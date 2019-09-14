@@ -3502,7 +3502,7 @@ namespace server
         aiman::clearai();
         aiman::poke();
         const char *reqmap = name && *name && strcmp(name, "<random>") ? name : pickmap(NULL, gamemode, mutators);
-        ifserver(reqmap && *reqmap)
+        if(servercheck(reqmap && *reqmap))
         {
             loopi(SENDMAP_MAX)
             {
@@ -5316,7 +5316,7 @@ namespace server
         }
         if(numclients())
         {
-            ifserver(shutdownwait)
+            if(servercheck(shutdownwait))
             {
                 int waituntil = maxshutdownwait*(gs_playing(gamestate) ? 2000 : 1000);
                 if(totalmillis >= shutdownwait+waituntil)
@@ -5505,7 +5505,7 @@ namespace server
         }
         else
         {
-            ifserver(shutdownwait)
+            if(servercheck(shutdownwait))
             {
                 srvoutf(4, "Server empty, shutting down as scheduled");
                 #ifdef STANDALONE

@@ -1030,7 +1030,7 @@ int updatetimer(bool limit)
         int cursecs = (totalmillis-lastsec)/1000;
         totalsecs += cursecs;
         lastsec += cursecs*1000;
-        ifserver(maxruntime && !shutdownwait && int(totalsecs) >= maxruntime)
+        if(servercheck(maxruntime && !shutdownwait && int(totalsecs) >= maxruntime))
         {
             server::srvoutf(-3, "\fyMax run time reached (\fs\fc%s\fS), waiting for server to empty", timestr(maxruntime*1000, 4));
             shutdownwait = totalmillis;

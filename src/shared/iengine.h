@@ -6,11 +6,9 @@ extern time_t clocktime, currenttime, clockoffset;
 extern int servertype, serverport, serverlanport, servermasterport;
 extern char *servermaster, *serverip;
 #ifdef STANDALONE
-#define ifserver(x) if(x)
-#define ifnserver(x) if(x)
+#define servercheck(x) (x)
 #else
-#define ifserver(x) if(servertype >= 3 && (x))
-#define ifnserver(x) if(servertype < 3 && (x))
+#define servercheck(x) (servertype >= 3 && (x))
 #endif
 extern ENetAddress masteraddress;
 extern void fatal(const char *s, ...) PRINTFARGS(1, 2);
