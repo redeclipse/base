@@ -217,6 +217,7 @@ void screenshot(char *sname)
 ICOMMAND(0, screenshot, "s", (char *s), if(!(identflags&IDF_WORLD)) screenshot(s));
 ICOMMAND(0, quit, "", (void), if(!(identflags&IDF_WORLD)) quit());
 
+bool wantdisplaysetup = false;
 void setupdisplay()
 {
     int index = SDL_GetWindowDisplayIndex(screen);
@@ -230,6 +231,7 @@ void setupdisplay()
         conoutf("Current monitor [%d]: %d x %d @ %d Hz", index, display.w, display.h, display.refresh_rate);
         refresh = display.refresh_rate;
     }
+    wantdisplaysetup = false;
 }
 
 bool initwindowpos = false;
@@ -250,7 +252,7 @@ void setfullscreen(bool enable)
             initwindowpos = false;
         }
     }
-    setupdisplay();
+    wantdisplaysetup = true;
 }
 
 VARF(0, fullscreen, 0, 1, 1, if(!(identflags&IDF_WORLD)) setfullscreen(fullscreen!=0));
@@ -280,7 +282,7 @@ void screenres(int w, int h)
             else resetfullscreen();
         }
         else SDL_SetWindowSize(screen, scr_w, scr_h);
-        setupdisplay();
+        wantdisplaysetup = true;
     }
     else initwarning("screen resolution");
 }
@@ -1138,6 +1140,7 @@ int main(int argc, char **argv)
         engineready = true;
         for(int frameloops = 0; ; frameloops = frameloops >= INT_MAX-1 ? MAXFPSHISTORY+1 : frameloops+1)
         {
+            if(wantdisplaysetup) setupdisplay();
             curtextscale = textscale;
             int elapsed = updatetimer(true);
             updatefps(frameloops, elapsed);
