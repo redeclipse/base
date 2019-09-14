@@ -39,11 +39,11 @@ void changemapvariant(int variant)
     }
 }
 
-VAR(0, mapeffects, 0, 2, 2);
+VAR(0, mapeffects, 1, 3, 3);
 
 bool checkmapeffects(int fxlevel)
 {
-    if(fxlevel < 0) return mapeffects&(0-fxlevel);
+    if(fxlevel < 0) return (0-fxlevel)&(1<<(mapeffects-1));
     return fxlevel <= mapeffects;
 }
 

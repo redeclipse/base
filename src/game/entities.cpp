@@ -1062,9 +1062,13 @@ namespace entities
             {
                 if(e.attrs[0] < 0) e.attrs[0] = 0; // radius, clamp
                 while(e.attrs[1] < 0) e.attrs[1] += 256; // red, wrap around
+                while(e.attrs[1] >= 256) e.attrs[1] -= 256; // red, wrap around
                 while(e.attrs[2] < 0) e.attrs[2] += 256; // green, wrap around
+                while(e.attrs[2] >= 256) e.attrs[1] -= 256; // green, wrap around
                 while(e.attrs[3] < 0) e.attrs[3] += 256; // blue, wrap around
-                if(e.attrs[4] < 0) e.attrs[4] = 0; // flare, clamp
+                while(e.attrs[3] >= 256) e.attrs[1] -= 256; // blue, wrap around
+                while(e.attrs[4] < 0) e.attrs[4] += 4; // flare, wrap around
+                while(e.attrs[4] >= 4) e.attrs[4] -= 4; // flare, wrap around
                 while(e.attrs[5] < 0) e.attrs[5] += 101; // flarescale, wrap around
                 if(e.attrs[6] < 0) e.attrs[6] = 0; // flags, clamp
                 if(e.attrs[7] < 0) e.attrs[7] = 0; // palette, clamp
@@ -1251,8 +1255,8 @@ namespace entities
         }
         if(enttype[e.type].fxattr >= 0)
         {
-            while(e.attrs[enttype[e.type].fxattr] < -3) e.attrs[enttype[e.type].fxattr] += 6;
-            while(e.attrs[enttype[e.type].fxattr] >= 3) e.attrs[enttype[e.type].fxattr] -= 6;
+            while(e.attrs[enttype[e.type].fxattr] < -7) e.attrs[enttype[e.type].fxattr] += 11;
+            while(e.attrs[enttype[e.type].fxattr] >= 4) e.attrs[enttype[e.type].fxattr] -= 11;
         }
     }
 

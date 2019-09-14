@@ -13,6 +13,7 @@ namespace UI
     SVAR(0, uiprecmd, "");
     SVAR(0, uipostcmd, "");
 
+    VAR(0, uihidden, 0, 0, 1);
     VAR(IDF_PERSIST, uitextrows, 1, 48, VAR_MAX);
 
     VAR(IDF_PERSIST, uiscrollsteptime, 0, 50, VAR_MAX);
@@ -4521,6 +4522,7 @@ namespace UI
 
     void update()
     {
+        if(uihidden) return;
         float oldtextscale = curtextscale;
         curtextscale = 1;
         cursortype = CURSOR_DEFAULT;
@@ -4545,6 +4547,7 @@ namespace UI
 
     void render()
     {
+        if(uihidden) return;
         float oldtextscale = curtextscale;
         curtextscale = 1;
         pushfont("default");

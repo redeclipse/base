@@ -733,6 +733,7 @@ namespace hud
             case POINTER_RELATIVE: return pointertex;
             case POINTER_UI:
             {
+                if(UI::uihidden) return NULL;
                 switch(UI::cursortype)
                 {
                     case CURSOR_HIDDEN: return NULL; break;

@@ -526,7 +526,7 @@ enum { CURSOR_DEFAULT = 0, CURSOR_HOVER, CURSOR_HIDDEN, CURSOR_MAX };
 
 namespace UI
 {
-    extern int cursortype;
+    extern int uihidden, cursortype;
     extern char *uiopencmd, *uiclosecmd;
     extern bool showui(const char *name);
     extern bool hideui(const char *name);
