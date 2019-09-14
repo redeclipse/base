@@ -1098,11 +1098,8 @@ namespace entities
             {
                 if(e.attrs[0] < 0) e.attrs[0] = 0; // radius, clamp
                 while(e.attrs[1] < 0) e.attrs[1] += 256; // red, wrap around
-                while(e.attrs[1] >= 256) e.attrs[1] -= 256; // red, wrap around
                 while(e.attrs[2] < 0) e.attrs[2] += 256; // green, wrap around
-                while(e.attrs[2] >= 256) e.attrs[1] -= 256; // green, wrap around
                 while(e.attrs[3] < 0) e.attrs[3] += 256; // blue, wrap around
-                while(e.attrs[3] >= 256) e.attrs[1] -= 256; // blue, wrap around
                 while(e.attrs[4] < 0) e.attrs[4] += 4; // flare, wrap around
                 while(e.attrs[4] >= 4) e.attrs[4] -= 4; // flare, wrap around
                 while(e.attrs[5] < 0) e.attrs[5] += 101; // flarescale, wrap around
