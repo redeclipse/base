@@ -1784,35 +1784,77 @@ static float findsurface(int fogmat, const vec &v, int &abovemat)
     return worldsize;
 }
 
+static void getcamfogmat(int &fogmat, int &abovemat, float &fogbelow)
+{
+    float fogmargin = 1 + WATER_AMPLITUDE + nearplane;
+    abovemat = MAT_AIR;
+    fogmat = lookupmaterial(vec(camera1->o.x, camera1->o.y, camera1->o.z - fogmargin))&(MATF_VOLUME|MATF_INDEX), abovemat = MAT_AIR;
+    fogbelow = 0;
+    if(isliquid(fogmat&MATF_VOLUME))
+    {
+        float z = findsurface(fogmat, vec(camera1->o.x, camera1->o.y, camera1->o.z - fogmargin), abovemat) - WATER_OFFSET;
+        if(camera1->o.z < z + fogmargin)
+        {
+            fogbelow = z - camera1->o.z;
+        }
+        else fogmat = abovemat;
+    }
+    else fogmat = MAT_AIR;
+}
+
+static void getmatfog(int fogmat, float &start, float &end)
+{
+    start = 0;
+
+    switch(fogmat&MATF_VOLUME)
+    {
+        case MAT_WATER:
+            end = getwaterfog(fogmat);
+            break;
+
+        case MAT_LAVA:
+            end = getlavafog(fogmat);
+            break;
+
+        default:
+            start = (getfog()+64)/8;
+            end = getfog();
+            break;
+    }
+}
+
 static void blendfog(int fogmat, float below, float blend, float logblend, float &start, float &end, vec &fogc)
 {
+    float matstart = 0, matend = 0;
+
+    getmatfog(fogmat, start, end);
+
     switch(fogmat&MATF_VOLUME)
     {
         case MAT_WATER:
         {
             const bvec &wcol = getwatercolour(fogmat), &wdeepcol = getwaterdeepcolour(fogmat);
-            int wfog = getwaterfog(fogmat), wdeep = getwaterdeep(fogmat);
-            float deepfade = clamp(below/max(wdeep, wfog), 0.0f, 1.0f);
+            float wdeep = getwaterdeep(fogmat);
+            float deepfade = clamp(below/max(wdeep, matend), 0.0f, 1.0f);
             vec color;
             color.lerp(wcol.tocolor(), wdeepcol.tocolor(), deepfade);
             fogc.add(vec(color).mul(blend));
-            end += logblend*min(getfog(), max(wfog*2, 16));
+            end += logblend*min((float)getfog(), max(matend*2, 16.0f));
             break;
         }
 
         case MAT_LAVA:
         {
             const bvec &lcol = getlavacolour(fogmat);
-            int lfog = getlavafog(fogmat);
             fogc.add(lcol.tocolor().mul(blend));
-            end += logblend*min(getfog(), max(lfog*2, 16));
+            end += logblend*min((float)getfog(), max(matend*2, 16.0f));
             break;
         }
 
         default:
             fogc.add(getfogcolour().tocolor().mul(blend));
-            start += logblend*(getfog()+64)/8;
-            end += logblend*getfog();
+            start += logblend*matstart;
+            end += logblend*matend;
             break;
     }
 }
@@ -2078,19 +2120,9 @@ void drawcubemap(int size, const vec &o, float yaw, float pitch, const cubemapsi
     camera1 = &cmcamera;
     setviewcell(camera1->o);
 
-    float fogmargin = 1 + WATER_AMPLITUDE + nearplane;
-    int fogmat = lookupmaterial(vec(camera1->o.x, camera1->o.y, camera1->o.z - fogmargin))&(MATF_VOLUME|MATF_INDEX), abovemat = MAT_AIR;
-    float fogbelow = 0;
-    if(isliquid(fogmat&MATF_VOLUME))
-    {
-        float z = findsurface(fogmat, vec(camera1->o.x, camera1->o.y, camera1->o.z - fogmargin), abovemat) - WATER_OFFSET;
-        if(camera1->o.z < z + fogmargin)
-        {
-            fogbelow = z - camera1->o.z;
-        }
-        else fogmat = abovemat;
-    }
-    else fogmat = MAT_AIR;
+    int fogmat, abovemat;
+    float fogbelow;
+    getcamfogmat(fogmat, abovemat, fogbelow);
     setfog(abovemat);
 
     float oldaspect = aspect, oldfovy = fovy, oldfov = curfov, oldldrscale = ldrscale, oldldrscaleb = ldrscaleb;
@@ -2268,19 +2300,9 @@ void gl_drawview()
     GLuint scalefbo = shouldscale();
     if(scalefbo) { vieww = gw; viewh = gh; }
 
-    float fogmargin = 1 + WATER_AMPLITUDE + nearplane;
-    int fogmat = lookupmaterial(vec(camera1->o.x, camera1->o.y, camera1->o.z - fogmargin))&(MATF_VOLUME|MATF_INDEX), abovemat = MAT_AIR;
-    float fogbelow = 0;
-    if(isliquid(fogmat&MATF_VOLUME))
-    {
-        float z = findsurface(fogmat, vec(camera1->o.x, camera1->o.y, camera1->o.z - fogmargin), abovemat) - WATER_OFFSET;
-        if(camera1->o.z < z + fogmargin)
-        {
-            fogbelow = z - camera1->o.z;
-        }
-        else fogmat = abovemat;
-    }
-    else fogmat = MAT_AIR;
+    int fogmat, abovemat;
+    float fogbelow;
+    getcamfogmat(fogmat, abovemat, fogbelow);
     setfog(abovemat);
     //setfog(fogmat, fogbelow, 1, abovemat);
 
