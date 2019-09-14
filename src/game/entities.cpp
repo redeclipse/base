@@ -149,36 +149,13 @@ namespace entities
 
     const char *entinfo(int type, attrvector &attr, bool full, bool icon)
     {
-        static string entinfostr; entinfostr[0] = 0;
+        if(type < 0 || type >= MAXENTTYPES) return NULL;
+        static string entinfostr;
+        entinfostr[0] = 0;
         #define addentinfo(s) if(*(s)) \
         { \
             if(entinfostr[0]) concatstring(entinfostr, ", "); \
             concatstring(entinfostr, s); \
-        }
-        #define addmodeinfo(a,b) \
-        { \
-            if(a) \
-            { \
-                int mode = a < 0 ? 0-a : a; \
-                loopi(G_MAX-G_PLAY) if(mode&(1<<i)) \
-                { \
-                    string ds; \
-                    if(a < 0) formatstring(ds, "not %s", gametype[i+G_PLAY].name); \
-                    else formatstring(ds, "%s", gametype[i+G_PLAY].name); \
-                    addentinfo(ds); \
-                } \
-            } \
-            if(b) \
-            { \
-                int muts = b < 0 ? 0-b : b; \
-                loopi(G_M_NUM) if(muts&(1<<i)) \
-                { \
-                    string ds; \
-                    if(b < 0) formatstring(ds, "not %s", mutstype[i].name); \
-                    else formatstring(ds, "%s", mutstype[i].name); \
-                    addentinfo(ds); \
-                } \
-            } \
         }
         switch(type)
         {
@@ -269,7 +246,6 @@ namespace entities
                     const char *cpnames[CP_MAX+1] = { "respawn", "start", "finish", "last", "" };
                     addentinfo(cpnames[attr[6] < 0 || attr[6] >= CP_MAX ? CP_MAX : attr[6]]);
                 }
-                addmodeinfo(attr[3], attr[4]);
                 break;
             }
             case LIGHT:
@@ -318,7 +294,6 @@ namespace entities
                 if(full && attr[0] >= 0 && attr[0] < A_TOTAL)
                 {
                     addentinfo(actor[attr[0]+A_ENEMY].name);
-                    addmodeinfo(attr[3], attr[4]);
                     addentinfo(W(attr[6] > 0 && attr[6] <= W_ALL ? attr[6]-1 : AA(attr[0]+A_ENEMY, weaponspawn), name));
                 }
                 break;
@@ -332,7 +307,6 @@ namespace entities
                     addentinfo(str);
                     if(full)
                     {
-                        addmodeinfo(attr[2], attr[3]);
                         if(attr[1]&W_F_FORCED) addentinfo("forced");
                     }
                 }
@@ -380,7 +354,6 @@ namespace entities
                     addentinfo(actnames[attr[2] < 0 || attr[2] >= TA_MAX ? TA_MAX : attr[2]]);
                     if(attr[4] >= 2) addentinfo(attr[4] ? "routed" : "inert");
                     addentinfo(attr[4]%2 ? "on" : "off");
-                    addmodeinfo(attr[5], attr[6]);
                 }
                 break;
             }
@@ -415,6 +388,56 @@ namespace entities
                 break;
             }
             default: break;
+        }
+        if(full)
+        {
+            if(enttype[type].modesattr >= 0)
+            {
+                int a = attr[enttype[type].modesattr], b = attr[enttype[type].modesattr+1];
+                if(a)
+                {
+                    int mode = a < 0 ? 0-a : a;
+                    loopi(G_MAX-G_PLAY) if(mode&(1<<i))
+                    {
+                        string ds;
+                        if(a < 0) formatstring(ds, "not %s", gametype[i+G_PLAY].name);
+                        else formatstring(ds, "%s", gametype[i+G_PLAY].name);
+                        addentinfo(ds);
+                    }
+                }
+                if(b)
+                {
+                    int muts = b < 0 ? 0-b : b;
+                    loopi(G_M_NUM) if(muts&(1<<i))
+                    {
+                        string ds;
+                        if(b < 0) formatstring(ds, "not %s", mutstype[i].name);
+                        else formatstring(ds, "%s", mutstype[i].name);
+                        addentinfo(ds);
+                    }
+                }
+            }
+            if(enttype[type].fxattr >= 0)
+            {
+                int a = attr[enttype[type].fxattr];
+                if(a < 0)
+                {
+                    int b = 0;
+                    defformatstring(ds, "fx ");
+                    loopi(3) if((0-a)&(1<<i))
+                    {
+                        concformatstring(ds, "%s%d", b ? "+" : "", i+1);
+                        b++;
+                    }
+                    concatstring(ds, " only");
+                    addentinfo(ds);
+                }
+                else if(a > 0)
+                {
+                    defformatstring(ds, "fx %d", a);
+                    addentinfo(ds);
+                }
+            }
         }
         return entinfostr[0] ? entinfostr : "";
     }
