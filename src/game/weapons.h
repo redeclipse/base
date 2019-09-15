@@ -180,19 +180,19 @@ WPVARM(IDF_GAMEMOD, aiskew, 0, VAR_MAX,
     1,          5,          1,          3,          5,          3,          5,          5,          5,          1,          1,          5,          1
 );
 WPVAR(IDF_GAMEMOD, ammoadd, 1, VAR_MAX,
-    1,          10,         1,          2,          30,         50,         16,         30,         6,          1,          1,          1,          1
+    1,          10,         1,          2,          30,         50,         16,         24,         6,          1,          1,          1,          1
 );
 WPVAR(IDF_GAMEMOD, ammoclip, 1, VAR_MAX,
-    1,          10,         1,          8,          30,         50,         16,         30,         6,          2,          2,          1,          1
+    1,          10,         1,          8,          30,         50,         16,         24,         6,          2,          2,          1,          1
 );
 WPVAR(IDF_GAMEMOD, ammoitem, 1, VAR_MAX,
-    1,          10,         1,          16,         60,         100,        32,         60,         18,         1,          1,          1,          0
+    1,          10,         1,          16,         60,         100,        32,         48,         18,         1,          1,          1,          0
 );
 WPVAR(IDF_GAMEMOD, ammospawn, 1, VAR_MAX,
-    1,          10,         1,          12,         90,         100,        32,         60,         12,         2,          2,          1,          1
+    1,          10,         1,          12,         90,         100,        32,         48,         12,         2,          2,          1,          1
 );
 WPVAR(IDF_GAMEMOD, ammostore, 0, VAR_MAX,
-    0,          0,          0,          40,         150,        200,        64,         120,        30,         0,          0,          0,          0
+    0,          0,          0,          40,         150,        200,        64,         96,         30,         0,          0,          0,          0
 );
 WPVARM(IDF_GAMEMOD, ammosub, 0, VAR_MAX,
     0,          1,          0,          1,          1,          1,          1,          1,          1,          1,          1,          1,          0,
@@ -366,7 +366,7 @@ WPFVARK(IDF_GAMEMOD, damagewhiplash, FVAR_MIN, FVAR_MAX,
     0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.75f,      0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.8f
 );
 WPVARM(IDF_GAMEMOD, delayattack, 1, VAR_MAX,
-    500,        130,        500,        750,        55,         20,         350,        200,        750,        750,        500,        1500,       500,
+    500,        130,        500,        750,        55,         20,         350,        250,        750,        750,        500,        1500,       500,
     800,        200,        800,        1250,       350,        1250,       1000,       195,        1250,       750,        500,        1500,       500
 );
 WPVAR(IDF_GAMEMOD, delayreload, 0, VAR_MAX,
