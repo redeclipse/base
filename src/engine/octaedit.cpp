@@ -185,7 +185,7 @@ void toggleedit(bool force)
 {
     if(!force && (!connected(false) || !client::allowedittoggle(editmode))) return;
     editmode = !editmode;
-    editing = entediting = (editmode ? 1 : 0);
+    editing = (editmode ? 1 : 0);
     client::edittoggled(editmode);
     cancelsel();
     stoppaintblendmap();
