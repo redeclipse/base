@@ -467,7 +467,7 @@ WPFVARM(IDF_GAMEMOD, fragoffset, 0, FVAR_MAX,
 );
 WPVARM(IDF_GAMEMOD, fragrays, 1, MAXPARAMS,
     5,          5,          5,          5,          5,          5,          5,          5,          5,          50,         35,         100,        5,
-    5,          5,          5,          24,         40,         5,          5,          5,          5,          50,         10,         100,        5
+    5,          5,          5,          16,         40,         5,          5,          5,          5,          50,         10,         100,        5
 );
 WPFVARM(IDF_GAMEMOD, fragrel, FVAR_MIN, FVAR_MAX,
     1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       0.0f,       0.0f,       0.0f,       1.0f,
