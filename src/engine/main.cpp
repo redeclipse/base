@@ -671,7 +671,6 @@ void swapbuffers(bool overlay)
 VAR(IDF_PERSIST, menufps, -1, 60, 1000);
 VAR(IDF_PERSIST, maxfps, -1, -1, 1000);
 
-
 void limitfps(int &millis, int curmillis)
 {
     int curmax = maxfps >= 0 ? maxfps : refresh, curmenu = menufps >= 0 ? menufps : refresh,
