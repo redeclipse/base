@@ -237,7 +237,7 @@ APFVAR(IDF_GAMEMOD, impulsespeedextra, FVAR_MIN, FVAR_MAX,
 );
 //    190,            190,            190,            190,            140
 APFVAR(IDF_GAMEMOD, weight, 0, FVAR_MAX,
-    126,            126,            126,            126,            93
+    176,            176,            176,            176,            130
 );
 APFVAR(IDF_GAMEMOD, weightextra, FVAR_MIN, FVAR_MAX,
     0,              0,              0,              0,              0
