@@ -1888,12 +1888,15 @@ FVAR(0, fogcullintensity, 0, 1e-3f, 1);
 float calcfogcull()
 {
     int fogmat, abovemat;
-    float below, start, end;
+    float below, start, end, startabove, endabove;
 
     getcamfogmat(fogmat, abovemat, below);
     getmatfog(fogmat, start, end);
+    getmatfog(abovemat, startabove, endabove);
 
-    return log(fogcullintensity) / (M_LN2*calcfogdensity(end - start));
+    float fogdepth = end > endabove ? (end - start) : (endabove - startabove);
+
+    return log(fogcullintensity) / (M_LN2*calcfogdensity(fogdepth));
 }
 
 static void setfog(int fogmat, float below = 0, float blend = 1, int abovemat = MAT_AIR)
