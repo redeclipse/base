@@ -2113,7 +2113,7 @@ void drawminimap()
     glViewport(0, 0, hudw, hudh);
 }
 
-void drawcubemap(int size, const vec &o, float yaw, float pitch, const cubemapside &side, bool onlysky)
+void drawcubemap(int size, const vec &o, float yaw, float pitch, bool onlysky)
 {
     drawtex = DRAWTEX_ENVMAP;
 

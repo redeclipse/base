@@ -2935,8 +2935,7 @@ Texture *Slot::loadthumbnail()
 }
 
 // environment mapped reflections
-
-extern const cubemapside cubemapsides[6] =
+const cubemapside cubemapsides[6] =
 {
     { GL_TEXTURE_CUBE_MAP_NEGATIVE_X, "lf", false, true,  true  },
     { GL_TEXTURE_CUBE_MAP_POSITIVE_X, "rt", true,  false, true  },
@@ -3144,7 +3143,7 @@ GLuint genenvmap(const vec &o, int envmapsize, int blur, bool onlysky)
             case GL_TEXTURE_CUBE_MAP_POSITIVE_Z: // up
                 yaw = 270; pitch = 90; break;
         }
-        drawcubemap(rendersize, o, yaw, pitch, side, onlysky);
+        drawcubemap(rendersize, o, yaw, pitch, onlysky);
         copyhdr(rendersize, rendersize, emfbo[0], texsize, texsize, side.flipx, !side.flipy, side.swapxy);
         if(blur > 0)
         {
