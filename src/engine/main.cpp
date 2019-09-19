@@ -318,12 +318,12 @@ void restorevsync()
 {
     if(initing || !glcontext) return;
     extern int vsync, vsynctear;
-    if(!SDL_GL_SetSwapInterval(vsync ? (vsynctear ? -1 : 1) : 0))
-        curvsync = vsync;
+    if(!SDL_GL_SetSwapInterval(vsync ? (vsynctear ? -1 : 1) : 0)) curvsync = vsync;
+    else if(vsync && vsynctear && !SDL_GL_SetSwapInterval(vsync ? 1 : 0)) curvsync = vsync;
 }
 
 VARF(IDF_PERSIST, vsync, 0, 0, 1, restorevsync());
-VARF(IDF_PERSIST, vsynctear, 0, 0, 1, { if(vsync) restorevsync(); });
+VARF(IDF_PERSIST, vsynctear, 0, 1, 1, { if(vsync) restorevsync(); });
 VAR(0, dbgmodes, 0, 0, 1);
 
 void setupscreen()
@@ -674,8 +674,8 @@ VAR(IDF_PERSIST, maxfps, -1, -1, 1000);
 void limitfps(int &millis, int curmillis)
 {
     int curmax = maxfps >= 0 ? maxfps : refresh, curmenu = menufps >= 0 ? menufps : refresh,
-        limit = (hasnoview() || minimized) && curmenu ? (curmax ? min(curmax, curmenu) : curmenu) : curmax;
-    if(!limit) return;
+        limit = (hasnoview() || minimized) && curmenu ? (curmax > 0 ? min(curmax, curmenu) : curmenu) : curmax;
+    if(!limit || (limit == refresh && vsync)) return;
     static int fpserror = 0;
     int delay = 1000/limit - (millis-curmillis);
     if(delay < 0) fpserror = 0;
