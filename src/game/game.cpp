@@ -293,14 +293,14 @@ namespace game
     VAR(IDF_PERSIST, playereffecttone, -1, CTONE_TEAMED, CTONE_MAX-1);
     VAR(IDF_PERSIST, playerteamtone, -1, CTONE_TEAM, CTONE_MAX-1);
 
-    FVAR(IDF_PERSIST, playerovertonelevel, 0.f, 1.f, 10.f);
+    FVAR(IDF_PERSIST, playerovertonelevel, 0.f, 0.75f, 10.f);
     FVAR(IDF_PERSIST, playerundertonelevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playerdisplaytonelevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playereffecttonelevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playerteamtonelevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playertonemix, 0, 0, 1);
 
-    FVAR(IDF_PERSIST, playerovertoneinterp, 0, 0.5f, 1); // interpolate this much brightness from the opposing tone
+    FVAR(IDF_PERSIST, playerovertoneinterp, 0, 0, 1); // interpolate this much brightness from the opposing tone
     FVAR(IDF_PERSIST, playerovertonebright, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playerundertoneinterp, 0, 0, 1); // interpolate this much brightness from the opposing tone
     FVAR(IDF_PERSIST, playerundertonebright, 0.f, 1.f, 10.f);
@@ -2014,7 +2014,9 @@ namespace game
 
     int levelcolour(int colour, float level)
     {
-        return (clamp(int((colour>>16)*level), 0, 255)<<16)|(clamp(int(((colour>>8)&0xFF)*level), 0, 255)<<8)|(clamp(int((colour&0xFF)*level), 0, 255));
+        if(level != 1)
+            return (clamp(int((colour>>16)*level), 0, 255)<<16)|(clamp(int(((colour>>8)&0xFF)*level), 0, 255)<<8)|(clamp(int((colour&0xFF)*level), 0, 255));
+        return colour;
     }
 
     int findcolour(gameent *d, bool tone, bool mix, float level)
