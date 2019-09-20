@@ -2945,7 +2945,7 @@ const cubemapside cubemapsides[6] =
     { GL_TEXTURE_CUBE_MAP_POSITIVE_Z, "up", true,  false, true  },
 };
 
-VARF(IDF_PERSIST, envmapsize, 4, 7, 10, setupmaterials());
+VARF(IDF_PERSIST, envmapsize, 3, 7, 12, setupmaterials());
 
 Texture *cubemaploadwildcard(Texture *t, const char *name, bool mipit, bool msg, bool transient = false)
 {
@@ -3212,8 +3212,8 @@ void initenvmaps()
         const extentity &ent = *ents[i];
         if(ent.type != ET_ENVMAP) continue;
         envmap &em = envmaps.add();
-        em.radius = ent.attrs[0] ? clamp(int(ent.attrs[0]), 0, 10000) : envmapradius;
-        em.size = ent.attrs[1] ? clamp(int(ent.attrs[1]), 4, 9) : 0;
+        em.radius = clamp(int(ent.attrs[0]), 0, 10000);
+        em.size = ent.attrs[1] ? clamp(int(ent.attrs[1]), 3, 12) : 0;
         em.blur = ent.attrs[2] ? clamp(int(ent.attrs[2]), 1, 2) : 0;
         em.o = ent.o;
     }
@@ -3249,16 +3249,16 @@ ushort closestenvmap(const vec &o)
     loopv(envmaps)
     {
         envmap &em = envmaps[i];
-        float dist;
+        float dist, radius = em.radius ? em.radius : envmapradius;
         if(envmapbb)
         {
-            if(!o.insidebb(vec(em.o).sub(em.radius), vec(em.o).add(em.radius))) continue;
+            if(!o.insidebb(vec(em.o).sub(radius), vec(em.o).add(radius))) continue;
             dist = em.o.dist(o);
         }
         else
         {
             dist = em.o.dist(o);
-            if(dist > em.radius) continue;
+            if(dist > radius) continue;
         }
         if(dist < mindist)
         {

@@ -1370,10 +1370,6 @@ float curfov = 100, fovy = 100, aspect = 1, cursorx = 0.5f, cursory = 0.5f;
 vec cursordir(0, 0, 0);
 FVARN(IDF_PERSIST, aspect, forceaspect, 0, 0, 1e3f);
 
-
-
-
-
 void vecfromcursor(float x, float y, float z, vec &dir)
 {
     vec dir1 = invcamprojmatrix.perspectivetransform(vec(x*2-1, 1-2*y, z*2-1)),
