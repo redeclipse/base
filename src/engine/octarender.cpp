@@ -1732,7 +1732,7 @@ void allchanged(bool load)
     clearvas(worldroot);
     resetqueries();
     resetclipplanes();
-    if(load) initenvmaps();
+    if(load) initenvtexs();
     entitiesinoctanodes();
     tjoints.setsize(0);
     if(filltjoints) findtjoints();
@@ -1746,7 +1746,7 @@ void allchanged(bool load)
         genshadowmeshes();
         updateblendtextures();
         seedparticles();
-        genenvmaps();
+        genenvtexs();
         drawminimap();
     }
 }

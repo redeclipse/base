@@ -60,7 +60,7 @@ namespace client
 
 namespace hud
 {
-    extern int statrate;
+    extern int statrate, hudsize, hudwidth, hudheight;
     extern char *progresstex, *progringtex;
     extern const char *modeimage();
     extern float radarlimit(float dist = -1);

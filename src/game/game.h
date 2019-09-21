@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 240
+#define VERSION_GAME 241
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -37,7 +37,7 @@ enum
 enum                                // entity types
 {
     NOTUSED = ET_EMPTY, LIGHT = ET_LIGHT, MAPMODEL = ET_MAPMODEL, PLAYERSTART = ET_PLAYERSTART, ENVMAP = ET_ENVMAP, PARTICLES = ET_PARTICLES,
-    MAPSOUND = ET_SOUND, LIGHTFX = ET_LIGHTFX, DECAL = ET_DECAL, WIND = ET_WIND, WEAPON = ET_GAMESPECIFIC,
+    MAPSOUND = ET_SOUND, LIGHTFX = ET_LIGHTFX, DECAL = ET_DECAL, WIND = ET_WIND, OUTLINE = ET_OUTLINE, WEAPON = ET_GAMESPECIFIC,
     TELEPORT, ACTOR, TRIGGER, PUSHER, AFFINITY, CHECKPOINT,
     ROUTE, UNUSEDENT,
     MAXENTTYPES
@@ -125,18 +125,26 @@ extern const enttypes enttype[] = {
                 "lightfx",      { "type",   "mod",      "min",      "max",      "flags",    "variant",  "fxlevel" }
     },
     {
-        DECAL,       1,             0,      0,      EU_NONE,    7,          -1,         -1,     5,      6,
+        DECAL,          1,          0,      0,      EU_NONE,    7,          -1,         -1,     5,      6,
             0, 0, 0,
             false,  false,  false,      false,      false,
                 "decal",        { "type",   "yaw",      "pitch",    "roll",     "scale",    "variant",  "fxlevel" }
     },
     {
-        WIND,        1,             1,      0,      EU_NONE,    9,          -1,         -1,     7,      8,
+        WIND,           1,          239,    0,      EU_NONE,    9,          -1,         -1,     7,      8,
             (1<<MAPSOUND),
             (1<<MAPSOUND),
             0,
             false,  false,  false,      false,      false,
                 "wind",        { "mode",   "yaw",      "speed",    "radius",   "atten",    "interval", "implen", "variant",  "fxlevel" }
+    },
+    {
+        OUTLINE,        1,          241,    0,      EU_NONE,    0,          -1,         -1,     -1,     -1,
+            (1<<OUTLINE),
+            (1<<OUTLINE),
+            0,
+            false,  false,  false,      false,      false,
+                "outline",      { "" }
     },
     {
         WEAPON,         2,          59,     24,     EU_ITEM,    6,          2,          4,      5,      -1,

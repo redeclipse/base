@@ -2464,6 +2464,7 @@ void gl_drawhud(bool noview = false)
     resethudshader();
 
     debuglights();
+    debugtexs();
 
     hud::render(noview);
 }

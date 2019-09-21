@@ -1292,6 +1292,7 @@ bool load_world(const char *mname, int crc, int variant)
             // version increments
             if(maptype == MAP_OCTA && e.type >= ET_DECAL) e.type++;
             if(maptype == MAP_MAPZ && hdr.version < 47 && e.type >= ET_WIND) e.type++;
+            if(maptype == MAP_MAPZ && hdr.version < 48 && e.type >= ET_OUTLINE) e.type++;
             bool oldsun = maptype == MAP_MAPZ && hdr.version <= 43 && e.type == ET_DECAL;
             if(!samegame && e.type >= ET_GAMESPECIFIC)
             {
@@ -1424,8 +1425,7 @@ bool load_world(const char *mname, int crc, int variant)
         loopv(ents)
         {
             extentity &e = *ents[i];
-
-            if(maptype == MAP_OCTA && ents[i]->type == ET_LIGHTFX && ents[i]->attrs[0] == LFX_SPOTLIGHT)
+            if(maptype == MAP_OCTA && e.type == ET_LIGHTFX && e.attrs[0] == LFX_SPOTLIGHT)
             {
                 int closest = -1;
                 float closedist = 1e10f;

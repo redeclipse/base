@@ -1042,7 +1042,7 @@ namespace entities
         loopvrev(e.links)
         {
             int ent = e.links[i];
-            if(!canlink(n, ent, verbose >= 2)) e.links.remove(i);
+            if(!canlink(n, ent, true)) e.links.remove(i);
             else if(ents.inrange(ent))
             {
                 gameentity &f = *(gameentity *)ents[ent];
@@ -1463,8 +1463,7 @@ namespace entities
 
     bool maylink(int type, int ver)
     {
-        if(enttype[type].links && enttype[type].links <= (ver ? ver : VERSION_GAME))
-                return true;
+        if(enttype[type].links && enttype[type].links <= (ver ? ver : VERSION_GAME)) return true;
         return false;
     }
 
@@ -2059,6 +2058,12 @@ namespace entities
                     part_radius(vec(e.o).add(vec(0, 0, PLAYERHEIGHT/2)), vec(PLAYERRADIUS, PLAYERRADIUS, PLAYERHEIGHT/2), showentsize, 1, 1, TEAM(e.attrs[0], colour));
                     break;
                 }
+                case ENVMAP:
+                {
+                    int s = e.attrs[0] ? clamp(e.attrs[0], 0, 10000) : envmapradius;
+                    part_radius(e.o, vec(float(s)), showentsize, 1, 1, colourcyan);
+                    break;
+                }
                 case ACTOR:
                 {
                     part_radius(vec(e.o).add(vec(0, 0, PLAYERHEIGHT/2)), vec(PLAYERRADIUS, PLAYERRADIUS, PLAYERHEIGHT/2), showentsize, 1, 1, TEAM(T_ENEMY, colour));
@@ -2076,10 +2081,9 @@ namespace entities
                     part_radius(e.o, vec(float(e.attrs[3])), showentsize, 1, 1, colourcyan);
                     break;
                 }
-                case ENVMAP:
+                case OUTLINE:
                 {
-                    int s = e.attrs[0] ? clamp(e.attrs[0], 0, 10000) : envmapradius;
-                    part_radius(e.o, vec(float(s)), showentsize, 1, 1, colourcyan);
+                    part_radius(e.o, vec(float(matcapdist)), showentsize, 1, 1, colourcyan);
                     break;
                 }
                 case LIGHT:
