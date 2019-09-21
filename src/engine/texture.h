@@ -873,6 +873,8 @@ struct cubemapside
     GLenum target;
     const char *name;
     bool flipx, flipy, swapxy;
+    float yaw, pitch;
+    int mcx, mcy;
 };
 
 extern const texrotation texrotations[8];
