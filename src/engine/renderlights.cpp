@@ -940,7 +940,7 @@ void resolvemsaadepth(int w = vieww, int h = viewh)
     endtimer(resolvetimer);
 }
 
-void resolvemsaacolor(int w = vieww, int h = viewh)
+void resolvemsaacolor(int x = 0, int y = 0, int w = vieww, int h = viewh)
 {
     if(!msaalight) return;
 
@@ -948,7 +948,7 @@ void resolvemsaacolor(int w = vieww, int h = viewh)
 
     glBindFramebuffer_(GL_READ_FRAMEBUFFER, mshdrfbo);
     glBindFramebuffer_(GL_DRAW_FRAMEBUFFER, hdrfbo);
-    glBlitFramebuffer_(0, 0, w, h, 0, 0, w, h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    glBlitFramebuffer_(0, 0, w, h, x, y, w, h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
     glBindFramebuffer_(GL_FRAMEBUFFER, hdrfbo);
 
@@ -982,16 +982,16 @@ FVARF(IDF_PERSIST, gscalecubicsoft, 0, 0, 1, initwarning("scaling setup", INIT_L
 
 float ldrscale = 1.0f, ldrscaleb = 1.0f/255;
 
-void copyhdr(int sw, int sh, GLuint fbo, int dw, int dh, bool flipx, bool flipy, bool swapxy)
+void copyhdr(int sw, int sh, GLuint fbo, int dx, int dy, int dw, int dh, bool flipx, bool flipy, bool swapxy)
 {
     if(!dw) dw = sw;
     if(!dh) dh = sh;
 
-    if(msaalight) resolvemsaacolor(sw, sh);
+    if(msaalight) resolvemsaacolor(dx, dy, sw, sh);
     GLERROR;
 
     glBindFramebuffer_(GL_FRAMEBUFFER, fbo);
-    glViewport(0, 0, dw, dh);
+    glViewport(dx, dy, dw, dh);
 
     SETSHADER(reorient);
     vec reorientx(flipx ? -0.5f : 0.5f, 0, 0.5f), reorienty(0, flipy ? -0.5f : 0.5f, 0.5f);

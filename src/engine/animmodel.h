@@ -134,7 +134,8 @@ struct animmodel : model
 
         bool masked() const { return masks != notexture; }
         bool envmapped() const { return envmapmax>0; }
-        bool matcapped() const { return matcapmax>0; }
+        //bool matcapped() const { return matcapmax>0; }
+        bool matcapped() const { return false; }
         bool bumpmapped() const { return normalmap != NULL; }
         bool alphatested() const { return alphatest > 0 && tex->type&Texture::ALPHA; }
         bool decaled() const { return decal != NULL; }
@@ -1521,12 +1522,12 @@ struct animmodel : model
                 closestenvmaptex = lookupenvmap(closestenvmap(state->o));
                 break;
             }
-            if(matcapped()) matcaptex[0] = getmatcap(state->o, &matcaptex[1], &matcapblend);
-            else if(state->attached) for(int i = 0; state->attached[i].tag; i++) if(state->attached[i].m && state->attached[i].m->matcapped())
-            {
-                matcaptex[0] = getmatcap(state->o, &matcaptex[1], &matcapblend);
-                break;
-            }
+            //if(matcapped()) matcaptex[0] = getmatcap(state->o, &matcaptex[1], &matcapblend);
+            //else if(state->attached) for(int i = 0; state->attached[i].tag; i++) if(state->attached[i].m && state->attached[i].m->matcapped())
+            //{
+            //    matcaptex[0] = getmatcap(state->o, &matcaptex[1], &matcapblend);
+            //    break;
+            //}
         }
 
         if(depthoffset && !enabledepthoffset)
