@@ -2946,6 +2946,9 @@ const cubemapside cubemapsides[6] =
 };
 
 VARF(IDF_PERSIST, envmapsize, 3, 7, 12, setupmaterials());
+VAR(IDF_WORLD, envmapradius, 0, 128, 10000);
+VAR(IDF_WORLD, envmapbb, 0, 0, 1);
+VAR(IDF_PERSIST, aaenvmap, 0, 1, 1);
 
 Texture *cubemaploadwildcard(Texture *t, const char *name, bool mipit, bool msg, bool transient = false)
 {
@@ -3069,10 +3072,6 @@ Texture *cubemapload(const char *name, bool mipit, bool msg, bool transient)
     return t;
 }
 
-VAR(IDF_WORLD, envmapradius, 0, 128, 10000);
-VAR(IDF_WORLD, envmapbb, 0, 0, 1);
-VAR(IDF_PERSIST, aaenvmap, 0, 1, 1);
-
 struct envmap
 {
     int radius, size, blur;
@@ -3098,13 +3097,13 @@ void clearenvmaps()
 static GLuint emfbo[3] = { 0, 0, 0 }, emtex[2] = { 0, 0 };
 static int emtexsize = -1;
 
-GLuint genenvmap(const vec &o, int envmapsize, int blur, bool onlysky)
+GLuint genenvmap(const vec &o, int esize, int aasize, int blur, bool onlysky)
 {
-    int rendersize = 1<<(envmapsize+aaenvmap), sizelimit = min(hwcubetexsize, min(gw, gh));
+    int rendersize = 1<<(esize+aasize), sizelimit = min(hwcubetexsize, min(gw, gh));
     if(maxtexsize) sizelimit = min(sizelimit, maxtexsize);
     while(rendersize > sizelimit) rendersize /= 2;
-    int texsize = min(rendersize, 1<<envmapsize);
-    if(!aaenvmap) rendersize = texsize;
+    int texsize = min(rendersize, 1<<esize);
+    if(!aasize) rendersize = texsize;
     if(!emtex[0]) glGenTextures(2, emtex);
     if(!emfbo[0]) glGenFramebuffers_(3, emfbo);
     if(emtexsize != texsize)
@@ -3224,11 +3223,10 @@ void genenvmaps()
     if(envmaps.empty()) return;
     progress(0, "Generating environment maps...");
     int lastprogress = SDL_GetTicks();
-    gl_setupframe(true);
     loopv(envmaps)
     {
         envmap &em = envmaps[i];
-        em.tex = genenvmap(em.o, em.size ? min(em.size, envmapsize) : envmapsize, em.blur, em.radius < 0);
+        em.tex = genenvmap(em.o, em.size ? min(em.size, envmapsize) : envmapsize, aaenvmap, em.blur, em.radius < 0);
         if(renderedframe) continue;
         int millis = SDL_GetTicks();
         if(millis - lastprogress >= 250)
@@ -3298,6 +3296,258 @@ GLuint lookupenvmap(ushort emid)
     return tex ? tex : lookupskyenvmap();
 }
 
+VAR(IDF_PERSIST, matcapsize, 1, 2, 10);
+VAR(IDF_PERSIST, matcapdist, 1, 64, 10000);
+VAR(IDF_PERSIST, matcapmaxdist, 1, 128, 10000);
+VAR(IDF_PERSIST, matcapblur, 0, 2, 2);
+VAR(IDF_PERSIST, aamatcap, 0, 1, 1);
+
+struct matcap
+{
+    vec o;
+    int ent;
+    bool sky;
+    GLuint tex;
+    linkvector links;
+
+    matcap() : o(0, 0, 0), ent(-1), sky(false), tex(0)
+    {
+        links.shrink(0);
+    }
+
+    void clear()
+    {
+        if(tex) { glDeleteTextures(1, &tex); tex = 0; }
+    }
+};
+
+static vector<matcap> matcaps;
+
+void clearmatcaps()
+{
+    loopv(matcaps) matcaps[i].clear();
+    matcaps.shrink(0);
+}
+
+void initmatcaps()
+{
+    clearmatcaps();
+    matcaps.add().sky = true;
+    const vector<extentity *> &ents = entities::getents();
+    loopv(ents)
+    {
+        const extentity &ent = *ents[i];
+        if(ent.type != ET_OUTLINE) continue;
+        matcap &mc = matcaps.add();
+        mc.o = ent.o;
+        mc.ent = i;
+    }
+    loopv(matcaps) if(ents.inrange(matcaps[i].ent))
+    {
+        matcap &mc = matcaps[i];
+        const extentity &ent = *ents[mc.ent];
+        loopvj(ent.links) if(ents.inrange(ent.links[j]))
+        {
+            int link = ent.links[j], last = i;
+            if(link > matcaps[i].ent) // otherwise we've already processed this link
+            {
+                const extentity &lent = *ents[link];
+                float dist = mc.o.dist(lent.o), dvc = dist/float(matcapdist);
+                if(dvc > 1)
+                {
+                    int num = int(ceilf(dvc));
+                    float space = dist/float(num);
+                    num--; // fill in between, but not the target
+                    vec dir = vec(lent.o).sub(mc.o).normalize().mul(space), iter = mc.o;
+                    loopk(num)
+                    {
+                        int lnum = matcaps.length();
+                        matcap &lmc = matcaps.add();
+                        lmc.o = iter.add(dir);
+                        matcaps[last].links.add(lnum);
+                        lmc.links.add(last);
+                        last = lnum;
+                    }
+                }
+                loopvk(matcaps) if(matcaps[k].ent == link)
+                {
+                    matcaps[last].links.add(k);
+                    matcaps[k].links.add(last);
+                }
+            }
+        }
+    }
+}
+
+void genmatcaps()
+{
+    if(matcaps.empty()) return;
+    progress(0, "Generating material captures...");
+    int lastprogress = SDL_GetTicks();
+    loopv(matcaps)
+    {
+        matcap &mc = matcaps[i];
+        mc.tex = genenvmap(mc.o, matcapsize, aamatcap, matcapblur, mc.sky);
+        if(renderedframe) continue;
+        int millis = SDL_GetTicks();
+        if(millis - lastprogress >= 250)
+        {
+            progress(float(i+1)/matcaps.length(), "Generating material captures...");
+            lastprogress = millis;
+        }
+    }
+    if(emfbo[0]) { glDeleteFramebuffers_(3, emfbo); memset(emfbo, 0, sizeof(emfbo)); }
+    if(emtex[0]) { glDeleteTextures(2, emtex); memset(emtex, 0, sizeof(emtex)); }
+    emtexsize = -1;
+}
+
+GLuint getmatcap(const vec &o, GLuint *blendtex, float *blend, int *id1, int *id2)
+{
+    if(blendtex) *blendtex = 0;
+    if(blend) *blend = 0;
+    if(id1) *id1 = -1;
+    if(id2) *id2 = -1;
+    if(matcaps.empty()) return 0;
+    int closest = -1;
+    float mindist = 1e16f;
+    loopv(matcaps)
+    {
+        matcap &mc = matcaps[i];
+        float dist = mc.o.dist(o);
+        if(dist > matcapmaxdist) continue;
+        if(closest < 0 || dist < mindist)
+        {
+            closest = i;
+            mindist = dist;
+        }
+    }
+    if(matcaps.inrange(closest))
+    {
+        matcap &mc = matcaps[closest];
+        if(id1) *id1 = closest;
+        if(blendtex && blend && mindist > 0)
+        {
+            closest = -1;
+            mindist = 1e16f;
+            loopv(mc.links) if(matcaps.inrange(mc.links[i]))
+            {
+                matcap &lmc = matcaps[mc.links[i]];
+                float dist = lmc.o.dist(o);
+                if(dist > matcapmaxdist) continue;
+                if(closest < 0 || dist < mindist)
+                {
+                    closest = mc.links[i];
+                    mindist = dist;
+                }
+            }
+            if(matcaps.inrange(closest))
+            {
+                matcap &lmc = matcaps[closest];
+                vec u = vec(o).sub(mc.o), v = vec(lmc.o).sub(mc.o);
+                float mdot = u.dot(v);
+                if(mdot > 0)
+                {
+                    float mlen = v.squaredlen();
+                    if(mlen > 0)
+                    {
+                        *blendtex = matcaps[closest].tex;
+                        *blend = mdot/mlen;
+                        if(id2) *id2 = closest;
+                    }
+                }
+            }
+        }
+        return mc.tex;
+    }
+    if(!matcaps.empty() && matcaps[0].sky)
+    {
+        if(id1) *id1 = 0;
+        return matcaps[0].tex;
+    }
+    return 0;
+}
+
+void clearenvtexs()
+{
+    clearenvmaps();
+    clearmatcaps();
+}
+
+void initenvtexs()
+{
+    initenvmaps();
+    initmatcaps();
+}
+
+void genenvtexs()
+{
+    gl_setupframe(true);
+    genenvmaps();
+    genmatcaps();
+}
+
+VAR(0, debugmatcaps, 0, 0, 4);
+void viewmatcaps()
+{
+    if(debugmatcaps <= 1) return;
+    GLuint matcaptex[2] = { 0, 0 };
+    int matcapid[2] = { -1, -1 };
+    float blend = 1;
+    matcaptex[0] = getmatcap(camera1->o, &matcaptex[1], &blend, &matcapid[0], &matcapid[1]);
+    hudmatrix.ortho(0, hud::hudwidth, hud::hudheight, 0, -1, 1);
+    flushhudmatrix();
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    resethudshader();
+    int view = min(debugmatcaps-1, 2), s = hud::hudwidth/4;
+    SETSHADER(hudmatcap);
+    glActiveTexture_(GL_TEXTURE0);
+    loopi(view)
+    {
+        if(!matcaptex[i]) continue;
+        glBindTexture(GL_TEXTURE_CUBE_MAP, matcaptex[i]);
+        gle::colorf(1, 1, 1, 1);
+        debugquad(s*i, 0, s, s);
+        if(debugmatcaps >= 4)
+        {
+            if(i) gle::colorf(1, 1, 1, blend);
+            debugquad(s*2, 0, s, s);
+        }
+    }
+    float dist[2] = { -1, -1 };
+    loopi(view)
+    {
+        if(!matcaptex[i] || !matcaps.inrange(matcapid[i])) continue;
+        dist[i] = camera1->o.dist(matcaps[matcapid[i]].o);
+        draw_textf("%d (%.2f)", s*i+FONTH/4, 0, 0, 0, 255, 255, 255, 255, TEXT_LEFT_JUSTIFY, -1, -1, 1, matcapid[i], dist[i]);
+    }
+    if(debugmatcaps >= 4 && matcaptex[1])
+        draw_textf("BLEND (%.2f) [%.2f]", s*2+FONTH/4, 0, 0, 0, 255, 255, 255, 255, TEXT_LEFT_JUSTIFY, -1, -1, 1, dist[1]-dist[0], blend);
+    glDisable(GL_BLEND);
+}
+
+void rendermatcaps()
+{
+    if(!debugmatcaps) return;
+    vec off(0, 0, 2);
+    loopv(matcaps)
+    {
+        matcap &mc = matcaps[i];
+        vec pos = mc.o;
+        part_create(PART_EDIT_ONTOP, 1, pos, 0x22FF22, 2);
+        defformatstring(s, "<super>matcap (%d) [%.2f]", i, camera1->o.dist(mc.o));
+        part_textcopy(pos.add(off), s, PART_TEXT);
+        s[0] = 0;
+        loopvk(mc.links) if(matcaps.inrange(mc.links[k]))
+        {
+            matcap &lmc = matcaps[mc.links[k]];
+            if(mc.links[k] > i) part_trace(mc.o, lmc.o, 2, 1, 1, lmc.links.find(i) >= 0 ? 0x22FF22 : 0xFF2222);
+            concformatstring(s, "%s%d", s[0] ? ", " : "links: ", mc.links[k]);
+        }
+        if(s[0]) part_textcopy(pos.add(off), s, PART_TEXT);
+    }
+}
+
 void cleanuptexture(Texture *t)
 {
     if(t->frames.length() > 1 && t->delay > 0) animtextures.removeobj(t);
@@ -3321,7 +3571,7 @@ void cleanuptexture(Texture *t)
 
 void cleanuptextures()
 {
-    clearenvmaps();
+    clearenvtexs();
     loopv(slots) slots[i]->cleanup();
     loopv(vslots) vslots[i]->cleanup();
     loopi((MATF_VOLUME|MATF_INDEX)+1) materialslots[i].cleanup();
@@ -4102,3 +4352,12 @@ COMMAND(0, mergenormalmaps, "ss");
 COMMAND(0, normalizenormalmap, "ss");
 COMMAND(0, removealphachannel, "ss");
 
+void debugtexs()
+{
+    viewmatcaps();
+}
+
+void rendertexdebug()
+{
+    rendermatcaps();
+}

@@ -1667,7 +1667,7 @@ namespace UI
 
     struct Colored : Object
     {
-        enum { SOLID = 0, MODULATE, OUTLINE };
+        enum { SOLID = 0, MODULATE, OUTLINED };
         enum { VERTICAL, HORIZONTAL };
 
         int type, dir;
@@ -1723,7 +1723,7 @@ namespace UI
             loopv(colorstack) colors.add(colorstack[i]);
         }
     };
-    UIARGT(Colored, colour, type, "i", int, int(Colored::SOLID), int(Colored::OUTLINE));
+    UIARGT(Colored, colour, type, "i", int, int(Colored::SOLID), int(Colored::OUTLINED));
     UIARGT(Colored, colour, dir, "i", int, int(Colored::VERTICAL), int(Colored::HORIZONTAL));
 
     UICMDT(Colored, colour, set, "ii", (int *c, int *pos),
@@ -2600,7 +2600,7 @@ namespace UI
 
         bool target(float cx, float cy)
         {
-            if(type == OUTLINE) return false;
+            if(type == OUTLINED) return false;
             bool side = vec2(cx, cy).sub(b).cross(vec2(a).sub(b)) < 0;
             return (vec2(cx, cy).sub(c).cross(vec2(b).sub(c)) < 0) == side &&
                    (vec2(cx, cy).sub(a).cross(vec2(c).sub(a)) < 0) == side;
@@ -2614,7 +2614,7 @@ namespace UI
             if(type==MODULATE) modblend(); else resetblend();
 
             colors[0].init();
-            gle::begin(type == OUTLINE ? GL_LINE_LOOP : GL_TRIANGLES);
+            gle::begin(type == OUTLINED ? GL_LINE_LOOP : GL_TRIANGLES);
             gle::attrib(vec2(sx, sy).add(a));
             gle::attrib(vec2(sx, sy).add(b));
             gle::attrib(vec2(sx, sy).add(c));
@@ -2626,7 +2626,7 @@ namespace UI
         BUILD(Triangle, o, o->setup(Color(*c), *minw*uiscale, *minh*uiscale, *angle, Triangle::SOLID), children));
 
     ICOMMAND(0, uitriangleoutline, "iffie", (int *c, float *minw, float *minh, int *angle, uint *children),
-        BUILD(Triangle, o, o->setup(Color(*c), *minw*uiscale, *minh*uiscale, *angle, Triangle::OUTLINE), children));
+        BUILD(Triangle, o, o->setup(Color(*c), *minw*uiscale, *minh*uiscale, *angle, Triangle::OUTLINED), children));
 
     ICOMMAND(0, uimodtriangle, "iffie", (int *c, float *minw, float *minh, int *angle, uint *children),
         BUILD(Triangle, o, o->setup(Color(*c), *minw*uiscale, *minh*uiscale, *angle, Triangle::MODULATE), children));
@@ -2647,7 +2647,7 @@ namespace UI
 
         bool target(float cx, float cy)
         {
-            if(type == OUTLINE) return false;
+            if(type == OUTLINED) return false;
             float r = radius <= 0 ? min(w, h)/2 : radius;
             return vec2(cx, cy).sub(r).squaredlen() <= r*r;
         }
@@ -2662,7 +2662,7 @@ namespace UI
             float r = radius <= 0 ? min(w, h)/2 : radius;
             colors[0].init();
             vec2 center(sx + r, sy + r);
-            if(type == OUTLINE)
+            if(type == OUTLINED)
             {
                 gle::begin(GL_LINE_LOOP);
                 for(int angle = 0; angle < 360; angle += 360/15)
@@ -2690,7 +2690,7 @@ namespace UI
         BUILD(Circle, o, o->setup(Color(*c), *size*uiscale, Circle::SOLID), children));
 
     ICOMMAND(0, uicircleoutline, "ife", (int *c, float *size, uint *children),
-        BUILD(Circle, o, o->setup(Color(*c), *size*uiscale, Circle::OUTLINE), children));
+        BUILD(Circle, o, o->setup(Color(*c), *size*uiscale, Circle::OUTLINED), children));
 
     ICOMMAND(0, uimodcircle, "ife", (int *c, float *size, uint *children),
         BUILD(Circle, o, o->setup(Color(*c), *size*uiscale, Circle::MODULATE), children));

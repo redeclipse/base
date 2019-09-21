@@ -154,6 +154,13 @@ void mdlenvmap(float *envmapmax, float *envmapmin, char *envmap)
 }
 COMMAND(0, mdlenvmap, "ffs");
 
+void mdlmatcap(float *matcapmax, float *matcapmin)
+{
+    checkmdl;
+    loadingmodel->setmatcap(*matcapmin, *matcapmax);
+}
+COMMAND(0, mdlmatcap, "ff");
+
 void mdlfullbright(float *fullbright)
 {
     checkmdl;

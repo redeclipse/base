@@ -1012,7 +1012,7 @@ namespace physics
             if(liquid || pl->physstate >= PHYS_SLOPE)
             {
                 float coast = liquid ? liquidmerge(pl, PHYS(aircoast), PHYS(liquidcoast)) : PHYS(floorcoast)*coastscale(pl->feetpos(-1)),
-                      c = liquid ? 1.0f : clamp((pl->floor.z - slopez)/(floorz-slopez), 0.0f, 1.0f);
+                      c = liquid ? 1.0f : clamp((pl->floor.z-slopez)/(floorz-slopez), 0.0f, 1.0f);
                 pl->falling.mul(pow(max(1.0f - c/coast, 0.0f), curtime/20.0f));
             }
         }

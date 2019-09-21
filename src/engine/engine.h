@@ -241,12 +241,15 @@ extern void blurnormals(int n, int w, int h, bvec *dst, const bvec *src, int mar
 extern GLuint setuppostfx(int w, int h, GLuint outfbo = 0);
 extern void cleanuppostfx(bool fullclean = false);
 extern void renderpostfx(GLuint outfbo = 0);
-extern void initenvmaps();
-extern void genenvmaps();
 extern ushort closestenvmap(const vec &o);
 extern ushort closestenvmap(int orient, const ivec &o, int size);
 extern GLuint lookupenvmap(ushort emid);
 extern GLuint lookupenvmap(Slot &slot);
+extern GLuint getmatcap(const vec &o, GLuint *blendtex = NULL, float *blend = NULL, int *id1 = NULL, int *id2 = NULL);
+extern void initenvtexs();
+extern void genenvtexs();
+extern void debugtexs();
+extern void rendertexdebug();
 extern bool reloadtexture(Texture *t);
 extern bool reloadtexture(const char *name);
 extern void setuptexcompress();
@@ -825,7 +828,7 @@ extern bool checkmapeffects(int fxlevel);
 
 // world
 extern vector<int> outsideents;
-extern int envmapradius;
+extern int envmapradius, matcapdist;
 extern int worldscale, worldsize;
 extern void entcancel();
 extern void entitiesinoctanodes();

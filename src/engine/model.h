@@ -23,6 +23,7 @@ struct model
     virtual int type() const = 0;
     virtual BIH *setBIH() { return NULL; }
     virtual bool envmapped() const { return false; }
+    virtual bool matcapped() const { return false; }
     virtual bool skeletal() const { return false; }
     virtual bool animated() const { return false; }
     virtual bool pitched() const { return true; }
@@ -30,6 +31,7 @@ struct model
 
     virtual void setshader(Shader *shader) {}
     virtual void setenvmap(float envmapmin, float envmapmax, Texture *envmap) {}
+    virtual void setmatcap(float matcapmin, float matcapmax) {}
     virtual void setspec(float spec) {}
     virtual void setgloss(int gloss) {}
     virtual void setglow(float glow, float glowdelta, float glowpulse) {}
