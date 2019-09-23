@@ -1215,7 +1215,7 @@ WPFVARM(IDF_GAMEMOD, modweightattack, FVAR_MIN, FVAR_MAX,
     0,          0,           0,         0,          0,          0,          0,          0,          0,          0,          0,          0,          0
 );
 WPFVAR(IDF_GAMEMOD, modweightequip, FVAR_MIN, FVAR_MAX,
-    0,          0,          -10,        0,          0,          0,          0,          0,          0,          0,          0,          0,          0
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
 );
 WPFVAR(IDF_GAMEMOD, modweightreload, FVAR_MIN, FVAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
