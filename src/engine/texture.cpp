@@ -2937,12 +2937,12 @@ Texture *Slot::loadthumbnail()
 // environment mapped reflections
 const cubemapside cubemapsides[6] =
 {
-    { GL_TEXTURE_CUBE_MAP_NEGATIVE_X, "lf", false, true,  true,     90,     0,      0, 1 },
-    { GL_TEXTURE_CUBE_MAP_POSITIVE_X, "rt", true,  false, true,     270,    0,      0, 0 },
-    { GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, "bk", false, false, false,    180,    0,      1, 1 },
-    { GL_TEXTURE_CUBE_MAP_POSITIVE_Y, "ft", true,  true,  false,    0,      0,      1, 0 },
-    { GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, "dn", true,  false, true,     270,    -90,    2, 1 },
-    { GL_TEXTURE_CUBE_MAP_POSITIVE_Z, "up", true,  false, true,     270,    90,     2, 0 },
+    { GL_TEXTURE_CUBE_MAP_NEGATIVE_X, "lf", false, true,  true,     90,     0,      0, 0 },
+    { GL_TEXTURE_CUBE_MAP_POSITIVE_X, "rt", true,  false, true,     270,    0,      0, 1 },
+    { GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, "bk", false, false, false,    180,    0,      1, 0 },
+    { GL_TEXTURE_CUBE_MAP_POSITIVE_Y, "ft", true,  true,  false,    0,      0,      1, 1 },
+    { GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, "dn", true,  false, true,     270,    -90,    2, 0 },
+    { GL_TEXTURE_CUBE_MAP_POSITIVE_Z, "up", true,  false, true,     270,    90,     2, 1 },
 };
 
 VARF(IDF_PERSIST, envmapsize, 0, 7, 12, setupmaterials());
@@ -3283,12 +3283,15 @@ GLuint lookupenvmap(ushort emid)
 }
 
 VAR(0, debugenvmaps, 0, 0, 1);
+FVAR(0, debugenvmapsize, 0, 0.2f, 1);
 bool viewenvmaps(int y, int s)
 {
     if(!debugenvmaps || envmaps.empty()) return false;
-    GLuint tex = lookupenvmap(closestenvmap(camera1->o));
+    physent *player = (physent *)game::focusedent(true);
+    if(!player || player->state >= CS_SPECTATOR) player = camera1;
+    GLuint tex = lookupenvmap(closestenvmap(player->o));
     if(!tex) return false;
-    SETSHADER(hudenvmap);
+    SETSHADER(hudcubemapsphere);
     glActiveTexture_(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_CUBE_MAP, tex);
     gle::colorf(1, 1, 1);
@@ -3308,11 +3311,11 @@ struct matcap
 {
     vec o;
     int ent;
-    float tx, ty, ts, tb;
-    bool sky;
+    vec4 texdims;
+    bool sky, generated;
     linkvector links;
 
-    matcap() : o(0, 0, 0), ent(-1), tx(0), ty(0), ts(0), tb(0), sky(false)
+    matcap() : o(0, 0, 0), ent(-1), texdims(0, 0, 0, 0), sky(false), generated(false)
     {
         links.shrink(0);
     }
@@ -3331,12 +3334,12 @@ void setupmatcapatlas()
     createtexture(matcapatlastex, matcapatlasdim, matcapatlasdim, NULL, 3, 1, GL_RGB5, GL_TEXTURE_2D);
 }
 
-void genmatcap(const vec &o, int tx, int ty, int texsize, int border, int blur, bool onlysky)
+bool genmatcap(const vec &o, int tx, int ty, int texsize, int border, int blur, bool onlysky)
 {
     loopi(6)
     {
         const cubemapside &side = cubemapsides[i];
-        int mx = tx+texsize*side.mcx+border*side.mcx, my = ty+texsize*side.mcy+border*side.mcy;
+        int mx = tx+((texsize+border)*side.mcx), my = ty+((texsize+border)*side.mcy);
         drawcubemap(texsize, o, side.yaw, side.pitch, onlysky);
         glBindFramebuffer_(GL_FRAMEBUFFER, matcapatlasfbo);
         glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, matcapatlastex, 0);
@@ -3345,6 +3348,7 @@ void genmatcap(const vec &o, int tx, int ty, int texsize, int border, int blur, 
     glBindFramebuffer_(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, hudw, hudh);
     clientkeepalive();
+    return true;
 }
 
 void cleanupmatcapatlas()
@@ -3421,15 +3425,15 @@ void genmatcaps()
     setupmatcapatlas();
     setupenvmap(texsize);
     int xsize = (texsize+matcapborder)*3, ysize = (texsize+matcapborder)*2;
+    float mcsize = texsize/float(matcapatlasdim), mcborder = matcapborder/float(matcapatlasdim);
     loopv(matcaps)
     {
         matcap &mc = matcaps[i];
-        mc.tx = matcapatlasx/float(matcapatlasdim);
-        mc.ty = matcapatlasy/float(matcapatlasdim);
-        mc.ts = texsize/float(matcapatlasdim);
-        mc.tb = matcapborder/float(matcapatlasdim);
-        //conoutf("Generating matcap %d at %d, %d with size %d [%d]...", i, mc.tx, mc.ty, mc.ts, mc.tb);
-        genmatcap(mc.o, matcapatlasx, matcapatlasy, texsize, matcapborder, matcapblur, mc.sky);
+        mc.texdims.x = matcapatlasx/float(matcapatlasdim);
+        mc.texdims.y = matcapatlasy/float(matcapatlasdim);
+        mc.texdims.z = mcsize;
+        mc.texdims.w = mcborder;
+        mc.generated = genmatcap(mc.o, matcapatlasx, matcapatlasy, texsize, matcapborder, matcapblur, mc.sky);
         matcapatlasx += xsize;
         if(matcapatlasx+xsize > matcapatlasdim)
         {
@@ -3446,7 +3450,7 @@ void genmatcaps()
     if(matcapatlasfbo) { glDeleteFramebuffers_(1, &matcapatlasfbo); matcapatlasfbo = 0; }
 }
 
-int getmatcap(const vec &o, int len, float values[][4], float *blend, int *id1 = NULL, int *id2 = NULL)
+int getmatcap(const vec &o, int len, vec4 values[], float *blend, int *id1 = NULL, int *id2 = NULL)
 {
     if(len < 1 || len > 2 || !values || matcaps.empty()) return 0;
     int closest = -1;
@@ -3454,6 +3458,7 @@ int getmatcap(const vec &o, int len, float values[][4], float *blend, int *id1 =
     loopv(matcaps)
     {
         matcap &mc = matcaps[i];
+        if(!mc.generated) continue;
         float dist = mc.o.dist(o);
         if(dist > matcapmaxdist) continue;
         if(closest < 0 || dist < mindist)
@@ -3466,10 +3471,7 @@ int getmatcap(const vec &o, int len, float values[][4], float *blend, int *id1 =
     {
         int num = 1;
         matcap &mc = matcaps[closest];
-        values[0][0] = mc.tx;
-        values[0][1] = mc.ty;
-        values[0][2] = mc.ts;
-        values[0][3] = mc.tb;
+        values[0] = mc.texdims;
         if(id1) *id1 = closest;
         if(len > 1 && blend && mindist > 0 && !mc.links.empty())
         {
@@ -3479,6 +3481,7 @@ int getmatcap(const vec &o, int len, float values[][4], float *blend, int *id1 =
             loopv(mc.links) if(matcaps.inrange(mc.links[i]))
             {
                 matcap &lmc = matcaps[mc.links[i]];
+                if(!lmc.generated) continue;
                 float dist = lmc.o.dist(o);
                 if(dist > matcapmaxdist) continue;
                 vec v = vec(lmc.o).sub(mc.o);
@@ -3496,10 +3499,7 @@ int getmatcap(const vec &o, int len, float values[][4], float *blend, int *id1 =
             if(matcaps.inrange(closest))
             {
                 matcap &lmc = matcaps[closest];
-                values[1][0] = lmc.tx;
-                values[1][1] = lmc.ty;
-                values[1][2] = lmc.ts;
-                values[1][3] = lmc.tb;
+                values[1] = lmc.texdims;
                 *blend = closeblend;
                 if(id2) *id2 = closest;
                 num = 2;
@@ -3512,10 +3512,7 @@ int getmatcap(const vec &o, int len, float values[][4], float *blend, int *id1 =
         matcap &mc = matcaps[0];
         if(mc.sky)
         {
-            values[0][0] = mc.tx;
-            values[0][1] = mc.ty;
-            values[0][2] = mc.ts;
-            values[0][3] = mc.tb;
+            values[0] = mc.texdims;
             if(id1) *id1 = 0;
             return 1;
         }
@@ -3544,7 +3541,7 @@ void genenvtexs()
 }
 
 VAR(0, debugmatcaps, 0, 0, 5);
-FVAR(0, debugmatcapsize, 0, 0.25f, 1);
+FVAR(0, debugmatcapsize, 0, 0.2f, 1);
 bool viewmatcaps(int y, int s)
 {
     if(debugmatcaps < 2 || !matcapatlastex || matcaps.empty()) return false;
@@ -3554,20 +3551,21 @@ bool viewmatcaps(int y, int s)
     gle::colorf(1, 1, 1, 1);
     debugquad(0, y, s, s);
     if(debugmatcaps < 3) return false;
-    float matcapdims[2][4] = { { 0, 0, 0, 0 }, { 0, 0, 0, 0 } }, blend = 1;
+    vec4 matcapdims[2] = { vec4(0, 0, 0, 0), vec4(0, 0, 0, 0) };
+    float blend = 1;
     int matcapid[2] = { -1, -1 };
     physent *player = (physent *)game::focusedent(true);
-    if(!player) player = camera1;
+    if(!player || player->state >= CS_SPECTATOR) player = camera1;
     int num = getmatcap(player->o, 2, matcapdims, &blend, &matcapid[0], &matcapid[1]);
     if(!num) return false;
     int view = min(min(debugmatcaps-2, 2), num);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    SETSHADER(hudmatcap);
+    SETSHADER(hudmatcapsphere);
     glBindTexture(GL_TEXTURE_2D, matcapatlastex);
     loopi(view)
     {
-        LOCALPARAMF(mcparams, matcapdims[i][0] + 0.5f*matcapdims[i][2], matcapdims[i][1] + 0.5f*matcapdims[i][2], matcapdims[i][2], -0.5f * (matcapdims[i][2] - matcapdims[i][3]));
+        LOCALPARAMF(mcparams, matcapdims[i].x + 0.5f*matcapdims[i].z, matcapdims[i].y + 0.5f*matcapdims[i].z, matcapdims[i].z, -0.5f * (matcapdims[i].z - matcapdims[i].w));
         debugquad(s*(i+1), y, s, s);
         if(debugmatcaps > 4)
         {
@@ -3577,13 +3575,17 @@ bool viewmatcaps(int y, int s)
         }
     }
     float dist[2] = { -1, -1 };
+    const char *tdims[4] = { "x", "y", "s", "b" };
+    pushfont("small");
     loopi(view)
     {
         dist[i] = player->o.dist(matcaps[matcapid[i]].o);
-        draw_textf("%d @ [%d,%d:%d] (%.2f)", s*(i+1)+FONTH/4, y, 0, 0, 255, 255, 255, 255, TEXT_LEFT_JUSTIFY, -1, -1, 1, matcapid[i], matcapdims[i][0], matcapdims[i][1], matcapdims[i][2], dist[i]);
+        float ty = draw_textf("#%d (dist: %.2f)", s*(i+1)+FONTH/4, y, 0, 0, 255, 255, 255, 255, TEXT_LEFT_JUSTIFY, -1, -1, 1, matcapid[i], dist[i]) + y;
+        loopk(4) ty += draw_textf("%s: %.10f", s*(i+1)+FONTH/4, ty, 0, 0, 255, 255, 255, 255, TEXT_LEFT_JUSTIFY, -1, -1, 1, tdims[k], matcapdims[i].v[k]);
     }
     if(debugmatcaps > 4 && num > 1)
-        draw_textf("Blend: %.2f (%.2f)", s*3+FONTH/4, y, 0, 0, 255, 255, 255, 255, TEXT_LEFT_JUSTIFY, -1, -1, 1, blend, dist[1]-dist[0]);
+        draw_textf("X %.4f (diff: %.2f)", s*3+FONTH/4, y, 0, 0, 255, 255, 255, 255, TEXT_LEFT_JUSTIFY, -1, -1, 1, blend, dist[1]-dist[0]);
+    popfont();
     glDisable(GL_BLEND);
     return true;
 }
@@ -4423,7 +4425,7 @@ void debugtexs()
     flushhudmatrix();
 
     if(viewmatcaps(y, s*debugmatcapsize)) y += s*debugmatcapsize;
-    viewenvmaps(y, s);
+    viewenvmaps(y, s*debugenvmapsize);
 }
 
 void rendertexdebug()
