@@ -424,7 +424,7 @@ void retrieveservers(vector<char> &data)
     ENetSocket sock = connectmaster(false);
     if(sock == ENET_SOCKET_NULL) return;
 
-    defformatstring(text, "Retrieving servers from %s:[%d]", servermaster, servermasterport);
+    defformatstring(text, "Retrieving servers from %s:[%d]...", servermaster, servermasterport);
     progress(0, text);
 
     int starttime = SDL_GetTicks(), timeout = 0;

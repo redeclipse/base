@@ -1784,7 +1784,6 @@ namespace entities
         loopv(ents)
         {
             gameentity &e = *(gameentity *)ents[i];
-            progress(i/float(ents.length()), "Importing entities...");
             switch(e.type)
             {
                 case WEAPON:
@@ -1836,6 +1835,7 @@ namespace entities
                     break;
                 }
             }
+            progress((i+1)/float(ents.length()), "Importing entities...");
         }
         loopv(ents)
         {
@@ -1860,10 +1860,10 @@ namespace entities
 
     void updateoldentities(int mtype, int mver, int gver)
     {
+        progress(0, "Updating old entities...");
         loopvj(ents)
         {
             gameentity &e = *(gameentity *)ents[j];
-            progress(j/float(ents.length()), "Updating old entities...");
             switch(e.type)
             {
                 case LIGHTFX:
@@ -1937,6 +1937,7 @@ namespace entities
                 }
                 default: break;
             }
+            progress((j+1)/float(ents.length()), "Updating old entities...");
         }
     }
 
@@ -1946,23 +1947,25 @@ namespace entities
         numactors = lastroutetime = droproute = 0;
         airnodes.setsize(0);
         ai::oldwaypoints.setsize(0);
+        progress(0, "Setting entity attributes...");
         loopv(ents)
         {
             gameentity &e = *(gameentity *)ents[i];
-            progress(i/float(ents.length()), "Setting entity attributes...");
             e.attrs.setsize(numattrs(e.type), 0);
+            progress((i+1)/float(ents.length()), "Setting entity attributes...");
         }
         if(mtype == MAP_OCTA) importentities(mtype, mver, gver);
         if(mtype == MAP_OCTA || (mtype == MAP_MAPZ && gver < VERSION_GAME)) updateoldentities(mtype, mver, gver);
+        progress(0, "Fixing entities...");
         loopv(ents)
         {
-            progress(i/float(ents.length()), "Fixing entities...");
             fixentity(i, false);
             switch(ents[i]->type)
             {
                 case ACTOR: numactors++; break;
                 default: break;
             }
+            progress((i+1)/float(ents.length()), "Fixing entities...");
         }
         memset(firstenttype, 0, sizeof(firstenttype));
         memset(firstusetype, 0, sizeof(firstusetype));
@@ -1992,10 +1995,10 @@ namespace entities
                 numactors++;
             }
         }
+        progress(0, "Updating entities...");
         loopv(ents)
         {
             gameentity &e = *(gameentity *)ents[i];
-            progress(i/float(ents.length()), "Updating entities...");
             if(mtype == MAP_MAPZ && gver <= 221 && (e.type == ROUTE || e.type == UNUSEDENT)) e.type = NOTUSED;
             if(e.type >= 0 && e.type < MAXENTTYPES)
             {
@@ -2017,6 +2020,7 @@ namespace entities
                     }
                 }
             }
+            progress((i+1)/float(ents.length()), "Updating entities...");
         }
     }
 

@@ -1844,7 +1844,7 @@ void makeparticle(const vec &o, attrvector &attr)
 
 void seedparticles()
 {
-    progress(0, "seeding particles");
+    progress(0, "Seeding particles...");
     addparticleemitters();
     canemit = true;
     loopv(emitters)

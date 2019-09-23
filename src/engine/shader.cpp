@@ -1106,7 +1106,7 @@ void variantshader(int *type, char *name, int *row, char *vs, char *ps, int *max
     defformatstring(varname, "<variant:%d,%d>%s", s->numvariants(*row), *row, name);
     if(*maxvariants > 0)
     {
-        defformatstring(info, "shader %s", name);
+        defformatstring(info, "Generating shader: %s", name);
         progress(min(s->variants.length() / float(*maxvariants), 1.0f), info);
     }
     vector<char> vsbuf, psbuf, vsbak, psbak;

@@ -849,7 +849,7 @@ static void show_genpvs_progress(int unique = pvs.length(), int processed = numv
 {
     float bar1 = float(processed) / float(totalviewcells>0 ? totalviewcells : 1);
 
-    defformatstring(text1, "View cells generated: %d of %d (%d unique)", processed, totalviewcells, unique);
+    defformatstring(text1, "PVS cells generated: %d of %d (%d unique)", processed, totalviewcells, unique);
 
     progress(bar1, text1);
 
@@ -1104,11 +1104,9 @@ void genpvs(int *viewcellsize)
         return;
     }
 
-    progress(-1, "Generating PVS");
+    progress(-1, "Generating potential visibility sets...");
     genpvs_canceled = false;
     Uint32 start = SDL_GetTicks();
-
-    progress(0, "Finding view cells");
 
     clearpvs();
     calcpvsbounds();
@@ -1139,7 +1137,7 @@ void genpvs(int *viewcellsize)
     }
     else
     {
-        progress(0, "Creating threads");
+        progress(0, "Creating PVS worker threads...");
         if(!pvsmutex) pvsmutex = SDL_CreateMutex();
         if(!viewcellmutex) viewcellmutex = SDL_CreateMutex();
         loopi(numthreads)

@@ -634,16 +634,16 @@ void save_config(char *mname, bool forcesave = false)
 
     // texture slots
     int nummats = sizeof(materialslots)/sizeof(materialslots[0]);
+    progress(0, "Saving material slots...");
     loopi(nummats)
     {
-        progress(i/float(nummats), "Saving material slots...");
-
         switch(i&MATF_VOLUME)
         {
             case MAT_WATER: case MAT_GLASS: case MAT_LAVA:
                 saveslotconfig(h, materialslots[i], -i, false);
                 break;
         }
+        progress((i+1)/float(nummats), "Saving material slots...");
     }
     if(verbose) conoutf("Saved %d material slots", nummats);
 
@@ -653,37 +653,41 @@ void save_config(char *mname, bool forcesave = false)
         h->printf("smoothangle %i %i\n", i, smoothgroups[i]);
     }
 
+    progress(0, "Saving texture slots...");
     loopv(slots)
     {
-        progress(i/float(slots.length()), "Saving texture slots...");
         saveslotconfig(h, *slots[i], i, false);
+        progress((i+1)/float(slots.length()), "Saving texture slots...");
     }
     if(verbose) conoutf("Saved %d texture slots", slots.length());
 
+    progress(0, "Saving decal slots...");
     loopv(decalslots)
     {
-        progress(i/float(decalslots.length()), "Saving decal slots...");
         saveslotconfig(h, *decalslots[i], i, true);
+        progress((i+1)/float(decalslots.length()), "Saving decal slots...");
     }
     if(verbose) conoutf("Saved %d decal slots", decalslots.length());
 
+    progress(0, "Saving mapmodel slots...");
     loopv(mapmodels)
     {
-        progress(i/float(mapmodels.length()), "Saving mapmodel slots...");
         h->printf("mapmodel %s\n", escapestring(mapmodels[i].name));
+        progress((i+1)/float(mapmodels.length()), "Saving mapmodel slots...");
     }
     if(mapmodels.length()) h->printf("\n");
     if(verbose) conoutf("Saved %d mapmodel slots", mapmodels.length());
 
+    progress(0, "Saving mapsound slots...");
     loopv(mapsounds)
     {
-        progress(i/float(mapsounds.length()), "Saving mapsound slots...");
         h->printf("mapsound %s", escapestring(mapsounds[i].name));
         if((mapsounds[i].vol > 0 && mapsounds[i].vol < 255) || mapsounds[i].maxrad > 0 || mapsounds[i].minrad >= 0)
             h->printf(" %d", mapsounds[i].vol);
         if(mapsounds[i].maxrad > 0 || mapsounds[i].minrad >= 0) h->printf(" %d", mapsounds[i].maxrad);
         if(mapsounds[i].minrad >= 0) h->printf(" %d", mapsounds[i].minrad);
         h->printf("\n");
+        progress((i+1)/float(mapsounds.length()), "Saving mapsound slots...");
     }
     if(mapsounds.length()) h->printf("\n");
     if(verbose) conoutf("Saved %d mapsound slots", mapsounds.length());
@@ -781,6 +785,7 @@ void save_world(const char *mname, bool nodata, bool forcesave)
 
     // world variables
     int numvars = 0, vars = 0;
+    progress(0, "Saving world variables...");
     enumerate(idents, ident, id,
     {
         if((id.type == ID_VAR || id.type == ID_FVAR || id.type == ID_SVAR) && id.flags&IDF_WORLD && !(id.flags&IDF_SERVER) && strlen(id.name)) numvars++;
@@ -791,7 +796,6 @@ void save_world(const char *mname, bool nodata, bool forcesave)
         if((id.type == ID_VAR || id.type == ID_FVAR || id.type == ID_SVAR) && id.flags&IDF_WORLD && !(id.flags&IDF_SERVER) && strlen(id.name))
         {
             vars++;
-            progress(vars/float(numvars), "Saving world variables...");
             f->putlil<int>((int)strlen(id.name));
             f->write(id.name, (int)strlen(id.name)+1);
             f->putlil<int>(id.type);
@@ -809,6 +813,7 @@ void save_world(const char *mname, bool nodata, bool forcesave)
                     break;
                 default: break;
             }
+            progress(vars/float(numvars), "Saving world variables...");
         }
     });
 
@@ -822,9 +827,9 @@ void save_world(const char *mname, bool nodata, bool forcesave)
     int count = 0;
     vector<int> remapents;
     if(!forcesave) entities::remapents(remapents);
+    progress(0, "Saving entities...");
     loopv(ents) // extended
     {
-        progress(i/float(ents.length()), "Saving entities...");
         int idx = remapents.inrange(i) ? remapents[i] : i;
         extentity &e = *(extentity *)ents[idx];
         if(e.type!=ET_EMPTY || forcesave)
@@ -857,6 +862,7 @@ void save_world(const char *mname, bool nodata, bool forcesave)
             }
             count++;
         }
+        progress((i+1)/float(ents.length()), "Saving entities...");
     }
     if(verbose) conoutf("Saved %d entities", count);
 
@@ -1028,10 +1034,11 @@ bool load_world(const char *mname, int crc, int variant)
             }
             #undef MAPZCOMPAT
 
+            progress(-1, "Loading map file...");
+
             resetmap(false, variant);
             hdr = newhdr;
             maploading = 1;
-            progress(-1, "Please wait...");
             maptype = MAP_MAPZ;
             mapcrc = filecrc;
 
@@ -1042,7 +1049,6 @@ bool load_world(const char *mname, int crc, int variant)
             progress(0, "Loading variables...");
             loopi(numvars)
             {
-                progress(i/float(numvars), "Loading variables...");
                 int len = f->getlil<int>();
                 if(len)
                 {
@@ -1125,6 +1131,7 @@ bool load_world(const char *mname, int crc, int variant)
                     if(!proceed) conoutf("\frWARNING: ignoring variable %s stored in map", name);
                     else vars++;
                 }
+                progress((i+1)/float(numvars), "Loading variables...");
             }
             identflags &= ~IDF_WORLD;
             if(verbose) conoutf("Loaded %d/%d variables", vars, numvars);
@@ -1156,10 +1163,10 @@ bool load_world(const char *mname, int crc, int variant)
             }
             lilswap(&ohdr.worldsize, 7);
 
+            progress(-1, "Loading map file..");
             resetmap(false, variant);
             hdr = newhdr;
             maploading = 1;
-            progress(-1, "Please wait..");
             maptype = MAP_OCTA;
 
             memcpy(hdr.head, ohdr.head, 4);
@@ -1262,7 +1269,6 @@ bool load_world(const char *mname, int crc, int variant)
         vec importedsuncolor(0, 0, 0);
         loopi(hdr.numents)
         {
-            progress(i/float(hdr.numents), "Loading entities...");
             extentity &e = *ents.add(entities::newent());
             if(maptype == MAP_OCTA)
             {
@@ -1350,6 +1356,7 @@ bool load_world(const char *mname, int crc, int variant)
             }
             if(!insideworld(e.o) && e.type != ET_LIGHT && e.type != ET_LIGHTFX)
                 conoutf("\frWARNING: ent outside of world: enttype[%d](%s) index %d (%f, %f, %f) [%d, %d]", e.type, entities::findname(e.type), i, e.o.x, e.o.y, e.o.z, worldsize, worldscale);
+            progress((i+1)/float(hdr.numents), "Loading entities...");
         }
         if(maptype == MAP_MAPZ && hdr.version <= 43)
         {
@@ -1395,7 +1402,7 @@ bool load_world(const char *mname, int crc, int variant)
 
         if(verbose) conoutf("Loaded %d entities", hdr.numents);
 
-        progress(0, "Loading slots...");
+        progress(0, "Loading texture slots...");
         loadvslots(f, hdr.numvslots);
 
         progress(0, "Loading octree...");
@@ -1403,7 +1410,7 @@ bool load_world(const char *mname, int crc, int variant)
         worldroot = loadchildren(f, ivec(0, 0, 0), hdr.worldsize>>1, failed);
         if(failed) conoutf("\frGarbage in map");
 
-        progress(0, "Validating...");
+        progress(0, "Validating octree...");
         validatec(worldroot, hdr.worldsize>>1);
 
         if(!failed)
@@ -1447,6 +1454,7 @@ bool load_world(const char *mname, int crc, int variant)
                     if(verbose) conoutf("\frWARNING: auto linked spotlight %d to light %d", i, closest);
                 }
             }
+            progress((i+1)/float(ents.length()), "Initialising entities...");
         }
         entities::initents(maptype, hdr.version, hdr.gameid, hdr.gamever);
         delete f;
@@ -1458,7 +1466,7 @@ bool load_world(const char *mname, int crc, int variant)
             delete[] buf;
         }
 
-        progress(0, "Initialising config...");
+        progress(0, "Initialising map config...");
         identflags |= IDF_WORLD;
         defformatstring(cfgname, "%s.cfg", mapname);
         if(maptype == MAP_OCTA)
@@ -1476,7 +1484,7 @@ bool load_world(const char *mname, int crc, int variant)
         }
         identflags &= ~IDF_WORLD;
 
-        progress(0, "Preloading models...");
+        progress(0, "Preloading map models...");
         preloadusedmapmodels(true);
         conoutf("Loaded %s (\fs%s\fS by \fs%s\fS) v.%d:%d(r%d) [0x%.8x] in %.1fs", mapname, *maptitle ? maptitle : "Untitled", *mapauthor ? mapauthor : "Unknown", hdr.version, hdr.gamever, hdr.revision, mapcrc, (SDL_GetTicks()-loadingstart)/1000.0f);
 
