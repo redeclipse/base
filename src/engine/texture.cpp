@@ -3307,7 +3307,8 @@ VAR(IDF_PERSIST, aamatcap, 0, 1, 1);
 struct matcap
 {
     vec o;
-    int ent, tx, ty, ts, tb;
+    int ent;
+    float tx, ty, ts, tb;
     bool sky;
     linkvector links;
 
@@ -3413,22 +3414,22 @@ void genmatcaps()
 {
     if(matcaps.empty()) return;
     progress(0, "Generating material captures...");
-    int lastprogress = SDL_GetTicks(), rendersize = 1<<matcapsize, sizelimit = min(hwtexsize, min(gw, gh));
+    int rendersize = 1<<matcapsize, sizelimit = min(hwtexsize, min(gw, gh));
     if(maxtexsize) sizelimit = min(sizelimit, maxtexsize);
     while(rendersize > sizelimit) rendersize /= 2;
     int texsize = min(rendersize, 1<<matcapsize);
     setupmatcapatlas();
     setupenvmap(texsize);
-    int xsize = texsize*3+matcapborder*3, ysize = texsize*2+matcapborder*2;
+    int xsize = (texsize+matcapborder)*3, ysize = (texsize+matcapborder)*2;
     loopv(matcaps)
     {
         matcap &mc = matcaps[i];
-        mc.tx = matcapatlasx;
-        mc.ty = matcapatlasy;
-        mc.ts = texsize;
-        mc.tb = matcapborder;
+        mc.tx = matcapatlasx/float(matcapatlasdim);
+        mc.ty = matcapatlasy/float(matcapatlasdim);
+        mc.ts = texsize/float(matcapatlasdim);
+        mc.tb = matcapborder/float(matcapatlasdim);
         //conoutf("Generating matcap %d at %d, %d with size %d [%d]...", i, mc.tx, mc.ty, mc.ts, mc.tb);
-        genmatcap(mc.o, mc.tx, mc.ty, texsize, matcapborder, matcapblur, mc.sky);
+        genmatcap(mc.o, matcapatlasx, matcapatlasy, texsize, matcapborder, matcapblur, mc.sky);
         matcapatlasx += xsize;
         if(matcapatlasx+xsize > matcapatlasdim)
         {
@@ -3440,18 +3441,12 @@ void genmatcaps()
                 break;
             }
         }
-        if(renderedframe) continue;
-        int millis = SDL_GetTicks();
-        if(millis-lastprogress >= 250)
-        {
-            progress(float(i+1)/matcaps.length(), "Generating material captures...");
-            lastprogress = millis;
-        }
+        progress(float(i+1)/matcaps.length(), "Generating material captures...");
     }
     if(matcapatlasfbo) { glDeleteFramebuffers_(1, &matcapatlasfbo); matcapatlasfbo = 0; }
 }
 
-int getmatcap(const vec &o, int len, int values[][4], float *blend, int *id1 = NULL, int *id2 = NULL)
+int getmatcap(const vec &o, int len, float values[][4], float *blend, int *id1 = NULL, int *id2 = NULL)
 {
     if(len < 1 || len > 2 || !values || matcaps.empty()) return 0;
     int closest = -1;
@@ -3549,18 +3544,18 @@ void genenvtexs()
 }
 
 VAR(0, debugmatcaps, 0, 0, 5);
-FVAR(0, debugmatcapsize, 0, 0.2f, 1);
+FVAR(0, debugmatcapsize, 0, 0.25f, 1);
 bool viewmatcaps(int y, int s)
 {
     if(debugmatcaps < 2 || !matcapatlastex || matcaps.empty()) return false;
-    SETSHADER(hudrect);
+    resethudshader();
     glActiveTexture_(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, matcapatlastex);
     gle::colorf(1, 1, 1, 1);
     debugquad(0, y, s, s);
     if(debugmatcaps < 3) return false;
-    int matcapdims[2][4] = { { 0, 0, 0, 0 }, { 0, 0, 0, 0 } }, matcapid[2] = { -1, -1 };
-    float blend = 1;
+    float matcapdims[2][4] = { { 0, 0, 0, 0 }, { 0, 0, 0, 0 } }, blend = 1;
+    int matcapid[2] = { -1, -1 };
     physent *player = (physent *)game::focusedent(true);
     if(!player) player = camera1;
     int num = getmatcap(player->o, 2, matcapdims, &blend, &matcapid[0], &matcapid[1]);
@@ -3572,12 +3567,7 @@ bool viewmatcaps(int y, int s)
     glBindTexture(GL_TEXTURE_2D, matcapatlastex);
     loopi(view)
     {
-        LOCALPARAMF(mcparams,
-            float(matcapdims[i][0] + 0.5f*matcapdims[i][2]),
-            float(matcapdims[i][1] + 0.5f*matcapdims[i][2]),
-            float(matcapdims[i][2]),
-            float(-0.5f * (matcapdims[i][2] - matcapdims[i][3]))
-        );
+        LOCALPARAMF(mcparams, matcapdims[i][0] + 0.5f*matcapdims[i][2], matcapdims[i][1] + 0.5f*matcapdims[i][2], matcapdims[i][2], -0.5f * (matcapdims[i][2] - matcapdims[i][3]));
         debugquad(s*(i+1), y, s, s);
         if(debugmatcaps > 4)
         {
