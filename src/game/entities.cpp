@@ -2085,11 +2085,6 @@ namespace entities
                     part_radius(e.o, vec(float(e.attrs[3])), showentsize, 1, 1, colourcyan);
                     break;
                 }
-                case OUTLINE:
-                {
-                    part_radius(e.o, vec(float(matcapdist)), showentsize, 1, 1, colourcyan);
-                    break;
-                }
                 case LIGHT:
                 {
                     int radius = e.attrs[0], spotlight = -1;

@@ -73,11 +73,11 @@ struct animmodel : model
 
     struct shaderparams
     {
-        float spec, gloss, glow, glowdelta, glowpulse, fullbright, envmapmin, envmapmax, matcapmin, matcapmax, scrollu, scrollv, alphatest;
+        float spec, gloss, glow, glowdelta, glowpulse, fullbright, envmapmin, envmapmax, scrollu, scrollv, alphatest;
         vec color;
         int material1, material2;
 
-        shaderparams() : spec(1.0f), gloss(1), glow(3.0f), glowdelta(0), glowpulse(0), fullbright(0), envmapmin(0), envmapmax(0), matcapmin(0), matcapmax(0), scrollu(0), scrollv(0), alphatest(0.9f), color(1, 1, 1), material1(1), material2(0) {}
+        shaderparams() : spec(1.0f), gloss(1), glow(3.0f), glowdelta(0), glowpulse(0), fullbright(0), envmapmin(0), envmapmax(0), scrollu(0), scrollv(0), alphatest(0.9f), color(1, 1, 1), material1(1), material2(0) {}
     };
 
     struct shaderparamskey
@@ -134,7 +134,6 @@ struct animmodel : model
 
         bool masked() const { return masks != notexture; }
         bool envmapped() const { return envmapmax>0; }
-        bool matcapped() const { return matcapmax>0; }
         bool bumpmapped() const { return normalmap != NULL; }
         bool alphatested() const { return alphatest > 0 && tex->type&Texture::ALPHA; }
         bool decaled() const { return decal != NULL; }
@@ -202,7 +201,6 @@ struct animmodel : model
 
             LOCALPARAMF(maskscale, spec, gloss, curglow);
             if(envmapped()) LOCALPARAMF(envmapscale, envmapmin-envmapmax, envmapmax);
-            if(matcapped()) LOCALPARAMF(matcapscale, matcapmin-matcapmax, matcapmax, matcapblend);
         }
 
         Shader *loadshader(bool force = false)
@@ -239,9 +237,8 @@ struct animmodel : model
             if(owner->model->wind) opts[optslen++] = 'w';
             if(decaled()) opts[optslen++] = decal->type&Texture::ALPHA ? 'D' : 'd';
             if(bumpmapped()) opts[optslen++] = 'n';
-            if(masked() || envmapped() || matcapped()) opts[optslen++] = 'm';
+            if(masked() || envmapped()) opts[optslen++] = 'm';
             if(envmapped()) opts[optslen++] = 'e';
-            if(matcapped()) opts[optslen++] = matcaptex[1] && matcapblend < 1 ? 'F' : 'f';
             if(mixed()) opts[optslen++] = 'x';
             if(patterned()) opts[optslen++] = 'p';
             if(!cullface) opts[optslen++] = 'c';
@@ -369,18 +366,6 @@ struct animmodel : model
                     activetmu = 2;
                     glBindTexture(GL_TEXTURE_CUBE_MAP, emtex);
                     lastenvmaptex = emtex;
-                }
-            }
-            if(matcapped())
-            {
-                loopi(2) if(lastmatcaptex[i]!=matcaptex[i])
-                {
-                    if(i && (!matcaptex[i] || matcapblend >= 1)) continue;
-                    GLuint mctex = matcaptex[i] ? matcaptex[i] : notexture->id;
-                    glActiveTexture_(i ? GL_TEXTURE8 : GL_TEXTURE7);
-                    activetmu = i ? 8 : 7;
-                    glBindTexture(GL_TEXTURE_CUBE_MAP, mctex);
-                    lastmatcaptex[i] = mctex;
                 }
             }
             if(activetmu != 0) glActiveTexture_(GL_TEXTURE0);
@@ -1521,12 +1506,6 @@ struct animmodel : model
                 closestenvmaptex = lookupenvmap(closestenvmap(state->o));
                 break;
             }
-            if(matcapped()) matcaptex[0] = getmatcap(state->o, &matcaptex[1], &matcapblend);
-            else if(state->attached) for(int i = 0; state->attached[i].tag; i++) if(state->attached[i].m && state->attached[i].m->matcapped())
-            {
-                matcaptex[0] = getmatcap(state->o, &matcaptex[1], &matcapblend);
-                break;
-            }
         }
 
         if(depthoffset && !enabledepthoffset)
@@ -1647,12 +1626,6 @@ struct animmodel : model
         return false;
     }
 
-    bool matcapped() const
-    {
-        loopv(parts) loopvj(parts[i]->skins) if(parts[i]->skins[j].matcapped()) return true;
-        return false;
-    }
-
     bool animated() const
     {
         if(spinyaw || spinpitch || spinroll || wind) return true;
@@ -1722,17 +1695,6 @@ struct animmodel : model
                 s.envmapmax = envmapmax;
             }
             if(envmap) s.envmap = envmap;
-        }
-    }
-
-    void setmatcap(float matcapmin, float matcapmax)
-    {
-        if(parts.empty()) loaddefaultparts();
-        loopv(parts) loopvj(parts[i]->skins)
-        {
-            skin &s = parts[i]->skins[j];
-            s.matcapmin = matcapmin;
-            s.matcapmax = matcapmax;
         }
     }
 
@@ -1857,9 +1819,9 @@ struct animmodel : model
     static float sizescale;
     static vec4 colorscale, mixercolor;
     static vec2 matbright, mixerglow, mixerscroll;
-    static float patternscale, matcapblend;
+    static float patternscale;
     static bvec modelmaterial[MAXMDLMATERIALS];
-    static GLuint lastvbuf, lasttcbuf, lastxbuf, lastbbuf, lastebuf, lastcolbuf, lastenvmaptex, closestenvmaptex, lastmatcaptex[2], matcaptex[2];
+    static GLuint lastvbuf, lasttcbuf, lastxbuf, lastbbuf, lastebuf, lastcolbuf, lastenvmaptex, closestenvmaptex;
     static Texture *lasttex, *lastdecal, *lastmasks, *lastmixer, *lastpattern, *lastnormalmap;
     static int matrixpos;
     static matrix4 matrixstack[64];
@@ -1869,7 +1831,6 @@ struct animmodel : model
         enabletc = enabletangents = enablebones = enabledepthoffset = enablecolor = false;
         enablecullface = true;
         lastvbuf = lasttcbuf = lastxbuf = lastbbuf = lastebuf = lastcolbuf = lastenvmaptex = closestenvmaptex = 0;
-        loopi(2) lastmatcaptex[i] = matcaptex[i] = 0;
         lasttex = lastdecal = lastmasks = lastmixer = lastpattern = lastnormalmap = NULL;
         shaderparamskey::invalidate();
     }
@@ -1958,10 +1919,10 @@ bool animmodel::enabletc = false, animmodel::enabletangents = false, animmodel::
 float animmodel::sizescale = 1;
 vec4 animmodel::colorscale(1, 1, 1, 1), animmodel::mixercolor(1, 1, 1, 1);
 vec2 animmodel::matbright(1, 1), animmodel::mixerglow(0, 0), animmodel::mixerscroll(0, 0);
-float animmodel::patternscale = 1, animmodel::matcapblend = 1;
+float animmodel::patternscale = 1;
 bvec animmodel::modelmaterial[MAXMDLMATERIALS] = { bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255) };
 GLuint animmodel::lastvbuf = 0, animmodel::lasttcbuf = 0, animmodel::lastxbuf = 0, animmodel::lastbbuf = 0, animmodel::lastebuf = 0,
-       animmodel::lastcolbuf = 0, animmodel::lastenvmaptex = 0, animmodel::closestenvmaptex = 0, animmodel::lastmatcaptex[2] = { 0, 0 }, animmodel::matcaptex[2] = { 0, 0 };
+       animmodel::lastcolbuf = 0, animmodel::lastenvmaptex = 0, animmodel::closestenvmaptex = 0;
 Texture *animmodel::lasttex = NULL, *animmodel::lastdecal = NULL, *animmodel::lastmasks = NULL, *animmodel::lastmixer = NULL, *animmodel::lastpattern = NULL, *animmodel::lastnormalmap = NULL;
 int animmodel::matrixpos = 0;
 matrix4 animmodel::matrixstack[64];
@@ -2038,7 +1999,7 @@ template<class MDL, class MESH> struct modelcommands
 
     #define loopskins(meshname, s, body) loopmeshes(meshname, m, { skin &s = mdl.skins[i]; body; })
 
-    static void setskin(char *meshname, char *tex, char *masks, float *envmapmax, float *envmapmin, float *matcapmax, float *matcapmin)
+    static void setskin(char *meshname, char *tex, char *masks, float *envmapmax, float *envmapmin)
     {
         loopskins(meshname, s,
             s.tex = textureload(makerelpath(MDL::dir, tex), 0, true, false);
@@ -2047,8 +2008,6 @@ template<class MDL, class MESH> struct modelcommands
                 s.masks = textureload(makerelpath(MDL::dir, masks), 0, true, false);
                 s.envmapmax = *envmapmax;
                 s.envmapmin = *envmapmin;
-                s.matcapmax = *matcapmax;
-                s.matcapmin = *matcapmin;
             }
         );
     }
@@ -2094,15 +2053,6 @@ template<class MDL, class MESH> struct modelcommands
             s.envmap = tex;
             if(*envmapmin >= 0) s.envmapmin = *envmapmin;
             if(*envmapmax >= 0) s.envmapmax = *envmapmax;
-        });
-    }
-
-    static void setmatcap(char *meshname, float *matcapmin, float *matcapmax)
-    {
-        loopskins(meshname, s,
-        {
-            if(*matcapmin >= 0) s.matcapmin = *matcapmin;
-            if(*matcapmax >= 0) s.matcapmax = *matcapmax;
         });
     }
 
@@ -2181,7 +2131,7 @@ template<class MDL, class MESH> struct modelcommands
         modelcommand(setdir, "dir", "s");
         if(MDL::multimeshed())
         {
-            modelcommand(setskin, "skin", "sssffff");
+            modelcommand(setskin, "skin", "sssff");
             modelcommand(setspec, "spec", "sf");
             modelcommand(setgloss, "gloss", "si");
             modelcommand(setglow, "glow", "sfff");
@@ -2189,7 +2139,6 @@ template<class MDL, class MESH> struct modelcommands
             modelcommand(setcullface, "cullface", "si");
             modelcommand(setcolor, "color", "sfff");
             modelcommand(setenvmap, "envmap", "ssgg");
-            modelcommand(setmatcap, "matcap", "sgg");
             modelcommand(setbumpmap, "bumpmap", "ss");
             modelcommand(setdecal, "decal", "ss");
             modelcommand(setfullbright, "fullbright", "sf");

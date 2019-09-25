@@ -4578,7 +4578,6 @@ void workinoq()
 
     if(drawtex) return;
 
-    rendertexdebug();
     game::render();
 
     if(shouldworkinoq())
