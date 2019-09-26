@@ -773,7 +773,7 @@ void setfullscreen(bool enable);
 extern bool progressing, pixeling;
 extern float loadprogress, progressamt;
 extern char *progresstitle;
-extern void progress(float bar1 = 0, const char *text1 = NULL);
+extern void progress(float amt, const char *s, ...) PRINTFARGS(2, 3);
 extern void limitfps(int &millis, int curmillis);
 
 enum

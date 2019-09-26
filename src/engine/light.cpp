@@ -442,9 +442,8 @@ void check_calclight_canceled()
 
 void show_calclight_progress()
 {
-    float bar1 = float(lightprogress) / float(allocnodes);
-    defformatstring(text1, "%d%%", int(bar1 * 100));
-    progress(bar1, text1);
+    float amt = float(lightprogress)/float(allocnodes);
+    progress(amt, "Computing lighting... (ESC to abort)");
 }
 
 static void calcsurfaces(cube &c, const ivec &co, int size, int usefacemask, int preview = 0)

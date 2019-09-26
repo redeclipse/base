@@ -1595,12 +1595,7 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
         else if(matchstring(cmd, len, "thumbnail")) raw = true;
         else if(matchstring(cmd, len, "stub")) return canloadsurface(file);
     }
-
-    if(msg)
-    {
-        defformatstring(text, "Loading texture: %s", file);
-        progress(loadprogress, text);
-    }
+    if(msg) progress(loadprogress, "Loading texture: %s", file);
 
     int flen = strlen(file);
     if(flen >= 4 && (!strcasecmp(file + flen - 4, ".dds") || (dds && !raw)))

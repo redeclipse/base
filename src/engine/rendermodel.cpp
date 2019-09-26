@@ -462,11 +462,7 @@ model *loadmodel(const char *name, int i, bool msg)
     else
     {
         if(!name[0] || loadingmodel || failedmodels.find(name, NULL)) return NULL;
-        if(msg)
-        {
-            defformatstring(str, "Loading model: %s", name);
-            progress(loadprogress, str);
-        }
+        if(msg) progress(loadprogress, "Loading model: %s", name);
         loopi(NUMMODELTYPES)
         {
             m = modeltypes[i](name);

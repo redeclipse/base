@@ -1066,10 +1066,7 @@ void shader(int *type, char *name, char *vs, char *ps)
 {
     if(lookupshaderbyname(name)) return;
 
-    if(!initshaders) {
-        defformatstring(info, "Loading shader: %s", name);
-        progress(loadprogress, info);
-    }
+    if(!initshaders) progress(loadprogress, "Loading shader: %s", name);
     vector<char> vsbuf, psbuf, vsbak, psbak;
 #define GENSHADER(cond, body) \
     if(cond) \
@@ -1104,11 +1101,7 @@ void variantshader(int *type, char *name, int *row, char *vs, char *ps, int *max
     if(!s) return;
 
     defformatstring(varname, "<variant:%d,%d>%s", s->numvariants(*row), *row, name);
-    if(*maxvariants > 0)
-    {
-        defformatstring(info, "Generating shader: %s", name);
-        progress(min(s->variants.length() / float(*maxvariants), 1.0f), info);
-    }
+    if(*maxvariants > 0) progress(min(s->variants.length() / float(*maxvariants), 1.0f), "Generating shader: %s", name);
     vector<char> vsbuf, psbuf, vsbak, psbak;
     GENSHADER(s->defaultparams.length(), genuniformdefs(vsbuf, psbuf, vs, ps, s));
     GENSHADER(strstr(vs, "//:fog") || strstr(ps, "//:fog"), genfogshader(vsbuf, psbuf, vs, ps));
@@ -1475,8 +1468,7 @@ void reloadshaders()
     {
         if(!s.standard && s.loaded() && !s.variantshader)
         {
-            defformatstring(info, "Loading shader: %s", s.name);
-            progress(0, info);
+            progress(0, "Loading shader: %s", s.name);
             if(!s.compile()) s.cleanup(true);
             loopv(s.variants)
             {

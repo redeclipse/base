@@ -843,31 +843,36 @@ FVAR(0, progressamt, -1, 0, 1);
 VAR(IDF_PERSIST, progressfps, -1, -1, VAR_MAX);
 int lastprogress = 0;
 
-void progress(float bar1, const char *text1)
+void progress(float amt, const char *s, ...)
 {
     if(progressing || !inbetweenframes || drawtex) return;
-    if(bar1 < 0) // signals the start of a long process, hide the UI
+    if(amt < 0) // signals the start of a long process, hide the UI
     {
         if(engineready) UI::hideui(NULL);
-        bar1 = 0;
+        amt = 0;
     }
     if(progressfps)
     {
         int curprog = progressfps >= 0 ? progressfps : refresh, ticks = SDL_GetTicks(), diff = ticks - lastprogress;
-        if(bar1 > 0 && diff >= 0 && diff < (1000 + curprog-1)/curprog) return;
+        if(amt > 0 && diff >= 0 && diff < (1000 + curprog-1)/curprog) return;
         lastprogress = ticks;
     }
     clientkeepalive();
 
     interceptkey(SDLK_UNKNOWN); // keep the event queue awake to avoid appearing unresponsive
 
-    setsvar("progresstitle", text1 ? text1 : "Loading..");
-    setfvar("progressamt", bar1);
-    if(verbose >= 4)
+    string sf;
+    if(s != NULL)
     {
-        if(text1) conoutf("%s [%.2f%%]", text1, bar1*100.f);
-        else conoutf("Progressing [%.2f%%]", bar1*100.f);
+        va_list args;
+        va_start(args, s);
+        vformatstring(sf, s, args);
+        va_end(args);
     }
+    else copystring(sf, "Loading...");
+    setsvar("progresstitle", sf);
+    setfvar("progressamt", amt);
+    if(verbose >= 4) conoutf("%s [%.2f%%]", sf, amt*100.f);
 
     int oldflags = identflags;
     identflags &= ~IDF_WORLD;
@@ -1110,7 +1115,6 @@ int main(int argc, char **argv)
 
         conoutf("Loading main..");
         progress(0, "Loading main..");
-        if(initscript) execute(initscript, true);
 
         capslockon = capslocked();
         numlockon = numlocked();
@@ -1119,6 +1123,8 @@ int main(int argc, char **argv)
         localconnect(false);
         resetfps();
 
+        engineready = true;
+        hud::checkui();
         if(reprotoarg)
         {
             if(connecthost && *connecthost) connectserv(connecthost, connectport, connectpassword);
@@ -1136,7 +1142,8 @@ int main(int argc, char **argv)
             delete[] reprotoarg;
             reprotoarg = NULL;
         }
-        engineready = true;
+        if(initscript) execute(initscript, true);
+
         for(int frameloops = 0; ; frameloops = frameloops >= INT_MAX-1 ? MAXFPSHISTORY+1 : frameloops+1)
         {
             if(wantdisplaysetup) setupdisplay();
