@@ -249,9 +249,7 @@ struct masterclient
     bool hasflag(char f)
     {
         if(f == 'b' && *flags) return true;
-        for(const char *c = flags; *c; c++) if(*c == f)
-            return true;
-        return false;
+        return ::hasflag(flags, f);
     }
 
     int priority()
@@ -708,6 +706,7 @@ static hashnameset<authuser> authusers;
 
 void addauth(char *name, char *flags, char *pubkey, char *email, char *steamid)
 {
+    if(!name || !*name || !flags || !*flags || !pubkey || !*pubkey) return;
     string authname;
     if(filterstring(authname, name, true, true, true, true, 100)) name = authname;
     if(authusers.access(name))
@@ -715,10 +714,27 @@ void addauth(char *name, char *flags, char *pubkey, char *email, char *steamid)
         conoutf("Auth handle '%s' already exists, skipping (%s)", name, email);
         return;
     }
+    string flagbuf;
+    int flagidx = 0;
+    flagbuf[0] = 0;
+    #define ADDFLAG(c, check) \
+        if(!hasflag(flagbuf, c)) \
+        { \
+            flagbuf[flagidx++] = c; \
+            flagbuf[flagidx] = 0; \
+            if(flagidx >= MAXSTRLEN-1) check; \
+        }
+    loopi(min(int(strlen(flags)), MAXSTRLEN-1))
+    {
+        ADDFLAG(flags[i], break);
+        if(flags[i] == 'm') { ADDFLAG('o', break); }
+        else if(flags[i] == 'o') { ADDFLAG('m', break); }
+    }
+    if(!flagbuf[0]) ADDFLAG('u', );
     name = newstring(name);
     authuser &u = authusers[name];
     u.name = name;
-    u.flags = newstring(flags);
+    u.flags = newstring(flagbuf);
     u.pubkey = parsepubkey(pubkey);
     u.email = newstring(email);
     u.steamid = newstring(steamid);
