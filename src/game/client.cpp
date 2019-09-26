@@ -2169,7 +2169,7 @@ namespace client
             loopi(W_MAX) loopj(W_A_MAX) d->weapammo[i][j] = getint(p);
             loopi(W_MAX) d->weapent[i] = getint(p);
         }
-        if(resume) d->configure(game::gamemode, game::mutators, game::rescale(d), game::speedscale(d), physics::carryaffinity(d), 0, lastmillis, true);
+        if(resume) d->configure(lastmillis, game::gamemode, game::mutators, physics::carryaffinity(d));
         return reset;
     }
 

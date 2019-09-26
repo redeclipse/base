@@ -212,6 +212,10 @@ extern const enttypes enttype[] = {
 };
 #else
 extern const enttypes enttype[];
+namespace entities
+{
+    extern vector<extentity *> ents;
+}
 #endif
 
 #define MAXNAMELEN 24
@@ -1286,7 +1290,7 @@ struct gameent : dynent, clientstate
         }
     }
 
-    void configure(int gamemode, int mutators, float scale, float speedscale, int affinities, int cur, int millis, bool reset)
+    void configure(int millis, int gamemode, int mutators, int affinities = 0, int cur = 0)
     {
         #define MODPHYSL \
             MODPHYS(speed, float, speedscale); \
@@ -1294,9 +1298,28 @@ struct gameent : dynent, clientstate
             MODPHYS(impulsespeed, float, speedscale); \
             MODPHYS(weight, float, curscale);
 
+        float scale = AA(actortype, scale), speedscale = 1;
+
+        if(actortype >= A_ENEMY && entities::ents.inrange(spawnpoint) && entities::ents[spawnpoint]->type == ACTOR)
+        {
+            if(entities::ents[spawnpoint]->attrs[8] > 0) speedscale *= entities::ents[spawnpoint]->attrs[8]/100.f;
+            if(entities::ents[spawnpoint]->attrs[9] > 0) scale *= (entities::ents[spawnpoint]->attrs[9]/100.f);
+        }
+
+        if(m_resize(gamemode, mutators))
+        {
+            float minscale = 1, amtscale = m_insta(gamemode, mutators) ? 1+(spree*G(instaresizeamt)) : max(health, 1)/float(max(gethealth(gamemode, mutators), 1));
+            if(m_resize(gamemode, mutators))
+            {
+                minscale = G(minresizescale);
+                if(amtscale < 1) amtscale = (amtscale*(1-minscale))+minscale;
+            }
+            scale *= clamp(amtscale, minscale, G(maxresizescale));
+        }
+
         if(scale != curscale)
         {
-            if(!reset && state == CS_ALIVE && cur > 0)
+            if(cur && state == CS_ALIVE)
                 curscale = scale > curscale ? min(curscale+cur/2000.f, scale) : max(curscale-cur/2000.f, scale);
             else curscale = scale;
         }
@@ -1306,7 +1329,7 @@ struct gameent : dynent, clientstate
 
         xradius = yradius = PLAYERRADIUS*curscale;
         zradius = PLAYERHEIGHT*curscale;
-        if(reset) height = zradius;
+        if(!cur) height = zradius;
 
         #define MODPHYS(a,b,c) a = AA(actortype, a)*c;
         MODPHYSL;
@@ -1398,7 +1421,7 @@ struct gameent : dynent, clientstate
         aboveeye = curscale;
 
         #undef MODPHYSL
-        if(!reset)
+        if(cur)
         {
             jitter(millis);
             stunscale = stunned(millis, false);
@@ -1446,7 +1469,7 @@ struct gameent : dynent, clientstate
         lastteamhit = lastflag = respawned = suicided = lastnode = lastfoot = -1;
         obit[0] = '\0';
         obliterated = headless = false;
-        configure(gamemode, mutators, 1, 1, 0, 0, millis, true);
+        configure(millis, gamemode, mutators);
         icons.shrink(0);
         stuns.shrink(0);
         jitters.shrink(0);
@@ -2061,8 +2084,6 @@ namespace game
     extern void announce(int idx, gameent *d = NULL, bool forced = false);
     extern void announcef(int idx, int targ, gameent *d, bool forced, const char *msg, ...);
     extern void specreset(gameent *d = NULL, bool clear = false);
-    extern float speedscale(gameent *d);
-    extern float rescale(gameent *d);
     extern float opacity(gameent *d);
     extern void respawn(gameent *d);
     extern void respawned(gameent *d, bool local, int ent = -1);
@@ -2100,7 +2121,6 @@ namespace entities
 {
     extern int showentdescs, showentfull, simpleitems;
     extern float showentavailable, showentunavailable;
-    extern vector<extentity *> ents;
     extern bool execitem(int n, int cn, dynent *d, vec &pos, float dist);
     extern bool collateitems(dynent *d, vec &pos, float radius, vector<actitem> &actitems);
     extern void checkitems(dynent *d);

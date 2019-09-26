@@ -867,39 +867,6 @@ namespace game
         return 1;
     }
 
-    float speedscale(gameent *d)
-    {
-        float speed = 1.f;
-        bool hasent = d->actortype >= A_ENEMY && entities::ents.inrange(d->spawnpoint) && entities::ents[d->spawnpoint]->type == ACTOR;
-        if(hasent && entities::ents[d->spawnpoint]->attrs[8] > 0) speed *= entities::ents[d->spawnpoint]->attrs[8]/100.f;
-        return speed;
-    }
-
-    float rescale(gameent *d)
-    {
-        float total = AA(d->actortype, scale);
-        if(d->actortype >= A_ENEMY)
-        {
-            bool hasent = entities::ents.inrange(d->spawnpoint) && entities::ents[d->spawnpoint]->type == ACTOR;
-            if(hasent && entities::ents[d->spawnpoint]->attrs[9] > 0) total *= (entities::ents[d->spawnpoint]->attrs[9]/100.f);
-        }
-        if(d->state != CS_SPECTATOR && d->state != CS_EDITING)
-        {
-            if(m_resize(gamemode, mutators))
-            {
-                float minscale = 1, amtscale = m_insta(gamemode, mutators) ? 1+(d->spree*instaresizeamt) : max(d->health, 1)/float(max(d->gethealth(gamemode, mutators), 1));
-                if(m_resize(gamemode, mutators))
-                {
-                    minscale = minresizescale;
-                    if(amtscale < 1) amtscale = (amtscale*(1-minscale))+minscale;
-                }
-                total *= clamp(amtscale, minscale, maxresizescale);
-            }
-            if(deathscale && (d->state == CS_DEAD || d->state == CS_WAITING)) total *= spawnfade(d);
-        }
-        return total;
-    }
-
     float opacity(gameent *d, bool third)
     {
         float total = d == focus ? (third ? (d != player1 ? followblend : thirdpersonblend) : 1.f) : playerblend;
@@ -926,7 +893,7 @@ namespace game
             entities::spawnplayer(d, ent, true);
             client::addmsg(N_SPAWN, "ri", d->clientnum);
         }
-        d->configure(gamemode, mutators, rescale(d), speedscale(d), physics::carryaffinity(d), 0, lastmillis, true);
+        d->configure(lastmillis, gamemode, mutators, physics::carryaffinity(d));
 
         if(d == player1) specreset();
         else if(d == focus) resetcamera();
@@ -1107,7 +1074,7 @@ namespace game
     {
         adjustscaled(d->quake, quakefade);
         int prevstate = isweap(d->weapselect) ? d->weapstate[d->weapselect] : W_S_IDLE;
-        d->configure(gamemode, mutators, rescale(d), speedscale(d), physics::carryaffinity(d), curtime, lastmillis, false);
+        d->configure(lastmillis, gamemode, mutators, physics::carryaffinity(d), curtime);
 
         float offset = d->height;
         d->o.z -= d->height;
@@ -3833,7 +3800,7 @@ namespace game
     void renderplayerpreview(float scale, const vec4 &mcolor, const char *actions)
     {
         if(!previewent) initplayerpreview();
-        previewent->configure(gamemode, mutators, 1, 1, 0, 0, lastmillis, true);
+        previewent->configure(lastmillis, gamemode, mutators);
         float height = previewent->height + previewent->aboveeye, zrad = height/2;
         vec2 xyrad = vec2(previewent->xradius, previewent->yradius).max(height/4);
         previewent->o = calcmodelpreviewpos(vec(xyrad, zrad), previewent->yaw).addz(previewent->height - zrad);
