@@ -2115,16 +2115,10 @@ namespace game
     {
         if(team < 0 || team > T_MAX) team = T_NEUTRAL;
         static string teamed;
-        string teamtmp;
         teamed[0] = '\0';
         concatstring(teamed, "\fs");
-        formatstring(teamtmp, "\f[%d]", TEAM(team, colour));
-        concatstring(teamed, teamtmp);
-        if(icon != NULL)
-        {
-            formatstring(teamtmp, "\f($%s)", *icon ? icon : teamtexnamex(team));
-            concatstring(teamed, teamtmp);
-        }
+        concformatstring(teamed, "\f[%d]", TEAM(team, colour));
+        if(icon != NULL) concformatstring(teamed, "\f($%s)", *icon ? icon : teamtexnamex(team));
         concatstring(teamed, TEAM(team, name));
         concatstring(teamed, "\fS");
         return teamed;

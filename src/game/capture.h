@@ -20,7 +20,7 @@ struct capturestate
         gameent *owner, *lastowner;
         projent *proj;
         int displaytime, movetime, viewtime, interptime;
-        vec viewpos, interppos, render, above;
+        vec viewpos, interppos, render;
         modelstate mdl, basemdl;
 #endif
 
@@ -49,7 +49,7 @@ struct capturestate
         {
             if(owner) return owner->waist;
             if(droptime) return proj ? proj->o : droploc;
-            return above;
+            return spawnloc;
         }
 
         vec &pos(bool view = false)
@@ -72,11 +72,17 @@ struct capturestate
 
         void setposition(const vec &pos)
         {
-            spawnloc = render = above = pos;
+            spawnloc = render = pos;
             render.z += 4;
             physics::droptofloor(render);
             render.z -= 1.5f;
-            if(render.z >= above.z-1) above.z += 1+render.z-above.z;
+            float offset = spawnloc.z-render.z;
+            if(offset < 0)
+            {
+                spawnloc = render;
+                offset = 0;
+            }
+            if(offset < 4) spawnloc.z += 4-offset;
         }
 #endif
 

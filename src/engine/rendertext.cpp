@@ -308,12 +308,12 @@ static void text_color(char c, bvec4 *stack, int size, int &sp, bvec4 &color, in
         case 'u': case 'Z': stack[sp] = color = TVECX(r, g, b, a); break; // default colour
         case 's': // save
         {
-            if(sp < size-1) stack[++sp] = color;
+            if(sp < size-1) stack[sp++] = color;
             return;
         }
         case 'S': // restore
         {
-            if(sp > 0) --sp;
+            if(sp > 0) sp--;
             color = stack[sp];
             break;
         }

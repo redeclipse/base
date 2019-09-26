@@ -319,7 +319,7 @@ namespace bomber
             }
             else if(!m_bb_hold(game::gamemode, game::mutators))
             {
-                vec above = f.above, effect = vec::fromcolor(TEAM(f.team, colour)).mul(trans);
+                vec above = f.spawnloc, effect = vec::fromcolor(TEAM(f.team, colour)).mul(trans);
                 float blend = camera1->o.distrange(above, game::affinityhintfadeat, game::affinityhintfadecut);
                 basemdl.material[0] = mdl.material[0] = bvec::fromcolor(effect);
                 int pcolour = effect.tohexcolor();
@@ -336,8 +336,8 @@ namespace bomber
                     offset.add(above);
                     part_icon(offset, textureload(hud::warningtex, 3, true, false), height, amt*blend, 0, 0, 1, c.tohexcolor());
                 }
-                above.z += enttype[AFFINITY].radius/4*trans;
-                defformatstring(info, "<super>%s base", TEAM(f.team, name));
+                above.z += 6*trans;
+                defformatstring(info, "<super>%s Base", TEAM(f.team, name));
                 part_textcopy(above, info, PART_TEXT, 1, TEAM(f.team, colour), 2, trans*blend);
                 above.z += 4;
                 part_icon(above, textureload(hud::teamtexname(f.team), 3), 4, trans*blend, 0, 0, 1, TEAM(f.team, colour));

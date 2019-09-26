@@ -184,7 +184,7 @@ extern const enttypes enttype[] = {
                 "pusher",       { "yaw",    "pitch",    "force",    "maxrad",   "minrad",   "type",     "modes",    "muts",     "id",       "variant",  "sdelay" }
     },
     {
-        AFFINITY,       1,          48,     32,     EU_NONE,    7,          3,          5,      6,      -1,
+        AFFINITY,       1,          48,     48,     EU_NONE,    7,          3,          5,      6,      -1,
             0, 0, 0,
             false,  false,  false,      false,      false,
                 "affinity",     { "team",   "yaw",      "pitch",    "modes",    "muts",     "id",       "variant" }

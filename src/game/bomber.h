@@ -23,7 +23,7 @@ struct bomberstate
         gameent *owner, *lastowner;
         projent *proj;
         int displaytime, movetime, inittime, viewtime, rendertime, interptime;
-        vec viewpos, renderpos, interppos, render, above;
+        vec viewpos, renderpos, interppos, render;
         modelstate mdl, basemdl;
 #endif
 
@@ -71,7 +71,7 @@ struct bomberstate
                 }
                 if(droptime) return proj ? proj->o : droploc;
             }
-            return above;
+            return spawnloc;
         }
 
         vec &pos(bool view = false, bool render = false)
@@ -94,11 +94,17 @@ struct bomberstate
 
         void setposition(const vec &pos)
         {
-            spawnloc = render = above = pos;
+            spawnloc = render = pos;
             render.z += 4;
             physics::droptofloor(render);
             render.z -= 1.5f;
-            if(render.z >= above.z-1) above.z += 1+render.z-above.z;
+            float offset = spawnloc.z-render.z;
+            if(offset < 0)
+            {
+                spawnloc = render;
+                offset = 0;
+            }
+            if(offset < 4) spawnloc.z += 4-offset;
         }
 #endif
         bool travel(const vec &o, float dist)

@@ -27,14 +27,14 @@ namespace defend
     ICOMMAND(0, getdefendradardist, "ib", (int *n, int *v),
     {
         if(!st.flags.inrange(*n) || (m_hard(game::gamemode, game::mutators) && !G(radarhardaffinity))) return;
-        float dist = vec(*v > 0 ? st.flags[*n].above : (*v < 0 ? st.flags[*n].render : st.flags[*n].o)).sub(camera1->o).magnitude();
+        float dist = vec(*v > 0 ? st.flags[*n].render : st.flags[*n].o).sub(camera1->o).magnitude();
         if(hud::radarlimited(dist)) return;
         floatret(dist);
     });
     ICOMMAND(0, getdefendradardir, "ib", (int *n, int *v),
     {
         if(!st.flags.inrange(*n) || (m_hard(game::gamemode, game::mutators) && !G(radarhardaffinity))) return;
-        vec dir = vec(*v > 0 ? st.flags[*n].above : (*v < 0 ? st.flags[*n].render : st.flags[*n].o)).sub(camera1->o);
+        vec dir = vec(*v > 0 ? st.flags[*n].render : st.flags[*n].o).sub(camera1->o);
         if(hud::radarlimited(dir.magnitude())) return;
         dir.rotate_around_z(-camera1->yaw*RAD).normalize();
         floatret(-atan2(dir.x, dir.y)/RAD);
@@ -117,22 +117,18 @@ namespace defend
             rendermodel("props/point", mdl);
             if(b.enemy && b.owner)
             {
-                defformatstring(bowner, "%s", game::colourteam(b.owner));
-                formatstring(b.info, "%s v %s", bowner, game::colourteam(b.enemy));
+                defformatstring(bowner, "%s", game::colourteam(b.owner, NULL));
+                formatstring(b.info, "%s v %s", bowner, game::colourteam(b.enemy, NULL));
             }
-            else
-            {
-                int defend = b.owner ? b.owner : b.enemy;
-                formatstring(b.info, "%s", game::colourteam(defend));
-            }
-            vec above = b.above;
+            else formatstring(b.info, "%s", TEAM(b.owner ? b.owner : b.enemy, name));
+            vec above = b.o;
             float blend = camera1->o.distrange(above, game::affinityhintfadeat, game::affinityhintfadecut);
             part_explosion(above, 3, PART_GLIMMERY, 1, colour, 1, blend);
             part_create(PART_HINT_SOFT, 1, above, colour, 6, blend);
-            above.z += 4;
+            above.z += 6;
             part_text(above, b.name, PART_TEXT, 1, colourwhite, 2, blend);
-            above.z += 4;
-            part_text(above, b.info, PART_TEXT, 1, colourwhite, 2, blend);
+            above.z += 2;
+            part_text(above, b.info, PART_TEXT, 1, colour, 2, blend);
             above.z += 4;
             if(b.enemy)
             {
@@ -140,7 +136,7 @@ namespace defend
                 part_icon(above, textureload(hud::progresstex, 3), 5, blend, 0, 0, 1, TEAM(b.enemy, colour), 0, occupy);
                 part_icon(above, textureload(hud::progresstex, 3), 5, 0.25f*blend, 0, 0, 1, TEAM(b.owner, colour), occupy, 1-occupy);
             }
-            else part_icon(above, textureload(hud::teamtexname(b.owner), 3), 4, blend, 0, 0, 1, TEAM(b.owner, colour));
+            else part_icon(above, textureload(hud::teamtexname(b.owner), 3), 4, blend, 0, 0, 1, colour);
         }
     }
 
@@ -181,7 +177,7 @@ namespace defend
             defendstate::flag &f = st.flags[i];
             float occupy = !f.owner || f.enemy ? clamp(f.converted/float(defendcount), 0.f, 1.f) : 1.f;
             bool overthrow = f.owner && f.enemy == game::focus->team;
-            ty -= draw_textf("You are %s: %s \fs\f[%d]\f(%s)\f(%s)\fS \fs%s%d%%\fS", tx, ty, int(FONTW*hud::eventpadx), int(FONTH*hud::eventpady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, overthrow ? "overthrowing" : "securing", f.name, TEAM(f.owner, colour), hud::teamtexname(f.owner), hud::pointtex, overthrow ? "\fy" : (occupy < 1.f ? "\fc" : "\fg"), int(occupy*100.f))+FONTH/4;
+            ty -= draw_textf("You are %s: %s \fs\f[%d]\f(%s)\f(%s)\fS \fs%s%d%%\fS", tx, ty, int(FONTW*hud::eventpadx), int(FONTH*hud::eventpady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, overthrow ? "Overthrowing" : "Securing", f.name, TEAM(f.owner, colour), hud::teamtexname(f.owner), hud::pointtex, overthrow ? "\fy" : (occupy < 1.f ? "\fc" : "\fg"), int(occupy*100.f))+FONTH/4;
             break;
         }
     }
@@ -217,7 +213,7 @@ namespace defend
             const char *name = getalias(alias);
             if(!name || !*name)
             {
-                formatstring(alias, "point #%d", st.flags.length()+1);
+                formatstring(alias, "Point #%d", st.flags.length()+1);
                 name = alias;
             }
             st.addaffinity(e.o, team, e.attrs[1], e.attrs[2], name);
@@ -257,7 +253,7 @@ namespace defend
             }
             if(st.flags.inrange(smallest))
             {
-                copystring(st.flags[smallest].name, "center");
+                copystring(st.flags[smallest].name, "Center");
                 st.flags[smallest].kinship = T_NEUTRAL;
                 loopi(smallest) st.flags.remove(0);
                 while(st.flags.length() > 1) st.flags.remove(1);

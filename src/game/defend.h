@@ -16,7 +16,7 @@ struct defendstate
         string info;
         bool hasflag;
         int lasthad;
-        vec render, above;
+        vec render;
         modelstate mdl;
 #endif
         int owners, enemies, converted, points;
@@ -120,11 +120,17 @@ struct defendstate
 #ifndef GAMESERVER
         void setposition(const vec &pos)
         {
-            o = render = above = pos;
+            o = render = pos;
             render.z += 4;
             physics::droptofloor(render);
             render.z -= 1.5f;
-            if(render.z >= above.z-1) above.z += 1+render.z-above.z;
+            float offset = o.z-render.z;
+            if(offset < 0)
+            {
+                o = render;
+                offset = 0;
+            }
+            if(offset < 4) o.z += 4-offset;
         }
 #endif
     };

@@ -560,10 +560,10 @@ WPVARK(IDF_GAMEMOD, interacts, 0, 3,
     0,          1,          0,          3,          3,          1,          1,          1,          1,          3,          3,          1,          0
 );
 WPFVAR(IDF_GAMEMOD, itemhalo, 0, FVAR_MAX,
-    6,          6,          12,         10,         8,          10,         6,          8,          10,         4,          4,          8,          1
+    9,          9,          18,         15,         12,         15,         9,          12,         15,         6,          6,          12,         1.5f
 );
 WPFVAR(IDF_GAMEMOD, itemhaloammo, 0, FVAR_MAX,
-    6,          6,          12,         10,         8,          10,         6,          8,          10,         4,          4,          8,          1
+    9,          9,          18,         15,         12,         15,         9,          12,         15,         6,          6,          12,         1.5f
 );
 WPFVARM(IDF_GAMEMOD, jitterpitchmax, FVAR_MIN, FVAR_MAX,
     1.0f,       1.0f,       1.0f,       10.0f,      6.0f,       0.2f,       5.0f,       3.0f,       4.0f,       1.0f,       1.0f,       1.0f,       1.0f,
@@ -1261,7 +1261,7 @@ weaptypes weaptype[] =
     {
             ANIM_PISTOL,        S_PISTOL,       10,
             true,       true,       false,
-            { 0, 0 },               0.35f,
+            { 0, 0 },               0.45f,
             "pistol", "weapons/pistol/item", "weapons/pistol/ammo", "weapons/pistol/vwep", "weapons/pistol/hwep", "weapons/pistol/proj", "projectiles/cartridge"
     },
     {
@@ -1273,13 +1273,13 @@ weaptypes weaptype[] =
     {
             ANIM_SHOTGUN,       S_SHOTGUN,      10,
             true,       true,       false,
-            { 0, 0 },               0.45f,
+            { 0, 0 },               0.6f,
             "shotgun", "weapons/shotgun/item", "weapons/shotgun/ammo", "weapons/shotgun/vwep", "weapons/shotgun/hwep", "", "projectiles/shell"
     },
     {
             ANIM_SMG,           S_SMG,          20,
             true,       true,       false,
-            { 0, 0 },               0.35f,
+            { 0, 0 },               0.45f,
             "smg", "weapons/smg/item", "weapons/smg/ammo", "weapons/smg/vwep", "weapons/smg/hwep", "", "projectiles/cartridge"
     },
     {
