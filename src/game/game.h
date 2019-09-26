@@ -1251,7 +1251,7 @@ struct gameent : dynent, clientstate
         if(pitch2 > pitch1) pitchv += (pitch2-pitch1)*(rnd(10000)+1)/10000.f;
         if(dir)
         {
-            int value = rnd(dir+1);
+            int value = rnd((dir > 0 ? dir : -dir)+1);
             if(dir > 0 ? value == 0 : value != 0) pitchv = -pitchv;
         }
         s.yaw = yawv;
