@@ -1158,7 +1158,7 @@ struct eventicon
 
 struct stunevent
 {
-    int weap, millis, delay, last[2];
+    int weap, millis, delay;
     float scale, gravity;
 };
 
@@ -1214,7 +1214,7 @@ struct gameent : dynent, clientstate
         if(delay <= 0 || (scale == 0 && gravity == 0)) return;
         stunevent &s = stuns.add();
         s.weap = weap;
-        s.millis = s.last[0] = s.last[1] = millis;
+        s.millis = millis;
         s.delay = delay;
         s.scale = scale;
         s.gravity = gravity;
@@ -1231,20 +1231,14 @@ struct gameent : dynent, clientstate
                 stuns.remove(i);
                 continue;
             }
-            int etime = s.millis+s.delay, stime = clamp(millis, s.millis, etime), qtime = stime-s.last[gravity ? 1 : 0], len = clamp(etime-stime, 1, 10);
-            if(qtime >= len)
-            {
-                int itime = qtime-(qtime%len), mtime = stime-s.millis-itime, iters = itime/len;
-                float force = (gravity ? s.gravity : s.scale)*(float(len)/float(s.delay));
-                loopj(iters) stun += force*(1.f-(float(mtime+j+1)/float(s.delay)));
-                s.last[gravity ? 1 : 0] = millis;
-            }
-            if(millis-s.millis >= s.delay) stuns.remove(i);
+            int etime = s.millis+s.delay, len = etime-clamp(millis, s.millis, etime);
+            if(len > 0) stun += (gravity ? s.gravity : s.scale)*(len/float(s.delay));
+            if(gravity && millis >= etime) stuns.remove(i);
         }
         return 1.f-clamp(stun, 0.f, 1.f);
     }
 
-    void addjitter(int weap, int millis, int delay, float yawmin, float yawmax, float pitchmin, float pitchmax)
+    void addjitter(int weap, int millis, int delay, float yawmin, float yawmax, float pitchmin, float pitchmax, int dir = 0)
     {
         if(delay <= 0) return;
         jitterevent &s = jitters.add();
@@ -1253,8 +1247,13 @@ struct gameent : dynent, clientstate
         s.delay = delay;
         float yaw1 = min(yawmin, yawmax), yaw2 = max(yawmin, yawmax), yawv = yaw1,
               pitch1 = min(pitchmin, pitchmax), pitch2 = max(pitchmin, pitchmax), pitchv = pitch1;
-        if(yaw2 > yaw1) yawv += (yaw2-yaw1)*(rnd(10001)/10000.f);
-        if(pitch2 > pitch1) pitchv += (pitch2-pitch1)*(rnd(10001)/10000.f);
+        if(yaw2 > yaw1) yawv += (yaw2-yaw1)*(rnd(10000)+1)/10000.f;
+        if(pitch2 > pitch1) pitchv += (pitch2-pitch1)*(rnd(10000)+1)/10000.f;
+        if(dir)
+        {
+            int value = rnd(dir+1);
+            if(dir > 0 ? value == 0 : value != 0) pitchv = -pitchv;
+        }
         s.yaw = yawv;
         s.pitch = pitchv;
     }
@@ -1269,24 +1268,19 @@ struct gameent : dynent, clientstate
                 jitters.remove(i);
                 continue;
             }
-            int etime = s.millis+s.delay, stime = clamp(millis, s.millis, etime), qtime = stime-s.last, len = clamp(etime-stime, 1, 10);
-            if(qtime >= len)
+            int etime = s.millis+s.delay, len = clamp(millis, s.millis, etime)-s.last;
+            if(len > 0)
             {
-                int itime = qtime-(qtime%len), mtime = stime-s.millis-itime, iters = itime/len;
-                float force = float(len)/float(s.delay);
-                loopj(iters)
-                {
-                    float scale = force*(1.f-(float(mtime+j+1)/float(s.delay)));
-                    yaw += s.yaw*scale;
-                    while(yaw < 0.0f) yaw += 360.0f;
-                    while(yaw >= 360.0f) yaw -= 360.0f;
-                    pitch += s.pitch*scale;
-                    if(pitch > 89.9f) pitch = 89.9f;
-                    if(pitch < -89.9f) pitch = -89.9f;
-                }
+                float scale = len/float(s.delay);
+                yaw += s.yaw*scale;
+                while(yaw < 0.0f) yaw += 360.0f;
+                while(yaw >= 360.0f) yaw -= 360.0f;
+                pitch += s.pitch*scale;
+                if(pitch > 89.9f) pitch = 89.9f;
+                if(pitch < -89.9f) pitch = -89.9f;
                 s.last = millis;
             }
-            if(millis-s.millis >= s.delay) jitters.remove(i);
+            if(millis >= etime) jitters.remove(i);
         }
     }
 

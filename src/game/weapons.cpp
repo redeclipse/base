@@ -290,7 +290,7 @@ namespace weapons
         MODSPREAD(jitteryaw, min);
         MODSPREAD(jitteryaw, max);
         MODSPREAD(jitterpitch, min);
-        MODSPREAD(jitterpitch, min);
+        MODSPREAD(jitterpitch, max);
     }
 
     bool doshot(gameent *d, vec &targ, int weap, bool pressed, bool secondary, int force)
@@ -400,10 +400,15 @@ namespace weapons
         if(W2(weap, jittertime, secondary))
         {
             int jittertime = W2(weap, jittertime, secondary);
+            if(jittertime < 0)
+            {
+                int value = -jittertime;
+                jittertime = W2(weap, delayattack, secondary)/value;
+            }
             float jitteryawmin = W2(weap, jitteryawmin, secondary), jitteryawmax = W2(weap, jitteryawmax, secondary),
                   jitterpitchmin = W2(weap, jitterpitchmin, secondary), jitterpitchmax = W2(weap, jitterpitchmax, secondary);
             accmodjitter(d, weap, secondary, W2(weap, cooked, true)&W_C_ZOOM && secondary && scale >= 0.9f, jittertime, jitteryawmin, jitteryawmax, jitterpitchmin, jitterpitchmax);
-            d->addjitter(weap, lastmillis, int(ceilf(jittertime*scale)), jitteryawmin*scale, jitteryawmax*scale, jitterpitchmin*scale, jitterpitchmax*scale);
+            d->addjitter(weap, lastmillis, int(ceilf(jittertime*scale)), jitteryawmin*scale, jitteryawmax*scale, jitterpitchmin*scale, jitterpitchmax*scale, W2(weap, jitterpitchdir, secondary));
         }
         projs::shootv(weap, secondary ? HIT(ALT) : 0, sub, offset, scale, from, shots, d, true);
         client::addmsg(N_SHOOT, "ri8iv", d->clientnum, lastmillis-game::maptime, weap, secondary ? HIT(ALT) : 0, cooked, int(from.x*DMF), int(from.y*DMF), int(from.z*DMF), shots.length(), shots.length()*sizeof(shotmsg)/sizeof(int), shots.getbuf());

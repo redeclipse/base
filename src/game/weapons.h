@@ -565,13 +565,17 @@ WPFVAR(IDF_GAMEMOD, itemhalo, 0, FVAR_MAX,
 WPFVAR(IDF_GAMEMOD, itemhaloammo, 0, FVAR_MAX,
     9,          9,          18,         15,         12,         15,         9,          12,         15,         6,          6,          12,         1.5f
 );
+WPVARM(IDF_GAMEMOD, jitterpitchdir, VAR_MIN, VAR_MAX,
+    0,          3,          0,          0,          2,          0,          0,          0,          0,          0,          0,          0,          0,
+    0,          3,          0,          0,          2,          0,          0,          0,          0,          0,          0,          0,          0
+);
 WPFVARM(IDF_GAMEMOD, jitterpitchmax, FVAR_MIN, FVAR_MAX,
-    1.0f,       1.0f,       1.0f,       10.0f,      6.0f,       0.2f,       5.0f,       3.0f,       4.0f,       1.0f,       1.0f,       1.0f,       1.0f,
-    1.0f,       2.0f,       1.0f,       20.0f,      3.5f,       0.5f,       15.0f,      3.0f,       5.5f,       1.0f,       1.0f,       1.0f,       1.0f
+    1.0f,       1.0f,       1.0f,       5.0f,       3.0f,       0.2f,       2.5f,       3.0f,       4.0f,       1.0f,       1.0f,       1.0f,       1.0f,
+    1.0f,       2.0f,       1.0f,       10.0f,      1.75f,      0.5f,       7.5f,       3.0f,       5.5f,       1.0f,       1.0f,       1.0f,       1.0f
 );
 WPFVARM(IDF_GAMEMOD, jitterpitchmin, FVAR_MIN, FVAR_MAX,
-    1.0f,       1.0f,       1.0f,       5.0f,       0.75f,      0.1f,       2.5f,       1.5f,       1.8f,       1.0f,       1.0f,       1.0f,       1.0f,
-    1.0f,       2.0f,       1.0f,       10.0f,      2.0f,       0.2f,       10.0f,      1.5f,       2.5f,       1.0f,       1.0f,       1.0f,       1.0f
+    1.0f,       1.0f,       1.0f,       2.5f,       0.25f,      0.1f,       1.25f,      1.5f,       1.8f,       1.0f,       1.0f,       1.0f,       1.0f,
+    1.0f,       2.0f,       1.0f,       5.0f,       1.0f,       0.2f,       5.0f,       1.5f,       2.5f,       1.0f,       1.0f,       1.0f,       1.0f
 );
 WPFVARM(IDF_GAMEMOD, jitterpitchcrouch, FVAR_MIN, FVAR_MAX,
     0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,
@@ -629,9 +633,9 @@ WPFVARM(IDF_GAMEMOD, jitteryawinair, FVAR_MIN, FVAR_MAX,
     0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,
     0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f
 );
-WPVARM(IDF_GAMEMOD, jittertime, 0, MAXPARAMS,
-    50,         13,         50,         75,         10,         10,         50,         50,         75,        75,         50,         150,        50,
-    80,         20,         80,         125,        50,         125,        180,        50,        125,        75,         50,         150,        50
+WPVARM(IDF_GAMEMOD, jittertime, VAR_MIN, VAR_MAX,
+    50,         13,         50,         75,         55,         20,         50,         50,         75,         75,         50,         150,        50,
+    80,         20,         80,         125,        100,        125,        180,        50,         125,        75,         50,         150,        50
 );
 WPFVARM(IDF_GAMEMOD, jittertimecrouch, FVAR_MIN, FVAR_MAX,
     0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,
