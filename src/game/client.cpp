@@ -1002,7 +1002,6 @@ namespace client
     CLPRIVCMD(player, PRIV_PLAYER);
     CLPRIVCMD(supporter, PRIV_SUPPORTER);
     CLPRIVCMD(moderator, PRIV_MODERATOR);
-    CLPRIVCMD(operator, PRIV_OPERATOR);
     CLPRIVCMD(administrator, PRIV_ADMINISTRATOR);
     CLPRIVCMD(developer, PRIV_DEVELOPER);
     CLPRIVCMD(founder, PRIV_CREATOR);

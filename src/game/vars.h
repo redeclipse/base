@@ -80,7 +80,7 @@ GSVAR(IDF_ADMIN, censorwords, "");
 GVAR(IDF_ADMIN, setinfolock, 0, PRIV_NONE, PRIV_MAX);
 GVAR(IDF_ADMIN, setinfowait, 0, 1000, VAR_MAX);
 
-GVAR(IDF_ADMIN, demolock, 0, PRIV_OPERATOR, PRIV_MAX);
+GVAR(IDF_ADMIN, demolock, 0, PRIV_MODERATOR, PRIV_MAX);
 GVAR(IDF_ADMIN, democount, 1, 10, VAR_MAX);
 GVAR(IDF_ADMIN, demomaxsize, 1, 16777216, VAR_MAX - 0x10000); // Variable is in bytes. It should fit in int type. See src/game/server.cpp:adddemo()
 GVAR(IDF_ADMIN, demoautorec, 0, 1, 1); // 0 = off, 1 = automatically record demos each match
@@ -91,8 +91,8 @@ GVAR(IDF_ADMIN, demoserverkeeptime, 0, 86400, VAR_MAX);
 GVAR(IDF_MODERATOR, speclock, 0, PRIV_MODERATOR, PRIV_MAX);
 GVAR(IDF_MODERATOR, teamlock, 0, PRIV_MODERATOR, PRIV_MAX);
 GVAR(IDF_MODERATOR, kicklock, 0, PRIV_MODERATOR, PRIV_MAX);
-GVAR(IDF_MODERATOR, allowlock, 0, PRIV_OPERATOR, PRIV_MAX);
-GVAR(IDF_MODERATOR, banlock, 0, PRIV_OPERATOR, PRIV_MAX);
+GVAR(IDF_MODERATOR, allowlock, 0, PRIV_MODERATOR, PRIV_MAX);
+GVAR(IDF_MODERATOR, banlock, 0, PRIV_MODERATOR, PRIV_MAX);
 GVAR(IDF_MODERATOR, mutelock, 0, PRIV_MODERATOR, PRIV_MAX);
 GVAR(IDF_MODERATOR, limitlock, 0, PRIV_MODERATOR, PRIV_MAX);
 GVAR(IDF_MODERATOR, exceptlock, 0, PRIV_MODERATOR, PRIV_MAX);
@@ -107,12 +107,12 @@ GVAR(IDF_MODERATOR, iphostlock, 0, 0, PRIV_MAX); // require this level to see ip
 GVAR(IDF_ADMIN, overflowlock, 0, PRIV_MODERATOR, PRIV_MAX); // normal message queue override
 GVAR(IDF_ADMIN, overflowsize, 0, 255, VAR_MAX); // kick if queued messages >= this
 
-GVAR(IDF_ADMIN, floodlock, 0, PRIV_OPERATOR, PRIV_MAX);
+GVAR(IDF_ADMIN, floodlock, 0, PRIV_MODERATOR, PRIV_MAX);
 GVAR(IDF_ADMIN, floodmute, 0, 3, VAR_MAX); // automatically mute player when warned this many times
 GVAR(IDF_ADMIN, floodtime, 250, 10000, VAR_MAX); // time span to check for floody messages
 GVAR(IDF_ADMIN, floodlines, 1, 5, VAR_MAX); // number of lines in aforementioned span before too many
 
-GVAR(IDF_ADMIN, teamkilllock, 0, PRIV_OPERATOR, PRIV_MAX);
+GVAR(IDF_ADMIN, teamkilllock, 0, PRIV_MODERATOR, PRIV_MAX);
 GVAR(IDF_ADMIN, teamkillwarn, 1, 3, VAR_MAX); // automatically warn player every this many team kills
 GVAR(IDF_ADMIN, teamkillkick, 0, 3, VAR_MAX); // automatically kick player at this many warnings
 GVAR(IDF_ADMIN, teamkillban, 0, 4, VAR_MAX); // automatically ban player at this many warnings
@@ -163,7 +163,7 @@ GVAR(IDF_MODERATOR, mutslockfilter, 0, G_M_FILTER, G_M_ALL);
 GVAR(IDF_MODERATOR, mutslockforce, 0, 0, G_M_ALL);
 
 GVAR(IDF_MODERATOR, mapsfilter, 0, 1, 2); // 0 = off, 1 = filter based on mutators, 2 = also filter based on players
-GVAR(IDF_MODERATOR, mapslock, 0, PRIV_OPERATOR, PRIV_MAX);
+GVAR(IDF_MODERATOR, mapslock, 0, PRIV_MODERATOR, PRIV_MAX);
 GVAR(IDF_MODERATOR, mapslocktype, 0, 2, 2); // 0 = off, 1 = allow maps, 2 = rotation maps
 
 GSVAR(IDF_READONLY, previousmaps, "");

@@ -319,8 +319,7 @@ namespace auth
             case 'c': case 'C': n = PRIV_CREATOR; break;
             case 'd': case 'D': n = PRIV_DEVELOPER; break;
             case 'a': case 'A': n = PRIV_ADMINISTRATOR; break;
-            case 'o': case 'O': n = PRIV_OPERATOR; break;
-            case 'm': case 'M': n = PRIV_MODERATOR; break;
+            case 'o': case 'O': case 'm': case 'M': n = PRIV_MODERATOR; break;
             case 's': case 'S': n = PRIV_SUPPORTER; break;
             case 'u': case 'U': n = PRIV_PLAYER; break;
             default: break;
@@ -332,8 +331,7 @@ namespace auth
             for(const char *c = localops[i].flags; *c; c++) switch(*c)
             {
                 case 'a': case 'A': o = PRIV_ADMINISTRATOR; break;
-                case 'o': case 'O': o = PRIV_OPERATOR; break;
-                case 'm': case 'M': o = PRIV_MODERATOR; break;
+                case 'o': case 'O': case 'm': case 'M': o = PRIV_MODERATOR; break;
                 case 's': case 'S': o = PRIV_SUPPORTER; break;
                 default: break;
             }
