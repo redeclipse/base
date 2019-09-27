@@ -2548,6 +2548,7 @@ void texcolor(float *r, float *g, float *b)
     propagatevslot(s.variants, 1<<VSLOT_COLOR);
 }
 COMMAND(0, texcolor, "fff");
+ICOMMAND(0, texcolour, "fff", (float *r, float *g, float *b), texcolor(r, g, b));
 
 void texcoastscale(float *value)
 {
