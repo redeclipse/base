@@ -2,12 +2,12 @@
 
 #include "engine.h"
 #include <stddef.h>
-#if defined(USE_STEAM) && USE_STEAM == 1
+#if defined(USE_STEAM)
 #define HAS_STEAM 1
 #include <steam_gameserver.h>
 #include <steam_api_flat.h> // C++ API crashes when compiled with MingW
 #endif
-#if !defined(STANDALONE) && defined(USE_DISCORD) && USE_DISCORD == 1
+#if !defined(STANDALONE) && defined(USE_DISCORD)
 #define HAS_DISCORD 1
 #define DISCORD_DYNAMIC_LIB 1
 #include <discord_rpc.h>
