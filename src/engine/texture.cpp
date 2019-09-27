@@ -2540,15 +2540,14 @@ void texalpha(float *front, float *back)
 }
 COMMAND(0, texalpha, "ff");
 
-void texcolor(float *r, float *g, float *b)
+void texcolour(float *r, float *g, float *b)
 {
     if(!defslot) return;
     Slot &s = *defslot;
     s.variants->colorscale = vec(clamp(*r, 0.0f, 2.0f), clamp(*g, 0.0f, 2.0f), clamp(*b, 0.0f, 2.0f));
     propagatevslot(s.variants, 1<<VSLOT_COLOR);
 }
-COMMAND(0, texcolor, "fff");
-ICOMMAND(0, texcolour, "fff", (float *r, float *g, float *b), texcolor(r, g, b));
+COMMAND(0, texcolour, "fff");
 
 void texcoastscale(float *value)
 {

@@ -560,7 +560,7 @@ void saveslotconfig(stream *h, Slot &s, int index, bool decal)
     if(s.variants->rotation) h->printf("texrotate %d\n", s.variants->rotation);
     if(s.variants->scale != 1) h->printf("texscale %g\n", s.variants->scale);
     if(s.variants->colorscale != vec(1, 1, 1))
-        h->printf("texcolor %f %f %f\n", s.variants->colorscale.x, s.variants->colorscale.y, s.variants->colorscale.z);
+        h->printf("texcolour %f %f %f\n", s.variants->colorscale.x, s.variants->colorscale.y, s.variants->colorscale.z);
     if(s.variants->palette || s.variants->palindex) h->printf("texpalette %d %d\n", s.variants->palette, s.variants->palindex);
     if(s.variants->refractscale > 0)
         h->printf("texrefract %g %g %g %g", s.variants->refractscale, s.variants->refractcolor.x, s.variants->refractcolor.y, s.variants->refractcolor.z);
