@@ -1325,8 +1325,8 @@ namespace hud
                             break;
                     }
                 }
-                else if(delay) ty += draw_textf("%s: Down for \fs\fy%s\fS", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1, game::player1 == game::player1 && game::player1->state == CS_WAITING ? "Please Wait" : "Fragged", timestr(delay));
-                else if(game::player1 == game::player1 && game::player1->state == CS_WAITING && m_play(game::gamemode) && maxalive > 0 && maxalivequeue)
+                else if(delay) ty += draw_textf("%s: Down for \fs\fy%s\fS", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1, game::player1->state == CS_WAITING ? "Please Wait" : "Fragged", timestr(delay));
+                else if(game::player1->state == CS_WAITING && m_play(game::gamemode) && maxalive > 0 && maxalivequeue)
                 {
                     switch(game::player1->queuepos)
                     {
@@ -1341,7 +1341,7 @@ namespace hud
                             break;
                     }
                 }
-                if(game::player1 == game::player1 && game::player1->state != CS_WAITING && shownotices >= 2 && lastmillis-game::player1->lastdeath >= 500)
+                if(game::player1->state != CS_WAITING && shownotices >= 2 && lastmillis-game::player1->lastdeath >= 500)
                 {
                     pushfont("little");
                     ty += draw_textf("Press \fs\fw\f{=primary}\fS to enter respawn queue", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1);
@@ -1351,7 +1351,7 @@ namespace hud
             else
             {
                 ty += draw_textf("Ready to respawn", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1);
-                if(game::player1 == game::player1 && game::player1->state != CS_WAITING && shownotices >= 2)
+                if(game::player1->state != CS_WAITING && shownotices >= 2)
                 {
                     pushfont("little");
                     ty += draw_textf("Press \fs\fw\f{=primary}\fS to respawn now", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1);
@@ -1366,7 +1366,7 @@ namespace hud
             }
             if(shownotices >= 2)
             {
-                if(game::player1 == game::player1 && !client::demoplayback)
+                if(!client::demoplayback)
                 {
                     if(game::player1->state == CS_WAITING && shownotices >= 2)
                     {
@@ -1397,7 +1397,7 @@ namespace hud
                 ty += draw_textf("%s", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1, game::player1->obit);
                 popfont();
             }
-            if(game::player1 == game::player1 && shownotices >= 2 && game::allowmove(game::player1))
+            if(shownotices >= 2 && game::allowmove(game::player1))
             {
                 pushfont("emphasis");
                 static vector<actitem> actitems;
