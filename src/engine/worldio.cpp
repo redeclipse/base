@@ -2165,22 +2165,18 @@ struct sortmapc
 
     static bool compare(sortmapc &a, sortmapc &b)
     {
-        int alen = strlen(a.title), blen = strlen(b.title);
-        loopi(alen)
+        loopi(strlen(a.title))
         {
-            if(i >= blen) return false;
-            if(a.title[i] > b.title[i]) return false;
+            if(!b.title[i] || a.title[i] > b.title[i]) return false;
             if(a.title[i] < b.title[i]) return true;
         }
         return true;
     }
 };
 
-char *sortmaplist(const char *names)
+const char *sortmaplist(const char *names)
 {
-    static bigstring result;
-    result[0] = 0;
-    if(!names || !*names) return result;
+    if(!names || !*names) return "";
     vector<char *> mapnames;
     vector<sortmapc> maplist;
     explodelist(names, mapnames);
@@ -2196,7 +2192,14 @@ char *sortmaplist(const char *names)
     }
     mapnames.deletearrays();
     maplist.sort(sortmapc::compare);
-    loopv(maplist) concformatstring(result, "%s%s", result[0] ? " " : "", maplist[i].name);
-    return result;
+    static vector<char> buf;
+    buf.setsize(0);
+    loopv(maplist)
+    {
+        if(!buf.empty()) buf.add(' ');
+        buf.put(maplist[i].name, strlen(maplist[i].name));
+    }
+    buf.add('\0');
+    return buf.getbuf();
 }
 ICOMMAND(0, sortmaps, "s", (char *s), result(sortmaplist(s)));

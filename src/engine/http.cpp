@@ -608,8 +608,8 @@ namespace json
 {
     int print(jsobj *j, char *dst, int level, size_t len)
     {
-        bigstring data = "";
         if(!j) return 0;
+        bigstring data = "";
         int count = 0;
         switch(j->type)
         {
