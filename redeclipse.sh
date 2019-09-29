@@ -72,10 +72,10 @@ redeclipse_setup() {
         elif [ -e ".git" ]; then
             REDECLIPSE_BRANCH="devel"
         else
-            REDECLIPSE_BRANCH="stable"
+            REDECLIPSE_BRANCH="master"
         fi
     fi
-    if [ -z "${REDECLIPSE_HOME+isset}" ] && [ "${REDECLIPSE_BRANCH}" != "stable" ] && [ "${REDECLIPSE_BRANCH}" != "inplace" ] && [ "${REDECLIPSE_BRANCH}" != "steam" ]; then REDECLIPSE_HOME="home"; fi
+    if [ -z "${REDECLIPSE_HOME+isset}" ] && [ "${REDECLIPSE_BRANCH}" != "stable" ] && [ "${REDECLIPSE_BRANCH}" != "steam" ]; then REDECLIPSE_HOME="home"; fi
     if [ -n "${REDECLIPSE_HOME+isset}" ]; then
         if [ ! -d "${REDECLIPSE_HOME}" ]; then
             mkdir -p "${REDECLIPSE_HOME}" >/dev/null 2>&1

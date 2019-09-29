@@ -29,10 +29,10 @@ setlocal enableextensions enabledelayedexpansion
         ) else if EXIST .git (
             set REDECLIPSE_BRANCH=devel
         ) else (
-            set REDECLIPSE_BRANCH=stable
+            set REDECLIPSE_BRANCH=master
         )
     )
-    if NOT DEFINED REDECLIPSE_HOME if NOT "%REDECLIPSE_BRANCH%" == "stable" if NOT "%REDECLIPSE_BRANCH%" == "inplace" if NOT "%REDECLIPSE_BRANCH%" == "steam" set REDECLIPSE_HOME=home
+    if NOT DEFINED REDECLIPSE_HOME if NOT "%REDECLIPSE_BRANCH%" == "stable" if NOT "%REDECLIPSE_BRANCH%" == "steam" set REDECLIPSE_HOME=home
     if DEFINED REDECLIPSE_HOME (
         if NOT EXIST "%REDECLIPSE_HOME%" mkdir "%REDECLIPSE_HOME%"> nul 2>&1
         copy /y nul "%REDECLIPSE_HOME%\test.tmp"> nul 2>&1 && (
