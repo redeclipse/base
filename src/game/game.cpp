@@ -369,13 +369,13 @@ namespace game
     FVAR(IDF_PERSIST, mixershockscroll1, -16, 0.25f, 16);
     FVAR(IDF_PERSIST, mixershockscroll2, -16, 0.45f, 16);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, mixerbufftex, "textures/residuals/buff", 0);
-    FVAR(IDF_PERSIST, mixerbuffblend, 0.f, 0.9f, 1.f);
+    FVAR(IDF_PERSIST, mixerbuffblend, 0.f, 0.4f, 1.f);
     FVAR(IDF_PERSIST, mixerbuffintensity, 0.f, 0.9f, 1.f);
     FVAR(IDF_PERSIST, mixerbuffglowblend, 0.f, 0.25f, 1.f);
     FVAR(IDF_PERSIST, mixerbuffglowintensity, 0.f, 1.f, 20);
     FVAR(IDF_PERSIST, mixerbuffscroll1, -16, 0.125f, 16);
     FVAR(IDF_PERSIST, mixerbuffscroll2, -16, -0.125f, 16);
-    VAR(IDF_PERSIST, mixerbuffpulse, 0, 0, 1000);
+    VAR(IDF_PERSIST, mixerbuffpulse, 0, 0, VAR_MAX);
     FVAR(IDF_PERSIST, mixerbuffpulsemin, 0, 0.25f, 1);
     FVAR(IDF_PERSIST, mixerbuffpulsemax, 0, 1, 1);
     VAR(IDF_PERSIST, mixerbufftone, -1, -1, CTONE_MAX-1);

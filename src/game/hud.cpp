@@ -117,7 +117,7 @@ namespace hud
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, deadtex, "<grey>textures/icons/dead", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, dominatingtex, "<grey>textures/icons/dominating", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, dominatedtex, "<grey>textures/icons/dominated", 3);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, inputtex, "textures/icons/menu", 3);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, inputtex, "<grey><rotate:1>textures/icons/arrow", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, waitingtex, "<grey>textures/icons/waiting", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, spectatortex, "<grey>textures/icons/spectator", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, chattex, "<grey>textures/icons/chat", 3);
