@@ -326,6 +326,7 @@ namespace aiman
         else balance += G(botoffset)*numt;
         int bots = balance-people;
         if(bots > blimit) balance -= bots-blimit;
+        if(numt > 1 && (balance%numt) != 0) balance -= balance%numt;
         if(balance > 0)
         {
             while(numclients(-1, true, A_BOT) < balance) if(!addai(A_BOT)) break;
