@@ -166,7 +166,7 @@ namespace projs
         else
         {
             hitmsg &h = hits.add();
-            h.flags = HIT(PROJ)|HIT(TORSO);
+            h.flags = HIT(PROJ)|HIT(HEAD);
             h.proj = p->id;
             h.target = p->owner->clientnum;
             h.dist = 0;
@@ -188,30 +188,51 @@ namespace projs
         if(gameent::is(d))
         {
             gameent *e = (gameent *)d;
-            float rdist[3] = { -1, -1, -1 };
-            radialpush(e->legs, e->lrad.x, e->lrad.y, e->lrad.z, e->lrad.z, rdist[0]);
-            radialpush(e->torso, e->trad.x, e->trad.y, e->trad.z, e->trad.z, rdist[1]);
-            radialpush(e->head, e->hrad.x, e->hrad.y, e->hrad.z, e->hrad.z, rdist[2]);
-            int closest = -1;
-            loopi(3) if(rdist[i] >= 0 && (closest < 0 || rdist[i] <= rdist[closest])) closest = i;
-            loopi(3) if(rdist[i] >= 0)
+            if(actors[e->actortype].hitboxes)
             {
-                int flag = 0;
-                switch(i)
+                float rdist[3] = { -1, -1, -1 };
+                radialpush(e->legs, e->lrad.x, e->lrad.y, e->lrad.z, e->lrad.z, rdist[0]);
+                radialpush(e->torso, e->trad.x, e->trad.y, e->trad.z, e->trad.z, rdist[1]);
+                radialpush(e->head, e->hrad.x, e->hrad.y, e->hrad.z, e->hrad.z, rdist[2]);
+                int closest = -1;
+                loopi(3) if(rdist[i] >= 0 && (closest < 0 || rdist[i] <= rdist[closest])) closest = i;
+                loopi(3) if(rdist[i] >= 0)
                 {
-                    case 2: flag = closest != i || rdist[i] > WF(WK(proj.flags), proj.weap, headmin, WS(proj.flags)) ? HIT(WHIPLASH) : HIT(HEAD); break;
-                    case 1: flag = HIT(TORSO); break;
-                    case 0: default: flag = HIT(LIMB); break;
+                    int flag = 0;
+                    switch(i)
+                    {
+                        case 2: flag = closest != i || rdist[i] > WF(WK(proj.flags), proj.weap, headmin, WS(proj.flags)) ? HIT(WHIPLASH) : HIT(HEAD); break;
+                        case 1: flag = HIT(TORSO); break;
+                        case 0: default: flag = HIT(LIMB); break;
+                    }
+                    if(rdist[i] <= radius)
+                    {
+                        hitpush(e, proj, flag|flags, radius, rdist[i], proj.curscale);
+                        radiated = true;
+                    }
+                    else if(push && rdist[i] <= maxdist)
+                    {
+                        hitpush(e, proj, flag|HIT(WAVE), maxdist, rdist[i], proj.curscale);
+                        radiated = true;
+                    }
                 }
-                if(rdist[i] <= radius)
+            }
+            else
+            {
+                float dist = -1;
+                radialpush(e->o, e->xradius, e->yradius, e->height, e->aboveeye, dist);
+                if(dist >= 0)
                 {
-                    hitpush(e, proj, flag|flags, radius, rdist[i], proj.curscale);
-                    radiated = true;
-                }
-                else if(push && rdist[i] <= maxdist)
-                {
-                    hitpush(e, proj, flag|HIT(WAVE), maxdist, rdist[i], proj.curscale);
-                    radiated = true;
+                    if(dist <= radius)
+                    {
+                        hitpush(e, proj, HIT(HEAD)|flags, radius, dist, proj.curscale);
+                        radiated = true;
+                    }
+                    else if(push && dist <= maxdist)
+                    {
+                        hitpush(e, proj, HIT(HEAD)|HIT(WAVE), maxdist, dist, proj.curscale);
+                        radiated = true;
+                    }
                 }
             }
         }

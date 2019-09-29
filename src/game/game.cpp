@@ -268,7 +268,7 @@ namespace game
 
     VAR(IDF_PERSIST, deathanim, 0, 2, 3); // 0 = hide player when dead, 1 = old death animation, 2 = ragdolls, 3 = ragdolls, but hide in duke
     VAR(IDF_PERSIST, deathfade, 0, 1, 1); // 0 = don't fade out dead players, 1 = fade them out
-    VAR(IDF_PERSIST, deathmaxfade, 0, 0, VAR_MAX);
+    VAR(IDF_PERSIST, deathmaxfade, 0, 5000, VAR_MAX);
     VAR(IDF_PERSIST, deathbuttonmash, 0, 1000, VAR_MAX);
     FVAR(IDF_PERSIST, bloodscale, 0, 1, 1000);
     VAR(IDF_PERSIST, bloodfade, 1, 5000, VAR_MAX);
@@ -281,7 +281,6 @@ namespace game
     FVAR(IDF_PERSIST, impulsescale, 0, 1, 1000);
     VAR(IDF_PERSIST, impulsefade, 0, 250, VAR_MAX);
     VAR(IDF_PERSIST, ragdolleffect, 2, 500, VAR_MAX);
-    VAR(IDF_PERSIST, deathscale, 0, 1, 1); // 0 = don't scale out dead players, 1 = scale them out
 
     FVAR(IDF_PERSIST, playerblend, 0, 1, 1);
     FVAR(IDF_PERSIST, playereditblend, 0, 1, 1);
@@ -481,7 +480,7 @@ namespace game
 
     const char *vanitymodel(gameent *d)
     {
-        if(d->actortype >= A_ENEMY) return actor[d->actortype%A_MAX].name;
+        if(d->actortype >= A_ENEMY) return actors[d->actortype%A_MAX].name;
         return playertypes[d->model%PLAYERTYPES][5];
     }
 
@@ -857,6 +856,7 @@ namespace game
     float spawnfade(gameent *d)
     {
         int len = max(m_delay(d->actortype, gamemode, mutators, d->team), 1);
+        if(AA(d->actortype, abilities)&(1<<A_A_KAMIKAZE) && (len <= 0 || len > 1000)) len = 1000;
         if(deathmaxfade && (len <= 0 || len > deathmaxfade)) len = deathmaxfade;
         if(len > 0)
         {
@@ -1029,6 +1029,7 @@ namespace game
 
     void impulseeffect(gameent *d, int effect)
     {
+        if(!actors[d->actortype].jetfx) return;
         int num = int((effect ? 3 : 10)*impulsescale);
         switch(effect)
         {
@@ -1047,6 +1048,7 @@ namespace game
 
     void footstep(gameent *d, int curfoot)
     {
+        if(!actors[d->actortype].steps) return;
         bool moving = d->move || d->strafe, liquid = physics::liquidcheck(d), onfloor = d->physstate >= PHYS_SLOPE || d->onladder || d->impulse[IM_TYPE] == IM_T_PARKOUR;
         if(curfoot < 0 || (moving && (liquid || onfloor)))
         {
@@ -1206,7 +1208,7 @@ namespace game
 
         int restime[W_R_MAX] = { d->burntime, d->bleedtime, d->shocktime };
         loopi(W_R_MAX) if(d->lastres[i] > 0 && lastmillis-d->lastres[i] >= restime[i]) d->resetresidual(i);
-        if(gs_playing(gamestate) && d->state == CS_ALIVE)
+        if(gs_playing(gamestate) && d->state == CS_ALIVE && actors[d->actortype].steps)
         {
             int curfoot = d->curfoot();
             bool hassound = footstepsounds&(d != focus ? 2 : 1);
@@ -2103,7 +2105,7 @@ namespace game
         client::addmsg(N_SUICIDE, "ri3", d->clientnum, flags, d->inmaterial);
         d->suicided = lastmillis;
     }
-    ICOMMAND(0, suicide, "",  (), { suicide(player1, 0); });
+    ICOMMAND(0, suicide, "",  (), { suicide(player1); });
 
     vec pulsecolour(physent *d, int i, int cycle)
     {
@@ -2586,7 +2588,7 @@ namespace game
                 gameentity &e = *(gameentity *)entities::ents[i];
                 if(e.type == MAPSOUND || e.type == MAPMODEL) continue;
                 vec pos = e.o;
-                if(!camcheck(pos, (e.type == PLAYERSTART ? PLAYERHEIGHT : enttype[e.type].radius)+2)) continue;
+                if(!camcheck(pos, (e.type == PLAYERSTART ? actors[A_PLAYER].height : enttype[e.type].radius)+2)) continue;
                 cameras.add(new cament(cameras.length(), cament::ENTITY, i, pos));
             }
             ai::getwaypoints();
@@ -2594,7 +2596,7 @@ namespace game
             {
                 ai::waypoint &w = ai::waypoints[i];
                 vec pos = w.o;
-                if(!camcheck(pos, PLAYERHEIGHT+2)) continue;
+                if(!camcheck(pos, actors[A_PLAYER].height+2)) continue;
                 cameras.add(new cament(cameras.length(), cament::WAYPOINT, i, pos));
             }
             starttvcamdyn = cameras.length();
@@ -3188,6 +3190,8 @@ namespace game
             mdltype = forceplayermodel >= 0 ? forceplayermodel : d->model%PLAYERTYPES,
             mdlidx = third == 1 && d->headless && !nogore && headlessmodels ? 3 : third;
         const char *mdlname = playertypes[mdltype][mdlidx];
+        if(d->actortype > A_PLAYER && d->actortype < A_MAX && actors[d->actortype].mdl && *actors[d->actortype].mdl)
+            mdlname = actors[d->actortype].mdl;
         bool hasweapon = false, secondary = false,
              onfloor = d->physstate >= PHYS_SLOPE || d->onladder || physics::liquidcheck(d),
              melee = d->hasmelee(lastmillis, true, d->sliding(true), onfloor);
@@ -3303,7 +3307,7 @@ namespace game
         }
         if(mdlattach)
         {
-            if(!(mdl.flags&MDL_ONLYSHADOW))
+            if(!(mdl.flags&MDL_ONLYSHADOW) && actors[d->actortype].hastags)
             {
                 if(third != 2)
                 {
@@ -3553,7 +3557,7 @@ namespace game
 
     void rendercheck(gameent *d, bool third)
     {
-        d->checktags();
+        if(actors[d->actortype].hastags) d->checktags();
         float blend = opacity(d, third);
         if(d->state == CS_ALIVE)
         {

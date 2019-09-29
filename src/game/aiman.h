@@ -354,7 +354,7 @@ namespace aiman
                 if(sents[j].attrs[0] < 0 || sents[j].attrs[0] >= A_TOTAL || gamemillis < sents[j].millis) continue;
                 if(sents[j].attrs[5] && sents[j].attrs[5] != triggerid) continue;
                 if(!m_check(sents[j].attrs[3], sents[j].attrs[4], gamemode, mutators)) continue;
-                if(sents[j].attrs[0] == A_TURRET && m_insta(gamemode, mutators)) continue;
+                if(sents[j].attrs[0]+A_ENEMY == A_TURRET && m_insta(gamemode, mutators)) continue;
                 int count = 0, numenemies = 0;
                 loopvrev(clients) if(clients[i]->actortype >= A_ENEMY)
                 {

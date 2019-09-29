@@ -876,7 +876,7 @@ namespace hud
             flamercliprotate, plasmacliprotate, zappercliprotate, riflecliprotate, grenadecliprotate, minecliprotate, rocketcliprotate
         };
         int ammo = game::focus->weapammo[weap][W_A_CLIP], maxammo = W(weap, ammoclip),
-            store = w_reload(weap) ? maxammo : game::focus->weapammo[weap][W_A_STORE], interval = lastmillis-game::focus->weaptime[weap];
+            store = game::focus->actortype >= A_ENEMY || w_reload(weap) ? maxammo : game::focus->weapammo[weap][W_A_STORE], interval = lastmillis-game::focus->weaptime[weap];
         float fade = clipblend*hudblend, skew = clipskew[weap]*clipsize, size = s*skew, offset = s*clipoffset,
               slice = 360/float(maxammo), angle = (maxammo > (cliprots[weap]&4 ? 4 : 3) || maxammo%2 ? 360.f : 360.f-slice*0.5f)-((maxammo-ammo)*slice),
               area = 1-clamp(clipoffs[weap]*2, 1e-3f, 1.f), need = s*skew*area*maxammo, have = 2*M_PI*s*clipoffset,
@@ -1888,7 +1888,7 @@ namespace hud
             gameent *a = game::getclient(d.clientnum);
             if((!onscreenhitsheal && d.damage < 0) || (!onscreenhitsself && a == game::focus)) continue;
             vec o = onscreenhitsfollow && a ? a->center() : d.dir;
-            o.z += PLAYERHEIGHT*onscreenhitsheight;
+            o.z += actors[a->actortype].height*onscreenhitsheight;
             float cx = 0, cy = 0, cz = 0;
             if(!vectocursor(o, cx, cy, cz)) continue;
             float hx = cx*w/onscreenhitsscale, hy = cy*h/onscreenhitsscale, fade = blend*onscreenhitsblend;

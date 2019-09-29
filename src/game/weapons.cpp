@@ -120,7 +120,7 @@ namespace weapons
             }
             client::addmsg(N_RELOAD, "ri3", d->clientnum, lastmillis-game::maptime, weap);
             int oldammo = max(d->weapammo[weap][W_A_CLIP], 0), ammoadd = W(weap, ammoadd);
-            if(W(weap, ammostore))
+            if(d->actortype < A_ENEMY && W(weap, ammostore))
             {
                 store = d->weapammo[weap][W_A_STORE];
                 if(!w_reload(weap)) ammoadd = min(store, ammoadd);

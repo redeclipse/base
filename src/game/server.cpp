@@ -378,8 +378,8 @@ namespace server
         }
 
         vec feetpos(float offset = 0) const { return vec(o).add(vec(0, 0, offset)); }
-        vec headpos(float offset = 0) const { return vec(o).add(vec(0, 0, offset+PLAYERHEIGHT)); }
-        vec center() const { return vec(o).add(vec(0, 0, PLAYERHEIGHT*0.5f)); }
+        vec headpos(float offset = 0) const { return vec(o).add(vec(0, 0, offset+actors[actortype].height)); }
+        vec center() const { return vec(o).add(vec(0, 0, actors[actortype].height*0.5f)); }
     };
 
     struct votecount
@@ -783,8 +783,9 @@ namespace server
     bool dropitems(clientinfo *ci, int flags = DROP_RESET)
     {
         bool kamikaze = false;
+        int ktype = AA(ci->actortype, abilities)&(1<<A_A_KAMIKAZE) ? 3 : G(kamikaze);
         vector<droplist> drop;
-        if(flags&DROP_EXPLODE || (flags&DROP_KAMIKAZE && G(kamikaze) && (G(kamikaze) > 2 || (ci->hasweap(W_GRENADE, m_weapon(ci->actortype, gamemode, mutators)) && (G(kamikaze) > 1 || ci->weapselect == W_GRENADE)))))
+        if(flags&DROP_EXPLODE || (flags&DROP_KAMIKAZE && ktype && (ktype > 2 || (ci->hasweap(W_GRENADE, m_weapon(ci->actortype, gamemode, mutators)) && (ktype > 1 || ci->weapselect == W_GRENADE)))))
         {
             ci->weapshots[W_GRENADE][0].add(1);
             droplist &d = drop.add();
@@ -4911,7 +4912,7 @@ namespace server
             return;
         }
         int oldammo = max(ci->weapammo[weap][W_A_CLIP], 0), ammoadd = W(weap, ammoadd);
-        if(!w_reload(weap) && W(weap, ammostore)) ammoadd = min(ci->weapammo[weap][W_A_STORE], ammoadd);
+        if(ci->actortype < A_ENEMY && !w_reload(weap) && W(weap, ammostore)) ammoadd = min(ci->weapammo[weap][W_A_STORE], ammoadd);
         if(!ammoadd)
         {
             srvmsgft(ci->clientnum, CON_DEBUG, "sync error: reload [%d] failed - no ammo available", weap);

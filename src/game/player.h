@@ -1,27 +1,42 @@
-enum { A_PLAYER = 0, A_BOT, A_TURRET, A_GRUNT, A_DRONE, A_MAX, A_ENEMY = A_TURRET, A_TOTAL = A_MAX-A_ENEMY };
+// Player and other actor definitions
 
+enum { A_PLAYER = 0, A_BOT, A_TURRET, A_GRUNT, A_DRONE, A_ROLLER, A_MAX, A_ENEMY = A_TURRET, A_TOTAL = A_MAX-A_ENEMY };
+
+struct actor
+{
+    const char *name;
+    int id;
+    bool hastags, jetfx, steps, hitboxes, onlyfwd;
+    float height, radius;
+    const char *mdl;
+};
 #ifdef GAMESERVER
-namemap actor[] = {
-    { "player", A_PLAYER },
-    { "bot",    A_BOT },
-    { "turret", A_TURRET },
-    { "grunt",  A_GRUNT },
-    { "drone",  A_DRONE },
+actor actors[] = {
+    { "player", A_PLAYER,   true,   true,   true,   true,   false,  27.f,   5.7f,   NULL },
+    { "bot",    A_BOT,      true,   true,   true,   true,   false,  27.f,   5.7f,   NULL },
+    { "turret", A_TURRET,   true,   true,   true,   true,   false,  27.f,   5.7f,   NULL },
+    { "grunt",  A_GRUNT,    true,   true,   true,   true,   false,  27.f,   5.7f,   NULL },
+    { "drone",  A_DRONE,    true,   true,   true,   true,   false,  27.f,   5.7f,   NULL },
+    { "roller", A_ROLLER,   false,  false,  false,  false,  true,   9.f,    4.5f,   "actors/roller" },
 };
 #else
-extern namemap actor[];
+extern actor actors[];
 #endif
 
 enum
 {
-    A_A_MOVE = 0, A_A_JUMP, A_A_CROUCH, A_A_SLIDE, A_A_BOOST, A_A_PARKOUR, A_A_MELEE, A_A_PRIMARY, A_A_SECONDARY, A_A_PUSHABLE, A_A_AFFINITY, A_A_REGEN, A_A_CLAW, A_A_MAX,
+    A_A_MOVE = 0, A_A_JUMP, A_A_CROUCH, A_A_SLIDE, A_A_BOOST, A_A_PARKOUR, A_A_MELEE,
+    A_A_PRIMARY, A_A_SECONDARY, A_A_PUSHABLE, A_A_AFFINITY, A_A_REGEN, A_A_CLAW, A_A_KAMIKAZE, A_A_MAX,
     A_A_IMFIRST = A_A_SLIDE, A_A_IMLAST = A_A_PARKOUR, A_A_IMPULSE = A_A_IMLAST-A_A_IMFIRST, A_A_IMCOUNT = A_A_IMPULSE+1,
-    A_A_IMOFFSET = (1<<(A_A_SLIDE-A_A_IMFIRST))|(1<<(A_A_BOOST-A_A_IMFIRST))|(1<<(A_A_PARKOUR-A_A_IMFIRST)), A_A_IMRELAX = (1<<(A_A_PARKOUR-A_A_IMFIRST)),
+    A_A_IMOFFSET = (1<<(A_A_SLIDE-A_A_IMFIRST))|(1<<(A_A_BOOST-A_A_IMFIRST))|(1<<(A_A_PARKOUR-A_A_IMFIRST)),
+    A_A_IMRELAX = (1<<(A_A_PARKOUR-A_A_IMFIRST)),
+    A_A_ATTACK = (1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_KAMIKAZE),
     A_A_ALL = (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_CROUCH)|(1<<A_A_SLIDE)|(1<<A_A_BOOST)|(1<<A_A_PARKOUR)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_AFFINITY)|(1<<A_A_REGEN)|(1<<A_A_CLAW),
     A_A_PLAYER = (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_CROUCH)|(1<<A_A_SLIDE)|(1<<A_A_BOOST)|(1<<A_A_PARKOUR)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_AFFINITY)|(1<<A_A_REGEN)|(1<<A_A_CLAW),
     A_A_MOVINGAI = (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_CROUCH)|(1<<A_A_SLIDE)|(1<<A_A_BOOST)|(1<<A_A_PARKOUR)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_AFFINITY)|(1<<A_A_REGEN)|(1<<A_A_CLAW),
     A_A_LESSAI = (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE),
-    A_A_FIXEDAI = (1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)
+    A_A_FIXEDAI = (1<<A_A_PRIMARY)|(1<<A_A_SECONDARY),
+    A_A_ROLLER = (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_PARKOUR)|(1<<A_A_PUSHABLE)|(1<<A_A_KAMIKAZE),
 };
 
 enum
@@ -100,8 +115,6 @@ struct score
 #define isteam(a,b,c,d) (m_play(a) && m_team(a,b) ? (c >= d && c <= numteams(a,b)) : c == T_NEUTRAL)
 #define valteam(a,b)    (a >= b && a <= T_TOTAL)
 
-#define PLAYERRADIUS 5.7f
-#define PLAYERHEIGHT 27.f
 #define PLAYERTYPES 2
 #define PLAYERPATTERNS 16
 
@@ -147,98 +160,98 @@ extern const playerpattern playerpatterns[PLAYERPATTERNS];
 #include "playerdef.h"
 
 APSVAR(IDF_GAMEMOD, vname,
-    "Player",       "Bot",          "Turret",       "Grunt",        "Drone"
+    "Player",       "Bot",          "Turret",       "Grunt",        "Drone",        "Roller"
 );
 APVAR(IDF_GAMEMOD, abilities, 0, A_A_ALL,
-    A_A_PLAYER,     A_A_MOVINGAI,   A_A_FIXEDAI,    A_A_MOVINGAI,   A_A_LESSAI
+    A_A_PLAYER,     A_A_MOVINGAI,   A_A_FIXEDAI,    A_A_MOVINGAI,   A_A_LESSAI,     A_A_ROLLER
 );
 APVAR(IDF_GAMEMOD, collide, 0, A_C_ALL,
-    A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL
+    A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL
 );
 APVAR(IDF_GAMEMOD, health, 1, VAR_MAX,
-    1000,           1000,           1000,           500,            500
+    1000,           1000,           1000,           500,            500,            500
 );
 APVAR(IDF_GAMEMOD, hurtstop, 1, VAR_MAX,
-    0,              0,              0,              100,            500
+    0,              0,              0,              100,            500,            100
 );
 APVAR(IDF_GAMEMOD, maxcarry, 0, W_LOADOUT,
-    2,              2,              0,              0,              0
-);
-APVAR(IDF_GAMEMOD, teamdamage, 0, A_T_ALL,
-    A_T_PLAYER,     A_T_AI,         A_T_AI,         A_T_AI,         A_T_AI
-);
-APVAR(IDF_GAMEMOD, weapongladiator, 0, W_ALL-1,
-    W_CLAW,         W_CLAW,         W_SMG,          W_PISTOL,       W_CLAW
-);
-APVAR(IDF_GAMEMOD, weaponinsta, 0, W_ALL-1,
-    W_RIFLE,        W_RIFLE,        W_RIFLE,        W_RIFLE,        W_CLAW
-);
-APVAR(IDF_GAMEMOD, weaponkaboom, 0, W_ALL-1,
-    W_GRENADE,      W_GRENADE,      W_GRENADE,      W_GRENADE,      W_CLAW
-);
-APVAR(IDF_GAMEMOD, weaponmedieval, 0, W_ALL-1,
-    W_SWORD,        W_SWORD,        W_RIFLE,        W_SWORD,        W_CLAW
-);
-APVAR(IDF_GAMEMOD, weaponrace, 0, W_ALL-1,
-    W_CLAW,         W_CLAW,         W_SMG,          W_PISTOL,       W_CLAW
-);
-APVAR(IDF_GAMEMOD, weaponspawn, 0, W_ALL-1,
-    W_PISTOL,       W_PISTOL,       W_SMG,          W_PISTOL,       W_CLAW
+    2,              2,              0,              0,              0,              0
 );
 APFVAR(IDF_GAMEMOD, scale, FVAR_NONZERO, FVAR_MAX,
-    1,             1,               0.5f,           0.85f,          0.7f
+    1,             1,               0.5f,           0.85f,          0.7f,           1.f
 );
 APVAR(IDF_GAMEMOD, spawndelay, 0, VAR_MAX,
-    5000,          5000,            30000,          30000,          30000
+    5000,          5000,            30000,          30000,          30000,          30000
 );
 APVAR(IDF_GAMEMOD, spawndelaybomber, 0, VAR_MAX,
-    3000,          3000,            30000,          30000,          30000
+    3000,          3000,            30000,          30000,          30000,          30000
 );
 APVAR(IDF_GAMEMOD, spawndelaycapture, 0, VAR_MAX,
-    5000,          5000,            30000,          30000,          30000
+    5000,          5000,            30000,          30000,          30000,          30000
 );
 APVAR(IDF_GAMEMOD, spawndelaydefend, 0, VAR_MAX,
-    5000,          5000,            30000,          30000,          30000
+    5000,          5000,            30000,          30000,          30000,          30000
 );
 APVAR(IDF_GAMEMOD, spawndelaygauntlet, 0, VAR_MAX,
-    3000,          3000,            30000,          30000,          30000
+    3000,          3000,            30000,          30000,          30000,          30000
 );
 APFVAR(IDF_GAMEMOD, spawndelayinstascale, 0, FVAR_MAX,
-    0.5f,          0.5f,            0.75f,          0.75f,          0.75f
+    0.5f,          0.5f,            0.75f,          0.75f,          0.75f,          0.75f
 );
 APVAR(IDF_GAMEMOD, spawndelayrace, 0, VAR_MAX,
-    1000,          1000,            10000,          10000,          10000
+    1000,          1000,            10000,          10000,          10000,          10000
 );
 APVAR(IDF_GAMEMOD, spawngrenades, 0, 2,
-    0,              0,              0,              0,              0
+    0,              0,              0,              0,              0,              0
 );
 APVAR(IDF_GAMEMOD, spawnmines, 0, 2,
-    0,              0,              0,              0,              0
+    0,              0,              0,              0,              0,              0
+);
+APVAR(IDF_GAMEMOD, teamdamage, 0, A_T_ALL,
+    A_T_PLAYER,     A_T_AI,         A_T_AI,         A_T_AI,         A_T_AI,         A_T_AI
+);
+APVAR(IDF_GAMEMOD, weapongladiator, 0, W_ALL-1,
+    W_CLAW,         W_CLAW,         W_SMG,          W_PISTOL,       W_CLAW,         W_CLAW
+);
+APVAR(IDF_GAMEMOD, weaponinsta, 0, W_ALL-1,
+    W_RIFLE,        W_RIFLE,        W_RIFLE,        W_RIFLE,        W_CLAW,         W_CLAW
+);
+APVAR(IDF_GAMEMOD, weaponkaboom, 0, W_ALL-1,
+    W_GRENADE,      W_GRENADE,      W_GRENADE,      W_GRENADE,      W_CLAW,         W_CLAW
+);
+APVAR(IDF_GAMEMOD, weaponmedieval, 0, W_ALL-1,
+    W_SWORD,        W_SWORD,        W_RIFLE,        W_SWORD,        W_CLAW,         W_CLAW
+);
+APVAR(IDF_GAMEMOD, weaponrace, 0, W_ALL-1,
+    W_CLAW,         W_CLAW,         W_SMG,          W_PISTOL,       W_CLAW,         W_CLAW
+);
+APVAR(IDF_GAMEMOD, weaponspawn, 0, W_ALL-1,
+    W_PISTOL,       W_PISTOL,       W_SMG,          W_PISTOL,       W_CLAW,         W_CLAW
 );
 // these are modified by gameent::configure() et al
 APFVAR(IDF_GAMEMOD, speed, 0, FVAR_MAX,
-    85,             85,             0,              85,             100
+    85,             85,             0,              85,             100,            100
 );
 APFVAR(IDF_GAMEMOD, speedextra, FVAR_MIN, FVAR_MAX,
-    0,              0,              0,              0,              0
+    0,              0,              0,              0,              0,              0
 );
 APFVAR(IDF_GAMEMOD, jumpspeed, 0, FVAR_MAX,
-    110,            110,            0,              110,            90
+    110,            110,            0,              110,            90,             75
 );
 APFVAR(IDF_GAMEMOD, jumpspeedextra, FVAR_MIN, FVAR_MAX,
-    0,              0,              0,              0,              0
+    0,              0,              0,              0,              0,              0
 );
 APFVAR(IDF_GAMEMOD, impulsespeed, 0, FVAR_MAX,
-    85,             85,             0,              85,             85
+    85,             85,             0,              85,             85,             75
 );
 APFVAR(IDF_GAMEMOD, impulsespeedextra, FVAR_MIN, FVAR_MAX,
-    0,              0,              0,              0,              0
+    0,              0,              0,              0,              0,              0
 );
 APFVAR(IDF_GAMEMOD, weight, 0, FVAR_MAX,
-    264,            264,            264,            264,            195
+    264,            264,            264,            264,            195,            150
 );
 APFVAR(IDF_GAMEMOD, weightextra, FVAR_MIN, FVAR_MAX,
-    0,              0,              0,              0,              0
+    0,              0,              0,              0,              0,              0
 );
 
 #define VANITYMAX 16

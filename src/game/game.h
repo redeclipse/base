@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 241
+#define VERSION_GAME 242
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -845,7 +845,9 @@ struct clientstate
 
     bool canreload(int weap, int sweap, bool check = false, int millis = 0, int skip = 0)
     {
-        if((w_reload(weap) || weapammo[weap][W_A_STORE] > 0) && (!check || (weap == weapselect && hasweap(weap, sweap) && weapammo[weap][W_A_CLIP] < W(weap, ammoclip) && weapstate[weap] != W_S_ZOOM && weapwaited(weap, millis, skip))))
+        if(actortype >= A_ENEMY ||
+            ((w_reload(weap) || weapammo[weap][W_A_STORE] > 0)
+                && (!check || (weap == weapselect && hasweap(weap, sweap) && weapammo[weap][W_A_CLIP] < W(weap, ammoclip) && weapstate[weap] != W_S_ZOOM && weapwaited(weap, millis, skip)))))
             return true;
         return false;
     }
@@ -1321,8 +1323,8 @@ struct gameent : dynent, clientstate
         loopi(W_MAX) if(weapstate[i] != W_S_IDLE && (weapselect != i || (weapstate[i] != W_S_POWER && weapstate[i] != W_S_ZOOM)) && millis-weaptime[i] >= weapwait[i]+100)
             setweapstate(i, W_S_IDLE, 0, millis);
 
-        xradius = yradius = PLAYERRADIUS*curscale;
-        zradius = PLAYERHEIGHT*curscale;
+        xradius = yradius = actors[actortype].radius*curscale;
+        zradius = actors[actortype].height*curscale;
         if(!cur) height = zradius;
 
         #define MODPHYS(a,b,c) a = AA(actortype, a)*c;
@@ -1618,14 +1620,10 @@ struct gameent : dynent, clientstate
         legs = torso;
         legs.z -= trad.z+lsize;
         lrad = vec(xradius*0.85f, yradius*0.85f, lsize);
-        if(waist == vec(-1, -1, -1))
-        {
-            vec dir;
-            vecfromyawpitch(yaw, 0, -1, 0, dir);
-            dir.mul(radius*1.5f);
-            dir.z -= height*0.5f;
-            waist = vec(o).add(dir);
-        }
+    }
+
+    void jettags()
+    {
         if(jet[0] == vec(-1, -1, -1))
         {
             vec dir;
@@ -1657,7 +1655,16 @@ struct gameent : dynent, clientstate
         originpos();
         muzzlepos();
         loopi(2) ejectpos(i!=0);
-        hitboxes();
+        if(actors[actortype].hitboxes) hitboxes();
+        if(waist == vec(-1, -1, -1))
+        {
+            vec dir;
+            vecfromyawpitch(yaw, 0, -1, 0, dir);
+            dir.mul(radius*1.5f);
+            dir.z -= height*0.5f;
+            waist = vec(o).add(dir);
+        }
+        if(actors[actortype].jetfx) jettags();
         loopi(2) if(toe[i] == vec(-1, -1, -1)) toe[i] = feetpos();
     }
 
@@ -2085,7 +2092,7 @@ namespace game
     extern int pulsehexcol(physent *d, int i = 0, int cycle = 50);
     extern void spawneffect(int type, const vec &pos, float radius, int colour, float size);
     extern void impulseeffect(gameent *d, int effect = 0);
-    extern void suicide(gameent *d, int flags);
+    extern void suicide(gameent *d, int flags = 0);
     extern void fixrange(float &yaw, float &pitch);
     extern void fixfullrange(float &yaw, float &pitch, float &roll, bool full = false);
     extern void getyawpitch(const vec &from, const vec &pos, float &yaw, float &pitch);

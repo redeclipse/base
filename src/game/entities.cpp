@@ -293,7 +293,7 @@ namespace entities
             {
                 if(full && attr[0] >= 0 && attr[0] < A_TOTAL)
                 {
-                    addentinfo(actor[attr[0]+A_ENEMY].name);
+                    addentinfo(actors[attr[0]+A_ENEMY].name);
                     addentinfo(W(attr[6] > 0 && attr[6] <= W_ALL ? attr[6]-1 : AA(attr[0]+A_ENEMY, weaponspawn), name));
                 }
                 break;
@@ -461,7 +461,13 @@ namespace entities
                 const char *mdlname = game::focus->hasweap(weap, sweap) ? weaptype[weap].ammo : weaptype[weap].item;
                 return mdlname && *mdlname ? mdlname : "projectiles/cartridge";
             }
-            case ACTOR: return playertypes[0][1];
+            case ACTOR:
+            {
+                if(attr[0] < 0 || attr[0] >= A_TOTAL) return "";
+                const char *mdl = actors[attr[0]+A_ENEMY].mdl;
+                if(!mdl || !*mdl) mdl = playertypes[0][1];
+                return mdl;
+            }
             default: break;
         }
         return "";
@@ -1980,7 +1986,7 @@ namespace entities
                 e.type = ACTOR;
                 e.o = ents[i]->o;
                 e.attrs.add(0, numattrs(ACTOR));
-                e.attrs[0] = (i%5 != 4 || ents[i]->type == WEAPON ? A_GRUNT : A_TURRET)-1;
+                e.attrs[0] = A_ENEMY+(i%A_TOTAL);
                 switch(ents[i]->type)
                 {
                     case PLAYERSTART:
@@ -2059,7 +2065,7 @@ namespace entities
             {
                 case PLAYERSTART:
                 {
-                    part_radius(vec(e.o).add(vec(0, 0, PLAYERHEIGHT/2)), vec(PLAYERRADIUS, PLAYERRADIUS, PLAYERHEIGHT/2), showentsize, 1, 1, TEAM(e.attrs[0], colour));
+                    part_radius(vec(e.o).add(vec(0, 0, actors[A_PLAYER].height*0.5f)), vec(actors[A_PLAYER].radius, actors[A_PLAYER].radius, actors[A_PLAYER].height*0.5f), showentsize, 1, 1, TEAM(e.attrs[0], colour));
                     break;
                 }
                 case ENVMAP:
@@ -2070,7 +2076,8 @@ namespace entities
                 }
                 case ACTOR:
                 {
-                    part_radius(vec(e.o).add(vec(0, 0, PLAYERHEIGHT/2)), vec(PLAYERRADIUS, PLAYERRADIUS, PLAYERHEIGHT/2), showentsize, 1, 1, TEAM(T_ENEMY, colour));
+                    int atype = clamp(e.attrs[0], 0, A_TOTAL-1)+A_ENEMY;
+                    part_radius(vec(e.o).add(vec(0, 0, actors[atype].height*0.5f)), vec(actors[atype].radius, actors[atype].radius, actors[atype].height*0.5f), showentsize, 1, 1, TEAM(T_ENEMY, colour));
                     part_radius(e.o, vec(ai::ALERTMAX), showentsize, 1, 1, TEAM(T_ENEMY, colour));
                     break;
                 }

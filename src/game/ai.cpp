@@ -56,7 +56,7 @@ namespace ai
 
     bool targetable(gameent *d, gameent *e, bool solid)
     {
-        if(d && e && d != e && e->state == CS_ALIVE && (AA(d->actortype, abilities)&(1<<A_A_PRIMARY) || AA(d->actortype, abilities)&(1<<A_A_SECONDARY)) && (!solid || physics::issolid(e, d)))
+        if(d && e && d != e && e->state == CS_ALIVE && AA(d->actortype, abilities)&A_A_ATTACK && (!solid || physics::issolid(e, d)))
         {
             if(d->team == T_ENEMY && e->team == T_ENEMY) return false;
             if(m_coop(game::gamemode, game::mutators) && e->actortype != A_PLAYER) return false;
@@ -130,6 +130,7 @@ namespace ai
     vec getaimpos(gameent *d, gameent *e, bool alt)
     {
         vec o = e->o;
+        if(AA(d->actortype, abilities)&(1<<A_A_KAMIKAZE)) return o;
         if(d->skill <= 100)
         {
             if(lastmillis >= d->ai->lastaimrnd)
@@ -554,7 +555,7 @@ namespace ai
         int sweap = m_weapon(d->actortype, game::gamemode, game::mutators);
         if(AA(d->actortype, abilities)&(1<<A_A_MOVE))
         {
-            if((AA(d->actortype, abilities)&(1<<A_A_PRIMARY) || AA(d->actortype, abilities)&(1<<A_A_SECONDARY)) && (!hasweap(d, weappref(d)) || d->carry(sweap) == 0))
+            if(d->actortype < A_ENEMY && (AA(d->actortype, abilities)&(1<<A_A_PRIMARY) || AA(d->actortype, abilities)&(1<<A_A_SECONDARY)) && (!hasweap(d, weappref(d)) || d->carry(sweap) == 0))
                 items(d, b, interests, d->carry(sweap) == 0);
             if(m_team(game::gamemode, game::mutators) && !m_duke(game::gamemode, game::mutators))
                 assist(d, b, interests, false, false);
@@ -577,7 +578,7 @@ namespace ai
             else if(m_defend(game::gamemode)) defend::aifind(d, b, interests);
             else if(m_bomber(game::gamemode)) bomber::aifind(d, b, interests);
         }
-        bool canretry = AA(d->actortype, abilities)&(1<<A_A_MOVE) && (AA(d->actortype, abilities)&(1<<A_A_PRIMARY) || AA(d->actortype, abilities)&(1<<A_A_SECONDARY));
+        bool canretry = AA(d->actortype, abilities)&(1<<A_A_MOVE) && AA(d->actortype, abilities)&A_A_ATTACK;
         loopk(canretry ? 2 : 1)
         {
             while(!interests.empty())
@@ -599,7 +600,7 @@ namespace ai
                     return true;
                 }
             }
-            if(!k && canretry) items(d, b, interests, true);
+            if(!k && canretry && d->actortype < A_ENEMY) items(d, b, interests, true);
         }
         return false;
     }
@@ -653,6 +654,7 @@ namespace ai
         loopv(game::players) if(game::players[i] && game::players[i]->ai && game::players[i]->actortype == A_BOT && game::players[i]->state == CS_ALIVE && iswaypoint(game::players[i]->lastnode))
         {
             gameent *d = game::players[i];
+            if(d->actortype >= A_ENEMY) continue;
             aistate &b = d->ai->getstate();
             int sweap = m_weapon(d->actortype, game::gamemode, game::mutators), attr = m_attr(entities::ents[ent]->type, entities::ents[ent]->attrs[0]);
             if(!isweap(attr) || b.targtype == AI_T_AFFINITY) continue; // don't override any affinity states
@@ -1088,9 +1090,9 @@ namespace ai
         }
     }
 
-    bool lockon(gameent *d, gameent *e, float maxdist, bool check)
+    bool lockon(gameent *d, gameent *e, float maxdist)
     {
-        if(check && !d->blocked && (d->inmaterial&MATF_CLIP) != MAT_AICLIP)
+        if(!d->blocked)
         {
             vec dir = vec(e->o).sub(d->o);
             float xydist = dir.x*dir.x+dir.y*dir.y, zdist = dir.z*dir.z, mdist = maxdist*maxdist, ddist = d->radius*d->radius+e->radius*e->radius;
@@ -1189,8 +1191,9 @@ namespace ai
                 if(insight) d->ai->enemyseen = lastmillis;
                 if(d->ai->dontmove || insight || hasseen)
                 {
+                    bool kamikaze = AA(d->actortype, abilities)&(1<<A_A_KAMIKAZE);
                     frame *= insight || d->skill > 100 ? 1.5f : (hasseen ? 1.25f : 1.f);
-                    if(lockon(d, e, CLOSEDIST, W2(d->weapselect, aidist, alt) < CLOSEDIST))
+                    if((kamikaze || W2(d->weapselect, aidist, alt) < CLOSEDIST) && lockon(d, e, CLOSEDIST))
                     {
                         frame *= 2.f;
                         b.acttype = AI_A_LOCKON;
@@ -1202,19 +1205,37 @@ namespace ai
                     game::scaleyawpitch(d->yaw, d->pitch, yaw, pitch, frame, frame*0.75f);
                     if(shootable)
                     {
-                        bool shoot = canshoot(d, e, alt);
-                        if(d->action[alt ? AC_SECONDARY : AC_PRIMARY] && W2(d->weapselect, cooktime, alt) && W2(d->weapselect, cooked, alt))
-                        { // TODO: make AI more aware of what they're shooting
-                            int cooked = W2(d->weapselect, cooked, alt);
-                            if(cooked&8) shoot = false; // inverted life
-                        }
-                        if(shoot && hastarget(d, b, e, alt, insight, yaw, pitch))
+                        if(kamikaze)
                         {
-                            d->action[alt ? AC_SECONDARY : AC_PRIMARY] = true;
-                            d->actiontime[alt ? AC_SECONDARY : AC_PRIMARY] = lastmillis;
-                            firing = true;
+                            if(d->suicided >= 0) occupied = true;
+                            else
+                            {
+                                vec oldpos = d->o, dir = vec(e->o).sub(d->o).normalize();
+                                d->o.add(vec(dir).mul(2));
+                                if(collide(d, dir) && collideplayer == e)
+                                {
+                                    game::suicide(d);
+                                    occupied = true;
+                                }
+                                d->o = oldpos;
+                            }
                         }
-                        occupied = true;
+                        if(!occupied)
+                        {
+                            bool shoot = canshoot(d, e, alt);
+                            if(d->action[alt ? AC_SECONDARY : AC_PRIMARY] && W2(d->weapselect, cooktime, alt) && W2(d->weapselect, cooked, alt))
+                            { // TODO: make AI more aware of what they're shooting
+                                int cooked = W2(d->weapselect, cooked, alt);
+                                if(cooked&8) shoot = false; // inverted life
+                            }
+                            if(shoot && hastarget(d, b, e, alt, insight, yaw, pitch))
+                            {
+                                d->action[alt ? AC_SECONDARY : AC_PRIMARY] = true;
+                                d->actiontime[alt ? AC_SECONDARY : AC_PRIMARY] = lastmillis;
+                                firing = true;
+                            }
+                            occupied = true;
+                        }
                     }
                 }
             }
@@ -1224,7 +1245,7 @@ namespace ai
         game::fixrange(d->ai->targyaw, d->ai->targpitch);
         if(dancing || !occupied)
         {
-            if(dancing) frame *= 10;
+            if(dancing || actors[d->actortype].onlyfwd) frame *= 10;
             else if(!m_insta(game::gamemode, game::mutators))
             {
                 int hp = max(d->gethealth(game::gamemode, game::mutators)/3, 1);
@@ -1242,6 +1263,11 @@ namespace ai
 
         if(d->ai->dontmove || !(AA(d->actortype, abilities)&(1<<A_A_MOVE)) || (AA(d->actortype, hurtstop) && lastmillis-d->lastpain <= AA(d->actortype, hurtstop)))
             d->move = d->strafe = 0;
+        else if(actors[d->actortype].onlyfwd)
+        {
+            d->move = 1;
+            d->strafe = 0;
+        }
         else
         { // our guys move one way.. but turn another?! :)
             const struct aimdir { int move, strafe, offset; } aimdirs[8] =
@@ -1282,7 +1308,7 @@ namespace ai
         bool occupied = false, firing = false,
              haswaited = d->weapwaited(d->weapselect, lastmillis, (1<<W_S_RELOAD));
         static vector<actitem> items; items.setsize(0);
-        if(AA(d->actortype, maxcarry))
+        if(AA(d->actortype, maxcarry) && d->actortype < A_ENEMY)
         {
             static vector<actitem> actitems;
             actitems.setsize(0);
@@ -1333,7 +1359,7 @@ namespace ai
             }
         }
         process(d, b, occupied, firing, items);
-        if(AA(d->actortype, maxcarry) && haswaited && !firing && !d->action[AC_USE]) while(!items.empty())
+        if(haswaited && !firing && !d->action[AC_USE]) while(!items.empty())
         {
             actitem &t = items.last();
             int ent = -1;
@@ -1539,7 +1565,7 @@ namespace ai
             gameent *d = (gameent *)game::iterdynents(i);
             if(!d) continue; // || d->actortype >= A_ENEMY) continue;
             if(d->state != CS_ALIVE || !physics::issolid(d)) continue;
-            obstacles.avoidnear(d, d->o.z + d->aboveeye + 1, d->feetpos(), PLAYERRADIUS + d->radius + 1);
+            obstacles.avoidnear(d, d->o.z + d->aboveeye + 1, d->feetpos(), actors[A_PLAYER].radius + d->radius + 1);
         }
         loopv(projs::projs)
         {
@@ -1547,7 +1573,7 @@ namespace ai
             if(p && p->state == CS_ALIVE && p->projtype == PRJ_SHOT)
             {
                 float expl = WX(WK(p->flags), p->weap, explode, WS(p->flags), game::gamemode, game::mutators, p->curscale);
-                if(expl > 0) obstacles.avoidnear(p, p->o.z + expl + 1, p->o, PLAYERRADIUS + expl + 1);
+                if(expl > 0) obstacles.avoidnear(p, p->o.z + expl + 1, p->o, actors[A_PLAYER].radius + expl + 1);
             }
         }
         loopenti(MAPMODEL) if(entities::ents[i]->type == MAPMODEL)
