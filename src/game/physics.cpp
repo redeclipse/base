@@ -766,7 +766,7 @@ namespace physics
                 {
                     vec rft;
                     float pitch = clamp(d->pitch, impulsekickpitchmin, impulsekickpitchmax);
-                    vecfromyawpitch(d->yaw, pitch, 1, 0, rft);
+                    vecfromyawpitch(d->yaw, pitch, d->move || d->strafe ? d->move : 1, d->strafe, rft);
                     d->vel = vec(rft).mul(mag).add(keepvel);
                     d->doimpulse(cost, IM_T_KICK, lastmillis);
                     d->action[AC_JUMP] = onfloor = false;
