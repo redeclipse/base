@@ -889,7 +889,7 @@ namespace physics
                         while(yaw >= 360) yaw -= 360;
                         while(yaw < 0) yaw += 360;
                         vec rft;
-                        vecfromyawpitch(yaw, pitch, 1, 0, rft);
+                        vecfromyawpitch(yaw, pitch, 1, isclimb ? -d->strafe : 0, rft);
                         if(d->impulse[IM_TYPE] != IM_T_PARKOUR)
                         {
                             int cost = int(impulsecost*(isclimb ? impulsecostclimb : impulsecostparkour));
