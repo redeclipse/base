@@ -731,7 +731,7 @@ static const char *gettklp(const char *str)
     return t->blist.search(str, type, "", "", " ", " ", 5);
 }
 
-#define defformatkey(dest, key) defformatstring((dest), "\fs\fa[\fS\fs\f[%d]%s\fS\fs\fa]\fS", textkeycolour, (key))
+#define defformatkey(dest, key) defformatstring(dest, "\fs\fa[\fS\fs\f[%d]%s\fS\fs\fa]\fS", textkeycolour, (key))
 
 float key_widthf(const char *str)
 {
