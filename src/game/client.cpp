@@ -2382,7 +2382,7 @@ namespace client
                         case SPHY_JUMP:
                         {
                             if(!proceed) break;
-                            t->doimpulse(0, IM_T_JUMP, lastmillis);
+                            t->doimpulse(IM_T_JUMP, lastmillis);
                             playsound(S_JUMP, t->o, t);
                             createshape(PART_SMOKE, int(t->radius), 0x222222, 21, 20, 250, t->feetpos(), 1, 1, -10, 0, 10.f);
                             break;
@@ -2390,7 +2390,7 @@ namespace client
                         case SPHY_BOOST: case SPHY_SLIDE: case SPHY_MELEE: case SPHY_KICK: case SPHY_GRAB: case SPHY_PARKOUR: case SPHY_AFTER:
                         {
                             if(!proceed) break;
-                            t->doimpulse(0, IM_T_BOOST+(st-SPHY_BOOST), lastmillis);
+                            t->doimpulse(IM_T_BOOST+(st-SPHY_BOOST), lastmillis);
                             game::impulseeffect(t);
                             if(st == SPHY_KICK || st == SPHY_PARKOUR || st == SPHY_MELEE) game::footstep(d);
                             break;

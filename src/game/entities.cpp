@@ -877,7 +877,7 @@ namespace entities
                         {
                             gameent *g = (gameent *)d;
                             execlink(g, n, true);
-                            if(e.attrs[10] > 0) g->doimpulse(0, IM_T_PUSHER, lastmillis+e.attrs[10]);
+                            if(e.attrs[10] > 0) g->doimpulse(IM_T_PUSHER, lastmillis+e.attrs[10]);
                             else g->resetair();
                         }
                         else if(projent::is(d))

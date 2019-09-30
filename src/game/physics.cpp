@@ -738,7 +738,7 @@ namespace physics
         }
         d->vel = vec(dir).mul(force).add(keepvel);
         if(launch) d->vel.z += jumpvel(d);
-        d->doimpulse(cost, melee ? IM_T_MELEE : (slide ? IM_T_SLIDE : IM_T_BOOST), lastmillis);
+        d->doimpulse(melee ? IM_T_MELEE : (slide ? IM_T_SLIDE : IM_T_BOOST), lastmillis, cost);
         d->action[AC_JUMP] = false;
         client::addmsg(N_SPHY, "ri2", d->clientnum, melee ? SPHY_MELEE : (slide ? SPHY_SLIDE : SPHY_BOOST));
         game::impulseeffect(d);
@@ -750,7 +750,7 @@ namespace physics
         bool onfloor = d->physstate >= PHYS_SLOPE || d->onladder || liquidcheck(d);
         if(d->impulse[IM_TYPE] == IM_T_PARKOUR && (!allowimpulse(d, A_A_PARKOUR) || (impulseparkourlen && lastmillis-d->impulsetime[IM_T_PARKOUR] > impulseparkourlen) || d->vel.iszero()))
         {
-            d->doimpulse(0, IM_T_AFTER, lastmillis);
+            d->doimpulse(IM_T_AFTER, lastmillis);
             client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_AFTER);
             d->resetphys(true);
             onfloor = false;
@@ -768,7 +768,7 @@ namespace physics
                     float pitch = clamp(d->pitch, impulsekickpitchmin, impulsekickpitchmax);
                     vecfromyawpitch(d->yaw, pitch, d->move || d->strafe ? d->move : 1, d->strafe, rft);
                     d->vel = vec(rft).mul(mag).add(keepvel);
-                    d->doimpulse(cost, IM_T_KICK, lastmillis);
+                    d->doimpulse(IM_T_KICK, lastmillis, cost);
                     d->action[AC_JUMP] = onfloor = false;
                     client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_KICK);
                     game::impulseeffect(d);
@@ -790,7 +790,7 @@ namespace physics
                         d->vel.x *= scale;
                         d->vel.y *= scale;
                     }
-                    d->doimpulse(0, IM_T_JUMP, lastmillis);
+                    d->doimpulse(IM_T_JUMP, lastmillis);
                     d->action[AC_JUMP] = onfloor = false;
                     client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_JUMP);
                     playsound(S_JUMP, d->o, d);
@@ -898,7 +898,7 @@ namespace physics
                             if(mag > 0)
                             {
                                 d->vel = vec(rft).mul(mag).add(keepvel);
-                                d->doimpulse(cost, IM_T_PARKOUR, lastmillis, side);
+                                d->doimpulse(IM_T_PARKOUR, lastmillis, cost, side);
                                 client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_PARKOUR);
                                 game::impulseeffect(d);
                                 game::footstep(d);
@@ -931,7 +931,7 @@ namespace physics
                     d->vel = rft.mul(mag);
                 }
             }
-            d->doimpulse(0, IM_T_AFTER, lastmillis);
+            d->doimpulse(IM_T_AFTER, lastmillis);
             client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_AFTER);
         }
     }

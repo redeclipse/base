@@ -1691,10 +1691,10 @@ struct gameent : dynent, clientstate
         resetjump(wait);
     }
 
-    void doimpulse(int cost, int type, int millis, int side = 0)
+    void doimpulse(int type, int millis, int cost = 0, int side = 0)
     {
         if(type < 0 || type >= IM_T_MAX) return;
-        impulse[IM_METER] += cost;
+        if(cost) impulse[IM_METER] += cost;
         impulsetime[type] = millis;
         if(type != IM_T_KICK) impulse[IM_SLIP] = millis;
         impulse[IM_TYPE] = type;

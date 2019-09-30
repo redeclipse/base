@@ -705,7 +705,7 @@ VAR(0, hwvtexunits, 1, 0, 0);
 VARF(IDF_PERSIST, maxtexsize, 0, 0, 1<<12, initwarning("texture quality", INIT_LOAD));
 VARF(IDF_PERSIST, reducefilter, 0, 1, 1, initwarning("texture quality", INIT_LOAD));
 VARF(IDF_PERSIST, texreduce, 0, 0, 12, initwarning("texture quality", INIT_LOAD));
-VARF(IDF_PERSIST, texcompress, 0, 1536, 1<<12, initwarning("texture quality", INIT_LOAD));
+VARF(IDF_PERSIST, texcompress, 0, 2048, 1<<12, initwarning("texture quality", INIT_LOAD));
 VARF(IDF_PERSIST, texcompressquality, -1, -1, 1, setuptexcompress());
 VARF(0, trilinear, 0, 1, 1, initwarning("texture filtering", INIT_LOAD));
 VARF(0, bilinear, 0, 1, 1, initwarning("texture filtering", INIT_LOAD));
