@@ -682,7 +682,7 @@ struct clientstate
 
     int getammo(int weap, int millis = 0, bool store = false)
     {
-        if(!isweap(weap)) return -1;
+        if(!isweap(weap) || weapammo[weap][W_A_CLIP] < 0) return -1;
         int a = weapammo[weap][W_A_CLIP] > 0 ? weapammo[weap][W_A_CLIP] : 0;
         if(millis && weapstate[weap] == W_S_RELOAD && millis-weaptime[weap] < weapwait[weap] && weapload[weap][W_A_CLIP] > 0)
             a -= weapload[weap][W_A_CLIP];
@@ -694,15 +694,16 @@ struct clientstate
     {
         if(isweap(weap) && weap != exclude)
         {
-            if(weapammo[weap][W_A_CLIP] >= 0) switch(level)
+            int ammo = getammo(weap, 0, true);
+            if(ammo >= 0) switch(level)
             {
                 case 0: default: return true; break; // has weap at all
                 case 1: if(w_carry(weap, sweap)) return true; break; // only carriable
-                case 2: if(weapammo[weap][W_A_CLIP] > 0) return true; break; // only with actual ammo
+                case 2: if(ammo > 0) return true; break; // only with actual ammo
                 case 3: if(canreload(weap, sweap)) return true; break; // only reloadable
-                case 4: if(weapammo[weap][W_A_CLIP] >= (canreload(weap, sweap) ? 0 : W(weap, ammoclip))) return true; break; // only reloadable or those with < clipsize
-                case 5: case 6: // special case to determine drop in classic/normal games
-                    if(weap == sweap || (level == 6 && weap < W_ITEM && weap >= W_OFFSET) || weapammo[weap][W_A_CLIP] > 0 || canreload(weap, sweap)) return true;
+                case 4: if(ammo >= (canreload(weap, sweap) ? 0 : W(weap, ammoclip))) return true; break; // only reloadable or those with < clipsize
+                case 5: case 6: // special case to determine drop in classic games
+                    if(weap == sweap || (level == 6 && weap < W_ITEM && weap >= W_OFFSET) || ammo > 0 || canreload(weap, sweap)) return true;
                     break;
             }
         }
@@ -1362,7 +1363,7 @@ struct gameent : dynent, clientstate
         loopi(W_MAX) if(hasweap(i, sweap))
         {
             int numammo = getammo(i, 0, true);
-            #define MODPHYS(a,b,c) a += W(i, mod##a)+(numammo*W(i, mod##a##ammo));
+            #define MODPHYS(a,b,c) if(numammo > 0) a += W(i, mod##a)+(numammo*W(i, mod##a##ammo));
             MODPHYSL;
             #undef MODPHYS
             if(i != weapselect) continue;
@@ -2011,7 +2012,6 @@ namespace projs
 
 namespace weapons
 {
-    extern int autoreloading;
     extern int slot(gameent *d, int n, bool back = false);
     extern bool weapselect(gameent *d, int weap, int filter, bool local = true);
     extern bool weapreload(gameent *d, int weap, int load = -1, int ammo = -1, int store = 0, bool local = true);

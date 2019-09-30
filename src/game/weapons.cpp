@@ -1,17 +1,12 @@
 #include "game.h"
 namespace weapons
 {
-    VAR(IDF_PERSIST, autoreloading, 0, 2, 4); // 0 = never, 1 = when empty, 2 = weapons that don't add a full clip, 3 = always (+1 zooming weaps too)
-    VAR(IDF_PERSIST, autodelayreload, 0, 0, VAR_MAX);
+    VAR(IDF_PERSIST, weapautoreload, 0, 2, 4); // 0 = never, 1 = when empty, 2 = weapons that don't add a full clip, 3 = always (+1 zooming weaps too)
+    VAR(IDF_PERSIST, weapautoreloaddelay, 0, 0, VAR_MAX);
+    VAR(IDF_PERSIST, weapautoswitch, 0, 1, 1); // 0 = never, 1 = when empty
 
-    VAR(IDF_PERSIST, skipspawnweapon, 0, 0, 6); // skip spawnweapon; 0 = never, 1 = if numweaps > 1 (+1), 3 = if carry > 0 (+2), 6 = always
-    VAR(IDF_PERSIST, skipclaw, 0, 0, 10); // skip claw; 0 = never, 1 = if numweaps > 1 (+2), 4 = if carry > 0 (+2), 7 = if carry > 0 and is offset (+2), 10 = always
-    VAR(IDF_PERSIST, skippistol, 0, 0, 10); // skip pistol; 0 = never, 1 = if numweaps > 1 (+2), 4 = if carry > 0 (+2), 7 = if carry > 0 and is offset (+2), 10 = always
-    VAR(IDF_PERSIST, skipgrenade, 0, 0, 10); // skip grenade; 0 = never, 1 = if numweaps > 1 (+2), 4 = if carry > 0 (+2), 7 = if carry > 0 and is offset (+2), 10 = always
-    VAR(IDF_PERSIST, skipmine, 0, 0, 10); // skip mine; 0 = never, 1 = if numweaps > 1 (+2), 4 = if carry > 0 (+2), 7 = if carry > 0 and is offset (+2), 10 = always
-    VAR(IDF_PERSIST, skiprocket, 0, 0, 10); // skip mine; 0 = never, 1 = if numweaps > 1 (+2), 4 = if carry > 0 (+2), 7 = if carry > 0 and is offset (+2), 10 = always
-
-    VAR(IDF_PERSIST, skippickup, 0, 0, 1);
+    VAR(IDF_PERSIST, weapskippickup, 0, 0, 1);
+    VAR(IDF_PERSIST, weapskipempty, 0, 1, 1);
 
     int lastweapselect = 0;
     VAR(IDF_PERSIST, weapselectdelay, 0, 200, VAR_MAX);
@@ -151,33 +146,8 @@ namespace weapons
                 else s += b;
                 while(s >= W_ALL) s -= W_ALL;
                 while(s < 0) s += W_ALL;
-
                 int n = slot(d, s, true);
-                if(a < 0)
-                { // weapon skipping when scrolling
-                    int p = m_weapon(d->actortype, game::gamemode, game::mutators);
-                    #define skipweap(q,w) \
-                    { \
-                        if(q && n == w) switch(q) \
-                        { \
-                            case 10: continue; break; \
-                            case 7: case 8: case 9: if(d->carry(p, 5, w) > (q-7)) continue; break; \
-                            case 4: case 5: case 6: if(d->carry(p, 1, w) > (q-3)) continue; break; \
-                            case 1: case 2: case 3: if(d->carry(p, 0, w) > q) continue; break; \
-                            case 0: default: break; \
-                        } \
-                    }
-                    skipweap(skipspawnweapon, p);
-                    skipweap(skipclaw, W_CLAW);
-                    skipweap(skippistol, W_PISTOL);
-                    if(!m_kaboom(game::gamemode, game::mutators))
-                    {
-                        skipweap(skipgrenade, W_GRENADE);
-                        skipweap(skipmine, W_MINE);
-                        skipweap(skiprocket, W_ROCKET);
-                    }
-                }
-
+                if(a < 0 && weapskipempty && d->getammo(n, 0, true) <= 0) continue; // skip empty when scrolling
                 if(weapselect(d, n, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
                 {
                     lastweapselect = totalmillis ? totalmillis : 1;
@@ -189,16 +159,6 @@ namespace weapons
         game::errorsnd(d);
     }
     ICOMMAND(0, weapon, "ss", (char *a, char *b), weaponswitch(game::player1, *a ? parseint(a) : -1, *b ? parseint(b) : -1));
-
-    bool canuse(int weap)
-    {
-        if(!skippickup || m_kaboom(game::gamemode, game::mutators)) return true;
-        #define canuseweap(q,w) if(q && weap == w) return false;
-        canuseweap(skipgrenade, W_GRENADE);
-        canuseweap(skipmine, W_MINE);
-        canuseweap(skiprocket, W_ROCKET);
-        return true;
-    }
 
     void weapdrop(gameent *d, int w)
     {
@@ -230,8 +190,8 @@ namespace weapons
         {
             bool noammo = d->weapammo[d->weapselect][W_A_CLIP] < W2(d->weapselect, ammosub, WS(flags)),
                  noattack = !d->action[AC_PRIMARY] && !d->action[AC_SECONDARY];
-            if((noammo || noattack) && !d->action[AC_USE] && d->weapstate[d->weapselect] == W_S_IDLE && (noammo || lastmillis-d->weaptime[d->weapselect] >= autodelayreload))
-                return autoreloading >= (noammo ? 1 : (W(d->weapselect, ammoadd) < W(d->weapselect, ammoclip) ? 2 : (W2(d->weapselect, cooked, true)&W_C_ZOOM ? 4 : 3)));
+            if((noammo || noattack) && !d->action[AC_USE] && d->weapstate[d->weapselect] == W_S_IDLE && (noammo || lastmillis-d->weaptime[d->weapselect] >= weapautoreloaddelay ))
+                return weapautoreload >= (noammo ? 1 : (W(d->weapselect, ammoadd) < W(d->weapselect, ammoclip) ? 2 : (W2(d->weapselect, cooked, true)&W_C_ZOOM ? 4 : 3)));
         }
         return false;
     }
@@ -239,7 +199,8 @@ namespace weapons
     void checkweapons(gameent *d)
     {
         int sweap = m_weapon(d->actortype, game::gamemode, game::mutators);
-        if(!d->hasweap(d->weapselect, sweap)) weapselect(d, d->bestweap(sweap, d->weapselect), 1<<W_S_RELOAD, true);
+        if(!d->hasweap(d->weapselect, sweap) || (weapautoswitch && d->getammo(d->weapselect, 0, true) <= 0))
+            weapselect(d, d->bestweap(sweap, d->weapselect), 1<<W_S_RELOAD, true);
         else if(d->action[AC_RELOAD] || autoreload(d)) weapreload(d, d->weapselect);
         else if(d->action[AC_DROP]) weapdrop(d, d->weapselect);
     }

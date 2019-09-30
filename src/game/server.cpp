@@ -767,7 +767,7 @@ namespace server
         if(!isweap(weap) || weap == m_weapon(ci->actortype, gamemode, mutators)) return;
         if(!ci->hasweap(weap, m_weapon(ci->actortype, gamemode, mutators)) || !sents.inrange(ci->weapent[weap])) return;
         int ammo = ci->getammo(weap, 0, true);
-        if(!ammo) return;
+        if(ammo <= 0) return;
         droplist &d = drop.add();
         d.weap = weap;
         d.ent = ci->weapent[weap];
@@ -4890,7 +4890,7 @@ namespace server
         {
             dropped = ci->weapent[weap];
             ammo = ci->getammo(weap, 0, true);
-            if(ammo) ci->dropped.add(dropped, ammo);
+            if(ammo > 0) ci->dropped.add(dropped, ammo);
         }
         ci->weapammo[weap][W_A_CLIP] = -1;
         ci->weapammo[weap][W_A_STORE] = 0;
@@ -4972,7 +4972,7 @@ namespace server
                 dropped = ci->weapent[weap];
                 ammo = ci->getammo(weap, 0, true);
                 ci->setweapstate(weap, W_S_SWITCH, W(weap, delayswitch), millis);
-                if(ammo) ci->dropped.add(dropped, ammo);
+                if(ammo > 0) ci->dropped.add(dropped, ammo);
             }
             ci->weapammo[weap][W_A_CLIP] = -1;
             ci->weapammo[weap][W_A_STORE] = 0;

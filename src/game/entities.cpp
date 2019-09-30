@@ -703,7 +703,6 @@ namespace entities
                     {
                         int sweap = m_weapon(f->actortype, game::gamemode, game::mutators), attr = m_attr(e.type, e.attrs[0]);
                         if(!isweap(attr)) return false;
-                        if(f == game::player1 && !weapons::canuse(attr)) return true;
                         if(!f->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, (1<<W_S_SWITCH)))
                         {
                             if(e.type != WEAPON) return false;
@@ -2292,7 +2291,7 @@ namespace entities
                         if(isweap(attr))
                         {
                             colour = W(attr, colour);
-                            if(!active || !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !showentfull) || !weapons::canuse(attr))
+                            if(!active || !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !showentfull))
                                 mdl.color.a *= showentunavailable;
                             else mdl.color.a *= showentavailable;
                         }
@@ -2365,7 +2364,7 @@ namespace entities
             float blend = fluc*skew, radius = fluc*0.5f;
             if(e.type == WEAPON && isweap(attr))
             {
-                if(!active || !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !showentfull) || !weapons::canuse(attr))
+                if(!active || !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !showentfull))
                 {
                     if(isedit) blend *= showentavailable;
                     else if(showentunavailable > 0) blend *= showentunavailable;
