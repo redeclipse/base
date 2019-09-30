@@ -986,7 +986,6 @@ struct clientstate
             weapammo[s][W_A_CLIP] = W(s, ammospawn);
             weapselect = s;
         }
-        if(s != W_CLAW && AA(actortype, abilities)&(1<<A_A_CLAW) && !W(W_CLAW, disabled)) weapammo[W_CLAW][W_A_CLIP] = W(W_CLAW, ammospawn);
         if(s != W_MELEE && AA(actortype, abilities)&(1<<A_A_MELEE) && !W(W_MELEE, disabled)) weapammo[W_MELEE][W_A_CLIP] = W(W_MELEE, ammospawn);
         if(actortype < A_ENEMY)
         {
