@@ -67,7 +67,7 @@ struct bomberstate
                         }
                         return renderpos;
                     }
-                    else return owner->waist;
+                    else return owner->tag[TAG_WAIST];
                 }
                 if(droptime) return proj ? proj->o : droploc;
             }

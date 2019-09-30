@@ -191,9 +191,9 @@ namespace projs
             if(actors[e->actortype].hitboxes)
             {
                 float rdist[3] = { -1, -1, -1 };
-                radialpush(e->legs, e->lrad.x, e->lrad.y, e->lrad.z, e->lrad.z, rdist[0]);
-                radialpush(e->torso, e->trad.x, e->trad.y, e->trad.z, e->trad.z, rdist[1]);
-                radialpush(e->head, e->hrad.x, e->hrad.y, e->hrad.z, e->hrad.z, rdist[2]);
+                radialpush(e->tag[TAG_LIMBS], e->tag[TAG_R_LIMBS].x, e->tag[TAG_R_LIMBS].y, e->tag[TAG_R_LIMBS].z, e->tag[TAG_R_LIMBS].z, rdist[0]);
+                radialpush(e->tag[TAG_TORSO], e->tag[TAG_R_TORSO].x, e->tag[TAG_R_TORSO].y, e->tag[TAG_R_TORSO].z, e->tag[TAG_R_TORSO].z, rdist[1]);
+                radialpush(e->tag[TAG_HEAD], e->tag[TAG_R_HEAD].x, e->tag[TAG_R_HEAD].y, e->tag[TAG_R_HEAD].z, e->tag[TAG_R_HEAD].z, rdist[2]);
                 int closest = -1;
                 loopi(3) if(rdist[i] >= 0 && (closest < 0 || rdist[i] <= rdist[closest])) closest = i;
                 loopi(3) if(rdist[i] >= 0)
@@ -841,7 +841,7 @@ namespace projs
                     {
                         if(proj.owner->state == CS_DEAD || proj.owner->state == CS_WAITING)
                         {
-                            proj.o = proj.owner->head;
+                            proj.o = proj.owner->tag[TAG_HEAD];
                             proj.o.z -= proj.owner->zradius*0.125f;
                         }
                         else

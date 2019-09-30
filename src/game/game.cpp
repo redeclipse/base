@@ -1036,7 +1036,7 @@ namespace game
             case 0: playsound(S_IMPULSE, d->o, d); // fail through
             case 1:
             {
-                if(num > 0 && impulsefade > 0) loopi(3) boosteffect(d, d->jet[i], num, impulsefade, effect == 0);
+                if(num > 0 && impulsefade > 0) loopi(TAG_N_JET) boosteffect(d, d->tag[TAG_JET+i], num, impulsefade, effect == 0);
                 break;
             }
             default: break;
@@ -1761,7 +1761,7 @@ namespace game
             else if(anc >= 0) announce(anc, d);
             if(anc >= 0 && d != v) announce(anc, v);
         }
-        vec pos = d->head;
+        vec pos = d->tag[TAG_HEAD];
         pos.z -= d->zradius*0.125f;
 
         if(vanitymodels && d->headless && !nogore && headlessmodels && *d->vanity)
@@ -3311,24 +3311,24 @@ namespace game
             {
                 if(third != 2)
                 {
-                    mdlattach[ai++] = modelattach(hasweapon ? "tag_muzzle" : "tag_weapon", &d->muzzle); // 1
-                    mdlattach[ai++] = modelattach("tag_weapon", &d->origin); // 2
+                    mdlattach[ai++] = modelattach(hasweapon ? "tag_muzzle" : "tag_weapon", &d->tag[TAG_MUZZLE]); // 1
+                    mdlattach[ai++] = modelattach("tag_weapon", &d->tag[TAG_ORIGIN]); // 2
                     if(weaptype[weap].eject || weaptype[weap].tape)
                     {
-                        mdlattach[ai++] = modelattach("tag_eject", &d->eject[0]); // 3
-                        mdlattach[ai++] = modelattach("tag_eject2", &d->eject[1]); // 4
+                        mdlattach[ai++] = modelattach("tag_eject", &d->tag[TAG_EJECT1]); // 3
+                        mdlattach[ai++] = modelattach("tag_eject2", &d->tag[TAG_EJECT2]); // 4
                     }
                 }
                 if(third)
                 {
-                    mdlattach[ai++] = modelattach("tag_head", &d->head); // 5
-                    mdlattach[ai++] = modelattach("tag_torso", &d->torso); // 6
-                    mdlattach[ai++] = modelattach("tag_waist", &d->waist); // 7
-                    mdlattach[ai++] = modelattach("tag_ljet", &d->jet[0]); // 8
-                    mdlattach[ai++] = modelattach("tag_rjet", &d->jet[1]); // 9
-                    mdlattach[ai++] = modelattach("tag_bjet", &d->jet[2]); // 10
-                    mdlattach[ai++] = modelattach("tag_ltoe", &d->toe[0]); // 11
-                    mdlattach[ai++] = modelattach("tag_rtoe", &d->toe[1]); // 12
+                    mdlattach[ai++] = modelattach("tag_head", &d->tag[TAG_HEAD]); // 5
+                    mdlattach[ai++] = modelattach("tag_torso", &d->tag[TAG_TORSO]); // 6
+                    mdlattach[ai++] = modelattach("tag_waist", &d->tag[TAG_WAIST]); // 7
+                    mdlattach[ai++] = modelattach("tag_ljet", &d->tag[TAG_JET_LEFT]); // 8
+                    mdlattach[ai++] = modelattach("tag_rjet", &d->tag[TAG_JET_RIGHT]); // 9
+                    mdlattach[ai++] = modelattach("tag_bjet", &d->tag[TAG_JET_BACK]); // 10
+                    mdlattach[ai++] = modelattach("tag_ltoe", &d->tag[TAG_TOE_LEFT]); // 11
+                    mdlattach[ai++] = modelattach("tag_rtoe", &d->tag[TAG_TOE_RIGHT]); // 12
                 }
             }
             if(vanitymodels && third && d->vanity[0])
