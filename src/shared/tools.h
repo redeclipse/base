@@ -791,7 +791,7 @@ template <class T> struct vector
     void growbuf(int sz)
     {
         int olen = alen;
-        if(!alen) alen = max(MINSIZE, sz);
+        if(alen <= 0) alen = max(MINSIZE, sz);
         else while(alen < sz) alen += alen/2;
         if(alen <= olen) return;
         uchar *newbuf = new uchar[alen*sizeof(T)];
