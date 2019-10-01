@@ -332,6 +332,10 @@ inline char *newconcatstring(const char *s, const char *t)
 #define loopcsvkrev(m,c,s) loopcsrev(k,(m).length(),c,s)
 #define loopcsvlrev(m,c,s) loopcsrev(l,(m).length(),c,s)
 
+template<class T> inline void memclear(T *p, size_t n) { memset((void *)p, 0, n * sizeof(T)); }
+template<class T> inline void memclear(T &p) { memset((void *)&p, 0, sizeof(T)); }
+template<class T, size_t N> inline void memclear(T (&p)[N]) { memset((void *)p, 0, N * sizeof(T)); }
+
 template <class T>
 struct databuf
 {
