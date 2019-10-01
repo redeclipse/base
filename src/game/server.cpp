@@ -2086,7 +2086,7 @@ namespace server
     void setupspawns(bool update)
     {
         totalspawns = 0;
-        teamspawns = m_team(gamemode, mutators);
+        teamspawns = m_teamspawn(gamemode, mutators);
         loopi(T_ALL) spawns[i].reset();
         if(update)
         {
@@ -2123,12 +2123,12 @@ namespace server
                 setmod(sv_maxplayers, 0);
                 return;
             }
-            if(!teamspawns && m_duel(gamemode, mutators))
+            if(m_duel(gamemode, mutators))
             { // iterate through teams so players spawn on opposite sides in duel
                 teamspawns = true;
-                numt = 2;
+                numt = T_NUM;
             }
-            if(m_play(gamemode) && teamspawns)
+            if(teamspawns)
             {
                 loopk(3)
                 {
@@ -2141,7 +2141,7 @@ namespace server
                         spawns[k ? T_NEUTRAL : sents[i].attrs[0]].add(i);
                         totalspawns++;
                     }
-                    if(totalspawns && m_team(gamemode, mutators))
+                    if(totalspawns && teamspawns)
                     {
                         loopi(numt) if(spawns[i+T_FIRST].ents.empty())
                         {
@@ -2218,55 +2218,56 @@ namespace server
     int pickspawn(clientinfo *ci)
     {
         if(ci->actortype >= A_ENEMY) return ci->spawnpoint;
-        else
+        if(m_race(gamemode) && !ci->cpnodes.empty() && !m_ra_endurance(gamemode, mutators) && (!m_ra_gauntlet(gamemode, mutators) || ci->team == T_ALPHA))
         {
-            if(m_race(gamemode) && !ci->cpnodes.empty() && !m_ra_endurance(gamemode, mutators) && (!m_ra_gauntlet(gamemode, mutators) || ci->team == T_ALPHA))
+            int checkpoint = ci->cpnodes.last();
+            if(sents.inrange(checkpoint)) return checkpoint;
+        }
+        if(totalspawns)
+        {
+            int rot = G(spawnrotate), team = teamspawns && m_teamspawn(gamemode, mutators) ? ci->team : T_NEUTRAL;
+            if(m_duke(gamemode, mutators))
             {
-                int checkpoint = ci->cpnodes.last();
-                if(sents.inrange(checkpoint)) return checkpoint;
-            }
-            if(totalspawns)
-            {
-                int team = T_NEUTRAL, rotate = G(spawnrotate);
-                if(m_duel(gamemode, mutators) && !m_team(gamemode, mutators))
-                {
-                    if(!spawns[T_ALPHA].ents.empty() && !spawns[T_OMEGA].ents.empty())
+                if(m_duel(gamemode, mutators), teamspawns)
+                {  // only use the opposing teams, multi spawns are usually diagonally arranged
+                    if(!m_team(gamemode, mutators))
                         team = spawns[T_ALPHA].iteration <= spawns[T_OMEGA].iteration ? T_ALPHA : T_OMEGA;
-                    if(!rotate) rotate = 2;
+                    else if(team > T_LAST && team <= T_MULTI) team -= T_NUM;
                 }
-                else if(m_play(gamemode) && m_team(gamemode, mutators) && (!m_race(gamemode) || m_ra_gauntlet(gamemode, mutators)) && !spawns[ci->team].ents.empty()) team = ci->team;
-                else switch(rotate)
-                {
-                    case 2:
-                    { // random
-                        static vector<int> lowest;
-                        lowest.setsize(0);
-                        loopv(spawns[team].cycle) if(lowest.empty() || spawns[team].cycle[i] <= spawns[team].cycle[lowest[0]])
-                        {
-                            if(spawns[team].cycle.length() >= 2 && spawns[team].current == i) continue; // avoid using this one again straight away
-                            if(!lowest.empty() && spawns[team].cycle[i] < spawns[team].cycle[lowest[0]]) lowest.setsize(0);
-                            lowest.add(i);
-                        }
-                        if(!lowest.empty())
-                        {
-                            spawns[team].current = lowest[lowest.length() >= 2 ? rnd(lowest.length()) : 0];
-                            break;
-                        }
-                        // fall through if this fails..
+                if(!rot) rot = 2; // letting the client decide would be bad in duel/survivor
+            }
+            if(team != T_NEUTRAL && spawns[team].ents.empty()) team = T_NEUTRAL; // not that this should happen
+            switch(rot)
+            {
+                case 2:
+                { // random
+                    static vector<int> lowest;
+                    lowest.setsize(0);
+                    loopv(spawns[team].cycle) if(lowest.empty() || spawns[team].cycle[i] <= spawns[team].cycle[lowest[0]])
+                    {
+                        if(spawns[team].cycle.length() >= 2 && spawns[team].current == i) continue; // avoid using this one again straight away
+                        if(!lowest.empty() && spawns[team].cycle[i] < spawns[team].cycle[lowest[0]]) lowest.setsize(0);
+                        lowest.add(i);
                     }
-                    case 1:
-                    { // sequential
-                        if(++spawns[team].current >= spawns[team].ents.length()) spawns[team].current = 0;
+                    if(!lowest.empty())
+                    {
+                        spawns[team].current = lowest[lowest.length() >= 2 ? rnd(lowest.length()) : 0];
                         break;
                     }
-                    case 0: default: spawns[team].current = -1; break;
+                    // fall through if this fails..
                 }
-                if(spawns[team].ents.inrange(spawns[team].current))
-                {
-                    spawns[team].iteration++;
-                    spawns[team].cycle[spawns[team].current]++;
-                    return spawns[team].ents[spawns[team].current];
+                case 1:
+                { // sequential
+                    if(++spawns[team].current >= spawns[team].ents.length()) spawns[team].current = 0;
+                    break;
                 }
+                case 0: default: return -1; // let the client decide..
+            }
+            if(spawns[team].ents.inrange(spawns[team].current))
+            {
+                spawns[team].iteration++;
+                spawns[team].cycle[spawns[team].current]++;
+                return spawns[team].ents[spawns[team].current];
             }
         }
         return -1;

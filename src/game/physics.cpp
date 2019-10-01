@@ -1288,12 +1288,15 @@ namespace physics
             gameent *e = (gameent *)o;
             if(actors[e->actortype].hitboxes)
             {
-                if(!d->o.reject(e->tag[TAG_LIMBS], d->radius+max(e->tag[TAG_R_LIMBS].x, e->tag[TAG_R_LIMBS].y)) && ellipsecollide(d, dir, e->tag[TAG_LIMBS], vec(0, 0, 0), e->yaw, e->tag[TAG_R_LIMBS].x, e->tag[TAG_R_LIMBS].y, e->tag[TAG_R_LIMBS].z, e->tag[TAG_R_LIMBS].z))
-                    collidezones |= CLZ_LIMB;
-                if(!d->o.reject(e->tag[TAG_TORSO], d->radius+max(e->tag[TAG_R_TORSO].x, e->tag[TAG_R_TORSO].y)) && ellipsecollide(d, dir, e->tag[TAG_TORSO], vec(0, 0, 0), e->yaw, e->tag[TAG_R_TORSO].x, e->tag[TAG_R_TORSO].y, e->tag[TAG_R_TORSO].z, e->tag[TAG_R_TORSO].z))
-                    collidezones |= CLZ_TORSO;
-                if(!d->o.reject(e->tag[TAG_HEAD], d->radius+max(e->tag[TAG_R_HEAD].x, e->tag[TAG_R_HEAD].y)) && ellipsecollide(d, dir, e->tag[TAG_HEAD], vec(0, 0, 0), e->yaw, e->tag[TAG_R_HEAD].x, e->tag[TAG_R_HEAD].y, e->tag[TAG_R_HEAD].z, e->tag[TAG_R_HEAD].z))
-                    collidezones |= CLZ_HEAD;
+                if(!d->o.reject(e->tag[TAG_LIMBS], d->radius+max(e->tag[TAG_R_LIMBS].x, e->tag[TAG_R_LIMBS].y))
+                    && ellipsecollide(d, dir, e->tag[TAG_LIMBS], vec(0, 0, 0), e->yaw, e->tag[TAG_R_LIMBS].x, e->tag[TAG_R_LIMBS].y, e->tag[TAG_R_LIMBS].z, e->tag[TAG_R_LIMBS].z))
+                        collidezones |= CLZ_LIMB;
+                if(!d->o.reject(e->tag[TAG_TORSO], d->radius+max(e->tag[TAG_R_TORSO].x, e->tag[TAG_R_TORSO].y))
+                    && ellipsecollide(d, dir, e->tag[TAG_TORSO], vec(0, 0, 0), e->yaw, e->tag[TAG_R_TORSO].x, e->tag[TAG_R_TORSO].y, e->tag[TAG_R_TORSO].z, e->tag[TAG_R_TORSO].z))
+                        collidezones |= CLZ_TORSO;
+                if(!d->o.reject(e->tag[TAG_HEAD], d->radius+max(e->tag[TAG_R_HEAD].x, e->tag[TAG_R_HEAD].y))
+                    && ellipsecollide(d, dir, e->tag[TAG_HEAD], vec(0, 0, 0), e->yaw, e->tag[TAG_R_HEAD].x, e->tag[TAG_R_HEAD].y, e->tag[TAG_R_HEAD].z, e->tag[TAG_R_HEAD].z))
+                        collidezones |= CLZ_HEAD;
                 return collidezones != CLZ_NONE;
             }
         }
@@ -1310,7 +1313,8 @@ namespace physics
             if(actors[e->actortype].hitboxes)
             {
                 float bestdist = 1e16f;
-                if(e->tag[TAG_LIMBS].x+e->tag[TAG_R_LIMBS].x >= x1 && e->tag[TAG_LIMBS].y+e->tag[TAG_R_LIMBS].y >= y1 && e->tag[TAG_LIMBS].x-e->tag[TAG_R_LIMBS].x <= x2 && e->tag[TAG_LIMBS].y-e->tag[TAG_R_LIMBS].y <= y2)
+                if(e->tag[TAG_LIMBS].x+e->tag[TAG_R_LIMBS].x >= x1 && e->tag[TAG_LIMBS].y+e->tag[TAG_R_LIMBS].y >= y1
+                    && e->tag[TAG_LIMBS].x-e->tag[TAG_R_LIMBS].x <= x2 && e->tag[TAG_LIMBS].y-e->tag[TAG_R_LIMBS].y <= y2)
                 {
                     vec bottom(e->tag[TAG_LIMBS]), top(e->tag[TAG_LIMBS]);
                     bottom.z -= e->tag[TAG_R_LIMBS].z;
@@ -1322,7 +1326,8 @@ namespace physics
                         bestdist = min(bestdist, t);
                     }
                 }
-                if(e->tag[TAG_TORSO].x+e->tag[TAG_R_TORSO].x >= x1 && e->tag[TAG_TORSO].y+e->tag[TAG_R_TORSO].y >= y1 && e->tag[TAG_TORSO].x-e->tag[TAG_R_TORSO].x <= x2 && e->tag[TAG_TORSO].y-e->tag[TAG_R_TORSO].y <= y2)
+                if(e->tag[TAG_TORSO].x+e->tag[TAG_R_TORSO].x >= x1 && e->tag[TAG_TORSO].y+e->tag[TAG_R_TORSO].y >= y1
+                    && e->tag[TAG_TORSO].x-e->tag[TAG_R_TORSO].x <= x2 && e->tag[TAG_TORSO].y-e->tag[TAG_R_TORSO].y <= y2)
                 {
                     vec bottom(e->tag[TAG_TORSO]), top(e->tag[TAG_TORSO]);
                     bottom.z -= e->tag[TAG_R_TORSO].z;
@@ -1334,7 +1339,8 @@ namespace physics
                         bestdist = min(bestdist, t);
                     }
                 }
-                if(e->tag[TAG_HEAD].x+e->tag[TAG_R_HEAD].x >= x1 && e->tag[TAG_HEAD].y+e->tag[TAG_R_HEAD].y >= y1 && e->tag[TAG_HEAD].x-e->tag[TAG_R_HEAD].x <= x2 && e->tag[TAG_HEAD].y-e->tag[TAG_R_HEAD].y <= y2)
+                if(e->tag[TAG_HEAD].x+e->tag[TAG_R_HEAD].x >= x1 && e->tag[TAG_HEAD].y+e->tag[TAG_R_HEAD].y >= y1
+                    && e->tag[TAG_HEAD].x-e->tag[TAG_R_HEAD].x <= x2 && e->tag[TAG_HEAD].y-e->tag[TAG_R_HEAD].y <= y2)
                 {
                     vec bottom(e->tag[TAG_HEAD]), top(e->tag[TAG_HEAD]);
                     bottom.z -= e->tag[TAG_R_HEAD].z;
