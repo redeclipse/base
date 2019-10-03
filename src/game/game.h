@@ -700,7 +700,7 @@ struct clientstate
                 case 0: default: return true; break; // has weap at all
                 case 1: if(w_carry(weap, sweap)) return true; break; // only carriable
                 case 2: if(ammo > 0) return true; break; // only with actual ammo
-                case 3: if(canreload(weap, sweap)) return true; break; // only reloadable
+                case 3: if(ammo > 0 || canreload(weap, sweap)) return true; break; // only reloadable or has ammo
                 case 4: if(ammo >= (canreload(weap, sweap) ? 0 : W(weap, ammoclip))) return true; break; // only reloadable or those with < clipsize
                 case 5: case 6: // special case to determine drop in classic games
                     if(weap == sweap || (level == 6 && weap < W_ITEM && weap >= W_OFFSET) || ammo > 0 || canreload(weap, sweap)) return true;

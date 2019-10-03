@@ -139,7 +139,7 @@ namespace weapons
         if(weapselectdelay && lastweapselect && totalmillis-lastweapselect < weapselectdelay) return;
         if(d->weapwaited(d->weapselect, lastmillis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
         {
-            int s = slot(d, d->weapselect);
+            int s = slot(d, d->weapselect), w = m_weapon(d->actortype, game::gamemode, game::mutators);
             loopi(W_ALL) // only loop the amount of times we have weaps for
             {
                 if(a >= 0) s = a;
@@ -147,7 +147,7 @@ namespace weapons
                 while(s >= W_ALL) s -= W_ALL;
                 while(s < 0) s += W_ALL;
                 int n = slot(d, s, true);
-                if(a < 0 && weapskipempty && d->getammo(n, 0, true) <= 0) continue; // skip empty when scrolling
+                if(a < 0 && weapskipempty && !d->hasweap(n, w, 3)) continue; // skip empty when scrolling
                 if(weapselect(d, n, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
                 {
                     lastweapselect = totalmillis ? totalmillis : 1;
@@ -199,8 +199,7 @@ namespace weapons
     void checkweapons(gameent *d)
     {
         int sweap = m_weapon(d->actortype, game::gamemode, game::mutators);
-        if(!d->hasweap(d->weapselect, sweap) || (weapautoswitch && d->getammo(d->weapselect, 0, true) <= 0))
-            weapselect(d, d->bestweap(sweap, d->weapselect), 1<<W_S_RELOAD, true);
+        if(!d->hasweap(d->weapselect, sweap, weapautoswitch ? 3 : 0)) weapselect(d, d->bestweap(sweap, d->weapselect), 1<<W_S_RELOAD, true);
         else if(d->action[AC_RELOAD] || autoreload(d)) weapreload(d, d->weapselect);
         else if(d->action[AC_DROP]) weapdrop(d, d->weapselect);
     }
