@@ -1598,11 +1598,9 @@ void setlocations()
 
 #ifndef STANDALONE
 VAR(IDF_INIT, noconfigfile, 0, 0, 1);
-#endif // STANDALONE
 
 void writecfg(const char *name, int flags)
 {
-#ifndef STANDALONE
     stream *f = openutf8file(name, "w");
     if(!f) return;
     vector<ident *> ids;
@@ -1642,16 +1640,19 @@ void writecfg(const char *name, int flags)
         writebinds(f);
     }
     delete f;
-#endif
 }
 ICOMMAND(0, writecfg, "i", (int *icfg), if(!(identflags&IDF_WORLD)) writecfg(*icfg ? "init.cfg" : "config.cfg", *icfg ? IDF_INIT : IDF_PERSIST));
+#endif
 
 void rehash(bool reload)
 {
     if(reload)
     {
         rehashing = 1;
+#ifndef STANDALONE
         if(!noconfigfile) writecfg("config.cfg", IDF_PERSIST);
+        writeservercfg();
+#endif
     }
     reloadserver();
     reloadmaster();
@@ -1767,9 +1768,9 @@ int main(int argc, char **argv)
     setverinfo(argv[0]);
 
     char *initscript = NULL;
-    for(int i = 1; i<argc; i++)
+    for(int i = 1; i < argc; i++)
     {
-        if(argv[i][0]=='-') switch(argv[i][1])
+        if(argv[i][0] == '-') switch(argv[i][1])
         {
             case 'x': initscript = &argv[i][2]; break;
             default: if(!serveroption(argv[i])) gameargs.add(argv[i]); break;
@@ -1777,7 +1778,7 @@ int main(int argc, char **argv)
         else gameargs.add(argv[i]);
     }
 
-    if(enet_initialize()<0) fatal("Unable to initialise network module");
+    if(enet_initialize() < 0) fatal("Unable to initialise network module");
     atexit(enet_deinitialize);
 
     signal(SIGINT, fatalsignal);

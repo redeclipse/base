@@ -911,25 +911,20 @@ int main(int argc, char **argv)
     char *initscript = NULL;
     initing = INIT_RESET;
 
-    // redeclipse:// URI support
-    // examples:
+    // URI support
     // redeclipse://password@hostname:port
     // redeclipse://hostname:port
     // redeclipse://hostname
-    // (password and port are optional)
-    const char reprotoprefix[] = "redeclipse://";
+    const char reprotoprefix[] = VERSION_UNAME "://";
     const int reprotolen = sizeof(reprotoprefix) - 1;
-    char *reprotoarg = NULL;
-    char *connectstr = NULL;
-    char *connectpassword = NULL;
-    char *connecthost = NULL;
+    char *reprotoarg = NULL, *connectstr = NULL, *connectpassword = NULL, *connecthost = NULL;
     int connectport = SERVER_PORT;
 
     // try to parse home directory argument
     // (has to be parsed first to be able to set the logfile path correctly)
-    for(int i = 1; i<argc; i++)
+    for(int i = 1; i < argc; i++)
     {
-        if(argv[i][0]=='-') switch(argv[i][1])
+        if(argv[i][0] == '-') switch(argv[i][1])
         {
             case 'h': serveroption(argv[i]); break;
         }
@@ -937,12 +932,10 @@ int main(int argc, char **argv)
     setlogfile("log.txt");
     execfile("init.cfg", false);
 
-    // parse the rest of the arguments
-    for(int i = 1; i<argc; i++)
-    {
-        // switches that can modify both server and client behavior
-        if(argv[i][0]=='-') switch(argv[i][1])
-        {
+    for(int i = 1; i < argc; i++)
+    { // parse the rest of the arguments
+        if(argv[i][0] == '-') switch(argv[i][1])
+        { // switches that can modify both server and client behavior
             case 'h': /* parsed first */ break;
             case 'r': /* compat, ignore */ break;
             case 'd':
@@ -958,7 +951,7 @@ int main(int argc, char **argv)
                     case 'f': fullscreen = atoi(&argv[i][3]); break;
                     case 's': /* compat, ignore */ break;
                     case 'u': /* compat, ignore */ break;
-                    default: conoutf("\frUnknown display option %c", argv[i][2]); break;
+                    default: conoutf("\frUnknown display option: '%c'", argv[i][2]); break;
                 }
                 break;
             }
@@ -967,20 +960,13 @@ int main(int argc, char **argv)
                 if(!serveroption(argv[i])) gameargs.add(argv[i]);
                 break;
         }
-
-        // will only parse the first argument that is possibly a redeclipse:// URL argument and ignore any following
         else if(!strncmp(argv[i], reprotoprefix, reprotolen) && !reprotoarg)
-        {
+        { // will only parse the first argument that is possibly a redeclipse:// URL argument and ignore any following
             reprotoarg = newstring(argv[i]);
             connectstr = newstring(reprotoarg + reprotolen);
-
-            // check if there's actually text after the protocol prefix
-            if(!*connectstr) continue;
-
-            // skip trailing slashes (if any)
-            char* slashchr = strchr(connectstr, '/');
+            if(!*connectstr) continue; // check if there's actually text after the protocol prefix
+            char *slashchr = strchr(connectstr, '/'); // skip trailing slashes (if any)
             if(slashchr) *slashchr = '\0';
-
             connecthost = strchr(connectstr, '@');
             if(connecthost)
             {
@@ -988,7 +974,6 @@ int main(int argc, char **argv)
                 *connecthost++ = '\0';
             }
             else connecthost = connectstr;
-
             char *portbuf = strchr(connecthost, ':');
             if(portbuf)
             {
