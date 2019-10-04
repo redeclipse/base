@@ -740,11 +740,8 @@ struct clientstate
 
     int bestweap(int sweap, int exclude = -1)
     {
-        int w = getlastweap(sweap, exclude);
-        if(hasweap(w, sweap)) return w;
-        loopirev(W_ALL) if(hasweap(i, sweap, 3)) return i; // reloadable first
-        loopirev(W_ALL) if(hasweap(i, sweap, 1)) return i; // carriable second
-        loopirev(W_ALL) if(hasweap(i, sweap, 0)) return i; // any just to bail us out
+        loopvrev(lastweap) if(hasweap(lastweap[i], sweap, 3, exclude)) return lastweap[i];
+        loopirev(W_ALL) if(hasweap(i, sweap, 3, exclude)) return i;
         return weapselect;
     }
 
