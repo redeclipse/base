@@ -401,7 +401,7 @@ static inline bool checknumber(const char *s)
 }
 static inline bool checknumber(const stringslice &s) { return checknumber(s.str); }
 
-template<class T> static inline ident *newident(const T &name, int flags)
+template<class T> static inline ident *newident(const T &name, int flags, int level = 0)
 {
     ident *id = idents.access(name);
     if(!id)
@@ -411,7 +411,7 @@ template<class T> static inline ident *newident(const T &name, int flags)
             debugcode("\frNumber %.*s is not a valid identifier name", stringlen(name), stringptr(name));
             return dummyident;
         }
-        id = addident(ident(ID_ALIAS, newstring(name), flags));
+        id = addident(ident(ID_ALIAS, newstring(name), flags, level));
     }
     return id;
 }
@@ -440,14 +440,14 @@ static inline ident *forceident(tagval &v)
     return dummyident;
 }
 
-ident *newident(const char *name, int flags)
+ident *newident(const char *name, int flags, int level)
 {
-    return newident<const char *>(name, flags);
+    return newident<const char *>(name, flags, level);
 }
 
-ident *writeident(const char *name, int flags)
+ident *writeident(const char *name, int flags, int level)
 {
-    ident *id = newident(name, flags);
+    ident *id = newident(name, flags, level);
     if(id->index < MAXARGS && !(aliasstack->usedargs&(1<<id->index)))
     {
         pusharg(*id, nullval, aliasstack->argstack[id->index]);
@@ -563,7 +563,7 @@ static void setalias(const char *name, tagval &v, bool world)
             return;
         }
 #endif
-        id = addident(ident(ID_ALIAS, newstring(name), v, identflags|(world ? IDF_WORLD : 0)));
+        id = addident(ident(ID_ALIAS, newstring(name), v, identflags|(world ? IDF_WORLD : 0), 0));
 #ifndef STANDALONE
         client::editvar(id, !(identflags&IDF_WORLD));
 #endif
@@ -612,21 +612,21 @@ COMMAND(0, loadalias, "ssi");
 
 // variables and commands are registered through globals, see cube.h
 
-int variable(const char *name, int min, int cur, int max, int *storage, identfun fun, int flags)
+int variable(const char *name, int min, int cur, int max, int *storage, identfun fun, int flags, int level)
 {
-    addident(ident(ID_VAR, name, min, cur, max, storage, (void *)fun, flags));
+    addident(ident(ID_VAR, name, min, cur, max, storage, (void *)fun, flags, level));
     return cur;
 }
 
-float fvariable(const char *name, float min, float cur, float max, float *storage, identfun fun, int flags)
+float fvariable(const char *name, float min, float cur, float max, float *storage, identfun fun, int flags, int level)
 {
-    addident(ident(ID_FVAR, name, min, cur, max, storage, (void *)fun, flags));
+    addident(ident(ID_FVAR, name, min, cur, max, storage, (void *)fun, flags, level));
     return cur;
 }
 
-char *svariable(const char *name, const char *cur, char **storage, identfun fun, int flags)
+char *svariable(const char *name, const char *cur, char **storage, identfun fun, int flags, int level)
 {
-    addident(ident(ID_SVAR, name, newstring(cur), storage, (void *)fun, flags));
+    addident(ident(ID_SVAR, name, newstring(cur), storage, (void *)fun, flags, level));
     return newstring(cur);
 }
 
@@ -774,6 +774,63 @@ void setsvar(const char *name, const char *str, bool dofunc, bool def)
 #endif
 }
 
+void setvarflag(const char *s, const char *v, int flag, const char *msg, bool alias)
+{
+    ident *id = idents.access(s);
+    if(!id || (alias && id->type != ID_ALIAS))
+    {
+        if(verbose) conoutf("\frAdding %s of %s failed as it is not available", msg, s);
+        return;
+    }
+    bool on = false;
+    if(isnumeric(*v)) on = atoi(v) != 0;
+    else if(!strcasecmp("false", v)) on = false;
+    else if(!strcasecmp("true", v)) on = true;
+    else if(!strcasecmp("on", v)) on = true;
+    else if(!strcasecmp("off", v)) on = false;
+    if(on && !(id->flags&flag)) id->flags |= flag;
+    else if(!on && id->flags&flag) id->flags &= ~flag;
+}
+
+ICOMMAND(0, setcomplete, "ss", (char *s, char *t), setvarflag(s, t, IDF_COMPLETE, "complete", false));
+ICOMMAND(0, setpersist, "ss", (char *s, char *t), setvarflag(s, t, IDF_PERSIST, "persist", true));
+
+void setvardesc(const char *s, const char *v, const char *f)
+{
+    ident *id = idents.access(s);
+    if(!id)
+    {
+        if(verbose) conoutf("\frAdding description of %s failed as it is not available", s);
+        return;
+    }
+    DELETEA(id->desc);
+    if(v && *v) id->desc = newstring(v);
+    loopvrev(id->fields)
+    {
+        DELETEA(id->fields[i]);
+        id->fields.remove(i);
+    }
+    if(f && *f) explodelist(f, id->fields);
+}
+ICOMMAND(0, setdesc, "sss", (char *s, char *t, char *f), setvardesc(s, t, f));
+
+void setvarlevel(const char *s, int level)
+{
+    ident *id = idents.access(s);
+    if(!id)
+    {
+        if(verbose) conoutf("\frSetting level of %s failed as it is not available", s);
+        return;
+    }
+    if(!(id->flags&IDF_SERVER))
+    {
+        if(verbose) conoutf("\frSetting level of %s failed as it is not a server side variable", s);
+        return;
+    }
+    id->level = level;
+}
+ICOMMAND(0, setvarlevel, "si", (char *s, int *level), setvarlevel(s, *level));
+
 int getvar(const char *name)
 {
     GETVAR(id, ID_VAR, name, 0);
@@ -800,6 +857,13 @@ int getvarflags(const char *name)
     ident *id = idents.access(name);
     if(!id) return -1;
     return id->flags;
+}
+
+int getvarlevel(const char *name)
+{
+    ident *id = idents.access(name);
+    if(!id) return -1;
+    return id->level;
 }
 
 int getvarmin(const char *name)
@@ -923,6 +987,7 @@ const char *getvarargs(const char *name)
 ICOMMAND(0, getvar, "s", (char *n), intret(getvar(n)));
 ICOMMAND(0, getvartype, "s", (char *n), intret(getvartype(n)));
 ICOMMAND(0, getvarflags, "s", (char *n), intret(getvarflags(n)));
+ICOMMAND(0, getvarlevel, "s", (char *n), intret(getvarlevel(n)));
 ICOMMAND(0, getvarmin, "s", (char *n), intret(getvarmin(n)));
 ICOMMAND(0, getvarmax, "s", (char *n), intret(getvarmax(n)));
 ICOMMAND(0, getfvarmin, "s", (char *s), floatret(getfvarmin(s)));
@@ -1064,7 +1129,7 @@ void setsvarchecked(ident *id, const char *val)
     }
 }
 
-bool addcommand(const char *name, identfun fun, const char *args, int type, int flags)
+bool addcommand(const char *name, identfun fun, const char *args, int type, int flags, int level)
 {
     uint argmask = 0;
     int numargs = 0;
@@ -1078,7 +1143,7 @@ bool addcommand(const char *name, identfun fun, const char *args, int type, int 
         default: fatal("Builtin %s declared with illegal type: %s", name, args); break;
     }
     if(limit && numargs > MAXCOMARGS) fatal("Builtin %s declared with too many args: %d", name, numargs);
-    addident(ident(type, name, args, argmask, numargs, (void *)fun, flags));
+    addident(ident(type, name, args, argmask, numargs, (void *)fun, flags, level));
     return false;
 }
 

@@ -326,19 +326,19 @@ extern mutstypes mutstype[];
                                 ) \
                             )
 
-#define MMVAR(f,a,b,c,w01,w02,w03,w04,w05,w06,w07,w08,w09,w10,w11,w12) \
-    GVAR(f, a, b, w01, c); \
-    GVAR(f, a##duel, b, w02, c); \
-    GVAR(f, a##survivor, b, w03, c); \
-    GVAR(f, a##gladiator, b, w04, c); \
-    GVAR(f, a##capture, b, w05, c); \
-    GVAR(f, a##defend, b, w06, c); \
-    GVAR(f, a##defendking, b, w07, c); \
-    GVAR(f, a##bomber, b, w08, c); \
-    GVAR(f, a##bomberhold, b, w09, c); \
-    GVAR(f, a##race, b, w10, c); \
-    GVAR(f, a##racetimed, b, w11, c); \
-    GVAR(f, a##racegauntlet, b, w12, c);
+#define MMVAR(f,l,a,b,c,w01,w02,w03,w04,w05,w06,w07,w08,w09,w10,w11,w12) \
+    GVAR(f, l, a, b, w01, c); \
+    GVAR(f, l, a##duel, b, w02, c); \
+    GVAR(f, l, a##survivor, b, w03, c); \
+    GVAR(f, l, a##gladiator, b, w04, c); \
+    GVAR(f, l, a##capture, b, w05, c); \
+    GVAR(f, l, a##defend, b, w06, c); \
+    GVAR(f, l, a##defendking, b, w07, c); \
+    GVAR(f, l, a##bomber, b, w08, c); \
+    GVAR(f, l, a##bomberhold, b, w09, c); \
+    GVAR(f, l, a##race, b, w10, c); \
+    GVAR(f, l, a##racetimed, b, w11, c); \
+    GVAR(f, l, a##racegauntlet, b, w12, c);
 
 #define DSG(a,b,x)          (m_duel(a, b) ? G(duel##x) : G(survivor##x))
 

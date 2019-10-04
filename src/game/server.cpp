@@ -3755,9 +3755,8 @@ namespace server
         {
             const char *name = &id->name[3], *val = NULL, *oldval = NULL;
             bool needfreeoldval = false;
-            int locked = min(max(id->flags&IDF_ADMIN ? int(G(adminlock)) : (id->flags&IDF_MODERATOR ? int(G(moderatorlock)) : 0), G(varslock)), int(PRIV_CREATOR));
-            if(!strcmp(id->name, "sv_gamespeed") && G(gamespeedlock) > locked) locked = min(G(gamespeedlock), int(PRIV_CREATOR));
-            else if(id->type == ID_VAR)
+            int locked = clamp(id->level, max(G(varslock), 0), int(PRIV_CREATOR));
+            if(id->type == ID_VAR)
             {
                 int len = strlen(id->name);
                 if(len > 4 && !strcmp(&id->name[len-4], "lock"))

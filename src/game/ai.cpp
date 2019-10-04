@@ -1810,6 +1810,13 @@ namespace ai
         client::addmsg(N_TEXT, "ri3s", d->clientnum, t->clientnum, SAY_WHISPER, msg);
     }
 
+    static const int AFFIRMNUM = 5;
+    static const char *affirm[AFFIRMNUM] = { "Roger", "Okay", "OK", "Will do", "I'm on it" };
+    static const int QUIPFORGETNUM = 4;
+    static const char *quip_forget[QUIPFORGETNUM] = { "Back to what I was doing then", "Resuming previous operations", "I am no longer your slave", "Jolly good show then" };
+    static const int QUIPRESETNUM = 4;
+    static const char *quip_reset[QUIPRESETNUM] = { "What was I doing again?", "Duh... off I go..", "Who were you again?", "Ummmm... wtf do I do now?" };
+
     void scanchat(gameent *d, gameent *t, int flags, const char *text)
     {
         if(flags&SAY_ACTION || d->actortype != A_PLAYER) return;
@@ -1855,10 +1862,9 @@ namespace ai
                 continue;
             else if(!m_edit(game::gamemode) && d->team != e->team && (!aimed || !client::haspriv(d, botoverridelock)))
             {
-                if(aimed) botsay(e, d, "sorry, can't obey you");
+                if(aimed) botsay(e, d, "Sorry, I can't obey you due to commands being locked on this server");
                 continue;
             }
-            const char *affirm[4] = { "roger", "okay", "will do", "i'm on it" };
             if(!strcasecmp(w[pos], "defend"))
             {
                 pos++;
@@ -1866,13 +1872,13 @@ namespace ai
                 {
                     e->ai->clear();
                     e->ai->addstate(AI_S_DEFEND, AI_T_ACTOR, d->clientnum, AI_A_PROTECT, d->clientnum);
-                    botsay(e, d, "%s, defending you", affirm[rnd(4)]);
+                    botsay(e, d, "%s, defending you", affirm[rnd(AFFIRMNUM)]);
                 }
                 else if(!strcasecmp(w[pos], "here"))
                 {
                     e->ai->clear();
                     e->ai->addstate(AI_S_DEFEND, AI_T_NODE, e->lastnode, AI_A_PROTECT, d->clientnum);
-                    botsay(e, d, "%s, defending your position", affirm[rnd(4)]);
+                    botsay(e, d, "%s, defending your position", affirm[rnd(AFFIRMNUM)]);
                 }
                 else
                 {
@@ -1881,7 +1887,7 @@ namespace ai
                     {
                         e->ai->clear();
                         e->ai->addstate(AI_S_DEFEND, AI_T_ACTOR, f->clientnum, AI_A_PROTECT, d->clientnum);
-                        botsay(e, d, "%s, defending %s", affirm[rnd(4)], f->name);
+                        botsay(e, d, "%s, defending %s", affirm[rnd(AFFIRMNUM)], f->name);
                     }
                     else
                     {
@@ -1896,7 +1902,7 @@ namespace ai
                                     {
                                         e->ai->clear();
                                         e->ai->addstate(AI_S_DEFEND, AI_T_AFFINITY, i, AI_A_PROTECT, d->clientnum);
-                                        botsay(e, d, "%s, defending the flag", affirm[rnd(4)]);
+                                        botsay(e, d, "%s, defending the flag", affirm[rnd(AFFIRMNUM)]);
                                         break;
                                     }
                                 }
@@ -1907,12 +1913,12 @@ namespace ai
                                     {
                                         e->ai->clear();
                                         e->ai->addstate(AI_S_DEFEND, AI_T_ENTITY, capture::st.flags[i].ent, AI_A_PROTECT, d->clientnum);
-                                        botsay(e, d, "%s, defending base for the flag", affirm[rnd(4)]);
+                                        botsay(e, d, "%s, defending base for the flag", affirm[rnd(AFFIRMNUM)]);
                                         break;
                                     }
                                 }
                                 #endif
-                                else botsay(e, d, "use: me, here, or flag");
+                                else botsay(e, d, "Usage: me, here, or flag");
                                 break;
                             }
                             case G_BOMBER:
@@ -1923,14 +1929,14 @@ namespace ai
                                     {
                                         e->ai->clear();
                                         e->ai->addstate(AI_S_DEFEND, AI_T_AFFINITY, i, AI_A_PROTECT, d->clientnum);
-                                        botsay(e, d, "%s, defending the goal", affirm[rnd(4)]);
+                                        botsay(e, d, "%s, defending the goal", affirm[rnd(AFFIRMNUM)]);
                                         break;
                                     }
                                 }
-                                else botsay(e, d, "use: me, here, or goal");
+                                else botsay(e, d, "Usage: me, here, or goal");
                                 break;
                             }
-                            default: botsay(e, d, "use: me, or here"); break;
+                            default: botsay(e, d, "Usage: me, or here"); break;
                         }
                     }
                 }
@@ -1949,7 +1955,7 @@ namespace ai
                             {
                                 e->ai->clear();
                                 e->ai->addstate(AI_S_PURSUE, AI_T_AFFINITY, i, AI_A_HASTE, d->clientnum);
-                                botsay(e, d, "%s, attacking the flag", affirm[rnd(4)]);
+                                botsay(e, d, "%s, attacking the flag", affirm[rnd(AFFIRMNUM)]);
                                 break;
                             }
                         }
@@ -1960,12 +1966,12 @@ namespace ai
                             {
                                 e->ai->clear();
                                 e->ai->addstate(AI_S_DEFEND, AI_T_ENTITY, capture::st.flags[i].ent, AI_A_HASTE, d->clientnum);
-                                botsay(e, d, "%s, attacking the flag", affirm[rnd(4)]);
+                                botsay(e, d, "%s, attacking the flag", affirm[rnd(AFFIRMNUM)]);
                                 break;
                             }
                         }
                         #endif
-                        else botsay(e, d, "sorry, flag is the only option");
+                        else botsay(e, d, "Sorry, flag is the only option");
 
                         break;
                     }
@@ -1977,7 +1983,7 @@ namespace ai
                             {
                                 e->ai->clear();
                                 e->ai->addstate(AI_S_PURSUE, AI_T_AFFINITY, i, AI_A_HASTE, d->clientnum);
-                                botsay(e, d, "%s, attacking the goal", affirm[rnd(4)]);
+                                botsay(e, d, "%s, attacking the goal", affirm[rnd(AFFIRMNUM)]);
                                 break;
                             }
                         }
@@ -1987,14 +1993,14 @@ namespace ai
                             {
                                 e->ai->clear();
                                 e->ai->addstate(AI_S_PURSUE, AI_T_AFFINITY, i, AI_A_HASTE, d->clientnum);
-                                botsay(e, d, "%s, attacking the ball", affirm[rnd(4)]);
+                                botsay(e, d, "%s, attacking the ball", affirm[rnd(AFFIRMNUM)]);
                                 break;
                             }
                         }
-                        else botsay(e, d, "use: goal, or ball");
+                        else botsay(e, d, "Usage: goal, or ball");
                         break;
                     }
-                    default: botsay(e, d, "sorry, no attack directions in this game"); break;
+                    default: botsay(e, d, "Sorry, no attack directions in this game type"); break;
                 }
             }
             else if(!strcasecmp(w[pos], "stand") || !strcasecmp(w[pos], "crouch") || !strcasecmp(w[pos], "dance"))
@@ -2017,7 +2023,7 @@ namespace ai
                 {
                     e->ai->clear();
                     e->ai->addstate(AI_S_OVERRIDE, AI_T_NODE, d->lastnode, act, d->clientnum, state);
-                    botsay(e, d, "%s, will %s at your position (%d)", affirm[rnd(4)], cmd, d->lastnode);
+                    botsay(e, d, "%s, will %s at your position (%d)", affirm[rnd(AFFIRMNUM)], cmd, d->lastnode);
                 }
                 else if(!strcasecmp(w[pos], "with") || !strcasecmp(w[pos], "next"))
                 {
@@ -2026,7 +2032,7 @@ namespace ai
                     {
                         e->ai->clear();
                         e->ai->addstate(AI_S_OVERRIDE, AI_T_ACTOR, d->clientnum, act, d->clientnum, state);
-                        botsay(e, d, "%s, will %s next to you", affirm[rnd(4)], cmd);
+                        botsay(e, d, "%s, will %s next to you", affirm[rnd(AFFIRMNUM)], cmd);
                     }
                     else
                     {
@@ -2035,7 +2041,7 @@ namespace ai
                         {
                             e->ai->clear();
                             e->ai->addstate(AI_S_OVERRIDE, AI_T_ACTOR, f->clientnum, act, d->clientnum, state);
-                            botsay(e, d, "%s, will %s next to %s", affirm[rnd(4)], cmd, f->name);
+                            botsay(e, d, "%s, will %s next to %s", affirm[rnd(AFFIRMNUM)], cmd, f->name);
                         }
                     }
                 }
@@ -2043,16 +2049,14 @@ namespace ai
             else if(!strcasecmp(w[pos], "forget"))
             {
                 loopvrev(e->ai->state) if(e->ai->state[i].owner == d->clientnum) e->ai->state.remove(i);
-                const char *quip[4] = { "back to what i was doing then", "resuming previous operations", "i am no longer your slave", "jolly good show then" };
-                botsay(e, d, "%s, %s", affirm[rnd(4)], quip[rnd(4)]);
+                botsay(e, d, "%s, %s", affirm[rnd(AFFIRMNUM)], quip_forget[rnd(QUIPFORGETNUM)]);
             }
             else if(!strcasecmp(w[pos], "reset"))
             {
                 e->ai->reset(true, false);
-                const char *quip[4] = { "what was i doing again?", "duh... off i go..", "who were you again?", "ummmm... wtf do i do now?" };
-                botsay(e, d, "%s, %s", affirm[rnd(4)], quip[rnd(4)]);
+                botsay(e, d, "%s, %s", affirm[rnd(AFFIRMNUM)], quip_reset[rnd(QUIPRESETNUM)]);
             }
-            else botsay(e, d, "use: defend, attack, stand, crouch, dance, forget, or reset");
+            else botsay(e, d, "Usage: defend, attack, stand, crouch, dance, forget, or reset");
         }
         loopi(numargs) DELETEA(w[i]);
     }

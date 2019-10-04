@@ -50,7 +50,7 @@ enum { ID_VAR, ID_FVAR, ID_SVAR, ID_COMMAND, ID_ALIAS, ID_LOCAL, ID_DO, ID_DOARG
 #define FVAR_MAX 1e6f
 #define FVAR_NONZERO 1e-6f
 
-enum { IDF_PERSIST = 1<<0, IDF_READONLY = 1<<1, IDF_REWRITE = 1<<2, IDF_WORLD = 1<<3, IDF_COMPLETE = 1<<4, IDF_TEXTURE = 1<<5, IDF_CLIENT = 1<<6, IDF_SERVER = 1<<7, IDF_HEX = 1<<8, IDF_ADMIN = 1<<9, IDF_UNKNOWN = 1<<10, IDF_ARG = 1<<11, IDF_PRELOAD = 1<<12, IDF_GAMEPRELOAD = 1<<13, IDF_MODERATOR = 1<<14, IDF_GAMEMOD = 1<<15, IDF_NAMECOMPLETE = 1<<16 };
+enum { IDF_PERSIST = 1<<0, IDF_READONLY = 1<<1, IDF_REWRITE = 1<<2, IDF_WORLD = 1<<3, IDF_COMPLETE = 1<<4, IDF_TEXTURE = 1<<5, IDF_CLIENT = 1<<6, IDF_SERVER = 1<<7, IDF_HEX = 1<<8, IDF_UNKNOWN = 1<<9, IDF_ARG = 1<<10, IDF_PRELOAD = 1<<11, IDF_GAMEPRELOAD = 1<<12, IDF_GAMEMOD = 1<<13, IDF_NAMECOMPLETE = 1<<14 };
 
 struct ident;
 
@@ -116,8 +116,7 @@ struct ident
         uchar valtype; // ID_ALIAS
         uchar numargs; // ID_COMMAND
     };
-    uint flags;
-    int index;
+    int flags, index, level;
     const char *name;
     union
     {
@@ -151,36 +150,36 @@ struct ident
 
     ident() {}
     // ID_VAR
-    ident(int t, const char *n, int m, int c, int x, int *s, void *f = NULL, int flags = IDF_COMPLETE)
-        : type(t), flags(flags | ((flags&IDF_HEX && uint(x) == 0xFFFFFFFFU ? uint(m) > uint(x) : m > x) ? IDF_READONLY : 0)), name(n), minval(m), maxval(x), fun((identfun)f), desc(NULL)
+    ident(int t, const char *n, int m, int c, int x, int *s, void *f = NULL, int flags = IDF_COMPLETE, int level = 0)
+        : type(t), flags(flags | ((flags&IDF_HEX && uint(x) == 0xFFFFFFFFU ? uint(m) > uint(x) : m > x) ? IDF_READONLY : 0)), level(level), name(n), minval(m), maxval(x), fun((identfun)f), desc(NULL)
     { fields.shrink(0); def.i = c; bin.i = c; storage.i = s; }
     // ID_FVAR
-    ident(int t, const char *n, float m, float c, float x, float *s, void *f = NULL, int flags = IDF_COMPLETE)
-        : type(t), flags(flags | ((flags&IDF_HEX && uint(x) == 0xFFFFFFFFU ? uint(m) > uint(x) : m > x) ? IDF_READONLY : 0)), name(n), minvalf(m), maxvalf(x), fun((identfun)f), desc(NULL)
+    ident(int t, const char *n, float m, float c, float x, float *s, void *f = NULL, int flags = IDF_COMPLETE, int level = 0)
+        : type(t), flags(flags | ((flags&IDF_HEX && uint(x) == 0xFFFFFFFFU ? uint(m) > uint(x) : m > x) ? IDF_READONLY : 0)), level(level), name(n), minvalf(m), maxvalf(x), fun((identfun)f), desc(NULL)
     { fields.shrink(0); def.f = c; bin.f = c; storage.f = s; }
     // ID_SVAR
-    ident(int t, const char *n, char *c, char **s, void *f = NULL, int flags = IDF_COMPLETE)
-        : type(t), flags(flags), name(n), fun((identfun)f), desc(NULL)
+    ident(int t, const char *n, char *c, char **s, void *f = NULL, int flags = IDF_COMPLETE, int level = 0)
+        : type(t), flags(flags), level(level), name(n), fun((identfun)f), desc(NULL)
     { fields.shrink(0); def.s = c; bin.s = newstring(c); storage.s = s; }
     // ID_ALIAS
-    ident(int t, const char *n, char *a, int flags)
-        : type(t), valtype(VAL_STR), flags(flags), name(n), code(NULL), stack(NULL), desc(NULL)
+    ident(int t, const char *n, char *a, int flags, int level)
+        : type(t), valtype(VAL_STR), flags(flags), level(level), name(n), code(NULL), stack(NULL), desc(NULL)
     { fields.shrink(0); val.s = a; }
-    ident(int t, const char *n, int a, int flags)
-        : type(t), valtype(VAL_INT), flags(flags), name(n), code(NULL), stack(NULL), desc(NULL)
+    ident(int t, const char *n, int a, int flags, int level)
+        : type(t), valtype(VAL_INT), flags(flags), level(level), name(n), code(NULL), stack(NULL), desc(NULL)
     { fields.shrink(0); val.i = a; }
-    ident(int t, const char *n, float a, int flags)
-        : type(t), valtype(VAL_FLOAT), flags(flags), name(n), code(NULL), stack(NULL), desc(NULL)
+    ident(int t, const char *n, float a, int flags, int level)
+        : type(t), valtype(VAL_FLOAT), flags(flags), level(level), name(n), code(NULL), stack(NULL), desc(NULL)
     { fields.shrink(0); val.f = a; }
-    ident(int t, const char *n, int flags)
-        : type(t), valtype(VAL_NULL), flags(flags), name(n), code(NULL), stack(NULL), desc(NULL)
+    ident(int t, const char *n, int flags, int level)
+        : type(t), valtype(VAL_NULL), flags(flags), level(level), name(n), code(NULL), stack(NULL), desc(NULL)
     { fields.shrink(0); }
-    ident(int t, const char *n, const tagval &v, int flags)
-        : type(t), valtype(v.type), flags(flags), name(n), code(NULL), stack(NULL), desc(NULL)
+    ident(int t, const char *n, const tagval &v, int flags, int level)
+        : type(t), valtype(v.type), flags(flags), level(level), name(n), code(NULL), stack(NULL), desc(NULL)
     { fields.shrink(0); val = v; }
     // ID_COMMAND
-    ident(int t, const char *n, const char *args, uint argmask, int numargs, void *f = NULL, int flags = IDF_COMPLETE)
-        : type(t), numargs(numargs), flags(flags), name(n), args(args), argmask(argmask), fun((identfun)f), desc(NULL)
+    ident(int t, const char *n, const char *args, uint argmask, int numargs, void *f = NULL, int flags = IDF_COMPLETE, int level = 0)
+        : type(t), numargs(numargs), flags(flags), level(level), name(n), args(args), argmask(argmask), fun((identfun)f), desc(NULL)
     { fields.shrink(0); }
 
     void changed() { if(fun) fun(this); }
@@ -331,9 +330,9 @@ inline void ident::getcval(tagval &v) const
         default: v.setnull(); break;
     }
 }
-extern int variable(const char *name, int min, int cur, int max, int *storage, identfun fun, int flags);
-extern float fvariable(const char *name, float min, float cur, float max, float *storage, identfun fun, int flags);
-extern char *svariable(const char *name, const char *cur, char **storage, identfun fun, int flags);
+extern int variable(const char *name, int min, int cur, int max, int *storage, identfun fun, int flags, int level = 0);
+extern float fvariable(const char *name, float min, float cur, float max, float *storage, identfun fun, int flags, int level = 0);
+extern char *svariable(const char *name, const char *cur, char **storage, identfun fun, int flags, int level = 0);
 extern void setvar(const char *name, int i, bool dofunc = false, bool def = false, bool force = false);
 extern void setfvar(const char *name, float f, bool dofunc = false, bool def = false, bool force = false);
 extern void setsvar(const char *name, const char *str, bool dofunc = false, bool def = false);
@@ -349,10 +348,10 @@ extern float getfvarmin(const char *name);
 extern float getfvarmax(const char *name);
 extern bool identexists(const char *name);
 extern ident *getident(const char *name);
-extern ident *newident(const char *name, int flags = 0);
+extern ident *newident(const char *name, int flags = 0, int level = 0);
 extern ident *readident(const char *name);
-extern ident *writeident(const char *name, int flags = 0);
-extern bool addcommand(const char *name, identfun fun, const char *args, int type = ID_COMMAND, int flags = IDF_COMPLETE);
+extern ident *writeident(const char *name, int flags = 0, int level = 0);
+extern bool addcommand(const char *name, identfun fun, const char *args, int type = ID_COMMAND, int flags = IDF_COMPLETE, int levle = 0);
 
 extern uint *compilecode(const char *p);
 extern void keepcode(uint *p);
@@ -423,20 +422,20 @@ extern char *limitstring(const char *str, size_t len);
 
 // nasty macros for registering script functions, abuses globals to avoid excessive infrastructure
 #define KEYWORD(flags, name, type) UNUSED static bool __dummy_##type = addcommand(#name, (identfun)NULL, NULL, type, flags|IDF_COMPLETE)
-#define COMMANDKN(flags, name, type, fun, nargs) UNUSED static bool __dummy_##fun = addcommand(#name, (identfun)fun, nargs, type, flags|IDF_COMPLETE)
-#define COMMANDK(flags, name, type, nargs) COMMANDKN(flags, name, type, name, nargs)
-#define COMMANDN(flags, name, fun, nargs) COMMANDKN(flags, name, ID_COMMAND, fun, nargs)
+#define COMMANDKN(flags, level, name, type, fun, nargs) UNUSED static bool __dummy_##fun = addcommand(#name, (identfun)fun, nargs, type, flags|IDF_COMPLETE, level)
+#define COMMANDK(flags, name, type, nargs) COMMANDKN(flags, 0, name, type, name, nargs)
+#define COMMANDN(flags, name, fun, nargs) COMMANDKN(flags, 0, name, ID_COMMAND, fun, nargs)
 #define COMMAND(flags, name, nargs) COMMANDN(flags, name, name, nargs)
 
 // anonymous inline commands, uses nasty template trick with line numbers to keep names unique
 #define ICOMMANDNAME(name) _icmd_##name
 #define ICOMMANDSNAME _icmds_
-#define ICOMMANDKNS(flags, name, type, cmdname, nargs, proto, b) template<int N> struct cmdname; template<> struct cmdname<__LINE__> { static bool init; static void run proto; }; bool cmdname<__LINE__>::init = addcommand(name, (identfun)cmdname<__LINE__>::run, nargs, type, flags|IDF_COMPLETE); void cmdname<__LINE__>::run proto \
+#define ICOMMANDKNS(flags, level, name, type, cmdname, nargs, proto, b) template<int N> struct cmdname; template<> struct cmdname<__LINE__> { static bool init; static void run proto; }; bool cmdname<__LINE__>::init = addcommand(name, (identfun)cmdname<__LINE__>::run, nargs, type, flags|IDF_COMPLETE, level); void cmdname<__LINE__>::run proto \
     { b; }
-#define ICOMMANDKN(flags, name, type, cmdname, nargs, proto, b) ICOMMANDKNS(flags, #name, type, cmdname, nargs, proto, b)
-#define ICOMMANDK(flags, name, type, nargs, proto, b) ICOMMANDKN(flags, name, type, ICOMMANDNAME(name), nargs, proto, b)
-#define ICOMMANDKS(flags, name, type, nargs, proto, b) ICOMMANDKNS(flags, name, type, ICOMMANDSNAME, nargs, proto, b)
-#define ICOMMANDNS(flags, name, cmdname, nargs, proto, b) ICOMMANDKNS(flags, name, ID_COMMAND, cmdname, nargs, proto, b)
+#define ICOMMANDKN(flags, level, name, type, cmdname, nargs, proto, b) ICOMMANDKNS(flags, level, #name, type, cmdname, nargs, proto, b)
+#define ICOMMANDK(flags, name, type, nargs, proto, b) ICOMMANDKN(flags, 0, name, type, ICOMMANDNAME(name), nargs, proto, b)
+#define ICOMMANDKS(flags, name, type, nargs, proto, b) ICOMMANDKNS(flags, 0, name, type, ICOMMANDSNAME, nargs, proto, b)
+#define ICOMMANDNS(flags, name, cmdname, nargs, proto, b) ICOMMANDKNS(flags, 0, name, ID_COMMAND, cmdname, nargs, proto, b)
 #define ICOMMANDN(flags, name, cmdname, nargs, proto, b) ICOMMANDNS(flags, #name, cmdname, nargs, proto, b)
 #define ICOMMAND(flags, name, nargs, proto, b) ICOMMANDN(flags, name, ICOMMANDNAME(name), nargs, proto, b)
 #define ICOMMANDS(flags, name, nargs, proto, b) ICOMMANDNS(flags, name, ICOMMANDSNAME, nargs, proto, b)
@@ -459,32 +458,32 @@ extern char *limitstring(const char *str, size_t len);
     else printsvar(id, (b)); \
 })
 
-#define _VAR(name, global, min, cur, max, flags) int global = variable(#name, min, cur, max, &global, NULL, flags|IDF_COMPLETE)
-#define VARN(flags, name, global, min, cur, max) _VAR(name, global, min, cur, max, flags)
-#define VAR(flags, name, min, cur, max) _VAR(name, name, min, cur, max, flags)
-#define _VARF(name, global, min, cur, max, body, flags)  void var_##name(ident *id); int global = variable(#name, min, cur, max, &global, var_##name, flags|IDF_COMPLETE); void var_##name(ident *id) { body; }
-#define VARFN(flags, name, global, min, cur, max, body) _VARF(name, global, min, cur, max, body, flags)
-#define VARF(flags, name, min, cur, max, body) _VARF(name, name, min, cur, max, body, flags)
+#define _VAR(name, global, min, cur, max, flags, level) int global = variable(#name, min, cur, max, &global, NULL, flags|IDF_COMPLETE, level)
+#define VARN(flags, name, global, min, cur, max) _VAR(name, global, min, cur, max, flags, 0)
+#define VAR(flags, name, min, cur, max) _VAR(name, name, min, cur, max, flags, 0)
+#define _VARF(name, global, min, cur, max, body, flags, level)  void var_##name(ident *id); int global = variable(#name, min, cur, max, &global, var_##name, flags|IDF_COMPLETE, level); void var_##name(ident *id) { body; }
+#define VARFN(flags, name, global, min, cur, max, body) _VARF(name, global, min, cur, max, body, flags, 0)
+#define VARF(flags, name, min, cur, max, body) _VARF(name, name, min, cur, max, body, flags, 0)
 
-#define _FVAR(name, global, min, cur, max, flags) float global = fvariable(#name, min, cur, max, &global, NULL, flags|IDF_COMPLETE)
-#define FVARN(flags, name, global, min, cur, max) _FVAR(name, global, min, cur, max, flags)
-#define FVAR(flags, name, min, cur, max) _FVAR(name, name, min, cur, max, flags)
-#define _FVARF(name, global, min, cur, max, body, flags) void var_##name(ident *id); float global = fvariable(#name, min, cur, max, &global, var_##name, flags|IDF_COMPLETE); void var_##name(ident *id) { body; }
-#define FVARFN(flags, name, global, min, cur, max, body) _FVARF(name, global, min, cur, max, body, flags)
-#define FVARF(flags, name, min, cur, max, body) _FVARF(name, name, min, cur, max, body, flags)
+#define _FVAR(name, global, min, cur, max, flags, level) float global = fvariable(#name, min, cur, max, &global, NULL, flags|IDF_COMPLETE, level)
+#define FVARN(flags, name, global, min, cur, max) _FVAR(name, global, min, cur, max, flags, 0)
+#define FVAR(flags, name, min, cur, max) _FVAR(name, name, min, cur, max, flags, 0)
+#define _FVARF(name, global, min, cur, max, body, flags, level) void var_##name(ident *id); float global = fvariable(#name, min, cur, max, &global, var_##name, flags|IDF_COMPLETE, level); void var_##name(ident *id) { body; }
+#define FVARFN(flags, name, global, min, cur, max, body) _FVARF(name, global, min, cur, max, body, flags, 0)
+#define FVARF(flags, name, min, cur, max, body) _FVARF(name, name, min, cur, max, body, flags, 0)
 
-#define _SVAR(name, global, cur, flags) char *global = svariable(#name, cur, &global, NULL, flags|IDF_COMPLETE)
-#define SVARN(flags, name, global, cur) _SVAR(name, global, cur, flags)
-#define SVAR(flags, name, cur) _SVAR(name, name, cur, flags)
-#define _SVARF(name, global, cur, body, flags) void var_##name(ident *id); char *global = svariable(#name, cur, &global, var_##name, flags|IDF_COMPLETE); void var_##name(ident *id) { body; }
-#define SVARFN(flags, name, global, cur, body) _SVARF(name, global, cur, body, flags)
-#define SVARF(flags, name, cur, body) _SVARF(name, name, cur, body, flags)
+#define _SVAR(name, global, cur, flags, level) char *global = svariable(#name, cur, &global, NULL, flags|IDF_COMPLETE, level)
+#define SVARN(flags, name, global, cur) _SVAR(name, global, cur, flags, 0)
+#define SVAR(flags, name, cur) _SVAR(name, name, cur, flags, 0)
+#define _SVARF(name, global, cur, body, flags, level) void var_##name(ident *id); char *global = svariable(#name, cur, &global, var_##name, flags|IDF_COMPLETE, level); void var_##name(ident *id) { body; }
+#define SVARFN(flags, name, global, cur, body) _SVARF(name, global, cur, body, flags, 0)
+#define SVARF(flags, name, cur, body) _SVARF(name, name, cur, body, flags, 0)
 
-#define _CVAR(name, cur, init, body, flags) bvec name = bvec::fromcolor(cur); _VARF(name, _##name, 0, cur, 0xFFFFFF, { init; name = bvec::fromcolor(_##name); body; }, IDF_HEX|flags)
-#define CVARF(flags, name, cur, body) _CVAR(name, cur, , body, flags)
-#define CVAR(flags, name, cur) _CVAR(name, cur, , , flags)
-#define CVAR0F(flags, name, cur, body) _CVAR(name, cur, { if(!_##name) _##name = cur; }, body, flags)
-#define CVAR1F(flags, name, cur, body) _CVAR(name, cur, { if(_##name <= 255) _##name |= (_##name<<8) | (_##name<<16); }, body, flags)
+#define _CVAR(name, cur, init, body, flags, level) bvec name = bvec::fromcolor(cur); _VARF(name, _##name, 0, cur, 0xFFFFFF, { init; name = bvec::fromcolor(_##name); body; }, IDF_HEX|flags, level)
+#define CVARF(flags, name, cur, body) _CVAR(name, cur, , body, flags, 0)
+#define CVAR(flags, name, cur) _CVAR(name, cur, , , flags, 0)
+#define CVAR0F(flags, name, cur, body) _CVAR(name, cur, { if(!_##name) _##name = cur; }, body, flags, 0)
+#define CVAR1F(flags, name, cur, body) _CVAR(name, cur, { if(_##name <= 255) _##name |= (_##name<<8) | (_##name<<16); }, body, flags, 0)
 #define CVAR0(flags, name, cur) CVAR0F(flags, name, cur, )
 #define CVAR1(flags, name, cur) CVAR1F(flags, name, cur, )
 
@@ -496,43 +495,43 @@ extern char *limitstring(const char *str, size_t len);
 #define IDF_GAME (IDF_CLIENT|IDF_REWRITE)
 #define G(name) (name)
 #define PHYS(name) (G(name)*G(name##scale))
-#define GICOMMAND(flags, n, g, proto, svbody, ccbody) ICOMMAND(flags|IDF_GAME, n, g, proto, ccbody)
-#define GVARN(flags, name, global, min, cur, max) _VAR(name, global, min, cur, max, flags|IDF_GAME)
-#define GVAR(flags, name, min, cur, max) _VAR(name, name, min, cur, max, flags|IDF_GAME)
-#define GVARF(flags, name, min, cur, max, svbody, ccbody) _VARF(name, name, min, cur, max, ccbody, flags|IDF_GAME)
-#define GFVARN(flags, name, global, min, cur, max) _FVAR(name, global, min, cur, max, flags|IDF_GAME)
-#define GFVAR(flags, name, min, cur, max) _FVAR(name, name, min, cur, max, flags|IDF_GAME)
-#define GFVARF(flags, name, min, cur, max, svbody, ccbody) _FVARF(name, name, min, cur, max, ccbody, flags|IDF_GAME)
-#define GSVARN(flags, name, global, cur) _SVAR(name, global, cur, flags|IDF_GAME)
-#define GSVAR(flags, name, cur) _SVAR(name, name, cur, flags|IDF_GAME)
-#define GSVARF(flags, name, cur, svbody, ccbody) _SVARF(name, name, cur, ccbody, flags|IDF_GAME)
+#define GICOMMAND(flags, level, name, nargs, proto, svbody, ccbody) ICOMMANDKNS(flags|IDF_GAME, level, #name, ID_COMMAND, ICOMMANDNAME(name), nargs, proto, ccbody)
+#define GVARN(flags, level, name, global, min, cur, max) _VAR(name, global, min, cur, max, flags|IDF_GAME, level)
+#define GVAR(flags, level, name, min, cur, max) _VAR(name, name, min, cur, max, flags|IDF_GAME, level)
+#define GVARF(flags, level, name, min, cur, max, svbody, ccbody) _VARF(name, name, min, cur, max, ccbody, flags|IDF_GAME, level)
+#define GFVARN(flags, level, name, global, min, cur, max) _FVAR(name, global, min, cur, max, flags|IDF_GAME, level)
+#define GFVAR(flags, level, name, min, cur, max) _FVAR(name, name, min, cur, max, flags|IDF_GAME, level)
+#define GFVARF(flags, level, name, min, cur, max, svbody, ccbody) _FVARF(name, name, min, cur, max, ccbody, flags|IDF_GAME, level)
+#define GSVARN(flags, level, name, global, cur) _SVAR(name, global, cur, flags|IDF_GAME, level)
+#define GSVAR(flags, level, name, cur) _SVAR(name, name, cur, flags|IDF_GAME, level)
+#define GSVARF(flags, level, name, cur, svbody, ccbody) _SVARF(name, name, cur, ccbody, flags|IDF_GAME, level)
 #elif defined(GAMESERVER)
 #define G(name) (sv_##name)
 #define IDF_GAME (IDF_SERVER|IDF_REWRITE)
-#define GICOMMAND(flags, n, g, proto, svbody, ccbody) ICOMMAND(flags|(IDF_GAME&~IDF_REWRITE), sv_##n, g, proto, svbody)
-#define GVARN(flags, name, global, min, cur, max) _VAR(sv_##name, global, min, cur, max, flags|IDF_GAME)
-#define GVAR(flags, name, min, cur, max) _VAR(sv_##name, sv_##name, min, cur, max, flags|IDF_GAME)
-#define GVARF(flags, name, min, cur, max, svbody, ccbody) _VARF(sv_##name, sv_##name, min, cur, max, svbody, flags|IDF_GAME)
-#define GFVARN(flags, name, global, min, cur, max) _FVAR(sv_##name, global, min, cur, max, flags|IDF_GAME)
-#define GFVAR(flags, name, min, cur, max) _FVAR(sv_##name, sv_##name, min, cur, max, flags|IDF_GAME)
-#define GFVARF(flags, name, min, cur, max, svbody, ccbody) _FVARF(sv_##name, sv_##name, min, cur, max, svbody, flags|IDF_GAME)
-#define GSVARN(flags, name, global, cur) _SVAR(sv_##name, global, cur, flags|IDF_GAME)
-#define GSVAR(flags, name, cur) _SVAR(sv_##name, sv_##name, cur, flags|IDF_GAME)
-#define GSVARF(flags, name, cur, svbody, ccbody) _SVARF(sv_##name, sv_##name, cur, svbody, flags|IDF_GAME)
+#define GICOMMAND(flags, level, name, nargs, proto, svbody, ccbody) ICOMMANDKNS(flags|(IDF_GAME&~IDF_REWRITE), level, "sv_" #name, ID_COMMAND, ICOMMANDNAME(sv_##name), nargs, proto, svbody)
+#define GVARN(flags, level, name, global, min, cur, max) _VAR(sv_##name, global, min, cur, max, flags|IDF_GAME, level)
+#define GVAR(flags, level, name, min, cur, max) _VAR(sv_##name, sv_##name, min, cur, max, flags|IDF_GAME, level)
+#define GVARF(flags, level, name, min, cur, max, svbody, ccbody) _VARF(sv_##name, sv_##name, min, cur, max, svbody, flags|IDF_GAME, level)
+#define GFVARN(flags, level, name, global, min, cur, max) _FVAR(sv_##name, global, min, cur, max, flags|IDF_GAME, level)
+#define GFVAR(flags, level, name, min, cur, max) _FVAR(sv_##name, sv_##name, min, cur, max, flags|IDF_GAME, level)
+#define GFVARF(flags, level, name, min, cur, max, svbody, ccbody) _FVARF(sv_##name, sv_##name, min, cur, max, svbody, flags|IDF_GAME, level)
+#define GSVARN(flags, level, name, global, cur) _SVAR(sv_##name, global, cur, flags|IDF_GAME, level)
+#define GSVAR(flags, level, name, cur) _SVAR(sv_##name, sv_##name, cur, flags|IDF_GAME, level)
+#define GSVARF(flags, level, name, cur, svbody, ccbody) _SVARF(sv_##name, sv_##name, cur, svbody, flags|IDF_GAME, level)
 #else
 #define G(name) (name)
 #define PHYS(name) (G(name)*G(name##scale))
-#define GICOMMAND(flags, n, g, proto, svbody, ccbody)
-#define GVARN(flags, name, global, min, cur, max) extern int name
-#define GVAR(flags, name, min, cur, max) extern int name
-#define GVARF(flags, name, min, cur, max, svbody, ccbody) extern int name
-#define GVARN(flags, name, global, min, cur, max) extern int name
-#define GVAR(flags, name, min, cur, max) extern int name
-#define GVARF(flags, name, min, cur, max, svbody, ccbody) extern int name
-#define GFVARN(flags, name, global, min, cur, max) extern float name
-#define GFVAR(flags, name, min, cur, max) extern float name
-#define GFVARF(flags, name, min, cur, max, svbody, ccbody) extern float name
-#define GSVARN(flags, name, global, cur) extern char *name
-#define GSVAR(flags, name, cur) extern char *name
-#define GSVARF(flags, name, cur, svbody, ccbody) extern char *name
+#define GICOMMAND(flags, level, n, g, proto, svbody, ccbody)
+#define GVARN(flags, level, name, global, min, cur, max) extern int name
+#define GVAR(flags, level, name, min, cur, max) extern int name
+#define GVARF(flags, level, name, min, cur, max, svbody, ccbody) extern int name
+#define GVARN(flags, level, name, global, min, cur, max) extern int name
+#define GVAR(flags, level, name, min, cur, max) extern int name
+#define GVARF(flags, level, name, min, cur, max, svbody, ccbody) extern int name
+#define GFVARN(flags, level, name, global, min, cur, max) extern float name
+#define GFVAR(flags, level, name, min, cur, max) extern float name
+#define GFVARF(flags, level, name, min, cur, max, svbody, ccbody) extern float name
+#define GSVARN(flags, level, name, global, cur) extern char *name
+#define GSVAR(flags, level, name, cur) extern char *name
+#define GSVARF(flags, level, name, cur, svbody, ccbody) extern char *name
 #endif

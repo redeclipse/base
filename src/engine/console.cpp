@@ -948,46 +948,6 @@ void complete(char *s, const char *cmdprefix, bool reverse)
     }
 }
 
-void setidflag(const char *s, const char *v, int flag, const char *msg, bool alias)
-{
-    ident *id = idents.access(s);
-    if(!id || (alias && id->type != ID_ALIAS))
-    {
-        if(verbose) conoutf("\frAdding %s of %s failed as it is not available", msg, s);
-        return;
-    }
-    bool on = false;
-    if(isnumeric(*v)) on = atoi(v) != 0;
-    else if(!strcasecmp("false", v)) on = false;
-    else if(!strcasecmp("true", v)) on = true;
-    else if(!strcasecmp("on", v)) on = true;
-    else if(!strcasecmp("off", v)) on = false;
-    if(on && !(id->flags&flag)) id->flags |= flag;
-    else if(!on && id->flags&flag) id->flags &= ~flag;
-}
-
-ICOMMAND(0, setcomplete, "ss", (char *s, char *t), setidflag(s, t, IDF_COMPLETE, "complete", false));
-ICOMMAND(0, setpersist, "ss", (char *s, char *t), setidflag(s, t, IDF_PERSIST, "persist", true));
-
-void setiddesc(const char *s, const char *v, const char *f)
-{
-    ident *id = idents.access(s);
-    if(!id)
-    {
-        if(verbose) conoutf("\frAdding description of %s failed as it is not available", s);
-        return;
-    }
-    DELETEA(id->desc);
-    if(v && *v) id->desc = newstring(v);
-    loopvrev(id->fields)
-    {
-        DELETEA(id->fields[i]);
-        id->fields.remove(i);
-    }
-    if(f && *f) explodelist(f, id->fields);
-}
-ICOMMAND(0, setdesc, "sss", (char *s, char *t, char *f), setiddesc(s, t, f));
-
 #ifdef __APPLE__
 extern bool mac_capslock();
 extern bool mac_numlock();
