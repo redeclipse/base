@@ -107,7 +107,7 @@ extern const char *ipinfotypes[ipinfo::MAXTYPES];
 extern void addipinfo(vector<ipinfo> &info, int type, const char *name, const char *reason = NULL);
 extern char *printipinfo(const ipinfo &info, char *buf = NULL);
 extern ipinfo *checkipinfo(vector<ipinfo> &info, int type, enet_uint32 ip);
-extern void writecfg();
+extern void writecfg(const char *name = "config.cfg", int flags = IDF_PERSIST);
 extern void rehash(bool reload = true);
 extern void fatalsignal(int signum);
 extern void reloadsignal(int signum);
@@ -723,6 +723,7 @@ extern void localdisconnect();
 
 // serverbrowser
 extern void addserver(const char *name, int port, int priority = 0, const char *desc = NULL, const char *handle = NULL, const char *flags = NULL, const char *branch = NULL);
+extern void writeservercfg();
 
 // client
 extern char *connectname;

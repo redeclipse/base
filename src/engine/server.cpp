@@ -250,7 +250,7 @@ void conoutf(const char *s, ...)
     conoutft(0, "%s", sf);
 }
 
-VAR(0, verbose, 0, 0, 6);
+VAR(IDF_INIT, verbose, 0, 0, 6);
 
 static void writelog(FILE *file, const char *buf)
 {
@@ -1597,14 +1597,13 @@ void setlocations()
 }
 
 #ifndef STANDALONE
-VAR(IDF_PERSIST, noconfigfile, 0, 0, 1);
+VAR(IDF_INIT, noconfigfile, 0, 0, 1);
 #endif // STANDALONE
 
-void writecfg()
+void writecfg(const char *name, int flags)
 {
 #ifndef STANDALONE
-    if(noconfigfile) return;
-    stream *f = openutf8file("config.cfg", "w");
+    stream *f = openutf8file(name, "w");
     if(!f) return;
     vector<ident *> ids;
     enumerate(idents, ident, id, ids.add(&id));
@@ -1613,7 +1612,7 @@ void writecfg()
     loopv(ids)
     {
         ident &id = *ids[i];
-        if(id.flags&IDF_PERSIST) switch(id.type)
+        if(id.flags&flags) switch(id.type)
         {
             case ID_VAR: if(*id.storage.i != id.def.i) { found = true; f->printf("%s %s\n", escapeid(id), intstr(&id)); } break;
             case ID_FVAR: if(*id.storage.f != id.def.f) { found = true; f->printf("%s %s\n", escapeid(id), floatstr(*id.storage.f)); } break;
@@ -1625,7 +1624,7 @@ void writecfg()
     loopv(ids)
     {
         ident &id = *ids[i];
-        if(id.flags&IDF_PERSIST) switch(id.type)
+        if(id.flags&flags) switch(id.type)
         {
             case ID_ALIAS:
             {
@@ -1637,19 +1636,22 @@ void writecfg()
             break;
         }
     }
-    if(found) f->printf("\n");
-    writebinds(f);
+    if(flags&IDF_PERSIST)
+    {
+        if(found) f->printf("\n");
+        writebinds(f);
+    }
     delete f;
 #endif
 }
-ICOMMAND(0, writecfg, "", (void), if(!(identflags&IDF_WORLD)) writecfg());
+ICOMMAND(0, writecfg, "i", (int *icfg), if(!(identflags&IDF_WORLD)) writecfg(*icfg ? "init.cfg" : "config.cfg", *icfg ? IDF_INIT : IDF_PERSIST));
 
 void rehash(bool reload)
 {
     if(reload)
     {
         rehashing = 1;
-        writecfg();
+        if(!noconfigfile) writecfg("config.cfg", IDF_PERSIST);
     }
     reloadserver();
     reloadmaster();

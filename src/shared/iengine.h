@@ -1,6 +1,6 @@
 // the interface the game uses to access the engine
 
-extern int verbose, curtime, lastmillis, totalmillis, timescale, paused;
+extern int verbose, noconfigfile, curtime, lastmillis, totalmillis, timescale, paused;
 extern uint totalsecs;
 extern time_t clocktime, currenttime, clockoffset;
 extern int servertype, serverport, serverlanport, servermasterport;

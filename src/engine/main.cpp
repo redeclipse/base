@@ -107,13 +107,11 @@ void cleanup()
 
 void quit()                  // normal exit
 {
-    extern void writeinitcfg();
-    extern void writeservercfg();
     inbetweenframes = false;
     initing = INIT_QUIT;
-    writeinitcfg();
+    writecfg("init.cfg", IDF_INIT);
     writeservercfg();
-    writecfg();
+    if(!noconfigfile) writecfg("config.cfg", IDF_PERSIST);
     abortconnect();
     disconnect(true);
     cleanup();
@@ -169,37 +167,6 @@ bool initwarning(const char *desc, int level, int type)
     return false;
 }
 
-#define SCR_MINW 320
-#define SCR_MINH 200
-#define SCR_MAXW 10000
-#define SCR_MAXH 10000
-#define SCR_DEFAULTW 1024
-#define SCR_DEFAULTH 768
-
-VARFN(0, screenw, scr_w, SCR_MINW, -1, SCR_MAXW, initwarning("screen resolution"));
-VARFN(0, screenh, scr_h, SCR_MINH, -1, SCR_MAXH, initwarning("screen resolution"));
-
-void writeinitcfg()
-{
-    stream *f = openutf8file("init.cfg", "w");
-    if(!f) return;
-    f->printf("// automatically written on exit, DO NOT MODIFY\n// modify settings in game\n");
-    extern int fullscreen, fullscreendesktop;
-    f->printf("fullscreen %d\n", fullscreen);
-    f->printf("fullscreendesktop %d\n", fullscreendesktop);
-    f->printf("screenw %d\n", scr_w);
-    f->printf("screenh %d\n", scr_h);
-    extern int soundmono, soundmixchans, soundbuflen, soundfreq;
-    f->printf("soundmono %d\n", soundmono);
-    f->printf("soundmixchans %d\n", soundmixchans);
-    f->printf("soundbuflen %d\n", soundbuflen);
-    f->printf("soundfreq %d\n", soundfreq);
-    f->printf("verbose %d\n", verbose);
-    extern int noconfigfile;
-    f->printf("noconfigfile %d\n", noconfigfile);
-    delete f;
-}
-
 VAR(IDF_PERSIST, compresslevel, 0, 9, 9);
 VAR(IDF_PERSIST, imageformat, IFMT_NONE+1, IFMT_PNG, IFMT_MAX-1);
 
@@ -234,6 +201,15 @@ void setupdisplay()
     wantdisplaysetup = false;
 }
 
+#define SCR_MINW 320
+#define SCR_MINH 200
+#define SCR_MAXW 10000
+#define SCR_MAXH 10000
+#define SCR_DEFAULTW 1024
+#define SCR_DEFAULTH 768
+
+VARFN(IDF_INIT, screenw, scr_w, SCR_MINW, -1, SCR_MAXW, initwarning("screen resolution"));
+VARFN(IDF_INIT, screenh, scr_h, SCR_MINH, -1, SCR_MAXH, initwarning("screen resolution"));
 bool initwindowpos = false;
 
 void setfullscreen(bool enable)
@@ -255,7 +231,7 @@ void setfullscreen(bool enable)
     wantdisplaysetup = true;
 }
 
-VARF(0, fullscreen, 0, 1, 1, if(!(identflags&IDF_WORLD)) setfullscreen(fullscreen!=0));
+VARF(IDF_INIT, fullscreen, 0, 1, 1, if(!(identflags&IDF_WORLD)) setfullscreen(fullscreen!=0));
 
 void resetfullscreen()
 {
@@ -263,7 +239,7 @@ void resetfullscreen()
     setfullscreen(true);
 }
 
-VARF(0, fullscreendesktop, 0, 1, 1, if(!(identflags&IDF_WORLD) && fullscreen) resetfullscreen());
+VARF(IDF_INIT, fullscreendesktop, 0, 1, 1, if(!(identflags&IDF_WORLD) && fullscreen) resetfullscreen());
 
 void screenres(int w, int h)
 {
