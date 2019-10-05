@@ -949,8 +949,8 @@ void makeundo()                        // stores state of selected cubes before 
 
 static inline int countblock(cube *c, int n = 8)
 {
-    int r = n;
-    loopi(n) if(c[i].children) r += countblock(c[i].children);
+    int r = 0;
+    loopi(n) if(c[i].children) r += countblock(c[i].children); else ++r;
     return r;
 }
 
@@ -968,7 +968,7 @@ void swapundo(undolist &a, undolist &b, int op)
         {
             ++ops;
             n += u->numents ? u->numents : countblock(u->block());
-            if(ops > 10 || n > 500)
+            if(ops > 10 || n > 2500)
             {
                 if(nompedit) { multiplayer(); return; }
                 op = -1;
