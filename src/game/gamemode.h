@@ -292,7 +292,7 @@ extern mutstypes mutstype[];
 #define m_lasthit(a,b)      (m_dm_gladiator(a,b) && m_points(a,b))
 
 #define m_weapon(at,a,b)    (m_medieval(a, b) ? AA(at, weaponmedieval) : (m_kaboom(a, b) ? AA(at, weaponkaboom) : (m_insta(a, b) ? AA(at, weaponinsta) : (m_race(a) && !m_ra_gauntlet(a, b) ? AA(at, weaponrace) : (m_dm_gladiator(a, b) ? AA(at, weapongladiator) : AA(at, weaponspawn))))))
-#define m_maxcarry(at,a,b)  (m_arena(a, b) || AA(at, maxcarry) > WEAPCARRY ? W_LOADOUT : AA(at, maxcarry))
+#define m_maxcarry(at,a,b)  (m_arena(a, b) ? W_LOADOUT : AA(at, maxcarry))
 #define m_delay(at,a,b,c)   ((m_play(a) || at >= A_ENEMY) && !m_duke(a,b) ? int((m_race(a) ? (!m_ra_gauntlet(a, b) || c == T_ALPHA ? AA(at, spawndelayrace) : AA(at, spawndelaygauntlet)) : (m_bomber(a) ? AA(at, spawndelaybomber) : (m_defend(a) ? AA(at, spawndelaydefend) : (m_capture(a) ? AA(at, spawndelaycapture) : AA(at, spawndelay)))))*(m_insta(a, b) ? AA(at, spawndelayinstascale) : 1.f)) : 0)
 #define m_protect(a,b)      (m_duke(a,b) ? DSG(a, b, protect) : (m_insta(a, b) ? G(instaprotect) : G(spawnprotect)))
 #define m_teamspawn(a,b)    (m_team(a, b) && (!m_race(a) || m_ra_gauntlet(a, b)))
@@ -411,7 +411,7 @@ VAR(IDF_READONLY, modebitdefend, 1, (1<<G_DEFEND), -1);
 VAR(IDF_READONLY, modebitbomber, 1, (1<<G_BOMBER), -1);
 VAR(IDF_READONLY, modebitrace, 1, (1<<G_RACE), -1);
 VAR(IDF_READONLY, modebitall, 1, G_ALL, -1);
-SVAR(IDF_READONLY, mutsname, "Multi FFA Coop Instagib Medieval Kaboom Duel Survivor Classic Onslaught Freestyle Vampire Resize Hard Basic");
+SVAR(IDF_READONLY, mutsname, "Multi FFA Coop Instagib Medieval Kaboom Duel Survivor Classic Onslaught Freestyle Vampire Resize Hard Arena");
 SVAR(IDF_READONLY, mutsidxname, "multi ffa coop instagib medieval kaboom duel survivor classic onslaught freestyle vampire resize hard arena");
 VAR(IDF_READONLY, mutsidxmulti, 1, G_M_MULTI, -1);
 VAR(IDF_READONLY, mutsidxffa, 1, G_M_FFA, -1);

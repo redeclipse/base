@@ -174,7 +174,7 @@ APVAR(IDF_GAMEMOD, 0, health, 1, VAR_MAX,
 APVAR(IDF_GAMEMOD, 0, hurtstop, 1, VAR_MAX,
     0,              0,              0,              100,            500,            100
 );
-APVAR(IDF_GAMEMOD, 0, maxcarry, 0, WEAPCARRY+1,
+APVAR(IDF_GAMEMOD, 0, maxcarry, 0, WEAPCARRY,
     WEAPCARRY,      WEAPCARRY,      0,              0,              0,              0
 );
 APFVAR(IDF_GAMEMOD, 0, scale, FVAR_NONZERO, FVAR_MAX,

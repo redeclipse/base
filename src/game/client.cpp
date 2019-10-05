@@ -598,7 +598,6 @@ namespace client
             if(team[0])
             {
                 int t = atoi(team);
-
                 loopi(numteams(game::gamemode, game::mutators))
                 {
                     if((t && t == i+T_FIRST) || !strcasecmp(TEAM(i+T_FIRST, name), team))
