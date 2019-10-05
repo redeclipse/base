@@ -1604,13 +1604,13 @@ void writecfg(const char *name, int flags)
     stream *f = openutf8file(name, "w");
     if(!f) return;
     vector<ident *> ids;
-    enumerate(idents, ident, id, ids.add(&id));
+    enumerate(idents, ident, id, if(id.flags&flags) ids.add(&id));
     ids.sortname();
     bool found = false;
     loopv(ids)
     {
         ident &id = *ids[i];
-        if(id.flags&flags) switch(id.type)
+        switch(id.type)
         {
             case ID_VAR: if(*id.storage.i != id.def.i) { found = true; f->printf("%s %s\n", escapeid(id), intstr(&id)); } break;
             case ID_FVAR: if(*id.storage.f != id.def.f) { found = true; f->printf("%s %s\n", escapeid(id), floatstr(*id.storage.f)); } break;
@@ -1622,7 +1622,7 @@ void writecfg(const char *name, int flags)
     loopv(ids)
     {
         ident &id = *ids[i];
-        if(id.flags&flags) switch(id.type)
+        switch(id.type)
         {
             case ID_ALIAS:
             {
