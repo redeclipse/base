@@ -1023,7 +1023,7 @@ namespace physics
     {
         int matid = lookupmaterial(bottom), curmat = matid&MATF_VOLUME, flagmat = matid&MATF_FLAGS,
             oldmatid = pl->inmaterial, oldmat = oldmatid&MATF_VOLUME;
-        float radius = center.z-bottom.z, submerged = pl->submerged;
+        float radius = center.z-bottom.z, frac = radius/10.f, submerged = pl->submerged;
         if(curmat != oldmat)
         {
             #define mattrig(mo,mcol,ms,mt,mz,mq,mp,mw) \
@@ -1044,25 +1044,26 @@ namespace physics
             }
         }
         pl->inmaterial = matid;
-        if((pl->inliquid = isliquid(curmat)) != false)
+        pl->inliquid = isliquid(curmat);
+        vec tmp = bottom;
+        int liquid = 0, death = 0;
+        loopi(20)
         {
-            float frac = radius/10.f, sub = pl->submerged;
-            vec tmp = bottom;
-            int found = 0;
-            loopi(20)
+            tmp.z += frac;
+            if(!liquid && pl->inliquid && !isliquid(lookupmaterial(tmp)&MATF_VOLUME)) liquid = i+1;
+            if(!death && !((pl->inmaterial&MATF_FLAGS)&MAT_DEATH))
             {
-                tmp.z += frac;
-                if(!isliquid(lookupmaterial(tmp)&MATF_VOLUME))
+                int chkmat = lookupmaterial(tmp);
+                if((chkmat&MATF_FLAGS)&MAT_DEATH)
                 {
-                    found = i+1;
-                    break;
+                    death = i+1;
+                    client::addmsg(N_SPHY, "ri3f", ((gameent *)pl)->clientnum, SPHY_MATERIAL, chkmat, -(death/20.f));
                 }
             }
-            pl->submerged = found ? found/20.f : 1.f;
-            if(local && pl->physstate < PHYS_SLIDE && sub >= 0.5f && pl->submerged < 0.5f && pl->vel.z > 1e-3f)
-                pl->vel.z = max(pl->vel.z, max(jumpvel(pl, false), gravityvel(pl)));
         }
-        else pl->submerged = 0;
+        pl->submerged = pl->inliquid ? (liquid ? liquid/20.f : 1.f) : 0.f;
+        if(local && pl->physstate < PHYS_SLIDE && submerged >= 0.5f && pl->submerged < 0.5f && pl->vel.z > 1e-3f)
+            pl->vel.z = max(pl->vel.z, max(jumpvel(pl, false), gravityvel(pl)));
         pl->onladder = flagmat&MAT_LADDER;
         if(pl->onladder && pl->physstate < PHYS_SLIDE) pl->floor = vec(0, 0, 1);
         if(local && gameent::is(pl) && (pl->inmaterial != oldmatid || pl->submerged != submerged))
