@@ -442,7 +442,7 @@ namespace hud
     TVAR(IDF_PERSIST, modevampiretex, "<grey>textures/modes/vampire", 3);
     TVAR(IDF_PERSIST, moderesizetex, "<grey>textures/modes/resize", 3);
     TVAR(IDF_PERSIST, modehardtex, "<grey>textures/modes/hard", 3);
-    TVAR(IDF_PERSIST, modebasictex, "<grey>textures/modes/basic", 3);
+    TVAR(IDF_PERSIST, modearenatex, "<grey>textures/modes/arena", 3);
 
     #define ADDMODEICON(g,m) \
     { \
@@ -525,7 +525,7 @@ namespace hud
         if(m_vampire(g, m) && (implied || !(gametype[g].implied&GM(VAMPIRE)))) ADDMODE(vampire)
         if(m_resize(g, m) && (implied || !(gametype[g].implied&GM(RESIZE)))) ADDMODE(resize)
         if(m_hard(g, m) && (implied || !(gametype[g].implied&GM(HARD)))) ADDMODE(hard)
-        if(m_basic(g, m) && (implied || !(gametype[g].implied&GM(BASIC)))) ADDMODE(basic)
+        if(m_arena(g, m) && (implied || !(gametype[g].implied&GM(ARENA)))) ADDMODE(arena)
         if(!before) modetex(g, m, list);
     }
     #undef ADDMODE
@@ -1437,7 +1437,7 @@ namespace hud
                                 if(isweap(attr) && game::player1->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
                                 {
                                     int drop = -1;
-                                    if(m_classic(game::gamemode, game::mutators) && w_carry(attr, sweap) && game::player1->carry(sweap) >= w_maxcarry(game::player1->actortype))
+                                    if(m_classic(game::gamemode, game::mutators) && w_carry(attr, sweap) && game::player1->carry(sweap) >= w_maxcarry(game::player1->actortype, game::gamemode, game::mutators))
                                         drop = game::player1->drop(sweap);
                                     if(isweap(drop))
                                     {

@@ -868,7 +868,7 @@ struct clientstate
             case EU_AUTO: case EU_ACT: return true; break;
             case EU_ITEM:
             { // can't use when reloading or firing
-                if(type != WEAPON || !isweap(attr) || !w_maxcarry(actortype)) return false;
+                if(type != WEAPON || !isweap(attr) || !w_maxcarry(actortype, gamemode, mutators)) return false;
                 if(!weapwaited(weapselect, millis, skip)) return false;
                 return canuseweap(gamemode, mutators, attr, sweap, millis, skip, full);
             }
@@ -983,6 +983,7 @@ struct clientstate
             weapammo[s][W_A_CLIP] = W(s, ammospawn);
             weapselect = s;
         }
+        if(s != W_CLAW && m_edit(gamemode, mutators) && !W(W_CLAW, disabled)) weapammo[W_CLAW][W_A_CLIP] = W(W_CLAW, ammospawn); // give SniperGoth his claw in edit mode
         if(s != W_MELEE && AA(actortype, abilities)&(1<<A_A_MELEE) && !W(W_MELEE, disabled)) weapammo[W_MELEE][W_A_CLIP] = W(W_MELEE, ammospawn);
         if(actortype < A_ENEMY)
         {
@@ -995,7 +996,7 @@ struct clientstate
                     weapammo[W_MINE][W_A_CLIP] = W(W_MINE, ammospawn);
             }
         }
-        if(w_maxcarry(actortype) && m_loadout(gamemode, mutators))
+        if(w_maxcarry(actortype, gamemode, mutators) && m_loadout(gamemode, mutators))
         {
             vector<int> aweap;
             loopj(W_LOADOUT)
@@ -1024,7 +1025,7 @@ struct clientstate
                 if(!isweap(aweap[j])) continue;
                 weapammo[aweap[j]][W_A_CLIP] = W(aweap[j], ammospawn);
                 count++;
-                if(count >= w_maxcarry(actortype)) break;
+                if(count >= w_maxcarry(actortype, gamemode, mutators)) break;
             }
             loopj(2) if(isweap(aweap[j])) { weapselect = aweap[j]; break; }
         }
@@ -1359,7 +1360,7 @@ struct gameent : dynent, clientstate
         loopi(W_MAX) if(hasweap(i, sweap))
         {
             int numammo = getammo(i, 0, true);
-            #define MODCARRY(a) (AA(actortype, maxcarry) > WEAPCARRY ? (a)*WEAPCARRY/W_LOADOUT : a)
+            #define MODCARRY(a) (m_arena(gamemode, mutators) || AA(actortype, maxcarry) > WEAPCARRY ? (a)*WEAPCARRY/W_LOADOUT : a)
             #define MODPHYS(a,b,c) a += MODCARRY(W(i, mod##a)+(numammo*W(i, mod##a##ammo)));
             MODPHYSL;
             #undef MODPHYS

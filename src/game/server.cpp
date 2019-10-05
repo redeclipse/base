@@ -1945,7 +1945,7 @@ namespace server
 
     bool hasitem(int i, bool item = true)
     {
-        if((m_race(gamemode) && !m_ra_gauntlet(gamemode, mutators)) || m_basic(gamemode, mutators) || !sents.inrange(i) || sents[i].type != WEAPON) return false;
+        if((m_race(gamemode) && !m_ra_gauntlet(gamemode, mutators)) || !sents.inrange(i) || sents[i].type != WEAPON) return false;
         if(!checkmapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) || (sents[i].attrs[4] && sents[i].attrs[4] != triggerid) || !m_check(sents[i].attrs[2], sents[i].attrs[3], gamemode, mutators)) return false;
         int attr = m_attr(sents[i].type, sents[i].attrs[0]);
         if(!isweap(attr) || !m_check(W(attr, modes), W(attr, muts), gamemode, mutators) || W(attr, disabled)) return false;
@@ -4963,7 +4963,7 @@ namespace server
             checkweapload(ci, ci->weapselect);
         }
         int weap = -1, ammoamt = W(attr, ammoitem), dropped = -1, ammo = -1;
-        if(m_classic(gamemode, mutators) && !ci->hasweap(attr, sweap) && w_carry(attr, sweap) && ci->carry(sweap) >= w_maxcarry(ci->actortype))
+        if(m_classic(gamemode, mutators) && !ci->hasweap(attr, sweap) && w_carry(attr, sweap) && ci->carry(sweap) >= m_maxcarry(ci->actortype, gamemode, mutators))
             weap = ci->drop(sweap);
         if(isweap(weap))
         {

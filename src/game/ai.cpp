@@ -158,13 +158,13 @@ namespace ai
 
     bool wantsweap(gameent *d, int weap, bool noitems = true)
     {
-        if(!isweap(weap) || !w_maxcarry(d->actortype)) return false;
+        if(!isweap(weap) || !w_maxcarry(d->actortype, game::gamemode, game::mutators)) return false;
         if(itemweap(weap)) { if(noitems) return false; }
         else
         {
-            int weapnum = min(w_maxcarry(d->actortype), d->loadweap.length()),
+            int weapnum = min(w_maxcarry(d->actortype, game::gamemode, game::mutators), d->loadweap.length()),
                 weaphas = d->loadweap.find(weap);
-            if(weaphas < 0 || weaphas >= w_maxcarry(d->actortype))
+            if(weaphas < 0 || weaphas >= w_maxcarry(d->actortype, game::gamemode, game::mutators))
             {
                 bool force = false;
                 if(m_classic(game::gamemode, game::mutators))
@@ -1306,7 +1306,7 @@ namespace ai
         bool occupied = false, firing = false,
              haswaited = d->weapwaited(d->weapselect, lastmillis, (1<<W_S_RELOAD));
         static vector<actitem> items; items.setsize(0);
-        if(w_maxcarry(d->actortype) && d->actortype < A_ENEMY)
+        if(w_maxcarry(d->actortype, game::gamemode, game::mutators) && d->actortype < A_ENEMY)
         {
             static vector<actitem> actitems;
             actitems.setsize(0);
