@@ -8,12 +8,14 @@ enum
     W_ITEMS = W_MINE-W_GRENADE+1,
     W_REPLACE = W_GRENADE
 };
+#define WEAPCARRY 2
 #define WZ(x) (W_MAX+(W_##x))
 
 #define isweap(a)       (a >= 0 && a < W_MAX)
 #define itemweap(a)     (a >= W_ITEM && a < W_ALL)
 #define w_carry(w1,w2)  (isweap(w1) && w1 != W_CLAW && w1 < W_ALL && (!isweap(w2) || (w1 != w2 && (w2 != W_GRENADE || w1 != W_MINE))) && (w1 == W_ROCKET || (w1 >= W_OFFSET && w1 < W_ITEM)))
 #define w_reload(w1)    (isweap(w1) && (w1 >= W_ALL || w1 < W_OFFSET))
+#define w_maxcarry(at)  (AA(at, maxcarry) > WEAPCARRY ? W_LOADOUT : AA(at, maxcarry))
 
 enum { W_F_NONE = 0, W_F_FORCED = 1<<0 };
 
@@ -1369,6 +1371,7 @@ VAR(IDF_READONLY, weapresidualburn, 1, W_R_BURN, -1);
 VAR(IDF_READONLY, weapresidualbleed, 1, W_R_BLEED, -1);
 VAR(IDF_READONLY, weapresidualshock, 1, W_R_SHOCK, -1);
 VAR(IDF_READONLY, weapresidualmax, 1, W_R_MAX, -1);
+VAR(IDF_READONLY, weapcarrydefault, 1, WEAPCARRY, -1);
 VAR(IDF_READONLY, weapcarrylimit, 1, W_LOADOUT, -1);
 #else
 extern weaptypes weaptype[];

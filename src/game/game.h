@@ -868,7 +868,7 @@ struct clientstate
             case EU_AUTO: case EU_ACT: return true; break;
             case EU_ITEM:
             { // can't use when reloading or firing
-                if(type != WEAPON || !isweap(attr) || !AA(actortype, maxcarry)) return false;
+                if(type != WEAPON || !isweap(attr) || !w_maxcarry(actortype)) return false;
                 if(!weapwaited(weapselect, millis, skip)) return false;
                 return canuseweap(gamemode, mutators, attr, sweap, millis, skip, full);
             }
@@ -995,7 +995,7 @@ struct clientstate
                     weapammo[W_MINE][W_A_CLIP] = W(W_MINE, ammospawn);
             }
         }
-        if(AA(actortype, maxcarry) && m_loadout(gamemode, mutators))
+        if(w_maxcarry(actortype) && m_loadout(gamemode, mutators))
         {
             vector<int> aweap;
             loopj(W_LOADOUT)
@@ -1024,7 +1024,7 @@ struct clientstate
                 if(!isweap(aweap[j])) continue;
                 weapammo[aweap[j]][W_A_CLIP] = W(aweap[j], ammospawn);
                 count++;
-                if(count >= AA(actortype, maxcarry)) break;
+                if(count >= w_maxcarry(actortype)) break;
             }
             loopj(2) if(isweap(aweap[j])) { weapselect = aweap[j]; break; }
         }
@@ -1334,7 +1334,7 @@ struct gameent : dynent, clientstate
         #define MODPHYS(a,b,c) a = AA(actortype, a)*c;
         MODPHYSL;
         #undef MODPHYS
-        if(m_sweaps(gamemode, mutators))
+        if(m_single(gamemode, mutators))
         {
             #define MODPHYS(a,b,c) a += AA(actortype, a##extra)*c;
             MODPHYSL;
@@ -1359,7 +1359,8 @@ struct gameent : dynent, clientstate
         loopi(W_MAX) if(hasweap(i, sweap))
         {
             int numammo = getammo(i, 0, true);
-            #define MODPHYS(a,b,c) if(numammo > 0) a += W(i, mod##a)+(numammo*W(i, mod##a##ammo));
+            #define MODCARRY(a) (AA(actortype, maxcarry) > WEAPCARRY ? (a)*WEAPCARRY/W_LOADOUT : a)
+            #define MODPHYS(a,b,c) a += MODCARRY(W(i, mod##a)+(numammo*W(i, mod##a##ammo)));
             MODPHYSL;
             #undef MODPHYS
             if(i != weapselect) continue;

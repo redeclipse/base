@@ -174,32 +174,32 @@ APVAR(IDF_GAMEMOD, 0, health, 1, VAR_MAX,
 APVAR(IDF_GAMEMOD, 0, hurtstop, 1, VAR_MAX,
     0,              0,              0,              100,            500,            100
 );
-APVAR(IDF_GAMEMOD, 0, maxcarry, 0, W_LOADOUT,
-    2,              2,              0,              0,              0,              0
+APVAR(IDF_GAMEMOD, 0, maxcarry, 0, WEAPCARRY+1,
+    WEAPCARRY,      WEAPCARRY,      0,              0,              0,              0
 );
 APFVAR(IDF_GAMEMOD, 0, scale, FVAR_NONZERO, FVAR_MAX,
-    1,             1,               0.5f,           0.85f,          0.7f,           1.f
+    1,              1,              0.5f,           0.85f,          0.7f,           1.f
 );
 APVAR(IDF_GAMEMOD, 0, spawndelay, 0, VAR_MAX,
-    5000,          5000,            30000,          30000,          30000,          30000
+    5000,           5000,           30000,          30000,          30000,          30000
 );
 APVAR(IDF_GAMEMOD, 0, spawndelaybomber, 0, VAR_MAX,
-    3000,          3000,            30000,          30000,          30000,          30000
+    3000,           3000,           30000,          30000,          30000,          30000
 );
 APVAR(IDF_GAMEMOD, 0, spawndelaycapture, 0, VAR_MAX,
-    5000,          5000,            30000,          30000,          30000,          30000
+    5000,           5000,           30000,          30000,          30000,          30000
 );
 APVAR(IDF_GAMEMOD, 0, spawndelaydefend, 0, VAR_MAX,
-    5000,          5000,            30000,          30000,          30000,          30000
+    5000,           5000,           30000,          30000,          30000,          30000
 );
 APVAR(IDF_GAMEMOD, 0, spawndelaygauntlet, 0, VAR_MAX,
-    3000,          3000,            30000,          30000,          30000,          30000
+    3000,           3000,           30000,          30000,          30000,          30000
 );
 APFVAR(IDF_GAMEMOD, 0, spawndelayinstascale, 0, FVAR_MAX,
-    0.5f,          0.5f,            0.75f,          0.75f,          0.75f,          0.75f
+    0.5f,           0.5f,           0.75f,          0.75f,          0.75f,          0.75f
 );
 APVAR(IDF_GAMEMOD, 0, spawndelayrace, 0, VAR_MAX,
-    1000,          1000,            10000,          10000,          10000,          10000
+    1000,           1000,           10000,          10000,          10000,          10000
 );
 APVAR(IDF_GAMEMOD, 0, spawngrenades, 0, 2,
     0,              0,              0,              0,              0,              0

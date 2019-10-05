@@ -4963,7 +4963,7 @@ namespace server
             checkweapload(ci, ci->weapselect);
         }
         int weap = -1, ammoamt = W(attr, ammoitem), dropped = -1, ammo = -1;
-        if(m_classic(gamemode, mutators) && !ci->hasweap(attr, sweap) && w_carry(attr, sweap) && ci->carry(sweap) >= AA(ci->actortype, maxcarry))
+        if(m_classic(gamemode, mutators) && !ci->hasweap(attr, sweap) && w_carry(attr, sweap) && ci->carry(sweap) >= w_maxcarry(ci->actortype))
             weap = ci->drop(sweap);
         if(isweap(weap))
         {
