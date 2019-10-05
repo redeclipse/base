@@ -816,7 +816,10 @@ ICOMMAND(0, setdesc, "sss", (char *s, char *t, char *f), setvardesc(s, t, f));
 
 void setvarlevel(const char *s, int level)
 {
-    ident *id = idents.access(s);
+    static string varname;
+    if(strlen(s) < 3 || strncmp(s, "sv_", 3)) formatstring(varname, "sv_%s", s);
+    else copystring(varname, s);
+    ident *id = idents.access(varname);
     if(!id)
     {
         if(verbose) conoutf("\frSetting level of %s failed as it is not available", s);
