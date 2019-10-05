@@ -807,9 +807,7 @@ namespace server
         {
             if(v != m && (!m_team(gamemode, mutators) || v->team != m->team) && v->state == CS_ALIVE && hurt > 0)
             {
-                int real = int(ceilf(hurt*G(vampirescale))), heal = v->health+real;
-                if(AA(v->actortype, abilities)&(1<<A_A_REGEN)) heal = min(heal, v->gethealth(gamemode, mutators, true));
-                int eff = heal-v->health;
+                int real = int(ceilf(hurt*G(vampirescale))), heal = min(v->health+real, v->gethealth(gamemode, mutators, true)), eff = heal-v->health;
                 if(eff > 0)
                 {
                     v->health = heal;
