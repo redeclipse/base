@@ -1787,15 +1787,26 @@ namespace hmap
     bool paintbrush = 0;
     int brushmaxx = 0, brushminx = MAXBRUSH;
     int brushmaxy = 0, brushminy = MAXBRUSH;
+    char *brushname = NULL;
 
     void clearbrush()
     {
         memset(brush, 0, sizeof brush);
         brushmaxx = brushmaxy = 0;
         brushminx = brushminy = MAXBRUSH;
+        DELETEA(brushname);
         paintbrush = false;
     }
     COMMAND(0, clearbrush, "");
+
+    void setbrushname(const char *name)
+    {
+        if(!name || !*name) return;
+        DELETEA(brushname);
+        brushname = newstring(name);
+    }
+    ICOMMAND(0, brushname, "s", (char *name), setbrushname(name));
+    ICOMMAND(0, getbrushname, "", (), result(brushname ? brushname : ""));
 
     void brushvert(int *x, int *y, int *v)
     {
@@ -1811,7 +1822,7 @@ namespace hmap
     }
     COMMAND(0, brushvert, "iii");
 
-    void brushimport(char *name)
+    void brushimport(const char *name)
     {
         ImageData s;
         if(loadimage(name, s))
