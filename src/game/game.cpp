@@ -1453,6 +1453,7 @@ namespace game
                             else doquake = false;
                         }
                         float hit = WF(WK(flags), weap, hitpush, WS(flags));
+                        if(d == v) hit *= WF(WK(flags), weap, hitpushself, WS(flags));
                         if(hit != 0)
                         {
                             float modify = WRS(flags&HIT(WAVE) || !hitdealt(flags) ? wavepushscale : (d->health <= 0 ? deadpushscale : hitpushscale), push, gamemode, mutators);
