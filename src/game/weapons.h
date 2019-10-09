@@ -459,10 +459,10 @@ WPVARK(IDF_GAMEMOD, 0, fadein, 0, VAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
 );
 WPVARK(IDF_GAMEMOD, 0, fadeout, 0, VAR_MAX,
-    0,          0,          0,          0,          0,          0,          0,          50,         0,          0,          0,          0,          0,
-    0,          0,          0,          0,          0,          0,          0,          50,         0,          0,          0,          0,          0,
-    0,          0,          0,          0,          0,          0,          0,          100,        0,          0,          0,          0,          0,
-    0,          0,          0,          0,          0,          0,          0,          100,        0,          0,          0,          0,          0
+    0,          0,          0,          0,          0,          0,          0,          75,         0,          0,          0,          0,          0,
+    0,          0,          0,          0,          0,          0,          0,          75,         0,          0,          0,          0,          0,
+    0,          0,          0,          0,          0,          0,          0,          150,        0,          0,          0,          0,          0,
+    0,          0,          0,          0,          0,          0,          0,          150,        0,          0,          0,          0,          0
 );
 //  Claw        Pistol      Sword       Shotgun     SMG         Flamer      Plasma      Zapper      Rifle       Grenade     Mine        Rocket      Melee
 WPFVARM(IDF_GAMEMOD, 0, fragjump, 0, 1,
@@ -475,7 +475,7 @@ WPFVARM(IDF_GAMEMOD, 0, fragoffset, 0, FVAR_MAX,
 );
 WPVARM(IDF_GAMEMOD, 0, fragrays, 1, MAXPARAMS,
     5,          5,          5,          5,          5,          5,          5,          5,          5,          50,         35,         100,        5,
-    5,          5,          5,          16,         40,         5,          5,          5,          5,          50,         10,         100,        5
+    5,          5,          5,          16,         40,         5,          5,          5,          5,          50,         1,          100,        5
 );
 WPFVARM(IDF_GAMEMOD, 0, fragrel, FVAR_MIN, FVAR_MAX,
     1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       0.0f,       0.0f,       0.0f,       1.0f,
@@ -506,8 +506,8 @@ WPFVARM(IDF_GAMEMOD, 0, fragspread, 0, FVAR_MAX,
     1.0f,       1.0f,       1.0f,       0.2f,       0.75f,      0.1f,       1.0f,       0.25f,      0.25f,      1.0f,       0.1f,       1.0f,       1.0f
 );
 WPVARM(IDF_GAMEMOD, 0, fragtime, 1, VAR_MAX,
-    500,        500,        500,        250,        500,        1000,       500,        500,        500,        1000,       2500,       1500,       500,
-    500,        500,        500,        5000,       750,        3000,       500,        500,        500,        1000,       5000,       1500,       500
+    500,        500,        500,        250,        500,        1000,       500,        500,        500,        1000,       1500,       1500,       500,
+    500,        500,        500,        5000,       750,        3000,       500,        500,        500,        1000,       3000,       1500,       500
 );
 WPVARM(IDF_GAMEMOD, 0, fragtimedelay, 0, VAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,
@@ -515,7 +515,7 @@ WPVARM(IDF_GAMEMOD, 0, fragtimedelay, 0, VAR_MAX,
 );
 WPVARM(IDF_GAMEMOD, 0, fragtimeiter, 0, VAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          1,          1,          1,          0,
-    0,          0,          0,          0,          3,          0,          0,          0,          0,          1,          100,        1,          0
+    0,          0,          0,          0,          3,          0,          0,          0,          0,          1,          1,          1,          0
 );
 WPVARM(IDF_GAMEMOD, 0, fragweap, -1, W_MAX*2-1,
     -1,         -1,         -1,         -1,         -1,         -1,         -1,         -1,         -1,         W_SHOTGUN,  W_ZAPPER,   W_SMG,      -1,
@@ -878,10 +878,10 @@ WPVARK(IDF_GAMEMOD, 0, radial, 0, VAR_MAX,
     0,          0,          0,          0,          0,          50,         100,        0,          0,          0,          0,          0,          0
 );
 WPFVARK(IDF_GAMEMOD, 0, radius, FVAR_NONZERO, FVAR_MAX,
-    8.0f,       1.0f,       20.0f,      1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.5f,       1.5f,       1.5f,       8.0f,
-    8.0f,       1.0f,       20.0f,      2.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.5f,       1.5f,       1.5f,       8.0f,
-    8.0f,       1.0f,       20.0f,      1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.5f,       1.5f,       1.5f,       8.0f,
-    8.0f,       1.0f,       20.0f,      1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.5f,       1.5f,       1.5f,       8.0f
+    8.0f,       1.0f,       20.0f,      1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.5f,       1.5f,       8.0f,
+    8.0f,       1.0f,       20.0f,      2.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.5f,       1.5f,       8.0f,
+    8.0f,       1.0f,       20.0f,      1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.5f,       1.5f,       8.0f,
+    8.0f,       1.0f,       20.0f,      1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.5f,       1.5f,       8.0f
 );
 WPVARM(IDF_GAMEMOD, 0, rays, 0, MAXPARAMS,
     1,          1,          1,          25,         1,          1,          1,          1,          1,          1,          1,          1,          1,

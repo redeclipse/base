@@ -650,13 +650,13 @@ namespace projs
         float trans = WF(WK(proj.flags), proj.weap, blend, WS(proj.flags));
         if(WF(WK(proj.flags), proj.weap, fadein, WS(proj.flags)) != 0)
         {
-            int millis = lastmillis-proj.spawntime, len = min(WF(WK(proj.flags), proj.weap, fadein, WS(proj.flags)), proj.lifetime);
+            int millis = proj.lifemillis-proj.lifetime, len = min(WF(WK(proj.flags), proj.weap, fadein, WS(proj.flags)), proj.lifemillis);
             if(len > 0 && millis < len) trans *= millis/float(len);
         }
         if(WF(WK(proj.flags), proj.weap, fadeout, WS(proj.flags)) != 0)
         {
-            int millis = lastmillis-proj.spawntime, len = min(WF(WK(proj.flags), proj.weap, fadeout, WS(proj.flags)), proj.lifetime), check = proj.lifetime-len;
-            if(len > 0 && millis > check) trans *= 1-((millis-check)/float(len));
+            int len = min(WF(WK(proj.flags), proj.weap, fadeout, WS(proj.flags)), proj.lifemillis);
+            if(len > 0 && proj.lifetime < len) trans *= proj.lifetime/float(len);
         }
         if(WF(WK(proj.flags), proj.weap, fade, WS(proj.flags))&(proj.owner != game::focus ? 2 : 1) && WF(WK(proj.flags), proj.weap, fadeat, WS(proj.flags)) > 0)
             trans *= camera1->o.distrange(proj.o, WF(WK(proj.flags), proj.weap, fadeat, WS(proj.flags)), WF(WK(proj.flags), proj.weap, fadecut, WS(proj.flags)));
@@ -768,42 +768,48 @@ namespace projs
         return true;
     }
 
+    void updateto(projent &proj)
+    {
+        if(proj.projcollide&COLLIDE_SCAN)
+        {
+            proj.to = proj.o;
+            return;
+        }
+        if(proj.vel.iszero()) return;
+        float size = clamp(WF(WK(proj.flags), proj.weap, partlen, WS(proj.flags))*(1.f-proj.lifespan)*proj.curscale, WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale, min(WF(WK(proj.flags), proj.weap, partlen, WS(proj.flags)), proj.o.dist(proj.from)));
+        if(proj.lastbounce) size = min(size, max(proj.movement, WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale));
+        if(size > 0) proj.to = vec(proj.o).sub(vec(proj.vel).normalize().mul(size));
+    }
+
     void updatetargets(projent &proj, int style = 0)
     {
-        if(proj.projtype == PRJ_SHOT)
+        bool check = proj.weap == W_MELEE || WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_LENGTH;
+        if(proj.projtype != PRJ_SHOT || WK(proj.flags) || !proj.owner || proj.owner->state != CS_ALIVE)
         {
-            bool owner = !WK(proj.flags) && proj.owner && proj.owner->state == CS_ALIVE;
-            if(proj.weap == W_MELEE || WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_LENGTH)
+            if(!check && !style) updateto(proj);
+            return;
+        }
+        if(check)
+        {
+            if(proj.weap == W_MELEE)
             {
-                if(owner)
-                {
-                    if(proj.weap == W_MELEE)
-                    {
-                        proj.from = proj.to = proj.owner->center();
-                        if(proj.target && proj.target->state == CS_ALIVE)
-                            proj.to.add(vec(proj.target->center()).sub(proj.from).normalize().mul(proj.owner->radius*2.f));
-                        else proj.to.add(vec(proj.owner->yaw*RAD, proj.owner->pitch*RAD).mul(proj.owner->radius*2.f));
-                    }
-                    else
-                    {
-                        proj.from = proj.owner->originpos();
-                        proj.to = proj.dest = proj.owner->muzzlepos();
-                    }
-                }
-                if(style != 2) proj.o = proj.from;
+                proj.from = proj.to = proj.owner->center();
+                if(proj.target && proj.target->state == CS_ALIVE)
+                    proj.to.add(vec(proj.target->center()).sub(proj.from).normalize().mul(proj.owner->radius*2.f));
+                else proj.to.add(vec(proj.owner->yaw*RAD, proj.owner->pitch*RAD).mul(proj.owner->radius*2.f));
             }
             else
             {
-                if(owner && !proj.child && !proj.bounced) proj.from = proj.owner->muzzlepos();
-                if(proj.projcollide&COLLIDE_SCAN) proj.to = proj.o;
-                else if(!proj.vel.iszero())
-                {
-                    float size = clamp(WF(WK(proj.flags), proj.weap, partlen, WS(proj.flags))*(1.f-proj.lifespan)*proj.curscale, WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale, min(WF(WK(proj.flags), proj.weap, partlen, WS(proj.flags)), proj.o.dist(proj.from)));
-                    if(proj.lastbounce) size = min(size, max(proj.movement, WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale));
-                    if(size > 0) proj.to = vec(proj.o).sub(vec(proj.vel).normalize().mul(size));
-                }
-                if(style == 1) proj.o = proj.from;
+                proj.from = proj.owner->originpos();
+                proj.to = proj.dest = proj.owner->muzzlepos();
             }
+            if(style != 2) proj.o = proj.from;
+        }
+        else
+        {
+            if(!proj.bounced) proj.from = proj.owner->muzzlepos();
+            updateto(proj);
+            if(style == 1) proj.o = proj.from;
         }
     }
 
