@@ -1172,7 +1172,7 @@ namespace projs
             int slot = WSNDF(weap, WS(flags)), vol = clamp(int(ceilf(255*skew)), 0, 255);
             if(slot >= 0 && vol > 0)
             {
-                if(weap == W_FLAMER && !(WS(flags)))
+                if((weap == W_FLAMER || weap == W_ZAPPER) && !(WS(flags)))
                 {
                     int ends = lastmillis+delayattack+PHYSMILLIS;
                     if(issound(d->wschan) && sounds[d->wschan].slotnum == slot) sounds[d->wschan].ends = ends;
