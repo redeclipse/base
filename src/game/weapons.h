@@ -520,7 +520,7 @@ WPVARM(IDF_GAMEMOD, 0, fragweap, -1, W_MAX*2-1,
 );
 WPVARM(IDF_GAMEMOD, 0, fullauto, 0, 1,
     1,          0,          1,          0,          1,          1,          1,          1,          0,          0,          0,          0,          1,
-    1,          0,          1,          0,          1,          0,          0,          1,          0,          0,          0,          0,          1
+    1,          0,          0,          0,          1,          0,          0,          1,          0,          0,          0,          0,          1
 );
 WPVARK(IDF_GAMEMOD, 0, grab, 0, 3,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,
