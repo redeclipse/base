@@ -766,28 +766,33 @@ namespace projs
 
     void updatetargets(projent &proj, int style = 0)
     {
-        if(proj.projtype == PRJ_SHOT && !WK(proj.flags) && proj.owner && proj.owner->state == CS_ALIVE)
+        if(proj.projtype == PRJ_SHOT)
         {
+            bool owner = !WK(proj.flags) && proj.owner && proj.owner->state == CS_ALIVE;
             if(proj.weap == W_MELEE || WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_LENGTH)
             {
-                if(proj.weap == W_MELEE)
+                if(owner)
                 {
-                    proj.from = proj.to = proj.owner->center();
-                    if(proj.target && proj.target->state == CS_ALIVE)
-                        proj.to.add(vec(proj.target->center()).sub(proj.from).normalize().mul(proj.owner->radius*2.f));
-                    else proj.to.add(vec(proj.owner->yaw*RAD, proj.owner->pitch*RAD).mul(proj.owner->radius*2.f));
-                }
-                else
-                {
-                    proj.from = proj.owner->originpos(proj.weap);
-                    proj.to = proj.dest = proj.owner->muzzlepos(proj.weap);
+                    if(proj.weap == W_MELEE)
+                    {
+                        proj.from = proj.to = proj.owner->center();
+                        if(proj.target && proj.target->state == CS_ALIVE)
+                            proj.to.add(vec(proj.target->center()).sub(proj.from).normalize().mul(proj.owner->radius*2.f));
+                        else proj.to.add(vec(proj.owner->yaw*RAD, proj.owner->pitch*RAD).mul(proj.owner->radius*2.f));
+                    }
+                    else
+                    {
+                        proj.from = proj.owner->originpos();
+                        proj.to = proj.dest = proj.owner->muzzlepos();
+                    }
                 }
                 if(style != 2) proj.o = proj.from;
             }
             else
             {
-                proj.from = proj.owner->muzzlepos(proj.weap);
-                if(!proj.vel.iszero())
+                if(owner && !proj.child && !proj.bounced) proj.from = proj.owner->muzzlepos();
+                if(proj.projcollide&COLLIDE_SCAN) proj.to = proj.o;
+                else if(!proj.vel.iszero())
                 {
                     float size = clamp(WF(WK(proj.flags), proj.weap, partlen, WS(proj.flags))*(1.f-proj.lifespan)*proj.curscale, WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale, min(WF(WK(proj.flags), proj.weap, partlen, WS(proj.flags)), proj.o.dist(proj.from)));
                     if(proj.lastbounce) size = min(size, max(proj.movement, WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale));
@@ -825,7 +830,7 @@ namespace projs
                 proj.escaped = !proj.owner || proj.child || WK(proj.flags) || WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_LENGTH || proj.weap == W_MELEE;
                 updatetargets(proj, waited ? 1 : 0);
                 if(WF(WK(proj.flags), proj.weap, guided, WS(proj.flags)) != 0 && proj.owner)
-                    findorientation(proj.owner->o, proj.owner->yaw, proj.owner->pitch, proj.dest);
+                    safefindorientation(proj.owner->o, proj.owner->yaw, proj.owner->pitch, proj.dest);
                 if(proj.projcollide&COLLIDE_PROJ) collideprojs.add(&proj);
                 break;
             }
@@ -906,7 +911,7 @@ namespace projs
             {
                 proj.height = proj.aboveeye = 0.5f; proj.radius = proj.yradius = 1; proj.xradius = 0.25f;
                 if(!isweap(proj.weap) && proj.owner) proj.weap = proj.owner->weapselect;
-                if(proj.owner) proj.o = proj.from = proj.owner->ejectpos(proj.weap);
+                if(proj.owner) proj.o = proj.from = proj.owner->ejectpos();
                 if(isweap(proj.weap))
                 {
                     proj.mdlname = weaptype[proj.weap].eject && *weaptype[proj.weap].eprj ? weaptype[proj.weap].eprj : "projectiles/catridge";
@@ -1214,7 +1219,8 @@ namespace projs
                 part_create(weapfx[weap].parttype, delayattack/3, from, colour, weapfx[weap].partsize, muz, 0, 0, d);
             if(muzzlechk(muzzleflare, d) && weapfx[weap].flaresize > 0)
             {
-                vec targ; findorientation(d->o, d->yaw, d->pitch, targ);
+                vec targ;
+                safefindorientation(d->o, d->yaw, d->pitch, targ);
                 targ.sub(from).normalize().mul(weapfx[weap].flarelen).add(from);
                 part_flare(from, targ, delayattack/2, PART_MUZZLE_FLARE, colour, weapfx[weap].flaresize, muz, 0, 0, d);
             }
@@ -1267,7 +1273,7 @@ namespace projs
                     }
                     else if(WF(WK(proj.flags), proj.weap, taperin, WS(proj.flags)) > 0 && distance > WF(WK(proj.flags), proj.weap, taperin, WS(proj.flags)))
                     {
-                        if(type%2 || !proj.stuck)
+                        if(type%2 || !proj.usestuck())
                         {
                             float dist = 1-((distance-WF(WK(proj.flags), proj.weap, taperin, WS(proj.flags)))/WF(WK(proj.flags), proj.weap, taperout, WS(proj.flags)));
                             proj.lifesize = clamp(dist, WF(WK(proj.flags), proj.weap, tapermin, WS(proj.flags)), WF(WK(proj.flags), proj.weap, tapermax, WS(proj.flags)));
@@ -1314,7 +1320,7 @@ namespace projs
                 }
                 else if(proj.lifespan >= (1-spanout))
                 {
-                    if(type%2 || !proj.stuck)
+                    if(type%2 || !proj.usestuck())
                         proj.lifesize = clamp(1-((proj.lifespan-(1-spanout))/spanout), WF(WK(proj.flags), proj.weap, tapermin, WS(proj.flags)), WF(WK(proj.flags), proj.weap, tapermax, WS(proj.flags)));
                     break;
                 }
@@ -1369,34 +1375,34 @@ namespace projs
                 {
                     case W_CLAW:
                     {
-                        part_create(PART_PLASMA_SOFT, 1, proj.from, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.lifesize*proj.curscale, 0.5f*trans);
-                        if(projhints) part_create(PART_HINT_SOFT, 1, proj.from, projhint(proj.owner, FWCOL(H, partcol, proj)), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*projhintsize*proj.lifesize*proj.curscale, 0.5f*projhintblend*trans);
-                        if(lastmillis-proj.lasteffect >= projtraildelay && proj.effectpos.dist(proj.to) >= 0.5f)
+                        part_create(PART_PLASMA_SOFT, 1, proj.originpos(), FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.lifesize*proj.curscale, 0.5f*trans);
+                        if(projhints) part_create(PART_HINT_SOFT, 1, proj.originpos(), projhint(proj.owner, FWCOL(H, partcol, proj)), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*projhintsize*proj.lifesize*proj.curscale, 0.5f*projhintblend*trans);
+                        if(lastmillis-proj.lasteffect >= projtraildelay && proj.effectpos.dist(proj.targetpos()) >= 0.5f)
                         {
-                            part_create(PART_PLASMA_SOFT, 100, proj.from, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.lifesize*proj.curscale, 0.5f*trans);
+                            part_create(PART_PLASMA_SOFT, 100, proj.originpos(), FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.lifesize*proj.curscale, 0.5f*trans);
                             proj.lasteffect = lastmillis - (lastmillis%projtraildelay);
-                            proj.effectpos = proj.to;
+                            proj.effectpos = proj.targetpos();
                         }
                         break;
                     }
                     case W_SWORD:
                     {
-                        part_flare(proj.from, proj.to, 1, PART_LIGHTNING_FLARE, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale, trans);
-                        if(lastmillis-proj.lasteffect >= projtraildelay && proj.effectpos.dist(proj.to) >= 0.5f)
+                        part_flare(proj.originpos(), proj.targetpos(), 1, PART_LIGHTNING_FLARE, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale, trans);
+                        if(lastmillis-proj.lasteffect >= projtraildelay && proj.effectpos.dist(proj.targetpos()) >= 0.5f)
                         {
-                            part_flare(proj.from, proj.to, 250, PART_LIGHTNING_FLARE, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale, 0.75f*trans);
+                            part_flare(proj.originpos(), proj.targetpos(), 250, PART_LIGHTNING_FLARE, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale, 0.75f*trans);
                             proj.lasteffect = lastmillis - (lastmillis%projtraildelay);
-                            proj.effectpos = proj.to;
+                            proj.effectpos = proj.targetpos();
                         }
                         break;
                     }
                     case W_PISTOL:
                     {
-                        part_flare(proj.to, proj.o, 1, PART_MUZZLE_FLARE, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale, clamp(1.25f-proj.lifespan, 0.35f, 0.85f)*trans);
+                        part_flare(proj.originpos(), proj.targetpos(), 1, PART_MUZZLE_FLARE, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale, clamp(1.25f-proj.lifespan, 0.35f, 0.85f)*trans);
                         if(projhints)
                         {
-                            part_flare(proj.to, proj.o, 1, PART_MUZZLE_FLARE, projhint(proj.owner, FWCOL(H, partcol, proj)), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*projhintsize*proj.curscale, clamp(1.25f-proj.lifespan, 0.35f, 0.85f)*projhintblend*trans);
-                            part_create(PART_HINT_SOFT, 1, proj.o, projhint(proj.owner, FWCOL(H, partcol, proj)), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*projhintsize*proj.curscale, clamp(1.25f-proj.lifespan, 0.35f, 0.85f)*projhintblend*trans);
+                            part_flare(proj.originpos(), proj.targetpos(), 1, PART_MUZZLE_FLARE, projhint(proj.owner, FWCOL(H, partcol, proj)), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*projhintsize*proj.curscale, clamp(1.25f-proj.lifespan, 0.35f, 0.85f)*projhintblend*trans);
+                            part_create(PART_HINT_SOFT, 1, proj.originpos(), projhint(proj.owner, FWCOL(H, partcol, proj)), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*projhintsize*proj.curscale, clamp(1.25f-proj.lifespan, 0.35f, 0.85f)*projhintblend*trans);
                         }
                         break;
                     }
@@ -1450,7 +1456,7 @@ namespace projs
                     }
                     case W_SHOTGUN:
                     {
-                        if(proj.stuck || (!WK(proj.flags) && W2(proj.weap, fragweap, WS(proj.flags)) >= 0))
+                        if(proj.usestuck() || (!WK(proj.flags) && W2(proj.weap, fragweap, WS(proj.flags)) >= 0))
                         {
                             part_create(PART_PLASMA, 1, proj.o, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*5*proj.curscale, 0.75f*trans);
                             part_create(PART_PLASMA, 1, proj.o, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*10*proj.curscale, 0.75f*trans);
@@ -1458,22 +1464,22 @@ namespace projs
                         }
                         else
                         {
-                            part_flare(proj.to, proj.o, 1, PART_FLARE, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*(1.f-proj.lifespan)*proj.curscale, clamp(1.25f-proj.lifespan, 0.5f, 1.f)*trans);
-                            if(projhints) part_flare(proj.to, proj.o, 1, PART_FLARE, projhint(proj.owner, FWCOL(H, partcol, proj)), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*(1.f-proj.lifespan)*projhintsize*proj.curscale, clamp(1.25f-proj.lifespan, 0.5f, 1.f)*projhintblend*trans);
+                            part_flare(proj.originpos(), proj.targetpos(), 1, PART_FLARE, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*(1.f-proj.lifespan)*proj.curscale, clamp(1.25f-proj.lifespan, 0.5f, 1.f)*trans);
+                            if(projhints) part_flare(proj.originpos(), proj.targetpos(), 1, PART_FLARE, projhint(proj.owner, FWCOL(H, partcol, proj)), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*(1.f-proj.lifespan)*projhintsize*proj.curscale, clamp(1.25f-proj.lifespan, 0.5f, 1.f)*projhintblend*trans);
                         }
                         break;
                     }
                     case W_SMG:
                     {
-                        if(!proj.stuck)
+                        if(!proj.usestuck())
                         {
-                            part_flare(proj.to, proj.o, 1, PART_FLARE, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*(1.f-proj.lifespan)*proj.curscale, clamp(1.25f-proj.lifespan, 0.5f, 1.f)*trans);
-                            if(projhints) part_flare(proj.to, proj.o, 1, PART_FLARE, projhint(proj.owner, FWCOL(H, partcol, proj)), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*(1.f-proj.lifespan)*projhintsize*proj.curscale, clamp(1.25f-proj.lifespan, 0.5f, 1.f)*projhintblend*trans);
+                            part_flare(proj.originpos(), proj.targetpos(), 1, PART_FLARE, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*(1.f-proj.lifespan)*proj.curscale, clamp(1.25f-proj.lifespan, 0.5f, 1.f)*trans);
+                            if(projhints) part_flare(proj.originpos(), proj.targetpos(), 1, PART_FLARE, projhint(proj.owner, FWCOL(H, partcol, proj)), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*(1.f-proj.lifespan)*projhintsize*proj.curscale, clamp(1.25f-proj.lifespan, 0.5f, 1.f)*projhintblend*trans);
                         }
-                        if(proj.stuck || (!WK(proj.flags) && W2(proj.weap, fragweap, WS(proj.flags)) >= 0))
+                        if(proj.usestuck() || (!WK(proj.flags) && W2(proj.weap, fragweap, WS(proj.flags)) >= 0))
                         {
                             part_create(PART_PLASMA, 1, proj.o, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*4*proj.curscale, 0.75f*trans);
-                            if(proj.stuck) part_create(PART_PLASMA, 1, proj.o, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*6*proj.curscale, 0.75f*trans);
+                            if(proj.usestuck()) part_create(PART_PLASMA, 1, proj.o, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*6*proj.curscale, 0.75f*trans);
                             if(projhints) part_create(PART_HINT_SOFT, 1, proj.o, projhint(proj.owner, FWCOL(H, partcol, proj)), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*5.f*projhintsize*proj.curscale, 0.75f*projhintblend*trans);
                         }
                         break;
@@ -1499,8 +1505,8 @@ namespace projs
                     }
                     case W_RIFLE: case W_ZAPPER:
                     {
-                        part_flare(proj.to, proj.o, 1, type != W_ZAPPER ? PART_FLARE : PART_LIGHTZAP_FLARE, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale, 0.85f*trans);
-                        if(projhints) part_flare(proj.to, proj.o, 1, type != W_ZAPPER ? PART_FLARE : PART_LIGHTZAP_FLARE, projhint(proj.owner, FWCOL(H, partcol, proj)), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*projhintsize*proj.curscale, projhintblend*trans);
+                        part_flare(proj.originpos(), proj.targetpos(), 1, type != W_ZAPPER ? PART_FLARE : PART_LIGHTZAP_FLARE, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale, 0.85f*trans);
+                        if(projhints) part_flare(proj.originpos(), proj.targetpos(), 1, type != W_ZAPPER ? PART_FLARE : PART_LIGHTZAP_FLARE, projhint(proj.owner, FWCOL(H, partcol, proj)), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*projhintsize*proj.curscale, projhintblend*trans);
                         if(type != W_ZAPPER && !WK(proj.flags) && W2(proj.weap, fragweap, WS(proj.flags)) >= 0)
                         {
                             part_create(PART_PLASMA, 1, proj.o, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale*5, 0.5f*trans);
@@ -1524,7 +1530,7 @@ namespace projs
                             dir.div(mag);
                             float blocked = tracecollide(&proj, from, dir, mag, RAY_CLIPMAT|RAY_ALPHAPOLY, true);
                             if(blocked >= 0) to = vec(from).add(vec(proj.norm).mul(blocked+proj.radius));
-                            part_flare(proj.o, to, 1, PART_FLARE, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*0.25f*proj.curscale*proj.lifesize, 0.75f*trans);
+                            part_flare(proj.originpos(), to, 1, PART_FLARE, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*0.25f*proj.curscale*proj.lifesize, 0.75f*trans);
                         }
                     }
                 }
@@ -1691,8 +1697,8 @@ namespace projs
                             if(WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags)) >= 1)
                                 part_explosion(proj.o, expl*WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags)), PART_SHOCKWAVE, halflen, projhint(proj.owner, FWCOL(H, explcol, proj)), 1.f, 0.5f*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags))*projhintblend);
                         }
-                        part_flare(proj.to, proj.o, len, type != W_ZAPPER ? PART_FLARE : PART_LIGHTZAP_FLARE, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale, 0.85f*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)));
-                        if(projhints) part_flare(proj.to, proj.o, len, type != W_ZAPPER ? PART_FLARE : PART_LIGHTZAP_FLARE, projhint(proj.owner, FWCOL(H, partcol, proj)), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*projhintsize*proj.curscale, projhintblend*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)));
+                        part_flare(proj.originpos(), proj.targetpos(), len, type != W_ZAPPER ? PART_FLARE : PART_LIGHTZAP_FLARE, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale, 0.85f*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)));
+                        if(projhints) part_flare(proj.originpos(), proj.targetpos(), len, type != W_ZAPPER ? PART_FLARE : PART_LIGHTZAP_FLARE, projhint(proj.owner, FWCOL(H, partcol, proj)), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*projhintsize*proj.curscale, projhintblend*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)));
                         addstain(STAIN_SCORCH, proj.o, proj.norm, max(expl, 2.f));
                         addstain(STAIN_ENERGY, proj.o, proj.norm, max(expl*0.5f, 1.f), bvec::fromcolor(FWCOL(P, explcol, proj)));
                         adddynlight(proj.o, 1.1f*expl, FWCOL(P, explcol, proj), len, 10);
@@ -1875,6 +1881,8 @@ namespace projs
                 {
                     reflect(proj, proj.norm);
                     proj.o.add(vec(proj.norm).mul(0.1f)); // offset from surface slightly to avoid initial collision
+                    proj.from = proj.o;
+                    proj.bounced = true;
                     proj.movement = 0;
                 }
                 proj.lastbounce = lastmillis;
@@ -1886,33 +1894,54 @@ namespace projs
         return 1; // live!
     }
 
-    int step(projent &proj, const vec &dir, const vec &oldpos, bool skip)
+    int step(projent &proj, const vec &dir, const vec &pos, bool skip)
     {
         int ret = check(proj, dir);
         if(!ret) return 0;
-        if(!skip && proj.interacts && checkitems(proj, oldpos, dir, proj.o.dist(oldpos))) return -1;
-        if(proj.projtype == PRJ_SHOT) updatetaper(proj, proj.distance+proj.o.dist(oldpos));
+        if(!skip && proj.interacts && checkitems(proj, pos, dir, proj.o.dist(pos))) return -1;
+        if(proj.projtype == PRJ_SHOT) updatetaper(proj, proj.distance+proj.o.dist(pos));
         if(ret == 1 && (collide(&proj, dir, 0.f, proj.projcollide&COLLIDE_DYNENT, false, GUARDRADIUS) || collideinside))
             ret = impact(proj, dir, collideplayer, collidezones, collidewall);
         return ret;
     }
 
-    int trace(projent &proj, const vec &dir, const vec &oldpos, int mat, bool skip)
+    int trace(projent &proj, const vec &dir, const vec &pos, int mat, bool skip)
     {
         int ret = check(proj, dir, mat);
         if(!ret) return 0;
-        vec ray = dir;
-        float maxdist = ray.magnitude();
-        if(maxdist > 0)
-        {
-            ray.mul(1/maxdist);
-            if(!skip && proj.interacts && checkitems(proj, oldpos, ray, maxdist)) return -1;
-            float dist = tracecollide(&proj, proj.o, ray, maxdist, RAY_CLIPMAT|RAY_ALPHAPOLY, proj.projcollide&COLLIDE_DYNENT, GUARDRADIUS),
-                  total = dist >= 0 ? dist : maxdist;
-            proj.o.add(vec(ray).mul(total));
-            if(proj.projtype == PRJ_SHOT) updatetaper(proj, proj.distance+total);
-            if(dist >= 0) ret = impact(proj, dir, collideplayer, collidezones, hitsurface);
+        float total = 0, dist = -1;
+        if(proj.projcollide&COLLIDE_SCAN)
+        { // run a pre-scan
+            if(!skip)
+            {
+                vec scan = vec(proj.o).sub(proj.from);
+                float scandist = scan.magnitude();
+                if(scandist > 0)
+                {
+                    scan.mul(1/scandist);
+                    dist = tracecollide(&proj, proj.from, scan, scandist, RAY_CLIPMAT|RAY_ALPHAPOLY, proj.projcollide&COLLIDE_DYNENT, GUARDRADIUS);
+                    if(dist >= 0)
+                    {
+                        proj.o = vec(proj.from).add(vec(scan).mul(dist));
+                        total = 0-max(scandist-dist, 0.f);
+                    }
+                }
+            }
+            if(proj.stuck) return ret;
         }
+        if(dist < 0)
+        {
+            vec ray = dir;
+            float maxdist = ray.magnitude();
+            if(maxdist <= 0) return ret;
+            ray.mul(1/maxdist);
+            if(!skip && proj.interacts && checkitems(proj, pos, ray, maxdist)) return -1;
+            dist = tracecollide(&proj, pos, ray, maxdist, RAY_CLIPMAT|RAY_ALPHAPOLY, proj.projcollide&COLLIDE_DYNENT, GUARDRADIUS);
+            total = dist >= 0 ? dist : maxdist;
+            if(total > 0) proj.o.add(vec(ray).mul(total));
+        }
+        if(proj.projtype == PRJ_SHOT) updatetaper(proj, proj.distance+total);
+        if(dist >= 0) ret = impact(proj, dir, collideplayer, collidezones, hitsurface);
         return ret;
     }
 
@@ -1926,7 +1955,7 @@ namespace projs
             {
                 vec ray = vec(dir).safenormalize();
                 if(proj.spawntime && lastmillis-proj.spawntime >= delay*2) proj.escaped = true;
-                else if(proj.projcollide&COLLIDE_TRACE)
+                else if(proj.projcollide&COLLIDE_FROMTO)
                 {
                     if(!pltracecollide(&proj, pos, ray, dir.magnitude(), GUARDRADIUS) || collideplayer != proj.owner) proj.escaped = true;
                 }
@@ -1945,7 +1974,7 @@ namespace projs
         if(!proj.escaped && proj.owner) escaped(proj, pos, dir);
 
         bool blocked = false;
-        if(proj.projcollide&COLLIDE_TRACE)
+        if(proj.projcollide&COLLIDE_FROMTO)
         {
             switch(trace(proj, dir, pos, mat, skip))
             {
@@ -2092,7 +2121,7 @@ namespace projs
                             if(proj.owner && proj.owner->state == CS_ALIVE)
                             {
                                 vec dest;
-                                findorientation(proj.owner->o, proj.owner->yaw, proj.owner->pitch, dest);
+                                safefindorientation(proj.owner->o, proj.owner->yaw, proj.owner->pitch, dest);
                                 t = game::intersectclosest(proj.owner->o, dest, proj.owner);
                                 break;
                             } // otherwise..
@@ -2101,7 +2130,8 @@ namespace projs
                         {
                             float yaw, pitch;
                             vectoyawpitch(dir, yaw, pitch);
-                            vec dest; findorientation(proj.o, yaw, pitch, dest);
+                            vec dest;
+                            safefindorientation(proj.o, yaw, pitch, dest);
                             t = game::intersectclosest(proj.o, dest, proj.owner);
                             break;
                         }
@@ -2117,7 +2147,7 @@ namespace projs
                 case 1:
                 {
                     if(proj.owner && proj.owner->state == CS_ALIVE)
-                        findorientation(proj.owner->o, proj.owner->yaw, proj.owner->pitch, proj.dest);
+                        safefindorientation(proj.owner->o, proj.owner->yaw, proj.owner->pitch, proj.dest);
                     break;
                 }
             }
@@ -2135,7 +2165,7 @@ namespace projs
 
     bool moveframe(projent &proj)
     {
-        if(((proj.lifetime -= physics::physframetime) <= 0 && proj.lifemillis) || (!proj.stuck && !move(proj, physics::physframetime)))
+        if(((proj.lifetime -= physics::physframetime) <= 0 && proj.lifemillis) || (!proj.usestuck() && !move(proj, physics::physframetime)))
         {
             if(proj.lifetime < 0) proj.lifetime = 0;
             return false;
@@ -2272,7 +2302,7 @@ namespace projs
                     int qtime = min(rtime, 30);
                     rtime -= qtime;
 
-                    if(((proj.lifetime -= qtime) <= 0 && proj.lifemillis) || (!proj.stuck && !move(proj, qtime)))
+                    if(((proj.lifetime -= qtime) <= 0 && proj.lifemillis) || (!proj.usestuck() && !move(proj, qtime)))
                     {
                         if(proj.lifetime < 0) proj.lifetime = 0;
                         proj.state = CS_DEAD;

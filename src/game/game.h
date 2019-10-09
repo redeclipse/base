@@ -1846,7 +1846,7 @@ struct projent : dynent
     vec from, to, dest, norm, inertia, sticknrm, stickpos, effectpos, lastgood;
     int addtime, lifetime, lifemillis, waittime, spawntime, fadetime, lastradial, lasteffect, lastbounce, beenused, extinguish, stuck;
     float movement, distance, lifespan, lifesize, speedmin, speedmax;
-    bool local, limited, escaped, child;
+    bool local, limited, escaped, child, bounced;
     int projtype, projcollide, interacts;
     float elasticity, reflectivity, relativity, liquidcoast;
     int schan, id, weap, fromweap, fromflags, value, flags, collidezones;
@@ -1883,7 +1883,7 @@ struct projent : dynent
         movement = distance = lifespan = speedmin = speedmax = 0;
         curscale = lifesize = 1;
         extinguish = stuck = interacts = 0;
-        limited = escaped = child = false;
+        limited = escaped = child = bounced = false;
         projcollide = BOUNCE_GEOM|BOUNCE_PLAYER;
         material = bvec(255, 255, 255);
     }
@@ -1893,6 +1893,24 @@ struct projent : dynent
         if(owner && (!used || projtype == PRJ_SHOT || !beenused) && waittime <= 0 && state != CS_DEAD)
             return true;
         return false;
+    }
+
+    vec &originpos()
+    {
+        if(projcollide&COLLIDE_SCAN) return from;
+        return o;
+    }
+
+    vec &targetpos()
+    {
+        if(projcollide&COLLIDE_SCAN) return o;
+        return to;
+    }
+
+    bool usestuck()
+    {
+        if(projcollide&COLLIDE_SCAN) return false;
+        return stuck != 0;
     }
 };
 

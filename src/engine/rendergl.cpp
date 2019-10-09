@@ -1265,11 +1265,20 @@ ICOMMAND(0, getcampos, "", (),
 physent camera, *camera1 = &camera;
 vec worldpos, camdir, camright, camup;
 
-void findorientation(vec &o, float yaw, float pitch, vec &pos)
+bool findorientation(vec &o, float yaw, float pitch, vec &pos)
 {
     vec dir(yaw*RAD, pitch*RAD);
     if(raycubepos(o, dir, pos, 0, RAY_CLIPMAT|RAY_SKIPFIRST) == -1)
+    {
         pos = dir.mul(2*worldsize).add(o);
+        return true;
+    }
+    return false;
+}
+
+void safefindorientation(vec &o, float yaw, float pitch, vec &pos)
+{
+    if(!findorientation(o, yaw, pitch, pos)) pos = vec(yaw*RAD, pitch*RAD).mul(2*worldsize).add(o);
 }
 
 void setcammatrix()

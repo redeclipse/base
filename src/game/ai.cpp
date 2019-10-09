@@ -632,7 +632,7 @@ namespace ai
             d->ai->clean();
             d->ai->reset(true);
             d->ai->lastrun = lastmillis;
-            findorientation(d->o, d->yaw, d->pitch, d->ai->target);
+            safefindorientation(d->o, d->yaw, d->pitch, d->ai->target);
         }
     }
 
@@ -1286,7 +1286,7 @@ namespace ai
             d->move = ad.move;
             d->strafe = ad.strafe;
         }
-        findorientation(d->o, d->yaw, d->pitch, d->ai->target);
+        safefindorientation(d->o, d->yaw, d->pitch, d->ai->target);
     }
 
     bool hasrange(gameent *d, gameent *e, int weap)
