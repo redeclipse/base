@@ -1087,7 +1087,7 @@ void gencubeverts(cube &c, const ivec &co, int size, int csi)
     if(!(c.visible&0x80)) vismask &= c.visible;
     if(!vismask) return;
 
-    int tj = filltjoints && c.ext ? c.ext->tjoints : -1, vis;
+    int tj = filltjoints && c.ext ? c.ext->tjoints : -1, vis = 0;
     loopi(6) if(vismask&(1<<i) && (vis = visibletris(c, i, co, size)))
     {
         vec pos[MAXFACEVERTS];

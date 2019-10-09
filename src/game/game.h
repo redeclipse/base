@@ -1471,7 +1471,6 @@ struct gameent : dynent, clientstate
         lastteamhit = lastflag = respawned = suicided = lastnode = lastfoot = -1;
         obit[0] = '\0';
         obliterated = headless = false;
-        configure(millis, gamemode, mutators);
         icons.shrink(0);
         stuns.shrink(0);
         jitters.shrink(0);
@@ -1483,9 +1482,10 @@ struct gameent : dynent, clientstate
     {
         stopmoving(true);
         removesounds();
-        clearstate(millis, gamemode, mutators);
         physent::reset();
+        clearstate(millis, gamemode, mutators);
         clientstate::respawn(millis);
+        configure(millis, gamemode, mutators);
     }
 
     void editspawn(int gamemode, int mutators)

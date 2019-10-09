@@ -1116,6 +1116,7 @@ namespace projs
                 proj.child = true;
                 proj.owner = d;
                 proj.vel = vec(proj.to).sub(proj.from);
+                vectoyawpitch(vec(proj.vel).normalize(), proj.yaw, proj.pitch);
                 if(parent) proj.target = parent->target;
             }
             else if(d)
@@ -1127,6 +1128,7 @@ namespace projs
                 if(proj.projtype == PRJ_SHOT && isweap(proj.weap) && issound(d->pschan) && weaptype[proj.weap].thrown[WS(proj.flags) ? 1 : 0] != 0)
                     playsound(WSND2(proj.weap, WS(proj.flags), S_W_TRANSIT), proj.o, &proj, SND_LOOP, sounds[d->pschan].vol, -1, -1, &proj.schan, 0, &d->pschan);
             }
+            else vectoyawpitch(vec(proj.to).sub(proj.from).normalize(), proj.yaw, proj.pitch);
         }
         if(!proj.waittime) init(proj, false);
         projs.add(&proj);
