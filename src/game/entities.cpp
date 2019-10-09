@@ -627,8 +627,10 @@ namespace entities
         return false;
     }
 
-    gameent *trigger = NULL;
-    ICOMMAND(0, triggerclientnum, "", (), intret(trigger ? trigger->clientnum : -1));
+    int triggerent = -1;
+    gameent *triggerclient = NULL;
+    ICOMMAND(0, triggerentnum, "", (), intret(triggerent));
+    ICOMMAND(0, triggerclientnum, "", (), intret(triggerclient ? triggerclient->clientnum : -1));
 
     bool cantrigger(int n, gameent *d = NULL)
     {
@@ -670,11 +672,13 @@ namespace entities
                 }
                 case TR_SCRIPT:
                 {
-                    if(d == game::player1)
-                    {
-                        defformatstring(s, "on_trigger_%d", e.attrs[0]);
-                        trigger = d; RUNWORLD(s); trigger = NULL;
-                    }
+                    if(d->actortype >= A_BOT) break;
+                    defformatstring(s, "on_trigger_%d", e.attrs[0]);
+                    triggerent = n;
+                    triggerclient = d;
+                    RUNWORLD(s);
+                    triggerent = -1;
+                    triggerclient = NULL;
                     break;
                 }
                 default: break;
@@ -687,7 +691,7 @@ namespace entities
     {
         loopenti(TRIGGER) if(ents[i]->type == TRIGGER && ents[i]->attrs[0] == n && ents[i]->attrs[2] == TA_MANUAL) runtrigger(i, d, false);
     }
-    ICOMMAND(0, exectrigger, "i", (int *n), if(identflags&IDF_WORLD) runtriggers(*n, trigger ? trigger : game::player1));
+    ICOMMAND(0, exectrigger, "i", (int *n), if(identflags&IDF_WORLD) runtriggers(*n, triggerclient ? triggerclient : game::player1));
 
     bool execitem(int n, int cn, dynent *d, vec &pos, float dist)
     {
@@ -1019,6 +1023,7 @@ namespace entities
             execlink(NULL, n, false);
         }
     }
+    ICOMMAND(0, entspawned, "i", (int *n), intret(ents.inrange(*n) && ents[*n]->spawned() ? 1 : 0));
 
     extentity *newent() { return new gameentity; }
     void deleteent(extentity *e) { delete (gameentity *)e; }

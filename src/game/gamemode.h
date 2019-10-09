@@ -269,7 +269,7 @@ extern mutstypes mutstype[];
 
 #define m_bb_hold(a,b)      (m_bomber(a) && m_gsp1(a, b))
 #define m_bb_basket(a,b)    (m_bomber(a) && m_gsp2(a, b))
-#define m_bb_assault(a,b)    (m_bomber(a) && m_gsp3(a, b))
+#define m_bb_assault(a,b)   (m_bomber(a) && m_gsp3(a, b))
 
 #define m_ra_timed(a,b)     (m_race(a) && m_gsp1(a, b))
 #define m_ra_endurance(a,b) (m_race(a) && m_gsp2(a, b))
