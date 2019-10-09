@@ -36,7 +36,7 @@ namespace ai
 
     float weapmindist(int weap, bool alt)
     {
-        if(WF(false, weap, collide, alt)&COLLIDE_HITSCAN) return 0.f;
+        if(WF(false, weap, collide, alt)&COLLIDE_LENGTH) return 0.f;
         if(WX(false, weap, explode, alt, game::gamemode, game::mutators, 1.f) > 0) return WX(false, weap, explode, alt, game::gamemode, game::mutators, 1.f);
         return 1.f;
     }

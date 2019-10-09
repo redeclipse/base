@@ -327,7 +327,7 @@ namespace weapons
         int rays = W2(weap, rays, secondary);
         if(rays > 1 && W2(weap, cooked, secondary)&W_C_RAYS && W2(weap, cooktime, secondary) && scale < 1)
             rays = max(1, int(ceilf(rays*scale)));
-        if(weap == W_MELEE || WF(false, weap, collide, secondary)&COLLIDE_HITSCAN)
+        if(weap == W_MELEE || WF(false, weap, collide, secondary)&COLLIDE_LENGTH)
         {
             if(weap == W_MELEE)
             {
