@@ -1,3 +1,5 @@
+//weapons.h configuration file
+//default weapon variables baked into the game
 enum
 {
     W_CLAW = 0, W_PISTOL, W_OFFSET, // end of unselectable weapon set
@@ -137,34 +139,35 @@ WPSVAR(IDF_GAMEMOD, 0, longname, // shown for weapon pickups and loadout menu
     "Rocket Launcher",
     "Melee Attack"
 );
-
+//Strings formatted as "The <weapon> <primary/secondary> <string>" implied
+//e.g. The sword primary is a horizontally slicing moderately powerful slash, capable of being swung at short intervals
 WPSVARM(IDF_GAMEMOD, 0, desc,
     "is a basic, horizontal claw slash, best used in conjunction with an impulse kick",
-    "is a long-range, low-damage bullets with a high rate of fire",
-    "is a horizontal slice, low-damage, can be swung at short intervals, causes bleed residual damage",
-    "fires a lot of pellets, causes mass destruction at short range, useless at long range",
-    "rapid-fires bullets that bounce off walls and knock back the victim",
-    "is a short-ranged rapid-fire flamethrower, causes burn residual damage",
+    "is an accurate, low-damage, and moderately fast projectile attack with a high rate of fire",
+    "is a horizontally slicing, moderately powerful slash, capable of being swung at short intervals",
+    "fires a conical spray of projectiles, causing high damage at short range, but none from afar",
+    "rapid-fires bullets that bounce off walls and knock back the victim, but at the cost of high muzzle climb",
+    "fires a short-ranged rapid-fire flame stream, causing burn residual damage",
     "fires plasma balls at a high rate with high damage, but relatively low accuracy and velocity",
-    "is a rapid-fire electric attack that hits almost instantly, great to finish off a wounded foe",
-    "fires a non-charged laser shot that deals damage in a small area",
-    "is a simple explosion device, can be cooked to control detonation delay, causes burn residual damage",
-    "explodes and discharges electricity when someone comes too close, slowing them down greatly and causing shock residual damage",
-    "is a fast, highly explosive rocket with a large shockwave, causes burn residual damage",
+    "is a long ranged, medium damage, and fairly quick firing ray weapon capable of holding off opponents at medium to long range",
+    "fires an uncharged laser shot that deals a reasonably large amount of damage at a fairly slow rate",
+    "is a thrown explosive with a burn residual, capable of having its time to detination shortened by being held after being cocked",
+    "explodes and discharges electric rays when someone comes too close, slowing them down and causing shock residual damage",
+    "is a fast, highly explosive rocket with a large shockwave, causing burn residual damage",
     "allows you to use parkour and kick moves as melee attacks",
     // begin secondary
     "is a slower and weaker claw attack that pulls you towards the enemy and allows wall grabs",
-    "is a slower rate of fire than the primary attack, but does more damage",
-    "is a slower vertical slice with much more power, causes bleed residual damage",
-    "shoots a slug that explodes and disintegrates into shavings, causes bleed residual damage",
-    "shoots long-range projectiles that stick to surfaces and players before exploding into fragments for additional damage",
-    "is a versatile air blast, can be used after jumping to travel great distances or to blast foes off their feet. extinguishes flame residual damage",
-    "is a charged, quickly-expanding ball of plasma that quickly sucks players in, causing great damage",
-    "is a charged and focused beam that will also cause shock residual damage and greatly slow down a foe",
+    "bludgeons opponents with the weapon itself, capable of being swung quickly but not capable of significant damage",
+    "is a slower, charged vertical slice capable of powerful bleed-inducing swings",
+    "shoots a slug that disintegrates on contact or delay into shrapnel, causing bleed residual damage",
+    "shoots medium-range projectiles that can stick to surfaces and players before exploding and releasing shrapnel for additional damage",
+    "releases an air blast, capable of extending one's own airtime or knocking back opponents; capable of extinguishing burning players",
+    "is a charged, slow moving spray of plasma chunks that splits on impact with surfaces and renders surfaces untraversible for a time",
+    "is a scoped, long ranged, medium damage, and fairly quick firing ray weapon capable of accurately hitting opponents at long range",
     "is a charged and focused laser shot with great precision and adjustable zoom, ideal for long range",
-    "sticks to whatever it hits, but has a smaller area of effect than the primary mode, causes burn residual damage",
-    "emits an endless distance laser trap that detonates when tripped, in addition causing shock residual damage which can slow down a foe",
-    "is a guided rocket that moves significantly slower than the primary fire mode, causes burn residual damage",
+    "is a thrown explosive that sticks to opponents, capable of having its time to detination shortened by being held; burns opponents",
+    "emits an long distance laser trap that detonates when tripped, damaging and slowing the victim with a stun residual",
+    "is a guided rocket that moves significantly slower than the primary fire mode, causing burn residual damage",
     "allows you to use slide moves as melee attacks"
 );
 
@@ -458,6 +461,7 @@ WPVARK(IDF_GAMEMOD, 0, fadetime, 0, VAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
 );
+//  Claw        Pistol      Sword       Shotgun     SMG         Flamer      Plasma      Zapper      Rifle       Grenade     Mine        Rocket      Melee
 WPFVARM(IDF_GAMEMOD, 0, fragjump, 0, 1,
     0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,
     0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f
@@ -566,6 +570,8 @@ WPFVAR(IDF_GAMEMOD, 0, itemhalo, 0, FVAR_MAX,
 WPFVAR(IDF_GAMEMOD, 0, itemhaloammo, 0, FVAR_MAX,
     9,          9,          18,         15,         12,         15,         9,          12,         15,         6,          6,          12,         1.5f
 );
+//jitter vars
+//  Claw        Pistol      Sword       Shotgun     SMG         Flamer      Plasma      Zapper      Rifle       Grenade     Mine        Rocket      Melee
 WPVARM(IDF_GAMEMOD, 0, jitterpitchdir, VAR_MIN, VAR_MAX,
     0,          30,         0,          0,          500,        0,          0,          0,          0,          0,          0,          0,          0,
     0,          30,         0,          0,          500,        0,          0,          0,          0,          0,          0,          0,          0
@@ -795,6 +801,7 @@ WPSVARK(IDF_GAMEMOD, 0, obituary,
     "obliterated",
     "given kung-fu lessons"
 );
+//  Claw        Pistol      Sword       Shotgun     SMG         Flamer      Plasma      Zapper      Rifle       Grenade     Mine        Rocket      Melee
 WPFVARK(IDF_GAMEMOD, 0, partblend, 0, 1,
     1.0f,       0.3f,       1.0f,       1.0f,       1.0f,       0.8f,       0.8f,       1.0f,       1.0f,       1.0f,       0.75f,      1.0f,       1.0f,
     1.0f,       0.6f,       1.0f,       1.0f,       1.0f,       0.25f,      1.0f,       1.0f,       1.0f,       1.0f,       0.75f,      1.0f,       1.0f,
@@ -893,6 +900,7 @@ WPVARK(IDF_GAMEMOD, 0, residualundo, 0, W_R_ALL,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,
     0,          0,          0,          0,          0,          WR(BURN),   0,          0,          0,          0,          0,          0,          0
 );
+//  Claw        Pistol      Sword       Shotgun     SMG         Flamer      Plasma      Zapper      Rifle       Grenade     Mine        Rocket      Melee
 WPVARK(IDF_GAMEMOD, 0, shocktime, 0, VAR_MAX,
     5500,       5500,       5500,       5500,       5500,       5500,       5500,       5500,       5500,       5500,       5500,       5500,       5500,
     5500,       5500,       5500,       5500,       5500,       5500,       5500,       5500,       5500,       5500,       5500,       5500,       5500,
@@ -1010,6 +1018,7 @@ WPFVARM(IDF_GAMEMOD, 0, spreadinair, 0, FVAR_MAX,
     0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,
     0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f
 );
+//  Claw        Pistol      Sword       Shotgun     SMG         Flamer      Plasma      Zapper      Rifle       Grenade     Mine       Rocket      Melee
 WPVARK(IDF_GAMEMOD, 0, stun, 0, W_N_ALL,
     W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,
     W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ALL,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,
