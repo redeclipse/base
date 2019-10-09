@@ -3266,7 +3266,7 @@ namespace game
                     }
                     case W_S_PRIMARY: case W_S_SECONDARY:
                     {
-                        if(weaptype[weap].thrown[d->weapstate[weap]-W_S_PRIMARY] > 0)
+                        if(weaptype[weap].thrown)
                         {
                             int millis = lastmillis-d->weaptime[weap], off = d->weapwait[weap]/4;
                             if(millis <= off || !d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators)))

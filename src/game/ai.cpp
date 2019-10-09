@@ -116,7 +116,7 @@ namespace ai
         if(insight && weaprange(d, d->weapselect, alt, e->o.squaredist(d->o)))
         {
             if(W2(d->weapselect, aidist, alt) < CLOSEDIST) return true;
-            float skew = clamp(float(lastmillis-d->ai->enemymillis)/float((d->skill*W(d->weapselect, delayreload)/5000.f)+(d->skill*W2(d->weapselect, delayattack, alt)/500.f)), 0.f, weaptype[d->weapselect].thrown[0] ? 0.25f : 1e16f),
+            float skew = clamp(float(lastmillis-d->ai->enemymillis)/float((d->skill*W(d->weapselect, delayreload)/5000.f)+(d->skill*W2(d->weapselect, delayattack, alt)/500.f)), 0.f, weaptype[d->weapselect].thrown ? 0.25f : 1e16f),
                 offy = yaw-d->yaw, offp = pitch-d->pitch;
             if(offy > 180) offy -= 360;
             else if(offy < -180) offy += 360;

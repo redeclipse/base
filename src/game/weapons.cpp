@@ -352,8 +352,7 @@ namespace weapons
                 vec dest;
                 if(spread > 0) offsetray(from, to, spread, W2(weap, spreadz, secondary), dest);
                 else dest = to;
-                if(weaptype[weap].thrown[secondary ? 1 : 0] > 0)
-                    dest.z += from.dist(dest)*weaptype[weap].thrown[secondary ? 1 : 0];
+                if(W2(weap, znudge, secondary)) dest.z += from.dist(dest)*W2(weap, znudge, secondary);
                 addshot(dest);
             }
         }
