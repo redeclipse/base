@@ -452,11 +452,17 @@ WPFVARK(IDF_GAMEMOD, 0, fadecut, 0, FVAR_MAX,
     0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,
     0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f
 );
-WPVARK(IDF_GAMEMOD, 0, fadetime, 0, VAR_MAX,
+WPVARK(IDF_GAMEMOD, 0, fadein, 0, VAR_MAX,
     0,          0,          0,          0,          0,          40,         40,         0,          0,          0,          0,          0,          0,
     0,          0,          0,          0,          0,          40,         40,         0,          0,          0,          0,          0,          0,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
+);
+WPVARK(IDF_GAMEMOD, 0, fadeout, 0, VAR_MAX,
+    0,          0,          0,          0,          0,          0,          0,          50,         0,          0,          0,          0,          0,
+    0,          0,          0,          0,          0,          0,          0,          50,         0,          0,          0,          0,          0,
+    0,          0,          0,          0,          0,          0,          0,          100,        0,          0,          0,          0,          0,
+    0,          0,          0,          0,          0,          0,          0,          100,        0,          0,          0,          0,          0
 );
 //  Claw        Pistol      Sword       Shotgun     SMG         Flamer      Plasma      Zapper      Rifle       Grenade     Mine        Rocket      Melee
 WPFVARM(IDF_GAMEMOD, 0, fragjump, 0, 1,

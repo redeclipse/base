@@ -648,14 +648,18 @@ namespace projs
     float fadeweap(projent &proj)
     {
         float trans = WF(WK(proj.flags), proj.weap, blend, WS(proj.flags));
-        if(WF(WK(proj.flags), proj.weap, fade, WS(proj.flags))&(proj.owner != game::focus ? 2 : 1))
+        if(WF(WK(proj.flags), proj.weap, fadein, WS(proj.flags)) != 0)
         {
-            int millis = lastmillis-proj.spawntime;
-            if(WF(WK(proj.flags), proj.weap, fadetime, WS(proj.flags)) != 0 && millis < WF(WK(proj.flags), proj.weap, fadetime, WS(proj.flags)))
-                trans *= millis/float(WF(WK(proj.flags), proj.weap, fadetime, WS(proj.flags)));
-            if(!proj.escaped && proj.owner == game::focus && WF(WK(proj.flags), proj.weap, fadeat, WS(proj.flags)) > 0)
-                trans *= camera1->o.distrange(proj.o, WF(WK(proj.flags), proj.weap, fadeat, WS(proj.flags)), WF(WK(proj.flags), proj.weap, fadecut, WS(proj.flags)));
+            int millis = lastmillis-proj.spawntime, len = min(WF(WK(proj.flags), proj.weap, fadein, WS(proj.flags)), proj.lifetime);
+            if(len > 0 && millis < len) trans *= millis/float(len);
         }
+        if(WF(WK(proj.flags), proj.weap, fadeout, WS(proj.flags)) != 0)
+        {
+            int millis = lastmillis-proj.spawntime, len = min(WF(WK(proj.flags), proj.weap, fadeout, WS(proj.flags)), proj.lifetime), check = proj.lifetime-len;
+            if(len > 0 && millis > check) trans *= 1-((millis-check)/float(len));
+        }
+        if(WF(WK(proj.flags), proj.weap, fade, WS(proj.flags))&(proj.owner != game::focus ? 2 : 1) && WF(WK(proj.flags), proj.weap, fadeat, WS(proj.flags)) > 0)
+            trans *= camera1->o.distrange(proj.o, WF(WK(proj.flags), proj.weap, fadeat, WS(proj.flags)), WF(WK(proj.flags), proj.weap, fadecut, WS(proj.flags)));
         if(proj.stuck && isweap(proj.weap) && WF(WK(proj.flags), proj.weap, vistime, WS(proj.flags)) != 0)
         {
             int millis = lastmillis-proj.stuck;
