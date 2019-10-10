@@ -793,10 +793,10 @@ namespace projs
         {
             if(proj.weap == W_MELEE)
             {
-                proj.from = proj.to = proj.owner->center();
+                proj.from = proj.to = proj.owner->foottag(0);
                 if(proj.target && proj.target->state == CS_ALIVE)
-                    proj.to.add(vec(proj.target->center()).sub(proj.from).normalize().mul(proj.owner->radius*2.f));
-                else proj.to.add(vec(proj.owner->yaw*RAD, proj.owner->pitch*RAD).mul(proj.owner->radius*2.f));
+                    proj.to.add(vec(proj.target->headpos()).sub(proj.from).normalize().mul(proj.owner->radius));
+                else proj.to.add(vec(proj.owner->yaw*RAD, proj.owner->pitch*RAD).mul(proj.owner->radius));
             }
             else
             {
@@ -2215,7 +2215,7 @@ namespace projs
         }
         float scale = proj.radius;
         if(proj.owner) scale *= proj.owner->curscale;
-        vec ray = vec(proj.to).sub(proj.from).mul(scale);
+        vec ray = vec(proj.to).sub(proj.from).normalize().mul(scale);
         float maxdist = ray.magnitude();
         if(maxdist <= 0) return 1; // not moving anywhere, so assume still alive since it was already alive
         ray.mul(1/maxdist);
