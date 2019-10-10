@@ -1200,7 +1200,6 @@ struct gameent : dynent, clientstate
         copystring(hostip, "0.0.0.0");
         name[0] = handle[0] = steamid[0] = info[0] = obit[0] = '\0';
         removesounds();
-        inittags();
         respawn(-1, 0, 0);
     }
     ~gameent()
@@ -1475,7 +1474,7 @@ struct gameent : dynent, clientstate
         stuns.shrink(0);
         jitters.shrink(0);
         used.shrink(0);
-        inittags();
+        cleartags();
     }
 
     void respawn(int millis, int gamemode, int mutators)
@@ -1523,26 +1522,73 @@ struct gameent : dynent, clientstate
         loopi(TAG_MAX) tag[i] = vec(-1, -1, -1);
     }
 
-    vec footpos(int foot)
+    float headsize()
     {
-        if(foot < 0 || foot > 1) return feetpos();
-        int tnum = TAG_TOE+foot;
-        if(tag[tnum] == vec(-1, -1, -1))
-        {
-            int millis = lastmillis%500;
-            float amt = millis > 250 ? (500-millis)/250.f : millis/250.f;
-            vec dir, right;
-            vecfromyawpitch(yaw, pitch, 1, 0, dir);
-            vecfromyawpitch(yaw, pitch, 0, foot ? 1 : -1, right);
-            dir.mul(radius*0.5f);
-            right.mul(radius*(!move && strafe ? amt-0.5f : 0.5f));
-            dir.z -= height*0.6f+(height*0.4f*(foot ? 1-amt : amt));
-            tag[tnum] = vec(o).add(dir).add(right);
-        }
-        return tag[tnum];
+        return max(xradius*0.45f, yradius*0.45f);
     }
 
-    vec originpos(int weap = -1)
+    vec &headtag()
+    {
+        if(tag[TAG_HEAD] == vec(-1, -1, -1))
+        {
+            tag[TAG_HEAD] = o;
+            tag[TAG_HEAD].z -= headsize()*0.375f;
+        }
+        return tag[TAG_HEAD];
+    }
+
+    vec &headbox()
+    {
+        if(tag[TAG_R_HEAD] == vec(-1, -1, -1))
+            tag[TAG_R_HEAD] = vec(xradius*0.5f, yradius*0.5f, headsize());
+        return tag[TAG_R_HEAD];
+    }
+
+    float torsosize()
+    {
+        return (headtag().z-headbox().z)-torsotag().z;
+    }
+
+    vec &torsotag()
+    {
+        if(tag[TAG_TORSO] == vec(-1, -1, -1))
+        {
+            tag[TAG_TORSO] = o;
+            tag[TAG_TORSO].z -= height*0.45f;
+        }
+        return tag[TAG_TORSO];
+    }
+
+    vec &torsobox()
+    {
+        if(tag[TAG_R_TORSO] == vec(-1, -1, -1))
+            tag[TAG_R_TORSO] = vec(xradius, yradius, torsosize());
+        return tag[TAG_R_TORSO];
+    }
+
+    float limbsize()
+    {
+        return ((torsotag().z-torsobox().z)-(o.z-height))*0.5f;
+    }
+
+    vec &limbstag()
+    {
+        if(tag[TAG_LIMBS] == vec(-1, -1, -1))
+        {
+            tag[TAG_LIMBS] = torsotag();
+            tag[TAG_LIMBS].z -= torsobox().z+limbsize();
+        }
+        return tag[TAG_LIMBS];
+    }
+
+    vec &limbsbox()
+    {
+        if(tag[TAG_R_LIMBS] == vec(-1, -1, -1))
+            tag[TAG_R_LIMBS] = vec(xradius*0.85f, yradius*0.85f, limbsize());
+        return tag[TAG_R_LIMBS];
+    }
+
+    vec &origintag(int weap = -1)
     {
         if(!isweap(weap)) weap = weapselect;
         if(tag[TAG_ORIGIN] == vec(-1, -1, -1))
@@ -1561,7 +1607,7 @@ struct gameent : dynent, clientstate
         return tag[TAG_ORIGIN];
     }
 
-    vec muzzlepos(int weap = -1)
+    vec &muzzletag(int weap = -1)
     {
         if(!isweap(weap)) weap = weapselect;
         if(tag[TAG_MUZZLE] == vec(-1, -1, -1))
@@ -1583,7 +1629,7 @@ struct gameent : dynent, clientstate
                     if(px >= 180) px -= 360;
                     if(px < -180) px += 360;
                 }
-                tag[TAG_MUZZLE] = vec(originpos(weap)).add(vec(yx*RAD, px*RAD).mul(8));
+                tag[TAG_MUZZLE] = vec(origintag(weap)).add(vec(yx*RAD, px*RAD).mul(8));
             }
             else
             {
@@ -1592,45 +1638,37 @@ struct gameent : dynent, clientstate
                 {
                     vec right;
                     vecfromyawpitch(yaw, pitch, 0, -1, right);
-                    tag[TAG_MUZZLE] = vec(originpos(weap)).add(dir.mul(radius*0.75f)).add(right.mul(radius*0.6f));
+                    tag[TAG_MUZZLE] = vec(origintag(weap)).add(dir.mul(radius*0.75f)).add(right.mul(radius*0.6f));
                 }
-                else tag[TAG_MUZZLE] = vec(originpos(weap)).add(dir.mul(radius*2));
+                else tag[TAG_MUZZLE] = vec(origintag(weap)).add(dir.mul(radius*2));
             }
         }
         return tag[TAG_MUZZLE];
     }
 
-    vec ejectpos(int weap = -1, bool alt = false)
+    vec &ejecttag(int weap = -1, int idx = 0)
     {
         if(!isweap(weap)) weap = weapselect;
-        int tnum = TAG_EJECT+(alt ? 1 : 0);
-        if(tag[tnum] == vec(-1, -1, -1)) tag[tnum] = alt ? originpos(weap) : muzzlepos(weap);
+        if(idx < 0 || idx >= TAG_N_EJECT) idx = 0;
+        int tnum = TAG_EJECT+idx;
+        if(tag[tnum] == vec(-1, -1, -1)) tag[tnum] = idx ? origintag(weap) : muzzletag(weap);
         return tag[tnum];
     }
 
-    void hitboxes()
+    vec &waisttag()
     {
-        float hsize = max(xradius*0.45f, yradius*0.45f);
-        if(tag[TAG_HEAD] == vec(-1, -1, -1))
+        if(tag[TAG_WAIST] == vec(-1, -1, -1))
         {
-            tag[TAG_HEAD] = o;
-            tag[TAG_HEAD].z -= hsize*0.375f;
+            vec dir;
+            vecfromyawpitch(yaw, 0, -1, 0, dir);
+            dir.mul(radius*1.6f);
+            dir.z -= height*0.5f;
+            tag[TAG_WAIST] = vec(o).add(dir);
         }
-        tag[TAG_R_HEAD] = vec(xradius*0.5f, yradius*0.5f, hsize);
-        if(tag[TAG_TORSO] == vec(-1, -1, -1))
-        {
-            tag[TAG_TORSO] = o;
-            tag[TAG_TORSO].z -= height*0.45f;
-        }
-        float tsize = (tag[TAG_HEAD].z-tag[TAG_R_HEAD].z)-tag[TAG_TORSO].z;
-        tag[TAG_R_TORSO] = vec(xradius, yradius, tsize);
-        float lsize = ((tag[TAG_TORSO].z-tag[TAG_R_TORSO].z)-(o.z-height))*0.5f;
-        tag[TAG_LIMBS] = tag[TAG_TORSO];
-        tag[TAG_LIMBS].z -= tag[TAG_R_TORSO].z+lsize;
-        tag[TAG_R_LIMBS] = vec(xradius*0.85f, yradius*0.85f, lsize);
+        return tag[TAG_WAIST];
     }
 
-    void jettags()
+    vec &jetlefttag()
     {
         if(tag[TAG_JET_LEFT] == vec(-1, -1, -1))
         {
@@ -1640,6 +1678,11 @@ struct gameent : dynent, clientstate
             dir.z -= height;
             tag[TAG_JET_LEFT] = vec(o).add(dir);
         }
+        return tag[TAG_JET_LEFT];
+    }
+
+    vec &jetrighttag()
+    {
         if(tag[TAG_JET_RIGHT] == vec(-1, -1, -1))
         {
             vec dir;
@@ -1648,6 +1691,11 @@ struct gameent : dynent, clientstate
             dir.z -= height;
             tag[TAG_JET_RIGHT] = vec(o).add(dir);
         }
+        return tag[TAG_JET_RIGHT];
+    }
+
+    vec &jetbacktag()
+    {
         if(tag[TAG_JET_BACK] == vec(-1, -1, -1))
         {
             vec dir;
@@ -1656,30 +1704,49 @@ struct gameent : dynent, clientstate
             dir.z -= height*0.35f;
             tag[TAG_JET_BACK] = vec(o).add(dir);
         }
+        return tag[TAG_JET_BACK];
     }
 
-    void checktags()
+    vec &jettag(int idx)
     {
-        originpos();
-        muzzlepos();
-        loopi(2) ejectpos(i!=0);
-        if(actors[actortype].hitboxes) hitboxes();
-        if(tag[TAG_WAIST] == vec(-1, -1, -1))
+        switch(idx)
         {
-            vec dir;
-            vecfromyawpitch(yaw, 0, -1, 0, dir);
-            dir.mul(radius*1.5f);
-            dir.z -= height*0.5f;
-            tag[TAG_WAIST] = vec(o).add(dir);
+            case 2: return jetbacktag();
+            case 1: return jetrighttag();
+            case 0: return jetlefttag();
+            default: break;
         }
-        if(actors[actortype].jetfx) jettags();
-        loopi(TAG_N_TOE) if(tag[TAG_TOE+i] == vec(-1, -1, -1)) tag[TAG_TOE+i] = feetpos();
+        return jetbacktag();
     }
 
-    void inittags()
+    vec &foottag(int idx = 0)
     {
-        cleartags();
-        checktags();
+        if(idx < 0 || idx > 1) idx = 0;
+        int tnum = TAG_TOE+idx;
+        if(tag[tnum] == vec(-1, -1, -1))
+        {
+            int millis = lastmillis%500;
+            float amt = millis > 250 ? (500-millis)/250.f : millis/250.f;
+            vec dir, right;
+            vecfromyawpitch(yaw, pitch, 1, 0, dir);
+            vecfromyawpitch(yaw, pitch, 0, idx ? 1 : -1, right);
+            dir.mul(radius*0.5f);
+            right.mul(radius*(!move && strafe ? amt-0.5f : 0.5f));
+            dir.z -= height*0.6f+(height*0.4f*(idx ? 1-amt : amt));
+            tag[tnum] = vec(o).add(dir).add(right);
+        }
+        return tag[tnum];
+    }
+
+    vec &toetag(int idx)
+    {
+        switch(idx)
+        {
+            case 1: return foottag(0);
+            case 0: return foottag(1);
+            default: break;
+        }
+        return foottag(0);
     }
 
     void resetjump(bool wait = false)
@@ -1801,8 +1868,8 @@ struct gameent : dynent, clientstate
         int foot = -1;
         vec fp = feetpos();
 
-        float d0 = fabs(footpos(0).z - fp.z),
-              d1 = fabs(footpos(1).z - fp.z);
+        float d0 = fabs(foottag(0).z - fp.z),
+              d1 = fabs(foottag(1).z - fp.z);
 
         if(d0 < FOOTSTEP_DIST * curscale) foot = 0;
         else if(d1 < FOOTSTEP_DIST * curscale) foot = 1;

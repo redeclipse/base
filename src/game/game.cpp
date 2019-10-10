@@ -976,14 +976,14 @@ namespace game
                 if(d->weapselect == W_FLAMER && (!reloading || amt > 0.5f) && !physics::liquidcheck(d))
                 {
                     float scale = powering ? 1.f+(amt*1.5f) : (d->weapstate[d->weapselect] == W_S_IDLE ? 1.f : (reloading ? (amt-0.5f)*2 : amt));
-                    adddynlight(d->ejectpos(d->weapselect), 16*scale, col, 0, 0);
+                    adddynlight(d->ejecttag(d->weapselect), 16*scale, col, 0, 0);
                 }
                 if((W(d->weapselect, lightpersist)&1 || powering) && W(d->weapselect, lightradius) > 0)
                 {
                     float thresh = max(amt, 0.25f), size = W(d->weapselect, lightradius)*thresh;
                     int span = max(W2(d->weapselect, cooktime, physics::secondaryweap(d))/4, 500), interval = lastmillis%span, part = span/2;
                     if(interval) size += size*0.5f*(interval <= part ? interval/float(part) : (span-interval)/float(part));
-                    adddynlight(d->muzzlepos(d->weapselect), size, vec(col).mul(thresh), 0, 0);
+                    adddynlight(d->muzzletag(d->weapselect), size, vec(col).mul(thresh), 0, 0);
                 }
             }
             if(d->burntime && d->burning(lastmillis, d->burntime))
@@ -1029,14 +1029,14 @@ namespace game
 
     void impulseeffect(gameent *d, int effect)
     {
-        if(!actors[d->actortype].jetfx) return;
         int num = int((effect ? 3 : 10)*impulsescale);
         switch(effect)
         {
             case 0: playsound(S_IMPULSE, d->o, d); // fail through
             case 1:
             {
-                if(num > 0 && impulsefade > 0) loopi(TAG_N_JET) boosteffect(d, d->tag[TAG_JET+i], num, impulsefade, effect == 0);
+                if(!actors[d->actortype].jetfx) break;
+                if(num > 0 && impulsefade > 0) loopi(TAG_N_JET) boosteffect(d, d->jettag(i), num, impulsefade, effect == 0);
                 break;
             }
             default: break;
@@ -1056,7 +1056,7 @@ namespace game
             if(n > m && mag > m)
             {
                 if(curfoot < 0) curfoot = d->lastfoot;
-                vec pos = d->footpos(curfoot);
+                vec pos = d->toetag(curfoot);
                 float amt = clamp(mag/n, 0.f, 1.f)*(d != focus ? footstepsoundlevel : footstepsoundfocus);
                 if(onfloor && !d->running(moveslow)) amt *= footstepsoundlight;
                 int vol = clamp(int(amt*footstepsoundmaxvol), footstepsoundminvol, footstepsoundmaxvol);
@@ -1223,12 +1223,12 @@ namespace game
                 {
                     if(hassound)
                     {
-                        if(d->lastfoot >= 0 && issound(d->sschan[d->lastfoot])) sounds[d->sschan[d->lastfoot]].pos = d->footpos(d->lastfoot);
+                        if(d->lastfoot >= 0 && issound(d->sschan[d->lastfoot])) sounds[d->sschan[d->lastfoot]].pos = d->toetag(d->lastfoot);
                         footstep(d, curfoot);
                         d->lastfoot = curfoot;
                     }
                 }
-                else if(hassound) loopi(2) if(issound(d->sschan[i])) sounds[d->sschan[i]].pos = d->footpos(i);
+                else if(hassound) loopi(2) if(issound(d->sschan[i])) sounds[d->sschan[i]].pos = d->toetag(i);
             }
         }
         loopv(d->icons) if(totalmillis-d->icons[i].millis > d->icons[i].fade) d->icons.remove(i--);
@@ -1762,7 +1762,7 @@ namespace game
             else if(anc >= 0) announce(anc, d);
             if(anc >= 0 && d != v) announce(anc, v);
         }
-        vec pos = d->tag[TAG_HEAD];
+        vec pos = d->headtag();
         pos.z -= d->zradius*0.125f;
 
         if(vanitymodels && d->headless && !nogore && headlessmodels && *d->vanity)
@@ -2137,13 +2137,13 @@ namespace game
             case PT_TAPE: case PT_LIGHTNING:
             {
                 float dist = p->o.dist(p->d);
-                p->d = p->o = d->muzzlepos(d->weapselect);
+                p->d = p->o = d->muzzletag(d->weapselect);
                 p->d.add(vec(d->yaw*RAD, d->pitch*RAD).mul(dist));
                 break;
             }
             case PT_PART: case PT_EXPLOSION: case PT_FLARE:
             {
-                p->o = d->muzzlepos(d->weapselect);
+                p->o = d->muzzletag(d->weapselect);
                 break;
             }
             default: break;
@@ -3546,11 +3546,15 @@ namespace game
         mdl.color = color;
         getplayermaterials(d, mdl);
         getplayereffects(d, mdl);
-
-        if(d != focus && !(mdl.anim&ANIM_RAGDOLL)) mdl.flags |= MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY;
-        if(d->actortype >= A_ENEMY) mdl.flags |= MDL_CULL_DIST;
-        else if(d != focus || (d != player1 ? fullbrightfocus&1 : fullbrightfocus&2)) mdl.flags |= MDL_FULLBRIGHT;
-        if(drawtex) mdl.flags &= ~(MDL_FULLBRIGHT | MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY | MDL_CULL_DIST);
+        if(!drawtex)
+        {
+            if(d != focus && !d->ai)
+            {
+                if(!(mdl.anim&ANIM_RAGDOLL)) mdl.flags |= MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY;
+                if(d->actortype >= A_ENEMY) mdl.flags |= MDL_CULL_DIST;
+            }
+            if(d != focus || (d != player1 ? fullbrightfocus&1 : fullbrightfocus&2)) mdl.flags |= MDL_FULLBRIGHT;
+        }
         rendermodel(mdlname, mdl, e);
         if((d != focus || d->state == CS_DEAD || d->state == CS_WAITING) && !(mdl.flags&MDL_ONLYSHADOW) && third == 1 && d->actortype < A_ENEMY && !shadowmapping && !drawtex && (aboveheaddead || d->state == CS_ALIVE))
             renderabovehead(d);
@@ -3558,7 +3562,6 @@ namespace game
 
     void rendercheck(gameent *d, bool third)
     {
-        if(actors[d->actortype].hastags) d->checktags();
         float blend = opacity(d, third);
         if(d->state == CS_ALIVE)
         {
@@ -3629,7 +3632,7 @@ namespace game
             if(d->hasmelee(lastmillis, true, d->sliding(true), d->physstate >= PHYS_SLOPE || d->onladder || physics::liquidcheck(d))) loopi(2)
             {
                 float amt = 1-((lastmillis-d->weaptime[W_MELEE])/float(d->weapwait[W_MELEE]));
-                part_create(PART_HINT_SOFT, 1, d->footpos(i), TEAM(d->team, colour), 2.f, amt*blend, 0, 0);
+                part_create(PART_HINT_SOFT, 1, d->toetag(i), TEAM(d->team, colour), 2.f, amt*blend, 0, 0);
             }
             int millis = lastmillis-d->weaptime[d->weapselect];
             bool last = millis > 0 && millis < d->weapwait[d->weapselect],
@@ -3641,13 +3644,13 @@ namespace game
             if(d->weapselect == W_FLAMER && (!reloading || amt > 0.5f) && !physics::liquidcheck(d))
             {
                 float scale = powering ? 1.f+(amt*1.5f) : (d->weapstate[d->weapselect] == W_S_IDLE ? 1.f : (reloading ? (amt-0.5f)*2 : amt));
-                part_create(PART_HINT_SOFT, 1, d->ejectpos(d->weapselect), 0x1818A8, 0.75f*scale, min(0.65f*scale, 0.8f)*blend, 0, 0);
-                part_create(PART_FIREBALL_SOFT, 1, d->ejectpos(d->weapselect), colour, 0.5f*scale, min(0.75f*scale, 0.95f)*blend, 0, 0);
-                regular_part_create(PART_FIREBALL, d->vel.magnitude() > 10 ? 30 : 75, d->ejectpos(d->weapselect), colour, 0.5f*scale, min(0.75f*scale, 0.95f)*blend, d->vel.magnitude() > 10 ? -40 : -10, 0);
+                part_create(PART_HINT_SOFT, 1, d->ejecttag(d->weapselect), 0x1818A8, 0.75f*scale, min(0.65f*scale, 0.8f)*blend, 0, 0);
+                part_create(PART_FIREBALL_SOFT, 1, d->ejecttag(d->weapselect), colour, 0.5f*scale, min(0.75f*scale, 0.95f)*blend, 0, 0);
+                regular_part_create(PART_FIREBALL, d->vel.magnitude() > 10 ? 30 : 75, d->ejecttag(d->weapselect), colour, 0.5f*scale, min(0.75f*scale, 0.95f)*blend, d->vel.magnitude() > 10 ? -40 : -10, 0);
             }
             if(W(d->weapselect, laser) && !reloading)
             {
-                vec v, muzzle = d->muzzlepos(d->weapselect);
+                vec v, muzzle = d->muzzletag(d->weapselect);
                 muzzle.z += 0.25f;
                 findorientation(d->o, d->yaw, d->pitch, v);
                 part_flare(muzzle, v, 1, PART_FLARE, colour, 0.5f*amt, amt*blend);
@@ -3676,19 +3679,19 @@ namespace game
                 {
                     case 1: case 2:
                     {
-                        regularshape(powerfx[d->weapselect].parttype, 1+(amt*powerfx[d->weapselect].radius), colour, powerfx[d->weapselect].type == 2 ? 21 : 53, 5, 60+int(30*amt), d->muzzlepos(d->weapselect), powerfx[d->weapselect].size*max(amt, 0.25f), max(amt, 0.1f)*blend, 1, 0, 5+(amt*5));
+                        regularshape(powerfx[d->weapselect].parttype, 1+(amt*powerfx[d->weapselect].radius), colour, powerfx[d->weapselect].type == 2 ? 21 : 53, 5, 60+int(30*amt), d->muzzletag(d->weapselect), powerfx[d->weapselect].size*max(amt, 0.25f), max(amt, 0.1f)*blend, 1, 0, 5+(amt*5));
                         break;
                     }
                     case 3:
                     {
                         int interval = lastmillis%1000;
                         float fluc = powerfx[d->weapselect].size+(interval ? (interval <= 500 ? interval/500.f : (1000-interval)/500.f) : 0.f);
-                        part_create(powerfx[d->weapselect].parttype, 1, d->muzzlepos(d->weapselect), colour, (powerfx[d->weapselect].radius*max(amt, 0.25f))+fluc, max(amt, 0.1f)*blend);
+                        part_create(powerfx[d->weapselect].parttype, 1, d->muzzletag(d->weapselect), colour, (powerfx[d->weapselect].radius*max(amt, 0.25f))+fluc, max(amt, 0.1f)*blend);
                         break;
                     }
                     case 4:
                     {
-                        part_flare(d->ejectpos(d->weapselect), d->ejectpos(d->weapselect, true), 1, powerfx[d->weapselect].parttype, colour, powerfx[d->weapselect].size*max(amt, 0.25f), max(amt, 0.1f)*blend);
+                        part_flare(d->ejecttag(d->weapselect), d->ejecttag(d->weapselect, 1), 1, powerfx[d->weapselect].parttype, colour, powerfx[d->weapselect].size*max(amt, 0.25f), max(amt, 0.1f)*blend);
                         break;
                     }
                     case 0: default: break;
@@ -3745,24 +3748,18 @@ namespace game
         int numdyns = numdynents();
         bool third = thirdpersonview();
         loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL)
+        {
+            if(d != focus || third) d->cleartags();
             renderplayer(d, 1, d->curscale, d == focus ? (third ? MDL_FORCETRANSPARENT | MDL_FORCESHADOW : MDL_ONLYSHADOW) : 0, vec4(1, 1, 1, opacity(d, true)));
+        }
     }
 
-    void prebatch(bool trans)
+    void renderpost()
     {
         gameent *d;
         int numdyns = numdynents();
         bool third = thirdpersonview();
-        loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL && (d != focus || (third && trans)))
-            d->cleartags();
-    }
-
-    void renderpost(bool trans)
-    {
-        gameent *d;
-        int numdyns = numdynents();
-        bool third = thirdpersonview();
-        loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL && (d != focus || (third && trans)))
+        loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL && (d != focus || third))
             rendercheck(d, true);
     }
 
@@ -3810,6 +3807,7 @@ namespace game
         vec2 xyrad = vec2(previewent->xradius, previewent->yradius).max(height/4);
         previewent->o = calcmodelpreviewpos(vec(xyrad, zrad), previewent->yaw).addz(previewent->height - zrad);
         if(actions && *actions) execute(actions);
+        previewent->cleartags();
         renderplayer(previewent, 1, scale, 0, mcolor);
     }
 

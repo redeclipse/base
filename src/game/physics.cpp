@@ -1289,14 +1289,14 @@ namespace physics
             gameent *e = (gameent *)o;
             if(actors[e->actortype].hitboxes)
             {
-                if(!d->o.reject(e->tag[TAG_LIMBS], d->radius+max(e->tag[TAG_R_LIMBS].x, e->tag[TAG_R_LIMBS].y))
-                    && ellipsecollide(d, dir, e->tag[TAG_LIMBS], vec(0, 0, 0), e->yaw, e->tag[TAG_R_LIMBS].x, e->tag[TAG_R_LIMBS].y, e->tag[TAG_R_LIMBS].z, e->tag[TAG_R_LIMBS].z))
+                if(!d->o.reject(e->limbstag(), d->radius+max(e->limbsbox().x, e->limbsbox().y))
+                    && ellipsecollide(d, dir, e->limbstag(), vec(0, 0, 0), e->yaw, e->limbsbox().x, e->limbsbox().y, e->limbsbox().z, e->limbsbox().z))
                         collidezones |= CLZ_LIMB;
-                if(!d->o.reject(e->tag[TAG_TORSO], d->radius+max(e->tag[TAG_R_TORSO].x, e->tag[TAG_R_TORSO].y))
-                    && ellipsecollide(d, dir, e->tag[TAG_TORSO], vec(0, 0, 0), e->yaw, e->tag[TAG_R_TORSO].x, e->tag[TAG_R_TORSO].y, e->tag[TAG_R_TORSO].z, e->tag[TAG_R_TORSO].z))
+                if(!d->o.reject(e->torsotag(), d->radius+max(e->torsobox().x, e->torsobox().y))
+                    && ellipsecollide(d, dir, e->torsotag(), vec(0, 0, 0), e->yaw, e->torsobox().x, e->torsobox().y, e->torsobox().z, e->torsobox().z))
                         collidezones |= CLZ_TORSO;
-                if(!d->o.reject(e->tag[TAG_HEAD], d->radius+max(e->tag[TAG_R_HEAD].x, e->tag[TAG_R_HEAD].y))
-                    && ellipsecollide(d, dir, e->tag[TAG_HEAD], vec(0, 0, 0), e->yaw, e->tag[TAG_R_HEAD].x, e->tag[TAG_R_HEAD].y, e->tag[TAG_R_HEAD].z, e->tag[TAG_R_HEAD].z))
+                if(!d->o.reject(e->headtag(), d->radius+max(e->headbox().x, e->headbox().y))
+                    && ellipsecollide(d, dir, e->headtag(), vec(0, 0, 0), e->yaw, e->headbox().x, e->headbox().y, e->headbox().z, e->headbox().z))
                         collidezones |= CLZ_HEAD;
                 return collidezones != CLZ_NONE;
             }
@@ -1314,40 +1314,40 @@ namespace physics
             if(actors[e->actortype].hitboxes)
             {
                 float bestdist = 1e16f;
-                if(e->tag[TAG_LIMBS].x+e->tag[TAG_R_LIMBS].x >= x1 && e->tag[TAG_LIMBS].y+e->tag[TAG_R_LIMBS].y >= y1
-                    && e->tag[TAG_LIMBS].x-e->tag[TAG_R_LIMBS].x <= x2 && e->tag[TAG_LIMBS].y-e->tag[TAG_R_LIMBS].y <= y2)
+                if(e->limbstag().x+e->limbsbox().x >= x1 && e->limbstag().y+e->limbsbox().y >= y1
+                    && e->limbstag().x-e->limbsbox().x <= x2 && e->limbstag().y-e->limbsbox().y <= y2)
                 {
-                    vec bottom(e->tag[TAG_LIMBS]), top(e->tag[TAG_LIMBS]);
-                    bottom.z -= e->tag[TAG_R_LIMBS].z;
-                    top.z += e->tag[TAG_R_LIMBS].z;
+                    vec bottom(e->limbstag()), top(e->limbstag());
+                    bottom.z -= e->limbsbox().z;
+                    top.z += e->limbsbox().z;
                     float t = 1e16f;
-                    if(linecylinderintersect(from, to, bottom, top, max(e->tag[TAG_R_LIMBS].x, e->tag[TAG_R_LIMBS].y), t))
+                    if(linecylinderintersect(from, to, bottom, top, max(e->limbsbox().x, e->limbsbox().y), t))
                     {
                         collidezones |= CLZ_LIMB;
                         bestdist = min(bestdist, t);
                     }
                 }
-                if(e->tag[TAG_TORSO].x+e->tag[TAG_R_TORSO].x >= x1 && e->tag[TAG_TORSO].y+e->tag[TAG_R_TORSO].y >= y1
-                    && e->tag[TAG_TORSO].x-e->tag[TAG_R_TORSO].x <= x2 && e->tag[TAG_TORSO].y-e->tag[TAG_R_TORSO].y <= y2)
+                if(e->torsotag().x+e->torsobox().x >= x1 && e->torsotag().y+e->torsobox().y >= y1
+                    && e->torsotag().x-e->torsobox().x <= x2 && e->torsotag().y-e->torsobox().y <= y2)
                 {
-                    vec bottom(e->tag[TAG_TORSO]), top(e->tag[TAG_TORSO]);
-                    bottom.z -= e->tag[TAG_R_TORSO].z;
-                    top.z += e->tag[TAG_R_TORSO].z;
+                    vec bottom(e->torsotag()), top(e->torsotag());
+                    bottom.z -= e->torsobox().z;
+                    top.z += e->torsobox().z;
                     float t = 1e16f;
-                    if(linecylinderintersect(from, to, bottom, top, max(e->tag[TAG_R_TORSO].x, e->tag[TAG_R_TORSO].y), t))
+                    if(linecylinderintersect(from, to, bottom, top, max(e->torsobox().x, e->torsobox().y), t))
                     {
                         collidezones |= CLZ_TORSO;
                         bestdist = min(bestdist, t);
                     }
                 }
-                if(e->tag[TAG_HEAD].x+e->tag[TAG_R_HEAD].x >= x1 && e->tag[TAG_HEAD].y+e->tag[TAG_R_HEAD].y >= y1
-                    && e->tag[TAG_HEAD].x-e->tag[TAG_R_HEAD].x <= x2 && e->tag[TAG_HEAD].y-e->tag[TAG_R_HEAD].y <= y2)
+                if(e->headtag().x+e->headbox().x >= x1 && e->headtag().y+e->headbox().y >= y1
+                    && e->headtag().x-e->headbox().x <= x2 && e->headtag().y-e->headbox().y <= y2)
                 {
-                    vec bottom(e->tag[TAG_HEAD]), top(e->tag[TAG_HEAD]);
-                    bottom.z -= e->tag[TAG_R_HEAD].z;
-                    top.z += e->tag[TAG_R_HEAD].z;
+                    vec bottom(e->headtag()), top(e->headtag());
+                    bottom.z -= e->headbox().z;
+                    top.z += e->headbox().z;
                     float t = 1e16f;
-                    if(linecylinderintersect(from, to, bottom, top, max(e->tag[TAG_R_HEAD].x, e->tag[TAG_R_HEAD].y), t))
+                    if(linecylinderintersect(from, to, bottom, top, max(e->headbox().x, e->headbox().y), t))
                     {
                         collidezones |= CLZ_HEAD;
                         bestdist = min(bestdist, t);

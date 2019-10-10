@@ -336,14 +336,14 @@ namespace weapons
             }
             else
             {
-                from = d->originpos(weap);
-                to = d->muzzlepos(weap);
+                from = d->origintag(weap);
+                to = d->muzzletag(weap);
             }
             loopi(rays) addshot(to);
         }
         else
         {
-            from = d->muzzlepos(weap);
+            from = d->muzzletag(weap);
             to = targ;
             float m = accmodspread(d, weap, secondary, W2(weap, cooked, true)&W_C_ZOOM && secondary && scale >= 0.9f);
             float spread = WSP(weap, secondary, game::gamemode, game::mutators, m);

@@ -191,9 +191,9 @@ namespace projs
             if(actors[e->actortype].hitboxes)
             {
                 float rdist[3] = { -1, -1, -1 };
-                radialpush(e->tag[TAG_LIMBS], e->tag[TAG_R_LIMBS].x, e->tag[TAG_R_LIMBS].y, e->tag[TAG_R_LIMBS].z, e->tag[TAG_R_LIMBS].z, rdist[0]);
-                radialpush(e->tag[TAG_TORSO], e->tag[TAG_R_TORSO].x, e->tag[TAG_R_TORSO].y, e->tag[TAG_R_TORSO].z, e->tag[TAG_R_TORSO].z, rdist[1]);
-                radialpush(e->tag[TAG_HEAD], e->tag[TAG_R_HEAD].x, e->tag[TAG_R_HEAD].y, e->tag[TAG_R_HEAD].z, e->tag[TAG_R_HEAD].z, rdist[2]);
+                radialpush(e->limbstag(), e->limbsbox().x, e->limbsbox().y, e->limbsbox().z, e->limbsbox().z, rdist[0]);
+                radialpush(e->torsotag(), e->torsobox().x, e->torsobox().y, e->torsobox().z, e->torsobox().z, rdist[1]);
+                radialpush(e->headtag(), e->headbox().x, e->headbox().y, e->headbox().z, e->headbox().z, rdist[2]);
                 int closest = -1;
                 loopi(3) if(rdist[i] >= 0 && (closest < 0 || rdist[i] <= rdist[closest])) closest = i;
                 loopi(3) if(rdist[i] >= 0)
@@ -800,14 +800,14 @@ namespace projs
             }
             else
             {
-                proj.from = proj.owner->originpos();
-                proj.to = proj.dest = proj.owner->muzzlepos();
+                proj.from = proj.owner->origintag();
+                proj.to = proj.dest = proj.owner->muzzletag();
             }
             if(style != 2) proj.o = proj.from;
         }
         else
         {
-            if(!proj.bounced) proj.from = proj.owner->muzzlepos();
+            if(!proj.bounced) proj.from = proj.owner->muzzletag();
             updateto(proj);
             if(style == 1) proj.o = proj.from;
         }
@@ -862,7 +862,7 @@ namespace projs
                     {
                         if(proj.owner->state == CS_DEAD || proj.owner->state == CS_WAITING)
                         {
-                            proj.o = proj.owner->tag[TAG_HEAD];
+                            proj.o = proj.owner->headtag();
                             proj.o.z -= proj.owner->zradius*0.125f;
                         }
                         else
@@ -921,7 +921,7 @@ namespace projs
             {
                 proj.height = proj.aboveeye = 0.5f; proj.radius = proj.yradius = 1; proj.xradius = 0.25f;
                 if(!isweap(proj.weap) && proj.owner) proj.weap = proj.owner->weapselect;
-                if(proj.owner) proj.o = proj.from = proj.owner->ejectpos();
+                if(proj.owner) proj.o = proj.from = proj.owner->ejecttag();
                 if(isweap(proj.weap))
                 {
                     proj.mdlname = weaptype[proj.weap].eject && *weaptype[proj.weap].eprj ? weaptype[proj.weap].eprj : "projectiles/catridge";
@@ -1152,12 +1152,12 @@ namespace projs
             if(ammo >= 0)
             {
                 if(ammo > 0 && entities::ents.inrange(ent))
-                    create(d->muzzlepos(), d->muzzlepos(), local, d, PRJ_ENT, -1, 0, W(weap, spawnstay), W(weap, spawnstay), 1, 1, ent, ammo, index);
+                    create(d->muzzletag(), d->muzzletag(), local, d, PRJ_ENT, -1, 0, W(weap, spawnstay), W(weap, spawnstay), 1, 1, ent, ammo, index);
                 d->weapammo[weap][W_A_CLIP] = -1;
                 d->weapammo[weap][W_A_STORE] = 0;
                 if(targ >= 0) d->setweapstate(weap, W_S_SWITCH, W(weap, delayswitch), lastmillis);
             }
-            else create(d->muzzlepos(), d->muzzlepos(), local, d, PRJ_SHOT, -1, 0, 1, W2(weap, time, false), 1, 1, 1, weap);
+            else create(d->muzzletag(), d->muzzletag(), local, d, PRJ_SHOT, -1, 0, 1, W2(weap, time, false), 1, 1, 1, weap);
         }
     }
 

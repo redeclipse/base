@@ -4749,9 +4749,7 @@ void rendertransparent()
             renderstains(STAINBUF_TRANSPARENT, true, layer+1);
             break;
         case 3:
-            game::prebatch(true);
             rendertransparentmodelbatches(layer+1);
-            game::renderpost(true);
             break;
         }
 
@@ -4914,7 +4912,6 @@ void rendergbuffer(bool depthclear)
     }
     else if(!drawtex)
     {
-        game::prebatch();
         rendermodelbatches();
         game::renderpost();
         GLERROR;
