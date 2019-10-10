@@ -129,7 +129,7 @@ extern physent *camera1, camera;
 extern mapz hdr;
 extern int octaentsize;
 extern vector<ushort> texmru;
-extern int xtraverts, xtravertsva;
+extern int showboundingboxes, xtraverts, xtravertsva;
 extern const ivec cubecoords[8];
 extern const ivec facecoords[6][4];
 extern const uchar fv[6][4];

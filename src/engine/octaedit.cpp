@@ -110,6 +110,7 @@ void renderboundboxes()
         o.sub2(2);
         gle::colorub(128, 255, 255);
         loopj(6) boxs(j, o, rad);
+        if(showboundingboxes > 1) physics::renderboundboxes((physent *)e);
     }
 
     glDisable(GL_BLEND);
