@@ -645,11 +645,15 @@ void swapbuffers(bool overlay)
 }
 
 VAR(IDF_PERSIST, menufps, -1, 60, 1000);
+FVAR(IDF_PERSIST, menufpsrefresh, FVAR_NONZERO, 1, FVAR_MAX);
 VAR(IDF_PERSIST, maxfps, -1, -1, 1000);
+FVAR(IDF_PERSIST, maxfpsrefresh, FVAR_NONZERO, 2, FVAR_MAX);
+
+#define GETFPS(a) (a >= 0 ? a : int(ceilf(refresh*a##refresh)))
 
 void limitfps(int &millis, int curmillis)
 {
-    int curmax = maxfps >= 0 ? maxfps : refresh, curmenu = menufps >= 0 ? menufps : refresh,
+    int curmax = GETFPS(maxfps), curmenu = GETFPS(menufps),
         limit = (hasnoview() || minimized) && curmenu ? (curmax > 0 ? min(curmax, curmenu) : curmenu) : curmax;
     if(!limit || (limit == refresh && vsync)) return;
     static int fpserror = 0;
