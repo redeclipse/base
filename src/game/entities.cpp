@@ -654,6 +654,19 @@ namespace entities
         return false;
     }
 
+    ICOMMAND(0, triggerents, "ii", (int *id, int *all),
+    {
+        vector<char> buf;
+        loopenti(TRIGGER) if(ents[i]->type == TRIGGER && ents[i]->attrs[0] == *id && (*all || cantrigger(i, game::player1)))
+        {
+            if(!buf.empty()) buf.add(' ');
+            defformatstring(s, "%d", i);
+            buf.put(s, strlen(s));
+        }
+        buf.add('\0');
+        commandret->setstr(buf.disown());
+    });
+
     void runtrigger(int n, gameent *d, bool act = true)
     {
         gameentity &e = *(gameentity *)ents[n];
