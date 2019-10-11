@@ -98,15 +98,15 @@ void renderboundboxes()
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE);
     ldrnotextureshader->set();
+    gle::colorub(255, 255, 255);
 
     dynent *e = NULL;
     int numdyns = game::numdynents();
     loopi(numdyns) if((e = (dynent *)game::iterdynents(i)) && e->state == CS_ALIVE)
     {
         vec rad = vec(e->xradius*2, e->yradius*2, e->height+e->aboveeye), o = vec(e->o).sub(vec(e->xradius, e->yradius, e->height));
-        gle::colorub(255, 255, 255);
         loopj(6) boxs(j, o, rad);
-        if(showboundingboxes > 1) physics::renderboundboxes((physent *)e);
+        if(showboundingboxes > 1) physics::renderboundboxes((physent *)e, rad, o);
     }
 
     glDisable(GL_BLEND);

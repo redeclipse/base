@@ -252,12 +252,6 @@ namespace physics
         return vel;
     }
 
-    float stepvel(physent *d, bool up)
-    {
-        if(d->physstate > PHYS_FALL) return stepspeed;
-        return 1.f;
-    }
-
     bool sticktofloor(physent *d)
     {
         if(!d->onladder)
@@ -388,9 +382,7 @@ namespace physics
     bool trystepup(physent *d, vec &dir, const vec &obstacle, float maxstep, const vec &floor)
     {
         vec old(d->o), stairdir = (obstacle.z >= 0 && obstacle.z < slopez ? vec(-obstacle.x, -obstacle.y, 0) : vec(dir.x, dir.y, 0)).rescale(1);
-        float force = stepvel(d, true);
         bool cansmooth = true;
-        d->o = old;
         /* check if there is space atop the stair to move to */
         if(d->physstate != PHYS_STEP_UP)
         {
@@ -427,7 +419,7 @@ namespace physics
             if(scale != 1)
             {
                 d->o = old;
-                d->o.sub(checkdir.mul(vec(2, 2, 1)));
+                d->o.add(checkdir.mul2(2));
                 if(!collide(d, vec(0, 0, -1), slopez)) scale = 1;
             }
 
@@ -443,8 +435,8 @@ namespace physics
                     smoothdir.mul(dir.magnitude()/smoothdir.magnitude());
                 }
                 else smoothdir.z = dir.z;
-                d->o.add(smoothdir.mul(force));
-                float margin = (maxstep + 0.1f)*ceil(force);
+                d->o.add(smoothdir.mul(stepspeed));
+                float margin = (maxstep + 0.1f)*ceil(stepspeed);
                 d->o.z += margin;
                 if(!collide(d, smoothdir))
                 {
@@ -463,7 +455,7 @@ namespace physics
 
         /* try stepping up */
         d->o = old;
-        d->o.z += dir.magnitude()*force;
+        d->o.z += dir.magnitude()*stepspeed;
         if(!collide(d, vec(0, 0, 1)))
         {
             if(d->physstate == PHYS_FALL || d->floor != floor)
@@ -639,19 +631,19 @@ namespace physics
         vec old(d->o), obstacle;
         d->o.add(dir);
         bool collided = false, slidecollide = false;
-        if(collide(d, dir))
+        if(gameent::is(d))
         {
-            obstacle = collidewall;
-            /* check to see if there is an obstacle that would prevent this one from being used as a floor */
-            if((gameent::is(d)) && ((collidewall.z >= slopez && dir.z < 0) || (collidewall.z <= -slopez && dir.z > 0)) && (dir.x || dir.y) && collide(d, vec(dir.x, dir.y, 0)))
+            if(collide(d, dir))
             {
-                if(collidewall.dot(dir) >= 0) slidecollide = true;
                 obstacle = collidewall;
-            }
+                /* check to see if there is an obstacle that would prevent this one from being used as a floor */
+                if(((collidewall.z >= slopez && dir.z < 0) || (collidewall.z <= -slopez && dir.z > 0)) && (dir.x || dir.y) && collide(d, vec(dir.x, dir.y, 0)))
+                {
+                    if(collidewall.dot(dir) >= 0) slidecollide = true;
+                    obstacle = collidewall;
+                }
 
-            d->o = old;
-            if(!sticktospecial(d))
-            {
+                d->o = old;
                 d->o.z -= stairheight;
                 d->zmargin = -stairheight;
                 if(d->physstate == PHYS_SLOPE || d->physstate == PHYS_FLOOR  || (collide(d, vec(0, 0, -1), slopez) && (d->physstate == PHYS_STEP_UP || d->physstate == PHYS_STEP_DOWN || collidewall.z >= floorz)))
@@ -666,24 +658,30 @@ namespace physics
                     d->o = old;
                     d->zmargin = 0;
                 }
+                collided = true; // can't step over the obstacle, so just slide against it
             }
-            collided = true; // can't step over the obstacle, so just slide against it
-        }
-        else if(gameent::is(d) && !sticktospecial(d) && d->physstate == PHYS_STEP_UP)
-        {
-            if(collide(d, vec(0, 0, -1), slopez))
+            else if(d->physstate == PHYS_STEP_UP)
             {
+                if(collide(d, vec(0, 0, -1), slopez))
+                {
+                    d->o = old;
+                    if(trystepup(d, dir, vec(0, 0, 1), stairheight, vec(collidewall))) return true;
+                    d->o.add(dir);
+                }
+            }
+            else if(!sticktospecial(d) && d->physstate == PHYS_STEP_DOWN && dir.dot(d->floor) <= 1e-6f)
+            {
+                vec moved(d->o);
                 d->o = old;
-                if(trystepup(d, dir, vec(0, 0, 1), stairheight, vec(collidewall))) return true;
-                d->o.add(dir);
+                if(trystepdown(d, dir)) return true;
+                d->o = moved;
             }
         }
-        else if(gameent::is(d) && !sticktospecial(d) && d->physstate == PHYS_STEP_DOWN && dir.dot(d->floor) <= 1e-6f)
+        else if(collide(d, dir))
         {
-            vec moved(d->o);
+            obstacle = collidewall;
             d->o = old;
-            if(trystepdown(d, dir)) return true;
-            d->o = moved;
+            collided = true;
         }
         vec floor(0, 0, 0);
         bool slide = collided, found = findfloor(d, collided, obstacle, slide, floor);
@@ -1344,17 +1342,21 @@ namespace physics
         return true;
     }
 
-    void renderboundboxes(physent *d)
+    void renderboundboxes(physent *d, const vec &rad, const vec &o)
     {
         if(!gameent::is(d)) return;
+        vec pos = vec(o).sub(GUARDRADIUS), radius = vec(rad).add(GUARDRADIUS*2);
+        loopj(6) boxs(j, pos, radius);
         gameent *e = (gameent *)d;
         if(!actors[e->actortype].hitboxes || (e == game::focus && !game::thirdpersonview())) return;
-        gle::colorub(128, 255, 255);
+        vec headpos = vec(e->headtag()).sub(e->headbox()), headbox = vec(e->headbox()).mul(2),
+            torsopos = vec(e->torsotag()).sub(e->torsobox()), torsobox = vec(e->torsobox()).mul(2),
+            limbspos = vec(e->limbstag()).sub(e->limbsbox()), limbsbox = vec(e->limbsbox()).mul(2);
         loopj(6)
         {
-            boxs(j, vec(e->headtag()).sub(e->headbox()), vec(e->headbox()).mul(2));
-            boxs(j, vec(e->torsotag()).sub(e->torsobox()), vec(e->torsobox()).mul(2));
-            boxs(j, vec(e->limbstag()).sub(e->limbsbox()), vec(e->limbsbox()).mul(2));
+            boxs(j, headpos, headbox);
+            boxs(j, torsopos, torsobox);
+            boxs(j, limbspos, limbsbox);
         }
     }
 
