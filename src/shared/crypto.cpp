@@ -837,6 +837,24 @@ const ecjacobian ecjacobian::base(
 #error Unsupported GF
 #endif
 
+void calcpubkey(gfint privkey, vector<char> &pubstr)
+{
+    ecjacobian c(ecjacobian::base);
+    c.mul(privkey);
+    c.normalize();
+    c.print(pubstr);
+    pubstr.add('\0');
+}
+
+bool calcpubkey(const char *privstr, vector<char> &pubstr)
+{
+    if(!privstr[0]) return false;
+    gfint privkey;
+    privkey.parse(privstr);
+    calcpubkey(privkey, pubstr);
+    return true;
+}
+
 void genprivkey(const char *seed, vector<char> &privstr, vector<char> &pubstr)
 {
     tiger::hashval hash;
@@ -848,23 +866,7 @@ void genprivkey(const char *seed, vector<char> &privstr, vector<char> &pubstr)
     privkey.printdigits(privstr);
     privstr.add('\0');
 
-    ecjacobian c(ecjacobian::base);
-    c.mul(privkey);
-    c.normalize();
-    c.print(pubstr);
-    pubstr.add('\0');
-}
-
-void genpubkey(const char *privstr, vector<char> &pubstr)
-{
-    gfint privkey;
-    privkey.parse(privstr);
-
-    ecjacobian c(ecjacobian::base);
-    c.mul(privkey);
-    c.normalize();
-    c.print(pubstr);
-    pubstr.add('\0');
+    calcpubkey(privkey, pubstr);
 }
 
 bool hashstring(const char *str, char *result, int maxlen)

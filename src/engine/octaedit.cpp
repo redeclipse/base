@@ -2977,6 +2977,7 @@ ICOMMAND(0, looptexmru, "re", (ident *id, uint *body),
 ICOMMAND(0, numvslots, "", (), intret(vslots.length()));
 ICOMMAND(0, numslots, "", (), intret(slots.length()));
 COMMAND(0, getslottex, "i");
+ICOMMAND(0, texloaded, "i", (int *tex), intret(slots.inrange(*tex) && slots[*tex]->loaded ? 1 : 0));
 
 void replacetexcube(cube &c, int oldtex, int newtex)
 {

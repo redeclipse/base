@@ -998,6 +998,8 @@ ICOMMAND(0, getvarfields, "sb", (char *n, int *p), getvarfields(n, *p));
 ICOMMAND(0, getvarargs, "s", (char *n), result(getvarargs(n)));
 
 bool identexists(const char *name) { return idents.access(name)!=NULL; }
+ICOMMAND(0, identexists, "s", (char *s), intret(identexists(s) ? 1 : 0));
+
 ident *getident(const char *name) { return idents.access(name); }
 
 void touchvar(const char *name)
@@ -1437,8 +1439,8 @@ static inline const char *compileblock(vector<uint> &code, const char *p, int re
     if(code.length() > start + 2)
     {
         code.add(CODE_EXIT|rettype);
-    code[start] |= uint(code.length() - (start + 1))<<8;
-}
+        code[start] |= uint(code.length() - (start + 1))<<8;
+    }
     else
     {
         code.setsize(start);
@@ -1825,7 +1827,7 @@ done:
             case VAL_IDENT:
                 compileident(code, stringslice(start, p-1));
                 return;
-            }
+        }
         switch(wordtype)
         {
             case VAL_CSTR: case VAL_CODE: case VAL_IDENT: case VAL_CANY: case VAL_COND:
@@ -1980,7 +1982,7 @@ static bool compilearg(vector<uint> &code, const char *&p, int wordtype, int pre
                     return true;
                 }
 
-        }
+            }
     }
 }
 
@@ -3896,12 +3898,12 @@ void at(tagval *args, int numargs)
 }
 COMMAND(0, at, "si1V");
 
-void substring(char *s, int *start, int *count, int *numargs)
+void substr(char *s, int *start, int *count, int *numargs)
 {
     int len = strlen(s), offset = clamp(*start, 0, len);
     commandret->setstr(newstring(&s[offset], *numargs >= 3 ? clamp(*count, 0, len - offset) : len - offset));
 }
-COMMAND(0, substring, "siiN");
+COMMAND(0, substr, "siiN");
 
 void sublist(const char *s, int *skip, int *count, int *numargs)
 {
@@ -4684,6 +4686,22 @@ ICOMMAND(0, doif, "te2V", (tagval *args, int numargs),
 });
 
 ICOMMAND(0, rnd, "ii", (int *a, int *b), intret(*a - *b > 0 ? rnd(*a - *b) + *b : *b));
+ICOMMAND(0, rndstr, "i", (int *len),
+{
+    int n = clamp(*len, 0, 10000);
+    char *s = newstring(n);
+    for(int i = 0; i < n;)
+    {
+        uint r = randomMT();
+        for(int j = min(i + 4, n); i < j; i++)
+        {
+            s[i] = (r%255) + 1;
+            r /= 255;
+        }
+    }
+    s[n] = '\0';
+    stringret(s);
+});
 
 ICOMMAND(0, tohex, "ii", (int *n, int *p),
 {

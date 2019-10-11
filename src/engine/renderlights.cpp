@@ -4429,7 +4429,7 @@ void rendershadowmaps(int offset = 0)
         {
             shadowmapping = SM_CUBEMAP;
             border = smfilter > 2 ? smborder2 : smborder;
-            sidemask = smsidecull ? cullfrustumsides(l.o, l.radius, sm.size, border) : 0x3F;
+            sidemask = drawtex == DRAWTEX_MINIMAP ? 0x2F : (smsidecull ? cullfrustumsides(l.o, l.radius, sm.size, border) : 0x3F);
         }
 
         sm.sidemask = sidemask;

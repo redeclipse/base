@@ -763,7 +763,7 @@ struct filesval
     int millis;
 
     filesval(int type, const char *dir, const char *ext) : type(type), dir(newstring(dir)), ext(ext && ext[0] ? newstring(ext) : NULL), millis(-1) {}
-    ~filesval() { DELETEA(dir); DELETEA(ext); loopv(files) DELETEA(files[i]); files.shrink(0); }
+    ~filesval() { DELETEA(dir); DELETEA(ext); files.deletearrays(); }
 
     void update()
     {

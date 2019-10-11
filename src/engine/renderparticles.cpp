@@ -298,7 +298,7 @@ struct listrenderer : partrenderer
         p->d = d;
         p->fade = fade;
         p->millis = lastmillis;
-        p->color = bvec(color>>16, (color>>8)&0xFF, color&0xFF);
+        p->color = bvec::hexcolor(color);
         p->size = size;
         p->blend = blend;
         p->gravity = gravity;
@@ -731,7 +731,7 @@ struct varenderer : partrenderer
         p->m = vec(0, 0, 0);
         p->fade = fade;
         p->millis = lastmillis + emitoffset;
-        p->color = bvec(color>>16, (color>>8)&0xFF, color&0xFF);
+        p->color = bvec::hexcolor(color);
         p->blend = blend;
         p->size = size;
         p->gravity = gravity;
