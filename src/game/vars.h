@@ -269,7 +269,7 @@ MMVAR(IDF_GAMEMOD, 0, overtimeallow, 0, 1,
 MMVAR(IDF_GAMEMOD, 0, overtimelimit, 0, VAR_MAX,
     5,          2,          3,          2,          5,          5,          5,          5,          5,          5,          5,          5
 );
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
 SVAR(0, limitidxname, "duel survivor gladiator capture defend defendking bomber bomberhold race racetimed racegauntlet");
 #endif
 

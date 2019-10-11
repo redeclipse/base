@@ -1,4 +1,4 @@
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
     #define defendstate stfservstate
     #define defendcount (m_dac_king(gamemode, mutators) ? G(defendking) : G(defendoccupy))
 #else
@@ -12,7 +12,7 @@ struct defendstate
         vec o;
         int kinship, yaw, pitch, owner, enemy;
         string name;
-#ifndef GAMESERVER
+#ifndef CPP_GAME_SERVER
         string info;
         bool hasflag;
         int lasthad;
@@ -39,7 +39,7 @@ struct defendstate
             noenemy();
             owner = kinship;
             yaw = pitch = owners = points = 0;
-#ifndef GAMESERVER
+#ifndef CPP_GAME_SERVER
             hasflag = false;
             lasthad = 0;
 #endif
@@ -117,7 +117,7 @@ struct defendstate
         {
             return (enemy ? enemy : owner) ? (!owner || enemy ? clamp(converted/amt, 0.f, 1.f) : 1.f) : 0.f;
         }
-#ifndef GAMESERVER
+#ifndef CPP_GAME_SERVER
         void setposition(const vec &pos)
         {
             o = render = pos;
@@ -151,7 +151,7 @@ struct defendstate
         b.reset();
         b.yaw = yaw;
         b.pitch = pitch;
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
         b.o = o;
 #else
         b.setposition(o);
@@ -167,7 +167,7 @@ struct defendstate
         b.reset();
         b.yaw = yaw;
         b.pitch = pitch;
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
         b.o = o;
 #else
         b.setposition(o);
@@ -208,7 +208,7 @@ struct defendstate
     }
 };
 
-#ifndef GAMESERVER
+#ifndef CPP_GAME_SERVER
 namespace defend
 {
     extern defendstate st;

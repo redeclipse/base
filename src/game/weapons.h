@@ -1273,7 +1273,7 @@ struct weaptypes
     float   esize;
     const char *name, *item, *ammo, *vwep, *hwep, *proj, *eprj;
 };
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
 weaptypes weaptype[] =
 {
     {

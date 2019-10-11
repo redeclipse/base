@@ -1,4 +1,4 @@
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
 #define capturedelay (m_ctf_defend(gamemode, mutators) ? G(capturedefenddelay) : G(captureresetdelay))
 #define capturestore (G(captureresetstore)&((m_ctf_quick(gamemode, mutators) ? 1 : 0)|(m_ctf_defend(gamemode, mutators) ? 2 : 0)|(m_ctf_protect(gamemode, mutators) ? 4 : 0)|(!m_ctf_quick(gamemode, mutators) && !m_ctf_defend(gamemode, mutators) && !m_ctf_protect(gamemode, mutators) ? 8 : 0)))
 #define capturestate captureservstate
@@ -12,7 +12,7 @@ struct capturestate
     {
         vec droploc, inertia, spawnloc;
         int team, yaw, pitch, droptime, taketime, dropoffset;
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
         int owner, lastowner, lastownerteam, returntime;
         vector<int> votes;
         vec floorpos;
@@ -30,7 +30,7 @@ struct capturestate
         {
             inertia = vec(0, 0, 0);
             droploc = spawnloc = vec(-1, -1, -1);
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
             owner = lastowner = -1;
             lastownerteam = returntime = 0;
             votes.shrink(0);
@@ -44,7 +44,7 @@ struct capturestate
             yaw = pitch = taketime = droptime = dropoffset = 0;
         }
 
-#ifndef GAMESERVER
+#ifndef CPP_GAME_SERVER
         vec &position()
         {
             if(owner) return owner->waisttag();
@@ -105,14 +105,14 @@ struct capturestate
         f.team = team;
         f.yaw = yaw;
         f.pitch = pitch;
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
         f.spawnloc = o;
 #else
         f.setposition(o);
 #endif
     }
 
-#ifndef GAMESERVER
+#ifndef CPP_GAME_SERVER
     void interp(int i, int t)
     {
         flag &f = flags[i];
@@ -138,7 +138,7 @@ struct capturestate
     }
 #endif
 
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
     void takeaffinity(int i, int owner, int t, int ownerteam)
 #else
     void takeaffinity(int i, gameent *owner, int t)
@@ -146,13 +146,13 @@ struct capturestate
     {
         flag &f = flags[i];
         if(f.droptime) f.dropoffset += t-f.droptime;
-#ifndef GAMESERVER
+#ifndef CPP_GAME_SERVER
         interp(i, t);
 #endif
         f.owner = owner;
         f.taketime = t;
         f.droptime = 0;
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
         f.votes.shrink(0);
         f.lastowner = owner;
         f.lastownerteam = ownerteam;
@@ -172,14 +172,14 @@ struct capturestate
     {
         flag &f = flags[i];
         if(offset >= 0) f.dropoffset = offset;
-#ifndef GAMESERVER
+#ifndef CPP_GAME_SERVER
         interp(i, t);
 #endif
         f.droploc = o;
         f.inertia = p;
         f.droptime = t;
         f.taketime = 0;
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
         f.owner = -1;
         f.votes.shrink(0);
 #else
@@ -193,11 +193,11 @@ struct capturestate
     void returnaffinity(int i, int t)
     {
         flag &f = flags[i];
-#ifndef GAMESERVER
+#ifndef CPP_GAME_SERVER
         interp(i, t);
 #endif
         f.droptime = f.taketime = f.dropoffset = 0;
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
         f.returntime = t;
         f.owner = -1;
         f.votes.shrink(0);
@@ -210,7 +210,7 @@ struct capturestate
     }
 };
 
-#ifndef GAMESERVER
+#ifndef CPP_GAME_SERVER
 namespace capture
 {
     extern capturestate st;

@@ -66,7 +66,7 @@ struct enttypes
     bool    noisy,  syncs,  resyncs,    syncpos,    synckin;
     const char *name,           *attrs[16];
 };
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
 extern const enttypes enttype[] = {
     {
         NOTUSED,        -1,         0,      0,      EU_NONE,    0,          -1,         -1,     -1,     -1,
@@ -288,7 +288,7 @@ enum { PULSE_FIRE = 0, PULSE_BURN, PULSE_DISCO, PULSE_SHOCK, PULSE_BLEED, PULSE_
 #define PULSE(x) (PULSE_##x)
 #define INVPULSE(x) (-1-(x))
 #define PC(x) (INVPULSE(PULSE(x)))
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
 extern const int pulsecols[PULSE_MAX][PULSECOLOURS] = {
     { 0xFF5808, 0x981808, 0x782808, 0x481808, 0x983818, 0x681808, 0xC81808, 0x381808 },
     { 0xFFC848, 0xF86838, 0xA85828, 0xA84838, 0xF8A858, 0xC84828, 0xF86848, 0xA89858 },
@@ -337,7 +337,7 @@ enum
     SENDMAP_MPZ = 0, SENDMAP_CFG, SENDMAP_PNG, SENDMAP_TXT, SENDMAP_GAME, SENDMAP_WPT = SENDMAP_GAME, SENDMAP_MAX,
     SENDMAP_MIN = SENDMAP_PNG, SENDMAP_HAS = SENDMAP_MIN+1, SENDMAP_EDIT = SENDMAP_CFG+1, SENDMAP_ALL = SENDMAP_MAX-1
 };
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
 extern const char * const sendmaptypes[SENDMAP_MAX] = { "mpz", "cfg", "png", "txt", "wpt" };
 #else
 extern const char * const sendmaptypes[SENDMAP_MAX];
@@ -391,7 +391,7 @@ enum
     SS_F_ALL = SS_F_STEAMAUTH
 };
 
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
 char msgsizelookup(int msg)
 {
     static const int msgsizes[] =               // size inclusive message token, 0 for variable or not-checked sizes
@@ -435,7 +435,7 @@ struct demoheader
 };
 #include "player.h"
 #include "vars.h"
-#ifndef GAMESERVER
+#ifndef CPP_GAME_SERVER
 #include "ai.h"
 #endif
 
@@ -1072,7 +1072,7 @@ namespace server
     extern bool servcmd(int nargs, const char *cmd, const char *arg);
     extern const char *privname(int priv = PRIV_NONE, int actortype = A_PLAYER);
     extern const char *privnamex(int priv = PRIV_NONE, int actortype = A_PLAYER, bool local = false);
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
     struct clientinfo;
     extern void waiting(clientinfo *ci, int drop = 0, bool doteam = true, bool exclude = false);
     extern void setteam(clientinfo *ci, int team, int flags = TT_RESET, bool swaps = true);
@@ -1080,7 +1080,7 @@ namespace server
 #endif
 }
 
-#if !defined(GAMESERVER) && !defined(STANDALONE)
+#if !defined(CPP_GAME_SERVER) && !defined(STANDALONE)
 template<class T> inline void flashcolour(T &r, T &g, T &b, T br, T bg, T bb, float amt)
 {
     r += (br-r)*amt;
@@ -1119,7 +1119,7 @@ struct actitem
     actitem() : type(ENT), target(-1), score(0) {}
     ~actitem() {}
 };
-#ifdef GAMEWORLD
+#ifdef CPP_GAME_MAIN
 const char * const animnames[] =
 {
     "idle", "forward", "backward", "left", "right", "dead", "dying", "swim",

@@ -3,7 +3,7 @@
 // The most recent version can be viewed at: https://redeclipse.net/guidelines
 // WARNING * WARNING * WARNING * WARNING * WARNING * WARNING * WARNING * WARNING
 
-#define GAMESERVER 1
+#define CPP_GAME_SERVER 1
 #include "game.h"
 #include "errno.h"
 
@@ -7646,4 +7646,4 @@ namespace server
         return false;
     }
 };
-#undef GAMESERVER
+#undef CPP_GAME_SERVER

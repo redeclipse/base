@@ -1,4 +1,4 @@
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
     #define TPVAR(flags, level, name, mn, mx, w00, w01, w02, w03, w04, w05) \
         GVAR(flags, level, teamneutral##name, mn, w00, mx); \
         GVAR(flags, level, teamalpha##name, mn, w01, mx); \
@@ -49,7 +49,7 @@
 
     #define TEAM(team,name)         (*sv_team_stat_##name[team])
 #else
-#ifdef GAMEWORLD
+#ifdef CPP_GAME_MAIN
     #define TPVAR(flags, level, name, mn, mx, w00, w01, w02, w03, w04, w05) \
         GVAR(flags, level, teamneutral##name, mn, w00, mx); \
         GVAR(flags, level, teamalpha##name, mn, w01, mx); \

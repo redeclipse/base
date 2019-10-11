@@ -1,4 +1,4 @@
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
 struct duelservmode : servmode
 {
     int duelround, dueltime, duelcheck, dueldeath, duelwinner, duelwins, duelaffin;

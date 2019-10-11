@@ -1,4 +1,4 @@
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
     #define APVAR(flags, level, name, mn, mx, w00, w01, w02, w03, w04, w05) \
         GVAR(flags, level, player##name, mn, w00, mx); \
         GVAR(flags, level, bot##name, mn, w01, mx); \
@@ -49,7 +49,7 @@
 
     #define AA(t,name)         (*sv_actor_stat_##name[t])
 #else
-#ifdef GAMEWORLD
+#ifdef CPP_GAME_MAIN
     #define APVAR(flags, level, name, mn, mx, w00, w01, w02, w03, w04, w05) \
         GVAR(flags, level, player##name, mn, w00, mx); \
         GVAR(flags, level, bot##name, mn, w01, mx); \

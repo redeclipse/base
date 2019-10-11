@@ -1,4 +1,4 @@
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
     #define WPVAR(flags, level, name, mn, mx, w00, w01, w02, w03, w04, w05, w06, w07, w08, w09, w10, w11, w12) \
         GVAR(flags, level, claw##name, mn, w00, mx); \
         GVAR(flags, level, pistol##name, mn, w01, mx); \
@@ -182,7 +182,7 @@
     #define W(weap,name)         (*sv_weap_stat_##name[weap])
     #define W2(weap,name,second) (*sv_weap_stat_##name[weap][second?1:0])
 #else
-#ifdef GAMEWORLD
+#ifdef CPP_GAME_MAIN
     #define WPVAR(flags, level, name, mn, mx, w00, w01, w02, w03, w04, w05, w06, w07, w08, w09, w10, w11, w12) \
         GVAR(flags, level, claw##name, mn, w00, mx); \
         GVAR(flags, level, pistol##name, mn, w01, mx); \

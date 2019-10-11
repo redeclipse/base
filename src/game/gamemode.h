@@ -27,7 +27,7 @@ enum { G_F_GSP = 0, G_F_NUM };
 
 enum { G_S_WAITING = 0, G_S_GETMAP, G_S_SENDMAP, G_S_READYING, G_S_GAMEINFO, G_S_PLAYING, G_S_OVERTIME, G_S_INTERMISSION, G_S_VOTING, G_S_MAX };
 
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
 const char *gamestates[4][G_S_MAX] = {
     { "waiting", "getmap", "sendmap", "readying", "syncing", "playing", "overtime", "intermission", "voting" },
     { "Waiting", "Getmap", "Sendmap", "Readying", "Syncing", "Playing", "Overtime", "Intermission", "Voting" },
@@ -52,7 +52,7 @@ struct mutstypes
     int type, implied, mutators;
     const char *name, *desc;
 };
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
 gametypes gametype[] = {
     {
         G_DEMO, 0, 0, { 0, 0, 0, 0 },
@@ -302,7 +302,7 @@ extern mutstypes mutstype[];
 #define m_balance(a,b,c)    (m_play(a) && m_teamspawn(a, b) && (m_forcebal(a, b) || ((G(balanceduke) || !m_duke(a, b)) && ((G(balancemaps) >= 0 ? G(balancemaps) : G(mapbalance)) >= (m_affinity(a) ? 1 : (c ? 2 : 3))))))
 #define m_balreset(a,b)     (G(balancereset) && (G(balancereset) == 2 || m_capture(a) || m_bomber(a) || m_race(a) || m_duke(a, b)))
 
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
 #define m_attr(a,b)         (a == WEAPON ? attrmap[isweap(b) ? b : W_GRENADE] : b)
 #else
 #define m_attr(a,b)         (a == WEAPON ? game::attrmap[isweap(b) ? b : W_GRENADE] : b)
@@ -376,7 +376,7 @@ extern mutstypes mutstype[];
     if(e) mapcull(a, b, c, d, e, f) \
     else mapshrink(!(f), a, G(previousmaps), true) \
 }
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
 SVAR(IDF_READONLY, gamestateidxname, "waiting getmap sendmap readying gameinfo playing overtime intermission voting");
 VAR(IDF_READONLY, gamestatewaiting, 1, G_S_WAITING, -1);
 VAR(IDF_READONLY, gamestategetmap, 1, G_S_GETMAP, -1);

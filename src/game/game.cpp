@@ -1,4 +1,4 @@
-#define GAMEWORLD 1
+#define CPP_GAME_MAIN 1
 #include "game.h"
 
 namespace game
@@ -3883,4 +3883,4 @@ namespace game
 
     bool clientoption(char *arg) { return false; }
 }
-#undef GAMEWORLD
+#undef CPP_GAME_MAIN

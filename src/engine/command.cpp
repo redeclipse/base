@@ -1,13 +1,8 @@
 // command.cpp: implements the parsing and execution of a tiny script language which
 // is largely backwards compatible with the quake console language.
 
+#define CPP_ENGINE_COMMAND 1
 #include "engine.h"
-
-VAR(IDF_READONLY, varidxmax, 0, VAR_MAX, -1);
-VAR(IDF_READONLY, varidxmin, 0, VAR_MIN, -1);
-FVAR(IDF_READONLY, fvaridxmax, 0, FVAR_MAX, -1);
-FVAR(IDF_READONLY, fvaridxmin, 0, FVAR_MIN, -1);
-FVAR(IDF_READONLY, fvaridxnonzero, 0, FVAR_NONZERO, -1);
 
 hashnameset<ident> idents; // contains ALL vars/commands/aliases
 vector<ident *> identmap;

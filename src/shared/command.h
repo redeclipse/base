@@ -1,6 +1,6 @@
 // script binding functionality
 
-enum { VAL_NULL = 0, VAL_INT, VAL_FLOAT, VAL_STR, VAL_ANY, VAL_CODE, VAL_MACRO, VAL_IDENT, VAL_CSTR, VAL_CANY, VAL_WORD, VAL_POP, VAL_COND };
+enum { VAL_NULL = 0, VAL_INT, VAL_FLOAT, VAL_STR, VAL_ANY, VAL_CODE, VAL_MACRO, VAL_IDENT, VAL_CSTR, VAL_CANY, VAL_WORD, VAL_POP, VAL_COND, VAL_MAX };
 
 enum
 {
@@ -43,7 +43,8 @@ enum
     RET_FLOAT  = VAL_FLOAT<<CODE_RET,
 };
 
-enum { ID_VAR, ID_FVAR, ID_SVAR, ID_COMMAND, ID_ALIAS, ID_LOCAL, ID_DO, ID_DOARGS, ID_IF, ID_RESULT, ID_NOT, ID_AND, ID_OR };
+enum { ID_VAR = 0, ID_FVAR, ID_SVAR, ID_COMMAND, ID_ALIAS, ID_LOCAL, ID_DO, ID_DOARGS, ID_IF, ID_RESULT, ID_NOT, ID_AND, ID_OR, ID_MAX };
+
 #define VAR_MIN INT_MIN+1
 #define VAR_MAX INT_MAX-1
 #define FVAR_MIN -1e6f
@@ -58,7 +59,6 @@ enum
 };
 
 struct ident;
-
 struct identval
 {
     union
@@ -496,7 +496,7 @@ extern char *limitstring(const char *str, size_t len);
 #define WITHWORLD(body) { int _oldflags = identflags; identflags |= IDF_WORLD; body; identflags = _oldflags; }
 #define RUNWORLD(n) { ident *wid = idents.access(n); if(wid && wid->type==ID_ALIAS && wid->flags&IDF_WORLD) { WITHWORLD(execute(wid->getstr())); } }
 
-#if defined(GAMEWORLD)
+#if defined(CPP_GAME_MAIN)
 #define IDF_GAME (IDF_CLIENT|IDF_REWRITE)
 #define G(name) (name)
 #define PHYS(name) (G(name)*G(name##scale))
@@ -510,7 +510,7 @@ extern char *limitstring(const char *str, size_t len);
 #define GSVARN(flags, level, name, global, cur) _SVAR(name, global, cur, flags|IDF_GAME, level)
 #define GSVAR(flags, level, name, cur) _SVAR(name, name, cur, flags|IDF_GAME, level)
 #define GSVARF(flags, level, name, cur, svbody, ccbody) _SVARF(name, name, cur, ccbody, flags|IDF_GAME, level)
-#elif defined(GAMESERVER)
+#elif defined(CPP_GAME_SERVER)
 #define G(name) (sv_##name)
 #define IDF_GAME (IDF_SERVER|IDF_REWRITE)
 #define GICOMMAND(flags, level, name, nargs, proto, svbody, ccbody) ICOMMANDKNS(flags|(IDF_GAME&~IDF_REWRITE), level, "sv_" #name, ID_COMMAND, ICOMMANDNAME(sv_##name), nargs, proto, svbody)
@@ -540,3 +540,100 @@ extern char *limitstring(const char *str, size_t len);
 #define GSVAR(flags, level, name, cur) extern char *name
 #define GSVARF(flags, level, name, cur, svbody, ccbody) extern char *name
 #endif
+
+#ifdef CPP_ENGINE_COMMAND
+SVAR(IDF_READONLY, validxname, "null int float str any code macro ident cstr cany word pop cond");
+VAR(IDF_READONLY, validxnull, 0, VAL_NULL, -1);
+SVAR(IDF_READONLY, valnamenull, "Null");
+VAR(IDF_READONLY, validxint, 0, VAL_INT, -1);
+SVAR(IDF_READONLY, valnameint, "Integer");
+VAR(IDF_READONLY, validxfloat, 0, VAL_FLOAT, -1);
+SVAR(IDF_READONLY, valnamefloat, "Float");
+VAR(IDF_READONLY, validxstr, 0, VAL_STR, -1);
+SVAR(IDF_READONLY, valnamestr, "String");
+VAR(IDF_READONLY, validxany, 0, VAL_ANY, -1);
+SVAR(IDF_READONLY, valnameany, "Any");
+VAR(IDF_READONLY, validxcode, 0, VAL_CODE, -1);
+SVAR(IDF_READONLY, valnamecode, "Code");
+VAR(IDF_READONLY, validxmacro, 0, VAL_MACRO, -1);
+SVAR(IDF_READONLY, valnamemacro, "Macro");
+VAR(IDF_READONLY, validxident, 0, VAL_IDENT, -1);
+SVAR(IDF_READONLY, valnameident, "Identifier");
+VAR(IDF_READONLY, validxcstr, 0, VAL_CSTR, -1);
+SVAR(IDF_READONLY, valnamecstr, "Constant-string");
+VAR(IDF_READONLY, validxcany, 0, VAL_CANY, -1);
+SVAR(IDF_READONLY, valnamecany, "Constant-any");
+VAR(IDF_READONLY, validxword, 0, VAL_WORD, -1);
+SVAR(IDF_READONLY, valnameworld, "Word");
+VAR(IDF_READONLY, validxpop, 0, VAL_POP, -1);
+SVAR(IDF_READONLY, valnamepop, "Pop");
+VAR(IDF_READONLY, validxcond, 0, VAL_COND, -1);
+SVAR(IDF_READONLY, valnamecond, "Conditional");
+VAR(IDF_READONLY, validxmax, 0, VAL_MAX, -1);
+SVAR(IDF_READONLY, ididxname, "var fvar svar command alias local do doargs if result not and or");
+VAR(IDF_READONLY, ididxvar, 0, ID_VAR, -1);
+SVAR(IDF_READONLY, idnamevar, "Integer-variable");
+VAR(IDF_READONLY, ididxfvar, 0, ID_FVAR, -1);
+SVAR(IDF_READONLY, idnamefvar, "Float-variable");
+VAR(IDF_READONLY, ididxsvar, 0, ID_SVAR, -1);
+SVAR(IDF_READONLY, idnamesvar, "String-variable");
+VAR(IDF_READONLY, ididxcommand, 0, ID_COMMAND, -1);
+SVAR(IDF_READONLY, idnamecommand, "Command");
+VAR(IDF_READONLY, ididxalias, 0, ID_ALIAS, -1);
+SVAR(IDF_READONLY, idnamealias, "Alias");
+VAR(IDF_READONLY, ididxlocal, 0, ID_LOCAL, -1);
+SVAR(IDF_READONLY, idnamelocal, "Local");
+VAR(IDF_READONLY, ididxdo, 0, ID_DO, -1);
+SVAR(IDF_READONLY, idnamedo, "Do");
+VAR(IDF_READONLY, ididxdoargs, 0, ID_DOARGS, -1);
+SVAR(IDF_READONLY, idnamedoargs, "Do-arguments");
+VAR(IDF_READONLY, ididxif, 0, ID_IF, -1);
+SVAR(IDF_READONLY, idnameif, "If-condition");
+VAR(IDF_READONLY, ididxresult, 0, ID_RESULT, -1);
+SVAR(IDF_READONLY, idnameresult, "Result");
+VAR(IDF_READONLY, ididxnot, 0, ID_NOT, -1);
+SVAR(IDF_READONLY, idnamenot, "Not-condition");
+VAR(IDF_READONLY, ididxand, 0, ID_AND, -1);
+SVAR(IDF_READONLY, idnameand, "And-condition");
+VAR(IDF_READONLY, ididxor, 0, ID_OR, -1);
+SVAR(IDF_READONLY, idnameor, "Or-condition");
+VAR(IDF_READONLY, ididxmax, 0, ID_MAX, -1);
+SVAR(IDF_READONLY, idfidxname, "init persist readonly rewrite world complete texture client server hex unknown arg preload gamepreload gamemod namecomplete");
+VAR(IDF_READONLY, idfbitinit, 0, IDF_INIT, -1);
+SVAR(IDF_READONLY, idfnameinit, "Initialiser");
+VAR(IDF_READONLY, idfbitpersist, 0, IDF_PERSIST, -1);
+SVAR(IDF_READONLY, idfnamepersist, "Persistent");
+VAR(IDF_READONLY, idfbitreadonly, 0, IDF_READONLY, -1);
+SVAR(IDF_READONLY, idfnamereadonly, "Read-only");
+VAR(IDF_READONLY, idfbitrewrite, 0, IDF_REWRITE, -1);
+SVAR(IDF_READONLY, idfnamerewrite, "Rewrite");
+VAR(IDF_READONLY, idfbitworld, 0, IDF_WORLD, -1);
+SVAR(IDF_READONLY, idfnameworld, "World");
+VAR(IDF_READONLY, idfbitcomplete, 0, IDF_COMPLETE, -1);
+SVAR(IDF_READONLY, idfnamecomplete, "Complete");
+VAR(IDF_READONLY, idfbittexture, 0, IDF_TEXTURE, -1);
+SVAR(IDF_READONLY, idfnametexture, "Texture");
+VAR(IDF_READONLY, idfbitclient, 0, IDF_CLIENT, -1);
+SVAR(IDF_READONLY, idfnameclient, "Client");
+VAR(IDF_READONLY, idfbitserver, 0, IDF_SERVER, -1);
+SVAR(IDF_READONLY, idfnameserver, "Server");
+VAR(IDF_READONLY, idfbithex, 0, IDF_HEX, -1);
+SVAR(IDF_READONLY, idfnamehex, "Hexadecimal");
+VAR(IDF_READONLY, idfbitunknown, 0, IDF_UNKNOWN, -1);
+SVAR(IDF_READONLY, idfnameunknown, "Unknown");
+VAR(IDF_READONLY, idfbitarg, 0, IDF_ARG, -1);
+SVAR(IDF_READONLY, idfnamearg, "Argument");
+VAR(IDF_READONLY, idfbitpreload, 0, IDF_PRELOAD, -1);
+SVAR(IDF_READONLY, idfnamepreload, "Preload");
+VAR(IDF_READONLY, idfbitgamepreload, 0, IDF_GAMEPRELOAD, -1);
+SVAR(IDF_READONLY, idfnamegamepreload, "Game-preload");
+VAR(IDF_READONLY, idfbitgamemod, 0, IDF_GAMEMOD, -1);
+SVAR(IDF_READONLY, idfnamegamemod, "Game-modifier");
+VAR(IDF_READONLY, idfbitnamecomplete, 0, IDF_NAMECOMPLETE, -1);
+SVAR(IDF_READONLY, idfnamenamecomplete, "Name-complete");
+VAR(IDF_READONLY, varidxmax, 0, VAR_MAX, -1);
+VAR(IDF_READONLY, varidxmin, 0, VAR_MIN, -1);
+FVAR(IDF_READONLY, fvaridxmax, 0, FVAR_MAX, -1);
+FVAR(IDF_READONLY, fvaridxmin, 0, FVAR_MIN, -1);
+FVAR(IDF_READONLY, fvaridxnonzero, 0, FVAR_NONZERO, -1);
+#endif // CPP_ENGINE_COMMAND

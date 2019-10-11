@@ -10,7 +10,7 @@ struct actor
     float height, radius;
     const char *mdl;
 };
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
 actor actors[] = {
     { "player", A_PLAYER,   true,   true,   true,   true,   false,  27.f,   5.7f,   NULL },
     { "bot",    A_BOT,      true,   true,   true,   true,   false,  27.f,   5.7f,   NULL },
@@ -69,7 +69,7 @@ enum
     TT_RESETX = TT_INFO|TT_RESET
 };
 
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
 int mapbals[T_TOTAL][T_TOTAL] = {
     { T_ALPHA, T_OMEGA, T_KAPPA, T_SIGMA },
     { T_OMEGA, T_ALPHA, T_SIGMA, T_KAPPA },
@@ -127,7 +127,7 @@ struct playerpattern
     float scale;
 };
 
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
 extern const char * const playertypes[PLAYERTYPES][7] = {
     { "actors/player/male/hwep",        "actors/player/male",       "actors/player/male/body",      "actors/player/male/headless",      "player",   "male",     "Male" },
     { "actors/player/female/hwep",      "actors/player/female",     "actors/player/male/body",      "actors/player/female/headless",    "player",   "female",   "Female" }
@@ -298,7 +298,7 @@ struct vanity
         proj = newstring(m);
     }
 };
-#ifdef GAMEWORLD
+#ifdef CPP_GAME_MAIN
 vector<vanity> vanities;
 #else
 extern vector<vanity> vanities;

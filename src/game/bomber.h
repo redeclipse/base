@@ -2,7 +2,7 @@
 #define isbomberhome(a,b)   (a.enabled && !isbomberaffinity(a) && a.team != T_NEUTRAL && a.team == b)
 #define isbombertarg(a,b)   (a.enabled && !isbomberaffinity(a) && a.team != T_NEUTRAL && a.team != b)
 
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
 #define carrytime (m_bb_hold(gamemode, mutators) ? G(bomberholdtime) : G(bombercarrytime))
 #define bomberstate bomberservstate
 #else
@@ -16,7 +16,7 @@ struct bomberstate
         int team, yaw, pitch, droptime, taketime, target;
         bool enabled;
         float distance;
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
         int owner, lastowner;
         vector<int> votes;
 #else
@@ -33,7 +33,7 @@ struct bomberstate
         {
             inertia = vec(0, 0, 0);
             droploc = droppos = spawnloc = vec(-1, -1, -1);
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
             owner = lastowner = -1;
             votes.shrink(0);
 #else
@@ -49,7 +49,7 @@ struct bomberstate
             distance = 0;
         }
 
-#ifndef GAMESERVER
+#ifndef CPP_GAME_SERVER
         vec &position(bool render = false)
         {
             if(team == T_NEUTRAL)
@@ -128,14 +128,14 @@ struct bomberstate
         f.team = team;
         f.yaw = yaw;
         f.pitch = pitch;
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
         f.spawnloc = o;
 #else
         f.setposition(o);
 #endif
     }
 
-#ifndef GAMESERVER
+#ifndef CPP_GAME_SERVER
     void interp(int i, int t)
     {
         flag &f = flags[i];
@@ -161,21 +161,21 @@ struct bomberstate
     }
 #endif
 
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
     void takeaffinity(int i, int owner, int t)
 #else
     void takeaffinity(int i, gameent *owner, int t)
 #endif
     {
         flag &f = flags[i];
-#ifndef GAMESERVER
+#ifndef CPP_GAME_SERVER
         interp(i, t);
 #endif
         f.owner = owner;
         f.taketime = t;
         f.droptime = 0;
         f.target = -1;
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
         f.votes.shrink(0);
         f.lastowner = owner;
 #else
@@ -190,7 +190,7 @@ struct bomberstate
     void dropaffinity(int i, const vec &o, const vec &p, int t, int target = -1)
     {
         flag &f = flags[i];
-#ifndef GAMESERVER
+#ifndef CPP_GAME_SERVER
         interp(i, t);
 #endif
         f.droploc = f.droppos = o;
@@ -199,7 +199,7 @@ struct bomberstate
         f.taketime = 0;
         f.target = target;
         f.distance = 0;
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
         f.owner = -1;
         f.votes.shrink(0);
 #else
@@ -214,13 +214,13 @@ struct bomberstate
     void returnaffinity(int i, int t, bool enabled)
     {
         flag &f = flags[i];
-#ifndef GAMESERVER
+#ifndef CPP_GAME_SERVER
         interp(i, t);
 #endif
         f.droptime = f.taketime = 0;
         f.enabled = enabled;
         f.target = -1;
-#ifdef GAMESERVER
+#ifdef CPP_GAME_SERVER
         f.owner = -1;
         f.votes.shrink(0);
 #else
@@ -231,7 +231,7 @@ struct bomberstate
     }
 };
 
-#ifndef GAMESERVER
+#ifndef CPP_GAME_SERVER
 namespace bomber
 {
     extern bomberstate st;
