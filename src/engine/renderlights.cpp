@@ -963,8 +963,9 @@ HDRVARS(alt);
 
 GETVARMPV(hdr, bright, float);
 
+VAR(IDF_PERSIST, bloom, 0, 1, 1);
 FVAR(0, bloomthreshold, 1e-3f, 0.8f, 1e3f);
-FVAR(IDF_PERSIST, bloomscale, 0, 1.0f, 1e3f);
+FVAR(IDF_PERSIST, bloomscale, 0, 0.5f, 1e3f);
 VAR(IDF_PERSIST, bloomblur, 0, 7, 7);
 VAR(IDF_PERSIST, bloomiter, 0, 0, 4);
 VARF(IDF_PERSIST, bloomsize, 6, 9, 11, cleanupbloom());
@@ -1044,7 +1045,7 @@ void processhdr(GLuint outfbo, int aa)
 {
     timer *hdrtimer = begintimer("HDR Processing");
 
-    GLOBALPARAMF(hdrparams, gethdrbright(), hdrsaturate, bloomthreshold, bloomscale);
+    GLOBALPARAMF(hdrparams, gethdrbright(), hdrsaturate, bloom ? bloomthreshold : 0.f, bloom ? bloomscale : 0.f);
 
     GLuint b0fbo = bloomfbo[1], b0tex = bloomtex[1], b1fbo =  bloomfbo[0], b1tex = bloomtex[0], ptex = hdrtex;
     int b0w = max(vieww/4, bloomw), b0h = max(viewh/4, bloomh), b1w = max(vieww/2, bloomw), b1h = max(viewh/2, bloomh),
@@ -1203,7 +1204,7 @@ void processhdr(GLuint outfbo, int aa)
     glBindTexture(GL_TEXTURE_RECTANGLE, ptex);
     screenquad(pw, ph);
 
-    if(bloomblur)
+    if(bloom && bloomblur)
     {
         float blurweights[MAXBLURRADIUS+1], bluroffsets[MAXBLURRADIUS+1];
         setupblurkernel(bloomblur, blurweights, bluroffsets);
