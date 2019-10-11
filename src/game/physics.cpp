@@ -1019,9 +1019,21 @@ namespace physics
 
     void updatematerial(physent *pl, const vec &center, const vec &bottom, bool local)
     {
-        int matid = lookupmaterial(bottom), curmat = matid&MATF_VOLUME, flagmat = matid&MATF_FLAGS,
-            oldmatid = pl->inmaterial, oldmat = oldmatid&MATF_VOLUME;
-        float radius = center.z-bottom.z, frac = radius/10.f, submerged = pl->submerged;
+        float radius = center.z-bottom.z, submerged = pl->submerged;
+        int matid = lookupmaterial(bottom), oldmatid = pl->inmaterial, oldmat = oldmatid&MATF_VOLUME, liquid = 0, iters = int(ceilf(radius*2));
+        if(iters > 0)
+        {
+            float frac = (radius*2)/float(iters); // guard against rounding errors
+            vec tmp = bottom;
+            loopi(iters)
+            {
+                tmp.z += frac;
+                int chkmat = lookupmaterial(tmp);
+                if(!liquid && pl->inliquid && !isliquid(chkmat&MATF_VOLUME)) liquid = i+1;
+                matid |= chkmat;
+            }
+        }
+        int curmat = matid&MATF_VOLUME;
         if(curmat != oldmat)
         {
             #define mattrig(mo,mcol,ms,mt,mz,mq,mp,mw) \
@@ -1043,26 +1055,10 @@ namespace physics
         }
         pl->inmaterial = matid;
         pl->inliquid = isliquid(curmat);
-        vec tmp = bottom;
-        int liquid = 0, death = 0;
-        loopi(20)
-        {
-            tmp.z += frac;
-            if(!liquid && pl->inliquid && !isliquid(lookupmaterial(tmp)&MATF_VOLUME)) liquid = i+1;
-            if(!death && !((pl->inmaterial&MATF_FLAGS)&MAT_DEATH))
-            {
-                int chkmat = lookupmaterial(tmp);
-                if((chkmat&MATF_FLAGS)&MAT_DEATH)
-                {
-                    death = i+1;
-                    client::addmsg(N_SPHY, "ri3f", ((gameent *)pl)->clientnum, SPHY_MATERIAL, chkmat, -(death/20.f));
-                }
-            }
-        }
-        pl->submerged = pl->inliquid ? (liquid ? liquid/20.f : 1.f) : 0.f;
+        pl->onladder = (matid&MATF_FLAGS)&MAT_LADDER;
+        pl->submerged = clamp(pl->inliquid ? (liquid ? liquid/float(radius*2) : 1.f) : 0.f, 0.f, 1.f);
         if(local && pl->physstate < PHYS_SLIDE && submerged >= 0.5f && pl->submerged < 0.5f && pl->vel.z > 1e-3f)
             pl->vel.z = max(pl->vel.z, max(jumpvel(pl, false), gravityvel(pl)));
-        pl->onladder = flagmat&MAT_LADDER;
         if(pl->onladder && pl->physstate < PHYS_SLIDE) pl->floor = vec(0, 0, 1);
         if(local && gameent::is(pl) && (pl->inmaterial != oldmatid || pl->submerged != submerged))
             client::addmsg(N_SPHY, "ri3f", ((gameent *)pl)->clientnum, SPHY_MATERIAL, pl->inmaterial, pl->submerged);
