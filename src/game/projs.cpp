@@ -803,13 +803,13 @@ namespace projs
                 proj.from = proj.owner->origintag();
                 proj.to = proj.dest = proj.owner->muzzletag();
             }
-            if(style != 2) proj.o = proj.from;
+            if(style != 3) proj.o = proj.from;
         }
         else
         {
             if(!proj.bounced) proj.from = proj.owner->muzzletag();
-            updateto(proj);
-            if(style == 1) proj.o = proj.from;
+            if(style == 2) proj.o = proj.from;
+            if(!style) updateto(proj);
         }
     }
 
@@ -838,7 +838,7 @@ namespace projs
                 proj.interacts = WF(WK(proj.flags), proj.weap, interacts, WS(proj.flags));
                 proj.mdlname = weaptype[proj.weap].proj;
                 proj.escaped = !proj.owner || proj.child || WK(proj.flags) || WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_LENGTH || proj.weap == W_MELEE;
-                updatetargets(proj, waited ? 1 : 0);
+                updatetargets(proj, waited ? 2 : 1);
                 if(WF(WK(proj.flags), proj.weap, guided, WS(proj.flags)) != 0 && proj.owner)
                     safefindorientation(proj.owner->o, proj.owner->yaw, proj.owner->pitch, proj.dest);
                 if(proj.projcollide&COLLIDE_PROJ) collideprojs.add(&proj);
@@ -1610,7 +1610,7 @@ namespace projs
         {
             case PRJ_SHOT:
             {
-                updatetargets(proj, 2);
+                updatetargets(proj, 3);
                 int vol = clamp(int(255*proj.curscale), 0, 255), type = WF(WK(proj.flags), proj.weap, parttype, WS(proj.flags)), len = W2(proj.weap, partfade, WS(proj.flags)), halflen = max(len/2, 1);
                 if(!proj.limited) switch(type)
                 {
