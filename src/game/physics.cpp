@@ -1349,12 +1349,12 @@ namespace physics
         if(!gameent::is(d)) return;
         gameent *e = (gameent *)d;
         if(!actors[e->actortype].hitboxes || (e == game::focus && !game::thirdpersonview())) return;
-        gle::colorub(255, 255, 255);
+        gle::colorub(128, 255, 255);
         loopj(6)
         {
             boxs(j, vec(e->headtag()).sub(e->headbox()), vec(e->headbox()).mul(2));
-            boxs(j, vec(e->torsotag()).sub(e->headbox()), vec(e->torsobox()).mul(2));
-            boxs(j, vec(e->limbstag()).sub(e->headbox()), vec(e->limbsbox()).mul(2));
+            boxs(j, vec(e->torsotag()).sub(e->torsobox()), vec(e->torsobox()).mul(2));
+            boxs(j, vec(e->limbstag()).sub(e->limbsbox()), vec(e->limbsbox()).mul(2));
         }
     }
 

@@ -106,10 +106,6 @@ void renderboundboxes()
         vec rad = vec(e->xradius*2, e->yradius*2, e->height+e->aboveeye), o = vec(e->o).sub(vec(e->xradius, e->yradius, e->height));
         gle::colorub(255, 255, 255);
         loopj(6) boxs(j, o, rad);
-        rad.add2(4);
-        o.sub2(2);
-        gle::colorub(128, 255, 255);
-        loopj(6) boxs(j, o, rad);
         if(showboundingboxes > 1) physics::renderboundboxes((physent *)e);
     }
 
