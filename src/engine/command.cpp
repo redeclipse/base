@@ -4696,14 +4696,14 @@ ICOMMAND(0, tohex, "ii", (int *n, int *p),
 #define CMPSCMD(func, name, op) \
     ICOMMAND(0, name, "s1V", (tagval *args, int numargs), \
     { \
-        bool val; \
+        bool val = false; \
         if(numargs >= 2) \
         { \
             val = func(args[0].s, args[1].s) op 0; \
             for(int i = 2; i < numargs && val; i++) val = func(args[i-1].s, args[i].s) op 0; \
         } \
         else val = (numargs > 0 ? args[0].s[0] : 0) op 0; \
-        intret(int(val)); \
+        intret(val ? 1 : 0); \
     })
 
 CMPSCMD(strcmp, strcmp, ==);
@@ -4725,14 +4725,15 @@ CMPSCMD(strcasecmp, >~=s, >=);
 #define CMPSNCMD(func, name, op) \
     ICOMMAND(0, name, "s1V", (tagval *args, int numargs), \
     { \
-        bool val; \
+        bool val = false; \
         if(numargs >= 3) \
         { \
-            val = func(args[0].s, args[1].s, args[2].i) op 0; \
-            for(int i = 5; i < numargs && val; i++) val = func(args[i-2].s, args[i-1].s, args[i].i) op 0; \
+            int last = numargs-1; \
+            val = func(args[0].s, args[1].s, args[last].getint()) op 0; \
+            for(int i = 3; i < last && val; i++) val = func(args[i-1].s, args[i].s, args[last].getint()) op 0; \
         } \
         else val = (numargs > 0 ? args[0].s[0] : 0) op 0; \
-        intret(int(val)); \
+        intret(val ? 1 : 0); \
     })
 
 CMPSNCMD(strncmp, strncmp, ==);
