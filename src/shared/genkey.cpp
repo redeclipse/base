@@ -21,7 +21,7 @@ int main(int argc, char **argv)
     else if(argc == 3)
     {
         vector<char> pubkey;
-        genpubkey(argv[2], pubkey);
+        calcpubkey(argv[2], pubkey);
         printf("%s\n", !strcmp(argv[1], pubkey.getbuf()) ? "yes" : "no");
         return EXIT_SUCCESS;
     }
