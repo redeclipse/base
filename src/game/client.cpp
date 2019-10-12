@@ -1697,13 +1697,13 @@ namespace client
         conoutf("\fySending map...");
         const char *reqmap = mapname;
         if(!reqmap || !*reqmap) reqmap = "maps/untitled";
-        int savedtype = -1;
-        if(m_edit(game::gamemode) || maptype != MAP_MAPZ)
+        bool saved = false;
+        if(m_edit(game::gamemode))
         {
             save_world(mapname, m_edit(game::gamemode), true);
             ai::savewaypoints(true, mapname);
             reqmap = mapname;
-            savedtype = maptype;
+            saved = true;
         }
         loopi(SENDMAP_MAX)
         {
@@ -1722,7 +1722,7 @@ namespace client
                 sendfile(-1, 2, NULL, "ri3", N_SENDMAPFILE, i, mapcrc);
             }
         }
-        if(savedtype >= 0) setnames(mapname, savedtype, 0);
+        if(saved) setnames(mapname);
     }
     ICOMMAND(0, sendmap, "", (), if(multiplayer(false)) sendmap());
 

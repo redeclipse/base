@@ -1569,135 +1569,8 @@ namespace entities
         }
     }
 
-    struct octatele
+    void readent(stream *g, int mver, char *gid, int gver, int id)
     {
-        int ent, tag;
-    };
-    vector<octatele> octateles;
-
-    void readent(stream *g, int mtype, int mver, char *gid, int gver, int id)
-    {
-        if(mtype != MAP_OCTA) return;
-        gameentity &f = *(gameentity *)ents[id];
-        // translate into our format
-        switch(f.type)
-        {
-            // LIGHT            -   LIGHT
-            // MAPMODEL         -   MAPMODEL
-            // PLAYERSTART      -   PLAYERSTART
-            // ENVMAP           -   ENVMAP
-            // PARTICLES        -   PARTICLES
-            // MAPSOUND         -   MAPSOUND
-            // SPOTLIGHT        -   LIGHTFX
-            //                  -   DECAL
-            //                  -   WIND
-            case 1: case 2: case 3: case 4: case 5: case 6: case 7: case 8: case 9: break;
-
-            // I_SHELLS         -   WEAPON      W_SHOTGUN
-            // I_BULLETS        -   WEAPON      W_SMG
-            // I_ROCKETS        -   WEAPON      W_FLAMER
-            // I_ROUNDS         -   WEAPON      W_RIFLE
-            // I_GL             -   WEAPON      W_GRENADE
-            // I_CARTRIDGES     -   WEAPON      W_PLASMA
-            case 10: case 11: case 12: case 13: case 14: case 15:
-            {
-                int weap = f.type-8;
-                if(weap >= 0 && weap <= 5)
-                {
-                    const int weapmap[6] = { W_SHOTGUN, W_SMG, W_FLAMER, W_RIFLE, W_GRENADE, W_PLASMA };
-                    f.type = WEAPON;
-                    f.attrs[0] = weapmap[weap];
-                    f.attrs[1] = 0;
-                }
-                else f.type = NOTUSED;
-                break;
-            }
-            // I_QUAD           -   WEAPON      W_ROCKET
-            case 19:
-            {
-                f.type = WEAPON;
-                f.attrs[0] = W_ROCKET;
-                f.attrs[1] = 0;
-                break;
-            }
-
-            // TELEPORT         -   TELEPORT
-            // TELEDEST         -   TELEPORT (linked)
-            case 20: case 21:
-            {
-                octatele &t = octateles.add();
-                t.ent = id;
-                if(f.type == 21)
-                {
-                    t.tag = f.attrs[1]+1; // needs translating later
-                    f.attrs[1] = -1;
-                }
-                else
-                {
-                    t.tag = -(f.attrs[0]+1);
-                    f.attrs[0] = -1;
-                }
-                f.attrs[2] = f.attrs[3] = f.attrs[4] = 0;
-                f.type = TELEPORT;
-                break;
-            }
-            // MONSTER          -   NOTUSED
-            case 22:
-            {
-                f.type = NOTUSED;
-                break;
-            }
-            // CARROT           -   TRIGGER     0
-            case 23:
-            {
-                f.type = NOTUSED;
-                f.attrs[0] = f.attrs[1] = f.attrs[2] = f.attrs[3] = f.attrs[4] = 0;
-                break;
-            }
-            // JUMPPAD          -   PUSHER
-            case 24:
-            {
-                f.type = PUSHER;
-                break;
-            }
-            // BASE             -   AFFINITY    1:idx       T_NEUTRAL
-            case 25:
-            {
-                f.type = AFFINITY;
-                if(f.attrs[0] < 0) f.attrs[0] = 0;
-                f.attrs[1] = T_NEUTRAL; // spawn as neutrals
-                break;
-            }
-            // RESPAWNPOINT     -   CHECKPOINT
-            case 26:
-            {
-                f.type = CHECKPOINT;
-                break;
-            }
-            // FLAG             -   AFFINITY        #           2:team
-            case 31:
-            {
-                f.type = AFFINITY;
-                f.attrs[0] = 0;
-                if(f.attrs[1] <= 0) f.attrs[1] = -1; // needs a team
-                break;
-            }
-
-            // I_HEALTH         -   NOTUSED
-            // I_BOOST          -   NOTUSED
-            // I_GREENARMOUR    -   NOTUSED
-            // I_YELLOWARMOUR   -   NOTUSED
-            // BOX              -   NOTUSED
-            // BARREL           -   NOTUSED
-            // PLATFORM         -   NOTUSED
-            // ELEVATOR         -   NOTUSED
-            default:
-            {
-                if(verbose) conoutf("\frWARNING: ignoring entity %d type %d", id, f.type);
-                f.type = NOTUSED;
-                break;
-            }
-        }
     }
 
     void writeent(stream *g, int id)
@@ -1739,232 +1612,7 @@ namespace entities
         }
     }
 
-    void importentities(int mtype, int mver, int gver)
-    {
-        int flag = 0, teams[T_TOTAL] = {0};
-        progress(0, "Importing entities...");
-        loopv(octateles) // translate teledest to teleport and link them appropriately
-        {
-            octatele &t = octateles[i];
-            if(t.tag <= 0) continue;
-            gameentity &e = *(gameentity *)ents[t.ent];
-            if(e.type != TELEPORT) continue;
-            loopvj(octateles)
-            {
-                octatele &p = octateles[j];
-                if(p.tag != -t.tag) continue;
-                gameentity &f = *(gameentity *)ents[p.ent];
-                if(f.type != TELEPORT) continue;
-                if(verbose) conoutf("\frWARNING: teledest %d and teleport %d linked automatically", t.ent, p.ent);
-                f.links.add(t.ent);
-            }
-        }
-        loopv(octateles) // second pass teledest translation
-        {
-            octatele &t = octateles[i];
-            if(t.tag <= 0) continue;
-            gameentity &e = *(gameentity *)ents[t.ent];
-            if(e.type != TELEPORT) continue;
-            int dest = -1;
-            float bestdist = enttype[TELEPORT].radius*4.f;
-            loopvj(octateles)
-            {
-                octatele &p = octateles[j];
-                if(p.tag >= 0) continue;
-                gameentity &f = *(gameentity *)ents[p.ent];
-                if(f.type != TELEPORT) continue;
-                float dist = e.o.dist(f.o);
-                if(dist > bestdist) continue;
-                dest = p.ent;
-                bestdist = dist;
-            }
-            if(ents.inrange(dest))
-            {
-                gameentity &f = *(gameentity *)ents[dest];
-                if(verbose) conoutf("\frWARNING: replaced teledest %d with closest teleport %d", t.ent, dest);
-                f.attrs[0] = e.attrs[0]; // copy the yaw
-                loopvk(e.links) if(f.links.find(e.links[k]) < 0) f.links.add(e.links[k]);
-                loopvj(ents) if(j != t.ent && j != dest)
-                {
-                    gameentity &g = *(gameentity *)ents[j];
-                    if(g.type == TELEPORT)
-                    {
-                        int link = g.links.find(t.ent);
-                        if(link >= 0)
-                        {
-                            g.links.remove(link);
-                            if(g.links.find(dest) < 0) g.links.add(dest);
-                            if(verbose) conoutf("\frWARNING: imported link to teledest %d to teleport %d", t.ent, j);
-                        }
-                    }
-                }
-                e.type = NOTUSED; // get rid of ye olde teledest
-                e.links.shrink(0);
-            }
-            else if(verbose) conoutf("\frWARNING: teledest %d has become a teleport", t.ent);
-        }
-        octateles.setsize(0);
-        loopv(ents)
-        {
-            gameentity &e = *(gameentity *)ents[i];
-            switch(e.type)
-            {
-                case WEAPON:
-                {
-                    float mindist = float((enttype[WEAPON].radius*4)*(enttype[WEAPON].radius*4));
-                    int weaps[W_MAX];
-                    loopj(W_MAX) weaps[j] = j != e.attrs[0] ? 0 : 1;
-                    loopvj(ents) if(j != i)
-                    {
-                        gameentity &f = *(gameentity *)ents[j];
-                        if(f.type == WEAPON && e.o.squaredist(f.o) <= mindist && isweap(f.attrs[0]))
-                        {
-                            weaps[f.attrs[0]]++;
-                            f.type = NOTUSED;
-                            if(verbose) conoutf("\frWARNING: culled tightly packed weapon %d [%d]", j, f.attrs[0]);
-                        }
-                    }
-                    int best = e.attrs[0];
-                    loopj(W_MAX) if(weaps[j] > weaps[best]) best = j;
-                    e.attrs[0] = best;
-                    break;
-                }
-                case AFFINITY: // replace bases/neutral flags near team flags
-                {
-                    if(valteam(e.attrs[1], T_FIRST)) teams[e.attrs[1]-T_FIRST]++;
-                    else if(e.attrs[1] == T_NEUTRAL)
-                    {
-                        int dest = -1;
-
-                        loopvj(ents) if(j != i)
-                        {
-                            gameentity &f = *(gameentity *)ents[j];
-
-                            if(f.type == AFFINITY && f.attrs[1] != T_NEUTRAL &&
-                                (!ents.inrange(dest) || e.o.dist(f.o) < ents[dest]->o.dist(f.o)) &&
-                                    e.o.dist(f.o) <= enttype[AFFINITY].radius*4.f)
-                                        dest = j;
-                        }
-
-                        if(ents.inrange(dest))
-                        {
-                            gameentity &f = *(gameentity *)ents[dest];
-                            if(verbose) conoutf("\frWARNING: old base %d (%d, %d) replaced with flag %d (%d, %d)", i, e.attrs[0], e.attrs[1], dest, f.attrs[0], f.attrs[1]);
-                            if(!f.attrs[0]) f.attrs[0] = e.attrs[0]; // give it the old base idx
-                            e.type = NOTUSED;
-                        }
-                        else if(e.attrs[0] > flag) flag = e.attrs[0]; // find the highest idx
-                    }
-                    break;
-                }
-            }
-            progress((i+1)/float(ents.length()), "Importing entities...");
-        }
-        loopv(ents)
-        {
-            gameentity &e = *(gameentity *)ents[i];
-            switch(e.type)
-            {
-                case AFFINITY:
-                {
-                    if(!e.attrs[0]) e.attrs[0] = ++flag; // assign a sane idx
-                    if(!valteam(e.attrs[1], T_NEUTRAL)) // assign a team
-                    {
-                        int lowest = -1;
-                        loopk(T_TOTAL) if(lowest < 0 || teams[k] < teams[lowest]) lowest = i;
-                        e.attrs[1] = lowest+T_FIRST;
-                        teams[lowest]++;
-                    }
-                    break;
-                }
-            }
-        }
-    }
-
-    void updateoldentities(int mtype, int mver, int gver)
-    {
-        progress(0, "Updating old entities...");
-        loopvj(ents)
-        {
-            gameentity &e = *(gameentity *)ents[j];
-            switch(e.type)
-            {
-                case LIGHTFX:
-                {
-                    if(mtype != MAP_OCTA) break;
-                    e.attrs[1] = e.attrs[0];
-                    e.attrs[0] = LFX_SPOTLIGHT;
-                    e.attrs[2] = e.attrs[3] = e.attrs[4] = 0;
-                    break;
-                }
-                case PLAYERSTART:
-                {
-                    if(mtype != MAP_OCTA) break;
-                    short yaw = e.attrs[0];
-                    e.attrs[0] = e.attrs[1];
-                    e.attrs[1] = yaw;
-                    e.attrs[2] = e.attrs[3] = e.attrs[4] = 0;
-                    break;
-                }
-                case PARTICLES:
-                {
-                    if(mtype != MAP_OCTA) break;
-                    switch(e.attrs[0])
-                    {
-                        case 0: if(e.attrs[3] <= 0) break;
-                        case 4: case 7: case 8: case 9: case 10: case 11: case 12: case 13: case 14: case 15: case 5: case 6:
-                            e.attrs[3] = (((e.attrs[3]&0xF)<<4)|((e.attrs[3]&0xF0)<<8)|((e.attrs[3]&0xF00)<<12))+0x0F0F0F;
-                            if(e.attrs[0] != 5 && e.attrs[0] != 6) break;
-                        case 3:
-                            e.attrs[2] = (((e.attrs[2]&0xF)<<4)|((e.attrs[2]&0xF0)<<8)|((e.attrs[2]&0xF00)<<12))+0x0F0F0F; break;
-                        default: break;
-                    }
-                    break;
-                }
-                case TELEPORT:
-                {
-                    if(mtype != MAP_OCTA) break;
-                    e.attrs[2] = 100; // give a push
-                    e.attrs[4] = e.attrs[1] >= 0 ? 0x2CE : 0;
-                    e.attrs[1] = e.attrs[3] = 0;
-                    e.o.z += 8; // teleport here is at middle
-                    if(e.attrs[0] >= 0)
-                    {
-                        int material = lookupmaterial(e.o), clipmat = material&MATF_CLIP;
-                        if(clipmat == MAT_CLIP || (material&MAT_DEATH) || (material&MATF_VOLUME) == MAT_LAVA)
-                            e.o.add(vec(e.attrs[0]*RAD, e.attrs[1]*RAD));
-                    }
-                    break;
-                }
-                case WEAPON:
-                {
-                    if(mtype != MAP_MAPZ) break; // readent and importentities take care of MAP_OCTA
-                    if(gver <= 218)
-                    { // insert mine before rockets (9 -> 10) after grenades (8)
-                        if(e.attrs[0] >= 9) e.attrs[0]++;
-                    }
-                    if(gver <= 221)
-                    { // insert zapper before rifle (7 -> 8) after plasma (6)
-                        if(e.attrs[0] >= 7) e.attrs[0]++;
-                    }
-                    break;
-                }
-                case AFFINITY:
-                {
-                    if(mtype != MAP_OCTA) break;
-                    e.attrs[0] = e.attrs[1];
-                    e.attrs[1] = e.attrs[2];
-                    e.attrs[2] = e.attrs[3];
-                    e.attrs[3] = e.attrs[4] = 0;
-                    break;
-                }
-                default: break;
-            }
-            progress((j+1)/float(ents.length()), "Updating old entities...");
-        }
-    }
-
-    void initents(int mtype, int mver, char *gid, int gver)
+    void initents(int mver, char *gid, int gver)
     {
         lastroutenode = routeid = -1;
         numactors = lastroutetime = droproute = 0;
@@ -1975,20 +1623,26 @@ namespace entities
         {
             gameentity &e = *(gameentity *)ents[i];
             e.attrs.setsize(numattrs(e.type), 0);
-            progress((i+1)/float(ents.length()), "Setting entity attributes...");
-        }
-        if(mtype == MAP_OCTA) importentities(mtype, mver, gver);
-        if(mtype == MAP_OCTA || (mtype == MAP_MAPZ && gver < VERSION_GAME)) updateoldentities(mtype, mver, gver);
-        progress(0, "Fixing entities...");
-        loopv(ents)
-        {
-            fixentity(i, false);
-            switch(ents[i]->type)
+            if(gver < VERSION_GAME) switch(e.type)
             {
                 case ACTOR: numactors++; break;
+                case WEAPON:
+                {
+                    if(gver <= 218)
+                    { // insert mine before rockets (9 -> 10) after grenades (8)
+                        if(e.attrs[0] >= 9) e.attrs[0]++;
+                    }
+                    if(gver <= 221)
+                    { // insert zapper before rifle (7 -> 8) after plasma (6)
+                        if(e.attrs[0] >= 7) e.attrs[0]++;
+                    }
+                    break;
+                }
+                case ROUTE: case UNUSEDENT: e.type = NOTUSED; break;
                 default: break;
             }
-            progress((i+1)/float(ents.length()), "Fixing entities...");
+            fixentity(i, false);
+            progress((i+1)/float(ents.length()), "Setting entity attributes...");
         }
         memset(firstenttype, 0, sizeof(firstenttype));
         memset(firstusetype, 0, sizeof(firstusetype));
@@ -2018,11 +1672,10 @@ namespace entities
                 numactors++;
             }
         }
-        progress(0, "Updating entities...");
+        progress(0, "Preparing entities...");
         loopv(ents)
         {
             gameentity &e = *(gameentity *)ents[i];
-            if(mtype == MAP_MAPZ && gver <= 221 && (e.type == ROUTE || e.type == UNUSEDENT)) e.type = NOTUSED;
             if(e.type >= 0 && e.type < MAXENTTYPES)
             {
                 firstenttype[e.type] = min(firstenttype[e.type], i);
@@ -2043,7 +1696,7 @@ namespace entities
                     }
                 }
             }
-            progress((i+1)/float(ents.length()), "Updating entities...");
+            progress((i+1)/float(ents.length()), "Preparing entities...");
         }
     }
 

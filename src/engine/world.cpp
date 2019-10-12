@@ -1169,7 +1169,7 @@ bool emptymap(int scale, bool force, const char *mname, bool usecfg)    // main 
 
     clearworldvars();
     resetmap(!usecfg);
-    setnames(mname, MAP_MAPZ);
+    setnames(mname);
     setvar("mapscale", scale<10 ? 10 : (scale>16 ? 16 : scale), true, false, true);
     setvar("mapsize", 1<<worldscale, true, false, true);
     setvar("emptymap", 1, true, false, true);
@@ -1199,7 +1199,7 @@ bool emptymap(int scale, bool force, const char *mname, bool usecfg)    // main 
     }
 
     allchanged(initing != INIT_QUIT);
-    entities::initents(MAP_MAPZ, hdr.version, hdr.gameid, hdr.gamever);
+    entities::initents(hdr.version, hdr.gameid, hdr.gamever);
     game::startmap(true);
 
     return true;

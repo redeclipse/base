@@ -1568,8 +1568,6 @@ namespace server
     bool canload(const char *type)
     {
         if(!strcmp(type, gameid())) return true;
-        if(!strcmp(type, "bfa")) return true;
-        if(!strcmp(type, "bfg")) return true;
         return false;
     }
 

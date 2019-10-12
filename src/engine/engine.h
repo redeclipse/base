@@ -86,7 +86,6 @@ extern int nextcontrolversion();
 #include "irc.h"
 #include "sound.h"
 
-enum { PACKAGEDIR_OCTA = 1<<0 };
 extern const char * const disc_reasons[];
 struct ipinfo
 {
@@ -819,7 +818,7 @@ extern bool getsight(vec &o, float yaw, float pitch, vec &q, vec &v, float mdist
 
 // worldio
 extern char *maptitle, *mapauthor, *mapname, *maptext, *mapdesc;
-extern int mapcrc, maptype, maploading, mapvariant, mapeffects;
+extern int mapcrc, maploading, mapvariant, mapeffects;
 extern const char *mapvariants[MPV_MAX];
 extern bool checkmapvariant(int variant);
 extern void changemapvariant(int variant);

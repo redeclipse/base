@@ -349,7 +349,7 @@ static inline void addstain(int type, const vec &center, const vec &surface, flo
 }
 
 // worldio
-extern void setnames(const char *fname, int type, int crc = 0);
+extern void setnames(const char *fname, int crc = 0);
 extern bool load_world(const char *mname, int crc = 0, int variant = MPV_DEF);
 extern void save_world(const char *mname, bool nodata = false, bool forcesave = false);
 extern char *mapctitle(const char *s);
@@ -580,13 +580,6 @@ extern int collidezones;
 extern vec collidewall, hitsurface;
 
 enum { CLZ_NONE = 0, CLZ_HEAD = 1<<0, CLZ_TORSO = 1<<1, CLZ_LIMB = 1<<2 };
-
-enum
-{
-    MAP_MAPZ = 0,
-    MAP_OCTA,
-    MAP_MAX
-};
 
 enum
 {

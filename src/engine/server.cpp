@@ -1472,7 +1472,7 @@ bool serveroption(char *opt)
     switch(opt[1])
     {
         case 'h': sethomedir(&opt[2]); logoutf("set home directory: %s", &opt[2]); return true;
-        case 'o': logoutf("sauerbraten maps are no longer supported, the -o switch is a stub"); return true; // Break Sauerbraten support with 1.9.9 and above
+        case 'o': logoutf("sauerbraten maps are no longer supported, the -o switch no longer works"); return true; // Break Sauerbraten support with 1.9.9 and above
         case 'p': addpackagedir(&opt[2]); logoutf("add package directory: %s", &opt[2]); return true;
         case 'g': setlogfile(&opt[2]); logoutf("set log file: %s", opt[2] ? &opt[2] : "<stdout>"); return true;
         case 'v': setvar("verbose", atoi(opt+2)); return true;
@@ -1506,16 +1506,6 @@ bool serveroption(char *opt)
     }
     return false;
 }
-
-void octapaks(uint *contents)
-{
-    int mask = maskpackagedirs(~0);
-    execute(contents);
-    maskpackagedirs(mask);
-}
-COMMAND(0, octapaks, "e");
-
-VAR(0, hasoctapaks, 1, 0, 0); // Stub
 
 SVAR(IDF_READONLY, extras, "");
 void loadextras()

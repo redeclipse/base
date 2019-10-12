@@ -5,25 +5,12 @@ enum                            // hardcoded texture numbers
     NUMDEFAULTSLOTS
 };
 
-#define OCTAVERSION 33          // diverged at ver 25
-#define MAPVERSION 48           // bump if map format changes, see worldio.cpp
+#define MAPVERSION 48 // bump if map format changes, see worldio.cpp
 
 struct binary
 {
     char head[4];
     int version, headersize;
-};
-
-#define OCTASTRLEN 260
-struct octa : binary
-{
-    int worldsize;
-    int numents;
-    int numpvs;
-    int lightmaps;
-    int blendmap;
-    int numvars;
-    int numvslots;
 };
 
 struct mapz : binary
@@ -38,14 +25,6 @@ struct mapzcompat43 : binary
     int worldsize, numents, numpvs, lightmaps, blendmap, numvslots;
     int gamever, revision;
     char gameid[4];
-};
-
-struct entcompat
-{
-    vec o;
-    short attr[5];
-    uchar type;
-    uchar reserved;
 };
 
 #define WATER_AMPLITUDE 0.4f
