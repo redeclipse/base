@@ -1019,17 +1019,17 @@ namespace physics
 
     void updatematerial(physent *pl, const vec &center, const vec &bottom, bool local)
     {
-        float radius = center.z-bottom.z, submerged = pl->submerged;
-        int matid = lookupmaterial(bottom), oldmatid = pl->inmaterial, oldmat = oldmatid&MATF_VOLUME, liquid = 0, iters = int(ceilf(radius*2));
+        float radius = center.z-bottom.z, height = radius*2, submerged = pl->submerged;
+        int matid = lookupmaterial(bottom), oldmatid = pl->inmaterial, oldmat = oldmatid&MATF_VOLUME, liquid = 0, iters = int(ceilf(height));
         if(iters > 0)
         {
-            float frac = (radius*2)/float(iters); // guard against rounding errors
+            float frac = height/float(iters); // guard against rounding errors
             vec tmp = bottom;
             loopi(iters)
             {
                 tmp.z += frac;
                 int chkmat = lookupmaterial(tmp);
-                if(!liquid && pl->inliquid && !isliquid(chkmat&MATF_VOLUME)) liquid = i+1;
+                if(!liquid && isliquid(matid&MATF_VOLUME) && !isliquid(chkmat&MATF_VOLUME)) liquid = i+1;
                 matid |= chkmat;
             }
         }
@@ -1044,19 +1044,19 @@ namespace physics
             }
             if(curmat == MAT_WATER || oldmat == MAT_WATER)
             {
-                const bvec &watercol = getwatercolour((curmat == MAT_WATER ? matid : pl->inmaterial) & MATF_INDEX);
+                const bvec &watercol = getwatercolour((curmat == MAT_WATER ? matid : pl->inmaterial)&MATF_INDEX);
                 mattrig(bottom, watercol, 0.5f, int(radius), PHYSMILLIS, 0.25f, PART_SPARK, curmat != MAT_WATER ? S_SPLASH2 : S_SPLASH1);
             }
             if(curmat == MAT_LAVA)
             {
-                const bvec &lavacol = getlavacolour(matid & MATF_INDEX);
+                const bvec &lavacol = getlavacolour(matid&MATF_INDEX);
                 mattrig(center, lavacol, 2.f, int(radius), PHYSMILLIS*2, 1.f, PART_FIREBALL, S_BURNLAVA);
             }
         }
         pl->inmaterial = matid;
         pl->inliquid = isliquid(curmat);
         pl->onladder = (matid&MATF_FLAGS)&MAT_LADDER;
-        pl->submerged = clamp(pl->inliquid ? (liquid ? liquid/float(radius*2) : 1.f) : 0.f, 0.f, 1.f);
+        pl->submerged = clamp(pl->inliquid ? (liquid ? liquid/float(iters) : 1.f) : 0.f, 0.f, 1.f);
         if(local && pl->physstate < PHYS_SLIDE && submerged >= 0.5f && pl->submerged < 0.5f && pl->vel.z > 1e-3f)
             pl->vel.z = max(pl->vel.z, max(jumpvel(pl, false), gravityvel(pl)));
         if(pl->onladder && pl->physstate < PHYS_SLIDE) pl->floor = vec(0, 0, 1);
