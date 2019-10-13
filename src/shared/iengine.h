@@ -244,6 +244,7 @@ enum
     PT_NOLAYER  = 1<<21,
     PT_SHRINK   = 1<<22,    // shrink particle as it fades
     PT_GROW     = 1<<23,    // grow particle as it fades
+    PT_WIND     = 1<<24,    // particles affected by the wind
     PT_FLIP     = PT_HFLIP | PT_VFLIP | PT_ROT
 };
 

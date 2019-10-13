@@ -47,7 +47,7 @@ extern int windanimdist;
 
 extern void clearwindemitters();
 extern void updatewind();
-extern vec getwind(const vec &o, const dynent *d);
+extern vec getwind(const vec &o, const dynent *d = NULL);
 extern void addwind(const vec &o, int mode, float speed, windemitter **hook = NULL, int yaw = 0,
     int interval = 0, int length = 4000, int radius = NULL, int atten = 1);
 extern void remwind(windemitter **we);

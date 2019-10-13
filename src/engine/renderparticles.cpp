@@ -11,6 +11,9 @@ VAR(IDF_PERSIST, particlesize, 20, 100, 500);
 VAR(IDF_PERSIST, softparticles, 0, 1, 1);
 VAR(IDF_PERSIST, softparticleblend, 1, 8, 64);
 
+// experimental feature, default to 0
+VAR(IDF_PERSIST, particlewind, 0, 0, 1);
+
 // Check canemitparticles() to limit the rate that paricles can be emitted for models/sparklies
 // Automatically stops particles being emitted when paused or in reflective drawing
 VAR(IDF_PERSIST, emitmillis, 1, 17, VAR_MAX);
@@ -182,6 +185,7 @@ struct partrenderer
                 v.z -= physics::gravityvel(&d)*secs;
             }
             p->o.add(v);
+            if(particlewind && type&PT_WIND) p->o.add(getwind(p->o));
             if(step && p->collide && p->o.z < p->val)
             {
                 if(p->collide > 0)
@@ -1149,12 +1153,12 @@ static partrenderer *parts[] =
     new portalrenderer("<grey>particles/teleport"), &icons,
     &lineprimitives, &lineontopprimitives, &trisprimitives, &trisontopprimitives,
     &loopprimitives, &loopontopprimitives, &coneprimitives, &coneontopprimitives,
-    new softquadrenderer("<grey>particles/fire", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK),
-    new softquadrenderer("<grey>particles/plasma", PT_PART|PT_BRIGHT|PT_FLIP|PT_SHRINK),
+    new softquadrenderer("<grey>particles/fire", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK|PT_WIND),
+    new softquadrenderer("<grey>particles/plasma", PT_PART|PT_BRIGHT|PT_FLIP|PT_SHRINK|PT_WIND),
     new taperenderer("<grey>particles/sflare", PT_TAPE|PT_BRIGHT|PT_FEW),
     new taperenderer("<grey>particles/mflare", PT_TAPE|PT_BRIGHT|PT_RND4|PT_VFLIP|PT_FEW),
-    new softquadrenderer("<grey>particles/smoke", PT_PART|PT_LERP|PT_FLIP|PT_SHRINK),
-    new quadrenderer("<grey>particles/smoke", PT_PART|PT_LERP|PT_FLIP|PT_SHRINK),
+    new softquadrenderer("<grey>particles/smoke", PT_PART|PT_LERP|PT_FLIP|PT_SHRINK|PT_WIND),
+    new quadrenderer("<grey>particles/smoke", PT_PART|PT_LERP|PT_FLIP|PT_SHRINK|PT_WIND),
     new softquadrenderer("<grey>particles/hint", PT_PART|PT_BRIGHT),
     new quadrenderer("<grey>particles/hint", PT_PART|PT_BRIGHT),
     new softquadrenderer("<grey>particles/hint_bold", PT_PART|PT_BRIGHT),
@@ -1163,8 +1167,8 @@ static partrenderer *parts[] =
     new quadrenderer("<grey><rotate:1>particles/hint_vert", PT_PART|PT_BRIGHT),
     new softquadrenderer("<grey><rotate:1>particles/hint_vert", PT_PART|PT_BRIGHT),
     new quadrenderer("<grey>particles/hint_vert", PT_PART|PT_BRIGHT),
-    new softquadrenderer("<grey>particles/smoke", PT_PART|PT_FLIP|PT_SHRINK),
-    new quadrenderer("<grey>particles/smoke", PT_PART|PT_FLIP|PT_SHRINK),
+    new softquadrenderer("<grey>particles/smoke", PT_PART|PT_FLIP|PT_SHRINK|PT_WIND),
+    new quadrenderer("<grey>particles/smoke", PT_PART|PT_FLIP|PT_SHRINK|PT_WIND),
     new softquadrenderer("<grey>particles/hint", PT_PART|PT_BRIGHT),
     new quadrenderer("<grey>particles/hint", PT_PART|PT_BRIGHT),
     new softquadrenderer("<grey>particles/hint_bold", PT_PART|PT_BRIGHT),
@@ -1177,21 +1181,21 @@ static partrenderer *parts[] =
     new quadrenderer("<grey>particles/entity", PT_PART|PT_BRIGHT),
     new quadrenderer("<grey>particles/entity", PT_PART|PT_BRIGHT|PT_ONTOP),
     new quadrenderer("<grey>particles/spark", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK),
-    new softquadrenderer("<grey>particles/fire", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK),
-    new quadrenderer("<grey>particles/fire", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK),
-    new softquadrenderer("<grey>particles/plasma", PT_PART|PT_BRIGHT|PT_FLIP|PT_SHRINK),
-    new quadrenderer("<grey>particles/plasma", PT_PART|PT_BRIGHT|PT_FLIP|PT_SHRINK),
-    new softquadrenderer("<grey>particles/electric", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK),
-    new quadrenderer("<grey>particles/electric", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK),
-    new softquadrenderer("<grey>particles/eleczap", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK),
-    new quadrenderer("<grey>particles/eleczap", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK),
-    new quadrenderer("<grey>particles/fire", PT_PART|PT_BRIGHT|PT_FLIP|PT_RND4|PT_BRIGHT|PT_SHRINK),
+    new softquadrenderer("<grey>particles/fire", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK|PT_WIND),
+    new quadrenderer("<grey>particles/fire", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK|PT_WIND),
+    new softquadrenderer("<grey>particles/plasma", PT_PART|PT_BRIGHT|PT_FLIP|PT_SHRINK|PT_WIND),
+    new quadrenderer("<grey>particles/plasma", PT_PART|PT_BRIGHT|PT_FLIP|PT_SHRINK|PT_WIND),
+    new softquadrenderer("<grey>particles/electric", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK|PT_WIND),
+    new quadrenderer("<grey>particles/electric", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK|PT_WIND),
+    new softquadrenderer("<grey>particles/eleczap", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK|PT_WIND),
+    new quadrenderer("<grey>particles/eleczap", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK|PT_WIND),
+    new quadrenderer("<grey>particles/fire", PT_PART|PT_BRIGHT|PT_FLIP|PT_RND4|PT_BRIGHT|PT_SHRINK|PT_WIND),
     new taperenderer("<grey>particles/sflare", PT_TAPE|PT_BRIGHT),
     new taperenderer("<grey>particles/mflare", PT_TAPE|PT_BRIGHT|PT_RND4|PT_VFLIP|PT_BRIGHT),
     new taperenderer("<grey>particles/lightning", PT_TAPE|PT_BRIGHT|PT_HFLIP|PT_VFLIP, 2), // uses same clamp setting as normal lightning to avoid conflict
     new taperenderer("<grey>particles/lightzap", PT_TAPE|PT_BRIGHT|PT_HFLIP|PT_VFLIP, 2),
     new quadrenderer("<grey>particles/muzzle", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP),
-    new quadrenderer("<grey>particles/snow", PT_PART|PT_BRIGHT|PT_FLIP),
+    new quadrenderer("<grey>particles/snow", PT_PART|PT_BRIGHT|PT_FLIP|PT_WIND),
     &texts, &textontop,
     &explosions, &shockwaves, &shockballs, &glimmerballs, &lightnings, &lightzaps,
     &flares // must be done last!
