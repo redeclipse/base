@@ -58,7 +58,7 @@ namespace ai
     {
         if(d && e && d != e && e->state == CS_ALIVE && AA(d->actortype, abilities)&A_A_ATTACK && (!solid || physics::issolid(e, d)))
         {
-            //if(m_onslaught(game::gamemode, game::mutators) && d->actortype >= A_ENEMY && e->actortype == A_BOT) return false;
+            if(m_onslaught(game::gamemode, game::mutators) && d->actortype >= A_ENEMY && e->actortype >= A_ENEMY) return false;
             if(!m_team(game::gamemode, game::mutators) || d->team != e->team) return true;
         }
         return false;
