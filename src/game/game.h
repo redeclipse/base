@@ -2084,7 +2084,7 @@ namespace projs
     extern void update();
     extern projent *create(const vec &from, const vec &to, bool local, gameent *d, int type, int fromweap, int fromflags, int lifetime, int lifemillis, int waittime, int speed, int id = 0, int weap = -1, int value = -1, int flags = 0, float scale = 1, bool child = false, projent *parent = NULL);
     extern void preload();
-    extern void remove(gameent *owner);
+    extern void removeplayer(gameent *d);
     extern void destruct(gameent *d, int targ, int id, bool all = false);
     extern void sticky(gameent *d, int id, vec &norm, vec &pos, gameent *f = NULL);
     extern void shootv(int weap, int flags, int sub, int offset, float scale, vec &from, vector<shotmsg> &shots, gameent *d, bool local);
@@ -2126,6 +2126,7 @@ namespace hud
     extern int numteamkills();
     extern void damage(int n, const vec &loc, gameent *v, int weap, int flags);
     extern void hit(int n, const vec &loc, gameent *v, int weap, int flags);
+    extern void removeplayer(gameent *d);
     extern const char *teamtexname(int team = T_NEUTRAL);
     extern const char *itemtex(int type, int stype);
     extern const char *privtex(int priv = PRIV_NONE, int actortype = A_PLAYER);

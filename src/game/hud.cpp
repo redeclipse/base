@@ -603,7 +603,7 @@ namespace hud
 
     void damage(int n, const vec &loc, gameent *v, int weap, int flags)
     {
-        if(!n) return;
+        if(!n || !v) return;
         int m = flags&HIT(BURN) || flags&HIT(BLEED) || flags&HIT(SHOCK) ? damageresiduemulresidual : damageresiduemul;
         damageresidue = clamp(damageresidue+(n*m), 0, damageresiduemax);
         int colour = onscreendamagecolour;
@@ -614,12 +614,12 @@ namespace hud
         vec dir = vec(loc).sub(camera1->o).normalize();
         loopv(damagelocs)
         {
-            dhloc &d = damagelocs[i];
-            if(v->clientnum != d.clientnum) continue;
-            if(totalmillis-d.outtime > onscreendamagemerge) continue;
-            if(d.colour != colour) continue;
-            d.damage += n;
-            d.dir = dir;
+            dhloc &l = damagelocs[i];
+            if(v->clientnum != l.clientnum) continue;
+            if(totalmillis-l.outtime > onscreendamagemerge) continue;
+            if(l.colour != colour) continue;
+            l.damage += n;
+            l.dir = dir;
             return; // accumulate
         }
         damagelocs.add(dhloc(v->clientnum, totalmillis, n, loc, colour));
@@ -627,7 +627,7 @@ namespace hud
 
     void hit(int n, const vec &loc, gameent *v, int weap, int flags)
     {
-        if(!n) return;
+        if(!n || !v) return;
         int colour = onscreenhitscolour;
         if(game::nogore || game::bloodscale <= 0) colour = 0xFF00FF;
         else if(wr_burns(weap, flags)) colour = onscreenhitsburncolour;
@@ -635,15 +635,31 @@ namespace hud
         else if(wr_shocks(weap, flags)) colour = onscreenhitsshockcolour;
         loopv(hitlocs)
         {
-            dhloc &d = hitlocs[i];
-            if(v->clientnum != d.clientnum) continue;
-            if(totalmillis-d.outtime > onscreenhitsmerge) continue;
-            if(d.colour != colour) continue;
-            d.damage += n;
-            d.dir = v->center();
+            dhloc &l = hitlocs[i];
+            if(v->clientnum != l.clientnum) continue;
+            if(totalmillis-l.outtime > onscreenhitsmerge) continue;
+            if(l.colour != colour) continue;
+            l.damage += n;
+            l.dir = v->center();
             return; // accumulate
         }
         hitlocs.add(dhloc(v->clientnum, totalmillis, n, v->center(), colour));
+    }
+
+    void removeplayer(gameent *d)
+    {
+        loopvrev(damagelocs)
+        {
+            dhloc &l = damagelocs[i];
+            gameent *e = game::getclient(l.clientnum);
+            if(!e || e == d) hitlocs.remove(i);
+        }
+        loopvrev(hitlocs)
+        {
+            dhloc &l = hitlocs[i];
+            gameent *e = game::getclient(l.clientnum);
+            if(!e || e == d) hitlocs.remove(i);
+        }
     }
 
     void drawquad(float x, float y, float w, float h, float tx1, float ty1, float tx2, float ty2, bool flipx, bool flipy)
@@ -1082,12 +1098,13 @@ namespace hud
                     float total = 0;
                     loopv(damagelocs)
                     {
-                        dhloc &d = damagelocs[i];
-                        int millis = totalmillis-d.outtime, delay = min(20, d.damage)*50;
-                        if(millis >= delay || d.dir.iszero()) { if(millis >= onscreendamagetime+onscreendamagefade) damagelocs.remove(i--); continue; }
-                        gameent *e = game::getclient(d.clientnum);
+                        dhloc &l = damagelocs[i];
+                        gameent *e = game::getclient(l.clientnum);
+                        if(!e || l.dir.iszero()) { damagelocs.remove(i--); continue; }
+                        int millis = totalmillis-l.outtime, delay = min(20, l.damage)*50;
+                        if(millis >= delay) { if(millis >= onscreendamagetime+onscreendamagefade) damagelocs.remove(i--); continue; }
                         if(!onscreendamageself && e == game::focus) continue;
-                        float dam = d.damage/float(max(game::focus->gethealth(game::gamemode, game::mutators), 1)),
+                        float dam = l.damage/float(max(game::focus->gethealth(game::gamemode, game::mutators), 1)),
                               amt = millis/float(delay);
                         total += dam;
                         val += dam*(1-amt);
@@ -1881,13 +1898,13 @@ namespace hud
         float maxy = -1.f;
         loopv(hitlocs)
         {
-            dhloc &d = hitlocs[i];
-            int millis = totalmillis-d.outtime;
-            if(millis >= onscreenhitstime+onscreenhitsfade || d.dir.iszero()) { hitlocs.remove(i--); continue; }
+            dhloc &l = hitlocs[i];
+            int millis = totalmillis-l.outtime;
+            gameent *a = game::getclient(l.clientnum);
+            if(!a || millis >= onscreenhitstime+onscreenhitsfade || l.dir.iszero()) { hitlocs.remove(i--); continue; }
             if(game::focus->state == CS_SPECTATOR || game::focus->state == CS_EDITING) continue;
-            gameent *a = game::getclient(d.clientnum);
-            if((!onscreenhitsheal && d.damage < 0) || (!onscreenhitsself && a == game::focus)) continue;
-            vec o = onscreenhitsfollow && a ? a->center() : d.dir;
+            if((!onscreenhitsheal && l.damage < 0) || (!onscreenhitsself && a == game::focus)) continue;
+            vec o = onscreenhitsfollow ? a->center() : l.dir;
             o.z += actors[a->actortype].height*onscreenhitsheight;
             float cx = 0, cy = 0, cz = 0;
             if(!vectocursor(o, cx, cy, cz)) continue;
@@ -1908,9 +1925,9 @@ namespace hud
             }
             string text;
             if(game::damageinteger)
-                formatstring(text, "%c%d", d.damage > 0 ? '-' : (d.damage < 0 ? '+' : '~'), int(ceilf((d.damage < 0 ? 0-d.damage : d.damage)/game::damagedivisor)));
-            else formatstring(text, "%c%.1f", d.damage > 0 ? '-' : (d.damage < 0 ? '+' : '~'), (d.damage < 0 ? 0-d.damage : d.damage)/game::damagedivisor);
-            vec colour = d.colour < 0 ? game::pulsecolour(a, INVPULSE(d.colour)) : vec::fromcolor(d.colour);
+                formatstring(text, "%c%d", l.damage > 0 ? '-' : (l.damage < 0 ? '+' : '~'), int(ceilf((l.damage < 0 ? 0-l.damage : l.damage)/game::damagedivisor)));
+            else formatstring(text, "%c%.1f", l.damage > 0 ? '-' : (l.damage < 0 ? '+' : '~'), (l.damage < 0 ? 0-l.damage : l.damage)/game::damagedivisor);
+            vec colour = l.colour < 0 ? game::pulsecolour(a, INVPULSE(l.colour)) : vec::fromcolor(l.colour);
             if(maxy >= 0 && hy < maxy) hy = maxy;
             if(onscreenhitsglow && settexture(onscreenhitsglowtex))
             {
@@ -1930,18 +1947,19 @@ namespace hud
     {
         loopv(damagelocs)
         {
-            dhloc &d = damagelocs[i];
-            int millis = totalmillis-d.outtime;
-            if(millis >= onscreendamagetime+onscreendamagefade || d.dir.iszero()) { if(millis >= min(20, d.damage)*50) damagelocs.remove(i--); continue; }
+            dhloc &l = damagelocs[i];
+            gameent *e = game::getclient(l.clientnum);
+            if(!e || l.dir.iszero()) { damagelocs.remove(i--); continue; }
+            int millis = totalmillis-l.outtime;
+            if(millis >= onscreendamagetime+onscreendamagefade) { if(millis >= min(20, l.damage)*50) damagelocs.remove(i--); continue; }
             if(game::focus->state == CS_SPECTATOR || game::focus->state == CS_EDITING) continue;
-            gameent *e = game::getclient(d.clientnum);
             if(!onscreendamageself && e == game::focus) continue;
             float amt = millis >= onscreendamagetime ? 1.f-(float(millis-onscreendamagetime)/float(onscreendamagefade)) : float(millis)/float(onscreendamagetime),
-                range = clamp(max(d.damage, onscreendamagemin)/float(max(onscreendamagemax-onscreendamagemin, 1)), onscreendamagemin/100.f, 1.f),
+                range = clamp(max(l.damage, onscreendamagemin)/float(max(onscreendamagemax-onscreendamagemin, 1)), onscreendamagemin/100.f, 1.f),
                 fade = clamp(onscreendamageblend*blend, min(onscreendamageblend*onscreendamagemin/100.f, 1.f), onscreendamageblend)*amt,
                 size = clamp(range*onscreendamagesize, min(onscreendamagesize*onscreendamagemin/100.f, 1.f), onscreendamagesize)*amt;
-            vec dir = d.dir, colour = d.colour < 0 ? game::pulsecolour(game::focus, INVPULSE(d.colour)) : vec::fromcolor(d.colour);
-            if(e == game::focus) d.dir = vec(e->yaw*RAD, 0.f).neg();
+            vec dir = l.dir, colour = l.colour < 0 ? game::pulsecolour(game::focus, INVPULSE(l.colour)) : vec::fromcolor(l.colour);
+            if(e == game::focus) l.dir = vec(e->yaw*RAD, 0.f).neg();
             dir.rotate_around_z(-camera1->yaw*RAD).normalize();
             float yaw = -atan2(dir.x, dir.y)/RAD, x = sinf(RAD*yaw), y = -cosf(RAD*yaw), sz = max(w, h)/2,
                   ts = sz*onscreendamagescale, tp = ts*size, tq = tp*onscreendamageblipsize, tr = ts*onscreendamageoffset, lx = (tr*x)+w/2, ly = (tr*y)+h/2;

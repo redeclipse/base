@@ -1875,7 +1875,8 @@ namespace game
         specreset(d, true);
         waiting.removeobj(d);
         client::clearvotes(d);
-        projs::remove(d);
+        projs::removeplayer(d);
+        hud::removeplayer(d);
         removedamagemerges(d);
         if(m_capture(gamemode)) capture::removeplayer(d);
         else if(m_defend(gamemode)) defend::removeplayer(d);

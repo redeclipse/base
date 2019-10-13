@@ -299,18 +299,18 @@ namespace projs
         return false;
     }
 
-    void remove(gameent *owner)
+    void removeplayer(gameent *d)
     {
         loopv(projs)
         {
-            if(projs[i]->target == owner) projs[i]->target = NULL;
-            if(projs[i]->stick == owner)
+            if(projs[i]->target == d) projs[i]->target = NULL;
+            if(projs[i]->stick == d)
             {
                 projs[i]->stuck = 0;
                 projs[i]->stick = NULL;
                 projs[i]->lastbounce = lastmillis;
             }
-            if(projs[i]->owner == owner)
+            if(projs[i]->owner == d)
             {
                 if(projs[i]->projtype == PRJ_SHOT)
                 {

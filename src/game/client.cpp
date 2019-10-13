@@ -645,7 +645,7 @@ namespace client
         game::resetstate();
         game::specreset();
         physics::entinmap(game::player1, true); // find spawn closest to current floating pos
-        projs::remove(game::player1);
+        projs::removeplayer(game::player1);
         if(m_edit(game::gamemode)) addmsg(N_EDITMODE, "ri", edit ? 1 : 0);
     }
 
@@ -1289,7 +1289,7 @@ namespace client
         messages.shrink(0);
         mapvotes.shrink(0);
         messagereliable = false;
-        projs::remove(game::player1);
+        projs::removeplayer(game::player1);
         removetrackedparticles(game::player1);
         removetrackedsounds(game::player1);
         game::player1->clientnum = -1;
@@ -3220,7 +3220,7 @@ namespace client
                         d->editspawn(game::gamemode, game::mutators);
                     }
                     d->resetinterp();
-                    projs::remove(d);
+                    projs::removeplayer(d);
                     break;
                 }
 

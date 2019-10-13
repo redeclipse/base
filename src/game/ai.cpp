@@ -253,7 +253,7 @@ namespace ai
         d->pattern = pt;
         d->setvanity(vn);
 
-        if(resetthisguy) projs::remove(d);
+        if(resetthisguy) projs::removeplayer(d);
         if(d->ownernum >= 0 && game::player1->clientnum == d->ownernum)
         {
             create(d);
