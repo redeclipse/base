@@ -16,7 +16,7 @@
 #define DNF 1000.0f // for normalized vectors
 #define DVELF 1.0f // for playerspeed based velocity vectors
 
-#define FOOTSTEP_DIST 1.0f // Threshold, below which a footstep will be registered
+#define FOOTSTEP_DIST 1.5f // Threshold, below which a footstep will be registered
 
 enum
 {
