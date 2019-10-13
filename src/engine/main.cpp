@@ -172,9 +172,9 @@ VAR(IDF_PERSIST, imageformat, IFMT_NONE+1, IFMT_PNG, IFMT_MAX-1);
 
 void screenshot(char *sname)
 {
-    ImageData image(screenw, screenh, 3);
+    ImageData image(renderw, renderh, 3);
     glPixelStorei(GL_PACK_ALIGNMENT, 1);
-    glReadPixels(0, 0, screenw, screenh, GL_RGB, GL_UNSIGNED_BYTE, image.data);
+    glReadPixels(0, 0, renderw, renderh, GL_RGB, GL_UNSIGNED_BYTE, image.data);
     string fname;
     if(sname && *sname) copystring(fname, sname);
     else formatstring(fname, "screenshots/%s", *filetimeformat ? gettime(filetimelocal ? currenttime : clocktime, filetimeformat) : (*mapname ? mapname : "screen"));
@@ -331,7 +331,8 @@ void setupscreen()
         scr_h = min(scr_h, desktoph);
     }
 
-    int winx = SDL_WINDOWPOS_UNDEFINED, winy = SDL_WINDOWPOS_UNDEFINED, winw = scr_w, winh = scr_h, flags = SDL_WINDOW_RESIZABLE;
+    int winx = SDL_WINDOWPOS_UNDEFINED, winy = SDL_WINDOWPOS_UNDEFINED, winw = scr_w, winh = scr_h,
+        flags = SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN|SDL_WINDOW_INPUT_FOCUS|SDL_WINDOW_MOUSE_FOCUS|SDL_WINDOW_RESIZABLE|SDL_WINDOW_ALLOW_HIGHDPI;
     if(fullscreen)
     {
         if(fullscreendesktop)
@@ -348,7 +349,7 @@ void setupscreen()
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
-    screen = SDL_CreateWindow(caption, winx, winy, winw, winh, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS | flags);
+    screen = SDL_CreateWindow(caption, winx, winy, winw, winh, flags);
     if(!screen) fatal("Failed to create OpenGL window: %s", SDL_GetError());
     SDL_Surface *s = loadsurface("textures/icon");
     if(s)
@@ -377,10 +378,11 @@ void setupscreen()
     if(!glcontext) fatal("Failed to create OpenGL context: %s", SDL_GetError());
 
     SDL_GetWindowSize(screen, &screenw, &screenh);
-    renderw = min(scr_w, screenw);
-    renderh = min(scr_h, screenh);
-    hudw = screenw;
-    hudh = screenh;
+    SDL_GL_GetDrawableSize(screen, &renderw, &renderh);
+    //renderw = min(scr_w, renderw);
+    //renderh = min(scr_h, renderh);
+    hudw = renderw;
+    hudh = renderh;
     setupdisplay();
 }
 
