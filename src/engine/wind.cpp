@@ -190,13 +190,14 @@ vec getwind(const vec &o, const dynent *d)
         if(we->unused) continue;
 
         const vec &eo = we->attrs.o;
+        float dist = o.dist(eo);
 
         // outside the radius
-        if(we->attrs.radius > 0 && o.dist(eo) > we->attrs.radius) continue;
+        if(we->attrs.radius > 0 && dist > we->attrs.radius) continue;
 
         // attenuate the strength depending on the distance
         int atten = we->attrs.atten;
-        float div = max(1.0f, o.dist2(eo) * atten * WIND_ATTEN_SCALE);
+        float div = max(1.0f, dist * atten * WIND_ATTEN_SCALE);
         float speed = (we->curspeed * we->attrs.speed) / div;
 
         // vectored mode, so we're getting the direction from the yaw parameter
