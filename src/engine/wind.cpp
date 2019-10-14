@@ -76,6 +76,8 @@ static windemitter *getemitter(extentity *e = NULL)
 
 static void putemitter(windemitter *we)
 {
+    if(we->unused) return;
+
     // invalidate the external handle
     if(we->hook) *we->hook = NULL;
 
