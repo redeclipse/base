@@ -58,6 +58,7 @@
 #include "command.h"
 #include "geom.h"
 #include "ents.h"
+#include "wind.h"
 
 #ifndef STANDALONE
 #include "glexts.h"

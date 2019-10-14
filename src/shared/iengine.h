@@ -282,6 +282,7 @@ struct particle
     int collide, fade, gravity, millis;
     bvec color;
     uchar flags;
+    windprobe wind;
     float size, blend;
     union
     {
