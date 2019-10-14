@@ -11,8 +11,7 @@ VAR(IDF_PERSIST, particlesize, 20, 100, 500);
 VAR(IDF_PERSIST, softparticles, 0, 1, 1);
 VAR(IDF_PERSIST, softparticleblend, 1, 8, 64);
 
-// experimental feature, default to 0
-VAR(IDF_PERSIST, particlewind, 0, 0, 1);
+VAR(IDF_PERSIST, particlewind, 0, 1, 1);
 
 // Check canemitparticles() to limit the rate that paricles can be emitted for models/sparklies
 // Automatically stops particles being emitted when paused or in reflective drawing
@@ -185,7 +184,7 @@ struct partrenderer
                 v.z -= physics::gravityvel(&d)*secs;
             }
             p->o.add(v);
-            if(particlewind && type&PT_WIND) p->o.add(getwind(p->o));
+            if(particlewind && type&PT_WIND) p->o.add(p->wind.probe(o).mul(secs * 20.0f));
             if(step && p->collide && p->o.z < p->val)
             {
                 if(p->collide > 0)
@@ -742,6 +741,7 @@ struct varenderer : partrenderer
         p->collide = collide;
         p->owner = pl;
         p->flags = 0x80 | (rndmask ? rnd(0x80) & rndmask : 0);
+        p->wind.reset();
         lastupdate = -1;
         return p;
     }
@@ -1261,6 +1261,8 @@ void debugparticles()
 
 void renderparticles(int layer)
 {
+    timer *parttimer = begintimer("Particles", false);
+
     canstep = layer != PL_UNDER;
 
     //want to debug BEFORE the lastpass render (that would delete particles)
@@ -1336,6 +1338,8 @@ void renderparticles(int layer)
         glDisable(GL_BLEND);
         glDepthMask(GL_TRUE);
     }
+
+    endtimer(parttimer);
 }
 
 static int addedparticles = 0;

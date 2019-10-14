@@ -8,10 +8,12 @@
 
 static vector<windemitter> windemitters;
 static int numwindemitters;
+static int windcost;
 
 VAR(0, winddebug, 0, 0, 1);
 VAR(IDF_PERSIST, windanimdist, 0, 1200, 10000);
 VAR(IDF_PERSIST, windmaxemitters, 1, 100, 1000);
+VAR(IDF_PERSIST, windcostdiv, 1, 2000, 10000);
 
 VAR(IDF_WORLD, windyaw, 0, 45, 360);
 VAR(IDF_WORLD, windyawalt, 0, 45, 360);
@@ -150,6 +152,8 @@ void updatewind()
     // apply the direction
     vecfromyaw(checkmapvariant(MPV_ALT) ? windyawalt : windyaw, 1, 0, globalwind);
     globalwind.mul(speed);
+
+    windcost = 0;
 }
 
 // gets the wind for dynamic (moving) entities
@@ -203,7 +207,27 @@ vec getwind(const vec &o, const dynent *d)
         else wind.add(vec(o).sub(eo).normalize().mul(speed)); // local mode, relative to emitter
     }
 
+    windcost++;
+
     return wind;
+}
+
+void windprobe::reset()
+{
+    nextprobe = 0;
+    lastwind = vec(0, 0, 0);
+}
+
+vec windprobe::probe(const vec &o, const dynent *d)
+{
+    if(lastmillis >= nextprobe)
+    {
+        int interval = (windcost * numwindemitters) / windcostdiv;
+        nextprobe = lastmillis + interval;
+        lastwind = getwind(o, d);
+    }
+
+    return lastwind;
 }
 
 void addwind(const vec &o, int mode, float speed, windemitter **hook, int yaw, int interval,

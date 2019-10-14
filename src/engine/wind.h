@@ -43,6 +43,16 @@ struct windemitter
     void update();
 };
 
+// windprobes used for large-scale wind sampling (e.g. particles)
+struct windprobe
+{
+    int nextprobe;
+    vec lastwind;
+
+    void reset();
+    vec probe(const vec &o, const dynent *d = NULL);
+};
+
 extern int windanimdist;
 
 extern void clearwindemitters();
