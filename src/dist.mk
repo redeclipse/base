@@ -6,9 +6,9 @@ appbranch=stable
 endif
 appnamefull=$(shell sed -n 's/.define VERSION_NAME *"\([^"]*\)"/\1/p' engine/version.h)
 apprelease=$(shell sed -n 's/.define VERSION_RELEASE *"\([^"]*\)"/\1/p' engine/version.h)
-appvermaj=$(shell sed -n 's/.define VERSION_MAJOR \([0-9]\)/\1/p' engine/version.h)
-appvermin=$(shell sed -n 's/.define VERSION_MINOR \([0-9]\)/\1/p' engine/version.h)
-appverpat=$(shell sed -n 's/.define VERSION_PATCH \([0-9]\)/\1/p' engine/version.h)
+appvermaj=$(shell sed -n 's/.define VERSION_MAJOR \([0-9]*\)/\1/p' engine/version.h)
+appvermin=$(shell sed -n 's/.define VERSION_MINOR \([0-9]*\)/\1/p' engine/version.h)
+appverpat=$(shell sed -n 's/.define VERSION_PATCH \([0-9]*\)/\1/p' engine/version.h)
 appversion=$(appvermaj).$(appvermin).$(appverpat)
 appfiles=https://raw.githubusercontent.com/redeclipse/deploy/master/$(appbranch)
 
