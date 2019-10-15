@@ -22,8 +22,8 @@ setlocal enableextensions enabledelayedexpansion
     )
     if /i "%REDECLIPSE_MACHINE%" == "amd64" set REDECLIPSE_ARCH=amd64
 :redeclipse_branch
-    if EXIST "%REDECLIPSE_PATH%\branch.txt" set /p REDECLIPSE_BRANCH_CURRENT=< "%REDECLIPSE_PATH%\branch.txt"
     if NOT DEFINED REDECLIPSE_BRANCH (
+        if EXIST "%REDECLIPSE_PATH%\branch.txt" set /p REDECLIPSE_BRANCH_CURRENT=< "%REDECLIPSE_PATH%\branch.txt"
         if DEFINED REDECLIPSE_BRANCH_CURRENT (
             set REDECLIPSE_BRANCH=%REDECLIPSE_BRANCH_CURRENT%
         ) else if EXIST .git (
