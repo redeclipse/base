@@ -2386,7 +2386,7 @@ namespace client
                             createshape(PART_SMOKE, int(t->radius), 0x222222, 21, 20, 250, t->feetpos(), 1, 1, -10, 0, 10.f);
                             break;
                         }
-                        case SPHY_BOOST: case SPHY_SLIDE: case SPHY_MELEE: case SPHY_KICK: case SPHY_GRAB: case SPHY_PARKOUR: case SPHY_AFTER:
+                        case SPHY_BOOST: case SPHY_POUND: case SPHY_SLIDE: case SPHY_MELEE: case SPHY_KICK: case SPHY_GRAB: case SPHY_PARKOUR: case SPHY_AFTER:
                         {
                             if(!proceed) break;
                             t->doimpulse(IM_T_BOOST+(st-SPHY_BOOST), lastmillis);
@@ -2628,7 +2628,7 @@ namespace client
 
                 case N_SHOTFX:
                 {
-                    int scn = getint(p), weap = getint(p), flags = getint(p), len = getint(p);
+                    int scn = getint(p), weap = getint(p), flags = getint(p), len = getint(p), target = getint(p);
                     vec from;
                     loopk(3) from[k] = getint(p)/DMF;
                     int ls = getint(p);
@@ -2639,7 +2639,7 @@ namespace client
                         s.id = getint(p);
                         loopk(3) s.pos[k] = getint(p);
                     }
-                    gameent *t = game::getclient(scn);
+                    gameent *t = game::getclient(scn), *v = game::getclient(target);
                     if(!t || !isweap(weap) || t == game::player1 || t->ai) break;
                     if(weap != t->weapselect) t->weapswitch(weap, lastmillis);
                     float scale = 1;
@@ -2649,7 +2649,7 @@ namespace client
                         scale = len/float(W2(weap, cooktime, WS(flags)));
                         if(sub > 1) sub = int(ceilf(sub*scale));
                     }
-                    projs::shootv(weap, flags, sub, 0, scale, from, shots, t, false);
+                    projs::shootv(weap, flags, sub, 0, scale, from, shots, t, false, v);
                     break;
                 }
 

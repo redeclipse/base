@@ -48,7 +48,7 @@ namespace server
 
     struct shotevent : timedevent
     {
-        int id, weap, flags, scale, num;
+        int id, weap, flags, scale, target, num;
         ivec from;
         vector<shotmsg> shots;
         void process(clientinfo *ci);
@@ -4815,7 +4815,7 @@ namespace server
         }
         takeammo(ci, weap, sub);
         ci->setweapstate(weap, WS(flags) ? W_S_SECONDARY : W_S_PRIMARY, W2(weap, delayattack, WS(flags)), millis);
-        sendf(-1, 1, "ri8ivx", N_SHOTFX, ci->clientnum, weap, flags, scale, from.x, from.y, from.z, shots.length(), shots.length()*sizeof(shotmsg)/sizeof(int), shots.getbuf(), ci->clientnum);
+        sendf(-1, 1, "ri9ivx", N_SHOTFX, ci->clientnum, weap, flags, scale, target, from.x, from.y, from.z, shots.length(), shots.length()*sizeof(shotmsg)/sizeof(int), shots.getbuf(), ci->clientnum);
         ci->weapshot[weap] = sub;
         ci->shotdamage += W2(weap, damage, WS(flags))*shots.length();
         loopv(shots) ci->weapshots[weap][WS(flags) ? 1 : 0].add(shots[i].id);
@@ -6228,7 +6228,7 @@ namespace server
                     bool proceed = hasclient(cp, ci), qmsg = false;
                     switch(idx)
                     {
-                        case SPHY_BOOST: case SPHY_SLIDE: case SPHY_MELEE: case SPHY_KICK: case SPHY_GRAB: case SPHY_PARKOUR: case SPHY_AFTER:
+                        case SPHY_BOOST: case SPHY_POUND: case SPHY_SLIDE: case SPHY_MELEE: case SPHY_KICK: case SPHY_GRAB: case SPHY_PARKOUR: case SPHY_AFTER:
                         {
                             if(!proceed || cp->state != CS_ALIVE) break;
                             qmsg = true;
@@ -6421,6 +6421,7 @@ namespace server
                     ev->weap = getint(p);
                     ev->flags = getint(p);
                     ev->scale = getint(p);
+                    ev->target = getint(p);
                     if(!isweap(ev->weap)) havecn = false;
                     else
                     {

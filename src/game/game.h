@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 242
+#define VERSION_GAME 243
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -244,10 +244,10 @@ enum
     AC_ALL = (1<<AC_PRIMARY)|(1<<AC_SECONDARY)|(1<<AC_RELOAD)|(1<<AC_USE)|(1<<AC_JUMP)|(1<<AC_WALK)|(1<<AC_CROUCH)|(1<<AC_SPECIAL)|(1<<AC_DROP)|(1<<AC_AFFINITY)
 };
 enum { IM_METER = 0, IM_TYPE, IM_REGEN, IM_COUNT, IM_COLLECT, IM_SLIP, IM_MAX };
-enum { IM_T_JUMP = 0, IM_T_BOOST, IM_T_SLIDE, IM_T_MELEE, IM_T_KICK, IM_T_GRAB, IM_T_PARKOUR, IM_T_AFTER, IM_T_PUSHER, IM_T_MAX, IM_T_TOUCH = IM_T_MELEE };
+enum { IM_T_JUMP = 0, IM_T_BOOST, IM_T_POUND, IM_T_SLIDE, IM_T_MELEE, IM_T_KICK, IM_T_GRAB, IM_T_PARKOUR, IM_T_AFTER, IM_T_PUSHER, IM_T_MAX, IM_T_TOUCH = IM_T_MELEE };
 enum
 {
-    SPHY_JUMP = 0, SPHY_BOOST, SPHY_SLIDE, SPHY_MELEE, SPHY_KICK, SPHY_GRAB, SPHY_PARKOUR, SPHY_AFTER, SPHY_COOK, SPHY_MATERIAL,
+    SPHY_JUMP = 0, SPHY_BOOST, SPHY_POUND, SPHY_SLIDE, SPHY_MELEE, SPHY_KICK, SPHY_GRAB, SPHY_PARKOUR, SPHY_AFTER, SPHY_COOK, SPHY_MATERIAL,
     SPHY_SERVER, SPHY_EXTINGUISH = SPHY_SERVER, SPHY_BUFF,
     SPHY_MAX
 };
@@ -1752,11 +1752,11 @@ struct gameent : dynent, clientstate
     void resetjump(bool wait = false)
     {
         airmillis = turnside = impulse[IM_COUNT] = 0;
-        impulsetime[IM_T_JUMP] = impulsetime[IM_T_BOOST] = 0;
+        impulsetime[IM_T_JUMP] = impulsetime[IM_T_BOOST] = impulsetime[IM_T_POUND] = 0;
         if(!wait)
         {
             impulse[IM_TYPE] = IM_T_JUMP;
-            impulsetime[IM_T_JUMP] = impulsetime[IM_T_PUSHER] = 0;
+            impulsetime[IM_T_PUSHER] = 0;
         }
     }
 
@@ -1848,18 +1848,17 @@ struct gameent : dynent, clientstate
         loopv(r) randweap.add(r[i]);
     }
 
-    bool hasmelee(int millis, bool check = false, bool slide = false, bool onfloor = true, bool can = true)
+    bool hasmelee(int millis, bool check = true)
     {
         if(!(AA(actortype, abilities)&(1<<A_A_MELEE))) return false;
-        if(check && (!action[AC_SPECIAL] || onfloor) && !slide) return false;
-        if(can && (weapstate[W_MELEE] != (slide ? W_S_SECONDARY : W_S_PRIMARY) || millis-weaptime[W_MELEE] >= weapwait[W_MELEE])) return false;
+        if(check && ((weapstate[W_MELEE] != W_S_PRIMARY && weapstate[W_MELEE] != W_S_SECONDARY) || millis-weaptime[W_MELEE] >= weapwait[W_MELEE])) return false;
         return true;
     }
 
-    bool canmelee(int sweap, int millis, bool check = false, bool slide = false, bool onfloor = true)
+    bool canmelee(int sweap, int millis, bool alt = false)
     {
-        if(!hasmelee(millis, check, slide, onfloor, false)) return false;
-        if(!canshoot(W_MELEE, slide ? HIT(ALT) : 0, sweap, millis, (1<<W_S_RELOAD))) return false;
+        if(!hasmelee(millis, false)) return false;
+        if(!canshoot(W_MELEE, alt ? HIT(ALT) : 0, sweap, millis, (1<<W_S_RELOAD))) return false;
         return true;
     }
 
@@ -2082,12 +2081,12 @@ namespace projs
 
     extern void reset();
     extern void update();
-    extern projent *create(const vec &from, const vec &to, bool local, gameent *d, int type, int fromweap, int fromflags, int lifetime, int lifemillis, int waittime, int speed, int id = 0, int weap = -1, int value = -1, int flags = 0, float scale = 1, bool child = false, projent *parent = NULL);
+    extern projent *create(const vec &from, const vec &to, bool local, gameent *d, int type, int fromweap, int fromflags, int lifetime, int lifemillis, int waittime, int speed, int id = 0, int weap = -1, int value = -1, int flags = 0, float scale = 1, bool child = false, gameent *target = NULL);
     extern void preload();
     extern void removeplayer(gameent *d);
     extern void destruct(gameent *d, int targ, int id, bool all = false);
     extern void sticky(gameent *d, int id, vec &norm, vec &pos, gameent *f = NULL);
-    extern void shootv(int weap, int flags, int sub, int offset, float scale, vec &from, vector<shotmsg> &shots, gameent *d, bool local);
+    extern void shootv(int weap, int flags, int sub, int offset, float scale, vec &from, vector<shotmsg> &shots, gameent *d, bool local, gameent *v = NULL);
     extern void drop(gameent *d, int weap, int ent, int ammo = -1, bool local = true, int index = 0, int targ = -1);
     extern void adddynlights();
     extern void render();
@@ -2101,7 +2100,7 @@ namespace weapons
     extern void weapdrop(gameent *d, int w = -1);
     extern void checkweapons(gameent *d);
     extern float accmodspread(gameent *d, int weap, bool secondary, bool zooming);
-    extern bool doshot(gameent *d, vec &targ, int weap, bool pressed = false, bool secondary = false, int force = 0);
+    extern bool doshot(gameent *d, vec &targ, int weap, bool pressed = false, bool secondary = false, int force = 0, gameent *v = NULL);
     extern void shoot(gameent *d, vec &targ, int force = 0);
     extern void preload();
     extern bool canuse(int weap);

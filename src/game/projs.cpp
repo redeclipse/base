@@ -793,15 +793,15 @@ namespace projs
         {
             if(proj.weap == W_MELEE)
             {
-                proj.from = proj.to = proj.owner->foottag(0);
-                if(proj.target && proj.target->state == CS_ALIVE)
-                    proj.to.add(vec(proj.target->headpos()).sub(proj.from).normalize().mul(proj.owner->radius));
-                else proj.to.add(vec(proj.owner->yaw*RAD, proj.owner->pitch*RAD).mul(proj.owner->radius));
+                vec feet = WS(proj.flags) ? proj.owner->foottag(0) : proj.owner->feetpos();
+                if(proj.target && proj.target->state == CS_ALIVE) proj.to = proj.target->headpos();
+                else proj.to = vec(proj.to).sub(proj.from).normalize().mul(proj.owner->radius).add(feet);
+                proj.from = feet;
             }
             else
             {
-                proj.from = proj.owner->origintag();
                 proj.to = proj.dest = proj.owner->muzzletag();
+                proj.from = proj.owner->origintag();
             }
             if(style != 3) proj.o = proj.from;
         }
@@ -1093,7 +1093,7 @@ namespace projs
         proj.resetinterp();
     }
 
-    projent *create(const vec &from, const vec &to, bool local, gameent *d, int type, int fromweap, int fromflags, int lifetime, int lifemillis, int waittime, int speed, int id, int weap, int value, int flags, float scale, bool child, projent *parent)
+    projent *create(const vec &from, const vec &to, bool local, gameent *d, int type, int fromweap, int fromflags, int lifetime, int lifemillis, int waittime, int speed, int id, int weap, int value, int flags, float scale, bool child, gameent *target)
     {
         projent &proj = *new projent;
         proj.o = proj.from = from;
@@ -1108,12 +1108,12 @@ namespace projs
         proj.id = id;
         proj.flags = flags;
         proj.curscale = scale;
+        proj.target = target;
         proj.movement = proj.distance = 0;
         if(proj.projtype == PRJ_AFFINITY)
         {
             proj.vel = proj.inertia = proj.to;
             proj.to.add(proj.from);
-            if(weap >= 0) proj.target = game::getclient(weap);
         }
         else
         {
@@ -1127,7 +1127,6 @@ namespace projs
                 proj.owner = d;
                 proj.vel = vec(proj.to).sub(proj.from);
                 vectoyawpitch(vec(proj.vel).normalize(), proj.yaw, proj.pitch);
-                if(parent) proj.target = parent->target;
             }
             else if(d)
             {
@@ -1161,7 +1160,7 @@ namespace projs
         }
     }
 
-    void shootv(int weap, int flags, int sub, int offset, float scale, vec &from, vector<shotmsg> &shots, gameent *d, bool local)
+    void shootv(int weap, int flags, int sub, int offset, float scale, vec &from, vector<shotmsg> &shots, gameent *d, bool local, gameent *v)
     {
         int delay = W2(weap, timedelay, WS(flags)), iter = W2(weap, timeiter, WS(flags)),
             delayattack = W2(weap, delayattack, WS(flags)),
@@ -1240,7 +1239,7 @@ namespace projs
             adddynlight(from, 32, vec::fromcolor(colour).mul(0.5f), fade, peak - fade, DL_FLASH);
         }
         loopv(shots)
-            create(from, vec(shots[i].pos).div(DMF), local, d, PRJ_SHOT, weap, flags, max(life, 1), W2(weap, time, WS(flags)), delay+(iter*i), speed, shots[i].id, weap, -1, flags, skew);
+            create(from, vec(shots[i].pos).div(DMF), local, d, PRJ_SHOT, weap, flags, max(life, 1), W2(weap, time, WS(flags)), delay+(iter*i), speed, shots[i].id, weap, -1, flags, skew, false, v);
         if(ejectfade && weaptype[weap].eject && *weaptype[weap].eprj) loopi(clamp(sub, 1, W2(weap, ammosub, WS(flags))))
             create(from, from, local, d, PRJ_EJECT, -1, 0, rnd(ejectfade)+ejectfade, 0, delay, rnd(weaptype[weap].espeed)+weaptype[weap].espeed, 0, weap, -1, flags);
 
@@ -1744,7 +1743,7 @@ namespace projs
                                 mag = rnd(W2(proj.weap, fragspeed, WS(proj.flags)))*0.5f+W2(proj.weap, fragspeed, WS(proj.flags))*0.5f;
                             if(skew > 0) to.add(vec(rnd(2001)-1000, rnd(2001)-1000, rnd(2001)-1000).normalize().mul(skew*mag));
                             if(W2(proj.weap, fragrel, WS(proj.flags)) != 0) to.add(vec(dir).mul(W2(proj.weap, fragrel, WS(proj.flags))*mag));
-                            create(pos, to, proj.local, proj.owner, PRJ_SHOT, proj.weap, proj.flags, max(life, 1), W2(proj.weap, fragtime, WS(proj.flags)), delay, W2(proj.weap, fragspeed, WS(proj.flags)), proj.id, w, -1, (f >= W_MAX ? HIT(ALT) : 0)|HIT(FLAK), scale, true, &proj);
+                            create(pos, to, proj.local, proj.owner, PRJ_SHOT, proj.weap, proj.flags, max(life, 1), W2(proj.weap, fragtime, WS(proj.flags)), delay, W2(proj.weap, fragspeed, WS(proj.flags)), proj.id, w, -1, (f >= W_MAX ? HIT(ALT) : 0)|HIT(FLAK), scale, true, proj.target);
                             delay += W2(proj.weap, fragtimeiter, WS(proj.flags));
                         }
                     }

@@ -3195,8 +3195,7 @@ namespace game
         if(d->actortype > A_PLAYER && d->actortype < A_MAX && actors[d->actortype].mdl && *actors[d->actortype].mdl)
             mdlname = actors[d->actortype].mdl;
         bool hasweapon = false, secondary = false,
-             onfloor = d->physstate >= PHYS_SLOPE || d->onladder || physics::liquidcheck(d),
-             melee = d->hasmelee(lastmillis, true, d->sliding(true), onfloor);
+             onfloor = d->physstate >= PHYS_SLOPE || d->onladder || physics::liquidcheck(d);
 
         mdl.anim = ANIM_IDLE|ANIM_LOOP;
         mdl.flags = flags;
@@ -3368,7 +3367,7 @@ namespace game
             if(lastoffset)
             {
                 float zoffset = (max(d->zradius-d->height, 0.f)+(d->radius*0.5f))*firstpersonbodyzoffset;
-                if(!onfloor && (melee || d->sliding(true) || d->impulse[IM_TYPE] == IM_T_KICK || d->impulse[IM_TYPE] == IM_T_GRAB))
+                if(!onfloor && (d->action[AC_SPECIAL] || d->impulse[IM_TYPE] == IM_T_POUND || d->sliding(true) || d->impulse[IM_TYPE] == IM_T_KICK || d->impulse[IM_TYPE] == IM_T_GRAB))
                 {
                     int lmillis = d->airtime(lastmillis);
                     if(lmillis < 100) zoffset *= lmillis/100.f;
@@ -3413,7 +3412,7 @@ namespace game
                 {
                     mdl.basetime2 = d->impulsetime[d->impulse[IM_TYPE]];
                     if(d->impulse[IM_TYPE] == IM_T_KICK || d->impulse[IM_TYPE] == IM_T_GRAB) mdl.anim |= ANIM_WALL_JUMP<<ANIM_SECONDARY;
-                    else if(melee)
+                    else if(d->action[AC_SPECIAL] || d->impulse[IM_TYPE] == IM_T_POUND)
                     {
                         mdl.anim |= ANIM_FLYKICK<<ANIM_SECONDARY;
                         mdl.basetime2 = d->weaptime[W_MELEE];
@@ -3426,7 +3425,7 @@ namespace game
                 else if(d->physstate == PHYS_FALL && !d->onladder && d->airtime(lastmillis) >= 50)
                 {
                     mdl.basetime2 = max(d->airmillis, d->impulsetime[IM_T_JUMP]);
-                    if(melee)
+                    if(d->action[AC_SPECIAL] || d->impulse[IM_TYPE] == IM_T_POUND)
                     {
                         mdl.anim |= ANIM_FLYKICK<<ANIM_SECONDARY;
                         mdl.basetime2 = d->weaptime[W_MELEE];
@@ -3630,10 +3629,10 @@ namespace game
                     part_icon(offset, textureload(hud::warningtex, 3, true, false), height*playerhinthurtsize, amt*blend*playerhinthurtblend, 0, 0, 1, c.tohexcolor());
                 }
             }
-            if(d->hasmelee(lastmillis, true, d->sliding(true), d->physstate >= PHYS_SLOPE || d->onladder || physics::liquidcheck(d))) loopi(2)
+            if(d->hasmelee(lastmillis))
             {
                 float amt = 1-((lastmillis-d->weaptime[W_MELEE])/float(d->weapwait[W_MELEE]));
-                part_create(PART_HINT_SOFT, 1, d->toetag(i), TEAM(d->team, colour), 2.f, amt*blend, 0, 0);
+                loopi(2) part_create(PART_HINT_SOFT, 1, d->toetag(i), TEAM(d->team, colour), 2.f, amt*blend, 0, 0);
             }
             int millis = lastmillis-d->weaptime[d->weapselect];
             bool last = millis > 0 && millis < d->weapwait[d->weapselect],

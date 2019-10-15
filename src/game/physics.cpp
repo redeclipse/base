@@ -49,6 +49,10 @@ namespace physics
                 time = e->impulsetime[IM_T_SLIDE];
                 delay = impulseslidedelay;
                 break;
+            case A_A_POUND:
+                time = e->impulsetime[IM_T_POUND];
+                delay = impulsepounddelay;
+                break;
             case A_A_BOOST: default:
                 time = max(e->impulsetime[IM_T_JUMP], max(e->impulsetime[IM_T_BOOST], e->impulsetime[IM_T_KICK]));
                 delay = e->impulse[IM_TYPE] == IM_T_JUMP ? impulsejumpdelay : impulseboostdelay;
@@ -697,32 +701,22 @@ namespace physics
 
     bool impulseplayer(gameent *d, bool onfloor, const vec &inertia, bool melee = false, bool slide = false)
     {
-        bool launch = !melee && !slide && onfloor && impulsemethod&1 && d->sliding(true) && d->action[AC_JUMP];
+        bool launch = !melee && !slide && onfloor && impulsemethod&1 && d->sliding(true) && d->action[AC_JUMP],
+             mchk = !melee || onfloor, action = mchk && (d->actortype >= A_BOT || melee || impulseaction&2);
+        int move = action ? d->move : 0, strafe = action ? d->strafe : 0;
+        bool moving = mchk && (move || strafe), pound = !melee && !launch && !slide && !onfloor && (impulsepoundstyle || !moving) && d->action[AC_CROUCH];
         if(d->actortype < A_BOT && !launch && !melee && !slide && !impulseaction) return false;
-        int type = melee ? A_A_PARKOUR : (slide ? A_A_SLIDE : A_A_BOOST);
-        bool pulse = melee ? !onfloor : (!launch && !onfloor ? ((d->actortype >= A_BOT || impulseaction&1) && d->action[AC_JUMP]) : false);
+        int type = melee ? A_A_PARKOUR : (slide ? A_A_SLIDE : (pound ? A_A_POUND : A_A_BOOST));
+        bool pulse = melee ? !onfloor : (!launch && !onfloor && (d->actortype >= A_BOT || impulseaction&1) && d->action[AC_JUMP]);
         if((!launch && !melee && !slide && !pulse) || !canimpulse(d, type, melee || slide)) return false;
-        bool mchk = !melee || onfloor, action = mchk && (d->actortype >= A_BOT || melee || impulseaction&2);
-        int move = action ? d->move : 0, strafe = action ? d->strafe : 0,
-            cost = int(impulsecost*(melee ? impulsecostmelee : impulsecostboost));
-        bool moving = mchk && (move || strafe), jumpdown = false;
-        if(!melee && !launch && !slide && !onfloor && (impulsejumpdownstyle || !moving) && d->action[AC_CROUCH])
-        {
-            moving = false;
-            jumpdown = true;
-        }
         vec keepvel = inertia;
-        float skew = melee ? impulsemelee : (slide ? impulseslide : (launch ? impulselaunch : (moving ? impulseboost : impulsejump))),
-              redir = melee ? impulsemeleeredir : (slide ? impulseslideredir : (launch ? impulselaunchredir : (moving ? impulseboostredir : impulsejumpredir))),
+        int cost = int(impulsecost*(melee ? impulsecostmelee : (pound ? impulsecostpound : impulsecostboost)));
+        float skew = melee ? impulsemelee : (slide ? impulseslide : (launch ? impulselaunch : (pound ? impulsepound : (moving ? impulseboost : impulsejump)))),
+              redir = melee ? impulsemeleeredir : (slide ? impulseslideredir : (launch ? impulselaunchredir : (pound ? impulsepoundredir : (moving ? impulseboostredir : impulsejumpredir)))),
               force = impulsevelocity(d, skew, cost, type, redir, keepvel);
         if(force <= 0) return false;
-        vec dir(0, 0, 1);
-        if(jumpdown)
-        {
-            dir.z = -1;
-            force *= impulsejumpdown;
-        }
-        else if(launch || slide || moving || onfloor)
+        vec dir(0, 0, pound ? -1 : 1);
+        if(!pound && (launch || slide || moving || onfloor))
         {
             float yaw = d->yaw, pitch = moving && (launch || pulse) ? d->pitch : 0;
             if(launch) pitch = clamp(pitch, impulselaunchpitchmin, impulselaunchpitchmax);
@@ -736,9 +730,9 @@ namespace physics
         }
         d->vel = vec(dir).mul(force).add(keepvel);
         if(launch) d->vel.z += jumpvel(d);
-        d->doimpulse(melee ? IM_T_MELEE : (slide ? IM_T_SLIDE : IM_T_BOOST), lastmillis, cost);
+        d->doimpulse(melee ? IM_T_MELEE : (slide ? IM_T_SLIDE : (pound ? IM_T_POUND : IM_T_BOOST)), lastmillis, cost);
         d->action[AC_JUMP] = false;
-        client::addmsg(N_SPHY, "ri2", d->clientnum, melee ? SPHY_MELEE : (slide ? SPHY_SLIDE : SPHY_BOOST));
+        client::addmsg(N_SPHY, "ri2", d->clientnum, melee ? SPHY_MELEE : (slide ? SPHY_SLIDE : (pound ? SPHY_POUND: SPHY_BOOST)));
         game::impulseeffect(d);
         return true;
     }
@@ -774,43 +768,23 @@ namespace physics
                 }
             }
         }
-        else if(!impulseplayer(d, onfloor, vec(d->vel).add(d->falling)))
+        else if(!impulseplayer(d, onfloor, vec(d->vel).add(d->falling)) && onfloor && d->action[AC_JUMP] && AA(d->actortype, abilities)&(1<<A_A_JUMP))
         {
-            if(onfloor && d->action[AC_JUMP] && AA(d->actortype, abilities)&(1<<A_A_JUMP))
+            float force = jumpvel(d);
+            if(force > 0)
             {
-                float force = jumpvel(d);
-                if(force > 0)
+                d->vel.z += force;
+                if(d->inliquid)
                 {
-                    d->vel.z += force;
-                    if(d->inliquid)
-                    {
-                        float scale = liquidmerge(d, 1.f, PHYS(liquidspeed));
-                        d->vel.x *= scale;
-                        d->vel.y *= scale;
-                    }
-                    d->doimpulse(IM_T_JUMP, lastmillis);
-                    d->action[AC_JUMP] = onfloor = false;
-                    client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_JUMP);
-                    playsound(S_JUMP, d->o, d);
-                    createshape(PART_SMOKE, int(d->radius), 0x222222, 21, 20, 250, d->feetpos(), 1, 1, -10, 0, 10.f);
+                    float scale = liquidmerge(d, 1.f, PHYS(liquidspeed));
+                    d->vel.x *= scale;
+                    d->vel.y *= scale;
                 }
-            }
-            if(d->hasmelee(lastmillis, true, d->sliding(true), onfloor))
-            {
-                vec oldpos = d->o, dir(d->yaw*RAD, 0.f);
-                d->o.add(dir);
-                bool collided = collide(d, dir, 0, true, true);
-                d->o = oldpos;
-                if(collided && collideplayer && gameent::is(collideplayer))
-                {
-                    impulseplayer(d, onfloor, vec(d->vel).add(d->falling), true);
-                    loopv(projs::projs)
-                    {
-                        projent *p = projs::projs[i];
-                        if(p->owner != d || p->projtype != PRJ_SHOT || p->weap != W_MELEE) continue;
-                        p->target = (gameent *)collideplayer;
-                    }
-                }
+                d->doimpulse(IM_T_JUMP, lastmillis);
+                d->action[AC_JUMP] = onfloor = false;
+                client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_JUMP);
+                playsound(S_JUMP, d->o, d);
+                createshape(PART_SMOKE, int(d->radius), 0x222222, 21, 20, 250, d->feetpos(), 1, 1, -10, 0, 10.f);
             }
         }
         bool found = false;
@@ -888,6 +862,10 @@ namespace physics
                         while(yaw < 0) yaw += 360;
                         vec rft;
                         vecfromyawpitch(yaw, pitch, 1, isclimb ? -d->strafe : 0, rft);
+                        d->o.add(rft);
+                        bool collided = collide(d, rft);
+                        d->o = oldpos;
+                        if(collided || collideplayer) continue; // we might find a better vector
                         if(d->impulse[IM_TYPE] != IM_T_PARKOUR)
                         {
                             int cost = int(impulsecost*(isclimb ? impulsecostclimb : impulsecostparkour));
@@ -915,8 +893,6 @@ namespace physics
                 }
             }
         }
-        if(d->canmelee(m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis, true, d->sliding(true), onfloor))
-            weapons::doshot(d, d->o, W_MELEE, true, d->sliding(true));
         if(!found && d->impulse[IM_TYPE] == IM_T_PARKOUR)
         {
             if(!d->turnside && impulseclimbendstyle)
@@ -931,6 +907,26 @@ namespace physics
             }
             d->doimpulse(IM_T_AFTER, lastmillis);
             client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_AFTER);
+        }
+        bool sliding = d->sliding(true), pounding = !sliding && !onfloor && d->impulse[IM_TYPE] == IM_T_POUND && d->impulsetime[IM_T_POUND] != 0, kicking = !sliding && !pounding && !onfloor && d->action[AC_SPECIAL];
+        if((sliding || pounding || kicking) && d->canmelee(m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis, sliding))
+        {
+            vec oldpos = d->o, dir(d->yaw*RAD, 0.f);
+            loopi(2)
+            {
+                d->o.add(dir);
+                bool collided = collide(d, dir, 0, true, true);
+                d->o = oldpos;
+                if(collided && collideplayer && gameent::is(collideplayer))
+                {
+                    vec pos = collideplayer->headpos();
+                    if(weapons::doshot(d, pos, W_MELEE, true, sliding, 0, (gameent *)collideplayer))
+                        impulseplayer(d, onfloor, vec(d->vel).add(d->falling), true);
+                    break;
+                }
+                if(sliding) break;
+                dir = vec(0, 0, -1); // try straight down
+            }
         }
     }
 

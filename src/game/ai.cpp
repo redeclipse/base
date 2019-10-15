@@ -1080,7 +1080,7 @@ namespace ai
         {
             if(airtime > (b.acttype >= AI_A_LOCKON ? 250 : 500) && d->impulse[IM_TYPE] != IM_T_PARKOUR && (d->skill >= 100 || !rnd(101-d->skill)) && physics::canimpulse(d, A_A_PARKOUR, true))
                 d->action[AC_SPECIAL] = true;
-            else if(AA(d->actortype, abilities)&(1<<A_A_MELEE) && lastmillis-d->ai->lastmelee >= (201-d->skill)*35 && d->canmelee(m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis))
+            else if(lastmillis-d->ai->lastmelee >= (201-d->skill)*35 && d->canmelee(m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis))
             {
                 d->action[AC_SPECIAL] = true;
                 d->ai->lastmelee = lastmillis;

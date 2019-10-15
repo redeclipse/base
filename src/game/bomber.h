@@ -157,7 +157,7 @@ struct bomberstate
     void create(int id, int target)
     {
         flag &f = flags[id];
-        f.proj = projs::create(f.droploc, f.inertia, false, NULL, PRJ_AFFINITY, -1, 0, bomberresetdelay, bomberresetdelay, 1, 1, id, target);
+        f.proj = projs::create(f.droploc, f.inertia, false, NULL, PRJ_AFFINITY, -1, 0, bomberresetdelay, bomberresetdelay, 1, 1, id, -1, -1, 0, 1, false, game::getclient(target));
     }
 #endif
 

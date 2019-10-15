@@ -253,7 +253,7 @@ namespace weapons
         MODSPREAD(jitterpitch, max);
     }
 
-    bool doshot(gameent *d, vec &targ, int weap, bool pressed, bool secondary, int force)
+    bool doshot(gameent *d, vec &targ, int weap, bool pressed, bool secondary, int force, gameent *v)
     {
         bool hadcook = W2(weap, cooked, true)&W_C_KEEP && (d->prevstate[weap] == W_S_ZOOM || d->prevstate[weap] == W_S_POWER),
              zooming = W2(weap, cooked, true)&W_C_ZOOM && (d->weapstate[weap] == W_S_ZOOM || (pressed && secondary) || (hadcook && d->prevstate[weap] == W_S_ZOOM)), wassecond = secondary;
@@ -331,8 +331,8 @@ namespace weapons
         {
             if(weap == W_MELEE)
             {
-                from = d->center();
-                to = vec(from).add(vec(d->yaw*RAD, d->pitch*RAD).mul(d->radius*2.f));
+                from = secondary ? d->foottag(0) : d->feetpos();
+                to = targ;
             }
             else
             {
@@ -369,8 +369,8 @@ namespace weapons
             accmodjitter(d, weap, secondary, W2(weap, cooked, true)&W_C_ZOOM && secondary && scale >= 0.9f, jittertime, jitteryawmin, jitteryawmax, jitterpitchmin, jitterpitchmax);
             d->addjitter(weap, lastmillis, int(ceilf(jittertime*scale)), jitteryawmin*scale, jitteryawmax*scale, jitterpitchmin*scale, jitterpitchmax*scale, W2(weap, jitterpitchdir, secondary));
         }
-        projs::shootv(weap, secondary ? HIT(ALT) : 0, sub, offset, scale, from, shots, d, true);
-        client::addmsg(N_SHOOT, "ri8iv", d->clientnum, lastmillis-game::maptime, weap, secondary ? HIT(ALT) : 0, cooked, int(from.x*DMF), int(from.y*DMF), int(from.z*DMF), shots.length(), shots.length()*sizeof(shotmsg)/sizeof(int), shots.getbuf());
+        projs::shootv(weap, secondary ? HIT(ALT) : 0, sub, offset, scale, from, shots, d, true, v);
+        client::addmsg(N_SHOOT, "ri9iv", d->clientnum, lastmillis-game::maptime, weap, secondary ? HIT(ALT) : 0, cooked, v ? v->clientnum : -1, int(from.x*DMF), int(from.y*DMF), int(from.z*DMF), shots.length(), shots.length()*sizeof(shotmsg)/sizeof(int), shots.getbuf());
 
         return true;
     }
