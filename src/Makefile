@@ -11,8 +11,8 @@ PLATFORM= $(shell $(CC) -dumpmachine)
 RMFLAGS= -fv
 
 PKG_CONFIG ?= pkg-config
-WANT_STEAM ?= 1
-WANT_DISCORD ?= 1
+WANT_STEAM ?= 0
+WANT_DISCORD ?= 0
 
 ifeq (,$(PLATFORM_BUILD))
 PLATFORM_BUILD=0
