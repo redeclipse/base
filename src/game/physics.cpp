@@ -538,6 +538,12 @@ namespace physics
     {
         if(!sticktofloor(d)) return false;
         vec old(d->o);
+        d->o.z -= 0.1f;
+        if(collide(d, vec(0, 0, -1)) || collideinside)
+        {
+            d->o = old;
+            return false;
+        }
         d->o.z -= stairheight;
         d->zmargin = -stairheight;
         if(!collide(d, vec(0, 0, -1), slopez))
@@ -564,7 +570,6 @@ namespace physics
             d->floor = vec(0, 0, 1);
             return;
         }
-        if(d->physstate >= PHYS_SLOPE && dir.dot(d->floor) <= 0.01f*dir.magnitude() && trystepdown(d, dir, true)) return;
         if(floor.z > 0.0f && floor.z < slopez)
         {
             if(floor.z >= wallz) switchfloor(d, dir, floor);
@@ -572,7 +577,8 @@ namespace physics
             d->physstate = PHYS_SLIDE;
             d->floor = floor;
         }
-        else d->physstate = PHYS_FALL;
+        else if(d->physstate < PHYS_SLOPE || dir.dot(d->floor) > 0.01f*dir.magnitude() || (floor.z != 0.0f && floor.z != 1.0f) || !trystepdown(d, dir, true))
+            d->physstate = PHYS_FALL;
     }
 
     void landing(physent *d, vec &dir, const vec &floor, bool collided)
