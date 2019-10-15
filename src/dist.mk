@@ -1,11 +1,16 @@
 ﻿appname=$(APPNAME)
+ifneq (,$(APPBRANCH))
+appbranch=$(APPBRANCH)
+else
+appbranch=stable
+endif
 appnamefull=$(shell sed -n 's/.define VERSION_NAME *"\([^"]*\)"/\1/p' engine/version.h)
 apprelease=$(shell sed -n 's/.define VERSION_RELEASE *"\([^"]*\)"/\1/p' engine/version.h)
 appvermaj=$(shell sed -n 's/.define VERSION_MAJOR \([0-9]\)/\1/p' engine/version.h)
 appvermin=$(shell sed -n 's/.define VERSION_MINOR \([0-9]\)/\1/p' engine/version.h)
 appverpat=$(shell sed -n 's/.define VERSION_PATCH \([0-9]\)/\1/p' engine/version.h)
 appversion=$(appvermaj).$(appvermin).$(appverpat)
-appfiles=https://raw.githubusercontent.com/redeclipse/deploy/master/stable
+appfiles=https://raw.githubusercontent.com/redeclipse/deploy/master/$(appbranch)
 
 dirname=$(appname)-$(appversion)
 dirname-mac=$(appname).app
@@ -32,7 +37,7 @@ CURL=curl --location --insecure --fail
 	rm -rfv $@
 	tar --exclude=.git --exclude=$(dirname) \
 		-cf - $(DISTFILES:%=../%) | (mkdir $@/; cd $@/ ; tar -xpf -)
-	echo "stable" > $@/branch.txt
+	echo $(appbranch) > $@/branch.txt
 	$(CURL) $(appfiles)/base.txt --output $@/version.txt
 	$(CURL) $(appfiles)/bins.txt --output $@/bin/version.txt
 	for i in `curl --silent --location --insecure --fail $(appfiles)/mods.txt`; do if [ "$${i}" != "base" ]; then mkdir -p $@/data/$${i}; $(CURL) $(appfiles)/$${i}.txt --output $@/data/$${i}/version.txt; fi; done

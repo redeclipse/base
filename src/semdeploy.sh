@@ -5,7 +5,7 @@ SEMABUILD_BUILD="${HOME}/deploy"
 SEMABUILD_SCP='scp -BC -o StrictHostKeyChecking=no'
 SEMABUILD_TARGET='qreeves@icculus.org:/webspace/redeclipse.net/files'
 SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get'
-SEMABUILD_MODULES=`curl --connect-timeout 30 -L -k -f https://raw.githubusercontent.com/redeclipse/deploy/master/stable/mods.txt` || exit 1
+SEMABUILD_MODULES=`curl --connect-timeout 30 -L -k -f https://raw.githubusercontent.com/redeclipse/deploy/master/${BRANCH_NAME}/mods.txt` || exit 1
 SEMABUILD_ALLMODS="base ${SEMABUILD_MODULES}"
 SEMABUILD_DIST="bz2 combined win zip mac"
 
@@ -24,17 +24,14 @@ for i in ${SEMABUILD_ALLMODS}; do
     if [ "${i}" = "base" ]; then
         SEMABUILD_MODDIR="${SEMABUILD_BUILD}"
         SEMABUILD_GITDIR="${SEMABUILD_PWD}"
-        SEMABUILD_ARCHBR="stable"
     else
         SEMABUILD_MODDIR="${SEMABUILD_BUILD}/data/${i}"
         SEMABUILD_GITDIR="${SEMABUILD_PWD}/data/${i}"
         git submodule update --init --depth 1 "data/${i}" || exit 1
-        pushd "${SEMABUILD_GITDIR}" || exit 1
-        SEMABUILD_ARCHBR=`git rev-parse HEAD`
-        popd || exit 1
     fi
     mkdir -pv "${SEMABUILD_MODDIR}" || exit 1
     pushd "${SEMABUILD_GITDIR}" || exit 1
+    SEMABUILD_ARCHBR=`git rev-parse HEAD`
     (git archive --verbose ${SEMABUILD_ARCHBR} | tar -x -C "${SEMABUILD_MODDIR}") || exit 1
     popd || exit 1
 done
@@ -46,11 +43,11 @@ SEMABUILD_UNAME=`sed -n 's/.define VERSION_UNAME *"\([^"]*\)"/\1/p' "${SEMABUILD
 SEMABUILD_VERSION=`sed -n 's/.define VERSION_STRING *"\([^"]*\)"/\1/p' "${SEMABUILD_PWD}/src/engine/version.h"`
 SEMABUILD_RELEASE=`sed -n 's/.define VERSION_RELEASE *"\([^"]*\)"/\1/p' "${SEMABUILD_PWD}/src/engine/version.h"`
 
-${SEMABUILD_GHR} release --user "redeclipse" --repo "base" --tag "v${SEMABUILD_VERSION}" --name "v${SEMABUILD_VERSION} (${SEMABUILD_RELEASE})" --description "${SEMABUILD_NAME} v${SEMABUILD_VERSION} (${SEMABUILD_RELEASE}) has been released!" --target "stable" --draft
+${SEMABUILD_GHR} release --user "redeclipse" --repo "base" --tag "v${SEMABUILD_VERSION}" --name "v${SEMABUILD_VERSION} (${SEMABUILD_RELEASE})" --description "${SEMABUILD_NAME} v${SEMABUILD_VERSION} (${SEMABUILD_RELEASE}) has been released!" --target "${BRANCH_NAME}" --draft
 
 for i in ${SEMABUILD_DIST}; do
     pushd "${SEMABUILD_BUILD}/src" || exit 1
-    make dist-${i} dist-torrent-${i} || exit 1
+    make APPBRANCH="${BRANCH_NAME}" dist-${i} dist-torrent-${i} || exit 1
     popd || exit 1
     pushd "${SEMABUILD_BUILD}" || exit 1
     mkdir -p releases || exit 1
