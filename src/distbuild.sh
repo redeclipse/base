@@ -29,7 +29,10 @@ for i in ${DISTBUILD_ALLMODS}; do
 done
 
 DISTBUILD_UNAME=`sed -n 's/.define VERSION_UNAME *"\([^"]*\)"/\1/p' "${DISTBUILD_PWD}/src/engine/version.h"`
-DISTBUILD_VERSION=`sed -n 's/.define VERSION_STRING *"\([^"]*\)"/\1/p' "${DISTBUILD_PWD}/src/engine/version.h"`
+DISTBUILD_VERSION_MAJOR=`sed -n 's/.define VERSION_MAJOR \([0-9]*\)/\1/p' src/engine/version.h`
+DISTBUILD_VERSION_MINOR=`sed -n 's/.define VERSION_MINOR \([0-9]*\)/\1/p' src/engine/version.h`
+DISTBUILD_VERSION_PATCH=`sed -n 's/.define VERSION_PATCH \([0-9]*\)/\1/p' src/engine/version.h`
+DISTBUILD_VERSION="${DISTBUILD_VERSION_MAJOR}.${DISTBUILD_VERSION_MINOR}.${DISTBUILD_VERSION_PATCH}"
 
 for i in ${DISTBUILD_DIST}; do
     pushd "${DISTBUILD_BUILD}/src" || exit 1
