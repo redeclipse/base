@@ -457,6 +457,43 @@ extern int octaentsize;
 
 static octaentities *visiblemms, **lastvisiblemms;
 
+bool mapmodeltransparent(extentity &e)
+{
+    if(e.attrs[4] > 0 && e.attrs[4] < 100) return true;
+    #if 0
+    if(mapmodels.inrange(e.attrs[0]))
+    {
+        mapmodelinfo &mmi = mapmodels[e.attrs[0]];
+        model *m = loadlodmodel(mmi.m ? mmi.m : loadmodel(mmi.name), e.o);
+        if(m && m->alphatested(true)) return true;
+    }
+    #endif
+    return false;
+}
+
+bool mapmodelvisible(extentity &e, bool colvis)
+{
+    if(e.flags&EF_NOVIS || !checkmapvariant(e.attrs[13]) || !checkmapeffects(e.attrs[14]) || !mapmodels.inrange(e.attrs[0])) return false;
+    if(colvis && e.flags&EF_NOCOLLIDE) return false;
+    if(e.lastemit)
+    {
+        if(e.flags&EF_HIDE)
+        {
+            if(e.spawned()) return false;
+        }
+        else if(colvis && e.lastemit > 0)
+        {
+            int millis = lastmillis-e.lastemit, delay = entities::triggertime(e, true);
+            if(e.spawned() ? millis > delay : millis < delay) return false;
+        }
+        else if((colvis || e.lastemit < 0) && e.spawned()) return false;
+    }
+    mapmodelinfo &mmi = mapmodels[e.attrs[0]];
+    model *m = loadlodmodel(mmi.m ? mmi.m : loadmodel(mmi.name), e.o);
+    if(!m) return false;
+    return true;
+}
+
 void findvisiblemms(const vector<extentity *> &ents, bool doquery)
 {
     visiblemms = NULL;
@@ -481,15 +518,7 @@ void findvisiblemms(const vector<extentity *> &ents, bool doquery)
             loopv(oe->mapmodels)
             {
                 extentity &e = *ents[oe->mapmodels[i]];
-                if(e.flags&EF_NOVIS || !checkmapvariant(e.attrs[13]) || !checkmapeffects(e.attrs[14])) continue;
-                if(e.lastemit)
-                {
-                    if(e.flags&EF_HIDE)
-                    {
-                        if(e.spawned()) continue;
-                    }
-                    else if(e.lastemit < 0 && e.spawned()) continue;
-                }
+                if(!mapmodelvisible(e) || mapmodeltransparent(e)) continue;
                 e.flags |= EF_RENDER;
                 ++visible;
             }
@@ -514,15 +543,16 @@ void findvisiblemms(const vector<extentity *> &ents, bool doquery)
 VAR(0, oqmm, 0, 4, 8);
 VAR(0, mmanimoverride, -1, 0, ANIM_ALL);
 
-static inline void rendermapmodel(extentity &e)
+static inline void rendermapmodelent(extentity &e, bool tpass)
 {
-    if(!checkmapvariant(e.attrs[13]) || !checkmapeffects(e.attrs[14])) return;
+    if(!mapmodelvisible(e)) return;
+    bool blended = mapmodeltransparent(e);
+    if(blended != tpass) return;
     entmodelstate mdl;
     mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
-    mdl.flags = MDL_CULL_VFC | MDL_CULL_DIST;
+    mdl.flags = MDL_CULL_VFC|MDL_CULL_DIST;
     if(e.lastemit)
     {
-        if(e.flags&EF_HIDE && e.spawned()) return;
         mdl.anim = e.spawned() ? ANIM_TRIGGER_ON : ANIM_TRIGGER_OFF;
         if(e.lastemit > 0 && lastmillis-e.lastemit < entities::triggertime(e)) mdl.basetime = e.lastemit;
         else mdl.anim |= ANIM_END;
@@ -536,7 +566,7 @@ static inline void rendermapmodel(extentity &e)
     mdl.pitch = e.attrs[2];
     mdl.roll = e.attrs[3];
     mdl.o = e.o;
-    mdl.color = vec4(1, 1, 1, e.attrs[4] ? min(e.attrs[4]/100.f, 1.f) : 1.f);
+    mdl.color = vec4(1, 1, 1, blended ? min(e.attrs[4]/100.f, 1.f) : 1.f);
     mdl.size = e.attrs[5] ? max(e.attrs[5]/100.f, 1e-3f) : 1.f;
     if(e.attrs[8] || e.attrs[9])
     {
@@ -548,7 +578,7 @@ static inline void rendermapmodel(extentity &e)
     if(e.attrs[10]) mdl.yaw += e.attrs[10]*lastmillis/1000.0f;
     if(e.attrs[11]) mdl.pitch += e.attrs[11]*lastmillis/1000.0f;
     if(e.attrs[12]) mdl.roll += e.attrs[12]*lastmillis/1000.0f;
-    rendermapmodel(e.attrs[0], mdl);
+    rendermapmodel(e.attrs[0], mdl, tpass);
 }
 
 void rendermapmodels()
@@ -571,7 +601,7 @@ void rendermapmodels()
                 oe->query = doquery && oe->distance>0 && !(++skipoq%oqmm) ? newquery(oe) : NULL;
                 if(oe->query) startmodelquery(oe->query);
             }
-            rendermapmodel(e);
+            rendermapmodelent(e, false);
             e.flags &= ~EF_RENDER;
         }
         if(rendered && oe->query) endmodelquery();
@@ -596,6 +626,22 @@ void rendermapmodels()
     if(queried)
     {
         endbb();
+    }
+}
+
+void rendertransparentmapmodels()
+{
+    const vector<extentity *> &ents = entities::getents();
+    for(vtxarray *va = visibleva; va; va = va->next) if(va->occluded < OCCLUDE_BB && va->curvfc < VFC_FOGGED) loopv(va->mapmodels)
+    {
+        octaentities *oe = va->mapmodels[i];
+        if(isfoggedcube(oe->o, oe->size) || pvsoccluded(oe->bbmin, oe->bbmax)) continue;
+        loopv(oe->mapmodels)
+        {
+            extentity &e = *ents[oe->mapmodels[i]];
+            if(!mapmodelvisible(e) || !mapmodeltransparent(e)) continue;
+            rendermapmodelent(e, true);
+        }
     }
 }
 
@@ -1131,22 +1177,14 @@ void batchshadowmapmodels(bool skipmesh)
     for(octaentities *oe = shadowmms; oe; oe = oe->rnext) loopvk(oe->mapmodels)
     {
         extentity &e = *ents[oe->mapmodels[k]];
-        if(e.flags&nflags || !checkmapvariant(e.attrs[13]) || !checkmapeffects(e.attrs[14])) continue;
-        if(e.lastemit)
-        {
-            if(e.flags&EF_HIDE)
-            {
-                if(e.spawned()) continue;
-            }
-            else if(e.lastemit < 0 && e.spawned()) continue;
-        }
+        if(e.flags&nflags || !mapmodelvisible(e)) continue;
         e.flags |= EF_RENDER;
     }
     for(octaentities *oe = shadowmms; oe; oe = oe->rnext) loopvj(oe->mapmodels)
     {
         extentity &e = *ents[oe->mapmodels[j]];
         if(!(e.flags&EF_RENDER)) continue;
-        rendermapmodel(e);
+        rendermapmodelent(e, false);
         e.flags &= ~EF_RENDER;
     }
 }
@@ -2655,15 +2693,7 @@ static void genshadowmeshmapmodels(shadowmesh &m, int sides, shadowdrawinfo draw
     for(octaentities *oe = shadowmms; oe; oe = oe->rnext) loopvk(oe->mapmodels)
     {
         extentity &e = *ents[oe->mapmodels[k]];
-        if(e.flags&(EF_NOVIS|EF_NOSHADOW) || !checkmapvariant(e.attrs[13]) || !checkmapeffects(e.attrs[14])) continue;
-        if(e.lastemit)
-        {
-            if(e.flags&EF_HIDE)
-            {
-                if(e.spawned()) continue;
-            }
-            else if(e.lastemit < 0 && e.spawned()) continue;
-        }
+        if(e.flags&(EF_NOVIS|EF_NOSHADOW) || !mapmodelvisible(e)) continue;
         e.flags |= EF_RENDER;
     }
     vector<triangle> tris;

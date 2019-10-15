@@ -1577,7 +1577,7 @@ namespace ai
         loopenti(MAPMODEL) if(entities::ents[i]->type == MAPMODEL)
         {
             gameentity &e = *(gameentity *)entities::ents[i];
-            if(e.spawned() || e.flags&EF_NOCOLLIDE || !checkmapvariant(e.attrs[13]) || !checkmapeffects(e.attrs[14])) continue;
+            if(!mapmodelvisible(e, true)) continue;
             mapmodelinfo *mmi = getmminfo(e.attrs[0]);
             if(!mmi || !mmi->m) continue;
             vec center, radius;
@@ -1590,11 +1590,8 @@ namespace ai
             }
             rotatebb(center, radius, int(e.attrs[1]), int(e.attrs[2]));
             float xy = max(radius.x, radius.y), z = radius.z;
-            if(e.flags&EF_HIDE)
-            {
-                xy += WAYPOINTRADIUS;
-                z += WAYPOINTRADIUS;
-            }
+            xy += WAYPOINTRADIUS;
+            z += WAYPOINTRADIUS;
             obstacles.avoidnear(NULL, e.o.z + z + 1, e.o, xy + 1);
         }
     }

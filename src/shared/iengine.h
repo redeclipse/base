@@ -379,6 +379,7 @@ extern void interpolateorientation(dynent *d, float &interpyaw, float &interppit
 extern void setbbfrommodel(dynent *d, const char *mdl, float size = 1);
 extern const char *mapmodelname(int i);
 extern model *loadmodel(const char *name, int i = -1, bool msg = false);
+extern model *loadlodmodel(model *m, const vec &pos);
 extern void preloadmodel(const char *name);
 extern void flushpreloadedmodels(bool msg = true);
 extern bool matchanim(const char *name, const char *pattern);

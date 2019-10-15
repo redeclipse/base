@@ -551,7 +551,7 @@ void addbatchedmodel(model *m, batchedmodel &bm, int idx)
     if(batches.inrange(m->batch))
     {
         b = &batches[m->batch];
-        if(b->m == m && (b->flags & MDL_MAPMODEL) == (bm.state.flags & MDL_MAPMODEL))
+        if(b->m == m && (b->flags&MDL_MAPMODEL) == (bm.state.flags&MDL_MAPMODEL))
             goto foundbatch;
     }
 
@@ -653,8 +653,8 @@ void shadowmaskbatchedmodels(bool dynshadow)
     loopv(batchedmodels)
     {
         batchedmodel &b = batchedmodels[i];
-        if(b.state.flags&(MDL_MAPMODEL | MDL_NOSHADOW)) break;
-        b.visible = dynshadow && (b.state.color.a >= 1 || b.state.flags & (MDL_ONLYSHADOW | MDL_FORCESHADOW)) ? shadowmaskmodel(b.state.center, b.state.radius) : 0;
+        if(b.state.flags&(MDL_MAPMODEL|MDL_NOSHADOW)) break;
+        b.visible = dynshadow && (b.state.color.a >= 1 || b.state.flags&(MDL_ONLYSHADOW|MDL_FORCESHADOW)) ? shadowmaskmodel(b.state.center, b.state.radius) : 0;
     }
 }
 
@@ -958,7 +958,7 @@ model *loadlodmodel(model *m, const vec &pos)
     return lm ? lm : m;
 }
 
-void rendermapmodel(int idx, entmodelstate &state)
+void rendermapmodel(int idx, entmodelstate &state, bool tpass)
 {
     if(!mapmodels.inrange(idx)) return;
     mapmodelinfo &mmi = mapmodels[idx];
@@ -986,7 +986,7 @@ void rendermapmodel(int idx, entmodelstate &state)
 
     batchedmodel &b = batchedmodels.add();
     (entmodelstate &)b.state = state;
-    b.state.flags |= MDL_MAPMODEL;
+    b.state.flags |= tpass ? MDL_FORCETRANSPARENT : MDL_MAPMODEL;
     b.visible = visible;
     b.d = NULL;
     b.attached = -1;

@@ -597,6 +597,7 @@ extern int findalphavas();
 extern void renderrefractmask();
 extern void renderalphageom(int side);
 extern void rendermapmodels();
+extern void rendertransparentmapmodels();
 extern void renderoutline();
 extern void cleanupva();
 
@@ -852,7 +853,8 @@ extern void shadowmaskbatchedmodels(bool dynshadow = true);
 extern void rendermapmodelbatches();
 extern void rendermodelbatches();
 extern void rendertransparentmodelbatches(int stencil = 0);
-extern void rendermapmodel(int idx, entmodelstate &state);
+extern bool mapmodelvisible(extentity &e, bool colvis = false);
+extern void rendermapmodel(int idx, entmodelstate &state, bool tpass = false);
 extern void clearbatchedmapmodels();
 extern void preloadusedmapmodels(bool msg = false, bool bih = false);
 extern int batcheddynamicmodels();

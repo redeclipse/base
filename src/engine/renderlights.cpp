@@ -4579,6 +4579,7 @@ void workinoq()
 
     if(drawtex) return;
 
+    rendertransparentmapmodels();
     game::render();
 
     if(shouldworkinoq())
