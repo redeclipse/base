@@ -91,16 +91,16 @@ CLIENT_INCLUDES= $(INCLUDES) -Iinclude
 CLIENT_LIBS= -mwindows $(STD_LIBS) -L$(WINDLL) -L$(WINLIB) -lSDL2 -lSDL2_image -lSDL2_mixer -lzlib1 -lopengl32 -lenet -lws2_32 -lwinmm
 ifneq (,$(findstring 64,$(PLATFORM)))
 override WINDRES+= -F pe-x86-64
-ifeq (1,$(WANT_STEAM))
+ifneq (,$(WANT_STEAM))
 override CLIENT_LIBS+= -lsteam_api64
 endif
 else
 override WINDRES+= -F pe-i386
-ifeq (1,$(WANT_STEAM))
+ifneq (,$(WANT_STEAM))
 override CLIENT_LIBS+= -lsteam_api
 endif
 endif
-ifeq (1,$(WANT_DISCORD))
+ifneq (,$(WANT_DISCORD))
 override CLIENT_LIBS+= -ldiscord-rpc
 endif
 else
@@ -119,10 +119,10 @@ endif
 endif
 CLIENT_INCLUDES= $(INCLUDES) `$(PKG_CONFIG) --cflags x11 sdl2 SDL2_image SDL2_mixer zlib gl`
 CLIENT_LIBS= -Lenet -lenet `$(PKG_CONFIG) --libs x11 sdl2 SDL2_image SDL2_mixer zlib gl`
-ifeq (1,$(WANT_STEAM))
+ifneq (,$(WANT_STEAM))
 override CLIENT_LIBS+= -L../bin/$(PLATFORM_BIN) -lsteam_api
 endif
-ifeq (1,$(WANT_DISCORD))
+ifneq (,$(WANT_DISCORD))
 ifneq (,$(findstring 64,$(PLATFORM)))
 override CLIENT_LIBS+= -L../bin/$(PLATFORM_BIN) -ldiscord-rpc
 endif
@@ -207,7 +207,7 @@ SERVER_INCLUDES= -DSTANDALONE $(INCLUDES) -Iinclude
 SERVER_LIBS= -mwindows $(STD_LIBS) -L$(WINDLL) -L$(WINLIB) -lzlib1 -lenet -lws2_32 -lwinmm
 CTFONT_INCLUDES= -DSTANDALONE -Iinclude
 CTFONT_LIBS= -mwindows $(STD_LIBS) -L$(WINDLL) -L$(WINLIB) -lzlib1 -lfreetype
-ifeq (1,$(WANT_STEAM))
+ifneq (,$(WANT_STEAM))
 ifneq (,$(findstring 64,$(PLATFORM)))
 override SERVER_LIBS+= -lsteam_api64
 else
@@ -219,7 +219,7 @@ SERVER_INCLUDES= -DSTANDALONE $(INCLUDES) `pkg-config --cflags zlib`
 SERVER_LIBS= -Lenet -lenet `pkg-config --libs zlib`
 CTFONT_INCLUDES= -DSTANDALONE `pkg-config --cflags zlib freetype2`
 CTFONT_LIBS= `pkg-config --libs zlib freetype2`
-ifeq (1,$(WANT_STEAM))
+ifneq (,$(WANT_STEAM))
 override SERVER_LIBS+= -L../bin/$(PLATFORM_BIN) -lsteam_api
 endif
 endif
