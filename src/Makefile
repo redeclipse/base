@@ -5,14 +5,9 @@ APPSERVER=$(APPNAME)_server
 #CXXFLAGS= -ggdb3
 CXXFLAGS?= -O3 -fomit-frame-pointer -ffast-math
 override CXXFLAGS+= -Wall -fsigned-char -fno-exceptions -fno-rtti -Wno-invalid-offsetof
-
 PLATFORM= $(shell $(CC) -dumpmachine)
-
 RMFLAGS= -fv
-
 PKG_CONFIG ?= pkg-config
-WANT_STEAM ?= 0
-WANT_DISCORD ?= 0
 
 ifeq (,$(PLATFORM_BUILD))
 PLATFORM_BUILD=0
@@ -57,10 +52,10 @@ override CXX=$(TOOLSET_PREFIX)$(CXX_TEMP)
 override CC=$(TOOLSET_PREFIX)$(CC_TEMP)
 
 INCLUDES= -DVERSION_BUILD=$(PLATFORM_BUILD) -DVERSION_BRANCH=\"$(PLATFORM_BRANCH)\" -DVERSION_REVISION=\"$(PLATFORM_REVISION)\" -I. -Ishared -Iengine -Igame -Ienet/include -Isupport
-ifeq (1,$(WANT_STEAM))
+ifneq (,$(WANT_STEAM))
 override INCLUDES+= -DUSE_STEAM=1 -Isteam
 endif
-ifeq (1,$(WANT_DISCORD))
+ifneq (,$(WANT_DISCORD))
 ifneq (,$(findstring mingw,$(PLATFORM)))
 override INCLUDES+= -DUSE_DISCORD=1
 else
