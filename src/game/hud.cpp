@@ -652,7 +652,7 @@ namespace hud
         {
             dhloc &l = damagelocs[i];
             gameent *e = game::getclient(l.clientnum);
-            if(!e || e == d) hitlocs.remove(i);
+            if(!e || e == d) damagelocs.remove(i);
         }
         loopvrev(hitlocs)
         {
