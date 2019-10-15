@@ -2523,12 +2523,23 @@ namespace game
                 fixrange(yaw, pitch);
             }
         }
-        if(renew || force || c->player)
+        if(renew || force || c->player || c->moveto)
         {
-            yaw = c->player ? c->player->yaw : float(rnd(360));
-            pitch = c->player ? c->player->pitch : float(rnd(91)-45);
-            fixrange(yaw, pitch);
-            c->dir = vec(yaw*RAD, pitch*RAD);
+            if(c->player)
+            {
+                yaw = c->player->yaw;
+                pitch = c->player->pitch;
+                fixrange(yaw, pitch);
+                c->dir = vec(yaw*RAD, pitch*RAD);
+            }
+            else if(c->moveto) c->dir = vec(c->moveto->o).sub(from).normalize();
+            else
+            {
+                yaw = float(rnd(360));
+                pitch = float(rnd(91)-45);
+                fixrange(yaw, pitch);
+                c->dir = vec(yaw*RAD, pitch*RAD);
+            }
             if(force) return true;
         }
         return false;
@@ -2590,16 +2601,65 @@ namespace game
                 gameentity &e = *(gameentity *)entities::ents[i];
                 if(e.type == MAPSOUND || e.type == MAPMODEL) continue;
                 vec pos = e.o;
-                if(!camcheck(pos, (e.type == PLAYERSTART ? actors[A_PLAYER].height : enttype[e.type].radius)+2)) continue;
+                if(!camcheck(pos, (e.type == PLAYERSTART ? actors[A_PLAYER].height+2 : enttype[e.type].radius))) continue;
                 cameras.add(new cament(cameras.length(), cament::ENTITY, i, pos));
             }
             ai::getwaypoints();
             loopv(ai::waypoints)
             {
+                if(!i) continue; // first waypoint is always dud
                 ai::waypoint &w = ai::waypoints[i];
                 vec pos = w.o;
                 if(!camcheck(pos, actors[A_PLAYER].height+2)) continue;
                 cameras.add(new cament(cameras.length(), cament::WAYPOINT, i, pos));
+            }
+            loopv(cameras)
+            {
+                cament *c = cameras[i];
+                switch(c->type)
+                {
+                    case cament::ENTITY:
+                    {
+                        if(!entities::ents.inrange(c->id)) continue;
+                        gameentity &e = *(gameentity *)entities::ents[c->id];
+                        if(e.links.empty()) continue;
+                        loopvj(e.links)
+                        {
+                            int link = e.links[j];
+                            if(!entities::ents.inrange(link)) continue;
+                            gameentity &f = *(gameentity *)entities::ents[link];
+                            if(f.type == MAPSOUND || f.type == MAPMODEL) continue;
+                            loopvk(cameras)
+                            {
+                                cament *d = cameras[k];
+                                if(d->type != cament::ENTITY || d->id != link) continue;
+                                c->links.add(d);
+                            }
+                        }
+                        break;
+                    }
+                    #if 0 // waypoints arre probably too closesly packed
+                    case cament::WAYPOINT:
+                    {
+                        if(!ai::waypoints.inrange(c->id)) continue;
+                        ai::waypoint &w = ai::waypoints[c->id];
+                        if(!w.haslinks()) continue;
+                        loopj(ai::MAXWAYPOINTLINKS)
+                        {
+                            int link = w.links[j];
+                            if(!link || !ai::waypoints.inrange(link)) continue;
+                            loopvk(cameras)
+                            {
+                                cament *d = cameras[k];
+                                if(d->type != cament::WAYPOINT || d->id != link) continue;
+                                c->links.add(d);
+                            }
+                        }
+                        break;
+                    }
+                    #endif
+                    default: break;
+                }
             }
             starttvcamdyn = cameras.length();
             loopv(players) if(players[i])
@@ -2691,27 +2751,41 @@ namespace game
                 renew = true;
                 cam->moveto = NULL;
                 cam->resetlast();
-                if(cam->type == cament::ENTITY || cam->type == cament::WAYPOINT)
+                vector<cament *> mcams;
+                loopj(cam->links.empty() ? 1 : 2)
                 {
-                    vector<cament *> mcams;
-                    mcams.reserve(cameras.length());
-                    mcams.put(cameras.getbuf(), cameras.length());
-                    mcams.sort(cament::compare);
-                    while(mcams.length())
+                    if(!j && !cam->links.empty())
                     {
-                        cament *mcam = mcams.removeunordered(rnd(mcams.length()));
-                        if(mcam->type == cament::ENTITY || mcam->type == cament::WAYPOINT)
+                        mcams.reserve(cam->links.length());
+                        mcams.put(cam->links.getbuf(), cam->links.length());
+                    }
+                    if(mcams.empty() && (cam->type == cament::ENTITY || cam->type == cament::WAYPOINT))
+                    {
+                        mcams.reserve(cameras.length());
+                        mcams.put(cameras.getbuf(), cameras.length());
+                    }
+                    if(!mcams.empty())
+                    {
+                        mcams.sort(cament::compare);
+                        while(mcams.length())
                         {
-                            vec ray = vec(mcam->o).sub(cam->o);
-                            float mag = ray.magnitude();
-                            ray.mul(1.0f/mag);
-                            if(raycube(cam->o, ray, mag, RAY_CLIPMAT|RAY_POLY) >= max(mag, spectvmovedist))
+                            cament *mcam = mcams.removeunordered(rnd(mcams.length()));
+                            if(mcam->type == cament::ENTITY || mcam->type == cament::WAYPOINT)
                             {
-                                cam->moveto = cameras[mcam->cn];
-                                break;
+                                vec ray = vec(mcam->o).sub(cam->o);
+                                float mag = ray.magnitude();
+                                ray.mul(1.0f/mag);
+                                if(raycube(cam->o, ray, mag, RAY_CLIPMAT|RAY_POLY) >= max(mag, spectvmovedist))
+                                {
+                                    cam->moveto = cameras[mcam->cn];
+                                    camupdate(cam, 0, true);
+                                    break;
+                                }
                             }
                         }
                     }
+                    if(cam->moveto) break;
+                    mcams.setsize(0);
                 }
             }
             break;

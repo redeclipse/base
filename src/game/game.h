@@ -1990,6 +1990,7 @@ struct cament
     gameent *player;
     bool ignore;
     cament *moveto;
+    vector<cament *> links;
 
     cament(int p, int t) : cn(p), type(t), id(-1), player(NULL), ignore(false), moveto(NULL)
     {
@@ -2019,6 +2020,7 @@ struct cament
     {
         loopi(MAX) inview[i] = lastinview[i] = 0;
         if(dir.iszero()) dir = vec(float(rnd(360)), float(rnd(91)-45));
+        links.setsize(0);
     }
 
     void resetlast()
