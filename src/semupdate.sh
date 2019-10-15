@@ -25,7 +25,7 @@ semupdate_setup() {
     mkdir -pv "${SEMUPDATE_DIR}" || return 1
     for i in ${SEMUPDATE_ALLMODS}; do
         if [ "${i}" != "base" ]; then
-            git submodule update --init --depth 1 "data/${i}" || return 1
+            git submodule update --init --depth 5 "data/${i}" || return 1
         fi
     done
     return 0
@@ -96,7 +96,7 @@ semupdate_steam() {
         else
             SEMUPDATE_MODDIR="${SEMUPDATE_DEPOT}/content/data/${i}"
             SEMUPDATE_GITDIR="${SEMUPDATE_PWD}/data/${i}"
-            git submodule update --init --depth 1 "data/${i}" || return 1
+            git submodule update --init --depth 5 "data/${i}" || return 1
             pushd "${SEMUPDATE_GITDIR}" || return 1
             SEMUPDATE_ARCHBR=`git rev-parse HEAD`
             popd || return 1

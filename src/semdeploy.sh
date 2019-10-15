@@ -27,7 +27,7 @@ for i in ${SEMABUILD_ALLMODS}; do
     else
         SEMABUILD_MODDIR="${SEMABUILD_BUILD}/data/${i}"
         SEMABUILD_GITDIR="${SEMABUILD_PWD}/data/${i}"
-        git submodule update --init --depth 1 "data/${i}" || exit 1
+        git submodule update --init --depth 5 "data/${i}" || exit 1
     fi
     mkdir -pv "${SEMABUILD_MODDIR}" || exit 1
     pushd "${SEMABUILD_GITDIR}" || exit 1
