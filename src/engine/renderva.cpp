@@ -2202,12 +2202,12 @@ bool renderexplicitsky(bool outline)
 struct decalrenderer
 {
     GLuint vbuf;
-    vec colorscale;
+    vec4 colorscale;
     int globals, tmu;
     GLuint textures[7];
     DecalSlot *slot;
 
-    decalrenderer() : vbuf(0), colorscale(1, 1, 1), globals(-1), tmu(-1), slot(NULL)
+    decalrenderer() : vbuf(0), colorscale(1, 1, 1, 1), globals(-1), tmu(-1), slot(NULL)
     {
         loopi(7) textures[i] = 0;
     }
@@ -2364,6 +2364,26 @@ static inline void bindslottex(decalrenderer &cur, int type, Texture *tex, GLenu
     }
 }
 
+static void updateslotcolor(decalrenderer &cur, int pass, DecalSlot &slot, ushort entid)
+{
+    vec4 colorscale = vec4(slot.getcolorscale(), 1);
+    if(entid != USHRT_MAX)
+    {
+        const vector<extentity *> &ents = entities::getents();
+        if(ents.inrange(entid))
+        {
+            if(ents[entid]->attrs[5] > 0 && ents[entid]->attrs[5] < 100) colorscale.w *= ents[entid]->attrs[5]/100.f;
+            if(ents[entid]->attrs[6] > 0) colorscale.mul(vec::fromcolor(ents[entid]->attrs[6]));
+            if(ents[entid]->attrs[7] || ents[entid]->attrs[8]) colorscale.mul(game::getpalette(ents[entid]->attrs[7], ents[entid]->attrs[8]));
+        }
+    }
+    if(cur.colorscale != colorscale)
+    {
+        cur.colorscale = colorscale;
+        GLOBALPARAMF(colorparams, colorscale.x, colorscale.y, colorscale.z, colorscale.w);
+    }
+}
+
 static void changeslottmus(decalrenderer &cur, int pass, DecalSlot &slot)
 {
     Texture *diffuse = slot.sts.empty() ? notexture : slot.sts[0].t;
@@ -2390,13 +2410,6 @@ static void changeslottmus(decalrenderer &cur, int pass, DecalSlot &slot)
     {
         cur.tmu = 0;
         glActiveTexture_(GL_TEXTURE0);
-    }
-
-    vec colorscale = slot.getcolorscale();
-    if(cur.colorscale != colorscale)
-    {
-        cur.colorscale = colorscale;
-        GLOBALPARAMF(colorparams, colorscale.x, colorscale.y, colorscale.z, 1);
     }
 
     cur.slot = &slot;
@@ -2447,10 +2460,12 @@ static void renderdecalbatches(decalrenderer &cur, int pass)
         if(cur.slot != &b.slot)
         {
             changeslottmus(cur, pass, b.slot);
+            updateslotcolor(cur, pass, b.slot, b.es.entid);
             changeshader(cur, pass, b);
         }
         else
         {
+            updateslotcolor(cur, pass, b.slot, b.es.entid);
             updateshader(cur);
         }
 

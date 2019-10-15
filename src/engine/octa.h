@@ -8,7 +8,7 @@ struct elementset
         struct { uchar orient, layer; };
         ushort reuse;
     };
-    ushort length, minvert, maxvert;
+    ushort length, minvert, maxvert, entid;
 };
 
 enum

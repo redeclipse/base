@@ -1187,6 +1187,8 @@ namespace entities
                 while(e.attrs[3] < 0) e.attrs[3] += 256; // volume
                 while(e.attrs[3] > 255) e.attrs[3] -= 256; // wrap both ways
                 if(e.attrs[4] < 0) e.attrs[4] = 0; // flags, clamp
+                while(e.attrs[5] < 0) e.attrs[5] += 101; // blend
+                while(e.attrs[5] > 100) e.attrs[5] -= 101; // wrap both ways
                 FIXEMIT;
                 break;
             }
@@ -1212,7 +1214,13 @@ namespace entities
                 }
 
                 FIXDIRYPR(1, 2, 3); // yaw, pitch, roll
-                if(e.attrs[4] <= 0) e.attrs[4] = 1; // size (>= 1)
+                if(e.attrs[4] <= 0) e.attrs[4] = 1; // scale, wrap around
+                while(e.attrs[5] < 0) e.attrs[5] += 101; // blend
+                while(e.attrs[5] > 100) e.attrs[5] -= 101; // wrap both ways
+                while(e.attrs[6] < 0) e.attrs[6] += 0x1000000; // colour
+                while(e.attrs[6] > 0xFFFFFF) e.attrs[6] -= 0x1000000; // wrap both ways
+                if(e.attrs[7] < 0) e.attrs[7] = 0; // palette, clamp
+                if(e.attrs[8] < 0) e.attrs[8] = 0; // palindex, clamp
                 break;
             }
             case WIND:

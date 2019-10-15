@@ -176,12 +176,12 @@ enum
 
 struct sortkey
 {
-    ushort tex, envmap;
+    ushort tex, envmap, entid;
     uchar orient, layer, alpha;
 
     sortkey() {}
-    sortkey(ushort tex, uchar orient, uchar layer = LAYER_TOP, ushort envmap = EMID_NONE, uchar alpha = NO_ALPHA)
-     : tex(tex), envmap(envmap), orient(orient), layer(layer), alpha(alpha)
+    sortkey(ushort tex, uchar orient, uchar layer = LAYER_TOP, ushort envmap = EMID_NONE, uchar alpha = NO_ALPHA, ushort entid = USHRT_MAX)
+     : tex(tex), envmap(envmap), entid(entid), orient(orient), layer(layer), alpha(alpha)
     {}
 
     bool operator==(const sortkey &o) const { return tex==o.tex && envmap==o.envmap && orient==o.orient && layer==o.layer && alpha==o.alpha; }
@@ -222,11 +222,11 @@ static inline uint hthash(const sortkey &k)
 
 struct decalkey
 {
-    ushort tex, envmap, reuse;
+    ushort tex, envmap, reuse, entid;
 
     decalkey() {}
-    decalkey(ushort tex, ushort envmap = EMID_NONE, ushort reuse = 0)
-     : tex(tex), envmap(envmap), reuse(reuse)
+    decalkey(ushort tex, ushort envmap = EMID_NONE, ushort reuse = 0, ushort entid = USHRT_MAX)
+     : tex(tex), envmap(envmap), reuse(reuse), entid(entid)
     {}
 
     bool operator==(const decalkey &o) const { return tex==o.tex && envmap==o.envmap && reuse==o.reuse; }
@@ -420,12 +420,12 @@ struct vacollect : verthash
             loopvj(oe->decals)
             {
                 extentity &e = *ents[oe->decals[j]];
-                if(e.flags&EF_RENDER || !checkmapvariant(e.attrs[5]) || !checkmapeffects(e.attrs[6])) continue;
+                if(e.flags&EF_RENDER || !checkmapvariant(e.attrs[9]) || !checkmapeffects(e.attrs[10])) continue;
                 e.flags |= EF_RENDER;
                 DecalSlot &s = lookupdecalslot(e.attrs[0], true);
                 if(!s.shader) continue;
                 ushort envmap = s.shader->type&SHADER_ENVMAP ? (s.texmask&(1<<TEX_ENVMAP) ? EMID_CUSTOM : closestenvmap(e.o)) : EMID_NONE;
-                decalkey k(e.attrs[0], envmap);
+                decalkey k(e.attrs[0], envmap, 0, oe->decals[j]);
                 gendecal(e, s, k);
             }
         }
@@ -528,6 +528,7 @@ struct vacollect : verthash
                 e.orient = k.orient;
                 e.layer = k.layer;
                 e.envmap = k.envmap;
+                e.entid = k.entid;
                 ushort *startbuf = curbuf;
                 e.minvert = USHRT_MAX;
                 e.maxvert = 0;
@@ -583,6 +584,7 @@ struct vacollect : verthash
                 e.texture = k.tex;
                 e.reuse = k.reuse;
                 e.envmap = k.envmap;
+                e.entid = k.entid;
                 ushort *startbuf = curbuf;
                 e.minvert = USHRT_MAX;
                 e.maxvert = 0;

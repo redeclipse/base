@@ -1202,6 +1202,12 @@ bool load_world(const char *mname, int crc, int variant)
                 if(e.attrs[0] == LFX_FLICKER) e.type = ET_EMPTY;
                 else if(e.attrs[0] > LFX_FLICKER) e.attrs[0] -= 1;
             }
+            if(hdr.version <= 48 && e.type == ET_DECAL)
+            {
+                e.attrs[9] = e.attrs[5];
+                e.attrs[10] = e.attrs[6];
+                e.attrs[5] = e.attrs[6] = 0;
+            }
             if(!insideworld(e.o) && e.type != ET_LIGHT && e.type != ET_LIGHTFX)
                 conoutf("\frWARNING: ent outside of world: enttype[%d](%s) index %d (%f, %f, %f) [%d, %d]", e.type, entities::findname(e.type), i, e.o.x, e.o.y, e.o.z, worldsize, worldscale);
             progress((i+1)/float(hdr.numents), "Loading entities...");

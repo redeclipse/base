@@ -125,10 +125,10 @@ extern const enttypes enttype[] = {
                 "lightfx",      { "type",   "mod",      "min",      "max",      "flags",    "variant",  "fxlevel" }
     },
     {
-        DECAL,          1,          0,      0,      EU_NONE,    7,          -1,         -1,     5,      6,
+        DECAL,          1,          0,      0,      EU_NONE,    11,         -1,         -1,     9,      10,
             0, 0, 0,
             false,  false,  false,      false,      false,
-                "decal",        { "type",   "yaw",      "pitch",    "roll",     "scale",    "variant",  "fxlevel" }
+                "decal",        { "type",   "yaw",      "pitch",    "roll",     "scale",    "blend",    "colour",   "palette",  "palindex", "variant",  "fxlevel" }
     },
     {
         WIND,           1,          239,    0,      EU_NONE,    9,          -1,         -1,     7,      8,
@@ -136,7 +136,7 @@ extern const enttypes enttype[] = {
             (1<<MAPSOUND),
             0,
             false,  false,  false,      false,      false,
-                "wind",        { "mode",   "yaw",      "speed",    "radius",   "atten",    "interval", "implen", "variant",  "fxlevel" }
+                "wind",        { "mode",   "yaw",      "speed",    "radius",   "atten",    "interval",  "implen",   "variant",  "fxlevel" }
     },
     {
         OUTLINE,        1,          241,    0,      EU_NONE,    0,          -1,         -1,     -1,     -1,
