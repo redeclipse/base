@@ -3824,7 +3824,7 @@ namespace game
         loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL)
         {
             if(d != focus || third) d->cleartags();
-            renderplayer(d, 1, d->curscale, d == focus ? (third ? MDL_FORCETRANSPARENT | MDL_FORCESHADOW : MDL_ONLYSHADOW) : 0, vec4(1, 1, 1, opacity(d, true)));
+            renderplayer(d, 1, d->curscale, d == focus ? (third ? MDL_FORCESHADOW : MDL_ONLYSHADOW) : 0, vec4(1, 1, 1, opacity(d, true)));
         }
     }
 
