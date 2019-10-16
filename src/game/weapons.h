@@ -174,11 +174,11 @@ WPSVAR(IDF_GAMEMOD, 0, name, // keep this incase longname is too long
 
 WPFVARM(IDF_GAMEMOD, 0, aidist, 0, FVAR_MAX,
     16.0f,      512.0f,     48.0f,      64.0f,      256.0f,     64.0f,      512.0f,     768.0f,     768.0f,     384.0f,     128.0f,     1024.0f,    16.0f,
-    16.0f,      40.0f,      48.0f,      128.0f,     128.0f,     64.0f,      128.0f,     768.0f,     2048.0f,    256.0f,     128.0f,     512.0f,     16.0f
+    16.0f,      40.0f,      48.0f,      128.0f,     384.0f,     32.0f,      128.0f,     768.0f,     2048.0f,    256.0f,     128.0f,     512.0f,     16.0f
 );
 WPVARM(IDF_GAMEMOD, 0, aiskew, 0, VAR_MAX,
     1,          5,          1,          3,          5,          3,          5,          5,          5,          1,          1,          5,          1,
-    1,          5,          1,          3,          5,          3,          5,          5,          5,          1,          1,          5,          1
+    1,          1,          1,          3,          5,          3,          5,          5,          5,          1,          1,          5,          1
 );
 WPVAR(IDF_GAMEMOD, 0, ammoadd, 1, VAR_MAX,
     1,          10,         1,          2,          30,         50,         16,         24,         6,          1,          1,          1,          1
