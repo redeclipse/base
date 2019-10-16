@@ -183,6 +183,9 @@ APFVAR(IDF_GAMEMOD, 0, scale, FVAR_NONZERO, FVAR_MAX,
 APVAR(IDF_GAMEMOD, 0, spawndelay, 0, VAR_MAX,
     5000,           5000,           30000,          30000,          30000,          30000
 );
+APVAR(IDF_GAMEMOD, 0, spawndelayedit, 0, VAR_MAX,
+    0,              5000,           30000,          30000,          30000,          30000
+);
 APVAR(IDF_GAMEMOD, 0, spawndelaybomber, 0, VAR_MAX,
     3000,           3000,           30000,          30000,          30000,          30000
 );
