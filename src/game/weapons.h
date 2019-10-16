@@ -261,7 +261,7 @@ WPVARK(IDF_GAMEMOD, 0, collide, 0, COLLIDE_ALL,
     IMPACT_GEOM|IMPACT_PLAYER|COLLIDE_TRACE|COLLIDE_LENGTH,
     BOUNCE_GEOM|IMPACT_PLAYER|COLLIDE_TRACE|IMPACT_SHOTS|COLLIDE_LENGTH,
     IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|COLLIDE_OWNER,
-    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|COLLIDE_TRACE|BOUNCE_GEOM|BOUNCE_PLAYER,
+    IMPACT_SHOTS|COLLIDE_OWNER|BOUNCE_GEOM|BOUNCE_PLAYER,
     BOUNCE_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER,
     IMPACT_GEOM|IMPACT_SHOTS|COLLIDE_OWNER|STICK_GEOM,
     IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_SCAN|STICK_GEOM|DRILL_PLAYER,
@@ -552,9 +552,9 @@ WPFVARK(IDF_GAMEMOD, 0, headmin, 0, FVAR_MAX,
 );
 WPFVARK(IDF_GAMEMOD, 0, hitpush, FVAR_MIN, FVAR_MAX,
     50.0f,      20.0f,      25.0f,      10.0f,      25.0f,      5.0f,       10.0f,      40.0f,      0.0f,       60.0f,      0.0f,       125.0f,     50.0f,
-    100.0f,     40.0f,      50.0f,      15.0f,      10.0f,      25.0f,      0.0f,       40.0f,      0.0f,       60.0f,      0.0f,       125.0f,     100.0f,
+    100.0f,     40.0f,      50.0f,      15.0f,      150.0f,     25.0f,      0.0f,       40.0f,      0.0f,       60.0f,      0.0f,       125.0f,     100.0f,
     50.0f,      20.0f,      25.0f,      10.0f,      25.0f,      5.0f,       10.0f,      10.0f,      10.0f,      60.0f,      0.0f,       125.0f,     50.0f,
-    100.0f,     40.0f,      50.0f,      15.0f,      10.0f,      25.0f,      0.0f,       10.0f,      10.0f,      60.0f,      0.0f,       125.0f,     100.0f
+    100.0f,     40.0f,      50.0f,      15.0f,      150.0f,     25.0f,      0.0f,       10.0f,      10.0f,      60.0f,      0.0f,       125.0f,     100.0f
 );
 WPFVARK(IDF_GAMEMOD, 0, hitpushself, 0, FVAR_MAX,
     1,          1,          1,          1,          1,          1,          1,          1,          1,          1,          1,          1,          1,
