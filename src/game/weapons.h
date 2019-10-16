@@ -680,7 +680,7 @@ WPFVARM(IDF_GAMEMOD, 0, jittertimeinair, FVAR_MIN, FVAR_MAX,
 );
 WPFVARM(IDF_GAMEMOD, 0, kickpush, FVAR_MIN, FVAR_MAX,
     0.0f,       4.0f,       -15.0f,     50.0f,      5.0f,       1.0f,       20.0f,      10.0f,      35.0f,      5.0f,       5.0f,       150.0f,     0.0f,
-    0.0f,       -15.0f,     -30.0f,     75.0f,      25.0f,      100.0f,     150.0f,     10.0f,      50.0f,      5.0f,       5.0f,       150.0f,     0.0f
+    0.0f,       -15.0f,     -30.0f,     75.0f,      25.0f,      100.0f,     50.0f,      10.0f,      50.0f,      5.0f,       5.0f,       150.0f,     0.0f
 );
 WPVAR(IDF_GAMEMOD, 0, laser, 0, 1,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
