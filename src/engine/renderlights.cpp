@@ -2513,7 +2513,7 @@ FVAR(0, volbilateraldepth, 0, 4, 1e3f);
 VARF(IDF_PERSIST, volblur, 0, 1, 3, cleanupvolumetric());
 VARF(IDF_PERSIST, volsteps, 1, 16, 64, cleanupvolumetric());
 FVAR(0, volminstep, 0, 0.0625f, 1e3f);
-FVAR(0, volprefilter, 0, 4, 1e3f);
+FVAR(IDF_PERSIST, volprefilter, 0, 4, 1e3f);
 FVAR(0, voldistclamp, 0, 0.99f, 2);
 
 #define VOLVARS(name) \
