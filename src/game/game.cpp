@@ -860,8 +860,11 @@ namespace game
     {
         int len = m_delay(d->actortype, gamemode, mutators, d->team);
         if(AA(d->actortype, abilities)&(1<<A_A_KAMIKAZE)) len = deathfadekamikaze;
-        else if(m_edit(gamemode)) len = deathfadeedit;
-        else len = clamp(len, min(deathfademin, deathfademax), max(deathfademin, deathfademax));
+        else
+        {
+            if(m_edit(gamemode) && !len && deathfadeedit) len = deathfadeedit;
+            len = clamp(len, min(deathfademin, deathfademax), max(deathfademin, deathfademax));
+        }
         if(len > 0)
         {
             int interval = min(len/4, ragdolleffect), over = max(len-interval, 1), millis = lastmillis-d->lastdeath;

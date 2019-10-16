@@ -59,7 +59,7 @@ GSVAR(0, PRIV_ADMINISTRATOR, serverdesc, "");
 GSVAR(0, PRIV_ADMINISTRATOR, servermotd, "");
 
 GVAR(0, PRIV_ADMINISTRATOR, autoadmin, 0, 0, 1);
-GVAR(0, PRIV_MODERATOR, varslock, 0, PRIV_SUPPORTER, PRIV_MAX);
+GVAR(0, PRIV_MODERATOR, varslock, 0, PRIV_MODERATOR, PRIV_MAX);
 
 GVAR(0, PRIV_ADMINISTRATOR, queryinterval, 0, 5000, VAR_MAX); // rebuild client list for server queries this often
 GVAR(0, PRIV_ADMINISTRATOR, masterinterval, 300000, 300000, VAR_MAX); // keep connection alive every this often
