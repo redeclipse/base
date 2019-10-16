@@ -268,7 +268,10 @@ namespace game
 
     VAR(IDF_PERSIST, deathanim, 0, 2, 3); // 0 = hide player when dead, 1 = old death animation, 2 = ragdolls, 3 = ragdolls, but hide in duke
     VAR(IDF_PERSIST, deathfade, 0, 1, 1); // 0 = don't fade out dead players, 1 = fade them out
-    VAR(IDF_PERSIST, deathmaxfade, 0, 5000, VAR_MAX);
+    VAR(IDF_PERSIST, deathfademin, 0, 500, VAR_MAX);
+    VAR(IDF_PERSIST, deathfademax, 0, 5000, VAR_MAX);
+    VAR(IDF_PERSIST, deathfadekamikaze, 0, 750, VAR_MAX);
+    VAR(IDF_PERSIST, deathfadeedit, 0, 3000, VAR_MAX);
     VAR(IDF_PERSIST, deathbuttonmash, 0, 1000, VAR_MAX);
     FVAR(IDF_PERSIST, bloodscale, 0, 1, 1000);
     VAR(IDF_PERSIST, bloodfade, 1, 5000, VAR_MAX);
@@ -855,9 +858,10 @@ namespace game
 
     float spawnfade(gameent *d)
     {
-        int len = max(m_delay(d->actortype, gamemode, mutators, d->team), 1);
-        if(AA(d->actortype, abilities)&(1<<A_A_KAMIKAZE) && (len <= 0 || len > 1000)) len = 1000;
-        if(deathmaxfade && (len <= 0 || len > deathmaxfade)) len = deathmaxfade;
+        int minlen = min(deathfademin, deathfademax), maxlen = max(minlen, deathfademax);
+        if(AA(d->actortype, abilities)&(1<<A_A_KAMIKAZE)) minlen = min(minlen, deathfadekamikaze);
+        else if(m_edit(gamemode)) minlen = min(minlen, deathfadeedit);
+        int len = clamp(m_delay(d->actortype, gamemode, mutators, d->team), minlen, max(minlen, maxlen));
         if(len > 0)
         {
             int interval = min(len/4, ragdolleffect), over = max(len-interval, 1), millis = lastmillis-d->lastdeath;
