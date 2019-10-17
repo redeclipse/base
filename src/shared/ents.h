@@ -45,20 +45,20 @@ struct modelattach
 {
     const char *tag, *name;
     int anim, basetime;
-    float sizescale;
+    float sizescale, speed;
     vec *pos;
     model *m;
 
-    modelattach() : tag(NULL), name(NULL), anim(-1), basetime(0), sizescale(-1), pos(NULL), m(NULL) {}
-    modelattach(const char *tag, const char *name, int anim = -1, int basetime = 0, float sizescale = 1) : tag(tag), name(name), anim(anim), basetime(basetime), sizescale(sizescale), pos(NULL), m(NULL) {}
-    modelattach(const char *tag, vec *pos) : tag(tag), name(NULL), anim(-1), basetime(0), sizescale(1), pos(pos), m(NULL) {}
+    modelattach() : tag(NULL), name(NULL), anim(-1), basetime(0), sizescale(-1), speed(1), pos(NULL), m(NULL) {}
+    modelattach(const char *tag, const char *name, int anim = -1, int basetime = 0, float sizescale = 1, float speed = 1) : tag(tag), name(name), anim(anim), basetime(basetime), sizescale(sizescale), speed(speed), pos(NULL), m(NULL) {}
+    modelattach(const char *tag, vec *pos) : tag(tag), name(NULL), anim(-1), basetime(0), sizescale(1), speed(1), pos(pos), m(NULL) {}
 };
 
 struct Texture;
 
 struct entmodelstate
 {
-    float yaw, pitch, roll, size, radius;
+    float yaw, pitch, roll, size, radius, speed, speed2;
     int anim, flags, basetime, basetime2, lastspin;
     vec o, center;
     vec4 color;
@@ -69,7 +69,7 @@ struct entmodelstate
     void reset()
     {
         yaw = pitch = roll = radius = 0;
-        size = 1;
+        size = speed = speed2 = 1;
         anim = flags = basetime = basetime2 = lastspin = 0;
         o = center = vec(0, 0, 0);
         color = vec4(1, 1, 1, 1);
@@ -226,7 +226,7 @@ struct physent : baseent                        // can be affected by physics
 
 enum
 {
-    ANIM_IDLE = 0, ANIM_FORWARD, ANIM_BACKWARD, ANIM_LEFT, ANIM_RIGHT, ANIM_DEAD, ANIM_DYING, ANIM_SWIM,
+    ANIM_IDLE = 0, ANIM_WALK_FORWARD, ANIM_WALK_BACKWARD, ANIM_WALK_LEFT, ANIM_WALK_RIGHT, ANIM_DEAD, ANIM_DYING, ANIM_SWIM,
     ANIM_MAPMODEL, ANIM_TRIGGER_ON, ANIM_TRIGGER_OFF,
     ANIM_GAMESPECIFIC
 };
@@ -246,8 +246,7 @@ enum
 #define ANIM_FULLBRIGHT  (1<<26)
 #define ANIM_NORENDER    (1<<27)
 #define ANIM_RAGDOLL     (1<<28)
-#define ANIM_SETSPEED    (1<<29)
-#define ANIM_NOPITCH     (1<<30)
+#define ANIM_NOPITCH     (1<<29)
 #define ANIM_FLAGS       0xFF000000
 
 struct animinfo // description of a character's animation

@@ -3488,11 +3488,12 @@ namespace game
             {
                 if(physics::liquidcheck(d) && d->physstate <= PHYS_FALL)
                     mdl.anim |= ((d->move || d->strafe || d->vel.z+d->falling.z > 0 ? int(ANIM_SWIM) : int(ANIM_SINK))|ANIM_LOOP)<<ANIM_SECONDARY;
-                else if(d->impulse[IM_TYPE] == IM_T_PARKOUR) mdl.anim |= ((d->turnside > 0 ? ANIM_WALL_RUN_LEFT : (d->turnside < 0 ? ANIM_WALL_RUN_RIGHT : ANIM_WALL_RUN_UP))|ANIM_LOOP)<<ANIM_SECONDARY;
+                else if(d->impulse[IM_TYPE] == IM_T_PARKOUR)
+                    mdl.anim |= ((d->turnside > 0 ? ANIM_PARKOUR_LEFT : (d->turnside < 0 ? ANIM_PARKOUR_RIGHT : ANIM_PARKOUR_UP))|ANIM_LOOP)<<ANIM_SECONDARY;
                 else if(d->physstate == PHYS_FALL && !d->onladder && d->impulsetime[d->impulse[IM_TYPE]] && lastmillis-d->impulsetime[d->impulse[IM_TYPE]] <= 1000)
                 {
                     mdl.basetime2 = d->impulsetime[d->impulse[IM_TYPE]];
-                    if(d->impulse[IM_TYPE] == IM_T_KICK || d->impulse[IM_TYPE] == IM_T_GRAB) mdl.anim |= ANIM_WALL_JUMP<<ANIM_SECONDARY;
+                    if(d->impulse[IM_TYPE] == IM_T_KICK || d->impulse[IM_TYPE] == IM_T_GRAB) mdl.anim |= ANIM_PARKOUR_JUMP<<ANIM_SECONDARY;
                     else if(d->action[AC_SPECIAL] || d->impulse[IM_TYPE] == IM_T_POUND)
                     {
                         mdl.anim |= ANIM_FLYKICK<<ANIM_SECONDARY;
@@ -3534,13 +3535,13 @@ namespace game
                 }
                 else if(d->running(moveslow))
                 {
-                    if(d->strafe) mdl.anim |= ((d->strafe > 0 ? ANIM_IMPULSE_LEFT : ANIM_IMPULSE_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
-                    else if(d->move > 0) mdl.anim |= (ANIM_IMPULSE_FORWARD|ANIM_LOOP)<<ANIM_SECONDARY;
-                    else if(d->move < 0) mdl.anim |= (ANIM_IMPULSE_BACKWARD|ANIM_LOOP)<<ANIM_SECONDARY;
+                    if(d->strafe) mdl.anim |= ((d->strafe > 0 ? ANIM_RUN_LEFT : ANIM_RUN_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
+                    else if(d->move > 0) mdl.anim |= (ANIM_RUN_FORWARD|ANIM_LOOP)<<ANIM_SECONDARY;
+                    else if(d->move < 0) mdl.anim |= (ANIM_RUN_BACKWARD|ANIM_LOOP)<<ANIM_SECONDARY;
                 }
-                else if(d->strafe) mdl.anim |= ((d->strafe > 0 ? ANIM_LEFT : ANIM_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
-                else if(d->move > 0) mdl.anim |= (ANIM_FORWARD|ANIM_LOOP)<<ANIM_SECONDARY;
-                else if(d->move < 0) mdl.anim |= (ANIM_BACKWARD|ANIM_LOOP)<<ANIM_SECONDARY;
+                else if(d->strafe) mdl.anim |= ((d->strafe > 0 ? ANIM_WALK_LEFT : ANIM_WALK_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
+                else if(d->move > 0) mdl.anim |= (ANIM_WALK_FORWARD|ANIM_LOOP)<<ANIM_SECONDARY;
+                else if(d->move < 0) mdl.anim |= (ANIM_WALK_BACKWARD|ANIM_LOOP)<<ANIM_SECONDARY;
             }
 
             if((mdl.anim>>ANIM_SECONDARY)&ANIM_INDEX) switch(mdl.anim&ANIM_INDEX)

@@ -261,9 +261,9 @@ enum
 {
     ANIM_PAIN = ANIM_GAMESPECIFIC,
     ANIM_JUMP_FORWARD, ANIM_JUMP_BACKWARD, ANIM_JUMP_LEFT, ANIM_JUMP_RIGHT, ANIM_JUMP,
-    ANIM_IMPULSE_FORWARD, ANIM_IMPULSE_BACKWARD, ANIM_IMPULSE_LEFT, ANIM_IMPULSE_RIGHT,
+    ANIM_RUN_FORWARD, ANIM_RUN_BACKWARD, ANIM_RUN_LEFT, ANIM_RUN_RIGHT,
     ANIM_BOOST_FORWARD, ANIM_BOOST_BACKWARD, ANIM_BOOST_LEFT, ANIM_BOOST_RIGHT, ANIM_BOOST_UP,
-    ANIM_WALL_RUN_LEFT, ANIM_WALL_RUN_RIGHT, ANIM_WALL_RUN_UP, ANIM_WALL_JUMP, ANIM_POWERSLIDE, ANIM_FLYKICK,
+    ANIM_PARKOUR_LEFT, ANIM_PARKOUR_RIGHT, ANIM_PARKOUR_UP, ANIM_PARKOUR_JUMP, ANIM_POWERSLIDE, ANIM_FLYKICK,
     ANIM_SINK, ANIM_EDIT, ANIM_WIN, ANIM_LOSE,
     ANIM_CROUCH, ANIM_CRAWL_FORWARD, ANIM_CRAWL_BACKWARD, ANIM_CRAWL_LEFT, ANIM_CRAWL_RIGHT,
     ANIM_CROUCH_JUMP_FORWARD, ANIM_CROUCH_JUMP_BACKWARD, ANIM_CROUCH_JUMP_LEFT, ANIM_CROUCH_JUMP_RIGHT, ANIM_CROUCH_JUMP,
@@ -1122,12 +1122,12 @@ struct actitem
 #ifdef CPP_GAME_MAIN
 const char * const animnames[] =
 {
-    "idle", "forward", "backward", "left", "right", "dead", "dying", "swim",
+    "idle", "walk forward", "walk backward", "walk left", "walk right", "dead", "dying", "swim",
     "mapmodel", "trigger on", "trigger off", "pain",
     "jump forward", "jump backward", "jump left", "jump right", "jump",
-    "impulse forward", "impulse backward", "impulse left", "impulse right",
+    "run forward", "run backward", "run left", "run right",
     "boost forward", "boost backward", "boost left", "boost right", "boost up",
-    "wall run left", "wall run right", "wall run up", "wall jump", "power slide", "fly kick",
+    "parkour left", "parkour right", "parkour up", "parkour jump", "power slide", "fly kick",
     "sink", "edit", "win", "lose",
     "crouch", "crawl forward", "crawl backward", "crawl left", "crawl right",
     "crouch jump forward", "crouch jump backward", "crouch jump left", "crouch jump right", "crouch jump",
@@ -1884,7 +1884,7 @@ struct gameent : dynent, clientstate
 
     bool running(float minspeed = 0)
     {
-        if(minspeed != 0 && vel.magnitude() >= speed*minspeed) return true;
+        if(minspeed != 0 && vel.magnitude() >= speed*0.5f*minspeed) return true;
         return sliding(true) || (!action[AC_WALK] && !crouching());
     }
 

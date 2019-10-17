@@ -719,12 +719,12 @@ struct animmodel : model
     {
         part *p;
         int tag, anim, basetime;
-        float size;
+        float size, speed;
         vec translate, rotate;
         vec *pos;
         matrix4 matrix;
 
-        linkedpart() : p(NULL), tag(-1), anim(-1), basetime(0), size(1), translate(0, 0, 0), rotate(0, 0, 0), pos(NULL) {}
+        linkedpart() : p(NULL), tag(-1), anim(-1), basetime(0), size(1), speed(1), translate(0, 0, 0), rotate(0, 0, 0), pos(NULL) {}
     };
 
     struct part
@@ -800,12 +800,12 @@ struct animmodel : model
             }
         }
 
-        bool link(part *p, const char *tag, const vec &translate = vec(0, 0, 0), const vec &rotate = vec(0, 0, 0), int anim = -1, int basetime = 0, float size = 1, vec *pos = NULL)
+        bool link(part *p, const char *tag, const vec &translate = vec(0, 0, 0), const vec &rotate = vec(0, 0, 0), int anim = -1, int basetime = 0, float size = 1, float speed = 1, vec *pos = NULL)
         {
             int i = meshes ? meshes->findtag(tag) : -1;
             if(i<0)
             {
-                loopv(links) if(links[i].p && links[i].p->link(p, tag, translate, rotate, anim, basetime, size, pos)) return true;
+                loopv(links) if(links[i].p && links[i].p->link(p, tag, translate, rotate, anim, basetime, size, speed, pos)) return true;
                 return false;
             }
             linkedpart &l = links.add();
@@ -813,6 +813,7 @@ struct animmodel : model
             l.tag = i;
             l.anim = anim;
             l.basetime = basetime;
+            l.speed = speed;
             l.size = size;
             l.translate = translate;
             l.rotate = rotate;
@@ -870,13 +871,13 @@ struct animmodel : model
             info.range = 1;
         }
 
-        bool calcanim(int animpart, int anim, int basetime, int basetime2, dynent *d, int interp, animinfo &info, int &aitime)
+        bool calcanim(int animpart, int anim, int basetime, int basetime2, float speed, float speed2, dynent *d, int interp, animinfo &info, int &aitime)
         {
             uint varseed = uint((size_t)d);
             info.anim = anim;
             info.basetime = basetime;
             info.varseed = varseed;
-            info.speed = anim&ANIM_SETSPEED ? basetime2 : 100.0f;
+            info.speed = speed*100.f;
             if((anim&ANIM_INDEX)==ANIM_ALL)
             {
                 info.frame = 0;
@@ -885,6 +886,7 @@ struct animmodel : model
             else
             {
                 animspec *spec = NULL;
+                float curspeed = speed;
                 if(anims[animpart])
                 {
                     vector<animspec> &primary = anims[animpart][anim&ANIM_INDEX];
@@ -900,6 +902,7 @@ struct animmodel : model
                                 spec = &spec2;
                                 info.anim >>= ANIM_SECONDARY;
                                 info.basetime = basetime2;
+                                curspeed = speed2;
                             }
                         }
                     }
@@ -908,7 +911,7 @@ struct animmodel : model
                 {
                     info.frame = spec->frame;
                     info.range = spec->range;
-                    if(spec->speed>0) info.speed = 1000.0f/spec->speed;
+                    if(spec->speed>0) info.speed = 1000.0f/spec->speed*curspeed;
                 }
                 else getdefaultanim(info, anim, uint(varseed + info.basetime), d);
             }
@@ -960,19 +963,19 @@ struct animmodel : model
             return true;
         }
 
-        void intersect(int anim, int basetime, int basetime2, float pitch, const vec &axis, const vec &forward, modelstate *state, dynent *d, const vec &o, const vec &ray)
+        void intersect(int anim, int basetime, int basetime2, float speed, float speed2, float pitch, const vec &axis, const vec &forward, modelstate *state, dynent *d, const vec &o, const vec &ray)
         {
             animstate as[MAXANIMPARTS];
-            intersect(anim, basetime, basetime2, pitch, axis, forward, state, d, o, ray, as);
+            intersect(anim, basetime, basetime2, speed, speed2, pitch, axis, forward, state, d, o, ray, as);
         }
 
-        void intersect(int anim, int basetime, int basetime2, float pitch, const vec &axis, const vec &forward, modelstate *state, dynent *d, const vec &o, const vec &ray, animstate *as)
+        void intersect(int anim, int basetime, int basetime2, float speed, float speed2, float pitch, const vec &axis, const vec &forward, modelstate *state, dynent *d, const vec &o, const vec &ray, animstate *as)
         {
             if((anim&ANIM_REUSE) != ANIM_REUSE) loopi(numanimparts)
             {
                 animinfo info;
                 int interp = d && index+numanimparts<=MAXANIMPARTS ? index+i : -1, aitime = animationinterpolationtime;
-                if(!calcanim(i, anim, basetime, basetime2, d, interp, info, aitime)) return;
+                if(!calcanim(i, anim, basetime, basetime2, speed, speed2, d, interp, info, aitime)) return;
                 animstate &p = as[i];
                 p.owner = this;
                 p.cur.setframes(info);
@@ -1033,13 +1036,16 @@ struct animmodel : model
                     matrixstack[matrixpos].mul(matrixstack[matrixpos-1], link.matrix);
 
                     int nanim = anim, nbasetime = basetime, nbasetime2 = basetime2;
+                    float nspeed = speed, nspeed2 = speed2;
                     if(link.anim>=0)
                     {
                         nanim = link.anim | (anim&ANIM_FLAGS);
                         nbasetime = link.basetime;
                         nbasetime2 = 0;
+                        nspeed = link.speed;
+                        nspeed2 = 1;
                     }
-                    link.p->intersect(nanim, nbasetime, nbasetime2, pitch, axis, forward, state, d, o, ray);
+                    link.p->intersect(nanim, nbasetime, nbasetime2, nspeed, nspeed2, pitch, axis, forward, state, d, o, ray);
                     sizescale = oldsizescale;
 
                     matrixpos--;
@@ -1049,19 +1055,19 @@ struct animmodel : model
             matrixpos = oldpos;
         }
 
-        void render(int anim, int basetime, int basetime2, float pitch, const vec &axis, const vec &forward, modelstate *state, dynent *d)
+        void render(int anim, int basetime, int basetime2, float speed, float speed2, float pitch, const vec &axis, const vec &forward, modelstate *state, dynent *d)
         {
             animstate as[MAXANIMPARTS];
-            render(anim, basetime, basetime2, pitch, axis, forward, state, d, as);
+            render(anim, basetime, basetime2, speed, speed2, pitch, axis, forward, state, d, as);
         }
 
-        void render(int anim, int basetime, int basetime2, float pitch, const vec &axis, const vec &forward, modelstate *state, dynent *d, animstate *as)
+        void render(int anim, int basetime, int basetime2, float speed, float speed2, float pitch, const vec &axis, const vec &forward, modelstate *state, dynent *d, animstate *as)
         {
             if((anim&ANIM_REUSE) != ANIM_REUSE) loopi(numanimparts)
             {
                 animinfo info;
                 int interp = d && index+numanimparts<=MAXANIMPARTS ? index+i : -1, aitime = animationinterpolationtime;
-                if(!calcanim(i, anim, basetime, basetime2, d, interp, info, aitime)) return;
+                if(!calcanim(i, anim, basetime, basetime2, speed, speed2, d, interp, info, aitime)) return;
                 animstate &p = as[i];
                 p.owner = this;
                 p.cur.setframes(info);
@@ -1154,14 +1160,17 @@ struct animmodel : model
                     }
 
                     int nanim = anim, nbasetime = basetime, nbasetime2 = basetime2;
+                    float nspeed = speed, nspeed2 = speed2;
                     if(link.anim>=0)
                     {
                         nanim = link.anim | (anim&ANIM_FLAGS);
                         nbasetime = link.basetime;
                         nbasetime2 = 0;
+                        nspeed = link.speed;
+                        nspeed2 = 1;
                     }
 
-                    link.p->render(nanim, nbasetime, nbasetime2, pitch, axis, forward, state, d);
+                    link.p->render(nanim, nbasetime, nbasetime2, nspeed, nspeed2, pitch, axis, forward, state, d);
                     sizescale = oldsizescale;
                     matrixpos--;
                 }
@@ -1208,7 +1217,7 @@ struct animmodel : model
 
     virtual int linktype(animmodel *m, part *p) const { return LINK_TAG; }
 
-    void intersect(int anim, int basetime, int basetime2, float pitch, const vec &axis, const vec &forward, modelstate *state, dynent *d, const vec &o, const vec &ray)
+    void intersect(int anim, int basetime, int basetime2, float speed, float speed2, float pitch, const vec &axis, const vec &forward, modelstate *state, dynent *d, const vec &o, const vec &ray)
     {
         int numtags = 0;
         if(state->attached)
@@ -1224,7 +1233,7 @@ struct animmodel : model
                 switch(linktype(m, p))
                 {
                     case LINK_TAG:
-                        p->index = link(p, state->attached[i].tag, vec(0, 0, 0), vec(0, 0, 0), state->attached[i].anim, state->attached[i].basetime, state->attached[i].sizescale, state->attached[i].pos) ? index : -1;
+                        p->index = link(p, state->attached[i].tag, vec(0, 0, 0), vec(0, 0, 0), state->attached[i].anim, state->attached[i].basetime, state->attached[i].sizescale, state->attached[i].speed, state->attached[i].pos) ? index : -1;
                         break;
 
                     case LINK_COOP:
@@ -1239,7 +1248,7 @@ struct animmodel : model
         }
 
         animstate as[MAXANIMPARTS];
-        parts[0]->intersect(anim, basetime, basetime2, pitch, axis, forward, state, d, o, ray, as);
+        parts[0]->intersect(anim, basetime, basetime2, speed, speed2, pitch, axis, forward, state, d, o, ray, as);
 
         for(int i = 1; i < parts.length(); i++)
         {
@@ -1247,11 +1256,11 @@ struct animmodel : model
             switch(linktype(this, p))
             {
                 case LINK_COOP:
-                    p->intersect(anim, basetime, basetime2, pitch, axis, forward, state, d, o, ray);
+                    p->intersect(anim, basetime, basetime2, speed, speed2, pitch, axis, forward, state, d, o, ray);
                     break;
 
                 case LINK_REUSE:
-                    p->intersect(anim | ANIM_REUSE, basetime, basetime2, pitch, axis, forward, state, d, o, ray, as);
+                    p->intersect(anim | ANIM_REUSE, basetime, basetime2, speed, speed2, pitch, axis, forward, state, d, o, ray, as);
                     break;
             }
         }
@@ -1269,12 +1278,12 @@ struct animmodel : model
                     break;
 
                 case LINK_COOP:
-                    p->intersect(anim, basetime, basetime2, pitch, axis, forward, state, d, o, ray);
+                    p->intersect(anim, basetime, basetime2, speed, speed2, pitch, axis, forward, state, d, o, ray);
                     p->index = 0;
                     break;
 
                 case LINK_REUSE:
-                    p->intersect(anim | ANIM_REUSE, basetime, basetime2, pitch, axis, forward, state, d, o, ray, as);
+                    p->intersect(anim | ANIM_REUSE, basetime, basetime2, speed, speed2, pitch, axis, forward, state, d, o, ray, as);
                     break;
             }
         }
@@ -1322,13 +1331,13 @@ struct animmodel : model
         intersectmode = mode;
         intersectdist = dist;
 
-        intersect(anim, state->basetime, state->basetime2, state->pitch, axis, forward, state, d, o, ray);
+        intersect(anim, state->basetime, state->basetime2, state->speed, state->speed2, state->pitch, axis, forward, state, d, o, ray);
 
         if(intersectresult >= 0) dist = intersectdist;
         return intersectresult;
     }
 
-    void render(int anim, int basetime, int basetime2, float pitch, const vec &axis, const vec &forward, modelstate *state, dynent *d)
+    void render(int anim, int basetime, int basetime2, float speed, float speed2, float pitch, const vec &axis, const vec &forward, modelstate *state, dynent *d)
     {
         int numtags = 0;
         if(state->attached)
@@ -1341,7 +1350,7 @@ struct animmodel : model
                 animmodel *m = (animmodel *)state->attached[i].m;
                 if(!m)
                 {
-                    if(state->attached[i].pos) link(NULL, state->attached[i].tag, vec(0, 0, 0), vec(0, 0, 0), 0, 0, state->attached[i].sizescale, state->attached[i].pos);
+                    if(state->attached[i].pos) link(NULL, state->attached[i].tag, vec(0, 0, 0), vec(0, 0, 0), 0, 0, state->attached[i].sizescale, state->attached[i].speed, state->attached[i].pos);
                     continue;
                 }
                 part *p = m->parts[0];
@@ -1350,7 +1359,7 @@ struct animmodel : model
                     case LINK_TAG:
                         p->index = link(p, state->attached[i].tag, vec(0, 0, 0),
                             vec(m->offsetyaw + m->spinyaw*lastmillis/1000.0f, m->offsetpitch + m->spinpitch*lastmillis/1000.0f, m->offsetroll + m->spinroll*lastmillis/1000.0f),
-                                state->attached[i].anim, state->attached[i].basetime, state->attached[i].sizescale, state->attached[i].pos) ? index : -1;
+                                state->attached[i].anim, state->attached[i].basetime, state->attached[i].sizescale, state->attached[i].speed, state->attached[i].pos) ? index : -1;
                         break;
 
                     case LINK_COOP:
@@ -1365,7 +1374,7 @@ struct animmodel : model
         }
 
         animstate as[MAXANIMPARTS];
-        parts[0]->render(anim, basetime, basetime2, pitch, axis, forward, state, d, as);
+        parts[0]->render(anim, basetime, basetime2, speed, speed2, pitch, axis, forward, state, d, as);
 
         for(int i = 1; i < parts.length(); i++)
         {
@@ -1373,11 +1382,11 @@ struct animmodel : model
             switch(linktype(this, p))
             {
                 case LINK_COOP:
-                    p->render(anim, basetime, basetime2, pitch, axis, forward, state, d);
+                    p->render(anim, basetime, basetime2, speed, speed2, pitch, axis, forward, state, d);
                     break;
 
                 case LINK_REUSE:
-                    p->render(anim | ANIM_REUSE, basetime, basetime2, pitch, axis, forward, state, d, as);
+                    p->render(anim | ANIM_REUSE, basetime, basetime2, speed, speed2, pitch, axis, forward, state, d, as);
                     break;
             }
         }
@@ -1399,12 +1408,12 @@ struct animmodel : model
                     break;
 
                 case LINK_COOP:
-                    p->render(anim, basetime, basetime2, pitch, axis, forward, state, d);
+                    p->render(anim, basetime, basetime2, speed, speed2, pitch, axis, forward, state, d);
                     p->index = 0;
                     break;
 
                 case LINK_REUSE:
-                    p->render(anim | ANIM_REUSE, basetime, basetime2, pitch, axis, forward, state, d, as);
+                    p->render(anim | ANIM_REUSE, basetime, basetime2, speed, speed2, pitch, axis, forward, state, d, as);
                     break;
             }
         }
@@ -1448,7 +1457,7 @@ struct animmodel : model
 
         if(anim&ANIM_NORENDER)
         {
-            render(anim, state->basetime, state->basetime2, state->pitch, axis, forward, state, d);
+            render(anim, state->basetime, state->basetime2, state->speed, state->speed2, state->pitch, axis, forward, state, d);
             if(d) d->lastrendered = lastmillis;
             return;
         }
@@ -1514,7 +1523,7 @@ struct animmodel : model
             enabledepthoffset = true;
         }
 
-        render(anim, state->basetime, state->basetime2, state->pitch, axis, forward, state, d);
+        render(anim, state->basetime, state->basetime2, state->speed, state->speed2, state->pitch, axis, forward, state, d);
 
         if(d) d->lastrendered = lastmillis;
     }
@@ -1608,10 +1617,10 @@ struct animmodel : model
         return bih;
     }
 
-    bool link(part *p, const char *tag, const vec &translate = vec(0, 0, 0), const vec &rotate = vec(0, 0, 0), int anim = -1, int basetime = 0, float size = 1, vec *pos = NULL)
+    bool link(part *p, const char *tag, const vec &translate = vec(0, 0, 0), const vec &rotate = vec(0, 0, 0), int anim = -1, int basetime = 0, float size = 1, float speed = 1, vec *pos = NULL)
     {
         if(parts.empty()) return false;
-        return parts[0]->link(p, tag, translate, rotate, anim, basetime, size, pos);
+        return parts[0]->link(p, tag, translate, rotate, anim, basetime, size, speed, pos);
     }
 
     bool unlink(part *p)
