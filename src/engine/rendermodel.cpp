@@ -1089,31 +1089,6 @@ void abovemodel(vec &o, const char *mdl)
     o.z += m->above();
 }
 
-bool matchanim(const char *name, const char *pattern)
-{
-    for(;; pattern++)
-    {
-        const char *s = name;
-        char c;
-        for(;; pattern++)
-        {
-            c = *pattern;
-            if(!c || c=='|') break;
-            else if(c=='*')
-            {
-                if(!*s || iscubespace(*s)) break;
-                do s++; while(*s && !iscubespace(*s));
-            }
-            else if(c!=*s) break;
-            else s++;
-        }
-        if(!*s && (!c || c=='|')) return true;
-        pattern = strchr(pattern, '|');
-        if(!pattern) break;
-    }
-    return false;
-}
-
 ICOMMAND(0, findanims, "s", (char *name),
 {
     vector<int> anims;

@@ -3119,7 +3119,7 @@ namespace game
     void findanims(const char *pattern, vector<int> &anims)
     {
         loopi(sizeof(animnames)/sizeof(animnames[0]))
-            if(*animnames[i] && matchanim(animnames[i], pattern))
+            if(*animnames[i] && cubepattern(animnames[i], pattern))
                 anims.add(i);
     }
 

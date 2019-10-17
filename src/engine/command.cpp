@@ -4710,6 +4710,9 @@ ICOMMAND(0, tohex, "ii", (int *n, int *p),
     stringret(buf);
 });
 
+ICOMMAND(0, echo, "C", (char *s), conoutf("%s", s));
+ICOMMAND(0, error, "C", (char *s), conoutf("\fr%s", s));
+
 #define CMPSCMD(func, name, op) \
     ICOMMAND(0, name, "s1V", (tagval *args, int numargs), \
     { \
@@ -4769,9 +4772,13 @@ CMPSNCMD(strncasecmp, >~sn, >);
 CMPSNCMD(strncasecmp, <~=sn, <=);
 CMPSNCMD(strncasecmp, >~=sn, >=);
 
-ICOMMAND(0, echo, "C", (char *s), conoutf("%s", s));
-ICOMMAND(0, error, "C", (char *s), conoutf("\fr%s", s));
 ICOMMAND(0, strstr, "ss", (char *a, char *b), { char *s = strstr(a, b); intret(s ? s-a : -1); });
+ICOMMAND(0, strcasestr, "ss", (char *a, char *b), { char *s = cubecasestr(a, b); intret(s ? s-a : -1); });
+ICOMMAND(0, strmatch, "ss", (char *a, char *b), { intret(cubematchstr(a, b) ? 1 : 0); });
+ICOMMAND(0, strcasematch, "ss", (char *a, char *b), { intret(cubematchstr(a, b, true) ? 1 : 0); });
+ICOMMAND(0, strpattern, "ss", (char *a, char *b), { intret(cubepattern(a, b) ? 1 : 0); });
+ICOMMAND(0, strcasepattern, "ss", (char *a, char *b), { intret(cubepattern(a, b, true) ? 1 : 0); });
+
 ICOMMAND(0, strlen, "s", (char *s), intret(strlen(s)));
 ICOMMAND(0, strcode, "si", (char *s, int *i), intret(*i > 0 ? (memchr(s, 0, *i) ? 0 : uchar(s[*i])) : uchar(s[0])));
 ICOMMAND(0, codestr, "i", (int *i), { char *s = newstring(1); s[0] = char(*i); s[1] = '\0'; stringret(s); });
@@ -4791,39 +4798,6 @@ ICOMMAND(0, unistr, "i", (int *i), { char *s = newstring(1); s[0] = uni2cube(*i)
 STRMAPCOMMAND(strlower, cubelower);
 STRMAPCOMMAND(strupper, cubeupper);
 
-char *rigcasestr(const char *s, const char *n)
-{
-    bool passed = true;
-    char *start = newstring(s), *needle = newstring(n), *a = start, *b = needle, *ret = NULL;
-    while(*a && *b)
-    {
-        *a = cubelower(*a);
-        *b = cubelower(*b);
-        if(passed && *a != *b) passed = false;
-        a++;
-        b++;
-    }
-    if(!*b)
-    {
-        if(passed) ret = (char *)s;
-        else
-        {
-            while(*a)
-            {
-                *a = cubelower(*a);
-                a++;
-            }
-            char *p = strstr(start, needle);
-            if(p) ret = (char *)(s+(p-start));
-        }
-    }
-    delete[] start;
-    delete[] needle;
-    return ret;
-}
-
-ICOMMAND(0, strcasestr, "ss", (char *a, char *b), { char *s = rigcasestr(a, b); intret(s ? s-a : -1); });
-
 char *strreplace(const char *s, const char *oldval, const char *newval, const char *newval2, bool docase)
 {
     vector<char> buf;
@@ -4832,7 +4806,7 @@ char *strreplace(const char *s, const char *oldval, const char *newval, const ch
     if(!oldlen) return newstring(s);
     for(int i = 0;; i++)
     {
-        const char *found = docase ? rigcasestr(s, oldval) : strstr(s, oldval);
+        const char *found = docase ? cubecasestr(s, oldval) : strstr(s, oldval);
         if(found)
         {
             while(s < found) buf.add(*s++);
@@ -4964,7 +4938,7 @@ void getvarinfo(int n, int types, int notypes, int flags, int noflags, char *str
         if(ids[1].empty() || !laststr || strcmp(str, laststr))
         {
             ids[1].setsize(0);
-            loopv(ids[0]) if(rigcasestr(ids[0][i]->name, str)) ids[1].add(ids[0][i]);
+            loopv(ids[0]) if(cubecasestr(ids[0][i]->name, str)) ids[1].add(ids[0][i]);
             if(laststr) DELETEA(laststr);
             laststr = newstring(str);
         }

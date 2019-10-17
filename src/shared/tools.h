@@ -1750,5 +1750,7 @@ struct ipmask
     int print(char *buf) const;
     bool check(enet_uint32 host) const { return (host & mask) == ip; }
 };
-
+extern char *cubecasestr(const char *str, const char *needle);
+extern bool cubematchstr(const char *str, const char *match, bool nocase = false);
+extern bool cubepattern(const char *str, const char *pattern, bool nocase = false);
 #endif

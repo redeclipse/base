@@ -192,7 +192,7 @@ void getstring(char *text, ucharbuf &p, size_t len)
     while(*t++);
 }
 void ipmask::parse(const char *name)
-{   
+{
     union { uchar b[sizeof(enet_uint32)]; enet_uint32 i; } ipconv, maskconv;
     ipconv.i = 0;
     maskconv.i = 0;
@@ -202,10 +202,10 @@ void ipmask::parse(const char *name)
         int n = strtol(name, &end, 10);
         if(!end) break;
         if(end > name) { ipconv.b[i] = n; maskconv.b[i] = 0xFF; }
-        name = end; 
+        name = end;
         while(int c = *name)
         {
-            ++name; 
+            ++name;
             if(c == '.') break;
             if(c == '/')
             {
@@ -242,3 +242,74 @@ int ipmask::print(char *buf) const
     return int(buf-start);
 }
 
+char *cubecasestr(const char *str, const char *needle)
+{
+    if(!str || !needle) return NULL;
+    bool passed = true;
+    char *start = newstring(str), *match = newstring(needle), *a = start, *b = match, *ret = NULL;
+    while(*a && *b)
+    {
+        *a = cubelower(*a);
+        *b = cubelower(*b);
+        if(passed && *a != *b) passed = false;
+        a++;
+        b++;
+    }
+    if(!*b)
+    {
+        if(passed) ret = (char *)str;
+        else
+        {
+            for(; *a; a++) *a = cubelower(*a);
+            char *p = strstr(start, match);
+            if(p) ret = (char *)(str+(p-start));
+        }
+    }
+    delete[] start;
+    delete[] match;
+    return ret;
+}
+
+// Code from https://www.codeproject.com/Articles/188256/A-Simple-Wildcard-Matching-Function
+// Author: Martin Richter
+bool cubematchstr(const char *str, const char *match, bool nocase)
+{
+    if(!str || !match) return false;
+    for(; *match; str++, match++)
+    {
+        if(*match == '?')
+        {
+            if(!*str) return false;
+        }
+        else if(*match == '*')
+        {
+            if(cubematchstr(str, match+1, nocase)) return true;
+            if(*str && cubematchstr(str+1, match, nocase)) return true;
+            return false;
+        }
+        else if(nocase ? cubelower(*str) != cubelower(*match) : *str != *match) return false;
+    }
+    return !*str && !*match;
+}
+
+bool cubepattern(const char *str, const char *pattern, bool nocase)
+{
+    if(!str || !pattern) return false;
+    vector<char *> match;
+    while(*pattern)
+    {
+        const char *start = pattern, *p = strchr(pattern, '|');
+        int len = p ? p-start : strlen(start);
+        match.add(newstring(start, len));
+        pattern += len;
+        if(p) pattern++;
+    }
+    bool ret = false;
+    loopv(match) if(cubematchstr(str, match[i], nocase))
+    {
+        ret = true;
+        break;
+    }
+    match.deletearrays();
+    return ret;
+}
