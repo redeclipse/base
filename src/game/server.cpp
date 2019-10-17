@@ -721,7 +721,7 @@ namespace server
         loopi(W_MAX)
         {
             if(m_edit(gamemode) || (i >= W_ITEM && i < W_ALL)) attrmap[i] = i;
-            else if(m_kaboom(gamemode, mutators) || m_medieval(gamemode, mutators)) attrmap[i] = W_ITEM+(i%W_ITEMS);
+            else if(m_kaboom(gamemode, mutators) || m_medieval(gamemode, mutators)) attrmap[i] = i != W_MINE ? W_GRENADE : W_MINE;
             else if(m_insta(gamemode, mutators)) attrmap[i] = sweap;
             else if(i == sweap || i < W_OFFSET || i >= W_ALL) attrmap[i] = W_REPLACE;
             else attrmap[i] = i;
