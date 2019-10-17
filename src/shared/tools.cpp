@@ -293,7 +293,7 @@ bool cubematchstr(const char *str, const char *match, bool nocase)
     return !*str && !*match;
 }
 
-bool cubepattern(const char *str, const char *pattern, bool nocase)
+int cubepattern(const char *str, const char *pattern, bool nocase)
 {
     if(!pattern || !*pattern) return !str || !*str;
     vector<char *> match;
@@ -305,10 +305,10 @@ bool cubepattern(const char *str, const char *pattern, bool nocase)
         pattern += len;
         if(p) pattern++;
     }
-    bool ret = false;
+    int ret = -1;
     loopv(match) if(cubematchstr(str, match[i], nocase))
     {
-        ret = true;
+        ret = i;
         break;
     }
     match.deletearrays();

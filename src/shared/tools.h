@@ -1752,5 +1752,5 @@ struct ipmask
 };
 extern char *cubecasestr(const char *str, const char *needle);
 extern bool cubematchstr(const char *str, const char *match, bool nocase = false);
-extern bool cubepattern(const char *str, const char *pattern, bool nocase = false);
+extern int cubepattern(const char *str, const char *pattern, bool nocase = false);
 #endif

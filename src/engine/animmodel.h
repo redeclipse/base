@@ -1990,7 +1990,7 @@ template<class MDL, class MESH> struct modelcommands
         loopv(mdl.meshes->meshes) \
         { \
             MESH &m = *(MESH *)mdl.meshes->meshes[i]; \
-            if(cubepattern(m.name, meshname)) \
+            if(cubepattern(m.name, meshname) >= 0) \
             { \
                 body; \
             } \

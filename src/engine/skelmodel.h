@@ -521,7 +521,7 @@ struct skelmodel : animmodel
         int findbones(const char *name, vector<int> &elems)
         {
             int num = 0;
-            loopi(numbones) if(cubepattern(bones[i].name, name))
+            loopi(numbones) if(cubepattern(bones[i].name, name) >= 0)
             {
                 elems.add(i);
                 num++;
@@ -538,7 +538,7 @@ struct skelmodel : animmodel
         int findtags(const char *name, vector<int> &elems)
         {
             int num = 0;
-            loopv(tags) if(cubepattern(tags[i].name, name))
+            loopv(tags) if(cubepattern(tags[i].name, name) >= 0)
             {
                 elems.add(i);
                 num++;
