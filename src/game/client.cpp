@@ -2629,8 +2629,9 @@ namespace client
                 case N_SHOTFX:
                 {
                     int scn = getint(p), weap = getint(p), flags = getint(p), len = getint(p), target = getint(p);
-                    vec from;
+                    vec from, dest;
                     loopk(3) from[k] = getint(p)/DMF;
+                    loopk(3) dest[k] = getint(p)/DMF;
                     int ls = getint(p);
                     vector<shotmsg> shots;
                     loopj(ls)
@@ -2649,7 +2650,7 @@ namespace client
                         scale = len/float(W2(weap, cooktime, WS(flags)));
                         if(sub > 1) sub = int(ceilf(sub*scale));
                     }
-                    projs::shootv(weap, flags, sub, 0, scale, from, shots, t, false, v);
+                    projs::shootv(weap, flags, sub, 0, scale, from, dest, shots, t, false, v);
                     break;
                 }
 

@@ -1909,7 +1909,7 @@ struct gameent : dynent, clientstate
 
 struct projent : dynent
 {
-    vec from, to, dest, norm, inertia, sticknrm, stickpos, effectpos, lastgood;
+    vec from, dest, norm, inertia, sticknrm, stickpos, effectpos, trailpos, lastgood;
     int addtime, lifetime, lifemillis, waittime, spawntime, fadetime, lastradial, lasteffect, lastbounce, beenused, extinguish, stuck;
     float movement, distance, lifespan, lifesize, speedmin, speedmax;
     bool local, limited, escaped, child, bounced;
@@ -1959,18 +1959,6 @@ struct projent : dynent
         if(owner && (!used || projtype == PRJ_SHOT || !beenused) && waittime <= 0 && state != CS_DEAD)
             return true;
         return false;
-    }
-
-    vec &originpos()
-    {
-        if(projcollide&COLLIDE_SCAN) return from;
-        return o;
-    }
-
-    vec &targetpos()
-    {
-        if(projcollide&COLLIDE_SCAN) return o;
-        return to;
     }
 
     bool usestuck()
@@ -2088,7 +2076,7 @@ namespace projs
     extern void removeplayer(gameent *d);
     extern void destruct(gameent *d, int targ, int id, bool all = false);
     extern void sticky(gameent *d, int id, vec &norm, vec &pos, gameent *f = NULL);
-    extern void shootv(int weap, int flags, int sub, int offset, float scale, vec &from, vector<shotmsg> &shots, gameent *d, bool local, gameent *v = NULL);
+    extern void shootv(int weap, int flags, int sub, int offset, float scale, vec &from, vec &dest, vector<shotmsg> &shots, gameent *d, bool local, gameent *v = NULL);
     extern void drop(gameent *d, int weap, int ent, int ammo = -1, bool local = true, int index = 0, int targ = -1);
     extern void adddynlights();
     extern void render();

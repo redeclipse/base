@@ -1507,7 +1507,7 @@ bool serveroption(char *opt)
     return false;
 }
 
-SVAR(IDF_READONLY, extras, "");
+SVAR(IDF_READONLY, extrapackages, "");
 void loadextras()
 {
     string extras = "";
@@ -1524,22 +1524,16 @@ void loadextras()
     }
     if(*extras)
     {
-        int len = listlen(extras);
-        setsvar("extras", extras);
-        loopi(len)
+        setsvar("extrapackages", extras);
+        vector<char *> list;
+        explodelist(extras, list);
+        loopv(list) if(list[i] && *list[i])
         {
-            char *word = indexlist(extras, i);
-            if(word)
-            {
-                if(*word)
-                {
-                    defformatstring(fname, "data/%s", extras);
-                    conoutf("Adding extra content: %s", fname);
-                    addpackagedir(fname);
-                }
-                delete[] word;
-            }
+            defformatstring(fname, "data/%s", list[i]);
+            conoutf("Adding extra content: %s (%s)", list[i], fname);
+            addpackagedir(fname);
         }
+        list.deletearrays();
     }
 }
 

@@ -821,10 +821,11 @@ namespace entities
                                 else if(projent::is(d))
                                 {
                                     projent *g = (projent *)d;
+                                    g->from = g->trailpos = g->deltapos = g->o;
+                                    g->dest = vec(g->o).add(g->vel);
+                                    g->bounced = true;
                                     g->lastbounce = lastmillis;
                                     g->movement = 0;
-                                    g->from = g->deltapos = g->o;
-                                    g->to = g->dest = vec(g->o).add(g->vel);
                                 }
                             }
                             else if(gameent::is(d)) warpragdoll(d, d->vel, vec(f.o).sub(e.o));
@@ -899,10 +900,11 @@ namespace entities
                         else if(projent::is(d))
                         {
                             projent *g = (projent *)d;
+                            g->from = g->trailpos = g->deltapos = g->o;
+                            g->dest = vec(g->o).add(g->vel);
+                            g->bounced = true;
                             g->lastbounce = lastmillis;
                             g->movement = 0;
-                            g->from = g->deltapos = g->o;
-                            g->to = g->dest = vec(g->o).add(g->vel);
                         }
                     }
                     else if(gameent::is(d)) warpragdoll(d, d->vel);

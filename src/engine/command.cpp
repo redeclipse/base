@@ -3396,8 +3396,7 @@ bool execfile(const char *cfgfile, bool msg, int flags)
         if(msg || verbose >= 2) conoutf("\frCould not read %s", cfgfile);
         return false;
     }
-    int oldflags = identflags;
-    int oldversion = versioning;
+    int oldflags = identflags, oldversion = versioning;
     if(flags&EXEC_NOWORLD) identflags &= ~IDF_WORLD;
     if(flags&EXEC_VERSION) versioning = flags&EXEC_BUILTIN ? 2 : 1;
     const char *oldsourcefile = sourcefile, *oldsourcestr = sourcestr;

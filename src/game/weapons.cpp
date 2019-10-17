@@ -316,7 +316,7 @@ namespace weapons
         }
         else if(!pressed) return false;
 
-        vec to, from;
+        vec from, dest;
         vector<shotmsg> shots;
         #define addshot(p) \
         { \
@@ -332,28 +332,28 @@ namespace weapons
             if(weap == W_MELEE)
             {
                 from = secondary ? d->foottag(0) : d->feetpos();
-                to = targ;
+                dest = targ;
             }
             else
             {
-                from = d->origintag(weap);
-                to = d->muzzletag(weap);
+                from = d->muzzletag(weap);
+                dest = d->origintag(weap);
             }
-            loopi(rays) addshot(to);
+            loopi(rays) addshot(dest);
         }
         else
         {
             from = d->muzzletag(weap);
-            to = targ;
+            dest = targ;
             float m = accmodspread(d, weap, secondary, W2(weap, cooked, true)&W_C_ZOOM && secondary && scale >= 0.9f);
             float spread = WSP(weap, secondary, game::gamemode, game::mutators, m);
             loopi(rays)
             {
-                vec dest;
-                if(spread > 0) offsetray(from, to, spread, W2(weap, spreadz, secondary), dest);
-                else dest = to;
-                if(W2(weap, znudge, secondary)) dest.z += from.dist(dest)*W2(weap, znudge, secondary);
-                addshot(dest);
+                vec r;
+                if(spread > 0) offsetray(from, dest, spread, W2(weap, spreadz, secondary), r);
+                else r = dest;
+                if(W2(weap, znudge, secondary)) r.z += from.dist(r)*W2(weap, znudge, secondary);
+                addshot(r);
             }
         }
         if(W2(weap, jittertime, secondary))
@@ -369,8 +369,8 @@ namespace weapons
             accmodjitter(d, weap, secondary, W2(weap, cooked, true)&W_C_ZOOM && secondary && scale >= 0.9f, jittertime, jitteryawmin, jitteryawmax, jitterpitchmin, jitterpitchmax);
             d->addjitter(weap, lastmillis, int(ceilf(jittertime*scale)), jitteryawmin*scale, jitteryawmax*scale, jitterpitchmin*scale, jitterpitchmax*scale, W2(weap, jitterpitchdir, secondary));
         }
-        projs::shootv(weap, secondary ? HIT(ALT) : 0, sub, offset, scale, from, shots, d, true, v);
-        client::addmsg(N_SHOOT, "ri9iv", d->clientnum, lastmillis-game::maptime, weap, secondary ? HIT(ALT) : 0, cooked, v ? v->clientnum : -1, int(from.x*DMF), int(from.y*DMF), int(from.z*DMF), shots.length(), shots.length()*sizeof(shotmsg)/sizeof(int), shots.getbuf());
+        projs::shootv(weap, secondary ? HIT(ALT) : 0, sub, offset, scale, from, dest, shots, d, true, v);
+        client::addmsg(N_SHOOT, "ri9i4v", d->clientnum, lastmillis-game::maptime, weap, secondary ? HIT(ALT) : 0, cooked, v ? v->clientnum : -1, int(from.x*DMF), int(from.y*DMF), int(from.z*DMF), int(dest.x*DMF), int(dest.y*DMF), int(dest.z*DMF), shots.length(), shots.length()*sizeof(shotmsg)/sizeof(int), shots.getbuf());
 
         return true;
     }

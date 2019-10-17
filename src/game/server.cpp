@@ -49,7 +49,7 @@ namespace server
     struct shotevent : timedevent
     {
         int id, weap, flags, scale, target, num;
-        ivec from;
+        ivec from, dest;
         vector<shotmsg> shots;
         void process(clientinfo *ci);
     };
@@ -6429,6 +6429,7 @@ namespace server
                         if(havecn) ev->millis = cp->getmillis(gamemillis, ev->id);
                     }
                     loopk(3) ev->from[k] = getint(p);
+                    loopk(3) ev->dest[k] = getint(p);
                     ev->num = getint(p);
                     loopj(ev->num)
                     {
