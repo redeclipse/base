@@ -1540,7 +1540,12 @@ void loadextras()
 
 void setlocations()
 {
+#if defined(__APPLE__)
+    int backstep = 4;
+    if(fileexists(findfile("../Resources/config/version.cfg", "r"), "r") && chdir("../Resources") >= 0) backstep = 0;
+#else
     int backstep = 3;
+#endif
     loopirev(backstep) if(!fileexists(findfile("config/version.cfg", "r"), "r"))
     { // standalone solution to this is: pebkac
         if(!i || chdir("..") < 0) fatal("Could not find config directory");
