@@ -514,14 +514,36 @@ struct skelmodel : animmodel
 
         int findbone(const char *name)
         {
-            loopi(numbones) if(bones[i].name && !strcmp(bones[i].name, name)) return i;
+            loopi(numbones) if(cubematchstr(bones[i].name, name)) return i;
             return -1;
+        }
+
+        int findbones(const char *name, vector<int> &elems)
+        {
+            int num = 0;
+            loopi(numbones) if(cubepattern(bones[i].name, name))
+            {
+                elems.add(i);
+                num++;
+            }
+            return num;
         }
 
         int findtag(const char *name)
         {
-            loopv(tags) if(!strcmp(tags[i].name, name)) return i;
+            loopv(tags) if(cubematchstr(tags[i].name, name)) return i;
             return -1;
+        }
+
+        int findtags(const char *name, vector<int> &elems)
+        {
+            int num = 0;
+            loopv(tags) if(cubepattern(tags[i].name, name))
+            {
+                elems.add(i);
+                num++;
+            }
+            return num;
         }
 
         bool addtag(const char *name, int bone, const matrix4x3 &matrix)
@@ -1736,42 +1758,47 @@ template<class MDL> struct skelcommands : modelcommands<MDL, struct MDL::skelmes
         if(!MDL::loading || MDL::loading->parts.empty()) { conoutf("\frNot loading an %s", MDL::formatname()); return; }
         part &mdl = *(part *)MDL::loading->parts.last();
 
-        if(name[0])
+        if(!*name)
         {
-            int i = mdl.meshes ? ((meshgroup *)mdl.meshes)->skel->findbone(name) : -1;
-            if(i>=0)
+            mdl.pitchscale = *pitchscale;
+            mdl.pitchoffset = *pitchoffset;
+            if(*pitchmin || *pitchmax)
             {
-                boneinfo &b = ((meshgroup *)mdl.meshes)->skel->bones[i];
-                b.pitchscale = *pitchscale;
-                b.pitchoffset = *pitchoffset;
-                if(*pitchmin || *pitchmax)
+                mdl.pitchmin = *pitchmin;
+                mdl.pitchmax = *pitchmax;
+            }
+            else
+            {
+                mdl.pitchmin = -360*fabs(mdl.pitchscale) + mdl.pitchoffset;
+                mdl.pitchmax = 360*fabs(mdl.pitchscale) + mdl.pitchoffset;
+            }
+            return;
+        }
+        if(mdl.meshes)
+        {
+            vector<int> elems;
+            if(((meshgroup *)mdl.meshes)->skel->findbones(name, elems))
+            {
+                loopv(elems)
                 {
-                    b.pitchmin = *pitchmin;
-                    b.pitchmax = *pitchmax;
-                }
-                else
-                {
-                    b.pitchmin = -360*fabs(b.pitchscale) + b.pitchoffset;
-                    b.pitchmax = 360*fabs(b.pitchscale) + b.pitchoffset;
+                    boneinfo &b = ((meshgroup *)mdl.meshes)->skel->bones[elems[i]];
+                    b.pitchscale = *pitchscale;
+                    b.pitchoffset = *pitchoffset;
+                    if(*pitchmin || *pitchmax)
+                    {
+                        b.pitchmin = *pitchmin;
+                        b.pitchmax = *pitchmax;
+                    }
+                    else
+                    {
+                        b.pitchmin = -360*fabs(b.pitchscale) + b.pitchoffset;
+                        b.pitchmax = 360*fabs(b.pitchscale) + b.pitchoffset;
+                    }
                 }
                 return;
             }
-            conoutf("\frCould not find bone %s to pitch", name);
-            return;
         }
-
-        mdl.pitchscale = *pitchscale;
-        mdl.pitchoffset = *pitchoffset;
-        if(*pitchmin || *pitchmax)
-        {
-            mdl.pitchmin = *pitchmin;
-            mdl.pitchmax = *pitchmax;
-        }
-        else
-        {
-            mdl.pitchmin = -360*fabs(mdl.pitchscale) + mdl.pitchoffset;
-            mdl.pitchmax = 360*fabs(mdl.pitchscale) + mdl.pitchoffset;
-        }
+        conoutf("\frCould not find bone matching %s to pitch", name);
     }
 
     static void setpitchtarget(char *name, char *animfile, int *frameoffset, float *pitchmin, float *pitchmax)
@@ -1783,18 +1810,26 @@ template<class MDL> struct skelcommands : modelcommands<MDL, struct MDL::skelmes
         animspec *sa = ((meshgroup *)mdl.meshes)->loadanim(path(filename));
         if(!sa) { conoutf("\frCould not load %s anim file %s", MDL::formatname(), filename); return; }
         skeleton *skel = ((meshgroup *)mdl.meshes)->skel;
-        int bone = skel ? skel->findbone(name) : -1;
-        if(bone < 0)
+        if(skel)
         {
-            conoutf("\frCould not find bone %s to pitch target", name);
-            return;
+            vector<int> elems;
+            if(skel->findbones(name, elems))
+            {
+                loopv(elems)
+                {
+                    bool skip = false;
+                    loopvj(skel->pitchtargets) if(skel->pitchtargets[j].bone == elems[i]) { skip = true; break; }
+                    if(skip) continue;
+                    pitchtarget &t = skel->pitchtargets.add();
+                    t.bone = elems[i];
+                    t.frame = sa->frame + clamp(*frameoffset, 0, sa->range-1);
+                    t.pitchmin = *pitchmin;
+                    t.pitchmax = *pitchmax;
+                }
+                return;
+            }
         }
-        loopv(skel->pitchtargets) if(skel->pitchtargets[i].bone == bone) return;
-        pitchtarget &t = skel->pitchtargets.add();
-        t.bone = bone;
-        t.frame = sa->frame + clamp(*frameoffset, 0, sa->range-1);
-        t.pitchmin = *pitchmin;
-        t.pitchmax = *pitchmax;
+        conoutf("\frCould not find bones matching %s to pitch target", name);
     }
 
     static void setpitchcorrect(char *name, char *targetname, float *scale, float *pitchmin, float *pitchmax)
@@ -1867,14 +1902,22 @@ template<class MDL> struct skelcommands : modelcommands<MDL, struct MDL::skelmes
         loopv(bonestrs)
         {
             char *bonestr = bonestrs[i];
-            int bone = p->meshes ? ((meshgroup *)p->meshes)->skel->findbone(bonestr[0]=='!' ? bonestr+1 : bonestr) : -1;
-            if(bone<0) { conoutf("\frCould not find bone %s for anim part mask [%s]", bonestr, maskstr); bonestrs.deletearrays(); return; }
-            bonemask.add(bone | (bonestr[0]=='!' ? BONEMASK_NOT : 0));
+            int num = 0;
+            if(p->meshes)
+            {
+                vector<int> elems;
+                if(((meshgroup *)p->meshes)->skel->findbones(bonestr[0]=='!' ? bonestr+1 : bonestr, elems)) loopv(elems)
+                {
+                    bonemask.add(elems[i] | (bonestr[0]=='!' ? BONEMASK_NOT : 0));
+                    num++;
+                }
+            }
+            if(!num) conoutf("\frCould not find bone %s for anim part mask [%s]", bonestr, maskstr);
         }
         bonestrs.deletearrays();
+        if(bonemask.empty()) return;
         bonemask.sort();
         if(bonemask.length()) bonemask.add(BONEMASK_END);
-
         if(!p->addanimpart(bonemask.getbuf())) conoutf("\frToo many animation parts");
     }
 
@@ -1884,10 +1927,20 @@ template<class MDL> struct skelcommands : modelcommands<MDL, struct MDL::skelmes
         part &mdl = *(part *)MDL::loading->parts.last();
 
         if(!name[0]) return;
-        int i = mdl.meshes ? ((meshgroup *)mdl.meshes)->skel->findbone(name) : -1;
-        if(i < 0) {  conoutf("\frCould not find bone %s to adjust", name); return; }
-        while(!MDL::adjustments.inrange(i)) MDL::adjustments.add(skeladjustment(0, 0, 0, vec(0, 0, 0)));
-        MDL::adjustments[i] = skeladjustment(*yaw, *pitch, *roll, vec(*tx/4, *ty/4, *tz/4));
+        if(mdl.meshes)
+        {
+            vector<int> elems;
+            if(((meshgroup *)mdl.meshes)->skel->findbones(name, elems))
+            {
+                loopv(elems)
+                {
+                    while(!MDL::adjustments.inrange(elems[i])) MDL::adjustments.add(skeladjustment(0, 0, 0, vec(0, 0, 0)));
+                    MDL::adjustments[elems[i]] = skeladjustment(*yaw, *pitch, *roll, vec(*tx/4, *ty/4, *tz/4));
+                }
+                return;
+            }
+        }
+        conoutf("\frCould not find bone %s to adjust", name);
     }
 
     static void sethitzone(int *id, char *maskstr)
@@ -1905,9 +1958,17 @@ template<class MDL> struct skelcommands : modelcommands<MDL, struct MDL::skelmes
         loopv(bonestrs)
         {
             char *bonestr = bonestrs[i];
-            int bone = p->meshes ? ((meshgroup *)p->meshes)->skel->findbone(bonestr[0]=='!' ? bonestr+1 : bonestr) : -1;
-            if(bone<0) { conoutf("\frCould not find bone %s for hit zone mask [%s]", bonestr, maskstr); bonestrs.deletearrays(); return; }
-            bonemask.add(bone | (bonestr[0]=='!' ? BONEMASK_NOT : 0));
+            int num = 0;
+            if(p->meshes)
+            {
+                vector<int> elems;
+                if(((meshgroup *)p->meshes)->skel->findbones(bonestr[0]=='!' ? bonestr+1 : bonestr, elems)) loopv(elems)
+                {
+                    bonemask.add(elems[i] | (bonestr[0]=='!' ? BONEMASK_NOT : 0));
+                    num++;
+                }
+            }
+            if(!num) conoutf("\frCould not find bone %s for hit zone mask [%s]", bonestr, maskstr);
         }
         bonestrs.deletearrays();
         if(bonemask.empty()) return;

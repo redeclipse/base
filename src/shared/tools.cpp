@@ -274,7 +274,8 @@ char *cubecasestr(const char *str, const char *needle)
 // Author: Martin Richter
 bool cubematchstr(const char *str, const char *match, bool nocase)
 {
-    if(!str || !match) return false;
+    if(!match || !*match) return !str || !*str;
+    if(!str || !*str) return *match == '*';
     for(; *match; str++, match++)
     {
         if(*match == '?')
@@ -294,7 +295,7 @@ bool cubematchstr(const char *str, const char *match, bool nocase)
 
 bool cubepattern(const char *str, const char *pattern, bool nocase)
 {
-    if(!str || !pattern) return false;
+    if(!pattern || !*pattern) return !str || !*str;
     vector<char *> match;
     while(*pattern)
     {
