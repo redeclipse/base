@@ -1,14 +1,14 @@
 "appbuild"
 {
-    "appid" "967460"
-    "desc" "v2 Preview"
+    "appid" "~REPAPPID~"
+    "desc" "~REPDESC~"
     "buildoutput" "output"
     "contentroot" "content"
-    "setlive" "devel"
+    "setlive" "~REPBRANCH~"
     "preview" "0"
     "local" ""
     "depots"
     {
-        "967461" "depot_build_967461.vdf"
+        "~REPDEPOT~" "depot_build.vdf"
     }
 }

@@ -11,6 +11,16 @@ SEMUPDATE_APPIMAGE_GH_DEST="redeclipse/deploy"
 SEMUPDATE_MODULES=`cat "${SEMUPDATE_PWD}/.gitmodules" | grep '\[submodule "[^.]' | sed -e 's/^.submodule..//;s/..$//' | tr "\n" " " | sed -e 's/ $//'`
 SEMUPDATE_ALLMODS="base ${SEMUPDATE_MODULES}"
 
+SEMUPDATE_VERSION_MAJOR=`sed -n 's/.define VERSION_MAJOR \([0-9]*\)/\1/p' src/engine/version.h`
+SEMUPDATE_VERSION_MINOR=`sed -n 's/.define VERSION_MINOR \([0-9]*\)/\1/p' src/engine/version.h`
+SEMUPDATE_VERSION_PATCH=`sed -n 's/.define VERSION_PATCH \([0-9]*\)/\1/p' src/engine/version.h`
+SEMUPDATE_VERSION="${SEMUPDATE_VERSION_MAJOR}.${SEMUPDATE_VERSION_MINOR}.${SEMUPDATE_VERSION_PATCH}"
+SEMUPDATE_STEAM_APPID=`sed -n 's/.define VERSION_STEAM_APPID \([0-9]*\)/\1/p' src/engine/version.h`
+SEMUPDATE_STEAM_DEPOT=`sed -n 's/.define VERSION_STEAM_DEPOT \([0-9]*\)/\1/p' src/engine/version.h`
+SEMUPDATE_DESCRIPTION="${BRANCH_NAME}:${SEMAPHORE_BUILD_NUMBER} from ${REVISION} for v${SEMUPDATE_VERSION}"
+SEMUPDATE_BRANCH="${BRANCH_NAME}"
+if [ "${SEMUPDATE_BRANCH}" = "master" ]; then SEMUPDATE_BRANCH="devel"; fi
+
 semupdate_setup() {
     echo "setting up ${BRANCH_NAME}..."
     git config --global user.email "noreply@redeclipse.net" || return 1
@@ -79,7 +89,14 @@ semupdate_appimage() {
 
 semupdate_steam() {
     echo "building Steam depot..."
-    cp -Rv "${SEMUPDATE_PWD}/src/install/steam" "${SEMUPDATE_DEPOT}" || return 1
+    mkdir -pv "${SEMUPDATE_DEPOT}" || return 1
+    pushd "${SEMUPDATE_PWD}/src/install/steam" || return 1
+    for i in *; do
+        if [ ! -d "${i}" ] && [ -e "${i}" ]; then
+            sed -e "s/~REPAPPID~/${SEMUPDATE_STEAM_APPID}/g;s/~REPDESC~/${SEMUPDATE_DESCRIPTION}/g;s/~REPBRANCH~/${SEMUPDATE_BRANCH}/g;s/~REPDEPOT~/${SEMUPDATE_STEAM_DEPOT}/g" "${i}" > "${SEMUPDATE_DEPOT}/${i}" || return 1
+        fi
+    done
+    popd || return 1
     mkdir -pv "${SEMAPHORE_CACHE_DIR}/Steam-dot" || return 1
     ln -sv "${SEMAPHORE_CACHE_DIR}/Steam-dot" "${HOME}/.steam" || return 1
     mkdir -pv "${SEMAPHORE_CACHE_DIR}/Steam" || return 1
@@ -120,7 +137,7 @@ semupdate_steam() {
     curl -sqL "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" | tar zxvf -
     chmod --verbose +x "linux32/steamcmd" || return 1
     export LD_LIBRARY_PATH="${SEMUPDATE_DEPOT}/linux32:${LD_LIBRARY_PATH}"
-    STEAM_ARGS="+login redeclipsenet ${STEAM_TOKEN} +run_app_build_http app_build_967460.vdf +quit"
+    STEAM_ARGS="+login redeclipsenet ${STEAM_TOKEN} +run_app_build_http app_build.vdf +quit"
     if [ "${STEAM_GUARD}" != "0" ]; then STEAM_ARGS="+set_steam_guard_code ${STEAM_GUARD} ${STEAM_ARGS}"; fi
     ls -la . linux32
     STEAM_EXECS=0

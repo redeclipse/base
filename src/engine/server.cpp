@@ -50,7 +50,8 @@ VAR(IDF_READONLY, versionisserver, 0, 1, 1);
 #else
 VAR(IDF_READONLY, versionisserver, 0, 0, 1);
 #endif
-VAR(IDF_READONLY, versionsteamid, 1, VERSION_STEAMID, -1);
+VAR(IDF_READONLY, versionsteamid, 1, VERSION_STEAM_APPID, -1);
+VAR(IDF_READONLY, versionsteamdepot, 1, VERSION_STEAM_DEPOT, -1);
 SVAR(IDF_READONLY, versiondiscordid, VERSION_DISCORD);
 
 static string verstr = "";
