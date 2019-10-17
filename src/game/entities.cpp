@@ -1430,7 +1430,7 @@ namespace entities
                 switch(k)
                 {
                     case 0:
-                        if(m_play(game::gamemode) && m_team(game::gamemode, game::mutators))
+                        if(m_team(game::gamemode, game::mutators))
                         {
                             loopenti(PLAYERSTART) if(ents[i]->type == PLAYERSTART)
                             {

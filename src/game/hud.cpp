@@ -1398,7 +1398,7 @@ namespace hud
                         ty += draw_textf("Press \fs\fw\f{=%s profile}\fS to \fs%s\fS loadout", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1, UI::uiopencmd, game::player1->loadweap.empty() ? "\fzoyselect" : "change");
                         popfont();
                     }
-                    if(m_play(game::gamemode) && m_team(game::gamemode, game::mutators))
+                    if(m_team(game::gamemode, game::mutators))
                     {
                         pushfont("little");
                         ty += draw_textf("Press \fs\fw\f{=%s team}\fS to change teams", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1, UI::uiopencmd);
@@ -1496,7 +1496,7 @@ namespace hud
             if(!client::demoplayback)
             {
                 ty += draw_textf("Press \fs\fw\f{=1:spectate 0}\fS to join the game", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1);
-                if(m_play(game::gamemode) && m_team(game::gamemode, game::mutators) && shownotices >= 2)
+                if(m_team(game::gamemode, game::mutators) && shownotices >= 2)
                     ty += draw_textf("Press \fs\fw\f{=1:%s team}\fS to join a team", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1, UI::uiopencmd);
             }
             if(!m_edit(game::gamemode) && shownotices >= 2)

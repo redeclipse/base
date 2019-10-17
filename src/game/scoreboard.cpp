@@ -120,7 +120,7 @@ namespace hud
                 if(o != game::player1 || !client::demoplayback) spectators.players.add(o);
                 continue;
             }
-            int team = m_play(game::gamemode) && m_team(game::gamemode, game::mutators) ? o->team : T_NEUTRAL;
+            int team = m_team(game::gamemode, game::mutators) ? o->team : T_NEUTRAL;
             bool found = false;
             loopj(numgroups)
             {
@@ -172,7 +172,7 @@ namespace hud
         }
         scoresoff = !onauto;
         scoreson = on;
-        if(m_play(game::gamemode) && m_play(game::gamemode) && interm)
+        if(interm)
         {
             int numgroups = groupplayers();
             if(!numgroups) return;

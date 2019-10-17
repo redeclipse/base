@@ -1521,7 +1521,7 @@ namespace game
         d->headless = (style&FRAG_HEADSHOT)!=0;
         bool burning = burn(d, weap, flags), bleeding = bleed(d, weap, flags), shocking = shock(d, weap, flags),
              isfocus = d == focus || v == focus, isme = d == player1 || v == player1,
-             allowanc = obitannounce && (obitannounce >= 2 || isfocus) && (m_play(gamemode) || isme) && v->actortype < A_ENEMY;
+             allowanc = obitannounce && (obitannounce >= 2 || isfocus) && isme && v->actortype < A_ENEMY;
         int anc = d == focus && allowanc ? S_V_FRAGGED : -1, dth = d->actortype >= A_ENEMY || d->obliterated ? S_SPLOSH : S_DEATH,
             curmat = material&MATF_VOLUME;
         if(d != player1) d->resetinterp();
@@ -1574,9 +1574,9 @@ namespace game
                 v->addicon(eventicon::HEADSHOT, totalmillis, eventiconfade, 0);
                 if(!override && allowanc) anc = S_V_HEADSHOT;
             }
-            if(!m_play(gamemode) || v->actortype >= A_ENEMY)
+            if(v->actortype >= A_ENEMY)
             {
-                concatstring(d->obit, v->actortype >= A_ENEMY ? " a " : " ");
+                concatstring(d->obit, " a ");
                 concatstring(d->obit, colourname(v));
             }
             else if(m_team(gamemode, mutators) && d->team == v->team)

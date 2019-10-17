@@ -584,7 +584,7 @@ namespace ai
                 int q = interests.length()-1;
                 loopi(interests.length()-1) if(interests[i].score < interests[q].score) q = i;
                 interest n = interests.removeunordered(q);
-                if(d->actortype == A_BOT && m_play(game::gamemode) && m_team(game::gamemode, game::mutators))
+                if(d->actortype == A_BOT && m_team(game::gamemode, game::mutators))
                 {
                     int members = 0;
                     static vector<int> targets; targets.setsize(0);

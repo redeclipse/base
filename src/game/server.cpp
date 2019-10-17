@@ -891,7 +891,7 @@ namespace server
 
         bool canspawn(clientinfo *ci, bool tryspawn = false)
         {
-            if(ci->actortype >= A_ENEMY || !m_play(gamemode)) return true;
+            if(ci->actortype >= A_ENEMY) return true;
             else if(tryspawn)
             {
                 if(m_loadout(gamemode, mutators) && !chkloadweap(ci)) return false;
@@ -1989,7 +1989,7 @@ namespace server
                     default: break;
                 }
             }
-            else if(m_play(gamemode) && enttype[sents[i].type].usetype == EU_ITEM && hasitem(i))
+            else if(enttype[sents[i].type].usetype == EU_ITEM && hasitem(i))
             {
                 sents[i].millis = gamemillis;
                 if(dospawn)
@@ -2199,7 +2199,7 @@ namespace server
             {
                 if(!cplayers) cplayers = totalspawns ? totalspawns : 1;
                 int np = G(numplayers) ? G(numplayers) : cplayers, mp = G(maxplayers) ? G(maxplayers) : np*3;
-                if(m_play(gamemode) && m_team(gamemode, mutators))
+                if(m_team(gamemode, mutators))
                 {
                     int offt = np%numt, offq = mp%numt;
                     if(offt) np += numt-offt;
@@ -3025,7 +3025,7 @@ namespace server
     int chooseteam(clientinfo *ci, int suggest, bool wantbal)
     {
         if(ci->actortype >= A_ENEMY) return T_ENEMY;
-        else if(m_play(gamemode) && m_team(gamemode, mutators) && ci->state != CS_SPECTATOR && ci->state != CS_EDITING)
+        else if(m_team(gamemode, mutators) && ci->state != CS_SPECTATOR && ci->state != CS_EDITING)
         {
             bool human = ci->actortype == A_PLAYER;
             int team = -1, bal = human && !wantbal && (G(teambalance) != 6 || !gs_playing(gamestate)) ? G(teambalance) : 1;
@@ -4437,7 +4437,7 @@ namespace server
                     style |= FRAG_HEADSHOT;
                     if(!m_dm_oldschool(gamemode, mutators)) pointvalue += G(headshotpoints);
                 }
-                if(m_play(gamemode) && m->actortype < A_ENEMY)
+                if(m->actortype < A_ENEMY)
                 {
                     int logs = 0;
                     v->spree++;

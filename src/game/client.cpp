@@ -593,7 +593,7 @@ namespace client
 
     int teamfromname(const char *team)
     {
-        if(m_play(game::gamemode) && m_team(game::gamemode, game::mutators))
+        if(m_team(game::gamemode, game::mutators))
         {
             if(team[0])
             {
@@ -615,7 +615,7 @@ namespace client
     {
         if(team[0])
         {
-            if(m_play(game::gamemode) && m_team(game::gamemode, game::mutators))
+            if(m_team(game::gamemode, game::mutators))
             {
                 int t = teamfromname(team);
                 if(isteam(game::gamemode, game::mutators, t, T_FIRST)) addmsg(N_SWITCHTEAM, "ri", t);
@@ -1210,7 +1210,7 @@ namespace client
 
     void setteam(const char *arg1, const char *arg2)
     {
-        if(m_play(game::gamemode) && m_team(game::gamemode, game::mutators))
+        if(m_team(game::gamemode, game::mutators))
         {
             int i = parseplayer(arg1);
             if(i >= 0)

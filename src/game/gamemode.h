@@ -62,7 +62,7 @@ gametypes gametype[] = {
     {
         G_EDITMODE, 0, GM(FFA),
         {
-            GM(MULTI)|GM(FFA)|GM(CLASSIC)|GM(FREESTYLE)|GM(VAMPIRE)|GM(RESIZE)|GM(HARD)|GM(ARENA),
+            GM(FFA)|GM(CLASSIC)|GM(FREESTYLE)|GM(VAMPIRE)|GM(RESIZE)|GM(HARD)|GM(ARENA),
             0, 0, 0
         },
         "Editing", "Editing", { "", "", "" },
