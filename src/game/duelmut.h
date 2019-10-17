@@ -375,119 +375,111 @@ struct duelservmode : servmode
                 allowed.remove(i);
                 cleanup = true;
             }
-            if(allowed.empty())
+            if(!allowed.empty()) return;
+            if(m_survivor(gamemode, mutators) && m_team(gamemode, mutators) && !alive.empty())
             {
-                if(m_survivor(gamemode, mutators) && m_team(gamemode, mutators) && !alive.empty())
+                bool found = false;
+                loopv(alive) if(i && alive[i]->team != alive[i-1]->team) { found = true; break; }
+                if(!found)
                 {
-                    bool found = false;
-                    loopv(alive) if(i && alive[i]->team != alive[i-1]->team) { found = true; break; }
-                    if(!found)
+                    if(dueldeath < 0) dueldeath = gamemillis+DSGS(delay);
+                    else if(gamemillis >= dueldeath)
                     {
-                        if(dueldeath < 0) dueldeath = gamemillis+DSGS(delay);
-                        else if(gamemillis >= dueldeath)
-                        {
-                            if(!cleanup)
-                            {
-                                bool teampoints = true;
-                                loopv(clients)
-                                {
-                                    bool was_playing = playing.find(clients[i]) >= 0;
-                                    if(was_playing)
-                                    {
-                                        if(clients[i]->team == alive[0]->team)
-                                        {
-                                            if(alive.find(clients[i]) >= 0)
-                                            {
-                                                if(!m_affinity(gamemode))
-                                                {
-                                                    givepoints(clients[i], 1, !m_dm_oldschool(gamemode, mutators), teampoints);
-                                                    teampoints = false;
-                                                }
-                                                else if(!duelaffin && teampoints && !m_dm_oldschool(gamemode, mutators))
-                                                {
-                                                    score &ts = teamscore(clients[i]->team);
-                                                    ts.total++;
-                                                    sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
-                                                    teampoints = false;
-                                                }
-                                            }
-                                        }
-                                    }
-                                    if(allowbroadcast(clients[i]->clientnum)) sendf(clients[i]->clientnum, 1, "ri3", N_DUELEND, alive[0]->team, int(was_playing));
-                                }
-                            }
-                            clear();
-                        }
-                    }
-                }
-                else switch(alive.length())
-                {
-                    case 0:
-                    {
-                        if(m_affinity(gamemode) && duelaffin) // reverse it!
-                        {
-                            score &ts = teamscore(abs(duelaffin));
-                            if(duelaffin > 0) ts.total--;
-                            else ts.total++;
-                            sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
-                        }
                         if(!cleanup)
                         {
-                            endffaround(alive);
-                            sendf(-1, 1, "ri2", N_DUELEND, -1);
-                            duelwinner = -1;
-                            duelwins = 0;
-                        }
-                        clear();
-                        break;
-                    }
-                    case 1:
-                    {
-                        if(dueldeath < 0)
-                        {
-                            dueldeath = gamemillis+DSGS(delay);
-                            break;
-                        }
-                        else if(gamemillis < dueldeath) break;
-                        if(!cleanup)
-                        {
-                            endffaround(alive);
-                            if(duelwinner != alive[0]->clientnum)
-                            {
-                                duelwinner = alive[0]->clientnum;
-                                duelwins = 1;
-                            }
-                            else
-                            {
-                                duelwins++;
-                            }
+                            bool teampoints = true;
                             loopv(clients)
                             {
-                                bool was_playing = playing.find(clients[i]) >= 0;
-                                if(was_playing)
+                                bool wasplay = playing.find(clients[i]) >= 0;
+                                if(wasplay)
                                 {
-                                    if(clients[i] == alive[0])
+                                    if(clients[i]->team == alive[0]->team)
                                     {
-                                        if(!m_dm_oldschool(gamemode, mutators))
+                                        if(alive.find(clients[i]) >= 0)
                                         {
-                                            if(!m_affinity(gamemode)) givepoints(clients[i], 1, true, true);
-                                            else if(!duelaffin)
+                                            if(!m_affinity(gamemode))
+                                            {
+                                                givepoints(clients[i], 1, !m_dm_oldschool(gamemode, mutators), teampoints);
+                                                teampoints = false;
+                                            }
+                                            else if(!duelaffin && teampoints && !m_dm_oldschool(gamemode, mutators))
                                             {
                                                 score &ts = teamscore(clients[i]->team);
                                                 ts.total++;
                                                 sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
+                                                teampoints = false;
                                             }
                                         }
                                     }
                                 }
-                                if(allowbroadcast(clients[i]->clientnum)) sendf(clients[i]->clientnum, 1, "ri4", N_DUELEND, duelwinner, int(was_playing), duelwins);
+                                if(allowbroadcast(clients[i]->clientnum)) sendf(clients[i]->clientnum, 1, "ri3", N_DUELEND, alive[0]->team, wasplay ? 3 : 2);
                             }
                         }
                         clear();
+                    }
+                }
+            }
+            else switch(alive.length())
+            {
+                case 0:
+                {
+                    if(m_affinity(gamemode) && duelaffin) // reverse it!
+                    {
+                        score &ts = teamscore(abs(duelaffin));
+                        if(duelaffin > 0) ts.total--;
+                        else ts.total++;
+                        sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
+                    }
+                    if(!cleanup)
+                    {
+                        endffaround(alive);
+                        sendf(-1, 1, "ri2", N_DUELEND, -1);
+                        duelwinner = -1;
+                        duelwins = 0;
+                    }
+                    clear();
+                    break;
+                }
+                case 1:
+                {
+                    if(dueldeath < 0)
+                    {
+                        dueldeath = gamemillis+DSGS(delay);
                         break;
                     }
-                    default: break;
+                    else if(gamemillis < dueldeath) break;
+                    if(!cleanup)
+                    {
+                        endffaround(alive);
+                        if(duelwinner != alive[0]->clientnum)
+                        {
+                            duelwinner = alive[0]->clientnum;
+                            duelwins = 1;
+                        }
+                        else
+                        {
+                            duelwins++;
+                        }
+                        loopv(clients)
+                        {
+                            bool wasplay = playing.find(clients[i]) >= 0;
+                            if(wasplay && clients[i] == alive[0] && !m_dm_oldschool(gamemode, mutators))
+                            {
+                                if(!m_affinity(gamemode)) givepoints(clients[i], 1, true, true);
+                                else if(!duelaffin)
+                                {
+                                    score &ts = teamscore(clients[i]->team);
+                                    ts.total++;
+                                    sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
+                                }
+                            }
+                            if(allowbroadcast(clients[i]->clientnum)) sendf(clients[i]->clientnum, 1, "ri4", N_DUELEND, duelwinner, wasplay ? 1 : 0, duelwins);
+                        }
+                    }
+                    clear();
+                    break;
                 }
+                default: break;
             }
         }
     }
