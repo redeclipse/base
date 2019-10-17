@@ -2379,6 +2379,7 @@ void gl_drawview()
     rendertransparent();
     GLERROR;
 
+    if(drawtex != DRAWTEX_MAPSHOT) game::renderpost();
     if(fogmat) setfog(fogmat, fogbelow, 1, abovemat);
 
     rendervolumetric();
