@@ -1540,25 +1540,33 @@ void loadextras()
 
 void setlocations()
 {
+    if(!fileexists(findfile("config/version.cfg", "r"), "r"))
+    {
+        if(chdir("..") < 0) fatal("Cannot change to parent directory to find config files");
 #if defined(__APPLE__)
-    int backstep = 4;
-    if(fileexists(findfile("../Resources/config/version.cfg", "r"), "r") && chdir("../Resources") >= 0) backstep = 0;
-#else
-    int backstep = 3;
+        if(fileexists(findfile("Resources/config/version.cfg", "r"), "r"))
+        {
+            if(chdir("Resources") < 0) fatal("Cannot change directory to app bundle resources");
+        }
+        else
 #endif
-    loopirev(backstep) if(!fileexists(findfile("config/version.cfg", "r"), "r"))
-    { // standalone solution to this is: pebkac
-        if(!i || chdir("..") < 0) fatal("Could not find config directory");
+        {
+            int backstep = 3;
+            loopirev(backstep) if(!fileexists(findfile("config/version.cfg", "r"), "r"))
+            { // standalone solution to this is: pebkac
+                if(chdir("..") < 0) fatal("Cannot change to parent directory to find config files");
+            }
+        }
     }
-    if(!execfile("config/version.cfg", false, EXEC_VERSION|EXEC_BUILTIN)) fatal("Cannot exec 'config/version.cfg'");
+    if(!execfile("config/version.cfg", false, EXEC_VERSION|EXEC_BUILTIN)) fatal("Cannot execute config/version.cfg");
 
     // pseudo directories with game content
     const char *data = getenv(sup_var("DATADIR"));
-    if(data && *data) addpackagedir(data);
-    else addpackagedir("data");
+    if(!data || !*data) data = "data";
+    addpackagedir(data);
     loadextras();
 
-    if(!fileexists(findfile("maps/readme.txt", "r"), "r")) fatal("Could not find game data");
+    if(!fileexists(findfile("maps/readme.txt", "r"), "r")) fatal("Could not find game content in %s", data);
 #if defined(WIN32)
     string dir;
     dir[0] = 0;
