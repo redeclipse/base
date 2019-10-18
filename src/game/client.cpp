@@ -3809,19 +3809,32 @@ namespace client
         }
     }
     ICOMMAND(0, getserver, "bbb", (int *server, int *prop, int *idx), getservers(*server, *prop, *idx));
-    ICOMMAND(0, getserveractive, "", (),
-    {
-        int n = 0;
-        loopv(servers) if(servers[i]->numplayers) n++;
-        intret(n);
-    });
-    ICOMMAND(0, getserverplayers, "", (),
-    {
-        int n = 0;
-        loopv(servers) n += servers[i]->numplayers;
-        intret(n);
-    });
-    ICOMMAND(0, loopservers, "ree", (ident *id, uint *body, uint *none),
+
+    #define GETSERVER(name, test, incr) \
+        ICOMMAND(0, getserver##name, "", (), \
+        { \
+            int n = 0; \
+            loopv(servers) if(test) n += incr; \
+            intret(n); \
+        }); \
+        ICOMMAND(0, getserver##name##if, "re", (ident *id, uint *cond), \
+        { \
+            int n = 0; \
+            loopstart(id, stack); \
+            loopv(servers) \
+            { \
+                loopiter(id, stack, i); \
+                if(test && executebool(cond)) n += incr; \
+            } \
+            loopend(id, stack); \
+            intret(n); \
+        });
+
+    GETSERVER(count, true, 1);
+    GETSERVER(active, servers[i]->numplayers, 1);
+    GETSERVER(players, servers[i]->numplayers, servers[i]->numplayers);
+
+    void loopserver(ident *id, uint *cond, uint *body, uint *none)
     {
         loopstart(id, stack);
         if(servers.empty())
@@ -3832,10 +3845,14 @@ namespace client
         else loopv(servers)
         {
             loopiter(id, stack, i);
+            if(cond && !executebool(cond)) continue;
             execute(body);
         }
         loopend(id, stack);
-    });
+    }
+
+    ICOMMAND(0, loopservers, "ree", (ident *id, uint *body, uint *none), loopserver(id, NULL, body, none));
+    ICOMMAND(0, loopserversif, "reee", (ident *id, uint *cond, uint *body, uint *none), loopserver(id, cond, body, none));
 
     void completeplayers(const char **nextcomplete, const char *start, int commandsize, const char *lastcomplete, bool reverse)
     {

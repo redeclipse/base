@@ -235,7 +235,7 @@ static struct identlink
     identstack *argstack;
 } noalias = { NULL, NULL, (1<<MAXARGS)-1, NULL }, *aliasstack = &noalias;
 
-VAR(0, dbgalias, 0, 4, 1000);
+VAR(0, dbgalias, 0, 20, 1000);
 
 static void debugalias()
 {
