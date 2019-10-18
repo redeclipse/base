@@ -42,11 +42,11 @@ namespace projs
     VAR(IDF_PERSIST, projtrails, 0, 1, 1);
     VAR(IDF_PERSIST, projtraildelay, 2, 50, VAR_MAX);
     VAR(IDF_PERSIST, projtraillength, 1, 250, VAR_MAX);
-    VAR(IDF_PERSIST, projhints, 0, 0, 6);
-    VAR(IDF_PERSIST, projfirehint, 0, 0, 1);
-    FVAR(IDF_PERSIST, projhintblend, 0, 0.75f, 1);
-    FVAR(IDF_PERSIST, projhintsize, 0, 1.45f, FVAR_MAX);
-    FVAR(IDF_PERSIST, projfirehintsize, 0, 1.85f, FVAR_MAX);
+    VAR(IDF_PERSIST, projhints, 0, 1, 6);
+    VAR(IDF_PERSIST, projfirehint, 0, 1, 1);
+    FVAR(IDF_PERSIST, projhintblend, 0, 0.5f, 1);
+    FVAR(IDF_PERSIST, projhintsize, 0, 1.5f, FVAR_MAX);
+    FVAR(IDF_PERSIST, projfirehintsize, 0, 1.75f, FVAR_MAX);
 
     VAR(IDF_PERSIST, projburntime, 0, 5500, VAR_MAX);
     VAR(IDF_PERSIST, projburndelay, 0, 1000, VAR_MAX);
@@ -282,15 +282,15 @@ namespace projs
             {
                 case -1: break;
                 case W_RIFLE:
-                    part_splash(PART_SPARK, 10, 500, proj.o, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale*0.125f, 1, 1, 0, 24, 20);
-                    part_create(PART_PLASMA, 500, proj.o, FWCOL(H, partcol, proj), expl*0.5f, 0.5f, 0, 0);
+                    part_splash(PART_SPARK, proj.child ? 5 : 10, proj.child ? 250 : 500, proj.o, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale*0.125f, 1, 1, 0, 24, 20);
+                    part_create(PART_PLASMA, proj.child ? 250 : 500, proj.o, FWCOL(H, partcol, proj), expl*0.5f, 0.5f, 0, 0);
                     adddynlight(proj.o, expl*1.1f, FWCOL(P, partcol, proj), 250, 10);
                     break;
                 default:
                     if(WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_LENGTH)
                     {
-                        part_flare(proj.from, proj.o, type == W_SWORD ? 750 : 350, type == W_SWORD ? PART_LIGHTNING_FLARE : PART_MUZZLE_FLARE, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale, 0.5f);
-                        if(type != W_SWORD) part_create(PART_PLASMA, 300, proj.o, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale, 0.25f);
+                        part_flare(proj.from, proj.o, proj.child ? 250 : (type == W_SWORD ? 750 : 350), type == W_SWORD ? PART_LIGHTNING_FLARE : PART_MUZZLE_FLARE, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale, 0.5f);
+                        if(type != W_SWORD) part_create(PART_PLASMA, proj.child ? 150 : 300, proj.o, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale, 0.25f);
                     }
                     break;
             }
@@ -591,12 +591,12 @@ namespace projs
                 {
                     case W_CLAW: case W_SWORD:
                     {
-                        part_splash(PART_SPARK, 10, 350, proj.o, FWCOL(H, partcol, proj), 0.35f, 1, 1, 0, 16, 15);
+                        part_splash(PART_SPARK, proj.child ? 5 : 10, proj.child ? 150 : 350, proj.o, FWCOL(H, partcol, proj), proj.child ? 0.2f : 0.35f, 1, 1, 0, 16, 15);
                         break;
                     }
                     case W_SHOTGUN: case W_SMG:
                     {
-                        part_splash(PART_SPARK, 5, 350, proj.o, FWCOL(H, partcol, proj), 0.35f, 1, 1, 0, 16, 15);
+                        part_splash(PART_SPARK, proj.child ? 3 : 6, proj.child ? 150 : 350, proj.o, FWCOL(H, partcol, proj), proj.child ? 0.2f : 0.35f, 1, 1, 0, 16, 15);
                         addstain(STAIN_BULLET, proj.o, proj.norm, max(WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags)), 0.25f)*4*proj.curscale);
                         break;
                     }
@@ -775,16 +775,19 @@ namespace projs
             proj.trailpos = proj.from;
             return;
         }
+        vec dir(0, 0, 0);
         float dist = proj.o.dist(proj.from);
+        if(!proj.child && dist > 0) dir = vec(proj.from).sub(proj.o).normalize();
+        else if(dist > 0 && !proj.vel.iszero()) dir = vec(proj.vel).normalize();
         if(dist > 0)
         {
             float len = WF(WK(proj.flags), proj.weap, partlen, WS(proj.flags))*(1.1f-proj.lifespan)*proj.curscale,
                   minsize = WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale,
                   maxsize = min(WF(WK(proj.flags), proj.weap, partlen, WS(proj.flags)), dist),
-                  cursize = clamp(len, minsize, maxsize);
+                  cursize = clamp(len, min(minsize, maxsize), maxsize);
             if(cursize > 0)
             {
-                proj.trailpos = vec(proj.from).sub(proj.o).normalize().mul(cursize).add(proj.o);
+                proj.trailpos = vec(dir).mul(cursize).add(proj.o);
                 return;
             }
         }
@@ -1622,7 +1625,7 @@ namespace projs
                         if(expl > 0)
                         {
                             part_explosion(proj.o, expl*0.5f, PART_EXPLOSION, len, FWCOL(H, explcol, proj), 1.f, WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)));
-                            part_splash(PART_SPARK, 5, 250, proj.o, FWCOL(H, partcol, proj), 0.5f*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)), 1, 1, 0, expl, 15);
+                            part_splash(PART_SPARK, proj.child ? 3 : 6, proj.child ? 100 : 250, proj.o, FWCOL(H, partcol, proj), 0.5f*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)), 1, 1, 0, expl, 15);
                             if(WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags)) >= 1)
                                 part_explosion(proj.o, expl*0.5f*WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags)), PART_SHOCKWAVE, halflen, projhint(proj.owner, FWCOL(H, explcol, proj)), 1.f, 0.5f*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags))*projhintblend);
                             addstain(STAIN_SCORCH_SHORT, proj.o, proj.norm, expl*0.5f);
@@ -1638,7 +1641,7 @@ namespace projs
                         if(expl > 0)
                         {
                             if(type != W_FLAMER) part_explosion(proj.o, expl, PART_EXPLOSION, len, FWCOL(H, explcol, proj), 1.f, WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)));
-                            part_splash(PART_SPARK, 20, len*2, proj.o, FWCOL(H, partcol, proj), 0.75f, WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)), 1, 0, expl, 20);
+                            part_splash(PART_SPARK, proj.child ? 10 : 20, proj.child ? len : len*2, proj.o, FWCOL(H, partcol, proj), 0.75f, WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)), 1, 0, expl, 20);
                             if(WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags)) >= 1)
                             {
                                 float explsize = expl*WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags));
@@ -1667,7 +1670,7 @@ namespace projs
                     case W_SHOTGUN: case W_SMG:
                     {
                         vol = clamp(int(vol*(1.f-proj.lifespan)), 0, 255);
-                        part_splash(PART_SPARK, type == W_SHOTGUN ? 5 : 3, len*2, proj.o, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale*0.5f, WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)), 1, 0, 16, 15);
+                        part_splash(PART_SPARK, proj.child ? 2 : (type == W_SHOTGUN ? 6 : 4), proj.child ? len : len*2, proj.o, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale*0.5f, WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)), 1, 0, 16, 15);
                         float expl = WX(WK(proj.flags), proj.weap, explode, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
                         if(expl > 0)
                         {
@@ -1690,7 +1693,7 @@ namespace projs
                                 part_explosion(proj.o, expl*WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags)), PART_SHOCKWAVE, halflen, projhint(proj.owner, FWCOL(H, explcol, proj)), 1.f, 0.25f*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags))*projhintblend);
                         }
                         else expl = max(WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags)), 0.25f)*4;
-                        part_splash(PART_SPARK, 20, len*2, proj.o, FWCOL(H, partcol, proj), 0.25f, WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)), 1, 0, expl, 20);
+                        part_splash(PART_SPARK, proj.child ? 10 : 20, proj.child ? len : len*2, proj.o, FWCOL(H, partcol, proj), 0.25f, WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)), 1, 0, expl, 20);
                         part_create(PART_PLASMA_SOFT, len, proj.o, FWCOL(H, partcol, proj), expl*0.75f, 0.5f*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)));
                         part_create(PART_ELECTRIC_SOFT, halflen, proj.o, FWCOL(H, partcol, proj), expl*0.375f, WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)));
                         part_create(PART_SMOKE, len, proj.o, FWCOL(H, partcol, proj), expl*0.35f, 0.35f*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)), -30);
@@ -1704,7 +1707,7 @@ namespace projs
                         if(expl > 0)
                         {
                             part_create(type != W_ZAPPER ? PART_PLASMA_SOFT : PART_ELECZAP_SOFT, len, proj.o, FWCOL(H, partcol, proj), expl*0.5f, 0.5f*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags))); // corona
-                            part_splash(PART_SPARK, 10, len*2, proj.o, FWCOL(H, partcol, proj), 0.25f, WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)), 1, 0, expl, 15);
+                            part_splash(PART_SPARK, proj.child ? 5 : 10, proj.child ? len : len*2, proj.o, FWCOL(H, partcol, proj), 0.25f, WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)), 1, 0, expl, 15);
                             part_explosion(proj.o, expl, PART_GLIMMERY, len, FWCOL(H, explcol, proj), 1.f, WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)));
                             if(WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags)) >= 1)
                                 part_explosion(proj.o, expl*WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags)), PART_SHOCKWAVE, halflen, projhint(proj.owner, FWCOL(H, explcol, proj)), 1.f, 0.5f*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags))*projhintblend);

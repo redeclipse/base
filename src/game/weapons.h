@@ -511,15 +511,15 @@ WPFVARM(IDF_GAMEMOD, 0, fragspread, 0, FVAR_MAX,
 );
 WPVARM(IDF_GAMEMOD, 0, fragtime, 1, VAR_MAX,
     500,        500,        500,        250,        500,        1000,       500,        500,        500,        1000,       2000,       1500,       500,
-    500,        500,        500,        5000,       300,        3000,       500,        500,        500,        1000,       2000,       1500,       500
+    500,        500,        500,        2500,       300,        3000,       500,        500,        500,        1000,       2000,       1500,       500
 );
 WPVARM(IDF_GAMEMOD, 0, fragtimedelay, 0, VAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
 );
 WPVARM(IDF_GAMEMOD, 0, fragtimeiter, 0, VAR_MAX,
-    0,          0,          0,          0,          0,          0,          0,          0,          0,          1,          1,          1,          0,
-    0,          0,          0,          0,          3,          0,          0,          0,          0,          1,          1,          1,          0
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
 );
 WPVARM(IDF_GAMEMOD, 0, fragweap, -1, W_MAX*2-1,
     -1,         -1,         -1,         -1,         -1,         -1,         -1,         -1,         -1,         W_SHOTGUN,  W_ZAPPER,   W_SMG,      -1,
@@ -878,15 +878,15 @@ WPVARK(IDF_GAMEMOD, 0, partfade, 1, VAR_MAX,
 );
 WPFVARK(IDF_GAMEMOD, 0, partlen, 0, FVAR_MAX,
     0.0f,       8.0f,       0.0f,       30.0f,      20.0f,      0.0f,       0.0f,       512.0f,     512.0f,     0.0f,       4.0f,       0.0f,       0.0f,
-    0.0f,       16.0f,      0.0f,       15.0f,      15.0f,      0.0f,       0.0f,       512.0f,     1024.0f,    0.0f,       4.0f,       0.0f,       0.0f,
-    0.0f,       8.0f,       0.0f,       15.0f,      15.0f,      0.0f,       0.0f,       1024.f,     512.0f,     0.0f,       4.0f,       0.0f,       0.0f,
-    0.0f,       16.0f,      0.0f,       15.0f,      50.0f,      0.0f,       0.0f,       1024.f,     1024.0f,    0.0f,       4.0f,       0.0f,       0.0f
+    0.0f,       16.0f,      0.0f,       10.0f,      15.0f,      0.0f,       0.0f,       512.0f,     1024.0f,    0.0f,       4.0f,       0.0f,       0.0f,
+    0.0f,       8.0f,       0.0f,       10.0f,      15.0f,      0.0f,       0.0f,       1024.f,     512.0f,     0.0f,       4.0f,       0.0f,       0.0f,
+    0.0f,       16.0f,      0.0f,       10.0f,      50.0f,      0.0f,       0.0f,       1024.f,     1024.0f,    0.0f,       4.0f,       0.0f,       0.0f
 );
 WPFVARK(IDF_GAMEMOD, 0, partsize, 0, FVAR_MAX,
     1.0f,       0.125f,     1.0f,       0.75f,      0.6f,       6.0f,       8.0f,       2.0f,       1.5f,       1.0f,       2.0f,       2.0f,       0.5f,
     2.0f,       0.25f,      1.25f,      0.5f,       0.75f,      12.0f,      5.0f,       2.0f,       3.0f,       1.0f,       2.0f,       2.0f,       1.0f,
-    1.0f,       0.125f,     1.0f,       0.5f,       0.5f,       6.0f,       8.0f,       3.0f,       1.5f,       1.0f,       2.0f,       2.0f,       0.5f,
-    2.0f,       0.25f,      1.25f,      0.5f,       0.5f,       12.0f,      5.0f,       5.0f,       3.0f,       1.0f,       2.0f,       2.0f,       1.0f
+    1.0f,       0.125f,     1.0f,       0.4f,       0.4f,       6.0f,       8.0f,       3.0f,       1.5f,       1.0f,       2.0f,       2.0f,       0.5f,
+    2.0f,       0.25f,      1.25f,      0.4f,       0.4f,       12.0f,      5.0f,       5.0f,       3.0f,       1.0f,       2.0f,       2.0f,       1.0f
 );
 WPVARK(IDF_GAMEMOD, 0, parttype, 0, W_MAX-1,
     W_CLAW,     W_PISTOL,   W_SWORD,    W_SHOTGUN,  W_SMG,      W_FLAMER,   W_PLASMA,   W_ZAPPER,   W_RIFLE,    W_GRENADE,  W_MINE,     W_ROCKET,   W_MELEE,
