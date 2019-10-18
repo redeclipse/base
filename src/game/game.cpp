@@ -346,6 +346,7 @@ namespace game
     VAR(IDF_PERSIST, forceplayermodel, -1, -1, PLAYERTYPES-1);
     VAR(IDF_PERSIST, forceplayerpattern, -1, -1, PLAYERPATTERNS-1);
     VAR(IDF_PERSIST, vanitymodels, 0, 1, 1);
+    FVAR(IDF_PERSIST, vanitymaxdist, FVAR_NONZERO, 1024, FVAR_MAX);
     VAR(IDF_PERSIST, headlessmodels, 0, 1, 1);
     FVAR(IDF_PERSIST, twitchspeed, 0, 2.5f, FVAR_MAX);
 
@@ -524,6 +525,12 @@ namespace game
             }
         }
         return file;
+    }
+
+    bool vanitycheck(gameent *d)
+    {
+        if(!vanitymodels || !d || !*d->vanity || (d != focus && d->o.dist(camera1->o) > vanitymaxdist)) return false;
+        return true;
     }
 
     bool allowspec(gameent *d, int level, int cn = -1)
@@ -1772,7 +1779,7 @@ namespace game
         vec pos = d->headtag();
         pos.z -= d->zradius*0.125f;
 
-        if(vanitymodels && d->headless && !nogore && headlessmodels && *d->vanity)
+        if(d->headless && !nogore && headlessmodels && vanitycheck(d))
         {
             if(d->vitems.empty()) vanitybuild(d);
             int found[VANITYMAX] = {0};
@@ -3413,19 +3420,11 @@ namespace game
                     mdlattach[ai++] = modelattach("tag_rtoe", &d->tag[TAG_TOE_RIGHT]); // 12
                 }
             }
-            if(vanitymodels && third && d->vanity[0])
+            if(third && vanitycheck(d))
             {
-                int idx = third == 1 && (d->state == CS_DEAD || d->state == CS_WAITING) && d->headless && !nogore && headlessmodels ? 3 : third;
-                if(d->vitems.empty())
-                {
-                    vector<char *> vanitylist;
-                    explodelist(d->vanity, vanitylist);
-                    loopv(vanitylist) if(vanitylist[i] && *vanitylist[i])
-                        loopvk(vanities) if(!strcmp(vanities[k].ref, vanitylist[i]))
-                            d->vitems.add(k);
-                    vanitylist.deletearrays();
-                }
-                int count = 0, found[VANITYMAX] = {0};
+                if(d->vitems.empty()) vanitybuild(d);
+                int idx = third == 1 && (d->state == CS_DEAD || d->state == CS_WAITING) && d->headless && !nogore && headlessmodels ? 3 : third,
+                    count = 0, found[VANITYMAX] = {0};
                 loopvk(d->vitems) if(vanities.inrange(d->vitems[k]))
                 {
                     if(found[vanities[d->vitems[k]].type]) continue;

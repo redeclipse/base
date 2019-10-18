@@ -1686,7 +1686,7 @@ void setverinfo(const char *bin)
         const char *vbranch = getenv(sup_var("BRANCH"));
         if(vbranch && *vbranch) setsvar("versionbranch", vbranch);
         else if(branchfile && *branchfile) setsvar("versionbranch", branchfile);
-        else setsvar("versionbranch", "none");
+        else setsvar("versionbranch", VERSION_BRANCH);
     }
     if(branchfile) delete[] branchfile;
 }
@@ -1697,7 +1697,7 @@ void fatalsignal(int signum)
     if(!fatalsig)
     {
         fatalsig = true;
-        const char *str = "Error: Fatal signal %d (Unknown Error)";
+        const char *str = "Fatal signal %d (Unknown Error)";
         switch(signum)
         {
             case SIGINT: str = "Exit signal %d (Interrupt)"; break;
