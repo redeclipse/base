@@ -813,7 +813,8 @@ struct clientstate
     bool weapwaited(int weap, int millis, int skip = 0)
     {
         if(weap != weapselect) skip &= ~(1<<W_S_RELOAD);
-        if(!weapwait[weap] || W_S_EXCLUDE&(1<<weapstate[weap]) || (skip && skip&(1<<weapstate[weap]))) return true;
+        if(!weapwait[weap] || weapstate[weap] == W_S_IDLE || (skip && skip&(1<<weapstate[weap]))) return true;
+        if(W(weap, cookinterrupt) && W_S_INTERRUPT&(1<<weapstate[weap])) return true;
         return millis-weaptime[weap] >= weapwait[weap];
     }
 
@@ -836,7 +837,7 @@ struct clientstate
     {
         if(!(AA(actortype, abilities)&(1<<(WS(flags) ? A_A_SECONDARY : A_A_PRIMARY)))) return false;
         if(weap == weapselect || weap == W_MELEE)
-            if(hasweap(weap, sweap) && getammo(weap, millis) >= (W2(weap, cooktime, WS(flags)) ? 1 : W2(weap, ammosub, WS(flags))) && weapwaited(weap, millis, skip))
+            if(hasweap(weap, sweap) && getammo(weap, millis) >= (W2(weap, cooktime, WS(flags)) ? 1 : W2(weap, ammosub, WS(flags))) && weapwaited(weap, millis, W_S_INTERRUPT|skip))
                 return true;
         return false;
     }

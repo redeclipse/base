@@ -261,7 +261,7 @@ namespace weapons
         {
             if(!pressed)
             {
-                client::addmsg(N_SPHY, "ri5", d->clientnum, SPHY_COOK, W_S_IDLE, 0, 0);
+                client::addmsg(N_SPHY, "ri6", d->clientnum, SPHY_COOK, weap, W_S_IDLE, 0, 0);
                 d->setweapstate(weap, W_S_IDLE, 0, lastmillis, 0, true);
                 return false;
             }
@@ -301,7 +301,7 @@ namespace weapons
                             d->weapload[weap][W_A_CLIP] = -offset;
                         }
                         int offtime = hadcook && d->prevstate[weap] == type ? lastmillis-d->prevtime[weap] : 0;
-                        client::addmsg(N_SPHY, "ri5", d->clientnum, SPHY_COOK, type, len, offtime);
+                        client::addmsg(N_SPHY, "ri6", d->clientnum, SPHY_COOK, weap, type, len, offtime);
                         d->setweapstate(weap, type, len, lastmillis, offtime);
                         d->lastcook = lastmillis;
                     }

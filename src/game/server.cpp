@@ -6236,25 +6236,25 @@ namespace server
                         }
                         case SPHY_COOK:
                         {
-                            int wstate = getint(p), wlen = getint(p), wtime = getint(p);
+                            int weap = getint(p), wstate = getint(p), wlen = getint(p), wtime = getint(p);
                             if(!proceed) break;
-                            if(!cp->isalive(gamemillis) || !isweap(cp->weapselect) || (wstate != W_S_IDLE && wstate != W_S_ZOOM && wstate != W_S_POWER))
+                            if(!cp->isalive(gamemillis) || !isweap(weap) || (wstate != W_S_IDLE && wstate != W_S_ZOOM && wstate != W_S_POWER))
                             {
-                                srvmsgft(cp->clientnum, CON_DEBUG, "Sync error: power [%d] failed - unexpected message", cp->weapselect);
+                                srvmsgft(cp->clientnum, CON_DEBUG, "Sync error: power [%d] failed - unexpected message", weap);
                                 break;
                             }
-                            if(cp->weapstate[cp->weapselect] == W_S_RELOAD && !cp->weapwaited(cp->weapselect, gamemillis))
+                            if(cp->weapstate[weap] == W_S_RELOAD && !cp->weapwaited(weap, gamemillis))
                             {
-                                if(!cp->weapwaited(cp->weapselect, gamemillis, (1<<W_S_RELOAD)))
+                                if(!cp->weapwaited(weap, gamemillis, (1<<W_S_RELOAD)))
                                 {
-                                    srvmsgft(cp->clientnum, CON_DEBUG, "Sync error: power [%d] failed - current state disallows it", cp->weapselect);
+                                    srvmsgft(cp->clientnum, CON_DEBUG, "Sync error: power [%d] failed - current state disallows it", weap);
                                     sendresume(ci, true);
                                     break;
                                 }
-                                else if(cp->weapload[cp->weapselect][W_A_CLIP] > 0) checkweapload(cp, cp->weapselect);
+                                else if(cp->weapload[weap][W_A_CLIP] > 0) checkweapload(cp, weap);
                                 else break;
                             }
-                            cp->setweapstate(cp->weapselect, wstate, wlen, lastmillis, wtime, wstate == W_S_IDLE);
+                            cp->setweapstate(weap, wstate, wlen, lastmillis, wtime, wstate == W_S_IDLE);
                             cp->lastcook = gamemillis;
                             qmsg = true;
                             break;

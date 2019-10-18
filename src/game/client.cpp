@@ -2396,9 +2396,9 @@ namespace client
                         }
                         case SPHY_COOK:
                         {
-                            int param = getint(p), value = getint(p), offtime = getint(p);
-                            if(!proceed) break;
-                            t->setweapstate(t->weapselect, param, value, lastmillis, offtime, param == W_S_IDLE);
+                            int weap = getint(p), param = getint(p), value = getint(p), offtime = getint(p);
+                            if(!proceed || !isweap(weap)) break;
+                            t->setweapstate(weap, param, value, lastmillis, offtime, param == W_S_IDLE);
                             break;
                         }
                         case SPHY_EXTINGUISH:

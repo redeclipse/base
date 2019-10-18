@@ -41,7 +41,7 @@ enum
 {
     W_S_IDLE = 0, W_S_PRIMARY, W_S_SECONDARY, W_S_RELOAD, W_S_POWER, W_S_ZOOM, W_S_SWITCH, W_S_USE, W_S_WAIT, W_S_MAX,
     W_S_ALL = (1<<W_S_IDLE)|(1<<W_S_PRIMARY)|(1<<W_S_SECONDARY)|(1<<W_S_RELOAD)|(1<<W_S_SWITCH)|(1<<W_S_USE)|(1<<W_S_POWER)|(1<<W_S_ZOOM)|(1<<W_S_WAIT),
-    W_S_EXCLUDE = (1<<W_S_IDLE)|(1<<W_S_POWER)|(1<<W_S_ZOOM)
+    W_S_INTERRUPT = (1<<W_S_POWER)|(1<<W_S_ZOOM)
 };
 
 enum { W_A_CLIP = 0, W_A_STORE, W_A_MAX };
@@ -305,6 +305,9 @@ WPVAR(IDF_GAMEMOD|IDF_HEX, 0, colour, 0, 0xFFFFFF,
 WPVARM(IDF_GAMEMOD, 0, cooked, 0, W_C_ALL,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          W_C_LIFEN,  0,          0,          0,
     0,          0,          W_C_SCALE,  0,          0,          0,          W_C_RAYS,   W_C_ZK,     W_C_SZ,     W_C_LIFEN,  0,          0,          0
+);
+WPVAR(IDF_GAMEMOD, 0, cookinterrupt, 0, VAR_MAX,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
 );
 WPVARM(IDF_GAMEMOD, 0, cooktime, 0, VAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          3000,       0,          0,          0,
@@ -1427,7 +1430,7 @@ VAR(IDF_READONLY, weapstatepower, 1, W_S_POWER, -1);
 VAR(IDF_READONLY, weapstatezoom, 1, W_S_ZOOM, -1);
 VAR(IDF_READONLY, weapstatewait, 1, W_S_WAIT, -1);
 VAR(IDF_READONLY, weapstatemax, 1, W_S_MAX, -1);
-VAR(IDF_READONLY, weapstateexclude, 1, W_S_EXCLUDE, -1);
+VAR(IDF_READONLY, weapstateinterrupt, 1, W_S_INTERRUPT, -1);
 VAR(IDF_READONLY, weapresidualburn, 1, W_R_BURN, -1);
 VAR(IDF_READONLY, weapresidualbleed, 1, W_R_BLEED, -1);
 VAR(IDF_READONLY, weapresidualshock, 1, W_R_SHOCK, -1);
