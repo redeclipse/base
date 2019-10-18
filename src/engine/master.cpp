@@ -290,10 +290,10 @@ void statsdb_rollback()
 void statsdb_warn(const char *fmt, ...)
 {
     defvformatbigstring(errmsg, fmt, fmt);
-    if(logfile) logoutf("statistics database error: %s", errmsg);
-    #ifndef WIN32
-    fprintf(stderr, "statistics database error: %s\n", errmsg);
-    #endif
+    if(logfile) logoutf("Statistics database error: %s", errmsg);
+#ifndef WIN32
+    fprintf(stderr, "Statistics database error: %s\n", errmsg);
+#endif
 }
 
 inline void statsdb_warn()

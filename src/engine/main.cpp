@@ -126,9 +126,9 @@ void fatal(const char *s, ...)    // failure exit
     {
         defvformatbigstring(msg, s, s);
         if(logfile) logoutf("%s", msg);
-        #ifndef WIN32
-        fprintf(stderr, "%s\n", msg);
-        #endif
+#ifndef WIN32
+        fprintf(stderr, "Fatal error: %s\n", msg);
+#endif
         if(errors <= 1) // avoid recursion
         {
             if(SDL_WasInit(SDL_INIT_VIDEO))
@@ -137,12 +137,12 @@ void fatal(const char *s, ...)    // failure exit
                 SDL_SetRelativeMouseMode(SDL_FALSE);
                 if(screen) SDL_SetWindowGrab(screen, SDL_FALSE);
                 cleargamma();
-                #ifdef __APPLE__
-                    if(screen) SDL_SetWindowFullscreen(screen, 0);
-                #endif
+#ifdef __APPLE__
+                if(screen) SDL_SetWindowFullscreen(screen, 0);
+#endif
             }
             SDL_Quit();
-            defformatstring(cap, "%s: Error", versionname);
+            defformatstring(cap, "%s: Fatal error", versionname);
             SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, cap, msg, NULL);
         }
     }

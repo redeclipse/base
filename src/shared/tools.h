@@ -202,6 +202,7 @@ static inline int bitscan(uint mask)
 #define chdir _chdir
 #define strcasecmp _stricmp
 #define strncasecmp _strnicmp
+#define getcwd _getcwd
 #define PATHDIV '\\'
 #else
 #define PATHDIV '/'

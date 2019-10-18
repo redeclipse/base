@@ -1508,65 +1508,66 @@ bool serveroption(char *opt)
     return false;
 }
 
+SVAR(IDF_READONLY, startingdir, "");
+SVAR(IDF_READONLY, workingdir, "");
+SVAR(IDF_READONLY, datapackage, "");
 SVAR(IDF_READONLY, extrapackages, "");
-void loadextras()
+
+void loadextras(const char *dirs)
 {
-    string extras = "";
-    const char *dir = getenv(sup_var("EXTRADIRS"));
-    if(dir && *dir) copystring(extras, dir);
-    else
+    vector<char *> list;
+    explodelist(dirs, list);
+    loopv(list) if(list[i] && *list[i])
     {
-        char *extrafile = loadfile("extras.txt", NULL);
-        if(extrafile)
-        {
-            concformatstring(extras, "%s%s", *extras ? " " : "", extrafile);
-            delete[] extrafile;
-        }
+        defformatstring(fname, "data/%s", list[i]);
+        conoutf("Adding extra content: %s (%s/%s)", list[i], workingdir, fname);
+        addpackagedir(fname);
     }
-    if(*extras)
-    {
-        setsvar("extrapackages", extras);
-        vector<char *> list;
-        explodelist(extras, list);
-        loopv(list) if(list[i] && *list[i])
-        {
-            defformatstring(fname, "data/%s", list[i]);
-            conoutf("Adding extra content: %s (%s)", list[i], fname);
-            addpackagedir(fname);
-        }
-        list.deletearrays();
-    }
+    list.deletearrays();
+    setsvar("extrapackages", dirs);
 }
 
 void setlocations()
 {
-    if(!fileexists(findfile("config/version.cfg", "r"), "r"))
+    string cwd;
+    cwd[0] = 0;
+    loopi(4)
     {
-        if(chdir("..") < 0) fatal("Cannot change to parent directory to find config files");
-#if defined(__APPLE__)
-        if(fileexists(findfile("Resources/config/version.cfg", "r"), "r"))
+        if(!getcwd(cwd, sizeof(cwd))) fatal("Could not query current working directory");
+        conoutf("Checking working directory: %s", path(cwd));
+        if(!i) setsvar("startingdir", cwd);
+#ifdef __APPLE__
+        if(fileexists(findfile("Resources/config/version.cfg", "r"), "r")) break;
         {
-            if(chdir("Resources") < 0) fatal("Cannot change directory to app bundle resources");
+            if(chdir("Resources") < 0) fatal("Could not change directory to app bundle resources");
+            break;
         }
-        else
 #endif
-        {
-            int backstep = 3;
-            loopirev(backstep) if(!fileexists(findfile("config/version.cfg", "r"), "r"))
-            { // standalone solution to this is: pebkac
-                if(chdir("..") < 0) fatal("Cannot change to parent directory to find config files");
-            }
-        }
+        if(fileexists(findfile("config/version.cfg", "r"), "r")) break;
+        if(chdir("..") < 0) fatal("Could not change to parent directory to find config files");
     }
-    if(!execfile("config/version.cfg", false, EXEC_VERSION|EXEC_BUILTIN)) fatal("Cannot execute config/version.cfg");
+    setsvar("workingdir", cwd);
+    if(!execfile("config/version.cfg", false, EXEC_VERSION|EXEC_BUILTIN)) fatal("Could not execute: %s/config/version.cfg", workingdir);
 
     // pseudo directories with game content
     const char *data = getenv(sup_var("DATADIR"));
     if(!data || !*data) data = "data";
     addpackagedir(data);
-    loadextras();
+    setsvar("datapackage", data);
+    if(!fileexists(findfile("maps/readme.txt", "r"), "r")) fatal("Could not find game content in: %s/%s", workingdir, data);
 
-    if(!fileexists(findfile("maps/readme.txt", "r"), "r")) fatal("Could not find game content in %s", data);
+    const char *extras = getenv(sup_var("EXTRADIRS"));
+    if(extras && *extras) loadextras(extras);
+    else
+    {
+        char *extrafile = loadfile("extras.txt", NULL);
+        if(extrafile)
+        {
+            if(*extrafile) loadextras(extrafile);
+            delete[] extrafile;
+        }
+    }
+
 #if defined(WIN32)
     string dir;
     dir[0] = 0;
@@ -1577,7 +1578,7 @@ void setlocations()
     }
 #elif defined(__APPLE__)
     extern const char *mac_personaldir();
-    const char *dir = mac_personaldir(); // typically  /Users/<name>/Application Support/
+    const char *dir = mac_personaldir(); // typically: /Users/<name>/Application Support/
     if(dir && *dir)
     {
         defformatstring(s, "%s/%s", dir, versionname);
@@ -1740,14 +1741,14 @@ void fatal(const char *s, ...)    // failure exit
         defvformatbigstring(msg, s, s);
         if(logfile) logoutf("%s", msg);
 #ifndef WIN32
-        fprintf(stderr, "Exiting: %s\n", msg);
+        fprintf(stderr, "Fatal error: %s\n", msg);
 #endif
         if(errors <= 1) // avoid recursion
         {
             cleanupserver();
             enet_deinitialize();
 #ifdef WIN32
-            defformatstring(cap, "%s: Error", versionname);
+            defformatstring(cap, "%s: Fatal error", versionname);
             MessageBox(NULL, msg, cap, MB_OK|MB_SYSTEMMODAL);
 #endif
         }
