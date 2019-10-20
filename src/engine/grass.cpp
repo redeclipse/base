@@ -2,7 +2,7 @@
 
 VAR(IDF_PERSIST, grass, 0, 1, 1);
 VAR(0, dbggrass, 0, 0, 1);
-VAR(IDF_PERSIST, grassdist, 0, 256, 10000);
+VAR(IDF_PERSIST, grassdist, 0, 1024, 10000);
 FVAR(IDF_PERSIST, grasstaper, 0, 0.2f, 1);
 FVAR(IDF_PERSIST, grassstep, 0.5f, 2, 8);
 VAR(IDF_WORLD, grassheight, 1, 4, 64);
