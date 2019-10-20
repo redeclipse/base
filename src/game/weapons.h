@@ -1171,7 +1171,7 @@ WPFVARK(IDF_GAMEMOD, 0, weight, FVAR_MIN, FVAR_MAX,
     0.0f,       0.0f,       0.0f,       750.0f,     500.0f,     200.0f,     0.0f,       0.0f,       0.0f,       200.0f,     175.0f,     0.0f,       0.0f,
     0.0f,       0.0f,       0.0f,       300.0f,     0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       200.0f,     175.0f,     0.0f,       0.0f
 );
-WPFVARM(IDF_GAMEMOD, 0, znudge, 0, FVAR_MAX,
+WPFVARM(IDF_GAMEMOD, 0, znudge, FVAR_MIN, FVAR_MAX,
     0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.1f,       0.0f,       0.0f,       0.0f,       0.1f,       0.0625f,    0.0f,       0.0f,
     0.0f,       0.0f,       0.0f,       0.1f,       0.1f,       0.0f,       0.15f,      0.0f,       0.0f,       0.1f,       0.0625f,    0.0f,       0.0f
 );
