@@ -227,8 +227,8 @@ struct defendservmode : defendstate, servmode
 
     void balance(int oldbalance)
     {
-        static vector<int> owners[T_TOTAL], enemies[T_TOTAL], modified;
-        loopk(T_TOTAL)
+        static vector<int> owners[T_NUM], enemies[T_NUM], modified;
+        loopk(T_NUM)
         {
             owners[k].setsize(0);
             enemies[k].setsize(0);

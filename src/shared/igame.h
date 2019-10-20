@@ -120,6 +120,7 @@ namespace game
     extern int numdynents(bool all = false);
     extern int hexpalette(int palette, int index);
     extern vec getpalette(int palette, int index);
+    extern void fixpalette(int &palette, int &index, int gver);
     extern void adddynlights();
     extern void particletrack(particle *p, uint type, int &ts, bool step);
     extern void dynlighttrack(physent *owner, vec &o, vec &hud);

@@ -110,8 +110,6 @@ namespace hud
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, teamneutraltex, "<grey>textures/icons/teamneutral", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, teamalphatex, "<grey>textures/icons/teamalpha", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, teamomegatex, "<grey>textures/icons/teamomega", 3);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, teamkappatex, "<grey>textures/icons/teamkappa", 3);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, teamsigmatex, "<grey>textures/icons/teamsigma", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, teamenemytex, "<grey>textures/icons/teamenemy", 3);
 
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, playertex, "<grey>textures/icons/player", 3);
@@ -429,7 +427,6 @@ namespace hud
     TVAR(IDF_PERSIST, moderaceendurancetex, "<grey>textures/modes/raceendurance", 3);
     TVAR(IDF_PERSIST, moderacegauntlettex, "<grey>textures/modes/racegauntlet", 3);
 
-    TVAR(IDF_PERSIST, modemultitex, "<grey>textures/modes/multi", 3);
     TVAR(IDF_PERSIST, modeffatex, "<grey>textures/modes/ffa", 3);
     TVAR(IDF_PERSIST, modecooptex, "<grey>textures/modes/coop", 3);
     TVAR(IDF_PERSIST, modeinstatex, "<grey>textures/modes/instagib", 3);
@@ -511,7 +508,6 @@ namespace hud
     {
         modecheck(g, m);
         if(before) modetex(g, m, list);
-        if(m_multi(g, m) && (implied || !(gametype[g].implied&GM(MULTI)))) ADDMODE(multi)
         if(m_ffa(g, m) && (implied || !(gametype[g].implied&GM(FFA)))) ADDMODE(ffa)
         if(m_coop(g, m) && (implied || !(gametype[g].implied&GM(COOP)))) ADDMODE(coop)
         if(m_insta(g, m) && (implied || !(gametype[g].implied&GM(INSTA)))) ADDMODE(insta)
@@ -1590,7 +1586,7 @@ namespace hud
 
     const char *teamtexname(int team)
     {
-        const char *teamtexs[T_MAX] = { teamneutraltex, teamalphatex, teamomegatex, teamkappatex, teamsigmatex, teamenemytex };
+        const char *teamtexs[T_MAX] = { teamneutraltex, teamalphatex, teamomegatex, teamenemytex };
         return teamtexs[clamp(team, 0, T_MAX-1)];
     }
 

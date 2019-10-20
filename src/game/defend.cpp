@@ -253,7 +253,7 @@ namespace defend
         bool hasteams = df != 0;
         if(hasteams)
         {
-            int bases[T_ALL] = {0};
+            int bases[T_COUNT] = {0};
             loopv(st.flags) bases[st.flags[i].kinship]++;
             loopi(numteams(game::gamemode, game::mutators)-1) if(!bases[i+1] || (bases[i+1] != bases[i+2]))
             {

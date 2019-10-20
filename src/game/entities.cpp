@@ -1159,8 +1159,8 @@ namespace entities
                 break;
             }
             case PLAYERSTART:
-                while(e.attrs[0] < 0) e.attrs[0] += T_ALL; // team
-                while(e.attrs[0] >= T_ALL) e.attrs[0] -= T_ALL; // wrap both ways
+                while(e.attrs[0] < 0) e.attrs[0] += T_COUNT; // team
+                while(e.attrs[0] >= T_COUNT) e.attrs[0] -= T_COUNT; // wrap both ways
             case CHECKPOINT: // keeps going
                 FIXDIRYPL(1, 2); // yaw, pitch
                 if(e.type == CHECKPOINT)
@@ -1284,8 +1284,8 @@ namespace entities
             }
             case AFFINITY:
             {
-                while(e.attrs[0] < 0) e.attrs[0] += T_ALL; // team
-                while(e.attrs[0] >= T_ALL) e.attrs[0] -= T_ALL; // wrap both ways
+                while(e.attrs[0] < 0) e.attrs[0] += T_COUNT; // team
+                while(e.attrs[0] >= T_COUNT) e.attrs[0] -= T_COUNT; // wrap both ways
                 FIXDIRYPL(1, 2); // yaw, pitch
                 break;
             }
@@ -1648,6 +1648,37 @@ namespace entities
                     }
                     break;
                 }
+                case PLAYERSTART: case AFFINITY:
+                {
+                    if(gver <= 244 && e.attrs[0] > T_OMEGA) e.type = NOTUSED;
+                    break;
+                }
+                case PARTICLES:
+                {
+                    if(gver <= 244) switch(e.attrs[0])
+                    {
+                        case 0: game::fixpalette(e.attrs[5], e.attrs[6], gver); break;
+                        case 3: game::fixpalette(e.attrs[3], e.attrs[4], gver); break;
+                        case 4: game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
+                        case 5: game::fixpalette(e.attrs[3], e.attrs[4], gver); break;
+                        case 6: game::fixpalette(e.attrs[4], e.attrs[5], gver); game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
+                        case 7: game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
+                        case 8: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
+                        case 9: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
+                        case 10: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
+                        case 11: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
+                        case 12: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
+                        case 13: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
+                        case 14: game::fixpalette(e.attrs[8], e.attrs[9], gver); break;
+                        case 15: game::fixpalette(e.attrs[8], e.attrs[9], gver); break;
+                        default: break;
+                    }
+                    break;
+                }
+                case LIGHT: if(gver <= 244) game::fixpalette(e.attrs[7], e.attrs[8], gver); break;
+                case MAPMODEL: if(gver <= 244) game::fixpalette(e.attrs[8], e.attrs[9], gver); break;
+                case DECAL: if(gver <= 244) game::fixpalette(e.attrs[7], e.attrs[8], gver); break;
+                case TELEPORT: if(gver <= 244) game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
                 case ROUTE: case UNUSEDENT: e.type = NOTUSED; break;
                 default: break;
             }

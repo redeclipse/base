@@ -55,11 +55,9 @@ enum
 
 enum
 {
-    T_NEUTRAL = 0, T_ALPHA, T_OMEGA, T_KAPPA, T_SIGMA, T_ENEMY, T_MAX,
-    T_FIRST = T_ALPHA, T_LAST = T_OMEGA, T_MULTI = T_SIGMA,
-    T_COUNT = T_LAST+1, T_ALL = T_MULTI+1,
-    T_NUM = (T_LAST-T_FIRST)+1,
-    T_TOTAL = (T_MULTI-T_FIRST)+1
+    T_NEUTRAL = 0, T_ALPHA, T_OMEGA, T_ENEMY, T_MAX,
+    T_FIRST = T_ALPHA, T_LAST = T_OMEGA,
+    T_COUNT = T_LAST+1, T_NUM = (T_LAST-T_FIRST)+1
 };
 
 enum
@@ -70,37 +68,30 @@ enum
 };
 
 #ifdef CPP_GAME_SERVER
-int mapbals[T_TOTAL][T_TOTAL] = {
-    { T_ALPHA, T_OMEGA, T_KAPPA, T_SIGMA },
-    { T_OMEGA, T_ALPHA, T_SIGMA, T_KAPPA },
-    { T_KAPPA, T_SIGMA, T_ALPHA, T_OMEGA },
-    { T_SIGMA, T_KAPPA, T_OMEGA, T_ALPHA }
+int mapbals[T_NUM][T_NUM] = {
+    { T_ALPHA, T_OMEGA },
+    { T_OMEGA, T_ALPHA },
 };
-SVAR(IDF_READONLY, teamnames, "neutral alpha omega kappa sigma enemy");
+SVAR(IDF_READONLY, teamnames, "neutral alpha omega enemy");
 VAR(IDF_READONLY, teamidxneutral, 1, T_NEUTRAL, -1);
 VAR(IDF_READONLY, teamidxalpha, 1, T_ALPHA, -1);
 VAR(IDF_READONLY, teamidxomega, 1, T_OMEGA, -1);
-VAR(IDF_READONLY, teamidxkappa, 1, T_KAPPA, -1);
-VAR(IDF_READONLY, teamidxsigma, 1, T_SIGMA, -1);
 VAR(IDF_READONLY, teamidxenemy, 1, T_ENEMY, -1);
 VAR(IDF_READONLY, teamidxfirst, 1, T_FIRST, -1);
 VAR(IDF_READONLY, teamidxlast, 1, T_LAST, -1);
-VAR(IDF_READONLY, teamidxmulti, 1, T_MULTI, -1);
 VAR(IDF_READONLY, teamidxcount, 1, T_COUNT, -1);
-VAR(IDF_READONLY, teamidxall, 1, T_ALL, -1);
 VAR(IDF_READONLY, teamidxnum, 1, T_NUM, -1);
-VAR(IDF_READONLY, teamidxtotal, 1, T_TOTAL, -1);
 #else
-extern int mapbals[T_TOTAL][T_TOTAL];
+extern int mapbals[T_NUM][T_NUM];
 #endif
 
 #include "teamdef.h"
 
 TPSVAR(IDF_GAMEMOD, 0, name,
-    "Neutral",  "Alpha",    "Omega",    "Kappa",    "Sigma",    "Enemy"
+    "Neutral",  "Alpha",    "Omega",    "Enemy"
 );
 TPVAR(IDF_GAMEMOD|IDF_HEX, 0, colour, 0, 0xFFFFFF,
-    0x909090,   0x2020FF,   0xFF2020,   0xA0A020,   0x20A020,   0xE020E0
+    0x909090,   0x2020FF,   0xFF2020,   0xE020E0
 );
 
 struct score
@@ -110,10 +101,10 @@ struct score
     ~score() {}
 };
 
-#define numteams(a,b)   (m_team(a,b) ? (m_multi(a,b) ? T_TOTAL : T_NUM) : 1)
-#define teamcount(a,b)  (m_team(a,b) ? (m_multi(a,b) ? T_ALL : T_COUNT) : 1)
+#define numteams(a,b)   (m_team(a,b) ? T_NUM : 1)
+#define teamcount(a,b)  (m_team(a,b) ? T_COUNT : 1)
 #define isteam(a,b,c,d) (m_team(a,b) ? (c >= d && c <= numteams(a,b)) : c == T_NEUTRAL)
-#define valteam(a,b)    (a >= b && a <= T_TOTAL)
+#define valteam(a,b)    (a >= b && a <= T_NUM)
 
 #define PLAYERTYPES 2
 #define PLAYERPATTERNS 16

@@ -1341,7 +1341,7 @@ namespace server
 
     const char *teamtexnamex(int team)
     {
-        const char *teamtexs[T_MAX] = { "teamneutraltex", "teamalphatex", "teamomegatex", "teamkappatex", "teamsigmatex", "teamenemytex" };
+        const char *teamtexs[T_MAX] = { "teamneutraltex", "teamalphatex", "teamomegatex", "teamenemytex" };
         return teamtexs[clamp(team, 0, T_MAX-1)];
     }
 
@@ -1667,7 +1667,7 @@ namespace server
 
     void doteambalance(bool init)
     {
-        vector<clientinfo *> tc[T_TOTAL];
+        vector<clientinfo *> tc[T_NUM];
         int numplaying = 0;
         loopv(clients)
         {
@@ -1899,11 +1899,11 @@ namespace server
                 {
                     int oldbalance = curbalance;
                     if(++curbalance >= numt) curbalance = 0; // safety first
-                    static vector<clientinfo *> assign[T_TOTAL];
-                    loopk(T_TOTAL) assign[k].setsize(0);
+                    static vector<clientinfo *> assign[T_NUM];
+                    loopk(T_NUM) assign[k].setsize(0);
                     loopv(clients) if(isteam(gamemode, mutators, clients[i]->team, T_FIRST))
                         assign[clients[i]->team-T_FIRST].add(clients[i]);
-                    int scores[T_TOTAL] = {0};
+                    int scores[T_NUM] = {0};
                     loopk(numt) scores[k] = teamscore(k+T_FIRST).total;
                     loopk(numt)
                     {
@@ -2084,13 +2084,13 @@ namespace server
             ents.add(n);
             cycle.add(0);
         }
-    } spawns[T_ALL];
+    } spawns[T_COUNT];
 
     void setupspawns(bool update)
     {
         totalspawns = 0;
         teamspawns = m_teamspawn(gamemode, mutators);
-        loopi(T_ALL) spawns[i].reset();
+        loopi(T_COUNT) spawns[i].reset();
         if(update)
         {
             int numt = numteams(gamemode, mutators), cplayers = 0;
@@ -2148,7 +2148,7 @@ namespace server
                     {
                         loopi(numt) if(spawns[i+T_FIRST].ents.empty())
                         {
-                            loopj(T_ALL) spawns[j].reset();
+                            loopj(T_COUNT) spawns[j].reset();
                             totalspawns = 0;
                             break;
                         }
@@ -2231,12 +2231,8 @@ namespace server
             int rot = G(spawnrotate), team = teamspawns && m_teamspawn(gamemode, mutators) ? ci->team : T_NEUTRAL;
             if(m_duke(gamemode, mutators))
             {
-                if(m_duel(gamemode, mutators), teamspawns)
-                {  // only use the opposing teams, multi spawns are usually diagonally arranged
-                    if(!m_team(gamemode, mutators))
-                        team = spawns[T_ALPHA].iteration <= spawns[T_OMEGA].iteration ? T_ALPHA : T_OMEGA;
-                    else if(team > T_LAST && team <= T_MULTI) team -= T_NUM;
-                }
+                if(m_duel(gamemode, mutators) && !m_team(gamemode, mutators)) // only use the opposing teams, multi spawns are usually diagonally arranged
+                    team = spawns[T_ALPHA].iteration <= spawns[T_OMEGA].iteration ? T_ALPHA : T_OMEGA;
                 if(!rot) rot = 2; // letting the client decide would be bad in duel/survivor
             }
             if(team != T_NEUTRAL && spawns[team].ents.empty()) team = T_NEUTRAL; // not that this should happen
@@ -3050,8 +3046,8 @@ namespace server
                     break;
                 }
             }
-            teamcheck teamchecks[T_TOTAL];
-            loopk(T_TOTAL) teamchecks[k].team = T_FIRST+k;
+            teamcheck teamchecks[T_NUM];
+            loopk(T_NUM) teamchecks[k].team = T_FIRST+k;
             loopv(clients) if(clients[i] != ci)
             {
                 clientinfo *cp = clients[i];

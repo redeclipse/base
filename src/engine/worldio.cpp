@@ -458,6 +458,7 @@ void loadvslot(stream *f, VSlot &vs, int changed)
             loopk(4) p.val[k] = f->getlil<float>();
             p.palette = flags&0x8000 ? f->getlil<int>() : 0;
             p.palindex = flags&0x8000 ? f->getlil<int>() : 0;
+            game::fixpalette(p.palette, p.palindex, hdr.gamever);
         }
     }
     if(vs.changed & (1<<VSLOT_SCALE)) vs.scale = f->getlil<float>();
@@ -484,6 +485,7 @@ void loadvslot(stream *f, VSlot &vs, int changed)
     {
         vs.palette = f->getlil<int>();
         vs.palindex = f->getlil<int>();
+        game::fixpalette(vs.palette, vs.palindex, hdr.gamever);
     }
     if(vs.changed & (1<<VSLOT_COAST)) vs.coastscale = f->getlil<float>();
     if(vs.changed & (1<<VSLOT_REFRACT))

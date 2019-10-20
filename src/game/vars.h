@@ -145,7 +145,6 @@ GSVAR(0, PRIV_ADMINISTRATOR, bombermaps, "untitled");
 GSVAR(0, PRIV_ADMINISTRATOR, holdmaps, "untitled");
 GSVAR(0, PRIV_ADMINISTRATOR, racemaps, "untitled");
 
-GSVAR(0, PRIV_ADMINISTRATOR, multimaps, "untitled"); // applies to modes which *require* multi spawns (ctf/bb)
 GSVAR(0, PRIV_ADMINISTRATOR, duelmaps, "untitled");
 GSVAR(0, PRIV_ADMINISTRATOR, gladiatormaps, "untitled");
 
@@ -449,7 +448,6 @@ GVAR(IDF_GAMEMOD, 0, botcolourseed, 0, 15, 15); // random bot things will be det
 GVAR(IDF_GAMEMOD, 0, botrandomcase, 0, 2, VAR_MAX); // bots will randomise the first letter of their name if rnd(botrandomcase) > 0
 GVAR(0, PRIV_ADMINISTRATOR, botoverridelock, PRIV_NONE, PRIV_ADMINISTRATOR, PRIV_MAX);
 GFVAR(IDF_GAMEMOD, 0, coopbalance, FVAR_NONZERO, 1.5f, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, coopmultibalance, FVAR_NONZERO, 2, FVAR_MAX);
 GVAR(IDF_GAMEMOD, 0, coopskillmin, 1, 75, 101);
 GVAR(IDF_GAMEMOD, 0, coopskillmax, 1, 85, 101);
 GFVAR(IDF_GAMEMOD, 0, coopskillfrags, -100, 0, 100);

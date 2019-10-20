@@ -103,7 +103,7 @@ struct bomberservmode : bomberstate, servmode
             bomberstate::returnaffinity(j, gamemillis, false);
             sendf(-1, 1, "ri3", N_RESETAFFIN, j, 0);
         }
-        if(m_bb_assault(gamemode, mutators) && G(bomberassaultwinner) && !m_multi(gamemode, mutators))
+        if(m_bb_assault(gamemode, mutators) && G(bomberassaultwinner))
         {
             int numt = numteams(gamemode, mutators);
             if(curbalance == numt-1)

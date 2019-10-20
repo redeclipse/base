@@ -939,11 +939,10 @@ namespace game
             }
             case 1: // teams
             {
-                int team = index%T_ALL;
-                if(!m_edit(gamemode) && index < T_ALL)
+                int team = index%T_COUNT;
+                if(!m_edit(gamemode) && index < T_COUNT)
                 {
-                    if(!m_team(gamemode, mutators) || team > (m_multi(gamemode, mutators) ? T_MULTI : T_LAST))
-                        team = T_NEUTRAL; // abstract team coloured levels to neutral
+                    if(!m_team(gamemode, mutators) || team > T_LAST) team = T_NEUTRAL; // abstract team coloured levels to neutral
                 }
                 return TEAM(team, colour); // return color of weapon
                 break;
@@ -968,6 +967,11 @@ namespace game
     vec getpalette(int palette, int index)
     {
         return vec::fromcolor(hexpalette(palette, index));
+    }
+
+    void fixpalette(int &palette, int &index, int gver)
+    {
+        if(gver <= 244 && palette == 1 && index%(T_COUNT+2) > T_LAST) index = T_NEUTRAL; // remove kappa and sigma
     }
 
     void adddynlights()
@@ -2098,7 +2102,7 @@ namespace game
 
     const char *teamtexnamex(int team)
     {
-        const char *teamtexs[T_MAX] = { "teamneutraltex", "teamalphatex", "teamomegatex", "teamkappatex", "teamsigmatex", "teamenemytex" };
+        const char *teamtexs[T_MAX] = { "teamneutraltex", "teamalphatex", "teamomegatex", "teamenemytex" };
         return teamtexs[clamp(team, 0, T_MAX-1)];
     }
 
@@ -3909,7 +3913,7 @@ namespace game
     PLAYERPREV(model, "i", (int *n), previewent->model = clamp(*n, 0, PLAYERTYPES-1));
     PLAYERPREV(colour, "i", (int *n), previewent->colour = clamp(*n, 0, 0xFFFFFF));
     PLAYERPREV(pattern, "i", (int *n), previewent->pattern = clamp(*n, 0, PLAYERPATTERNS-1));
-    PLAYERPREV(team, "i", (int *n), previewent->team = clamp(*n, 0, int(T_MULTI)));
+    PLAYERPREV(team, "i", (int *n), previewent->team = clamp(*n, 0, int(T_LAST)));
     PLAYERPREV(privilege, "i", (int *n), previewent->privilege = clamp(*n, 0, int(PRIV_MAX-1)));
     PLAYERPREV(weapselect, "i", (int *n), previewent->weapselect = clamp(*n, 0, W_ALL-1));
     PLAYERPREV(weapammo, "iii", (int *n, int *o, int *p), previewent->weapammo[clamp(*n, 0, W_ALL-1)][clamp(*p, 0, W_A_MAX-1)] = *o);

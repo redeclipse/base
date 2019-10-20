@@ -34,7 +34,7 @@ namespace aiman
         if(m_coop(gamemode, mutators))
         {
             int people = numclients(-1, true, -1), numt = numteams(gamemode, mutators)-1;
-            return min(int(ceilf(people*numt*(m_multi(gamemode, mutators) ? G(coopmultibalance) : G(coopbalance)))), MAXAI);
+            return min(int(ceilf(people*numt*G(coopbalance))), MAXAI);
         }
         return G(botlimit);
     }
@@ -287,7 +287,7 @@ namespace aiman
         if(m_coop(gamemode, mutators))
         {
             numt--; // filter out the human team
-            balance += int(ceilf(people*numt*(m_multi(gamemode, mutators) ? G(coopmultibalance) : G(coopbalance))));
+            balance += int(ceilf(people*numt*G(coopbalance)));
             balance += G(botoffset)*numt;
         }
         else if(m_bots(gamemode) && blimit > 0)
@@ -303,7 +303,7 @@ namespace aiman
             if(!m_duke(gamemode, mutators) && G(botbalancescale) != 1) balance = int(ceilf(balance*G(botbalancescale)));
             if(balance > 0 && m_team(gamemode, mutators))
             { // skew this if teams are unbalanced
-                int plrs[T_TOTAL] = {0}, highest = -1, bots = 0, offset = balance%numt; // we do this because humans can unbalance in odd ways
+                int plrs[T_NUM] = {0}, highest = -1, bots = 0, offset = balance%numt; // we do this because humans can unbalance in odd ways
                 if(offset) balance += numt-offset;
                 loopv(clients) if(clients[i]->team >= T_FIRST && isteam(gamemode, mutators, clients[i]->team, T_FIRST))
                 {

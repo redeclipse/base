@@ -2564,6 +2564,7 @@ void texpalette(int *p, int *x)
     Slot &s = *defslot;
     s.variants->palette = max(*p, 0);
     s.variants->palindex = max(*x, 0);
+    if(maploading) game::fixpalette(s.variants->palette, s.variants->palindex, hdr.gamever);
     propagatevslot(s.variants, 1<<VSLOT_PALETTE);
 }
 COMMAND(0, texpalette, "ii");
