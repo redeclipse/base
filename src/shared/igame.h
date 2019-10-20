@@ -118,6 +118,7 @@ namespace game
     extern dynent *iterdynents(int i, bool all = false);
     extern dynent *focusedent(bool force = false);
     extern int numdynents(bool all = false);
+    extern int hexpalette(int palette, int index);
     extern vec getpalette(int palette, int index);
     extern void adddynlights();
     extern void particletrack(particle *p, uint type, int &ts, bool step);

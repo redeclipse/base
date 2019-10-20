@@ -174,6 +174,71 @@ enum
     ALPHA_REFRACT
 };
 
+bool compareentcolor(ushort entid1, ushort entid2)
+{
+    if(entid1 != USHRT_MAX && entid2 != USHRT_MAX)
+    {
+        const vector<extentity *> &ents = entities::getents();
+        bool found1 = ents.inrange(entid1), found2 = ents.inrange(entid2);
+        if(found1 && found2)
+        {
+            bool decal1 = ents[entid1]->type == ET_DECAL, decal2 = ents[entid2]->type == ET_DECAL;
+            if(decal1 && decal2)
+            {
+                int blend1 = ents[entid1]->attrs[5] > 0 && ents[entid1]->attrs[5] < 100 ? ents[entid1]->attrs[5] : 100,
+                    blend2 = ents[entid2]->attrs[5] > 0 && ents[entid2]->attrs[5] < 100 ? ents[entid2]->attrs[5] : 100;
+                if(blend1 != blend2) return false;
+                int color1 = ents[entid1]->attrs[6] > 0 ? ents[entid1]->attrs[6] : 0xFFFFFF,
+                    color2 = ents[entid2]->attrs[6] > 0 ? ents[entid2]->attrs[6] : 0xFFFFFF;
+                if(color1 != color2) return false;
+                int palette1 = ents[entid1]->attrs[7] || ents[entid1]->attrs[8] ? game::hexpalette(ents[entid1]->attrs[7], ents[entid1]->attrs[8]) : 0xFFFFFF,
+                    palette2 = ents[entid2]->attrs[7] || ents[entid2]->attrs[8] ? game::hexpalette(ents[entid2]->attrs[7], ents[entid2]->attrs[8]) : 0xFFFFFF;
+                if(palette1 != palette2) return false;
+            }
+            else if(decal1 || decal2) return false;
+        }
+        else if(found1 || found2) return false;
+    }
+    else if(entid1 != USHRT_MAX || entid2 != USHRT_MAX) return false;
+    return true;
+}
+
+int sortentcolor(ushort entid1, ushort entid2)
+{
+    if(entid1 != USHRT_MAX && entid2 != USHRT_MAX)
+    {
+        const vector<extentity *> &ents = entities::getents();
+        bool found1 = ents.inrange(entid1), found2 = ents.inrange(entid2);
+        if(found1 && found2)
+        {
+            bool decal1 = ents[entid1]->type == ET_DECAL, decal2 = ents[entid2]->type == ET_DECAL;
+            if(decal1 && decal2)
+            {
+                int blend1 = ents[entid1]->attrs[5] > 0 && ents[entid1]->attrs[5] < 100 ? ents[entid1]->attrs[5] : 100,
+                    blend2 = ents[entid2]->attrs[5] > 0 && ents[entid2]->attrs[5] < 100 ? ents[entid2]->attrs[5] : 100;
+                if(blend1 < blend2) return -1;
+                if(blend1 > blend2) return 1;
+                int color1 = ents[entid1]->attrs[6] > 0 ? ents[entid1]->attrs[6] : 0xFFFFFF,
+                    color2 = ents[entid2]->attrs[6] > 0 ? ents[entid2]->attrs[6] : 0xFFFFFF;
+                if(color1 < color2) return -1;
+                if(color1 > color2) return 1;
+                int palette1 = ents[entid1]->attrs[7] || ents[entid1]->attrs[8] ? game::hexpalette(ents[entid1]->attrs[7], ents[entid1]->attrs[8]) : 0xFFFFFF,
+                    palette2 = ents[entid2]->attrs[7] || ents[entid2]->attrs[8] ? game::hexpalette(ents[entid2]->attrs[7], ents[entid2]->attrs[8]) : 0xFFFFFF;
+                if(palette1 < palette2) return -1;
+                if(palette1 > palette2) return 1;
+            }
+            else if(decal1) return -1;
+            else if(decal2) return 1;
+        }
+        else if(found1) return -1;
+        else if(found2) return 1;
+    }
+    else if(entid1 != USHRT_MAX) return -1;
+    else if(entid2 != USHRT_MAX) return 1;
+    return 0;
+}
+
+
 struct sortkey
 {
     ushort tex, envmap, entid;
@@ -184,7 +249,7 @@ struct sortkey
      : tex(tex), envmap(envmap), entid(entid), orient(orient), layer(layer), alpha(alpha)
     {}
 
-    bool operator==(const sortkey &o) const { return tex==o.tex && envmap==o.envmap && orient==o.orient && layer==o.layer && alpha==o.alpha; }
+    bool operator==(const sortkey &o) const { return tex==o.tex && envmap==o.envmap && orient==o.orient && layer==o.layer && alpha==o.alpha && compareentcolor(entid, o.entid); }
 
     static inline bool sort(const sortkey &x, const sortkey &y)
     {
@@ -206,7 +271,8 @@ struct sortkey
         if(xs.slot->params.length() < ys.slot->params.length()) return true;
         if(xs.slot->params.length() > ys.slot->params.length()) return false;
         if(x.tex < y.tex) return true;
-        else return false;
+        if(x.tex > y.tex) return false;
+        return sortentcolor(x.entid, y.entid) < 0;
     }
 };
 
@@ -229,7 +295,7 @@ struct decalkey
      : tex(tex), envmap(envmap), reuse(reuse), entid(entid)
     {}
 
-    bool operator==(const decalkey &o) const { return tex==o.tex && envmap==o.envmap && reuse==o.reuse; }
+    bool operator==(const decalkey &o) const { return tex==o.tex && envmap==o.envmap && reuse==o.reuse && compareentcolor(entid, o.entid); }
 
     static inline bool sort(const decalkey &x, const decalkey &y)
     {
@@ -246,7 +312,8 @@ struct decalkey
         if(xs.slot->params.length() < ys.slot->params.length()) return true;
         if(xs.slot->params.length() > ys.slot->params.length()) return false;
         if(x.tex < y.tex) return true;
-        else return false;
+        if(x.tex > y.tex) return false;
+        return sortentcolor(x.entid, y.entid);
     }
 };
 

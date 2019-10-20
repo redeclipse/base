@@ -579,6 +579,7 @@ extern void clearvas(cube *c);
 extern void destroyva(vtxarray *va, bool reparent = true);
 extern void updatevabb(vtxarray *va, bool force = false);
 extern void updatevabbs(bool force = false);
+extern int sortentcolor(ushort entid1, ushort entid2);
 
 // renderva
 

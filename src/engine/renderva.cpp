@@ -2240,7 +2240,7 @@ struct decalbatch
         if(slot.Slot::params.length() > b.slot.Slot::params.length()) return 1;
         if(es.reuse < b.es.reuse) return -1;
         if(es.reuse > b.es.reuse) return 1;
-        return 0;
+        return sortentcolor(es.entid, b.es.entid);
     }
 };
 
