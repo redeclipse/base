@@ -2092,7 +2092,7 @@ namespace game
 
     const char *teamtexnamex(int team)
     {
-        const char *teamtexs[T_MAX] = { "teamtex", "teamalphatex", "teamomegatex", "teamkappatex", "teamsigmatex", "teamtex" };
+        const char *teamtexs[T_MAX] = { "teamtex", "teamalphatex", "teamomegatex", "teamkappatex", "teamsigmatex", "teamenemytex" };
         return teamtexs[clamp(team, 0, T_MAX-1)];
     }
 

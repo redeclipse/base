@@ -112,6 +112,7 @@ namespace hud
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, teamomegatex, "<grey>textures/icons/teamomega", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, teamkappatex, "<grey>textures/icons/teamkappa", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, teamsigmatex, "<grey>textures/icons/teamsigma", 3);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, teamenemytex, "<grey>textures/icons/teamenemy", 3);
 
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, playertex, "<grey>textures/icons/player", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, deadtex, "<grey>textures/icons/dead", 3);
@@ -1580,7 +1581,7 @@ namespace hud
 
     const char *teamtexname(int team)
     {
-        const char *teamtexs[T_MAX] = { teamtex, teamalphatex, teamomegatex, teamkappatex, teamsigmatex, teamtex };
+        const char *teamtexs[T_MAX] = { teamtex, teamalphatex, teamomegatex, teamkappatex, teamsigmatex, teamenemytex };
         return teamtexs[clamp(team, 0, T_MAX-1)];
     }
 
