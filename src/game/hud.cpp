@@ -2036,9 +2036,9 @@ namespace hud
             }
             if(!noview)
             {
-                if(titlefade && (client::waiting() || !game::mapstart || totalmillis-game::mapstart <= titlefade))
+                if(titlefade && (!game::mapstart || totalmillis-game::mapstart <= titlefade))
                 {
-                    float a = !client::waiting() || !game::mapstart ? float(totalmillis-game::mapstart)/float(titlefade) : 0.f;
+                    float a = game::mapstart ? float(totalmillis-game::mapstart)/float(titlefade) : 0.f;
                     loopi(3) if(a < colour[i]) colour[i] *= a;
                 }
                 if(tvmodefade && game::tvmode())
@@ -2070,8 +2070,8 @@ namespace hud
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         resethudshader();
-        if(noview) drawbackground(hudwidth, hudheight);
-        else if(!client::waiting())
+        if(noview || client::waiting()) drawbackground(hudwidth, hudheight);
+        else
         {
             if(showhud)
             {
@@ -2120,7 +2120,7 @@ namespace hud
         if(!progressing && showhud)
         {
             if(commandmillis <= 0 && curcompass) rendercmenu();
-            else if(shownotices && !client::waiting() && !hasinput(false) && !texpaneltimer) drawnotices();
+            else if(shownotices && !noview && !client::waiting() && !hasinput(false) && !texpaneltimer) drawnotices();
         }
         if(progressing || !curcompass) UI::render();
         if(!progressing)
