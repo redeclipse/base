@@ -378,9 +378,9 @@ void setupscreen()
     if(!glcontext) fatal("Failed to create OpenGL context: %s", SDL_GetError());
 
     SDL_GetWindowSize(screen, &screenw, &screenh);
-    SDL_GL_GetDrawableSize(screen, &renderw, &renderh);
-    //renderw = min(scr_w, renderw);
-    //renderh = min(scr_h, renderh);
+    //SDL_GL_GetDrawableSize(screen, &renderw, &renderh);
+    renderw = min(scr_w, renderw);
+    renderh = min(scr_h, renderh);
     hudw = renderw;
     hudh = renderh;
     setupdisplay();

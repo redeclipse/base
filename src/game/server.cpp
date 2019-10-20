@@ -4815,7 +4815,7 @@ namespace server
         }
         takeammo(ci, weap, sub);
         ci->setweapstate(weap, WS(flags) ? W_S_SECONDARY : W_S_PRIMARY, W2(weap, delayattack, WS(flags)), millis);
-        sendf(-1, 1, "ri9ivx", N_SHOTFX, ci->clientnum, weap, flags, scale, target, from.x, from.y, from.z, shots.length(), shots.length()*sizeof(shotmsg)/sizeof(int), shots.getbuf(), ci->clientnum);
+        sendf(-1, 1, "ri9i4vx", N_SHOTFX, ci->clientnum, weap, flags, scale, target, from.x, from.y, from.z, dest.x, dest.y, dest.z, shots.length(), shots.length()*sizeof(shotmsg)/sizeof(int), shots.getbuf(), ci->clientnum);
         ci->weapshot[weap] = sub;
         ci->shotdamage += W2(weap, damage, WS(flags))*shots.length();
         loopv(shots) ci->weapshots[weap][WS(flags) ? 1 : 0].add(shots[i].id);
