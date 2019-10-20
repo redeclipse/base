@@ -873,8 +873,9 @@ namespace client
 
     bool radarallow(gameent *d, vec &dir, float &dist)
     {
-        if(m_hard(game::gamemode, game::mutators) || d == game::focus) return false;
+        if(m_hard(game::gamemode, game::mutators) || d == game::focus || d->actortype >= A_ENEMY) return false;
         if(d->state != CS_ALIVE && d->state != CS_EDITING && d->state != CS_DEAD && (!d->lastdeath || d->state != CS_WAITING)) return false;
+        if(m_duke(game::gamemode, game::mutators) && (!d->lastdeath || lastmillis-d->lastdeath >= 1000)) return false;
         bool dominated = game::focus->dominated.find(d) >= 0;
         if(!dominated && vec(d->vel).add(d->falling).magnitude() <= 0) return false;
         dir = vec(d->center()).sub(camera1->o);
