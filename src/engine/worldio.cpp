@@ -28,7 +28,7 @@ void changemapvariant(int variant)
     }
 }
 
-VAR(0, mapeffects, 1, 3, 3);
+VARF(0, mapeffects, 1, 3, 3, allchanged(true));
 
 bool checkmapeffects(int fxlevel)
 {
