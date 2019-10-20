@@ -37,7 +37,7 @@ namespace physics
         gameent *e = (gameent *)d;
         if(e->impulse[IM_TYPE] == IM_T_PUSHER && e->impulsetime[IM_T_PUSHER] > lastmillis) return false;
         if(!touch && impulsestyle == 1 && e->impulse[IM_TYPE] > IM_T_JUMP && e->impulse[IM_TYPE] < IM_T_TOUCH) return false;
-        if(!m_freestyle(game::gamemode, game::mutators) && impulsestyle <= 2 && e->impulse[IM_COUNT] >= impulsecount) return false;
+        if(impulsestyle <= 2 && e->impulse[IM_COUNT] >= impulsecount) return false;
         int time = 0, delay = 0;
         switch(type)
         {
@@ -312,7 +312,7 @@ namespace physics
         {
             gameent *e = (gameent *)d;
             scale *= e->stunscale;
-            if(impulsemeter && cost && !m_freestyle(game::gamemode, game::mutators))
+            if(impulsemeter && cost)
             {
                 if(impulsecostscale > 0) cost = int(cost*scale);
                 int diff = impulsemeter-e->impulse[IM_METER];

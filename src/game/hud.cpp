@@ -439,7 +439,6 @@ namespace hud
     TVAR(IDF_PERSIST, modesurvivortex, "<grey>textures/modes/survivor", 3);
     TVAR(IDF_PERSIST, modeclassictex, "<grey>textures/modes/classic", 3);
     TVAR(IDF_PERSIST, modeonslaughttex, "<grey>textures/modes/onslaught", 3);
-    TVAR(IDF_PERSIST, modefreestyletex, "<grey>textures/modes/freestyle", 3);
     TVAR(IDF_PERSIST, modevampiretex, "<grey>textures/modes/vampire", 3);
     TVAR(IDF_PERSIST, moderesizetex, "<grey>textures/modes/resize", 3);
     TVAR(IDF_PERSIST, modehardtex, "<grey>textures/modes/hard", 3);
@@ -522,7 +521,6 @@ namespace hud
         if(m_survivor(g, m) && (implied || !(gametype[g].implied&GM(SURVIVOR)))) ADDMODE(survivor)
         if(m_classic(g, m) && (implied || !(gametype[g].implied&GM(CLASSIC)))) ADDMODE(classic)
         if(m_onslaught(g, m) && (implied || !(gametype[g].implied&GM(ONSLAUGHT)))) ADDMODE(onslaught)
-        if(m_freestyle(g, m) && (implied || !(gametype[g].implied&GM(FREESTYLE)))) ADDMODE(freestyle)
         if(m_vampire(g, m) && (implied || !(gametype[g].implied&GM(VAMPIRE)))) ADDMODE(vampire)
         if(m_resize(g, m) && (implied || !(gametype[g].implied&GM(RESIZE)))) ADDMODE(resize)
         if(m_hard(g, m) && (implied || !(gametype[g].implied&GM(HARD)))) ADDMODE(hard)
@@ -1000,7 +998,7 @@ namespace hud
         int num = 0;
         loopi(3) if(circlebartype&(1<<i))
         {
-            if(i == 1 && (!impulsemeter || m_freestyle(game::gamemode, game::mutators))) continue;
+            if(i == 1 && !impulsemeter) continue;
             num++;
         }
         if(!num) return;
@@ -1021,7 +1019,7 @@ namespace hud
                     if(circlebarhealthtone) skewcolour(c.r, c.g, c.b, circlebarhealthtone);
                     break;
                 case 1:
-                    if(!impulsemeter || m_freestyle(game::gamemode, game::mutators)) continue;
+                    if(!impulsemeter) continue;
                     val = 1-clamp(float(game::focus->impulse[IM_METER])/float(impulsemeter), 0.f, 1.f);
                     if(circlebarimpulsetone) skewcolour(c.r, c.g, c.b, circlebarimpulsetone);
                     break;
