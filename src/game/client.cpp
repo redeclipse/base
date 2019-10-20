@@ -770,6 +770,46 @@ namespace client
     LOOPCLIENTS(,loopcsi,loopvk,false);
     LOOPCLIENTS(rev,loopcsirev,loopvkrev,true);
 
+    #define LOOPCLIENTSIF(name,op,lp,nop) \
+        ICOMMAND(0, loopclients##name##if, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
+        { \
+            loopstart(id, stack); \
+            int amt = 1; \
+            loopv(game::players) if(game::players[i]) amt++; \
+            op(amt, *count, *skip) \
+            { \
+                int r = -1; \
+                int n = nop ? amt-1 : 0; \
+                if(!i) \
+                { \
+                    if(nop ? n <= i : n >= i) r = game::player1->clientnum; \
+                    if(nop) n--; \
+                    else n++; \
+                } \
+                else \
+                { \
+                    lp(game::players) if(game::players[k]) \
+                    { \
+                        if(nop ? n <= i : n >= i) \
+                        { \
+                            r = game::players[k]->clientnum; \
+                            break; \
+                        } \
+                        if(nop) n--; \
+                        else n++; \
+                    } \
+                } \
+                if(r >= 0) \
+                { \
+                    loopiter(id, stack, r); \
+                    if(executebool(cond)) execute(body); \
+                } \
+            } \
+            loopend(id, stack); \
+        });
+    LOOPCLIENTSIF(,loopcsi,loopvk,false);
+    LOOPCLIENTSIF(rev,loopcsirev,loopvkrev,true);
+
     #define LOOPINVENTORY(name,op,lp,nop) \
         ICOMMAND(IDF_NAMECOMPLETE, loopinventory##name, "siire", (char *who, int *count, int *skip, ident *id, uint *body), \
         { \
@@ -831,34 +871,43 @@ namespace client
     CLCOMMAND(pitch, floatret(d->pitch));
     CLCOMMAND(roll, floatret(d->roll));
 
+    bool radarallow(gameent *d, vec &dir, float &dist)
+    {
+        if(m_hard(game::gamemode, game::mutators) || d == game::focus) return false;
+        if(d->state != CS_ALIVE && d->state != CS_EDITING && d->state != CS_DEAD && (!d->lastdeath || d->state != CS_WAITING)) return false;
+        bool dominated = game::focus->dominated.find(d) >= 0;
+        if(!dominated && vec(d->vel).add(d->falling).magnitude() <= 0) return false;
+        dir = vec(d->center()).sub(camera1->o);
+        dist = dir.magnitude();
+        if(!dominated && hud::radarlimited(dist)) return false;
+        return true;
+    }
+    CLCOMMAND(radarallow,
+    {
+        vec dir(0, 0, 0);
+        float dist = -1;
+        intret(radarallow(d, dir, dist) ? 1 : 0);
+    });
     CLCOMMAND(radardist,
     {
-        if(m_hard(game::gamemode, game::mutators)) return;
-        if(d->state != CS_ALIVE && d->state != CS_EDITING && d->state != CS_DEAD && (!d->lastdeath || d->state != CS_WAITING)) return;
-        bool dominated = game::focus->dominated.find(d) >= 0;
-        if(!dominated && vec(d->vel).add(d->falling).magnitude() <= 0) return;
-        float dist = vec(d->center()).sub(camera1->o).magnitude();
-        if(!dominated && hud::radarlimited(dist)) return;
+        vec dir(0, 0, 0);
+        float dist = -1;
+        if(!radarallow(d, dir, dist)) return;
         floatret(dist);
     });
     CLCOMMAND(radardir,
     {
-        if(m_hard(game::gamemode, game::mutators)) return;
-        if(d->state != CS_ALIVE && d->state != CS_EDITING && d->state != CS_DEAD && (!d->lastdeath || d->state != CS_WAITING)) return;
-        bool dominated = game::focus->dominated.find(d) >= 0;
-        if(!dominated && vec(d->vel).add(d->falling).magnitude() <= 0) return;
-        vec dir = vec(d->center()).sub(camera1->o);
-        if(!dominated && hud::radarlimited(dir.magnitude())) return;
+        vec dir(0, 0, 0);
+        float dist = -1;
+        if(!radarallow(d, dir, dist)) return;
         dir.rotate_around_z(-camera1->yaw*RAD).normalize();
         floatret(-atan2(dir.x, dir.y)/RAD);
     });
     CLCOMMAND(radaryaw,
     {
-        if(m_hard(game::gamemode, game::mutators)) return;
-        if(d->state != CS_ALIVE && d->state != CS_EDITING && d->state != CS_DEAD && (!d->lastdeath || d->state != CS_WAITING)) return;
-        bool dominated = game::focus->dominated.find(d) >= 0;
-        if(!dominated && vec(d->vel).add(d->falling).magnitude() <= 0) return;
-        if(!dominated && hud::radarlimited(vec(d->center()).sub(camera1->o).magnitude())) return;
+        vec dir(0, 0, 0);
+        float dist = -1;
+        if(!radarallow(d, dir, dist)) return;
         floatret(d->yaw-camera1->yaw);
     });
 

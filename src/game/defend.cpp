@@ -24,18 +24,34 @@ namespace defend
     ICOMMAND(0, getdefendinfo, "i", (int *n), result(st.flags.inrange(*n) ? st.flags[*n].info : ""));
     ICOMMAND(0, getdefendinside, "isi", (int *n, const char *who, int *h), gameent *d = game::getclient(client::parseplayer(who)); intret(d && st.flags.inrange(*n) && insideaffinity(st.flags[*n], d, *h!=0) ? 1 : 0));
 
+    bool radarallow(int id, int render, vec &dir, float &dist, bool justtest = false)
+    {
+        if(!st.flags.inrange(id) || (m_hard(game::gamemode, game::mutators) && !G(radarhardaffinity))) return false;
+        if(justtest) return true;
+        dir = vec(render > 0 ? st.flags[id].render : st.flags[id].o).sub(camera1->o);
+        dist = dir.magnitude();
+        if(hud::radarlimited(dist)) return false;
+        return true;
+    }
+
+    ICOMMAND(0, getdefendradarallow, "ibi", (int *n, int *v, int *q),
+    {
+        vec dir(0, 0, 0);
+        float dist = -1;
+        intret(radarallow(*n, *v, dir, dist, *q != 0) ? 1 : 0);
+    });
     ICOMMAND(0, getdefendradardist, "ib", (int *n, int *v),
     {
-        if(!st.flags.inrange(*n) || (m_hard(game::gamemode, game::mutators) && !G(radarhardaffinity))) return;
-        float dist = vec(*v > 0 ? st.flags[*n].render : st.flags[*n].o).sub(camera1->o).magnitude();
-        if(hud::radarlimited(dist)) return;
+        vec dir(0, 0, 0);
+        float dist = -1;
+        if(!radarallow(*n, *v, dir, dist)) return;
         floatret(dist);
     });
     ICOMMAND(0, getdefendradardir, "ib", (int *n, int *v),
     {
-        if(!st.flags.inrange(*n) || (m_hard(game::gamemode, game::mutators) && !G(radarhardaffinity))) return;
-        vec dir = vec(*v > 0 ? st.flags[*n].render : st.flags[*n].o).sub(camera1->o);
-        if(hud::radarlimited(dir.magnitude())) return;
+        vec dir(0, 0, 0);
+        float dist = -1;
+        if(!radarallow(*n, *v, dir, dist)) return;
         dir.rotate_around_z(-camera1->yaw*RAD).normalize();
         floatret(-atan2(dir.x, dir.y)/RAD);
     });
@@ -54,6 +70,21 @@ namespace defend
         });
     LOOPDEFEND(,loopcsv);
     LOOPDEFEND(rev,loopcsvrev);
+
+    #define LOOPDEFENDIF(name,op) \
+        ICOMMAND(0, loopdefend##name##if, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
+        { \
+            if(!m_defend(game::gamemode)) return; \
+            loopstart(id, stack); \
+            op(st.flags, *count, *skip) \
+            { \
+                loopiter(id, stack, i); \
+                if(executebool(cond)) execute(body); \
+            } \
+            loopend(id, stack); \
+        });
+    LOOPDEFENDIF(,loopcsv);
+    LOOPDEFENDIF(rev,loopcsvrev);
 
     void preload()
     {

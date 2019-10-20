@@ -14,18 +14,34 @@ namespace capture
     ICOMMAND(0, getcaptureowner, "i", (int *n), intret(st.flags.inrange(*n) && st.flags[*n].owner ? st.flags[*n].owner->clientnum : -1));
     ICOMMAND(0, getcapturelastowner, "i", (int *n), intret(st.flags.inrange(*n) && st.flags[*n].lastowner ? st.flags[*n].lastowner->clientnum : -1));
 
+    bool radarallow(int id, int render, vec &dir, float &dist, bool justtest = false)
+    {
+        if(!st.flags.inrange(id) || (m_hard(game::gamemode, game::mutators) && !G(radarhardaffinity))) return false;
+        if(justtest) return true;
+        dir = vec(render > 0 ? st.flags[id].spawnloc : st.flags[id].pos(render < 0)).sub(camera1->o);
+        dist = dir.magnitude();
+        if(st.flags[id].owner != game::focus && hud::radarlimited(dist)) return false;
+        return true;
+    }
+
+    ICOMMAND(0, getcaptureradarallow, "ibi", (int *n, int *v, int *q),
+    {
+        vec dir(0, 0, 0);
+        float dist = -1;
+        intret(radarallow(*n, *v, dir, dist, *q != 0) ? 1 : 0);
+    });
     ICOMMAND(0, getcaptureradardist, "ib", (int *n, int *v),
     {
-        if(!st.flags.inrange(*n) || (m_hard(game::gamemode, game::mutators) && !G(radarhardaffinity))) return;
-        float dist = vec(*v > 0 ? st.flags[*n].spawnloc : st.flags[*n].pos(*v < 0)).sub(camera1->o).magnitude();
-        if(hud::radarlimited(dist)) return;
+        vec dir(0, 0, 0);
+        float dist = -1;
+        if(!radarallow(*n, *v, dir, dist)) return;
         floatret(dist);
     });
     ICOMMAND(0, getcaptureradardir, "ib", (int *n, int *v),
     {
-        if(!st.flags.inrange(*n) || (m_hard(game::gamemode, game::mutators) && !G(radarhardaffinity))) return;
-        vec dir = vec(*v > 0 ? st.flags[*n].spawnloc : st.flags[*n].pos(*v < 0)).sub(camera1->o);
-        if(hud::radarlimited(dir.magnitude())) return;
+        vec dir(0, 0, 0);
+        float dist = -1;
+        if(!radarallow(*n, *v, dir, dist)) return;
         dir.rotate_around_z(-camera1->yaw*RAD).normalize();
         floatret(-atan2(dir.x, dir.y)/RAD);
     });
@@ -44,6 +60,21 @@ namespace capture
         });
     LOOPCAPTURE(,loopcsv);
     LOOPCAPTURE(rev,loopcsvrev);
+
+    #define LOOPCAPTUREIF(name,op) \
+        ICOMMAND(0, loopcapture##name##if, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
+        { \
+            if(!m_capture(game::gamemode)) return; \
+            loopstart(id, stack); \
+            op(st.flags, *count, *skip) \
+            { \
+                loopiter(id, stack, i); \
+                if(executebool(cond)) execute(body); \
+            } \
+            loopend(id, stack); \
+        });
+    LOOPCAPTUREIF(,loopcsv);
+    LOOPCAPTUREIF(rev,loopcsvrev);
 
     int carryaffinity(gameent *d)
     {
