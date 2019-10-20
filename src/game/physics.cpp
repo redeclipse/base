@@ -1280,9 +1280,17 @@ namespace physics
     bool checkcollide(physent *d, const vec &dir, physent *o)
     {
         collidezones = CLZ_NONE;
-        if(!d || !projent::shot(d) || !gameent::is(o)) return true;
+        if(!d || !projent::shot(d) || !gameent::is(o))
+        {
+            collidezones |= CLZ_HEAD;
+            return true;
+        }
         gameent *e = (gameent *)o;
-        if(!actors[e->actortype].hitboxes) return true;
+        if(!actors[e->actortype].hitboxes)
+        {
+            collidezones |= CLZ_HEAD;
+            return true;
+        }
         if(!d->o.reject(e->limbstag(), d->radius+max(e->limbsbox().x, e->limbsbox().y)) && ellipsecollide(d, dir, e->limbstag(), vec(0, 0, 0), e->yaw, e->limbsbox().x, e->limbsbox().y, e->limbsbox().z, e->limbsbox().z))
             collidezones |= CLZ_LIMB;
         if(!d->o.reject(e->torsotag(), d->radius+max(e->torsobox().x, e->torsobox().y)) && ellipsecollide(d, dir, e->torsotag(), vec(0, 0, 0), e->yaw, e->torsobox().x, e->torsobox().y, e->torsobox().z, e->torsobox().z))
@@ -1295,9 +1303,17 @@ namespace physics
     bool checktracecollide(physent *d, const vec &from, const vec &to, float &dist, physent *o, float x1, float x2, float y1, float y2)
     {
         collidezones = CLZ_NONE;
-        if(!d || !projent::shot(d) || !gameent::is(o)) return true;
+        if(!d || !projent::shot(d) || !gameent::is(o))
+        {
+            collidezones |= CLZ_HEAD;
+            return true;
+        }
         gameent *e = (gameent *)o;
-        if(!actors[e->actortype].hitboxes) return true;
+        if(!actors[e->actortype].hitboxes)
+        {
+            collidezones |= CLZ_HEAD;
+            return true;
+        }
         float bestdist = 1e16f;
         if(e->limbstag().x+e->limbsbox().x >= x1 && e->limbstag().y+e->limbsbox().y >= y1 && e->limbstag().x-e->limbsbox().x <= x2 && e->limbstag().y-e->limbsbox().y <= y2)
         {
