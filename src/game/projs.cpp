@@ -182,7 +182,9 @@ namespace projs
             if(!proj.o.rejectxyz(xx, yx, yy, yz1, yz2)) zz = 0; \
             else if(!proj.o.reject(xx, maxdist+max(yx, yy))) \
             { \
-                vec bottom(xx), top(xx); bottom.z -= yz1; top.z += yz2; \
+                vec bottom(xx), top(xx); \
+                bottom.z -= yz1; \
+                top.z += yz2; \
                 zz = closestpointcylinder(proj.o, bottom, top, max(yx, yy)).dist(proj.o); \
             }
         if(gameent::is(d))
@@ -518,7 +520,8 @@ namespace projs
             proj.vel = vec(0, 0, 0);
             return;
         }
-        vec dir[2]; dir[0] = dir[1] = vec(proj.vel).normalize();
+        vec dir[2];
+        dir[0] = dir[1] = vec(proj.vel).normalize();
         float mag = proj.vel.magnitude()*elasticity, reflectivity = speed ? proj.reflectivity : 0.f; // conservation of energy
         dir[1].reflect(pos);
         if(!proj.lastbounce && reflectivity > 0.f)
@@ -755,8 +758,18 @@ namespace projs
         }
         else switch(proj.projtype)
         {
-            case PRJ_GIBS: case PRJ_DEBRIS: case PRJ_VANITY: proj.height = proj.aboveeye = proj.radius = proj.xradius = proj.yradius = 0.5f*size; break;
-            case PRJ_EJECT: proj.height = proj.aboveeye = 0.25f*size; proj.radius = proj.yradius = 0.5f*size; proj.xradius = 0.125f*size; break;
+            case PRJ_GIBS: case PRJ_DEBRIS: case PRJ_VANITY:
+            {
+                proj.height = proj.aboveeye = proj.radius = proj.xradius = proj.yradius = 0.5f*size;
+                break;
+            }
+            case PRJ_EJECT:
+            {
+                proj.height = proj.aboveeye = 0.25f*size;
+                proj.radius = proj.yradius = 0.5f*size;
+                proj.xradius = 0.125f*size;
+                break;
+            }
             case PRJ_ENT:
             {
                 if(entities::ents.inrange(proj.id))
@@ -925,7 +938,9 @@ namespace projs
             }
             case PRJ_EJECT:
             {
-                proj.height = proj.aboveeye = 0.5f; proj.radius = proj.yradius = 1; proj.xradius = 0.25f;
+                proj.height = proj.aboveeye = 0.5f;
+                proj.radius = proj.yradius = 1;
+                proj.xradius = 0.25f;
                 if(!isweap(proj.weap) && proj.owner) proj.weap = proj.owner->weapselect;
                 if(proj.owner) proj.o = proj.from = proj.owner->ejecttag();
                 if(isweap(proj.weap))
@@ -949,10 +964,10 @@ namespace projs
                 proj.fadetime = rnd(250)+250;
                 proj.extinguish = 6;
                 proj.interacts = 3;
-                if(proj.owner == game::focus && !game::thirdpersonview())
-                    proj.o = proj.from.add(vec(proj.from).sub(camera1->o).normalize().mul(4));
+                //if(proj.owner == game::focus && !game::thirdpersonview())
+                //    proj.o = proj.from.add(vec(proj.from).sub(camera1->o).normalize().mul(4));
                 vecfromyawpitch(proj.yaw+40+rnd(41), proj.pitch+50-proj.speed+rnd(41), 1, 0, proj.dest);
-                proj.dest.add(proj.from);
+                proj.dest.mul(4).add(proj.from);
                 break;
             }
             case PRJ_ENT:
@@ -1205,6 +1220,7 @@ namespace projs
                 }
             }
         }
+        vec orig = d == game::player1 || d->ai ? from : d->muzzletag();
         if(delayattack >= 5 && weap < W_ALL)
         {
             int colour = WHCOL(d, weap, partcol, WS(flags));
@@ -1228,7 +1244,6 @@ namespace projs
                 { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
                 { 150, PART_MUZZLE_FLASH, 250, 10, 8, 3, 3, 6, 0.0125f },
             };
-            vec orig = d == game::player1 || d->ai ? from : d->muzzletag();
             if(weapfx[weap].smoke) part_create(PART_SMOKE_LERP, weapfx[weap].smoke, orig, 0x888888, 1, 0.25f, -10);
             if(weapfx[weap].sparktime && weapfx[weap].sparknum)
                 part_splash(weap == W_FLAMER ? PART_FIREBALL : PART_SPARK, weapfx[weap].sparknum, weapfx[weap].sparktime, orig, colour, weapfx[weap].sparksize, muz, 1, 0, weapfx[weap].sparkrad, 15);
@@ -1243,9 +1258,9 @@ namespace projs
             adddynlight(orig, 32, vec::fromcolor(colour).mul(0.5f), fade, peak - fade, DL_FLASH);
         }
         loopv(shots)
-            create(from, vec(shots[i].pos).div(DMF), local, d, PRJ_SHOT, weap, flags, max(life, 1), W2(weap, time, WS(flags)), delay+(iter*i), speed, shots[i].id, weap, -1, flags, skew, false, v);
+            create(orig, vec(shots[i].pos).div(DMF), local, d, PRJ_SHOT, weap, flags, max(life, 1), W2(weap, time, WS(flags)), delay+(iter*i), speed, shots[i].id, weap, -1, flags, skew, false, v);
         if(ejectfade && weaptype[weap].eject && *weaptype[weap].eprj) loopi(clamp(sub, 1, W2(weap, ammosub, WS(flags))))
-            create(from, from, local, d, PRJ_EJECT, -1, 0, rnd(ejectfade)+ejectfade, 0, delay, rnd(weaptype[weap].espeed)+weaptype[weap].espeed, 0, weap, -1, flags);
+            create(d->ejecttag(), d->ejecttag(), local, d, PRJ_EJECT, -1, 0, rnd(ejectfade)+ejectfade, 0, delay, rnd(weaptype[weap].espeed)+weaptype[weap].espeed, 0, weap, -1, flags);
 
         d->setweapstate(weap, WS(flags) ? W_S_SECONDARY : W_S_PRIMARY, delayattack, lastmillis);
         d->weapammo[weap][W_A_CLIP] = max(d->weapammo[weap][W_A_CLIP]-sub-offset, 0);
@@ -1566,7 +1581,11 @@ namespace projs
                 {
                     bool effect = false;
                     float radius = (proj.radius+0.5f)*(clamp(1.f-proj.lifespan, 0.1f, 1.f)+0.25f), blend = clamp(1.25f-proj.lifespan, 0.25f, 1.f)*(0.75f+(rnd(25)/100.f)); // gets smaller as it gets older
-                    if(projtrails && lastmillis-proj.lasteffect >= projtraildelay) { effect = true; proj.lasteffect = lastmillis - (lastmillis%projtraildelay); }
+                    if(projtrails && lastmillis-proj.lasteffect >= projtraildelay)
+                    {
+                        effect = true;
+                        proj.lasteffect = lastmillis - (lastmillis%projtraildelay);
+                    }
                     int len = effect ? max(int(projtraillength*0.5f*max(1.f-proj.lifespan, 0.1f)), 1) : 1,
                         colour = !proj.id && isweap(proj.weap) ? FWCOL(H, explcol, proj) : game::pulsehexcol(&proj, PULSE_FIRE);
                     part_create(proj.projtype == PRJ_GIBS || (!proj.id && isweap(proj.weap) && WF(WK(proj.flags), proj.weap, explcol, WS(proj.flags)) <= PC(DISCO)) ? PART_SPARK : PART_FIREBALL, len, proj.o, colour, radius, blend, -5);
@@ -2012,7 +2031,10 @@ namespace projs
                     proj.o.add(ray.mul(barrier-0.15f));
                     switch(step(proj, ray, pos, skip))
                     {
-                        case 2: proj.o = pos; blocked = true; break;
+                        case 2:
+                            proj.o = pos;
+                            blocked = true;
+                            break;
                         case 1: proj.o = pos; break;
                         case 0: return false;
                         case -1: return moveproj(proj, secs, true);
@@ -2024,9 +2046,19 @@ namespace projs
                 proj.o.add(dir);
                 switch(step(proj, dir, pos, skip))
                 {
-                    case 2: proj.o = pos; if(proj.projtype == PRJ_SHOT) blocked = true; break;
+                    case 2:
+                        proj.o = pos;
+                        if(proj.projtype == PRJ_SHOT) blocked = true;
+                        break;
                     case 1: default: break;
-                    case 0: proj.o = pos; if(proj.projtype == PRJ_SHOT) { dir.rescale(max(dir.magnitude()-0.15f, 0.0f)); proj.o.add(dir); } return false;
+                    case 0:
+                        proj.o = pos;
+                        if(proj.projtype == PRJ_SHOT)
+                        {
+                            dir.rescale(max(dir.magnitude()-0.15f, 0.0f));
+                            proj.o.add(dir);
+                        }
+                        return false;
                     case -1: return moveproj(proj, secs, true);
                 }
             }
@@ -2045,14 +2077,30 @@ namespace projs
                     if(!proj.lastbounce || proj.movement > 0)
                     {
                         vec axis(sinf(proj.yaw*RAD), -cosf(proj.yaw*RAD), 0);
-                        if(proj.vel.dot2(axis) >= 0) { proj.pitch -= diff; if(proj.pitch < -180) proj.pitch = 180 - fmod(180 - proj.pitch, 360); }
-                        else { proj.pitch += diff; if(proj.pitch > 180) proj.pitch = fmod(proj.pitch + 180, 360) - 180; }
+                        if(proj.vel.dot2(axis) >= 0)
+                        {
+                            proj.pitch -= diff;
+                            if(proj.pitch < -180) proj.pitch = 180 - fmod(180 - proj.pitch, 360);
+                        }
+                        else
+                        {
+                            proj.pitch += diff;
+                            if(proj.pitch > 180) proj.pitch = fmod(proj.pitch + 180, 360) - 180;
+                        }
                         break;
                     }
                     if(proj.pitch != 0)
                     {
-                        if(proj.pitch < 0) { proj.pitch += max(diff, !proj.lastbounce || proj.movement > 0 ? 1.f : 5.f); if(proj.pitch > 0) proj.pitch = 0; }
-                        else if(proj.pitch > 0) { proj.pitch -= max(diff, !proj.lastbounce || proj.movement > 0 ? 1.f : 5.f); if(proj.pitch < 0) proj.pitch = 0; }
+                        if(proj.pitch < 0)
+                        {
+                            proj.pitch += max(diff, !proj.lastbounce || proj.movement > 0 ? 1.f : 5.f);
+                            if(proj.pitch > 0) proj.pitch = 0;
+                        }
+                        else if(proj.pitch > 0)
+                        {
+                            proj.pitch -= max(diff, !proj.lastbounce || proj.movement > 0 ? 1.f : 5.f);
+                            if(proj.pitch < 0) proj.pitch = 0;
+                        }
                     }
                     break;
                 }
@@ -2071,8 +2119,16 @@ namespace projs
                     vectoyawpitch(vec(proj.vel).normalize(), yaw, pitch);
                     game::scaleyawpitch(proj.yaw, proj.pitch, yaw, pitch, speed, speed);
                     vec axis(sinf(proj.yaw*RAD), -cosf(proj.yaw*RAD), 0);
-                    if(proj.vel.dot2(axis) >= 0) { proj.roll -= diff; if(proj.roll < -180) proj.roll = 180 - fmod(180 - proj.roll, 360); }
-                    else { proj.roll += diff; if(proj.roll > 180) proj.roll = fmod(proj.roll + 180, 360) - 180; }
+                    if(proj.vel.dot2(axis) >= 0)
+                    {
+                        proj.roll -= diff;
+                        if(proj.roll < -180) proj.roll = 180 - fmod(180 - proj.roll, 360);
+                    }
+                    else
+                    {
+                        proj.roll += diff;
+                        if(proj.roll > 180) proj.roll = fmod(proj.roll + 180, 360) - 180;
+                    }
                 }
                 if(proj.projtype != PRJ_VANITY) break;
             }
@@ -2080,21 +2136,45 @@ namespace projs
                 if(!proj.lastbounce || proj.movement > 0)
                 {
                     vec axis(sinf(proj.yaw*RAD), -cosf(proj.yaw*RAD), 0);
-                    if(proj.vel.dot2(axis) >= 0) { proj.pitch -= diff; if(proj.pitch < -180) proj.pitch = 180 - fmod(180 - proj.pitch, 360); }
-                    else { proj.pitch += diff; if(proj.pitch > 180) proj.pitch = fmod(proj.pitch + 180, 360) - 180; }
+                    if(proj.vel.dot2(axis) >= 0)
+                    {
+                        proj.pitch -= diff;
+                        if(proj.pitch < -180) proj.pitch = 180 - fmod(180 - proj.pitch, 360);
+                    }
+                    else
+                    {
+                        proj.pitch += diff;
+                        if(proj.pitch > 180) proj.pitch = fmod(proj.pitch + 180, 360) - 180;
+                    }
                     break;
                 }
             case PRJ_ENT:
             {
                 if(proj.pitch != 0)
                 {
-                    if(proj.pitch < 0) { proj.pitch += max(diff, !proj.lastbounce || proj.movement > 0 ? 1.f : 5.f); if(proj.pitch > 0) proj.pitch = 0; }
-                    else if(proj.pitch > 0) { proj.pitch -= max(diff, !proj.lastbounce || proj.movement > 0 ? 1.f : 5.f); if(proj.pitch < 0) proj.pitch = 0; }
+                    if(proj.pitch < 0)
+                    {
+                        proj.pitch += max(diff, !proj.lastbounce || proj.movement > 0 ? 1.f : 5.f);
+                        if(proj.pitch > 0) proj.pitch = 0;
+                    }
+                    else if(proj.pitch > 0)
+                    {
+                        proj.pitch -= max(diff, !proj.lastbounce || proj.movement > 0 ? 1.f : 5.f);
+                        if(proj.pitch < 0) proj.pitch = 0;
+                    }
                 }
                 if(proj.roll != 0)
                 {
-                    if(proj.roll < 0) { proj.roll += max(diff, !proj.lastbounce || proj.movement > 0 ? 1.f : 5.f); if(proj.roll > 0) proj.roll = 0; }
-                    else if(proj.roll > 0) { proj.roll -= max(diff, !proj.lastbounce || proj.movement > 0 ? 1.f : 5.f); if(proj.roll < 0) proj.roll = 0; }
+                    if(proj.roll < 0)
+                    {
+                        proj.roll += max(diff, !proj.lastbounce || proj.movement > 0 ? 1.f : 5.f);
+                        if(proj.roll > 0) proj.roll = 0;
+                    }
+                    else if(proj.roll > 0)
+                    {
+                        proj.roll -= max(diff, !proj.lastbounce || proj.movement > 0 ? 1.f : 5.f);
+                        if(proj.roll < 0) proj.roll = 0;
+                    }
                 }
                 break;
             }
@@ -2308,7 +2388,12 @@ namespace projs
                             }
                             if(proj.lifetime > 0) break;
                         }
-                        default: proj.state = CS_DEAD; proj.escaped = true; break;
+                        default:
+                        {
+                            proj.state = CS_DEAD;
+                            proj.escaped = true;
+                            break;
+                        }
                     }
                 }
                 else for(int rtime = curtime; proj.state != CS_DEAD && rtime > 0;)
