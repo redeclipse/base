@@ -505,10 +505,13 @@ void entrotate(int *cw)
 }
 
 VAR(IDF_PERSIST, entselmdlbox, 0, 0, 1); // wanted this off in RE
-void entselectionbox(extentity &e, vec &eo, vec &es)
+VAR(IDF_PERSIST, entselmapmodelbox, 0, 0, 1);
+VAR(IDF_PERSIST, entseldecalbox, 0, 0, 1);
+bool entselectionbox(extentity &e, vec &eo, vec &es, bool full)
 {
     model *m = NULL;
     const char *mname = entselmdlbox ? entities::entmdlname(e.type, e.attrs) : NULL;
+    bool found = false, faked = false;
     if(mname && (m = loadmodel(mname)))
     {
         m->collisionbox(eo, es);
@@ -517,27 +520,39 @@ void entselectionbox(extentity &e, vec &eo, vec &es)
         eo.x += e.o.x;
         eo.y += e.o.y;
         eo.z = e.o.z - entselradius + es.z;
+        found = true;
     }
     else if(e.type == ET_MAPMODEL && (m = loadmapmodel(e.attrs[0])))
     {
-        mmcollisionbox(e, m, eo, es);
-        es.max(entselradius);
-        eo.add(e.o);
+        if(!full && !entselmapmodelbox) faked = true;
+        else
+        {
+            mmcollisionbox(e, m, eo, es);
+            es.max(entselradius);
+            eo.add(e.o);
+            found = true;
+        }
     }
     else if(e.type == ET_DECAL)
     {
-        DecalSlot &s = lookupdecalslot(e.attrs[0], false);
-        decalboundbox(e, s, eo, es);
-        es.max(entselradius);
-        eo.add(e.o);
+        if(!full && !entseldecalbox) faked = true;
+        else
+        {
+            DecalSlot &s = lookupdecalslot(e.attrs[0], false);
+            decalboundbox(e, s, eo, es);
+            es.max(entselradius);
+            eo.add(e.o);
+            found = true;
+        }
     }
-    else
+    if(!found)
     {
         es = vec(entselradius);
         eo = e.o;
     }
     eo.sub(es);
     es.mul(2);
+    return faked;
 }
 
 VAR(0, entselsnap, 0, 1, 1);
@@ -608,13 +623,14 @@ void renderentselection(const vec &o, const vec &ray, bool entmoving)
     if(noentedit() || (entgroup.empty() && enthover < 0)) return;
     vec eo, es;
 
+    vector<int> full;
     if(entgroup.length())
     {
-        gle::colorub(0, 40, 0);
+        gle::colorub(0, 128, 0);
         gle::defvertex();
         gle::begin(GL_LINES, entgroup.length()*24);
         loopv(entgroup) entfocus(entgroup[i],
-            entselectionbox(e, eo, es);
+            if(entselectionbox(e, eo, es)) full.add(entgroup[i]);
             renderentbox(eo, es);
         );
         xtraverts += gle::end();
@@ -622,13 +638,15 @@ void renderentselection(const vec &o, const vec &ray, bool entmoving)
 
     if(enthover >= 0)
     {
-        gle::colorub(0, 40, 0);
-        entfocus(enthover, entselectionbox(e, eo, es)); // also ensures enthover is back in focus
+        gle::colorub(0, 128, 0);
+        entfocus(enthover,
+            if(entselectionbox(e, eo, es)) full.add(enthover);
+        ); // also ensures enthover is back in focus
         boxs3D(eo, es, 1);
         if(entmoving && entmovingshadow==1)
         {
             vec a, b;
-            gle::colorub(20, 20, 20);
+            gle::colorub(128, 128, 128);
             (a = eo).x = eo.x - fmod(eo.x, worldsize); (b = es).x = a.x + worldsize; boxs3D(a, b, 1);
             (a = eo).y = eo.y - fmod(eo.y, worldsize); (b = es).y = a.x + worldsize; boxs3D(a, b, 1);
             (a = eo).z = eo.z - fmod(eo.z, worldsize); (b = es).z = a.x + worldsize; boxs3D(a, b, 1);
@@ -636,6 +654,18 @@ void renderentselection(const vec &o, const vec &ray, bool entmoving)
         gle::colorub(200, 0, 0);
         boxs(entorient, eo, es);
         boxs(entorient, eo, es, clamp(0.015f*camera1->o.dist(eo)*tan(fovy*0.5f*RAD), 0.1f, 1.0f));
+    }
+
+    if(full.length())
+    {
+        gle::colorub(0, 128, 128);
+        gle::defvertex();
+        gle::begin(GL_LINES, full.length()*24);
+        loopv(full) entfocus(full[i],
+            entselectionbox(e, eo, es, true);
+            renderentbox(eo, es);
+        );
+        xtraverts += gle::end();
     }
 }
 

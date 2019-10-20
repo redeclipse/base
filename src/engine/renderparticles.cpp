@@ -1090,6 +1090,7 @@ struct coneprimitive : listparticle<coneprimitive>
     vec dir, spot, spoke;
     float radius, angle;
     bool fill;
+    int spokenum;
 };
 
 struct coneprimitiverenderer : listrenderer<coneprimitive>
@@ -1115,22 +1116,22 @@ struct coneprimitiverenderer : listrenderer<coneprimitive>
         gle::colorub(p->color.r, p->color.g, p->color.b, uchar(p->blend*blend));
 
         gle::begin(GL_LINES);
-        loopi(15)
+        loopi(p->spokenum)
         {
             gle::attrib(p->o);
-            gle::attrib(vec(p->spoke).rotate(sincos360[i*(360/15)], p->dir).add(p->spot).mul(size).add(p->o));
+            gle::attrib(vec(p->spoke).rotate(sincos360[i*(360/p->spokenum)], p->dir).add(p->spot).mul(size).add(p->o));
         }
         gle::end();
 
         gle::begin(GL_LINE_LOOP);
-        loopi(15)
+        loopi(p->spokenum)
         {
-            gle::attrib(vec(p->spoke).rotate(sincos360[i*(360/15)], p->dir).add(p->spot).mul(size).add(p->o));
+            gle::attrib(vec(p->spoke).rotate(sincos360[i*(360/p->spokenum)], p->dir).add(p->spot).mul(size).add(p->o));
         }
         gle::end();
     }
 
-    coneprimitive *addcone(const vec &o, const vec &dir, float radius, float angle, int fade, int color, float size, float blend, bool fill)
+    coneprimitive *addcone(const vec &o, const vec &dir, float radius, float angle, int fade, int color, float size, float blend, bool fill, int spokenum = 15)
     {
         coneprimitive *p = (coneprimitive *)listrenderer<coneprimitive>::addpart(o, vec(0, 0, 0), fade, color, size, blend);
         p->dir = dir;
@@ -1140,6 +1141,7 @@ struct coneprimitiverenderer : listrenderer<coneprimitive>
         p->spot = vec(p->dir).mul(p->radius*cosf(p->angle*RAD));
         p->spoke.orthogonal(p->dir);
         p->spoke.normalize().mul(p->radius*sinf(p->angle*RAD));
+        p->spokenum = clamp(spokenum, 3, 359);
         return p;
     }
 
@@ -1597,11 +1599,11 @@ void part_radius(const vec &o, const vec &v, float size, float blend, int fade, 
     p->addellipse(o, v, fade, color, size, blend, 2, fill);
 }
 
-void part_cone(const vec &o, const vec &dir, float radius, float angle, float size, float blend, int fade, int color, bool fill, int type)
+void part_cone(const vec &o, const vec &dir, float radius, float angle, float size, float blend, int fade, int color, bool fill, int spokenum, int type)
 {
     if(!canaddparticles() || (parts[type]->type&PT_TYPE) != PT_CONE) return;
     coneprimitiverenderer *p = (coneprimitiverenderer *)parts[type];
-    p->addcone(o, dir, radius, angle, fade, color, size, blend, fill);
+    p->addcone(o, dir, radius, angle, fade, color, size, blend, fill, spokenum);
 }
 
 //dir = 0..6 where 0=up

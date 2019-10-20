@@ -317,7 +317,7 @@ extern void part_dir(const vec &o, float yaw, float pitch, float length = 1, flo
 extern void part_trace(const vec &o, const vec &v, float size = 1, float blend = 1, int fade = 1, int color = colourwhite, int interval = 0, bool fill = true);
 extern void part_ellipse(const vec &o, const vec &v, float size = 1, float blend = 1, int fade = 1, int color = colourwhite, int axis = 0, bool fill = false, int type = PART_ELLIPSE);
 extern void part_radius(const vec &o, const vec &v, float size = 1, float blend = 1, int fade = 1, int color = colourcyan, bool fill = false);
-extern void part_cone(const vec &o, const vec &dir, float radius, float angle = 0.f, float size = 1, float blend = 1, int fade = 1, int color = colourcyan, bool fill = false, int type = PART_CONE);
+extern void part_cone(const vec &o, const vec &dir, float radius, float angle = 0.f, float size = 1, float blend = 1, int fade = 1, int color = colourcyan, bool fill = false, int spokenum = 15, int type = PART_CONE);
 
 extern void removetrackedparticles(physent *pl = NULL);
 extern int particletext, maxparticledistance;

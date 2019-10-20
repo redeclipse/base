@@ -124,7 +124,6 @@ static inline bool raycubeintersect(const clipplanes &p, const cube &c, const ve
     return true;
 }
 
-extern void entselectionbox(extentity &e, vec &eo, vec &es);
 float hitentdist;
 int hitent, hitorient;
 

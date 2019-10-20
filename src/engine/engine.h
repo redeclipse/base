@@ -835,6 +835,7 @@ extern void freeoctaentities(cube &c);
 extern bool pointinsel(const selinfo &sel, const vec &o);
 extern void clearworldvars(bool msg = false);
 extern void resetmap(bool empty, int variant = MPV_DEF);
+extern bool entselectionbox(extentity &e, vec &eo, vec &es, bool full = false);
 
 // rendermodel
 struct mapmodelinfo { string name; model *m, *collide; };
