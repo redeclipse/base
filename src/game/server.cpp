@@ -60,6 +60,12 @@ namespace server
         void process(clientinfo *ci);
     };
 
+    struct cookevent : timedevent
+    {
+        int id, weap, etype, offtime;
+        void process(clientinfo *ci);
+    };
+
     struct dropevent : timedevent
     {
         int id, weap;
@@ -707,7 +713,7 @@ namespace server
             if(request)
             {
                 ci->lastplayerinfo = 0;
-                sendf(ci->clientnum, 1, "ri", N_LOADW);
+                sendf(ci->clientnum, 1, "ri", N_LOADOUT);
             }
             return false;
         }
@@ -797,7 +803,7 @@ namespace server
         }
         if(flags&DROP_WEAPONS) loopi(W_ALL) dropweapon(ci, flags, i, drop);
         if(!drop.empty())
-            sendf(-1, 1, "ri3iv", N_DROP, ci->clientnum, -1, drop.length(), drop.length()*sizeof(droplist)/sizeof(int), drop.getbuf());
+            sendf(-1, 1, "ri3iv", N_WEAPDROP, ci->clientnum, -1, drop.length(), drop.length()*sizeof(droplist)/sizeof(int), drop.getbuf());
         return kamikaze;
     }
 
@@ -4834,7 +4840,7 @@ namespace server
             }
             else if(!ci->hasweap(weap, sweap, m_classic(gamemode, mutators) ? 5 : 6))
             {
-                sendf(-1, 1, "ri7", N_DROP, ci->clientnum, -1, 1, weap, -1, 0);
+                sendf(-1, 1, "ri7", N_WEAPDROP, ci->clientnum, -1, 1, weap, -1, 0);
                 ci->weapammo[weap][W_A_CLIP] = -1;
                 ci->weapammo[weap][W_A_STORE] = 0;
             }
@@ -4846,7 +4852,6 @@ namespace server
         if(!ci->isalive(gamemillis) || !isweap(weap))
         {
             srvmsgft(ci->clientnum, CON_DEBUG, "Sync error: switch [%d] failed - unexpected message", weap);
-            sendf(ci->clientnum, 1, "ri3", N_WSELECT, ci->clientnum, ci->weapselect);
             return;
         }
         if(!ci->canswitch(weap, m_weapon(ci->actortype, gamemode, mutators), millis, (1<<W_S_SWITCH)))
@@ -4861,7 +4866,36 @@ namespace server
         }
         ci->updateweaptime();
         ci->weapswitch(weap, millis, W(weap, delayswitch));
-        sendf(-1, 1, "ri3x", N_WSELECT, ci->clientnum, weap, ci->clientnum);
+        sendf(-1, 1, "ri3x", N_WEAPSELECT, ci->clientnum, weap, ci->clientnum);
+    }
+
+    void cookevent::process(clientinfo *ci)
+    {
+        if(!ci->isalive(gamemillis) || !isweap(weap) || etype < -1 || etype > 2)
+        {
+            srvmsgft(ci->clientnum, CON_DEBUG, "Sync error: cook [%d] failed - unexpected message", weap);
+            return;
+        }
+        if(ci->weapstate[weap] == W_S_RELOAD && !ci->weapwaited(weap, gamemillis))
+        {
+            if(!ci->weapwaited(weap, gamemillis, (1<<W_S_RELOAD)))
+            {
+                srvmsgft(ci->clientnum, CON_DEBUG, "Sync error: cook [%d] failed - current state disallows it", weap);
+                sendresume(ci, true);
+                return;
+            }
+            checkweapload(ci, weap);
+        }
+        if(etype >= 0)
+        {
+            float maxscale = 1;
+            int sub = W2(weap, ammosub, etype >= 1);
+            if(sub > 1 && ci->weapammo[weap][W_A_CLIP] < sub) maxscale = ci->weapammo[weap][W_A_CLIP]/float(sub);
+            ci->setweapstate(weap, etype >= 2 ? W_S_ZOOM : W_S_POWER, max(int(W2(weap, cooktime, etype >= 1)*maxscale), 1), millis, offtime);
+        }
+        else ci->setweapstate(weap, W_S_IDLE, 0, millis, 0, true);
+        ci->lastcook = millis;
+        sendf(-1, 1, "ri5x", N_WEAPCOOK, ci->clientnum, weap, etype, offtime, ci->clientnum);
     }
 
     void dropevent::process(clientinfo *ci)
@@ -4892,7 +4926,7 @@ namespace server
         ci->weapammo[weap][W_A_CLIP] = -1;
         ci->weapammo[weap][W_A_STORE] = 0;
         ci->weapswitch(nweap, millis, W(nweap, delayswitch));
-        sendf(-1, 1, "ri7", N_DROP, ci->clientnum, nweap, 1, weap, dropped, ammo);
+        sendf(-1, 1, "ri7", N_WEAPDROP, ci->clientnum, nweap, 1, weap, dropped, ammo);
     }
 
     void reloadevent::process(clientinfo *ci)
@@ -5716,7 +5750,7 @@ namespace server
         }
 
         uchar operator[](int msg) const { return msg >= 0 && msg < NUMMSG ? msgmask[msg] : 0; }
-    } msgfilter(-1, N_CONNECT, N_SERVERINIT, N_CLIENTINIT, N_WELCOME, N_MAPCHANGE, N_SERVMSG, N_DAMAGE, N_SHOTFX, N_LOADW, N_DIED, N_POINTS, N_SPAWNSTATE, N_ITEMACC, N_ITEMSPAWN, N_TICK, N_DISCONNECT, N_CURRENTPRIV, N_PONG, N_SCOREAFFIN, N_SCORE, N_ANNOUNCE, N_SENDDEMOLIST, N_SENDDEMO, N_DEMOPLAYBACK, N_SENDMAP, N_REGEN, N_CLIENT, N_AUTHCHAL, N_QUEUEPOS, N_STEAMCHAL, -2, N_REMIP, N_NEWMAP, N_CLIPBOARD, -3, N_EDITENT, N_EDITLINK, N_EDITVAR, N_EDITF, N_EDITT, N_EDITM, N_FLIP, N_COPY, N_PASTE, N_ROTATE, N_REPLACE, N_DELCUBE, N_EDITVSLOT, N_UNDO, N_REDO, -4, N_POS, N_SPAWN, N_DESTROY, NUMMSG),
+    } msgfilter(-1, N_CONNECT, N_SERVERINIT, N_CLIENTINIT, N_WELCOME, N_MAPCHANGE, N_SERVMSG, N_DAMAGE, N_SHOTFX, N_LOADOUT, N_DIED, N_POINTS, N_SPAWNSTATE, N_ITEMACC, N_ITEMSPAWN, N_TICK, N_DISCONNECT, N_CURRENTPRIV, N_PONG, N_SCOREAFFIN, N_SCORE, N_ANNOUNCE, N_SENDDEMOLIST, N_SENDDEMO, N_DEMOPLAYBACK, N_SENDMAP, N_REGEN, N_CLIENT, N_AUTHCHAL, N_QUEUEPOS, N_STEAMCHAL, -2, N_REMIP, N_NEWMAP, N_CLIPBOARD, -3, N_EDITENT, N_EDITLINK, N_EDITVAR, N_EDITF, N_EDITT, N_EDITM, N_FLIP, N_COPY, N_PASTE, N_ROTATE, N_REPLACE, N_DELCUBE, N_EDITVSLOT, N_UNDO, N_REDO, -4, N_POS, N_SPAWN, N_DESTROY, NUMMSG),
       connectfilter(-1, N_CONNECT, -2, N_AUTHANS, N_STEAMANS, N_STEAMFAIL, -3, N_PING, NUMMSG);
 
     int checktype(int type, clientinfo *ci)
@@ -6234,31 +6268,6 @@ namespace server
                             qmsg = true;
                             break;
                         }
-                        case SPHY_COOK:
-                        {
-                            int weap = getint(p), wstate = getint(p), wlen = getint(p), wtime = getint(p);
-                            if(!proceed) break;
-                            if(!cp->isalive(gamemillis) || !isweap(weap) || (wstate != W_S_IDLE && wstate != W_S_ZOOM && wstate != W_S_POWER))
-                            {
-                                srvmsgft(cp->clientnum, CON_DEBUG, "Sync error: power [%d] failed - unexpected message", weap);
-                                break;
-                            }
-                            if(cp->weapstate[weap] == W_S_RELOAD && !cp->weapwaited(weap, gamemillis))
-                            {
-                                if(!cp->weapwaited(weap, gamemillis, (1<<W_S_RELOAD)))
-                                {
-                                    srvmsgft(cp->clientnum, CON_DEBUG, "Sync error: power [%d] failed - current state disallows it", weap);
-                                    sendresume(ci, true);
-                                    break;
-                                }
-                                else if(cp->weapload[weap][W_A_CLIP] > 0) checkweapload(cp, weap);
-                                else break;
-                            }
-                            cp->setweapstate(weap, wstate, wlen, lastmillis, wtime, wstate == W_S_IDLE);
-                            cp->lastcook = gamemillis;
-                            qmsg = true;
-                            break;
-                        }
                         case SPHY_MATERIAL:
                         {
                             int inmaterial = getint(p);
@@ -6355,7 +6364,7 @@ namespace server
                     break;
                 }
 
-                case N_WSELECT:
+                case N_WEAPSELECT:
                 {
                     int lcn = getint(p), id = getint(p), weap = getint(p);
                     clientinfo *cp = (clientinfo *)getinfo(lcn);
@@ -6363,6 +6372,21 @@ namespace server
                     switchevent *ev = new switchevent;
                     ev->id = id;
                     ev->weap = weap;
+                    ev->millis = cp->getmillis(gamemillis, ev->id);
+                    cp->addevent(ev);
+                    break;
+                }
+
+                case N_WEAPCOOK:
+                {
+                    int lcn = getint(p), id = getint(p), weap = getint(p), etype = getint(p), offtime = getint(p);
+                    clientinfo *cp = (clientinfo *)getinfo(lcn);
+                    if(!hasclient(cp, ci) || !isweap(weap) || weap >= W_ALL || cp->needsresume) break;
+                    cookevent *ev = new cookevent;
+                    ev->id = id;
+                    ev->weap = weap;
+                    ev->etype = etype;
+                    ev->offtime = offtime;
                     ev->millis = cp->getmillis(gamemillis, ev->id);
                     cp->addevent(ev);
                     break;
@@ -6455,7 +6479,7 @@ namespace server
                     break;
                 }
 
-                case N_DROP:
+                case N_WEAPDROP:
                 {
                     int lcn = getint(p), id = getint(p), weap = getint(p);
                     clientinfo *cp = (clientinfo *)getinfo(lcn);

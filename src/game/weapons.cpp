@@ -97,7 +97,7 @@ namespace weapons
                 if(W(oldweap, ammostore)) d->weapammo[oldweap][W_A_STORE] = clamp(d->weapammo[oldweap][W_A_STORE]+offset, 0, W(oldweap, ammostore));
                 d->weapload[oldweap][W_A_CLIP] = -d->weapload[oldweap][W_A_CLIP];
             }
-            client::addmsg(N_WSELECT, "ri3", d->clientnum, lastmillis-game::maptime, weap);
+            client::addmsg(N_WEAPSELECT, "ri3", d->clientnum, lastmillis-game::maptime, weap);
         }
         playsound(WSND(weap, S_W_SWITCH), d->o, d, 0, -1, -1, -1, &d->wschan);
         return true;
@@ -180,7 +180,7 @@ namespace weapons
                 d->weapload[d->weapselect][W_A_CLIP] = -d->weapload[d->weapselect][W_A_CLIP];
             }
         }
-        client::addmsg(N_DROP, "ri3", d->clientnum, lastmillis-game::maptime, weap);
+        client::addmsg(N_WEAPDROP, "ri3", d->clientnum, lastmillis-game::maptime, weap);
         d->setweapstate(weap, W_S_WAIT, PHYSMILLIS, lastmillis);
     }
 
@@ -261,7 +261,7 @@ namespace weapons
         {
             if(!pressed)
             {
-                client::addmsg(N_SPHY, "ri6", d->clientnum, SPHY_COOK, weap, W_S_IDLE, 0, 0);
+                client::addmsg(N_WEAPCOOK, "ri5", d->clientnum, lastmillis-game::maptime, weap, -1, 0);
                 d->setweapstate(weap, W_S_IDLE, 0, lastmillis, 0, true);
                 return false;
             }
@@ -301,7 +301,7 @@ namespace weapons
                             d->weapload[weap][W_A_CLIP] = -offset;
                         }
                         int offtime = hadcook && d->prevstate[weap] == type ? lastmillis-d->prevtime[weap] : 0;
-                        client::addmsg(N_SPHY, "ri6", d->clientnum, SPHY_COOK, weap, type, len, offtime);
+                        client::addmsg(N_WEAPCOOK, "ri5", d->clientnum, lastmillis-game::maptime, weap, zooming ? 2 : (secondary ? 1 : 0), offtime);
                         d->setweapstate(weap, type, len, lastmillis, offtime);
                         d->lastcook = lastmillis;
                     }

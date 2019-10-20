@@ -2443,13 +2443,6 @@ namespace client
                             if(st == SPHY_KICK || st == SPHY_PARKOUR || st == SPHY_MELEE) game::footstep(d);
                             break;
                         }
-                        case SPHY_COOK:
-                        {
-                            int weap = getint(p), param = getint(p), value = getint(p), offtime = getint(p);
-                            if(!proceed || !isweap(weap)) break;
-                            t->setweapstate(weap, param, value, lastmillis, offtime, param == W_S_IDLE);
-                            break;
-                        }
                         case SPHY_EXTINGUISH:
                         {
                             if(!proceed) break;
@@ -2643,7 +2636,7 @@ namespace client
                     break;
                 }
 
-                case N_LOADW:
+                case N_LOADOUT:
                 {
                     hud::showscores(false);
                     if(!UI::hasmenu()) UI::openui("profile");
@@ -2861,7 +2854,7 @@ namespace client
                     break;
                 }
 
-                case N_DROP:
+                case N_WEAPDROP:
                 {
                     int trg = getint(p), weap = getint(p), ds = getint(p);
                     gameent *m = game::getclient(trg);
@@ -2879,12 +2872,28 @@ namespace client
                     break;
                 }
 
-                case N_WSELECT:
+                case N_WEAPSELECT:
                 {
                     int trg = getint(p), weap = getint(p);
                     gameent *m = game::getclient(trg);
                     if(!m || !isweap(weap)) break;
                     weapons::weapselect(m, weap, (1<<W_S_SWITCH)|(1<<W_S_RELOAD), false);
+                    break;
+                }
+
+                case N_WEAPCOOK:
+                {
+                    int trg = getint(p), weap = getint(p), etype = getint(p), offtime = getint(p);
+                    gameent *m = game::getclient(trg);
+                    if(!m || !isweap(weap)) break;
+                    if(etype >= 0)
+                    {
+                        float maxscale = 1;
+                        int sub = W2(weap, ammosub, etype >= 1);
+                        if(sub > 1 && m->weapammo[weap][W_A_CLIP] < sub) maxscale = m->weapammo[weap][W_A_CLIP]/float(sub);
+                        m->setweapstate(weap, etype >= 2 ? W_S_ZOOM : W_S_POWER, max(int(W2(weap, cooktime, etype >= 1)*maxscale), 1), lastmillis, offtime);
+                    }
+                    else m->setweapstate(weap, W_S_IDLE, 0, lastmillis, 0, true);
                     break;
                 }
 

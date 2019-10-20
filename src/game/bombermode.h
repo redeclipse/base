@@ -258,7 +258,7 @@ struct bomberservmode : bomberstate, servmode
                 if(ci && carrytime && gamemillis-f.taketime >= carrytime)
                 {
                     ci->weapshots[W_GRENADE][0].add(1);
-                    sendf(-1, 1, "ri7", N_DROP, ci->clientnum, -1, 1, W_GRENADE, -1, -1);
+                    sendf(-1, 1, "ri7", N_WEAPDROP, ci->clientnum, -1, 1, W_GRENADE, -1, -1);
                     dropaffinity(ci, ci->feetpos(G(bomberdropheight)), vec(ci->vel).add(ci->falling));
                     if(m_bb_hold(gamemode, mutators) && G(bomberholdpenalty))
                     {
