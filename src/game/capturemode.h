@@ -243,6 +243,7 @@ struct captureservmode : capturestate, servmode
                 if((G(capturebuffing)&1 || G(capturebuffing)&2) && !owner && (!f.droptime || m_ctf_defend(gamemode, mutators) || G(capturebuffing)&2) && ci->o.dist(f.droptime ? f.droploc : f.spawnloc) <= G(capturebuffarea)) { buff = true; break; }
                 if(G(capturebuffing)&4 && owner && ci == owner) { buff = true; break; }
                 if(G(capturebuffing)&8 && owner && ci != owner && owner->team == ci->team && (G(capturebuffarea) > 0 ? ci->o.dist(owner->o) <= G(capturebuffarea) : true)) { buff = true; break; }
+                if((G(capturebuffing)&64) && ci->o.dist(f.spawnloc) <= G(capturebuffarea)) { buff = true; break; }
             }
             else
             {

@@ -344,7 +344,7 @@ GFVAR(IDF_GAMEMOD, 0, capturespeedmax, 0, 100, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, capturerepulsion, 0, 16, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, capturerepelspeed, 0, 25, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, capturethreshold, 0, 0, FVAR_MAX); // if someone 'warps' more than this distance, auto-drop
-GVAR(IDF_GAMEMOD, 0, capturebuffing, 0, 9, 63); // buffed; 0 = off, &1 = when defending, &2 = when defending dropped, &4 = when secured, &8 = when defending secured, &16 = when secured enemy, &32 = when defending secured enemy
+GVAR(IDF_GAMEMOD, 0, capturebuffing, 0, 15, 63); // buffed; 0 = off, &1 = when defending, &2 = when defending dropped, &4 = when secured, &8 = when defending secured, &16 = when secured enemy, &32 = when defending secured enemy, &64 = when defending own base
 GVAR(IDF_GAMEMOD, 0, capturebuffdelay, 0, 3000, VAR_MAX); // buffed for this long after leaving
 GFVAR(IDF_GAMEMOD, 0, capturebuffarea, 0, 160, FVAR_MAX); // radius in which buffing occurs
 GFVAR(IDF_GAMEMOD, 0, capturebuffdamage, 1, 1.25f, FVAR_MAX); // multiply outgoing damage by this much when buffed
