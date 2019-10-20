@@ -2543,7 +2543,7 @@ namespace game
                 fixrange(yaw, pitch);
             }
         }
-        if(renew || force || c->player || c->moveto)
+        if(renew || force)
         {
             if(c->player)
             {
@@ -2580,7 +2580,7 @@ namespace game
         } c;
         c.o = pos;
         if(csize) c.o.z += csize;
-        if(!collide(&c, vec(0, 0, 0), 0, false))
+        if(!collide(&c, vec(0, 0, 0), 0, false) && !collideinside)
         {
             pos = c.o;
             return true;
@@ -2588,7 +2588,7 @@ namespace game
         if(csize) loopi(csize)
         {
             c.o.z -= 1;
-            if(!collide(&c, vec(0, 0, 0), 0, false))
+            if(!collide(&c, vec(0, 0, 0), 0, false) && !collideinside)
             {
                 pos = c.o;
                 return true;
@@ -2598,7 +2598,7 @@ namespace game
         loopi(5) loopj(5) loopk(8)
         {
             c.o = vec(pos).add(vec(sphereyawchecks[k]*RAD, spherepitchchecks[j]*RAD).mul((i+1)*2));
-            if(!collide(&c, vec(0, 0, 0), 0, false))
+            if(!collide(&c, vec(0, 0, 0), 0, false) && !collideinside)
             {
                 pos = c.o;
                 return true;
@@ -2658,7 +2658,7 @@ namespace game
                         }
                         break;
                     }
-                    #if 0 // waypoints arre probably too closesly packed
+                    #if 0 // waypoints arre probably too closely packed
                     case cament::WAYPOINT:
                     {
                         if(!ai::waypoints.inrange(c->id)) continue;
@@ -2779,7 +2779,7 @@ namespace game
                         mcams.reserve(cam->links.length());
                         mcams.put(cam->links.getbuf(), cam->links.length());
                     }
-                    if(mcams.empty() && (cam->type == cament::ENTITY || cam->type == cament::WAYPOINT))
+                    else if(cam->type == cament::ENTITY || cam->type == cament::WAYPOINT)
                     {
                         mcams.reserve(cameras.length());
                         mcams.put(cameras.getbuf(), cameras.length());
