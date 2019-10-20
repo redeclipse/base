@@ -1287,6 +1287,17 @@ namespace hud
         return "Spectating";
     }
 
+    const char *qposname(int pos)
+    {
+        static string posname = "";
+        int num = pos%10;
+        if(num == 1 && pos != 11) formatstring(posname, "%dst", pos);
+        else if(num == 2 && pos != 12) formatstring(posname, "%dnd", pos);
+        else if(num == 3 && pos != 13) formatstring(posname, "%drd", pos);
+        else formatstring(posname, "%dth", pos);
+        return posname;
+    }
+
     void drawnotices()
     {
         pushhudscale(noticescale);
@@ -1340,7 +1351,7 @@ namespace hud
                             ty += draw_textf("You are \fs\fzcgNEXT\fS in the duel queue", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1);
                             break;
                         default:
-                            ty += draw_textf("You are \fs\fy#\fS\fs\fc%d\fS in the duel queue", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1, game::player1->queuepos);
+                            ty += draw_textf("You are \fs\fc%s\fS in the duel queue", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1, qposname(game::player1->queuepos+1));
                             break;
                     }
                 }
@@ -1356,7 +1367,7 @@ namespace hud
                             ty += draw_textf("You are \fs\fzcgNEXT\fS in the spawn queue", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1);
                             break;
                         default:
-                            ty += draw_textf("You are \fs\fy#\fS\fs\fc%d\fS in the spawn queue", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1, game::player1->queuepos);
+                            ty += draw_textf("You are \fs\fc%s\fS in the spawn queue", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1, qposname(game::player1->queuepos+1));
                             break;
                     }
                 }
