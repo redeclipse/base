@@ -602,7 +602,7 @@ namespace game
 
     bool inzoom()
     {
-        if(focus != player1 && followthirdperson && tvmode()) return false;
+        if(focus != player1 && followthirdperson) return false;
         if(lastzoom && (zooming || lastmillis-lastzoom <= W(focus->weapselect, cookzoom)))
             return true;
         return false;
