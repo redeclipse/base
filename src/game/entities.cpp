@@ -1328,7 +1328,7 @@ namespace entities
 
     const char *findname(int type)
     {
-        if(type >= NOTUSED && type < MAXENTTYPES) return enttype[type].name;
+        if(isent(type)) return enttype[type].name;
         return "";
     }
 
@@ -1622,6 +1622,78 @@ namespace entities
         }
     }
 
+    void importent(gameentity &e, int mver, int gver)
+    {
+        switch(e.type)
+        {
+            case ACTOR: numactors++; break;
+            case WEAPON:
+            {
+                if(gver <= 218)
+                { // insert mine before rockets (9 -> 10) after grenades (8)
+                    if(e.attrs[0] >= 9) e.attrs[0]++;
+                }
+                if(gver <= 221)
+                { // insert zapper before rifle (7 -> 8) after plasma (6)
+                    if(e.attrs[0] >= 7) e.attrs[0]++;
+                }
+                break;
+            }
+            case PLAYERSTART: case AFFINITY:
+            {
+                if(gver <= 244 && e.attrs[0] > T_OMEGA) e.type = NOTUSED;
+                break;
+            }
+            case PARTICLES:
+            {
+                if(gver <= 244) switch(e.attrs[0])
+                {
+                    case 0: game::fixpalette(e.attrs[5], e.attrs[6], gver); break;
+                    case 3: game::fixpalette(e.attrs[3], e.attrs[4], gver); break;
+                    case 4: game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
+                    case 5: game::fixpalette(e.attrs[3], e.attrs[4], gver); break;
+                    case 6: game::fixpalette(e.attrs[4], e.attrs[5], gver); game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
+                    case 7: game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
+                    case 8: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
+                    case 9: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
+                    case 10: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
+                    case 11: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
+                    case 12: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
+                    case 13: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
+                    case 14: game::fixpalette(e.attrs[8], e.attrs[9], gver); break;
+                    case 15: game::fixpalette(e.attrs[8], e.attrs[9], gver); break;
+                    default: break;
+                }
+                break;
+            }
+            case LIGHT: if(gver <= 244) game::fixpalette(e.attrs[7], e.attrs[8], gver); break;
+            case MAPMODEL: if(gver <= 244) game::fixpalette(e.attrs[8], e.attrs[9], gver); break;
+            case DECAL: if(gver <= 244) game::fixpalette(e.attrs[7], e.attrs[8], gver); break;
+            case TELEPORT: if(gver <= 244) game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
+            case ROUTE: case UNUSEDENT: e.type = NOTUSED; break;
+            default: break;
+        }
+        if(gver <= 244 && enttype[e.type].modesattr >= 0)
+        {
+            int mattr = enttype[e.type].modesattr+1;
+            if(e.attrs[mattr] != 0)
+            {
+                static const int G_M_MULTI = 0, G_M_FREESTYLE = 10, G_M_OLDNUM = 20;
+                int offset = 0, oldmuts = e.attrs[mattr] > 0 ? e.attrs[mattr] : 0-e.attrs[mattr], newmuts = 0;
+                loopi(G_M_OLDNUM) switch(i)
+                {
+                    case G_M_MULTI: case G_M_FREESTYLE:
+                        offset++;
+                        break;
+                    default:
+                        if(oldmuts&(1<<i)) newmuts |= 1<<(i-offset);
+                        break;
+                }
+                e.attrs[mattr] = e.attrs[mattr] > 0 ? newmuts : 0-newmuts;
+            }
+        }
+    }
+
     void initents(int mver, char *gid, int gver)
     {
         lastroutenode = routeid = -1;
@@ -1633,55 +1705,7 @@ namespace entities
         {
             gameentity &e = *(gameentity *)ents[i];
             e.attrs.setsize(numattrs(e.type), 0);
-            if(gver < VERSION_GAME) switch(e.type)
-            {
-                case ACTOR: numactors++; break;
-                case WEAPON:
-                {
-                    if(gver <= 218)
-                    { // insert mine before rockets (9 -> 10) after grenades (8)
-                        if(e.attrs[0] >= 9) e.attrs[0]++;
-                    }
-                    if(gver <= 221)
-                    { // insert zapper before rifle (7 -> 8) after plasma (6)
-                        if(e.attrs[0] >= 7) e.attrs[0]++;
-                    }
-                    break;
-                }
-                case PLAYERSTART: case AFFINITY:
-                {
-                    if(gver <= 244 && e.attrs[0] > T_OMEGA) e.type = NOTUSED;
-                    break;
-                }
-                case PARTICLES:
-                {
-                    if(gver <= 244) switch(e.attrs[0])
-                    {
-                        case 0: game::fixpalette(e.attrs[5], e.attrs[6], gver); break;
-                        case 3: game::fixpalette(e.attrs[3], e.attrs[4], gver); break;
-                        case 4: game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
-                        case 5: game::fixpalette(e.attrs[3], e.attrs[4], gver); break;
-                        case 6: game::fixpalette(e.attrs[4], e.attrs[5], gver); game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
-                        case 7: game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
-                        case 8: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
-                        case 9: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
-                        case 10: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
-                        case 11: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
-                        case 12: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
-                        case 13: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
-                        case 14: game::fixpalette(e.attrs[8], e.attrs[9], gver); break;
-                        case 15: game::fixpalette(e.attrs[8], e.attrs[9], gver); break;
-                        default: break;
-                    }
-                    break;
-                }
-                case LIGHT: if(gver <= 244) game::fixpalette(e.attrs[7], e.attrs[8], gver); break;
-                case MAPMODEL: if(gver <= 244) game::fixpalette(e.attrs[8], e.attrs[9], gver); break;
-                case DECAL: if(gver <= 244) game::fixpalette(e.attrs[7], e.attrs[8], gver); break;
-                case TELEPORT: if(gver <= 244) game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
-                case ROUTE: case UNUSEDENT: e.type = NOTUSED; break;
-                default: break;
-            }
+            if(gver < VERSION_GAME) importent(e, mver, gver);
             fixentity(i, false);
             progress((i+1)/float(ents.length()), "Setting entity attributes...");
         }

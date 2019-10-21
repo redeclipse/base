@@ -217,6 +217,7 @@ namespace entities
     extern vector<extentity *> ents;
 }
 #endif
+#define isent(a) (a >= NOTUSED && a < MAXENTTYPES)
 
 #define MAXNAMELEN 24
 enum { SAY_NONE = 0, SAY_ACTION = 1<<0, SAY_TEAM = 1<<1, SAY_WHISPER = 1<<2, SAY_NUM = 3 };
