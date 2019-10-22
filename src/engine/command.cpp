@@ -3125,7 +3125,7 @@ static const uint *runcode(const uint *code, tagval &result)
                 {
                 noid:
                     if(checknumber(idarg.s)) goto litval;
-                    if(idrewrite && server::rewritecommand(id, args, numargs)) FORCERESULT;
+                    if(offset == 1 && idrewrite && server::rewritecommand(id, args, numargs)) FORCERESULT;
                     debugcode("\frUnknown command: %s", idarg.s);
                     forcenull(result);
                     FORCERESULT;
