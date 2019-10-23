@@ -535,7 +535,7 @@ namespace game
 
     bool allowspec(gameent *d, int level, int cn = -1)
     {
-        if(d->o.magnitude() <= 0 || d->o.z < 0) return false;
+        if(d->actortype >= A_ENEMY || d->o.magnitude() <= 0 || d->o.z < 0) return false;
         if(d->state == CS_SPECTATOR || ((d->state == CS_DEAD || d->state == CS_WAITING) && !d->lastdeath)) return false;
         if(cn >= 0)
         {
@@ -779,39 +779,52 @@ namespace game
     MODESWITCH(spec);
     MODESWITCH(wait);
 
+    bool addfollow(int n, int *f, bool other)
+    {
+        if(!f)
+        {
+            specreset();
+            return true;
+        }
+        #define checkfollow \
+            if(*f >= players.length()) *f = -1; \
+            else if(*f < -1) *f = players.length()-1;
+        *f += clamp(n, -1, 1);
+        checkfollow;
+        if(*f == -1)
+        {
+            if(other) *f += clamp(n, -1, 1);
+            else
+            {
+                specreset();
+                return true;
+            }
+            checkfollow;
+        }
+        return false;
+    }
+
     bool followswitch(int n, bool other)
     {
         if(player1->state == CS_SPECTATOR || (player1->state == CS_WAITING && (!player1->lastdeath || !deathbuttonmash || lastmillis-player1->lastdeath > deathbuttonmash)))
         {
             bool istv = tvmode(true, false);
             int *f = istv ? &spectvfollow : &follow;
-            #define checkfollow \
-                if(*f >= players.length()) *f = -1; \
-                else if(*f < -1) *f = players.length()-1;
-            #define addfollow \
-            { \
-                *f += clamp(n, -1, 1); \
-                checkfollow; \
-                if(*f == -1) \
-                { \
-                    if(other) *f += clamp(n, -1, 1); \
-                    else \
-                    { \
-                        specreset(); \
-                        return true; \
-                    } \
-                    checkfollow; \
-                } \
-            }
-            addfollow;
             if(!n) n = 1;
+            if(addfollow(n, f, other)) return true;
             loopi(players.length())
             {
-                if(!players.inrange(*f)) addfollow
+                if(!players.inrange(*f))
+                {
+                    if(addfollow(n, f, other)) return true;
+                }
                 else
                 {
                     gameent *d = players[*f];
-                    if(!d || d->actortype >= A_ENEMY || !allowspec(d, istv ? spectvdead : followdead)) addfollow
+                    if(!d || !allowspec(d, istv ? spectvdead : followdead))
+                    {
+                        if(addfollow(n, f, other)) return true;
+                    }
                     else
                     {
                         focus = d;
@@ -2611,99 +2624,91 @@ namespace game
         return false;
     }
 
-    bool cameratv()
+    void buildcams()
     {
-        if(!tvmode(false)) return false;
-        if(!gs_playing(gamestate)) spectvfollowing = -1;
-        else if(player1->state != CS_SPECTATOR && spectvfollowself >= (m_duke(gamemode, mutators) ? 2 : 1))
-            spectvfollowing = player1->clientnum;
-        else spectvfollowing = spectvfollow;
-        if(cameras.empty())
+        loopv(entities::ents)
         {
-            loopv(entities::ents)
-            {
-                gameentity &e = *(gameentity *)entities::ents[i];
-                if(e.type == MAPSOUND || e.type == MAPMODEL) continue;
-                vec pos = e.o;
-                if(!camcheck(pos, (e.type == PLAYERSTART ? actors[A_PLAYER].height+2 : enttype[e.type].radius))) continue;
-                cameras.add(new cament(cameras.length(), cament::ENTITY, i, pos));
-            }
-            ai::getwaypoints();
-            loopv(ai::waypoints)
-            {
-                if(!i) continue; // first waypoint is always dud
-                ai::waypoint &w = ai::waypoints[i];
-                vec pos = w.o;
-                if(!camcheck(pos, actors[A_PLAYER].height+2)) continue;
-                cameras.add(new cament(cameras.length(), cament::WAYPOINT, i, pos));
-            }
-            loopv(cameras)
-            {
-                cament *c = cameras[i];
-                switch(c->type)
-                {
-                    case cament::ENTITY:
-                    {
-                        if(!entities::ents.inrange(c->id)) continue;
-                        gameentity &e = *(gameentity *)entities::ents[c->id];
-                        if(e.links.empty()) continue;
-                        loopvj(e.links)
-                        {
-                            int link = e.links[j];
-                            if(!entities::ents.inrange(link)) continue;
-                            gameentity &f = *(gameentity *)entities::ents[link];
-                            if(f.type == MAPSOUND || f.type == MAPMODEL) continue;
-                            loopvk(cameras)
-                            {
-                                cament *d = cameras[k];
-                                if(d->type != cament::ENTITY || d->id != link) continue;
-                                c->links.add(d);
-                            }
-                        }
-                        break;
-                    }
-                    #if 0 // waypoints arre probably too closely packed
-                    case cament::WAYPOINT:
-                    {
-                        if(!ai::waypoints.inrange(c->id)) continue;
-                        ai::waypoint &w = ai::waypoints[c->id];
-                        if(!w.haslinks()) continue;
-                        loopj(ai::MAXWAYPOINTLINKS)
-                        {
-                            int link = w.links[j];
-                            if(!link || !ai::waypoints.inrange(link)) continue;
-                            loopvk(cameras)
-                            {
-                                cament *d = cameras[k];
-                                if(d->type != cament::WAYPOINT || d->id != link) continue;
-                                c->links.add(d);
-                            }
-                        }
-                        break;
-                    }
-                    #endif
-                    default: break;
-                }
-            }
-            starttvcamdyn = cameras.length();
-            loopv(players) if(players[i])
-            {
-                gameent *d = players[i];
-                if(d->actortype >= A_ENEMY) continue;
-                vec pos = d->center();
-                cameras.add(new cament(cameras.length(), cament::PLAYER, d->clientnum, pos, d));
-            }
-            vec pos = player1->center();
-            cameras.add(new cament(cameras.length(), cament::PLAYER, player1->clientnum, pos, player1));
-            if(m_capture(gamemode)) capture::checkcams(cameras);
-            else if(m_defend(gamemode)) defend::checkcams(cameras);
-            else if(m_bomber(gamemode)) bomber::checkcams(cameras);
+            gameentity &e = *(gameentity *)entities::ents[i];
+            if(e.type == MAPSOUND || e.type == MAPMODEL) continue;
+            vec pos = e.o;
+            if(!camcheck(pos, (e.type == PLAYERSTART ? actors[A_PLAYER].height+2 : enttype[e.type].radius))) continue;
+            cameras.add(new cament(cameras.length(), cament::ENTITY, i, pos));
         }
-        if(cameras.empty()) return false;
-        if(!cameras.inrange(lastcamcn)) lastcamcn = rnd(cameras.length());
-        cament *cam = cameras[lastcamcn];
-        bool forced = !tvmode(false, false), renew = !lastcamera, found = spectvfollowing < 0;
-        float amt = 0;
+        ai::getwaypoints();
+        loopv(ai::waypoints)
+        {
+            if(!i) continue; // first waypoint is always dud
+            ai::waypoint &w = ai::waypoints[i];
+            vec pos = w.o;
+            if(!camcheck(pos, actors[A_PLAYER].height+2)) continue;
+            cameras.add(new cament(cameras.length(), cament::WAYPOINT, i, pos));
+        }
+        loopv(cameras)
+        {
+            cament *c = cameras[i];
+            switch(c->type)
+            {
+                case cament::ENTITY:
+                {
+                    if(!entities::ents.inrange(c->id)) continue;
+                    gameentity &e = *(gameentity *)entities::ents[c->id];
+                    if(e.links.empty()) continue;
+                    loopvj(e.links)
+                    {
+                        int link = e.links[j];
+                        if(!entities::ents.inrange(link)) continue;
+                        gameentity &f = *(gameentity *)entities::ents[link];
+                        if(f.type == MAPSOUND || f.type == MAPMODEL) continue;
+                        loopvk(cameras)
+                        {
+                            cament *d = cameras[k];
+                            if(d->type != cament::ENTITY || d->id != link) continue;
+                            c->links.add(d);
+                        }
+                    }
+                    break;
+                }
+                #if 0 // waypoints are probably too closely packed
+                case cament::WAYPOINT:
+                {
+                    if(!ai::waypoints.inrange(c->id)) continue;
+                    ai::waypoint &w = ai::waypoints[c->id];
+                    if(!w.haslinks()) continue;
+                    loopj(ai::MAXWAYPOINTLINKS)
+                    {
+                        int link = w.links[j];
+                        if(!link || !ai::waypoints.inrange(link)) continue;
+                        loopvk(cameras)
+                        {
+                            cament *d = cameras[k];
+                            if(d->type != cament::WAYPOINT || d->id != link) continue;
+                            c->links.add(d);
+                        }
+                    }
+                    break;
+                }
+                #endif
+                default: break;
+            }
+        }
+        starttvcamdyn = cameras.length();
+        loopv(players) if(players[i])
+        {
+            gameent *d = players[i];
+            if(d->actortype >= A_ENEMY) continue;
+            vec pos = d->center();
+            cameras.add(new cament(cameras.length(), cament::PLAYER, d->clientnum, pos, d));
+        }
+        vec pos = player1->center();
+        cameras.add(new cament(cameras.length(), cament::PLAYER, player1->clientnum, pos, player1));
+        if(m_capture(gamemode)) capture::checkcams(cameras);
+        else if(m_defend(gamemode)) defend::checkcams(cameras);
+        else if(m_bomber(gamemode)) bomber::checkcams(cameras);
+    }
+
+    bool findcams(cament *cam, bool forced, bool check)
+    {
+        bool found = check;
         for(int i = startcam(); i < cameras.length(); i++)
         {
             cament *c = cameras[i];
@@ -2718,6 +2723,21 @@ namespace game
             else if(m_defend(gamemode)) defend::updatecam(c);
             else if(m_bomber(gamemode)) bomber::updatecam(c);
         }
+        return found;
+    }
+
+    bool cameratv()
+    {
+        if(!tvmode(false)) return false;
+        if(!gs_playing(gamestate)) spectvfollowing = -1;
+        else if(player1->state != CS_SPECTATOR && spectvfollowself >= (m_duke(gamemode, mutators) ? 2 : 1))
+            spectvfollowing = player1->clientnum;
+        else spectvfollowing = spectvfollow;
+        if(cameras.empty()) buildcams();
+        if(!cameras.inrange(lastcamcn)) lastcamcn = rnd(cameras.length());
+        cament *cam = cameras[lastcamcn];
+        bool forced = !tvmode(false, false), renew = !lastcamera, found = findcams(cam, forced, spectvfollowing < 0);
+        float amt = 0;
         if(!found) spectvfollow = spectvfollowing = -1;
         camrefresh(cam);
         #define stvf(z) (!gs_playing(gamestate) ? spectvinter##z : (spectvfollowing >= 0 ? spectvfollow##z : spectv##z))
