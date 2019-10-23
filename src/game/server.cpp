@@ -773,6 +773,7 @@ namespace server
         if(!isweap(weap) || weap == m_weapon(ci->actortype, gamemode, mutators)) return;
         if(m_arena(gamemode, mutators) && weap < W_ITEM) return; // only drop non-loadout weapons in arena
         if(!ci->hasweap(weap, m_weapon(ci->actortype, gamemode, mutators)) || !sents.inrange(ci->weapent[weap])) return;
+        if(!m_classic(gamemode, mutators) && !W2(weap, ammosub, false) && !W2(weap, ammosub, true)) return;
         int ammo = ci->getammo(weap, 0, true);
         if(ammo <= 0) return;
         droplist &d = drop.add();
