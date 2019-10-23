@@ -4912,7 +4912,7 @@ namespace server
             }
             checkweapload(ci, ci->weapselect);
         }
-        int dropped = -1, ammo = -1, nweap = ci->bestweap(sweap, weap); // switch to best weapon
+        int dropped = -1, ammo = -1, nweap = ci->bestweap(sweap, false, weap); // switch to best weapon
         if(sents.inrange(ci->weapent[weap]))
         {
             dropped = ci->weapent[weap];

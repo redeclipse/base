@@ -2306,6 +2306,7 @@ namespace game
         float dist = from.dist(pos);
         yaw = -atan2(pos.x-from.x, pos.y-from.y)/RAD;
         pitch = asin((pos.z-from.z)/dist)/RAD;
+        fixrange(yaw, pitch);
     }
 
     void scaleyawpitch(float &yaw, float &pitch, float targyaw, float targpitch, float yawspeed, float pitchspeed, float rotate)

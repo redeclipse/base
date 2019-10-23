@@ -125,23 +125,20 @@ namespace ai
         return false;
     }
 
-    vec getaimpos(gameent *d, gameent *e, bool alt)
+    vec &getaimpos(gameent *d, gameent *e, bool alt)
     {
-        vec o = e->o;
-        if(AA(d->actortype, abilities)&(1<<A_A_KAMIKAZE)) return o;
-        if(d->skill <= 100)
+        if(AA(d->actortype, abilities)&(1<<A_A_KAMIKAZE) || d->skill >= 100) return e->o;
+        static vec o;
+        o = e->o;
+        if(lastmillis >= d->ai->lastaimrnd)
         {
-            if(lastmillis >= d->ai->lastaimrnd)
-            {
-                int radius = ceilf(e->radius*W2(d->weapselect, aiskew, alt));
-                float speed = clamp(e->vel.magnitude()/max(e->speed, 1.f), 0.f, 1.f), scale = speed+((1-speed)*((101-d->skill)/100.f));
-                loopk(3) d->ai->aimrnd[k] = (rnd((radius*2)+1)-radius)*scale;
-                int dur = (d->skill+10)*10;
-                d->ai->lastaimrnd = lastmillis+dur+rnd(dur);
-            }
-            o.add(d->ai->aimrnd);
+            int radius = ceilf(e->radius*W2(d->weapselect, aiskew, alt));
+            float speed = clamp(e->vel.magnitude()/max(e->speed, 1.f), 0.f, 1.f), scale = speed+((1-speed)*((101-d->skill)/100.f));
+            loopk(3) d->ai->aimrnd[k] = (rnd((radius*2)+1)-radius)*scale;
+            int dur = max(d->skill*2, 30)*5;
+            d->ai->lastaimrnd = lastmillis+dur+rnd(dur);
         }
-        return o;
+        return o.add(d->ai->aimrnd);
     }
 
     int weappref(gameent *d)
@@ -152,8 +149,8 @@ namespace ai
 
     bool hasweap(gameent *d, int weap)
     {
-        if(!isweap(weap) || !d->hasweap(weap, m_weapon(d->actortype, game::gamemode, game::mutators))) return false;
-        return d->getammo(weap, 0, true) >= 0;
+        if(!isweap(weap) || !d->hasweap(weap, m_weapon(d->actortype, game::gamemode, game::mutators), 2)) return false;
+        return true;
     }
 
     bool wantsweap(gameent *d, int weap, bool noitems = true)
@@ -1044,9 +1041,9 @@ namespace ai
     {
         vec off = vec(pos).sub(d->feetpos());
         int airtime = d->airtime(lastmillis);
-        bool sequenced = d->ai->blockseq || d->ai->targseq, offground = airtime && !physics::liquidcheck(d) && !d->onladder,
+        bool sequenced = d->ai->blockseq > 1 || d->ai->targseq > 1, offground = airtime && !physics::liquidcheck(d) && !d->onladder,
              impulse = physics::canimpulse(d, A_A_BOOST, false) && airtime > (b.acttype >= AI_A_LOCKON ? 100 : 250) && d->impulse[IM_TYPE] != IM_T_PARKOUR && (b.acttype >= AI_A_LOCKON || off.z >= JUMPMIN) && (!impulsemeter || impulsemeter-d->impulse[IM_METER] >= impulsecost),
-             jumper = AA(d->actortype, abilities)&(1<<A_A_JUMP) && !offground && (b.acttype == AI_A_LOCKON || sequenced || off.z >= JUMPMIN || (d->actortype == A_BOT && lastmillis >= d->ai->jumprand)),
+             jumper = AA(d->actortype, abilities)&(1<<A_A_JUMP) && !offground && (b.acttype == AI_A_LOCKON || sequenced || off.z >= JUMPMIN),
              jump = (impulse || jumper) && lastmillis >= d->ai->jumpseed;
         if(jump)
         {
@@ -1054,14 +1051,11 @@ namespace ai
             d->o = vec(pos).add(vec(0, 0, d->height));
             if(collide(d, vec(0, 0, 1))) jump = false;
             d->o = old;
-            if(jump)
+            if(jump) loopenti(PUSHER) if(entities::ents[i]->type == PUSHER)
             {
-                loopenti(PUSHER) if(entities::ents[i]->type == PUSHER)
-                {
-                    gameentity &e = *(gameentity *)entities::ents[i];
-                    float radius = (e.attrs[3] ? e.attrs[3] : enttype[e.type].radius)*1.5f; radius *= radius;
-                    if(e.o.squaredist(pos) <= radius) { jump = false; break; }
-                }
+                gameentity &e = *(gameentity *)entities::ents[i];
+                float radius = (e.attrs[3] ? e.attrs[3] : enttype[e.type].radius)*1.5f; radius *= radius;
+                if(e.o.squaredist(pos) <= radius) { jump = false; break; }
             }
         }
         if(d->action[AC_JUMP] != jump)
@@ -1073,12 +1067,10 @@ namespace ai
         {
             int seed = (111-d->skill)*(b.acttype == AI_A_LOCKON ? 2 : 10);
             d->ai->jumpseed = lastmillis+seed+rnd(seed);
-            seed *= 500;
-            d->ai->jumprand = lastmillis+seed+rnd(seed);
         }
         if(!sequenced && !d->onladder && airtime)
         {
-            if(airtime > (b.acttype >= AI_A_LOCKON ? 250 : 500) && d->impulse[IM_TYPE] != IM_T_PARKOUR && (d->skill >= 100 || !rnd(101-d->skill)) && physics::canimpulse(d, A_A_PARKOUR, true))
+            if(airtime > impulsejumpdelay && d->impulse[IM_TYPE] != IM_T_PARKOUR && (d->skill >= 100 || !rnd(101-d->skill)) && physics::canimpulse(d, A_A_PARKOUR, true))
                 d->action[AC_SPECIAL] = true;
             else if(lastmillis-d->ai->lastmelee >= (201-d->skill)*35 && d->canmelee(m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis))
             {
@@ -1181,10 +1173,8 @@ namespace ai
             if(e)
             {
                 bool alt = altfire(d, e);
-                vec ep = getaimpos(d, e, alt);
                 float yaw, pitch;
-                game::getyawpitch(d->o, ep, yaw, pitch);
-                game::fixrange(yaw, pitch);
+                game::getyawpitch(d->o, getaimpos(d, e, alt), yaw, pitch);
                 bool insight = cansee(d, d->o, e->o), hasseen = d->ai->enemyseen && lastmillis-d->ai->enemyseen <= (d->skill*10)+1000;
                 if(insight) d->ai->enemyseen = lastmillis;
                 if(d->ai->dontmove || insight || hasseen)
@@ -1232,9 +1222,9 @@ namespace ai
                                 d->actiontime[alt ? AC_SECONDARY : AC_PRIMARY] = lastmillis;
                                 firing = true;
                             }
-                            occupied = true;
                         }
                     }
+                    occupied = true;
                 }
             }
         }
@@ -1419,6 +1409,7 @@ namespace ai
                     }
                     if(isweap(weap)) break;
                 }
+                if(!isweap(weap)) weap = d->bestweap(sweap, true);
             }
             if(isweap(weap) && weap != d->weapselect && weapons::weapselect(d, weap, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
             {

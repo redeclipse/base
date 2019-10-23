@@ -739,10 +739,11 @@ struct clientstate
         return -1;
     }
 
-    int bestweap(int sweap, int exclude = -1)
+    int bestweap(int sweap, bool ammo, int exclude = -1)
     {
         loopvrev(lastweap) if(hasweap(lastweap[i], sweap, 3, exclude)) return lastweap[i];
         loopirev(W_ALL) if(hasweap(i, sweap, 3, exclude)) return i;
+        if(ammo) loopirev(W_ALL) if(hasweap(i, sweap, 2, exclude)) return i;
         return weapselect;
     }
 
