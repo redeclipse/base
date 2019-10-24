@@ -299,6 +299,7 @@ WPVARK(IDF_GAMEMOD, 0, collide, 0, COLLIDE_ALL,
     IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|COLLIDE_PROJ,
     IMPACT_PLAYER|COLLIDE_TRACE|COLLIDE_OWNER
 );
+//  Claw        Pistol      Sword       Shotgun     SMG         Flamer      Plasma      Zapper      Rifle       Grenade     Mine        Rocket      Melee
 WPVAR(IDF_GAMEMOD|IDF_HEX, 0, colour, 0, 0xFFFFFF,
     0x907020,   0xD0D0D0,   0x4040F0,   0xF0F020,   0xF05820,   0xF02020,   0x40F0C8,   0xC090F0,   0xA020F0,   0x40F000,   0x00F068,   0x803000,   0x606060
 );
@@ -383,6 +384,7 @@ WPVAR(IDF_GAMEMOD, 0, delayitem, 0, VAR_MAX,
 WPVAR(IDF_GAMEMOD, 0, delayswitch, 0, VAR_MAX,
     100,        200,        200,        400,        300,        400,        400,        300,        400,        300,        300,        500,        100
 );
+//  Claw        Pistol      Sword       Shotgun     SMG         Flamer      Plasma      Zapper      Rifle       Grenade     Mine        Rocket      Melee
 WPVARK(IDF_GAMEMOD, 0, destroyburn, 0, 1,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          1,          0,          0,          0,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          1,          0,          0,          0,
