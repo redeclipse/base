@@ -27,7 +27,7 @@
 	<key>LSMinimumSystemVersion</key>
 	<string>10.5.0</string>
     <key>NSHighResolutionCapable</key>
-    <true/>
+    <false/>
 	<key>NSHumanReadableCopyright</key>
 	<string>(C) 2009-2019 Quinton Reeves, Lee Salzman, under the ZLIB License</string>
 </dict>
