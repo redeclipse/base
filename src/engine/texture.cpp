@@ -1626,8 +1626,8 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
         PARSETEXCOMMANDS(cmds);
         if(d.compressed) goto compressed;
         if(matchstring(cmd, len, "mad")) texmad(d, parsevec(arg[0]), parsevec(arg[1]));
-        else if(matchstring(cmd, len, "colorify")) texcolorify(d, parsevec(arg[0]), parsevec(arg[1]));
-        else if(matchstring(cmd, len, "colormask")) texcolormask(d, parsevec(arg[0]), *arg[1] ? parsevec(arg[1]) : vec(1, 1, 1));
+        else if(matchstring(cmd, len, "colorify") || matchstring(cmd, len, "colourify")) texcolorify(d, parsevec(arg[0]), parsevec(arg[1]));
+        else if(matchstring(cmd, len, "colormask") || matchstring(cmd, len, "colourmask")) texcolormask(d, parsevec(arg[0]), *arg[1] ? parsevec(arg[1]) : vec(1, 1, 1));
         else if(matchstring(cmd, len, "invert")) texinvert(d);
         else if(matchstring(cmd, len, "normal"))
         {
