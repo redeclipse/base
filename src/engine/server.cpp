@@ -1537,14 +1537,14 @@ void setlocations()
         conoutf("Checking working directory: %s", path(cwd));
         if(!i) setsvar("startingdir", cwd);
 #ifdef __APPLE__
-        if(fileexists(findfile("Resources/config/version.cfg", "r"), "r")) break;
+        if(fileexists(findfile("Resources/config/version.cfg", "r"), "r"))
         {
-            if(chdir("Resources") < 0) fatal("Could not change directory to app bundle resources");
+            if(chdir("Resources") < 0) fatal("Could not change directory to app bundle resources from: %s", cwd);
             break;
         }
 #endif
         if(fileexists(findfile("config/version.cfg", "r"), "r")) break;
-        if(chdir("..") < 0) fatal("Could not change to parent directory to find config files");
+        if(chdir("..") < 0) fatal("Could not change to parent directory to find config files from: %s", cwd);
     }
     setsvar("workingdir", cwd);
     if(!execfile("config/version.cfg", false, EXEC_VERSION|EXEC_BUILTIN)) fatal("Could not execute: %s/config/version.cfg", workingdir);
