@@ -28,8 +28,6 @@ namespace server
         }
     };
 
-    static const int DEATHMILLIS = 300;
-
     struct clientinfo;
 
     struct gameevent

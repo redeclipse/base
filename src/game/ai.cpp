@@ -289,9 +289,18 @@ namespace ai
                 int x = 999/itercount, y = totalmillis-itermillis, c = 0;
                 loopv(game::players) if(game::players[i] && game::players[i]->ai)
                 {
+                    gameent *d = game::players[i];
                     bool iterate = c == iteration && y >= c*x;
-                    if(iterate) checkinfo(game::players[i]);
-                    think(game::players[i], iterate);
+                    if(iterate)
+                    {
+                        checkinfo(d);
+                        if(d->state == CS_DEAD && d->respawned < 0 && (!d->lastdeath || lastmillis-d->lastdeath > DEATHMILLIS*2))
+                        {
+                            client::addmsg(N_TRYSPAWN, "ri", d->clientnum);
+                            d->respawned = lastmillis;
+                        }
+                    }
+                    think(d, iterate);
                     if(iterate && ++iteration >= itercount) iteration = -1;
                     c++;
                 }
@@ -1608,15 +1617,7 @@ namespace ai
                 c.override = false;
                 cleannext = false;
             }
-            if(d->state == CS_DEAD)
-            {
-                if(d->respawned < 0 && (!d->lastdeath || lastmillis-d->lastdeath > (d->actortype == A_BOT ? 500 : enemyspawntime)))
-                {
-                    client::addmsg(N_TRYSPAWN, "ri", d->clientnum);
-                    d->respawned = lastmillis;
-                }
-            }
-            else if(d->state == CS_ALIVE && run)
+            if(d->state == CS_ALIVE && run)
             {
                 bool result = false;
                 c.acttype = m_insta(game::gamemode, game::mutators) ? AI_A_HASTE : AI_A_NORMAL;

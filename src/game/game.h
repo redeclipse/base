@@ -257,6 +257,7 @@ enum
 #define CROUCHMOVING 0.85f
 #define GUARDRADIUS 3.f
 #define PHYSMILLIS 250
+#define DEATHMILLIS 300
 
 enum
 {
