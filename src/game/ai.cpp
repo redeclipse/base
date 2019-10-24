@@ -1104,7 +1104,7 @@ namespace ai
     {
         int skmod = max(101-d->skill, 1);
         float frame = d->skill <= 100 ? ((lastmillis-d->ai->lastrun)*(100.f/gamespeed))/float(skmod*10) : 1;
-        if(d->dominating.length()) frame *= 1+d->dominating.length();
+        if(d->dominating.length()) frame *= 1+d->dominating.length(); // berserker mode
         bool dancing = b.type == AI_S_OVERRIDE && b.overridetype == AI_O_DANCE,
              allowrnd = dancing || b.type == AI_S_WAIT || b.type == AI_S_PURSUE || b.type == AI_S_INTEREST;
         d->action[AC_SPECIAL] = d->ai->dontmove = false;
@@ -1125,7 +1125,7 @@ namespace ai
             if(!allowrnd) d->ai->dontmove = true;
             else
             {
-                if((d->blocked || (d->inmaterial&MATF_CLIP) == MAT_AICLIP) && (!d->ai->lastturn || lastmillis-d->ai->lastturn >= 1000))
+                if(d->blocked || (!d->ai->lastturn || lastmillis-d->ai->lastturn >= 1000))
                 {
                     d->ai->targyaw += 90+rnd(180);
                     d->ai->lastturn = lastmillis;
@@ -1143,7 +1143,7 @@ namespace ai
                 d->ai->targyaw = rnd(360);
                 d->ai->targpitch = rnd(178)-89;
                 d->ai->lastturn = lastmillis;
-                if(rnd(d->skill) > d->skill/2) d->ai->spot.z += rnd(int(d->height*3/2));
+                if(rnd(d->skill*2) >= d->skill) d->ai->spot.z += rnd(int(d->height*3/2));
             }
         }
         else
@@ -1466,10 +1466,10 @@ namespace ai
 
     void timeouts(gameent *d, aistate &b)
     {
-        if(d->blocked || (d->inmaterial&MATF_CLIP) == MAT_AICLIP)
+        if(d->blocked)
         {
             d->ai->blocktime += lastmillis-d->ai->lastrun;
-            if(d->ai->blocktime > (d->ai->blockseq+1)*1000)
+            if(d->ai->blocktime > (d->ai->blockseq+1)*500)
             {
                 d->ai->blockseq++;
                 switch(d->ai->blockseq)
@@ -1498,7 +1498,7 @@ namespace ai
         if(iswaypoint(d->ai->targnode) && (d->ai->targnode == d->ai->targlast || d->ai->hasprevnode(d->ai->targnode)))
         {
             d->ai->targtime += lastmillis-d->ai->lastrun;
-            if(d->ai->targtime > (d->ai->targseq+1)*1000)
+            if(d->ai->targtime > (d->ai->targseq+1)*500)
             {
                 d->ai->targseq++;
                 switch(d->ai->targseq)
@@ -1628,7 +1628,7 @@ namespace ai
                     case AI_S_PURSUE: result = dopursue(d, c); break;
                     case AI_S_INTEREST: result = dointerest(d, c); break;
                     case AI_S_OVERRIDE: result = dooverride(d, c); break;
-                    default: result = 0; break;
+                    default: result = false; break;
                 }
                 if(!result && c.type != AI_S_WAIT && c.owner < 0)
                 {
@@ -1847,8 +1847,7 @@ namespace ai
                 }
             }
             else aimed = true;
-            if(aimed && t != e)
-                continue;
+            if(aimed && t != e) continue;
             else if(!m_edit(game::gamemode) && d->team != e->team && (!aimed || !client::haspriv(d, botoverridelock)))
             {
                 if(aimed) botsay(e, d, "Sorry, I can't obey you due to commands being locked on this server");
@@ -1895,18 +1894,6 @@ namespace ai
                                         break;
                                     }
                                 }
-                                #if 0
-                                else if(!strcasecmp(w[pos], "base"))
-                                {
-                                    loopv(capture::st.flags) if(capture::st.flags[i].team == e->team)
-                                    {
-                                        e->ai->clear();
-                                        e->ai->addstate(AI_S_DEFEND, AI_T_ENTITY, capture::st.flags[i].ent, AI_A_PROTECT, d->clientnum);
-                                        botsay(e, d, "%s, defending base for the flag", affirm[rnd(AFFIRMNUM)]);
-                                        break;
-                                    }
-                                }
-                                #endif
                                 else botsay(e, d, "Usage: me, here, or flag");
                                 break;
                             }
@@ -1948,20 +1935,7 @@ namespace ai
                                 break;
                             }
                         }
-                        #if 0
-                        else if(!strcasecmp(w[pos], "base"))
-                        {
-                            loopv(capture::st.flags) if(capture::st.flags[i].team != e->team)
-                            {
-                                e->ai->clear();
-                                e->ai->addstate(AI_S_DEFEND, AI_T_ENTITY, capture::st.flags[i].ent, AI_A_HASTE, d->clientnum);
-                                botsay(e, d, "%s, attacking the flag", affirm[rnd(AFFIRMNUM)]);
-                                break;
-                            }
-                        }
-                        #endif
                         else botsay(e, d, "Sorry, flag is the only option");
-
                         break;
                     }
                     case G_BOMBER:

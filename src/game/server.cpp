@@ -1303,7 +1303,7 @@ namespace server
         if(actortype != A_PLAYER) return "bot";
         const char *privnames[2][PRIV_MAX] = {
             { "none", "player", "supporter", "moderator", "administrator", "developer", "founder" },
-            { "none", "player", "localsupporter", "localmoderator", "localadministrator", "developer", "founder" }
+            { "none", "player", "localsupporter", "localmoderator", "localadministrator", "none", "none" }
         };
         return privnames[local && priv&PRIV_LOCAL ? 1 : 0][clamp(priv&PRIV_TYPE, 0, int(priv&PRIV_LOCAL ? PRIV_ADMINISTRATOR : PRIV_LAST))];
     }
