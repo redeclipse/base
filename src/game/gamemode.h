@@ -260,6 +260,7 @@ extern mutstypes mutstype[];
 #define m_bb_assault(a,b)   (m_bomber(a) && m_gsp3(a, b))
 
 #define m_ra_lapped(a,b)    (m_race(a) && m_gsp1(a, b))
+#define m_ra_timed(a,b)     (m_race(a) && !m_gsp1(a, b))
 #define m_ra_endurance(a,b) (m_race(a) && m_gsp2(a, b))
 #define m_ra_gauntlet(a,b)  (m_race(a) && m_gsp3(a, b))
 
@@ -273,7 +274,6 @@ extern mutstypes mutstype[];
 #define m_ghost(a,b)        (m_race(a) && !m_ra_gauntlet(a, b))
 #define m_bots(a)           (m_play(a) && !m_race(a))
 #define m_botbal(a,b)       (m_duel(a, b) ? G(botbalanceduel) : (m_survivor(a, b) ? G(botbalancesurvivor) : G(botbalance)))
-#define m_laptime(a,b)      (!m_ra_lapped(a, b))
 #define m_nopoints(a,b)     (m_duke(a, b) || m_bb_hold(a, b) || m_race(a))
 #define m_points(a,b)       (!m_nopoints(a, b))
 #define m_normweaps(a,b)    (!m_race(a) && !m_insta(a,b) && !m_medieval(a,b) && !m_kaboom(a,b) && !m_dm_gladiator(a,b))

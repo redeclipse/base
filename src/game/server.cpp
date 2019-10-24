@@ -1648,12 +1648,12 @@ namespace server
             int best = -1;
             loopv(clients) if(clients[i]->actortype < A_ENEMY && clients[i]->state != CS_SPECTATOR)
             {
-                if(best < 0 || (m_laptime(gamemode, mutators) ? (clients[best]->cptime <= 0 || (clients[i]->cptime > 0 && clients[i]->cptime < clients[best]->cptime)) : clients[i]->points > clients[best]->points))
+                if(best < 0 || (m_ra_timed(gamemode, mutators) ? (clients[best]->cptime <= 0 || (clients[i]->cptime > 0 && clients[i]->cptime < clients[best]->cptime)) : clients[i]->points > clients[best]->points))
                 {
                     best = i;
                     result = false;
                 }
-                else if(m_laptime(gamemode, mutators) ? clients[i]->cptime == clients[best]->cptime : clients[i]->points == clients[best]->points) result = true;
+                else if(m_ra_timed(gamemode, mutators) ? clients[i]->cptime == clients[best]->cptime : clients[i]->points == clients[best]->points) result = true;
             }
         }
         return result;
@@ -3371,7 +3371,7 @@ namespace server
             loopv(clients) if(clients[i]->actortype == A_PLAYER) savestatsscore(clients[i]);
             bool worthy = false;
             if(fromintermission) worthy = true;
-            else if(m_laptime(gamemode, mutators))
+            else if(m_ra_timed(gamemode, mutators))
             {
                 loopv(savedstatsscores) if(savedstatsscores[i].actortype == A_PLAYER) if(savedstatsscores[i].cptime > 0)
                 {
@@ -3425,7 +3425,7 @@ namespace server
             {
                 requestmasterf("stats player %s %s %d %d %d %d %d %d\n",
                     escapestring(savedstatsscores[i].name), escapestring(savedstatsscores[i].handle),
-                    m_laptime(gamemode, mutators) ? savedstatsscores[i].cptime : savedstatsscores[i].points,
+                    m_ra_timed(gamemode, mutators) ? savedstatsscores[i].cptime : savedstatsscores[i].points,
                     savedstatsscores[i].timealive, savedstatsscores[i].frags, savedstatsscores[i].deaths, i,
                     savedstatsscores[i].timeactive
                 );
@@ -6595,7 +6595,7 @@ namespace server
                                     sendf(-1, 1, "ri6", N_CHECKPOINT, cp->clientnum, ent, laptime, cp->cptime, cp->points);
                                     if(m_team(gamemode, mutators))
                                     {
-                                        if(m_laptime(gamemode, mutators))
+                                        if(m_ra_timed(gamemode, mutators))
                                         {
                                             score &ts = teamscore(cp->team);
                                             if(!ts.total || ts.total > cp->cptime)
@@ -6619,7 +6619,7 @@ namespace server
                                                 loopi(numt)
                                                 {
                                                     int t = i+T_FIRST, s = teamscore(t).total;
-                                                    if(t != T_OMEGA && (m_laptime(gamemode, mutators) ? s <= total : s >= total))
+                                                    if(t != T_OMEGA && (m_ra_timed(gamemode, mutators) ? s <= total : s >= total))
                                                     {
                                                         found = true;
                                                         break;

@@ -69,7 +69,7 @@ namespace hud
             else return false;
         }
         else if(b->state == CS_SPECTATOR || b->state == CS_EDITING) return true;
-        if(m_laptime(game::gamemode, game::mutators))
+        if(m_ra_timed(game::gamemode, game::mutators))
         {
             if((a->cptime && !b->cptime) || (a->cptime && b->cptime && a->cptime < b->cptime)) return true;
             if((b->cptime && !a->cptime) || (a->cptime && b->cptime && b->cptime < a->cptime)) return false;
@@ -91,7 +91,7 @@ namespace hud
             if(y->team) return false;
         }
         else if(!y->team) return true;
-        if(m_laptime(game::gamemode, game::mutators))
+        if(m_ra_timed(game::gamemode, game::mutators))
         {
             if((x->total && !y->total) || (x->total && y->total && x->total < y->total)) return true;
             if((y->total && !x->total) || (x->total && y->total && x->total > y->total)) return false;
@@ -196,15 +196,15 @@ namespace hud
                             }
                             else break;
                         }
-                        game::announcef(S_V_DRAW, CON_EVENT, NULL, true, "\fw%s tied %swith a total score of \fs\fc%s\fS", game::colourteam(sg.team), winner, m_laptime(game::gamemode, game::mutators) ? timestr(sg.total, scoreracestyle) : intstr(sg.total));
+                        game::announcef(S_V_DRAW, CON_EVENT, NULL, true, "\fw%s tied %swith a total score of \fs\fc%s\fS", game::colourteam(sg.team), winner, m_ra_timed(game::gamemode, game::mutators) ? timestr(sg.total, scoreracestyle) : intstr(sg.total));
                     }
-                    else game::announcef(anc, CON_EVENT, NULL, true, "\fwTeam %s won the match with a total score of \fs\fc%s\fS", game::colourteam(sg.team), m_laptime(game::gamemode, game::mutators) ? timestr(sg.total, scoreracestyle) : intstr(sg.total));
+                    else game::announcef(anc, CON_EVENT, NULL, true, "\fwTeam %s won the match with a total score of \fs\fc%s\fS", game::colourteam(sg.team), m_ra_timed(game::gamemode, game::mutators) ? timestr(sg.total, scoreracestyle) : intstr(sg.total));
                 }
             }
             else
             {
                 int anc = sg.players[0] == game::player1 ? S_V_YOUWIN : (game::player1->state != CS_SPECTATOR ? S_V_YOULOSE : -1);
-                if(m_laptime(game::gamemode, game::mutators))
+                if(m_ra_timed(game::gamemode, game::mutators))
                 {
                     if(sg.players.length() > 1 && sg.players[0]->cptime == sg.players[1]->cptime)
                     {
