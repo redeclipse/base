@@ -423,7 +423,7 @@ namespace hud
     TVAR(IDF_PERSIST, modebomberassaulttex, "<grey>textures/modes/bomberassault", 3);
 
     TVAR(IDF_PERSIST, moderacetex, "<grey>textures/modes/race", 3);
-    TVAR(IDF_PERSIST, moderacetimedtex, "<grey>textures/modes/racetimed", 3);
+    TVAR(IDF_PERSIST, moderacelappedtex, "<grey>textures/modes/racelapped", 3);
     TVAR(IDF_PERSIST, moderaceendurancetex, "<grey>textures/modes/raceendurance", 3);
     TVAR(IDF_PERSIST, moderacegauntlettex, "<grey>textures/modes/racegauntlet", 3);
 
@@ -478,12 +478,12 @@ namespace hud
             if(m_ra_gauntlet(g, m)) \
             { \
                 ADDMODE(racegauntlet) \
-                if(m_ra_timed(g, m)) ADDMODE(racetimed) \
+                if(m_ra_lapped(g, m)) ADDMODE(racelapped) \
                 if(m_ra_endurance(g, m)) ADDMODE(raceendurance) \
             } \
-            else if(m_ra_timed(g, m)) \
+            else if(m_ra_lapped(g, m)) \
             { \
-                ADDMODE(racetimed) \
+                ADDMODE(racelapped) \
                 if(m_ra_endurance(g, m)) ADDMODE(raceendurance) \
             } \
             else if(m_ra_endurance(g, m)) ADDMODE(raceendurance) \

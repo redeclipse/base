@@ -1455,7 +1455,7 @@ namespace server
             else if((type == 4 || type == 5) && m_dac_king(mode, muts)) concatstring(mdname, gametype[mode].gsd[1]);
             else if((type == 4 || type == 5) && m_bb_hold(mode, muts)) concatstring(mdname, gametype[mode].gsd[0]);
             else if((type == 4 || type == 5) && m_bb_assault(mode, muts)) concatstring(mdname, gametype[mode].gsd[2]);
-            else if((type == 4 || type == 5) && m_ra_timed(mode, muts)) concatstring(mdname, gametype[mode].gsd[0]);
+            else if((type == 4 || type == 5) && m_ra_lapped(mode, muts)) concatstring(mdname, gametype[mode].gsd[0]);
             else if((type == 4 || type == 5) && m_ra_gauntlet(mode, muts)) concatstring(mdname, gametype[mode].gsd[2]);
             else concatstring(mdname, gametype[mode].desc);
         }
@@ -1475,7 +1475,7 @@ namespace server
             if(m_ctf_protect(mode, muts)) return "";
             else if(m_dac_king(mode, muts)) return "";
             else if(m_bb_hold(mode, muts) || m_bb_assault(mode, muts)) return "";
-            else if(m_ra_timed(mode, muts) || m_ra_gauntlet(mode, muts)) return "";
+            else if(m_ra_lapped(mode, muts) || m_ra_gauntlet(mode, muts)) return "";
         }
         if(type == 1 || type == 3 || type == 4)
         {
@@ -1851,7 +1851,7 @@ namespace server
             else if(m_capture(gamemode)) plimit = G(capturelimit);
             else if(m_defend(gamemode)) plimit = G(defendlimit) ? G(defendlimit) : INT_MAX-1;
             else if(m_bomber(gamemode)) plimit = m_bb_hold(gamemode, mutators) ? G(bomberholdlimit) : G(bomberlimit);
-            else if(m_race(gamemode) && !m_ra_timed(gamemode, mutators) && !m_ra_gauntlet(gamemode, mutators)) plimit = G(racelimit);
+            else if(m_race(gamemode) && m_ra_lapped(gamemode, mutators) && !m_ra_gauntlet(gamemode, mutators)) plimit = G(racelimit);
             if(plimit)
             {
                 if(m_team(gamemode, mutators))

@@ -120,8 +120,8 @@ gametypes gametype[] = {
             GM(FFA)|GM(ONSLAUGHT)|GM(GSP1)|GM(GSP2)|GM(GSP3),
             GM(INSTA)|GM(MEDIEVAL)|GM(KABOOM)|GM(ONSLAUGHT)|GM(VAMPIRE)|GM(RESIZE)|GM(HARD)|GM(ARENA)|GM(GSP1)|GM(GSP2)|GM(GSP3)
         },
-        "Race", "Race", { "Timed", "Endurance", "Gauntlet" },
-        "Compete for the most number of laps", { "Compete for the fastest time completing a lap", "Laps must be completed without dying at all", "Teams take turns running the gauntlet" },
+        "Race", "Race", { "Lapped", "Endurance", "Gauntlet" },
+        "Compete for the fastest time completing a lap", { "Compete for the most number of laps", "Laps must be completed without dying at all", "Teams take turns running the gauntlet" },
     }
 };
 mutstypes mutstype[] = {
@@ -259,7 +259,7 @@ extern mutstypes mutstype[];
 #define m_bb_basket(a,b)    (m_bomber(a) && m_gsp2(a, b))
 #define m_bb_assault(a,b)   (m_bomber(a) && m_gsp3(a, b))
 
-#define m_ra_timed(a,b)     (m_race(a) && m_gsp1(a, b))
+#define m_ra_lapped(a,b)    (m_race(a) && m_gsp1(a, b))
 #define m_ra_endurance(a,b) (m_race(a) && m_gsp2(a, b))
 #define m_ra_gauntlet(a,b)  (m_race(a) && m_gsp3(a, b))
 
@@ -273,7 +273,7 @@ extern mutstypes mutstype[];
 #define m_ghost(a,b)        (m_race(a) && !m_ra_gauntlet(a, b))
 #define m_bots(a)           (m_play(a) && !m_race(a))
 #define m_botbal(a,b)       (m_duel(a, b) ? G(botbalanceduel) : (m_survivor(a, b) ? G(botbalancesurvivor) : G(botbalance)))
-#define m_laptime(a,b)      (m_ra_timed(a, b))
+#define m_laptime(a,b)      (!m_ra_lapped(a, b))
 #define m_nopoints(a,b)     (m_duke(a, b) || m_bb_hold(a, b) || m_race(a))
 #define m_points(a,b)       (!m_nopoints(a, b))
 #define m_normweaps(a,b)    (!m_race(a) && !m_insta(a,b) && !m_medieval(a,b) && !m_kaboom(a,b) && !m_dm_gladiator(a,b))
@@ -307,7 +307,7 @@ extern mutstypes mutstype[];
                                         (m_dac_king(a, b) ? G(c##defendking) : G(c##defend)) : \
                                         (m_bomber(a) ? (m_bb_hold(a, b) ? G(c##bomberhold) : G(c##bomber)) : \
                                             (m_race(a) ? \
-                                                (m_ra_timed(a, b) ? G(c##racetimed) : \
+                                                (m_ra_lapped(a, b) ? G(c##racelapped) : \
                                                     (m_ra_gauntlet(a, b) ? G(c##racegauntlet) : G(c##race)) \
                                                 ) : 0 \
                                             ) \
@@ -327,7 +327,7 @@ extern mutstypes mutstype[];
     GVAR(f, l, a##bomber, b, w08, c); \
     GVAR(f, l, a##bomberhold, b, w09, c); \
     GVAR(f, l, a##race, b, w10, c); \
-    GVAR(f, l, a##racetimed, b, w11, c); \
+    GVAR(f, l, a##racelapped, b, w11, c); \
     GVAR(f, l, a##racegauntlet, b, w12, c);
 
 #define DSG(a,b,x)          (m_duel(a, b) ? G(duel##x) : G(survivor##x))
