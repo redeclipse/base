@@ -169,7 +169,7 @@ APVAR(IDF_GAMEMOD, 0, maxcarry, 0, WEAPCARRY,
     WEAPCARRY,      WEAPCARRY,      0,              0,              0,              0
 );
 APFVAR(IDF_GAMEMOD, 0, scale, FVAR_NONZERO, FVAR_MAX,
-    1,              1,              0.5f,           0.85f,          0.7f,           1.f
+    1,              1,              0.5f,           1,              0.85,           1.f
 );
 APVAR(IDF_GAMEMOD, 0, spawndelay, 0, VAR_MAX,
     5000,           5000,           30000,          30000,          30000,          30000
