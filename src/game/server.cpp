@@ -595,8 +595,8 @@ namespace server
     };
 
     namespace aiman {
-        extern void setskill(clientinfo *ci);
-        extern bool addai(int type, int ent = -1, int skill = -1);
+        extern void setskill(clientinfo *ci, bool init = false);
+        extern bool addai(int type, int ent = -1);
         extern void deleteai(clientinfo *ci);
         extern bool delai(int type, bool skip = true);
         extern void removeai(clientinfo *ci, bool complete = false);

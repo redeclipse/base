@@ -39,67 +39,54 @@ namespace aiman
         return G(botlimit);
     }
 
-    void getskillrange(int type, int &n, int &m, int frags = -1, int deaths = -1)
+    void getskillrange(clientinfo *ci, int &n, int &m)
     {
-        switch(type)
+        switch(ci->actortype)
         {
             case A_BOT:
-                if(m_coop(gamemode, mutators))
-                {
-                    m = max(G(coopskillmax), G(coopskillmin));
-                    n = min(G(coopskillmin), m);
-                    if(deaths != 0 && G(coopskilldeaths) != 0)
-                    {
-                        int amt = G(coopskilldeaths)*deaths;
-                        m += amt;
-                        n += amt;
-                    }
-                    if(frags != 0 && G(coopskillfrags) != 0)
-                    {
-                        int amt = G(coopskillfrags)*frags;
-                        m += amt;
-                        n += amt;
-                    }
+            {
+                #define BOTSKILL(a) \
+                { \
+                    m = max(G(a##skillmax), G(a##skillmin)); \
+                    n = min(G(a##skillmin), m); \
+                    if(ci->deaths != 0 && G(a##skilldeaths) != 0) \
+                    { \
+                        int amt = int(G(a##skilldeaths)*ci->deaths); \
+                        m += amt; \
+                        n += amt; \
+                    } \
+                    if(ci->frags != 0 && G(a##skillfrags) != 0) \
+                    { \
+                        int amt = int(G(a##skillfrags)*ci->frags); \
+                        m += amt; \
+                        n += amt; \
+                    } \
                 }
-                else
-                {
-                    m = max(G(botskillmax), G(botskillmin));
-                    n = min(G(botskillmin), m);
-                    if(deaths != 0 && G(botskilldeaths) != 0)
-                    {
-                        int amt = G(botskilldeaths)*deaths;
-                        m += amt;
-                        n += amt;
-                    }
-                    if(frags != 0 && G(botskillfrags) != 0)
-                    {
-                        int amt = G(botskillfrags)*frags;
-                        m += amt;
-                        n += amt;
-                    }
-                }
+                if(m_coop(gamemode, mutators)) BOTSKILL(coop)
+                else BOTSKILL(bot)
                 break;
+            }
             default:
                 m = max(G(enemyskillmax), G(enemyskillmin));
                 n = min(G(enemyskillmin), m);
                 break;
         }
-        m = min(m, 101);
-        n = min(n, m);
+        m = clamp(m, 1, 101);
+        n = clamp(n, 1, m);
     }
 
-    void setskill(clientinfo *ci)
+    void setskill(clientinfo *ci, bool init)
     {
         int n = 1, m = 100;
-        getskillrange(ci->actortype, n, m, ci->frags, ci->deaths);
-        if(ci->skill > m || ci->skill < n)
+        getskillrange(ci, n, m);
+        if(init || ci->skill > m || ci->skill < n)
         { // needs re-skilling
             ci->skill = (m != n ? botrnd(ci, 2, m-n) + n + 1 : m);
-            if(!ci->aireinit) ci->aireinit = 1;
+            if(!init && !ci->aireinit) ci->aireinit = 1;
         }
     }
 
-    bool addai(int type, int ent, int skill)
+    bool addai(int type, int ent)
     {
         int count = 0, limit = getlimit(type);
         if(!limit) return false;
@@ -137,10 +124,7 @@ namespace aiman
                 ci->colour = rnd(0xFFFFFF);
                 ci->model = botrnd(ci, 4, PLAYERTYPES);
                 ci->pattern = botrnd(ci, 4, PLAYERPATTERNS);
-                int s = skill, n = 1, m = 100;
-                getskillrange(type, n, m);
-                if(skill > m || skill < n) s = (m != n ? botrnd(ci, 2, m-n) + n + 1 : m);
-                ci->skill = clamp(s, 1, 101);
+                setskill(ci, true);
                 copystring(ci->name, AA(ci->actortype, vname), MAXNAMELEN);
                 ci->loadweap.shrink(0);
                 if(ci->actortype == A_BOT)
