@@ -859,7 +859,7 @@ namespace game
     void respawn(gameent *d)
     {
         if(d == player1 && (maptime <= 0 || needname(d) || wantsloadoutmenu)) return; // prevent spawning
-        if(d->state == CS_DEAD && d->respawned < 0 && (!d->lastdeath || lastmillis-d->lastdeath >= 500))
+        if(d->state == CS_DEAD && d->respawned < 0 && (!d->lastdeath || lastmillis-d->lastdeath >= DEATHMILLIS*2))
         {
             client::addmsg(N_TRYSPAWN, "ri", d->clientnum);
             d->respawned = lastmillis;

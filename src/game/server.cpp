@@ -2357,8 +2357,7 @@ namespace server
     void srvmsgftforce(int cn, int conlevel, const char *s, ...)
     {
         defvformatbigstring(str, s, s);
-        if(cn < 0 || allowbroadcast(cn)) sendf(cn, 1, "ri2s", N_SERVMSG, conlevel, str);
-        if(cn >= 0 && !allowbroadcast(cn)) sendf(cn, 1, "ri2s", N_SERVMSG, conlevel, str);
+        sendf(cn, 1, "ri2s", N_SERVMSG, conlevel, str);
     }
 
     void srvmsgf(int cn, const char *s, ...)
@@ -4699,7 +4698,7 @@ namespace server
         {
             if(!ci->weapshots[weap][WS(flags) ? 1 : 0].find(id))
             {
-                srvmsgft(ci->clientnum, CON_DEBUG, "Sync error: sticky [%d (%d)] failed - not found", weap, id);
+                srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s sticky [%d (%d)] failed - not found", colourname(ci), weap, id);
                 return;
             }
             clientinfo *m = target >= 0 ? (clientinfo *)getinfo(target) : NULL;
@@ -4723,7 +4722,7 @@ namespace server
                 if(!isweap(weap)) break;
                 if(!ci->weapshots[weap][WS(flags) ? 1 : 0].find(id))
                 {
-                    srvmsgft(ci->clientnum, CON_DEBUG, "Sync error: destroy [%d:%d (%d)] failed - not found", weap, WS(flags) ? 1 : 0, id);
+                    srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s destroy [%d:%d (%d)] failed - not found", colourname(ci), weap, WS(flags) ? 1 : 0, id);
                     return;
                 }
                 vector<clientinfo *> hitclients;
@@ -4790,7 +4789,7 @@ namespace server
     {
         if(!ci->isalive(gamemillis) || !isweap(weap))
         {
-            srvmsgft(ci->clientnum, CON_DEBUG, "Sync error: shoot [%d] failed - unexpected message", weap);
+            srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s shoot [%d] failed - unexpected message", colourname(ci), weap);
             return;
         }
         int sweap = m_weapon(ci->actortype, gamemode, mutators), sub = W2(weap, ammosub, WS(flags));
@@ -4808,7 +4807,7 @@ namespace server
             if(!ci->canshoot(weap, flags, sweap, millis, (1<<W_S_RELOAD)))
             {
                 if(sub && W(weap, ammoclip)) ci->weapammo[weap][W_A_CLIP] = max(ci->weapammo[weap][W_A_CLIP]-sub, 0);
-                srvmsgft(ci->clientnum, CON_DEBUG, "Sync error: shoot [%d] failed - current state disallows it", weap);
+                srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s shoot [%d] failed - current state disallows it", colourname(ci), weap);
                 sendresume(ci, true);
                 return;
             }
@@ -4846,14 +4845,14 @@ namespace server
     {
         if(!ci->isalive(gamemillis) || !isweap(weap))
         {
-            srvmsgft(ci->clientnum, CON_DEBUG, "Sync error: switch [%d] failed - unexpected message", weap);
+            srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s switch [%d] failed - unexpected message", colourname(ci), weap);
             return;
         }
         if(!ci->canswitch(weap, m_weapon(ci->actortype, gamemode, mutators), millis, (1<<W_S_SWITCH)))
         {
             if(!ci->canswitch(weap, m_weapon(ci->actortype, gamemode, mutators), millis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
             {
-                srvmsgft(ci->clientnum, CON_DEBUG, "Sync error: switch [%d] failed - current state disallows it", weap);
+                srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s switch [%d] failed - current state disallows it", colourname(ci), weap);
                 sendresume(ci, true);
                 return;
             }
@@ -4868,14 +4867,14 @@ namespace server
     {
         if(!ci->isalive(gamemillis) || !isweap(weap) || etype < -1 || etype > 2)
         {
-            srvmsgft(ci->clientnum, CON_DEBUG, "Sync error: cook [%d] failed - unexpected message", weap);
+            srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s cook [%d] failed - unexpected message", colourname(ci), weap);
             return;
         }
         if(ci->weapstate[weap] == W_S_RELOAD && !ci->weapwaited(weap, gamemillis))
         {
             if(!ci->weapwaited(weap, gamemillis, (1<<W_S_RELOAD)))
             {
-                srvmsgft(ci->clientnum, CON_DEBUG, "Sync error: cook [%d] failed - current state disallows it", weap);
+                srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s cook [%d] failed - current state disallows it", colourname(ci), weap);
                 sendresume(ci, true);
                 return;
             }
@@ -4897,7 +4896,7 @@ namespace server
     {
         if(!ci->isalive(gamemillis) || !isweap(weap))
         {
-            srvmsgft(ci->clientnum, CON_DEBUG, "Sync error: drop [%d] failed - unexpected message", weap);
+            srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s drop [%d] failed - unexpected message", colourname(ci), weap);
             return;
         }
         int sweap = m_weapon(ci->actortype, gamemode, mutators);
@@ -4905,7 +4904,7 @@ namespace server
         {
             if(!ci->candrop(weap, sweap, millis, m_classic(gamemode, mutators), (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
             {
-                srvmsgft(ci->clientnum, CON_DEBUG, "Sync error: drop [%d] failed - current state disallows it", weap);
+                srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s drop [%d] failed - current state disallows it", colourname(ci), weap);
                 sendresume(ci, true);
                 return;
             }
@@ -4928,12 +4927,12 @@ namespace server
     {
         if(!ci->isalive(gamemillis) || !isweap(weap))
         {
-            srvmsgft(ci->clientnum, CON_DEBUG, "Sync error: reload [%d] failed - unexpected message", weap);
+            srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s reload [%d] failed - unexpected message", colourname(ci), weap);
             return;
         }
         if(!ci->canreload(weap, m_weapon(ci->actortype, gamemode, mutators), true, millis))
         {
-            srvmsgft(ci->clientnum, CON_DEBUG, "Sync error: reload [%d] failed - current state disallows it", weap);
+            srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s reload [%d] failed - current state disallows it", colourname(ci), weap);
             sendresume(ci, true);
             return;
         }
@@ -4941,7 +4940,7 @@ namespace server
         if(ci->actortype < A_ENEMY && !w_reload(weap) && W(weap, ammostore)) ammoadd = min(ci->weapammo[weap][W_A_STORE], ammoadd);
         if(!ammoadd)
         {
-            srvmsgft(ci->clientnum, CON_DEBUG, "Sync error: reload [%d] failed - no ammo available", weap);
+            srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s reload [%d] failed - no ammo available", colourname(ci), weap);
             sendresume(ci, true);
             return;
         }
@@ -4957,7 +4956,7 @@ namespace server
     {
         if(ci->state != CS_ALIVE || !sents.inrange(ent) || sents[ent].type != WEAPON)
         {
-            srvmsgft(ci->clientnum, CON_DEBUG, "Sync error: use [%d] failed - unexpected message", ent);
+            srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s use [%d] failed - unexpected message", colourname(ci), ent);
             return;
         }
         clientinfo *cp = NULL;
@@ -4966,13 +4965,13 @@ namespace server
             cp = (clientinfo *)getinfo(cn);
             if(!cp || !cp->dropped.find(ent))
             {
-                srvmsgft(ci->clientnum, CON_DEBUG, "Sync error: use [%d] failed - doesn't seem to be dropped anywhere", ent);
+                srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s use [%d] failed - doesn't seem to be dropped anywhere", colourname(ci), ent);
                 return;
             }
         }
         else if(!finditem(ent))
         {
-            srvmsgft(ci->clientnum, CON_DEBUG, "Sync error: use [%d] failed - doesn't seem to be spawned anywhere", ent);
+            srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s use [%d] failed - doesn't seem to be spawned anywhere", colourname(ci), ent);
             return;
         }
         int sweap = m_weapon(ci->actortype, gamemode, mutators), attr = m_attr(sents[ent].type, sents[ent].attrs[0]);
@@ -4982,7 +4981,7 @@ namespace server
         {
             if(!ci->canuse(gamemode, mutators, sents[ent].type, attr, sents[ent].attrs, sweap, millis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
             {
-                srvmsgft(ci->clientnum, CON_DEBUG, "Sync error: use [%d] failed - current state disallows it", ent);
+                srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s use [%d] failed - current state disallows it", colourname(ci), ent);
                 sendresume(ci, true);
                 return;
             }
@@ -6297,7 +6296,7 @@ namespace server
                     if(!ci || ci->actortype > A_PLAYER) break;
                     if(!allowstate(ci, val ? ALST_EDIT : ALST_WALK, G(editlock)))
                     {
-                        srvmsgft(ci->clientnum, CON_DEBUG, "Sync error: unable to switch state %s - %d [%d, %d]", colourname(ci), ci->state, ci->lastdeath, gamemillis);
+                        srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s unable to switch state - %d [%d, %d]", colourname(ci), ci->state, ci->lastdeath, gamemillis);
                         spectator(ci);
                         break;
                     }
@@ -6345,7 +6344,7 @@ namespace server
                     if(!hasclient(cp, ci)) break;
                     if(!allowstate(cp, ALST_TRY, m_edit(gamemode) ? G(spawneditlock) : G(spawnlock)))
                     {
-                        srvmsgft(cp->clientnum, CON_DEBUG, "Sync error: unable to spawn %s - %d [%d, %d]", colourname(cp), cp->state, cp->lastdeath, gamemillis);
+                        srvmsgftforce(cp->clientnum, CON_DEBUG, "Sync error: %s unable to spawn - %d [%d, %d]", colourname(cp), cp->state, cp->lastdeath, gamemillis);
                         break;
                     }
                     int nospawn = 0;
@@ -6394,7 +6393,7 @@ namespace server
                     if(!hasclient(cp, ci)) break;
                     if(!allowstate(cp, ALST_SPAWN))
                     {
-                        srvmsgft(cp->clientnum, CON_DEBUG, "Sync error: unable to spawn %s - %d [%d, %d]", colourname(cp), cp->state, cp->lastdeath, gamemillis);
+                        srvmsgftforce(cp->clientnum, CON_DEBUG, "Sync error: %s unable to spawn - %d [%d, %d]", colourname(cp), cp->state, cp->lastdeath, gamemillis);
                         break;
                     }
                     cp->updatetimeplayed();
@@ -6573,7 +6572,7 @@ namespace server
                     if(!hasclient(cp, ci) || cp->state != CS_ALIVE) break;
                     if(!sents.inrange(ent))
                     {
-                        srvmsgft(cp->clientnum, CON_DEBUG, "Sync error: cannot trigger %d - entity does not exist (max: %d)", ent, sents.length());
+                        srvmsgftforce(cp->clientnum, CON_DEBUG, "Sync error: %s cannot trigger %d - entity does not exist (max: %d)", colourname(cp), ent, sents.length());
                         break;
                     }
                     if(sents[ent].type == CHECKPOINT)
@@ -6902,7 +6901,7 @@ namespace server
                     {
                         if(!allowstate(ci, ALST_TRY, m_edit(gamemode) ? G(spawneditlock) : G(spawnlock)))
                         {
-                            srvmsgft(ci->clientnum, CON_DEBUG, "Sync error: unable to spawn %s - %d [%d, %d]", colourname(ci), ci->state, ci->lastdeath, gamemillis);
+                            srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s unable to spawn - %d [%d, %d]", colourname(ci), ci->state, ci->lastdeath, gamemillis);
                             spectator(ci);
                             break;
                         }
@@ -7241,12 +7240,12 @@ namespace server
                     clientinfo *cp = (clientinfo *)getinfo(sn);
                     if(!cp || cp->actortype > A_PLAYER || (val ? cp->state == CS_SPECTATOR : cp->state != CS_SPECTATOR))
                     {
-                        srvmsgft(ci->clientnum, CON_DEBUG, "Sync error: unable to modify spectator %s - %d [%d, %d] - invalid", colourname(cp), cp->state, cp->lastdeath, gamemillis);
+                        srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s unable to modify spectator - %d [%d, %d] - invalid", colourname(cp), cp->state, cp->lastdeath, gamemillis);
                         break;
                     }
                     if(sn != sender ? !haspriv(ci, max(m_edit(gamemode) ? G(spawneditlock) : G(spawnlock), G(speclock)), "control other players") : (!haspriv(ci, max(m_edit(gamemode) ? G(spawneditlock) : G(spawnlock), G(speclock))) && !allowstate(cp, val ? ALST_SPEC : ALST_TRY, m_edit(gamemode) ? G(spawneditlock) : G(spawnlock))))
                     {
-                        srvmsgft(ci->clientnum, CON_DEBUG, "Sync error: unable to modify spectator %s - %d [%d, %d] - restricted", colourname(cp), cp->state, cp->lastdeath, gamemillis);
+                        srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s unable to modify spectator - %d [%d, %d] - restricted", colourname(cp), cp->state, cp->lastdeath, gamemillis);
                         break;
                     }
                     bool spec = val != 0, quarantine = cp != ci && val == 2, wasq = cp->quarantine;
@@ -7257,7 +7256,7 @@ namespace server
                     }
                     if(!spectate(cp, spec, quarantine))
                     {
-                        srvmsgft(ci->clientnum, CON_DEBUG, "Sync error: unable to modify spectator %s - %d [%d, %d] - failed", colourname(cp), cp->state, cp->lastdeath, gamemillis);
+                        srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s unable to modify spectator - %d [%d, %d] - failed", colourname(cp), cp->state, cp->lastdeath, gamemillis);
                         break;
                     }
                     if(quarantine && cp->quarantine)
