@@ -291,14 +291,23 @@ namespace ai
                 {
                     gameent *d = game::players[i];
                     bool iterate = c == iteration && y >= c*x;
-                    if(iterate)
+                    if(iterate) switch(d->state)
                     {
-                        checkinfo(d);
-                        if(d->state == CS_DEAD && d->respawned < 0 && (!d->lastdeath || lastmillis-d->lastdeath > DEATHMILLIS*2))
+                        case CS_DEAD:
                         {
+                            if(d->respawned >= 0 || (d->lastdeath && lastmillis-d->lastdeath <= DEATHMILLIS*2)) break;
                             client::addmsg(N_TRYSPAWN, "ri", d->clientnum);
                             d->respawned = lastmillis;
+                            break;
                         }
+                        case CS_SPECTATOR:
+                        {
+                            if(d->respawned >= 0) break;
+                            client::addmsg(N_SPECTATOR, "ri2", d->clientnum, 0);
+                            d->respawned = lastmillis;
+                            break;
+                        }
+                        default: break;
                     }
                     think(d, iterate);
                     if(iterate && ++iteration >= itercount) iteration = -1;

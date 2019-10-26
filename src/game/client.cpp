@@ -3299,6 +3299,7 @@ namespace client
                         if(s == game::player1 && editmode) toggleedit();
                         s->state = CS_SPECTATOR;
                         s->quarantine = val == 2;
+                        s->respawned = -1;
                     }
                     else
                     {

@@ -5284,7 +5284,10 @@ namespace server
                 }
             }
             if(G(autospectate) && !m_duke(gamemode, mutators) && ci->state == CS_DEAD && ci->lastdeath && gamemillis-ci->lastdeath >= G(autospecdelay))
-                spectate(ci, true);
+            {
+                if(ci->actortype > A_PLAYER) waiting(ci, DROP_RESET);
+                else spectate(ci, true);
+            }
         }
     }
 
@@ -7238,7 +7241,7 @@ namespace server
                 {
                     int sn = getint(p), val = getint(p);
                     clientinfo *cp = (clientinfo *)getinfo(sn);
-                    if(!cp || cp->actortype > A_PLAYER || (val ? cp->state == CS_SPECTATOR : cp->state != CS_SPECTATOR))
+                    if(!cp || (val ? cp->state == CS_SPECTATOR && cp->actortype > A_PLAYER : cp->state != CS_SPECTATOR))
                     {
                         srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s unable to modify spectator - %d [%d, %d] - invalid", colourname(cp), cp->state, cp->lastdeath, gamemillis);
                         break;
