@@ -3644,7 +3644,7 @@ namespace game
 
     void renderplayer(gameent *d, int third, float size, int flags = 0, const vec4 &color = vec4(1, 1, 1, 1), int *lastoffset = NULL)
     {
-        if(d->state == CS_SPECTATOR) return;
+        if(d->state == CS_SPECTATOR || (d->state != CS_ALIVE && color.a <= 0)) return;
         modelstate mdl;
         modelattach mdlattach[ATTACHMENTMAX];
         dynent *e = third ? (third != 2 ? (dynent *)d : (dynent *)&bodymodel) : (dynent *)&avatarmodel;
