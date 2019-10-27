@@ -740,11 +740,27 @@ struct clientstate
         return -1;
     }
 
-    int bestweap(int sweap, bool ammo, int exclude = -1)
+    int bestweapcheck(int sweap, int level, int num = W_ALL, int exclude = -1)
     {
-        loopvrev(lastweap) if(hasweap(lastweap[i], sweap, 3, exclude)) return lastweap[i];
-        loopirev(W_ALL) if(hasweap(i, sweap, 3, exclude)) return i;
-        if(ammo) loopirev(W_ALL) if(hasweap(i, sweap, 2, exclude)) return i;
+        loopvrev(lastweap) if(lastweap[i] < num && hasweap(lastweap[i], sweap, level, exclude)) return lastweap[i];
+        loopirev(num) if(hasweap(i, sweap, level, exclude)) return i;
+        return -1;
+    }
+
+    int bestweap(int sweap, bool ammo, bool pick = false, int exclude = -1)
+    {
+        int n = bestweapcheck(sweap, 3, W_ALL, exclude);
+        if(isweap(n)) return n;
+        if(ammo)
+        {
+            n = bestweapcheck(sweap, 2, W_ALL, exclude);
+            if(isweap(n)) return n;
+        }
+        if(pick)
+        {
+            n = bestweapcheck(sweap, 0, W_ITEM, exclude);
+            if(isweap(n)) return n;
+        }
         return weapselect;
     }
 

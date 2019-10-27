@@ -1427,7 +1427,7 @@ namespace ai
                     }
                     if(isweap(weap)) break;
                 }
-                if(!isweap(weap)) weap = d->bestweap(sweap, true);
+                if(!isweap(weap)) weap = d->bestweap(sweap, true, true);
             }
             if(isweap(weap) && weap != d->weapselect && weapons::weapselect(d, weap, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
             {

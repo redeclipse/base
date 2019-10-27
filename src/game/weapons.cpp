@@ -199,7 +199,7 @@ namespace weapons
     void checkweapons(gameent *d)
     {
         int sweap = m_weapon(d->actortype, game::gamemode, game::mutators);
-        if(!d->hasweap(d->weapselect, sweap, weapautoswitch ? 3 : 0)) weapselect(d, d->bestweap(sweap, true, d->weapselect), 1<<W_S_RELOAD, true);
+        if(!d->hasweap(d->weapselect, sweap, weapautoswitch ? 3 : 0)) weapselect(d, d->bestweap(sweap, true, true, d->weapselect), 1<<W_S_RELOAD, true);
         else if(d->action[AC_RELOAD] || autoreload(d)) weapreload(d, d->weapselect);
         else if(d->action[AC_DROP]) weapdrop(d, d->weapselect);
     }
