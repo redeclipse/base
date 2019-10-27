@@ -6814,7 +6814,7 @@ namespace server
                     break;
                 }
 
-                case N_SETPLAYERINFO: // name colour model checkpoint vanity count <loadweaps> count <randweaps>
+                case N_SETPLAYERINFO: // name colour model pattern checkpoint vanity count <loadweaps> count <randweaps>
                 {
                     uint ip = getclientip(ci->clientnum);
                     if(ci->lastplayerinfo)
@@ -6826,7 +6826,7 @@ namespace server
                         if(!allow)
                         {
                             getstring(text, p);
-                            loopk(3) getint(p);
+                            loopk(4) getint(p);
                             getstring(text, p);
                             int lw = getint(p);
                             loopk(lw) getint(p);
@@ -6872,6 +6872,7 @@ namespace server
                     QUEUE_STR(ci->name);
                     QUEUE_INT(ci->colour);
                     QUEUE_INT(ci->model);
+                    QUEUE_INT(ci->pattern);
                     QUEUE_INT(ci->checkpointspawn);
                     QUEUE_STR(ci->vanity);
                     QUEUE_INT(ci->loadweap.length());
