@@ -256,7 +256,7 @@ namespace game
     VAR(IDF_PERSIST, damageinteger, 0, 1, 1);
     FVAR(IDF_PERSIST, damagedivisor, FVAR_NONZERO, 10, FVAR_MAX);
     FVAR(IDF_PERSIST, damagecritical, 0, 0.25f, 1);
-    VAR(IDF_PERSIST, damagecriticalsound, 0, 1, 2);
+    VAR(IDF_PERSIST, damagecriticalsound, 0, 1, 3);
     VAR(IDF_PERSIST, damagemergedelay, 0, 75, VAR_MAX);
     VAR(IDF_PERSIST, damagemergeburn, 0, 250, VAR_MAX);
     VAR(IDF_PERSIST, damagemergebleed, 0, 250, VAR_MAX);
@@ -1520,7 +1520,7 @@ namespace game
         if(d->state != CS_ALIVE || !gs_playing(gamestate)) return;
         if(hitdealt(flags))
         {
-            if(!m_insta(gamemode, mutators) && damagecritical > 0 && damagecriticalsound >= (d == focus ? 1 : 2))
+            if(!m_insta(gamemode, mutators) && damagecritical > 0 && damagecriticalsound&(d == focus ? 1 : 2))
             {
                 int hp = d->gethealth(gamemode, mutators), crit = int(hp*damagecritical);
                 if(d->health > crit && health <= crit) playsound(S_CRITICAL, d->o, d);
