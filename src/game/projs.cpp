@@ -1363,6 +1363,7 @@ namespace projs
 
     void iter(projent &proj)
     {
+        proj.movement = 0;
         proj.lifespan = clamp((proj.lifemillis-proj.lifetime)/float(max(proj.lifemillis, 1)), 0.f, 1.f);
         if(proj.target && proj.target->state != CS_ALIVE) proj.target = NULL;
         updatesticky(proj);
