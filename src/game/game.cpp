@@ -167,8 +167,8 @@ namespace game
     VAR(IDF_PERSIST, spectvdead, 0, 1, 2); // 0 = never, 1 = in all but duel/survivor, 2 = always
     VAR(IDF_PERSIST, spectvfirstperson, 0, 0, 2); // 0 = aim in direction followed player is facing, 1 = aim in direction determined by spectv when dead, 2 = always aim in direction
     VAR(IDF_PERSIST, spectvthirdperson, 0, 2, 2); // 0 = aim in direction followed player is facing, 1 = aim in direction determined by spectv when dead, 2 = always aim in direction
-    VAR(IDF_PERSIST, spectvplayerbias, 0, 3, VAR_MAX);
-    VAR(IDF_PERSIST, spectvaffinitybias, 0, 3, VAR_MAX);
+    VAR(IDF_PERSIST, spectvplayerbias, 0, 1, VAR_MAX);
+    VAR(IDF_PERSIST, spectvaffinitybias, 0, 1, VAR_MAX);
 
     VAR(IDF_PERSIST, spectvintertime, 1000, 10000, VAR_MAX);
     VAR(IDF_PERSIST, spectvintermintime, 1000, 6000, VAR_MAX);
@@ -781,11 +781,6 @@ namespace game
 
     bool addfollow(int n, int *f, bool other)
     {
-        if(!f)
-        {
-            specreset();
-            return true;
-        }
         #define checkfollow \
             if(*f >= players.length()) *f = -1; \
             else if(*f < -1) *f = players.length()-1;
@@ -793,49 +788,48 @@ namespace game
         checkfollow;
         if(*f == -1)
         {
-            if(other) *f += clamp(n, -1, 1);
-            else
+            if(!other)
             {
                 specreset();
-                return true;
+                return false;
             }
+            *f += n ? clamp(n, -1, 1) : 1;
             checkfollow;
         }
-        return false;
+        return true;
     }
 
-    bool followswitch(int n, bool other)
+    void followswitch(int n, bool other)
     {
         if(player1->state == CS_SPECTATOR || (player1->state == CS_WAITING && (!player1->lastdeath || !deathbuttonmash || lastmillis-player1->lastdeath > deathbuttonmash)))
         {
             bool istv = tvmode(true, false);
             int *f = istv ? &spectvfollow : &follow;
+            if(!addfollow(n, f, other)) return;
             if(!n) n = 1;
-            if(addfollow(n, f, other)) return true;
             loopi(players.length())
             {
                 if(!players.inrange(*f))
                 {
-                    if(addfollow(n, f, other)) return true;
+                    if(!addfollow(n, f, other)) return;
                 }
                 else
                 {
                     gameent *d = players[*f];
                     if(!d || !allowspec(d, istv ? spectvdead : followdead))
                     {
-                        if(addfollow(n, f, other)) return true;
+                        if(!addfollow(n, f, other)) return;
                     }
                     else
                     {
                         focus = d;
                         resetcamera();
-                        return true;
+                        return;
                     }
                 }
             }
             specreset();
         }
-        return false;
     }
     ICOMMAND(0, followdelta, "ii", (int *n, int *o), followswitch(*n!=0 ? *n : 1, *o!=0));
 
