@@ -111,6 +111,7 @@ void quit()                  // normal exit
     writeinitcfg();
     writeservercfg();
     writecfg();
+    client::writecfg();
     abortconnect();
     disconnect(true);
     cleanup();

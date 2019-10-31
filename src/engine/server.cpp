@@ -1650,6 +1650,9 @@ void rehash(bool reload)
     {
         rehashing = 1;
         writecfg();
+#ifndef STANDALONE
+        client::writecfg();
+#endif
     }
     reloadserver();
     reloadmaster();

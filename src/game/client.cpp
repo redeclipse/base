@@ -233,13 +233,26 @@ namespace client
     ICOMMAND(0, demoinfo, "bb", (int *idx, int *prop, int *numargs), infodemo(*idx, *prop));
 
     VAR(IDF_PERSIST, authconnect, 0, 1, 1);
-    SVAR(IDF_PERSIST, accountname, "");
-    SVAR(IDF_PERSIST, accountpass, "");
-    ICOMMAND(0, authkey, "ss", (char *name, char *key), {
-        setsvar("accountname", name);
-        setsvar("accountpass", key);
+    VAR(IDF_PERSIST, noauthconfig, 0, 0, 1);
+
+    string accountname = "", accountpass = "";
+    ICOMMAND(0, accountname, "s", (char *s), copystring(accountname, s && *s ? s : ""));
+    ICOMMAND(0, accountpass, "s", (char *s), copystring(accountname, s && *s ? s : ""));
+    ICOMMAND(0, authkey, "ss", (char *name, char *key),
+    {
+        copystring(accountname, name && *name ? name : "");
+        copystring(accountpass, key && *key ? key : "");
     });
     ICOMMAND(0, hasauthkey, "i", (int *n), intret(accountname[0] && accountpass[0] && (!*n || authconnect) ? 1 : 0));
+
+    void writecfg()
+    {
+        if(noauthconfig || !*accountname || !*accountpass) return;
+        stream *f = openutf8file("auth.cfg", "w");
+        if(!f) return;
+        f->printf("authkey %s %s\n", accountname, accountpass);
+        delete f;
+    }
 
     void writegamevars(const char *name, bool all = false, bool server = false)
     {
