@@ -1650,6 +1650,7 @@ void rehash(bool reload)
         rehashing = 1;
 #ifndef STANDALONE
         if(!noconfigfile) writecfg("config.cfg", IDF_PERSIST);
+        client::writecfg();
         writeservercfg();
 #endif
     }

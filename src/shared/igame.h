@@ -37,6 +37,7 @@ namespace client
     extern int getcn(physent *d);
     extern int parseplayer(const char *arg);
     extern int maxmsglen();
+    extern void writecfg();
     extern void gamedisconnect(int clean);
     extern void parsepacketclient(int chan, packetbuf &p);
     extern void gameconnect(bool _remote);
