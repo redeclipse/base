@@ -611,7 +611,7 @@ static float *findslotparam(Slot &s, const char *name, float *noval = NULL)
         SlotShaderParam &param = s.params[i];
         if(name == param.name) return param.val;
     }
-    loopv(s.shader->defaultparams)
+    if(s.shader) loopv(s.shader->defaultparams)
     {
         SlotShaderParamState &param = s.shader->defaultparams[i];
         if(name == param.name) return param.val;

@@ -1423,7 +1423,7 @@ static void changevbuf(renderstate &cur, int pass, vtxarray *va)
 
 static void changebatchtmus(renderstate &cur, int pass, geombatch &b)
 {
-    if(b.vslot.slot->shader->type&SHADER_ENVMAP && b.es.envmap!=EMID_CUSTOM)
+    if(b.vslot.slot->shader && b.vslot.slot->shader->type&SHADER_ENVMAP && b.es.envmap!=EMID_CUSTOM)
     {
         GLuint emtex = lookupenvmap(b.es.envmap);
         if(cur.textures[TEX_ENVMAP]!=emtex)
@@ -1492,7 +1492,7 @@ static void changeslottmus(renderstate &cur, int pass, Slot &slot, VSlot &vslot)
         {
             if(msaasamples) GLOBALPARAMF(hashid, vslot.index);
 
-            if(slot.shader->type&SHADER_TRIPLANAR)
+            if(slot.shader && slot.shader->type&SHADER_TRIPLANAR)
             {
                 float scale = TEX_SCALE/vslot.scale;
                 GLOBALPARAMF(texgenscale, scale/diffuse->xs, scale/diffuse->ys);
@@ -1557,7 +1557,7 @@ static void changeslottmus(renderstate &cur, int pass, Slot &slot, VSlot &vslot)
             switch(t.type)
             {
                 case TEX_DIFFUSE:
-                    if(slot.shader->type&SHADER_TRIPLANAR)
+                    if(slot.shader && slot.shader->type&SHADER_TRIPLANAR)
                     {
                         float scale = TEX_SCALE/detail.scale;
                         GLOBALPARAMF(detailscale, scale/t.t->xs, scale/t.t->ys);
@@ -2334,7 +2334,7 @@ static void changevbuf(decalrenderer &cur, int pass, vtxarray *va)
 
 static void changebatchtmus(decalrenderer &cur, int pass, decalbatch &b)
 {
-    if(b.slot.shader->type&SHADER_ENVMAP && b.es.envmap!=EMID_CUSTOM)
+    if(b.slot.shader && b.slot.shader->type&SHADER_ENVMAP && b.es.envmap!=EMID_CUSTOM)
     {
         GLuint emtex = lookupenvmap(b.es.envmap);
         if(cur.textures[TEX_ENVMAP]!=emtex)

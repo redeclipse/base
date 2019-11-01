@@ -630,7 +630,7 @@ struct vacollect : verthash
             if(vslot.isdynamic()) va->dyntexs++;
             Slot &slot = *vslot.slot;
             loopvj(slot.sts) va->texmask |= 1<<slot.sts[j].type;
-            if(slot.shader->type&SHADER_ENVMAP) va->texmask |= 1<<TEX_ENVMAP;
+            if(slot.shader && slot.shader->type&SHADER_ENVMAP) va->texmask |= 1<<TEX_ENVMAP;
         }
 
         va->decalbuf = 0;
