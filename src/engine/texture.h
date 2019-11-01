@@ -798,7 +798,7 @@ inline void VSlot::addvariant(Slot *slot)
 
 inline bool VSlot::isdynamic() const
 {
-    return !scroll.iszero() || slot->shader->isdynamic();
+    return !scroll.iszero() || (slot->shader && slot->shader->isdynamic());
 }
 
 struct MatSlot : Slot, VSlot

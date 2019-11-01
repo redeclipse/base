@@ -1394,9 +1394,9 @@ int genmergedfaces(cube &c, const ivec &co, int size, int minlevel = -1)
 
             VSlot &vslot = lookupvslot(mf.tex, true),
                   *layer = vslot.layer && !(c.material&MAT_ALPHA) ? &lookupvslot(vslot.layer, true) : NULL;
-            if(vslot.slot->shader->type&SHADER_ENVMAP)
+            if(vslot.slot->shader && vslot.slot->shader->type&SHADER_ENVMAP)
                 mf.envmap = vslot.slot->texmask&(1<<TEX_ENVMAP) ? EMID_CUSTOM : closestenvmap(i, co, size);
-            ushort envmap2 = layer && layer->slot->shader->type&SHADER_ENVMAP ? (layer->slot->texmask&(1<<TEX_ENVMAP) ? EMID_CUSTOM : closestenvmap(i, co, size)) : EMID_NONE;
+            ushort envmap2 = layer && layer->slot->shader && layer->slot->shader->type&SHADER_ENVMAP ? (layer->slot->texmask&(1<<TEX_ENVMAP) ? EMID_CUSTOM : closestenvmap(i, co, size)) : EMID_NONE;
 
             if(surf.numverts&LAYER_TOP) vamerges[level].add(mf);
             if(surf.numverts&LAYER_BOTTOM)
