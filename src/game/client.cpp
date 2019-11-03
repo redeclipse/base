@@ -292,7 +292,7 @@ namespace client
 
     string accountname = "", accountpass = "";
     ICOMMAND(0, accountname, "s", (char *s), copystring(accountname, s && *s ? s : ""));
-    ICOMMAND(0, accountpass, "s", (char *s), copystring(accountname, s && *s ? s : ""));
+    ICOMMAND(0, accountpass, "s", (char *s), copystring(accountpass, s && *s ? s : ""));
     ICOMMAND(0, authkey, "ss", (char *name, char *key),
     {
         copystring(accountname, name && *name ? name : "");
