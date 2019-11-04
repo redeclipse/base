@@ -784,7 +784,7 @@ namespace game
         #define checkfollow \
             if(*f >= players.length()) *f = -1; \
             else if(*f < -1) *f = players.length()-1;
-        *f += clamp(n, -1, 1);
+        *f += n;
         checkfollow;
         if(*f == -1)
         {
@@ -793,7 +793,7 @@ namespace game
                 specreset();
                 return false;
             }
-            *f += n ? clamp(n, -1, 1) : 1;
+            *f += n ? n : 1;
             checkfollow;
         }
         return true;
@@ -809,24 +809,17 @@ namespace game
             if(!n) n = 1;
             loopi(players.length())
             {
-                if(!players.inrange(*f))
-                {
-                    if(!addfollow(n, f, other)) return;
-                }
-                else
+                if(players.inrange(*f))
                 {
                     gameent *d = players[*f];
-                    if(!d || !allowspec(d, istv ? spectvdead : followdead))
-                    {
-                        if(!addfollow(n, f, other)) return;
-                    }
-                    else
+                    if(d && allowspec(d, istv ? spectvdead : followdead))
                     {
                         focus = d;
                         resetcamera();
                         return;
                     }
                 }
+                if(!addfollow(n, f, other)) return;
             }
             specreset();
         }
