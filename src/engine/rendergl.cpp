@@ -2458,11 +2458,8 @@ int renderw = 0, renderh = 0, hudw = 0, hudh = 0;
 
 void gl_setupframe(bool force)
 {
-    extern int scr_w, scr_h;
-    renderw = min(scr_w, screenw);
-    renderh = min(scr_h, screenh);
-    hudw = screenw;
-    hudh = screenh;
+    hudw = renderw;
+    hudh = renderh;
     if(!force) return;
     setuplights();
 }

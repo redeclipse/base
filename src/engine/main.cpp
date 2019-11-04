@@ -185,23 +185,6 @@ void screenshot(char *sname)
 ICOMMAND(0, screenshot, "s", (char *s), if(!(identflags&IDF_WORLD)) screenshot(s));
 ICOMMAND(0, quit, "", (void), if(!(identflags&IDF_WORLD)) quit());
 
-bool wantdisplaysetup = false;
-void setupdisplay()
-{
-    int index = SDL_GetWindowDisplayIndex(screen);
-    if(SDL_GetCurrentDisplayMode(index, &display) < 0)
-    {
-        conoutf("Failed querying monitor %d display mode: %s", index, SDL_GetError());
-        refresh = 60; // sane-ish default
-    }
-    else
-    {
-        conoutf("Current monitor [%d]: %d x %d @ %d Hz", index, display.w, display.h, display.refresh_rate);
-        refresh = display.refresh_rate;
-    }
-    wantdisplaysetup = false;
-}
-
 #define SCR_MINW 320
 #define SCR_MINH 200
 #define SCR_MAXW 10000
@@ -211,13 +194,50 @@ void setupdisplay()
 
 VARFN(IDF_INIT, screenw, scr_w, SCR_MINW, -1, SCR_MAXW, initwarning("screen resolution"));
 VARFN(IDF_INIT, screenh, scr_h, SCR_MINH, -1, SCR_MAXH, initwarning("screen resolution"));
-bool initwindowpos = false;
+bool initwindowpos = false, wantdisplaysetup = false;
+float dpid = 0, dpiw = 0, dpih = 0;
+
+void setupdisplay(bool msg = true)
+{
+    SDL_GetWindowSize(screen, &screenw, &screenh);
+    SDL_GL_GetDrawableSize(screen, &renderw, &renderh);
+    scr_w = screenw;
+    scr_h = screenh;
+    hudw = renderw;
+    hudh = renderh;
+    gl_resize();
+
+    int index = SDL_GetWindowDisplayIndex(screen);
+    if(SDL_GetCurrentDisplayMode(index, &display) < 0)
+    {
+        if(msg) conoutf("Failed querying monitor %d display mode: %s", index, SDL_GetError());
+        refresh = 60; // sane-ish default
+    }
+    else
+    {
+        bool fs = SDL_GetWindowFlags(screen)&SDL_WINDOW_FULLSCREEN;
+        const char *wtype = fs ? "FullScreen" : "Windowed";
+        if(fs && fullscreendesktop) wtype = "FS-Desktop";
+        if((!fs || fullscreendesktop) && SDL_GetDisplayDPI(index, &dpid, &dpiw, &dpih) < 0)
+        {
+            if(msg) conoutf("Failed querying monitor %d DPI: %s", index, SDL_GetError());
+            dpid = dpiw = dpih = 0;
+        }
+        if(msg)
+        {
+            if(dpid != 0 || dpiw != 0 || dpih != 0)
+                conoutf("Display [%d]: %dx%d [%d Hz] %s: %dx%d, Renderer: %dx%d (DPI: %.2fx%.2f [%.2f])", index, display.w, display.h, display.refresh_rate, wtype, screenw, screenh, renderw, renderh, dpiw, dpih, dpid);
+            else conoutf("Display [%d]: %dx%d [%d Hz] %s: %dx%d, Renderer: %dx%d (DPI: disabled)", index, display.w, display.h, display.refresh_rate, wtype, screenw, screenh, renderw, renderh);
+        }
+        refresh = display.refresh_rate;
+    }
+    wantdisplaysetup = false;
+}
 
 void setfullscreen(bool enable)
 {
     if(!screen) return;
     //initwarning(enable ? "fullscreen" : "windowed");
-    extern int fullscreendesktop;
     SDL_SetWindowFullscreen(screen, enable ? (fullscreendesktop ? SDL_WINDOW_FULLSCREEN_DESKTOP : SDL_WINDOW_FULLSCREEN) : 0);
     if(!enable)
     {
@@ -253,11 +273,7 @@ void screenres(int w, int h)
             scr_w = min(scr_w, desktopw);
             scr_h = min(scr_h, desktoph);
         }
-        if(SDL_GetWindowFlags(screen) & SDL_WINDOW_FULLSCREEN)
-        {
-            if(fullscreendesktop) gl_resize();
-            else resetfullscreen();
-        }
+        if(SDL_GetWindowFlags(screen)&SDL_WINDOW_FULLSCREEN) resetfullscreen();
         else SDL_SetWindowSize(screen, scr_w, scr_h);
         wantdisplaysetup = true;
     }
@@ -301,7 +317,6 @@ void restorevsync()
 
 VARF(IDF_PERSIST, vsync, 0, 0, 1, restorevsync());
 VARF(IDF_PERSIST, vsynctear, 0, 1, 1, { if(vsync) restorevsync(); });
-VAR(0, dbgmodes, 0, 0, 1);
 
 void setupscreen()
 {
@@ -333,7 +348,7 @@ void setupscreen()
     }
 
     int winx = SDL_WINDOWPOS_UNDEFINED, winy = SDL_WINDOWPOS_UNDEFINED, winw = scr_w, winh = scr_h,
-        flags = SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN|SDL_WINDOW_INPUT_FOCUS|SDL_WINDOW_MOUSE_FOCUS|SDL_WINDOW_RESIZABLE; //|SDL_WINDOW_ALLOW_HIGHDPI;
+        flags = SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN|SDL_WINDOW_INPUT_FOCUS|SDL_WINDOW_MOUSE_FOCUS|SDL_WINDOW_RESIZABLE|SDL_WINDOW_ALLOW_HIGHDPI;
     if(fullscreen)
     {
         if(fullscreendesktop)
@@ -377,14 +392,7 @@ void setupscreen()
         if(glcontext) break;
     }
     if(!glcontext) fatal("Failed to create OpenGL context: %s", SDL_GetError());
-
-    SDL_GetWindowSize(screen, &screenw, &screenh);
-    SDL_GL_GetDrawableSize(screen, &renderw, &renderh);
-    //renderw = min(scr_w, renderw);
-    //renderh = min(scr_h, renderh);
-    hudw = renderw;
-    hudh = renderh;
-    setupdisplay();
+    setupdisplay(false);
 }
 
 void resetgl()
@@ -585,13 +593,7 @@ void checkinput()
 
                     case SDL_WINDOWEVENT_SIZE_CHANGED:
                     {
-                        SDL_GetWindowSize(screen, &screenw, &screenh);
-                        if(!fullscreendesktop || !(SDL_GetWindowFlags(screen) & SDL_WINDOW_FULLSCREEN))
-                        {
-                            scr_w = clamp(screenw, SCR_MINW, SCR_MAXW);
-                            scr_h = clamp(screenh, SCR_MINH, SCR_MAXH);
-                        }
-                        gl_resize();
+                        wantdisplaysetup = true;
                         break;
                     }
                 }
