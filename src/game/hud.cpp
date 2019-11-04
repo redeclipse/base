@@ -1999,10 +1999,11 @@ namespace hud
 
     void render(bool noview)
     {
+        int wait = client::waiting();
+        float fade = hudblend;
         hudmatrix.ortho(0, hudwidth, hudheight, 0, -1, 1);
         flushhudmatrix();
-        float fade = hudblend;
-        if(!progressing)
+        if(!progressing && !wait)
         {
             vec colour = vec(1, 1, 1);
             if(commandfade && (commandmillis > 0 || totalmillis-abs(commandmillis) <= commandfade))
@@ -2064,14 +2065,14 @@ namespace hud
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         resethudshader();
-        if(noview || client::waiting()) drawbackground(hudwidth, hudheight);
+        if(noview || wait) drawbackground(hudwidth, hudheight);
         else
         {
+            drawzoom(hudwidth, hudheight);
             if(showhud)
             {
                 if(gs_playing(game::gamestate))
                 {
-                    drawzoom(hudwidth, hudheight);
                     drawdamages(fade);
                     if(teamhurthud&2 && teamhurttime && m_team(game::gamemode, game::mutators) && game::focus == game::player1 && game::player1->lastteamhit >= 0 && totalmillis-game::player1->lastteamhit <= teamhurttime)
                     {
@@ -2109,7 +2110,6 @@ namespace hud
                 }
                 if(showevents && !texpaneltimer && !game::tvmode() && !client::waiting() && !hasinput(false)) drawevents(fade);
             }
-            else drawzoom(hudwidth, hudheight);
         }
         if(!progressing && showhud)
         {
