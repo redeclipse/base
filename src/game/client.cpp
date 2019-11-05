@@ -153,7 +153,7 @@ namespace client
         m->players.add(d);
         mapvotes.sort(mapvote::compare);
         if(showmapvotes >= (!gs_playing(game::gamestate) ? 2 : 1) && !isignored(d->clientnum))
-            conoutft(CON_EVENT, "%s suggests: \fs\fy%s\fS on \fs\fo%s\fS, press \f{=%s maps} to vote", game::colourname(d), server::gamename(mode, muts), mapctitle(m->map), UI::uiopencmd);
+            conoutft(CON_EVENT, "%s suggests: \fs\fy%s\fS on \fs\fo%s\fS, press \f{=%s votes} to vote", game::colourname(d), server::gamename(mode, muts), mapctitle(m->map), UI::uiopencmd);
     }
     ICOMMAND(0, fakevote, "", (), loopi(20) vote(game::player1, "maps/bloodlust", G_DEATHMATCH, 0, true); loopi(20) vote(game::player1, "maps/dutility", G_CAPTURE, 1<<G_M_GSP1, true));
 
