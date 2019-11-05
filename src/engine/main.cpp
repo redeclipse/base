@@ -195,7 +195,6 @@ ICOMMAND(0, quit, "", (void), if(!(identflags&IDF_WORLD)) quit());
 VARFN(IDF_INIT, screenw, scr_w, SCR_MINW, -1, SCR_MAXW, initwarning("screen resolution"));
 VARFN(IDF_INIT, screenh, scr_h, SCR_MINH, -1, SCR_MAXH, initwarning("screen resolution"));
 bool initwindowpos = false, wantdisplaysetup = false;
-float dpid = 0, dpiw = 0, dpih = 0;
 
 void setupdisplay(bool msg = true)
 {
@@ -215,20 +214,7 @@ void setupdisplay(bool msg = true)
     }
     else
     {
-        bool fs = SDL_GetWindowFlags(screen)&SDL_WINDOW_FULLSCREEN;
-        const char *wtype = fs ? "FullScreen" : "Windowed";
-        if(fs && fullscreendesktop) wtype = "FS-Desktop";
-        if((!fs || fullscreendesktop) && SDL_GetDisplayDPI(index, &dpid, &dpiw, &dpih) < 0)
-        {
-            if(msg) conoutf("Failed querying monitor %d DPI: %s", index, SDL_GetError());
-            dpid = dpiw = dpih = 0;
-        }
-        if(msg)
-        {
-            if(dpid != 0 || dpiw != 0 || dpih != 0)
-                conoutf("Display [%d]: %dx%d [%d Hz] %s: %dx%d, Renderer: %dx%d (DPI: %.2fx%.2f [%.2f])", index, display.w, display.h, display.refresh_rate, wtype, screenw, screenh, renderw, renderh, dpiw, dpih, dpid);
-            else conoutf("Display [%d]: %dx%d [%d Hz] %s: %dx%d, Renderer: %dx%d (DPI: disabled)", index, display.w, display.h, display.refresh_rate, wtype, screenw, screenh, renderw, renderh);
-        }
+        if(msg) conoutf("Display [%d]: %dx%d [%d Hz] %s: %dx%d, Renderer: %dx%d", index, display.w, display.h, display.refresh_rate, SDL_GetWindowFlags(screen)&SDL_WINDOW_FULLSCREEN ? (fullscreendesktop ? "FS-Desktop" : "FullScreen") : "Windowed", screenw, screenh, renderw, renderh);
         refresh = display.refresh_rate;
     }
     wantdisplaysetup = false;
@@ -348,7 +334,7 @@ void setupscreen()
     }
 
     int winx = SDL_WINDOWPOS_UNDEFINED, winy = SDL_WINDOWPOS_UNDEFINED, winw = scr_w, winh = scr_h,
-        flags = SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN|SDL_WINDOW_INPUT_FOCUS|SDL_WINDOW_MOUSE_FOCUS|SDL_WINDOW_RESIZABLE|SDL_WINDOW_ALLOW_HIGHDPI;
+        flags = SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN|SDL_WINDOW_INPUT_FOCUS|SDL_WINDOW_MOUSE_FOCUS|SDL_WINDOW_RESIZABLE;//|SDL_WINDOW_ALLOW_HIGHDPI;
     if(fullscreen)
     {
         if(fullscreendesktop)
