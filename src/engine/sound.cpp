@@ -48,7 +48,13 @@ stream *musicstream = NULL;
 char *musicfile = NULL, *musicdonecmd = NULL;
 int musictime = -1, musicdonetime = -1;
 
-VARF(IDF_PERSIST, mastervol, 0, 255, 255, changedvol = true; if(!music && musicvol > 0 && mastervol > 0) smartmusic(true));
+void updatemusic()
+{
+    changedvol = true;
+    if(!music && musicvol > 0 && mastervol > 0) smartmusic(true);
+}
+
+VARF(IDF_PERSIST, mastervol, 0, 255, 255, updatemusic());
 VAR(IDF_PERSIST, soundvol, 0, 255, 255);
 VARF(IDF_INIT, soundmono, 0, 0, 1, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
 VARF(IDF_INIT, soundmixchans, 16, 256, 1024, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
@@ -62,7 +68,7 @@ FVAR(IDF_PERSIST, soundenvvol, 0, 1, FVAR_MAX);
 FVAR(IDF_PERSIST, soundenvscale, 0, 1, FVAR_MAX);
 VAR(IDF_PERSIST, soundcull, 0, 1, 1);
 
-VARF(IDF_PERSIST, musicvol, 0, 64, 255, changedvol = true; if(!music && musicvol > 0) smartmusic(true));
+VARF(IDF_PERSIST, musicvol, 0, 32, 255, updatemusic());
 VAR(IDF_PERSIST, musicfadein, 0, 1000, VAR_MAX);
 VAR(IDF_PERSIST, musicfadeout, 0, 2500, VAR_MAX);
 SVAR(0, titlemusic, "sounds/theme");
