@@ -20,7 +20,6 @@ VAR(0, mintexoffset, 1, 0, 0);
 VAR(0, maxtexoffset, 1, 0, 0);
 VAR(0, mintexrectoffset, 1, 0, 0);
 VAR(0, maxtexrectoffset, 1, 0, 0);
-//VAR(0, dbgshader, 0, 0, 2);
 VAR(0, dbgshader, 0, 1, 2);
 
 void loadshaders()
