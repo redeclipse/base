@@ -427,7 +427,7 @@ extern void flushmasteroutput();
 extern void flushmasterinput();
 
 extern void setverinfo(const char *bin);
-extern void setlocations();
+extern void setlocations(const char *bin);
 
 // client
 struct serverinfo

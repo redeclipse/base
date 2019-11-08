@@ -1527,7 +1527,7 @@ void loadextras(const char *dirs)
     setsvar("extrapackages", dirs);
 }
 
-void setlocations()
+void setlocations(const char *bin)
 {
     string cwd;
     cwd[0] = 0;
@@ -1546,7 +1546,9 @@ void setlocations()
         if(fileexists(findfile("config/version.cfg", "r"), "r")) break;
         if(chdir("..") < 0) fatal("Could not change to parent directory to find config files from: %s", cwd);
     }
+
     setsvar("workingdir", cwd);
+    setverinfo(bin);
     if(!execfile("config/version.cfg", false, EXEC_VERSION|EXEC_BUILTIN)) fatal("Could not execute: %s/config/version.cfg", workingdir);
 
     // pseudo directories with game content
@@ -1568,31 +1570,29 @@ void setlocations()
         }
     }
 
-#if defined(WIN32)
     string dir;
     dir[0] = 0;
-    if(SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, SHGFP_TYPE_CURRENT, dir) == S_OK)
+    const char *hdir = getenv(sup_var("HOME"));
+    if(hdir && *hdir) copystring(dir, hdir);
+    else
     {
-        defformatstring(s, "%s\\My Games\\%s", dir, versionname);
-        sethomedir(s);
-    }
+#if defined(WIN32)
+        string str;
+        str[0] = 0;
+        if(SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, SHGFP_TYPE_CURRENT, str) == S_OK)
+            formatstring(dir, "%s\\My Games\\%s", str, versionname);
 #elif defined(__APPLE__)
-    extern const char *mac_personaldir();
-    const char *dir = mac_personaldir(); // typically: /Users/<name>/Application Support/
-    if(dir && *dir)
-    {
-        defformatstring(s, "%s/%s", dir, versionname);
-        sethomedir(s);
-    }
+        extern const char *mac_personaldir();
+        const char *str = mac_personaldir(); // typically: /Users/<name>/Application Support/
+        if(str && *str) formatstring(dir, "%s/%s", str, versionname);
 #else
-    const char *dir = getenv("HOME");
-    if(dir && *dir)
-    {
-        defformatstring(s, "%s/.%s", dir, versionuname);
-        sethomedir(s);
-    }
+        const char *str = getenv("HOME");
+        if(str && *str) formatstring(dir, "%s/.%s", str, versionuname);
 #endif
-    else sethomedir("home");
+    }
+    if(!dir[0]) copystring(dir, "home");
+    if(strcmp(versionbranch, "stable") && strcmp(versionbranch, "steam")) concformatstring(dir, "\\%s", versionbranch);
+    sethomedir(dir);
 }
 
 #ifndef STANDALONE
@@ -1764,8 +1764,7 @@ int main(int argc, char **argv)
     clockoffset = currenttime-clocktime;
 
     setlogfile(NULL);
-    setlocations();
-    setverinfo(argv[0]);
+    setlocations(argv[0]);
 
     char *initscript = NULL;
     for(int i = 1; i < argc; i++)

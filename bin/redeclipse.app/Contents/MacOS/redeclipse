@@ -6,13 +6,11 @@ REDECLIPSE_APPDIR=$(dirname "$0")
 cd "${REDECLIPSE_APPDIR}"
 if [ -e "../Resources/config/version.cfg" ]; then
     cd "../Resources"
-    REDECLIPSE_RESDIR=`pwd`
-    osascript -e "tell application \"Terminal\" to do script \"cd \\\"${REDECLIPSE_RESDIR}\\\"; ./redeclipse.sh $@; exit\""
+    ./redeclipse.sh $@
 elif [ -e "../../../../config/version.cfg" ]; then
     cd "../../../.."
-    REDECLIPSE_RESDIR=`pwd`
-    osascript -e "tell application \"Terminal\" to do script \"cd \\\"${REDECLIPSE_RESDIR}\\\"; ./redeclipse.sh $@; exit\""
+    ./redeclipse.sh $@
 elif [ -e "redeclipse_universal" ]; then
-    osascript -e "tell application \"Terminal\" to do script \"./redeclipse_universal $@; exit\""
+    ./redeclipse_universal $@
 fi
 cd "${REDECLIPSE_ORIGPW}"

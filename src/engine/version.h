@@ -19,7 +19,7 @@
 #define VERSION_BUILD 0
 #endif
 #ifndef VERSION_BRANCH
-#define VERSION_BRANCH "none"
+#define VERSION_BRANCH "unknown"
 #endif
 #ifndef VERSION_REVISION
 #define VERSION_REVISION ""
