@@ -964,9 +964,9 @@ HDRVARS(alt);
 GETVARMPV(hdr, bright, float);
 
 VAR(IDF_PERSIST, bloom, 0, 1, 1);
-FVAR(0, bloomthreshold, 1e-3f, 0.8f, 1e3f);
-FVAR(IDF_PERSIST, bloomscale, 0, 0.5f, 1e3f);
-VAR(IDF_PERSIST, bloomblur, 0, 7, 7);
+FVAR(0, bloomthreshold, 1e-3f, 0.9f, 1e3f);
+FVAR(IDF_PERSIST, bloomscale, 0, 2.0f, 1e3f);
+VAR(IDF_PERSIST, bloomblur, 0, 5, 7);
 VAR(IDF_PERSIST, bloomiter, 0, 0, 4);
 VARF(IDF_PERSIST, bloomsize, 6, 9, 11, cleanupbloom());
 VARF(IDF_PERSIST, bloomprec, 0, 2, 3, cleanupbloom());
