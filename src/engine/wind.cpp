@@ -6,13 +6,13 @@
 #define WIND_ATTEN_SCALE 0.01f
 #define WIND_MAX_SPEED 2.0f
 
-static vector<windemitter> windemitters;
+static windemitter *windemitters;
 static int numwindemitters;
 static int windcost;
 
 VAR(0, winddebug, 0, 0, 1);
 VAR(IDF_PERSIST, windanimdist, 0, 1200, 10000);
-VAR(IDF_PERSIST, windmaxemitters, 1, 100, 1000);
+VARF(IDF_PERSIST, windmaxemitters, 1, 100, 1000, { setupwind(); });
 VAR(IDF_PERSIST, windcostdiv, 1, 2000, 10000);
 
 VAR(IDF_WORLD, windyaw, 0, 45, 360);
@@ -23,6 +23,19 @@ VAR(IDF_WORLD, windinterval, 0, 50000, VAR_MAX);
 VAR(IDF_WORLD, windintervalalt, 0, 50000, VAR_MAX);
 
 static vec2 globalwind;
+
+void cleanupwind()
+{
+    if(!windemitters) return;
+    clearwindemitters();
+    if(windemitters) DELETEA(windemitters);
+}
+
+void setupwind()
+{
+    cleanupwind();
+    windemitters = new windemitter[windmaxemitters];
+}
 
 // creates smooth periodic interpolation
 static float interpwindspeed(int interval)
@@ -38,19 +51,17 @@ static windemitter *getemitter(extentity *e = NULL)
     windemitter *we = NULL;
 
     // find a free emitter
-    loopv(windemitters)
+    loopi(windmaxemitters)
     {
         we = &windemitters[i];
         if(we->unused) break;
         else we = NULL;
     }
 
-    // create a new one if all are busy
-    if(!we) we = &windemitters.add();
-
     we->unused = false;
     we->hook = NULL;
     we->ent = e;
+    we->entindex = -1;
     we->lastimpulse = lastmillis;
 
     if(e)
@@ -69,7 +80,7 @@ static windemitter *getemitter(extentity *e = NULL)
     numwindemitters++;
 
     if(winddebug) conoutf("windemitter get (ent %d), total %d, allocated %d", we->entindex,
-        numwindemitters, windemitters.length());
+        numwindemitters, windmaxemitters);
 
     return we;
 }
@@ -87,7 +98,7 @@ static void putemitter(windemitter *we)
     numwindemitters--;
 
     if(winddebug) conoutf("windemitter put (ent %d), total %d, allocated %d, hook %p",
-        we->entindex, numwindemitters, windemitters.length(), we->hook);
+        we->entindex, numwindemitters, windmaxemitters, we->hook);
 }
 
 windemitter::windemitter(extentity *e) : ent(e), hook(NULL), curspeed(0), lastimpulse(lastmillis),
@@ -137,12 +148,12 @@ void windemitter::update()
     else curspeed = 1.0f; // constant wind
 }
 
-void clearwindemitters() { loopv(windemitters) putemitter(&windemitters[i]); }
+void clearwindemitters() { loopi(windmaxemitters) putemitter(&windemitters[i]); }
 
 // updates global wind and emitters
 void updatewind()
 {
-    loopv(windemitters) windemitters[i].update();
+    loopi(windmaxemitters) windemitters[i].update();
 
     // map settings
     float speed = checkmapvariant(MPV_ALT) ? windspeedalt : windspeed;
@@ -184,7 +195,7 @@ vec getwind(const vec &o, const dynent *d)
     wind.add(getentwindvec(d));
 
     // go through all active windemitters
-    loopv(windemitters)
+    loopi(windmaxemitters)
     {
         windemitter *we = &windemitters[i];
         if(we->unused) continue;
@@ -207,7 +218,7 @@ vec getwind(const vec &o, const dynent *d)
             vecfromyaw(we->attrs.yaw, 1, 0, windvec);
             wind.add(windvec.mul(speed));
         }
-        else wind.add(vec(o).sub(eo).normalize().mul(speed)); // local mode, relative to emitter
+        else wind.add(vec(o).sub(eo).safenormalize().mul(speed)); // local mode, relative to emitter
     }
 
     windcost++;
@@ -282,7 +293,7 @@ void addwind(extentity *e)
 
 void remwind(extentity *e)
 {
-    loopv(windemitters)
+    loopi(windmaxemitters)
     {
         windemitter *we = &windemitters[i];
         if(we->ent == e) putemitter(we);
