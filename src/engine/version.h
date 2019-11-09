@@ -20,7 +20,7 @@
 #define VERSION_BUILD 0
 #endif
 #ifndef VERSION_BRANCH
-#define VERSION_BRANCH "unknown"
+#define VERSION_BRANCH "selfbuilt"
 #endif
 #ifndef VERSION_REVISION
 #define VERSION_REVISION ""
