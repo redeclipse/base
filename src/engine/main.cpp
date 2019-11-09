@@ -94,6 +94,7 @@ void cleanup()
     cleargamma();
     freeocta(worldroot);
     UI::cleanup();
+    cleanupwind();
     extern void clear_command(); clear_command();
     extern void clear_console(); clear_console();
     extern void clear_models();  clear_models();
@@ -1046,6 +1047,7 @@ int main(int argc, char **argv)
 
     conoutf("Loading world..");
     progress(0, "Loading world..");
+    setupwind();
     emptymap(0, true, NULL, false);
 
     conoutf("Loading config..");
