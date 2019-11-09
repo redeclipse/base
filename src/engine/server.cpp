@@ -1590,8 +1590,17 @@ void setlocations(const char *bin)
         if(str && *str) formatstring(dir, "%s/.%s", str, versionuname);
 #endif
     }
-    if(!dir[0]) copystring(dir, "home");
+    if(!dir[0]) copystring(dir, "home"); // failsafe
     if(strcmp(versionbranch, "stable") && strcmp(versionbranch, "steam")) concformatstring(dir, "\\%s", versionbranch);
+    if(dir[0])
+    {
+        for(int n = 0, len = strlen(dir); n < len; n++)
+        {
+            if(iscubeprint(dir[n]) || iscubespace(dir[n])) continue;
+            dir[n] = 0;
+            break;
+        }
+    }
     sethomedir(dir);
 }
 
@@ -1680,16 +1689,28 @@ ICOMMAND(0, rehash, "i", (int *nosave), if(!(identflags&IDF_WORLD)) rehash(*nosa
 void setverinfo(const char *bin)
 {
     setvar("versioncrc", crcfile(bin));
+    string branch;
+    copystring(branch, versionbranch);
     char *branchfile = loadfile("branch.txt", NULL);
-    if(branchfile && !strcmp(branchfile, "steam")) setsvar("versionbranch", branchfile);
-    if(!*versionbranch || !strcmp(versionbranch, "none"))
+    if(branchfile && !strcmp(branchfile, "steam")) copystring(branch, branchfile);
+    if(!branch[0] || !strcmp(branch, "none"))
     {
         const char *vbranch = getenv(sup_var("BRANCH"));
-        if(vbranch && *vbranch) setsvar("versionbranch", vbranch);
-        else if(branchfile && *branchfile) setsvar("versionbranch", branchfile);
-        else setsvar("versionbranch", VERSION_BRANCH);
+        if(vbranch && *vbranch) copystring(branch, vbranch);
+        else if(branchfile && *branchfile) copystring(branch, branchfile);
+        else copystring(branch, VERSION_BRANCH);
     }
     if(branchfile) delete[] branchfile;
+    if(branch[0])
+    {
+        for(int n = 0, len = strlen(branch); n < len; n++)
+        {
+            if(iscubeprint(branch[n]) || iscubespace(branch[n])) continue;
+            branch[n] = 0;
+            break;
+        }
+    }
+    if(strcmp(branch, versionbranch)) setsvar("versionbranch", branch);
 }
 
 volatile bool fatalsig = false;

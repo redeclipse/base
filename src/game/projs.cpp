@@ -1259,7 +1259,7 @@ namespace projs
         }
         loopv(shots)
             create(orig, vec(shots[i].pos).div(DMF), local, d, PRJ_SHOT, weap, flags, max(life, 1), W2(weap, time, WS(flags)), delay+(iter*i), speed, shots[i].id, weap, -1, flags, skew, false, v);
-        if(ejectfade && weaptype[weap].eject && *weaptype[weap].eprj) loopi(clamp(sub, 1, W2(weap, ammosub, WS(flags))))
+        if(W2(weap, ammosub, WS(flags)) && ejectfade && weaptype[weap].eject && *weaptype[weap].eprj) loopi(W2(weap, ammosub, WS(flags)))
             create(d->ejecttag(), d->ejecttag(), local, d, PRJ_EJECT, -1, 0, rnd(ejectfade)+ejectfade, 0, delay, rnd(weaptype[weap].espeed)+weaptype[weap].espeed, 0, weap, -1, flags);
 
         d->setweapstate(weap, WS(flags) ? W_S_SECONDARY : W_S_PRIMARY, delayattack, lastmillis);
