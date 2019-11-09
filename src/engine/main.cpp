@@ -144,7 +144,7 @@ void fatal(const char *s, ...)    // failure exit
 #endif
             }
             SDL_Quit();
-            defformatstring(cap, "%s: Fatal error", versionname);
+            defformatstring(cap, "%s: Fatal error", versionfname);
             SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, cap, msg, NULL);
         }
     }
@@ -694,7 +694,7 @@ void stackdumper(unsigned int type, EXCEPTION_POINTERS *ep)
     EXCEPTION_RECORD *er = ep->ExceptionRecord;
     CONTEXT *context = ep->ContextRecord;
     bigstring out;
-    formatstring(out, "%s Win32 Exception: 0x%x [0x%x]\n\n", versionname, er->ExceptionCode, er->ExceptionCode==EXCEPTION_ACCESS_VIOLATION ? er->ExceptionInformation[1] : -1);
+    formatstring(out, "%s Win32 Exception: 0x%x [0x%x]\n\n", versionfname, er->ExceptionCode, er->ExceptionCode==EXCEPTION_ACCESS_VIOLATION ? er->ExceptionInformation[1] : -1);
     SymInitialize(GetCurrentProcess(), NULL, TRUE);
 #ifdef _AMD64_
     STACKFRAME64 sf = {{context->Rip, 0, AddrModeFlat}, {}, {context->Rbp, 0, AddrModeFlat}, {context->Rsp, 0, AddrModeFlat}, 0};
@@ -907,9 +907,9 @@ int main(int argc, char **argv)
     initing = INIT_RESET;
 
     // URI support
-    // redeclipse://password@hostname:port
-    // redeclipse://hostname:port
-    // redeclipse://hostname
+    // *://password@hostname:port
+    // *://hostname:port
+    // *://hostname
     const char reprotoprefix[] = VERSION_UNAME "://";
     const int reprotolen = sizeof(reprotoprefix) - 1;
     char *reprotoarg = NULL, *connectstr = NULL, *connectpassword = NULL, *connecthost = NULL;
@@ -956,7 +956,7 @@ int main(int argc, char **argv)
                 break;
         }
         else if(!strncmp(argv[i], reprotoprefix, reprotolen) && !reprotoarg)
-        { // will only parse the first argument that is possibly a redeclipse:// URL argument and ignore any following
+        { // will only parse the first argument that is possibly a *:// URL argument and ignore any following
             reprotoarg = newstring(argv[i]);
             connectstr = newstring(reprotoarg + reprotolen);
             if(!*connectstr) continue; // check if there's actually text after the protocol prefix

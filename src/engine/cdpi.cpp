@@ -142,7 +142,7 @@ namespace cdpi
         bool initclient()
         {
             if(!steamclient) return true;
-            if(versionsteamid && !strcmp(versionbranch, "steam") && SteamAPI_RestartAppIfNecessary(versionsteamid)) return false;
+            if(versionsteamid && !strncmp(versionbranch, "steam", 5) && SteamAPI_RestartAppIfNecessary(versionsteamid)) return false;
             if(!SteamAPI_Init())
             {
                 conoutf("Steam API failed to start.");
@@ -209,8 +209,9 @@ namespace cdpi
             serv = (intptr_t)SteamAPI_ISteamClient_GetISteamGameServer(sclient, supipe, smpipe, STEAMGAMESERVER_INTERFACE_VERSION);
             if(!serv) { conoutf("Failed to get Steam server interface."); cleanup(SWSERVER); return; }
 
-            SteamAPI_ISteamGameServer_SetModDir(serv, versionuname);
-            SteamAPI_ISteamGameServer_SetProduct(serv, versionname);
+            defformatstring(steamappid, "%d", versionsteamid);
+            SteamAPI_ISteamGameServer_SetModDir(serv, versionfname);
+            SteamAPI_ISteamGameServer_SetProduct(serv, steamappid);
             SteamAPI_ISteamGameServer_SetGameDescription(serv, versiondesc);
             SteamAPI_ISteamGameServer_SetDedicatedServer(serv, servertype >= 3);
             SteamAPI_ISteamGameServer_LogOnAnonymous(serv);
@@ -388,7 +389,7 @@ namespace cdpi
                     int g = game::gametime();
                     discordPresence.endTimestamp = g ? (currenttime + g/1000) : 0;
                     discordPresence.largeImageKey = "emblem";
-                    discordPresence.largeImageText = versionname;
+                    discordPresence.largeImageText = versionfname;
                     discordPresence.smallImageKey = hud::modeimage();
                     discordPresence.smallImageText = details;
 

@@ -5,10 +5,11 @@
 #define VERSION_STR(x,y,z,r) VERSION_HLP(x,y,z,r)
 #define VERSION_STRING VERSION_STR(VERSION_MAJOR,VERSION_MINOR,VERSION_PATCH,.)
 #define VERSION_NAME "Red Eclipse"
+#define VERSION_FNAME "Red Eclipse 2"
 #define VERSION_UNAME "redeclipse"
 #define VERSION_VNAME "REDECLIPSE"
 #define VERSION_RELEASE "v2 Preview"
-#define VERSION_URL "https://redeclipse.net/"
+#define VERSION_URL "www.redeclipse.net"
 #define VERSION_COPY "2010-2019"
 #define VERSION_DESC "A fun-filled new take on the first-person arena shooter."
 #define VERSION_STEAM_APPID 967460

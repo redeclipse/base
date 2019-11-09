@@ -31,6 +31,7 @@ VAR(IDF_READONLY, versionminor, 1, VERSION_MINOR, -1);
 VAR(IDF_READONLY, versionpatch, 1, VERSION_PATCH, -1);
 SVAR(IDF_READONLY, versionstring, VERSION_STRING);
 SVAR(IDF_READONLY, versionname, VERSION_NAME);
+SVAR(IDF_READONLY, versionfname, VERSION_FNAME);
 SVAR(IDF_READONLY, versionuname, VERSION_UNAME);
 SVAR(IDF_READONLY, versionvname, VERSION_VNAME);
 SVAR(IDF_READONLY, versionrelease, VERSION_RELEASE);
@@ -1317,7 +1318,7 @@ void logoutfv(const char *fmt, va_list args)
 void serverloop()
 {
 #ifdef WIN32
-    defformatstring(cap, "%s server", versionname);
+    defformatstring(cap, "%s server", versionfname);
     setupwindow(cap);
     SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
 #endif
@@ -1589,17 +1590,14 @@ void setlocations(const char *bin)
         const char *str = getenv("HOME");
         if(str && *str) formatstring(dir, "%s/.%s", str, versionuname);
 #endif
+        if(dir[0] && strncmp(versionbranch, "steam", 5)) concformatstring(dir, "\\%s", versionbranch);
     }
     if(!dir[0]) copystring(dir, "home"); // failsafe
-    if(strcmp(versionbranch, "stable") && strcmp(versionbranch, "steam")) concformatstring(dir, "\\%s", versionbranch);
-    if(dir[0])
+    for(int n = 0, len = strlen(dir); n < len; n++)
     {
-        for(int n = 0, len = strlen(dir); n < len; n++)
-        {
-            if(iscubeprint(dir[n]) || iscubespace(dir[n])) continue;
-            dir[n] = 0;
-            break;
-        }
+        if(iscubeprint(dir[n]) || iscubespace(dir[n])) continue;
+        dir[n] = 0;
+        break;
     }
     sethomedir(dir);
 }
@@ -1692,7 +1690,7 @@ void setverinfo(const char *bin)
     string branch;
     copystring(branch, versionbranch);
     char *branchfile = loadfile("branch.txt", NULL);
-    if(branchfile && !strcmp(branchfile, "steam")) copystring(branch, branchfile);
+    if(branchfile && *branchfile) copystring(branch, branchfile);
     if(!branch[0] || !strcmp(branch, "none"))
     {
         const char *vbranch = getenv(sup_var("BRANCH"));
@@ -1770,7 +1768,7 @@ void fatal(const char *s, ...)    // failure exit
             cleanupserver();
             enet_deinitialize();
 #ifdef WIN32
-            defformatstring(cap, "%s: Fatal error", versionname);
+            defformatstring(cap, "%s: Fatal error", versionfname);
             MessageBox(NULL, msg, cap, MB_OK|MB_SYSTEMMODAL);
 #endif
         }

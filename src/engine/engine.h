@@ -5,7 +5,7 @@
 #include "cube.h"
 
 extern int version, versioning, versionmajor, versionminor, versionpatch, versionbuild, versionplatform, versionarch, versionisserver, versioncrc, versionsteamid;
-extern char *versionstring, *versionname, *versionuname, *versionvname, *versionrelease, *versionurl, *versioncopy, *versiondesc, *versionmaster, *versionplatname, *versionplatlongname, *versionbranch, *versionrevision, *versiondiscordid;
+extern char *versionstring, *versionname, *versionfname, *versionuname, *versionvname, *versionrelease, *versionurl, *versioncopy, *versiondesc, *versionmaster, *versionplatname, *versionplatlongname, *versionbranch, *versionrevision, *versiondiscordid;
 #define CUR_VER_MAKE(a,b,c) (((a)<<16) | ((b)<<8) | (c))
 #define CUR_VER CUR_VER_MAKE(VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH)
 #define CUR_VERSION (VERSION_MAJOR*100)+(VERSION_MINOR*10)+VERSION_PATCH

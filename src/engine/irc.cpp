@@ -827,7 +827,7 @@ void irccleanup()
     loopv(ircnets) if(ircnets[i]->sock != ENET_SOCKET_NULL)
     {
         ircnet *n = ircnets[i];
-        ircsend(n, "QUIT :%s%s%s", versionname, *versionurl ? ", " : "", versionurl);
+        ircsend(n, "QUIT :%s%s%s", versionfname, *versionurl ? ", " : "", versionurl);
         ircdiscon(n, "shutdown");
     }
 }
@@ -938,7 +938,7 @@ void ircslice()
                     if(*n->passkey) ircsend(n, "PASS %s", n->passkey);
                     copystring(n->nick, n->mnick);
                     ircsend(n, "NICK %s", n->mnick);
-                    if(!*n->ident) copystring(n->ident, versionuname);
+                    if(!*n->ident) copystring(n->ident, versionfname);
                     ircsend(n, "USER %s +iw %s :%s v%s-%s%d-%s (%s)", n->ident, n->ident, versionname, versionstring, versionplatname, versionarch, versionbranch, versionrelease);
                     n->lastnick = clocktime;
                     n->state = IRC_CONN;
