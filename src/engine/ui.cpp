@@ -6,7 +6,6 @@ namespace UI
     int cursortype = CURSOR_DEFAULT;
 
     FVAR(0, uitextscale, 1, 0, 0);
-    FVAR(0, uiscale, FVAR_NONZERO, 1, 100);
 
     SVAR(0, uiopencmd, "showui");
     SVAR(0, uiclosecmd, "hideui");
@@ -14,6 +13,7 @@ namespace UI
     SVAR(0, uipostcmd, "");
 
     VAR(0, uihidden, 0, 0, 1);
+    FVAR(IDF_PERSIST, uiscale, FVAR_NONZERO, 1, 100);
     VAR(IDF_PERSIST, uitextrows, 1, 48, VAR_MAX);
 
     VAR(IDF_PERSIST, uiscrollsteptime, 0, 50, VAR_MAX);
