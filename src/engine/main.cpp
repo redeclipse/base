@@ -944,6 +944,7 @@ int main(int argc, char **argv)
                     case 'a': /* compat, ignore */ break;
                     case 'v': /* compat, ignore */ break;
                     case 'f': fullscreen = atoi(&argv[i][3]); break;
+                    case 'F': fullscreendesktop = atoi(&argv[i][3]); break;
                     case 's': /* compat, ignore */ break;
                     case 'u': /* compat, ignore */ break;
                     default: conoutf("\frUnknown display option: '%c'", argv[i][2]); break;
