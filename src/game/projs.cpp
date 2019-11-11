@@ -2543,6 +2543,7 @@ namespace projs
                 {
                     mdl.size *= proj.lifesize;
                     fadeproj(proj, mdl.color.a, mdl.size);
+                    if(mdl.color.a <= 0) continue;
                     if(!proj.limited) game::getburneffect(&proj, mdl, projburntime, lastmillis-proj.spawntime, projburndelay);
                     break;
                 }
@@ -2552,27 +2553,23 @@ namespace projs
                 {
                     mdl.size *= proj.lifesize;
                     fadeproj(proj, mdl.color.a, mdl.size);
+                    if(mdl.color.a <= 0) continue;
                     if(proj.owner && !proj.limited) game::getplayereffects(proj.owner, mdl);
                     break;
                 }
                 case PRJ_SHOT:
                 {
                     mdl.color.a *= fadeweap(proj);
-                    if(proj.weap == W_GRENADE)
+                    if(mdl.color.a <= 0) continue;
+                    mdl.material[0] = proj.owner ? bvec::fromcolor(game::getcolour(proj.owner, game::playerovertone, game::playerovertonelevel)) : bvec(128, 128, 128);
+                    mdl.material[1] = proj.owner ? bvec::fromcolor(game::getcolour(proj.owner, game::playerundertone, game::playerundertonelevel)) : bvec(128, 128, 128);
+                    if(!isweap(proj.weap) || (WF(WK(proj.flags), proj.weap, proxtype, WS(proj.flags)) && (!proj.stuck || proj.lifetime%500 >= 300))) mdl.material[2] = bvec(0, 0, 0);
+                    else if(W2(proj.weap, colourproj, WS(proj.flags)) >= 0)
                     {
                         float amt = clamp(proj.lifespan, 0.f, 1.f);
-                        vec color = vec::fromcolor(W(proj.weap, colour));
-                        color.r += (1 - color.r) * amt;
-                        color.g *= 1 - amt;
-                        color.b *= 1 - amt;
-                        mdl.material[0] = bvec::fromcolor(color);
+                        mdl.material[2] = bvec::fromcolor(vec::fromcolor(W(proj.weap, colour)).mul(1-amt).add(vec::fromcolor(W2(proj.weap, colourproj, WS(proj.flags))).mul(amt)).clamp(0.f, 1.f));
                     }
-                    if(WF(WK(proj.flags), proj.weap, partcol, WS(proj.flags)))
-                    {
-                        mdl.material[0] = bvec::fromcolor(FWCOL(P, partcol, proj));
-                        if(WF(WK(proj.flags), proj.weap, proxtype, WS(proj.flags)) && (!proj.stuck || proj.lifetime%500 >= 300))
-                            mdl.material[0] = bvec(0, 0, 0);
-                    }
+                    else if(WF(WK(proj.flags), proj.weap, partcol, WS(proj.flags))) mdl.material[2] = bvec::fromcolor(FWCOL(P, partcol, proj));
                     break;
                 }
                 case PRJ_ENT:
@@ -2582,12 +2579,14 @@ namespace projs
                     if(!entities::ents.inrange(proj.id)) continue;
                     gameentity &e = *(gameentity *)entities::ents[proj.id];
                     mdlname = entities::entmdlname(e.type, e.attrs);
+                    mdl.material[0] = proj.owner ? bvec::fromcolor(game::getcolour(proj.owner, game::playerovertone, game::playerovertonelevel)) : bvec(128, 128, 128);
+                    mdl.material[1] = proj.owner ? bvec::fromcolor(game::getcolour(proj.owner, game::playerundertone, game::playerundertonelevel)) : bvec(128, 128, 128);
                     if(e.type == WEAPON)
                     {
                         int attr = m_attr(e.type, e.attrs[0]);
                         if(isweap(attr))
                         {
-                            mdl.material[0] = bvec::fromcolor(W(attr, colour));
+                            mdl.material[2] = bvec::fromcolor(W(attr, colour));
                             if(!game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !entities::showentfull))
                                 mdl.color.a *= entities::showentunavailable;
                             else mdl.color.a *= entities::showentavailable;

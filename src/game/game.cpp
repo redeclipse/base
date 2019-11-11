@@ -3258,21 +3258,16 @@ namespace game
         #undef TONEINTERP
         if(isweap(d->weapselect))
         {
-            if(d->weapselect == W_GRENADE)
+            bool secondary = physics::secondaryweap(d);
+            vec color = vec::fromcolor(W(d->weapselect, colour));
+            if((d->weapstate[d->weapselect] == W_S_POWER || d->weapstate[d->weapselect] == W_S_ZOOM) && W2(d->weapselect, colourcook, secondary) >= 0)
             {
-                vec color = vec::fromcolor(W(d->weapselect, colour));
-                if(lastmillis-d->weaptime[d->weapselect] > 0 && d->weapstate[d->weapselect] == W_S_POWER)
-                {
-                    float amt = clamp(float(lastmillis-d->weaptime[d->weapselect])/d->weapwait[d->weapselect], 0.f, 1.f);
-                    color.r += (1 - color.r) * amt;
-                    color.g *= 1 - amt;
-                    color.b *= 1 - amt;
-                }
-                mdl.material[2] = bvec::fromcolor(color);
+                float amt = clamp(float(lastmillis-d->weaptime[d->weapselect])/max(d->weapwait[d->weapselect], 1), 0.f, 1.f);
+                color.mul(1-amt).add(vec::fromcolor(W2(d->weapselect, colourcook, secondary)).mul(amt)).clamp(0.f, 1.f);
             }
-            else if(W2(d->weapselect, ammosub, false) || W2(d->weapselect, ammosub, true))
+            else if(d->weapselect >= W_OFFSET && d->weapselect < W_ITEM && (W2(d->weapselect, ammosub, false) || W2(d->weapselect, ammosub, true)))
             {
-                int ammo = d->weapammo[d->weapselect][W_A_CLIP], maxammo = W(d->weapselect, ammoclip);
+                int ammo = d->weapammo[d->weapselect][W_A_CLIP], maxammo = max(W(d->weapselect, ammoclip), 1);
                 float scale = 1;
                 switch(d->weapstate[d->weapselect])
                 {
@@ -3286,9 +3281,10 @@ namespace game
                     }
                     default: scale = float(ammo)/maxammo; break;
                 }
-                mdl.material[2] = bvec::fromcolor(vec(scale, scale, scale));
+                if(scale < 1) color.mul(scale);
             }
-            if(W(d->weapselect, lightpersist)&2) mdl.material[2].max(bvec::fromcolor(WPCOL(d, d->weapselect, lightcol, physics::secondaryweap(d))));
+            if(W(d->weapselect, lightpersist)&2) color.max(WPCOL(d, d->weapselect, lightcol, physics::secondaryweap(d)));
+            mdl.material[2] = bvec::fromcolor(color);
         }
     }
 

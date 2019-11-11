@@ -303,6 +303,14 @@ WPVARK(IDF_GAMEMOD, 0, collide, 0, COLLIDE_ALL,
 WPVAR(IDF_GAMEMOD|IDF_HEX, 0, colour, 0, 0xFFFFFF,
     0x907020,   0xD0D0D0,   0x4040F0,   0xF0F020,   0xF05820,   0xF02020,   0x40F0C8,   0xC090F0,   0xA020F0,   0x40F000,   0x00F068,   0x803000,   0x606060
 );
+WPVARM(IDF_GAMEMOD|IDF_HEX, 0, colourcook, -1, 0xFFFFFF,
+    -1,         -1,         -1,         -1,         -1,         -1,         -1,         -1,         -1,         0xFF0000,   -1,         -1,         -1,
+    -1,         -1,         0xFF00FF,   -1,         -1,         -1,         0x00FFFF,   -1,         -1,         0xFF0000,   -1,         -1,         -1
+);
+WPVARM(IDF_GAMEMOD|IDF_HEX, 0, colourproj, -1, 0xFFFFFF,
+    -1,         -1,         -1,         -1,         -1,         -1,         -1,         -1,         -1,         0xFF0000,   -1,         -1,         -1,
+    -1,         -1,         -1,         -1,         -1,         -1,         -1,         -1,         -1,         0xFF0000,   -1,         -1,         -1
+);
 WPVARM(IDF_GAMEMOD, 0, cooked, 0, W_C_ALL,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          W_C_LIFEN,  0,          0,          0,
     0,          0,          W_C_SCALE,  0,          0,          0,          W_C_RAYS,   W_C_ZK,     W_C_SZ,     W_C_LIFEN,  0,          0,          0

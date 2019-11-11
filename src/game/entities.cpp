@@ -2035,7 +2035,9 @@ namespace entities
                     }
                     if(mdl.color.a > 0)
                     {
-                        if(colour >= 0) mdl.material[0] = bvec::fromcolor(colour);
+                        mdl.material[0] = bvec::fromcolor(game::getcolour(game::focus, game::playerovertone, game::playerovertonelevel));
+                        mdl.material[1] = bvec::fromcolor(game::getcolour(game::focus, game::playerundertone, game::playerundertonelevel));
+                        if(colour >= 0) mdl.material[2] = bvec::fromcolor(colour);
                         rendermodel(mdlname, mdl);
                     }
                 }
