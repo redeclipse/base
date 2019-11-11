@@ -1801,7 +1801,7 @@ namespace projs
         {
             if(mat < 0) mat = lookupmaterial(proj.o);
             if(proj.extinguish&1 && (mat&MATF_VOLUME) == MAT_WATER) chk |= 1;
-            if(proj.extinguish&2 && ((mat&MATF_VOLUME) == MAT_LAVA || mat&MAT_DEATH)) chk |= 2;
+            if(proj.extinguish&2 && ((mat&MATF_FLAGS)&MAT_DEATH)) chk |= 2;
         }
         if(chk)
         {

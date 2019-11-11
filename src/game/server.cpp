@@ -6270,19 +6270,18 @@ namespace server
                             int inmaterial = getint(p);
                             float submerged = getfloat(p);
                             if(!proceed) break;
-                            int oldmaterial = cp->inmaterial;
                             cp->inmaterial = inmaterial;
                             cp->submerged = submerged;
-                            if((inmaterial&MATF_VOLUME) == MAT_WATER && cp->burning(gamemillis, ci->burntime) && cp->submerged >= G(liquidextinguish))
+                            if((cp->inmaterial&MATF_VOLUME) == MAT_WATER && cp->burning(gamemillis, ci->burntime) && cp->submerged >= G(liquidextinguish))
                             {
                                 cp->lastres[W_R_BURN] = cp->lastrestime[W_R_BURN] = 0;
                                 sendf(-1, 1, "ri3", N_SPHY, cp->clientnum, SPHY_EXTINGUISH);
                             }
-                            if(cp->state == CS_ALIVE && (inmaterial&MATF_FLAGS)&MAT_DEATH && !((oldmaterial&MATF_FLAGS)&MAT_DEATH))
+                            if(cp->state == CS_ALIVE && (cp->inmaterial&MATF_FLAGS)&MAT_DEATH)
                             {
                                 suicideevent ev;
                                 ev.flags = HIT(MATERIAL);
-                                ev.material = inmaterial;
+                                ev.material = cp->inmaterial;
                                 ev.process(cp); // process death immediately
                             }
                             break; // does not get sent to clients

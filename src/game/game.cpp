@@ -1265,7 +1265,7 @@ namespace game
         if(d->impulse[IM_TYPE] != IM_T_PARKOUR && (d->physstate >= PHYS_SLOPE || d->onladder || physics::liquidcheck(d)) && pos.z > 0 && d->floortime(lastmillis))
         {
             int mat = lookupmaterial(pos);
-            if(!isclipped(mat&MATF_VOLUME) && ((mat&MATF_VOLUME) != int(MAT_LAVA)) && !(mat&MAT_DEATH)) d->floorpos = pos;
+            if(!isclipped(mat&MATF_VOLUME) && !((mat&MATF_FLAGS)&MAT_DEATH)) d->floorpos = pos;
         }
     }
 
