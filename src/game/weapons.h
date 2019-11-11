@@ -362,7 +362,7 @@ WPFVARK(IDF_GAMEMOD, 0, damageteam, FVAR_MIN, FVAR_MAX,
     1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       0.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       0.0f
 );
 WPFVARK(IDF_GAMEMOD, 0, damagetorso, FVAR_MIN, FVAR_MAX,
-    0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.75f,       0.6f,       0.6f,       0.6f,       0.6f,
+    0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.75f,      0.6f,       0.6f,       0.6f,       0.6f,
     0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       1.5f,       0.6f,       0.6f,       0.48f,      0.6f,       0.6f,       0.6f,       0.6f,
     0.6f,       0.6f,       0.6f,       0.5f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,
     0.6f,       0.6f,       0.6f,       0.5f,       0.6f,       1.5f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f
@@ -533,7 +533,7 @@ WPVARM(IDF_GAMEMOD, 0, fragtimeiter, 0, VAR_MAX,
 );
 WPVARM(IDF_GAMEMOD, 0, fragweap, -1, W_MAX*2-1,
     -1,         -1,         -1,         -1,         -1,         -1,         -1,         -1,         -1,         W_SHOTGUN,  W_ZAPPER,   W_SMG,      -1,
-    -1,         -1,         -1,         WZ(SHOTGUN),WZ(SMG),    -1, WZ(PLASMA),         -1,         -1,         W_SHOTGUN,  WZ(ZAPPER), W_SMG,      -1
+    -1,         -1,         -1,         WZ(SHOTGUN),WZ(SMG),    -1,         WZ(PLASMA), -1,         -1,         W_SHOTGUN,  WZ(ZAPPER), W_SMG,      -1
 );
 WPVARM(IDF_GAMEMOD, 0, fullauto, 0, 1,
     1,          0,          1,          0,          1,          1,          1,          1,          0,          0,          0,          0,          1,
