@@ -2370,7 +2370,7 @@ static void updateslotcolor(decalrenderer &cur, int pass, DecalSlot &slot, ushor
     if(entid != USHRT_MAX)
     {
         const vector<extentity *> &ents = entities::getents();
-        if(ents.inrange(entid))
+        if(ents.inrange(entid) && ents[entid]->type == ET_DECAL)
         {
             if(ents[entid]->attrs[5] > 0 && ents[entid]->attrs[5] < 100) colorscale.w *= ents[entid]->attrs[5]/100.f;
             if(ents[entid]->attrs[6] > 0) colorscale.mul(vec::fromcolor(ents[entid]->attrs[6]));

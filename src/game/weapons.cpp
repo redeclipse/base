@@ -146,7 +146,7 @@ namespace weapons
             loopi(W_ALL) // only loop the amount of times we have weaps for
             {
                 int n = -1;
-                if(a >= 0) n = a;
+                if(a >= 0) n = b > 0 ? a : slot(d, a, true);
                 else
                 {
                     s += b;

@@ -179,23 +179,19 @@ bool compareentcolor(ushort entid1, ushort entid2)
     if(entid1 != USHRT_MAX && entid2 != USHRT_MAX)
     {
         const vector<extentity *> &ents = entities::getents();
-        bool found1 = ents.inrange(entid1), found2 = ents.inrange(entid2);
+        bool found1 = ents.inrange(entid1) && ents[entid1]->type == ET_DECAL,
+             found2 = ents.inrange(entid2) && ents[entid2]->type == ET_DECAL;
         if(found1 && found2)
         {
-            bool decal1 = ents[entid1]->type == ET_DECAL, decal2 = ents[entid2]->type == ET_DECAL;
-            if(decal1 && decal2)
-            {
-                int blend1 = ents[entid1]->attrs[5] > 0 && ents[entid1]->attrs[5] < 100 ? ents[entid1]->attrs[5] : 100,
-                    blend2 = ents[entid2]->attrs[5] > 0 && ents[entid2]->attrs[5] < 100 ? ents[entid2]->attrs[5] : 100;
-                if(blend1 != blend2) return false;
-                int color1 = ents[entid1]->attrs[6] > 0 ? ents[entid1]->attrs[6] : 0xFFFFFF,
-                    color2 = ents[entid2]->attrs[6] > 0 ? ents[entid2]->attrs[6] : 0xFFFFFF;
-                if(color1 != color2) return false;
-                int palette1 = ents[entid1]->attrs[7] || ents[entid1]->attrs[8] ? game::hexpalette(ents[entid1]->attrs[7], ents[entid1]->attrs[8]) : 0xFFFFFF,
-                    palette2 = ents[entid2]->attrs[7] || ents[entid2]->attrs[8] ? game::hexpalette(ents[entid2]->attrs[7], ents[entid2]->attrs[8]) : 0xFFFFFF;
-                if(palette1 != palette2) return false;
-            }
-            else if(decal1 || decal2) return false;
+            int blend1 = ents[entid1]->attrs[5] > 0 && ents[entid1]->attrs[5] < 100 ? ents[entid1]->attrs[5] : 100,
+                blend2 = ents[entid2]->attrs[5] > 0 && ents[entid2]->attrs[5] < 100 ? ents[entid2]->attrs[5] : 100;
+            if(blend1 != blend2) return false;
+            int color1 = ents[entid1]->attrs[6] > 0 ? ents[entid1]->attrs[6] : 0xFFFFFF,
+                color2 = ents[entid2]->attrs[6] > 0 ? ents[entid2]->attrs[6] : 0xFFFFFF;
+            if(color1 != color2) return false;
+            int palette1 = ents[entid1]->attrs[7] || ents[entid1]->attrs[8] ? game::hexpalette(ents[entid1]->attrs[7], ents[entid1]->attrs[8]) : 0xFFFFFF,
+                palette2 = ents[entid2]->attrs[7] || ents[entid2]->attrs[8] ? game::hexpalette(ents[entid2]->attrs[7], ents[entid2]->attrs[8]) : 0xFFFFFF;
+            if(palette1 != palette2) return false;
         }
         else if(found1 || found2) return false;
     }
