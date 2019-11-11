@@ -42,8 +42,8 @@ namespace projs
     VAR(IDF_PERSIST, projtrails, 0, 1, 1);
     VAR(IDF_PERSIST, projtraildelay, 2, 50, VAR_MAX);
     VAR(IDF_PERSIST, projtraillength, 1, 250, VAR_MAX);
-    VAR(IDF_PERSIST, projhints, 0, 1, 6);
-    VAR(IDF_PERSIST, projfirehint, 0, 1, 1);
+    VAR(IDF_PERSIST, projhints, 0, 0, 6);
+    VAR(IDF_PERSIST, projfirehint, 0, 0, 1);
     FVAR(IDF_PERSIST, projhintblend, 0, 0.5f, 1);
     FVAR(IDF_PERSIST, projhintsize, 0, 1.5f, FVAR_MAX);
     FVAR(IDF_PERSIST, projfirehintsize, 0, 1.75f, FVAR_MAX);
