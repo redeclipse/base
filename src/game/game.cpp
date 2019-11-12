@@ -109,6 +109,7 @@ namespace game
     FVAR(IDF_PERSIST, firstpersonpitchscale, -1, 1, 1);
 
     VAR(IDF_PERSIST, firstpersonsway, 0, 1, 1);
+    FVAR(IDF_PERSIST, firstpersonswayslide, 0, 0.5f, 1);
     FVAR(IDF_PERSIST, firstpersonswaymin, 0, 0.15f, 1);
     FVAR(IDF_PERSIST, firstpersonswaystep, 1, 28.f, 1000);
     FVAR(IDF_PERSIST, firstpersonswayside, 0, 0.05f, 10);
@@ -621,29 +622,33 @@ namespace game
     void addsway(gameent *d)
     {
         float speed = physics::movevelocity(d), step = firstpersonbob ? firstpersonbobstep : firstpersonswaystep;
-        if(d->state == CS_ALIVE && (d->physstate >= PHYS_SLOPE || d->onladder || d->impulse[IM_TYPE] == IM_T_PARKOUR))
+        bool bobbed = false, sliding = d->sliding(true);
+        if(d->state == CS_ALIVE && (d->physstate >= PHYS_SLOPE || d->onladder || d->impulse[IM_TYPE] == IM_T_PARKOUR || sliding))
         {
-            swayspeed = clamp(d->vel.magnitude(), speed*firstpersonswaymin, speed);
+            float mag = d->vel.magnitude();
+            if(sliding) mag *= firstpersonswayslide;
+            swayspeed = clamp(mag, speed*firstpersonswaymin, speed);
             swaydist += swayspeed*curtime/1000.0f;
             swaydist = fmod(swaydist, 2*step);
-            bobdist += swayspeed*curtime/1000.0f;
-            bobdist = fmod(bobdist, 2*firstpersonbobstep);
-            bobfade = swayfade = 1;
-        }
-        else
-        {
-            if(swayfade > 0)
+            if(!sliding)
             {
-                swaydist += swayspeed*swayfade*curtime/1000.0f;
-                swaydist = fmod(swaydist, 2*step);
-                swayfade -= 0.5f*(curtime*speed)/(step*1000.0f);
-            }
-            if(bobfade > 0)
-            {
-                bobdist += swayspeed*bobfade*curtime/1000.0f;
+                bobdist += swayspeed*curtime/1000.0f;
                 bobdist = fmod(bobdist, 2*firstpersonbobstep);
-                bobfade -= 0.5f*(curtime*speed)/(firstpersonbobstep*1000.0f);
+                bobfade = swayfade = 1;
+                bobbed = true;
             }
+        }
+        else if(swayfade > 0)
+        {
+            swaydist += swayspeed*swayfade*curtime/1000.0f;
+            swaydist = fmod(swaydist, 2*step);
+            swayfade -= 0.5f*(curtime*speed)/(step*1000.0f);
+        }
+        if(!bobbed && bobfade > 0)
+        {
+            bobdist += swayspeed*bobfade*curtime/1000.0f;
+            bobdist = fmod(bobdist, 2*firstpersonbobstep);
+            bobfade -= 0.5f*(curtime*speed)/(firstpersonbobstep*1000.0f);
         }
 
         float k = pow(0.7f, curtime/25.0f);
