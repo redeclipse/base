@@ -294,17 +294,17 @@ namespace game
     FVAR(IDF_PERSIST, playerghostblend, 0, 0.35f, 1);
 
     VAR(IDF_PERSIST, playerovertone, -1, CTONE_TEAM, CTONE_MAX-1);
-    VAR(IDF_PERSIST, playerundertone, -1, CTONE_TONE, CTONE_MAX-1);
+    VAR(IDF_PERSIST, playerundertone, -1, CTONE_TMIX, CTONE_MAX-1);
     VAR(IDF_PERSIST, playerdisplaytone, -1, CTONE_TONE, CTONE_MAX-1);
     VAR(IDF_PERSIST, playereffecttone, -1, CTONE_TEAMED, CTONE_MAX-1);
     VAR(IDF_PERSIST, playerteamtone, -1, CTONE_TEAM, CTONE_MAX-1);
 
-    FVAR(IDF_PERSIST, playerovertonelevel, 0.f, 0.75f, 10.f);
+    FVAR(IDF_PERSIST, playerovertonelevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playerundertonelevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playerdisplaytonelevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playereffecttonelevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playerteamtonelevel, 0.f, 1.f, 10.f);
-    FVAR(IDF_PERSIST, playertonemix, 0, 0, 1);
+    FVAR(IDF_PERSIST, playertonemix, 0, 0.5f, 1);
 
     FVAR(IDF_PERSIST, playerovertoneinterp, 0, 0, 1); // interpolate this much brightness from the opposing tone
     FVAR(IDF_PERSIST, playerovertonebright, 0.f, 1.f, 10.f);
@@ -316,11 +316,11 @@ namespace game
     VAR(IDF_PERSIST, playerhinthurtthrob, 0, 1, 1);
     VAR(IDF_PERSIST, playerhinttone, -1, CTONE_TEAMED, CTONE_MAX-1);
     FVAR(IDF_PERSIST, playerhinttonelevel, 0.f, 1.f, 10.f);
-    FVAR(IDF_PERSIST, playerhintblend, 0, 0.1f, 1);
+    FVAR(IDF_PERSIST, playerhintblend, 0, 0.25f, 1);
     FVAR(IDF_PERSIST, playerhintscale, 0, 0.7f, 1); // scale blend depending on health
-    FVAR(IDF_PERSIST, playerhintlight, 0, 0.3f, 1); // override for light effect
-    FVAR(IDF_PERSIST, playerhintdom, 0, 0.3f, 1); // override for dominate effect
-    FVAR(IDF_PERSIST, playerhintsize, 0, 1.2f, 2);
+    FVAR(IDF_PERSIST, playerhintlight, 0, 0.35f, 1); // override for light effect
+    FVAR(IDF_PERSIST, playerhintdom, 0, 0.35f, 1); // override for dominate effect
+    FVAR(IDF_PERSIST, playerhintsize, 0, 1.25f, 2);
     FVAR(IDF_PERSIST, playerhintmaxsize, 0, 20, FVAR_MAX);
     FVAR(IDF_PERSIST, playerhintfadeat, 0, 64, FVAR_MAX);
     FVAR(IDF_PERSIST, playerhintfadecut, 0, 8, FVAR_MAX);
