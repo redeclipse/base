@@ -3754,72 +3754,75 @@ namespace game
                     part_icon(offset, textureload(hud::warningtex, 3, true, false), height*playerhinthurtsize, amt*blend*playerhinthurtblend, 0, 0, 1, c.tohexcolor());
                 }
             }
-            if(d->hasmelee(lastmillis))
+            if(actors[d->actortype].weapfx)
             {
-                float amt = 1-((lastmillis-d->weaptime[W_MELEE])/float(d->weapwait[W_MELEE]));
-                loopi(2) part_create(PART_HINT_SOFT, 1, d->toetag(i), TEAM(d->team, colour), 2.f, amt*blend, 0, 0);
-            }
-            int millis = lastmillis-d->weaptime[d->weapselect];
-            bool last = millis > 0 && millis < d->weapwait[d->weapselect],
-                 powering = last && d->weapstate[d->weapselect] == W_S_POWER,
-                 reloading = last && d->weapstate[d->weapselect] == W_S_RELOAD,
-                 secondary = physics::secondaryweap(d);
-            float amt = last ? (lastmillis-d->weaptime[d->weapselect])/float(d->weapwait[d->weapselect]) : 1.f;
-            int colour = WHCOL(d, d->weapselect, partcol, secondary);
-            if(d->weapselect == W_FLAMER && (!reloading || amt > 0.5f) && !physics::liquidcheck(d))
-            {
-                float scale = powering ? 1.f+(amt*1.5f) : (d->weapstate[d->weapselect] == W_S_IDLE ? 1.f : (reloading ? (amt-0.5f)*2 : amt));
-                part_create(PART_HINT_SOFT, 1, d->ejecttag(d->weapselect), 0x1818A8, 0.75f*scale, min(0.65f*scale, 0.8f)*blend, 0, 0);
-                part_create(PART_FIREBALL_SOFT, 1, d->ejecttag(d->weapselect), colour, 0.5f*scale, min(0.75f*scale, 0.95f)*blend, 0, 0);
-                regular_part_create(PART_FIREBALL, d->vel.magnitude() > 10 ? 30 : 75, d->ejecttag(d->weapselect), colour, 0.5f*scale, min(0.75f*scale, 0.95f)*blend, d->vel.magnitude() > 10 ? -40 : -10, 0);
-            }
-            if(W(d->weapselect, laser) && !reloading)
-            {
-                vec v, muzzle = d->muzzletag(d->weapselect);
-                muzzle.z += 0.25f;
-                findorientation(d->o, d->yaw, d->pitch, v);
-                part_flare(muzzle, v, 1, PART_FLARE, colour, 0.5f*amt, amt*blend);
-            }
-            if(d->weapselect == W_SWORD || d->weapselect == W_ZAPPER || powering)
-            {
-                static const struct powerfxs {
-                    int type, parttype;
-                    float size, radius;
-                } powerfx[W_MAX] = {
-                    { 4, PART_LIGHTNING, 1.f, 1 },
-                    { 2, PART_SPARK, 0.1f, 1.5f },
-                    { 4, PART_LIGHTNING, 2.f, 1 },
-                    { 2, PART_SPARK, 0.15f, 2 },
-                    { 2, PART_SPARK, 0.1f, 2 },
-                    { 2, PART_FIREBALL, 0.1f, 6 },
-                    { 1, PART_PLASMA, 0.05f, 2 },
-                    { 4, PART_LIGHTZAP, 0.75f, 1 },
-                    { 2, PART_PLASMA, 0.05f, 2.5f },
-                    { 3, PART_PLASMA, 0.1f, 0.125f },
-                    { 0, 0, 0, 0 },
-                    { 0, 0, 0, 0 },
-                    { 0, 0, 0, 0 },
-                };
-                switch(powerfx[d->weapselect].type)
+                if(d->hasmelee(lastmillis))
                 {
-                    case 1: case 2:
+                    float amt = 1-((lastmillis-d->weaptime[W_MELEE])/float(d->weapwait[W_MELEE]));
+                    loopi(2) part_create(PART_HINT_SOFT, 1, d->toetag(i), TEAM(d->team, colour), 2.f, amt*blend, 0, 0);
+                }
+                int millis = lastmillis-d->weaptime[d->weapselect];
+                bool last = millis > 0 && millis < d->weapwait[d->weapselect],
+                     powering = last && d->weapstate[d->weapselect] == W_S_POWER,
+                     reloading = last && d->weapstate[d->weapselect] == W_S_RELOAD,
+                     secondary = physics::secondaryweap(d);
+                float amt = last ? (lastmillis-d->weaptime[d->weapselect])/float(d->weapwait[d->weapselect]) : 1.f;
+                int colour = WHCOL(d, d->weapselect, partcol, secondary);
+                if(d->weapselect == W_FLAMER && (!reloading || amt > 0.5f) && !physics::liquidcheck(d))
+                {
+                    float scale = powering ? 1.f+(amt*1.5f) : (d->weapstate[d->weapselect] == W_S_IDLE ? 1.f : (reloading ? (amt-0.5f)*2 : amt));
+                    part_create(PART_HINT_SOFT, 1, d->ejecttag(d->weapselect), 0x1818A8, 0.75f*scale, min(0.65f*scale, 0.8f)*blend, 0, 0);
+                    part_create(PART_FIREBALL_SOFT, 1, d->ejecttag(d->weapselect), colour, 0.5f*scale, min(0.75f*scale, 0.95f)*blend, 0, 0);
+                    regular_part_create(PART_FIREBALL, d->vel.magnitude() > 10 ? 40 : 80, d->ejecttag(d->weapselect), colour, 0.5f*scale, min(0.75f*scale, 0.95f)*blend, d->vel.magnitude() > 10 ? -40 : -10, 0);
+                }
+                if(W(d->weapselect, laser) && !reloading)
+                {
+                    vec v, muzzle = d->muzzletag(d->weapselect);
+                    muzzle.z += 0.25f;
+                    findorientation(d->o, d->yaw, d->pitch, v);
+                    part_flare(muzzle, v, 1, PART_FLARE, colour, 0.5f*amt, amt*blend);
+                }
+                if(d->weapselect == W_SWORD || d->weapselect == W_ZAPPER || powering)
+                {
+                    static const struct powerfxs {
+                        int type, parttype;
+                        float size, radius;
+                    } powerfx[W_MAX] = {
+                        { 4, PART_LIGHTNING, 1.f, 1 },
+                        { 2, PART_SPARK, 0.1f, 1.5f },
+                        { 4, PART_LIGHTNING, 2.f, 1 },
+                        { 2, PART_SPARK, 0.15f, 2 },
+                        { 2, PART_SPARK, 0.1f, 2 },
+                        { 2, PART_FIREBALL, 0.1f, 6 },
+                        { 1, PART_PLASMA, 0.05f, 2 },
+                        { 4, PART_LIGHTZAP, 0.75f, 1 },
+                        { 2, PART_PLASMA, 0.05f, 2.5f },
+                        { 3, PART_PLASMA, 0.1f, 0.125f },
+                        { 0, 0, 0, 0 },
+                        { 0, 0, 0, 0 },
+                        { 0, 0, 0, 0 },
+                    };
+                    switch(powerfx[d->weapselect].type)
                     {
-                        regularshape(powerfx[d->weapselect].parttype, 1+(amt*powerfx[d->weapselect].radius), colour, powerfx[d->weapselect].type == 2 ? 21 : 53, 5, 60+int(30*amt), d->muzzletag(d->weapselect), powerfx[d->weapselect].size*max(amt, 0.25f), max(amt, 0.1f)*blend, 1, 0, 5+(amt*5));
-                        break;
+                        case 1: case 2:
+                        {
+                            regularshape(powerfx[d->weapselect].parttype, 1+(amt*powerfx[d->weapselect].radius), colour, powerfx[d->weapselect].type == 2 ? 21 : 53, 5, 60+int(30*amt), d->muzzletag(d->weapselect), powerfx[d->weapselect].size*max(amt, 0.25f), max(amt, 0.1f)*blend, 1, 0, 5+(amt*5));
+                            break;
+                        }
+                        case 3:
+                        {
+                            int interval = lastmillis%1000;
+                            float fluc = powerfx[d->weapselect].size+(interval ? (interval <= 500 ? interval/500.f : (1000-interval)/500.f) : 0.f);
+                            part_create(powerfx[d->weapselect].parttype, 1, d->muzzletag(d->weapselect), colour, (powerfx[d->weapselect].radius*max(amt, 0.25f))+fluc, max(amt, 0.1f)*blend);
+                            break;
+                        }
+                        case 4:
+                        {
+                            part_flare(d->ejecttag(d->weapselect), d->ejecttag(d->weapselect, 1), 1, powerfx[d->weapselect].parttype, colour, powerfx[d->weapselect].size*max(amt, 0.25f), max(amt, 0.1f)*blend);
+                            break;
+                        }
+                        case 0: default: break;
                     }
-                    case 3:
-                    {
-                        int interval = lastmillis%1000;
-                        float fluc = powerfx[d->weapselect].size+(interval ? (interval <= 500 ? interval/500.f : (1000-interval)/500.f) : 0.f);
-                        part_create(powerfx[d->weapselect].parttype, 1, d->muzzletag(d->weapselect), colour, (powerfx[d->weapselect].radius*max(amt, 0.25f))+fluc, max(amt, 0.1f)*blend);
-                        break;
-                    }
-                    case 4:
-                    {
-                        part_flare(d->ejecttag(d->weapselect), d->ejecttag(d->weapselect, 1), 1, powerfx[d->weapselect].parttype, colour, powerfx[d->weapselect].size*max(amt, 0.25f), max(amt, 0.1f)*blend);
-                        break;
-                    }
-                    case 0: default: break;
                 }
             }
             if(d->impulse[IM_TYPE] == IM_T_PARKOUR || d->impulsetime[IM_T_JUMP] || d->sliding(true)) impulseeffect(d, 1);
