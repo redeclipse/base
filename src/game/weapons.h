@@ -332,9 +332,9 @@ WPFVAR(IDF_GAMEMOD, 0, cookzoommax, 1, 150,
     60,         60,         60,         60,         60,         60,         60,         60,         60,         60,         60,         60,         60
 );
 WPVARK(IDF_GAMEMOD, 0, damage, VAR_MIN, VAR_MAX,
-    400,        200,        450,        60,         120,        45,         220,        250,        400,        1600,       1000,       2000,       300,
+    400,        200,        500,        60,         120,        45,         220,        250,        400,        1600,       1000,       2000,       300,
     400,        300,        1200,        0,         130,        120,        30,         250,        1500,       1100,       1000,       2000,       400,
-    400,        200,        450,        70,         190,        45,         220,        150,        150,        1600,       1000,       2000,       300,
+    400,        200,        500,        70,         190,        45,         220,        150,        150,        1600,       1000,       2000,       300,
     400,        300,        1200,       50,         75,         120,        75,         150,        150,        1100,       1000,       2000,       400
 );
 WPFVARK(IDF_GAMEMOD, 0, damagehead, FVAR_MIN, FVAR_MAX,
@@ -955,9 +955,9 @@ WPFVARM(IDF_GAMEMOD, 0, relativity, 0, FVAR_MAX,
     0.0f,       0.05f,      0.0f,       0.35f,      0.25f,      0.15f,      0.15f,      0.1f,       0.1f,       0.75f,      0.5f,       0.0f,       0.0f
 );
 WPVARK(IDF_GAMEMOD, 0, residual, 0, W_R_ALL,
-    0,          0,          WR(BLEED),  0,          0,          WR(BURN),   0,          0,          0,          WR(BURN),   WR(SHOCK),  WR(BURN),   0,
+    0,          0,          0,          0,          0,          WR(BURN),   0,          0,          0,          WR(BURN),   WR(SHOCK),  WR(BURN),   0,
     0,          0,          WR(BLEED),  WR(BLEED),  0,          0,          0,          0,          0,          WR(BURN),   WR(SHOCK),  WR(BURN),   0,
-    0,          0,          WR(BLEED),  0,          0,          WR(BURN),   0,          0,          0,          WR(BURN),   WR(SHOCK),  WR(BURN),   0,
+    0,          0,          0,          0,          0,          WR(BURN),   0,          0,          0,          WR(BURN),   WR(SHOCK),  WR(BURN),   0,
     0,          0,          WR(BLEED),  WR(BLEED),  0,          0,          0,          0,          0,          WR(BURN),   WR(SHOCK),  WR(BURN),   0
 );
 WPVARK(IDF_GAMEMOD, 0, residualundo, 0, W_R_ALL,
