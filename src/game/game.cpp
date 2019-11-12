@@ -3921,7 +3921,7 @@ namespace game
         previewent->physstate = PHYS_FLOOR;
         previewent->spawnstate(G_DEATHMATCH, 0, -1, previewent->gethealth(G_DEATHMATCH, 0));
         loopi(W_MAX) previewent->weapammo[i][W_A_CLIP] = W(i, ammoclip);
-        loopi(W_MAX) previewent->weapammo[i][W_A_STORE] = W(i, ammostore);
+        loopi(W_MAX) previewent->weapammo[i][W_A_STORE] = W(i, ammostore) > 0 ? W(i, ammostore) : 0;
     }
 
     void renderplayerpreview(float scale, const vec4 &mcolor, const char *actions)

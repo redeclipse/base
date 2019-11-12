@@ -4779,7 +4779,7 @@ namespace server
     {
         if(ci->weapload[ci->weapselect][W_A_CLIP] <= 0) return;
         takeammo(ci, ci->weapselect, ci->weapload[ci->weapselect][W_A_CLIP]);
-        if(W(ci->weapselect, ammostore))
+        if(W(ci->weapselect, ammostore) > 0)
             ci->weapammo[ci->weapselect][W_A_STORE] = clamp(ci->weapammo[ci->weapselect][W_A_STORE]+ci->weapload[ci->weapselect][W_A_CLIP], 0, W(ci->weapselect, ammostore));
         ci->weapload[ci->weapselect][W_A_CLIP] = -ci->weapload[ci->weapselect][W_A_CLIP]; // the client should already do this for themself
         sendf(-1, 1, "ri6x", N_RELOAD, ci->clientnum, ci->weapselect, ci->weapload[ci->weapselect][W_A_CLIP], ci->weapammo[ci->weapselect][W_A_CLIP], ci->weapammo[ci->weapselect][W_A_STORE], ci->clientnum);
@@ -4937,7 +4937,7 @@ namespace server
             return;
         }
         int oldammo = max(ci->weapammo[weap][W_A_CLIP], 0), ammoadd = W(weap, ammoadd);
-        if(ci->actortype < A_ENEMY && !w_reload(weap) && W(weap, ammostore)) ammoadd = min(ci->weapammo[weap][W_A_STORE], ammoadd);
+        if(ci->actortype < A_ENEMY && W(weap, ammostore) > 0) ammoadd = min(ci->weapammo[weap][W_A_STORE], ammoadd);
         if(!ammoadd)
         {
             srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s reload [%d] failed - no ammo available", colourname(ci), weap);
@@ -4947,7 +4947,7 @@ namespace server
         ci->setweapstate(weap, W_S_RELOAD, W(weap, delayreload), millis);
         ci->weapammo[weap][W_A_CLIP] = min(oldammo+ammoadd, W(weap, ammoclip));
         int diff = ci->weapammo[weap][W_A_CLIP]-oldammo;
-        if(W(weap, ammostore)) ci->weapammo[weap][W_A_STORE] = clamp(ci->weapammo[weap][W_A_STORE]-diff, 0, W(weap, ammostore));
+        if(W(weap, ammostore) > 0) ci->weapammo[weap][W_A_STORE] = clamp(ci->weapammo[weap][W_A_STORE]-diff, 0, W(weap, ammostore));
         ci->weapload[weap][W_A_CLIP] = diff;
         sendf(-1, 1, "ri6x", N_RELOAD, ci->clientnum, weap, ci->weapload[weap][W_A_CLIP], ci->weapammo[weap][W_A_CLIP], ci->weapammo[weap][W_A_STORE], ci->clientnum);
     }

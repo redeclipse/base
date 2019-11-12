@@ -870,7 +870,7 @@ struct clientstate
     bool canreload(int weap, int sweap, bool check = false, int millis = 0, int skip = 0)
     {
         if(actortype >= A_ENEMY ||
-            ((w_reload(weap) || weapammo[weap][W_A_STORE] > 0)
+            ((W(weap, ammostore) < 0 || weapammo[weap][W_A_STORE] > 0)
                 && (!check || (weap == weapselect && hasweap(weap, sweap) && weapammo[weap][W_A_CLIP] < W(weap, ammoclip) && weapstate[weap] != W_S_ZOOM && weapwaited(weap, millis, skip)))))
             return true;
         return false;
@@ -881,7 +881,8 @@ struct clientstate
         if(!m_classic(gamemode, mutators) && attr < W_ITEM && !hasweap(attr, sweap)) return false;
         if(full)
         {
-            int ammo = getammo(attr, 0, true), total = W(attr, ammoclip)+W(attr, ammostore);
+            int ammo = getammo(attr, 0, true), total = W(attr, ammoclip);
+            if(W(attr, ammostore) > 0) total += W(attr, ammostore);
             if(ammo >= total) return false;
         }
         return true;
@@ -908,9 +909,9 @@ struct clientstate
         if(type != WEAPON || !isweap(attr)) return;
         int prevclip = max(weapammo[attr][W_A_CLIP], 0), prevstore = max(weapammo[attr][W_A_STORE], 0);
         weapswitch(attr, millis, delay, W_S_USE);
-        weapammo[attr][W_A_CLIP] = !W(attr, ammostore) || !hasweap(attr, sweap) ? clamp(prevclip+ammoamt, 0, W(attr, ammoclip)) : prevclip;
+        weapammo[attr][W_A_CLIP] = W(attr, ammostore) <= 0 || !hasweap(attr, sweap) ? clamp(prevclip+ammoamt, 0, W(attr, ammoclip)) : prevclip;
         int diffclip = max(weapammo[attr][W_A_CLIP], 0)-prevclip, store = ammoamt-diffclip;
-        weapammo[attr][W_A_STORE] = W(attr, ammostore) ? clamp(weapammo[attr][W_A_STORE]+store, 0, W(attr, ammostore)) : 0;
+        weapammo[attr][W_A_STORE] = W(attr, ammostore) > 0 ? clamp(weapammo[attr][W_A_STORE]+store, 0, W(attr, ammostore)) : 0;
         weapload[attr][W_A_CLIP] = diffclip;
         weapload[attr][W_A_STORE] = max(weapammo[attr][W_A_STORE], 0)-prevstore;
         weapent[attr] = id;
@@ -1057,7 +1058,7 @@ struct clientstate
         }
         loopj(W_MAX) if(weapammo[j][W_A_CLIP] > W(j, ammoclip))
         {
-            if(W(j, ammostore)) weapammo[j][W_A_STORE] = clamp(weapammo[j][W_A_CLIP]-W(j, ammoclip), 0, W(j, ammostore));
+            if(W(j, ammostore) > 0) weapammo[j][W_A_STORE] = clamp(weapammo[j][W_A_CLIP]-W(j, ammoclip), 0, W(j, ammostore));
             weapammo[j][W_A_CLIP] = W(j, ammoclip);
         }
     }

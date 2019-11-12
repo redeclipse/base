@@ -16,7 +16,6 @@ enum
 #define isweap(a)       (a >= 0 && a < W_MAX)
 #define itemweap(a)     (a >= W_ITEM && a < W_ALL)
 #define w_carry(w1,w2)  (isweap(w1) && w1 != W_CLAW && w1 < W_ALL && (!isweap(w2) || (w1 != w2 && (w2 != W_GRENADE || w1 != W_MINE))) && (w1 == W_ROCKET || (w1 >= W_OFFSET && w1 < W_ITEM)))
-#define w_reload(w1)    (isweap(w1) && (w1 >= W_ALL || w1 < W_OFFSET))
 
 enum { W_F_NONE = 0, W_F_FORCED = 1<<0 };
 
@@ -192,8 +191,8 @@ WPVAR(IDF_GAMEMOD, 0, ammoitem, 1, VAR_MAX,
 WPVAR(IDF_GAMEMOD, 0, ammospawn, 1, VAR_MAX,
     1,          10,         1,          12,         90,         100,        32,         48,         12,         2,          2,          1,          1
 );
-WPVAR(IDF_GAMEMOD, 0, ammostore, 0, VAR_MAX,
-    0,          0,          0,          40,         150,        200,        64,         96,         30,         0,          0,          0,          0
+WPVAR(IDF_GAMEMOD, 0, ammostore, -1, VAR_MAX,
+    -1,         -1,         -1,         40,         150,        200,        64,         96,         30,         0,          0,          0,          -1
 );
 WPVARM(IDF_GAMEMOD, 0, ammosub, 0, VAR_MAX,
     0,          1,          0,          1,          1,          1,          1,          1,          1,          1,          1,          1,          0,

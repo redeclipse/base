@@ -61,7 +61,7 @@ namespace weapons
     ICOMMAND(0, ammo, "i", (int *n, int *m), intret(isweap(*n) ? game::player1->weapammo[*n][clamp(*m, 0, W_A_MAX-1)] : -1));
     ICOMMAND(0, ammoclip, "i", (int *n), intret(isweap(*n) ? game::player1->weapammo[*n][W_A_CLIP] : -1));
     ICOMMAND(0, ammostore, "i", (int *n), intret(isweap(*n) ? game::player1->weapammo[*n][W_A_STORE] : -1));
-    ICOMMAND(0, reloadweap, "i", (int *n), intret(w_reload(*n) ? 1 : 0));
+    ICOMMAND(0, reloadweap, "i", (int *n), intret(isweap(*n) && W(*n, ammostore) < 0 ? 1 : 0));
     ICOMMAND(0, hasweap, "ii", (int *n, int *o), intret(isweap(*n) && game::player1->hasweap(*n, *o) ? 1 : 0));
     ICOMMAND(0, getweap, "ii", (int *n, int *o),
     {
@@ -97,7 +97,7 @@ namespace weapons
             {
                 int offset = d->weapload[oldweap][W_A_CLIP];
                 d->weapammo[oldweap][W_A_CLIP] = max(d->weapammo[oldweap][W_A_CLIP]-offset, 0);
-                if(W(oldweap, ammostore)) d->weapammo[oldweap][W_A_STORE] = clamp(d->weapammo[oldweap][W_A_STORE]+offset, 0, W(oldweap, ammostore));
+                if(W(oldweap, ammostore) > 0) d->weapammo[oldweap][W_A_STORE] = clamp(d->weapammo[oldweap][W_A_STORE]+offset, 0, W(oldweap, ammostore));
                 d->weapload[oldweap][W_A_CLIP] = -d->weapload[oldweap][W_A_CLIP];
             }
             client::addmsg(N_WEAPSELECT, "ri3", d->clientnum, lastmillis-game::maptime, weap);
@@ -118,19 +118,19 @@ namespace weapons
             }
             client::addmsg(N_RELOAD, "ri3", d->clientnum, lastmillis-game::maptime, weap);
             int oldammo = max(d->weapammo[weap][W_A_CLIP], 0), ammoadd = W(weap, ammoadd);
-            if(d->actortype < A_ENEMY && W(weap, ammostore))
+            if(d->actortype < A_ENEMY && W(weap, ammostore) > 0)
             {
                 store = d->weapammo[weap][W_A_STORE];
-                if(!w_reload(weap)) ammoadd = min(store, ammoadd);
+                ammoadd = min(store, ammoadd);
             }
             ammo = min(oldammo+ammoadd, W(weap, ammoclip));
             int diff = ammo-oldammo;
-            if(W(weap, ammostore)) store = clamp(store-diff, 0, W(weap, ammostore));
+            if(W(weap, ammostore) > 0) store = clamp(store-diff, 0, W(weap, ammostore));
             load = diff;
         }
         d->weapload[weap][W_A_CLIP] = load;
         d->weapammo[weap][W_A_CLIP] = min(ammo, W(weap, ammoclip));
-        if(W(weap, ammostore)) d->weapammo[weap][W_A_STORE] = clamp(store, 0, W(weap, ammostore));
+        if(W(weap, ammostore) > 0) d->weapammo[weap][W_A_STORE] = clamp(store, 0, W(weap, ammostore));
         playsound(WSND(weap, S_W_RELOAD), d->o, d, 0, -1, -1, -1, &d->wschan);
         d->setweapstate(weap, W_S_RELOAD, W(weap, delayreload), lastmillis);
         return true;
@@ -183,7 +183,7 @@ namespace weapons
             {
                 int offset = d->weapload[d->weapselect][W_A_CLIP];
                 d->weapammo[d->weapselect][W_A_CLIP] = max(d->weapammo[d->weapselect][W_A_CLIP]-offset, 0);
-                if(W(d->weapselect, ammostore)) d->weapammo[d->weapselect][W_A_STORE] = clamp(d->weapammo[d->weapselect][W_A_STORE]+offset, 0, W(d->weapselect, ammostore));
+                if(W(d->weapselect, ammostore) > 0) d->weapammo[d->weapselect][W_A_STORE] = clamp(d->weapammo[d->weapselect][W_A_STORE]+offset, 0, W(d->weapselect, ammostore));
                 d->weapload[d->weapselect][W_A_CLIP] = -d->weapload[d->weapselect][W_A_CLIP];
             }
         }
@@ -304,7 +304,7 @@ namespace weapons
                         if(offset > 0)
                         {
                             d->weapammo[weap][W_A_CLIP] = max(curammo, 0);
-                            if(W(weap, ammostore)) d->weapammo[weap][W_A_STORE] = clamp(d->weapammo[weap][W_A_STORE]+offset, 0, W(weap, ammostore));
+                            if(W(weap, ammostore) > 0) d->weapammo[weap][W_A_STORE] = clamp(d->weapammo[weap][W_A_STORE]+offset, 0, W(weap, ammostore));
                             d->weapload[weap][W_A_CLIP] = -offset;
                         }
                         int offtime = hadcook && d->prevstate[weap] == type ? lastmillis-d->prevtime[weap] : 0;

@@ -1267,7 +1267,7 @@ namespace projs
         d->weapshot[weap] = sub;
         if(offset > 0)
         {
-            if(W(weap, ammostore)) d->weapammo[weap][W_A_STORE] = clamp(d->weapammo[weap][W_A_STORE]+offset, 0, W(weap, ammostore));
+            if(W(weap, ammostore) > 0) d->weapammo[weap][W_A_STORE] = clamp(d->weapammo[weap][W_A_STORE]+offset, 0, W(weap, ammostore));
             d->weapload[weap][W_A_CLIP] = -offset;
         }
         d->lastshoot = lastmillis;

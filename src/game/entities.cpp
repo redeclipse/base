@@ -729,7 +729,7 @@ namespace entities
                             {
                                 int offset = f->weapload[f->weapselect][W_A_CLIP];
                                 f->weapammo[f->weapselect][W_A_CLIP] = max(f->weapammo[f->weapselect][W_A_CLIP]-offset, 0);
-                                if(W(f->weapselect, ammostore))
+                                if(W(f->weapselect, ammostore) > 0)
                                     f->weapammo[f->weapselect][W_A_STORE] = clamp(f->weapammo[f->weapselect][W_A_STORE]+offset, 0, W(f->weapselect, ammostore));
                                 f->weapload[f->weapselect][W_A_CLIP] = -f->weapload[f->weapselect][W_A_CLIP];
                             }
