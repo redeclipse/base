@@ -195,29 +195,43 @@ ICOMMAND(0, quit, "", (void), if(!(identflags&IDF_WORLD)) quit());
 
 VARFN(IDF_INIT, screenw, scr_w, SCR_MINW, -1, SCR_MAXW, initwarning("screen resolution"));
 VARFN(IDF_INIT, screenh, scr_h, SCR_MINH, -1, SCR_MAXH, initwarning("screen resolution"));
-bool initwindowpos = false, wantdisplaysetup = false;
+bool wantdisplaysetup = false;
 
-void setupdisplay(bool msg = true)
+void resetfullscreen();
+
+int getdisplaymode()
+{
+    int index = SDL_GetWindowDisplayIndex(screen);
+    if(SDL_GetCurrentDisplayMode(index, &display) < 0) fatal("Failed querying monitor %d display mode: %s", index, SDL_GetError());
+    desktopw = display.w;
+    desktoph = display.h;
+    return index;
+}
+
+void setupdisplay(bool dogl = true, bool msg = true)
 {
     SDL_GetWindowSize(screen, &screenw, &screenh);
     SDL_GL_GetDrawableSize(screen, &renderw, &renderh);
+
+    int index = getdisplaymode();
+    bool full = SDL_GetWindowFlags(screen)&SDL_WINDOW_FULLSCREEN;
+    if(full && (display.w != screenw || display.h != screenh))
+    {
+        scr_w = clamp(display.w, SCR_MINW, SCR_MAXW);
+        scr_h = clamp(display.h, SCR_MINH, SCR_MAXH);
+        resetfullscreen();
+        SDL_GetWindowSize(screen, &screenw, &screenh);
+        SDL_GL_GetDrawableSize(screen, &renderw, &renderh);
+    }
+    refresh = display.refresh_rate;
     scr_w = screenw;
     scr_h = screenh;
     hudw = renderw;
     hudh = renderh;
-    gl_resize();
+    if(dogl) gl_resize();
 
-    int index = SDL_GetWindowDisplayIndex(screen);
-    if(SDL_GetCurrentDisplayMode(index, &display) < 0)
-    {
-        if(msg) conoutf("Failed querying monitor %d display mode: %s", index, SDL_GetError());
-        refresh = 60; // sane-ish default
-    }
-    else
-    {
-        if(msg) conoutf("Display [%d]: %dx%d [%d Hz] %s: %dx%d, Renderer: %dx%d", index, display.w, display.h, display.refresh_rate, SDL_GetWindowFlags(screen)&SDL_WINDOW_FULLSCREEN ? (fullscreendesktop ? "FS-Desktop" : "FullScreen") : "Windowed", screenw, screenh, renderw, renderh);
-        refresh = display.refresh_rate;
-    }
+    if(msg) conoutf("Display [%d]: %dx%d [%d Hz] %s: %dx%d, Renderer: %dx%d", index, display.w, display.h, display.refresh_rate, full ? (fullscreendesktop ? "Fullscreen" : "Exclusive") : "Windowed", screenw, screenh, renderw, renderh);
+
     wantdisplaysetup = false;
 }
 
@@ -229,12 +243,7 @@ void setfullscreen(bool enable)
     if(!enable)
     {
         SDL_SetWindowSize(screen, scr_w, scr_h);
-        if(initwindowpos)
-        {
-            int winx = SDL_WINDOWPOS_CENTERED, winy = SDL_WINDOWPOS_CENTERED;
-            SDL_SetWindowPosition(screen, winx, winy);
-            initwindowpos = false;
-        }
+        SDL_SetWindowPosition(screen, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
     }
     wantdisplaysetup = true;
 }
@@ -257,11 +266,16 @@ void screenres(int w, int h)
     {
         if(fullscreendesktop)
         {
+            getdisplaymode();
             scr_w = min(scr_w, desktopw);
             scr_h = min(scr_h, desktoph);
         }
         if(SDL_GetWindowFlags(screen)&SDL_WINDOW_FULLSCREEN) resetfullscreen();
-        else SDL_SetWindowSize(screen, scr_w, scr_h);
+        else
+        {
+            SDL_SetWindowSize(screen, scr_w, scr_h);
+            SDL_SetWindowPosition(screen, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+        }
         wantdisplaysetup = true;
     }
     else initwarning("screen resolution");
@@ -305,7 +319,7 @@ void restorevsync()
 VARF(IDF_PERSIST, vsync, 0, 0, 1, restorevsync());
 VARF(IDF_PERSIST, vsynctear, 0, 1, 1, { if(vsync) restorevsync(); });
 
-void setupscreen()
+void setupscreen(bool dogl = true)
 {
     if(glcontext)
     {
@@ -345,7 +359,6 @@ void setupscreen()
             flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
         }
         else flags |= SDL_WINDOW_FULLSCREEN;
-        initwindowpos = true;
     }
 
     SDL_GL_ResetAttributes();
@@ -379,7 +392,7 @@ void setupscreen()
         if(glcontext) break;
     }
     if(!glcontext) fatal("Failed to create OpenGL context: %s", SDL_GetError());
-    setupdisplay(false);
+    setupdisplay(dogl, engineready);
 }
 
 void resetgl()
@@ -401,7 +414,7 @@ void resetgl()
     cleanupshaders();
     cleanupgl();
 
-    setupscreen();
+    setupscreen(false);
     inputgrab(grabinput);
     gl_init();
 
@@ -579,10 +592,8 @@ void checkinput()
                         break;
 
                     case SDL_WINDOWEVENT_SIZE_CHANGED:
-                    {
                         wantdisplaysetup = true;
                         break;
-                    }
                 }
                 break;
 
