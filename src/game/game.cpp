@@ -125,6 +125,9 @@ namespace game
     FVAR(IDF_PERSIST, firstpersonbobfocusmaxdist, 0, 256, 10000);
     FVAR(IDF_PERSIST, firstpersonbobfocus, 0, 0.5f, 1);
 
+    VAR(IDF_PERSIST, firstpersonslidetime, 0, 200, VAR_MAX);
+    FVAR(IDF_PERSIST, firstpersonslideroll, -89.9f, -5.f, 89.9f);
+
     VAR(IDF_PERSIST, editfov, 90, 120, 150);
     VAR(IDF_PERSIST, specfov, 90, 120, 150);
 
@@ -1106,8 +1109,9 @@ namespace game
         d->o.z -= d->height;
         if(d->state == CS_ALIVE && AA(d->actortype, abilities)&(1<<A_A_CROUCH))
         {
-            bool crouching = d->crouching(true), moving = d->move || d->strafe || (d->physstate < PHYS_SLOPE && !d->onladder);
-            float zrad = d->zradius*(moving ? CROUCHMOVING : CROUCHSTILL), zoff = d->zradius-zrad;
+            bool sliding = d->sliding(true), crouching = sliding || d->crouching(true),
+                 moving = d->move || d->strafe || (d->physstate < PHYS_SLOPE && !d->onladder);
+            float zrad = d->zradius*(moving && !sliding ? CROUCHHIGH : CROUCHLOW), zoff = d->zradius-zrad;
             vec old = d->o;
             if(!crouching)
             {
@@ -1166,7 +1170,7 @@ namespace game
             impulsemod(d->move || d->strafe, impulseregenmove);
             impulsemod((!onfloor && PHYS(gravity) > 0) || d->sliding(), impulseregeninair);
             impulsemod(onfloor && d->crouching() && !d->sliding(), impulseregencrouch);
-            impulsemod(d->sliding(), impulseregenslide);
+            impulsemod(d->sliding(true), impulseregenslide);
             if(collect)
             {
                 if(timeslice > 0)
@@ -3454,40 +3458,61 @@ namespace game
                 }
             }
         }
-        if(third == 2)
+        switch(third)
         {
-            mdl.o.sub(vec(mdl.yaw*RAD, 0.f).mul(firstpersonbodydist+firstpersonspineoffset));
-            mdl.o.sub(vec(mdl.yaw*RAD, 0.f).rotate_around_z(90*RAD).mul(firstpersonbodyside));
-            if(lastoffset)
+            case 0:
             {
-                float zoffset = (max(d->zradius-d->height, 0.f)+(d->radius*0.5f))*firstpersonbodyzoffset;
-                if(!onfloor && (d->action[AC_SPECIAL] || d->impulse[IM_TYPE] == IM_T_POUND || d->sliding(true) || d->impulse[IM_TYPE] == IM_T_KICK || d->impulse[IM_TYPE] == IM_T_GRAB))
+                if(gs_playing(gamestate) && firstpersonsway)
                 {
-                    int lmillis = d->airtime(lastmillis);
-                    if(lmillis < 100) zoffset *= lmillis/100.f;
-                    mdl.o.z -= zoffset;
-                    *lastoffset = lastmillis;
+                    float steps = swaydist/(firstpersonbob ? firstpersonbobstep : firstpersonswaystep)*M_PI;
+                    vec dir = vec(mdl.yaw*RAD, 0.f).mul(firstpersonswayside*cosf(steps));
+                    dir.z = firstpersonswayup*(fabs(sinf(steps)) - 1);
+                    mdl.o.add(dir).add(swaydir).add(swaypush);
                 }
-                else if(*lastoffset)
+                if(d->sliding(true) && firstpersonslidetime && firstpersonslideroll != 0)
                 {
-                    int lmillis = lastmillis-(*lastoffset);
-                    if(lmillis < 100) mdl.o.z -= zoffset*((100-lmillis)/100.f);
+                    int dur = min(impulseslidelen/2, firstpersonslidetime), millis = lastmillis-d->impulsetime[IM_T_SLIDE];
+                    float amt = 1;
+                    if(millis > dur)
+                    {
+                        int off = impulseslidelen-millis;
+                        if(off < dur) amt = off/float(dur);
+                    }
+                    else amt = millis/float(dur);
+                    mdl.roll = firstpersonslideroll*amt;
                 }
+                break;
             }
-            if(firstpersonbodypitchadjust > 0 && mdl.pitch < 0) mdl.o.sub(vec(mdl.yaw*RAD, 0.f).mul(d->radius*(0-mdl.pitch)/90.f*firstpersonbodypitchadjust));
-            mdl.pitch = firstpersonbodypitch >= 0 ? mdl.pitch*firstpersonbodypitch : mdl.pitch;
-            mdl.roll = 0.f;
-        }
-        else if(gs_playing(gamestate))
-        {
-            if(third == 1 && d == focus && d == player1 && thirdpersonview(true, d))
-                vectoyawpitch(vec(worldpos).sub(d->headpos()).normalize(), mdl.yaw, mdl.pitch);
-            else if(!third && firstpersonsway)
+            case 1:
             {
-                float steps = swaydist/(firstpersonbob ? firstpersonbobstep : firstpersonswaystep)*M_PI;
-                vec dir = vec(mdl.yaw*RAD, 0.f).mul(firstpersonswayside*cosf(steps));
-                dir.z = firstpersonswayup*(fabs(sinf(steps)) - 1);
-                mdl.o.add(dir).add(swaydir).add(swaypush);
+                if(d == focus && d == player1 && thirdpersonview(true, d))
+                    vectoyawpitch(vec(worldpos).sub(d->headpos()).normalize(), mdl.yaw, mdl.pitch);
+                break;
+            }
+            case 2:
+            {
+                mdl.o.sub(vec(mdl.yaw*RAD, 0.f).mul(firstpersonbodydist+firstpersonspineoffset));
+                mdl.o.sub(vec(mdl.yaw*RAD, 0.f).rotate_around_z(90*RAD).mul(firstpersonbodyside));
+                if(lastoffset)
+                {
+                    float zoffset = (max(d->zradius-d->height, 0.f)+(d->radius*0.5f))*firstpersonbodyzoffset;
+                    if(!onfloor && (d->action[AC_SPECIAL] || d->impulse[IM_TYPE] == IM_T_POUND || d->sliding(true) || d->impulse[IM_TYPE] == IM_T_KICK || d->impulse[IM_TYPE] == IM_T_GRAB))
+                    {
+                        int lmillis = d->airtime(lastmillis);
+                        if(lmillis < 100) zoffset *= lmillis/100.f;
+                        mdl.o.z -= zoffset;
+                        *lastoffset = lastmillis;
+                    }
+                    else if(*lastoffset)
+                    {
+                        int lmillis = lastmillis-(*lastoffset);
+                        if(lmillis < 100) mdl.o.z -= zoffset*((100-lmillis)/100.f);
+                    }
+                }
+                if(firstpersonbodypitchadjust > 0 && mdl.pitch < 0) mdl.o.sub(vec(mdl.yaw*RAD, 0.f).mul(d->radius*(0-mdl.pitch)/90.f*firstpersonbodypitchadjust));
+                mdl.pitch = firstpersonbodypitch >= 0 ? mdl.pitch*firstpersonbodypitch : mdl.pitch;
+                mdl.roll = 0.f;
+                break;
             }
         }
         if(animoverride && (m_edit(gamemode) ? (animtargets >= (d == focus ? 0 : 1)) : d == focus))
