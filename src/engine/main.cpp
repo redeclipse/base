@@ -214,8 +214,7 @@ void setupdisplay(bool dogl = true, bool msg = true)
     SDL_GL_GetDrawableSize(screen, &renderw, &renderh);
 
     int index = getdisplaymode();
-    bool full = SDL_GetWindowFlags(screen)&SDL_WINDOW_FULLSCREEN;
-    if(full && (display.w != screenw || display.h != screenh))
+    if(SDL_GetWindowFlags(screen)&SDL_WINDOW_FULLSCREEN && (display.w != screenw || display.h != screenh))
     {
         scr_w = clamp(display.w, SCR_MINW, SCR_MAXW);
         scr_h = clamp(display.h, SCR_MINH, SCR_MAXH);
@@ -230,7 +229,7 @@ void setupdisplay(bool dogl = true, bool msg = true)
     hudh = renderh;
     if(dogl) gl_resize();
 
-    if(msg) conoutf("Display [%d]: %dx%d [%d Hz] %s: %dx%d, Renderer: %dx%d", index, display.w, display.h, display.refresh_rate, full ? (fullscreendesktop ? "Fullscreen" : "Exclusive") : "Windowed", screenw, screenh, renderw, renderh);
+    if(msg) conoutf("Display [%d]: %dx%d [%d Hz] %s: %dx%d, Renderer: %dx%d", index, display.w, display.h, display.refresh_rate, SDL_GetWindowFlags(screen)&SDL_WINDOW_FULLSCREEN ? (fullscreendesktop ? "Fullscreen" : "Exclusive") : "Windowed", screenw, screenh, renderw, renderh);
 
     wantdisplaysetup = false;
 }
