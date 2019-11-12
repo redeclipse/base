@@ -85,53 +85,50 @@ namespace physics
     // inputs
     void doaction(int type, bool down)
     {
-        if(type < AC_MAX && type > -1)
+        if(type >= AC_MAX || type < 0) return;
+        if(!game::allowmove(game::player1))
         {
-            if(game::allowmove(game::player1))
-            {
-                int style = 0, *last = NULL;
-                switch(type)
-                {
-                    case AC_CROUCH: style = crouchstyle; last = &lastcrouch; break;
-                    case AC_WALK: style = walkstyle; last = &lastwalk; break;
-                    default: break;
-                }
-                if(last != NULL) switch(style)
-                {
-                    case 1:
-                    {
-                        if(!down && game::player1->action[type])
-                        {
-                            if(*last && lastmillis-*last < PHYSMILLIS) return;
-                            *last = lastmillis;
-                        }
-                        break;
-                    }
-                    case 2:
-                    {
-                        if(!down)
-                        {
-                            if(*last)
-                            {
-                                *last = 0;
-                                return;
-                            }
-                            *last = lastmillis;
-                        }
-                        break;
-                    }
-                    default: break;
-                }
-                if(down) game::player1->actiontime[type] = lastmillis;
-                else if(type == AC_CROUCH || type == AC_JUMP) game::player1->actiontime[type] = -lastmillis;
-                game::player1->action[type] = down;
-            }
-            else
-            {
-                game::player1->action[type] = false;
-                if((type == AC_PRIMARY || type == AC_JUMP) && down) game::respawn(game::player1);
-            }
+            game::player1->action[type] = false;
+            if((type == AC_PRIMARY || type == AC_JUMP) && down) game::respawn(game::player1);
+            return;
         }
+
+        int style = 0, *last = NULL;
+        switch(type)
+        {
+            case AC_CROUCH: style = crouchstyle; last = &lastcrouch; break;
+            case AC_WALK: style = walkstyle; last = &lastwalk; break;
+            default: break;
+        }
+        if(last != NULL) switch(style)
+        {
+            case 1:
+            {
+                if(!down && game::player1->action[type])
+                {
+                    if(*last && lastmillis-*last < PHYSMILLIS) return;
+                    *last = lastmillis;
+                }
+                break;
+            }
+            case 2:
+            {
+                if(!down)
+                {
+                    if(*last)
+                    {
+                        *last = 0;
+                        return;
+                    }
+                    *last = lastmillis;
+                }
+                break;
+            }
+            default: break;
+        }
+        if(down) game::player1->actiontime[type] = lastmillis;
+        else if(type == AC_CROUCH || type == AC_JUMP) game::player1->actiontime[type] = -lastmillis;
+        game::player1->action[type] = down;
     }
 
     ICOMMAND(0, primary, "D", (int *n), doaction(AC_PRIMARY, *n!=0));
