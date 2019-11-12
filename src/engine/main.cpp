@@ -646,7 +646,7 @@ void swapbuffers(bool overlay)
     SDL_GL_SwapWindow(screen);
 }
 
-VAR(IDF_PERSIST, menufps, -1, 60, 1000);
+VAR(IDF_PERSIST, menufps, -1, -1, 1000);
 FVAR(IDF_PERSIST, menufpsrefresh, FVAR_NONZERO, 1, FVAR_MAX);
 VAR(IDF_PERSIST, maxfps, -1, -1, 1000);
 FVAR(IDF_PERSIST, maxfpsrefresh, FVAR_NONZERO, 2, FVAR_MAX);
