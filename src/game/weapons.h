@@ -186,7 +186,7 @@ WPVAR(IDF_GAMEMOD, 0, ammoclip, 1, VAR_MAX,
     1,          10,         1,          8,          30,         50,         16,         24,         6,          2,          2,          1,          1
 );
 WPVAR(IDF_GAMEMOD, 0, ammoitem, 1, VAR_MAX,
-    1,          10,         1,          16,         60,         100,        32,         48,         18,         1,          1,          1,          0
+    1,          10,         1,          12,         60,         100,        32,         48,         18,         1,          1,          1,          0
 );
 WPVAR(IDF_GAMEMOD, 0, ammospawn, 1, VAR_MAX,
     1,          10,         1,          12,         90,         100,        32,         48,         12,         2,          2,          1,          1
