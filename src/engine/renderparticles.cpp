@@ -1402,7 +1402,7 @@ void regularsplash(int type, int color, float radius, int num, int fade, const v
 
 bool canaddparticles()
 {
-    return !minimized;
+    return !minimized || renderunfocused;
 }
 
 void regular_part_create(int type, int fade, const vec &p, int color, float size, float blend, float gravity, int collide, physent *pl, int delay)
@@ -1875,7 +1875,7 @@ void updateparticles()
 {
     if(regenemitters) addparticleemitters();
 
-    if(minimized) { canemit = false; return; }
+    if(minimized && !renderunfocused) { canemit = false; return; }
 
     if(lastmillis - lastemitframe >= emitmillis)
     {

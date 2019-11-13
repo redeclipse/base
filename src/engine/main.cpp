@@ -433,6 +433,7 @@ void resetgl()
 ICOMMAND(0, resetgl, "", (void), if(!(identflags&IDF_WORLD)) resetgl());
 
 bool warping = false, minimized = false;
+VAR(IDF_PERSIST, renderunfocused, 0, 0, 1);
 
 vector<SDL_Event> events;
 
@@ -655,7 +656,7 @@ FVAR(IDF_PERSIST, maxfpsrefresh, FVAR_NONZERO, 2, FVAR_MAX);
 void limitfps(int &millis, int curmillis)
 {
     int curmax = GETFPS(maxfps), curmenu = GETFPS(menufps),
-        limit = (hasnoview() || minimized) && curmenu ? (curmax > 0 ? min(curmax, curmenu) : curmenu) : curmax;
+        limit = (hasnoview() || (minimized && !renderunfocused)) && curmenu ? (curmax > 0 ? min(curmax, curmenu) : curmenu) : curmax;
     if(!limit || (limit == refresh && vsync)) return;
     static int fpserror = 0;
     int delay = 1000/limit - (millis-curmillis);
@@ -1138,7 +1139,7 @@ int main(int argc, char **argv)
                 updatetextures();
                 updateparticles();
                 updatesounds();
-                if(!minimized)
+                if(!minimized || renderunfocused)
                 {
                     inbetweenframes = renderedframe = false;
                     gl_drawframe();
