@@ -47,7 +47,7 @@ void textinput(bool on, int mask)
 
 VARN(IDF_PERSIST, relativemouse, userelativemouse, 0, 1, 1);
 
-bool shouldgrab = false, grabinput = false, canrelativemouse = true, relativemouse = false;
+bool windowfocus = true, shouldgrab = false, grabinput = false, canrelativemouse = true, relativemouse = false;
 
 void inputgrab(bool on)
 {
@@ -205,6 +205,7 @@ int getdisplaymode()
     if(SDL_GetCurrentDisplayMode(index, &display) < 0) fatal("Failed querying monitor %d display mode: %s", index, SDL_GetError());
     desktopw = display.w;
     desktoph = display.h;
+    refresh = display.refresh_rate;
     return index;
 }
 
@@ -214,7 +215,7 @@ void setupdisplay(bool dogl = true, bool msg = true)
     SDL_GL_GetDrawableSize(screen, &renderw, &renderh);
 
     int index = getdisplaymode();
-    if(SDL_GetWindowFlags(screen)&SDL_WINDOW_FULLSCREEN && (display.w != screenw || display.h != screenh))
+    if(windowfocus && SDL_GetWindowFlags(screen)&SDL_WINDOW_FULLSCREEN && (display.w != screenw || display.h != screenh))
     {
         scr_w = clamp(display.w, SCR_MINW, SCR_MAXW);
         scr_h = clamp(display.h, SCR_MINH, SCR_MAXH);
@@ -222,7 +223,6 @@ void setupdisplay(bool dogl = true, bool msg = true)
         SDL_GetWindowSize(screen, &screenw, &screenh);
         SDL_GL_GetDrawableSize(screen, &renderw, &renderh);
     }
-    refresh = display.refresh_rate;
     scr_w = screenw;
     scr_h = screenh;
     hudw = renderw;
@@ -237,7 +237,6 @@ void setupdisplay(bool dogl = true, bool msg = true)
 void setfullscreen(bool enable)
 {
     if(!screen) return;
-    //initwarning(enable ? "fullscreen" : "windowed");
     SDL_SetWindowFullscreen(screen, enable ? (fullscreendesktop ? SDL_WINDOW_FULLSCREEN_DESKTOP : SDL_WINDOW_FULLSCREEN) : 0);
     if(!enable)
     {
@@ -567,14 +566,14 @@ void checkinput()
                         break;
 
                     case SDL_WINDOWEVENT_FOCUS_GAINED:
-                        shouldgrab = true;
+                        windowfocus = shouldgrab = true;
                         break;
                     case SDL_WINDOWEVENT_ENTER:
                         inputgrab(grabinput = true);
                         break;
 
+                    case SDL_WINDOWEVENT_FOCUS_LOST: windowfocus = false; // fall through
                     case SDL_WINDOWEVENT_LEAVE:
-                    case SDL_WINDOWEVENT_FOCUS_LOST:
                         inputgrab(grabinput = false);
                         break;
 

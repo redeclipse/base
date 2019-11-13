@@ -1703,7 +1703,7 @@ void setverinfo(const char *bin)
     {
         for(int n = 0, len = strlen(branch); n < len; n++)
         {
-            if(iscubeprint(branch[n]) || iscubespace(branch[n])) continue;
+            if(iscubeprint(branch[n])) continue;
             branch[n] = 0;
             break;
         }
