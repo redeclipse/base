@@ -825,7 +825,7 @@ WPSVARK(IDF_GAMEMOD, 0, obituary,
     "kicked",
 
     "clawed",
-    "bludgeoned",
+    "pistol whipped",
     "sliced and diced",
     "filled with lead",
     "spliced apart",
