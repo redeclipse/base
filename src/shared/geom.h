@@ -2038,6 +2038,15 @@ static inline int mod360(int angle)
     else if(angle >= 360) angle %= 360;
     return angle;
 }
+
+static inline void lerp360(float &angle, float target, float factor)
+{
+    float diff = target - angle;
+    if(diff > 180) angle += 360;
+    else if(diff < -180) angle -= 360;
+    angle += (target - angle) * factor;
+}
+
 static inline const vec2 &sincosmod360(int angle) { return sincos360[mod360(angle)]; }
 static inline float cos360(int angle) { return sincos360[angle].x; }
 static inline float sin360(int angle) { return sincos360[angle].y; }
