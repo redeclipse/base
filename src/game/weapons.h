@@ -1255,7 +1255,7 @@ WPFVAR(IDF_GAMEMOD, 0, modimpulsespeedzoom, FVAR_MIN, FVAR_MAX,
 );
 // SPEED
 WPFVAR(IDF_GAMEMOD, 0, modspeed, FVAR_MIN, FVAR_MAX,
-    0,          0,          0,          -8,         -5,         -10,        -8,         -8,         -10,        0,          0,          -15,        0
+    0,          0,          0,          -8,         -5,         -8,         -8,         -8,         -10,        0,          0,          -15,        0
 );
 WPFVAR(IDF_GAMEMOD, 0, modspeedammo, FVAR_MIN, FVAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          -2,         -2,         0,          0
