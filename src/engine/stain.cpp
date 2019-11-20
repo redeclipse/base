@@ -746,13 +746,13 @@ struct stainrenderer
 
 stainrenderer stains[] =
 {
-    stainrenderer("<grey>particles/smoke", SF_ROTATE, 500, 1000, 10000),
     stainrenderer("<grey>particles/scorch", SF_ROTATE, 500, 1000, 10000),
     stainrenderer("<grey>particles/scorch", SF_ROTATE, 500, 1000, 2000),
     stainrenderer("<grey>particles/blood", SF_RND4|SF_ROTATE|SF_INVMOD, 0, 1000, 10000),
     stainrenderer("<grey>particles/bullet", SF_OVERBRIGHT, 0, 1000, 10000),
     stainrenderer("<grey>particles/energy", SF_ROTATE|SF_GLOW|SF_SATURATE, 150, 500, 3000),
-    stainrenderer("<grey>particles/stain", SF_SATURATE, 100, 900, 1000)
+    stainrenderer("<grey>particles/stain", SF_SATURATE, 100, 900, 1000),
+    stainrenderer("<grey>particles/smoke", SF_ROTATE, 500, 1000, 10000)
 };
 
 void initstains()
@@ -809,8 +809,9 @@ VAR(IDF_PERSIST, maxstaindistance, 1, 512, 10000);
 
 void addstain(int type, const vec &center, const vec &surface, float radius, const bvec &color, int info)
 {
-    if(!showstains || type<0 || (size_t)type>=sizeof(stains)/sizeof(stains[0]) || center.dist(camera1->o) - radius > maxstaindistance) return;
-    stainrenderer &d = stains[type];
+    int id = type-1;
+    if(!showstains || type<=0 || (size_t)type>sizeof(stains)/sizeof(stains[0]) || center.dist(camera1->o) - radius > maxstaindistance) return;
+    stainrenderer &d = stains[id];
     d.addstain(center, surface, radius, color, info);
 }
 

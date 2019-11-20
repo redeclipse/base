@@ -334,12 +334,13 @@ extern void regularflame(int type, const vec &p, float radius, float height, int
 // stain
 enum
 {
-    STAIN_SMOKE = 0,
+    STAIN_NONE = 0,
     STAIN_SCORCH, STAIN_SCORCH_SHORT,
     STAIN_BLOOD,
     STAIN_BULLET,
     STAIN_ENERGY,
     STAIN_STAIN,
+    STAIN_SMOKE,
     STAIN_MAX
 };
 
