@@ -195,7 +195,7 @@ struct partrenderer
                     if(p->o.z >= collidez+COLLIDEERROR) p->val = collidez+COLLIDEERROR;
                     else
                     {
-                        addstain(p->collide-1, vec(p->o.x, p->o.y, collidez), vec(o).sub(p->o).normalize(), 2*p->size, p->color, type&PT_RND4 ? (p->flags>>5)&3 : 0);
+                        addstain(p->collide, vec(p->o.x, p->o.y, collidez), vec(o).sub(p->o).normalize(), 2*p->size, p->color, type&PT_RND4 ? (p->flags>>5)&3 : 0);
                         blend = 0;
                     }
                 }
