@@ -590,7 +590,7 @@ WPFVAR(IDF_GAMEMOD, 0, itemhalo, 0, FVAR_MAX,
     9,          9,          18,         15,         12,         15,         9,          12,         15,         6,          6,          12,         1.5f
 );
 WPFVAR(IDF_GAMEMOD, 0, itemhaloammo, 0, FVAR_MAX,
-    9,          9,          18,         15,         12,         15,         9,          12,         15,         6,          6,          12,         1.5f
+    12,         12,         12,         12,         12,         12,         12,         12,         12,         6,          6,          12,         1.5f
 );
 //jitter vars
 //  Claw        Pistol      Sword       Shotgun     SMG         Flamer      Plasma      Zapper      Rifle       Grenade     Mine        Rocket      Melee
