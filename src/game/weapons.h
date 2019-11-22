@@ -595,8 +595,8 @@ WPFVAR(IDF_GAMEMOD, 0, itemhaloammo, 0, FVAR_MAX,
 //jitter vars
 //  Claw        Pistol      Sword       Shotgun     SMG         Flamer      Plasma      Zapper      Rifle       Grenade     Mine        Rocket      Melee
 WPVARM(IDF_GAMEMOD, 0, jitterpitchdir, VAR_MIN, VAR_MAX,
-    0,          30,         0,          0,          500,        0,          0,          0,          0,          0,          0,          0,          0,
-    0,          30,         0,          0,          500,        0,          0,          0,          0,          0,          0,          0,          0
+    0,          500,        0,          0,          500,        0,          0,          0,          0,          0,          0,          0,          0,
+    0,          500,        0,          0,          500,        0,          0,          0,          0,          0,          0,          0,          0
 );
 WPFVARM(IDF_GAMEMOD, 0, jitterpitchmax, FVAR_MIN, FVAR_MAX,
     1.0f,       1.0f,       1.0f,       5.0f,       3.0f,       0.2f,       2.5f,       3.0f,       4.0f,       1.0f,       1.0f,       1.0f,       1.0f,
@@ -935,9 +935,9 @@ WPVARK(IDF_GAMEMOD, 0, radial, 0, VAR_MAX,
 );
 WPFVARK(IDF_GAMEMOD, 0, radius, FVAR_NONZERO, FVAR_MAX,
     10.0f,      1.0f,       17.0f,      1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.5f,       1.5f,       10.0f,
-    10.0f,      10.0f,      17.0f,      2.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.5f,       1.5f,       10.0f,
+    10.0f,      14.0f,      17.0f,      2.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.5f,       1.5f,       10.0f,
     10.0f,      1.0f,       17.0f,      1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.5f,       1.5f,       10.0f,
-    10.0f,      10.0f,      17.0f,      1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.5f,       1.5f,       10.0f
+    10.0f,      14.0f,      17.0f,      1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.5f,       1.5f,       10.0f
 );
 WPVARM(IDF_GAMEMOD, 0, rays, 0, MAXPARAMS,
     1,          1,          1,          25,         1,          1,          1,          1,          1,          1,          1,          1,          1,
