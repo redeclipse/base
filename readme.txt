@@ -1,24 +1,28 @@
-# Red Eclipse
-* A free first-person arena shooter; released as free and open source software
+# Red Eclipse 2
+* A modern first-person arena shooter; released as free and open source software
 * Available for Windows, GNU/Linux, BSD, and macOS
 * Features parkour gameplay, such as impulse boosts, dashing, and other tricks
 * Favourite gamemodes with an array of mutators and variables
-* A built-in editor lets you create your own maps cooperatively online
+* A built-in editor lets you create your own release-quality maps cooperatively online
 * Download for free at https://redeclipse.net/
 
 ## About
-Red Eclipse is a fun-filled new take on the first-person arena shooter, built using the technology found in [Tesseract](http://tesseract.gg/), which lends itself towards a balanced gameplay, with a general theme of agility in a variety of environments. For more information, visit our [Wiki](https://redeclipse.net/wiki) or [Forums](https://redeclipse.net/forum).
+
+Building on over 12 years of gameplay design and the lessons learned from Red Eclipse 1.x, Red Eclipse 2 focuses on agile, easily accessible arena shooter gameplay over adherence to antiquated arena shooter tropes. For creators, the full power of the [Tesseract](http://tesseract.gg/) engine is at your fingertips in the included realtime multiplayer editor.
 
 The project is a free and open source game built using SDL and OpenGL which allows it to be ported to many platforms; you can [download a package](https://redeclipse.net/download) for Windows, GNU/Linux, BSD, and macOS; or grab a development copy from our [Git repository](https://redeclipse.net/devel) and live on the bleeding edge.
 
 In a true open source by the people for the people nature, we try to work closely with the gaming and open source communities to provide a better overall experience, aiming to create a game environment that is fun and easy to play, while still having elements to master.
 
-If you think you might have something to contribute to the game or community, please feel free to drop by our [IRC chatroom](https://redeclipse.net/chat) or [forums](https://redeclipse.net/forums) and talk to us directly. We try to maintain a standard of friendly behaviour in our community, so don't be afraid to speak up and have your say in building this game for us all! :)
+If you think you might have something to contribute to the game or community, please feel free to drop by our [Discord server](https://redeclipse.net/chat) or [forums](https://redeclipse.net/forums) and talk to us directly. We try to maintain a standard of friendly behaviour in our community, so don't be afraid to speak up and have your say in building this game for us all! :)
+
+## Distribution
+This game is primarily distributed via Steam. For the most bleeding-edge version of the game, or for those who are unable to get a Steam account, it is possible to compile the game from source, following the guide at https://www.redeclipse.net/docs/Install-Guide.
 
 ## Get Involved
 You're encouraged to help the project by joining in with the rest of the community to make a better project! You can do this by participating in our Community, using the development version and reporting any issues, ideas, suggestions or comments you may have.
 
-We chat via IRC in the channel `#redeclipse` on `irc.freenode.net`, if you don't have an IRC client you can use [our webchat](https://redeclipse.net/chat), or the IRC relay on the [Discord server](https://redeclipse.net/discord). You can use these services to talk directly to the Red Eclipse developers, contributors, and supporters, whether you just want to have a chat, report a problem, or make a suggestion, this is the best place to do it.
+The main chat access is via Discord in on our [server](https://redeclipse.net/chat); if you don't have a Discord account you can use the IRC relay on Freenode: channel `#redeclipse` on `irc.freenode.net`. You can use these services to talk directly to the Red Eclipse developers, contributors, and supporters; whether you just want to have a chat, report a problem, or make a suggestion, this is the best place to do it.
 
 ## Open Source
 The project is Free and Open Source, meaning that you can both use it for free and be a part of it by contributing in whatever way you can. These are the people who have helped shape Red Eclipse into what you see today. They are regular people just like you who volunteer their time or donate in the spirit of making a really cool game. Your name could be down here, too!
