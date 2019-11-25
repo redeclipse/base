@@ -134,14 +134,13 @@ namespace game
 
     VAR(IDF_PERSIST, specresetstyle, 0, 1, 1); // 0 = back to player1, 1 = stay at camera
 
-    VAR(IDF_PERSIST, followmode, 0, 1, 1); // 0 = never, 1 = tv
     VARF(IDF_PERSIST, specmode, 0, 1, 1, specreset()); // 0 = float, 1 = tv
     VARF(IDF_PERSIST, waitmode, 0, 1, 1, specreset()); // 0 = float, 1 = tv
     VARF(IDF_PERSIST, intermmode, 0, 1, 1, specreset()); // 0 = float, 1 = tv
 
     VAR(IDF_PERSIST, followdead, 0, 1, 2); // 0 = never, 1 = in all but duel/survivor, 2 = always
     VAR(IDF_PERSIST, followthirdperson, 0, 1, 1);
-    VAR(IDF_PERSIST, followaiming, 0, 1, 3); // 0 = don't aim, &1 = aim in thirdperson, &2 = aim in first person
+    VAR(IDF_PERSIST, followaiming, 0, 0, 3); // 0 = don't aim, &1 = aim in thirdperson, &2 = aim in first person
     FVAR(IDF_PERSIST, followdist, FVAR_NONZERO, 10, FVAR_MAX);
     FVAR(IDF_PERSIST, followside, FVAR_MIN, 8, FVAR_MAX);
     FVAR(IDF_PERSIST, followblend, 0, 1, 1);
@@ -539,7 +538,7 @@ namespace game
 
     bool allowspec(gameent *d, int level, int cn = -1)
     {
-        if(d->actortype >= A_ENEMY || d->o.magnitude() <= 0 || d->o.z < 0) return false;
+        if(d->actortype >= A_ENEMY || !insideworld(d->o)) return false;
         if(d->state == CS_SPECTATOR || ((d->state == CS_DEAD || d->state == CS_WAITING) && !d->lastdeath)) return false;
         if(cn >= 0)
         {
@@ -750,8 +749,8 @@ namespace game
         else
         {
             cameras.deletecontents();
-            starttvcamdyn = lastcamcn = -1;
-            lastcamera = lasttvcam = lasttvchg = 0;
+            lastcamcn = -1;
+            lastcamera = lasttvcam = lasttvchg = starttvcamdyn = 0;
             resetfollow();
         }
     }
@@ -765,8 +764,8 @@ namespace game
             if(!gs_playing(gamestate) && intermmode) return true;
             else switch(player1->state)
             {
-                case CS_SPECTATOR: if(specmode || (force && focus != player1 && followmode && followaim())) return true; break;
-                case CS_WAITING: if((waitmode && (!player1->lastdeath || lastmillis-player1->lastdeath >= 500)) || (force && focus != player1 && followmode && followaim())) return true; break;
+                case CS_SPECTATOR: if(specmode) return true; break;
+                case CS_WAITING: if((waitmode && (!player1->lastdeath || lastmillis-player1->lastdeath >= 500))) return true; break;
                 default: break;
             }
         }
@@ -776,37 +775,12 @@ namespace game
     #define MODESWITCH(name) \
         ICOMMAND(0, name##modeswitch, "", (), \
         { \
-            if(tvmode(true, true)) \
-            { \
-                if(!tvmode(true, false)) followmode = 0; \
-                else name##mode = 0; \
-            } \
-            else if(focus != player1) followmode = 1; \
+            if(tvmode(true, true)) name##mode = 0; \
             else name##mode = 1; \
             specreset(); \
         });
     MODESWITCH(spec);
     MODESWITCH(wait);
-
-    bool addfollow(int n, int *f, bool other)
-    {
-        #define checkfollow \
-            if(*f >= players.length()) *f = -1; \
-            else if(*f < -1) *f = players.length()-1;
-        *f += n;
-        checkfollow;
-        if(*f == -1)
-        {
-            if(!other)
-            {
-                specreset();
-                return false;
-            }
-            *f += n ? n : 1;
-            checkfollow;
-        }
-        return true;
-    }
 
     void followswitch(int n, bool other)
     {
@@ -814,25 +788,48 @@ namespace game
         {
             bool istv = tvmode(true, false);
             int *f = istv ? &spectvfollow : &follow;
-            if(!addfollow(n, f, other)) return;
+            #define checkfollow \
+                if(*f >= players.length()) *f = -1; \
+                else if(*f < -1) *f = players.length()-1;
+            #define addfollow \
+            { \
+                *f += n; \
+                checkfollow; \
+                if(*f == -1) \
+                { \
+                    if(other) *f += n; \
+                    else \
+                    { \
+                        specreset(); \
+                        return; \
+                    } \
+                    checkfollow; \
+                } \
+            }
+            addfollow;
             if(!n) n = 1;
             loopi(players.length())
             {
-                if(players.inrange(*f))
+                if(!players.inrange(*f)) addfollow
+                else
                 {
                     gameent *d = players[*f];
-                    if(d && allowspec(d, istv ? spectvdead : followdead))
+                    if(!d || d->actortype >= A_ENEMY || !allowspec(d, istv ? spectvdead : followdead)) addfollow
+                    else
                     {
-                        focus = d;
-                        resetcamera();
-                        resetsway();
+                        if(!istv)
+                        {
+                            focus = d;
+                            resetcamera();
+                            resetsway();
+                        }
                         return;
                     }
                 }
-                if(!addfollow(n, f, other)) return;
             }
             specreset();
         }
+        return;
     }
     ICOMMAND(0, followdelta, "ii", (int *n, int *o), followswitch(*n!=0 ? *n : 1, *o!=0));
 
@@ -2516,6 +2513,7 @@ namespace game
             {
                 cament *cam = cameras[i];
                 if(cam == c) continue;
+                bool inview = spectvfollowing < 0;
                 switch(cam->type)
                 {
                     case cament::AFFINITY:
@@ -2526,6 +2524,7 @@ namespace game
                     case cament::PLAYER:
                     {
                         if(!cam->player || c->player == cam->player || !allowspec(cam->player, spectvdead, spectvfollowing)) continue;
+                        if(!inview && cam->id == spectvfollowing) inview = true;
                         break;
                     }
                     default: continue;
@@ -2538,7 +2537,7 @@ namespace game
                 float dist = from.dist(cam->o);
                 if(dist >= mindist && getsight(from, yaw, pitch, cam->o, trg, maxdist, curfov, fovy))
                 {
-                    c->inview[cam->type]++;
+                    if(inview) c->inview[cam->type]++;
                     dir.add(cam->o);
                     count++;
                 }
@@ -2706,9 +2705,9 @@ namespace game
         else if(m_bomber(gamemode)) bomber::checkcams(cameras);
     }
 
-    bool findcams(cament *cam, bool forced, bool check)
+    bool findcams(cament *cam)
     {
-        bool found = check;
+        bool found = false;
         for(int i = startcam(); i < cameras.length(); i++)
         {
             cament *c = cameras[i];
@@ -2716,7 +2715,6 @@ namespace game
             {
                 if(!found && c->id == spectvfollowing && c->player->state != CS_SPECTATOR) found = true;
                 c->o = c->player->center();
-                if(forced && c->player == focus) cam = c;
             }
             else if(c->type != cament::PLAYER && c->player) c->player = NULL;
             if(m_capture(gamemode)) capture::updatecam(c);
@@ -2730,27 +2728,17 @@ namespace game
     {
         if(!tvmode(false)) return false;
         if(!gs_playing(gamestate)) spectvfollowing = -1;
-        else if(player1->state != CS_SPECTATOR && spectvfollowself >= (m_duke(gamemode, mutators) ? 2 : 1))
-            spectvfollowing = player1->clientnum;
+        else if(player1->state != CS_SPECTATOR && spectvfollowself >= (m_duke(gamemode, mutators) ? 2 : 1)) spectvfollowing = player1->clientnum;
         else spectvfollowing = spectvfollow;
         if(cameras.empty()) buildcams();
         if(!cameras.inrange(lastcamcn)) lastcamcn = rnd(cameras.length());
         cament *cam = cameras[lastcamcn];
-        bool forced = !tvmode(false, false), renew = !lastcamera, found = findcams(cam, forced, spectvfollowing < 0);
+        bool renew = !lastcamera, found = findcams(cam);
         float amt = 0;
-        if(!found) spectvfollow = spectvfollowing = -1;
+        if(!found) spectvfollowing = -1;
         camrefresh(cam);
         #define stvf(z) (!gs_playing(gamestate) ? spectvinter##z : (spectvfollowing >= 0 ? spectvfollow##z : spectv##z))
-        if(forced)
-        {
-            camupdate(cam, amt, renew, true);
-            if(renew)
-            {
-                lasttvchg = lasttvcam = totalmillis;
-                cam->resetlast();
-            }
-        }
-        else loopk(spectvfollowing >= 0 ? 2 : 1)
+        loopk(spectvfollowing >= 0 ? 2 : 1)
         {
             int lastcn = cam->cn, millis = lasttvchg ? totalmillis-lasttvchg : 0;
             if(millis) amt = float(millis)/float(stvf(maxtime));
@@ -2834,7 +2822,7 @@ namespace game
             }
             break;
         }
-        bool chase = cam->player && (forced || spectvaiming(cam->player));
+        bool chase = cam->player && spectvaiming(cam->player);
         if(!cam->player || chase)
         {
             float yaw = camera1->yaw, pitch = camera1->pitch;
