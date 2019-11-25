@@ -1274,7 +1274,7 @@ WPFVAR(IDF_GAMEMOD, 0, modspeedswitch, FVAR_MIN, FVAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
 );
 WPFVAR(IDF_GAMEMOD, 0, modspeedpower, FVAR_MIN, FVAR_MAX,
-    -5,         -5,         -5,         -5,         -5,         -5,         0,          -5,         -5,         -5,         -5,         -10,        -5
+    -5,         -5,         0,          -5,         -5,         -5,         0,          -5,         -5,         -5,         -5,         -10,        -5
 );
 WPFVAR(IDF_GAMEMOD, 0, modspeeduse, FVAR_MIN, FVAR_MAX,
     0,          0,          -1,         -2,         -2,         -2,         -2,         -2,         -3,         -5,         -5,         -10,        0
