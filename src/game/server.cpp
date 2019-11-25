@@ -738,6 +738,7 @@ namespace server
         if(!sents.inrange(ent)) return;
         if(clear) loopvk(clients) if(clients[k]->dropped.removeall(ent))
             sendf(-1, 1, "ri5", N_DESTROY, clients[k]->clientnum, PRJ_ENT, -1, ent);
+        bool oldspawn = sents[ent].spawned;
         sents[ent].spawned = spawned;
         sents[ent].millis = sents[ent].last = gamemillis;
         if(delay) sents[ent].millis += delay;
@@ -751,7 +752,7 @@ namespace server
             }
         }
         else sents[ent].millis += G(itemspawntime);
-        if(msg) sendf(-1, 1, "ri3", N_ITEMSPAWN, ent, sents[ent].spawned ? 1 : 0);
+        if(msg && sents[ent].spawned != oldspawn) sendf(-1, 1, "ri3", N_ITEMSPAWN, ent, sents[ent].spawned ? 1 : 0);
     }
 
     void takeammo(clientinfo *ci, int weap, int amt = 1)
