@@ -444,16 +444,9 @@ struct demoheader
 template<class T>
 static inline void adjustscaled(T &n, int s)
 {
-    if(n > 0)
-    {
-        n = (T)(n/(1.f+sqrtf((float)curtime)/float(s)));
-        if(n <= 0) n = (T)0;
-    }
-    else if(n < 0)
-    {
-        n = (T)(n/(1.f+sqrtf((float)curtime)/float(s)));
-        if(n >= 0) n = (T)0;
-    }
+    T o = n;
+    n = (T)(n/(1.f+sqrtf((float)curtime)/float(s)));
+    if((o > 0 && n < 0) || (o < 0 && n > 0)) n = (T)0;
 }
 
 static inline void modecheck(int &mode, int &muts, int trying = 0)
@@ -2211,6 +2204,7 @@ namespace game
     extern bool inzoom();
     extern bool tvmode(bool check = true, bool force = true);
     extern void resetcamera(bool cam = true, bool input = true);
+    extern void resetsway();
     extern void resetworld();
     extern void resetstate();
     extern void hiteffect(int weap, int flags, int damage, gameent *d, gameent *v, vec &dir, vec &vel, float dist, bool local = false);

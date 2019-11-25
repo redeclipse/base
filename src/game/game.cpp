@@ -6,7 +6,7 @@ namespace game
     int nextmode = G_EDITMODE, nextmuts = 0, gamestate = G_S_WAITING, gamemode = G_EDITMODE, mutators = 0, maptime = 0, mapstart = 0, timeremaining = 0, lasttimeremain = 0,
         lastcamera = 0, lasttvcam = 0, lasttvchg = 0, lastzoom = 0, spectvfollowing = -1, starttvcamdyn = -1, lastcamcn = -1;
     bool zooming = false, inputmouse = false, inputview = false, inputmode = false, wantsloadoutmenu = false;
-    float swayfade = 0, swayspeed = 0, swaydist = 0, bobfade = 0, bobdist = 0, swayyaw = 0, swaypitch = 0;
+    float swayfade = 0, swayspeed = 0, swaydist = 0, bobfade = 0, bobdist = 0;
     vec swaydir(0, 0, 0), swaypush(0, 0, 0);
     int attrmap[W_MAX] = {0};
 
@@ -114,7 +114,6 @@ namespace game
     FVAR(IDF_PERSIST, firstpersonswaystep, 1, 35.f, 1000);
     FVAR(IDF_PERSIST, firstpersonswayside, 0, 0.05f, 10);
     FVAR(IDF_PERSIST, firstpersonswayup, 0, 0.06f, 10);
-    FVAR(IDF_PERSIST, firstpersonswaysmooth, 0.0f, 0.6f, 0.9f);
 
     VAR(IDF_PERSIST, firstpersonbob, 0, 1, 1);
     FVAR(IDF_PERSIST, firstpersonbobmin, 0, 0.2f, 1);
@@ -618,8 +617,6 @@ namespace game
     {
         swaydir = swaypush = vec(0, 0, 0);
         swayfade = swayspeed = swaydist = bobfade = bobdist = 0;
-        swayyaw = camera1->yaw;
-        swaypitch = camera1->pitch;
     }
 
     void addsway(gameent *d)
@@ -660,19 +657,6 @@ namespace game
         float speedscale = max(inertia.magnitude(), speed);
         if(d->state == CS_ALIVE && speedscale > 0) swaydir.add(vec(inertia).mul((1-k)/(15*speedscale)));
         swaypush.mul(pow(0.5f, curtime/25.0f));
-
-        if(firstpersonswaysmooth > 0)
-        {
-            float t = sqrtf(curtime/16.6f);
-            float swayfactor = min(1.0f, (1.0f-firstpersonswaysmooth) * t);
-            lerp360(swayyaw, d->yaw, swayfactor);
-            lerp360(swaypitch, d->pitch, swayfactor);
-        }
-        else
-        {
-            swayyaw = d->yaw;
-            swaypitch = d->pitch;
-        }
     }
 
     int errorchan = -1;
@@ -718,6 +702,7 @@ namespace game
         }
         focus = player1;
         resetcamera();
+        resetsway();
     }
 
     int startcam()
@@ -840,6 +825,7 @@ namespace game
                     {
                         focus = d;
                         resetcamera();
+                        resetsway();
                         return;
                     }
                 }
@@ -936,6 +922,7 @@ namespace game
 
         if(d == player1) specreset();
         else if(d == focus) resetcamera();
+        if(d == focus) resetsway();
 
         if(d->actortype < A_ENEMY)
         {
@@ -1972,7 +1959,6 @@ namespace game
         physics::reset();
         resetworld();
         resetcursor();
-        resetsway();
         if(!empty) preload();
         gameent *d;
         int numdyns = numdynents();
@@ -1980,6 +1966,7 @@ namespace game
         entities::spawnplayer(player1); // prevent the player from being in the middle of nowhere
         if(showloadoutmenu && m_loadout(gamemode, mutators)) wantsloadoutmenu = true;
         resetcamera();
+        resetsway();
     }
 
     gameent *intersectclosest(vec &from, vec &to, gameent *at)
@@ -2992,6 +2979,7 @@ namespace game
     {
         resetworld();
         resetcamera();
+        resetsway();
     }
 
     void updateworld()      // main game update loop
@@ -3017,6 +3005,7 @@ namespace game
                 if(type != 6) musicdone(false);
                 RUNWORLD("on_start");
                 resetcamera();
+                resetsway();
                 return;
             }
             else if(!nosound && mastervol && musicvol && type && !playingmusic())
@@ -3328,8 +3317,8 @@ namespace game
         mdl.flags = flags;
         mdl.basetime = mdl.basetime2 = 0;
         mdl.size = size;
-        mdl.yaw = (third == 1) ? d->yaw : swayyaw;
-        mdl.pitch = (third == 1) ? d->pitch : swaypitch;
+        mdl.yaw = d->yaw;
+        mdl.pitch = d->pitch;
         mdl.roll = calcroll(d);
         mdl.o = third ? d->feetpos() : camerapos(d);
 
