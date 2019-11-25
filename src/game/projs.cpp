@@ -750,6 +750,11 @@ namespace projs
             m->boundbox(center, radius);
             center.mul(size);
             radius.mul(size);
+            if(proj.projtype == PRJ_ENT)
+            {
+                center.add(size*0.5f);
+                radius.add(size);
+            }
             rotatebb(center, radius, proj.yaw, 0, 0);
             proj.xradius = radius.x;
             proj.yradius = radius.y;
@@ -989,9 +994,8 @@ namespace projs
                     if(mag <= 0) proj.inertia = vec(proj.yaw*RAD, proj.pitch*RAD);
                     proj.inertia.normalize().mul(50);
                 }
-                proj.dest.add(proj.inertia);
-                proj.dest.z += 4;
-                if(proj.flags) proj.inertia.div(proj.flags+1);
+                proj.dest.add(vec(proj.inertia).mul(proj.flags+1));
+                proj.dest.z += proj.flags*4;
                 proj.fadetime = 500;
                 proj.extinguish = itemextinguish;
                 proj.interacts = iteminteracts;
