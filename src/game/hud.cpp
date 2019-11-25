@@ -1300,11 +1300,11 @@ namespace hud
             tw = int((hudwidth-((hudsize*edgesize)*2))/noticescale);
         if(noticetone) skewcolour(tr, tg, tb, noticetone);
 
-        pushfont("emphasis");
+        pushfont("huge");
         if(!gs_playing(game::gamestate) || totalmillis-game::mapstart <= noticetitle)
         {
             ty += draw_textf("%s", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), -1, -1, -1, tf, TEXT_CENTERED, -1, tw, 1, *maptitle ? maptitle : mapname);
-            pushfont("reduced");
+            pushfont("default");
             if(*mapauthor) ty += draw_textf("by %s", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), -1, -1, -1, tf, TEXT_CENTERED, -1, tw, 1, mapauthor);
             defformatstring(gname, "%s", server::gamename(game::gamemode, game::mutators, 0, 32));
             ty += draw_textf("[ \fs\fa%s\fS ]", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), -1, -1, -1, tf, TEXT_CENTERED, -1, tw, 1, gname);
@@ -1315,7 +1315,7 @@ namespace hud
             ty += draw_textf("Demo playback in progress", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), -1, -1, -1, tf, TEXT_CENTERED, -1, tw, 1)+FONTH/3;
         popfont();
 
-        pushfont("default");
+        pushfont("super");
         if(game::player1->quarantine)
         {
             ty += draw_textf("You are \fzoyQUARANTINED", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1);
@@ -1367,7 +1367,7 @@ namespace hud
                 }
                 if(game::player1->state != CS_WAITING && shownotices >= 2 && lastmillis-game::player1->lastdeath >= 500)
                 {
-                    pushfont("little");
+                    pushfont("default");
                     ty += draw_textf("Press \fs\fw\f{=primary}\fS to enter respawn queue", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1);
                     popfont();
                 }
@@ -1377,14 +1377,14 @@ namespace hud
                 ty += draw_textf("Ready to respawn", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1);
                 if(game::player1->state != CS_WAITING && shownotices >= 2)
                 {
-                    pushfont("little");
+                    pushfont("default");
                     ty += draw_textf("Press \fs\fw\f{=primary}\fS to respawn now", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1);
                     popfont();
                 }
             }
             if(obitnotices && game::player1->lastdeath && (game::player1->state == CS_WAITING || game::player1->state == CS_DEAD) && *game::player1->obit)
             {
-                pushfont("reduced");
+                pushfont("default");
                 ty += draw_textf("%s", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1, game::player1->obit);
                 popfont();
             }
@@ -1394,19 +1394,19 @@ namespace hud
                 {
                     if(game::player1->state == CS_WAITING && shownotices >= 2)
                     {
-                        pushfont("little");
+                        pushfont("default");
                         ty += draw_textf("Press \fs\fw\f{=3:waitmodeswitch}\fS to %s", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1, game::tvmode() ? "interact" : "switch to TV");
                         popfont();
                     }
                     if(m_loadout(game::gamemode, game::mutators))
                     {
-                        pushfont("little");
+                        pushfont("default");
                         ty += draw_textf("Press \fs\fw\f{=%s profile}\fS to \fs%s\fS loadout", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1, UI::uiopencmd, game::player1->loadweap.empty() ? "\fzoyselect" : "change");
                         popfont();
                     }
                     if(m_team(game::gamemode, game::mutators))
                     {
-                        pushfont("little");
+                        pushfont("default");
                         ty += draw_textf("Press \fs\fw\f{=%s team}\fS to change teams", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1, UI::uiopencmd);
                         popfont();
                     }
@@ -1417,13 +1417,13 @@ namespace hud
         {
             if(obitnotices && totalmillis-game::player1->lastkill <= noticetime && *game::player1->obit)
             {
-                pushfont("reduced");
+                pushfont("default");
                 ty += draw_textf("%s", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1, game::player1->obit);
                 popfont();
             }
             if(shownotices >= 2 && game::allowmove(game::player1))
             {
-                pushfont("emphasis");
+                pushfont("huge");
                 static vector<actitem> actitems;
                 actitems.setsize(0);
                 vec pos = game::player1->center();
@@ -1469,7 +1469,7 @@ namespace hud
                                         defformatstring(dropweap, "%s", entities::entinfo(WEAPON, attrs, false, true));
                                         ty += draw_textf("Press \fs\fw\f{=use}\fS to swap \fs%s\fS for \fs%s\fS", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1, dropweap, entities::entinfo(e.type, e.attrs, false, true));
                                     }
-                                    else ty += draw_textf("Press \fs\fw\f{=use}\fS to pickup \fs%s\fS", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1, entities::entinfo(e.type, e.attrs, false, true));
+                                    else ty += draw_textf("Press \fs\fw\f{=use}\fS to %s \fs%s\fS", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1, game::player1->hasweap(attr, sweap) ? "refill" : "pickup", entities::entinfo(e.type, e.attrs, false, true));
                                     break;
                                 }
                             }
@@ -1485,7 +1485,7 @@ namespace hud
                 popfont();
                 if(shownotices >= 4)
                 {
-                    pushfont("little");
+                    pushfont("default");
                     if(game::player1->canshoot(game::player1->weapselect, 0, m_weapon(game::player1->actortype, game::gamemode, game::mutators), lastmillis, (1<<W_S_RELOAD)))
                         ty += draw_textf("Press \fs\fw\f{=primary}\fS to attack", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1);
                     if(game::player1->canshoot(game::player1->weapselect, HIT(ALT), m_weapon(game::player1->actortype, game::gamemode, game::mutators), lastmillis, (1<<W_S_RELOAD)))
@@ -1498,7 +1498,7 @@ namespace hud
         }
         else if(game::player1->state == CS_SPECTATOR)
         {
-            pushfont("little");
+            pushfont("default");
             if(!client::demoplayback)
             {
                 ty += draw_textf("Press \fs\fw\f{=1:spectate 0}\fS to join the game", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1);
@@ -1512,7 +1512,7 @@ namespace hud
 
         if(m_edit(game::gamemode) && (game::player1->state != CS_EDITING || shownotices >= 4) && !client::demoplayback)
         {
-            pushfont("little");
+            pushfont("default");
             ty += draw_textf("Press \fs\fw\f{=1:edittoggle}\fS to %s editmode", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1, game::focus->state != CS_EDITING ? "enter" : "exit");
             popfont();
         }
