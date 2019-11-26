@@ -659,7 +659,7 @@ void limitfps(int &millis, int curmillis)
 {
     int curmax = GETFPS(maxfps), curmenu = GETFPS(menufps),
         limit = (hasnoview() || (minimized && !renderunfocused)) && curmenu ? (curmax > 0 ? min(curmax, curmenu) : curmenu) : curmax;
-    if(!limit || (limit == refresh && vsync)) return;
+    if(!limit || (limit >= refresh && vsync)) return;
     static int fpserror = 0;
     int delay = 1000/limit - (millis-curmillis);
     if(delay < 0) fpserror = 0;
