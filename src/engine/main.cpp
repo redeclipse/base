@@ -646,12 +646,14 @@ void swapbuffers(bool overlay)
     SDL_GL_SwapWindow(screen);
 }
 
-VAR(IDF_PERSIST, menufps, -1, -1, 1000);
-FVAR(IDF_PERSIST, menufpsrefresh, FVAR_NONZERO, 1, FVAR_MAX);
-VAR(IDF_PERSIST, maxfps, -1, -1, 1000);
-FVAR(IDF_PERSIST, maxfpsrefresh, FVAR_NONZERO, 2, FVAR_MAX);
+VAR(IDF_PERSIST, menufps, -1, -1, VAR_MAX);
+FVAR(IDF_PERSIST, menufpsrefresh, 0.1f, 1, 100);
+VAR(IDF_PERSIST, menufpsrefreshoffset, 0, 1, VAR_MAX);
+VAR(IDF_PERSIST, maxfps, -1, -1, VAR_MAX);
+FVAR(IDF_PERSIST, maxfpsrefresh, 0.1f, 1, 100);
+VAR(IDF_PERSIST, maxfpsrefreshoffset, 0, 1, VAR_MAX);
 
-#define GETFPS(a) (a >= 0 ? a : int(ceilf(refresh*a##refresh)))
+#define GETFPS(a) (a >= 0 ? a : int((refresh*a##refresh)+a##refreshoffset))
 
 void limitfps(int &millis, int curmillis)
 {
