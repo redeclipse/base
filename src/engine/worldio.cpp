@@ -966,7 +966,7 @@ bool load_world(const char *mname, int crc, int variant)
         setvar("mapscale", 0, true, false, true);
         setvar("mapsize", 0, true, false, true);
         setvar("emptymap", 0, true, false, true);
-        if(memcmp(newhdr.head, "MAPZ", 4) == 0 || memcmp(newhdr.head, "BFGZ", 4) == 0)
+        if(memcmp(newhdr.head, "MAPZ", 4) == 0)
         {
             if(newhdr.version > MAPVERSION)
             {
@@ -1603,7 +1603,7 @@ int scanmapc(const char *fname)
         return -1;
     }
     lilswap(&d.maphdr.version, 2);
-    if(memcmp(d.maphdr.head, "MAPZ", 4) == 0 || memcmp(d.maphdr.head, "BFGZ", 4) == 0)
+    if(memcmp(d.maphdr.head, "MAPZ", 4) == 0)
     {
         if(d.maphdr.version > MAPVERSION)
         {
