@@ -68,7 +68,7 @@ FVAR(IDF_PERSIST, soundenvvol, 0, 1, FVAR_MAX);
 FVAR(IDF_PERSIST, soundenvscale, 0, 1, FVAR_MAX);
 VAR(IDF_PERSIST, soundcull, 0, 1, 1);
 
-VARF(IDF_PERSIST, musicvol, 0, 32, 255, updatemusic());
+VARF(IDF_PERSIST, musicvol, 0, 25, 255, updatemusic());
 VAR(IDF_PERSIST, musicfadein, 0, 1000, VAR_MAX);
 VAR(IDF_PERSIST, musicfadeout, 0, 2500, VAR_MAX);
 SVAR(0, titlemusic, "sounds/theme");
