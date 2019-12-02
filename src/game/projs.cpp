@@ -1939,7 +1939,7 @@ namespace projs
         if(!ret) return 0;
         if(!skip && proj.interacts && checkitems(proj, pos, dir, proj.o.dist(pos))) return -1;
         if(proj.projtype == PRJ_SHOT) updatetaper(proj, proj.distance+proj.o.dist(pos));
-        if(ret == 1 && (collide(&proj, dir, 0.f, proj.projcollide&COLLIDE_DYNENT, false, GUARDRADIUS) || collideinside))
+        if(ret == 1 && (collide(&proj, dir, 0.f, proj.projcollide&COLLIDE_DYNENT, true, GUARDRADIUS) || collideinside))
             ret = impact(proj, dir, collideplayer, collidezones, collidewall);
         return ret;
     }

@@ -504,7 +504,7 @@ inline void BIH::tricollide<COLLIDE_ELLIPSE>(const mesh &m, int tidx, physent *d
     float pdist = (n.dot(vec(center).sub(a)) - fabs(n.dot(zdir)))*m.scale - radius.x;
     if(pdist > 0 || pdist <= dist) return;
 
-    collideinside = true;
+    collideinside++;
 
     n = orient.transformnormal(n).mul(m.invscale);
 
@@ -539,7 +539,7 @@ inline void BIH::tricollide<COLLIDE_OBB>(const mesh &m, int tidx, physent *d, co
     pdist -= r;
     if(pdist <= dist) return;
 
-    collideinside = true;
+    collideinside++;
 
     if(!dir.iszero())
     {
