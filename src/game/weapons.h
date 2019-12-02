@@ -1170,9 +1170,9 @@ WPVARK(IDF_GAMEMOD, 0, vistime, 0, VAR_MAX,
 );
 WPFVARK(IDF_GAMEMOD, 0, wavepush, 0, FVAR_MAX,
     1.5f,       1.5f,       1.5f,       1.5f,       1.5f,       0.0f,       1.5f,       1.5f,       2.5f,       2.0f,       2.0f,       3.0f,       1.5f,
-    1.5f,       1.5f,       1.5f,       1.5f,       1.5f,       3.0f,       2.5f,       1.5f,       1.5f,       2.0f,       2.0f,       3.0f,       1.5f,
+    1.5f,       1.5f,       1.5f,       1.5f,       1.5f,       3.0f,       1.0f,       1.5f,       1.5f,       2.0f,       2.0f,       3.0f,       1.5f,
     1.5f,       1.5f,       1.5f,       1.5f,       1.5f,       0.0f,       1.5f,       1.5f,       1.5f,       2.0f,       2.0f,       3.0f,       1.5f,
-    1.5f,       1.5f,       1.5f,       1.5f,       1.5f,       3.0f,       2.5f,       2.0f,       2.5f,       2.0f,       2.0f,       3.0f,       1.5f
+    1.5f,       1.5f,       1.5f,       1.5f,       1.5f,       3.0f,       1.0f,       2.0f,       2.5f,       2.0f,       2.0f,       3.0f,       1.5f
 );
 WPFVARK(IDF_GAMEMOD, 0, weight, FVAR_MIN, FVAR_MAX,
     0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       200.0f,     0.0f,       0.0f,       0.0f,       200.0f,     175.0f,     0.0f,       0.0f,
