@@ -1235,8 +1235,8 @@ namespace game
 
         if(local)
         {
-            if(d->respawned > 0 && lastmillis-d->respawned >= 2500) d->respawned = -1;
-            if(d->suicided > 0 && lastmillis-d->suicided >= 2500) d->suicided = -1;
+            if(d->respawned >= 0 && lastmillis-d->respawned >= 2500) d->respawned = -1;
+            if(d->suicided >= 0 && lastmillis-d->suicided >= 2500) d->suicided = -1;
         }
 
         int restime[W_R_MAX] = { d->burntime, d->bleedtime, d->shocktime };

@@ -278,7 +278,7 @@ namespace ai
                 avoid();
                 avoidmillis = totalmillis;
             }
-            if(iteration < 0 && totalmillis-itermillis >= 1000)
+            if(totalmillis-itermillis >= 1000)
             {
                 iteration = itercount = 0;
                 loopv(game::players) if(game::players[i] && game::players[i]->ai) itercount++;
@@ -291,31 +291,32 @@ namespace ai
                 {
                     gameent *d = game::players[i];
                     bool iterate = c == iteration && y >= c*x;
-                    if(iterate) switch(d->state)
+                    if(iterate)
                     {
-                        case CS_DEAD:
+                        iteration++;
+                        switch(d->state)
                         {
-                            if(d->respawned >= 0 || (d->lastdeath && lastmillis-d->lastdeath <= DEATHMILLIS*2)) break;
-                            client::addmsg(N_TRYSPAWN, "ri", d->clientnum);
-                            d->respawned = lastmillis;
-                            break;
+                            case CS_DEAD:
+                            {
+                                if(d->respawned >= 0 || (d->lastdeath && lastmillis-d->lastdeath <= DEATHMILLIS*2)) break;
+                                client::addmsg(N_TRYSPAWN, "ri", d->clientnum);
+                                d->respawned = lastmillis;
+                                break;
+                            }
+                            case CS_SPECTATOR:
+                            {
+                                if(d->respawned >= 0) break;
+                                client::addmsg(N_SPECTATOR, "ri2", d->clientnum, 0);
+                                d->respawned = lastmillis;
+                                break;
+                            }
+                            default: break;
                         }
-                        case CS_SPECTATOR:
-                        {
-                            if(d->respawned >= 0) break;
-                            client::addmsg(N_SPECTATOR, "ri2", d->clientnum, 0);
-                            d->respawned = lastmillis;
-                            break;
-                        }
-                        default: break;
                     }
                     think(d, iterate);
-                    if(iterate && ++iteration >= itercount) iteration = -1;
                     c++;
                 }
-                if(!c) iteration = -1;
             }
-            else iteration = -1;
         }
     }
 
