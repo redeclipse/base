@@ -579,10 +579,16 @@ namespace bomber
         if(d->ai) aihomerun(d, d->ai->state.last());
     }
 
+    static inline bool pointinsidecylinder(vec pt, const vec center, float height, float radius)
+    {
+        if(pt.z < center.z-height/2 || pt.z > center.z+height/2) return false;
+        pt.sub(center);
+        return pt.x*pt.x + pt.y*pt.y <= radius*radius;
+    }
+
     void checkaffinity(gameent *d, int i)
     {
         if(!(AA(d->actortype, abilities)&(1<<A_A_AFFINITY))) return;
-        vec o = d->feetpos();
         bomberstate::flag &f = st.flags[i];
         if(f.owner)
         {
@@ -608,7 +614,9 @@ namespace bomber
         }
         if(!f.droptime && m_bb_assault(game::gamemode, game::mutators) && d->team == T_ALPHA && bomberassaultreset) return;
         if(f.lastowner == d && f.droptime && lastmillis-f.droptime <= bomberpickupdelay) return;
-        if(o.dist(f.pos()) <= enttype[AFFINITY].radius/2) client::addmsg(N_TAKEAFFIN, "ri2", d->clientnum, i);
+        float radius = enttype[AFFINITY].radius;
+        if(pointinsidecylinder(f.pos(), d->center(), d->height+radius/2, radius/2))
+            client::addmsg(N_TAKEAFFIN, "ri2", d->clientnum, i);
     }
 
     void update()
