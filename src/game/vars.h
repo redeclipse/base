@@ -224,7 +224,7 @@ GVAR(IDF_GAMEMOD, 0, balancenospawn, 0, 1, 1); // prevent respawning when waitin
 GVAR(IDF_GAMEMOD, 0, balanceduke, 0, 1, 1); // enable in duel/survivor
 
 GFVAR(IDF_GAMEMOD, 0, healthscale, 0, 1.0f, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, healthscalehard, 0, 0.5f, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, healthscalehard, 0, 1.0f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, maxhealth, 0, 1.5f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, maxhealthvampire, 0, 3.0f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, vampirescale, 0, 1.0f, FVAR_MAX);
