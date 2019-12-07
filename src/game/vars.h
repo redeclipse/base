@@ -278,7 +278,7 @@ GVAR(IDF_GAMEMOD, 0, votelimit, 0, 40000, VAR_MAX); // .. before vote passes by 
 GVAR(IDF_GAMEMOD, 0, duelrandom, 0, 1, 1); // randomise queue before first round
 GVAR(IDF_GAMEMOD, 0, duelreset, 0, 1, 1); // reset winner in duel
 GVAR(IDF_GAMEMOD, 0, duelclear, 0, 1, 1); // clear items in duel
-GVAR(IDF_GAMEMOD, 0, duelregen, 0, 0, 1); // allow regen in duel
+GVAR(IDF_GAMEMOD, 0, duelregen, 0, 1, 1); // allow regen in duel
 GVAR(IDF_GAMEMOD, 0, dueldelay, 500, 1000, VAR_MAX); // round continues for this length after winning
 GVAR(IDF_GAMEMOD, 0, duelcooloff, 0, 3000, VAR_MAX); // cool off period before duel goes to next round
 GVAR(IDF_GAMEMOD, 0, duelcycle, 0, 2, 3); // determines if players are force-cycled after a certain number of wins (bit: 0 = off, 1 = non-team games, 2 = team games)
@@ -290,7 +290,7 @@ GVAR(IDF_GAMEMOD, 0, duelmaxqueued, 0, 0, MAXCLIENTS); // number of players that
 
 GVAR(IDF_GAMEMOD, 0, survivorreset, 0, 1, 1); // reset winners in survivor
 GVAR(IDF_GAMEMOD, 0, survivorclear, 0, 1, 1); // clear items in survivor
-GVAR(IDF_GAMEMOD, 0, survivorregen, 0, 0, 1); // allow regen in survivor
+GVAR(IDF_GAMEMOD, 0, survivorregen, 0, 1, 1); // allow regen in survivor
 GVAR(IDF_GAMEMOD, 0, survivordelay, 500, 1000, VAR_MAX); // round continues for this length after winning
 GVAR(IDF_GAMEMOD, 0, survivorcooloff, 0, 3000, VAR_MAX); // cool off period before survivor goes to next round
 GVAR(IDF_GAMEMOD, 0, survivoraffinity, 0, 0, 1); // 0 = off, 1 = on enter can spawn immediately
