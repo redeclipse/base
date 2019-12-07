@@ -17,6 +17,7 @@ namespace entities
     extern const char *entmdlname(int type, attrvector &attr);
     extern const char *findname(int type);
     extern int findtype(char *type);
+    extern void execlink(dynent *d, int index, bool local, int ignore = -1);
     extern bool maylink(int type, int ver = 0);
     extern bool canlink(int index, int node, bool msg = false);
     extern bool linkents(int index, int node, bool add = true, bool local = true, bool toggle = true);

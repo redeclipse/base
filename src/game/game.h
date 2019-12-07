@@ -2229,7 +2229,6 @@ namespace entities
     extern bool collateitems(dynent *d, vec &pos, float radius, vector<actitem> &actitems);
     extern void checkitems(dynent *d);
     extern void putitems(packetbuf &p);
-    extern void execlink(gameent *d, int index, bool local, int ignore = -1);
     extern void setspawn(int n, int m);
     extern bool tryspawn(dynent *d, const vec &o, float yaw = 0, float pitch = 0);
     extern void spawnplayer(gameent *d, int ent = -1, bool suicide = false);
