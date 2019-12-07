@@ -184,7 +184,7 @@ struct partrenderer
                 v.z -= physics::gravityvel(&d)*secs;
             }
             p->o.add(v);
-            if(particlewind && type&PT_WIND) p->o.add(p->wind.probe(o).mul(secs * 20.0f));
+            if(particlewind && type&PT_WIND) p->o.add(p->wind.probe(o).mul(secs * 10.0f));
             if(step && p->collide && p->o.z < p->val)
             {
                 if(p->collide > 0)

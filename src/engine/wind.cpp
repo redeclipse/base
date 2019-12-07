@@ -1,5 +1,4 @@
 #include "engine.h"
-#include "game.h"
 
 #define WIND_IMPULSE_DECAY_MUL 4.0f
 #define WIND_DYNENT_MOVE_SCALE 0.01f
@@ -68,8 +67,8 @@ static windemitter *getemitter(extentity *e = NULL)
     {
         // find the index of the supplied entity
         const vector<extentity *> &ents = entities::getents();
-        int firstent = entities::firstent(WIND);
-        int lastent = entities::lastent(WIND);
+        int firstent = entities::firstent(ET_WIND);
+        int lastent = entities::lastent(ET_WIND);
         for(int i = firstent; i < lastent; i++) if(ents[i] == e)
         {
             we->entindex = i;
