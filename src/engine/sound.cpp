@@ -444,6 +444,36 @@ void updatesound(int chan)
     }
 }
 
+static bool updatesoundchan(int chan, int srcchan, soundslot *slot)
+{
+    while(chan >= sounds.length()) sounds.add();
+
+    sound &s = sounds[srcchan];
+    sound &t = sounds[chan];
+
+    if(chan == s.chan) return false;
+
+    t.slot = slot;
+    t.vol = s.vol;
+    t.maxrad = s.maxrad;
+    t.minrad = s.minrad;
+    t.material = s.material;
+    t.flags = s.flags;
+    t.millis = s.millis;
+    t.ends = s.ends;
+    t.slotnum = s.slotnum;
+    t.owner = s.owner;
+    t.pos = t.oldpos = s.pos;
+    t.curvol = s.curvol;
+    t.curpan = s.curpan;
+    t.chan = chan;
+    t.hook = s.hook;
+    loopv(s.buffer) t.buffer.add(s.buffer[i]);
+    updatesound(chan);
+
+    return true;
+}
+
 void updatesounds()
 {
     updatemumble();
@@ -483,35 +513,10 @@ void updatesounds()
                     chan = Mix_PlayChannel(-1, sample->sound, s.flags&SND_LOOP ? -1 : 0);
                 }
             }
-            if(chan >= 0)
+            if(chan >= 0 && !updatesoundchan(chan, i, slot))
             {
-                while(chan >= sounds.length()) sounds.add();
-                sound &t = sounds[chan];
-                if(chan == s.chan)
-                {
-                    i--; // repeat with new sound
-                    continue;
-                }
-                else
-                {
-                    t.slot = slot;
-                    t.vol = s.vol;
-                    t.maxrad = s.maxrad;
-                    t.minrad = s.minrad;
-                    t.material = s.material;
-                    t.flags = s.flags;
-                    t.millis = s.millis;
-                    t.ends = s.ends;
-                    t.slotnum = s.slotnum;
-                    t.owner = s.owner;
-                    t.pos = t.oldpos = s.pos;
-                    t.curvol = s.curvol;
-                    t.curpan = s.curpan;
-                    t.chan = chan;
-                    t.hook = s.hook;
-                    loopvj(s.buffer) t.buffer.add(s.buffer[j]);
-                    updatesound(chan);
-                }
+                i--;
+                continue;
             }
         }
         removesound(i);
@@ -586,10 +591,11 @@ int playsound(int n, const vec &pos, physent *d, int flags, int vol, int maxrad,
 
                 while(chan >= sounds.length()) sounds.add();
 
-                // Reset the sound channel if we haven't had the time to do it beforehand
-                if(sounds[chan].slot) sounds[chan].reset();
-
                 sound &s = sounds[chan];
+
+                // invalidate old hook
+                if(s.hook && s.hook != hook) *s.hook = -1;
+
                 s.slot = slot;
                 s.vol = v;
                 s.maxrad = x;
