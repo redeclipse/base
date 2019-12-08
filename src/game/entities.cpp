@@ -1341,7 +1341,7 @@ namespace entities
     // these functions are called when the client touches the item
     void execlink(dynent *d, int index, bool local, int ignore)
     {
-        if(!gameent::is(d) || !ents.inrange(index) || !maylink(ents[index]->type)) return;
+        if(!ents.inrange(index) || !maylink(ents[index]->type)) return;
         gameentity &e = *(gameentity *)ents[index];
         if(e.type == TRIGGER && !cantrigger(index)) return;
         if(!local) e.lastemit = lastmillis;
@@ -1385,7 +1385,7 @@ namespace entities
                 default: break;
             }
         }
-        if(d && commit) client::addmsg(N_EXECLINK, "ri2", ((gameent *)d)->clientnum, index);
+        if(d && gameent::is(d) && commit) client::addmsg(N_EXECLINK, "ri2", ((gameent *)d)->clientnum, index);
     }
 
     bool tryspawn(dynent *d, const vec &o, float yaw, float pitch)
