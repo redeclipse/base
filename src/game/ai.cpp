@@ -1265,8 +1265,12 @@ namespace ai
         }
 
         if(AA(d->actortype, abilities)&(1<<A_A_JUMP)) jumpto(d, b, d->ai->spot);
-        if(d->action[AC_CROUCH] != (d->actortype == A_TURRET || (d->ai->dontmove && (b.type != AI_S_OVERRIDE || b.overridetype == AI_O_CROUCH))))
-            if((d->action[AC_CROUCH] = !d->action[AC_CROUCH]) == true) d->actiontime[AC_CROUCH] = lastmillis;
+        bool crouch = d->actortype == A_TURRET || (d->ai->dontmove && (b.type != AI_S_OVERRIDE || b.overridetype == AI_O_CROUCH));
+        if(d->action[AC_CROUCH] != crouch)
+        {
+            d->action[AC_CROUCH] = crouch;
+            d->actiontime[AC_CROUCH] = crouch ? lastmillis : -lastmillis;
+        }
 
         if(d->ai->dontmove || !(AA(d->actortype, abilities)&(1<<A_A_MOVE)) || (AA(d->actortype, hurtstop) && lastmillis-d->lastpain <= AA(d->actortype, hurtstop)))
             d->move = d->strafe = 0;
