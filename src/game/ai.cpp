@@ -37,7 +37,7 @@ namespace ai
     float weapmindist(int weap, bool alt)
     {
         if(WF(false, weap, collide, alt)&COLLIDE_LENGTH) return 0.f;
-        if(WX(false, weap, explode, alt, game::gamemode, game::mutators, 1.f) > 0) return WX(false, weap, explode, alt, game::gamemode, game::mutators, 1.f);
+        if(WX(false, weap, radial, alt, game::gamemode, game::mutators, 1.f) > 0) return WX(false, weap, radial, alt, game::gamemode, game::mutators, 1.f);
         return 1.f;
     }
 
@@ -1580,7 +1580,7 @@ namespace ai
             projent *p = projs::projs[i];
             if(p && p->state == CS_ALIVE && p->projtype == PRJ_SHOT)
             {
-                float expl = WX(WK(p->flags), p->weap, explode, WS(p->flags), game::gamemode, game::mutators, p->curscale);
+                float expl = WX(WK(p->flags), p->weap, radial, WS(p->flags), game::gamemode, game::mutators, p->curscale);
                 if(expl > 0) obstacles.avoidnear(p, p->o.z + expl + 1, p->o, actors[A_PLAYER].radius + expl + 1);
             }
         }

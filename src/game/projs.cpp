@@ -257,7 +257,7 @@ namespace projs
             bool drill = proj.projcollide&(d->type == ENT_PROJ ? DRILL_SHOTS : DRILL_PLAYER);
             proj.hit = d;
             proj.collidezones = flags;
-            float expl = WX(WK(proj.flags), proj.weap, explode, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
+            float expl = WX(WK(proj.flags), proj.weap, radial, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
             if(!proj.limited && proj.local)
             {
                 if(expl > 0)
@@ -605,7 +605,7 @@ namespace projs
                     }
                     case W_FLAMER:
                     {
-                        addstain(STAIN_SCORCH_SHORT, proj.o, proj.norm, WX(WK(proj.flags), proj.weap, explode, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize));
+                        addstain(STAIN_SCORCH_SHORT, proj.o, proj.norm, WX(WK(proj.flags), proj.weap, radial, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize));
                         break;
                     }
                     default: break;
@@ -1521,7 +1521,7 @@ namespace projs
                     }
                     case W_PLASMA:
                     {
-                        float expl = WX(WK(proj.flags), proj.weap, explode, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
+                        float expl = WX(WK(proj.flags), proj.weap, radial, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
                         if(expl > 0)
                         {
                             part_explosion(proj.o, expl, PART_SHOCKBALL, 1, FWCOL(H, partcol, proj), 1.f, trans);
@@ -1645,7 +1645,7 @@ namespace projs
                     {
                         vol = clamp(int(vol*(1.f-proj.lifespan)), 0, 255);
                         part_create(PART_SMOKE_LERP, len*2, proj.o, 0x999999, WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale, 0.5f*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)), -20);
-                        float expl = WX(WK(proj.flags), proj.weap, explode, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
+                        float expl = WX(WK(proj.flags), proj.weap, radial, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
                         if(expl > 0)
                         {
                             part_explosion(proj.o, expl*0.5f, PART_EXPLOSION, len, FWCOL(H, explcol, proj), 1.f, WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)));
@@ -1660,7 +1660,7 @@ namespace projs
                     }
                     case W_FLAMER: case W_GRENADE: case W_MINE: case W_ROCKET:
                     { // all basically explosions
-                        float expl = WX(WK(proj.flags), proj.weap, explode, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
+                        float expl = WX(WK(proj.flags), proj.weap, radial, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
                         if(type != W_FLAMER) part_create(PART_PLASMA_SOFT, len, proj.o, FWCOL(H, partcol, proj), max(expl*0.5f, 0.5f), 0.5f*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags))); // corona
                         if(expl > 0)
                         {
@@ -1695,7 +1695,7 @@ namespace projs
                     {
                         vol = clamp(int(vol*(1.f-proj.lifespan)), 0, 255);
                         part_splash(PART_SPARK, proj.child ? 2 : (type == W_SHOTGUN ? 6 : 4), proj.child ? len : len*2, proj.o, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale*0.5f, WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)), 1, 0, 16, 15);
-                        float expl = WX(WK(proj.flags), proj.weap, explode, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
+                        float expl = WX(WK(proj.flags), proj.weap, radial, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
                         if(expl > 0)
                         {
                             part_explosion(proj.o, expl*0.5f, PART_EXPLOSION, len, FWCOL(H, explcol, proj), 1.f, WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)));
@@ -1709,7 +1709,7 @@ namespace projs
                     }
                     case W_PLASMA:
                     {
-                        float expl = WX(WK(proj.flags), proj.weap, explode, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
+                        float expl = WX(WK(proj.flags), proj.weap, radial, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
                         if(expl > 0)
                         {
                             part_explosion(proj.o, expl, PART_SHOCKBALL, len, FWCOL(H, explcol, proj), 1.f, WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)));
@@ -1727,7 +1727,7 @@ namespace projs
                     }
                     case W_RIFLE: case W_ZAPPER:
                     {
-                        float expl = WX(WK(proj.flags), proj.weap, explode, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
+                        float expl = WX(WK(proj.flags), proj.weap, radial, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
                         if(expl > 0)
                         {
                             part_create(type != W_ZAPPER ? PART_PLASMA_SOFT : PART_ELECZAP_SOFT, len, proj.o, FWCOL(H, partcol, proj), expl*0.5f, 0.5f*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags))); // corona
@@ -1747,7 +1747,7 @@ namespace projs
                 }
                 if(vol > 0 && !proj.limited && !WK(proj.flags))
                 {
-                    int slot = WX(WK(proj.flags), proj.weap, explode, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize) > 0 ? S_W_EXPLODE : S_W_DESTROY;
+                    int slot = WX(WK(proj.flags), proj.weap, radial, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize) > 0 ? S_W_EXPLODE : S_W_DESTROY;
                     playsound(WSND2(proj.weap, WS(proj.flags), slot), proj.o, NULL, 0, vol);
                 }
                 if(proj.owner)
@@ -1817,7 +1817,7 @@ namespace projs
                 {
                     snd = WSND2(proj.weap, WS(proj.flags), S_W_EXTINGUISH);
                     vol = clamp(10+int(245*proj.lifespan*proj.lifesize*proj.curscale), 0, 255);
-                    float expl = WX(WK(proj.flags), proj.weap, explode, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
+                    float expl = WX(WK(proj.flags), proj.weap, radial, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
                     if(expl > 0) size *= expl*1.5f;
                     else size *= 2.5f;
                 }
@@ -2360,7 +2360,7 @@ namespace projs
         loopv(projs)
         {
             projent &proj = *projs[i];
-            if(proj.projtype == PRJ_SHOT && WF(WK(proj.flags), proj.weap, radial, WS(proj.flags)))
+            if(proj.projtype == PRJ_SHOT && WF(WK(proj.flags), proj.weap, radialdelay, WS(proj.flags)))
             {
                 proj.hit = NULL;
                 proj.collidezones = CLZ_NONE;
@@ -2423,12 +2423,12 @@ namespace projs
             }
             if(proj.local && proj.owner && proj.projtype == PRJ_SHOT)
             {
-                float expl = WX(WK(proj.flags), proj.weap, explode, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
+                float expl = WX(WK(proj.flags), proj.weap, radial, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
                 if(WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_LENGTH) proj.o = proj.dest;
                 if(!proj.limited && proj.state != CS_DEAD)
                 {
                     if(!(proj.projcollide&DRILL_PLAYER)) proj.hit = NULL;
-                    bool radial = WF(WK(proj.flags), proj.weap, radial, WS(proj.flags)) && expl > 0 && (!proj.lastradial || lastmillis-proj.lastradial >= WF(WK(proj.flags), proj.weap, radial, WS(proj.flags)));
+                    bool radial = WF(WK(proj.flags), proj.weap, radialdelay, WS(proj.flags)) && expl > 0 && (!proj.lastradial || lastmillis-proj.lastradial >= WF(WK(proj.flags), proj.weap, radialdelay, WS(proj.flags)));
                     int proxim = proj.stuck && !proj.beenused ? WF(WK(proj.flags), proj.weap, proxtype, WS(proj.flags)) : 0;
                     if(radial || proxim)
                     {
@@ -2618,7 +2618,7 @@ namespace projs
                 case W_CLAW: case W_SWORD: adddynlight(proj.o, 24*trans, FWCOL(P, partcol, proj)); break;
                 case W_PISTOL: case W_SHOTGUN: case W_SMG: case W_ZAPPER: case W_RIFLE:
                 {
-                    float expl = WX(WK(proj.flags), proj.weap, explode, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
+                    float expl = WX(WK(proj.flags), proj.weap, radial, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
                     if(type != W_ZAPPER || expl <= 0)
                     {
                         float size = clamp(WF(WK(proj.flags), proj.weap, partlen, WS(proj.flags))*(1.f-proj.lifespan)*proj.curscale, proj.curscale, min(16.f, min(WF(WK(proj.flags), proj.weap, partlen, WS(proj.flags)), proj.o.dist(proj.from))));
@@ -2628,7 +2628,7 @@ namespace projs
                 }
                 case W_FLAMER: case W_PLASMA: case W_GRENADE: case W_ROCKET:
                 {
-                    float size = WX(WK(proj.flags), proj.weap, explode, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
+                    float size = WX(WK(proj.flags), proj.weap, radial, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
                     if(size <= 0) size = WF(WK(proj.flags), proj.weap, partlen, WS(proj.flags))*proj.lifesize*proj.curscale*0.5f;
                     adddynlight(proj.o, 1.5f*size*trans, FWCOL(P, partcol, proj));
                     break;
