@@ -1060,9 +1060,21 @@ namespace entities
         return true;
     }
 
+    void cleansound(int n)
+    {
+        gameentity &e = *(gameentity *)ents[n];
+        if(issound(e.schan))
+        {
+            removesound(e.schan);
+            e.schan = -1; // prevent clipping when moving around
+            if(e.type == MAPSOUND) e.lastemit = lastmillis+1000;
+        }
+    }
+
     void fixentity(int n, bool recurse, bool create, bool alter)
     {
         gameentity &e = *(gameentity *)ents[n];
+        cleansound(n);
         e.attrs.setsize(numattrs(e.type), 0);
         loopvrev(e.links)
         {
@@ -1080,12 +1092,6 @@ namespace entities
                 if(recurse || ent < n) fixentity(ent, false);
             }
             else continue;
-        }
-        if(issound(e.schan))
-        {
-            removesound(e.schan);
-            e.schan = -1; // prevent clipping when moving around
-            if(e.type == MAPSOUND) e.lastemit = lastmillis+1000;
         }
         #define FIXEMIT \
             e.nextemit = 0; \
@@ -1477,6 +1483,7 @@ namespace entities
     void editent(int i, bool local)
     {
         extentity &e = *ents[i];
+        cleansound(i);
         if(local && m_edit(game::gamemode) && game::player1->state == CS_EDITING)
             client::addmsg(N_EDITENT, "ri5iv", i, (int)(e.o.x*DMF), (int)(e.o.y*DMF), (int)(e.o.z*DMF), e.type, e.attrs.length(), e.attrs.length(), e.attrs.getbuf());
         if(e.type < MAXENTTYPES)
