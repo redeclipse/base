@@ -204,6 +204,8 @@ namespace bomber
                     gle::colorf(rp, gp, bp, sq*0.5f);
                     hud::drawsized(sx+ss/4, sy+ss/4, ss/2);
                 }
+                float fade = camera1->o.distrange(e->headpos(), game::bombertargetnamefadeat*game::aboveheadnamessize, game::bombertargetnamefadecut*game::aboveheadnamessize);
+                draw_textf("%s", cx*w, cy*h-size, 0, 0, -1, -1, -1, int(255*blend*fade), TEXT_CENTERED, -1, 0, 0, game::colourname(e));
             }
         }
     }

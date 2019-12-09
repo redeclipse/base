@@ -334,6 +334,9 @@ namespace game
     FVAR(IDF_PERSIST, affinityfollowblend, 0, 0.5f, 1);
     FVAR(IDF_PERSIST, affinitythirdblend, 0, 0.5f, 1);
 
+    FVAR(IDF_PERSIST, bombertargetnamefadeat, 0, 20, FVAR_MAX);
+    FVAR(IDF_PERSIST, bombertargetnamefadecut, 0, 15, FVAR_MAX);
+
     VAR(IDF_PERSIST, footstepsounds, 0, 3, 3); // 0 = off, &1 = focus, &2 = everyone else
     FVAR(IDF_PERSIST, footstepsoundmin, 0, 0, FVAR_MAX); // minimum velocity magnitude
     FVAR(IDF_PERSIST, footstepsoundmax, 0, 150, FVAR_MAX); // maximum velocity magnitude
