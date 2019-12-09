@@ -183,7 +183,7 @@ mutstypes mutstype[] = {
     {
         G_M_HARD, GM(HARD),
         GM(FFA)|GM(COOP)|GM(INSTA)|GM(MEDIEVAL)|GM(KABOOM)|GM(DUEL)|GM(SURVIVOR)|GM(CLASSIC)|GM(ONSLAUGHT)|GM(VAMPIRE)|GM(RESIZE)|GM(HARD)|GM(ARENA)|GM(GSP1)|GM(GSP2)|GM(GSP3),
-        "Hard", "Less health without regeneration and no radar blips"
+        "Hard", "Radar and health regeneration is disabled"
     },
     {
         G_M_ARENA, GM(ARENA),
