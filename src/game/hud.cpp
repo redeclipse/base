@@ -171,7 +171,6 @@ namespace hud
     FVAR(IDF_PERSIST, crosshairaccamt, 0, 0, 1);
     VAR(IDF_PERSIST, crosshairflash, 0, 1, 1);
     FVAR(IDF_PERSIST, crosshairthrob, 0, 0, 1000);
-    TVAR(IDF_PERSIST|IDF_PRELOAD, pointertex, "textures/hud/pointer", 3);
     TVAR(IDF_PERSIST|IDF_PRELOAD, cursortex, "textures/hud/cursor", 3);
     TVAR(IDF_PERSIST|IDF_PRELOAD, cursorhovertex, "textures/hud/cursorhover", 3);
 
@@ -732,7 +731,7 @@ namespace hud
 
     enum
     {
-        POINTER_NONE = 0, POINTER_RELATIVE, POINTER_UI, POINTER_EDIT, POINTER_SPEC,
+        POINTER_NONE = 0, POINTER_UI, POINTER_EDIT, POINTER_SPEC,
         POINTER_HAIR, POINTER_TEAM, POINTER_ZOOM, POINTER_HIT, POINTER_MAX
     };
 
@@ -740,7 +739,6 @@ namespace hud
     {
         switch(index)
         {
-            case POINTER_RELATIVE: return pointertex;
             case POINTER_UI:
             {
                 if(UI::uihidden) return NULL;
