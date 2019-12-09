@@ -125,7 +125,7 @@ namespace bomber
                     return e->clientnum;
             }
             float fx = k >= 2 ? 360 : (d->ai ? d->ai->views[0] : curfov), fy = k >= 2 ? 360 : (d->ai ? d->ai->views[1] : fovy);
-            loopi(numdyns) if((e = (gameent *)game::iterdynents(i)) && e->team == d->team && e->state == CS_ALIVE && (k%2 || e->actortype != A_BOT))
+            loopi(numdyns) if((e = (gameent *)game::iterdynents(i)) && e != d && e->team == d->team && e->state == CS_ALIVE && (k%2 || e->actortype != A_BOT))
             {
                 if(getsight(d->o, d->yaw, d->pitch, e->o, dest, 1e16f, fx, fy))
                 {
