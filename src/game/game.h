@@ -2223,7 +2223,7 @@ namespace game
 
 namespace entities
 {
-    extern int showentdescs, showentfull, simpleitems;
+    extern int showentdescs, showentfull, showentweapons, simpleitems;
     extern float showentavailable, showentunavailable;
     extern bool execitem(int n, int cn, dynent *d, vec &pos, float dist);
     extern bool collateitems(dynent *d, vec &pos, float radius, vector<actitem> &actitems);

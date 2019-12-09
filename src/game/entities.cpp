@@ -10,6 +10,7 @@ namespace entities
     VAR(IDF_PERSIST, showentdescs, 0, 2, 3);
     VAR(IDF_PERSIST, showentinfo, 0, 21, 127);
     VAR(IDF_PERSIST, showentattrinfo, 0, 7, 7);
+    VAR(IDF_PERSIST, showentweapons, 0, 0, 2);
 
     VAR(IDF_PERSIST, showentdir, 0, 1, 3); // 0 = off, 1 = only selected, 2 = always when editing, 3 = always in editmode
     VAR(IDF_PERSIST, showentradius, 0, 1, 3);
@@ -458,7 +459,7 @@ namespace entities
             {
                 int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators), weap = m_attr(type, attr[0]);
                 if(!isweap(weap)) break;
-                const char *mdlname = game::focus->hasweap(weap, sweap) ? weaptype[weap].ammo : weaptype[weap].item;
+                const char *mdlname = !showentweapons || (showentweapons != 2 && game::focus->hasweap(weap, sweap)) ? weaptype[weap].ammo : weaptype[weap].item;
                 return mdlname && *mdlname ? mdlname : "projectiles/cartridge";
             }
             case ACTOR:
