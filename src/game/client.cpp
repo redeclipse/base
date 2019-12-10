@@ -2880,7 +2880,7 @@ namespace client
                     if(isweap(weap) && m)
                     {
                         if(m->weapswitch(weap, lastmillis, W(weap, delayswitch)))
-                            playsound(WSND(weap, S_W_SWITCH), m->o, m, 0, -1, -1, -1, &m->wschan);
+                            playsound(WSND(weap, S_W_SWITCH), m->o, m, 0, -1, -1, -1, &m->wschan[WS_MAIN_CHAN]);
                     }
                     break;
                 }

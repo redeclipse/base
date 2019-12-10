@@ -48,6 +48,8 @@ enum { W_A_CLIP = 0, W_A_STORE, W_A_MAX };
 enum
 {
     S_W_PRIMARY = 0, S_W_SECONDARY,
+    S_W_PRIMARY_BEGIN, S_W_PRIMARY_END,
+    S_W_SECONDARY_BEGIN, S_W_SECONDARY_END,
     S_W_POWER, S_W_POWER2, S_W_ZOOM,
     S_W_SWITCH, S_W_RELOAD, S_W_NOTIFY,
     S_W_EXPLODE, S_W_EXPLODE2,
@@ -1317,6 +1319,8 @@ WPFVAR(IDF_GAMEMOD, 0, modweightzoom, FVAR_MIN, FVAR_MAX,
 #define WSP(a,b,c,d,e)       (!m_insta(c, d) || (a) != W_RIFLE ? clamp(W2(a, spread, b)*(e), W2(a, spreadmin, b), W2(a, spreadmax, b) > 0 ? W2(a, spreadmax, b) : FVAR_MAX) : 0.f)
 #define WSND(a,b)            (weaptype[a].sound+(b))
 #define WSNDF(a,b)           (weaptype[a].sound+((b) ? S_W_SECONDARY : S_W_PRIMARY))
+#define WSNDFB(a,b)          (weaptype[a].sound+((b) ? S_W_SECONDARY_BEGIN : S_W_PRIMARY_BEGIN))
+#define WSNDFE(a,b)          (weaptype[a].sound+((b) ? S_W_SECONDARY_END : S_W_PRIMARY_END))
 #define WSND2(a,b,c)         (weaptype[a].sound+((b) ? (c)+1 : (c)))
 #define WHCOL(d,a,b,c)       (W2(a, b, c) >= 0 ? W2(a, b, c) : game::pulsehexcol(d, clamp(INVPULSE(W2(a, b, c)), 0, int(PULSE_LAST)), 50))
 #define WPCOL(d,a,b,c)       (W2(a, b, c) >= 0 ? vec::fromcolor(W2(a, b, c)) : game::pulsecolour(d, clamp(INVPULSE(W2(a, b, c)), 0, int(PULSE_LAST)), 50))

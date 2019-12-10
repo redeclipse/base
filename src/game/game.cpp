@@ -1195,14 +1195,27 @@ namespace game
 
         if(isweap(d->weapselect) && gs_playing(gamestate) && d->state == CS_ALIVE)
         {
+            bool secondary = physics::secondaryweap(d);
+            bool firing = d->weapstate[d->weapselect] == (secondary ? W_S_SECONDARY : W_S_PRIMARY);
+
+            if(d->wasfiring != d->weapselect && firing)
+            {
+                d->wasfiring = d->weapselect;
+                playsound(WSNDFB(d->weapselect, secondary), d->o, d, 0, 255, -1, -1, &d->wschan[WS_BEGIN_CHAN]);
+            }
+            else if(d->wasfiring == d->weapselect && !firing)
+            {
+                d->wasfiring = -1;
+                playsound(WSNDFE(d->weapselect, secondary), d->o, d, 0, 255, -1, -1, &d->wschan[WS_END_CHAN]);
+            }
+
             if(d->weapselect < W_ALL && d->weapstate[d->weapselect] != W_S_RELOAD && prevstate == W_S_RELOAD && playreloadnotify&(d == focus ? 1 : 2) && (d->weapammo[d->weapselect][W_A_CLIP] >= W(d->weapselect, ammoclip) || playreloadnotify&(d == focus ? 4 : 8)))
-                    playsound(WSND(d->weapselect, S_W_NOTIFY), d->o, d, 0, reloadnotifyvol, -1, -1, &d->wschan);
+                    playsound(WSND(d->weapselect, S_W_NOTIFY), d->o, d, 0, reloadnotifyvol, -1, -1, &d->wschan[WS_MAIN_CHAN]);
             if(d->weapstate[d->weapselect] == W_S_POWER || d->weapstate[d->weapselect] == W_S_ZOOM)
             {
                 int millis = lastmillis-d->weaptime[d->weapselect];
                 if(millis >= 0 && millis <= d->weapwait[d->weapselect])
                 {
-                    bool secondary = physics::secondaryweap(d);
                     float amt = millis/float(d->weapwait[d->weapselect]);
                     int vol = 255, snd = d->weapstate[d->weapselect] == W_S_POWER ? WSND2(d->weapselect, secondary, S_W_POWER) : WSND(d->weapselect, S_W_ZOOM);
                     if(W2(d->weapselect, cooktime, secondary)) switch(W2(d->weapselect, cooked, secondary))

@@ -1195,13 +1195,22 @@ enum
     TAG_MAX, TAG_EJECT = TAG_EJECT1, TAG_N_EJECT = 2, TAG_JET = TAG_JET_LEFT, TAG_N_JET = 3, TAG_TOE = TAG_TOE_LEFT, TAG_N_TOE = 2
 };
 
+enum
+{
+    WS_BEGIN_CHAN = 0,
+    WS_MAIN_CHAN,
+    WS_END_CHAN,
+
+    WS_CHANS
+};
+
 struct gameent : dynent, clientstate
 {
     editinfo *edit;
     ai::aiinfo *ai;
     int team, clientnum, privilege, projid, lastnode, checkpoint, cplast, respawned, suicided, lastupdate, lastpredict, plag, ping, lastflag, totaldamage,
-        actiontime[AC_MAX], impulse[IM_MAX], impulsetime[IM_T_MAX], smoothmillis, turnside, aschan, cschan, vschan, wschan, pschan, sschan[2],
-        lasthit, lastteamhit, lastkill, lastattacker, lastpoints, quake, lastfoot, lastimpulsecollect;
+        actiontime[AC_MAX], impulse[IM_MAX], impulsetime[IM_T_MAX], smoothmillis, turnside, aschan, cschan, vschan, wschan[WS_CHANS], pschan, sschan[2],
+        lasthit, lastteamhit, lastkill, lastattacker, lastpoints, quake, wasfiring, lastfoot, lastimpulsecollect;
     float deltayaw, deltapitch, newyaw, newpitch, stunscale, stungravity;
     bool action[AC_MAX], conopen, k_up, k_down, k_left, k_right, obliterated, headless;
     vec tag[TAG_MAX];
@@ -1213,7 +1222,7 @@ struct gameent : dynent, clientstate
     vector<int> vitems;
 
     gameent() : edit(NULL), ai(NULL), team(T_NEUTRAL), clientnum(-1), privilege(PRIV_NONE), projid(0), checkpoint(-1), cplast(0), lastupdate(0), lastpredict(0), plag(0), ping(0),
-        totaldamage(0), smoothmillis(-1), lastattacker(-1), lastpoints(0), quake(0), conopen(false), k_up(false), k_down(false), k_left(false), k_right(false), obliterated(false)
+        totaldamage(0), smoothmillis(-1), lastattacker(-1), lastpoints(0), quake(0), wasfiring(-1), conopen(false), k_up(false), k_down(false), k_left(false), k_right(false), obliterated(false)
     {
         state = CS_DEAD;
         type = ENT_PLAYER;
@@ -1462,9 +1471,13 @@ struct gameent : dynent, clientstate
         if(issound(aschan)) removesound(aschan);
         if(issound(cschan)) removesound(cschan);
         if(issound(vschan)) removesound(vschan);
-        if(issound(wschan)) removesound(wschan);
         if(issound(pschan)) removesound(pschan);
-        aschan = cschan = vschan = wschan = pschan = -1;
+        aschan = cschan = vschan = pschan = -1;
+        loopi(WS_CHANS)
+        {
+            if(issound(wschan[i])) removesound(wschan[i]);
+            wschan[i] = -1;
+        }
         loopi(2)
         {
             if(issound(sschan[i])) removesound(sschan[i]);
