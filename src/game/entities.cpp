@@ -487,7 +487,7 @@ namespace entities
             d->weapammo[weap][W_A_STORE] = 0;
         }
         d->useitem(ent, e.type, attr, ammoamt, sweap, lastmillis, W(attr, delayitem));
-        playsound(e.type == WEAPON && attr >= W_OFFSET && attr < W_ALL ? WSND(attr, S_W_USE) : S_ITEMUSE, d->o, d, 0, -1, -1, -1, &d->wschan);
+        playsound(e.type == WEAPON && attr >= W_OFFSET && attr < W_ALL ? WSND(attr, S_W_USE) : S_ITEMUSE, d->o, d, 0, -1, -1, -1, &d->wschan[WS_MAIN_CHAN]);
         if(game::dynlighteffects) adddynlight(d->center(), enttype[e.type].radius*2, vec::fromcolor(colour).mul(2.f), 250, 250);
         if(ents.inrange(drop) && ents[drop]->type == WEAPON)
         {
