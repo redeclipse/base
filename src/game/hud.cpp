@@ -836,7 +836,7 @@ namespace hud
         float rot = 0;
         if(rotate&8) rot += spin;
         if(rotate&4) rot += angle;
-        if(rotate&2) flipy= angle > 90.f && angle <= 180.f;
+        if(rotate&2) flipy = angle > 90.f && angle <= 180.f;
         if(rotate&1) flipx = angle >= 180.f;
         while(rot < 0.0f) rot += 360.0f;
         while(rot >= 360.0f) rot -= 360.0f;

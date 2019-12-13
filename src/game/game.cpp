@@ -348,7 +348,7 @@ namespace game
     VAR(IDF_PERSIST, footstepsoundminrad, -1, -1, 255);
     VAR(IDF_PERSIST, footstepsoundmaxrad, -1, -1, 255);
 
-    VAR(IDF_PERSIST, nogore, 0 , 0, 2); // turns off all gore, 0 = off, 1 = replace, 2 = remove
+    VAR(IDF_PERSIST, nogore, 0, 0, 2); // turns off all gore, 0 = off, 1 = replace, 2 = remove
     VAR(IDF_PERSIST, forceplayermodel, -1, -1, PLAYERTYPES-1);
     VAR(IDF_PERSIST, forceplayerpattern, -1, -1, PLAYERPATTERNS-1);
     VAR(IDF_PERSIST, vanitymodels, 0, 1, 1);
