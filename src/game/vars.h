@@ -260,7 +260,7 @@ GFVAR(IDF_GAMEMOD, 0, itemrepelspeed, 0, 35, FVAR_MAX);
 
 //  dm          duel        survivor    gladiator   capture     defend      defendking  bomber      bomberhold  race        racelapped  racegauntlet
 MMVAR(IDF_GAMEMOD, 0, timelimit, 0, VAR_MAX,
-    10,         10,         10,         10,         10,         10,         10,         10,         10,         10,         10,         10
+    10,         10,         10,         10,         10,         10,         10,         10,         10,         0,          10,         10
 );
 MMVAR(IDF_GAMEMOD, 0, overtimeallow, 0, 1,
     1,          1,          1,          1,          1,          1,          1,          1,          1,          1,          1,          1
