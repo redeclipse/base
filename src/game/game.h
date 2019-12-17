@@ -168,7 +168,7 @@ extern const enttypes enttype[] = {
                 "actor",        { "type",   "yaw",      "pitch",    "modes",    "muts",     "id",       "weap",     "health",   "speed",    "scale",    "variant" }
     },
     {
-        TRIGGER,        1,          58,     16,     EU_AUTO,    7,          6,          -1,     6,      -1,
+        TRIGGER,        1,          58,     16,     EU_AUTO,    8,          6,          -1,     7,      -1,
             (1<<MAPMODEL)|(1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<MAPMODEL)|(1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<ENT_PLAYER)|(1<<ENT_AI),
