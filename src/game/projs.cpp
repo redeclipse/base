@@ -1158,7 +1158,7 @@ namespace projs
                 proj.yaw = d->yaw;
                 proj.pitch = d->pitch;
                 proj.inertia = vec(d->vel).add(d->falling);
-                if(proj.projtype == PRJ_SHOT && isweap(proj.weap) && issound(d->pschan) && weaptype[proj.weap].thrown)
+                if(proj.weap != W_ZAPPER && proj.projtype == PRJ_SHOT && isweap(proj.weap) && issound(d->pschan) && weaptype[proj.weap].thrown)
                     playsound(WSND2(proj.weap, WS(proj.flags), S_W_TRANSIT), proj.o, &proj, SND_LOOP, sounds[d->pschan].vol, -1, -1, &proj.schan, 0, &d->pschan);
             }
             else vectoyawpitch(vec(proj.dest).sub(proj.from).normalize(), proj.yaw, proj.pitch);
@@ -1207,6 +1207,10 @@ namespace projs
             int slot = WSNDF(weap, WS(flags)), vol = clamp(int(ceilf(255*skew)), 0, 255);
             if(slot >= 0 && vol > 0)
             {
+                // quick hack to have additional audio feedback for zapper
+                if(weap == W_ZAPPER && !(WS(flags)))
+                    playsound(WSND2(weap, WS(flags), S_W_TRANSIT), d->o, d, 0, vol, -1, -1, &d->wschan[WS_OTHER_CHAN]);
+
                 if((weap == W_FLAMER || weap == W_ZAPPER) && !(WS(flags)))
                 {
                     int ends = lastmillis+delayattack+PHYSMILLIS;
@@ -1405,7 +1409,7 @@ namespace projs
                         case 1: case 2: case 3: default: vol = clamp(10+int(245*proj.lifespan*proj.lifesize*proj.curscale), 0, 255); break; // shorter
                     }
                     if(issound(proj.schan)) sounds[proj.schan].vol = vol;
-                    else if(vol > 0) playsound(WSND2(proj.weap, WS(proj.flags), S_W_TRANSIT), proj.o, &proj, SND_LOOP, vol, -1, -1, &proj.schan);
+                    else if(vol > 0 && proj.weap != W_ZAPPER) playsound(WSND2(proj.weap, WS(proj.flags), S_W_TRANSIT), proj.o, &proj, SND_LOOP, vol, -1, -1, &proj.schan);
                 }
                 int type = WF(WK(proj.flags), proj.weap, parttype, WS(proj.flags));
                 switch(type)

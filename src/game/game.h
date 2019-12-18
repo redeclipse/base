@@ -1200,6 +1200,7 @@ enum
     WS_BEGIN_CHAN = 0,
     WS_MAIN_CHAN,
     WS_END_CHAN,
+    WS_OTHER_CHAN,
 
     WS_CHANS
 };
@@ -1500,7 +1501,7 @@ struct gameent : dynent, clientstate
         loopi(IM_MAX) impulse[i] = 0;
         loopi(IM_T_MAX) impulsetime[i] = 0;
         lasthit = lastkill = quake = turnside = lastimpulsecollect = 0;
-        lastteamhit = lastflag = respawned = suicided = lastnode = lastfoot = -1;
+        lastteamhit = lastflag = respawned = suicided = lastnode = lastfoot = wasfiring = -1;
         obit[0] = '\0';
         obliterated = headless = false;
         icons.shrink(0);
