@@ -36,6 +36,7 @@ The project is Free and Open Source, meaning that you can both use it for free a
 
 ### Contributors, Developers and Supporters
 * Adam "lycanfox" Hobson
+* Alex "molexted" Foster - Maps/Balance Lead and CubeScript
 * Alex "ZeroKnight" George - Design/Testing, Support
 * Anup "DOS_WARRIOR" Debnath
 * Cameron "Rhubarb" Dawdy
@@ -104,10 +105,10 @@ The project is Free and Open Source, meaning that you can both use it for free a
 * "Fleeky" - Models
 * "fluxord" - Crosshairs
 * "Furor"
+* "Iceflower" - Icons
 * "John_III" - Maps and Models
 * "Korsi" - Maps
 * "littlebabyjesus"
-* "molexted" - Maps and CubeScript
 * "nemurati"
 * "Raiden" - Maps
 * "RaZgRiZ" - Textures and Cubescript maintenance
