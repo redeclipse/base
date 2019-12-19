@@ -163,7 +163,7 @@ GVAR(0, PRIV_MODERATOR, mapslock, 0, PRIV_MODERATOR, PRIV_MAX);
 GVAR(0, PRIV_MODERATOR, mapslocktype, 0, 2, 2); // 0 = off, 1 = allow maps, 2 = rotation maps
 
 GSVAR(IDF_READONLY, 0, previousmaps, "");
-GVAR(0, PRIV_MODERATOR, maphistory, 0, 5, VAR_MAX);
+GVAR(0, PRIV_MODERATOR, maphistory, 0, 1, VAR_MAX);
 
 GVAR(0, PRIV_MODERATOR, rotatemaps, 0, 2, 2); // 0 = off, 1 = sequence, 2 = random
 GVAR(0, PRIV_MODERATOR, rotatemode, 0, 1, 1);
