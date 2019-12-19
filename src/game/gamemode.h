@@ -352,6 +352,7 @@ extern mutstypes mutstype[];
     } \
     mapshrink(!(f), a, G(previousmaps), true) \
 }
+//note that maplist removes entries in previousmaps
 #define maplist(a,b,c,d,e,f) \
 { \
     if(m_capture(b)) a = newstring(G(capturemaps)); \
@@ -363,6 +364,17 @@ extern mutstypes mutstype[];
     if(e) mapcull(a, b, c, d, e, f) \
     else mapshrink(!(f), a, G(previousmaps), true) \
 }
+//allowmaplist doesn't cut previous maps
+#define allowmaplist(a,b,c) \
+{ \
+    if(m_capture(b)) a = newstring(G(capturemaps)); \
+    else if(m_defend(b)) a = newstring(m_dac_king(b, c) ? G(kingmaps) : G(defendmaps)); \
+    else if(m_bomber(b)) a = newstring(m_bb_hold(b, c) ? G(holdmaps) : G(bombermaps)); \
+    else if(m_race(b)) a = newstring(G(racemaps)); \
+    else if(m_dm(b)) a = newstring(m_dm_gladiator(b, c) ? G(gladiatormaps) : G(mainmaps)); \
+    else a = newstring(G(allowmaps)); \
+}
+
 #ifdef CPP_GAME_SERVER
 SVAR(IDF_READONLY, gamestateidxname, "waiting getmap sendmap readying gameinfo playing overtime intermission voting");
 VAR(IDF_READONLY, gamestatewaiting, 1, G_S_WAITING, -1);
