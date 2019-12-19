@@ -52,7 +52,7 @@ GVARF(IDF_GAMEMOD, 0, forcemapvariant, 0, 1, MPV_MAX-1, if(sv_forcemapvariant) s
 
 GVAR(0, PRIV_ADMINISTRATOR, serverstats, 0, 1, 1);
 GVAR(0, PRIV_ADMINISTRATOR, serverclients, 1, 16, MAXCLIENTS);
-GVAR(0, PRIV_ADMINISTRATOR, serverspectators, 0, 0, MAXCLIENTS); // 0 = copy serverclients, 1+ = spectator slots
+GVAR(0, PRIV_ADMINISTRATOR, serverspectators, -1, 0, MAXCLIENTS); // -1 = copy serverclients, 0+ = spectator slots
 GVARF(0, PRIV_ADMINISTRATOR, serverdupclients, 0, 0, MAXCLIENTS, limitdupclients(), );
 GVAR(0, PRIV_ADMINISTRATOR, serveropen, 0, 3, 3);
 GSVAR(0, PRIV_ADMINISTRATOR, serverdesc, "");
