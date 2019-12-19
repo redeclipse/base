@@ -1225,7 +1225,7 @@ namespace server
     void deleteinfo(void *ci) { delete (clientinfo *)ci; }
 
     int numchannels() { return 3; }
-    int spectatorslots() { return clamp(G(serverspectators) > 0 ? G(serverspectators) : G(serverclients), 1, MAXCLIENTS); }
+    int spectatorslots() { return clamp(G(serverspectators) >= 0 ? G(serverspectators) : G(serverclients), 1, MAXCLIENTS); }
     int maxslots() { return clamp(G(serverclients)+spectatorslots(), 1, MAXCLIENTS); }
     int reserveclients() { return maxslots()+4; }
     int dupclients() { return G(serverdupclients); }
