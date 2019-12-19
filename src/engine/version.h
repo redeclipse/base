@@ -1,6 +1,6 @@
-#define VERSION_MAJOR 1
-#define VERSION_MINOR 9
-#define VERSION_PATCH 9
+#define VERSION_MAJOR 2
+#define VERSION_MINOR 0
+#define VERSION_PATCH 0
 #define VERSION_HLP(x,y,z,r) #x#r#y#r#z
 #define VERSION_STR(x,y,z,r) VERSION_HLP(x,y,z,r)
 #define VERSION_STRING VERSION_STR(VERSION_MAJOR,VERSION_MINOR,VERSION_PATCH,.)
@@ -8,7 +8,7 @@
 #define VERSION_FNAME "Red Eclipse 2"
 #define VERSION_UNAME "redeclipse"
 #define VERSION_VNAME "REDECLIPSE"
-#define VERSION_RELEASE "v2 Preview"
+#define VERSION_RELEASE "Jupiter Edition"
 #define VERSION_URL "www.redeclipse.net"
 #define VERSION_COPY "2010-2019"
 #define VERSION_DESC "A fun-filled new take on the first-person arena shooter."
