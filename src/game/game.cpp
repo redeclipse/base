@@ -3537,6 +3537,10 @@ namespace game
         }
         else
         {
+            // `true` if the player is actually moving at a meaningful speed.
+            // This may not be the case if the player is running against a wall or another obstacle.
+            const bool moving = abs(d->vel.x) > 5.0f || abs(d->vel.y) > 5.0f;
+
             if(secondary && allowmove(d) && AA(d->actortype, abilities)&(1<<A_A_MOVE))
             {
                 if(physics::liquidcheck(d) && d->physstate <= PHYS_FALL)
@@ -3552,9 +3556,9 @@ namespace game
                         mdl.anim |= ANIM_FLYKICK<<ANIM_SECONDARY;
                         mdl.basetime2 = d->weaptime[W_MELEE];
                     }
-                    else if(d->strafe) mdl.anim |= (d->strafe > 0 ? ANIM_BOOST_LEFT : ANIM_BOOST_RIGHT)<<ANIM_SECONDARY;
-                    else if(d->move > 0) mdl.anim |= ANIM_BOOST_FORWARD<<ANIM_SECONDARY;
-                    else if(d->move < 0) mdl.anim |= ANIM_BOOST_BACKWARD<<ANIM_SECONDARY;
+                    else if(moving && d->strafe) mdl.anim |= (d->strafe > 0 ? ANIM_BOOST_LEFT : ANIM_BOOST_RIGHT)<<ANIM_SECONDARY;
+                    else if(moving && d->move > 0) mdl.anim |= ANIM_BOOST_FORWARD<<ANIM_SECONDARY;
+                    else if(moving && d->move < 0) mdl.anim |= ANIM_BOOST_BACKWARD<<ANIM_SECONDARY;
                     else mdl.anim |= ANIM_BOOST_UP<<ANIM_SECONDARY;
                 }
                 else if(d->physstate == PHYS_FALL && !d->onladder && d->airtime(lastmillis) >= 50)
@@ -3567,34 +3571,34 @@ namespace game
                     }
                     else if(d->crouching(true))
                     {
-                        if(d->strafe) mdl.anim |= (d->strafe > 0 ? ANIM_CROUCH_JUMP_LEFT : ANIM_CROUCH_JUMP_RIGHT)<<ANIM_SECONDARY;
-                        else if(d->move > 0) mdl.anim |= ANIM_CROUCH_JUMP_FORWARD<<ANIM_SECONDARY;
-                        else if(d->move < 0) mdl.anim |= ANIM_CROUCH_JUMP_BACKWARD<<ANIM_SECONDARY;
+                        if(moving && d->strafe) mdl.anim |= (d->strafe > 0 ? ANIM_CROUCH_JUMP_LEFT : ANIM_CROUCH_JUMP_RIGHT)<<ANIM_SECONDARY;
+                        else if(moving && d->move > 0) mdl.anim |= ANIM_CROUCH_JUMP_FORWARD<<ANIM_SECONDARY;
+                        else if(moving && d->move < 0) mdl.anim |= ANIM_CROUCH_JUMP_BACKWARD<<ANIM_SECONDARY;
                         else mdl.anim |= ANIM_CROUCH_JUMP<<ANIM_SECONDARY;
                     }
-                    else if(d->strafe) mdl.anim |= (d->strafe > 0 ? ANIM_JUMP_LEFT : ANIM_JUMP_RIGHT)<<ANIM_SECONDARY;
-                    else if(d->move > 0) mdl.anim |= ANIM_JUMP_FORWARD<<ANIM_SECONDARY;
-                    else if(d->move < 0) mdl.anim |= ANIM_JUMP_BACKWARD<<ANIM_SECONDARY;
+                    else if(moving && d->strafe) mdl.anim |= (d->strafe > 0 ? ANIM_JUMP_LEFT : ANIM_JUMP_RIGHT)<<ANIM_SECONDARY;
+                    else if(moving && d->move > 0) mdl.anim |= ANIM_JUMP_FORWARD<<ANIM_SECONDARY;
+                    else if(moving && d->move < 0) mdl.anim |= ANIM_JUMP_BACKWARD<<ANIM_SECONDARY;
                     else mdl.anim |= ANIM_JUMP<<ANIM_SECONDARY;
                     if(!mdl.basetime2) mdl.anim |= ANIM_END<<ANIM_SECONDARY;
                 }
                 else if(d->sliding(true)) mdl.anim |= (ANIM_POWERSLIDE|ANIM_LOOP)<<ANIM_SECONDARY;
                 else if(d->crouching(true))
                 {
-                    if(d->strafe) mdl.anim |= ((d->strafe > 0 ? ANIM_CRAWL_LEFT : ANIM_CRAWL_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
-                    else if(d->move > 0) mdl.anim |= (ANIM_CRAWL_FORWARD|ANIM_LOOP)<<ANIM_SECONDARY;
-                    else if(d->move < 0) mdl.anim |= (ANIM_CRAWL_BACKWARD|ANIM_LOOP)<<ANIM_SECONDARY;
+                    if(moving && d->strafe) mdl.anim |= ((d->strafe > 0 ? ANIM_CRAWL_LEFT : ANIM_CRAWL_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
+                    else if(moving && d->move > 0) mdl.anim |= (ANIM_CRAWL_FORWARD|ANIM_LOOP)<<ANIM_SECONDARY;
+                    else if(moving && d->move < 0) mdl.anim |= (ANIM_CRAWL_BACKWARD|ANIM_LOOP)<<ANIM_SECONDARY;
                     else mdl.anim |= (ANIM_CROUCH|ANIM_LOOP)<<ANIM_SECONDARY;
                 }
                 else if(d->running(moveslow))
                 {
-                    if(d->strafe) mdl.anim |= ((d->strafe > 0 ? ANIM_RUN_LEFT : ANIM_RUN_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
-                    else if(d->move > 0) mdl.anim |= (ANIM_RUN_FORWARD|ANIM_LOOP)<<ANIM_SECONDARY;
-                    else if(d->move < 0) mdl.anim |= (ANIM_RUN_BACKWARD|ANIM_LOOP)<<ANIM_SECONDARY;
+                    if(moving && d->strafe) mdl.anim |= ((d->strafe > 0 ? ANIM_RUN_LEFT : ANIM_RUN_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
+                    else if(moving && d->move > 0) mdl.anim |= (ANIM_RUN_FORWARD|ANIM_LOOP)<<ANIM_SECONDARY;
+                    else if(moving && d->move < 0) mdl.anim |= (ANIM_RUN_BACKWARD|ANIM_LOOP)<<ANIM_SECONDARY;
                 }
-                else if(d->strafe) mdl.anim |= ((d->strafe > 0 ? ANIM_WALK_LEFT : ANIM_WALK_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
-                else if(d->move > 0) mdl.anim |= (ANIM_WALK_FORWARD|ANIM_LOOP)<<ANIM_SECONDARY;
-                else if(d->move < 0) mdl.anim |= (ANIM_WALK_BACKWARD|ANIM_LOOP)<<ANIM_SECONDARY;
+                else if(moving && d->strafe) mdl.anim |= ((d->strafe > 0 ? ANIM_WALK_LEFT : ANIM_WALK_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
+                else if(moving && d->move > 0) mdl.anim |= (ANIM_WALK_FORWARD|ANIM_LOOP)<<ANIM_SECONDARY;
+                else if(moving && d->move < 0) mdl.anim |= (ANIM_WALK_BACKWARD|ANIM_LOOP)<<ANIM_SECONDARY;
             }
 
             if((mdl.anim>>ANIM_SECONDARY)&ANIM_INDEX) switch(mdl.anim&ANIM_INDEX)
