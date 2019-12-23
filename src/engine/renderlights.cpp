@@ -396,7 +396,7 @@ void cleanupscale()
     scalew = scaleh = -1;
 }
 
-extern int gscalecubic, gscalenearest;
+extern int gscale, gscalecubic, gscalenearest;
 
 void setupscale(int sw, int sh, int w, int h)
 {
@@ -410,7 +410,11 @@ void setupscale(int sw, int sh, int w, int h)
 
         glBindFramebuffer_(GL_FRAMEBUFFER, scalefbo[i]);
 
-        createtexture(scaletex[i], sw, i ? h : sh, NULL, 3, gscalecubic || !gscalenearest ? 1 : 0, GL_RGB, GL_TEXTURE_RECTANGLE);
+        // When `gscalenearest` is -1 (the default), filtering is only enabled for non-integer scale factors.
+        // This makes visuals crisper when using `gscale 25` or `gscale 50`.
+        // See <http://tanalin.com/en/articles/integer-scaling/> for rationale.
+        const bool filter = gscalecubic || gscalenearest == 0 || (gscalenearest == -1 && gscale != 25 && gscale != 50);
+        createtexture(scaletex[i], sw, i ? h : sh, NULL, 3, filter, GL_RGB, GL_TEXTURE_RECTANGLE);
 
         glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, scaletex[i], 0);
         if(!i) bindgdepth();
@@ -978,7 +982,7 @@ FVARF(IDF_PERSIST, hdrgamma, 1e-3f, 2, 1e3f, initwarning("HDR setup", INIT_LOAD,
 FVAR(0, hdrsaturate, 1e-3f, 0.8f, 1e3f);
 VARF(IDF_PERSIST, gscale, 25, 100, 100, cleanupgbuffer());
 VARF(IDF_PERSIST, gscalecubic, 0, 0, 1, cleanupgbuffer());
-VARF(IDF_PERSIST, gscalenearest, 0, 0, 1, cleanupgbuffer());
+VARF(IDF_PERSIST, gscalenearest, -1, -1, 1, cleanupgbuffer());
 FVARF(IDF_PERSIST, gscalecubicsoft, 0, 0, 1, initwarning("scaling setup", INIT_LOAD, CHANGE_SHADERS));
 
 float ldrscale = 1.0f, ldrscaleb = 1.0f/255;
@@ -5058,4 +5062,3 @@ void cleanuplights()
     lightsphere::cleanup();
     cleanupaa();
 }
-
