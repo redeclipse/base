@@ -286,7 +286,7 @@ namespace projs
                 case W_RIFLE:
                     part_splash(PART_SPARK, proj.child ? 5 : 10, proj.child ? 250 : 500, proj.o, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale*0.125f, 1, 1, 0, 24, 20);
                     part_create(PART_PLASMA, proj.child ? 250 : 500, proj.o, FWCOL(H, partcol, proj), expl*0.5f, 0.5f, 0, 0);
-                    adddynlight(proj.o, expl*1.1f, FWCOL(P, partcol, proj), 250, 10);
+                    adddynlight(proj.o, expl*1.1f, FWCOL(P, partcol, proj), 250, 10, L_NOSHADOW);
                     break;
                 default:
                     if(WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_LENGTH)
@@ -1265,7 +1265,7 @@ namespace projs
                 part_flare(orig, targ, delayattack/2, PART_MUZZLE_FLARE, colour, weapfx[weap].flaresize, muz, 0, 0, d);
             }
             int peak = delayattack/4, fade = min(peak/2, 75);
-            adddynlight(orig, 32, vec::fromcolor(colour).mul(0.5f), fade, peak - fade, DL_FLASH);
+            adddynlight(orig, 32, vec::fromcolor(colour).mul(0.5f), fade, peak - fade, L_NOSHADOW | DL_FLASH);
         }
         loopv(shots)
             create(orig, vec(shots[i].pos).div(DMF), local, d, PRJ_SHOT, weap, flags, max(life, 1), W2(weap, time, WS(flags)), delay+(iter*i), speed, shots[i].id, weap, -1, flags, skew, false, v);
@@ -1659,7 +1659,7 @@ namespace projs
                             if(WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags)) >= 1)
                                 part_explosion(proj.o, expl*0.5f*WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags)), PART_SHOCKWAVE, halflen, projhint(proj.owner, FWCOL(H, explcol, proj)), 1.f, 0.5f*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags))*projhintblend);
                             addstain(STAIN_SCORCH_SHORT, proj.o, proj.norm, expl*0.5f);
-                            adddynlight(proj.o, expl, FWCOL(P, explcol, proj), len, 10);
+                            adddynlight(proj.o, expl, FWCOL(P, explcol, proj), len, 10, L_NOSHADOW);
                         }
                         else addstain(STAIN_BULLET, proj.o, proj.norm, max(WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags)), 0.25f)*4);
                         break;
@@ -1694,7 +1694,7 @@ namespace projs
                             part_create(PART_FIREBALL_SOFT, len*2, to, FWCOL(H, explcol, proj), expl*1.25f, (0.5f+(rnd(50)/100.f))*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)), -10);
                         }
                         addstain(type == W_FLAMER ? STAIN_SCORCH_SHORT : STAIN_SCORCH, proj.o, proj.norm, expl*0.5f);
-                        adddynlight(proj.o, expl, FWCOL(P, explcol, proj), len, 10);
+                        adddynlight(proj.o, expl, FWCOL(P, explcol, proj), len, 10, L_NOSHADOW);
                         break;
                     }
                     case W_SHOTGUN: case W_SMG:
@@ -1708,7 +1708,7 @@ namespace projs
                             if(WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags)) >= 1)
                                 part_explosion(proj.o, expl*0.5f*WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags)), PART_SHOCKWAVE, halflen, projhint(proj.owner, FWCOL(H, explcol, proj)), 1.f, 0.5f*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags))*projhintblend);
                             addstain(STAIN_SCORCH_SHORT, proj.o, proj.norm, expl*0.5f);
-                            adddynlight(proj.o, expl, FWCOL(P, explcol, proj), len, 10);
+                            adddynlight(proj.o, expl, FWCOL(P, explcol, proj), len, 10, L_NOSHADOW);
                         }
                         else addstain(STAIN_BULLET, proj.o, proj.norm, max(WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags)), 0.25f)*4);
                         break;
@@ -1728,7 +1728,7 @@ namespace projs
                         part_create(PART_ELECTRIC_SOFT, halflen, proj.o, FWCOL(H, partcol, proj), expl*0.375f, WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)));
                         part_create(PART_SMOKE, len, proj.o, FWCOL(H, partcol, proj), expl*0.35f, 0.35f*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)), -30);
                         addstain(STAIN_ENERGY, proj.o, proj.norm, expl*0.75f, bvec::fromcolor(FWCOL(P, explcol, proj)));
-                        adddynlight(proj.o, 1.1f*expl, FWCOL(P, explcol, proj), len, 10);
+                        adddynlight(proj.o, 1.1f*expl, FWCOL(P, explcol, proj), len, 10, L_NOSHADOW);
                         break;
                     }
                     case W_RIFLE: case W_ZAPPER:
@@ -1746,7 +1746,7 @@ namespace projs
                         if(projhints) part_flare(proj.trailpos, proj.o, len, type != W_ZAPPER ? PART_FLARE : PART_LIGHTZAP_FLARE, projhint(proj.owner, FWCOL(H, partcol, proj)), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*projhintsize*proj.curscale, projhintblend*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)));
                         addstain(STAIN_SCORCH, proj.o, proj.norm, max(expl, 2.f));
                         addstain(STAIN_ENERGY, proj.o, proj.norm, max(expl*0.5f, 1.f), bvec::fromcolor(FWCOL(P, explcol, proj)));
-                        adddynlight(proj.o, 1.1f*expl, FWCOL(P, explcol, proj), len, 10);
+                        adddynlight(proj.o, 1.1f*expl, FWCOL(P, explcol, proj), len, 10, L_NOSHADOW);
                         break;
                     }
                     default: break;
@@ -2621,14 +2621,14 @@ namespace projs
             int type = WF(WK(proj.flags), proj.weap, parttype, WS(proj.flags));
             if(trans > 0) switch(type)
             {
-                case W_CLAW: case W_SWORD: adddynlight(proj.o, 24*trans, FWCOL(P, partcol, proj)); break;
+                case W_CLAW: case W_SWORD: adddynlight(proj.o, 24*trans, FWCOL(P, partcol, proj), 0, 0, L_NOSHADOW); break;
                 case W_PISTOL: case W_SHOTGUN: case W_SMG: case W_ZAPPER: case W_RIFLE:
                 {
                     float expl = WX(WK(proj.flags), proj.weap, radial, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
                     if(type != W_ZAPPER || expl <= 0)
                     {
                         float size = clamp(WF(WK(proj.flags), proj.weap, partlen, WS(proj.flags))*(1.f-proj.lifespan)*proj.curscale, proj.curscale, min(16.f, min(WF(WK(proj.flags), proj.weap, partlen, WS(proj.flags)), proj.o.dist(proj.from))));
-                        adddynlight(proj.o, 1.25f*size*trans, FWCOL(P, partcol, proj));
+                        adddynlight(proj.o, 1.25f*size*trans, FWCOL(P, partcol, proj), 0, 0, L_NOSHADOW);
                         break;
                     }
                 }
@@ -2636,7 +2636,8 @@ namespace projs
                 {
                     float size = WX(WK(proj.flags), proj.weap, radial, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
                     if(size <= 0) size = WF(WK(proj.flags), proj.weap, partlen, WS(proj.flags))*proj.lifesize*proj.curscale*0.5f;
-                    adddynlight(proj.o, 1.5f*size*trans, FWCOL(P, partcol, proj));
+                    // Enable shadows only for grenades, as they cast a large light and can move slowly
+                    adddynlight(proj.o, 1.5f*size*trans, FWCOL(P, partcol, proj), 0, 0, type == W_GRENADE ? 0 : L_NOSHADOW);
                     break;
                 }
                 default: break;

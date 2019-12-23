@@ -2977,7 +2977,7 @@ namespace client
                             }
                         }
                         game::spawneffect(PART_SPARK, e.o, enttype[e.type].radius*0.25f, colour, 1);
-                        if(game::dynlighteffects) adddynlight(e.o, enttype[e.type].radius, vec::fromcolor(colour).mul(2.f), 250, 250);
+                        if(game::dynlighteffects) adddynlight(e.o, enttype[e.type].radius, vec::fromcolor(colour).mul(2.f), 250, 250, L_NOSHADOW);
                     }
                     break;
                 }

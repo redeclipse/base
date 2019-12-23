@@ -396,7 +396,7 @@ namespace bomber
             int millis = lastmillis-f.displaytime;
             if(millis <= 1000) trans = float(millis)/1000.f;
             vec colour = isbomberaffinity(f) ? pulsecolour() : vec::fromcolor(TEAM(f.team, colour));
-            adddynlight(f.pos(true, true), enttype[AFFINITY].radius*trans, colour, 0, 0);
+            adddynlight(f.pos(true, true), enttype[AFFINITY].radius*trans, colour, 0, 0, L_NOSHADOW);
         }
     }
 
@@ -503,7 +503,7 @@ namespace bomber
                 defformatstring(text, "<huge>\fzuw%s", str);
                 part_textcopy(vec(from).add(vec(0, 0, enttype[AFFINITY].radius)), text, PART_TEXT, game::eventiconfade, TEAM(team, colour), 3, 1, -10);
             }
-            if(game::dynlighteffects) adddynlight(vec(from).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(team, colour)).mul(2.f), 500, 250);
+            if(game::dynlighteffects) adddynlight(vec(from).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(team, colour)).mul(2.f), 500, 250, L_NOSHADOW);
         }
         if(to.x >= 0)
         {
@@ -512,7 +512,7 @@ namespace bomber
                 defformatstring(text, "<huge>\fzuw%s", str);
                 part_textcopy(vec(to).add(vec(0, 0, enttype[AFFINITY].radius)), text, PART_TEXT, game::eventiconfade, TEAM(team, colour), 3, 1, -10);
             }
-            if(game::dynlighteffects) adddynlight(vec(to).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(team, colour)).mul(2.f), 500, 250);
+            if(game::dynlighteffects) adddynlight(vec(to).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(team, colour)).mul(2.f), 500, 250, L_NOSHADOW);
         }
         if(from.x >= 0 && to.x >= 0 && from != to) part_trail(PART_SPARK, 500, from, to, TEAM(team, colour), 1, 1, -10);
     }

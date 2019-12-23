@@ -178,7 +178,7 @@ namespace defend
         {
             defendstate::flag &f = st.flags[i];
             float occupy = f.occupied(m_dac_quick(game::gamemode, game::mutators), defendcount);
-            adddynlight(vec(f.o).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, skewcolour(f.owner, f.enemy, occupy), 0, 0);
+            adddynlight(vec(f.o).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, skewcolour(f.owner, f.enemy, occupy), 0, 0, L_NOSHADOW);
         }
     }
 
@@ -342,7 +342,7 @@ namespace defend
                         if((d = e) == game::focus) break;
                     game::announcef(S_V_FLAGSECURED, CON_EVENT, d, true, "\faTeam %s secured \fw\f($pointtex)%s", game::colourteam(owner), b.name);
                     if(game::aboveheadaffinity) part_textcopy(vec(b.o).add(vec(0, 0, enttype[AFFINITY].radius)), "<huge>\fzuwSECURED", PART_TEXT, game::eventiconfade, TEAM(owner, colour), 3, 1, -10);
-                    if(game::dynlighteffects) adddynlight(b.o, enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(owner, colour)).mul(2.f), 500, 250);
+                    if(game::dynlighteffects) adddynlight(b.o, enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(owner, colour)).mul(2.f), 500, 250, L_NOSHADOW);
                 }
             }
             else if(b.owner)
@@ -353,7 +353,7 @@ namespace defend
                     if((d = e) == game::focus) break;
                 game::announcef(S_V_FLAGOVERTHROWN, CON_EVENT, d, true, "\faTeam %s overthrew \fw\f($pointtex)%s", game::colourteam(enemy), b.name);
                 if(game::aboveheadaffinity) part_textcopy(vec(b.o).add(vec(0, 0, enttype[AFFINITY].radius)), "<huge>\fzuwOVERTHROWN", PART_TEXT, game::eventiconfade, TEAM(enemy, colour), 3, 1, -10);
-                if(game::dynlighteffects) adddynlight(b.o, enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(enemy, colour)).mul(2.f), 500, 250);
+                if(game::dynlighteffects) adddynlight(b.o, enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(enemy, colour)).mul(2.f), 500, 250, L_NOSHADOW);
             }
             b.converted = converted;
         }

@@ -930,7 +930,7 @@ namespace game
             playsound(S_RESPAWN, d->o, d);
             spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playerovertone, playerovertonelevel), 1);
             spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playerundertone, playerundertonelevel), 1);
-            if(dynlighteffects) adddynlight(center, d->height*2, vec::fromcolor(getcolour(d, playereffecttone, playereffecttonelevel)).mul(2.f), 250, 250);
+            if(dynlighteffects) adddynlight(center, d->height*2, vec::fromcolor(getcolour(d, playereffecttone, playereffecttonelevel)).mul(2.f), 250, 250, L_NOSHADOW);
             if(entities::ents.inrange(ent) && entities::ents[ent]->type == PLAYERSTART) entities::execlink(d, ent, false);
         }
         ai::respawned(d, local, ent);
@@ -1011,14 +1011,14 @@ namespace game
                 if(d->weapselect == W_FLAMER && (!reloading || amt > 0.5f) && !physics::liquidcheck(d))
                 {
                     float scale = powering ? 1.f+(amt*1.5f) : (d->weapstate[d->weapselect] == W_S_IDLE ? 1.f : (reloading ? (amt-0.5f)*2 : amt));
-                    adddynlight(d->ejecttag(d->weapselect), 16*scale, col, 0, 0);
+                    adddynlight(d->ejecttag(d->weapselect), 16*scale, col, 0, 0, L_NOSHADOW);
                 }
                 if((W(d->weapselect, lightpersist)&1 || powering) && W(d->weapselect, lightradius) > 0)
                 {
                     float thresh = max(amt, 0.25f), size = W(d->weapselect, lightradius)*thresh;
                     int span = max(W2(d->weapselect, cooktime, physics::secondaryweap(d))/4, 500), interval = lastmillis%span, part = span/2;
                     if(interval) size += size*0.5f*(interval <= part ? interval/float(part) : (span-interval)/float(part));
-                    adddynlight(d->muzzletag(d->weapselect), size, vec(col).mul(thresh), 0, 0);
+                    adddynlight(d->muzzletag(d->weapselect), size, vec(col).mul(thresh), 0, 0, L_NOSHADOW);
                 }
             }
             if(d->burntime && d->burning(lastmillis, d->burntime))
@@ -1033,7 +1033,7 @@ namespace game
                     if(fluc >= 0.25f) fluc = (0.25f+0.03f-fluc)*(0.25f/0.03f);
                     pc *= 0.75f+fluc;
                 }
-                adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d).mul(pc), 0, 0);
+                adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d).mul(pc), 0, 0, L_NOSHADOW);
             }
             if(d->shocktime && d->shocking(lastmillis, d->shocktime))
             {
@@ -1047,10 +1047,10 @@ namespace game
                     if(fluc >= 0.25f) fluc = (0.25f+0.03f-fluc)*(0.25f/0.03f);
                     pc *= 0.75f+fluc;
                 }
-                adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d, PULSE_SHOCK).mul(pc), 0, 0);
+                adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d, PULSE_SHOCK).mul(pc), 0, 0, L_NOSHADOW);
             }
             if(d->actortype < A_ENEMY && illumlevel > 0 && illumradius > 0)
-                adddynlight(d->center(), illumradius, vec::fromcolor(getcolour(d, playereffecttone, illumlevel)), 0, 0);
+                adddynlight(d->center(), illumradius, vec::fromcolor(getcolour(d, playereffecttone, illumlevel)), 0, 0, L_NOSHADOW);
         }
     }
 
