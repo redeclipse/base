@@ -1174,11 +1174,38 @@ namespace hud
             else if(crosshairweapons&2) c = vec::fromcolor(W(game::focus->weapselect, colour));
             else if(crosshairtone) skewcolour(c.r, c.g, c.b, crosshairtone);
             int heal = game::focus->gethealth(game::gamemode, game::mutators);
-            if(crosshairflash && game::focus->state == CS_ALIVE && game::focus->health < heal)
+            if(crosshairflash && game::focus->state == CS_ALIVE)
             {
-                int millis = lastmillis%1000;
-                float amt = (millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f))*clamp(float(heal-game::focus->health)/float(heal), 0.f, 1.f);
-                flashcolour(c.r, c.g, c.b, 1.f, 0.f, 0.f, amt);
+                const float ratio = clamp(float(game::focus->health)/float(heal), 0.0f, 2.0f);
+
+                if(ratio < 0.2f)
+                {
+                    // Red (critical health level)
+                    c.r = 1.0f;
+                    c.g = 0.0f;
+                    c.b = 0.0f;
+                }
+                else if(ratio < 0.6f)
+                {
+                    // Red-yellow
+                    c.r = 1.0f;
+                    c.g = (ratio-0.2f)/0.4f;
+                    c.b = 0.0f;
+                }
+                else if(ratio < 1.0f)
+                {
+                    // Yellow-white
+                    c.r = 1.0f;
+                    c.g = 1.0f;
+                    c.b = (ratio-0.6f)/0.4f;
+                }
+                else
+                {
+                    // Green (overheal)
+                    c.r = 2.0f - ratio;
+                    c.g = 1.0f;
+                    c.b = 2.0f - ratio;
+                }
             }
             if(crosshairthrob > 0 && regentime && game::focus->lastregen && lastmillis-game::focus->lastregen <= regentime)
             {
