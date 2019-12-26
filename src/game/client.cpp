@@ -2215,7 +2215,7 @@ namespace client
     void c2sinfo(bool force) // send update to the server
     {
         static int lastupdate = -1000;
-        if(totalmillis-lastupdate < 40 && !force) return;    // don't update faster than 25fps
+        if(totalmillis-lastupdate < 8 && !force) return;    // don't update faster than 125 FPS
         lastupdate = totalmillis ? totalmillis : 1;
         sendpositions();
         sendmessages();

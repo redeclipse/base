@@ -5932,9 +5932,12 @@ namespace server
     {
         if(clients.empty() || (!hasnonlocalclients() && !demorecord)) return false;
         enet_uint32 millis = enet_time_get()-lastsend;
-        if(millis < 40 && !force) return false;
+        // Send packets at 100 Hz. Higher update rates result in lower effective latency.
+        // This update rate should be slower than the one defined on the client to avoid "slipped" frames,
+        // which makes interpolation look worse.
+        if(millis < 10 && !force) return false;
         bool flush = buildworldstate();
-        lastsend += millis - (millis%40);
+        lastsend += millis - (millis%10);
         return flush;
     }
 
