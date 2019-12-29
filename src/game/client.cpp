@@ -326,6 +326,12 @@ namespace client
     });
     ICOMMAND(0, hasauthkey, "i", (int *n), intret(accountname[0] && accountpass[0] && (!*n || authconnect) ? 1 : 0));
 
+    void rehash()
+    {
+        if(noauthconfig) return;
+        execfile("auth.cfg", false);
+    }
+
     void writecfg()
     {
         if(noauthconfig || !*accountname || !*accountpass) return;

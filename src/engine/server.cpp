@@ -1673,7 +1673,7 @@ void rehash(bool reload)
     initing = INIT_LOAD;
     execfile("servers.cfg", false);
     if(!noconfigfile) execfile("config.cfg", false);
-    execfile("auth.cfg", false);
+    client::rehash();
     execfile("autoexec.cfg", false);
     initing = NOT_INITING;
 #endif
