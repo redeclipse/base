@@ -100,7 +100,7 @@ GVAR(0, PRIV_ADMINISTRATOR, spawnlock, 0, PRIV_MODERATOR, PRIV_MAX); // if locke
 GVAR(0, PRIV_ADMINISTRATOR, spawneditlock, 0, PRIV_MODERATOR, PRIV_MAX); // if locked in editmode, require this to spawn
 GVAR(0, PRIV_ADMINISTRATOR, masterlock, 0, PRIV_MODERATOR, PRIV_MAX);
 GVAR(0, PRIV_ADMINISTRATOR, crclock, 0, PRIV_MAX, PRIV_MAX);
-GVAR(0, PRIV_ADMINISTRATOR, iphostlock, 0, 0, PRIV_MAX); // require this level to see ip/hosts
+GVAR(0, PRIV_ADMINISTRATOR, iphostlock, 0, 5, PRIV_MAX); // require this level to see ip/hosts
 
 GVAR(0, PRIV_ADMINISTRATOR, overflowlock, 0, PRIV_MODERATOR, PRIV_MAX); // normal message queue override
 GVAR(0, PRIV_ADMINISTRATOR, overflowsize, 0, 255, VAR_MAX); // kick if queued messages >= this
