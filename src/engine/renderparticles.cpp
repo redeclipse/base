@@ -1047,12 +1047,16 @@ struct loopprimitiverenderer : listrenderer<loopprimitive>
 
     void renderpart(loopprimitive *p, int blend, int ts, float size)
     {
+        // The number of polygon sides to use.
+        // The polygon rendering breaks if this is set too high.
+        const int detail = 40;
+
         glBindTexture(GL_TEXTURE_2D, blanktexture->id);
         gle::colorub(p->color.r, p->color.g, p->color.b, uchar(p->blend*blend));
         gle::begin(p->fill ? GL_TRIANGLE_FAN : GL_LINE_LOOP);
-        loopi(15 + (p->fill ? 1 : 0))
+        loopi(detail + (p->fill ? 1 : 0))
         {
-            const vec2 &sc = sincos360[i*(360/15)];
+            const vec2 &sc = sincos360[i*(360/detail)];
             vec v;
             switch(p->axis)
             {
