@@ -51,11 +51,20 @@ redeclipse_setup() {
             i486|i586|i686|x86)
                 REDECLIPSE_ARCH="x86"
                 ;;
+            ppc64*|powerpc64*)
+                REDECLIPSE_ARCH="ppc64"
+                ;;
+            ppc*|powerpc*)
+                REDECLIPSE_ARCH="ppc"
+                ;;
             x86_64|[Aa][Mm][Dd]64)
                 REDECLIPSE_ARCH="amd64"
                 ;;
             arm|armv*)
                 REDECLIPSE_ARCH="arm"
+                ;;
+            aarch64*)
+                REDECLIPSE_ARCH="aarch64"
                 ;;
             *)
                 REDECLIPSE_ARCH="native"

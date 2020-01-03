@@ -62,7 +62,11 @@ endif()
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 # set compile options
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fsigned-char -ffast-math -fno-exceptions -fno-rtti -Wno-invalid-offsetof")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fsigned-char -fno-exceptions -fno-rtti -Wno-invalid-offsetof")
+
+if(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "i[3-6]86|x86_64")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffast-math")
+endif()
 
 # Use pkg-config to configure dependencies later
 find_package(PkgConfig REQUIRED)
@@ -267,6 +271,14 @@ if(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "i[3-6]86")
 	set(ARCHITECTURE "x86")
 elseif(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "x86_64")
 	set(ARCHITECTURE "amd64")
+elseif(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "ppc64*")
+	set(ARCHITECTURE "ppc64")
+elseif(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "ppc|powerpc")
+	set(ARCHITECTURE "ppc")
+elseif(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "armv*")
+	set(ARCHITECTURE "arm")
+elseif(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "aarch64")
+	set(ARCHITECTURE "aarch64")
 else()
     set(ARCHITECTURE "native")
 endif()
