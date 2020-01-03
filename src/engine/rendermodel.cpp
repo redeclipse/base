@@ -1132,5 +1132,11 @@ void setbbfrommodel(dynent *d, const char *mdl, float size)
     d->radius   = d->collidetype==COLLIDE_OBB ? sqrtf(d->xradius*d->xradius + d->yradius*d->yradius) : max(d->xradius, d->yradius);
     d->height   = d->zradius = (center.z-radius.z) + radius.z*2*m->height;
     d->aboveeye = radius.z*2*(1.0f-m->height);
+    if (d->aboveeye + d->eyeheight <= 0.5f)
+    {
+        float zrad = (0.5f - (d->aboveeye + d->eyeheight)) / 2;
+        d->aboveeye += zrad;
+        d->eyeheight += zrad;
+    }
 }
 
