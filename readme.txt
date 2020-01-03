@@ -35,7 +35,7 @@ The project is Free and Open Source, meaning that you can both use it for free a
     - Engine Designer, Programming Support (there'd be no game without this guy!)
 
 ### Contributors, Developers and Supporters
-* Adam "lycanfox" Hobson
+* "Lycanfox"
 * Alex "molexted" Foster - Maps/Balance Lead and CubeScript
 * Alex "ZeroKnight" George - Design/Testing, Support
 * Anup "DOS_WARRIOR" Debnath
