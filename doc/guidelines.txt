@@ -24,6 +24,11 @@ modification must be approved and will be done on a case-by-case basis. It is
 advised you create a topic in the "General Discussion" section of the official
 Red Eclipse discussions located at https://redeclipse.net/discuss
 
+NOTE: By playing online you consent to the disclosure of certain information for
+legitimate administration and moderation purposes. This includes, but is not
+limited to: Username, Steam ID and handle, Discord handle, IP address, Hardware
+configuration, and Operating system details.
+
 ### Guidelines for Servers
 
 (See RE Mark Policy for definitions of "substantially (un)modified")
