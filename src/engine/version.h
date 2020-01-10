@@ -10,7 +10,7 @@
 #define VERSION_VNAME "REDECLIPSE"
 #define VERSION_RELEASE "Jupiter Edition"
 #define VERSION_URL "www.redeclipse.net"
-#define VERSION_COPY "2010-2019"
+#define VERSION_COPY "2010-2020"
 #define VERSION_DESC "A fun-filled new take on the first-person arena shooter."
 #define VERSION_STEAM_APPID 967460
 #define VERSION_STEAM_DEPOT 967461
