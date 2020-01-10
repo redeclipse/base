@@ -166,7 +166,7 @@ system-install-menus: icons
 
 system-install-cube2font: cube2font system-install-cube2font-docs
 	$(MKDIR) $(bindir)
-	install -m755 cube2font $(bindir)/cube2font
+	install -m755 cube2font$(BIN_SUFFIX) $(bindir)/cube2font
 
 system-install-cube2font-docs: ../doc/man/cube2font.1
 	$(MKDIR) $(mandir)/man1
