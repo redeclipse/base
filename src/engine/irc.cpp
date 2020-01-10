@@ -126,7 +126,7 @@ void ircsend(ircnet *n, const char *msg, ...)
 void cube2irc(char *dst, const char *src)
 {
     int colorpos = 0; char colorstack[10];
-    memset(colorstack, 'u', sizeof(colorstack)); //indicate user color
+    memset(colorstack, 'u', sizeof(colorstack)); // indicate user color
     for(int c = *src; c; c = *++src)
     {
         if(c == '\f')

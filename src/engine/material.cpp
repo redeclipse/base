@@ -451,7 +451,7 @@ static inline bool editmatcmp(const materialsurface &x, const materialsurface &y
         else if(max(ymin, ymax) <= min(xmin, xmax)) return false;
     }
     if(x.material < y.material) return true;
-    //if(x.material > y.material) return false;
+    // if(x.material > y.material) return false;
     return false;
 }
 

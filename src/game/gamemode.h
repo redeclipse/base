@@ -352,7 +352,7 @@ extern mutstypes mutstype[];
     } \
     mapshrink(!(f), a, G(previousmaps), true) \
 }
-//note that maplist removes entries in previousmaps
+// note that maplist removes entries in previousmaps
 #define maplist(a,b,c,d,e,f) \
 { \
     if(m_capture(b)) a = newstring(G(capturemaps)); \
@@ -364,7 +364,7 @@ extern mutstypes mutstype[];
     if(e) mapcull(a, b, c, d, e, f) \
     else mapshrink(!(f), a, G(previousmaps), true) \
 }
-//allowmaplist doesn't cut previous maps
+// allowmaplist doesn't cut previous maps
 #define allowmaplist(a,b,c) \
 { \
     if(m_capture(b)) a = newstring(G(capturemaps)); \

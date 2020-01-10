@@ -140,7 +140,7 @@ struct editor
 {
     enum { SCROLLEND = INT_MAX };
 
-    int mode; //editor mode - 1= keep while focused, 2= keep while used in gui, 3= keep forever (i.e. until mode changes)
+    int mode; // editor mode - 1= keep while focused, 2= keep while used in gui, 3= keep forever (i.e. until mode changes)
     bool active, rendered, unfocus;
     const char *name;
     const char *filename;
@@ -524,7 +524,7 @@ struct editor
                     editline &current = currentline();
                     if(cx < current.len) current.del(cx, 1);
                     else if(cy < lines.length()-1)
-                    {   //combine with next line
+                    {   // combine with next line
                         current.append(lines[cy+1].text);
                         removelines(cy+1, 1);
                     }
@@ -536,7 +536,7 @@ struct editor
                     editline &current = currentline();
                     if(cx > 0) current.del(--cx, 1);
                     else if(cy > 0)
-                    {   //combine with previous line
+                    {   // combine with previous line
                         cx = lines[cy-1].len;
                         lines[cy-1].append(current.text);
                         removelines(cy--, 1);

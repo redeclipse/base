@@ -6,7 +6,7 @@ static const struct flaretype
     uchar alpha;          /* color alpha */
 } flaretypes[] =
 {
-    {2,  1.30f, 0.04f, 255}, //flares
+    {2,  1.30f, 0.04f, 255}, // flares
     {3,  1.00f, 0.10f, 192},
     {1,  0.50f, 0.20f, 128},
     {3,  0.20f, 0.05f, 128},
@@ -15,7 +15,7 @@ static const struct flaretype
     {5, -0.40f, 0.02f, 224},
     {5, -0.60f, 0.04f, 192},
     {5, -1.00f, 0.03f, 64},
-    {-1, 1.00f, 0.30f, 255}, //shine - red, green, blue
+    {-1, 1.00f, 0.30f, 255}, // shine - red, green, blue
     {-2, 1.00f, 0.20f, 255},
     {-3, 1.00f, 0.25f, 255}
 };
@@ -59,7 +59,7 @@ struct flarerenderer : partrenderer
     void newflare(const vec &o, const vec &center, uchar r, uchar g, uchar b, float mod, float size, bool sun, int sparkle)
     {
         if(numflares >= maxflares) return;
-        //occlusion check (neccessary as depth testing is turned off)
+        // occlusion check (neccessary as depth testing is turned off)
         vec dir = vec(camera1->o).sub(o);
         float dist = dir.magnitude();
         dir.mul(1/dist);
@@ -74,12 +74,12 @@ struct flarerenderer : partrenderer
 
     bool generate(const vec &o, vec &center, vec &flaredir, float &mod, float &size, bool sun, float radius)
     {
-        //frustrum + fog check
+        // frustrum + fog check
         if(isvisiblesphere(0.0f, o) > (sun?VFC_FOGGED:VFC_FULL_VISIBLE)) return false;
-        //find closest point between camera line of sight and flare pos
+        // find closest point between camera line of sight and flare pos
         flaredir = vec(o).sub(camera1->o);
         center = vec(camdir).mul(flaredir.dot(camdir)).add(camera1->o);
-        if(sun) //fixed size
+        if(sun) // fixed size
         {
             mod = 1.0;
             size = flaredir.magnitude() * flaresize / 100.0f;
@@ -103,7 +103,7 @@ struct flarerenderer : partrenderer
 
     void update()
     {
-        numflares = 0; //regenerate flarelist each frame
+        numflares = 0; // regenerate flarelist each frame
         shinetime = lastmillis/flareshine;
     }
 
@@ -176,17 +176,17 @@ struct flarerenderer : partrenderer
                 vec o = vec(axis).mul(ft.loc).add(f.center);
                 float sz = ft.scale * f.size;
                 int tex = ft.type;
-                if(ft.type < 0) //sparkles - always done last
+                if(ft.type < 0) // sparkles - always done last
                 {
                     shinetime = (shinetime + 1) % 10;
                     tex = 6+shinetime;
                     color.r = 0;
                     color.g = 0;
                     color.b = 0;
-                    color[-ft.type-1] = f.color[-ft.type-1]; //only want a single channel
+                    color[-ft.type-1] = f.color[-ft.type-1]; // only want a single channel
                 }
                 color.a = uchar(ceilf(ft.alpha*blend));
-                const float tsz = 0.25f; //flares are aranged in 4x4 grid
+                const float tsz = 0.25f; // flares are aranged in 4x4 grid
                 float tx = tsz*(tex&0x03), ty = tsz*((tex>>2)&0x03);
                 gle::attribf(o.x+(-camright.x+camup.x)*sz, o.y+(-camright.y+camup.y)*sz, o.z+(-camright.z+camup.z)*sz);
                     gle::attribf(tx,     ty+tsz);
@@ -206,7 +206,7 @@ struct flarerenderer : partrenderer
         glEnable(GL_DEPTH_TEST);
     }
 
-    //square per round hole - use addflare(..) instead
+    // square per round hole - use addflare(..) instead
     particle *addpart(const vec &o, const vec &d, int fade, int color, float size, float blend = 1, float gravity = 0, int collide = 0, physent *pl = NULL) { return NULL; }
 };
 static flarerenderer flares("<grey>particles/lensflares", 128);

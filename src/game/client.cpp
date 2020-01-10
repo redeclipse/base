@@ -68,12 +68,12 @@ namespace client
     }
     ICOMMAND(0, waiting, "i", (int *n), intret(waiting(!*n)));
 
-//*maplist commands: see gamemode.h for related macros
+    // maplist commands: see gamemode.h for related macros
 
-//getmaplist
-//arg1: i/gamemode
-//arg2: i/mutators
-//returns: list of valid maps including previousmaps validity (cuts previousmaps entries)
+    // getmaplist
+    // arg1: i/gamemode
+    // arg2: i/mutators
+    // returns: list of valid maps including previousmaps validity (cuts previousmaps entries)
     void makemaplist(int g, int m, int c)
     {
          char *list = NULL;
@@ -90,10 +90,10 @@ namespace client
     }
     ICOMMAND(0, getmaplist, "iii", (int *g, int *m, int *c), makemaplist(*g, *m, *c));
 
-//allowmaplist
-//arg1: i/gamemode
-//arg2: i/mutators
-//returns: list of valid maps regardless of previousmaps presence
+    // allowmaplist
+    // arg1: i/gamemode
+    // arg2: i/mutators
+    // returns: list of valid maps regardless of previousmaps presence
     void makeallowmaplist(int g, int m)
     {
          char *list = NULL;

@@ -126,7 +126,7 @@ struct lightningrenderer : sharedlistrenderer
     {
         blend = int(min(blend<<2, 255)*p->blend);
         bvec4 midcol, endcol;
-        if(type&PT_MOD) //multiply alpha into color
+        if(type&PT_MOD) // multiply alpha into color
         {
             midcol = bvec4((p->color.r*blend)>>8, (p->color.g*blend)>>8, (p->color.b*blend)>>8, 0xFF);
             endcol = bvec4(0, 0, 0, 0xFF);

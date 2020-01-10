@@ -8,7 +8,7 @@
 
 int main(int argc, char **argv)
 {
-    //Generate key pair: genkey <seed>
+    // Generate key pair: genkey <seed>
     if(argc == 2)
     {
         vector<char> privkey, pubkey;
@@ -17,7 +17,7 @@ int main(int argc, char **argv)
         printf("public key: %s\n", pubkey.getbuf());
         return EXIT_SUCCESS;
     }
-    //Print yes/no to match pubkey with privkey: genkey <pubkey> <privkey>
+    // Print yes/no to match pubkey with privkey: genkey <pubkey> <privkey>
     else if(argc == 3)
     {
         vector<char> pubkey;

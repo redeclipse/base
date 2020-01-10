@@ -358,7 +358,7 @@ namespace fogdome
         loopi(3)
         {
             int curvert = numverts++;
-            verts[curvert] = vert(verts[idx[i]], verts[idx[(i+1)%3]]); //push on to unit sphere
+            verts[curvert] = vert(verts[idx[i]], verts[idx[(i+1)%3]]); // push on to unit sphere
             idx[3+i] = curvert;
             indices[face+2-i] = curvert;
         }
@@ -380,7 +380,7 @@ namespace fogdome
         indices = new GLushort[(tris + (capsize >= 0 ? hres<<depth : 0))*3];
         if(clipz >= 1)
         {
-            verts[numverts++] = vert(vec(0.0f, 0.0f, 1.0f), color, minalpha); //build initial 'hres' sided pyramid
+            verts[numverts++] = vert(vec(0.0f, 0.0f, 1.0f), color, minalpha); // build initial 'hres' sided pyramid
             loopi(hres) verts[numverts++] = vert(vec(sincos360[(360*i)/hres], 0.0f), color, maxalpha);
             loopi(hres) genface(depth, 0, i+1, 1+(i+1)%hres);
         }

@@ -263,7 +263,7 @@ struct aviwriter
         endchunk(); // strh
 
         startchunk("strf", 40);
-        f->putlil<uint>(40); //headersize
+        f->putlil<uint>(40); // headersize
         f->putlil<uint>(videow); // width
         f->putlil<uint>(videoh); // height
         f->putlil<ushort>(3); // planes
@@ -353,7 +353,7 @@ struct aviwriter
             f->putlil<ushort>(bps*soundchannels); // block align <-- guess
             f->putlil<ushort>(bps*8); // bits per sample
             f->putlil<ushort>(0); // size
-            endchunk(); //strf
+            endchunk(); // strf
 
             startchunk("indx", 24 + 16*MAX_SUPER_INDEX);
             superindexsoundoffset = f->tell();

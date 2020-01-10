@@ -48,7 +48,7 @@ GFVAR(IDF_GAMEMOD, 0, liquidsubmergescale, 0, 1, FVAR_MAX);
 GFVAR(IDF_WORLD, 0, liquidextinguish, 0, 0.25f, 1);
 GFVAR(IDF_GAMEMOD, 0, liquidextinguishscale, 0, 1, FVAR_MAX);
 
-GVARF(IDF_GAMEMOD, 0, forcemapvariant, 0, 1, MPV_MAX-1, if(sv_forcemapvariant) server::changemapvariant(sv_forcemapvariant), if(forcemapvariant) changemapvariant(forcemapvariant));
+GVARF(IDF_GAMEMOD, 0, forcemapvariant, 0, 0, MPV_MAX-1, if(sv_forcemapvariant) server::changemapvariant(sv_forcemapvariant), if(forcemapvariant) changemapvariant(forcemapvariant));
 
 GVAR(0, PRIV_ADMINISTRATOR, serverstats, 0, 1, 1);
 GVAR(0, PRIV_ADMINISTRATOR, serverclients, 1, 16, MAXCLIENTS);

@@ -1,5 +1,5 @@
-//weapons.h configuration file
-//default weapon variables baked into the game
+// weapons.h configuration file
+// default weapon variables baked into the game
 enum
 {
     W_CLAW = 0, W_PISTOL, W_OFFSET, // end of unselectable weapon set
@@ -137,8 +137,8 @@ WPSVAR(IDF_GAMEMOD, 0, longname, // shown for weapon pickups and loadout menu
     "Rocket Launcher",
     "Melee Attack"
 );
-//Strings formatted as "The <weapon> <primary/secondary> <string>" implied
-//e.g. The sword primary is a horizontally slicing moderately powerful slash, capable of being swung at short intervals
+// Strings formatted as "The <weapon> <primary/secondary> <string>" implied
+// e.g. The sword primary is a horizontally slicing moderately powerful slash, capable of being swung at short intervals
 WPSVARM(IDF_GAMEMOD, 0, desc,
     "is a basic, horizontal claw slash, best used in conjunction with an impulse kick",
     "is an accurate, low-damage, and moderately fast projectile attack with a high rate of fire",
@@ -243,62 +243,62 @@ WPFVARK(IDF_GAMEMOD, 0, blend, 0, 1,
     1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f
 );
 WPVARK(IDF_GAMEMOD, 0, collide, 0, COLLIDE_ALL,
-    //primary
-    IMPACT_GEOM|IMPACT_PLAYER|COLLIDE_TRACE|COLLIDE_LENGTH,                                     //claw
-    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|COLLIDE_TRACE,                         //pistol
-    BOUNCE_GEOM|IMPACT_PLAYER|COLLIDE_TRACE|IMPACT_SHOTS|COLLIDE_LENGTH,                        //sword
-    BOUNCE_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|COLLIDE_OWNER|DRILL_GEOM,              //shotgun
-    BOUNCE_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|COLLIDE_OWNER|DRILL_GEOM,              //smg
-    BOUNCE_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER,                                       //flamer
-    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER,                                       //plasma
-    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_SCAN|STICK_GEOM,                             //zapper
-    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|COLLIDE_TRACE|DRILL_GEOM,              //rifle
-    BOUNCE_GEOM|BOUNCE_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|COLLIDE_PROJ,                          //grenade
-    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|STICK_GEOM|STICK_PLAYER,               //mine
-    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|COLLIDE_PROJ,                          //rocket
-    IMPACT_PLAYER|COLLIDE_TRACE|COLLIDE_LENGTH,                                                 //melee
-    //secondary
-    IMPACT_GEOM|IMPACT_PLAYER|COLLIDE_TRACE|COLLIDE_LENGTH,                                     //claw
-    IMPACT_GEOM|IMPACT_PLAYER|COLLIDE_TRACE|COLLIDE_LENGTH,                                     //pistol
-    BOUNCE_GEOM|IMPACT_PLAYER|COLLIDE_TRACE|IMPACT_SHOTS|COLLIDE_LENGTH,                        //sword
-    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|COLLIDE_OWNER,                         //shotgun
-    IMPACT_SHOTS|COLLIDE_OWNER|BOUNCE_GEOM|BOUNCE_PLAYER,                                       //smg
-    BOUNCE_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER,                                       //flamer
-    IMPACT_GEOM|IMPACT_SHOTS|COLLIDE_OWNER,                                                     //plasma
-    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_SCAN|STICK_GEOM,                             //zapper
-    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|COLLIDE_TRACE|DRILL_GEOM|DRILL_PLAYER, //rifle
-    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|STICK_GEOM|STICK_PLAYER|COLLIDE_PROJ,  //grenade
-    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|STICK_GEOM|STICK_PLAYER,               //mine
-    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|COLLIDE_PROJ,                          //rocket
-    IMPACT_PLAYER|COLLIDE_TRACE|COLLIDE_LENGTH,                                                 //melee
-    //primary flak
-    IMPACT_PLAYER|COLLIDE_TRACE|COLLIDE_OWNER,                                                  //claw
-    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|COLLIDE_OWNER,                         //pistol
-    BOUNCE_GEOM|IMPACT_PLAYER|COLLIDE_TRACE|IMPACT_SHOTS|COLLIDE_OWNER,                         //sword
-    BOUNCE_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|COLLIDE_OWNER,                         //shotgun
-    BOUNCE_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|COLLIDE_OWNER,                         //smg
-    BOUNCE_GEOM|IMPACT_PLAYER|COLLIDE_OWNER,                                                    //flamer
-    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER,                                       //plasma
-    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|COLLIDE_SCAN|STICK_GEOM,               //zapper
-    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|COLLIDE_TRACE,                         //rifle
-    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|COLLIDE_PROJ,                          //grenade
-    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|STICK_GEOM|STICK_PLAYER,               //mine
-    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|COLLIDE_PROJ,                          //rocket
-    IMPACT_PLAYER|COLLIDE_TRACE|COLLIDE_OWNER,                                                  //melee
-    //secondary flak
-    IMPACT_PLAYER|COLLIDE_TRACE|COLLIDE_OWNER,                                                  //claw
-    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|COLLIDE_OWNER,                         //pistol
-    BOUNCE_GEOM|IMPACT_PLAYER|COLLIDE_TRACE|IMPACT_SHOTS|COLLIDE_OWNER,                         //sword
-    BOUNCE_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|COLLIDE_OWNER,                         //shotgun
-    BOUNCE_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|COLLIDE_OWNER,                         //smg
-    BOUNCE_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER,                                       //flamer
-    BOUNCE_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER,                                       //plasma
-    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_SCAN|STICK_GEOM|DRILL_PLAYER|COLLIDE_OWNER,  //zapper
-    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|DRILL_PLAYER|COLLIDE_OWNER,            //rifle
-    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|STICK_GEOM|STICK_PLAYER|COLLIDE_PROJ,  //grenade
-    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|STICK_GEOM|STICK_PLAYER,               //mine
-    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|COLLIDE_PROJ,                          //rocket
-    IMPACT_PLAYER|COLLIDE_TRACE|COLLIDE_OWNER                                                   //melee
+    // primary
+    IMPACT_GEOM|IMPACT_PLAYER|COLLIDE_TRACE|COLLIDE_LENGTH,                                     // claw
+    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|COLLIDE_TRACE,                         // pistol
+    BOUNCE_GEOM|IMPACT_PLAYER|COLLIDE_TRACE|IMPACT_SHOTS|COLLIDE_LENGTH,                        // sword
+    BOUNCE_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|COLLIDE_OWNER|DRILL_GEOM,              // shotgun
+    BOUNCE_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|COLLIDE_OWNER|DRILL_GEOM,              // smg
+    BOUNCE_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER,                                       // flamer
+    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER,                                       // plasma
+    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_SCAN|STICK_GEOM,                             // zapper
+    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|COLLIDE_TRACE|DRILL_GEOM,              // rifle
+    BOUNCE_GEOM|BOUNCE_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|COLLIDE_PROJ,                          // grenade
+    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|STICK_GEOM|STICK_PLAYER,               // mine
+    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|COLLIDE_PROJ,                          // rocket
+    IMPACT_PLAYER|COLLIDE_TRACE|COLLIDE_LENGTH,                                                 // melee
+    // secondary
+    IMPACT_GEOM|IMPACT_PLAYER|COLLIDE_TRACE|COLLIDE_LENGTH,                                     // claw
+    IMPACT_GEOM|IMPACT_PLAYER|COLLIDE_TRACE|COLLIDE_LENGTH,                                     // pistol
+    BOUNCE_GEOM|IMPACT_PLAYER|COLLIDE_TRACE|IMPACT_SHOTS|COLLIDE_LENGTH,                        // sword
+    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|COLLIDE_OWNER,                         // shotgun
+    IMPACT_SHOTS|COLLIDE_OWNER|BOUNCE_GEOM|BOUNCE_PLAYER,                                       // smg
+    BOUNCE_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER,                                       // flamer
+    IMPACT_GEOM|IMPACT_SHOTS|COLLIDE_OWNER,                                                     // plasma
+    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_SCAN|STICK_GEOM,                             // zapper
+    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|COLLIDE_TRACE|DRILL_GEOM|DRILL_PLAYER, // rifle
+    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|STICK_GEOM|STICK_PLAYER|COLLIDE_PROJ,  // grenade
+    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|STICK_GEOM|STICK_PLAYER,               // mine
+    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|COLLIDE_PROJ,                          // rocket
+    IMPACT_PLAYER|COLLIDE_TRACE|COLLIDE_LENGTH,                                                 // melee
+    // primary flak
+    IMPACT_PLAYER|COLLIDE_TRACE|COLLIDE_OWNER,                                                  // claw
+    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|COLLIDE_OWNER,                         // pistol
+    BOUNCE_GEOM|IMPACT_PLAYER|COLLIDE_TRACE|IMPACT_SHOTS|COLLIDE_OWNER,                         // sword
+    BOUNCE_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|COLLIDE_OWNER,                         // shotgun
+    BOUNCE_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|COLLIDE_OWNER,                         // smg
+    BOUNCE_GEOM|IMPACT_PLAYER|COLLIDE_OWNER,                                                    // flamer
+    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER,                                       // plasma
+    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|COLLIDE_SCAN|STICK_GEOM,               // zapper
+    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|COLLIDE_TRACE,                         // rifle
+    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|COLLIDE_PROJ,                          // grenade
+    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|STICK_GEOM|STICK_PLAYER,               // mine
+    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|COLLIDE_PROJ,                          // rocket
+    IMPACT_PLAYER|COLLIDE_TRACE|COLLIDE_OWNER,                                                  // melee
+    // secondary flak
+    IMPACT_PLAYER|COLLIDE_TRACE|COLLIDE_OWNER,                                                  // claw
+    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|COLLIDE_OWNER,                         // pistol
+    BOUNCE_GEOM|IMPACT_PLAYER|COLLIDE_TRACE|IMPACT_SHOTS|COLLIDE_OWNER,                         // sword
+    BOUNCE_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|COLLIDE_OWNER,                         // shotgun
+    BOUNCE_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|COLLIDE_OWNER,                         // smg
+    BOUNCE_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER,                                       // flamer
+    BOUNCE_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER,                                       // plasma
+    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_SCAN|STICK_GEOM|DRILL_PLAYER|COLLIDE_OWNER,  // zapper
+    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|DRILL_PLAYER|COLLIDE_OWNER,            // rifle
+    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|STICK_GEOM|STICK_PLAYER|COLLIDE_PROJ,  // grenade
+    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|STICK_GEOM|STICK_PLAYER,               // mine
+    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|COLLIDE_PROJ,                          // rocket
+    IMPACT_PLAYER|COLLIDE_TRACE|COLLIDE_OWNER                                                   // melee
 );
 //  Claw        Pistol      Sword       Shotgun     SMG         Flamer      Plasma      Zapper      Rifle       Grenade     Mine        Rocket      Melee
 WPVAR(IDF_GAMEMOD|IDF_HEX, 0, colour, 0, 0xFFFFFF,
@@ -560,9 +560,9 @@ WPFVARK(IDF_GAMEMOD, 0, headmin, 0, FVAR_MAX,
 );
 WPFVARK(IDF_GAMEMOD, 0, hitpush, FVAR_MIN, FVAR_MAX,
     50.0f,      20.0f,      25.0f,      10.0f,      25.0f,      5.0f,       10.0f,      40.0f,      0.0f,       60.0f,      0.0f,       125.0f,     50.0f,
-    100.0f,     40.0f,      50.0f,      15.0f,      150.0f,     100.0f,     0.0f,       40.0f,      0.0f,       60.0f,      0.0f,       125.0f,     100.0f,
+    100.0f,     40.0f,      50.0f,      15.0f,      150.0f,     75.0f,      0.0f,       40.0f,      0.0f,       60.0f,      0.0f,       125.0f,     100.0f,
     50.0f,      20.0f,      25.0f,      10.0f,      25.0f,      5.0f,       10.0f,      40.0f,      10.0f,      60.0f,      0.0f,       125.0f,     50.0f,
-    100.0f,     40.0f,      50.0f,      15.0f,      50.0f,      100.0f,     0.0f,       40.0f,      10.0f,      60.0f,      0.0f,       125.0f,     100.0f
+    100.0f,     40.0f,      50.0f,      15.0f,      50.0f,      75.0f,      0.0f,       40.0f,      10.0f,      60.0f,      0.0f,       125.0f,     100.0f
 );
 WPFVARK(IDF_GAMEMOD, 0, hitpushself, 0, FVAR_MAX,
     1,          1,          1,          1,          1,          1,          1,          1,          1,          1,          1,          1,          1,
@@ -588,7 +588,7 @@ WPFVAR(IDF_GAMEMOD, 0, itemhalo, 0, FVAR_MAX,
 WPFVAR(IDF_GAMEMOD, 0, itemhaloammo, 0, FVAR_MAX,
     12,         12,         12,         12,         12,         12,         12,         12,         12,         6,          6,          12,         1.5f
 );
-//jitter vars
+// jitter vars
 //  Claw        Pistol      Sword       Shotgun     SMG         Flamer      Plasma      Zapper      Rifle       Grenade     Mine        Rocket      Melee
 WPVARM(IDF_GAMEMOD, 0, jitterpitchdir, VAR_MIN, VAR_MAX,
     0,          500,        0,          0,          500,        0,          0,          0,          0,          0,          0,          0,          0,
@@ -748,7 +748,7 @@ WPSVARR(IDF_GAMEMOD, 0, obitobliterated,
     "given kung-fu lessons"
 );
 WPSVARK(IDF_GAMEMOD, 0, obitheadless,
-    //primary
+    // primary
     "clawed and mauled",
     "capped",
     "sliced in half",
@@ -762,7 +762,7 @@ WPSVARK(IDF_GAMEMOD, 0, obitheadless,
     "blown apart",
     "exploded",
     "given kung-fu lessons",
-    //secondary
+    // secondary
     "clawed and mauled",
     "clobbered",
     "sliced in half",
@@ -776,7 +776,7 @@ WPSVARK(IDF_GAMEMOD, 0, obitheadless,
     "blown apart",
     "exploded",
     "given kung-fu lessons",
-    //primary flak
+    // primary flak
     "clawed and mauled",
     "capped",
     "sliced in half",
@@ -790,7 +790,7 @@ WPSVARK(IDF_GAMEMOD, 0, obitheadless,
     "blown apart",
     "exploded",
     "given kung-fu lessons",
-    //secondary flak
+    // secondary flak
     "clawed and mauled",
     "clobbered",
     "sliced in half",
@@ -865,9 +865,9 @@ WPSVARK(IDF_GAMEMOD, 0, obituary,
 //  Claw        Pistol      Sword       Shotgun     SMG         Flamer      Plasma      Zapper      Rifle       Grenade     Mine        Rocket      Melee
 WPFVARK(IDF_GAMEMOD, 0, partblend, 0, 1,
     1.0f,       0.3f,       1.0f,       1.0f,       1.0f,       0.8f,       0.8f,       1.0f,       1.0f,       1.0f,       0.75f,      1.0f,       1.0f,
-    1.0f,       0.0f,       1.0f,       1.0f,       1.0f,       0.25f,      1.0f,       1.0f,       1.0f,       1.0f,       0.75f,      1.0f,       1.0f,
+    1.0f,       0.0f,       1.0f,       1.0f,       1.0f,       0.125f,     1.0f,       1.0f,       1.0f,       1.0f,       0.75f,      1.0f,       1.0f,
     1.0f,       0.3f,       1.0f,       1.0f,       1.0f,       0.8f,       0.8f,       1.0f,       1.0f,       1.0f,       0.75f,      1.0f,       1.0f,
-    1.0f,       0.0f,       1.0f,       1.0f,       1.0f,       0.25f,      1.0f,       1.0f,       1.0f,       1.0f,       0.75f,      1.0f,       1.0f
+    1.0f,       0.0f,       1.0f,       1.0f,       1.0f,       0.125f,     1.0f,       1.0f,       1.0f,       1.0f,       0.75f,      1.0f,       1.0f
 );
 WPVARK(IDF_GAMEMOD|IDF_HEX, 0, partcol, PC(LAST), 0xFFFFFF,
     0x907020,   0xD0D0D0,   0x4040F0,   0xF0F020,   0xF05820,   PC(FIRE),   0x40F0C8,   PC(SHOCK),  0xA020F0,   PC(FIRE),   0x00F068,   PC(FIRE),   0xEEEE22,
@@ -889,9 +889,9 @@ WPFVARK(IDF_GAMEMOD, 0, partlen, 0, FVAR_MAX,
 );
 WPFVARK(IDF_GAMEMOD, 0, partsize, 0, FVAR_MAX,
     1.0f,       0.125f,     1.0f,       0.75f,      0.6f,       6.0f,       8.0f,       2.0f,       1.5f,       1.0f,       2.0f,       2.0f,       0.5f,
-    2.0f,       0.25f,      1.25f,      0.5f,       0.75f,      12.0f,      5.0f,       2.0f,       3.0f,       1.0f,       2.0f,       2.0f,       1.0f,
+    2.0f,       0.25f,      1.25f,      0.5f,       0.75f,      16.0f,      5.0f,       2.0f,       3.0f,       1.0f,       2.0f,       2.0f,       1.0f,
     1.0f,       0.125f,     1.0f,       0.4f,       0.4f,       6.0f,       8.0f,       2.0f,       1.5f,       1.0f,       2.0f,       2.0f,       0.5f,
-    2.0f,       0.25f,      1.25f,      0.4f,       0.4f,       12.0f,      10.0f,      2.0f,       3.0f,       1.0f,       2.0f,       2.0f,       1.0f
+    2.0f,       0.25f,      1.25f,      0.4f,       0.4f,       16.0f,      10.0f,      2.0f,       3.0f,       1.0f,       2.0f,       2.0f,       1.0f
 );
 WPVARK(IDF_GAMEMOD, 0, parttype, 0, W_MAX-1,
     W_CLAW,     W_PISTOL,   W_SWORD,    W_SHOTGUN,  W_SMG,      W_FLAMER,   W_PLASMA,   W_ZAPPER,   W_RIFLE,    W_GRENADE,  W_MINE,     W_ROCKET,   W_MELEE,
@@ -925,9 +925,9 @@ WPVARK(IDF_GAMEMOD, 0, proxtype, 0, 2,
 );
 WPFVARK(IDF_GAMEMOD, 0, radial, 0, FVAR_MAX,
     0.0f,       0.0f,       25.0f,      0.0f,       0.0f,       6.0f,       10.0f,      0.0f,       0.0f,       72.0f,      72.0f,      96.0f,      0.0f,
-    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       26.0f,      16.0f,      0.0f,       0.0f,       60.0f,      32.0f,      96.0f,      0.0f,
+    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       16.0f,      16.0f,      0.0f,       0.0f,       60.0f,      32.0f,      96.0f,      0.0f,
     0.0f,       0.0f,       25.0f,      0.0f,       0.0f,       6.0f,       10.0f,      0.0f,       8.0f,       72.0f,      72.0f,      96.0f,      0.0f,
-    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       26.0f,      16.0f,      0.0f,       8.0f,       60.0f,      32.0f,      96.0f,      0.0f
+    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       16.0f,      16.0f,      0.0f,       8.0f,       60.0f,      32.0f,      96.0f,      0.0f
 );
 WPVARK(IDF_GAMEMOD, 0, radialdelay, 0, VAR_MAX,
     0,          0,          0,          0,          0,          50,         50,         0,          0,          0,          0,          0,          0,
@@ -1142,7 +1142,7 @@ WPFVARK(IDF_GAMEMOD, 0, tapermax, 0, 1,
 );
 WPVARM(IDF_GAMEMOD, 0, time, 1, VAR_MAX,
     200,        1000,       350,        400,        800,        650,        350,        250,        7500,       2500,       45000,      5000,       250,
-    350,        300,        250,        1000,       750,        40,         2000,       250,        7500,       2500,       45000,      5000,       250
+    350,        300,        250,        1000,       750,        125,        2000,       250,        7500,       2500,       45000,      5000,       250
 );
 WPVARM(IDF_GAMEMOD, 0, timedelay, 0, VAR_MAX,
     0,          0,          10,         0,          0,          0,          0,          0,          0,          175,        50,         0,          0,

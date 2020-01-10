@@ -610,7 +610,7 @@ int text_visible(const char *str, float hitx, float hity, float maxwidth, int fl
     return i;
 }
 
-//inverse of text_visible
+// inverse of text_visible
 void text_posf(const char *str, int cursor, float &cx, float &cy, float maxwidth, int flags, float linespace)
 {
     if(linespace <= 0) linespace = textlinespacing;
