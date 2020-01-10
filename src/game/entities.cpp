@@ -1788,7 +1788,7 @@ namespace entities
                     both = true;
                     break;
                 }
-                part_trace(e.o, f.o, showentsize, 1, 1, both ? colourviolet : colourdarkviolet, showentinterval);
+                part_trace(e.o, f.o, showentsize, 1, 1, both ? colourcyan : colourdarkcyan, showentinterval);
             }
         }
     }
@@ -2144,10 +2144,10 @@ namespace entities
         }
         if(edit)
         {
-            part_create(hastop ? PART_EDIT_ONTOP : PART_EDIT, 1, o, hastop ? colourviolet : colourdarkviolet, hastop ? 2.f : 1.f);
+            part_create(hastop ? PART_EDIT_ONTOP : PART_EDIT, 1, o, hastop ? colourcyan : colourdarkcyan, hastop ? 2.f : 1.f);
             if(showentinfo&(hasent ? 4 : 8))
             {
-                defformatstring(s, "<super>%s%s (%d)", hastop ? "\fp" : "\fP", enttype[e.type].name, idx >= 0 ? idx : 0);
+                defformatstring(s, "<super>%s%s (%d)", hastop ? "\fc" : "\fC", enttype[e.type].name, idx >= 0 ? idx : 0);
                 part_textcopy(pos.add(off), s, hastop ? PART_TEXT_ONTOP : PART_TEXT);
             }
         }
