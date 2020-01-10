@@ -1236,6 +1236,7 @@ namespace entities
             {
                 if(e.attrs[0] < 0) e.attrs[0] = 0; // mode, clamp
                 if(alter && !e.attrs[1]) e.attrs[1] = (int)camera1->yaw;
+                FIXDIRY(1); // yaw
                 while(e.attrs[2] < 0) e.attrs[2] += 256; // speed
                 while(e.attrs[2] > 255) e.attrs[2] -= 256; // wrap both ways
                 if(e.attrs[3] < 0) e.attrs[3] = 0; // radius, clamp
