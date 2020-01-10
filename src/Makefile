@@ -2,9 +2,6 @@ APPNAME=redeclipse
 APPCLIENT=$(APPNAME)
 APPSERVER=$(APPNAME)_server
 
-#CXXFLAGS= -ggdb3
-CXXFLAGS?= -O3 -fomit-frame-pointer -ffast-math
-override CXXFLAGS+= -Wall -fsigned-char -fno-exceptions -fno-rtti -Wno-invalid-offsetof
 PLATFORM= $(shell $(CC) -dumpmachine)
 RMFLAGS= -fv
 PKG_CONFIG ?= pkg-config
@@ -19,17 +16,15 @@ ifeq (,$(PLATFORM_REVISION))
 PLATFORM_REVISION=""
 endif
 
-ifeq (,$(PLATFORM_BIN))
-ifneq (,$(findstring arm,$(PLATFORM)))
-PLATFORM_BIN=arm
+PLATFORM_BIN?=$(shell ./get_binarch.sh $(PLATFORM))
+
+#CXXFLAGS= -ggdb3
+ifneq (,$(filter amd64 x86,$(PLATFORM_BIN)))
+CXXFLAGS?= -O3 -fomit-frame-pointer -ffast-math
 else
-ifneq (,$(findstring 64,$(PLATFORM)))
-PLATFORM_BIN=amd64
-else
-PLATFORM_BIN=x86
+CXXFLAGS?= -O3 -fomit-frame-pointer
 endif
-endif
-endif
+override CXXFLAGS+= -Wall -fsigned-char -fno-exceptions -fno-rtti -Wno-invalid-offsetof
 
 ifeq (,$(INSTDIR))
 INSTDIR=../bin/$(PLATFORM_BIN)
@@ -59,7 +54,7 @@ ifneq (,$(WANT_DISCORD))
 ifneq (,$(findstring mingw,$(PLATFORM)))
 override INCLUDES+= -DUSE_DISCORD=1
 else
-ifneq (,$(findstring 64,$(PLATFORM)))
+ifneq (,$(findstring x86_64,$(PLATFORM)))
 override INCLUDES+= -DUSE_DISCORD=1
 endif
 endif
@@ -89,7 +84,7 @@ override WINDRES=$(TOOLSET_PREFIX)$(WINDRES_TEMP)
 STD_LIBS= -static-libgcc -static-libstdc++
 CLIENT_INCLUDES= $(INCLUDES) -Iinclude
 CLIENT_LIBS= -mwindows $(STD_LIBS) -L$(WINDLL) -L$(WINLIB) -lSDL2 -lSDL2_image -lSDL2_mixer -lzlib1 -lopengl32 -lenet -lws2_32 -lwinmm
-ifneq (,$(findstring 64,$(PLATFORM)))
+ifneq (,$(findstring x86_64,$(PLATFORM)))
 override WINDRES+= -F pe-x86-64
 ifneq (,$(WANT_STEAM))
 override CLIENT_LIBS+= -lsteam_api64
@@ -123,7 +118,7 @@ ifneq (,$(WANT_STEAM))
 override CLIENT_LIBS+= -L../bin/$(PLATFORM_BIN) -lsteam_api
 endif
 ifneq (,$(WANT_DISCORD))
-ifneq (,$(findstring 64,$(PLATFORM)))
+ifneq (,$(findstring x86_64,$(PLATFORM)))
 override CLIENT_LIBS+= -L../bin/$(PLATFORM_BIN) -ldiscord-rpc
 endif
 endif
@@ -208,7 +203,7 @@ SERVER_LIBS= -mwindows $(STD_LIBS) -L$(WINDLL) -L$(WINLIB) -lzlib1 -lenet -lws2_
 CTFONT_INCLUDES= -DSTANDALONE -Iinclude
 CTFONT_LIBS= -mwindows $(STD_LIBS) -L$(WINDLL) -L$(WINLIB) -lzlib1 -lfreetype
 ifneq (,$(WANT_STEAM))
-ifneq (,$(findstring 64,$(PLATFORM)))
+ifneq (,$(findstring x86_64,$(PLATFORM)))
 override SERVER_LIBS+= -lsteam_api64
 else
 override SERVER_LIBS+= -lsteam_api
