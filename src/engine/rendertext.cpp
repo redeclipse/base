@@ -284,6 +284,7 @@ COLOURVAR(pink, 0xFF8080);
 COLOURVAR(violet, 0xB060FF);
 COLOURVAR(purple, 0xFF00FF);
 COLOURVAR(brown, 0xA05030);
+COLOURVAR(chartreuse, 0xB0FF00);
 
 static void text_color(char c, bvec4 *stack, int size, int &sp, bvec4 &color, int r, int g, int b, int a, int flags)
 {
@@ -304,6 +305,7 @@ static void text_color(char c, bvec4 *stack, int size, int &sp, bvec4 &color, in
         case 'v': case 'V': stack[sp] = color = TVECA(c == 'V' ? colourdarkviolet : colourviolet, alpha); break;
         case 'p': case 'P': stack[sp] = color = TVECA(c == 'P' ? colourdarkpurple : colourpurple, alpha); break;
         case 'n': case 'N': stack[sp] = color = TVECA(c == 'N' ? colourdarkbrown : colourbrown, alpha); break;
+        case 'h': case 'H': stack[sp] = color = TVECA(c == 'H' ? colourdarkchartreuse : colourchartreuse, alpha); break;
         case 'e': case 'E': (stack[sp] = color = stack[sp]).alpha(c != 'E' ? a/2 : a/4); break;
         case 'u': case 'Z': stack[sp] = color = TVECX(r, g, b, a); break; // default colour
         case 's': // save
