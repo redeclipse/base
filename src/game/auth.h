@@ -255,7 +255,8 @@ namespace auth
         if(tryident(ci, authname, pwd)) return DISC_NONE;
         if(checksid && ci->connectsteam) return DISC_NONE;
         // above here are short circuits
-        if(numspectators() >= spectatorslots()) return DISC_MAXCLIENTS;
+        int spectators = spectatorslots();
+        if(spectators > 0 && numspectators() >= spectators) return DISC_MAXCLIENTS;
         uint ip = getclientip(ci->clientnum);
         if(!ip || !checkipinfo(control, ipinfo::EXCEPT, ip))
         {
