@@ -2105,14 +2105,17 @@ namespace UI
                       tdh1 = tcoordmap[FC_TR][1]-tcoordmap[FC_TL][1], tdh2 = tcoordmap[FC_BR][1]-tcoordmap[FC_BL][1];
                 loopi(cols-1)
                 {
+                    int color1 = i+colstart,
+                        color2 = colcount>1 ? color1+1 : color1;
+
                     switch(dir)
                     {
                         case HORIZONTAL:
                         {
-                            gle::attribf(sx+vx1+vcx1, sy+vy1+vcy1); gle::attribf(tx1+tcx1, ty1+tcy1); colors[i+colstart].attrib(); // 0
-                            gle::attribf(sx+vx1+vcx1+(vw1*vr), sy+vy1+vcy1+(vdh1*vr)); gle::attribf(tx1+tcx1+(tw1*vr), ty1+tcy1+(tdh1*vr)); colors[i+colstart+1].attrib(); // 1
-                            gle::attribf(sx+vx2+vcx2, sy+vy1+vcy2+vh1); gle::attribf(tx2+tcx2, ty1+tcy2+th1); colors[i+colstart].attrib(); // 3
-                            gle::attribf(sx+vx2+vcx2+(vw2*vr), sy+vy1+vcy2+vh1+(vdh2*vr)); gle::attribf(tx2+tcx2+(tw2*vr), ty1+tcy2+th1+(tdh2*vr)); colors[i+colstart+1].attrib(); // 2
+                            gle::attribf(sx+vx1+vcx1, sy+vy1+vcy1); gle::attribf(tx1+tcx1, ty1+tcy1); colors[color1].attrib(); // 0
+                            gle::attribf(sx+vx1+vcx1+(vw1*vr), sy+vy1+vcy1+(vdh1*vr)); gle::attribf(tx1+tcx1+(tw1*vr), ty1+tcy1+(tdh1*vr)); colors[color2].attrib(); // 1
+                            gle::attribf(sx+vx2+vcx2, sy+vy1+vcy2+vh1); gle::attribf(tx2+tcx2, ty1+tcy2+th1); colors[color1].attrib(); // 3
+                            gle::attribf(sx+vx2+vcx2+(vw2*vr), sy+vy1+vcy2+vh1+(vdh2*vr)); gle::attribf(tx2+tcx2+(tw2*vr), ty1+tcy2+th1+(tdh2*vr)); colors[color2].attrib(); // 2
                             vcx1 += vw1*vr;
                             vcx2 += vw2*vr;
                             vcy1 += vdh1*vr;
@@ -2125,10 +2128,10 @@ namespace UI
                         }
                         case VERTICAL:
                         {
-                            gle::attribf(sx+vx1+vcx2+vw1, sy+vy2+vcy2); gle::attribf(tx1+tcx2+tw1, ty2+tcy2); colors[i+colstart].attrib(); // 1
-                            gle::attribf(sx+vx1+vcx2+vw1+(vdw2*vr), sy+vy2+vcy2+(vh2*vr)); gle::attribf(tx1+tcx2+tw1+(tdw2*vr), ty2+tcy2+(th2*vr)); colors[i+colstart+1].attrib(); // 2
-                            gle::attribf(sx+vx1+vcx1, sy+vy1+vcy1); gle::attribf(tx1+tcx1, ty1+tcy1); colors[i+colstart].attrib(); // 0
-                            gle::attribf(sx+vx1+vcx1+(vdw1*vr), sy+vy1+vcy1+(vh1*vr)); gle::attribf(tx1+tcx1+(tdw1*vr), ty1+tcy1+(th1*vr)); colors[i+colstart+1].attrib(); // 3
+                            gle::attribf(sx+vx1+vcx2+vw1, sy+vy2+vcy2); gle::attribf(tx1+tcx2+tw1, ty2+tcy2); colors[color1].attrib(); // 1
+                            gle::attribf(sx+vx1+vcx2+vw1+(vdw2*vr), sy+vy2+vcy2+(vh2*vr)); gle::attribf(tx1+tcx2+tw1+(tdw2*vr), ty2+tcy2+(th2*vr)); colors[color2].attrib(); // 2
+                            gle::attribf(sx+vx1+vcx1, sy+vy1+vcy1); gle::attribf(tx1+tcx1, ty1+tcy1); colors[color1].attrib(); // 0
+                            gle::attribf(sx+vx1+vcx1+(vdw1*vr), sy+vy1+vcy1+(vh1*vr)); gle::attribf(tx1+tcx1+(tdw1*vr), ty1+tcy1+(th1*vr)); colors[color2].attrib(); // 3
                             vcy1 += vh1*vr;
                             vcy2 += vh2*vr;
                             vcx1 += vdw1*vr;
@@ -2140,7 +2143,7 @@ namespace UI
                             break;
                         }
                     }
-                    lastcolor = colors[i+colstart+1];
+                    lastcolor = colors[color2];
                     vs += vr;
                 }
             }
