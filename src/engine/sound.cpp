@@ -602,7 +602,7 @@ int playsound(int n, const vec &pos, physent *d, int flags, int vol, int maxrad,
                 s.minrad = y;
                 s.material = mat;
                 s.flags = flags;
-                s.millis = oldhook ? sounds[*oldhook].millis : lastmillis;
+                s.millis = oldhook && sounds.inrange(*oldhook) ? sounds[*oldhook].millis : lastmillis;
                 s.ends = ends;
                 s.slotnum = n;
                 s.owner = d;
