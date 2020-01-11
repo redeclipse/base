@@ -15,6 +15,64 @@ namespace game
     vector<gameent *> players, waiting;
     vector<cament *> cameras;
 
+    void mapweapsounds()
+    {
+        static const char *nameprefixes[W_MAX] =
+        {
+            "S_W_CLAW_", "S_W_PISTOL_",
+            "S_W_SWORD_", "S_W_SHOTGUN_", "S_W_SMG_", "S_W_FLAMER_", "S_W_PLASMA_", "S_W_ZAPPER_", "S_W_RIFLE_",
+            "S_W_GRENADE_", "S_W_MINE_", "S_W_ROCKET_"
+        };
+
+        static const char *names[S_W_MAX] =
+        {
+            "PRIMARY", "SECONDARY",
+            "BEGIN", "END",
+            "BEGIN2", "END2",
+            "POWER", "POWER2", "ZOOM",
+            "SWITCH", "RELOAD", "NOTIFY",
+            "EXPLODE", "EXPLODE2",
+            "DESTROY", "DESTROY2",
+            "IMPACT", "IMPACT2",
+            "EXTINGUISH", "EXTINGUISH2",
+            "TRANSIT", "TRANSIT2",
+            "BOUNCE", "BOUNCE2",
+            "USE", "SPAWN"
+        };
+
+        loopi(W_MAX) loopj(S_W_MAX)
+        {
+            if(i < W_OFFSET && j >= S_W_OFFSET) continue;
+
+            string slotname;
+            formatstring(slotname, "%s%s", nameprefixes[i], names[j]);
+            mapsoundslot(WSND(i, j), slotname);
+        }
+    }
+
+    void mapgamesounds()
+    {
+        static const char *names[S_GAME - S_GAMESPECIFIC] =
+        {
+            "S_JUMP", "S_IMPULSE", "S_LAND", "S_FOOTSTEP", "S_SWIMSTEP", "S_PAIN", "S_DEATH",
+            "S_SPLASH1", "S_SPLASH2", "S_SPLOSH", "S_DEBRIS", "S_BURNLAVA",
+            "S_EXTINGUISH", "S_SHELL", "S_ITEMUSE", "S_ITEMSPAWN",
+            "S_REGEN", "S_CRITICAL", "S_DAMAGE", "S_DAMAGE2", "S_DAMAGE3", "S_DAMAGE4", "S_DAMAGE5", "S_DAMAGE6", "S_DAMAGE7", "S_DAMAGE8",
+            "S_BURNED", "S_BLEED", "S_SHOCK", "S_RESPAWN", "S_CHAT", "S_ERROR", "S_ALARM", "S_CATCH", "S_BOUNCE",
+            "S_V_FLAGSECURED", "S_V_FLAGOVERTHROWN", "S_V_FLAGPICKUP", "S_V_FLAGDROP", "S_V_FLAGRETURN", "S_V_FLAGSCORE", "S_V_FLAGRESET",
+            "S_V_BOMBSTART", "S_V_BOMBDUEL", "S_V_BOMBPICKUP", "S_V_BOMBSCORE", "S_V_BOMBRESET",
+            "S_V_NOTIFY", "S_V_FIGHT", "S_V_START", "S_V_CHECKPOINT", "S_V_COMPLETE", "S_V_OVERTIME", "S_V_ONEMINUTE", "S_V_HEADSHOT",
+            "S_V_SPREE", "S_V_SPREE2", "S_V_SPREE3", "S_V_SPREE4", "S_V_MULTI", "S_V_MULTI2", "S_V_MULTI3",
+            "S_V_REVENGE", "S_V_DOMINATE", "S_V_FIRSTBLOOD", "S_V_BREAKER",
+            "S_V_YOUWIN", "S_V_YOULOSE", "S_V_DRAW", "S_V_FRAGGED", "S_V_BALWARN", "S_V_BALALERT"
+        };
+
+        for(int i = S_GAMESPECIFIC; i < S_GAME; i++)
+            mapsoundslot(i, names[i - S_GAMESPECIFIC]);
+
+        mapweapsounds();
+    }
+
     void start()
     {
         player1->version.major = VERSION_MAJOR;

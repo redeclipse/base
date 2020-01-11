@@ -1543,6 +1543,87 @@ template <class T, int SIZE> struct reversequeue : queue<T, SIZE>
     const T &operator[](int offset) const { return queue<T, SIZE>::added(offset); }
 };
 
+struct slot
+{
+    int index;
+    char *name;
+
+    slot() : index(-1), name(NULL) {}
+    ~slot() { DELETEA(name); }
+
+    bool isfree() const { return index < 0; }
+};
+
+template<class T>
+struct slotmanager
+{
+    vector<T> slots;
+    hashnameset<slot> slotmap;
+
+    int length() const { return slots.length(); }
+    bool inrange(int index) const { return slots.inrange(index); }
+
+    slot *getslot(const char *name)
+    {
+        slot *s = slotmap.access(name);
+
+        if(!s)
+        {
+            s = &slotmap[name];
+            s->name = newstring(name);
+        }
+
+        return s;
+    }
+
+    int getindex(const char *name)
+    {
+        slot *s = slotmap.access(name);
+        return s ? s->index : -1;
+    }
+
+    int assign(const char *name)
+    {
+        slot *s = getslot(name);
+        int index = s->isfree() ? slots.length() : s->index;
+        s->index = index;
+
+        return index;
+    }
+
+    int add(const T &x, const char *name = NULL)
+    {
+        int slotidx = (name && *name) ? assign(name) : slots.length();
+
+        if(slotidx > slots.length()) slots.add(T(), slotidx - slots.length());
+        if(slotidx == slots.length()) slots.add(x);
+        else slots[slotidx] = x;
+
+        return slotidx;
+    }
+
+    int add(const char *name = NULL) { return add(T(), name); }
+
+    void clear(bool freeres = true)
+    {
+        if(freeres) slots.shrink(0);
+        else slots.setsize(0);
+    }
+
+    T &operator[](int index) { return slots[index]; }
+    const T &operator[](int index) const { return slots[index]; }
+
+    T *get(const char *name)
+    {
+        if(!name || !*name) return NULL;
+
+        slot *s = slotmap.access(name);
+        if(s && slots.inrange(s->index)) return &slots[s->index];
+
+        return NULL;
+    }
+};
+
 #if defined(WIN32) && !defined(__GNUC__)
 #ifdef _DEBUG
 //#define _CRTDBG_MAP_ALLOC

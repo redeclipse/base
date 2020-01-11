@@ -109,6 +109,7 @@ namespace physics
 
 namespace game
 {
+    extern void mapgamesounds();
     extern void start();
     extern bool clientoption(char *arg);
     extern void preload();
