@@ -646,6 +646,7 @@ enum
     VSLOT_COAST,
     VSLOT_REFRACT,
     VSLOT_DETAIL,
+    VSLOT_ANGLE,
     VSLOT_NUM
 };
 
@@ -661,6 +662,7 @@ struct VSlot
     bool linked;
     float scale;
     int rotation;
+    vec angle;
     ivec2 offset;
     vec2 scroll;
     int layer, detail, palette, palindex;
@@ -687,6 +689,7 @@ struct VSlot
         linked = false;
         scale = 1;
         rotation = 0;
+        angle = vec(0, sinf(0), cosf(0));
         offset = ivec2(0, 0);
         scroll = vec2(0, 0);
         layer = detail = palette = palindex = 0;

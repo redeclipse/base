@@ -1985,6 +1985,7 @@ static void propagatevslot(VSlot &dst, const VSlot &src, int diff, bool edit = f
         dst.rotation = src.rotation;
         if(edit && !dst.offset.iszero()) clampvslotoffset(dst);
     }
+    if(diff & (1<<VSLOT_ANGLE)) dst.angle = src.angle;
     if(diff & (1<<VSLOT_OFFSET))
     {
         dst.offset = src.offset;
@@ -2049,6 +2050,7 @@ static void mergevslot(VSlot &dst, const VSlot &src, int diff, Slot *slot = NULL
         dst.rotation = clamp(dst.rotation + src.rotation, 0, 7);
         if(!dst.offset.iszero()) clampvslotoffset(dst, slot);
     }
+    if(diff & (1<<VSLOT_ANGLE)) dst.angle.add(src.angle);
     if(diff & (1<<VSLOT_OFFSET))
     {
         dst.offset.add(src.offset);
@@ -2122,6 +2124,7 @@ static bool comparevslot(const VSlot &dst, const VSlot &src, int diff)
     }
     if(diff & (1<<VSLOT_SCALE) && dst.scale != src.scale) return false;
     if(diff & (1<<VSLOT_ROTATION) && dst.rotation != src.rotation) return false;
+    if(diff & (1<<VSLOT_ANGLE) && dst.angle != src.angle) return false;
     if(diff & (1<<VSLOT_OFFSET) && dst.offset != src.offset) return false;
     if(diff & (1<<VSLOT_SCROLL) && dst.scroll != src.scroll) return false;
     if(diff & (1<<VSLOT_LAYER) && dst.layer != src.layer) return false;
@@ -2157,6 +2160,13 @@ void packvslot(vector<uchar> &buf, const VSlot &src)
     {
         buf.put(VSLOT_ROTATION);
         putint(buf, src.rotation);
+    }
+    if(src.changed & (1<<VSLOT_ANGLE))
+    {
+        buf.put(VSLOT_ANGLE);
+        putfloat(buf, src.angle.x);
+        putfloat(buf, src.angle.y);
+        putfloat(buf, src.angle.z);
     }
     if(src.changed & (1<<VSLOT_OFFSET))
     {
@@ -2254,6 +2264,11 @@ bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta)
             case VSLOT_ROTATION:
                 dst.rotation = getint(buf);
                 if(!delta) dst.rotation = clamp(dst.rotation, 0, 7);
+                break;
+            case VSLOT_ANGLE:
+                dst.angle.x = getfloat(buf);
+                dst.angle.y = getfloat(buf);
+                dst.angle.z = getfloat(buf);
                 break;
             case VSLOT_OFFSET:
                 dst.offset.x = getint(buf);
@@ -2502,6 +2517,15 @@ void texrotate_(int *rot)
     propagatevslot(s.variants, 1<<VSLOT_ROTATION);
 }
 COMMANDN(0, texrotate, texrotate_, "i");
+
+void texangle_(float *a)
+{
+    if(!defslot) return;
+    Slot &s = *defslot;
+    s.variants->angle = vec(*a, sinf(RAD**a), cosf(RAD**a));
+    propagatevslot(s.variants, 1<<VSLOT_ANGLE);
+}
+COMMANDN(0, texangle, texangle_, "f");
 
 void texscale(float *scale)
 {
