@@ -14,7 +14,7 @@ namespace client
     SVAR(IDF_PERSIST, demolist, "");
     VAR(0, demoendless, 0, 0, 1);
     VAR(IDF_PERSIST, showpresence, 0, 1, 2); // 0 = never show join/leave, 1 = show only during game, 2 = show when connecting/disconnecting
-    VAR(IDF_PERSIST, showpresencehostinfo, 0, 1, 1);
+    VAR(IDF_PERSIST, showpresencehostinfo, 0, 0, 1);
     VAR(IDF_PERSIST, showteamchange, 0, 1, 2); // 0 = never show, 1 = show only when switching between, 2 = show when entering match too
     VAR(IDF_PERSIST, showservervariables, 0, 0, 1); // determines if variables set by the server are printed to the console
     VAR(IDF_PERSIST, showmapvotes, 0, 1, 3); // shows map votes, 1 = only mid-game (not intermision), 2 = at all times, 3 = verbose
