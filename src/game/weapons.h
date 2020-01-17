@@ -715,7 +715,7 @@ WPVAR(IDF_GAMEMOD, 0, modes, -G_ALL, G_ALL,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
 );
 WPVAR(IDF_GAMEMOD, 0, muts, -G_M_ALL, G_M_ALL,
-    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          -G_M_DUKE
 );
 WPSVARR(IDF_GAMEMOD, 0, obitsuicide,
     "hit themself",
