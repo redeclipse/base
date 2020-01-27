@@ -226,7 +226,7 @@ GVAR(IDF_GAMEMOD, 0, balanceduke, 0, 1, 1); // enable in duel/survivor
 GFVAR(IDF_GAMEMOD, 0, healthscale, 0, 1.0f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, healthscalehard, 0, 1.0f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, maxhealth, 0, 1.5f, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, maxhealthvampire, 0, 3.0f, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, maxhealthvampire, 0, 2.0f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, vampirescale, 0, 1.0f, FVAR_MAX);
 
 GFVAR(IDF_GAMEMOD, 0, maxresizescale, 1, 2, FVAR_MAX);
