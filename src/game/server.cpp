@@ -6817,15 +6817,18 @@ namespace server
                 case N_SETPLAYERINFO: // name colour model pattern checkpoint vanity count <loadweaps> count <randweaps>
                 {
                     uint ip = getclientip(ci->clientnum);
+                    getstring(text, p);
+                    stringz(namestr);
+                    filterstring(namestr, text, true, true, true, true, MAXNAMELEN);
+                    if(!namestr[0]) copystring(namestr, ci->name[0] ? ci->name : "unnamed");
                     if(ci->lastplayerinfo)
                     {
                         bool allow = true;
                         if(!haspriv(ci, G(setinfolock), "change player info on this server")) allow = false;
-                        else if(ip && checkipinfo(control, ipinfo::MUTE, ip) && !checkipinfo(control, ipinfo::EXCEPT, ip) && !haspriv(ci, G(mutelock), "change player info while muted")) allow = false;
+                        else if(ip && strcmp(ci->name, namestr) && checkipinfo(control, ipinfo::MUTE, ip) && !checkipinfo(control, ipinfo::EXCEPT, ip) && !haspriv(ci, G(mutelock), "change player name while muted")) allow = false;
                         else if(totalmillis-ci->lastplayerinfo < G(setinfowait)) allow = false;
                         if(!allow)
                         {
-                            getstring(text, p);
                             loopk(4) getint(p);
                             getstring(text, p);
                             int lw = getint(p);
@@ -6838,10 +6841,6 @@ namespace server
                     }
                     QUEUE_MSG;
                     defformatstring(oldname, "%s", colourname(ci));
-                    getstring(text, p);
-                    stringz(namestr);
-                    filterstring(namestr, text, true, true, true, true, MAXNAMELEN);
-                    if(!*namestr) copystring(namestr, "unnamed");
                     if(strcmp(ci->name, namestr))
                     {
                         copystring(ci->name, namestr, MAXNAMELEN+1);
