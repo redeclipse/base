@@ -88,7 +88,10 @@ WINDLL=../bin/$(PLATFORM_BIN)
 override WINDRES=$(TOOLSET_PREFIX)$(WINDRES_TEMP)
 STD_LIBS= -static-libgcc -static-libstdc++
 CLIENT_INCLUDES= $(INCLUDES) -Iinclude
-CLIENT_LIBS= -mwindows $(STD_LIBS) -L$(WINDLL) -L$(WINLIB) -lSDL2 -lSDL2_image -lSDL2_mixer -lzlib1 -lopengl32 -lenet -lws2_32 -lwinmm
+CLIENT_LIBS= $(STD_LIBS) -L$(WINDLL) -L$(WINLIB) -lSDL2 -lSDL2_image -lSDL2_mixer -lzlib1 -lopengl32 -lenet -lws2_32 -lwinmm
+ifeq (,$(findstring -D_DEBUG,$(CXXFLAGS)))
+CLIENT_LIBS+= -mwindows
+endif
 ifneq (,$(findstring 64,$(PLATFORM)))
 override WINDRES+= -F pe-x86-64
 ifneq (,$(WANT_STEAM))
