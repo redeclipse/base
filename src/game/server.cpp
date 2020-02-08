@@ -6260,12 +6260,6 @@ namespace server
                     bool proceed = hasclient(cp, ci), qmsg = false;
                     switch(idx)
                     {
-                        case SPHY_BOOST: case SPHY_POUND: case SPHY_SLIDE: case SPHY_MELEE: case SPHY_KICK: case SPHY_GRAB: case SPHY_PARKOUR: case SPHY_AFTER:
-                        {
-                            if(!proceed || cp->state != CS_ALIVE) break;
-                            qmsg = true;
-                            break;
-                        }
                         case SPHY_MATERIAL:
                         {
                             int inmaterial = getint(p);
@@ -6287,7 +6281,12 @@ namespace server
                             }
                             break; // does not get sent to clients
                         }
-                        default: break;
+                        default:
+                        {
+                            if(!proceed || cp->state != CS_ALIVE || idx >= SPHY_SERVER) break;
+                            qmsg = true;
+                            break;
+                        }
                     }
                     if(qmsg) QUEUE_MSG;
                     break;
