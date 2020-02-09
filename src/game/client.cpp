@@ -2834,7 +2834,12 @@ namespace client
                         f->impulse[IM_METER] = 0;
                         f->resetresidual();
                     }
-                    else if(amt > 0 && (!f->lastregen || lastmillis-f->lastregen >= 500)) playsound(S_REGEN, f->o, f);
+                    else if(amt > 0 && (!f->lastregen || lastmillis-f->lastregen >= 500))
+                    {
+                        if(f->health < f->gethealth(game::gamemode, game::mutators) && !f->lastregen)
+                            playsound(S_REGEN_BEGIN, f->o, f);
+                        else playsound(S_REGEN, f->o, f);
+                    }
                     f->health = heal;
                     f->lastregen = lastmillis;
                     f->lastregenamt = amt;
