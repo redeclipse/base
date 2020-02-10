@@ -1920,12 +1920,6 @@ namespace server
                                     break;
                                 }
                             }
-                            if(m_race(gamemode))
-                            {
-                                cp->cpmillis = 0;
-                                cp->cpnodes.shrink(0);
-                                sendf(-1, 1, "ri3", N_CHECKPOINT, cp->clientnum, -1);
-                            }
                             setteam(cp, to, (m_balreset(gamemode, mutators) ? TT_RESET : 0)|TT_INFO, false);
                             cp->lastdeath = 0;
                         }
@@ -2981,6 +2975,12 @@ namespace server
                 if(smode) smode->leavegame(ci);
                 mutate(smuts, mut->leavegame(ci));
                 reenter = true;
+            }
+            if(m_race(gamemode))
+            {
+                ci->cpmillis = 0;
+                ci->cpnodes.shrink(0);
+                sendf(-1, 1, "ri3", N_CHECKPOINT, ci->clientnum, -1);
             }
             ci->lastteam = ci->team;
             ci->team = team;
