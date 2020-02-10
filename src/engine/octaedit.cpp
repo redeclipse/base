@@ -2462,6 +2462,17 @@ void vrotate(int *n)
 COMMAND(0, vrotate, "i");
 ICOMMAND(0, getvrotate, "i", (int *tex), intret(lookupvslot(*tex, false).rotation));
 
+void vangle(float *a)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = 1<<VSLOT_ANGLE;
+    ds.angle = vec(*a, sinf(RAD**a), cosf(RAD**a));
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vangle, "f");
+ICOMMAND(0, getvangle, "i", (int *tex), floatret(lookupvslot(*tex, false).angle.x));
+
 void voffset(int *x, int *y)
 {
     if(noedit()) return;

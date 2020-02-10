@@ -377,6 +377,12 @@ void savevslot(stream *f, VSlot &vs, int prev)
     }
     if(vs.changed & (1<<VSLOT_SCALE)) f->putlil<float>(vs.scale);
     if(vs.changed & (1<<VSLOT_ROTATION)) f->putlil<int>(vs.rotation);
+    if(vs.changed & (1<<VSLOT_ANGLE))
+    {
+        f->putlil<float>(vs.angle.x);
+        f->putlil<float>(vs.angle.y);
+        f->putlil<float>(vs.angle.z);
+    }
     if(vs.changed & (1<<VSLOT_OFFSET))
     {
         loopk(2) f->putlil<int>(vs.offset[k]);
@@ -463,6 +469,10 @@ void loadvslot(stream *f, VSlot &vs, int changed)
     }
     if(vs.changed & (1<<VSLOT_SCALE)) vs.scale = f->getlil<float>();
     if(vs.changed & (1<<VSLOT_ROTATION)) vs.rotation = clamp(f->getlil<int>(), 0, 7);
+    if(vs.changed & (1<<VSLOT_ANGLE))
+    {
+        loopk(3) vs.angle[k] = f->getlil<float>();
+    }
     if(vs.changed & (1<<VSLOT_OFFSET))
     {
         loopk(2) vs.offset[k] = f->getlil<int>();
@@ -547,6 +557,7 @@ void saveslotconfig(stream *h, Slot &s, int index, bool decal)
 
     if(s.variants->offset.x || s.variants->offset.y) h->printf("texoffset %d %d\n", s.variants->offset.x, s.variants->offset.y);
     if(s.variants->rotation) h->printf("texrotate %d\n", s.variants->rotation);
+    if(s.variants->angle.x) h->printf("texangle %f\n", s.variants->angle.x);
     if(s.variants->scale != 1) h->printf("texscale %g\n", s.variants->scale);
     if(s.variants->colorscale != vec(1, 1, 1))
         h->printf("texcolour %f %f %f\n", s.variants->colorscale.x, s.variants->colorscale.y, s.variants->colorscale.z);
