@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 245
+#define VERSION_GAME 246
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -874,9 +874,8 @@ struct clientstate
         if(!m_classic(gamemode, mutators) && attr < W_ITEM && !hasweap(attr, sweap)) return false;
         if(full)
         {
-            int ammo = getammo(attr, 0, true), total = W(attr, ammoclip);
-            if(W(attr, ammostore) > 0) total += W(attr, ammostore);
-            if(ammo >= total) return false;
+            int total = W(attr, ammostore) > 0 ? W(attr, ammostore) : 0;
+            if(weapammo[weap][W_A_STORE] >= total) return false;
         }
         return true;
     }
