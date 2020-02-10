@@ -191,10 +191,10 @@ WPVAR(IDF_GAMEMOD, 0, ammoitem, 1, VAR_MAX,
     1,          10,         1,          24,         90,         150,        90,         72,         18,         1,          1,          1,          0
 );
 WPVAR(IDF_GAMEMOD, 0, ammospawn, 1, VAR_MAX,
-    1,          10,         1,          24,         90,         150,        90,         72,         18,         2,          2,          1,          1
+    1,          10,         1,          48,         180,        300,        180,        144,        36,         2,          2,          1,          1
 );
 WPVAR(IDF_GAMEMOD, 0, ammostore, -1, VAR_MAX,
-    -1,         -1,         -1,         40,         150,        250,        150,        120,        30,         0,          0,          0,          -1
+    -1,         -1,         -1,         48,         180,        300,        180,        144,        36,         0,          0,          0,          -1
 );
 WPVARM(IDF_GAMEMOD, 0, ammosub, 0, VAR_MAX,
     0,          1,          0,          1,          1,          1,          1,          1,          1,          1,          1,          1,          0,
@@ -324,7 +324,7 @@ WPVARM(IDF_GAMEMOD, 0, cooktime, 0, VAR_MAX,
     0,          0,          800,        0,          0,          0,          1250,       750,        750,        2500,       0,          0,          0
 );
 WPVAR(IDF_GAMEMOD, 0, cookzoom, 0, VAR_MAX,
-    0,          0,          0,          0,          0,          0,          0,          0,          400,        0,          0,          0,          0
+    0,          0,          0,          0,          0,          0,          0,          0,          500,        0,          0,          0,          0
 );
 WPFVAR(IDF_GAMEMOD, 0, cookzoommin, 1, 150,
     10,         10,         10,         10,         10,         10,         10,         10,         10,         10,         10,         10,         10
@@ -381,8 +381,8 @@ WPFVARK(IDF_GAMEMOD, 0, damagewhiplash, FVAR_MIN, FVAR_MAX,
     0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.75f,      0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.8f
 );
 WPVARM(IDF_GAMEMOD, 0, delayattack, 1, VAR_MAX,
-    500,        200,        500,        900,        60,         20,         350,        80,         700,        750,        500,        1500,       1000,
-    800,        300,        400,        1350,       350,        800,        1000,       500,        1250,       750,        500,        1500,       1000
+    500,        200,        500,        900,        60,         20,         350,        100,        700,        750,        500,        1500,       1000,
+    800,        300,        400,        1350,       350,        800,        1200,       1000,       1250,       750,        500,        1500,       1000
 );
 WPVAR(IDF_GAMEMOD, 0, delayreload, 0, VAR_MAX,
     50,         1000,       50,         1000,       1300,       2000,       1800,       1800,       2000,       1000,       1500,       2500,       50
@@ -560,9 +560,9 @@ WPFVARK(IDF_GAMEMOD, 0, headmin, 0, FVAR_MAX,
 );
 WPFVARK(IDF_GAMEMOD, 0, hitpush, FVAR_MIN, FVAR_MAX,
     50.0f,      20.0f,      25.0f,      10.0f,      25.0f,      5.0f,       10.0f,      40.0f,      0.0f,       60.0f,      0.0f,       125.0f,     50.0f,
-    100.0f,     40.0f,      50.0f,      15.0f,      150.0f,     75.0f,      0.0f,       40.0f,      0.0f,       60.0f,      0.0f,       125.0f,     100.0f,
+    100.0f,     40.0f,      50.0f,      15.0f,      150.0f,     75.0f,      -50.0f,     40.0f,      0.0f,       60.0f,      0.0f,       125.0f,     100.0f,
     50.0f,      20.0f,      25.0f,      10.0f,      25.0f,      5.0f,       10.0f,      40.0f,      10.0f,      60.0f,      0.0f,       125.0f,     50.0f,
-    100.0f,     40.0f,      50.0f,      15.0f,      50.0f,      75.0f,      0.0f,       40.0f,      10.0f,      60.0f,      0.0f,       125.0f,     100.0f
+    100.0f,     40.0f,      50.0f,      15.0f,      50.0f,      75.0f,      -50.0f,     40.0f,      10.0f,      60.0f,      0.0f,       125.0f,     100.0f
 );
 WPFVARK(IDF_GAMEMOD, 0, hitpushself, 0, FVAR_MAX,
     1,          1,          1,          1,          1,          1,          1,          1,          1,          1,          1,          1,          1,
@@ -595,11 +595,11 @@ WPVARM(IDF_GAMEMOD, 0, jitterpitchdir, VAR_MIN, VAR_MAX,
     0,          500,        0,          0,          500,        0,          0,          0,          0,          0,          0,          0,          0
 );
 WPFVARM(IDF_GAMEMOD, 0, jitterpitchmax, FVAR_MIN, FVAR_MAX,
-    1.0f,       1.0f,       1.0f,       5.0f,       2.5f,       0.2f,       2.5f,       3.0f,       4.0f,       1.0f,       1.0f,       1.0f,       1.0f,
-    1.0f,       0.0f,       1.0f,       10.0f,      1.5f,      0.5f,       7.5f,       3.0f,       5.5f,       1.0f,       1.0f,       1.0f,       1.0f
+    1.0f,       1.0f,       1.0f,       5.0f,       2.5f,       0.2f,       2.5f,       2.0f,       4.0f,       1.0f,       1.0f,       1.0f,       1.0f,
+    1.0f,       0.0f,       1.0f,       10.0f,      1.5f,       0.5f,       7.5f,       3.0f,       5.5f,       1.0f,       1.0f,       1.0f,       1.0f
 );
 WPFVARM(IDF_GAMEMOD, 0, jitterpitchmin, FVAR_MIN, FVAR_MAX,
-    1.0f,       1.0f,       1.0f,       2.5f,       0.2f,      0.1f,       1.25f,      1.5f,       1.8f,       1.0f,       1.0f,       1.0f,       1.0f,
+    1.0f,       1.0f,       1.0f,       2.5f,       0.2f,      0.1f,       1.25f,      0.5f,       1.8f,       1.0f,       1.0f,       1.0f,       1.0f,
     1.0f,       0.0f,       1.0f,       5.0f,       0.7f,      0.2f,       5.0f,       1.5f,       2.5f,       1.0f,       1.0f,       1.0f,       1.0f
 );
 WPFVARM(IDF_GAMEMOD, 0, jitterpitchcrouch, FVAR_MIN, FVAR_MAX,
@@ -688,7 +688,7 @@ WPFVARM(IDF_GAMEMOD, 0, jittertimeinair, FVAR_MIN, FVAR_MAX,
 );
 WPFVARM(IDF_GAMEMOD, 0, kickpush, FVAR_MIN, FVAR_MAX,
     0.0f,       4.0f,       -15.0f,     50.0f,      5.0f,       1.0f,       20.0f,      10.0f,      35.0f,      5.0f,       5.0f,       150.0f,     0.0f,
-    0.0f,       -15.0f,     -30.0f,     75.0f,      25.0f,      100.0f,     50.0f,      10.0f,      50.0f,      5.0f,       5.0f,       150.0f,     0.0f
+    0.0f,       -15.0f,     -30.0f,     75.0f,      25.0f,      100.0f,     100.0f,     10.0f,      50.0f,      5.0f,       5.0f,       150.0f,     0.0f
 );
 WPVAR(IDF_GAMEMOD, 0, laser, 0, 1,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
@@ -864,16 +864,16 @@ WPSVARK(IDF_GAMEMOD, 0, obituary,
 );
 //  Claw        Pistol      Sword       Shotgun     SMG         Flamer      Plasma      Zapper      Rifle       Grenade     Mine        Rocket      Melee
 WPFVARK(IDF_GAMEMOD, 0, partblend, 0, 1,
-    1.0f,       0.3f,       1.0f,       1.0f,       1.0f,       0.8f,       0.8f,       1.0f,       1.0f,       1.0f,       0.75f,      1.0f,       1.0f,
-    1.0f,       0.0f,       1.0f,       1.0f,       1.0f,       0.125f,     1.0f,       1.0f,       1.0f,       1.0f,       0.75f,      1.0f,       1.0f,
-    1.0f,       0.3f,       1.0f,       1.0f,       1.0f,       0.8f,       0.8f,       1.0f,       1.0f,       1.0f,       0.75f,      1.0f,       1.0f,
-    1.0f,       0.0f,       1.0f,       1.0f,       1.0f,       0.125f,     1.0f,       1.0f,       1.0f,       1.0f,       0.75f,      1.0f,       1.0f
+    1.0f,       0.3f,       1.0f,       1.0f,       1.0f,       0.7f,       0.7f,       1.0f,       1.0f,       1.0f,       0.75f,      1.0f,       1.0f,
+    1.0f,       0.0f,       1.0f,       1.0f,       1.0f,       0.125f,     0.5f,       1.0f,       1.0f,       1.0f,       0.75f,      1.0f,       1.0f,
+    1.0f,       0.3f,       1.0f,       1.0f,       1.0f,       0.7f,       0.7f,       1.0f,       1.0f,       1.0f,       0.75f,      1.0f,       1.0f,
+    1.0f,       0.0f,       1.0f,       1.0f,       1.0f,       0.125f,     0.5f,       1.0f,       1.0f,       1.0f,       0.75f,      1.0f,       1.0f
 );
 WPVARK(IDF_GAMEMOD|IDF_HEX, 0, partcol, PC(LAST), 0xFFFFFF,
     0x907020,   0xD0D0D0,   0x4040F0,   0xF0F020,   0xF05820,   PC(FIRE),   0x40F0C8,   PC(SHOCK),  0xA020F0,   PC(FIRE),   0x00F068,   PC(FIRE),   0xEEEE22,
-    0x907020,   0xD0D0D0,   0x4040F0,   0xF0F020,   0xF05820,   0xF0F0F0,   0x40F0C8,   PC(SHOCK),  0xA020F0,   PC(FIRE),   0x00F068,   PC(FIRE),   0xEEEE22,
+    0x907020,   0xD0D0D0,   0x4040F0,   0xF0F020,   0xF05820,   0xFFFFFF,   0x40F0C8,   PC(SHOCK),  0xA020F0,   PC(FIRE),   0x00F068,   PC(FIRE),   0xEEEE22,
     0x907020,   0xD0D0D0,   0x4040F0,   0xF0F020,   0xF05820,   PC(FIRE),   0x40F0C8,   PC(SHOCK),  0xA020F0,   PC(FIRE),   0x00F068,   PC(FIRE),   0xEEEE22,
-    0x907020,   0xD0D0D0,   0x4040F0,   0xF0F020,   0xF05820,   0xF0F0F0,   0x40F0C8,   PC(SHOCK),  0xA020F0,   PC(FIRE),   0x00F068,   PC(FIRE),   0xEEEE22
+    0x907020,   0xD0D0D0,   0x4040F0,   0xF0F020,   0xF05820,   0xFFFFFF,   0x40F0C8,   PC(SHOCK),  0xA020F0,   PC(FIRE),   0x00F068,   PC(FIRE),   0xEEEE22
 );
 WPVARK(IDF_GAMEMOD, 0, partfade, 1, VAR_MAX,
     500,        250,        500,        250,        250,        200,        500,        100,        500,        500,        500,        750,        500,
@@ -889,9 +889,9 @@ WPFVARK(IDF_GAMEMOD, 0, partlen, 0, FVAR_MAX,
 );
 WPFVARK(IDF_GAMEMOD, 0, partsize, 0, FVAR_MAX,
     1.0f,       0.125f,     1.0f,       0.75f,      0.6f,       6.0f,       8.0f,       2.0f,       1.5f,       1.0f,       2.0f,       2.0f,       0.5f,
-    2.0f,       0.25f,      1.25f,      0.5f,       0.75f,      16.0f,      5.0f,       2.0f,       3.0f,       1.0f,       2.0f,       2.0f,       1.0f,
+    2.0f,       0.25f,      1.25f,      0.5f,       0.75f,      16.0f,      18.0f,      2.0f,       3.0f,       1.0f,       2.0f,       2.0f,       1.0f,
     1.0f,       0.125f,     1.0f,       0.4f,       0.4f,       6.0f,       8.0f,       2.0f,       1.5f,       1.0f,       2.0f,       2.0f,       0.5f,
-    2.0f,       0.25f,      1.25f,      0.4f,       0.4f,       16.0f,      10.0f,      2.0f,       3.0f,       1.0f,       2.0f,       2.0f,       1.0f
+    2.0f,       0.25f,      1.25f,      0.4f,       0.4f,       16.0f,      18.0f,      2.0f,       3.0f,       1.0f,       2.0f,       2.0f,       1.0f
 );
 WPVARK(IDF_GAMEMOD, 0, parttype, 0, W_MAX-1,
     W_CLAW,     W_PISTOL,   W_SWORD,    W_SHOTGUN,  W_SMG,      W_FLAMER,   W_PLASMA,   W_ZAPPER,   W_RIFLE,    W_GRENADE,  W_MINE,     W_ROCKET,   W_MELEE,
@@ -925,9 +925,9 @@ WPVARK(IDF_GAMEMOD, 0, proxtype, 0, 2,
 );
 WPFVARK(IDF_GAMEMOD, 0, radial, 0, FVAR_MAX,
     0.0f,       0.0f,       25.0f,      0.0f,       0.0f,       6.0f,       10.0f,      0.0f,       0.0f,       72.0f,      72.0f,      96.0f,      0.0f,
-    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       16.0f,      16.0f,      0.0f,       0.0f,       60.0f,      32.0f,      96.0f,      0.0f,
+    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       40.0f,      24.0f,      0.0f,       0.0f,       60.0f,      32.0f,      96.0f,      0.0f,
     0.0f,       0.0f,       25.0f,      0.0f,       0.0f,       6.0f,       10.0f,      0.0f,       8.0f,       72.0f,      72.0f,      96.0f,      0.0f,
-    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       16.0f,      16.0f,      0.0f,       8.0f,       60.0f,      32.0f,      96.0f,      0.0f
+    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       40.0f,      24.0f,      0.0f,       8.0f,       60.0f,      32.0f,      96.0f,      0.0f
 );
 WPVARK(IDF_GAMEMOD, 0, radialdelay, 0, VAR_MAX,
     0,          0,          0,          0,          0,          50,         50,         0,          0,          0,          0,          0,          0,
@@ -1020,8 +1020,8 @@ WPVAR(IDF_GAMEMOD, 0, spawnduke, 0, VAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          60000,      0
 );
 WPVARM(IDF_GAMEMOD, 0, speed, 0, VAR_MAX,
-    0,          2000,       0,          1000,       4000,       200,        1250,       10000,      10000,      275,        100,        1000,       0,
-    0,          1500,       0,          270,        500,        750,        90,         10000,      100000,     275,        100,        250,        0
+    0,          2000,       0,          1000,       4000,       180,        1250,       10000,      10000,      275,        100,        1000,       0,
+    0,          1500,       0,          270,        500,        750,        80,         10000,      100000,     275,        100,        250,        0
 );
 WPFVARK(IDF_GAMEMOD, 0, speeddelta, 0, FVAR_MAX,
     10.0f,      10.0f,      10.0f,      10.0f,      10.0f,      10.0f,      10.0f,      10.0f,      10.0f,      10.0f,      10.0f,      10.0f,      10.0f,
@@ -1102,7 +1102,7 @@ WPFVARK(IDF_GAMEMOD, 0, stunscale, 0, FVAR_MAX,
     0.5f,       0.125f,     1.0f,       0.125f,     0.25f,      0.0f,       0.1f,       0.2f,       0.3f,       1.0f,       4.0f,       8.0f,       0.25f,
     0.75f,      0.125f,     2.0f,       0.25f ,     0.5f,       0.5f,       0.25f,      0.2f,       2.0f,       1.0f,       8.0f,       8.0f,       0.5f,
     0.5f ,      0.125f,     1.0f,       0.125f,     0.25f,      0.0f,       0.1f,       0.2f,       0.6f,       1.0f,       4.0f,       8.0f,       0.25f,
-    0.75f,      0.125f,     2.0f,       0.25f,      0.5f,       0.5f,       0.25f,      0.2f,      4.0f,       1.0f,       8.0f,       8.0f,       0.5f
+    0.75f,      0.125f,     2.0f,       0.25f,      0.5f,       0.5f,       0.25f,      0.2f,       4.0f,       1.0f,       8.0f,       8.0f,       0.5f
 );
 WPVARK(IDF_GAMEMOD, 0, stuntime, 0, VAR_MAX,
     250,        25,         300,        75,         75,         0,          0,          250,        100,        200,        500,        750,        100,
@@ -1118,15 +1118,15 @@ WPVARK(IDF_GAMEMOD, 0, taper, 0, 6,
 );
 WPFVARK(IDF_GAMEMOD, 0, taperin, 0, FVAR_MAX,
     0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.05f,      0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,
+    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.5f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,
     0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,
-    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,
-    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f
+    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.5f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f
 );
 WPFVARK(IDF_GAMEMOD, 0, taperout, 0, FVAR_MAX,
     0.0f,       0.0f,       0.0f,       1.0f,       1.0f,       0.0f,       0.01f,      0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,
-    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,
+    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.5f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,
     0.0f,       0.0f,       0.0f,       1.0f,       1.0f,       0.0f,       0.01f,      0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,
-    0.0f,       0.0f,       0.0f,       0.01f,      0.01f,      0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f
+    0.0f,       0.0f,       0.0f,       0.01f,      0.01f,      0.0f,       0.5f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f
 );
 WPFVARK(IDF_GAMEMOD, 0, tapermin, 0, 1,
     0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,
@@ -1141,8 +1141,8 @@ WPFVARK(IDF_GAMEMOD, 0, tapermax, 0, 1,
     1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f
 );
 WPVARM(IDF_GAMEMOD, 0, time, 1, VAR_MAX,
-    200,        1000,       350,        400,        800,        650,        350,        250,        7500,       2500,       45000,      5000,       250,
-    350,        300,        250,        1000,       750,        125,        2500,       250,        7500,       2500,       45000,      5000,       250
+    200,        1000,       350,        400,        800,        400,        350,        250,        7500,       2500,       45000,      5000,       250,
+    350,        300,        250,        1000,       750,        125,        2000,       200,        7500,       2500,       45000,      5000,       250
 );
 WPVARM(IDF_GAMEMOD, 0, timedelay, 0, VAR_MAX,
     0,          0,          10,         0,          0,          0,          0,          0,          0,          175,        50,         0,          0,
@@ -1172,9 +1172,9 @@ WPVARK(IDF_GAMEMOD, 0, vistime, 0, VAR_MAX,
 );
 WPFVARK(IDF_GAMEMOD, 0, wavepush, 0, FVAR_MAX,
     1.5f,       1.5f,       1.5f,       1.5f,       1.5f,       0.0f,       1.5f,       1.5f,       2.5f,       2.0f,       2.0f,       3.0f,       1.5f,
-    1.5f,       1.5f,       1.5f,       1.5f,       1.5f,       2.0f,       0.0f,       1.5f,       1.5f,       2.0f,       2.0f,       3.0f,       1.5f,
+    1.5f,       1.5f,       1.5f,       1.5f,       1.5f,       2.0f,       2.5f,       1.5f,       1.5f,       2.0f,       2.0f,       3.0f,       1.5f,
     1.5f,       1.5f,       1.5f,       1.5f,       1.5f,       0.0f,       1.5f,       1.5f,       1.5f,       2.0f,       2.0f,       3.0f,       1.5f,
-    1.5f,       1.5f,       1.5f,       1.5f,       1.5f,       2.0f,       0.0f,       1.5f,       2.5f,       2.0f,       2.0f,       3.0f,       1.5f
+    1.5f,       1.5f,       1.5f,       1.5f,       1.5f,       2.0f,       2.5f,       1.5f,       2.5f,       2.0f,       2.0f,       3.0f,       1.5f
 );
 WPFVARK(IDF_GAMEMOD, 0, weight, FVAR_MIN, FVAR_MAX,
     0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       -25.0f,     0.0f,       0.0f,       0.0f,       200.0f,     175.0f,     0.0f,       0.0f,
