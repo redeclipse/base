@@ -1115,9 +1115,10 @@ namespace game
     {
         adjustscaled(d->quake, quakefade);
         int prevstate = isweap(d->weapselect) ? d->weapstate[d->weapselect] : W_S_IDLE;
+        float offset = d->height;
+
         d->configure(lastmillis, gamemode, mutators, physics::carryaffinity(d), curtime);
 
-        float offset = d->height;
         d->o.z -= d->height;
         if(d->state == CS_ALIVE && AA(d->actortype, abilities)&(1<<A_A_CROUCH))
         {
