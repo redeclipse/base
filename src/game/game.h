@@ -875,7 +875,7 @@ struct clientstate
         if(full)
         {
             int total = W(attr, ammostore) > 0 ? W(attr, ammostore) : 0;
-            if(weapammo[weap][W_A_STORE] >= total) return false;
+            if(weapammo[attr][W_A_STORE] >= total) return false;
         }
         return true;
     }
