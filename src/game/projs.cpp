@@ -1214,14 +1214,16 @@ namespace projs
                 if((weap == W_FLAMER || weap == W_ZAPPER) && !(WS(flags)))
                 {
                     int ends = lastmillis+delayattack+PHYSMILLIS;
-                    if(issound(d->wschan[WS_MAIN_CHAN]) && sounds[d->wschan[WS_MAIN_CHAN]].slotnum == slot)
+                    if(issound(d->wschan[WS_MAIN_CHAN]) &&
+                       sounds[d->wschan[WS_MAIN_CHAN]].slotnum == getsoundslot(slot))
                         sounds[d->wschan[WS_MAIN_CHAN]].ends = ends;
                     else playsound(slot, d->o, d, SND_LOOP, vol, -1, -1, &d->wschan[WS_MAIN_CHAN], ends);
                 }
                 else if(!W2(weap, time, WS(flags)) || life)
                 {
-                    if(issound(d->wschan[WS_MAIN_CHAN]) && (sounds[d->wschan[WS_MAIN_CHAN]].slotnum == WSNDF(weap, false) ||
-                        sounds[d->wschan[WS_MAIN_CHAN]].slotnum == WSNDF(weap, true)))
+                    if(issound(d->wschan[WS_MAIN_CHAN]) &&
+                       (sounds[d->wschan[WS_MAIN_CHAN]].slotnum == getsoundslot(WSNDF(weap, false)) ||
+                        sounds[d->wschan[WS_MAIN_CHAN]].slotnum == getsoundslot(WSNDF(weap, true))))
                     {
                         sounds[d->wschan[WS_MAIN_CHAN]].hook = NULL;
                         d->wschan[WS_MAIN_CHAN] = -1;
