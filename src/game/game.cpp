@@ -727,12 +727,12 @@ namespace game
     }
 
     int announcerchan = -1;
-    void announce(int idx, gameent *d, bool forced)
+    void announce(int idx, gameent *d, bool forced, bool unmapped)
     {
         if(idx < 0) return;
         physent *t = !d || d == player1 || forced ? camera1 : d;
         int *chan = d && !forced ? &d->aschan : &announcerchan;
-        playsound(idx, t->o, t, (t != camera1 ? SND_IMPORT : SND_FORCED)|SND_BUFFER, -1, -1, -1, chan);
+        playsound(idx, t->o, t, (unmapped ? SND_UNMAPPED : 0)|(t != camera1 ? SND_IMPORT : SND_FORCED)|SND_BUFFER, -1, -1, -1, chan);
     }
 
     void announcef(int idx, int targ, gameent *d, bool forced, const char *msg, ...)
@@ -744,6 +744,7 @@ namespace game
         }
         announce(idx, d, forced);
     }
+
     ICOMMAND(0, announce, "iiisN", (int *idx, int *targ, int *cn, int *forced, char *s, int *numargs),
     {
         if(*numargs >= 5) announcef(*numargs >= 1 ? *idx : -1, *numargs >= 2 ? *targ : CON_EVENT, *numargs >= 3 ? getclient(*cn) : NULL, *numargs >= 4 ? *forced!=0 : false, "\fw%s", s);
