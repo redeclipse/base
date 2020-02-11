@@ -31,7 +31,7 @@ namespace hud
     VAR(IDF_PERSIST, showeventicons, 0, 1, 7);
     VAR(IDF_PERSIST, showloadingaspect, 0, 1, 1);
     VAR(IDF_PERSIST, showloadingmapbg, 0, 1, 1);
-    VAR(IDF_PERSIST, showloadinglogos, 0, 0, 1);
+    VAR(IDF_PERSIST, showloadinglogos, 0, 1, 2);
 
     const int NUMSTATS = 42;
     int prevstats[NUMSTATS] = {0}, curstats[NUMSTATS] = {0};
@@ -1848,19 +1848,20 @@ namespace hud
 
         resethudshader();
 
-        if(showloadinglogos)
+        if(showloadinglogos >= (engineready ? 2 : 1))
         {
             gle::colorf(1, 1, 1, 1);
 
             t = textureload(logotex, 3);
             glBindTexture(GL_TEXTURE_2D, t->id);
-            drawtexture(w-1024, 0, 1024, 512);
+            if(engineready) drawtexture(w-w/8, 0, w/8, w/16);
+            else drawtexture(w-w/2-w/8, h/2-w/16, w/4, w/8);
         }
 
         if(!engineready)
         {
-            pushfont("small");
-            draw_textf("%s", FONTH*3/4, h-FONTH/2, 0, 0, 255, 255, 255, 255, TEXT_LEFT_UP, -1, -1, 1, *progresstitle ? progresstitle : "Loading, please wait..");
+            pushfont("emphasis");
+            draw_textf("%s", w-w/2, h-w/8, 0, 0, 255, 255, 255, 255, TEXT_CENTERED, -1, -1, 1, *progresstitle ? progresstitle : "Loading, please wait..");
             popfont();
         }
     }
