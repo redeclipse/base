@@ -874,7 +874,7 @@ struct clientstate
         if(!m_classic(gamemode, mutators) && attr < W_ITEM && !hasweap(attr, sweap)) return false;
         if(full)
         {
-            int total = W(attr, ammostore) > 0 ? W(attr, ammostore) : 0,
+            int total = W(attr, ammostore) > 0 ? W(attr, ammostore) : W(attr, ammoclip),
                 ammo = W(attr, ammostore) > 0 ? weapammo[attr][W_A_STORE] : getammo(attr, millis);
             if(ammo >= total) return false;
         }
