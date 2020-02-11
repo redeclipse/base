@@ -224,25 +224,25 @@ APVAR(IDF_GAMEMOD, 0, weaponspawn, 0, W_ALL-1,
 );
 // these are modified by gameent::configure() et al
 APFVAR(IDF_GAMEMOD, 0, speed, 0, FVAR_MAX,
-    95,             95,             0,              85,             100,            100
+    100,            100,            0,              90,             100,            100
 );
 APFVAR(IDF_GAMEMOD, 0, speedextra, FVAR_MIN, FVAR_MAX,
     0,              0,              0,              0,              0,              0
 );
 APFVAR(IDF_GAMEMOD, 0, jumpspeed, 0, FVAR_MAX,
-    120,            120,            0,              110,            90,             75
+    140,            140,            0,              120,            90,             75
 );
 APFVAR(IDF_GAMEMOD, 0, jumpspeedextra, FVAR_MIN, FVAR_MAX,
     0,              0,              0,              0,              0,              0
 );
 APFVAR(IDF_GAMEMOD, 0, impulsespeed, 0, FVAR_MAX,
-    85,             85,             0,              85,             85,             75
+    90,             90,             0,              90,             90,             75
 );
 APFVAR(IDF_GAMEMOD, 0, impulsespeedextra, FVAR_MIN, FVAR_MAX,
     0,              0,              0,              0,              0,              0
 );
 APFVAR(IDF_GAMEMOD, 0, weight, 0, FVAR_MAX,
-    264,            264,            264,            264,            195,            150
+    260,            260,            260,            260,            200,            150
 );
 APFVAR(IDF_GAMEMOD, 0, weightextra, FVAR_MIN, FVAR_MAX,
     0,              0,              0,              0,              0,              0

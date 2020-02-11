@@ -513,8 +513,8 @@ GVAR(IDF_GAMEMOD, 0, impulsesliplen, 0, 750, VAR_MAX); // time before floor fric
 GVAR(IDF_GAMEMOD, 0, impulseslidelen, 0, 1000, VAR_MAX); // time before slides end
 GVAR(IDF_GAMEMOD, 0, impulseparkourlen, 0, 1250, VAR_MAX); // length of time a run along a wall can last
 
-GVAR(IDF_GAMEMOD, 0, impulsejumpdelay, 0, 250, VAR_MAX); // minimum time after jump for boost
-GVAR(IDF_GAMEMOD, 0, impulseboostdelay, 0, 500, VAR_MAX); // minimum time between boosts
+GVAR(IDF_GAMEMOD, 0, impulsejumpdelay, 0, 200, VAR_MAX); // minimum time after jump for boost
+GVAR(IDF_GAMEMOD, 0, impulseboostdelay, 0, 300, VAR_MAX); // minimum time between boosts
 GVAR(IDF_GAMEMOD, 0, impulsepounddelay, 0, 500, VAR_MAX); // minimum time between pounds
 GVAR(IDF_GAMEMOD, 0, impulseslidedelay, 0, 1000, VAR_MAX); // minimum time between slides
 GVAR(IDF_GAMEMOD, 0, impulseslideinair, 0, 100, VAR_MAX); // minimum time in air for slide

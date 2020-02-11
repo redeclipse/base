@@ -687,8 +687,8 @@ WPFVARM(IDF_GAMEMOD, 0, jittertimeinair, FVAR_MIN, FVAR_MAX,
     0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f
 );
 WPFVARM(IDF_GAMEMOD, 0, kickpush, FVAR_MIN, FVAR_MAX,
-    0.0f,       4.0f,       -15.0f,     50.0f,      5.0f,       1.0f,       20.0f,      10.0f,      35.0f,      5.0f,       5.0f,       150.0f,     0.0f,
-    0.0f,       -15.0f,     -30.0f,     75.0f,      25.0f,      100.0f,     100.0f,     10.0f,      50.0f,      5.0f,       5.0f,       150.0f,     0.0f
+    0.0f,       4.0f,       -10.0f,     50.0f,      5.0f,       1.0f,       20.0f,      10.0f,      35.0f,      5.0f,       5.0f,       150.0f,     0.0f,
+    0.0f,       -15.0f,     -50.0f,     75.0f,      25.0f,      100.0f,     100.0f,     10.0f,      50.0f,      5.0f,       5.0f,       150.0f,     0.0f
 );
 WPVAR(IDF_GAMEMOD, 0, laser, 0, 1,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
@@ -1237,8 +1237,8 @@ WPFVAR(IDF_GAMEMOD, 0, modimpulsespeedequip, FVAR_MIN, FVAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
 );
 WPFVARM(IDF_GAMEMOD, 0, modimpulsespeedattack, FVAR_MIN, FVAR_MAX,
-    -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,
-    -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5
+    0,          -5,         0,          -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,
+    0,          -5,         5,          -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5
 );
 WPFVAR(IDF_GAMEMOD, 0, modimpulsespeedreload, FVAR_MIN, FVAR_MAX,
     -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5
@@ -1247,7 +1247,7 @@ WPFVAR(IDF_GAMEMOD, 0, modimpulsespeedswitch, FVAR_MIN, FVAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
 );
 WPFVAR(IDF_GAMEMOD, 0, modimpulsespeedpower, FVAR_MIN, FVAR_MAX,
-    -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5
+    0,          -5,         0,          -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5
 );
 WPFVAR(IDF_GAMEMOD, 0, modimpulsespeeduse, FVAR_MIN, FVAR_MAX,
     0,          0,          -1,         -2,         -2,         -2,         -2,         -2,         -2,         -2,         -2,         -5,         0
@@ -1266,8 +1266,8 @@ WPFVAR(IDF_GAMEMOD, 0, modspeedequip, FVAR_MIN, FVAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
 );
 WPFVARM(IDF_GAMEMOD, 0, modspeedattack, FVAR_MIN, FVAR_MAX,
-    -5,         -5,         -5,         -10,        -15,        -5,         -5,         -10,        -15,        -5,         -5,         -15,        -5,
-    -5,         -5,         -5,         -15,        -15,        -5,         -10,        -15,        -20,        -5,         -5,         -15,        -5
+    0,          -5,         0,          -10,        -15,        -5,         -5,         -10,        -15,        -5,         -5,         -15,        -5,
+    0,          -5,         5,          -15,        -15,        -5,         -10,        -15,        -20,        -5,         -5,         -15,        -5
 );
 WPFVAR(IDF_GAMEMOD, 0, modspeedreload, FVAR_MIN, FVAR_MAX,
     -5,         -5,         -5,         -5,         -10,        -5,         -10,        -5,         -10,        -5,         -5,         -5,         -5
@@ -1276,10 +1276,10 @@ WPFVAR(IDF_GAMEMOD, 0, modspeedswitch, FVAR_MIN, FVAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
 );
 WPFVAR(IDF_GAMEMOD, 0, modspeedpower, FVAR_MIN, FVAR_MAX,
-    -5,         -5,         0,          -5,         -5,         -5,         0,          -5,         -5,         -5,         -5,         -10,        -5
+    0,          -5,         0,          -5,         -5,         -5,         0,          -5,         -5,         -5,         -5,         -10,        -5
 );
 WPFVAR(IDF_GAMEMOD, 0, modspeeduse, FVAR_MIN, FVAR_MAX,
-    0,          0,          -1,         -2,         -2,         -2,         -2,         -2,         -3,         -5,         -5,         -10,        0
+    0,          0,          0,          -2,         -2,         -2,         -2,         -2,         -3,         -5,         -5,         -10,        0
 );
 WPFVAR(IDF_GAMEMOD, 0, modspeedzoom, FVAR_MIN, FVAR_MAX,
     -5,         -5,         -5,         -5,         -5,         -5,         -5,         -10,        -15,        -5,         -5,         -10,        -5
