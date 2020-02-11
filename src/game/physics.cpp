@@ -1028,7 +1028,7 @@ namespace physics
             {
                 tmp.z += frac;
                 int chkmat = lookupmaterial(tmp);
-                if(!liquid && isliquid(matid&MATF_VOLUME) && !isliquid(chkmat&MATF_VOLUME)) liquid = i+1;
+                if(isliquid(chkmat&MATF_VOLUME)) liquid = i+1;
                 matid |= chkmat;
             }
         }
