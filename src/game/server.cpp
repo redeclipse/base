@@ -1693,7 +1693,7 @@ namespace server
                 {
                     int secs = G(teambalancedelay)/1000;
                     nextteambalance = gamemillis+G(teambalancedelay);
-                    ancmsgft(-1, S_V_BALWARN, CON_EVENT, "\fy\fs\fzoyWARNING:\fS \fs\fcteams\fS will be \fs\fcbalanced\fS in \fs\fc%d\fS %s", secs, secs != 1 ? "seconds" : "second");
+                    ancmsgft(-1, CON_EVENT, "S_V_BALWARN", "\fy\fs\fzoyWARNING:\fS \fs\fcteams\fS will be \fs\fcbalanced\fS in \fs\fc%d\fS %s", secs, secs != 1 ? "seconds" : "second");
                 }
                 else if(init)
                 {
@@ -1759,8 +1759,8 @@ namespace server
                     }
                     if(!init)
                     {
-                        if(moved) ancmsgft(-1, S_V_BALALERT, CON_EVENT, "\fy\fs\fzoyALERT:\fS \fs\fcteams\fS have now been \fs\fcbalanced\fS");
-                        else ancmsgft(-1, S_V_NOTIFY, CON_EVENT, "\fy\fs\fzoyALERT:\fS \fs\fcteams\fS failed to be \fs\fcbalanced\fS");
+                        if(moved) ancmsgft(-1, CON_EVENT, "S_V_BALALERT", "\fy\fs\fzoyALERT:\fS \fs\fcteams\fS have now been \fs\fcbalanced\fS");
+                        else ancmsgft(-1, CON_EVENT, "S_V_NOTIFY", "\fy\fs\fzoyALERT:\fS \fs\fcteams\fS failed to be \fs\fcbalanced\fS");
                     }
                     lastteambalance = gamemillis+G(teambalancewait);
                     nextteambalance = 0;
@@ -1768,14 +1768,14 @@ namespace server
             }
             else
             {
-                if(!init && nextteambalance) ancmsgft(-1, S_V_NOTIFY, CON_EVENT, "\fy\fs\fzoyALERT:\fS \fs\fcteams\fS no longer need to be \fs\fcbalanced\fS");
+                if(!init && nextteambalance) ancmsgft(-1, CON_EVENT, "S_V_NOTIFY", "\fy\fs\fzoyALERT:\fS \fs\fcteams\fS no longer need to be \fs\fcbalanced\fS");
                 lastteambalance = gamemillis+(nextteambalance ? G(teambalancewait) : G(teambalancedelay));
                 nextteambalance = 0;
             }
         }
         else
         {
-            if(!init && nextteambalance) ancmsgft(-1, S_V_NOTIFY, CON_EVENT, "\fy\fs\fzoyALERT:\fS \fs\fcteams\fS are no longer able to be \fs\fcbalanced\fS");
+            if(!init && nextteambalance) ancmsgft(-1, CON_EVENT, "S_V_NOTIFY", "\fy\fs\fzoyALERT:\fS \fs\fcteams\fS are no longer able to be \fs\fcbalanced\fS");
             lastteambalance = gamemillis+(nextteambalance ? G(teambalancewait) : G(teambalancedelay));
             nextteambalance = 0;
         }
@@ -1814,34 +1814,34 @@ namespace server
                         {
                             timeremaining = limit*60;
                             gamelimit += timeremaining*1000;
-                            ancmsgft(-1, S_V_OVERTIME, CON_EVENT, "\fyOvertime, match extended by \fs\fc%d\fS %s", limit, limit > 1 ? "minutes" : "minute");
+                            ancmsgft(-1, CON_EVENT, "S_V_OVERTIME", "\fyOvertime, match extended by \fs\fc%d\fS %s", limit, limit > 1 ? "minutes" : "minute");
                         }
                         else
                         {
                             timeremaining = -1;
                             gamelimit = 0;
-                            ancmsgft(-1, S_V_OVERTIME, CON_EVENT, "\fyOvertime, match extended until someone wins");
+                            ancmsgft(-1, CON_EVENT, "S_V_OVERTIME", "\fyOvertime, match extended until someone wins");
                         }
                         gamestate = G_S_OVERTIME;
                         wantsoneminute = false;
                     }
                     else
                     {
-                        ancmsgft(-1, S_V_NOTIFY, CON_EVENT, "\fyTime limit has been reached");
+                        ancmsgft(-1, CON_EVENT, "S_V_NOTIFY", "\fyTime limit has been reached");
                         startintermission();
                         return; // bail
                     }
                 }
                 if(gs_playing(gamestate) && timeremaining != 0)
                 {
-                    if(wantsoneminute && timeremaining == 60) ancmsgft(-1, S_V_ONEMINUTE, CON_EVENT, "\fzYgone minute remains");
+                    if(wantsoneminute && timeremaining == 60) ancmsgft(-1, CON_EVENT, "S_V_ONEMINUTE", "\fzYgone minute remains");
                     sendtick();
                 }
             }
         }
         if(wasinovertime && !wantsovertime())
         {
-            ancmsgft(-1, S_V_NOTIFY, CON_EVENT, "\fyOvertime has ended, a winner has been chosen");
+            ancmsgft(-1, CON_EVENT, "S_V_NOTIFY", "\fyOvertime has ended, a winner has been chosen");
             startintermission();
             return; // bail
         }
@@ -1862,7 +1862,7 @@ namespace server
                         best = i+T_FIRST;
                     if(best >= 0 && teamscore(best).total >= plimit)
                     {
-                        ancmsgft(-1, S_V_NOTIFY, CON_EVENT, "\fyScore limit has been reached");
+                        ancmsgft(-1, CON_EVENT, "S_V_NOTIFY", "\fyScore limit has been reached");
                         startintermission();
                         return; // bail
                     }
@@ -1874,7 +1874,7 @@ namespace server
                         best = i;
                     if(best >= 0 && clients[best]->points >= plimit)
                     {
-                        ancmsgft(-1, S_V_NOTIFY, CON_EVENT, "\fyScore limit has been reached");
+                        ancmsgft(-1, CON_EVENT, "S_V_NOTIFY", "\fyScore limit has been reached");
                         startintermission();
                         return; // bail
                     }
@@ -1892,7 +1892,7 @@ namespace server
                     if(delpart >= 1000)
                     {
                         int secs = delpart/1000;
-                        ancmsgft(-1, S_V_BALWARN, CON_EVENT, "\fy\fs\fzoyWARNING:\fS \fs\fcteams\fS will be \fs\fcreassigned\fS in \fs\fc%d\fS %s %s", secs, secs != 1 ? "seconds" : "second", m_forcebal(gamemode, mutators) ? "to switch roles" : "for map symmetry");
+                        ancmsgft(-1, CON_EVENT, "S_V_BALWARN", "\fy\fs\fzoyWARNING:\fS \fs\fcteams\fS will be \fs\fcreassigned\fS in \fs\fc%d\fS %s %s", secs, secs != 1 ? "seconds" : "second", m_forcebal(gamemode, mutators) ? "to switch roles" : "for map symmetry");
                     }
                 }
                 if(gamemillis >= nextbalance && canbalancenow())
@@ -1927,7 +1927,7 @@ namespace server
                         cs.total = scores[tot];
                         sendf(-1, 1, "ri3", N_SCORE, cs.team, cs.total);
                     }
-                    ancmsgft(-1, S_V_BALALERT, CON_EVENT, "\fy\fs\fzoyALERT:\fS \fs\fcteams\fS have %sbeen \fs\fcreassigned\fS %s", delpart > 0 ? "now " : "", m_forcebal(gamemode, mutators) ? "to switch roles" : "for map symmetry");
+                    ancmsgft(-1, CON_EVENT, "S_V_BALALERT", "\fy\fs\fzoyALERT:\fS \fs\fcteams\fS have %sbeen \fs\fcreassigned\fS %s", delpart > 0 ? "now " : "", m_forcebal(gamemode, mutators) ? "to switch roles" : "for map symmetry");
                     if(smode) smode->balance(oldbalance);
                     mutate(smuts, mut->balance(oldbalance));
                     if(smode) smode->layout();
@@ -2337,10 +2337,10 @@ namespace server
 #endif
     }
 
-    void ancmsgft(int cn, int snd, int conlevel, const char *s, ...)
+    void ancmsgft(int cn, int conlevel, const char *snd, const char *s, ...)
     {
         defvformatbigstring(str, s, s);
-        if(cn < 0 || allowbroadcast(cn)) sendf(cn, 1, "ri3s", N_ANNOUNCE, snd, conlevel, str);
+        if(cn < 0 || allowbroadcast(cn)) sendf(cn, 1, "ri2ss", N_ANNOUNCE, conlevel, snd, str);
     }
 
     void srvmsgft(int cn, int conlevel, const char *s, ...)
@@ -2934,7 +2934,7 @@ namespace server
             if(cp->actortype != A_PLAYER || (newteam && cp->team != newteam) || !cp->swapteam || cp->swapteam != oldteam) continue;
             setteam(cp, oldteam, TT_RESET|TT_INFOSM, false);
             cp->lastdeath = 0;
-            ancmsgft(cp->clientnum, S_V_BALALERT, CON_EVENT, "\fyYou have been moved to %s as previously requested", colourteam(oldteam));
+            ancmsgft(cp->clientnum, CON_EVENT, "S_V_BALALERT", "\fyYou have been moved to %s as previously requested", colourteam(oldteam));
             return;
         }
         if(haspriv(ci, G(teambalancelock)))
@@ -2957,7 +2957,7 @@ namespace server
                 clientinfo *cp = clients[worst];
                 setteam(cp, oldteam, TT_RESET|TT_INFOSM, false);
                 cp->lastdeath = 0;
-                ancmsgft(cp->clientnum, S_V_BALALERT, CON_EVENT, "\fyYou have been moved to %s by higher skilled %s %s", colourteam(oldteam), privname(G(teambalancelock)), colourname(ci));
+                ancmsgft(cp->clientnum, CON_EVENT, "S_V_BALALERT", "\fyYou have been moved to %s by higher skilled %s %s", colourteam(oldteam), privname(G(teambalancelock)), colourname(ci));
                 return;
             }
         }
@@ -4164,8 +4164,8 @@ namespace server
         if(ci && !ci->online && *G(servermotd))
         {
             putint(p, N_ANNOUNCE);
-            putint(p, S_ACTION);
             putint(p, CON_MESG);
+            sendstring("S_ACTION", p);
             sendstring(G(servermotd), p);
         }
 
@@ -5075,7 +5075,7 @@ namespace server
         {
             if(team && m_swapteam(gamemode, mutators) && ci->team != team && ci->actortype == A_PLAYER && ci->swapteam != team && canplay())
             {
-                ancmsgft(-1, S_V_NOTIFY, CON_EVENT, "\fy%s requests swap to team %s, change teams to accept", colourname(ci), colourteam(team));
+                ancmsgft(-1, CON_EVENT, "S_V_NOTIFY", "\fy%s requests swap to team %s, change teams to accept", colourname(ci), colourteam(team));
                 ci->swapteam = team;
             }
             team = chooseteam(ci);
@@ -5515,7 +5515,7 @@ namespace server
                     gamewaittime = 0;
                     if(m_team(gamemode, mutators)) doteambalance(true);
                     if(m_play(gamemode) && !m_bomber(gamemode) && !m_duke(gamemode, mutators)) // they do their own "fight"
-                        sendf(-1, 1, "ri3s", N_ANNOUNCE, S_V_FIGHT, CON_EVENT, "Match start, fight!");
+                        sendf(-1, 1, "ri3ss", N_ANNOUNCE, CON_EVENT, "S_V_FIGHT", "Match start, fight!");
                     sendtick();
                 }
             }
@@ -6628,7 +6628,7 @@ namespace server
                                                 }
                                                 if(!found)
                                                 {
-                                                    ancmsgft(-1, S_V_NOTIFY, CON_EVENT, "\fyBest score has been reached");
+                                                    ancmsgft(-1, CON_EVENT, "S_V_NOTIFY", "\fyBest score has been reached");
                                                     startintermission();
                                                 }
                                             }

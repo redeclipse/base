@@ -69,6 +69,7 @@ extern vector<sound> sounds;
 
 extern void mapsoundslot(int index, const char *name);
 extern int getsoundslot(int index);
+extern int getsoundname(const char *name);
 extern void initsound();
 extern void stopsound();
 extern bool playmusic(const char *name, const char *cmd = NULL);

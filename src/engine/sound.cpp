@@ -92,6 +92,13 @@ int getsoundslot(int index)
     return soundmap[index]->index;
 }
 
+int getsoundname(const char *name)
+{
+    slot *s = gamesounds.getslot(name);
+    if(s) loopv(soundmap) if(soundmap[i] == s) return i;
+    return -1;
+}
+
 void mapsoundslots()
 {
     static const char *names[S_NUM_GENERIC] = { "S_PRESS", "S_BACK", "S_ACTION" };

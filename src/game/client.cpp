@@ -2510,7 +2510,9 @@ namespace client
 
                 case N_ANNOUNCE:
                 {
-                    int snd = getint(p), targ = getint(p);
+                    int targ = getint(p);
+                    getstring(text, p);
+                    int snd = getsoundname(text);
                     getstring(text, p);
                     if(targ >= 0 && text[0]) game::announcef(snd, targ, NULL, false, "%s", text);
                     else game::announce(snd);

@@ -349,8 +349,8 @@ struct duelservmode : servmode
                         duelqueue.removeobj(playing[i]);
                     }
                     if(gamestate == G_S_OVERTIME && !restricted.empty())
-                        ancmsgft(-1, S_V_FIGHT, CON_EVENT, "\fy\fs\fzcgSudden Death\fS, %s", fight);
-                    else ancmsgft(-1, S_V_FIGHT, CON_EVENT, "\fy%s", fight);
+                        ancmsgft(-1, CON_EVENT, "S_V_FIGHT", "\fy\fs\fzcgSudden Death\fS, %s", fight);
+                    else ancmsgft(-1, CON_EVENT, "S_V_FIGHT", "\fy%s", fight);
                     dueltime = dueldeath = -1;
                     duelcheck = gamemillis+5000;
                 }

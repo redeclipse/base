@@ -120,7 +120,7 @@ struct bomberservmode : bomberstate, servmode
                 }
                 if(!found)
                 {
-                    ancmsgft(-1, S_V_NOTIFY, CON_EVENT, "\fyBest score has been reached");
+                    ancmsgft(-1, CON_EVENT, "S_V_NOTIFY", "\fyBest score has been reached");
                     startintermission();
                 }
             }
@@ -228,7 +228,7 @@ struct bomberservmode : bomberstate, servmode
                 srvmsgf(-1, "\fs\fzoyThis map is not playable in:\fS %s", gamename(gamemode, mutators));
                 return;
             }
-            ancmsgft(-1, m_duke(gamemode, mutators) ? S_V_BOMBDUEL : S_V_BOMBSTART, CON_EVENT, "\faThe \fs\fzwvbomb\fS has been spawned");
+            ancmsgft(-1, CON_EVENT, m_duke(gamemode, mutators) ? "S_V_BOMBDUEL" : "S_V_BOMBSTART", "\faThe \fs\fzwvbomb\fS has been spawned");
             hasstarted = true;
             bombertime = 0;
         }

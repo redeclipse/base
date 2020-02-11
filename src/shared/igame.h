@@ -154,7 +154,7 @@ namespace server
     extern void reload();
     extern void shutdown();
     extern void changemapvariant(int variant);
-    extern void ancmsgft(int cn, int snd, int conlevel, const char *s, ...);
+    extern void ancmsgft(int cn, int conlevel, const char *snd, const char *s, ...);
     extern void srvmsgft(int cn, int conlevel, const char *s, ...);
     extern void srvmsgf(int cn, const char *s, ...);
     extern void srvoutf(int r, const char *s, ...);
