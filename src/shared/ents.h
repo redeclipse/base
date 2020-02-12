@@ -25,7 +25,6 @@ enum
     EF_OCTA       = 1<<5,
     EF_RENDER     = 1<<6,
     EF_SPAWNED    = 1<<7
-
 };
 
 typedef smallvector<int> attrvector;
