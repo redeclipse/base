@@ -1679,7 +1679,7 @@ namespace entities
             case MAPMODEL: if(gver <= 244) game::fixpalette(e.attrs[8], e.attrs[9], gver); break;
             case DECAL: if(gver <= 244) game::fixpalette(e.attrs[7], e.attrs[8], gver); break;
             case TELEPORT: if(gver <= 244) game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
-            case ROUTE: case UNUSEDENT: e.type = NOTUSED; break;
+            case UNUSEDENT: e.type = NOTUSED; break;
             default: break;
         }
         if(gver <= 244 && enttype[e.type].modesattr >= 0)
