@@ -3342,10 +3342,10 @@ namespace game
         {
             bool secondary = physics::secondaryweap(d);
             vec color = vec::fromcolor(W(d->weapselect, colour));
-            if((d->weapstate[d->weapselect] == W_S_POWER || d->weapstate[d->weapselect] == W_S_ZOOM) && W2(d->weapselect, colourcook, secondary) >= 0)
+            if((d->weapstate[d->weapselect] == W_S_POWER || d->weapstate[d->weapselect] == W_S_ZOOM) && W2(d->weapselect, colourcook, secondary) != 0)
             {
                 float amt = clamp(float(lastmillis-d->weaptime[d->weapselect])/max(d->weapwait[d->weapselect], 1), 0.f, 1.f);
-                color.mul(1-amt).add(vec::fromcolor(W2(d->weapselect, colourcook, secondary)).mul(amt)).clamp(0.f, 1.f);
+                color.mul(1-amt).add(vec(WPCOL(d, d->weapselect, colourcook, secondary)).mul(amt)).clamp(0.f, 1.f);
             }
             else if(d->weapselect >= W_OFFSET && d->weapselect < W_ITEM && (W2(d->weapselect, ammosub, false) || W2(d->weapselect, ammosub, true)))
             {

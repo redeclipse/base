@@ -2576,10 +2576,10 @@ namespace projs
                     mdl.material[0] = proj.owner ? bvec::fromcolor(game::getcolour(proj.owner, game::playerovertone, game::playerovertonelevel)) : bvec(128, 128, 128);
                     mdl.material[1] = proj.owner ? bvec::fromcolor(game::getcolour(proj.owner, game::playerundertone, game::playerundertonelevel)) : bvec(128, 128, 128);
                     if(!isweap(proj.weap) || (WF(WK(proj.flags), proj.weap, proxtype, WS(proj.flags)) && (!proj.stuck || proj.lifetime%500 >= 300))) mdl.material[2] = bvec(0, 0, 0);
-                    else if(W2(proj.weap, colourproj, WS(proj.flags)) >= 0)
+                    else if(W2(proj.weap, colourproj, WS(proj.flags)) != 0)
                     {
                         float amt = clamp(proj.lifespan, 0.f, 1.f);
-                        mdl.material[2] = bvec::fromcolor(vec::fromcolor(W(proj.weap, colour)).mul(1-amt).add(vec::fromcolor(W2(proj.weap, colourproj, WS(proj.flags))).mul(amt)).clamp(0.f, 1.f));
+                        mdl.material[2] = bvec::fromcolor(vec::fromcolor(W(proj.weap, colour)).mul(1-amt).add(vec(WPCOL(&proj, proj.weap, colourproj, WS(proj.flags))).mul(amt)).clamp(0.f, 1.f));
                     }
                     else if(WF(WK(proj.flags), proj.weap, partcol, WS(proj.flags))) mdl.material[2] = bvec::fromcolor(FWCOL(P, partcol, proj));
                     break;

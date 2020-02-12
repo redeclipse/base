@@ -302,15 +302,15 @@ WPVARK(IDF_GAMEMOD, 0, collide, 0, COLLIDE_ALL,
 );
 //  Claw        Pistol      Sword       Shotgun     SMG         Flamer      Plasma      Zapper      Rifle       Grenade     Mine        Rocket      Melee
 WPVAR(IDF_GAMEMOD|IDF_HEX, 0, colour, 0, 0xFFFFFF,
-    0x907020,   0xD0D0D0,   0x4040F0,   0xF0F020,   0xF05820,   0xF02020,   0x40F0C8,   0xA080F0,   0xF020F0,   0x40F000,   0x00F068,   0x803000,   0x606060
+    0x907020,   0xD0D0D0,   0x1010F0,   0xF0F020,   0xF05820,   0xF02020,   0x40F0C8,   0xA080F0,   0xF020F0,   0x40F000,   0x00F068,   0x803000,   0x606060
 );
-WPVARM(IDF_GAMEMOD|IDF_HEX, 0, colourcook, -1, 0xFFFFFF,
-    -1,         -1,         -1,         -1,         -1,         -1,         -1,         -1,         -1,         0xFF0000,   -1,         -1,         -1,
-    -1,         -1,         0xFF00FF,   -1,         -1,         -1,         0x00FFFF,   -1,         -1,         0xFF0000,   -1,         -1,         -1
+WPVARM(IDF_GAMEMOD|IDF_HEX, 0, colourcook, PC(LAST), 0xFFFFFF,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          0xFF0000,   0,          0,          0,
+    0,          0,          PC(BLEED),  0,          0,          0,          PC(DISCO),  PC(SHOCK),  0,          0xFF0000,   0,          0,          0
 );
-WPVARM(IDF_GAMEMOD|IDF_HEX, 0, colourproj, -1, 0xFFFFFF,
-    -1,         -1,         -1,         -1,         -1,         -1,         -1,         -1,         -1,         0xFF0000,   -1,         -1,         -1,
-    -1,         -1,         -1,         -1,         -1,         -1,         -1,         -1,         -1,         0xFF0000,   -1,         -1,         -1
+WPVARM(IDF_GAMEMOD|IDF_HEX, 0, colourproj, PC(LAST),  0xFFFFFF,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          0xFF0000,   0,          0,          0,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          0xFF0000,   0,          0,          0
 );
 WPVARM(IDF_GAMEMOD, 0, cooked, 0, W_C_ALL,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          W_C_LIFEN,  0,          0,          0,
@@ -432,10 +432,10 @@ WPVARM(IDF_GAMEMOD, 0, escapedelay, 0, VAR_MAX,
     200,        200,        200,        200,        200,        200,        200,        200,        200,        200,        200,        200,        200
 );
 WPVARK(IDF_GAMEMOD|IDF_HEX, 0, explcol, PC(LAST), 0xFFFFFF,
-    PC(FIRE),   PC(FIRE),   0x4040F0,   0xF0F020,   0xF05820,   PC(FIRE),   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   PC(SHOCK),  PC(FIRE),   PC(FIRE),
-    PC(FIRE),   PC(FIRE),   0x4040F0,   0xF0F020,   0xF05820,   0x808080,   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   PC(SHOCK),  PC(FIRE),   PC(FIRE),
-    PC(FIRE),   PC(FIRE),   0x4040F0,   0xF0F020,   0xF05820,   PC(FIRE),   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   PC(SHOCK),  PC(FIRE),   PC(FIRE),
-    PC(FIRE),   PC(FIRE),   0x4040F0,   0xF0F020,   0xF05820,   0x808080,   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   PC(SHOCK),  PC(FIRE),   PC(FIRE)
+    PC(FIRE),   PC(FIRE),   0x1010F0,   0xF0F020,   0xF05820,   PC(FIRE),   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   PC(SHOCK),  PC(FIRE),   PC(FIRE),
+    PC(FIRE),   PC(FIRE),   0x1010F0,   0xF0F020,   0xF05820,   0x808080,   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   PC(SHOCK),  PC(FIRE),   PC(FIRE),
+    PC(FIRE),   PC(FIRE),   0x1010F0,   0xF0F020,   0xF05820,   PC(FIRE),   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   PC(SHOCK),  PC(FIRE),   PC(FIRE),
+    PC(FIRE),   PC(FIRE),   0x1010F0,   0xF0F020,   0xF05820,   0x808080,   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   PC(SHOCK),  PC(FIRE),   PC(FIRE)
 );
 WPVARK(IDF_GAMEMOD, 0, extinguish, 0, 7,
     0,          2,          2,          2,          2,          3,          1,          1,          2,          2,          2,          2,          0,
@@ -694,10 +694,10 @@ WPVAR(IDF_GAMEMOD, 0, laser, 0, 1,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
 );
 WPVARK(IDF_GAMEMOD|IDF_HEX, 0, lightcol, PC(LAST), 0xFFFFFF,
-    0x907020,   0xD0D0D0,   0x4040F0,   0xF0F020,   0xF05820,   PC(FIRE),   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   0x00F068,   PC(FIRE),   0xEEEE22,
-    0x907020,   0xD0D0D0,   0x4040F0,   0xF0F020,   0xF05820,   0xF0F0F0,   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   0x00F068,   PC(FIRE),   0xEEEE22,
-    0x907020,   0xD0D0D0,   0x4040F0,   0xF0F020,   0xF05820,   PC(FIRE),   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   0x00F068,   PC(FIRE),   0xEEEE22,
-    0x907020,   0xD0D0D0,   0x4040F0,   0xF0F020,   0xF05820,   0xF0F0F0,   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   0x00F068,   PC(FIRE),   0xEEEE22
+    0x907020,   0xD0D0D0,   0x1010F0,   0xF0F020,   0xF05820,   PC(FIRE),   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   0x00F068,   PC(FIRE),   0xEEEE22,
+    0x907020,   0xD0D0D0,   0x1010F0,   0xF0F020,   0xF05820,   0xF0F0F0,   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   0x00F068,   PC(FIRE),   0xEEEE22,
+    0x907020,   0xD0D0D0,   0x1010F0,   0xF0F020,   0xF05820,   PC(FIRE),   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   0x00F068,   PC(FIRE),   0xEEEE22,
+    0x907020,   0xD0D0D0,   0x1010F0,   0xF0F020,   0xF05820,   0xF0F0F0,   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   0x00F068,   PC(FIRE),   0xEEEE22
 );
 WPVAR(IDF_GAMEMOD, 0, lightpersist, 0, 15,
     0,          0,          1,          0,          0,          1,          0,          1,          0,          8,          0,          6,          0
@@ -870,10 +870,10 @@ WPFVARK(IDF_GAMEMOD, 0, partblend, 0, 1,
     1.0f,       0.0f,       1.0f,       1.0f,       1.0f,       0.125f,     0.5f,       1.0f,       1.0f,       1.0f,       0.75f,      1.0f,       1.0f
 );
 WPVARK(IDF_GAMEMOD|IDF_HEX, 0, partcol, PC(LAST), 0xFFFFFF,
-    0x907020,   0xD0D0D0,   0x4040F0,   0xF0F020,   0xF05820,   PC(FIRE),   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   0x00F068,   PC(FIRE),   0xEEEE22,
-    0x907020,   0xD0D0D0,   0x4040F0,   0xF0F020,   0xF05820,   0xFFFFFF,   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   0x00F068,   PC(FIRE),   0xEEEE22,
-    0x907020,   0xD0D0D0,   0x4040F0,   0xF0F020,   0xF05820,   PC(FIRE),   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   0x00F068,   PC(FIRE),   0xEEEE22,
-    0x907020,   0xD0D0D0,   0x4040F0,   0xF0F020,   0xF05820,   0xFFFFFF,   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   0x00F068,   PC(FIRE),   0xEEEE22
+    0x907020,   0xD0D0D0,   0x1010F0,   0xF0F020,   0xF05820,   PC(FIRE),   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   0x00F068,   PC(FIRE),   0xEEEE22,
+    0x907020,   0xD0D0D0,   0x1010F0,   0xF0F020,   0xF05820,   0xFFFFFF,   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   0x00F068,   PC(FIRE),   0xEEEE22,
+    0x907020,   0xD0D0D0,   0x1010F0,   0xF0F020,   0xF05820,   PC(FIRE),   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   0x00F068,   PC(FIRE),   0xEEEE22,
+    0x907020,   0xD0D0D0,   0x1010F0,   0xF0F020,   0xF05820,   0xFFFFFF,   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   0x00F068,   PC(FIRE),   0xEEEE22
 );
 WPVARK(IDF_GAMEMOD, 0, partfade, 1, VAR_MAX,
     500,        250,        500,        250,        250,        200,        500,        50,         500,        500,        500,        750,        500,
