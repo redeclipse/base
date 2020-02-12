@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 247
+#define VERSION_GAME 248
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -404,7 +404,7 @@ char msgsizelookup(int msg)
         N_SHOOT, 0, N_DESTROY, 0, N_STICKY, 0, N_SUICIDE, 4, N_DIED, 0, N_POINTS, 5, N_TOTALS, 0, N_AVGPOS, 0, N_DAMAGE, 14, N_SHOTFX, 0,
         N_LOADOUT, 0, N_TRYSPAWN, 2, N_SPAWNSTATE, 0, N_SPAWN, 0, N_WEAPDROP, 0, N_WEAPSELECT, 0, N_WEAPCOOK, 0,
         N_MAPCHANGE, 0, N_MAPVOTE, 0, N_CLEARVOTE, 0, N_CHECKPOINT, 0, N_ITEMSPAWN, 3, N_ITEMUSE, 0, N_TRIGGER, 0, N_EXECLINK, 3,
-        N_PING, 2, N_PONG, 2, N_CLIENTPING, 2, N_TICK, 3, N_ITEMACC, 0, N_SERVMSG, 0, N_GETGAMEINFO, 0, N_GAMEINFO, 0, N_ATTRMAP, 0, N_RESUME, 0,
+        N_PING, 2, N_PONG, 2, N_CLIENTPING, 2, N_TICK, 4, N_ITEMACC, 0, N_SERVMSG, 0, N_GETGAMEINFO, 0, N_GAMEINFO, 0, N_ATTRMAP, 0, N_RESUME, 0,
         N_EDITMODE, 2, N_EDITENT, 0, N_EDITLINK, 4, N_EDITVAR, 0, N_EDITF, 16, N_EDITT, 16, N_EDITM, 17, N_FLIP, 14,
         N_COPY, 14, N_PASTE, 14, N_ROTATE, 15, N_REPLACE, 17, N_DELCUBE, 14,
         N_CALCLIGHT, 1, N_REMIP, 1, N_EDITVSLOT, 16, N_UNDO, 0, N_REDO, 0, N_NEWMAP, 0,
@@ -2165,7 +2165,7 @@ namespace hud
 enum { CTONE_TEAM = 0, CTONE_TONE, CTONE_TEAMED, CTONE_ALONE, CTONE_MIXED, CTONE_TMIX, CTONE_AMIX, CTONE_MAX };
 namespace game
 {
-    extern int gamestate, gamemode, mutators, nextmode, nextmuts, timeremaining, lasttimeremain, maptime, mapstart, lastzoom, lasttvcam, lasttvchg, spectvtime, waittvtime,
+    extern int gamestate, gamemode, mutators, nextmode, nextmuts, timeremaining, timeelapsed, timelast, maptime, mapstart, lastzoom, lasttvcam, lasttvchg, spectvtime, waittvtime,
             bloodfade, bloodsize, bloodsparks, debrisfade, eventiconfade, eventiconshort, damageinteger,
             announcefilter, dynlighteffects, aboveheadaffinity, aboveheadnames, followthirdperson, nogore, forceplayermodel, forceplayerpattern,
             playerovertone, playerundertone, playerdisplaytone, playereffecttone, playerteamtone, follow, specmode, spectvfollow, spectvfollowing, clientcrc, affinityhint;
@@ -2226,7 +2226,7 @@ namespace game
     extern void hiteffect(int weap, int flags, int damage, gameent *d, gameent *v, vec &dir, vec &vel, float dist, bool local = false);
     extern void damaged(int weap, int flags, int damage, int health, gameent *d, gameent *v, int millis, vec &dir, vec &vel, float dist);
     extern void killed(int weap, int flags, int damage, gameent *d, gameent *v, vector<gameent*> &log, int style, int material);
-    extern void timeupdate(int state, int remain);
+    extern void timeupdate(int state, int remain, int elapsed);
     extern void footstep(gameent *d, int curfoot = -1);
     extern bool canregenimpulse(gameent *d);
     #define RESIDUAL(name, type, pulse) extern void get##name##effect(physent *d, modelstate &mdl, int length, int millis, int delay);

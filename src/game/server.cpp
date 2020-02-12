@@ -607,7 +607,7 @@ namespace server
     }
 
     string smapname = "";
-    int smapcrc = 0, smapvariant = MPV_DEF, mapsending = -1, mapgameinfo = -1, gamestate = G_S_WAITING, gamemode = G_EDITMODE, mutators = 0, gamemillis = 0, gamelimit = 0,
+    int smapcrc = 0, smapvariant = MPV_DEF, mapsending = -1, mapgameinfo = -1, gamestate = G_S_WAITING, gamemode = G_EDITMODE, mutators = 0, gamemillis = 0, gamelimit = 0, gametick = 0,
         mastermode = MM_OPEN, timeremaining = -1, oldtimelimit = -1, gamewaittime = 0, lastteambalance = 0, nextteambalance = 0, lastavgposcalc = 0, lastrotatecycle = 0;
     bool hasgameinfo = false, updatecontrols = false, shouldcheckvotes = false, firstblood = false, sentstats = false;
     enet_uint32 lastsend = 0;
@@ -1589,7 +1589,8 @@ namespace server
 
     void sendtick()
     {
-        sendf(-1, 1, "ri3", N_TICK, gamestate, timeleft());
+        sendf(-1, 1, "ri4", N_TICK, gamestate, timeleft(), gamemillis);
+        gametick = totalmillis;
     }
 
     bool checkvotes(bool force = false);
@@ -4095,6 +4096,7 @@ namespace server
             putint(p, N_TICK);
             putint(p, gamestate);
             putint(p, timeleft());
+            putint(p, gamemillis);
         }
 
         if(hasgameinfo)
@@ -5519,7 +5521,11 @@ namespace server
                     sendtick();
                 }
             }
-            if(canplay() && !paused) gamemillis += curtime;
+            if(canplay() && !paused)
+            {
+                gamemillis += curtime;
+                if(totalmillis-gametick >= 1000) sendtick();
+            }
             if(m_demo(gamemode)) readdemo();
             else if(canplay() && !paused)
             {

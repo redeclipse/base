@@ -386,7 +386,7 @@ namespace cdpi
                     discordPresence.state = state;
 
                     discordPresence.startTimestamp = 0;
-                    int g = game::gametime();
+                    int g = game::gametimeremain();
                     discordPresence.endTimestamp = g ? (currenttime + g/1000) : 0;
                     discordPresence.largeImageKey = "emblem";
                     discordPresence.largeImageText = versionfname;

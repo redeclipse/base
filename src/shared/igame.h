@@ -131,7 +131,8 @@ namespace game
     extern bool mousemove(int dx, int dy, int x, int y, int w, int h);
     extern void project();
     extern void recomputecamera();
-    extern int gametime();
+    extern int gametimeremain();
+    extern int gametimeelapsed();
     extern const char *gamestatename(int type = 0);
     extern const char *gametitle();
     extern const char *gametext();

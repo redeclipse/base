@@ -3235,8 +3235,8 @@ namespace client
 
                 case N_TICK:
                 {
-                    int state = getint(p), remain = getint(p);
-                    game::timeupdate(state, remain);
+                    int state = getint(p), remain = getint(p), elapsed = getint(p);
+                    game::timeupdate(state, remain, elapsed);
                     break;
                 }
 

@@ -3,7 +3,7 @@
 
 namespace game
 {
-    int nextmode = G_EDITMODE, nextmuts = 0, gamestate = G_S_WAITING, gamemode = G_EDITMODE, mutators = 0, maptime = 0, mapstart = 0, timeremaining = 0, lasttimeremain = 0,
+    int nextmode = G_EDITMODE, nextmuts = 0, gamestate = G_S_WAITING, gamemode = G_EDITMODE, mutators = 0, maptime = 0, mapstart = 0, timeremaining = 0, timeelapsed = 0, timelast = 0,
         lastcamera = 0, lasttvcam = 0, lasttvchg = 0, lastzoom = 0, spectvfollowing = -1, starttvcamdyn = -1, lastcamcn = -1;
     bool zooming = false, inputmouse = false, inputview = false, inputmode = false, wantsloadoutmenu = false;
     float swayfade = 0, swayspeed = 0, swaydist = 0, bobfade = 0, bobdist = 0;
@@ -457,9 +457,14 @@ namespace game
         return muts;
     }
 
-    int gametime()
+    int gametimeremain()
     {
-        return connected() ? max(timeremaining*1000-((gs_playing(gamestate) ? lastmillis : totalmillis)-lasttimeremain), 0) : 0;
+        return connected() ? max(timeremaining*1000-((gs_playing(gamestate) ? lastmillis : totalmillis)-timelast), 0) : 0;
+    }
+
+    int gametimeelapsed()
+    {
+        return connected() && gs_playing(gamestate) ? max(timeelapsed+(lastmillis-timelast), 0) : 0;
     }
 
     const char *gamestatename(int type)
@@ -475,7 +480,8 @@ namespace game
     ICOMMAND(0, getgameisplay, "b", (int *n), intret(m_play(*n >= 0 ? *n : gamemode) ? 1 :0));
     ICOMMAND(0, getgamestate, "", (), intret(gamestate));
     ICOMMAND(0, getgamestatestr, "ib", (int *n, int *b), result(gamestates[clamp(*n, 0, 3)][clamp(*b >= 0 ? *b : gamestate, 0, int(G_S_MAX))]));
-    ICOMMAND(0, getgametimeremain, "", (), intret(gametime()));
+    ICOMMAND(0, getgametimeremain, "", (), intret(gametimeremain()));
+    ICOMMAND(0, getgametimeelapsed, "", (), intret(gametimeelapsed()));
     ICOMMAND(0, getgametimelimit, "bb", (int *g, int *m), intret(m_mmvar(*g >= 0 ? *g : gamemode, *m >= 0 ? *m : mutators, timelimit)));
 
     const char *gametitle() { return connected() ? server::gamename(gamemode, mutators) : "Ready"; }
@@ -1905,12 +1911,13 @@ namespace game
         ai::killed(d, v);
     }
 
-    void timeupdate(int state, int remain)
+    void timeupdate(int state, int remain, int elapsed)
     {
         int oldstate = gamestate;
         gamestate = state;
         timeremaining = remain;
-        lasttimeremain = gs_playing(gamestate) ? lastmillis : totalmillis;
+        timeelapsed = elapsed;
+        timelast = gs_playing(gamestate) ? lastmillis : totalmillis;
         if(gs_intermission(gamestate) && gs_playing(oldstate))
         {
             player1->stopmoving(true);
