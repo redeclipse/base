@@ -1102,7 +1102,7 @@ static inline bool octacollide(physent *d, const vec &dir, float cutoff, const i
             {
                 case MAT_NOCLIP: continue;
                 case MAT_CLIP:
-                    if(isclipped(c[i].material&MATF_VOLUME) || d->type<ENT_CAMERA)
+                    if(isclipped(c[i].material&MATF_VOLUME) || (c[i].material&MATF_FLAGS)&MAT_HURT || d->type<ENT_CAMERA)
                     {
                         solid = true;
                         collidematerial = c[i].material;
@@ -1139,7 +1139,13 @@ static inline bool octacollide(physent *d, const vec &dir, float cutoff, const i
     switch(c->material&MATF_CLIP)
     {
         case MAT_NOCLIP: return false;
-        case MAT_CLIP: if(isclipped(c->material&MATF_VOLUME) || d->type<ENT_CAMERA) solid = true; break;
+        case MAT_CLIP:
+            if(isclipped(c->material&MATF_VOLUME) || (c->material&MATF_FLAGS)&MAT_HURT || d->type<ENT_CAMERA)
+            {
+                solid = true;
+                collidematerial = c->material;
+            }
+            break;
     }
     if(!solid && isempty(*c)) return false;
     int csize = 2<<scale, cmask = ~(csize-1);
