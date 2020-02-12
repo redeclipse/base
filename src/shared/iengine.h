@@ -576,7 +576,7 @@ extern ENetHost *serverhost;
 
 // world
 
-extern int collideinside;
+extern int collideinside, collidematerial;
 extern physent *collideplayer;
 extern int collidezones;
 extern vec collidewall, hitsurface;

@@ -808,6 +808,7 @@ namespace physics
                     d->o.add(dir);
                     bool collided = collide(d);
                     if(!collided || collideplayer || collidewall.iszero()) continue;
+                    if(collidematerial && ((collidematerial&MATF_CLIP) == MAT_CLIP) && (collidematerial&MATF_FLAGS)&MAT_LADDER) continue;
                     foundwall = true;
                     break;
                 }

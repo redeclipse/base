@@ -426,7 +426,7 @@ float rayfloor(const vec &o, vec &floor, int mode, float radius)
 /////////////////////////  entity collision  ///////////////////////////////////////////////
 
 // info about collisions
-int collideinside; // whether an internal collision happened
+int collideinside = 0, collidematerial = 0; // whether an internal collision happened, what material we collided with
 physent *collideplayer; // whether the collection hit a player
 int collidezones = CLZ_NONE;
 vec collidewall; // just the normal vectors.
@@ -1101,10 +1101,19 @@ static inline bool octacollide(physent *d, const vec &dir, float cutoff, const i
             switch(c[i].material&MATF_CLIP)
             {
                 case MAT_NOCLIP: continue;
-                case MAT_CLIP: if(isclipped(c[i].material&MATF_VOLUME) || d->type<ENT_CAMERA) solid = true; break;
+                case MAT_CLIP:
+                    if(isclipped(c[i].material&MATF_VOLUME) || d->type<ENT_CAMERA)
+                    {
+                        solid = true;
+                        collidematerial = c[i].material;
+                    }
+                    break;
             }
             if(!solid && isempty(c[i])) continue;
-            if(cubecollide(d, dir, cutoff, c[i], o, size, solid)) return true;
+            if(cubecollide(d, dir, cutoff, c[i], o, size, solid))
+            {
+                return true;
+            }
         }
     }
     return false;
@@ -1140,7 +1149,7 @@ static inline bool octacollide(physent *d, const vec &dir, float cutoff, const i
 // all collision happens here
 bool collide(physent *d, const vec &dir, float cutoff, bool playercol, bool insideplayercol, float guard)
 {
-    collideinside = 0;
+    collideinside = collidematerial = 0;
     collideplayer = NULL;
     collidezones = CLZ_NONE;
     collidewall = vec(0, 0, 0);
