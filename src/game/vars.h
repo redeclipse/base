@@ -255,8 +255,8 @@ GFVAR(IDF_GAMEMOD, 0, itemliquidcoast, 0, 1.75f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemweight, FVAR_MIN, 150, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemspeedmin, 0, 0, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemspeedmax, 0, 0, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, itemrepulsion, 0, 16, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, itemrepelspeed, 0, 35, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, itemrepulsion, 0, 24, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, itemrepelspeed, 0, 50, FVAR_MAX);
 
 //  dm          duel        survivor    gladiator   capture     defend      defendking  bomber      bomberhold  race        racelapped  racegauntlet
 MMVAR(IDF_GAMEMOD, 0, timelimit, 0, VAR_MAX,
@@ -340,8 +340,8 @@ GFVAR(IDF_GAMEMOD, 0, captureliquidcoast, FVAR_MIN, 1.75f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, captureweight, FVAR_MIN, 400, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, capturespeedmin, 0, 0, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, capturespeedmax, 0, 100, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, capturerepulsion, 0, 16, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, capturerepelspeed, 0, 35, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, capturerepulsion, 0, 24, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, capturerepelspeed, 0, 50, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, capturethreshold, 0, 0, FVAR_MAX); // if someone 'warps' more than this distance, auto-drop
 GVAR(IDF_GAMEMOD, 0, capturebuffing, 0, 15, 63); // buffed; 0 = off, &1 = when defending, &2 = when defending dropped, &4 = when secured, &8 = when defending secured, &16 = when secured enemy, &32 = when defending secured enemy, &64 = when defending own base
 GVAR(IDF_GAMEMOD, 0, capturebuffdelay, 0, 3000, VAR_MAX); // buffed for this long after leaving
