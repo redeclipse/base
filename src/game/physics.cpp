@@ -1020,11 +1020,10 @@ namespace physics
     void updatematerial(physent *pl, const vec &center, const vec &bottom, bool local)
     {
         float radius = center.z-bottom.z, height = radius*2, submerged = pl->submerged;
-        int matid = 0, oldmatid = pl->inmaterial, oldmat = oldmatid&MATF_VOLUME, iters = max(int(ceilf(height)), 1);
+        int matid = 0, oldmatid = pl->inmaterial, oldmat = oldmatid&MATF_VOLUME, iters = max(int(ceilf(height)), 1), liquid = 0;
         float frac = height/float(iters); // guard against rounding errors
         vec tmp = bottom;
         pl->inliquid = pl->onladder = false;
-        pl->submerged = 0;
         loopi(iters+1)
         {
             int chkmat = lookupmaterial(tmp);
@@ -1057,12 +1056,13 @@ namespace physics
             if(isliquid(chkmat&MATF_VOLUME))
             {
                 pl->inliquid = true;
-                if(i) pl->submerged = clamp(pl->submerged+frac, 0.f, 1.f);
+                if(i) liquid++;
             }
             if((chkmat&MATF_FLAGS)&MAT_LADDER) pl->onladder = true;
             tmp.z += frac;
         }
         pl->inmaterial = matid;
+        pl->submerged = liquid ? liquid/float(iters) : 0.f;
         if(pl->onladder && pl->physstate < PHYS_SLIDE) pl->floor = vec(0, 0, 1);
         if(local && gameent::is(pl))
         {
