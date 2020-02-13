@@ -676,7 +676,7 @@ template<class E, class M>
 static inline bool mmcollide(physent *d, const vec &dir, const extentity &e, const vec &center, const vec &radius, int yaw, int pitch, int roll)
 {
     E entvol(d);
-    M mdlvol(e.o, center, radius, yaw, pitch, roll);
+    M mdlvol(e.viewpos, center, radius, yaw, pitch, roll);
     vec cp(0, 0, 0);
     if(mpr::collide(entvol, mdlvol, NULL, NULL, &cp))
     {
@@ -822,7 +822,7 @@ bool mmcollide(physent *d, const vec &dir, float cutoff, octaentities &oc) // co
         vec center, radius;
         float rejectradius = m->collisionbox(center, radius), scale = e.attrs[5] ? max(e.attrs[5]/100.0f, 1e-3f) : 1;
         center.mul(scale);
-        if(d->o.reject(vec(e.o).add(center), d->radius + rejectradius*scale)) continue;
+        if(d->o.reject(vec(e.viewpos).add(center), d->radius + rejectradius*scale)) continue;
 
         int yaw = e.attrs[1], pitch = e.attrs[2], roll = e.attrs[3];
         if(mcol == COLLIDE_TRI || testtricol)
@@ -831,10 +831,10 @@ bool mmcollide(physent *d, const vec &dir, float cutoff, octaentities &oc) // co
             switch(testtricol ? testtricol : d->collidetype)
             {
                 case COLLIDE_ELLIPSE:
-                    if(m->bih->ellipsecollide(d, dir, cutoff, e.o, yaw, pitch, roll, scale)) return true;
+                    if(m->bih->ellipsecollide(d, dir, cutoff, e.viewpos, yaw, pitch, roll, scale)) return true;
                     break;
                 case COLLIDE_OBB:
-                    if(m->bih->boxcollide(d, dir, cutoff, e.o, yaw, pitch, roll, scale)) return true;
+                    if(m->bih->boxcollide(d, dir, cutoff, e.viewpos, yaw, pitch, roll, scale)) return true;
                     break;
                 default: continue;
             }
@@ -849,15 +849,15 @@ bool mmcollide(physent *d, const vec &dir, float cutoff, octaentities &oc) // co
                     {
                         if(pitch || roll)
                         {
-                            if(fuzzycollideellipse<mpr::EntCapsule>(d, dir, cutoff, e.o, center, radius, yaw, pitch, roll)) return true;
+                            if(fuzzycollideellipse<mpr::EntCapsule>(d, dir, cutoff, e.viewpos, center, radius, yaw, pitch, roll)) return true;
                         }
-                        else if(ellipsecollide(d, dir, e.o, center, yaw, radius.x, radius.y, radius.z, radius.z)) return true;
+                        else if(ellipsecollide(d, dir, e.viewpos, center, yaw, radius.x, radius.y, radius.z, radius.z)) return true;
                     }
                     else if(pitch || roll)
                     {
-                        if(fuzzycollidebox<mpr::EntCapsule>(d, dir, cutoff, e.o, center, radius, yaw, pitch, roll)) return true;
+                        if(fuzzycollidebox<mpr::EntCapsule>(d, dir, cutoff, e.viewpos, center, radius, yaw, pitch, roll)) return true;
                     }
-                    else if(ellipseboxcollide(d, dir, e.o, center, yaw, radius.x, radius.y, radius.z, radius.z)) return true;
+                    else if(ellipseboxcollide(d, dir, e.viewpos, center, yaw, radius.x, radius.y, radius.z, radius.z)) return true;
                     break;
                 case COLLIDE_OBB:
                     if(mcol == COLLIDE_ELLIPSE)

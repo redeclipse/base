@@ -464,7 +464,7 @@ bool mapmodeltransparent(extentity &e)
     if(mapmodels.inrange(e.attrs[0]))
     {
         mapmodelinfo &mmi = mapmodels[e.attrs[0]];
-        model *m = loadlodmodel(mmi.m ? mmi.m : loadmodel(mmi.name), e.o);
+        model *m = loadlodmodel(mmi.m ? mmi.m : loadmodel(mmi.name), e.viewpos);
         if(m && m->alphatested(true)) return true;
     }
     #endif
@@ -489,7 +489,7 @@ bool mapmodelvisible(extentity &e, bool colvis)
         else if((colvis || e.lastemit < 0) && e.spawned()) return false;
     }
     mapmodelinfo &mmi = mapmodels[e.attrs[0]];
-    model *m = loadlodmodel(mmi.m ? mmi.m : loadmodel(mmi.name), e.o);
+    model *m = loadlodmodel(mmi.m ? mmi.m : loadmodel(mmi.name), e.viewpos);
     if(!m) return false;
     return true;
 }
@@ -562,10 +562,10 @@ static inline void rendermapmodelent(extentity &e, bool tpass)
         mdl.anim = (mmanimoverride<0 ? ANIM_ALL : mmanimoverride)|ANIM_LOOP;
         mdl.basetime = 0;
     }
-    mdl.yaw = e.attrs[1];
-    mdl.pitch = e.attrs[2];
+    mdl.yaw = e.attrs[1]+e.viewyaw;
+    mdl.pitch = e.attrs[2]+e.viewpitch;
     mdl.roll = e.attrs[3];
-    mdl.o = e.o;
+    mdl.o = e.viewpos;
     mdl.color = vec4(1, 1, 1, blended ? min(e.attrs[4]/100.f, 1.f) : 1.f);
     mdl.size = e.attrs[5] ? max(e.attrs[5]/100.f, 1e-3f) : 1.f;
     if(e.attrs[8] || e.attrs[9])
@@ -2731,7 +2731,7 @@ static void genshadowmeshmapmodels(shadowmesh &m, int sides, shadowdrawinfo draw
         if(e.attrs[2]) orient.rotate_around_x(sincosmod360(e.attrs[2]));
         if(e.attrs[3]) orient.rotate_around_y(sincosmod360(-e.attrs[3]));
         if(e.attrs[5] > 0) orient.scale(e.attrs[5]/100.0f);
-        orient.settranslation(e.o);
+        orient.settranslation(e.viewpos);
         tris.setsize(0);
         mm->genshadowmesh(tris, orient);
 

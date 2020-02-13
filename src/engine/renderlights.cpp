@@ -3513,17 +3513,17 @@ void collectlights()
         if(ents.inrange(spotlight))
         {
             const extentity &f = *ents[spotlight];
-            dir = vec(f.o).sub(e.o).normalize();
+            dir = vec(f.viewpos).sub(e.viewpos).normalize();
             spot = clamp(int(f.attrs[1]), 1, 89);
         }
 
         if(smviscull)
         {
-            if(isfoggedsphere(radius, e.o)) continue;
-            if(pvsoccludedsphere(e.o, radius)) continue;
+            if(isfoggedsphere(radius, e.viewpos)) continue;
+            if(pvsoccludedsphere(e.viewpos, radius)) continue;
         }
 
-        lightinfo &l = lights.add(lightinfo(i, e.o, color, float(radius), e.attrs[6], dir, spot));
+        lightinfo &l = lights.add(lightinfo(i, e.viewpos, color, float(radius), e.attrs[6], dir, spot));
         if(l.validscissor()) lightorder.add(lights.length()-1);
     }
 
@@ -4357,7 +4357,7 @@ int calcshadowinfo(const extentity &e, vec &origin, float &radius, vec &spotloc,
     if(e.attrs[6]&L_NOSHADOW) return SM_NONE;
     int rad = e.attrs[0], slight = -1;
     if(!getlightfx(e, &rad, &slight) || rad <= smminradius) return SM_NONE;
-    origin = e.o;
+    origin = e.viewpos;
     radius = float(rad);
     int type, w, border;
     float lod;
@@ -4377,7 +4377,7 @@ int calcshadowinfo(const extentity &e, vec &origin, float &radius, vec &spotloc,
         w = 3;
         lod = smcubeprec;
         border = smfilter > 2 ? smborder2 : smborder;
-        spotloc = e.o;
+        spotloc = e.viewpos;
         spotangle = 0;
     }
 

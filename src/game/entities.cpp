@@ -3,7 +3,7 @@ namespace entities
 {
     vector<extentity *> ents;
     int firstenttype[MAXENTTYPES], firstusetype[EU_MAX], lastenttype[MAXENTTYPES], lastusetype[EU_MAX],
-        numactors = 0, lastroutenode = -1, lastroutefloor = -1, lastroutetime = 0;
+        numactors = 0, lastroutenode = -1, lastroutefloor = -1, lastroutetime = 0, lastelapsed = 0;
     vector<int> airnodes;
 
     VAR(IDF_PERSIST, showentmodels, 0, 1, 2);
@@ -388,6 +388,14 @@ namespace entities
                 }
                 break;
             }
+            case RAIL:
+            {
+                if(full)
+                {
+                    const char *railnames[RAIL_MAX] = { "rail-yaw", "rail-pitch" };
+                    loopj(RAIL_MAX) if(attr[1]&(1<<j)) addentinfo(railnames[j]);
+                }
+            }
             default: break;
         }
         if(full)
@@ -523,12 +531,12 @@ namespace entities
                     case TRIGGER: case TELEPORT: case PUSHER: if(e.attrs[3] > 0) radius = e.attrs[3]; break;
                     case CHECKPOINT: if(e.attrs[0] > 0) radius = e.attrs[0]; break;
                 }
-                if(overlapsbox(pos, zrad, xyrad, e.o, radius, radius))
+                if(overlapsbox(pos, zrad, xyrad, e.viewpos, radius, radius))
                 {
                     actitem &t = actitems.add();
                     t.type = actitem::ENT;
                     t.target = n;
-                    t.score = pos.squaredist(e.o);
+                    t.score = pos.squaredist(e.viewpos);
                 }
             }
         }
@@ -584,7 +592,7 @@ namespace entities
             if(enttype[e.type].usetype != EU_NONE && (enttype[e.type].usetype != EU_ITEM || (d->state == CS_ALIVE && e.spawned())))
             {
                 if(enttype[e.type].mvattr >= 0 && !checkmapvariant(e.attrs[enttype[e.type].mvattr])) continue;
-                float eradius = enttype[e.type].radius, edist = pos.dist(e.o);
+                float eradius = enttype[e.type].radius, edist = pos.dist(e.viewpos);
                 switch(e.type)
                 {
                     case TRIGGER: case TELEPORT: case PUSHER: if(e.attrs[3] > 0) eradius = e.attrs[3]; break;
@@ -772,7 +780,7 @@ namespace entities
                     {
                         int r = rnd(teleports.length()), q = teleports[r];
                         gameentity &f = *(gameentity *)ents[q];
-                        d->o = vec(f.o).add(f.attrs[5] >= 3 ? vec(orig).sub(e.o) : vec(0, 0, d->height*0.5f));
+                        d->o = vec(f.viewpos).add(f.attrs[5] >= 3 ? vec(orig).sub(e.viewpos) : vec(0, 0, d->height*0.5f));
                         float mag = vec(d->vel).add(d->falling).magnitude(), yaw = f.attrs[0] < 0 ? (lastmillis/5)%360 : f.attrs[0], pitch = f.attrs[1];
                         if(!projent::shot(d))
                         {
@@ -817,7 +825,7 @@ namespace entities
                                     execlink(g, n, true);
                                     execlink(g, q, true);
                                     g->resetair();
-                                    ai::inferwaypoints(g, e.o, f.o, float(e.attrs[3] ? e.attrs[3] : enttype[e.type].radius)+ai::CLOSEDIST);
+                                    ai::inferwaypoints(g, e.viewpos, f.viewpos, float(e.attrs[3] ? e.attrs[3] : enttype[e.type].radius)+ai::CLOSEDIST);
                                 }
                                 else if(projent::is(d))
                                 {
@@ -829,7 +837,7 @@ namespace entities
                                     g->movement = 0;
                                 }
                             }
-                            else if(gameent::is(d)) warpragdoll(d, d->vel, vec(f.o).sub(e.o));
+                            else if(gameent::is(d)) warpragdoll(d, d->vel, vec(f.viewpos).sub(e.viewpos));
                             return false; // gotcha
                         }
                         d->o = orig;
@@ -1077,6 +1085,7 @@ namespace entities
         gameentity &e = *(gameentity *)ents[n];
         cleansound(n);
         e.attrs.setsize(numattrs(e.type), 0);
+        e.rails.setsize(0);
         loopvrev(e.links)
         {
             int ent = e.links[i];
@@ -1313,6 +1322,17 @@ namespace entities
                 if(e.attrs[8] < 0) e.attrs[8] = 0; // flags, clamp
                 break;
             }
+            case RAIL:
+            {
+                if(e.attrs[0] < 0) e.attrs[0] = 0; // limit
+                while(e.attrs[1] < 0) e.attrs[1] += RAIL_ALL+1;
+                while(e.attrs[1] > RAIL_ALL) e.attrs[1] -= RAIL_ALL;
+                loopvj(ents)
+                {
+                    gameentity &r = *(gameentity *)ents[j];
+                    if(r.rails.find(n) >= 0) r.rails.setsize(0);
+                }
+            }
             default: break;
         }
         #undef FIXEMIT
@@ -1386,7 +1406,7 @@ namespace entities
                     {
                         int flags = SND_MAP;
                         loopk(SND_LAST) if(f.attrs[4]&(1<<k)) flags |= 1<<k;
-                        playsound(f.attrs[0], both ? f.o : e.o, NULL, flags, f.attrs[3] ? f.attrs[3] : -1, f.attrs[1] || f.attrs[2] ? f.attrs[1] : -1, f.attrs[2] ? f.attrs[2] : -1, &f.schan);
+                        playsound(f.attrs[0], both ? f.viewpos : e.viewpos, NULL, flags, f.attrs[3] ? f.attrs[3] : -1, f.attrs[1] || f.attrs[2] ? f.attrs[1] : -1, f.attrs[2] ? f.attrs[2] : -1, &f.schan);
                     }
                     break;
                 }
@@ -1679,7 +1699,8 @@ namespace entities
             case MAPMODEL: if(gver <= 244) game::fixpalette(e.attrs[8], e.attrs[9], gver); break;
             case DECAL: if(gver <= 244) game::fixpalette(e.attrs[7], e.attrs[8], gver); break;
             case TELEPORT: if(gver <= 244) game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
-            case UNUSEDENT: e.type = NOTUSED; break;
+            case ROUTE: if(gver <= 223) e.type = NOTUSED; break;
+            case RAIL: if(gver <= 247) e.type = NOTUSED; break;
             default: break;
         }
         if(gver <= 244 && enttype[e.type].modesattr >= 0)
@@ -1706,7 +1727,7 @@ namespace entities
     void initents(int mver, char *gid, int gver)
     {
         lastroutenode = routeid = -1;
-        numactors = lastroutetime = droproute = 0;
+        numactors = lastroutetime = droproute = lastelapsed = 0;
         airnodes.setsize(0);
         ai::oldwaypoints.setsize(0);
         progress(0, "Setting entity attributes...");
@@ -1714,6 +1735,7 @@ namespace entities
         {
             gameentity &e = *(gameentity *)ents[i];
             e.attrs.setsize(numattrs(e.type), 0);
+            e.viewpos = e.o;
             if(gver < VERSION_GAME) importent(e, mver, gver);
             fixentity(i, false);
             progress((i+1)/float(ents.length()), "Setting entity attributes...");
@@ -1729,7 +1751,7 @@ namespace entities
                 extentity &e = *newent();
                 ents.add(&e);
                 e.type = ACTOR;
-                e.o = ents[i]->o;
+                e.o = e.viewpos = ents[i]->o;
                 e.attrs.add(0, numattrs(ACTOR));
                 e.attrs[0] = A_ENEMY+(i%A_TOTAL);
                 switch(ents[i]->type)
@@ -1917,18 +1939,136 @@ namespace entities
     {
     }
 
-    void update()
+    void scaleyawpitch(float &yaw, float &pitch, float targyaw, float targpitch, float amt)
     {
-        loopenti(MAPSOUND)
+        if(yaw < targyaw-180.0f) yaw += 360.0f;
+        if(yaw > targyaw+180.0f) yaw -= 360.0f;
+        float offyaw = (targyaw-yaw)*amt, offpitch = (targpitch-pitch)*amt;
+        if(targyaw > yaw)
         {
-            gameentity &e = *(gameentity *)ents[i];
-            if(e.type == MAPSOUND && checkmapvariant(e.attrs[enttype[e.type].mvattr]) && e.links.empty() && mapsounds.inrange(e.attrs[0]) && !issound(e.schan))
+            yaw += offyaw;
+            if(targyaw < yaw) yaw = targyaw;
+        }
+        else if(targyaw < yaw)
+        {
+            yaw -= offyaw;
+            if(targyaw > yaw) yaw = targyaw;
+        }
+        if(targpitch > pitch)
+        {
+            pitch += offpitch;
+            if(targpitch < pitch) pitch = targpitch;
+        }
+        else if(targpitch < pitch)
+        {
+            pitch -= offpitch;
+            if(targpitch > pitch) pitch = targpitch;
+        }
+    }
+
+    int buildrail(gameentity &r, int n)
+    {
+        gameentity &e = *(gameentity *)ents[n];
+        loopvj(e.links)
+        {
+            int link = e.links[j];
+            if(!ents.inrange(link) || ents[link]->type != RAIL) continue;
+            if(r.rails.find(link) >= 0) continue;
+            r.rails.add(link);
+            r.railtime += ents[link]->attrs[0] ? ents[link]->attrs[0] : 500;
+            return link;
+        }
+        return -1;
+    }
+
+    void checkrails(int n, int elapsed)
+    {
+        gameentity &e = *(gameentity *)ents[n];
+        e.viewpos = e.o;
+        e.viewyaw = e.viewpitch = 0;
+        if(!(enttype[e.type].canlink&(1<<RAIL))) return;
+        if(e.rails.empty())
+        {
+            e.railtime = 0;
+            int rail = buildrail(e, n);
+            while(rail >= 0) rail = buildrail(e, rail);
+        }
+        loopvj(e.rails)
+        {
+            int link = e.rails[j];
+            if(!ents.inrange(link) || ents[link]->type != RAIL)
             {
-                int flags = SND_MAP|SND_LOOP; // ambient sounds loop
-                loopk(SND_LAST)  if(e.attrs[4]&(1<<k)) flags |= 1<<k;
-                playsound(e.attrs[0], e.o, NULL, flags, e.attrs[3] ? e.attrs[3] : 255, e.attrs[1] || e.attrs[2] ? e.attrs[1] : -1, e.attrs[2] ? e.attrs[2] : -1, &e.schan);
+                e.rails.setsize(0);
+                return;
             }
         }
+        if(e.rails.length() <= 1 || e.railtime <= 0) return;
+        int millis = elapsed%e.railtime, iter = 0, prev = -1, flags = 0;
+        float syaw = 0, spitch = 0, ryaw = 0, rpitch = 0;
+        vec start(0, 0, 0), dir(0, 0, 0);
+        loopvj(e.rails)
+        {
+            int link = e.rails[j], rail = e.rails.inrange(j+1) ? e.rails[j+1] : e.rails[0];
+            gameentity &r = *(gameentity *)ents[link], &s = *(gameentity *)ents[rail];
+            if(prev < 0)
+            {
+                start = r.o;
+                flags = r.attrs[1];
+                if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH))
+                {
+                    int last = j > 0 ? e.rails[j-1] : e.rails.last();
+                    gameentity &t = *(gameentity *)ents[last];
+                    float tyaw = 0, tpitch = 0;
+                    vec tdir = vec(r.o).sub(t.o).normalize();
+                    vectoyawpitch(tdir, tyaw, tpitch);
+                    if(flags&(1<<RAIL_YAW)) syaw = ryaw = tyaw;
+                    if(flags&(1<<RAIL_PITCH)) spitch = rpitch = tpitch;
+                }
+            }
+            int dur = r.attrs[0] > 0 ? r.attrs[0] : 500;
+            float cyaw = 0, cpitch = 0;
+            if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH))
+            {
+                vec dir = vec(s.o).sub(r.o).normalize();
+                vectoyawpitch(dir, cyaw, cpitch);
+            }
+            if(millis < iter+dur)
+            {
+                float amt = (millis-iter)/float(dur);
+                e.viewpos.add(vec(r.o).add(vec(s.o).sub(r.o).mul(amt)).sub(start));
+                if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)) scaleyawpitch(ryaw, rpitch, cyaw, cpitch, amt);
+                if(flags&(1<<RAIL_YAW)) e.viewyaw = ryaw-syaw;
+                if(flags&(1<<RAIL_PITCH)) e.viewpitch = rpitch-spitch;
+                return;
+            }
+            if(flags&(1<<RAIL_YAW)) ryaw = cyaw;
+            if(flags&(1<<RAIL_PITCH)) rpitch = cpitch;
+            iter += r.attrs[0];
+            prev = link;
+        }
+    }
+
+    void update()
+    {
+        int elapsed = game::gametimeelapsed();
+        bool timepassed = elapsed > lastelapsed;
+        loopv(ents)
+        {
+            gameentity &e = *(gameentity *)ents[i];
+            if(e.type == NOTUSED || e.type == RAIL) continue;
+            if(timepassed) checkrails(i, elapsed);
+            if(e.type == MAPSOUND && checkmapvariant(e.attrs[enttype[e.type].mvattr]) && e.links.empty() && mapsounds.inrange(e.attrs[0]))
+            {
+                if(!issound(e.schan))
+                {
+                    int flags = SND_MAP|SND_LOOP; // ambient sounds loop
+                    loopk(SND_LAST)  if(e.attrs[4]&(1<<k)) flags |= 1<<k;
+                    playsound(e.attrs[0], e.viewpos, NULL, flags, e.attrs[3] ? e.attrs[3] : 255, e.attrs[1] || e.attrs[2] ? e.attrs[1] : -1, e.attrs[2] ? e.attrs[2] : -1, &e.schan);
+                }
+                else if(!e.rails.empty()) sounds[e.schan].pos = e.viewpos;
+            }
+        }
+        lastelapsed = elapsed;
         if((m_edit(game::gamemode) || m_race(game::gamemode)) && routeid >= 0 && droproute)
         {
             if(game::player1->state == CS_ALIVE)
@@ -1998,7 +2138,7 @@ namespace entities
                 if(mdlname && *mdlname)
                 {
                     modelstate mdl;
-                    mdl.o = e.o;
+                    mdl.o = e.viewpos;
                     mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
                     mdl.flags = MDL_CULL_VFC|MDL_CULL_DIST|MDL_CULL_OCCLUDED;
                     int colour = -1;
@@ -2063,7 +2203,7 @@ namespace entities
             vec r = vec::fromcolor(colour).mul(game::getpalette(e.attrs[6], e.attrs[7]));
             colour = (int(r.x*255)<<16)|(int(r.y*255)<<8)|(int(r.z*255));
         }
-        part_portal(e.o, radius, 1, yaw, e.attrs[1], PART_TELEPORT, 1, colour);
+        part_portal(e.viewpos, radius, 1, yaw, e.attrs[1], PART_TELEPORT, 1, colour);
     }
 
     bool checkparticle(extentity &e)
@@ -2090,18 +2230,18 @@ namespace entities
             case ROUTE:
             {
                 if(e.attrs[0] != routeid || (!m_edit(game::gamemode) && !m_race(game::gamemode))) break;
-                loopv(e.links) if(ents.inrange(e.links[i]) && ents[e.links[i]]->type == ROUTE && (!routemaxdist || e.o.dist(ents[e.links[i]]->o) <= routemaxdist))
-                    part_flare(e.o, ents[e.links[i]]->o, 1, PART_LIGHTNING_FLARE, routecolour);
+                loopv(e.links) if(ents.inrange(e.links[i]) && ents[e.links[i]]->type == ROUTE && (!routemaxdist || o.dist(ents[e.links[i]]->o) <= routemaxdist))
+                    part_flare(o, ents[e.links[i]]->o, 1, PART_LIGHTNING_FLARE, routecolour);
             }
             default: break;
         }
 
-        vec off(0, 0, 2.f), pos(o);
+        vec off(0, 0, 2.f), pos = o, view = idx >= 0 ? e.viewpos : o;
         if(enttype[e.type].usetype == EU_ITEM) pos.add(off);
         bool edit = m_edit(game::gamemode) && idx >= 0 && cansee(idx),
              isedit = edit && game::player1->state == CS_EDITING,
              hasent = isedit && (enthover == idx || entgroup.find(idx) >= 0),
-             hastop = hasent && e.o.squaredist(camera1->o) <= showentdist*showentdist;
+             hastop = hasent && o.squaredist(camera1->o) <= showentdist*showentdist;
         int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators),
             attr = e.type == WEAPON ? m_attr(e.type, e.attrs[0]) : e.attrs[0],
             colour = e.type == WEAPON && isweap(attr) ? W(attr, colour) : colourwhite, interval = lastmillis%1000;
@@ -2129,7 +2269,7 @@ namespace entities
             {
                 if(simpleitems == 1)
                 {
-                    part_icon(o, textureload(hud::itemtex(e.type, attr), 3), simpleitemsize*skew, simpleitemblend*blend*skew, 0, 0, 1, colour);
+                    part_icon(view, textureload(hud::itemtex(e.type, attr), 3), simpleitemsize*skew, simpleitemblend*blend*skew, 0, 0, 1, colour);
                     if(radius < simpleitemsize*skew) radius = simpleitemsize*skew;
                     blend *= simpleitemhalo;
                 }
@@ -2138,9 +2278,9 @@ namespace entities
                     radius *= haloitemsize;
                     blend *= haloitemblend;
                 }
-                vec offset = vec(o).sub(camera1->o).rescale(radius/2);
+                vec offset = vec(view).sub(camera1->o).rescale(radius/2);
                 offset.z = max(offset.z, -1.0f);
-                part_create(PART_HINT_BOLD_SOFT, 1, offset.add(o), colour, radius, blend);
+                part_create(PART_HINT_BOLD_SOFT, 1, offset.add(view), colour, radius, blend);
             }
         }
         if(edit)
@@ -2150,6 +2290,11 @@ namespace entities
             {
                 defformatstring(s, "<super>%s%s (%d)", hastop ? "\fc" : "\fC", enttype[e.type].name, idx >= 0 ? idx : 0);
                 part_textcopy(pos.add(off), s, hastop ? PART_TEXT_ONTOP : PART_TEXT);
+                if(!e.rails.empty())
+                {
+                    formatstring(s, "RAIL: (%d) %d / %d ms", e.rails.length(), game::gametimeelapsed()%e.railtime, e.railtime);
+                    part_textcopy(pos.add(off), s, hastop ? PART_TEXT_ONTOP : PART_TEXT);
+                }
             }
         }
         if(isedit ? (showentinfo&(hasent ? 1 : 2)) : (enttype[e.type].usetype == EU_ITEM && active && showentdescs >= 3))

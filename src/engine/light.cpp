@@ -374,8 +374,8 @@ void clearlightcache(int id)
         const extentity &light = *entities::getents()[id];
         int radius = light.attrs[0];
         if(radius <= 0) return;
-        for(int x = int(max(light.o.x-radius, 0.0f))>>lightcachesize, ex = int(min(light.o.x+radius, worldsize-1.0f))>>lightcachesize; x <= ex; x++)
-        for(int y = int(max(light.o.y-radius, 0.0f))>>lightcachesize, ey = int(min(light.o.y+radius, worldsize-1.0f))>>lightcachesize; y <= ey; y++)
+        for(int x = int(max(light.viewpos.x-radius, 0.0f))>>lightcachesize, ex = int(min(light.viewpos.x+radius, worldsize-1.0f))>>lightcachesize; x <= ex; x++)
+        for(int y = int(max(light.viewpos.y-radius, 0.0f))>>lightcachesize, ey = int(min(light.viewpos.y+radius, worldsize-1.0f))>>lightcachesize; y <= ey; y++)
         {
             lightcacheentry &lce = lightcache[LIGHTCACHEHASH(x, y)];
             if(lce.x != x || lce.y != y) continue;
@@ -411,8 +411,8 @@ const vector<int> &checklightcache(int x, int y)
             {
                 int radius = light.attrs[0];
                 if(!getlightfx(light, &radius) ||
-                   light.o.x + radius < cx || light.o.x - radius > cx + csize ||
-                   light.o.y + radius < cy || light.o.y - radius > cy + csize)
+                   light.viewpos.x + radius < cx || light.viewpos.x - radius > cx + csize ||
+                   light.viewpos.y + radius < cy || light.viewpos.y - radius > cy + csize)
                     continue;
                 break;
             }
@@ -737,11 +737,11 @@ void lightreaching(const vec &target, vec &color, vec &dir, bool fast, extentity
         if(!getlightfx(e, &radius, &slight, &lightcol)) continue;
 
         vec ray(target);
-        ray.sub(e.o);
+        ray.sub(e.viewpos);
         if(ents.inrange(slight))
         {
             extentity &spotlight = *ents[slight];
-            vec spot = vec(spotlight.o).sub(e.o).normalize();
+            vec spot = vec(spotlight.viewpos).sub(e.viewpos).normalize();
             float spotatten = 1 - (1 - ray.dot(spot)) / (1 - cos360(clamp(int(spotlight.attrs[1]), 1, 89)));
             if(spotatten <= 0) continue;
             intensity *= spotatten;
@@ -755,7 +755,7 @@ void lightreaching(const vec &target, vec &color, vec &dir, bool fast, extentity
         else
         {
             ray.div(mag);
-            if(shadowray(e.o, ray, mag, RAY_SHADOW | RAY_POLY, t) < mag)
+            if(shadowray(e.viewpos, ray, mag, RAY_SHADOW | RAY_POLY, t) < mag)
                 continue;
         }
 

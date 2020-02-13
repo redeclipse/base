@@ -39,7 +39,7 @@ enum                                // entity types
     NOTUSED = ET_EMPTY, LIGHT = ET_LIGHT, MAPMODEL = ET_MAPMODEL, PLAYERSTART = ET_PLAYERSTART, ENVMAP = ET_ENVMAP, PARTICLES = ET_PARTICLES,
     MAPSOUND = ET_SOUND, LIGHTFX = ET_LIGHTFX, DECAL = ET_DECAL, WIND = ET_WIND, OUTLINE = ET_OUTLINE, WEAPON = ET_GAMESPECIFIC,
     TELEPORT, ACTOR, TRIGGER, PUSHER, AFFINITY, CHECKPOINT,
-    ROUTE, UNUSEDENT,
+    ROUTE, RAIL,
     MAXENTTYPES
 };
 
@@ -47,6 +47,7 @@ enum { EU_NONE = 0, EU_ITEM, EU_AUTO, EU_ACT, EU_MAX };
 
 enum { TR_TOGGLE = 0, TR_LINK, TR_SCRIPT, TR_ONCE, TR_EXIT, TR_MAX };
 enum { TA_MANUAL = 0, TA_AUTO, TA_ACTION, TA_MAX };
+enum { RAIL_YAW = 0, RAIL_PITCH, RAIL_MAX, RAIL_ALL = (1<<RAIL_YAW)|(1<<RAIL_PITCH) };
 
 #define TRIGGERIDS      16
 #define TRIGSTATE(a,b)  (b%2 ? !a : a)
@@ -76,13 +77,13 @@ extern const enttypes enttype[] = {
     },
     {
         LIGHT,          1,          59,     0,      EU_NONE,    11,         -1,         -1,     9,      10,
-            (1<<LIGHTFX), (1<<LIGHTFX), 0,
+            (1<<LIGHTFX)|(1<<RAIL), (1<<LIGHTFX), 0,
             false,  false,  false,      false,      false,
                 "light",        { "radius", "red",      "green",    "blue",     "flare",    "flarescale", "flags",  "palette",  "palindex", "variant", "fxlevel"  }
     },
     {
         MAPMODEL,       1,          58,     0,      EU_NONE,    15,         -1,         -1,     13,     14,
-            (1<<TRIGGER), (1<<TRIGGER), 0,
+            (1<<TRIGGER)|(1<<RAIL), (1<<TRIGGER), 0,
             false,  false,  false,      false,      false,
                 "mapmodel",     { "type",   "yaw",      "pitch",    "roll",     "blend",    "scale",    "flags",    "colour",   "palette",  "palindex", "spinyaw",  "spinpitch", "spinroll",    "variant",  "fxlevel" }
     },
@@ -102,7 +103,7 @@ extern const enttypes enttype[] = {
     },
     {
         PARTICLES,      1,          59,     0,      EU_NONE,    14,         -1,         -1,     12,     13,
-            (1<<TELEPORT)|(1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT),
+            (1<<TELEPORT)|(1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT)|(1<<RAIL),
             (1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT),
             0,
             false,  false,  false,      false,      false,
@@ -110,7 +111,7 @@ extern const enttypes enttype[] = {
     },
     {
         MAPSOUND,       1,          58,     0,      EU_NONE,    6,          -1,         -1,     5,      -1,
-            (1<<TELEPORT)|(1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT)|(1<<WIND),
+            (1<<TELEPORT)|(1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT)|(1<<WIND)|(1<<RAIL),
             (1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT)|(1<<WIND),
             0,
             false,  false,  false,      false,      false,
@@ -118,7 +119,7 @@ extern const enttypes enttype[] = {
     },
     {
         LIGHTFX,        1,          1,      0,      EU_NONE,    7,          -1,         -1,     5,      6,
-            (1<<LIGHT)|(1<<TELEPORT)|(1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT),
+            (1<<LIGHT)|(1<<TELEPORT)|(1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT)|(1<<RAIL),
             (1<<LIGHT)|(1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT),
             0,
             false,  false,  false,      false,      false,
@@ -148,14 +149,14 @@ extern const enttypes enttype[] = {
     },
     {
         WEAPON,         2,          59,     24,     EU_ITEM,    6,          2,          4,      5,      -1,
-            0, 0,
+            (1<<RAIL), 0,
             (1<<ENT_PLAYER)|(1<<ENT_AI),
             false,  true,   true,      false,      false,
                 "weapon",       { "type",   "flags",    "modes",    "muts",     "id",       "variant" }
     },
     {
         TELEPORT,       1,          50,     12,     EU_AUTO,    10,         -1,         -1,     9,      -1,
-            (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX)|(1<<TELEPORT),
+            (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX)|(1<<TELEPORT)|(1<<RAIL),
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<ENT_PLAYER)|(1<<ENT_AI)|(1<<ENT_PROJ),
             false,  false,  false,      false,      false,
@@ -177,7 +178,7 @@ extern const enttypes enttype[] = {
     },
     {
         PUSHER,         1,          58,     12,     EU_AUTO,    11,         -1,         -1,     9,      -1,
-            (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
+            (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX)|(1<<RAIL),
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<ENT_PLAYER)|(1<<ENT_AI)|(1<<ENT_PROJ),
             false,  false,  false,      false,      false,
@@ -198,16 +199,16 @@ extern const enttypes enttype[] = {
                 "checkpoint",   { "radius", "yaw",      "pitch",    "modes",    "muts",     "id",       "type",     "variant" }
     },
     {
-        ROUTE,          1,         224,      16,    EU_NONE,    6,          -1,         -1,     -1,     -1,
+        ROUTE,          1,          224,    16,     EU_NONE,    6,          -1,         -1,     -1,     -1,
             (1<<ROUTE), 0, 0,
             false,   false,  false,      false,      false,
                 "route",         { "num",   "yaw",      "pitch",    "move",     "strafe",   "action" }
     },
     {
-        UNUSEDENT,      -1,          0,      0,     EU_NONE,    0,          -1,         -1,     -1,     -1,
-            0, 0, 0,
-            true,   false,  false,      false,      false,
-                "unused",         { "" }
+        RAIL,           -1,         228,    0,      EU_NONE,    2,          -1,         -1,     -1,     -1,
+            (1<<RAIL), 0, 0,
+            false,   false,  false,      false,      false,
+                "rail",         { "time",   "flags" }
     }
 };
 #else
@@ -1120,11 +1121,10 @@ template<class T> inline void flashcolourf(T &r, T &g, T &b, T &f, T br, T bg, T
 
 struct gameentity : extentity
 {
-    int schan;
-    int lastspawn, nextemit;
-    linkvector kin;
+    int schan, lastspawn, nextemit, railtime;
+    linkvector kin, rails;
 
-    gameentity() : schan(-1), lastspawn(0), nextemit(0) {}
+    gameentity() : schan(-1), lastspawn(0), nextemit(0), railtime(0) {}
     ~gameentity()
     {
         if(issound(schan)) removesound(schan);

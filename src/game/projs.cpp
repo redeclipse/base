@@ -11,6 +11,8 @@ namespace projs
         int ent;
         float radius;
         vec o;
+
+        vec &pos() { return entities::ents.inrange(ent) ? entities::ents[ent]->viewpos : o; }
     };
     vector<toolent> teleports, pushers;
 
@@ -446,7 +448,7 @@ namespace projs
                 if(millis && lastmillis-millis <= 100) continue;
             }
             float dist = 1e16f;
-            if(raysphereintersect(list[i].o, list[i].radius, o, dir, dist) && dist <= maxdist && (closeent < 0 || dist < closedist))
+            if(raysphereintersect(list[i].pos(), list[i].radius, o, dir, dist) && dist <= maxdist && (closeent < 0 || dist < closedist))
             {
                 closeent = list[i].ent;
                 closedist = dist;
