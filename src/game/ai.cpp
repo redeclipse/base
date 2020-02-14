@@ -1591,7 +1591,7 @@ namespace ai
         loopenti(MAPMODEL) if(entities::ents[i]->type == MAPMODEL)
         {
             gameentity &e = *(gameentity *)entities::ents[i];
-            if(!mapmodelvisible(e, true)) continue;
+            if(!mapmodelvisible(e, i, true)) continue;
             mapmodelinfo *mmi = getmminfo(e.attrs[0]);
             if(!mmi || !mmi->m) continue;
             vec center, radius;

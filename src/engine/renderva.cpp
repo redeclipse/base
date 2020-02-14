@@ -471,11 +471,12 @@ bool mapmodeltransparent(extentity &e)
     return false;
 }
 
-bool mapmodelvisible(extentity &e, bool colvis)
+bool mapmodelvisible(extentity &e, int n, int colvis)
 {
-    if(e.flags&EF_NOVIS || !checkmapvariant(e.attrs[13]) || !checkmapeffects(e.attrs[14]) || !mapmodels.inrange(e.attrs[0])) return false;
-    if(colvis && e.flags&EF_NOCOLLIDE) return false;
-    if(e.flags&EF_DYNAMIC) return false;
+    if(editmode && colvis&1) return true;
+    bool ingroup = editmode && (enthover == n || entgroup.find(n) >= 0);
+    if(!ingroup && (e.flags&EF_NOVIS || e.flags&EF_DYNAMIC || !checkmapvariant(e.attrs[13]) || !checkmapeffects(e.attrs[14]) || !mapmodels.inrange(e.attrs[0]))) return false;
+    if(colvis&2 && (e.flags&EF_NOCOLLIDE || e.flags&EF_DYNAMIC)) return false;
     if(e.lastemit)
     {
         if(e.flags&EF_HIDE)
@@ -487,7 +488,7 @@ bool mapmodelvisible(extentity &e, bool colvis)
             int millis = lastmillis-e.lastemit, delay = entities::triggertime(e, true);
             if(e.spawned() ? millis > delay : millis < delay) return false;
         }
-        else if((colvis || e.lastemit < 0) && e.spawned()) return false;
+        else if((colvis&2 || e.lastemit < 0) && e.spawned()) return false;
     }
     mapmodelinfo &mmi = mapmodels[e.attrs[0]];
     model *m = loadlodmodel(mmi.m ? mmi.m : loadmodel(mmi.name), e.o);
@@ -519,7 +520,7 @@ void findvisiblemms(const vector<extentity *> &ents, bool doquery)
             loopv(oe->mapmodels)
             {
                 extentity &e = *ents[oe->mapmodels[i]];
-                if(!mapmodelvisible(e) || mapmodeltransparent(e)) continue;
+                if(!mapmodelvisible(e, oe->mapmodels[i]) || mapmodeltransparent(e)) continue;
                 e.flags |= EF_RENDER;
                 ++visible;
             }
@@ -575,9 +576,9 @@ void getmapmodelstate(extentity &e, entmodelstate &mdl)
     if(e.attrs[12]) mdl.roll += e.attrs[12]*lastmillis/1000.0f;
 }
 
-static inline void rendermapmodelent(extentity &e, bool tpass)
+static inline void rendermapmodelent(extentity &e, int n, bool tpass)
 {
-    if(!mapmodelvisible(e)) return;
+    if(!mapmodelvisible(e, n)) return;
     bool blended = mapmodeltransparent(e);
     if(blended != tpass) return;
     entmodelstate mdl;
@@ -608,7 +609,7 @@ void rendermapmodels()
                 oe->query = doquery && oe->distance>0 && !(++skipoq%oqmm) ? newquery(oe) : NULL;
                 if(oe->query) startmodelquery(oe->query);
             }
-            rendermapmodelent(e, false);
+            rendermapmodelent(e, oe->mapmodels[i], false);
             e.flags &= ~EF_RENDER;
         }
         if(rendered && oe->query) endmodelquery();
@@ -646,8 +647,8 @@ void rendertransparentmapmodels()
         loopv(oe->mapmodels)
         {
             extentity &e = *ents[oe->mapmodels[i]];
-            if(!mapmodelvisible(e) || !mapmodeltransparent(e)) continue;
-            rendermapmodelent(e, true);
+            if(!mapmodelvisible(e, oe->mapmodels[i]) || !mapmodeltransparent(e)) continue;
+            rendermapmodelent(e, oe->mapmodels[i], true);
         }
     }
 }
@@ -1184,14 +1185,14 @@ void batchshadowmapmodels(bool skipmesh)
     for(octaentities *oe = shadowmms; oe; oe = oe->rnext) loopvk(oe->mapmodels)
     {
         extentity &e = *ents[oe->mapmodels[k]];
-        if(e.flags&nflags || !mapmodelvisible(e)) continue;
+        if(e.flags&nflags || !mapmodelvisible(e, oe->mapmodels[k])) continue;
         e.flags |= EF_RENDER;
     }
     for(octaentities *oe = shadowmms; oe; oe = oe->rnext) loopvj(oe->mapmodels)
     {
         extentity &e = *ents[oe->mapmodels[j]];
         if(!(e.flags&EF_RENDER)) continue;
-        rendermapmodelent(e, false);
+        rendermapmodelent(e, oe->mapmodels[j], false);
         e.flags &= ~EF_RENDER;
     }
 }
@@ -2718,7 +2719,7 @@ static void genshadowmeshmapmodels(shadowmesh &m, int sides, shadowdrawinfo draw
     for(octaentities *oe = shadowmms; oe; oe = oe->rnext) loopvk(oe->mapmodels)
     {
         extentity &e = *ents[oe->mapmodels[k]];
-        if(e.flags&(EF_NOVIS|EF_NOSHADOW) || !mapmodelvisible(e)) continue;
+        if(e.flags&(EF_NOVIS|EF_NOSHADOW) || !mapmodelvisible(e, oe->mapmodels[k])) continue;
         e.flags |= EF_RENDER;
     }
     vector<triangle> tris;

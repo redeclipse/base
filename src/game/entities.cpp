@@ -152,7 +152,7 @@ namespace entities
                     length[0] += rails[i].length;
                     if(i >= ret) length[1] += rails[i].length;
                 }
-                if(length > 0) return true;
+                if(length[0] > 0) return true;
             }
             return false;
         }
