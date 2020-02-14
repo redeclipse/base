@@ -5517,7 +5517,7 @@ namespace server
                     gamewaittime = 0;
                     if(m_team(gamemode, mutators)) doteambalance(true);
                     if(m_play(gamemode) && !m_bomber(gamemode) && !m_duke(gamemode, mutators)) // they do their own "fight"
-                        sendf(-1, 1, "ri3ss", N_ANNOUNCE, CON_EVENT, "S_V_FIGHT", "Match start, fight!");
+                        sendf(-1, 1, "ri2ss", N_ANNOUNCE, CON_EVENT, "S_V_FIGHT", "Match start, fight!");
                     sendtick();
                 }
             }
