@@ -1121,10 +1121,10 @@ template<class T> inline void flashcolourf(T &r, T &g, T &b, T &f, T br, T bg, T
 
 struct gameentity : extentity
 {
-    int schan, lastspawn, nextemit, railtime;
-    linkvector kin, rails;
+    int schan, lastspawn, nextemit;
+    linkvector kin;
 
-    gameentity() : schan(-1), lastspawn(0), nextemit(0), railtime(0) {}
+    gameentity() : schan(-1), lastspawn(0), nextemit(0) {}
     ~gameentity()
     {
         if(issound(schan)) removesound(schan);

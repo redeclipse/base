@@ -3,7 +3,7 @@ namespace entities
 {
     vector<extentity *> ents;
     int firstenttype[MAXENTTYPES], firstusetype[EU_MAX], lastenttype[MAXENTTYPES], lastusetype[EU_MAX],
-        numactors = 0, lastroutenode = -1, lastroutefloor = -1, lastroutetime = 0, lastelapsed = 0;
+        numactors = 0, lastroutenode = -1, lastroutefloor = -1, lastroutetime = 0;
     vector<int> airnodes;
 
     VAR(IDF_PERSIST, showentmodels, 0, 1, 2);
@@ -35,6 +35,224 @@ namespace entities
     VAR(IDF_HEX, routecolour, 0, 0xFF22FF, 0xFFFFFF);
     VAR(0, droproutedist, 1, 16, VAR_MAX);
     VAR(0, routemaxdist, 0, 64, VAR_MAX);
+
+    struct rail
+    {
+        int ent, length, flags;
+        float yaw, pitch;
+        vec pos, dest, dir;
+
+        rail() : ent(-1), length(0), flags(0), yaw(0), pitch(0), pos(0, 0, 0), dest(0, 0, 0), dir(0, 0, 0) {}
+        rail(int n, const vec &o, int d = 0, int f = 0) : ent(n), length(d), flags(f), yaw(0), pitch(0), pos(o), dest(0, 0, 0), dir(0, 0, 0) {}
+        ~rail() {}
+    };
+
+    struct railway
+    {
+        int ent, ret, flags, length[2], last, millis;
+        float yaw, pitch;
+        vec pos, dir, offset;
+
+        vector<rail> rails;
+        vector<int> parents;
+
+        railway() : ent(-1), ret(0), flags(0), last(0), millis(0), yaw(0), pitch(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0) { reset(); }
+        railway(int n, int f = 0) : ent(n), ret(0), flags(f), last(0), millis(0), yaw(0), pitch(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0) { reset(); }
+
+        ~railway() {}
+
+        void reset()
+        {
+            rails.setsize(0);
+            parents.setsize(0);
+            loopi(2) length[i] = 0;
+        }
+
+        void clear()
+        {
+            ret = 0;
+            rails.setsize(0);
+            loopi(2) length[i] = 0;
+        }
+
+        int findchild(int n)
+        {
+            loopv(rails) if(rails[i].ent == n) return i;
+            return -1;
+        }
+
+        int findparent(int n)
+        {
+            loopv(parents) if(parents[i] == n) return i;
+            return -1;
+        }
+
+        void addparent(int n)
+        {
+            if(parents.find(n) < 0) parents.add(n);
+        }
+
+        bool build()
+        {
+            clear();
+            if(!ents.inrange(ent)) return false;
+            for(int next = ent; ents.inrange(next); )
+            { // build the rails for this line
+                gameentity &e = *(gameentity *)ents[next];
+                rails.add(rail(next, e.o, max(e.attrs[0], 0), e.attrs[1]));
+                next = -1;
+                loopvj(e.links)
+                {
+                    int link = e.links[j];
+                    if(!ents.inrange(link) || ents[link]->type != RAIL) continue;
+                    int cur = findchild(link);
+                    if(cur >= 0)
+                    {
+                        ret = cur;
+                        break;
+                    }
+                    next = link;
+                    break;
+                }
+            }
+            if(!rails.empty())
+            { // calculate the telemetry of the line
+                if(ret < 0) ret = 0;
+                loopv(rails)
+                {
+                    rail &r = rails[i], &s = rails.inrange(i+1) ? rails[i+1] : rails[ret];
+                    r.dest = vec(s.pos).sub(r.pos);
+                    if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH))
+                    {
+                        r.dir = vec(r.dest).normalize();
+                        vectoyawpitch(r.dir, r.yaw, r.pitch);
+                    }
+                    length[0] += rails[i].length;
+                    if(i >= ret) length[1] += rails[i].length;
+                }
+                if(length > 0) return true;
+            }
+            return false;
+        }
+
+        bool run(int secs)
+        {
+            if(rails.empty()) return false;
+            if(last >= secs) return true; // rail has already run this timestep
+            int elapsed = secs, iter = 0, span = 0;
+            if(elapsed > length[0])
+            { // allow the loop point to be different from the start
+                elapsed -= length[0];
+                iter++;
+            }
+            millis = elapsed%length[iter];
+            for(int i = iter ? ret : 0; i < rails.length(); i++)
+            { // look for the station on the timetable
+                rail &r = rails[i], &s = rails.inrange(i+1) ? rails[i+1] : rails[ret];
+                if(r.length > 0 && millis <= span+r.length)
+                { // interpolate toward the next station
+                    float amt = (millis-span)/float(r.length);
+                    offset = vec(r.pos).add(vec(r.dest).mul(amt)).sub(rails[0].pos);
+                    if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)) dir = vec(r.dir).mul(1-amt).add(vec(s.dir).mul(amt)).normalize();
+                    break;
+                }
+                span += r.length;
+            }
+            if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)) vectoyawpitch(dir, yaw, pitch);
+            loopv(parents)
+            {
+                if(!ents.inrange(parents[i]))
+                {
+                    parents.remove(i--);
+                    continue;
+                }
+                gameentity &e = *(gameentity *)ents[parents[i]];
+                if(enthover == parents[i] || entgroup.find(parents[i]) >= 0)
+                { // hey, the player looking at you.. freeze!
+                    e.viewpos = e.o;
+                    e.viewyaw = e.viewpitch = 0;
+                    continue;
+                }
+                e.viewpos = vec(e.o).add(offset);
+                if(flags&(1<<RAIL_YAW)) e.viewyaw = yaw;
+                if(flags&(1<<RAIL_PITCH)) e.viewpitch = pitch;
+            }
+            last = secs;
+            return true;
+        }
+    };
+
+    int railbuilt = 0;
+    vector<railway> railways;
+
+    int findrail(int n)
+    {
+        loopv(railways) if(railways[i].ent == n) return i;
+        return -1;
+    }
+
+    int findrailparent(int n)
+    {
+        loopv(railways) if(railways[i].findparent(n) >= 0) return i;
+        return -1;
+    }
+
+    int findrailchild(int n)
+    {
+        loopv(railways) if(railways[i].findchild(n) >= 0) return i;
+        return -1;
+    }
+
+    void resetrails()
+    {
+        railways.setsize(0);
+        railbuilt = 0;
+    }
+
+    void fixrails(int n)
+    {
+        loopv(railways) if(railways[i].ent == n || railways[i].findchild(n) >= 0 || railways[i].findparent(n) >= 0) railways.remove(i--);
+        railbuilt = 0;
+    }
+
+    void makerail(int n)
+    {
+        if(ents[n]->type == RAIL || !(enttype[ents[n]->type].canlink&(1<<RAIL)) || findrailparent(n) >= 0) return;
+        gameentity &e = *(gameentity *)ents[n];
+        loopvj(e.links)
+        {
+            int link = e.links[j];
+            if(!ents.inrange(link) || ents[link]->type != RAIL) continue;
+            int cur = findrail(link);
+            railway &w = railways.inrange(cur) ? railways[cur] : railways.add(railway(link, ents[link]->attrs[1]));
+            w.addparent(n);
+            break;
+        }
+    }
+
+    void buildrails()
+    {
+        loopv(ents) makerail(i);
+        loopv(railways) if(!railways[i].build()) railways.remove(i--);
+        railbuilt = totalmillis ? totalmillis : 1;
+    }
+
+    void runrails()
+    {
+        int secs = game::gametimeelapsed();
+        if(!railbuilt) buildrails();
+        loopv(railways) if(!railways[i].run(secs))
+        {
+            railways.remove(i--);
+            railbuilt = 0;
+        }
+    }
+
+    void initrails()
+    {
+        resetrails();
+        buildrails();
+    }
 
     vector<extentity *> &getents() { return ents; }
     int firstent(int type) { return type >= 0 && type < MAXENTTYPES ? clamp(firstenttype[type], 0, ents.length()-1) : 0; }
@@ -1085,7 +1303,6 @@ namespace entities
         gameentity &e = *(gameentity *)ents[n];
         cleansound(n);
         e.attrs.setsize(numattrs(e.type), 0);
-        e.rails.setsize(0);
         loopvrev(e.links)
         {
             int ent = e.links[i];
@@ -1326,12 +1543,7 @@ namespace entities
             {
                 if(e.attrs[0] < 0) e.attrs[0] = 0; // limit
                 while(e.attrs[1] < 0) e.attrs[1] += RAIL_ALL+1;
-                while(e.attrs[1] > RAIL_ALL) e.attrs[1] -= RAIL_ALL;
-                loopvj(ents)
-                {
-                    gameentity &r = *(gameentity *)ents[j];
-                    if(r.rails.find(n) >= 0) r.rails.setsize(0);
-                }
+                while(e.attrs[1] > RAIL_ALL) e.attrs[1] -= RAIL_ALL+1;
             }
             default: break;
         }
@@ -1352,6 +1564,7 @@ namespace entities
             while(e.attrs[enttype[e.type].fxattr] < -7) e.attrs[enttype[e.type].fxattr] += 11;
             while(e.attrs[enttype[e.type].fxattr] >= 4) e.attrs[enttype[e.type].fxattr] -= 11;
         }
+        fixrails(n);
     }
 
     const char *findname(int type)
@@ -1727,7 +1940,7 @@ namespace entities
     void initents(int mver, char *gid, int gver)
     {
         lastroutenode = routeid = -1;
-        numactors = lastroutetime = droproute = lastelapsed = 0;
+        numactors = lastroutetime = droproute = 0;
         airnodes.setsize(0);
         ai::oldwaypoints.setsize(0);
         progress(0, "Setting entity attributes...");
@@ -1794,6 +2007,7 @@ namespace entities
             }
             progress((i+1)/float(ents.length()), "Preparing entities...");
         }
+        initrails();
     }
 
     #define renderfocus(i,f) { gameentity &e = *(gameentity *)ents[i]; f; }
@@ -1824,7 +2038,7 @@ namespace entities
     void renderentshow(gameentity &e, int idx, int level)
     {
         if(e.o.squaredist(camera1->o) > showentdist*showentdist) return;
-        #define entdirpart(o,yaw,pitch,length,fade,colour) part_dir(o, yaw, pitch, length, showentsize, 1, fade, colour, showentinterval);
+        #define entdirpart(o,yaw,pitch,length,fade,colour) { part_dir(o, yaw, pitch, length, showentsize, 1, fade, colour, showentinterval); }
         if(showentradius >= level)
         {
             switch(e.type)
@@ -1929,6 +2143,15 @@ namespace entities
                     entdirpart(e.o, e.attrs[0], e.attrs[1], 4.f+e.attrs[2], 1, colourcyan);
                     break;
                 }
+                case RAIL:
+                {
+                    loopv(railways)
+                    {
+                        if(railways[i].ent == idx) entdirpart(e.o, railways[i].yaw, railways[i].pitch, 8.f, 1, colourgreen);
+                        loopvj(railways[i].rails) if(railways[i].rails[j].ent == idx) entdirpart(e.o, railways[i].rails[j].yaw, railways[i].rails[j].pitch, 8.f, 1, colouryellow);
+                    }
+                    break;
+                }
                 default: break;
             }
         }
@@ -1939,124 +2162,12 @@ namespace entities
     {
     }
 
-    void scaleyawpitch(float &yaw, float &pitch, float targyaw, float targpitch, float amt)
-    {
-        if(yaw < targyaw-180.0f) yaw += 360.0f;
-        if(yaw > targyaw+180.0f) yaw -= 360.0f;
-        float offyaw = (targyaw-yaw)*amt, offpitch = (targpitch-pitch)*amt;
-        if(targyaw > yaw)
-        {
-            yaw += offyaw;
-            if(targyaw < yaw) yaw = targyaw;
-        }
-        else if(targyaw < yaw)
-        {
-            yaw -= offyaw;
-            if(targyaw > yaw) yaw = targyaw;
-        }
-        if(targpitch > pitch)
-        {
-            pitch += offpitch;
-            if(targpitch < pitch) pitch = targpitch;
-        }
-        else if(targpitch < pitch)
-        {
-            pitch -= offpitch;
-            if(targpitch > pitch) pitch = targpitch;
-        }
-    }
-
-    int buildrail(gameentity &r, int n)
-    {
-        gameentity &e = *(gameentity *)ents[n];
-        loopvj(e.links)
-        {
-            int link = e.links[j];
-            if(!ents.inrange(link) || ents[link]->type != RAIL) continue;
-            if(r.rails.find(link) >= 0) continue;
-            r.rails.add(link);
-            if(ents[link]->attrs[0] > 0) r.railtime += ents[link]->attrs[0];
-            return link;
-        }
-        return -1;
-    }
-
-    void checkrails(int n, int elapsed)
-    {
-        gameentity &e = *(gameentity *)ents[n];
-        e.viewpos = e.o;
-        e.viewyaw = e.viewpitch = 0;
-        if(!(enttype[e.type].canlink&(1<<RAIL))) return;
-        if(e.rails.empty())
-        {
-            e.railtime = 0;
-            int rail = buildrail(e, n);
-            while(rail >= 0) rail = buildrail(e, rail);
-        }
-        loopvj(e.rails)
-        {
-            int link = e.rails[j];
-            if(!ents.inrange(link) || ents[link]->type != RAIL)
-            {
-                e.rails.setsize(0);
-                return;
-            }
-        }
-        if(e.rails.length() <= 1 || e.railtime <= 0) return;
-        int millis = elapsed%e.railtime, iter = 0, prev = -1, flags = 0;
-        float syaw = 0, spitch = 0, ryaw = 0, rpitch = 0;
-        vec start(0, 0, 0), dir(0, 0, 0);
-        loopvj(e.rails)
-        {
-            int link = e.rails[j], rail = e.rails.inrange(j+1) ? e.rails[j+1] : e.rails[0];
-            gameentity &r = *(gameentity *)ents[link], &s = *(gameentity *)ents[rail];
-            if(prev < 0)
-            {
-                start = r.o;
-                flags = r.attrs[1];
-                if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH))
-                {
-                    int last = j > 0 ? e.rails[j-1] : e.rails.last();
-                    gameentity &t = *(gameentity *)ents[last];
-                    float tyaw = 0, tpitch = 0;
-                    vec tdir = vec(r.o).sub(t.o).normalize();
-                    vectoyawpitch(tdir, tyaw, tpitch);
-                    if(flags&(1<<RAIL_YAW)) syaw = ryaw = tyaw;
-                    if(flags&(1<<RAIL_PITCH)) spitch = rpitch = tpitch;
-                }
-            }
-            int dur = r.attrs[0] > 0 ? r.attrs[0] : 0;
-            float cyaw = 0, cpitch = 0;
-            if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH))
-            {
-                vec dir = vec(s.o).sub(r.o).normalize();
-                vectoyawpitch(dir, cyaw, cpitch);
-            }
-            if(dur > 0 && millis < iter+dur)
-            {
-                float amt = (millis-iter)/float(dur);
-                e.viewpos.add(vec(r.o).add(vec(s.o).sub(r.o).mul(amt)).sub(start));
-                if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)) scaleyawpitch(ryaw, rpitch, cyaw, cpitch, amt);
-                if(flags&(1<<RAIL_YAW)) e.viewyaw = ryaw-syaw;
-                if(flags&(1<<RAIL_PITCH)) e.viewpitch = rpitch-spitch;
-                return;
-            }
-            if(flags&(1<<RAIL_YAW)) ryaw = cyaw;
-            if(flags&(1<<RAIL_PITCH)) rpitch = cpitch;
-            iter += dur;
-            prev = link;
-        }
-    }
-
     void update()
     {
-        int elapsed = game::gametimeelapsed();
-        bool timepassed = elapsed > lastelapsed;
-        loopv(ents)
+        runrails();
+        loopenti(MAPSOUND)
         {
             gameentity &e = *(gameentity *)ents[i];
-            if(e.type == NOTUSED || e.type == RAIL) continue;
-            if(timepassed) checkrails(i, elapsed);
             if(e.type == MAPSOUND && checkmapvariant(e.attrs[enttype[e.type].mvattr]) && e.links.empty() && mapsounds.inrange(e.attrs[0]))
             {
                 if(!issound(e.schan))
@@ -2065,10 +2176,9 @@ namespace entities
                     loopk(SND_LAST)  if(e.attrs[4]&(1<<k)) flags |= 1<<k;
                     playsound(e.attrs[0], e.viewpos, NULL, flags, e.attrs[3] ? e.attrs[3] : 255, e.attrs[1] || e.attrs[2] ? e.attrs[1] : -1, e.attrs[2] ? e.attrs[2] : -1, &e.schan);
                 }
-                else if(!e.rails.empty()) sounds[e.schan].pos = e.viewpos;
+                else sounds[e.schan].pos = e.viewpos;
             }
         }
-        lastelapsed = elapsed;
         if((m_edit(game::gamemode) || m_race(game::gamemode)) && routeid >= 0 && droproute)
         {
             if(game::player1->state == CS_ALIVE)
@@ -2290,10 +2400,21 @@ namespace entities
             {
                 defformatstring(s, "<super>%s%s (%d)", hastop ? "\fc" : "\fC", enttype[e.type].name, idx >= 0 ? idx : 0);
                 part_textcopy(pos.add(off), s, hastop ? PART_TEXT_ONTOP : PART_TEXT);
-                if(!e.rails.empty())
+                if(idx >= 0)
                 {
-                    formatstring(s, "RAIL: (%d) %d / %d ms", e.rails.length(), game::gametimeelapsed()%e.railtime, e.railtime);
-                    part_textcopy(pos.add(off), s, hastop ? PART_TEXT_ONTOP : PART_TEXT);
+                    loopv(railways)
+                    {
+                        if(railways[i].ent != idx && railways[i].findparent(idx) < 0) continue;
+                        formatstring(s, "<little>railway [%d] %d ms (%d/%d) [%.1f/%.1f]", i, railways[i].millis, railways[i].length[0], railways[i].length[1], railways[i].yaw, railways[i].pitch);
+                        part_textcopy(pos.add(vec(off).mul(0.5f)), s, hastop ? PART_TEXT_ONTOP : PART_TEXT);
+                    }
+                    loopv(railways)
+                    {
+                        int n = railways[i].findchild(idx);
+                        if(n < 0) continue;
+                        formatstring(s, "<tiny>in railway [%d] %d of %d [%.1f/%.1f]", i, n+1, railways[i].rails.length(), railways[i].rails[n].yaw, railways[i].rails[n].pitch);
+                        part_textcopy(pos.add(vec(off).mul(0.35f)), s, hastop ? PART_TEXT_ONTOP : PART_TEXT);
+                    }
                 }
             }
         }
