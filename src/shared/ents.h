@@ -24,7 +24,8 @@ enum
     EF_SHADOWMESH = 1<<4,
     EF_OCTA       = 1<<5,
     EF_RENDER     = 1<<6,
-    EF_SPAWNED    = 1<<7
+    EF_SPAWNED    = 1<<7,
+    EF_DYNAMIC    = 1<<8
 };
 
 typedef smallvector<int> attrvector;
@@ -113,6 +114,7 @@ struct extentity : entity                       // part of the entity that doesn
     void setspawned(bool val) { if(val) flags |= EF_SPAWNED; else flags &= ~EF_SPAWNED; }
     void setspawned() { flags |= EF_SPAWNED; }
     void clearspawned() { flags &= ~EF_SPAWNED; }
+    bool dynamic() const { return (flags&EF_DYNAMIC) != 0; }
 };
 
 #define MAXENTS 30000

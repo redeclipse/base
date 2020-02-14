@@ -464,7 +464,7 @@ bool mapmodeltransparent(extentity &e)
     if(mapmodels.inrange(e.attrs[0]))
     {
         mapmodelinfo &mmi = mapmodels[e.attrs[0]];
-        model *m = loadlodmodel(mmi.m ? mmi.m : loadmodel(mmi.name), e.viewpos);
+        model *m = loadlodmodel(mmi.m ? mmi.m : loadmodel(mmi.name), e.o);
         if(m && m->alphatested(true)) return true;
     }
     #endif
@@ -475,6 +475,7 @@ bool mapmodelvisible(extentity &e, bool colvis)
 {
     if(e.flags&EF_NOVIS || !checkmapvariant(e.attrs[13]) || !checkmapeffects(e.attrs[14]) || !mapmodels.inrange(e.attrs[0])) return false;
     if(colvis && e.flags&EF_NOCOLLIDE) return false;
+    if(e.flags&EF_DYNAMIC) return false;
     if(e.lastemit)
     {
         if(e.flags&EF_HIDE)
@@ -489,7 +490,7 @@ bool mapmodelvisible(extentity &e, bool colvis)
         else if((colvis || e.lastemit < 0) && e.spawned()) return false;
     }
     mapmodelinfo &mmi = mapmodels[e.attrs[0]];
-    model *m = loadlodmodel(mmi.m ? mmi.m : loadmodel(mmi.name), e.viewpos);
+    model *m = loadlodmodel(mmi.m ? mmi.m : loadmodel(mmi.name), e.o);
     if(!m) return false;
     return true;
 }
@@ -543,14 +544,9 @@ void findvisiblemms(const vector<extentity *> &ents, bool doquery)
 VAR(0, oqmm, 0, 4, 8);
 VAR(0, mmanimoverride, -1, 0, ANIM_ALL);
 
-static inline void rendermapmodelent(extentity &e, bool tpass)
+void getmapmodelstate(extentity &e, entmodelstate &mdl)
 {
-    if(!mapmodelvisible(e)) return;
-    bool blended = mapmodeltransparent(e);
-    if(blended != tpass) return;
-    entmodelstate mdl;
     mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
-    mdl.flags = MDL_CULL_VFC|MDL_CULL_DIST;
     if(e.lastemit)
     {
         mdl.anim = e.spawned() ? ANIM_TRIGGER_ON : ANIM_TRIGGER_OFF;
@@ -562,11 +558,10 @@ static inline void rendermapmodelent(extentity &e, bool tpass)
         mdl.anim = (mmanimoverride<0 ? ANIM_ALL : mmanimoverride)|ANIM_LOOP;
         mdl.basetime = 0;
     }
-    mdl.yaw = e.attrs[1]+e.viewyaw;
-    mdl.pitch = e.attrs[2]+e.viewpitch;
+    mdl.yaw = e.attrs[1];
+    mdl.pitch = e.attrs[2];
     mdl.roll = e.attrs[3];
-    mdl.o = e.viewpos;
-    mdl.color = vec4(1, 1, 1, blended ? min(e.attrs[4]/100.f, 1.f) : 1.f);
+    mdl.color = vec4(1, 1, 1, e.attrs[4] > 0 && e.attrs[4] < 100 ? e.attrs[4]/100.f : 1);
     mdl.size = e.attrs[5] ? max(e.attrs[5]/100.f, 1e-3f) : 1.f;
     if(e.attrs[8] || e.attrs[9])
     {
@@ -578,6 +573,18 @@ static inline void rendermapmodelent(extentity &e, bool tpass)
     if(e.attrs[10]) mdl.yaw += e.attrs[10]*lastmillis/1000.0f;
     if(e.attrs[11]) mdl.pitch += e.attrs[11]*lastmillis/1000.0f;
     if(e.attrs[12]) mdl.roll += e.attrs[12]*lastmillis/1000.0f;
+}
+
+static inline void rendermapmodelent(extentity &e, bool tpass)
+{
+    if(!mapmodelvisible(e)) return;
+    bool blended = mapmodeltransparent(e);
+    if(blended != tpass) return;
+    entmodelstate mdl;
+    mdl.o = e.o;
+    mdl.flags = MDL_CULL_VFC|MDL_CULL_DIST;
+    getmapmodelstate(e, mdl);
+    if(!tpass) mdl.color.a = 1;
     rendermapmodel(e.attrs[0], mdl, tpass);
 }
 
@@ -2731,7 +2738,7 @@ static void genshadowmeshmapmodels(shadowmesh &m, int sides, shadowdrawinfo draw
         if(e.attrs[2]) orient.rotate_around_x(sincosmod360(e.attrs[2]));
         if(e.attrs[3]) orient.rotate_around_y(sincosmod360(-e.attrs[3]));
         if(e.attrs[5] > 0) orient.scale(e.attrs[5]/100.0f);
-        orient.settranslation(e.viewpos);
+        orient.settranslation(e.o);
         tris.setsize(0);
         mm->genshadowmesh(tris, orient);
 
@@ -2821,7 +2828,7 @@ shadowmesh *findshadowmesh(int idx, extentity &e)
             int slight = -1;
             if(!getlightfx(e, NULL, &slight)) return NULL;
             const vector<extentity *> &ents = entities::getents();
-            if(!ents.inrange(slight) || m->spotloc != ents[slight]->o || m->spotangle < clamp(int(ents[slight]->attrs[1]), 1, 89)) return NULL;
+            if(!ents.inrange(slight) || m->spotloc != ents[slight]->viewpos || m->spotangle < clamp(int(ents[slight]->attrs[1]), 1, 89)) return NULL;
             break;
         }
     }

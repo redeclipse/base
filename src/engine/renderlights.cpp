@@ -4368,7 +4368,7 @@ int calcshadowinfo(const extentity &e, vec &origin, float &radius, vec &spotloc,
         w = 1;
         border = 0;
         lod = smspotprec;
-        spotloc = ents[slight]->o;
+        spotloc = ents[slight]->viewpos;
         spotangle = clamp(int(ents[slight]->attrs[1]), 1, 89);
     }
     else

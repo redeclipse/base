@@ -855,6 +855,7 @@ extern void rendermapmodelbatches();
 extern void rendermodelbatches();
 extern void rendertransparentmodelbatches(int stencil = 0);
 extern bool mapmodelvisible(extentity &e, bool colvis = false);
+extern void getmapmodelstate(extentity &e, entmodelstate &mdl);
 extern void rendermapmodel(int idx, entmodelstate &state, bool tpass = false);
 extern void clearbatchedmapmodels();
 extern void preloadusedmapmodels(bool msg = false, bool bih = false);

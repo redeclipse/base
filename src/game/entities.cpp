@@ -167,12 +167,6 @@ namespace entities
                     continue;
                 }
                 gameentity &e = *(gameentity *)ents[parents[i]];
-                if(enthover == parents[i] || entgroup.find(parents[i]) >= 0)
-                { // hey, the player looking at you.. freeze!
-                    e.viewpos = e.o;
-                    e.viewyaw = e.viewpitch = 0;
-                    continue;
-                }
                 e.viewpos = vec(e.o).add(offset);
                 if(flags&(1<<RAIL_YAW)) e.viewyaw = yaw;
                 if(flags&(1<<RAIL_PITCH)) e.viewpitch = pitch;
@@ -217,8 +211,13 @@ namespace entities
 
     void makerail(int n)
     {
-        if(ents[n]->type == RAIL || !(enttype[ents[n]->type].canlink&(1<<RAIL)) || findrailparent(n) >= 0) return;
         gameentity &e = *(gameentity *)ents[n];
+        if(e.type == RAIL || !(enttype[e.type].canlink&(1<<RAIL)))
+        {
+            if(e.dynamic()) e.flags &= ~EF_DYNAMIC;
+            return;
+        }
+        if(findrailparent(n) >= 0) return;
         loopvj(e.links)
         {
             int link = e.links[j];
@@ -226,6 +225,7 @@ namespace entities
             int cur = findrail(link);
             railway &w = railways.inrange(cur) ? railways[cur] : railways.add(railway(link, ents[link]->attrs[1]));
             w.addparent(n);
+            e.flags |= EF_DYNAMIC;
             break;
         }
     }
@@ -2301,6 +2301,21 @@ namespace entities
                     }
                 }
             }
+        }
+        loopv(railways) loopvj(railways[i].parents)
+        {
+            int n = railways[i].parents[j];
+            if(!ents.inrange(n) || ents[n]->type != MAPMODEL) continue;
+            const char *mdlname = mapmodelname(ents[n]->attrs[0]);
+            if(!mdlname || !*mdlname) continue;
+            extentity &e = *(extentity *)ents[n];
+            modelstate mdl;
+            mdl.o = e.viewpos;
+            mdl.flags = MDL_CULL_VFC|MDL_CULL_DIST|MDL_CULL_OCCLUDED;
+            getmapmodelstate(e, mdl);
+            mdl.yaw += e.viewyaw;
+            mdl.pitch += e.viewpitch;
+            rendermodel(mdlname, mdl);
         }
     }
 
