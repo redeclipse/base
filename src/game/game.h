@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 248
+#define VERSION_GAME 249
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -47,7 +47,7 @@ enum { EU_NONE = 0, EU_ITEM, EU_AUTO, EU_ACT, EU_MAX };
 
 enum { TR_TOGGLE = 0, TR_LINK, TR_SCRIPT, TR_ONCE, TR_EXIT, TR_MAX };
 enum { TA_MANUAL = 0, TA_AUTO, TA_ACTION, TA_MAX };
-enum { RAIL_YAW = 0, RAIL_PITCH, RAIL_MAX, RAIL_ALL = (1<<RAIL_YAW)|(1<<RAIL_PITCH) };
+enum { RAIL_YAW = 0, RAIL_PITCH, RAIL_SEEK, RAIL_MAX, RAIL_ALL = (1<<RAIL_YAW)|(1<<RAIL_PITCH)|(1<<RAIL_SEEK) };
 
 #define TRIGGERIDS      16
 #define TRIGSTATE(a,b)  (b%2 ? !a : a)
@@ -205,10 +205,10 @@ extern const enttypes enttype[] = {
                 "route",         { "num",   "yaw",      "pitch",    "move",     "strafe",   "action" }
     },
     {
-        RAIL,           -1,         228,    0,      EU_NONE,    2,          -1,         -1,     -1,     -1,
+        RAIL,           -1,         228,    0,      EU_NONE,    5,          -1,         -1,     -1,     -1,
             (1<<RAIL), 0, 0,
             false,   false,  false,      false,      false,
-                "rail",         { "time",   "flags" }
+                "rail",         { "time",   "flags",    "yaw",      "pitch",    "rotate" }
     }
 };
 #else

@@ -38,12 +38,12 @@ namespace entities
 
     struct rail
     {
-        int ent, length, flags;
+        int ent, length, rotstart, rotend, rotlen, flags;
         float yaw, pitch;
         vec pos, dest, dir;
 
-        rail() : ent(-1), length(0), flags(0), yaw(0), pitch(0), pos(0, 0, 0), dest(0, 0, 0), dir(0, 0, 0) {}
-        rail(int n, const vec &o, int d = 0, int f = 0) : ent(n), length(d), flags(f), yaw(0), pitch(0), pos(o), dest(0, 0, 0), dir(0, 0, 0) {}
+        rail() : ent(-1), length(0), rotstart(0), rotend(0), rotlen(0), flags(0), yaw(0), pitch(0), pos(0, 0, 0), dest(0, 0, 0), dir(0, 0, 0) {}
+        rail(int n, const vec &o, int d = 0, int f = 0) : ent(n), length(d), rotstart(0), rotend(0), rotlen(0), flags(f), yaw(0), pitch(0), pos(o), dest(0, 0, 0), dir(0, 0, 0) {}
         ~rail() {}
     };
 
@@ -99,7 +99,25 @@ namespace entities
             for(int next = ent; ents.inrange(next); )
             { // build the rails for this line
                 gameentity &e = *(gameentity *)ents[next];
-                rails.add(rail(next, e.o, max(e.attrs[0], 0), e.attrs[1]));
+                rail &r = rails.add(rail(next, e.o, max(e.attrs[0], 0), e.attrs[1]));
+                if(flags&(1<<RAIL_YAW)) r.yaw = e.attrs[2];
+                if(flags&(1<<RAIL_PITCH)) r.pitch = e.attrs[3];
+                if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH))
+                {
+                    int rotate = clamp(e.attrs[4], -r.length, r.length);
+                    if(rotate >= 0)
+                    {
+                        r.rotlen = rotate ? rotate : r.length;
+                        r.rotstart = 0;
+                        r.rotend = r.rotlen;
+                    }
+                    else
+                    {
+                        r.rotlen = 0-rotate;
+                        r.rotstart = r.length-r.rotlen;
+                        r.rotend = r.length;
+                    }
+                }
                 next = -1;
                 loopvj(e.links)
                 {
@@ -124,8 +142,12 @@ namespace entities
                     r.dest = vec(s.pos).sub(r.pos);
                     if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH))
                     {
-                        r.dir = vec(r.dest).normalize();
-                        vectoyawpitch(r.dir, r.yaw, r.pitch);
+                        if(flags&(1<<RAIL_SEEK))
+                        {
+                            r.dir = vec(r.dest).normalize();
+                            vectoyawpitch(r.dir, r.yaw, r.pitch);
+                        }
+                        else dir = vec(r.yaw*RAD, r.pitch*RAD);
                     }
                     length[0] += rails[i].length;
                     if(i >= ret) length[1] += rails[i].length;
@@ -151,9 +173,18 @@ namespace entities
                 rail &r = rails[i], &s = rails.inrange(i+1) ? rails[i+1] : rails[ret];
                 if(r.length > 0 && millis <= span+r.length)
                 { // interpolate toward the next station
-                    float amt = (millis-span)/float(r.length);
+                    int step = millis-span;
+                    float amt = step/float(r.length);
                     offset = vec(r.pos).add(vec(r.dest).mul(amt)).sub(rails[0].pos);
-                    if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)) dir = vec(r.dir).mul(1-amt).add(vec(s.dir).mul(amt)).normalize();
+                    if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH))
+                    {
+                        if(step >= r.rotend) dir = s.dir;
+                        else if(step >= r.rotstart)
+                        {
+                            float part = (step-r.rotstart)/float(r.rotlen);
+                            dir = vec(r.dir).mul(1-part).add(vec(s.dir).mul(part)).normalize();
+                        }
+                    }
                     break;
                 }
                 span += r.length;
@@ -610,7 +641,7 @@ namespace entities
             {
                 if(full)
                 {
-                    const char *railnames[RAIL_MAX] = { "follow-yaw", "follow-pitch" };
+                    const char *railnames[RAIL_MAX] = { "follow-yaw", "follow-pitch", "seek-next" };
                     loopj(RAIL_MAX) if(attr[1]&(1<<j)) addentinfo(railnames[j]);
                 }
             }
@@ -1545,6 +1576,7 @@ namespace entities
                 if(e.attrs[0] < 0) e.attrs[0] = 0; // limit
                 while(e.attrs[1] < 0) e.attrs[1] += RAIL_ALL+1;
                 while(e.attrs[1] > RAIL_ALL) e.attrs[1] -= RAIL_ALL+1;
+                FIXDIRYPL(2, 3); // yaw, pitch
             }
             default: break;
         }
@@ -1914,7 +1946,12 @@ namespace entities
             case DECAL: if(gver <= 244) game::fixpalette(e.attrs[7], e.attrs[8], gver); break;
             case TELEPORT: if(gver <= 244) game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
             case ROUTE: if(gver <= 223) e.type = NOTUSED; break;
-            case RAIL: if(gver <= 247) e.type = NOTUSED; break;
+            case RAIL:
+            {
+                if(gver <= 247) e.type = NOTUSED;
+                if(gver <= 248 && (e.attrs[1]&(1<<RAIL_YAW) || e.attrs[1]&(1<<RAIL_PITCH))) e.attrs[1] |= (1<<RAIL_SEEK);
+                break;
+            }
             default: break;
         }
         if(gver <= 244 && enttype[e.type].modesattr >= 0)
