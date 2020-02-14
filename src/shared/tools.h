@@ -1608,6 +1608,8 @@ struct slotmanager
     {
         if(freeres) slots.shrink(0);
         else slots.setsize(0);
+
+        enumerate(slotmap, slot, s, s.index = -1);
     }
 
     T &operator[](int index) { return slots[index]; }
