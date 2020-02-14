@@ -1303,6 +1303,7 @@ namespace entities
         gameentity &e = *(gameentity *)ents[n];
         cleansound(n);
         e.attrs.setsize(numattrs(e.type), 0);
+        e.viewpos = e.o;
         loopvrev(e.links)
         {
             int ent = e.links[i];
