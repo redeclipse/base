@@ -392,7 +392,7 @@ namespace entities
             {
                 if(full)
                 {
-                    const char *railnames[RAIL_MAX] = { "rail-yaw", "rail-pitch" };
+                    const char *railnames[RAIL_MAX] = { "follow-yaw", "follow-pitch" };
                     loopj(RAIL_MAX) if(attr[1]&(1<<j)) addentinfo(railnames[j]);
                 }
             }
@@ -1975,7 +1975,7 @@ namespace entities
             if(!ents.inrange(link) || ents[link]->type != RAIL) continue;
             if(r.rails.find(link) >= 0) continue;
             r.rails.add(link);
-            r.railtime += ents[link]->attrs[0] ? ents[link]->attrs[0] : 500;
+            if(ents[link]->attrs[0] > 0) r.railtime += ents[link]->attrs[0];
             return link;
         }
         return -1;
@@ -2025,14 +2025,14 @@ namespace entities
                     if(flags&(1<<RAIL_PITCH)) spitch = rpitch = tpitch;
                 }
             }
-            int dur = r.attrs[0] > 0 ? r.attrs[0] : 500;
+            int dur = r.attrs[0] > 0 ? r.attrs[0] : 0;
             float cyaw = 0, cpitch = 0;
             if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH))
             {
                 vec dir = vec(s.o).sub(r.o).normalize();
                 vectoyawpitch(dir, cyaw, cpitch);
             }
-            if(millis < iter+dur)
+            if(dur > 0 && millis < iter+dur)
             {
                 float amt = (millis-iter)/float(dur);
                 e.viewpos.add(vec(r.o).add(vec(s.o).sub(r.o).mul(amt)).sub(start));
@@ -2043,7 +2043,7 @@ namespace entities
             }
             if(flags&(1<<RAIL_YAW)) ryaw = cyaw;
             if(flags&(1<<RAIL_PITCH)) rpitch = cpitch;
-            iter += r.attrs[0];
+            iter += dur;
             prev = link;
         }
     }
