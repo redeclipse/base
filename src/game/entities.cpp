@@ -2276,9 +2276,15 @@ namespace entities
                 loopvj(e.links)
                 {
                     int n = e.links[j];
-                    if(!ents.inrange(n) || ents[n]->type != TRIGGER) continue;
+                    if(!ents.inrange(n)) continue;
                     triggered = true;
                     break;
+                }
+                if(issound(e.schan))
+                {
+                    if(triggered && !e.spawned() && (e.lastemit < 0 || lastmillis-e.lastemit > triggertime(e, true)))
+                        removesound(e.schan);
+                    else sounds[e.schan].pos = e.pos();
                 }
                 if(triggered) continue;
                 if(!issound(e.schan))
@@ -2287,7 +2293,6 @@ namespace entities
                     loopk(SND_LAST)  if(e.attrs[4]&(1<<k)) flags |= 1<<k;
                     playsound(e.attrs[0], e.pos(), NULL, flags, e.attrs[3] ? e.attrs[3] : 255, e.attrs[1] || e.attrs[2] ? e.attrs[1] : -1, e.attrs[2] ? e.attrs[2] : -1, &e.schan);
                 }
-                else sounds[e.schan].pos = e.pos();
             }
         }
         if((m_edit(game::gamemode) || m_race(game::gamemode)) && routeid >= 0 && droproute)
@@ -2456,9 +2461,9 @@ namespace entities
         loopv(f.links)
         {
             int n = f.links[i];
-            if(!ents.inrange(n) || ents[n]->type != TRIGGER) continue;
-            ret = false; // if there's a trigger and one isn't spawned, default to false
+            if(!ents.inrange(n)) continue;
             if(f.spawned() || (f.lastemit > 0 && lastmillis-f.lastemit <= triggertime(e, true))) return true;
+            ret = false; // if there's a trigger and one isn't spawned, default to false
         }
         return ret;
     }
