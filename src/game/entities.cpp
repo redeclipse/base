@@ -1409,7 +1409,7 @@ namespace entities
         {
             removesound(e.schan);
             e.schan = -1; // prevent clipping when moving around
-            if(e.type == MAPSOUND) e.lastemit = lastmillis+1000;
+            if(e.type == MAPSOUND) e.lastemit = lastmillis+500;
         }
     }
 
@@ -2341,17 +2341,14 @@ namespace entities
                 }
                 if(issound(e.schan))
                 {
-                    if(triggered && !e.spawned() && (e.lastemit < 0 || lastmillis-e.lastemit > triggertime(e, true)))
+                    if(triggered && sounds[e.schan].flags&SND_LOOP && !e.spawned() && (e.lastemit < 0 || lastmillis-e.lastemit > triggertime(e, true)))
                         removesound(e.schan);
                     else sounds[e.schan].pos = e.pos();
                 }
-                if(triggered) continue;
-                if(!issound(e.schan))
-                {
-                    int flags = SND_MAP|SND_LOOP; // ambient sounds loop
-                    loopk(SND_LAST)  if(e.attrs[4]&(1<<k)) flags |= 1<<k;
-                    playsound(e.attrs[0], e.pos(), NULL, flags, e.attrs[3] ? e.attrs[3] : 255, e.attrs[1] || e.attrs[2] ? e.attrs[1] : -1, e.attrs[2] ? e.attrs[2] : -1, &e.schan);
-                }
+                if(triggered || issound(e.schan)) continue;
+                int flags = SND_MAP|SND_LOOP; // ambient sounds loop
+                loopk(SND_LAST)  if(e.attrs[4]&(1<<k)) flags |= 1<<k;
+                playsound(e.attrs[0], e.pos(), NULL, flags, e.attrs[3] ? e.attrs[3] : 255, e.attrs[1] || e.attrs[2] ? e.attrs[1] : -1, e.attrs[2] ? e.attrs[2] : -1, &e.schan);
             }
         }
         if((m_edit(game::gamemode) || m_race(game::gamemode)) && routeid >= 0 && droproute)
