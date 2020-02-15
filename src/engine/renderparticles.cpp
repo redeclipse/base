@@ -1864,7 +1864,7 @@ void seedparticles()
         seedemitter = &pe;
         for(int millis = 0; millis < seedmillis; millis += min(emitmillis, seedmillis/10))
             if(entities::checkparticle(e))
-                makeparticle(e.viewpos, e.attrs);
+                makeparticle(e.o, e.attrs);
         seedemitter = NULL;
         pe.lastemit = -seedmillis;
         pe.finalize();
@@ -1897,19 +1897,19 @@ void updateparticles()
         {
             particleemitter &pe = emitters[i];
             extentity &e = *pe.ent;
-            if(!entities::checkparticle(e) || e.viewpos.dist(camera1->o) > maxparticledistance) { pe.lastemit = lastmillis; continue; }
+            if(e.flags&EF_DYNAMIC || !entities::checkparticle(e) || e.o.dist(camera1->o) > maxparticledistance) { pe.lastemit = lastmillis; continue; }
             if(cullparticles && pe.maxfade >= 0)
             {
                 if(isfoggedsphere(pe.radius, pe.center)) { pe.lastcull = lastmillis; continue; }
                 if(pvsoccluded(pe.cullmin, pe.cullmax)) { pe.lastcull = lastmillis; continue; }
             }
-            makeparticle(e.viewpos, e.attrs);
+            makeparticle(e.o, e.attrs);
             emitted++;
             if(replayparticles && pe.maxfade > 5 && pe.lastcull > pe.lastemit)
             {
                 for(emitoffset = max(pe.lastemit + emitmillis - lastmillis, -pe.maxfade); emitoffset < 0; emitoffset += emitmillis)
                 {
-                    makeparticle(e.viewpos, e.attrs);
+                    makeparticle(e.o, e.attrs);
                     replayed++;
                 }
                 emitoffset = 0;

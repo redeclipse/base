@@ -248,12 +248,13 @@ namespace entities
     void makerail(int n)
     {
         gameentity &e = *(gameentity *)ents[n];
-        if(e.type == RAIL || !(enttype[e.type].canlink&(1<<RAIL)))
+        e.flags &= ~EF_DYNAMIC;
+        if(e.type == RAIL || !(enttype[e.type].canlink&(1<<RAIL))) return;
+        if(findrailparent(n) >= 0)
         {
-            if(e.dynamic()) e.flags &= ~EF_DYNAMIC;
+            e.flags |= EF_DYNAMIC;
             return;
         }
-        if(findrailparent(n) >= 0) return;
         loopvj(e.links)
         {
             int link = e.links[j];
@@ -2349,9 +2350,9 @@ namespace entities
         {
             int n = railways[i].parents[j];
             if(!ents.inrange(n) || ents[n]->type != MAPMODEL) continue;
+            extentity &e = *(extentity *)ents[n];
             const char *mdlname = mapmodelname(ents[n]->attrs[0]);
             if(!mdlname || !*mdlname) continue;
-            extentity &e = *(extentity *)ents[n];
             modelstate mdl;
             mdl.o = e.viewpos;
             mdl.flags = MDL_CULL_VFC|MDL_CULL_DIST|MDL_CULL_OCCLUDED;
@@ -2384,8 +2385,15 @@ namespace entities
             if(f.nextemit) return false;
             f.nextemit += f.attrs[11];
         }
-        if(f.links.empty() || f.spawned() || (f.lastemit > 0 && lastmillis-f.lastemit <= triggertime(e, true))) return true;
-        return false;
+        bool ret = true;
+        loopv(f.links)
+        {
+            int n = f.links[i];
+            if(!ents.inrange(n) || ents[n]->type != TRIGGER) continue;
+            ret = false; // if there's a trigger and one isn't spawned, default to false
+            if(f.spawned() || (f.lastemit > 0 && lastmillis-f.lastemit <= triggertime(e, true))) return true;
+        }
+        return ret;
     }
 
     void drawparticle(gameentity &e, const vec &o, int idx, bool spawned, bool active, float skew)
@@ -2520,16 +2528,25 @@ namespace entities
 
     void drawparticles()
     {
-        float maxdist = float(maxparticledistance)*float(maxparticledistance);
         bool hasroute = (m_edit(game::gamemode) || m_race(game::gamemode)) && routeid >= 0;
         int fstent = m_edit(game::gamemode) ? 0 : min(firstuse(EU_ITEM), firstent(hasroute ? ROUTE : TELEPORT)),
             lstent = m_edit(game::gamemode) ? ents.length() : max(lastuse(EU_ITEM), lastent(hasroute ? ROUTE : TELEPORT));
+
+        loopv(railways) loopvj(railways[i].parents)
+        {
+            int n = railways[i].parents[j];
+            if(!ents.inrange(n) || ents[n]->type != PARTICLES) continue;
+            extentity &e = *(extentity *)ents[n];
+            if(!checkparticle(e) || e.viewpos.dist(camera1->o) > maxparticledistance) continue;
+            makeparticle(e.viewpos, e.attrs);
+        }
+
         for(int i = fstent; i < lstent; ++i)
         {
             gameentity &e = *(gameentity *)ents[i];
             if(e.type == NOTUSED || e.attrs.empty()) continue;
             if(e.type != TELEPORT && e.type != ROUTE && !m_edit(game::gamemode) && enttype[e.type].usetype != EU_ITEM) continue;
-            else if(e.o.squaredist(camera1->o) > maxdist) continue;
+            else if(e.o.dist(camera1->o) > maxparticledistance) continue;
             float skew = 1;
             bool active = false;
             if(e.spawned())
@@ -2549,6 +2566,7 @@ namespace entities
             }
             drawparticle(e, e.o, i, e.spawned(), active, skew);
         }
+
         loopv(projs::projs)
         {
             projent &proj = *projs::projs[i];
