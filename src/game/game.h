@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 249
+#define VERSION_GAME 250
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -205,10 +205,10 @@ extern const enttypes enttype[] = {
                 "route",         { "num",   "yaw",      "pitch",    "move",     "strafe",   "action" }
     },
     {
-        RAIL,           -1,         228,    0,      EU_NONE,    5,          -1,         -1,     -1,     -1,
+        RAIL,           -1,         228,    0,      EU_NONE,    6,          -1,         -1,     -1,     -1,
             (1<<RAIL), 0, 0,
             false,   false,  false,      false,      false,
-                "rail",         { "time",   "flags",    "yaw",      "pitch",    "rotate" }
+                "rail",         { "time",   "flags",    "yaw",      "pitch",    "rotlen",   "rotwait" }
     }
 };
 #else

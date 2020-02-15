@@ -144,19 +144,9 @@ namespace entities
                     if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH))
                     {
                         gameentity &e = *(gameentity *)ents[r.ent];
-                        int rotate = clamp(e.attrs[4], -r.length, r.length);
-                        if(rotate >= 0)
-                        {
-                            r.rotlen = rotate ? rotate : r.length;
-                            r.rotstart = 0;
-                            r.rotend = r.rotlen;
-                        }
-                        else
-                        {
-                            r.rotlen = 0-rotate;
-                            r.rotstart = r.length-r.rotlen;
-                            r.rotend = r.length;
-                        }
+                        r.rotstart = clamp(e.attrs[5], 0, r.length);
+                        r.rotend = clamp(r.rotstart+(e.attrs[4] > 0 ? e.attrs[4] : r.length), r.rotstart, r.length);
+                        r.rotlen = clamp(r.rotend-r.rotstart, 0, r.length);
                         if(flags&(1<<RAIL_SEEK))
                         {
                             r.dir = vec(s.pos).sub(r.pos).safenormalize();
@@ -169,8 +159,8 @@ namespace entities
                             dir = vec(r.yaw*RAD, r.pitch*RAD);
                         }
                     }
-                    length[0] += rails[i].length;
-                    if(i >= ret) length[1] += rails[i].length;
+                    length[0] += r.length;
+                    if(i >= ret) length[1] += r.length;
                 }
                 if(length[0] > 0) return true;
             }
@@ -1621,6 +1611,8 @@ namespace entities
                 while(e.attrs[1] < 0) e.attrs[1] += RAIL_ALL+1;
                 while(e.attrs[1] > RAIL_ALL) e.attrs[1] -= RAIL_ALL+1;
                 FIXDIRYPL(2, 3); // yaw, pitch
+                if(e.attrs[4] < 0) e.attrs[4] = 0;
+                if(e.attrs[5] < 0) e.attrs[5] = 0;
             }
             default: break;
         }
@@ -1994,6 +1986,12 @@ namespace entities
             {
                 if(gver <= 247) e.type = NOTUSED;
                 if(gver <= 248 && (e.attrs[1]&(1<<RAIL_YAW) || e.attrs[1]&(1<<RAIL_PITCH))) e.attrs[1] |= (1<<RAIL_SEEK);
+                if(gver <= 249 && e.attrs[4] < 0)
+                {
+                    e.attrs[5] = e.attrs[2]+e.attrs[4];
+                    e.attrs[4] = 0-e.attrs[4];
+                    e.attrs[5] = 0;
+                }
                 break;
             }
             default: break;
