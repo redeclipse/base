@@ -184,11 +184,11 @@ namespace entities
 
             for(int i = iter ? ret : 0; i < rails.length(); i++)
             { // look for the station on the timetable
-                rail &rcur = rails[i], &rnext  = getrail(i, 1, iter);
+                rail &rcur = rails[i], &rnext = getrail(i, 1, iter);
 
                 if(rcur.length > 0 && millis <= span+rcur.length)
                 { // interpolate toward the next station
-                    rail &rprev  = getrail(i, -1, iter), &rnext2 = getrail(i,  2, iter);
+                    rail &rprev = getrail(i, -1, iter), &rnext2 = getrail(i,  2, iter);
 
                     int step = millis-span;
                     float amt = step/float(rcur.length);
