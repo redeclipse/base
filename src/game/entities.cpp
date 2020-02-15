@@ -2,10 +2,11 @@
 
 namespace entities
 {
+    int firstenttype[MAXENTTYPES], firstusetype[EU_MAX], lastenttype[MAXENTTYPES], lastusetype[EU_MAX], numactors = 0, lastroutenode = -1, lastroutefloor = -1, lastroutetime = 0;
+
     vector<extentity *> ents;
-    int firstenttype[MAXENTTYPES], firstusetype[EU_MAX], lastenttype[MAXENTTYPES], lastusetype[EU_MAX],
-        numactors = 0, lastroutenode = -1, lastroutefloor = -1, lastroutetime = 0;
     vector<int> airnodes;
+    vector<inanimate *> inanimates;
 
     VAR(IDF_PERSIST, showentmodels, 0, 1, 2);
     VAR(IDF_PERSIST, showentdescs, 0, 2, 3);
@@ -60,7 +61,16 @@ namespace entities
         railway() : ent(-1), ret(0), flags(0), last(0), millis(0), yaw(0), pitch(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0) { reset(); }
         railway(int n, int f = 0) : ent(n), ret(0), flags(f), last(0), millis(0), yaw(0), pitch(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0) { reset(); }
 
-        ~railway() {}
+        ~railway()
+        {
+            loopv(inanimates)
+            {
+                inanimate *m = inanimates[i];
+                if(m->control != INANIMATE_RAIL && parents.find(m->ent) < 0) continue;
+                DELETEP(m);
+                inanimates.remove(i--);
+            }
+        }
 
         void reset()
         {
@@ -225,15 +235,61 @@ namespace entities
 
             loopv(parents)
             {
-                if(!ents.inrange(parents[i]))
+                int parent = parents[i];
+                if(!ents.inrange(parent))
                 {
                     parents.remove(i--);
                     continue;
                 }
-                gameentity &e = *(gameentity *)ents[parents[i]];
+                gameentity &e = *(gameentity *)ents[parent];
                 e.offset = offset;
                 if(flags&(1<<RAIL_YAW)) e.yaw = yaw;
                 if(flags&(1<<RAIL_PITCH)) e.pitch = pitch;
+                if(e.type == MAPMODEL && !(e.flags&EF_NOCOLLIDE))
+                {
+                    mapmodelinfo *mmi = getmminfo(e.attrs[0]);
+                    if(!mmi || !mmi->m) continue;
+                    inanimate *m = NULL;
+                    loopv(inanimates) if(inanimates[i]->control == INANIMATE_RAIL && inanimates[i]->ent == parent)
+                    {
+                        m = inanimates[i];
+                        break;
+                    }
+                    if(!m)
+                    {
+                        m = new inanimate;
+                        m->ent = parent;
+                        m->control = INANIMATE_RAIL;
+                        m->collidetype = mmi->m->collide;
+                        inanimates.add(m);
+                        cleardynentcache();
+                    }
+                    m->o = e.pos();
+                    m->yaw = e.attrs[1]+e.yaw;
+                    m->pitch = e.attrs[2]+e.pitch;
+                    game::fixrange(m->yaw, m->pitch);
+                    vec center, radius;
+                    mmi->m->collisionbox(center, radius);
+                    if(e.attrs[5])
+                    {
+                        float scale = e.attrs[5]/100.f;
+                        center.mul(scale);
+                        radius.mul(scale);
+                    }
+                    rotatebb(center, radius, int(m->yaw), int(m->pitch));
+                    m->xradius = radius.x + fabs(center.x);
+                    m->yradius = radius.y + fabs(center.y);
+                    m->radius = m->collidetype == COLLIDE_OBB ? sqrtf(m->xradius*m->xradius + m->yradius*m->yradius) : max(m->xradius, m->yradius);
+                    m->height = m->zradius = (center.z-radius.z) + radius.z*2*mmi->m->height;
+                    m->aboveeye = radius.z*2*(1.0f-mmi->m->height);
+                    if(m->aboveeye+m->height <= 0.5f)
+                    {
+                        float zrad = (0.5f-(m->aboveeye+m->height))/2;
+                        m->aboveeye += zrad;
+                        m->height += zrad;
+                    }
+                    m->o.z += m->height;
+                }
             }
             last = secs;
             return true;
@@ -270,6 +326,7 @@ namespace entities
     void fixrails(int n)
     {
         loopv(railways) if(railways[i].ent == n || railways[i].findchild(n) >= 0 || railways[i].findparent(n) >= 0) railways.remove(i--);
+        cleardynentcache();
         railbuilt = 0;
     }
 
@@ -2023,6 +2080,8 @@ namespace entities
         lastroutenode = routeid = -1;
         numactors = lastroutetime = droproute = 0;
         airnodes.setsize(0);
+        inanimates.deletecontents();
+        inanimates.shrink(0);
         ai::oldwaypoints.setsize(0);
         progress(0, "Setting entity attributes...");
         loopv(ents)

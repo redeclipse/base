@@ -2075,8 +2075,10 @@ namespace game
     {
         int i = 1+players.length();
         if(all) i += projs::collideprojs.length();
+        if(all) i += entities::inanimates.length();
         return i;
     }
+
     dynent *iterdynents(int i, bool all)
     {
         if(!i) return player1;
@@ -2086,9 +2088,12 @@ namespace game
         if(all)
         {
             if(i < projs::collideprojs.length()) return projs::collideprojs[i];
+            i -= projs::collideprojs.length();
+            if(i < entities::inanimates.length()) return entities::inanimates[i];
         }
         return NULL;
     }
+
     dynent *focusedent(bool force)
     {
         if(force) return player1;

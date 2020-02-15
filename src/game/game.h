@@ -1947,6 +1947,29 @@ struct gameent : dynent, clientstate
     }
 };
 
+enum { INANIMATE_NONE = 0, INANIMATE_RAIL, INANIMATE_MAX };
+
+struct inanimate : dynent
+{
+    int control, ent;
+
+    inanimate() : control(INANIMATE_NONE), ent(-1)
+    {
+        physent::reset();
+        type = ENT_INANIMATE;
+        state = CS_ALIVE;
+    }
+
+    ~inanimate()
+    {
+        removetrackedparticles(this);
+        removetrackedsounds(this);
+    }
+
+    static bool is(int t) { return t == ENT_INANIMATE; }
+    static bool is(physent *d) { return d->type == ENT_INANIMATE; }
+};
+
 struct projent : dynent
 {
     vec from, dest, norm, inertia, sticknrm, stickpos, effectpos, trailpos, lastgood;
@@ -2243,6 +2266,7 @@ namespace game
 
 namespace entities
 {
+    extern vector<inanimate *> inanimates;
     extern int showentdescs, showentfull, showentweapons, simpleitems;
     extern float showentavailable, showentunavailable;
     extern bool execitem(int n, int cn, dynent *d, vec &pos, float dist);

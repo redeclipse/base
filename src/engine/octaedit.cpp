@@ -101,8 +101,8 @@ void renderboundboxes()
     gle::colorub(255, 255, 255);
 
     dynent *e = NULL;
-    int numdyns = game::numdynents();
-    loopi(numdyns) if((e = (dynent *)game::iterdynents(i)) && e->state == CS_ALIVE)
+    int numdyns = game::numdynents(true);
+    loopi(numdyns) if((e = (dynent *)game::iterdynents(i, true)) && e->state == CS_ALIVE)
     {
         vec rad = vec(e->xradius*2, e->yradius*2, e->height+e->aboveeye), o = vec(e->o).sub(vec(e->xradius, e->yradius, e->height));
         loopj(6) boxs(j, o, rad);
