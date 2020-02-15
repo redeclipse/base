@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 250
+#define VERSION_GAME 251
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -77,13 +77,13 @@ extern const enttypes enttype[] = {
     },
     {
         LIGHT,          1,          59,     0,      EU_NONE,    11,         -1,         -1,     9,      10,
-            (1<<LIGHTFX)|(1<<RAIL), (1<<LIGHTFX), 0,
+            (1<<LIGHTFX), (1<<LIGHTFX), 0,
             false,  false,  false,      false,      false,
                 "light",        { "radius", "red",      "green",    "blue",     "flare",    "flarescale", "flags",  "palette",  "palindex", "variant", "fxlevel"  }
     },
     {
         MAPMODEL,       1,          58,     0,      EU_NONE,    15,         -1,         -1,     13,     14,
-            (1<<TRIGGER)|(1<<RAIL), (1<<TRIGGER), 0,
+            (1<<TRIGGER), (1<<TRIGGER), 0,
             false,  false,  false,      false,      false,
                 "mapmodel",     { "type",   "yaw",      "pitch",    "roll",     "blend",    "scale",    "flags",    "colour",   "palette",  "palindex", "spinyaw",  "spinpitch", "spinroll",    "variant",  "fxlevel" }
     },
@@ -103,7 +103,7 @@ extern const enttypes enttype[] = {
     },
     {
         PARTICLES,      1,          59,     0,      EU_NONE,    14,         -1,         -1,     12,     13,
-            (1<<TELEPORT)|(1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT)|(1<<RAIL),
+            (1<<TELEPORT)|(1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT),
             (1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT),
             0,
             false,  false,  false,      false,      false,
@@ -111,7 +111,7 @@ extern const enttypes enttype[] = {
     },
     {
         MAPSOUND,       1,          58,     0,      EU_NONE,    6,          -1,         -1,     5,      -1,
-            (1<<TELEPORT)|(1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT)|(1<<WIND)|(1<<RAIL),
+            (1<<TELEPORT)|(1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT)|(1<<WIND),
             (1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT)|(1<<WIND),
             0,
             false,  false,  false,      false,      false,
@@ -119,7 +119,7 @@ extern const enttypes enttype[] = {
     },
     {
         LIGHTFX,        1,          1,      0,      EU_NONE,    7,          -1,         -1,     5,      6,
-            (1<<LIGHT)|(1<<TELEPORT)|(1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT)|(1<<RAIL),
+            (1<<LIGHT)|(1<<TELEPORT)|(1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT),
             (1<<LIGHT)|(1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT),
             0,
             false,  false,  false,      false,      false,
@@ -149,14 +149,14 @@ extern const enttypes enttype[] = {
     },
     {
         WEAPON,         2,          59,     24,     EU_ITEM,    6,          2,          4,      5,      -1,
-            (1<<RAIL), 0,
+            0, 0,
             (1<<ENT_PLAYER)|(1<<ENT_AI),
             false,  true,   true,      false,      false,
                 "weapon",       { "type",   "flags",    "modes",    "muts",     "id",       "variant" }
     },
     {
         TELEPORT,       1,          50,     12,     EU_AUTO,    10,         -1,         -1,     9,      -1,
-            (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX)|(1<<TELEPORT)|(1<<RAIL),
+            (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX)|(1<<TELEPORT),
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<ENT_PLAYER)|(1<<ENT_AI)|(1<<ENT_PROJ),
             false,  false,  false,      false,      false,
@@ -178,7 +178,7 @@ extern const enttypes enttype[] = {
     },
     {
         PUSHER,         1,          58,     12,     EU_AUTO,    11,         -1,         -1,     9,      -1,
-            (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX)|(1<<RAIL),
+            (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<ENT_PLAYER)|(1<<ENT_AI)|(1<<ENT_PROJ),
             false,  false,  false,      false,      false,
@@ -206,7 +206,7 @@ extern const enttypes enttype[] = {
     },
     {
         RAIL,           -1,         228,    0,      EU_NONE,    6,          -1,         -1,     -1,     -1,
-            (1<<RAIL), 0, 0,
+            (1<<LIGHT)|(1<<MAPMODEL)|(1<<PLAYERSTART)|(1<<PARTICLES)|(1<<MAPSOUND)|(1<<LIGHTFX)|(1<<WEAPON)|(1<<TELEPORT)|(1<<ACTOR)|(1<<TRIGGER)|(1<<PUSHER)|(1<<RAIL), 0, 0,
             false,   false,  false,      false,      false,
                 "rail",         { "time",   "flags",    "yaw",      "pitch",    "rotlen",   "rotwait" }
     }

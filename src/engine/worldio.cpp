@@ -839,7 +839,6 @@ void save_world(const char *mname, bool nodata, bool forcesave)
             f->write(&tmp, sizeof(entbase));
             f->putlil<int>(e.attrs.length());
             loopvk(e.attrs) f->putlil<int>(e.attrs[k]);
-            entities::writeent(f, idx);
             if(entities::maylink(e.type))
             {
                 vector<int> links;
@@ -860,6 +859,7 @@ void save_world(const char *mname, bool nodata, bool forcesave)
                 loopvj(links) f->putlil<int>(links[j]); // aligned index
                 if(verbose >= 2) conoutf("Entity %s (%d) saved %d links", entities::findname(e.type), i, links.length());
             }
+            entities::writeent(f, idx);
             count++;
         }
         progress((i+1)/float(ents.length()), "Saving entities...");
@@ -1195,9 +1195,6 @@ bool load_world(const char *mname, int crc, int variant)
                 e.type = ET_EMPTY;
                 continue;
             }
-
-            entities::readent(f, hdr.version, hdr.gameid, hdr.gamever, i);
-
             if(entities::maylink(e.type, hdr.gamever))
             {
                 int links = f->getlil<int>();
@@ -1223,6 +1220,9 @@ bool load_world(const char *mname, int crc, int variant)
             }
             if(!insideworld(e.o) && e.type != ET_LIGHT && e.type != ET_LIGHTFX)
                 conoutf("\frWARNING: ent outside of world: enttype[%d](%s) index %d (%f, %f, %f) [%d, %d]", e.type, entities::findname(e.type), i, e.o.x, e.o.y, e.o.z, worldsize, worldscale);
+
+            entities::readent(f, hdr.version, hdr.gameid, hdr.gamever, i);
+
             progress((i+1)/float(hdr.numents), "Loading entities...");
         }
         if(hdr.version <= 43)

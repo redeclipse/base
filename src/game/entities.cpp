@@ -276,28 +276,21 @@ namespace entities
     void makerail(int n)
     {
         gameentity &e = *(gameentity *)ents[n];
-        e.flags &= ~EF_DYNAMIC;
-        if(e.type == RAIL || !(enttype[e.type].canlink&(1<<RAIL))) return;
-        if(findrailparent(n) >= 0)
+        loopv(e.links)
         {
-            e.flags |= EF_DYNAMIC;
-            return;
-        }
-        loopvj(e.links)
-        {
-            int link = e.links[j];
-            if(!ents.inrange(link) || ents[link]->type != RAIL) continue;
-            int cur = findrail(link);
-            railway &w = railways.inrange(cur) ? railways[cur] : railways.add(railway(link, ents[link]->attrs[1]));
-            w.addparent(n);
-            e.flags |= EF_DYNAMIC;
-            break;
+            int parent = e.links[i];
+            if(!ents.inrange(parent) || ents[parent]->type == RAIL || !(enttype[RAIL].canlink&(1<<ents[parent]->type))) continue;
+            int cur = findrail(n);
+            railway &w = railways.inrange(cur) ? railways[cur] : railways.add(railway(n, e.attrs[1]));
+            w.addparent(parent);
+            ents[parent]->flags |= EF_DYNAMIC;
         }
     }
 
     void buildrails()
     {
-        loopv(ents) makerail(i);
+        loopv(ents) ents[i]->flags &= ~EF_DYNAMIC;
+        loopv(ents) if(ents[i]->type == RAIL) makerail(i);
         loopv(railways) if(!railways[i].build()) railways.remove(i--);
         railbuilt = totalmillis ? totalmillis : 1;
     }
@@ -1771,7 +1764,7 @@ namespace entities
                 {
                     int r = rnd(spawns.length());
                     gameentity &e = *(gameentity *)ents[spawns[r]];
-                    if(tryspawn(d, e.o, e.type == PLAYERSTART ? e.attrs[1] : rnd(360), e.type == PLAYERSTART ? e.attrs[2] : 0))
+                    if(tryspawn(d, e.viewpos, e.type == PLAYERSTART ? e.attrs[1] : rnd(360), e.type == PLAYERSTART ? e.attrs[2] : 0))
                         return;
                     spawns.remove(r); // must've really sucked, try another one
                 }
@@ -1933,8 +1926,17 @@ namespace entities
         }
     }
 
-    void importent(gameentity &e, int mver, int gver)
+    void importent(gameentity &e, int id, int mver, int gver)
     {
+        if(e.type != RAIL && gver <= 250) loopv(e.links)
+        { // switch linking to a rail to linking from it
+            int link = e.links[i];
+            if(!ents.inrange(link) || ents[link]->type != RAIL) continue;
+            gameentity &f = *(gameentity *)ents[link];
+            f.links.add(id);
+            e.links.remove(i--);
+            conoutf("switched rail link between %d and %d", id, link);
+        }
         switch(e.type)
         {
             case ACTOR: numactors++; break;
@@ -2029,7 +2031,7 @@ namespace entities
             gameentity &e = *(gameentity *)ents[i];
             e.attrs.setsize(numattrs(e.type), 0);
             e.viewpos = e.o;
-            if(gver < VERSION_GAME) importent(e, mver, gver);
+            if(gver < VERSION_GAME) importent(e, i, mver, gver);
             fixentity(i, false);
             progress((i+1)/float(ents.length()), "Setting entity attributes...");
         }
