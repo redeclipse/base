@@ -2212,8 +2212,17 @@ namespace entities
         loopenti(MAPSOUND)
         {
             gameentity &e = *(gameentity *)ents[i];
-            if(e.type == MAPSOUND && checkmapvariant(e.attrs[enttype[e.type].mvattr]) && e.links.empty() && mapsounds.inrange(e.attrs[0]))
+            if(e.type == MAPSOUND && checkmapvariant(e.attrs[enttype[e.type].mvattr]) && mapsounds.inrange(e.attrs[0]))
             {
+                bool triggered = false;
+                loopvj(e.links)
+                {
+                    int n = e.links[i];
+                    if(!ents.inrange(n) || ents[n]->type != TRIGGER) continue;
+                    triggered = true;
+                    break;
+                }
+                if(triggered) continue;
                 if(!issound(e.schan))
                 {
                     int flags = SND_MAP|SND_LOOP; // ambient sounds loop
