@@ -2068,3 +2068,21 @@ static inline float impulse(float t)
     float f = 1.0f / (4.0f * t + 1);
     return f * f * smoothwave(t) * 3.231f;
 }
+
+// Catmull-Rom Spline
+static inline vec catmullrom(vec points[4], float t)
+{
+    float t2 = t * t;
+    float t3 = t * t * t;
+
+    float b[4] =
+    {
+        ((t3*-1) + (2*t2) - t) / 2,
+        ((t3* 3) - (5*t2) + 2) / 2,
+        ((t3*-3) + (4*t2) + t) / 2,
+        (t3-t2) / 2
+    };
+
+    loopi(4) points[i].mul(b[i]);
+    return points[0].add(points[1]).add(points[2]).add(points[3]);
+}

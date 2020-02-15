@@ -1,4 +1,5 @@
 #include "game.h"
+
 namespace entities
 {
     vector<extentity *> ents;
@@ -40,10 +41,10 @@ namespace entities
     {
         int ent, length, rotstart, rotend, rotlen, flags;
         float yaw, pitch;
-        vec pos, dest, dir;
+        vec pos, dir;
 
-        rail() : ent(-1), length(0), rotstart(0), rotend(0), rotlen(0), flags(0), yaw(0), pitch(0), pos(0, 0, 0), dest(0, 0, 0), dir(0, 0, 0) {}
-        rail(int n, const vec &o, int d = 0, int f = 0) : ent(n), length(d), rotstart(0), rotend(0), rotlen(0), flags(f), yaw(0), pitch(0), pos(o), dest(0, 0, 0), dir(0, 0, 0) {}
+        rail() : ent(-1), length(0), rotstart(0), rotend(0), rotlen(0), flags(0), yaw(0), pitch(0), pos(0, 0, 0), dir(0, 0, 0) {}
+        rail(int n, const vec &o, int d = 0, int f = 0) : ent(n), length(d), rotstart(0), rotend(0), rotlen(0), flags(f), yaw(0), pitch(0), pos(o), dir(0, 0, 0) {}
         ~rail() {}
     };
 
@@ -92,6 +93,25 @@ namespace entities
             if(parents.find(n) < 0) parents.add(n);
         }
 
+        rail &getrail(int cur, int offset, int iter)
+        {
+            int index = cur;
+
+            if(offset == -1 && ((cur == ret && iter) || (!iter && !cur)))
+                index = rails.length() - 1;
+            else
+            {
+                index += offset;
+                if(index >= rails.length())
+                {
+                    iter++;
+                    index %= rails.length() - ret;
+                }
+            }
+
+            return rails[index];
+        }
+
         bool build()
         {
             clear();
@@ -121,7 +141,6 @@ namespace entities
                 loopv(rails)
                 {
                     rail &r = rails[i], &s = rails.inrange(i+1) ? rails[i+1] : rails[ret];
-                    r.dest = vec(s.pos).sub(r.pos);
                     if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH))
                     {
                         gameentity &e = *(gameentity *)ents[r.ent];
@@ -140,7 +159,7 @@ namespace entities
                         }
                         if(flags&(1<<RAIL_SEEK))
                         {
-                            r.dir = vec(r.dest).normalize();
+                            r.dir = vec(s.pos).sub(r.pos).safenormalize();
                             vectoyawpitch(r.dir, r.yaw, r.pitch);
                         }
                         else
@@ -162,39 +181,58 @@ namespace entities
         {
             if(rails.empty()) return false;
             if(last >= secs) return true; // rail has already run this timestep
+
             int elapsed = secs, iter = 0, span = 0;
-            if(elapsed > length[0])
+            if(elapsed >= length[0])
             { // allow the loop point to be different from the start
                 elapsed -= length[0];
                 iter++;
             }
+
             millis = elapsed%length[iter];
             offset = rails[0].pos;
+
             for(int i = iter ? ret : 0; i < rails.length(); i++)
             { // look for the station on the timetable
-                rail &r = rails[i], &s = rails.inrange(i+1) ? rails[i+1] : rails[ret];
-                if(r.length > 0 && millis <= span+r.length)
+                rail &rcur = rails[i], &rnext  = getrail(i, 1, iter);
+
+                if(rcur.length > 0 && millis <= span+rcur.length)
                 { // interpolate toward the next station
+                    rail &rprev  = getrail(i, -1, iter), &rnext2 = getrail(i,  2, iter);
+
                     int step = millis-span;
-                    float amt = step/float(r.length);
-                    offset = vec(r.pos).add(vec(r.dest).mul(amt));
-                    if(r.rotlen > 0 && (flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)))
+                    float amt = step/float(rcur.length);
+
+                    if(flags&(1<<RAIL_SPLINE))
                     {
-                        if(step >= r.rotend) dir = s.dir;
-                        else if(step >= r.rotstart)
+                        vec spline[4] = { rprev.pos, rcur.pos, rnext.pos, rnext2.pos };
+                        offset = catmullrom(spline, amt);
+                    }
+                    else
+                    {
+                        vec dest = vec(rnext.pos).sub(rcur.pos);
+                        offset = vec(rcur.pos).add(dest.mul(amt));
+                    }
+
+                    if(rcur.rotlen > 0 && (flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)))
+                    {
+                        if(step >= rcur.rotend) dir = rnext.dir;
+                        else if(step >= rcur.rotstart)
                         {
-                            float part = (step-r.rotstart)/float(r.rotlen);
-                            dir = vec(r.dir).mul(1-part).add(vec(s.dir).mul(part)).normalize();
+                            float part = (step-rcur.rotstart)/float(rcur.rotlen);
+                            dir = vec(rcur.dir).mul(1-part).add(vec(rnext.dir).mul(part)).safenormalize();
                         }
                     }
                     break;
                 }
-                offset = s.pos;
-                if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)) dir = s.dir;
-                span += r.length;
+                offset = rnext.pos;
+                if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)) dir = rnext.dir;
+                span += rcur.length;
             }
+
             offset.sub(rails[0].pos);
             if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)) vectoyawpitch(dir, yaw, pitch);
+
             loopv(parents)
             {
                 if(!ents.inrange(parents[i]))
@@ -647,7 +685,7 @@ namespace entities
             {
                 if(full)
                 {
-                    const char *railnames[RAIL_MAX] = { "follow-yaw", "follow-pitch", "seek-next" };
+                    const char *railnames[RAIL_MAX] = { "follow-yaw", "follow-pitch", "seek-next", "spline" };
                     loopj(RAIL_MAX) if(attr[1]&(1<<j)) addentinfo(railnames[j]);
                 }
             }
