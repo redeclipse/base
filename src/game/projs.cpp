@@ -12,7 +12,7 @@ namespace projs
         float radius;
         vec o;
 
-        vec &pos() { return entities::ents.inrange(ent) ? entities::ents[ent]->viewpos : o; }
+        vec pos() const { return entities::ents.inrange(ent) ? ((gameentity *)entities::ents[ent])->pos() : o; }
     };
     vector<toolent> teleports, pushers;
 

@@ -1123,13 +1123,17 @@ struct gameentity : extentity
 {
     int schan, lastspawn, nextemit;
     linkvector kin;
+    vec offset;
+    float yaw, pitch;
 
-    gameentity() : schan(-1), lastspawn(0), nextemit(0) {}
+    gameentity() : schan(-1), lastspawn(0), nextemit(0), offset(0, 0, 0), yaw(0), pitch(0) {}
     ~gameentity()
     {
         if(issound(schan)) removesound(schan);
         schan = -1;
     }
+
+    vec pos() const { return flags&EF_DYNAMIC ? vec(o).add(offset) : o; }
 };
 
 struct actitem

@@ -2973,10 +2973,10 @@ namespace client
                     if(e.spawned())
                     {
                         int attr = m_attr(e.type, e.attrs[0]), colour = e.type == WEAPON && isweap(attr) ? W(attr, colour) : colourwhite;
-                        playsound(e.type == WEAPON && attr >= W_OFFSET && attr < W_ALL ? WSND(attr, S_W_SPAWN) : S_ITEMSPAWN, e.viewpos, NULL, 0, -1, -1, -1, &e.schan);
+                        playsound(e.type == WEAPON && attr >= W_OFFSET && attr < W_ALL ? WSND(attr, S_W_SPAWN) : S_ITEMSPAWN, e.pos(), NULL, 0, -1, -1, -1, &e.schan);
                         if(entities::showentdescs)
                         {
-                            vec pos = vec(e.viewpos).add(vec(0, 0, 4));
+                            vec pos = vec(e.pos()).add(vec(0, 0, 4));
                             const char *texname = entities::showentdescs >= 2 ? hud::itemtex(e.type, attr) : NULL;
                             if(texname && *texname) part_icon(pos, textureload(texname, 3), game::aboveitemiconsize, 1, -10, 0, game::eventiconfade, colour);
                             else
@@ -2989,8 +2989,8 @@ namespace client
                                 }
                             }
                         }
-                        game::spawneffect(PART_SPARK, e.viewpos, enttype[e.type].radius*0.25f, colour, 1);
-                        if(game::dynlighteffects) adddynlight(e.viewpos, enttype[e.type].radius, vec::fromcolor(colour).mul(2.f), 250, 250);
+                        game::spawneffect(PART_SPARK, e.pos(), enttype[e.type].radius*0.25f, colour, 1);
+                        if(game::dynlighteffects) adddynlight(e.pos(), enttype[e.type].radius, vec::fromcolor(colour).mul(2.f), 250, 250);
                     }
                     break;
                 }

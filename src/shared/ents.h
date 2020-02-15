@@ -102,10 +102,8 @@ struct extentity : entity                       // part of the entity that doesn
 {
     int flags;        // the only dynamic state of a map entity
     int lastemit, emit[3];
-    vec viewpos;
-    float viewyaw, viewpitch;
 
-    extentity() : flags(0), lastemit(0), viewpos(0, 0, 0), viewyaw(0.f), viewpitch(0.f)
+    extentity() : flags(0), lastemit(0)
     {
         emit[0] = emit[1] = emit[2] = 0;
     }

@@ -695,13 +695,13 @@ struct stainrenderer
             vec center, radius;
             float rejectradius = m->collisionbox(center, radius), scale = e.attrs[5] > 0 ? e.attrs[5]/100.0f : 1;
             center.mul(scale);
-            if(staincenter.reject(vec(e.viewpos).add(center), stainradius + rejectradius*scale)) continue;
+            if(staincenter.reject(vec(e.o).add(center), stainradius + rejectradius*scale)) continue;
 
             if(m->animated() || (!m->bih && !m->setBIH())) continue;
 
             int yaw = e.attrs[1], pitch = e.attrs[2], roll = e.attrs[3];
 
-            m->bih->genstaintris(this, staincenter, stainradius, e.viewpos, yaw, pitch, roll, scale);
+            m->bih->genstaintris(this, staincenter, stainradius, e.o, yaw, pitch, roll, scale);
         }
     }
 

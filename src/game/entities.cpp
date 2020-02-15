@@ -231,9 +231,9 @@ namespace entities
                     continue;
                 }
                 gameentity &e = *(gameentity *)ents[parents[i]];
-                e.viewpos = vec(e.o).add(offset);
-                if(flags&(1<<RAIL_YAW)) e.viewyaw = yaw;
-                if(flags&(1<<RAIL_PITCH)) e.viewpitch = pitch;
+                e.offset = offset;
+                if(flags&(1<<RAIL_YAW)) e.yaw = yaw;
+                if(flags&(1<<RAIL_PITCH)) e.pitch = pitch;
             }
             last = secs;
             return true;
@@ -807,12 +807,12 @@ namespace entities
                     case TRIGGER: case TELEPORT: case PUSHER: if(e.attrs[3] > 0) radius = e.attrs[3]; break;
                     case CHECKPOINT: if(e.attrs[0] > 0) radius = e.attrs[0]; break;
                 }
-                if(overlapsbox(pos, zrad, xyrad, e.viewpos, radius, radius))
+                if(overlapsbox(pos, zrad, xyrad, e.pos(), radius, radius))
                 {
                     actitem &t = actitems.add();
                     t.type = actitem::ENT;
                     t.target = n;
-                    t.score = pos.squaredist(e.viewpos);
+                    t.score = pos.squaredist(e.pos());
                 }
             }
         }
@@ -864,11 +864,11 @@ namespace entities
     {
         loopv(ents)
         {
-            extentity &e = *ents[i];
+            gameentity &e = *(gameentity *)ents[i];
             if(enttype[e.type].usetype != EU_NONE && (enttype[e.type].usetype != EU_ITEM || (d->state == CS_ALIVE && e.spawned())))
             {
                 if(enttype[e.type].mvattr >= 0 && !checkmapvariant(e.attrs[enttype[e.type].mvattr])) continue;
-                float eradius = enttype[e.type].radius, edist = pos.dist(e.viewpos);
+                float eradius = enttype[e.type].radius, edist = pos.dist(e.pos());
                 switch(e.type)
                 {
                     case TRIGGER: case TELEPORT: case PUSHER: if(e.attrs[3] > 0) eradius = e.attrs[3]; break;
@@ -1056,7 +1056,7 @@ namespace entities
                     {
                         int r = rnd(teleports.length()), q = teleports[r];
                         gameentity &f = *(gameentity *)ents[q];
-                        d->o = vec(f.viewpos).add(f.attrs[5] >= 3 ? vec(orig).sub(e.viewpos) : vec(0, 0, d->height*0.5f));
+                        d->o = vec(f.pos()).add(f.attrs[5] >= 3 ? vec(orig).sub(e.pos()) : vec(0, 0, d->height*0.5f));
                         float mag = vec(d->vel).add(d->falling).magnitude(), yaw = f.attrs[0] < 0 ? (lastmillis/5)%360 : f.attrs[0], pitch = f.attrs[1];
                         if(!projent::shot(d))
                         {
@@ -1101,7 +1101,7 @@ namespace entities
                                     execlink(g, n, true);
                                     execlink(g, q, true);
                                     g->resetair();
-                                    ai::inferwaypoints(g, e.viewpos, f.viewpos, float(e.attrs[3] ? e.attrs[3] : enttype[e.type].radius)+ai::CLOSEDIST);
+                                    ai::inferwaypoints(g, e.pos(), f.pos(), float(e.attrs[3] ? e.attrs[3] : enttype[e.type].radius)+ai::CLOSEDIST);
                                 }
                                 else if(projent::is(d))
                                 {
@@ -1113,7 +1113,7 @@ namespace entities
                                     g->movement = 0;
                                 }
                             }
-                            else if(gameent::is(d)) warpragdoll(d, d->vel, vec(f.viewpos).sub(e.viewpos));
+                            else if(gameent::is(d)) warpragdoll(d, d->vel, vec(f.pos()).sub(e.pos()));
                             return false; // gotcha
                         }
                         d->o = orig;
@@ -1361,7 +1361,6 @@ namespace entities
         gameentity &e = *(gameentity *)ents[n];
         cleansound(n);
         e.attrs.setsize(numattrs(e.type), 0);
-        e.viewpos = e.o;
         loopvrev(e.links)
         {
             int ent = e.links[i];
@@ -1681,7 +1680,7 @@ namespace entities
                     {
                         int flags = SND_MAP;
                         loopk(SND_LAST) if(f.attrs[4]&(1<<k)) flags |= 1<<k;
-                        playsound(f.attrs[0], both ? f.viewpos : e.viewpos, NULL, flags, f.attrs[3] ? f.attrs[3] : -1, f.attrs[1] || f.attrs[2] ? f.attrs[1] : -1, f.attrs[2] ? f.attrs[2] : -1, &f.schan);
+                        playsound(f.attrs[0], both ? f.pos() : e.pos(), NULL, flags, f.attrs[3] ? f.attrs[3] : -1, f.attrs[1] || f.attrs[2] ? f.attrs[1] : -1, f.attrs[2] ? f.attrs[2] : -1, &f.schan);
                     }
                     break;
                 }
@@ -1764,7 +1763,7 @@ namespace entities
                 {
                     int r = rnd(spawns.length());
                     gameentity &e = *(gameentity *)ents[spawns[r]];
-                    if(tryspawn(d, e.viewpos, e.type == PLAYERSTART ? e.attrs[1] : rnd(360), e.type == PLAYERSTART ? e.attrs[2] : 0))
+                    if(tryspawn(d, e.pos(), e.type == PLAYERSTART ? e.attrs[1] : rnd(360), e.type == PLAYERSTART ? e.attrs[2] : 0))
                         return;
                     spawns.remove(r); // must've really sucked, try another one
                 }
@@ -2030,7 +2029,6 @@ namespace entities
         {
             gameentity &e = *(gameentity *)ents[i];
             e.attrs.setsize(numattrs(e.type), 0);
-            e.viewpos = e.o;
             if(gver < VERSION_GAME) importent(e, i, mver, gver);
             fixentity(i, false);
             progress((i+1)/float(ents.length()), "Setting entity attributes...");
@@ -2046,7 +2044,7 @@ namespace entities
                 extentity &e = *newent();
                 ents.add(&e);
                 e.type = ACTOR;
-                e.o = e.viewpos = ents[i]->o;
+                e.o = ents[i]->o;
                 e.attrs.add(0, numattrs(ACTOR));
                 e.attrs[0] = A_ENEMY+(i%A_TOTAL);
                 switch(ents[i]->type)
@@ -2242,6 +2240,28 @@ namespace entities
 
     void adddynlights()
     {
+        loopv(railways)
+        {
+            railway &w = railways[i];
+            loopvj(w.parents) if(ents.inrange(w.parents[j]))
+            {
+                int n = w.parents[j];
+                gameentity &e = *(gameentity *)ents[n];
+                if(e.type != LIGHT) continue;
+                int radius = e.attrs[0], spotlight = -1;
+                vec color(255, 255, 255);
+                if(!getlightfx(e, &radius, &spotlight, &color, true, false)) continue;
+                int spot = 0;
+                vec dir(0, 0, 0);
+                if(ents.inrange(spotlight))
+                {
+                    gameentity &f = *(gameentity *)ents[spotlight];
+                    dir = vec(f.pos()).sub(e.pos()).safenormalize();
+                    spot = clamp(int(f.attrs[1]), 1, 89);
+                }
+                adddynlight(e.pos(), radius, color, 0, 0, 0, radius, color, NULL, dir, spot);
+            }
+        }
     }
 
     void update()
@@ -2255,7 +2275,7 @@ namespace entities
                 bool triggered = false;
                 loopvj(e.links)
                 {
-                    int n = e.links[i];
+                    int n = e.links[j];
                     if(!ents.inrange(n) || ents[n]->type != TRIGGER) continue;
                     triggered = true;
                     break;
@@ -2265,9 +2285,9 @@ namespace entities
                 {
                     int flags = SND_MAP|SND_LOOP; // ambient sounds loop
                     loopk(SND_LAST)  if(e.attrs[4]&(1<<k)) flags |= 1<<k;
-                    playsound(e.attrs[0], e.viewpos, NULL, flags, e.attrs[3] ? e.attrs[3] : 255, e.attrs[1] || e.attrs[2] ? e.attrs[1] : -1, e.attrs[2] ? e.attrs[2] : -1, &e.schan);
+                    playsound(e.attrs[0], e.pos(), NULL, flags, e.attrs[3] ? e.attrs[3] : 255, e.attrs[1] || e.attrs[2] ? e.attrs[1] : -1, e.attrs[2] ? e.attrs[2] : -1, &e.schan);
                 }
-                else sounds[e.schan].pos = e.viewpos;
+                else sounds[e.schan].pos = e.pos();
             }
         }
         if((m_edit(game::gamemode) || m_race(game::gamemode)) && routeid >= 0 && droproute)
@@ -2339,7 +2359,7 @@ namespace entities
                 if(mdlname && *mdlname)
                 {
                     modelstate mdl;
-                    mdl.o = e.viewpos;
+                    mdl.o = e.pos();
                     mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
                     mdl.flags = MDL_CULL_VFC|MDL_CULL_DIST|MDL_CULL_OCCLUDED;
                     int colour = -1;
@@ -2397,15 +2417,15 @@ namespace entities
         {
             int n = railways[i].parents[j];
             if(!ents.inrange(n) || ents[n]->type != MAPMODEL) continue;
-            extentity &e = *(extentity *)ents[n];
+            gameentity &e = *(gameentity *)ents[n];
             const char *mdlname = mapmodelname(ents[n]->attrs[0]);
             if(!mdlname || !*mdlname) continue;
             modelstate mdl;
-            mdl.o = e.viewpos;
+            mdl.o = e.pos();
             mdl.flags = MDL_CULL_VFC|MDL_CULL_DIST|MDL_CULL_OCCLUDED;
             getmapmodelstate(e, mdl);
-            mdl.yaw += e.viewyaw;
-            mdl.pitch += e.viewpitch;
+            mdl.yaw += e.yaw;
+            mdl.pitch += e.pitch;
             rendermodel(mdlname, mdl);
         }
     }
@@ -2419,7 +2439,7 @@ namespace entities
             vec r = vec::fromcolor(colour).mul(game::getpalette(e.attrs[6], e.attrs[7]));
             colour = (int(r.x*255)<<16)|(int(r.y*255)<<8)|(int(r.z*255));
         }
-        part_portal(e.viewpos, radius, 1, yaw, e.attrs[1], PART_TELEPORT, 1, colour);
+        part_portal(e.pos(), radius, 1, yaw, e.attrs[1], PART_TELEPORT, 1, colour);
     }
 
     bool checkparticle(extentity &e)
@@ -2459,7 +2479,7 @@ namespace entities
             default: break;
         }
 
-        vec off(0, 0, 2.f), pos = o, view = idx >= 0 ? e.viewpos : o;
+        vec off(0, 0, 2.f), pos = o, view = idx >= 0 ? e.pos() : o;
         if(enttype[e.type].usetype == EU_ITEM) pos.add(off);
         bool edit = m_edit(game::gamemode) && idx >= 0 && cansee(idx),
              isedit = edit && game::player1->state == CS_EDITING,
@@ -2583,9 +2603,9 @@ namespace entities
         {
             int n = railways[i].parents[j];
             if(!ents.inrange(n) || ents[n]->type != PARTICLES) continue;
-            extentity &e = *(extentity *)ents[n];
-            if(!checkparticle(e) || e.viewpos.dist(camera1->o) > maxparticledistance) continue;
-            makeparticle(e.viewpos, e.attrs);
+            gameentity &e = *(gameentity *)ents[n];
+            if(!checkparticle(e) || e.pos().dist(camera1->o) > maxparticledistance) continue;
+            makeparticle(e.pos(), e.attrs);
         }
 
         for(int i = fstent; i < lstent; ++i)

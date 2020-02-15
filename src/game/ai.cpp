@@ -535,10 +535,10 @@ namespace ai
             { // go get a weapon upgrade
                 interest &n = interests.add();
                 n.state = AI_S_INTEREST;
-                n.node = closestwaypoint(e.viewpos, CLOSEDIST, true);
+                n.node = closestwaypoint(e.pos(), CLOSEDIST, true);
                 n.target = j;
                 n.targtype = AI_T_ENTITY;
-                n.score =  pos.squaredist(e.viewpos)/(wantsweap(d, attr) ? 1e8f : (force ? 1e4f : 1.f));
+                n.score =  pos.squaredist(e.pos())/(wantsweap(d, attr) ? 1e8f : (force ? 1e4f : 1.f));
                 n.tolerance = 0;
             }
         }
@@ -765,7 +765,7 @@ namespace ai
                     if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON) return false;
                     int attr = m_attr(e.type, e.attrs[0]);
                     if(!isweap(attr) || !e.spawned() || !wantsweap(d, attr, false)) return false;
-                    return makeroute(d, b, e.viewpos);
+                    return makeroute(d, b, e.pos());
                 }
                 break;
             }
@@ -1074,7 +1074,7 @@ namespace ai
             {
                 gameentity &e = *(gameentity *)entities::ents[i];
                 float radius = (e.attrs[3] ? e.attrs[3] : enttype[e.type].radius)*1.5f; radius *= radius;
-                if(e.viewpos.squaredist(pos) <= radius) { jump = false; break; }
+                if(e.pos().squaredist(pos) <= radius) { jump = false; break; }
             }
         }
         if(d->action[AC_JUMP] != jump)
