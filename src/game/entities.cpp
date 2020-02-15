@@ -99,25 +99,7 @@ namespace entities
             for(int next = ent; ents.inrange(next); )
             { // build the rails for this line
                 gameentity &e = *(gameentity *)ents[next];
-                rail &r = rails.add(rail(next, e.o, max(e.attrs[0], 0), e.attrs[1]));
-                if(flags&(1<<RAIL_YAW)) r.yaw = e.attrs[2];
-                if(flags&(1<<RAIL_PITCH)) r.pitch = e.attrs[3];
-                if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH))
-                {
-                    int rotate = clamp(e.attrs[4], -r.length, r.length);
-                    if(rotate >= 0)
-                    {
-                        r.rotlen = rotate ? rotate : r.length;
-                        r.rotstart = 0;
-                        r.rotend = r.rotlen;
-                    }
-                    else
-                    {
-                        r.rotlen = 0-rotate;
-                        r.rotstart = r.length-r.rotlen;
-                        r.rotend = r.length;
-                    }
-                }
+                rails.add(rail(next, e.o, max(e.attrs[0], 0), e.attrs[1]));
                 next = -1;
                 loopvj(e.links)
                 {
@@ -142,12 +124,31 @@ namespace entities
                     r.dest = vec(s.pos).sub(r.pos);
                     if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH))
                     {
+                        gameentity &e = *(gameentity *)ents[r.ent];
+                        int rotate = clamp(e.attrs[4], -r.length, r.length);
+                        if(rotate >= 0)
+                        {
+                            r.rotlen = rotate ? rotate : r.length;
+                            r.rotstart = 0;
+                            r.rotend = r.rotlen;
+                        }
+                        else
+                        {
+                            r.rotlen = 0-rotate;
+                            r.rotstart = r.length-r.rotlen;
+                            r.rotend = r.length;
+                        }
                         if(flags&(1<<RAIL_SEEK))
                         {
                             r.dir = vec(r.dest).normalize();
                             vectoyawpitch(r.dir, r.yaw, r.pitch);
                         }
-                        else dir = vec(r.yaw*RAD, r.pitch*RAD);
+                        else
+                        {
+                            if(flags&(1<<RAIL_YAW)) r.yaw = e.attrs[2];
+                            if(flags&(1<<RAIL_PITCH)) r.pitch = e.attrs[3];
+                            dir = vec(r.yaw*RAD, r.pitch*RAD);
+                        }
                     }
                     length[0] += rails[i].length;
                     if(i >= ret) length[1] += rails[i].length;
@@ -168,6 +169,7 @@ namespace entities
                 iter++;
             }
             millis = elapsed%length[iter];
+            offset = rails[0].pos;
             for(int i = iter ? ret : 0; i < rails.length(); i++)
             { // look for the station on the timetable
                 rail &r = rails[i], &s = rails.inrange(i+1) ? rails[i+1] : rails[ret];
@@ -175,8 +177,8 @@ namespace entities
                 { // interpolate toward the next station
                     int step = millis-span;
                     float amt = step/float(r.length);
-                    offset = vec(r.pos).add(vec(r.dest).mul(amt)).sub(rails[0].pos);
-                    if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH))
+                    offset = vec(r.pos).add(vec(r.dest).mul(amt));
+                    if(r.rotlen > 0 && (flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)))
                     {
                         if(step >= r.rotend) dir = s.dir;
                         else if(step >= r.rotstart)
@@ -187,8 +189,11 @@ namespace entities
                     }
                     break;
                 }
+                offset = s.pos;
+                if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)) dir = s.dir;
                 span += r.length;
             }
+            offset.sub(rails[0].pos);
             if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)) vectoyawpitch(dir, yaw, pitch);
             loopv(parents)
             {
