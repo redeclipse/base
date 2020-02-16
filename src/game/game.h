@@ -2280,6 +2280,7 @@ namespace entities
     extern void adddynlights();
     extern void render();
     extern void update();
+    extern void reset();
 }
 #endif
 #include "capture.h"

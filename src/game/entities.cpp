@@ -250,9 +250,9 @@ namespace entities
                     mapmodelinfo *mmi = getmminfo(e.attrs[0]);
                     if(!mmi || !mmi->m) continue;
                     inanimate *m = NULL;
-                    loopv(inanimates) if(inanimates[i]->control == INANIMATE_RAIL && inanimates[i]->ent == parent)
+                    loopvj(inanimates) if(inanimates[j]->control == INANIMATE_RAIL && inanimates[j]->ent == parent)
                     {
-                        m = inanimates[i];
+                        m = inanimates[j];
                         break;
                     }
                     if(!m)
@@ -2080,8 +2080,6 @@ namespace entities
         lastroutenode = routeid = -1;
         numactors = lastroutetime = droproute = 0;
         airnodes.setsize(0);
-        inanimates.deletecontents();
-        inanimates.shrink(0);
         ai::oldwaypoints.setsize(0);
         progress(0, "Setting entity attributes...");
         loopv(ents)
@@ -2321,6 +2319,12 @@ namespace entities
                 adddynlight(e.pos(), radius, color, 0, 0, 0, radius, color, NULL, dir, spot);
             }
         }
+    }
+
+    void reset()
+    {
+        resetrails();
+        inanimates.deletecontents();
     }
 
     void update()
