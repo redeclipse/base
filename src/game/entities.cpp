@@ -166,7 +166,7 @@ namespace entities
                         {
                             if(flags&(1<<RAIL_YAW)) r.yaw = e.attrs[2];
                             if(flags&(1<<RAIL_PITCH)) r.pitch = e.attrs[3];
-                            dir = vec(r.yaw*RAD, r.pitch*RAD);
+                            r.dir = vec(r.yaw*RAD, r.pitch*RAD);
                         }
                     }
                     length[0] += r.length;
