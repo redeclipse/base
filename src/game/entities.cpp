@@ -191,6 +191,7 @@ namespace entities
 
             millis = elapsed%length[iter];
             offset = rails[0].pos;
+            if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)) dir = rails[0].dir;
 
             for(int i = iter ? ret : 0; i < rails.length(); i++)
             { // look for the station on the timetable
@@ -214,12 +215,12 @@ namespace entities
                         offset = vec(rcur.pos).add(dest.mul(amt));
                     }
 
-                    if(rcur.rotlen > 0 && (flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)))
+                    if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH))
                     {
                         if(step >= rcur.rotend) dir = rnext.dir;
                         else if(step >= rcur.rotstart)
                         {
-                            float part = (step-rcur.rotstart)/float(rcur.rotlen);
+                            float part = (step-rcur.rotstart)/float(max(rcur.rotlen, 1));
                             dir = vec(rcur.dir).mul(1-part).add(vec(rnext.dir).mul(part)).safenormalize();
                         }
                     }
