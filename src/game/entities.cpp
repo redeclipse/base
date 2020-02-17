@@ -66,7 +66,7 @@ namespace entities
             loopv(inanimates)
             {
                 inanimate *m = inanimates[i];
-                if(m->control != INANIMATE_RAIL && parents.find(m->ent) < 0) continue;
+                if(m->control != INANIMATE_RAIL || parents.find(m->ent) < 0) continue;
                 DELETEP(m);
                 inanimates.remove(i--);
             }
