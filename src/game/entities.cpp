@@ -112,11 +112,7 @@ namespace entities
             else
             {
                 index += offset;
-                if(index >= rails.length())
-                {
-                    iter++;
-                    index %= rails.length() - ret;
-                }
+                if(index >= rails.length()) index %= rails.length() - ret;
             }
 
             return rails[index];
@@ -127,11 +123,11 @@ namespace entities
             clear();
             if(!ents.inrange(ent)) return false;
 
-            for(int next = ent; ents.inrange(next); )
+            for(int i = ent; ents.inrange(i); )
             { // build the rails for this line
-                gameentity &e = *(gameentity *)ents[next];
-                rails.add(rail(next, e.o, max(e.attrs[0], 0), e.attrs[1]));
-                next = -1;
+                gameentity &e = *(gameentity *)ents[i];
+                rails.add(rail(i, e.o, max(e.attrs[0], 0), e.attrs[1]));
+                i = -1;
                 loopvj(e.links)
                 {
                     int link = e.links[j];
@@ -142,7 +138,7 @@ namespace entities
                         ret = cur;
                         break;
                     }
-                    next = link;
+                    i = link;
                     break;
                 }
             }
@@ -185,14 +181,14 @@ namespace entities
             if(rails.empty()) return false;
             if(last >= secs) return true; // rail has already run this timestep
 
-            int elapsed = secs, iter = 0, span = 0;
+            int elapsed = secs, start = 0, iter = 0, span = 0;
             if(elapsed >= length[0])
             { // allow the loop point to be different from the start
                 elapsed -= length[0];
+                start = ret;
                 iter++;
             }
 
-            int start = iter ? ret : 0;
             millis = elapsed%length[iter];
             offset = rails[start].pos;
             if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)) dir = rails[start].dir;
@@ -268,7 +264,7 @@ namespace entities
                         m = new inanimate;
                         m->ent = parent;
                         m->control = INANIMATE_RAIL;
-                        m->collidetype = mmi->m->collide;
+                        if(mmi->m->collide != COLLIDE_ELLIPSE) m->collidetype = COLLIDE_OBB;
                         inanimates.add(m);
                         cleardynentcache();
                     }
