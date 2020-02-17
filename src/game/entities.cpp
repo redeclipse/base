@@ -126,6 +126,7 @@ namespace entities
         {
             clear();
             if(!ents.inrange(ent)) return false;
+
             for(int next = ent; ents.inrange(next); )
             { // build the rails for this line
                 gameentity &e = *(gameentity *)ents[next];
@@ -145,6 +146,7 @@ namespace entities
                     break;
                 }
             }
+
             if(!rails.empty())
             { // calculate the telemetry of the line
                 if(ret < 0) ret = 0;
@@ -174,6 +176,7 @@ namespace entities
                 }
                 if(length[0] > 0) return true;
             }
+            
             return false;
         }
 
@@ -189,11 +192,12 @@ namespace entities
                 iter++;
             }
 
+            int start = iter ? ret : 0;
             millis = elapsed%length[iter];
-            offset = rails[0].pos;
-            if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)) dir = rails[0].dir;
+            offset = rails[start].pos;
+            if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)) dir = rails[start].dir;
 
-            for(int i = iter ? ret : 0; i < rails.length(); i++)
+            for(int i = start; i < rails.length(); i++)
             { // look for the station on the timetable
                 rail &rcur = rails[i], &rnext = getrail(i, 1, iter);
 
@@ -226,12 +230,13 @@ namespace entities
                     }
                     break;
                 }
+
                 offset = rnext.pos;
                 if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)) dir = rnext.dir;
                 span += rcur.length;
             }
 
-            offset.sub(rails[0].pos);
+            offset.sub(rails[0].pos); // all coordinates translate based on first rail
             if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)) vectoyawpitch(dir, yaw, pitch);
 
             loopv(parents)
@@ -242,10 +247,12 @@ namespace entities
                     parents.remove(i--);
                     continue;
                 }
+                
                 gameentity &e = *(gameentity *)ents[parent];
                 e.offset = offset;
                 if(flags&(1<<RAIL_YAW)) e.yaw = yaw;
                 if(flags&(1<<RAIL_PITCH)) e.pitch = pitch;
+
                 if(e.type == MAPMODEL && !(e.flags&EF_NOCOLLIDE))
                 {
                     mapmodelinfo *mmi = getmminfo(e.attrs[0]);
