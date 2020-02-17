@@ -341,6 +341,10 @@ namespace entities
         {
             int parent = e.links[i];
             if(!ents.inrange(parent) || ents[parent]->type == RAIL || !(enttype[RAIL].canlink&(1<<ents[parent]->type))) continue;
+            gameentity &f = *(gameentity *)ents[parent];
+            if(enttype[f.type].modesattr >= 0 && !m_check(f.attrs[enttype[f.type].modesattr], f.attrs[enttype[f.type].modesattr+1], game::gamemode, game::mutators)) continue;
+            if(enttype[f.type].mvattr >= 0 && !checkmapvariant(f.attrs[enttype[f.type].mvattr])) continue;
+            if(enttype[f.type].fxattr >= 0 && !checkmapeffects(f.attrs[enttype[f.type].fxattr])) continue;
             int cur = findrail(n);
             railway &w = railways.inrange(cur) ? railways[cur] : railways.add(railway(n, e.attrs[1]));
             w.addparent(parent);
