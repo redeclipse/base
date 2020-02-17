@@ -2320,7 +2320,7 @@ namespace entities
                     dir = vec(f.pos()).sub(e.pos()).safenormalize();
                     spot = clamp(int(f.attrs[1]), 1, 89);
                 }
-                adddynlight(e.pos(), radius, color, 0, 0, 0, radius, color, NULL, dir, spot);
+                adddynlight(e.pos(), radius, color, 0, 0, e.attrs[6], radius, color, NULL, dir, spot);
             }
         }
     }
