@@ -52,14 +52,14 @@ namespace entities
     struct railway
     {
         int ent, ret, flags, length[2], last, millis;
-        float yaw, pitch;
-        vec pos, dir, offset;
+        float yaw, pitch, lastyaw, lastpitch;
+        vec pos, dir, offset, lastoffset;
 
         vector<rail> rails;
         vector<int> parents;
 
-        railway() : ent(-1), ret(0), flags(0), last(0), millis(0), yaw(0), pitch(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0) { reset(); }
-        railway(int n, int f = 0) : ent(n), ret(0), flags(f), last(0), millis(0), yaw(0), pitch(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0) { reset(); }
+        railway() : ent(-1), ret(0), flags(0), last(0), millis(0), yaw(0), pitch(0), lastyaw(0), lastpitch(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0) { reset(); }
+        railway(int n, int f = 0) : ent(n), ret(0), flags(f), last(0), millis(0), yaw(0), pitch(0), lastyaw(0), lastpitch(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0) { reset(); }
 
         ~railway()
         {
@@ -172,7 +172,7 @@ namespace entities
                 }
                 if(length[0] > 0) return true;
             }
-            
+
             return false;
         }
 
@@ -188,6 +188,10 @@ namespace entities
                 start = ret;
                 iter++;
             }
+
+            lastoffset = offset;
+            lastyaw = yaw;
+            lastpitch = pitch;
 
             millis = elapsed%length[iter];
             offset = rails[start].pos;
@@ -243,7 +247,7 @@ namespace entities
                     parents.remove(i--);
                     continue;
                 }
-                
+
                 gameentity &e = *(gameentity *)ents[parent];
                 e.offset = offset;
                 if(flags&(1<<RAIL_YAW)) e.yaw = yaw;
@@ -253,6 +257,7 @@ namespace entities
                 {
                     mapmodelinfo *mmi = getmminfo(e.attrs[0]);
                     if(!mmi || !mmi->m) continue;
+
                     inanimate *m = NULL;
                     loopvj(inanimates) if(inanimates[j]->control == INANIMATE_RAIL && inanimates[j]->ent == parent)
                     {
@@ -267,6 +272,7 @@ namespace entities
                         if(mmi->m->collide != COLLIDE_ELLIPSE) m->collidetype = COLLIDE_OBB;
                         inanimates.add(m);
                     }
+
                     m->o = e.pos();
                     m->yaw = e.attrs[1]+e.yaw;
                     m->pitch = e.attrs[2]+e.pitch;
@@ -280,6 +286,8 @@ namespace entities
                         radius.mul(scale);
                     }
                     rotatebb(center, radius, int(m->yaw), int(m->pitch));
+
+                    vec oldsize(m->xradius, m->yradius, m->height);
                     m->xradius = radius.x + fabs(center.x);
                     m->yradius = radius.y + fabs(center.y);
                     m->radius = m->collidetype == COLLIDE_OBB ? sqrtf(m->xradius*m->xradius + m->yradius*m->yradius) : max(m->xradius, m->yradius);
@@ -292,8 +300,16 @@ namespace entities
                         m->height += zrad;
                     }
                     m->o.z += m->height;
+                    if(last)
+                    {
+                        m->yawed = yaw-lastyaw;
+                        m->pitched = pitch-lastpitch;
+                        m->moved = vec(offset).sub(lastoffset);
+                        m->resized = vec(m->xradius, m->yradius, m->height).sub(oldsize);
+                    }
                 }
             }
+
             last = secs;
             return true;
         }
@@ -375,6 +391,25 @@ namespace entities
     {
         resetrails();
         buildrails();
+    }
+
+    void runinanimates()
+    {
+        loopv(inanimates)
+        {
+            inanimate *m = inanimates[i];
+            loopvj(m->passengers)
+            {
+                passenger &p = m->passengers[j];
+                vec dir = vec(p.offset).rotate_around_z(m->yawed*RAD).sub(p.offset).add(m->moved);
+                p.ent->o.add(dir);
+                p.ent->newpos.add(dir);
+                p.ent->yaw += m->yawed;
+                p.ent->pitch += m->pitched;
+                game::fixrange(p.ent->yaw, p.ent->pitch);
+            }
+            m->passengers.shrink(0);
+        }
     }
 
     vector<extentity *> &getents() { return ents; }
@@ -2417,6 +2452,7 @@ namespace entities
                 airnodes.setsize(0);
             }
         }
+        runinanimates();
     }
 
     void render()

@@ -105,6 +105,7 @@ namespace physics
     extern void updatematerial(physent *pl, const vec &center, const vec &bottom, bool local = false);
     extern bool checkcollide(physent *d, const vec &dir, physent *o);
     extern bool checktracecollide(physent *d, const vec &from, const vec &to, float &dist, physent *o, float x1, float x2, float y1, float y2);
+    extern void collided(physent *d, const vec &dir, physent *o, bool inside = false);
     extern void renderboundboxes(physent *d, const vec &rad, const vec &o);
 }
 

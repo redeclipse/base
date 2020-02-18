@@ -644,6 +644,7 @@ bool plcollide(physent *d, const vec &dir, bool insideplayercol, float guard)   
             if(physics::checkcollide(d, dir, o))
             {
                 collideplayer = o;
+                physics::collided(d, dir, o, false);
                 return true;
             }
             if(collideinside > lastinside)
@@ -656,6 +657,7 @@ bool plcollide(physent *d, const vec &dir, bool insideplayercol, float guard)   
     if(insideplayer && insideplayercol)
     {
         collideplayer = insideplayer;
+        physics::collided(d, dir, insideplayer, true);
         return true;
     }
     return false;

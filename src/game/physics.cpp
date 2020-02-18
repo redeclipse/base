@@ -1053,7 +1053,7 @@ namespace physics
                 }
             }
             else matid |= chkmat&MATF_FLAGS;
-            
+
             if(isliquid(chkmat&MATF_VOLUME))
             {
                 pl->inliquid = true;
@@ -1346,6 +1346,13 @@ namespace physics
         if(collidezones == CLZ_NONE) return false;
         dist = bestdist*from.dist(to);
         return true;
+    }
+
+    void collided(physent *d, const vec &dir, physent *o, bool inside)
+    {
+        if(!gameent::is(d) || !inanimate::is(o)) return;
+        inanimate *m = (inanimate *)o;
+        if(!inside && collidewall.z > 0) m->addpassenger(d);
     }
 
     void renderboundboxes(physent *d, const vec &rad, const vec &o)

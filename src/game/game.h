@@ -1949,11 +1949,23 @@ struct gameent : dynent, clientstate
 
 enum { INANIMATE_NONE = 0, INANIMATE_RAIL, INANIMATE_MAX };
 
+struct passenger
+{
+    physent *ent;
+    vec offset;
+
+    passenger(physent *d = NULL, const vec &off = vec(0, 0, 0)) : ent(d), offset(off) {}
+    ~passenger() {}
+};
+
 struct inanimate : dynent
 {
     int control, ent;
+    float yawed, pitched;
+    vec moved, resized;
+    vector<passenger> passengers;
 
-    inanimate() : control(INANIMATE_NONE), ent(-1)
+    inanimate() : control(INANIMATE_NONE), ent(-1), yawed(0), pitched(0), moved(0, 0, 0), resized(0, 0, 0)
     {
         physent::reset();
         type = ENT_INANIMATE;
@@ -1968,6 +1980,18 @@ struct inanimate : dynent
 
     static bool is(int t) { return t == ENT_INANIMATE; }
     static bool is(physent *d) { return d->type == ENT_INANIMATE; }
+
+    int findpassenger(physent *d)
+    {
+        loopv(passengers) if(passengers[i].ent == d) return i;
+        return -1;
+    }
+
+    void addpassenger(physent *d)
+    {
+        if(findpassenger(d) >= 0) return;
+        passengers.add(passenger(d, vec(d->o).sub(o)));
+    }
 };
 
 struct projent : dynent
