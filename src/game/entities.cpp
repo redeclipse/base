@@ -402,6 +402,7 @@ namespace entities
             {
                 passenger &p = m->passengers[j];
                 vec dir = vec(p.offset).rotate_around_z(m->yawed*RAD).sub(p.offset).add(m->moved);
+                dir.z += m->resized.z;
                 p.ent->o.add(dir);
                 p.ent->newpos.add(dir);
                 p.ent->yaw += m->yawed;

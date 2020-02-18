@@ -808,7 +808,7 @@ namespace physics
                 {
                     d->o.add(dir);
                     bool collided = collide(d);
-                    if(!collided || collideplayer || collidewall.iszero()) continue;
+                    if(!collided || (collideplayer && !inanimate::is(collideplayer)) || collidewall.iszero()) continue;
                     if(collidematerial && (collidematerial&MATF_CLIP) == MAT_CLIP && (collidematerial&MATF_FLAGS)&MAT_LADDER) continue;
                     foundwall = true;
                     break;
@@ -835,13 +835,13 @@ namespace physics
                             if(collide(d))
                             {
                                 d->o.z += space*n-space*m;
-                                if(!collide(d) || collideplayer) vault = true;
+                                if(!collide(d) || (collideplayer && !inanimate::is(collideplayer))) vault = true;
                             }
                         }
                         else
                         {
                             d->o.z += space*n;
-                            if(!collide(d) || collideplayer) vault = true;
+                            if(!collide(d) || (collideplayer && !inanimate::is(collideplayer))) vault = true;
                         }
                         d->o = oldpos;
                     }
@@ -870,7 +870,7 @@ namespace physics
                         d->o.add(rft);
                         bool collided = collide(d, rft);
                         d->o = oldpos;
-                        if(collided || collideplayer) continue; // we might find a better vector
+                        if(collided || (collideplayer && !inanimate::is(collideplayer))) continue; // we might find a better vector
                         if(d->impulse[IM_TYPE] != IM_T_PARKOUR)
                         {
                             int cost = int(impulsecost*(isclimb ? impulsecostclimb : impulsecostparkour));
