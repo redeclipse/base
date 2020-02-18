@@ -51,15 +51,15 @@ namespace entities
 
     struct railway
     {
-        int ent, ret, flags, length[2], lastsecs, millis;
+        int ent, ret, flags, length[2], lastsecs, millis, coltype;
         float yaw, pitch, lastyaw, lastpitch;
         vec pos, dir, offset, lastoffset;
 
         vector<rail> rails;
         vector<int> parents;
 
-        railway() : ent(-1), ret(0), flags(0), lastsecs(0), millis(0), yaw(0), pitch(0), lastyaw(0), lastpitch(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0) { reset(); }
-        railway(int n, int f = 0) : ent(n), ret(0), flags(f), lastsecs(0), millis(0), yaw(0), pitch(0), lastyaw(0), lastpitch(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0) { reset(); }
+        railway() : ent(-1), ret(0), flags(0), lastsecs(0), millis(0), coltype(0), yaw(0), pitch(0), lastyaw(0), lastpitch(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0) { reset(); }
+        railway(int n, int f = 0, int c = 0) : ent(n), ret(0), flags(f), lastsecs(0), millis(0), coltype(c), yaw(0), pitch(0), lastyaw(0), lastpitch(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0) { reset(); }
 
         ~railway()
         {
@@ -288,6 +288,7 @@ namespace entities
                         m = new inanimate;
                         m->ent = parent;
                         m->control = INANIMATE_RAIL;
+                        m->coltype = coltype;
                         if(mmi->m->collide != COLLIDE_ELLIPSE) m->collidetype = COLLIDE_OBB;
                         inanimates.add(m);
                     }
@@ -381,7 +382,7 @@ namespace entities
             if(enttype[f.type].mvattr >= 0 && !checkmapvariant(f.attrs[enttype[f.type].mvattr])) continue;
             if(enttype[f.type].fxattr >= 0 && !checkmapeffects(f.attrs[enttype[f.type].fxattr])) continue;
             int cur = findrail(n);
-            railway &w = railways.inrange(cur) ? railways[cur] : railways.add(railway(n, e.attrs[1]));
+            railway &w = railways.inrange(cur) ? railways[cur] : railways.add(railway(n, e.attrs[1], e.attrs[6]));
             w.addparent(parent);
             f.flags |= EF_DYNAMIC;
         }
@@ -809,6 +810,9 @@ namespace entities
                 {
                     const char *railnames[RAIL_MAX] = { "follow-yaw", "follow-pitch", "seek-next", "spline" };
                     loopj(RAIL_MAX) if(attr[1]&(1<<j)) addentinfo(railnames[j]);
+
+                    const char *railcollides[RAIL_C_MAX] = { "touch-kill" };
+                    loopj(RAIL_C_MAX) if(attr[6]&(1<<j)) addentinfo(railcollides[j]);
                 }
             }
             default: break;
@@ -1744,6 +1748,8 @@ namespace entities
                 FIXDIRYPL(2, 3); // yaw, pitch
                 if(e.attrs[4] < 0) e.attrs[4] = 0;
                 if(e.attrs[5] < 0) e.attrs[5] = 0;
+                while(e.attrs[6] < 0) e.attrs[6] += RAIL_C_ALL+1;
+                while(e.attrs[6] > RAIL_C_ALL) e.attrs[6] -= RAIL_C_ALL+1;
             }
             default: break;
         }

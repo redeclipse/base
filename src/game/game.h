@@ -48,6 +48,7 @@ enum { EU_NONE = 0, EU_ITEM, EU_AUTO, EU_ACT, EU_MAX };
 enum { TR_TOGGLE = 0, TR_LINK, TR_SCRIPT, TR_ONCE, TR_EXIT, TR_MAX };
 enum { TA_MANUAL = 0, TA_AUTO, TA_ACTION, TA_MAX };
 enum { RAIL_YAW = 0, RAIL_PITCH, RAIL_SEEK, RAIL_SPLINE, RAIL_MAX, RAIL_ALL = (1<<RAIL_YAW)|(1<<RAIL_PITCH)|(1<<RAIL_SEEK)|(1<<RAIL_SPLINE) };
+enum { RAIL_C_NONE = 0, RAIL_C_KILL, RAIL_C_MAX, RAIL_C_ALL = (1<<RAIL_C_KILL) };
 
 #define TRIGGERIDS      16
 #define TRIGSTATE(a,b)  (b%2 ? !a : a)
@@ -205,10 +206,10 @@ extern const enttypes enttype[] = {
                 "route",         { "num",   "yaw",      "pitch",    "move",     "strafe",   "action" }
     },
     {
-        RAIL,           -1,         228,    0,      EU_NONE,    6,          -1,         -1,     -1,     -1,
+        RAIL,           -1,         228,    0,      EU_NONE,    7,          -1,         -1,     -1,     -1,
             (1<<LIGHT)|(1<<MAPMODEL)|(1<<PLAYERSTART)|(1<<PARTICLES)|(1<<MAPSOUND)|(1<<LIGHTFX)|(1<<WEAPON)|(1<<TELEPORT)|(1<<ACTOR)|(1<<TRIGGER)|(1<<PUSHER)|(1<<RAIL), 0, 0,
             false,   false,  false,      false,      false,
-                "rail",         { "time",   "flags",    "yaw",      "pitch",    "rotlen",   "rotwait" }
+                "rail",         { "time",   "flags",    "yaw",      "pitch",    "rotlen",   "rotwait",  "collide" }
     }
 };
 #else
@@ -1960,12 +1961,12 @@ struct passenger
 
 struct inanimate : dynent
 {
-    int control, ent;
+    int control, ent, coltype;
     float yawed, pitched;
     vec moved, resized;
     vector<passenger> passengers;
 
-    inanimate() : control(INANIMATE_NONE), ent(-1), yawed(0), pitched(0), moved(0, 0, 0), resized(0, 0, 0)
+    inanimate() : control(INANIMATE_NONE), ent(-1), coltype(0), yawed(0), pitched(0), moved(0, 0, 0), resized(0, 0, 0)
     {
         physent::reset();
         type = ENT_INANIMATE;
@@ -2019,9 +2020,9 @@ struct projent : dynent
     }
 
     static bool is(int t) { return t == ENT_PROJ; }
-    static bool is(physent *d) { return d->type == ENT_PROJ; }
+    static bool is(physent *d) { return d && d->type == ENT_PROJ; }
     static bool shot(int t, int w) { return t == ENT_PROJ && w == PRJ_SHOT; }
-    static bool shot(physent *d) { return d->type == ENT_PROJ && ((projent*)d)->projtype == PRJ_SHOT; }
+    static bool shot(physent *d) { return d && d->type == ENT_PROJ && ((projent*)d)->projtype == PRJ_SHOT; }
 
     void reset()
     {

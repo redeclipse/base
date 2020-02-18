@@ -1350,8 +1350,24 @@ namespace physics
 
     void collided(physent *d, const vec &dir, physent *o, bool inside)
     {
-        if(!gameent::is(d) || !inanimate::is(o)) return;
-        inanimate *m = (inanimate *)o;
+        gameent *e = NULL;
+        inanimate *m = NULL;
+
+        if(gameent::is(d)) e = (gameent *)d;
+        else if(inanimate::is(d)) m = (inanimate *)d;
+        else return;
+
+        if(gameent::is(o)) e = (gameent *)o;
+        else if(inanimate::is(o)) m = (inanimate *)o;
+        else return;
+
+        if(!e || !m) return;
+
+        if(m->coltype == RAIL_C_KILL)
+        {
+            game::suicide(e, HIT(TOUCH));
+            return;
+        }
         if(!inside && collidewall.z > 0) m->addpassenger(d);
     }
 

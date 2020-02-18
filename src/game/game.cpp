@@ -120,6 +120,7 @@ namespace game
     SVAR(IDF_WORLD, obitdeath, "");
     SVAR(IDF_WORLD, obithurt, "");
     SVAR(IDF_WORLD, obitfall, "");
+    SVAR(IDF_WORLD, obitrail, "");
 
     void stopmapmusic()
     {
@@ -1650,6 +1651,7 @@ namespace game
             concatstring(d->obit, "\fs");
             if(!obitverbose) concatstring(d->obit, obitdied);
             else if(flags&HIT(SPAWN)) concatstring(d->obit, obitspawn);
+            else if(flags&HIT(TOUCH)) concatstring(d->obit, *obitrail ? obitrail : obittouch);
             else if(flags&HIT(SPEC)) concatstring(d->obit, obitspectator);
             else if(flags&HIT(MATERIAL) && curmat&MAT_WATER) concatstring(d->obit, getobitwater(material, obitdrowned));
             else if(flags&HIT(MATERIAL) && curmat&MAT_LAVA) concatstring(d->obit, getobitlava(material, obitmelted));
