@@ -266,7 +266,6 @@ namespace entities
                         m->control = INANIMATE_RAIL;
                         if(mmi->m->collide != COLLIDE_ELLIPSE) m->collidetype = COLLIDE_OBB;
                         inanimates.add(m);
-                        cleardynentcache();
                     }
                     m->o = e.pos();
                     m->yaw = e.attrs[1]+e.yaw;
