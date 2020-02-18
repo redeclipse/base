@@ -31,6 +31,7 @@ namespace entities
     extern int lastuse(int type);
     extern bool checkparticle(extentity &e);
     extern void drawparticles();
+    extern void allchanged(bool load = false);
 }
 
 namespace client

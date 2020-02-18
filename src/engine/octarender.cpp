@@ -1806,6 +1806,7 @@ void allchanged(bool load)
     setupmaterials();
     clearshadowcache();
     updatevabbs(true);
+    entities::allchanged(load);
     if(load)
     {
         genshadowmeshes();

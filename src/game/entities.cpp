@@ -329,6 +329,7 @@ namespace entities
 
     void fixrails(int n)
     {
+        if(!ents.inrange(n)) return;
         loopv(railways) if(railways[i].ent == n || railways[i].findchild(n) >= 0 || railways[i].findparent(n) >= 0) railways.remove(i--);
         cleardynentcache();
         railbuilt = 0;
@@ -348,7 +349,7 @@ namespace entities
             int cur = findrail(n);
             railway &w = railways.inrange(cur) ? railways[cur] : railways.add(railway(n, e.attrs[1]));
             w.addparent(parent);
-            ents[parent]->flags |= EF_DYNAMIC;
+            f.flags |= EF_DYNAMIC;
         }
     }
 
@@ -2333,6 +2334,11 @@ namespace entities
     {
         resetrails();
         inanimates.deletecontents();
+    }
+
+    void allchanged(bool load)
+    {
+        if(load) reset();
     }
 
     void update()
