@@ -48,7 +48,6 @@ enum { EU_NONE = 0, EU_ITEM, EU_AUTO, EU_ACT, EU_MAX };
 enum { TR_TOGGLE = 0, TR_LINK, TR_SCRIPT, TR_ONCE, TR_EXIT, TR_MAX };
 enum { TA_MANUAL = 0, TA_AUTO, TA_ACTION, TA_MAX };
 enum { RAIL_YAW = 0, RAIL_PITCH, RAIL_SEEK, RAIL_SPLINE, RAIL_MAX, RAIL_ALL = (1<<RAIL_YAW)|(1<<RAIL_PITCH)|(1<<RAIL_SEEK)|(1<<RAIL_SPLINE) };
-enum { RAIL_C_NONE = 0, RAIL_C_KILL, RAIL_C_MAX, RAIL_C_ALL = (1<<RAIL_C_KILL) };
 
 #define TRIGGERIDS      16
 #define TRIGSTATE(a,b)  (b%2 ? !a : a)
@@ -1949,6 +1948,7 @@ struct gameent : dynent, clientstate
 };
 
 enum { INANIMATE_NONE = 0, INANIMATE_RAIL, INANIMATE_MAX };
+enum { INANIMATE_C_KILL = 0, INANIMATE_C_MAX, INANIMATE_C_ALL = (1<<INANIMATE_C_KILL) };
 
 struct passenger
 {

@@ -811,8 +811,8 @@ namespace entities
                     const char *railnames[RAIL_MAX] = { "follow-yaw", "follow-pitch", "seek-next", "spline" };
                     loopj(RAIL_MAX) if(attr[1]&(1<<j)) addentinfo(railnames[j]);
 
-                    const char *railcollides[RAIL_C_MAX] = { "touch-kill" };
-                    loopj(RAIL_C_MAX) if(attr[6]&(1<<j)) addentinfo(railcollides[j]);
+                    const char *railcollides[INANIMATE_C_MAX] = { "touch-kill" };
+                    loopj(INANIMATE_C_MAX) if(attr[6]&(1<<j)) addentinfo(railcollides[j]);
                 }
             }
             default: break;
@@ -1748,8 +1748,8 @@ namespace entities
                 FIXDIRYPL(2, 3); // yaw, pitch
                 if(e.attrs[4] < 0) e.attrs[4] = 0;
                 if(e.attrs[5] < 0) e.attrs[5] = 0;
-                while(e.attrs[6] < 0) e.attrs[6] += RAIL_C_ALL+1;
-                while(e.attrs[6] > RAIL_C_ALL) e.attrs[6] -= RAIL_C_ALL+1;
+                while(e.attrs[6] < 0) e.attrs[6] += INANIMATE_C_ALL+1;
+                while(e.attrs[6] > INANIMATE_C_ALL) e.attrs[6] -= INANIMATE_C_ALL+1;
             }
             default: break;
         }

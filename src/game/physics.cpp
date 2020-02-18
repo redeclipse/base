@@ -1363,7 +1363,7 @@ namespace physics
 
         if(!e || !m) return;
 
-        if(m->coltype&(1<<RAIL_C_KILL))
+        if(m->coltype&(1<<INANIMATE_C_KILL))
         {
             game::suicide(e, HIT(TOUCH));
             return;
