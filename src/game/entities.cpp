@@ -51,15 +51,15 @@ namespace entities
 
     struct railway
     {
-        int ent, ret, flags, length[2], last, millis;
+        int ent, ret, flags, length[2], lastsecs, millis;
         float yaw, pitch, lastyaw, lastpitch;
         vec pos, dir, offset, lastoffset;
 
         vector<rail> rails;
         vector<int> parents;
 
-        railway() : ent(-1), ret(0), flags(0), last(0), millis(0), yaw(0), pitch(0), lastyaw(0), lastpitch(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0) { reset(); }
-        railway(int n, int f = 0) : ent(n), ret(0), flags(f), last(0), millis(0), yaw(0), pitch(0), lastyaw(0), lastpitch(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0) { reset(); }
+        railway() : ent(-1), ret(0), flags(0), lastsecs(0), millis(0), yaw(0), pitch(0), lastyaw(0), lastpitch(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0) { reset(); }
+        railway(int n, int f = 0) : ent(n), ret(0), flags(f), lastsecs(0), millis(0), yaw(0), pitch(0), lastyaw(0), lastpitch(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0) { reset(); }
 
         ~railway()
         {
@@ -179,7 +179,26 @@ namespace entities
         bool run(int secs)
         {
             if(rails.empty()) return false;
-            if(last >= secs) return true; // rail has already run this timestep
+            if(lastsecs >= secs)
+            { // rail has already run this timestep
+                loopv(parents)
+                {
+                    int parent = parents[i];
+                    if(!ents.inrange(parent))
+                    {
+                        parents.remove(i--);
+                        continue;
+                    }
+                    loopvj(inanimates) if(inanimates[j]->control == INANIMATE_RAIL && inanimates[j]->ent == parent)
+                    {
+                        inanimate *m = inanimates[j];
+                        m->yawed = m->pitched = 0;
+                        m->moved = m->resized = vec(0, 0, 0);
+                        break;
+                    }
+                }
+                return true;
+            }
 
             int elapsed = secs, start = 0, iter = 0, span = 0;
             if(elapsed >= length[0])
@@ -300,7 +319,7 @@ namespace entities
                         m->height += zrad;
                     }
                     m->o.z += m->height;
-                    if(last)
+                    if(lastsecs)
                     {
                         m->yawed = yaw-lastyaw;
                         m->pitched = pitch-lastpitch;
@@ -310,7 +329,7 @@ namespace entities
                 }
             }
 
-            last = secs;
+            lastsecs = secs;
             return true;
         }
     };
@@ -401,13 +420,32 @@ namespace entities
             loopvj(m->passengers)
             {
                 passenger &p = m->passengers[j];
-                vec dir = vec(p.offset).rotate_around_z(m->yawed*RAD).sub(p.offset).add(m->moved);
-                dir.z += m->resized.z;
-                p.ent->o.add(dir);
-                p.ent->newpos.add(dir);
-                p.ent->yaw += m->yawed;
-                p.ent->pitch += m->pitched;
-                game::fixrange(p.ent->yaw, p.ent->pitch);
+                physent *d = p.ent;
+                vec dir = vec(p.offset).rotate_around_z(m->yawed*RAD).sub(p.offset).add(m->moved).addz(m->resized.z),
+                    oldpos = d->o, oldnew = d->newpos;
+                for(int secs = curtime; secs > 0; )
+                {
+                    int step = min(secs, physics::physframetime);
+                    float part = step/float(curtime);
+                    if(!dir.iszero())
+                    {
+                        vec curdir = vec(dir).mul(part);
+                        d->o.add(curdir);
+                        d->newpos.add(curdir);
+                        if(collide(d) && collideplayer != m && !gameent::is(collideplayer))
+                        {
+                            d->o = oldpos;
+                            d->newpos = oldnew;
+                            break;
+                        }
+                        oldpos = d->o;
+                        oldnew = d->newpos;
+                    }
+                    if(m->yawed != 0) d->yaw += m->yawed*part;
+                    if(m->pitched != 0) d->pitch += m->pitched*part;
+                    secs -= step;
+                }
+                game::fixrange(d->yaw, d->pitch);
             }
             m->passengers.shrink(0);
         }

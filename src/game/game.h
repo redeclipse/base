@@ -1248,7 +1248,7 @@ struct gameent : dynent, clientstate
     }
 
     static bool is(int t) { return t == ENT_PLAYER || t == ENT_AI; }
-    static bool is(physent *d) { return d->type == ENT_PLAYER || d->type == ENT_AI; }
+    static bool is(physent *d) { return d && (d->type == ENT_PLAYER || d->type == ENT_AI); }
 
 
     void addstun(int weap, int millis, int delay, float scale, float gravity)
@@ -1979,7 +1979,7 @@ struct inanimate : dynent
     }
 
     static bool is(int t) { return t == ENT_INANIMATE; }
-    static bool is(physent *d) { return d->type == ENT_INANIMATE; }
+    static bool is(physent *d) { return d && d->type == ENT_INANIMATE; }
 
     int findpassenger(physent *d)
     {

@@ -312,8 +312,8 @@ struct dynent : physent                         // animated characters, or chara
 #endif
     }
 
-    static bool is(int t) { return t == ENT_PLAYER || t == ENT_AI || t == ENT_PROJ; }
-    static bool is(physent *d) { return d->type == ENT_PLAYER || d->type == ENT_AI || d->type == ENT_PROJ; }
+    static bool is(int t) { return t == ENT_PLAYER || t == ENT_AI || t == ENT_PROJ || t == ENT_INANIMATE; }
+    static bool is(physent *d) { return d && (d->type == ENT_PLAYER || d->type == ENT_AI || d->type == ENT_PROJ || d->type == ENT_INANIMATE); }
 
     void reset()
     {
