@@ -311,7 +311,8 @@ namespace entities
                     m->xradius = radius.x + fabs(center.x);
                     m->yradius = radius.y + fabs(center.y);
                     m->radius = m->collidetype == COLLIDE_OBB ? sqrtf(m->xradius*m->xradius + m->yradius*m->yradius) : max(m->xradius, m->yradius);
-                    m->height = m->zradius = (center.z-radius.z) + radius.z*2*mmi->m->height;
+                    float offz = center.z-radius.z;
+                    m->height = m->zradius = max(offz, 0.f) + radius.z*2*mmi->m->height;
                     m->aboveeye = radius.z*2*(1.0f-mmi->m->height);
                     if(m->aboveeye+m->height <= 0.5f)
                     {
@@ -320,6 +321,7 @@ namespace entities
                         m->height += zrad;
                     }
                     m->o.z += m->height;
+                    if(offz < 0) m->o.z += offz;
                     if(lastsecs)
                     {
                         m->yawed = yaw-lastyaw;
@@ -457,28 +459,21 @@ namespace entities
                             d->newpos.add(push);
                             if(collide(d))
                             {
-                                d->o = oldpos;
-                                d->newpos = oldnew;
+                                bool crush = true;
                                 if(collidewall.z >= physics::slopez)
                                 {
                                     vec proj = vec(push).project(collidewall);
-                                    if(proj.iszero())
+                                    if(!proj.iszero())
                                     {
-                                        game::suicide(d, HIT(CRUSH));
-                                        break;
-                                    }
-                                    d->o.add(proj);
-                                    d->newpos.add(proj);
-                                    if(collide(d))
-                                    {
-                                        d->o = oldpos;
-                                        d->newpos = oldnew;
-                                        game::suicide(d, HIT(CRUSH));
-                                        break;
+                                        d->o = vec(oldpos).add(proj);
+                                        d->newpos = vec(oldnew).add(proj);
+                                        if(!collide(d)) crush = false;
                                     }
                                 }
-                                else
+                                if(crush)
                                 {
+                                    d->o = oldpos;
+                                    d->newpos = oldnew;
                                     game::suicide(d, HIT(CRUSH));
                                     break;
                                 }
