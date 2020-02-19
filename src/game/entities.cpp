@@ -445,17 +445,16 @@ namespace entities
                     {
                         gameent *d = (gameent *)game::iterdynents(j);
                         if(!d || d->state != CS_ALIVE || m->findpassenger(d) >= 0) continue;
-                        vec oldpos = d->o, oldnew = d->newpos,
-                            rescale = vec(d->o).sub(m->o).safenormalize().mul(resize),
-                            norm = vec(dir).add(rescale);
-                        bool under = d->o.z <= prevpos.z-prevh && d->o.x >= prevpos.x-prevx && d->o.x <= prevpos.x+prevx && d->o.y >= prevpos.y-prevy && d->o.y <= prevpos.y+prevy;
+                        vec oldpos = d->o, oldnew = d->newpos, rescale = vec(d->o).sub(m->o);
+                        if(!rescale.iszero()) rescale.normalize().mul(resize);
+                        bool under = d->o.z <= prevpos.z-prevh && d->o.x >= prevpos.x-prevx-d->xradius && d->o.x <= prevpos.x+prevx+d->xradius && d->o.y >= prevpos.y-prevy-d->yradius && d->o.y <= prevpos.y+prevy+d->yradius;
                         m->coltarget = d;
-                        while(collide(m, vec(0, 0, 0), 0, true, true, 0, false))
+                        loopn(2) loopk(2) if(collide(m, vec(0, 0, 0), 0, true, true, 0, false))
                         {
                             if(m->coltype&(1<<INANIMATE_C_KILL)) game::suicide(d, HIT(TOUCH));
-                            vec push = norm;
+                            vec push = k ? dir : rescale;
                             if(push.z > 0 || !under) push.z = 0;
-                            if(push.iszero()) break;
+                            if(push.iszero()) continue;
                             d->o.add(push);
                             d->newpos.add(push);
                             if(collide(d))

@@ -117,7 +117,7 @@ static inline int bitscan(uint mask)
 #define loopk(u) loop(k,u)
 #define loopl(u) loop(l,u)
 #define loopm(u) loop(m,u)
-#define loopn(u) loop(,u)
+#define loopn(u) loop(n,u)
 
 #define looprev(v,u) for(int v = int(u); --v >= 0;)
 #define loopirev(u) looprev(i,u)
