@@ -421,11 +421,12 @@ namespace entities
             if(!m->moved.iszero())
             {
                 vec origpos = m->o;
-                float origx = m->xradius, origy = m->yradius, origh = m->height;
+                float origr = m->radius, origx = m->xradius, origy = m->yradius, origh = m->height;
                 int numdynents = game::numdynents();
                 m->o.sub(m->moved);
                 m->xradius -= m->resized.x;
                 m->yradius -= m->resized.y;
+                m->radius = m->collidetype == COLLIDE_OBB ? sqrtf(m->xradius*m->xradius + m->yradius*m->yradius) : max(m->xradius, m->yradius);
                 m->height -= m->resized.z;
                 for(int secs = curtime; secs > 0; )
                 {
@@ -436,6 +437,7 @@ namespace entities
                     m->o.add(dir);
                     m->xradius += resize.x;
                     m->yradius += resize.y;
+                    m->radius = m->collidetype == COLLIDE_OBB ? sqrtf(m->xradius*m->xradius + m->yradius*m->yradius) : max(m->xradius, m->yradius);
                     m->height += resize.z;
                     loopj(numdynents)
                     {
@@ -491,6 +493,7 @@ namespace entities
                 m->o = origpos;
                 m->xradius = origx;
                 m->yradius = origy;
+                m->radius = origr;
                 m->height = origh;
             }
             loopvj(m->passengers)
