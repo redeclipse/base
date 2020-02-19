@@ -442,21 +442,44 @@ namespace entities
                         gameent *d = (gameent *)game::iterdynents(j);
                         if(!d || m->findpassenger(d) >= 0) continue;
                         vec oldpos = d->o, oldnew = d->newpos,
-                            rescale = vec(d->o).sub(m->o).normalize().mul(resize),
+                            rescale = vec(d->o).sub(m->o).safenormalize().mul(resize),
                             norm = vec(dir).add(rescale);
                         bool under = d->o.z <= prevpos.z-prevh && d->o.x >= prevpos.x-prevx && d->o.x <= prevpos.x+prevx && d->o.y >= prevpos.y-prevy && d->o.y <= prevpos.y+prevy;
                         m->coltarget = d;
                         while(collide(m, vec(0, 0, 0), 0, true, true, 0, false))
                         {
-                            if(norm.z > 0 || !under) norm.z = 0;
-                            d->o.add(norm);
-                            d->newpos.add(norm);
+                            vec push = norm;
+                            if(push.z > 0 || !under) push.z = 0;
+                            if(push.iszero()) break;
+                            d->o.add(push);
+                            d->newpos.add(push);
                             if(collide(d))
                             {
                                 d->o = oldpos;
                                 d->newpos = oldnew;
-                                game::suicide(d, HIT(CRUSH));
-                                break;
+                                if(collidewall.z >= physics::slopez)
+                                {
+                                    vec proj = vec(push).project(collidewall);
+                                    if(proj.iszero())
+                                    {
+                                        game::suicide(d, HIT(CRUSH));
+                                        break;
+                                    }
+                                    d->o.add(proj);
+                                    d->newpos.add(proj);
+                                    if(collide(d))
+                                    {
+                                        d->o = oldpos;
+                                        d->newpos = oldnew;
+                                        game::suicide(d, HIT(CRUSH));
+                                        break;
+                                    }
+                                }
+                                else
+                                {
+                                    game::suicide(d, HIT(CRUSH));
+                                    break;
+                                }
                             }
                             oldpos = d->o;
                             oldnew = d->newpos;
@@ -490,6 +513,7 @@ namespace entities
                         {
                             d->o = oldpos;
                             d->newpos = oldnew;
+                            if(gameent::is(d) && collidewall.z < 0) game::suicide((gameent *)d, HIT(CRUSH));
                             break;
                         }
                         oldpos = d->o;
