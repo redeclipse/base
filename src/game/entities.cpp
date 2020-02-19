@@ -1404,7 +1404,7 @@ namespace entities
                 {
                     if(!checkmapvariant(e.attrs[enttype[e.type].mvattr])) break;
                     int millis = d->lastused(n, true);
-                    if(millis && lastmillis-millis < triggertime(e)) break;
+                    if(e.attrs[5] != 3 && millis && lastmillis-millis < triggertime(e)) break;
                     e.lastemit = lastmillis;
                     d->setused(n, lastmillis);
                     float mag = e.attrs[2] != 0 ? e.attrs[2] : 1, maxrad = e.attrs[3] ? e.attrs[3] : enttype[PUSHER].radius, minrad = e.attrs[4];
@@ -1433,7 +1433,7 @@ namespace entities
                         if(gameent::is(d))
                         {
                             gameent *g = (gameent *)d;
-                            execlink(g, n, true);
+                            if(e.attrs[5] != 3 || !millis || lastmillis-millis >= triggertime(e)) execlink(g, n, true);
                             if(e.attrs[10] > 0) g->doimpulse(IM_T_PUSHER, lastmillis+e.attrs[10]);
                             else g->resetair();
                         }
