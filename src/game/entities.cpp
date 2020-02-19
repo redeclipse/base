@@ -449,10 +449,10 @@ namespace entities
                         if(!rescale.iszero()) rescale.normalize().mul(resize);
                         bool under = d->o.z <= prevpos.z-prevh && d->o.x >= prevpos.x-prevx-d->xradius && d->o.x <= prevpos.x+prevx+d->xradius && d->o.y >= prevpos.y-prevy-d->yradius && d->o.y <= prevpos.y+prevy+d->yradius;
                         m->coltarget = d;
-                        loopn(2) loopk(2) if(collide(m, vec(0, 0, 0), 0, true, true, 0, false))
+                        loopk(4) if(collide(m, vec(0, 0, 0), 0, true, true, 0, false))
                         {
                             if(m->coltype&(1<<INANIMATE_C_KILL)) game::suicide(d, HIT(TOUCH));
-                            vec push = k ? dir : rescale;
+                            vec push = k%2 ? dir : rescale;
                             if(push.z > 0 || !under) push.z = 0;
                             if(push.iszero()) continue;
                             d->o.add(push);
