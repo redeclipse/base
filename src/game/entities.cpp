@@ -491,7 +491,7 @@ namespace entities
                 m->radius = origr;
                 m->height = origh;
             }
-            loopvj(m->passengers)
+            if(!(m->coltype&(1<<INANIMATE_C_NOPASS))) loopvj(m->passengers)
             {
                 passenger &p = m->passengers[j];
                 physent *d = p.ent;
@@ -897,7 +897,7 @@ namespace entities
                     const char *railnames[RAIL_MAX] = { "follow-yaw", "follow-pitch", "seek-next", "spline" };
                     loopj(RAIL_MAX) if(attr[1]&(1<<j)) addentinfo(railnames[j]);
 
-                    const char *railcollides[INANIMATE_C_MAX] = { "touch-kill" };
+                    const char *railcollides[INANIMATE_C_MAX] = { "touch-kill", "no-passenger" };
                     loopj(INANIMATE_C_MAX) if(attr[6]&(1<<j)) addentinfo(railcollides[j]);
                 }
             }

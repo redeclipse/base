@@ -1375,7 +1375,7 @@ namespace physics
         if(!e || !m) return;
 
         if(m->coltype&(1<<INANIMATE_C_KILL)) game::suicide(e, HIT(TOUCH));
-        if(!inside && collidewall.z > 0) m->addpassenger(d);
+        if(!(m->coltype&(1<<INANIMATE_C_NOPASS)) && !inside && collidewall.z > 0) m->addpassenger(d);
     }
 
     void renderboundboxes(physent *d, const vec &rad, const vec &o)
