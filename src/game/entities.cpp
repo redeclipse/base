@@ -420,7 +420,7 @@ namespace entities
         loopv(inanimates)
         {
             inanimate *m = inanimates[i];
-            if(!m->moved.iszero())
+            if(!m->moved.iszero() || !m->resized.iszero())
             {
                 vec origpos = m->o;
                 float origr = m->radius, origx = m->xradius, origy = m->yradius, origh = m->height;
