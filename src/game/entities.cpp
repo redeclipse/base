@@ -444,7 +444,7 @@ namespace entities
                     loopj(numdynents)
                     {
                         gameent *d = (gameent *)game::iterdynents(j);
-                        if(!d || m->findpassenger(d) >= 0) continue;
+                        if(!d || d->state != CS_ALIVE || m->findpassenger(d) >= 0) continue;
                         vec oldpos = d->o, oldnew = d->newpos,
                             rescale = vec(d->o).sub(m->o).safenormalize().mul(resize),
                             norm = vec(dir).add(rescale);
@@ -452,6 +452,7 @@ namespace entities
                         m->coltarget = d;
                         while(collide(m, vec(0, 0, 0), 0, true, true, 0, false))
                         {
+                            if(m->coltype&(1<<INANIMATE_C_KILL)) game::suicide(d, HIT(TOUCH));
                             vec push = norm;
                             if(push.z > 0 || !under) push.z = 0;
                             if(push.iszero()) break;
@@ -495,6 +496,7 @@ namespace entities
             {
                 passenger &p = m->passengers[j];
                 physent *d = p.ent;
+                if(d->state != CS_ALIVE) continue;
                 vec dir = vec(p.offset).rotate_around_z(m->yawed*RAD).sub(p.offset).add(m->moved).addz(m->resized.z),
                     oldpos = d->o, oldnew = d->newpos;
                 m->coltarget = d; // filter collisions from the passenger
