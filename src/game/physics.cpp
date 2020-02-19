@@ -180,7 +180,18 @@ namespace physics
     bool issolid(physent *d, physent *e, bool esc, bool impact, bool reverse)
     { // d is target, e is from
         if(!e || d == e) return false; // don't collide with themself
-        if(inanimate::is(d) || inanimate::is(e)) return true;
+        if(inanimate::is(d))
+        {
+            inanimate *m = (inanimate *)d;
+            if(m->coltarget && e == m->coltarget) return false;
+            return true;
+        }
+        if(inanimate::is(e))
+        {
+            inanimate *m = (inanimate *)e;
+            if(m->coltarget && d != m->coltarget) return false;
+            return true;
+        }
         if(projent::is(e))
         {
             projent *p = (projent *)e;

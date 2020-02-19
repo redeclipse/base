@@ -361,7 +361,7 @@ extern char *mapcdesc(const char *s);
 
 // physics
 extern bool ellipsecollide(physent *d, const vec &dir, const vec &o, const vec &center, float yaw, float xr, float yr, float hi, float lo);
-extern bool collide(physent *d, const vec &dir = vec(0, 0, 0), float cutoff = 0, bool playercol = true, bool insideplayercol = false, float guard = 0);
+extern bool collide(physent *d, const vec &dir = vec(0, 0, 0), float cutoff = 0, bool playercol = true, bool insideplayercol = false, float guard = 0, bool npcol = true);
 extern bool plcollide(physent *d, const vec &dir = vec(0, 0, 0), bool insideplayercol = false, float guard = 0);
 extern bool plcollide(physent *d, const vec &dir, physent *o, float guard = 0);
 extern float pltracecollide(physent *d, const vec &o, const vec &ray, float maxdist, float guard = 0);

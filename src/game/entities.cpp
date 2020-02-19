@@ -418,12 +418,65 @@ namespace entities
         loopv(inanimates)
         {
             inanimate *m = inanimates[i];
+            if(!m->moved.iszero())
+            {
+                vec origpos = m->o;
+                float origx = m->xradius, origy = m->yradius, origh = m->height;
+                int numdynents = game::numdynents();
+                m->o.sub(m->moved);
+                m->xradius -= m->resized.x;
+                m->yradius -= m->resized.y;
+                m->height -= m->resized.z;
+                for(int secs = curtime; secs > 0; )
+                {
+                    int step = min(secs, physics::physframetime);
+                    float part = step/float(curtime);
+                    vec dir = vec(m->moved).mul(part), resize = vec(m->resized).mul(part), prevpos = m->o;
+                    float prevx = m->xradius, prevy = m->yradius, prevh = m->height;
+                    m->o.add(dir);
+                    m->xradius += resize.x;
+                    m->yradius += resize.y;
+                    m->height += resize.z;
+                    loopj(numdynents)
+                    {
+                        gameent *d = (gameent *)game::iterdynents(j);
+                        if(!d || m->findpassenger(d) >= 0) continue;
+                        vec oldpos = d->o, oldnew = d->newpos,
+                            rescale = vec(d->o).sub(m->o).normalize().mul(resize),
+                            norm = vec(dir).add(rescale);
+                        bool under = d->o.z <= prevpos.z-prevh && d->o.x >= prevpos.x-prevx && d->o.x <= prevpos.x+prevx && d->o.y >= prevpos.y-prevy && d->o.y <= prevpos.y+prevy;
+                        m->coltarget = d;
+                        while(collide(m, vec(0, 0, 0), 0, true, true, 0, false))
+                        {
+                            if(norm.z > 0 || !under) norm.z = 0;
+                            d->o.add(norm);
+                            d->newpos.add(norm);
+                            if(collide(d))
+                            {
+                                d->o = oldpos;
+                                d->newpos = oldnew;
+                                game::suicide(d, HIT(CRUSH));
+                                break;
+                            }
+                            oldpos = d->o;
+                            oldnew = d->newpos;
+                        }
+                    }
+                    m->coltarget = NULL;
+                    secs -= step;
+                }
+                m->o = origpos;
+                m->xradius = origx;
+                m->yradius = origy;
+                m->height = origh;
+            }
             loopvj(m->passengers)
             {
                 passenger &p = m->passengers[j];
                 physent *d = p.ent;
                 vec dir = vec(p.offset).rotate_around_z(m->yawed*RAD).sub(p.offset).add(m->moved).addz(m->resized.z),
                     oldpos = d->o, oldnew = d->newpos;
+                m->coltarget = d; // filter collisions from the passenger
                 for(int secs = curtime; secs > 0; )
                 {
                     int step = min(secs, physics::physframetime);
@@ -433,7 +486,7 @@ namespace entities
                         vec curdir = vec(dir).mul(part);
                         d->o.add(curdir);
                         d->newpos.add(curdir);
-                        if(collide(d) && collideplayer != m && !gameent::is(collideplayer))
+                        if(collide(d) && !gameent::is(collideplayer))
                         {
                             d->o = oldpos;
                             d->newpos = oldnew;
@@ -446,6 +499,7 @@ namespace entities
                     if(m->pitched != 0) d->pitch += m->pitched*part;
                     secs -= step;
                 }
+                m->coltarget = NULL;
                 game::fixrange(d->yaw, d->pitch);
             }
             m->passengers.shrink(0);

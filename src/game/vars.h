@@ -641,4 +641,5 @@ GSVAR(0, 0, obitobliterated, "was obliterated");
 GSVAR(0, 0, obitheadless, "had their head caved in");
 GSVAR(0, 0, obitsuicide, "suicided");
 GSVAR(0, 0, obitkilled, "killed");
-GSVAR(0, 0, obittouch, "touched the wrong thing");
+GSVAR(0, 0, obitsplat, "touched the wrong thing");
+GSVAR(0, 0, obitsquish, "was crushed");

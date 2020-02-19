@@ -1155,7 +1155,7 @@ static inline bool octacollide(physent *d, const vec &dir, float cutoff, const i
 }
 
 // all collision happens here
-bool collide(physent *d, const vec &dir, float cutoff, bool playercol, bool insideplayercol, float guard)
+bool collide(physent *d, const vec &dir, float cutoff, bool playercol, bool insideplayercol, float guard, bool npcol)
 {
     collideinside = collidematerial = 0;
     collideplayer = NULL;
@@ -1164,7 +1164,7 @@ bool collide(physent *d, const vec &dir, float cutoff, bool playercol, bool insi
     ivec bo(int(d->o.x-d->radius), int(d->o.y-d->radius), int(d->o.z-d->height)),
          bs(int(d->o.x+d->radius), int(d->o.y+d->radius), int(d->o.z+d->aboveeye));
     bo.sub(1); bs.add(1);  // guard space for rounding errors
-    return octacollide(d, dir, cutoff, bo, bs) || (playercol && plcollide(d, dir, insideplayercol, guard)); // collide with world
+    return (npcol && octacollide(d, dir, cutoff, bo, bs)) || (playercol && plcollide(d, dir, insideplayercol, guard)); // collide with world
 }
 
 float pltracecollide(physent *d, const vec &from, const vec &ray, float maxdist, float guard)

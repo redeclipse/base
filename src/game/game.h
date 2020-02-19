@@ -1965,8 +1965,9 @@ struct inanimate : dynent
     float yawed, pitched;
     vec moved, resized;
     vector<passenger> passengers;
+    physent *coltarget;
 
-    inanimate() : control(INANIMATE_NONE), ent(-1), coltype(0), yawed(0), pitched(0), moved(0, 0, 0), resized(0, 0, 0)
+    inanimate() : control(INANIMATE_NONE), ent(-1), coltype(0), yawed(0), pitched(0), moved(0, 0, 0), resized(0, 0, 0), coltarget(NULL)
     {
         physent::reset();
         type = ENT_INANIMATE;
