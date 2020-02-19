@@ -1155,12 +1155,17 @@ static inline bool octacollide(physent *d, const vec &dir, float cutoff, const i
 }
 
 // all collision happens here
-bool collide(physent *d, const vec &dir, float cutoff, bool playercol, bool insideplayercol, float guard, bool npcol)
+void resetcollide()
 {
     collideinside = collidematerial = 0;
     collideplayer = NULL;
     collidezones = CLZ_NONE;
     collidewall = vec(0, 0, 0);
+}
+
+bool collide(physent *d, const vec &dir, float cutoff, bool playercol, bool insideplayercol, float guard, bool npcol)
+{
+    resetcollide();
     ivec bo(int(d->o.x-d->radius), int(d->o.y-d->radius), int(d->o.z-d->height)),
          bs(int(d->o.x+d->radius), int(d->o.y+d->radius), int(d->o.z+d->aboveeye));
     bo.sub(1); bs.add(1);  // guard space for rounding errors
@@ -1196,14 +1201,21 @@ float pltracecollide(physent *d, const vec &from, const vec &ray, float maxdist,
 
 float tracecollide(physent *d, const vec &o, const vec &ray, float maxdist, int mode, bool playercol, float guard)
 {
-    hitsurface = vec(0, 0, 0);
-    collideplayer = NULL;
-    collidezones = CLZ_NONE;
+    resetcollide();
     float dist = raycube(o, ray, maxdist+1e-3f, mode);
+    collidewall = hitsurface;
     if(playercol)
     {
         float pldist = pltracecollide(d, o, ray, min(dist, maxdist), guard);
-        if(pldist >= 0 && pldist < dist) dist = pldist;
+        if(collideplayer && pldist >= 0 && pldist < dist)
+        {
+            dist = pldist;
+            //int orient = 0;
+            //if(rayboxintersect(collideplayer->center(), vec(collideplayer->xradius, collideplayer->yradius, collideplayer->height*0.5f), o, ray, pldist, orient))
+            //    collidewall[dimension(orient)] = dimcoord(orient) ? -1 : 1;
+            //else
+            collidewall = vec(o).sub(collideplayer->center()).normalize();
+        }
     }
     return dist <= maxdist ? dist : -1;
 }

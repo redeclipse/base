@@ -1850,6 +1850,7 @@ namespace projs
             proj.norm = norm;
             if(d)
             {
+                if(inanimate::is(d)) return 0; // inanimates don't really work yet
                 if(proj.norm.iszero()) proj.norm = vec(proj.o).sub(d->center()).normalize();
                 if(proj.norm.iszero()) proj.norm = vec(proj.vel).normalize().neg();
                 if(gameent::is(d) && proj.projcollide&COLLIDE_PLAYER)
@@ -1922,7 +1923,7 @@ namespace projs
                     game::footstep(e);
                 }
             }
-            bool ricochet = proj.projcollide&(d ? (d->type == ENT_PROJ ? BOUNCE_SHOTS : BOUNCE_PLAYER) : BOUNCE_GEOM);
+            bool ricochet = proj.projcollide&(d && !inanimate::is(d) ? (d->type == ENT_PROJ ? BOUNCE_SHOTS : BOUNCE_PLAYER) : BOUNCE_GEOM);
             bounce(proj, ricochet);
             if(ricochet)
             {
@@ -1937,7 +1938,7 @@ namespace projs
                 }
                 return 2; // bounce
             }
-            else if(proj.projcollide&(d ? (d->type == ENT_PROJ ? IMPACT_SHOTS : IMPACT_PLAYER) : IMPACT_GEOM))
+            else if(proj.projcollide&(d && !inanimate::is(d)  ? (d->type == ENT_PROJ ? IMPACT_SHOTS : IMPACT_PLAYER) : IMPACT_GEOM))
                 return 0; // die on impact
         }
         return 1; // live!
@@ -1990,7 +1991,7 @@ namespace projs
             if(total > 0) proj.o.add(vec(ray).mul(total));
         }
         if(proj.projtype == PRJ_SHOT) updatetaper(proj, proj.distance+total);
-        if(dist >= 0) ret = impact(proj, dir, collideplayer, collidezones, hitsurface);
+        if(dist >= 0) ret = impact(proj, dir, collideplayer, collidezones, collidewall);
         return ret;
     }
 
@@ -2322,7 +2323,7 @@ namespace projs
         {
             vec dir = vec(proj.dest).sub(proj.from).safenormalize();
             proj.o = vec(proj.from).add(vec(dir).mul(dist));
-            switch(impact(proj, dir, collideplayer, collidezones, hitsurface))
+            switch(impact(proj, dir, collideplayer, collidezones, collidewall))
             {
                 case 1: case 2: return true;
                 case 0: default: return false;
