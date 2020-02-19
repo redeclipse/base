@@ -216,6 +216,7 @@ extern const enttypes enttype[];
 namespace entities
 {
     extern vector<extentity *> ents;
+    extern void removepassenger(physent *d);
 }
 #endif
 #define isent(a) (a >= NOTUSED && a < MAXENTTYPES)
@@ -1245,6 +1246,7 @@ struct gameent : dynent, clientstate
         if(ai) delete ai;
         removetrackedparticles(this);
         removetrackedsounds(this);
+        entities::removepassenger(this);
     }
 
     static bool is(int t) { return t == ENT_PLAYER || t == ENT_AI; }

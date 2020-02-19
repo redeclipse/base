@@ -530,6 +530,15 @@ namespace entities
         }
     }
 
+    void removepassenger(physent *d)
+    {
+        loopv(inanimates)
+        {
+            inanimate *m = inanimates[i];
+            loopvj(m->passengers) if(m->passengers[j].ent == d) m->passengers.remove(i--);
+        }
+    }
+
     vector<extentity *> &getents() { return ents; }
     int firstent(int type) { return type >= 0 && type < MAXENTTYPES ? clamp(firstenttype[type], 0, ents.length()-1) : 0; }
     int firstuse(int type) { return type >= 0 && type < EU_MAX ? clamp(firstusetype[type], 0, ents.length()-1) : 0; }
