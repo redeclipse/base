@@ -24,6 +24,17 @@ namespace entities
     FVAR(IDF_PERSIST, showentavailable, 0, 1, 1);
     FVAR(IDF_PERSIST, showentunavailable, 0, 0.15f, 1);
 
+    FVAR(IDF_PERSIST, entselsize, 0, 1.5f, FVAR_MAX);
+    FVAR(IDF_PERSIST, entselsizetop, 0, 3, FVAR_MAX);
+    FVAR(IDF_PERSIST, entdirsize, 0, 10, FVAR_MAX);
+
+    VAR(IDF_PERSIST|IDF_HEX, entselcolour, 0, 0xFF00FF, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, entselcolourtop, 0, 0xFF88FF, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, entlinkcolour, 0, 0xFF00FF, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, entlinkcolourboth, 0, 0xFF88FF, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, entdircolour, 0, 0x88FF88, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, entradiuscolour, 0, 0x88FF88, 0xFFFFFF);
+
     VAR(IDF_PERSIST, simpleitems, 0, 0, 2); // 0 = items are models, 1 = items are icons, 2 = items are off and only halos appear
     FVAR(IDF_PERSIST, simpleitemsize, 0, 2, 8);
     FVAR(IDF_PERSIST, simpleitemblend, 0, 1, 1);
@@ -2362,7 +2373,7 @@ namespace entities
                     both = true;
                     break;
                 }
-                part_trace(e.o, f.o, showentsize, 1, 1, both ? colourcyan : colourdarkcyan, showentinterval);
+                part_trace(e.o, f.o, showentsize, 1, 1, both ? entlinkcolourboth : entlinkcolour, showentinterval);
             }
         }
     }
@@ -2388,7 +2399,7 @@ namespace entities
                 case ENVMAP:
                 {
                     int s = e.attrs[0] ? clamp(e.attrs[0], 0, 10000) : envmapradius;
-                    part_radius(e.o, vec(float(s)), showentsize, 1, 1, colourcyan);
+                    part_radius(e.o, vec(float(s)), showentsize, 1, 1, entradiuscolour);
                     break;
                 }
                 case ACTOR:
@@ -2400,13 +2411,13 @@ namespace entities
                 }
                 case MAPSOUND:
                 {
-                    part_radius(e.o, vec(float(e.attrs[1])), showentsize, 1, 1, colourcyan);
-                    part_radius(e.o, vec(float(e.attrs[2])), showentsize, 1, 1, colourcyan);
+                    part_radius(e.o, vec(float(e.attrs[1])), showentsize, 1, 1, entradiuscolour);
+                    part_radius(e.o, vec(float(e.attrs[2])), showentsize, 1, 1, entradiuscolour);
                     break;
                 }
                 case WIND:
                 {
-                    part_radius(e.o, vec(float(e.attrs[3])), showentsize, 1, 1, colourcyan);
+                    part_radius(e.o, vec(float(e.attrs[3])), showentsize, 1, 1, entradiuscolour);
                     break;
                 }
                 case LIGHT:
@@ -2437,9 +2448,9 @@ namespace entities
                     float radius = enttype[e.type].radius;
                     if((e.type == TRIGGER || e.type == TELEPORT || e.type == PUSHER || e.type == CHECKPOINT) && e.attrs[e.type == CHECKPOINT ? 0 : 3])
                         radius = e.attrs[e.type == CHECKPOINT ? 0 : 3];
-                    if(radius > 0) part_radius(e.o, vec(radius), showentsize, 1, 1, colourcyan);
+                    if(radius > 0) part_radius(e.o, vec(radius), showentsize, 1, 1, entradiuscolour);
                     if(e.type == PUSHER && e.attrs[4] > 0 && e.attrs[4] < radius)
-                        part_radius(e.o, vec(float(e.attrs[4])), showentsize, 1, 1, colourcyan);
+                        part_radius(e.o, vec(float(e.attrs[4])), showentsize, 1, 1, entradiuscolour);
                     break;
                 }
             }
@@ -2456,12 +2467,12 @@ namespace entities
                 }
                 //case MAPMODEL:
                 //{
-                //    entdirpart(e.o, e.attrs[1], 360-e.attrs[3], 4.f, 1, colourcyan);
+                //    entdirpart(e.o, e.attrs[1], 360-e.attrs[3], 4.f, 1, entdircolour);
                 //    break;
                 //}
                 case WIND:
                 {
-                    if(e.attrs[0]&WIND_EMIT_VECTORED) entdirpart(e.o, e.attrs[1], 0, 8.f, 1, colourcyan);
+                    if(e.attrs[0]&WIND_EMIT_VECTORED) entdirpart(e.o, e.attrs[1], 0, entdirsize, 1, entdircolour);
                     break;
                 }
                 case ACTOR:
@@ -2471,22 +2482,18 @@ namespace entities
                 }
                 case TELEPORT:
                 {
-                    if(e.attrs[0] < 0) { entdirpart(e.o, (lastmillis/5)%360, e.attrs[1], 4.f, 1, colourcyan); }
-                    else { entdirpart(e.o, e.attrs[0], e.attrs[1], 8.f, 1, colourcyan); }
+                    if(e.attrs[0] < 0) { entdirpart(e.o, (lastmillis/5)%360, e.attrs[1], 4.f, 1, entdircolour); }
+                    else { entdirpart(e.o, e.attrs[0], e.attrs[1], entdirsize, 1, entdircolour); }
                     break;
                 }
                 case PUSHER:
                 {
-                    entdirpart(e.o, e.attrs[0], e.attrs[1], 4.f+e.attrs[2], 1, colourcyan);
+                    entdirpart(e.o, e.attrs[0], e.attrs[1], 4.f+e.attrs[2], 1, entdircolour);
                     break;
                 }
                 case RAIL:
                 {
-                    loopv(railways)
-                    {
-                        if(railways[i].ent == idx) entdirpart(e.o, railways[i].yaw, railways[i].pitch, 8.f, 1, colourgreen);
-                        loopvj(railways[i].rails) if(railways[i].rails[j].ent == idx) entdirpart(e.o, railways[i].rails[j].yaw, railways[i].rails[j].pitch, 8.f, 1, colouryellow);
-                    }
+                    loopv(railways) if(railways[i].ent == idx) entdirpart(e.o, railways[i].yaw, railways[i].pitch, entdirsize, 1, entdircolour);
                     break;
                 }
                 default: break;
@@ -2799,7 +2806,7 @@ namespace entities
         }
         if(edit)
         {
-            part_create(hastop ? PART_EDIT_ONTOP : PART_EDIT, 1, o, hastop ? colourcyan : colourdarkcyan, hastop ? 2.f : 1.f);
+            part_create(hastop ? PART_EDIT_ONTOP : PART_EDIT, 1, o, hastop ? entselcolourtop : entselcolour, hastop ? entselsizetop : entselsize);
             if(showentinfo&(hasent ? 4 : 8))
             {
                 defformatstring(s, "<super>%s%s (%d)", hastop ? "\fc" : "\fC", enttype[e.type].name, idx >= 0 ? idx : 0);
