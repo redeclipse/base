@@ -195,7 +195,7 @@ namespace entities
                         if(i && r.length > 0 && !r.offset.iszero())
                         {
                             int oldlen = r.length;
-                            r.length = int(r.offset.magnitude()*speed);
+                            r.length = int(r.offset.magnitude()*speed*r.length/float(rails[0].length));
                             if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH))
                             {
                                 gameentity &e = *(gameentity *)ents[r.ent];
