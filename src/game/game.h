@@ -205,10 +205,10 @@ extern const enttypes enttype[] = {
                 "route",         { "num",   "yaw",      "pitch",    "move",     "strafe",   "action" }
     },
     {
-        RAIL,           -1,         228,    0,      EU_NONE,    7,          -1,         -1,     -1,     -1,
+        RAIL,           -1,         228,    0,      EU_NONE,    8,          -1,         -1,     -1,     -1,
             (1<<LIGHT)|(1<<MAPMODEL)|(1<<PLAYERSTART)|(1<<PARTICLES)|(1<<MAPSOUND)|(1<<LIGHTFX)|(1<<WEAPON)|(1<<TELEPORT)|(1<<ACTOR)|(1<<TRIGGER)|(1<<PUSHER)|(1<<RAIL), 0, 0,
             false,   false,  false,      false,      false,
-                "rail",         { "time",   "flags",    "yaw",      "pitch",    "rotlen",   "rotwait",  "collide" }
+                "rail",         { "time",   "flags",    "yaw",      "pitch",    "rotlen",   "rotwait",  "collide",  "anim" }
     }
 };
 #else
@@ -1146,8 +1146,8 @@ struct actitem
     actitem() : type(ENT), target(-1), score(0) {}
     ~actitem() {}
 };
-#ifdef CPP_GAME_MAIN
-const char * const animnames[] =
+
+static const char * const animnames[] =
 {
     "idle", "walk forward", "walk backward", "walk left", "walk right", "dead", "dying", "swim",
     "mapmodel", "trigger on", "trigger off", "pain",
@@ -1170,12 +1170,9 @@ const char * const animnames[] =
     "grenade", "grenade primary", "grenade secondary", "grenade reload", "grenade power", "grenade zoom",
     "mine", "mine primary", "mine secondary", "mine reload", "mine power", "mine zoom",
     "rocket", "rocket primary", "rocket secondary", "rocket reload", "rocket power", "rocket zoom",
-    "switch", "use",
+    "switch", "use", "rail 1", "rail 2", "rail 3", "rail 4",
     ""
 };
-#else
-extern const char * const animnames[];
-#endif
 
 struct eventicon
 {

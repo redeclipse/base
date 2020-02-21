@@ -940,7 +940,7 @@ model *loadlodmodel(model *m, const vec &pos, float offset)
 {
     if(drawtex || !m) return m;
     float dist = offset + camera1->o.dist(pos);
-    if(lodmodelfov && (!lodmodelfovdist || dist <= lodmodelfovdist))
+    if(dist > 0 && lodmodelfov && (!lodmodelfovdist || dist <= lodmodelfovdist))
     {
         float fovmin = min(lodmodelfovmin, lodmodelfovmax),
               fovmax = max(lodmodelfovmax, fovmin+1.f),

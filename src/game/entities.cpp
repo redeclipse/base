@@ -51,26 +51,26 @@ namespace entities
 
     struct rail
     {
-        int ent, length, rotstart, rotend, rotlen, flags;
+        int ent, length, rotstart, rotend, rotlen, flags, animtype;
         float yaw, pitch;
         vec pos, dir;
 
-        rail() : ent(-1), length(0), rotstart(0), rotend(0), rotlen(0), flags(0), yaw(0), pitch(0), pos(0, 0, 0), dir(0, 0, 0) {}
-        rail(int n, const vec &o, int d = 0, int f = 0) : ent(n), length(d), rotstart(0), rotend(0), rotlen(0), flags(f), yaw(0), pitch(0), pos(o), dir(0, 0, 0) {}
+        rail() : ent(-1), length(0), rotstart(0), rotend(0), rotlen(0), flags(0), animtype(0), yaw(0), pitch(0), pos(0, 0, 0), dir(0, 0, 0) {}
+        rail(int n, const vec &o, int d = 0, int f = 0, int a = 0) : ent(n), length(d), rotstart(0), rotend(0), rotlen(0), flags(f), animtype(a), yaw(0), pitch(0), pos(o), dir(0, 0, 0) {}
         ~rail() {}
     };
 
     struct railway
     {
-        int ent, ret, flags, length[2], lastsecs, millis, coltype;
+        int ent, ret, flags, length[2], lastsecs, millis, coltype, animtype, animtime;
         float yaw, pitch, lastyaw, lastpitch;
         vec pos, dir, offset, lastoffset;
 
         vector<rail> rails;
         vector<int> parents;
 
-        railway() : ent(-1), ret(0), flags(0), lastsecs(0), millis(0), coltype(0), yaw(0), pitch(0), lastyaw(0), lastpitch(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0) { reset(); }
-        railway(int n, int f = 0, int c = 0) : ent(n), ret(0), flags(f), lastsecs(0), millis(0), coltype(c), yaw(0), pitch(0), lastyaw(0), lastpitch(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0) { reset(); }
+        railway() : ent(-1), ret(0), flags(0), lastsecs(0), millis(0), coltype(0), animtype(0), animtime(0), yaw(0), pitch(0), lastyaw(0), lastpitch(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0) { reset(); }
+        railway(int n, int f = 0, int c = 0) : ent(n), ret(0), flags(f), lastsecs(0), millis(0), coltype(c), animtype(0), animtime(0), yaw(0), pitch(0), lastyaw(0), lastpitch(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0) { reset(); }
 
         ~railway()
         {
@@ -137,7 +137,7 @@ namespace entities
             for(int i = ent; ents.inrange(i); )
             { // build the rails for this line
                 gameentity &e = *(gameentity *)ents[i];
-                rails.add(rail(i, e.o, max(e.attrs[0], 0), e.attrs[1]));
+                rails.add(rail(i, e.o, max(e.attrs[0], 0), e.attrs[1], clamp(e.attrs[7], 0, int(ANIM_MAX-1))));
                 i = -1;
 
                 loopvj(e.links)
@@ -213,7 +213,7 @@ namespace entities
                 return true;
             }
 
-            int elapsed = secs, start = 0, iter = 0, span = 0;
+            int elapsed = secs, start = 0, iter = 0;
             if(elapsed >= length[0])
             { // allow the loop point to be different from the start
                 elapsed -= length[0];
@@ -229,6 +229,7 @@ namespace entities
             offset = rails[start].pos;
             if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)) dir = rails[start].dir;
 
+            int span = 0, anim = 0;
             bool moved = false;
             for(int i = start; i < rails.length(); i++)
             { // look for the station on the timetable
@@ -242,6 +243,7 @@ namespace entities
                     float amt = step/float(rcur.length);
 
                     moved = true;
+                    anim = rcur.animtype;
                     if(flags&(1<<RAIL_SPLINE))
                     {
                         vec spline[4] = { rprev.pos, rcur.pos, rnext.pos, rnext2.pos };
@@ -266,12 +268,18 @@ namespace entities
                 }
 
                 offset = rnext.pos;
+                anim = rnext.animtype;
                 if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)) dir = rnext.dir;
                 span += rcur.length;
             }
 
             offset.sub(rails[0].pos); // all coordinates translate based on first rail
             if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)) vectoyawpitch(dir, yaw, pitch);
+            if(anim != animtype)
+            {
+                animtype = anim;
+                animtime = lastmillis;
+            }
 
             loopv(parents)
             {
@@ -963,6 +971,12 @@ namespace entities
 
                     const char *railcollides[INANIMATE_C_MAX] = { "touch-kill", "no-passenger" };
                     loopj(INANIMATE_C_MAX) if(attr[6]&(1<<j)) addentinfo(railcollides[j]);
+
+                    if(attr[7] > 0 && attr[7] < ANIM_MAX)
+                    {
+                        defformatstring(str, "anim: %s", animnames[attr[7]]);
+                        addentinfo(str);
+                    }
                 }
             }
             default: break;
@@ -1900,6 +1914,8 @@ namespace entities
                 if(e.attrs[5] < 0) e.attrs[5] = 0;
                 while(e.attrs[6] < 0) e.attrs[6] += INANIMATE_C_ALL+1;
                 while(e.attrs[6] > INANIMATE_C_ALL) e.attrs[6] -= INANIMATE_C_ALL+1;
+                while(e.attrs[7] < 0) e.attrs[7] += ANIM_MAX;
+                while(e.attrs[7] >= ANIM_MAX) e.attrs[6] -= ANIM_MAX;
             }
             default: break;
         }
@@ -2720,7 +2736,8 @@ namespace entities
         }
         loopv(railways) loopvj(railways[i].parents)
         {
-            int n = railways[i].parents[j];
+            railway &r = railways[i];
+            int n = r.parents[j];
             if(!ents.inrange(n) || ents[n]->type != MAPMODEL) continue;
             gameentity &e = *(gameentity *)ents[n];
             const char *mdlname = mapmodelname(ents[n]->attrs[0]);
@@ -2729,9 +2746,20 @@ namespace entities
             mdl.o = e.pos();
             mdl.flags = MDL_CULL_VFC|MDL_CULL_DIST|MDL_CULL_OCCLUDED;
             getmapmodelstate(e, mdl);
+            if(r.animtype > 0 && r.animtime > 0)
+            {
+                mdl.anim = r.animtype|ANIM_LOOP;
+                mdl.basetime = r.animtime;
+            }
             mdl.yaw += e.yaw;
             mdl.pitch += e.pitch;
-            rendermodel(mdlname, mdl);
+            dynent *d = NULL;
+            loopvj(inanimates) if(inanimates[j]->control == INANIMATE_RAIL && inanimates[j]->ent == n)
+            {
+                d = inanimates[j];
+                break;
+            }
+            rendermodel(mdlname, mdl, d);
         }
     }
 
