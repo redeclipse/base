@@ -58,8 +58,8 @@ struct Texture;
 
 struct entmodelstate
 {
-    float yaw, pitch, roll, size, radius, speed, speed2;
     int anim, flags, basetime, basetime2, lastspin;
+    float yaw, pitch, roll, size, radius, speed, speed2, lodoffset;
     vec o, center;
     vec4 color;
     bvec material[MAXMDLMATERIALS];
@@ -68,9 +68,9 @@ struct entmodelstate
 
     void reset()
     {
-        yaw = pitch = roll = radius = 0;
         size = speed = speed2 = 1;
         anim = flags = basetime = basetime2 = lastspin = 0;
+        yaw = pitch = roll = radius = lodoffset = 0;
         o = center = vec(0, 0, 0);
         color = vec4(1, 1, 1, 1);
         loopi(MAXMDLMATERIALS) material[i] = bvec(255, 255, 255);

@@ -464,7 +464,7 @@ bool mapmodeltransparent(extentity &e)
     if(mapmodels.inrange(e.attrs[0]))
     {
         mapmodelinfo &mmi = mapmodels[e.attrs[0]];
-        model *m = loadlodmodel(mmi.m ? mmi.m : loadmodel(mmi.name), e.o);
+        model *m = loadlodmodel(mmi.m ? mmi.m : loadmodel(mmi.name), e.o, e.attrs[15]);
         if(m && m->alphatested(true)) return true;
     }
     #endif
@@ -491,7 +491,7 @@ bool mapmodelvisible(extentity &e, int n, int colvis)
         else if((colvis&2 || e.lastemit < 0) && e.spawned()) return false;
     }
     mapmodelinfo &mmi = mapmodels[e.attrs[0]];
-    model *m = loadlodmodel(mmi.m ? mmi.m : loadmodel(mmi.name), e.o);
+    model *m = loadlodmodel(mmi.m ? mmi.m : loadmodel(mmi.name), e.o, e.attrs[15]);
     if(!m) return false;
     return true;
 }
@@ -574,6 +574,7 @@ void getmapmodelstate(extentity &e, entmodelstate &mdl)
     if(e.attrs[10]) mdl.yaw += e.attrs[10]*lastmillis/1000.0f;
     if(e.attrs[11]) mdl.pitch += e.attrs[11]*lastmillis/1000.0f;
     if(e.attrs[12]) mdl.roll += e.attrs[12]*lastmillis/1000.0f;
+    mdl.lodoffset = e.attrs[15];
 }
 
 static inline void rendermapmodelent(extentity &e, int n, bool tpass)

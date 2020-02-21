@@ -933,14 +933,14 @@ void clearbatchedmapmodels()
 VAR(IDF_PERSIST, lodmodelfov, 0, 1, 1);
 FVAR(IDF_PERSIST, lodmodelfovmax, 1, 90, 180);
 FVAR(IDF_PERSIST, lodmodelfovmin, 1, 10, 180);
-FVAR(IDF_PERSIST, lodmodelfovdist, 1, 1024, VAR_MAX);
+FVAR(IDF_PERSIST, lodmodelfovdist, 0, 0, VAR_MAX);
 FVAR(IDF_PERSIST, lodmodelfovscale, 0, 1, 1000);
 
-model *loadlodmodel(model *m, const vec &pos)
+model *loadlodmodel(model *m, const vec &pos, float offset)
 {
     if(drawtex || !m) return m;
-    float dist = camera1->o.dist(pos);
-    if(lodmodelfov && dist <= lodmodelfovdist)
+    float dist = offset + camera1->o.dist(pos);
+    if(lodmodelfov && (!lodmodelfovdist || dist <= lodmodelfovdist))
     {
         float fovmin = min(lodmodelfovmin, lodmodelfovmax),
               fovmax = max(lodmodelfovmax, fovmin+1.f),
@@ -962,7 +962,7 @@ void rendermapmodel(int idx, entmodelstate &state, bool tpass)
 {
     if(!mapmodels.inrange(idx)) return;
     mapmodelinfo &mmi = mapmodels[idx];
-    model *m = loadlodmodel(mmi.m ? mmi.m : loadmodel(mmi.name), state.o);
+    model *m = loadlodmodel(mmi.m ? mmi.m : loadmodel(mmi.name), state.o, state.lodoffset);
     if(!m) return;
     vec bbradius;
     m->boundbox(state.center, bbradius);
@@ -995,7 +995,7 @@ void rendermapmodel(int idx, entmodelstate &state, bool tpass)
 
 void rendermodel(const char *mdl, modelstate &state, dynent *d)
 {
-    model *m = loadlodmodel(loadmodel(mdl), state.o);
+    model *m = loadlodmodel(loadmodel(mdl), state.o, state.lodoffset);
     if(!m) return;
     vec bbradius;
     m->boundbox(state.center, bbradius);
@@ -1025,7 +1025,7 @@ hasboundbox:
     if(state.flags&MDL_NORENDER) state.anim |= ANIM_NORENDER;
 
     if(state.attached) for(int i = 0; state.attached[i].tag; i++)
-        if(state.attached[i].name) state.attached[i].m = loadlodmodel(loadmodel(state.attached[i].name), state.o);
+        if(state.attached[i].name) state.attached[i].m = loadlodmodel(loadmodel(state.attached[i].name), state.o, state.lodoffset);
 
     if(state.flags&MDL_CULL_QUERY)
     {
