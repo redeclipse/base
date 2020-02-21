@@ -47,7 +47,7 @@ enum { EU_NONE = 0, EU_ITEM, EU_AUTO, EU_ACT, EU_MAX };
 
 enum { TR_TOGGLE = 0, TR_LINK, TR_SCRIPT, TR_ONCE, TR_EXIT, TR_MAX };
 enum { TA_MANUAL = 0, TA_AUTO, TA_ACTION, TA_MAX };
-enum { RAIL_YAW = 0, RAIL_PITCH, RAIL_SEEK, RAIL_SPLINE, RAIL_MAX, RAIL_ALL = (1<<RAIL_YAW)|(1<<RAIL_PITCH)|(1<<RAIL_SEEK)|(1<<RAIL_SPLINE) };
+enum { RAIL_YAW = 0, RAIL_PITCH, RAIL_SEEK, RAIL_SPLINE, RAIL_SPEED, RAIL_MAX, RAIL_ALL = (1<<RAIL_YAW)|(1<<RAIL_PITCH)|(1<<RAIL_SEEK)|(1<<RAIL_SPLINE)|(1<<RAIL_SPEED) };
 
 #define TRIGGERIDS      16
 #define TRIGSTATE(a,b)  (b%2 ? !a : a)
@@ -1170,7 +1170,7 @@ static const char * const animnames[] =
     "grenade", "grenade primary", "grenade secondary", "grenade reload", "grenade power", "grenade zoom",
     "mine", "mine primary", "mine secondary", "mine reload", "mine power", "mine zoom",
     "rocket", "rocket primary", "rocket secondary", "rocket reload", "rocket power", "rocket zoom",
-    "switch", "use", "rail 1", "rail 2", "rail 3", "rail 4",
+    "switch", "use",
     ""
 };
 

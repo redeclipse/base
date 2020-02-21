@@ -53,24 +53,24 @@ namespace entities
     {
         int ent, length, rotstart, rotend, rotlen, flags, animtype;
         float yaw, pitch;
-        vec pos, dir;
+        vec pos, dir, offset;
 
-        rail() : ent(-1), length(0), rotstart(0), rotend(0), rotlen(0), flags(0), animtype(0), yaw(0), pitch(0), pos(0, 0, 0), dir(0, 0, 0) {}
-        rail(int n, const vec &o, int d = 0, int f = 0, int a = 0) : ent(n), length(d), rotstart(0), rotend(0), rotlen(0), flags(f), animtype(a), yaw(0), pitch(0), pos(o), dir(0, 0, 0) {}
+        rail() : ent(-1), length(0), rotstart(0), rotend(0), rotlen(0), flags(0), animtype(0), yaw(0), pitch(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0) {}
+        rail(int n, const vec &o, int d = 0, int f = 0, int a = 0) : ent(n), length(d), rotstart(0), rotend(0), rotlen(0), flags(f), animtype(a), yaw(0), pitch(0), pos(o), dir(0, 0, 0), offset(0, 0, 0) {}
         ~rail() {}
     };
 
     struct railway
     {
         int ent, ret, flags, length[2], lastsecs, millis, coltype, animtype, animtime;
-        float yaw, pitch, lastyaw, lastpitch;
+        float yaw, pitch, lastyaw, lastpitch, speed;
         vec pos, dir, offset, lastoffset;
 
         vector<rail> rails;
         vector<int> parents;
 
-        railway() : ent(-1), ret(0), flags(0), lastsecs(0), millis(0), coltype(0), animtype(0), animtime(0), yaw(0), pitch(0), lastyaw(0), lastpitch(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0) { reset(); }
-        railway(int n, int f = 0, int c = 0) : ent(n), ret(0), flags(f), lastsecs(0), millis(0), coltype(c), animtype(0), animtime(0), yaw(0), pitch(0), lastyaw(0), lastpitch(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0) { reset(); }
+        railway() : ent(-1), ret(0), flags(0), lastsecs(0), millis(0), coltype(0), animtype(0), animtime(0), yaw(0), pitch(0), lastyaw(0), lastpitch(0), speed(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0) { reset(); }
+        railway(int n, int f = 0, int c = 0) : ent(n), ret(0), flags(f), lastsecs(0), millis(0), coltype(c), animtype(0), animtime(0), yaw(0), pitch(0), lastyaw(0), lastpitch(0), speed(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0) { reset(); }
 
         ~railway()
         {
@@ -167,10 +167,10 @@ namespace entities
                         r.rotstart = clamp(e.attrs[5], 0, r.length);
                         r.rotend = clamp(r.rotstart+(e.attrs[4] > 0 ? e.attrs[4] : r.length), r.rotstart, r.length);
                         r.rotlen = clamp(r.rotend-r.rotstart, 0, r.length);
-
+                        r.offset = vec(s.pos).sub(r.pos);
                         if(flags&(1<<RAIL_SEEK))
                         {
-                            r.dir = vec(s.pos).sub(r.pos).safenormalize();
+                            r.dir = vec(r.offset).safenormalize();
                             vectoyawpitch(r.dir, r.yaw, r.pitch);
                         }
                         else
@@ -183,7 +183,35 @@ namespace entities
                     length[0] += r.length;
                     if(i >= ret) length[1] += r.length;
                 }
-                if(length[0] > 0) return true;
+                if(length[0] <= 0) return false;
+
+                if(rails[0].length > 0 && !rails[0].offset.iszero() && flags&(1<<RAIL_SPEED))
+                {
+                    speed = float(rails[0].length)/rails[0].offset.magnitude();
+                    length[0] = length[1] = 0;
+                    loopv(rails)
+                    {
+                        rail &r = rails[i];
+                        if(i && r.length > 0 && !r.offset.iszero())
+                        {
+                            int oldlen = r.length;
+                            r.length = int(r.offset.magnitude()*speed);
+                            if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH))
+                            {
+                                gameentity &e = *(gameentity *)ents[r.ent];
+                                float scale = r.length/float(oldlen);
+                                r.rotstart = clamp(int(e.attrs[5]*scale), 0, r.length);
+                                r.rotend = clamp(r.rotstart+(e.attrs[4] > 0 ? int(e.attrs[4]*scale) : r.length), r.rotstart, r.length);
+                                r.rotlen = clamp(r.rotend-r.rotstart, 0, r.length);
+                            }
+                        }
+                        length[0] += r.length;
+                        if(i >= ret) length[1] += r.length;
+                    }
+                }
+                if(length[0] <= 0) return false;
+
+                return true;
             }
 
             return false;
@@ -966,7 +994,7 @@ namespace entities
             {
                 if(full)
                 {
-                    const char *railnames[RAIL_MAX] = { "follow-yaw", "follow-pitch", "seek-next", "spline" };
+                    const char *railnames[RAIL_MAX] = { "follow-yaw", "follow-pitch", "seek-next", "spline", "set-speed" };
                     loopj(RAIL_MAX) if(attr[1]&(1<<j)) addentinfo(railnames[j]);
 
                     const char *railcollides[INANIMATE_C_MAX] = { "touch-kill", "no-passenger" };
@@ -2871,15 +2899,13 @@ namespace entities
                     loopv(railways)
                     {
                         if(railways[i].ent != idx && railways[i].findparent(idx) < 0) continue;
-                        formatstring(s, "<little>railway [%d] %d ms (%d/%d) [%.1f/%.1f]", i, railways[i].millis, railways[i].length[0], railways[i].length[1], railways[i].yaw, railways[i].pitch);
+                        formatstring(s, "<little>railway [%d] %d ms (%d/%d)", i, railways[i].millis, railways[i].length[0], railways[i].length[1]);
+                        if(railways[i].flags&(1<<RAIL_SPEED))
+                        {
+                            defformatstring(t, " speed: %.8f", railways[i].speed);
+                            concatstring(s, t);
+                        }
                         part_textcopy(pos.add(vec(off).mul(0.5f)), s, hastop ? PART_TEXT_ONTOP : PART_TEXT);
-                    }
-                    loopv(railways)
-                    {
-                        int n = railways[i].findchild(idx);
-                        if(n < 0) continue;
-                        formatstring(s, "<tiny>in railway [%d] %d of %d [%.1f/%.1f]", i, n+1, railways[i].rails.length(), railways[i].rails[n].yaw, railways[i].rails[n].pitch);
-                        part_textcopy(pos.add(vec(off).mul(0.35f)), s, hastop ? PART_TEXT_ONTOP : PART_TEXT);
                     }
                 }
             }
