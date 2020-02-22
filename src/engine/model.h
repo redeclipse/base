@@ -97,6 +97,6 @@ struct model
     }
 
     virtual void addlod(const char *str, float dist) {}
-    virtual const char *lodmodel(float dist = 0) { return NULL; }
+    virtual const char *lodmodel(float dist = 0, float offset = 0) { return NULL; }
 };
 

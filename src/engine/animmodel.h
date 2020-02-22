@@ -1916,12 +1916,21 @@ struct animmodel : model
         lm.dist = dist;
     }
 
-    const char *lodmodel(float dist)
+    const char *lodmodel(float dist, float offset)
     {
         if(dist <= 0) return NULL;
-        int id = -1;
-        loopv(lod) if(dist >= lod[i].dist && (id < 0 || lod[i].dist > lod[id].dist)) id = i;
-        return lod.inrange(id) ? lod[id].name : NULL;
+        int curid = -1;
+        float curdist = 0;
+        loopv(lod)
+        {
+            float curlod = lod[i].dist + offset;
+            if(dist >= curlod && (curid < 0 || curlod > curdist))
+            {
+                curid = i;
+                curdist = curlod;
+            }
+        }
+        return lod.inrange(curid) ? lod[curid].name : NULL;
     }
 };
 

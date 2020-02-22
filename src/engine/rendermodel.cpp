@@ -939,7 +939,7 @@ FVAR(IDF_PERSIST, lodmodelfovscale, 0, 1, 1000);
 model *loadlodmodel(model *m, const vec &pos, float offset)
 {
     if(drawtex || !m) return m;
-    float dist = offset + camera1->o.dist(pos);
+    float dist = camera1->o.dist(pos);
     if(dist > 0 && lodmodelfov && (!lodmodelfovdist || dist <= lodmodelfovdist))
     {
         float fovmin = min(lodmodelfovmin, lodmodelfovmax),
@@ -952,7 +952,7 @@ model *loadlodmodel(model *m, const vec &pos, float offset)
             if(min(x, 360-x) <= curfov && min(y, 360-y) <= fovy) dist *= fovnow/fovmax*lodmodelfovscale;
         }
     }
-    const char *mdl = m->lodmodel(dist);
+    const char *mdl = m->lodmodel(dist, offset);
     if(!mdl || !*mdl) return m;
     model *lm = loadmodel(mdl);
     return lm ? lm : m;
