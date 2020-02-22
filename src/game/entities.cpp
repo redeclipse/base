@@ -1943,7 +1943,7 @@ namespace entities
                 while(e.attrs[6] < 0) e.attrs[6] += INANIMATE_C_ALL+1;
                 while(e.attrs[6] > INANIMATE_C_ALL) e.attrs[6] -= INANIMATE_C_ALL+1;
                 while(e.attrs[7] < 0) e.attrs[7] += ANIM_MAX;
-                while(e.attrs[7] >= ANIM_MAX) e.attrs[6] -= ANIM_MAX;
+                while(e.attrs[7] >= ANIM_MAX) e.attrs[7] -= ANIM_MAX;
             }
             default: break;
         }
