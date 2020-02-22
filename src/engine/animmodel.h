@@ -1127,10 +1127,15 @@ struct animmodel : model
                 if(model->wind)
                 {
                     vec pos = matrixstack[matrixpos].gettranslation();
+                    int animdist = windanimdist + windanimfalloff;
                     float dist = camera1->o.dist(pos);
+                    float falloff = 1.0f;
 
-                    GLOBALPARAMF(windparams, max(1.0f - dist/windanimdist, 0.0f), d ? 0 : pos.magnitude());
-                    GLOBALPARAM(windvec, getwind(pos, d).mul(resize * model->wind));
+                    if(windanimfalloff)
+                        falloff = 1.0f - clamp((dist-windanimdist)/windanimfalloff, 0.0f, 1.0f);
+
+                    GLOBALPARAMF(windparams, max(1.0f - dist/animdist, 0.0f), d ? 0 : pos.magnitude());
+                    GLOBALPARAM(windvec, getwind(pos, d).mul(resize * model->wind * falloff));
                 }
             }
 

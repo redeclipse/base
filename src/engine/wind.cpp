@@ -10,7 +10,8 @@ static int numwindemitters;
 static int windcost;
 
 VAR(0, winddebug, 0, 0, 1);
-VAR(IDF_PERSIST, windanimdist, 0, 1200, 10000);
+VAR(IDF_PERSIST, windanimdist, 100, 1200, 10000);
+VAR(IDF_PERSIST, windanimfalloff, 0, 300, 10000);
 VARF(IDF_PERSIST, windmaxemitters, 1, 100, 1000, { setupwind(); });
 VAR(IDF_PERSIST, windcostdiv, 1, 2000, 10000);
 

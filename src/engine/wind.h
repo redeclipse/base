@@ -54,6 +54,7 @@ struct windprobe
 };
 
 extern int windanimdist;
+extern int windanimfalloff;
 
 extern void cleanupwind();
 extern void setupwind();
