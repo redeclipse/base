@@ -667,14 +667,17 @@ void renderwater()
         Shader *belowshader = NULL;
         if(drawtex != DRAWTEX_MINIMAP) SETWATERSHADER(below, underwater);
 
-        aboveshader->set();
-        loopv(surfs)
+        if(aboveshader)
         {
-            materialsurface &m = surfs[i];
-            if(camera1->o.z < m.o.z - WATER_OFFSET) continue;
-            renderwater(m);
+            aboveshader->set();
+            loopv(surfs)
+            {
+                materialsurface &m = surfs[i];
+                if(camera1->o.z < m.o.z - WATER_OFFSET) continue;
+                renderwater(m);
+            }
+            xtraverts += gle::end();
         }
-        xtraverts += gle::end();
 
         if(belowshader)
         {
