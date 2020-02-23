@@ -3528,7 +3528,7 @@ void collectlights()
     }
 
     int numdynlights = 0;
-    if(!drawtex)
+    if(!drawtex || drawtex == DRAWTEX_MAPSHOT)
     {
         updatedynlights();
         numdynlights = finddynlights();
@@ -3547,7 +3547,7 @@ void collectlights()
     lightorder.sort(sortlights);
 
     bool queried = false;
-    if(!drawtex && smquery && oqfrags && oqlights) loopv(lightorder)
+    if((!drawtex || drawtex == DRAWTEX_MAPSHOT) && smquery && oqfrags && oqlights) loopv(lightorder)
     {
         int idx = lightorder[i];
         lightinfo &l = lights[idx];
@@ -4581,7 +4581,7 @@ void workinoq()
 {
     collectlights();
 
-    if(drawtex) return;
+    if(drawtex && drawtex != DRAWTEX_MAPSHOT) return;
 
     rendertransparentmapmodels();
     game::render();
@@ -4916,15 +4916,18 @@ void rendergbuffer(bool depthclear)
         renderminimapmaterials();
         GLERROR;
     }
-    else if(!drawtex)
+    else if(!drawtex || drawtex == DRAWTEX_MAPSHOT)
     {
         rendermodelbatches();
         GLERROR;
-        renderstains(STAINBUF_OPAQUE, true);
-        renderstains(STAINBUF_MAPMODEL, true);
-        GLERROR;
-        //renderavatar();
-        //GLERROR;
+        if(!drawtex)
+        {
+            renderstains(STAINBUF_OPAQUE, true);
+            renderstains(STAINBUF_MAPMODEL, true);
+            GLERROR;
+            //renderavatar();
+            //GLERROR;
+        }
     }
 
     endtimer(gtimer);
