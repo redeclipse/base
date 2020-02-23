@@ -489,6 +489,7 @@ namespace entities
 
     void runinanimates()
     {
+        if(!curtime) return;
         loopv(inanimates)
         {
             inanimate *m = inanimates[i];
@@ -3096,8 +3097,10 @@ namespace entities
 
     void mapshot(vec &pos, float &yaw, float &pitch, float &fov)
     {
-        vector<int> cameras;
         fov = 90;
+        if(ents.empty()) return;
+        vector<int> cameras;
+        cameras.setsize(0);
         loopk(3)
         {
             loopv(ents)
@@ -3108,6 +3111,7 @@ namespace entities
             }
             if(!cameras.empty()) break;
         }
+        if(cameras.empty()) return;
         int cam = rnd(cameras.length());
         if(cameras.inrange(cam))
         {
