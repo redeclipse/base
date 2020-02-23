@@ -52,25 +52,25 @@ namespace entities
     struct rail
     {
         int ent, length, rotstart, rotend, rotlen, flags, animtype;
-        float yaw, pitch;
+        float yaw, pitch, animspeed;
         vec pos, dir, offset;
 
-        rail() : ent(-1), length(0), rotstart(0), rotend(0), rotlen(0), flags(0), animtype(0), yaw(0), pitch(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0) {}
-        rail(int n, const vec &o, int d = 0, int f = 0, int a = 0) : ent(n), length(d), rotstart(0), rotend(0), rotlen(0), flags(f), animtype(a), yaw(0), pitch(0), pos(o), dir(0, 0, 0), offset(0, 0, 0) {}
+        rail() : ent(-1), length(0), rotstart(0), rotend(0), rotlen(0), flags(0), animtype(0), yaw(0), pitch(0), animspeed(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0) {}
+        rail(int n, const vec &o, int d = 0, int f = 0, int at = 0, float as = 0) : ent(n), length(d), rotstart(0), rotend(0), rotlen(0), flags(f), animtype(at), yaw(0), pitch(0), animspeed(as), pos(o), dir(0, 0, 0), offset(0, 0, 0) {}
         ~rail() {}
     };
 
     struct railway
     {
-        int ent, ret, flags, length[2], lastsecs, millis, coltype, animtype, animtime;
-        float yaw, pitch, lastyaw, lastpitch, speed;
+        int ent, ret, flags, length[2], lastsecs, millis, coltype, animtype, animoffset, animtime;
+        float yaw, pitch, lastyaw, lastpitch, speed, animspeed;
         vec pos, dir, offset, lastoffset;
 
         vector<rail> rails;
         vector<int> parents;
 
-        railway() : ent(-1), ret(0), flags(0), lastsecs(0), millis(0), coltype(0), animtype(0), animtime(0), yaw(0), pitch(0), lastyaw(0), lastpitch(0), speed(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0) { reset(); }
-        railway(int n, int f = 0, int c = 0) : ent(n), ret(0), flags(f), lastsecs(0), millis(0), coltype(c), animtype(0), animtime(0), yaw(0), pitch(0), lastyaw(0), lastpitch(0), speed(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0) { reset(); }
+        railway() : ent(-1), ret(0), flags(0), lastsecs(0), millis(0), coltype(0), animtype(0), animoffset(0), animtime(0), yaw(0), pitch(0), lastyaw(0), lastpitch(0), speed(0), animspeed(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0) { reset(); }
+        railway(int n, int f = 0, int c = 0, int at = 0, int ao = 0, float as = 0) : ent(n), ret(0), flags(f), lastsecs(0), millis(0), coltype(c), animtype(at), animoffset(ao), animtime(0), yaw(0), pitch(0), lastyaw(0), lastpitch(0), speed(0), animspeed(as), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0) { reset(); }
 
         ~railway()
         {
@@ -137,7 +137,7 @@ namespace entities
             for(int i = ent; ents.inrange(i); )
             { // build the rails for this line
                 gameentity &e = *(gameentity *)ents[i];
-                rails.add(rail(i, e.o, max(e.attrs[0], 0), e.attrs[1], clamp(e.attrs[7], 0, int(ANIM_MAX-1))));
+                rails.add(rail(i, e.o, max(e.attrs[0], 0), e.attrs[1], e.attrs[7], e.attrs[8]/100.f));
                 i = -1;
 
                 loopvj(e.links)
@@ -258,6 +258,7 @@ namespace entities
             if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)) dir = rails[start].dir;
 
             int span = 0, anim = 0;
+            float aspeed = 0;
             bool moved = false;
             for(int i = start; i < rails.length(); i++)
             { // look for the station on the timetable
@@ -272,6 +273,7 @@ namespace entities
 
                     moved = true;
                     anim = rcur.animtype;
+                    aspeed = rcur.animspeed;
                     if(flags&(1<<RAIL_SPLINE))
                     {
                         vec spline[4] = { rprev.pos, rcur.pos, rnext.pos, rnext2.pos };
@@ -297,17 +299,20 @@ namespace entities
 
                 offset = rnext.pos;
                 anim = rnext.animtype;
+                aspeed = rnext.animspeed;
                 if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)) dir = rnext.dir;
                 span += rcur.length;
             }
 
             offset.sub(rails[0].pos); // all coordinates translate based on first rail
             if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)) vectoyawpitch(dir, yaw, pitch);
+
             if(anim != animtype)
             {
                 animtype = anim;
-                animtime = lastmillis;
+                animtime = anim ? lastmillis : 0;
             }
+            animspeed = aspeed;
 
             loopv(parents)
             {
@@ -443,7 +448,7 @@ namespace entities
             if(enttype[f.type].fxattr >= 0 && !checkmapeffects(f.attrs[enttype[f.type].fxattr])) continue;
 
             int cur = findrail(n);
-            railway &w = railways.inrange(cur) ? railways[cur] : railways.add(railway(n, e.attrs[1], e.attrs[6]));
+            railway &w = railways.inrange(cur) ? railways[cur] : railways.add(railway(n, e.attrs[1], e.attrs[6], e.attrs[7], e.attrs[9], e.attrs[8]/100.f));
             w.addparent(parent);
             f.flags |= EF_DYNAMIC;
         }
@@ -1782,6 +1787,9 @@ namespace entities
                 while(e.attrs[7] > 0xFFFFFF) e.attrs[7] -= 0x1000000; // wrap both ways
                 if(e.attrs[8] < 0) e.attrs[8] = 0; // palette, clamp
                 if(e.attrs[9] < 0) e.attrs[9] = 0; // palindex, clamp
+                while(e.attrs[16] < 0) e.attrs[16] += ANIM_MAX;
+                while(e.attrs[16] >= ANIM_MAX) e.attrs[16] -= ANIM_MAX;
+                if(e.attrs[17] < 0) e.attrs[17] = 0; // anim speed, clamp
                 break;
             }
             case PLAYERSTART:
@@ -1944,6 +1952,7 @@ namespace entities
                 while(e.attrs[6] > INANIMATE_C_ALL) e.attrs[6] -= INANIMATE_C_ALL+1;
                 while(e.attrs[7] < 0) e.attrs[7] += ANIM_MAX;
                 while(e.attrs[7] >= ANIM_MAX) e.attrs[7] -= ANIM_MAX;
+                if(e.attrs[8] < 0) e.attrs[8] = 0; // anim speed, clamp
             }
             default: break;
         }
@@ -2774,11 +2783,10 @@ namespace entities
             mdl.o = e.pos();
             mdl.flags = MDL_CULL_VFC|MDL_CULL_DIST|MDL_CULL_OCCLUDED;
             getmapmodelstate(e, mdl);
-            if(r.animtype > 0 && r.animtime > 0)
-            {
-                mdl.anim = r.animtype|ANIM_LOOP;
-                mdl.basetime = r.animtime;
-            }
+            if(r.animtype > 0) mdl.anim = r.animtype|ANIM_LOOP;
+            if(r.animtime > 0) mdl.basetime = r.animtime;
+            if(r.animoffset > 0) mdl.basetime += r.animoffset;
+            if(r.animspeed > 0) mdl.speed = 1/r.animspeed;
             mdl.yaw += e.yaw;
             mdl.pitch += e.pitch;
             dynent *d = NULL;

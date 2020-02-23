@@ -65,7 +65,7 @@ struct enttypes
     int type,           priority, links,    radius, usetype,    numattrs,   modesattr,  idattr, mvattr, fxattr,
             canlink, reclink, canuse;
     bool    noisy,  syncs,  resyncs,    syncpos,    synckin;
-    const char *name,           *attrs[16];
+    const char *name,           *attrs[MAXENTATTRS];
 };
 #ifdef CPP_GAME_SERVER
 extern const enttypes enttype[] = {
@@ -79,13 +79,13 @@ extern const enttypes enttype[] = {
         LIGHT,          1,          59,     0,      EU_NONE,    11,         -1,         -1,     9,      10,
             (1<<LIGHTFX), (1<<LIGHTFX), 0,
             false,  false,  false,      false,      false,
-                "light",        { "radius", "red",      "green",    "blue",     "flare",    "flarescale", "flags",  "palette",  "palindex", "variant", "fxlevel"  }
+                "light",        { "radius", "red",      "green",    "blue",     "flare",    "fscale",   "flags",    "palette",  "palindex", "variant",  "fxlevel"  }
     },
     {
-        MAPMODEL,       1,          58,     0,      EU_NONE,    16,         -1,         -1,     13,     14,
+        MAPMODEL,       1,          58,     0,      EU_NONE,    19,         -1,         -1,     13,     14,
             (1<<TRIGGER), (1<<TRIGGER), 0,
             false,  false,  false,      false,      false,
-                "mapmodel",     { "type",   "yaw",      "pitch",    "roll",     "blend",    "scale",    "flags",    "colour",   "palette",  "palindex", "spinyaw",  "spinpitch", "spinroll",    "variant",  "fxlevel",  "lodoffset" }
+                "mapmodel",     { "type",   "yaw",      "pitch",    "roll",     "blend",    "scale",    "flags",    "colour",   "palette",  "palindex", "spinyaw",  "spinpitch", "spinroll",    "variant",  "fxlevel",  "lodoff",   "anim",     "aspeed",   "aoffset" }
     },
     {
         PLAYERSTART,    1,          59,     0,      EU_NONE,    7,          3,          5,      6,      -1,
@@ -205,10 +205,10 @@ extern const enttypes enttype[] = {
                 "route",         { "num",   "yaw",      "pitch",    "move",     "strafe",   "action" }
     },
     {
-        RAIL,           -1,         228,    0,      EU_NONE,    8,          -1,         -1,     -1,     -1,
+        RAIL,           -1,         228,    0,      EU_NONE,    10,          -1,         -1,     -1,     -1,
             (1<<LIGHT)|(1<<MAPMODEL)|(1<<PLAYERSTART)|(1<<PARTICLES)|(1<<MAPSOUND)|(1<<LIGHTFX)|(1<<WEAPON)|(1<<TELEPORT)|(1<<ACTOR)|(1<<TRIGGER)|(1<<PUSHER)|(1<<RAIL), 0, 0,
             false,   false,  false,      false,      false,
-                "rail",         { "time",   "flags",    "yaw",      "pitch",    "rotlen",   "rotwait",  "collide",  "anim" }
+                "rail",         { "time",   "flags",    "yaw",      "pitch",    "rotlen",   "rotwait",  "collide",  "anim",     "aspeed",   "aoffset" }
     }
 };
 #else

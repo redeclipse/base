@@ -547,7 +547,9 @@ VAR(0, mmanimoverride, -1, 0, ANIM_ALL);
 
 void getmapmodelstate(extentity &e, entmodelstate &mdl)
 {
-    mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
+    int anim = (e.attrs[16] > 0 ? e.attrs[16] : ANIM_MAPMODEL);
+    mdl.anim = anim|ANIM_LOOP;
+    mdl.basetime = e.attrs[17];
     if(e.lastemit)
     {
         mdl.anim = e.spawned() ? ANIM_TRIGGER_ON : ANIM_TRIGGER_OFF;
@@ -575,6 +577,7 @@ void getmapmodelstate(extentity &e, entmodelstate &mdl)
     if(e.attrs[11]) mdl.pitch += e.attrs[11]*lastmillis/1000.0f;
     if(e.attrs[12]) mdl.roll += e.attrs[12]*lastmillis/1000.0f;
     mdl.lodoffset = e.attrs[15];
+    if(e.attrs[17] > 0) mdl.speed = 1/float(e.attrs[17]/100.f);
 }
 
 static inline void rendermapmodelent(extentity &e, int n, bool tpass)
