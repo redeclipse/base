@@ -702,8 +702,8 @@ VARF(IDF_PERSIST, mapshotsize, 0, 512, INT_MAX-1, mapshotsize -= mapshotsize%2);
 void save_mapshot(char *mname, bool forcesave = false)
 {
     vec oldpos = camera1->o;
-    float oldyaw = camera1->yaw, oldpitch = camera1->pitch;
-    entities::mapshot(camera1->o, camera1->yaw, camera1->pitch);
+    float oldyaw = camera1->yaw, oldpitch = camera1->pitch, oldfov = curfov;
+    entities::mapshot(camera1->o, camera1->yaw, camera1->pitch, curfov);
     if(autosavebackups && !forcesave) backup(mname, ifmtexts[imageformat], hdr.revision, autosavebackups > 2, !(autosavebackups%2));
     GLuint tex;
     glGenTextures(1, &tex);
@@ -723,11 +723,16 @@ void save_mapshot(char *mname, bool forcesave = false)
     if(vieww > mapshotsize || viewh > mapshotsize) scaleimage(image, mapshotsize, mapshotsize);
     saveimage(mname, image, imageformat, compresslevel, true);
     glDeleteTextures(1, &tex);
-    defformatstring(texname, "%s", mname);
-    reloadtexture(texname);
+    const char *mapshotnames[3] = { "", "<blur:1>", "<blur:2>" };
+    loopi(3)
+    {
+        defformatstring(texname, "%s%s", mapshotnames[i], mname);
+        reloadtexture(texname);
+    }
     camera1->o = oldpos;
     camera1->yaw = oldyaw;
     camera1->pitch = oldpitch;
+    curfov = oldfov;
 }
 ICOMMAND(0, savemapshot, "s", (char *mname), if(!(identflags&IDF_WORLD)) save_mapshot(*mname ? mname : mapname));
 

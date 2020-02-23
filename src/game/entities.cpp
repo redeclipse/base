@@ -30,6 +30,7 @@ namespace entities
 
     VAR(IDF_PERSIST|IDF_HEX, entselcolour, 0, 0xFF00FF, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, entselcolourtop, 0, 0xFF88FF, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, entselcolourdyn, 0, 0x880088, 0x880088);
     VAR(IDF_PERSIST|IDF_HEX, entlinkcolour, 0, 0xFF00FF, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, entlinkcolourboth, 0, 0xFF88FF, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, entdircolour, 0, 0x88FF88, 0xFFFFFF);
@@ -1985,6 +1986,8 @@ namespace entities
                 FIXDIRYPL(2, 3);
                 if(e.attrs[4] < 0) e.attrs[4] = 0; // maxdist, limit
                 if(e.attrs[5] < 0) e.attrs[5] = 0; // mindist, limit
+                while(e.attrs[11] < 0) e.attrs[11] += 151; // fov, clamp
+                while(e.attrs[11] >= 150) e.attrs[11] -= 151; // fov, clamp
                 break;
             }
             default: break;
@@ -2471,7 +2474,11 @@ namespace entities
         initrails();
     }
 
-    #define renderfocus(i,f) { gameentity &e = *(gameentity *)ents[i]; f; }
+    #define renderfocus(i,f) \
+    { \
+        gameentity &e = *(gameentity *)ents[i]; \
+        loopj(2) { f; } \
+    }
     void renderlinked(gameentity &e, int idx)
     {
         loopv(e.links)
@@ -2496,70 +2503,83 @@ namespace entities
         return max(showentradius, max(showentdir, showentlinks)) >= level;
     }
 
-    void renderentshow(gameentity &e, int idx, int level)
+    void renderentshow(gameentity &e, int idx, int level, bool dynamic = false)
     {
-        if(e.o.squaredist(camera1->o) > showentdist*showentdist) return;
-        #define entdirpart(o,yaw,pitch,length,fade,colour) { part_dir(o, yaw, pitch, length, showentsize, 1, fade, colour, showentinterval); }
+        if(dynamic && (!(e.flags&EF_DYNAMIC) || level >= 2)) return;
+        vec pos = dynamic ? e.pos() : e.o;
+        if(pos.squaredist(camera1->o) > showentdist*showentdist) return;
+        #define entdirpart(o,y,p,length,fade,colour) \
+        { \
+            float targyaw = y, targpitch = p; \
+            if(dynamic) \
+            { \
+                targyaw += e.yaw; \
+                targpitch += e.pitch; \
+                game::fixrange(targyaw, targpitch); \
+            } \
+            part_dir(o, targyaw, targpitch, length, showentsize, 1, fade, colour, showentinterval); \
+        }
         if(showentradius >= level)
         {
             switch(e.type)
             {
                 case PLAYERSTART:
                 {
-                    part_radius(vec(e.o).add(vec(0, 0, actors[A_PLAYER].height*0.5f)), vec(actors[A_PLAYER].radius, actors[A_PLAYER].radius, actors[A_PLAYER].height*0.5f), showentsize, 1, 1, TEAM(e.attrs[0], colour));
+                    part_radius(vec(pos).add(vec(0, 0, actors[A_PLAYER].height*0.5f)), vec(actors[A_PLAYER].radius, actors[A_PLAYER].radius, actors[A_PLAYER].height*0.5f), showentsize, 1, 1, TEAM(e.attrs[0], colour));
                     break;
                 }
                 case ENVMAP:
                 {
                     int s = e.attrs[0] ? clamp(e.attrs[0], 0, 10000) : envmapradius;
-                    part_radius(e.o, vec(float(s)), showentsize, 1, 1, entradiuscolour);
+                    part_radius(pos, vec(float(s)), showentsize, 1, 1, entradiuscolour);
                     break;
                 }
                 case ACTOR:
                 {
                     int atype = clamp(e.attrs[0], 0, A_TOTAL-1)+A_ENEMY;
-                    part_radius(vec(e.o).add(vec(0, 0, actors[atype].height*0.5f)), vec(actors[atype].radius, actors[atype].radius, actors[atype].height*0.5f), showentsize, 1, 1, TEAM(T_ENEMY, colour));
-                    part_radius(e.o, vec(ai::ALERTMAX), showentsize, 1, 1, TEAM(T_ENEMY, colour));
+                    part_radius(vec(pos).add(vec(0, 0, actors[atype].height*0.5f)), vec(actors[atype].radius, actors[atype].radius, actors[atype].height*0.5f), showentsize, 1, 1, TEAM(T_ENEMY, colour));
+                    part_radius(pos, vec(ai::ALERTMAX), showentsize, 1, 1, TEAM(T_ENEMY, colour));
                     break;
                 }
                 case MAPSOUND:
                 {
-                    part_radius(e.o, vec(float(e.attrs[1])), showentsize, 1, 1, entradiuscolour);
-                    part_radius(e.o, vec(float(e.attrs[2])), showentsize, 1, 1, entradiuscolour);
+                    part_radius(pos, vec(float(e.attrs[1])), showentsize, 1, 1, entradiuscolour);
+                    part_radius(pos, vec(float(e.attrs[2])), showentsize, 1, 1, entradiuscolour);
                     break;
                 }
                 case WIND:
                 {
-                    part_radius(e.o, vec(float(e.attrs[3])), showentsize, 1, 1, entradiuscolour);
+                    part_radius(pos, vec(float(e.attrs[3])), showentsize, 1, 1, entradiuscolour);
                     break;
                 }
                 case LIGHT:
                 {
                     int radius = e.attrs[0], spotlight = -1;
-                    vec color;
-                    getlightfx(e, &radius, &spotlight, &color);
+                    vec color(1, 1, 1);
+                    getlightfx(e, &radius, &spotlight, &color, true);
                     if(e.attrs[0] && e.attrs[0] != radius)
-                        part_radius(e.o, vec(float(e.attrs[0])), showentsize, 1, 1, color.tohexcolor());
-                    part_radius(e.o, vec(float(radius)), showentsize, 1, 1, color.tohexcolor());
+                        part_radius(pos, vec(float(e.attrs[0])), showentsize, 1, 1, color.tohexcolor());
+                    part_radius(pos, vec(float(radius)), showentsize, 1, 1, color.tohexcolor());
                     if(ents.inrange(spotlight))
                     {
                         gameentity &f = *(gameentity *)ents[spotlight];
-                        part_cone(e.o, vec(f.o).sub(e.o).normalize(), radius, clamp(int(f.attrs[1]), 1, 89), showentsize, 1, 1, color.tohexcolor());
+                        part_cone(pos, vec(dynamic ? f.pos() : f.o).sub(pos).safenormalize(), radius, clamp(int(f.attrs[1]), 1, 89), showentsize, 1, 1, color.tohexcolor());
                     }
                     break;
                 }
                 case AFFINITY:
                 {
                     float radius = enttype[e.type].radius;
-                    part_radius(e.o, vec(radius), showentsize, 1, 1, TEAM(e.attrs[0], colour));
+                    part_radius(pos, vec(radius), showentsize, 1, 1, TEAM(e.attrs[0], colour));
                     radius = radius*2/3; // capture pickup dist
-                    part_radius(e.o, vec(radius), showentsize, 1, 1, TEAM(e.attrs[0], colour));
+                    part_radius(pos, vec(radius), showentsize, 1, 1, TEAM(e.attrs[0], colour));
                     break;
                 }
                 case CAMERA:
                 {
-                    part_radius(e.o, vec(float(e.attrs[4])), showentsize, 1, 1, entradiuscolour);
-                    part_radius(e.o, vec(float(e.attrs[5])), showentsize, 1, 1, entradiuscolour);
+                    part_radius(pos, vec(float(e.attrs[4])), showentsize, 1, 1, entradiuscolour);
+                    part_radius(pos, vec(float(e.attrs[5])), showentsize, 1, 1, entradiuscolour);
+                    part_cone(pos, vec(e.attrs[2]*RAD, e.attrs[3]*RAD).safenormalize(), 128, e.attrs[11] > 0 ? clamp(e.attrs[11], 1, 89) : 89, 0, showentsize, 1, 1, entradiuscolour);
                     break;
                 }
                 default:
@@ -2567,9 +2587,9 @@ namespace entities
                     float radius = enttype[e.type].radius;
                     if((e.type == TRIGGER || e.type == TELEPORT || e.type == PUSHER || e.type == CHECKPOINT) && e.attrs[e.type == CHECKPOINT ? 0 : 3])
                         radius = e.attrs[e.type == CHECKPOINT ? 0 : 3];
-                    if(radius > 0) part_radius(e.o, vec(radius), showentsize, 1, 1, entradiuscolour);
+                    if(radius > 0) part_radius(pos, vec(radius), showentsize, 1, 1, entradiuscolour);
                     if(e.type == PUSHER && e.attrs[4] > 0 && e.attrs[4] < radius)
-                        part_radius(e.o, vec(float(e.attrs[4])), showentsize, 1, 1, entradiuscolour);
+                        part_radius(pos, vec(float(e.attrs[4])), showentsize, 1, 1, entradiuscolour);
                     break;
                 }
             }
@@ -2581,44 +2601,43 @@ namespace entities
             {
                 case PLAYERSTART: case CHECKPOINT:
                 {
-                    entdirpart(e.o, e.attrs[1], e.attrs[2], 4.f, 1, TEAM(e.type == PLAYERSTART ? e.attrs[0] : T_NEUTRAL, colour));
+                    entdirpart(pos, e.attrs[1], e.attrs[2], 4.f, 1, TEAM(e.type == PLAYERSTART ? e.attrs[0] : T_NEUTRAL, colour));
                     break;
                 }
                 //case MAPMODEL:
                 //{
-                //    entdirpart(e.o, e.attrs[1], 360-e.attrs[3], 4.f, 1, entdircolour);
+                //    entdirpart(pos, e.attrs[1], 360-e.attrs[3], 4.f, 1, entdircolour);
                 //    break;
                 //}
                 case WIND:
                 {
-                    if(e.attrs[0]&WIND_EMIT_VECTORED) entdirpart(e.o, e.attrs[1], 0, entdirsize, 1, entdircolour);
+                    if(e.attrs[0]&WIND_EMIT_VECTORED) entdirpart(pos, e.attrs[1], 0, entdirsize, 1, entdircolour);
                     break;
                 }
                 case ACTOR:
                 {
-                    entdirpart(e.o, e.attrs[1], e.attrs[2], 4.f, 1, TEAM(T_ENEMY, colour));
+                    entdirpart(pos, e.attrs[1], e.attrs[2], 4.f, 1, TEAM(T_ENEMY, colour));
                     break;
                 }
                 case TELEPORT:
                 {
-                    if(e.attrs[0] < 0) { entdirpart(e.o, (lastmillis/5)%360, e.attrs[1], 4.f, 1, entdircolour); }
-                    else { entdirpart(e.o, e.attrs[0], e.attrs[1], entdirsize, 1, entdircolour); }
+                    if(e.attrs[0] < 0) { entdirpart(pos, (lastmillis/5)%360, e.attrs[1], 4.f, 1, entdircolour); }
+                    else { entdirpart(pos, e.attrs[0], e.attrs[1], entdirsize, 1, entdircolour); }
                     break;
                 }
                 case PUSHER:
                 {
-                    entdirpart(e.o, e.attrs[0], e.attrs[1], 4.f+e.attrs[2], 1, entdircolour);
+                    entdirpart(pos, e.attrs[0], e.attrs[1], 4.f+e.attrs[2], 1, entdircolour);
                     break;
                 }
                 case RAIL:
                 {
-                    entdirpart(e.o, e.attrs[2], e.attrs[3], 4.f, 1, entdircolour);
-                    loopv(railways) if(railways[i].ent == idx) entdirpart(e.o, railways[i].yaw, railways[i].pitch, entdirsize, 1, entdircolour);
+                    entdirpart(pos, e.attrs[2], e.attrs[3], 4.f, 1, entdircolour);
                     break;
                 }
                 case CAMERA:
                 {
-                    entdirpart(e.o, e.attrs[2], e.attrs[3], 4.f, 1, entdircolour);
+                    entdirpart(pos, e.attrs[2], e.attrs[3], 4.f, 1, entdircolour);
                     break;
                 }
                 default: break;
@@ -2749,7 +2768,7 @@ namespace entities
         if(!drawtex)
         {
             if(shouldshowents(game::player1->state == CS_EDITING ? 1 : (!entgroup.empty() || ents.inrange(enthover) ? 2 : 3))) loopv(ents) // important, don't render lines and stuff otherwise!
-                renderfocus(i, renderentshow(e, i, game::player1->state == CS_EDITING ? ((entgroup.find(i) >= 0 || enthover == i) ? 1 : 2) : 3));
+                renderfocus(i, renderentshow(e, i, game::player1->state == CS_EDITING ? ((entgroup.find(i) >= 0 || enthover == i) ? 1 : 2) : 3, j!=0));
             int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators),
                 fstent = m_edit(game::gamemode) ? 0 : firstuse(EU_ITEM),
                 lstent = m_edit(game::gamemode) ? ents.length() : lastuse(EU_ITEM);
@@ -2945,7 +2964,11 @@ namespace entities
         }
         if(edit)
         {
-            part_create(hastop ? PART_EDIT_ONTOP : PART_EDIT, 1, o, hastop ? entselcolourtop : entselcolour, hastop ? entselsizetop : entselsize);
+            loopj(hastop && e.flags&EF_DYNAMIC ? 2 : 1)
+            {
+                part_create(hastop ? PART_EDIT_ONTOP : PART_EDIT, 1, j ? e.pos() : o, j ? entselcolourdyn : (hastop ? entselcolourtop : entselcolour), hastop ? entselsizetop : entselsize);
+                if(j) part_line(o, e.pos(), entselsizetop, 1, 1, entselcolourdyn);
+            }
             if(showentinfo&(hasent ? 4 : 8))
             {
                 defformatstring(s, "<super>%s%s (%d)", hastop ? "\fc" : "\fC", enttype[e.type].name, idx >= 0 ? idx : 0);
@@ -3070,9 +3093,10 @@ namespace entities
         }
     }
 
-    void mapshot(vec &pos, float &yaw, float &pitch)
+    void mapshot(vec &pos, float &yaw, float &pitch, float &fov)
     {
         vector<int> cameras;
+        fov = 90;
         loopk(3)
         {
             loopv(ents)
@@ -3090,6 +3114,7 @@ namespace entities
             pos = e.pos();
             yaw = e.attrs[e.type == PLAYERSTART ? 1 : 2]+e.yaw;
             pitch = e.attrs[e.type == PLAYERSTART ? 2 : 3]+e.pitch;
+            if(e.type == CAMERA && e.attrs[11] > 0) fov = e.attrs[11];
             game::fixrange(yaw, pitch);
         }
     }

@@ -216,7 +216,7 @@ extern const enttypes enttype[] = {
         CAMERA,         -1,         252,    0,      EU_NONE,    12,         7,          9,      10,      -1,
             0, 0, 0,
             false,   false,  false,      false,      false,
-                "camera",       { "type",   "flags",    "yaw",      "pitch",     "maxdist", "mindist",  "delay",   "modes",    "muts",     "id",       "variant" }
+                "camera",       { "type",   "flags",    "yaw",      "pitch",     "maxdist", "mindist",  "delay",   "modes",    "muts",     "id",       "variant",   "fov" }
     }
 };
 #else
@@ -2118,6 +2118,8 @@ struct cament
         if(a->inview[cament::PLAYER] < b->inview[cament::PLAYER]) return false;
         if(a->inview[cament::AFFINITY] > b->inview[cament::AFFINITY]) return true;
         if(a->inview[cament::AFFINITY] < b->inview[cament::AFFINITY]) return false;
+        if(!a->chase && b->chase) return true;
+        if(a->chase && !b->chase) return false;
         return !rnd(2);
     }
 };

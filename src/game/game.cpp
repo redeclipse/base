@@ -2717,9 +2717,13 @@ namespace game
                 }
             }
         }
-        if(c->chase) getcamyawpitch(c, yaw, pitch, true);
+        if(c->chase)
+        {
+            getcamyawpitch(c, yaw, pitch, true);
+            if(renew) c->chase = false;
+        }
         c->dir = vec(yaw*RAD, pitch*RAD);
-        if(!c->chase || (renew && c->type == cament::ENTITY)) return true;
+        if(!c->chase) return true;
         return false;
     }
 
