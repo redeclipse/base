@@ -4739,7 +4739,7 @@ void rendertransparent()
         }
         maskgbuffer("cndg");
 
-        if(wireframe && editmode) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        if(drawtex != DRAWTEX_MAPSHOT && wireframe && editmode) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
         switch(layer)
         {
@@ -4759,7 +4759,7 @@ void rendertransparent()
             break;
         }
 
-        if(wireframe && editmode) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        if(drawtex != DRAWTEX_MAPSHOT && wireframe && editmode) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
         if(msaalight)
         {

@@ -2334,12 +2334,15 @@ void gl_drawview()
 
     visiblecubes();
 
-    if(wireframe && editmode) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    if(drawtex != DRAWTEX_MAPSHOT && wireframe && editmode) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     rendergbuffer();
 
-    if(wireframe && editmode) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    else if(limitsky() && editmode) renderexplicitsky(true);
+    if(drawtex != DRAWTEX_MAPSHOT)
+    {
+        if(wireframe && editmode) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        else if(limitsky() && editmode) renderexplicitsky(true);
+    }
 
     renderao();
     GLERROR;
@@ -2385,25 +2388,28 @@ void gl_drawview()
     rendervolumetric();
     GLERROR;
 
-    if(drawtex != DRAWTEX_MAPSHOT && editmode)
+    if(drawtex != DRAWTEX_MAPSHOT)
     {
-        if(!wireframe && outline) renderoutline();
-        GLERROR;
-        rendereditmaterials();
-        GLERROR;
-        renderparticles();
-        GLERROR;
+        if(editmode)
+        {
+            if(!wireframe && outline) renderoutline();
+            GLERROR;
+            rendereditmaterials();
+            GLERROR;
+            renderparticles();
+            GLERROR;
 
-        glDepthMask(GL_FALSE);
-        renderblendbrush();
-        rendereditcursor();
-        glDepthMask(GL_TRUE);
-    }
-    if(showboundingboxes)
-    {
-        glDepthMask(GL_FALSE);
-        renderboundboxes();
-        glDepthMask(GL_TRUE);
+            glDepthMask(GL_FALSE);
+            renderblendbrush();
+            rendereditcursor();
+            glDepthMask(GL_TRUE);
+        }
+        if(showboundingboxes)
+        {
+            glDepthMask(GL_FALSE);
+            renderboundboxes();
+            glDepthMask(GL_TRUE);
+        }
     }
 
     glDisable(GL_CULL_FACE);
