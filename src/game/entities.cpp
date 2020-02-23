@@ -353,6 +353,7 @@ namespace entities
                     m->o = e.pos();
                     m->yaw = e.attrs[1]+e.yaw;
                     m->pitch = e.attrs[2]+e.pitch;
+                    m->roll = e.attrs[3];
                     game::fixrange(m->yaw, m->pitch);
                     vec center, radius;
                     mmi->m->collisionbox(center, radius);
@@ -362,7 +363,7 @@ namespace entities
                         center.mul(scale);
                         radius.mul(scale);
                     }
-                    rotatebb(center, radius, int(m->yaw), int(m->pitch));
+                    rotatebb(center, radius, int(m->yaw), int(m->pitch), int(m->roll));
 
                     vec oldsize(m->xradius, m->yradius, m->height);
                     m->xradius = radius.x + fabs(center.x);
