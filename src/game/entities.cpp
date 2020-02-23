@@ -64,14 +64,14 @@ namespace entities
     struct railway
     {
         int ent, ret, flags, length[2], lastsecs, millis, coltype, animtype, animoffset, animtime;
-        float yaw, pitch, lastyaw, lastpitch, speed, animspeed;
+        float yaw, pitch, lastyaw, lastpitch, animspeed;
         vec pos, dir, offset, lastoffset;
 
         vector<rail> rails;
         vector<int> parents;
 
-        railway() : ent(-1), ret(0), flags(0), lastsecs(0), millis(0), coltype(0), animtype(0), animoffset(0), animtime(0), yaw(0), pitch(0), lastyaw(0), lastpitch(0), speed(0), animspeed(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0) { reset(); }
-        railway(int n, int f = 0, int c = 0, int at = 0, int ao = 0, float as = 0) : ent(n), ret(0), flags(f), lastsecs(0), millis(0), coltype(c), animtype(at), animoffset(ao), animtime(0), yaw(0), pitch(0), lastyaw(0), lastpitch(0), speed(0), animspeed(as), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0) { reset(); }
+        railway() : ent(-1), ret(0), flags(0), lastsecs(0), millis(0), coltype(0), animtype(0), animoffset(0), animtime(0), yaw(0), pitch(0), lastyaw(0), lastpitch(0), animspeed(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0) { reset(); }
+        railway(int n, int f = 0, int c = 0, int at = 0, int ao = 0, float as = 0) : ent(n), ret(0), flags(f), lastsecs(0), millis(0), coltype(c), animtype(at), animoffset(ao), animtime(0), yaw(0), pitch(0), lastyaw(0), lastpitch(0), animspeed(as), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0) { reset(); }
 
         ~railway()
         {
@@ -194,7 +194,6 @@ namespace entities
 
                 if(rails[0].length > 0 && !rails[0].offset.iszero() && flags&(1<<RAIL_SPEED))
                 {
-                    speed = rails[0].length/1000.f;
                     length[0] = length[1] = 0;
                     loopv(rails)
                     {
@@ -202,7 +201,7 @@ namespace entities
                         if(r.length > 0 && !r.offset.iszero())
                         {
                             int oldlen = r.length;
-                            r.length = int(r.offset.magnitude()*speed*r.length/1000.f);
+                            r.length = int(r.offset.magnitude()*r.length/100.f);
                             if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH))
                             {
                                 gameentity &e = *(gameentity *)ents[r.ent];
@@ -298,8 +297,14 @@ namespace entities
                         else if(step >= rcur.rotstart)
                         {
                             float part = (step-rcur.rotstart)/float(max(rcur.rotlen, 1));
-                            dir = vec(rcur.dir).mul(1-part).add(vec(rnext.dir).mul(part)).safenormalize();
+                            if(flags&(1<<RAIL_SPLINE))
+                            {
+                                vec spline[4] = { rprev.dir, rcur.dir, rnext.dir, rnext2.dir };
+                                dir = catmullrom(spline, part);
+                            }
+                            else dir = vec(rcur.dir).mul(1-part).add(vec(rnext.dir).mul(part)).safenormalize();
                         }
+                        else dir = rcur.dir;
                     }
                     break;
                 }
@@ -2987,11 +2992,6 @@ namespace entities
                     {
                         if(railways[i].ent != idx && railways[i].findparent(idx) < 0) continue;
                         formatstring(s, "<little>railway [%d] %d ms (%d/%d)", i, railways[i].millis, railways[i].length[0], railways[i].length[1]);
-                        if(railways[i].flags&(1<<RAIL_SPEED))
-                        {
-                            defformatstring(t, " speed: %.8f", railways[i].speed);
-                            concatstring(s, t);
-                        }
                         part_textcopy(pos.add(vec(off).mul(0.5f)), s, hastop ? PART_TEXT_ONTOP : PART_TEXT);
                     }
                 }
