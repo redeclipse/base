@@ -987,7 +987,7 @@ void entset(char *what, char *attr)
 }
 COMMAND(0, entset, "ss");
 
-void entlink()
+void entlink(int *parent)
 {
     if(entgroup.length() > 1)
     {
@@ -1006,13 +1006,14 @@ void entlink()
                         conoutf("\frFailed linking %d and %d (%d)", index, node, i+1);
                 }
                 else conoutf("\fr%d (%d) is not in range", node, i+1);
+                if(!*parent) index = i;
             }
         }
         else conoutf("\fr%d (%d) is not in range", index, 0);
     }
     else conoutft(CON_DEBUG, "\frMore than one entity must be selected to link");
 }
-COMMAND(0, entlink, "");
+COMMAND(0, entlink, "i");
 
 void nearestent()
 {
