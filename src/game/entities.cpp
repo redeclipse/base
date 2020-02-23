@@ -254,7 +254,7 @@ namespace entities
             lastyaw = yaw;
             lastpitch = pitch;
 
-            millis = elapsed%length[iter];
+            millis = elapsed%max(length[iter], 1);
             offset = rails[start].pos;
             if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)) dir = rails[start].dir;
 
