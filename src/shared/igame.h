@@ -134,7 +134,7 @@ namespace game
     extern void project();
     extern void recomputecamera();
     extern int gametimeremain();
-    extern int gametimeelapsed();
+    extern int gametimeelapsed(bool force = false);
     extern const char *gamestatename(int type = 0);
     extern const char *gametitle();
     extern const char *gametext();

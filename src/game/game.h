@@ -2293,6 +2293,7 @@ namespace entities
     extern vector<inanimate *> inanimates;
     extern int showentdescs, showentfull, showentweapons, simpleitems;
     extern float showentavailable, showentunavailable;
+    extern void updaterails();
     extern bool execitem(int n, int cn, dynent *d, vec &pos, float dist);
     extern bool collateitems(dynent *d, vec &pos, float radius, vector<actitem> &actitems);
     extern void checkitems(dynent *d);

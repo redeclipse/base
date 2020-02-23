@@ -465,13 +465,18 @@ namespace entities
 
     void runrails()
     {
-        int secs = game::gametimeelapsed();
+        int secs = game::gametimeelapsed(true);
         if(!railbuilt) buildrails();
         loopv(railways) if(!railways[i].run(secs))
         {
             railways.remove(i--);
             railbuilt = 0;
         }
+    }
+
+    void updaterails()
+    {
+        loopv(railways) railways[i].lastsecs = 0;
     }
 
     void initrails()

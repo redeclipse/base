@@ -461,12 +461,12 @@ namespace game
 
     int gametimeremain()
     {
-        return connected() ? max(timeremaining*1000-((gs_playing(gamestate) ? lastmillis : totalmillis)-timelast), 0) : 0;
+        return connected() ? max(timeremaining*1000-((gs_timeupdate(gamestate) ? lastmillis : totalmillis)-timelast), 0) : 0;
     }
 
-    int gametimeelapsed()
+    int gametimeelapsed(bool force)
     {
-        return connected() && gs_playing(gamestate) ? max(timeelapsed+(lastmillis-timelast), 0) : 0;
+        return connected() && gs_timeupdate(gamestate) ? max(timeelapsed+(lastmillis-timelast), 0) : (force && maptime > 0 ? lastmillis-maptime : 0);
     }
 
     const char *gamestatename(int type)
@@ -483,7 +483,7 @@ namespace game
     ICOMMAND(0, getgamestate, "", (), intret(gamestate));
     ICOMMAND(0, getgamestatestr, "ib", (int *n, int *b), result(gamestates[clamp(*n, 0, 3)][clamp(*b >= 0 ? *b : gamestate, 0, int(G_S_MAX))]));
     ICOMMAND(0, getgametimeremain, "", (), intret(gametimeremain()));
-    ICOMMAND(0, getgametimeelapsed, "", (), intret(gametimeelapsed()));
+    ICOMMAND(0, getgametimeelapsed, "i", (int *n), intret(gametimeelapsed(*n!=0)));
     ICOMMAND(0, getgametimelimit, "bb", (int *g, int *m), intret(m_mmvar(*g >= 0 ? *g : gamemode, *m >= 0 ? *m : mutators, timelimit)));
 
     const char *gametitle() { return connected() ? server::gamename(gamemode, mutators) : "Ready"; }
@@ -1911,7 +1911,8 @@ namespace game
         gamestate = state;
         timeremaining = remain;
         timeelapsed = elapsed;
-        timelast = gs_playing(gamestate) ? lastmillis : totalmillis;
+        timelast = gs_timeupdate(gamestate) ? lastmillis : totalmillis;
+        if(gs_timeupdate(gamestate) != gs_timeupdate(oldstate)) entities::updaterails();
         if(gs_intermission(gamestate) && gs_playing(oldstate))
         {
             player1->stopmoving(true);
@@ -2660,7 +2661,7 @@ namespace game
         mindist = min(mindist, maxdist);
     }
 
-    bool camupdate(cament *c, bool renew = false, bool force = false)
+    bool camupdate(cament *c, bool renew = false)
     {
         if(c->player && !allowspec(c->player, spectvdead, spectvfollowing)) return false;
         c->reset();
@@ -2669,7 +2670,7 @@ namespace game
         getcamdist(c, maxdist, mindist);
         vec from = camvec(c, yaw, pitch), trg;
         int count = 0;
-        loopj(c->player ? 3 : 2)
+        loopj(c->chase ? (c->player ? 3 : 2) : 1)
         {
             vec dir(0, 0, 0);
             loopv(cameras)
@@ -2716,17 +2717,9 @@ namespace game
                 }
             }
         }
-        if(!c->chase || renew || force)
-        {
-            if(c->player)
-            {
-                yaw = c->player->yaw;
-                pitch = c->player->pitch;
-            }
-            fixrange(yaw, pitch);
-            c->dir = vec(yaw*RAD, pitch*RAD);
-            if(!c->chase || force) return true;
-        }
+        if(c->chase) getcamyawpitch(c, yaw, pitch, true);
+        c->dir = vec(yaw*RAD, pitch*RAD);
+        if(!c->chase || (renew && c->type == cament::ENTITY)) return true;
         return false;
     }
 
@@ -3095,9 +3088,9 @@ namespace game
             ai::navigate();
             projs::update();
             ai::update();
+            entities::update();
             if(gs_playing(gamestate))
             {
-                entities::update();
                 if(m_capture(gamemode)) capture::update();
                 else if(m_bomber(gamemode)) bomber::update();
                 if(player1->state == CS_ALIVE) weapons::shoot(player1, worldpos);
