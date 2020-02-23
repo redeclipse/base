@@ -2669,9 +2669,9 @@ namespace game
         getcamyawpitch(c, yaw, pitch, renew);
         getcamdist(c, maxdist, mindist);
         vec from = camvec(c, yaw, pitch), trg;
-        int count = 0;
         loopj(c->chase ? (c->player ? 3 : 2) : 1)
         {
+            int count = 0;
             vec dir(0, 0, 0);
             loopv(cameras)
             {
@@ -2777,7 +2777,7 @@ namespace game
             loopv(entities::ents)
             {
                 gameentity &e = *(gameentity *)entities::ents[i];
-                if(k ? (e.type != PLAYERSTART && e.type != WEAPON) : e.type != CAMERA) continue;
+                if(k ? (e.type != PLAYERSTART && e.type != WEAPON && e.type != CAMERA) : (e.type != CAMERA || e.attrs[0] != CAMERA_NORMAL)) continue;
                 if(enttype[e.type].modesattr >= 0 && !m_check(e.attrs[enttype[e.type].modesattr], e.attrs[enttype[e.type].modesattr+1], game::gamemode, game::mutators)) continue;
                 if(enttype[e.type].mvattr >= 0 && !checkmapvariant(e.attrs[enttype[e.type].mvattr])) continue;
                 if(enttype[e.type].fxattr >= 0 && !checkmapeffects(e.attrs[enttype[e.type].fxattr])) continue;
@@ -2853,16 +2853,16 @@ namespace game
                 loopv(cameras)
                 {
                     cament *c = cameras[i];
-                    if(!camupdate(c, true))
-                    {
-                        c->reset(); // this camera sucks then
-                        c->ignore = true;
-                    }
+                    if(!camupdate(c, true)) c->ignore = true;
                     else loopj(cament::MAX) c->lastinview[j] = c->inview[j];
-                    if(!c->ignore) goodcams++;
+                    if(!c->ignore) loopk(cament::MAX) if(c->inview[k])
+                    {
+                        goodcams++;
+                        break;
+                    }
                 }
                 if(!goodcams) cam->ignore = false; // in case there's only one good camera
-                reset = true;
+                else reset = true;
             }
             if(reset)
             {
