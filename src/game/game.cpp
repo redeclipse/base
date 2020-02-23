@@ -214,8 +214,8 @@ namespace game
     FVAR(IDF_PERSIST, followtvyawthresh, 0, 0, 360);
     FVAR(IDF_PERSIST, followtvpitchthresh, 0, 0, 180);
 
+    VAR(IDF_PERSIST, spectvmintime, 1000, 5000, VAR_MAX);
     VAR(IDF_PERSIST, spectvtime, 1000, 10000, VAR_MAX);
-    VAR(IDF_PERSIST, spectvmintime, 1000, 3000, VAR_MAX);
     VAR(IDF_PERSIST, spectvmaxtime, 0, 15000, VAR_MAX);
     VAR(IDF_PERSIST, spectvspeed, 1, 350, VAR_MAX);
     VAR(IDF_PERSIST, spectvyawspeed, 1, 350, VAR_MAX);
@@ -233,23 +233,23 @@ namespace game
     VAR(IDF_PERSIST, spectvplayerbias, 0, 0, VAR_MAX);
     VAR(IDF_PERSIST, spectvaffinitybias, 0, 1, VAR_MAX);
 
-    VAR(IDF_PERSIST, spectvintertime, 1000, 10000, VAR_MAX);
-    VAR(IDF_PERSIST, spectvintermintime, 1000, 6000, VAR_MAX);
-    VAR(IDF_PERSIST, spectvintermaxtime, 0, 20000, VAR_MAX);
-    VAR(IDF_PERSIST, spectvinterspeed, 1, 350, VAR_MAX);
-    VAR(IDF_PERSIST, spectvinteryawspeed, 1, 350, VAR_MAX);
-    VAR(IDF_PERSIST, spectvinterpitchspeed, 1, 350, VAR_MAX);
-    FVAR(IDF_PERSIST, spectvinterrotate, FVAR_MIN, 0, FVAR_MAX); // rotate style, < 0 = absolute angle, 0 = scaled, > 0 = scaled with max angle
-    FVAR(IDF_PERSIST, spectvinteryawscale, FVAR_MIN, 1, 1000);
-    FVAR(IDF_PERSIST, spectvinterpitchscale, FVAR_MIN, 1, 1000);
-    FVAR(IDF_PERSIST, spectvinteryawthresh, 0, 0, 360);
-    FVAR(IDF_PERSIST, spectvinterpitchthresh, 0, 0, 180);
+    VAR(IDF_PERSIST, spectvintermmintime, 1000, 10000, VAR_MAX);
+    VAR(IDF_PERSIST, spectvintermtime, 1000, 15000, VAR_MAX);
+    VAR(IDF_PERSIST, spectvintermmaxtime, 0, 20000, VAR_MAX);
+    VAR(IDF_PERSIST, spectvintermspeed, 1, 350, VAR_MAX);
+    VAR(IDF_PERSIST, spectvintermyawspeed, 1, 350, VAR_MAX);
+    VAR(IDF_PERSIST, spectvintermpitchspeed, 1, 350, VAR_MAX);
+    FVAR(IDF_PERSIST, spectvintermrotate, FVAR_MIN, 0, FVAR_MAX); // rotate style, < 0 = absolute angle, 0 = scaled, > 0 = scaled with max angle
+    FVAR(IDF_PERSIST, spectvintermyawscale, FVAR_MIN, 1, 1000);
+    FVAR(IDF_PERSIST, spectvintermpitchscale, FVAR_MIN, 1, 1000);
+    FVAR(IDF_PERSIST, spectvintermyawthresh, 0, 0, 360);
+    FVAR(IDF_PERSIST, spectvintermpitchthresh, 0, 0, 180);
 
     VARF(0, spectvfollow, -1, -1, VAR_MAX, spectvfollowing = spectvfollow); // attempts to always keep this client in view
     VAR(0, spectvfollowself, 0, 1, 2); // if we are not spectating, spectv should show us; 0 = off, 1 = not duel/survivor, 2 = always
+    VAR(IDF_PERSIST, spectvfollowmintime, 1000, 5000, VAR_MAX);
     VAR(IDF_PERSIST, spectvfollowtime, 1000, 10000, VAR_MAX);
-    VAR(IDF_PERSIST, spectvfollowmintime, 1000, 2000, VAR_MAX);
-    VAR(IDF_PERSIST, spectvfollowmaxtime, 0, 20000, VAR_MAX);
+    VAR(IDF_PERSIST, spectvfollowmaxtime, 0, 15000, VAR_MAX);
     VAR(IDF_PERSIST, spectvfollowspeed, 1, 250, VAR_MAX);
     VAR(IDF_PERSIST, spectvfollowyawspeed, 1, 250, VAR_MAX);
     VAR(IDF_PERSIST, spectvfollowpitchspeed, 1, 350, VAR_MAX);
@@ -2834,57 +2834,59 @@ namespace game
         bool renew = !lastcamera, found = findcams(cam);
         if(!found) spectvfollowing = -1;
         camrefresh(cam);
-        #define stvf(z) (!gs_playing(gamestate) ? spectvinter##z : (spectvfollowing >= 0 ? spectvfollow##z : spectv##z))
-        loopk(spectvfollowing >= 0 ? 2 : 1)
+
+        #define stvf(z) (!gs_playing(gamestate) ? spectvinterm##z : (spectvfollowing >= 0 ? spectvfollow##z : spectv##z))
+        int lastcn = cam->cn, millis = lasttvchg ? totalmillis-lasttvchg : 0;
+        bool reset = false, updated = camupdate(cam, renew), override = !lasttvchg || millis >= stvf(mintime),
+             timeup = !lasttvcam || totalmillis-lasttvcam >= stvf(time), overtime = stvf(maxtime) && millis >= stvf(maxtime);
+
+        if(overtime || timeup || (!updated && override))
         {
-            int lastcn = cam->cn, millis = lasttvchg ? totalmillis-lasttvchg : 0;
-            bool updated = camupdate(cam, renew), override = !lasttvchg || millis >= stvf(mintime),
-                 reset = (stvf(maxtime) && millis >= stvf(maxtime)) || !lasttvcam || totalmillis-lasttvcam >= stvf(time);
-            if(spectvfollowing >= 0 && !reset && !updated && !override)
+            loopv(cameras) if(cameras[i]->ignore) cameras[i]->ignore = false;
+            if(overtime) cam->ignore = true; // so we don't use the last one we just used
+            int goodcams = 0;
+            loopv(cameras)
             {
-                spectvfollowing = -1;
-                continue;
-            }
-            if(reset || (!updated && override))
-            {
-                loopv(cameras) if(cameras[i]->ignore) cameras[i]->ignore = false;
-                cam->ignore = true; // so we don't use the last one we just used
-                int goodcams = 0;
-                loopv(cameras)
+                cament *c = cameras[i];
+                if(!camupdate(c, true)) c->ignore = true;
+                else loopj(cament::MAX) c->lastinview[j] = c->inview[j];
+                if(!c->ignore) loopk(cament::MAX) if(c->inview[k])
                 {
-                    cament *c = cameras[i];
-                    if(!camupdate(c, true)) c->ignore = true;
-                    else loopj(cament::MAX) c->lastinview[j] = c->inview[j];
-                    if(!c->ignore) loopk(cament::MAX) if(c->inview[k])
-                    {
-                        goodcams++;
-                        break;
-                    }
+                    goodcams++;
+                    break;
                 }
-                if(!goodcams) cam->ignore = false; // in case there's only one good camera
-                else reset = true;
             }
-            if(reset)
+            if(!goodcams)
             {
-                vector<cament *> scams;
-                scams.reserve(cameras.length());
-                scams.put(cameras.getbuf(), cameras.length());
-                scams.sort(cament::compare);
-                lastcamcn = scams[0]->cn;
+                cam->ignore = false; // in case there's only one good camera
+                reset = overtime;
+            }
+            else reset = true;
+        }
+        if(reset || overtime)
+        {
+            vector<cament *> scams;
+            scams.reserve(cameras.length());
+            scams.put(cameras.getbuf(), cameras.length());
+            scams.sort(cament::compare);
+            lastcamcn = scams[0]->cn;
+            if(!lasttvcam || cam != cameras[lastcamcn])
+            {
                 cam = cameras[lastcamcn];
                 lasttvcam = totalmillis;
             }
-            camrefresh(cam, reset);
-            if(!lasttvchg || cam->cn != lastcn)
-            {
-                lasttvchg = totalmillis;
-                renew = true;
-                cam->resetlast();
-            }
-            break;
         }
+        camrefresh(cam, reset);
+        if(!lasttvchg || cam->cn != lastcn)
+        {
+            cam->resetlast();
+            lasttvchg = totalmillis;
+            renew = true;
+        }
+
         float yaw = camera1->yaw, pitch = camera1->pitch;
         if(!cam->dir.iszero()) vectoyawpitch(cam->dir, yaw, pitch);
+
         if(!cam->player || cam->chase)
         {
             if(cam->chase && !renew)
