@@ -391,6 +391,7 @@ namespace entities
                         m->moved = vec(0, 0, 0);
                     }
                     m->resized = vec(m->xradius, m->yradius, m->height).sub(oldsize);
+                    m->resetinterp();
                 }
             }
 
@@ -1011,6 +1012,21 @@ namespace entities
                         addentinfo(str);
                     }
                 }
+                break;
+            }
+            case CAMERA:
+            {
+                if(full)
+                {
+                    if(attr[0] >= 0 && attr[1] < CAMERA_MAX)
+                    {
+                        const char *cameranames[CAMERA_MAX] = { "normal", "mapshot" };
+                        addentinfo(cameranames[attr[0]]);
+                    }
+                    const char *cameraflags[INANIMATE_C_MAX] = { "free-look" };
+                    loopj(CAMERA_F_MAX) if(attr[1]&(1<<j)) addentinfo(cameraflags[j]);
+                }
+                break;
             }
             default: break;
         }
@@ -1953,6 +1969,18 @@ namespace entities
                 while(e.attrs[7] < 0) e.attrs[7] += ANIM_MAX;
                 while(e.attrs[7] >= ANIM_MAX) e.attrs[7] -= ANIM_MAX;
                 if(e.attrs[8] < 0) e.attrs[8] = 0; // anim speed, clamp
+                break;
+            }
+            case CAMERA:
+            {
+                while(e.attrs[0] < 0) e.attrs[0] += CAMERA_MAX;
+                while(e.attrs[0] >= CAMERA_MAX) e.attrs[0] -= CAMERA_MAX;
+                while(e.attrs[1] < 0) e.attrs[1] += CAMERA_F_ALL+1;
+                while(e.attrs[1] > CAMERA_F_ALL) e.attrs[1] -= CAMERA_F_ALL+1;
+                FIXDIRYPL(2, 3);
+                if(e.attrs[4] < 0) e.attrs[4] = 0; // maxdist, limit
+                if(e.attrs[5] < 0) e.attrs[5] = 0; // mindist, limit
+                break;
             }
             default: break;
         }
@@ -2523,6 +2551,12 @@ namespace entities
                     part_radius(e.o, vec(radius), showentsize, 1, 1, TEAM(e.attrs[0], colour));
                     break;
                 }
+                case CAMERA:
+                {
+                    part_radius(e.o, vec(float(e.attrs[4])), showentsize, 1, 1, entradiuscolour);
+                    part_radius(e.o, vec(float(e.attrs[5])), showentsize, 1, 1, entradiuscolour);
+                    break;
+                }
                 default:
                 {
                     float radius = enttype[e.type].radius;
@@ -2573,7 +2607,13 @@ namespace entities
                 }
                 case RAIL:
                 {
+                    entdirpart(e.o, e.attrs[2], e.attrs[3], 4.f, 1, entdircolour);
                     loopv(railways) if(railways[i].ent == idx) entdirpart(e.o, railways[i].yaw, railways[i].pitch, entdirsize, 1, entdircolour);
+                    break;
+                }
+                case CAMERA:
+                {
+                    entdirpart(e.o, e.attrs[2], e.attrs[3], 4.f, 1, entdircolour);
                     break;
                 }
                 default: break;

@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 251
+#define VERSION_GAME 252
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -39,7 +39,7 @@ enum                                // entity types
     NOTUSED = ET_EMPTY, LIGHT = ET_LIGHT, MAPMODEL = ET_MAPMODEL, PLAYERSTART = ET_PLAYERSTART, ENVMAP = ET_ENVMAP, PARTICLES = ET_PARTICLES,
     MAPSOUND = ET_SOUND, LIGHTFX = ET_LIGHTFX, DECAL = ET_DECAL, WIND = ET_WIND, OUTLINE = ET_OUTLINE, WEAPON = ET_GAMESPECIFIC,
     TELEPORT, ACTOR, TRIGGER, PUSHER, AFFINITY, CHECKPOINT,
-    ROUTE, RAIL,
+    ROUTE, RAIL, CAMERA,
     MAXENTTYPES
 };
 
@@ -48,6 +48,8 @@ enum { EU_NONE = 0, EU_ITEM, EU_AUTO, EU_ACT, EU_MAX };
 enum { TR_TOGGLE = 0, TR_LINK, TR_SCRIPT, TR_ONCE, TR_EXIT, TR_MAX };
 enum { TA_MANUAL = 0, TA_AUTO, TA_ACTION, TA_MAX };
 enum { RAIL_YAW = 0, RAIL_PITCH, RAIL_SEEK, RAIL_SPLINE, RAIL_SPEED, RAIL_MAX, RAIL_ALL = (1<<RAIL_YAW)|(1<<RAIL_PITCH)|(1<<RAIL_SEEK)|(1<<RAIL_SPLINE)|(1<<RAIL_SPEED) };
+enum { CAMERA_NONE = 0, CAMERA_MAPSHOT, CAMERA_MAX };
+enum { CAMERA_F_FREE = 0, CAMERA_F_MAX, CAMERA_F_ALL = (1<<CAMERA_F_FREE)};
 
 #define TRIGGERIDS      16
 #define TRIGSTATE(a,b)  (b%2 ? !a : a)
@@ -205,10 +207,16 @@ extern const enttypes enttype[] = {
                 "route",         { "num",   "yaw",      "pitch",    "move",     "strafe",   "action" }
     },
     {
-        RAIL,           -1,         228,    0,      EU_NONE,    10,          -1,         -1,     -1,     -1,
-            (1<<LIGHT)|(1<<MAPMODEL)|(1<<PLAYERSTART)|(1<<PARTICLES)|(1<<MAPSOUND)|(1<<LIGHTFX)|(1<<WEAPON)|(1<<TELEPORT)|(1<<ACTOR)|(1<<TRIGGER)|(1<<PUSHER)|(1<<RAIL), 0, 0,
+        RAIL,           -1,         228,    0,      EU_NONE,    10,         -1,         -1,     -1,     -1,
+            (1<<LIGHT)|(1<<MAPMODEL)|(1<<PLAYERSTART)|(1<<PARTICLES)|(1<<MAPSOUND)|(1<<LIGHTFX)|(1<<WEAPON)|(1<<TELEPORT)|(1<<ACTOR)|(1<<TRIGGER)|(1<<PUSHER)|(1<<RAIL)|(1<<CAMERA), 0, 0,
             false,   false,  false,      false,      false,
                 "rail",         { "time",   "flags",    "yaw",      "pitch",    "rotlen",   "rotwait",  "collide",  "anim",     "aspeed",   "aoffset" }
+    },
+    {
+        CAMERA,         -1,         252,    0,      EU_NONE,    12,         7,          9,      10,      -1,
+            0, 0, 0,
+            false,   false,  false,      false,      false,
+                "camera",       { "type",   "flags",    "yaw",      "pitch",     "maxdist", "mindist",  "delay",   "modes",    "muts",     "id",       "variant" }
     }
 };
 #else
@@ -2058,33 +2066,31 @@ struct projent : dynent
 
 struct cament
 {
-    enum { ENTITY = 0, WAYPOINT, PLAYER, AFFINITY, MAX };
+    enum { ENTITY = 0, PLAYER, AFFINITY, MAX };
 
     int cn, type, id, inview[MAX], lastinview[MAX], lastyawtime, lastpitchtime;
     vec o, dir;
     float dist, lastyaw, lastpitch;
     gameent *player;
-    bool ignore;
-    cament *moveto;
-    vector<cament *> links;
+    bool ignore, chase;
 
-    cament(int p, int t) : cn(p), type(t), id(-1), player(NULL), ignore(false), moveto(NULL)
+    cament(int p, int t) : cn(p), type(t), id(-1), o(0, 0, 0), dir(0, 0, 0), player(NULL), ignore(false), chase(true)
     {
         reset();
         resetlast();
     }
-    cament(int p, int t, int n) : cn(p), type(t), id(n), player(NULL), ignore(false), moveto(NULL)
+    cament(int p, int t, int n) : cn(p), type(t), id(n), o(0, 0, 0), dir(0, 0, 0), player(NULL), ignore(false), chase(true)
     {
         reset();
         resetlast();
     }
-    cament(int p, int t, int n, vec &d) : cn(p), type(t), id(n), player(NULL), ignore(false), moveto(NULL)
+    cament(int p, int t, int n, vec &d) : cn(p), type(t), id(n), o(0, 0, 0), dir(0, 0, 0), player(NULL), ignore(false), chase(true)
     {
         reset();
         resetlast();
         o = d;
     }
-    cament(int p, int t, int n, vec &c, gameent *d) : cn(p), type(t), id(n), player(d), ignore(false), moveto(NULL)
+    cament(int p, int t, int n, vec &c, gameent *d) : cn(p), type(t), id(n), o(0, 0, 0), dir(0, 0, 0), player(d), ignore(false), chase(true)
     {
         reset();
         resetlast();
@@ -2096,7 +2102,6 @@ struct cament
     {
         loopi(MAX) inview[i] = lastinview[i] = 0;
         if(dir.iszero()) dir = vec(float(rnd(360)), float(rnd(91)-45));
-        links.setsize(0);
     }
 
     void resetlast()
@@ -2114,12 +2119,6 @@ struct cament
         if(a->inview[cament::AFFINITY] > b->inview[cament::AFFINITY]) return true;
         if(a->inview[cament::AFFINITY] < b->inview[cament::AFFINITY]) return false;
         return !rnd(2);
-    }
-
-    vec pos(float amt = 0)
-    {
-        if(amt > 0 && moveto) return vec(o).add(vec(moveto->o).sub(o).mul(min(amt, 1.f)));
-        return o;
     }
 };
 
