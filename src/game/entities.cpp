@@ -162,29 +162,35 @@ namespace entities
                 loopv(rails)
                 {
                     rail &r = rails[i], &s = rails.inrange(i+1) ? rails[i+1] : rails[ret];
+                    r.offset = vec(s.pos).sub(r.pos);
                     if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH))
                     {
                         gameentity &e = *(gameentity *)ents[r.ent];
                         r.rotstart = clamp(e.attrs[5], 0, r.length);
                         r.rotend = clamp(r.rotstart+(e.attrs[4] > 0 ? e.attrs[4] : r.length), r.rotstart, r.length);
                         r.rotlen = clamp(r.rotend-r.rotstart, 0, r.length);
-                        r.offset = vec(s.pos).sub(r.pos);
-                        if(flags&(1<<RAIL_SEEK))
-                        {
-                            r.dir = vec(r.offset).safenormalize();
-                            vectoyawpitch(r.dir, r.yaw, r.pitch);
-                        }
-                        else
-                        {
-                            if(flags&(1<<RAIL_YAW)) r.yaw = e.attrs[2];
-                            if(flags&(1<<RAIL_PITCH)) r.pitch = e.attrs[3];
-                            r.dir = vec(r.yaw*RAD, r.pitch*RAD);
-                        }
                     }
                     length[0] += r.length;
                     if(i >= ret) length[1] += r.length;
                 }
                 if(length[0] <= 0) return false;
+
+                if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)) loopv(rails)
+                {
+                    rail &r = rails[i], &s = flags&(1<<RAIL_PREV) ? getrail(i, -1, 1) : (flags&(1<<RAIL_NEXT) ?  getrail(i, 1, 1) : r);
+                    if(flags&(1<<RAIL_SEEK))
+                    {
+                        r.dir = vec(s.offset).safenormalize();
+                        vectoyawpitch(r.dir, r.yaw, r.pitch);
+                    }
+                    else
+                    {
+                        gameentity &e = *(gameentity *)ents[s.ent];
+                        if(flags&(1<<RAIL_YAW)) r.yaw = e.attrs[2];
+                        if(flags&(1<<RAIL_PITCH)) r.pitch = e.attrs[3];
+                        r.dir = vec(r.yaw*RAD, r.pitch*RAD);
+                    }
+                }
 
                 if(rails[0].length > 0 && !rails[0].offset.iszero() && flags&(1<<RAIL_SPEED))
                 {
@@ -1008,7 +1014,7 @@ namespace entities
             {
                 if(full)
                 {
-                    const char *railnames[RAIL_MAX] = { "follow-yaw", "follow-pitch", "seek-next", "spline", "set-speed" };
+                    const char *railnames[RAIL_MAX] = { "follow-yaw", "follow-pitch", "seek", "spline", "set-speed", "prev", "next" };
                     loopj(RAIL_MAX) if(attr[1]&(1<<j)) addentinfo(railnames[j]);
 
                     const char *railcollides[INANIMATE_C_MAX] = { "touch-kill", "no-passenger" };
