@@ -162,14 +162,20 @@ namespace entities
                 loopv(rails)
                 {
                     rail &r = rails[i], &s = rails.inrange(i+1) ? rails[i+1] : rails[ret];
+                    int oldlen = r.length;
+
                     r.offset = vec(s.pos).sub(r.pos);
+                    if(flags&(1<<RAIL_SPEED)) r.length = int(r.offset.magnitude()*r.length/100.f);
+
                     if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH))
                     {
                         gameentity &e = *(gameentity *)ents[r.ent];
-                        r.rotstart = clamp(e.attrs[5], 0, r.length);
-                        r.rotend = clamp(r.rotstart+(e.attrs[4] > 0 ? e.attrs[4] : r.length), r.rotstart, r.length);
+                        float scale = flags&(1<<RAIL_SPEED) && r.length != oldlen ? r.length/float(oldlen) : 1.f;
+                        r.rotstart = clamp(int(e.attrs[5]*scale), 0, r.length);
+                        r.rotend = clamp(r.rotstart+(e.attrs[4] > 0 ? int(e.attrs[4]*scale) : r.length), r.rotstart, r.length);
                         r.rotlen = clamp(r.rotend-r.rotstart, 0, r.length);
                     }
+
                     length[0] += r.length;
                     if(i >= ret) length[1] += r.length;
                 }
@@ -178,6 +184,7 @@ namespace entities
                 if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)) loopv(rails)
                 {
                     rail &r = rails[i], &s = flags&(1<<RAIL_PREV) ? getrail(i, -1, 1) : (flags&(1<<RAIL_NEXT) ?  getrail(i, 1, 1) : r);
+
                     if(flags&(1<<RAIL_SEEK))
                     {
                         r.dir = vec(s.offset).safenormalize();
@@ -191,31 +198,6 @@ namespace entities
                         r.dir = vec(r.yaw*RAD, r.pitch*RAD);
                     }
                 }
-
-                if(rails[0].length > 0 && !rails[0].offset.iszero() && flags&(1<<RAIL_SPEED))
-                {
-                    length[0] = length[1] = 0;
-                    loopv(rails)
-                    {
-                        rail &r = rails[i];
-                        if(r.length > 0 && !r.offset.iszero())
-                        {
-                            int oldlen = r.length;
-                            r.length = int(r.offset.magnitude()*r.length/100.f);
-                            if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH))
-                            {
-                                gameentity &e = *(gameentity *)ents[r.ent];
-                                float scale = r.length/float(oldlen);
-                                r.rotstart = clamp(int(e.attrs[5]*scale), 0, r.length);
-                                r.rotend = clamp(r.rotstart+(e.attrs[4] > 0 ? int(e.attrs[4]*scale) : r.length), r.rotstart, r.length);
-                                r.rotlen = clamp(r.rotend-r.rotstart, 0, r.length);
-                            }
-                        }
-                        length[0] += r.length;
-                        if(i >= ret) length[1] += r.length;
-                    }
-                }
-                if(length[0] <= 0) return false;
 
                 return true;
             }
