@@ -259,11 +259,11 @@ namespace game
     FVAR(IDF_PERSIST, spectvfollowyawthresh, 0, 0, 360);
     FVAR(IDF_PERSIST, spectvfollowpitchthresh, 0, 0, 180);
 
-    FVAR(IDF_PERSIST, spectvmindist, 0, 32, FVAR_MAX);
-    FVAR(IDF_PERSIST, spectvmaxdist, 0, 320, FVAR_MAX);
+    FVAR(IDF_PERSIST, spectvmindist, 0, 64, FVAR_MAX);
+    FVAR(IDF_PERSIST, spectvmaxdist, 0, 512, FVAR_MAX);
     FVAR(IDF_PERSIST, spectvmovedist, 0, 64, FVAR_MAX);
-    FVAR(IDF_PERSIST, spectvfollowmindist, 0, 16, FVAR_MAX);
-    FVAR(IDF_PERSIST, spectvfollowmaxdist, 0, 160, FVAR_MAX);
+    FVAR(IDF_PERSIST, spectvfollowmindist, 0, 64, FVAR_MAX);
+    FVAR(IDF_PERSIST, spectvfollowmaxdist, 0, 256, FVAR_MAX);
 
     VAR(IDF_PERSIST, deathcamstyle, 0, 2, 2); // 0 = no follow, 1 = follow attacker, 2 = follow self
     VAR(IDF_PERSIST, deathcamspeed, 0, 500, VAR_MAX);
@@ -2677,7 +2677,6 @@ namespace game
             {
                 cament *cam = cameras[i];
                 if(cam == c) continue;
-                bool inview = spectvfollowing < 0;
                 switch(cam->type)
                 {
                     case cament::AFFINITY:
@@ -2688,7 +2687,6 @@ namespace game
                     case cament::PLAYER:
                     {
                         if(!cam->player || c->player == cam->player || !allowspec(cam->player, spectvdead, spectvfollowing)) continue;
-                        if(!inview && cam->id == spectvfollowing) inview = true;
                         break;
                     }
                     default: continue;
@@ -2701,7 +2699,7 @@ namespace game
                 float dist = from.dist(cam->o);
                 if(dist >= mindist && getsight(from, yaw, pitch, cam->o, trg, maxdist, curfov, fovy))
                 {
-                    if(inview) c->inview[cam->type]++;
+                    c->inview[cam->type]++;
                     dir.add(cam->o);
                     count++;
                 }

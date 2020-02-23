@@ -2118,8 +2118,6 @@ struct cament
         if(a->inview[cament::PLAYER] < b->inview[cament::PLAYER]) return false;
         if(a->inview[cament::AFFINITY] > b->inview[cament::AFFINITY]) return true;
         if(a->inview[cament::AFFINITY] < b->inview[cament::AFFINITY]) return false;
-        if(!a->chase && b->chase) return true;
-        if(a->chase && !b->chase) return false;
         return !rnd(2);
     }
 };
