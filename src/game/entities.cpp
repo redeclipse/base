@@ -188,15 +188,15 @@ namespace entities
 
                 if(rails[0].length > 0 && !rails[0].offset.iszero() && flags&(1<<RAIL_SPEED))
                 {
-                    speed = float(rails[0].length)/rails[0].offset.magnitude();
+                    speed = rails[0].length/1000.f;
                     length[0] = length[1] = 0;
                     loopv(rails)
                     {
                         rail &r = rails[i];
-                        if(i && r.length > 0 && !r.offset.iszero())
+                        if(r.length > 0 && !r.offset.iszero())
                         {
                             int oldlen = r.length;
-                            r.length = int(r.offset.magnitude()*speed*r.length/float(rails[0].length));
+                            r.length = int(r.offset.magnitude()*speed*r.length/1000.f);
                             if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH))
                             {
                                 gameentity &e = *(gameentity *)ents[r.ent];
