@@ -1532,6 +1532,7 @@ void setblurshader(int pass, int size, int radius, float *weights, float *offset
         defformatstring(name, "blur%c%d%s", 'x'+pass, radius, target == GL_TEXTURE_RECTANGLE ? "rect" : "");
         s = lookupshaderbyname(name);
     }
+    if(!s) return;
     s->set();
     LOCALPARAMV(weights, weights, 8);
     float scaledoffsets[8];

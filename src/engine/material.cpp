@@ -413,6 +413,7 @@ void setupmaterials(int start, int len)
     if(hasmat&(0xF<<MAT_LAVA))
     {
         useshaderbyname("lava");
+        useshaderbyname("waterfog");
         loopi(4) if(hasmat&(1<<(MAT_LAVA+i))) lookupmaterialslot(MAT_LAVA+i);
     }
     if(hasmat&(0xF<<MAT_GLASS))
