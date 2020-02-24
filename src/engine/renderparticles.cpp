@@ -17,7 +17,7 @@ VAR(IDF_PERSIST, particlewind, 0, 1, 1);
 // Automatically stops particles being emitted when paused or in reflective drawing
 VAR(IDF_PERSIST, emitmillis, 1, 17, VAR_MAX);
 static int lastemitframe = 0, emitoffset = 0;
-static bool canemit = false, regenemitters = false, canstep = false;
+static bool canemit = false, regenemitters = false, canstep = false, enviroparts = false;
 
 static bool canemitparticles()
 {
@@ -306,6 +306,7 @@ struct listrenderer : partrenderer
         p->blend = blend;
         p->gravity = gravity;
         p->collide = collide;
+        p->enviro = enviroparts;
         if((p->owner = pl) != NULL && (p->owner->type == ENT_PLAYER || p->owner->type == ENT_AI)) switch(type&PT_TYPE)
         {
             case PT_TEXT: case PT_ICON: p->m.add(vec(p->o).sub(p->owner->abovehead())); break;
@@ -348,7 +349,7 @@ struct listrenderer : partrenderer
         if(tex) glBindTexture(GL_TEXTURE_2D, tex->id);
         if(canstep) for(T **prev = &list, *p = list; p; p = *prev)
         {
-            if(renderpart(p)) prev = &p->next;
+            if((drawtex && !p->enviro) || renderpart(p)) prev = &p->next;
             else
             { // remove
                 *prev = p->next;
@@ -741,6 +742,7 @@ struct varenderer : partrenderer
         p->collide = collide;
         p->owner = pl;
         p->flags = 0x80 | (rndmask ? rnd(0x80) & rndmask : 0);
+        p->enviro = enviroparts;
         p->wind.reset();
         lastupdate = -1;
         return p;
@@ -1757,6 +1759,7 @@ void makeparticle(const vec &o, attrvector &attr)
 {
     bool oldemit = canemit;
     if(attr[11]) canemit = true;
+    enviroparts = true;
     switch(attr[0])
     {
         case 0: // fire
@@ -1850,6 +1853,7 @@ void makeparticle(const vec &o, attrvector &attr)
             break;
     }
     canemit = oldemit;
+    enviroparts = false;
 }
 
 void seedparticles()

@@ -3964,7 +3964,7 @@ namespace game
     {
         ai::render();
         entities::render();
-        if(drawtex == DRAWTEX_MAPSHOT) return;
+        if(drawtex) return;
         projs::render();
         if(m_capture(gamemode)) capture::render();
         else if(m_defend(gamemode)) defend::render();

@@ -2324,7 +2324,7 @@ void gl_drawview()
 
     projmatrix.perspective(fovy, aspect, nearplane, farplane);
     setcamprojmatrix();
-    game::project();
+    if(!drawtex) game::project();
 
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
@@ -2334,11 +2334,11 @@ void gl_drawview()
 
     visiblecubes();
 
-    if(drawtex != DRAWTEX_MAPSHOT && wireframe && editmode) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    if(!drawtex && wireframe && editmode) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     rendergbuffer();
 
-    if(drawtex != DRAWTEX_MAPSHOT)
+    if(!drawtex)
     {
         if(wireframe && editmode) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         else if(limitsky() && editmode) renderexplicitsky(true);
@@ -2348,7 +2348,7 @@ void gl_drawview()
     GLERROR;
 
     // render avatar after AO to avoid weird contact shadows
-    if(drawtex != DRAWTEX_MAPSHOT)
+    if(!drawtex)
     {
         renderavatar();
         GLERROR;
@@ -2382,13 +2382,13 @@ void gl_drawview()
     rendertransparent();
     GLERROR;
 
-    if(drawtex != DRAWTEX_MAPSHOT) game::renderpost();
+    if(!drawtex) game::renderpost();
     if(fogmat) setfog(fogmat, fogbelow, 1, abovemat);
 
     rendervolumetric();
     GLERROR;
 
-    if(drawtex != DRAWTEX_MAPSHOT)
+    if(!drawtex)
     {
         if(editmode)
         {

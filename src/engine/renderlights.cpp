@@ -4739,7 +4739,7 @@ void rendertransparent()
         }
         maskgbuffer("cndg");
 
-        if(drawtex != DRAWTEX_MAPSHOT && wireframe && editmode) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        if(!drawtex && wireframe && editmode) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
         switch(layer)
         {
@@ -4759,7 +4759,7 @@ void rendertransparent()
             break;
         }
 
-        if(drawtex != DRAWTEX_MAPSHOT && wireframe && editmode) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        if(!drawtex && wireframe && editmode) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
         if(msaalight)
         {
@@ -4916,7 +4916,7 @@ void rendergbuffer(bool depthclear)
         renderminimapmaterials();
         GLERROR;
     }
-    else if(!drawtex || drawtex == DRAWTEX_MAPSHOT)
+    else
     {
         rendermodelbatches();
         GLERROR;

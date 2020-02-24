@@ -697,42 +697,65 @@ void save_config(char *mname, bool forcesave = false)
 }
 ICOMMAND(0, savemapconfig, "s", (char *mname), if(!(identflags&IDF_WORLD)) save_config(*mname ? mname : mapname));
 
-VARF(IDF_PERSIST, mapshotsize, 0, 512, INT_MAX-1, mapshotsize -= mapshotsize%2);
+VARF(IDF_PERSIST, mapshotsize, 2, 512, INT_MAX-1, mapshotsize -= mapshotsize%2);
 
 void save_mapshot(char *mname, bool forcesave = false)
 {
-    vec oldpos = camera1->o;
-    float oldyaw = camera1->yaw, oldpitch = camera1->pitch, oldfov = curfov;
+    drawtex = DRAWTEX_ENVMAP;
+
+    float oldaspect = aspect, oldfovy = fovy, oldfov = curfov;
+    int oldfarplane = farplane, oldvieww = vieww, oldviewh = viewh;
+
+    vieww = viewh = mapshotsize;
+    farplane = worldsize*2;
+    curfov = fovy = 90;
+    aspect = 1;
+
+    physent *oldcamera = camera1;
+    static physent cmcamera;
+    cmcamera = *camera1;
+    cmcamera.reset();
+    cmcamera.type = ENT_CAMERA;
+    cmcamera.o = camera1->o;
+    cmcamera.yaw = camera1->yaw;
+    cmcamera.pitch = camera1->pitch;
+    cmcamera.roll = 0;
+    camera1 = &cmcamera;
+
     entities::mapshot(camera1->o, camera1->yaw, camera1->pitch, curfov);
-    if(autosavebackups && !forcesave) backup(mname, ifmtexts[imageformat], hdr.revision, autosavebackups > 2, !(autosavebackups%2));
+    setviewcell(camera1->o);
+
     GLuint tex;
     glGenTextures(1, &tex);
     glPixelStorei(GL_PACK_ALIGNMENT, 1);
     ImageData image(vieww, viewh, 3);
     memset(image.data, 0, 3*vieww*viewh);
-    drawtex = DRAWTEX_MAPSHOT;
     gl_drawview();
-    drawtex = 0;
     glReadPixels(0, 0, vieww, viewh, GL_RGB, GL_UNSIGNED_BYTE, image.data);
-    #if 0 // generates better images without this
-    int x = 0, y = 0, w = vieww, h = viewh;
-    if(w > h) { x += (w-h)/2; w = h; }
-    else if(h > w) { y += (h-w)/2; h = w; }
-    if(x || y) texcrop(image, x, y, w, h);
-    #endif
+
     if(vieww > mapshotsize || viewh > mapshotsize) scaleimage(image, mapshotsize, mapshotsize);
+    if(autosavebackups && !forcesave) backup(mname, ifmtexts[imageformat], hdr.revision, autosavebackups > 2, !(autosavebackups%2));
     saveimage(mname, image, imageformat, compresslevel, true);
     glDeleteTextures(1, &tex);
+
     const char *mapshotnames[3] = { "", "<blur:1>", "<blur:2>" };
     loopi(3)
     {
         defformatstring(texname, "%s%s", mapshotnames[i], mname);
         reloadtexture(texname);
     }
-    camera1->o = oldpos;
-    camera1->yaw = oldyaw;
-    camera1->pitch = oldpitch;
+
+    aspect = oldaspect;
+    fovy = oldfovy;
     curfov = oldfov;
+    farplane = oldfarplane;
+    vieww = oldvieww;
+    viewh = oldviewh;
+
+    camera1 = oldcamera;
+    drawtex = 0;
+
+    progress(-1, "Saved map preview image..");
 }
 ICOMMAND(0, savemapshot, "s", (char *mname), if(!(identflags&IDF_WORLD)) save_mapshot(*mname ? mname : mapname));
 
