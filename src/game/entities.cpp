@@ -1031,7 +1031,7 @@ namespace entities
                         const char *cameranames[CAMERA_MAX] = { "normal", "mapshot" };
                         addentinfo(cameranames[attr[0]]);
                     }
-                    const char *cameraflags[INANIMATE_C_MAX] = { "free-look" };
+                    const char *cameraflags[INANIMATE_C_MAX] = { "static-view" };
                     loopj(CAMERA_F_MAX) if(attr[1]&(1<<j)) addentinfo(cameraflags[j]);
                 }
                 break;

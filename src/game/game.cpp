@@ -2599,17 +2599,14 @@ namespace game
                     pitch = e.attrs[2];
                     break;
                 case CAMERA:
-                    if(e.attrs[1]&(1<<CAMERA_F_FREE))
+                    if(e.attrs[1]&(1<<CAMERA_F_STATIC)) c->chase = false;
+                    else if(!renew)
                     {
-                        if(!renew)
-                        {
-                            yaw = camera1->yaw;
-                            pitch = camera1->pitch;
-                            dynamic = false;
-                            break;
-                        }
+                        yaw = camera1->yaw;
+                        pitch = camera1->pitch;
+                        dynamic = false;
+                        break;
                     }
-                    else c->chase = false;
                     yaw = e.attrs[2];
                     pitch = e.attrs[3];
                     break;
