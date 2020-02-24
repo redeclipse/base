@@ -2084,13 +2084,13 @@ struct cament
         reset();
         resetlast();
     }
-    cament(int p, int t, int n, vec &d) : cn(p), type(t), id(n), o(0, 0, 0), dir(0, 0, 0), player(NULL), ignore(false), chase(true)
+    cament(int p, int t, int n, const vec &d) : cn(p), type(t), id(n), o(0, 0, 0), dir(0, 0, 0), player(NULL), ignore(false), chase(true)
     {
         reset();
         resetlast();
         o = d;
     }
-    cament(int p, int t, int n, vec &c, gameent *d) : cn(p), type(t), id(n), o(0, 0, 0), dir(0, 0, 0), player(d), ignore(false), chase(true)
+    cament(int p, int t, int n, const vec &c, gameent *d) : cn(p), type(t), id(n), o(0, 0, 0), dir(0, 0, 0), player(d), ignore(false), chase(true)
     {
         reset();
         resetlast();
@@ -2118,7 +2118,7 @@ struct cament
         if(a->inview[cament::PLAYER] < b->inview[cament::PLAYER]) return false;
         if(a->inview[cament::AFFINITY] > b->inview[cament::AFFINITY]) return true;
         if(a->inview[cament::AFFINITY] < b->inview[cament::AFFINITY]) return false;
-        return !rnd(2);
+        return !rnd(int(a->type + 2));
     }
 };
 
