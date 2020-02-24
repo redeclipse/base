@@ -30,7 +30,7 @@ namespace entities
 
     VAR(IDF_PERSIST|IDF_HEX, entselcolour, 0, 0xFF00FF, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, entselcolourtop, 0, 0xFF88FF, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, entselcolourdyn, 0, 0x880088, 0x880088);
+    VAR(IDF_PERSIST|IDF_HEX, entselcolourdyn, 0, 0xFFFF00, 0xFFFF00);
     VAR(IDF_PERSIST|IDF_HEX, entlinkcolour, 0, 0xFF00FF, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, entlinkcolourboth, 0, 0xFF88FF, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, entdircolour, 0, 0x88FF88, 0xFFFFFF);
