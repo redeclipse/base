@@ -17,6 +17,8 @@ namespace entities
     VAR(IDF_PERSIST, showentdir, 0, 1, 3); // 0 = off, 1 = only selected, 2 = always when editing, 3 = always in editmode
     VAR(IDF_PERSIST, showentradius, 0, 1, 3);
     VAR(IDF_PERSIST, showentlinks, 0, 1, 3);
+    VAR(IDF_PERSIST, showentdynamic, 0, 1, 3);
+    VAR(IDF_PERSIST, showentrails, 0, 1, 3);
     VAR(IDF_PERSIST, showentinterval, 0, 32, VAR_MAX);
     VAR(IDF_PERSIST, showentdist, 0, 512, VAR_MAX);
     VAR(IDF_PERSIST, showentfull, 0, 0, 1);
@@ -63,15 +65,15 @@ namespace entities
 
     struct railway
     {
-        int ent, ret, flags, length[2], lastsecs, millis, coltype, animtype, animoffset, animtime;
+        int ent, rpoint, flags, length[2], lastsecs, millis, coltype, animtype, animoffset, animtime;
         float yaw, pitch, lastyaw, lastpitch, animspeed;
         vec pos, dir, offset, lastoffset;
 
         vector<rail> rails;
         vector<int> parents;
 
-        railway() : ent(-1), ret(0), flags(0), lastsecs(0), millis(0), coltype(0), animtype(0), animoffset(0), animtime(0), yaw(0), pitch(0), lastyaw(0), lastpitch(0), animspeed(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0) { reset(); }
-        railway(int n, int f = 0, int c = 0, int at = 0, int ao = 0, float as = 0) : ent(n), ret(0), flags(f), lastsecs(0), millis(0), coltype(c), animtype(at), animoffset(ao), animtime(0), yaw(0), pitch(0), lastyaw(0), lastpitch(0), animspeed(as), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0) { reset(); }
+        railway() : ent(-1), rpoint(0), flags(0), lastsecs(0), millis(0), coltype(0), animtype(0), animoffset(0), animtime(0), yaw(0), pitch(0), lastyaw(0), lastpitch(0), animspeed(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0) { reset(); }
+        railway(int n, int f = 0, int c = 0, int at = 0, int ao = 0, float as = 0) : ent(n), rpoint(0), flags(f), lastsecs(0), millis(0), coltype(c), animtype(at), animoffset(ao), animtime(0), yaw(0), pitch(0), lastyaw(0), lastpitch(0), animspeed(as), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0) { reset(); }
 
         ~railway()
         {
@@ -93,15 +95,27 @@ namespace entities
 
         void clear()
         {
-            ret = 0;
+            rpoint = 0;
             rails.setsize(0);
             loopi(2) length[i] = 0;
         }
 
-        int findchild(int n)
+        int findchild(int n, int v = 0)
         {
-            loopv(rails) if(rails[i].ent == n) return i;
+            int r = 0;
+            loopv(rails) if(rails[i].ent == n)
+            {
+                if(r == v) return i;
+                r++;
+            }
             return -1;
+        }
+
+        int children(int n)
+        {
+            int r = 0;
+            loopv(rails) if(rails[i].ent == n) r++;
+            return r;
         }
 
         int findparent(int n)
@@ -119,12 +133,12 @@ namespace entities
         {
             int index = cur;
 
-            if(offset == -1 && ((cur == ret && iter) || (!iter && !cur)))
+            if(offset == -1 && ((cur == rpoint && iter) || (!iter && !cur)))
                 index = rails.length() - 1;
             else
             {
                 index += offset;
-                if(index >= rails.length()) index %= rails.length() - ret;
+                if(index >= rails.length()) index %= rails.length() - rpoint;
             }
 
             return rails[index];
@@ -148,7 +162,7 @@ namespace entities
                     int cur = findchild(link);
                     if(cur >= 0)
                     {
-                        ret = cur;
+                        rpoint = cur;
                         break;
                     }
                     i = link;
@@ -158,10 +172,10 @@ namespace entities
 
             if(!rails.empty())
             { // calculate the telemetry of the line
-                if(ret < 0) ret = 0;
+                if(rpoint < 0) rpoint = 0;
                 loopv(rails)
                 {
-                    rail &r = rails[i], &s = rails.inrange(i+1) ? rails[i+1] : rails[ret];
+                    rail &r = rails[i], &s = rails.inrange(i+1) ? rails[i+1] : rails[rpoint];
                     int oldlen = r.length;
 
                     r.offset = vec(s.pos).sub(r.pos);
@@ -177,7 +191,7 @@ namespace entities
                     }
 
                     length[0] += r.length;
-                    if(i >= ret) length[1] += r.length;
+                    if(i >= rpoint) length[1] += r.length;
                 }
                 if(length[0] <= 0) return false;
 
@@ -233,7 +247,7 @@ namespace entities
             if(elapsed >= length[0])
             { // allow the loop point to be different from the start
                 elapsed -= length[0];
-                start = ret;
+                start = rpoint;
                 iter++;
             }
 
@@ -2507,7 +2521,7 @@ namespace entities
 
     void renderentshow(gameentity &e, int idx, int level, bool dynamic = false)
     {
-        if(dynamic && (!(e.flags&EF_DYNAMIC) || level >= 2)) return;
+        if(dynamic && (!(e.flags&EF_DYNAMIC) || showentdynamic >= level)) return;
         vec pos = dynamic ? e.pos() : e.o;
         if(pos.squaredist(camera1->o) > showentdist*showentdist) return;
         #define entdirpart(o,y,p,length,fade,colour) \
@@ -2644,6 +2658,13 @@ namespace entities
                 }
                 default: break;
             }
+        }
+        if(!dynamic && showentrails >= level && idx >= 0) loopv(railways)
+        {
+            railway &w = railways[i];
+            if(w.ent != idx && w.findparent(idx) < 0 && w.findchild(idx) < 0) continue;
+            loopvj(w.rails)
+                part_trace(w.rails[j].pos, w.rails.inrange(j+1) ? w.rails[j+1].pos : w.rails[w.rpoint].pos, 1, 1, 1, entselcolourdyn);
         }
         if(enttype[e.type].links && showentlinks >= level) renderlinked(e, idx);
     }
@@ -2968,8 +2989,8 @@ namespace entities
         {
             loopj(hastop && e.flags&EF_DYNAMIC ? 2 : 1)
             {
-                part_create(hastop ? PART_EDIT_ONTOP : PART_EDIT, 1, j ? e.pos() : o, j ? entselcolourdyn : (hastop ? entselcolourtop : entselcolour), hastop ? entselsizetop : entselsize);
-                if(j) part_line(o, e.pos(), entselsizetop, 1, 1, entselcolourdyn);
+                part_create(hastop && !j ? PART_EDIT_ONTOP : PART_EDIT, 1, j ? e.pos() : o, j ? entselcolourdyn : (hastop ? entselcolourtop : entselcolour), hastop && !j ? entselsizetop : entselsize);
+                if(j) part_line(o, e.pos(), entselsize, 1, 1, entselcolourdyn);
             }
             if(showentinfo&(hasent ? 4 : 8))
             {
