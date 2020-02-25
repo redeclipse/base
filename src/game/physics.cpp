@@ -183,12 +183,14 @@ namespace physics
         if(inanimate::is(d))
         {
             inanimate *m = (inanimate *)d;
+            if(inanimate::is(e)) return false;
             if(m->coltarget && e == m->coltarget) return false;
             return true;
         }
         if(inanimate::is(e))
         {
             inanimate *m = (inanimate *)e;
+            if(inanimate::is(d)) return false;
             if(m->coltarget && d != m->coltarget) return false;
             return true;
         }
@@ -1375,7 +1377,7 @@ namespace physics
         if(!e || !m) return;
 
         if(m->coltype&(1<<INANIMATE_C_KILL)) game::suicide(e, HIT(TOUCH));
-        if(!(m->coltype&(1<<INANIMATE_C_NOPASS)) && !inside && collidewall.z > 0) m->addpassenger(d);
+        if(m == o && !(m->coltype&(1<<INANIMATE_C_NOPASS)) && !inside && collidewall.z > 0) entities::addpassenger(m, e);
     }
 
     void renderboundboxes(physent *d, const vec &rad, const vec &o)

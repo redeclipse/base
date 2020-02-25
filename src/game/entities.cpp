@@ -574,7 +574,7 @@ namespace entities
 
                     m->coltarget = d; // restricts inanimate collisions to this entity, and filters out the reverse collision
 
-                    loopk(4) if(collide(m, vec(0, 0, 0), 0, true, true, 0, false))
+                    loopk(4) if(collide(m, vec(0, 0, 0), 0, true, true, 0, false) && collideplayer == d)
                     {
                         if(k%2 ? !moved : !resized) continue;
                         if(m->coltype&(1<<INANIMATE_C_KILL)) game::suicide(d, HIT(TOUCH));
@@ -689,6 +689,24 @@ namespace entities
             inanimate *m = inanimates[i];
             loopvj(m->passengers) if(m->passengers[j].ent == d) m->passengers.remove(i--);
         }
+    }
+
+    void addpassenger(inanimate *m, physent *d)
+    {
+        float dist = m->headpos().dist(d->feetpos());
+        loopv(inanimates)
+        {
+            inanimate *t = inanimates[i];
+            int cur = t->findpassenger(d);
+            if(cur < 0) continue;
+            if(t->headpos().dist(d->feetpos()) > dist)
+            {
+                t->passengers.remove(cur);
+                break;
+            }
+            else return;
+        }
+        m->addpassenger(d);
     }
 
     vector<extentity *> &getents() { return ents; }
