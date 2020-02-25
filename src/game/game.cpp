@@ -2706,7 +2706,7 @@ namespace game
         getcamdist(c, maxdist, mindist);
         vec from = camvec(c, yaw, pitch);
 
-        loopj(c->chase ? (renew ? 3 : 2) : 1)
+        loopj(c->chase ? 3 : 1)
         {
             int count = 0;
             vec dir(0, 0, 0);
@@ -2868,22 +2868,31 @@ namespace game
     bool cameratv()
     {
         if(!tvmode(false)) return false;
+
         if(!gs_playing(gamestate)) spectvfollowing = -1;
         else if(player1->state != CS_SPECTATOR && spectvfollowself >= (m_duke(gamemode, mutators) ? 2 : 1)) spectvfollowing = player1->clientnum;
         else spectvfollowing = spectvfollow;
+
         if(cameras.empty()) buildcams();
-        if(!cameras.inrange(lastcamcn)) lastcamcn = rnd(cameras.length());
+
+        bool restart = !lastcamera;
+        if(!cameras.inrange(lastcamcn))
+        {
+            lastcamcn = rnd(cameras.length());
+            restart = true;
+        }
+
         cament *cam = cameras[lastcamcn];
-        bool renew = !lastcamera, found = findcams(cam);
+        bool found = findcams(cam);
         if(!found) spectvfollowing = -1;
         camrefresh(cam);
 
         #define stvf(z) (!gs_playing(gamestate) ? spectvinterm##z : (spectvfollowing >= 0 ? spectvfollow##z : spectv##z))
         int lastcn = cam->cn, millis = lasttvchg ? totalmillis-lasttvchg : 0;
-        bool reset = false, updated = camupdate(cam, renew), override = !lasttvchg || millis >= stvf(mintime),
+        bool reset = false, updated = camupdate(cam, restart), override = !lasttvchg || millis >= stvf(mintime),
              timeup = !lasttvcam || totalmillis-lasttvcam >= stvf(time), overtime = stvf(maxtime) && millis >= stvf(maxtime);
 
-        if(overtime || timeup || (!updated && override))
+        if(restart || overtime || timeup || (!updated && override))
         {
             loopv(cameras) if(cameras[i]->ignore) cameras[i]->ignore = false;
             if(overtime) cam->ignore = true; // so we don't use the last one we just used
@@ -2898,14 +2907,15 @@ namespace game
             if(!goodcams) cam->ignore = false; // in case there's only one good camera
             else reset = true;
         }
-        if(reset || overtime)
+
+        if(restart || reset || overtime)
         {
             vector<cament *> scams;
             scams.reserve(cameras.length());
             scams.put(cameras.getbuf(), cameras.length());
             scams.sort(cament::compare);
             lastcamcn = scams[0]->cn;
-            if(!lasttvcam || cam != cameras[lastcamcn])
+            if(restart || !lasttvcam || cam != cameras[lastcamcn])
             {
                 cam = cameras[lastcamcn];
                 lasttvcam = totalmillis;
@@ -2919,7 +2929,7 @@ namespace game
         {
             cam->resetlast();
             lasttvchg = totalmillis;
-            renew = true;
+            reset = true;
         }
 
         float yaw = camera1->yaw, pitch = camera1->pitch;
@@ -2970,7 +2980,7 @@ namespace game
             }
         }
         fixrange(camera1->yaw, camera1->pitch);
-        if(!cam->player || (cam->player->state == CS_ALIVE || cam->player->state == CS_EDITING))
+        if(reset || !cam->player || (cam->player->state == CS_ALIVE || cam->player->state == CS_EDITING))
         {
             camera1->o = camvec(cam, camera1->yaw, camera1->pitch);
             camera1->resetinterp(); // because this just sets position directly
