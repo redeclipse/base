@@ -29,10 +29,12 @@ namespace entities
     FVAR(IDF_PERSIST, entselsize, 0, 1.5f, FVAR_MAX);
     FVAR(IDF_PERSIST, entselsizetop, 0, 3, FVAR_MAX);
     FVAR(IDF_PERSIST, entdirsize, 0, 10, FVAR_MAX);
+    FVAR(IDF_PERSIST, entrailoffset, 0, 0.1f, FVAR_MAX);
 
     VAR(IDF_PERSIST|IDF_HEX, entselcolour, 0, 0xFF00FF, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, entselcolourtop, 0, 0xFF88FF, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, entselcolourdyn, 0, 0xFFFF00, 0xFFFF00);
+    VAR(IDF_PERSIST|IDF_HEX, entselcolourdyn, 0, 0x00FFFF, 0xFFFF00);
+    VAR(IDF_PERSIST|IDF_HEX, entselcolourrail, 0, 0xFFFF00, 0xFFFF00);
     VAR(IDF_PERSIST|IDF_HEX, entlinkcolour, 0, 0xFF00FF, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, entlinkcolourboth, 0, 0xFF88FF, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, entdircolour, 0, 0x88FF88, 0xFFFFFF);
@@ -2643,13 +2645,6 @@ namespace entities
                 default: break;
             }
         }
-        if(!dynamic && showentrails >= level && idx >= 0) loopv(railways)
-        {
-            railway &w = railways[i];
-            if(w.ent != idx && w.findparent(idx) < 0 && w.findchild(idx) < 0) continue;
-            loopvj(w.rails)
-                part_trace(w.rails[j].pos, w.rails.inrange(j+1) ? w.rails[j+1].pos : w.rails[w.rpoint].pos, 1, 1, 1, entselcolourdyn);
-        }
         if(enttype[e.type].links && showentlinks >= level) renderlinked(e, idx);
     }
 
@@ -2770,39 +2765,65 @@ namespace entities
         runinanimates();
     }
 
+    int showlevel(int n)
+    {
+        return game::player1->state == CS_EDITING ? ((entgroup.find(n) >= 0 || enthover == n) ? 1 : 2) : 3;
+    }
+
     void render()
     {
-        loopv(railways) loopvj(railways[i].parents)
+        float offset = entrailoffset;
+        loopv(railways)
         {
             railway &r = railways[i];
-            int n = r.parents[j];
-            if(!ents.inrange(n) || ents[n]->type != MAPMODEL) continue;
-            gameentity &e = *(gameentity *)ents[n];
-            const char *mdlname = mapmodelname(ents[n]->attrs[0]);
-            if(!mdlname || !*mdlname) continue;
-            modelstate mdl;
-            mdl.o = e.pos();
-            mdl.flags = MDL_CULL_VFC|MDL_CULL_DIST|MDL_CULL_OCCLUDED;
-            getmapmodelstate(e, mdl);
-            if(r.animtype > 0) mdl.anim = r.animtype|ANIM_LOOP;
-            if(r.animtime > 0) mdl.basetime = r.animtime;
-            if(r.animoffset > 0) mdl.basetime += r.animoffset;
-            if(r.animspeed > 0) mdl.speed = 1/r.animspeed;
-            mdl.yaw += e.yaw;
-            mdl.pitch += e.pitch;
-            dynent *d = NULL;
-            loopvj(inanimates) if(inanimates[j]->control == INANIMATE_RAIL && inanimates[j]->ent == n)
+            if(!drawtex && showentrails)
             {
-                d = inanimates[j];
-                break;
+                bool draw = showentrails >= showlevel(r.ent);
+                if(!draw) loopvj(r.parents) if(showentrails >= showlevel(r.parents[j]))
+                {
+                    draw = true;
+                    break;
+                }
+                if(draw)
+                {
+                    loopvj(r.rails) part_trace(vec(r.rails[j].pos).addz(offset), vec(r.rails[r.rails.inrange(j+1) ? j+1 : r.rpoint].pos).addz(offset), 1, 1, 1, entselcolourrail);
+                    offset += entrailoffset;
+                }
             }
-            rendermodel(mdlname, mdl, d);
+
+            loopvj(r.parents)
+            {
+                int n = r.parents[j];
+                if(!ents.inrange(n) || ents[n]->type != MAPMODEL) continue;
+
+                gameentity &e = *(gameentity *)ents[n];
+                const char *mdlname = mapmodelname(ents[n]->attrs[0]);
+                if(!mdlname || !*mdlname) continue;
+                modelstate mdl;
+                mdl.o = e.pos();
+                mdl.flags = MDL_CULL_VFC|MDL_CULL_DIST|MDL_CULL_OCCLUDED;
+                getmapmodelstate(e, mdl);
+                if(r.animtype > 0) mdl.anim = r.animtype|ANIM_LOOP;
+                if(r.animtime > 0) mdl.basetime = r.animtime;
+                if(r.animoffset > 0) mdl.basetime += r.animoffset;
+                if(r.animspeed > 0) mdl.speed = 1/r.animspeed;
+                mdl.yaw += e.yaw;
+                mdl.pitch += e.pitch;
+                dynent *d = NULL;
+                loopvj(inanimates) if(inanimates[j]->control == INANIMATE_RAIL && inanimates[j]->ent == n)
+                {
+                    d = inanimates[j];
+                    break;
+                }
+                rendermodel(mdlname, mdl, d);
+            }
         }
 
         if(drawtex) return;
 
-        if(shouldshowents(game::player1->state == CS_EDITING ? 1 : (!entgroup.empty() || ents.inrange(enthover) ? 2 : 3))) loopv(ents) // important, don't render lines and stuff otherwise!
-            renderfocus(i, renderentshow(e, i, game::player1->state == CS_EDITING ? ((entgroup.find(i) >= 0 || enthover == i) ? 1 : 2) : 3, j!=0));
+        if(shouldshowents(game::player1->state == CS_EDITING ? 1 : (!entgroup.empty() || ents.inrange(enthover) ? 2 : 3)))
+            loopv(ents) renderfocus(i, renderentshow(e, i, showlevel(i), j!=0));
+
         int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators),
             fstent = m_edit(game::gamemode) ? 0 : firstuse(EU_ITEM),
             lstent = m_edit(game::gamemode) ? ents.length() : lastuse(EU_ITEM);

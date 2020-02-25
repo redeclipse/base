@@ -1709,7 +1709,7 @@ namespace ai
                 vec pos = d->abovehead();
                 pos.z += 3;
                 alive++;
-                if(aidebug >= 4 && AA(d->actortype, abilities)&(1<<A_A_MOVE)) drawroute(d, 4.f*(float(alive)/float(total)));
+                if(aidebug >= 4 && AA(d->actortype, abilities)&(1<<A_A_MOVE)) drawroute(d, 4.f*(alive/float(total)));
                 if(aidebug >= 3)
                 {
                     defformatstring(q, "node: %d route: %d (%d)",
