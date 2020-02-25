@@ -67,15 +67,24 @@ namespace entities
 
     struct railway
     {
-        int ent, rpoint, flags, length[2], lastsecs, millis, coltype, animtype, animoffset, animtime;
+        int ent, retpoint, curpoint, lastpoint, flags, length[2], lastsecs, millis, coltype, animtype, animoffset, animtime;
         float yaw, pitch, lastyaw, lastpitch, animspeed;
-        vec pos, dir, offset, lastoffset;
+        vec pos, dir, offset, lastoffset, lastdir;
 
         vector<rail> rails;
         vector<int> parents;
 
-        railway() : ent(-1), rpoint(0), flags(0), lastsecs(0), millis(0), coltype(0), animtype(0), animoffset(0), animtime(0), yaw(0), pitch(0), lastyaw(0), lastpitch(0), animspeed(0), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0) { reset(); }
-        railway(int n, int f = 0, int c = 0, int at = 0, int ao = 0, float as = 0) : ent(n), rpoint(0), flags(f), lastsecs(0), millis(0), coltype(c), animtype(at), animoffset(ao), animtime(0), yaw(0), pitch(0), lastyaw(0), lastpitch(0), animspeed(as), pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0) { reset(); }
+        railway() :
+            ent(-1), retpoint(0), curpoint(-1), lastpoint(-1), flags(0), lastsecs(0), millis(0), coltype(0), animtype(0), animoffset(0), animtime(0),
+            yaw(0), pitch(0), lastyaw(0), lastpitch(0), animspeed(0),
+            pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0), lastdir(0, 0, 0)
+            { reset(); }
+
+        railway(int n, int f = 0, int c = 0, int at = 0, int ao = 0, float as = 0) :
+            ent(n), retpoint(0), curpoint(-1), lastpoint(-1), flags(f), lastsecs(0), millis(0), coltype(c), animtype(at), animoffset(ao), animtime(0),
+            yaw(0), pitch(0), lastyaw(0), lastpitch(0), animspeed(as),
+            pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0), lastdir(0, 0, 0)
+            { reset(); }
 
         ~railway()
         {
@@ -97,7 +106,7 @@ namespace entities
 
         void clear()
         {
-            rpoint = 0;
+            retpoint = 0;
             rails.setsize(0);
             loopi(2) length[i] = 0;
         }
@@ -135,12 +144,12 @@ namespace entities
         {
             int index = cur;
 
-            if(offset == -1 && ((cur == rpoint && iter) || (!iter && !cur)))
+            if(offset == -1 && ((cur == retpoint && iter) || (!iter && !cur)))
                 index = rails.length() - 1;
             else
             {
                 index += offset;
-                if(index >= rails.length()) index %= rails.length() - rpoint;
+                if(index >= rails.length()) index %= rails.length() - retpoint;
             }
 
             return rails[index];
@@ -164,7 +173,7 @@ namespace entities
                     int cur = findchild(link);
                     if(cur >= 0)
                     {
-                        rpoint = cur;
+                        retpoint = cur;
                         break;
                     }
                     i = link;
@@ -174,10 +183,10 @@ namespace entities
 
             if(!rails.empty())
             { // calculate the telemetry of the line
-                if(rpoint < 0) rpoint = 0;
+                if(retpoint < 0) retpoint = 0;
                 loopv(rails)
                 {
-                    rail &r = rails[i], &s = rails.inrange(i+1) ? rails[i+1] : rails[rpoint];
+                    rail &r = rails[i], &s = rails.inrange(i+1) ? rails[i+1] : rails[retpoint];
                     int oldlen = r.length;
 
                     r.offset = vec(s.pos).sub(r.pos);
@@ -193,7 +202,7 @@ namespace entities
                     }
 
                     length[0] += r.length;
-                    if(i >= rpoint) length[1] += r.length;
+                    if(i >= retpoint) length[1] += r.length;
                 }
                 if(length[0] <= 0) return false;
 
@@ -219,6 +228,34 @@ namespace entities
             }
 
             return false;
+        }
+
+        void generate(int index, int iter, float amt, int step, vec &off, vec &aim)
+        {
+            rail &rcur = rails[index], &rprev = getrail(index, -1, iter),
+                 &rnext = getrail(index, 1, iter), &rnext2 = getrail(index, 2, iter);
+
+            if(flags&(1<<RAIL_SPLINE))
+            {
+                vec spline[4] = { rprev.pos, rcur.pos, rnext.pos, rnext2.pos };
+                off = catmullrom(spline, amt);
+            }
+            else
+            {
+                vec dest = vec(rnext.pos).sub(rcur.pos);
+                off = vec(rcur.pos).add(dest.mul(amt));
+            }
+
+            if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH))
+            {
+                float part = step >= rcur.rotend ? 1.f : (step >= rcur.rotstart ? (step-rcur.rotstart)/float(max(rcur.rotlen, 1)) : 0.f);
+                if(flags&(1<<RAIL_SPLINE))
+                {
+                    vec spline[4] = { rprev.dir, rcur.dir, rnext.dir, rnext2.dir };
+                    aim = catmullrom(spline, part);
+                }
+                else aim = vec(rcur.dir).mul(1-part).add(vec(rnext.dir).mul(part)).safenormalize();
+            }
         }
 
         bool run(int secs)
@@ -249,13 +286,15 @@ namespace entities
             if(elapsed >= length[0])
             { // allow the loop point to be different from the start
                 elapsed -= length[0];
-                start = rpoint;
+                start = retpoint;
                 iter++;
             }
 
-            lastoffset = offset;
+            lastpoint = curpoint;
             lastyaw = yaw;
             lastpitch = pitch;
+            lastoffset = offset;
+            lastdir = dir;
 
             millis = elapsed%max(length[iter], 1);
             offset = rails[0].pos;
@@ -266,43 +305,23 @@ namespace entities
             bool moved = false;
             for(int i = start; i < rails.length(); i++)
             { // look for the station on the timetable
-                rail &rcur = rails[i];
+                rail &r = rails[i];
 
-                if(rcur.length > 0 && millis <= span+rcur.length)
+                if(r.length > 0 && millis <= span+r.length)
                 { // interpolate toward the next station
                     int step = millis-span;
-                    float amt = step/float(rcur.length);
-                    rail &rnext = getrail(i, 1, iter), &rprev = getrail(i, -1, iter), &rnext2 = getrail(i,  2, iter);
+                    float amt = step/float(r.length);
 
                     moved = true;
-                    anim = rcur.animtype;
-                    aspeed = rcur.animspeed;
-                    if(flags&(1<<RAIL_SPLINE))
-                    {
-                        vec spline[4] = { rprev.pos, rcur.pos, rnext.pos, rnext2.pos };
-                        offset = catmullrom(spline, amt);
-                    }
-                    else
-                    {
-                        vec dest = vec(rnext.pos).sub(rcur.pos);
-                        offset = vec(rcur.pos).add(dest.mul(amt));
-                    }
-
-                    if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH))
-                    {
-                        float part = step >= rcur.rotend ? 1.f : (step >= rcur.rotstart ? (step-rcur.rotstart)/float(max(rcur.rotlen, 1)) : 0.f);
-                        if(flags&(1<<RAIL_SPLINE))
-                        {
-                            vec spline[4] = { rprev.dir, rcur.dir, rnext.dir, rnext2.dir };
-                            dir = catmullrom(spline, part);
-                        }
-                        else dir = vec(rcur.dir).mul(1-part).add(vec(rnext.dir).mul(part)).safenormalize();
-                    }
+                    curpoint = i;
+                    anim = r.animtype;
+                    aspeed = r.animspeed;
+                    generate(i, iter, amt, step, offset, dir);
 
                     break;
                 }
 
-                span += rcur.length;
+                span += r.length;
             }
 
             offset.sub(rails[0].pos); // all coordinates translate based on first rail
@@ -315,6 +334,7 @@ namespace entities
             }
             animspeed = aspeed;
 
+            bool checkteleport = lastsecs && moved && curpoint >= 0 && lastpoint >= 0 && lastpoint != curpoint;
             loopv(parents)
             {
                 int parent = parents[i];
@@ -333,6 +353,25 @@ namespace entities
                 {
                     mapmodelinfo *mmi = getmminfo(e.attrs[0]);
                     if(!mmi || !mmi->m) continue;
+
+                    if(checkteleport)
+                    {
+                        int teleported = -1;
+                        loopi(rails.length()-1)
+                        {
+                            int index = lastpoint + i + 1;
+                            if(index >= rails.length()) index -= rails.length() - retpoint;
+                            if(index == curpoint) break;
+                            teleported = index;
+                        }
+                        if(teleported >= 0)
+                        {
+                            generate(teleported, iter, 1, rails[teleported].length, lastoffset, lastdir);
+                            lastoffset.sub(rails[0].pos); // all coordinates translate based on first rail
+                            if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)) vectoyawpitch(lastdir, lastyaw, lastpitch);
+                        }
+                        checkteleport = false;
+                    }
 
                     inanimate *m = NULL;
                     loopvj(inanimates) if(inanimates[j]->control == INANIMATE_RAIL && inanimates[j]->ent == parent)
@@ -2786,7 +2825,7 @@ namespace entities
                 }
                 if(draw)
                 {
-                    loopvj(r.rails) part_trace(vec(r.rails[j].pos).addz(offset), vec(r.rails[r.rails.inrange(j+1) ? j+1 : r.rpoint].pos).addz(offset), 1, 1, 1, entselcolourrail);
+                    loopvj(r.rails) part_trace(vec(r.rails[j].pos).addz(offset), vec(r.rails[r.rails.inrange(j+1) ? j+1 : r.retpoint].pos).addz(offset), 1, 1, 1, entselcolourrail);
                     offset += entrailoffset;
                 }
             }
