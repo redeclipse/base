@@ -2324,7 +2324,6 @@ namespace entities
         }
         switch(e.type)
         {
-            case ACTOR: numactors++; break;
             case WEAPON:
             {
                 if(gver <= 218)
@@ -2417,6 +2416,7 @@ namespace entities
             e.attrs.setsize(numattrs(e.type), 0);
             if(gver < VERSION_GAME) importent(e, i, mver, gver);
             fixentity(i, false);
+            if(e.type == ACTOR) numactors++;
             progress((i+1)/float(ents.length()), "Setting entity attributes...");
         }
         memset(firstenttype, 0, sizeof(firstenttype));
