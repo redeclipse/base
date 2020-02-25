@@ -1006,7 +1006,7 @@ void entlink(int *parent)
                         conoutf("\frFailed linking %d and %d (%d)", index, node, i+1);
                 }
                 else conoutf("\fr%d (%d) is not in range", node, i+1);
-                if(!*parent) index = i;
+                if(!*parent) index = node;
             }
         }
         else conoutf("\fr%d (%d) is not in range", index, 0);
