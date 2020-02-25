@@ -256,21 +256,21 @@ namespace entities
             lastpitch = pitch;
 
             millis = elapsed%max(length[iter], 1);
-            offset = rails[start].pos;
-            if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)) dir = rails[start].dir;
+            offset = rails[0].pos;
+            if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)) dir = rails[0].dir;
 
-            int span = 0, anim = 0;
-            float aspeed = 0;
+            int span = 0, anim = rails[0].animtype;
+            float aspeed = rails[0].animspeed;
             bool moved = false;
             for(int i = start; i < rails.length(); i++)
             { // look for the station on the timetable
-                rail &rcur = rails[i], &rnext = getrail(i, 1, iter),
-                     &rprev = getrail(i, -1, iter), &rnext2 = getrail(i,  2, iter);
+                rail &rcur = rails[i];
 
                 if(rcur.length > 0 && millis <= span+rcur.length)
                 { // interpolate toward the next station
                     int step = millis-span;
                     float amt = step/float(rcur.length);
+                    rail &rnext = getrail(i, 1, iter), &rprev = getrail(i, -1, iter), &rnext2 = getrail(i,  2, iter);
 
                     moved = true;
                     anim = rcur.animtype;
@@ -288,7 +288,7 @@ namespace entities
 
                     if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH))
                     {
-                        float part = step > rcur.rotend ? 1.f : (step > rcur.rotstart ? (step-rcur.rotstart)/float(max(rcur.rotlen, 1)) : 0.f);
+                        float part = step >= rcur.rotend ? 1.f : (step >= rcur.rotstart ? (step-rcur.rotstart)/float(max(rcur.rotlen, 1)) : 0.f);
                         if(flags&(1<<RAIL_SPLINE))
                         {
                             vec spline[4] = { rprev.dir, rcur.dir, rnext.dir, rnext2.dir };
@@ -296,26 +296,10 @@ namespace entities
                         }
                         else dir = vec(rcur.dir).mul(1-part).add(vec(rnext.dir).mul(part)).safenormalize();
                     }
+
                     break;
                 }
 
-                if(flags&(1<<RAIL_SPLINE))
-                {
-                    vec spline[4] = { rprev.pos, rcur.pos, rnext.pos, rnext2.pos };
-                    offset = catmullrom(spline, 1);
-                }
-                else offset = rnext.pos;
-                anim = rnext.animtype;
-                aspeed = rnext.animspeed;
-                if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH))
-                {
-                    if(flags&(1<<RAIL_SPLINE))
-                    {
-                        vec spline[4] = { rprev.dir, rcur.dir, rnext.dir, rnext2.dir };
-                        dir = catmullrom(spline, 1);
-                    }
-                    else dir = rnext.dir;
-                }
                 span += rcur.length;
             }
 
