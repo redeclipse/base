@@ -4898,7 +4898,7 @@ void rendergbuffer(bool depthclear)
 
     preparegbuffer(depthclear);
 
-    if(limitsky())
+    if(!drawtex && limitsky())
     {
         renderexplicitsky();
         GLERROR;
