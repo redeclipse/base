@@ -1005,7 +1005,7 @@ namespace game
             case 1: // teams
             {
                 int team = index%T_COUNT;
-                if(!m_edit(gamemode) && index < T_COUNT)
+                if(drawtex != DRAWTEX_MAPSHOT && !m_edit(gamemode) && index < T_COUNT)
                 {
                     if(!m_team(gamemode, mutators) || team > T_LAST) team = T_NEUTRAL; // abstract team coloured levels to neutral
                 }
@@ -1014,6 +1014,7 @@ namespace game
             }
             case 2: // weapons
             {
+                if(drawtex) break;
                 int weap = index%W_MAX;
                 if(!m_edit(gamemode) && index < W_MAX)
                 {

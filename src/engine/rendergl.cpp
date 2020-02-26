@@ -2312,7 +2312,7 @@ int xtraverts, xtravertsva;
 void gl_drawview()
 {
     GLuint scalefbo = shouldscale();
-    if(scalefbo) { vieww = gw; viewh = gh; }
+    if(!drawtex && scalefbo) { vieww = gw; viewh = gh; }
 
     int fogmat, abovemat;
     float fogbelow;
@@ -2347,7 +2347,6 @@ void gl_drawview()
     renderao();
     GLERROR;
 
-    // render avatar after AO to avoid weird contact shadows
     if(!drawtex)
     {
         renderavatar();
@@ -2417,9 +2416,12 @@ void gl_drawview()
 
     if(fogoverlay && fogmat != MAT_AIR) drawfogoverlay(fogmat, fogbelow, clamp(fogbelow, 0.0f, 1.0f), abovemat);
 
-    doaa(setuppostfx(vieww, viewh, scalefbo), processhdr);
-    renderpostfx(scalefbo);
-    if(scalefbo) doscale();
+    if(!drawtex)
+    {
+        doaa(setuppostfx(vieww, viewh, scalefbo), processhdr);
+        renderpostfx(scalefbo);
+        if(scalefbo) doscale();
+    }
 }
 
 void resethudshader()

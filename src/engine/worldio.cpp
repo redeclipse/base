@@ -705,12 +705,7 @@ void save_mapshot(char *mname, bool forcesave = false)
     progress(0, "Saving map preview image..");
 
     float oldaspect = aspect, oldfovy = fovy, oldfov = curfov;
-    int oldfarplane = farplane, oldvieww = vieww, oldviewh = viewh;
-
-    vieww = viewh = mapshotsize;
-    farplane = worldsize*2;
-    curfov = fovy = 90;
-    aspect = 1;
+    int oldvieww = vieww, oldviewh = viewh, rsize = min(mapshotsize*2, vieww, viewh);
 
     physent *oldcamera = camera1;
     static physent cmcamera;
@@ -724,6 +719,10 @@ void save_mapshot(char *mname, bool forcesave = false)
     camera1 = &cmcamera;
 
     entities::mapshot(camera1->o, camera1->yaw, camera1->pitch, curfov);
+
+    vieww = viewh = rsize;
+    aspect = 1;
+    fovy = 2*atan2(tan(curfov/2*RAD), aspect)/RAD;
     setviewcell(camera1->o);
 
     GLuint tex;
@@ -735,6 +734,8 @@ void save_mapshot(char *mname, bool forcesave = false)
     glReadPixels(0, 0, vieww, viewh, GL_RGB, GL_UNSIGNED_BYTE, image.data);
 
     if(autosavebackups && !forcesave) backup(mname, ifmtexts[imageformat], hdr.revision, autosavebackups > 2, !(autosavebackups%2));
+    texmad(image, vec(2, 2, 2));
+    scaleimage(image, mapshotsize, mapshotsize);
     saveimage(mname, image, imageformat, compresslevel, true);
     glDeleteTextures(1, &tex);
 
@@ -748,7 +749,6 @@ void save_mapshot(char *mname, bool forcesave = false)
     aspect = oldaspect;
     fovy = oldfovy;
     curfov = oldfov;
-    farplane = oldfarplane;
     vieww = oldvieww;
     viewh = oldviewh;
 

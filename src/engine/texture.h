@@ -862,7 +862,7 @@ struct DecalSlot : Slot, VSlot
 
 extern void scaleimage(ImageData &s, int w, int h);
 extern void texcrop(ImageData &s, ImageData &d, int x, int y, int w, int h);
-extern void texcrop(ImageData &s, int x, int y, int w, int h);
+extern void texmad(ImageData &s, const vec &mul, const vec &add = vec(0 , 0, 0));
 extern void updatetextures();
 extern void preloadtextures(uint flags = IDF_PRELOAD);
 
