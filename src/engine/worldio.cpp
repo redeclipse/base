@@ -701,7 +701,7 @@ VARF(IDF_PERSIST, mapshotsize, 2, 512, INT_MAX-1, mapshotsize -= mapshotsize%2);
 
 void save_mapshot(char *mname, bool forcesave = false)
 {
-    drawtex = DRAWTEX_ENVMAP;
+    drawtex = DRAWTEX_MAPSHOT;
     progress(0, "Saving map preview image..");
 
     float oldaspect = aspect, oldfovy = fovy, oldfov = curfov;

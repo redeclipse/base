@@ -1041,9 +1041,9 @@ namespace game
 
     void adddynlights()
     {
-        if(!dynlighteffects) return;
-        projs::adddynlights();
         entities::adddynlights();
+        if(!dynlighteffects || drawtex) return;
+        projs::adddynlights();
         if(dynlighteffects >= 2)
         {
             if(m_capture(gamemode)) capture::adddynlights();
@@ -3969,9 +3969,9 @@ namespace game
 
     void render()
     {
-        ai::render();
         entities::render();
         if(drawtex) return;
+        ai::render();
         projs::render();
         if(m_capture(gamemode)) capture::render();
         else if(m_defend(gamemode)) defend::render();
