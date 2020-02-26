@@ -1999,7 +1999,13 @@ struct inanimate : dynent
 
     void addpassenger(physent *d)
     {
-        if(findpassenger(d) >= 0) return;
+        int n = findpassenger(d);
+        if(n >= 0)
+        {
+            passenger &p = passengers[n];
+            p.offset = vec(d->o).sub(o);
+            return;
+        }
         passengers.add(passenger(d, vec(d->o).sub(o)));
     }
 };

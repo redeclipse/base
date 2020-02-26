@@ -508,6 +508,35 @@ namespace entities
                             }
 
                             m->coltarget = NULL;
+
+                            if(!(m->coltype&(1<<INANIMATE_C_NOPASS))) loopvj(m->passengers)
+                            {
+                                passenger &p = m->passengers[j];
+                                physent *d = p.ent;
+                                if(d->state != CS_ALIVE) continue;
+
+                                vec rotate = vec(p.offset).rotate_around_z(m->yawed*RAD).sub(p.offset).mul(part),
+                                    curdir = vec(rotate).add(dir).add(vec(resize.x, resize.y, resize.z+resize.w)),
+                                    oldpos = d->o, oldnew = d->newpos;
+                                m->coltarget = d; // filter collisions from the passenger
+
+                                d->o.add(curdir);
+                                d->newpos.add(curdir);
+
+                                if(collide(d) && !gameent::is(collideplayer))
+                                {
+                                    d->o = oldpos;
+                                    d->newpos = oldnew;
+                                    if(gameent::is(d) && collidewall.z < 0) game::suicide((gameent *)d, HIT(CRUSH));
+                                }
+                                if(m->yawed != 0) d->yaw += m->yawed*part;
+                                if(m->pitched != 0) d->pitch += m->pitched*part;
+
+                                m->coltarget = NULL;
+                                game::fixrange(d->yaw, d->pitch);
+
+                            }
+
                             prevpos = m->o;
                             secs -= step;
                         }
@@ -540,6 +569,7 @@ namespace entities
                         if(collide(m, vec(0, 0, 0), 0, true, true, 0, false) && collideplayer == d && collideinside) game::suicide(d, HIT(CRUSH));
                         m->coltarget = NULL;
                     }
+                    m->passengers.shrink(0);
                 }
             }
 
@@ -633,57 +663,6 @@ namespace entities
         buildrails();
     }
 
-    void runinanimates()
-    {
-        loopv(inanimates)
-        {
-            inanimate *m = inanimates[i];
-            if(!m->curstep || m->moved.iszero() || m->coltype&(1<<INANIMATE_C_NOPASS)) continue;
-            loopvj(m->passengers)
-            {
-                passenger &p = m->passengers[j];
-                physent *d = p.ent;
-                if(d->state != CS_ALIVE) continue;
-
-                vec dir = vec(p.offset).rotate_around_z(m->yawed*RAD).sub(p.offset).add(m->moved).addz(m->resized.w);
-                if(dir.iszero()) continue;
-
-                vec oldpos = d->o, oldnew = d->newpos;
-                m->coltarget = d; // filter collisions from the passenger
-
-                for(int secs = m->curstep; secs > 0; )
-                {
-                    int step = min(secs, physics::physframetime);
-                    float part = step/float(m->curstep);
-
-                    vec curdir = vec(dir).mul(part);
-                    d->o.add(curdir);
-                    d->newpos.add(curdir);
-
-                    if(collide(d) && !gameent::is(collideplayer))
-                    {
-                        d->o = oldpos;
-                        d->newpos = oldnew;
-                        if(gameent::is(d) && collidewall.z < 0) game::suicide((gameent *)d, HIT(CRUSH));
-                        break;
-                    }
-
-                    oldpos = d->o;
-                    oldnew = d->newpos;
-                    if(m->yawed != 0) d->yaw += m->yawed*part;
-                    if(m->pitched != 0) d->pitch += m->pitched*part;
-                    secs -= step;
-                }
-
-                m->coltarget = NULL;
-                game::fixrange(d->yaw, d->pitch);
-
-            }
-
-            m->passengers.shrink(0);
-        }
-    }
-
     void removepassenger(physent *d)
     {
         loopv(inanimates)
@@ -699,6 +678,7 @@ namespace entities
         loopv(inanimates)
         {
             inanimate *t = inanimates[i];
+            if(t == m) continue;
             int cur = t->findpassenger(d);
             if(cur < 0) continue;
             if(t->headpos().dist(d->feetpos()) > dist)
@@ -2821,7 +2801,6 @@ namespace entities
                 airnodes.setsize(0);
             }
         }
-        runinanimates();
     }
 
     int showlevel(int n)
