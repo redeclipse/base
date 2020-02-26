@@ -441,7 +441,7 @@ namespace entities
                         m->yawed = yaw-lastyaw;
                         m->pitched = pitch-lastpitch;
                         m->moved = vec(newpos).sub(prevpos);
-                        m->resized = vec4(m->xradius, m->yradius, m->height, m->aboveeye).sub(oldsize);
+                        m->resized = vec4(xradius, yradius, height, aboveeye).sub(oldsize);
 
                         for(int secs = curstep; secs > 0; )
                         {
@@ -463,25 +463,25 @@ namespace entities
                                 gameent *d = (gameent *)game::iterdynents(j);
                                 if(!d || d->state != CS_ALIVE || m->findpassenger(d) >= 0) continue;
 
-                                vec oldpos = d->o, oldnew = d->newpos, rescale = vec(resize.x, resize.y, 0);
+                                vec rescale = vec(d->o.x, d->o.y, 0.f).sub(vec(m->o.x, m->o.y, 0.f)).safenormalize().mul(vec(resize.x, resize.y, 0)),
+                                    curdir = vec(rescale).add(dir), oldpos = d->o, oldnew = d->newpos;
                                 m->coltarget = d; // restricts inanimate collisions to this entity, and filters out the reverse collision
 
-                                loopk(4) if(collide(m, vec(0, 0, 0), 0, true, true, 0, false) && collideplayer == d)
+                                loopk(2) if(collide(m, vec(0, 0, 0), 0, true, true, 0, false) && collideplayer == d)
                                 {
                                     if(m->coltype&(1<<INANIMATE_C_KILL)) game::suicide(d, HIT(TOUCH));
 
-                                    vec push = k%2 ? dir : rescale;
-                                    if(push.z > 0) push.z = 0;
-                                    if(push.iszero()) continue;
-                                    d->o.add(push);
-                                    d->newpos.add(push);
+                                    if(curdir.z > 0) curdir.z = 0;
+                                    if(curdir.iszero()) continue;
+                                    d->o.add(curdir);
+                                    d->newpos.add(curdir);
 
                                     if(collide(d))
                                     {
                                         bool crush = true;
                                         if(collidewall.z >= physics::slopez)
                                         {
-                                            vec proj = vec(push).project(collidewall);
+                                            vec proj = vec(curdir).project(collidewall);
                                             if(!proj.iszero())
                                             {
                                                 if(moved)
@@ -516,7 +516,7 @@ namespace entities
                                 if(d->state != CS_ALIVE) continue;
 
                                 vec rotate = vec(p.offset).rotate_around_z(m->yawed*RAD).sub(p.offset).mul(part),
-                                    curdir = vec(rotate).add(dir).add(vec(resize.x, resize.y, resize.z+resize.w)),
+                                    curdir = vec(rotate).add(dir).addz(resize.w),
                                     oldpos = d->o, oldnew = d->newpos;
                                 m->coltarget = d; // filter collisions from the passenger
 
