@@ -1600,7 +1600,7 @@ namespace ai
                 center.mul(scale);
                 radius.mul(scale);
             }
-            rotatebb(center, radius, int(e.attrs[1]), int(e.attrs[2]));
+            rotatebb(center, radius, int(e.attrs[1]), int(e.attrs[2]), int(e.attrs[3]));
             float xy = max(radius.x, radius.y), z = radius.z;
             xy += WAYPOINTRADIUS;
             z += WAYPOINTRADIUS;
