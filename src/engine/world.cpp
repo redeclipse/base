@@ -1017,6 +1017,7 @@ COMMAND(0, entlink, "i");
 
 void selentlinks(int n, int recurse, uint *cond)
 {
+    if(noentedit()) return;
     const vector<extentity *> &ents = entities::getents();
     if(n < 0)
     {
