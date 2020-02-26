@@ -1015,6 +1015,38 @@ void entlink(int *parent)
 }
 COMMAND(0, entlink, "i");
 
+void selentlinks(int n, int recurse, uint *cond)
+{
+    const vector<extentity *> &ents = entities::getents();
+    if(n < 0)
+    {
+        if(entgroup.length())
+        {
+            loopv(entgroup) selentlinks(entgroup[i], recurse, cond);
+            return;
+        }
+        if(ents.inrange(enthover)) n = enthover;
+        else return;
+    }
+    if(!ents.inrange(n)) return;
+    extentity &e = *(extentity *)ents[n];
+    loopv(e.links)
+    {
+        int r = e.links[i];
+        if(e.type == ET_EMPTY || !ents.inrange(r) || entgroup.find(r) >= 0) continue;
+        efocus = r;
+        if(cond && !executebool(cond)) continue;
+        entadd(r);
+        if(recurse < 0 || recurse > 0) selentlinks(r, recurse-1, cond);
+    }
+}
+ICOMMAND(0, selentlinks, "bbs", (int *n, int *recurse, char *s),
+{
+    uint *cond = s && *s ? compilecode(s) : NULL;
+    selentlinks(*n, *recurse, cond);
+    if(cond) freecode(cond);
+});
+
 void nearestent()
 {
     if(noentedit()) return;
