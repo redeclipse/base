@@ -429,6 +429,7 @@ namespace entities
                         height += zrad;
                     }
 
+                    int numdynents = game::numdynents();
                     if(slice)
                     {
                         vec prevpos = vec(e.o).add(lastoffset);
@@ -444,7 +445,7 @@ namespace entities
 
                         for(int secs = curstep; secs > 0; )
                         {
-                            int step = min(secs, physics::physframetime), numdynents = game::numdynents();
+                            int step = min(secs, physics::physframetime);
                             float part = step/float(curstep);
                             vec dir = vec(m->moved).mul(part);
                             vec4 resize = vec4(m->resized).mul(part);
@@ -463,8 +464,6 @@ namespace entities
                                 if(!d || d->state != CS_ALIVE || m->findpassenger(d) >= 0) continue;
 
                                 vec oldpos = d->o, oldnew = d->newpos, rescale = vec(resize.x, resize.y, 0);
-                                //bool under = d->o.z <= prevpos.z && d->o.x >= prevpos.x-m->xradius-d->xradius-GUARDRADIUS && d->o.x <= prevpos.x+m->xradius+d->xradius+GUARDRADIUS && d->o.y >= prevpos.y-m->yradius-d->yradius-GUARDRADIUS && d->o.y <= prevpos.y+m->yradius+d->yradius+GUARDRADIUS;
-
                                 m->coltarget = d; // restricts inanimate collisions to this entity, and filters out the reverse collision
 
                                 loopk(4) if(collide(m, vec(0, 0, 0), 0, true, true, 0, false) && collideplayer == d)
@@ -532,6 +531,15 @@ namespace entities
                     m->height = m->zradius = height;
                     m->aboveeye = aboveeye;
                     m->resetinterp();
+
+                    loopj(numdynents)
+                    {
+                        gameent *d = (gameent *)game::iterdynents(j);
+                        if(!d || d->state != CS_ALIVE || (d != game::player1 && !d->ai) || m->findpassenger(d) >= 0) continue;
+                        m->coltarget = d; // restricts inanimate collisions to this entity, and filters out the reverse collision
+                        if(collide(m, vec(0, 0, 0), 0, true, true, 0, false) && collideplayer == d && collideinside) game::suicide(d, HIT(CRUSH));
+                        m->coltarget = NULL;
+                    }
                 }
             }
 
