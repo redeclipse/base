@@ -385,9 +385,9 @@ namespace entities
                     if(slice && checkteleport)
                     { // only do this if we need it
                         int teleported = -1;
-                        loopi(rails.length()-1)
+                        loopk(rails.length()-1)
                         {
-                            int index = lastpoint + i + 1;
+                            int index = lastpoint + k + 1;
                             if(index >= rails.length()) index -= rails.length() - retpoint;
                             if(index == curpoint) break;
                             teleported = index;
