@@ -702,6 +702,7 @@ VARF(IDF_PERSIST, mapshotsize, 2, 512, INT_MAX-1, mapshotsize -= mapshotsize%2);
 void save_mapshot(char *mname, bool forcesave = false)
 {
     drawtex = DRAWTEX_ENVMAP;
+    progress(0, "Saving map preview image..");
 
     float oldaspect = aspect, oldfovy = fovy, oldfov = curfov;
     int oldfarplane = farplane, oldvieww = vieww, oldviewh = viewh;
@@ -754,7 +755,7 @@ void save_mapshot(char *mname, bool forcesave = false)
     camera1 = oldcamera;
     drawtex = 0;
 
-    progress(-1, "Saved map preview image..");
+    progress(1, "Saved map preview image..");
 }
 ICOMMAND(0, savemapshot, "s", (char *mname), if(!(identflags&IDF_WORLD)) save_mapshot(*mname ? mname : mapname));
 

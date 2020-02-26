@@ -1571,22 +1571,20 @@ namespace ai
     {
         obstacles.clear();
         obstacles.add(wpavoid);
-        int numdyns = game::numdynents();
+        int numdyns = game::numdynents(true);
         loopi(numdyns)
         {
-            gameent *d = (gameent *)game::iterdynents(i);
+            dynent *d = game::iterdynents(i, true);
             if(!d) continue; // || d->actortype >= A_ENEMY) continue;
             if(d->state != CS_ALIVE || !physics::issolid(d)) continue;
-            obstacles.avoidnear(d, d->o.z + d->aboveeye + 1, d->feetpos(), actors[A_PLAYER].radius + d->radius + 1);
-        }
-        loopv(projs::projs)
-        {
-            projent *p = projs::projs[i];
-            if(p && p->state == CS_ALIVE && p->projtype == PRJ_SHOT)
+            if(projent::is(d))
             {
+                projent *p = (projent *)d;
+                if(p->projtype != PRJ_SHOT) continue;
                 float expl = WX(WK(p->flags), p->weap, radial, WS(p->flags), game::gamemode, game::mutators, p->curscale);
-                if(expl > 0) obstacles.avoidnear(p, p->o.z + expl + 1, p->o, actors[A_PLAYER].radius + expl + 1);
+                if(expl > 0) obstacles.avoidnear(p, p->o.z + expl + 1, p->o, WAYPOINTRADIUS + expl + 1);
             }
+            else obstacles.avoidnear(d, d->o.z + d->aboveeye + 1, d->feetpos(), WAYPOINTRADIUS + d->radius + 1);
         }
         loopenti(MAPMODEL) if(entities::ents[i]->type == MAPMODEL)
         {
