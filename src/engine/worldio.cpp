@@ -733,7 +733,6 @@ void save_mapshot(char *mname, bool forcesave = false)
     gl_drawview();
     glReadPixels(0, 0, vieww, viewh, GL_RGB, GL_UNSIGNED_BYTE, image.data);
 
-    if(vieww > mapshotsize || viewh > mapshotsize) scaleimage(image, mapshotsize, mapshotsize);
     if(autosavebackups && !forcesave) backup(mname, ifmtexts[imageformat], hdr.revision, autosavebackups > 2, !(autosavebackups%2));
     saveimage(mname, image, imageformat, compresslevel, true);
     glDeleteTextures(1, &tex);
