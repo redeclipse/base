@@ -213,7 +213,7 @@ namespace entities
 
                 if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)) loopv(rails)
                 {
-                    rail &r = rails[i], &s = flags&(1<<RAIL_PREV) ? getrail(i, -1, 1) : (flags&(1<<RAIL_NEXT) ?  getrail(i, 1, 1) : r);
+                    rail &r = rails[i], &s = flags&(1<<RAIL_PREV) ? getrail(i, -1, 1) : (flags&(1<<RAIL_NEXT) ? getrail(i, 1, 1) : r);
 
                     if(flags&(1<<RAIL_SEEK))
                     {
@@ -245,11 +245,7 @@ namespace entities
                 vec spline[4] = { rprev.pos, rcur.pos, rnext.pos, rnext2.pos };
                 off = catmullrom(spline, amt);
             }
-            else
-            {
-                vec dest = vec(rnext.pos).sub(rcur.pos);
-                off = vec(rcur.pos).add(dest.mul(amt));
-            }
+            else off = vec(rcur.pos).add(vec(rcur.offset).mul(amt));
 
             if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH))
             {
@@ -443,9 +439,9 @@ namespace entities
                         m->moved = vec(newpos).sub(prevpos);
                         m->resized = vec4(xradius, yradius, height, aboveeye).sub(oldsize);
 
-                        for(int secs = curstep; secs > 0; )
+                        for(int s = curstep; s > 0; )
                         {
-                            int step = min(secs, physics::physframetime);
+                            int step = min(s, physics::physframetime);
                             float part = step/float(curstep);
                             vec dir = vec(m->moved).mul(part);
                             vec4 resize = vec4(m->resized).mul(part);
@@ -531,14 +527,13 @@ namespace entities
                                 }
                                 if(m->yawed != 0) d->yaw += m->yawed*part;
                                 if(m->pitched != 0) d->pitch += m->pitched*part;
-
-                                m->coltarget = NULL;
                                 game::fixrange(d->yaw, d->pitch);
 
+                                m->coltarget = NULL;
                             }
 
                             prevpos = m->o;
-                            secs -= step;
+                            s -= step;
                         }
                     }
                     else
