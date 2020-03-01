@@ -480,11 +480,8 @@ namespace entities
                                             vec proj = vec(curdir).project(collidewall);
                                             if(!proj.iszero())
                                             {
-                                                if(moved)
-                                                {
-                                                    d->o = vec(oldpos).add(proj);
-                                                    d->newpos = vec(oldnew).add(proj);
-                                                }
+                                                d->o = vec(oldpos).add(proj);
+                                                d->newpos = vec(oldnew).add(proj);
                                                 if(!collide(d)) crush = false;
                                             }
                                         }
