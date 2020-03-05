@@ -897,7 +897,13 @@ namespace server
 
         bool canspawn(clientinfo *ci, bool tryspawn = false)
         {
-            if(ci->actortype >= A_ENEMY) return true;
+            if(ci->actortype >= A_ENEMY)
+            {
+              //note: if actor spawns < enemylimit, some spawns are never used
+              if(!ci->lastdeath) return true;
+              else if(gamemillis > ci->lastdeath + G(enemyspawntime)) return true;
+              else return false;
+            }
             else if(tryspawn)
             {
                 if(m_loadout(gamemode, mutators) && !chkloadweap(ci)) return false;
