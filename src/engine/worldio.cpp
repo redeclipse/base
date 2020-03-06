@@ -950,6 +950,7 @@ const char *variantvars[] = {
     "lavacolour", "lavafog", "lavaglowmin", "lavaglowmax", "lavaspec", "lava2colour", "lava2fog", "lava2glowmin", "lava2glowmax", "lava2spec",
     "lava3colour", "lava3fog", "lava3glowmin", "lava3glowmax", "lava3spec", "lava4colour", "lava4fog", "lava4glowmin", "lava4glowmax", "lava4spec",
     "glasscolour", "glassrefract", "glassspec", "glass2colour", "glass2refract", "glass2spec", "glass3colour", "glass3refract", "glass3spec", "glass4colour", "glass4refract", "glass4spec",
+    "illumlevel", "illumradius",
     NULL
 };
 

@@ -97,8 +97,23 @@ namespace game
         player1->version.gpuversion = newstring(gfxversion);
     }
 
-    FVAR(IDF_WORLD, illumlevel, 0, 0, 2);
-    VAR(IDF_WORLD, illumradius, 0, 0, VAR_MAX);
+    #define ILLUMVARS(name) \
+        FVAR(IDF_WORLD, illumlevel##name, 0, 0, 2); \
+        VAR(IDF_WORLD, illumradius##name, 0, 0, VAR_MAX);
+
+    ILLUMVARS();
+    ILLUMVARS(alt);
+
+    #define GETMPV(name, type) \
+    type get##name() \
+    { \
+        if(checkmapvariant(MPV_ALT)) return name##alt; \
+        return name; \
+    }
+
+    GETMPV(illumlevel, float);
+    GETMPV(illumradius, int);
+
     #define OBITVARS(name) \
         SVAR(IDF_WORLD, obit##name, ""); \
         SVAR(IDF_WORLD, obit##name##2, ""); \
@@ -1102,8 +1117,8 @@ namespace game
                 }
                 adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d, PULSE_SHOCK).mul(pc), 0, 0);
             }
-            if(d->actortype < A_ENEMY && illumlevel > 0 && illumradius > 0)
-                adddynlight(d->center(), illumradius, vec::fromcolor(getcolour(d, playereffecttone, illumlevel)), 0, 0);
+            if(d->actortype < A_ENEMY && getillumlevel() > 0 && getillumradius() > 0)
+                adddynlight(d->center(), getillumradius(), vec::fromcolor(getcolour(d, playereffecttone, getillumlevel())), 0, 0);
         }
     }
 
