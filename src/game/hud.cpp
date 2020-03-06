@@ -1242,6 +1242,7 @@ namespace hud
         else index = POINTER_HAIR;
         if(index > POINTER_NONE)
         {
+            resethudshader();
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             drawpointer(w, h, index);
@@ -2078,6 +2079,7 @@ namespace hud
         {
             hudmatrix.ortho(0, hudwidth, hudheight, 0, -1, 1);
             flushhudmatrix();
+            resethudshader();
             drawpointers(hudwidth, hudheight);
             rendertexturepanel(hudwidth, hudheight);
         }
