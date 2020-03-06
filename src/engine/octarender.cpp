@@ -1132,7 +1132,7 @@ void gencubeedges(cube &c, const ivec &co, int size)
 
 void gencubeedges(cube *c = worldroot, const ivec &co = ivec(0, 0, 0), int size = worldsize>>1)
 {
-    rcprogress("Fixing t-joints...");
+    rcprogress("Fixing t-joints..");
     neighbourstack[++neighbourdepth] = c;
     loopi(8)
     {
@@ -1609,7 +1609,7 @@ VARF(0, vacubesize, 32, 128, 0x1000, allchanged());
 
 int updateva(cube *c, const ivec &co, int size, int csi)
 {
-    rcprogress("Recalculating geometry...");
+    rcprogress("Recalculating geometry..");
     int ccount = 0, cmergemax = vamergemax, chasmerges = vahasmerges;
     neighbourstack[++neighbourdepth] = c;
     loopi(8)                                    // counting number of semi-solid/solid children cubes
@@ -1793,7 +1793,7 @@ void allchanged(bool load)
 {
     if(!connected()) load = false;
     if(load) initlights();
-    progress(-1, "Clearing vertex arrays...");
+    progress(-1, "Clearing vertex arrays..");
     clearvas(worldroot);
     resetqueries();
     resetclipplanes();

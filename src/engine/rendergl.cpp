@@ -2005,7 +2005,7 @@ void drawminimap()
     if(!hud::needminimap()) { clearminimap(); return; }
 
     GLERROR;
-    progress(0, "Generating mini-map...");
+    progress(0, "Generating mini-map..");
 
     drawtex = DRAWTEX_MINIMAP;
 

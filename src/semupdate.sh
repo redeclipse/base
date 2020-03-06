@@ -22,7 +22,7 @@ SEMUPDATE_BRANCH="${BRANCH_NAME}"
 if [ "${SEMUPDATE_BRANCH}" = "master" ]; then SEMUPDATE_BRANCH="devel"; fi
 
 semupdate_setup() {
-    echo "setting up ${BRANCH_NAME}..."
+    echo "setting up ${BRANCH_NAME}.."
     git config --global user.email "noreply@redeclipse.net" || return 1
     git config --global user.name "Red Eclipse" || return 1
     git config --global credential.helper store || return 1
@@ -44,14 +44,14 @@ semupdate_setup() {
 semupdate_wait() {
     pushd "${SEMUPDATE_BUILD}" || return 1
     SEMUPDATE_CURPRC=1
-    echo "Waiting for macOS build to complete..." # Will wait up to 20 minutes before failing
+    echo "Waiting for macOS build to complete.." # Will wait up to 20 minutes before failing
     for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40; do
         SEMUPDATE_CURBIN=`cat "${SEMUPDATE_DIR}/bins.txt"`
         SEMUPDATE_CURMAC=`cat "${SEMUPDATE_DIR}/macos.txt"`
         echo ""
         echo "Binaries: ${SEMUPDATE_CURBIN} macOS: ${SEMUPDATE_CURMAC}"
         if [ "${SEMUPDATE_CURBIN}" != "${SEMUPDATE_CURMAC}" ]; then
-            echo "[${i}] Sleep for 30 seconds..."
+            echo "[${i}] Sleep for 30 seconds.."
             sleep 30s || return 1
             git pull || return 1
         else
@@ -88,7 +88,7 @@ semupdate_appimage() {
 }
 
 semupdate_steam() {
-    echo "building Steam depot..."
+    echo "building Steam depot.."
     mkdir -pv "${SEMUPDATE_DEPOT}" || return 1
     pushd "${SEMUPDATE_PWD}/src/install/steam" || return 1
     for i in *; do

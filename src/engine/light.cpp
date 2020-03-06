@@ -444,7 +444,7 @@ void check_calclight_canceled()
 void show_calclight_progress()
 {
     float amt = float(lightprogress)/float(allocnodes);
-    progress(amt, "Computing lighting... (ESC to abort)");
+    progress(amt, "Computing lighting.. (ESC to abort)");
 }
 
 static void calcsurfaces(cube &c, const ivec &co, int size, int usefacemask, int preview = 0)
@@ -669,7 +669,7 @@ static Uint32 calclighttimer(Uint32 interval, void *param)
 
 void calclight()
 {
-    progress(-1, "Computing lighting... (ESC to abort)");
+    progress(-1, "Computing lighting.. (ESC to abort)");
     remip();
     optimizeblendmap();
     clearsurfaces(worldroot);
@@ -683,7 +683,7 @@ void calclight()
     clearnormals();
     Uint32 end = SDL_GetTicks();
     if(timer) SDL_RemoveTimer(timer);
-    progress(0, "Lighting done...");
+    progress(0, "Lighting done..");
     allchanged();
     if(calclight_canceled) conoutf("Calclight aborted");
     else conoutf("Computed lighting (%.1f seconds)", (end - start) / 1000.0f);

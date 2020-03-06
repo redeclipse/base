@@ -64,10 +64,10 @@ void ircestablish(ircnet *n)
     n->lastping = 0;
     if(n->address.host == ENET_HOST_ANY)
     {
-        ircprintf(n, 4, NULL, "looking up %s:[%d]...", n->serv, n->port);
+        ircprintf(n, 4, NULL, "looking up %s:[%d]..", n->serv, n->port);
         if(!resolverwait(n->serv, &n->address))
         {
-            ircprintf(n, 4, NULL, "unable to resolve %s:[%d]...", n->serv, n->port);
+            ircprintf(n, 4, NULL, "unable to resolve %s:[%d]..", n->serv, n->port);
             n->state = IRC_DISC;
             return;
         }
@@ -94,7 +94,7 @@ void ircestablish(ircnet *n)
         return;
     }
     n->state = IRC_WAIT;
-    ircprintf(n, 4, NULL, "connecting to %s:[%d]...", n->serv, n->port);
+    ircprintf(n, 4, NULL, "connecting to %s:[%d]..", n->serv, n->port);
 }
 
 void ircsend(ircnet *n, const char *msg, ...)

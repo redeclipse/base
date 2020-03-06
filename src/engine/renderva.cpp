@@ -2812,7 +2812,7 @@ void genshadowmeshes()
     clearshadowmeshes();
     if(!smmesh) return;
 
-    progress(0, "Generating shadow meshes...");
+    progress(0, "Generating shadow meshes..");
 
     vector<extentity *> &ents = entities::getents();
     loopv(ents)

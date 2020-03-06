@@ -713,7 +713,7 @@ ENetSocket connectmaster(bool reuse)
     if(!servermaster[0]) return ENET_SOCKET_NULL;
     if(masteraddress.host == ENET_HOST_ANY)
     {
-        if(servertype >= 2) conoutf("\faLooking up %s:[%d]...", servermaster, servermasterport);
+        if(servertype >= 2) conoutf("\faLooking up %s:[%d]..", servermaster, servermasterport);
         masteraddress.port = servermasterport;
         if(!resolverwait(servermaster, &masteraddress))
         {
@@ -1322,7 +1322,7 @@ void serverloop()
     setupwindow(cap);
     SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
 #endif
-    conoutf("\fgDedicated server started, waiting for clients...");
+    conoutf("\fgDedicated server started, waiting for clients..");
     for(;;)
     {
         //int _lastmillis = lastmillis;

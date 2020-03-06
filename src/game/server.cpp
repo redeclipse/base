@@ -5353,7 +5353,7 @@ namespace server
                 int waituntil = maxshutdownwait*(gs_playing(gamestate) ? 2000 : 1000);
                 if(totalmillis >= shutdownwait+waituntil)
                 {
-                    srvoutf(3, "Waited \fs\fc%s\fS to shutdown, overriding and exiting...", timestr(totalmillis-shutdownwait, 4));
+                    srvoutf(3, "Waited \fs\fc%s\fS to shutdown, overriding and exiting..", timestr(totalmillis-shutdownwait, 4));
 #ifdef STANDALONE
                     cleanupserver();
                     exit(EXIT_SUCCESS);

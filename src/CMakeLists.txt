@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.11)
 
-# link_deps([FATAL] DEPS <deps>...)
+# link_deps([FATAL] DEPS <deps>..)
 # Calls link_directories for <deps>. <deps> is a list of dependencies.
 # If FATAL is specified then it exits on failure. Otherwise it returns
 # and sets link_deps_failed.

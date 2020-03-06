@@ -2440,7 +2440,7 @@ namespace entities
         numactors = lastroutetime = droproute = 0;
         airnodes.setsize(0);
         ai::oldwaypoints.setsize(0);
-        progress(0, "Setting entity attributes...");
+        progress(0, "Setting entity attributes..");
         loopv(ents)
         {
             gameentity &e = *(gameentity *)ents[i];
@@ -2448,7 +2448,7 @@ namespace entities
             if(gver < VERSION_GAME) importent(e, i, mver, gver);
             fixentity(i, false);
             if(e.type == ACTOR) numactors++;
-            progress((i+1)/float(ents.length()), "Setting entity attributes...");
+            progress((i+1)/float(ents.length()), "Setting entity attributes..");
         }
         memset(firstenttype, 0, sizeof(firstenttype));
         memset(firstusetype, 0, sizeof(firstusetype));
@@ -2478,7 +2478,7 @@ namespace entities
                 numactors++;
             }
         }
-        progress(0, "Preparing entities...");
+        progress(0, "Preparing entities..");
         loopv(ents)
         {
             gameentity &e = *(gameentity *)ents[i];
@@ -2502,7 +2502,7 @@ namespace entities
                     }
                 }
             }
-            progress((i+1)/float(ents.length()), "Preparing entities...");
+            progress((i+1)/float(ents.length()), "Preparing entities..");
         }
         initrails();
     }

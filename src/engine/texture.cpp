@@ -1854,7 +1854,7 @@ void compactvslot(VSlot &vs)
 
 void compactvslots(cube *c, int n)
 {
-    if((compactvslotsprogress++&0xFFF)==0) progress(min(float(compactvslotsprogress)/allocnodes, 1.0f), markingvslots ? "Marking slots..." : "Compacting slots...");
+    if((compactvslotsprogress++&0xFFF)==0) progress(min(float(compactvslotsprogress)/allocnodes, 1.0f), markingvslots ? "Marking slots.." : "Compacting slots..");
     loopi(n)
     {
         if(c[i].children) compactvslots(c[i].children);
@@ -3248,12 +3248,12 @@ void initenvmaps()
 void genenvmaps()
 {
     if(envmaps.empty()) return;
-    progress(0, "Generating environment maps...");
+    progress(0, "Generating environment maps..");
     loopv(envmaps)
     {
         envmap &em = envmaps[i];
         em.tex = genenvmap(em.o, em.size ? min(em.size, envmapsize) : envmapsize, aaenvmap, em.blur, em.radius < 0);
-        progress(float(i+1)/envmaps.length(), "Generating environment maps...");
+        progress(float(i+1)/envmaps.length(), "Generating environment maps..");
     }
 }
 

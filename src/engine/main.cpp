@@ -422,7 +422,7 @@ void resetgl()
         fatal("Failed to reload core textures");
     reloadfonts();
     inbetweenframes = true;
-    progress(0, "Initializing...");
+    progress(0, "Initializing..");
     restoregamma();
     restorevsync();
     initgbuffer();
@@ -854,7 +854,7 @@ void progress(float amt, const char *s, ...)
         vformatstring(sf, s, args);
         va_end(args);
     }
-    else copystring(sf, "Loading...");
+    else copystring(sf, "Loading..");
     setsvar("progresstitle", sf);
     setfvar("progressamt", amt);
     if(verbose >= 4) conoutf("%s [%.2f%%]", sf, amt*100.f);

@@ -1750,8 +1750,8 @@ namespace client
 
     void getdemo(int i, const char *name)
     {
-        if(i <= 0) conoutft(CON_EVENT, "\fyGetting demo, please wait...");
-        else conoutft(CON_EVENT, "\fyGetting demo \fs\fc%d\fS, please wait...", i);
+        if(i <= 0) conoutft(CON_EVENT, "\fyGetting demo, please wait..");
+        else conoutft(CON_EVENT, "\fyGetting demo \fs\fc%d\fS, please wait..", i);
         addmsg(N_GETDEMO, "ri2", i, demonameid);
         if(*name) demonames.access(demonameid, newstring(name));
         demonameid++;
@@ -1760,7 +1760,7 @@ namespace client
 
     void listdemos()
     {
-        conoutft(CON_EVENT, "\fyListing demos...");
+        conoutft(CON_EVENT, "\fyListing demos..");
         addmsg(N_LISTDEMOS, "r");
     }
     ICOMMAND(0, listdemos, "", (), listdemos());
@@ -1788,7 +1788,7 @@ namespace client
 
     void sendmap()
     {
-        conoutf("\fySending map...");
+        conoutf("\fySending map..");
         const char *reqmap = mapname;
         if(!reqmap || !*reqmap) reqmap = "maps/untitled";
         bool saved = false;
@@ -3685,7 +3685,7 @@ namespace client
                         putuint(sc, tokenlen);
                         if(tokenlen > 0) sc.put((uchar *)token, tokenlen);
                         sendclientpacket(sc.finalize(), 1);
-                        conoutft(CON_EVENT, "\fyPerforming Steam ID challenge...");
+                        conoutft(CON_EVENT, "\fyPerforming Steam ID challenge..");
                     }
                     else
                     {

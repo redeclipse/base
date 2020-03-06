@@ -849,7 +849,7 @@ static void show_genpvs_progress(int unique = pvs.length(), int processed = numv
 {
     float amt = float(processed)/float(totalviewcells>0 ? totalviewcells : 1);
 
-    progress(amt, "Generating PVS... %d of %d, %d unique (ESC to abort)", processed, totalviewcells, unique);
+    progress(amt, "Generating PVS.. %d of %d, %d unique (ESC to abort)", processed, totalviewcells, unique);
 
     if(interceptkey(SDLK_ESCAPE)) genpvs_canceled = true;
     check_genpvs_progress = false;
@@ -1102,7 +1102,7 @@ void genpvs(int *viewcellsize)
         return;
     }
 
-    progress(-1, "Generating PVS... (ESC to abort)");
+    progress(-1, "Generating PVS.. (ESC to abort)");
     genpvs_canceled = false;
     Uint32 start = SDL_GetTicks();
 
@@ -1135,7 +1135,7 @@ void genpvs(int *viewcellsize)
     }
     else
     {
-        progress(0, "Creating PVS worker threads...");
+        progress(0, "Creating PVS worker threads..");
         if(!pvsmutex) pvsmutex = SDL_CreateMutex();
         if(!viewcellmutex) viewcellmutex = SDL_CreateMutex();
         loopi(numthreads)

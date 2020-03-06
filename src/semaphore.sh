@@ -11,7 +11,7 @@ SEMABUILD_ALLMODS="base ${SEMABUILD_MODULES}"
 SEMABUILD_DEPLOY="false"
 
 semabuild_setup() {
-    echo "setting up ${BRANCH_NAME}..."
+    echo "setting up ${BRANCH_NAME}.."
     git config --global user.email "noreply@redeclipse.net" || return 1
     git config --global user.name "Red Eclipse" || return 1
     git config --global credential.helper store || return 1
@@ -26,7 +26,7 @@ semabuild_setup() {
 }
 
 semabuild_archive() {
-    echo "archiving ${BRANCH_NAME}..."
+    echo "archiving ${BRANCH_NAME}.."
     # ensure updater and scripts updated at least if base fails
     cp -fv "redeclipse.bat" "${SEMABUILD_DIR}/windows/redeclipse.bat" || return 1
     cp -fv "redeclipse_server.bat" "${SEMABUILD_DIR}/windows/redeclipse_server.bat" || return 1
@@ -45,7 +45,7 @@ semabuild_archive() {
 }
 
 semabuild_test() {
-    echo "testing ${BRANCH_NAME}..."
+    echo "testing ${BRANCH_NAME}.."
     sudo ${SEMABUILD_APT} update || return 1
     sudo ${SEMABUILD_APT} -fy install build-essential multiarch-support gcc-multilib g++-multilib zlib1g-dev libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev libfreetype6-dev binutils-mingw-w64 g++-mingw-w64 || return 1
     make PLATFORM="crossmingw64" PLATFORM_BIN="amd64" PLATFORM_BUILD="${SEMAPHORE_BUILD_NUMBER}" PLATFORM_BRANCH="${BRANCH_NAME}" PLATFORM_REVISION="${REVISION}" WANT_DISCORD=1 WANT_STEAM=1 INSTDIR="${SEMABUILD_DIR}/windows/bin/amd64" CFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math" CXXFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math" LDFLAGS="-m64" -C src clean install || return 1
@@ -54,7 +54,7 @@ semabuild_test() {
 }
 
 semabuild_build() {
-    echo "building ${BRANCH_NAME}..."
+    echo "building ${BRANCH_NAME}.."
     sudo dpkg --add-architecture i386 || return 1
     sudo ${SEMABUILD_APT} update || return 1
     sudo ${SEMABUILD_APT} -fy install build-essential multiarch-support gcc-multilib g++-multilib zlib1g-dev libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev libfreetype6-dev binutils-mingw-w64 g++-mingw-w64 || return 1
@@ -134,7 +134,7 @@ semabuild_process() {
 }
 
 semabuild_deploy() {
-    echo "deploying ${BRANCH_NAME}..."
+    echo "deploying ${BRANCH_NAME}.."
     echo "${SEMABUILD_ALLMODS}" > "${SEMABUILD_DIR}/mods.txt"
     pushd "${SEMABUILD_BUILD}" || return 1
     git status || return 1

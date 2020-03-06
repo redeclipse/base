@@ -588,7 +588,7 @@ struct aviwriter
     {
         // do conversion in-place to little endian format
         // note that xoring by half the range yields the same bit pattern as subtracting the range regardless of signedness
-        // ... so can toggle signedness just by xoring the high byte with 0x80
+        // .. so can toggle signedness just by xoring the high byte with 0x80
         switch(soundformat)
         {
             case AUDIO_U8:

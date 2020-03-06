@@ -1816,7 +1816,7 @@ namespace ai
     static const int QUIPFORGETNUM = 4;
     static const char *quip_forget[QUIPFORGETNUM] = { "Back to what I was doing then", "Resuming previous operations", "I am no longer your slave", "Jolly good show then" };
     static const int QUIPRESETNUM = 4;
-    static const char *quip_reset[QUIPRESETNUM] = { "What was I doing again?", "Duh... off I go..", "Who were you again?", "Ummmm... wtf do I do now?" };
+    static const char *quip_reset[QUIPRESETNUM] = { "What was I doing again?", "Duh.. off I go..", "Who were you again?", "Ummmm.. wtf do I do now?" };
 
     void scanchat(gameent *d, gameent *t, int flags, const char *text)
     {

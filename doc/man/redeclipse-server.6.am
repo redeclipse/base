@@ -118,7 +118,7 @@ Sets default map to
 .IR defaultmap .
 
 .TP
-.BI \-x "\(dqcommand 1; command 2; ...\(dq"
+.BI \-x "\(dqcommand 1; command 2; ..\(dq"
 .
 Executes a list of commands once the Red Eclipse server has started up.
 

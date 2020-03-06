@@ -107,7 +107,7 @@ redeclipse_setup
 if [ $? -ne 0 ]; then
     echo ""
     echo "There was an error running Red Eclipse."
-    echo "Press any key to continue..."
+    echo "Press any key to continue.."
     read REDECLIPSE_PAUSE
     ${REDECLIPSE_EXITR} 1
 else

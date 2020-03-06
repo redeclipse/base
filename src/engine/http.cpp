@@ -380,10 +380,10 @@ namespace http
         copystring(c->path, path);
         if(data) copystring(c->data, data);
         c->callback = callback;
-        conoutf("HTTP looking up %s:[%d] [%d]...", c->name, c->port, c->uid);
+        conoutf("HTTP looking up %s:[%d] [%d]..", c->name, c->port, c->uid);
         if(!resolverwait(c->name, &c->address)) // TODO: don't block here
         {
-            conoutf("HTTP unable to resolve %s:[%d] [%d]...", c->name, c->port, c->uid);
+            conoutf("HTTP unable to resolve %s:[%d] [%d]..", c->name, c->port, c->uid);
             delete c;
             return NULL;
         }
@@ -399,7 +399,7 @@ namespace http
         c->state = HTTP_S_CONNECTING;
         c->outhdrs.add("User-Agent", getverstr());
         clients.add(c);
-        conoutf("HTTP connecting to %s:[%d] [%d]...", c->name, c->port, c->uid);
+        conoutf("HTTP connecting to %s:[%d] [%d]..", c->name, c->port, c->uid);
         return c;
     }
 

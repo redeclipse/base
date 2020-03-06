@@ -346,7 +346,7 @@ float raycube(const vec &o, const vec &ray, float radius, int mode, int size, ex
     }
 }
 
-// optimized version for light shadowing... every cycle here counts!!!
+// optimized version for light shadowing.. every cycle here counts!!!
 float shadowray(const vec &o, const vec &ray, float radius, int mode, extentity *t)
 {
     INITRAYCUBE;

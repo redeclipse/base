@@ -88,7 +88,7 @@ void trydisconnect(bool force)
     if(connpeer) abortconnect();
     else if(curpeer || haslocalclients())
     {
-        if(verbose) conoutft(CON_DEBUG, "\faAttempting to disconnect...");
+        if(verbose) conoutft(CON_DEBUG, "\faAttempting to disconnect..");
         disconnect(false, !force && !discmillis);
     }
     else conoutft(CON_DEBUG, "\frNot connected");
@@ -277,7 +277,7 @@ void gets2c()           // get updates from the server
             break;
 
         case ENET_EVENT_TYPE_RECEIVE:
-            if(discmillis) conoutft(CON_DEBUG, "\faAttempting to disconnect...");
+            if(discmillis) conoutft(CON_DEBUG, "\faAttempting to disconnect..");
             else localservertoclient(event.channelID, event.packet);
             enet_packet_destroy(event.packet);
             break;
@@ -294,8 +294,8 @@ void gets2c()           // get updates from the server
                 if(!discmillis || event.data)
                 {
                     const char *msg = disc_reasons[event.data];
-                    if(msg) conoutf("\frServer network error, disconnecting (%s) ...", msg);
-                    else conoutf("\frServer network error, disconnecting...");
+                    if(msg) conoutf("\frServer network error, disconnecting (%s) ..", msg);
+                    else conoutf("\frServer network error, disconnecting..");
                 }
                 disconnect();
             }

@@ -149,7 +149,7 @@ static uint normalprogress = 0;
 void show_addnormals_progress()
 {
     float amt = float(normalprogress)/float(allocnodes);
-    progress(amt, "Computing normals...");
+    progress(amt, "Computing normals..");
 }
 
 void addnormals(cube &c, const ivec &o, int size)
