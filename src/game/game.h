@@ -1222,9 +1222,9 @@ struct gameent : dynent, clientstate
     editinfo *edit;
     ai::aiinfo *ai;
     int team, clientnum, privilege, projid, lastnode, checkpoint, cplast, respawned, suicided, lastupdate, lastpredict, plag, ping, lastflag, totaldamage,
-        actiontime[AC_MAX], impulse[IM_MAX], impulsetime[IM_T_MAX], smoothmillis, turnside, aschan, cschan, vschan, wschan[WS_CHANS], pschan, sschan[2],
+        actiontime[AC_MAX], impulse[IM_MAX], impulsetime[IM_T_MAX], smoothmillis, turnside, turnmillis, aschan, cschan, vschan, wschan[WS_CHANS], pschan, sschan[2],
         lasthit, lastteamhit, lastkill, lastattacker, lastpoints, quake, wasfiring, lastfoot, lastimpulsecollect;
-    float deltayaw, deltapitch, newyaw, newpitch, stunscale, stungravity;
+    float deltayaw, deltapitch, newyaw, newpitch, stunscale, stungravity, turnyaw, turnroll;
     bool action[AC_MAX], conopen, k_up, k_down, k_left, k_right, obliterated, headless;
     vec tag[TAG_MAX];
     string hostip, name, handle, steamid, info, obit;
@@ -1513,8 +1513,9 @@ struct gameent : dynent, clientstate
     {
         loopi(IM_MAX) impulse[i] = 0;
         loopi(IM_T_MAX) impulsetime[i] = 0;
-        lasthit = lastkill = quake = turnside = lastimpulsecollect = 0;
+        lasthit = lastkill = quake = turnside = turnmillis = lastimpulsecollect = 0;
         lastteamhit = lastflag = respawned = suicided = lastnode = lastfoot = wasfiring = -1;
+        turnyaw = turnroll = 0;
         obit[0] = '\0';
         obliterated = headless = false;
         icons.shrink(0);
@@ -1813,7 +1814,7 @@ struct gameent : dynent, clientstate
         resetjump(wait);
     }
 
-    void doimpulse(int type, int millis, int cost = 0, int side = 0)
+    void doimpulse(int type, int millis, int cost = 0, int side = 0, int turn = 0, float yaw = 0, float roll = 0)
     {
         if(type < 0 || type >= IM_T_MAX) return;
         if(cost) impulse[IM_METER] += cost;
@@ -1832,6 +1833,10 @@ struct gameent : dynent, clientstate
             else resetair(true);
         }
         turnside = side;
+        turnmillis = turn;
+        turnside = 0;
+        turnyaw = yaw;
+        turnroll = roll;
     }
 
     void addicon(int type, int millis, int fade, int value = 0)

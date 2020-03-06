@@ -16,6 +16,10 @@ namespace physics
     FVAR(IDF_PERSIST, impulseparkouryaw, 0, 150, 180); // determines the minimum yaw angle to switch between parkour climb and run
     VAR(IDF_PERSIST, impulsemethod, 0, 3, 3); // determines which impulse method to use, 0 = none, 1 = launch, 2 = slide, 3 = both
     VAR(IDF_PERSIST, impulseaction, 0, 3, 3); // determines how impulse action works, 0 = off, 1 = impulse jump, 2 = impulse boost, 3 = both
+    VAR(IDF_PERSIST, impulseturntime, 0, 250, VAR_MAX);
+    FVAR(IDF_PERSIST, impulseturnroll, 0, 15, 89);
+    FVAR(IDF_PERSIST, impulseturnscale, 0, 1, 1);
+    FVAR(IDF_PERSIST, impulseturnswitch, 0, 0, 1);
 
     VAR(IDF_PERSIST, crouchstyle, 0, 0, 2); // 0 = press and hold, 1 = double-tap toggle, 2 = toggle
     VAR(IDF_PERSIST, walkstyle, 0, 0, 2); // 0 = press and hold, 1 = double-tap toggle, 2 = toggle
@@ -861,6 +865,7 @@ namespace physics
                     if(d->impulse[IM_TYPE] == IM_T_PARKOUR || parkour || vault)
                     {
                         int side = isclimb ? 0 : (off < 0 ? -1 : 1);
+
                         if(isclimb)
                         {
                             if(pitch > 0)
@@ -876,14 +881,22 @@ namespace physics
                             else yaw -= 90;
                             pitch = 0;
                         }
+
                         while(yaw >= 360) yaw -= 360;
                         while(yaw < 0) yaw += 360;
+
+                        off = yaw-d->yaw;
+                        if(off > 180) off -= 360;
+                        else if(off < -180) off += 360;
+
                         vec rft;
                         vecfromyawpitch(yaw, pitch, 1, isclimb ? -d->strafe : 0, rft);
                         d->o.add(rft);
+
                         bool collided = collide(d, rft);
                         d->o = oldpos;
                         if(collided || (collideplayer && !inanimate::is(collideplayer))) continue; // we might find a better vector
+
                         if(d->impulse[IM_TYPE] != IM_T_PARKOUR)
                         {
                             int cost = int(impulsecost*(isclimb ? impulsecostclimb : impulsecostparkour));
@@ -892,7 +905,7 @@ namespace physics
                             if(mag > 0)
                             {
                                 d->vel = vec(rft).mul(mag).add(keepvel);
-                                d->doimpulse(IM_T_PARKOUR, lastmillis, cost, side);
+                                d->doimpulse(IM_T_PARKOUR, lastmillis, cost, side, impulseturntime, side ? off*impulseturnscale : 0, side ? (impulseturnroll*d->turnside)-d->roll : 0);
                                 client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_PARKOUR);
                                 game::impulseeffect(d);
                                 game::footstep(d);
@@ -902,6 +915,12 @@ namespace physics
                         }
                         else
                         {
+                            if(d->turnside != side)
+                            {
+                                d->turnmillis = impulseturntime;
+                                d->turnyaw = side ? off*impulseturnswitch : 0;
+                                d->turnroll = side ? (impulseturnroll*d->turnside)-d->roll : 0;
+                            }
                             d->turnside = side;
                             m = rft; // re-project and override
                             found = true;
@@ -1166,7 +1185,18 @@ namespace physics
                         game::suicide(d, HIT(LOST));
                         return false;
                     }
-                    if(d->roll != 0) adjustscaled(d->roll, PHYSMILLIS);
+                    if(d->turnmillis > 0)
+                    {
+                        float amt = float(millis)/float(impulseturntime), yaw = d->turnyaw*amt, roll = d->turnroll*amt;
+                        if(yaw != 0) d->yaw += yaw;
+                        if(roll != 0) d->roll += roll;
+                        d->turnmillis -= millis;
+                    }
+                    else
+                    {
+                        d->turnmillis = 0;
+                        if(d->roll != 0 && !d->turnside) adjustscaled(d->roll, impulseturntime);
+                    }
                 }
                 else d->roll = 0;
             }
