@@ -567,6 +567,11 @@ foundbatch:
     b->batched = idx;
 }
 
+static inline bool isbatchdynamic(modelbatch &b)
+{
+    return b.m->animated() || b.flags&MDL_FORCEDYNAMIC;
+}
+
 static inline void renderbatchedmodel(model *m, batchedmodel &b)
 {
     if(b.attached>=0) b.state.attached = &modelattached[b.attached];
@@ -670,7 +675,7 @@ int batcheddynamicmodels()
     loopv(batches)
     {
         modelbatch &b = batches[i];
-        if(!(b.flags&MDL_MAPMODEL) || !b.m->animated()) continue;
+        if(!(b.flags&MDL_MAPMODEL) || !isbatchdynamic(b)) continue;
         for(int j = b.batched; j >= 0;)
         {
             batchedmodel &bm = batchedmodels[j];
@@ -698,7 +703,7 @@ int batcheddynamicmodelbounds(int mask, vec &bbmin, vec &bbmax)
     loopv(batches)
     {
         modelbatch &b = batches[i];
-        if(!(b.flags&MDL_MAPMODEL) || !b.m->animated()) continue;
+        if(!(b.flags&MDL_MAPMODEL) || !isbatchdynamic(b)) continue;
         for(int j = b.batched; j >= 0;)
         {
             batchedmodel &bm = batchedmodels[j];
@@ -719,7 +724,7 @@ void rendershadowmodelbatches(bool dynmodel)
     loopv(batches)
     {
         modelbatch &b = batches[i];
-        if(!b.m->shadow || (!dynmodel && (!(b.flags&MDL_MAPMODEL) || b.m->animated()))) continue;
+        if(!b.m->shadow || (!dynmodel && (!(b.flags&MDL_MAPMODEL) || isbatchdynamic(b)))) continue;
         bool rendered = false;
         for(int j = b.batched; j >= 0;)
         {
@@ -741,7 +746,7 @@ void rendermapmodelbatches()
         modelbatch &b = batches[i];
         if(!(b.flags&MDL_MAPMODEL)) continue;
         b.m->startrender();
-        setaamask(b.m->animated());
+        setaamask(isbatchdynamic(b));
         for(int j = b.batched; j >= 0;)
         {
             batchedmodel &bm = batchedmodels[j];
@@ -897,7 +902,7 @@ void endmodelquery()
         int j = b.batched;
         if(j < modelquerymodels) continue;
         b.m->startrender();
-        setaamask(!(b.flags&MDL_MAPMODEL) || b.m->animated());
+        setaamask(!(b.flags&MDL_MAPMODEL) || isbatchdynamic(b));
         do
         {
             batchedmodel &bm = batchedmodels[j];
