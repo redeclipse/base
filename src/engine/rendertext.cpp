@@ -318,6 +318,7 @@ COLOURVAR(chartreuse, 0xB0FF00);
 
 static void text_color(char c, bvec4 *stack, int size, int &sp, bvec4 &color, int r, int g, int b, int a, int flags)
 {
+    bvec4 oldcolor = color;
     int alpha = stack[sp].a;
     switch(c)
     {
@@ -351,8 +352,11 @@ static void text_color(char c, bvec4 *stack, int size, int &sp, bvec4 &color, in
         }
         default: color = stack[sp]; break; // everything else
     }
-    xtraverts += gle::end();
-    gle::color(color);
+    if(color != oldcolor)
+    {
+        xtraverts += gle::end();
+        gle::color(color);
+    }
 }
 
 static const char *gettexvar(const char *var)
@@ -924,18 +928,32 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
         draw_char(tex, '_', left+cx, top+cy, scale);
         xtraverts += gle::end();
     }
-    hudshader->set();
     if(wantfontpass)
     {
         curfontpass = 1;
+        fade = a;
+        usecolor = true;
+        hasfade = false;
+        if(fade < 0) { usecolor = false; fade = -a; }
+        colorpos = 1;
+        ly = 0;
+        left = rleft;
+        top = rtop;
+        cx = -FONTW;
+        cy = 0;
+        color = TVECX(r, g, b, fade);
+        loopi(16) colorstack[i] = color;
+        hudshader->set();
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         gle::color(color);
         gle::defvertex(textmatrix ? 3 : 2);
         gle::deftexcoord0();
         gle::begin(GL_QUADS);
         TEXTSKELETON
-        TEXTEND(cursor)
+        //TEXTEND(cursor)
         xtraverts += gle::end();
+        (textshader ? textshader : hudtextshader)->set();
+        LOCALPARAMF(textparams, curfont->bordermin, curfont->bordermax, curfont->outlinemin, curfont->outlinemax);
         wantfontpass = false;
     }
     curfontpass = 0;
