@@ -2744,7 +2744,7 @@ namespace UI
                 case 1:     a |= TEXT_RIGHT_JUSTIFY; left += tw*k; break;
                 case 2:     a |= TEXT_NO_INDENT|TEXT_RIGHT_JUSTIFY; left += tw*k; break;
             }
-            if(rescale != 1) top += (((th*drawscale())-(th*k))*0.5f)/k;
+            //if(rescale != 1) top += (((th*drawscale())-(th*k))*0.5f)/k;
             if(growth < 0) top += th-(th/(0-growth));
             if(rotate == 1 || rotate == 2) left += tw;
             if(rotate == 2 || rotate == 3) top += th;
@@ -2828,7 +2828,7 @@ namespace UI
             }
             if(growth != 1) th *= growth > 0 ? growth : 0-growth;
             w = max(w, tw*k*rescale);
-            h = max(h, th*k);
+            h = max(h, th*k*rescale);
         }
     };
 

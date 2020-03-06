@@ -167,7 +167,6 @@ int cmenuhit()
 
 void renderaction(int idx, int size, Texture *t, char code, const char *name, bool hit)
 {
-    pushfont(!idx || hit ? "super" : "default");
     int s = compassdir[idx].x && compassdir[idx].y ? size*2/3 : size,
         x = hudwidth/2+(s*compassdir[idx].x), y = hudheight/2+(s*compassdir[idx].y)-(((0-compassdir[idx].y)+1)*FONTH),
         r = 255, g = hit && idx ? 0 : 255, b = hit && idx ? 0 : 255, f = hit || !idx ? 255 : 128;
@@ -179,10 +178,7 @@ void renderaction(int idx, int size, Texture *t, char code, const char *name, bo
         else drawsized(hudwidth/2-size*3/8, hudheight/2-size*3/8, size*3/4);
     }
     if(code) y += draw_textf("\f{%s}", x, y, 0, 0, r, g, b, int((idx ? 255 : f)*compassblend), compassdir[idx].align, -1, -1, 1, getkeyname(code));
-    popfont();
-    pushfont(!idx || hit ? "emphasis" : "reduced");
     draw_textf("%s", x, y, 0, 0, r, g, b, int(f*compassblend), compassdir[idx].align, -1, -1, 1, name);
-    popfont();
 }
 
 void rendercmenu()
@@ -198,7 +194,6 @@ void rendercmenu()
         renderaction(i+1, size, t, curcompass->actions[i].code, curcompass->actions[i].name, hit == i);
     if(curcompass->actions.length() > 8)
     {
-        pushfont("reduced");
         int x = hudwidth/2, y = hudheight/2+size+FONTH*4, maxy = hudheight-FONTH*2;
         loopi(curcompass->actions.length()-8)
         {
@@ -206,7 +201,6 @@ void rendercmenu()
             y += draw_textf("\f{%s} %s", x, y, 0, 0, -1, -1, -1, int(192*compassblend), TEXT_CENTERED, -1, -1, 1, getkeyname(c.code), c.name);
             if(y >= maxy) break;
         }
-        popfont();
     }
 }
 

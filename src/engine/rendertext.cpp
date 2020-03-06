@@ -20,9 +20,10 @@ static int fontdeftex = 0;
 
 vector<font *> fontstack;
 font *curfont = NULL;
-int curfonttex = 0;
+int curfonttex = 0, curfontpass = 0;
+bool wantfontpass = false;
 
-void newfont(char *name, char *tex, int *defaultw, int *defaulth)
+void newfont(char *name, char *tex, int *defaultw, int *defaulth, float *scale)
 {
     font *f = &fonts[name];
     if(!f->name) f->name = newstring(name);
@@ -32,10 +33,31 @@ void newfont(char *name, char *tex, int *defaultw, int *defaulth)
 
     f->charoffset = '!';
     f->mw = f->maxw = f->defaultw = *defaultw;
-    f->mh = f->maxh = f->defaulth = f->scale = *defaulth;
+    f->mh = f->maxh = f->defaulth = *defaulth;
+    f->scale = *scale > 0 ? *scale : f->defaulth;
+    f->bordermin = 0.49f;
+    f->bordermax = 0.5f;
+    f->outlinemin = -1;
+    f->outlinemax = 0;
 
     fontdef = f;
     fontdeftex = 0;
+}
+
+void fontborder(float *bordermin, float *bordermax)
+{
+    if(!fontdef) return;
+
+    fontdef->bordermin = *bordermin;
+    fontdef->bordermax = max(*bordermax, *bordermin+0.01f);
+}
+
+void fontoutline(float *outlinemin, float *outlinemax)
+{
+    if(!fontdef) return;
+
+    fontdef->outlinemin = min(*outlinemin, *outlinemax-0.01f);
+    fontdef->outlinemax = *outlinemax;
 }
 
 void fontoffset(char *c)
@@ -45,7 +67,7 @@ void fontoffset(char *c)
     fontdef->charoffset = c[0];
 }
 
-void fontscale(int *scale)
+void fontscale(float *scale)
 {
     if(!fontdef) return;
 
@@ -91,9 +113,11 @@ void fontskip(int *n)
     }
 }
 
-COMMANDN(0, font, newfont, "ssii");
+COMMANDN(0, font, newfont, "ssiii");
+COMMAND(0, fontborder, "ff");
+COMMAND(0, fontoutline, "ff");
 COMMAND(0, fontoffset, "s");
-COMMAND(0, fontscale, "i");
+COMMAND(0, fontscale, "f");
 COMMAND(0, fonttex, "s");
 COMMAND(0, fontchar, "fffffff");
 COMMAND(0, fontskip, "i");
@@ -103,7 +127,7 @@ font *loadfont(const char *name)
     font *f = fonts.access(name);
     if(!f)
     {
-        defformatstring(n, "config/fonts/%s.cfg", name);
+        defformatstring(n, "fonts/%s.cfg", name);
         if(execfile(n, false)) f = fonts.access(name);
     }
     return f;
@@ -125,6 +149,10 @@ void fontalias(const char *dst, const char *src)
     d->mw = s->mw;
     d->maxh = s->maxh;
     d->mh = s->mh;
+    d->bordermin = s->bordermin;
+    d->bordermax = s->bordermax;
+    d->outlinemin = s->outlinemin;
+    d->outlinemax = s->outlinemax;
 
     fontdef = d;
     fontdeftex = d->texs.length()-1;
@@ -226,37 +254,39 @@ const matrix4x3 *textmatrix = NULL;
 static float draw_char(Texture *&tex, int c, float x, float y, float scale)
 {
     font::charinfo &info = curfont->chars[c-curfont->charoffset];
-    if(tex != curfont->texs[info.tex])
+    if(!curfontpass)
     {
-        xtraverts += gle::end();
-        tex = curfont->texs[info.tex];
-        glBindTexture(GL_TEXTURE_2D, tex->id);
-    }
+        if(tex != curfont->texs[info.tex])
+        {
+            xtraverts += gle::end();
+            tex = curfont->texs[info.tex];
+            glBindTexture(GL_TEXTURE_2D, tex->id);
+        }
 
-    float x1 = x + scale*info.offsetx,
-          y1 = y + scale*info.offsety,
-          x2 = x + scale*(info.offsetx + info.w),
-          y2 = y + scale*(info.offsety + info.h),
-          tx1 = info.x / float(tex->xs),
-          ty1 = info.y / float(tex->ys),
-          tx2 = (info.x + info.w) / float(tex->xs),
-          ty2 = (info.y + info.h) / float(tex->ys);
+        float x1 = x + scale*info.offsetx,
+            y1 = y + scale*info.offsety,
+            x2 = x + scale*(info.offsetx + info.w),
+            y2 = y + scale*(info.offsety + info.h),
+            tx1 = info.x / float(tex->xs),
+            ty1 = info.y / float(tex->ys),
+            tx2 = (info.x + info.w) / float(tex->xs),
+            ty2 = (info.y + info.h) / float(tex->ys);
 
-    if(textmatrix)
-    {
-        gle::attrib(textmatrix->transform(vec2(x1, y1))); gle::attribf(tx1, ty1);
-        gle::attrib(textmatrix->transform(vec2(x2, y1))); gle::attribf(tx2, ty1);
-        gle::attrib(textmatrix->transform(vec2(x2, y2))); gle::attribf(tx2, ty2);
-        gle::attrib(textmatrix->transform(vec2(x1, y2))); gle::attribf(tx1, ty2);
+        if(textmatrix)
+        {
+            gle::attrib(textmatrix->transform(vec2(x1, y1))); gle::attribf(tx1, ty1);
+            gle::attrib(textmatrix->transform(vec2(x2, y1))); gle::attribf(tx2, ty1);
+            gle::attrib(textmatrix->transform(vec2(x2, y2))); gle::attribf(tx2, ty2);
+            gle::attrib(textmatrix->transform(vec2(x1, y2))); gle::attribf(tx1, ty2);
+        }
+        else
+        {
+            gle::attribf(x1, y1); gle::attribf(tx1, ty1);
+            gle::attribf(x2, y1); gle::attribf(tx2, ty1);
+            gle::attribf(x2, y2); gle::attribf(tx2, ty2);
+            gle::attribf(x1, y2); gle::attribf(tx1, ty2);
+        }
     }
-    else
-    {
-        gle::attribf(x1, y1); gle::attribf(tx1, ty1);
-        gle::attribf(x2, y1); gle::attribf(tx2, ty1);
-        gle::attribf(x2, y2); gle::attribf(tx2, ty2);
-        gle::attribf(x1, y2); gle::attribf(tx1, ty2);
-    }
-
     return scale*info.advance;
 }
 
@@ -352,17 +382,21 @@ static float draw_icon(Texture *&tex, const char *name, float x, float y, float 
     if(!*file) return 0;
     Texture *t = textureload(file, 3, true, false);
     if(!t) return 0;
-    if(tex != t)
-    {
-        xtraverts += gle::end();
-        tex = t;
-        glBindTexture(GL_TEXTURE_2D, tex->id);
-    }
     float h = curfont->maxh*scale, w = (t->w*h)/float(t->h);
-    textvert(x,     y    ); gle::attribf(0, 0);
-    textvert(x + w, y    ); gle::attribf(1, 0);
-    textvert(x + w, y + h); gle::attribf(1, 1);
-    textvert(x,     y + h); gle::attribf(0, 1);
+    if(curfontpass)
+    {
+        if(tex != t)
+        {
+            xtraverts += gle::end();
+            tex = t;
+            glBindTexture(GL_TEXTURE_2D, tex->id);
+        }
+        textvert(x,     y    ); gle::attribf(0, 0);
+        textvert(x + w, y    ); gle::attribf(1, 0);
+        textvert(x + w, y + h); gle::attribf(1, 1);
+        textvert(x,     y + h); gle::attribf(0, 1);
+    }
+    else wantfontpass = true;
     return w;
 }
 
@@ -774,13 +808,16 @@ static float draw_key(Texture *&tex, const char *str, float sx, float sy, bvec4 
     {
         if(i && textkeyseps)
         {
-            if(tex != oldtex)
+            if(!curfontpass)
             {
-                xtraverts += gle::end();
-                tex = oldtex;
-                glBindTexture(GL_TEXTURE_2D, tex->id);
+                if(tex != oldtex)
+                {
+                    xtraverts += gle::end();
+                    tex = oldtex;
+                    glBindTexture(GL_TEXTURE_2D, tex->id);
+                }
+                draw_text(" or ", sx + width, sy, color.r, color.g, color.b, color.a, 0, -1, -1, 1);
             }
-            draw_text(" or ", sx + width, sy, color.r, color.g, color.b, color.a, 0, -1, -1, 1);
             width += text_widthf(" or ");
         }
         if(textkeyimages)
@@ -788,30 +825,38 @@ static float draw_key(Texture *&tex, const char *str, float sx, float sy, bvec4 
             textkey *t = findtextkey(list[i]);
             if(t && t->tex)
             {
-                if(tex != t->tex)
+                float w = (t->tex->w*h)/float(t->tex->h);
+                if(curfontpass)
                 {
-                    xtraverts += gle::end();
-                    tex = t->tex;
-                    glBindTexture(GL_TEXTURE_2D, tex->id);
+                    if(tex != t->tex)
+                    {
+                        xtraverts += gle::end();
+                        tex = t->tex;
+                        glBindTexture(GL_TEXTURE_2D, tex->id);
+                    }
+                    float oh = h-sh, oy = sy-oh*0.5f;
+                    textvert(sx + width,     oy    ); gle::attribf(0, 0);
+                    textvert(sx + width + w, oy    ); gle::attribf(1, 0);
+                    textvert(sx + width + w, oy + h); gle::attribf(1, 1);
+                    textvert(sx + width,     oy + h); gle::attribf(0, 1);
                 }
-                float w = (tex->w*h)/float(tex->h), oh = h-sh, oy = sy-oh*0.5f;
-                textvert(sx + width,     oy    ); gle::attribf(0, 0);
-                textvert(sx + width + w, oy    ); gle::attribf(1, 0);
-                textvert(sx + width + w, oy + h); gle::attribf(1, 1);
-                textvert(sx + width,     oy + h); gle::attribf(0, 1);
+                else wantfontpass = true;
                 width += w;
                 continue;
             }
             // fallback if not found
         }
-        if(tex != oldtex)
-        {
-            xtraverts += gle::end();
-            tex = oldtex;
-            glBindTexture(GL_TEXTURE_2D, tex->id);
-        }
         defformatkey(keystr, list[i]);
-        draw_text(keystr, sx + width, sy, color.r, color.g, color.b, color.a, 0, -1, -1, 1);
+        if(!curfontpass)
+        {
+            if(tex != oldtex)
+            {
+                xtraverts += gle::end();
+                tex = oldtex;
+                glBindTexture(GL_TEXTURE_2D, tex->id);
+            }
+            draw_text(keystr, sx + width, sy, color.r, color.g, color.b, color.a, 0, -1, -1, 1);
+        }
         width += text_widthf(keystr);
     }
     list.deletearrays();
@@ -861,6 +906,9 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
     loopi(16) colorstack[i] = color;
     Texture *tex = curfont->texs[0];
     (textshader ? textshader : hudtextshader)->set();
+    LOCALPARAMF(textparams, curfont->bordermin, curfont->bordermax, curfont->outlinemin, curfont->outlinemax);
+    wantfontpass = false;
+    curfontpass = 0;
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glBindTexture(GL_TEXTURE_2D, tex->id);
     gle::color(color);
@@ -876,6 +924,21 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
         draw_char(tex, '_', left+cx, top+cy, scale);
         xtraverts += gle::end();
     }
+    hudshader->set();
+    if(wantfontpass)
+    {
+        curfontpass = 1;
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        gle::color(color);
+        gle::defvertex(textmatrix ? 3 : 2);
+        gle::deftexcoord0();
+        gle::begin(GL_QUADS);
+        TEXTSKELETON
+        TEXTEND(cursor)
+        xtraverts += gle::end();
+        wantfontpass = false;
+    }
+    curfontpass = 0;
     #undef TEXTINDEX
     #undef TEXTWHITE
     #undef TEXTLINE

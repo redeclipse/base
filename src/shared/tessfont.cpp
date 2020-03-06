@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <limits.h>
+#include <math.h>
+#include <time.h>
 #include <zlib.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -13,8 +15,10 @@ typedef unsigned char uchar;
 typedef unsigned short ushort;
 typedef unsigned int uint;
 
-int imin(int a, int b) { return a < b ? a : b; }
-int imax(int a, int b) { return a > b ? a : b; }
+static inline int imin(int a, int b) { return a < b ? a : b; }
+static inline int imax(int a, int b) { return a > b ? a : b; }
+static inline int iclamp(int n, int l, int h) { return imax(l, imin(n, h)); }
+static inline float fclamp(float n, float l, float h) { return fmax(l, fmin(n, h)); }
 
 void fatal(const char *fmt, ...)
 {
@@ -79,10 +83,10 @@ void savepng(const char *filename, uchar *data, int w, int h, int bpp, int flip)
         case 2: ihdr.colortype = 4; break;
         case 3: ihdr.colortype = 2; break;
         case 4: ihdr.colortype = 6; break;
-        default: fatal("Cube2font: invalid PNG bpp"); return;
+        default: fatal("tessfont: invalid PNG bpp"); return;
     }
     f = fopen(filename, "wb");
-    if(!f) { fatal("Cube2font: could not write to %s", filename); return; }
+    if(!f) { fatal("tessfont: could not write to %s", filename); return; }
 
     fwrite(signature, 1, sizeof(signature), f);
 
@@ -153,7 +157,7 @@ cleanuperror:
 error:
     fclose(f);
 
-    fatal("Cube2font: failed saving PNG to %s", filename);
+    fatal("tessfont: failed saving PNG to %s", filename);
 }
 
 enum
@@ -243,7 +247,7 @@ uni1: *dst++ = '\0';
     return buf;
 }
 
-struct fontchar { int code, uni, tex, x, y, w, h, offx, offy, offset, advance; FT_BitmapGlyph color, alpha; };
+struct fontchar { int code, uni, tex, x, y, sdfradius, sdfpitch, sdfx, sdfy, sdfw, sdfh; float w, h, left, top, advance; FT_BitmapGlyph glyph; uchar *sdf; };
 
 const char *texdir = "";
 
@@ -261,62 +265,267 @@ const char *texname(const char *name, int texnum)
     return file;
 }
 
+static int sdist;
+static inline void searchdist(int x, int y, int cx, int cy)
+{
+    int dx = cx - x, dy = cy - y, dist = dx*dx + dy*dy;
+    if(dist < sdist) sdist = dist;
+}
+
+static int sx1, ex1;
+static inline int search1(int x, int y, int w, int radius, int cy, uchar *src)
+{
+    int cx = imin(ex1, x)-1;
+    if(cx >= sx1)
+    {
+        uchar *bsrc = &src[cx>>3];
+        int bx = cx&~7, bits = *bsrc;
+        if(bits==0xFF) cx = bx-1;
+        else
+        {
+            bits >>= 7-(cx&7);
+            if(bx <= sx1)
+            {
+                for(; cx >= sx1; cx--, bits >>= 1) if(!(bits&1)) { sx1 = cx+1; searchdist(x, y, cx, cy); goto foundbelow1; }
+                goto foundbelow1;
+            }
+            else for(; cx >= bx; cx--, bits >>= 1) if(!(bits&1)) { sx1 = cx+1; searchdist(x, y, cx, cy); goto foundbelow1; }
+        }
+        while(cx >= sx1)
+        {
+            bits = *--bsrc;
+            if(bits==0xFF) cx -= 8;
+            else if((bx = cx - 7) <= sx1)
+            {
+                for(; cx >= sx1; cx--, bits >>= 1) if(!(bits&1)) { sx1 = cx+1; searchdist(x, y, cx, cy); goto foundbelow1; }
+                goto foundbelow1;
+            }
+            else for(; cx >= bx; cx--, bits >>= 1) if(!(bits&1)) { sx1 = cx+1; searchdist(x, y, cx, cy); goto foundbelow1; }
+
+        }
+    }
+foundbelow1:
+    cx = imax(sx1, x);
+    if(cx < ex1)
+    {
+        uchar *bsrc = &src[cx>>3];
+        int bx = (cx&~7) + 8, bits = *bsrc;
+        if(bits==0xFF) cx = bx;
+        else
+        {
+            bits <<= cx&7;
+            if(bx >= ex1)
+            {
+                for(; cx < ex1; cx++, bits <<= 1) if(!(bits&0x80)) { ex1 = cx-1; searchdist(x, y, cx, cy); goto foundabove1; }
+                goto foundabove1;
+            }
+            else for(; cx < bx; cx++, bits <<= 1) if(!(bits&0x80)) { ex1 = cx-1; searchdist(x, y, cx, cy); goto foundabove1; }
+        }
+        while(cx < ex1)
+        {
+            bits = *++bsrc;
+            if(bits==0xFF) cx += 8;
+            else if((bx = cx + 8) >= ex1)
+            {
+                for(; cx < ex1; cx++, bits <<= 1) if(!(bits&0x80)) { ex1 = cx-1; searchdist(x, y, cx, cy); goto foundabove1; }
+                goto foundabove1;
+            }
+            else for(; cx < bx; cx++, bits <<= 1) if(!(bits&0x80)) { ex1 = cx-1; searchdist(x, y, cx, cy); goto foundabove1; }
+        }
+    }
+foundabove1:
+    if(x - radius < 0) searchdist(x, y, -1, cy);
+    if(x + radius > w) searchdist(x, y, w, cy);
+    return sx1 < ex1;
+}
+
+static int sx0, ex0;
+static inline int search0(int x, int y, int w, int radius, int cy, uchar *src)
+{
+    int cx = imin(ex0, x)-1;
+    if(cx >= sx0)
+    {
+        uchar *bsrc = &src[cx>>3];
+        int bx = cx&~7, bits = *bsrc;
+        if(!bits) cx = bx-1;
+        else
+        {
+            bits >>= 7-(cx&7);
+            if(bx <= sx0)
+            {
+                for(; cx >= sx0; cx--, bits >>= 1) if(bits&1) { sx0 = cx+1; searchdist(x, y, cx, cy); goto foundbelow0; }
+                goto foundbelow0;
+            }
+            else for(; cx >= bx; cx--, bits >>= 1) if(bits&1) { sx0 = cx+1; searchdist(x, y, cx, cy); goto foundbelow0; }
+        }
+        while(cx >= sx0)
+        {
+            bits = *--bsrc;
+            if(!bits) cx -= 8;
+            else if((bx = cx - 7) <= sx0)
+            {
+                for(; cx >= sx0; cx--, bits >>= 1) if(bits&1) { sx0 = cx+1; searchdist(x, y, cx, cy); goto foundbelow0; }
+                goto foundbelow0;
+            }
+            else for(; cx >= bx; cx--, bits >>= 1) if(bits&1) { sx0 = cx+1; searchdist(x, y, cx, cy); goto foundbelow0; }
+        }
+    }
+foundbelow0:
+    cx = imax(sx0, x);
+    if(cx < ex0)
+    {
+        uchar *bsrc = &src[cx>>3];
+        int bx = (cx&~7) + 8, bits = *bsrc;
+        if(!bits) cx = bx;
+        else
+        {
+            bits <<= cx&7;
+            if(bx >= ex0)
+            {
+                for(; cx < ex0; cx++, bits <<= 1) if(bits&0x80) { ex0 = cx-1; searchdist(x, y, cx, cy); goto foundabove0; }
+                goto foundabove0;
+            }
+            else for(; cx < bx; cx++, bits <<= 1) if(bits&0x80) { ex0 = cx-1; searchdist(x, y, cx, cy); goto foundabove0; }
+        }
+        while(cx < ex0)
+        {
+            bits = *++bsrc;
+            if(!bits) cx += 8;
+            else if((bx = cx + 8) >= ex0)
+            {
+                for(; cx < ex0; cx++, bits <<= 1) if(bits&0x80) { ex0 = cx-1; searchdist(x, y, cx, cy); goto foundabove0; }
+                goto foundabove0;
+            }
+            else for(; cx < bx; cx++, bits <<= 1) if(bits&0x80) { ex0 = cx-1; searchdist(x, y, cx, cy); goto foundabove0; }
+        }
+    }
+foundabove0:
+    return sx0 < ex0;
+}
+
+#define SUPERSAMPLE_MIN 1
+#define SUPERSAMPLE_MAX 32
+static int supersample = SUPERSAMPLE_MIN;
+
+void gensdf(struct fontchar *c)
+{
+    int w = c->glyph->bitmap.width, h = c->glyph->bitmap.rows, radius = c->sdfradius*supersample;
+    int dx, dy, dw = (w + 2*radius + supersample-1)/supersample, dh = (h + 2*radius + supersample-1)/supersample;
+    int x, y, x1 = INT_MAX, y1 = INT_MAX, x2 = INT_MIN, y2 = INT_MIN;
+    uchar *dst = (uchar *)malloc(dw*dh), *src;
+    if(!dst) fatal("tessfont: failed allocating signed distance field");
+    c->sdfpitch = dw;
+    c->sdf = dst;
+    for(dy = 0; dy < dh; dy++)
+    for(dx = 0; dx < dw; dx++)
+    {
+        double total = 0;
+        for(y = dy*supersample - radius; y < (dy+1)*supersample - radius; y++)
+        for(x = dx*supersample - radius; x < (dx+1)*supersample - radius; x++)
+        {
+            int sx = imax(x - radius, 0), sy = imax(y - radius, 0), ex = imin(x + radius, w), ey = imin(y + radius, h), cy, val = 0;
+            if(y >= 0 && y < h && x >= 0 && x < w)
+            {
+                uchar *center = (uchar *)c->glyph->bitmap.buffer + y*c->glyph->bitmap.pitch;
+                val = (center[x>>3]<<(x&7))&0x80;
+            }
+            sdist = INT_MAX;
+            if(val)
+            {
+                for(cy = imin(ey, y)-1, sx1 = sx, ex1 = ex, src = (uchar *)c->glyph->bitmap.buffer + cy*c->glyph->bitmap.pitch;
+                    cy >= sy && search1(x, y, w, radius, cy, src);
+                    cy--, src -= c->glyph->bitmap.pitch);
+                for(cy = imax(sy, y), sx1 = sx, ex1 = ex, src = (uchar *)c->glyph->bitmap.buffer + cy*c->glyph->bitmap.pitch;
+                    cy < ey && search1(x, y, w, radius, cy, src);
+                    cy++, src += c->glyph->bitmap.pitch);
+                if(y - radius < 0) searchdist(x, y, x, -1);
+                if(y + radius > h) searchdist(x, y, x, h);
+            }
+            else
+            {
+                for(cy = imin(ey, y)-1, sx0 = sx, ex0 = ex, src = (uchar *)c->glyph->bitmap.buffer + cy*c->glyph->bitmap.pitch;
+                    cy >= sy && search0(x, y, w, radius, cy, src);
+                    cy--, src -= c->glyph->bitmap.pitch);
+                for(cy = imax(sy, y), sx0 = sx, ex0 = ex, src = (uchar *)c->glyph->bitmap.buffer + cy*c->glyph->bitmap.pitch;
+                    cy < ey && search0(x, y, w, radius, cy, src);
+                    cy++, src += c->glyph->bitmap.pitch);
+            }
+            if(val) total += sqrt(sdist);
+            else total -= sqrt(sdist);
+        }
+        *dst = (uchar)iclamp((int)round(127.5 + (127.5/(supersample*supersample))*total/radius), 0, 255);
+        if(*dst)
+        {
+            x1 = imin(x1, dx);
+            y1 = imin(y1, dy);
+            x2 = imax(x2, dx);
+            y2 = imax(y2, dy);
+        }
+        dst++;
+    }
+    if(x1 <= x2 && y1 <= y2)
+    {
+        c->sdfx = x1;
+        c->sdfy = y1;
+        c->sdfw = x2 - x1 + 1;
+        c->sdfh = y2 - y1 + 1;
+    }
+}
+
 void writetexs(const char *name, struct fontchar *chars, int numchars, int numtexs, int tw, int th)
 {
     int tex;
-    uchar *pixels = (uchar *)malloc(tw*th*2);
-    if(!pixels) fatal("Cube2font: failed allocating textures");
+    uchar *pixels = (uchar *)malloc(tw*th);
+    if(!pixels) fatal("tessfont: failed allocating textures");
     for(tex = 0; tex < numtexs; tex++)
     {
         const char *file = texfilename(name, tex);
         int texchars = 0, i;
         uchar *dst, *src;
-        memset(pixels, 0, tw*th*2);
+        memset(pixels, 0, tw*th);
         for(i = 0; i < numchars; i++)
         {
             struct fontchar *c = &chars[i];
-            uint x, y;
+            int y;
             if(c->tex != tex) continue;
             texchars++;
-            dst = &pixels[2*((c->y + c->offy - c->color->top)*tw + c->x + c->color->left - c->offx)];
-            src = (uchar *)c->color->bitmap.buffer;
-            for(y = 0; y < c->color->bitmap.rows; y++)
+            dst = &pixels[c->y*tw + c->x];
+            src = c->sdf + c->sdfy*c->sdfpitch + c->sdfx;
+            for(y = 0; y < c->sdfh; y++)
             {
-                for(x = 0; x < c->color->bitmap.width; x++)
-                    dst[2*x] = src[x];
-                src += c->color->bitmap.pitch;
-                dst += 2*tw;
-            }
-            dst = &pixels[2*((c->y + c->offy - c->alpha->top)*tw + c->x + c->alpha->left - c->offx)];
-            src = (uchar *)c->alpha->bitmap.buffer;
-            for(y = 0; y < c->alpha->bitmap.rows; y++)
-            {
-                for(x = 0; x < c->alpha->bitmap.width; x++)
-                    dst[2*x+1] = src[x];
-                src += c->alpha->bitmap.pitch;
-                dst += 2*tw;
+                memcpy(dst, src, c->sdfw);
+                dst += tw;
+                src += c->sdfpitch;
             }
         }
-        printf("cube2font: writing %d chars to %s\n", texchars, file);
-        savepng(file, pixels, tw, th, 2, 0);
+        printf("tessfont: writing %d chars to %s\n", texchars, file);
+        savepng(file, pixels, tw, th, 1, 0);
    }
    free(pixels);
 }
 
-void writecfg(const char *name, struct fontchar *chars, int numchars, int x1, int y1, int x2, int y2, int sw, int sh, int argc, char **argv)
+static float offsetx = 0, offsety = 0, border = 0, border2 = 0, outline = 0, outline2 = 0;
+static int scale = 0;
+
+void writecfg(const char *name, struct fontchar *chars, int numchars, float x1, float y1, float x2, float y2, int sw, int sh, int argc, char **argv)
 {
     FILE *f;
     char file[256];
     int i, lastcode = 0, lasttex = 0;
     snprintf(file, sizeof(file), "%s.cfg", name);
     f = fopen(file, "w");
-    if(!f) fatal("Cube2font: failed writing %s", file);
-    printf("cube2font: writing %d chars to %s\n", numchars, file);
+    if(!f) fatal("tessfont: failed writing %s", file);
+    printf("tessfont: writing %d chars to %s\n", numchars, file);
     fprintf(f, "//");
     for(i = 1; i < argc; i++)
         fprintf(f, " %s", argv[i]);
     fprintf(f, "\n");
     fprintf(f, "font \"%s\" \"%s\" %d %d\n", name, texname(name, 0), sw, sh);
+    if(scale > 0) fprintf(f, "fontscale %d\n", scale);
+    if(border2) fprintf(f, "fontborder %g %g\n", border, border2);
+    else if(border) fprintf(f, "fontborder %g\n", border);
+    if(outline2) fprintf(f, "fontoutline %g %g\n", outline, outline2);
+    else if(outline) fprintf(f, "fontoutline %g\n", outline);
     for(i = 0; i < numchars; i++)
     {
         struct fontchar *c = &chars[i];
@@ -338,10 +547,11 @@ void writecfg(const char *name, struct fontchar *chars, int numchars, int x1, in
             fprintf(f, "\nfonttex \"%s\"\n", texname(name, c->tex));
             lasttex = c->tex;
         }
+        float offx = c->sdfx-c->sdfradius + c->left + offsetx, offy = c->sdfy-c->sdfradius + y2-c->top + offsety;
         if(c->code != c->uni)
-            fprintf(f, "fontchar %d %d %d %d %d %d %d // %s (%d -> 0x%X)\n", c->x, c->y, c->w, c->h, c->offx+c->offset, y2-c->offy, c->advance, encodeutf8(c->uni), c->code, c->uni);
+            fprintf(f, "fontchar %d %d %d %d %g %g %g // %s (%d -> 0x%X)\n", c->x, c->y, c->sdfw, c->sdfh, offx, offy, c->advance, encodeutf8(c->uni), c->code, c->uni);
         else
-            fprintf(f, "fontchar %d %d %d %d %d %d %d // %s (%d)\n", c->x, c->y, c->w, c->h, c->offx+c->offset, y2-c->offy, c->advance, encodeutf8(c->uni), c->code);
+            fprintf(f, "fontchar %d %d %d %d %g %g %g // %s (%d)\n", c->x, c->y, c->sdfw, c->sdfh, offx, offy, c->advance, encodeutf8(c->uni), c->code);
         lastcode++;
     }
     fclose(f);
@@ -365,16 +575,16 @@ int sortchars(const void *x, const void *y)
     int xg = groupchar(xc->uni), yg = groupchar(yc->uni);
     if(xg < yg) return -1;
     if(xg > yg) return 1;
-    if(xc->h != yc->h) return yc->h - xc->h;
-    if(xc->w != yc->w) return yc->w - xc->w;
+    if(xc->sdfh != yc->sdfh) return yc->sdfh - xc->sdfh;
+    if(xc->sdfw != yc->sdfw) return yc->sdfw - xc->sdfw;
     return yc->uni - xc->uni;
 }
 
 int scorechar(struct fontchar *f, int pad, int tw, int th, int rw, int rh, int ry)
 {
     int score = 0;
-    if(rw + f->w > tw) { ry += rh + pad; score = 1; }
-    if(ry + f->h > th) score = 2;
+    if(rw + f->sdfw > tw) { ry += rh + pad; score = 1; }
+    if(ry + f->sdfh > th) score = 2;
     return score;
 }
 
@@ -382,66 +592,72 @@ int main(int argc, char **argv)
 {
     FT_Library l;
     FT_Face f;
-    FT_Stroker s, s2;
-    int i, pad, offset, advance, w, h, tw, th, c, trial = -2, rw = 0, rh = 0, ry = 0, x1 = INT_MAX, x2 = INT_MIN, y1 = INT_MAX, y2 = INT_MIN, w2 = 0, h2 = 0, sw = 0, sh = 0;
-    float outborder = 0, inborder = 0;
+    int i, radius, pad, w, h, tw, th, c, numgen = 0, trial = -2, rw = 0, rh = 0, ry = 0, sw = 0, sh = 0;
+    float advance, x1 = INT_MAX, x2 = INT_MIN, y1 = INT_MAX, y2 = INT_MIN, w2 = 0, h2 = 0;
+    time_t starttime, endtime;
     struct fontchar chars[256];
     struct fontchar *order[256];
     int numchars = 0, numtex = 0;
-    if(argc < 11)
-        fatal("Usage: cube2font infile outfile outborder[:inborder] pad offset advance charwidth charheight texwidth texheight [spacewidth spaceheight texdir]");
-    sscanf(argv[3], "%f:%f", &outborder, &inborder);
-    pad = atoi(argv[4]);
-    offset = atoi(argv[5]);
-    advance = atoi(argv[6]);
-    w = atoi(argv[7]);
-    h = atoi(argv[8]);
-    tw = atoi(argv[9]);
-    th = atoi(argv[10]);
-    if(argc > 11) sw = atoi(argv[11]);
-    if(argc > 12) sh = atoi(argv[12]);
-    if(argc > 13) texdir = argv[13];
+    if(argc < 13)
+        fatal("Usage: tessfont infile outfile supersample border[:border2[:outline:outline2]] radius pad offsetx[:offsety] advance charwidth charheight texwidth texheight [spacewidth spaceheight scale texdir]");
+    supersample = iclamp(atoi(argv[3]), SUPERSAMPLE_MIN, SUPERSAMPLE_MAX);
+    sscanf(argv[4], "%f:%f:%f:%f", &border, &border2, &outline, &outline2);
+    radius = atoi(argv[5]);
+    pad = atoi(argv[6]);
+    sscanf(argv[7], "%f:%f", &offsetx, &offsety);
+    advance = atof(argv[8]);
+    w = atoi(argv[9]);
+    h = atoi(argv[10]);
+    tw = atoi(argv[11]);
+    th = atoi(argv[12]);
+    if(argc > 13) sw = atoi(argv[13]);
+    if(argc > 14) sh = atoi(argv[14]);
+    if(argc > 15) scale = atoi(argv[15]);
+    if(argc > 16) texdir = argv[16];
     if(FT_Init_FreeType(&l))
-        fatal("Cube2font: failed initing freetype");
+        fatal("tessfont: failed initing freetype");
     if(FT_New_Face(l, argv[1], 0, &f) ||
        FT_Set_Charmap(f, f->charmaps[0]) ||
-       FT_Set_Pixel_Sizes(f, w, h) ||
-       FT_Stroker_New(l, &s) ||
-       FT_Stroker_New(l, &s2))
-        fatal("Cube2font: failed loading font %s", argv[1]);
-    if(outborder > 0) FT_Stroker_Set(s, (FT_Fixed)(outborder * 64), FT_STROKER_LINECAP_ROUND, FT_STROKER_LINEJOIN_ROUND, 0);
-    if(inborder > 0) FT_Stroker_Set(s2, (FT_Fixed)(inborder * 64), FT_STROKER_LINECAP_ROUND, FT_STROKER_LINEJOIN_ROUND, 0);
+       FT_Set_Pixel_Sizes(f, w*supersample, h*supersample))
+        fatal("tessfont: failed loading font %s", argv[1]);
+    setbuf(stdout, NULL);
+    starttime = time(NULL);
     for(c = 0; c < 256; c++) if(iscubeprint(c))
     {
-        FT_Glyph p, p2;
-        FT_BitmapGlyph b, b2;
+        FT_Glyph p;
+        FT_BitmapGlyph b;
         struct fontchar *dst = &chars[numchars];
         dst->code = c;
         dst->uni = cube2uni(c);
-        if(FT_Load_Char(f, dst->uni, FT_LOAD_DEFAULT))
-            fatal("Cube2font: failed loading character %s", encodeutf8(dst->uni));
+        if(FT_Load_Char(f, dst->uni, FT_LOAD_TARGET_MONO))
+            fatal("tessfont: failed loading character %s", encodeutf8(dst->uni));
         FT_Get_Glyph(f->glyph, &p);
-        p2 = p;
-        if(outborder > 0) FT_Glyph_StrokeBorder(&p, s, 0, 0);
-        if(inborder > 0) FT_Glyph_StrokeBorder(&p2, s2, 1, 0);
-        FT_Glyph_To_Bitmap(&p, FT_RENDER_MODE_NORMAL, 0, 1);
-        if(inborder > 0 || outborder > 0) FT_Glyph_To_Bitmap(&p2, FT_RENDER_MODE_NORMAL, 0, 1);
-        else p2 = p;
+        FT_Glyph_To_Bitmap(&p, FT_RENDER_MODE_MONO, 0, 1);
         b = (FT_BitmapGlyph)p;
-        b2 = (FT_BitmapGlyph)p2;
         dst->tex = -1;
         dst->x = INT_MIN;
         dst->y = INT_MIN;
-        dst->offx = imin(b->left, b2->left);
-        dst->offy = imax(b->top, b2->top);
-        dst->offset = offset;
-        dst->advance = offset + ((p->advance.x+0xFFFF)>>16) + advance;
-        dst->w = imax(b->left + b->bitmap.width, b2->left + b2->bitmap.width) - dst->offx;
-        dst->h = dst->offy - imin(b->top - b->bitmap.rows, b2->top - b2->bitmap.rows);
-        dst->alpha = b;
-        dst->color = b2;
+        dst->w = b->bitmap.width/(float)supersample;
+        dst->h = b->bitmap.rows/(float)supersample;
+        dst->left = b->left/(float)supersample;
+        dst->top = b->top/(float)supersample;
+        dst->advance = offsetx + p->advance.x/(float)(supersample<<16) + advance;
+        dst->glyph = b;
+        dst->sdfradius = radius;
+        dst->sdf = NULL;
+        dst->sdfpitch = 0;
+        dst->sdfx = 0;
+        dst->sdfy = 0;
+        dst->sdfw = 0;
+        dst->sdfh = 0;
         order[numchars++] = dst;
+        if(!numgen) printf("tessfont: generating %d", dst->code);
+        else printf(" %d", dst->code);
+        numgen += dst->code >= 100 ? 4 : (dst->code >= 10 ? 3 : 2);
+        if(numgen > 50) { printf("\n"); numgen = 0; }
+        gensdf(dst);
     }
+    if(numgen) printf("\n");
     qsort(order, numchars, sizeof(order[0]), sortchars);
     for(i = 0; i < numchars;)
     {
@@ -462,26 +678,26 @@ int main(int argc, char **argv)
                     if(fit->tex >= 0 || fit->tex <= trial) continue;
                     if(fit->tex >= trial0 && groupchar(fit->uni) != g) break;
                     fitscore = scorechar(fit, pad, tw, th, fw, fh, fy);
-                    if(fitscore < dstscore || (fitscore == dstscore && fit->h > dst->h))
+                    if(fitscore < dstscore || (fitscore == dstscore && fit->sdfh > dst->sdfh))
                     {
                         dst = fit;
                         dstscore = fitscore;
                     }
                 }
-                if(fw + dst->w > tw)
+                if(fw + dst->sdfw > tw)
                 {
                     fy += fh + pad;
                     fw = fh = 0;
                 }
-                if(fy + dst->h > th)
+                if(fy + dst->sdfh > th)
                 {
                     fy = fw = fh = 0;
                     if(curscore > 0) break;
                 }
                 if(dst->tex >= trial+1 && dst->tex <= trial+2) { dst->tex = trial; reused++; }
                 else dst->tex = trial;
-                fw += dst->w + pad;
-                fh = imax(fh, dst->h);
+                fw += dst->sdfw + pad;
+                fh = imax(fh, dst->sdfh);
                 if(dst != order[j]) --j;
                 curscore++;
             }
@@ -498,19 +714,19 @@ int main(int argc, char **argv)
                 struct fontchar *fit = order[j];
                 if(fit->tex < trial || fit->tex > trial+2) continue;
                 fitscore = scorechar(fit, pad, tw, th, rw, rh, ry);
-                if(fitscore < dstscore || (fitscore == dstscore && fit->h > dst->h))
+                if(fitscore < dstscore || (fitscore == dstscore && fit->sdfh > dst->sdfh))
                 {
                     dst = fit;
                     dstscore = fitscore;
                 }
             }
             if(dst->tex < trial || dst->tex > trial+2) break;
-            if(rw + dst->w > tw)
+            if(rw + dst->sdfw > tw)
             {
                 ry += rh + pad;
                 rw = rh = 0;
             }
-            if(ry + dst->h > th)
+            if(ry + dst->sdfh > th)
             {
                 ry = rw = rh = 0;
                 numtex++;
@@ -518,39 +734,31 @@ int main(int argc, char **argv)
             dst->tex = numtex;
             dst->x = rw;
             dst->y = ry;
-            rw += dst->w + pad;
-            rh = imax(rh, dst->h);
-            y1 = imin(y1, dst->offy - dst->h);
-            y2 = imax(y2, dst->offy);
-            x1 = imin(x1, dst->offx);
-            x2 = imax(x2, dst->offx + dst->w);
-            w2 = imax(w2, dst->w);
-            h2 = imax(h2, dst->h);
+            rw += dst->sdfw + pad;
+            rh = imax(rh, dst->sdfh);
+            y1 = fmin(y1, dst->top - dst->h);
+            y2 = fmax(y2, dst->top);
+            x1 = fmin(x1, dst->left);
+            x2 = fmax(x2, dst->left + dst->w);
+            w2 = fmax(w2, dst->w);
+            h2 = fmax(h2, dst->h);
             if(dst != order[i]) --i;
         }
     }
     if(rh > 0) numtex++;
-#if 0
-    if(sw <= 0)
-    {
-        if(FT_Load_Char(f, ' ', FT_LOAD_DEFAULT))
-            fatal("Cube2font: failed loading space character");
-        sw = (f->glyph->advance.x+0x3F)>>6;
-    }
-#endif
-    if(sh <= 0) sh = y2 - y1;
+    if(sh <= 0) sh = (int)ceil(y2 - y1);
     if(sw <= 0) sw = sh/3;
+    endtime = time(NULL);
     writetexs(argv[2], chars, numchars, numtex, tw, th);
     writecfg(argv[2], chars, numchars, x1, y1, x2, y2, sw, sh, argc, argv);
     for(i = 0; i < numchars; i++)
     {
-        if(chars[i].alpha != chars[i].color) FT_Done_Glyph((FT_Glyph)chars[i].alpha);
-        FT_Done_Glyph((FT_Glyph)chars[i].color);
+        struct fontchar *c = &chars[i];
+        FT_Done_Glyph((FT_Glyph)c->glyph);
+        if(c->sdf) free(c->sdf);
     }
-    FT_Stroker_Done(s);
-    FT_Stroker_Done(s2);
     FT_Done_FreeType(l);
-    printf("cube2font: (%d, %d) .. (%d, %d) = (%d, %d) / (%d, %d), %d texs\n", x1, y1, x2, y2, x2 - x1, y2 - y1, w2, h2, numtex);
+    printf("tessfont: (%g, %g) .. (%g, %g) = (%g, %g) / (%g, %g), %d texs, %d secs\n", x1, y1, x2, y2, x2 - x1, y2 - y1, w2, h2, numtex, (int)(endtime - starttime));
     return EXIT_SUCCESS;
 }
 

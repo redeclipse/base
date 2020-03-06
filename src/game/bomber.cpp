@@ -215,7 +215,6 @@ namespace bomber
         if(game::focus->state != CS_ALIVE || hud::shownotices < 2) return;
         if(game::focus->lastbuff && hud::shownotices >= 3)
         {
-            pushfont("reduced");
             if(m_regen(game::gamemode, game::mutators) && bomberregenbuff && bomberregenextra)
             {
                 if(game::damageinteger)
@@ -223,7 +222,6 @@ namespace bomber
                 else ty += draw_textf("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield, +\fs\fy%1.f\fS regen", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, int(bomberbuffdamage*100), int(bomberbuffshield*100), bomberregenextra/game::damagedivisor);
             }
             else ty += draw_textf("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, int(bomberbuffdamage*100), int(bomberbuffshield*100));
-            popfont();
         }
         loopv(st.flags)
         {
@@ -234,23 +232,13 @@ namespace bomber
                 if(carrytime)
                 {
                     int delay = carrytime-(lastmillis-f.taketime);
-                    pushfont("default");
                     ty += draw_textf("Bomb explodes in \fs\fzgy%s\fS", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, timestr(delay));
-                    popfont();
                     if(m_bb_hold(game::gamemode, game::mutators))
-                    {
-                        pushfont("reduced");
                         ty += draw_textf("Killing enemies resets fuse timer", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED);
-                        popfont();
-                    }
                     if(delay <= carrytime/4) important = true;
                 }
                 if(game::focus == game::player1)
-                {
-                    pushfont(important ? "emphasis" : "reduced");
                     ty += draw_textf(important ? "\fs\fzuyPress \fs\fw\f{=affinity}\fS to throw the bomb\fS" : "Press \fs\fw\f{=affinity}\fS to throw the bomb", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED);
-                    popfont();
-                }
                 break;
             }
         }

@@ -2,10 +2,10 @@
 *.bin
 *.exe
 src/redeclipse_*
-src/cube2font_*
+src/tessfont_*
 src/genkey_*
 bin/**/redeclipse_*
-bin/**/cube2font_*
+bin/**/tessfont_*
 bin/**/genkey_*
 bin/redeclipse.app/Contents/MacOS/redeclipse_universal
 bin/x86/steam_appid.txt

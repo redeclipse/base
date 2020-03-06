@@ -262,11 +262,11 @@
 					<Variable name="WINDRES_TARGET" value="pe-i386" />
 				</Environment>
 			</Target>
-			<Target title="cube2font-x86">
-				<Option output="../bin/x86/cube2font.exe" prefix_auto="0" extension_auto="0" />
+			<Target title="tessfont-x86">
+				<Option output="../bin/x86/tessfont.exe" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="../" />
-				<Option object_output=".objs/cube2font-x86" />
-				<Option deps_output=".deps/cube2font-x86" />
+				<Option object_output=".objs/tessfont-x86" />
+				<Option deps_output=".deps/tessfont-x86" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Option use_console_runner="0" />
@@ -600,11 +600,11 @@
 					<Variable name="WINDRES_TARGET" value="pe-x86-64" />
 				</Environment>
 			</Target>
-			<Target title="cube2font-amd64">
-				<Option output="../bin/amd64/cube2font.exe" prefix_auto="0" extension_auto="0" />
+			<Target title="tessfont-amd64">
+				<Option output="../bin/amd64/tessfont.exe" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="../" />
-				<Option object_output=".objs/cube2font-amd64" />
-				<Option deps_output=".deps/cube2font-amd64" />
+				<Option object_output=".objs/tessfont-amd64" />
+				<Option deps_output=".deps/tessfont-amd64" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Option use_console_runner="0" />
@@ -688,9 +688,9 @@
 			<Add alias="ALL" targets="redeclipse-x86;redeclipse_server-x86;redeclipse_server-amd64;redeclipse-amd64;" />
 			<Add alias="ALL-amd64" targets="redeclipse_server-amd64;redeclipse-amd64;" />
 			<Add alias="ALL-x86" targets="redeclipse_server-x86;redeclipse-x86;" />
-			<Add alias="TOOLS" targets="genkey-x86;cube2font-x86;genkey-amd64;cube2font-amd64;" />
-			<Add alias="TOOLS-amd64" targets="genkey-amd64;cube2font-amd64;" />
-			<Add alias="TOOLS-x86" targets="genkey-x86;cube2font-x86;" />
+			<Add alias="TOOLS" targets="genkey-x86;tessfont-x86;genkey-amd64;tessfont-amd64;" />
+			<Add alias="TOOLS-amd64" targets="genkey-amd64;tessfont-amd64;" />
+			<Add alias="TOOLS-x86" targets="genkey-x86;tessfont-x86;" />
 		</VirtualTargets>
 		<Unit filename="dpiaware.manifest">
 			<Option target="redeclipse-x86" />
@@ -1685,10 +1685,10 @@
 			<Option target="redeclipse-amd64-dbg" />
 			<Option target="redeclipse-amd64-prof" />
 		</Unit>
-		<Unit filename="shared/cube2font.cpp">
+		<Unit filename="shared/tessfont.cpp">
 			<Option compilerVar="CC" />
-			<Option target="cube2font-x86" />
-			<Option target="cube2font-amd64" />
+			<Option target="tessfont-x86" />
+			<Option target="tessfont-amd64" />
 		</Unit>
 		<Unit filename="shared/discord_register.h">
 			<Option target="redeclipse-x86" />

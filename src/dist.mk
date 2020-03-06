@@ -71,8 +71,8 @@ dist-tar: ../$(tarname)
 	rm -rfv $@/Contents/Resources/bin/*/*.exe
 	rm -rfv $@/Contents/Resources/bin/*/genkey*linux*
 	rm -rfv $@/Contents/Resources/bin/*/genkey*bsd*
-	rm -rfv $@/Contents/Resources/bin/*/cube2font*linux*
-	rm -rfv $@/Contents/Resources/bin/*/cube2font*bsd*
+	rm -rfv $@/Contents/Resources/bin/*/tessfont*linux*
+	rm -rfv $@/Contents/Resources/bin/*/tessfont*bsd*
 
 ../$(tarname-mac): ../$(dirname-mac)
 	tar -cf $@ $<
@@ -91,8 +91,8 @@ dist-tar-combined: ../$(tarname-combined)
 	rm -rfv $@/bin/*/$(appname)*bsd*
 	rm -rfv $@/bin/*/genkey*linux*
 	rm -rfv $@/bin/*/genkey*bsd*
-	rm -rfv $@/bin/*/cube2font*linux*
-	rm -rfv $@/bin/*/cube2font*bsd*
+	rm -rfv $@/bin/*/tessfont*linux*
+	rm -rfv $@/bin/*/tessfont*bsd*
 	rm -rfv $@/bin/$(dirname-mac)/Contents/MacOS/$(appname)_universal
 
 distdir-win: ../$(dirname-win)
@@ -253,10 +253,10 @@ dist-clean: dist-mostlyclean
 	rm -fv ../$(tarname-combined)*
 	rm -fv ../$(exename)*
 
-../doc/cube2font.txt: ../doc/man/cube2font.1
-	scripts/cube2font-txt $< $@
+../doc/tessfont.txt: ../doc/man/tessfont.1
+	scripts/tessfont-txt $< $@
 
-cube2font-txt: ../doc/cube2font.txt
+tessfont-txt: ../doc/tessfont.txt
 
 ../doc/examples/servinit.cfg: ../config/usage.cfg install-server
 	scripts/servinit-defaults $@

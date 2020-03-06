@@ -245,7 +245,7 @@ SERVER_OBJS= \
 LIBENET= enet/libenet.a
 
 GENKEY_OBJS= shared/genkey.o shared/crypto-standalone.o
-CTFONT_OBJS= shared/cube2font.o
+CTFONT_OBJS= shared/tessfont.o
 
 all:
 
@@ -263,10 +263,10 @@ clean-server:
 clean-genkey:
 	@rm $(RMFLAGS) $(GENKEY_OBJS) genkey$(BIN_SUFFIX)
 
-clean-cube2font:
-	@rm $(RMFLAGS) $(CTFONT_OBJS) cube2font$(BIN_SUFFIX)
+clean-tessfont:
+	@rm $(RMFLAGS) $(CTFONT_OBJS) tessfont$(BIN_SUFFIX)
 
-clean: clean-enet clean-client clean-server clean-genkey clean-cube2font
+clean: clean-enet clean-client clean-server clean-genkey clean-tessfont
 
 %.h.gch: %.h
 	$(CXX) $(CXXFLAGS) -x c++-header -o $(subst .h.gch,.tmp.h.gch,$@) $(subst .h.gch,.h,$@)
@@ -314,13 +314,13 @@ genkey$(BIN_SUFFIX): $(GENKEY_OBJS)
 shared/genkey.o: shared/genkey.cpp
 	$(CXX) $(CXXFLAGS) $(SERVER_INCLUDES) -c -o shared/genkey.o shared/genkey.cpp
 
-cube2font: cube2font$(BIN_SUFFIX)
+tessfont: tessfont$(BIN_SUFFIX)
 
-cube2font$(BIN_SUFFIX): $(CTFONT_OBJS)
+tessfont$(BIN_SUFFIX): $(CTFONT_OBJS)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(CTFONT_OBJS) $(CTFONT_LIBS)
 
-shared/cube2font.o: shared/cube2font.cpp
-	$(CXX) $(CXXFLAGS) $(CTFONT_INCLUDES) -c -o shared/cube2font.o shared/cube2font.cpp
+shared/tessfont.o: shared/tessfont.cpp
+	$(CXX) $(CXXFLAGS) $(CTFONT_INCLUDES) -c -o shared/tessfont.o shared/tessfont.cpp
 
 $(INSTDIR)/%$(BIN_SUFFIX): %$(APPMODIFIER)$(BIN_SUFFIX)
 	$(MKDIR) $(INSTDIR)
@@ -336,7 +336,7 @@ ifneq (,$(STRIP))
 	$(STRIP) $@
 endif
 
-$(INSTDIR)/cube2font$(BIN_SUFFIX): cube2font$(BIN_SUFFIX)
+$(INSTDIR)/tessfont$(BIN_SUFFIX): tessfont$(BIN_SUFFIX)
 	$(MKDIR) $(INSTDIR)
 	$(CP) $< $@
 ifneq (,$(STRIP))
@@ -349,9 +349,9 @@ install-server: $(INSTDIR)/$(APPSERVER)$(BIN_SUFFIX)
 
 install-genkey: $(INSTDIR)/genkey$(BIN_SUFFIX)
 
-install-cube2font: $(INSTDIR)/cube2font$(BIN_SUFFIX)
+install-tessfont: $(INSTDIR)/tessfont$(BIN_SUFFIX)
 
-install: install-client install-server install-genkey install-cube2font
+install: install-client install-server install-genkey install-tessfont
 
 $(LIBENET):
 	$(MAKE) -C enet
@@ -361,7 +361,7 @@ depend:
 	makedepend -a -o-standalone.o -Y -I. -Ishared -Iengine -Igame -Isupport -DSTANDALONE $(subst -standalone.o,.cpp,$(SERVER_OBJS))
 	makedepend -a -o.h.gch -Y -I. -Ishared -Iengine -Igame -Isupport $(subst .h.gch,.h,$(CLIENT_PCH))
 
-all: client server genkey cube2font
+all: client server genkey tessfont
 
 include system-install.mk
 include dist.mk
