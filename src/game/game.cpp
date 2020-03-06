@@ -327,7 +327,7 @@ namespace game
     VAR(IDF_PERSIST, obitverbose, 0, 1, 1); // 0 = extremely simple, 1 = regular messages
     VAR(IDF_PERSIST, obitstyles, 0, 1, 1); // 0 = no obituary styles, 1 = show sprees/dominations/etc
 
-    VAR(IDF_PERSIST, damageinteger, 0, 1, 1);
+    VAR(IDF_PERSIST, damageinteger, 0, 0, 1);
     FVAR(IDF_PERSIST, damagedivisor, FVAR_NONZERO, 10, FVAR_MAX);
     FVAR(IDF_PERSIST, damagecritical, 0, 0.25f, 1);
     VAR(IDF_PERSIST, damagecriticalsound, 0, 1, 3);
