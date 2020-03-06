@@ -576,6 +576,7 @@ void getmapmodelstate(extentity &e, entmodelstate &mdl)
     if(e.attrs[10]) mdl.yaw += e.attrs[10]*lastmillis/1000.0f;
     if(e.attrs[11]) mdl.pitch += e.attrs[11]*lastmillis/1000.0f;
     if(e.attrs[12]) mdl.roll += e.attrs[12]*lastmillis/1000.0f;
+    if(e.attrs[10] || e.attrs[11] || e.attrs[12]) mdl.flags |= MDL_FORCEDYNAMIC;
     mdl.lodoffset = e.attrs[15];
     if(e.attrs[17] > 0) mdl.speed = 1/float(e.attrs[17]/100.f);
 }
