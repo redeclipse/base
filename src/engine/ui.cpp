@@ -2006,21 +2006,26 @@ namespace UI
         enum { CO_TL = 0, CO_TR, CO_TC, CO_BL, CO_BR, CO_BC, CO_ML, CO_MR, CO_MC, CO_MAX };
 
         Texture *tex;
-        bool alphatarget;
+        bool alphatarget, outline;
+        float shadow;
 
-        void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0)
+        void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0, bool outline_ = false, float shadow_ = 0.f)
         {
             Target::setup(minw_, minh_, color_, SOLID, VERTICAL);
             tex = tex_;
             alphatarget = alphatarget_;
+            outline = outline_;
+            shadow = shadow_;
         }
 
-        void setup(Texture *tex_, const Color &color_, const Color &color2_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0, int dir_ = VERTICAL)
+        void setup(Texture *tex_, const Color &color_, const Color &color2_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0, int dir_ = VERTICAL, bool outline_ = false, float shadow_ = 0.f)
         {
             Target::setup(minw_, minh_, color_, SOLID, dir_);
             colors.add(color2_); // gradient version
             tex = tex_;
             alphatarget = alphatarget_;
+            outline = outline_;
+            shadow = shadow_;
         }
 
         static const char *typestr() { return "#Image"; }
@@ -2048,7 +2053,8 @@ namespace UI
         {
             changedraw(CHANGE_COLOR | CHANGE_BLEND);
             if(type==MODULATE) modblend(); else resetblend();
-            int col = clamp(colstart, 0, colors.length()-1);
+            int col = clamp(colstart, -1, colors.length()-1);
+            Color c = col >= 0 ? colors[col] : Color(0, 0, 0, 255);
             if(forced || lastmode != mode)
             {
                 if(lastmode != GL_POINTS) gle::end();
@@ -2067,7 +2073,7 @@ namespace UI
                 glBindTexture(GL_TEXTURE_2D, tex->id);
                 goto changecolor;
             }
-            if(lastcolor != colors[col])
+            if(lastcolor != c)
             {
                 gle::end();
             changecolor:
@@ -2076,33 +2082,39 @@ namespace UI
                     case GL_TRIANGLE_STRIP:
                         lastcolor = Color(0, 0, 0, 0);
                     case GL_QUADS:
-                        lastcolor = colors[col];
-                        colors[col].init();
+                        lastcolor = c;
+                        c.init();
                         break;
                 }
             }
         }
 
-        bool drawmapped(float sx, float sy, vec2 coordmap[FC_MAX], vec2 tcoordmap[FC_MAX], int colstart = 0, int colcount = 0, bool forced = false)
+        bool drawmapped(float sx, float sy, vec2 coordmap[FC_MAX], vec2 tcoordmap[FC_MAX], int colstart = 0, int colcount = 0, bool forced = false, bool shading = false)
         {
             int cols = clamp(colcount ? colcount : colors.length()-colstart, min(colstart, colors.length()-1), colors.length());
-            if(cols >= 2)
+            if(!shading && outline)
+            {
+                changedraw(CHANGE_SHADER);
+                hudoutlineshader->set();
+                LOCALPARAMF(textparams, 0.15f, 0.35f, 0.35f, 0.55f);
+            }
+            if(!shading && cols >= 2)
             {
                 bindtex(GL_TRIANGLE_STRIP, colstart, forced);
                 float vr = 1/float(cols-1), vs = 0, vcx1 = 0, vcx2 = 0, vcy1 = 0, vcy2 = 0,
-                      vw1 = coordmap[FC_TR][0]-coordmap[FC_TL][0], vx1 = coordmap[FC_TL][0],
-                      vw2 = coordmap[FC_BR][0]-coordmap[FC_BL][0], vx2 = coordmap[FC_BL][0],
-                      vdw1 = coordmap[FC_BL][0]-coordmap[FC_TL][0], vdw2 = coordmap[FC_BR][0]-coordmap[FC_TR][0],
-                      vh1 = coordmap[FC_BL][1]-coordmap[FC_TL][1], vy1 = coordmap[FC_TL][1],
-                      vh2 = coordmap[FC_BR][1]-coordmap[FC_TR][1], vy2 = coordmap[FC_TR][1],
-                      vdh1 = coordmap[FC_TR][1]-coordmap[FC_TL][1], vdh2 = coordmap[FC_BR][1]-coordmap[FC_BL][1],
-                      tcx1 = 0, tcx2 = 0, tcy1 = 0, tcy2 = 0,
-                      tw1 = tcoordmap[FC_TR][0]-tcoordmap[FC_TL][0], tx1 = tcoordmap[FC_TL][0],
-                      tw2 = tcoordmap[FC_BR][0]-tcoordmap[FC_BL][0], tx2 = tcoordmap[FC_BL][0],
-                      tdw1 = tcoordmap[FC_BL][0]-tcoordmap[FC_TL][0], tdw2 = tcoordmap[FC_BR][0]-tcoordmap[FC_TR][0],
-                      th1 = tcoordmap[FC_BL][1]-tcoordmap[FC_TL][1], ty1 = tcoordmap[FC_TL][1],
-                      th2 = tcoordmap[FC_BR][1]-tcoordmap[FC_TR][1], ty2 = tcoordmap[FC_TR][1],
-                      tdh1 = tcoordmap[FC_TR][1]-tcoordmap[FC_TL][1], tdh2 = tcoordmap[FC_BR][1]-tcoordmap[FC_BL][1];
+                    vw1 = coordmap[FC_TR][0]-coordmap[FC_TL][0], vx1 = coordmap[FC_TL][0],
+                    vw2 = coordmap[FC_BR][0]-coordmap[FC_BL][0], vx2 = coordmap[FC_BL][0],
+                    vdw1 = coordmap[FC_BL][0]-coordmap[FC_TL][0], vdw2 = coordmap[FC_BR][0]-coordmap[FC_TR][0],
+                    vh1 = coordmap[FC_BL][1]-coordmap[FC_TL][1], vy1 = coordmap[FC_TL][1],
+                    vh2 = coordmap[FC_BR][1]-coordmap[FC_TR][1], vy2 = coordmap[FC_TR][1],
+                    vdh1 = coordmap[FC_TR][1]-coordmap[FC_TL][1], vdh2 = coordmap[FC_BR][1]-coordmap[FC_BL][1],
+                    tcx1 = 0, tcx2 = 0, tcy1 = 0, tcy2 = 0,
+                    tw1 = tcoordmap[FC_TR][0]-tcoordmap[FC_TL][0], tx1 = tcoordmap[FC_TL][0],
+                    tw2 = tcoordmap[FC_BR][0]-tcoordmap[FC_BL][0], tx2 = tcoordmap[FC_BL][0],
+                    tdw1 = tcoordmap[FC_BL][0]-tcoordmap[FC_TL][0], tdw2 = tcoordmap[FC_BR][0]-tcoordmap[FC_TR][0],
+                    th1 = tcoordmap[FC_BL][1]-tcoordmap[FC_TL][1], ty1 = tcoordmap[FC_TL][1],
+                    th2 = tcoordmap[FC_BR][1]-tcoordmap[FC_TR][1], ty2 = tcoordmap[FC_TR][1],
+                    tdh1 = tcoordmap[FC_TR][1]-tcoordmap[FC_TL][1], tdh2 = tcoordmap[FC_BR][1]-tcoordmap[FC_BL][1];
                 loopi(cols-1)
                 {
                     int color1 = i+colstart,
@@ -2162,13 +2174,19 @@ namespace UI
         {
             if(tex == notexture) { Object::draw(sx, sy); return; }
 
-            vec2 coordmap[FC_MAX], tcoordmap[FC_MAX];
-            loopi(FC_MAX) loopj(2)
+            loopk(shadow != 0 ? 2 : 1)
             {
-                coordmap[i][j] = getcoord(i, j)*(j ? h : w);
-                tcoordmap[i][j] = defcoords[i][j];
+                bool shading = shadow != 0 && !k;
+                float gx = sx+(shadow > 0 && !k ? shadow : 0), gy = sy+(shadow > 0 && !k ? shadow : 0),
+                      gw = max(w-(shadow != 0 ? float(fabs(shadow)) : 0.f), 0.f), gh = max(h-(shadow != 0 ? float(fabs(shadow)) : 0.f), 0.f);
+                vec2 coordmap[FC_MAX], tcoordmap[FC_MAX];
+                loopi(FC_MAX) loopj(2)
+                {
+                    coordmap[i][j] = getcoord(i, j)*(j ? gh : gw);
+                    tcoordmap[i][j] = defcoords[i][j];
+                }
+                drawmapped(gx, gy, coordmap, tcoordmap, shading ? -1 : 0, 0, false, shading);
             }
-            drawmapped(sx, sy, coordmap, tcoordmap);
 
             Object::draw(sx, sy);
         }
@@ -2191,14 +2209,16 @@ namespace UI
     UIIMGCMDS(, 3);
     UIIMGCMDS(clamped, 0x7000);
     UIARGB(Image, image, alphatarget);
+    UIARGB(Image, image, outline);
+    UIARG(Image, image, shadow, "f", float, FVAR_MIN, FVAR_MAX);
 
     struct CroppedImage : Image
     {
         float cropx, cropy, cropw, croph;
 
-        void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0, float cropx_ = 0, float cropy_ = 0, float cropw_ = 1, float croph_ = 1)
+        void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0, float cropx_ = 0, float cropy_ = 0, float cropw_ = 1, float croph_ = 1, bool outline_ = false, float shadow_ = 0.f)
         {
-            Image::setup(tex_, color_, alphatarget_, minw_, minh_);
+            Image::setup(tex_, color_, alphatarget_, minw_, minh_, outline_, shadow_);
             cropx = cropx_;
             cropy = cropy_;
             cropw = cropw_;
@@ -2217,14 +2237,20 @@ namespace UI
         {
             if(tex == notexture) { Object::draw(sx, sy); return; }
 
-            float texmap[FC_MAX][2] = { { cropx, cropy }, { cropx+cropw, cropy }, { cropx+cropw, cropy+croph }, { cropx, cropy+croph } };
-            vec2 coordmap[FC_MAX], tcoordmap[FC_MAX];
-            loopi(FC_MAX) loopj(2)
+            loopk(shadow != 0 ? 2 : 1)
             {
-                coordmap[i][j] = getcoord(i, j)*(j ? h : w);
-                tcoordmap[i][j] = texmap[i][j];
+                bool shading = shadow != 0 && !k;
+                float gx = sx+(shadow > 0 && !k ? shadow : 0), gy = sy+(shadow > 0 && !k ? shadow : 0),
+                      gw = max(w-(shadow != 0 ? float(fabs(shadow)) : 0.f), 0.f), gh = max(h-(shadow != 0 ? float(fabs(shadow)) : 0.f), 0.f);
+                float texmap[FC_MAX][2] = { { cropx, cropy }, { cropx+cropw, cropy }, { cropx+cropw, cropy+croph }, { cropx, cropy+croph } };
+                vec2 coordmap[FC_MAX], tcoordmap[FC_MAX];
+                loopi(FC_MAX) loopj(2)
+                {
+                    coordmap[i][j] = getcoord(i, j)*(j ? gh : gw);
+                    tcoordmap[i][j] = texmap[i][j];
+                }
+                drawmapped(gx, gy, coordmap, tcoordmap, shading ? -1 : 0, 0, false, shading);
             }
-            drawmapped(sx, sy, coordmap, tcoordmap);
 
             Object::draw(sx, sy);
         }
@@ -2289,38 +2315,50 @@ namespace UI
         {
             if(tex == notexture) { Object::draw(sx, sy); return; }
 
-            bindtex();
-
-            float splitw = (minw ? min(minw, w) : w) / 2,
-                  splith = (minh ? min(minh, h) : h) / 2,
-                  vy = sy, ty = 0;
-            loopi(3)
+            loopk(shadow != 0 ? 2 : 1)
             {
-                float vh = 0, th = 0;
-                switch(i)
+                bool shading = shadow != 0 && !k;
+                float gx = sx+(shadow > 0 && !k ? shadow : 0), gy = sy+(shadow > 0 && !k ? shadow : 0),
+                      gw = max(w-(shadow != 0 ? float(fabs(shadow)) : 0.f), 0.f), gh = max(h-(shadow != 0 ? float(fabs(shadow)) : 0.f), 0.f);
+                if(!shading && outline)
                 {
-                    case 0: if(splith < h - splith) { vh = splith; th = 0.5f; } else { vh = h; th = 1; } break;
-                    case 1: vh = h - 2*splith; th = 0; break;
-                    case 2: vh = splith; th = 0.5f; break;
+                    changedraw(CHANGE_SHADER);
+                    hudoutlineshader->set();
+                    LOCALPARAMF(textparams, 0.15f, 0.35f, 0.35f, 0.55f);
                 }
-                float vx = sx, tx = 0;
-                loopj(3)
+                bindtex(GL_QUADS, shading ? -1 : 0);
+
+                float splitw = (minw ? min(minw, gw) : gw) / 2,
+                    splith = (minh ? min(minh, gh) : gh) / 2,
+                    vy = gy, ty = 0;
+                loopi(3)
                 {
-                    float vw = 0, tw = 0;
-                    switch(j)
+                    float vh = 0, th = 0;
+                    switch(i)
                     {
-                        case 0: if(splitw < w - splitw) { vw = splitw; tw = 0.5f; } else { vw = w; tw = 1; } break;
-                        case 1: vw = w - 2*splitw; tw = 0; break;
-                        case 2: vw = splitw; tw = 0.5f; break;
+                        case 0: if(splith < gh - splith) { vh = splith; th = 0.5f; } else { vh = gh; th = 1; } break;
+                        case 1: vh = gh - 2*splith; th = 0; break;
+                        case 2: vh = splith; th = 0.5f; break;
                     }
-                    quads(vx, vy, vw, vh, tx, ty, tw, th);
-                    vx += vw;
-                    tx += tw;
-                    if(tx >= 1) break;
+                    float vx = gx, tx = 0;
+                    loopj(3)
+                    {
+                        float vw = 0, tw = 0;
+                        switch(j)
+                        {
+                            case 0: if(splitw < gw - splitw) { vw = splitw; tw = 0.5f; } else { vw = gw; tw = 1; } break;
+                            case 1: vw = gw - 2*splitw; tw = 0; break;
+                            case 2: vw = splitw; tw = 0.5f; break;
+                        }
+                        quads(vx, vy, vw, vh, tx, ty, tw, th);
+                        vx += vw;
+                        tx += tw;
+                        if(tx >= 1) break;
+                    }
+                    vy += vh;
+                    ty += th;
+                    if(ty >= 1) break;
                 }
-                vy += vh;
-                ty += th;
-                if(ty >= 1) break;
             }
 
             Object::draw(sx, sy);
@@ -2338,9 +2376,9 @@ namespace UI
     {
         float texborder, screenborder;
 
-        void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float texborder_ = 0, float screenborder_ = 0, float minw_ = 0, float minh_ = 0)
+        void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float texborder_ = 0, float screenborder_ = 0, float minw_ = 0, float minh_ = 0, bool outline_ = false, float shadow_ = 0.f)
         {
-            Image::setup(tex_, color_, alphatarget_, minw_, minh_);
+            Image::setup(tex_, color_, alphatarget_, minw_, minh_, outline_, shadow_);
             texborder = texborder_;
             screenborder = screenborder_;
         }
@@ -2367,127 +2405,132 @@ namespace UI
         {
             if(tex == notexture) { Object::draw(sx, sy); return; }
 
-            vec2 outline[FC_MAX], projdir[2], coordmap[CO_MAX][FC_MAX], tcoordmap[CO_MAX][FC_MAX];
-            loopi(FC_MAX) loopj(2) outline[i].v[j] = getcoord(i, j)*(j ? h : w);
-
-            // top left
-            projdir[0] = vec2(outline[1]).sub(outline[0]).normalize();
-            projdir[1] = vec2(outline[3]).sub(outline[0]).normalize();
-            coordmap[CO_TL][FC_TL] = outline[0];
-            coordmap[CO_TL][FC_TR] = vec2(coordmap[CO_TL][FC_TL]).add(vec2(projdir[0]).mul(screenborder));
-            coordmap[CO_TL][FC_BL] = vec2(coordmap[CO_TL][FC_TL]).add(vec2(projdir[1]).mul(screenborder));
-            coordmap[CO_TL][FC_BR] = vec2(coordmap[CO_TL][FC_BL]).add(vec2(projdir[0]).mul(screenborder));
-            tcoordmap[CO_TL][FC_TL] = vec2(0, 0);
-            tcoordmap[CO_TL][FC_TR] = vec2(texborder, 0);
-            tcoordmap[CO_TL][FC_BR] = vec2(texborder, texborder);
-            tcoordmap[CO_TL][FC_BL] = vec2(0, texborder);
-
-            // top right
-            projdir[0] = vec2(outline[0]).sub(outline[1]).normalize();
-            projdir[1] = vec2(outline[2]).sub(outline[1]).normalize();
-            coordmap[CO_TR][FC_TR] = outline[1];
-            coordmap[CO_TR][FC_TL] = vec2(coordmap[CO_TR][FC_TR]).add(vec2(projdir[0]).mul(screenborder));
-            coordmap[CO_TR][FC_BR] = vec2(coordmap[CO_TR][FC_TR]).add(vec2(projdir[1]).mul(screenborder));
-            coordmap[CO_TR][FC_BL] = vec2(coordmap[CO_TR][FC_BR]).add(vec2(projdir[0]).mul(screenborder));
-            tcoordmap[CO_TR][FC_TL] = vec2(1-texborder, 0);
-            tcoordmap[CO_TR][FC_TR] = vec2(1, 0);
-            tcoordmap[CO_TR][FC_BR] = vec2(1, texborder);
-            tcoordmap[CO_TR][FC_BL] = vec2(1-texborder, texborder);
-
-            // top center
-            coordmap[CO_TC][FC_TL] = coordmap[CO_TL][FC_TR];
-            coordmap[CO_TC][FC_TR] = coordmap[CO_TR][FC_TL];
-            coordmap[CO_TC][FC_BR] = coordmap[CO_TR][FC_BL];
-            coordmap[CO_TC][FC_BL] = coordmap[CO_TL][FC_BR];
-            tcoordmap[CO_TC][FC_TL] = vec2(texborder, 0);
-            tcoordmap[CO_TC][FC_TR] = vec2(1-texborder, 0);
-            tcoordmap[CO_TC][FC_BR] = vec2(1-texborder, texborder);
-            tcoordmap[CO_TC][FC_BL] = vec2(texborder, texborder);
-
-            // bottom left
-            projdir[0] = vec2(outline[2]).sub(outline[3]).normalize();
-            projdir[1] = vec2(outline[0]).sub(outline[3]).normalize();
-            coordmap[CO_BL][FC_BL] = outline[3];
-            coordmap[CO_BL][FC_TL] = vec2(coordmap[CO_BL][FC_BL]).add(vec2(projdir[1]).mul(screenborder));
-            coordmap[CO_BL][FC_BR] = vec2(coordmap[CO_BL][FC_BL]).add(vec2(projdir[0]).mul(screenborder));
-            coordmap[CO_BL][FC_TR] = vec2(coordmap[CO_BL][FC_BR]).add(vec2(projdir[1]).mul(screenborder));
-            tcoordmap[CO_BL][FC_TL] = vec2(0, 1-texborder);
-            tcoordmap[CO_BL][FC_TR] = vec2(texborder, 1-texborder);
-            tcoordmap[CO_BL][FC_BR] = vec2(texborder, 1);
-            tcoordmap[CO_BL][FC_BL] = vec2(0, 1);
-
-            // bottom right
-            projdir[0] = vec2(outline[3]).sub(outline[2]).normalize();
-            projdir[1] = vec2(outline[1]).sub(outline[2]).normalize();
-            coordmap[CO_BR][FC_BR] = outline[2];
-            coordmap[CO_BR][FC_TR] = vec2(coordmap[CO_BR][FC_BR]).add(vec2(projdir[1]).mul(screenborder));
-            coordmap[CO_BR][FC_BL] = vec2(coordmap[CO_BR][FC_BR]).add(vec2(projdir[0]).mul(screenborder));
-            coordmap[CO_BR][FC_TL] = vec2(coordmap[CO_BR][FC_BL]).add(vec2(projdir[1]).mul(screenborder));
-            tcoordmap[CO_BR][FC_TL] = vec2(1-texborder, 1-texborder);
-            tcoordmap[CO_BR][FC_TR] = vec2(1, 1-texborder);
-            tcoordmap[CO_BR][FC_BR] = vec2(1, 1);
-            tcoordmap[CO_BR][FC_BL] = vec2(1-texborder, 1);
-
-            // bottom center
-            coordmap[CO_BC][FC_TL] = coordmap[CO_BL][FC_TR];
-            coordmap[CO_BC][FC_TR] = coordmap[CO_BR][FC_TL];
-            coordmap[CO_BC][FC_BR] = coordmap[CO_BR][FC_BL];
-            coordmap[CO_BC][FC_BL] = coordmap[CO_BL][FC_BR];
-            tcoordmap[CO_BC][FC_TL] = vec2(texborder, 1-texborder);
-            tcoordmap[CO_BC][FC_TR] = vec2(1-texborder, 1-texborder);
-            tcoordmap[CO_BC][FC_BR] = vec2(1-texborder, 1);
-            tcoordmap[CO_BC][FC_BL] = vec2(texborder, 1);
-
-            // middle left
-            coordmap[CO_ML][FC_TL] = coordmap[CO_TL][FC_BL];
-            coordmap[CO_ML][FC_TR] = coordmap[CO_TL][FC_BR];
-            coordmap[CO_ML][FC_BR] = coordmap[CO_BL][FC_TR];
-            coordmap[CO_ML][FC_BL] = coordmap[CO_BL][FC_TL];
-            tcoordmap[CO_ML][FC_TL] = vec2(0, texborder);
-            tcoordmap[CO_ML][FC_TR] = vec2(texborder, texborder);
-            tcoordmap[CO_ML][FC_BR] = vec2(texborder, 1-texborder);
-            tcoordmap[CO_ML][FC_BL] = vec2(0, 1-texborder);
-
-            // middle right
-            coordmap[CO_MR][FC_TL] = coordmap[CO_TR][FC_BL];
-            coordmap[CO_MR][FC_TR] = coordmap[CO_TR][FC_BR];
-            coordmap[CO_MR][FC_BR] = coordmap[CO_BR][FC_TR];
-            coordmap[CO_MR][FC_BL] = coordmap[CO_BR][FC_TL];
-            tcoordmap[CO_MR][FC_TL] = vec2(1-texborder, texborder);
-            tcoordmap[CO_MR][FC_TR] = vec2(1, texborder);
-            tcoordmap[CO_MR][FC_BR] = vec2(1, 1-texborder);
-            tcoordmap[CO_MR][FC_BL] = vec2(1-texborder, 1-texborder);
-
-            // middle center
-            coordmap[CO_MC][FC_TL] = coordmap[CO_TL][FC_BR];
-            coordmap[CO_MC][FC_TR] = coordmap[CO_TR][FC_BL];
-            coordmap[CO_MC][FC_BR] = coordmap[CO_BR][FC_TL];
-            coordmap[CO_MC][FC_BL] = coordmap[CO_BL][FC_TR];
-            tcoordmap[CO_MC][FC_TL] = vec2(texborder, texborder);
-            tcoordmap[CO_MC][FC_TR] = vec2(1-texborder, texborder);
-            tcoordmap[CO_MC][FC_BR] = vec2(1-texborder, 1-texborder);
-            tcoordmap[CO_MC][FC_BL] = vec2(1-texborder, texborder);
-
-            if(colors.length() >= 2)
+            loopk(shadow != 0 ? 2 : 1)
             {
-                static const int drawmap[2][CO_MAX] = {
-                    { CO_TL, CO_ML, CO_BL, CO_TC, CO_MC, CO_BC, CO_TR, CO_MR, CO_BR }, // VERTICAL
-                    { CO_TL, CO_TC, CO_TR, CO_ML, CO_MC, CO_MR, CO_BL, CO_BC, CO_BR }  // HORIZONTAL
-                };
-                loopi(3) loopj(3)
-                {
-                    int index = (i*3)+j, target = drawmap[dir][index], colstart = 0, colcount = 0;
-                    switch(j)
-                    {
-                        case 0: colstart = 0; colcount = 1; break;
-                        case 1: colstart = 0; colcount = colors.length(); break;
-                        case 2: colstart = colors.length()-1; colcount = 1; break;
-                    }
-                    drawmapped(sx, sy, coordmap[target], tcoordmap[target], colstart, colcount, j == 0);
-                }
-            }
-            else loopi(CO_MAX) drawmapped(sx, sy, coordmap[i], tcoordmap[i]);
+                bool shading = shadow != 0 && !k;
+                float gx = sx+(shadow > 0 && !k ? shadow : 0), gy = sy+(shadow > 0 && !k ? shadow : 0),
+                      gw = max(w-(shadow != 0 ? float(fabs(shadow)) : 0.f), 0.f), gh = max(h-(shadow != 0 ? float(fabs(shadow)) : 0.f), 0.f);
+                vec2 outline[FC_MAX], projdir[2], coordmap[CO_MAX][FC_MAX], tcoordmap[CO_MAX][FC_MAX];
+                loopi(FC_MAX) loopj(2) outline[i].v[j] = getcoord(i, j)*(j ? gh : gw);
 
+                // top left
+                projdir[0] = vec2(outline[1]).sub(outline[0]).normalize();
+                projdir[1] = vec2(outline[3]).sub(outline[0]).normalize();
+                coordmap[CO_TL][FC_TL] = outline[0];
+                coordmap[CO_TL][FC_TR] = vec2(coordmap[CO_TL][FC_TL]).add(vec2(projdir[0]).mul(screenborder));
+                coordmap[CO_TL][FC_BL] = vec2(coordmap[CO_TL][FC_TL]).add(vec2(projdir[1]).mul(screenborder));
+                coordmap[CO_TL][FC_BR] = vec2(coordmap[CO_TL][FC_BL]).add(vec2(projdir[0]).mul(screenborder));
+                tcoordmap[CO_TL][FC_TL] = vec2(0, 0);
+                tcoordmap[CO_TL][FC_TR] = vec2(texborder, 0);
+                tcoordmap[CO_TL][FC_BR] = vec2(texborder, texborder);
+                tcoordmap[CO_TL][FC_BL] = vec2(0, texborder);
+
+                // top right
+                projdir[0] = vec2(outline[0]).sub(outline[1]).normalize();
+                projdir[1] = vec2(outline[2]).sub(outline[1]).normalize();
+                coordmap[CO_TR][FC_TR] = outline[1];
+                coordmap[CO_TR][FC_TL] = vec2(coordmap[CO_TR][FC_TR]).add(vec2(projdir[0]).mul(screenborder));
+                coordmap[CO_TR][FC_BR] = vec2(coordmap[CO_TR][FC_TR]).add(vec2(projdir[1]).mul(screenborder));
+                coordmap[CO_TR][FC_BL] = vec2(coordmap[CO_TR][FC_BR]).add(vec2(projdir[0]).mul(screenborder));
+                tcoordmap[CO_TR][FC_TL] = vec2(1-texborder, 0);
+                tcoordmap[CO_TR][FC_TR] = vec2(1, 0);
+                tcoordmap[CO_TR][FC_BR] = vec2(1, texborder);
+                tcoordmap[CO_TR][FC_BL] = vec2(1-texborder, texborder);
+
+                // top center
+                coordmap[CO_TC][FC_TL] = coordmap[CO_TL][FC_TR];
+                coordmap[CO_TC][FC_TR] = coordmap[CO_TR][FC_TL];
+                coordmap[CO_TC][FC_BR] = coordmap[CO_TR][FC_BL];
+                coordmap[CO_TC][FC_BL] = coordmap[CO_TL][FC_BR];
+                tcoordmap[CO_TC][FC_TL] = vec2(texborder, 0);
+                tcoordmap[CO_TC][FC_TR] = vec2(1-texborder, 0);
+                tcoordmap[CO_TC][FC_BR] = vec2(1-texborder, texborder);
+                tcoordmap[CO_TC][FC_BL] = vec2(texborder, texborder);
+
+                // bottom left
+                projdir[0] = vec2(outline[2]).sub(outline[3]).normalize();
+                projdir[1] = vec2(outline[0]).sub(outline[3]).normalize();
+                coordmap[CO_BL][FC_BL] = outline[3];
+                coordmap[CO_BL][FC_TL] = vec2(coordmap[CO_BL][FC_BL]).add(vec2(projdir[1]).mul(screenborder));
+                coordmap[CO_BL][FC_BR] = vec2(coordmap[CO_BL][FC_BL]).add(vec2(projdir[0]).mul(screenborder));
+                coordmap[CO_BL][FC_TR] = vec2(coordmap[CO_BL][FC_BR]).add(vec2(projdir[1]).mul(screenborder));
+                tcoordmap[CO_BL][FC_TL] = vec2(0, 1-texborder);
+                tcoordmap[CO_BL][FC_TR] = vec2(texborder, 1-texborder);
+                tcoordmap[CO_BL][FC_BR] = vec2(texborder, 1);
+                tcoordmap[CO_BL][FC_BL] = vec2(0, 1);
+
+                // bottom right
+                projdir[0] = vec2(outline[3]).sub(outline[2]).normalize();
+                projdir[1] = vec2(outline[1]).sub(outline[2]).normalize();
+                coordmap[CO_BR][FC_BR] = outline[2];
+                coordmap[CO_BR][FC_TR] = vec2(coordmap[CO_BR][FC_BR]).add(vec2(projdir[1]).mul(screenborder));
+                coordmap[CO_BR][FC_BL] = vec2(coordmap[CO_BR][FC_BR]).add(vec2(projdir[0]).mul(screenborder));
+                coordmap[CO_BR][FC_TL] = vec2(coordmap[CO_BR][FC_BL]).add(vec2(projdir[1]).mul(screenborder));
+                tcoordmap[CO_BR][FC_TL] = vec2(1-texborder, 1-texborder);
+                tcoordmap[CO_BR][FC_TR] = vec2(1, 1-texborder);
+                tcoordmap[CO_BR][FC_BR] = vec2(1, 1);
+                tcoordmap[CO_BR][FC_BL] = vec2(1-texborder, 1);
+
+                // bottom center
+                coordmap[CO_BC][FC_TL] = coordmap[CO_BL][FC_TR];
+                coordmap[CO_BC][FC_TR] = coordmap[CO_BR][FC_TL];
+                coordmap[CO_BC][FC_BR] = coordmap[CO_BR][FC_BL];
+                coordmap[CO_BC][FC_BL] = coordmap[CO_BL][FC_BR];
+                tcoordmap[CO_BC][FC_TL] = vec2(texborder, 1-texborder);
+                tcoordmap[CO_BC][FC_TR] = vec2(1-texborder, 1-texborder);
+                tcoordmap[CO_BC][FC_BR] = vec2(1-texborder, 1);
+                tcoordmap[CO_BC][FC_BL] = vec2(texborder, 1);
+
+                // middle left
+                coordmap[CO_ML][FC_TL] = coordmap[CO_TL][FC_BL];
+                coordmap[CO_ML][FC_TR] = coordmap[CO_TL][FC_BR];
+                coordmap[CO_ML][FC_BR] = coordmap[CO_BL][FC_TR];
+                coordmap[CO_ML][FC_BL] = coordmap[CO_BL][FC_TL];
+                tcoordmap[CO_ML][FC_TL] = vec2(0, texborder);
+                tcoordmap[CO_ML][FC_TR] = vec2(texborder, texborder);
+                tcoordmap[CO_ML][FC_BR] = vec2(texborder, 1-texborder);
+                tcoordmap[CO_ML][FC_BL] = vec2(0, 1-texborder);
+
+                // middle right
+                coordmap[CO_MR][FC_TL] = coordmap[CO_TR][FC_BL];
+                coordmap[CO_MR][FC_TR] = coordmap[CO_TR][FC_BR];
+                coordmap[CO_MR][FC_BR] = coordmap[CO_BR][FC_TR];
+                coordmap[CO_MR][FC_BL] = coordmap[CO_BR][FC_TL];
+                tcoordmap[CO_MR][FC_TL] = vec2(1-texborder, texborder);
+                tcoordmap[CO_MR][FC_TR] = vec2(1, texborder);
+                tcoordmap[CO_MR][FC_BR] = vec2(1, 1-texborder);
+                tcoordmap[CO_MR][FC_BL] = vec2(1-texborder, 1-texborder);
+
+                // middle center
+                coordmap[CO_MC][FC_TL] = coordmap[CO_TL][FC_BR];
+                coordmap[CO_MC][FC_TR] = coordmap[CO_TR][FC_BL];
+                coordmap[CO_MC][FC_BR] = coordmap[CO_BR][FC_TL];
+                coordmap[CO_MC][FC_BL] = coordmap[CO_BL][FC_TR];
+                tcoordmap[CO_MC][FC_TL] = vec2(texborder, texborder);
+                tcoordmap[CO_MC][FC_TR] = vec2(1-texborder, texborder);
+                tcoordmap[CO_MC][FC_BR] = vec2(1-texborder, 1-texborder);
+                tcoordmap[CO_MC][FC_BL] = vec2(1-texborder, texborder);
+
+                if(!shading && colors.length() >= 2)
+                {
+                    static const int drawmap[2][CO_MAX] = {
+                        { CO_TL, CO_ML, CO_BL, CO_TC, CO_MC, CO_BC, CO_TR, CO_MR, CO_BR }, // VERTICAL
+                        { CO_TL, CO_TC, CO_TR, CO_ML, CO_MC, CO_MR, CO_BL, CO_BC, CO_BR }  // HORIZONTAL
+                    };
+                    loopi(3) loopj(3)
+                    {
+                        int index = (i*3)+j, target = drawmap[dir][index], colstart = 0, colcount = 0;
+                        switch(j)
+                        {
+                            case 0: colstart = 0; colcount = 1; break;
+                            case 1: colstart = 0; colcount = colors.length(); break;
+                            case 2: colstart = colors.length()-1; colcount = 1; break;
+                        }
+                        drawmapped(gx, gy, coordmap[target], tcoordmap[target], colstart, colcount, j == 0);
+                    }
+                }
+                else loopi(CO_MAX) drawmapped(gx, gy, coordmap[i], tcoordmap[i], shading ? -1 : 0, 0, false, shading);
+            }
             Object::draw(sx, sy);
         }
     };
@@ -2510,9 +2553,9 @@ namespace UI
     {
         float tilew, tileh;
 
-        void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0, float tilew_ = 0, float tileh_ = 0)
+        void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0, float tilew_ = 0, float tileh_ = 0, bool outline_ = false, float shadow_ = 0.f)
         {
-            Image::setup(tex_, color_, alphatarget_, minw_, minh_);
+            Image::setup(tex_, color_, alphatarget_, minw_, minh_, outline_, shadow_);
             tilew = tilew_;
             tileh = tileh_;
         }
@@ -2530,21 +2573,32 @@ namespace UI
         {
             if(tex == notexture) { Object::draw(sx, sy); return; }
 
-            bindtex();
-
-            if(tex->clamp)
+            loopk(shadow != 0 ? 2 : 1)
             {
-                for(float dy = 0; dy < h; dy += tileh)
+                bool shading = shadow != 0 && !k;
+                float gx = sx+(shadow > 0 && !k ? shadow : 0), gy = sy+(shadow > 0 && !k ? shadow : 0),
+                      gw = max(w-(shadow != 0 ? float(fabs(shadow)) : 0.f), 0.f), gh = max(h-(shadow != 0 ? float(fabs(shadow)) : 0.f), 0.f);
+                if(!shading && outline)
                 {
-                    float dh = min(tileh, h - dy);
-                    for(float dx = 0; dx < w; dx += tilew)
+                    changedraw(CHANGE_SHADER);
+                    hudoutlineshader->set();
+                    LOCALPARAMF(textparams, 0.15f, 0.35f, 0.35f, 0.55f);
+                }
+                bindtex(GL_QUADS, shading ? -1 : 0);
+                if(tex->clamp)
+                {
+                    for(float dy = 0; dy < gh; dy += tileh)
                     {
-                        float dw = min(tilew, w - dx);
-                        quads(sx + dx, sy + dy, dw, dh, 0, 0, dw / tilew, dh / tileh);
+                        float dh = min(tileh, gh - dy);
+                        for(float dx = 0; dx < gw; dx += tilew)
+                        {
+                            float dw = min(tilew, gw - dx);
+                            quads(gx + dx, gy + dy, dw, dh, 0, 0, dw / tilew, dh / tileh);
+                        }
                     }
                 }
+                else quads(gx, gy, gw, gh, 0, 0, w/tilew, h/tileh);
             }
-            else quads(sx, sy, w, h, 0, 0, w/tilew, h/tileh);
 
             Object::draw(sx, sy);
         }

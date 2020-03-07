@@ -1512,6 +1512,30 @@ void texblur(ImageData &s, int n, int r)
     }
 }
 
+void texoutline(ImageData &s, int n, int r)
+{
+    loopk(n)
+    {
+        ImageData d(s.w, s.h, 1);
+        ivec2 p(0, 0);
+        for(p.x = 0; p.x < s.w; p.x++) for(p.y = 0; p.y < s.h; p.y++)
+        {
+            int start = int(s.data[p.x*s.bpp + p.y*s.pitch]), total = 0, count = 0;
+            for(int w = -r; w < r; w++) for(int h = -r; h < r; h++, count++)
+            {
+                ivec2 q(p.x + w, p.y + h);
+                if(q.x < 0 || q.x >= s.w || q.y < 0 || q.y >= s.h) continue;
+                int cur = s.data[q.x*s.bpp + q.y*s.pitch];
+                if(s.bpp == 2 || s.bpp == 4) cur = int((cur*s.data[q.x*s.bpp + q.y*s.pitch + s.bpp-1])/255.f);
+                float amt = clamp(p.dist(q), 0.f, float(r))/float(r);
+                total += clamp(int(cur*amt), int(start*amt), 255);
+            }
+            d.data[p.x + p.y*d.pitch] = uchar(clamp(int(total/float(count)), start, 255));
+        }
+        s.replace(d);
+    }
+}
+
 bool canloadsurface(const char *name)
 {
     stream *f = openfile(name, "rb");
@@ -1645,6 +1669,11 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
         {
             int emphasis = atoi(arg[0]), repeat = atoi(arg[1]);
             texblur(d, emphasis > 0 ? clamp(emphasis, 1, 2) : 1, repeat > 0 ? repeat : 1);
+        }
+        else if(matchstring(cmd, len, "outline"))
+        {
+            int supersample = atoi(arg[0]), radius = atoi(arg[1]);
+            texoutline(d, supersample > 0 ? clamp(supersample, 1, 32) : 1, radius > 0 ? radius : 1);
         }
         else if(matchstring(cmd, len, "premul")) texpremul(d);
         else if(matchstring(cmd, len, "agrad")) texagrad(d, atof(arg[0]), atof(arg[1]), atof(arg[2]), atof(arg[3]));

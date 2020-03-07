@@ -1323,8 +1323,13 @@ struct ivec2
     ivec2 &min(int n) { x = ::min(x, n); y = ::min(y, n); return *this; }
     ivec2 &max(int n) { x = ::max(x, n); y = ::max(y, n); return *this; }
     ivec2 &abs() { x = ::abs(x); y = ::abs(y); return *this; }
+
     int dot(const ivec2 &o) const { return x*o.x + y*o.y; }
     int cross(const ivec2 &o) const { return x*o.y - y*o.x; }
+    float squaredlen() const { return dot(*this); }
+    float magnitude() const  { return sqrtf(squaredlen()); }
+    float squaredist(const ivec2 &e) const { return ivec2(*this).sub(e).squaredlen(); }
+    float dist(const ivec2 &e) const { return sqrtf(squaredist(e)); }
 };
 
 inline ivec::ivec(const ivec2 &v, int z) : x(v.x), y(v.y), z(z) {}

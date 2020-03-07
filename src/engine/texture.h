@@ -881,7 +881,7 @@ struct cubemapside
 extern const texrotation texrotations[8];
 extern const cubemapside cubemapsides[6];
 extern Texture *notexture, *blanktexture;
-extern Shader *nullshader, *hudshader, *hudtextshader, *hudnotextureshader, *hudbackgroundshader, *nocolorshader, *foggedshader, *foggednotextureshader, *ldrshader, *ldrnotextureshader, *stdworldshader;
+extern Shader *nullshader, *hudshader, *hudoutlineshader, *hudtextshader, *hudnotextureshader, *hudbackgroundshader, *nocolorshader, *foggedshader, *foggednotextureshader, *ldrshader, *ldrnotextureshader, *stdworldshader;
 extern int maxvsuniforms, maxfsuniforms;
 
 extern Shader *lookupshaderbyname(const char *name);
