@@ -2732,7 +2732,7 @@ namespace UI
 
         void draw(float sx, float sy)
         {
-            changedraw(CHANGE_COLOR);
+            changedraw(CHANGE_COLOR|CHANGE_SHADER);
 
             float k = drawscale(rescale), left = sx/k, top = sy/k;
             int a = TEXT_MODCOL;

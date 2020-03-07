@@ -59,7 +59,7 @@ namespace defend
     #define LOOPDEFEND(name,op) \
         ICOMMAND(0, loopdefend##name, "iire", (int *count, int *skip, ident *id, uint *body), \
         { \
-            if(!m_defend(game::gamemode)) return; \
+            if(!m_defend(game::gamemode) || st.flags.empty()) return; \
             loopstart(id, stack); \
             op(st.flags, *count, *skip) \
             { \
@@ -74,7 +74,7 @@ namespace defend
     #define LOOPDEFENDIF(name,op) \
         ICOMMAND(0, loopdefend##name##if, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
         { \
-            if(!m_defend(game::gamemode)) return; \
+            if(!m_defend(game::gamemode) || st.flags.empty()) return; \
             loopstart(id, stack); \
             op(st.flags, *count, *skip) \
             { \

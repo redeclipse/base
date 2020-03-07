@@ -48,7 +48,7 @@ namespace bomber
     #define LOOPBOMBER(name,op) \
         ICOMMAND(0, loopbomber##name, "iire", (int *count, int *skip, ident *id, uint *body), \
         { \
-            if(!m_bomber(game::gamemode)) return; \
+            if(!m_bomber(game::gamemode) || st.flags.empty()) return; \
             loopstart(id, stack); \
             op(st.flags, *count, *skip) \
             { \
@@ -63,7 +63,7 @@ namespace bomber
     #define LOOPBOMBERIF(name,op) \
         ICOMMAND(0, loopbomber##name##if, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
         { \
-            if(!m_bomber(game::gamemode)) return; \
+            if(!m_bomber(game::gamemode) || st.flags.empty()) return; \
             loopstart(id, stack); \
             op(st.flags, *count, *skip) \
             { \

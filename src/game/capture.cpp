@@ -49,7 +49,7 @@ namespace capture
     #define LOOPCAPTURE(name,op) \
         ICOMMAND(0, loopcapture##name, "iire", (int *count, int *skip, ident *id, uint *body), \
         { \
-            if(!m_capture(game::gamemode)) return; \
+            if(!m_capture(game::gamemode) || st.flags.empty()) return; \
             loopstart(id, stack); \
             op(st.flags, *count, *skip) \
             { \
@@ -64,7 +64,7 @@ namespace capture
     #define LOOPCAPTUREIF(name,op) \
         ICOMMAND(0, loopcapture##name##if, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
         { \
-            if(!m_capture(game::gamemode)) return; \
+            if(!m_capture(game::gamemode) || st.flags.empty()) return; \
             loopstart(id, stack); \
             op(st.flags, *count, *skip) \
             { \
