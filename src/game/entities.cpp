@@ -2906,7 +2906,7 @@ namespace entities
                         if(isweap(attr))
                         {
                             colour = W(attr, colour);
-                            if(!active || !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !showentfull))
+                            if(!active || (!game::focus->isobserver() && !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !showentfull)))
                                 mdl.color.a *= showentunavailable;
                             else mdl.color.a *= showentavailable;
                         }
@@ -2990,7 +2990,7 @@ namespace entities
             {
                 if(!active || !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !showentfull))
                 {
-                    if(isedit) blend *= showentavailable;
+                    if(isedit || game::focus->isobserver()) blend *= showentavailable;
                     else if(showentunavailable > 0) blend *= showentunavailable;
                     else blend = 0;
                 }

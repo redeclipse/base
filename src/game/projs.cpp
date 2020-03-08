@@ -2602,7 +2602,7 @@ namespace projs
                         if(isweap(attr))
                         {
                             mdl.material[2] = bvec::fromcolor(W(attr, colour));
-                            if(!game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !entities::showentfull))
+                            if(!game::focus->isobserver() && !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !entities::showentfull))
                                 mdl.color.a *= entities::showentunavailable;
                             else mdl.color.a *= entities::showentavailable;
                         }
