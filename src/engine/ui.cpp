@@ -2881,8 +2881,8 @@ namespace UI
                 }
             }
             if(growth != 1) th *= growth > 0 ? growth : 0-growth;
-            w = max(w, tw*k*rescale);
-            h = max(h, th*k*rescale);
+            w = max(w, tw*k*min(rescale, 1.f));
+            h = max(h, th*k*min(rescale, 1.f));
         }
     };
 

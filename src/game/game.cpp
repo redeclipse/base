@@ -4,7 +4,7 @@
 namespace game
 {
     int nextmode = G_EDITMODE, nextmuts = 0, gamestate = G_S_WAITING, gamemode = G_EDITMODE, mutators = 0, maptime = 0, mapstart = 0, timeremaining = 0, timeelapsed = 0, timelast = 0,
-        lastcamera = 0, lasttvcam = 0, lasttvchg = 0, lastzoom = 0, spectvfollowing = -1, lastcamcn = -1;
+        lastcamera = 0, lasttvcam = 0, lasttvchg = 0, lastzoom = 0, lastcamcn = -1;
     bool zooming = false, inputmouse = false, inputview = false, inputmode = false, wantsloadoutmenu = false;
     float swayfade = 0, swayspeed = 0, swaydist = 0, bobfade = 0, bobdist = 0;
     vec swaydir(0, 0, 0), swaypush(0, 0, 0);
@@ -229,6 +229,8 @@ namespace game
     FVAR(IDF_PERSIST, followtvyawthresh, 0, 0, 360);
     FVAR(IDF_PERSIST, followtvpitchthresh, 0, 0, 180);
 
+    VAR(0, spectvcamera, -1, -1, VAR_MAX); // use this specific camera id
+    VAR(0, spectvcameraaim, 0, 1, 1); // use this specific camera aiming
     VAR(IDF_PERSIST, spectvmintime, 1000, 3000, VAR_MAX);
     VAR(IDF_PERSIST, spectvtime, 1000, 7500, VAR_MAX);
     VAR(IDF_PERSIST, spectvmaxtime, 0, 15000, VAR_MAX);
@@ -256,8 +258,8 @@ namespace game
     FVAR(IDF_PERSIST, spectvintermyawthresh, 0, 0, 360);
     FVAR(IDF_PERSIST, spectvintermpitchthresh, 0, 0, 180);
 
-    VARF(0, spectvfollow, -1, -1, VAR_MAX, spectvfollowing = spectvfollow); // attempts to always keep this client in view
-    VAR(0, spectvfollowself, 0, 1, 2); // if we are not spectating, spectv should show us; 0 = off, 1 = not duel/survivor, 2 = always
+    VAR(0, spectvfollow, -1, -1, VAR_MAX); // attempts to always keep this client in view
+    VAR(IDF_PERSIST, spectvfollowself, 0, 1, 2); // if we are not spectating, spectv should show us; 0 = off, 1 = not duel/survivor, 2 = always
     VAR(IDF_PERSIST, spectvfollowmintime, 1000, 3000, VAR_MAX);
     VAR(IDF_PERSIST, spectvfollowtime, 1000, 7500, VAR_MAX);
     VAR(IDF_PERSIST, spectvfollowmaxtime, 0, 15000, VAR_MAX);
@@ -827,7 +829,7 @@ namespace game
 
     bool followaim() { return followaiming&(thirdpersonview(true) ? 1 : 2); }
 
-    bool tvmode(bool check, bool force)
+    bool tvmode(bool check)
     {
         if(!check || !cameras.empty())
         {
@@ -845,7 +847,7 @@ namespace game
     #define MODESWITCH(name) \
         ICOMMAND(0, name##modeswitch, "", (), \
         { \
-            if(tvmode(true, true)) name##mode = 0; \
+            if(tvmode()) name##mode = 0; \
             else name##mode = 1; \
             specreset(); \
         });
@@ -856,7 +858,7 @@ namespace game
     {
         if(player1->state == CS_SPECTATOR || (player1->state == CS_WAITING && (!player1->lastdeath || !deathbuttonmash || lastmillis-player1->lastdeath > deathbuttonmash)))
         {
-            bool istv = tvmode(true, false);
+            bool istv = tvmode();
             int *f = istv ? &spectvfollow : &follow;
             #define checkfollow \
                 if(*f >= players.length()) *f = -1; \
@@ -899,9 +901,22 @@ namespace game
             }
             specreset();
         }
-        return;
     }
-    ICOMMAND(0, followdelta, "ii", (int *n, int *o), followswitch(*n!=0 ? *n : 1, *o!=0));
+    ICOMMAND(0, followdelta, "ii", (int *n, int *o), followswitch(*n != 0 ? *n : 1, *o != 0));
+
+    void spectvcamupdate()
+    {
+        while(spectvcamera < -1) spectvcamera += cameras.length() + 1;
+        while(spectvcamera >= cameras.length()) spectvcamera -= cameras.length() + 1;
+        if(spectvcamera >= 0 && !cameras.inrange(spectvcamera)) spectvcamera = -1;
+    }
+
+    void spectvswitch(int n)
+    {
+        spectvcamera += n;
+        spectvcamupdate();
+    }
+    ICOMMAND(0, spectvdelta, "i", (int *n), spectvswitch(*n != 0 ? *n : 1));
 
     bool allowmove(physent *d)
     {
@@ -2601,7 +2616,7 @@ namespace game
 
     void getcamyawpitch(cament *c, float &yaw, float &pitch, bool renew = false)
     {
-        c->chase = true;
+        c->chase = spectvcameraaim != 0;
         if(c->type == cament::ENTITY && entities::ents.inrange(c->id))
         {
             gameentity &e = *(gameentity *)entities::ents[c->id];
@@ -2675,12 +2690,12 @@ namespace game
         {
             case cament::AFFINITY:
             {
-                if(v->player && (v->player == c->player || !allowspec(v->player, spectvdead, spectvfollowing))) return false;
+                if(v->player && (v->player == c->player || !allowspec(v->player, spectvdead, spectvfollow))) return false;
                 break;
             }
             case cament::PLAYER:
             {
-                if(!v->player || v->player == c->player || !allowspec(v->player, spectvdead, spectvfollowing)) return false;
+                if(!v->player || v->player == c->player || !allowspec(v->player, spectvdead, spectvfollow)) return false;
                 break;
             }
             default: return false;
@@ -2713,7 +2728,7 @@ namespace game
 
     bool camupdate(cament *c, bool renew = false)
     {
-        if(c->player && !allowspec(c->player, spectvdead, spectvfollowing)) return false;
+        if(c->player && !allowspec(c->player, spectvdead, spectvfollow)) return false;
 
         float yaw = 0, pitch = 0, mindist = 0, maxdist = 0;
         getcamyawpitch(c, yaw, pitch, renew);
@@ -2740,7 +2755,7 @@ namespace game
 
             if(j && !dir.iszero()) // extra passes may give a better direction, but may not contain visible players..
             {
-                vec(dir).div(count).sub(from).safenormalize();
+                dir.div(count).sub(from).safenormalize();
                 vectoyawpitch(dir, yaw, pitch);
 
                 dir = vec(0, 0, 0);
@@ -2818,7 +2833,7 @@ namespace game
         return false;
     }
 
-    void buildcams()
+    bool buildcams()
     {
         loopk(2)
         {
@@ -2853,6 +2868,8 @@ namespace game
         if(m_capture(gamemode)) capture::checkcams(cameras);
         else if(m_defend(gamemode)) defend::checkcams(cameras);
         else if(m_bomber(gamemode)) bomber::checkcams(cameras);
+
+        return !cameras.empty();
     }
 
     bool findcams(cament *cam)
@@ -2869,7 +2886,7 @@ namespace game
 
             if(c->type == cament::PLAYER && (c->player || ((c->player = getclient(c->id)) != NULL)))
             {
-                if(!found && c->id == spectvfollowing && c->player->state != CS_SPECTATOR) found = true;
+                if(!found && c->id == spectvfollow && c->player->state != CS_SPECTATOR) found = true;
                 c->o = c->player->center();
             }
             else if(c->type != cament::PLAYER && c->player) c->player = NULL;
@@ -2881,15 +2898,29 @@ namespace game
         return found;
     }
 
+    int getcurrentcam()
+    {
+        if(tvmode() && cameras.inrange(lastcamcn)) return lastcamcn;
+        return -1;
+    }
+    ICOMMAND(0, currentcam, "iN$", (int *n, int *numargs, ident *id),
+    {
+        if(*numargs > 0)
+        {
+            spectvcamera = *n;
+            spectvcamupdate();
+        }
+        else if(*numargs < 0) intret(getcurrentcam());
+        else printvar(id, getcurrentcam());
+    });
+
     bool cameratv()
     {
-        if(!tvmode(false)) return false;
+        if(!tvmode(false) || (cameras.empty() && !buildcams())) return false;
 
-        if(!gs_playing(gamestate)) spectvfollowing = -1;
-        else if(player1->state != CS_SPECTATOR && spectvfollowself >= (m_duke(gamemode, mutators) ? 2 : 1)) spectvfollowing = player1->clientnum;
-        else spectvfollowing = spectvfollow;
-
-        if(cameras.empty()) buildcams();
+        if(!gs_playing(gamestate)) spectvfollow = -1;
+        else if(player1->state != CS_SPECTATOR && spectvfollowself >= (m_duke(gamemode, mutators) ? 2 : 1)) spectvfollow = player1->clientnum;
+        else spectvfollow = spectvfollow;
 
         bool restart = !lastcamera;
         if(!cameras.inrange(lastcamcn))
@@ -2897,47 +2928,59 @@ namespace game
             lastcamcn = rnd(cameras.length());
             restart = true;
         }
-
         cament *cam = cameras[lastcamcn];
-        bool found = findcams(cam);
-        if(!found) spectvfollowing = -1;
-        camrefresh(cam);
+        bool found = findcams(cam), reset = false;
+        int lastcn = cam->cn;
+        if(!found) spectvfollow = -1;
 
-        #define stvf(z) (!gs_playing(gamestate) ? spectvinterm##z : (spectvfollowing >= 0 ? spectvfollow##z : spectv##z))
-        int lastcn = cam->cn, millis = lasttvchg ? totalmillis-lasttvchg : 0;
-        bool reset = false, updated = camupdate(cam, restart), override = !lasttvchg || millis >= stvf(mintime),
-             timeup = !lasttvcam || totalmillis-lasttvcam >= stvf(time), overtime = stvf(maxtime) && millis >= stvf(maxtime);
+        #define stvf(z) (!gs_playing(gamestate) ? spectvinterm##z : (spectvfollow >= 0 ? spectvfollow##z : spectv##z))
 
-        if(restart || overtime || timeup || (!updated && override))
+        if(spectvcamera >= 0)
         {
-            loopv(cameras) if(cameras[i]->ignore) cameras[i]->ignore = false;
-            if(overtime) cam->ignore = true; // so we don't use the last one we just used
-            int goodcams = 0;
-            loopv(cameras)
-            {
-                cament *c = cameras[i];
-                if(!camupdate(c, true)) continue;
-                loopj(cament::MAX) c->lastinview[j] = c->inview[j];
-                if(!c->ignore) goodcams++;
-            }
-            if(!goodcams) cam->ignore = false; // in case there's only one good camera
-            else reset = true;
+            while(spectvcamera >= cameras.length()) spectvcamera--;
+            cam = cameras[spectvcamera];
+            lastcamcn = cam->cn;
+            camupdate(cam, restart);
         }
-
-        if(restart || reset || overtime)
+        else
         {
-            vector<cament *> scams;
-            scams.reserve(cameras.length());
-            scams.put(cameras.getbuf(), cameras.length());
-            scams.sort(cament::compare);
-            lastcamcn = scams[0]->cn;
-            if(restart || !lasttvcam || cam != cameras[lastcamcn])
+            camrefresh(cam);
+
+            int millis = lasttvchg ? totalmillis-lasttvchg : 0;
+            bool updated = camupdate(cam, restart), override = !lasttvchg || millis >= stvf(mintime),
+                timeup = !lasttvcam || totalmillis-lasttvcam >= stvf(time), overtime = stvf(maxtime) && millis >= stvf(maxtime);
+
+            if(restart || overtime || timeup || (!updated && override))
             {
-                cam = cameras[lastcamcn];
-                lasttvcam = totalmillis;
-                reset = true;
+                loopv(cameras) if(cameras[i]->ignore) cameras[i]->ignore = false;
+                if(overtime) cam->ignore = true; // so we don't use the last one we just used
+                int goodcams = 0;
+                loopv(cameras)
+                {
+                    cament *c = cameras[i];
+                    if(!camupdate(c, true)) continue;
+                    loopj(cament::MAX) c->lastinview[j] = c->inview[j];
+                    if(!c->ignore) goodcams++;
+                }
+                if(!goodcams) cam->ignore = false; // in case there's only one good camera
+                else reset = true;
             }
-            else reset = false;
+
+            if(restart || reset || overtime)
+            {
+                vector<cament *> scams;
+                scams.reserve(cameras.length());
+                scams.put(cameras.getbuf(), cameras.length());
+                scams.sort(cament::compare);
+                lastcamcn = scams[0]->cn;
+                if(restart || !lasttvcam || cam != cameras[lastcamcn])
+                {
+                    cam = cameras[lastcamcn];
+                    lasttvcam = totalmillis;
+                    reset = true;
+                }
+                else reset = false;
+            }
         }
 
         camrefresh(cam, reset);

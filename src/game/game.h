@@ -2132,7 +2132,7 @@ struct cament
         if(a->inview[cament::PLAYER] < b->inview[cament::PLAYER]) return false;
         if(a->inview[cament::AFFINITY] > b->inview[cament::AFFINITY]) return true;
         if(a->inview[cament::AFFINITY] < b->inview[cament::AFFINITY]) return false;
-        return !rnd(int(a->type + 2));
+        return !rnd(a->player ? 2 : 3);
     }
 };
 
@@ -2283,7 +2283,7 @@ namespace game
     extern bool allowmove(physent *d);
     extern void checkzoom();
     extern bool inzoom();
-    extern bool tvmode(bool check = true, bool force = true);
+    extern bool tvmode(bool check = true);
     extern void resetcamera(bool cam = true, bool input = true);
     extern void resetsway();
     extern void resetworld();
