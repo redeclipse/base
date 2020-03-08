@@ -2767,9 +2767,11 @@ namespace game
             else continue;
             return true;
         }
-
-        getcamyawpitch(c, yaw, pitch, true);
-        c->dir = vec(yaw*RAD, pitch*RAD);
+        if(renew)
+        {
+            getcamyawpitch(c, yaw, pitch, true);
+            c->dir = vec(yaw*RAD, pitch*RAD);
+        }
 
         return false;
     }
