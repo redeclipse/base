@@ -2616,7 +2616,7 @@ namespace game
 
     void getcamyawpitch(cament *c, float &yaw, float &pitch, bool renew = false)
     {
-        c->chase = spectvcameraaim != 0;
+        c->chase = true;
         if(c->type == cament::ENTITY && entities::ents.inrange(c->id))
         {
             gameentity &e = *(gameentity *)entities::ents[c->id];
@@ -2735,7 +2735,7 @@ namespace game
         getcamdist(c, maxdist, mindist);
         vec from = camvec(c, yaw, pitch);
 
-        loopj(c->chase ? 3 : 1)
+        loopj(c->chase && spectvcameraaim ? 3 : 1)
         {
             int count = 0;
             vec dir(0, 0, 0);
@@ -2773,7 +2773,7 @@ namespace game
                 if(!count) continue; // nope, that didn't work..
             }
 
-            if(!c->chase)
+            if(!c->chase || !spectvcameraaim)
             {
                 getcamyawpitch(c, yaw, pitch, true);
                 c->dir = vec(yaw*RAD, pitch*RAD);
@@ -2782,7 +2782,7 @@ namespace game
             else continue;
             return true;
         }
-        if(renew)
+        if(renew || !spectvcameraaim)
         {
             getcamyawpitch(c, yaw, pitch, true);
             c->dir = vec(yaw*RAD, pitch*RAD);
@@ -2872,8 +2872,9 @@ namespace game
         return !cameras.empty();
     }
 
-    bool findcams(cament *cam)
+    int findcams(cament *cam)
     {
+        int count = 0;
         bool found = false;
         loopv(cameras)
         {
@@ -2886,7 +2887,11 @@ namespace game
 
             if(c->type == cament::PLAYER && (c->player || ((c->player = getclient(c->id)) != NULL)))
             {
-                if(!found && c->id == spectvfollow && c->player->state != CS_SPECTATOR) found = true;
+                if(c->player->state != CS_SPECTATOR)
+                {
+                    if(!found && c->id == spectvfollow) found = true;
+                    if(allowspec(c->player, spectvdead, spectvfollow)) count++;
+                }
                 c->o = c->player->center();
             }
             else if(c->type != cament::PLAYER && c->player) c->player = NULL;
@@ -2895,7 +2900,8 @@ namespace game
             else if(m_defend(gamemode)) defend::updatecam(c);
             else if(m_bomber(gamemode)) bomber::updatecam(c);
         }
-        return found;
+        if(!found) spectvfollow = -1;
+        return count;
     }
 
     int getcurrentcam()
@@ -2929,25 +2935,25 @@ namespace game
             restart = true;
         }
         cament *cam = cameras[lastcamcn];
-        bool found = findcams(cam), reset = false;
-        int lastcn = cam->cn;
-        if(!found) spectvfollow = -1;
+        bool reset = false;
+        int count = findcams(cam), lastcn = cam->cn;
 
         #define stvf(z) (!gs_playing(gamestate) ? spectvinterm##z : (spectvfollow >= 0 ? spectvfollow##z : spectv##z))
 
         if(spectvcamera >= 0)
         {
             while(spectvcamera >= cameras.length()) spectvcamera--;
+            if(spectvcamera != lastcamcn) reset = true;
             cam = cameras[spectvcamera];
             lastcamcn = cam->cn;
-            camupdate(cam, restart);
+            camupdate(cam, restart || !count || !spectvcameraaim);
         }
         else
         {
             camrefresh(cam);
 
             int millis = lasttvchg ? totalmillis-lasttvchg : 0;
-            bool updated = camupdate(cam, restart), override = !lasttvchg || millis >= stvf(mintime),
+            bool updated = camupdate(cam, restart || !count || !spectvcameraaim), override = !lasttvchg || millis >= stvf(mintime),
                 timeup = !lasttvcam || totalmillis-lasttvcam >= stvf(time), overtime = stvf(maxtime) && millis >= stvf(maxtime);
 
             if(restart || overtime || timeup || (!updated && override))
@@ -2996,7 +3002,7 @@ namespace game
 
         if(!cam->player || cam->chase)
         {
-            if(cam->chase && !reset)
+            if(cam->chase && !reset && spectvcameraaim)
             {
                 float speed = curtime/float(cam->player ? followtvspeed : stvf(speed));
                 #define SCALEAXIS(x) \
