@@ -2054,7 +2054,7 @@ namespace UI
             changedraw(CHANGE_COLOR | CHANGE_BLEND);
             if(type==MODULATE) modblend(); else resetblend();
             int col = clamp(colstart, -1, colors.length()-1);
-            Color c = col >= 0 ? colors[col] : Color(0, 0, 0, 255);
+            Color c = col >= 0 ? colors[col] : Color(0, 0, 0, colors[0].a);
             if(forced || lastmode != mode)
             {
                 if(lastmode != GL_POINTS) gle::end();
