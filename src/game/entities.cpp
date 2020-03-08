@@ -69,7 +69,7 @@ namespace entities
     {
         int ent, retpoint, curpoint, lastpoint, flags, length[2], lastsecs, curstep, millis, coltype, animtype, animoffset, animtime;
         float yaw, pitch, lastyaw, lastpitch, animspeed;
-        vec pos, dir, offset, lastoffset, lastdir;
+        vec dir, offset, lastoffset, lastdir;
 
         vector<rail> rails;
         vector<int> parents;
@@ -77,13 +77,13 @@ namespace entities
         railway() :
             ent(-1), retpoint(0), curpoint(-1), lastpoint(-1), flags(0), lastsecs(0), curstep(0), millis(0), coltype(0), animtype(0), animoffset(0), animtime(0),
             yaw(0), pitch(0), lastyaw(0), lastpitch(0), animspeed(0),
-            pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0), lastdir(0, 0, 0)
+            dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0), lastdir(0, 0, 0)
             { reset(); }
 
         railway(int n, int f = 0, int c = 0, int at = 0, int ao = 0, float as = 0) :
             ent(n), retpoint(0), curpoint(-1), lastpoint(-1), flags(f), lastsecs(0), curstep(0), millis(0), coltype(c), animtype(at), animoffset(ao), animtime(0),
             yaw(0), pitch(0), lastyaw(0), lastpitch(0), animspeed(as),
-            pos(0, 0, 0), dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0), lastdir(0, 0, 0)
+            dir(0, 0, 0), offset(0, 0, 0), lastoffset(0, 0, 0), lastdir(0, 0, 0)
             { reset(); }
 
         ~railway()
