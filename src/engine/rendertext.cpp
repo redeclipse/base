@@ -8,9 +8,10 @@ VAR(IDF_PERSIST, textfaded, 0, 1, 1);
 VAR(IDF_PERSIST, textminintensity, 0, 64, 255);
 VAR(IDF_PERSIST, textwrapmin, 0, 10, VAR_MAX);
 FVAR(IDF_PERSIST, textwraplimit, 0, 0.3f, 1);
+FVAR(IDF_PERSIST, textspacescale, 0, 0.5f, 10);
 
 VAR(IDF_PERSIST, textkeyimages, 0, 1, 1);
-FVAR(IDF_PERSIST, textkeyimagescale, 0, 1, FVAR_MAX);
+FVAR(IDF_PERSIST, textkeyimagescale, 0, 0.8f, FVAR_MAX);
 VAR(IDF_PERSIST, textkeyseps, 0, 1, 1);
 VAR(IDF_PERSIST|IDF_HEX, textkeycolour, 0, 0x00FFFF, 0xFFFFFF);
 
@@ -518,7 +519,7 @@ static float icon_width(const char *name, float scale)
         } \
         else if(qc == ' ') \
         { \
-            float cw = scale*curfont->defaultw; \
+            float cw = scale*curfont->defaultw*textspacescale; \
             TEXTWIDTHEST(true); \
             qx += cw; \
         } \
@@ -598,7 +599,7 @@ static float icon_width(const char *name, float scale)
         } \
         else if(c == ' ') \
         { \
-            float cw = scale*curfont->defaultw; \
+            float cw = scale*curfont->defaultw*textspacescale; \
             TEXTWIDTH; \
             x += cw; \
             TEXTWHITE(i); \
