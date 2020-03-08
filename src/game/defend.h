@@ -218,8 +218,6 @@ namespace defend
     extern void setscore(int team, int total);
     extern void reset();
     extern void setup();
-    extern void drawnotices(int w, int h, int &tx, int &ty, int tr, int tg, int tb, float blend);
-    extern void drawevents(int w, int h, int &tx, int &ty, int tr, int tg, int tb, float blend);
     extern void drawonscreen(int w, int h, float blend);
     extern void preload();
     extern void render();

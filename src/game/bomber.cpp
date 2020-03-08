@@ -210,55 +210,6 @@ namespace bomber
         }
     }
 
-    void drawnotices(int w, int h, int &tx, int &ty, int tr, int tg, int tb, float blend)
-    {
-        if(game::focus->state != CS_ALIVE || hud::shownotices < 2) return;
-        if(game::focus->lastbuff && hud::shownotices >= 3)
-        {
-            if(m_regen(game::gamemode, game::mutators) && bomberregenbuff && bomberregenextra)
-            {
-                if(game::damageinteger)
-                    ty += draw_textf("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield, +\fs\fy%d\fS regen", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, int(bomberbuffdamage*100), int(bomberbuffshield*100), int(ceilf(bomberregenextra/game::damagedivisor)));
-                else ty += draw_textf("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield, +\fs\fy%1.f\fS regen", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, int(bomberbuffdamage*100), int(bomberbuffshield*100), bomberregenextra/game::damagedivisor);
-            }
-            else ty += draw_textf("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, int(bomberbuffdamage*100), int(bomberbuffshield*100));
-        }
-        loopv(st.flags)
-        {
-            bomberstate::flag &f = st.flags[i];
-            if(f.owner == game::focus)
-            {
-                bool important = false;
-                if(carrytime)
-                {
-                    int delay = carrytime-(lastmillis-f.taketime);
-                    ty += draw_textf("Bomb explodes in \fs\fzgy%s\fS", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, timestr(delay));
-                    if(m_bb_hold(game::gamemode, game::mutators))
-                        ty += draw_textf("Killing enemies resets fuse timer", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED);
-                    if(delay <= carrytime/4) important = true;
-                }
-                if(game::focus == game::player1)
-                    ty += draw_textf(important ? "\fs\fzuyPress \fs\fw\f{=affinity}\fS to throw the bomb\fS" : "Press \fs\fw\f{=affinity}\fS to throw the bomb", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED);
-                break;
-            }
-        }
-    }
-
-    void drawevents(int w, int h, int &tx, int &ty, int tr, int tg, int tb, float blend)
-    {
-        if(game::focus->state != CS_ALIVE || hud::showevents < 2) return;
-        loopv(st.flags)
-        {
-            bomberstate::flag &f = st.flags[i];
-            if(f.owner == game::focus)
-            {
-                ty -= draw_textf("You are holding the \fs\f[%d]\f(%s)bomb\fS", tx, ty, int(FONTW*hud::eventpadx), int(FONTH*hud::eventpady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, game::pulsehexcol(game::focus, PULSE_DISCO), hud::bombtex);
-                ty -= FONTH/4;
-                break;
-            }
-        }
-    }
-
     void checkcams(vector<cament *> &cameras)
     {
         loopv(st.flags) // flags/bases

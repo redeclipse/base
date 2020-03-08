@@ -186,31 +186,6 @@ namespace defend
     {
     }
 
-    void drawnotices(int w, int h, int &tx, int &ty, int tr, int tg, int tb, float blend)
-    {
-        if(game::focus->state != CS_ALIVE || hud::shownotices < 3 || !game::focus->lastbuff) return;
-        if(m_regen(game::gamemode, game::mutators) && defendregenbuff && defendregenextra)
-        {
-            if(game::damageinteger)
-                ty += draw_textf("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield, +\fs\fy%d\fS regen", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, int(bomberbuffdamage*100), int(bomberbuffshield*100), int(ceilf(bomberregenextra/game::damagedivisor)));
-            else ty += draw_textf("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield, +\fs\fy%1.f\fS regen", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, int(bomberbuffdamage*100), int(bomberbuffshield*100), bomberregenextra/game::damagedivisor);
-        }
-        else ty += draw_textf("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, int(defendbuffdamage*100), int(defendbuffshield*100));
-    }
-
-    void drawevents(int w, int h, int &tx, int &ty, int tr, int tg, int tb, float blend)
-    {
-        if(game::focus->state != CS_ALIVE || hud::showevents < 2) return;
-        loopv(st.flags) if(insideaffinity(st.flags[i], game::focus) && (st.flags[i].owner == game::focus->team || st.flags[i].enemy == game::focus->team))
-        {
-            defendstate::flag &f = st.flags[i];
-            float occupy = !f.owner || f.enemy ? clamp(f.converted/float(defendcount), 0.f, 1.f) : 1.f;
-            bool overthrow = f.owner && f.enemy == game::focus->team;
-            ty -= draw_textf("You are %s: %s \fs\f[%d]\f(%s)\f(%s)\fS \fs%s%d%%\fS", tx, ty, int(FONTW*hud::eventpadx), int(FONTH*hud::eventpady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, overthrow ? "Overthrowing" : "Securing", f.name, TEAM(f.owner, colour), hud::teamtexname(f.owner), hud::pointtex, overthrow ? "\fy" : (occupy < 1.f ? "\fc" : "\fg"), int(occupy*100.f))+FONTH/4;
-            break;
-        }
-    }
-
     void reset()
     {
         st.reset();

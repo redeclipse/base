@@ -2204,8 +2204,8 @@ namespace hud
         *flagtakentex, *bombdroptex, *bombtakentex, *attacktex, *warningtex, *indicatortex, *crosshairtex, *hithairtex,
         *spree1tex, *spree2tex, *spree3tex, *spree4tex, *multi1tex, *multi2tex, *multi3tex, *headshottex, *dominatetex, *revengetex,
         *firstbloodtex, *breakertex;
-    extern int hudwidth, hudheight, hudsize, lastteam, damageresidue, damageresiduefade, shownotices, showevents, radaraffinitynames, teamhurthud, teamhurttime, teamhurtdist;
-    extern float noticescale, eventscale, radaraffinityblend, radarblipblend, radaraffinitysize, noticepadx, noticepady, eventpadx, eventpady;
+    extern int hudwidth, hudheight, hudsize, lastteam, damageresidue, damageresiduefade, radaraffinitynames, teamhurthud, teamhurttime, teamhurtdist;
+    extern float radaraffinityblend, radarblipblend, radaraffinitysize;
     extern bool scoreson, scoresoff, shownscores;
     extern vector<int> teamkills;
     extern const char *icontex(int type, int value);
