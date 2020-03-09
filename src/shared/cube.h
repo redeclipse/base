@@ -3,22 +3,19 @@
 
 #define _FILE_OFFSET_BITS 64
 
-#ifdef WIN32
-#define _USE_MATH_DEFINES
-#endif
-#include <math.h>
-
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <stdarg.h>
-#include <limits.h>
-#include <float.h>
-#include <assert.h>
-#include <time.h>
+#include <cmath>
+#include <cstring>
+#include <cstdio>
+#include <cstdlib>
+#include <cctype>
+#include <cstdarg>
+#include <climits>
+#include <cfloat>
+#include <cassert>
+#include <ctime>
 
 #ifdef WIN32
+  #define _USE_MATH_DEFINES
   #define WIN32_LEAN_AND_MEAN
   #ifdef _WIN32_WINNT
   #undef _WIN32_WINNT
