@@ -223,15 +223,13 @@ namespace defend
             st.addaffinity(e.o, team, e.attrs[1], e.attrs[2], name);
         }
         if(!st.flags.length()) return; // map doesn't seem to support this mode at all..
-        bool hasteams = df != 0;
-        if(hasteams)
+        if(df != 0)
         {
             int bases[T_COUNT] = {0};
             loopv(st.flags) bases[st.flags[i].kinship]++;
             loopi(numteams(game::gamemode, game::mutators)-1) if(!bases[i+1] || (bases[i+1] != bases[i+2]))
             {
                 loopvk(st.flags) st.flags[k].kinship = T_NEUTRAL;
-                hasteams = false;
                 break;
             }
         }

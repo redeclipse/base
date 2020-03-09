@@ -246,7 +246,7 @@ struct bomberservmode : bomberstate, servmode
                     int score = G(bomberholdpoints)*t;
                     if(score)
                     {
-                        int total = ci->points;
+                        int total;
                         givepoints(ci, score, true, false);
                         if(m_team(gamemode, mutators))
                         {

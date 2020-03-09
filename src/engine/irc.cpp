@@ -194,7 +194,7 @@ void irc2cube(char *dst, const char *src)
                         case '7': *dst++ = '\f'; *dst++ = 'o'; break; // orange
                         case '8': *dst++ = '\f'; *dst++ = 'y'; break; // yellow
                         case '9': *dst++ = '\f'; *dst++ = 'g'; break; // green
-                        default: *dst++ = '\f'; *dst++ = 'w'; c = *--src; break;
+                        default: *dst++ = '\f'; *dst++ = 'w'; break;
                     }
                     break;
                 case '1':
@@ -207,7 +207,7 @@ void irc2cube(char *dst, const char *src)
                         case '3': *dst++ = '\f'; *dst++ = 'm'; break; // magenta
                         case '4': *dst++ = '\f'; *dst++ = 'A'; break; // dark grey
                         case '5': *dst++ = '\f'; *dst++ = 'a'; break; // grey
-                        default: *dst++ = '\f'; *dst++ = 'A'; c = *--src; break;
+                        default: *dst++ = '\f'; *dst++ = 'A'; break;
                     }
                     break;
                 case '2': *dst++ = '\f'; *dst++ = 'B'; break; // dark blue
@@ -218,7 +218,7 @@ void irc2cube(char *dst, const char *src)
                 case '7': *dst++ = '\f'; *dst++ = 'o'; break; // orange
                 case '8': *dst++ = '\f'; *dst++ = 'y'; break; // yellow
                 case '9': *dst++ = '\f'; *dst++ = 'g'; break; // green
-                default: *dst++ = '\f'; *dst++ = 'w'; c = *--src; break;
+                default: *dst++ = '\f'; *dst++ = 'w'; break;
             }
         }
         else if(c == '\x0F')

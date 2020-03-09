@@ -103,7 +103,7 @@ static bool findzipdirectory(FILE *f, zipdirectoryheader &hdr)
     hdr.entries = lilswap(*(ushort *)src); src += 2;
     hdr.size = lilswap(*(uint *)src); src += 4;
     hdr.offset = lilswap(*(uint *)src); src += 4;
-    hdr.commentlength = lilswap(*(ushort *)src); src += 2;
+    hdr.commentlength = lilswap(*(ushort *)src);
 
     if(hdr.signature != ZIP_DIRECTORY_SIGNATURE || hdr.disknumber != hdr.directorydisk || hdr.diskentries != hdr.entries) return false;
 
@@ -187,7 +187,7 @@ static bool readlocalfileheader(FILE *f, ziplocalfileheader &h, uint offset)
     h.compressedsize = lilswap(*(uint *)src); src += 4;
     h.uncompressedsize = lilswap(*(uint *)src); src += 4;
     h.namelength = lilswap(*(ushort *)src); src += 2;
-    h.extralength = lilswap(*(ushort *)src); src += 2;
+    h.extralength = lilswap(*(ushort *)src);
     if(h.signature != ZIP_LOCAL_FILE_SIGNATURE) return false;
     // h.uncompressedsize or h.compressedsize may be zero - so don't validate
     return true;

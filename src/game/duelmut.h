@@ -43,8 +43,7 @@ struct duelservmode : servmode
             if(m_survivor(gamemode, mutators)) ci->queuepos = -1;
             else
             {
-                int n = duelqueue.find(ci);
-                ci->queuepos = n > 0 && dueltime >= 0 ? n-1 : n;
+                ci->queuepos = duelqueue.find(ci) > 0 && dueltime >= 0 ? duelqueue.find(ci)-1 : duelqueue.find(ci);
             }
             sendf(-1, 1, "ri3", N_QUEUEPOS, ci->clientnum, ci->queuepos);
         }
@@ -52,10 +51,9 @@ struct duelservmode : servmode
 
     bool remqueue(clientinfo *ci, bool pos = true)
     {
-        int n = duelqueue.find(ci);
-        if(n >= 0)
+        if(duelqueue.find(ci) >= 0)
         {
-            duelqueue.remove(n);
+            duelqueue.remove(duelqueue.find(ci));
             if(pos) position();
             return true;
         }
@@ -79,16 +77,13 @@ struct duelservmode : servmode
             }
         }
         if(ci->actortype == A_PLAYER && waitforhumans) waitforhumans = false;
-        int n = duelqueue.find(ci);
         if(top)
         {
-            if(n >= 0) duelqueue.remove(n);
+            if(duelqueue.find(ci) >= 0) duelqueue.remove(duelqueue.find(ci));
             duelqueue.insert(0, ci);
-            n = 0;
         }
-        else if(n < 0)
+        else if(duelqueue.find(ci) < 0)
         {
-            n = duelqueue.length();
             duelqueue.add(ci);
         }
         if(wait && ci->state != CS_WAITING) waiting(ci, DROP_RESET);

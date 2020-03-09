@@ -305,7 +305,7 @@ void backup(const char *fname, const char *ext, int revision, int start, bool st
     defformatstring(aname, "%s", findfile(tname, "w"));
     if(fileexists(aname, "r"))
     {
-        const char *bname = aname;
+        const char *bname;
         if(full) bname = findfile(makefile(fname, ext, revision, start, store), "w");
         else
         {

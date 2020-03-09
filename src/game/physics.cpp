@@ -1012,7 +1012,7 @@ namespace physics
         }
 
         m.mul(movevelocity(pl, floating));
-        float coast = PHYS(floorcoast);
+        float coast;
         if(floating || pl->type == ENT_CAMERA) coast = floatcoast;
         else
         {

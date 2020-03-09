@@ -3736,11 +3736,7 @@ namespace server
                 }
                 default: return false;
             }
-            if(val)
-            {
-                sendf(-1, 1, "ri2sis", N_COMMAND, -1, &id->name[3], strlen(val), val);
-                arg = val;
-            }
+            if(val) sendf(-1, 1, "ri2sis", N_COMMAND, -1, &id->name[3], strlen(val), val);
             return true;
         }
         return false; // parse will spit out "unknown command" in this case
@@ -7583,7 +7579,6 @@ namespace server
                     putint(q, packlen);
                     if(packlen > 0) p.get(q.subbuf(packlen).buf, packlen);
                     ci->messages.put(q.buf, q.length());
-                    curmsg += q.length();
                     break;
                 }
 

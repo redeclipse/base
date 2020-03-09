@@ -1613,7 +1613,6 @@ namespace ai
         // the state stack works like a chain of commands, certain commands simply replace each other
         // others spawn new commands to the stack the ai reads the top command from the stack and executes
         // it or pops the stack and goes back along the history until it finds a suitable command to execute
-        bool cleannext = false;
         if(d->ai->state.empty()) d->ai->addstate(AI_S_WAIT);
         loopvrev(d->ai->state)
         {
@@ -1622,12 +1621,6 @@ namespace ai
             {
                 gameent *e = game::getclient(c.owner);
                 if(!e || e->team != d->team) c.owner = -1;
-            }
-            if(cleannext)
-            {
-                c.millis = lastmillis;
-                c.override = false;
-                cleannext = false;
             }
             if(d->state == CS_ALIVE && run)
             {
@@ -1645,7 +1638,6 @@ namespace ai
                 if(!result && c.type != AI_S_WAIT && c.owner < 0)
                 {
                     d->ai->removestate(i);
-                    cleannext = true;
                     continue; // logic is run on working states
                 }
             }

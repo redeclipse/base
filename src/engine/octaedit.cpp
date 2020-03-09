@@ -405,9 +405,7 @@ FVAR(IDF_PERSIST, selectionwidth, 0, 4, 10);
 
 void rendereditcursor()
 {
-    int d   = dimension(sel.orient),
-        od  = dimension(orient),
-        odc = dimcoord(orient);
+    int d, od = dimension(orient), odc = dimcoord(orient);
 
     bool hidecursor = hud::hasinput() || blendpaintmode, hovering = false;
     hmapsel = false;
