@@ -194,8 +194,7 @@ struct shaft
         numplanes = 0;
         loopi(5) if(!(match&(1<<i))) for(int j = i+1; j<6; j++) if(!(match&(1<<j)) && i+3!=j && ((color>>i)^(color>>j))&1)
         {
-            int r = i%3, c = j%3, d = (r+1)%3;
-            if(d==c) d = (c+1)%3;
+            int r = i%3, c = j%3;
             shaftplane &p = planes[numplanes++];
             p.r = from[j] - to[j];
             if(i<3 ? p.r >= 0 : p.r < 0)

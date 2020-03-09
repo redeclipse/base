@@ -3051,7 +3051,6 @@ static void renderlightsnobatch(Shader *s, int stencilref, bool transparent, flo
 
     if(!outside)
     {
-        outside = true;
         glDepthFunc(GL_LESS);
         glCullFace(GL_BACK);
     }
@@ -3216,7 +3215,7 @@ void renderlights(float bsx1 = -1, float bsy1 = -1, float bsx2 = 1, float bsy2 =
         rendersunpass(s, stencilref, transparent, bsx1, bsy1, bsx2, bsy2, tilemask);
     }
 
-    if(depthtestlights && !depth) { glEnable(GL_DEPTH_TEST); depth = true; }
+    if(depthtestlights && !depth) glEnable(GL_DEPTH_TEST);
 
     if(!lighttilebatch || drawtex == DRAWTEX_MINIMAP)
     {
@@ -3368,10 +3367,7 @@ void rendervolumetric()
     }
 
     if(!outside)
-    {
-        outside = true;
         glCullFace(GL_BACK);
-    }
 
     lightsphere::disable();
 

@@ -2291,8 +2291,7 @@ namespace client
 
     void parsepositions(ucharbuf &p)
     {
-        int type;
-        while(p.remaining()) switch(type = getint(p))
+        while(p.remaining()) switch(getint(p))
         {
             case N_POS: // position of another client
             {

@@ -1812,30 +1812,21 @@ namespace game
                     concatstring(d->obit, " on a \fs\fzywslaughter\fS");
                     v->addicon(eventicon::SPREE, totalmillis, eventiconfade, 1);
                     if(!override && allowanc)
-                    {
                         anc = S_V_SPREE2;
-                        override = true;
-                    }
                 }
                 else if(style&FRAG_SPREE3)
                 {
                     concatstring(d->obit, " on a \fs\fzywmassacre\fS");
                     v->addicon(eventicon::SPREE, totalmillis, eventiconfade, 2);
                     if(!override && allowanc)
-                    {
                         anc = S_V_SPREE3;
-                        override = true;
-                    }
                 }
                 else if(style&FRAG_SPREE4)
                 {
                     concatstring(d->obit, " in a \fs\fzyibloodbath\fS");
                     v->addicon(eventicon::SPREE, totalmillis, eventiconfade, 3);
                     if(!override && allowanc)
-                    {
                         anc = S_V_SPREE4;
-                        override = true;
-                    }
                 }
             }
         }

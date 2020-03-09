@@ -431,8 +431,6 @@ struct editor
             if(maxx >= 0 && b->lines[0].len + cx > maxx) slen = maxx-cx;
             if(slen > 0)
             {
-                int len = current.len;
-                if(maxx >= 0 && slen + cx + len > maxx) len = max(0, maxx-(cx+slen));
                 current.insert(str, cx, slen);
                 cx += slen;
             }
@@ -646,13 +644,11 @@ struct editor
             {
                 if(sy < starty) // crop top/bottom within window
                 {
-                    sy = starty;
                     psy = 0;
                     psx = 0;
                 }
                 if(ey > maxy)
                 {
-                    ey = maxy;
                     pey = pixelheight-FONTH;
                     pex = pixelwidth;
                 }

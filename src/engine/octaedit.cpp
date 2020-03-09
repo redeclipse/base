@@ -482,7 +482,7 @@ void rendereditcursor()
             if(gridlookup && !dragging && !moving && !havesel && hmapedit!=1) gridsize = lusize;
             int mag = gridsize && lusize ? lusize / gridsize : 0;
             normalizelookupcube(ivec(w));
-            if(sdist == 0 || sdist > wdist) rayboxintersect(vec(lu), vec(gridsize), player->o, camdir, t=0, orient); // just getting orient
+            if(sdist == 0 || sdist > wdist) rayboxintersect(vec(lu), vec(gridsize), player->o, camdir, t, orient); // just getting orient
             cur = lu;
             cor = ivec(vec(w).mul(2).div(gridsize));
             od = dimension(orient);

@@ -940,8 +940,6 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
         ly = 0;
         left = rleft;
         top = rtop;
-        cx = -FONTW;
-        cy = 0;
         color = TVECX(r, g, b, fade);
         loopi(16) colorstack[i] = color;
         hudshader->set();
