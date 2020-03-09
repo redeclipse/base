@@ -3,11 +3,6 @@
 #ifndef _TOOLS_H
 #define _TOOLS_H
 
-#ifdef NULL
-#undef NULL
-#endif
-#define NULL 0
-
 typedef unsigned char uchar;
 typedef unsigned short ushort;
 typedef unsigned int uint;
