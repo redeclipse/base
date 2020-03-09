@@ -1802,10 +1802,7 @@ namespace game
                     concatstring(d->obit, " in total \fs\fzywcarnage\fS");
                     v->addicon(eventicon::SPREE, totalmillis, eventiconfade, 0);
                     if(!override && allowanc)
-                    {
                         anc = S_V_SPREE;
-                        override = true;
-                    }
                 }
                 else if(style&FRAG_SPREE2)
                 {
