@@ -52,7 +52,10 @@ GTAGS
 GRTAGS
 CMakeCache.txt
 CMakeFiles/
+cmake-build-*/
 cmake_install.cmake
 data/bonus/
 extras.txt
 src/redeclipse.code-workspace
+!src/lib/amd64/*.lib
+!src/lib/x86/*.lib
