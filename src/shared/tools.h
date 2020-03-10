@@ -1626,7 +1626,7 @@ struct slotmanager
     }
 };
 
-#if defined(WIN32) && !defined(__GNUC__)
+#if defined(WIN32) && !defined(__GNUC__) && !defined(__clang__)
 #ifdef _DEBUG
 //#define _CRTDBG_MAP_ALLOC
 #include <crtdbg.h>
