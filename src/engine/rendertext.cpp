@@ -381,7 +381,7 @@ static const char *gettexvar(const char *var)
 
 static float draw_icon(Texture *&tex, const char *name, float x, float y, float scale)
 {
-    if(!name && !*name) return 0;
+    if(!name) return 0;
     const char *file = name;
     if(*file == '$') file = gettexvar(++file);
     if(!*file) return 0;
