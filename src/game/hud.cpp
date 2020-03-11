@@ -1845,7 +1845,6 @@ namespace hud
             flushhudmatrix();
             resethudshader();
             drawpointers(hudwidth, hudheight);
-            rendertexturepanel(hudwidth, hudheight);
         }
         glDisable(GL_BLEND);
     }

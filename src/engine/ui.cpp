@@ -796,9 +796,14 @@ namespace UI
     ICOMMAND(0, uirootname, "", (), { Window *o = uirootwindow(buildparent); result(o ? o->name : ""); });
 
     #define UIWINCMDC(func, types, argtypes, body) \
-        ICOMMAND(0, ui##func, types, argtypes, \
+        ICOMMAND(0, ui##func##root, types, argtypes, \
         { \
             Object *o = uirootwindow(buildparent); \
+            if(o) { body; } \
+        }); \
+        ICOMMAND(0, ui##func, types, argtypes, \
+        { \
+            Object *o = buildparent; \
             if(o) { body; } \
         });
 

@@ -552,7 +552,6 @@ extern void pasteundoents(undoblock *u);
 // octaedit
 extern int texpaneltimer;
 extern void cancelsel();
-extern void rendertexturepanel(int w, int h);
 extern void addundo(undoblock *u);
 extern void commitchanges(bool force = false);
 extern void changed(const ivec &bbmin, const ivec &bbmax, bool commit = true);
