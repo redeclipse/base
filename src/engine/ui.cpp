@@ -1655,6 +1655,15 @@ namespace UI
 
         static void def() { gle::defcolor(4, GL_UNSIGNED_BYTE); }
 
+        Color &scale(const Color &c)
+        {
+            r = int(r*c.r/255.f);
+            g = int(g*c.g/255.f);
+            b = int(b*c.b/255.f);
+            a = int(a*c.a/255.f);
+            return *this;
+        }
+
         vec tocolor() const { return vec(r*(1.0f/255.0f), g*(1.0f/255.0f), b*(1.0f/255.0f)); }
         int tohexcolor() const { return (int(r)<<16)|(int(g)<<8)|int(b); }
 
@@ -2007,25 +2016,28 @@ namespace UI
 
         Texture *tex;
         bool alphatarget, outline;
-        float shadow;
+        float shadowsize;
+        Color shadowcolor;
 
-        void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0, bool outline_ = false, float shadow_ = 0.f)
+        void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0, bool outline_ = false, float shadowsize_ = 0.f)
         {
             Target::setup(minw_, minh_, color_, SOLID, VERTICAL);
             tex = tex_;
             alphatarget = alphatarget_;
             outline = outline_;
-            shadow = shadow_;
+            shadowsize = shadowsize_;
+            shadowcolor = Color(color_).scale(Color(0, 0, 0, 255));
         }
 
-        void setup(Texture *tex_, const Color &color_, const Color &color2_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0, int dir_ = VERTICAL, bool outline_ = false, float shadow_ = 0.f)
+        void setup(Texture *tex_, const Color &color_, const Color &color2_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0, int dir_ = VERTICAL, bool outline_ = false, float shadowsize_ = 0.f)
         {
             Target::setup(minw_, minh_, color_, SOLID, dir_);
             colors.add(color2_); // gradient version
             tex = tex_;
             alphatarget = alphatarget_;
             outline = outline_;
-            shadow = shadow_;
+            shadowsize = shadowsize_;
+            shadowcolor = Color(color_).scale(Color(0, 0, 0, 255));
         }
 
         static const char *typestr() { return "#Image"; }
@@ -2054,7 +2066,7 @@ namespace UI
             changedraw(CHANGE_COLOR | CHANGE_BLEND);
             if(type==MODULATE) modblend(); else resetblend();
             int col = clamp(colstart, -1, colors.length()-1);
-            Color c = col >= 0 ? colors[col] : Color(0, 0, 0, colors[0].a);
+            Color c = col >= 0 ? colors[col] : Color(colors[0]).scale(shadowcolor);
             if(forced || lastmode != mode)
             {
                 if(lastmode != GL_POINTS) gle::end();
@@ -2174,11 +2186,16 @@ namespace UI
         {
             if(tex == notexture) { Object::draw(sx, sy); return; }
 
-            loopk(shadow != 0 ? 2 : 1)
+            float gs = fabs(shadowsize), gw = max(w-(shadowsize != 0 ? float(gs) : 0.f), 0.f), gh = max(h-(shadowsize != 0 ? float(gs) : 0.f), 0.f);
+            loopk(shadowsize != 0 ? 2 : 1)
             {
-                bool shading = shadow != 0 && !k;
-                float gx = sx+(shadow > 0 && !k ? shadow : 0), gy = sy+(shadow > 0 && !k ? shadow : 0),
-                      gw = max(w-(shadow != 0 ? float(fabs(shadow)) : 0.f), 0.f), gh = max(h-(shadow != 0 ? float(fabs(shadow)) : 0.f), 0.f);
+                bool shading = shadowsize != 0 && !k;
+                float gx = sx, gy = sy;
+                if((shadowsize > 0 && !k) || (shadowsize < 0 && k))
+                {
+                    gx += gs;
+                    gy += gs;
+                }
                 vec2 coordmap[FC_MAX], tcoordmap[FC_MAX];
                 loopi(FC_MAX) loopj(2)
                 {
@@ -2210,15 +2227,21 @@ namespace UI
     UIIMGCMDS(clamped, 0x7000);
     UIARGB(Image, image, alphatarget);
     UIARGB(Image, image, outline);
-    UIARG(Image, image, shadow, "f", float, FVAR_MIN, FVAR_MAX);
+    UICMD(Image, image, shadow, "fi", (float *s, int *c),
+    {
+        o->shadowsize = clamp(*s, FVAR_MIN, FVAR_MAX);
+        o->shadowcolor = Color(*c);
+    });
+    UIARG(Image, image, shadowsize, "f", float, FVAR_MIN, FVAR_MAX);
+    UICMD(Image, image, shadowcolour, "i", (int *c), o->shadowcolor = Color(*c));
 
     struct CroppedImage : Image
     {
         float cropx, cropy, cropw, croph;
 
-        void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0, float cropx_ = 0, float cropy_ = 0, float cropw_ = 1, float croph_ = 1, bool outline_ = false, float shadow_ = 0.f)
+        void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0, float cropx_ = 0, float cropy_ = 0, float cropw_ = 1, float croph_ = 1, bool outline_ = false, float shadowsize_ = 0.f)
         {
-            Image::setup(tex_, color_, alphatarget_, minw_, minh_, outline_, shadow_);
+            Image::setup(tex_, color_, alphatarget_, minw_, minh_, outline_, shadowsize_);
             cropx = cropx_;
             cropy = cropy_;
             cropw = cropw_;
@@ -2237,11 +2260,16 @@ namespace UI
         {
             if(tex == notexture) { Object::draw(sx, sy); return; }
 
-            loopk(shadow != 0 ? 2 : 1)
+            float gs = fabs(shadowsize), gw = max(w-(shadowsize != 0 ? float(gs) : 0.f), 0.f), gh = max(h-(shadowsize != 0 ? float(gs) : 0.f), 0.f);
+            loopk(shadowsize != 0 ? 2 : 1)
             {
-                bool shading = shadow != 0 && !k;
-                float gx = sx+(shadow > 0 && !k ? shadow : 0), gy = sy+(shadow > 0 && !k ? shadow : 0),
-                      gw = max(w-(shadow != 0 ? float(fabs(shadow)) : 0.f), 0.f), gh = max(h-(shadow != 0 ? float(fabs(shadow)) : 0.f), 0.f);
+                bool shading = shadowsize != 0 && !k;
+                float gx = sx, gy = sy;
+                if((shadowsize > 0 && !k) || (shadowsize < 0 && k))
+                {
+                    gx += gs;
+                    gy += gs;
+                }
                 float texmap[FC_MAX][2] = { { cropx, cropy }, { cropx+cropw, cropy }, { cropx+cropw, cropy+croph }, { cropx, cropy+croph } };
                 vec2 coordmap[FC_MAX], tcoordmap[FC_MAX];
                 loopi(FC_MAX) loopj(2)
@@ -2315,11 +2343,16 @@ namespace UI
         {
             if(tex == notexture) { Object::draw(sx, sy); return; }
 
-            loopk(shadow != 0 ? 2 : 1)
+            float gs = fabs(shadowsize), gw = max(w-(shadowsize != 0 ? float(gs) : 0.f), 0.f), gh = max(h-(shadowsize != 0 ? float(gs) : 0.f), 0.f);
+            loopk(shadowsize != 0 ? 2 : 1)
             {
-                bool shading = shadow != 0 && !k;
-                float gx = sx+(shadow > 0 && !k ? shadow : 0), gy = sy+(shadow > 0 && !k ? shadow : 0),
-                      gw = max(w-(shadow != 0 ? float(fabs(shadow)) : 0.f), 0.f), gh = max(h-(shadow != 0 ? float(fabs(shadow)) : 0.f), 0.f);
+                bool shading = shadowsize != 0 && !k;
+                float gx = sx, gy = sy;
+                if((shadowsize > 0 && !k) || (shadowsize < 0 && k))
+                {
+                    gx += gs;
+                    gy += gs;
+                }
                 if(!shading && outline)
                 {
                     changedraw(CHANGE_SHADER);
@@ -2376,9 +2409,9 @@ namespace UI
     {
         float texborder, screenborder;
 
-        void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float texborder_ = 0, float screenborder_ = 0, float minw_ = 0, float minh_ = 0, bool outline_ = false, float shadow_ = 0.f)
+        void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float texborder_ = 0, float screenborder_ = 0, float minw_ = 0, float minh_ = 0, bool outline_ = false, float shadowsize_ = 0.f)
         {
-            Image::setup(tex_, color_, alphatarget_, minw_, minh_, outline_, shadow_);
+            Image::setup(tex_, color_, alphatarget_, minw_, minh_, outline_, shadowsize_);
             texborder = texborder_;
             screenborder = screenborder_;
         }
@@ -2405,11 +2438,16 @@ namespace UI
         {
             if(tex == notexture) { Object::draw(sx, sy); return; }
 
-            loopk(shadow != 0 ? 2 : 1)
+            float gs = fabs(shadowsize), gw = max(w-(shadowsize != 0 ? float(gs) : 0.f), 0.f), gh = max(h-(shadowsize != 0 ? float(gs) : 0.f), 0.f);
+            loopk(shadowsize != 0 ? 2 : 1)
             {
-                bool shading = shadow != 0 && !k;
-                float gx = sx+(shadow > 0 && !k ? shadow : 0), gy = sy+(shadow > 0 && !k ? shadow : 0),
-                      gw = max(w-(shadow != 0 ? float(fabs(shadow)) : 0.f), 0.f), gh = max(h-(shadow != 0 ? float(fabs(shadow)) : 0.f), 0.f);
+                bool shading = shadowsize != 0 && !k;
+                float gx = sx, gy = sy;
+                if((shadowsize > 0 && !k) || (shadowsize < 0 && k))
+                {
+                    gx += gs;
+                    gy += gs;
+                }
                 vec2 outline[FC_MAX], projdir[2], coordmap[CO_MAX][FC_MAX], tcoordmap[CO_MAX][FC_MAX];
                 loopi(FC_MAX) loopj(2) outline[i].v[j] = getcoord(i, j)*(j ? gh : gw);
 
@@ -2553,9 +2591,9 @@ namespace UI
     {
         float tilew, tileh;
 
-        void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0, float tilew_ = 0, float tileh_ = 0, bool outline_ = false, float shadow_ = 0.f)
+        void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0, float tilew_ = 0, float tileh_ = 0, bool outline_ = false, float shadowsize_ = 0.f)
         {
-            Image::setup(tex_, color_, alphatarget_, minw_, minh_, outline_, shadow_);
+            Image::setup(tex_, color_, alphatarget_, minw_, minh_, outline_, shadowsize_);
             tilew = tilew_;
             tileh = tileh_;
         }
@@ -2573,11 +2611,16 @@ namespace UI
         {
             if(tex == notexture) { Object::draw(sx, sy); return; }
 
-            loopk(shadow != 0 ? 2 : 1)
+            float gs = fabs(shadowsize), gw = max(w-(shadowsize != 0 ? float(gs) : 0.f), 0.f), gh = max(h-(shadowsize != 0 ? float(gs) : 0.f), 0.f);
+            loopk(shadowsize != 0 ? 2 : 1)
             {
-                bool shading = shadow != 0 && !k;
-                float gx = sx+(shadow > 0 && !k ? shadow : 0), gy = sy+(shadow > 0 && !k ? shadow : 0),
-                      gw = max(w-(shadow != 0 ? float(fabs(shadow)) : 0.f), 0.f), gh = max(h-(shadow != 0 ? float(fabs(shadow)) : 0.f), 0.f);
+                bool shading = shadowsize != 0 && !k;
+                float gx = sx, gy = sy;
+                if((shadowsize > 0 && !k) || (shadowsize < 0 && k))
+                {
+                    gx += gs;
+                    gy += gs;
+                }
                 if(!shading && outline)
                 {
                     changedraw(CHANGE_SHADER);
