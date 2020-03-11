@@ -3029,14 +3029,14 @@ namespace entities
             }
             if(showentinfo&(hasent ? 4 : 8))
             {
-                defformatstring(s, "<super>%s%s (%d)", hastop ? "\fc" : "\fC", enttype[e.type].name, idx >= 0 ? idx : 0);
+                defformatstring(s, "<bold>%s%s (%d)", hastop ? "\fc" : "\fC", enttype[e.type].name, idx >= 0 ? idx : 0);
                 part_textcopy(pos.add(off), s, hastop ? PART_TEXT_ONTOP : PART_TEXT);
                 if(idx >= 0)
                 {
                     loopv(railways)
                     {
                         if(railways[i].ent != idx && railways[i].findparent(idx) < 0) continue;
-                        formatstring(s, "<little>railway [%d] %d ms (%d/%d)", i, railways[i].millis, railways[i].length[0], railways[i].length[1]);
+                        formatstring(s, "railway [%d] %d ms (%d/%d)", i, railways[i].millis, railways[i].length[0], railways[i].length[1]);
                         part_textcopy(pos.add(vec(off).mul(0.5f)), s, hastop ? PART_TEXT_ONTOP : PART_TEXT);
                     }
                 }
@@ -3047,7 +3047,7 @@ namespace entities
             const char *itxt = entinfo(e.type, e.attrs, isedit);
             if(itxt && *itxt)
             {
-                defformatstring(ds, "<emphasis>%s", itxt);
+                defformatstring(ds, "%s", itxt);
                 part_textcopy(pos.add(off), ds, hastop ? PART_TEXT_ONTOP : PART_TEXT, 1, colourwhite);
             }
         }

@@ -1467,8 +1467,8 @@ namespace game
             if(aboveheaddamage)
             {
                 string text;
-                if(damageinteger) formatstring(text, "<sub>\fo%c%d", damage > 0 ? '-' : (damage < 0 ? '+' : '~'), int(ceilf((damage < 0 ? 0-damage : damage)/damagedivisor)));
-                else formatstring(text, "<sub>\fo%c%.1f", damage > 0 ? '-' : (damage < 0 ? '+' : '~'), (damage < 0 ? 0-damage : damage)/damagedivisor);
+                if(damageinteger) formatstring(text, "\fo%c%d", damage > 0 ? '-' : (damage < 0 ? '+' : '~'), int(ceilf((damage < 0 ? 0-damage : damage)/damagedivisor)));
+                else formatstring(text, "\fo%c%.1f", damage > 0 ? '-' : (damage < 0 ? '+' : '~'), (damage < 0 ? 0-damage : damage)/damagedivisor);
                 part_textcopy(d->abovehead(), text, d != focus ? PART_TEXT : PART_TEXT_ONTOP, eventiconfade, colourwhite, 4, 1, -10, 0, d);
             }
         }
@@ -3331,7 +3331,8 @@ namespace game
         if(aboveheadnames && d != player1)
         {
             pos.z += aboveheadnamessize/2;
-            part_textcopy(pos, colourname(d), PART_TEXT, 1, colourwhite, aboveheadnamessize, blend*aboveheadnamesblend);
+            defformatstring(name, "<bold>%s", colourname(d));
+            part_textcopy(pos, name, PART_TEXT, 1, colourwhite, aboveheadnamessize, blend*aboveheadnamesblend);
         }
         if(aboveheadinventory && d != player1)
         {

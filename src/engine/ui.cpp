@@ -2992,34 +2992,34 @@ namespace UI
 
     struct Font : Object
     {
-        ::font *font;
+        char *str;
 
-        Font() : font(NULL) {}
+        Font() : str(NULL) {}
+        ~Font() { delete[] str; }
 
-        void setup(const char *name)
+        void setup(const char *str_)
         {
             Object::setup();
-
-            if(!font || !strcmp(font->name, name)) font = findfont(name);
+            SETSTR(str, str_);
         }
 
         void layout()
         {
-            pushfont(font);
+            pushfont(str);
             Object::layout();
             popfont();
         }
 
         void draw(float sx, float sy)
         {
-            pushfont(font);
+            pushfont(str);
             Object::draw(sx, sy);
             popfont();
         }
 
         void buildchildren(uint *contents)
         {
-            pushfont(font);
+            pushfont(str);
             Object::buildchildren(contents);
             popfont();
         }
@@ -3027,7 +3027,7 @@ namespace UI
         #define DOSTATE(flags, func) \
             void func##children(float cx, float cy, int mask, bool inside, int setflags) \
             { \
-                pushfont(font); \
+                pushfont(str); \
                 Object::func##children(cx, cy, mask, inside, setflags); \
                 popfont(); \
             }
@@ -3036,7 +3036,7 @@ namespace UI
 
         bool rawkey(int code, bool isdown)
         {
-            pushfont(font);
+            pushfont(str);
             bool result = Object::rawkey(code, isdown);
             popfont();
             return result;
@@ -3044,7 +3044,7 @@ namespace UI
 
         bool key(int code, bool isdown)
         {
-            pushfont(font);
+            pushfont(str);
             bool result = Object::key(code, isdown);
             popfont();
             return result;
@@ -3052,7 +3052,7 @@ namespace UI
 
         bool textinput(const char *str, int len)
         {
-            pushfont(font);
+            pushfont(str);
             bool result = Object::textinput(str, len);
             popfont();
             return result;
@@ -4583,7 +4583,7 @@ namespace UI
         float oldtextscale = curtextscale;
         curtextscale = 1;
         cursortype = CURSOR_DEFAULT;
-        pushfont("default");
+        pushfont();
         readyeditors();
 
         world->setstate(STATE_HOVER, cursorx, cursory, world->childstate&STATE_HOLD_MASK);
@@ -4607,7 +4607,7 @@ namespace UI
         if(uihidden) return;
         float oldtextscale = curtextscale;
         curtextscale = 1;
-        pushfont("default");
+        pushfont();
         world->layout();
         world->adjustchildren();
         world->draw();

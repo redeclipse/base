@@ -157,7 +157,8 @@ namespace defend
             part_explosion(above, 3, PART_GLIMMERY, 1, colour, 1, blend);
             part_create(PART_HINT_SOFT, 1, above, colour, 6, blend);
             above.z += 6;
-            part_text(above, b.name, PART_TEXT, 1, colourwhite, 2, blend);
+            defformatstring(name, "<bold>%s", b.name);
+            part_textcopy(above, name, PART_TEXT, 1, colourwhite, 2, blend);
             above.z += 2;
             part_text(above, b.info, PART_TEXT, 1, colour, 2, blend);
             above.z += 4;
@@ -314,7 +315,7 @@ namespace defend
                     loopi(numdyns) if((e = (gameent *)game::iterdynents(i)) && e->actortype < A_ENEMY && insideaffinity(b, e))
                         if((d = e) == game::focus) break;
                     game::announcef(S_V_FLAGSECURED, CON_EVENT, d, true, "\faTeam %s secured \fw\f($pointtex)%s", game::colourteam(owner), b.name);
-                    if(game::aboveheadaffinity) part_textcopy(vec(b.o).add(vec(0, 0, enttype[AFFINITY].radius)), "<huge>\fzuwSECURED", PART_TEXT, game::eventiconfade, TEAM(owner, colour), 3, 1, -10);
+                    if(game::aboveheadaffinity) part_textcopy(vec(b.o).add(vec(0, 0, enttype[AFFINITY].radius)), "<bold>\fzuwSECURED", PART_TEXT, game::eventiconfade, TEAM(owner, colour), 3, 1, -10);
                     if(game::dynlighteffects) adddynlight(b.o, enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(owner, colour)).mul(2.f), 500, 250);
                 }
             }
@@ -325,7 +326,7 @@ namespace defend
                 loopi(numdyns) if((e = (gameent *)game::iterdynents(i)) && e->actortype < A_ENEMY && insideaffinity(b, e))
                     if((d = e) == game::focus) break;
                 game::announcef(S_V_FLAGOVERTHROWN, CON_EVENT, d, true, "\faTeam %s overthrew \fw\f($pointtex)%s", game::colourteam(enemy), b.name);
-                if(game::aboveheadaffinity) part_textcopy(vec(b.o).add(vec(0, 0, enttype[AFFINITY].radius)), "<huge>\fzuwOVERTHROWN", PART_TEXT, game::eventiconfade, TEAM(enemy, colour), 3, 1, -10);
+                if(game::aboveheadaffinity) part_textcopy(vec(b.o).add(vec(0, 0, enttype[AFFINITY].radius)), "<bold>\fzuwOVERTHROWN", PART_TEXT, game::eventiconfade, TEAM(enemy, colour), 3, 1, -10);
                 if(game::dynlighteffects) adddynlight(b.o, enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(enemy, colour)).mul(2.f), 500, 250);
             }
             b.converted = converted;

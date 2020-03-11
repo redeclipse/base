@@ -377,7 +377,7 @@ struct textrenderer : sharedlistrenderer
     {
         textshader = particletextshader;
 
-        pushfont("default");
+        pushfont();
     }
 
     void endrender()
@@ -395,6 +395,15 @@ struct textrenderer : sharedlistrenderer
     void renderpart(sharedlistparticle *p, int blend, int ts, float size)
     {
         const char *text = p->text;
+        stringz(font);
+        if(*text == '<')
+        {
+            const char *start = text;
+            while(*text && *text != '>') text++;
+            if(*text) { int len = text-(start+1); memcpy(font, start+1, len); font[len] = '\0'; text++; }
+            else text = start;
+        }
+        if(*font) pushfont(font);
         float scale = p->size/80.0f, xoff = -text_widthf(text)*0.5f;
 
         matrix4x3 m(camright, vec(camup).neg(), vec(camdir).neg(), p->o);
@@ -404,6 +413,7 @@ struct textrenderer : sharedlistrenderer
         textmatrix = &m;
         draw_text(text, 0, 0, p->color.r, p->color.g, p->color.b, int(p->blend*blend));
         textmatrix = NULL;
+        if(*font) popfont();
     }
 };
 static textrenderer texts, textontop(PT_ONTOP);

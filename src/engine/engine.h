@@ -192,9 +192,9 @@ enum
 
 extern font *findfont(const char *name);
 extern bool setfont(font *id);
-extern bool setfont(const char *name);
+extern bool setfont(const char *name = NULL);
 extern bool pushfont(font *id);
-extern bool pushfont(const char *name);
+extern bool pushfont(const char *name = NULL);
 extern bool popfont(int num = 1);
 extern float draw_text(const char *str, float rleft, float rtop, int r = -1, int g = -1, int b = -1, int a = 255, int flags = 0, int cursor = -1, float maxwidth = 0, float linespace = 0);
 extern float draw_textf(const char *fstr, float left, float top, float xpad = 0, float ypad = 0, int r = -1, int g = -1, int b = -1, int a = 255, int flags = 0, int cursor = -1, float maxwidth = 0, int linespace = 0, ...);
