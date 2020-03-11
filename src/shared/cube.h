@@ -14,6 +14,9 @@
 #include <cassert>
 #include <ctime>
 
+// add some C++ headers
+#include <iostream>
+
 #ifdef WIN32
   #define _USE_MATH_DEFINES
   #define WIN32_LEAN_AND_MEAN
