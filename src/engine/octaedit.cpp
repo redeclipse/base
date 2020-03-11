@@ -2315,8 +2315,9 @@ COMMAND(0, delcube, "");
 
 /////////// texture editing //////////////////
 
-int curtexindex = -1, lasttex = 0, lasttexmillis = -1;
-int texpaneltimer = 0;
+int lasttex = 0, lasttexmillis = -1;
+VAR(IDF_READONLY, texpaneltimer, 1, 0, -1);
+VAR(IDF_READONLY, curtexindex, 1, -1, -1);
 vector<ushort> texmru;
 
 void tofronttex()                                       // maintain most recently used of the texture lists when applying texture
@@ -2909,13 +2910,12 @@ void edittex(int i, bool save = true, bool edit = true)
     if(edit) mpedittex(i, allfaces, sel, true);
 }
 
-VAR(IDF_PERSIST, texpaneltime, 0, 5000, VAR_MAX);
 void edittex_(int *dir)
 {
     if(noedit()) return;
     filltexlist();
     if(texmru.empty()) return;
-    texpaneltimer = texpaneltime;
+    texpaneltimer = totalmillis;
     if(!(lastsel==sel)) tofronttex();
     curtexindex = clamp(curtexindex<0 ? 0 : curtexindex+*dir, 0, texmru.length()-1);
     edittex(texmru[curtexindex], false);
@@ -2976,17 +2976,38 @@ COMMAND(0, getseltex, "");
 ICOMMAND(0, getreptex, "", (), { if(!noedit()) intret(vslots.inrange(reptex) ? reptex : -1); });
 COMMAND(0, gettexname, "ii");
 ICOMMAND(0, texmru, "b", (int *idx), { filltexlist(); intret(texmru.inrange(*idx) ? texmru[*idx] : texmru.length()); });
-ICOMMAND(0, looptexmru, "re", (ident *id, uint *body),
-{
-    loopstart(id, stack);
-    filltexlist();
-    loopv(texmru) { loopiter(id, stack, texmru[i]); execute(body); }
-    loopend(id, stack);
-});
 ICOMMAND(0, numvslots, "", (), intret(vslots.length()));
 ICOMMAND(0, numslots, "", (), intret(slots.length()));
 COMMAND(0, getslottex, "i");
 ICOMMAND(0, texloaded, "i", (int *tex), intret(slots.inrange(*tex) && slots[*tex]->loaded ? 1 : 0));
+
+#define LOOPTEXMRU(name,op) \
+    ICOMMAND(0, looptexmru##name, "iire", (int *count, int *skip, ident *id, uint *body), \
+    { \
+        loopstart(id, stack); \
+        op(texmru, *count, *skip) \
+        { \
+            loopiter(id, stack, texmru[i]); \
+            execute(body); \
+        } \
+        loopend(id, stack); \
+    });
+LOOPTEXMRU(,loopcsv);
+LOOPTEXMRU(rev,loopcsvrev);
+
+#define LOOPTEXMRUIF(name,op) \
+    ICOMMAND(0, looptexmru##name##if, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
+    { \
+        loopstart(id, stack); \
+        op(texmru, *count, *skip) \
+        { \
+            loopiter(id, stack, texmru[i]); \
+            if(executebool(cond)) execute(body); \
+        } \
+        loopend(id, stack); \
+    });
+LOOPTEXMRUIF(,loopcsv);
+LOOPTEXMRUIF(rev,loopcsvrev);
 
 void replacetexcube(cube &c, int oldtex, int newtex)
 {
@@ -3250,111 +3271,6 @@ void editmat(char *name, char *filtername, int *style)
     mpeditmat(id, filter, *style, sel, true);
 }
 COMMAND(0, editmat, "ssi");
-
-void rendertexturepanel(int w, int h)
-{
-    if((texpaneltimer -= curtime)>0 && editmode)
-    {
-        pushhudmatrix();
-        flushhudmatrix(false);
-        SETSHADER(hudrgb);
-
-        int y = 340, gap = 10;
-
-        gle::defvertex(2);
-        gle::deftexcoord0();
-
-        loopi(7)
-        {
-            int s = (i == 3 ? 285 : 220), ti = curtexindex+i-3;
-            if(texmru.inrange(ti))
-            {
-                VSlot &vslot = lookupvslot(texmru[ti]), *layer = NULL, *detail = NULL;
-                Slot &slot = *vslot.slot;
-                Texture *tex = slot.sts.empty() ? notexture : slot.sts[0].t, *glowtex = NULL, *layertex = NULL, *detailtex = NULL;
-                if(slot.texmask&(1<<TEX_GLOW))
-                {
-                    loopvj(slot.sts) if(slot.sts[j].type==TEX_GLOW) { glowtex = slot.sts[j].t; break; }
-                }
-                if(vslot.layer)
-                {
-                    layer = &lookupvslot(vslot.layer);
-                    layertex = layer->slot->sts.empty() ? notexture : layer->slot->sts[0].t;
-                }
-                if(vslot.detail)
-                {
-                    detail = &lookupvslot(vslot.detail);
-                    detailtex = detail->slot->sts.empty() ? notexture : detail->slot->sts[0].t;
-                }
-                float sx = min(1.0f, tex->xs/(float)tex->ys), sy = min(1.0f, tex->ys/(float)tex->xs);
-                int x = w-s-gap, r = s;
-                vec2 tc[4] = { vec2(0, 0), vec2(1, 0), vec2(1, 1), vec2(0, 1) };
-                float xoff = vslot.offset.x, yoff = vslot.offset.y;
-                if(vslot.rotation)
-                {
-                    const texrotation &r = texrotations[vslot.rotation];
-                    if(r.swapxy) { swap(xoff, yoff); loopk(4) swap(tc[k].x, tc[k].y); }
-                    if(r.flipx) { xoff *= -1; loopk(4) tc[k].x *= -1; }
-                    if(r.flipy) { yoff *= -1; loopk(4) tc[k].y *= -1; }
-                }
-                loopk(4) { tc[k].x = tc[k].x/sx - xoff/tex->xs; tc[k].y = tc[k].y/sy - yoff/tex->ys; }
-                glBindTexture(GL_TEXTURE_2D, tex->id);
-                vec colorscale = vslot.getcolorscale();
-                loopj(glowtex ? 3 : 2)
-                {
-                    if(j < 2) gle::color(vec(colorscale).mul(j), texpaneltimer/1000.0f);
-                    else
-                    {
-                        glBindTexture(GL_TEXTURE_2D, glowtex->id);
-                        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-                        vec glowcolor = vslot.getglowcolor();
-                        gle::color(glowcolor, texpaneltimer/1000.0f);
-                    }
-                    gle::begin(GL_TRIANGLE_STRIP);
-                    gle::attribf(x,   y);   gle::attrib(tc[0]);
-                    gle::attribf(x+r, y);   gle::attrib(tc[1]);
-                    gle::attribf(x,   y+r); gle::attrib(tc[3]);
-                    gle::attribf(x+r, y+r); gle::attrib(tc[2]);
-                    xtraverts += gle::end();
-                    if(j==1 && detailtex)
-                    {
-                        glBindTexture(GL_TEXTURE_2D, detailtex->id);
-                        gle::begin(GL_TRIANGLE_STRIP);
-                        gle::attribf(x,     y);     gle::attrib(tc[0]);
-                        gle::attribf(x+r/2, y);     gle::attrib(tc[1]);
-                        gle::attribf(x,     y+r/2); gle::attrib(tc[3]);
-                        gle::attribf(x+r/2, y+r/2); gle::attrib(tc[2]);
-                        xtraverts += gle::end();
-                    }
-                    if(j==1 && layertex)
-                    {
-                        vec layerscale = layer->getcolorscale();
-                        gle::color(layerscale, texpaneltimer/1000.0f);
-                        glBindTexture(GL_TEXTURE_2D, layertex->id);
-                        gle::begin(GL_TRIANGLE_STRIP);
-                        gle::attribf(x+r/2, y+r/2); gle::attrib(tc[0]);
-                        gle::attribf(x+r,   y+r/2); gle::attrib(tc[1]);
-                        gle::attribf(x+r/2, y+r);   gle::attrib(tc[3]);
-                        gle::attribf(x+r,   y+r);   gle::attrib(tc[2]);
-                        xtraverts += gle::end();
-                    }
-                    if(!j)
-                    {
-                        r -= 10;
-                        x += 5;
-                        y += 5;
-                    }
-                    else if(j == 2) glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-                }
-            }
-            y += s+gap;
-        }
-
-        pophudmatrix(true, false);
-        resethudshader();
-    }
-    else texpaneltimer = 0;
-}
 
 #define EDITSTAT(name, type, val) \
     ICOMMAND(0, editstat##name, "", (), \

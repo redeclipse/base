@@ -2983,7 +2983,7 @@ namespace client
                                 const char *item = entities::entinfo(e.type, e.attrs, 0);
                                 if(item && *item)
                                 {
-                                    defformatstring(ds, "<emphasis>%s", item);
+                                    defformatstring(ds, "<bold>%s", item);
                                     part_textcopy(pos, ds, PART_TEXT, game::eventiconfade, colourwhite, 2, 1, -10);
                                 }
                             }

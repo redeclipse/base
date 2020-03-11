@@ -14,6 +14,7 @@ VAR(IDF_PERSIST, textkeyimages, 0, 1, 1);
 FVAR(IDF_PERSIST, textkeyimagescale, 0, 0.8f, FVAR_MAX);
 VAR(IDF_PERSIST, textkeyseps, 0, 1, 1);
 VAR(IDF_PERSIST|IDF_HEX, textkeycolour, 0, 0x00FFFF, 0xFFFFFF);
+SVAR(IDF_PERSIST, textfont, "default");
 
 static hashnameset<font> fonts;
 static font *fontdef = NULL;
@@ -21,7 +22,7 @@ static int fontdeftex = 0;
 
 vector<font *> fontstack;
 font *curfont = NULL;
-int curfonttex = 0, curfontpass = 0;
+int curfontpass = 0;
 bool wantfontpass = false;
 
 void newfont(char *name, char *tex, int *defaultw, int *defaulth, float *scale)
@@ -125,6 +126,7 @@ COMMAND(0, fontskip, "i");
 
 font *loadfont(const char *name)
 {
+    if(!name || !*name) return NULL;
     font *f = fonts.access(name);
     if(!f)
     {
@@ -163,6 +165,7 @@ COMMAND(0, fontalias, "ss");
 
 font *findfont(const char *name)
 {
+    if(!name || !*name) return NULL;
     return fonts.access(name);
 }
 
@@ -175,12 +178,14 @@ bool setfont(font *id)
 
 bool setfont(const char *name)
 {
-    return setfont(loadfont(name));
+    return setfont(loadfont(name ? name : textfont));
 }
 
 bool pushfont(font *id)
 {
-    if(!fontstack.length() && curfont)
+    if(!id) return false;
+
+    if(fontstack.empty() && curfont)
         fontstack.add(curfont);
 
     if(setfont(id))
@@ -193,18 +198,23 @@ bool pushfont(font *id)
 
 bool pushfont(const char *name)
 {
-    return pushfont(loadfont(name));
+    return pushfont(loadfont(name ? name : textfont));
 }
 
 bool popfont(int num)
 {
+    if(num == -1) num = fontstack.length();
     loopi(num)
     {
         if(fontstack.empty()) break;
         fontstack.pop();
     }
-    if(fontstack.length()) { curfont = fontstack.last(); return true; }
-    return setfont("default");
+    if(!fontstack.empty())
+    {
+        curfont = fontstack.last();
+        return true;
+    }
+    return setfont(textfont);
 }
 
 float text_widthf(const char *str, float xpad, float ypad, int flags, float linespace)
@@ -255,7 +265,7 @@ const matrix4x3 *textmatrix = NULL;
 static float draw_char(Texture *&tex, int c, float x, float y, float scale)
 {
     font::charinfo &info = curfont->chars[c-curfont->charoffset];
-    if(!curfontpass)
+    if(!curfontpass && curfont->texs.inrange(info.tex))
     {
         if(tex != curfont->texs[info.tex])
         {
@@ -478,6 +488,23 @@ static float icon_width(const char *name, float scale)
         } \
         else break; \
     } \
+    else if(str[h] == '<') \
+    { \
+        h++; \
+        const char *start = &str[h]; \
+        const char *end = strchr(start, '>'); \
+        if(end) \
+        { \
+            if(end > start) \
+            { \
+                string value; \
+                copystring(value, start, min(size_t(end - start + 1), sizeof(value))); \
+                TEXTFONT(value); \
+            } \
+            h += end-start; \
+        } \
+        else break; \
+    } \
     else if(s) TEXTCOLOR(h); \
 }
 
@@ -630,12 +657,14 @@ static float icon_width(const char *name, float scale)
 
 int text_visible(const char *str, float hitx, float hity, float maxwidth, int flags, float linespace)
 {
+    int oldfontdepth = fontstack.length();
     if(linespace <= 0) linespace = textlinespacing;
     #define TEXTINDEX(idx)
     #define TEXTWHITE(idx) if(y+FONTH > hity && x >= hitx) return idx;
     #define TEXTLINE(idx) if(y+FONTH > hity) return idx;
     #define TEXTCOLOR(idx)
     #define TEXTHEXCOLOR(ret)
+    #define TEXTFONT(ret) if(!strcmp(ret, "~")) { if(fontstack.length() > oldfontdepth) popfont(); } else pushfont(ret);
     #define TEXTICON(ret,q,s) q += icon_width(ret, scale);
     #define TEXTKEY(ret,q,s) q += key_widthf(ret);
     #define TEXTCHAR(idx) x += cw; TEXTWHITE(idx)
@@ -645,21 +674,25 @@ int text_visible(const char *str, float hitx, float hity, float maxwidth, int fl
     #undef TEXTLINE
     #undef TEXTCOLOR
     #undef TEXTHEXCOLOR
+    #undef TEXTFONT
     #undef TEXTICON
     #undef TEXTKEY
     #undef TEXTCHAR
+    if(fontstack.length() > oldfontdepth) popfont(fontstack.length()-oldfontdepth);
     return i;
 }
 
 // inverse of text_visible
 void text_posf(const char *str, int cursor, float &cx, float &cy, float maxwidth, int flags, float linespace)
 {
+    int oldfontdepth = fontstack.length();
     if(linespace <= 0) linespace = textlinespacing;
     #define TEXTINDEX(idx) if(cursor == idx) { cx = x; cy = y; break; }
     #define TEXTWHITE(idx)
     #define TEXTLINE(idx)
     #define TEXTCOLOR(idx)
     #define TEXTHEXCOLOR(ret)
+    #define TEXTFONT(ret) if(!strcmp(ret, "~")) { if(fontstack.length() > oldfontdepth) popfont(); } else pushfont(ret);
     #define TEXTICON(ret,q,s) q += icon_width(ret, scale); if(i >= cursor) break;
     #define TEXTKEY(ret,q,s) q += key_widthf(ret); if(i >= cursor) break;
     #define TEXTCHAR(idx) x += cw; if(i >= cursor) break;
@@ -671,14 +704,16 @@ void text_posf(const char *str, int cursor, float &cx, float &cy, float maxwidth
     #undef TEXTLINE
     #undef TEXTCOLOR
     #undef TEXTHEXCOLOR
+    #undef TEXTFONT
     #undef TEXTICON
     #undef TEXTKEY
     #undef TEXTCHAR
-    #undef TEXTCHAR
+    if(fontstack.length() > oldfontdepth) popfont(fontstack.length()-oldfontdepth);
 }
 
 void text_boundsf(const char *str, float &width, float &height, float xpad, float ypad, float maxwidth, int flags, float linespace)
 {
+    int oldfontdepth = fontstack.length();
     if(linespace <= 0) linespace = textlinespacing;
     flags &= TEXT_ALIGN;
     #define TEXTINDEX(idx)
@@ -686,11 +721,13 @@ void text_boundsf(const char *str, float &width, float &height, float xpad, floa
     #define TEXTLINE(idx) if(x > width) width = x;
     #define TEXTCOLOR(idx)
     #define TEXTHEXCOLOR(ret)
+    #define TEXTFONT(ret) if(!strcmp(ret, "~")) { if(fontstack.length() > oldfontdepth) popfont(); } else pushfont(ret);
     #define TEXTICON(ret,q,s) q += icon_width(ret, scale);
     #define TEXTKEY(ret,q,s) q += key_widthf(ret);
     #define TEXTCHAR(idx) x += cw;
     width = height = 0;
     TEXTSKELETON
+    if(fontstack.length() > oldfontdepth) popfont(fontstack.length()-oldfontdepth);
     height = y + FONTH;
     TEXTLINE(_)
     if(xpad) width += xpad*2;
@@ -700,6 +737,7 @@ void text_boundsf(const char *str, float &width, float &height, float xpad, floa
     #undef TEXTLINE
     #undef TEXTCOLOR
     #undef TEXTHEXCOLOR
+    #undef TEXTFONT
     #undef TEXTICON
     #undef TEXTKEY
     #undef TEXTCHAR
@@ -872,6 +910,13 @@ Shader *textshader = NULL;
 
 float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, int a, int flags, int cursor, float maxwidth, float linespace)
 {
+    if(curfont->texs.empty())
+    {
+        float lw = 0, lh = 0;
+        text_boundsf(str, lw, lh, 0.f, 0.f, maxwidth, flags, linespace);
+        return lh;
+    }
+    int oldfontdepth = fontstack.length();
     if(linespace <= 0) linespace = textlinespacing;
     #define TEXTINDEX(idx) \
         if(cursor >= 0 && idx == cursor) \
@@ -896,6 +941,7 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
             xtraverts += gle::end(); \
             gle::color(color); \
         }
+    #define TEXTFONT(ret) if(!strcmp(ret, "~")) { if(fontstack.length() > oldfontdepth) popfont(); } pushfont(ret);
     #define TEXTICON(ret,q,s) q += s ? draw_icon(tex, ret, left+x, top+y, scale) : icon_width(ret, scale);
     #define TEXTKEY(ret,q,s) q += s ? draw_key(tex, ret, left+x, top+y, color) : key_widthf(ret);
     #define TEXTCHAR(idx) { draw_char(tex, c, left+x, top+y, scale); x += cw; }
@@ -961,7 +1007,11 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
     #undef TEXTLINE
     #undef TEXTCOLOR
     #undef TEXTHEXCOLOR
+    #undef TEXTFONT
+    #undef TEXTICON
+    #undef TEXTKEY
     #undef TEXTCHAR
+    if(fontstack.length() > oldfontdepth) popfont(fontstack.length()-oldfontdepth);
     return ly + FONTH;
 }
 
@@ -971,6 +1021,7 @@ void reloadfonts()
         loopv(f.texs) if(!reloadtexture(f.texs[i])) fatal("Failed to reload font texture");
     );
 }
+COMMAND(0, reloadfonts, "");
 
 float draw_textf(const char *fstr, float left, float top, float xpad, float ypad, int r, int g, int b, int a, int flags, int cursor, float maxwidth, int linespace, ...)
 {

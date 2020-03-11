@@ -237,7 +237,7 @@ namespace capture
             vec above = f.spawnloc;
             above.z += !f.owner && !f.droptime ? enttype[AFFINITY].radius/2 + 4 : 3;
             blend = camera1->o.distrange(above, enttype[AFFINITY].radius, enttype[AFFINITY].radius/8);
-            defformatstring(info, "<super>%s Base", TEAM(f.team, name));
+            defformatstring(info, "<bold>%s Base", TEAM(f.team, name));
             part_textcopy(above, info, PART_TEXT, 1, TEAM(f.team, colour), 2, blend);
             above.z += 5;
             if(gs_playing(game::gamestate) && (f.droptime || (m_ctf_protect(game::gamemode, game::mutators) && f.taketime && f.owner && f.owner->team != f.team)))
@@ -358,7 +358,7 @@ namespace capture
         {
             if(effect&1 && game::aboveheadaffinity)
             {
-                defformatstring(text, "<huge>\fzuw%s", str);
+                defformatstring(text, "<bold>\fzuw%s", str);
                 part_textcopy(vec(from).add(vec(0, 0, enttype[AFFINITY].radius)), text, PART_TEXT, game::eventiconfade, TEAM(team, colour), 3, 1, -10);
             }
             if(game::dynlighteffects) adddynlight(vec(from).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(team, colour)).mul(2.f), 500, 250);
@@ -367,7 +367,7 @@ namespace capture
         {
             if(effect&2 && game::aboveheadaffinity)
             {
-                defformatstring(text, "<huge>\fzuw%s",str);
+                defformatstring(text, "<bold>\fzuw%s",str);
                 part_textcopy(vec(to).add(vec(0, 0, enttype[AFFINITY].radius)), text, PART_TEXT, game::eventiconfade, TEAM(team, colour), 3, 1, -10);
             }
             if(game::dynlighteffects) adddynlight(vec(to).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(team, colour)).mul(2.f), 500, 250);

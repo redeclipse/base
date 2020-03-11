@@ -1052,7 +1052,7 @@ int main(int argc, char **argv)
 
     conoutf("Loading defaults..");
     if(!execfile("config/stdlib.cfg", false)) fatal("Cannot find data files");
-    if(!setfont("default")) fatal("No default font specified");
+    if(!setfont()) fatal("No default font specified");
 
     UI::setup();
 
@@ -1168,6 +1168,7 @@ int main(int argc, char **argv)
                 }
                 setcaption(game::gametitle(), game::gametext());
             }
+            //popfont(-1);
         }
     }
 

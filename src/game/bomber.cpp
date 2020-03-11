@@ -309,7 +309,7 @@ namespace bomber
                     part_icon(offset, textureload(hud::warningtex, 3, true, false), height, amt*blend, 0, 0, 1, c.tohexcolor());
                 }
                 above.z += 6*trans;
-                defformatstring(info, "<super>%s Base", TEAM(f.team, name));
+                defformatstring(info, "<bold>%s Base", TEAM(f.team, name));
                 part_textcopy(above, info, PART_TEXT, 1, TEAM(f.team, colour), 2, trans*blend);
                 above.z += 4;
                 part_icon(above, textureload(hud::teamtexname(f.team), 3), 4, trans*blend, 0, 0, 1, TEAM(f.team, colour));
@@ -439,7 +439,7 @@ namespace bomber
         {
             if(effect&1 && game::aboveheadaffinity)
             {
-                defformatstring(text, "<huge>\fzuw%s", str);
+                defformatstring(text, "<bold>\fzuw%s", str);
                 part_textcopy(vec(from).add(vec(0, 0, enttype[AFFINITY].radius)), text, PART_TEXT, game::eventiconfade, TEAM(team, colour), 3, 1, -10);
             }
             if(game::dynlighteffects) adddynlight(vec(from).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(team, colour)).mul(2.f), 500, 250);
@@ -448,7 +448,7 @@ namespace bomber
         {
             if(effect&2 && game::aboveheadaffinity)
             {
-                defformatstring(text, "<huge>\fzuw%s", str);
+                defformatstring(text, "<bold>\fzuw%s", str);
                 part_textcopy(vec(to).add(vec(0, 0, enttype[AFFINITY].radius)), text, PART_TEXT, game::eventiconfade, TEAM(team, colour), 3, 1, -10);
             }
             if(game::dynlighteffects) adddynlight(vec(to).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(team, colour)).mul(2.f), 500, 250);
