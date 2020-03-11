@@ -1754,7 +1754,7 @@ void shutdownsignal(int signum)
 }
 
 #ifdef STANDALONE
-volatile int errors = 0;
+int errors = 0;
 void fatal(const char *s, ...)    // failure exit
 {
     if(++errors <= 2) // print up to one extra recursive error

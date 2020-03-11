@@ -120,7 +120,7 @@ void quit()                  // normal exit
     exit(EXIT_SUCCESS);
 }
 
-volatile int errors = 0;
+int errors = 0;
 void fatal(const char *s, ...)    // failure exit
 {
     if(!errors) initing = INIT_QUIT;
