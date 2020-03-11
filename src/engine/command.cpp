@@ -4975,7 +4975,7 @@ bool hasflag(const char *flags, char f)
 }
 ICOMMAND(0, hasflag, "ss", (char *s, char *f), intret(*s && *f && hasflag(s, *f) ? 1 : 0));
 
-int scalecolour(int c, int m) { return vec::fromcolor(c).mul(vec::fromcolor(m)).div(255).tohexcolor(); }
+int scalecolour(int c, int m) { return vec::fromcolor(c).mul(vec::fromcolor(m)).tohexcolor(); }
 ICOMMAND(0, scalecolour, "ii", (int *c, int *m), intret(scalecolour(*c, *m)));
 
 int modcolour(int c, float m) { return vec::fromcolor(c).mul(m).tohexcolor(); }
