@@ -1,7 +1,7 @@
 // Content Delivery Platform Integrations
 
 #include "engine.h"
-#include <stddef.h>
+#include <cstddef>
 #if defined(USE_STEAM)
 #define HAS_STEAM 1
 #include <steam_gameserver.h>

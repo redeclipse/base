@@ -735,7 +735,7 @@ COMMAND(0, resetsound, "");
 
 #ifdef WIN32
 
-#include <wchar.h>
+#include <cwchar>
 
 #else
 
@@ -746,7 +746,7 @@ COMMAND(0, resetsound, "");
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <fcntl.h>
-#include <wchar.h>
+#include <cwchar>
 #endif
 
 #endif
