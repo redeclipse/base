@@ -681,10 +681,18 @@ void rendereditcursor()
     glEnable(GL_CULL_FACE);
 }
 
+VAR(0, nexttex, -1, -1, VAR_MAX);
+
 void tryedit()
 {
     if(!editmode) return;
     if(blendpaintmode) trypaintblendmap();
+    if(vslots.inrange(nexttex) && !noedit())
+    {
+        filltexlist();
+        edittex(nexttex);
+    }
+    nexttex = -1;
 }
 
 //////////// ready changes to vertex arrays ////////////
@@ -2320,6 +2328,7 @@ COMMAND(0, delcube, "");
 int lasttex = 0, lasttexmillis = -1;
 VAR(IDF_READONLY, texpaneltimer, 1, 0, -1);
 VAR(IDF_READONLY, curtexindex, 1, -1, -1);
+
 vector<ushort> texmru;
 
 void tofronttex()                                       // maintain most recently used of the texture lists when applying texture
@@ -2860,7 +2869,7 @@ bool mpedittex(int tex, int allfaces, selinfo &sel, ucharbuf &buf)
     return true;
 }
 
-static void filltexlist()
+void filltexlist()
 {
     if(texmru.length()!=vslots.length())
     {
@@ -2901,7 +2910,7 @@ void compactmruvslots()
     reptex = vslots.inrange(reptex) ? vslots[reptex]->index : -1;
 }
 
-void edittex(int i, bool save = true, bool edit = true)
+void edittex(int i, bool save, bool edit)
 {
     lasttex = i;
     lasttexmillis = totalmillis;
@@ -3012,6 +3021,22 @@ LOOPTEXMRU(rev,loopcsvrev);
     });
 LOOPTEXMRUIF(,loopcsv);
 LOOPTEXMRUIF(rev,loopcsvrev);
+
+#define LOOPTEXMRUWHILE(name,op) \
+    ICOMMAND(0, looptexmru##name##while, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
+    { \
+        filltexlist(); \
+        loopstart(id, stack); \
+        op(texmru, *count, *skip) \
+        { \
+            if(!executebool(cond)) break; \
+            loopiter(id, stack, texmru[i]); \
+            execute(body); \
+        } \
+        loopend(id, stack); \
+    });
+LOOPTEXMRUWHILE(,loopcsv);
+LOOPTEXMRUWHILE(rev,loopcsvrev);
 
 void replacetexcube(cube &c, int oldtex, int newtex)
 {

@@ -738,14 +738,6 @@ namespace UI
     ICOMMAND(0, uigroup, "e", (uint *children),
         BUILD(Object, o, o->setup(), children));
 
-    UIGETOBJ(Object, objpos, x, float);
-    UIGETOBJ(Object, objpos, y, float);
-    UIGETOBJ(Object, objpos, w, float);
-    UIGETOBJ(Object, objpos, h, float);
-    UIGETOBJ(Object, objpos, ox, float);
-    UIGETOBJ(Object, objpos, oy, float);
-    UIARGB(Object, obj, overridepos);
-
     static inline void stopdrawing()
     {
         if(drawing)
@@ -935,11 +927,6 @@ namespace UI
             Object *o = buildparent; \
             if(o) { body; } \
         });
-
-    UIGETCMD(Window, window, px, float);
-    UIGETCMD(Window, window, py, float);
-    UIGETCMD(Window, window, pw, float);
-    UIGETCMD(Window, window, ph, float);
 
     static hashnameset<Window *> windows;
 
@@ -4202,8 +4189,11 @@ namespace UI
 
         void draw(float sx, float sy)
         {
-            Slot &slot = lookupslot(index, false);
-            previewslot(slot, *slot.variants, sx, sy);
+            if(slots.inrange(index))
+            {
+                Slot &slot = lookupslot(index, false);
+                previewslot(slot, *slot.variants, sx, sy);
+            }
 
             Object::draw(sx, sy);
         }
@@ -4219,8 +4209,11 @@ namespace UI
 
         void draw(float sx, float sy)
         {
-            VSlot &vslot = lookupvslot(index, false);
-            previewslot(*vslot.slot, vslot, sx, sy);
+            if(vslots.inrange(index))
+            {
+                VSlot &vslot = lookupvslot(index, false);
+                previewslot(*vslot.slot, vslot, sx, sy);
+            }
 
             Object::draw(sx, sy);
         }

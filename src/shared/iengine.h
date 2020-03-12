@@ -131,6 +131,8 @@ extern void mpdelcube(selinfo &sel, bool local);
 extern void mpremip(bool local);
 extern bool mpeditvslot(int delta, int allfaces, selinfo &sel, ucharbuf &buf);
 extern void mpcalclight(bool local);
+extern void filltexlist();
+extern void edittex(int i, bool save = true, bool edit = true);
 
 // console
 extern int changedkeys;
