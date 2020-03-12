@@ -2394,8 +2394,8 @@ namespace game
                     break;
                 }
             }
-            vecfromcursor(cursorx, cursory, 1.f, cursordir);
         }
+        vecfromcursor(cursorx, cursory, 1.f, cursordir);
     }
 
     void getyawpitch(const vec &from, const vec &pos, float &yaw, float &pitch)
@@ -3286,7 +3286,7 @@ namespace game
             if(player1->state >= CS_SPECTATOR && focus != player1) camera1->resetinterp();
         }
         calcangles(camera1, focus);
-        if(thirdpersoncursor != 1 && focus == player1 && thirdpersonview(true, focus))
+        if(hud::hasinput() == 2 || (thirdpersoncursor != 1 && focus == player1 && thirdpersonview(true, focus)))
         {
             float yaw = camera1->yaw, pitch = camera1->pitch;
             vectoyawpitch(cursordir, yaw, pitch);

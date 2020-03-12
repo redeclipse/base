@@ -889,7 +889,7 @@ namespace client
     VAR(0, numplayertypes, 1, PLAYERTYPES, -1);
     ICOMMAND(0, getmodelname, "ib", (int *mdl, int *idx), result(*mdl >= 0 ? playertypes[*mdl%PLAYERTYPES][*idx >= 0 ? clamp(*idx, 0, 6) : 6] : ""));
     VAR(0, numpatterns, 1, PLAYERPATTERNS, -1);
-    ICOMMAND(0, getpattern, "ib", (int *pattern, int *idx),
+    ICOMMAND(0, getpattern, "bb", (int *pattern, int *idx),
         if(*pattern >= 0)
         {
             const ::playerpattern &p = playerpatterns[*pattern%PLAYERPATTERNS];
@@ -903,6 +903,7 @@ namespace client
                 default: break;
             }
         }
+        else intret(PLAYERPATTERNS);
     );
 
     ICOMMAND(0, getcamerayaw, "", (), floatret(camera1->yaw));

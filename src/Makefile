@@ -3,7 +3,10 @@ APPCLIENT=$(APPNAME)
 APPSERVER=$(APPNAME)_server
 
 #CXXFLAGS= -ggdb3
+CC= clang
+CXX= clang++
 CXXFLAGS?= -O3 -fomit-frame-pointer -ffast-math
+#-fsanitize=safe-stack
 override CXXFLAGS+= -Wall -fsigned-char -fno-exceptions -fno-rtti -Wno-invalid-offsetof
 PLATFORM= $(shell $(CC) -dumpmachine)
 RMFLAGS= -fv

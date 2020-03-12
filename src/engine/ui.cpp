@@ -20,7 +20,7 @@ namespace UI
     VAR(IDF_PERSIST, uislidersteptime, 0, 50, VAR_MAX);
     VAR(IDF_PERSIST, uislotviewtime, 0, 25, VAR_MAX);
 
-    FVAR(IDF_PERSIST, uitipoffset, -1, -0.03f, 1);
+    FVAR(IDF_PERSIST, uitipoffset, -1, 0.001f, 1);
 
     static void quads(float x, float y, float w, float h, float tx = 0, float ty = 0, float tw = 1, float th = 1)
     {
@@ -641,8 +641,8 @@ namespace UI
     {
         char *name;
         uint *contents, *onshow, *onhide;
-        bool allowinput, exclusive, closing;
-        int windowflags;
+        bool exclusive, closing;
+        int allowinput, windowflags;
         float px, py, pw, ph;
         vec2 sscale, soffset;
 
@@ -651,7 +651,7 @@ namespace UI
             contents(compilecode(contents)),
             onshow(onshow && onshow[0] ? compilecode(onshow) : NULL),
             onhide(onhide && onhide[0] ? compilecode(onhide) : NULL),
-            allowinput(true), exclusive(false), closing(false),
+            exclusive(false), closing(false), allowinput(1),
             px(0), py(0), pw(0), ph(0),
             sscale(1, 1), soffset(0, 0)
         {
@@ -688,7 +688,7 @@ namespace UI
         void setup()
         {
             Object::setup();
-            allowinput = true;
+            allowinput = 1;
             exclusive = false;
             px = py = pw = ph = 0;
         }
@@ -1034,15 +1034,16 @@ namespace UI
             return false;
         }
 
-        bool allowinput() const
+        int allowinput() const
         {
             bool hasexcl = hasexclusive();
+            int ret = 0;
             loopwindows(w,
             {
                 if(hasexcl && !w->exclusive) continue;
-                if(w->allowinput && !(w->state&STATE_HIDDEN)) return true;
+                if(w->allowinput && !(w->state&STATE_HIDDEN) && ret != 1) ret = w->allowinput;
             });
-            return false;
+            return ret;
         }
 
         bool hasmenu(bool pass = true) const
@@ -1073,7 +1074,7 @@ namespace UI
             {
                 if(hasexcl && !w->exclusive) continue;
                 if(w->windowflags&WINDOW_TIP) // follows cursor
-                    w->setpos((cursorx*float(hudw)/float(hudh))-(w->w*cursorx), uitipoffset >= 0 ? cursory-w->h-uitipoffset : cursory-uitipoffset);
+                    w->setpos((cursorx*float(hudw)/float(hudh))-(w->w*cursorx), cursory >= 0.5f ? cursory-w->h-uitipoffset : cursory+hud::cursorsize+uitipoffset);
                 else if(w->windowflags&WINDOW_POPUP && !w->overridepos)
                     w->setpos((cursorx*float(hudw)/float(hudh))-(w->w*cursorx), cursory-w->h*0.5f);
             });
@@ -1103,7 +1104,7 @@ namespace UI
         windows[name] = new Window(name, contents, onshow, onhide, *windowflags);
     });
 
-    ICOMMAND(0, uiallowinput, "b", (int *val), { if(window) { if(*val >= 0) window->allowinput = *val!=0; intret(window->allowinput ? 1 : 0); } });
+    ICOMMAND(0, uiallowinput, "b", (int *val), { if(window) { if(*val >= 0) window->allowinput = clamp(*val, 0, 2); intret(window->allowinput); } });
     ICOMMAND(0, uiexclusive, "b", (int *val), { if(window) { if(*val >= 0) window->exclusive = *val!=0; intret(window->exclusive ? 1 : 0); } });
     ICOMMAND(0, uiwindowflags, "b", (int *val), { if(window) { if(*val >= 0) window->windowflags = clamp(*val, 0, int(WINDOW_ALL)); intret(window->windowflags); } });
 
@@ -4559,7 +4560,7 @@ namespace UI
     }
     UIWINCMDC(rotatecolours, "fii", (float *amt, int *start, int *count), rotchildcolours(o, amt, start, count));
 
-    bool hasinput()
+    int hasinput()
     {
         return world->allowinput();
     }
