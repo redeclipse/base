@@ -350,8 +350,7 @@ struct databuf
     };
 
     T *buf;
-    int len, maxlen;
-    uchar flags;
+    int len, maxlen, flags;
 
     databuf() : buf(NULL), len(0), maxlen(0), flags(0) {}
 
