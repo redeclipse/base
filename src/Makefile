@@ -3,7 +3,7 @@ APPCLIENT=$(APPNAME)
 APPSERVER=$(APPNAME)_server
 
 #CXXFLAGS= -ggdb3
-CXXFLAGS?= -O3 -fomit-frame-pointer -ffast-math
+CXXFLAGS?= -O3 -fomit-frame-pointer -std=c++17 -ffast-math
 override CXXFLAGS+= -Wall -fsigned-char -fno-exceptions -fno-rtti -Wno-invalid-offsetof
 PLATFORM= $(shell $(CC) -dumpmachine)
 RMFLAGS= -fv
