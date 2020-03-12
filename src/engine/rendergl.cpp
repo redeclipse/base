@@ -2,9 +2,7 @@
 
 #include "engine.h"
 
-bool hasVAO = false, hasTR = false, hasTSW = false, hasPBO = false, hasFBO = false, hasAFBO = false, hasDS = false, hasTF = false, hasCBF = false, hasS3TC = false, hasFXT1 = false, hasLATC = false, hasRGTC = false, hasAF = false, hasFBB = false, hasFBMS = false, hasTMS = false, hasMSS = false, hasFBMSBS = false, hasUBO = false, hasMBR = false, hasDB2 = false, hasDBB = false, hasTG = false, hasTQ = false, hasPF = false, hasTRG = false, hasTI = false, hasHFV = false, hasHFP = false, hasDBT = false, hasDC = false, hasDBGO = false, hasEGPU4 = false, hasGPU4 = false, hasGPU5 = false, hasBFE = false, hasEAL = false, hasCR = false, hasOQ2 = false, hasES3 = false, hasCB = false, hasCI = false;
-bool mesa = false, intel = false, amd = false, nvidia = false;
-int hasstencil = 0;
+bool hasVAO, hasTR, hasTSW, hasPBO, hasFBO, hasAFBO, hasDS, hasTF, hasCBF, hasS3TC, hasFXT1, hasLATC, hasRGTC, hasAF, hasFBB, hasFBMS, hasTMS, hasMSS, hasFBMSBS, hasUBO, hasMBR, hasDB2, hasDBB, hasTG, hasTQ, hasPF, hasTRG, hasTI, hasHFV, hasHFP, hasDBT, hasDC, hasDBGO, hasEGPU4, hasGPU4, hasGPU5, hasBFE, hasEAL, hasCR, hasOQ2, hasES3, hasCB, hasCI, mesa, intel, amd, nvidia;
 
 VAR(IDF_READONLY, glversion, 1, 0, 0);
 VAR(IDF_READONLY, glslversion, 1, 0, 0);
@@ -378,11 +376,6 @@ void gl_checkextensions()
 
     conoutf("Renderer: %s (%s)", gfxrenderer, gfxvendor);
     conoutf("Driver: %s", gfxversion);
-
-#ifdef __APPLE__
-    // extern int mac_osversion();
-    // int osversion = mac_osversion();  /* 0x0A0600 = 10.6, assumed minimum */
-#endif
 
     if(strstr(gfxrenderer, "Mesa") || strstr(gfxversion, "Mesa"))
     {
@@ -2318,7 +2311,6 @@ void gl_drawview()
     float fogbelow;
     getcamfogmat(fogmat, abovemat, fogbelow);
     setfog(abovemat);
-    //setfog(fogmat, fogbelow, 1, abovemat);
 
     farplane = worldsize*2;
 

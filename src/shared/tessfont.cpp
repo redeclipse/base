@@ -477,6 +477,7 @@ void writetexs(const char *name, struct fontchar *chars, int numchars, int numte
     int tex;
     uchar *pixels = (uchar *)malloc(tw*th);
     if(!pixels) fatal("tessfont: failed allocating textures");
+    else {
     for(tex = 0; tex < numtexs; tex++)
     {
         const char *file = texfilename(name, tex);
@@ -502,6 +503,7 @@ void writetexs(const char *name, struct fontchar *chars, int numchars, int numte
         savepng(file, pixels, tw, th, 1, 0);
    }
    free(pixels);
+   }
 }
 
 static float offsetx = 0, offsety = 0, border = 0, border2 = 0, outline = 0, outline2 = 0;
