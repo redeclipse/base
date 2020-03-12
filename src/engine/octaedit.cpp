@@ -2986,6 +2986,7 @@ ICOMMAND(0, texloaded, "i", (int *tex), intret(slots.inrange(*tex) && slots[*tex
 #define LOOPTEXMRU(name,op) \
     ICOMMAND(0, looptexmru##name, "iire", (int *count, int *skip, ident *id, uint *body), \
     { \
+        filltexlist(); \
         loopstart(id, stack); \
         op(texmru, *count, *skip) \
         { \
@@ -3000,6 +3001,7 @@ LOOPTEXMRU(rev,loopcsvrev);
 #define LOOPTEXMRUIF(name,op) \
     ICOMMAND(0, looptexmru##name##if, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
     { \
+        filltexlist(); \
         loopstart(id, stack); \
         op(texmru, *count, *skip) \
         { \

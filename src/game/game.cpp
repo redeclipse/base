@@ -2346,16 +2346,17 @@ namespace game
         else curfov = float(fov());
     }
 
+    VAR(0, mouseoverride, 0, 0, 3);
     bool mousemove(int dx, int dy, int x, int y, int w, int h)
     {
         #define mousesens(a,b,c) ((float(a)/float(b))*c)
-        if(hud::hasinput(true))
+        if(mouseoverride&2 || (!mouseoverride && hud::hasinput(true)))
         {
             cursorx = clamp(cursorx+mousesens(dx, w, mousesensitivity), 0.f, 1.f);
             cursory = clamp(cursory+mousesens(dy, h, mousesensitivity), 0.f, 1.f);
-            return true;
+            if(!(mouseoverride&1)) return true;
         }
-        else if(!tvmode())
+        if(mouseoverride&1 || (!mouseoverride && !tvmode()))
         {
             physent *d = (!gs_playing(gamestate) || player1->state >= CS_SPECTATOR) && (focus == player1 || followaim()) ? camera1 : (allowmove(player1) ? player1 : NULL);
             if(d)
@@ -2406,8 +2407,9 @@ namespace game
                     break;
                 }
             }
+            vecfromcursor(cursorx, cursory, 1.f, cursordir);
         }
-        vecfromcursor(cursorx, cursory, 1.f, cursordir);
+        else if(hud::hasinput() == 2) vecfromcursor(cursorx, cursory, 1.f, cursordir);
     }
 
     void getyawpitch(const vec &from, const vec &pos, float &yaw, float &pitch)

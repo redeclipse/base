@@ -187,6 +187,127 @@ namespace UI
     void resetblend() { changeblend(BLEND_ALPHA, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); }
     void modblend() { changeblend(BLEND_MOD, GL_ZERO, GL_SRC_COLOR); }
 
+    #define UIREVCMDC(func, types, argtypes, body) \
+        ICOMMAND(0, ui##func, types, argtypes, \
+        { \
+            for(Object *o = buildparent; o != NULL; o = o->parent) \
+            { \
+                body; \
+                if(o->istype<Window>()) break; \
+            } \
+        });
+
+    #define UIREVCMDW(func, types, argtypes, body) \
+        ICOMMAND(0, ui##func, types, argtypes, \
+        { \
+            for(Object *o = buildparent; o != NULL; o = o->parent) \
+            { \
+                if(o->istype<Window>()) break; \
+                body; \
+            } \
+        });
+
+    #define UICMD(uitype, uiname, vname, valtype, args, body) \
+        ICOMMAND(0, ui##uiname##vname, valtype, args, { \
+            if(buildparent && buildparent->istype<uitype>()) \
+            { \
+                uitype *o = (uitype *)buildparent; \
+                body; \
+            } \
+        });
+
+    #define UIGETOBJ(uitype, uiname, vname, type) \
+        ICOMMAND(0, uiget##uiname##vname, "", (), { \
+            if(buildparent) \
+            { \
+                uitype *o = (uitype *)buildparent; \
+                type##ret(o->vname); \
+            } \
+        });
+
+    #define UIGETCMD(uitype, uiname, vname, type) \
+        ICOMMAND(0, uiget##uiname##vname, "", (), { \
+            if(buildparent && buildparent->istype<uitype>()) \
+            { \
+                uitype *o = (uitype *)buildparent; \
+                type##ret(o->vname); \
+            } \
+        });
+
+    #define UIARGB(uitype, uiname, vname) \
+        UICMD(uitype, uiname, vname, "i", (int *val), { \
+            o->vname = *val!=0; \
+            intret(o->vname ? 1 : 0); \
+        }); \
+        UIGETCMD(uitype, uiname, vname, int);
+
+    #define UIARGK(uitype, uiname, vname, valtype, type, cmin, cmax, valdef) \
+        UICMD(uitype, uiname, vname, valtype, (type *val), { \
+            o->vname = type(clamp((valdef), cmin, cmax)); \
+            type##ret(o->vname); \
+        }); \
+        UIGETCMD(uitype, uiname, vname, type);
+
+    #define UIARGSCALED(uitype, uiname, vname, valtype, type, cmin, cmax) \
+        UICMD(uitype, uiname, vname, valtype, (type *val), { \
+            o->vname = type(clamp(*val, cmin, cmax)*uiscale); \
+            type##ret(o->vname); \
+        }); \
+        UIGETCMD(uitype, uiname, vname, type);
+
+    #define UIARG(uitype, uiname, vname, valtype, type, cmin, cmax) \
+        UICMD(uitype, uiname, vname, valtype, (type *val), { \
+            o->vname = type(clamp(*val, cmin, cmax)); \
+            type##ret(o->vname); \
+        }); \
+        UIGETCMD(uitype, uiname, vname, type);
+
+    #define UICMDT(uitype, uiname, vname, valtype, args, body) \
+        ICOMMAND(0, ui##uiname##vname, valtype, args, { \
+            if(buildparent && buildparent->is##uiname()) \
+            { \
+                uitype *o = (uitype *)buildparent; \
+                body; \
+            } \
+        });
+
+    #define UIGETCMDT(uitype, uiname, vname, type) \
+        ICOMMAND(0, uiget##uiname##vname, "", (), { \
+            if(buildparent && buildparent->is##uiname()) \
+            { \
+                uitype *o = (uitype *)buildparent; \
+                type##ret(o->vname); \
+            } \
+        });
+
+    #define UIARGTB(uitype, uiname, vname) \
+        UICMDT(uitype, uiname, vname, "i", (int *val), { \
+            o->vname = *val!=0; \
+            intret(o->vname ? 1 : 0); \
+        }); \
+        UIGETCMDT(uitype, uiname, vname, int);
+
+    #define UIARGTK(uitype, uiname, vname, valtype, type, cmin, cmax, valdef) \
+        UICMDT(uitype, uiname, vname, valtype, (type *val), { \
+            o->vname = type(clamp((valdef), cmin, cmax)); \
+            type##ret(o->vname); \
+        }); \
+        UIGETCMDT(uitype, uiname, vname, type);
+
+    #define UIARGSCALEDT(uitype, uiname, vname, valtype, type, cmin, cmax) \
+        UICMDT(uitype, uiname, vname, valtype, (type *val), { \
+            o->vname = type(clamp(*val, cmin, cmax)*uiscale); \
+            type##ret(o->vname); \
+        }); \
+        UIGETCMDT(uitype, uiname, vname, type);
+
+    #define UIARGT(uitype, uiname, vname, valtype, type, cmin, cmax) \
+        UICMDT(uitype, uiname, vname, valtype, (type *val), { \
+            o->vname = type(clamp(*val, cmin, cmax)); \
+            type##ret(o->vname); \
+        }); \
+        UIGETCMDT(uitype, uiname, vname, type);
+
     struct Object
     {
         Object *parent;
@@ -617,6 +738,14 @@ namespace UI
     ICOMMAND(0, uigroup, "e", (uint *children),
         BUILD(Object, o, o->setup(), children));
 
+    UIGETOBJ(Object, objpos, x, float);
+    UIGETOBJ(Object, objpos, y, float);
+    UIGETOBJ(Object, objpos, w, float);
+    UIGETOBJ(Object, objpos, h, float);
+    UIGETOBJ(Object, objpos, ox, float);
+    UIGETOBJ(Object, objpos, oy, float);
+    UIARGB(Object, obj, overridepos);
+
     static inline void stopdrawing()
     {
         if(drawing)
@@ -807,117 +936,10 @@ namespace UI
             if(o) { body; } \
         });
 
-    #define UIREVCMDC(func, types, argtypes, body) \
-        ICOMMAND(0, ui##func, types, argtypes, \
-        { \
-            for(Object *o = buildparent; o != NULL; o = o->parent) \
-            { \
-                body; \
-                if(o->istype<Window>()) break; \
-            } \
-        });
-
-    #define UIREVCMDW(func, types, argtypes, body) \
-        ICOMMAND(0, ui##func, types, argtypes, \
-        { \
-            for(Object *o = buildparent; o != NULL; o = o->parent) \
-            { \
-                if(o->istype<Window>()) break; \
-                body; \
-            } \
-        });
-
-    #define UICMD(uitype, uiname, vname, valtype, args, body) \
-        ICOMMAND(0, ui##uiname##vname, valtype, args, { \
-            if(buildparent && buildparent->istype<uitype>()) \
-            { \
-                uitype *o = (uitype *)buildparent; \
-                body; \
-            } \
-        });
-
-    #define UIGETCMD(uitype, uiname, vname, type) \
-        ICOMMAND(0, uiget##uiname##vname, "", (), { \
-            if(buildparent && buildparent->istype<uitype>()) \
-            { \
-                uitype *o = (uitype *)buildparent; \
-                type##ret(o->vname); \
-            } \
-        });
-
-    #define UIARGB(uitype, uiname, vname) \
-        UICMD(uitype, uiname, vname, "i", (int *val), { \
-            o->vname = *val!=0; \
-            intret(o->vname ? 1 : 0); \
-        }); \
-        UIGETCMD(uitype, uiname, vname, int);
-
-    #define UIARGK(uitype, uiname, vname, valtype, type, cmin, cmax, valdef) \
-        UICMD(uitype, uiname, vname, valtype, (type *val), { \
-            o->vname = type(clamp((valdef), cmin, cmax)); \
-            type##ret(o->vname); \
-        }); \
-        UIGETCMD(uitype, uiname, vname, type);
-
-    #define UIARGSCALED(uitype, uiname, vname, valtype, type, cmin, cmax) \
-        UICMD(uitype, uiname, vname, valtype, (type *val), { \
-            o->vname = type(clamp(*val, cmin, cmax)*uiscale); \
-            type##ret(o->vname); \
-        }); \
-        UIGETCMD(uitype, uiname, vname, type);
-
-    #define UIARG(uitype, uiname, vname, valtype, type, cmin, cmax) \
-        UICMD(uitype, uiname, vname, valtype, (type *val), { \
-            o->vname = type(clamp(*val, cmin, cmax)); \
-            type##ret(o->vname); \
-        }); \
-        UIGETCMD(uitype, uiname, vname, type);
-
-    #define UICMDT(uitype, uiname, vname, valtype, args, body) \
-        ICOMMAND(0, ui##uiname##vname, valtype, args, { \
-            if(buildparent && buildparent->is##uiname()) \
-            { \
-                uitype *o = (uitype *)buildparent; \
-                body; \
-            } \
-        });
-
-    #define UIGETCMDT(uitype, uiname, vname, type) \
-        ICOMMAND(0, uiget##uiname##vname, "", (), { \
-            if(buildparent && buildparent->is##uiname()) \
-            { \
-                uitype *o = (uitype *)buildparent; \
-                type##ret(o->vname); \
-            } \
-        });
-
-    #define UIARGTB(uitype, uiname, vname) \
-        UICMDT(uitype, uiname, vname, "i", (int *val), { \
-            o->vname = *val!=0; \
-            intret(o->vname ? 1 : 0); \
-        }); \
-        UIGETCMDT(uitype, uiname, vname, int);
-
-    #define UIARGTK(uitype, uiname, vname, valtype, type, cmin, cmax, valdef) \
-        UICMDT(uitype, uiname, vname, valtype, (type *val), { \
-            o->vname = type(clamp((valdef), cmin, cmax)); \
-            type##ret(o->vname); \
-        }); \
-        UIGETCMDT(uitype, uiname, vname, type);
-
-    #define UIARGSCALEDT(uitype, uiname, vname, valtype, type, cmin, cmax) \
-        UICMDT(uitype, uiname, vname, valtype, (type *val), { \
-            o->vname = type(clamp(*val, cmin, cmax)*uiscale); \
-            type##ret(o->vname); \
-        }); \
-        UIGETCMDT(uitype, uiname, vname, type);
-
-    #define UIARGT(uitype, uiname, vname, valtype, type, cmin, cmax) \
-        UICMDT(uitype, uiname, vname, valtype, (type *val), { \
-            o->vname = type(clamp(*val, cmin, cmax)); \
-            type##ret(o->vname); \
-        }); \
-        UIGETCMDT(uitype, uiname, vname, type);
+    UIGETCMD(Window, window, px, float);
+    UIGETCMD(Window, window, py, float);
+    UIGETCMD(Window, window, pw, float);
+    UIGETCMD(Window, window, ph, float);
 
     static hashnameset<Window *> windows;
 
@@ -2847,7 +2869,8 @@ namespace UI
                 case 1:     a |= TEXT_RIGHT_JUSTIFY; left += tw*k; break;
                 case 2:     a |= TEXT_NO_INDENT|TEXT_RIGHT_JUSTIFY; left += tw*k; break;
             }
-            //if(rescale != 1) top += (((th*drawscale())-(th*k))*0.5f)/k;
+            if(rescale != 1) top += (((th*drawscale())-(th*k))*0.5f)/k;
+            //if(rescale != 1) top += (th-(th*rescale))*0.5f;
             if(growth < 0) top += th-(th/(0-growth));
             if(rotate == 1 || rotate == 2) left += tw;
             if(rotate == 2 || rotate == 3) top += th;
@@ -2931,7 +2954,7 @@ namespace UI
             }
             if(growth != 1) th *= growth > 0 ? growth : 0-growth;
             w = max(w, tw*k*min(rescale, 1.f));
-            h = max(h, th*k*min(rescale, 1.f));
+            h = max(h, th*k);
         }
     };
 

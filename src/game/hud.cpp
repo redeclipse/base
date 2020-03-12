@@ -1,7 +1,7 @@
 #include "game.h"
 namespace hud
 {
-    int uimillis = 0, damageresidue = 0, hudwidth = 0, hudheight = 0, lastteam = 0, laststats = 0;
+    int damageresidue = 0, hudwidth = 0, hudheight = 0, lastteam = 0, laststats = 0;
 
     #include "compass.h"
     vector<int> teamkills;
@@ -82,11 +82,6 @@ namespace hud
     VAR(IDF_PERSIST, titlefade, 0, 1000, 10000);
     VAR(IDF_PERSIST, tvmodefade, 0, 250, VAR_MAX);
     VAR(IDF_PERSIST, spawnfade, 0, 250, VAR_MAX);
-
-    VAR(IDF_PERSIST, commandfade, 0, 250, VAR_MAX);
-    FVAR(IDF_PERSIST, commandfadeamt, 0, 0.75f, 1);
-    VAR(IDF_PERSIST, uifade, 0, 250, VAR_MAX);
-    FVAR(IDF_PERSIST, uifadeamt, 0, 0.5f, 1);
 
     FVAR(IDF_PERSIST, eventoffset, -1, 0.58f, 1);
     FVAR(IDF_PERSIST, eventblend, 0, 1, 1);
@@ -1734,27 +1729,11 @@ namespace hud
         if(!progressing && !wait)
         {
             vec colour = vec(1, 1, 1);
-            if(commandfade && (commandmillis > 0 || totalmillis-abs(commandmillis) <= commandfade))
-            {
-                float a = min(float(totalmillis-abs(commandmillis))/float(commandfade), 1.f)*commandfadeamt;
-                if(commandmillis > 0) a = 1.f-a;
-                else a += (1.f-commandfadeamt);
-                loopi(3) if(a < colour[i]) colour[i] *= a;
-            }
             if(compassfade && (compassmillis > 0 || totalmillis-abs(compassmillis) <= compassfade))
             {
                 float a = min(float(totalmillis-abs(compassmillis))/float(compassfade), 1.f)*compassfadeamt;
                 if(compassmillis > 0) a = 1.f-a;
                 else a += (1.f-compassfadeamt);
-                loopi(3) if(a < colour[i]) colour[i] *= a;
-            }
-            bool haspopup = UI::hasmenu(false) || cdpi::getoverlay() > 0;
-            if(haspopup ? uimillis <= 0 : uimillis >= 0) uimillis = haspopup ? totalmillis : -totalmillis;
-            if(uifade && (uimillis > 0 || totalmillis-abs(uimillis) <= uifade))
-            {
-                float n = min(float(totalmillis-abs(uimillis))/float(uifade), 1.f), a = n*uifadeamt;
-                if(uimillis > 0) a = 1.f-a;
-                else a += (1.f-uifadeamt);
                 loopi(3) if(a < colour[i]) colour[i] *= a;
             }
             if(!noview)
