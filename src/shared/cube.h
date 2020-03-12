@@ -13,6 +13,7 @@
 #include <cfloat>
 #include <cassert>
 #include <ctime>
+#include <iostream>
 
 #ifdef WIN32
   #define _USE_MATH_DEFINES
