@@ -67,10 +67,11 @@ namespace hud
 {
     extern int statrate, hudsize, hudwidth, hudheight;
     extern char *progresstex, *progringtex;
+    extern float cursorsize;
     extern const char *modeimage();
     extern float radarlimit(float dist = -1);
     extern bool radarlimited(float dist);
-    extern bool hasinput(bool pass = false, bool focus = true);
+    extern int hasinput(bool pass = false, bool focus = true);
     extern bool textinput(const char *str, int len);
     extern bool keypress(int code, bool isdown);
     extern void render(bool noview = false);

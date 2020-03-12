@@ -529,12 +529,14 @@ namespace hud
 
     bool needminimap() { return true; }
 
-    bool hasinput(bool pass, bool focus)
+    int hasinput(bool pass, bool focus)
     {
         if(focus && (cdpi::getoverlay() > 0 || commandmillis > 0 || curcompass)) return true;
-        return UI::hasinput() || UI::hasmenu(pass);
+        int cur = UI::hasinput();
+        if(!cur && UI::hasmenu(pass)) cur = 1;
+        return cur;
     }
-    ICOMMAND(0, hasinput, "N$", (int *n, ident *id), if(*n) intret(hasinput() ? 1 : 0); else printvar(id, hasinput() ? 1 : 0));
+    ICOMMAND(0, hasinput, "N$", (int *n, ident *id), if(*n) intret(hasinput()); else printvar(id, hasinput()));
 
     bool hastkwarn()
     {
