@@ -246,7 +246,6 @@ static inline bool modifyoctaent(int flags, int id)
     return ents.inrange(id) && modifyoctaent(flags, id, *ents[id]);
 }
 
-static inline void addentity(int id)        { modifyoctaent(MODOE_ADD|MODOE_UPDATEBB, id); }
 static inline void addentityedit(int id, bool fix = true)
 {
     if(fix) entities::fixentity(id, true);

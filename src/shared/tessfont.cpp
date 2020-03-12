@@ -18,7 +18,6 @@ typedef unsigned int uint;
 static inline int imin(int a, int b) { return a < b ? a : b; }
 static inline int imax(int a, int b) { return a > b ? a : b; }
 static inline int iclamp(int n, int l, int h) { return imax(l, imin(n, h)); }
-static inline float fclamp(float n, float l, float h) { return fmax(l, fmin(n, h)); }
 
 void fatal(const char *fmt, ...)
 {
@@ -595,7 +594,7 @@ int main(int argc, char **argv)
     FT_Library l;
     FT_Face f;
     int i, radius, pad, w, h, tw, th, c, numgen = 0, trial = -2, rw = 0, rh = 0, ry = 0, sw = 0, sh = 0;
-    float advance, x1 = INT_MAX, x2 = INT_MIN, y1 = INT_MAX, y2 = INT_MIN, w2 = 0, h2 = 0;
+    int advance, x1 = INT_MAX, x2 = INT_MIN, y1 = INT_MAX, y2 = INT_MIN, w2 = 0, h2 = 0;
     time_t starttime, endtime;
     struct fontchar chars[256];
     struct fontchar *order[256];
@@ -760,7 +759,7 @@ int main(int argc, char **argv)
         if(c->sdf) free(c->sdf);
     }
     FT_Done_FreeType(l);
-    printf("tessfont: (%g, %g) .. (%g, %g) = (%g, %g) / (%g, %g), %d texs, %d secs\n", x1, y1, x2, y2, x2 - x1, y2 - y1, w2, h2, numtex, (int)(endtime - starttime));
+    printf("tessfont: (%d, %d) .. (%d, %d) = (%d, %d) / (%d, %d), %d texs, %d secs\n", x1, y1, x2, y2, x2 - x1, y2 - y1, w2, h2, numtex, (int)(endtime - starttime));
     return EXIT_SUCCESS;
 }
 

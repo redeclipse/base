@@ -2775,16 +2775,6 @@ FVAR(0, depthtestlightsclamp, 0, 0.999995f, 1);
 VAR(0, depthfaillights, 0, 1, 1);
 FVAR(0, lightradiustweak, 1, 1.11f, 2);
 
-static inline void lightquad(float z = -1, float sx1 = -1, float sy1 = -1, float sx2 = 1, float sy2 = 1)
-{
-    gle::begin(GL_TRIANGLE_STRIP);
-    gle::attribf(sx2, sy1, z);
-    gle::attribf(sx1, sy1, z);
-    gle::attribf(sx2, sy2, z);
-    gle::attribf(sx1, sy2, z);
-    gle::end();
-}
-
 static inline void lightquads(float z, float sx1, float sy1, float sx2, float sy2)
 {
     gle::attribf(sx1, sy2, z);

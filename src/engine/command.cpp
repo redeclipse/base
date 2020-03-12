@@ -1383,7 +1383,6 @@ static inline void compilestr(vector<uint> &code, const char *word, int len, boo
 
 static inline void compilestr(vector<uint> &code) { code.add(CODE_VALI|RET_STR); }
 static inline void compilestr(vector<uint> &code, const stringslice &word, bool macro = false) { compilestr(code, word.str, word.len, macro); }
-static inline void compilestr(vector<uint> &code, const char *word, bool macro = false) { compilestr(code, word, int(strlen(word)), macro); }
 
 static inline void compileunescapestring(vector<uint> &code, const char *&p, bool macro = false)
 {

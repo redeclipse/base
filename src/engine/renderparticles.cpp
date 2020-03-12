@@ -598,15 +598,6 @@ inline void genpos<PT_TAPE>(const vec &o, const vec &d, float size, float gravit
     vs[3].pos = vec(d.x+c.x, d.y+c.y, d.z+c.z);
 }
 
-template<>
-inline void genpos<PT_TRAIL>(const vec &o, const vec &d, float size, float gravity, int ts, partvert *vs)
-{
-    vec e = d;
-    if(gravity) e.z -= float(ts)/gravity;
-    e.div(-75.0f).add(o);
-    genpos<PT_TAPE>(o, e, size, gravity, ts, vs);
-}
-
 template<int T>
 static inline void genrotpos(const vec &o, const vec &d, float size, float gravity, int ts, partvert *vs, int rot)
 {
@@ -656,15 +647,6 @@ template<>
 inline void seedpos<PT_TAPE>(particleemitter &pe, const vec &o, const vec &d, int fade, float size, float gravity)
 {
     pe.extendbb(d, size);
-}
-
-template<>
-inline void seedpos<PT_TRAIL>(particleemitter &pe, const vec &o, const vec &d, int fade, float size, float gravity)
-{
-    vec e = d;
-    if(gravity) e.z -= float(fade)/gravity;
-    e.div(-75.0f).add(o);
-    pe.extendbb(e, size);
 }
 
 template<int T>

@@ -52,12 +52,6 @@ int isvisiblesphere(float rad, const vec &cv)
     return v;
 }
 
-static inline int ishiddencube(const ivec &o, int size)
-{
-    loopi(5) if(o.dist(vfcP[i]) < -vfcDfar[i]*size) return true;
-    return false;
-}
-
 static inline int isfoggedcube(const ivec &o, int size)
 {
     loopi(4) if(o.dist(vfcP[i]) < -vfcDfar[i]*size) return true;

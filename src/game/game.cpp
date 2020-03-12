@@ -2914,7 +2914,6 @@ namespace game
 
         if(!gs_playing(gamestate)) spectvfollow = -1;
         else if(player1->state != CS_SPECTATOR && spectvfollowself >= (m_duke(gamemode, mutators) ? 2 : 1)) spectvfollow = player1->clientnum;
-        else spectvfollow = spectvfollow;
 
         bool restart = !lastcamera;
         if(!cameras.inrange(lastcamcn))
