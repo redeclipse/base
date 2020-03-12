@@ -393,7 +393,7 @@ void gl_checkextensions()
     if(sscanf(gfxversion, " %u.%u", &glmajorversion, &glminorversion) != 2) glversion = 100;
     else glversion = glmajorversion*100 + glminorversion*10;
 
-    if(glversion < 200) fatal("OpenGL 2.0 or greater is required!");
+    if(glversion < 300) fatal("OpenGL 3.0 or greater is required!");
 
 #ifdef WIN32
     glActiveTexture_ =            (PFNGLACTIVETEXTUREPROC)            getprocaddress("glActiveTexture");
