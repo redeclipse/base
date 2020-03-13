@@ -26,6 +26,7 @@
 					<Add option="-Wall" />
 					<Add option="-m32" />
 					<Add option="-ffast-math" />
+					<Add option="-std=c++17" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
 					<Add option="-fno-exceptions" />
@@ -185,6 +186,7 @@
 					<Add option="-Wall" />
 					<Add option="-m32" />
 					<Add option="-ffast-math" />
+					<Add option="-std=c++17" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
 					<Add option="-fno-exceptions" />
@@ -281,6 +283,7 @@
 					<Add option="-Wall" />
 					<Add option="-m32" />
 					<Add option="-ffast-math" />
+					<Add option="-std=c++17" />
 					<Add option="-fsigned-char" />
 					<Add option="-fno-exceptions" />
 					<Add option="-mwindows" />
@@ -320,6 +323,7 @@
 					<Add option="-Wall" />
 					<Add option="-m32" />
 					<Add option="-ffast-math" />
+					<Add option="-std=c++17" />
 					<Add option="-fsigned-char" />
 					<Add option="-fno-exceptions" />
 					<Add option="-fno-rtti" />
@@ -364,6 +368,7 @@
 					<Add option="-Wall" />
 					<Add option="-m64" />
 					<Add option="-ffast-math" />
+					<Add option="-std=c++17" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
 					<Add option="-fno-exceptions" />
@@ -523,6 +528,7 @@
 					<Add option="-Wall" />
 					<Add option="-m64" />
 					<Add option="-ffast-math" />
+					<Add option="-std=c++17" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
 					<Add option="-fno-exceptions" />
@@ -619,6 +625,7 @@
 					<Add option="-Wall" />
 					<Add option="-m64" />
 					<Add option="-ffast-math" />
+					<Add option="-std=c++17" />
 					<Add option="-fsigned-char" />
 					<Add option="-fno-exceptions" />
 					<Add option="-mwindows" />
@@ -658,6 +665,7 @@
 					<Add option="-Wall" />
 					<Add option="-m64" />
 					<Add option="-ffast-math" />
+					<Add option="-std=c++17" />
 					<Add option="-fsigned-char" />
 					<Add option="-fno-exceptions" />
 					<Add option="-fno-rtti" />
