@@ -1019,6 +1019,17 @@ void swapundo(undolist &a, undolist &b, int op)
 void editundo() { swapundo(undos, redos, EDIT_UNDO); }
 void editredo() { swapundo(redos, undos, EDIT_REDO); }
 
+ICOMMAND(0, hasundos, "iN$", (int *n, int *numargs, ident *id),
+{
+    if(*numargs < 0) intret(undos.empty() ? 0 : 1);
+    else printvar(id, undos.empty() ? 0 : 1);
+});
+ICOMMAND(0, hasredos, "iN$", (int *n, int *numargs, ident *id),
+{
+    if(*numargs < 0) intret(redos.empty() ? 0 : 1);
+    else printvar(id, redos.empty() ? 0 : 1);
+});
+
 // guard against subdivision
 #define protectsel(f) { undoblock *_u = newundocube(sel); f; if(_u) { pasteundo(_u); freeundo(_u); } }
 
