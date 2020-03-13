@@ -553,23 +553,18 @@ namespace hud
 
     void checkui()
     {
-        UI::hideui("loading");
         UI::showui("hud");
-        if(connected())
+        if(!UI::hasmenu() && (game::needname(game::player1) || game::wantsloadoutmenu))
         {
-            if(!UI::hasmenu() && (game::needname(game::player1) || game::wantsloadoutmenu))
-            {
-                UI::openui("profile");
-                game::wantsloadoutmenu = false;
-            }
-            else
-            {
-                UI::pressui("scoreboard", scoreson);
-                if(game::player1->state == CS_DEAD) { if(scoreson) shownscores = true; }
-                else shownscores = false;
-            }
+            UI::openui("profile");
+            game::wantsloadoutmenu = false;
         }
-        else if(!UI::hasmenu()) UI::openui(game::needname(game::player1) ? "profile" : "main");
+        else if(connected())
+        {
+            UI::pressui("scoreboard", scoreson);
+            if(game::player1->state == CS_DEAD) { if(scoreson) shownscores = true; }
+            else shownscores = false;
+        }
         UI::update();
     }
 
