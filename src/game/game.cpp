@@ -204,8 +204,8 @@ namespace game
     VAR(IDF_PERSIST, firstpersonslidetime, 0, 200, VAR_MAX);
     FVAR(IDF_PERSIST, firstpersonslideroll, -89.9f, -5.f, 89.9f);
 
-    VAR(IDF_PERSIST, editfov, 90, 100, 150);
-    VAR(IDF_PERSIST, specfov, 90, 100, 150);
+    VAR(IDF_PERSIST, editfov, 10, 100, 150);
+    VAR(IDF_PERSIST, specfov, 10, 100, 150);
 
     VAR(IDF_PERSIST, specresetstyle, 0, 1, 1); // 0 = back to player1, 1 = stay at camera
 
