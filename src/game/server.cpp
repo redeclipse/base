@@ -6844,7 +6844,6 @@ namespace server
                             break;
                         }
                     }
-                    QUEUE_MSG;
                     defformatstring(oldname, "%s", colourname(ci));
                     if(strcmp(ci->name, namestr))
                     {
@@ -6873,6 +6872,7 @@ namespace server
                         else ci->randweap.add(getint(p));
                     }
                     ci->lastplayerinfo = totalmillis ? totalmillis : 1;
+                    QUEUE_INT(N_SETPLAYERINFO);
                     QUEUE_STR(ci->name);
                     QUEUE_INT(ci->colour);
                     QUEUE_INT(ci->model);

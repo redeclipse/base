@@ -2141,7 +2141,7 @@ namespace client
                 p.reliable();
                 sendplayerinfo = false;
                 lastplayerinfo = totalmillis ? totalmillis : 1;
-                putint(p, N_SETPLAYERINFO);
+                putint(p, N_SETPLAYERINFO); // name colour model pattern checkpoint vanity count <loadweaps> count <randweaps>
                 sendstring(game::player1->name, p);
                 putint(p, game::player1->colour);
                 putint(p, game::player1->model);
