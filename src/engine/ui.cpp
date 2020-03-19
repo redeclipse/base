@@ -214,6 +214,7 @@ namespace UI
                 uitype *o = (uitype *)buildparent; \
                 body; \
             } \
+            else conoutf("Warning: parent not a %s in ui%s%s", #uitype, #uiname, #vname); \
         });
 
     #define UIGETOBJ(uitype, uiname, vname, type) \
@@ -232,6 +233,7 @@ namespace UI
                 uitype *o = (uitype *)buildparent; \
                 type##ret(o->vname); \
             } \
+            else conoutf("Warning: parent not a %s in ui%s%s", #uitype, #uiname, #vname); \
         });
 
     #define UIARGB(uitype, uiname, vname) \
@@ -269,6 +271,7 @@ namespace UI
                 uitype *o = (uitype *)buildparent; \
                 body; \
             } \
+            else conoutf("Warning: parent not a is%s in ui%s%s", #uiname, #uiname, #vname); \
         });
 
     #define UIGETCMDT(uitype, uiname, vname, type) \
@@ -2246,15 +2249,15 @@ namespace UI
 
     UIIMGCMDS(, 3);
     UIIMGCMDS(clamped, 0x7000);
-    UIARGB(Image, image, alphatarget);
-    UIARGB(Image, image, outline);
-    UICMD(Image, image, shadow, "fi", (float *s, int *c),
+    UIARGTB(Image, image, alphatarget);
+    UIARGTB(Image, image, outline);
+    UICMDT(Image, image, shadow, "fi", (float *s, int *c),
     {
         o->shadowsize = clamp(*s, FVAR_MIN, FVAR_MAX);
         o->shadowcolor = Color(*c);
     });
-    UIARG(Image, image, shadowsize, "f", float, FVAR_MIN, FVAR_MAX);
-    UICMD(Image, image, shadowcolour, "i", (int *c), o->shadowcolor = Color(*c));
+    UIARGT(Image, image, shadowsize, "f", float, FVAR_MIN, FVAR_MAX);
+    UICMDT(Image, image, shadowcolour, "i", (int *c), o->shadowcolor = Color(*c));
 
     struct CroppedImage : Image
     {
