@@ -4111,7 +4111,7 @@ namespace game
         renderplayer(previewent, 1, scale, 0, mcolor);
     }
 
-    #define PLAYERPREV(name, arglist, argexpr, body) ICOMMAND(0, playerpreview##name, arglist, argexpr, if(previewent) { body; });
+    #define PLAYERPREV(name, arglist, argexpr, body) ICOMMAND(0, uiplayerpreview##name, arglist, argexpr, if(previewent) { body; });
     PLAYERPREV(state, "b", (int *n), previewent->state = *n >= 0 ? clamp(*n, 0, int(CS_MAX-1)) : int(CS_ALIVE));
     PLAYERPREV(move, "i", (int *n), previewent->move = *n != 0 ? (*n > 0 ? 1 : -1) : 0);
     PLAYERPREV(strafe, "i", (int *n), previewent->strafe = *n != 0 ? (*n > 0 ? 1 : -1) : 0);

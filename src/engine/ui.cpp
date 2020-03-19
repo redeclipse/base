@@ -662,6 +662,7 @@ namespace UI
         virtual bool iseditor() const { return false; }
         virtual bool isclip() const { return false; }
         virtual bool isradar() const { return false; }
+        virtual bool ispreview() const { return false; }
 
         Object *find(const char *name, bool recurse = true, const Object *exclude = NULL) const
         {
@@ -1828,6 +1829,11 @@ namespace UI
 
     struct Target : Filler
     {
+        void setup(float minw_, float minh_, const Color &color_ = Color(colourwhite), int type_ = SOLID, int dir_ = VERTICAL)
+        {
+            Filler::setup(minw_, minh_, color_, type_, dir_);
+        }
+
         static const char *typestr() { return "#Target"; }
         const char *gettype() const { return typestr(); }
 
@@ -3942,6 +3948,17 @@ namespace UI
 
     struct Preview : Target
     {
+        vec lightcol, lightdir;
+
+        void setup(float minw_ = 0, float minh_ = 0, const vec &lightcol_ = vec(0.6f, 0.6f, 0.6f), const vec &lightdir_ = vec(0, -1, 2), const Color &color_ = Color(colourwhite))
+        {
+            Target::setup(minw_, minh_, color_);
+            lightcol = lightcol_;
+            lightdir = lightdir_;
+        }
+
+        bool ispreview() const { return true; }
+
         void startdraw()
         {
             glDisable(GL_BLEND);
@@ -3957,6 +3974,9 @@ namespace UI
         }
     };
 
+    UICMDT(Preview, preview, lightcol, "i", (int *c), o->lightcol = vec::fromcolor(*c));
+    UICMDT(Preview, preview, lightdir, "fff", (float *x, float *y, float *z), o->lightdir = vec(*x, *y, *z));
+
     struct ModelPreview : Preview
     {
         char *name;
@@ -3965,11 +3985,11 @@ namespace UI
         ModelPreview() : name(NULL) {}
         ~ModelPreview() { delete[] name; }
 
-        void setup(const char *name_, const char *animspec, float scale_, float blend_, float minw_, float minh_)
+        void setup(const char *name_, const char *animspec, float scale_, float blend_, float minw_, float minh_, const vec &lightcol_ = vec(0.6f, 0.6f, 0.6f), const vec &lightdir_ = vec(0, -1, 2))
         {
             mdl.reset();
 
-            Preview::setup(minw_, minh_, Color(colourwhite));
+            Preview::setup(minw_, minh_, lightcol_, lightdir_);
             SETSTR(name, name_);
 
             mdl.anim = ANIM_ALL;
@@ -4017,7 +4037,7 @@ namespace UI
                 rendermodel(name, mdl);
             }
             if(clipstack.length()) clipstack.last().scissor();
-            modelpreview::end();
+            modelpreview::end(lightcol, lightdir);
         }
     };
 
@@ -4032,9 +4052,9 @@ namespace UI
         PlayerPreview() : actions(NULL) {}
         ~PlayerPreview() { delete[] actions; }
 
-        void setup(float scale_, float blend_, float minw_, float minh_, const char *actions_)
+        void setup(float scale_, float blend_, float minw_, float minh_, const char *actions_, const vec &lightcol_ = vec(0.6f, 0.6f, 0.6f), const vec &lightdir_ = vec(0, -1, 2))
         {
-            Preview::setup(minw_, minh_, Color(colourwhite));
+            Preview::setup(minw_, minh_, lightcol_, lightdir_);
             scale = scale_;
             blend = blend_;
             SETSTR(actions, actions_);
@@ -4057,7 +4077,7 @@ namespace UI
             colors[0].a = uchar(colors[0].a*blend);
             game::renderplayerpreview(scale, colors[0].tocolor4(), actions);
             if(clipstack.length()) clipstack.last().scissor();
-            modelpreview::end();
+            modelpreview::end(lightcol, lightdir);
         }
     };
 
@@ -4072,9 +4092,9 @@ namespace UI
         PrefabPreview() : name(NULL) {}
         ~PrefabPreview() { delete[] name; }
 
-        void setup(const char *name_, const Color &color_, float blend, float minw_, float minh_)
+        void setup(const char *name_, const Color &color_, float blend, float minw_, float minh_, const vec &lightcol_ = vec(0.6f, 0.6f, 0.6f), const vec &lightdir_ = vec(0, -1, 2))
         {
-            Preview::setup(minw_, minh_, color_);
+            Preview::setup(minw_, minh_, lightcol_, lightdir_, color_);
             SETSTR(name, name_);
         }
 
@@ -4094,7 +4114,7 @@ namespace UI
             modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, false, clipstack.length() > 0);
             previewprefab(name, colors[0].tocolor(), blend*(colors[0].a/255.f));
             if(clipstack.length()) clipstack.last().scissor();
-            modelpreview::end();
+            modelpreview::end(lightcol, lightdir);
         }
     };
 

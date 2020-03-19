@@ -2222,8 +2222,8 @@ namespace modelpreview
     int oldfarplane, oldvieww, oldviewh;
     matrix4 oldprojmatrix;
 
-    int x, y, w, h;
-    bool background, scissor;
+    int x = 0, y = 0, w = 0, h = 0;
+    bool background = true, scissor = false;
 
     void start(int x, int y, int w, int h, bool background, bool scissor)
     {
@@ -2278,14 +2278,14 @@ namespace modelpreview
         preparegbuffer();
     }
 
-    void end()
+    void end(const vec &lightcol, const vec &lightdir)
     {
         rendermodelbatches();
 
         glDisable(GL_DEPTH_TEST);
         glDisable(GL_CULL_FACE);
 
-        shademodelpreview(x, y, w, h, background, scissor);
+        shademodelpreview(x, y, w, h, background, scissor, lightcol, lightdir);
 
         aspect = oldaspect;
         fovy = oldfovy;
