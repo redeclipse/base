@@ -2211,7 +2211,6 @@ void drawcubemap(int size, const vec &o, float yaw, float pitch, bool onlysky)
 }
 
 VAR(0, modelpreviewfov, 10, 20, 100);
-VAR(0, modelpreviewpitch, -90, -15, 90);
 
 namespace modelpreview
 {
@@ -2225,7 +2224,7 @@ namespace modelpreview
     int x = 0, y = 0, w = 0, h = 0;
     bool background = true, scissor = false;
 
-    void start(int x, int y, int w, int h, bool background, bool scissor)
+    void start(int x, int y, int w, int h, float pitch, float roll, float fov, bool background, bool scissor)
     {
         modelpreview::x = x;
         modelpreview::y = y;
@@ -2246,8 +2245,8 @@ namespace modelpreview
         mpcam.type = ENT_CAMERA;
         mpcam.o = vec(0, 0, 0);
         mpcam.yaw = 0;
-        mpcam.pitch = modelpreviewpitch;
-        mpcam.roll = 0;
+        mpcam.pitch = pitch;
+        mpcam.roll = roll;
         camera1 = &mpcam;
 
         oldaspect = aspect;
@@ -2261,7 +2260,7 @@ namespace modelpreview
         oldprojmatrix = projmatrix;
 
         aspect = w/float(h);
-        fovy = modelpreviewfov;
+        fovy = fov > 0 ? clamp(fov, 10.f, 100.f) : modelpreviewfov;
         curfov = 2*atan2(tan(fovy/2*RAD), 1/aspect)/RAD;
         farplane = 1024;
         vieww = min(gw, w);
@@ -2306,7 +2305,7 @@ namespace modelpreview
 
 vec calcmodelpreviewpos(const vec &radius, float &yaw)
 {
-    yaw = fmod(lastmillis/10000.0f*360.0f, 360.0f);
+    if(yaw < 0) yaw = fmod(lastmillis/10000.0f*360.0f, 360.0f);
     float dist = max(radius.magnitude2()/aspect, radius.magnitude())/sinf(fovy/2*RAD);
     return vec(0, dist, 0).rotate_around_x(camera1->pitch*RAD);
 }

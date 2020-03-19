@@ -3951,16 +3951,28 @@ namespace UI
 
     struct Preview : Target
     {
+        float yaw, pitch, roll, fov;
         vec skycol, suncol, sundir, excol, exdir;
+        float offsetx, offsety, offsetyaw, offsetpitch;
+        bool dragging, interactive;
 
-        void setup(float minw_ = 0, float minh_ = 0, const vec &skycol_ = vec(0.1f, 0.1f, 0.1f), const vec &suncol_ = vec(0.6f, 0.6f, 0.6f), const vec &sundir_ = vec(0, -1, 2), const vec &excol_ = vec(0.f, 0.f, 0.f), const vec &exdir_ = vec(0, 0, 0), const Color &color_ = Color(colourwhite))
+        Preview() { resetoffset(); }
+
+        void resetoffset() { offsetx = offsety = offsetyaw = offsetpitch = 0; dragging = false; }
+
+        void setup(float minw_ = 0, float minh_ = 0, float yaw_ = -1, float pitch_ = -15, float roll_ = 0, float fov_ = 0, const vec &skycol_ = vec(0.1f, 0.1f, 0.1f), const vec &suncol_ = vec(0.6f, 0.6f, 0.6f), const vec &sundir_ = vec(0, -1, 2), const vec &excol_ = vec(0.f, 0.f, 0.f), const vec &exdir_ = vec(0, 0, 0), const Color &color_ = Color(colourwhite))
         {
             Target::setup(minw_, minh_, color_);
+            yaw = yaw_;
+            pitch = pitch_;
+            roll = roll_;
+            fov = fov_;
             skycol = skycol_;
             suncol = suncol_;
             sundir = sundir_;
             excol = excol_;
             exdir = exdir_;
+            interactive = false;
         }
 
         bool ispreview() const { return true; }
@@ -3978,6 +3990,25 @@ namespace UI
 
             if(clipstack.length()) glEnable(GL_SCISSOR_TEST);
         }
+
+        void althold(float cx, float cy)
+        {
+            if(!interactive) return;
+            float rx = (cx - x) / w, ry = (cy - y) / h;
+            if(rx < 0 || rx > 1 || ry < 0 || ry > 1) return;
+            if(!dragging || rx != offsetx || ry != offsety)
+            {
+                if(dragging)
+                {
+                    float qx = offsetx - rx, qy = offsety - ry;
+                    offsetyaw += qx * 360.f;
+                    offsetpitch += qy * 180.f;
+                }
+                offsetx = rx;
+                offsety = ry;
+                dragging = true;
+            }
+        }
     };
 
     UICMDT(Preview, preview, skycol, "i", (int *c), o->skycol = vec::fromcolor(*c));
@@ -3985,20 +4016,26 @@ namespace UI
     UICMDT(Preview, preview, sundir, "fff", (float *x, float *y, float *z), o->sundir = vec(*x, *y, *z));
     UICMDT(Preview, preview, excol, "i", (int *c), o->excol = vec::fromcolor(*c));
     UICMDT(Preview, preview, exdir, "fff", (float *x, float *y, float *z), o->exdir = vec(*x, *y, *z));
+    UICMDT(Preview, preview, yaw, "f", (float *n), o->yaw = *n);
+    UICMDT(Preview, preview, pitch, "f", (float *n), o->pitch = *n);
+    UICMDT(Preview, preview, roll, "f", (float *n), o->roll = *n);
+    UICMDT(Preview, preview, fov, "f", (float *n), o->fov = *n);
+    UICMDT(Preview, preview, interactive, "i", (int *c), o->interactive = *c != 0);
+    UICMDT(Preview, preview, resetoffset, "", (void), o->resetoffset());
 
     struct ModelPreview : Preview
     {
         char *name;
         modelstate mdl;
 
-        ModelPreview() : name(NULL) {}
+        ModelPreview() : name(NULL) { resetoffset(); }
         ~ModelPreview() { delete[] name; }
 
-        void setup(const char *name_, const char *animspec, float scale_, float blend_, float minw_, float minh_, const vec &skycol_ = vec(0.1f, 0.1f, 0.1f), const vec &suncol_ = vec(0.6f, 0.6f, 0.6f), const vec &sundir_ = vec(0, -1, 2), const vec &excol_ = vec(0.f, 0.f, 0.f), const vec &exdir_ = vec(0, 0, 0))
+        void setup(const char *name_, const char *animspec, float scale_, float blend_, float minw_, float minh_, float yaw_ = -1, float pitch_ = -15, float roll_ = 0, float fov_ = 20, const vec &skycol_ = vec(0.1f, 0.1f, 0.1f), const vec &suncol_ = vec(0.6f, 0.6f, 0.6f), const vec &sundir_ = vec(0, -1, 2), const vec &excol_ = vec(0.f, 0.f, 0.f), const vec &exdir_ = vec(0, 0, 0))
         {
             mdl.reset();
 
-            Preview::setup(minw_, minh_, skycol_, suncol_, sundir_, excol_, exdir_);
+            Preview::setup(minw_, minh_, yaw_, pitch_, roll_, fov_, skycol_, suncol_, sundir_, excol_, exdir_);
             SETSTR(name, name_);
 
             mdl.anim = ANIM_ALL;
@@ -4029,20 +4066,22 @@ namespace UI
         {
             Object::draw(sx, sy);
 
-            if (!loadedshaders) return;
+            if(!loadedshaders) return;
 
             changedraw(CHANGE_SHADER);
 
             int sx1, sy1, sx2, sy2;
             window->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
-            modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, false, clipstack.length() > 0);
+            modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch+offsetpitch, roll, fov, false, clipstack.length() > 0);
             model *m = loadmodel(name);
             if(m)
             {
                 loopi(min(colors.length(), int(MAXMDLMATERIALS))) mdl.material[i] = bvec(colors[i].r, colors[i].g, colors[i].b);
                 vec center, radius;
                 m->boundbox(center, radius);
+                if(yaw >= 0) mdl.yaw = yaw;
                 mdl.o = calcmodelpreviewpos(radius, mdl.yaw).sub(center);
+                mdl.yaw += offsetyaw;
                 rendermodel(name, mdl);
             }
             if(clipstack.length()) clipstack.last().scissor();
@@ -4058,12 +4097,12 @@ namespace UI
         float scale, blend;
         char *actions;
 
-        PlayerPreview() : actions(NULL) {}
+        PlayerPreview() : actions(NULL) { resetoffset(); }
         ~PlayerPreview() { delete[] actions; }
 
-        void setup(float scale_, float blend_, float minw_, float minh_, const char *actions_, const vec &skycol_ = vec(0.1f, 0.1f, 0.1f), const vec &suncol_ = vec(0.6f, 0.6f, 0.6f), const vec &sundir_ = vec(0, -1, 2), const vec &excol_ = vec(0.f, 0.f, 0.f), const vec &exdir_ = vec(0, 0, 0))
+        void setup(float scale_, float blend_, float minw_, float minh_, const char *actions_, float yaw_ = -1, float pitch_ = -15, float roll_ = 0, float fov_ = 20, const vec &skycol_ = vec(0.1f, 0.1f, 0.1f), const vec &suncol_ = vec(0.6f, 0.6f, 0.6f), const vec &sundir_ = vec(0, -1, 2), const vec &excol_ = vec(0.f, 0.f, 0.f), const vec &exdir_ = vec(0, 0, 0))
         {
-            Preview::setup(minw_, minh_, skycol_, suncol_, sundir_, excol_, exdir_);
+            Preview::setup(minw_, minh_, yaw_, pitch_, roll_,fov_, skycol_, suncol_, sundir_, excol_, exdir_);
             scale = scale_;
             blend = blend_;
             SETSTR(actions, actions_);
@@ -4082,9 +4121,9 @@ namespace UI
 
             int sx1, sy1, sx2, sy2;
             window->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
-            modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, false, clipstack.length() > 0);
+            modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch+offsetpitch, roll, fov, false, clipstack.length() > 0);
             colors[0].a = uchar(colors[0].a*blend);
-            game::renderplayerpreview(scale, colors[0].tocolor4(), actions);
+            game::renderplayerpreview(scale, colors[0].tocolor4(), actions, yaw, offsetyaw);
             if(clipstack.length()) clipstack.last().scissor();
             modelpreview::end(skycol, suncol, sundir, excol, exdir);
         }
@@ -4098,12 +4137,12 @@ namespace UI
         char *name;
         float blend;
 
-        PrefabPreview() : name(NULL) {}
+        PrefabPreview() : name(NULL) { resetoffset(); }
         ~PrefabPreview() { delete[] name; }
 
-        void setup(const char *name_, const Color &color_, float blend, float minw_, float minh_, const vec &skycol_ = vec(0.1f, 0.1f, 0.1f), const vec &suncol_ = vec(0.6f, 0.6f, 0.6f), const vec &sundir_ = vec(0, -1, 2), const vec &excol_ = vec(0.f, 0.f, 0.f), const vec &exdir_ = vec(0, 0, 0))
+        void setup(const char *name_, const Color &color_, float blend, float minw_, float minh_, float yaw_ = -1, float pitch_ = -15, float roll_ = 0, float fov_ = 20, const vec &skycol_ = vec(0.1f, 0.1f, 0.1f), const vec &suncol_ = vec(0.6f, 0.6f, 0.6f), const vec &sundir_ = vec(0, -1, 2), const vec &excol_ = vec(0.f, 0.f, 0.f), const vec &exdir_ = vec(0, 0, 0))
         {
-            Preview::setup(minw_, minh_, skycol_, suncol_, sundir_, excol_, exdir_, color_);
+            Preview::setup(minw_, minh_, yaw_, pitch_, roll_, fov_, skycol_, suncol_, sundir_, excol_, exdir_, color_);
             SETSTR(name, name_);
         }
 
@@ -4120,8 +4159,8 @@ namespace UI
 
             int sx1, sy1, sx2, sy2;
             window->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
-            modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, false, clipstack.length() > 0);
-            previewprefab(name, colors[0].tocolor(), blend*(colors[0].a/255.f));
+            modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch, roll, fov, false, clipstack.length() > 0);
+            previewprefab(name, colors[0].tocolor(), blend*(colors[0].a/255.f), yaw, offsetyaw);
             if(clipstack.length()) clipstack.last().scissor();
             modelpreview::end(skycol, suncol, sundir, excol, exdir);
         }

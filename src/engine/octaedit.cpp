@@ -1681,15 +1681,16 @@ void renderprefab(const char *name, const vec &o, float yaw, float pitch, float 
     if(p) renderprefab(*p, o, yaw, pitch, roll, size, color, blend);
 }
 
-void previewprefab(const char *name, const vec &color, float blend)
+void previewprefab(const char *name, const vec &color, float blend, float yaw, float offsetyaw)
 {
     prefab *p = loadprefab(name, false);
     if(p)
     {
         block3 &b = *p->copy;
-        float yaw;
-        vec o = calcmodelpreviewpos(vec(b.s).mul(b.grid*0.5f), yaw);
-        renderprefab(*p, o, yaw, 0, 0, 1, color, blend);
+        float ryaw = yaw;
+        vec o = calcmodelpreviewpos(vec(b.s).mul(b.grid*0.5f), ryaw);
+        ryaw += offsetyaw;
+        renderprefab(*p, o, ryaw, 0, 0, 1, color, blend);
     }
 }
 

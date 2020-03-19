@@ -4099,20 +4099,25 @@ namespace game
         loopi(W_MAX) previewent->weapammo[i][W_A_STORE] = W(i, ammostore) > 0 ? W(i, ammostore) : 0;
     }
 
-    void renderplayerpreview(float scale, const vec4 &mcolor, const char *actions)
+    void renderplayerpreview(float scale, const vec4 &mcolor, const char *actions, float yaw, float offsetyaw)
     {
         if(!previewent) initplayerpreview();
         previewent->configure(lastmillis, gamemode, mutators);
+        previewent->yaw = yaw;
+        if(actions && *actions) execute(actions);
         float height = previewent->height + previewent->aboveeye, zrad = height/2;
         vec2 xyrad = vec2(previewent->xradius, previewent->yradius).max(height/4);
         previewent->o = calcmodelpreviewpos(vec(xyrad, zrad), previewent->yaw).addz(previewent->height - zrad);
-        if(actions && *actions) execute(actions);
+        previewent->yaw += offsetyaw;
         previewent->cleartags();
         renderplayer(previewent, 1, scale, 0, mcolor);
     }
 
     #define PLAYERPREV(name, arglist, argexpr, body) ICOMMAND(0, uiplayerpreview##name, arglist, argexpr, if(previewent) { body; });
     PLAYERPREV(state, "b", (int *n), previewent->state = *n >= 0 ? clamp(*n, 0, int(CS_MAX-1)) : int(CS_ALIVE));
+    PLAYERPREV(yaw, "f", (float *n), previewent->yaw = *n);
+    PLAYERPREV(pitch, "f", (float *n), previewent->pitch = *n);
+    PLAYERPREV(roll, "f", (float *n), previewent->roll = *n);
     PLAYERPREV(move, "i", (int *n), previewent->move = *n != 0 ? (*n > 0 ? 1 : -1) : 0);
     PLAYERPREV(strafe, "i", (int *n), previewent->strafe = *n != 0 ? (*n > 0 ? 1 : -1) : 0);
     PLAYERPREV(turnside, "i", (int *n), previewent->turnside = *n != 0 ? (*n > 0 ? 1 : -1) : 0);
