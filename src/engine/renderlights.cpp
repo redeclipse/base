@@ -4951,7 +4951,7 @@ void shademinimap(const vec &color)
     GLERROR;
 }
 
-void shademodelpreview(int x, int y, int w, int h, bool background, bool scissor, const vec &suncol, const vec &sundir, const vec &excol, const vec &exdir)
+void shademodelpreview(int x, int y, int w, int h, bool background, bool scissor, const vec &skycol, const vec &suncol, const vec &sundir, const vec &excol, const vec &exdir)
 {
     GLERROR;
 
@@ -4969,7 +4969,7 @@ void shademodelpreview(int x, int y, int w, int h, bool background, bool scissor
     glActiveTexture_(GL_TEXTURE0);
 
     float lightscale = 2.0f*ldrscale;
-    GLOBALPARAMF(lightscale, 0.1f*lightscale, 0.1f*lightscale, 0.1f*lightscale, lightscale);
+    GLOBALPARAMF(lightscale, skycol.x*lightscale, skycol.y*lightscale, skycol.z*lightscale, lightscale);
     GLOBALPARAM(sunlightdir, vec(sundir).safenormalize());
     GLOBALPARAMF(sunlightcolor, suncol.x*lightscale, suncol.y*lightscale, suncol.z*lightscale);
     GLOBALPARAM(exlightdir, vec(exdir).safenormalize());

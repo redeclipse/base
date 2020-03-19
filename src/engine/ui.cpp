@@ -3948,11 +3948,12 @@ namespace UI
 
     struct Preview : Target
     {
-        vec suncol, sundir, excol, exdir;
+        vec skycol, suncol, sundir, excol, exdir;
 
-        void setup(float minw_ = 0, float minh_ = 0, const vec &suncol_ = vec(0.6f, 0.6f, 0.6f), const vec &sundir_ = vec(0, -1, 2), const vec &excol_ = vec(0.f, 0.f, 0.f), const vec &exdir_ = vec(0, 0, 0), const Color &color_ = Color(colourwhite))
+        void setup(float minw_ = 0, float minh_ = 0, const vec &skycol_ = vec(0.1f, 0.1f, 0.1f), const vec &suncol_ = vec(0.6f, 0.6f, 0.6f), const vec &sundir_ = vec(0, -1, 2), const vec &excol_ = vec(0.f, 0.f, 0.f), const vec &exdir_ = vec(0, 0, 0), const Color &color_ = Color(colourwhite))
         {
             Target::setup(minw_, minh_, color_);
+            skycol = skycol_;
             suncol = suncol_;
             sundir = sundir_;
             excol = excol_;
@@ -3976,6 +3977,7 @@ namespace UI
         }
     };
 
+    UICMDT(Preview, preview, skycol, "i", (int *c), o->skycol = vec::fromcolor(*c));
     UICMDT(Preview, preview, suncol, "i", (int *c), o->suncol = vec::fromcolor(*c));
     UICMDT(Preview, preview, sundir, "fff", (float *x, float *y, float *z), o->sundir = vec(*x, *y, *z));
     UICMDT(Preview, preview, excol, "i", (int *c), o->excol = vec::fromcolor(*c));
@@ -3989,11 +3991,11 @@ namespace UI
         ModelPreview() : name(NULL) {}
         ~ModelPreview() { delete[] name; }
 
-        void setup(const char *name_, const char *animspec, float scale_, float blend_, float minw_, float minh_, const vec &suncol_ = vec(0.6f, 0.6f, 0.6f), const vec &sundir_ = vec(0, -1, 2), const vec &excol_ = vec(0.f, 0.f, 0.f), const vec &exdir_ = vec(0, 0, 0))
+        void setup(const char *name_, const char *animspec, float scale_, float blend_, float minw_, float minh_, const vec &skycol_ = vec(0.1f, 0.1f, 0.1f), const vec &suncol_ = vec(0.6f, 0.6f, 0.6f), const vec &sundir_ = vec(0, -1, 2), const vec &excol_ = vec(0.f, 0.f, 0.f), const vec &exdir_ = vec(0, 0, 0))
         {
             mdl.reset();
 
-            Preview::setup(minw_, minh_, suncol_, sundir_, excol_, exdir_);
+            Preview::setup(minw_, minh_, skycol_, suncol_, sundir_, excol_, exdir_);
             SETSTR(name, name_);
 
             mdl.anim = ANIM_ALL;
@@ -4041,7 +4043,7 @@ namespace UI
                 rendermodel(name, mdl);
             }
             if(clipstack.length()) clipstack.last().scissor();
-            modelpreview::end(suncol, sundir, excol, exdir);
+            modelpreview::end(skycol, suncol, sundir, excol, exdir);
         }
     };
 
@@ -4056,9 +4058,9 @@ namespace UI
         PlayerPreview() : actions(NULL) {}
         ~PlayerPreview() { delete[] actions; }
 
-        void setup(float scale_, float blend_, float minw_, float minh_, const char *actions_, const vec &suncol_ = vec(0.6f, 0.6f, 0.6f), const vec &sundir_ = vec(0, -1, 2), const vec &excol_ = vec(0.f, 0.f, 0.f), const vec &exdir_ = vec(0, 0, 0))
+        void setup(float scale_, float blend_, float minw_, float minh_, const char *actions_, const vec &skycol_ = vec(0.1f, 0.1f, 0.1f), const vec &suncol_ = vec(0.6f, 0.6f, 0.6f), const vec &sundir_ = vec(0, -1, 2), const vec &excol_ = vec(0.f, 0.f, 0.f), const vec &exdir_ = vec(0, 0, 0))
         {
-            Preview::setup(minw_, minh_, suncol_, sundir_, excol_, exdir_);
+            Preview::setup(minw_, minh_, skycol_, suncol_, sundir_, excol_, exdir_);
             scale = scale_;
             blend = blend_;
             SETSTR(actions, actions_);
@@ -4081,7 +4083,7 @@ namespace UI
             colors[0].a = uchar(colors[0].a*blend);
             game::renderplayerpreview(scale, colors[0].tocolor4(), actions);
             if(clipstack.length()) clipstack.last().scissor();
-            modelpreview::end(suncol, sundir, excol, exdir);
+            modelpreview::end(skycol, suncol, sundir, excol, exdir);
         }
     };
 
@@ -4096,9 +4098,9 @@ namespace UI
         PrefabPreview() : name(NULL) {}
         ~PrefabPreview() { delete[] name; }
 
-        void setup(const char *name_, const Color &color_, float blend, float minw_, float minh_, const vec &suncol_ = vec(0.6f, 0.6f, 0.6f), const vec &sundir_ = vec(0, -1, 2), const vec &excol_ = vec(0.f, 0.f, 0.f), const vec &exdir_ = vec(0, 0, 0))
+        void setup(const char *name_, const Color &color_, float blend, float minw_, float minh_, const vec &skycol_ = vec(0.1f, 0.1f, 0.1f), const vec &suncol_ = vec(0.6f, 0.6f, 0.6f), const vec &sundir_ = vec(0, -1, 2), const vec &excol_ = vec(0.f, 0.f, 0.f), const vec &exdir_ = vec(0, 0, 0))
         {
-            Preview::setup(minw_, minh_, suncol_, sundir_, excol_, exdir_, color_);
+            Preview::setup(minw_, minh_, skycol_, suncol_, sundir_, excol_, exdir_, color_);
             SETSTR(name, name_);
         }
 
@@ -4118,7 +4120,7 @@ namespace UI
             modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, false, clipstack.length() > 0);
             previewprefab(name, colors[0].tocolor(), blend*(colors[0].a/255.f));
             if(clipstack.length()) clipstack.last().scissor();
-            modelpreview::end(suncol, sundir, excol, exdir);
+            modelpreview::end(skycol, suncol, sundir, excol, exdir);
         }
     };
 
