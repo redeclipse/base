@@ -4951,7 +4951,7 @@ void shademinimap(const vec &color)
     GLERROR;
 }
 
-void shademodelpreview(int x, int y, int w, int h, bool background, bool scissor, const vec &lightcol, const vec &lightdir)
+void shademodelpreview(int x, int y, int w, int h, bool background, bool scissor, const vec &suncol, const vec &sundir, const vec &excol, const vec &exdir)
 {
     GLERROR;
 
@@ -4970,8 +4970,10 @@ void shademodelpreview(int x, int y, int w, int h, bool background, bool scissor
 
     float lightscale = 2.0f*ldrscale;
     GLOBALPARAMF(lightscale, 0.1f*lightscale, 0.1f*lightscale, 0.1f*lightscale, lightscale);
-    GLOBALPARAM(sunlightdir, vec(lightdir).safenormalize());
-    GLOBALPARAMF(sunlightcolor, lightcol.x*lightscale, lightcol.y*lightscale, lightcol.z*lightscale);
+    GLOBALPARAM(sunlightdir, vec(sundir).safenormalize());
+    GLOBALPARAMF(sunlightcolor, suncol.x*lightscale, suncol.y*lightscale, suncol.z*lightscale);
+    GLOBALPARAM(exlightdir, vec(exdir).safenormalize());
+    GLOBALPARAMF(exlightcolor, excol.x*lightscale, excol.y*lightscale, excol.z*lightscale);
 
     SETSHADER(modelpreview);
 

@@ -2278,14 +2278,14 @@ namespace modelpreview
         preparegbuffer();
     }
 
-    void end(const vec &lightcol, const vec &lightdir)
+    void end(const vec &suncol, const vec &sundir, const vec &excol, const vec &exdir)
     {
         rendermodelbatches();
 
         glDisable(GL_DEPTH_TEST);
         glDisable(GL_CULL_FACE);
 
-        shademodelpreview(x, y, w, h, background, scissor, lightcol, lightdir);
+        shademodelpreview(x, y, w, h, background, scissor, suncol, sundir, excol, exdir);
 
         aspect = oldaspect;
         fovy = oldfovy;
