@@ -4124,7 +4124,7 @@ namespace game
     PLAYERPREV(pattern, "i", (int *n), previewent->pattern = clamp(*n, 0, PLAYERPATTERNS-1));
     PLAYERPREV(team, "i", (int *n), previewent->team = clamp(*n, 0, int(T_LAST)));
     PLAYERPREV(privilege, "i", (int *n), previewent->privilege = clamp(*n, 0, int(PRIV_MAX-1)));
-    PLAYERPREV(weapselect, "i", (int *n), previewent->weapselect = clamp(*n, 0, W_ALL-1));
+    PLAYERPREV(weapselect, "i", (int *n), previewent->weapselect = clamp(*n, 0, W_MAX-1));
     PLAYERPREV(weapammo, "iii", (int *n, int *o, int *p), previewent->weapammo[clamp(*n, 0, W_ALL-1)][clamp(*p, 0, W_A_MAX-1)] = *o);
     PLAYERPREV(weapclip, "ii", (int *n, int *o), previewent->weapammo[clamp(*n, 0, W_ALL-1)][W_A_CLIP] = *o);
     PLAYERPREV(weapstore, "ii", (int *n, int *o), previewent->weapammo[clamp(*n, 0, W_ALL-1)][W_A_STORE] = *o);

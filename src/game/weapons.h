@@ -1409,7 +1409,7 @@ weaptypes weaptype[] =
             "rocket", "weapons/rocket/item", "weapons/rocket/ammo", "weapons/rocket/vwep", "weapons/rocket/hwep", "weapons/rocket/proj",  ""
     },
     {
-            0,                  S_MELEE,        1,
+            ANIM_CLAW,          S_MELEE,        1,
             false,      false,      false,       false,
             0,
             "melee",    "", "", "", "", "", ""
