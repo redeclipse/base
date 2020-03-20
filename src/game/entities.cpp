@@ -2258,7 +2258,7 @@ namespace entities
                 else if(toggle && canlink(node, index))
                 {
                     f.links.add(index);
-                    if(recip && (h = e.links.find(node)) < 0) e.links.add(node);
+                    if(recip && e.links.find(node) < 0) e.links.add(node);
                     fixentity(node, true);
                     if(local && m_edit(game::gamemode)) client::addmsg(N_EDITLINK, "ri3", 1, node, index);
                     if(verbose > 2) conoutf("\faEntity %s (%d) and %s (%d) linked", enttype[ents[node]->type].name, node, enttype[ents[index]->type].name, index);
@@ -2277,7 +2277,7 @@ namespace entities
             else if(toggle || add)
             {
                 e.links.add(node);
-                if(recip && (h = f.links.find(index)) < 0) f.links.add(index);
+                if(recip && f.links.find(index) < 0) f.links.add(index);
                 fixentity(index, true);
                 if(local && m_edit(game::gamemode)) client::addmsg(N_EDITLINK, "ri3", 1, index, node);
                 if(verbose > 2) conoutf("\faEntity %s (%d) and %s (%d) linked", enttype[ents[index]->type].name, index, enttype[ents[node]->type].name, node);

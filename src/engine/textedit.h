@@ -433,7 +433,7 @@ struct editor
             {
                 int len = current.len;
                 if(maxx >= 0 && slen + cx + len > maxx) len = max(0, maxx-(cx+slen));
-                current.insert(str, cx, slen);
+                current.insert(str, cx, len);
                 cx += slen;
             }
         }
@@ -646,13 +646,13 @@ struct editor
             {
                 if(sy < starty) // crop top/bottom within window
                 {
-                    sy = starty;
+                    //sy = starty;
                     psy = 0;
                     psx = 0;
                 }
                 if(ey > maxy)
                 {
-                    ey = maxy;
+                    //ey = maxy;
                     pey = pixelheight-FONTH;
                     pex = pixelwidth;
                 }

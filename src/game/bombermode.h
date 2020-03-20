@@ -246,11 +246,10 @@ struct bomberservmode : bomberstate, servmode
                     int score = G(bomberholdpoints)*t;
                     if(score)
                     {
-                        int total = ci->points;
                         givepoints(ci, score, true, false);
                         if(m_team(gamemode, mutators))
                         {
-                            total = addscore(ci->team, score);
+                            int total = addscore(ci->team, score);
                             sendf(-1, 1, "ri3", N_SCORE, ci->team, total);
                         }
                     }

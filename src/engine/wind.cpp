@@ -244,8 +244,7 @@ vec windprobe::probe(const vec &o, const dynent *d)
     return lastwind;
 }
 
-void addwind(const vec &o, int mode, float speed, windemitter **hook, int yaw, int interval,
-    int length, int radius, int atten)
+void addwind(const vec &o, int mode, float speed, windemitter **hook, int yaw, int interval, int length, int radius, int atten)
 {
     windemitter *we;
 

@@ -18,7 +18,6 @@ typedef unsigned int uint;
 static inline int imin(int a, int b) { return a < b ? a : b; }
 static inline int imax(int a, int b) { return a > b ? a : b; }
 static inline int iclamp(int n, int l, int h) { return imax(l, imin(n, h)); }
-static inline float fclamp(float n, float l, float h) { return fmax(l, fmin(n, h)); }
 
 void fatal(const char *fmt, ...)
 {
@@ -593,7 +592,7 @@ int main(int argc, char **argv)
     FT_Library l;
     FT_Face f;
     int i, radius, pad, w, h, tw, th, c, numgen = 0, trial = -2, rw = 0, rh = 0, ry = 0, sw = 0, sh = 0;
-    float advance, x1 = INT_MAX, x2 = INT_MIN, y1 = INT_MAX, y2 = INT_MIN, w2 = 0, h2 = 0;
+    float advance, x1 = 1e16f, x2 = -1e16f, y1 = 1e16f, y2 = -1e16f, w2 = 0, h2 = 0;
     time_t starttime, endtime;
     struct fontchar chars[256];
     struct fontchar *order[256];

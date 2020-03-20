@@ -259,7 +259,6 @@ bool playmusic(const char *name, const char *cmd)
     if(!*name) return false;
     string buf;
     const char *dirs[] = { "", "sounds/" }, *exts[] = { "", ".wav", ".ogg" };
-    bool found = false;
     loopi(sizeof(dirs)/sizeof(dirs[0])) loopk(sizeof(exts)/sizeof(exts[0]))
     {
         formatstring(buf, "%s%s%s", dirs[i], name, exts[k]);
@@ -272,7 +271,7 @@ bool playmusic(const char *name, const char *cmd)
         if(musicfadein) Mix_FadeInMusic(music, cmd && *cmd ? 0 : -1, musicfadein);
         else Mix_PlayMusic(music, cmd && *cmd ? 0 : -1);
         Mix_VolumeMusic(int((mastervol/255.f)*(musicvol/255.f)*MIX_MAX_VOLUME));
-        changedvol = found = true;
+        changedvol = true;
         return true;
     }
     if(!music) conoutf("\frCould not play music: %s", name);
