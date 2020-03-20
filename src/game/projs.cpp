@@ -161,7 +161,7 @@ namespace projs
         h.vel = ivec(int(vel.x*DNF), int(vel.y*DNF), int(vel.z*DNF));
     }
 
-    void projpush(projent *p)
+    void projpush(projent *p, float dist = 0)
     {
         if(p->projtype != PRJ_SHOT || !p->owner) return;
         if(p->local) p->state = CS_DEAD;
@@ -171,7 +171,7 @@ namespace projs
             h.flags = HIT(PROJ)|HIT(HEAD);
             h.proj = p->id;
             h.target = p->owner->clientnum;
-            h.dist = 0;
+            h.dist = int(dist*DNF);
             h.dir = h.vel = ivec(0, 0, 0);
         }
     }
@@ -179,10 +179,9 @@ namespace projs
     bool radialeffect(dynent *d, projent &proj, int flags, float radius)
     {
         bool push = WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags)) != 0, radiated = false;
-        float maxdist = push ? radius*WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags)) : radius;
-        #define radialpush(xx,yx,yy,yz1,yz2,zz) \
+        #define radialpush(rs,xx,yx,yy,yz1,yz2,zz) \
             if(!proj.o.rejectxyz(xx, yx, yy, yz1, yz2)) zz = 0; \
-            else if(!proj.o.reject(xx, maxdist+max(yx, yy))) \
+            else if(!proj.o.reject(xx, rs+max(yx, yy))) \
             { \
                 vec bottom(xx), top(xx); \
                 bottom.z -= yz1; \
@@ -192,12 +191,13 @@ namespace projs
         if(gameent::is(d))
         {
             gameent *e = (gameent *)d;
+            float maxdist = push ? radius*WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags)) : radius;
             if(actors[e->actortype].hitboxes)
             {
                 float rdist[3] = { -1, -1, -1 };
-                radialpush(e->limbstag(), e->limbsbox().x, e->limbsbox().y, e->limbsbox().z, e->limbsbox().z, rdist[0]);
-                radialpush(e->torsotag(), e->torsobox().x, e->torsobox().y, e->torsobox().z, e->torsobox().z, rdist[1]);
-                radialpush(e->headtag(), e->headbox().x, e->headbox().y, e->headbox().z, e->headbox().z, rdist[2]);
+                radialpush(maxdist, e->limbstag(), e->limbsbox().x, e->limbsbox().y, e->limbsbox().z, e->limbsbox().z, rdist[0]);
+                radialpush(maxdist, e->torsotag(), e->torsobox().x, e->torsobox().y, e->torsobox().z, e->torsobox().z, rdist[1]);
+                radialpush(maxdist, e->headtag(), e->headbox().x, e->headbox().y, e->headbox().z, e->headbox().z, rdist[2]);
                 int closest = -1;
                 loopi(3) if(rdist[i] >= 0 && (closest < 0 || rdist[i] <= rdist[closest])) closest = i;
                 loopi(3) if(rdist[i] >= 0)
@@ -224,7 +224,7 @@ namespace projs
             else
             {
                 float dist = -1;
-                radialpush(e->o, e->xradius, e->yradius, e->height, e->aboveeye, dist);
+                radialpush(maxdist, e->o, e->xradius, e->yradius, e->height, e->aboveeye, dist);
                 if(dist >= 0)
                 {
                     if(dist <= radius)
@@ -244,8 +244,8 @@ namespace projs
         {
             projent *e = (projent *)d;
             float dist = -1;
-            radialpush(e->o, e->xradius, e->yradius, e->height, e->aboveeye, dist);
-            if(dist >= 0 && dist <= radius) projpush(e);
+            radialpush(radius, e->o, e->xradius, e->yradius, e->height, e->aboveeye, dist);
+            if(dist >= 0 && dist <= radius) projpush(e, dist);
         }
         return radiated;
     }
