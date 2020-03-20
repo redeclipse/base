@@ -681,7 +681,9 @@ void rendereditcursor()
     glEnable(GL_CULL_FACE);
 }
 
-VAR(0, nexttex, -1, -1, VAR_MAX);
+int nexttex = -1;
+bool nextsave = false;
+ICOMMAND(0, nexttex, "ii", (int *n, int *s), nexttex = *n; nextsave = *s != 0);
 
 void tryedit()
 {
@@ -690,9 +692,11 @@ void tryedit()
     if(vslots.inrange(nexttex) && !noedit())
     {
         filltexlist();
-        edittex(nexttex);
+        edittex(nexttex, nextsave);
+        texpaneltimer = totalmillis;
     }
     nexttex = -1;
+    nextsave = false;
 }
 
 //////////// ready changes to vertex arrays ////////////
@@ -2960,18 +2964,34 @@ void gettex()
 
 void getcurtex()
 {
-    if(noedit(true)) return;
+    if(noedit(true))
+    {
+        intret(-1);
+        return;
+    }
     filltexlist();
     int index = curtexindex < 0 ? 0 : curtexindex;
-    if(!texmru.inrange(index)) return;
+    if(!texmru.inrange(index))
+    {
+        intret(-1);
+        return;
+    }
     intret(texmru[index]);
 }
 
 void getseltex()
 {
-    if(noedit(true)) return;
+    if(noedit(true))
+    {
+        intret(-1);
+        return;
+    }
     cube &c = lookupcube(sel.o, -sel.grid);
-    if(c.children || isempty(c)) return;
+    if(c.children || isempty(c))
+    {
+        intret(-1);
+        return;
+    }
     intret(c.texture[sel.orient]);
 }
 
@@ -2999,6 +3019,7 @@ COMMAND(0, getseltex, "");
 ICOMMAND(0, getreptex, "", (), { if(!noedit()) intret(vslots.inrange(reptex) ? reptex : -1); });
 COMMAND(0, gettexname, "ii");
 ICOMMAND(0, texmru, "b", (int *idx), { filltexlist(); intret(texmru.inrange(*idx) ? texmru[*idx] : texmru.length()); });
+ICOMMAND(0, texmrufind, "i", (int *idx), { filltexlist(); intret(texmru.find(*idx)); });
 ICOMMAND(0, numvslots, "", (), intret(vslots.length()));
 ICOMMAND(0, numslots, "", (), intret(slots.length()));
 COMMAND(0, getslottex, "i");

@@ -349,7 +349,7 @@ namespace UI
         {
             resetlayout();
             parent = parent_;
-            adjust = parent->childalign();
+            adjust = parent ? parent->childalign() : (ALIGN_HCENTER | ALIGN_VCENTER);
         }
 
         void setup()
