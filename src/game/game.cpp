@@ -1205,7 +1205,7 @@ namespace game
         d->o.z -= d->height;
         if(d->state == CS_ALIVE && AA(d->actortype, abilities)&(1<<A_A_CROUCH))
         {
-            bool sliding = d->sliding(true), crouching = sliding || d->crouching(true),
+            bool sliding = d->sliding(true), crouching = sliding || d->crouching(),
                  moving = d->move || d->strafe || (d->physstate < PHYS_SLOPE && !d->onladder);
             float zrad = d->zradius*(moving && !sliding ? CROUCHHIGH : CROUCHLOW), zoff = d->zradius-zrad;
             vec old = d->o;
@@ -1222,7 +1222,7 @@ namespace game
                 d->o = old;
                 d->height = offset;
             }
-            if(crouching || d->crouching())
+            if(crouching || d->crouching(true))
             {
                 float zamt = zoff*curtime/float(PHYSMILLIS);
                 if(crouching)
@@ -3726,7 +3726,7 @@ namespace game
                         mdl.anim |= ANIM_FLYKICK<<ANIM_SECONDARY;
                         mdl.basetime2 = d->weaptime[W_MELEE];
                     }
-                    else if(d->crouching(true))
+                    else if(d->crouching())
                     {
                         if(d->strafe) mdl.anim |= (d->strafe > 0 ? ANIM_CROUCH_JUMP_LEFT : ANIM_CROUCH_JUMP_RIGHT)<<ANIM_SECONDARY;
                         else if(d->move > 0) mdl.anim |= ANIM_CROUCH_JUMP_FORWARD<<ANIM_SECONDARY;
@@ -3740,7 +3740,7 @@ namespace game
                     if(!mdl.basetime2) mdl.anim |= ANIM_END<<ANIM_SECONDARY;
                 }
                 else if(d->sliding(true)) mdl.anim |= (ANIM_POWERSLIDE|ANIM_LOOP)<<ANIM_SECONDARY;
-                else if(d->crouching(true))
+                else if(d->crouching())
                 {
                     if(d->strafe) mdl.anim |= ((d->strafe > 0 ? ANIM_CRAWL_LEFT : ANIM_CRAWL_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
                     else if(d->move > 0) mdl.anim |= (ANIM_CRAWL_FORWARD|ANIM_LOOP)<<ANIM_SECONDARY;

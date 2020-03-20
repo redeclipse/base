@@ -16,6 +16,7 @@ namespace physics
     FVAR(IDF_PERSIST, impulseparkouryaw, 0, 150, 180); // determines the minimum yaw angle to switch between parkour climb and run
     VAR(IDF_PERSIST, impulsemethod, 0, 3, 3); // determines which impulse method to use, 0 = none, 1 = launch, 2 = slide, 3 = both
     VAR(IDF_PERSIST, impulseaction, 0, 3, 3); // determines how impulse action works, 0 = off, 1 = impulse jump, 2 = impulse boost, 3 = both
+    VAR(IDF_PERSIST, impulsedash, 0, 1, 1); // double tap to impulse dash
     VAR(IDF_PERSIST, impulseturntime, 0, 250, VAR_MAX);
     FVAR(IDF_PERSIST, impulseturnroll, 0, 15, 89);
     FVAR(IDF_PERSIST, impulseturnscale, 0, 1, 1);
@@ -57,8 +58,8 @@ namespace physics
                 time = e->impulsetime[IM_T_POUND];
                 delay = impulsepounddelay;
                 break;
-            case A_A_BOOST: default:
-                time = max(e->impulsetime[IM_T_JUMP], max(e->impulsetime[IM_T_BOOST], e->impulsetime[IM_T_KICK]));
+            case A_A_BOOST: case A_A_DASH: default:
+                time = max(e->impulsetime[IM_T_JUMP], max(e->impulsetime[IM_T_DASH], max(e->impulsetime[IM_T_BOOST], e->impulsetime[IM_T_KICK])));
                 delay = e->impulse[IM_TYPE] == IM_T_JUMP ? impulsejumpdelay : impulseboostdelay;
                 break;
         }
@@ -74,6 +75,11 @@ namespace physics
             game::player1->v = dir; \
             if(down) \
             { \
+                if(allowimpulse(game::player1, A_A_DASH) && impulsedash && last##v && lastdir##v && dir == lastdir##v && lastmillis-last##v < PHYSMILLIS) \
+                { \
+                    game::player1->action[AC_DASH] = true; \
+                    game::player1->actiontime[AC_DASH] = lastmillis; \
+                } \
                 last##v = lastmillis; \
                 lastdir##v = dir; \
                 last##u = lastdir##u = 0; \
@@ -145,6 +151,7 @@ namespace physics
     ICOMMAND(0, special, "D", (int *n), doaction(AC_SPECIAL, *n!=0));
     ICOMMAND(0, drop, "D", (int *n), doaction(AC_DROP, *n!=0));
     ICOMMAND(0, affinity, "D", (int *n), doaction(AC_AFFINITY, *n!=0));
+    ICOMMAND(0, dash, "D", (int *n), doaction(AC_DASH, *n!=0));
 
     int carryaffinity(gameent *d)
     {
@@ -263,9 +270,9 @@ namespace physics
         if(gameent::is(d))
         {
             gameent *e = (gameent *)d;
-            if(e->vel.z+e->falling.z <= gravitycutoff) vel *= e->crouching(true) ? gravityfallcrouch : gravityfall;
-            else if(e->actiontime[AC_JUMP] >= 0) vel *= e->crouching(true) ? gravityjumpcrouch : gravityjump;
-            else if(e->crouching(true)) vel *= gravitycrouch;
+            if(e->vel.z+e->falling.z <= gravitycutoff) vel *= e->crouching() ? gravityfallcrouch : gravityfall;
+            else if(e->actiontime[AC_JUMP] >= 0) vel *= e->crouching() ? gravityjumpcrouch : gravityjump;
+            else if(e->crouching()) vel *= gravitycrouch;
             vel *= e->stungravity;
         }
         return vel;
@@ -723,27 +730,28 @@ namespace physics
     bool impulseplayer(gameent *d, bool onfloor, const vec &inertia, bool melee = false, bool slide = false)
     {
         bool launch = !melee && !slide && onfloor && impulsemethod&1 && d->sliding(true) && d->action[AC_JUMP],
-             mchk = !melee || onfloor, action = mchk && (d->actortype >= A_BOT || melee || impulseaction&2);
+             mchk = !melee || onfloor, action = mchk && (d->actortype >= A_BOT || melee || impulseaction&2),
+             dash = d->action[AC_DASH] && onfloor, dashslide = dash && d->move == 1, sliding = slide || dashslide;
         int move = action ? d->move : 0, strafe = action ? d->strafe : 0;
-        bool moving = mchk && (move || strafe), pound = !melee && !launch && !slide && !onfloor && (impulsepoundstyle || !moving) && d->action[AC_CROUCH];
-        if(d->actortype < A_BOT && !launch && !melee && !slide && !impulseaction) return false;
-        int type = melee ? A_A_PARKOUR : (slide ? A_A_SLIDE : (pound ? A_A_POUND : A_A_BOOST));
-        bool pulse = melee ? !onfloor : (!launch && !onfloor && (d->actortype >= A_BOT || impulseaction&1) && d->action[AC_JUMP]);
-        if((!launch && !melee && !slide && !pulse) || !canimpulse(d, type, melee || slide)) return false;
+        bool moving = mchk && (move || strafe), pound = !melee && !launch && !sliding && !onfloor && (impulsepoundstyle || !moving) && d->action[AC_CROUCH];
+        if(d->actortype < A_BOT && !launch && !melee && !sliding && !impulseaction && !d->action[AC_DASH]) return false;
+        int type = melee ? A_A_PARKOUR : (sliding ? A_A_SLIDE : (pound ? A_A_POUND : (dash ? A_A_DASH : A_A_BOOST)));
+        bool pulse = melee ? !onfloor : d->action[AC_DASH] || (!launch && !onfloor && (d->actortype >= A_BOT || impulseaction&1) && d->action[AC_JUMP]);
+        if((!launch && !melee && !sliding && !pulse) || !canimpulse(d, type, melee || sliding)) return false;
         vec keepvel = inertia;
-        int cost = int(impulsecost*(melee ? impulsecostmelee : (pound ? impulsecostpound : impulsecostboost)));
-        float skew = melee ? impulsemelee : (slide ? impulseslide : (launch ? impulselaunch : (pound ? impulsepound : (moving ? impulseboost : impulsejump)))),
-              redir = melee ? impulsemeleeredir : (slide ? impulseslideredir : (launch ? impulselaunchredir : (pound ? impulsepoundredir : (moving ? impulseboostredir : impulsejumpredir)))),
+        int cost = int(impulsecost*(melee ? impulsecostmelee : (slide ? impulsecostslide : (pound ? impulsecostpound : (dash ? impulsecostdash : impulsecostboost)))));
+        float skew = melee ? impulsemelee : (sliding ? (dashslide ? impulsedashslide : impulseslide) : (launch ? impulselaunch : (pound ? impulsepound : (dash ? impulsedash : (moving ? impulseboost : impulsejump))))),
+              redir = melee ? impulsemeleeredir : (sliding ? impulseslideredir : (launch ? impulselaunchredir : (pound ? impulsepoundredir : (dash ? impulsedashredir : (moving ? impulseboostredir : impulsejumpredir))))),
               force = impulsevelocity(d, skew, cost, type, redir, keepvel);
         if(force <= 0) return false;
         vec dir(0, 0, pound ? -1 : 1);
-        if(!pound && (launch || slide || moving || onfloor))
+        if(!pound && (launch || sliding || moving || onfloor))
         {
-            float yaw = d->yaw, pitch = moving && (launch || pulse) ? d->pitch : 0;
+            float yaw = d->yaw, pitch = moving && (launch || pulse) && !dash ? d->pitch : 0;
             if(launch) pitch = clamp(pitch, impulselaunchpitchmin, impulselaunchpitchmax);
-            else if(moving && pulse) pitch = clamp(pitch, impulseboostpitchmin, impulseboostpitchmax);
+            else if(moving && pulse && !dash) pitch = clamp(pitch, impulseboostpitchmin, impulseboostpitchmax);
             vecfromyawpitch(yaw, pitch, moving ? move : 1, strafe, dir);
-            if(!launch && slide && !d->floor.iszero() && !dir.iszero())
+            if(!launch && sliding && !d->floor.iszero() && !dir.iszero())
             {
                 dir.project(d->floor).normalize();
                 if(dir.z < 0) force += -dir.z*force;
@@ -751,9 +759,9 @@ namespace physics
         }
         d->vel = vec(dir).mul(force).add(keepvel);
         if(launch) d->vel.z += jumpvel(d);
-        d->doimpulse(melee ? IM_T_MELEE : (slide ? IM_T_SLIDE : (pound ? IM_T_POUND : IM_T_BOOST)), lastmillis, cost);
-        d->action[AC_JUMP] = false;
-        client::addmsg(N_SPHY, "ri2", d->clientnum, melee ? SPHY_MELEE : (slide ? SPHY_SLIDE : (pound ? SPHY_POUND: SPHY_BOOST)));
+        d->doimpulse(melee ? IM_T_MELEE : (sliding ? IM_T_SLIDE : (pound ? IM_T_POUND : (dash ? IM_T_DASH : IM_T_BOOST))), lastmillis, cost);
+        d->action[AC_JUMP] = d->action[AC_DASH] = false;
+        client::addmsg(N_SPHY, "ri2", d->clientnum, melee ? SPHY_MELEE : (sliding ? SPHY_SLIDE : (pound ? SPHY_POUND: (dash ? SPHY_DASH : SPHY_BOOST))));
         game::impulseeffect(d);
         return true;
     }
