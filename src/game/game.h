@@ -255,10 +255,10 @@ enum
     AC_ALL = (1<<AC_PRIMARY)|(1<<AC_SECONDARY)|(1<<AC_RELOAD)|(1<<AC_USE)|(1<<AC_JUMP)|(1<<AC_WALK)|(1<<AC_CROUCH)|(1<<AC_SPECIAL)|(1<<AC_DROP)|(1<<AC_AFFINITY)
 };
 enum { IM_METER = 0, IM_TYPE, IM_REGEN, IM_COUNT, IM_COLLECT, IM_SLIP, IM_MAX };
-enum { IM_T_JUMP = 0, IM_T_BOOST, IM_T_DASH, IM_T_POUND, IM_T_SLIDE, IM_T_MELEE, IM_T_KICK, IM_T_GRAB, IM_T_PARKOUR, IM_T_AFTER, IM_T_PUSHER, IM_T_MAX, IM_T_TOUCH = IM_T_MELEE };
+enum { IM_T_JUMP = 0, IM_T_BOOST, IM_T_DASH, IM_T_SLIDE, IM_T_MELEE, IM_T_KICK, IM_T_GRAB, IM_T_PARKOUR, IM_T_POUND, IM_T_AFTER, IM_T_PUSHER, IM_T_MAX, IM_T_TOUCH = IM_T_MELEE };
 enum
 {
-    SPHY_JUMP = 0, SPHY_BOOST, SPHY_DASH, SPHY_POUND, SPHY_SLIDE, SPHY_MELEE, SPHY_KICK, SPHY_GRAB, SPHY_PARKOUR, SPHY_AFTER, SPHY_MATERIAL,
+    SPHY_JUMP = 0, SPHY_BOOST, SPHY_DASH, SPHY_SLIDE, SPHY_MELEE, SPHY_KICK, SPHY_GRAB, SPHY_PARKOUR, SPHY_POUND, SPHY_AFTER, SPHY_MATERIAL,
     SPHY_SERVER, SPHY_EXTINGUISH = SPHY_SERVER, SPHY_BUFF,
     SPHY_MAX
 };
@@ -1823,7 +1823,7 @@ struct gameent : dynent, clientstate
         impulsetime[type] = millis;
         if(type != IM_T_KICK) impulse[IM_SLIP] = millis;
         impulse[IM_TYPE] = type;
-        if(type != IM_T_JUMP)
+        if(type != IM_T_JUMP && type != IM_T_DASH && type != IM_T_SLIDE)
         {
             if(!impulsetime[IM_T_JUMP]) impulsetime[IM_T_JUMP] = millis;
             if(type != IM_T_AFTER) impulse[IM_COUNT]++;
@@ -1831,7 +1831,8 @@ struct gameent : dynent, clientstate
         if(type != IM_T_AFTER)
         {
             impulse[IM_REGEN] = millis;
-            if(type != IM_T_PUSHER) resetphys(type > IM_T_JUMP && type < IM_T_TOUCH);
+            if(type != IM_T_PUSHER)
+                resetphys(type > IM_T_JUMP && type < IM_T_TOUCH);
             else resetair(true);
         }
         turnside = side;

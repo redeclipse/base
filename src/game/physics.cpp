@@ -50,16 +50,16 @@ namespace physics
                 time = max(max(e->impulsetime[IM_T_PARKOUR], e->impulsetime[IM_T_MELEE]), e->impulsetime[IM_T_GRAB]);
                 delay = impulseparkourdelay;
                 break;
-            case A_A_SLIDE:
-                time = e->impulsetime[IM_T_SLIDE];
-                delay = impulseslidedelay;
+            case A_A_SLIDE: case A_A_DASH:
+                time = max(e->impulsetime[IM_T_DASH], e->impulsetime[IM_T_SLIDE]);
+                delay = impulsedashdelay;
                 break;
             case A_A_POUND:
                 time = e->impulsetime[IM_T_POUND];
                 delay = impulsepounddelay;
                 break;
-            case A_A_BOOST: case A_A_DASH: default:
-                time = max(e->impulsetime[IM_T_JUMP], max(e->impulsetime[IM_T_DASH], max(e->impulsetime[IM_T_BOOST], e->impulsetime[IM_T_KICK])));
+            case A_A_BOOST: default:
+                time = max(e->impulsetime[IM_T_JUMP], max(e->impulsetime[IM_T_BOOST], e->impulsetime[IM_T_KICK]));
                 delay = e->impulse[IM_TYPE] == IM_T_JUMP ? impulsejumpdelay : impulseboostdelay;
                 break;
         }
@@ -817,7 +817,7 @@ namespace physics
             }
         }
         bool found = false;
-        if(d->impulse[IM_TYPE] == IM_T_PARKOUR || d->action[AC_SPECIAL])
+        if(!d->crouching() && (d->impulse[IM_TYPE] == IM_T_PARKOUR || d->action[AC_SPECIAL]))
         {
             vec oldpos = d->o, dir;
             const int movements[8][2] = { { 2, 2 }, { 1, 2 }, { 1, 0 }, { 1, -1 }, { 1, 1 }, { 0, 1 }, { 0, -1 }, { -1, 0 } };
@@ -940,7 +940,7 @@ namespace physics
         }
         if(!found && d->impulse[IM_TYPE] == IM_T_PARKOUR)
         {
-            if(!d->turnside && impulseclimbendstyle)
+            if(!d->turnside && impulseclimbendstyle && !d->crouching())
             {
                 float mag = vec(d->vel).magnitude();
                 if(mag > 0)

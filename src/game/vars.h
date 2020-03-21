@@ -518,8 +518,8 @@ GVAR(IDF_GAMEMOD, 0, impulseparkourlen, 0, 1250, VAR_MAX); // length of time a r
 
 GVAR(IDF_GAMEMOD, 0, impulsejumpdelay, 0, 200, VAR_MAX); // minimum time after jump for boost/dash
 GVAR(IDF_GAMEMOD, 0, impulseboostdelay, 0, 300, VAR_MAX); // minimum time between boosts/dashes
+GVAR(IDF_GAMEMOD, 0, impulsedashdelay, 0, 1000, VAR_MAX); // minimum time between dashes/slides
 GVAR(IDF_GAMEMOD, 0, impulsepounddelay, 0, 500, VAR_MAX); // minimum time between pounds
-GVAR(IDF_GAMEMOD, 0, impulseslidedelay, 0, 1000, VAR_MAX); // minimum time between slides
 GVAR(IDF_GAMEMOD, 0, impulseslideinair, 0, 100, VAR_MAX); // minimum time in air for slide
 GVAR(IDF_GAMEMOD, 0, impulseparkourdelay, 0, 500, VAR_MAX); // minimum time between parkour moves
 
