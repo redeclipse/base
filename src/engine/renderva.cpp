@@ -460,14 +460,15 @@ static octaentities *visiblemms, **lastvisiblemms;
 bool mapmodeltransparent(extentity &e)
 {
     if(e.attrs[4] > 0 && e.attrs[4] < 100) return true;
-    #if 0
     if(mapmodels.inrange(e.attrs[0]))
     {
         mapmodelinfo &mmi = mapmodels[e.attrs[0]];
         model *m = loadlodmodel(mmi.m ? mmi.m : loadmodel(mmi.name), e.o, e.attrs[15]);
+        if(m && m->alphablended()) return true;
+    #if 0
         if(m && m->alphatested(true)) return true;
-    }
     #endif
+    }
     return false;
 }
 
