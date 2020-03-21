@@ -73,11 +73,11 @@ struct animmodel : model
 
     struct shaderparams
     {
-        float spec, gloss, glow, glowdelta, glowpulse, fullbright, envmapmin, envmapmax, scrollu, scrollv, alphatest;
+        float spec, gloss, glow, glowdelta, glowpulse, fullbright, envmapmin, envmapmax, scrollu, scrollv, alphatest, blend;
         vec color;
-        int material1, material2;
+        int material1, material2, blendmode;
 
-        shaderparams() : spec(1.0f), gloss(1), glow(3.0f), glowdelta(0), glowpulse(0), fullbright(0), envmapmin(0), envmapmax(0), scrollu(0), scrollv(0), alphatest(0.9f), color(1, 1, 1), material1(1), material2(0) {}
+        shaderparams() : spec(1.0f), gloss(1), glow(3.0f), glowdelta(0), glowpulse(0), fullbright(0), envmapmin(0), envmapmax(0), scrollu(0), scrollv(0), alphatest(0.9f), blend(1.0f), color(1, 1, 1), material1(1), material2(0), blendmode(MDL_BLEND_TEST) {}
     };
 
     struct shaderparamskey
@@ -135,7 +135,8 @@ struct animmodel : model
         bool masked() const { return masks != notexture; }
         bool envmapped() const { return envmapmax>0; }
         bool bumpmapped() const { return normalmap != NULL; }
-        bool alphatested() const { return alphatest > 0 && tex->type&Texture::ALPHA; }
+        bool alphatested() const { return alphatest > 0 && tex->type&Texture::ALPHA && blendmode == MDL_BLEND_TEST; }
+        bool alphablended() const { return blendmode == MDL_BLEND_ALPHA || blend < 1.0f; }
         bool decaled() const { return decal != NULL; }
 
         bool mixed() const { return (flags&ENABLE_MIXER) != 0; }
@@ -168,8 +169,8 @@ struct animmodel : model
 
             if(!skinned) return;
 
-            if(color.r < 0) LOCALPARAM(colorscale, colorscale);
-            else LOCALPARAMF(colorscale, color.r, color.g, color.b, colorscale.a);
+            if(color.r < 0) LOCALPARAMF(colorscale, colorscale.r, colorscale.g, colorscale.b, colorscale.a*blend);
+            else LOCALPARAMF(colorscale, color.r, color.g, color.b, colorscale.a*blend);
 
             if(mixed())
             {
@@ -234,6 +235,7 @@ struct animmodel : model
             string opts;
             int optslen = 0;
             if(alphatested()) opts[optslen++] = 'a';
+            else if(alphablended()) opts[optslen++] = 'A';
             if(owner->model->wind) opts[optslen++] = 'w';
             if(decaled()) opts[optslen++] = decal->type&Texture::ALPHA ? 'D' : 'd';
             if(bumpmapped()) opts[optslen++] = 'n';
@@ -847,6 +849,12 @@ struct animmodel : model
         bool alphatested() const
         {
             loopv(skins) if(skins[i].alphatested()) return true;
+            return false;
+        }
+
+        bool alphablended() const
+        {
+            loopv(skins) if(skins[i].alphablended()) return true;
             return false;
         }
 
@@ -1658,6 +1666,12 @@ struct animmodel : model
         return false;
     }
 
+    bool alphablended() const
+    {
+        loopv(parts) if(parts[i]->alphablended()) return true;
+        return false;
+    }
+
     virtual bool flipy() const { return false; }
     virtual bool loadconfig() { return false; }
     virtual bool loaddefaultparts() { return false; }
@@ -1740,6 +1754,18 @@ struct animmodel : model
     {
         if(parts.empty()) loaddefaultparts();
         loopv(parts) loopvj(parts[i]->skins) parts[i]->skins[j].alphatest = alphatest;
+    }
+
+    void setblend(float blend)
+    {
+        if(parts.empty()) loaddefaultparts();
+        loopv(parts) loopvj(parts[i]->skins) parts[i]->skins[j].blend = blend;
+    }
+
+    void setblendmode(int blendmode)
+    {
+        if(parts.empty()) loaddefaultparts();
+        loopv(parts) loopvj(parts[i]->skins) parts[i]->skins[j].blendmode = blendmode;
     }
 
     void setfullbright(float fullbright)
@@ -2058,6 +2084,16 @@ template<class MDL, class MESH> struct modelcommands
         loopskins(meshname, s, s.alphatest = max(0.0f, min(1.0f, *cutoff)));
     }
 
+    static void setblend(char *meshname, float *blend)
+    {
+        loopskins(meshname, s, s.blend = max(0.0f, min(1.0f, *blend)));
+    }
+
+    static void setblendmode(char *meshname, int *blendmode)
+    {
+        loopskins(meshname, s, s.blendmode = max((int)MDL_BLEND_TEST, min((int)MDL_BLEND_ALPHA, *blendmode)));
+    }
+
     static void setcullface(char *meshname, int *cullface)
     {
         loopskins(meshname, s, s.cullface = *cullface);
@@ -2159,6 +2195,8 @@ template<class MDL, class MESH> struct modelcommands
             modelcommand(setgloss, "gloss", "si");
             modelcommand(setglow, "glow", "sfff");
             modelcommand(setalphatest, "alphatest", "sf");
+            modelcommand(setblend, "blend", "sf");
+            modelcommand(setblendmode, "blendmode", "si");
             modelcommand(setcullface, "cullface", "si");
             modelcommand(setcolor, "color", "sfff");
             modelcommand(setenvmap, "envmap", "ssgg");

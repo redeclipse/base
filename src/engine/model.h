@@ -1,4 +1,5 @@
 enum { MDL_MD2 = 0, MDL_MD3, MDL_MD5, MDL_OBJ, MDL_SMD, MDL_IQM, NUMMODELTYPES };
+enum { MDL_BLEND_TEST = 0, MDL_BLEND_ALPHA };
 
 struct model
 {
@@ -27,6 +28,7 @@ struct model
     virtual bool animated() const { return false; }
     virtual bool pitched() const { return true; }
     virtual bool alphatested() const { return false; }
+    virtual bool alphablended() const { return false; }
 
     virtual void setshader(Shader *shader) {}
     virtual void setenvmap(float envmapmin, float envmapmax, Texture *envmap) {}
@@ -34,6 +36,8 @@ struct model
     virtual void setgloss(int gloss) {}
     virtual void setglow(float glow, float glowdelta, float glowpulse) {}
     virtual void setalphatest(float alpha) {}
+    virtual void setblend(float blend) {}
+    virtual void setblendmode(int mode) {}
     virtual void setfullbright(float fullbright) {}
     virtual void setcullface(int cullface) {}
     virtual void setcolor(const vec &color) {}

@@ -131,6 +131,20 @@ void mdlalphatest(float *cutoff)
 }
 COMMAND(0, mdlalphatest, "f");
 
+void mdlblend(float *blend)
+{
+    checkmdl;
+    loadingmodel->setblend(max(0.0f, min(1.0f, *blend)));
+}
+COMMAND(0, mdlblend, "f");
+
+void mdlblendmode(int *blendmode)
+{
+    checkmdl;
+    loadingmodel->setblendmode(max((int)MDL_BLEND_TEST, min((int)MDL_BLEND_ALPHA, *blendmode)));
+}
+COMMAND(0, mdlblendmode, "f");
+
 void mdldepthoffset(int *offset)
 {
     checkmdl;
@@ -724,7 +738,7 @@ void rendershadowmodelbatches(bool dynmodel)
     loopv(batches)
     {
         modelbatch &b = batches[i];
-        if(!b.m->shadow || (!dynmodel && (!(b.flags&MDL_MAPMODEL) || isbatchdynamic(b)))) continue;
+        if(!b.m->shadow || b.m->alphablended() || (!dynmodel && (!(b.flags&MDL_MAPMODEL) || isbatchdynamic(b)))) continue;
         bool rendered = false;
         for(int j = b.batched; j >= 0;)
         {
