@@ -474,14 +474,15 @@ GFVAR(IDF_GAMEMOD, 0, impulseboost, 0, 1.f, FVAR_MAX); // boost modifier
 GFVAR(IDF_GAMEMOD, 0, impulseboostredir, 0, 1.f, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, 0, impulseboostpitchmin, -89.9f, -89.9f, 89.9f); // boost pitch minimum
 GFVAR(IDF_GAMEMOD, 0, impulseboostpitchmax, -89.9f, 89.9f, 89.9f); // boost pitch maximum
-GFVAR(IDF_GAMEMOD, 0, impulsedash, 0, 1.1f, FVAR_MAX); // dash modifier
+GFVAR(IDF_GAMEMOD, 0, impulsedash, 0, 1.2f, FVAR_MAX); // dash modifier
+GFVAR(IDF_GAMEMOD, 0, impulsedashback, 0, 1.1f, FVAR_MAX); // dash modifier
 GFVAR(IDF_GAMEMOD, 0, impulsedashslide, 0, 1.f, FVAR_MAX); // dash modifier for slide
 GFVAR(IDF_GAMEMOD, 0, impulsedashredir, 0, 1.f, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, 0, impulsepound, 0, 1.3f, FVAR_MAX); // pound modifier
 GFVAR(IDF_GAMEMOD, 0, impulsepoundredir, 0, 1.f, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, 0, impulselaunch, 0, 0.9f, FVAR_MAX); // launch modifier
 GFVAR(IDF_GAMEMOD, 0, impulselaunchredir, 0, 1.f, FVAR_MAX); // how much of the old velocity is redirected into the new one
-GFVAR(IDF_GAMEMOD, 0, impulselaunchpitchmin, -89.9f, 15.f, 89.9f); // launch pitch minimum
+GFVAR(IDF_GAMEMOD, 0, impulselaunchpitchmin, -89.9f, 20.f, 89.9f); // launch pitch minimum
 GFVAR(IDF_GAMEMOD, 0, impulselaunchpitchmax, -89.9f, 89.9f, 89.9f); // launch pitch maximum
 GFVAR(IDF_GAMEMOD, 0, impulseslide, 0, 0.6f, FVAR_MAX); // slide modifier
 GFVAR(IDF_GAMEMOD, 0, impulseslideredir, 0, 1.f, FVAR_MAX); // how much of the old velocity is redirected into the new one
@@ -529,6 +530,7 @@ GFVAR(IDF_GAMEMOD, 0, impulsecostparkour, 0, 1, FVAR_MAX); // scale cost parkour
 GFVAR(IDF_GAMEMOD, 0, impulsecostboost, 0, 1, FVAR_MAX); // scale cost boost move
 GFVAR(IDF_GAMEMOD, 0, impulsecostdash, 0, 1, FVAR_MAX); // scale cost dash move
 GFVAR(IDF_GAMEMOD, 0, impulsecostslide, 0, 1, FVAR_MAX); // scale cost slide move
+GFVAR(IDF_GAMEMOD, 0, impulsecostlaunch, 0, 1, FVAR_MAX); // scale cost launch move
 GFVAR(IDF_GAMEMOD, 0, impulsecostpound, 0, 1, FVAR_MAX); // scale cost pound move
 GFVAR(IDF_GAMEMOD, 0, impulsecostkick, 0, 1, FVAR_MAX); // scale cost kick move
 GFVAR(IDF_GAMEMOD, 0, impulsecostmelee, 0, 1, FVAR_MAX); // scale cost melee move

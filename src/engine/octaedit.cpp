@@ -681,6 +681,22 @@ void rendereditcursor()
     glEnable(GL_CULL_FACE);
 }
 
+int lasttex = 0, lasttexmillis = -1;
+VAR(IDF_READONLY, texpaneltimer, 1, 0, -1);
+VAR(IDF_READONLY, curtexindex, 1, -1, -1);
+
+vector<ushort> texmru;
+
+void tofronttex()                                       // maintain most recently used of the texture lists when applying texture
+{
+    int c = curtexindex;
+    if(texmru.inrange(c))
+    {
+        texmru.insert(0, texmru.remove(c));
+        curtexindex = -1;
+    }
+}
+
 int nexttex = -1;
 bool nextsave = false;
 ICOMMAND(0, nexttex, "ii", (int *n, int *s), nexttex = *n; nextsave = *s != 0);
@@ -694,6 +710,7 @@ void tryedit()
         filltexlist();
         edittex(nexttex, nextsave);
         texpaneltimer = totalmillis;
+        if(!(lastsel==sel)) tofronttex();
     }
     nexttex = -1;
     nextsave = false;
@@ -2340,22 +2357,6 @@ COMMAND(0, editface, "ii");
 COMMAND(0, delcube, "");
 
 /////////// texture editing //////////////////
-
-int lasttex = 0, lasttexmillis = -1;
-VAR(IDF_READONLY, texpaneltimer, 1, 0, -1);
-VAR(IDF_READONLY, curtexindex, 1, -1, -1);
-
-vector<ushort> texmru;
-
-void tofronttex()                                       // maintain most recently used of the texture lists when applying texture
-{
-    int c = curtexindex;
-    if(texmru.inrange(c))
-    {
-        texmru.insert(0, texmru.remove(c));
-        curtexindex = -1;
-    }
-}
 
 selinfo repsel;
 int reptex = -1;
