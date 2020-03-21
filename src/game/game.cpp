@@ -3740,7 +3740,7 @@ namespace game
                     if(!mdl.basetime2) mdl.anim |= ANIM_END<<ANIM_SECONDARY;
                 }
                 else if(d->sliding(true)) mdl.anim |= (ANIM_POWERSLIDE|ANIM_LOOP)<<ANIM_SECONDARY;
-                else if(d->impulse[IM_TYPE] == IM_T_DASH && lastmillis-d->impulsetime[IM_T_DASH] <= impulsedashdelay)
+                else if(d->impulsetime[IM_T_DASH] && lastmillis-d->impulsetime[IM_T_DASH] <= impulsedashdelay/2)
                 {
                     if(d->strafe) mdl.anim |= (d->strafe > 0 ? ANIM_BOOST_LEFT : ANIM_BOOST_RIGHT)<<ANIM_SECONDARY;
                     else if(d->move > 0) mdl.anim |= ANIM_BOOST_FORWARD<<ANIM_SECONDARY;
