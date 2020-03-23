@@ -688,7 +688,7 @@ struct matrix3
     void multranspose(const matrix3 &m, const matrix3 &n)
     {
         a = vec(m.a).mul(n.a.x).madd(m.b, n.b.x).madd(m.c, n.c.x);
-        b = vec(m.a).mul(n.a.y).madd(m.b, m.b.y).madd(m.c, n.c.y);
+        b = vec(m.a).mul(n.a.y).madd(m.b, n.b.y).madd(m.c, n.c.y);
         c = vec(m.a).mul(n.a.z).madd(m.b, n.b.z).madd(m.c, n.c.z);
     }
     void multranspose(const matrix3 &n) { multranspose(matrix3(*this), n); }
@@ -1015,7 +1015,7 @@ struct matrix4x3
     {
         vec t(n.a.dot(n.d), n.b.dot(n.d), n.c.dot(n.d));
         a = vec(m.a).mul(n.a.x).madd(m.b, n.b.x).madd(m.c, n.c.x);
-        b = vec(m.a).mul(n.a.y).madd(m.b, m.b.y).madd(m.c, n.c.y);
+        b = vec(m.a).mul(n.a.y).madd(m.b, n.b.y).madd(m.c, n.c.y);
         c = vec(m.a).mul(n.a.z).madd(m.b, n.b.z).madd(m.c, n.c.z);
         d = vec(m.d).msub(m.a, t.x).msub(m.b, t.y).msub(m.c, t.z);
     }
