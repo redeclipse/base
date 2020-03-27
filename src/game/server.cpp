@@ -2723,6 +2723,7 @@ namespace server
         }
         if(passed)
         {
+            sendpackets(true);
             sendstats();
             endmatch();
             if(best)
@@ -2838,6 +2839,7 @@ namespace server
         ci->lastvote = totalmillis ? totalmillis : 1;
         if(hasveto)
         {
+            sendpackets(true);
             sendstats();
             endmatch();
             srvoutf(-3, "%s forced: \fs\fy%s\fS on \fs\fo%s\fS", colourname(ci), gamename(ci->modevote, ci->mutsvote), ci->mapvote);
