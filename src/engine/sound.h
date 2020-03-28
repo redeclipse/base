@@ -34,7 +34,7 @@ struct soundsample;
 struct soundslot
 {
     vector<soundsample *> samples;
-    int vol, maxrad, minrad;
+    int vol, maxrad, minrad, variants, fardistance;
     char *name;
 
     soundslot();

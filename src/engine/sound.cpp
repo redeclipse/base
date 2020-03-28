@@ -335,86 +335,84 @@ static Mix_Chunk *loadwav(const char *name)
     return c;
 }
 
-int addsound(const char *id, const char *name, int vol, int maxrad, int minrad, int value, slotmanager<soundslot> &soundset)
+static soundsample *loadsound(const char *name)
 {
+    soundsample *sample = NULL;
+
+    if(!(sample = soundsamples.access(name)))
+    {
+        char *n = newstring(name);
+        sample = &soundsamples[n];
+        sample->name = n;
+        sample->sound = NULL;
+    }
+
+    if(!sample->sound)
+    {
+        string buf;
+        const char *dirs[] = { "", "sounds/" }, *exts[] = { "", ".wav", ".ogg", ".mp3" };
+        bool found = false;
+        loopi(sizeof(dirs)/sizeof(dirs[0]))
+        {
+            loopk(sizeof(exts)/sizeof(exts[0]))
+            {
+                formatstring(buf, "%s%s%s", dirs[i], sample->name, exts[k]);
+                if((sample->sound = loadwav(buf)) != NULL) found = true;
+                if(found) break;
+            }
+            if(found) break;
+        }
+    }
+
+    return sample;
+}
+
+static void loadsamples(soundslot &slot, const char *name, int variants, bool farvariant)
+{
+    soundsample *sample;
+    string sam;
+
+    loopi(variants)
+    {
+        copystring(sam, name);
+        if(farvariant) concatstring(sam, "far");
+        if(i) concatstring(sam, intstr(i + 1));
+
+        sample = loadsound(sam);
+        slot.samples.add(sample);
+
+        if(!sample || !sample->sound) conoutf("\frFailed to load sample: %s", sam);
+    }
+}
+
+int addsound(const char *id, const char *name, int vol, int maxrad, int minrad, int variants, int fardistance, slotmanager<soundslot> &soundset)
+{
+    if(nosound || !strcmp(name, "<none>")) return -1;
+
     if(vol <= 0 || vol >= 255) vol = 255;
     if(maxrad <= 0) maxrad = -1;
     if(minrad < 0) minrad = -1;
-    if(value == 1)
-    {
-        loopv(soundset)
-        {
-            soundslot &slot = soundset[i];
-            if(slot.vol == vol && slot.maxrad == maxrad && slot.minrad == minrad && !strcmp(slot.name, name))
-                return i;
-        }
-    }
-    if(!strcmp(name, "<none>"))
-    {
-        int newidx = soundset.add(id);
-        soundslot &slot = soundset[newidx];
-        slot.reset();
-        slot.name = newstring(name);
-        slot.vol = 0;
-        slot.maxrad = slot.minrad = -1;
-        return newidx;
-    }
-    soundsample *sample = NULL;
-    #define loadsound(req) \
-    { \
-        if(!(sample = soundsamples.access(req))) \
-        { \
-            char *n = newstring(req); \
-            sample = &soundsamples[n]; \
-            sample->name = n; \
-            sample->sound = NULL; \
-        } \
-        if(!sample->sound) \
-        { \
-            string buf; \
-            const char *dirs[] = { "", "sounds/" }, *exts[] = { "", ".wav", ".ogg", ".mp3" }; \
-            bool found = false; \
-            loopi(sizeof(dirs)/sizeof(dirs[0])) \
-            { \
-                loopk(sizeof(exts)/sizeof(exts[0])) \
-                { \
-                    formatstring(buf, "%s%s%s", dirs[i], sample->name, exts[k]); \
-                    if((sample->sound = loadwav(buf)) != NULL) found = true; \
-                    if(found) break; \
-                } \
-                if(found) break; \
-            } \
-        } \
-    }
-    string sam;
-    if(!nosound) loopi(value > 1 ? 2 : 1)
-    {
-        if(value > 1 && !i) formatstring(sam, "%s1", name);
-        else copystring(sam, name);
-        loadsound(sam);
-        if(sample->sound) break;
-        if(value < 2 || i) conoutf("\frFailed to load sample: %s", name);
-    }
+    if(variants < 1) variants = 1;
+
     int newidx = soundset.add(id);
     soundslot &slot = soundset[newidx];
+
     slot.reset();
     slot.name = newstring(name);
     slot.vol = vol;
     slot.maxrad = maxrad; // use these values if none are supplied when playing
     slot.minrad = minrad;
-    slot.samples.add(sample);
-    if(!nosound && value > 1) loopi(value-1)
-    {
-        formatstring(sam, "%s%d", name, i+2);
-        loadsound(sam);
-        if(sample->sound) slot.samples.add(sample);
-        else conoutf("\frFailed to load sample: %s", sam);
-    }
+    slot.variants = variants;
+    slot.fardistance = fardistance;
+
+    loadsamples(slot, name, variants, false);
+    if(fardistance > 0) loadsamples(slot, name, variants, true);
+
     return newidx;
 }
 
-ICOMMAND(0, registersound, "ssissi", (char *i, char *n, int *v, char *w, char *x, int *u), intret(addsound(i, n, *v, *w ? parseint(w) : -1, *x ? parseint(x) : -1, *u, gamesounds)));
-ICOMMAND(0, mapsound, "sissi", (char *n, int *v, char *w, char *x, int *u), intret(addsound(NULL, n, *v, *w ? parseint(w) : -1, *x ? parseint(x) : -1, *u, mapsounds)));
+ICOMMAND(0, registersound, "ssissii", (char *i, char *n, int *v, char *w, char *x, int *u, int *f), intret(addsound(i, n, *v, *w ? parseint(w) : -1, *x ? parseint(x) : -1, *u, *f, gamesounds)));
+ICOMMAND(0, mapsound, "sissi", (char *n, int *v, char *w, char *x, int *u), intret(addsound(NULL, n, *v, *w ? parseint(w) : -1, *x ? parseint(x) : -1, *u, 0, mapsounds)));
 
 void calcvol(int flags, int vol, int slotvol, int maxrad, int minrad, const vec &pos, int *curvol, int *curpan, bool liquid)
 {
@@ -605,7 +603,13 @@ int playsound(int n, const vec &pos, physent *d, int flags, int vol, int maxrad,
             else
             {
                 oldhook = NULL;
-                soundsample *sample = slot->samples[rnd(slot->samples.length())];
+                int variant = rnd(slot->variants);
+                if(slot->fardistance && o.dist(camera1->o) >= slot->fardistance)
+                    variant += slot->variants;
+                soundsample *sample = slot->samples[variant];
+
+                if(!sample || !sample->sound) return -1;
+
                 if((chan = Mix_PlayChannel(-1, sample->sound, flags&SND_LOOP ? -1 : 0)) < 0)
                 {
                     int lowest = -1;
