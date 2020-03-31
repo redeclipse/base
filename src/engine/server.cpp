@@ -640,7 +640,7 @@ VAR(IDF_PERSIST, autoconnect, 0, 0, 1);
 
 void localconnect(bool force)
 {
-    if(!connected() && (force || autoconnect))
+    if(!initing && !connected() && (force || autoconnect))
     {
         setsvar("connectname", "");
         setvar("connectport", 0);
