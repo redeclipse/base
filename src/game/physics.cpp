@@ -923,7 +923,7 @@ namespace physics
                         }
                         else
                         {
-                            if(d->turnside != side)
+                            if(d->turnside == side)
                             {
                                 d->turnmillis = impulseturntime;
                                 d->turnyaw = side ? off*impulseturnswitch : 0;
