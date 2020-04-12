@@ -1132,7 +1132,7 @@ namespace game
                 }
                 adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d, PULSE_SHOCK).mul(pc), 0, 0);
             }
-            if(d->actortype < A_ENEMY && getillumlevel() > 0 && getillumradius() > 0)
+            if(d->actortype < A_ENEMY && d->state != CS_SPECTATOR && getillumlevel() > 0 && getillumradius() > 0)
                 adddynlight(d->center(), getillumradius(), vec::fromcolor(getcolour(d, playereffecttone, getillumlevel())), 0, 0);
         }
     }
