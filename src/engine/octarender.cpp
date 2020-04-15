@@ -1094,21 +1094,21 @@ void gencubeedges(cube &c, const ivec &co, int size)
                 while(cur >= 0)
                 {
                     cubeedge &p = cubeedges[cur];
-                    if(p.flags&CE_DUP ?
-                        ce.offset>=p.offset && ce.offset+ce.size<=p.offset+p.size :
-                        ce.offset==p.offset && ce.size==p.size)
+                    if(ce.offset <= p.offset+p.size)
                     {
-                        p.flags |= CE_DUP;
-                        insert = false;
-                        break;
-                    }
-                    else if(ce.offset >= p.offset)
-                    {
+                        if(ce.offset < p.offset) break;
+                        if(p.flags&CE_DUP ?
+                            ce.offset+ce.size <= p.offset+p.size :
+                            ce.offset==p.offset && ce.size==p.size)
+                        {
+                            p.flags |= CE_DUP;
+                            insert = false;
+                            break;
+                        }
                         if(ce.offset == p.offset+p.size) ce.flags &= ~CE_START;
-                        prev = cur;
-                        cur = p.next;
                     }
-                    else break;
+                    prev = cur;
+                    cur = p.next;
                 }
                 if(insert)
                 {
