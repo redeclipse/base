@@ -1002,7 +1002,7 @@ struct edgegroup
 
 static inline uint hthash(const edgegroup &g)
 {
-    return g.slope.x^g.slope.y^g.slope.z^g.origin.x^g.origin.y^g.origin.z;
+    return g.slope.x^(g.slope.y<<2)^(g.slope.z<<4)^g.origin.x^g.origin.y^g.origin.z;
 }
 
 static inline bool htcmp(const edgegroup &x, const edgegroup &y)
@@ -1027,7 +1027,7 @@ struct cubeedge
 };
 
 vector<cubeedge> cubeedges;
-hashtable<edgegroup, int> edgegroups(1<<14);
+hashtable<edgegroup, int> edgegroups(1<<13);
 
 void gencubeedges(cube &c, const ivec &co, int size)
 {
