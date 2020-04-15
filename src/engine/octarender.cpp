@@ -1027,7 +1027,7 @@ struct cubeedge
 };
 
 vector<cubeedge> cubeedges;
-hashtable<edgegroup, int> edgegroups(1<<13);
+hashtable<edgegroup, int> edgegroups(1<<14);
 
 void gencubeedges(cube &c, const ivec &co, int size)
 {
