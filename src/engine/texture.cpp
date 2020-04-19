@@ -2844,6 +2844,7 @@ void Slot::load()
 
 MatSlot &lookupmaterialslot(int index, bool load)
 {
+    if(materialslots[index].sts.empty() && index&MATF_INDEX) index &= ~MATF_INDEX;
     MatSlot &s = materialslots[index];
     if(load && !s.linked)
     {
