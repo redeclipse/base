@@ -1005,6 +1005,7 @@ static GLenum textype(GLenum &component, GLenum &format)
             if(!format) format = GL_RGB;
             break;
 
+        case GL_RGBA4:
         case GL_RGB5_A1:
         case GL_RGBA8:
         case GL_RGBA16:
@@ -2041,6 +2042,7 @@ static void propagatevslot(VSlot &dst, const VSlot &src, int diff, bool edit = f
         dst.refractcolor = src.refractcolor;
     }
     if(diff & (1<<VSLOT_DETAIL)) dst.detail = src.detail;
+    if(diff & (1<<VSLOT_SHADOW)) dst.shadow = src.shadow;
 }
 
 static void propagatevslot(VSlot *root, int changed)
@@ -2106,6 +2108,7 @@ static void mergevslot(VSlot &dst, const VSlot &src, int diff, Slot *slot = NULL
         dst.refractcolor.mul(src.refractcolor);
     }
     if(diff & (1<<VSLOT_DETAIL)) dst.detail = src.detail;
+    if(diff & (1<<VSLOT_SHADOW)) dst.shadow = src.shadow;
 }
 
 void mergevslot(VSlot &dst, const VSlot &src, const VSlot &delta)
@@ -2164,6 +2167,7 @@ static bool comparevslot(const VSlot &dst, const VSlot &src, int diff)
     if(diff & (1<<VSLOT_COAST) && dst.coastscale != src.coastscale) return false;
     if(diff & (1<<VSLOT_REFRACT) && (dst.refractscale != src.refractscale || dst.refractcolor != src.refractcolor)) return false;
     if(diff & (1<<VSLOT_DETAIL) && dst.detail != src.detail) return false;
+    if(diff & (1<<VSLOT_SHADOW) && dst.shadow != src.shadow) return false;
     return true;
 }
 
@@ -2251,6 +2255,11 @@ void packvslot(vector<uchar> &buf, const VSlot &src)
     {
         buf.put(VSLOT_DETAIL);
         putuint(buf, vslots.inrange(src.detail) && !vslots[src.detail]->changed ? src.detail : 0);
+    }
+    if(src.changed & (1<<VSLOT_SHADOW))
+    {
+        buf.put(VSLOT_SHADOW);
+        putint(buf, src.shadow);
     }
     buf.put(0xFF);
 }
@@ -2343,6 +2352,9 @@ bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta)
                 dst.detail = vslots.inrange(tex) ? tex : 0;
                 break;
             }
+            case VSLOT_SHADOW:
+                dst.shadow = getint(buf);
+                break;
             default:
                 return false;
         }
@@ -2623,6 +2635,15 @@ void texpalette(int *p, int *x)
     propagatevslot(s.variants, 1<<VSLOT_PALETTE);
 }
 COMMAND(0, texpalette, "ii");
+
+void texshadow(int *shadow)
+{
+    if(!defslot) return;
+    Slot &s = *defslot;
+    s.variants->shadow = *shadow;
+    propagatevslot(s.variants, 1<<VSLOT_SHADOW);
+}
+COMMAND(0, texshadow, "i");
 
 void texrefract(float *k, float *r, float *g, float *b)
 {
