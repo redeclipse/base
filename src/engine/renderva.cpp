@@ -1497,9 +1497,10 @@ FVAR(0, lightintensity, 0, 1, 10);
 
 static void changeslottmus(renderstate &cur, int pass, Slot &slot, VSlot &vslot)
 {
+    Texture *diffuse = blankgeom ? blanktexture : (!slot.sts.empty() ? slot.sts[0].t : notexture);
+
     if(pass==RENDERPASS_GBUFFER || pass==RENDERPASS_RSM)
     {
-        Texture *diffuse = blankgeom ? blanktexture : (!slot.sts.empty() ? slot.sts[0].t : notexture);
         bindslottex(cur, TEX_DIFFUSE, diffuse);
 
         if(pass == RENDERPASS_GBUFFER)
@@ -1584,7 +1585,7 @@ static void changeslottmus(renderstate &cur, int pass, Slot &slot, VSlot &vslot)
         }
     }
 
-    GLOBALPARAM(rotate, vec2(vslot.angle.y, vslot.angle.z));
+    GLOBALPARAM(rotate, vec(vslot.angle.y, vslot.angle.z, diffuse->ratio));
 
     if(cur.tmu != 0)
     {
