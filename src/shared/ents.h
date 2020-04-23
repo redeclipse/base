@@ -199,7 +199,7 @@ struct physent : baseent                        // can be affected by physics
 
     bool blocked, inliquid, onladder, forcepos;
     float curscale;
-    char move, strafe;
+    schar move, strafe;
 
     uchar physstate;                            // one of PHYS_* above
     uchar type;                                 // one of ENT_* above
