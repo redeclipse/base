@@ -106,8 +106,8 @@ void putint(vector<uchar> &p, int n) { putint_(p, n); }
 
 int getint(ucharbuf &p)
 {
-    int c = (char)p.get();
-    if(c==-128) { int n = p.get(); n |= char(p.get())<<8; return n; }
+    int c = (signed char)p.get();
+    if(c==-128) { int n = p.get(); n |= ((signed char)p.get())<<8; return n; }
     else if(c==-127) { int n = p.get(); n |= p.get()<<8; n |= p.get()<<16; return n|(p.get()<<24); }
     else return c;
 }
