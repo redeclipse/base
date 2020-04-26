@@ -362,11 +362,28 @@ float shadowray(const vec &o, const vec &ray, float radius, int mode, extentity 
 
         if(!isempty(c) && !(c.material&MAT_ALPHA))
         {
-            if(isentirelysolid(c)) return c.texture[side]==DEFAULT_SKY && mode&RAY_SKIPSKY ? radius : dist;
-            const clipplanes &p = getclipplanes(c, lo, 1<<lshift);
-            INTERSECTPLANES(side = p.side[i], goto nextcube);
-            INTERSECTBOX(side = (i<<1) + 1 - lsizemask[i], goto nextcube);
-            if(exitdist >= 0) return c.texture[side]==DEFAULT_SKY && mode&RAY_SKIPSKY ? radius : dist+max(enterdist+0.1f, 0.0f);
+            if(isentirelysolid(c))
+            {
+                if(c.texture[side]==DEFAULT_SKY && mode&RAY_SKIPSKY)
+                {
+                    if(mode&RAY_SKYTEX) return radius;
+                }
+                else return dist;
+            }
+            else
+            {
+                const clipplanes &p = getclipplanes(c, lo, 1<<lshift);
+                INTERSECTPLANES(side = p.side[i], goto nextcube);
+                INTERSECTBOX(side = (i<<1) + 1 - lsizemask[i], goto nextcube);
+                if(exitdist >= 0)
+                {
+                    if(c.texture[side]==DEFAULT_SKY && mode&RAY_SKIPSKY)
+                    {
+                        if(mode&RAY_SKYTEX) return radius;
+                    }
+                    else return dist+max(enterdist+0.1f, 0.0f);
+                }
+            }
         }
 
     nextcube:
