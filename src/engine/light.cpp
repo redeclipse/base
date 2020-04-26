@@ -765,7 +765,7 @@ void lightreaching(const vec &target, vec &color, vec &dir, bool fast, extentity
     }
     bvec pie = getpielight();
     vec piedir = getpielightdir();
-    if(!pie.iszero() && shadowray(target, piedir, 1e16f, RAY_SHADOW | RAY_POLY, t) > 1e15f)
+    if(!pie.iszero() && shadowray(target, piedir, 1e16f, RAY_SHADOW | RAY_POLY | RAY_SKIPSKY | (getskytexture() ? RAY_SKYTEX : 0), t) > 1e15f)
     {
         vec lightcol = pie.tocolor().mul(getpielightscale());
         color.add(lightcol);
