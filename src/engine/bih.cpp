@@ -10,7 +10,7 @@ bool BIH::triintersect(const mesh &m, int tidx, const vec &mo, const vec &mray, 
     float det = mray.dot(n), v, w, f;
     if(det >= 0)
     {
-        if(!(mode&RAY_SHADOW) && m.flags&MESH_CULLFACE) return false;
+        if(m.flags&MESH_CULLFACE) return false;
         v = e.dot(c);
         if(v < 0 || v > det) return false;
         w = -e.dot(b);
@@ -36,7 +36,7 @@ bool BIH::triintersect(const mesh &m, int tidx, const vec &mo, const vec &mray, 
             ti = clamp(int(m.tex->ys * at.y), 0, m.tex->ys-1);
         if(!(m.tex->alphamask[ti*((m.tex->xs+7)/8) + si/8] & (1<<(si%8)))) return false;
     }
-    if(!(mode&RAY_SHADOW)) hitsurface = m.xformnorm.transform(n).normalize();
+    hitsurface = m.xformnorm.transform(n).normalize();
     dist = f*invdet;
     return true;
 }
@@ -128,7 +128,7 @@ inline bool BIH::traverse(const vec &o, const vec &ray, float maxdist, float &di
     loopi(nummeshes)
     {
         mesh &m = meshes[i];
-        if(!(m.flags&MESH_RENDER) || (!(mode&RAY_SHADOW) && m.flags&MESH_NOCLIP)) continue;
+        if(!(m.flags&MESH_RENDER) || m.flags&MESH_NOCLIP) continue;
         float t1 = (m.bbmin.x - o.x)*invray.x,
               t2 = (m.bbmax.x - o.x)*invray.x,
               tmin, tmax;
@@ -312,11 +312,7 @@ bool mmintersect(const extentity &e, const vec &o, const vec &ray, float maxdist
 {
     model *m = loadmapmodel(e.attrs[0]);
     if(!m) return false;
-    if(mode&RAY_SHADOW)
-    {
-        if(!m->shadow || e.flags&EF_NOSHADOW) return false;
-    }
-    else if((mode&RAY_ENTS)!=RAY_ENTS && (!m->collide || e.flags&EF_NOCOLLIDE)) return false;
+    if((mode&RAY_ENTS)!=RAY_ENTS && (!m->collide || e.flags&EF_NOCOLLIDE)) return false;
     if(!m->bih && !m->setBIH()) return false;
     float scale = e.attrs[5] ? 100.0f/e.attrs[5] : 1.0f;
     vec mo = vec(o).sub(e.o).mul(scale), mray(ray);
@@ -344,12 +340,9 @@ bool mmintersect(const extentity &e, const vec &o, const vec &ray, float maxdist
     if(m->bih->traverse(mo, mray, maxdist ? maxdist*scale : 1e16f, dist, mode))
     {
         dist /= scale;
-        if(!(mode&RAY_SHADOW))
-        {
-            if(roll != 0) hitsurface.rotate_around_y(sincosmod360(-roll));
-            if(pitch != 0) hitsurface.rotate_around_x(sincosmod360(pitch));
-            if(yaw != 0) hitsurface.rotate_around_z(sincosmod360(yaw));
-        }
+        if(roll != 0) hitsurface.rotate_around_y(sincosmod360(-roll));
+        if(pitch != 0) hitsurface.rotate_around_x(sincosmod360(pitch));
+        if(yaw != 0) hitsurface.rotate_around_z(sincosmod360(yaw));
         return true;
     }
     return false;

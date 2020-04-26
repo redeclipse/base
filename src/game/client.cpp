@@ -1386,6 +1386,7 @@ namespace client
         messagereliable = false;
         projs::removeplayer(game::player1);
         removetrackedparticles(game::player1);
+        removetrackeddynlights(game::player1);
         removetrackedsounds(game::player1);
         game::player1->clientnum = -1;
         game::player1->privilege = PRIV_NONE;

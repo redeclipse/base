@@ -60,8 +60,7 @@ struct skelbih
     float v = ray.dot(q) / det; \
     if(v < 0 || u + v > 1) return false; \
     float f = ec.dot(q) / det; \
-    if(f < 0 || f*skelmodel::intersectscale > skelmodel::intersectdist) return false; \
-    if(!(skelmodel::intersectmode&RAY_SHADOW) && tm->noclip) return false; \
+    if(f < 0 || f*skelmodel::intersectscale > skelmodel::intersectdist || tm->noclip) return false; \
     if((skelmodel::intersectmode&RAY_ALPHAPOLY)==RAY_ALPHAPOLY) \
     { \
         Texture *tex = s[t.mesh].tex; \

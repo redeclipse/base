@@ -197,22 +197,6 @@ static float disttooutsideent(const vec &o, const vec &ray, float radius, int mo
     return dist;
 }
 
-// optimized shadow version
-static float shadowent(octaentities *oc, const vec &o, const vec &ray, float radius, int mode, extentity *t)
-{
-    float dist = radius, f = 0.0f;
-    const vector<extentity *> &ents = entities::getents();
-    loopv(oc->mapmodels)
-    {
-        extentity &e = *ents[oc->mapmodels[i]];
-        if(!(e.flags&EF_OCTA) || &e==t) continue;
-        if(e.flags&EF_NOSHADOW || !mapmodelvisible(e, oc->mapmodels[i])) continue;
-        if(!mmintersect(e, o, ray, radius, mode, f)) continue;
-        if(f>0 && f<dist) dist = f;
-    }
-    return dist;
-}
-
 #define INITRAYCUBE \
     float dist = 0, dent = radius > 0 ? radius : 1e16f; \
     vec v(o), invray(ray.x ? 1/ray.x : 1e16f, ray.y ? 1/ray.y : 1e16f, ray.z ? 1/ray.z : 1e16f); \
@@ -242,7 +226,7 @@ static float shadowent(octaentities *oc, const vec &o, const vec &ray, float rad
         dist += disttoworld; \
     }
 
-#define DOWNOCTREE(disttoent, earlyexit) \
+#define DOWNOCTREE(disttoent) \
         cube *lc = levels[lshift]; \
         for(;;) \
         { \
@@ -253,7 +237,6 @@ static float shadowent(octaentities *oc, const vec &o, const vec &ray, float rad
                 float edist = disttoent(lc->ext->ents, o, ray, dent, mode, t); \
                 if(edist < dent) \
                 { \
-                    earlyexit return min(edist, dist); \
                     elvl = lshift; \
                     dent = min(dent, edist); \
                 } \
@@ -299,7 +282,7 @@ float raycube(const vec &o, const vec &ray, float radius, int mode, int size, ex
     int closest = -1, x = int(v.x), y = int(v.y), z = int(v.z);
     for(;;)
     {
-        DOWNOCTREE(disttoent, if(mode&RAY_SHADOW));
+        DOWNOCTREE(disttoent);
 
         int lsize = 1<<lshift;
 
@@ -343,55 +326,6 @@ float raycube(const vec &o, const vec &ray, float radius, int mode, int size, ex
         if(radius>0 && dist>=radius) return min(dent, dist);
 
         UPOCTREE(return min(dent, radius>0 ? radius : dist));
-    }
-}
-
-// optimized version for light shadowing.. every cycle here counts!!!
-float shadowray(const vec &o, const vec &ray, float radius, int mode, extentity *t)
-{
-    INITRAYCUBE;
-    CHECKINSIDEWORLD;
-
-    int side = O_BOTTOM, x = int(v.x), y = int(v.y), z = int(v.z);
-    for(;;)
-    {
-        DOWNOCTREE(shadowent, );
-
-        cube &c = *lc;
-        ivec lo(x&(~0U<<lshift), y&(~0U<<lshift), z&(~0U<<lshift));
-
-        if(!isempty(c) && !(c.material&MAT_ALPHA))
-        {
-            if(isentirelysolid(c))
-            {
-                if(c.texture[side]==DEFAULT_SKY && mode&RAY_SKIPSKY)
-                {
-                    if(mode&RAY_SKYTEX) return radius;
-                }
-                else return dist;
-            }
-            else
-            {
-                const clipplanes &p = getclipplanes(c, lo, 1<<lshift);
-                INTERSECTPLANES(side = p.side[i], goto nextcube);
-                INTERSECTBOX(side = (i<<1) + 1 - lsizemask[i], goto nextcube);
-                if(exitdist >= 0)
-                {
-                    if(c.texture[side]==DEFAULT_SKY && mode&RAY_SKIPSKY)
-                    {
-                        if(mode&RAY_SKYTEX) return radius;
-                    }
-                    else return dist+max(enterdist+0.1f, 0.0f);
-                }
-            }
-        }
-
-    nextcube:
-        FINDCLOSEST(side = O_RIGHT - lsizemask.x, side = O_FRONT - lsizemask.y, side = O_TOP - lsizemask.z);
-
-        if(dist>=radius) return dist;
-
-        UPOCTREE(return radius);
     }
 }
 
