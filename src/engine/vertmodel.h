@@ -98,7 +98,7 @@ struct vertmodel : animmodel
             vv.pos = hvec4(v.pos, 1);
             vv.tc = tc.tc;
             vv.tangent = v.tangent;
-            vv.col = vcolors ? vcolors[j] : bvec4(255, 255, 255, 255);
+            vv.col = vcolors ? vcolors[j] : bvec4(0, 0, 0, 0);
         }
 
         template<class T>
@@ -309,7 +309,8 @@ struct vertmodel : animmodel
             }
             else
             {
-                looprendermeshes(vertmesh, m, { if(m.vcolors) { usecolor = true; break; }});
+                if(m && m->needscolor()) usecolor = true;
+                else looprendermeshes(vertmesh, m, { if(m.vcolors) { usecolor = true; break; }});
                 gle::bindvbo(vc.vbuf);
                 #define GENVBO(type) \
                     do \

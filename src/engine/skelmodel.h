@@ -254,7 +254,7 @@ struct skelmodel : animmodel
             vv.pos = hvec4(v.pos, 1);
             vv.tc = v.tc;
             vv.tangent = v.tangent;
-            vv.col = vcolors ? vcolors[j] : bvec4(255, 255, 255, 255);
+            vv.col = vcolors ? vcolors[j] : bvec4(0, 0, 0, 0);
         }
 
         inline void assignvert(vvertgw &vv, int j, vert &v, blendcombo &c)
@@ -271,7 +271,7 @@ struct skelmodel : animmodel
             vv.tc = v.tc;
             vv.tangent = v.tangent;
             c.serialize(vv);
-            vv.col = vcolors ? vcolors[j] : bvec4(255, 255, 255, 255);
+            vv.col = vcolors ? vcolors[j] : bvec4(0, 0, 0, 0);
         }
 
         template<class T>
@@ -1231,7 +1231,8 @@ struct skelmodel : animmodel
                     loopv(blendcombos) blendcombos[i].interpindex = -1;
                 }
 
-                looprendermeshes(skelmesh, m, { if(m.vcolors) { usecolor = true; break; }});
+                if(m && m->needscolor()) usecolor = true;
+                else looprendermeshes(skelmesh, m, { if(m.vcolors) { usecolor = true; break; }});
                 gle::bindvbo(vc.vbuf);
                 #define GENVBO(type, args) \
                     do \
