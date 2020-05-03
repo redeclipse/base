@@ -53,9 +53,9 @@ struct windprobe
     vec probe(const vec &o, const dynent *d = NULL);
 };
 
-extern int windanimdist;
 extern int windanimfalloff;
 
+extern int getwindanimdist();
 extern void cleanupwind();
 extern void setupwind();
 extern void clearwindemitters();

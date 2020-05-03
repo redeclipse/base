@@ -11,6 +11,7 @@ static int windcost;
 
 VAR(0, winddebug, 0, 0, 1);
 VAR(IDF_PERSIST, windanimdist, 100, 1200, 10000);
+VAR(IDF_WORLD, windanimdistbias, 0, 0, 10000);
 VAR(IDF_PERSIST, windanimfalloff, 0, 300, 10000);
 VARF(IDF_PERSIST, windmaxemitters, 1, 100, 1000, { setupwind(); });
 VAR(IDF_PERSIST, windcostdiv, 1, 2000, 10000);
@@ -23,6 +24,11 @@ VAR(IDF_WORLD, windinterval, 0, 50000, VAR_MAX);
 VAR(IDF_WORLD, windintervalalt, 0, 50000, VAR_MAX);
 
 static vec2 globalwind;
+
+int getwindanimdist()
+{
+    return windanimdist + windanimdistbias;
+}
 
 void cleanupwind()
 {
