@@ -4271,7 +4271,7 @@ void rendershadowtransparent(int smalphapass)
     if(!smalpha) return;
 
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-    glClearColor(1, 1, 1, 0);
+    glClearColor(1, 1, 1, 1);
     glClear(GL_COLOR_BUFFER_BIT);
 
     if(smalpha >= smalphapass)
@@ -4288,7 +4288,6 @@ void rendershadowtransparent(int smalphapass)
     }
 
     glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-    glClearColor(0, 0, 0, 0);
 }
 
 void renderradiancehints()
