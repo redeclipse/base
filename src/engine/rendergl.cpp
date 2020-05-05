@@ -1037,7 +1037,6 @@ void gl_checkextensions()
     }
     else if(intel)
     {
-        smgather = 1; // native shadow filter is slow
         if(mesa)
         {
             batchsunlight = 0; // causes massive slowdown in linux driver
@@ -1048,6 +1047,7 @@ void gl_checkextensions()
         }
         else
         {
+            smgather = 1; // native shadow filter is slow
             // causes massive slowdown in windows driver if reading depth-stencil texture
             if(checkdepthtexstencilrb())
             {
