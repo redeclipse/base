@@ -270,6 +270,7 @@ void glerror(const char *file, int line, GLenum error)
 VAR(0, amd_pf_bug, 0, 0, 1);
 VAR(0, amd_eal_bug, 0, 0, 1);
 VAR(0, mesa_texrectoffset_bug, 0, 0, 1);
+VAR(0, mesa_drawbuffer_bug, 0, 0, 1);
 VAR(0, intel_texalpha_bug, 0, 0, 1);
 VAR(0, intel_mapbufferrange_bug, 0, 0, 1);
 VAR(0, mesa_swap_bug, 0, 0, 1);
@@ -1043,6 +1044,7 @@ void gl_checkextensions()
             if(!checkmesaversion(gfxversion, 10, 0, 3))
                 mesa_texrectoffset_bug = 1; // mesa i965 driver has buggy textureOffset with texture rectangles
             msaalineardepth = 1; // MSAA depth texture access is buggy and resolves are slow
+            mesa_drawbuffer_bug = 1;
         }
         else
         {

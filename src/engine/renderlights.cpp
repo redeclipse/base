@@ -1821,10 +1821,12 @@ void setupshadowatlas()
 
     glBindFramebuffer_(GL_FRAMEBUFFER, shadowatlasfbo);
 
-    glReadBuffer(GL_NONE);
-
     if(smalpha) glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, shadowatlastarget, shadowcolortex, 0);
     glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, shadowatlastarget, shadowatlastex, 0);
+
+    extern int mesa_drawbuffer_bug;
+    if(!smalpha && !mesa_drawbuffer_bug) glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
 
     if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         fatal("Failed allocating shadow atlas!");
