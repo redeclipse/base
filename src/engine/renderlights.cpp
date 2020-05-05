@@ -1813,7 +1813,7 @@ void setupshadowatlas()
     {
         if(!shadowcolortex) glGenTextures(1, &shadowcolortex);
 
-        GLenum colcomp = smalphacolorprec ? GL_RGB10 : GL_RGB565;
+        GLenum colcomp = smalphacolorprec ? GL_RGB10 : GL_RGB5;
         createtexture(shadowcolortex, shadowatlaspacker.w, shadowatlaspacker.h, NULL, 3, 1, colcomp, shadowatlastarget);
     }
 
