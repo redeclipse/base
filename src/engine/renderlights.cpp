@@ -1821,7 +1821,6 @@ void setupshadowatlas()
 
     glBindFramebuffer_(GL_FRAMEBUFFER, shadowatlasfbo);
 
-    if(!smalpha) glDrawBuffer(GL_NONE);
     glReadBuffer(GL_NONE);
 
     if(smalpha) glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, shadowatlastarget, shadowcolortex, 0);
