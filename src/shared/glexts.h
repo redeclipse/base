@@ -788,8 +788,7 @@ extern PFNGLBLENDEQUATIONSEPARATEIPROC glBlendEquationSeparatei_;
 extern PFNGLBLENDFUNCIPROC glBlendFunci_;
 extern PFNGLBLENDFUNCSEPARATEIPROC glBlendFuncSeparatei_;
 
-#ifndef GL_VERSION_4_1
-#define GL_VERSION_4_1 1
+#ifndef GL_RGB565
 #define GL_RGB565                         0x8D62
 #endif
 
