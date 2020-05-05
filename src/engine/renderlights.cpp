@@ -4527,7 +4527,7 @@ void rendershadowmaps(int offset = 0)
         shadowmesh *mesh = e ? findshadowmesh(l.ent, *e) : NULL;
 
         findshadowvas(smalpha >= 2);
-        findshadowmms(false);
+        findshadowmms();
 
         shadowmaskbatchedmodels(!(l.flags&L_NODYNSHADOW) && smdynshadow);
         batchshadowmapmodels(mesh != NULL);

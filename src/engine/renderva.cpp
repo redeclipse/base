@@ -1026,13 +1026,9 @@ void findshadowvas(vector<vtxarray *> &vas, bool transparent)
         if(dist < shadowradius || !smdistcull)
         {
             ivec bbmin, bbmax;
-            if(transparent)
-            {
-                if(v.alphabacktris || v.alphafronttris || v.refracttris) { bbmin = v.alphamin; bbmax = v.alphamax; }
-                else continue;
-            }
-            else if(v.children.length() || v.mapmodels.length()) { bbmin = v.bbmin; bbmax = v.bbmax; }
+            if(v.children.length() || v.mapmodels.length()) { bbmin = v.bbmin; bbmax = v.bbmax; }
             else { bbmin = v.geommin; bbmax = v.geommax; }
+            if(transparent && (v.alphabacktris || v.alphafronttris || v.refracttris)) { bbmin = v.alphamin; bbmax = v.alphamax; }
             v.shadowmask = smbbcull ? 0x3F : calcbbsidemask(bbmin, bbmax, shadoworigin, shadowradius, shadowbias);
 
             addshadowva(&v, dist);
@@ -1047,13 +1043,9 @@ void findcsmshadowvas(vector<vtxarray *> &vas, bool transparent)
     {
         vtxarray &v = *vas[i];
         ivec bbmin, bbmax;
-        if(transparent)
-        {
-            if(v.alphabacktris || v.alphafronttris || v.refracttris) { bbmin = v.alphamin; bbmax = v.alphamax; }
-            else continue;
-        }
-        else if(v.children.length() || v.mapmodels.length()) { bbmin = v.bbmin; bbmax = v.bbmax; }
+        if(v.children.length() || v.mapmodels.length()) { bbmin = v.bbmin; bbmax = v.bbmax; }
         else { bbmin = v.geommin; bbmax = v.geommax; }
+        if(transparent && (v.alphabacktris || v.alphafronttris || v.refracttris)) { bbmin = v.alphamin; bbmax = v.alphamax; }
         v.shadowmask = calcbbcsmsplits(bbmin, bbmax);
         if(v.shadowmask)
         {
@@ -1093,13 +1085,9 @@ void findspotshadowvas(vector<vtxarray *> &vas, bool transparent)
         if(dist < shadowradius || !smdistcull)
         {
             ivec bbmin, bbmax;
-            if(transparent)
-            {
-                if(v.alphabacktris || v.alphafronttris || v.refracttris) { bbmin = v.alphamin; bbmax = v.alphamax; }
-                else continue;
-            }
-            else if(v.children.length() || v.mapmodels.length()) { bbmin = v.bbmin; bbmax = v.bbmax; }
+            if(v.children.length() || v.mapmodels.length()) { bbmin = v.bbmin; bbmax = v.bbmax; }
             else { bbmin = v.geommin; bbmax = v.geommax; }
+            if(transparent && (v.alphabacktris || v.alphafronttris || v.refracttris)) { bbmin = v.alphamin; bbmax = v.alphamax; }
             bool insidespot = bbinsidespot(shadoworigin, shadowdir, shadowspot, bbmin, bbmax);
             v.shadowmask = !smbbcull || insidespot ? 1 : 0;
             addshadowva(&v, dist);
