@@ -2009,7 +2009,7 @@ extern int smalpha;
 int dynamicshadowvas()
 {
     int vis = 0;
-    if(smalpha) for(vtxarray *va = shadowva; va; va = va->rnext) if(va->dyntexs && (va->alphabacktris || va->alphafronttris || va->refracttris)) vis |= va->shadowmask;
+    if(smalpha >= 2) for(vtxarray *va = shadowva; va; va = va->rnext) if(va->dyntexs && (va->alphabacktris || va->alphafronttris || va->refracttris)) vis |= va->shadowmask;
     return vis;
 }
 

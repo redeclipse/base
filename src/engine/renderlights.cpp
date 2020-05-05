@@ -4267,26 +4267,21 @@ void radiancehints::renderslices()
     if(rhrect) glDisable(GL_SCISSOR_TEST);
 }
 
-void rendershadowtransparent(int smalphapass)
+void rendershadowtransparent()
 {
-    if(!smalpha) return;
-
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
     glClearColor(1, 1, 1, 1);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    if(smalpha >= smalphapass)
-    {
-        glDepthMask(GL_FALSE);
+    glDepthMask(GL_FALSE);
 
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_ZERO, GL_SRC_COLOR);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ZERO, GL_SRC_COLOR);
 
-        renderalphashadow();
+    renderalphashadow();
 
-        glDisable(GL_BLEND);
-        glDepthMask(GL_TRUE);
-    }
+    glDisable(GL_BLEND);
+    glDepthMask(GL_TRUE);
 
     glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 }
@@ -4412,7 +4407,7 @@ void rendercsmshadowmaps()
 
         rendershadowmapworld();
         rendershadowmodelbatches();
-        rendershadowtransparent(1);
+        if(smalpha) rendershadowtransparent();
     }
 
     clearbatchedmapmodels();
@@ -4573,7 +4568,7 @@ void rendershadowmaps(int offset = 0)
 
             if(mesh) rendershadowmesh(mesh); else rendershadowmapworld();
             rendershadowmodelbatches();
-            rendershadowtransparent(2);
+            if(smalpha >= 2) rendershadowtransparent();
         }
         else
         {
@@ -4605,7 +4600,7 @@ void rendershadowmaps(int offset = 0)
 
                 if(mesh) rendershadowmesh(mesh); else rendershadowmapworld();
                 rendershadowmodelbatches();
-                rendershadowtransparent(2);
+                if(smalpha >= 2) rendershadowtransparent();
             }
         }
 
