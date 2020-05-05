@@ -585,12 +585,13 @@ struct animmodel : model
 
     struct meshgroup
     {
+        model *m;
         meshgroup *next;
         int shared;
         char *name;
         vector<mesh *> meshes;
 
-        meshgroup() : next(NULL), shared(0), name(NULL)
+        meshgroup() : m(NULL), next(NULL), shared(0), name(NULL)
         {
         }
 
@@ -1689,7 +1690,11 @@ struct animmodel : model
         if(flipy()) translate.y = -translate.y;
 
         if(!success) return false;
-        loopv(parts) if(!parts[i]->meshes) return false;
+        loopv(parts)
+        {
+            if(!parts[i]->meshes) return false;
+            parts[i]->meshes->m = this;
+        }
 
         loaded();
         return true;

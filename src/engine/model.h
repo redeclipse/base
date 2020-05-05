@@ -29,6 +29,7 @@ struct model
     virtual bool pitched() const { return true; }
     virtual bool alphatested() const { return false; }
     virtual bool alphablended() const { return false; }
+    virtual bool needscolor() const { return wind != 0.0f; }
 
     virtual void setshader(Shader *shader) {}
     virtual void setenvmap(float envmapmin, float envmapmax, Texture *envmap) {}
