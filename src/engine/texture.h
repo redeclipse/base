@@ -649,6 +649,7 @@ enum
     VSLOT_REFRACT,
     VSLOT_DETAIL,
     VSLOT_ANGLE,
+    VSLOT_SHADOW,
     VSLOT_NUM
 };
 
@@ -668,6 +669,7 @@ struct VSlot
     ivec2 offset;
     vec2 scroll;
     int layer, detail, palette, palindex;
+    bool shadow;
     float alphafront, alphaback;
     vec colorscale, colorscalealt;
     vec glowcolor;
@@ -677,7 +679,7 @@ struct VSlot
 
     Texture *loadthumbnail();
 
-    VSlot(Slot *slot = NULL, int index = -1) : slot(slot), next(NULL), index(index), changed(0), palette(0), palindex(0)
+    VSlot(Slot *slot = NULL, int index = -1) : slot(slot), next(NULL), index(index), changed(0), palette(0), palindex(0), shadow(true)
     {
         reset();
         if(slot) addvariant(slot);
@@ -702,6 +704,7 @@ struct VSlot
         coastscale = 1;
         refractscale = 0;
         refractcolor = vec(1, 1, 1);
+        shadow = true;
     }
 
     vec getcolorscale() const { return palette || palindex ? vec(colorscale).mul(game::getpalette(palette, palindex)) : colorscale; }
