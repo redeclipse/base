@@ -1231,8 +1231,7 @@ struct skelmodel : animmodel
                     loopv(blendcombos) blendcombos[i].interpindex = -1;
                 }
 
-                if(m && m->needscolor()) usecolor = true;
-                else looprendermeshes(skelmesh, m, { if(m.vcolors) { usecolor = true; break; }});
+                looprendermeshes(skelmesh, m, { if(m.vcolors) { usecolor = true; break; }});
                 gle::bindvbo(vc.vbuf);
                 #define GENVBO(type, args) \
                     do \

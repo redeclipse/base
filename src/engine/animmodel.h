@@ -585,13 +585,12 @@ struct animmodel : model
 
     struct meshgroup
     {
-        model *m;
         meshgroup *next;
         int shared;
         char *name;
         vector<mesh *> meshes;
 
-        meshgroup() : m(NULL), next(NULL), shared(0), name(NULL)
+        meshgroup() : next(NULL), shared(0), name(NULL)
         {
         }
 
@@ -1145,6 +1144,7 @@ struct animmodel : model
 
                     GLOBALPARAMF(windparams, max(1.0f - dist/animdist, 0.0f), d ? 0 : pos.magnitude());
                     GLOBALPARAM(windvec, getwind(pos, d).mul(resize * model->wind * falloff));
+                    gle::colorf(0, 0, 0, 0);
                 }
             }
 
@@ -1690,11 +1690,7 @@ struct animmodel : model
         if(flipy()) translate.y = -translate.y;
 
         if(!success) return false;
-        loopv(parts)
-        {
-            if(!parts[i]->meshes) return false;
-            parts[i]->meshes->m = this;
-        }
+        loopv(parts) if(!parts[i]->meshes) return false;
 
         loaded();
         return true;

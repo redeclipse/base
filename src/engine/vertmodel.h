@@ -309,8 +309,7 @@ struct vertmodel : animmodel
             }
             else
             {
-                if(m && m->needscolor()) usecolor = true;
-                else looprendermeshes(vertmesh, m, { if(m.vcolors) { usecolor = true; break; }});
+                looprendermeshes(vertmesh, m, { if(m.vcolors) { usecolor = true; break; }});
                 gle::bindvbo(vc.vbuf);
                 #define GENVBO(type) \
                     do \
