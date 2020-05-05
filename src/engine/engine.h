@@ -453,8 +453,8 @@ extern void clearshadowcache();
 extern void rendervolumetric();
 extern void cleanupvolumetric();
 
-extern void findshadowvas(bool transparent);
-extern void findshadowmms(bool transparent);
+extern void findshadowvas(bool transparent = false);
+extern void findshadowmms(bool transparent = false);
 
 extern int calcshadowinfo(const extentity &e, vec &origin, float &radius, vec &spotloc, int &spotangle, float &bias);
 extern int dynamicshadowvas();
@@ -597,7 +597,8 @@ extern void restorevfcP();
 extern void rendergeom();
 extern int findalphavas();
 extern void renderrefractmask();
-extern void renderalphageom(int side, bool shadowing = false);
+extern void renderalphageom(int side);
+extern void renderalphashadow();
 extern void rendermapmodels();
 extern void rendertransparentmapmodels();
 extern void renderoutline();

@@ -2630,11 +2630,11 @@ void vshadow(int *shadow)
     if(noedit()) return;
     VSlot ds;
     ds.changed = 1<<VSLOT_SHADOW;
-    ds.shadow = *shadow;
+    ds.shadow = *shadow != 0;
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vshadow, "i");
-ICOMMAND(0, getvshadow, "i", (int *tex), intret(lookupvslot(*tex, false).shadow));
+ICOMMAND(0, getvshadow, "i", (int *tex), intret(lookupvslot(*tex, false).shadow ? 1 : 0));
 
 void vrefract(float *k, float *r, float *g, float *b)
 {

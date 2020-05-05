@@ -1747,7 +1747,7 @@ Shader *smworldshader = NULL, *smalphaworldshader = NULL;
 void loadsmshaders()
 {
     smworldshader = useshaderbyname("smworld");
-    smalphaworldshader = useshaderbyname("smalphaworld");
+    if(smalpha) smalphaworldshader = useshaderbyname("smalphaworld");
 }
 
 void clearsmshaders()
@@ -1831,6 +1831,8 @@ void setupshadowatlas()
         fatal("Failed allocating shadow atlas!");
 
     glBindFramebuffer_(GL_FRAMEBUFFER, 0);
+
+    loadsmshaders();
 }
 
 void cleanupshadowatlas()
@@ -1839,6 +1841,7 @@ void cleanupshadowatlas()
     if(shadowcolortex) { glDeleteTextures(1, &shadowcolortex); shadowcolortex = 0; }
     if(shadowatlasfbo) { glDeleteFramebuffers_(1, &shadowatlasfbo); shadowatlasfbo = 0; }
     clearshadowcache();
+    clearsmshaders();
 }
 
 const matrix4 cubeshadowviewmatrix[6] =
@@ -4278,8 +4281,7 @@ void rendershadowtransparent(int smalphapass)
         glEnable(GL_BLEND);
         glBlendFunc(GL_ZERO, GL_SRC_COLOR);
 
-        renderalphageom(1, true);
-        renderalphageom(2, true);
+        renderalphashadow();
 
         glDisable(GL_BLEND);
         glDepthMask(GL_TRUE);
@@ -4307,8 +4309,8 @@ void renderradiancehints()
     shadowbias = rsm.lightview.project_bb(worldmin, worldmax);
     shadowradius = fabs(rsm.lightview.project_bb(worldmax, worldmin));
 
-    findshadowvas(false);
-    findshadowmms(false);
+    findshadowvas();
+    findshadowmms();
 
     shadowmaskbatchedmodels(false);
     batchshadowmapmodels();
@@ -4389,8 +4391,8 @@ void rendercsmshadowmaps()
 
     glEnable(GL_SCISSOR_TEST);
 
-    findshadowvas(smalpha);
-    findshadowmms(false);
+    findshadowvas(smalpha!=0);
+    findshadowmms();
 
     shadowmaskbatchedmodels(smdynshadow!=0);
     batchshadowmapmodels();
@@ -5119,7 +5121,6 @@ void setuplights()
 {
     GLERROR;
     setupgbuffer();
-    loadsmshaders();
     if(bloomw < 0 || bloomh < 0) setupbloom(gw, gh);
     if(ao && (aow < 0 || aoh < 0)) setupao(gw, gh);
     if(volumetriclights && volumetric && (volw < 0 || volh < 0)) setupvolumetric(gw, gh);
@@ -5148,7 +5149,6 @@ bool debuglights()
 void cleanuplights()
 {
     cleanupgbuffer();
-    clearsmshaders();
     cleanupbloom();
     cleanupao();
     cleanupvolumetric();
