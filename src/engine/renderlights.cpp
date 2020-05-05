@@ -1504,8 +1504,6 @@ VARF(0, rhrect, 0, 0, 1, cleanupradiancehints());
 VARF(0, rhsplits, 1, 2, RH_MAXSPLITS, { cleardeferredlightshaders(); cleanupradiancehints(); });
 VARF(0, rhborder, 0, 1, 1, cleanupradiancehints());
 VARF(0, rsmsize, 64, 384, 2048, cleanupradiancehints());
-VARF(IDF_WORLD, rhnearplane, 1, 1, 16, clearradiancehintscache());
-VARF(IDF_WORLD, rhfarplane, 64, 1024, 16384, clearradiancehintscache());
 FVARF(0, rsmpradiustweak, 1e-3f, 1, 1e3f, clearradiancehintscache());
 FVARF(0, rhpradiustweak, 1e-3f, 1, 1e3f, clearradiancehintscache());
 FVARF(0, rsmdepthrange, 0, 1024, 1e6f, clearradiancehintscache());
@@ -1525,6 +1523,16 @@ VAR(0, rsmcull, 0, 1, 1);
 VARF(IDF_PERSIST, rhtaps, 0, 20, 32, cleanupradiancehints());
 VAR(0, rhdyntex, 0, 0, 1);
 VAR(0, rhdynmm, 0, 0, 1);
+
+#define RHVARS(name) \
+    VARF(IDF_WORLD, rhnearplane##name, 1, 1, 16, clearradiancehintscache()); \
+    VARF(IDF_WORLD, rhfarplane##name, 64, 1024, 16384, clearradiancehintscache());
+
+RHVARS();
+RHVARS(alt);
+
+GETVARMPV(rh, nearplane, float);
+GETVARMPV(rh, farplane, float);
 
 #define GIVARS(name) \
     VARF(IDF_WORLD, gidist##name, 0, 384, 1024, { clearradiancehintscache(); cleardeferredlightshaders(); if(!gidist##name) cleanupradiancehints(); }); \
@@ -2025,8 +2033,6 @@ void cascadedshadowmap::setup()
     gencullplanes();
 }
 
-VAR(IDF_WORLD, csmnearplane, 1, 1, 16);
-VAR(IDF_WORLD, csmfarplane, 64, 1024, 16384);
 FVAR(0, csmpradiustweak, 1e-3f, 1, 1e3f);
 FVAR(0, csmdepthrange, 0, 1024, 1e6f);
 FVAR(0, csmdepthmargin, 0, 0.1f, 1e3f);
@@ -2038,9 +2044,19 @@ FVAR(0, csmpolyoffset2, -1e4f, 0, 1e4f);
 FVAR(0, csmbias2, -1e16f, 2e-4f, 1e6f);
 VAR(0, csmcull, 0, 1, 1);
 
+#define CSMVARS(name) \
+    VAR(IDF_WORLD, csmnearplane##name, 1, 1, 16); \
+    VAR(IDF_WORLD, csmfarplane##name, 64, 1024, 16384);
+
+CSMVARS();
+CSMVARS(alt);
+
+GETVARMPV(csm, nearplane, float);
+GETVARMPV(csm, farplane, float);
+
 void cascadedshadowmap::updatesplitdist()
 {
-    float lambda = csmsplitweight, nd = csmnearplane, fd = csmfarplane, ratio = fd/nd;
+    float lambda = csmsplitweight, nd = getcsmnearplane(), fd = getcsmfarplane(), ratio = fd/nd;
     splits[0].nearplane = nd;
     for(int i = 1; i < csmsplits; ++i)
     {
@@ -2239,7 +2255,7 @@ void reflectiveshadowmap::getprojmatrix()
     maxz += zmargin;
 
     vec c;
-    float radius = calcfrustumboundsphere(rhnearplane, rhfarplane, camera1->o, camdir, c);
+    float radius = calcfrustumboundsphere(getrhnearplane(), getrhfarplane(), camera1->o, camdir, c);
 
     // compute the projected bounding box of the sphere
     vec tc;
@@ -2343,7 +2359,7 @@ void clearradiancehintscache()
 
 void radiancehints::updatesplitdist()
 {
-    float lambda = rhsplitweight, nd = rhnearplane, fd = rhfarplane, ratio = fd/nd;
+    float lambda = rhsplitweight, nd = getrhnearplane(), fd = getrhfarplane(), ratio = fd/nd;
     splits[0].nearplane = nd;
     for(int i = 1; i < rhsplits; ++i)
     {
