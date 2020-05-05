@@ -49,6 +49,10 @@
 #define GL_COMPRESSED_LUMINANCE_ALPHA 0x84EB
 #endif
 
+#ifndef GL_RGB565
+#define GL_RGB565                     0x8D62
+#endif
+
 #ifndef GL_EXT_texture_filter_anisotropic
 #define GL_EXT_texture_filter_anisotropic 1
 #define GL_TEXTURE_MAX_ANISOTROPY_EXT     0x84FE
