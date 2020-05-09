@@ -926,6 +926,10 @@ struct matrix4x3
     void translate(float x, float y, float z) { translate(vec(x, y, z)); }
     void translate(const vec &p, float scale) { translate(vec(p).mul(scale)); }
 
+    void posttranslate(const vec &p) { d.add(p); }
+    void posttranslate(float x, float y, float z) { posttranslate(vec(x, y, z)); }
+    void posttranslate(const vec &p, float scale) { d.madd(p, scale); }
+
     void accumulate(const matrix4x3 &m, float k)
     {
         a.madd(m.a, k);
