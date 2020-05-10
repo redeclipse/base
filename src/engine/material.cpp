@@ -507,12 +507,22 @@ void rendermatgrid()
     disablepolygonoffset(GL_POLYGON_OFFSET_LINE);
 }
 
-static void drawglass(const materialsurface &m, float offset, const vec &normal)
+extern const bvec4 matnormals[6] =
+{
+    bvec4(0x80, 0, 0),
+    bvec4(0x7F, 0, 0),
+    bvec4(0, 0x80, 0),
+    bvec4(0, 0x7F, 0),
+    bvec4(0, 0, 0x80),
+    bvec4(0, 0, 0x7F)
+};
+
+static void drawglass(const materialsurface &m, float offset)
 {
     if(gle::attribbuf.empty())
     {
         gle::defvertex();
-        gle::defnormal();
+        gle::defnormal(4, GL_BYTE);
         gle::begin(GL_QUADS);
     }
     float x = m.o.x, y = m.o.y, z = m.o.z, csize = m.csize, rsize = m.rsize;
@@ -523,7 +533,7 @@ static void drawglass(const materialsurface &m, float offset, const vec &normal)
     #define GENFACEVERT(orient, vert, mx,my,mz, sx,sy,sz) \
         { \
             gle::attribf(mx sx, my sy, mz sz); \
-            gle::attribf(normal.x, normal.y, normal.z); \
+            gle::attrib(matnormals[orient]); \
         }
         GENFACEVERTS(x, x, y, y, z, z, /**/, + csize, /**/, + rsize, + offset, - offset)
     #undef GENFACEORIENT
@@ -635,16 +645,6 @@ void rendermaterialmask()
     glEnable(GL_CULL_FACE);
 }
 
-extern const vec matnormals[6] =
-{
-    vec(-1, 0, 0),
-    vec( 1, 0, 0),
-    vec(0, -1, 0),
-    vec(0,  1, 0),
-    vec(0, 0, -1),
-    vec(0, 0,  1)
-};
-
 #define GLASSVARS(type, name) \
     CVAR0(IDF_WORLD, name##colour##type, 0xB0D8FF); \
     FVAR(IDF_WORLD, name##refract##type, 0, 0.1f, 1e3f); \
@@ -703,7 +703,7 @@ void renderglass()
                 glBindTexture(GL_TEXTURE_CUBE_MAP, lookupenvmap(m.envmap));
                 envmap = m.envmap;
             }
-            drawglass(m, 0.1f, matnormals[m.orient]);
+            drawglass(m, 0.1f);
         }
         xtraverts += gle::end();
     }
