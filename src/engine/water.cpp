@@ -233,11 +233,38 @@ VERTWN(vertln, {
     xtraverts += gle::end(); \
 }
 
-void flushwater(int mat = MAT_WATER)
+#define renderwaterquadsubdiv(vertw, z, subdiv) { \
+    if(gle::attribbuf.empty()) { def##vertw(); gle::begin(GL_QUADS); } \
+    for(int x = wx1; x<wx2; x += subdiv) \
+    { \
+        for(int y = wy1; y<wy2; y += subdiv) \
+        { \
+            vertw(x,        y,        z); \
+            vertw(x+subdiv, y,        z); \
+            vertw(x+subdiv, y+subdiv, z); \
+            vertw(x,        y+subdiv, z); \
+        } \
+    } \
+}
+
+#define renderwatersubdiv(vertw, force) { \
+    if(wsubdiv == wsize && wx2-wx1 <= wsize*2 && wy2-wy1 <= wsize*2) \
+    { \
+        renderwaterquadsubdiv(vertw, wz, wsubdiv); \
+        if(force) xtraverts += gle::end(); \
+    } \
+    else \
+    { \
+        if(gle::attribbuf.length()) xtraverts += gle::end(); \
+        renderwaterstrips(vertw, wz, wsubdiv); \
+    } \
+}
+
+void flushwater(int mat = MAT_WATER, bool force = true)
 {
     if(!wsize)
     {
-        if(!vertwater || drawtex == DRAWTEX_MINIMAP) xtraverts += gle::end();
+        if(gle::attribbuf.length()) xtraverts += gle::end();
         return;
     }
     switch(mat)
@@ -245,14 +272,14 @@ void flushwater(int mat = MAT_WATER)
         case MAT_WATER:
         {
             whoffset = fmod(float(lastmillis/600.0f/(2*M_PI)), 1.0f);
-            renderwaterstrips(vertwt, wz, wsubdiv);
+            renderwatersubdiv(vertwt, force);
             break;
         }
 
         case MAT_LAVA:
         {
             whoffset = fmod(float(lastmillis/2000.0f/(2*M_PI)), 1.0f);
-            renderwaterstrips(vertl, wz, wsubdiv);
+            renderwatersubdiv(vertl, force);
             break;
         }
     }
@@ -270,7 +297,7 @@ void rendervertwater(int subdiv, int xo, int yo, int z, int size, int mat)
         else if(wy2 == yo && wx1 == xo && wx2 == xo + size) { wy2 += size; return; }
     }
 
-    flushwater(mat);
+    flushwater(mat, false);
 
     wx1 = xo;
     wy1 = yo;
@@ -344,7 +371,6 @@ int renderwaterlod(int x, int y, int z, int size, int mat)
         vertwn(x+rsize, y, z); \
         vertwn(x+rsize, y+csize, z); \
         vertwn(x, y+csize, z); \
-        xtraverts += 4; \
     }
 
 void renderflatwater(int x, int y, int z, int rsize, int csize, int mat)
