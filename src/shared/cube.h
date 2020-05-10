@@ -57,8 +57,10 @@
 #include "tools.h"
 #include "command.h"
 #include "geom.h"
+#include "prop.h"
 #include "ents.h"
 #include "wind.h"
+#include "fx.h"
 
 #ifndef STANDALONE
 #include "glexts.h"

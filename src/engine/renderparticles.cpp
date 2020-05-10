@@ -1475,12 +1475,12 @@ void part_flare(const vec &p, const vec &dest, int fade, int type, int color, fl
     newparticle(p, dest, fade, type, color, size, blend, gravity, collide, pl);
 }
 
-void part_explosion(const vec &dest, float maxsize, int type, int fade, int color, float size, float blend, float gravity, int collide)
+void part_explosion(const vec &dest, float maxsize, int type, int fade, int color, float size, float blend, float gravity, int collide, physent *pl)
 {
     if(!canaddparticles()) return;
     float growth = maxsize - size;
     if(fade < 0) fade = int(growth*25);
-    newparticle(dest, vec(0, 0, 0), fade, type, color, size, blend, gravity, collide)->val = growth;
+    newparticle(dest, vec(0, 0, 0), fade, type, color, size, blend, gravity, collide, pl)->val = growth;
 }
 
 void regular_part_explosion(const vec &dest, float maxsize, int type, int fade, int color, float size, float blend, float gravity, int collide)

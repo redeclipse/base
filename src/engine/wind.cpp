@@ -207,14 +207,15 @@ vec getwind(const vec &o, const dynent *d)
         if(we->unused) continue;
 
         const vec &eo = we->attrs.o;
-        float dist = o.dist(eo);
+        float distsq = o.squaredist(eo);
+        float dist = sqrtf(distsq);
 
         // outside the radius
         if(we->attrs.radius > 0 && dist > we->attrs.radius) continue;
 
         // attenuate the strength depending on the distance
-        int atten = we->attrs.atten;
-        float div = max(1.0f, dist * atten * WIND_ATTEN_SCALE);
+        float atten = we->attrs.atten;
+        float div = max(1.0f, distsq * atten * WIND_ATTEN_SCALE);
         float speed = (we->curspeed * we->attrs.speed) / div;
 
         // vectored mode, so we're getting the direction from the yaw parameter
@@ -250,7 +251,7 @@ vec windprobe::probe(const vec &o, const dynent *d)
     return lastwind;
 }
 
-void addwind(const vec &o, int mode, float speed, windemitter **hook, int yaw, int interval, int length, int radius, int atten)
+void addwind(const vec &o, int mode, float speed, windemitter **hook, int yaw, int interval, int length, int radius, float atten)
 {
     windemitter *we;
 
@@ -290,7 +291,7 @@ void addwind(extentity *e)
         we->attrs.yaw = e->attrs[1];
         we->attrs.speed = min(1.0f, e->attrs[2] / 255.0f) * WIND_MAX_SPEED;
         we->attrs.radius = e->attrs[3];
-        we->attrs.atten = e->attrs[4];
+        we->attrs.atten = e->attrs[4] / 100.0f;
         we->attrs.interval = e->attrs[5];
         we->attrs.length = e->attrs[6];
     }

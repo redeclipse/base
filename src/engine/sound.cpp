@@ -121,7 +121,6 @@ void initsound()
         nosound = false;
     }
     initmumble();
-    mapsoundslots();
 }
 
 void stopmusic(bool docmd)

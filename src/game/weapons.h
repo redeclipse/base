@@ -81,6 +81,62 @@ enum
     S_MAX       = S_MELEE+S_W_OFFSET
 };
 
+// weapon shot fx
+enum
+{
+    FX_W_NONE = -1,
+
+    FX_W_MUZZLE1,  // default for pistol1
+    FX_W_MUZZLE2,  // default for shotgun1
+    FX_W_MUZZLE3,  // default for shotgun2
+    FX_W_MUZZLE4,  // default for smg1
+    FX_W_MUZZLE5,  // default for smg2
+    FX_W_MUZZLE6,  // default for rocket1 and rocket2
+    FX_W_FLAME,    // default for flamer1
+    FX_W_AIRBLAST, // default for flamer2
+    FX_W_PLASMA1,  // default for plasma1
+    FX_W_PLASMA2,  // default for plasma2
+    FX_W_PLASMA_P, // default for plasma power
+    FX_W_ENERGY1,  // default for zapper1
+    FX_W_ENERGY2,  // default for zapper2
+    FX_W_ENERGY_P, // default for zapper power
+    FX_W_BEAM1,    // default for rifle1
+    FX_W_BEAM2,    // default for rifle2
+
+    FX_W_TYPES
+};
+
+enum
+{
+    FX_P_NONE = -1,
+
+    // Weapon projectiles
+    FX_P_BULLET,
+    FX_P_PELLET,
+    FX_P_FLAK,
+    FX_P_SHRAPNEL,
+    FX_P_FLAME,
+    FX_P_AIRBLAST,
+    FX_P_PLASMA,
+    FX_P_VORTEX,
+    FX_P_ENERGY,
+    FX_P_BEAM,
+    FX_P_GRENADE,
+    FX_P_MINE,
+    FX_P_ROCKET,
+
+    // Misc projectiles
+    FX_P_CASING,
+    FX_P_GIB,
+    FX_P_DEBRIS,
+
+    FX_P_TYPES
+};
+
+#define W_FX_POWER_PARAM 0
+#define P_FX_LIFETIME_PARAM 0
+#define P_FX_BOUNCE_VEL_PARAM 0
+
 enum
 {
     COLLIDE_TRACE = 1<<0, COLLIDE_SCAN = 1<<1, COLLIDE_LENGTH = 1<<2, COLLIDE_PROJ = 1<<3, COLLIDE_OWNER = 1<<4,
@@ -535,6 +591,40 @@ WPVARM(IDF_GAMEMOD, 0, fullauto, 0, 1,
     1,          0,          1,          0,          1,          1,          1,          1,          0,          0,          0,          0,          1,
     1,          0,          0,          0,          1,          0,          0,          1,          0,          0,          0,          0,          1
 );
+WPFVARK(IDF_GAMEMOD, 0, fxblend, 0, 1,
+    1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,
+    1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,
+    1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,
+    1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f
+);
+WPVARK(IDF_GAMEMOD|IDF_HEX, 0, fxcol, PC(LAST), 0xFFFFFF,
+    0x907020,   0xD0D0D0,   0x1010F0,   0xF0F020,   0xF05820,   PC(FIRE),   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   0x00F068,   PC(FIRE),   0xEEEE22,
+    0x907020,   0xD0D0D0,   0x1010F0,   0xF0F020,   0xF05820,   0xFFFFFF,   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   0x00F068,   PC(FIRE),   0xEEEE22,
+    0x907020,   0xD0D0D0,   0x1010F0,   0xF0F020,   0xF05820,   PC(FIRE),   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   0x00F068,   PC(FIRE),   0xEEEE22,
+    0x907020,   0xD0D0D0,   0x1010F0,   0xF0F020,   0xF05820,   0xFFFFFF,   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   0x00F068,   PC(FIRE),   0xEEEE22
+);
+WPFVARK(IDF_GAMEMOD, 0, fxscale, 0, FVAR_MAX,
+    1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,      1.0f,       1.0f,
+    1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,      1.0f,       1.0f,
+    1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,      1.0f,       1.0f,
+    1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,      1.0f,       1.0f
+);
+WPVARK(IDF_GAMEMOD, 0, fxtype, FX_W_NONE, FX_W_TYPES-1,
+    FX_W_NONE,  FX_W_MUZZLE1,FX_W_NONE, FX_W_MUZZLE2,FX_W_MUZZLE4,FX_W_FLAME,   FX_W_PLASMA1,FX_W_ENERGY1,FX_W_BEAM1,FX_W_NONE,FX_W_NONE,FX_W_MUZZLE6,FX_W_NONE,
+    FX_W_NONE,  FX_W_NONE,   FX_W_NONE, FX_W_MUZZLE3,FX_W_MUZZLE5,FX_W_AIRBLAST,FX_W_PLASMA2,FX_W_ENERGY2,FX_W_BEAM2,FX_W_NONE,FX_W_NONE,FX_W_MUZZLE6,FX_W_NONE,
+    FX_W_NONE,  FX_W_MUZZLE1,FX_W_NONE, FX_W_MUZZLE2,FX_W_MUZZLE4,FX_W_FLAME,   FX_W_PLASMA1,FX_W_ENERGY1,FX_W_BEAM1,FX_W_NONE,FX_W_NONE,FX_W_MUZZLE6,FX_W_NONE,
+    FX_W_NONE,  FX_W_NONE,   FX_W_NONE, FX_W_MUZZLE3,FX_W_MUZZLE5,FX_W_AIRBLAST,FX_W_PLASMA2,FX_W_ENERGY2,FX_W_BEAM2,FX_W_NONE,FX_W_NONE,FX_W_MUZZLE6,FX_W_NONE
+);
+WPVARK(IDF_GAMEMOD, 0, fxtypeproj, FX_P_NONE, FX_P_TYPES-1,
+    FX_P_NONE,  FX_P_BULLET,FX_P_NONE,  FX_P_PELLET,  FX_P_BULLET,  FX_P_FLAME,   FX_P_PLASMA,FX_P_ENERGY,FX_P_BEAM,FX_P_GRENADE,FX_P_MINE,FX_P_ROCKET,FX_P_NONE,
+    FX_P_NONE,  FX_P_NONE,  FX_P_NONE,  FX_P_FLAK,    FX_P_FLAK,    FX_P_AIRBLAST,FX_P_VORTEX,FX_P_ENERGY,FX_P_BEAM,FX_P_GRENADE,FX_P_MINE,FX_P_ROCKET,FX_P_NONE,
+    FX_P_NONE,  FX_P_BULLET,FX_P_NONE,  FX_P_PELLET,  FX_P_BULLET,  FX_P_FLAME,   FX_P_PLASMA,FX_P_ENERGY,FX_P_BEAM,FX_P_GRENADE,FX_P_MINE,FX_P_ROCKET,FX_P_NONE,
+    FX_P_NONE,  FX_P_NONE,  FX_P_NONE,  FX_P_SHRAPNEL,FX_P_SHRAPNEL,FX_P_AIRBLAST,FX_P_VORTEX,FX_P_ENERGY,FX_P_BEAM,FX_P_GRENADE,FX_P_MINE,FX_P_ROCKET,FX_P_NONE
+);
+WPVARM(IDF_GAMEMOD, 0, fxtypepower, FX_W_NONE, FX_W_TYPES-1,
+    FX_W_NONE,  FX_W_NONE,  FX_W_NONE, FX_W_NONE,   FX_W_NONE,  FX_W_NONE,  FX_W_PLASMA_P,FX_W_ENERGY_P,FX_W_NONE,FX_W_NONE,FX_W_NONE,  FX_W_NONE,  FX_W_NONE,
+    FX_W_NONE,  FX_W_NONE,  FX_W_NONE, FX_W_NONE,   FX_W_NONE,  FX_W_NONE,  FX_W_PLASMA_P,FX_W_ENERGY_P,FX_W_NONE,FX_W_NONE,FX_W_NONE,  FX_W_NONE,  FX_W_NONE
+);
 WPVARK(IDF_GAMEMOD, 0, grab, 0, 3,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,
     3,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,
@@ -864,41 +954,11 @@ WPSVARK(IDF_GAMEMOD, 0, obituary,
     "given kung-fu lessons"
 );
 //  Claw        Pistol      Sword       Shotgun     SMG         Flamer      Plasma      Zapper      Rifle       Grenade     Mine        Rocket      Melee
-WPFVARK(IDF_GAMEMOD, 0, partblend, 0, 1,
-    1.0f,       0.3f,       1.0f,       1.0f,       1.0f,       0.6f,       0.6f,       1.0f,       1.0f,       1.0f,       0.75f,      1.0f,       1.0f,
-    1.0f,       0.0f,       1.0f,       1.0f,       1.0f,       0.125f,     0.4f,       1.0f,       1.0f,       1.0f,       0.75f,      1.0f,       1.0f,
-    1.0f,       0.3f,       1.0f,       1.0f,       1.0f,       0.6f,       0.6f,       1.0f,       1.0f,       1.0f,       0.75f,      1.0f,       1.0f,
-    1.0f,       0.0f,       1.0f,       1.0f,       1.0f,       0.125f,     0.4f,       1.0f,       1.0f,       1.0f,       0.75f,      1.0f,       1.0f
-);
-WPVARK(IDF_GAMEMOD|IDF_HEX, 0, partcol, PC(LAST), 0xFFFFFF,
-    0x907020,   0xD0D0D0,   0x1010F0,   0xF0F020,   0xF05820,   PC(FIRE),   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   0x00F068,   PC(FIRE),   0xEEEE22,
-    0x907020,   0xD0D0D0,   0x1010F0,   0xF0F020,   0xF05820,   0xFFFFFF,   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   0x00F068,   PC(FIRE),   0xEEEE22,
-    0x907020,   0xD0D0D0,   0x1010F0,   0xF0F020,   0xF05820,   PC(FIRE),   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   0x00F068,   PC(FIRE),   0xEEEE22,
-    0x907020,   0xD0D0D0,   0x1010F0,   0xF0F020,   0xF05820,   0xFFFFFF,   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   0x00F068,   PC(FIRE),   0xEEEE22
-);
-WPVARK(IDF_GAMEMOD, 0, partfade, 1, VAR_MAX,
-    500,        250,        500,        250,        250,        200,        500,        50,         500,        500,        500,        750,        500,
-    500,        250,        500,        250,        250,        500,        500,        500,        1000,       500,        500,        750,        500,
-    500,        250,        500,        250,        250,        200,        500,        500,        500,        500,        500,        750,        500,
-    500,        250,        500,        250,        250,        500,        500,        500,        1000,       500,        500,        750,        500
-);
 WPFVARK(IDF_GAMEMOD, 0, partlen, 0, FVAR_MAX,
     0.0f,       8.0f,       0.0f,       30.0f,      20.0f,      0.0f,       0.0f,       1024.0f,    512.0f,     0.0f,       4.0f,       0.0f,       0.0f,
     0.0f,       16.0f,      0.0f,       10.0f,      15.0f,      0.0f,       0.0f,       1024.0f,    1024.0f,    0.0f,       4.0f,       0.0f,       0.0f,
     0.0f,       8.0f,       0.0f,       10.0f,      15.0f,      0.0f,       0.0f,       1024.0f,    512.0f,     0.0f,       4.0f,       0.0f,       0.0f,
     0.0f,       16.0f,      0.0f,       10.0f,      50.0f,      0.0f,       0.0f,       1024.0f,    1024.0f,    0.0f,       4.0f,       0.0f,       0.0f
-);
-WPFVARK(IDF_GAMEMOD, 0, partsize, 0, FVAR_MAX,
-    1.0f,       0.125f,     1.0f,       0.75f,      0.6f,       6.0f,       8.0f,       1.5f,       1.5f,       1.0f,       2.0f,       2.0f,       0.5f,
-    2.0f,       0.25f,      1.25f,      0.5f,       0.75f,      16.0f,      18.0f,      2.0f,       3.0f,       1.0f,       2.0f,       2.0f,       1.0f,
-    1.0f,       0.125f,     1.0f,       0.4f,       0.4f,       6.0f,       8.0f,       1.5f,       1.5f,       1.0f,       2.0f,       2.0f,       0.5f,
-    2.0f,       0.25f,      1.25f,      0.4f,       0.4f,       16.0f,      18.0f,      2.0f,       3.0f,       1.0f,       2.0f,       2.0f,       1.0f
-);
-WPVARK(IDF_GAMEMOD, 0, parttype, 0, W_MAX-1,
-    W_CLAW,     W_PISTOL,   W_SWORD,    W_SHOTGUN,  W_SMG,      W_FLAMER,   W_PLASMA,   W_ZAPPER,   W_RIFLE,    W_GRENADE,  W_MINE,     W_ROCKET,   W_MELEE,
-    W_CLAW,     W_PISTOL,   W_SWORD,    W_SHOTGUN,  W_SMG,      W_FLAMER,   W_PLASMA,   W_ZAPPER,   W_RIFLE,    W_GRENADE,  W_MINE,     W_ROCKET,   W_MELEE,
-    W_CLAW,     W_PISTOL,   W_SWORD,    W_SHOTGUN,  W_SMG,      W_FLAMER,   W_PLASMA,   W_ZAPPER,   W_RIFLE,    W_GRENADE,  W_MINE,     W_ROCKET,   W_MELEE,
-    W_CLAW,     W_PISTOL,   W_SWORD,    W_SHOTGUN,  W_SMG,      W_FLAMER,   W_PLASMA,   W_ZAPPER,   W_RIFLE,    W_GRENADE,  W_MINE,     W_ROCKET,   W_MELEE
 );
 WPVARK(IDF_GAMEMOD, 0, proxdelay, 0, VAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          3000,       0,          0,

@@ -107,6 +107,86 @@ static inline int bitscan(uint mask)
 #endif
 #endif
 
+#define BIT(n) (1 << (n))
+
+#define listdinit(array, length, begin, end, prev, next) do \
+{ \
+    begin = &array[0]; \
+    end = &array[(length)-1]; \
+    loopi(length) \
+    { \
+        array[i].prev = !i ? NULL : &array[i-1]; \
+        array[i].next = (i == (length)-1) ? NULL : &array[i+1]; \
+    } \
+} while(0)
+
+#define listinit(array, length, begin, prev, next) do \
+{ \
+    begin = &array[0]; \
+    loopi(length) \
+    { \
+        array[i].prev = !i ? NULL : &array[i-1]; \
+        array[i].next = (i == (length)-1) ? NULL : &array[i+1]; \
+    } \
+} while(0)
+
+#define listdremove(elem, begin, end, prev, next) do \
+{ \
+    if(elem->prev) elem->prev->next = elem->next; \
+    else begin = elem->next; \
+    if(elem->next) elem->next->prev = elem->prev; \
+    else end = elem->prev; \
+} while(0)
+
+#define listremove(elem, begin, prev, next) do \
+{ \
+    if(elem->prev) elem->prev->next = elem->next; \
+    else begin = elem->next; \
+    if(elem->next) elem->next->prev = elem->prev; \
+} while(0)
+
+#define listpopfront(result, begin, prev, next) do \
+{ \
+    result = begin; \
+    if(begin) begin = begin->next; \
+    if(begin) begin->prev = NULL; \
+    if(result) result->prev = result->next = NULL; \
+} while(0)
+
+#define listpopback(result, end, prev, next) do \
+{ \
+    result = end; \
+    if(end) end = end->prev; \
+    if(end) end->next = NULL; \
+    if(result) result->prev = result->next = NULL; \
+} while(0)
+
+#define listpushfront(elem, begin, prev, next) do \
+{ \
+    if(begin) begin->prev = elem; \
+    elem->next = begin; \
+    elem->prev = NULL; \
+    begin = elem; \
+} while(0)
+
+#define listdpushfront(elem, begin, end, prev, next) do \
+{ \
+    if(begin) begin->prev = elem; \
+    elem->next = begin; \
+    elem->prev = NULL; \
+    begin = elem; \
+    if(!end) end = elem; \
+} while(0)
+
+#define listdpushback(elem, begin, end, prev, next) do \
+{ \
+    if(end) end->next = elem; \
+    elem->next = NULL; \
+    elem->prev = end; \
+    end = elem; \
+    if(!begin) begin = elem; \
+} while(0)
+
 #define rnd(x) ((int)(randomMT()&0x7FFFFFFF)%(x))
 #define rndscale(x) (float((randomMT()&0x7FFFFFFF)*double(x)/double(0x7FFFFFFF)))
 #define detrnd(s, x) ((int)(((((uint)(s))*1103515245+12345)>>16)%(x)))
@@ -1600,6 +1680,12 @@ struct slotmanager
         return s ? s->index : -1;
     }
 
+    const char *getname(int index)
+    {
+        enumerate(slotmap, slot, s, if(s.index == index) return s.name; );
+        return NULL;
+    }
+
     int assign(const char *name)
     {
         slot *s = getslot(name);
@@ -1632,6 +1718,12 @@ struct slotmanager
 
     T &operator[](int index) { return slots[index]; }
     const T &operator[](int index) const { return slots[index]; }
+
+    T& last() { return slots.last(); }
+    const T& last() const { return slots.last(); }
+
+    T& first() { return slots.first(); }
+    const T& first() const { return slots.first(); }
 
     T *get(const char *name)
     {

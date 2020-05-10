@@ -631,6 +631,7 @@ extern void rendershadowmesh(shadowmesh *m);
 
 // dynlight
 
+extern void cleardynlights();
 extern void updatedynlights();
 extern int finddynlights();
 extern bool getdynlight(int n, vec &o, float &radius, vec &color, vec &dir, int &spot, int &flags);
