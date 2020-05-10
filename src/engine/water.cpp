@@ -405,49 +405,31 @@ void preloadwatershaders(bool force)
 
 static float wfwave = 0.0f;
 
-static void renderwaterfall(const materialsurface &m, float offset, const vec *normal = NULL)
+static void renderwaterfall(const materialsurface &m, float offset, const vec &normal)
 {
     if(gle::attribbuf.empty())
     {
         gle::defvertex();
-        if(normal) gle::defnormal();
+        gle::defnormal();
         gle::begin(GL_QUADS);
     }
     float x = m.o.x, y = m.o.y, zmin = m.o.z, zmax = zmin;
     if(m.ends&1) zmin += -WATER_OFFSET-WATER_AMPLITUDE;
     if(m.ends&2) zmax += wfwave;
     int csize = m.csize, rsize = m.rsize;
-#define GENFACEORIENT(orient, v0, v1, v2, v3) \
-        case orient: v0 v1 v2 v3 break;
-#undef GENFACEVERTX
-#define GENFACEVERTX(orient, vert, mx,my,mz, sx,sy,sz) \
-            { \
-                vec v(mx sx, my sy, mz sz); \
-                gle::attribf(v.x, v.y, v.z); \
-                GENFACENORMAL \
-            }
-#undef GENFACEVERTY
-#define GENFACEVERTY(orient, vert, mx,my,mz, sx,sy,sz) \
-            { \
-                vec v(mx sx, my sy, mz sz); \
-                gle::attribf(v.x, v.y, v.z); \
-                GENFACENORMAL \
-            }
-#define GENFACENORMAL gle::attribf(n.x, n.y, n.z);
-    if(normal)
+    switch(m.orient)
     {
-        vec n = *normal;
-        switch(m.orient) { GENFACEVERTSXY(x, x, y, y, zmin, zmax, /**/, + csize, /**/, + rsize, + offset, - offset) }
+    #define GENFACEORIENT(orient, v0, v1, v2, v3) \
+        case orient: v0 v1 v2 v3 break;
+    #define GENFACEVERT(orient, vert, mx,my,mz, sx,sy,sz) \
+        { \
+            gle::attribf(mx sx, my sy, mz sz); \
+            gle::attribf(normal.x, normal.y, normal.z); \
+        }
+        GENFACEVERTSXY(x, x, y, y, zmin, zmax, /**/, + csize, /**/, + rsize, + offset, - offset)
+    #undef GENFACEORIENT
+    #undef GENFACEVERT
     }
-#undef GENFACENORMAL
-#define GENFACENORMAL
-    else switch(m.orient) { GENFACEVERTSXY(x, x, y, y, zmin, zmax, /**/, + csize, /**/, + rsize, + offset, - offset) }
-#undef GENFACENORMAL
-#undef GENFACEORIENT
-#undef GENFACEVERTX
-#define GENFACEVERTX(o,n, x,y,z, xv,yv,zv) GENFACEVERT(o,n, x,y,z, xv,yv,zv)
-#undef GENFACEVERTY
-#define GENFACEVERTY(o,n, x,y,z, xv,yv,zv) GENFACEVERT(o,n, x,y,z, xv,yv,zv)
 }
 
 void renderlava()
@@ -511,7 +493,7 @@ void renderlava()
             loopv(surfs)
             {
                 materialsurface &m = surfs[i];
-                renderwaterfall(m, 0.1f, &matnormals[m.orient]);
+                renderwaterfall(m, 0.1f, matnormals[m.orient]);
             }
             xtraverts += gle::end();
         }
@@ -563,7 +545,7 @@ void renderwaterfalls()
         loopv(surfs)
         {
             materialsurface &m = surfs[i];
-            renderwaterfall(m, 0.1f, &matnormals[m.orient]);
+            renderwaterfall(m, 0.1f, matnormals[m.orient]);
         }
         xtraverts += gle::end();
     }

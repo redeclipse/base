@@ -82,13 +82,13 @@ static void drawmaterial(const materialsurface &m, float offset)
     float x = m.o.x, y = m.o.y, z = m.o.z, csize = m.csize, rsize = m.rsize;
     switch(m.orient)
     {
-#define GENFACEORIENT(orient, v0, v1, v2, v3) \
+    #define GENFACEORIENT(orient, v0, v1, v2, v3) \
         case orient: v0 v1 v2 v3 break;
-#define GENFACEVERT(orient, vert, mx,my,mz, sx,sy,sz) \
+    #define GENFACEVERT(orient, vert, mx,my,mz, sx,sy,sz) \
             gle::attribf(mx sx, my sy, mz sz);
         GENFACEVERTS(x, x, y, y, z, z, /**/, + csize, /**/, + rsize, + offset, - offset)
-#undef GENFACEORIENT
-#undef GENFACEVERT
+    #undef GENFACEORIENT
+    #undef GENFACEVERT
     }
 }
 
@@ -507,61 +507,28 @@ void rendermatgrid()
     disablepolygonoffset(GL_POLYGON_OFFSET_LINE);
 }
 
-static float glassxscale = 0, glassyscale = 0;
-
-static void drawglass(const materialsurface &m, float offset, const vec *normal = NULL)
+static void drawglass(const materialsurface &m, float offset, const vec &normal)
 {
     if(gle::attribbuf.empty())
     {
         gle::defvertex();
-        if(normal) gle::defnormal();
-        gle::deftexcoord0();
+        gle::defnormal();
         gle::begin(GL_QUADS);
     }
+    float x = m.o.x, y = m.o.y, z = m.o.z, csize = m.csize, rsize = m.rsize;
+    switch(m.orient)
+    {
     #define GENFACEORIENT(orient, v0, v1, v2, v3) \
         case orient: v0 v1 v2 v3 break;
-    #undef GENFACEVERTX
-    #define GENFACEVERTX(orient, vert, mx,my,mz, sx,sy,sz) \
+    #define GENFACEVERT(orient, vert, mx,my,mz, sx,sy,sz) \
         { \
-            vec v(mx sx, my sy, mz sz); \
-            gle::attribf(v.x, v.y, v.z); \
-            GENFACENORMAL \
-            gle::attribf(glassxscale*v.y, -glassyscale*v.z); \
+            gle::attribf(mx sx, my sy, mz sz); \
+            gle::attribf(normal.x, normal.y, normal.z); \
         }
-    #undef GENFACEVERTY
-    #define GENFACEVERTY(orient, vert, mx,my,mz, sx,sy,sz) \
-        { \
-            vec v(mx sx, my sy, mz sz); \
-            gle::attribf(v.x, v.y, v.z); \
-            GENFACENORMAL \
-            gle::attribf(glassxscale*v.x, -glassyscale*v.z); \
-        }
-    #undef GENFACEVERTZ
-    #define GENFACEVERTZ(orient, vert, mx,my,mz, sx,sy,sz) \
-        { \
-            vec v(mx sx, my sy, mz sz); \
-            gle::attribf(v.x, v.y, v.z); \
-            GENFACENORMAL \
-            gle::attribf(glassxscale*v.x, glassyscale*v.y); \
-        }
-    #define GENFACENORMAL gle::attribf(n.x, n.y, n.z);
-    float x = m.o.x, y = m.o.y, z = m.o.z, csize = m.csize, rsize = m.rsize;
-    if(normal)
-    {
-        vec n = *normal;
-        switch(m.orient) { GENFACEVERTS(x, x, y, y, z, z, /**/, + csize, /**/, + rsize, + offset, - offset) }
-    }
-    #undef GENFACENORMAL
-    #define GENFACENORMAL
-    else switch(m.orient) { GENFACEVERTS(x, x, y, y, z, z, /**/, + csize, /**/, + rsize, + offset, - offset) }
-    #undef GENFACENORMAL
+        GENFACEVERTS(x, x, y, y, z, z, /**/, + csize, /**/, + rsize, + offset, - offset)
     #undef GENFACEORIENT
-    #undef GENFACEVERTX
-    #define GENFACEVERTX(o,n, x,y,z, xv,yv,zv) GENFACEVERT(o,n, x,y,z, xv,yv,zv)
-    #undef GENFACEVERTY
-    #define GENFACEVERTY(o,n, x,y,z, xv,yv,zv) GENFACEVERT(o,n, x,y,z, xv,yv,zv)
-    #undef GENFACEVERTZ
-    #define GENFACEVERTZ(o,n, x,y,z, xv,yv,zv) GENFACEVERT(o,n, x,y,z, xv,yv,zv)
+    #undef GENFACEVERT
+    }
 }
 
 vector<materialsurface> editsurfs, glasssurfs[4], watersurfs[4], waterfallsurfs[4], lavasurfs[4], lavafallsurfs[4];
@@ -708,8 +675,9 @@ void renderglass()
         MatSlot &gslot = lookupmaterialslot(MAT_GLASS+k);
 
         Texture *tex = gslot.sts.inrange(0) ? gslot.sts[0].t : notexture;
-        glassxscale = TEX_SCALE/(tex->xs*gslot.scale);
-        glassyscale = TEX_SCALE/(tex->ys*gslot.scale);
+        float xscale = TEX_SCALE/(tex->xs*gslot.scale);
+        float yscale = TEX_SCALE/(tex->ys*gslot.scale);
+        GLOBALPARAMF(glasstexgen, xscale, yscale);
 
         glActiveTexture_(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, tex->id);
@@ -735,7 +703,7 @@ void renderglass()
                 glBindTexture(GL_TEXTURE_CUBE_MAP, lookupenvmap(m.envmap));
                 envmap = m.envmap;
             }
-            drawglass(m, 0.1f, &matnormals[m.orient]);
+            drawglass(m, 0.1f, matnormals[m.orient]);
         }
         xtraverts += gle::end();
     }
