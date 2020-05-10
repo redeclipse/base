@@ -146,7 +146,7 @@ void renderwaterfog(int mat, float surface)
 VAR(IDF_WORLD, watersubdiv, 0, 2, 3);
 VAR(IDF_WORLD, waterlod, 0, 1, 3);
 
-static int wx1, wy1, wx2, wy2, wsize;
+static int wx1, wy1, wx2, wy2, wz, wsize, wsubdiv;
 static float whscale, whoffset;
 
 #define VERTW(vertw, defbody, body) \
@@ -208,7 +208,7 @@ VERTWN(vertln, {
     gle::attribf(wxscale*(v1+wscroll), wyscale*(v2+wscroll));
 })
 
-#define renderwaterstrips(vertw, z) { \
+#define renderwaterstrips(vertw, z, subdiv) { \
     def##vertw(); \
     gle::begin(GL_TRIANGLE_STRIP, 2*(wy2-wy1 + 1)*(wx2-wx1)/subdiv); \
     for(int x = wx1; x<wx2; x += subdiv) \
@@ -233,34 +233,56 @@ VERTWN(vertln, {
     xtraverts += gle::end(); \
 }
 
-void rendervertwater(int subdiv, int xo, int yo, int z, int size, int mat)
+void flushwater(int mat = MAT_WATER)
 {
-    wx1 = xo;
-    wy1 = yo;
-    wx2 = wx1 + size,
-    wy2 = wy1 + size;
-    wsize = size;
-    whscale = 59.0f/(23.0f*wsize*wsize)/(2*M_PI);
-
-    ASSERT((wx1 & (subdiv - 1)) == 0);
-    ASSERT((wy1 & (subdiv - 1)) == 0);
-
+    if(!wsize)
+    {
+        if(!vertwater || drawtex == DRAWTEX_MINIMAP) xtraverts += gle::end();
+        return;
+    }
     switch(mat)
     {
         case MAT_WATER:
         {
             whoffset = fmod(float(lastmillis/600.0f/(2*M_PI)), 1.0f);
-            renderwaterstrips(vertwt, z);
+            renderwaterstrips(vertwt, wz, wsubdiv);
             break;
         }
 
         case MAT_LAVA:
         {
             whoffset = fmod(float(lastmillis/2000.0f/(2*M_PI)), 1.0f);
-            renderwaterstrips(vertl, z);
+            renderwaterstrips(vertl, wz, wsubdiv);
             break;
         }
     }
+    wsize = 0;
+}
+
+void rendervertwater(int subdiv, int xo, int yo, int z, int size, int mat)
+{
+    if(wsize == size && wsubdiv == subdiv && wz == z)
+    {
+        if(wx2 == xo)
+        {
+            if(wy1 == yo && wy2 == yo + size) { wx2 += size; return; }
+        }
+        else if(wy2 == yo && wx1 == xo && wx2 == xo + size) { wy2 += size; return; }
+    }
+
+    flushwater(mat);
+
+    wx1 = xo;
+    wy1 = yo;
+    wx2 = xo + size,
+    wy2 = yo + size;
+    wz = z;
+    wsize = size;
+    wsubdiv = subdiv;
+    whscale = 59.0f/(23.0f*wsize*wsize)/(2*M_PI);
+
+    ASSERT((wx1 & (subdiv - 1)) == 0);
+    ASSERT((wy1 & (subdiv - 1)) == 0);
 }
 
 int calcwatersubdiv(int x, int y, int z, int size)
@@ -525,7 +547,7 @@ void renderlava()
 
             vector<materialsurface> &surfs = lavasurfs[k];
             loopv(surfs) renderwater(surfs[i], MAT_LAVA);
-            xtraverts += gle::end();
+            flushwater(MAT_LAVA);
         }
 
         if(drawtex != DRAWTEX_MINIMAP && lavafallsurfs[k].length())
@@ -684,7 +706,7 @@ void renderwater()
                 if(camera1->o.z < m.o.z - WATER_OFFSET) continue;
                 renderwater(m);
             }
-            xtraverts += gle::end();
+            flushwater();
         }
 
         if(belowshader)
@@ -696,7 +718,7 @@ void renderwater()
                 if(camera1->o.z >= m.o.z - WATER_OFFSET) continue;
                 renderwater(m);
             }
-            xtraverts += gle::end();
+            flushwater();
         }
     }
 }
