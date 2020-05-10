@@ -220,7 +220,15 @@ VERTWN(vertln, {
             vertw(x,        y+subdiv, z); \
             vertw(x+subdiv, y+subdiv, z); \
         } \
-        gle::multidraw(); \
+        x += subdiv; \
+        if(x>=wx2) break; \
+        vertw(x,        wy2, z); \
+        vertw(x+subdiv, wy2, z); \
+        for(int y = wy2; y>wy1; y -= subdiv) \
+        { \
+            vertw(x,        y-subdiv, z); \
+            vertw(x+subdiv, y-subdiv, z); \
+        } \
     } \
     xtraverts += gle::end(); \
 }

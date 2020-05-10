@@ -22,7 +22,6 @@ namespace gle
 
     extern void begin(GLenum mode);
     extern void begin(GLenum mode, int numverts);
-    extern void multidraw();
     extern void defattribs(const char *fmt);
     extern void defattrib(int type, int size, int format);
 
