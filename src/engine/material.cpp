@@ -72,11 +72,12 @@ struct QuadNode
     }
 };
 
-static void drawmaterial(const materialsurface &m, float offset)
+static void drawmaterial(const materialsurface &m, float offset, const bvec4 &color = bvec4(0, 0, 0, 0))
 {
     if(gle::attribbuf.empty())
     {
         gle::defvertex();
+        gle::defcolor(4, GL_UNSIGNED_BYTE);
         gle::begin(GL_QUADS);
     }
     float x = m.o.x, y = m.o.y, z = m.o.z, csize = m.csize, rsize = m.rsize;
@@ -85,7 +86,10 @@ static void drawmaterial(const materialsurface &m, float offset)
     #define GENFACEORIENT(orient, v0, v1, v2, v3) \
         case orient: v0 v1 v2 v3 break;
     #define GENFACEVERT(orient, vert, mx,my,mz, sx,sy,sz) \
-            gle::attribf(mx sx, my sy, mz sz);
+        { \
+            gle::attribf(mx sx, my sy, mz sz); \
+            gle::attrib(color); \
+        }
         GENFACEVERTS(x, x, y, y, z, z, /**/, + csize, /**/, + rsize, + offset, - offset)
     #undef GENFACEORIENT
     #undef GENFACEVERT
@@ -468,39 +472,37 @@ void sorteditmaterials()
 }
 
 #define EDITMATCOLOR(value) \
-    case MAT_WATER:  value = bvec::fromcolor(colourblue); break; \
-    case MAT_CLIP:   value = bvec::fromcolor(colourred); break; \
-    case MAT_GLASS:  value = bvec::fromcolor(colourcyan); break; \
-    case MAT_NOCLIP: value = bvec::fromcolor(colourgreen); break; \
-    case MAT_LAVA:   value = bvec::fromcolor(colourorange); break; \
-    case MAT_AICLIP: value = bvec::fromcolor(colouryellow); break; \
-    case MAT_DEATH:  value = bvec::fromcolor(colourdarkgrey); break; \
-    case MAT_LADDER: value = bvec::fromcolor(colourviolet); break; \
-    case MAT_ALPHA:  value = bvec::fromcolor(colourpink); break; \
-    case MAT_HURT:   value = bvec::fromcolor(colourgrey); break; \
-    case MAT_NOGI:   value = bvec::fromcolor(colourbrown); break;
+    case MAT_WATER:  value = bvec4::fromcolor(colourblue); break; \
+    case MAT_CLIP:   value = bvec4::fromcolor(colourred); break; \
+    case MAT_GLASS:  value = bvec4::fromcolor(colourcyan); break; \
+    case MAT_NOCLIP: value = bvec4::fromcolor(colourgreen); break; \
+    case MAT_LAVA:   value = bvec4::fromcolor(colourorange); break; \
+    case MAT_AICLIP: value = bvec4::fromcolor(colouryellow); break; \
+    case MAT_DEATH:  value = bvec4::fromcolor(colourdarkgrey); break; \
+    case MAT_LADDER: value = bvec4::fromcolor(colourviolet); break; \
+    case MAT_ALPHA:  value = bvec4::fromcolor(colourpink); break; \
+    case MAT_HURT:   value = bvec4::fromcolor(colourgrey); break; \
+    case MAT_NOGI:   value = bvec4::fromcolor(colourbrown); break;
 
 void rendermatgrid()
 {
     enablepolygonoffset(GL_POLYGON_OFFSET_LINE);
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     int lastmat = -1;
+    bvec4 color(0, 0, 0, 0);
     loopvrev(editsurfs)
     {
         materialsurface &m = editsurfs[i];
         if(m.material != lastmat)
         {
-            xtraverts += gle::end();
-            bvec color;
             switch(m.material&~MATF_INDEX)
             {
                 EDITMATCOLOR(color)
                 default: continue;
             }
-            gle::colorf(color.x*ldrscaleb, color.y*ldrscaleb, color.z*ldrscaleb);
             lastmat = m.material;
         }
-        drawmaterial(m, -0.1f);
+        drawmaterial(m, -0.1f, color);
     }
     xtraverts += gle::end();
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -748,22 +750,21 @@ void rendereditmaterials()
     glEnable(GL_BLEND);
 
     int lastmat = -1;
+    bvec4 color(0, 0, 0, 0);
     loopv(editsurfs)
     {
         const materialsurface &m = editsurfs[i];
         if(lastmat!=m.material)
         {
-            xtraverts += gle::end();
-            bvec color;
             switch(m.material&~MATF_INDEX)
             {
                 EDITMATCOLOR(color)
                 default: continue;
             }
-            gle::color(color.tocolor().mul(editmatscale), editmatblend);
+            color.mul(editmatscale, editmatscale, editmatscale, editmatblend);
             lastmat = m.material;
         }
-        drawmaterial(m, -0.1f);
+        drawmaterial(m, -0.1f, color);
     }
 
     xtraverts += gle::end();
