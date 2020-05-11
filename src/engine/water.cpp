@@ -188,7 +188,7 @@ void flushwater(int mat = MAT_WATER, bool force = true)
     {
         if(gle::attribbuf.length()) xtraverts += gle::end();
         gle::defvertex();
-        gle::begin(GL_TRIANGLE_STRIP, 2*(wy2-wy1 + 1)*(wx2-wx1)/wsubdiv);
+        gle::begin(GL_TRIANGLE_STRIP, 2*((wy2-wy1)/wsubdiv + 1)*(wx2-wx1)/wsubdiv);
         for(int x = wx1; x<wx2; x += wsubdiv)
         {
             vertw(x,         wy1, wz);
