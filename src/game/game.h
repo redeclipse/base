@@ -1529,7 +1529,7 @@ struct gameent : dynent, clientstate
 
     void respawn(int millis, int gamemode, int mutators)
     {
-        stopmoving(true);
+        stopmoving(false);
         removesounds();
         physent::reset();
         clearstate(millis, gamemode, mutators);
@@ -1539,11 +1539,10 @@ struct gameent : dynent, clientstate
 
     void editspawn(int gamemode, int mutators)
     {
-        stopmoving(true);
+        stopmoving(false);
         clearstate(lastmillis, gamemode, mutators);
         inmaterial = airmillis = floormillis = 0;
         inliquid = onladder = forcepos = false;
-        strafe = move = 0;
         physstate = PHYS_FALL;
         vel = falling = vec(0, 0, 0);
         floor = vec(0, 0, 1);
