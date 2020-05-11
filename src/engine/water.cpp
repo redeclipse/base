@@ -164,31 +164,48 @@ static inline void vertwn(float v1, float v2, float v3)
     gle::attribf(v1, v2, v3+h);
 }
 
-void flushwater(int mat = MAT_WATER, bool force = true)
+struct waterstrip
 {
-    if(!wsize)
+    int x1, y1, x2, y2, z;
+    ushort size, subdiv;
+
+    int numverts() const { return 2*((y2-y1)/subdiv + 1)*((x2-x1)/subdiv); }
+
+    void save()
     {
-        if(gle::attribbuf.length()) xtraverts += gle::end();
-        return;
+        x1 = wx1;
+        y1 = wy1;
+        x2 = wx2;
+        y2 = wy2;
+        z = wz;
+        size = wsize;
+        subdiv = wsubdiv;
     }
 
-    if(wsubdiv == wsize && wx2-wx1 <= wsize*2 && wy2-wy1 <= wsize*2)
+    void restore()
     {
-        if(gle::attribbuf.empty()) { gle::defvertex(); gle::begin(GL_QUADS); }
-        for(int x = wx1; x<wx2; x += wsubdiv) for(int y = wy1; y<wy2; y += wsubdiv)
-        {
-            vertw(x,         y,         wz);
-            vertw(x+wsubdiv, y,         wz);
-            vertw(x+wsubdiv, y+wsubdiv, wz);
-            vertw(x,         y+wsubdiv, wz);
-        }
-        if(force) xtraverts += gle::end();
+        wx1 = x1;
+        wy1 = y1;
+        wx2 = x2;
+        wy2 = y2;
+        wz = z;
+        wsize = size;
+        wsubdiv = subdiv;
     }
-    else
+};
+vector<waterstrip> waterstrips;
+
+void flushwaterstrips()
+{
+    if(gle::attribbuf.length()) xtraverts += gle::end();
+    gle::defvertex();
+    int numverts = 0;
+    loopv(waterstrips) numverts += waterstrips[i].numverts();
+    gle::begin(GL_TRIANGLE_STRIP, numverts);
+    loopv(waterstrips)
     {
-        if(gle::attribbuf.length()) xtraverts += gle::end();
-        gle::defvertex();
-        gle::begin(GL_TRIANGLE_STRIP, 2*((wy2-wy1)/wsubdiv + 1)*(wx2-wx1)/wsubdiv);
+        waterstrips[i].restore();
+        whscale = 59.0f/(23.0f*wsize*wsize)/(2*M_PI);
         for(int x = wx1; x<wx2; x += wsubdiv)
         {
             vertw(x,         wy1, wz);
@@ -208,10 +225,37 @@ void flushwater(int mat = MAT_WATER, bool force = true)
                 vertw(x+wsubdiv, y-wsubdiv, wz);
             }
         }
-        xtraverts += gle::end();
+        gle::multidraw();
+    }
+    waterstrips.setsize(0);
+    xtraverts += gle::end();
+}
+
+void flushwater(int mat = MAT_WATER, bool force = true)
+{
+    if(wsize)
+    {
+        if(wsubdiv == wsize && wx2-wx1 <= wsize*2 && wy2-wy1 <= wsize*2)
+        {
+            if(gle::attribbuf.empty()) { gle::defvertex(); gle::begin(GL_QUADS); }
+            whscale = 59.0f/(23.0f*wsize*wsize)/(2*M_PI);
+            for(int x = wx1; x<wx2; x += wsubdiv) for(int y = wy1; y<wy2; y += wsubdiv)
+            {
+                vertw(x,         y,         wz);
+                vertw(x+wsubdiv, y,         wz);
+                vertw(x+wsubdiv, y+wsubdiv, wz);
+                vertw(x,         y+wsubdiv, wz);
+            }
+        }
+        else waterstrips.add().save();
+        wsize = 0;
     }
 
-    wsize = 0;
+    if(force)
+    {
+        if(gle::attribbuf.length()) xtraverts += gle::end();
+        if(waterstrips.length()) flushwaterstrips();
+    }
 }
 
 void rendervertwater(int subdiv, int xo, int yo, int z, int size, int mat)
@@ -234,7 +278,6 @@ void rendervertwater(int subdiv, int xo, int yo, int z, int size, int mat)
     wz = z;
     wsize = size;
     wsubdiv = subdiv;
-    whscale = 59.0f/(23.0f*wsize*wsize)/(2*M_PI);
 
     ASSERT((wx1 & (subdiv - 1)) == 0);
     ASSERT((wy1 & (subdiv - 1)) == 0);

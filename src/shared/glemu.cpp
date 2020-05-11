@@ -31,6 +31,8 @@ namespace gle
     static GLenum primtype = GL_TRIANGLES;
     static uchar *lastbuf = NULL;
     static bool changedattribs = false;
+    static vector<GLint> multidrawstart;
+    static vector<GLsizei> multidrawcount;
 
     #define MAXQUADS (0x10000/4)
     static GLuint quadindexes = 0;
@@ -231,6 +233,17 @@ namespace gle
         }
     }
 
+    void multidraw()
+    {
+        int start = multidrawstart.length() ? multidrawstart.last() + multidrawcount.last() : 0,
+            count = attribbuf.length()/vertexsize - start;
+        if(count > 0)
+        {
+            multidrawstart.add(start);
+            multidrawcount.add(count);
+        }
+    }
+
     int end()
     {
         uchar *buf = attribbuf.getbuf();
@@ -283,7 +296,18 @@ namespace gle
             if(!quadsenabled) enablequads();
             drawquads(start/4, numvertexes/4);
         }
-        else glDrawArrays(primtype, start, numvertexes);
+        else
+        {
+            if(multidrawstart.length())
+            {
+                multidraw();
+                if(start) loopv(multidrawstart) multidrawstart[i] += start;
+                glMultiDrawArrays_(primtype, multidrawstart.getbuf(), multidrawcount.getbuf(), multidrawstart.length());
+                multidrawstart.setsize(0);
+                multidrawcount.setsize(0);
+            }
+            else glDrawArrays(primtype, start, numvertexes);
+        }
         attribbuf.reset(attribdata, MAXVBOSIZE);
         return numvertexes;
     }

@@ -167,6 +167,7 @@ namespace gle
     static inline void attrib(const bvec &b, uchar w) { attribub(b.x, b.y, b.z, w); }
     static inline void attrib(const bvec4 &b) { attribub(b.x, b.y, b.z, b.w); }
 
+    extern void multidraw();
     extern int end();
 
     extern void enablequads();
