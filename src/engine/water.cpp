@@ -147,15 +147,29 @@ VAR(IDF_WORLD, watersubdiv, 0, 2, 3);
 VAR(IDF_WORLD, waterlod, 0, 1, 3);
 
 static int wx1, wy1, wx2, wy2, wz, wsize, wsubdiv;
-static float whscale, whoffset;
+static float whscale, whoffset, whphase;
+
+static inline float vertwangle(float v1, float v2)
+{
+    return (v1-wx1)*(v2-wy1)*(v1-wx2)*(v2-wy2)*whscale+whoffset;
+}
+
+static inline float vertwphase(float angle)
+{
+    float s = angle - int(angle) - 0.5f;
+    s *= 8 - fabs(s)*16;
+    return WATER_AMPLITUDE*s-WATER_OFFSET;
+}
 
 static inline void vertw(float v1, float v2, float v3)
 {
-    float angle = (v1-wx1)*(v2-wy1)*(v1-wx2)*(v2-wy2)*whscale+whoffset;
-    float s = angle - int(angle) - 0.5f;
-    s *= 8 - fabs(s)*16;
-    float h = WATER_AMPLITUDE*s-WATER_OFFSET;
+    float h = vertwphase(vertwangle(v1, v2));
     gle::attribf(v1, v2, v3+h);
+}
+
+static inline void vertwq(float v1, float v2, float v3)
+{
+    gle::attribf(v1, v2, v3+whphase);
 }
 
 static inline void vertwn(float v1, float v2, float v3)
@@ -238,13 +252,12 @@ void flushwater(int mat = MAT_WATER, bool force = true)
         if(wsubdiv == wsize && wx2-wx1 <= wsize*2 && wy2-wy1 <= wsize*2)
         {
             if(gle::attribbuf.empty()) { gle::defvertex(); gle::begin(GL_QUADS); }
-            whscale = 59.0f/(23.0f*wsize*wsize)/(2*M_PI);
             for(int x = wx1; x<wx2; x += wsubdiv) for(int y = wy1; y<wy2; y += wsubdiv)
             {
-                vertw(x,         y,         wz);
-                vertw(x+wsubdiv, y,         wz);
-                vertw(x+wsubdiv, y+wsubdiv, wz);
-                vertw(x,         y+wsubdiv, wz);
+                vertwq(x,         y,         wz);
+                vertwq(x+wsubdiv, y,         wz);
+                vertwq(x+wsubdiv, y+wsubdiv, wz);
+                vertwq(x,         y+wsubdiv, wz);
             }
         }
         else waterstrips.add().save();
@@ -502,6 +515,7 @@ void renderlava()
             LOCALPARAMF(lavatexgen, xscale, yscale, scroll, scroll);
 
             whoffset = fmod(float(lastmillis/2000.0f/(2*M_PI)), 1.0f);
+            whphase = vertwphase(whoffset);
 
             glBindTexture(GL_TEXTURE_2D, tex->id);
             glActiveTexture_(GL_TEXTURE1);
@@ -609,6 +623,7 @@ void renderwater()
         GLOBALPARAMF(watertexgen, xscale, yscale);
 
         whoffset = fmod(float(lastmillis/600.0f/(2*M_PI)), 1.0f);
+        whphase = vertwphase(whoffset);
 
         glBindTexture(GL_TEXTURE_2D, tex->id);
         glActiveTexture_(GL_TEXTURE1);
