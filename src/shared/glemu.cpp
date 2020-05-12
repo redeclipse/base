@@ -296,11 +296,11 @@ namespace gle
             if(!quadsenabled) enablequads();
             for(;;)
             {
-                int count = min(numvertexes, 4*MAXQUADS);
-                drawquads(start/4, count/4);
-                numvertexes -= count;
+                int count = min(numvertexes/4, MAXQUADS);
+                drawquads(start/4, count);
+                numvertexes -= 4*count;
                 if(numvertexes < 4) break;
-                setattribs(buf + count * vertexsize);
+                setattribs(buf + 4*count*vertexsize);
                 start = 0;
             }
         }
