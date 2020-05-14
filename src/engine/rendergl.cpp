@@ -1020,7 +1020,7 @@ void gl_checkextensions()
         if(dbgexts) conoutf("\frUsing GL_NV_copy_image extension.");
     }
 
-    extern int gdepthstencil, gstencil, glineardepth, msaadepthstencil, msaalineardepth, batchsunlight, smgather, rhrect, tqaaresolvegather;
+    extern int gdepthstencil, gstencil, glineardepth, msaadepthstencil, msaalineardepth, batchsunlight, smgather, rhrect, tqaaresolvegather, smalpha;
     if(amd || nvidia) msaalineardepth = glineardepth = 1; // reading back from depth-stencil still buggy on newer cards, and requires stencil for MSAA
     if(amd)
     {
@@ -1048,6 +1048,7 @@ void gl_checkextensions()
         else
         {
             smgather = 1; // native shadow filter is slow
+            smalpha = 0; // smalpha is slow with gather
             // causes massive slowdown in windows driver if reading depth-stencil texture
             if(checkdepthtexstencilrb())
             {
