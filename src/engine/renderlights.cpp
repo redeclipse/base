@@ -1778,7 +1778,7 @@ void viewshadowatlas(bool color)
 {
     int w = min(hudw, hudh)/2, h = (w*hudh)/hudw, x = hudw-w, y = hudh-h;
     float tw = 1, th = 1;
-    if(shadowatlastarget == GL_TEXTURE_RECTANGLE)
+    if(color || shadowatlastarget == GL_TEXTURE_RECTANGLE)
     {
         tw = shadowatlaspacker.w;
         th = shadowatlaspacker.h;
@@ -1786,8 +1786,12 @@ void viewshadowatlas(bool color)
     }
     else hudshader->set();
     gle::colorf(1, 1, 1);
-    glBindTexture(shadowatlastarget, color ? shadowcolortex : shadowatlastex);
-    if(!color && usesmcomparemode()) setsmnoncomparemode();
+    if(color) glBindTexture(GL_TEXTURE_RECTANGLE, shadowcolortex);
+    else
+    {
+        glBindTexture(shadowatlastarget, shadowatlastex);
+        if(usesmcomparemode()) setsmnoncomparemode();
+    }
     debugquad(x, y, w, h, 0, 0, tw, th);
     if(!color && usesmcomparemode()) setsmcomparemode();
 }
@@ -1814,14 +1818,14 @@ void setupshadowatlas()
         if(!shadowcolortex) glGenTextures(1, &shadowcolortex);
 
         GLenum colcomp = smalphacolorprec ? GL_RGB10 : GL_RGB5;
-        createtexture(shadowcolortex, shadowatlaspacker.w, shadowatlaspacker.h, NULL, 3, 1, colcomp, shadowatlastarget);
+        createtexture(shadowcolortex, shadowatlaspacker.w, shadowatlaspacker.h, NULL, 3, 1, colcomp, GL_TEXTURE_RECTANGLE);
     }
 
     if(!shadowatlasfbo) glGenFramebuffers_(1, &shadowatlasfbo);
 
     glBindFramebuffer_(GL_FRAMEBUFFER, shadowatlasfbo);
 
-    if(smalpha) glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, shadowatlastarget, shadowcolortex, 0);
+    if(smalpha) glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, shadowcolortex, 0);
     glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, shadowatlastarget, shadowatlastex, 0);
 
     extern int mesa_drawbuffer_bug;
@@ -2912,8 +2916,7 @@ static void bindlighttexs(int msaapass = 0, bool transparent = false)
     if(smalpha)
     {
         glActiveTexture_(GL_TEXTURE10);
-        glBindTexture(shadowatlastarget, shadowcolortex);
-        if(usegatherforsm()) setsmnoncomparemode();
+        glBindTexture(GL_TEXTURE_RECTANGLE, shadowcolortex);
     }
     glActiveTexture_(GL_TEXTURE0);
 }
