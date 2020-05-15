@@ -1656,13 +1656,8 @@ static inline void changeshader(renderstate &cur, int pass, geombatch &b)
     if(pass == RENDERPASS_SM_TRANSP)
     {
         extern Shader *smalphaworldshader;
-        int row = -1;
-        if(slot.texmask&(1<<TEX_ALPHA))
-        {
-            if(slot.texmask&(1<<TEX_NORMAL)) row = 1;
-            else row = 0;
-        }
-        smalphaworldshader->setvariant(0, row, slot, vslot);
+        if(slot.texmask&(1<<TEX_ALPHA)) smalphaworldshader->setvariant(0, slot.texmask&(1<<TEX_NORMAL) ? 1 : 0, slot, vslot);
+        else smalphaworldshader->set(slot, vslot);
     }
     else if(pass == RENDERPASS_RSM)
     {
