@@ -1602,7 +1602,7 @@ static void changeslottmus(renderstate &cur, int pass, Slot &slot, VSlot &vslot)
         }
     }
 
-    GLOBALPARAM(rotate, vec(vslot.angle.y, vslot.angle.z, diffuse->ratio));
+    GLOBALPARAM(rotate, vec(vslot.angle.z, (vslot.angle.y*diffuse->h)/diffuse->w, -(vslot.angle.y*diffuse->w)/diffuse->h));
 
     if(cur.tmu != 0)
     {
@@ -2217,7 +2217,7 @@ void renderalphashadow()
 
     cur.alphaing = 2;
     for(vtxarray *va = shadowva; va; va = va->rnext)
-        if(va->alphafronttris || va->refracttris || va->alphabacktris)
+        if(va->alphafronttris || va->refracttris)
             renderva(cur, va, RENDERPASS_SM_TRANSP);
     if(geombatches.length()) renderbatches(cur, RENDERPASS_SM_TRANSP);
 

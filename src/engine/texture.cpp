@@ -1243,7 +1243,6 @@ static Texture *newtexture(Texture *t, const char *rname, ImageData &s, int clam
 
     t->w = t->xs = hasanim ? anim->w : s.w;
     t->h = t->ys = hasanim ? anim->h : s.h;
-    t->ratio = t->w / (float)t->h;
     if(t->frames.empty()) t->frames.add(0);
 
     int filter = !canreduce || reducefilter ? (mipit ? 2 : 1) : 0;
