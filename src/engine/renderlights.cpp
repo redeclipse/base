@@ -1889,7 +1889,7 @@ VARF(IDF_PERSIST, smfilter, 0, 2, 3, { cleardeferredlightshaders(); cleanupshado
 VARF(IDF_PERSIST, smgather, 0, 0, 1, { cleardeferredlightshaders(); cleanupshadowatlas(); cleanupvolumetric(); });
 VAR(0, smnoshadow, 0, 0, 1);
 VAR(0, smdynshadow, 0, 1, 1);
-VARF(IDF_PERSIST, smalpha, 0, 2, 2, { cleardeferredlightshaders(); cleanupshadowatlas(); });
+VARF(IDF_PERSIST, smalpha, 0, 1, 2, { cleardeferredlightshaders(); cleanupshadowatlas(); });
 VARF(0, smalphacolorprec, 0, 0, 1, cleanupshadowatlas());
 VAR(0, lightpassesused, 1, 0, 0);
 VAR(0, lightsvisible, 1, 0, 0);
