@@ -1003,7 +1003,7 @@ static inline void addshadowva(vtxarray *va, float dist, bool transparent = fals
     va->rnext = cur;
     *prev = va;
 
-    if(transparent) shadowtransparent += va->alphabacktris + va->alphafronttris + va->refracttris;
+    if(transparent && (v.alphabacktris || v.alphafronttris || v.refracttris)) shadowtransparent |= va->sidemask;
 }
 
 void sortshadowvas()
@@ -2209,7 +2209,7 @@ void renderalphashadow()
 
     cur.alphaing = 1;
     for(vtxarray *va = shadowva; va; va = va->rnext)
-        if(va->alphabacktris)
+        if(va->alphabacktris && va->shadowmask&(1<<shadowside))
             renderva(cur, va, RENDERPASS_SM_TRANSP);
     if(geombatches.length()) renderbatches(cur, RENDERPASS_SM_TRANSP);
 
@@ -2217,7 +2217,7 @@ void renderalphashadow()
 
     cur.alphaing = 2;
     for(vtxarray *va = shadowva; va; va = va->rnext)
-        if(va->alphafronttris || va->refracttris)
+        if((va->alphafronttris || va->refracttris) && va->shadowmask&(1<<shadowside))
             renderva(cur, va, RENDERPASS_SM_TRANSP);
     if(geombatches.length()) renderbatches(cur, RENDERPASS_SM_TRANSP);
 
