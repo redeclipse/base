@@ -983,11 +983,11 @@ VAR(0, smnodraw, 0, 0, 1);
 
 vec shadoworigin(0, 0, 0), shadowdir(0, 0, 0);
 float shadowradius = 0, shadowbias = 0;
-int shadowside = 0, shadowspot = 0;
+int shadowside = 0, shadowspot = 0, shadowtransparent = 0;
 
 vtxarray *shadowva = NULL;
 
-static inline void addshadowva(vtxarray *va, float dist)
+static inline void addshadowva(vtxarray *va, float dist, bool transparent = false)
 {
     va->rdistance = int(dist);
 
@@ -1002,6 +1002,8 @@ static inline void addshadowva(vtxarray *va, float dist)
 
     va->rnext = cur;
     *prev = va;
+
+    if(transparent) shadowtransparent += va->alphabacktris + va->alphafronttris + va->refracttris;
 }
 
 void sortshadowvas()
@@ -1036,7 +1038,7 @@ void findshadowvas(vector<vtxarray *> &vas, bool transparent)
             getshadowvabb(v, bbmin, bbmax, transparent);
             v.shadowmask = smbbcull ? 0x3F : calcbbsidemask(bbmin, bbmax, shadoworigin, shadowradius, shadowbias);
 
-            addshadowva(&v, dist);
+            addshadowva(&v, dist, transparent);
             if(v.children.length()) findshadowvas(v.children, transparent);
         }
     }
@@ -1053,7 +1055,7 @@ void findcsmshadowvas(vector<vtxarray *> &vas, bool transparent)
         if(v.shadowmask)
         {
             float dist = shadowdir.project_bb(bbmin, bbmax) - shadowbias;
-            addshadowva(&v, dist);
+            addshadowva(&v, dist, transparent);
             if(v.children.length()) findcsmshadowvas(v.children, transparent);
         }
     }
@@ -1061,8 +1063,7 @@ void findcsmshadowvas(vector<vtxarray *> &vas, bool transparent)
 
 void findrsmshadowvas(vector<vtxarray *> &vas, bool transparent)
 {
-    if(transparent) return;
-
+    ASSERT(!transparent);
     loopv(vas)
     {
         vtxarray &v = *vas[i];
@@ -1090,7 +1091,7 @@ void findspotshadowvas(vector<vtxarray *> &vas, bool transparent)
             getshadowvabb(v, bbmin, bbmax, transparent);
             bool insidespot = bbinsidespot(shadoworigin, shadowdir, shadowspot, bbmin, bbmax);
             v.shadowmask = !smbbcull || insidespot ? 1 : 0;
-            addshadowva(&v, dist);
+            addshadowva(&v, dist, transparent);
             if(v.children.length()) findspotshadowvas(v.children, transparent);
         }
     }
@@ -1098,6 +1099,7 @@ void findspotshadowvas(vector<vtxarray *> &vas, bool transparent)
 
 void findshadowvas(bool transparent)
 {
+    shadowtransparent = 0;
     memset(vasort, 0, sizeof(vasort));
     switch(shadowmapping)
     {

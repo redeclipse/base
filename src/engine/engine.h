@@ -443,7 +443,7 @@ extern int shadowmapping;
 
 extern vec shadoworigin, shadowdir;
 extern float shadowradius, shadowbias;
-extern int shadowside, shadowspot;
+extern int shadowside, shadowspot, shadowtransparent;
 extern matrix4 shadowmatrix;
 
 extern void loaddeferredlightshaders();

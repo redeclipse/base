@@ -1601,7 +1601,8 @@ extern int smminradius;
 
 struct lightinfo
 {
-    int ent, shadowmap, flags;
+    int ent, shadowmap;
+    ushort flags, batched;
     vec o, color;
     float radius, dist;
     vec dir, spotx, spoty;
@@ -1610,16 +1611,16 @@ struct lightinfo
     occludequery *query;
 
     lightinfo() {}
-    lightinfo(const vec &o, const vec &color, float radius, int flags = 0, const vec &dir = vec(0, 0, 0), int spot = 0)
-      : ent(-1), shadowmap(-1), flags(flags),
+    lightinfo(const vec &o, const vec &color, float radius, ushort flags = 0, const vec &dir = vec(0, 0, 0), int spot = 0)
+      : ent(-1), shadowmap(-1), flags(flags), batched(~0),
         o(o), color(color), radius(radius), dist(camera1->o.dist(o)),
         dir(dir), spot(spot), query(NULL)
     {
         if(spot > 0) calcspot();
         calcscissor();
     }
-    lightinfo(int i, const vec &o, const vec &color, float radius, int flags = 0, const vec &dir = vec(0, 0, 0), int spot = 0)
-      : ent(i), shadowmap(-1), flags(flags),
+    lightinfo(int i, const vec &o, const vec &color, float radius, ushort flags = 0, const vec &dir = vec(0, 0, 0), int spot = 0)
+      : ent(i), shadowmap(-1), flags(flags), batched(~0),
         o(o), color(color), radius(radius), dist(camera1->o.dist(o)),
         dir(dir), spot(spot), query(NULL)
     {
@@ -1888,7 +1889,7 @@ VARF(IDF_PERSIST, smfilter, 0, 2, 3, { cleardeferredlightshaders(); cleanupshado
 VARF(IDF_PERSIST, smgather, 0, 0, 1, { cleardeferredlightshaders(); cleanupshadowatlas(); cleanupvolumetric(); });
 VAR(0, smnoshadow, 0, 0, 1);
 VAR(0, smdynshadow, 0, 1, 1);
-VARF(IDF_PERSIST, smalpha, 0, 1, 2, { cleardeferredlightshaders(); cleanupshadowatlas(); });
+VARF(IDF_PERSIST, smalpha, 0, 2, 2, { cleardeferredlightshaders(); cleanupshadowatlas(); });
 VARF(0, smalphacolorprec, 0, 0, 1, cleanupshadowatlas());
 VAR(0, lightpassesused, 1, 0, 0);
 VAR(0, lightsvisible, 1, 0, 0);
@@ -1950,7 +1951,8 @@ enum
 {
     BF_SPOTLIGHT = 1<<0,
     BF_NOSHADOW  = 1<<1,
-    BF_NOSUN     = 1<<2
+    BF_SMALPHA   = 1<<2,
+    BF_NOSUN     = 1<<3
 };
 
 struct lightbatchkey
@@ -2045,6 +2047,7 @@ struct cascadedshadowmap
     matrix4 model;                // model view is shared by all splits
     splitinfo splits[CSM_MAXSPLITS]; // per-split parameters
     vec lightview;                  // view vector for light
+    int rendered;
     void setup();                   // insert shadowmaps for each split frustum if there is sunlight
     void updatesplitdist();         // compute split frustum distances
     void getmodelmatrix();          // compute the shared model matrix
@@ -2624,7 +2627,7 @@ Shader *loaddeferredlightshader(const char *type = NULL)
     common[commonlen] = '\0';
 
     shadow[shadowlen++] = 'p';
-    if(smalpha >= 2) shadow[shadowlen++] = 'P';
+    if(smalpha > 1) shadow[shadowlen++] = 'P';
     shadow[shadowlen] = '\0';
 
     int usecsm = 0, userh = 0;
@@ -2947,8 +2950,7 @@ static inline void setlightglobals(bool transparent = false)
         GLOBALPARAMF(lightscale, curambient.x*lightscale*curambientscale, curambient.y*lightscale*curambientscale, curambient.z*lightscale*curambientscale, 255*lightscale);
     }
 
-    bvec pie = getpielight();
-    if(!pie.iszero() && csmshadowmap)
+    if(csm.rendered)
     {
         csm.bindparams();
         rh.bindparams();
@@ -2961,6 +2963,7 @@ static inline void setlightglobals(bool transparent = false)
         }
         else
         {
+            bvec pie = getpielight();
             bvec piesky = getskylight();
             vec piedir = getpielightdir();
             float piescale = getpielightscale(), pieskyscale = getskylightscale();
@@ -3011,9 +3014,10 @@ static inline void setlightparams(int i, const lightinfo &l)
     }
 }
 
-static inline void setlightshader(Shader *s, int n, bool baselight, bool shadowmap, bool spotlight, bool transparent = false, bool avatar = false)
+static inline void setlightshader(Shader *s, int n, bool baselight, bool shadowmap, bool spotlight, bool transparent = false, bool colorshadow = false, bool avatar = false)
 {
-    s->setvariant(n-1, (shadowmap ? 1 : 0) + (baselight ? 0 : 2) + (spotlight ? 4 : 0) + (transparent ? 8 : 0) + (avatar ? 24 : 0));
+    int variant = (shadowmap ? 1 : 0) + (baselight ? 0 : 2) + (spotlight ? 4 : 0) + (transparent ? 8 : (avatar ? 24 : (colorshadow ? 16 : 0)));
+    s->setvariant(n - (variant&7 ? 1 : 0), variant);
     lightpos.setv(lightposv, n);
     lightcolor.setv(lightcolorv, n);
     if(spotlight) spotparams.setv(spotparamsv, n);
@@ -3035,7 +3039,7 @@ static void rendersunpass(Shader *s, int stencilref, bool transparent, float bsx
 
     int tx1 = max(int(floor((bsx1*0.5f+0.5f)*vieww)), 0), ty1 = max(int(floor((bsy1*0.5f+0.5f)*viewh)), 0),
         tx2 = min(int(ceil((bsx2*0.5f+0.5f)*vieww)), vieww), ty2 = min(int(ceil((bsy2*0.5f+0.5f)*viewh)), viewh);
-    s->setvariant(transparent ? 0 : -1, 16);
+    s->setvariant(0, transparent ? 8 : (csm.rendered > 1 ? 16 : 0));
     lightquad(-1, (tx1*2.0f)/vieww-1.0f, (ty1*2.0f)/viewh-1.0f, (tx2*2.0f)/vieww-1.0f, (ty2*2.0f)/viewh-1.0f, tilemask);
     lightpassesused++;
 
@@ -3043,7 +3047,7 @@ static void rendersunpass(Shader *s, int stencilref, bool transparent, float bsx
     {
         setavatarstencil(stencilref, true);
 
-        s->setvariant(0, 17);
+        s->setvariant(0, 24);
         lightquad(-1, (tx1*2.0f)/vieww-1.0f, (ty1*2.0f)/viewh-1.0f, (tx2*2.0f)/vieww-1.0f, (ty2*2.0f)/viewh-1.0f, tilemask);
         lightpassesused++;
 
@@ -3075,7 +3079,7 @@ static void renderlightsnobatch(Shader *s, int stencilref, bool transparent, flo
             GLOBALPARAM(lightmatrix, lightmatrix);
 
             setlightparams(0, l);
-            setlightshader(s, 1, false, l.shadowmap >= 0, l.spot > 0, transparent, avatarpass > 0);
+            setlightshader(s, 1, false, l.shadowmap >= 0, l.spot > 0, transparent, (l.flags & L_SMALPHA) != 0, avatarpass > 0);
 
             int tx1 = int(floor((sx1*0.5f+0.5f)*vieww)), ty1 = int(floor((sy1*0.5f+0.5f)*viewh)),
                 tx2 = int(ceil((sx2*0.5f+0.5f)*vieww)), ty2 = int(ceil((sy2*0.5f+0.5f)*viewh));
@@ -3119,9 +3123,8 @@ static void renderlightsnobatch(Shader *s, int stencilref, bool transparent, flo
     lightsphere::disable();
 }
 
-static void renderlightbatches(Shader *s, int stencilref, bool transparent, float bsx1, float bsy1, float bsx2, float bsy2, const uint *tilemask)
+static void renderlightbatches(Shader *s, int stencilref, bool transparent, float bsx1, float bsy1, float bsx2, float bsy2, const uint *tilemask, bool sunpass)
 {
-    bool sunpass = !getpielight().iszero() && csmshadowmap && batchsunlight <= (gi && getgiscale() && getgidist() ? 1 : 0);
     int btx1, bty1, btx2, bty2;
     calctilebounds(bsx1, bsy1, bsx2, bsy2, btx1, bty1, btx2, bty2);
     loopv(lightbatches)
@@ -3148,10 +3151,10 @@ static void renderlightbatches(Shader *s, int stencilref, bool transparent, floa
 
         if(n)
         {
-            bool shadowmap = !(batch.flags & BF_NOSHADOW), spotlight = (batch.flags & BF_SPOTLIGHT) != 0;
-            setlightshader(s, n, baselight, shadowmap, spotlight, transparent);
+            bool shadowmap = !(batch.flags & BF_NOSHADOW), spotlight = (batch.flags & BF_SPOTLIGHT) != 0, colorshadow = (batch.flags & BF_SMALPHA) != 0;
+            setlightshader(s, n, baselight, shadowmap, spotlight, transparent, colorshadow);
         }
-        else s->setvariant(transparent ? 0 : -1, 16);
+        else s->setvariant(0, transparent ? 8 : 0);
 
         lightpassesused++;
 
@@ -3198,8 +3201,8 @@ static void renderlightbatches(Shader *s, int stencilref, bool transparent, floa
                 if(sx1 >= sx2 || sy1 >= sy2 || sz1 >= sz2) continue;
             }
 
-            if(n) setlightshader(s, n, baselight, shadowmap, spotlight, false, true);
-            else s->setvariant(0, 17);
+            if(n) setlightshader(s, n, baselight, shadowmap, spotlight, false, false, true);
+            else s->setvariant(0, 24);
 
             if(hasDBT && depthtestlights > 1) glDepthBounds_(sz1*0.5f + 0.5f, min(sz2*0.5f + 0.5f, depthtestlightsclamp));
             lightquad(sz1, sx1, sy1, sx2, sy2, tilemask);
@@ -3267,7 +3270,7 @@ void renderlights(float bsx1 = -1, float bsy1 = -1, float bsx2 = 1, float bsy2 =
 
     if(hasDBT && depthtestlights > 1) glEnable(GL_DEPTH_BOUNDS_TEST_EXT);
 
-    bool sunpass = !lighttilebatch || drawtex == DRAWTEX_MINIMAP || (!getpielight().iszero() && csmshadowmap && batchsunlight <= (gi && getgiscale() && getgidist() ? 1 : 0));
+    bool sunpass = !lighttilebatch || drawtex == DRAWTEX_MINIMAP || (csm.rendered && (csm.rendered > 1 || batchsunlight <= (gi && getgiscale() && getgidist() ? 1 : 0)));
     if(sunpass)
     {
         if(depthtestlights && depth) { glDisable(GL_DEPTH_TEST); depth = false; }
@@ -3282,7 +3285,7 @@ void renderlights(float bsx1 = -1, float bsy1 = -1, float bsx2 = 1, float bsy2 =
     }
     else
     {
-        renderlightbatches(s, stencilref, transparent, bsx1, bsy1, bsx2, bsy2, tilemask);
+        renderlightbatches(s, stencilref, transparent, bsx1, bsy1, bsx2, bsy2, tilemask, sunpass);
     }
 
     if(msaapass == 1 && ghasstencil)
@@ -3694,7 +3697,7 @@ struct batchrect : lightrect
     batchrect() {}
     batchrect(const lightinfo &l, ushort idx)
       : lightrect(l),
-        group((l.shadowmap < 0 ? BF_NOSHADOW : 0) | (l.spot > 0 ? BF_SPOTLIGHT : 0)),
+        group((l.shadowmap < 0 ? BF_NOSHADOW : 0) | (l.spot > 0 ? BF_SPOTLIGHT : 0) | (l.flags&L_SMALPHA ? BF_SMALPHA : 0)),
         idx(idx)
     {}
 };
@@ -3828,6 +3831,7 @@ void packlights()
                 shadowmaps[l.shadowmap].light = -1;
                 l.shadowmap = -1;
             }
+            l.batched = ~0;
             lightsoccluded++;
             continue;
         }
@@ -3851,12 +3855,11 @@ void packlights()
             else if(smcache) shadowcachefull = true;
         }
 
+        l.batched = batchrects.length();
         batchrects.add(batchrect(l, i));
     }
 
     lightsvisible = lightorder.length() - lightsoccluded;
-
-    batchlights();
 }
 
 static inline void nogiquad(int x, int y, int w, int h)
@@ -4363,7 +4366,12 @@ void renderradiancehints()
 void rendercsmshadowmaps()
 {
     if(csminoq && !debugshadowatlas && !inoq && shouldworkinoq()) return;
+
+    csm.rendered = 0;
+
     if(getpielight().iszero() || !csmshadowmap) return;
+
+    csm.rendered = 1;
 
     if(inoq)
     {
@@ -4390,6 +4398,7 @@ void rendercsmshadowmaps()
     glEnable(GL_SCISSOR_TEST);
 
     findshadowvas(smalpha!=0);
+    if(shadowtransparent) csm.rendered = 2;
     findshadowmms();
 
     shadowmaskbatchedmodels(smdynshadow!=0);
@@ -4410,7 +4419,7 @@ void rendercsmshadowmaps()
 
         rendershadowmapworld();
         rendershadowmodelbatches();
-        if(smalpha) rendershadowtransparent();
+        if(shadowtransparent) rendershadowtransparent();
     }
 
     clearbatchedmapmodels();
@@ -4524,7 +4533,25 @@ void rendershadowmaps(int offset = 0)
 
         shadowmesh *mesh = e ? findshadowmesh(l.ent, *e) : NULL;
 
-        findshadowvas(smalpha >= 2);
+        findshadowvas(smalpha > 1 && !(l.flags&L_NOSHADOW));
+        if(shadowtransparent)
+        {
+            l.flags |= L_SMALPHA;
+            if(batchrects.inrange(l.batched)) batchrects[l.batched].group |= BF_SMALPHA;
+            if(csm.rendered == 1 && lighttilebatch && batchsunlight)
+            {
+                csm.rendered = -1;
+                glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+                glClearColor(1, 1, 1, 1);
+                loopj(csmsplits) if(csm.splits[j].idx >= 0)
+                {
+                    const shadowmapinfo &sm = shadowmaps[csm.splits[j].idx];
+                    glScissor(sm.x, sm.y, sm.size, sm.size);
+                    glClear(GL_COLOR_BUFFER_BIT);
+                }
+                glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+            }
+        }
         findshadowmms();
 
         shadowmaskbatchedmodels(!(l.flags&L_NODYNSHADOW) && smdynshadow);
@@ -4571,7 +4598,7 @@ void rendershadowmaps(int offset = 0)
 
             if(mesh) rendershadowmesh(mesh); else rendershadowmapworld();
             rendershadowmodelbatches();
-            if(smalpha >= 2) rendershadowtransparent();
+            if(shadowtransparent) rendershadowtransparent();
         }
         else
         {
@@ -4603,7 +4630,7 @@ void rendershadowmaps(int offset = 0)
 
                 if(mesh) rendershadowmesh(mesh); else rendershadowmapworld();
                 rendershadowmodelbatches();
-                if(smalpha >= 2) rendershadowtransparent();
+                if(shadowtransparent) rendershadowtransparent();
             }
         }
 
@@ -4658,6 +4685,8 @@ void rendershadowatlas()
 
     // point lights
     rendershadowmaps(smoffset);
+
+    batchlights();
 
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
