@@ -1003,7 +1003,7 @@ static inline void addshadowva(vtxarray *va, float dist, bool transparent = fals
     va->rnext = cur;
     *prev = va;
 
-    if(transparent && (v.alphabacktris || v.alphafronttris || v.refracttris)) shadowtransparent |= va->shadowmask;
+    if(transparent && (va->alphabacktris || va->alphafronttris || va->refracttris)) shadowtransparent |= va->shadowmask;
 }
 
 void sortshadowvas()
