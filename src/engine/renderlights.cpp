@@ -1752,6 +1752,10 @@ bool shadowcachefull = false;
 int evictshadowcache = 0;
 Shader *smalphaworldshader = NULL;
 
+extern int usetexgather;
+static inline bool usegatherforsm() { return smfilter > 1 && smgather && hasTG && usetexgather; }
+static inline bool usesmcomparemode() { return !usegatherforsm() || (hasTG && hasGPU5 && usetexgather > 1); }
+
 void loadsmshaders()
 {
     if(smalpha && alphashadow)
@@ -1760,7 +1764,7 @@ void loadsmshaders()
         if(smfilter)
         {
             useshaderbyname("smalphaclear");
-            useshaderbyname("smalphablur");
+            useshaderbyname(usegatherforsm() ? "smalphablur2d" : "smalphablurrect");
         }
     }
 }
@@ -1784,17 +1788,13 @@ static inline void setsmcomparemode() // use embedded shadow cmp
     glTexParameteri(shadowatlastarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 }
 
-extern int usetexgather;
-static inline bool usegatherforsm() { return smfilter > 1 && smgather && hasTG && usetexgather; }
-static inline bool usesmcomparemode() { return !usegatherforsm() || (hasTG && hasGPU5 && usetexgather > 1); }
-
 VAR(0, debugshadowatlas, 0, 0, 3);
 void viewshadowatlas()
 {
     bool color = debugshadowatlas > 1 && shadowcolortex && (debugshadowatlas <= 2 || shadowfiltertex);
     int w = min(hudw, hudh)/2, h = (w*hudh)/hudw, x = hudw-w, y = hudh-h;
     float tw = 1, th = 1;
-    if(color || shadowatlastarget == GL_TEXTURE_RECTANGLE)
+    if((color && debugshadowatlas > 2) || shadowatlastarget == GL_TEXTURE_RECTANGLE)
     {
         tw = shadowatlaspacker.w;
         th = shadowatlaspacker.h;
@@ -1803,7 +1803,11 @@ void viewshadowatlas()
     }
     else hudshader->set();
     gle::colorf(1, 1, 1);
-    if(color) glBindTexture(GL_TEXTURE_RECTANGLE, debugshadowatlas > 2 ? shadowfiltertex : shadowcolortex);
+    if(color)
+    {
+        if(debugshadowatlas > 2) glBindTexture(GL_TEXTURE_RECTANGLE, shadowcolortex);
+        else glBindTexture(shadowatlastarget, shadowcolortex);
+    }
     else
     {
         glBindTexture(shadowatlastarget, shadowatlastex);
@@ -1835,7 +1839,7 @@ void setupshadowatlas()
         if(!shadowcolortex) glGenTextures(1, &shadowcolortex);
 
         GLenum colcomp = smalphaprec > 1 ? GL_RGB10 : (smalphaprec ? (hasES2 ? GL_RGB565 : GL_RGB5) : GL_R3_G3_B2);
-        createtexture(shadowcolortex, shadowatlaspacker.w, shadowatlaspacker.h, NULL, 3, 1, colcomp, GL_TEXTURE_RECTANGLE);
+        createtexture(shadowcolortex, shadowatlaspacker.w, shadowatlaspacker.h, NULL, 3, 1, colcomp, shadowatlastarget);
 
         if(!shadowblanktex) glGenTextures(1, &shadowblanktex);
         static const uchar blank[4] = {255, 255, 255, 255};
@@ -1861,7 +1865,7 @@ void setupshadowatlas()
 
     glBindFramebuffer_(GL_FRAMEBUFFER, shadowatlasfbo);
 
-    if(shadowcolortex) glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, shadowcolortex, 0);
+    if(shadowcolortex) glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, shadowatlastarget, shadowcolortex, 0);
     glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, shadowatlastarget, shadowatlastex, 0);
 
     extern int mesa_drawbuffer_bug;
@@ -4748,8 +4752,16 @@ void filtershadowcolors()
 
     if(shadowcolorblurs.length())
     {
-        glBindTexture(GL_TEXTURE_RECTANGLE, shadowcolortex);
-        SETSHADER(smalphablur);
+        if(usegatherforsm())
+        {
+            SETSHADER(smalphablur2d);
+            glBindTexture(GL_TEXTURE_2D, shadowcolortex);
+        }
+        else
+        {
+            SETSHADER(smalphablurrect);
+            glBindTexture(GL_TEXTURE_RECTANGLE, shadowcolortex);
+        }
         gle::defvertex(2);
         gle::deftexcoord0(4);
         gle::begin(GL_QUADS);
