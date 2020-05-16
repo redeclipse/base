@@ -3311,7 +3311,7 @@ void renderlights(float bsx1 = -1, float bsy1 = -1, float bsx2 = 1, float bsy2 =
 
     if(hasDBT && depthtestlights > 1) glEnable(GL_DEPTH_BOUNDS_TEST_EXT);
 
-    bool sunpass = !lighttilebatch || drawtex == DRAWTEX_MINIMAP || (csm.rendered && (csm.rendered > 1 || batchsunlight <= (gi && getgiscale() && getgidist() ? 1 : 0)));
+    bool sunpass = !lighttilebatch || drawtex == DRAWTEX_MINIMAP || (csm.rendered && batchsunlight <= (gi && getgiscale() && getgidist() ? 1 : 0));
     if(sunpass)
     {
         if(depthtestlights && depth) { glDisable(GL_DEPTH_TEST); depth = false; }
