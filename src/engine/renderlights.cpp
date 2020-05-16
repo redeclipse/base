@@ -1712,17 +1712,19 @@ struct shadowcacheval;
 
 struct shadowmapinfo
 {
-    ushort x, y, size, sidemask;
+    ushort x, y, size;
+    uchar sidemask, transparent;
     int light;
     shadowcacheval *cached;
 };
 
 struct shadowcacheval
 {
-    ushort x, y, size, sidemask;
+    ushort x, y, size;
+    uchar sidemask, transparent;
 
     shadowcacheval() {}
-    shadowcacheval(const shadowmapinfo &sm) : x(sm.x), y(sm.y), size(sm.size), sidemask(sm.sidemask) {}
+    shadowcacheval(const shadowmapinfo &sm) : x(sm.x), y(sm.y), size(sm.size), sidemask(sm.sidemask), transparent(sm.transparent) {}
 };
 
 struct shadowcache : hashtable<shadowcachekey, shadowcacheval>
@@ -1934,7 +1936,7 @@ VARN(0, lightbatches, lightbatchesused, 1, 0, 0);
 VARN(0, lightbatchrects, lightbatchrectsused, 1, 0, 0);
 VARN(0, lightbatchstacks, lightbatchstacksused, 1, 0, 0);
 
-VARF(IDF_WORLD, alphashadow, 0, 1, 1, { cleardeferredlightshaders(); cleanupshadowatlas(); });
+VARF(IDF_WORLD, alphashadow, 0, 1, 2, { cleardeferredlightshaders(); cleanupshadowatlas(); });
 
 enum
 {
@@ -2058,6 +2060,7 @@ static shadowmapinfo *addshadowmap(ushort x, ushort y, int size, int &idx, int l
     sm->size = size;
     sm->light = light;
     sm->sidemask = 0;
+    sm->transparent = 0;
     sm->cached = cached;
     return sm;
 }
@@ -3119,7 +3122,9 @@ static void renderlightsnobatch(Shader *s, int stencilref, bool transparent, flo
             GLOBALPARAM(lightmatrix, lightmatrix);
 
             setlightparams(0, l);
-            setlightshader(s, 1, false, l.shadowmap >= 0, l.spot > 0, transparent, l.colorshadow(), avatarpass > 0);
+
+            bool colorshadow = shadowmaps.inrange(l.shadowmap) && shadowmaps[l.shadowmap].transparent;
+            setlightshader(s, 1, false, l.shadowmap >= 0, l.spot > 0, transparent, colorshadow, avatarpass > 0);
 
             int tx1 = int(floor((sx1*0.5f+0.5f)*vieww)), ty1 = int(floor((sy1*0.5f+0.5f)*viewh)),
                 tx2 = int(ceil((sx2*0.5f+0.5f)*vieww)), ty2 = int(ceil((sy2*0.5f+0.5f)*viewh));
@@ -3737,7 +3742,7 @@ struct batchrect : lightrect
     batchrect() {}
     batchrect(const lightinfo &l, ushort idx)
       : lightrect(l),
-        group((l.shadowmap < 0 ? BF_NOSHADOW : 0) | (l.spot > 0 ? BF_SPOTLIGHT : 0) | (l.colorshadow() ? BF_SMALPHA : 0)),
+        group((l.shadowmap < 0 ? BF_NOSHADOW : 0) | (l.spot > 0 ? BF_SPOTLIGHT : 0)),
         idx(idx)
     {}
 };
@@ -4582,10 +4587,10 @@ void rendershadowmaps(int offset = 0)
 
         shadowmesh *mesh = e ? findshadowmesh(l.ent, *e) : NULL;
 
-        findshadowvas(smalpha > 1 && alphashadow);
+        findshadowvas(smalpha > 1 && alphashadow > (l.colorshadow() ? 0 : 1));
         if(shadowtransparent)
         {
-            l.flags |= L_SMALPHA;
+            sm.transparent = shadowtransparent;
             if(batchrects.inrange(l.batched)) batchrects[l.batched].group |= BF_SMALPHA;
         }
         findshadowmms();

@@ -904,6 +904,7 @@ namespace entities
                     if(attr[6]&(1<<LIGHT_STATIC)) addentinfo("static");
                     if(attr[6]&(1<<LIGHT_VOLUMETRIC)) addentinfo("volumetric");
                     if(attr[6]&(1<<LIGHT_NOSPEC)) addentinfo("no-specular");
+                    if(attr[6]&(1<<LIGHT_SMALPHA)) addentinfo("color-shadow");
 
                 }
                 break;
