@@ -1926,7 +1926,7 @@ VARF(IDF_PERSIST, smgather, 0, 0, 1, { cleardeferredlightshaders(); cleanupshado
 VAR(0, smnoshadow, 0, 0, 1);
 VAR(0, smdynshadow, 0, 1, 1);
 VARF(IDF_PERSIST, smalpha, 0, 2, 2, { cleardeferredlightshaders(); cleanupshadowatlas(); });
-VARF(0, smalphaprec, 0, 0, 2, cleanupshadowatlas());
+VARF(IDF_PERSIST, smalphaprec, 0, 0, 2, cleanupshadowatlas());
 VAR(0, lightpassesused, 1, 0, 0);
 VAR(0, lightsvisible, 1, 0, 0);
 VAR(0, lightsoccluded, 1, 0, 0);
