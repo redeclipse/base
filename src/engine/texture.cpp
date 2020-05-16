@@ -2262,7 +2262,7 @@ void packvslot(vector<uchar> &buf, const VSlot &src)
     if(src.changed & (1<<VSLOT_SHADOW))
     {
         buf.put(VSLOT_SHADOW);
-        putint(buf, src.shadow);
+        putfloat(buf, src.shadow);
     }
     buf.put(0xFF);
 }
@@ -2356,7 +2356,7 @@ bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta)
                 break;
             }
             case VSLOT_SHADOW:
-                dst.shadow = getint(buf);
+                dst.shadow = getfloat(buf);
                 break;
             default:
                 return false;
@@ -2639,14 +2639,14 @@ void texpalette(int *p, int *x)
 }
 COMMAND(0, texpalette, "ii");
 
-void texshadow(int *shadow)
+void texshadow(float *shadow)
 {
     if(!defslot) return;
     Slot &s = *defslot;
     s.variants->shadow = *shadow;
     propagatevslot(s.variants, 1<<VSLOT_SHADOW);
 }
-COMMAND(0, texshadow, "i");
+COMMAND(0, texshadow, "f");
 
 void texrefract(float *k, float *r, float *g, float *b)
 {

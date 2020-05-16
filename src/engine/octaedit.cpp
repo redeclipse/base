@@ -2625,16 +2625,16 @@ ICOMMAND(0, getvpalette, "i", (int *tex),
     result(str);
 });
 
-void vshadow(int *shadow)
+void vshadow(float *shadow)
 {
     if(noedit()) return;
     VSlot ds;
     ds.changed = 1<<VSLOT_SHADOW;
-    ds.shadow = *shadow != 0;
+    ds.shadow = *shadow;
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
-COMMAND(0, vshadow, "i");
-ICOMMAND(0, getvshadow, "i", (int *tex), intret(lookupvslot(*tex, false).shadow ? 1 : 0));
+COMMAND(0, vshadow, "f");
+ICOMMAND(0, getvshadow, "f", (float *tex), intret(lookupvslot(*tex, false).shadow));
 
 void vrefract(float *k, float *r, float *g, float *b)
 {
