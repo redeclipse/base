@@ -1934,7 +1934,7 @@ VARN(0, lightbatches, lightbatchesused, 1, 0, 0);
 VARN(0, lightbatchrects, lightbatchrectsused, 1, 0, 0);
 VARN(0, lightbatchstacks, lightbatchstacksused, 1, 0, 0);
 
-VARF(IDF_WORLD, alphashadow, 0, 1, 1, { cleardeferredlightshaders(); cleanupshadowatlas()); });
+VARF(IDF_WORLD, alphashadow, 0, 1, 1, { cleardeferredlightshaders(); cleanupshadowatlas(); });
 
 enum
 {

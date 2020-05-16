@@ -1629,7 +1629,8 @@ static void changeslottmus(renderstate &cur, int pass, Slot &slot, VSlot &vslot)
         }
     }
 
-    GLOBALPARAM(rotate, vec(vslot.angle.z, (vslot.angle.y*diffuse->h)/diffuse->w, -(vslot.angle.y*diffuse->w)/diffuse->h));
+    if(!cur.vslot || vslot.angle.x != cur.vslot->angle.x)
+        GLOBALPARAM(rotate, vec(vslot.angle.z, (vslot.angle.y*diffuse->h)/diffuse->w, -(vslot.angle.y*diffuse->w)/diffuse->h));
 
     if(cur.tmu != 0)
     {
@@ -1650,8 +1651,7 @@ static void changetexgen(renderstate &cur, int orient, Slot &slot, VSlot &vslot)
         if(!cur.texgenvslot || slot.sts.empty() ||
             (curtex->xs != tex->xs || curtex->ys != tex->ys ||
              cur.texgenvslot->rotation != vslot.rotation || cur.texgenvslot->scale != vslot.scale ||
-             cur.texgenvslot->offset != vslot.offset || cur.texgenvslot->scroll != vslot.scroll) ||
-             cur.texgenvslot->angle != vslot.angle)
+             cur.texgenvslot->offset != vslot.offset || cur.texgenvslot->scroll != vslot.scroll))
         {
             const texrotation &r = texrotations[vslot.rotation];
             float xs = r.flipx ? -tex->xs : tex->xs,
