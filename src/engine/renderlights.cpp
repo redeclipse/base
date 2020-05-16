@@ -3080,7 +3080,7 @@ static void rendersunpass(Shader *s, int stencilref, bool transparent, float bsx
 
     int tx1 = max(int(floor((bsx1*0.5f+0.5f)*vieww)), 0), ty1 = max(int(floor((bsy1*0.5f+0.5f)*viewh)), 0),
         tx2 = min(int(ceil((bsx2*0.5f+0.5f)*vieww)), vieww), ty2 = min(int(ceil((bsy2*0.5f+0.5f)*viewh)), viewh);
-    s->setvariant(0, transparent ? 8 : (csm.rendered > 1 ? 16 : 0));
+    s->setvariant(0, transparent ? 8 : 0);
     lightquad(-1, (tx1*2.0f)/vieww-1.0f, (ty1*2.0f)/viewh-1.0f, (tx2*2.0f)/vieww-1.0f, (ty2*2.0f)/viewh-1.0f, tilemask);
     lightpassesused++;
 
