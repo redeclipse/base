@@ -625,7 +625,6 @@ struct vacollect : verthash
                     va->dyntexs++;
                     if(k.alpha) va->dynalphatexs++;
                 }
-
                 Slot &slot = *vslot.slot;
                 loopvj(slot.sts) va->texmask |= 1<<slot.sts[j].type;
                 if(slot.shader && slot.shader->type&SHADER_ENVMAP) va->texmask |= 1<<TEX_ENVMAP;

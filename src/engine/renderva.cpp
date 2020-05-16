@@ -1076,9 +1076,8 @@ void findcsmshadowvas(vector<vtxarray *> &vas, bool transparent)
     }
 }
 
-void findrsmshadowvas(vector<vtxarray *> &vas, bool transparent)
+void findrsmshadowvas(vector<vtxarray *> &vas)
 {
-    ASSERT(!transparent);
     loopv(vas)
     {
         vtxarray &v = *vas[i];
@@ -1089,7 +1088,7 @@ void findrsmshadowvas(vector<vtxarray *> &vas, bool transparent)
         {
             float dist = shadowdir.project_bb(bbmin, bbmax) - shadowbias;
             addshadowva(&v, dist);
-            if(v.children.length()) findrsmshadowvas(v.children, transparent);
+            if(v.children.length()) findrsmshadowvas(v.children);
         }
     }
 }
@@ -1127,7 +1126,7 @@ void findshadowvas(bool transparent)
     memset(vasort, 0, sizeof(vasort));
     switch(shadowmapping)
     {
-        case SM_REFLECT: findrsmshadowvas(varoot, transparent); break;
+        case SM_REFLECT: findrsmshadowvas(varoot); break;
         case SM_CUBEMAP: findshadowvas(varoot, transparent); break;
         case SM_CASCADE: findcsmshadowvas(varoot, transparent); break;
         case SM_SPOT: findspotshadowvas(varoot, transparent); break;
@@ -1186,7 +1185,7 @@ void rendershadowmapworld()
 
 static octaentities *shadowmms = NULL;
 
-void findshadowmms(bool transparent)
+void findshadowmms()
 {
     shadowmms = NULL;
     octaentities **lastmms = &shadowmms;
@@ -1306,7 +1305,7 @@ enum
     RENDERPASS_Z,
     RENDERPASS_CAUSTICS,
     RENDERPASS_GBUFFER_BLEND,
-    RENDERPASS_SM_TRANSP,
+    RENDERPASS_SMALPHA,
     RENDERPASS_RSM,
     RENDERPASS_RSM_BLEND
 };
@@ -1465,7 +1464,7 @@ static void changevbuf(renderstate &cur, int pass, vtxarray *va)
     vertex *vdata = (vertex *)0;
     gle::vertexpointer(sizeof(vertex), vdata->pos.v);
 
-    if(pass==RENDERPASS_GBUFFER || pass==RENDERPASS_RSM || pass==RENDERPASS_SM_TRANSP)
+    if(pass==RENDERPASS_GBUFFER || pass==RENDERPASS_RSM || pass==RENDERPASS_SMALPHA)
     {
         gle::normalpointer(sizeof(vertex), vdata->norm.v, GL_BYTE);
         gle::texcoord0pointer(sizeof(vertex), vdata->tc.v);
@@ -1492,7 +1491,6 @@ static void changebatchtmus(renderstate &cur, int pass, geombatch &b)
         {
             cur.blend = true;
             cur.vslot = NULL;
-
         }
         if((cur.blendx != (b.va->o.x&~0xFFF) || cur.blendy != (b.va->o.y&~0xFFF)))
         {
@@ -1537,7 +1535,7 @@ static void changeslottmus(renderstate &cur, int pass, Slot &slot, VSlot &vslot)
 {
     Texture *diffuse = blankgeom ? blanktexture : (!slot.sts.empty() ? slot.sts[0].t : notexture);
 
-    if(pass==RENDERPASS_GBUFFER || pass==RENDERPASS_RSM || pass==RENDERPASS_SM_TRANSP)
+    if(pass==RENDERPASS_GBUFFER || pass==RENDERPASS_RSM || pass==RENDERPASS_SMALPHA)
     {
         bindslottex(cur, TEX_DIFFUSE, diffuse);
 
@@ -1570,7 +1568,7 @@ static void changeslottmus(renderstate &cur, int pass, Slot &slot, VSlot &vslot)
         {
         changecolorparams:
             cur.colorscale = colorscale;
-            if(pass == RENDERPASS_SM_TRANSP)
+            if(pass == RENDERPASS_SMALPHA)
                 GLOBALPARAMF(colorparams, colorscale.x, colorscale.y, colorscale.z, alpha);
             else
                 GLOBALPARAMF(colorparams, alpha*colorscale.x, alpha*colorscale.y, alpha*colorscale.z, alpha);
@@ -1677,7 +1675,7 @@ static inline void changeshader(renderstate &cur, int pass, geombatch &b)
 {
     VSlot &vslot = b.vslot;
     Slot &slot = *vslot.slot;
-    if(pass == RENDERPASS_SM_TRANSP)
+    if(pass == RENDERPASS_SMALPHA)
     {
         extern Shader *smalphaworldshader;
         if(slot.texmask&(1<<TEX_ALPHA)) smalphaworldshader->setvariant(0, slot.texmask&(1<<TEX_NORMAL) ? 1 : 0, slot, vslot);
@@ -1750,7 +1748,7 @@ static void renderbatches(renderstate &cur, int pass)
         if(cur.shadowing && !b.vslot.shadow) continue;
 
         if(cur.vbuf != b.va->vbuf) changevbuf(cur, pass, b.va);
-        if(pass == RENDERPASS_GBUFFER || pass == RENDERPASS_RSM || pass == RENDERPASS_SM_TRANSP)
+        if(pass == RENDERPASS_GBUFFER || pass == RENDERPASS_RSM || pass == RENDERPASS_SMALPHA)
             changebatchtmus(cur, pass, b);
         if(cur.vslot != &b.vslot)
         {
@@ -1848,7 +1846,7 @@ void renderva(renderstate &cur, vtxarray *va, int pass = RENDERPASS_GBUFFER, boo
             if(doquery) endvaquery(va, );
             break;
 
-        case RENDERPASS_SM_TRANSP:
+        case RENDERPASS_SMALPHA:
             mergetexs(cur, va);
             if(!batchgeom && geombatches.length()) renderbatches(cur, pass);
             break;
@@ -1968,7 +1966,6 @@ void rendergeom()
 
             blends += va->blends;
             renderva(cur, va, RENDERPASS_GBUFFER);
-
         }
         if(geombatches.length()) renderbatches(cur, RENDERPASS_GBUFFER);
     }
@@ -2025,12 +2022,10 @@ void rendergeom()
     }
 }
 
-extern int smalpha;
-
 int dynamicshadowvas()
 {
     int vis = 0;
-    if(smalpha >= 2) for(vtxarray *va = shadowva; va; va = va->rnext) if(va->dynalphatexs) vis |= va->shadowtransparent;
+    for(vtxarray *va = shadowva; va; va = va->rnext) if(va->dynalphatexs) vis |= va->shadowtransparent;
     return vis;
 }
 
@@ -2234,16 +2229,16 @@ void renderalphashadow()
     cur.alphaing = 1;
     for(vtxarray *va = shadowva; va; va = va->rnext)
         if(va->shadowtransparent&(1<<shadowside) && va->alphabacktris)
-            renderva(cur, va, RENDERPASS_SM_TRANSP);
-    if(geombatches.length()) renderbatches(cur, RENDERPASS_SM_TRANSP);
+            renderva(cur, va, RENDERPASS_SMALPHA);
+    if(geombatches.length()) renderbatches(cur, RENDERPASS_SMALPHA);
 
     glCullFace(cullside ? GL_BACK : GL_FRONT);
 
     cur.alphaing = 2;
     for(vtxarray *va = shadowva; va; va = va->rnext)
         if(va->shadowtransparent&(1<<shadowside) && (va->alphafronttris || va->refracttris))
-            renderva(cur, va, RENDERPASS_SM_TRANSP);
-    if(geombatches.length()) renderbatches(cur, RENDERPASS_SM_TRANSP);
+            renderva(cur, va, RENDERPASS_SMALPHA);
+    if(geombatches.length()) renderbatches(cur, RENDERPASS_SMALPHA);
 
     glCullFace(GL_BACK);
 

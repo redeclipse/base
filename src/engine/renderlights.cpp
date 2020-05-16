@@ -1638,6 +1638,7 @@ struct lightinfo
     bool noshadow() const { return flags&L_NOSHADOW || radius <= smminradius; }
     bool nospec() const { return (flags&L_NOSPEC) != 0; }
     bool volumetric() const { return (flags&L_VOLUMETRIC) != 0; }
+    bool colorshadow() const { return (flags&L_SMALPHA) != 0; }
 
     void addscissor(float &dx1, float &dy1, float &dx2, float &dy2) const
     {
@@ -1738,7 +1739,8 @@ extern int smcache, smfilter, smgather, smalpha, smalphaprec;
 
 #define SHADOWCACHE_EVICT 2
 
-GLuint shadowatlastex = 0, shadowcolortex = 0, shadowblanktex = 0, shadowatlasfbo = 0;
+GLuint shadowatlastex = 0, shadowatlasfbo = 0;
+GLuint shadowcolortex = 0, shadowblanktex = 0;
 GLuint shadowfiltertex = 0, shadowfilterfbo = 0;
 GLenum shadowatlastarget = GL_NONE;
 vector<uint> shadowcolorclears, shadowcolorblurs;
@@ -2960,7 +2962,6 @@ static void bindlighttexs(int msaapass = 0, bool transparent = false)
         glBindTexture(GL_TEXTURE_RECTANGLE, csm.rendered > 1 ? (smfilter ? shadowfiltertex : shadowcolortex) : shadowblanktex);
         glActiveTexture_(GL_TEXTURE11);
         glBindTexture(GL_TEXTURE_RECTANGLE, smfilter ? shadowfiltertex : shadowcolortex);
-
     }
     glActiveTexture_(GL_TEXTURE0);
 }
@@ -3120,7 +3121,7 @@ static void renderlightsnobatch(Shader *s, int stencilref, bool transparent, flo
             GLOBALPARAM(lightmatrix, lightmatrix);
 
             setlightparams(0, l);
-            setlightshader(s, 1, false, l.shadowmap >= 0, l.spot > 0, transparent, (l.flags & L_SMALPHA) != 0, avatarpass > 0);
+            setlightshader(s, 1, false, l.shadowmap >= 0, l.spot > 0, transparent, l.colorshadow(), avatarpass > 0);
 
             int tx1 = int(floor((sx1*0.5f+0.5f)*vieww)), ty1 = int(floor((sy1*0.5f+0.5f)*viewh)),
                 tx2 = int(ceil((sx2*0.5f+0.5f)*vieww)), ty2 = int(ceil((sy2*0.5f+0.5f)*viewh));
@@ -3738,7 +3739,7 @@ struct batchrect : lightrect
     batchrect() {}
     batchrect(const lightinfo &l, ushort idx)
       : lightrect(l),
-        group((l.shadowmap < 0 ? BF_NOSHADOW : 0) | (l.spot > 0 ? BF_SPOTLIGHT : 0) | (l.flags&L_SMALPHA ? BF_SMALPHA : 0)),
+        group((l.shadowmap < 0 ? BF_NOSHADOW : 0) | (l.spot > 0 ? BF_SPOTLIGHT : 0) | (l.colorshadow() ? BF_SMALPHA : 0)),
         idx(idx)
     {}
 };
@@ -4314,25 +4315,6 @@ void radiancehints::renderslices()
     if(rhrect) glDisable(GL_SCISSOR_TEST);
 }
 
-void rendershadowtransparent()
-{
-    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-    glClearColor(1, 1, 1, 1);
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    glDepthMask(GL_FALSE);
-
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_ZERO, GL_SRC_COLOR);
-
-    renderalphashadow();
-
-    glDisable(GL_BLEND);
-    glDepthMask(GL_TRUE);
-
-    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-}
-
 void renderradiancehints()
 {
     if(rhinoq && !inoq && shouldworkinoq()) return;
@@ -4402,6 +4384,25 @@ void renderradiancehints()
 
     endtimer(rhtimer);
     endtimer(rhcputimer);
+}
+
+void rendershadowtransparent()
+{
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+    glClearColor(1, 1, 1, 1);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glDepthMask(GL_FALSE);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ZERO, GL_SRC_COLOR);
+
+    renderalphashadow();
+
+    glDisable(GL_BLEND);
+    glDepthMask(GL_TRUE);
+
+    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 }
 
 void rendercsmshadowmaps()
@@ -4583,7 +4584,7 @@ void rendershadowmaps(int offset = 0)
 
         shadowmesh *mesh = e ? findshadowmesh(l.ent, *e) : NULL;
 
-        findshadowvas(smalpha > 1 && !(l.flags&L_NOSHADOW) && alphashadow);
+        findshadowvas(smalpha > 1 && alphashadow);
         if(shadowtransparent)
         {
             l.flags |= L_SMALPHA;
