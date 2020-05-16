@@ -1248,6 +1248,7 @@ struct renderstate
     bool vattribs, vquery;
     vec colorscale;
     float alphascale;
+    float shadowopacity;
     float refractscale;
     vec refractcolor;
     bool blend;
@@ -1259,7 +1260,7 @@ struct renderstate
     vec2 texgenscroll;
     int texgenorient, texgenmillis;
 
-    renderstate() : colormask(true), depthmask(true), alphaing(0), shadowing(false), vbuf(0), vattribs(false), vquery(false), colorscale(1, 1, 1), alphascale(0), refractscale(0), refractcolor(1, 1, 1), blend(false), blendx(-1), blendy(-1), globals(-1), tmu(-1), slot(NULL), texgenslot(NULL), vslot(NULL), texgenvslot(NULL), texgenscroll(0, 0), texgenorient(-1), texgenmillis(lastmillis)
+    renderstate() : colormask(true), depthmask(true), alphaing(0), shadowing(false), vbuf(0), vattribs(false), vquery(false), colorscale(1, 1, 1), alphascale(0), shadowopacity(-1), refractscale(0), refractcolor(1, 1, 1), blend(false), blendx(-1), blendy(-1), globals(-1), tmu(-1), slot(NULL), texgenslot(NULL), vslot(NULL), texgenvslot(NULL), texgenscroll(0, 0), texgenorient(-1), texgenmillis(lastmillis)
     {
         loopk(7) textures[k] = 0;
     }
@@ -1579,6 +1580,11 @@ static void changeslottmus(renderstate &cur, int pass, Slot &slot, VSlot &vslot)
             float refractscale = 0.5f/ldrscale*(1-alpha);
             GLOBALPARAMF(refractparams, vslot.refractcolor.x*refractscale, vslot.refractcolor.y*refractscale, vslot.refractcolor.z*refractscale, vslot.refractscale*viewh);
         }
+        if(cur.shadowopacity != vslot.shadow)
+        {
+            cur.shadowopacity = vslot.shadow;
+            GLOBALPARAMF(shadowopacity, vslot.shadow);
+        }
     }
     else if(cur.colorscale != colorscale)
     {
@@ -1744,7 +1750,7 @@ static void renderbatches(renderstate &cur, int pass)
         geombatch &b = geombatches[curbatch];
         curbatch = b.next;
 
-        if(cur.shadowing && !b.vslot.shadow) continue;
+        if(cur.shadowing && b.vslot.shadow < 0) continue;
 
         if(cur.vbuf != b.va->vbuf) changevbuf(cur, pass, b.va);
         if(pass == RENDERPASS_GBUFFER || pass == RENDERPASS_RSM || pass == RENDERPASS_SMALPHA)

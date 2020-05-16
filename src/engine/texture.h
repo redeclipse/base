@@ -668,8 +668,7 @@ struct VSlot
     ivec2 offset;
     vec2 scroll;
     int layer, detail, palette, palindex;
-    bool shadow;
-    float alphafront, alphaback;
+    float shadow, alphafront, alphaback;
     vec colorscale, colorscalealt;
     vec glowcolor;
     float coastscale;
@@ -678,7 +677,7 @@ struct VSlot
 
     Texture *loadthumbnail();
 
-    VSlot(Slot *slot = NULL, int index = -1) : slot(slot), next(NULL), index(index), changed(0), palette(0), palindex(0), shadow(true)
+    VSlot(Slot *slot = NULL, int index = -1) : slot(slot), next(NULL), index(index), changed(0), palette(0), palindex(0), shadow(0)
     {
         reset();
         if(slot) addvariant(slot);
