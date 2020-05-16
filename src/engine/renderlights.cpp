@@ -3742,7 +3742,7 @@ struct batchrect : lightrect
     batchrect() {}
     batchrect(const lightinfo &l, ushort idx)
       : lightrect(l),
-        group((l.shadowmap < 0 ? BF_NOSHADOW : 0) | (l.spot > 0 ? BF_SPOTLIGHT : 0)),
+        group((l.shadowmap < 0 ? BF_NOSHADOW : (shadowmaps[l.shadowmap].transparent ? BF_SMALPHA : 0)) | (l.spot > 0 ? BF_SPOTLIGHT : 0)),
         idx(idx)
     {}
 };
