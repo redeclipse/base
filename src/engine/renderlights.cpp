@@ -1735,7 +1735,7 @@ struct shadowcache : hashtable<shadowcachekey, shadowcacheval>
     }
 };
 
-extern int smcache, smfilter, smgather, smalpha, smalphaprec;
+extern int smcache, smfilter, smgather, smalpha, smalphaprec, alphashadow;
 
 #define SHADOWCACHE_EVICT 2
 
@@ -1752,7 +1752,7 @@ Shader *smalphaworldshader = NULL;
 
 void loadsmshaders()
 {
-    if(smalpha)
+    if(smalpha && alphashadow)
     {
         smalphaworldshader = useshaderbyname("smalphaworld");
         if(smfilter)
@@ -1828,7 +1828,7 @@ void setupshadowatlas()
     glTexParameteri(shadowatlastarget, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
 
     smalign = 0;
-    if(smalpha)
+    if(smalpha && alphashadow)
     {
         if(!shadowcolortex) glGenTextures(1, &shadowcolortex);
 
@@ -1859,11 +1859,11 @@ void setupshadowatlas()
 
     glBindFramebuffer_(GL_FRAMEBUFFER, shadowatlasfbo);
 
-    if(smalpha) glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, shadowcolortex, 0);
+    if(shadowcolortex) glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, shadowcolortex, 0);
     glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, shadowatlastarget, shadowatlastex, 0);
 
     extern int mesa_drawbuffer_bug;
-    if(!smalpha && (!mesa_drawbuffer_bug || !hasES2)) glDrawBuffer(GL_NONE);
+    if(!shadowcolortex && (!mesa_drawbuffer_bug || !hasES2)) glDrawBuffer(GL_NONE);
     glReadBuffer(GL_NONE);
 
     if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -1934,7 +1934,7 @@ VARN(0, lightbatches, lightbatchesused, 1, 0, 0);
 VARN(0, lightbatchrects, lightbatchrectsused, 1, 0, 0);
 VARN(0, lightbatchstacks, lightbatchstacksused, 1, 0, 0);
 
-VARF(IDF_WORLD, alphashadow, 0, 1, 1, cleanupshadowatlas());
+VARF(IDF_WORLD, alphashadow, 0, 1, 1, { cleardeferredlightshaders(); cleanupshadowatlas()); });
 
 enum
 {
@@ -2665,7 +2665,7 @@ Shader *loaddeferredlightshader(const char *type = NULL)
     common[commonlen] = '\0';
 
     shadow[shadowlen++] = 'p';
-    if(smalpha > 1) shadow[shadowlen++] = 'P';
+    if(smalpha > 1 && alphashadow) shadow[shadowlen++] = 'P';
     shadow[shadowlen] = '\0';
 
     int usecsm = 0, userh = 0;
@@ -2673,7 +2673,7 @@ Shader *loaddeferredlightshader(const char *type = NULL)
     {
         usecsm = csmsplits;
         sun[sunlen++] = 'c';
-        if(smalpha) sun[sunlen++] = 'C';
+        if(smalpha && alphashadow) sun[sunlen++] = 'C';
         sun[sunlen++] = '0' + csmsplits;
         if(!minimap)
         {
@@ -2954,7 +2954,7 @@ static void bindlighttexs(int msaapass = 0, bool transparent = false)
         glActiveTexture_(GL_TEXTURE6 + i);
         glBindTexture(GL_TEXTURE_3D, rhtex[i]);
     }
-    if(smalpha)
+    if(smalpha && alphashadow)
     {
         glActiveTexture_(GL_TEXTURE10);
         glBindTexture(GL_TEXTURE_RECTANGLE, csm.rendered > 1 ? (smfilter ? shadowfiltertex : shadowcolortex) : shadowblanktex);
@@ -4437,7 +4437,7 @@ void rendercsmshadowmaps()
 
     glEnable(GL_SCISSOR_TEST);
 
-    findshadowvas(smalpha!=0 && alphashadow);
+    findshadowvas(smalpha && alphashadow);
     if(shadowtransparent) csm.rendered = 2;
     findshadowmms();
 
@@ -4784,7 +4784,7 @@ void rendershadowatlas()
     {
         // clean up the atlas to make it more readable in debug view
         glClearDepth(0);
-        if(smalpha)
+        if(shadowcolortex)
         {
             glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
             glClearColor(0, 0, 0, 0);
