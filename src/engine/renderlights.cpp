@@ -1738,7 +1738,7 @@ extern int smcache, smfilter, smgather, smalpha, smalphaprec;
 
 #define SHADOWCACHE_EVICT 2
 
-GLuint shadowatlastex = 0, shadowcolortex = 0, shadowatlasfbo = 0;
+GLuint shadowatlastex = 0, shadowcolortex = 0, shadowblanktex = 0, shadowatlasfbo = 0;
 GLuint shadowfiltertex = 0, shadowfilterfbo = 0;
 GLenum shadowatlastarget = GL_NONE;
 vector<uint> shadowcolorclears, shadowcolorblurs;
@@ -1835,6 +1835,10 @@ void setupshadowatlas()
         GLenum colcomp = smalphaprec > 1 ? GL_RGB10 : (smalphaprec ? GL_RGB5 : GL_R3_G3_B2);
         createtexture(shadowcolortex, shadowatlaspacker.w, shadowatlaspacker.h, NULL, 3, 1, colcomp, GL_TEXTURE_RECTANGLE);
 
+        if(!shadowblanktex) glGenTextures(1, &shadowblanktex);
+        static const uchar blank[4] = {255, 255, 255, 255};
+        createtexture(shadowblanktex, 1, 1, blank, 3, 1, GL_RGB, GL_TEXTURE_RECTANGLE);
+
         if(smfilter)
         {
             smalign = 1;
@@ -1874,6 +1878,7 @@ void cleanupshadowatlas()
 {
     if(shadowatlastex) { glDeleteTextures(1, &shadowatlastex); shadowatlastex = 0; }
     if(shadowcolortex) { glDeleteTextures(1, &shadowcolortex); shadowcolortex = 0; }
+    if(shadowblanktex) { glDeleteTextures(1, &shadowblanktex); shadowblanktex = 0; }
     if(shadowatlasfbo) { glDeleteFramebuffers_(1, &shadowatlasfbo); shadowatlasfbo = 0; }
     if(shadowfiltertex) { glDeleteTextures(1, &shadowfiltertex); shadowfiltertex = 0; }
     if(shadowfilterfbo) { glDeleteFramebuffers_(1, &shadowfilterfbo); shadowfilterfbo = 0; }
@@ -2952,7 +2957,10 @@ static void bindlighttexs(int msaapass = 0, bool transparent = false)
     if(smalpha)
     {
         glActiveTexture_(GL_TEXTURE10);
+        glBindTexture(GL_TEXTURE_RECTANGLE, csm.rendered > 1 ? (smfilter ? shadowfiltertex : shadowcolortex) : shadowblanktex);
+        glActiveTexture_(GL_TEXTURE11);
         glBindTexture(GL_TEXTURE_RECTANGLE, smfilter ? shadowfiltertex : shadowcolortex);
+
     }
     glActiveTexture_(GL_TEXTURE0);
 }
@@ -4580,11 +4588,6 @@ void rendershadowmaps(int offset = 0)
         {
             l.flags |= L_SMALPHA;
             if(batchrects.inrange(l.batched)) batchrects[l.batched].group |= BF_SMALPHA;
-            if(csm.rendered == 1 && lighttilebatch && batchsunlight)
-            {
-                csm.rendered = -1;
-                loopj(csmsplits) if(csm.splits[j].idx >= 0) shadowcolorclears.add(csm.splits[j].idx * 6);
-            }
         }
         findshadowmms();
 
