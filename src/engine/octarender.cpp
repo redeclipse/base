@@ -578,6 +578,9 @@ struct vacollect : verthash
         va->ebuf = 0;
         va->edata = 0;
         va->eoffset = 0;
+        va->texmask = 0;
+        va->dyntexs = 0;
+        va->dynalphatexs = 0;
         if(va->texs)
         {
             va->texelems = new elementset[va->texs];
@@ -615,19 +618,21 @@ struct vacollect : verthash
                 else if(k.alpha==ALPHA_BACK) { va->texs--; va->tris -= e.length/3; va->alphaback++; va->alphabacktris += e.length/3; }
                 else if(k.alpha==ALPHA_FRONT) { va->texs--; va->tris -= e.length/3; va->alphafront++; va->alphafronttris += e.length/3; }
                 else if(k.alpha==ALPHA_REFRACT) { va->texs--; va->tris -= e.length/3; va->refract++; va->refracttris += e.length/3; }
+
+                VSlot &vslot = lookupvslot(k.tex, false);
+                if(vslot.isdynamic())
+                {
+                    va->dyntexs++;
+                    if(k.alpha) va->dynalphatexs++;
+                }
+
+                Slot &slot = *vslot.slot;
+                loopvj(slot.sts) va->texmask |= 1<<slot.sts[j].type;
+                if(slot.shader && slot.shader->type&SHADER_ENVMAP) va->texmask |= 1<<TEX_ENVMAP;
             }
         }
 
-        va->texmask = 0;
-        va->dyntexs = 0;
-        loopi(va->texs+va->blends+va->alphaback+va->alphafront+va->refract)
-        {
-            VSlot &vslot = lookupvslot(va->texelems[i].texture, false);
-            if(vslot.isdynamic()) va->dyntexs++;
-            Slot &slot = *vslot.slot;
-            loopvj(slot.sts) va->texmask |= 1<<slot.sts[j].type;
-            if(slot.shader && slot.shader->type&SHADER_ENVMAP) va->texmask |= 1<<TEX_ENVMAP;
-        }
+        va->alphatris = va->alphabacktris + va->alphafronttris + va->refracttris;
 
         va->decalbuf = 0;
         va->decaldata = 0;
@@ -1220,7 +1225,7 @@ vtxarray *newva(const ivec &o, int size)
 
     vc.setupdata(va);
 
-    if(va->alphafronttris || va->alphabacktris || va->refracttris)
+    if(va->alphatris)
     {
         va->alphamin = ivec(vec(vc.alphamin).mul(8)).shr(3);
         va->alphamax = ivec(vec(vc.alphamax).mul(8)).add(7).shr(3);
@@ -1242,7 +1247,7 @@ vtxarray *newva(const ivec &o, int size)
     va->nogimax = vc.nogimax;
 
     wverts += va->verts;
-    wtris  += va->tris + va->blends + va->alphabacktris + va->alphafronttris + va->refracttris + va->decaltris;
+    wtris  += va->tris + va->blends + va->alphatris + va->decaltris;
     allocva++;
     valist.add(va);
 
@@ -1252,7 +1257,7 @@ vtxarray *newva(const ivec &o, int size)
 void destroyva(vtxarray *va, bool reparent)
 {
     wverts -= va->verts;
-    wtris -= va->tris + va->blends + va->alphabacktris + va->alphafronttris + va->refracttris + va->decaltris;
+    wtris -= va->tris + va->blends + va->alphatris + va->decaltris;
     allocva--;
     valist.removeobj(va);
     if(!va->parent) varoot.removeobj(va);

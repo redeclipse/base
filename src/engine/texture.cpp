@@ -730,6 +730,7 @@ GLenum compressedformat(GLenum format, int w, int h, int force = 0)
 {
     if(usetexcompress && texcompress && force >= 0 && (force || max(w, h) >= texcompress)) switch(format)
     {
+        case GL_R3_G3_B2:
         case GL_RGB5:
         case GL_RGB565:
         case GL_RGB8:
@@ -997,6 +998,7 @@ static GLenum textype(GLenum &component, GLenum &format)
             if(!format) format = GL_RG;
             break;
 
+        case GL_R3_G3_B2:
         case GL_RGB5:
         case GL_RGB565:
         case GL_RGB8:
