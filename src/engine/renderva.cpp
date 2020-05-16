@@ -2938,8 +2938,7 @@ void rendershadowmesh(shadowmesh *m)
     int draw = m->draws[shadowside];
     if(draw < 0) return;
 
-    extern Shader *smworldshader;
-    smworldshader->set();
+    SETSHADER(smworld);
 
     gle::enablevertex();
 
