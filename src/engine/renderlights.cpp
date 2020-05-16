@@ -1934,7 +1934,7 @@ VARN(0, lightbatches, lightbatchesused, 1, 0, 0);
 VARN(0, lightbatchrects, lightbatchrectsused, 1, 0, 0);
 VARN(0, lightbatchstacks, lightbatchstacksused, 1, 0, 0);
 
-VAR(IDF_WORLD, alphashadow, 0, 1, 1);
+VARF(IDF_WORLD, alphashadow, 0, 1, 1, cleanupshadowatlas());
 
 enum
 {
@@ -4650,6 +4650,7 @@ void rendershadowmaps(int offset = 0)
                     cy2 = sidemask & 0x2A ? 2 * sm.size : sm.size;
                 glScissor(sm.x + cx1, sm.y + cy1, cx2 - cx1, cy2 - cy1);
                 glClear(GL_DEPTH_BUFFER_BIT);
+                if(int clearmask = shadowtransparent&~sidemask) loop(side, 6) if(clearmask&(1<<side)) shadowcolorclears.add(i * 6 + side);
             }
             loop(side, 6) if(sidemask&(1<<side))
             {
