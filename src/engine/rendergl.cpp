@@ -978,6 +978,12 @@ void gl_checkextensions()
     }
     if(hasTG) usetexgather = hasGPU5 && !intel && !nvidia ? 2 : 1;
 
+    if(glversion >= 410 || hasext("GL_ARB_ES2_compatibility"))
+    {
+        hasES2 = true;
+        if(glversion < 410 && dbgexts) conoutf("\frUsing GL_ARB_ES2_compatibility extension.");
+    }
+
     if(glversion >= 430 || hasext("GL_ARB_ES3_compatibility"))
     {
         hasES3 = true;
@@ -2102,7 +2108,7 @@ void drawminimap()
     camera1 = oldcamera;
     drawtex = 0;
 
-    createtexture(minimaptex, size, size, NULL, 3, 1, GL_RGB5, GL_TEXTURE_2D);
+    createtexture(minimaptex, size, size, NULL, 3, 1, hasES2 ? GL_RGB565 : GL_RGB5, GL_TEXTURE_2D);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
     GLfloat border[4] = { minimapcolour.x/255.0f, minimapcolour.y/255.0f, minimapcolour.z/255.0f, 1.0f };

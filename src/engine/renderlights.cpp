@@ -1832,7 +1832,7 @@ void setupshadowatlas()
     {
         if(!shadowcolortex) glGenTextures(1, &shadowcolortex);
 
-        GLenum colcomp = smalphaprec > 1 ? GL_RGB10 : (smalphaprec ? GL_RGB5 : GL_R3_G3_B2);
+        GLenum colcomp = smalphaprec > 1 ? GL_RGB10 : (smalphaprec ? (hasES2 ? GL_RGB565 : GL_RGB5) : GL_R3_G3_B2);
         createtexture(shadowcolortex, shadowatlaspacker.w, shadowatlaspacker.h, NULL, 3, 1, colcomp, GL_TEXTURE_RECTANGLE);
 
         if(!shadowblanktex) glGenTextures(1, &shadowblanktex);
