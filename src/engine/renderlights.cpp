@@ -1748,11 +1748,10 @@ int smalign = 0;
 shadowcache shadowcache;
 bool shadowcachefull = false;
 int evictshadowcache = 0;
-Shader *smworldshader = NULL, *smalphaworldshader = NULL;
+Shader *smalphaworldshader = NULL;
 
 void loadsmshaders()
 {
-    smworldshader = useshaderbyname("smworld");
     if(smalpha)
     {
         smalphaworldshader = useshaderbyname("smalphaworld");
@@ -1766,7 +1765,6 @@ void loadsmshaders()
 
 void clearsmshaders()
 {
-    smworldshader = NULL;
     smalphaworldshader = NULL;
 }
 

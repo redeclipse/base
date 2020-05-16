@@ -1136,8 +1136,7 @@ void findshadowvas(bool transparent)
 
 void rendershadowmapworld()
 {
-    extern Shader *smworldshader;
-    smworldshader->set();
+    SETSHADER(smworld);
 
     gle::enablevertex();
 
