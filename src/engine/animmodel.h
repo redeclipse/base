@@ -264,8 +264,8 @@ struct animmodel : model
         void preloadshader()
         {
             loadshader();
-            if(owner->model->wind) useshaderbyname("windshadowmodel");
-            else useshaderbyname(alphatested() && owner->model->alphashadow ? "alphashadowmodel" : "shadowmodel");
+            if(alphatested() && owner->model->alphashadow) useshaderbyname(owner->model->wind ? "windowshadowmodel" : "alphashadowmodel");
+            else useshaderbyname("shadowmodel");
             if(useradiancehints()) useshaderbyname(alphatested() ? "rsmalphamodel" : "rsmmodel");
         }
 
