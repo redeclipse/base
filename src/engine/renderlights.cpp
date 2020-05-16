@@ -1863,7 +1863,7 @@ void setupshadowatlas()
     glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, shadowatlastarget, shadowatlastex, 0);
 
     extern int mesa_drawbuffer_bug;
-    if(!smalpha && !mesa_drawbuffer_bug) glDrawBuffer(GL_NONE);
+    if(!smalpha && (!mesa_drawbuffer_bug || !hasES2)) glDrawBuffer(GL_NONE);
     glReadBuffer(GL_NONE);
 
     if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
