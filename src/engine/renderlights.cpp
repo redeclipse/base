@@ -1946,6 +1946,14 @@ VARN(0, lightbatchstacks, lightbatchstacksused, 1, 0, 0);
 
 VARF(IDF_WORLD, alphashadow, 0, 1, 2, { cleardeferredlightshaders(); cleanupshadowatlas(); });
 
+#define ALPHASHADOWVARS(name) \
+    FVARF(IDF_WORLD, alphashadowscale##name, 0, 1, 2, clearshadowcache());
+
+ALPHASHADOWVARS();
+ALPHASHADOWVARS(alt);
+
+GETVARMPV(alphashadow, scale, float);
+
 enum
 {
     MAXLIGHTTILEBATCH = 8
