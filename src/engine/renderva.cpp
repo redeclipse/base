@@ -2243,7 +2243,7 @@ void renderalphashadow(bool cullside)
 
     cur.alphaing = 2;
     for(vtxarray *va = shadowva; va; va = va->rnext)
-        if(va->shadowtransparent&(1<<shadowside) && (va->alphafronttris || va->refracttris))
+        if(va->shadowtransparent&(1<<shadowside) && va->alphatris)
             renderva(cur, va, RENDERPASS_SMALPHA);
     if(geombatches.length()) renderbatches(cur, RENDERPASS_SMALPHA);
 
