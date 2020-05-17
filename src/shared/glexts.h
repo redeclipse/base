@@ -530,6 +530,11 @@ extern PFNGLVERTEXATTRIBPOINTERPROC      glVertexAttribPointer_;
 extern PFNGLDRAWBUFFERSPROC glDrawBuffers_;
 #endif
 
+#ifndef GL_VERSION_2_0
+#define GL_VERSION_2_0 1
+#define GL_FRAGMENT_SHADER_DERIVATIVE_HINT 0x8B8B
+#endif
+
 #ifndef GL_VERSION_2_1
 #define GL_VERSION_2_1 1
 #define GL_PIXEL_PACK_BUFFER              0x88EB
