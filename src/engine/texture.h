@@ -677,7 +677,7 @@ struct VSlot
 
     Texture *loadthumbnail();
 
-    VSlot(Slot *slot = NULL, int index = -1) : slot(slot), next(NULL), index(index), changed(0), palette(0), palindex(0), shadow(0)
+    VSlot(Slot *slot = NULL, int index = -1) : slot(slot), next(NULL), index(index), changed(0)
     {
         reset();
         if(slot) addvariant(slot);
@@ -691,7 +691,7 @@ struct VSlot
         linked = false;
         scale = 1;
         rotation = 0;
-        angle = vec(0, sinf(0), cosf(0));
+        angle = vec(0, 0, 1);
         offset = ivec2(0, 0);
         scroll = vec2(0, 0);
         layer = detail = palette = palindex = 0;
@@ -702,7 +702,7 @@ struct VSlot
         coastscale = 1;
         refractscale = 0;
         refractcolor = vec(1, 1, 1);
-        shadow = true;
+        shadow = 0;
     }
 
     vec getcolorscale() const { return palette || palindex ? vec(colorscale).mul(game::getpalette(palette, palindex)) : colorscale; }
