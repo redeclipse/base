@@ -2218,7 +2218,7 @@ void renderalphageom(int side)
     cleanupgeom(cur);
 }
 
-void renderalphashadow()
+void renderalphashadow(bool cullside)
 {
     resetbatches();
 
@@ -2228,7 +2228,6 @@ void renderalphashadow()
 
     setupgeom(cur);
 
-    bool cullside = shadowmapping == SM_CUBEMAP && !((shadowside & 1) ^ (shadowside >> 2));
     glCullFace(cullside ? GL_FRONT : GL_BACK);
 
     cur.alphaing = 1;

@@ -598,7 +598,7 @@ extern void rendergeom();
 extern int findalphavas();
 extern void renderrefractmask();
 extern void renderalphageom(int side);
-extern void renderalphashadow();
+extern void renderalphashadow(bool cullside = false);
 extern void rendermapmodels();
 extern void rendertransparentmapmodels();
 extern void renderoutline();

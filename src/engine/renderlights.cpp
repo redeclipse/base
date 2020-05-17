@@ -4393,23 +4393,50 @@ void renderradiancehints()
     endtimer(rhcputimer);
 }
 
-void rendershadowtransparent()
+void setupshadowtransparent()
 {
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
     glClearColor(1, 1, 1, 1);
-    glClear(GL_COLOR_BUFFER_BIT);
 
     glDepthMask(GL_FALSE);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_ZERO, GL_SRC_COLOR);
+}
 
-    renderalphashadow();
-
+void cleanupshadowtransparent()
+{
     glDisable(GL_BLEND);
     glDepthMask(GL_TRUE);
 
     glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+}
+
+static inline bool clearshadowtransparent(int idx, int side)
+{
+    if(shadowtransparent&(1<<side)) return false;
+    shadowcolorclears.add(idx * 6 + side);
+    return true;
+}
+
+void rendershadowtransparent(int idx, int side, bool cullside = false)
+{
+    const shadowmapinfo &sm = shadowmaps[idx];
+    int sidex = 0, sidey = 0;
+    if(sm.light >= 0)
+    {
+        sidex = (side>>1)*sm.size;
+        sidey = (side&1)*sm.size;
+    }
+    glViewport(sm.x + sidex, sm.y + sidey, sm.size, sm.size);
+    glScissor(sm.x + sidex, sm.y + sidey, sm.size, sm.size);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    shadowside = side;
+
+    renderalphashadow(cullside);
+
+    if(smfilter) shadowcolorblurs.add(idx * 6 + side);
 }
 
 void rendercsmshadowmaps()
@@ -4469,15 +4496,22 @@ void rendercsmshadowmaps()
 
         rendershadowmapworld();
         rendershadowmodelbatches();
-        if(shadowtransparent)
+    }
+
+    if(shadowtransparent)
+    {
+        setupshadowtransparent();
+        loopi(csmsplits) if(csm.splits[i].idx >= 0)
         {
-            if(shadowtransparent&(1<<i))
-            {
-                rendershadowtransparent();
-                if(smfilter) shadowcolorblurs.add(split.idx * 6);
-            }
-            else shadowcolorclears.add(split.idx * 6);
+            const cascadedshadowmap::splitinfo &split = csm.splits[i];
+            if(clearshadowtransparent(split.idx, i)) continue;
+
+            shadowmatrix.mul(split.proj, csm.model);
+            GLOBALPARAM(shadowmatrix, shadowmatrix);
+
+            rendershadowtransparent(split.idx, i);
         }
+        cleanupshadowtransparent();
     }
 
     clearbatchedmapmodels();
@@ -4637,16 +4671,18 @@ void rendershadowmaps(int offset = 0)
             shadowmatrix.mul(smprojmatrix, spotmatrix);
             GLOBALPARAM(shadowmatrix, shadowmatrix);
 
-            glCullFace((l.dir.z >= 0) == (smcullside != 0) ? GL_BACK : GL_FRONT);
+            glCullFace((l.dir.z >= 0) == !smcullside ? GL_FRONT : GL_BACK);
 
             shadowside = 0;
 
             if(mesh) rendershadowmesh(mesh); else rendershadowmapworld();
             rendershadowmodelbatches();
+
             if(shadowtransparent)
             {
-                rendershadowtransparent();
-                if(smfilter) shadowcolorblurs.add(i * 6);
+                setupshadowtransparent();
+                rendershadowtransparent(i, 0, (l.dir.z >= 0) == !smcullside);
+                cleanupshadowtransparent();
             }
         }
         else
@@ -4659,7 +4695,6 @@ void rendershadowmaps(int offset = 0)
                     cy2 = sidemask & 0x2A ? 2 * sm.size : sm.size;
                 glScissor(sm.x + cx1, sm.y + cy1, cx2 - cx1, cy2 - cy1);
                 glClear(GL_DEPTH_BUFFER_BIT);
-                if(int clearmask = shadowtransparent&~sidemask) loop(side, 6) if(clearmask&(1<<side)) shadowcolorclears.add(i * 6 + side);
             }
             loop(side, 6) if(sidemask&(1<<side))
             {
@@ -4680,15 +4715,23 @@ void rendershadowmaps(int offset = 0)
 
                 if(mesh) rendershadowmesh(mesh); else rendershadowmapworld();
                 rendershadowmodelbatches();
-                if(shadowtransparent)
+            }
+            if(shadowtransparent)
+            {
+                setupshadowtransparent();
+                loop(side, 6) if(sidemask&(1<<side))
                 {
-                    if(shadowtransparent&(1<<side))
-                    {
-                        rendershadowtransparent();
-                        if(smfilter) shadowcolorblurs.add(i * 6 + side);
-                    }
-                    else shadowcolorclears.add(i * 6 + side);
+                    if(clearshadowtransparent(i, side)) continue;
+
+                    matrix4 cubematrix(cubeshadowviewmatrix[side]);
+                    cubematrix.scale(1.0f/l.radius);
+                    cubematrix.translate(vec(l.o).neg());
+                    shadowmatrix.mul(smprojmatrix, cubematrix);
+                    GLOBALPARAM(shadowmatrix, shadowmatrix);
+
+                    rendershadowtransparent(i, side, (side & 1) ^ (side >> 2) ^ smcullside);
                 }
+                cleanupshadowtransparent();
             }
         }
 
