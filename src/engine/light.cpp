@@ -356,77 +356,6 @@ static void clearsurfaces(cube *c)
     }
 }
 
-#define LIGHTCACHESIZE 1024
-
-static struct lightcacheentry
-{
-    int x, y;
-    vector<int> lights;
-} lightcache[LIGHTCACHESIZE];
-
-#define LIGHTCACHEHASH(x, y) (((((x)^(y))<<5) + (((x)^(y))>>5)) & (LIGHTCACHESIZE - 1))
-
-VARF(0, lightcachesize, 4, 6, 12, clearlightcache());
-
-void clearlightcache(int id)
-{
-    if(id >= 0)
-    {
-        const extentity &light = *entities::getents()[id];
-        int radius = light.attrs[0];
-        if(radius <= 0) return;
-        for(int x = int(max(light.o.x-radius, 0.0f))>>lightcachesize, ex = int(min(light.o.x+radius, worldsize-1.0f))>>lightcachesize; x <= ex; x++)
-        for(int y = int(max(light.o.y-radius, 0.0f))>>lightcachesize, ey = int(min(light.o.y+radius, worldsize-1.0f))>>lightcachesize; y <= ey; y++)
-        {
-            lightcacheentry &lce = lightcache[LIGHTCACHEHASH(x, y)];
-            if(lce.x != x || lce.y != y) continue;
-            lce.x = -1;
-            lce.lights.setsize(0);
-        }
-        return;
-    }
-
-    for(lightcacheentry *lce = lightcache; lce < &lightcache[LIGHTCACHESIZE]; lce++)
-    {
-        lce->x = -1;
-        lce->lights.setsize(0);
-    }
-}
-
-const vector<int> &checklightcache(int x, int y)
-{
-    x >>= lightcachesize;
-    y >>= lightcachesize;
-    lightcacheentry &lce = lightcache[LIGHTCACHEHASH(x, y)];
-    if(lce.x == x && lce.y == y) return lce.lights;
-
-    lce.lights.setsize(0);
-    int csize = 1<<lightcachesize, cx = x<<lightcachesize, cy = y<<lightcachesize;
-    const vector<extentity *> &ents = entities::getents();
-    loopv(ents)
-    {
-        const extentity &light = *ents[i];
-        switch(light.type)
-        {
-            case ET_LIGHT:
-            {
-                int radius = light.attrs[0];
-                if(!getlightfx(light, &radius) ||
-                   light.o.x + radius < cx || light.o.x - radius > cx + csize ||
-                   light.o.y + radius < cy || light.o.y - radius > cy + csize)
-                    continue;
-                break;
-            }
-            default: continue;
-        }
-        lce.lights.add(i);
-    }
-
-    lce.x = x;
-    lce.y = y;
-    return lce.lights;
-}
-
 static uint lightprogress = 0;
 
 bool calclight_canceled = false;
@@ -702,7 +631,6 @@ VAR(0, fullbrightlevel, 0, 160, 255);
 
 void clearlights()
 {
-    clearlightcache();
     clearshadowcache();
     cleardeferredlightshaders();
     resetsmoothgroups();
@@ -710,7 +638,6 @@ void clearlights()
 
 void initlights()
 {
-    clearlightcache();
     clearshadowcache();
     loaddeferredlightshaders();
 }

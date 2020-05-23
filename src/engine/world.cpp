@@ -227,7 +227,6 @@ static bool modifyoctaent(int flags, int id, extentity &e)
     switch(e.type)
     {
         case ET_LIGHT:
-            clearlightcache(id);
             if(e.attrs[6]&L_VOLUMETRIC) { if(flags&MODOE_ADD) volumetriclights++; else --volumetriclights; }
             if(e.attrs[6]&L_NOSPEC) { if(!(flags&MODOE_ADD ? nospeclights++ : --nospeclights)) cleardeferredlightshaders(); }
             if(e.attrs[6]&L_SMALPHA)
