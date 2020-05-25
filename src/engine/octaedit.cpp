@@ -2528,7 +2528,7 @@ COMMAND(0, vscroll, "ff");
 ICOMMAND(0, getvscroll, "i", (int *tex),
 {
     VSlot &vslot = lookupvslot(*tex, false);
-    defformatstring(str, "%s %s", floatstr(vslot.scroll.x), floatstr(vslot.scroll.y));
+    defformatstring(str, "%s %s", floatstr(vslot.scroll.x*1000.0f), floatstr(vslot.scroll.y*1000.0f));
     result(str);
 });
 
