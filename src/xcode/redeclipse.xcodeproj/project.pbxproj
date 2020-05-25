@@ -88,7 +88,6 @@
 		D118DEB60D979281000E8C4C /* renderlights.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D118DEB50D979281000E8C4C /* renderlights.cpp */; };
 		D11B5A6510CBB4D8003F0098 /* ai.h in Headers */ = {isa = PBXBuildFile; fileRef = D11B5A6310CBB4D8003F0098 /* ai.h */; };
 		D11B5A6610CBB4D8003F0098 /* game.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D11B5A6410CBB4D8003F0098 /* game.cpp */; };
-		D11B5A6A10CBB500003F0098 /* movie.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D11B5A6810CBB500003F0098 /* movie.cpp */; };
 		D11B5A6B10CBB500003F0098 /* mpr.h in Headers */ = {isa = PBXBuildFile; fileRef = D11B5A6910CBB500003F0098 /* mpr.h */; };
 		D11B5A8210CBB637003F0098 /* crypto.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D11B5A7F10CBB637003F0098 /* crypto.cpp */; };
 		D11B5A8310CBB637003F0098 /* stream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D11B5A8010CBB637003F0098 /* stream.cpp */; };
@@ -238,7 +237,6 @@
 		D118DEB50D979281000E8C4C /* renderlights.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = renderlights.cpp; sourceTree = "<group>"; };
 		D11B5A6310CBB4D8003F0098 /* ai.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = ai.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		D11B5A6410CBB4D8003F0098 /* game.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; path = game.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
-		D11B5A6810CBB500003F0098 /* movie.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = movie.cpp; sourceTree = "<group>"; };
 		D11B5A6910CBB500003F0098 /* mpr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mpr.h; sourceTree = "<group>"; };
 		D11B5A7F10CBB637003F0098 /* crypto.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = crypto.cpp; sourceTree = "<group>"; };
 		D11B5A8010CBB637003F0098 /* stream.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = stream.cpp; sourceTree = "<group>"; };
@@ -456,7 +454,6 @@
 				B91D40220D525FE9004EF78A /* md5.h */,
 				B9AC7A930D06DB44005506F8 /* menus.cpp */,
 				B9AC7A940D06DB44005506F8 /* model.h */,
-				D11B5A6810CBB500003F0098 /* movie.cpp */,
 				D11B5A6910CBB500003F0098 /* mpr.h */,
 				B9AC7A950D06DB44005506F8 /* normal.cpp */,
 				D16C16900E04812500A522EB /* obj.h */,
@@ -769,7 +766,6 @@
 				D1D88AB80F350EDE000680E8 /* irc.cpp in Sources */,
 				D11B5A6610CBB4D8003F0098 /* game.cpp in Sources */,
 				FD6BC4A61B4BE57C0010977F /* master.cpp in Sources */,
-				D11B5A6A10CBB500003F0098 /* movie.cpp in Sources */,
 				D11B5A8210CBB637003F0098 /* crypto.cpp in Sources */,
 				D11B5A8310CBB637003F0098 /* stream.cpp in Sources */,
 				D11B5A8410CBB637003F0098 /* zip.cpp in Sources */,

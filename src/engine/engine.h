@@ -976,14 +976,6 @@ extern void updateblendtextures(int x1 = 0, int y1 = 0, int x2 = worldsize, int 
 extern void bindblendtexture(const ivec &p);
 extern void clearblendtextures();
 extern void cleanupblendmap();
-
-// recorder
-namespace recorder
-{
-    extern void stop();
-    extern void capture(bool overlay = true);
-    extern void cleanup();
-}
 #endif // STANDALONE
 
 #endif
