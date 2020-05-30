@@ -7,6 +7,7 @@ FVAR(IDF_PERSIST, grasstaper, 0, 0.2f, 1);
 FVAR(IDF_PERSIST, grassstep, 0.5f, 3, 8);
 VAR(IDF_WORLD, grassheight, 1, 4, 64);
 VAR(IDF_PERSIST, grassmargin, 0, 8, 32);
+FVAR(0, grassmarginfade, 0, 1, 1);
 
 struct grasswedge
 {
@@ -323,7 +324,7 @@ void rendergrass()
     gle::enablequads();
 
     GLOBALPARAMF(grasstest, grasstest);
-    GLOBALPARAMF(grassmargin, grassmargin, grassmargin ? 1.0f / grassmargin : 0.0f);
+    GLOBALPARAMF(grassmargin, grassmargin, grassmargin ? grassmarginfade / grassmargin : 0.0f, grassmargin ? grassmarginfade : 1.0f);
 
     int texid = -1, blend = -1;
     loopv(grassgroups)
