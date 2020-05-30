@@ -131,6 +131,13 @@ void mdlalphatest(float *cutoff)
 }
 COMMAND(0, mdlalphatest, "f");
 
+void mdldither(int *dither)
+{
+    checkmdl;
+    loadingmodel->setdither(*dither != 0);
+}
+COMMAND(0, mdldither, "i");
+
 void mdlblend(float *blend)
 {
     checkmdl;

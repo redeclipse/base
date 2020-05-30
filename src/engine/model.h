@@ -37,6 +37,7 @@ struct model
     virtual void setgloss(int gloss) {}
     virtual void setglow(float glow, float glowdelta, float glowpulse) {}
     virtual void setalphatest(float alpha) {}
+    virtual void setdither(bool dither) {}
     virtual void setblend(float blend) {}
     virtual void setblendmode(int mode) {}
     virtual void setfullbright(float fullbright) {}

@@ -116,7 +116,8 @@ struct animmodel : model
             ALLOW_MIXER    = 1<<0,
             ENABLE_MIXER   = 1<<1,
             ALLOW_PATTERN  = 1<<2,
-            ENABLE_PATTERN = 1<<3
+            ENABLE_PATTERN = 1<<3,
+            DITHER         = 1<<4
         };
 
         part *owner;
@@ -137,6 +138,7 @@ struct animmodel : model
         bool bumpmapped() const { return normalmap != NULL; }
         bool alphatested() const { return alphatest > 0 && tex->type&Texture::ALPHA && blendmode == MDL_BLEND_TEST; }
         bool alphablended() const { return blendmode == MDL_BLEND_ALPHA || blend < 1.0f; }
+        bool dithered() const { return (flags&DITHER) != 0; }
         bool decaled() const { return decal != NULL; }
 
         bool mixed() const { return (flags&ENABLE_MIXER) != 0; }
@@ -234,7 +236,11 @@ struct animmodel : model
 
             string opts;
             int optslen = 0;
-            if(alphatested()) opts[optslen++] = 'a';
+            if(alphatested())
+            {
+                opts[optslen++] = 'a';
+                if(dithered()) opts[optslen++] = 'u';
+            }
             else if(alphablended()) opts[optslen++] = 'A';
             if(owner->model->wind) opts[optslen++] = 'w';
             if(decaled()) opts[optslen++] = decal->type&Texture::ALPHA ? 'D' : 'd';
@@ -1757,6 +1763,17 @@ struct animmodel : model
         loopv(parts) loopvj(parts[i]->skins) parts[i]->skins[j].alphatest = alphatest;
     }
 
+    void setdither(bool val)
+    {
+        if(parts.empty()) loaddefaultparts();
+        loopv(parts) loopvj(parts[i]->skins)
+        {
+            skin &s = parts[i]->skins[j];
+            if(val) s.flags |= skin::DITHER;
+            else s.flags &= ~skin::DITHER;
+        }
+    }
+
     void setblend(float blend)
     {
         if(parts.empty()) loaddefaultparts();
@@ -2085,6 +2102,11 @@ template<class MDL, class MESH> struct modelcommands
         loopskins(meshname, s, s.alphatest = max(0.0f, min(1.0f, *cutoff)));
     }
 
+    static void setdither(char *meshname, int *dither)
+    {
+        loopskins(meshname, s, { if(*dither) s.flags |= skin::DITHER; else s.flags &= ~skin::DITHER; });
+    }
+
     static void setblend(char *meshname, float *blend)
     {
         loopskins(meshname, s, s.blend = max(0.0f, min(1.0f, *blend)));
@@ -2196,6 +2218,7 @@ template<class MDL, class MESH> struct modelcommands
             modelcommand(setgloss, "gloss", "si");
             modelcommand(setglow, "glow", "sfff");
             modelcommand(setalphatest, "alphatest", "sf");
+            modelcommand(setdither, "dither", "si");
             modelcommand(setblend, "blend", "sf");
             modelcommand(setblendmode, "blendmode", "si");
             modelcommand(setcullface, "cullface", "si");
