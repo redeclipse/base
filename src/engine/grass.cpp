@@ -4,31 +4,37 @@ VAR(IDF_PERSIST, grass, 0, 1, 1);
 VAR(0, dbggrass, 0, 0, 1);
 VAR(IDF_PERSIST, grassdist, 0, 1024, 10000);
 FVAR(IDF_PERSIST, grasstaper, 0, 0.2f, 1);
-FVAR(IDF_PERSIST, grassstep, 0.5f, 2, 8);
+FVAR(IDF_PERSIST, grassstep, 0.5f, 3, 8);
 VAR(IDF_WORLD, grassheight, 1, 4, 64);
+VAR(IDF_PERSIST, grassmargin, 0, 8, 32);
 
 struct grasswedge
 {
     vec dir, across, edge1, edge2;
     plane bound1, bound2;
+    bvec4 vertbounds;
 
-    void init(int i, int n)
+    grasswedge(int i, int n) :
+      dir(2*M_PI*(i+0.5f)/float(n), 0),
+      across(2*M_PI*((i+0.5f)/float(n) + 0.25f), 0),
+      edge1(vec(2*M_PI*i/float(n), 0).div(cos(M_PI/n))),
+      edge2(vec(2*M_PI*(i+1)/float(n), 0).div(cos(M_PI/n))),
+      bound1(vec(2*M_PI*(i/float(n) - 0.25f), 0), 0),
+      bound2(vec(2*M_PI*((i+1)/float(n) + 0.25f), 0), 0)
     {
-      dir = vec(2*M_PI*(i+0.5f)/float(n), 0);
-      across = vec(2*M_PI*((i+0.5f)/float(n) + 0.25f), 0);
-      edge1 = vec(2*M_PI*i/float(n), 0).div(cos(M_PI/n));
-      edge2 = vec(2*M_PI*(i+1)/float(n), 0).div(cos(M_PI/n));
-      bound1 = plane(vec(2*M_PI*(i/float(n) - 0.25f), 0), 0);
-      bound2 = plane(vec(2*M_PI*((i+1)/float(n) + 0.25f), 0), 0);
       across.div(-across.dot(bound1));
+
+      bvec vertbound1(bound1), vertbound2(bound2);
+      vertbounds = bvec4(vertbound1.x, vertbound1.y, vertbound2.x, vertbound2.y);
+      vertbounds.flip();
     }
 };
-static grasswedge *grasswedges = NULL;
+static vector<grasswedge> grasswedges;
 void resetgrasswedges(int n)
 {
-    DELETEA(grasswedges);
-    grasswedges = new grasswedge[n];
-    loopi(n) grasswedges[i].init(i, n);
+    grasswedges.setsize(0);
+    grasswedges.reserve(n);
+    loopi(n) grasswedges.add(grasswedge(i, n));
 }
 VARFN(IDF_PERSIST, grasswedges, numgrasswedges, 8, 8, 1024, resetgrasswedges(numgrasswedges));
 
@@ -37,6 +43,7 @@ struct grassvert
     vec pos;
     bvec4 color;
     vec2 tc;
+    bvec4 bounds;
 };
 
 static vector<grassvert> grassverts;
@@ -53,14 +60,15 @@ struct grassgroup
 
 static vector<grassgroup> grassgroups;
 
-float *grassoffsets = NULL, *grassanimoffsets = NULL;
+vector<float> grassoffsets, grassanimoffsets;
 void resetgrassoffsets(int n)
 {
-    DELETEA(grassoffsets);
-    DELETEA(grassanimoffsets);
-    grassoffsets = new float[n];
-    grassanimoffsets = new float[n];
-    loopi(n) grassoffsets[i] = rnd(0x1000000)/float(0x1000000);
+    grassoffsets.setsize(0);
+    grassoffsets.reserve(n);
+    loopi(n) grassoffsets.add(rnd(0x1000000)/float(0x1000000));
+    grassanimoffsets.setsize(0);
+    grassanimoffsets.reserve(n);
+    grassanimoffsets.setsize(n);
 }
 VARFN(IDF_PERSIST, grassoffsets, numgrassoffsets, 8, 32, 1024, resetgrassoffsets(numgrassoffsets));
 
@@ -158,15 +166,15 @@ static void gengrassquads(grassgroup *&group, const grasswedge &w, const grasstr
             rightdb = w.bound2.dot(rightdir);
         }
         vec p1 = leftp, p2 = rightp;
-        if(leftb > 0)
+        if(leftb > grassmargin)
         {
-            if(w.bound1.dist(p2) >= 0) continue;
-            p1.add(vec(across).mul(leftb));
+            if(w.bound1.dist(p2) >= grassmargin) continue;
+            p1.add(vec(across).mul(leftb - grassmargin));
         }
-        if(rightb > 0)
+        if(rightb > grassmargin)
         {
-            if(w.bound2.dist(p1) >= 0) continue;
-            p2.sub(vec(across).mul(rightb));
+            if(w.bound2.dist(p1) >= grassmargin) continue;
+            p2.sub(vec(across).mul(rightb - grassmargin));
         }
 
         if(grassverts.length() >= 4*maxgrass) break;
@@ -199,6 +207,7 @@ static void gengrassquads(grassgroup *&group, const grasswedge &w, const grasstr
             gv.pos = p##n; \
             gv.color = color; \
             gv.tc = vec2(tc##n, tcv); \
+            gv.bounds = w.vertbounds; \
             modify; \
         }
 
@@ -229,7 +238,7 @@ static void gengrassquads(vtxarray *va)
         loopi(numgrasswedges)
         {
             grasswedge &w = grasswedges[i];
-            if(w.bound1.dist(g.center) > g.radius || w.bound2.dist(g.center) > g.radius) continue;
+            if(w.bound1.dist(g.center) > g.radius + grassmargin || w.bound2.dist(g.center) > g.radius + grassmargin) continue;
             gengrassquads(group, w, g, s.grasstex, s.grasscolor, s.grassblend, s.grassscale, s.grassheight);
         }
     }
@@ -242,8 +251,8 @@ void generategrass()
     grassgroups.setsize(0);
     grassverts.setsize(0);
 
-    if(!grasswedges) resetgrasswedges(numgrasswedges);
-    if(!grassoffsets) resetgrassoffsets(numgrassoffsets);
+    if(grasswedges.empty()) resetgrasswedges(numgrasswedges);
+    if(grassoffsets.empty()) resetgrassoffsets(numgrassoffsets);
 
     loopi(numgrasswedges)
     {
@@ -306,12 +315,15 @@ void rendergrass()
     gle::vertexpointer(sizeof(grassvert), ptr->pos.v);
     gle::colorpointer(sizeof(grassvert), ptr->color.v);
     gle::texcoord0pointer(sizeof(grassvert), ptr->tc.v);
+    gle::tangentpointer(sizeof(grassvert), ptr->bounds.v, GL_BYTE);
     gle::enablevertex();
     gle::enablecolor();
     gle::enabletexcoord0();
+    gle::enabletangent();
     gle::enablequads();
 
     GLOBALPARAMF(grasstest, grasstest);
+    GLOBALPARAMF(grassmargin, grassmargin, grassmargin ? 1.0f / grassmargin : 0.0f);
 
     int texid = -1, blend = -1;
     loopv(grassgroups)
@@ -345,6 +357,7 @@ void rendergrass()
     gle::disablevertex();
     gle::disablecolor();
     gle::disabletexcoord0();
+    gle::disabletangent();
 
     gle::clearvbo();
 
