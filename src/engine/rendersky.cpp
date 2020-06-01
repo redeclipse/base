@@ -518,7 +518,7 @@ static void drawatmosphere()
     LOCALPARAM(sundir, getpielightdir());
 
     vec sundiskparams;
-    sundiskparams.y = -(1 - 0.015f * getatmodisksize());
+    sundiskparams.y = -(1 - 0.01f * getatmodisksize());
     sundiskparams.x = 1/(1 + sundiskparams.y);
     sundiskparams.y *= sundiskparams.x;
     sundiskparams.z = getatmodiskbright();
