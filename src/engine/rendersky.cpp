@@ -175,7 +175,6 @@ GETMPV(atmodiskbright, float);
 GETMPV(atmohaze, float);
 GETMPV(atmohazefade, bvec &);
 GETMPV(atmohazefadescale, float);
-GETMPV(atmoclarity, float);
 GETMPV(atmodensity, float);
 GETMPV(atmoblend, float);
 GETMPV(fogdomeheight, float);
