@@ -95,7 +95,6 @@ Texture *loadskyoverlay(const char *basename)
     FVAR(IDF_WORLD, atmohaze##name, 0, 0.1f, 1); \
     CVAR0(IDF_WORLD, atmohazefade##name, 0xAEACA9); \
     FVAR(IDF_WORLD, atmohazefadescale##name, 0, 1, 1); \
-    FVAR(IDF_WORLD, atmoclarity##name, 0, 1, 10); \
     FVAR(IDF_WORLD, atmodensity##name, FVAR_NONZERO, 1, FVAR_MAX); \
     FVAR(IDF_WORLD, atmoblend##name, 0, 1, 1); \
     FVAR(IDF_WORLD, fogdomeheight##name, -1, -0.5f, 1); \
@@ -534,9 +533,9 @@ static void drawatmosphere()
     LOCALPARAMF(mie, 1 + gm*gm, -2*gm);
 
     vec lambda(680e-9f, 550e-9f, 450e-9f),
-        betar = vec(lambda).square().square().recip().mul(1.86e-31f / getatmodensity()),
-        betam = vec(lambda).recip().mul(2*M_PI).square().mul(getatmohazefade().tocolor().mul(getatmohazefadescale())).mul(1.36e-19f * max(getatmohaze(), FVAR_NONZERO)),
-        betarm = vec(betar).div(1+getatmoclarity()).add(betam);
+        betar = vec(lambda).square().square().recip().mul(1.24e-31f * getatmodensity()),
+        betam = vec(lambda).recip().mul(2*M_PI).square().mul(getatmohazefade().tocolor().mul(getatmohazefadescale())).mul(0.952e-19f * max(getatmohaze(), FVAR_NONZERO)),
+        betarm = vec(betar).add(betam);
     betar.div(betarm).mul(3/(16*M_PI));
     betam.div(betarm).mul((1-gm)*(1-gm)/(4*M_PI));
     LOCALPARAM(betar, betar);
