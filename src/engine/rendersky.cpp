@@ -526,8 +526,6 @@ static void drawatmosphere()
     float planetradius = earthradius*getatmoplanetsize(), atmoradius = planetradius + earthatmoheight*getatmoheight();
     LOCALPARAMF(atmoradius, planetradius, atmoradius*atmoradius, atmoradius*atmoradius - planetradius*planetradius);
 
-    LOCALPARAMF(sampleoffset, max(0.15f + 0.75f * getpielightdir().z, 0.0f));
-
     float gm = (1 - getatmohaze())*0.2f + 0.75f;
     LOCALPARAMF(mie, 1 + gm*gm, -2*gm);
 
