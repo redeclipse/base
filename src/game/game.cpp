@@ -186,13 +186,13 @@ namespace game
     VAR(IDF_PERSIST, firstpersonsway, 0, 1, 1);
     FVAR(IDF_PERSIST, firstpersonswayslide, 0, 0.5f, 1);
     FVAR(IDF_PERSIST, firstpersonswaymin, 0, 0.15f, 1);
-    FVAR(IDF_PERSIST, firstpersonswaystep, 1, 35.f, 1000);
+    FVAR(IDF_PERSIST, firstpersonswaystep, 1, 40.f, 1000);
     FVAR(IDF_PERSIST, firstpersonswayside, 0, 0.05f, 10);
     FVAR(IDF_PERSIST, firstpersonswayup, 0, 0.06f, 10);
 
     VAR(IDF_PERSIST, firstpersonbob, 0, 1, 1);
     FVAR(IDF_PERSIST, firstpersonbobmin, 0, 0.2f, 1);
-    FVAR(IDF_PERSIST, firstpersonbobstep, 1, 28.f, 1000);
+    FVAR(IDF_PERSIST, firstpersonbobstep, 1, 40.f, 1000);
     FVAR(IDF_PERSIST, firstpersonbobroll, 0, 0.3f, 10);
     FVAR(IDF_PERSIST, firstpersonbobside, 0, 0.6f, 10);
     FVAR(IDF_PERSIST, firstpersonbobup, 0, 0.6f, 10);
