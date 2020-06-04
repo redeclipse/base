@@ -90,12 +90,11 @@ Texture *loadskyoverlay(const char *basename)
     FVAR(IDF_WORLD, atmobright##name, 0, 3, 16); \
     CVAR1(IDF_WORLD, atmolight##name, 0); \
     FVAR(IDF_WORLD, atmolightscale##name, 0, 1, 16); \
-    FVAR(IDF_WORLD, atmodisksize##name, 0, 1, 1000); \
+    FVAR(IDF_WORLD, atmodisksize##name, 0, 1, 16); \
     FVAR(IDF_WORLD, atmodiskbright##name, 0, 1, 16); \
-    FVAR(IDF_WORLD, atmohaze##name, 0, 0.1f, 1); \
-    CVAR0(IDF_WORLD, atmohazefade##name, 0xAEACA9); \
-    FVAR(IDF_WORLD, atmohazefadescale##name, 0, 1, 1); \
-    FVAR(IDF_WORLD, atmodensity##name, FVAR_NONZERO, 1, FVAR_MAX); \
+    FVAR(IDF_WORLD, atmohaze##name, 0, 0.1f, 16); \
+    FVAR(IDF_WORLD, atmodensity##name, 0, 1, 16); \
+    FVAR(IDF_WORLD, atmoozone##name, 0, 1, 16); \
     FVAR(IDF_WORLD, atmoblend##name, 0, 1, 1); \
     FVAR(IDF_WORLD, fogdomeheight##name, -1, -0.5f, 1); \
     FVAR(IDF_WORLD, fogdomemin##name, 0, 0, 1); \
@@ -173,9 +172,8 @@ GETMPV(atmolightscale, float);
 GETMPV(atmodisksize, float);
 GETMPV(atmodiskbright, float);
 GETMPV(atmohaze, float);
-GETMPV(atmohazefade, bvec &);
-GETMPV(atmohazefadescale, float);
 GETMPV(atmodensity, float);
+GETMPV(atmoozone, float);
 GETMPV(atmoblend, float);
 GETMPV(fogdomeheight, float);
 GETMPV(fogdomemin, float);
@@ -522,17 +520,20 @@ static void drawatmosphere()
     sundiskparams.z = getatmodiskbright();
     LOCALPARAM(sundiskparams, sundiskparams);
 
-    const float earthradius = 6.371e6f, earthatmoheight = 0.1e6f;
+    const float earthradius = 6371e3f, earthatmoheight = 8.4e3f;
     float planetradius = earthradius*getatmoplanetsize(), atmoradius = planetradius + earthatmoheight*getatmoheight();
     LOCALPARAMF(atmoradius, planetradius, atmoradius*atmoradius, atmoradius*atmoradius - planetradius*planetradius);
 
     float gm = (1 - getatmohaze())*0.2f + 0.75f;
     LOCALPARAMF(mie, 1 + gm*gm, -2*gm);
 
-    vec lambda(680e-9f, 550e-9f, 450e-9f),
-        betar = vec(lambda).square().square().recip().mul(1.24e-31f * getatmodensity()),
-        betam = vec(lambda).recip().mul(2*M_PI).square().mul(getatmohazefade().tocolor().mul(getatmohazefadescale())).mul(0.952e-19f * max(getatmohaze(), FVAR_NONZERO)),
-        betarm = vec(betar).add(betam);
+    static const vec lambda(680e-9f, 550e-9f, 450e-9f),
+                     k(0.686f, 0.678f, 0.666f),
+                     ozone(3.426f, 8.298f, 0.356f);
+    vec betar = vec(lambda).square().square().recip().mul(1.241e-30f * getatmodensity()),
+        betam = vec(lambda).recip().square().mul(k).mul(1.350e-17f * getatmohaze()),
+        betao = vec(ozone).mul(0.06e-5f*getatmoozone()),
+        betarm = vec(betar).add(betam).add(betao);
     betar.div(betarm).mul(3/(16*M_PI));
     betam.div(betarm).mul((1-gm)*(1-gm)/(4*M_PI));
     LOCALPARAM(betar, betar);
