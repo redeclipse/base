@@ -68,8 +68,7 @@ void resetgrassoffsets(int n)
     grassoffsets.reserve(n);
     loopi(n) grassoffsets.add(rnd(0x1000000)/float(0x1000000));
     grassanimoffsets.setsize(0);
-    grassanimoffsets.reserve(n);
-    grassanimoffsets.setsize(n);
+    grassanimoffsets.pad(n);
 }
 VARFN(IDF_PERSIST, grassoffsets, numgrassoffsets, 8, 32, 1024, resetgrassoffsets(numgrassoffsets));
 
