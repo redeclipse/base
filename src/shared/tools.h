@@ -788,7 +788,7 @@ template <class T> struct vector
     T *disown() { T *r = buf; buf = NULL; alen = ulen = 0; return r; }
 
     void shrink(int i) { ASSERT(i<=ulen); if(isclass<T>::no) ulen = i; else while(ulen>i) drop(); }
-    void setsize(int i) { ASSERT(i<=ulen); ulen = i; }
+    void setsize(int i) { ASSERT(i<=alen); ulen = i; }
 
     void deletecontents(int n = 0) { while(ulen > n) delete pop(); }
     void deletearrays(int n = 0) { while(ulen > n) delete[] pop(); }
