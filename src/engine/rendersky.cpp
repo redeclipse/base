@@ -109,6 +109,8 @@ Texture *loadskyoverlay(const char *basename)
 MPVVARS(, MPV_DEF);
 MPVVARS(alt, MPV_ALT);
 
+FVAR(IDF_READONLY, atmodiskpower, 1, 8, 0);
+
 #define GETMPV(name, type) \
     type get##name() \
     { \
@@ -502,27 +504,24 @@ static void drawatmosphere()
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     }
-    SETSHADER(atmosphere);
+    if(getpielightdir().z >= 1.0f/256) SETSHADER(atmosphere);
+    else
+    {
+        SETSHADER(skyfog);
+        gle::colorf(0, 0, 0, getatmoblend());
+        matrix4 skymatrix;
+        skymatrix.identity();
+        LOCALPARAM(skymatrix, skymatrix);
+    }
 
     matrix4 sunmatrix = invcammatrix;
     sunmatrix.settranslation(0, 0, 0);
     sunmatrix.mul(invprojmatrix);
     LOCALPARAM(sunmatrix, sunmatrix);
 
-    bvec curatmolight = getatmolight();
-    LOCALPARAM(sunlight, (!curatmolight.iszero() ? curatmolight.tocolor().mul(getatmolightscale()) : getpielight().tocolor().mul(getpielightscale())).mul(getatmobright()*ldrscale));
-    LOCALPARAM(sundir, getpielightdir());
-
-    vec sundiskparams;
-    sundiskparams.y = -(1 - 0.01f * getatmodisksize());
-    sundiskparams.x = 1/(1 + sundiskparams.y);
-    sundiskparams.y *= sundiskparams.x;
-    sundiskparams.z = getatmodiskbright();
-    LOCALPARAM(sundiskparams, sundiskparams);
-
     const float earthradius = 6371e3f, earthatmoheight = 8.4e3f;
     float planetradius = earthradius*getatmoplanetsize(), atmoradius = planetradius + earthatmoheight*getatmoheight();
-    LOCALPARAMF(atmoradius, planetradius, atmoradius*atmoradius, atmoradius*atmoradius - planetradius*planetradius);
+    LOCALPARAMF(opticaldepthoffset, (atmoradius*atmoradius) / (planetradius*planetradius) - 1);
 
     float gm = (1 - getatmohaze())*0.2f + 0.75f;
     LOCALPARAMF(mie, 1 + gm*gm, -2*gm);
@@ -533,14 +532,22 @@ static void drawatmosphere()
     vec betar = vec(lambda).square().square().recip().mul(1.241e-30f * getatmodensity()),
         betam = vec(lambda).recip().square().mul(k).mul(1.350e-17f * getatmohaze()),
         betao = vec(ozone).mul(0.06e-5f*getatmoozone()),
-        betarm = vec(betar).add(betam).add(betao);
+        betarm = vec(betar).add(betam).add(betao).div(getpielightdir().z);
     betar.div(betarm).mul(3/(16*M_PI));
     betam.div(betarm).mul((1-gm)*(1-gm)/(4*M_PI));
     LOCALPARAM(betar, betar);
     LOCALPARAM(betam, betam);
-    LOCALPARAM(betarm, betarm.div(M_LN2));
+    LOCALPARAM(betarm, vec(betarm).mul(planetradius/M_LN2));
 
-    LOCALPARAMF(atmoblend, getatmoblend());
+    extern float hdrgamma;
+    vec sunextinction = vec(betarm).mul(-(atmoradius - planetradius) / hdrgamma).exp();
+    bvec curatmolight = getatmolight();
+    vec suncolor = (!curatmolight.iszero() ? curatmolight.tocolor().mul(getatmolightscale()) : getpielight().tocolor().mul(getpielightscale())).mul(getatmobright()*ldrscale);
+    LOCALPARAM(sunlight, vec4(suncolor.mul(sunextinction), getatmoblend()));
+    LOCALPARAM(sundir, getpielightdir());
+
+    float sundiskscale = 100.0f / getatmodisksize();
+    LOCALPARAMF(sundiskparams, sundiskscale, getatmodiskbright());
 
     gle::defvertex();
     gle::begin(GL_TRIANGLE_STRIP);
