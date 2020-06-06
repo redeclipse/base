@@ -197,6 +197,7 @@ extern void removetrackeddynlights(physent *owner = NULL);
 extern vec worldpos, camdir, camright, camup;
 extern void gettextres(int &w, int &h);
 
+extern vec calcavatarpos(const vec &pos, float fov);
 extern vec calcmodelpreviewpos(const vec &radius, float &yaw);
 
 extern vec minimapcenter, minimapradius, minimapscale;

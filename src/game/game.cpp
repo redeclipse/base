@@ -4070,6 +4070,18 @@ namespace game
             rendercheck(d, true);
     }
 
+    void calcfirstpersontag(gameent *d, int tag)
+    {
+        if(d->tag[tag].x >= 0) d->tag[tag] = calcavatarpos(d->tag[tag], firstpersondepthfov);
+    }
+
+    void calcfirstpersontags(gameent *d)
+    {
+        calcfirstpersontag(d, TAG_ORIGIN);
+        calcfirstpersontag(d, TAG_MUZZLE);
+        loopi(TAG_N_EJECT) calcfirstpersontag(d, TAG_EJECT + i);
+    }
+
     void renderavatar()
     {
         if(thirdpersonview()) return;
@@ -4091,6 +4103,7 @@ namespace game
             static int lastoffset = 0;
             renderplayer(focus, 2, focus->curscale, MDL_NOBATCH, color, &lastoffset);
         }
+        calcfirstpersontags(focus);
         rendercheck(focus, false);
     }
 
