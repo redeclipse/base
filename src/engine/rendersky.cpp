@@ -90,7 +90,8 @@ Texture *loadskyoverlay(const char *basename)
     FVAR(IDF_WORLD, atmobright##name, 0, 4, 16); \
     CVAR1(IDF_WORLD, atmolight##name, 0); \
     FVAR(IDF_WORLD, atmolightscale##name, 0, 1, 16); \
-    FVAR(IDF_WORLD, atmodisksize##name, 0, 1, 16); \
+    FVAR(IDF_WORLD, atmodisksize##name, 0, 10, 90); \
+    FVAR(IDF_WORLD, atmodiskcorona##name, 0, 0.2f, 1); \
     FVAR(IDF_WORLD, atmodiskbright##name, 0, 1, 16); \
     FVAR(IDF_WORLD, atmohaze##name, 0, 0.1f, 16); \
     FVAR(IDF_WORLD, atmodensity##name, 0, 1, 16); \
@@ -108,8 +109,6 @@ Texture *loadskyoverlay(const char *basename)
 
 MPVVARS(, MPV_DEF);
 MPVVARS(alt, MPV_ALT);
-
-FVAR(IDF_READONLY, atmodiskpower, 1, 8, 0);
 
 #define GETMPV(name, type) \
     type get##name() \
@@ -172,6 +171,7 @@ GETMPV(atmobright, float);
 GETMPV(atmolight, bvec &);
 GETMPV(atmolightscale, float);
 GETMPV(atmodisksize, float);
+GETMPV(atmodiskcorona, float);
 GETMPV(atmodiskbright, float);
 GETMPV(atmohaze, float);
 GETMPV(atmodensity, float);
@@ -520,8 +520,10 @@ static void drawatmosphere()
     LOCALPARAM(sunmatrix, sunmatrix);
 
     const float earthradius = 6371e3f, earthatmoheight = 8.4e3f;
-    float planetradius = earthradius*getatmoplanetsize(), atmoradius = planetradius + earthatmoheight*getatmoheight();
-    LOCALPARAMF(opticaldepthoffset, (atmoradius*atmoradius) / (planetradius*planetradius) - 1);
+    float planetradius = earthradius*atmoplanetsize, atmoradius = planetradius + earthatmoheight*atmoheight, atmoratio = atmoradius/planetradius;
+    vec sundir = getpielightdir();
+    float sundist = sqrtf(sundir.z*sundir.z + atmoratio*atmoratio - 1) - sundir.z;
+    LOCALPARAMF(opticaldepthoffset, atmoratio*atmoratio - 1, sundist + 1e-5);
 
     float gm = clamp(0.95f - 0.2f*getatmohaze(), 0.0f, 1.0f);
     LOCALPARAMF(mie, 1 + gm*gm, -2*gm);
@@ -532,22 +534,32 @@ static void drawatmosphere()
     vec betar = vec(lambda).square().square().recip().mul(1.241e-30f * getatmodensity()),
         betam = vec(lambda).recip().square().mul(k).mul(1.350e-17f * getatmohaze()),
         betao = vec(ozone).mul(0.05e-5f*getatmoozone()),
-        betarm = vec(betar).add(betam).add(betao).div(getpielightdir().z);
+        betarm = vec(betar).add(betam).add(betao);
     betar.div(betarm).mul(3/(16*M_PI));
     betam.div(betarm).mul((1-gm)*(1-gm)/(4*M_PI));
-    LOCALPARAM(betar, betar);
-    LOCALPARAM(betam, betam);
-    LOCALPARAM(betarm, vec(betarm).mul(planetradius/M_LN2));
+    // scale extinction distances so that 1 unit = 1 planet radius
+    betarm.mul(planetradius);
+    // multiply here to cancel out division by zenith extinction that happens later
+    vec zenithextinction = vec(betarm).mul(-(atmoratio - 1)).exp();
+    LOCALPARAM(betar, vec(betar).mul(zenithextinction));
+    LOCALPARAM(betam, vec(betam).mul(zenithextinction));
+    LOCALPARAM(betarm, vec(betarm).div(M_LN2));
 
+    // calculate extinction(sundir)/extinction(zenith)
     extern float hdrgamma;
-    vec sunextinction = vec(betarm).mul(-(atmoradius - planetradius) / hdrgamma).exp();
+    vec sunextinction = vec(betarm).mul(-(sundist - (atmoratio - 1)) / hdrgamma).exp();
     bvec curatmolight = getatmolight();
     vec suncolor = (!curatmolight.iszero() ? curatmolight.tocolor().mul(getatmolightscale()) : getpielight().tocolor().mul(getpielightscale())).mul(getatmobright()*ldrscale);
     LOCALPARAM(sunlight, vec4(suncolor.mul(sunextinction), getatmoblend()));
-    LOCALPARAM(sundir, getpielightdir());
+    LOCALPARAM(sundir, sundir);
 
-    float sundiskscale = 100.0f / getatmodisksize();
-    LOCALPARAMF(sundiskparams, sundiskscale, getatmodiskbright());
+    float sundiskscale = sinf(0.5f*getatmodisksize()*RAD);
+    if(sundiskscale > 0)
+    {
+        float brightness = getatmodiskbright() / (pow(getatmobright(), hdrgamma) * max(getatmodiskcorona() * getatmodiskcorona(), 1e-3f));
+        LOCALPARAMF(sundiskparams, 1.0f/(sundiskscale*sundiskscale), brightness);
+    }
+    else LOCALPARAMF(sundiskparams, 0, 0);
 
     gle::defvertex();
     gle::begin(GL_TRIANGLE_STRIP);
