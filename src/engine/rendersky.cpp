@@ -523,7 +523,8 @@ static void drawatmosphere()
     float planetradius = earthradius*atmoplanetsize, atmoradius = planetradius + earthatmoheight*atmoheight, atmoratio = atmoradius/planetradius;
     vec sundir = getpielightdir();
     float sundist = sqrtf(sundir.z*sundir.z + atmoratio*atmoratio - 1) - sundir.z;
-    LOCALPARAMF(opticaldepthoffset, atmoratio*atmoratio - 1, sundist + 1e-5);
+    // scales on input are 1 unit = 1 planet radius, on output 1 unit = 1 sundist
+    LOCALPARAMF(opticaldepthparams, atmoratio*atmoratio - 1, 1/(sundist + 1e-5f));
 
     float gm = clamp(0.95f - 0.2f*getatmohaze(), 0.0f, 1.0f);
     LOCALPARAMF(mie, 1 + gm*gm, -2*gm);
@@ -543,7 +544,7 @@ static void drawatmosphere()
     vec zenithextinction = vec(betarm).mul(-(atmoratio - 1)).exp();
     LOCALPARAM(betar, vec(betar).mul(zenithextinction));
     LOCALPARAM(betam, vec(betam).mul(zenithextinction));
-    LOCALPARAM(betarm, vec(betarm).div(M_LN2));
+    LOCALPARAM(betarm, vec(betarm).mul(sundist/M_LN2));
 
     // calculate extinction(sundir)/extinction(zenith)
     extern float hdrgamma;
