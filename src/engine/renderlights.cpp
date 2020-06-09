@@ -1337,6 +1337,17 @@ done:
     endtimer(hdrtimer);
 }
 
+VAR(0, debugbloom, 0, 0, 1);
+
+void viewbloom()
+{
+    int w = min(hudw, hudh)/2, h = (w*hudh)/hudw;
+    SETSHADER(hudrect);
+    gle::colorf(1, 1, 1);
+    glBindTexture(GL_TEXTURE_RECTANGLE, bloomtex[3]);
+    debugquad(0, 0, w, h, 0, 0, bloomw, bloomh);
+}
+
 VAR(0, debugdepth, 0, 0, 1);
 
 void viewdepth()
@@ -5370,6 +5381,7 @@ bool debuglights()
 {
     if(debugshadowatlas) viewshadowatlas();
     else if(debugao) viewao();
+    else if(debugbloom) viewbloom();
     else if(debugdepth) viewdepth();
     else if(debugstencil) viewstencil();
     else if(debugrefract) viewrefract();
