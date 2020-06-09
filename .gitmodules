@@ -22,6 +22,9 @@
 	path = data/crosshairs
 	url = https://github.com/redeclipse/crosshairs.git
 	branch = master
+[submodule "dc"]
+	path = data/dc
+	url = https://github.com/redeclipse/dc.git
 [submodule "decals"]
 	path = data/decals
 	url = https://github.com/redeclipse/decals.git
