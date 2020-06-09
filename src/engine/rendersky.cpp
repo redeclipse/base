@@ -90,6 +90,7 @@ Texture *loadskyoverlay(const char *basename)
     FVAR(IDF_WORLD, atmobright##name, 0, 1, 16); \
     CVAR1(IDF_WORLD, atmolight##name, 0); \
     FVAR(IDF_WORLD, atmolightscale##name, 0, 1, 16); \
+    CVAR1(IDF_WORLD, atmodisk##name, 0); \
     FVAR(IDF_WORLD, atmodisksize##name, 0, 10, 90); \
     FVAR(IDF_WORLD, atmodiskcorona##name, 0, 0.5f, 1); \
     FVAR(IDF_WORLD, atmodiskbright##name, 0, 1, 16); \
@@ -170,6 +171,7 @@ GETMPV(atmoheight, float);
 GETMPV(atmobright, float);
 GETMPV(atmolight, bvec &);
 GETMPV(atmolightscale, float);
+GETMPV(atmodisk, bvec &);
 GETMPV(atmodisksize, float);
 GETMPV(atmodiskcorona, float);
 GETMPV(atmodiskbright, float);
@@ -546,16 +548,17 @@ static void drawatmosphere()
     // assume sunlight color is gamma encoded, so decode to linear light
     extern float hdrgamma;
     bvec curatmolight = getatmolight();
-    vec suncolor = (!curatmolight.iszero() ? curatmolight.tocolor().mul(getatmolightscale()) : getpielight().tocolor().mul(getpielightscale())).mul(ldrscale).pow(hdrgamma).mul(getatmobright() * 16);
-    suncolor.mul(sunextinction);
-    LOCALPARAM(betar, vec(betar).mul(suncolor));
-    LOCALPARAM(betam, vec(betam).mul(suncolor));
+    vec suncolor = !curatmolight.iszero() ? curatmolight.tocolor().mul(getatmolightscale()) : getpielight().tocolor().mul(getpielightscale());
+    vec sunscale = vec(suncolor).mul(ldrscale).pow(hdrgamma).mul(getatmobright() * 16).mul(sunextinction);
+    LOCALPARAM(betar, vec(betar).mul(sunscale));
+    LOCALPARAM(betam, vec(betam).mul(sunscale));
     // further scale extinction distances output from opticaldepth that are in sundist units
     LOCALPARAM(betarm, vec(betarm).mul(sundist/M_LN2));
 
     // scale extinguished sunlight in ratio to extinction at zenith, then clamp to force saturation
-    vec zenithextinction = vec(betarm).mul(-(atmoratio - 1)).exp();
-    vec diskcolor = vec(suncolor).div(zenithextinction).mul(getatmodiskbright() * 2 / (getatmobright() * 16)).min(1);
+    vec zenithextinction = vec(betarm).mul(-(sundist - (atmoratio - 1))).exp();
+    bvec curatmodisk = getatmodisk();
+    vec diskcolor = (!curatmodisk.iszero() ? curatmodisk.tocolor() : suncolor).mul(ldrscale).pow(hdrgamma).mul(zenithextinction).mul(getatmodiskbright() * 2).min(1);
     LOCALPARAM(sunlight, vec4(diskcolor, getatmoblend()));
     LOCALPARAM(sundir, sundir);
 
