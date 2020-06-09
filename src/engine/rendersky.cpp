@@ -528,8 +528,10 @@ static void drawatmosphere()
     // scales on input are 1 unit = 1 planet radius, on output 1 unit = 1 sundist
     LOCALPARAMF(opticaldepthparams, atmoratio*atmoratio - 1, 1/(sundist + 1e-5f));
 
-    float gm = clamp(0.95f - 0.2f*getatmohaze(), 0.0f, 1.0f);
-    LOCALPARAMF(mie, 1 + gm*gm, -2*gm);
+    // Henyey-Greenstein approximation, 1/(4pi) * (1 - g^2)/(1 + g^2 - 2gcos)]^1.5
+    // clamp values near 0 angle to avoid spotlight artifact inside sundisk
+    float gm = max(0.95f - 0.2f*getatmohaze(), 0.65f);
+    LOCALPARAMF(mie, 1 + gm*gm, -2*gm, 1 - (1 - cosf(0.5f*getatmodisksize()*RAD))*(1 - getatmodiskcorona()));
 
     static const vec lambda(680e-9f, 550e-9f, 450e-9f),
                      k(0.686f, 0.678f, 0.666f),
