@@ -1450,6 +1450,22 @@ matrix4 cammatrix, projmatrix, camprojmatrix, invcammatrix, invcamprojmatrix, in
 
 FVAR(0, nearplane, 0.01f, 0.54f, 2.0f);
 
+vec calcavatarpos(const vec &pos, float fov)
+{
+    vec eyepos;
+    cammatrix.transform(pos, eyepos);
+    GLdouble ydist = nearplane * tan(fov/2.0f*RAD), xdist = ydist * aspect;
+    vec4 scrpos;
+    scrpos.x = eyepos.x*nearplane/xdist;
+    scrpos.y = eyepos.y*nearplane/ydist;
+    scrpos.z = (eyepos.z*(farplane + nearplane) - 2*nearplane*farplane) / (farplane - nearplane);
+    scrpos.w = -eyepos.z;
+
+    vec worldpos = invcamprojmatrix.perspectivetransform(scrpos);
+    vec dir = vec(worldpos).sub(camera1->o).rescale(12.0f*sqrtf(aspect));
+    return dir.add(camera1->o);
+}
+
 void setavatarscale(float fov, float zscale)
 {
     projmatrix.perspective(fov, aspect, nearplane, farplane);
