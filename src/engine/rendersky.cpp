@@ -560,7 +560,7 @@ static void drawatmosphere()
     // scale extinguished sunlight in ratio to extinction at zenith, then clamp to force saturation
     vec zenithextinction = vec(betarm).mul(-(sundist - (atmoratio - 1))).exp();
     bvec curatmodisk = getatmodisk();
-    vec diskcolor = (!curatmodisk.iszero() ? curatmodisk.tocolor() : suncolor).mul(ldrscale).pow(hdrgamma).mul(zenithextinction).mul(getatmodiskbright() * 2).min(1);
+    vec diskcolor = (!curatmodisk.iszero() ? curatmodisk.tocolor() : suncolor).mul(ldrscale).pow(hdrgamma).mul(zenithextinction).mul(getatmodiskbright() * 1.5f).min(1);
     LOCALPARAM(sunlight, vec4(diskcolor, getatmoblend()));
     LOCALPARAM(sundir, sundir);
 
