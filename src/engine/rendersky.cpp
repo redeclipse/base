@@ -91,7 +91,7 @@ Texture *loadskyoverlay(const char *basename)
     CVAR1(IDF_WORLD, atmolight##name, 0); \
     FVAR(IDF_WORLD, atmolightscale##name, 0, 1, 16); \
     CVAR1(IDF_WORLD, atmodisk##name, 0); \
-    FVAR(IDF_WORLD, atmodisksize##name, 0, 10, 90); \
+    FVAR(IDF_WORLD, atmodisksize##name, 0, 15, 90); \
     FVAR(IDF_WORLD, atmodiskcorona##name, 0, 0.5f, 1); \
     FVAR(IDF_WORLD, atmodiskbright##name, 0, 1, 16); \
     FVAR(IDF_WORLD, atmohaze##name, 0, 0.1f, 16); \
@@ -564,8 +564,11 @@ static void drawatmosphere()
     LOCALPARAM(sunlight, vec4(diskcolor, getatmoblend()));
     LOCALPARAM(sundir, sundir);
 
+    // convert from view cosine into mu^2 for limb darkening, where mu = sqrt(1 - sin^2) and sin^2 = 1 - cos^2, thus mu^2 = 1 - (1 - cos^2*scale)
+    // convert corona offset into scale for mu^2, where sin = (1-corona) and thus mu^2 = 1 - (1-corona^2)
     float sundiskscale = sinf(0.5f*getatmodisksize()*RAD);
-    if(sundiskscale > 0) LOCALPARAMF(sundiskparams, 1.0f/(sundiskscale*sundiskscale), 1.0f/max(getatmodiskcorona(), 1e-3f));
+    float coronamu = 1 - (1-getatmodiskcorona())*(1-getatmodiskcorona());
+    if(sundiskscale > 0) LOCALPARAMF(sundiskparams, 1.0f/(sundiskscale*sundiskscale), 1.0f/max(coronamu, 1e-3f));
     else LOCALPARAMF(sundiskparams, 0, 0);
 
     gle::defvertex();
