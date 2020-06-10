@@ -983,7 +983,7 @@ VAR(0, hdraccummillis, 1, 33, 1000);
 VAR(0, hdrreduce, 0, 2, 2);
 VARF(IDF_PERSIST, hdrprec, 0, 2, 3, cleanupgbuffer());
 FVARF(IDF_PERSIST, hdrgamma, 1e-3f, 2, 1e3f, initwarning("HDR setup", INIT_LOAD, CHANGE_SHADERS));
-FVAR(0, hdrsaturate, 1e-3f, 0.8f, 1e3f);
+FVAR(0, hdrsaturate, 1e-3f, 0.9f, 1e3f);
 VARF(IDF_PERSIST, gscale, 25, 100, 100, cleanupgbuffer());
 VARF(IDF_PERSIST, gscalecubic, 0, 0, 1, cleanupgbuffer());
 VARF(IDF_PERSIST, gscalenearest, -1, -1, 1, cleanupgbuffer());
