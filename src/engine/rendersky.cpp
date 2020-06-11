@@ -531,7 +531,7 @@ static void drawatmosphere()
     // Henyey-Greenstein approximation, 1/(4pi) * (1 - g^2)/(1 + g^2 - 2gcos)]^1.5
     // clamp values near 0 angle to avoid spotlight artifact inside sundisk
     float gm = max(0.95f - 0.2f*getatmohaze(), 0.65f);
-    LOCALPARAMF(mie, 1 + gm*gm, -2*gm, 1 - (1 - cosf(0.5f*getatmodisksize()*RAD))*(1 - getatmodiskcorona()));
+    LOCALPARAMF(mie, 1 + gm*gm, -2*gm, 1 - (1 - cosf(0.5f*getatmodisksize()*(1 - getatmodiskcorona()))));
 
     static const vec lambda(680e-9f, 550e-9f, 450e-9f),
                      k(0.686f, 0.678f, 0.666f),
@@ -560,10 +560,7 @@ static void drawatmosphere()
     // scale extinguished sunlight in ratio to extinction at zenith, then clamp to force saturation
     vec zenithextinction = vec(betarm).mul(-(sundist - (atmoratio - 1))).exp();
     bvec curatmodisk = getatmodisk();
-    vec diskcolor = (!curatmodisk.iszero() ? curatmodisk.tocolor() : suncolor).pow(hdrgamma).mul(zenithextinction).mul(getatmodiskbright() * 3.0f);
-    static vec lumweights(0.2126, 0.7152, 0.0722);
-    float lum = diskcolor.dot(lumweights);
-    diskcolor.mul(min(lum, 2.0f) / max(lum, 1e-3f) * pow(ldrscale, hdrgamma));
+    vec diskcolor = (!curatmodisk.iszero() ? curatmodisk.tocolor() : suncolor).pow(hdrgamma).mul(ldrscale).mul(zenithextinction).mul(getatmodiskbright());
     LOCALPARAM(sunlight, vec4(diskcolor, getatmoblend()));
     LOCALPARAM(sundir, sundir);
 
