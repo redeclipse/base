@@ -984,6 +984,8 @@ VAR(0, hdrreduce, 0, 2, 2);
 VARF(IDF_PERSIST, hdrprec, 0, 2, 3, cleanupgbuffer());
 FVARF(IDF_PERSIST, hdrgamma, 1e-3f, 2, 1e3f, initwarning("HDR setup", INIT_LOAD, CHANGE_SHADERS));
 FVAR(0, hdrsaturate, 1e-3f, 0.9f, 1e3f);
+FVAR(0, hdrminexposure, 0, 0.03f, 1);
+FVAR(0, hdrmaxexposure, 0, 0.3f, 1);
 VARF(IDF_PERSIST, gscale, 25, 100, 100, cleanupgbuffer());
 VARF(IDF_PERSIST, gscalecubic, 0, 0, 1, cleanupgbuffer());
 VARF(IDF_PERSIST, gscalenearest, -1, -1, 1, cleanupgbuffer());
@@ -1336,6 +1338,19 @@ done:
 
     endtimer(hdrtimer);
 }
+
+void getavglum()
+{
+    if(!bloomfbo[4]) return;
+    glBindFramebuffer_(GL_FRAMEBUFFER, bloomfbo[4]);
+    glPixelStorei(GL_PACK_ALIGNMENT, 1);
+    float avglum = -1;
+    glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &avglum);
+    glBindFramebuffer_(GL_FRAMEBUFFER, 0);
+    if(avglum >= 0) floatret(4 * avglum);
+}
+
+COMMANDN(0, avglum, getavglum, "");
 
 VAR(0, debugbloom, 0, 0, 1);
 
