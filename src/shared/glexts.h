@@ -164,7 +164,6 @@ typedef void (APIENTRYP PFNGLBINDFRAMEBUFFERPROC) (GLenum target, GLuint framebu
 typedef void (APIENTRYP PFNGLDELETEFRAMEBUFFERSPROC) (GLsizei n, const GLuint *framebuffers);
 typedef void (APIENTRYP PFNGLGENFRAMEBUFFERSPROC) (GLsizei n, GLuint *framebuffers);
 typedef GLenum (APIENTRYP PFNGLCHECKFRAMEBUFFERSTATUSPROC) (GLenum target);
-typedef void (APIENTRYP PFNGLFRAMEBUFFERTEXTURE1DPROC) (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
 typedef void (APIENTRYP PFNGLFRAMEBUFFERTEXTURE2DPROC) (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
 typedef void (APIENTRYP PFNGLFRAMEBUFFERTEXTURE3DPROC) (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset);
 typedef void (APIENTRYP PFNGLFRAMEBUFFERRENDERBUFFERPROC) (GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
@@ -185,7 +184,6 @@ extern PFNGLCHECKFRAMEBUFFERSTATUSPROC     glCheckFramebufferStatus_;
 extern PFNGLBINDFRAMEBUFFERPROC            glBindFramebuffer_;
 extern PFNGLDELETEFRAMEBUFFERSPROC         glDeleteFramebuffers_;
 extern PFNGLGENFRAMEBUFFERSPROC            glGenFramebuffers_;
-extern PFNGLFRAMEBUFFERTEXTURE1DPROC       glFramebufferTexture1D_;
 extern PFNGLFRAMEBUFFERTEXTURE2DPROC       glFramebufferTexture2D_;
 extern PFNGLFRAMEBUFFERTEXTURE3DPROC       glFramebufferTexture3D_;
 extern PFNGLFRAMEBUFFERRENDERBUFFERPROC    glFramebufferRenderbuffer_;
@@ -309,10 +307,8 @@ extern PFNGLFLUSHMAPPEDBUFFERRANGEPROC glFlushMappedBufferRange_;
 
 #define glCompressedTexImage3D_ glCompressedTexImage3D
 #define glCompressedTexImage2D_ glCompressedTexImage2D
-#define glCompressedTexImage1D_ glCompressedTexImage1D
 #define glCompressedTexSubImage3D_ glCompressedTexSubImage3D
 #define glCompressedTexSubImage2D_ glCompressedTexSubImage2D
-#define glCompressedTexSubImage1D_ glCompressedTexSubImage1D
 #define glGetCompressedTexImage_ glGetCompressedTexImage
 
 #define glDrawRangeElements_ glDrawRangeElements
@@ -328,10 +324,8 @@ extern PFNGLCOPYTEXSUBIMAGE3DPROC glCopyTexSubImage3D_;
 
 extern PFNGLCOMPRESSEDTEXIMAGE3DPROC    glCompressedTexImage3D_;
 extern PFNGLCOMPRESSEDTEXIMAGE2DPROC    glCompressedTexImage2D_;
-extern PFNGLCOMPRESSEDTEXIMAGE1DPROC    glCompressedTexImage1D_;
 extern PFNGLCOMPRESSEDTEXSUBIMAGE3DPROC glCompressedTexSubImage3D_;
 extern PFNGLCOMPRESSEDTEXSUBIMAGE2DPROC glCompressedTexSubImage2D_;
-extern PFNGLCOMPRESSEDTEXSUBIMAGE1DPROC glCompressedTexSubImage1D_;
 extern PFNGLGETCOMPRESSEDTEXIMAGEPROC   glGetCompressedTexImage_;
 
 extern PFNGLDRAWRANGEELEMENTSPROC glDrawRangeElements_;

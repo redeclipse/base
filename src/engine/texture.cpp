@@ -826,8 +826,7 @@ void uploadtexture(GLenum target, GLenum internal, int tw, int th, GLenum format
         int srcalign = row > 0 ? rowalign : texalign(src, pitch, 1);
         if(align != srcalign) glPixelStorei(GL_UNPACK_ALIGNMENT, align = srcalign);
         if(row > 0) glPixelStorei(GL_UNPACK_ROW_LENGTH, row);
-        if(target==GL_TEXTURE_1D) glTexImage1D(target, level, internal, tw, 0, format, type, src);
-        else glTexImage2D(target, level, internal, tw, th, 0, format, type, src);
+        glTexImage2D(target, level, internal, tw, th, 0, format, type, src);
         if(row > 0) glPixelStorei(GL_UNPACK_ROW_LENGTH, row = 0);
         if(!mipmap || max(tw, th) <= 1) break;
         int srcw = tw, srch = th;
@@ -852,8 +851,7 @@ void uploadcompressedtexture(GLenum target, GLenum subtarget, GLenum format, int
         int size = ((w + align-1)/align) * ((h + align-1)/align) * blocksize;
         if(w <= sizelimit && h <= sizelimit)
         {
-            if(target==GL_TEXTURE_1D) glCompressedTexImage1D_(subtarget, level, format, w, 0, size, data);
-            else glCompressedTexImage2D_(subtarget, level, format, w, h, 0, size, data);
+            glCompressedTexImage2D_(subtarget, level, format, w, h, 0, size, data);
             level++;
             if(!mipmap) break;
         }
@@ -925,7 +923,7 @@ void setuptexparameters(int tnum, const void *pixels, int clamp, int filter, GLe
 {
     glBindTexture(target, tnum);
     glTexParameteri(target, GL_TEXTURE_WRAP_S, clamp&0x001 ? GL_CLAMP_TO_EDGE : (clamp&0x1000 ? GL_CLAMP_TO_BORDER : (clamp&0x100 ? GL_MIRRORED_REPEAT : GL_REPEAT)));
-    if(target!=GL_TEXTURE_1D) glTexParameteri(target, GL_TEXTURE_WRAP_T, clamp&0x002 ? GL_CLAMP_TO_EDGE : (clamp&0x2000 ? GL_CLAMP_TO_BORDER : (clamp&0x200 ? GL_MIRRORED_REPEAT : GL_REPEAT)));
+    glTexParameteri(target, GL_TEXTURE_WRAP_T, clamp&0x002 ? GL_CLAMP_TO_EDGE : (clamp&0x2000 ? GL_CLAMP_TO_BORDER : (clamp&0x200 ? GL_MIRRORED_REPEAT : GL_REPEAT)));
     if(target==GL_TEXTURE_3D) glTexParameteri(target, GL_TEXTURE_WRAP_R, clamp&0x004 ? GL_CLAMP_TO_EDGE : (clamp&0x4000 ? GL_CLAMP_TO_BORDER : (clamp&0x400 ? GL_MIRRORED_REPEAT : GL_REPEAT)));
     if(target==GL_TEXTURE_2D && hasAF && min(aniso, hwmaxaniso) > 0 && filter > 1) glTexParameteri(target, GL_TEXTURE_MAX_ANISOTROPY_EXT, min(aniso, hwmaxaniso));
     glTexParameteri(target, GL_TEXTURE_MAG_FILTER, !(clamp&0x8000) && filter && bilinear ? GL_LINEAR : GL_NEAREST);

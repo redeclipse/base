@@ -215,7 +215,6 @@ static void compileglslshader(Shader &s, GLenum type, GLuint &obj, const char *d
             }
         }
         parts[numparts++] =
-            "#define texture1D(sampler, coords) texture(sampler, coords)\n"
             "#define texture2D(sampler, coords) texture(sampler, coords)\n"
             "#define texture2DOffset(sampler, coords, offset) textureOffset(sampler, coords, offset)\n"
             "#define texture2DProj(sampler, coords) textureProj(sampler, coords)\n"
