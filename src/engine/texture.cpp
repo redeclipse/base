@@ -804,7 +804,7 @@ void cleanupmipmaps()
     if(mipmapfbo[0]) { glDeleteFramebuffers_(2, mipmapfbo); memset(mipmapfbo, 0, sizeof(mipmapfbo)); }
 }
 
-VARF(IDF_PERSIST, gpumipmap, 0, 0, 1, cleanupmipmaps());
+VARF(IDF_PERSIST, gpumipmap, 0, 1, 1, cleanupmipmaps());
 
 void uploadtexture(int tnum, GLenum target, GLenum internal, int tw, int th, GLenum format, GLenum type, const void *pixels, int pw, int ph, int pitch, bool mipmap)
 {
