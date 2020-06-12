@@ -797,7 +797,16 @@ void resizetexture(int w, int h, bool mipmap, bool canreduce, GLenum target, int
     }
 }
 
-void uploadtexture(GLenum target, GLenum internal, int tw, int th, GLenum format, GLenum type, const void *pixels, int pw, int ph, int pitch, bool mipmap)
+static GLuint mipmapfbo[2] = { 0, 0 };
+
+void cleanupmipmaps()
+{
+    if(mipmapfbo[0]) { glDeleteFramebuffers_(2, mipmapfbo); memset(mipmapfbo, 0, sizeof(mipmapfbo)); }
+}
+
+VARF(IDF_PERSIST, gpumipmap, 0, 0, 1, cleanupmipmaps());
+
+void uploadtexture(int tnum, GLenum target, GLenum internal, int tw, int th, GLenum format, GLenum type, const void *pixels, int pw, int ph, int pitch, bool mipmap)
 {
     int bpp = formatsize(format), row = 0, rowalign = 0;
     if(!pitch) pitch = pw*bpp;
@@ -819,26 +828,49 @@ void uploadtexture(GLenum target, GLenum internal, int tw, int th, GLenum format
             loopi(th) memcpy(&buf[i*tw*bpp], &((uchar *)pixels)[i*pitch], tw*bpp);
         }
     }
-    for(int level = 0, align = 0;; level++)
+    bool shouldgpumipmap = pixels && mipmap && gpumipmap && hasFBB;
+    for(int level = 0, align = 0, mw = tw, mh = th;; level++)
     {
         uchar *src = buf ? buf : (uchar *)pixels;
-        if(buf) pitch = tw*bpp;
+        if(buf) pitch = mw*bpp;
         int srcalign = row > 0 ? rowalign : texalign(src, pitch, 1);
         if(align != srcalign) glPixelStorei(GL_UNPACK_ALIGNMENT, align = srcalign);
         if(row > 0) glPixelStorei(GL_UNPACK_ROW_LENGTH, row);
-        glTexImage2D(target, level, internal, tw, th, 0, format, type, src);
+        glTexImage2D(target, level, internal, mw, mh, 0, format, type, src);
         if(row > 0) glPixelStorei(GL_UNPACK_ROW_LENGTH, row = 0);
-        if(!mipmap || max(tw, th) <= 1) break;
-        int srcw = tw, srch = th;
-        if(tw > 1) tw /= 2;
-        if(th > 1) th /= 2;
+        if(!mipmap || shouldgpumipmap || max(mw, mh) <= 1) break;
+        int srcw = mw, srch = mh;
+        if(mw > 1) mw /= 2;
+        if(mh > 1) mh /= 2;
         if(src)
         {
-            if(!buf) buf = new uchar[tw*th*bpp];
-            scaletexture(src, srcw, srch, bpp, pitch, buf, tw, th);
+            if(!buf) buf = new uchar[mw*mh*bpp];
+            scaletexture(src, srcw, srch, bpp, pitch, buf, mw, mh);
         }
     }
     if(buf) delete[] buf;
+    if(shouldgpumipmap)
+    {
+        for(int level = 1, mw = tw, mh = th; max(mw, mh) > 1; level++)
+        {
+            if(mw > 1) mw /= 2;
+            if(mh > 1) mh /= 2;
+            glTexImage2D(target, level, internal, mw, mh, 0, format, type, NULL);
+        }
+        if(!mipmapfbo[0]) glGenFramebuffers_(2, mipmapfbo);
+        glBindFramebuffer_(GL_READ_FRAMEBUFFER, mipmapfbo[0]);
+        glBindFramebuffer_(GL_DRAW_FRAMEBUFFER, mipmapfbo[1]);
+        for(int level = 1, mw = tw, mh = th; max(mw, mh) > 1; level++)
+        {
+            int srcw = mw, srch = mh;
+            if(mw > 1) mw /= 2;
+            if(mh > 1) mh /= 2;
+            glFramebufferTexture2D_(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tnum, level - 1);
+            glFramebufferTexture2D_(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tnum, level);
+            glBlitFramebuffer_(0, 0, srcw, srch, 0, 0, mw, mh, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+        }
+        glBindFramebuffer_(GL_FRAMEBUFFER, 0);
+    }
 }
 
 void uploadcompressedtexture(GLenum target, GLenum subtarget, GLenum format, int w, int h, const uchar *data, int align, int blocksize, int levels, bool mipmap)
@@ -1092,7 +1124,7 @@ void createtexture(int tnum, int w, int h, const void *pixels, int clamp, int fi
         resizetexture(w, h, mipmap, false, target, 0, tw, th);
         if(mipmap) component = compressedformat(component, tw, th);
     }
-    uploadtexture(subtarget, component, tw, th, format, type, pixels, pw, ph, pitch, mipmap);
+    uploadtexture(tnum, subtarget, component, tw, th, format, type, pixels, pw, ph, pitch, mipmap);
 }
 
 void createcompressedtexture(int tnum, int w, int h, const uchar *data, int align, int blocksize, int levels, int clamp, int filter, GLenum format, GLenum subtarget, bool swizzle = false)
@@ -3307,6 +3339,7 @@ GLuint genenvmap(const vec &o, int esize, int aasize, int blur, bool onlysky)
 
 void initenvmaps()
 {
+    cleanupmipmaps();
     clearenvmaps();
     envmaps.add().size = hasskybox() ? 0 : 1;
     const vector<extentity *> &ents = entities::getents();
