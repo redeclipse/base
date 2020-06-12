@@ -881,6 +881,8 @@ void uploadtexture(int tnum, GLenum target, GLenum internal, int tw, int th, GLe
     if(buf) delete[] buf;
     if(shouldgpumipmap)
     {
+        GLint fbo = 0;
+        glGetIntegerv(GL_FRAMEBUFFER_BINDING, &fbo);
         for(int level = 1, mw = tw, mh = th; max(mw, mh) > 1; level++)
         {
             if(mw > 1) mw /= 2;
@@ -899,8 +901,7 @@ void uploadtexture(int tnum, GLenum target, GLenum internal, int tw, int th, GLe
             glFramebufferTexture2D_(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tnum, level);
             glBlitFramebuffer_(0, 0, srcw, srch, 0, 0, mw, mh, GL_COLOR_BUFFER_BIT, GL_LINEAR);
         }
-        glBindFramebuffer_(GL_READ_FRAMEBUFFER, 0);
-        glBindFramebuffer_(GL_DRAW_FRAMEBUFFER, 0);
+        glBindFramebuffer_(GL_FRAMEBUFFER, fbo);
     }
 }
 
