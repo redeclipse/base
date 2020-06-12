@@ -882,7 +882,7 @@ void uploadtexture(int tnum, GLenum target, GLenum internal, int tw, int th, GLe
     if(shouldgpumipmap)
     {
         GLint fbo = 0;
-        glGetIntegerv(GL_FRAMEBUFFER_BINDING, &fbo);
+        if(progressing || !inbetweenframes || drawtex) glGetIntegerv(GL_FRAMEBUFFER_BINDING, &fbo);
         for(int level = 1, mw = tw, mh = th; max(mw, mh) > 1; level++)
         {
             if(mw > 1) mw /= 2;
