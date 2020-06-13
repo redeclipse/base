@@ -897,10 +897,12 @@ void uploadtexture(int tnum, GLenum target, GLenum internal, int tw, int th, GLe
             int srcw = mw, srch = mh;
             if(mw > 1) mw /= 2;
             if(mh > 1) mh /= 2;
-            glFramebufferTexture2D_(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tnum, level - 1);
-            glFramebufferTexture2D_(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tnum, level);
+            glFramebufferTexture2D_(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, tnum, level - 1);
+            glFramebufferTexture2D_(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, tnum, level);
             glBlitFramebuffer_(0, 0, srcw, srch, 0, 0, mw, mh, GL_COLOR_BUFFER_BIT, GL_LINEAR);
         }
+        glFramebufferTexture2D_(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, 0, 0);
+        glFramebufferTexture2D_(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, 0, 0);
         glBindFramebuffer_(GL_FRAMEBUFFER, fbo);
     }
 }
