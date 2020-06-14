@@ -117,6 +117,7 @@ struct vec
     float zdot(const vec &o) const { return z*o.z; }
     vec &pow(float f)        { x = ::pow(x, f); y = ::pow(y, f); z = ::pow(z, f); return *this; }
     vec &exp()               { x = ::exp(x); y = ::exp(y); z = ::exp(z); return *this; }
+    vec &exp2()              { x = ::exp2(x); y = ::exp2(y); z = ::exp2(z); return *this; }
     vec &sqrt()              { x = sqrtf(x); y = sqrtf(y); z = sqrtf(z); return *this; }
     vec &mul(const vec &o)   { x *= o.x; y *= o.y; z *= o.z; return *this; }
     vec &mul(float f)        { x *= f; y *= f; z *= f; return *this; }
