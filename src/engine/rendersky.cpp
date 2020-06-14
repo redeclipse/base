@@ -88,6 +88,7 @@ Texture *loadskyoverlay(const char *basename)
     FVAR(IDF_WORLD, atmoplanetsize##name, FVAR_NONZERO, 1, FVAR_MAX); \
     FVAR(IDF_WORLD, atmoheight##name, FVAR_NONZERO, 1, FVAR_MAX); \
     FVAR(IDF_WORLD, atmobright##name, 0, 1, 16); \
+    FVAR(IDF_WORLD|IDF_READONLY, atmoclarity##name, 0, 0, 10); /* old map compat for fixatmo, don't use */ \
     CVAR1(IDF_WORLD, atmolight##name, 0); \
     FVAR(IDF_WORLD, atmolightscale##name, 0, 1, 16); \
     CVAR1(IDF_WORLD, atmodisk##name, 0); \
@@ -176,6 +177,7 @@ GETMPV(atmodisksize, float);
 GETMPV(atmodiskcorona, float);
 GETMPV(atmodiskbright, float);
 GETMPV(atmohaze, float);
+GETMPV(atmoclarity, float);
 GETMPV(atmodensity, float);
 GETMPV(atmoozone, float);
 GETMPV(atmoblend, float);
@@ -499,6 +501,26 @@ void cleanupsky()
     fogdome::cleanup();
 }
 
+void fixatmo()
+{
+    if(noedit(true)) return;
+    float betar = 1.86e-31 / (pow(550e-9f, 4) * atmodensity),
+          betam = pow(2*M_PI/550e-9f, 2) * 1.36e-19f * 0.68f * atmohaze,
+          ratio = (betar / (1 + atmoclarity) + betam) / (betar / 1.2f + betam);
+    setfvar("atmobright", pow(atmobright / 4, 2) / ratio);
+    setfvar("atmodisksize", max(15 + 5 * (atmodisksize - 1), 0.0f));
+    setfvar("atmodensity", 1.0f / atmodensity);
+    setfvar("atmoheight", ratio);
+    float betaralt = 1.86e-31 / (pow(550e-9f, 4) * atmodensityalt),
+          betamalt = pow((2*M_PI)/550e-9f, 2) * 1.36e-19f * 0.68f * atmohazealt,
+          ratioalt = (betaralt / (1 + atmoclarityalt) + betamalt) / (betaralt / 1.2f + betamalt);
+    setfvar("atmobrightalt", pow(atmobrightalt / 4, 2) / ratioalt);
+    setfvar("atmodisksizealt", max(15 + 5 * (atmodisksizealt - 1), 0.0f));
+    setfvar("atmodensityalt", 1.0f / atmodensityalt);
+    setfvar("atmoheightalt", ratioalt);
+}
+COMMAND(0, fixatmo, "");
+
 static void drawatmosphere()
 {
     if(getatmoblend() < 1)
@@ -506,7 +528,8 @@ static void drawatmosphere()
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     }
-    if(getpielightdir().z >= 1.0f/256) SETSHADER(atmosphere);
+    vec sundir = getpielightdir();
+    if(sundir.z >= 1.0f/256) SETSHADER(atmosphere);
     else
     {
         SETSHADER(skyfog);
@@ -521,48 +544,49 @@ static void drawatmosphere()
     sunmatrix.mul(invprojmatrix);
     LOCALPARAM(sunmatrix, sunmatrix);
 
-    const float earthradius = 6371e3f, earthatmoheight = 8.4e3f;
-    float planetradius = earthradius*atmoplanetsize, atmoradius = planetradius + earthatmoheight*atmoheight, atmoratio = atmoradius/planetradius;
-    vec sundir = getpielightdir();
-    float sundist = sqrtf(sundir.z*sundir.z + atmoratio*atmoratio - 1) - sundir.z;
-    // scales on input are 1 unit = 1 planet radius, on output 1 unit = 1 sundist
-    LOCALPARAMF(opticaldepthparams, atmoratio*atmoratio - 1, 1/(sundist + 1e-5f));
+    // optical depth scales for 3 different shells of atmosphere - air, haze, ozone
+    const float earthradius = 6371e3f, earthatmoheight = 8.4e3f, earthmieheight = 1.25e3, earthozoneheight = 2*earthatmoheight;
+    float planetradius = earthradius*getatmoplanetsize();
+    vec atmoshells = vec(earthatmoheight, earthmieheight, earthozoneheight).mul(getatmoheight()).add(planetradius).square().sub(planetradius*planetradius);
+    LOCALPARAM(opticaldepthparams, vec4(atmoshells, planetradius));
 
     // Henyey-Greenstein approximation, 1/(4pi) * (1 - g^2)/(1 + g^2 - 2gcos)]^1.5
+    // Hoffman-Preetham variation uses (1-g)^2 instead of 1-g^2 which avoids excessive glare
     // clamp values near 0 angle to avoid spotlight artifact inside sundisk
-    float gm = max(0.95f - 0.2f*getatmohaze(), 0.65f);
-    LOCALPARAMF(mie, 1 + gm*gm, -2*gm, 1 - (1 - cosf(0.5f*getatmodisksize()*(1 - getatmodiskcorona()))));
+    float gm = max(0.95f - 0.2f*getatmohaze(), 0.65f), miescale = pow((1-gm)*(1-gm)/(4*M_PI), -2.0f/3.0f);
+    LOCALPARAMF(mieparams, miescale*(1 + gm*gm), miescale*-2*gm, 1 - (1 - cosf(0.5f*getatmodisksize()*(1 - getatmodiskcorona())*RAD)));
 
     static const vec lambda(680e-9f, 550e-9f, 450e-9f),
                      k(0.686f, 0.678f, 0.666f),
                      ozone(3.426f, 8.298f, 0.356f);
     vec betar = vec(lambda).square().square().recip().mul(1.241e-30f * getatmodensity()),
-        betam = vec(lambda).recip().square().mul(k).mul(1.350e-17f * getatmohaze()),
-        betao = vec(ozone).mul(0.05e-5f*getatmoozone()),
-        betarm = vec(betar).add(betam).add(betao);
-    betar.div(betarm).mul(3/(16*M_PI));
-    betam.div(betarm).mul((1-gm)*(1-gm)/(4*M_PI));
-    // scale extinction distances so that 1 unit = 1 planet radius
-    betarm.mul(planetradius);
+        betam = vec(lambda).recip().square().mul(k).mul(9.072e-17f * getatmohaze()),
+        betao = vec(ozone).mul(0.06e-5f*getatmoozone());
+    LOCALPARAM(betarayleigh, vec(betar).div(M_LN2));
+    LOCALPARAM(betamie, vec(betam).div(M_LN2));
+    LOCALPARAM(betaozone, vec(betao).div(M_LN2));
 
     // extinction in direction of sun
-    vec sunextinction = vec(betarm).mul(-sundist).exp();
-    // assume sunlight color is gamma encoded, so decode to linear light
-    extern float hdrgamma;
+    float sunoffset = sundir.z*planetradius;
+    vec sundepth = vec(atmoshells).add(sunoffset*sunoffset).sqrt().sub(sunoffset);
+    vec sunweight = vec(betar).mul(sundepth.x).madd(betam, sundepth.y).madd(betao, sundepth.z - sundepth.x);
+    vec sunextinction = vec(sunweight).neg().exp();
     bvec curatmolight = getatmolight();
     vec suncolor = !curatmolight.iszero() ? curatmolight.tocolor().mul(getatmolightscale()) : getpielight().tocolor().mul(getpielightscale());
-    vec sunscale = vec(suncolor).mul(ldrscale).pow(hdrgamma).mul(getatmobright() * 16).mul(sunextinction);
-    LOCALPARAM(betar, vec(betar).mul(sunscale));
-    LOCALPARAM(betam, vec(betam).mul(sunscale));
-    // further scale extinction distances output from opticaldepth that are in sundist units
-    LOCALPARAM(betarm, vec(betarm).mul(sundist/M_LN2));
+    // assume sunlight color is gamma encoded, so decode to linear light, then apply extinction
+    extern float hdrgamma;
+    vec sunscale = vec(suncolor).mul(ldrscale).pow(hdrgamma).mul(atmobright * 16).mul(sunextinction);
+    LOCALPARAM(sunweight, vec(sunweight).div(M_LN2).add(1e-5f));
+    LOCALPARAM(sunlight, vec4(sunscale, getatmoblend()));
+    LOCALPARAM(sundir, sundir);
 
-    // scale extinguished sunlight in ratio to extinction at zenith, then clamp to force saturation
-    vec zenithextinction = vec(betarm).mul(-(sundist - (atmoratio - 1))).exp();
+    // invert extinction at zenith to get an approximation of how bright the sun disk should be
+    vec zenithdepth = vec(atmoshells).add(planetradius*planetradius).sqrt().sub(planetradius);
+    vec zenithweight = vec(betar).mul(zenithdepth.x).madd(betam, zenithdepth.y).madd(betao, zenithdepth.z - zenithdepth.x);
+    vec zenithextinction = vec(zenithweight).sub(sunweight).exp();
     bvec curatmodisk = getatmodisk();
     vec diskcolor = (!curatmodisk.iszero() ? curatmodisk.tocolor() : suncolor).mul(ldrscale).pow(hdrgamma).mul(zenithextinction).mul(getatmodiskbright() * 2);
-    LOCALPARAM(sunlight, vec4(diskcolor, getatmoblend()));
-    LOCALPARAM(sundir, sundir);
+    LOCALPARAM(sundiskcolor, diskcolor);
 
     // convert from view cosine into mu^2 for limb darkening, where mu = sqrt(1 - sin^2) and sin^2 = 1 - cos^2, thus mu^2 = 1 - (1 - cos^2*scale)
     // convert corona offset into scale for mu^2, where sin = (1-corona) and thus mu^2 = 1 - (1-corona^2)

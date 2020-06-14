@@ -349,6 +349,7 @@ extern int getvar(const char *name);
 extern int getvarmin(const char *name);
 extern int getvarmax(const char *name);
 extern int getvardef(const char *name, bool rb = false);
+extern float getfvar(const char *name);
 extern float getfvarmin(const char *name);
 extern float getfvarmax(const char *name);
 extern bool identexists(const char *name);

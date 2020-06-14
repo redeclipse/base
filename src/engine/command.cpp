@@ -831,16 +831,30 @@ ICOMMAND(0, setvarlevel, "si", (char *s, int *level), setvarlevel(s, *level));
 
 int getvar(const char *name)
 {
-    GETVAR(id, ID_VAR, name, 0);
-    switch(id->type)
+    ident *id = idents.access(name);
+    if(id) switch(id->type)
     {
         case ID_VAR: return *id->storage.i;
         case ID_FVAR: return int(*id->storage.f);
-        case ID_SVAR: return atoi(*id->storage.s);
+        case ID_SVAR: return parseint(*id->storage.s);
         case ID_ALIAS: return id->getint();
         default: break;
     }
     return 0;
+}
+
+float getfvar(const char *name)
+{
+    ident *id = idents.access(name);
+    if(id) switch(id->type)
+    {
+        case ID_VAR: return float(*id->storage.i);
+        case ID_FVAR: return *id->storage.f;
+        case ID_SVAR: return parsefloat(*id->storage.s);
+        case ID_ALIAS: return id->getfloat();
+        default: break;
+    }
+    return 0.0f;
 }
 
 int getvartype(const char *name)
