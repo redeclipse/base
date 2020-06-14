@@ -545,7 +545,7 @@ static void drawatmosphere()
     LOCALPARAM(sunmatrix, sunmatrix);
 
     // optical depth scales for 3 different shells of atmosphere - air, haze, ozone
-    const float earthradius = 6371e3f, earthairheight = 8.4e3f, earthhazeeight = 1.25e3f, earthozoneheight = earthairheight + 15e3f;
+    const float earthradius = 6371e3f, earthairheight = 8.4e3f, earthhazeheight = 1.25e3f, earthozoneheight = earthairheight + 15e3f;
     float planetradius = earthradius*getatmoplanetsize();
     vec atmoshells = vec(earthairheight, earthhazeheight, earthozoneheight).mul(getatmoheight()).add(planetradius).square().sub(planetradius*planetradius);
     LOCALPARAM(opticaldepthparams, vec4(atmoshells, planetradius));
