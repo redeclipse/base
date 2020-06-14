@@ -93,7 +93,7 @@ Texture *loadskyoverlay(const char *basename)
     FVAR(IDF_WORLD, atmolightscale##name, 0, 1, 16); \
     CVAR1(IDF_WORLD, atmodisk##name, 0); \
     FVAR(IDF_WORLD, atmodisksize##name, 0, 15, 90); \
-    FVAR(IDF_WORLD, atmodiskcorona##name, 0, 0.35f, 1); \
+    FVAR(IDF_WORLD, atmodiskcorona##name, 0, 0.4f, 1); \
     FVAR(IDF_WORLD, atmodiskbright##name, 0, 1, 16); \
     FVAR(IDF_WORLD, atmohaze##name, 0, 0.1f, 16); \
     FVAR(IDF_WORLD, atmodensity##name, 0, 1, 16); \
