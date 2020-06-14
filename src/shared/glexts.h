@@ -791,6 +791,14 @@ extern PFNGLBLENDFUNCSEPARATEIPROC glBlendFuncSeparatei_;
 #define GL_RGB565                         0x8D62
 #endif
 
+#ifndef GL_VERSION_4_2
+#define GL_VERSION_4_2 1
+typedef void (APIENTRYP PFNGLTEXSTORAGE2DPROC) (GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height);
+#endif
+
+// GL_ARB_texture_storage
+extern PFNGLTEXSTORAGE2DPROC glTexStorage2D_;
+
 #ifndef GL_VERSION_4_3
 #define GL_VERSION_4_3 1
 #define GL_ANY_SAMPLES_PASSED_CONSERVATIVE 0x8D6A

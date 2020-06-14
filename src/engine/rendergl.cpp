@@ -2,7 +2,7 @@
 
 #include "engine.h"
 
-bool hasVAO = false, hasTR = false, hasTSW = false, hasPBO = false, hasFBO = false, hasAFBO = false, hasDS = false, hasTF = false, hasCBF = false, hasS3TC = false, hasFXT1 = false, hasLATC = false, hasRGTC = false, hasAF = false, hasFBB = false, hasFBMS = false, hasTMS = false, hasMSS = false, hasFBMSBS = false, hasUBO = false, hasMBR = false, hasDB2 = false, hasDBB = false, hasTG = false, hasTQ = false, hasPF = false, hasTRG = false, hasTI = false, hasHFV = false, hasHFP = false, hasDBT = false, hasDC = false, hasDBGO = false, hasEGPU4 = false, hasGPU4 = false, hasGPU5 = false, hasBFE = false, hasEAL = false, hasCR = false, hasOQ2 = false, hasES2 = false, hasES3 = false, hasCB = false, hasCI = false;
+bool hasVAO = false, hasTR = false, hasTSW = false, hasPBO = false, hasFBO = false, hasAFBO = false, hasDS = false, hasTF = false, hasCBF = false, hasS3TC = false, hasFXT1 = false, hasLATC = false, hasRGTC = false, hasAF = false, hasFBB = false, hasFBMS = false, hasTMS = false, hasMSS = false, hasFBMSBS = false, hasUBO = false, hasMBR = false, hasDB2 = false, hasDBB = false, hasTG = false, hasTQ = false, hasPF = false, hasTRG = false, hasTI = false, hasHFV = false, hasHFP = false, hasDBT = false, hasDC = false, hasDBGO = false, hasEGPU4 = false, hasGPU4 = false, hasGPU5 = false, hasBFE = false, hasEAL = false, hasCR = false, hasOQ2 = false, hasES2 = false, hasES3 = false, hasCB = false, hasCI = false, hasTS = false;
 bool mesa = false, intel = false, amd = false, nvidia = false;
 int hasstencil = 0;
 
@@ -240,6 +240,9 @@ PFNGLBINDFRAGDATALOCATIONINDEXEDPROC glBindFragDataLocationIndexed_ = NULL;
 
 // GL_ARB_copy_image
 PFNGLCOPYIMAGESUBDATAPROC glCopyImageSubData_ = NULL;
+
+// GL_ARB_texture_storage
+PFNGLTEXSTORAGE2DPROC glTexStorage2D_ = NULL;
 
 void *getprocaddress(const char *name)
 {
@@ -1017,6 +1020,19 @@ void gl_checkextensions()
 
         hasCI = true;
         if(dbgexts) conoutf("\frUsing GL_NV_copy_image extension.");
+    }
+
+    if(glversion >= 420 || hasext("GL_ARB_texture_storage"))
+    {
+        glTexStorage2D_ = (PFNGLTEXSTORAGE2DPROC)getprocaddress("glTexStorage2D");
+        hasTS = true;
+        if(glversion < 420 && dbgexts) conoutf("\frUsing GL_ARB_texture_storage extension.");
+    }
+    else if(hasext("GL_EXT_texture_storage"))
+    {
+        glTexStorage2D_ = (PFNGLTEXSTORAGE2DPROC)getprocaddress("glTexStorage2DEXT");
+        hasTS = true;
+        if(dbgexts) conoutf("\frUsing GL_EXT_texture_storage extension.");
     }
 
     extern int gdepthstencil, gstencil, glineardepth, msaadepthstencil, msaalineardepth, batchsunlight, smgather, rhrect, tqaaresolvegather;
