@@ -92,7 +92,7 @@ Texture *loadskyoverlay(const char *basename)
     CVAR1(IDF_WORLD, atmolight##name, 0); \
     FVAR(IDF_WORLD, atmolightscale##name, 0, 1, 16); \
     CVAR1(IDF_WORLD, atmodisk##name, 0); \
-    FVAR(IDF_WORLD, atmodisksize##name, 0, 15, 90); \
+    FVAR(IDF_WORLD, atmodisksize##name, 0, 12, 90); \
     FVAR(IDF_WORLD, atmodiskcorona##name, 0, 0.4f, 1); \
     FVAR(IDF_WORLD, atmodiskbright##name, 0, 1, 16); \
     FVAR(IDF_WORLD, atmohaze##name, 0, 0.1f, 16); \
@@ -508,14 +508,16 @@ void fixatmo()
           betam = pow(2*M_PI/550e-9f, 2) * 1.36e-19f * 0.68f * atmohaze,
           ratio = (betar / (1 + atmoclarity) + betam) / (betar / 1.2f + betam);
     setfvar("atmobright", pow(atmobright / 4, 2) / ratio);
-    setfvar("atmodisksize", max(15 + 5 * (atmodisksize - 1), 0.0f));
+    setfvar("atmodisksize", max(12 + 5 * (atmodisksize - 1), 0.0f));
+    setfvar("atmodiskcorona", 0.4f);
     setfvar("atmodensity", 1.0f / atmodensity);
     setfvar("atmoheight", ratio);
     float betaralt = 1.86e-31 / (pow(550e-9f, 4) * atmodensityalt),
           betamalt = pow((2*M_PI)/550e-9f, 2) * 1.36e-19f * 0.68f * atmohazealt,
           ratioalt = (betaralt / (1 + atmoclarityalt) + betamalt) / (betaralt / 1.2f + betamalt);
     setfvar("atmobrightalt", pow(atmobrightalt / 4, 2) / ratioalt);
-    setfvar("atmodisksizealt", max(15 + 5 * (atmodisksizealt - 1), 0.0f));
+    setfvar("atmodisksizealt", max(12 + 5 * (atmodisksizealt - 1), 0.0f));
+    setfvar("atmodiskcoronaalt", 0.4f);
     setfvar("atmodensityalt", 1.0f / atmodensityalt);
     setfvar("atmoheightalt", ratioalt);
 }
