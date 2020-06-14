@@ -561,7 +561,7 @@ static void drawatmosphere()
                      ozone(3.426f, 8.298f, 0.356f);
     vec betar = vec(lambda).square().square().recip().mul(1.241e-30f * getatmodensity()),
         betam = vec(lambda).recip().square().mul(k).mul(9.072e-17f * getatmohaze()),
-        betao = vec(ozone).mul(2e-7f*getatmoozone());
+        betao = vec(ozone).mul(1.5e-7f*getatmoozone());
     LOCALPARAM(betarayleigh, vec(betar).div(M_LN2));
     LOCALPARAM(betamie, vec(betam).div(M_LN2));
     LOCALPARAM(betaozone, vec(betao).div(M_LN2));
