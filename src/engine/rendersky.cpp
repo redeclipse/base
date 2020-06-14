@@ -93,7 +93,7 @@ Texture *loadskyoverlay(const char *basename)
     FVAR(IDF_WORLD, atmolightscale##name, 0, 1, 16); \
     CVAR1(IDF_WORLD, atmodisk##name, 0); \
     FVAR(IDF_WORLD, atmodisksize##name, 0, 15, 90); \
-    FVAR(IDF_WORLD, atmodiskcorona##name, 0, 0.5f, 1); \
+    FVAR(IDF_WORLD, atmodiskcorona##name, 0, 0.35f, 1); \
     FVAR(IDF_WORLD, atmodiskbright##name, 0, 1, 16); \
     FVAR(IDF_WORLD, atmohaze##name, 0, 0.1f, 16); \
     FVAR(IDF_WORLD, atmodensity##name, 0, 1, 16); \
@@ -585,7 +585,7 @@ static void drawatmosphere()
     vec zenithweight = vec(betar).mul(zenithdepth.x).madd(betam, zenithdepth.y).madd(betao, zenithdepth.z - zenithdepth.x);
     vec zenithextinction = vec(zenithweight).sub(sunweight).exp();
     bvec curatmodisk = getatmodisk();
-    vec diskcolor = (!curatmodisk.iszero() ? curatmodisk.tocolor() : suncolor).mul(ldrscale).pow(hdrgamma).mul(zenithextinction).mul(getatmodiskbright() * 2);
+    vec diskcolor = (!curatmodisk.iszero() ? curatmodisk.tocolor() : suncolor).mul(ldrscale).pow(hdrgamma).mul(zenithextinction).mul(getatmodiskbright() * 3);
     LOCALPARAM(sundiskcolor, diskcolor);
 
     // convert from view cosine into mu^2 for limb darkening, where mu = sqrt(1 - sin^2) and sin^2 = 1 - cos^2, thus mu^2 = 1 - (1 - cos^2*scale)
