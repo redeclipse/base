@@ -920,7 +920,7 @@ void uploadtexture(int tnum, GLenum target, GLenum internal, int tw, int th, GLe
     }
 }
 
-void uploadcompressedtexture(GLenum target, GLenum subtarget, GLenum format, int w, int h, const uchar *data, int align, int blocksize, int levels, bool mipmap)
+void uploadcompressedtexture(GLenum target, GLenum subtarget, GLenum format, int w, int h, const uchar *data, int align, int blocksize, int levels, bool mipmap, bool prealloc)
 {
     int hwlimit = target==GL_TEXTURE_CUBE_MAP ? hwcubetexsize : hwtexsize,
         sizelimit = levels > 1 && maxtexsize ? min(maxtexsize, hwlimit) : hwlimit;
@@ -930,7 +930,8 @@ void uploadcompressedtexture(GLenum target, GLenum subtarget, GLenum format, int
         int size = ((w + align-1)/align) * ((h + align-1)/align) * blocksize;
         if(w <= sizelimit && h <= sizelimit)
         {
-            glCompressedTexImage2D_(subtarget, level, format, w, h, 0, size, data);
+            if(prealloc) glCompressedTexSubImage2D_(subtarget, level, 0, 0, w, h, format, size, data);
+            else glCompressedTexImage2D_(subtarget, level, format, w, h, 0, size, data);
             level++;
             if(!mipmap) break;
         }
@@ -1152,8 +1153,13 @@ void createtexture(int tnum, int w, int h, const void *pixels, int clamp, int fi
 void createcompressedtexture(int tnum, int w, int h, const uchar *data, int align, int blocksize, int levels, int clamp, int filter, GLenum format, GLenum subtarget, bool swizzle = false)
 {
     GLenum target = textarget(subtarget);
-    if(filter >= 0 && clamp >= 0) setuptexparameters(tnum, data, clamp, filter, format, target, swizzle);
-    uploadcompressedtexture(target, subtarget, format, w, h, data, align, blocksize, levels, filter > 1);
+    bool mipmap = filter > 1, prealloc = hasTS && hasTRG && hasTSW;
+    if(filter >= 0 && clamp >= 0)
+    {
+        setuptexparameters(tnum, data, clamp, filter, format, target, swizzle);
+        if(prealloc) glTexStorage2D_(target, mipmap ? bitscan(max(w, h)) + 1 : 1, format, w, h);
+    }
+    uploadcompressedtexture(target, subtarget, format, w, h, data, align, blocksize, levels, mipmap, prealloc);
 }
 
 void create3dtexture(int tnum, int w, int h, int d, const void *pixels, int clamp, int filter, GLenum component, GLenum target, bool swizzle)
