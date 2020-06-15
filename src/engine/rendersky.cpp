@@ -572,7 +572,7 @@ static void drawatmosphere()
     vec sunscale = vec(suncolor).mul(ldrscale).pow(hdrgamma).mul(atmobright * 16).mul(sunextinction);
     float maxsunweight = max(max(sunweight.x, sunweight.y), sunweight.z);
     if(maxsunweight > 127) sunweight.mul(127/maxsunweight);
-    sunweight.add(1e-5);
+    sunweight.add(1e-4f);
     LOCALPARAM(sunweight, sunweight);
     LOCALPARAM(sunlight, vec4(sunscale, getatmoblend()));
     LOCALPARAM(sundir, sundir);
