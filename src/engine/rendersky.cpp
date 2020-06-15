@@ -95,9 +95,9 @@ Texture *loadskyoverlay(const char *basename)
     FVAR(IDF_WORLD, atmodisksize##name, 0, 12, 90); \
     FVAR(IDF_WORLD, atmodiskcorona##name, 0, 0.4f, 1); \
     FVAR(IDF_WORLD, atmodiskbright##name, 0, 1, 16); \
-    FVAR(IDF_WORLD, atmohaze##name, 0, 0.1f, 16); \
-    FVAR(IDF_WORLD, atmodensity##name, 0, 1, 16); \
-    FVAR(IDF_WORLD, atmoozone##name, 0, 1, 16); \
+    FVAR(IDF_WORLD, atmohaze##name, 0, 0.1f, 100); \
+    FVAR(IDF_WORLD, atmodensity##name, 0, 1, 100); \
+    FVAR(IDF_WORLD, atmoozone##name, 0, 1, 100); \
     FVAR(IDF_WORLD, atmoblend##name, 0, 1, 1); \
     FVAR(IDF_WORLD, fogdomeheight##name, -1, -0.5f, 1); \
     FVAR(IDF_WORLD, fogdomemin##name, 0, 0, 1); \
@@ -507,19 +507,23 @@ void fixatmo()
     float betar = 1.86e-31 / (pow(550e-9f, 4) * atmodensity),
           betam = pow(2*M_PI/550e-9f, 2) * 1.36e-19f * 0.68f * atmohaze,
           ratio = (betar / (1 + atmoclarity) + betam) / (betar / 1.2f + betam);
+    setfvar("atmohaze", atmohaze * (0.1f/0.03f));
     setfvar("atmobright", pow(atmobright / 4, 2) / ratio);
     setfvar("atmodisksize", max(12 + 5 * (atmodisksize - 1), 0.0f));
     setfvar("atmodiskcorona", 0.4f);
-    setfvar("atmodensity", 1.0f / atmodensity);
-    setfvar("atmoheight", ratio);
+    setfvar("atmodensity", 0.99f / atmodensity);
+    setfvar("atmoheight", atmoheight * ratio);
+    setfvar("atmoplanetsize", atmoplanetsize / 8);
     float betaralt = 1.86e-31 / (pow(550e-9f, 4) * atmodensityalt),
           betamalt = pow((2*M_PI)/550e-9f, 2) * 1.36e-19f * 0.68f * atmohazealt,
           ratioalt = (betaralt / (1 + atmoclarityalt) + betamalt) / (betaralt / 1.2f + betamalt);
+    setfvar("atmohazealt", atmohazealt * (0.1f/0.03f));
     setfvar("atmobrightalt", pow(atmobrightalt / 4, 2) / ratioalt);
     setfvar("atmodisksizealt", max(12 + 5 * (atmodisksizealt - 1), 0.0f));
     setfvar("atmodiskcoronaalt", 0.4f);
-    setfvar("atmodensityalt", 1.0f / atmodensityalt);
-    setfvar("atmoheightalt", ratioalt);
+    setfvar("atmodensityalt", 0.99f / atmodensityalt);
+    setfvar("atmoheightalt", atmoheightalt * ratioalt);
+    setfvar("atmoplanetsizealt", atmoplanetsizealt / 8);
 }
 COMMAND(0, fixatmo, "");
 
