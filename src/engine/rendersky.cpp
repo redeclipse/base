@@ -582,7 +582,7 @@ static void drawatmosphere()
     vec zenithweight = vec(betar).mul(zenithdepth.x).madd(betam, zenithdepth.y).madd(betao, zenithdepth.z - zenithdepth.x);
     vec zenithextinction = vec(zenithweight).sub(sunweight).exp2();
     bvec curatmodisk = getatmodisk();
-    vec diskcolor = (!curatmodisk.iszero() ? curatmodisk.tocolor() : suncolor).mul(ldrscale).pow(hdrgamma).mul(zenithextinction).mul(getatmodiskbright() * 3);
+    vec diskcolor = (!curatmodisk.iszero() ? curatmodisk.tocolor() : suncolor).mul(ldrscale).pow(hdrgamma).mul(zenithextinction).mul(getatmodiskbright() * 4);
     LOCALPARAM(sundiskcolor, diskcolor);
 
     // convert from view cosine into mu^2 for limb darkening, where mu = sqrt(1 - sin^2) and sin^2 = 1 - cos^2, thus mu^2 = 1 - (1 - cos^2*scale)
