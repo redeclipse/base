@@ -1140,7 +1140,7 @@ void createtexture(int tnum, int w, int h, const void *pixels, int clamp, int fi
         resizetexture(w, h, mipmap, false, target, 0, tw, th);
         if(mipmap) component = compressedformat(component, tw, th);
     }
-    bool prealloc = !resize && hasTS && hasTRG;
+    bool prealloc = !resize && hasTS && hasTRG && hasTSW && !uncompressedformat(component);
     if(filter >= 0 && clamp >= 0)
     {
         setuptexparameters(tnum, pixels, clamp, filter, format, target, swizzle);
@@ -3485,6 +3485,7 @@ void cleanuptexture(Texture *t)
 
 void cleanuptextures()
 {
+    cleanupmipmaps();
     clearenvtexs();
     loopv(slots) slots[i]->cleanup();
     loopv(vslots) vslots[i]->cleanup();
