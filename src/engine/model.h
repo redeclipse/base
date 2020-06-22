@@ -81,7 +81,7 @@ struct model
             {
                 collidecenter.z = collideradius.z = collideheight/2;
             }
-            rejectradius = collideradius.magnitude();
+            rejectradius = vec(collidecenter).abs().add(collideradius).magnitude();
         }
         center = collidecenter;
         radius = collideradius;
