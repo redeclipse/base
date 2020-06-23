@@ -3429,7 +3429,7 @@ namespace game
             mdl.matbright[var] = player##name##tonebright; \
             if(player##name##toneinterp > 0) \
             { \
-                float intensity = 1.f-((mdl.material[mat].r+mdl.material[mat].g+mdl.material[mat].b)/765.f); \
+                float intensity = 1.f-((uint(mdl.material[mat].r)+uint(mdl.material[mat].g)+uint(mdl.material[mat].b))/765.f); \
                 mdl.matbright[var] += intensity*player##name##toneinterp; \
             }
         TONEINTERP(over, 1, 0);
