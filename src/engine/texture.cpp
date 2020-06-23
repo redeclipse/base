@@ -1129,6 +1129,13 @@ static GLenum textype(GLenum &component, GLenum &format)
     return type;
 }
 
+static int miplevels(int n)
+{
+    int levels = 1;
+    for(; n > 1; n /= 2) levels++;
+    return levels;
+}
+
 void createtexture(int tnum, int w, int h, const void *pixels, int clamp, int filter, GLenum component, GLenum subtarget, int pw, int ph, int pitch, bool resize, GLenum format, bool swizzle)
 {
     GLenum target = textarget(subtarget), type = textype(component, format);
@@ -1145,7 +1152,7 @@ void createtexture(int tnum, int w, int h, const void *pixels, int clamp, int fi
     if(filter >= 0 && clamp >= 0)
     {
         setuptexparameters(tnum, pixels, clamp, filter, format, target, swizzle);
-        if(prealloc) glTexStorage2D_(target, mipmap ? bitscan(max(tw, th)) + 1 : 1, sizedformat(component), tw, th);
+        if(prealloc) glTexStorage2D_(target, mipmap ? miplevels(max(tw, th)) : 1, sizedformat(component), tw, th);
     }
     uploadtexture(tnum, subtarget, component, tw, th, format, type, pixels, pw, ph, pitch, mipmap, prealloc);
 }
@@ -1157,7 +1164,7 @@ void createcompressedtexture(int tnum, int w, int h, const uchar *data, int alig
     if(filter >= 0 && clamp >= 0)
     {
         setuptexparameters(tnum, data, clamp, filter, format, target, swizzle);
-        if(prealloc) glTexStorage2D_(target, mipmap ? bitscan(max(w, h)) + 1 : 1, format, w, h);
+        if(prealloc) glTexStorage2D_(target, mipmap ? miplevels(max(w, h)) : 1, format, w, h);
     }
     uploadcompressedtexture(target, subtarget, format, w, h, data, align, blocksize, levels, mipmap, prealloc);
 }
