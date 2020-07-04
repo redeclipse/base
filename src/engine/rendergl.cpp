@@ -1462,7 +1462,16 @@ FVAR(0, nearplane, 0.01f, 0.54f, 2.0f);
 vec calcavatarpos(const vec &pos, float fov)
 {
     vec eyepos;
+    float scale = 12.0f*sqrtf(aspect);
     cammatrix.transform(pos, eyepos);
+
+    if(eyepos.z > 0)
+    {
+        // behind the camera, flip
+        eyepos.z *= -1;
+        scale *= -1;
+    }
+
     GLdouble ydist = nearplane * tan(fov/2.0f*RAD), xdist = ydist * aspect;
     vec4 scrpos;
     scrpos.x = eyepos.x*nearplane/xdist;
@@ -1471,7 +1480,7 @@ vec calcavatarpos(const vec &pos, float fov)
     scrpos.w = -eyepos.z;
 
     vec worldpos = invcamprojmatrix.perspectivetransform(scrpos);
-    vec dir = vec(worldpos).sub(camera1->o).rescale(12.0f*sqrtf(aspect));
+    vec dir = vec(worldpos).sub(camera1->o).rescale(scale);
     return dir.add(camera1->o);
 }
 
