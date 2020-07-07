@@ -713,10 +713,18 @@ void processkey(int code, bool isdown)
     else if(!consolekey(code, isdown) && !hud::keypress(code, isdown) && haskey) execbind(*haskey, isdown);
 }
 
-void clear_console()
+void clear_binds()
 {
     keyms.clear();
 }
+
+void clear_console(int type)
+{
+   if (type >= 0) conlines[type].clear();
+   else loopi(CON_MAX-1) conlines[i].clear();
+}
+ICOMMAND(0, clearconsole, "i", (int *type), clear_console(clamp(*type, -1, CON_MAX-1)));
+ICOMMAND(0, clearchat, "", (), clear_console(CON_MESG));
 
 void writebinds(stream *f)
 {
