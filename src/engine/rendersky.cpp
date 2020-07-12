@@ -51,11 +51,13 @@ Texture *loadskyoverlay(const char *basename)
     FVAR(IDF_WORLD, skyoverbrightmin##name, 0, 1, 16); \
     FVAR(IDF_WORLD, skyoverbrightthreshold##name, 0, 0.7f, 1); \
     FVAR(IDF_WORLD, spinsky##name, -720, 0, 720); \
+    FVAR(IDF_WORLD, rollsky##name, -720, 0, 720); \
     VAR(IDF_WORLD, yawsky##name, 0, 0, 360); \
     SVARF(IDF_WORLD, cloudbox##name, "", { if(cloudbox##name[0] && checkmapvariant(type)) loadsky(cloudbox##name, clouds); }); \
     CVAR(IDF_WORLD, cloudcolour##name, 0xFFFFFF); \
     FVAR(IDF_WORLD, cloudblend##name, 0, 1.0f, 1); \
     FVAR(IDF_WORLD, spinclouds##name, -720, 0, 720); \
+    FVAR(IDF_WORLD, rollclouds##name, -720, 0, 720); \
     VAR(IDF_WORLD, yawclouds##name, 0, 0, 360); \
     FVAR(IDF_WORLD, cloudclip##name, 0, 0.5f, 1); \
     SVARF(IDF_WORLD, cloudlayer##name, "", { if(cloudlayer##name[0] && checkmapvariant(type)) cloudoverlay = loadskyoverlay(cloudlayer##name); }); \
@@ -133,11 +135,13 @@ GETMPV(skyoverbright, float);
 GETMPV(skyoverbrightmin, float);
 GETMPV(skyoverbrightthreshold, float);
 GETMPV(spinsky, float);
+GETMPV(rollsky, float);
 GETMPV(yawsky, int);
 GETMPV(cloudbox, const char *);
 GETMPV(cloudcolour, bvec &);
 GETMPV(cloudblend, float);
 GETMPV(spinclouds, float);
+GETMPV(rollclouds, float);
 GETMPV(yawclouds, int);
 GETMPV(cloudclip, float);
 GETMPV(cloudlayer, const char *);
@@ -685,6 +689,7 @@ void drawskybox(bool clear)
         matrix4 skymatrix = cammatrix, skyprojmatrix;
         skymatrix.settranslation(0, 0, 0);
         skymatrix.rotate_around_z((getspinsky()*lastmillis/1000.0f+getyawsky())*-RAD);
+        skymatrix.rotate_around_x((getrollsky()*lastmillis/1000.0f+getyawsky())*-RAD);
         skyprojmatrix.mul(projmatrix, skymatrix);
         LOCALPARAM(skymatrix, skyprojmatrix);
 
@@ -710,6 +715,7 @@ void drawskybox(bool clear)
         matrix4 skymatrix = cammatrix, skyprojmatrix;
         skymatrix.settranslation(0, 0, 0);
         skymatrix.rotate_around_z((getspinclouds()*lastmillis/1000.0f+getyawclouds())*-RAD);
+        skymatrix.rotate_around_x((getrollclouds()*lastmillis/1000.0f+getyawclouds())*-RAD);
         skyprojmatrix.mul(projmatrix, skymatrix);
         LOCALPARAM(skymatrix, skyprojmatrix);
 
