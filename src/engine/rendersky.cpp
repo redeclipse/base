@@ -689,7 +689,7 @@ void drawskybox(bool clear)
         matrix4 skymatrix = cammatrix, skyprojmatrix;
         skymatrix.settranslation(0, 0, 0);
         skymatrix.rotate_around_z((getspinsky()*lastmillis/1000.0f+getyawsky())*-RAD);
-        skymatrix.rotate_around_x((getrollsky()*lastmillis/1000.0f+getyawsky())*-RAD);
+        skymatrix.rotate_around_x((getrollsky()*lastmillis/1000.0f*-RAD));
         skyprojmatrix.mul(projmatrix, skymatrix);
         LOCALPARAM(skymatrix, skyprojmatrix);
 
@@ -715,7 +715,7 @@ void drawskybox(bool clear)
         matrix4 skymatrix = cammatrix, skyprojmatrix;
         skymatrix.settranslation(0, 0, 0);
         skymatrix.rotate_around_z((getspinclouds()*lastmillis/1000.0f+getyawclouds())*-RAD);
-        skymatrix.rotate_around_x((getrollclouds()*lastmillis/1000.0f+getyawclouds())*-RAD);
+        skymatrix.rotate_around_x((getrollclouds()*lastmillis/1000.0f*-RAD));
         skyprojmatrix.mul(projmatrix, skymatrix);
         LOCALPARAM(skymatrix, skyprojmatrix);
 
