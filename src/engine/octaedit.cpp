@@ -1747,7 +1747,7 @@ void pasteclear()
 void pastehilight()
 {
     if(!localedit) return;
-    sel.s = localedit->copy->s;
+    if(localedit->copy) sel.s = localedit->copy->s;
     reorient();
     havesel = true;
 }

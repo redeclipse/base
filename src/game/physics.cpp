@@ -1064,6 +1064,7 @@ namespace physics
         float radius = center.z-bottom.z, height = radius*2, submerged = pl->submerged;
         int matid = 0, oldmatid = pl->inmaterial, oldmat = oldmatid&MATF_VOLUME, iters = max(int(ceilf(height)), 1), liquid = 0;
         float frac = height/float(iters); // guard against rounding errors
+        bool prevliq = pl->inliquid;
         vec tmp = bottom;
         pl->inliquid = pl->onladder = false;
         loopi(iters+1)
@@ -1106,10 +1107,14 @@ namespace physics
         pl->inmaterial = matid;
         pl->submerged = liquid ? liquid/float(iters) : 0.f;
         if(pl->onladder && pl->physstate < PHYS_SLIDE) pl->floor = vec(0, 0, 1);
-        if(local && gameent::is(pl))
+        if(gameent::is(pl))
         {
-            if(pl->physstate < PHYS_SLIDE && submerged >= 0.5f && pl->submerged < 0.5f && pl->vel.z > 1e-3f) pl->vel.z = max(pl->vel.z, max(jumpvel(pl, false), gravityvel(pl)));
-            if(pl->inmaterial != oldmatid || pl->submerged != submerged) client::addmsg(N_SPHY, "ri3f", ((gameent *)pl)->clientnum, SPHY_MATERIAL, pl->inmaterial, pl->submerged);
+            if(!prevliq && pl->inliquid) ((gameent *)pl)->resetjump();
+            if(local)
+            {
+                if(pl->physstate < PHYS_SLIDE && submerged >= 0.5f && pl->submerged < 0.5f && pl->vel.z > 1e-3f) pl->vel.z = max(pl->vel.z, max(jumpvel(pl, false), gravityvel(pl)));
+                if(pl->inmaterial != oldmatid || pl->submerged != submerged) client::addmsg(N_SPHY, "ri3f", ((gameent *)pl)->clientnum, SPHY_MATERIAL, pl->inmaterial, pl->submerged);
+            }
         }
     }
 
