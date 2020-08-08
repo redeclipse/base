@@ -133,7 +133,7 @@ configuration, and Operating system details.
     situation in a professional manner.
   - Extended verbal disputes with players in-game is not permitted and
     moderators are encouraged to ignore abuse from other players.
-  - The powers of a moderator should be not be used for personal disputes with
+  - The powers of a moderator should not be used for personal disputes with
     another player or moderator.
 
 * The use of mute, quarantine, kick, and/or ban should only be used when a user
