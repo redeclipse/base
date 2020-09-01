@@ -52,7 +52,7 @@ void resetclipplanes()
     clipcacheversion += MAXCLIPOFFSET;
     if(!clipcacheversion)
     {
-        memset(clipcache, 0, sizeof(clipcache));
+        memclear(clipcache);
         clipcacheversion = MAXCLIPOFFSET;
     }
 }

@@ -184,7 +184,7 @@ static inline void findvisiblevas(vector<vtxarray *> &vas)
 
 void findvisiblevas()
 {
-    memset(vasort, 0, sizeof(vasort));
+    memclear(vasort);
     findvisiblevas<false, false>(varoot);
     sortvisiblevas();
 }
@@ -235,10 +235,10 @@ void visiblecubes(bool cull)
     }
     else
     {
-        memset(vfcP, 0, sizeof(vfcP));
+        memclear(vfcP);
         vfcDfog = farplane;
-        memset(vfcDnear, 0, sizeof(vfcDnear));
-        memset(vfcDfar, 0, sizeof(vfcDfar));
+        memclear(vfcDnear);
+        memclear(vfcDfar);
         visibleva = NULL;
         loopv(valist)
         {
@@ -1123,7 +1123,7 @@ void findspotshadowvas(vector<vtxarray *> &vas, bool transparent)
 void findshadowvas(bool transparent)
 {
     shadowtransparent = 0;
-    memset(vasort, 0, sizeof(vasort));
+    memclear(vasort);
     switch(shadowmapping)
     {
         case SM_REFLECT: findrsmshadowvas(varoot); break;
@@ -2125,7 +2125,7 @@ int findalphavas()
     alphafrontsx1 = alphafrontsy1 = alphabacksx1 = alphabacksy1 = alpharefractsx1 = alpharefractsy1 = 1;
     alphafrontsx2 = alphafrontsy2 = alphabacksx2 = alphabacksy2 = alpharefractsx2 = alpharefractsy2 = -1;
     alphabackvas = alpharefractvas = 0;
-    memset(alphatiles, 0, sizeof(alphatiles));
+    memclear(alphatiles);
     for(vtxarray *va = visibleva; va; va = va->next) if(va->alphatris)
     {
         if(va->occluded >= OCCLUDE_BB) continue;
