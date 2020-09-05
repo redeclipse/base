@@ -20,7 +20,7 @@ namespace physics
     VAR(IDF_PERSIST, impulseturntime, 0, 250, VAR_MAX);
     FVAR(IDF_PERSIST, impulseturnroll, 0, 15, 89);
     FVAR(IDF_PERSIST, impulseturnscale, 0, 1, 1);
-    FVAR(IDF_PERSIST, impulseturnswitch, 0, 0, 1);
+    FVAR(IDF_PERSIST, impulseturnswitch, 0, 1, 1);
 
     VAR(IDF_PERSIST, crouchstyle, 0, 0, 2); // 0 = press and hold, 1 = double-tap toggle, 2 = toggle
     VAR(IDF_PERSIST, walkstyle, 0, 0, 2); // 0 = press and hold, 1 = double-tap toggle, 2 = toggle
@@ -917,22 +917,18 @@ namespace physics
                                 client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_PARKOUR);
                                 game::impulseeffect(d);
                                 game::footstep(d);
-                                m = rft; // re-project and override
-                                found = true;
                             }
+                            else continue;
                         }
-                        else
+                        if(d->turnside != side)
                         {
-                            if(d->turnside != side)
-                            {
-                                d->turnmillis = impulseturntime;
-                                d->turnyaw = side ? off*impulseturnswitch : 0;
-                                d->turnroll = side ? (impulseturnroll*d->turnside)-d->roll : 0;
-                            }
-                            d->turnside = side;
-                            m = rft; // re-project and override
-                            found = true;
+                            d->turnmillis = impulseturntime;
+                            d->turnyaw = side ? off*impulseturnswitch : 0;
+                            d->turnroll = side ? (impulseturnroll*d->turnside)-d->roll : 0;
                         }
+                        d->turnside = side;
+                        m = rft; // re-project and override
+                        found = true;
                         break;
                     }
                 }
@@ -1201,7 +1197,7 @@ namespace physics
                     }
                     if(d->turnmillis > 0)
                     {
-                        float amt = float(millis)/float(impulseturntime), yaw = d->turnyaw*amt, roll = d->turnroll*amt;
+                        float amt = float(min(d->turnmillis, millis))/float(impulseturntime), yaw = d->turnyaw*amt, roll = d->turnroll*amt;
                         if(yaw != 0) d->yaw += yaw;
                         if(roll != 0) d->roll += roll;
                         d->turnmillis -= millis;
