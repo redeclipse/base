@@ -831,11 +831,7 @@ int lastprogress = 0;
 void progress(float amt, const char *s, ...)
 {
     if(progressing || !inbetweenframes || drawtex) return;
-    if(amt < 0) // signals the start of a long process, hide the UI
-    {
-        if(engineready) UI::hideui(NULL);
-        amt = 0;
-    }
+    if(amt < 0) amt = 0; // signals the start of a long process
     if(progressfps)
     {
         int curprog = progressfps >= 0 ? progressfps : refresh, ticks = SDL_GetTicks(), diff = ticks - lastprogress;
@@ -862,7 +858,6 @@ void progress(float amt, const char *s, ...)
     int oldflags = identflags;
     identflags &= ~IDF_WORLD;
     progressing = true;
-    if(engineready) UI::update();
     gl_drawnoview();
     swapbuffers(false);
     progressing = false;

@@ -29,7 +29,7 @@ namespace hud
     VAR(IDF_PERSIST, showeventicons, 0, 1, 7);
     VAR(IDF_PERSIST, showloadingaspect, 0, 1, 1);
     VAR(IDF_PERSIST, showloadingmapbg, 0, 1, 1);
-    VAR(IDF_PERSIST, showloadinglogos, 0, 1, 2);
+    VAR(IDF_PERSIST, showloadinglogos, 0, 1, 1);
 
     const int NUMSTATS = 42;
     int prevstats[NUMSTATS] = {0}, curstats[NUMSTATS] = {0};
@@ -1572,18 +1572,20 @@ namespace hud
 
         resethudshader();
 
-        if(showloadinglogos >= (engineready ? 2 : 1))
+        if(progressing)
         {
-            gle::colorf(1, 1, 1, 1);
+            if(showloadinglogos)
+            {
+                gle::colorf(1, 1, 1, 1);
 
-            t = textureload(logotex, 3);
-            glBindTexture(GL_TEXTURE_2D, t->id);
-            if(engineready) drawtexture(w-w/8, 0, w/8, w/16);
-            else drawtexture(w-w/2-w/8, h/2-w/16, w/4, w/8);
+                t = textureload(logotex, 3);
+                glBindTexture(GL_TEXTURE_2D, t->id);
+                drawtexture(w-w/2-w/8, h/2-w/16, w/4, w/8);
+            }
+
+            if(progressamt > 0) draw_textf("%s [%.1f%%]", w-w/2, h-w/6, 0, 0, 255, 255, 255, 255, TEXT_CENTERED, -1, -1, 1, *progresstitle ? progresstitle : "Loading, please wait..", progressamt*100);
+            else draw_textf("%s", w-w/2, h-w/6, 0, 0, 255, 255, 255, 255, TEXT_CENTERED, -1, -1, 1, *progresstitle ? progresstitle : "Loading, please wait..");
         }
-
-        if(!engineready)
-            draw_textf("%s", w-w/2, h-w/8, 0, 0, 255, 255, 255, 255, TEXT_CENTERED, -1, -1, 1, *progresstitle ? progresstitle : "Loading, please wait..");
     }
 
     ICOMMAND(0, getprogresstitle, "", (),
@@ -1813,10 +1815,10 @@ namespace hud
                 if(!game::tvmode() && !client::waiting() && !hasinput(false)) drawevents(fade);
             }
         }
-        if(!progressing && showhud && commandmillis <= 0 && curcompass) rendercmenu();
-        if(progressing || !curcompass) UI::render();
         if(!progressing)
         {
+            if(showhud && commandmillis <= 0 && curcompass) rendercmenu();
+            else UI::render();
             hudmatrix.ortho(0, hudwidth, hudheight, 0, -1, 1);
             flushhudmatrix();
             resethudshader();

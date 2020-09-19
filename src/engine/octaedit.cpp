@@ -697,23 +697,10 @@ void tofronttex()                                       // maintain most recentl
     }
 }
 
-int nexttex = -1;
-bool nextsave = false;
-ICOMMAND(0, nexttex, "ii", (int *n, int *s), nexttex = *n; nextsave = *s != 0);
-
 void tryedit()
 {
     if(!editmode) return;
     if(blendpaintmode) trypaintblendmap();
-    if(vslots.inrange(nexttex) && !noedit())
-    {
-        filltexlist();
-        edittex(nexttex, nextsave);
-        texpaneltimer = totalmillis;
-        if(!(lastsel==sel)) tofronttex();
-    }
-    nexttex = -1;
-    nextsave = false;
 }
 
 //////////// ready changes to vertex arrays ////////////
