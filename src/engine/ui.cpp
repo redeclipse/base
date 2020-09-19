@@ -3194,7 +3194,7 @@ namespace UI
             sizeh = sizeh_;
             if(offsetx_ >= 0) offsetx = offsetx_;
             if(offsety_ >= 0) offsety = offsety_;
-            virtw = virth = 0;
+            //virtw = virth = 0;
         }
 
         static const char *typestr() { return "#Clipper"; }
@@ -3258,6 +3258,8 @@ namespace UI
 
     UIARGSCALEDT(Clipper, clip, sizew, "f", float, 0.f, FVAR_MAX);
     UIARGSCALEDT(Clipper, clip, sizeh, "f", float, 0.f, FVAR_MAX);
+    UIARGSCALEDT(Clipper, clip, virtw, "f", float, 0.f, FVAR_MAX);
+    UIARGSCALEDT(Clipper, clip, virth, "f", float, 0.f, FVAR_MAX);
     UIARGSCALEDT(Clipper, clip, offsetx, "f", float, FVAR_MIN, FVAR_MAX);
     UIARGSCALEDT(Clipper, clip, offsety, "f", float, FVAR_MIN, FVAR_MAX);
 

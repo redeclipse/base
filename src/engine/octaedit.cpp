@@ -2228,6 +2228,19 @@ void linkedpush(cube &c, int d, int x, int y, int dc, int dir)
     }
 }
 
+void linkedset(cube &c, int d, int x, int y, int dc, int val)
+{
+    ivec v, p;
+    getcubevector(c, d, x, y, dc, v);
+
+    loopi(2) loopj(2)
+    {
+        getcubevector(c, d, i, j, dc, p);
+        if(v==p)
+            edgeset(cubeedge(c, d, i, j), bounded(val), dc);
+    }
+}
+
 static ushort getmaterial(cube &c)
 {
     if(c.children)
@@ -2241,15 +2254,11 @@ static ushort getmaterial(cube &c)
 
 VAR(0, invalidcubeguard, 0, 1, 1);
 
-void mpeditface(int dir, int mode, selinfo &sel, bool local)
+void editfaceinternal(int dir, int mode, selinfo &sel, bool local)
 {
-    if(mode==1 && (sel.cx || sel.cy || sel.cxs&1 || sel.cys&1)) mode = 0;
     int d = dimension(sel.orient);
     int dc = dimcoord(sel.orient);
     int seldir = dc ? -dir : dir;
-
-    if(local)
-        client::edittrigger(sel, EDIT_FACE, dir, mode);
 
     if(mode==1)
     {
@@ -2318,6 +2327,30 @@ void mpeditface(int dir, int mode, selinfo &sel, bool local)
     );
     if(mode==1 && dir>0)
         sel.o[d] += sel.grid * seldir;
+}
+
+VAR(0, editfacekeepsel, 0, 0, 1);
+
+void mpeditface(int dir, int mode, selinfo &sel, bool local)
+{
+    if(mode==1 && (sel.cx || sel.cy || sel.cxs&1 || sel.cys&1)) mode = 0;
+
+    if(local)
+        client::edittrigger(sel, EDIT_FACE, dir, mode);
+
+    selinfo oldsel = sel;
+    editfaceinternal(dir, mode, sel, local);
+
+    if(editfacekeepsel)
+    {
+        sel = oldsel;
+        int d = dimension(sel.orient);
+        int dc = dimcoord(sel.orient);
+        //int seldir = dc ? -dir : -dir;
+
+        sel.s[d] += -dir;
+        if(!dc) sel.o[d] += sel.grid * dir;
+    }
 }
 
 void editface(int *dir, int *mode)
