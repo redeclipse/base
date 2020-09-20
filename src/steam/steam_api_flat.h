@@ -8,9 +8,9 @@
 #ifndef STEAMAPIFLAT_H
 #define STEAMAPIFLAT_H
 
-#include "steam/steam_api.h"
-#include "steam/isteamgameserver.h"
-#include "steam/isteamgameserverstats.h"
+#include "steam_api.h"
+#include "isteamgameserver.h"
+#include "isteamgameserverstats.h"
 
 typedef uint64 uint64_steamid; // Used when passing or returning CSteamID
 typedef uint64 uint64_gameid; // Used when passing or return CGameID
