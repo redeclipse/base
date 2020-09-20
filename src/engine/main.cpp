@@ -97,7 +97,7 @@ void cleanup()
     fx::cleanup();
     cleanupwind();
     extern void clear_command(); clear_command();
-    extern void clear_console(); clear_console();
+    extern void clear_binds(); clear_binds();
     extern void clear_models();  clear_models();
 
     stopsound();
