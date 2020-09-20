@@ -678,7 +678,7 @@
 			dependencies = (
 			);
 			name = redeclipse;
-			productInstallPath = "$(HOME)/Desktop/RedEclipse";
+			productInstallPath = "$(HOME)/Desktop/redeclipse";
 			productName = redeclipse;
 			productReference = B94198CB09207E810029DAD1 /* redeclipse.app */;
 			productType = "com.apple.product-type.application";
