@@ -733,7 +733,7 @@ namespace game
     {
         float speed = physics::movevelocity(d), step = firstpersonbob ? firstpersonbobstep : firstpersonswaystep;
         bool bobbed = false, sliding = d->sliding(true);
-        if(d->state == CS_ALIVE && (d->physstate >= PHYS_SLOPE || d->onladder || d->impulse[IM_TYPE] == IM_T_PARKOUR || sliding))
+        if(d->state == CS_ALIVE && (d->physstate >= PHYS_SLOPE || d->onladder || d->hasparkour() || sliding))
         {
             float mag = d->vel.magnitude();
             if(sliding) mag *= firstpersonswayslide;
@@ -1427,7 +1427,7 @@ namespace game
     {
         if(d->state != CS_ALIVE) return;
         vec pos = d->feetpos();
-        if(d->impulse[IM_TYPE] != IM_T_PARKOUR && (d->physstate >= PHYS_SLOPE || d->onladder || physics::liquidcheck(d)) && pos.z > 0 && d->floortime(lastmillis))
+        if(!d->hasparkour() && (d->physstate >= PHYS_SLOPE || d->onladder || physics::liquidcheck(d)) && pos.z > 0 && d->floortime(lastmillis))
         {
             int mat = lookupmaterial(pos);
             if(!isclipped(mat&MATF_VOLUME) && !((mat&MATF_FLAGS)&MAT_DEATH)) d->floorpos = pos;
@@ -3763,8 +3763,8 @@ namespace game
             {
                 if(physics::liquidcheck(d) && d->physstate <= PHYS_FALL)
                     mdl.anim |= ((d->move || d->strafe || d->vel.z+d->falling.z > 0 ? int(ANIM_SWIM) : int(ANIM_SINK))|ANIM_LOOP)<<ANIM_SECONDARY;
-                else if(d->impulse[IM_TYPE] == IM_T_PARKOUR)
-                    mdl.anim |= ((d->turnside > 0 ? ANIM_PARKOUR_LEFT : (d->turnside < 0 ? ANIM_PARKOUR_RIGHT : ANIM_PARKOUR_UP))|ANIM_LOOP)<<ANIM_SECONDARY;
+                else if(d->impulse[IM_TYPE] == IM_T_VAULT) mdl.anim |= (ANIM_VAULT|ANIM_LOOP)<<ANIM_SECONDARY;
+                else if(d->impulse[IM_TYPE] == IM_T_PARKOUR) mdl.anim |= ((d->turnside > 0 ? ANIM_PARKOUR_LEFT : (d->turnside < 0 ? ANIM_PARKOUR_RIGHT : ANIM_PARKOUR_UP))|ANIM_LOOP)<<ANIM_SECONDARY;
                 else if(d->physstate == PHYS_FALL && !d->onladder && d->impulsetime[d->impulse[IM_TYPE]] && lastmillis-d->impulsetime[d->impulse[IM_TYPE]] <= 1000)
                 {
                     mdl.basetime2 = d->impulsetime[d->impulse[IM_TYPE]];
@@ -3993,7 +3993,7 @@ namespace game
                     part_icon(offset, textureload(hud::warningtex, 3, true, false), height*playerhinthurtsize, amt*blend*playerhinthurtblend, 0, 0, 1, c.tohexcolor());
                 }
             }
-            if(d->impulse[IM_TYPE] == IM_T_PARKOUR || d->impulsetime[IM_T_JUMP] || d->sliding(true)) impulseeffect(d, 1);
+            if(d->hasparkour() || d->impulsetime[IM_T_JUMP] || d->sliding(true)) impulseeffect(d, 1);
         }
         if(d->burntime && d->burning(lastmillis, d->burntime))
         {

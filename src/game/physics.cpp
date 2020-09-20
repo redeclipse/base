@@ -47,7 +47,7 @@ namespace physics
         switch(type)
         {
             case A_A_PARKOUR:
-                time = max(max(e->impulsetime[IM_T_PARKOUR], e->impulsetime[IM_T_MELEE]), e->impulsetime[IM_T_GRAB]);
+                time = max(max(max(e->impulsetime[IM_T_PARKOUR], e->impulsetime[IM_T_VAULT]), e->impulsetime[IM_T_MELEE]), e->impulsetime[IM_T_GRAB]);
                 delay = impulseparkourdelay;
                 break;
             case A_A_SLIDE: case A_A_DASH:
@@ -294,7 +294,7 @@ namespace physics
 
     bool sticktospecial(physent *d)
     {
-        if(gameent::is(d) && ((gameent *)d)->impulse[IM_TYPE] == IM_T_PARKOUR) return true;
+        if(gameent::is(d) && ((gameent *)d)->hasparkour()) return true;
         return false;
     }
 
@@ -769,14 +769,23 @@ namespace physics
     void modifyinput(gameent *d, vec &m, bool wantsmove, int millis)
     {
         bool onfloor = d->physstate >= PHYS_SLOPE || d->onladder || liquidcheck(d);
-        if(d->impulse[IM_TYPE] == IM_T_PARKOUR && (!allowimpulse(d, A_A_PARKOUR) || (impulseparkourlen && lastmillis-d->impulsetime[IM_T_PARKOUR] > impulseparkourlen) || d->vel.iszero()))
+        if(d->hasparkour())
         {
-            d->doimpulse(IM_T_AFTER, lastmillis);
-            client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_AFTER);
-            d->resetphys(true);
-            onfloor = false;
+            int length = 0, ms = 0;
+            switch(d->impulse[IM_TYPE])
+            {
+                case IM_T_PARKOUR: length = impulseparkourlen; ms = d->impulsetime[IM_T_PARKOUR]; break;
+                case IM_T_VAULT: length = impulsevaultlen; ms = d->impulsetime[IM_T_VAULT]; break;
+            }
+            if((length && lastmillis-ms > length) || !allowimpulse(d, A_A_PARKOUR) || d->vel.iszero())
+            {
+                d->doimpulse(IM_T_AFTER, lastmillis);
+                client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_AFTER);
+                d->resetphys(true);
+                onfloor = false;
+            }
         }
-        if(d->impulse[IM_TYPE] == IM_T_PARKOUR)
+        if(d->hasparkour())
         {
             if(d->action[AC_JUMP] && canimpulse(d, A_A_BOOST, true))
             {
@@ -817,7 +826,7 @@ namespace physics
             }
         }
         bool found = false;
-        if(!d->crouching() && (d->impulse[IM_TYPE] == IM_T_PARKOUR || d->action[AC_SPECIAL]))
+        if(!d->crouching() && (d->hasparkour() || d->action[AC_SPECIAL]))
         {
             vec oldpos = d->o, dir;
             const int movements[8][2] = { { 2, 2 }, { 1, 2 }, { 1, 0 }, { 1, -1 }, { 1, 1 }, { 0, 1 }, { 0, -1 }, { -1, 0 } };
@@ -870,7 +879,7 @@ namespace physics
                         }
                         d->o = oldpos;
                     }
-                    if(d->impulse[IM_TYPE] == IM_T_PARKOUR || parkour || vault)
+                    if(d->hasparkour() || parkour || vault)
                     {
                         int side = isclimb ? 0 : (off < 0 ? -1 : 1);
 
@@ -905,7 +914,7 @@ namespace physics
                         d->o = oldpos;
                         if(collided || (collideplayer && !inanimate::is(collideplayer))) continue; // we might find a better vector
 
-                        if(d->impulse[IM_TYPE] != IM_T_PARKOUR)
+                        if(d->impulse[IM_TYPE] != (vault ? IM_T_VAULT : IM_T_PARKOUR))
                         {
                             int cost = int(impulsecost*(isclimb ? impulsecostclimb : impulsecostparkour));
                             vec keepvel = vec(d->vel).add(d->falling);
@@ -913,8 +922,8 @@ namespace physics
                             if(mag > 0)
                             {
                                 d->vel = vec(rft).mul(mag).add(keepvel);
-                                d->doimpulse(IM_T_PARKOUR, lastmillis, cost, side, impulseturntime, side ? off*impulseturnscale : 0, side ? (impulseturnroll*d->turnside)-d->roll : 0);
-                                client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_PARKOUR);
+                                d->doimpulse(vault ? IM_T_VAULT : IM_T_PARKOUR, lastmillis, cost, side, impulseturntime, side ? off*impulseturnscale : 0, side ? (impulseturnroll*d->turnside)-d->roll : 0);
+                                client::addmsg(N_SPHY, "ri2", d->clientnum, vault ? SPHY_VAULT : SPHY_PARKOUR);
                                 game::impulseeffect(d);
                                 game::footstep(d);
                             }
@@ -934,7 +943,7 @@ namespace physics
                 }
             }
         }
-        if(!found && d->impulse[IM_TYPE] == IM_T_PARKOUR)
+        if(!found && d->hasparkour())
         {
             if(!d->turnside && impulseclimbendstyle && !d->crouching())
             {
@@ -981,7 +990,7 @@ namespace physics
             m.z = liquidcheck(d) ? max(m.z, dz) : dz;
             if(!m.iszero()) m.normalize();
         }
-        if(d->physstate == PHYS_FALL && !d->onladder && d->impulse[IM_TYPE] != IM_T_PARKOUR)
+        if(d->physstate == PHYS_FALL && !d->onladder && !d->hasparkour())
         {
             if(!d->airmillis) d->airmillis = lastmillis ? lastmillis : 1;
             d->floormillis = 0;
@@ -991,7 +1000,7 @@ namespace physics
             d->airmillis = 0;
             if(!d->floormillis) d->floormillis = lastmillis ? lastmillis : 1;
         }
-        if(d->impulse[IM_TYPE] != IM_T_PARKOUR && d->onladder && !m.iszero()) m.add(vec(0, 0, m.z >= 0 ? 1 : -1)).normalize();
+        if(!d->hasparkour() && d->onladder && !m.iszero()) m.add(vec(0, 0, m.z >= 0 ? 1 : -1)).normalize();
     }
 
     float coastscale(const vec &o)

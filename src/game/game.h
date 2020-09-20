@@ -255,10 +255,10 @@ enum
     AC_ALL = (1<<AC_PRIMARY)|(1<<AC_SECONDARY)|(1<<AC_RELOAD)|(1<<AC_USE)|(1<<AC_JUMP)|(1<<AC_WALK)|(1<<AC_CROUCH)|(1<<AC_SPECIAL)|(1<<AC_DROP)|(1<<AC_AFFINITY)
 };
 enum { IM_METER = 0, IM_TYPE, IM_REGEN, IM_COUNT, IM_COLLECT, IM_SLIP, IM_MAX };
-enum { IM_T_JUMP = 0, IM_T_BOOST, IM_T_DASH, IM_T_SLIDE, IM_T_LAUNCH, IM_T_MELEE, IM_T_KICK, IM_T_GRAB, IM_T_PARKOUR, IM_T_POUND, IM_T_AFTER, IM_T_PUSHER, IM_T_MAX, IM_T_TOUCH = IM_T_MELEE };
+enum { IM_T_JUMP = 0, IM_T_BOOST, IM_T_DASH, IM_T_SLIDE, IM_T_LAUNCH, IM_T_MELEE, IM_T_KICK, IM_T_GRAB, IM_T_PARKOUR, IM_T_VAULT, IM_T_POUND, IM_T_AFTER, IM_T_PUSHER, IM_T_MAX, IM_T_TOUCH = IM_T_MELEE };
 enum
 {
-    SPHY_JUMP = 0, SPHY_BOOST, SPHY_DASH, SPHY_SLIDE, SPHY_LAUNCH, SPHY_MELEE, SPHY_KICK, SPHY_GRAB, SPHY_PARKOUR, SPHY_POUND, SPHY_AFTER, SPHY_MATERIAL,
+    SPHY_JUMP = 0, SPHY_BOOST, SPHY_DASH, SPHY_SLIDE, SPHY_LAUNCH, SPHY_MELEE, SPHY_KICK, SPHY_GRAB, SPHY_PARKOUR, SPHY_VAULT, SPHY_POUND, SPHY_AFTER, SPHY_MATERIAL,
     SPHY_SERVER, SPHY_EXTINGUISH = SPHY_SERVER, SPHY_BUFF,
     SPHY_MAX
 };
@@ -275,7 +275,8 @@ enum
     ANIM_JUMP_FORWARD, ANIM_JUMP_BACKWARD, ANIM_JUMP_LEFT, ANIM_JUMP_RIGHT, ANIM_JUMP,
     ANIM_RUN_FORWARD, ANIM_RUN_BACKWARD, ANIM_RUN_LEFT, ANIM_RUN_RIGHT,
     ANIM_BOOST_FORWARD, ANIM_BOOST_BACKWARD, ANIM_BOOST_LEFT, ANIM_BOOST_RIGHT, ANIM_BOOST_UP,
-    ANIM_PARKOUR_LEFT, ANIM_PARKOUR_RIGHT, ANIM_PARKOUR_UP, ANIM_PARKOUR_JUMP, ANIM_POWERSLIDE, ANIM_FLYKICK,
+    ANIM_PARKOUR_LEFT, ANIM_PARKOUR_RIGHT, ANIM_PARKOUR_UP, ANIM_PARKOUR_JUMP,
+    ANIM_VAULT, ANIM_POWERSLIDE, ANIM_FLYKICK,
     ANIM_SINK, ANIM_EDIT, ANIM_WIN, ANIM_LOSE,
     ANIM_CROUCH, ANIM_CRAWL_FORWARD, ANIM_CRAWL_BACKWARD, ANIM_CRAWL_LEFT, ANIM_CRAWL_RIGHT,
     ANIM_CROUCH_JUMP_FORWARD, ANIM_CROUCH_JUMP_BACKWARD, ANIM_CROUCH_JUMP_LEFT, ANIM_CROUCH_JUMP_RIGHT, ANIM_CROUCH_JUMP,
@@ -1164,7 +1165,8 @@ static const char * const animnames[] =
     "jump forward", "jump backward", "jump left", "jump right", "jump",
     "run forward", "run backward", "run left", "run right",
     "boost forward", "boost backward", "boost left", "boost right", "boost up",
-    "parkour left", "parkour right", "parkour up", "parkour jump", "power slide", "fly kick",
+    "parkour left", "parkour right", "parkour up", "parkour jump",
+    "vault", "power slide", "fly kick",
     "sink", "edit", "win", "lose",
     "crouch", "crawl forward", "crawl backward", "crawl left", "crawl right",
     "crouch jump forward", "crouch jump backward", "crouch jump left", "crouch jump right", "crouch jump",
@@ -1845,6 +1847,11 @@ struct gameent : dynent, clientstate
         turnside = 0;
         turnyaw = yaw;
         turnroll = roll;
+    }
+
+    bool hasparkour()
+    {
+        return impulse[IM_TYPE] == IM_T_PARKOUR || impulse[IM_TYPE] == IM_T_VAULT;
     }
 
     void addicon(int type, int millis, int fade, int value = 0)
