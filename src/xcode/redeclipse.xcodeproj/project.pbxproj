@@ -88,6 +88,8 @@
 		B9AC7B0E0D06DB44005506F8 /* geom.h in Headers */ = {isa = PBXBuildFile; fileRef = B9AC7AC60D06DB44005506F8 /* geom.h */; };
 		B9AC7B0F0D06DB44005506F8 /* iengine.h in Headers */ = {isa = PBXBuildFile; fileRef = B9AC7AC70D06DB44005506F8 /* iengine.h */; };
 		B9AC7B100D06DB44005506F8 /* igame.h in Headers */ = {isa = PBXBuildFile; fileRef = B9AC7AC80D06DB44005506F8 /* igame.h */; };
+		B9AC7B0D0D06DB44000506F8 /* prop.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B9AC7AC50D06DB44000506F8 /* prop.cpp */; };
+		B9AC7B0E0D06DB44001506F8 /* prop.h in Headers */ = {isa = PBXBuildFile; fileRef = B9AC7AC60D06DB44001506F8 /* prop.h */; };
 		B9AC7B150D06DB44005506F8 /* tools.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B9AC7ACD0D06DB44005506F8 /* tools.cpp */; };
 		B9AC7B160D06DB44005506F8 /* tools.h in Headers */ = {isa = PBXBuildFile; fileRef = B9AC7ACE0D06DB44005506F8 /* tools.h */; };
 		D118DEB60D979281000E8C4C /* renderlights.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D118DEB50D979281000E8C4C /* renderlights.cpp */; };
@@ -242,6 +244,8 @@
 		B9AC7AC60D06DB44005506F8 /* geom.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = geom.h; sourceTree = "<group>"; };
 		B9AC7AC70D06DB44005506F8 /* iengine.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = iengine.h; sourceTree = "<group>"; };
 		B9AC7AC80D06DB44005506F8 /* igame.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = igame.h; sourceTree = "<group>"; };
+		B9AC7AC50D06DB44000506F8 /* prop.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = prop.cpp; sourceTree = "<group>"; };
+		B9AC7AC60D06DB44001506F8 /* prop.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = prop.h; sourceTree = "<group>"; };
 		B9AC7ACD0D06DB44005506F8 /* tools.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tools.cpp; sourceTree = "<group>"; };
 		B9AC7ACE0D06DB44005506F8 /* tools.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tools.h; sourceTree = "<group>"; };
 		B9CACA14092099E700A13F04 /* redeclipse-Info.plist */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.plist.xml; path = "redeclipse-Info.plist"; sourceTree = "<group>"; };
@@ -524,6 +528,8 @@
 				FD05F14B1ADD1BD70046F323 /* glexts.h */,
 				B9AC7AC70D06DB44005506F8 /* iengine.h */,
 				B9AC7AC80D06DB44005506F8 /* igame.h */,
+				B9AC7AC50D06DB44000506F8 /* prop.cpp */,
+				B9AC7AC60D06DB44001506F8 /* prop.h */,
 				D11B5A8010CBB637003F0098 /* stream.cpp */,
 				B9AC7ACD0D06DB44005506F8 /* tools.cpp */,
 				B9AC7ACE0D06DB44005506F8 /* tools.h */,
@@ -612,6 +618,7 @@
 				B9AC7B0E0D06DB44005506F8 /* geom.h in Headers */,
 				B9AC7B0F0D06DB44005506F8 /* iengine.h in Headers */,
 				B9AC7B100D06DB44005506F8 /* igame.h in Headers */,
+				B9AC7B0E0D06DB44001506F8 /* prop.h in Headers */,
 				B9AC7B160D06DB44005506F8 /* tools.h in Headers */,
 				FD05F1481ADD1BBA0046F323 /* playerdef.h in Headers */,
 				FD05F14A1ADD1BBA0046F323 /* weapons.h in Headers */,
@@ -764,6 +771,7 @@
 				B9AC7AF50D06DB44005506F8 /* world.cpp in Sources */,
 				B9AC7AF70D06DB44005506F8 /* worldio.cpp in Sources */,
 				B9AC7B0D0D06DB44005506F8 /* geom.cpp in Sources */,
+				B9AC7B0D0D06DB44000506F8 /* prop.cpp in Sources */,
 				B9AC7B150D06DB44005506F8 /* tools.cpp in Sources */,
 				FD88C2981B6C824B004CEB1D /* glexts.h in Sources */,
 				D1C660CA0D5467C8002E52C1 /* pvs.cpp in Sources */,
