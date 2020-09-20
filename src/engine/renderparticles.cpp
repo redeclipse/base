@@ -1742,6 +1742,12 @@ void regularflame(int type, const vec &p, float radius, float height, int color,
     }
 }
 
+void lensflare(const vec &o, const vec &color, bool sun, int sparkle, float scale)
+{
+    if(!canemitparticles()) return;
+    flares.addflare(o, uchar(color.r*255), uchar(color.g*255), uchar(color.b*255), sun, sparkle, scale);
+}
+
 static int partcolour(int c, int p, int x)
 {
     if(c <= 0) c = 0xFFFFFF;

@@ -93,12 +93,12 @@ struct flarerenderer : partrenderer
         return true;
     }
 
-    void addflare(const vec &o, uchar r, uchar g, uchar b, bool sun, int sparkle)
+    void addflare(const vec &o, uchar r, uchar g, uchar b, bool sun, int sparkle, float scale = 1)
     {
         vec flaredir, center;
         float mod = 0, size = 0;
         if(generate(o, center, flaredir, mod, size, sun, sun ? 0.f : flarecutoff))
-            newflare(o, center, r, g, b, mod, size, sun, sparkle);
+            newflare(o, center, r, g, b, mod, size*scale, sun, sparkle);
     }
 
     void update()
@@ -114,7 +114,7 @@ struct flarerenderer : partrenderer
         loopenti(ET_LIGHT)
         {
             extentity &e = *ents[i];
-            if(e.type != ET_LIGHT || (!(flarelights&2) && !(flarelights&1 && e.attrs[4])) || !checkmapvariant(e.attrs[9]) || !checkmapeffects(e.attrs[10])) continue;
+            if(e.type != ET_LIGHT || e.flags&EF_DYNAMIC || (!(flarelights&2) && !(flarelights&1 && e.attrs[4])) || !checkmapvariant(e.attrs[9]) || !checkmapeffects(e.attrs[10])) continue;
             bool sun = false;
             int sparkle = 0;
             uchar r = e.attrs[1], g = e.attrs[2], b = e.attrs[3];

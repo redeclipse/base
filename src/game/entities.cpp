@@ -2702,6 +2702,14 @@ namespace entities
                     spot = clamp(int(f.attrs[1]), 1, 89);
                 }
                 adddynlight(e.pos(), radius, color, 0, 0, e.attrs[6]|DL_ENVIRO, radius, color, NULL, dir, spot);
+                if(!flarelights) continue;
+                bool sun = false;
+                int sparkle = 0;
+                float scale = 1.f;
+                if(!e.attrs[0] || e.attrs[4]&1) sun = true;
+                if(!e.attrs[0] || e.attrs[4]&2 || flarelights&4) sparkle = sun ? 1 : 2;
+                if(e.attrs[5] > 0) scale = e.attrs[5]/100.f;
+                lensflare(e.pos(), color, sun, sparkle, scale);
             }
         }
     }

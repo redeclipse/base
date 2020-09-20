@@ -323,7 +323,7 @@ extern void part_radius(const vec &o, const vec &v, float size = 1, float blend 
 extern void part_cone(const vec &o, const vec &dir, float radius, float angle = 0.f, float size = 1, float blend = 1, int fade = 1, int color = colourcyan, bool fill = false, int spokenum = 15, int type = PART_CONE);
 
 extern void removetrackedparticles(physent *pl = NULL);
-extern int particletext, maxparticledistance;
+extern int particletext, maxparticledistance, flarelights;
 
 extern particle *newparticle(const vec &o, const vec &d, int fade, int type, int color = colourwhite, float size = 2, float blend = 1, float gravity = 0, int collide = 0, physent *pl = NULL);
 extern void create(int type, int color, int fade, const vec &p, float size = 2, float blend = 1, float gravity = 0, int collide = 0, physent *pl = NULL);
@@ -333,6 +333,7 @@ extern void regularsplash(int type, int color, float radius, int num, int fade, 
 extern void createshape(int type, float radius, int color, int dir, int num, int fade, const vec &p, float size = 2, float blend = 1, float gravity = 0, int collide = 0, float vel = 1);
 extern void regularshape(int type, float radius, int color, int dir, int num, int fade, const vec &p, float size = 2, float blend = 1, float gravity = 0, int collide = 0, float vel = 1);
 extern void regularflame(int type, const vec &p, float radius, float height, int color, int density = 3, int fade = 500, float size = 2, float blend = 1, float gravity = -1, int collide = 0, float vel = 1);
+extern void lensflare(const vec &o, const vec &color, bool sun, int sparkle, float scale = 1);
 
 // stain
 enum
