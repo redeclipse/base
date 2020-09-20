@@ -10,7 +10,7 @@
 #pragma once
 #endif
 
-#include "isteamclient.h"
+#include "steam_api_common.h"
 
 
 // Steam API call failure results
@@ -42,13 +42,17 @@ enum EGamepadTextInputLineMode
 };
 
 
+// The context where text filtering is being done
+enum ETextFilteringContext
+{
+	k_ETextFilteringContextUnknown = 0,	// Unknown context
+	k_ETextFilteringContextGameContent = 1,	// Game content, only legally required filtering is performed
+	k_ETextFilteringContextChat = 2,	// Chat from another player
+	k_ETextFilteringContextName = 3,	// Character or item name
+};
+
+
 // function prototype for warning message hook
-#if defined( POSIX )
-#ifdef __cdecl
-#undef __cdecl
-#endif
-#define __cdecl
-#endif
 extern "C" typedef void (__cdecl *SteamAPIWarningMessageHook_t)(int, const char *);
 
 //-----------------------------------------------------------------------------
@@ -57,7 +61,7 @@ extern "C" typedef void (__cdecl *SteamAPIWarningMessageHook_t)(int, const char 
 class ISteamUtils
 {
 public:
-	// return the number of seconds since the user 
+	// return the number of seconds since the user
 	virtual uint32 GetSecondsSinceAppActive() = 0;
 	virtual uint32 GetSecondsSinceComputerActive() = 0;
 
@@ -117,10 +121,10 @@ public:
 	// start & hook the game process, so this function will initially return false while the overlay is loading.
 	virtual bool IsOverlayEnabled() = 0;
 
-	// Normally this call is unneeded if your game has a constantly running frame loop that calls the 
+	// Normally this call is unneeded if your game has a constantly running frame loop that calls the
 	// D3D Present API, or OGL SwapBuffers API every frame.
 	//
-	// However, if you have a game that only refreshes the screen on an event driven basis then that can break 
+	// However, if you have a game that only refreshes the screen on an event driven basis then that can break
 	// the overlay, as it uses your Present/SwapBuffers calls to drive it's internal frame loop and it may also
 	// need to Present() to the screen any time an even needing a notification happens or when the overlay is
 	// brought up over the game by a user.  You can use this API to ask the overlay if it currently need a present
@@ -129,14 +133,14 @@ public:
 	virtual bool BOverlayNeedsPresent() = 0;
 
 	// Asynchronous call to check if an executable file has been signed using the public key set on the signing tab
-	// of the partner site, for example to refuse to load modified executable files.  
+	// of the partner site, for example to refuse to load modified executable files.
 	// The result is returned in CheckFileSignature_t.
 	//   k_ECheckFileSignatureNoSignaturesFoundForThisApp - This app has not been configured on the signing tab of the partner site to enable this function.
 	//   k_ECheckFileSignatureNoSignaturesFoundForThisFile - This file is not listed on the signing tab for the partner site.
 	//   k_ECheckFileSignatureFileNotFound - The file does not exist on disk.
 	//   k_ECheckFileSignatureInvalidSignature - The file exists, and the signing tab has been set for this file, but the file is either not signed or the signature does not match.
 	//   k_ECheckFileSignatureValidSignature - The file is signed and the signature is valid.
-	CALL_RESULT( CheckFileSignature_t )
+	STEAM_CALL_RESULT( CheckFileSignature_t )
 	virtual SteamAPICall_t CheckFileSignature( const char *szFileName ) = 0;
 
 	// Activates the Big Picture text input dialog which only supports gamepad input
@@ -151,7 +155,7 @@ public:
 
 	// returns true if Steam itself is running in VR mode
 	virtual bool IsSteamRunningInVR() = 0;
-	
+
 	// Sets the inset of the overlay notification from the corner specified by SetOverlayNotificationPosition.
 	virtual void SetOverlayNotificationInset( int nHorizontalInset, int nVerticalInset ) = 0;
 
@@ -163,19 +167,47 @@ public:
 	// ask SteamUI to create and render its OpenVR dashboard
 	virtual void StartVRDashboard() = 0;
 
-	// Returns true if the HMD content will be streamed via Steam In-Home Streaming
+	// Returns true if the HMD content will be streamed via Steam Remote Play
 	virtual bool IsVRHeadsetStreamingEnabled() = 0;
 
-	// Set whether the HMD content will be streamed via Steam In-Home Streaming
+	// Set whether the HMD content will be streamed via Steam Remote Play
 	// If this is set to true, then the scene in the HMD headset will be streamed, and remote input will not be allowed.
 	// If this is set to false, then the application window will be streamed instead, and remote input will be allowed.
 	// The default is true unless "VRHeadsetStreaming" "0" is in the extended appinfo for a game.
 	// (this is useful for games that have asymmetric multiplayer gameplay)
 	virtual void SetVRHeadsetStreamingEnabled( bool bEnabled ) = 0;
+
+	// Returns whether this steam client is a Steam China specific client, vs the global client.
+	virtual bool IsSteamChinaLauncher() = 0;
+
+	// Initializes text filtering.
+	//   unFilterOptions are reserved for future use and should be set to 0
+	// Returns false if filtering is unavailable for the language the user is currently running in.
+	virtual bool InitFilterText( uint32 unFilterOptions = 0 ) = 0;
+
+	// Filters the provided input message and places the filtered result into pchOutFilteredText, using legally required filtering and additional filtering based on the context and user settings
+	//   eContext is the type of content in the input string
+	//   sourceSteamID is the Steam ID that is the source of the input string (e.g. the player with the name, or who said the chat text)
+	//   pchInputText is the input string that should be filtered, which can be ASCII or UTF-8
+	//   pchOutFilteredText is where the output will be placed, even if no filtering is performed
+	//   nByteSizeOutFilteredText is the size (in bytes) of pchOutFilteredText, should be at least strlen(pchInputText)+1
+	// Returns the number of characters (not bytes) filtered
+	virtual int FilterText( ETextFilteringContext eContext, CSteamID sourceSteamID, const char *pchInputMessage, char *pchOutFilteredText, uint32 nByteSizeOutFilteredText ) = 0;
+
+	// Return what we believe your current ipv6 connectivity to "the internet" is on the specified protocol.
+	// This does NOT tell you if the Steam client is currently connected to Steam via ipv6.
+	virtual ESteamIPv6ConnectivityState GetIPv6ConnectivityState( ESteamIPv6ConnectivityProtocol eProtocol ) = 0;
 };
 
-#define STEAMUTILS_INTERFACE_VERSION "SteamUtils009"
+#define STEAMUTILS_INTERFACE_VERSION "SteamUtils010"
 
+// Global interface accessor
+inline ISteamUtils *SteamUtils();
+STEAM_DEFINE_INTERFACE_ACCESSOR( ISteamUtils *, SteamUtils, SteamInternal_FindOrCreateUserInterface( 0, STEAMUTILS_INTERFACE_VERSION ), "user", STEAMUTILS_INTERFACE_VERSION );
+
+// Global accessor for the gameserver client
+inline ISteamUtils *SteamGameServerUtils();
+STEAM_DEFINE_INTERFACE_ACCESSOR( ISteamUtils *, SteamGameServerUtils, SteamInternal_FindOrCreateGameServerInterface( 0, STEAMUTILS_INTERFACE_VERSION ), "gameserver", STEAMUTILS_INTERFACE_VERSION );
 
 // callbacks
 #if defined( VALVE_CALLBACK_PACK_SMALL )
@@ -183,8 +215,8 @@ public:
 #elif defined( VALVE_CALLBACK_PACK_LARGE )
 #pragma pack( push, 8 )
 #else
-#error isteamclient.h must be included
-#endif 
+#error steam_api_common.h should define VALVE_CALLBACK_PACK_xxx
+#endif
 
 //-----------------------------------------------------------------------------
 // Purpose: The country of the user changed
