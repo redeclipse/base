@@ -47,6 +47,7 @@
 		B9AC7AD60D06DB44005506B8 /* fx.h in Headers */ = {isa = PBXBuildFile; fileRef = B9AC7A8B0D06DB44005506B8 /* fx.h */; };
 		B9AC7AD70D06DB44005506C8 /* fxemit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B9AC7A8C0D06DB44005506C8 /* fxemit.cpp */; };
 		B9AC7AD70D06DB44005506D8 /* fxprop.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B9AC7A8C0D06DB44005506D8 /* fxprop.cpp */; };
+		B9AC7AD70D06DB44005506E8 /* fxprop.h in Headers */ = {isa = PBXBuildFile; fileRef = B9AC7A8C0D06DB44005506E8 /* fxprop.h */; };
 		B9AC7AD70D06DB44005506F8 /* grass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B9AC7A8C0D06DB44005506F8 /* grass.cpp */; };
 		B9AC7AD80D06DB44005506F8 /* light.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B9AC7A8D0D06DB44005506F8 /* light.cpp */; };
 		B9AC7AD90D06DB44005506F8 /* light.h in Headers */ = {isa = PBXBuildFile; fileRef = B9AC7A8E0D06DB44005506F8 /* light.h */; };
@@ -200,6 +201,7 @@
 		B9AC7A8B0D06DB44005506B8 /* fx.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fx.h; sourceTree = "<group>"; };
 		B9AC7A8C0D06DB44005506C8 /* fxemit.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = fxemit.cpp; sourceTree = "<group>"; };
 		B9AC7A8C0D06DB44005506D8 /* fxprop.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = fxprop.cpp; sourceTree = "<group>"; };
+		B9AC7A8B0D06DB44005506E8 /* fxprop.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fxprop.h; sourceTree = "<group>"; };
 		B9AC7A8C0D06DB44005506F8 /* grass.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = grass.cpp; sourceTree = "<group>"; };
 		B9AC7A8D0D06DB44005506F8 /* light.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = light.cpp; sourceTree = "<group>"; };
 		B9AC7A8E0D06DB44005506F8 /* light.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = light.h; sourceTree = "<group>"; };
@@ -446,10 +448,12 @@
 				B9AC7A8B0D06DB44005506F8 /* engine.h */,
 				D18B8FBE0DB0AF8200171439 /* explosion.h */,
 				D118DEB50D979281000E8C4C /* renderlights.cpp */,
-				B9AC7A8C0D06DB44005506F8 /* fx.cpp */,
-				B9AC7A8C0D06DB44005506F8 /* fx.h */,
-				B9AC7A8C0D06DB44005506F8 /* fxemit.cpp */,
-				B9AC7A8C0D06DB44005506F8 /* fxprop.cpp */,
+				B9AC7A8C0D06DB44005506A8 /* fx.cpp */,
+				B9AC7A8C0D06DB44005506B8 /* fx.h */,
+				B9AC7A8C0D06DB44005506C8 /* fxemit.cpp */,
+				B9AC7A8C0D06DB44005506D8 /* fxprop.cpp */,
+				B9AC7A8C0D06DB44005506E8 /* fxprop.h */,
+				B9AC7A8C0D06DB44005506F8 /* grass.cpp */,
 				FD05F14C1ADD1BD70046F323 /* iqm.h */,
 				D1D88AB60F350EDE000680E1 /* http.cpp */,
 				D1D88AB70F350EDE000680E2 /* http.h */,
