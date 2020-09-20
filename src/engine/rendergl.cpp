@@ -1458,11 +1458,12 @@ extern const matrix4 invviewmatrix(vec(-1, 0, 0), vec(0, 0, -1), vec(0, 1, 0));
 matrix4 cammatrix, projmatrix, camprojmatrix, invcammatrix, invcamprojmatrix, invprojmatrix;
 
 FVAR(0, nearplane, 0.01f, 0.54f, 2.0f);
+FVAR(IDF_PERSIST, avatarposfactor, 0.01f, 4.0f, 64.0f);
 
 vec calcavatarpos(const vec &pos, float fov)
 {
     vec eyepos;
-    float scale = 12.0f*sqrtf(aspect);
+    float scale = avatarposfactor*sqrtf(aspect);
     cammatrix.transform(pos, eyepos);
 
     if(eyepos.z > 0)

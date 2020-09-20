@@ -67,6 +67,7 @@ extern vector<sound> sounds;
 
 #define issound(c) (sounds.inrange(c) && sounds[c].valid())
 
+extern void mapsoundslots();
 extern void mapsoundslot(int index, const char *name);
 extern int getsoundslot(int index);
 extern void initsound();

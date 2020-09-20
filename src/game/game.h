@@ -1235,9 +1235,11 @@ struct gameent : dynent, clientstate
     vector<stunevent> stuns;
     vector<jitterevent> jitters;
     vector<int> vitems;
+    fx::emitter *weaponfx;
 
     gameent() : edit(NULL), ai(NULL), team(T_NEUTRAL), clientnum(-1), privilege(PRIV_NONE), projid(0), checkpoint(-1), cplast(0), lastupdate(0), lastpredict(0), plag(0), ping(0),
-        totaldamage(0), smoothmillis(-1), lastattacker(-1), lastpoints(0), quake(0), wasfiring(-1), conopen(false), k_up(false), k_down(false), k_left(false), k_right(false), obliterated(false)
+        totaldamage(0), smoothmillis(-1), lastattacker(-1), lastpoints(0), quake(0), wasfiring(-1), conopen(false), k_up(false), k_down(false), k_left(false), k_right(false), obliterated(false),
+        weaponfx(NULL)
     {
         state = CS_DEAD;
         type = ENT_PLAYER;
@@ -1248,6 +1250,7 @@ struct gameent : dynent, clientstate
     }
     ~gameent()
     {
+        removefx();
         removesounds();
         freeeditinfo(edit);
         if(ai) delete ai;
@@ -1482,6 +1485,8 @@ struct gameent : dynent, clientstate
         return projid;
     }
 
+    void removefx() { if(weaponfx) fx::stopfx(weaponfx); }
+
     void removesounds()
     {
         if(issound(aschan)) removesound(aschan);
@@ -1530,6 +1535,7 @@ struct gameent : dynent, clientstate
     void respawn(int millis, int gamemode, int mutators)
     {
         stopmoving(false);
+        removefx();
         removesounds();
         physent::reset();
         clearstate(millis, gamemode, mutators);
@@ -2031,13 +2037,17 @@ struct projent : dynent
     physent *hit;
     const char *mdlname;
     bvec material;
+    fx::emitter *effect;
+    int fxtype;
 
-    projent() : projtype(PRJ_SHOT), id(-1), collidezones(CLZ_NONE), owner(NULL), target(NULL), stick(NULL), hit(NULL), mdlname(NULL) { reset(); }
+    projent() : projtype(PRJ_SHOT), id(-1), collidezones(CLZ_NONE), owner(NULL), target(NULL),
+        stick(NULL), hit(NULL), mdlname(NULL), effect(NULL), fxtype(FX_P_NONE) { reset(); }
     ~projent()
     {
         removetrackedparticles(this);
         removetrackedsounds(this);
         if(issound(schan)) removesound(schan);
+        if(effect) effect->unhook();
         schan = -1;
     }
 
@@ -2062,6 +2072,8 @@ struct projent : dynent
         limited = escaped = child = bounced = false;
         projcollide = BOUNCE_GEOM|BOUNCE_PLAYER;
         material = bvec(255, 255, 255);
+        if(effect) effect->unhook();
+        fxtype = FX_P_NONE;
     }
 
     bool ready(bool used = true)
@@ -2170,6 +2182,7 @@ namespace projs
 {
     extern vector<projent *> projs, collideprojs;
 
+    extern void mapprojfx();
     extern void reset();
     extern void update();
     extern projent *create(const vec &from, const vec &to, bool local, gameent *d, int type, int fromweap, int fromflags, int lifetime, int lifemillis, int waittime, int speed, int id = 0, int weap = -1, int value = -1, int flags = 0, float scale = 1, bool child = false, gameent *target = NULL);
@@ -2179,7 +2192,6 @@ namespace projs
     extern void sticky(gameent *d, int id, vec &norm, vec &pos, gameent *f = NULL);
     extern void shootv(int weap, int flags, int sub, int offset, float scale, vec &from, vec &dest, vector<shotmsg> &shots, gameent *d, bool local, gameent *v = NULL);
     extern void drop(gameent *d, int weap, int ent, int ammo = -1, bool local = true, int index = 0, int targ = -1);
-    extern void adddynlights();
     extern void render();
 }
 
@@ -2240,6 +2252,7 @@ namespace game
     extern vec swaypush, swaydir;
     extern string clientmap;
     extern int attrmap[W_MAX];
+    extern int showweapfx;
 
     extern gameent *player1, *focus;
     extern vector<gameent *> players, waiting;
@@ -2250,6 +2263,7 @@ namespace game
     };
     extern avatarent avatarmodel, bodymodel;
 
+    extern int getweapfx(int type);
     extern bool needname(gameent *d);
     extern void vanityreset();
     extern void vanitybuild(gameent *d);

@@ -94,6 +94,7 @@ void cleanup()
     cleargamma();
     freeocta(worldroot);
     UI::cleanup();
+    fx::cleanup();
     cleanupwind();
     extern void clear_command(); clear_command();
     extern void clear_console(); clear_console();
@@ -891,6 +892,12 @@ void readpixel(char *act)
 }
 ICOMMAND(0, readpixel, "s", (char *act), readpixel(act));
 
+static void mapslots()
+{
+    mapsoundslots();
+    game::mapslots();
+}
+
 VAR(0, numcpus, 1, 1, 16);
 
 int main(int argc, char **argv)
@@ -1057,6 +1064,7 @@ int main(int argc, char **argv)
     conoutf("Loading world..");
     progress(0, "Loading world..");
     setupwind();
+    fx::setup();
     emptymap(0, true, NULL, false);
 
     conoutf("Loading config..");
@@ -1064,6 +1072,7 @@ int main(int argc, char **argv)
     initing = INIT_LOAD;
     rehash(false);
     if(shouldload) smartmusic(true, true);
+    mapslots();
 
     initing = NOT_INITING;
 
@@ -1134,6 +1143,9 @@ int main(int argc, char **argv)
             {
                 game::recomputecamera();
                 setviewcell(camera1->o);
+                cleardynlights();
+                fx::update();
+                updatewind();
                 updatetextures();
                 updateparticles();
                 updatesounds();

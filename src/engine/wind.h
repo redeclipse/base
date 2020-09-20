@@ -12,7 +12,7 @@ struct windattrs
     int yaw;
     float speed;
     int radius;
-    int atten;
+    float atten;
     int interval;
     int length;
 };
@@ -61,7 +61,7 @@ extern void setupwind();
 extern void clearwindemitters();
 extern void updatewind();
 extern vec getwind(const vec &o, const dynent *d = NULL);
-extern void addwind(const vec &o, int mode, float speed, windemitter **hook = NULL, int yaw = 0, int interval = 0, int length = 4000, int radius = 0, int atten = 1);
+extern void addwind(const vec &o, int mode, float speed, windemitter **hook = NULL, int yaw = 0, int interval = 0, int length = 4000, int radius = 0, float atten = 0.1f);
 extern void remwind(windemitter **we);
 extern void addwind(extentity *e);
 extern void remwind(extentity *e);

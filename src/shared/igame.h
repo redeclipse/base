@@ -113,6 +113,7 @@ namespace physics
 
 namespace game
 {
+    extern void mapslots();
     extern void mapgamesounds();
     extern void start();
     extern bool clientoption(char *arg);
@@ -130,6 +131,7 @@ namespace game
     extern vec getpalette(int palette, int index);
     extern void fixpalette(int &palette, int &index, int gver);
     extern void adddynlights();
+    extern void fxtrack(fx::emitter *e);
     extern void particletrack(particle *p, uint type, int &ts, bool step);
     extern void dynlighttrack(physent *owner, vec &o, vec &hud);
     extern bool mousemove(int dx, int dy, int x, int y, int w, int h);

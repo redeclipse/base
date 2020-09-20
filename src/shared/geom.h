@@ -1255,6 +1255,8 @@ struct ivec
     bool operator==(const ivec &v) const { return x==v.x && y==v.y && z==v.z; }
     bool operator!=(const ivec &v) const { return x!=v.x || y!=v.y || z!=v.z; }
     bool iszero() const { return x==0 && y==0 && z==0; }
+    ivec &mul(float n) { x *= n; y *= n; z *= n; return *this; }
+    ivec &div(float n) { x /= n; y /= n; z /= n; return *this; }
     ivec &shl(int n) { x<<= n; y<<= n; z<<= n; return *this; }
     ivec &shr(int n) { x>>= n; y>>= n; z>>= n; return *this; }
     ivec &mul(int n) { x *= n; y *= n; z *= n; return *this; }
@@ -1265,6 +1267,7 @@ struct ivec
     ivec &div(const ivec &v) { x /= v.x; y /= v.y; z /= v.z; return *this; }
     ivec &add(const ivec &v) { x += v.x; y += v.y; z += v.z; return *this; }
     ivec &sub(const ivec &v) { x -= v.x; y -= v.y; z -= v.z; return *this; }
+    ivec &mul(const vec &v) { x *= v.x; y *= v.y; z *= v.z; return *this; }
     ivec &mask(int n) { x &= n; y &= n; z &= n; return *this; }
     ivec &neg() { x = -x; y = -y; z = -z; return *this; }
     ivec &min(const ivec &o) { x = ::min(x, o.x); y = ::min(y, o.y); z = ::min(z, o.z); return *this; }
@@ -1407,6 +1410,8 @@ struct bvec
 
     bool iszero() const { return x==0 && y==0 && z==0; }
 
+    bvec &mul(float n) { x *= n; y *= n; z *= n; return *this; }
+    bvec &div(float n) { x /= n; y /= n; z /= n; return *this; }
     bvec &mul(int n) { x *= n; y *= n; z *= n; return *this; }
     bvec &div(int n) { x /= n; y /= n; z /= n; return *this; }
     bvec &add(int n) { x += n; y += n; z += n; return *this; }
@@ -1415,6 +1420,7 @@ struct bvec
     bvec &sub(const bvec &v) { x -= v.x; y -= v.y; z -= v.z; return *this; }
     bvec &min(const bvec &o)   { x = ::min(x, o.x); y = ::min(y, o.y); z = ::min(z, o.z); return *this; }
     bvec &max(const bvec &o)   { x = ::max(x, o.x); y = ::max(y, o.y); z = ::max(z, o.z); return *this; }
+    bvec &mul(const vec &v) { x *= v.x; y *= v.y; z *= v.z; return *this; }
     bvec &min(int f)        { x = ::min(int(x), f); y = ::min(int(y), f); z = ::min(int(z), f); return *this; }
     bvec &max(int f)        { x = ::max(int(x), f); y = ::max(int(y), f); z = ::max(int(z), f); return *this; }
     bvec &abs() { return *this; }
@@ -2052,7 +2058,7 @@ static inline int mod360(int angle)
     return angle;
 }
 
-static inline void lerp360(float &angle, float target, float factor)
+static inline float lerp360(float angle, float target, float factor)
 {
     float diff = target - angle;
     if(diff > 180) angle += 360;
@@ -2061,7 +2067,12 @@ static inline void lerp360(float &angle, float target, float factor)
     angle += offset * factor;
     if((oldangle > target && angle < target) || (oldangle < target && angle > target))
         angle = target;
+
+    return angle;
 }
+
+template<class T>
+static inline T lerp(T a, T b, float t) { return a + (b-a)*t; }
 
 static inline const vec2 &sincosmod360(int angle) { return sincos360[mod360(angle)]; }
 static inline float cos360(int angle) { return sincos360[angle].x; }

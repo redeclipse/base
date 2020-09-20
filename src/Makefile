@@ -142,6 +142,7 @@ CLIENT_OBJS= \
 	shared/crypto.o \
 	shared/geom.o \
 	shared/glemu.o \
+	shared/prop.o \
 	shared/stream.o \
 	shared/tools.o \
 	shared/zip.o \
@@ -155,6 +156,9 @@ CLIENT_OBJS= \
 	engine/command.o \
 	engine/console.o \
 	engine/dynlight.o \
+	engine/fx.o \
+	engine/fxemit.o \
+	engine/fxprop.o \
 	engine/grass.o \
 	engine/http.o \
 	engine/irc.o \
