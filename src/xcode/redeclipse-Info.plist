@@ -9,7 +9,7 @@
 	<key>CFBundleIconFile</key>
 	<string>redeclipse</string>
 	<key>CFBundleIdentifier</key>
-	<string></string>
+	<string>net.redeclipse.game</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundlePackageType</key>

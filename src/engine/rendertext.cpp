@@ -16,10 +16,6 @@ VAR(IDF_PERSIST, textkeyseps, 0, 1, 1);
 VAR(IDF_PERSIST|IDF_HEX, textkeycolour, 0, 0x00FFFF, 0xFFFFFF);
 SVAR(IDF_PERSIST, textfont, "default");
 
-VAR(IDF_PERSIST, texthintres, 0, 1080, VAR_MAX);
-FVAR(IDF_PERSIST, texthintborder, 0, 0.025f, 1);
-FVAR(IDF_PERSIST, texthintoutline, 0, 0.15f, 1);
-
 static hashnameset<font> fonts;
 static font *fontdef = NULL;
 static int fontdeftex = 0;
@@ -953,11 +949,7 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
     bool usecolor = true, hasfade = false;
     if(fade < 0) { usecolor = false; fade = -a; }
     int colorpos = 1, ly = 0, left = rleft, top = rtop;
-    float cx = -FONTW, cy = 0, pscale = min(screenw, screenh)/float(texthintres),
-          bmin = pscale < 1 ? curfont->bordermin*(1-pscale*texthintborder) : curfont->bordermin,
-          bmax = pscale < 1 ? curfont->bordermax*(1-pscale*texthintborder) : curfont->bordermax,
-          omin = pscale < 1 ? curfont->outlinemin*(1-pscale*texthintoutline) : curfont->outlinemin,
-          omax = pscale < 1 ? curfont->outlinemax*(1-pscale*texthintoutline) : curfont->outlinemax;
+    float cx = -FONTW, cy = 0;
     if(r < 0) r = (colourwhite>>16)&0xFF;
     if(g < 0) g = (colourwhite>>8)&0xFF;
     if(b < 0) b = colourwhite&0xFF;
@@ -965,7 +957,7 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
     loopi(16) colorstack[i] = color;
     Texture *tex = curfont->texs[0];
     (textshader ? textshader : hudtextshader)->set();
-    LOCALPARAMF(textparams, bmin, bmax, omin, omax);
+    LOCALPARAMF(textparams, curfont->bordermin, curfont->bordermax, curfont->outlinemin, curfont->outlinemax);
     wantfontpass = false;
     curfontpass = 0;
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1008,7 +1000,7 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
         //TEXTEND(cursor)
         xtraverts += gle::end();
         (textshader ? textshader : hudtextshader)->set();
-        LOCALPARAMF(textparams, bmin, bmax, omin, omax);
+        LOCALPARAMF(textparams, curfont->bordermin, curfont->bordermax, curfont->outlinemin, curfont->outlinemax);
         wantfontpass = false;
     }
     curfontpass = 0;
