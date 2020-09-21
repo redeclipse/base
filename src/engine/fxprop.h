@@ -31,9 +31,7 @@ namespace fx
         fxpropertydef(
             "activelen",
             PROP_INT,
-            1,
-            1,
-            INT_MAX,
+            1, 1, INT_MAX,
             BIT(FX_MOD_RAND)
         ),
         fxpropertydef(
@@ -169,7 +167,7 @@ namespace fx
         fxpropertydef(
             "part",
             PROP_INT,
-            (int)PART_FIREBALL_LERP, (int)PART_FIREBALL_LERP, (int)PART_MAX - 1,
+            (int)PART_FIREBALL_LERP, (int)PART_FIREBALL_LERP, (int)PART_LIGHTZAP,
             0
         ),
         fxpropertydef(

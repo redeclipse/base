@@ -12,7 +12,7 @@ void property::clear()
     {
         case PROP_IVEC: delete (ivec *)data; break;
         case PROP_FVEC: delete (vec *)data; break;
-        case PROP_STRING: free(data); break;
+        case PROP_STRING: delete[] (char*)data; break;
     }
 
     data = NULL;
