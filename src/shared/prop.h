@@ -63,7 +63,7 @@ struct property
 
     void operator=(const char *value)
     {
-        if(data) free(data);
+        if(data) delete[] (char*)data;
         if(value) data = newstring(value);
         else data = NULL;
     }
