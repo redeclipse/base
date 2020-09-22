@@ -263,7 +263,7 @@ enum
     SPHY_MAX
 };
 
-#define CROUCHLOW 0.7f
+#define CROUCHLOW 0.65f
 #define CROUCHHIGH 0.85f
 #define GUARDRADIUS 3.f
 #define PHYSMILLIS 250
@@ -1830,7 +1830,7 @@ struct gameent : dynent, clientstate
         impulsetime[type] = millis;
         if(type != IM_T_KICK) impulse[IM_SLIP] = millis;
         impulse[IM_TYPE] = type;
-        if(type != IM_T_JUMP && type != IM_T_DASH && type != IM_T_SLIDE)
+        if(type != IM_T_JUMP && type != IM_T_DASH && type != IM_T_SLIDE && type != IM_T_VAULT)
         {
             if(!impulsetime[IM_T_JUMP]) impulsetime[IM_T_JUMP] = millis;
             if(type != IM_T_AFTER) impulse[IM_COUNT]++;
@@ -1957,6 +1957,7 @@ struct gameent : dynent, clientstate
 
     bool sliding(bool power = false)
     {
+        if(impulse[IM_TYPE] == IM_T_VAULT) return true;
         if(G(impulseslidelen) && impulsetime[IM_T_SLIDE] && lastmillis-impulsetime[IM_T_SLIDE] <= G(impulseslidelen)) return true;
         if(!power && G(impulsesliplen) && impulse[IM_SLIP] && lastmillis-impulse[IM_SLIP] <= G(impulsesliplen)) return true;
         return false;

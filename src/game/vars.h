@@ -498,17 +498,17 @@ GFVAR(IDF_GAMEMOD, 0, impulsekickpitchmin, -89.9f, -89.9f, 89.9f); // kick pitch
 GFVAR(IDF_GAMEMOD, 0, impulsekickpitchmax, -89.9f, 89.9f, 89.9f); // kick pitch maximum
 GFVAR(IDF_GAMEMOD, 0, impulseclimb, 0, 1.f, FVAR_MAX); // parkour climb modifier
 GFVAR(IDF_GAMEMOD, 0, impulseclimbredir, 0, 1.f, FVAR_MAX); // how much of the old velocity is redirected into the new one
-GFVAR(IDF_GAMEMOD, 0, impulseclimbendmin, 0, 5, 89.9f); // parkour climb end minimum pitch
-GFVAR(IDF_GAMEMOD, 0, impulseclimbvaultmin, FVAR_NONZERO, 0.25f, FVAR_MAX); // minimum percentage of height for vault
-GFVAR(IDF_GAMEMOD, 0, impulseclimbvaultmax, FVAR_NONZERO, 1.6f, FVAR_MAX); // maximum percentage of height for vault
+GFVAR(IDF_GAMEMOD, 0, impulsevault, 0, 0.5f, FVAR_MAX); // vault modifier
+GFVAR(IDF_GAMEMOD, 0, impulsevaultredir, 0, 1.f, FVAR_MAX); // how much of the old velocity is redirected into the new one
+GFVAR(IDF_GAMEMOD, 0, impulsevaultpitch, -89.9f, 0, 89.9f); // z direction to funnel in when vaulting
+GFVAR(IDF_GAMEMOD, 0, impulsevaultmin, FVAR_NONZERO, 0.25f, FVAR_MAX); // minimum percentage of height for vault
+GFVAR(IDF_GAMEMOD, 0, impulsevaultmax, FVAR_NONZERO, 1.25f, FVAR_MAX); // maximum percentage of height for vault
 GFVAR(IDF_GAMEMOD, 0, impulsegrab, 0, 2.f, FVAR_MAX); // parkour grab modifier
 GFVAR(IDF_GAMEMOD, 0, impulsegrabredir, 0, 1.f, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, 0, impulsegrabplayer, 0, 2, FVAR_MAX); // parkour grab player modifier
 GFVAR(IDF_GAMEMOD, 0, impulsegrabplayerredir, 0, 1.f, FVAR_MAX); // how much of the old velocity is redirected into the new one
 
 GVAR(IDF_GAMEMOD, 0, impulsestyle, 0, 1, 3); // impulse style; 0 = off, 1 = touch and count, 2 = count only, 3 = freestyle
-GVAR(IDF_GAMEMOD, 0, impulseclimbstyle, 0, 1, 1); // climb style; 0 = normal, 1 = with vault from ground
-GVAR(IDF_GAMEMOD, 0, impulseclimbendstyle, 0, 2, 2); // climb end style: 0 = free move, 1 = redirect forward, 2 = redirect pitch
 GVAR(IDF_GAMEMOD, 0, impulsepoundstyle, 0, 0, 1); // pound style: 0 = stop moving first, 1 = allow moving
 
 GVAR(IDF_GAMEMOD, 0, impulsecount, 0, 6, VAR_MAX); // number of impulse actions per air transit
@@ -523,10 +523,12 @@ GVAR(IDF_GAMEMOD, 0, impulsedashdelay, 0, 1000, VAR_MAX); // minimum time betwee
 GVAR(IDF_GAMEMOD, 0, impulsepounddelay, 0, 500, VAR_MAX); // minimum time between pounds
 GVAR(IDF_GAMEMOD, 0, impulseslideinair, 0, 100, VAR_MAX); // minimum time in air for slide
 GVAR(IDF_GAMEMOD, 0, impulseparkourdelay, 0, 500, VAR_MAX); // minimum time between parkour moves
+GVAR(IDF_GAMEMOD, 0, impulsevaultdelay, 0, 500, VAR_MAX); // minimum time between vault moves
 
 GVAR(IDF_GAMEMOD, 0, impulsemeter, 0, 0, VAR_MAX); // impulse limiter
 GVAR(IDF_GAMEMOD, 0, impulsecost, 1, 5000, VAR_MAX); // cost of impulse move
 GFVAR(IDF_GAMEMOD, 0, impulsecostparkour, 0, 1, FVAR_MAX); // scale cost parkour move
+GFVAR(IDF_GAMEMOD, 0, impulsecostvault, 0, 1, FVAR_MAX); // scale cost vault move
 GFVAR(IDF_GAMEMOD, 0, impulsecostboost, 0, 1, FVAR_MAX); // scale cost boost move
 GFVAR(IDF_GAMEMOD, 0, impulsecostdash, 0, 1, FVAR_MAX); // scale cost dash move
 GFVAR(IDF_GAMEMOD, 0, impulsecostslide, 0, 1, FVAR_MAX); // scale cost slide move

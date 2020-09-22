@@ -1231,13 +1231,13 @@ namespace game
         d->configure(lastmillis, gamemode, mutators, physics::carryaffinity(d), curtime);
 
         d->o.z -= d->height;
-        if(d->state == CS_ALIVE && AA(d->actortype, abilities)&(1<<A_A_CROUCH))
+        if(d->state == CS_ALIVE)
         {
-            bool sliding = d->sliding(true), crouching = sliding || d->crouching(),
+            bool sliding = d->sliding(true), crouching = sliding || (d->crouching() && AA(d->actortype, abilities)&(1<<A_A_CROUCH)),
                  moving = d->move || d->strafe || (d->physstate < PHYS_SLOPE && !d->onladder);
             float zrad = d->zradius*(moving && !sliding ? CROUCHHIGH : CROUCHLOW), zoff = d->zradius-zrad;
             vec old = d->o;
-            if(!crouching)
+            if(!crouching && AA(d->actortype, abilities)&(1<<A_A_CROUCH))
             {
                 d->o.z += d->zradius;
                 d->height = d->zradius;
@@ -1277,7 +1277,7 @@ namespace game
             d->height = d->zradius;
             d->actiontime[AC_CROUCH] = 0;
         }
-        d->o.z += d->airmillis ? offset : d->height;
+        d->o.z += d->airmillis && d->impulse[IM_TYPE] != IM_T_VAULT ? offset : d->height;
 
         if(impulsemeter && canregenimpulse(d) && d->impulse[IM_METER] > 0)
         {
@@ -1427,7 +1427,7 @@ namespace game
     {
         if(d->state != CS_ALIVE) return;
         vec pos = d->feetpos();
-        if(!d->hasparkour() && (d->physstate >= PHYS_SLOPE || d->onladder || physics::liquidcheck(d)) && pos.z > 0 && d->floortime(lastmillis))
+        if(d->impulse[IM_TYPE] != IM_T_PARKOUR && (d->physstate >= PHYS_SLOPE || d->onladder || physics::liquidcheck(d)) && pos.z > 0 && d->floortime(lastmillis))
         {
             int mat = lookupmaterial(pos);
             if(!isclipped(mat&MATF_VOLUME) && !((mat&MATF_FLAGS)&MAT_DEATH)) d->floorpos = pos;
@@ -3536,8 +3536,7 @@ namespace game
         const char *mdlname = playertypes[mdltype][mdlidx];
         if(d->actortype > A_PLAYER && d->actortype < A_MAX && actors[d->actortype].mdl && *actors[d->actortype].mdl)
             mdlname = actors[d->actortype].mdl;
-        bool hasweapon = false, secondary = false,
-             onfloor = d->physstate >= PHYS_SLOPE || d->onladder || physics::liquidcheck(d);
+        bool hasweapon = false, onfloor = d->physstate >= PHYS_SLOPE || d->onladder || physics::liquidcheck(d);
 
         mdl.anim = ANIM_IDLE|ANIM_LOOP;
         mdl.flags = flags;
@@ -3578,7 +3577,6 @@ namespace game
         {
             float weapscale = 1.f;
             bool showweap = third != 2 && isweap(weap) && weap < W_ALL;
-            secondary = third != 0;
             if(showweap)
             {
                 mdl.basetime = d->weaptime[weap];
@@ -3634,7 +3632,6 @@ namespace game
             }
             if(third && (mdl.anim&ANIM_IDLE) && lastmillis-d->lastpain <= 300)
             {
-                secondary = true;
                 mdl.basetime = d->lastpain;
                 mdl.anim = ANIM_PAIN;
             }
@@ -3759,15 +3756,14 @@ namespace game
         }
         else
         {
-            // `true` if the player is actually moving at a meaningful speed.
+            // Test if the player is actually moving at a meaningful speed.
             // This may not be the case if the player is running against a wall or another obstacle.
             const bool moving = abs(d->vel.x) > 5.0f || abs(d->vel.y) > 5.0f;
-
-            if(secondary && allowmove(d) && AA(d->actortype, abilities)&(1<<A_A_MOVE))
+            if(allowmove(d))
             {
                 if(physics::liquidcheck(d) && d->physstate <= PHYS_FALL)
                     mdl.anim |= ((d->move || d->strafe || d->vel.z+d->falling.z > 0 ? int(ANIM_SWIM) : int(ANIM_SINK))|ANIM_LOOP)<<ANIM_SECONDARY;
-                else if(d->impulse[IM_TYPE] == IM_T_VAULT) mdl.anim |= (ANIM_VAULT|ANIM_LOOP)<<ANIM_SECONDARY;
+                else if(d->impulse[IM_TYPE] == IM_T_VAULT) mdl.anim |= ANIM_VAULT<<ANIM_SECONDARY;
                 else if(d->impulse[IM_TYPE] == IM_T_PARKOUR) mdl.anim |= ((d->turnside > 0 ? ANIM_PARKOUR_LEFT : (d->turnside < 0 ? ANIM_PARKOUR_RIGHT : ANIM_PARKOUR_UP))|ANIM_LOOP)<<ANIM_SECONDARY;
                 else if(d->physstate == PHYS_FALL && !d->onladder && d->impulsetime[d->impulse[IM_TYPE]] && lastmillis-d->impulsetime[d->impulse[IM_TYPE]] <= 1000)
                 {
