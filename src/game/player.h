@@ -249,7 +249,7 @@ APFVAR(IDF_GAMEMOD, 0, weightextra, FVAR_MIN, FVAR_MAX,
 );
 
 #define VANITYMAX 16
-#define ATTACHMENTMAX VANITYMAX+13
+#define ATTACHMENTMAX VANITYMAX+14
 
 struct vanityfile
 {

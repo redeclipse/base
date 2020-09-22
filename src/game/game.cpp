@@ -195,6 +195,7 @@ namespace game
     VARF(0, follow, -1, -1, VAR_MAX, followswitch(0));
 
     VAR(IDF_PERSIST, firstpersonmodel, 0, 3, 3);
+    VAR(IDF_PERSIST, firstpersoncamera, 0, 0, 1);
     VAR(IDF_PERSIST, firstpersonfov, 90, 100, 150);
     FVAR(IDF_PERSIST, firstpersondepth, 0, 0.25f, 1);
     FVAR(IDF_PERSIST, firstpersonbodydepth, 0, 0.65f, 1);
@@ -2544,6 +2545,8 @@ namespace game
     vec firstpos(physent *d, const vec &pos, float yaw, float pitch)
     {
         if(d->state != CS_ALIVE) return pos;
+        if(firstpersoncamera && gameent::is(d) && d == focus) return ((gameent *)d)->cameratag();
+
         static struct fpcam : physent
         {
             fpcam()
@@ -3532,7 +3535,7 @@ namespace game
     {
         int weap = d->weapselect, ai = 0,
             mdltype = forceplayermodel >= 0 ? forceplayermodel : d->model%PLAYERTYPES,
-            mdlidx = third == 1 && d->headless && !nogore && headlessmodels ? 3 : third;
+            mdlidx = (third && d->headless && !nogore && headlessmodels) || (third == 2 && firstpersoncamera) ? 3 : third;
         const char *mdlname = playertypes[mdltype][mdlidx];
         if(d->actortype > A_PLAYER && d->actortype < A_MAX && actors[d->actortype].mdl && *actors[d->actortype].mdl)
             mdlname = actors[d->actortype].mdl;
@@ -3576,7 +3579,7 @@ namespace game
         else
         {
             float weapscale = 1.f;
-            bool showweap = third != 2 && isweap(weap) && weap < W_ALL;
+            bool showweap = (third != 2 || firstpersoncamera) && isweap(weap) && weap < W_ALL;
             if(showweap)
             {
                 mdl.basetime = d->weaptime[weap];
@@ -3649,7 +3652,7 @@ namespace game
         {
             if(!(mdl.flags&MDL_ONLYSHADOW) && actors[d->actortype].hastags)
             {
-                if(third != 2)
+                if(third != 2 || firstpersoncamera)
                 {
                     mdlattach[ai++] = modelattach(hasweapon ? "tag_muzzle" : "tag_weapon", &d->tag[TAG_MUZZLE]); // 1
                     mdlattach[ai++] = modelattach("tag_weapon", &d->tag[TAG_ORIGIN]); // 2
@@ -3661,21 +3664,21 @@ namespace game
                 }
                 if(third)
                 {
-                    mdlattach[ai++] = modelattach("tag_head", &d->tag[TAG_HEAD]); // 5
-                    mdlattach[ai++] = modelattach("tag_torso", &d->tag[TAG_TORSO]); // 6
-                    mdlattach[ai++] = modelattach("tag_waist", &d->tag[TAG_WAIST]); // 7
-                    mdlattach[ai++] = modelattach("tag_ljet", &d->tag[TAG_JET_LEFT]); // 8
-                    mdlattach[ai++] = modelattach("tag_rjet", &d->tag[TAG_JET_RIGHT]); // 9
-                    mdlattach[ai++] = modelattach("tag_bjet", &d->tag[TAG_JET_BACK]); // 10
-                    mdlattach[ai++] = modelattach("tag_ltoe", &d->tag[TAG_TOE_LEFT]); // 11
-                    mdlattach[ai++] = modelattach("tag_rtoe", &d->tag[TAG_TOE_RIGHT]); // 12
+                    mdlattach[ai++] = modelattach("tag_camera", &d->tag[TAG_CAMERA]); // 5
+                    mdlattach[ai++] = modelattach("tag_head", &d->tag[TAG_HEAD]); // 6
+                    mdlattach[ai++] = modelattach("tag_torso", &d->tag[TAG_TORSO]); // 7
+                    mdlattach[ai++] = modelattach("tag_waist", &d->tag[TAG_WAIST]); // 8
+                    mdlattach[ai++] = modelattach("tag_ljet", &d->tag[TAG_JET_LEFT]); // 9
+                    mdlattach[ai++] = modelattach("tag_rjet", &d->tag[TAG_JET_RIGHT]); // 10
+                    mdlattach[ai++] = modelattach("tag_bjet", &d->tag[TAG_JET_BACK]); // 11
+                    mdlattach[ai++] = modelattach("tag_ltoe", &d->tag[TAG_TOE_LEFT]); // 12
+                    mdlattach[ai++] = modelattach("tag_rtoe", &d->tag[TAG_TOE_RIGHT]); // 13
                 }
             }
             if(third && vanitycheck(d))
             {
                 if(d->vitems.empty()) vanitybuild(d);
-                int idx = third == 1 && (d->state == CS_DEAD || d->state == CS_WAITING) && d->headless && !nogore && headlessmodels ? 3 : third,
-                    count = 0, found[VANITYMAX] = {0};
+                int idx = mdlidx, count = 0, found[VANITYMAX] = {0};
                 loopvk(d->vitems) if(vanities.inrange(d->vitems[k]))
                 {
                     if(found[vanities[d->vitems[k]].type]) continue;
@@ -3695,7 +3698,7 @@ namespace game
         {
             case 0:
             {
-                if(gs_playing(gamestate) && firstpersonsway)
+                if(!firstpersoncamera && gs_playing(gamestate) && firstpersonsway)
                 {
                     float steps = swaydist/(firstpersonbob ? firstpersonbobstep : firstpersonswaystep)*M_PI;
                     vec dir = vec(mdl.yaw*RAD, 0.f).mul(firstpersonswayside*sinf(steps) * 2.0f);
@@ -3725,6 +3728,7 @@ namespace game
             }
             case 2:
             {
+                if(firstpersoncamera) break;
                 mdl.o.sub(vec(mdl.yaw*RAD, 0.f).mul(firstpersonbodydist+firstpersonspineoffset));
                 mdl.o.sub(vec(mdl.yaw*RAD, 0.f).rotate_around_z(90*RAD).mul(firstpersonbodyside));
                 if(lastoffset)
@@ -3745,7 +3749,6 @@ namespace game
                 }
                 if(firstpersonbodypitchadjust > 0 && mdl.pitch < 0) mdl.o.sub(vec(mdl.yaw*RAD, 0.f).mul(d->radius*(0-mdl.pitch)/90.f*firstpersonbodypitchadjust));
                 mdl.pitch = firstpersonbodypitch >= 0 ? mdl.pitch*firstpersonbodypitch : mdl.pitch;
-                mdl.roll = 0.f;
                 break;
             }
         }
@@ -4088,25 +4091,28 @@ namespace game
     void renderavatar()
     {
         if(thirdpersonview()) return;
-        focus->cleartags();
-        if(!firstpersonmodel) return;
-        float depthfov = firstpersondepthfov != 0 ? firstpersondepthfov : curfov;
-        if(inzoom())
-        {
-            int frame = lastmillis-lastzoom;
-            float pc = frame <= W(focus->weapselect, cookzoom) ? frame/float(W(focus->weapselect, cookzoom)) : 1.f;
-            depthfov *= zooming ? 1.f-pc : pc;
-        }
-        setavatarscale(depthfov, firstpersondepth);
+        static int lastoffset = 0;
         vec4 color = vec4(1, 1, 1, opacity(focus, false));
-        if(focus->state == CS_ALIVE && firstpersonmodel&1) renderplayer(focus, 0, focus->curscale, MDL_NOBATCH, color);
-        if(focus->state == CS_ALIVE && firstpersonmodel&2)
+        focus->cleartags();
+        if(firstpersoncamera) renderplayer(focus, 2, focus->curscale, MDL_NOBATCH, color, &lastoffset);
+        else if(firstpersonmodel)
         {
-            setavatarscale(firstpersonbodydepthfov != 0 ? firstpersonbodydepthfov : curfov, firstpersonbodydepth);
-            static int lastoffset = 0;
-            renderplayer(focus, 2, focus->curscale, MDL_NOBATCH, color, &lastoffset);
+            float depthfov = firstpersondepthfov != 0 ? firstpersondepthfov : curfov;
+            if(inzoom())
+            {
+                int frame = lastmillis-lastzoom;
+                float pc = frame <= W(focus->weapselect, cookzoom) ? frame/float(W(focus->weapselect, cookzoom)) : 1.f;
+                depthfov *= zooming ? 1.f-pc : pc;
+            }
+            setavatarscale(depthfov, firstpersondepth);
+            if(focus->state == CS_ALIVE && firstpersonmodel&1) renderplayer(focus, 0, focus->curscale, MDL_NOBATCH, color);
+            if(focus->state == CS_ALIVE && firstpersonmodel&2)
+            {
+                setavatarscale(firstpersonbodydepthfov != 0 ? firstpersonbodydepthfov : curfov, firstpersonbodydepth);
+                renderplayer(focus, 2, focus->curscale, MDL_NOBATCH, color, &lastoffset);
+            }
+            calcfirstpersontags(focus);
         }
-        calcfirstpersontags(focus);
         rendercheck(focus, false);
     }
 
