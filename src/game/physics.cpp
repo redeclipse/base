@@ -948,25 +948,17 @@ namespace physics
             }
             if(!found && d->impulse[IM_TYPE] == IM_T_PARKOUR)
             {
-                if(!d->turnside)
+                if(!d->turnside && canimpulse(d, A_A_VAULT, true))
                 {
                     vec rft(d->yaw*RAD, impulsevaultpitch*RAD);
-                    if(canimpulse(d, A_A_VAULT, true))
-                    {
-                        int cost = int(impulsecost*impulsecostvault);
-                        vec keepvel = vec(d->vel).add(d->falling);
-                        float mag = impulsevelocity(d, impulsevault, cost, A_A_VAULT, impulsevaultredir, keepvel);
-                        if(mag > 0) d->vel = vec(rft).mul(mag).add(keepvel);
-                        d->doimpulse(IM_T_VAULT, lastmillis, cost);
-                        client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_VAULT);
-                        game::impulseeffect(d);
-                        game::footstep(d);
-                    }
-                    else
-                    {
-                        float mag = d->vel.magnitude();
-                        d->vel = vec(rft).mul(mag);
-                    }
+                    int cost = int(impulsecost*impulsecostvault);
+                    vec keepvel = vec(d->vel).add(d->falling);
+                    float mag = impulsevelocity(d, impulsevault, cost, A_A_VAULT, impulsevaultredir, keepvel);
+                    d->vel = vec(rft).mul(mag).add(keepvel);
+                    d->doimpulse(IM_T_VAULT, lastmillis, cost);
+                    client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_VAULT);
+                    game::impulseeffect(d);
+                    game::footstep(d);
                     m = rft;
                 }
                 else

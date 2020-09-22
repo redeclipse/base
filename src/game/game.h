@@ -1955,6 +1955,14 @@ struct gameent : dynent, clientstate
         return sliding(true) || (!action[AC_WALK] && !crouching());
     }
 
+    int slidetime(bool power = false)
+    {
+        if(impulse[IM_TYPE] == IM_T_VAULT) return impulsetime[IM_T_VAULT];
+        if(G(impulseslidelen) && impulsetime[IM_T_SLIDE] && lastmillis-impulsetime[IM_T_SLIDE] <= G(impulseslidelen)) return impulsetime[IM_T_SLIDE];
+        if(!power && G(impulsesliplen) && impulse[IM_SLIP] && lastmillis-impulse[IM_SLIP] <= G(impulsesliplen)) return impulse[IM_SLIP];
+        return 0;
+    }
+
     bool sliding(bool power = false)
     {
         if(impulse[IM_TYPE] == IM_T_VAULT) return true;

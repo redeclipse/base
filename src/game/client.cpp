@@ -1032,7 +1032,6 @@ namespace client
     CLCOMMAND(impulseregen, intret(d->impulse[IM_REGEN]));
     CLCOMMAND(impulsecount, intret(d->impulse[IM_COUNT]));
     CLCOMMAND(impulsecollect, intret(d->impulse[IM_COLLECT]));
-    CLCOMMAND(impulseslip, intret(d->impulse[IM_SLIP]));
     CLCOMMAND(impulsejump, intret(d->impulsetime[IM_T_JUMP]));
     CLCOMMAND(impulsewait, intret(d->impulsetime[IM_T_PUSHER]));
     CLCOMMANDM(impulse, "si", (char *who, int *n), intret(*n >= 0 && *n < IM_MAX ? d->impulse[*n] : 0));

@@ -3763,16 +3763,24 @@ namespace game
             {
                 if(physics::liquidcheck(d) && d->physstate <= PHYS_FALL)
                     mdl.anim |= ((d->move || d->strafe || d->vel.z+d->falling.z > 0 ? int(ANIM_SWIM) : int(ANIM_SINK))|ANIM_LOOP)<<ANIM_SECONDARY;
-                else if(d->impulse[IM_TYPE] == IM_T_VAULT) mdl.anim |= ANIM_VAULT<<ANIM_SECONDARY;
-                else if(d->impulse[IM_TYPE] == IM_T_PARKOUR) mdl.anim |= ((d->turnside > 0 ? ANIM_PARKOUR_LEFT : (d->turnside < 0 ? ANIM_PARKOUR_RIGHT : ANIM_PARKOUR_UP))|ANIM_LOOP)<<ANIM_SECONDARY;
+                else if(d->impulse[IM_TYPE] == IM_T_VAULT)
+                {
+                    mdl.basetime2 = d->impulsetime[IM_T_VAULT];
+                    mdl.anim |= ANIM_VAULT<<ANIM_SECONDARY;
+                }
+                else if(d->impulse[IM_TYPE] == IM_T_PARKOUR)
+                {
+                    mdl.basetime2 = d->impulsetime[IM_T_PARKOUR];
+                    mdl.anim |= ((d->turnside > 0 ? ANIM_PARKOUR_LEFT : (d->turnside < 0 ? ANIM_PARKOUR_RIGHT : ANIM_PARKOUR_UP))|ANIM_LOOP)<<ANIM_SECONDARY;
+                }
                 else if(d->physstate == PHYS_FALL && !d->onladder && d->impulsetime[d->impulse[IM_TYPE]] && lastmillis-d->impulsetime[d->impulse[IM_TYPE]] <= 1000)
                 {
                     mdl.basetime2 = d->impulsetime[d->impulse[IM_TYPE]];
                     if(d->impulse[IM_TYPE] == IM_T_KICK || d->impulse[IM_TYPE] == IM_T_GRAB) mdl.anim |= ANIM_PARKOUR_JUMP<<ANIM_SECONDARY;
                     else if(d->action[AC_SPECIAL] || d->impulse[IM_TYPE] == IM_T_POUND)
                     {
-                        mdl.anim |= ANIM_FLYKICK<<ANIM_SECONDARY;
                         mdl.basetime2 = d->weaptime[W_MELEE];
+                        mdl.anim |= ANIM_FLYKICK<<ANIM_SECONDARY;
                     }
                     else if(moving && d->strafe) mdl.anim |= (d->strafe > 0 ? ANIM_BOOST_LEFT : ANIM_BOOST_RIGHT)<<ANIM_SECONDARY;
                     else if(moving && d->move > 0) mdl.anim |= ANIM_BOOST_FORWARD<<ANIM_SECONDARY;
@@ -3800,9 +3808,14 @@ namespace game
                     else mdl.anim |= ANIM_JUMP<<ANIM_SECONDARY;
                     if(!mdl.basetime2) mdl.anim |= ANIM_END<<ANIM_SECONDARY;
                 }
-                else if(d->sliding(true)) mdl.anim |= (ANIM_POWERSLIDE|ANIM_LOOP)<<ANIM_SECONDARY;
+                else if(d->sliding(true))
+                {
+                    mdl.basetime2 = d->slidetime(true);
+                    mdl.anim |= (ANIM_POWERSLIDE|ANIM_LOOP)<<ANIM_SECONDARY;
+                }
                 else if(d->impulsetime[IM_T_DASH] && lastmillis-d->impulsetime[IM_T_DASH] <= impulsedashdelay/2)
                 {
+                    mdl.basetime2 = d->impulsetime[IM_T_DASH];
                     if(d->strafe) mdl.anim |= (d->strafe > 0 ? ANIM_BOOST_LEFT : ANIM_BOOST_RIGHT)<<ANIM_SECONDARY;
                     else if(d->move > 0) mdl.anim |= ANIM_BOOST_FORWARD<<ANIM_SECONDARY;
                     else if(d->move < 0) mdl.anim |= ANIM_BOOST_BACKWARD<<ANIM_SECONDARY;
