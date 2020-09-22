@@ -256,7 +256,7 @@ namespace fx
         void unhook();
         void updateend(int end);
         void init(emitter **newhook);
-        void instantiate(int index, instance *parent = NULL);
+        bool instantiate(int index, instance *parent = NULL);
         void prolong();
         bool done();
         void update();
