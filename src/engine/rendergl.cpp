@@ -2471,6 +2471,86 @@ void gl_drawview()
     }
 }
 
+GLuint halotex = 0;
+
+void clearhalo()
+{
+    if(halotex) { glDeleteTextures(1, &halotex); halotex = 0; }
+}
+
+void gl_predraw()
+{
+    game::recomputecamera();
+    setviewcell(camera1->o);
+
+    if(hasnoview())
+    {
+        clearhalo();
+        return;
+    }
+
+    gl_setupframe(true);
+    vieww = hudw;
+    viewh = hudh;
+    hud::update(hudw, hudh);
+
+    drawtex = DRAWTEX_HALO;
+    farplane = worldsize*2;
+
+    //if(!halotex) glGenTextures(1, &halotex);
+
+    projmatrix.perspective(fovy, aspect, nearplane, farplane);
+    setcamprojmatrix();
+    game::project();
+
+    glEnable(GL_CULL_FACE);
+    glEnable(GL_DEPTH_TEST);
+
+    xtravertsva = xtraverts = glde = gbatches = vtris = vverts = 0;
+    flipqueries();
+
+    ldrscale = 0.5f;
+    ldrscaleb = ldrscale/255;
+
+    visiblecubes();
+    preparegbuffer();
+
+    rendertransparentmapmodels();
+    game::render();
+    rendermapmodels();
+    rendermodelbatches();
+    renderavatar();
+    GLERROR;
+
+    glFlush();
+
+    shadegbuffer();
+    GLERROR;
+
+    game::renderpost();
+
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_DEPTH_TEST);
+    drawtex = 0;
+
+    /*
+    createtexture(halotex, hudw, hudh, NULL, 3, 1, hasES2 ? GL_RGB565 : GL_RGB5, GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    GLuint fbo = 0;
+    glGenFramebuffers_(1, &fbo);
+    glBindFramebuffer_(GL_FRAMEBUFFER, fbo);
+    glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, minimaptex, 0);
+    copyhdr(hudw, hudh, fbo);
+    glBindFramebuffer_(GL_FRAMEBUFFER, 0);
+    glDeleteFramebuffers_(1, &fbo);
+    */
+
+    game::recomputecamera();
+    setviewcell(camera1->o);
+
+}
+
 void resethudshader()
 {
     hudshader->set();
@@ -2564,6 +2644,7 @@ void gl_drawframe()
 void cleanupgl()
 {
     clearminimap();
+    clearhalo();
     cleanuptimers();
     cleanupscreenquad();
     gle::cleanup();

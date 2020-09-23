@@ -284,7 +284,7 @@ extern int glversion, glslversion, glcompat;
 extern char *gfxvendor, *gfxrenderer, *gfxversion;
 extern int maxdrawbufs, maxdualdrawbufs;
 
-enum { DRAWTEX_NONE = 0, DRAWTEX_ENVMAP, DRAWTEX_MINIMAP, DRAWTEX_MODELPREVIEW, DRAWTEX_MAPSHOT };
+enum { DRAWTEX_NONE = 0, DRAWTEX_ENVMAP, DRAWTEX_MINIMAP, DRAWTEX_MODELPREVIEW, DRAWTEX_MAPSHOT, DRAWTEX_HALO };
 
 extern int vieww, viewh;
 extern float curfov, fovy, aspect, forceaspect;
@@ -313,6 +313,7 @@ extern void gl_setupframe(bool force = false);
 extern void gl_drawview();
 extern void gl_drawnoview();
 extern void gl_drawframe();
+extern void gl_predraw();
 extern void cleanupgl();
 
 extern void vecfromcursor(float x, float y, float z, vec &dir);

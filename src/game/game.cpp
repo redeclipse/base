@@ -4050,20 +4050,24 @@ namespace game
     void render()
     {
         entities::render();
-        if(drawtex) return;
-        ai::render();
-        projs::render();
-        if(m_capture(gamemode)) capture::render();
-        else if(m_defend(gamemode)) defend::render();
-        else if(m_bomber(gamemode)) bomber::render();
-
-        gameent *d;
-        int numdyns = numdynents();
-        bool third = thirdpersonview();
-        loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL)
+        if(!drawtex)
         {
-            if(d != focus || third) d->cleartags();
-            renderplayer(d, 1, d->curscale, d == focus ? (third ? MDL_FORCESHADOW : MDL_ONLYSHADOW) : 0, vec4(1, 1, 1, opacity(d, true)));
+            ai::render();
+            projs::render();
+            if(m_capture(gamemode)) capture::render();
+            else if(m_defend(gamemode)) defend::render();
+            else if(m_bomber(gamemode)) bomber::render();
+        }
+        if(!drawtex || drawtex == DRAWTEX_HALO)
+        {
+            gameent *d;
+            int numdyns = numdynents();
+            bool third = thirdpersonview();
+            loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL)
+            {
+                if(drawtex == DRAWTEX_HALO && (d != focus || third)) d->cleartags();
+                renderplayer(d, 1, d->curscale, d == focus ? (third ? MDL_FORCESHADOW : MDL_ONLYSHADOW) : 0, vec4(1, 1, 1, opacity(d, true)));
+            }
         }
     }
 
@@ -4093,7 +4097,7 @@ namespace game
         if(thirdpersonview()) return;
         static int lastoffset = 0;
         vec4 color = vec4(1, 1, 1, opacity(focus, false));
-        focus->cleartags();
+        if(drawtex == DRAWTEX_HALO) focus->cleartags();
         if(firstpersoncamera) renderplayer(focus, 2, focus->curscale, MDL_NOBATCH, color, &lastoffset);
         else if(firstpersonmodel)
         {

@@ -1141,8 +1141,7 @@ int main(int argc, char **argv)
             ircslice();
             if(frameloops)
             {
-                game::recomputecamera();
-                setviewcell(camera1->o);
+                gl_predraw();
                 cleardynlights();
                 fx::update();
                 updatewind();

@@ -188,7 +188,8 @@ struct animmodel : model
             LOCALPARAM(material1, material1 > 0 ? modelmaterial[min(material1, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.x) : vec(matbright.x));
             LOCALPARAM(material2, material2 > 0 ? modelmaterial[min(material2, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.y) : vec(matbright.y));
 
-            if(fullbright) LOCALPARAMF(fullbright, 0.0f, fullbright);
+            if(drawtex == DRAWTEX_HALO)  LOCALPARAMF(fullbright, 0.0f, 1.0f);
+            else if(fullbright) LOCALPARAMF(fullbright, 0.0f, fullbright);
             else LOCALPARAMF(fullbright, 1.0f, as->cur.anim&ANIM_FULLBRIGHT ? 0.5f*fullbrightmodels/100.0f : 0.0f);
 
             float curglow = glow;

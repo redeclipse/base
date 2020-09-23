@@ -3033,6 +3033,8 @@ static inline void setlightglobals(bool transparent = false)
         }
     }
     float lightscale = 2.0f*ldrscaleb;
+    if(drawtex == DRAWTEX_HALO)
+        GLOBALPARAMF(lightscale, 255*lightscale, 255*lightscale, 255*lightscale, 255*lightscale);
     if(!drawtex && editmode && fullbright)
         GLOBALPARAMF(lightscale, fullbrightlevel*lightscale, fullbrightlevel*lightscale, fullbrightlevel*lightscale, 255*lightscale);
     else
@@ -3046,7 +3048,7 @@ static inline void setlightglobals(bool transparent = false)
     {
         csm.bindparams();
         rh.bindparams();
-        if(!drawtex && editmode && fullbright)
+        if(drawtex == DRAWTEX_HALO || (!drawtex && editmode && fullbright))
         {
             GLOBALPARAMF(sunlightdir, 0, 0, 0);
             GLOBALPARAMF(sunlightcolor, 0, 0, 0);

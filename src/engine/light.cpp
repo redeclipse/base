@@ -628,6 +628,12 @@ ICOMMAND(0, calclight, "", (), mpcalclight(true));
 
 VAR(0, fullbright, 0, 0, 1);
 VAR(0, fullbrightlevel, 0, 160, 255);
+int getfullbrightlevel()
+{
+    if(drawtex == DRAWTEX_HALO) return 255;
+    if(fullbright) return fullbrightlevel;
+    return 0;
+}
 
 void clearlights()
 {
