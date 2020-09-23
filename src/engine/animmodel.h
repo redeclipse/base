@@ -122,11 +122,11 @@ struct animmodel : model
 
         part *owner;
         Texture *tex, *decal, *masks, *envmap, *normalmap;
-        Shader *shader, *rsmshader;
+        Shader *shader, *rsmshader, *haloshader;
         int cullface, flags;
         shaderparamskey *key;
 
-        skin() : owner(0), tex(notexture), decal(NULL), masks(notexture), envmap(NULL), normalmap(NULL), shader(NULL), rsmshader(NULL), cullface(1), flags(0), key(NULL) {}
+        skin() : owner(0), tex(notexture), decal(NULL), masks(notexture), envmap(NULL), normalmap(NULL), shader(NULL), rsmshader(NULL), haloshader(NULL), cullface(1), flags(0), key(NULL) {}
 
         bool firstmodel(const animstate *as) const
         {
@@ -174,34 +174,42 @@ struct animmodel : model
             if(color.r < 0) LOCALPARAMF(colorscale, colorscale.r, colorscale.g, colorscale.b, colorscale.a*blend);
             else LOCALPARAMF(colorscale, color.r, color.g, color.b, colorscale.a*blend);
 
-            if(mixed())
+            if(drawtex == DRAWTEX_HALO)
             {
-                LOCALPARAM(mixercolor, mixercolor);
-                LOCALPARAM(mixerglow, mixerglow);
-                LOCALPARAMF(mixerscroll, mixerscroll.x*lastmillis/1000.0f, mixerscroll.y*lastmillis/1000.0f);
+                LOCALPARAMF(fullbright, 0.0f, 1.0f);
+                LOCALPARAM(material1, material1 > 0 ? modelmaterial[min(material1, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.x) : vec(matbright.x));
+                LOCALPARAM(material2, material2 > 0 ? modelmaterial[min(material2, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.y) : vec(matbright.y));
             }
-            if(patterned())
+            else
             {
-                LOCALPARAMF(patternscale, patternscale);
+                if(mixed())
+                {
+                    LOCALPARAM(mixercolor, mixercolor);
+                    LOCALPARAM(mixerglow, mixerglow);
+                    LOCALPARAMF(mixerscroll, mixerscroll.x*lastmillis/1000.0f, mixerscroll.y*lastmillis/1000.0f);
+                }
+                if(patterned())
+                {
+                    LOCALPARAMF(patternscale, patternscale);
+                }
+
+                LOCALPARAM(material1, material1 > 0 ? modelmaterial[min(material1, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.x) : vec(matbright.x));
+                LOCALPARAM(material2, material2 > 0 ? modelmaterial[min(material2, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.y) : vec(matbright.y));
+
+                if(fullbright) LOCALPARAMF(fullbright, 0.0f, fullbright);
+                else LOCALPARAMF(fullbright, 1.0f, as->cur.anim&ANIM_FULLBRIGHT ? 0.5f*fullbrightmodels/100.0f : 0.0f);
+
+                float curglow = glow;
+                if(glowpulse > 0)
+                {
+                    float curpulse = lastmillis*glowpulse;
+                    curpulse -= floor(curpulse);
+                    curglow += glowdelta*2*fabs(curpulse - 0.5f);
+                }
+
+                LOCALPARAMF(maskscale, spec, gloss, curglow);
+                if(envmapped()) LOCALPARAMF(envmapscale, envmapmin-envmapmax, envmapmax);
             }
-
-            LOCALPARAM(material1, material1 > 0 ? modelmaterial[min(material1, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.x) : vec(matbright.x));
-            LOCALPARAM(material2, material2 > 0 ? modelmaterial[min(material2, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.y) : vec(matbright.y));
-
-            if(drawtex == DRAWTEX_HALO)  LOCALPARAMF(fullbright, 0.0f, 1.0f);
-            else if(fullbright) LOCALPARAMF(fullbright, 0.0f, fullbright);
-            else LOCALPARAMF(fullbright, 1.0f, as->cur.anim&ANIM_FULLBRIGHT ? 0.5f*fullbrightmodels/100.0f : 0.0f);
-
-            float curglow = glow;
-            if(glowpulse > 0)
-            {
-                float curpulse = lastmillis*glowpulse;
-                curpulse -= floor(curpulse);
-                curglow += glowdelta*2*fabs(curpulse - 0.5f);
-            }
-
-            LOCALPARAMF(maskscale, spec, gloss, curglow);
-            if(envmapped()) LOCALPARAMF(envmapscale, envmapmin-envmapmax, envmapmax);
         }
 
         Shader *loadshader(bool force = false)
@@ -214,6 +222,26 @@ struct animmodel : model
                 } while(0)
             #define LOADMODELSHADER(name) DOMODELSHADER(name, return name##shader)
             #define SETMODELSHADER(m, name) DOMODELSHADER(name, (m).setshader(name##shader))
+
+            if(drawtex == DRAWTEX_HALO)
+            {
+                string opts;
+                int optslen = 0;
+                if(alphatested())
+                {
+                    opts[optslen++] = 'a';
+                    if(dithered()) opts[optslen++] = 'u';
+                }
+                else if(alphablended()) opts[optslen++] = 'A';
+                if(owner->model->wind) opts[optslen++] = 'w';
+                if(masked()) opts[optslen++] = 'm';
+                if(!cullface) opts[optslen++] = 'c';
+                opts[optslen++] = '\0';
+
+                defformatstring(name, "model%s", opts);
+                haloshader = generateshader(name, "modelshader \"%s\"", opts);
+                return haloshader;
+            }
 
             if(shadowmapping == SM_REFLECT)
             {
@@ -305,73 +333,90 @@ struct animmodel : model
                 }
                 return;
             }
-            int activetmu = 0;
-            if(tex!=lasttex)
+            int activetmu = 0, oldflags = flags;
+            if(drawtex == DRAWTEX_HALO)
             {
-                glBindTexture(GL_TEXTURE_2D, tex->id);
-                lasttex = tex;
-            }
-            if(bumpmapped() && normalmap!=lastnormalmap)
-            {
-                glActiveTexture_(GL_TEXTURE3);
-                activetmu = 3;
-                glBindTexture(GL_TEXTURE_2D, normalmap->id);
-                lastnormalmap = normalmap;
-            }
-            if(decaled() && decal!=lastdecal)
-            {
-                glActiveTexture_(GL_TEXTURE4);
-                activetmu = 4;
-                glBindTexture(GL_TEXTURE_2D, decal->id);
-                lastdecal = decal;
-            }
-            if(masked() && masks!=lastmasks)
-            {
-                glActiveTexture_(GL_TEXTURE1);
-                activetmu = 1;
-                glBindTexture(GL_TEXTURE_2D, masks->id);
-                lastmasks = masks;
-            }
-            int oldflags = flags;
-            if(flags&ALLOW_MIXER)
-            {
-                if(canmix(state, as))
+                if(blanktexture!=lasttex)
                 {
-                    flags |= ENABLE_MIXER;
-                    if(state->mixer != lastmixer)
-                    {
-                        glActiveTexture_(GL_TEXTURE5);
-                        activetmu = 5;
-                        glBindTexture(GL_TEXTURE_2D, state->mixer->id);
-                        lastmixer = state->mixer;
-                    }
+                    glBindTexture(GL_TEXTURE_2D, blanktexture->id);
+                    lasttex = blanktexture;
                 }
-                else flags &= ~ENABLE_MIXER;
-            }
-            if(flags&ALLOW_PATTERN)
-            {
-                if(canpattern(state, as))
+                if(masked() && masks!=lastmasks)
                 {
-                    flags |= ENABLE_PATTERN;
-                    if(state->pattern != lastpattern)
-                    {
-                        glActiveTexture_(GL_TEXTURE6);
-                        activetmu = 6;
-                        glBindTexture(GL_TEXTURE_2D, state->pattern->id);
-                        lastpattern = state->pattern;
-                    }
+                    glActiveTexture_(GL_TEXTURE1);
+                    activetmu = 1;
+                    glBindTexture(GL_TEXTURE_2D, masks->id);
+                    lastmasks = masks;
                 }
-                else flags &= ~ENABLE_PATTERN;
             }
-            if(envmapped())
+            else
             {
-                GLuint emtex = envmap ? envmap->id : closestenvmaptex;
-                if(lastenvmaptex!=emtex)
+                if(tex!=lasttex)
                 {
-                    glActiveTexture_(GL_TEXTURE2);
-                    activetmu = 2;
-                    glBindTexture(GL_TEXTURE_CUBE_MAP, emtex);
-                    lastenvmaptex = emtex;
+                    glBindTexture(GL_TEXTURE_2D, tex->id);
+                    lasttex = tex;
+                }
+                if(bumpmapped() && normalmap!=lastnormalmap)
+                {
+                    glActiveTexture_(GL_TEXTURE3);
+                    activetmu = 3;
+                    glBindTexture(GL_TEXTURE_2D, normalmap->id);
+                    lastnormalmap = normalmap;
+                }
+                if(decaled() && decal!=lastdecal)
+                {
+                    glActiveTexture_(GL_TEXTURE4);
+                    activetmu = 4;
+                    glBindTexture(GL_TEXTURE_2D, decal->id);
+                    lastdecal = decal;
+                }
+                if(masked() && masks!=lastmasks)
+                {
+                    glActiveTexture_(GL_TEXTURE1);
+                    activetmu = 1;
+                    glBindTexture(GL_TEXTURE_2D, masks->id);
+                    lastmasks = masks;
+                }
+                if(flags&ALLOW_MIXER)
+                {
+                    if(canmix(state, as))
+                    {
+                        flags |= ENABLE_MIXER;
+                        if(state->mixer != lastmixer)
+                        {
+                            glActiveTexture_(GL_TEXTURE5);
+                            activetmu = 5;
+                            glBindTexture(GL_TEXTURE_2D, state->mixer->id);
+                            lastmixer = state->mixer;
+                        }
+                    }
+                    else flags &= ~ENABLE_MIXER;
+                }
+                if(flags&ALLOW_PATTERN)
+                {
+                    if(canpattern(state, as))
+                    {
+                        flags |= ENABLE_PATTERN;
+                        if(state->pattern != lastpattern)
+                        {
+                            glActiveTexture_(GL_TEXTURE6);
+                            activetmu = 6;
+                            glBindTexture(GL_TEXTURE_2D, state->pattern->id);
+                            lastpattern = state->pattern;
+                        }
+                    }
+                    else flags &= ~ENABLE_PATTERN;
+                }
+                if(envmapped())
+                {
+                    GLuint emtex = envmap ? envmap->id : closestenvmaptex;
+                    if(lastenvmaptex!=emtex)
+                    {
+                        glActiveTexture_(GL_TEXTURE2);
+                        activetmu = 2;
+                        glBindTexture(GL_TEXTURE_CUBE_MAP, emtex);
+                        lastenvmaptex = emtex;
+                    }
                 }
             }
             if(activetmu != 0) glActiveTexture_(GL_TEXTURE0);

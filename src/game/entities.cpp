@@ -2812,7 +2812,7 @@ namespace entities
     void render()
     {
         float offset = entrailoffset;
-        loopv(railways)
+        if(drawtex != DRAWTEX_HALO) loopv(railways)
         {
             railway &r = railways[i];
             if(!drawtex && showentrails)
@@ -2858,7 +2858,7 @@ namespace entities
             }
         }
 
-        if(drawtex) return;
+        if(drawtex && drawtex != DRAWTEX_HALO) return;
 
         if(shouldshowents(game::player1->state == CS_EDITING ? 1 : (!entgroup.empty() || ents.inrange(enthover) ? 2 : 3)))
             loopv(ents) renderfocus(i, renderentshow(e, i, showlevel(i), j!=0));
@@ -2916,16 +2916,23 @@ namespace entities
                         {
                             colour = W(attr, colour);
                             if(!active || (!game::focus->isobserver() && !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !showentfull)))
+                            {
+                                if(drawtex == DRAWTEX_HALO) continue;
                                 mdl.color.a *= showentunavailable;
+                            }
                             else mdl.color.a *= showentavailable;
                         }
                         else continue;
                     }
                     if(mdl.color.a > 0)
                     {
-                        mdl.material[0] = bvec::fromcolor(game::getcolour(game::focus, game::playerovertone, game::playerovertonelevel));
-                        mdl.material[1] = bvec::fromcolor(game::getcolour(game::focus, game::playerundertone, game::playerundertonelevel));
-                        if(colour >= 0) mdl.material[2] = bvec::fromcolor(colour);
+                        if(drawtex == DRAWTEX_HALO) mdl.material[0] = mdl.material[1] = mdl.material[2] = bvec::fromcolor(colour >= 0 ? colour : 0xFFFFFF);
+                        else
+                        {
+                            mdl.material[0] = bvec::fromcolor(game::getcolour(game::focus, game::playerovertone, game::playerovertonelevel));
+                            mdl.material[1] = bvec::fromcolor(game::getcolour(game::focus, game::playerundertone, game::playerundertonelevel));
+                            if(colour >= 0) mdl.material[2] = bvec::fromcolor(colour);
+                        }
                         rendermodel(mdlname, mdl);
                     }
                 }

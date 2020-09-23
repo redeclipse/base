@@ -3487,6 +3487,12 @@ namespace game
 
     void getplayermaterials(gameent *d, modelstate &mdl)
     {
+        if(drawtex == DRAWTEX_HALO)
+        {
+            mdl.color = vec4::fromcolor(getcolour(d, playerovertone, 1));
+            mdl.material[0] = mdl.material[1] = mdl.material[2] = bvec(255, 255, 255);
+            return;
+        }
         mdl.material[0] = bvec::fromcolor(getcolour(d, playerovertone, playerovertonelevel));
         mdl.material[1] = bvec::fromcolor(getcolour(d, playerundertone, playerundertonelevel));
         #define TONEINTERP(name, mat, var) \

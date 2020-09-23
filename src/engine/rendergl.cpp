@@ -2471,11 +2471,14 @@ void gl_drawview()
     }
 }
 
-GLuint halotex = 0;
+FVAR(0, halosize, 0, 0.25f, 1.f);
+
+GLuint halotex = 0, halofbo = 0;
 
 void clearhalo()
 {
     if(halotex) { glDeleteTextures(1, &halotex); halotex = 0; }
+    if(halofbo) { glDeleteFramebuffers_(1, &halofbo); halofbo = 0; }
 }
 
 void gl_predraw()
@@ -2489,15 +2492,16 @@ void gl_predraw()
         return;
     }
 
-    gl_setupframe(true);
+    int oldrh = renderh, oldrw = renderw;
+    renderw = int(renderw*halosize);
+    renderh = int(renderh*halosize);
+    gl_setupframe();
     vieww = hudw;
     viewh = hudh;
     hud::update(hudw, hudh);
 
     drawtex = DRAWTEX_HALO;
     farplane = worldsize*2;
-
-    //if(!halotex) glGenTextures(1, &halotex);
 
     projmatrix.perspective(fovy, aspect, nearplane, farplane);
     setcamprojmatrix();
@@ -2515,9 +2519,7 @@ void gl_predraw()
     visiblecubes();
     preparegbuffer();
 
-    rendertransparentmapmodels();
     game::render();
-    rendermapmodels();
     rendermodelbatches();
     renderavatar();
     GLERROR;
@@ -2527,28 +2529,40 @@ void gl_predraw()
     shadegbuffer();
     GLERROR;
 
-    game::renderpost();
-
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
     drawtex = 0;
 
-    /*
-    createtexture(halotex, hudw, hudh, NULL, 3, 1, hasES2 ? GL_RGB565 : GL_RGB5, GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    if(!halotex)
+    {
+        glGenTextures(1, &halotex);
+        createtexture(halotex, vieww, viewh, NULL, 3, 1, hasES2 ? GL_RGB565 : GL_RGB5, GL_TEXTURE_RECTANGLE);
+        if(!halofbo) glGenFramebuffers_(1, &halofbo);
+        glBindFramebuffer_(GL_FRAMEBUFFER, halofbo);
+        glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, halotex, 0);
+    }
 
-    GLuint fbo = 0;
-    glGenFramebuffers_(1, &fbo);
-    glBindFramebuffer_(GL_FRAMEBUFFER, fbo);
-    glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, minimaptex, 0);
-    copyhdr(hudw, hudh, fbo);
+    copyhdr(vieww, viewh, halofbo);
     glBindFramebuffer_(GL_FRAMEBUFFER, 0);
-    glDeleteFramebuffers_(1, &fbo);
-    */
+    renderh = oldrh;
+    renderw = oldrw;
 
     game::recomputecamera();
     setviewcell(camera1->o);
 
+}
+
+void renderhalo()
+{
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    SETSHADER(hudhalo);
+    gle::colorf(1, 1, 1, 1);
+    glBindTexture(GL_TEXTURE_RECTANGLE, halotex);
+    debugquad(0, 0, hudw, hudh, 0, 0, int(hudw*halosize), int(hudh*halosize));
+
+    glDisable(GL_BLEND);
 }
 
 void resethudshader()
@@ -2599,13 +2613,27 @@ void gl_setupframe(bool force)
     setuplights();
 }
 
+VAR(0, debughalo, 0, 0, 1);
+
+void viewhalo()
+{
+    if(!halotex) return;
+    int w = min(hudw, hudh)/3, h = (w*hudh)/hudw, rw = int(hudw*halosize), rh = int(hudh*halosize);
+    SETSHADER(hudrect);
+    gle::colorf(1, 1, 1);
+    glBindTexture(GL_TEXTURE_RECTANGLE, halotex);
+    debugquad(0, 0, w, h, 0, 0, rw, rh);
+}
+
 void gl_drawhud(bool noview = false)
 {
     hudmatrix.ortho(0, hudw, hudh, 0, -1, 1);
     resethudmatrix();
     resethudshader();
 
+    //renderhalo();
     debuglights();
+    if(debughalo) viewhalo();
 
     hud::render(noview);
 }
