@@ -3926,7 +3926,9 @@ namespace game
     {
         if(drawtex != DRAWTEX_HALO) return;
         mdl.flags |= MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY;
-        if(team >= 0 && m_team(gamemode, mutators) && team != focus->team && focus->state != CS_SPECTATOR)
+        if(mdl.flags&MDL_NORENDER) return;
+        if(focus->o.dist(mdl.o) >= halodist) mdl.flags |= MDL_NORENDER;
+        else if(team >= 0 && m_team(gamemode, mutators) && team != focus->team && focus->state != CS_SPECTATOR)
         {
             vec targ;
             if(!alive || !getsight(camera1->o, camera1->yaw, camera1->pitch, mdl.o, targ, halodist, curfov, fovy)) mdl.flags |= MDL_NORENDER;

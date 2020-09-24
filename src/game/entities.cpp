@@ -2865,7 +2865,7 @@ namespace entities
         for(int i = fstent; i < lstent; i++)
         {
             gameentity &e = *(gameentity *)ents[i];
-            if(drawtex == DRAWTEX_HALO && (e.o.dist(camera1->o) >= halodist || (e.type != WEAPON && (game::player1->state != CS_EDITING || (i != enthover && entgroup.find(i) < 0))))) continue;
+            if(drawtex == DRAWTEX_HALO && e.type != WEAPON && (game::player1->state != CS_EDITING || (i != enthover && entgroup.find(i) < 0))) continue;
             if(e.type <= NOTUSED || e.type >= MAXENTTYPES || (enttype[e.type].usetype == EU_ITEM && simpleitems)) continue;
             bool active = enttype[e.type].usetype == EU_ITEM && (e.spawned() || (e.lastemit && lastmillis-e.lastemit < 500));
             if(m_edit(game::gamemode) || active)
@@ -2914,7 +2914,7 @@ namespace entities
                             colour = W(attr, colour);
                             if(!active || (!game::focus->isobserver() && !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !showentfull)))
                             {
-                                if(drawtex == DRAWTEX_HALO) continue;
+                                if(drawtex == DRAWTEX_HALO) mdl.flags |= MDL_NORENDER;
                                 mdl.color.a *= showentunavailable;
                             }
                             else mdl.color.a *= showentavailable;
