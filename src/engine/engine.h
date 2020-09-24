@@ -284,7 +284,8 @@ extern int glversion, glslversion, glcompat;
 extern char *gfxvendor, *gfxrenderer, *gfxversion;
 extern int maxdrawbufs, maxdualdrawbufs;
 
-enum { DRAWTEX_NONE = 0, DRAWTEX_ENVMAP, DRAWTEX_MINIMAP, DRAWTEX_MODELPREVIEW, DRAWTEX_MAPSHOT, DRAWTEX_HALO };
+enum { DRAWTEX_NONE = 0, DRAWTEX_ENVMAP, DRAWTEX_MINIMAP, DRAWTEX_MODELPREVIEW, DRAWTEX_MAPSHOT,
+    DRAWTEX_HALO };
 
 extern int vieww, viewh;
 extern float curfov, fovy, aspect, forceaspect;
@@ -306,7 +307,7 @@ extern void glerror(const char *file, int line, GLenum error);
 
 #define GLERROR do { if(glerr) { GLenum error = glGetError(); if(error != GL_NO_ERROR) glerror(__FILE__, __LINE__, error); } } while(0)
 
-extern float halodist;
+extern int halodist;
 
 extern void gl_checkextensions();
 extern void gl_init();
@@ -314,8 +315,8 @@ extern void gl_resize();
 extern void gl_setupframe(bool force = false);
 extern void gl_drawview();
 extern void gl_drawnoview();
+extern void gl_drawhalos();
 extern void gl_drawframe();
-extern void gl_predraw();
 extern void cleanupgl();
 
 extern void vecfromcursor(float x, float y, float z, vec &dir);
@@ -519,13 +520,17 @@ extern void rendertransparent();
 extern void renderao();
 extern void loadhdrshaders(int aa = AA_UNUSED);
 extern void processhdr(GLuint outfbo = 0, int aa = AA_UNUSED);
-extern void copyhdr(int sw, int sh, GLuint fbo, int dw = 0, int dh = 0, bool flipx = false, bool flipy = false, bool swapxy = false, int halo = 0);
+extern void copyhdr(int sw, int sh, GLuint fbo, int dw = 0, int dh = 0, bool flipx = false, bool flipy = false, bool swapxy = false);
 extern void setuplights();
 extern void setupgbuffer();
 extern GLuint shouldscale();
 extern void doscale(GLuint outfbo = 0);
 extern bool debuglights();
 extern void cleanuplights();
+extern void renderhalo();
+extern void setuphalo(int w, int h);
+extern void endhalo();
+extern void cleanuphalo();
 
 extern int avatarmask;
 extern bool useavatarmask();

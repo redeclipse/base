@@ -44,7 +44,6 @@ struct PackNode
 };
 
 extern int fullbright, fullbrightlevel;
-extern int getfullbrightlevel();
 
 extern bool getlightfx(const extentity &e, int *radius = NULL, int *spotlight = NULL, vec *color = NULL, bool normalize = true, bool dyncheck = true);
 
