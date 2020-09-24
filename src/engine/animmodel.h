@@ -171,7 +171,7 @@ struct animmodel : model
 
             if(!skinned) return;
 
-            if(color.r < 0) LOCALPARAMF(colorscale, colorscale.r, colorscale.g, colorscale.b, colorscale.a*blend);
+            if(color.r < 0 || drawtex == DRAWTEX_HALO) LOCALPARAMF(colorscale, colorscale.r, colorscale.g, colorscale.b, colorscale.a*blend);
             else LOCALPARAMF(colorscale, color.r, color.g, color.b, colorscale.a*blend);
 
             if(drawtex == DRAWTEX_HALO)
@@ -227,6 +227,7 @@ struct animmodel : model
             {
                 string opts;
                 int optslen = 0;
+                opts[optslen++] = 'h';
                 if(alphatested())
                 {
                     opts[optslen++] = 'a';
@@ -234,7 +235,6 @@ struct animmodel : model
                 }
                 else if(alphablended()) opts[optslen++] = 'A';
                 if(owner->model->wind) opts[optslen++] = 'w';
-                if(masked()) opts[optslen++] = 'm';
                 if(!cullface) opts[optslen++] = 'c';
                 opts[optslen++] = '\0';
 
@@ -334,28 +334,13 @@ struct animmodel : model
                 return;
             }
             int activetmu = 0, oldflags = flags;
-            if(drawtex == DRAWTEX_HALO)
+            if(tex!=lasttex)
             {
-                if(blanktexture!=lasttex)
-                {
-                    glBindTexture(GL_TEXTURE_2D, blanktexture->id);
-                    lasttex = blanktexture;
-                }
-                if(masked() && masks!=lastmasks)
-                {
-                    glActiveTexture_(GL_TEXTURE1);
-                    activetmu = 1;
-                    glBindTexture(GL_TEXTURE_2D, masks->id);
-                    lastmasks = masks;
-                }
+                glBindTexture(GL_TEXTURE_2D, tex->id);
+                lasttex = tex;
             }
-            else
+            if(drawtex != DRAWTEX_HALO)
             {
-                if(tex!=lasttex)
-                {
-                    glBindTexture(GL_TEXTURE_2D, tex->id);
-                    lasttex = tex;
-                }
                 if(bumpmapped() && normalmap!=lastnormalmap)
                 {
                     glActiveTexture_(GL_TEXTURE3);

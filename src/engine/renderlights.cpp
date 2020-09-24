@@ -993,7 +993,7 @@ FVARF(IDF_PERSIST, gscalecubicsoft, 0, 0, 1, initwarning("scaling setup", INIT_L
 
 float ldrscale = 1.0f, ldrscaleb = 1.0f/255;
 
-void copyhdr(int sw, int sh, GLuint fbo, int dw, int dh, bool flipx, bool flipy, bool swapxy)
+void copyhdr(int sw, int sh, GLuint fbo, int dw, int dh, bool flipx, bool flipy, bool swapxy, int halo)
 {
     if(!dw) dw = sw;
     if(!dh) dh = sh;
@@ -1004,7 +1004,12 @@ void copyhdr(int sw, int sh, GLuint fbo, int dw, int dh, bool flipx, bool flipy,
     glBindFramebuffer_(GL_FRAMEBUFFER, fbo);
     glViewport(0, 0, dw, dh);
 
-    SETSHADER(reorient);
+    if(halo)
+    {
+        SETSHADER(halo);
+        LOCALPARAMI(radius, halo);
+    }
+    else SETSHADER(reorient);
     vec reorientx(flipx ? -0.5f : 0.5f, 0, 0.5f), reorienty(0, flipy ? -0.5f : 0.5f, 0.5f);
     if(swapxy) swap(reorientx, reorienty);
     reorientx.mul(sw);

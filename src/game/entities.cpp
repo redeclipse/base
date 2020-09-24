@@ -40,13 +40,9 @@ namespace entities
     VAR(IDF_PERSIST|IDF_HEX, entdircolour, 0, 0x88FF88, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, entradiuscolour, 0, 0x88FF88, 0xFFFFFF);
 
-    VAR(IDF_PERSIST, simpleitems, 0, 0, 2); // 0 = items are models, 1 = items are icons, 2 = items are off and only halos appear
+    VAR(IDF_PERSIST, simpleitems, 0, 0, 1); // 0 = items are models, 1 = items are icons
     FVAR(IDF_PERSIST, simpleitemsize, 0, 2, 8);
     FVAR(IDF_PERSIST, simpleitemblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, simpleitemhalo, 0, 0.25f, 1);
-
-    FVAR(IDF_PERSIST, haloitemsize, 0, 1, 8);
-    FVAR(IDF_PERSIST, haloitemblend, 0, 0.7f, 1);
 
     VARF(0, routeid, -1, -1, VAR_MAX, lastroutenode = -1; lastroutetime = 0; airnodes.setsize(0)); // selected route in race
     VARF(0, droproute, 0, 0, 1, lastroutenode = -1; lastroutetime = 0; airnodes.setsize(0); if(routeid < 0) routeid = 0);
@@ -3011,29 +3007,13 @@ namespace entities
                     else blend = 0;
                 }
                 else blend *= showentavailable;
-                if(blend > 0)
-                {
-                    radius += game::focus->hasweap(attr, sweap) ? W(attr, itemhaloammo) : W(attr, itemhalo);
-                    radius = max(radius*skew, 0.125f);
-                }
+                if(blend > 0) radius = max(radius*skew, 0.125f);
             }
             else radius = max(enttype[e.type].radius*0.5f*skew, 0.125f);
-            if(blend > 0)
+            if(blend > 0 && simpleitems == 1)
             {
-                if(simpleitems == 1)
-                {
-                    part_icon(view, textureload(hud::itemtex(e.type, attr), 3), simpleitemsize*skew, simpleitemblend*blend*skew, 0, 0, 1, colour);
-                    if(radius < simpleitemsize*skew) radius = simpleitemsize*skew;
-                    blend *= simpleitemhalo;
-                }
-                else
-                {
-                    radius *= haloitemsize;
-                    blend *= haloitemblend;
-                }
-                vec offset = vec(view).sub(camera1->o).rescale(radius/2);
-                offset.z = max(offset.z, -1.0f);
-                part_create(PART_HINT_BOLD_SOFT, 1, offset.add(view), colour, radius, blend);
+                part_icon(view, textureload(hud::itemtex(e.type, attr), 3), simpleitemsize*skew, simpleitemblend*blend*skew, 0, 0, 1, colour);
+                if(radius < simpleitemsize*skew) radius = simpleitemsize*skew;
             }
         }
         if(edit)

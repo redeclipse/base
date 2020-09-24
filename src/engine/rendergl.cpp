@@ -2471,8 +2471,6 @@ void gl_drawview()
     }
 }
 
-FVAR(0, halosize, 0, 0.25f, 1.f);
-
 GLuint halotex = 0, halofbo = 0;
 
 void clearhalo()
@@ -2480,6 +2478,9 @@ void clearhalo()
     if(halotex) { glDeleteTextures(1, &halotex); halotex = 0; }
     if(halofbo) { glDeleteFramebuffers_(1, &halofbo); halofbo = 0; }
 }
+
+FVARF(IDF_PERSIST, halosize, 0, 0.75f, 1, clearhalo());
+VAR(IDF_PERSIST, haloradius, 1, 4, VAR_MAX);
 
 void gl_predraw()
 {
@@ -2492,12 +2493,9 @@ void gl_predraw()
         return;
     }
 
-    int oldrh = renderh, oldrw = renderw;
-    renderw = int(renderw*halosize);
-    renderh = int(renderh*halosize);
-    gl_setupframe();
-    vieww = hudw;
-    viewh = hudh;
+    int oldrh = renderh, oldrw = renderw, halow = int(renderw*halosize), haloh = int(renderh*halosize);
+    renderw = vieww = hudw = halow;
+    renderh = viewh = hudh = haloh;
     hud::update(hudw, hudh);
 
     drawtex = DRAWTEX_HALO;
@@ -2533,24 +2531,25 @@ void gl_predraw()
     glDisable(GL_DEPTH_TEST);
     drawtex = 0;
 
-    if(!halotex)
-    {
-        glGenTextures(1, &halotex);
-        createtexture(halotex, vieww, viewh, NULL, 3, 1, hasES2 ? GL_RGB565 : GL_RGB5, GL_TEXTURE_RECTANGLE);
-        if(!halofbo) glGenFramebuffers_(1, &halofbo);
-        glBindFramebuffer_(GL_FRAMEBUFFER, halofbo);
-        glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, halotex, 0);
-    }
+    if(!halotex) glGenTextures(1, &halotex);
+    createtexture(halotex, vieww, viewh, NULL, 3, 1, GL_RGBA8, GL_TEXTURE_RECTANGLE);
+    if(!halofbo) glGenFramebuffers_(1, &halofbo);
+    glBindFramebuffer_(GL_FRAMEBUFFER, halofbo);
+    glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, halotex, 0);
 
     copyhdr(vieww, viewh, halofbo);
+
+    renderh = viewh = hudh = oldrh;
+    renderw = vieww = hudw = oldrw;
+
     glBindFramebuffer_(GL_FRAMEBUFFER, 0);
-    renderh = oldrh;
-    renderw = oldrw;
 
     game::recomputecamera();
     setviewcell(camera1->o);
 
 }
+
+VAR(IDF_PERSIST, drawhalos, 0, 1, 1);
 
 void renderhalo()
 {
@@ -2558,6 +2557,7 @@ void renderhalo()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     SETSHADER(hudhalo);
+    LOCALPARAMI(radius, int(haloradius*halosize));
     gle::colorf(1, 1, 1, 1);
     glBindTexture(GL_TEXTURE_RECTANGLE, halotex);
     debugquad(0, 0, hudw, hudh, 0, 0, int(hudw*halosize), int(hudh*halosize));
@@ -2618,11 +2618,11 @@ VAR(0, debughalo, 0, 0, 1);
 void viewhalo()
 {
     if(!halotex) return;
-    int w = min(hudw, hudh)/3, h = (w*hudh)/hudw, rw = int(hudw*halosize), rh = int(hudh*halosize);
+    int w = min(hudw, hudh)/3, h = (w*hudh)/hudw;
     SETSHADER(hudrect);
     gle::colorf(1, 1, 1);
     glBindTexture(GL_TEXTURE_RECTANGLE, halotex);
-    debugquad(0, 0, w, h, 0, 0, rw, rh);
+    debugquad(0, 0, w, h, 0, 0, int(hudw*halosize), int(hudh*halosize));
 }
 
 void gl_drawhud(bool noview = false)
@@ -2631,7 +2631,7 @@ void gl_drawhud(bool noview = false)
     resethudmatrix();
     resethudshader();
 
-    //renderhalo();
+    if(drawhalos) renderhalo();
     debuglights();
     if(debughalo) viewhalo();
 
