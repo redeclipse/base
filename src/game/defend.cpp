@@ -146,29 +146,33 @@ namespace defend
             mdl.yaw = b.yaw;
             mdl.o = b.render;
             rendermodel("props/point", mdl);
-            if(b.enemy && b.owner)
+            game::setuphalo(mdl, b.owner);
+            if(drawtex != DRAWTEX_HALO)
             {
-                defformatstring(bowner, "%s", game::colourteam(b.owner, NULL));
-                formatstring(b.info, "%s v %s", bowner, game::colourteam(b.enemy, NULL));
+                if(b.enemy && b.owner)
+                {
+                    defformatstring(bowner, "%s", game::colourteam(b.owner, NULL));
+                    formatstring(b.info, "%s v %s", bowner, game::colourteam(b.enemy, NULL));
+                }
+                else formatstring(b.info, "%s", TEAM(b.owner ? b.owner : b.enemy, name));
+                vec above = b.o;
+                float blend = camera1->o.distrange(above, game::affinityhintfadeat, game::affinityhintfadecut);
+                part_explosion(above, 3, PART_GLIMMERY, 1, colour, 1, blend);
+                part_create(PART_HINT_SOFT, 1, above, colour, 6, blend);
+                above.z += 6;
+                defformatstring(name, "<bold>%s", b.name);
+                part_textcopy(above, name, PART_TEXT, 1, colourwhite, 2, blend);
+                above.z += 2;
+                part_text(above, b.info, PART_TEXT, 1, colour, 2, blend);
+                above.z += 4;
+                if(b.enemy)
+                {
+                    part_icon(above, textureload(hud::progringtex, 3), 5, blend, 0, 0, 1, colour, (lastmillis%1000)/1000.f, 0.1f);
+                    part_icon(above, textureload(hud::progresstex, 3), 5, blend, 0, 0, 1, TEAM(b.enemy, colour), 0, occupy);
+                    part_icon(above, textureload(hud::progresstex, 3), 5, 0.25f*blend, 0, 0, 1, TEAM(b.owner, colour), occupy, 1-occupy);
+                }
+                else part_icon(above, textureload(hud::teamtexname(b.owner), 3), 4, blend, 0, 0, 1, colour);
             }
-            else formatstring(b.info, "%s", TEAM(b.owner ? b.owner : b.enemy, name));
-            vec above = b.o;
-            float blend = camera1->o.distrange(above, game::affinityhintfadeat, game::affinityhintfadecut);
-            part_explosion(above, 3, PART_GLIMMERY, 1, colour, 1, blend);
-            part_create(PART_HINT_SOFT, 1, above, colour, 6, blend);
-            above.z += 6;
-            defformatstring(name, "<bold>%s", b.name);
-            part_textcopy(above, name, PART_TEXT, 1, colourwhite, 2, blend);
-            above.z += 2;
-            part_text(above, b.info, PART_TEXT, 1, colour, 2, blend);
-            above.z += 4;
-            if(b.enemy)
-            {
-                part_icon(above, textureload(hud::progringtex, 3), 5, blend, 0, 0, 1, colour, (lastmillis%1000)/1000.f, 0.1f);
-                part_icon(above, textureload(hud::progresstex, 3), 5, blend, 0, 0, 1, TEAM(b.enemy, colour), 0, occupy);
-                part_icon(above, textureload(hud::progresstex, 3), 5, 0.25f*blend, 0, 0, 1, TEAM(b.owner, colour), occupy, 1-occupy);
-            }
-            else part_icon(above, textureload(hud::teamtexname(b.owner), 3), 4, blend, 0, 0, 1, colour);
         }
     }
 

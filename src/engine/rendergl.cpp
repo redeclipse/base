@@ -2479,15 +2479,16 @@ void clearhalo()
     if(halofbo) { glDeleteFramebuffers_(1, &halofbo); halofbo = 0; }
 }
 
-FVARF(IDF_PERSIST, halosize, 0, 0.75f, 1, clearhalo());
-VAR(IDF_PERSIST, haloradius, 1, 4, VAR_MAX);
+FVARF(IDF_PERSIST, halosize, 0, 1, 1, clearhalo());
+VAR(IDF_PERSIST, haloradius, 1, 2, VAR_MAX);
+FVARF(IDF_PERSIST, halodist, 0, 1024, FVAR_MAX, clearhalo());
 
 void gl_predraw()
 {
     game::recomputecamera();
     setviewcell(camera1->o);
 
-    if(hasnoview())
+    if(hasnoview() || halosize <= 0)
     {
         clearhalo();
         return;
@@ -2557,7 +2558,7 @@ void renderhalo()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     SETSHADER(hudhalo);
-    LOCALPARAMI(radius, int(haloradius*halosize));
+    LOCALPARAMI(radius, max(1, int(haloradius*halosize)));
     gle::colorf(1, 1, 1, 1);
     glBindTexture(GL_TEXTURE_RECTANGLE, halotex);
     debugquad(0, 0, hudw, hudh, 0, 0, int(hudw*halosize), int(hudh*halosize));
@@ -2631,9 +2632,9 @@ void gl_drawhud(bool noview = false)
     resethudmatrix();
     resethudshader();
 
-    if(drawhalos) renderhalo();
+    if(drawhalos && halosize > 0) renderhalo();
     debuglights();
-    if(debughalo) viewhalo();
+    if(debughalo && halosize > 0) viewhalo();
 
     hud::render(noview);
 }

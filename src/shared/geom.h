@@ -396,7 +396,8 @@ struct vec4
 
     static vec4 fromcolor(const vec &v, float trans) { return vec4(v.x, v.y, v.z, trans); }
     static vec4 fromcolor(const vec &v) { return fromcolor(v, 1); }
-    static vec4 fromcolor(int color) { return vec4(((color>>16)&0xFF)/255.f, ((color>>8)&0xFF)/255.f, (color&0xFF)/255.f, 1); }
+    static vec4 fromcolor(int color, float trans) { return vec4(((color>>16)&0xFF)/255.f, ((color>>8)&0xFF)/255.f, (color&0xFF)/255.f, trans); }
+    static vec4 fromcolor(int color) { return fromcolor(color, 1); }
 };
 
 inline vec2::vec2(const vec4 &v) : x(v.x), y(v.y) {}

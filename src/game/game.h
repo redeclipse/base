@@ -2336,6 +2336,7 @@ namespace game
     extern void getplayermaterials(gameent *d, modelstate &mdl);
     extern void getplayereffects(gameent *d, modelstate &mdl);
     extern const char *getplayerstate(gameent *d, modelstate &mdl, int third = 1, float size = 1, int flags = 0, modelattach *mdlattach = NULL, int *lastoffset = NULL);
+    extern void setuphalo(modelstate &mdl, int team = -1, bool alive = true);
 }
 
 namespace entities

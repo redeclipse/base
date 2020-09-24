@@ -177,8 +177,8 @@ struct animmodel : model
             if(drawtex == DRAWTEX_HALO)
             {
                 LOCALPARAMF(fullbright, 0.0f, 1.0f);
-                LOCALPARAM(material1, material1 > 0 ? modelmaterial[min(material1, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.x) : vec(matbright.x));
-                LOCALPARAM(material2, material2 > 0 ? modelmaterial[min(material2, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.y) : vec(matbright.y));
+                LOCALPARAM(material1, modelmaterial[0].tocolor());
+                LOCALPARAM(material2, modelmaterial[1].tocolor());
             }
             else
             {

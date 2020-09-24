@@ -2865,6 +2865,7 @@ namespace entities
         for(int i = fstent; i < lstent; i++)
         {
             gameentity &e = *(gameentity *)ents[i];
+            if(drawtex == DRAWTEX_HALO && (e.o.dist(camera1->o) >= halodist || (e.type != WEAPON && (game::player1->state != CS_EDITING || (i != enthover && entgroup.find(i) < 0))))) continue;
             if(e.type <= NOTUSED || e.type >= MAXENTTYPES || (enttype[e.type].usetype == EU_ITEM && simpleitems)) continue;
             bool active = enttype[e.type].usetype == EU_ITEM && (e.spawned() || (e.lastemit && lastmillis-e.lastemit < 500));
             if(m_edit(game::gamemode) || active)
@@ -2877,7 +2878,7 @@ namespace entities
                     mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
                     mdl.flags = MDL_CULL_VFC|MDL_CULL_DIST|MDL_CULL_OCCLUDED;
                     int colour = -1;
-                    if(!active)
+                    if(!active || (e.type != WEAPON && drawtex == DRAWTEX_HALO))
                     {
                         if(showentmodels <= (e.type == PLAYERSTART || e.type == ACTOR ? 1 : 0)) continue;
                         if(e.type == AFFINITY || e.type == PLAYERSTART)
@@ -2922,13 +2923,10 @@ namespace entities
                     }
                     if(mdl.color.a > 0)
                     {
-                        if(drawtex == DRAWTEX_HALO) mdl.material[0] = mdl.material[1] = mdl.material[2] = bvec::fromcolor(colour >= 0 ? colour : 0xFFFFFF);
-                        else
-                        {
-                            mdl.material[0] = bvec::fromcolor(game::getcolour(game::focus, game::playerovertone, game::playerovertonelevel));
-                            mdl.material[1] = bvec::fromcolor(game::getcolour(game::focus, game::playerundertone, game::playerundertonelevel));
-                            if(colour >= 0) mdl.material[2] = bvec::fromcolor(colour);
-                        }
+                        mdl.material[0] = bvec::fromcolor(game::getcolour(game::focus, game::playerovertone, game::playerovertonelevel));
+                        mdl.material[1] = bvec::fromcolor(game::getcolour(game::focus, game::playerundertone, game::playerundertonelevel));
+                        if(colour >= 0) mdl.material[0] = mdl.material[2] = bvec::fromcolor(colour);
+                        game::setuphalo(mdl);
                         rendermodel(mdlname, mdl);
                     }
                 }

@@ -3489,7 +3489,8 @@ namespace game
     {
         if(drawtex == DRAWTEX_HALO)
         {
-            mdl.material[0] = mdl.material[1] = mdl.material[2] = bvec::fromcolor(getcolour(d, playerovertone, 1));
+            mdl.material[0] = mdl.material[2] = bvec::fromcolor(getcolour(d, playerovertone, 1));
+            mdl.material[1] = bvec::fromcolor(getcolour(d, playerovertone, 1));
             return;
         }
         mdl.material[0] = bvec::fromcolor(getcolour(d, playerovertone, playerovertonelevel));
@@ -3921,6 +3922,17 @@ namespace game
         }
     }
 
+    void setuphalo(modelstate &mdl, int team, bool alive)
+    {
+        if(drawtex != DRAWTEX_HALO) return;
+        mdl.flags |= MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY;
+        if(team >= 0 && m_team(gamemode, mutators) && team != focus->team && focus->state != CS_SPECTATOR)
+        {
+            vec targ;
+            if(!alive || !getsight(camera1->o, camera1->yaw, camera1->pitch, mdl.o, targ, halodist, curfov, fovy)) mdl.flags |= MDL_NORENDER;
+        }
+    }
+
     void renderplayer(gameent *d, int third, float size, int flags = 0, const vec4 &color = vec4(1, 1, 1, 1), int *lastoffset = NULL)
     {
         if(d->state == CS_SPECTATOR || (d->state != CS_ALIVE && color.a <= 0)) return;
@@ -3940,6 +3952,7 @@ namespace game
             }
             if(d != focus || (d != player1 ? fullbrightfocus&1 : fullbrightfocus&2)) mdl.flags |= MDL_FULLBRIGHT;
         }
+        if(d != focus) setuphalo(mdl, d->team, d->state == CS_ALIVE);
         rendermodel(mdlname, mdl, e);
         if((d != focus || d->state == CS_DEAD || d->state == CS_WAITING) && !(mdl.flags&MDL_ONLYSHADOW) && third == 1 && d->actortype < A_ENEMY && !shadowmapping && !drawtex && (aboveheaddead || d->state == CS_ALIVE))
             renderabovehead(d);
@@ -4054,17 +4067,18 @@ namespace game
 
     void render()
     {
-        entities::render();
+        if(!drawtex || drawtex == DRAWTEX_HALO) entities::render();
         if(!drawtex)
         {
             ai::render();
             projs::render();
-            if(m_capture(gamemode)) capture::render();
-            else if(m_defend(gamemode)) defend::render();
-            else if(m_bomber(gamemode)) bomber::render();
         }
         if(!drawtex || drawtex == DRAWTEX_HALO)
         {
+            if(m_capture(gamemode)) capture::render();
+            else if(m_defend(gamemode)) defend::render();
+            else if(m_bomber(gamemode)) bomber::render();
+
             gameent *d;
             int numdyns = numdynents();
             bool third = thirdpersonview();

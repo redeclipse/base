@@ -306,6 +306,8 @@ extern void glerror(const char *file, int line, GLenum error);
 
 #define GLERROR do { if(glerr) { GLenum error = glGetError(); if(error != GL_NO_ERROR) glerror(__FILE__, __LINE__, error); } } while(0)
 
+extern float halodist;
+
 extern void gl_checkextensions();
 extern void gl_init();
 extern void gl_resize();

@@ -275,17 +275,21 @@ namespace bomber
                     if(f.owner == game::focus)
                         trans *= game::focus != game::player1 ? game::affinityfollowblend : game::affinitythirdblend;
                     mdl.color.a *= trans;
+                    game::setuphalo(mdl);
                     rendermodel("props/ball", mdl);
-                    float fluc = interval >= 500 ? (1500-interval)/1000.f : (500+interval)/1000.f;
-                    int pcolour = effect.tohexcolor();
-                    if(game::affinityhint)
-                        part_create(PART_HINT_SOFT, 1, above, pcolour, enttype[AFFINITY].radius/4*game::affinityhintsize+(2*fluc), fluc*trans*game::affinityhintblend*camera1->o.distrange(above, game::affinityhintfadeat, game::affinityhintfadecut));
-                    if(gs_playing(game::gamestate) && f.droptime)
+                    if(drawtex != DRAWTEX_HALO)
                     {
-                        above.z += enttype[AFFINITY].radius/4*trans+1.5f;
-                        part_icon(above, textureload(hud::progringtex, 3), 5*trans, 1, 0, 0, 1, pcolour, (lastmillis%1000)/1000.f, 0.1f);
-                        part_icon(above, textureload(hud::progresstex, 3), 5*trans, 0.25f, 0, 0, 1, pcolour);
-                        part_icon(above, textureload(hud::progresstex, 3), 5*trans, 1, 0, 0, 1, pcolour, 0, wait);
+                        float fluc = interval >= 500 ? (1500-interval)/1000.f : (500+interval)/1000.f;
+                        int pcolour = effect.tohexcolor();
+                        if(game::affinityhint)
+                            part_create(PART_HINT_SOFT, 1, above, pcolour, enttype[AFFINITY].radius/4*game::affinityhintsize+(2*fluc), fluc*trans*game::affinityhintblend*camera1->o.distrange(above, game::affinityhintfadeat, game::affinityhintfadecut));
+                        if(gs_playing(game::gamestate) && f.droptime)
+                        {
+                            above.z += enttype[AFFINITY].radius/4*trans+1.5f;
+                            part_icon(above, textureload(hud::progringtex, 3), 5*trans, 1, 0, 0, 1, pcolour, (lastmillis%1000)/1000.f, 0.1f);
+                            part_icon(above, textureload(hud::progresstex, 3), 5*trans, 0.25f, 0, 0, 1, pcolour);
+                            part_icon(above, textureload(hud::progresstex, 3), 5*trans, 1, 0, 0, 1, pcolour, 0, wait);
+                        }
                     }
                 }
             }
@@ -294,25 +298,28 @@ namespace bomber
                 vec above = f.spawnloc, effect = vec::fromcolor(TEAM(f.team, colour)).mul(trans);
                 float blend = camera1->o.distrange(above, game::affinityhintfadeat, game::affinityhintfadecut);
                 basemdl.material[0] = mdl.material[0] = bvec::fromcolor(effect);
-                int pcolour = effect.tohexcolor();
-                part_explosion(above, 3, PART_GLIMMERY, 1, pcolour, 1, trans*blend);
-                part_create(PART_HINT_SOFT, 1, above, pcolour, 6, trans*blend);
-                if(m_bb_basket(game::gamemode, game::mutators) && carryaffinity(game::focus) && bomberbasketmindist > 0 && game::focus->o.dist(above) < bomberbasketmindist)
+                if(drawtex != DRAWTEX_HALO)
                 {
-                    int millis = lastmillis%500;
-                    float amt = millis <= 250 ? 1.f-(millis/250.f) : (millis-250)/250.f, height = enttype[AFFINITY].radius*0.75f;
-                    vec c = game::pulsecolour(game::focus, PULSE_WARN),
-                        offset = vec(above).sub(camera1->o).rescale(-enttype[AFFINITY].radius*0.5f);
-                    height += height*amt*0.1f;
-                    offset.z = max(offset.z, -1.0f);
-                    offset.add(above);
-                    part_icon(offset, textureload(hud::warningtex, 3, true, false), height, amt*blend, 0, 0, 1, c.tohexcolor());
+                    int pcolour = effect.tohexcolor();
+                    part_explosion(above, 3, PART_GLIMMERY, 1, pcolour, 1, trans*blend);
+                    part_create(PART_HINT_SOFT, 1, above, pcolour, 6, trans*blend);
+                    if(m_bb_basket(game::gamemode, game::mutators) && carryaffinity(game::focus) && bomberbasketmindist > 0 && game::focus->o.dist(above) < bomberbasketmindist)
+                    {
+                        int millis = lastmillis%500;
+                        float amt = millis <= 250 ? 1.f-(millis/250.f) : (millis-250)/250.f, height = enttype[AFFINITY].radius*0.75f;
+                        vec c = game::pulsecolour(game::focus, PULSE_WARN),
+                            offset = vec(above).sub(camera1->o).rescale(-enttype[AFFINITY].radius*0.5f);
+                        height += height*amt*0.1f;
+                        offset.z = max(offset.z, -1.0f);
+                        offset.add(above);
+                        part_icon(offset, textureload(hud::warningtex, 3, true, false), height, amt*blend, 0, 0, 1, c.tohexcolor());
+                    }
+                    above.z += 6*trans;
+                    defformatstring(info, "<bold>%s Base", TEAM(f.team, name));
+                    part_textcopy(above, info, PART_TEXT, 1, TEAM(f.team, colour), 2, trans*blend);
+                    above.z += 4;
+                    part_icon(above, textureload(hud::teamtexname(f.team), 3), 4, trans*blend, 0, 0, 1, TEAM(f.team, colour));
                 }
-                above.z += 6*trans;
-                defformatstring(info, "<bold>%s Base", TEAM(f.team, name));
-                part_textcopy(above, info, PART_TEXT, 1, TEAM(f.team, colour), 2, trans*blend);
-                above.z += 4;
-                part_icon(above, textureload(hud::teamtexname(f.team), 3), 4, trans*blend, 0, 0, 1, TEAM(f.team, colour));
             }
             if(!m_bb_hold(game::gamemode, game::mutators))
             {
@@ -320,6 +327,7 @@ namespace bomber
                 basemdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED;
                 basemdl.o = f.render;
                 basemdl.yaw = f.yaw;
+                game::setuphalo(basemdl, f.team);
                 rendermodel("props/point", basemdl);
             }
         }
