@@ -1418,7 +1418,7 @@ namespace game
                     safefindorientation(d->o, d->yaw, d->pitch, targ);
                     targ.sub(from).normalize().add(from);
                     fx::createfx(fxindex, from, targ, 1.0f, 1.0f, bvec(color), d, &d->weaponfx);
-                    d->weaponfx->setparam(W_FX_POWER_PARAM, amt);
+                    if(d->weaponfx) d->weaponfx->setparam(W_FX_POWER_PARAM, amt);
                 }
             }
         }

@@ -272,12 +272,12 @@ namespace fx
         bumpstat(FX_STAT_EMITTER_INIT);
     }
 
-    void emitter::instantiate(int index, instance *parent)
+    bool emitter::instantiate(int index, instance *parent)
     {
         if(!isfx(index))
         {
             conoutf("\frError: cannot instantiate fx, invalid index %d", index);
-            return;
+            return false;
         }
 
         instance *inst = getinstance();
@@ -285,7 +285,7 @@ namespace fx
         if(!inst)
         {
             if(fxdebug == 2) conoutf("\fyWarning: cannot instantiate fx, no free instances");
-            return;
+            return false;
         }
 
         inst->init(this, index, parent);
@@ -294,6 +294,8 @@ namespace fx
 
         fxdef &def = getfxdef(index);
         loopv(def.children) instantiate(def.children[i], inst);
+
+        return true;
     }
 
     void emitter::prolong()
@@ -376,7 +378,13 @@ namespace fx
         if(!e->hook)
         {
             e->init(hook);
-            e->instantiate(index);
+            if(!e->instantiate(index))
+            {
+                // no free instances, emitter has nothing to do
+                putemitter(e);
+                return NULL;
+            }
+
             e->prevfrom = from;
         }
         else

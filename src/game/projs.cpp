@@ -139,12 +139,12 @@ namespace projs
         {
             case PRJ_FX_LIFE:
                 param = clamp(proj.lifespan, 0.0f, 1.0f);
-                e->setparam(P_FX_LIFETIME_PARAM, param);
+                if(e) e->setparam(P_FX_LIFETIME_PARAM, param);
                 break;
 
             case PRJ_FX_BOUNCE:
                 param = clamp(proj.vel.magnitude()*proj.curscale*0.005f, 0.0f, 1.0f);
-                e->setparam(P_FX_BOUNCE_VEL_PARAM, param);
+                if(e) e->setparam(P_FX_BOUNCE_VEL_PARAM, param);
                 break;
         }
     }
@@ -1281,7 +1281,7 @@ namespace projs
                 safefindorientation(d->o, d->yaw, d->pitch, targ);
                 targ.sub(from).normalize().add(from);
                 fx::createfx(fxindex, from, targ, 1.0f, fxscale, bvec(color), d, &d->weaponfx);
-                d->weaponfx->setparam(W_FX_POWER_PARAM, scale);
+                if(d->weaponfx) d->weaponfx->setparam(W_FX_POWER_PARAM, scale);
             }
         }
         loopv(shots)
