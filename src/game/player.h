@@ -120,8 +120,8 @@ struct playerpattern
 
 #ifdef CPP_GAME_SERVER
 extern const char * const playertypes[PLAYERTYPES][7] = {
-    { "actors/player/male/hwep",        "actors/player/male",       "actors/player/male/body",      "actors/player/male/headless",      "player",   "male",     "Male" },
-    { "actors/player/female/hwep",      "actors/player/female",     "actors/player/male/body",      "actors/player/female/headless",    "player",   "female",   "Female" }
+    { "actors/player/male/hwep",        "actors/player/male/headless",      "actors/player/male/body",      "actors/player/male",       "player",   "male",     "Male" },
+    { "actors/player/female/hwep",      "actors/player/female/headless",    "actors/player/male/body",      "actors/player/female",     "player",   "female",   "Female" }
 };
 
 // final entry is texscale in playerpattern (512x -> 2 , 1024x -> 1)

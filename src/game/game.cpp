@@ -456,7 +456,6 @@ namespace game
     VAR(IDF_PERSIST, forceplayerpattern, -1, -1, PLAYERPATTERNS-1);
     VAR(IDF_PERSIST, vanitymodels, 0, 1, 1);
     FVAR(IDF_PERSIST, vanitymaxdist, FVAR_NONZERO, 1024, FVAR_MAX);
-    VAR(IDF_PERSIST, headlessmodels, 0, 1, 1);
     FVAR(IDF_PERSIST, twitchspeed, 0, 2.5f, FVAR_MAX);
 
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, mixerburntex, "textures/residuals/burn", 0);
@@ -591,9 +590,21 @@ namespace game
         if(!*d->vanity) return; // not needed
         vector<char *> vanitylist;
         explodelist(d->vanity, vanitylist);
+        bool hashead = false;
         loopv(vanitylist) if(vanitylist[i] && *vanitylist[i])
+        {
             loopvk(vanities) if(!strcmp(vanities[k].ref, vanitylist[i]))
+            {
                 d->vitems.add(k);
+                if(!vanities[k].type) hashead = true;
+            }
+        }
+        if(!hashead) loopv(vanities)
+        {
+            if(vanities[i].type || strcmp(vanities[i].ref, "head")) continue;
+            d->vitems.add(i);
+            break;
+        }
         vanitylist.deletearrays();
     }
 
@@ -644,8 +655,7 @@ namespace game
 
     bool vanitycheck(gameent *d)
     {
-        if(!vanitymodels || !d || !*d->vanity || (d != focus && d->o.dist(camera1->o) > vanitymaxdist)) return false;
-        return true;
+        return vanitymodels && (d == focus || d->o.dist(camera1->o) <= vanitymaxdist);
     }
 
     bool allowspec(gameent *d, int level, int cn = -1)
@@ -1957,12 +1967,14 @@ namespace game
         vec pos = d->headtag();
         pos.z -= d->zradius*0.125f;
 
-        if(d->headless && !nogore && headlessmodels && vanitycheck(d))
+        if(d->headless)
         {
             if(d->vitems.empty()) vanitybuild(d);
             int found[VANITYMAX] = {0};
+            bool check = vanitycheck(d);
             loopvk(d->vitems) if(vanities.inrange(d->vitems[k]))
             {
+                if(vanities[d->vitems[k]].type && !check) continue;
                 if(found[vanities[d->vitems[k]].type]) continue;
                 if(!(vanities[d->vitems[k]].cond&2)) continue;
                 projs::create(pos, pos, true, d, PRJ_VANITY, -1, 0, (rnd(gibfade)+gibfade)*2, 0, 0, rnd(50)+10, -1, d->vitems[k], 0, 0);
@@ -3540,9 +3552,8 @@ namespace game
     const char *getplayerstate(gameent *d, modelstate &mdl, int third, float size, int flags, modelattach *mdlattach, int *lastoffset)
     {
         int weap = d->weapselect, ai = 0,
-            mdltype = forceplayermodel >= 0 ? forceplayermodel : d->model%PLAYERTYPES,
-            mdlidx = (third && d->headless && !nogore && headlessmodels) || (third == 2 && firstpersoncamera) ? 3 : third;
-        const char *mdlname = playertypes[mdltype][mdlidx];
+            mdltype = forceplayermodel >= 0 ? forceplayermodel : d->model%PLAYERTYPES;
+        const char *mdlname = playertypes[mdltype][third];
         if(d->actortype > A_PLAYER && d->actortype < A_MAX && actors[d->actortype].mdl && *actors[d->actortype].mdl)
             mdlname = actors[d->actortype].mdl;
         bool hasweapon = false, onfloor = d->physstate >= PHYS_SLOPE || d->onladder || physics::liquidcheck(d);
@@ -3671,7 +3682,7 @@ namespace game
                 if(third)
                 {
                     mdlattach[ai++] = modelattach("tag_camera", &d->tag[TAG_CAMERA]); // 5
-                    mdlattach[ai++] = modelattach("tag_head", &d->tag[TAG_HEAD]); // 6
+                    mdlattach[ai++] = modelattach("tag_crown", &d->tag[TAG_CROWN]); // 6
                     mdlattach[ai++] = modelattach("tag_torso", &d->tag[TAG_TORSO]); // 7
                     mdlattach[ai++] = modelattach("tag_waist", &d->tag[TAG_WAIST]); // 8
                     mdlattach[ai++] = modelattach("tag_ljet", &d->tag[TAG_JET_LEFT]); // 9
@@ -3681,15 +3692,17 @@ namespace game
                     mdlattach[ai++] = modelattach("tag_rtoe", &d->tag[TAG_TOE_RIGHT]); // 13
                 }
             }
-            if(third && vanitycheck(d))
+            if(third)
             {
                 if(d->vitems.empty()) vanitybuild(d);
-                int idx = mdlidx, count = 0, found[VANITYMAX] = {0};
+                int count = 0, found[VANITYMAX] = {0};
+                bool check = vanitycheck(d);
                 loopvk(d->vitems) if(vanities.inrange(d->vitems[k]))
                 {
+                    if(vanities[d->vitems[k]].type && !check) continue;
                     if(found[vanities[d->vitems[k]].type]) continue;
-                    if(vanities[d->vitems[k]].cond&1 && idx == 2) continue;
-                    if(vanities[d->vitems[k]].cond&2 && idx == 3) continue;
+                    if(vanities[d->vitems[k]].cond&1 && third == 2) continue;
+                    if(vanities[d->vitems[k]].cond&2 && d->headless) continue;
                     const char *file = vanityfname(d, d->vitems[k]);
                     if(file)
                     {

@@ -1206,7 +1206,7 @@ struct jitterevent
 
 enum
 {
-    TAG_CAMERA, TAG_HEAD, TAG_R_HEAD, TAG_TORSO, TAG_R_TORSO, TAG_LIMBS, TAG_R_LIMBS, TAG_WAIST,
+    TAG_CAMERA, TAG_CROWN, TAG_R_CROWN, TAG_TORSO, TAG_R_TORSO, TAG_LIMBS, TAG_R_LIMBS, TAG_WAIST,
     TAG_MUZZLE, TAG_ORIGIN, TAG_EJECT1, TAG_EJECT2, TAG_JET_LEFT, TAG_JET_RIGHT, TAG_JET_BACK, TAG_TOE_LEFT, TAG_TOE_RIGHT,
     TAG_MAX, TAG_EJECT = TAG_EJECT1, TAG_N_EJECT = 2, TAG_JET = TAG_JET_LEFT, TAG_N_JET = 3, TAG_TOE = TAG_TOE_LEFT, TAG_N_TOE = 2
 };
@@ -1586,12 +1586,12 @@ struct gameent : dynent, clientstate
 
     vec &headtag()
     {
-        if(tag[TAG_HEAD] == vec(-1, -1, -1))
+        if(tag[TAG_CROWN] == vec(-1, -1, -1))
         {
-            tag[TAG_HEAD] = o;
-            tag[TAG_HEAD].z -= headsize()*0.375f;
+            tag[TAG_CROWN] = o;
+            tag[TAG_CROWN].z -= headsize()*0.375f;
         }
-        return tag[TAG_HEAD];
+        return tag[TAG_CROWN];
     }
 
     vec &cameratag()
@@ -1602,9 +1602,9 @@ struct gameent : dynent, clientstate
 
     vec &headbox()
     {
-        if(tag[TAG_R_HEAD] == vec(-1, -1, -1))
-            tag[TAG_R_HEAD] = vec(xradius*0.5f, yradius*0.5f, headsize());
-        return tag[TAG_R_HEAD];
+        if(tag[TAG_R_CROWN] == vec(-1, -1, -1))
+            tag[TAG_R_CROWN] = vec(xradius*0.5f, yradius*0.5f, headsize());
+        return tag[TAG_R_CROWN];
     }
 
     float torsosize()
