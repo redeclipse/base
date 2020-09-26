@@ -411,6 +411,7 @@ void resetgl()
     cleanuptextures();
     cleanupblendmap();
     cleanuplights();
+    cleanuphalo();
     cleanupshaders();
     cleanupgl();
 
@@ -1141,7 +1142,11 @@ int main(int argc, char **argv)
             ircslice();
             if(frameloops)
             {
-                gl_predraw();
+                game::recomputecamera();
+                setviewcell(camera1->o);
+
+                gl_drawhalos();
+
                 cleardynlights();
                 fx::update();
                 updatewind();

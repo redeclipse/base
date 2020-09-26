@@ -648,26 +648,11 @@ void drawskybox(bool clear)
 
     const char *curskybox = getskybox();
     bool blendsky = !curskybox[0] || !sky[0] || sky[0]->type&Texture::ALPHA || getskyblend() < 1;
-    if(clear || drawtex == DRAWTEX_HALO)
+    if(clear)
     {
-        vec color = (drawtex == DRAWTEX_HALO ? vec(0, 0, 0) : getskybgcolour().tocolor()).mul(ldrscale);
+        vec color = getskybgcolour().tocolor().mul(ldrscale);
         glClearColor(color.x, color.y, color.z, 0);
         glClear(GL_COLOR_BUFFER_BIT);
-        if(drawtex == DRAWTEX_HALO)
-        {
-            if(clampsky) glDepthRange(0, 1);
-
-            if(limited)
-            {
-                glEnable(GL_DEPTH_TEST);
-            }
-            else
-            {
-                glDepthMask(GL_TRUE);
-                glDepthFunc(GL_LESS);
-            }
-            return;
-        }
     }
     else if(blendsky && (!getatmo() || getatmoblend() < 1))
     {

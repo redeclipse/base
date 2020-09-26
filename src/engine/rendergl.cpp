@@ -2471,101 +2471,6 @@ void gl_drawview()
     }
 }
 
-GLuint halotex = 0, halofbo = 0;
-
-void clearhalo()
-{
-    if(halotex) { glDeleteTextures(1, &halotex); halotex = 0; }
-    if(halofbo) { glDeleteFramebuffers_(1, &halofbo); halofbo = 0; }
-}
-
-FVARF(IDF_PERSIST, halosize, 0, 1, 1, clearhalo());
-VAR(IDF_PERSIST, haloradius, 1, 2, VAR_MAX);
-FVARF(IDF_PERSIST, halodist, 0, 1024, FVAR_MAX, clearhalo());
-
-void gl_predraw()
-{
-    game::recomputecamera();
-    setviewcell(camera1->o);
-
-    if(hasnoview() || halosize <= 0)
-    {
-        clearhalo();
-        return;
-    }
-
-    int oldrh = renderh, oldrw = renderw, halow = int(renderw*halosize), haloh = int(renderh*halosize);
-    renderw = vieww = hudw = halow;
-    renderh = viewh = hudh = haloh;
-    hud::update(hudw, hudh);
-
-    drawtex = DRAWTEX_HALO;
-    farplane = worldsize*2;
-
-    projmatrix.perspective(fovy, aspect, nearplane, farplane);
-    setcamprojmatrix();
-    game::project();
-
-    glEnable(GL_CULL_FACE);
-    glEnable(GL_DEPTH_TEST);
-
-    xtravertsva = xtraverts = glde = gbatches = vtris = vverts = 0;
-    flipqueries();
-
-    ldrscale = 0.5f;
-    ldrscaleb = ldrscale/255;
-
-    visiblecubes();
-    preparegbuffer();
-
-    game::render();
-    rendermodelbatches();
-    renderavatar();
-    GLERROR;
-
-    glFlush();
-
-    shadegbuffer();
-    GLERROR;
-
-    glDisable(GL_CULL_FACE);
-    glDisable(GL_DEPTH_TEST);
-    drawtex = 0;
-
-    if(!halotex) glGenTextures(1, &halotex);
-    createtexture(halotex, vieww, viewh, NULL, 3, 1, GL_RGBA8, GL_TEXTURE_RECTANGLE);
-    if(!halofbo) glGenFramebuffers_(1, &halofbo);
-    glBindFramebuffer_(GL_FRAMEBUFFER, halofbo);
-    glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, halotex, 0);
-
-    copyhdr(vieww, viewh, halofbo);
-
-    renderh = viewh = hudh = oldrh;
-    renderw = vieww = hudw = oldrw;
-
-    glBindFramebuffer_(GL_FRAMEBUFFER, 0);
-
-    game::recomputecamera();
-    setviewcell(camera1->o);
-
-}
-
-VAR(IDF_PERSIST, drawhalos, 0, 1, 1);
-
-void renderhalo()
-{
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    SETSHADER(hudhalo);
-    LOCALPARAMI(radius, max(1, int(haloradius*halosize)));
-    gle::colorf(1, 1, 1, 1);
-    glBindTexture(GL_TEXTURE_RECTANGLE, halotex);
-    debugquad(0, 0, hudw, hudh, 0, 0, int(hudw*halosize), int(hudh*halosize));
-
-    glDisable(GL_BLEND);
-}
-
 void resethudshader()
 {
     hudshader->set();
@@ -2610,20 +2515,8 @@ void gl_setupframe(bool force)
 {
     hudw = renderw;
     hudh = renderh;
-    if(!force) return;
+    if(!force || drawtex == DRAWTEX_HALO) return;
     setuplights();
-}
-
-VAR(0, debughalo, 0, 0, 1);
-
-void viewhalo()
-{
-    if(!halotex) return;
-    int w = min(hudw, hudh)/3, h = (w*hudh)/hudw;
-    SETSHADER(hudrect);
-    gle::colorf(1, 1, 1);
-    glBindTexture(GL_TEXTURE_RECTANGLE, halotex);
-    debugquad(0, 0, w, h, 0, 0, int(hudw*halosize), int(hudh*halosize));
 }
 
 void gl_drawhud(bool noview = false)
@@ -2632,9 +2525,8 @@ void gl_drawhud(bool noview = false)
     resethudmatrix();
     resethudshader();
 
-    if(drawhalos && halosize > 0) renderhalo();
+    renderhalo();
     debuglights();
-    if(debughalo && halosize > 0) viewhalo();
 
     hud::render(noview);
 }
@@ -2646,6 +2538,40 @@ void gl_drawnoview()
     viewh = hudh;
     hud::update(vieww, viewh);
     gl_drawhud(true);
+}
+
+FVAR(IDF_PERSIST, halosize, 0.25f, 1.0f, 2.0f);
+VAR(IDF_PERSIST, halodist, 32, 1024, VAR_MAX);
+
+void gl_drawhalos()
+{
+    drawtex = DRAWTEX_HALO;
+
+    GLERROR;
+    gl_setupframe();
+    vieww = hudw;
+    viewh = hudh;
+
+    projmatrix.perspective(fovy, aspect, nearplane, farplane);
+    setcamprojmatrix();
+    game::project();
+
+    setuphalo(vieww*halosize, viewh*halosize);
+    resetmodelbatches();
+
+    glClearColor(0, 0, 0, 0);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glEnable(GL_CULL_FACE);
+
+    game::render();
+    rendermodelbatches();
+    renderavatar();
+
+    glDisable(GL_CULL_FACE);
+
+    drawtex = 0;
+    endhalo();
 }
 
 void gl_drawframe()
@@ -2673,7 +2599,6 @@ void gl_drawframe()
 void cleanupgl()
 {
     clearminimap();
-    clearhalo();
     cleanuptimers();
     cleanupscreenquad();
     gle::cleanup();

@@ -643,7 +643,7 @@ static inline int cullmodel(model *m, const vec &center, float radius, int flags
 {
     if(flags&MDL_CULL_DIST && center.dist(camera1->o)/radius>maxmodelradiusdistance) return MDL_CULL_DIST;
     if(flags&MDL_CULL_VFC && isfoggedsphere(radius, center)) return MDL_CULL_VFC;
-    if(flags&MDL_CULL_OCCLUDED && modeloccluded(center, radius)) return MDL_CULL_OCCLUDED;
+    if(flags&MDL_CULL_OCCLUDED && drawtex != DRAWTEX_HALO && modeloccluded(center, radius)) return MDL_CULL_OCCLUDED;
     else if(flags&MDL_CULL_QUERY && d->query && d->query->owner==d && checkquery(d->query)) return MDL_CULL_QUERY;
     return 0;
 }
