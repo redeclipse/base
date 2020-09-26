@@ -631,7 +631,7 @@ namespace entities
 
     void runrails()
     {
-        int secs = game::gametimeelapsed(true);
+        int secs = game::gettimesync();
         if(!railbuilt) buildrails();
         loopv(railways) if(!railways[i].run(secs))
         {

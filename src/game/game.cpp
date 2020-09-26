@@ -3,7 +3,8 @@
 
 namespace game
 {
-    int nextmode = G_EDITMODE, nextmuts = 0, gamestate = G_S_WAITING, gamemode = G_EDITMODE, mutators = 0, maptime = 0, mapstart = 0, timeremaining = 0, timeelapsed = 0, timelast = 0,
+    int nextmode = G_EDITMODE, nextmuts = 0, gamestate = G_S_WAITING, gamemode = G_EDITMODE, mutators = 0,
+        maptime = 0, mapstart = 0, timeremaining = 0, timeelapsed = 0, timelast = 0, timesync = 0,
         lastcamera = 0, lasttvcam = 0, lasttvchg = 0, lastzoom = 0, lastcamcn = -1;
     bool zooming = false, inputmouse = false, inputview = false, inputmode = false, wantsloadoutmenu = false;
     float swayfade = 0, swayspeed = 0, swaydist = 0, bobfade = 0, bobdist = 0;
@@ -501,14 +502,19 @@ namespace game
         return muts;
     }
 
-    int gametimeremain()
+    int gettimeremain()
     {
         return connected() ? max(timeremaining*1000-((gs_timeupdate(gamestate) ? lastmillis : totalmillis)-timelast), 0) : 0;
     }
 
-    int gametimeelapsed(bool force)
+    int gettimeelapsed(bool force)
     {
         return connected() && gs_timeupdate(gamestate) ? max(timeelapsed+(lastmillis-timelast), 0) : (force && maptime > 0 ? lastmillis-maptime : 0);
+    }
+
+    int gettimesync()
+    {
+        return connected() && gs_timeupdate(gamestate) ? max(lastmillis-timesync, 0) : 0;
     }
 
     const char *gamestatename(int type)
@@ -524,8 +530,9 @@ namespace game
     ICOMMAND(0, getgameisplay, "b", (int *n), intret(m_play(*n >= 0 ? *n : gamemode) ? 1 :0));
     ICOMMAND(0, getgamestate, "", (), intret(gamestate));
     ICOMMAND(0, getgamestatestr, "ib", (int *n, int *b), result(gamestates[clamp(*n, 0, 3)][clamp(*b >= 0 ? *b : gamestate, 0, int(G_S_MAX))]));
-    ICOMMAND(0, getgametimeremain, "", (), intret(gametimeremain()));
-    ICOMMAND(0, getgametimeelapsed, "i", (int *n), intret(gametimeelapsed(*n!=0)));
+    ICOMMAND(0, getgametimeremain, "", (), intret(gettimeremain()));
+    ICOMMAND(0, getgametimeelapsed, "i", (int *n), intret(gettimeelapsed(*n!=0)));
+    ICOMMAND(0, getgametimesync, "", (), intret(gettimesync()));
     ICOMMAND(0, getgametimelimit, "bb", (int *g, int *m), intret(m_mmvar(*g >= 0 ? *g : gamemode, *m >= 0 ? *m : mutators, timelimit)));
 
     const char *gametitle() { return connected() ? server::gamename(gamemode, mutators) : "Ready"; }
@@ -2003,6 +2010,7 @@ namespace game
         timeremaining = remain;
         timeelapsed = elapsed;
         timelast = gs_timeupdate(gamestate) ? lastmillis : totalmillis;
+        timesync = gs_timeupdate(gamestate) ? max(lastmillis-elapsed-(player1->ping/2), timesync) : 0;
         if(gs_timeupdate(gamestate) != gs_timeupdate(oldstate)) entities::updaterails();
         if(gs_intermission(gamestate) && gs_playing(oldstate))
         {

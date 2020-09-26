@@ -1630,7 +1630,7 @@ namespace client
         game::nextmode = game::gamemode;
         game::nextmuts = game::mutators;
         game::timeremaining = -1;
-        game::maptime = 0;
+        game::maptime = game::timesync = 0;
         hud::resetscores();
         mapvotes.shrink(0);
         if(editmode) toggleedit();
