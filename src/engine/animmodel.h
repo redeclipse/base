@@ -267,21 +267,14 @@ struct animmodel : model
                 opts[optslen++] = 'a';
                 if(dithered()) opts[optslen++] = 'u';
             }
-            else if(alphablended() && drawtex != DRAWTEX_HALO) opts[optslen++] = 'A';
+            else if(alphablended()) opts[optslen++] = 'A';
             if(owner->model->wind) opts[optslen++] = 'w';
-            if(drawtex != DRAWTEX_HALO)
-            {
-                if(decaled()) opts[optslen++] = decal->type&Texture::ALPHA ? 'D' : 'd';
-                if(bumpmapped()) opts[optslen++] = 'n';
-                if(masked() || envmapped()) opts[optslen++] = 'm';
-                if(envmapped()) opts[optslen++] = 'e';
-                if(mixed()) opts[optslen++] = 'x';
-                if(patterned()) opts[optslen++] = 'p';
-            }
-            else
-            {
-                opts[optslen++] = 'h';
-            }
+            if(decaled()) opts[optslen++] = decal->type&Texture::ALPHA ? 'D' : 'd';
+            if(bumpmapped()) opts[optslen++] = 'n';
+            if(masked() || envmapped()) opts[optslen++] = 'm';
+            if(envmapped()) opts[optslen++] = 'e';
+            if(mixed()) opts[optslen++] = 'x';
+            if(patterned()) opts[optslen++] = 'p';
             if(!cullface) opts[optslen++] = 'c';
             opts[optslen++] = '\0';
 

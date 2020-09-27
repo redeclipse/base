@@ -394,10 +394,8 @@ struct vec4
     vec4 &rotate_around_x(const vec2 &sc) { return rotate_around_x(sc.x, sc.y); }
     vec4 &rotate_around_y(const vec2 &sc) { return rotate_around_y(sc.x, sc.y); }
 
-    static vec4 fromcolor(const vec &v, float trans) { return vec4(v.x, v.y, v.z, trans); }
-    static vec4 fromcolor(const vec &v) { return fromcolor(v, 1); }
-    static vec4 fromcolor(int color, float trans) { return vec4(((color>>16)&0xFF)/255.f, ((color>>8)&0xFF)/255.f, (color&0xFF)/255.f, trans); }
-    static vec4 fromcolor(int color) { return fromcolor(color, 1); }
+    static vec4 fromcolor(const vec &v, float trans = 1) { return vec4(v.x, v.y, v.z, trans); }
+    static vec4 fromcolor(int color, float trans = 1) { return vec4(((color>>16)&0xFF)/255.f, ((color>>8)&0xFF)/255.f, (color&0xFF)/255.f, trans); }
 };
 
 inline vec2::vec2(const vec4 &v) : x(v.x), y(v.y) {}
@@ -1551,8 +1549,8 @@ struct bvec4
     void flip() { mask ^= 0x80808080; }
 
     bvec4 &alpha(uchar n) { a = n; return *this; }
-    static bvec4 fromcolor(const vec &v) { return bvec4(uchar(v.x*255.0f), uchar(v.y*255.0f), uchar(v.z*255.0f), 255); }
-    static bvec4 fromcolor(int color) { return bvec4(uchar((color>>16)&0xFF), uchar((color>>8)&0xFF), uchar(color&0xFF), 255); }
+    static bvec4 fromcolor(const vec &v, float trans = 1) { return bvec4(uchar(v.x*255.0f), uchar(v.y*255.0f), uchar(v.z*255.0f), uchar(trans*255.0f)); }
+    static bvec4 fromcolor(int color, float trans = 1) { return bvec4(uchar((color>>16)&0xFF), uchar((color>>8)&0xFF), uchar(color&0xFF), uchar(trans*255.0f)); }
 };
 
 inline bvec::bvec(const bvec4 &v) : x(v.x), y(v.y), z(v.z) {}

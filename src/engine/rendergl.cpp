@@ -2524,11 +2524,9 @@ void gl_drawhud(bool noview = false)
     hudmatrix.ortho(0, hudw, hudh, 0, -1, 1);
     resethudmatrix();
     resethudshader();
-
-    renderhalo();
-    debuglights();
-
     hud::render(noview);
+    if(!noview) renderhalo();
+    debuglights();
 }
 
 void gl_drawnoview()
@@ -2565,6 +2563,7 @@ void gl_drawhalos()
     glEnable(GL_CULL_FACE);
 
     game::render();
+    rendertransparentmodelbatches();
     rendermodelbatches();
     renderavatar();
 

@@ -1459,9 +1459,7 @@ namespace hud
     void drawzoom(int w, int h)
     {
         if(!gs_playing(game::gamestate) || game::focus->state != CS_ALIVE || !game::inzoom()) return;
-        int frame = lastmillis-game::lastzoom;
-        float pc = frame <= W(game::focus->weapselect, cookzoom) ? float(frame)/float(W(game::focus->weapselect, cookzoom)) : 1.f;
-        if(!game::zooming) pc = 1.f-pc;
+        float pc = game::zoomscale();
         int x = 0, y = 0, c = 0;
         if(w > h)
         {

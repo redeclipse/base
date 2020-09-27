@@ -741,6 +741,17 @@ namespace game
     }
     ICOMMAND(0, iszooming, "", (), intret(inzoom() ? 1 : 0));
 
+    float zoomscale()
+    {
+        if(!inzoom()) return 0.f;
+        float amt = 1;
+        int frame = lastmillis-lastzoom;
+        if(frame <= 0) amt = 0;
+        else if(frame < W(focus->weapselect, cookzoom))
+            amt = clamp(frame/float(W(focus->weapselect, cookzoom)), 0.f, 1.f);
+        return zooming ? amt : 1-amt;
+    }
+
     void resetsway()
     {
         swaydir = swaypush = vec(0, 0, 0);
@@ -2420,11 +2431,7 @@ namespace game
         if(inzoom())
         {
             checkzoom();
-            int frame = lastmillis-lastzoom;
-            float zoom = W(focus->weapselect, cookzoommax)-((W(focus->weapselect, cookzoommax)-W(focus->weapselect, cookzoommin))/float(zoomlevels)*zoomlevel),
-                  diff = float(fov()-zoom), amt = frame < W(focus->weapselect, cookzoom) ? clamp(frame/float(W(focus->weapselect, cookzoom)), 0.f, 1.f) : 1.f;
-            if(!zooming) amt = 1.f-amt;
-            curfov = fov()-(amt*diff);
+            curfov = fov()-(zoomscale()*(fov()-(W(focus->weapselect, cookzoommax)-((W(focus->weapselect, cookzoommax)-W(focus->weapselect, cookzoommin))/float(zoomlevels)*zoomlevel))));
         }
         else curfov = float(fov());
     }
@@ -2591,13 +2598,7 @@ namespace game
         if(firstpersonbob && gs_playing(gamestate) && d->state == CS_ALIVE)
         {
             float scale = 1;
-            if(gameent::is(d) && d == focus && inzoom())
-            {
-                gameent *e = (gameent *)d;
-                int frame = lastmillis-lastzoom;
-                float pc = frame <= W(e->weapselect, cookzoom) ? frame/float(W(e->weapselect, cookzoom)) : 1.f;
-                scale *= zooming ? 1.f-pc : pc;
-            }
+            if(gameent::is(d) && d == focus && inzoom()) scale *= 1-zoomscale();
             if(firstpersonbobtopspeed) scale *= clamp(d->vel.magnitude()/firstpersonbobtopspeed, firstpersonbobmin, 1.f);
             if(scale > 0)
             {
@@ -3177,12 +3178,7 @@ namespace game
         if(firstpersonbob && gs_playing(gamestate) && d->state == CS_ALIVE && !thirdpersonview(true))
         {
             float scale = 1;
-            if(d == focus && inzoom())
-            {
-                int frame = lastmillis-lastzoom;
-                float pc = frame <= W(d->weapselect, cookzoom) ? frame/float(W(d->weapselect, cookzoom)) : 1.f;
-                scale *= zooming ? 1.f-pc : pc;
-            }
+            if(d == focus && inzoom()) scale *= 1-zoomscale();
             if(firstpersonbobtopspeed) scale *= clamp(d->vel.magnitude()/firstpersonbobtopspeed, firstpersonbobmin, 1.f);
             if(scale > 0)
             {
@@ -3943,16 +3939,46 @@ namespace game
         }
     }
 
+    FVAR(IDF_PERSIST, haloedgecut, 0, 0.9f, 1);
+
     void setuphalo(modelstate &mdl, int team, bool alive)
     {
         if(drawtex != DRAWTEX_HALO) return;
         mdl.flags |= MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY;
         if(mdl.flags&MDL_NORENDER) return;
-        if(focus->o.dist(mdl.o) >= halodist) mdl.flags |= MDL_NORENDER;
+
+        if(camera1->o.dist(mdl.o) >= halodist)
+        {
+            mdl.flags |= MDL_NORENDER;
+            return;
+        }
         else if(team >= 0 && m_team(gamemode, mutators) && team != focus->team && focus->state != CS_SPECTATOR)
         {
             vec targ;
-            if(!alive || !getsight(camera1->o, camera1->yaw, camera1->pitch, mdl.o, targ, halodist, curfov, fovy)) mdl.flags |= MDL_NORENDER;
+            if(!alive || !getsight(camera1->o, camera1->yaw, camera1->pitch, mdl.o, targ, halodist, curfov, fovy))
+            {
+                mdl.flags |= MDL_NORENDER;
+                return;
+            }
+        }
+
+        if(inzoom())
+        {
+            vec2 pos(0.5f, 0.5f), cur = pos;
+            float z = 1;
+            if(!vectocursor(mdl.o, pos.x, pos.y, z))
+            {
+                mdl.flags |= MDL_NORENDER;
+                return;
+            }
+
+            float scale = cur.dist(pos)*2;
+            if(scale >= 0.5f)
+            {
+                mdl.flags |= MDL_NORENDER;
+                return;
+            }
+            mdl.color.a *= 1-(scale*2*zoomscale());
         }
     }
 
@@ -3966,6 +3992,7 @@ namespace game
         mdl.color = color;
         getplayermaterials(d, mdl);
         getplayereffects(d, mdl);
+
         if(!drawtex)
         {
             if(d != focus && !d->ai)
@@ -3975,7 +4002,10 @@ namespace game
             }
             if(d != focus || (d != player1 ? fullbrightfocus&1 : fullbrightfocus&2)) mdl.flags |= MDL_FULLBRIGHT;
         }
+
         if(d != focus) setuphalo(mdl, d->team, d->state == CS_ALIVE);
+        else if(drawtex == DRAWTEX_HALO && inzoom()) mdl.flags |= MDL_NORENDER;
+
         rendermodel(mdlname, mdl, e);
         if((d != focus || d->state == CS_DEAD || d->state == CS_WAITING) && !(mdl.flags&MDL_ONLYSHADOW) && third == 1 && d->actortype < A_ENEMY && !shadowmapping && !drawtex && (aboveheaddead || d->state == CS_ALIVE))
             renderabovehead(d);
@@ -4144,12 +4174,7 @@ namespace game
         else if(firstpersonmodel)
         {
             float depthfov = firstpersondepthfov != 0 ? firstpersondepthfov : curfov;
-            if(inzoom())
-            {
-                int frame = lastmillis-lastzoom;
-                float pc = frame <= W(focus->weapselect, cookzoom) ? frame/float(W(focus->weapselect, cookzoom)) : 1.f;
-                depthfov *= zooming ? 1.f-pc : pc;
-            }
+            if(inzoom()) depthfov *= 1-zoomscale();
             setavatarscale(depthfov, firstpersondepth);
             if(focus->state == CS_ALIVE && firstpersonmodel&1) renderplayer(focus, 0, focus->curscale, MDL_NOBATCH, color);
             if(focus->state == CS_ALIVE && firstpersonmodel&2)

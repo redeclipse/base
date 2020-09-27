@@ -5421,6 +5421,9 @@ static void haloblurkernel(int radius, float *weights, float *offsets)
     offsets[MAXBLURRADIUS] = 0;
 }
 
+VAR(IDF_PERSIST, haloblend, 0, 1, 1);
+CVAR(IDF_PERSIST, halocolour, 0xFFFFFF);
+
 void renderhalo()
 {
     float blurweights[MAXBLURRADIUS+1], bluroffsets[MAXBLURRADIUS+1];
@@ -5441,6 +5444,7 @@ void renderhalo()
             glViewport(0, 0, hudw, hudh);
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            gle::color(bvec4(halocolour, uchar(haloblend*255.0f)));
         }
 
         screenquad(halow, haloh);

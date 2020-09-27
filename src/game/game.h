@@ -2320,6 +2320,7 @@ namespace game
     extern bool allowmove(physent *d);
     extern void checkzoom();
     extern bool inzoom();
+    extern float zoomscale();
     extern bool tvmode(bool check = true);
     extern void resetcamera(bool cam = true, bool input = true);
     extern void resetsway();
