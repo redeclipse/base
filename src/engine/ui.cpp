@@ -3687,7 +3687,7 @@ namespace UI
             if(edit->linewrap && edit->maxy == 1) edit->updateheight();
             else edit->pixelheight = FONTH*max(height, 1);
             scale = scale_;
-            if(keyfilter_) SETSTR(keyfilter, keyfilter_);
+            if(keyfilter_ && *keyfilter_) SETSTR(keyfilter, keyfilter_);
             else DELETEA(keyfilter);
         }
         ~TextEditor()
