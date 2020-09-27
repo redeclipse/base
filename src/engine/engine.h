@@ -307,8 +307,6 @@ extern void glerror(const char *file, int line, GLenum error);
 
 #define GLERROR do { if(glerr) { GLenum error = glGetError(); if(error != GL_NO_ERROR) glerror(__FILE__, __LINE__, error); } } while(0)
 
-extern int halodist;
-
 extern void gl_checkextensions();
 extern void gl_init();
 extern void gl_resize();
@@ -527,10 +525,6 @@ extern GLuint shouldscale();
 extern void doscale(GLuint outfbo = 0);
 extern bool debuglights();
 extern void cleanuplights();
-extern void renderhalo();
-extern void setuphalo(int w, int h);
-extern void endhalo();
-extern void cleanuphalo();
 
 extern int avatarmask;
 extern bool useavatarmask();
@@ -993,6 +987,20 @@ namespace recorder
     extern void capture(bool overlay = true);
     extern void cleanup();
 }
+
+// halo
+
+extern int debughalo;
+extern int halodist;
+extern float haloblend;
+extern bvec halocolour;
+extern float haloedgecut;
+
+extern void renderhalo();
+extern void viewhalo();
+extern void drawhalo();
+extern void cleanuphalo();
+
 #endif // STANDALONE
 
 #endif

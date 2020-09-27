@@ -2525,7 +2525,7 @@ void gl_drawhud(bool noview = false)
     resethudmatrix();
     resethudshader();
     hud::render(noview);
-    if(!noview) renderhalo();
+    if(!noview) drawhalo();
     debuglights();
 }
 
@@ -2537,9 +2537,6 @@ void gl_drawnoview()
     hud::update(vieww, viewh);
     gl_drawhud(true);
 }
-
-FVAR(IDF_PERSIST, halosize, 0.25f, 1.0f, 2.0f);
-VAR(IDF_PERSIST, halodist, 32, 1024, VAR_MAX);
 
 void gl_drawhalos()
 {
@@ -2554,23 +2551,9 @@ void gl_drawhalos()
     setcamprojmatrix();
     game::project();
 
-    setuphalo(vieww*halosize, viewh*halosize);
-    resetmodelbatches();
-
-    glClearColor(0, 0, 0, 0);
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    glEnable(GL_CULL_FACE);
-
-    game::render();
-    rendertransparentmodelbatches();
-    rendermodelbatches();
-    renderavatar();
-
-    glDisable(GL_CULL_FACE);
+    renderhalo();
 
     drawtex = 0;
-    endhalo();
 }
 
 void gl_drawframe()

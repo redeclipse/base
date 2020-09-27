@@ -160,6 +160,7 @@ CLIENT_OBJS= \
 	engine/fxemit.o \
 	engine/fxprop.o \
 	engine/grass.o \
+	engine/halo.o \
 	engine/http.o \
 	engine/irc.o \
 	engine/light.o \
