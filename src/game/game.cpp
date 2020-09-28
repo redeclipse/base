@@ -3939,8 +3939,6 @@ namespace game
         }
     }
 
-    FVAR(IDF_PERSIST, haloedgecut, 0, 0.9f, 1);
-
     void setuphalo(modelstate &mdl, int team, bool alive)
     {
         if(drawtex != DRAWTEX_HALO) return;
