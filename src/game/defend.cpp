@@ -145,8 +145,7 @@ namespace defend
             mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED;
             mdl.yaw = b.yaw;
             mdl.o = b.render;
-            rendermodel("props/point", mdl);
-            game::setuphalo(mdl, b.owner);
+            game::drawmodel("props/point", mdl, b.render, b.owner);
             if(drawtex != DRAWTEX_HALO)
             {
                 if(b.enemy && b.owner)

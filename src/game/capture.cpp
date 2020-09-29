@@ -191,8 +191,7 @@ namespace capture
                 vec flagpos = pos;
                 mdl.o = flagpos;
                 mdl.color = vec4(1, 1, 1, blend);
-                game::setuphalo(mdl, f.team);
-                rendermodel("props/flag", mdl);
+                game::drawmodel("props/flag", mdl, flagpos, f.team);
                 flagpos.z += enttype[AFFINITY].radius/3;
                 if(drawtex != DRAWTEX_HALO && game::affinityhint)
                     part_create(PART_HINT_SOFT, 1, flagpos, effect.tohexcolor(), enttype[AFFINITY].radius/2*game::affinityhintsize, blend*game::affinityhintblend*camera1->o.distrange(flagpos, game::affinityhintfadeat, game::affinityhintfadecut));
@@ -214,8 +213,7 @@ namespace capture
                 while(mdl.yaw >= 360.f) mdl.yaw -= 360.f;
                 mdl.o = flagpos;
                 mdl.color = vec4(1, 1, 1, blend);
-                game::setuphalo(mdl, f.team);
-                rendermodel("props/flag", mdl);
+                game::drawmodel("props/flag", mdl, flagpos, f.team);
                 if(drawtex != DRAWTEX_HALO)
                 {
                     flagpos.z += enttype[AFFINITY].radius/3;
@@ -239,8 +237,7 @@ namespace capture
             basemdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
             basemdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED;
             basemdl.o = f.render;
-            game::setuphalo(basemdl, f.team);
-            rendermodel("props/point", basemdl);
+            game::drawmodel("props/point", basemdl, f.render, f.team);
             if(drawtex != DRAWTEX_HALO)
             {
                 vec above = f.spawnloc;

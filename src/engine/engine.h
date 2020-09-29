@@ -989,12 +989,10 @@ namespace recorder
 }
 
 // halo
-
 extern int debughalo;
 extern int halodist;
 extern float haloblend;
 extern bvec halocolour;
-extern float haloedgecut;
 
 extern void renderhalo();
 extern void viewhalo();

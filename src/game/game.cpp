@@ -3939,45 +3939,45 @@ namespace game
         }
     }
 
-    void setuphalo(modelstate &mdl, int team, bool alive)
+    void drawmodel(const char *name, modelstate &mdl, const vec &o, int team, bool alive, dynent *e)
     {
-        if(drawtex != DRAWTEX_HALO) return;
-        mdl.flags |= MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY;
-        if(mdl.flags&MDL_NORENDER) return;
-
-        if(camera1->o.dist(mdl.o) >= halodist)
+        if(drawtex == DRAWTEX_HALO)
         {
-            mdl.flags |= MDL_NORENDER;
-            return;
-        }
-        else if(team >= 0 && m_team(gamemode, mutators) && team != focus->team && focus->state != CS_SPECTATOR)
-        {
-            vec targ;
-            if(!alive || !getsight(camera1->o, camera1->yaw, camera1->pitch, mdl.o, targ, halodist, curfov, fovy))
+            if(camera1->o.dist(o) >= halodist)
             {
                 mdl.flags |= MDL_NORENDER;
                 return;
             }
+            else if(team >= 0 && m_team(gamemode, mutators) && team != focus->team && focus->state != CS_SPECTATOR)
+            {
+                vec targ;
+                if(!alive || !getsight(camera1->o, camera1->yaw, camera1->pitch, o, targ, halodist, curfov, fovy))
+                {
+                    mdl.flags |= MDL_NORENDER;
+                    return;
+                }
+            }
+            if(inzoom())
+            {
+                vec2 pos(0.5f, 0.5f), cur = pos;
+                float z = 1;
+                if(!vectocursor(o, pos.x, pos.y, z))
+                {
+                    mdl.flags |= MDL_NORENDER;
+                    return;
+                }
+
+                float scale = cur.dist(pos)*2;
+                if(scale >= 0.75f)
+                {
+                    mdl.flags |= MDL_NORENDER;
+                    return;
+                }
+                if(scale >= 0.25f) mdl.color.a *= 1-((scale-0.25f)*2*zoomscale());
+            }
         }
 
-        if(inzoom())
-        {
-            vec2 pos(0.5f, 0.5f), cur = pos;
-            float z = 1;
-            if(!vectocursor(mdl.o, pos.x, pos.y, z))
-            {
-                mdl.flags |= MDL_NORENDER;
-                return;
-            }
-
-            float scale = cur.dist(pos)*2;
-            if(scale >= 0.5f)
-            {
-                mdl.flags |= MDL_NORENDER;
-                return;
-            }
-            mdl.color.a *= 1-(scale*2*zoomscale());
-        }
+        rendermodel(name, mdl, e);
     }
 
     void renderplayer(gameent *d, int third, float size, int flags = 0, const vec4 &color = vec4(1, 1, 1, 1), int *lastoffset = NULL)
@@ -4000,11 +4000,10 @@ namespace game
             }
             if(d != focus || (d != player1 ? fullbrightfocus&1 : fullbrightfocus&2)) mdl.flags |= MDL_FULLBRIGHT;
         }
+        if(d == focus && drawtex == DRAWTEX_HALO && inzoom()) mdl.flags |= MDL_NORENDER;
 
-        if(d != focus) setuphalo(mdl, d->team, d->state == CS_ALIVE);
-        else if(drawtex == DRAWTEX_HALO && inzoom()) mdl.flags |= MDL_NORENDER;
+        drawmodel(mdlname, mdl, d->center(), d->team, d->state == CS_ALIVE, e);
 
-        rendermodel(mdlname, mdl, e);
         if((d != focus || d->state == CS_DEAD || d->state == CS_WAITING) && !(mdl.flags&MDL_ONLYSHADOW) && third == 1 && d->actortype < A_ENEMY && !shadowmapping && !drawtex && (aboveheaddead || d->state == CS_ALIVE))
             renderabovehead(d);
     }

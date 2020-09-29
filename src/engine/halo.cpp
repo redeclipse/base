@@ -9,7 +9,6 @@ FVAR(IDF_PERSIST, halosize, 0.25f, 1.0f, 2.0f);
 VAR(IDF_PERSIST, halodist, 32, 1024, VAR_MAX);
 FVAR(IDF_PERSIST, haloblend, 0, 1, 1);
 CVAR(IDF_PERSIST, halocolour, 0xFFFFFF);
-FVAR(IDF_PERSIST, haloedgecut, 0, 0.9f, 1);
 
 void setuphalo(int w, int h)
 {

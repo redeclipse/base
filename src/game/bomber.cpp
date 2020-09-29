@@ -275,8 +275,7 @@ namespace bomber
                     if(f.owner == game::focus)
                         trans *= game::focus != game::player1 ? game::affinityfollowblend : game::affinitythirdblend;
                     mdl.color.a *= trans;
-                    game::setuphalo(mdl);
-                    rendermodel("props/ball", mdl);
+                    game::drawmodel("props/ball", mdl, above);
                     if(drawtex != DRAWTEX_HALO)
                     {
                         float fluc = interval >= 500 ? (1500-interval)/1000.f : (500+interval)/1000.f;
@@ -327,8 +326,7 @@ namespace bomber
                 basemdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED;
                 basemdl.o = f.render;
                 basemdl.yaw = f.yaw;
-                game::setuphalo(basemdl, f.team);
-                rendermodel("props/point", basemdl);
+                game::drawmodel("props/point", basemdl, f.render, f.team);
             }
         }
     }
