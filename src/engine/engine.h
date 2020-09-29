@@ -819,7 +819,7 @@ extern void conline(int type, const char *sf, int n);
 extern int dynentsize;
 extern bool overlapsdynent(const vec &o, float radius);
 extern void rotatebb(vec &center, vec &radius, int yaw, int pitch, int roll = 0);
-extern bool getsight(vec &o, float yaw, float pitch, vec &q, vec &v, float mdist, float fovx, float fovy);
+extern bool getsight(const vec &o, float yaw, float pitch, const vec &q, vec &v, float mdist, float fovx, float fovy);
 
 // worldio
 extern char *maptitle, *mapauthor, *mapname, *maptext, *mapdesc;
