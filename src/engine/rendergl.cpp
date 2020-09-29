@@ -2524,8 +2524,8 @@ void gl_drawhud(bool noview = false)
     hudmatrix.ortho(0, hudw, hudh, 0, -1, 1);
     resethudmatrix();
     resethudshader();
-    hud::render(noview);
     if(!noview) drawhalo();
+    hud::render(noview);
     debuglights();
 }
 
@@ -2540,6 +2540,7 @@ void gl_drawnoview()
 
 void gl_drawhalos()
 {
+    if(hasnoview()) return;
     drawtex = DRAWTEX_HALO;
 
     GLERROR;
