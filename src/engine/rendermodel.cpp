@@ -278,6 +278,17 @@ void mdllod(char *name, float *dist)
 }
 COMMAND(0, mdllod, "sf");
 
+void mdlparenttag(char *name, float *tx, float *ty, float *tz, float *rx, float *ry, float *rz)
+{
+    checkmdl;
+    float cx = *rx ? cosf(*rx/2*RAD) : 1, sx = *rx ? sinf(*rx/2*RAD) : 0, cy = *ry ? cosf(*ry/2*RAD) : 1, sy = *ry ? sinf(*ry/2*RAD) : 0, cz = *rz ? cosf(*rz/2*RAD) : 1, sz = *rz ? sinf(*rz/2*RAD) : 0;
+    parenttag &m = loadingmodel->parenttags.add();
+    m.name = newstring(name);
+    m.matrix = matrix4x3(matrix3(quat(sx*cy*cz - cx*sy*sz, cx*sy*cz + sx*cy*sz, cx*cy*sz - sx*sy*cz, cx*cy*cz + sx*sy*sz)),
+                vec(*tx, *ty, *tz));
+}
+COMMAND(0, mdlparenttag, "sffffff");
+
 void mdlname()
 {
     checkmdl;

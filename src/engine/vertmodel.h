@@ -265,21 +265,38 @@ struct vertmodel : animmodel
 
         int totalframes() const { return numframes; }
 
+        matrix4x3 tagmatrix(part *p, int i)
+        {
+            loopvk(p->links)
+            {
+                if(k == i || !p->links[k].p) continue;
+                animmodel *m = p->links[k].p->model;
+                if(!m) continue;
+                loopvj(m->parenttags)
+                {
+                    parenttag &t = m->parenttags[j];
+                    if(!cubematchstr(tags[i].name, t.name)) continue;
+                    return t.matrix;
+                }
+            }
+            return tags[i].matrix;
+        }
+
         void concattagtransform(part *p, int i, const matrix4x3 &m, matrix4x3 &n)
         {
-            n.mul(m, tags[i].matrix);
+            n.mul(m, tagmatrix(p, i));
         }
 
         void calctagmatrix(part *p, int i, const animstate &as, matrix4 &matrix)
         {
-            const matrix4x3 &tag1 = tags[as.cur.fr1*numtags + i].matrix,
-                            &tag2 = tags[as.cur.fr2*numtags + i].matrix;
+            const matrix4x3 &tag1 = tagmatrix(p, as.cur.fr1*numtags + i),
+                            &tag2 = tagmatrix(p, as.cur.fr2*numtags + i);
             matrix4x3 tag;
             tag.lerp(tag1, tag2, as.cur.t);
             if(as.interp<1)
             {
-                const matrix4x3 &tag1p = tags[as.prev.fr1*numtags + i].matrix,
-                                &tag2p = tags[as.prev.fr2*numtags + i].matrix;
+                const matrix4x3 &tag1p = tagmatrix(p, as.prev.fr1*numtags + i),
+                                &tag2p = tagmatrix(p, as.prev.fr2*numtags + i);
                 matrix4x3 tagp;
                 tagp.lerp(tag1p, tag2p, as.prev.t);
                 tag.lerp(tagp, tag, as.interp);

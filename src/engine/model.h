@@ -1,6 +1,15 @@
 enum { MDL_MD2 = 0, MDL_MD3, MDL_MD5, MDL_OBJ, MDL_SMD, MDL_IQM, NUMMODELTYPES };
 enum { MDL_BLEND_TEST = 0, MDL_BLEND_ALPHA };
 
+struct parenttag
+{
+    char *name;
+    matrix4x3 matrix;
+
+    parenttag() : name(NULL) {}
+    ~parenttag() { DELETEA(name); }
+};
+
 struct model
 {
     char *name;
@@ -13,6 +22,7 @@ struct model
     float rejectradius, height, collidexyradius, collideheight;
     char *collidemodel;
     int collide, batch;
+    vector<parenttag> parenttags;
 
     model(const char *name) : name(name ? newstring(name) : NULL), spinyaw(0), spinpitch(0), spinroll(0), offsetyaw(0), offsetpitch(0), offsetroll(0), shadow(true), alphashadow(true), depthoffset(false), wind(0.0f), scale(1.0f), translate(0, 0, 0), bih(0), bbcenter(0, 0, 0), bbradius(-1, -1, -1), bbextend(0, 0, 0), collidecenter(0, 0, 0), collideradius(-1, -1, -1), rejectradius(-1), height(0.9f), collidexyradius(0), collideheight(0), collidemodel(NULL), collide(COLLIDE_OBB), batch(-1) {}
     virtual ~model() { DELETEA(name); DELETEP(bih); }

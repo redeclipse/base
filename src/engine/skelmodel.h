@@ -986,10 +986,27 @@ struct skelmodel : animmodel
             loopv(antipodes) sc.bdata[antipodes[i].child].fixantipodal(sc.bdata[antipodes[i].parent]);
         }
 
+        matrix4x3 tagmatrix(part *p, int i)
+        {
+            loopvk(p->links)
+            {
+                if(k == i || !p->links[k].p) continue;
+                animmodel *m = p->links[k].p->model;
+                if(!m) continue;
+                loopvj(m->parenttags)
+                {
+                    parenttag &t = m->parenttags[j];
+                    if(!cubematchstr(tags[i].name, t.name)) continue;
+                    return t.matrix;
+                }
+            }
+            return tags[i].matrix;
+        }
+
         void concattagtransform(part *p, int i, const matrix4x3 &m, matrix4x3 &n)
         {
             matrix4x3 t;
-            t.mul(bones[tags[i].bone].base, tags[i].matrix);
+            t.mul(bones[tags[i].bone].base, tagmatrix(p, i));
             n.mul(m, t);
         }
 
@@ -1003,7 +1020,7 @@ struct skelmodel : animmodel
                 if(sc) q.mul(sc->bdata[bones[t.bone].interpindex], bones[t.bone].base);
                 else q = bones[t.bone].base;
                 matrix4x3 m;
-                m.mul(q, t.matrix);
+                m.mul(q, tagmatrix(p, l.tag));
                 m.d.mul(p->model->scale * sizescale);
                 l.matrix = m;
             }
