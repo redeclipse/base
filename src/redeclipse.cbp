@@ -28,6 +28,7 @@
 					<Add option="-ffast-math" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
+                    <Add option="-std=c++11" />
 					<Add option="-fno-exceptions" />
 					<Add option="-fno-rtti" />
 					<Add option="-Wno-invalid-offsetof" />
@@ -82,6 +83,7 @@
 					<Add option="-g" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
+                    <Add option="-std=c++11" />
 					<Add option="-Wno-invalid-offsetof" />
 					<Add option="-DUSE_STEAM=1" />
 					<Add option="-DUSE_DISCORD=1" />
@@ -133,6 +135,7 @@
 					<Add option="-m32" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
+                    <Add option="-std=c++11" />
 					<Add option="-finline-functions" />
 					<Add option="-Wno-invalid-offsetof" />
 					<Add option="-DUSE_STEAM=1" />
@@ -187,6 +190,7 @@
 					<Add option="-ffast-math" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
+                    <Add option="-std=c++11" />
 					<Add option="-fno-exceptions" />
 					<Add option="-fno-rtti" />
 					<Add option="-Wno-invalid-offsetof" />
@@ -235,6 +239,7 @@
 					<Add option="-g" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
+                    <Add option="-std=c++11" />
 					<Add option="-Wno-invalid-offsetof" />
 					<Add option="-DSTANDALONE" />
 					<Add option="-DUSE_STEAM=1" />
@@ -282,6 +287,7 @@
 					<Add option="-m32" />
 					<Add option="-ffast-math" />
 					<Add option="-fsigned-char" />
+                    <Add option="-std=c++11" />
 					<Add option="-fno-exceptions" />
 					<Add option="-mwindows" />
 					<Add option="-DSTANDALONE" />
@@ -321,6 +327,7 @@
 					<Add option="-m32" />
 					<Add option="-ffast-math" />
 					<Add option="-fsigned-char" />
+                    <Add option="-std=c++11" />
 					<Add option="-fno-exceptions" />
 					<Add option="-fno-rtti" />
 					<Add option="-mwindows" />
@@ -366,6 +373,7 @@
 					<Add option="-ffast-math" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
+                    <Add option="-std=c++11" />
 					<Add option="-fno-exceptions" />
 					<Add option="-fno-rtti" />
 					<Add option="-Wno-invalid-offsetof" />
@@ -420,6 +428,7 @@
 					<Add option="-g" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
+                    <Add option="-std=c++11" />
 					<Add option="-Wno-invalid-offsetof" />
 					<Add option="-DUSE_STEAM=1" />
 					<Add option="-DUSE_DISCORD=1" />
@@ -471,6 +480,7 @@
 					<Add option="-m64" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
+                    <Add option="-std=c++11" />
 					<Add option="-finline-functions" />
 					<Add option="-Wno-invalid-offsetof" />
 					<Add option="-DUSE_STEAM=1" />
@@ -525,6 +535,7 @@
 					<Add option="-ffast-math" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
+                    <Add option="-std=c++11" />
 					<Add option="-fno-exceptions" />
 					<Add option="-fno-rtti" />
 					<Add option="-Wno-invalid-offsetof" />
@@ -573,6 +584,7 @@
 					<Add option="-g" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
+                    <Add option="-std=c++11" />
 					<Add option="-Wno-invalid-offsetof" />
 					<Add option="-DSTANDALONE" />
 					<Add option="-DUSE_STEAM=1" />
@@ -620,6 +632,7 @@
 					<Add option="-m64" />
 					<Add option="-ffast-math" />
 					<Add option="-fsigned-char" />
+                    <Add option="-std=c++11" />
 					<Add option="-fno-exceptions" />
 					<Add option="-mwindows" />
 					<Add option="-DSTANDALONE" />
@@ -659,6 +672,7 @@
 					<Add option="-m64" />
 					<Add option="-ffast-math" />
 					<Add option="-fsigned-char" />
+                    <Add option="-std=c++11" />
 					<Add option="-fno-exceptions" />
 					<Add option="-fno-rtti" />
 					<Add option="-mwindows" />
