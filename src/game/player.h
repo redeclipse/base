@@ -251,24 +251,11 @@ APFVAR(IDF_GAMEMOD, 0, weightextra, FVAR_MIN, FVAR_MAX,
 #define VANITYMAX 16
 #define ATTACHMENTMAX VANITYMAX+14
 
-struct vanityfile
-{
-    char *id, *name;
-    bool proj;
-
-    vanityfile() : id(NULL), name(NULL), proj(false) {}
-    vanityfile(const char *d, const char *n, bool p = false) : id(newstring(d)), name(newstring(n)), proj(p) {}
-    ~vanityfile()
-    {
-        if(id) delete[] id;
-        if(name) delete[] name;
-    }
-};
 struct vanity
 {
     int type, cond, style;
     char *ref, *model, *proj, *name, *tag;
-    vector<vanityfile> files;
+    vector<char *> files;
 
     vanity() : type(-1), cond(0), style(0), ref(NULL), model(NULL), proj(NULL), name(NULL), tag(NULL) {}
     vanity(int t, const char *r, const char *n, const char *g, int c, int s) : type(t), cond(c), style(s), ref(newstring(r)), model(NULL), proj(NULL), name(newstring(n)), tag(newstring(g)) { setmodel(r); }
@@ -279,7 +266,7 @@ struct vanity
         if(proj) delete[] proj;
         if(name) delete[] name;
         if(tag) delete[] tag;
-        loopvrev(files) files.remove(i);
+        files.deletearrays();
     }
 
     void setmodel(const char *r)

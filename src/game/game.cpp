@@ -540,7 +540,7 @@ namespace game
 
     enum
     {
-        VANITYSTYLE_NONE = 0, VANITYSTYLE_PRIV = 1<<0, VANITYSTYLE_ACTORMODEL = 1<<1,
+        VANITYSTYLE_NONE = 0, VANITYSTYLE_PRIV = 1<<0, VANITYSTYLE_MODEL = 1<<1, VANITYSTYLE_HEAD = 1<<2
     };
 
     void vanityreset()
@@ -592,27 +592,39 @@ namespace game
     }
     ICOMMAND(0, findvanity, "s", (char *s), intret(vanityfind(s)));
 
-    void vanitybuild(gameent *d)
+    int vanitybuild(gameent *d)
     {
-        if(!*d->vanity) return; // not needed
-        vector<char *> vanitylist;
-        explodelist(d->vanity, vanitylist);
-        bool hashead = false;
-        loopv(vanitylist) if(vanitylist[i] && *vanitylist[i])
+        int head = -1;
+        if(d->vitems.empty() && *d->vanity)
         {
-            loopvk(vanities) if(!strcmp(vanities[k].ref, vanitylist[i]))
+            vector<char *> vanitylist;
+            explodelist(d->vanity, vanitylist);
+            loopv(vanitylist) if(vanitylist[i] && *vanitylist[i])
             {
-                d->vitems.add(k);
-                if(!vanities[k].type) hashead = true;
+                loopvk(vanities) if(!strcmp(vanities[k].ref, vanitylist[i]))
+                {
+                    if(!vanities[k].type && !vanities.inrange(head)) head = d->vitems.length();
+                    d->vitems.add(k);
+                }
+            }
+            vanitylist.deletearrays();
+        }
+        else
+        {
+            loopv(d->vitems) if(vanities.inrange(d->vitems[i]) && !vanities[d->vitems[i]].type)
+            {
+                head = i;
+                break;
             }
         }
-        if(!hashead) loopv(vanities)
+        if(!vanities.inrange(head)) loopv(vanities)
         {
-            if(vanities[i].type || strcmp(vanities[i].ref, "head")) continue;
+            if(vanities[i].type) continue;
+            head = d->vitems.length();
             d->vitems.add(i);
             break;
         }
-        vanitylist.deletearrays();
+        return head;
     }
 
     const char *vanitymodel(gameent *d)
@@ -621,7 +633,7 @@ namespace game
         return playertypes[d->model%PLAYERTYPES][5];
     }
 
-    const char *vanityfname(gameent *d, int n, bool proj)
+    const char *vanityfname(gameent *d, int n, int head, bool proj)
     {
         const char *file = NULL;
         if(vanities.inrange(n))
@@ -631,30 +643,21 @@ namespace game
             else
             {
                 // Unique ID for this vanity setup.
-                defformatstring(id, "%s:%s",
-                                (vanities[n].style & VANITYSTYLE_PRIV) ? server::privnamex(d->privilege, d->actortype, true) : "",
-                                (vanities[n].style & VANITYSTYLE_ACTORMODEL) ? vanitymodel(d) : "");
+                defformatstring(id, "%s", vanities[n].model);
+                if(vanities[n].style&VANITYSTYLE_HEAD && vanities.inrange(head))
+                {
+                    const char *name = vanityfname(d, head, -1, proj);
+                    if(name && *name) concformatstring(id, "/%s", name);
+                }
+                else if(vanities[n].style&VANITYSTYLE_MODEL) concformatstring(id, "/%s", vanitymodel(d));
+                if(vanities[n].style&VANITYSTYLE_PRIV) concformatstring(id, "/%s", server::privnamex(d->privilege, d->actortype, true));
+                if(proj) concatstring(id, "/proj");
 
                 // Check if we've already found the file.
-                loopv(vanities[n].files)
-                    if(vanities[n].files[i].proj == proj && !strcmp(vanities[n].files[i].id, id))
-                        file = vanities[n].files[i].name;
+                loopv(vanities[n].files) if(!strcmp(vanities[n].files[i], id)) file = vanities[n].files[i];
 
                 // If not already found, build file name from each style.
-                if(!file)
-                {
-                    defformatstring(fn, "%s", vanities[n].model);
-                    if(vanities[n].style & VANITYSTYLE_PRIV) concformatstring(fn, "/%s", server::privnamex(d->privilege, d->actortype, true));
-                    if(vanities[n].style & VANITYSTYLE_ACTORMODEL) concformatstring(fn, "/%s", vanitymodel(d));
-                    if(proj) concatstring(fn, "/proj");
-
-                    // Add to the list.
-                    vanityfile &f = vanities[n].files.add();
-                    f.id = newstring(id);
-                    f.name = newstring(fn);
-                    f.proj = proj;
-                    file = f.name;
-                }
+                if(!file) file = vanities[n].files.add(newstring(id));
             }
         }
         return file;
@@ -1987,15 +1990,14 @@ namespace game
 
         if(d->headless)
         {
-            if(d->vitems.empty()) vanitybuild(d);
-            int found[VANITYMAX] = {0};
+            int head = vanitybuild(d), found[VANITYMAX] = {0};
             bool check = vanitycheck(d);
             loopvk(d->vitems) if(vanities.inrange(d->vitems[k]))
             {
                 if(vanities[d->vitems[k]].type && !check) continue;
                 if(found[vanities[d->vitems[k]].type]) continue;
                 if(!(vanities[d->vitems[k]].cond&2)) continue;
-                projs::create(pos, pos, true, d, PRJ_VANITY, -1, 0, (rnd(gibfade)+gibfade)*2, 0, 0, rnd(50)+10, -1, d->vitems[k], 0, 0);
+                projs::create(pos, pos, true, d, PRJ_VANITY, -1, 0, (rnd(gibfade)+gibfade)*2, 0, 0, rnd(50)+10, -1, d->vitems[k], head, 0);
                 found[vanities[d->vitems[k]].type]++;
             }
         }
@@ -3698,8 +3700,7 @@ namespace game
             }
             if(third)
             {
-                if(d->vitems.empty()) vanitybuild(d);
-                int count = 0, found[VANITYMAX] = {0};
+                int count = 0, head = vanitybuild(d), found[VANITYMAX] = {0};
                 bool check = vanitycheck(d);
                 loopvk(d->vitems) if(vanities.inrange(d->vitems[k]))
                 {
@@ -3707,7 +3708,7 @@ namespace game
                     if(found[vanities[d->vitems[k]].type]) continue;
                     if(vanities[d->vitems[k]].cond&1 && third == 2) continue;
                     if(vanities[d->vitems[k]].cond&2 && d->headless) continue;
-                    const char *file = vanityfname(d, d->vitems[k]);
+                    const char *file = vanityfname(d, d->vitems[k], head);
                     if(file)
                     {
                         mdlattach[ai++] = modelattach(vanities[d->vitems[k]].tag, file);

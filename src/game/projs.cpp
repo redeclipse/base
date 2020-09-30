@@ -1091,7 +1091,7 @@ namespace projs
                         return;
                     }
                 }
-                proj.mdlname = game::vanityfname(proj.owner, proj.weap, true);
+                proj.mdlname = game::vanityfname(proj.owner, proj.weap, proj.value, true);
                 proj.reflectivity = 0.f;
                 proj.elasticity = vanityelasticity;
                 proj.relativity = vanityrelativity;

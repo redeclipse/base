@@ -2288,9 +2288,7 @@ namespace game
 
     extern int getweapfx(int type);
     extern bool needname(gameent *d);
-    extern void vanityreset();
-    extern void vanitybuild(gameent *d);
-    extern const char *vanityfname(gameent *d, int n, bool proj = false);
+    extern const char *vanityfname(gameent *d, int n, int head = -1, bool proj = false);
     extern void followswitch(int n, bool other = false);
     extern vector<cament *> cameras;
     extern gameent *newclient(int cn);
