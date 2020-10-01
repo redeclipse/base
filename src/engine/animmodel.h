@@ -122,11 +122,11 @@ struct animmodel : model
 
         part *owner;
         Texture *tex, *decal, *masks, *envmap, *normalmap;
-        Shader *shader, *rsmshader, *haloshader;
+        Shader *shader, *rsmshader;
         int cullface, flags;
         shaderparamskey *key;
 
-        skin() : owner(0), tex(notexture), decal(NULL), masks(notexture), envmap(NULL), normalmap(NULL), shader(NULL), rsmshader(NULL), haloshader(NULL), cullface(1), flags(0), key(NULL) {}
+        skin() : owner(0), tex(notexture), decal(NULL), masks(notexture), envmap(NULL), normalmap(NULL), shader(NULL), rsmshader(NULL), cullface(1), flags(0), key(NULL) {}
 
         bool firstmodel(const animstate *as) const
         {
@@ -169,7 +169,14 @@ struct animmodel : model
             LOCALPARAMF(texscroll, scrollu*lastmillis/1000.0f, scrollv*lastmillis/1000.0f);
             if(alphatested()) LOCALPARAMF(alphatest, alphatest);
 
-            if(!skinned) return;
+            if(!skinned)
+            {
+                if(drawtex == DRAWTEX_HALO)
+                {
+                    LOCALPARAM(material1, modelmaterial[0].tocolor());
+                }
+                return;
+            }
 
             if(color.r < 0) LOCALPARAMF(colorscale, colorscale.r, colorscale.g, colorscale.b, colorscale.a*blend);
             else LOCALPARAMF(colorscale, color.r, color.g, color.b, colorscale.a*blend);
@@ -185,16 +192,8 @@ struct animmodel : model
                 LOCALPARAMF(patternscale, patternscale);
             }
 
-            if(drawtex == DRAWTEX_HALO)
-            {
-                LOCALPARAM(material1, modelmaterial[0].tocolor());
-                LOCALPARAM(material2, modelmaterial[1].tocolor());
-            }
-            else
-            {
-                LOCALPARAM(material1, material1 > 0 ? modelmaterial[min(material1, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.x) : vec(matbright.x));
-                LOCALPARAM(material2, material2 > 0 ? modelmaterial[min(material2, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.y) : vec(matbright.y));
-            }
+            LOCALPARAM(material1, material1 > 0 ? modelmaterial[min(material1, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.x) : vec(matbright.x));
+            LOCALPARAM(material2, material2 > 0 ? modelmaterial[min(material2, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.y) : vec(matbright.y));
 
             if(fullbright) LOCALPARAMF(fullbright, 0.0f, fullbright);
             else LOCALPARAMF(fullbright, 1.0f, as->cur.anim&ANIM_FULLBRIGHT ? 0.5f*fullbrightmodels/100.0f : 0.0f);
@@ -221,27 +220,6 @@ struct animmodel : model
                 } while(0)
             #define LOADMODELSHADER(name) DOMODELSHADER(name, return name##shader)
             #define SETMODELSHADER(m, name) DOMODELSHADER(name, (m).setshader(name##shader))
-
-            if(drawtex == DRAWTEX_HALO)
-            {
-                if(haloshader) return haloshader;
-
-                string opts;
-                int optslen = 0;
-                if(alphatested())
-                {
-                    opts[optslen++] = 'a';
-                    if(dithered()) opts[optslen++] = 'u';
-                }
-                if(owner->model->wind) opts[optslen++] = 'w';
-                opts[optslen++] = 'h';
-                if(!cullface) opts[optslen++] = 'c';
-                opts[optslen++] = '\0';
-
-                defformatstring(name, "model%s", opts);
-                haloshader = generateshader(name, "modelshader \"%s\"", opts);
-                return haloshader;
-            }
 
             if(shadowmapping == SM_REFLECT)
             {
@@ -296,9 +274,11 @@ struct animmodel : model
         void preloadshader()
         {
             loadshader();
-            if(alphatested() && owner->model->alphashadow) useshaderbyname(owner->model->wind ? "windowshadowmodel" : "alphashadowmodel");
+            if(alphatested() && owner->model->alphashadow) useshaderbyname(owner->model->wind ? "windshadowmodel" : "alphashadowmodel");
             else useshaderbyname("shadowmodel");
             if(useradiancehints()) useshaderbyname(alphatested() ? "rsmalphamodel" : "rsmmodel");
+            if(alphatested() && owner->model->alphashadow) useshaderbyname(owner->model->wind ? "windhalomodel" : "alphahalomodel");
+            else useshaderbyname("halomodel");
         }
 
         void setshader(mesh &m, const animstate *as, bool force = false)
@@ -316,7 +296,25 @@ struct animmodel : model
 
             if(as->cur.anim&ANIM_NOSKIN)
             {
-                if(alphatested() && owner->model->alphashadow)
+                if(drawtex == DRAWTEX_HALO)
+                {
+                    if(alphatested() && owner->model->alphashadow)
+                    {
+                        if(tex!=lasttex)
+                        {
+                            glBindTexture(GL_TEXTURE_2D, tex->id);
+                            lasttex = tex;
+                        }
+                        if(owner->model->wind) SETMODELSHADER(b, windhalomodel);
+                        else SETMODELSHADER(b, alphahalomodel);
+                    }
+                    else
+                    {
+                        SETMODELSHADER(b, halomodel);
+                    }
+                    setshaderparams(b, as, false);
+                }
+                else if(alphatested() && owner->model->alphashadow)
                 {
                     if(tex!=lasttex)
                     {
@@ -1561,6 +1559,16 @@ struct animmodel : model
                 closestenvmaptex = lookupenvmap(closestenvmap(state->o));
                 break;
             }
+        }
+        else if(drawtex == DRAWTEX_HALO)
+        {
+            bool invalidate = false;
+            if(modelmaterial[0] != state->material[0])
+            {
+                modelmaterial[0] = state->material[0];
+                invalidate = true;
+            }
+            if(invalidate) shaderparamskey::invalidate();
         }
 
         if(depthoffset && !enabledepthoffset)

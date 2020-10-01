@@ -858,6 +858,7 @@ extern void shadowmaskbatchedmodels(bool dynshadow = true);
 extern void rendermapmodelbatches();
 extern void rendermodelbatches();
 extern void rendertransparentmodelbatches(int stencil = 0);
+extern void renderhalomodelbatches();
 extern bool mapmodelvisible(extentity &e, int n, int colvis = 0);
 extern void getmapmodelstate(extentity &e, entmodelstate &mdl);
 extern void rendermapmodel(int idx, entmodelstate &state, bool tpass = false);
@@ -996,7 +997,7 @@ extern bvec halocolour;
 
 extern void renderhalo();
 extern void viewhalo();
-extern void drawhalo();
+extern void blendhalos();
 extern void cleanuphalo();
 
 #endif // STANDALONE

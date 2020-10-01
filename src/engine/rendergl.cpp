@@ -2524,7 +2524,7 @@ void gl_drawhud(bool noview = false)
     hudmatrix.ortho(0, hudw, hudh, 0, -1, 1);
     resethudmatrix();
     resethudshader();
-    if(!noview) drawhalo();
+    if(!noview) blendhalos();
     hud::render(noview);
     debuglights();
 }

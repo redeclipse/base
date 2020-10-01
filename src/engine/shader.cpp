@@ -1525,18 +1525,15 @@ void setupblurkernel(int radius, float *weights, float *offsets)
     for(int i = radius+1; i <= MAXBLURRADIUS; i++) weights[i] = offsets[i] = 0;
 }
 
-void setblurshader(int pass, int size, int radius, float *weights, float *offsets,
-    GLenum target, GLint masktex)
+void setblurshader(int pass, int size, int radius, float *weights, float *offsets, GLenum target)
 {
     if(radius<1 || radius>MAXBLURRADIUS) return;
-    static Shader *blurshader[7][2][2] = { NULL };
-    static Shader *blurrectshader[7][2][2] = { NULL };
-
-    Shader *&s = (target == GL_TEXTURE_RECTANGLE ? blurrectshader : blurshader)[radius-1][pass][masktex != 0];
+    static Shader *blurshader[7][2] = { { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, { NULL, NULL } },
+                  *blurrectshader[7][2] = { { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, { NULL, NULL } };
+    Shader *&s = (target == GL_TEXTURE_RECTANGLE ? blurrectshader : blurshader)[radius-1][pass];
     if(!s)
     {
-        defformatstring(name, "blur%s%c%d%s", masktex ? "mask" : "", 'x'+pass, radius,
-            target == GL_TEXTURE_RECTANGLE ? "rect" : "");
+        defformatstring(name, "blur%c%d%s", 'x'+pass, radius, target == GL_TEXTURE_RECTANGLE ? "rect" : "");
         s = lookupshaderbyname(name);
     }
     if(!s) return;
@@ -1545,10 +1542,4 @@ void setblurshader(int pass, int size, int radius, float *weights, float *offset
     float scaledoffsets[8];
     loopk(8) scaledoffsets[k] = offsets[k]/size;
     LOCALPARAMV(offsets, scaledoffsets, 8);
-    if(masktex)
-    {
-        glActiveTexture_(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_RECTANGLE, masktex);
-        glActiveTexture_(GL_TEXTURE0);
-    }
 }

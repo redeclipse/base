@@ -609,7 +609,7 @@ static inline void renderbatchedmodel(model *m, batchedmodel &b)
     if(b.attached>=0) b.state.attached = &modelattached[b.attached];
 
     int anim = b.state.anim;
-    if(shadowmapping > SM_REFLECT)
+    if(shadowmapping > SM_REFLECT || drawtex == DRAWTEX_HALO)
     {
         anim |= ANIM_NOSKIN;
     }
@@ -654,7 +654,7 @@ static inline int cullmodel(model *m, const vec &center, float radius, int flags
 {
     if(flags&MDL_CULL_DIST && center.dist(camera1->o)/radius>maxmodelradiusdistance) return MDL_CULL_DIST;
     if(flags&MDL_CULL_VFC && isfoggedsphere(radius, center)) return MDL_CULL_VFC;
-    if(flags&MDL_CULL_OCCLUDED && drawtex != DRAWTEX_HALO && modeloccluded(center, radius)) return MDL_CULL_OCCLUDED;
+    if(flags&MDL_CULL_OCCLUDED && modeloccluded(center, radius)) return MDL_CULL_OCCLUDED;
     else if(flags&MDL_CULL_QUERY && d->query && d->query->owner==d && checkquery(d->query)) return MDL_CULL_QUERY;
     return 0;
 }
@@ -763,6 +763,25 @@ void rendershadowmodelbatches(bool dynmodel)
             batchedmodel &bm = batchedmodels[j];
             j = bm.next;
             if(!(bm.visible&(1<<shadowside))) continue;
+            if(!rendered) { b.m->startrender(); rendered = true; }
+            renderbatchedmodel(b.m, bm);
+        }
+        if(rendered) b.m->endrender();
+    }
+}
+
+void renderhalomodelbatches()
+{
+    loopv(batches)
+    {
+        modelbatch &b = batches[i];
+        bool rendered = false;
+        for(int j = b.batched; j >= 0;)
+        {
+            batchedmodel &bm = batchedmodels[j];
+            j = bm.next;
+            bm.culled = cullmodel(b.m, bm.state.center, bm.state.radius, bm.state.flags&~MDL_CULL_OCCLUDED, bm.d);
+            if(bm.culled || bm.state.flags&MDL_ONLYSHADOW) continue;
             if(!rendered) { b.m->startrender(); rendered = true; }
             renderbatchedmodel(b.m, bm);
         }
@@ -1071,6 +1090,11 @@ hasboundbox:
 
     if(state.flags&MDL_NOBATCH)
     {
+        if(drawtex == DRAWTEX_HALO)
+        {
+            state.flags &= ~(MDL_CULL_OCCLUDED | MDL_CULL_QUERY);
+            state.anim |= ANIM_NOSKIN;
+        }
         int culled = cullmodel(m, state.center, state.radius, state.flags, d);
         if(culled)
         {

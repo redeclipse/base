@@ -904,7 +904,7 @@ extern void cleanupshaders();
 #define MAXBLURRADIUS 7
 extern float blursigma;
 extern void setupblurkernel(int radius, float *weights, float *offsets);
-extern void setblurshader(int pass, int size, int radius, float *weights, float *offsets, GLenum target = GL_TEXTURE_2D, GLint masktex = 0);
+extern void setblurshader(int pass, int size, int radius, float *weights, float *offsets, GLenum target = GL_TEXTURE_2D);
 
 enum
 {
