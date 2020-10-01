@@ -644,12 +644,8 @@ namespace game
             {
                 // Unique ID for this vanity setup.
                 defformatstring(id, "%s", vanities[n].model);
-                if(vanities[n].style&VANITYSTYLE_HEAD && vanities.inrange(head))
-                {
-                    const char *name = vanityfname(d, head, -1, proj);
-                    if(name && *name) concformatstring(id, "/%s", name);
-                }
-                else if(vanities[n].style&VANITYSTYLE_MODEL) concformatstring(id, "/%s", vanitymodel(d));
+                if(vanities[n].style&VANITYSTYLE_MODEL) concformatstring(id, "/%s", vanitymodel(d));
+                if(vanities[n].style&VANITYSTYLE_HEAD && vanities.inrange(head)) concformatstring(id, "/%s", vanities[head].ref);
                 if(vanities[n].style&VANITYSTYLE_PRIV) concformatstring(id, "/%s", server::privnamex(d->privilege, d->actortype, true));
                 if(proj) concatstring(id, "/proj");
 
