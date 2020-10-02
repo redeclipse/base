@@ -117,16 +117,17 @@ struct animmodel : model
             ENABLE_MIXER   = 1<<1,
             ALLOW_PATTERN  = 1<<2,
             ENABLE_PATTERN = 1<<3,
-            DITHER         = 1<<4
+            DITHER         = 1<<4,
+            CULL_HALO      = 1<<5
         };
 
         part *owner;
         Texture *tex, *decal, *masks, *envmap, *normalmap;
         Shader *shader, *rsmshader;
-        int cullface, cullhalo, flags;
+        int cullface, flags;
         shaderparamskey *key;
 
-        skin() : owner(0), tex(notexture), decal(NULL), masks(notexture), envmap(NULL), normalmap(NULL), shader(NULL), rsmshader(NULL), cullface(1), cullhalo(1), flags(0), key(NULL) {}
+        skin() : owner(0), tex(notexture), decal(NULL), masks(notexture), envmap(NULL), normalmap(NULL), shader(NULL), rsmshader(NULL), cullface(1), flags(CULL_HALO), key(NULL) {}
 
         bool firstmodel(const animstate *as) const
         {
@@ -155,7 +156,10 @@ struct animmodel : model
             return !(state->flags&MDL_NOPATTERN) || firstmodel(as);
         }
 
-        int getcull() const { return cullface > 0 ? cullface : (drawtex == DRAWTEX_HALO ? cullhalo : 0); }
+        bool shouldcullface() const
+        {
+            return cullface > 0 && (drawtex != DRAWTEX_HALO || flags&CULL_HALO);
+        }
 
         void setkey()
         {
@@ -290,7 +294,7 @@ struct animmodel : model
 
         void bind(mesh &b, const animstate *as, modelstate *state)
         {
-            if(getcull() > 0)
+            if(shouldcullface())
             {
                 if(!enablecullface) { glEnable(GL_CULL_FACE); enablecullface = true; }
             }
@@ -1834,10 +1838,15 @@ struct animmodel : model
         loopv(parts) loopvj(parts[i]->skins) parts[i]->skins[j].cullface = cullface;
     }
 
-    void setcullhalo(int cullhalo)
+    void setcullhalo(bool val)
     {
         if(parts.empty()) loaddefaultparts();
-        loopv(parts) loopvj(parts[i]->skins) parts[i]->skins[j].cullhalo = cullhalo;
+        loopv(parts) loopvj(parts[i]->skins)
+        {
+            skin &s = parts[i]->skins[j];
+            if(val) s.flags |= skin::CULL_HALO;
+            else s.flags &= ~skin::CULL_HALO;
+        }
     }
 
     void setcolor(const vec &color)
@@ -2166,7 +2175,7 @@ template<class MDL, class MESH> struct modelcommands
 
     static void setcullhalo(char *meshname, int *cullhalo)
     {
-        loopskins(meshname, s, s.cullhalo = *cullhalo);
+        loopskins(meshname, s, { if(*cullhalo) s.flags |= skin::CULL_HALO; else s.flags &= ~skin::CULL_HALO; });
     }
 
     static void setcolor(char *meshname, float *r, float *g, float *b)

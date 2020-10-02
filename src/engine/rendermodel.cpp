@@ -80,7 +80,7 @@ COMMAND(0, mdlcullface, "i");
 void mdlcullhalo(int *cullhalo)
 {
     checkmdl;
-    loadingmodel->setcullhalo(*cullhalo);
+    loadingmodel->setcullhalo(*cullhalo != 0);
 }
 COMMAND(0, mdlcullhalo, "i");
 
