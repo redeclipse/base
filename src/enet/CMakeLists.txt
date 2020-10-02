@@ -19,40 +19,42 @@ set(CMAKE_EXTRA_INCLUDE_FILES "sys/types.h" "sys/socket.h")
 check_type_size("socklen_t" HAS_SOCKLEN_T BUILTIN_TYPES_ONLY)
 unset(CMAKE_EXTRA_INCLUDE_FILES)
 
-if(HAS_FCNTL)
+if (HAS_FCNTL)
     add_definitions(-DHAS_FCNTL=1)
-endif()
-if(HAS_POLL)
+endif ()
+if (HAS_POLL)
     add_definitions(-DHAS_POLL=1)
-endif()
-if(HAS_GETNAMEINFO)
+endif ()
+if (HAS_GETNAMEINFO)
     add_definitions(-DHAS_GETNAMEINFO=1)
-endif()
-if(HAS_GETADDRINFO)
+endif ()
+if (HAS_GETADDRINFO)
     add_definitions(-DHAS_GETADDRINFO=1)
-endif()
-if(HAS_GETHOSTBYNAME_R)
+endif ()
+if (HAS_GETHOSTBYNAME_R)
     add_definitions(-DHAS_GETHOSTBYNAME_R=1)
-endif()
-if(HAS_GETHOSTBYADDR_R)
+endif ()
+if (HAS_GETHOSTBYADDR_R)
     add_definitions(-DHAS_GETHOSTBYADDR_R=1)
-endif()
-if(HAS_INET_PTON)
+endif ()
+if (HAS_INET_PTON)
     add_definitions(-DHAS_INET_PTON=1)
-endif()
-if(HAS_INET_NTOP)
+endif ()
+if (HAS_INET_NTOP)
     add_definitions(-DHAS_INET_NTOP=1)
-endif()
-if(HAS_MSGHDR_FLAGS)
+endif ()
+if (HAS_MSGHDR_FLAGS)
     add_definitions(-DHAS_MSGHDR_FLAGS=1)
-endif()
-if(HAS_SOCKLEN_T)
+endif ()
+if (HAS_SOCKLEN_T)
     add_definitions(-DHAS_SOCKLEN_T=1)
-endif()
+endif ()
 
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
-add_library(enet STATIC
+add_library(
+        enet STATIC
+
         callbacks.c
         compress.c
         host.c
@@ -62,4 +64,10 @@ add_library(enet STATIC
         protocol.c
         unix.c
         win32.c
-    )
+)
+
+include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/functions.cmake)
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR MINGW)
+    find_link(enet ws2_32)
+    find_link(enet winmm)
+endif ()

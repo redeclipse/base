@@ -1,284 +1,369 @@
-cmake_minimum_required(VERSION 2.8.11)
+cmake_minimum_required(VERSION 3.13)
 
-# link_deps([FATAL] DEPS <deps>..)
-# Calls link_directories for <deps>. <deps> is a list of dependencies.
-# If FATAL is specified then it exits on failure. Otherwise it returns
-# and sets link_deps_failed.
-function(link_deps_dirs)
-    cmake_parse_arguments(link_deps_dirs "FATAL" "TARGET" "DEPS" "${ARGN}")
-    foreach(dep IN LISTS link_deps_dirs_DEPS)
-        if(${link_deps_dirs_FATAL})
-            pkg_check_modules(${dep} REQUIRED ${dep})
-        else()
-            pkg_check_modules(${dep} ${dep})
-        endif()
-        if(NOT ${dep}_FOUND)
-            set(link_deps_dirs_failed true PARENT_SCOPE)
-            return()
-        endif()
+### project ###
+project(
+    redeclipse
+)
 
-        # tell the compiler where to find the libraries' binaries
-        foreach(lib_dir IN LISTS ${dep}_LIBRARY_DIRS)
-            message("library dir: ${lib_dir}")
-            link_directories(${lib_dir})
-        endforeach(lib_dir)
-    endforeach(dep)
-endfunction(link_deps_dirs)
+### functions ###
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/functions.cmake)
 
-# configure_deps(TARGET <target> [FATAL] DEPS <deps>...)
-# Configures dependencies for <target>. <deps> is a list of dependencies.
-# If FATAL is specified then it exits on failure. Otherwise it returns
-# and sets configure_deps_failed.
-function(configure_deps)
-    cmake_parse_arguments(configure_deps "FATAL" "TARGET" "DEPS" "${ARGN}")
-    foreach(dep IN LISTS configure_deps_DEPS)
-        if(${configure_deps_FATAL})
-            pkg_check_modules(${dep} REQUIRED ${dep})
-        else()
-            pkg_check_modules(${dep} ${dep})
-        endif()
-        if(NOT ${dep}_FOUND)
-            set(configure_deps_failed true PARENT_SCOPE)
-            return()
-        endif()
-
-        # add the necessary includes
-        foreach(include_dir IN LISTS ${dep}_INCLUDE_DIRS)
-            include_directories(${include_dir})
-        endforeach(include_dir)
-
-        # link to the libraries
-        foreach(lib IN LISTS ${dep}_LIBRARIES)
-            target_link_libraries(${configure_deps_TARGET} ${lib})
-        endforeach(lib)
-    endforeach(dep)
-endfunction(configure_deps)
+### cmake ###
+# stop in source builds
+set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 
 # set default build type
-if(NOT CMAKE_BUILD_TYPE)
+if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type (release or debug)" FORCE)
-endif()
+endif ()
 
+message(STATUS "CMAKE_VERSION: ${CMAKE_VERSION}")
+message(STATUS "CMAKE_GENERATOR: ${CMAKE_GENERATOR}")
+message(STATUS "C Compiler executable: ${CMAKE_C_COMPILER}")
+message(STATUS "CXX Compiler executable: ${CMAKE_CXX_COMPILER}")
+message(STATUS "Linker executable: ${CMAKE_LINKER}")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
-# set compile options
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fsigned-char -ffast-math -fno-exceptions -fno-rtti -Wno-invalid-offsetof")
+# set C++ standard
+set(CMAKE_CXX_STANDARD 11)
 
+### architecture ###
+set(RE_ARCH_86 OFF)
+set(RE_ARCH_64 OFF)
+set(RE_ARCH_ppc64 OFF)
+set(RE_ARCH_ppc OFF)
+set(RE_ARCH_arm OFF)
+set(RE_ARCH_aarch64 OFF)
+set(RE_ARCH_NATIVE OFF)
+if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "amd64.*|x86_64.*|AMD64.*")
+    set(RE_ARCH "amd64")
+    set(RE_ARCH_64 ON)
+elseif (${CMAKE_SYSTEM_PROCESSOR} MATCHES "i686.*|i386.*|x86.*")
+    set(RE_ARCH "x86")
+    set(RE_ARCH_86 ON)
+elseif (${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc64*")
+    set(RE_ARCH "ppc64")
+    set(RE_ARCH_ppc64 ON)
+elseif (${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc|powerpc")
+    set(RE_ARCH "ppc")
+    set(RE_ARCH_ppc ON)
+elseif (${CMAKE_SYSTEM_PROCESSOR} MATCHES "armv*")
+    set(RE_ARCH "arm")
+    set(RE_ARCH_arm ON)
+elseif (${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch64")
+    set(RE_ARCH "aarch64")
+    set(RE_ARCH_aarch64 ON)
+else ()
+    set(RE_ARCH "native")
+    set(RE_ARCH_NATIVE ON)
+endif ()
+
+### OS ###
+
+set(RE_OS_LINUX OFF)
+set(RE_OS_WINDOWS OFF)
+set(RE_OS_APPLE OFF)
+set(RE_OS_OTHER OFF)
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    set(RE_OS_LINUX ON)
+elseif (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    set(RE_OS_WINDOWS ON)
+elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    set(RE_OS_APPLE ON)
+else ()
+    set(RE_OS_OTHER ON)
+endif ()
+
+# set compile options
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fsigned-char -fno-exceptions -fno-rtti -Wno-invalid-offsetof")
+if (${RE_ARCH_86} OR ${RE_ARCH_64})
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffast-math")
+endif ()
+
+### output name suffix ###
+if (${RE_OS_WINDOWS})
+    set(RE_NAME_SUFFIX "")
+elseif (${RE_OS_LINUX})
+    set(RE_NAME_SUFFIX "_linux")
+elseif (${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
+    set(RE_NAME_SUFFIX "_bsd")
+else ()
+    set(RE_NAME_SUFFIX "_native")
+endif ()
+
+### options ###
+option(BUILD_CLIENT "Build client?" ON)
+option(WANT_STEAM "Build client with Steam support?" OFF)
+option(WANT_DISCORD "Build client with Discord support?" OFF)
+option(BUILD_TESSFONT "Build tessfont?" ON)
+option(BUILD_SERVER "Build server?" ON)
+option(BUILD_GENKEY "Build genkey?" ON)
+
+# disable steam and discord support if it is not possible to link them
+if (NOT ${BUILD_CLIENT})
+    message(WARNING "Disabling Steam and Discord support as client is not built.")
+    set(WANT_STEAM OFF CACHE BOOL "" FORCE)
+    set(WANT_DISCORD OFF CACHE BOOL "" FORCE)
+endif ()
+
+# steam not for native
+if (${WANT_STEAM} AND (${RE_OS_OTHER} OR ${RE_ARCH_NATIVE}))
+    message(WARNING "Disabling Steam support, only supported for Linux/Windows/Apple and x86/amd64.")
+    set(WANT_STEAM OFF CACHE BOOL "" FORCE)
+endif ()
+# discord only for non linux or linux + x64
+if (${WANT_DISCORD} AND ((${RE_OS_LINUX} AND ${RE_ARCH_86}) OR ${RE_ARCH_NATIVE}))
+    message(WARNING "Disabling Discord support, only supported for Windows and Linux amd64.")
+    set(WANT_DISCORD OFF CACHE BOOL "" FORCE)
+endif ()
+
+message(STATUS "Build client: ${BUILD_CLIENT}")
+message(STATUS "  with Steam support: ${WANT_STEAM}")
+message(STATUS "  with Discord support: ${WANT_DISCORD}")
+message(STATUS "Build server: ${BUILD_SERVER}")
+message(STATUS "Build genkey: ${BUILD_GENKEY}")
+message(STATUS "Build tessfont: ${BUILD_TESSFONT}")
+
+### configuring ###
 # Use pkg-config to configure dependencies later
 find_package(PkgConfig REQUIRED)
-# the dependencies required by all platforms
-set(client_deps zlib sdl2 SDL2_image SDL2_mixer gl)
-set(server_deps zlib)
-set(genkey_deps zlib)
-set(tessfont_deps zlib freetype2)
 
-set(BUILD_CLIENT true CACHE BOOL "Build client?")
-if(NOT ${BUILD_CLIENT})
-    message(STATUS "Will not build client as requested")
-endif()
+# configure enet
+# BUILD_GENKEY requires only enet headers
+if (${BUILD_CLIENT} OR ${BUILD_SERVER} OR ${BUILD_GENKEY})
+    set(ENET_SOURCE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/enet)
+    add_subdirectory(${ENET_SOURCE_DIRECTORY})
+endif ()
 
-set(WANT_STEAM true CACHE BOOL "Build with Steam support?")
-if(NOT ${WANT_STEAM})
-    message(STATUS "Will not build Steam support as requested")
-endif()
-
-set(WANT_DISCORD true CACHE BOOL "Build with Discord support?")
-if(NOT ${WANT_DISCORD})
-    message(STATUS "Will not build Discord support as requested")
-endif()
-
-# the client depends on almost all the source files
-file(GLOB client_sources
-    engine/*.cpp
-    game/*.cpp
-    shared/*.cpp
-    support/jsmn.c
-    support/sqlite3.c
-)
-
-# the server requires less source files
-file(GLOB server_sources
-    shared/crypto.cpp
-    shared/geom.cpp
-    shared/stream.cpp
-    shared/tools.cpp
-    shared/zip.cpp
-    support/jsmn.c
-    support/sqlite3.c
-    engine/cdpi.cpp
-    engine/command.cpp
-    engine/http.cpp
-    engine/irc.cpp
-    engine/master.cpp
-    engine/server.cpp
-    game/server.cpp
-)
-
-# genkey is a rather simple application
-file(GLOB genkey_sources
-    shared/genkey.cpp
-    shared/crypto.cpp
-)
-
-# neither server nor client need genkey.cpp - to avoid warnings about duplicate main()s, it has to be removed from their source lists
-file(GLOB genkey_cpp_path shared/genkey.cpp)
-list(REMOVE_ITEM client_sources ${genkey_cpp_path})
-list(REMOVE_ITEM server_sources ${genkey_cpp_path})
-
-# tessfont is a very simple application
-file(GLOB tessfont_sources
-    shared/tessfont.cpp
-)
-
-# neither server nor client need tessfont.cpp - to avoid warnings about duplicate main()s, it has to be removed from their source lists
-file(GLOB tessfont_cpp_path shared/tessfont.cpp)
-list(REMOVE_ITEM client_sources ${tessfont_cpp_path})
-list(REMOVE_ITEM server_sources ${tessfont_cpp_path})
-
-# make sure sqlite3 is built with the correct flags
-file(GLOB sqlite3_cpp_path support/sqlite3.c)
-set_source_files_properties(support/sqlite3.c PROPERTIES
+# sqlite3 need special compile flags
+set_source_files_properties(
+    support/sqlite3.c PROPERTIES
     COMPILE_FLAGS "-DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOAD_EXTENSION"
 )
 
-# platform specific code
-if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-    list(APPEND client_deps x11)
-    set(link_libs rt)
-    if(${WANT_STEAM})
-        add_library(steam_lib SHARED IMPORTED)
-        if(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "i[3-6]86")
-            set_target_properties(steam_lib PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/../bin/x86/libsteam_api.so)
-        elseif(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "x86_64")
-            set_target_properties(steam_lib PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/../bin/amd64/libsteam_api.so)
-        endif()
-        list(APPEND link_libs steam_lib)
-    endif()
-    if(${WANT_DISCORD})
-        if(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "x86_64")
-            add_library(discord_lib SHARED IMPORTED)
-            set_target_properties(discord_lib PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/../bin/amd64/libdiscord-rpc.so)
-            list(APPEND link_libs discord_lib)
-        endif()
-    endif()
-    link_libraries(${link_libs})
-    set(BIN_SUFFIX "_linux")
-elseif(APPLE)
-    # build OS X specific Objective-C code
-    file(GLOB mac_client_sources
-        xcode/main.m xcode/macutils.mm
-        xcode/SDLmain.m xcode/ConsoleView.m
-    )
-    file(GLOB mac_server_sources
-        xcode/macutils.mm
-    )
-    list(APPEND client_sources ${mac_client_sources})
-    list(APPEND server_sources ${mac_server_sources})
-    set(BIN_SUFFIX "_osx")
-elseif(MINGW)
-    link_libraries(ws2_32 winmm)
-    set(BIN_SUFFIX "_windows")
-else()
-    set(BIN_SUFFIX "_native")
-endif()
-
-if(${BUILD_CLIENT})
-    # set up library directories
-    link_deps_dirs(DEPS ${client_deps})
-    if(link_deps_dirs_failed)
-        message(FATAL_ERROR "Could not find required packages for the client. You can run cmake with -DBUILD_CLIENT=0 to exclude the client.")
-    endif()
-    # add the client executable and link it to enet
-    add_executable(redeclipse${BIN_SUFFIX} ${client_sources})
-    target_link_libraries(redeclipse${BIN_SUFFIX} enet)
-endif()
-
-# set up library directories
-link_deps_dirs(FATAL DEPS ${server_deps})
-# add the server executable and link it to enet
-# (define STANDALONE to "notify" the preprocessor that the server is built this time)
-add_executable(redeclipse_server${BIN_SUFFIX} ${server_sources})
-target_link_libraries(redeclipse_server${BIN_SUFFIX} enet)
-set_target_properties(redeclipse_server${BIN_SUFFIX} PROPERTIES
-    COMPILE_FLAGS "-DSTANDALONE"
-)
-
-if(APPLE)
-    # include framework required in xcode/ code
-    find_library(COCOA_LIBRARY Cocoa)
-    if(${BUILD_CLIENT})
-        target_link_libraries(redeclipse${BIN_SUFFIX} ${COCOA_LIBRARY})
-    endif()
-    target_link_libraries(redeclipse_server${BIN_SUFFIX} ${COCOA_LIBRARY})
-else(APPLE)
-    # add the genkey executable
-    add_executable(genkey${BIN_SUFFIX} ${genkey_sources})
-    set_target_properties(genkey${BIN_SUFFIX} PROPERTIES
-        COMPILE_FLAGS "-DSTANDALONE"
-    )
-    add_executable(tessfont${BIN_SUFFIX} ${tessfont_sources})
-    set_target_properties(tessfont${BIN_SUFFIX} PROPERTIES
-        COMPILE_FLAGS "-DSTANDALONE"
-    )
-endif(APPLE)
-
-# configure dependencies
-if(${BUILD_CLIENT})
-    configure_deps(TARGET redeclipse${BIN_SUFFIX} DEPS ${client_deps})
-    if(configure_deps_failed)
-        message(FATAL_ERROR "Could not find required packages for the client. You can run cmake with -DBUILD_CLIENT=0 to exclude the client.")
-    endif()
-endif()
-configure_deps(TARGET redeclipse_server${BIN_SUFFIX} FATAL DEPS ${server_deps})
-configure_deps(TARGET genkey${BIN_SUFFIX} FATAL DEPS ${genkey_deps})
-configure_deps(TARGET tessfont${BIN_SUFFIX} FATAL DEPS ${tessfont_deps})
-
-# configure enet
-set(ENET_SOURCE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/enet)
-add_subdirectory(${ENET_SOURCE_DIRECTORY})
-
-# configure local includes
-include_directories(
+### configure general includes ###
+set(
+    RE_INCLUDE_DIRS
     ${ENET_SOURCE_DIRECTORY}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/engine
     ${CMAKE_CURRENT_SOURCE_DIR}/game
     ${CMAKE_CURRENT_SOURCE_DIR}/shared
     ${CMAKE_CURRENT_SOURCE_DIR}/support
 )
-if(${WANT_STEAM})
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/steam)
-    add_definitions("-DUSE_STEAM=1")
-endif()
-if(${WANT_DISCORD})
-    if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-        add_definitions("-DUSE_DISCORD=1")
-    elseif(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "x86_64")
-        add_definitions("-DUSE_DISCORD=1")
-    endif()
-endif()
 
-# include the headers for the libraries bundled in ../bin
-if(MINGW)
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-endif()
+### building ###
+if (${BUILD_CLIENT})
+    add_executable(
+        redeclipse_client
 
-# install to ../bin/
-if(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "i[3-6]86")
-	set(ARCHITECTURE "x86")
-elseif(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "x86_64")
-	set(ARCHITECTURE "amd64")
-else()
-    set(ARCHITECTURE "native")
-endif()
+        engine/aa.cpp
+        engine/bih.cpp
+        engine/blend.cpp
+        engine/cdpi.cpp
+        engine/client.cpp
+        engine/command.cpp
+        engine/console.cpp
+        engine/dynlight.cpp
+        engine/grass.cpp
+        engine/http.cpp
+        engine/irc.cpp
+        engine/light.cpp
+        engine/main.cpp
+        engine/master.cpp
+        engine/material.cpp
+        engine/menus.cpp
+        engine/movie.cpp
+        engine/normal.cpp
+        engine/octa.cpp
+        engine/octaedit.cpp
+        engine/octarender.cpp
+        engine/physics.cpp
+        engine/pvs.cpp
+        engine/rendergl.cpp
+        engine/renderlights.cpp
+        engine/rendermodel.cpp
+        engine/renderparticles.cpp
+        engine/rendersky.cpp
+        engine/rendertext.cpp
+        engine/renderva.cpp
+        engine/server.cpp
+        engine/serverbrowser.cpp
+        engine/shader.cpp
+        engine/sound.cpp
+        engine/stain.cpp
+        engine/texture.cpp
+        engine/ui.cpp
+        engine/water.cpp
+        engine/wind.cpp
+        engine/world.cpp
+        engine/worldio.cpp
+        game/ai.cpp
+        game/bomber.cpp
+        game/capture.cpp
+        game/client.cpp
+        game/defend.cpp
+        game/entities.cpp
+        game/game.cpp
+        game/hud.cpp
+        game/physics.cpp
+        game/projs.cpp
+        game/scoreboard.cpp
+        game/server.cpp
+        game/waypoint.cpp
+        game/weapons.cpp
+        shared/crypto.cpp
+        shared/geom.cpp
+        shared/glemu.cpp
+        shared/stream.cpp
+        shared/tools.cpp
+        shared/zip.cpp
+        support/jsmn.c
+        support/sqlite3.c
 
-set(targets redeclipse_server${BIN_SUFFIX} genkey${BIN_SUFFIX} tessfont${BIN_SUFFIX})
-if(${BUILD_CLIENT})
-    set(targets redeclipse${BIN_SUFFIX} ${targets})
-endif()
-
-foreach(target IN LISTS targets)
-    install(
-        TARGETS ${target}
-        DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/../bin/${ARCHITECTURE}/
+        redeclipse.rc
     )
-endforeach()
+    if (${RE_OS_WINDOWS} AND ${CMAKE_BUILD_TYPE} MATCHES "Release")
+        set_target_properties(redeclipse_client PROPERTIES WIN32 TRUE)
+    elseif (${RE_OS_APPLE})
+        target_sources(
+            redeclipse_client PRIVATE
+
+            xcode/macutils.mm
+            xcode/SDLmain.m
+            xcode/ConsoleView.m
+        )
+        set_target_properties(redeclipse_client PROPERTIES MACOSX_BUNDLE TRUE)
+    endif ()
+    target_include_directories(redeclipse_client PRIVATE ${RE_INCLUDE_DIRS})
+
+    # configure steam
+    if (${WANT_STEAM})
+        if (${RE_OS_LINUX})
+            find_link(redeclipse_client libsteam_api.so ${CMAKE_CURRENT_SOURCE_DIR}/../bin/${RE_ARCH}/)
+        elseif (${RE_OS_WINDOWS} AND ${RE_ARCH_86})
+            find_link(redeclipse_client steam_api ${CMAKE_CURRENT_SOURCE_DIR}/lib/x86/)
+        elseif (${RE_OS_WINDOWS} AND ${RE_ARCH_64})
+            find_link(redeclipse_client steam_api64 ${CMAKE_CURRENT_SOURCE_DIR}/lib/amd64/)
+        elseif (${RE_OS_APPLE})
+            find_link(redeclipse_client steam_api ${CMAKE_CURRENT_SOURCE_DIR}/../bin/redeclipse.app/Contents/Frameworks/)
+        endif ()
+        target_include_directories(redeclipse_client PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/steam)
+        target_compile_definitions(redeclipse_client PRIVATE USE_STEAM=1)
+    endif ()
+    # configure discord
+    if (${WANT_DISCORD})
+        if (${RE_OS_LINUX})
+            find_link(redeclipse_client libdiscord-rpc.so ${CMAKE_CURRENT_SOURCE_DIR}/../bin/${RE_ARCH}/)
+        elseif (${RE_OS_WINDOWS})
+            find_link(redeclipse_client discord-rpc ${CMAKE_CURRENT_SOURCE_DIR}/lib/${RE_ARCH}/)
+        elseif (${RE_OS_APPLE})
+            find_link(redeclipse_client discord-rpc ${CMAKE_CURRENT_SOURCE_DIR}/../bin/redeclipse.app/Contents/Frameworks/)
+        endif ()
+        target_compile_definitions(redeclipse_client PRIVATE USE_DISCORD=1)
+    endif ()
+
+    # link libraries and OS depending libraries
+    target_link_libraries(redeclipse_client enet)
+    set(RE_CLIENT_DEPS zlib sdl2 SDL2_image SDL2_mixer)
+    if (${RE_OS_LINUX})
+        set(RE_CLIENT_DEPS ${RE_CLIENT_DEPS} x11 gl)
+        find_link(redeclipse_client rt)
+    elseif (${RE_OS_WINDOWS})
+        set(RE_CLIENT_DEPS ${RE_CLIENT_DEPS} freeglut)
+        find_link(redeclipse_client opengl32)
+    elseif (${RE_OS_APPLE})
+        set(RE_CLIENT_DEPS ${RE_CLIENT_DEPS} freeglut)
+        find_link(redeclipse_client OpenGL)
+        find_link(redeclipse_client Cocoa)
+    else ()
+        set(RE_CLIENT_DEPS ${RE_CLIENT_DEPS} gl)
+    endif ()
+    configure_deps(redeclipse_client ${RE_CLIENT_DEPS})
+
+    set_target_properties(redeclipse_client PROPERTIES OUTPUT_NAME "redeclipse${RE_NAME_SUFFIX}")
+    install(
+        TARGETS redeclipse_client
+        DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/../bin/${RE_ARCH}/
+    )
+endif ()
+
+if (${BUILD_SERVER})
+    add_executable(
+        redeclipse_server
+
+        engine/cdpi.cpp
+        engine/command.cpp
+        engine/http.cpp
+        engine/irc.cpp
+        engine/master.cpp
+        engine/server.cpp
+        game/server.cpp
+        shared/crypto.cpp
+        shared/geom.cpp
+        shared/stream.cpp
+        shared/tools.cpp
+        shared/zip.cpp
+        support/jsmn.c
+        support/sqlite3.c
+    )
+    if (${RE_OS_APPLE})
+        target_sources(redeclipse_server PRIVATE xcode/macutils.mm)
+    endif ()
+    target_include_directories(redeclipse_server PRIVATE ${RE_INCLUDE_DIRS})
+    target_compile_definitions(redeclipse_server PRIVATE STANDALONE=1)
+
+    # link libraries
+    target_link_libraries(redeclipse_server enet)
+    set(RE_SERVER_DEPS zlib)
+    if (${RE_OS_APPLE})
+        find_link(redeclipse_server Cocoa)
+    endif ()
+    configure_deps(redeclipse_server ${RE_SERVER_DEPS})
+
+    set_target_properties(redeclipse_server PROPERTIES OUTPUT_NAME "redeclipse_server${RE_NAME_SUFFIX}")
+    install(
+        TARGETS redeclipse_server
+        DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/../bin/${RE_ARCH}/
+    )
+endif ()
+
+if (${BUILD_GENKEY})
+    add_executable(
+        redeclipse_genkey
+
+        shared/genkey.cpp
+        shared/crypto.cpp
+    )
+    target_include_directories(redeclipse_genkey PRIVATE ${RE_INCLUDE_DIRS})
+    target_compile_definitions(redeclipse_genkey PRIVATE STANDALONE=1)
+
+    # link libraries
+    set(RE_GENKEY_DEPS zlib)
+    configure_deps(redeclipse_genkey ${RE_GENKEY_DEPS})
+
+    set_target_properties(redeclipse_genkey PROPERTIES OUTPUT_NAME "genkey${RE_NAME_SUFFIX}")
+    install(
+        TARGETS redeclipse_genkey
+        DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/../bin/${RE_ARCH}/
+    )
+endif ()
+
+if (${BUILD_TESSFONT})
+    add_executable(
+        redeclipse_tessfont
+
+        shared/tessfont.cpp
+    )
+    target_include_directories(redeclipse_tessfont PRIVATE ${RE_INCLUDE_DIRS})
+    target_compile_definitions(redeclipse_tessfont PRIVATE STANDALONE=1)
+
+    # link libraries
+    set(RE_TESSFONT_DEPS zlib freetype2)
+    configure_deps(redeclipse_tessfont ${RE_TESSFONT_DEPS})
+
+    set_target_properties(redeclipse_tessfont PROPERTIES OUTPUT_NAME "tessfont${RE_NAME_SUFFIX}")
+    install(
+        TARGETS redeclipse_tessfont
+        DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/../bin/${RE_ARCH}/
+    )
+endif ()
