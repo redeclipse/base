@@ -3,6 +3,10 @@
 
 #define _FILE_OFFSET_BITS 64
 
+#if !defined(WIN32) && defined(_WIN32)
+#define WIN32
+#endif
+
 #ifdef WIN32
 #define _USE_MATH_DEFINES
 #endif
