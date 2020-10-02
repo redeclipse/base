@@ -867,7 +867,7 @@ namespace game
                             for(int j = i+1; j < cameras.length(); j++) cameras[j]->cn--;
                             if(i == lastcamcn)
                             {
-                                lastcamcn = -1;
+                                lastcamcn = spectvcamera = -1;
                                 lastcamera = lasttvcam = lasttvchg = 0;
                             }
                         }
@@ -882,7 +882,7 @@ namespace game
         else
         {
             cameras.deletecontents();
-            lastcamcn = -1;
+            lastcamcn = spectvcamera = -1;
             lastcamera = lasttvcam = lasttvchg = 0;
             resetfollow();
         }
