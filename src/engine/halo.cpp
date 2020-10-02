@@ -4,6 +4,7 @@ static GLuint halofbo = 0, halotex = 0;
 static int halow = -1, haloh = -1;
 
 VAR(0, debughalo, 0, 0, 2);
+FVAR(IDF_PERSIST, halowireframe, 0, 0, FVAR_MAX);
 VAR(IDF_PERSIST, halodist, 32, 1024, VAR_MAX);
 FVAR(IDF_PERSIST, haloscale, 0, 0.5f, 1);
 FVAR(IDF_PERSIST, haloblend, 0, 1, 1);
@@ -64,12 +65,23 @@ void renderhalo()
 
     glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT);
-
     glEnable(GL_CULL_FACE);
+
+    if(halowireframe > 0)
+    {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        glLineWidth(halowireframe);
+    }
 
     game::render();
     renderhalomodelbatches();
     renderavatar();
+
+    if(halowireframe > 0)
+    {
+        glLineWidth(1);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
 
     glDisable(GL_CULL_FACE);
 
