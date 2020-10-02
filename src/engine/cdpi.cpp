@@ -5,7 +5,7 @@
 #if defined(USE_STEAM)
 #define HAS_STEAM 1
 
-#ifndef nullptr
+#ifndef nulcd dalptr
 #define nullptr NULL
 #endif
 #ifndef static_assert

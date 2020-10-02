@@ -3,15 +3,18 @@
 static GLuint halofbo = 0, halotex = 0;
 static int halow = -1, haloh = -1;
 
-VAR(0, debughalo, 0, 0, 1);
+VAR(0, debughalo, 0, 0, 2);
 VAR(IDF_PERSIST, halodist, 32, 1024, VAR_MAX);
+FVAR(IDF_PERSIST, haloscale, 0, 0.5f, 1);
 FVAR(IDF_PERSIST, haloblend, 0, 1, 1);
 CVAR(IDF_PERSIST, halocolour, 0xFFFFFF);
+VAR(IDF_PERSIST, halooffset, 1, 2, 4);
+FVAR(IDF_PERSIST, halofactor, FVAR_NONZERO, 4.f, FVAR_MAX);
 
 void setuphalo(int w, int h)
 {
-    w /= 2;
-    h /= 2;
+    w = int(w*haloscale);
+    h = int(h*haloscale);
     if(w != halow || h != haloh)
     {
         cleanuphalo();
@@ -77,7 +80,7 @@ void renderhalo()
 void viewhalo()
 {
     if(!halotex) return;
-    int w = min(hudw, hudh)/3, h = (w*hudh)/hudw;
+    int w = min(hudw, hudh)/(debughalo == 2 ? 2 : 3), h = (w*hudh)/hudw;
     SETSHADER(hudrect);
     gle::colorf(1, 1, 1);
     glBindTexture(GL_TEXTURE_RECTANGLE, halotex);
@@ -96,6 +99,8 @@ void blendhalos()
     glBindTexture(GL_TEXTURE_RECTANGLE, halotex);
 
     SETSHADER(hudhalo);
+    LOCALPARAMI(offset, halooffset);
+    LOCALPARAMF(factor, halofactor);
 
     hudquad(0, 0, hudw, hudh, 0, haloh, halow, -haloh);
 
