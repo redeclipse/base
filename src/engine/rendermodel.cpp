@@ -994,7 +994,7 @@ FVAR(IDF_PERSIST, lodmodelfovscale, 0, 1, 1000);
 
 model *loadlodmodel(model *m, const vec &pos, float offset)
 {
-    if(drawtex || !m) return m;
+    if((drawtex && drawtex != DRAWTEX_HALO) || !m) return m;
     float dist = camera1->o.dist(pos);
     if(dist > 0 && lodmodelfov && (!lodmodelfovdist || dist <= lodmodelfovdist))
     {
