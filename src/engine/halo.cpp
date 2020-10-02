@@ -6,7 +6,7 @@ static int halow = -1, haloh = -1;
 VAR(0, debughalo, 0, 0, 2);
 FVAR(IDF_PERSIST, halowireframe, 0, 0, FVAR_MAX);
 VAR(IDF_PERSIST, halodist, 32, 1024, VAR_MAX);
-FVAR(IDF_PERSIST, haloscale, 0, 0.5f, 1);
+FVARF(IDF_PERSIST, haloscale, 0, 0.5f, 1, cleanuphalo());
 FVAR(IDF_PERSIST, haloblend, 0, 1, 1);
 CVAR(IDF_PERSIST, halocolour, 0xFFFFFF);
 VARF(IDF_PERSIST, halooffset, 1, 2, 4, initwarning("halo setup", INIT_LOAD, CHANGE_SHADERS));
@@ -14,8 +14,8 @@ FVAR(IDF_PERSIST, halofactor, FVAR_NONZERO, 4.f, FVAR_MAX);
 
 void setuphalo(int w, int h)
 {
-    w = int(w*haloscale);
-    h = int(h*haloscale);
+    w = max(int(w*haloscale), 2);
+    h = max(int(h*haloscale), 2);
     if(w != halow || h != haloh)
     {
         cleanuphalo();
