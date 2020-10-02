@@ -49,6 +49,9 @@ namespace entities
     VAR(IDF_HEX, routecolour, 0, 0xFF22FF, 0xFFFFFF);
     VAR(0, droproutedist, 1, 16, VAR_MAX);
     VAR(0, routemaxdist, 0, 64, VAR_MAX);
+    VAR(IDF_PERSIST, showroutenames, 0, 1, 1);
+    FVAR(IDF_PERSIST, routenameblend, 0, 1, 1);
+    SVARF(IDF_WORLD, routenames, "Easy Medium Hard", { string s; if(filterstring(s, routenames)) setsvar("routenames", s, false); });
 
     struct rail
     {
@@ -2430,6 +2433,19 @@ namespace entities
             }
         }
     }
+    
+    int getfirstroute()
+    {
+        if(lastroutenode == routeid) return -1;
+
+        int firstroute = -1;
+        loopenti(ROUTE) if(entities::ents[i]->type == ROUTE && entities::ents[i]->attrs[0] == routeid)
+        {
+            firstroute = i; 
+            break;
+        }
+        return firstroute;
+    }
 
     void initents(int mver, char *gid, int gver)
     {
@@ -2978,6 +2994,24 @@ namespace entities
                 if(e.attrs[0] != routeid || (!m_edit(game::gamemode) && !m_race(game::gamemode))) break;
                 loopv(e.links) if(ents.inrange(e.links[i]) && ents[e.links[i]]->type == ROUTE && (!routemaxdist || o.dist(ents[e.links[i]]->o) <= routemaxdist))
                     part_flare(o, ents[e.links[i]]->o, 1, PART_LIGHTNING_FLARE, routecolour);
+                    
+                if(showroutenames && getfirstroute() == idx)
+                {
+                    char *name = indexlist(routenames, routeid);
+                    if(name)
+                    {
+                        if(*name)
+                        {
+                            vec above = o;
+                            above.z += 6;
+                            defformatstring(routename, "<bold>%s", name);
+                            part_textcopy(above, routename, PART_TEXT, 1, colourwhite, 2, routenameblend);
+                            above.z += 2;
+                            part_text(above, "Route", PART_TEXT, 1, colourwhite, 2, routenameblend);
+                        }
+                        delete[] name;
+                    }
+                }
             }
             default: break;
         }
