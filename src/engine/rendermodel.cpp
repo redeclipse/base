@@ -986,6 +986,7 @@ void clearbatchedmapmodels()
     }
 }
 
+VAR(IDF_PERSIST, lodmodels, 0, 1, 1);
 VAR(IDF_PERSIST, lodmodelfov, 0, 1, 1);
 FVAR(IDF_PERSIST, lodmodelfovmax, 1, 90, 180);
 FVAR(IDF_PERSIST, lodmodelfovmin, 1, 10, 180);
@@ -994,7 +995,7 @@ FVAR(IDF_PERSIST, lodmodelfovscale, 0, 1, 1000);
 
 model *loadlodmodel(model *m, const vec &pos, float offset)
 {
-    if((drawtex && drawtex != DRAWTEX_HALO) || !m) return m;
+    if(!lodmodels || (drawtex && drawtex != DRAWTEX_HALO) || !m) return m;
     float dist = camera1->o.dist(pos);
     if(dist > 0 && lodmodelfov && (!lodmodelfovdist || dist <= lodmodelfovdist))
     {

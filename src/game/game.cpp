@@ -3781,13 +3781,12 @@ namespace game
             mdl.anim = (animoverride < 0 ? ANIM_ALL : animoverride)|ANIM_LOOP;
             mdl.basetime = 0;
         }
-        else
+        else if(third || firstpersoncamera)
         {
-            // Test if the player is actually moving at a meaningful speed.
-            // This may not be the case if the player is running against a wall or another obstacle.
-            const bool moving = abs(d->vel.x) > 5.0f || abs(d->vel.y) > 5.0f;
             if(allowmove(d))
             {
+                // Test if the player is actually moving at a meaningful speed. This may not be the case if the player is running against a wall or another obstacle.
+                const bool moving = abs(d->vel.x) > 5.0f || abs(d->vel.y) > 5.0f;
                 if(physics::liquidcheck(d) && d->physstate <= PHYS_FALL)
                     mdl.anim |= ((d->move || d->strafe || d->vel.z+d->falling.z > 0 ? int(ANIM_SWIM) : int(ANIM_SINK))|ANIM_LOOP)<<ANIM_SECONDARY;
                 else if(d->impulse[IM_TYPE] == IM_T_VAULT)
