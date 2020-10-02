@@ -2433,7 +2433,7 @@ namespace entities
             }
         }
     }
-    
+
     int getfirstroute()
     {
         if(lastroutenode == routeid) return -1;
@@ -2441,7 +2441,7 @@ namespace entities
         int firstroute = -1;
         loopenti(ROUTE) if(entities::ents[i]->type == ROUTE && entities::ents[i]->attrs[0] == routeid)
         {
-            firstroute = i; 
+            firstroute = i;
             break;
         }
         return firstroute;
@@ -2994,7 +2994,7 @@ namespace entities
                 if(e.attrs[0] != routeid || (!m_edit(game::gamemode) && !m_race(game::gamemode))) break;
                 loopv(e.links) if(ents.inrange(e.links[i]) && ents[e.links[i]]->type == ROUTE && (!routemaxdist || o.dist(ents[e.links[i]]->o) <= routemaxdist))
                     part_flare(o, ents[e.links[i]]->o, 1, PART_LIGHTNING_FLARE, routecolour);
-                    
+
                 if(showroutenames && getfirstroute() == idx)
                 {
                     char *name = indexlist(routenames, routeid);

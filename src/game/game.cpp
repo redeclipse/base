@@ -414,27 +414,8 @@ namespace game
     FVAR(IDF_PERSIST, playerundertoneinterp, 0, 0, 1); // interpolate this much brightness from the opposing tone
     FVAR(IDF_PERSIST, playerundertonebright, 0.f, 1.f, 10.f);
 
-    VAR(IDF_PERSIST, playerhint, 0, 15, 15);
-    VAR(IDF_PERSIST, playerhinthurt, 0, 1, 1);
-    VAR(IDF_PERSIST, playerhinthurtthrob, 0, 1, 1);
-    VAR(IDF_PERSIST, playerhinttone, -1, CTONE_TEAMED, CTONE_MAX-1);
-    FVAR(IDF_PERSIST, playerhinttonelevel, 0.f, 1.f, 10.f);
-    FVAR(IDF_PERSIST, playerhintblend, 0, 0.25f, 1);
-    FVAR(IDF_PERSIST, playerhintscale, 0, 0.7f, 1); // scale blend depending on health
-    FVAR(IDF_PERSIST, playerhintlight, 0, 0.35f, 1); // override for light effect
-    FVAR(IDF_PERSIST, playerhintdom, 0, 0.35f, 1); // override for dominate effect
-    FVAR(IDF_PERSIST, playerhintsize, 0, 1.25f, 2);
-    FVAR(IDF_PERSIST, playerhintmaxsize, 0, 20, FVAR_MAX);
-    FVAR(IDF_PERSIST, playerhintfadeat, 0, 64, FVAR_MAX);
-    FVAR(IDF_PERSIST, playerhintfadecut, 0, 8, FVAR_MAX);
-    FVAR(IDF_PERSIST, playerhinthurtblend, 0, 0.9f, 1);
-    FVAR(IDF_PERSIST, playerhinthurtsize, 0, 1.3f, 2);
-
-    VAR(IDF_PERSIST, affinityhint, 0, 1, 1);
-    FVAR(IDF_PERSIST, affinityhintblend, 0, 0.15f, 1);
-    FVAR(IDF_PERSIST, affinityhintsize, 0, 1.1f, 2);
-    FVAR(IDF_PERSIST, affinityhintfadeat, 0, 32, FVAR_MAX);
-    FVAR(IDF_PERSIST, affinityhintfadecut, 0, 4, FVAR_MAX);
+    FVAR(IDF_PERSIST, affinityfadeat, 0, 32, FVAR_MAX);
+    FVAR(IDF_PERSIST, affinityfadecut, 0, 4, FVAR_MAX);
     FVAR(IDF_PERSIST, affinityfollowblend, 0, 0.5f, 1);
     FVAR(IDF_PERSIST, affinitythirdblend, 0, 0.5f, 1);
 
@@ -3514,8 +3495,14 @@ namespace game
     {
         if(drawtex == DRAWTEX_HALO)
         {
-            mdl.material[0] = mdl.material[2] = bvec::fromcolor(getcolour(d, playerovertone, 1));
-            mdl.material[1] = bvec::fromcolor(getcolour(d, playerovertone, 1));
+            mdl.material[0] = bvec::fromcolor(getcolour(d, playerovertone, 1));
+            if(d->state == CS_ALIVE && d->lastbuff)
+            {
+                int millis = lastmillis%1000;
+                float amt = millis <= 500 ? 1.f-(millis/500.f) : (millis-500)/500.f;
+                bvec pc = bvec::fromcolor(game::pulsecolour(d, PULSE_BUFF));
+                flashcolour(mdl.material[0].r, mdl.material[0].g, mdl.material[0].b, pc.r, pc.g, pc.b, amt);
+            }
             return;
         }
         mdl.material[0] = bvec::fromcolor(getcolour(d, playerovertone, playerovertonelevel));
@@ -3996,7 +3983,7 @@ namespace game
         const char *mdlname = getplayerstate(d, mdl, third, size, flags, mdlattach, lastoffset);
         mdl.color = color;
         getplayermaterials(d, mdl);
-        getplayereffects(d, mdl);
+        if(drawtex != DRAWTEX_HALO) getplayereffects(d, mdl);
 
         if(!drawtex)
         {
@@ -4018,74 +4005,7 @@ namespace game
     void rendercheck(gameent *d, bool third)
     {
         float blend = opacity(d, third);
-        if(d->state == CS_ALIVE)
-        {
-            bool useth = hud::teamhurthud&1 && hud::teamhurttime && m_team(gamemode, mutators) && focus == player1 &&
-                 d->team == player1->team && d->lastteamhit >= 0 && totalmillis-d->lastteamhit <= hud::teamhurttime,
-            hashint = playerhint&(d->team != focus->team ? 2 : 1), haslight = false, haspower = false, hasdom = false;
-            if(isweap(d->weapselect) && playerhint&4)
-            {
-                if(W(d->weapselect, lightpersist)&4) haslight = true;
-                if(W(d->weapselect, lightpersist)&8 && lastmillis-d->weaptime[d->weapselect] > 0 && d->weapstate[d->weapselect] == W_S_POWER)
-                    haspower = true;
-            }
-            if((!m_team(gamemode, mutators) || d->team != focus->team) && playerhint&8 && d->dominated.find(focus) >= 0) hasdom = true;
-            if(d->actortype < A_ENEMY && d != focus && (useth || hashint || haslight || haspower || hasdom))
-            {
-                if(hashint || haslight || haspower || hasdom)
-                {
-                    vec c = vec::fromcolor(hasdom ? pulsehexcol(d, PULSE_DISCO) : (haslight ? WHCOL(d, d->weapselect, lightcol, physics::secondaryweap(d)) : getcolour(d, playerhinttone, playerhinttonelevel)));
-                    float height = d->height, fade = blend;
-                    if(hasdom) fade *= playerhintdom;
-                    else if(haslight || haspower)
-                    {
-                        int millis = lastmillis-d->weaptime[d->weapselect];
-                        if(haslight)
-                        {
-                            if(d->weapstate[d->weapselect] == W_S_SWITCH || d->weapstate[d->weapselect] == W_S_USE)
-                                fade *= millis/float(max(d->weapwait[d->weapselect], 1));
-                        }
-                        else fade *= millis/float(max(d->weapwait[d->weapselect], 1));
-                        fade *= playerhintlight;
-                    }
-                    else if(playerhintscale > 0)
-                    {
-                        float per = d->health/float(max(d->gethealth(gamemode, mutators), 1));
-                        fade = (fade*(1.f-playerhintscale))+(fade*per*playerhintscale);
-                        if(fade > 1)
-                        {
-                            height *= 1.f+(fade-1.f);
-                            fade = 1;
-                        }
-                        fade *= playerhintblend;
-                    }
-                    if(d->state == CS_ALIVE && d->lastbuff)
-                    {
-                        int millis = lastmillis%1000;
-                        float amt = millis <= 500 ? 1.f-(millis/500.f) : (millis-500)/500.f;
-                        vec pc = game::pulsecolour(d, PULSE_BUFF);
-                        flashcolour(c.r, c.g, c.b, pc.r, pc.g, pc.b, amt);
-                        height += height*amt*0.1f;
-                    }
-                    vec o = d->center(), offset = vec(o).sub(camera1->o).rescale(d->radius/2);
-                    offset.z = max(offset.z, -1.0f);
-                    offset.add(o);
-                    part_create(PART_HINT_VERT_SOFT, 1, offset, c.tohexcolor(), clamp(height*playerhintsize, 1.f, playerhintmaxsize), fade*camera1->o.distrange(o, playerhintfadeat, playerhintfadecut));
-                }
-                if(useth)
-                {
-                    int millis = lastmillis%500;
-                    float amt = millis <= 250 ? 1.f-(millis/250.f) : (millis-250)/250.f, height = d->height*0.5f;
-                    if(playerhinthurtthrob) height += height*amt*0.1f;
-                    vec c = pulsecolour(d, PULSE_WARN),
-                        o = d->center(), offset = vec(o).sub(camera1->o).rescale(-d->radius);
-                    offset.z = max(offset.z, -1.0f);
-                    offset.add(o);
-                    part_icon(offset, textureload(hud::warningtex, 3, true, false), height*playerhinthurtsize, amt*blend*playerhinthurtblend, 0, 0, 1, c.tohexcolor());
-                }
-            }
-            if(d->hasparkour() || d->impulsetime[IM_T_JUMP] || d->sliding(true)) impulseeffect(d, 1);
-        }
+        if(d->state == CS_ALIVE && (d->hasparkour() || d->impulsetime[IM_T_JUMP] || d->sliding(true))) impulseeffect(d, 1);
         if(d->burntime && d->burning(lastmillis, d->burntime))
         {
             int millis = lastmillis-d->lastres[W_R_BURN], delay = max(d->burndelay, 1);

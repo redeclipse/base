@@ -192,9 +192,6 @@ namespace capture
                 mdl.o = flagpos;
                 mdl.color = vec4(1, 1, 1, blend);
                 game::drawmodel("props/flag", mdl, flagpos, f.team);
-                flagpos.z += enttype[AFFINITY].radius/3;
-                if(drawtex != DRAWTEX_HALO && game::affinityhint)
-                    part_create(PART_HINT_SOFT, 1, flagpos, effect.tohexcolor(), enttype[AFFINITY].radius/2*game::affinityhintsize, blend*game::affinityhintblend*camera1->o.distrange(flagpos, game::affinityhintfadeat, game::affinityhintfadecut));
             }
             else if(!f.owner || f.owner != game::focus || game::thirdpersonview(true))
             {
@@ -216,10 +213,7 @@ namespace capture
                 game::drawmodel("props/flag", mdl, flagpos, f.team);
                 if(drawtex != DRAWTEX_HALO)
                 {
-                    flagpos.z += enttype[AFFINITY].radius/3;
-                    if(drawtex != DRAWTEX_HALO && game::affinityhint)
-                        part_create(PART_HINT_SOFT, 1, flagpos, effect.tohexcolor(), enttype[AFFINITY].radius/2*game::affinityhintsize, blend*game::affinityhintblend*camera1->o.distrange(flagpos, game::affinityhintfadeat, game::affinityhintfadecut));
-                    flagpos.z += enttype[AFFINITY].radius/2;
+                    flagpos.z += enttype[AFFINITY].radius;
                     if(f.owner)
                     {
                         flagpos.z += iterflags[f.owner->clientnum]*2;

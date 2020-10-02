@@ -155,7 +155,7 @@ namespace defend
                 }
                 else formatstring(b.info, "%s", TEAM(b.owner ? b.owner : b.enemy, name));
                 vec above = b.o;
-                float blend = camera1->o.distrange(above, game::affinityhintfadeat, game::affinityhintfadecut);
+                float blend = camera1->o.distrange(above, game::affinityfadeat, game::affinityfadecut);
                 part_explosion(above, 3, PART_GLIMMERY, 1, colour, 1, blend);
                 part_create(PART_HINT_SOFT, 1, above, colour, 6, blend);
                 above.z += 6;

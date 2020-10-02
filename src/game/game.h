@@ -2268,9 +2268,9 @@ namespace game
             maptime, mapstart, timeremaining, timeelapsed, timelast, timesync,
             bloodfade, bloodsize, bloodsparks, debrisfade, eventiconfade, eventiconshort, damageinteger,
             announcefilter, dynlighteffects, aboveheadaffinity, aboveheadnames, followthirdperson, nogore, forceplayermodel, forceplayerpattern,
-            playerovertone, playerundertone, playerdisplaytone, playereffecttone, playerteamtone, follow, specmode, spectvfollow, clientcrc, affinityhint;
+            playerovertone, playerundertone, playerdisplaytone, playereffecttone, playerteamtone, follow, specmode, spectvfollow, clientcrc;
     extern float bloodscale, debrisscale, aboveitemiconsize, aboveheadnamessize, playerovertonelevel, playerundertonelevel, playerdisplaytonelevel, playereffecttonelevel, playerteamtonelevel,
-    affinityhintblend, affinityhintsize, affinityhintfadeat, affinityhintfadecut, affinityfollowblend, affinitythirdblend, bombertargetnamefadeat, bombertargetnamefadecut, damagedivisor;
+            affinityfadeat, affinityfadecut, affinityfollowblend, affinitythirdblend, bombertargetnamefadeat, bombertargetnamefadecut, damagedivisor;
     extern bool zooming, wantsloadoutmenu;
     extern vec swaypush, swaydir;
     extern string clientmap;

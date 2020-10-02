@@ -261,7 +261,6 @@ namespace bomber
                 mdl.pitch = !f.owner && f.proj ? f.proj->pitch : 0;
                 mdl.roll = !f.owner && f.proj ? f.proj->roll : 0;
                 float wait = f.droptime ? clamp((lastmillis-f.droptime)/float(bomberresetdelay), 0.f, 1.f) : ((f.owner && carrytime) ? clamp((lastmillis-f.taketime)/float(carrytime), 0.f, 1.f) : 0.f);
-                int interval = lastmillis%1000;
                 vec effect = pulsecolour();
                 if(wait > 0.5f)
                 {
@@ -276,26 +275,20 @@ namespace bomber
                         trans *= game::focus != game::player1 ? game::affinityfollowblend : game::affinitythirdblend;
                     mdl.color.a *= trans;
                     game::drawmodel("props/ball", mdl, above);
-                    if(drawtex != DRAWTEX_HALO)
+                    if(drawtex != DRAWTEX_HALO && gs_playing(game::gamestate) && f.droptime)
                     {
-                        float fluc = interval >= 500 ? (1500-interval)/1000.f : (500+interval)/1000.f;
                         int pcolour = effect.tohexcolor();
-                        if(game::affinityhint)
-                            part_create(PART_HINT_SOFT, 1, above, pcolour, enttype[AFFINITY].radius/4*game::affinityhintsize+(2*fluc), fluc*trans*game::affinityhintblend*camera1->o.distrange(above, game::affinityhintfadeat, game::affinityhintfadecut));
-                        if(gs_playing(game::gamestate) && f.droptime)
-                        {
-                            above.z += enttype[AFFINITY].radius/4*trans+1.5f;
-                            part_icon(above, textureload(hud::progringtex, 3), 5*trans, 1, 0, 0, 1, pcolour, (lastmillis%1000)/1000.f, 0.1f);
-                            part_icon(above, textureload(hud::progresstex, 3), 5*trans, 0.25f, 0, 0, 1, pcolour);
-                            part_icon(above, textureload(hud::progresstex, 3), 5*trans, 1, 0, 0, 1, pcolour, 0, wait);
-                        }
+                        above.z += enttype[AFFINITY].radius/4*trans+1.5f;
+                        part_icon(above, textureload(hud::progringtex, 3), 5*trans, 1, 0, 0, 1, pcolour, (lastmillis%1000)/1000.f, 0.1f);
+                        part_icon(above, textureload(hud::progresstex, 3), 5*trans, 0.25f, 0, 0, 1, pcolour);
+                        part_icon(above, textureload(hud::progresstex, 3), 5*trans, 1, 0, 0, 1, pcolour, 0, wait);
                     }
                 }
             }
             else if(!m_bb_hold(game::gamemode, game::mutators))
             {
                 vec above = f.spawnloc, effect = vec::fromcolor(TEAM(f.team, colour)).mul(trans);
-                float blend = camera1->o.distrange(above, game::affinityhintfadeat, game::affinityhintfadecut);
+                float blend = camera1->o.distrange(above, game::affinityfadeat, game::affinityfadecut);
                 basemdl.material[0] = mdl.material[0] = bvec::fromcolor(effect);
                 if(drawtex != DRAWTEX_HALO)
                 {
