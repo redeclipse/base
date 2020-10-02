@@ -9,7 +9,7 @@ VAR(IDF_PERSIST, halodist, 32, 1024, VAR_MAX);
 FVAR(IDF_PERSIST, haloscale, 0, 0.5f, 1);
 FVAR(IDF_PERSIST, haloblend, 0, 1, 1);
 CVAR(IDF_PERSIST, halocolour, 0xFFFFFF);
-VAR(IDF_PERSIST, halooffset, 1, 2, 4);
+VARF(IDF_PERSIST, halooffset, 1, 2, 4, initwarning("halo setup", INIT_LOAD, CHANGE_SHADERS));
 FVAR(IDF_PERSIST, halofactor, FVAR_NONZERO, 4.f, FVAR_MAX);
 
 void setuphalo(int w, int h)
@@ -111,8 +111,7 @@ void blendhalos()
     glBindTexture(GL_TEXTURE_RECTANGLE, halotex);
 
     SETSHADER(hudhalo);
-    LOCALPARAMI(offset, halooffset);
-    LOCALPARAMF(factor, halofactor);
+    LOCALPARAMF(halofactor, halofactor);
 
     hudquad(0, 0, hudw, hudh, 0, haloh, halow, -haloh);
 
