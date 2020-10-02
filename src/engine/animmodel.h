@@ -118,16 +118,18 @@ struct animmodel : model
             ALLOW_PATTERN  = 1<<2,
             ENABLE_PATTERN = 1<<3,
             DITHER         = 1<<4,
-            CULL_HALO      = 1<<5
+            CULL_FACE      = 1<<5,
+            DOUBLE_SIDED   = 1<<6,
+            CULL_HALO      = 1<<7
         };
 
         part *owner;
         Texture *tex, *decal, *masks, *envmap, *normalmap;
         Shader *shader, *rsmshader;
-        int cullface, flags;
+        int flags;
         shaderparamskey *key;
 
-        skin() : owner(0), tex(notexture), decal(NULL), masks(notexture), envmap(NULL), normalmap(NULL), shader(NULL), rsmshader(NULL), cullface(1), flags(CULL_HALO), key(NULL) {}
+        skin() : owner(0), tex(notexture), decal(NULL), masks(notexture), envmap(NULL), normalmap(NULL), shader(NULL), rsmshader(NULL), flags(CULL_FACE|CULL_HALO), key(NULL) {}
 
         bool firstmodel(const animstate *as) const
         {
@@ -141,6 +143,8 @@ struct animmodel : model
         bool alphablended() const { return blendmode == MDL_BLEND_ALPHA || blend < 1.0f; }
         bool dithered() const { return (flags&DITHER) != 0; }
         bool decaled() const { return decal != NULL; }
+        bool shouldcullface() const { return flags&CULL_FACE && (drawtex != DRAWTEX_HALO || flags&CULL_HALO); }
+        bool doublesided() const { return (flags&DOUBLE_SIDED) != 0; }
 
         bool mixed() const { return (flags&ENABLE_MIXER) != 0; }
         bool canmix(const modelstate *state, const animstate *as) const
@@ -154,11 +158,6 @@ struct animmodel : model
         {
             if(!state->pattern || state->pattern == notexture) return false;
             return !(state->flags&MDL_NOPATTERN) || firstmodel(as);
-        }
-
-        bool shouldcullface() const
-        {
-            return cullface > 0 && (drawtex != DRAWTEX_HALO || flags&CULL_HALO);
         }
 
         void setkey()
@@ -234,7 +233,7 @@ struct animmodel : model
                 string opts;
                 int optslen = 0;
                 if(alphatested()) opts[optslen++] = 'a';
-                if(!cullface) opts[optslen++] = 'c';
+                if(doublesided()) opts[optslen++] = 'c';
                 opts[optslen++] = '\0';
 
                 defformatstring(name, "rsmmodel%s", opts);
@@ -259,7 +258,7 @@ struct animmodel : model
             if(envmapped()) opts[optslen++] = 'e';
             if(mixed()) opts[optslen++] = 'x';
             if(patterned()) opts[optslen++] = 'p';
-            if(!cullface) opts[optslen++] = 'c';
+            if(doublesided()) opts[optslen++] = 'c';
             opts[optslen++] = '\0';
 
             defformatstring(name, "model%s", opts);
@@ -441,7 +440,7 @@ struct animmodel : model
             if(cancollide) m.flags |= BIH::MESH_COLLIDE;
             if(s.alphatested()) m.flags |= BIH::MESH_ALPHA;
             if(noclip) m.flags |= BIH::MESH_NOCLIP;
-            if(s.cullface > 0) m.flags |= BIH::MESH_CULLFACE;
+            if(s.shouldcullface()) m.flags |= BIH::MESH_CULLFACE;
             genBIH(m);
             while(bih.last().numtris > BIH::mesh::MAXTRIS)
             {
@@ -1835,7 +1834,14 @@ struct animmodel : model
     void setcullface(int cullface)
     {
         if(parts.empty()) loaddefaultparts();
-        loopv(parts) loopvj(parts[i]->skins) parts[i]->skins[j].cullface = cullface;
+        loopv(parts) loopvj(parts[i]->skins)
+        {
+            skin &s = parts[i]->skins[j];
+            if(cullface > 0) s.flags |= skin::CULL_FACE;
+            else s.flags &= ~skin::CULL_FACE;
+            if(!cullface) s.flags |= skin::DOUBLE_SIDED;
+            else s.flags &= ~skin::DOUBLE_SIDED;
+        }
     }
 
     void setcullhalo(bool val)
@@ -2170,7 +2176,11 @@ template<class MDL, class MESH> struct modelcommands
 
     static void setcullface(char *meshname, int *cullface)
     {
-        loopskins(meshname, s, s.cullface = *cullface);
+        loopskins(meshname, s,
+        {
+            if(*cullface > 0) s.flags |= skin::CULL_FACE; else s.flags &= ~skin::CULL_FACE;
+            if(!*cullface) s.flags |= skin::DOUBLE_SIDED; else s.flags &= ~skin::DOUBLE_SIDED;
+        });
     }
 
     static void setcullhalo(char *meshname, int *cullhalo)
