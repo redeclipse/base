@@ -123,10 +123,10 @@ struct animmodel : model
         part *owner;
         Texture *tex, *decal, *masks, *envmap, *normalmap;
         Shader *shader, *rsmshader;
-        int cullface, flags;
+        int cullface, cullhalo, flags;
         shaderparamskey *key;
 
-        skin() : owner(0), tex(notexture), decal(NULL), masks(notexture), envmap(NULL), normalmap(NULL), shader(NULL), rsmshader(NULL), cullface(1), flags(0), key(NULL) {}
+        skin() : owner(0), tex(notexture), decal(NULL), masks(notexture), envmap(NULL), normalmap(NULL), shader(NULL), rsmshader(NULL), cullface(1), cullhalo(1), flags(0), key(NULL) {}
 
         bool firstmodel(const animstate *as) const
         {
@@ -154,6 +154,8 @@ struct animmodel : model
             if(!state->pattern || state->pattern == notexture) return false;
             return !(state->flags&MDL_NOPATTERN) || firstmodel(as);
         }
+
+        int getcull() const { return cullface > 0 ? cullface : (drawtex == DRAWTEX_HALO ? cullhalo : 0); }
 
         void setkey()
         {
@@ -288,7 +290,7 @@ struct animmodel : model
 
         void bind(mesh &b, const animstate *as, modelstate *state)
         {
-            if(cullface > 0)
+            if(getcull() > 0)
             {
                 if(!enablecullface) { glEnable(GL_CULL_FACE); enablecullface = true; }
             }
@@ -1832,6 +1834,12 @@ struct animmodel : model
         loopv(parts) loopvj(parts[i]->skins) parts[i]->skins[j].cullface = cullface;
     }
 
+    void setcullhalo(int cullhalo)
+    {
+        if(parts.empty()) loaddefaultparts();
+        loopv(parts) loopvj(parts[i]->skins) parts[i]->skins[j].cullhalo = cullhalo;
+    }
+
     void setcolor(const vec &color)
     {
         if(parts.empty()) loaddefaultparts();
@@ -2156,6 +2164,11 @@ template<class MDL, class MESH> struct modelcommands
         loopskins(meshname, s, s.cullface = *cullface);
     }
 
+    static void setcullhalo(char *meshname, int *cullhalo)
+    {
+        loopskins(meshname, s, s.cullhalo = *cullhalo);
+    }
+
     static void setcolor(char *meshname, float *r, float *g, float *b)
     {
         loopskins(meshname, s, s.color = vec(*r, *g, *b));
@@ -2256,6 +2269,7 @@ template<class MDL, class MESH> struct modelcommands
             modelcommand(setblend, "blend", "sf");
             modelcommand(setblendmode, "blendmode", "si");
             modelcommand(setcullface, "cullface", "si");
+            modelcommand(setcullhalo, "cullhalo", "si");
             modelcommand(setcolor, "color", "sfff");
             modelcommand(setenvmap, "envmap", "ssgg");
             modelcommand(setbumpmap, "bumpmap", "ss");

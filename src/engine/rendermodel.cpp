@@ -77,6 +77,13 @@ void mdlcullface(int *cullface)
 }
 COMMAND(0, mdlcullface, "i");
 
+void mdlcullhalo(int *cullhalo)
+{
+    checkmdl;
+    loadingmodel->setcullhalo(*cullhalo);
+}
+COMMAND(0, mdlcullhalo, "i");
+
 void mdlcolor(float *r, float *g, float *b)
 {
     checkmdl;

@@ -52,6 +52,7 @@ struct model
     virtual void setblendmode(int mode) {}
     virtual void setfullbright(float fullbright) {}
     virtual void setcullface(int cullface) {}
+    virtual void setcullhalo(int cullhalo) {}
     virtual void setcolor(const vec &color) {}
     virtual void setmaterial(int material1, int material2) {}
     virtual void setmixer(bool) {}
