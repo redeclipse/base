@@ -595,33 +595,40 @@ namespace game
     int vanitybuild(gameent *d)
     {
         int head = -1;
-        if(d->vitems.empty() && *d->vanity)
+        if(d->vitems.empty())
         {
-            vector<char *> vanitylist;
-            explodelist(d->vanity, vanitylist);
-            loopv(vanitylist) if(vanitylist[i] && *vanitylist[i])
+            if(*d->vanity)
             {
-                loopvk(vanities) if(!strcmp(vanities[k].ref, vanitylist[i]))
+                vector<char *> vanitylist;
+                explodelist(d->vanity, vanitylist);
+                loopv(vanitylist)
                 {
-                    if(!vanities[k].type && !vanities.inrange(head)) head = d->vitems.length();
-                    d->vitems.add(k);
+                    if(!vanitylist[i] || !*vanitylist[i]) continue;
+                    loopvk(vanities)
+                    {
+                        if(strcmp(vanities[k].ref, vanitylist[i])) continue;
+                        d->vitems.add(k);
+                        if(vanities[k].type || head >= 0) continue;
+                        head = k;
+                    }
                 }
+                vanitylist.deletearrays();
             }
-            vanitylist.deletearrays();
         }
         else
         {
-            loopv(d->vitems) if(vanities.inrange(d->vitems[i]) && !vanities[d->vitems[i]].type)
+            loopv(d->vitems)
             {
-                head = i;
+                if(!vanities.inrange(d->vitems[i]) || vanities[d->vitems[i]].type) continue;
+                head = d->vitems[i];
                 break;
             }
         }
         if(!vanities.inrange(head)) loopv(vanities)
         {
             if(vanities[i].type) continue;
-            head = d->vitems.length();
             d->vitems.add(i);
+            head = i;
             break;
         }
         return head;
