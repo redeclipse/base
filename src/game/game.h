@@ -2271,7 +2271,7 @@ namespace game
             announcefilter, dynlighteffects, aboveheadnames, followthirdperson, nogore, forceplayermodel, forceplayerpattern,
             playerovertone, playerundertone, playerdisplaytone, playereffecttone, playerteamtone, follow, specmode, spectvfollow, clientcrc;
     extern float bloodscale, debrisscale, aboveitemiconsize, playerovertonelevel, playerundertonelevel, playerdisplaytonelevel, playereffecttonelevel, playerteamtonelevel,
-            affinityfadeat, affinityfadecut, affinityfollowblend, affinitythirdblend, bombertargetnamefadeat, bombertargetnamefadecut, damagedivisor;
+            affinityfadeat, affinityfadecut, affinityfollowblend, affinitythirdblend, damagedivisor;
     extern bool zooming, wantsloadoutmenu;
     extern vec swaypush, swaydir;
     extern string clientmap;

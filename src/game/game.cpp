@@ -384,7 +384,7 @@ namespace game
     FVAR(IDF_PERSIST, playerghostblend, 0, 0.35f, 1);
 
     VAR(IDF_PERSIST, playerovertone, -1, CTONE_TEAM, CTONE_MAX-1);
-    VAR(IDF_PERSIST, playerundertone, -1, CTONE_TMIX, CTONE_MAX-1);
+    VAR(IDF_PERSIST, playerundertone, -1, CTONE_TONE, CTONE_MAX-1);
     VAR(IDF_PERSIST, playerdisplaytone, -1, CTONE_TONE, CTONE_MAX-1);
     VAR(IDF_PERSIST, playereffecttone, -1, CTONE_TEAMED, CTONE_MAX-1);
     VAR(IDF_PERSIST, playerhalotone, -1, CTONE_TEAM, CTONE_MAX-1);
@@ -396,7 +396,7 @@ namespace game
     FVAR(IDF_PERSIST, playereffecttonelevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playerhalotonelevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playerteamtonelevel, 0.f, 1.f, 10.f);
-    FVAR(IDF_PERSIST, playertonemix, 0, 0, 1);
+    FVAR(IDF_PERSIST, playertonemix, 0, 0.5f, 1);
 
     FVAR(IDF_PERSIST, playerovertoneinterp, 0, 0, 1); // interpolate this much brightness from the opposing tone
     FVAR(IDF_PERSIST, playerovertonebright, 0.f, 1.f, 10.f);
@@ -407,9 +407,6 @@ namespace game
     FVAR(IDF_PERSIST, affinityfadecut, 0, 4, FVAR_MAX);
     FVAR(IDF_PERSIST, affinityfollowblend, 0, 0.5f, 1);
     FVAR(IDF_PERSIST, affinitythirdblend, 0, 0.5f, 1);
-
-    FVAR(IDF_PERSIST, bombertargetnamefadeat, 0, 20, FVAR_MAX);
-    FVAR(IDF_PERSIST, bombertargetnamefadecut, 0, 15, FVAR_MAX);
 
     VAR(IDF_PERSIST, footstepsounds, 0, 3, 3); // 0 = off, &1 = focus, &2 = everyone else
     FVAR(IDF_PERSIST, footstepsoundmin, 0, 0, FVAR_MAX); // minimum velocity magnitude

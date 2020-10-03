@@ -3035,9 +3035,6 @@ namespace entities
              isedit = edit && game::player1->state == CS_EDITING,
              hasent = isedit && (enthover == idx || entgroup.find(idx) >= 0),
              hastop = hasent && o.squaredist(camera1->o) <= showentdist*showentdist;
-        int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators),
-            attr = e.type == WEAPON ? m_attr(e.type, e.attrs[0]) : e.attrs[0], interval = lastmillis%1000;
-        float fluc = interval >= 500 ? (1500-interval)/1000.f : (500+interval)/1000.f;
         if(edit)
         {
             loopj(hastop && e.flags&EF_DYNAMIC ? 2 : 1)
