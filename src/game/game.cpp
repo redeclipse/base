@@ -400,14 +400,16 @@ namespace game
     VAR(IDF_PERSIST, playerundertone, -1, CTONE_TMIX, CTONE_MAX-1);
     VAR(IDF_PERSIST, playerdisplaytone, -1, CTONE_TONE, CTONE_MAX-1);
     VAR(IDF_PERSIST, playereffecttone, -1, CTONE_TEAMED, CTONE_MAX-1);
+    VAR(IDF_PERSIST, playerhalotone, -1, CTONE_TEAM, CTONE_MAX-1);
     VAR(IDF_PERSIST, playerteamtone, -1, CTONE_TEAM, CTONE_MAX-1);
 
     FVAR(IDF_PERSIST, playerovertonelevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playerundertonelevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playerdisplaytonelevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playereffecttonelevel, 0.f, 1.f, 10.f);
+    FVAR(IDF_PERSIST, playerhalotonelevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playerteamtonelevel, 0.f, 1.f, 10.f);
-    FVAR(IDF_PERSIST, playertonemix, 0, 0.5f, 1);
+    FVAR(IDF_PERSIST, playertonemix, 0, 0, 1);
 
     FVAR(IDF_PERSIST, playerovertoneinterp, 0, 0, 1); // interpolate this much brightness from the opposing tone
     FVAR(IDF_PERSIST, playerovertonebright, 0.f, 1.f, 10.f);
@@ -1429,7 +1431,7 @@ namespace game
             if(powering && showweapfx)
             {
                 int fxtype = W2(d->weapselect, fxtypepower, secondary);
-                int fxindex = game::getweapfx(fxtype);
+                int fxindex = getweapfx(fxtype);
                 if(fxindex >= 0)
                 {
                     vec from = d->muzzletag(d->weapselect);
@@ -2066,7 +2068,7 @@ namespace game
             stringz(formattedreason);
             stringz(ipaddr);
             if(reason >= 0) formatstring(formattedreason, " (%s)", disc_reasons[reason]);
-            if(client::showpresencehostinfo && client::haspriv(game::player1, G(iphostlock))) formatstring(ipaddr, " (%s)", d->hostip);
+            if(client::showpresencehostinfo && client::haspriv(player1, G(iphostlock))) formatstring(ipaddr, " (%s)", d->hostip);
             if(d->actortype == A_PLAYER)
             {
                 int amt = client::otherclients(); // not including self to disclude this player
@@ -2920,7 +2922,7 @@ namespace game
             {
                 gameentity &e = *(gameentity *)entities::ents[i];
                 if(k ? (e.type != PLAYERSTART && e.type != WEAPON && e.type != CAMERA) : (e.type != CAMERA || e.attrs[0] != CAMERA_NORMAL)) continue;
-                if(enttype[e.type].modesattr >= 0 && !m_check(e.attrs[enttype[e.type].modesattr], e.attrs[enttype[e.type].modesattr+1], game::gamemode, game::mutators)) continue;
+                if(enttype[e.type].modesattr >= 0 && !m_check(e.attrs[enttype[e.type].modesattr], e.attrs[enttype[e.type].modesattr+1], gamemode, mutators)) continue;
                 if(enttype[e.type].mvattr >= 0 && !checkmapvariant(e.attrs[enttype[e.type].mvattr])) continue;
                 if(enttype[e.type].fxattr >= 0 && !checkmapeffects(e.attrs[enttype[e.type].fxattr])) continue;
                 vec pos = e.o;
@@ -3495,12 +3497,12 @@ namespace game
     {
         if(drawtex == DRAWTEX_HALO)
         {
-            mdl.material[0] = bvec::fromcolor(getcolour(d, playerovertone, 1));
+            mdl.material[0] = bvec::fromcolor(getcolour(d, playerhalotone, playerhalotonelevel));
             if(d->state == CS_ALIVE && d->lastbuff)
             {
                 int millis = lastmillis%1000;
                 float amt = millis <= 500 ? 1.f-(millis/500.f) : (millis-500)/500.f;
-                bvec pc = bvec::fromcolor(game::pulsecolour(d, PULSE_BUFF));
+                bvec pc = bvec::fromcolor(pulsecolour(d, PULSE_BUFF));
                 flashcolour(mdl.material[0].r, mdl.material[0].g, mdl.material[0].b, pc.r, pc.g, pc.b, amt);
             }
             return;
@@ -3933,45 +3935,15 @@ namespace game
         }
     }
 
-    void drawmodel(const char *name, modelstate &mdl, const vec &o, int team, bool alive, dynent *e)
+    bool haloallow(gameent *d)
     {
-        if(drawtex == DRAWTEX_HALO)
-        {
-            if(camera1->o.dist(o) >= halodist)
-            {
-                mdl.flags |= MDL_NORENDER;
-                return;
-            }
-            else if(team >= 0 && m_team(gamemode, mutators) && team != focus->team && focus->state != CS_SPECTATOR)
-            {
-                vec targ;
-                if(!alive || !getsight(camera1->o, camera1->yaw, camera1->pitch, o, targ, halodist, curfov, fovy))
-                {
-                    mdl.flags |= MDL_NORENDER;
-                    return;
-                }
-            }
-            if(inzoom())
-            {
-                vec2 pos(0.5f, 0.5f), cur = pos;
-                float z = 1;
-                if(!vectocursor(o, pos.x, pos.y, z))
-                {
-                    mdl.flags |= MDL_NORENDER;
-                    return;
-                }
-
-                float scale = cur.dist(pos)*2;
-                if(scale >= 0.75f)
-                {
-                    mdl.flags |= MDL_NORENDER;
-                    return;
-                }
-                if(scale >= 0.25f) mdl.color.a *= 1-((scale-0.25f)*2*zoomscale());
-            }
-        }
-
-        rendermodel(name, mdl, e);
+        if(drawtex != DRAWTEX_HALO) return true;
+        if(d == focus) return !inzoom();
+        vec dir(0, 0, 0);
+        float dist = -1;
+        if(!client::radarallow(d, dir, dist)) return false;
+        if(dist > halodist) return false;
+        return true;
     }
 
     void renderplayer(gameent *d, int third, float size, int flags = 0, const vec4 &color = vec4(1, 1, 1, 1), int *lastoffset = NULL)
@@ -3981,6 +3953,7 @@ namespace game
         modelattach mdlattach[ATTACHMENTMAX];
         dynent *e = third ? (third != 2 ? (dynent *)d : (dynent *)&bodymodel) : (dynent *)&avatarmodel;
         const char *mdlname = getplayerstate(d, mdl, third, size, flags, mdlattach, lastoffset);
+
         mdl.color = color;
         getplayermaterials(d, mdl);
         if(drawtex != DRAWTEX_HALO) getplayereffects(d, mdl);
@@ -3994,9 +3967,9 @@ namespace game
             }
             if(d != focus || (d != player1 ? fullbrightfocus&1 : fullbrightfocus&2)) mdl.flags |= MDL_FULLBRIGHT;
         }
-        if(d == focus && drawtex == DRAWTEX_HALO && inzoom()) mdl.flags |= MDL_NORENDER;
+        else if(drawtex == DRAWTEX_HALO && (d == focus ? inzoom() : !haloallow(d))) mdl.flags |= MDL_NORENDER;
 
-        drawmodel(mdlname, mdl, d->center(), d->team, d->state == CS_ALIVE, e);
+        rendermodel(mdlname, mdl, e);
 
         if((d != focus || d->state == CS_DEAD || d->state == CS_WAITING) && !(mdl.flags&MDL_ONLYSHADOW) && third == 1 && d->actortype < A_ENEMY && !shadowmapping && !drawtex && (aboveheaddead || d->state == CS_ALIVE))
             renderabovehead(d);
@@ -4044,26 +4017,23 @@ namespace game
 
     void render()
     {
-        if(!drawtex || drawtex == DRAWTEX_HALO) entities::render();
-        if(!drawtex)
-        {
-            ai::render();
-            projs::render();
-        }
-        if(!drawtex || drawtex == DRAWTEX_HALO)
-        {
-            if(m_capture(gamemode)) capture::render();
-            else if(m_defend(gamemode)) defend::render();
-            else if(m_bomber(gamemode)) bomber::render();
+        if(drawtex && drawtex != DRAWTEX_HALO) return;
 
-            gameent *d;
-            int numdyns = numdynents();
-            bool third = thirdpersonview();
-            loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL)
-            {
-                if(drawtex == DRAWTEX_HALO && (d != focus || third)) d->cleartags();
-                renderplayer(d, 1, d->curscale, d == focus ? (third ? MDL_FORCESHADOW : MDL_ONLYSHADOW) : 0, vec4(1, 1, 1, opacity(d, true)));
-            }
+        ai::render();
+        entities::render();
+        projs::render();
+
+        if(m_capture(gamemode)) capture::render();
+        else if(m_defend(gamemode)) defend::render();
+        else if(m_bomber(gamemode)) bomber::render();
+
+        gameent *d;
+        int numdyns = numdynents();
+        bool third = thirdpersonview();
+        loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL)
+        {
+            if(drawtex == DRAWTEX_HALO && (d != focus || third)) d->cleartags();
+            renderplayer(d, 1, d->curscale, d == focus ? (third ? MDL_FORCESHADOW : MDL_ONLYSHADOW) : 0, vec4(1, 1, 1, opacity(d, true)));
         }
     }
 

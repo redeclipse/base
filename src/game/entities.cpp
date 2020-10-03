@@ -24,7 +24,7 @@ namespace entities
     VAR(IDF_PERSIST, showentfull, 0, 0, 1);
     FVAR(IDF_PERSIST, showentsize, 0, 3, 10);
     FVAR(IDF_PERSIST, showentavailable, 0, 1, 1);
-    FVAR(IDF_PERSIST, showentunavailable, 0, 0.15f, 1);
+    FVAR(IDF_PERSIST, showentunavailable, 0, 0.1f, 1);
 
     FVAR(IDF_PERSIST, entselsize, 0, 1.5f, FVAR_MAX);
     FVAR(IDF_PERSIST, entselsizetop, 0, 3, FVAR_MAX);
@@ -2821,6 +2821,28 @@ namespace entities
         return game::player1->state == CS_EDITING ? ((entgroup.find(n) >= 0 || enthover == n) ? 1 : 2) : 3;
     }
 
+    bool radarallow(int id, vec &dir, float &dist, bool justtest = false)
+    {
+        if(!ents.inrange(id) || m_hard(game::gamemode, game::mutators)) return false;
+        if(justtest) return true;
+        dir = vec(((gameentity *)ents[id])->pos()).sub(camera1->o);
+        dist = dir.magnitude();
+        if(hud::radarlimited(dist)) return false;
+        return true;
+    }
+
+    bool haloallow(int id, bool justtest)
+    {
+        if(!ents.inrange(id)) return false;
+        if(drawtex != DRAWTEX_HALO) return true;
+        if(ents[id]->type != WEAPON && (game::player1->state != CS_EDITING || (id != enthover && entgroup.find(id) < 0))) return false;
+        vec dir(0, 0, 0);
+        float dist = -1;
+        if(!radarallow(id, dir, dist, justtest)) return false;
+        if(dist > halodist) return false;
+        return true;
+    }
+
     void render()
     {
         float offset = entrailoffset;
@@ -2881,8 +2903,7 @@ namespace entities
         for(int i = fstent; i < lstent; i++)
         {
             gameentity &e = *(gameentity *)ents[i];
-            if(drawtex == DRAWTEX_HALO && e.type != WEAPON && (game::player1->state != CS_EDITING || (i != enthover && entgroup.find(i) < 0))) continue;
-            if(e.type <= NOTUSED || e.type >= MAXENTTYPES || (enttype[e.type].usetype == EU_ITEM && simpleitems)) continue;
+            if(e.type <= NOTUSED || e.type >= MAXENTTYPES || (enttype[e.type].usetype == EU_ITEM && simpleitems) || !haloallow(i)) continue;
             bool active = enttype[e.type].usetype == EU_ITEM && (e.spawned() || (e.lastemit && lastmillis-e.lastemit < 500));
             if(m_edit(game::gamemode) || active)
             {
@@ -2929,10 +2950,7 @@ namespace entities
                         {
                             colour = W(attr, colour);
                             if(!active || (!game::focus->isobserver() && !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !showentfull)))
-                            {
-                                if(drawtex == DRAWTEX_HALO) mdl.flags |= MDL_NORENDER;
                                 mdl.color.a *= showentunavailable;
-                            }
                             else mdl.color.a *= showentavailable;
                         }
                         else continue;
@@ -2942,7 +2960,7 @@ namespace entities
                         mdl.material[0] = bvec::fromcolor(game::getcolour(game::focus, game::playerovertone, game::playerovertonelevel));
                         mdl.material[1] = bvec::fromcolor(game::getcolour(game::focus, game::playerundertone, game::playerundertonelevel));
                         if(colour >= 0) mdl.material[0] = mdl.material[2] = bvec::fromcolor(colour);
-                        game::drawmodel(mdlname, mdl, e.pos());
+                        rendermodel(mdlname, mdl);
                     }
                 }
             }

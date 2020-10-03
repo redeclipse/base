@@ -23,6 +23,16 @@ namespace bomber
         return true;
     }
 
+    bool haloallow(int id, int render = 0, bool justtest = false)
+    {
+        if(drawtex != DRAWTEX_HALO) return true;
+        vec dir(0, 0, 0);
+        float dist = -1;
+        if(!radarallow(id, render, dir, dist, justtest)) return false;
+        if(dist > halodist) return false;
+        return true;
+    }
+
     ICOMMAND(0, getbomberradarallow, "ibi", (int *n, int *v, int *q),
     {
         vec dir(0, 0, 0);
@@ -241,7 +251,7 @@ namespace bomber
 
     void render()
     {
-        loopv(st.flags) // flags/bases
+        loopv(st.flags) if(haloallow(i)) // flags/bases
         {
             bomberstate::flag &f = st.flags[i];
             modelstate mdl, basemdl;
@@ -274,7 +284,7 @@ namespace bomber
                     if(f.owner == game::focus)
                         trans *= game::focus != game::player1 ? game::affinityfollowblend : game::affinitythirdblend;
                     mdl.color.a *= trans;
-                    game::drawmodel("props/ball", mdl, above);
+                    rendermodel("props/ball", mdl);
                     if(drawtex != DRAWTEX_HALO && gs_playing(game::gamestate) && f.droptime)
                     {
                         int pcolour = effect.tohexcolor();
@@ -319,7 +329,7 @@ namespace bomber
                 basemdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED;
                 basemdl.o = f.render;
                 basemdl.yaw = f.yaw;
-                game::drawmodel("props/point", basemdl, f.render, f.team);
+                rendermodel("props/point", basemdl);
             }
         }
     }

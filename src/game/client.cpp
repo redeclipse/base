@@ -928,6 +928,7 @@ namespace client
         if(!dominated && hud::radarlimited(dist)) return false;
         return true;
     }
+
     CLCOMMAND(radarallow,
     {
         vec dir(0, 0, 0);

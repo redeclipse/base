@@ -2208,9 +2208,10 @@ namespace projs
     void render()
     {
         int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators);
-        loopv(projs) if(projs[i]->ready(false) && projs[i]->projtype != PRJ_AFFINITY)
+        loopv(projs) if(projs[i]->ready(false))
         {
             projent &proj = *projs[i];
+            if(proj.projtype == PRJ_AFFINITY || (drawtex == DRAWTEX_HALO && proj.projtype != PRJ_ENT && proj.projtype != PRJ_VANITY)) continue;
             if((proj.projtype == PRJ_ENT && !entities::ents.inrange(proj.id)) || !projs[i]->mdlname || !*projs[i]->mdlname) continue;
             const char *mdlname = proj.mdlname;
             modelstate mdl;
@@ -2234,7 +2235,11 @@ namespace projs
                     break;
                 }
                 case PRJ_VANITY:
-                    if(proj.owner) game::getplayermaterials(proj.owner, mdl);
+                    if(proj.owner)
+                    {
+                        if(!game::haloallow(proj.owner)) continue;
+                        game::getplayermaterials(proj.owner, mdl);
+                    }
                 case PRJ_GIBS: case PRJ_EJECT:
                 {
                     mdl.size *= proj.lifesize;
@@ -2260,7 +2265,7 @@ namespace projs
                 }
                 case PRJ_ENT:
                 {
-                    if(entities::simpleitems) continue;
+                    if(entities::simpleitems || !entities::haloallow(proj.id)) continue;
                     fadeproj(proj, mdl.color.a, mdl.size);
                     if(!entities::ents.inrange(proj.id)) continue;
                     gameentity &e = *(gameentity *)entities::ents[proj.id];
@@ -2272,7 +2277,7 @@ namespace projs
                         int attr = m_attr(e.type, e.attrs[0]);
                         if(isweap(attr))
                         {
-                            mdl.material[2] = bvec::fromcolor(W(attr, colour));
+                            mdl.material[0] = mdl.material[2] = bvec::fromcolor(W(attr, colour));
                             if(!game::focus->isobserver() && !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !entities::showentfull))
                                 mdl.color.a *= entities::showentunavailable;
                             else mdl.color.a *= entities::showentavailable;

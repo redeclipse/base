@@ -34,6 +34,16 @@ namespace defend
         return true;
     }
 
+    bool haloallow(int id, int render = 0, bool justtest = false)
+    {
+        if(drawtex != DRAWTEX_HALO) return true;
+        vec dir(0, 0, 0);
+        float dist = -1;
+        if(!radarallow(id, render, dir, dist, justtest)) return false;
+        if(dist > halodist) return false;
+        return true;
+    }
+
     ICOMMAND(0, getdefendradarallow, "ibi", (int *n, int *v, int *q),
     {
         vec dir(0, 0, 0);
@@ -133,7 +143,7 @@ namespace defend
 
     void render()
     {
-        loopv(st.flags)
+        loopv(st.flags) if(haloallow(i))
         {
             defendstate::flag &b = st.flags[i];
             modelstate mdl;
@@ -145,7 +155,7 @@ namespace defend
             mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED;
             mdl.yaw = b.yaw;
             mdl.o = b.render;
-            game::drawmodel("props/point", mdl, b.render, b.owner);
+            rendermodel("props/point", mdl);
             if(drawtex != DRAWTEX_HALO)
             {
                 if(b.enemy && b.owner)

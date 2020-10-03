@@ -24,6 +24,16 @@ namespace capture
         return true;
     }
 
+    bool haloallow(int id, int render = 0, bool justtest = false)
+    {
+        if(drawtex != DRAWTEX_HALO) return true;
+        vec dir(0, 0, 0);
+        float dist = -1;
+        if(!radarallow(id, render, dir, dist, justtest)) return false;
+        if(dist > halodist) return false;
+        return true;
+    }
+
     ICOMMAND(0, getcaptureradarallow, "ibi", (int *n, int *v, int *q),
     {
         vec dir(0, 0, 0);
@@ -165,7 +175,7 @@ namespace capture
             }
             numflags[f.owner->clientnum]++;
         }
-        loopv(st.flags) // flags/bases
+        loopv(st.flags) if(haloallow(i)) // flags/bases
         {
             capturestate::flag &f = st.flags[i];
             modelstate mdl, basemdl;
@@ -191,7 +201,7 @@ namespace capture
                 vec flagpos = pos;
                 mdl.o = flagpos;
                 mdl.color = vec4(1, 1, 1, blend);
-                game::drawmodel("props/flag", mdl, flagpos, f.team);
+                rendermodel("props/flag", mdl);
             }
             else if(!f.owner || f.owner != game::focus || game::thirdpersonview(true))
             {
@@ -210,7 +220,7 @@ namespace capture
                 while(mdl.yaw >= 360.f) mdl.yaw -= 360.f;
                 mdl.o = flagpos;
                 mdl.color = vec4(1, 1, 1, blend);
-                game::drawmodel("props/flag", mdl, flagpos, f.team);
+                rendermodel("props/flag", mdl);
                 if(drawtex != DRAWTEX_HALO)
                 {
                     flagpos.z += enttype[AFFINITY].radius;
@@ -231,7 +241,7 @@ namespace capture
             basemdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
             basemdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED;
             basemdl.o = f.render;
-            game::drawmodel("props/point", basemdl, f.render, f.team);
+            rendermodel("props/point", basemdl);
             if(drawtex != DRAWTEX_HALO)
             {
                 vec above = f.spawnloc;

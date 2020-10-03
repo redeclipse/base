@@ -1697,6 +1697,7 @@ namespace ai
     };
     void render()
     {
+        if(drawtex) return;
         if(aidebug >= 2)
         {
             int total = 0, alive = 0;
