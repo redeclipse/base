@@ -326,27 +326,14 @@ namespace game
     VAR(IDF_PERSIST, zoomoffset, 0, 2, 10); // if zoomdefault = -1, then offset from zoomlevels this much for initial default
     VAR(IDF_PERSIST, zoomscroll, 0, 0, 1); // 0 = stop at min/max, 1 = go to opposite end
 
-    VAR(IDF_PERSIST, aboveheadaffinity, 0, 0, 1);
     VAR(IDF_PERSIST, aboveheaddead, 0, 1, 1);
     VAR(IDF_PERSIST, aboveheadnames, 0, 1, 1);
-    VAR(IDF_PERSIST, aboveheadinventory, 0, 0, 2); // 0 = off, 1 = weapselect only, 2 = all weapons
-    VAR(IDF_PERSIST, aboveheadstatus, 0, 1, 1);
-    VAR(IDF_PERSIST, aboveheadteam, 0, 1, 3);
-    VAR(IDF_PERSIST, aboveheaddamage, 0, 0, 1);
-    VAR(IDF_PERSIST, aboveheadicons, 0, 5, 7);
-    FVAR(IDF_PERSIST, aboveheadblend, 0.f, 1, 1.f);
-    FVAR(IDF_PERSIST, aboveheadnamesblend, 0.f, 1, 1.f);
-    FVAR(IDF_PERSIST, aboveheadinventoryblend, 0.f, 0.8f, 1.f);
-    FVAR(IDF_PERSIST, aboveheadinventoryfade, 0.f, 0.5f, 1.f);
-    FVAR(IDF_PERSIST, aboveheadstatusblend, 0.f, 1, 1.f);
-    FVAR(IDF_PERSIST, aboveheadiconsblend, 0.f, 1, 1.f);
     FVAR(IDF_PERSIST, aboveheadnamessize, 0, 4, 10);
-    FVAR(IDF_PERSIST, aboveheadinventorysize, 0, 4, 10);
+    VAR(IDF_PERSIST, aboveheaddamage, 0, 0, 1);
+    VAR(IDF_PERSIST, aboveheaddamagefade, 0, 500, VAR_MAX);
+    FVAR(IDF_PERSIST, aboveheadblend, 0.f, 1, 1.f);
+    VAR(IDF_PERSIST, aboveheadstatus, 0, 1, 1);
     FVAR(IDF_PERSIST, aboveheadstatussize, 0, 3.f, 10);
-    FVAR(IDF_PERSIST, aboveheadiconssize, 0, 2.5f, 10);
-    FVAR(IDF_PERSIST, aboveheadeventsize, 0, 3, 10);
-
-    FVAR(IDF_PERSIST, aboveitemiconsize, 0, 3.f, 10);
     FVAR(IDF_PERSIST, aboveheadsmooth, 0, 0.25f, 1);
     VAR(IDF_PERSIST, aboveheadsmoothmillis, 1, 100, 10000);
 
@@ -1543,7 +1530,7 @@ namespace game
                 string text;
                 if(damageinteger) formatstring(text, "\fo%c%d", damage > 0 ? '-' : (damage < 0 ? '+' : '~'), int(ceilf((damage < 0 ? 0-damage : damage)/damagedivisor)));
                 else formatstring(text, "\fo%c%.1f", damage > 0 ? '-' : (damage < 0 ? '+' : '~'), (damage < 0 ? 0-damage : damage)/damagedivisor);
-                part_textcopy(d->abovehead(), text, d != focus ? PART_TEXT : PART_TEXT_ONTOP, eventiconfade, colourwhite, 4, 1, -10, 0, d);
+                part_textcopy(d->abovehead(), text, d != focus ? PART_TEXT : PART_TEXT_ONTOP, aboveheaddamagefade, colourwhite, 4, 1, -10, 0, d);
             }
         }
     };
@@ -3406,24 +3393,9 @@ namespace game
         {
             pos.z += aboveheadnamessize/2;
             defformatstring(name, "<bold>%s", colourname(d));
-            part_textcopy(pos, name, PART_TEXT, 1, colourwhite, aboveheadnamessize, blend*aboveheadnamesblend);
+            part_textcopy(pos, name, PART_TEXT, 1, colourwhite, aboveheadnamessize, blend);
         }
-        if(aboveheadinventory && d != player1)
-        {
-            stringz(weapons);
-            #define printweapon(q) \
-                if(d->hasweap(q, m_weapon(d->actortype, gamemode, mutators))) \
-                { \
-                    vec colour = vec::fromcolor(W(q, colour)); \
-                    if(q != d->weapselect) colour.mul(aboveheadinventoryfade); \
-                    defformatstring(str, "\fs\f[%d]%s\f(%s)\fS", colour.tohexcolor(), q != d->weapselect ? "\fE" : "", hud::itemtex(WEAPON, q)); \
-                    concatstring(weapons, str); \
-                }
-            if(aboveheadinventory >= 2) { loopi(W_ALL) printweapon(i); }
-            else { printweapon(d->weapselect); }
-            pos.z += aboveheadinventorysize/2;
-            part_textcopy(pos, weapons, PART_TEXT, 1, colourwhite, aboveheadinventorysize, blend*aboveheadinventoryblend);
-        }
+
         if(aboveheadstatus)
         {
             Texture *t = NULL;
@@ -3432,8 +3404,6 @@ namespace game
             else if(d->state == CS_ALIVE)
             {
                 if(d->conopen) t = textureload(hud::chattex, 3);
-                else if(m_team(gamemode, mutators) && (hud::numteamkills() >= teamkillwarn || aboveheadteam&(d->team != focus->team ? 2 : 1)))
-                    t = textureload(hud::teamtexname(d->team), 3);
                 if(!m_team(gamemode, mutators) || d->team != focus->team)
                 {
                     if(d->dominating.find(focus) >= 0)
@@ -3451,44 +3421,7 @@ namespace game
             if(t && t != notexture)
             {
                 pos.z += aboveheadstatussize;
-                part_icon(pos, t, aboveheadstatussize, blend*aboveheadstatusblend, 0, 0, 1, colour);
-            }
-        }
-        if(aboveheadicons && d->state != CS_EDITING && d->state != CS_SPECTATOR) loopv(d->icons)
-        {
-            if(d->icons[i].type == eventicon::AFFINITY && !(aboveheadicons&2)) continue;
-            if(d->icons[i].type == eventicon::WEAPON && !(aboveheadicons&4)) continue;
-            int millis = totalmillis-d->icons[i].millis;
-            if(millis <= d->icons[i].fade)
-            {
-                Texture *t = textureload(hud::icontex(d->icons[i].type, d->icons[i].value));
-                if(t && t != notexture)
-                {
-                    int olen = min(d->icons[i].length/5, 1000), ilen = olen/2, colour = colourwhite;
-                    float skew = millis < ilen ? millis/float(ilen) : (millis > d->icons[i].fade-olen ? (d->icons[i].fade-millis)/float(olen) : 1.f),
-                          size = skew, fade = blend*skew;
-                    if(d->icons[i].type >= eventicon::SORTED)
-                    {
-                        size *= aboveheadiconssize;
-                        switch(d->icons[i].type)
-                        {
-                            case eventicon::WEAPON: colour = W(d->icons[i].value, colour); break;
-                            case eventicon::AFFINITY:
-                                if(m_bomber(gamemode))
-                                {
-                                    bvec pcol = bvec::fromcolor(bomber::pulsecolour());
-                                    colour = (pcol.x<<16)|(pcol.y<<8)|pcol.z;
-                                }
-                                else colour = TEAM(d->icons[i].value, colour);
-                                break;
-                            default: break;
-                        }
-                    }
-                    else size *= aboveheadeventsize;
-                    pos.z += size;
-                    part_icon(pos, t, size, fade*aboveheadiconsblend, 0, 0, 1, colour);
-                    //if(d->icons[i].type >= eventicon::SORTED) pos.z += 1.5f;
-                }
+                part_icon(pos, t, aboveheadstatussize, blend, 0, 0, 1, colour);
             }
         }
     }

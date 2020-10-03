@@ -2268,9 +2268,9 @@ namespace game
     extern int gamestate, gamemode, mutators, nextmode, nextmuts, lastzoom, lasttvcam, lasttvchg, spectvtime, waittvtime,
             maptime, mapstart, timeremaining, timeelapsed, timelast, timesync,
             bloodfade, bloodsize, bloodsparks, debrisfade, eventiconfade, eventiconshort, damageinteger,
-            announcefilter, dynlighteffects, aboveheadaffinity, aboveheadnames, followthirdperson, nogore, forceplayermodel, forceplayerpattern,
+            announcefilter, dynlighteffects, aboveheadnames, followthirdperson, nogore, forceplayermodel, forceplayerpattern,
             playerovertone, playerundertone, playerdisplaytone, playereffecttone, playerteamtone, follow, specmode, spectvfollow, clientcrc;
-    extern float bloodscale, debrisscale, aboveitemiconsize, aboveheadnamessize, playerovertonelevel, playerundertonelevel, playerdisplaytonelevel, playereffecttonelevel, playerteamtonelevel,
+    extern float bloodscale, debrisscale, aboveitemiconsize, playerovertonelevel, playerundertonelevel, playerdisplaytonelevel, playereffecttonelevel, playerteamtonelevel,
             affinityfadeat, affinityfadecut, affinityfollowblend, affinitythirdblend, bombertargetnamefadeat, bombertargetnamefadecut, damagedivisor;
     extern bool zooming, wantsloadoutmenu;
     extern vec swaypush, swaydir;
@@ -2343,7 +2343,7 @@ namespace game
 namespace entities
 {
     extern vector<inanimate *> inanimates;
-    extern int showentdescs, showentfull, showentweapons, simpleitems;
+    extern int showentfull, showentweapons;
     extern float showentavailable, showentunavailable;
     extern void updaterails();
     extern void addpassenger(inanimate *m, physent *d);

@@ -9,7 +9,6 @@ namespace entities
     vector<inanimate *> inanimates;
 
     VAR(IDF_PERSIST, showentmodels, 0, 1, 2);
-    VAR(IDF_PERSIST, showentdescs, 0, 2, 3);
     VAR(IDF_PERSIST, showentinfo, 0, 21, 127);
     VAR(IDF_PERSIST, showentattrinfo, 0, 7, 7);
     VAR(IDF_PERSIST, showentweapons, 0, 0, 2);
@@ -39,10 +38,6 @@ namespace entities
     VAR(IDF_PERSIST|IDF_HEX, entlinkcolourboth, 0, 0xFF88FF, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, entdircolour, 0, 0x88FF88, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, entradiuscolour, 0, 0x88FF88, 0xFFFFFF);
-
-    VAR(IDF_PERSIST, simpleitems, 0, 0, 1); // 0 = items are models, 1 = items are icons
-    FVAR(IDF_PERSIST, simpleitemsize, 0, 2, 8);
-    FVAR(IDF_PERSIST, simpleitemblend, 0, 1, 1);
 
     VARF(0, routeid, -1, -1, VAR_MAX, lastroutenode = -1; lastroutetime = 0; airnodes.setsize(0)); // selected route in race
     VARF(0, droproute, 0, 0, 1, lastroutenode = -1; lastroutetime = 0; airnodes.setsize(0); if(routeid < 0) routeid = 0);
@@ -2903,7 +2898,7 @@ namespace entities
         for(int i = fstent; i < lstent; i++)
         {
             gameentity &e = *(gameentity *)ents[i];
-            if(e.type <= NOTUSED || e.type >= MAXENTTYPES || (enttype[e.type].usetype == EU_ITEM && simpleitems) || !haloallow(i)) continue;
+            if(e.type <= NOTUSED || e.type >= MAXENTTYPES || !haloallow(i)) continue;
             bool active = enttype[e.type].usetype == EU_ITEM && (e.spawned() || (e.lastemit && lastmillis-e.lastemit < 500));
             if(m_edit(game::gamemode) || active)
             {
@@ -3034,37 +3029,15 @@ namespace entities
             default: break;
         }
 
-        vec off(0, 0, 2.f), pos = o, view = idx >= 0 ? e.pos() : o;
+        vec off(0, 0, 2.f), pos = o;
         if(enttype[e.type].usetype == EU_ITEM) pos.add(off);
         bool edit = m_edit(game::gamemode) && idx >= 0 && cansee(idx),
              isedit = edit && game::player1->state == CS_EDITING,
              hasent = isedit && (enthover == idx || entgroup.find(idx) >= 0),
              hastop = hasent && o.squaredist(camera1->o) <= showentdist*showentdist;
         int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators),
-            attr = e.type == WEAPON ? m_attr(e.type, e.attrs[0]) : e.attrs[0],
-            colour = e.type == WEAPON && isweap(attr) ? W(attr, colour) : colourwhite, interval = lastmillis%1000;
+            attr = e.type == WEAPON ? m_attr(e.type, e.attrs[0]) : e.attrs[0], interval = lastmillis%1000;
         float fluc = interval >= 500 ? (1500-interval)/1000.f : (500+interval)/1000.f;
-        if(enttype[e.type].usetype == EU_ITEM && (active || isedit))
-        {
-            float blend = fluc*skew, radius = fluc*0.5f;
-            if(e.type == WEAPON && isweap(attr))
-            {
-                if(!active || !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !showentfull))
-                {
-                    if(isedit || game::focus->isobserver()) blend *= showentavailable;
-                    else if(showentunavailable > 0) blend *= showentunavailable;
-                    else blend = 0;
-                }
-                else blend *= showentavailable;
-                if(blend > 0) radius = max(radius*skew, 0.125f);
-            }
-            else radius = max(enttype[e.type].radius*0.5f*skew, 0.125f);
-            if(blend > 0 && simpleitems == 1)
-            {
-                part_icon(view, textureload(hud::itemtex(e.type, attr), 3), simpleitemsize*skew, simpleitemblend*blend*skew, 0, 0, 1, colour);
-                if(radius < simpleitemsize*skew) radius = simpleitemsize*skew;
-            }
-        }
         if(edit)
         {
             loopj(hastop && e.flags&EF_DYNAMIC ? 2 : 1)
@@ -3076,18 +3049,15 @@ namespace entities
             {
                 defformatstring(s, "<bold>%s%s (%d)", hastop ? "\fc" : "\fC", enttype[e.type].name, idx >= 0 ? idx : 0);
                 part_textcopy(pos.add(off), s, hastop ? PART_TEXT_ONTOP : PART_TEXT);
-                if(idx >= 0)
+                if(idx >= 0) loopv(railways)
                 {
-                    loopv(railways)
-                    {
-                        if(railways[i].ent != idx && railways[i].findparent(idx) < 0) continue;
-                        formatstring(s, "railway [%d] %d ms (%d/%d)", i, railways[i].millis, railways[i].length[0], railways[i].length[1]);
-                        part_textcopy(pos.add(vec(off).mul(0.5f)), s, hastop ? PART_TEXT_ONTOP : PART_TEXT);
-                    }
+                    if(railways[i].ent != idx && railways[i].findparent(idx) < 0) continue;
+                    formatstring(s, "railway [%d] %d ms (%d/%d)", i, railways[i].millis, railways[i].length[0], railways[i].length[1]);
+                    part_textcopy(pos.add(vec(off).mul(0.5f)), s, hastop ? PART_TEXT_ONTOP : PART_TEXT);
                 }
             }
         }
-        if(isedit ? (showentinfo&(hasent ? 1 : 2)) : (enttype[e.type].usetype == EU_ITEM && active && showentdescs >= 3))
+        if(isedit && showentinfo&(hasent ? 1 : 2))
         {
             const char *itxt = entinfo(e.type, e.attrs, isedit);
             if(itxt && *itxt)

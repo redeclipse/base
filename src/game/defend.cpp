@@ -164,23 +164,9 @@ namespace defend
                     formatstring(b.info, "%s v %s", bowner, game::colourteam(b.enemy, NULL));
                 }
                 else formatstring(b.info, "%s", TEAM(b.owner ? b.owner : b.enemy, name));
-                vec above = b.o;
-                float blend = camera1->o.distrange(above, game::affinityfadeat, game::affinityfadecut);
-                part_explosion(above, 3, PART_GLIMMERY, 1, colour, 1, blend);
-                part_create(PART_HINT_SOFT, 1, above, colour, 6, blend);
-                above.z += 6;
-                defformatstring(name, "<bold>%s", b.name);
-                part_textcopy(above, name, PART_TEXT, 1, colourwhite, 2, blend);
-                above.z += 2;
-                part_text(above, b.info, PART_TEXT, 1, colour, 2, blend);
-                above.z += 4;
-                if(b.enemy)
-                {
-                    part_icon(above, textureload(hud::progringtex, 3), 5, blend, 0, 0, 1, colour, (lastmillis%1000)/1000.f, 0.1f);
-                    part_icon(above, textureload(hud::progresstex, 3), 5, blend, 0, 0, 1, TEAM(b.enemy, colour), 0, occupy);
-                    part_icon(above, textureload(hud::progresstex, 3), 5, 0.25f*blend, 0, 0, 1, TEAM(b.owner, colour), occupy, 1-occupy);
-                }
-                else part_icon(above, textureload(hud::teamtexname(b.owner), 3), 4, blend, 0, 0, 1, colour);
+                float blend = camera1->o.distrange(b.o, game::affinityfadeat, game::affinityfadecut);
+                part_explosion(b.o, 3, PART_GLIMMERY, 1, colour, 1, blend);
+                part_create(PART_HINT_SOFT, 1, b.o, colour, 6, blend);
             }
         }
     }
@@ -326,7 +312,6 @@ namespace defend
                     loopi(numdyns) if((e = (gameent *)game::iterdynents(i)) && e->actortype < A_ENEMY && insideaffinity(b, e))
                         if((d = e) == game::focus) break;
                     game::announcef(S_V_FLAGSECURED, CON_EVENT, d, true, "\faTeam %s secured \fw\f($pointtex)%s", game::colourteam(owner), b.name);
-                    if(game::aboveheadaffinity) part_textcopy(vec(b.o).add(vec(0, 0, enttype[AFFINITY].radius)), "<bold>\fzuwSECURED", PART_TEXT, game::eventiconfade, TEAM(owner, colour), 3, 1, -10);
                     if(game::dynlighteffects) adddynlight(b.o, enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(owner, colour)).mul(2.f), 500, 250);
                 }
             }
@@ -337,7 +322,6 @@ namespace defend
                 loopi(numdyns) if((e = (gameent *)game::iterdynents(i)) && e->actortype < A_ENEMY && insideaffinity(b, e))
                     if((d = e) == game::focus) break;
                 game::announcef(S_V_FLAGOVERTHROWN, CON_EVENT, d, true, "\faTeam %s overthrew \fw\f($pointtex)%s", game::colourteam(enemy), b.name);
-                if(game::aboveheadaffinity) part_textcopy(vec(b.o).add(vec(0, 0, enttype[AFFINITY].radius)), "<bold>\fzuwOVERTHROWN", PART_TEXT, game::eventiconfade, TEAM(enemy, colour), 3, 1, -10);
                 if(game::dynlighteffects) adddynlight(b.o, enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(enemy, colour)).mul(2.f), 500, 250);
             }
             b.converted = converted;

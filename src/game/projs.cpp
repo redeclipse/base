@@ -2050,7 +2050,7 @@ namespace projs
             hits.setsize(0);
             if((proj.projtype != PRJ_SHOT || proj.owner) && proj.state != CS_DEAD)
             {
-                if(proj.projtype == PRJ_ENT && entities::ents.inrange(proj.id) && !entities::simpleitems) // in case spawnweapon changes
+                if(proj.projtype == PRJ_ENT && entities::ents.inrange(proj.id)) // in case spawnweapon changes
                     proj.mdlname = entities::entmdlname(entities::ents[proj.id]->type, entities::ents[proj.id]->attrs);
                 if(proj.waittime > 0)
                 {
@@ -2265,7 +2265,7 @@ namespace projs
                 }
                 case PRJ_ENT:
                 {
-                    if(entities::simpleitems || !entities::haloallow(proj.id)) continue;
+                    if(!entities::haloallow(proj.id)) continue;
                     fadeproj(proj, mdl.color.a, mdl.size);
                     if(!entities::ents.inrange(proj.id)) continue;
                     gameentity &e = *(gameentity *)entities::ents[proj.id];

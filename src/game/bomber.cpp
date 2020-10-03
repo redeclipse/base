@@ -214,7 +214,7 @@ namespace bomber
                     gle::colorf(rp, gp, bp, sq*0.5f);
                     hud::drawsized(sx+ss/4, sy+ss/4, ss/2);
                 }
-                float fade = camera1->o.distrange(e->headpos(), game::bombertargetnamefadeat*game::aboveheadnamessize, game::bombertargetnamefadecut*game::aboveheadnamessize);
+                float fade = camera1->o.distrange(e->headpos(), game::bombertargetnamefadeat, game::bombertargetnamefadecut);
                 draw_textf("%s", cx*w, cy*h-size, 0, 0, -1, -1, -1, int(255*blend*fade), TEXT_CENTERED, -1, 0, 0, game::colourname(e));
             }
         }
@@ -285,14 +285,6 @@ namespace bomber
                         trans *= game::focus != game::player1 ? game::affinityfollowblend : game::affinitythirdblend;
                     mdl.color.a *= trans;
                     rendermodel("props/ball", mdl);
-                    if(drawtex != DRAWTEX_HALO && gs_playing(game::gamestate) && f.droptime)
-                    {
-                        int pcolour = effect.tohexcolor();
-                        above.z += enttype[AFFINITY].radius/4*trans+1.5f;
-                        part_icon(above, textureload(hud::progringtex, 3), 5*trans, 1, 0, 0, 1, pcolour, (lastmillis%1000)/1000.f, 0.1f);
-                        part_icon(above, textureload(hud::progresstex, 3), 5*trans, 0.25f, 0, 0, 1, pcolour);
-                        part_icon(above, textureload(hud::progresstex, 3), 5*trans, 1, 0, 0, 1, pcolour, 0, wait);
-                    }
                 }
             }
             else if(!m_bb_hold(game::gamemode, game::mutators))
@@ -305,22 +297,6 @@ namespace bomber
                     int pcolour = effect.tohexcolor();
                     part_explosion(above, 3, PART_GLIMMERY, 1, pcolour, 1, trans*blend);
                     part_create(PART_HINT_SOFT, 1, above, pcolour, 6, trans*blend);
-                    if(m_bb_basket(game::gamemode, game::mutators) && carryaffinity(game::focus) && bomberbasketmindist > 0 && game::focus->o.dist(above) < bomberbasketmindist)
-                    {
-                        int millis = lastmillis%500;
-                        float amt = millis <= 250 ? 1.f-(millis/250.f) : (millis-250)/250.f, height = enttype[AFFINITY].radius*0.75f;
-                        vec c = game::pulsecolour(game::focus, PULSE_WARN),
-                            offset = vec(above).sub(camera1->o).rescale(-enttype[AFFINITY].radius*0.5f);
-                        height += height*amt*0.1f;
-                        offset.z = max(offset.z, -1.0f);
-                        offset.add(above);
-                        part_icon(offset, textureload(hud::warningtex, 3, true, false), height, amt*blend, 0, 0, 1, c.tohexcolor());
-                    }
-                    above.z += 6*trans;
-                    defformatstring(info, "<bold>%s Base", TEAM(f.team, name));
-                    part_textcopy(above, info, PART_TEXT, 1, TEAM(f.team, colour), 2, trans*blend);
-                    above.z += 4;
-                    part_icon(above, textureload(hud::teamtexname(f.team), 3), 4, trans*blend, 0, 0, 1, TEAM(f.team, colour));
                 }
             }
             if(!m_bb_hold(game::gamemode, game::mutators))
@@ -442,25 +418,12 @@ namespace bomber
         }
     }
 
-    void affinityeffect(int i, int team, const vec &from, const vec &to, int effect, const char *str)
+    void affinityeffect(int i, int team, const vec &from, const vec &to)
     {
-        if(from.x >= 0)
+        if(game::dynlighteffects)
         {
-            if(effect&1 && game::aboveheadaffinity)
-            {
-                defformatstring(text, "<bold>\fzuw%s", str);
-                part_textcopy(vec(from).add(vec(0, 0, enttype[AFFINITY].radius)), text, PART_TEXT, game::eventiconfade, TEAM(team, colour), 3, 1, -10);
-            }
-            if(game::dynlighteffects) adddynlight(vec(from).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(team, colour)).mul(2.f), 500, 250);
-        }
-        if(to.x >= 0)
-        {
-            if(effect&2 && game::aboveheadaffinity)
-            {
-                defformatstring(text, "<bold>\fzuw%s", str);
-                part_textcopy(vec(to).add(vec(0, 0, enttype[AFFINITY].radius)), text, PART_TEXT, game::eventiconfade, TEAM(team, colour), 3, 1, -10);
-            }
-            if(game::dynlighteffects) adddynlight(vec(to).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(team, colour)).mul(2.f), 500, 250);
+            if(from.x >= 0) adddynlight(vec(from).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(team, colour)).mul(2.f), 500, 250);
+            if(to.x >= 0) adddynlight(vec(to).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(team, colour)).mul(2.f), 500, 250);
         }
         if(from.x >= 0 && to.x >= 0 && from != to) part_trail(PART_SPARK, 500, from, to, TEAM(team, colour), 1, 1, -10);
     }
@@ -488,7 +451,7 @@ namespace bomber
             destroyaffinity(f.pos(true, true));
             if(isbomberaffinity(f))
             {
-                affinityeffect(i, T_NEUTRAL, f.pos(true, true), f.spawnloc, 3, "RESET");
+                affinityeffect(i, T_NEUTRAL, f.pos(true, true), f.spawnloc);
                 game::announcef(S_V_BOMBRESET, CON_EVENT, NULL, true, "\faThe \fs\fzwvbomb\fS has been reset");
             }
         }
@@ -507,7 +470,7 @@ namespace bomber
             if(f.droptime) formatstring(extra, " from \fs\fy%.2f\fom\fS", f.droppos.dist(g.spawnloc)/8.f);
             else copystring(extra, " with a \fs\fytouchdown\fS");
         }
-        affinityeffect(goal, d->team, g.spawnloc, f.spawnloc, 3, "DESTROYED");
+        affinityeffect(goal, d->team, g.spawnloc, f.spawnloc);
         destroyaffinity(g.spawnloc);
         hud::teamscore(d->team).total = score;
         defformatstring(gteam, "%s", game::colourteam(g.team, "pointtex"));
@@ -522,7 +485,7 @@ namespace bomber
         playsound(S_CATCH, d->o, d);
         if(!f.droptime)
         {
-            affinityeffect(i, d->team, d->feetpos(), f.pos(true, true), 1, "TAKEN");
+            affinityeffect(i, d->team, d->feetpos(), f.pos(true, true));
             game::announcef(S_V_BOMBPICKUP, CON_EVENT, d, true, "\fa%s picked up the \fs\fzwv\f($bombtex)bomb\fS", game::colourname(d));
         }
         st.takeaffinity(i, d, lastmillis);
