@@ -860,6 +860,7 @@ void progress(float amt, const char *s, ...)
     int oldflags = identflags;
     identflags &= ~IDF_WORLD;
     progressing = true;
+    if(engineready) UI::update();
     gl_drawnoview();
     swapbuffers(false);
     progressing = false;

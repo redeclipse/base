@@ -1099,7 +1099,7 @@ namespace UI
         }
     };
 
-    static World *world = NULL;
+    static World *world = NULL, *wmain = NULL, *wprogress = NULL;
 
     void Window::build()
     {
@@ -4694,15 +4694,19 @@ namespace UI
 
     void setup()
     {
-        world = new World;
+        world = wmain = new World;
+        wprogress = new World;
     }
 
     void cleanup()
     {
-        world->children.setsize(0);
+        wmain->children.setsize(0);
+        wprogress->children.setsize(0);
         enumerate(windows, Window *, w, delete w);
         windows.clear();
-        DELETEP(world);
+        DELETEP(wmain);
+        DELETEP(wprogress);
+        world = NULL;
     }
 
     void calctextscale()
@@ -4712,7 +4716,12 @@ namespace UI
 
     void update()
     {
-        if(uihidden) return;
+        if(uihidden && !progressing) return;
+        if(progressing)
+        {
+            world = wprogress;
+            showui("progress");
+        }
         float oldtextscale = curtextscale;
         curtextscale = 1;
         cursortype = CURSOR_DEFAULT;
@@ -4746,5 +4755,6 @@ namespace UI
         world->draw();
         popfont();
         curtextscale = oldtextscale;
+        world = wmain;
     }
 }
