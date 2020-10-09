@@ -4716,12 +4716,12 @@ namespace UI
 
     void update()
     {
-        if(uihidden && !progressing) return;
         if(progressing)
         {
             world = wprogress;
             showui("progress");
         }
+        else if(uihidden) return;
         float oldtextscale = curtextscale;
         curtextscale = 1;
         cursortype = CURSOR_DEFAULT;
@@ -4746,7 +4746,7 @@ namespace UI
 
     void render()
     {
-        if(uihidden) return;
+        if(!progressing && uihidden) return;
         float oldtextscale = curtextscale;
         curtextscale = 1;
         pushfont();
