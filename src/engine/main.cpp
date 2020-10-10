@@ -86,6 +86,7 @@ extern void cleargamma();
 
 void cleanup()
 {
+    engineready = false;
     recorder::stop();
     cleanupserver();
     SDL_ShowCursor(SDL_TRUE);
@@ -109,7 +110,7 @@ void cleanup()
 
 void quit()                  // normal exit
 {
-    inbetweenframes = false;
+    inbetweenframes = engineready = false;
     initing = INIT_QUIT;
     writecfg("init.cfg", IDF_INIT);
     writeservercfg();
@@ -124,6 +125,7 @@ void quit()                  // normal exit
 volatile int errors = 0;
 void fatal(const char *s, ...)    // failure exit
 {
+    engineready = false;
     if(!errors) initing = INIT_QUIT;
     if(++errors <= 2) // print up to one extra recursive error
     {
@@ -400,6 +402,7 @@ void resetgl()
     clearchanges(CHANGE_GFX|CHANGE_SHADERS);
 
     progress(0, "Resetting OpenGL..");
+    engineready = false;
 
     recorder::cleanup();
     cleanupva();
@@ -431,6 +434,7 @@ void resetgl()
     reloadshaders();
     reloadtextures();
     allchanged(true);
+    engineready = true;
 }
 
 ICOMMAND(0, resetgl, "", (void), if(!(identflags&IDF_WORLD)) resetgl());

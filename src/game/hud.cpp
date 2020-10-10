@@ -1720,7 +1720,7 @@ namespace hud
         float fade = hudblend;
         hudmatrix.ortho(0, hudwidth, hudheight, 0, -1, 1);
         flushhudmatrix();
-        if(!progressing && !wait)
+        if(!progressing && !wait && engineready)
         {
             vec colour = vec(1, 1, 1);
             if(compassfade && (compassmillis > 0 || totalmillis-abs(compassmillis) <= compassfade))
@@ -1767,7 +1767,7 @@ namespace hud
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         resethudshader();
         if(noview || wait) drawbackground(hudwidth, hudheight);
-        else
+        else if(engineready)
         {
             drawzoom(hudwidth, hudheight);
             if(showhud)
@@ -1812,16 +1812,19 @@ namespace hud
                 if(!game::tvmode() && !client::waiting() && !hasinput(false)) drawevents(fade);
             }
         }
-        if(!progressing)
+        if(engineready)
         {
-            if(showhud && commandmillis <= 0 && curcompass) rendercmenu();
+            if(!progressing)
+            {
+                if(showhud && commandmillis <= 0 && curcompass) rendercmenu();
+                else UI::render();
+                hudmatrix.ortho(0, hudwidth, hudheight, 0, -1, 1);
+                flushhudmatrix();
+                resethudshader();
+                drawpointers(hudwidth, hudheight);
+            }
             else UI::render();
-            hudmatrix.ortho(0, hudwidth, hudheight, 0, -1, 1);
-            flushhudmatrix();
-            resethudshader();
-            drawpointers(hudwidth, hudheight);
         }
-        else UI::render();
         glDisable(GL_BLEND);
     }
 

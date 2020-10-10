@@ -1659,6 +1659,7 @@ void rehash(bool reload)
         if(!noconfigfile) writecfg("config.cfg", IDF_PERSIST);
         client::writecfg();
         writeservercfg();
+        engineready = false;
 #endif
     }
     reloadserver();
@@ -1679,6 +1680,9 @@ void rehash(bool reload)
 #endif
     conoutf("\fwConfiguration %s", reload ? "reloaded" : "loaded");
     rehashing = 0;
+#ifndef STANDALONE
+    if(reload) engineready = true;
+#endif
 }
 ICOMMAND(0, rehash, "i", (int *nosave), if(!(identflags&IDF_WORLD)) rehash(*nosave ? false : true));
 
