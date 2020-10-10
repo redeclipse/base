@@ -1569,7 +1569,7 @@ namespace hud
         }
 
         resethudshader();
-        if(progressing && !engineready)
+        if(progressing)// && !engineready)
         {
             if(showloadinglogos)
             {
@@ -1823,7 +1823,7 @@ namespace hud
                 resethudshader();
                 drawpointers(hudwidth, hudheight);
             }
-            else UI::render();
+            //else UI::render();
         }
         glDisable(GL_BLEND);
     }
