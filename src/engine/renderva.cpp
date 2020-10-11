@@ -475,6 +475,7 @@ bool mapmodeltransparent(extentity &e)
 bool mapmodelvisible(extentity &e, int n, int colvis)
 {
     if(editmode && colvis&1) return true;
+    if(!mapmodels.inrange(e.attrs[0])) return false;
     bool ingroup = editmode && (enthover == n || entgroup.find(n) >= 0);
     if(!ingroup && (e.flags&EF_NOVIS || e.flags&EF_DYNAMIC || !checkmapvariant(e.attrs[13]) || !checkmapeffects(e.attrs[14]) || !mapmodels.inrange(e.attrs[0]))) return false;
     if(colvis&2 && (e.flags&EF_NOCOLLIDE || e.flags&EF_DYNAMIC)) return false;
