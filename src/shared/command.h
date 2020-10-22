@@ -260,12 +260,12 @@ PARSEFLOAT(float, float)
 PARSEFLOAT(number, double)
 
 static inline void intformat(char *buf, int v, int len = 20) { nformatstring(buf, len, "%d", v); }
-static inline void floatformat(char *buf, float v, int len = 20) { nformatstring(buf, len, v==int(v) ? "%.1f" : "%.7g", v); }
+static inline void floatformat(char *buf, float v, int len = 20) { nformatstring(buf, len, v==int(v) ? "%.1f" : "%.6g", v); }
 static inline void numberformat(char *buf, double v, int len = 20)
 {
     int i = int(v);
     if(v == i) nformatstring(buf, len, "%d", i);
-    else nformatstring(buf, len, "%.7g", v);
+    else nformatstring(buf, len, "%.6g", v);
 }
 
 static inline const char *getstr(const identval &v, int type)
