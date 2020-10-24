@@ -41,12 +41,12 @@ namespace entities
 
     VARF(0, routeid, -1, -1, VAR_MAX, lastroutenode = -1; lastroutetime = 0; airnodes.setsize(0)); // selected route in race
     VARF(0, droproute, 0, 0, 1, lastroutenode = -1; lastroutetime = 0; airnodes.setsize(0); if(routeid < 0) routeid = 0);
-    VAR(IDF_HEX, routecolour, 0, 0xFF22FF, 0xFFFFFF);
     VAR(0, droproutedist, 1, 16, VAR_MAX);
     VAR(0, routemaxdist, 0, 64, VAR_MAX);
     VAR(IDF_PERSIST, showroutenames, 0, 1, 1);
     FVAR(IDF_PERSIST, routenameblend, 0, 1, 1);
-    SVARF(IDF_WORLD, routenames, "Easy Medium Hard", { string s; if(filterstring(s, routenames)) setsvar("routenames", s, false); });
+    SVARF(IDF_WORLD, routenames, "Easy Medium Hard", { string s; if(filterstring(s, routenames)) { delete[] routenames; routenames = newstring(s); } });
+    SVARF(IDF_WORLD, routecolours, "0x00FF00 0xFF7700 0xFF0000", { string s; if(filterstring(s, routecolours)) { delete[] routecolours; routecolours = newstring(s); } });
 
     struct rail
     {
@@ -3006,7 +3006,17 @@ namespace entities
             {
                 if(e.attrs[0] != routeid || (!m_edit(game::gamemode) && !m_race(game::gamemode))) break;
                 loopv(e.links) if(ents.inrange(e.links[i]) && ents[e.links[i]]->type == ROUTE && (!routemaxdist || o.dist(ents[e.links[i]]->o) <= routemaxdist))
-                    part_flare(o, ents[e.links[i]]->o, 1, PART_LIGHTNING_FLARE, routecolour);
+                {
+                    char *colour = indexlist(routecolours, routeid);
+                    if(colour)
+                    {
+                        if(*colour)
+                        {
+                            part_flare(o, ents[e.links[i]]->o, 1, PART_LIGHTNING_FLARE, parseint(colour));
+                        }
+                        delete[] colour;
+                    }
+                }
 
                 if(showroutenames && getfirstroute() == idx)
                 {
