@@ -1,9 +1,3 @@
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <errno.h>
-#include <signal.h>
-
 #include "cube.h"
 
 int main(int argc, char **argv)

@@ -34,6 +34,10 @@ typedef unsigned long long int ullong;
 #define UNUSED
 #endif
 
+#ifdef _MSC_VER
+#define unlink _unlink
+#endif
+
 void *operator new(size_t, bool);
 void *operator new[](size_t, bool);
 inline void *operator new(size_t, void *p) { return p; }
@@ -1736,7 +1740,7 @@ struct slotmanager
     }
 };
 
-#if defined(WIN32) && !defined(__GNUC__)
+#if defined(WIN32) && !defined(__GNUC__) && !defined(__clang__)
 #ifdef _DEBUG
 //#define _CRTDBG_MAP_ALLOC
 #include <crtdbg.h>

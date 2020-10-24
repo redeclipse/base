@@ -997,7 +997,7 @@ VAR(IDF_PERSIST, lodmodels, 0, 1, 1);
 VAR(IDF_PERSIST, lodmodelfov, 0, 1, 1);
 FVAR(IDF_PERSIST, lodmodelfovmax, 1, 90, 180);
 FVAR(IDF_PERSIST, lodmodelfovmin, 1, 10, 180);
-FVAR(IDF_PERSIST, lodmodelfovdist, 0, 0, VAR_MAX);
+FVAR(IDF_PERSIST, lodmodelfovdist, 0, 0, FVAR_MAX);
 FVAR(IDF_PERSIST, lodmodelfovscale, 0, 1, 1000);
 
 model *loadlodmodel(model *m, const vec &pos, float offset)
