@@ -148,9 +148,17 @@ namespace UI
         STATE_HOLD_MASK = STATE_HOLD | STATE_ALT_HOLD | STATE_ESC_HOLD
     };
 
+    enum
+    {
+        SETSTATE_ANY = 0,
+        SETSTATE_INSIDE,
+        SETSTATE_FOCUSED
+    };
+
     struct Object;
 
     static Object *buildparent = NULL;
+    static Object *inputsteal = NULL;
     static int buildchild = -1;
 
     #define BUILD(type, o, setup, contents) do { \
@@ -323,6 +331,7 @@ namespace UI
         Object() : ox(0), oy(0), overridepos(false), adjust(0), state(0), childstate(0) {}
         virtual ~Object()
         {
+            if(inputsteal == this) inputsteal = NULL;
             clearchildren();
         }
 
@@ -495,6 +504,11 @@ namespace UI
             overridepos = false;
         }
 
+        virtual bool isfocus() const
+        {
+            return false;
+        }
+
         virtual bool target(float cx, float cy)
         {
             return false;
@@ -580,7 +594,12 @@ namespace UI
         }
 
         bool hasstate(int flags) const { return ((state & ~childstate) & flags) != 0; }
-        bool haschildstate(int flags) const { return ((state | childstate) & flags) != 0; }
+        bool haschildstate(int flags) const
+        {
+            bool cs = ((state | childstate) & flags) != 0;
+            bool steal = (this == inputsteal || !inputsteal);
+            return cs && steal;
+        }
 
         #define DOSTATES \
             DOSTATE(STATE_HOVER, hover) \
@@ -596,11 +615,11 @@ namespace UI
             DOSTATE(STATE_SCROLL_UP, scrollup) \
             DOSTATE(STATE_SCROLL_DOWN, scrolldown)
 
-        bool setstate(int state, float cx, float cy, int mask = 0, bool inside = true, int setflags = 0)
+        bool setstate(int state, float cx, float cy, int mask = 0, int mode = SETSTATE_INSIDE, int setflags = 0)
         {
             switch(state)
             {
-            #define DOSTATE(flags, func) case flags: func##children(cx, cy, mask, inside, setflags | flags); return haschildstate(flags);
+            #define DOSTATE(flags, func) case flags: func##children(cx, cy, true, mask, mode, setflags | flags); return haschildstate(flags);
             DOSTATES
             #undef DOSTATE
             }
@@ -617,14 +636,19 @@ namespace UI
             }
         }
 
-        #define propagatestate(o, cx, cy, mask, inside, body) \
+        #define propagatestate(o, cx, cy, mask, mode, body) \
             loopchildrenrev(o, \
             { \
                 if(((o->state | o->childstate) & mask) != mask) continue; \
                 float o##x = cx - o->x; \
                 float o##y = cy - o->y; \
-                if(!inside) \
+                bool oinside = true; \
+                if(mode != SETSTATE_INSIDE) \
                 { \
+                    if(o##x < 0.0f || o##x >= o->w || \
+                       o##y < 0.0f || o##y >= o->h) \
+                        oinside = false; \
+                    \
                     o##x = clamp(o##x, 0.0f, o->w); \
                     o##y = clamp(o##y, 0.0f, o->h); \
                     body; \
@@ -636,17 +660,20 @@ namespace UI
             })
 
         #define DOSTATE(flags, func) \
-            virtual void func##children(float cx, float cy, int mask, bool inside, int setflags) \
+            virtual void func##children(float cx, float cy, bool cinside, int mask, int mode, int setflags) \
             { \
-                propagatestate(o, cx, cy, mask, inside, \
+                propagatestate(o, cx, cy, mask, mode, \
                 { \
-                    o->func##children(ox, oy, mask, inside, setflags); \
+                    o->func##children(ox, oy, oinside, mask, mode, setflags); \
                     childstate |= (o->state | o->childstate) & (setflags); \
                 }); \
-                if(target(cx, cy)) state |= (setflags); \
-                func(cx, cy); \
+                if(mode != SETSTATE_FOCUSED || isfocus()) \
+                { \
+                    if(target(cx, cy)) state |= (setflags); \
+                    func(cx, cy, cinside); \
+                } \
             } \
-            virtual void func(float cx, float cy) {}
+            virtual void func(float cx, float cy, bool inside) {}
         DOSTATES
         #undef DOSTATE
 
@@ -873,13 +900,14 @@ namespace UI
         }
 
         #define DOSTATE(flags, func) \
-            void func##children(float cx, float cy, int mask, bool inside, int setflags) \
+            void func##children(float cx, float cy, bool cinside, int mask, int mode, int setflags) \
             { \
                 if(!allowinput || state&STATE_HIDDEN || pw <= 0 || ph <= 0) return; \
                 cx = cx*pw + px-x; \
                 cy = cy*ph + py-y; \
-                if(!inside || (cx >= 0 && cy >= 0 && cx < w && cy < h)) \
-                    Object::func##children(cx, cy, mask, inside, setflags); \
+                bool inside = (cx >= 0 && cy >= 0 && cx < w && cy < h); \
+                if(mode != SETSTATE_INSIDE || inside) \
+                    Object::func##children(cx, cy, inside, mask, mode, setflags); \
             }
         DOSTATES
         #undef DOSTATE
@@ -969,12 +997,12 @@ namespace UI
         }
 
         #define DOSTATE(flags, func) \
-            void func##children(float cx, float cy, int mask, bool inside, int setflags) \
+            void func##children(float cx, float cy, bool cinside, int mask, int mode, int setflags) \
             { \
                 loopwindowsrev(w, \
                 { \
                     if(((w->state | w->childstate) & mask) != mask) continue; \
-                    w->func##children(cx, cy, mask, inside, setflags); \
+                    w->func##children(cx, cy, cinside, mask, mode, setflags); \
                     int wflags = (w->state | w->childstate) & (setflags); \
                     if(wflags) { childstate |= wflags; break; } \
                 }); \
@@ -3094,10 +3122,10 @@ namespace UI
         }
 
         #define DOSTATE(flags, func) \
-            void func##children(float cx, float cy, int mask, bool inside, int setflags) \
+            void func##children(float cx, float cy, bool cinside, int mask, int mode, int setflags) \
             { \
                 pushfont(str); \
-                Object::func##children(cx, cy, mask, inside, setflags); \
+                Object::func##children(cx, cy, cinside, mask, mode, setflags); \
                 popfont(); \
             }
         DOSTATES
@@ -3168,11 +3196,11 @@ namespace UI
         }
 
         #define DOSTATE(flags, func) \
-            void func##children(float cx, float cy, int mask, bool inside, int setflags) \
+            void func##children(float cx, float cy, bool cinside, int mask, int mode, int setflags) \
             { \
                 cx += offsetx; \
                 cy += offsety; \
-                if(cx < virtw && cy < virth) Object::func##children(cx, cy, mask, inside, setflags); \
+                if(cx < virtw && cy < virth) Object::func##children(cx, cy, true, mask, mode, setflags); \
             }
         DOSTATES
         #undef DOSTATE
@@ -3221,8 +3249,8 @@ namespace UI
         static const char *typestr() { return "#Scroller"; }
         const char *gettype() const { return typestr(); }
 
-        void scrollup(float cx, float cy);
-        void scrolldown(float cx, float cy);
+        void scrollup(float cx, float cy, bool inside);
+        void scrolldown(float cx, float cy, bool inside);
     };
 
     ICOMMAND(0, uiscroll, "ffe", (float *sizew, float *sizeh, uint *children),
@@ -3254,13 +3282,13 @@ namespace UI
 
         virtual void scrollto(float cx, float cy, bool closest = false) {}
 
-        void hold(float cx, float cy)
+        void hold(float cx, float cy, bool inside)
         {
             ScrollButton *button = (ScrollButton *)find(ScrollButton::typestr(), false);
             if(button && button->haschildstate(STATE_HOLD)) movebutton(button, offsetx, offsety, cx - button->x, cy - button->y);
         }
 
-        void press(float cx, float cy)
+        void press(float cx, float cy, bool inside)
         {
             ScrollButton *button = (ScrollButton *)find(ScrollButton::typestr(), false);
             if(button && button->haschildstate(STATE_PRESS)) { offsetx = cx - button->x; offsety = cy - button->y; }
@@ -3279,19 +3307,19 @@ namespace UI
         void wheelscroll(float step);
         virtual int wheelscrolldirection() const { return 1; }
 
-        void scrollup(float cx, float cy) { wheelscroll(-wheelscrolldirection()); }
-        void scrolldown(float cx, float cy) { wheelscroll(wheelscrolldirection()); }
+        void scrollup(float cx, float cy, bool inside) { wheelscroll(-wheelscrolldirection()); }
+        void scrolldown(float cx, float cy, bool inside) { wheelscroll(wheelscrolldirection()); }
 
         virtual void movebutton(Object *o, float fromx, float fromy, float tox, float toy) = 0;
     };
 
-    void Scroller::scrollup(float cx, float cy)
+    void Scroller::scrollup(float cx, float cy, bool inside)
     {
         ScrollBar *scrollbar = (ScrollBar *)findsibling(ScrollBar::typestr());
         if(scrollbar) scrollbar->wheelscroll(-scrollbar->wheelscrolldirection());
     }
 
-    void Scroller::scrolldown(float cx, float cy)
+    void Scroller::scrolldown(float cx, float cy, bool inside)
     {
         ScrollBar *scrollbar = (ScrollBar *)findsibling(ScrollBar::typestr());
         if(scrollbar) scrollbar->wheelscroll(scrollbar->wheelscrolldirection());
@@ -3310,7 +3338,7 @@ namespace UI
         static const char *typestr() { return "#ScrollArrow"; }
         const char *gettype() const { return typestr(); }
 
-        void hold(float cx, float cy)
+        void hold(float cx, float cy, bool inside)
         {
             ScrollBar *scrollbar = (ScrollBar *)findsibling(ScrollBar::typestr());
             if(scrollbar) scrollbar->arrowscroll(speed);
@@ -3531,12 +3559,12 @@ namespace UI
         void wheelscroll(float step);
         virtual int wheelscrolldirection() const { return 1; }
 
-        void scrollup(float cx, float cy) { wheelscroll(-wheelscrolldirection()); }
-        void scrolldown(float cx, float cy) { wheelscroll(wheelscrolldirection()); }
+        void scrollup(float cx, float cy, bool inside) { wheelscroll(-wheelscrolldirection()); }
+        void scrolldown(float cx, float cy, bool inside) { wheelscroll(wheelscrolldirection()); }
 
         virtual void scrollto(float cx, float cy) {}
 
-        void hold(float cx, float cy)
+        void hold(float cx, float cy, bool inside)
         {
             scrollto(cx, cy);
         }
@@ -3564,7 +3592,7 @@ namespace UI
         static const char *typestr() { return "#SliderArrow"; }
         const char *gettype() const { return typestr(); }
 
-        void press(float cx, float cy)
+        void press(float cx, float cy, bool inside)
         {
             laststep = totalmillis + 2*uislidersteptime;
 
@@ -3572,7 +3600,7 @@ namespace UI
             if(slider) slider->arrowscroll(stepdir);
         }
 
-        void hold(float cx, float cy)
+        void hold(float cx, float cy, bool inside)
         {
             if(totalmillis < laststep + uislidersteptime)
                 return;
@@ -3678,7 +3706,6 @@ namespace UI
                 if(edit) clearfocus();
                 edit = edit_;
             }
-            else if(isfocus() && !hasstate(STATE_HOVER)) commit();
             if(initval && edit->mode == EDITORFOCUSED && !isfocus()) edit->clear(initval);
             edit->active = true;
             edit->linewrap = length < 0;
@@ -3701,6 +3728,7 @@ namespace UI
         {
             if(focus == e) return;
             focus = e;
+            if(e) inputsteal = e;
             bool allowtextinput = focus!=NULL && focus->allowtextinput();
             ::textinput(allowtextinput, TI_UI);
             ::keyrepeat(allowtextinput, KR_UI);
@@ -3751,13 +3779,18 @@ namespace UI
             offsety = cy;
         }
 
-        void press(float cx, float cy)
+        void press(float cx, float cy, bool inside)
         {
             setfocus();
             resetmark(cx, cy);
         }
 
-        void hold(float cx, float cy)
+        void release(float cx, float cy, bool inside)
+        {
+            if(isfocus() && !inside) cancel();
+        }
+
+        void hold(float cx, float cy, bool inside)
         {
             if(isfocus())
             {
@@ -3767,12 +3800,12 @@ namespace UI
             }
         }
 
-        void scrollup(float cx, float cy)
+        void scrollup(float cx, float cy, bool inside)
         {
             edit->scrollup();
         }
 
-        void scrolldown(float cx, float cy)
+        void scrolldown(float cx, float cy, bool inside)
         {
             edit->scrolldown();
         }
@@ -3787,6 +3820,11 @@ namespace UI
             clearfocus();
         }
 
+        void escrelease(float cx, float cy, bool inside)
+        {
+            cancel();
+        }
+
         bool key(int code, bool isdown)
         {
             if(Object::key(code, isdown)) return true;
@@ -3794,7 +3832,6 @@ namespace UI
             switch(code)
             {
                 case SDLK_ESCAPE:
-                    if(isdown) cancel();
                     return true;
                 case SDLK_RETURN:
                 case SDLK_TAB:
@@ -3875,7 +3912,6 @@ namespace UI
 
         void setup(ident *id_, int length, uint *onchange, float scale = 1, const char *keyfilter_ = NULL, bool immediate = false)
         {
-            if(isfocus() && !hasstate(STATE_HOVER)) commit();
             if(isfocus() && immediate && edit && id == id_)
             {
                 bool shouldfree = false;
@@ -3992,7 +4028,7 @@ namespace UI
             if(clipstack.length()) glEnable(GL_SCISSOR_TEST);
         }
 
-        void althold(float cx, float cy)
+        void althold(float cx, float cy, bool inside)
         {
             if(!interactive) return;
             float rx = (cx - x) / w, ry = (cy - y) / h;
@@ -4699,16 +4735,17 @@ namespace UI
             case -4: action = STATE_SCROLL_UP; break;
             case -5: action = STATE_SCROLL_DOWN; break;
         }
+        int setmode = inputsteal ? SETSTATE_FOCUSED : SETSTATE_INSIDE;
         if(action)
         {
             if(isdown)
             {
                 if(hold) world->clearstate(hold);
-                if(world->setstate(action, cursorx, cursory, 0, true, action|hold)) return true;
+                if(world->setstate(action, cursorx, cursory, 0, setmode, action|hold)) return true;
             }
             else if(hold)
             {
-                if(world->setstate(action, cursorx, cursory, hold, true, action))
+                if(world->setstate(action, cursorx, cursory, hold, setmode, action))
                 {
                     world->clearstate(hold);
                     return true;
@@ -4728,6 +4765,7 @@ namespace UI
     {
         world = wmain = new World;
         wprogress = new World;
+        inputsteal = NULL;
     }
 
     void cleanup()
@@ -4739,6 +4777,7 @@ namespace UI
         DELETEP(wmain);
         DELETEP(wprogress);
         world = NULL;
+        inputsteal = NULL;
     }
 
     void calctextscale()
@@ -4761,15 +4800,18 @@ namespace UI
         readyeditors();
 
         world->setstate(STATE_HOVER, cursorx, cursory, world->childstate&STATE_HOLD_MASK);
-        if(world->childstate&STATE_HOLD) world->setstate(STATE_HOLD, cursorx, cursory, STATE_HOLD, false);
-        if(world->childstate&STATE_ALT_HOLD) world->setstate(STATE_ALT_HOLD, cursorx, cursory, STATE_ALT_HOLD, false);
-        if(world->childstate&STATE_ESC_HOLD) world->setstate(STATE_ESC_HOLD, cursorx, cursory, STATE_ESC_HOLD, false);
+        if(world->childstate&STATE_HOLD) world->setstate(STATE_HOLD, cursorx, cursory, STATE_HOLD, SETSTATE_ANY);
+        if(world->childstate&STATE_ALT_HOLD) world->setstate(STATE_ALT_HOLD, cursorx, cursory, STATE_ALT_HOLD, SETSTATE_ANY);
+        if(world->childstate&STATE_ESC_HOLD) world->setstate(STATE_ESC_HOLD, cursorx, cursory, STATE_ESC_HOLD, SETSTATE_ANY);
 
         calctextscale();
 
         if(*uiprecmd) execute(uiprecmd);
         world->build();
         if(*uipostcmd) execute(uipostcmd);
+
+        if(inputsteal && !inputsteal->isfocus())
+            inputsteal = NULL;
 
         flusheditors();
         popfont();
