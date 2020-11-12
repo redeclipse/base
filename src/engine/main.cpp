@@ -74,8 +74,8 @@ void inputgrab(bool on, bool delay = false)
         SDL_ShowCursor(SDL_TRUE);
         if(relativemouse)
         {
-            SDL_SetRelativeMouseMode(SDL_FALSE);
             SDL_SetWindowGrab(screen, SDL_FALSE);
+            SDL_SetRelativeMouseMode(SDL_FALSE);
             relativemouse = false;
         }
     }
