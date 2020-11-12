@@ -1556,6 +1556,7 @@ template <class T, int SIZE> struct queue
 
     void clear() { head = tail = len = 0; }
 
+    int capacity() const { return SIZE; }
     int length() const { return len; }
     bool empty() const { return !len; }
     bool full() const { return len == SIZE; }
@@ -1576,6 +1577,25 @@ template <class T, int SIZE> struct queue
         return t;
     }
     T &add(const T &e) { return add() = e; }
+
+    databuf<T> reserve(int sz)
+    {
+        if(!len) head = tail = 0;
+        return databuf<T>(&data[tail], min(sz, SIZE-tail));
+    }
+
+    void advance(int sz)
+    {
+        if(len + sz > SIZE) sz = SIZE - len;
+        tail += sz;
+        if(tail >= SIZE) tail -= SIZE;
+        len += sz;
+    }
+
+    void addbuf(const databuf<T> &p)
+    {
+        advance(p.length());
+    }
 
     T &insertback(int offset)
     {

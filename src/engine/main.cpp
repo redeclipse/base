@@ -465,14 +465,14 @@ ICOMMAND(0, resetgl, "", (void), if(!(identflags&IDF_WORLD)) resetgl());
 bool warping = false, minimized = false;
 VAR(IDF_PERSIST, renderunfocused, 0, 0, 1);
 
-vector<SDL_Event> events;
+static queue<SDL_Event, 32> events;
 
-void pushevent(const SDL_Event &e)
+static inline void pushevent(const SDL_Event &e)
 {
     events.add(e);
 }
 
-static bool filterevent(const SDL_Event &event)
+static inline bool filterevent(const SDL_Event &event)
 {
     switch(event.type)
     {
@@ -491,35 +491,73 @@ static bool filterevent(const SDL_Event &event)
     return true;
 }
 
-static inline bool pollevent(SDL_Event &event)
+template <int SIZE> static inline bool pumpevents(queue<SDL_Event, SIZE> &events)
 {
-    while(SDL_PollEvent(&event))
+    if(events.empty())
     {
-        if(filterevent(event)) return true;
+        SDL_PumpEvents();
+        databuf<SDL_Event> buf = events.reserve(events.capacity());
+        int n = SDL_PeepEvents(buf.getbuf(), buf.remaining(), SDL_GETEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT);
+        loopi(n) if(filterevent(buf.buf[i])) buf.put(buf.buf[i]);
+        events.addbuf(buf);
+        if(events.empty()) return false;
     }
-    return false;
+    return true;
 }
 
-bool interceptkey(int sym, int mod)
+static int interceptkeysym = 0;
+
+static int interceptevents(void *data, SDL_Event *event)
 {
-    SDL_Event event;
-    while(pollevent(event)) switch(event.type)
+    switch(event->type)
     {
         case SDL_KEYDOWN:
-            if(event.key.keysym.sym == sym && (!mod || SDL_GetModState()&mod))
-                return true;
-        default:
-            pushevent(event);
+            if(event->key.keysym.sym == interceptkeysym)
+            {
+                interceptkeysym = -interceptkeysym;
+                return 0;
+            }
             break;
+    }
+    return 1;
+}
+
+static void clearinterceptkey()
+{
+    SDL_DelEventWatch(interceptevents, NULL);
+    interceptkeysym = 0;
+}
+
+bool interceptkey(int sym)
+{
+    if(!interceptkeysym)
+    {
+        interceptkeysym = sym;
+        SDL_FilterEvents(interceptevents, NULL);
+        if(interceptkeysym < 0)
+        {
+            interceptkeysym = 0;
+            return true;
+        }
+        SDL_AddEventWatch(interceptevents, NULL);
+    }
+    else if(abs(interceptkeysym) != sym) interceptkeysym = sym;
+    SDL_PumpEvents();
+    if(interceptkeysym < 0)
+    {
+        clearinterceptkey();
+        interceptkeysym = sym;
+        SDL_FilterEvents(interceptevents, NULL);
+        interceptkeysym = 0;
+        return true;
     }
     return false;
 }
 
 static void ignoremousemotion()
 {
-    SDL_Event e;
     SDL_PumpEvents();
-    while(SDL_PeepEvents(&e, 1, SDL_GETEVENT, SDL_MOUSEMOTION, SDL_MOUSEMOTION));
+    SDL_FlushEvent(SDL_MOUSEMOTION);
 }
 
 void resetcursor(bool warp, bool reset)
@@ -534,40 +572,25 @@ void resetcursor(bool warp, bool reset)
 
 static void checkmousemotion(int &dx, int &dy)
 {
-    loopv(events)
+    while(pumpevents(events))
     {
-        SDL_Event &event = events[i];
-        if(event.type != SDL_MOUSEMOTION)
-        {
-            if(i > 0) events.remove(0, i);
-            return;
-        }
+        SDL_Event &event = events.removing();
+        if(event.type != SDL_MOUSEMOTION) return;
         dx += event.motion.xrel;
         dy += event.motion.yrel;
-    }
-    events.setsize(0);
-    SDL_Event event;
-    while(pollevent(event))
-    {
-        if(event.type != SDL_MOUSEMOTION)
-        {
-            events.add(event);
-            return;
-        }
-        dx += event.motion.xrel;
-        dy += event.motion.yrel;
+        events.remove();
     }
 }
 
 void checkinput()
 {
-    SDL_Event event;
+    if(interceptkeysym) clearinterceptkey();
     //int lasttype = 0, lastbut = 0;
     bool mousemoved = false, shouldwarp = false;
     int focused = 0;
-    while(events.length() || pollevent(event))
+    while(pumpevents(events))
     {
-        if(events.length()) event = events.remove(0);
+        SDL_Event &event = events.remove();
 
         if(focused && event.type!=SDL_WINDOWEVENT) { if(grabinput != (focused>0)) inputgrab(grabinput = focused>0, shouldgrab); focused = 0; }
 
@@ -875,7 +898,7 @@ void progress(float amt, const char *s, ...)
     }
     clientkeepalive();
 
-    interceptkey(SDLK_UNKNOWN); // keep the event queue awake to avoid appearing unresponsive
+    SDL_PumpEvents(); // keep the event queue awake to avoid appearing unresponsive
 
     string sf;
     if(s != NULL)

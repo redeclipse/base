@@ -794,8 +794,7 @@ extern bool initwarning(const char *desc, int level = INIT_RESET, int type = CHA
 extern bool grabinput, minimized;
 extern int compresslevel, imageformat, renderunfocused;
 
-extern void pushevent(const SDL_Event &e);
-extern bool interceptkey(int sym, int mod = 0);
+extern bool interceptkey(int sym);
 extern void resetcursor(bool warp = true, bool reset = true);
 extern void getframemillis(float &avg, float &best, float &worst);
 extern void getfps(int &fps, int &bestdiff, int &worstdiff);
