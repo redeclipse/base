@@ -3,6 +3,10 @@
 #include "engine.h"
 #include <signal.h>
 
+#ifdef SDL_VIDEO_DRIVER_X11
+#include "SDL_syswm.h"
+#endif
+
 string caption = "";
 
 void setcaption(const char *text, const char *text2)
@@ -60,6 +64,16 @@ void inputgrab(bool on, bool delay = false)
             {
                 SDL_SetWindowGrab(screen, SDL_TRUE);
                 relativemouse = true;
+                #ifdef SDL_VIDEO_DRIVER_X11
+                // Workaround for buggy SDL X11 pointer grabbing
+                union { SDL_SysWMinfo info; uchar buf[sizeof(SDL_SysWMinfo) + 512]; };
+                SDL_GetVersion(&info.version);
+                if(SDL_GetWindowWMInfo(screen, &info) && info.subsystem == SDL_SYSWM_X11)
+                {
+                    uint mask = ButtonPressMask | ButtonReleaseMask | PointerMotionMask | FocusChangeMask;
+                    XGrabPointer(info.info.x11.display, info.info.x11.window, True, mask, GrabModeAsync, GrabModeAsync, info.info.x11.window, None, CurrentTime);
+                }
+                #endif
             }
             else
             {
