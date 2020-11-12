@@ -90,7 +90,7 @@ void inputgrab(bool on, bool delay = false)
     if(relativemouse || wasrelativemouse)
     {
         // Workaround for buggy SDL X11 pointer grabbing
-        union { SDL_SysWMinfo info; uchar buf[sizeof(SDL_SysWMinfo) + 512]; };
+        union { SDL_SysWMinfo info; uchar buf[sizeof(SDL_SysWMinfo) + 128]; };
         SDL_GetVersion(&info.version);
         if(SDL_GetWindowWMInfo(screen, &info) && info.subsystem == SDL_SYSWM_X11)
         {
