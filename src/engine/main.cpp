@@ -493,14 +493,14 @@ static inline bool filterevent(const SDL_Event &event)
 
 template <int SIZE> static inline bool pumpevents(queue<SDL_Event, SIZE> &events)
 {
-    if(events.empty())
+    while(events.empty())
     {
         SDL_PumpEvents();
         databuf<SDL_Event> buf = events.reserve(events.capacity());
         int n = SDL_PeepEvents(buf.getbuf(), buf.remaining(), SDL_GETEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT);
+        if(n <= 0) return false;
         loopi(n) if(filterevent(buf.buf[i])) buf.put(buf.buf[i]);
         events.addbuf(buf);
-        if(events.empty()) return false;
     }
     return true;
 }
