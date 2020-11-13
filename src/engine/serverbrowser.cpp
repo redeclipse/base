@@ -178,7 +178,7 @@ bool resolverwait(const char *name, ENetAddress *address)
         }
     }
     SDL_UnlockMutex(resolvermutex);
-    return resolved;
+    return resolved && address->host != ENET_HOST_ANY;
 }
 
 #define CONNLIMIT 20000
