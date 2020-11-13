@@ -53,6 +53,10 @@ VARN(IDF_PERSIST, relativemouse, userelativemouse, 0, 1, 1);
 
 bool windowfocus = true, shouldgrab = false, grabinput = false, canrelativemouse = true, relativemouse = false;
 
+#ifdef SDL_VIDEO_DRIVER_X11
+VAR(0, sdl_xgrab_bug, 0, 1, 1);
+#endif
+
 void inputgrab(bool on, bool delay = false)
 {
     bool wasrelativemouse = relativemouse;
@@ -87,7 +91,7 @@ void inputgrab(bool on, bool delay = false)
     shouldgrab = false;
 
 #ifdef SDL_VIDEO_DRIVER_X11
-    if(relativemouse || wasrelativemouse)
+    if((relativemouse || wasrelativemouse) && sdl_xgrab_bug)
     {
         // Workaround for buggy SDL X11 pointer grabbing
         union { SDL_SysWMinfo info; uchar buf[sizeof(SDL_SysWMinfo) + 128]; };
