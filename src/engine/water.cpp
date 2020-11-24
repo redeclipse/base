@@ -147,13 +147,14 @@ VAR(IDF_WORLD, watersubdiv, 0, 2, 3);
 VAR(IDF_WORLD, waterlod, 0, 1, 3);
 
 static int wx1, wy1, wx2, wy2, wz, wsize, wsubdiv;
-static float whscale, whoffset, whphase;
+static float whoffset, whphase;
 
-static inline float vertwangle(float v1, float v2)
+static inline float vertwangle(int v1, int v2)
 {
-    v1 -= wx1;
-    v2 -= wy1;
-    return v1*v2*(v1-wsize)*(v2-wsize)*whscale+whoffset;
+    static const float whscale = 59.0f/23.0f/(2*M_PI);
+    v1 &= wsize-1;
+    v2 &= wsize-1;
+    return v1*v2*whscale+whoffset;
 }
 
 static inline float vertwphase(float angle)
@@ -163,7 +164,7 @@ static inline float vertwphase(float angle)
     return WATER_AMPLITUDE*s-WATER_OFFSET;
 }
 
-static inline void vertw(float v1, float v2, float v3)
+static inline void vertw(int v1, int v2, int v3)
 {
     float h = vertwphase(vertwangle(v1, v2));
     gle::attribf(v1, v2, v3+h);
@@ -220,29 +221,21 @@ void flushwaterstrips()
     gle::begin(GL_TRIANGLE_STRIP, numverts);
     loopv(waterstrips)
     {
-        waterstrip &s = waterstrips[i];
-        s.restore();
-        whscale = 59.0f/(23.0f*wsize*wsize)/(2*M_PI);
-        for(int x = wx1;;)
+        waterstrips[i].restore();
+        for(int x = wx1; x < wx2; x += wsubdiv)
         {
-            wy1 = s.y1;
-            for(int y = wy1;; y += wsubdiv)
+            for(int y = wy1; y - wsubdiv < wy2; y += wsubdiv)
             {
                 vertw(x,         y, wz);
                 vertw(x+wsubdiv, y, wz);
-                if(y >= wy1+wsize) { if(y >= s.y2) break; wy1 += wsize; }
             }
             x += wsubdiv;
-            if(x >= wx1+wsize) { if(x >= wx2) break; wx1 += wsize; }
-            wy1 = s.y2;
-            for(int y = wy1;; y -= wsubdiv)
+            if(x >= wx2) break;
+            for(int y = wy2; y + wsubdiv > wy1; y -= wsubdiv)
             {
                 vertw(x,         y, wz);
                 vertw(x+wsubdiv, y, wz);
-                if(y <= wy1) { if(y <= s.y1) break; wy1 -= wsize; }
             }
-            x += wsubdiv;
-            if(x >= wx1+wsize) { if(x >= wx2) break; wx1 += wsize; }
         }
         gle::multidraw();
     }
