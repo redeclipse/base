@@ -226,9 +226,8 @@ void flushwaterstrips()
         for(int x = wx1;;)
         {
             wy1 = s.y1;
-            for(int y = wy1-wsubdiv;;)
+            for(int y = wy1;; y += wsubdiv)
             {
-                y += wsubdiv;
                 vertw(x,         y, wz);
                 vertw(x+wsubdiv, y, wz);
                 if(y >= wy1+wsize) { if(y >= s.y2) break; wy1 += wsize; }
@@ -236,9 +235,8 @@ void flushwaterstrips()
             x += wsubdiv;
             if(x >= wx1+wsize) { if(x >= wx2) break; wx1 += wsize; }
             wy1 = s.y2;
-            for(int y = wy1+wsubdiv;;)
+            for(int y = wy1;; y -= wsubdiv)
             {
-                y -= wsubdiv;
                 vertw(x,         y, wz);
                 vertw(x+wsubdiv, y, wz);
                 if(y <= wy1) { if(y <= s.y1) break; wy1 -= wsize; }
