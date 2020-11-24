@@ -151,7 +151,9 @@ static float whscale, whoffset, whphase;
 
 static inline float vertwangle(float v1, float v2)
 {
-    return (v1-wx1)*(v2-wy1)*(v1-wx2)*(v2-wy2)*whscale+whoffset;
+    v1 -= wx1;
+    v2 -= wy1;
+    return v1*v2*(v1-wsize)*(v2-wsize)*whscale+whoffset;
 }
 
 static inline float vertwphase(float angle)
@@ -218,26 +220,31 @@ void flushwaterstrips()
     gle::begin(GL_TRIANGLE_STRIP, numverts);
     loopv(waterstrips)
     {
-        waterstrips[i].restore();
+        waterstrip &s = waterstrips[i];
+        s.restore();
         whscale = 59.0f/(23.0f*wsize*wsize)/(2*M_PI);
-        for(int x = wx1; x<wx2; x += wsubdiv)
+        for(int x = wx1;;)
         {
-            vertw(x,         wy1, wz);
-            vertw(x+wsubdiv, wy1, wz);
-            for(int y = wy1; y<wy2; y += wsubdiv)
+            wy1 = s.y1;
+            for(int y = wy1-wsubdiv;;)
             {
-                vertw(x,         y+wsubdiv, wz);
-                vertw(x+wsubdiv, y+wsubdiv, wz);
+                y += wsubdiv;
+                vertw(x,         y, wz);
+                vertw(x+wsubdiv, y, wz);
+                if(y >= wy1+wsize) { if(y >= s.y2) break; wy1 += wsize; }
             }
             x += wsubdiv;
-            if(x>=wx2) break;
-            vertw(x,         wy2, wz);
-            vertw(x+wsubdiv, wy2, wz);
-            for(int y = wy2; y>wy1; y -= wsubdiv)
+            if(x >= wx1+wsize) { if(x >= wx2) break; wx1 += wsize; }
+            wy1 = s.y2;
+            for(int y = wy1+wsubdiv;;)
             {
-                vertw(x,         y-wsubdiv, wz);
-                vertw(x+wsubdiv, y-wsubdiv, wz);
+                y -= wsubdiv;
+                vertw(x,         y, wz);
+                vertw(x+wsubdiv, y, wz);
+                if(y <= wy1) { if(y <= s.y1) break; wy1 -= wsize; }
             }
+            x += wsubdiv;
+            if(x >= wx1+wsize) { if(x >= wx2) break; wx1 += wsize; }
         }
         gle::multidraw();
     }
