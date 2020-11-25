@@ -224,14 +224,14 @@ void flushwaterstrips()
         waterstrips[i].restore();
         for(int x = wx1; x < wx2; x += wsubdiv)
         {
-            for(int y = wy1; y - wsubdiv < wy2; y += wsubdiv)
+            for(int y = wy1; y <= wy2; y += wsubdiv)
             {
                 vertw(x,         y, wz);
                 vertw(x+wsubdiv, y, wz);
             }
             x += wsubdiv;
             if(x >= wx2) break;
-            for(int y = wy2; y + wsubdiv > wy1; y -= wsubdiv)
+            for(int y = wy2; y >= wy1; y -= wsubdiv)
             {
                 vertw(x,         y, wz);
                 vertw(x+wsubdiv, y, wz);
