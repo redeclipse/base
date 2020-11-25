@@ -49,7 +49,12 @@ void textinput(bool on, int mask)
     }
 }
 
+#ifdef WIN32
+// SDL_WarpMouseInWindow behaves erratically on Windows, so force relative mouse instead.
+VARN(IDF_READONLY, relativemouse, userelativemouse, 1, 1, 0);
+#else
 VARN(IDF_PERSIST, relativemouse, userelativemouse, 0, 1, 1);
+#endif
 
 bool windowfocus = true, shouldgrab = false, grabinput = false, canrelativemouse = true, relativemouse = false;
 
