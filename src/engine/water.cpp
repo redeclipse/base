@@ -248,16 +248,13 @@ void flushwater(int mat = MAT_WATER, bool force = true)
 {
     if(wsize)
     {
-        if(wsubdiv == wsize && wx2-wx1 <= wsize*2 && wy2-wy1 <= wsize*2)
+        if(wsubdiv >= wsize)
         {
             if(gle::attribbuf.empty()) { gle::defvertex(); gle::begin(GL_QUADS); }
-            for(int x = wx1; x<wx2; x += wsubdiv) for(int y = wy1; y<wy2; y += wsubdiv)
-            {
-                vertwq(x,         y,         wz);
-                vertwq(x+wsubdiv, y,         wz);
-                vertwq(x+wsubdiv, y+wsubdiv, wz);
-                vertwq(x,         y+wsubdiv, wz);
-            }
+            vertwq(wx1, wy1, wz);
+            vertwq(wx2, wy1, wz);
+            vertwq(wx2, wy2, wz);
+            vertwq(wx1, wy2, wz);
         }
         else waterstrips.add().save();
         wsize = 0;

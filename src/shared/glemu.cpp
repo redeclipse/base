@@ -294,12 +294,12 @@ namespace gle
         if(primtype == GL_QUADS)
         {
             if(!quadsenabled) enablequads();
-            for(;;)
+            for(int quads = numvertexes/4;;)
             {
-                int count = min(numvertexes/4, MAXQUADS);
+                int count = min(quads, MAXQUADS);
                 drawquads(start/4, count);
-                numvertexes -= 4*count;
-                if(numvertexes < 4) break;
+                quads -= count;
+                if(quads <= 0) break;
                 setattribs(buf + 4*count*vertexsize);
                 start = 0;
             }
