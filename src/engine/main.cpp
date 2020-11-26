@@ -1070,7 +1070,7 @@ int main(int argc, char **argv)
 #ifdef SDL_VIDEO_DRIVER_X11
     SDL_version version;
     SDL_GetVersion(&version);
-    if (SDL_VERSIONNUM(version.major, version.minor, version.patch) < SDL_VERSIONNUM(2, 0, 13))
+    if (SDL_VERSIONNUM(version.major, version.minor, version.patch) <= SDL_VERSIONNUM(2, 0, 12))
         sdl_xgrab_bug = 1;
 #endif
 
