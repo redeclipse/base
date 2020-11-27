@@ -4822,7 +4822,7 @@ int naturalsort(const char *a, const char *b)
         else if(ac != bc) return ac - bc;
     }
 }
-ICOMMAND(naturalsort, "ss", (char *a, char *b), intret(naturalsort(a,b)<=0));
+ICOMMAND(0, naturalsort, "ss", (char *a, char *b), intret(naturalsort(a,b)<=0));
 
 #define STRMAPCOMMAND(name, map) \
     ICOMMAND(0, name, "s", (char *s), \
