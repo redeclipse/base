@@ -3918,6 +3918,31 @@ void substr(char *s, int *start, int *count, int *numargs)
 }
 COMMAND(0, substr, "siiN");
 
+void chopstr(char *s, int *lim, char *ellipsis)
+{
+    int len = strlen(s), maxlen = abs(*lim);
+    if(len > maxlen)
+    {
+        int elen = strlen(ellipsis);
+        maxlen = max(maxlen, elen);
+        char *chopped = newstring(maxlen);
+        if(*lim < 0)
+        {
+            memcpy(chopped, ellipsis, elen);
+            memcpy(&chopped[elen], &s[len - (maxlen - elen)], maxlen - elen);
+        }
+        else
+        {
+            memcpy(chopped, s, maxlen - elen);
+            memcpy(&chopped[maxlen - elen], ellipsis, elen);
+        }
+        chopped[maxlen] = '\0';
+        commandret->setstr(chopped);
+    }
+    else result(s);
+}
+COMMAND(0, chopstr, "sis");
+
 void sublist(const char *s, int *skip, int *count, int *numargs)
 {
     int offset = max(*skip, 0), len = *numargs >= 3 ? max(*count, 0) : -1;
