@@ -4033,6 +4033,20 @@ void looplist(ident *id, const char *list, const uint *body)
 }
 COMMAND(0, looplist, "rse");
 
+void loopsublist(ident *id, const char *list, int *skip, int *count, const uint *body)
+{
+    if(id->type!=ID_ALIAS) return;
+    identstack stack;
+    int n = 0, offset = max(*skip, 0), len = *count < 0 ? INT_MAX : offset + *count;
+    for(const char *s = list, *start, *end, *qstart; parselist(s, start, end, qstart) && n < len; n++) if(n >= offset)
+    {
+        setiter(*id, listelem(start, end, qstart), stack);
+        execute(body);
+    }
+    if(n) poparg(*id);
+}
+COMMAND(0, loopsublist, "rsiie");
+
 void looplist2(ident *id, ident *id2, const char *list, const uint *body)
 {
     if(id->type!=ID_ALIAS || id2->type!=ID_ALIAS) return;
