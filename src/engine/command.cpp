@@ -1161,7 +1161,7 @@ ICOMMAND(0, set, "rT", (ident *id, tagval *v),
             setsvarchecked(id, forcestr(*v));
             break;
         default:
-            debugcode("cannot redefine builtin %s with an alias", id->name);
+            debugcode("\frCannot redefine builtin %s with an alias", id->name);
             break;
     }
 });
