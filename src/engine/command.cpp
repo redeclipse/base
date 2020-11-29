@@ -2438,9 +2438,17 @@ void printvar(ident *id)
         case ID_VAR: printvar(id, *id->storage.i); break;
         case ID_FVAR: printfvar(id, *id->storage.f); break;
         case ID_SVAR: printsvar(id, *id->storage.s); break;
-        default: break;
+        case ID_ALIAS:
+            switch(id->valtype)
+            {
+                case VAL_INT: printvar(id, id->getint()); break;
+                case VAL_FLOAT: printfvar(id, id->getfloat()); break;
+                default: printsvar(id, id->getstr()); break;
+            }
+            break;
     }
 }
+ICOMMAND(0, printvar, "r", (ident *id), printvar(id));
 
 typedef void (__cdecl *comfun)();
 typedef void (__cdecl *comfun1)(void *);
