@@ -1168,13 +1168,8 @@ ICOMMAND(0, set, "rT", (ident *id, tagval *v),
             setsvarchecked(id, forcestr(*v));
             break;
         case ID_COMMAND:
-            if(id->flags&IDF_EMUVAR)
-            {
-                tagval arg;
-                arg.setint(execute(id, NULL, 0, true) ? 0 : 1);
-                execute(id, &arg, 1, false);
-                break;
-            }
+            if(id->flags&IDF_EMUVAR) { execute(id, v, 1); break; }
+            // fall through
         default:
             debugcode("\frCannot redefine builtin %s with an alias", id->name);
             break;
