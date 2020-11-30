@@ -541,7 +541,7 @@ static void setalias(const char *name, tagval &v, bool world)
             case ID_COMMAND:
                 if(id->flags&IDF_EMUVAR)
                 {
-                    execute(id, &v, 1, false);
+                    execute(id, &v, 1);
                     break;
                 }
                 // fall through
