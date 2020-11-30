@@ -538,6 +538,13 @@ static void setalias(const char *name, tagval &v, bool world)
             case ID_SVAR:
                 setsvarchecked(id, v.getstr());
                 break;
+            case ID_COMMAND:
+                if(id->flags&IDF_EMUVAR)
+                {
+                    execute(id, &v, 1, false);
+                    break;
+                }
+                // fall through
             default:
                 debugcode("\frCannot redefine builtin %s with an alias", id->name);
                 break;
@@ -1160,6 +1167,14 @@ ICOMMAND(0, set, "rT", (ident *id, tagval *v),
         case ID_SVAR:
             setsvarchecked(id, forcestr(*v));
             break;
+        case ID_COMMAND:
+            if(id->flags&IDF_EMUVAR)
+            {
+                tagval arg;
+                arg.setint(execute(id, NULL, 0, true) ? 0 : 1);
+                execute(id, &arg, 1, false);
+                break;
+            }
         default:
             debugcode("\frCannot redefine builtin %s with an alias", id->name);
             break;
@@ -1174,7 +1189,8 @@ bool addcommand(const char *name, identfun fun, const char *args, int type, int 
     if(args) for(const char *fmt = args; *fmt; fmt++) switch(*fmt)
     {
         case 'i': case 'b': case 'f': case 'g': case 'F': case 't': case 'T': case 'E': case 'N': case 'D': if(numargs < MAXARGS) numargs++; break;
-        case 'S': case 's': case 'e': case 'r': case '$': if(numargs < MAXARGS) { argmask |= 1<<numargs; numargs++; } break;
+        case '$': flags |= IDF_EMUVAR; // fall through
+        case 'S': case 's': case 'e': case 'r': if(numargs < MAXARGS) { argmask |= 1<<numargs; numargs++; } break;
         case '1': case '2': case '3': case '4': if(numargs < MAXARGS) fmt -= *fmt-'0'+1; break;
         case 'C': case 'V': limit = false; break;
         default: fatal("Builtin %s declared with illegal type: %s", name, args); break;
@@ -2062,6 +2078,9 @@ static void compilestatements(vector<uint> &code, const char *&p, int rettype, i
                             if(!(more = compilearg(code, p, VAL_CSTR, prevargs))) compilestr(code);
                             code.add(CODE_SVAR1|(id->index<<8));
                             goto endstatement;
+                        case ID_COMMAND:
+                            if(id->flags&IDF_EMUVAR) goto compilecommand;
+                            break;
                     }
                     compilestr(code, idname, true);
                 }
@@ -2069,6 +2088,7 @@ static void compilestatements(vector<uint> &code, const char *&p, int rettype, i
                 code.add(CODE_ALIASU);
                 goto endstatement;
         }
+    compilecommand:
         numargs = 0;
         if(!idname.str)
         {
@@ -2431,6 +2451,17 @@ void printsvar(ident *id, const char *s, const char *str)
     conoutft(CON_DEBUG, "%s", output);
 }
 
+template <class V>
+static void printvar(ident *id, int type, V &val)
+{
+    switch(type)
+    {
+        case VAL_INT: printvar(id, val.getint()); break;
+        case VAL_FLOAT: printfvar(id, val.getfloat()); break;
+        default: printsvar(id, val.getstr()); break;
+    }
+}
+
 void printvar(ident *id)
 {
     switch(id->type)
@@ -2438,12 +2469,14 @@ void printvar(ident *id)
         case ID_VAR: printvar(id, *id->storage.i); break;
         case ID_FVAR: printfvar(id, *id->storage.f); break;
         case ID_SVAR: printsvar(id, *id->storage.s); break;
-        case ID_ALIAS:
-            switch(id->valtype)
+        case ID_ALIAS: printvar(id, id->valtype, *id); break;
+        case ID_COMMAND:
+            if(id->flags&IDF_EMUVAR)
             {
-                case VAL_INT: printvar(id, id->getint()); break;
-                case VAL_FLOAT: printfvar(id, id->getfloat()); break;
-                default: printsvar(id, id->getstr()); break;
+                tagval result;
+                executeret(id, NULL, 0, true, result);
+                printvar(id, result.type, result);
+                freearg(result);
             }
             break;
     }
