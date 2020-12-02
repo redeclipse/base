@@ -1,6 +1,8 @@
 *.dbg
 *.bin
 *.exe
+*.pdb
+*.tmp
 src/redeclipse_*
 src/tessfont_*
 src/genkey_*
