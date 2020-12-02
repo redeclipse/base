@@ -399,6 +399,11 @@ void setupscreen(bool dogl = true)
 
     SDL_GL_ResetAttributes();
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+#if !defined(WIN32) && !defined(__APPLE__)
+    SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+#endif
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
     screen = SDL_CreateWindow(caption, winx, winy, winw, winh, flags);
