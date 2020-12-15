@@ -1057,6 +1057,8 @@ namespace game
 
     // determines if correct gamemode/mutators are present for displaying palette colours
     // for textures, lights, mapmodels, particles which use a palette colour
+    VAR(0, forcepalette, 0, 0, 2); // force palette for teams in edit mode: 0 = off, 1 = neutral, 2 = teams
+
     int hexpalette(int palette, int index)
     {
         if(palette >= 0 && index >= 0) switch(palette)
@@ -1070,9 +1072,13 @@ namespace game
             case 1: // teams
             {
                 int team = index%T_COUNT;
-                if(drawtex != DRAWTEX_MAPSHOT && !m_edit(gamemode) && index < T_COUNT)
+                if(drawtex != DRAWTEX_MAPSHOT && index < T_COUNT)
                 {
-                    if(!m_team(gamemode, mutators) || team > T_LAST) team = T_NEUTRAL; // abstract team coloured levels to neutral
+                    if(m_edit(gamemode) && forcepalette)
+                    {
+                        if(forcepalette == 1 || team > T_LAST) team = T_NEUTRAL;
+                    }
+                    else if(!m_team(gamemode, mutators) || team > T_LAST) team = T_NEUTRAL; // abstract team coloured levels to neutral
                 }
                 return TEAM(team, colour); // return color of weapon
                 break;
