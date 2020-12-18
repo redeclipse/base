@@ -160,17 +160,18 @@ ifeq (1,$(BUILD_WINDOWS))
     BIN_SUFFIX = .exe
     WINDRES = windres
     override WINDRES := $(TOOLSET_PREFIX)$(WINDRES)
-    WINLIB = lib/$(PLATFORM_BIN)
-    WINDLL = ../bin/$(PLATFORM_BIN)
 
     ifneq (,$(findstring msvc,$(PLATFORM)))
         STD_LIBS = -static
+        SUP_LIBS = -Lvcpp/$(PLATFORM_BIN) -Llib/$(PLATFORM_BIN)
     else
         STD_LIBS = -static-libgcc -static-libstdc++
+        SUP_LIBS = -L../bin/$(PLATFORM_BIN) -Llib/$(PLATFORM_BIN)
     endif
 
     CLIENT_INCLUDES = $(INCLUDES) -isystem include
-    CLIENT_LIBS = $(STD_LIBS) -L$(WINDLL) -L$(WINLIB) \
+
+    CLIENT_LIBS = $(STD_LIBS) $(SUP_LIBS) \
                   -lSDL2 -lSDL2_image -lSDL2_mixer -lzlib1 -lopengl32 -lenet -lws2_32 -lwinmm
 
     ifneq (,$(findstring msvc,$(PLATFORM)))
@@ -305,9 +306,9 @@ CLIENT_PCH = shared/cube.h.gch engine/engine.h.gch
 
 ifeq (1,$(BUILD_WINDOWS))
     SERVER_INCLUDES = -DSTANDALONE $(INCLUDES) -Iinclude
-    SERVER_LIBS = -mwindows $(STD_LIBS) -L$(WINDLL) -L$(WINLIB) -lzlib1 -lenet -lws2_32 -lwinmm
+    SERVER_LIBS = -mwindows $(STD_LIBS) $(SUP_LIBS) -lzlib1 -lenet -lws2_32 -lwinmm
     CTFONT_INCLUDES = -DSTANDALONE -Iinclude
-    CTFONT_LIBS = -mwindows $(STD_LIBS) -L$(WINDLL) -L$(WINLIB) -lzlib1 -lfreetype
+    CTFONT_LIBS = -mwindows $(STD_LIBS) $(SUP_LIBS) -lzlib1 -lfreetype
 
     ifneq (,$(findstring msvc,$(PLATFORM)))
         SERVER_LIBS += -ldbghelp -luser32 -lshell32
