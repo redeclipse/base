@@ -372,6 +372,8 @@ extern float rayent(const vec &o, const vec &ray, float radius, int mode, int si
 
 VAR(0, gridlookup, 0, 0, 1);
 VAR(0, passthroughcube, 0, 1, 1);
+VAR(0, passthroughent, 0, 1, 1);
+VARF(0, passthrough, 0, 0, 1, { passthroughsel = passthrough; entcancel(); });
 
 CVAR(IDF_PERSIST, selgridhmap, 0x66FF22);
 CVAR(IDF_PERSIST, selgridcursor, 0xFFBBBB);
@@ -444,9 +446,9 @@ void rendereditcursor()
 
         wdist = rayent(player->o, cursordir, 1e16f,
                        (editmode && showmat ? RAY_EDITMAT : 0)   // select cubes first
-                       | (!dragging && entediting ? RAY_ENTS : 0)
+                       | (!dragging && entediting && (!passthrough || !passthroughent) ? RAY_ENTS : 0)
                        | RAY_SKIPFIRST
-                       | (passthroughcube==1 ? RAY_PASS : 0), gridsize, entorient, ent);
+                       | (passthroughcube || passthrough ? RAY_PASS : 0), gridsize, entorient, ent);
 
         if((havesel || dragging) && !passthroughsel && !hmapedit)     // now try selecting the selection
             if(rayboxintersect(vec(sel.o), vec(sel.s).mul(sel.grid), player->o, cursordir, sdist, orient))
