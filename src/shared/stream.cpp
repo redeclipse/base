@@ -941,7 +941,7 @@ struct gzstream : stream
     offset size()
     {
         if(!file) return -1;
-        offset pos = tell();
+        offset pos = file->tell();
         if(!file->seek(-4, SEEK_END)) return -1;
         uint isize = file->getlil<uint>();
         return file->seek(pos, SEEK_SET) ? isize : offset(-1);
