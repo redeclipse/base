@@ -793,6 +793,7 @@ bool mmcollide(physent *d, const vec &dir, float cutoff, octaentities &oc) // co
         }
         else
         {
+            center.mul(scale);
             radius.mul(scale);
             switch(d->collidetype)
             {
