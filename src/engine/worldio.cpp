@@ -938,7 +938,8 @@ static void sanevars()
 
 const char *variantvars[] = {
     "ambient", "ambientscale", "skylight", "skylightscale", "fog", "fogcolour", "skybgcolour", "skybox", "skycolour", "skyblend", "skyoverbright", "skyoverbrightmin",
-    "skyoverbrightthreshold", "spinsky", "rollsky", "yawsky", "cloudbox", "cloudcolour", "cloudblend", "spinclouds", "rollclouds", "yawclouds", "cloudclip", "cloudlayer", "cloudlayercolour",
+    "skyoverbrightthreshold", "spinsky", "spinskypitch", "spinskyroll", "yawsky", "pitchsky", "rollsky", "cloudbox", "cloudcolour", "cloudblend", 
+    "spinclouds", "spincloudspitch", "spincloudsroll", "yawclouds", "pitchclouds", "rollclouds", "cloudclip", "cloudlayer", "cloudlayercolour",
     "cloudlayerblend", "cloudoffsetx", "cloudoffsety", "cloudscrollx", "cloudscrolly", "cloudscale", "spincloudlayer", "yawcloudlayer", "cloudheight", "cloudfade",
     "cloudsubdiv", "envlayer", "envlayercolour", "envlayerblend", "envoffsetx", "envoffsety", "envscrollx", "envscrolly", "envscale", "spinenvlayer", "yawenvlayer",
     "envheight", "envfade", "envsubdiv", "atmo", "atmoplanetsize", "atmoheight", "atmobright", "atmolight", "atmolightscale", "atmodisksize", "atmodiskbright",
