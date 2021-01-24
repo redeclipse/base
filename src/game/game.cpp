@@ -1013,10 +1013,13 @@ namespace game
 
     float opacity(gameent *d, bool third)
     {
+        bool dead = d->state == CS_DEAD || d->state == CS_WAITING;
+        if(dead && !deathanim) return 0;
+
         float total = d == focus ? (third ? (d != player1 ? followblend : thirdpersonblend) : 1.f) : playerblend;
-        if(physics::isghost(d, focus)) total *= playerghostblend;
-        if(d->state == CS_DEAD || d->state == CS_WAITING)
+        if(dead)
         {
+            if(!deathanim) return 0;
             if(deathfade) total *= spawnfade(d);
         }
         else if(d->state == CS_ALIVE)
@@ -1026,6 +1029,9 @@ namespace game
             if(millis > 0) total *= 1.f-min(float(millis)/float(prot), 1.0f);
         }
         else if(d->state == CS_EDITING) total *= playereditblend;
+
+        if(physics::isghost(d, focus)) total *= playerghostblend;
+
         return total;
     }
 
