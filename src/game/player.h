@@ -139,6 +139,7 @@ extern const playerpattern playerpatterns[PLAYERPATTERNS] = {
     { "<grey>textures/patterns/zigzag",   "zigzag",   "Zigzag",   0x300, 2 },
     { "<grey>textures/patterns/pixel",    "pixel",    "Pixel",    0x300, 2 },
     { "<grey>textures/patterns/circle",   "circle",   "Circle",   0x300, 2 },
+    { "<grey>textures/patterns/mutant",   "mutant",   "Mutant",   0x300, 2 },
     { "<grey>textures/patterns/ninja",    "ninja",    "Ninja",    0,     2 },
     { "<grey>textures/patterns/lines",    "lines",    "Lines",    0,     1 },
     { "<grey>textures/patterns/softhero", "softhero", "Softhero", 0,     1 },
