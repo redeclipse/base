@@ -92,6 +92,7 @@ template<int BPP> static void scaletexture(uchar * RESTRICT src, uint sw, uint s
 
 static void scaletexture(uchar * RESTRICT src, uint sw, uint sh, uint bpp, uint pitch, uchar * RESTRICT dst, uint dw, uint dh)
 {
+    if(!sw || !sh || !dw || !dh) return;
     if(sw == dw*2 && sh == dh*2)
     {
         switch(bpp)
