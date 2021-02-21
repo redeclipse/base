@@ -1927,8 +1927,8 @@ namespace entities
                 FIXDIRYPL(0, 1); // yaw, pitch
                 if(e.attrs[3] < 0) e.attrs[3] = 0; // maxrad, clamp
                 if(e.attrs[4] < 0) e.attrs[4] = 0; // minrad, clamp
-                if(e.attrs[5] < 0) e.attrs[5] += 4; // type
-                if(e.attrs[5] >= 4) e.attrs[5] -= 4; // wrap both ways
+                while(e.attrs[5] < 0) e.attrs[5] += 4; // type
+                while(e.attrs[5] >= 4) e.attrs[5] -= 4; // wrap both ways
                 break;
             }
             case TRIGGER:
