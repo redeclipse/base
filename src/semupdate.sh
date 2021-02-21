@@ -44,8 +44,8 @@ semupdate_setup() {
 semupdate_wait() {
     pushd "${SEMUPDATE_BUILD}" || return 1
     SEMUPDATE_CURPRC=1
-    echo "Waiting for macOS build to complete.." # Will wait up to 20 minutes before failing
-    for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40; do
+    echo "Waiting for macOS build to complete.." # Will wait up to 15 minutes before failing
+    for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do
         SEMUPDATE_CURBIN=`cat "${SEMUPDATE_DIR}/bins.txt"`
         SEMUPDATE_CURMAC=`cat "${SEMUPDATE_DIR}/macos.txt"`
         echo ""
@@ -160,7 +160,7 @@ if [ "${BRANCH_NAME}" = master ]; then
     pushd "${HOME}" || exit 1
     semupdate_appimage || exit 1
     popd || exit 1
-    semupdate_wait || exit 1
+    semupdate_wait
     semupdate_steam || exit 1
 fi
 echo "done."
