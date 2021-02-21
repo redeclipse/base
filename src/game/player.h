@@ -107,7 +107,7 @@ struct score
 #define valteam(a,b)    (a >= b && a <= T_NUM)
 
 #define PLAYERTYPES 2
-#define PLAYERPATTERNS 16
+#define PLAYERPATTERNS 17
 
 struct playerpattern
 {
