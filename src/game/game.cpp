@@ -2496,7 +2496,7 @@ namespace game
     {
         float dist = from.dist(pos);
         yaw = -atan2(pos.x-from.x, pos.y-from.y)/RAD;
-        pitch = asin((pos.z-from.z)/dist)/RAD;
+        pitch = dist > 0 ? asin((pos.z-from.z)/dist)/RAD : 0;
         fixrange(yaw, pitch);
     }
 
