@@ -903,8 +903,8 @@ namespace physics
                             pitch = 0;
                         }
 
-                        while(yaw >= 360) yaw -= 360;
-                        while(yaw < 0) yaw += 360;
+                        if(yaw < 0.0f) yaw = 360.0f - fmodf(-yaw, 360.0f);
+                        else if(yaw >= 360.0f) yaw = fmodf(yaw, 360.0f);
 
                         off = yaw-d->yaw;
                         if(off > 180) off -= 360;

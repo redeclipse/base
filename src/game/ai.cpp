@@ -1293,8 +1293,8 @@ namespace ai
                 {  1,  1,   315 }
             };
             float yaw = d->ai->targyaw-d->yaw;
-            while(yaw < 0.0f) yaw += 360.0f;
-            while(yaw >= 360.0f) yaw -= 360.0f;
+            if(yaw < 0.0f) yaw = 360.0f - fmodf(-yaw, 360.0f);
+            else if(yaw >= 360.0f) yaw = fmodf(yaw, 360.0f);
             const aimdir &ad = aimdirs[clamp(((int)floor((yaw+22.5f)/45.0f))&7, 0, 7)];
             d->move = ad.move;
             d->strafe = ad.strafe;

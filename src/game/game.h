@@ -1329,11 +1329,11 @@ struct gameent : dynent, clientstate
             {
                 float scale = len/float(s.delay);
                 yaw += s.yaw*scale;
-                while(yaw < 0.0f) yaw += 360.0f;
-                while(yaw >= 360.0f) yaw -= 360.0f;
+                if(yaw < 0.0f) yaw = 360.0f - fmodf(-yaw, 360.0f);
+                else if(yaw >= 360.0f) yaw = fmodf(yaw, 360.0f);
                 pitch += s.pitch*scale;
                 if(pitch > 89.9f) pitch = 89.9f;
-                if(pitch < -89.9f) pitch = -89.9f;
+                else if(pitch < -89.9f) pitch = -89.9f;
                 s.last = millis;
             }
             if(millis >= etime) jitters.remove(i);

@@ -2394,20 +2394,20 @@ namespace game
     {
         if(full)
         {
-            while(pitch < -180.0f) pitch += 360.0f;
-            while(pitch >= 180.0f) pitch -= 360.0f;
-            while(roll < -180.0f) roll += 360.0f;
-            while(roll >= 180.0f) roll -= 360.0f;
+            if(pitch < -180.0f) pitch = 180.0f - fmodf(-180.0f - pitch, 360.0f);
+            else if(pitch >= 180.0f) pitch = fmodf(pitch + 180.0f, 360.0f) - 180.0f;
+            if(roll < -180.0f) roll = 180.0f - fmodf(-180.0f - roll, 360.0f);
+            else if(roll >= 180.0f) roll = fmodf(roll + 180.0f, 360.0f) - 180.0f;
         }
         else
         {
             if(pitch > 89.9f) pitch = 89.9f;
-            if(pitch < -89.9f) pitch = -89.9f;
+            else if(pitch < -89.9f) pitch = -89.9f;
             if(roll > 89.9f) roll = 89.9f;
-            if(roll < -89.9f) roll = -89.9f;
+            else if(roll < -89.9f) roll = -89.9f;
         }
-        while(yaw < 0.0f) yaw += 360.0f;
-        while(yaw >= 360.0f) yaw -= 360.0f;
+        if(yaw < 0.0f) yaw = 360.0f - fmodf(-yaw, 360.0f);
+        else if(yaw >= 360.0f) yaw = fmodf(yaw, 360.0f);
     }
 
     void fixrange(float &yaw, float &pitch)
