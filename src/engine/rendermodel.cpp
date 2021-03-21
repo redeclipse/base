@@ -1011,7 +1011,7 @@ model *loadlodmodel(model *m, const vec &pos, float offset)
               fovnow = clamp(curfov, fovmin, fovmax);
         if(fovnow < fovmax)
         {
-            float x = fmod(fabs(asin((pos.z-camera1->o.z)/dist)/RAD-camera1->pitch), 360),
+            float x = fmod(fabs((dist > 0 ? asin((pos.z-camera1->o.z)/dist)/RAD : 0) - camera1->pitch), 360),
                   y = fmod(fabs(-atan2(pos.x-camera1->o.x, pos.y-camera1->o.y)/RAD-camera1->yaw), 360);
             if(min(x, 360-x) <= curfov && min(y, 360-y) <= fovy) dist *= fovnow/fovmax*lodmodelfovscale;
         }

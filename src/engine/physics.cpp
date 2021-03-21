@@ -1203,7 +1203,7 @@ bool getsight(const vec &o, float yaw, float pitch, const vec &q, vec &v, float 
 
     if(dist <= mdist)
     {
-        float x = fmod(fabs(asin((q.z-o.z)/dist)/RAD-pitch), 360);
+        float x = fmod(fabs((dist > 0 ? asin((q.z-o.z)/dist)/RAD : 0) - pitch), 360);
         float y = fmod(fabs(-atan2(q.x-o.x, q.y-o.y)/RAD-yaw), 360);
         if(min(x, 360-x) <= fovx && min(y, 360-y) <= fovy) return raycubelos(o, q, v);
     }
