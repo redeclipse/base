@@ -296,8 +296,9 @@ namespace fx
 
         float radius = inst.getextprop<float>(FX_LIGHT_RADIUS) * scale;
         vec color = getcolor(inst, FX_LIGHT_COLOR).mul(getblend(inst)).tocolor();
+        int flags = inst.getextprop<int>(FX_LIGHT_FLAGS);
 
-        adddynlight(from, radius, vec(color));
+        adddynlight(from, radius, vec(color), 0, 0, flags);
     }
 
     static void soundfx(instance &inst)
