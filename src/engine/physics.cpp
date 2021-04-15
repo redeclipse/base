@@ -829,7 +829,7 @@ bool mmcollide(physent *d, const vec &dir, float cutoff, octaentities &oc) // co
 template<class E>
 static bool fuzzycollidesolid(physent *d, const vec &dir, float cutoff, const cube &c, const ivec &co, int size) // collide with solid cube geometry
 {
-    int crad = size/2;
+    float crad = size * 0.5f;
     if(fabs(d->o.x - co.x - crad) > d->radius + crad || fabs(d->o.y - co.y - crad) > d->radius + crad ||
        d->o.z + d->aboveeye < co.z || d->o.z - d->height > co.z + size)
         return false;
@@ -945,7 +945,7 @@ static bool fuzzycollideplanes(physent *d, const vec &dir, float cutoff, const c
 template<class E>
 static bool cubecollidesolid(physent *d, const vec &dir, float cutoff, const cube &c, const ivec &co, int size) // collide with solid cube geometry
 {
-    int crad = size/2;
+    float crad = size * 0.5f;
     if(fabs(d->o.x - co.x - crad) > d->radius + crad || fabs(d->o.y - co.y - crad) > d->radius + crad ||
        d->o.z + d->aboveeye < co.z || d->o.z - d->height > co.z + size)
         return false;
