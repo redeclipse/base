@@ -691,13 +691,16 @@ void checkinput()
                 //lasttype = event.type;
                 //lastbut = event.button.button;
                 int button = event.button.button;
-                if(button >= 4) button += 2;
+                if(button >= 6) button += 4; // skip mousewheel X (-4,-5) & Y (-8, 9)
+                else if(button >= 4) button += 2; // skip mousewheel X (-4,-5)
                 processkey(-button, event.button.state==SDL_PRESSED);
                 break;
             }
             case SDL_MOUSEWHEEL:
                 if(event.wheel.y > 0) { processkey(-4, true); processkey(-4, false); }
                 else if(event.wheel.y < 0) { processkey(-5, true); processkey(-5, false); }
+                else if(event.wheel.x > 0) { processkey(-8, true); processkey(-8, false); }
+                else if(event.wheel.x < 0) { processkey(-9, true); processkey(-9, false); }
                 break;
         }
     }
