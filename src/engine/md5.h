@@ -21,7 +21,6 @@ struct md5vert
 
 struct md5hierarchy
 {
-    string name;
     int parent, flags, start, bone;
 };
 
@@ -303,14 +302,20 @@ struct md5 : skelloader<md5>
                 {
                     while(f->getline(buf, sizeof(buf)) && buf[0]!='}')
                     {
+                        string name;
                         md5hierarchy h;
-                        if(sscanf(buf, " %100s %d %d %d", h.name, &h.parent, &h.flags, &h.start)==4)
+                        if(sscanf(buf, " %100s %d %d %d", name, &h.parent, &h.flags, &h.start)==4)
                         {
+                            if(char *start = strchr(name, '"')) if(char *end = strchr(start+1, '"'))
+                            {
+                                memcpy(name, start, end - start);
+                                name[end - start] = '\0';
+                            }
                             int k = hierarchy.length();
                             h.bone = k;
-                            if(skel->bones[k].name && strcmp(skel->bones[k].name, h.name))
+                            if(skel->bones[k].name && strcmp(skel->bones[k].name, name))
                             {
-                                loopi(skel->numbones) if(skel->bones[i].name && !strcmp(skel->bones[i].name, h.name)) { h.bone = i; break; }
+                                loopi(skel->numbones) if(skel->bones[i].name && !strcmp(skel->bones[i].name, name)) { h.bone = i; break; }
                             }
                             hierarchy.add(h);
                         }
