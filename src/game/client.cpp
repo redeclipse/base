@@ -3650,11 +3650,10 @@ namespace client
                 {
                     uint id = (uint)getint(p);
                     getstring(text, p);
-                    if(accountname[0] && accountpass[0])
+                    vector<char> buf;
+                    if(accountname[0] && accountpass[0] && answerchallenge(accountpass, text, buf))
                     {
                         conoutf("Identifying as: \fs\fc%s\fS (\fs\fy%u\fS)", accountname, id);
-                        vector<char> buf;
-                        answerchallenge(accountpass, text, buf);
                         addmsg(N_AUTHANS, "ris", id, buf.getbuf());
                     }
                     break;

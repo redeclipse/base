@@ -787,12 +787,13 @@ struct ecjacobian
         x.printdigits(buf);
     }
 
-    void parse(const char *s)
+    bool parse(const char *s)
     {
         bool ybit = *s++ == '-';
         x.parse(s);
-        calcy(ybit);
+        if(!calcy(ybit)) return false;
         z = bigint<1>(1);
+        return true;
     }
 };
 
@@ -884,16 +885,17 @@ bool hashstring(const char *str, char *result, int maxlen)
     return true;
 }
 
-void answerchallenge(const char *privstr, const char *challenge, vector<char> &answerstr)
+bool answerchallenge(const char *privstr, const char *challenge, vector<char> &answerstr)
 {
     gfint privkey;
     privkey.parse(privstr);
     ecjacobian answer;
-    answer.parse(challenge);
+    if(!answer.parse(challenge)) return false;
     answer.mul(privkey);
     answer.normalize();
     answer.x.printdigits(answerstr);
     answerstr.add('\0');
+    return true;
 }
 
 void *parsepubkey(const char *pubstr)
