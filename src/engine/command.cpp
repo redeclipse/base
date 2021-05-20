@@ -1018,6 +1018,9 @@ ICOMMAND(0, getvardesc, "s", (char *n), result(getvardesc(n)));
 ICOMMAND(0, getvarfields, "sb", (char *n, int *p), getvarfields(n, *p));
 ICOMMAND(0, getvarargs, "s", (char *n), result(getvarargs(n)));
 
+VAR(IDF_READONLY, intmin, 1, INT_MIN, -1);
+VAR(IDF_READONLY, intmax, 1, INT_MAX, -1);
+
 bool identexists(const char *name) { return idents.access(name)!=NULL; }
 ICOMMAND(0, identexists, "s", (char *s), intret(identexists(s) ? 1 : 0));
 
