@@ -4426,6 +4426,86 @@ namespace UI
     ICOMMAND(0, uivslotview, "iffe", (int *index, float *minw, float *minh, uint *children),
         BUILD(VSlotViewer, o, o->setup(*index, *minw*uiscale, *minh*uiscale), children));
 
+    struct DecalSlotViewer : SlotViewer
+    {
+        static const char *typestr() { return "#DecalSlotViewer"; }
+        const char *gettype() const { return typestr(); }
+
+        void previewslot(Slot &slot, VSlot &vslot, float x, float y, bool clamp = false)
+        {
+            if(!loadedshaders || slot.sts.empty()) return;
+            Texture *t = NULL, *glowtex = NULL;
+            if(slot.loaded)
+            {
+                t = slot.sts[0].t;
+                if(t == notexture) return;
+                Slot &slot = *vslot.slot;
+                if(slot.texmask&(1<<TEX_GLOW)) { loopvj(slot.sts) if(slot.sts[j].type==TEX_GLOW) { glowtex = slot.sts[j].t; break; } }
+            }
+            else
+            {
+                if(!slot.thumbnail)
+                {
+                    if(totalmillis - lastthumbnail < uislotviewtime) return;
+                    slot.loadthumbnail();
+                    lastthumbnail = totalmillis;
+                }
+                if(slot.thumbnail != notexture) t = slot.thumbnail;
+                else return;
+            }
+
+            changedraw(CHANGE_SHADER | CHANGE_COLOR);
+
+            SETSHADER(hudrgb);
+            vec2 tc[4] = { vec2(0, 0), vec2(1, 0), vec2(1, 1), vec2(0, 1) };
+            float xoff = float(vslot.offset.x)/t->xs, yoff = float(vslot.offset.y)/t->ys;
+            float xt = min(1.0f, t->xs/float(t->ys)), yt = min(1.0f, t->ys/float(t->xs));
+
+            xoff += (1.0f - xt) * 0.5f; yoff += (1.0f - yt) * 0.5f;
+
+            if(vslot.rotation)
+            {
+                const texrotation &r = texrotations[vslot.rotation];
+                if(r.swapxy) { swap(xoff, yoff); loopk(4) swap(tc[k].x, tc[k].y); }
+                if(r.flipx) { xoff *= -1; loopk(4) tc[k].x *= -1; }
+                if(r.flipy) { yoff *= -1; loopk(4) tc[k].y *= -1; }
+            }
+            loopk(4) { tc[k].x = (tc[k].x - xoff)/xt; tc[k].y = (tc[k].y - yoff)/yt; }
+            glBindTexture(GL_TEXTURE_2D, t->id);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+            vec colorscale = vslot.getcolorscale();
+            if(slot.loaded) gle::colorf(colorscale.x*colors[0].r/255.f, colorscale.y*colors[0].g/255.f, colorscale.z*colors[0].b/255.f, colors[0].a/255.f);
+            else gle::colorf(1, 1, 1, 1);
+            quad(x, y, w, h, tc);
+            if(glowtex)
+            {
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+                glBindTexture(GL_TEXTURE_2D, glowtex->id);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+                vec glowcolor = vslot.getglowcolor();
+                gle::colorf(glowcolor.x*colors[0].r/255.f, glowcolor.y*colors[0].g/255.f, glowcolor.z*colors[0].b/255.f, colors[0].a/255.f);
+                quad(x, y, w, h, tc);
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            }
+        }
+
+        void draw(float sx, float sy)
+        {
+            if(decalslots.inrange(index))
+            {
+                DecalSlot &slot = lookupdecalslot(index, false);
+                previewslot(slot, *slot.variants, sx, sy, true);
+            }
+
+            Object::draw(sx, sy);
+        }
+    };
+
+    ICOMMAND(0, uidecalslotview, "iffe", (int *index, float *minw, float *minh, uint *children),
+        BUILD(DecalSlotViewer, o, o->setup(*index, *minw*uiscale, *minh*uiscale), children));
+
     struct MiniMap : Target
     {
         Texture *tex;
