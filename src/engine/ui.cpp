@@ -666,6 +666,7 @@ namespace UI
         virtual bool isclip() const { return false; }
         virtual bool isradar() const { return false; }
         virtual bool ispreview() const { return false; }
+        virtual bool ismodelpreview() const { return false; }
 
         Object *find(const char *name, bool recurse = true, const Object *exclude = NULL) const
         {
@@ -4038,6 +4039,17 @@ namespace UI
             Preview::setup(minw_, minh_, yaw_, pitch_, roll_, fov_, skycol_, suncol_, sundir_, excol_, exdir_);
             SETSTR(name, name_);
 
+            setanim(animspec);
+            mdl.size = scale_;
+            mdl.color = vec4(1, 1, 1, blend_);
+        }
+
+        static const char *typestr() { return "#ModelPreview"; }
+        const char *gettype() const { return typestr(); }
+        bool ismodelpreview() const { return true; }
+
+        void setanim(const char *animspec)
+        {
             mdl.anim = ANIM_ALL;
             if(animspec[0])
             {
@@ -4055,12 +4067,7 @@ namespace UI
                 }
             }
             mdl.anim |= ANIM_LOOP;
-            mdl.size = scale_;
-            mdl.color = vec4(1, 1, 1, blend_);
         }
-
-        static const char *typestr() { return "#ModelPreview"; }
-        const char *gettype() const { return typestr(); }
 
         void draw(float sx, float sy)
         {
@@ -4091,6 +4098,31 @@ namespace UI
 
     ICOMMAND(0, uimodelpreview, "ssffffe", (char *model, char *animspec, float *scale, float *blend, float *minw, float *minh, uint *children),
         BUILD(ModelPreview, o, o->setup(model, animspec, *scale, *blend, *minw*uiscale, *minh*uiscale), children));
+
+    UICMDT(ModelPreview, modelpreview, file, "s", (const char *s), SETSTR(o->name, s));
+    UICMDT(ModelPreview, modelpreview, anim, "s", (const char *s), o->setanim(s));
+    UICMDT(ModelPreview, modelpreview, scale, "f", (float *n), o->mdl.size = *n);
+    UICMDT(ModelPreview, modelpreview, skycol, "i", (int *c), o->skycol = vec::fromcolor(*c));
+    UICMDT(ModelPreview, modelpreview, suncol, "i", (int *c), o->suncol = vec::fromcolor(*c));
+    UICMDT(ModelPreview, modelpreview, sundir, "fff", (float *x, float *y, float *z), o->sundir = vec(*x, *y, *z));
+    UICMDT(ModelPreview, modelpreview, excol, "i", (int *c), o->excol = vec::fromcolor(*c));
+    UICMDT(ModelPreview, modelpreview, exdir, "fff", (float *x, float *y, float *z), o->exdir = vec(*x, *y, *z));
+    UICMDT(ModelPreview, modelpreview, yaw, "f", (float *n), o->yaw = *n);
+    UICMDT(ModelPreview, modelpreview, pitch, "f", (float *n), o->pitch = *n);
+    UICMDT(ModelPreview, modelpreview, roll, "f", (float *n), o->roll = *n);
+    UICMDT(ModelPreview, modelpreview, fov, "f", (float *n), o->fov = *n);
+    UICMDT(ModelPreview, modelpreview, interactive, "i", (int *c), o->interactive = *c != 0);
+    UICMDT(ModelPreview, modelpreview, resetoffset, "", (void), o->resetoffset());
+    UICMDT(ModelPreview, modelpreview, colour, "fffg", (float *r, float *g, float *b, float *a), o->mdl.color = vec4(*r, *g, *b, *a >= 0 ? *a : 1.f));
+    UICMDT(ModelPreview, modelpreview, basetime, "bb", (int *b, int *c), o->mdl.basetime = *b >= 0 ? *b : lastmillis; o->mdl.basetime2 = *c >= 0 ? *c : 0);
+    UICMDT(ModelPreview, modelpreview, material, "iiii", (int *mat, int *r, int *g, int *b), if(*mat >= 0 && *mat < MAXMDLMATERIALS) o->mdl.material[*mat] = bvec(*r, *g, *b));
+    UICMDT(ModelPreview, modelpreview, mixercolour, "fffg", (float *r, float *g, float *b, float *a), o->mdl.mixercolor = vec4(*r, *g, *b, *a >= 0 ? *a : 1.f));
+    UICMDT(ModelPreview, modelpreview, matbright, "ff", (float *x, float *y), o->mdl.matbright = vec2(*x, *y));
+    UICMDT(ModelPreview, modelpreview, mixerglow, "ff", (float *x, float *y), o->mdl.mixerglow = vec2(*x, *y));
+    UICMDT(ModelPreview, modelpreview, mixerscroll, "ff", (float *x, float *y), o->mdl.mixerscroll = vec2(*x, *y));
+    UICMDT(ModelPreview, modelpreview, patternscale, "f", (float *n), o->mdl.patternscale = *n);
+    UICMDT(ModelPreview, modelpreview, mixer, "s", (const char *texname), o->mdl.mixer = textureload(texname, 3, true, false));
+    UICMDT(ModelPreview, modelpreview, pattern, "s", (const char *texname), o->mdl.pattern = textureload(texname, 3, true, false));
 
     struct PlayerPreview : Preview
     {
