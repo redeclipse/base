@@ -2623,7 +2623,7 @@ void vshadow(float *shadow)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vshadow, "f");
-ICOMMAND(0, getvshadow, "f", (float *tex), intret(lookupvslot(*tex, false).shadow));
+ICOMMAND(0, getvshadow, "f", (float *tex), floatret(lookupvslot(*tex, false).shadow));
 
 void vrefract(float *k, float *r, float *g, float *b)
 {
