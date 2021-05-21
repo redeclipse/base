@@ -1080,6 +1080,7 @@ COMMAND(0, nearestent, "");
 ICOMMAND(0, enthavesel,"", (), addimplicit(intret(entgroup.length())));
 ICOMMAND(0, entselect, "e", (uint *body), if(!noentedit()) addgroup(e.type != ET_EMPTY && entgroup.find(n)<0 && executebool(body)));
 ICOMMAND(0, entloop, "e", (uint *body), if(!noentedit()) { addimplicit(groupeditloop(((void)e, execute(body)))); commitchanges(); });
+ICOMMAND(0, entloopread, "e", (uint *body), if(entgroup.length()) loopv(entgroup) entfocus(entgroup[i], (void)e; execute(body);));
 ICOMMAND(0, insel, "", (), entfocus(efocus, intret(pointinsel(sel, e.o))));
 ICOMMAND(0, entget, "", (), entfocus(efocus,
 {
