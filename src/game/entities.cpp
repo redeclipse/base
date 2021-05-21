@@ -683,8 +683,8 @@ namespace entities
     int lastent(int type) { return type >= 0 && type < MAXENTTYPES ? clamp(lastenttype[type], 0, ents.length()) : 0; }
     int lastuse(int type) { return type >= 0 && type < EU_MAX ? clamp(lastusetype[type], 0, ents.length()) : 0; }
 
-    int numattrs(int type) { return clamp(type >= 0 && type < MAXENTTYPES ? enttype[type].numattrs : 0, 5, MAXENTATTRS); }
-    ICOMMAND(0, entityattrs, "b", (int *n), intret(numattrs(*n)));
+    int numattrs(int type, bool unused) { return clamp(type >= 0 && type < MAXENTTYPES ? enttype[type].numattrs : 0, unused ? 5 : 0, MAXENTATTRS); }
+    ICOMMAND(0, entityattrs, "bb", (int *n, int *used), intret(numattrs(*n, !*used)));
 
     #define ENTTYPE(value) ICOMMAND(0, entity##value, "b", (int *n), intret(*n >= 0 && *n < MAXENTTYPES ? enttype[*n].value : 0));
     ENTTYPE(priority);
