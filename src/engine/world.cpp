@@ -1094,6 +1094,21 @@ ICOMMAND(0, entget, "", (), entfocus(efocus,
 }));
 ICOMMAND(0, entindex, "", (), intret(efocus));
 
+void entlast(uint *body)
+{
+    if(noentedit()) return;
+
+    if(entgroup.length())
+    {
+        entfocus(entgroup.last(),
+            (void)e;
+            execute(body);
+        );
+    }
+    else execute(body);
+}
+COMMAND(0, entlast, "e");
+
 void enttype(char *type, int *numargs)
 {
     if(*numargs >= 1)
