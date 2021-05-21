@@ -976,10 +976,19 @@ static inline int countblock(cube *c, int n = 8)
 
 static int countblock(block3 *b) { return countblock(b->c(), b->size()); }
 
-void swapundo(undolist &a, undolist &b, int op)
+enum
 {
-    if(noedit()) return;
-    if(a.empty()) { conoutf("\frNothing more to %s", op == EDIT_REDO ? "redo" : "undo"); return; }
+    UNDO_NONE = 0,
+    UNDO_CUBE,
+    UNDO_ENT
+};
+
+int swapundo(undolist &a, undolist &b, int op)
+{
+    int undotype = UNDO_NONE;
+
+    if(noedit()) return UNDO_NONE;
+    if(a.empty()) { conoutf("\frNothing more to %s", op == EDIT_REDO ? "redo" : "undo"); return UNDO_NONE; }
     int ts = a.last->timestamp;
     if(multiplayer(false))
     {
@@ -991,7 +1000,7 @@ void swapundo(undolist &a, undolist &b, int op)
             if(ops > 10 || n > 2500)
             {
                 conoutf("\frUndo too big for multiplayer");
-                if(nompedit) { multiplayer(); return; }
+                if(nompedit) { multiplayer(); return UNDO_NONE; }
                 op = -1;
                 break;
             }
@@ -1002,6 +1011,7 @@ void swapundo(undolist &a, undolist &b, int op)
     {
         if(op >= 0) client::edittrigger(sel, op);
         undoblock *u = a.poplast(), *r;
+        undotype = u->numents ? UNDO_ENT : UNDO_CUBE;
         if(u->numents) r = copyundoents(u);
         else
         {
@@ -1029,10 +1039,12 @@ void swapundo(undolist &a, undolist &b, int op)
         reorient();
     }
     forcenextundo();
+
+    return undotype;
 }
 
-void editundo() { swapundo(undos, redos, EDIT_UNDO); }
-void editredo() { swapundo(redos, undos, EDIT_REDO); }
+int editundo() { return swapundo(undos, redos, EDIT_UNDO); }
+int editredo() { return swapundo(redos, undos, EDIT_REDO); }
 
 ICOMMAND(0, hasundos, "iN$", (int *n, int *numargs, ident *id),
 {
@@ -1756,8 +1768,8 @@ COMMAND(0, copy, "");
 COMMAND(0, pasteclear, "");
 COMMAND(0, pastehilight, "");
 COMMAND(0, paste, "");
-COMMANDN(0, undo, editundo, "");
-COMMANDN(0, redo, editredo, "");
+ICOMMAND(0, undo, "", (), intret(editundo()));
+ICOMMAND(0, redo, "", (), intret(editredo()));
 
 static vector<int *> editingvslots;
 struct vslotref
