@@ -2681,16 +2681,16 @@ COMMAND(0, vshaderparam, "sffffii");
 ICOMMAND(0, getvshaderparam, "is", (int *tex, const char *name),
 {
     VSlot &vslot = lookupvslot(*tex, false);
-    loopv(vslot.params)
+    float pal = 0;
+    float palidx = 0;
+    float *params = findslotparam(vslot, name, pal, palidx);
+
+    if(params)
     {
-        SlotShaderParam &p = vslot.params[i];
-        if(!strcmp(p.name, name))
-        {
-            defformatstring(str, "%s %s %s %s", floatstr(p.val[0]), floatstr(p.val[1]), floatstr(p.val[2]), floatstr(p.val[3]));
-            if(p.palette || p.palindex) concformatstring(str, " %d %d", p.palette, p.palindex);
-            result(str);
-            return;
-        }
+        defformatstring(str, "%s %s %s %s", floatstr(params[0]), floatstr(params[1]),
+            floatstr(params[2]), floatstr(params[3]));
+        if(pal || palidx) concformatstring(str, " %d %d", pal, palidx);
+        result(str);
     }
 });
 ICOMMAND(0, getvshaderparamnames, "i", (int *tex),
