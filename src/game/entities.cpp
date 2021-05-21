@@ -1720,6 +1720,7 @@ namespace entities
 
     void clearents()
     {
+        efocus = -1;
         while(ents.length()) deleteent(ents.pop());
         memset(firstenttype, 0, sizeof(firstenttype));
         memset(firstusetype, 0, sizeof(firstusetype));
