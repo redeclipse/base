@@ -931,6 +931,7 @@ struct lineprimitiverenderer : listrenderer<lineprimitive>
     void startrender()
     {
         glDisable(GL_CULL_FACE);
+        glDisable(GL_DEPTH_TEST);
         gle::defvertex();
         gle::defcolor(4, GL_UNSIGNED_BYTE);
         gle::begin(GL_LINES);
@@ -939,6 +940,7 @@ struct lineprimitiverenderer : listrenderer<lineprimitive>
     void endrender()
     {
         gle::end();
+        glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
     }
 
@@ -979,6 +981,7 @@ struct trisprimitiverenderer : listrenderer<trisprimitive>
     void startrender()
     {
         glDisable(GL_CULL_FACE);
+        glDisable(GL_DEPTH_TEST);
         gle::defvertex();
         gle::defcolor(4, GL_UNSIGNED_BYTE);
         gle::begin(GL_TRIANGLES);
@@ -987,6 +990,7 @@ struct trisprimitiverenderer : listrenderer<trisprimitive>
     void endrender()
     {
         gle::end();
+        glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
     }
 
@@ -1039,11 +1043,13 @@ struct loopprimitiverenderer : listrenderer<loopprimitive>
     void startrender()
     {
         glDisable(GL_CULL_FACE);
+        glDisable(GL_DEPTH_TEST);
         gle::defvertex();
     }
 
     void endrender()
     {
+        glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
     }
 
@@ -1104,11 +1110,13 @@ struct coneprimitiverenderer : listrenderer<coneprimitive>
     void startrender()
     {
         glDisable(GL_CULL_FACE);
+        glDisable(GL_DEPTH_TEST);
         gle::defvertex();
     }
 
     void endrender()
     {
+        glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
     }
 
