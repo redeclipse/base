@@ -702,7 +702,7 @@ struct VSlot
         coastscale = 1;
         refractscale = 0;
         refractcolor = vec(1, 1, 1);
-        shadow = 0;
+        shadow = 1;
     }
 
     vec getcolorscale() const { return palette || palindex ? vec(colorscale).mul(game::getpalette(palette, palindex)) : colorscale; }
