@@ -48,6 +48,11 @@ slotmanager<soundslot> gamesounds, mapsounds;
 vector<slot *> soundmap;
 vector<sound> sounds;
 
+ICOMMAND(0, mapsoundinfo, "i", (int *index), {
+    if(*index < 0) intret(mapsounds.length());
+    else if(*index < mapsounds.length()) result(mapsounds[*index].name);
+});
+
 bool nosound = true, changedvol = false, canmusic = false;
 Mix_Music *music = NULL;
 SDL_RWops *musicrw = NULL;
