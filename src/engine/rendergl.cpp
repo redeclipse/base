@@ -2254,6 +2254,7 @@ void drawcubemap(int size, const vec &o, float yaw, float pitch, bool onlysky)
 }
 
 VAR(0, modelpreviewfov, 10, 20, 100);
+VAR(0, modelpreviewfarplane, 256, 2048, 8192);
 
 namespace modelpreview
 {
@@ -2305,7 +2306,7 @@ namespace modelpreview
         aspect = w/float(h);
         fovy = fov > 0 ? clamp(fov, 10.f, 100.f) : modelpreviewfov;
         curfov = 2*atan2(tan(fovy/2*RAD), 1/aspect)/RAD;
-        farplane = 1024;
+        farplane = modelpreviewfarplane;
         vieww = min(gw, w);
         viewh = min(gh, h);
         ldrscale = 1;
