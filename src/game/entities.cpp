@@ -2641,7 +2641,7 @@ namespace entities
         {
             switch(e.type)
             {
-                case PLAYERSTART: case CHECKPOINT:
+                case PLAYERSTART: case CHECKPOINT: case ROUTE:
                 {
                     entdirpart(pos, e.attrs[1], e.attrs[2], 4.f, 1, TEAM(e.type == PLAYERSTART ? e.attrs[0] : T_NEUTRAL, colour));
                     break;
