@@ -748,10 +748,11 @@ void entpush(int *dir)
 }
 
 VAR(0, entautoviewdist, 0, 25, 100);
-void entautoview(int *dir)
+void entautoview(int *dir, int *isidx)
 {
     if(!haveselent()) return;
     static int s = 0;
+    if(*isidx) s = 0;
     physent *player = (physent *)game::focusedent(true);
     if(!player) player = camera1;
     vec v(player->o);
@@ -768,7 +769,7 @@ void entautoview(int *dir)
     );
 }
 
-COMMAND(0, entautoview, "i");
+COMMAND(0, entautoview, "ii");
 COMMAND(0, entflip, "");
 COMMAND(0, entrotate, "i");
 COMMAND(0, entpush, "i");
