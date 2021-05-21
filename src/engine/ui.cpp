@@ -3706,8 +3706,9 @@ namespace UI
         float scale, offsetx, offsety;
         editor *edit;
         char *keyfilter;
+        bool canfocus;
 
-        TextEditor() : edit(NULL), keyfilter(NULL) {}
+        TextEditor() : edit(NULL), keyfilter(NULL), canfocus(true) {}
 
         bool iseditor() const { return true; }
 
@@ -3748,6 +3749,7 @@ namespace UI
             ::keyrepeat(allowtextinput, KR_UI);
         }
         void setfocus() { setfocus(this); }
+        void setfocusable(bool focusable) { canfocus = focusable; }
         void clearfocus() { if(focus == this) setfocus(NULL); }
         bool isfocus() const { return focus == this; }
 
@@ -3795,6 +3797,8 @@ namespace UI
 
         void press(float cx, float cy, bool inside)
         {
+            if(!canfocus) return;
+
             setfocus();
             resetmark(cx, cy);
         }
@@ -3884,6 +3888,9 @@ namespace UI
     TextEditor *TextEditor::focus = NULL;
     ICOMMAND(0, uitexteditor, "siifsies", (char *name, int *length, int *height, float *scale, char *initval, int *mode, uint *children, char *keyfilter),
         BUILD(TextEditor, o, o->setup(name, *length, *height, (*scale <= 0 ? 1 : *scale)*uiscale * uitextscale, initval, *mode <= 0 ? EDITORFOREVER : *mode, keyfilter), children));
+
+    UICMDT(TextEditor, editor, setfocus, "", (), o->setfocus());
+    UICMDT(TextEditor, editor, setfocusable, "i", (int *focusable), o->setfocusable(*focusable));
 
     static const char *getsval(ident *id, bool &shouldfree, const char *val = "")
     {
