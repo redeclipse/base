@@ -373,7 +373,12 @@ extern float rayent(const vec &o, const vec &ray, float radius, int mode, int si
 VAR(0, gridlookup, 0, 0, 1);
 VAR(0, passthroughcube, 0, 1, 1);
 VAR(0, passthroughent, 0, 1, 1);
-VARF(0, passthrough, 0, 0, 1, { passthroughsel = passthrough; entcancel(); });
+VAR(IDF_PERSIST, passthroughentcancel, 0, 0, 1);
+VARF(0, passthrough, 0, 0, 1,
+{
+    passthroughsel = passthrough;
+    if(passthroughentcancel) entcancel();
+});
 
 CVAR(IDF_PERSIST, selgridhmap, 0x66FF22);
 CVAR(IDF_PERSIST, selgridcursor, 0xFFBBBB);
