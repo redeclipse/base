@@ -534,6 +534,7 @@ enum { CURSOR_DEFAULT = 0, CURSOR_HOVER, CURSOR_HIDDEN, CURSOR_MAX };
 
 namespace UI
 {
+    extern bool cursorlocked;
     extern int uihidden, cursortype;
     extern char *uiopencmd, *uiclosecmd;
     extern bool showui(const char *name);
@@ -555,6 +556,7 @@ namespace UI
     extern void update();
     extern void render();
     extern void cleanup();
+    extern void mousetrack(float dx, float dy);
 }
 
 // menus

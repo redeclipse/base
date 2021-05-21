@@ -4,6 +4,9 @@
 namespace UI
 {
     int cursortype = CURSOR_DEFAULT;
+    bool cursorlocked = false, mousetracking = false;
+
+    vec2 mousetrackvec;
 
     FVAR(0, uitextscale, 1, 0, 0);
 
@@ -1156,10 +1159,21 @@ namespace UI
 
     ICOMMAND(0, uicursorx, "", (), floatret(cursorx*float(hudw)/hudh));
     ICOMMAND(0, uicursory, "", (), floatret(cursory));
+    ICOMMAND(0, uilockcursor, "", (), cursorlocked = true);
 
     ICOMMAND(0, uiaspect, "", (), floatret(float(hudw)/hudh));
 
     ICOMMAND(0, uicursortype, "b", (int *val), { if(*val >= 0) cursortype = clamp(*val, 0, CURSOR_MAX-1); intret(cursortype); });
+
+    ICOMMAND(0, uimousetrackx, "", (), {
+        mousetracking = true;
+        floatret(mousetrackvec.x);
+    });
+
+    ICOMMAND(0, uimousetracky, "", (), {
+        mousetracking = true;
+        floatret(mousetrackvec.y);
+    });
 
     bool showui(const char *name)
     {
@@ -4796,6 +4810,8 @@ namespace UI
         float oldtextscale = curtextscale;
         curtextscale = 1;
         cursortype = CURSOR_DEFAULT;
+        mousetracking = false;
+        cursorlocked = false;
         pushfont();
         readyeditors();
 
@@ -4812,6 +4828,8 @@ namespace UI
 
         if(inputsteal && !inputsteal->isfocus())
             inputsteal = NULL;
+
+        if(!mousetracking) mousetrackvec = vec2(0, 0);
 
         flusheditors();
         popfont();
@@ -4831,4 +4849,6 @@ namespace UI
         curtextscale = oldtextscale;
         world = wmain;
     }
+
+    void mousetrack(float dx, float dy) { mousetrackvec.add(vec2(dx, dy)); }
 }
