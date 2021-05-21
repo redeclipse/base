@@ -578,8 +578,9 @@ void entdrag(const vec &ray)
     vec eo, es;
     int d = dimension(entorient),
         dc= dimcoord(entorient);
+    int eindex = enthover >= 0 ? enthover : entgroup.last();
 
-    entfocus(entgroup.last(),
+    entfocus(eindex,
         entselectionbox(e, eo, es);
 
         if(!editmoveplane(e.o, ray, d, eo[d] + (dc ? es[d] : 0), handle, dest, entmoving==1))
