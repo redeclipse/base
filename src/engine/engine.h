@@ -750,11 +750,13 @@ extern ENetPeer *curpeer, *connpeer;
 // console
 #ifdef __APPLE__
     #define MOD_KEYS (KMOD_LGUI|KMOD_RGUI)
-    #define MOD_ALTS MOD_KEYS
+    #define MOD_ALTS KMOD_RALT
 #else
     #define MOD_KEYS (KMOD_LCTRL|KMOD_RCTRL)
     #define MOD_ALTS (KMOD_LALT|KMOD_RALT)
 #endif
+
+#define MOD_SHIFTS (KMOD_LSHIFT|KMOD_RSHIFT)
 
 extern char *pastetext(char *buf = NULL, size_t len = 0);
 extern void writebinds(stream *f);

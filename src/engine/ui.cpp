@@ -3973,8 +3973,19 @@ namespace UI
 
     struct KeyField : Field
     {
+        enum { MODE_MULTI = 0, MODE_COMBO };
+
         static const char *typestr() { return "#KeyField"; }
         const char *gettype() const { return typestr(); }
+
+        int fieldmode;
+
+        void setup(ident *id_, int length, uint *onchange, float scale = 1,
+            const char *keyfilter_ = NULL, bool immediate = false, int mode = MODE_MULTI)
+        {
+            Field::setup(id_, length, onchange, scale, keyfilter_, immediate);
+            fieldmode = mode;
+        }
 
         void resetmark(float cx, float cy)
         {
@@ -3984,11 +3995,35 @@ namespace UI
 
         void insertkey(int code)
         {
+            bool ctrl = false, shift = false, alt = false;
+
+            ctrl = code == SDLK_LCTRL || code == SDLK_RCTRL;
+            alt = code == SDLK_LALT || code == SDLK_RALT;
+            shift = code == SDLK_LSHIFT || code == SDLK_RSHIFT;
+
+            // Do not insert the modifiers themselves
+            if(fieldmode == MODE_COMBO && (ctrl || shift || alt))
+                return;
+
             const char *keyname = getkeyname(code);
             if(keyname)
             {
-                if(!edit->empty()) edit->insert(" ");
+                if(!edit->empty())
+                {
+                    if(fieldmode == MODE_MULTI) edit->insert(" ");
+                    else edit->clear();
+                }
+
+                if(fieldmode == MODE_COMBO)
+                {
+                    if(SDL_GetModState()&MOD_KEYS) edit->insert("CTRL+");
+                    if(SDL_GetModState()&MOD_ALTS) edit->insert("ALT+");
+                    if(SDL_GetModState()&MOD_SHIFTS) edit->insert("SHIFT+");
+                }
+
                 edit->insert(keyname);
+
+                if(fieldmode == MODE_COMBO) commit();
             }
         }
 
@@ -4004,8 +4039,20 @@ namespace UI
         bool allowtextinput() const { return false; }
     };
 
-    ICOMMAND(0, uikeyfield, "riefe", (ident *var, int *length, uint *onchange, float *scale, uint *children),
-        BUILD(KeyField, o, o->setup(var, *length, onchange, (*scale <= 0 ? 1 : *scale)*uiscale * uitextscale), children));
+    ICOMMAND(0, uikeyfield, "riefe", (ident *var, int *length, uint *onchange, float *scale,
+        uint *children),
+    {
+        float s = (*scale <= 0 ? 1 : *scale)*uiscale * uitextscale;
+        BUILD(KeyField, o, o->setup(var, *length, onchange, s, NULL, false), children);
+    });
+
+    ICOMMAND(0, uicombokeyfield, "riefe", (ident *var, int *length, uint *onchange, float *scale,
+        uint *children),
+    {
+        float s = (*scale <= 0 ? 1 : *scale)*uiscale * uitextscale;
+        BUILD(KeyField, o, o->setup(var, *length, onchange, s, NULL, false, KeyField::MODE_COMBO),
+            children);
+    });
 
     struct Preview : Target
     {
