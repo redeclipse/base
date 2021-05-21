@@ -3005,6 +3005,14 @@ void gettexname(int *tex, int *subslot)
     result(slot.sts[*subslot].name);
 }
 
+void getdecalname(int *decal, int *subslot)
+{
+    if(*decal<0) return;
+    DecalSlot &slot = lookupdecalslot(*decal, false);
+    if(!slot.sts.inrange(*subslot)) return;
+    result(slot.sts[*subslot].name);
+}
+
 void getslottex(int *idx)
 {
     if(*idx < 0 || !slots.inrange(*idx)) { intret(-1); return; }
@@ -3019,10 +3027,12 @@ COMMAND(0, getcurtex, "");
 COMMAND(0, getseltex, "");
 ICOMMAND(0, getreptex, "", (), { if(!noedit()) intret(vslots.inrange(reptex) ? reptex : -1); });
 COMMAND(0, gettexname, "ii");
+COMMAND(0, getdecalname, "ii");
 ICOMMAND(0, texmru, "b", (int *idx), { filltexlist(); intret(texmru.inrange(*idx) ? texmru[*idx] : texmru.length()); });
 ICOMMAND(0, texmrufind, "i", (int *idx), { filltexlist(); intret(texmru.find(*idx)); });
 ICOMMAND(0, numvslots, "", (), intret(vslots.length()));
 ICOMMAND(0, numslots, "", (), intret(slots.length()));
+ICOMMAND(0, numdecalslots, "", (), intret(decalslots.length()));
 COMMAND(0, getslottex, "i");
 ICOMMAND(0, texloaded, "i", (int *tex), intret(slots.inrange(*tex) && slots[*tex]->loaded ? 1 : 0));
 
