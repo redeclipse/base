@@ -1021,6 +1021,13 @@ void entlink(int *parent)
 }
 COMMAND(0, entlink, "i");
 
+void entunlink()
+{
+    loopv(entgroup)
+        entities::unlinkent(entgroup[i]);
+}
+COMMAND(0, entunlink, "");
+
 void selentlinks(int n, int recurse, uint *cond)
 {
     if(noentedit()) return;

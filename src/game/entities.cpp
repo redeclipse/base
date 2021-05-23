@@ -2285,6 +2285,26 @@ namespace entities
         return false;
     }
 
+    void unlinkent(int index)
+    {
+        if(ents.inrange(index))
+        {
+            gameentity &e = *(gameentity *)ents[index];
+            if(e.links.empty()) return;
+
+            loopv(e.links) if(ents.inrange(e.links[i]))
+            {
+                gameentity &f = *(gameentity *)ents[e.links[i]];
+                if(f.links.empty()) continue;
+
+                int linkidx = f.links.find(index);
+                if(linkidx >= 0) f.links.remove(linkidx);
+            }
+
+            e.links.shrink(0);
+        }
+    }
+
     void entitylink(int index, int node, bool both = true)
     {
         if(ents.inrange(index) && ents.inrange(node))
