@@ -2997,20 +2997,34 @@ void getcurtex()
     intret(texmru[index]);
 }
 
-void getseltex()
+void getseltex(int *allcubes)
 {
     if(noedit(true))
     {
         intret(-1);
         return;
     }
-    cube &c = lookupcube(sel.o, -sel.grid);
-    if(c.children || isempty(c))
+
+    int tex = -1;
+
+    if(*allcubes)
     {
-        intret(-1);
-        return;
+        loopxyz(sel, -sel.grid, {
+            if(!c.children && !isempty(c))
+            {
+                tex = c.texture[sel.orient];
+                goto end;
+            }
+        });
     }
-    intret(c.texture[sel.orient]);
+    else
+    {
+        cube &c = lookupcube(sel.o, -sel.grid);
+        if(!c.children && !isempty(c)) tex = c.texture[sel.orient];
+    }
+
+    end:
+    intret(tex);
 }
 
 void gettexname(int *tex, int *subslot)
@@ -3041,7 +3055,7 @@ COMMANDN(0, edittex, edittex_, "i");
 ICOMMAND(0, settex, "i", (int *tex), { if(!vslots.inrange(*tex) || noedit()) return; filltexlist(); edittex(*tex); });
 COMMAND(0, gettex, "");
 COMMAND(0, getcurtex, "");
-COMMAND(0, getseltex, "");
+COMMAND(0, getseltex, "i");
 ICOMMAND(0, getreptex, "", (), { if(!noedit()) intret(vslots.inrange(reptex) ? reptex : -1); });
 COMMAND(0, gettexname, "ii");
 COMMAND(0, getdecalname, "ii");
