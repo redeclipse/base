@@ -4071,9 +4071,7 @@ namespace UI
 
         void draw(float sx, float sy)
         {
-            Object::draw(sx, sy);
-
-            if(!loadedshaders) return;
+            if(!loadedshaders) { Object::draw(sx, sy); return; }
 
             changedraw(CHANGE_SHADER);
 
@@ -4083,7 +4081,7 @@ namespace UI
             model *m = loadmodel(name);
             if(m)
             {
-                loopi(min(colors.length(), int(MAXMDLMATERIALS))) mdl.material[i] = bvec(colors[i].r, colors[i].g, colors[i].b);
+                //loopi(min(colors.length(), int(MAXMDLMATERIALS))) mdl.material[i] = bvec(colors[i].r, colors[i].g, colors[i].b);
                 vec center, radius;
                 m->boundbox(center, radius);
                 if(yaw >= 0) mdl.yaw = yaw;
@@ -4093,6 +4091,8 @@ namespace UI
             }
             if(clipstack.length()) clipstack.last().scissor();
             modelpreview::end(skycol, suncol, sundir, excol, exdir);
+
+            Object::draw(sx, sy);
         }
     };
 
@@ -4145,9 +4145,7 @@ namespace UI
 
         void draw(float sx, float sy)
         {
-            Object::draw(sx, sy);
-
-            if(!loadedshaders) return;
+            if(!loadedshaders) { Object::draw(sx, sy); return; }
 
             changedraw(CHANGE_SHADER);
 
@@ -4158,6 +4156,8 @@ namespace UI
             game::renderplayerpreview(scale, colors[0].tocolor4(), actions, yaw, offsetyaw);
             if(clipstack.length()) clipstack.last().scissor();
             modelpreview::end(skycol, suncol, sundir, excol, exdir);
+
+            Object::draw(sx, sy);
         }
     };
 
