@@ -263,6 +263,12 @@ namespace fx
             PROP_COLOR,
             bvec(0, 0, 0), bvec(255, 255, 255), bvec(255, 255, 255),
             BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+        ),
+        fxpropertydef(
+            "flags",
+            PROP_INT,
+            0, 0, INT_MAX,
+            0
         )
     };
 
