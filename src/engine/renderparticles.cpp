@@ -1205,7 +1205,7 @@ static partrenderer *parts[] =
     &flares // must be done last!
 };
 
-VARF(IDF_PERSIST, maxparticles, 10, 4000, 10000, initparticles());
+VARF(IDF_PERSIST, maxparticles, 10, 5000, 10000, initparticles());
 VARF(IDF_PERSIST, fewparticles, 10, 100, 10000, initparticles());
 
 int partsorder[sizeof(parts)/sizeof(parts[0])];
@@ -1377,7 +1377,7 @@ void regularcreate(int type, int color, int fade, const vec &p, float size, floa
     create(type, color, fade, p, size, blend, gravity, collide, pl);
 }
 
-VAR(IDF_PERSIST, maxparticledistance, 256, 1024, 4096);
+VAR(IDF_PERSIST, maxparticledistance, 256, 1536, 4096);
 
 void splash(int type, int color, float radius, int num, int fade, const vec &p, float size, float blend, float gravity, int collide, float vel)
 {
