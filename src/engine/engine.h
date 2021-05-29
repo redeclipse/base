@@ -283,6 +283,7 @@ extern bool hasVAO, hasTR, hasTSW, hasPBO, hasFBO, hasAFBO, hasDS, hasTF, hasCBF
 extern int glversion, glslversion, glcompat;
 extern char *gfxvendor, *gfxrenderer, *gfxversion;
 extern int maxdrawbufs, maxdualdrawbufs;
+extern int framemillis;
 
 enum { DRAWTEX_NONE = 0, DRAWTEX_ENVMAP, DRAWTEX_MINIMAP, DRAWTEX_MODELPREVIEW, DRAWTEX_MAPSHOT,
     DRAWTEX_HALO };
