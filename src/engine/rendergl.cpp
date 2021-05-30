@@ -2572,11 +2572,8 @@ void gl_drawframe()
     if(!noview) gl_drawview();
     gl_drawhud(noview);
 
-    if(frametimer)
-    {
-        glFinish();
-        framemillis = getclockmillis() - totalmillis;
-    }
+    glFinish();
+    framemillis = getclockmillis() - totalmillis;
 }
 
 void cleanupgl()

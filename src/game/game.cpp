@@ -2488,7 +2488,6 @@ namespace game
 		     }
 
 		}
-
 		// end accel
 		float scale = (focus == player1 && inzoom() && zoomsensitivity > 0 ? (1.f-((zoomlevel+1)/float(zoomlevels+2)))*zoomsensitivity : 1.f)*sensitivity*accelsensitivity; // t
                 d->yaw += mousesens(dx, sensitivityscale, yawsensitivity*scale);
