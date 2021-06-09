@@ -15,7 +15,7 @@ actor actors[] = {
     { "player", A_PLAYER,   true,   true,   true,   true,   true,   false,  24.f,   5.f,   NULL },
     { "bot",    A_BOT,      true,   true,   true,   true,   true,   false,  24.f,   5.f,   NULL },
     { "turret", A_TURRET,   true,   true,   true,   true,   true,   false,  24.f,   5.f,   NULL },
-    { "grunt",  A_GRUNT,    true,   true,   true,   true,   true,   false,  24.f,   5.f,   NULL },
+    { "grunt",  A_GRUNT,    true,   true,   true,   true,   true,   false,  24.f,   5.f,   "actors/player/male" },
     { "drone",  A_DRONE,    true,   true,   true,   true,   true,   false,  24.f,   5.f,   NULL },
     { "roller", A_ROLLER,   false,  false,  false,  false,  false,  true,   13.5f,  6.75f,  "actors/roller" },
 };
