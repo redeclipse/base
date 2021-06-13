@@ -2436,54 +2436,53 @@ namespace game
     bool mousemove(int dx, int dy, int x, int y, int w, int h)
     {
         #define mousesens(a,b,c) ((float(a)/float(b))*c)
+
         if(mouseoverride&2 || (!mouseoverride && hud::hasinput(true)))
         {
             cursorx = clamp(cursorx+mousesens(dx, w, mousesensitivity), 0.f, 1.f);
             cursory = clamp(cursory+mousesens(dy, h, mousesensitivity), 0.f, 1.f);
             if(!(mouseoverride&1)) return true;
         }
+
         if(mouseoverride&1 || (!mouseoverride && !tvmode()))
         {
             physent *d = (!gs_playing(gamestate) || player1->state >= CS_SPECTATOR) && (focus == player1 || followaim()) ? camera1 : (allowmove(player1) ? player1 : NULL);
             if(d)
             {
-                float accelsensitivity = 1;
+                float scale = (focus == player1 && inzoom() && zoomsensitivity > 0 ? (1.f-((zoomlevel+1)/float(zoomlevels+2)))*zoomsensitivity : 1.f)*sensitivity;
                 if(mouseaccel != 0)
                 {
-                     // Then do Quake Live-style power acceleration.
-                     // Note that this behavior REPLACES the usual sensitivity, we then have to divide the result by the sensitivity again to no have double the sensitivity
-                     float speed = (sqrtf(dx * dx + dy * dy) / framemillis);
-                     float adjustedspeedpxms = (speed - mouseacceloffset) * 0.001f * mouseaccel;
-                     if(adjustedspeedpxms > 0)
-                     {
-                         if(mouseaccelexp > 1.0f)
-                         {
-                             // TODO: How does this interact with sensitivity changes? Is this intended?
-                             // Currently: more sensitivity = less acceleration at same pixel speed.
-                             accelsensitivity += expf((mouseaccelexp - 1.0f) * logf(adjustedspeedpxms)) / sensitivity;
-                         }
-                         else
-                         {
-                             // The limit of the then-branch for mauseaccel -> 1.
-                              accelsensitivity += (1 / sensitivity);
-                             // Note: QL had just accelsens = 1.0f.
-                             // This is mathematically wrong though.
-                         }
-                     }
-                     else
-                     {
-                         // The limit of the then-branch for adjustedspeed -> 0.
-                         accelsensitivity += 0.0f;
-                     }
-                     if(mouseaccelsenscap > 0.0f && accelsensitivity > mouseaccelsenscap / sensitivity)
-                     {
-                         // TODO: How does this interact with sensitivity changes? Is this intended?
-                         // Currently: senscap is in absolute sensitivity units, so if senscap < sensitivity, it overrides.
-                         accelsensitivity = mouseaccelsenscap / sensitivity;
-                     }
+                    // Quake Live style mouse acceleration Note: this behavior REPLACES the usual sensitivity, we then have to divide the result by the sensitivity again to no have double the sensitivity
+                    float accelsensitivity = 1, speed = (sqrtf(dx*dx+dy*dy)/framemillis), adjustedspeedpxms = (speed-mouseacceloffset)*0.001f*mouseaccel;
+                    if(adjustedspeedpxms > 0)
+                    {
+                        if(mouseaccelexp > 1.0f)
+                        {
+                            // TODO: How does this interact with sensitivity changes? Is this intended? Currently: more sensitivity = less acceleration at same pixel speed.
+                            accelsensitivity += expf((mouseaccelexp-1.0f)*logf(adjustedspeedpxms))/sensitivity;
+                        }
+                        else
+                        {
+                            // The limit of the then-branch for mauseaccel -> 1. Note: QL had just accelsens = 1.0f. This is mathematically wrong though.
+                            accelsensitivity += (1/sensitivity);
+                        }
+                    }
+                    else
+                    {
+                        // The limit of the then-branch for adjustedspeed -> 0.
+                        accelsensitivity += 0.0f;
+                    }
 
+                    float cap = mouseaccelsenscap/sensitivity;
+                    if(mouseaccelsenscap > 0.0f && accelsensitivity > cap)
+                    {
+                        // TODO: How does this interact with sensitivity changes? Is this intended? Currently: senscap is in absolute sensitivity units, so if senscap < sensitivity, it overrides.
+                        accelsensitivity = cap;
+                    }
+
+                    scale *= accelsensitivity;
                 }
-                float scale = (focus == player1 && inzoom() && zoomsensitivity > 0 ? (1.f-((zoomlevel+1)/float(zoomlevels+2)))*zoomsensitivity : 1.f)*sensitivity*accelsensitivity; // t
+
                 d->yaw += mousesens(dx, sensitivityscale, yawsensitivity*scale);
                 d->pitch -= mousesens(dy, sensitivityscale, pitchsensitivity*scale*(mouseinvert ? -1.f : 1.f));
                 fixrange(d->yaw, d->pitch);
