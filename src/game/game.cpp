@@ -3631,7 +3631,12 @@ namespace game
                     case W_S_IDLE: case W_S_WAIT: default:
                     {
                         if(!d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators))) showweap = false;
-                        mdl.anim = weaptype[weap].anim|ANIM_LOOP;
+                        if(d->impulse[IM_TYPE] == IM_T_VAULT)
+                        {
+                            mdl.basetime = d->impulsetime[IM_T_VAULT];
+                            mdl.anim = ANIM_VAULT;
+                        }
+                        else mdl.anim = weaptype[weap].anim|ANIM_LOOP;
                         break;
                     }
                 }
@@ -3712,7 +3717,7 @@ namespace game
                 }
                 if(d->sliding(true) && firstpersonslidetime && firstpersonslideroll != 0)
                 {
-                    int dur = min(impulseslidelen/2, firstpersonslidetime), millis = lastmillis-d->impulsetime[IM_T_SLIDE];
+                    int dur = min(impulseslidelen/2, firstpersonslidetime), millis = lastmillis-d->slidetime();
                     float amt = 1;
                     if(millis > dur)
                     {
