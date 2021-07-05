@@ -360,6 +360,7 @@ VARF(0, blendpaintmode, 0, 0, 5,
 {
     if(!blendpaintmode) stoppaintblendmap();
 });
+VAR(0, blendselsnap, 0, 0, 1);
 
 static void blitblendmap(uchar &type, BlendMapNode &node, int bmx, int bmy, int bmsize, uchar *src, int sx, int sy, int sw, int sh, int smode)
 {
@@ -971,13 +972,25 @@ ICOMMAND(0, rotateblendbrush, "i", (int *val),
     brush->reorient(r.flipx, r.flipy, r.swapxy);
 });
 
+void getblendpos(BlendBrush *brush, int &x, int &y)
+{
+    x = (int)floor(clamp(worldpos.x, 0.0f, float(worldsize))/(1<<BM_SCALE) - 0.5f*brush->w);
+    y = (int)floor(clamp(worldpos.y, 0.0f, float(worldsize))/(1<<BM_SCALE) - 0.5f*brush->h);
+    if(blendselsnap)
+    {
+        int s = sel.grid/2;
+        x -= x%s;
+        y -= y%s;
+    }
+}
+
 void paintblendmap(bool msg)
 {
     if(!canpaintblendmap(true, false, msg)) return;
 
     BlendBrush *brush = brushes[curbrush];
-    int x = (int)floor(clamp(worldpos.x, 0.0f, float(worldsize))/(1<<BM_SCALE) - 0.5f*brush->w),
-        y = (int)floor(clamp(worldpos.y, 0.0f, float(worldsize))/(1<<BM_SCALE) - 0.5f*brush->h);
+    int x = 0, y = 0;
+    getblendpos(brush, x, y);
     blitblendmap(brush->data, x, y, brush->w, brush->h, blendpaintmode);
     previewblends(ivec((x-1)<<BM_SCALE, (y-1)<<BM_SCALE, 0),
                   ivec((x+brush->w+1)<<BM_SCALE, (y+brush->h+1)<<BM_SCALE, worldsize));
@@ -1083,8 +1096,10 @@ void renderblendbrush()
     if(!blendpaintmode || !brushes.inrange(curbrush)) return;
 
     BlendBrush *brush = brushes[curbrush];
-    int x1 = (int)floor(clamp(worldpos.x, 0.0f, float(worldsize))/(1<<BM_SCALE) - 0.5f*brush->w) << BM_SCALE,
-        y1 = (int)floor(clamp(worldpos.y, 0.0f, float(worldsize))/(1<<BM_SCALE) - 0.5f*brush->h) << BM_SCALE,
+    int x = 0, y = 0;
+    getblendpos(brush, x, y);
+    int x1 = x << BM_SCALE,
+        y1 = y << BM_SCALE,
         x2 = x1 + (brush->w << BM_SCALE),
         y2 = y1 + (brush->h << BM_SCALE);
 
