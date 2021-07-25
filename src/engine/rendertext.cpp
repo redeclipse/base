@@ -115,7 +115,7 @@ void fontskip(int *n)
     }
 }
 
-COMMANDN(0, font, newfont, "ssiii");
+COMMANDN(0, font, newfont, "ssiif");
 COMMAND(0, fontborder, "ff");
 COMMAND(0, fontoutline, "ff");
 COMMAND(0, fontoffset, "s");
