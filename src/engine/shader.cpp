@@ -602,29 +602,44 @@ void GlobalShaderParamState::resetversions()
     });
 }
 
-static float *findslotparam(Slot &s, const char *name, float *noval = NULL)
+float *findslotparam(Slot &s, const char *name, float &pal, float &palidx, float *noval)
 {
     loopv(s.params)
     {
         SlotShaderParam &param = s.params[i];
-        if(name == param.name) return param.val;
+        if(!strcmp(name, param.name))
+        {
+            pal = param.palette;
+            palidx = param.palindex;
+            return param.val;
+        }
     }
     if(s.shader) loopv(s.shader->defaultparams)
     {
         SlotShaderParamState &param = s.shader->defaultparams[i];
-        if(name == param.name) return param.val;
+        if(!strcmp(name, param.name))
+        {
+            pal = param.palette;
+            palidx = param.palindex;
+            return param.val;
+        }
     }
     return noval;
 }
 
-static float *findslotparam(VSlot &s, const char *name, float *noval = NULL)
+float *findslotparam(VSlot &s, const char *name, float &pal, float &palidx, float *noval)
 {
     loopv(s.params)
     {
         SlotShaderParam &param = s.params[i];
-        if(name == param.name) return param.val;
+        if(!strcmp(name, param.name))
+        {
+            pal = param.palette;
+            palidx = param.palindex;
+            return param.val;
+        }
     }
-    return findslotparam(*s.slot, name, noval);
+    return findslotparam(*s.slot, name, pal, palidx, noval);
 }
 
 static inline void setslotparam(SlotShaderParamState &l, const float *val)
@@ -694,7 +709,8 @@ void Shader::setslotparams(Slot &slot, VSlot &vslot)
         loopv(defaultparams)
         {
             SlotShaderParamState &l = defaultparams[i];
-            SETSLOTPARAM(l, unimask, i, l.flags&SlotShaderParam::REUSE ? findslotparam(vslot, l.name, l.val) : l.val);
+            float pal = 0, palidx = 0;
+            SETSLOTPARAM(l, unimask, i, l.flags&SlotShaderParam::REUSE ? findslotparam(vslot, l.name, pal, palidx, l.val) : l.val);
         }
     }
 }
@@ -1185,7 +1201,8 @@ void linkvslotshader(VSlot &s, bool load)
     if(s.slot->texmask&(1<<TEX_GLOW))
     {
         static const char *paramname = getshaderparamname("glowcolor");
-        const float *param = findslotparam(s, paramname);
+        float pal = 0, palidx = 0;
+        const float *param = findslotparam(s, paramname, pal, palidx);
         if(param) s.glowcolor = vec(param).clamp(0, 1);
     }
 }
@@ -1200,7 +1217,8 @@ bool shouldreuseparams(Slot &s, VSlot &p)
         SlotShaderParamState &param = sh.defaultparams[i];
         if(param.flags & SlotShaderParam::REUSE)
         {
-            const float *val = findslotparam(p, param.name);
+            float pal = 0, palidx = 0;
+            const float *val = findslotparam(p, param.name, pal, palidx);
             if(val && memcmp(param.val, val, sizeof(param.val)))
             {
                 loopvj(s.params) if(s.params[j].name == param.name) goto notreused;

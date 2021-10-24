@@ -356,9 +356,24 @@ void optimizeblendmap()
 
 ICOMMAND(0, optimizeblendmap, "", (), optimizeblendmap());
 
+VARF(0, autoshowblendmap, 0, 1, 1,
+{
+    extern int blendpaintmode;
+    extern void showblendmap();
+
+    if(autoshowblendmap && blendpaintmode)
+        showblendmap();
+});
+
 VARF(0, blendpaintmode, 0, 0, 5,
 {
+    static int lastblendpaintmode = 0;
+    extern void showblendmap();
+
     if(!blendpaintmode) stoppaintblendmap();
+    else if(autoshowblendmap && !lastblendpaintmode) showblendmap();
+
+    lastblendpaintmode = blendpaintmode;
 });
 VAR(0, blendselsnap, 0, 0, 1);
 
@@ -941,6 +956,7 @@ ICOMMAND(0, blendbrush, "sN$", (char *s, int *numargs, ident *id),
             else loopv(brushes) if(!strcmp(brushes[i]->name, s)) { n = i; break; }
         }
         if(brushes.inrange(n)) curbrush = n;
+        else if(n == -1) intret(brushes.length());
         else curbrush = -1;
     }
     else if(*numargs < 0) intret(curbrush);

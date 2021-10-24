@@ -373,7 +373,12 @@ extern float rayent(const vec &o, const vec &ray, float radius, int mode, int si
 VAR(0, gridlookup, 0, 0, 1);
 VAR(0, passthroughcube, 0, 1, 1);
 VAR(0, passthroughent, 0, 1, 1);
-VARF(0, passthrough, 0, 0, 1, { passthroughsel = passthrough; entcancel(); });
+VAR(IDF_PERSIST, passthroughentcancel, 0, 0, 1);
+VARF(0, passthrough, 0, 0, 1,
+{
+    passthroughsel = passthrough;
+    if(passthroughentcancel) entcancel();
+});
 
 CVAR(IDF_PERSIST, selgridhmap, 0x66FF22);
 CVAR(IDF_PERSIST, selgridcursor, 0xFFBBBB);
@@ -971,10 +976,19 @@ static inline int countblock(cube *c, int n = 8)
 
 static int countblock(block3 *b) { return countblock(b->c(), b->size()); }
 
-void swapundo(undolist &a, undolist &b, int op)
+enum
 {
-    if(noedit()) return;
-    if(a.empty()) { conoutf("\frNothing more to %s", op == EDIT_REDO ? "redo" : "undo"); return; }
+    UNDO_NONE = 0,
+    UNDO_CUBE,
+    UNDO_ENT
+};
+
+int swapundo(undolist &a, undolist &b, int op)
+{
+    int undotype = UNDO_NONE;
+
+    if(noedit()) return UNDO_NONE;
+    if(a.empty()) { conoutf("\frNothing more to %s", op == EDIT_REDO ? "redo" : "undo"); return UNDO_NONE; }
     int ts = a.last->timestamp;
     if(multiplayer(false))
     {
@@ -986,7 +1000,7 @@ void swapundo(undolist &a, undolist &b, int op)
             if(ops > 10 || n > 2500)
             {
                 conoutf("\frUndo too big for multiplayer");
-                if(nompedit) { multiplayer(); return; }
+                if(nompedit) { multiplayer(); return UNDO_NONE; }
                 op = -1;
                 break;
             }
@@ -997,6 +1011,7 @@ void swapundo(undolist &a, undolist &b, int op)
     {
         if(op >= 0) client::edittrigger(sel, op);
         undoblock *u = a.poplast(), *r;
+        undotype = u->numents ? UNDO_ENT : UNDO_CUBE;
         if(u->numents) r = copyundoents(u);
         else
         {
@@ -1024,10 +1039,12 @@ void swapundo(undolist &a, undolist &b, int op)
         reorient();
     }
     forcenextundo();
+
+    return undotype;
 }
 
-void editundo() { swapundo(undos, redos, EDIT_UNDO); }
-void editredo() { swapundo(redos, undos, EDIT_REDO); }
+int editundo() { return swapundo(undos, redos, EDIT_UNDO); }
+int editredo() { return swapundo(redos, undos, EDIT_REDO); }
 
 ICOMMAND(0, hasundos, "iN$", (int *n, int *numargs, ident *id),
 {
@@ -1751,8 +1768,8 @@ COMMAND(0, copy, "");
 COMMAND(0, pasteclear, "");
 COMMAND(0, pastehilight, "");
 COMMAND(0, paste, "");
-COMMANDN(0, undo, editundo, "");
-COMMANDN(0, redo, editredo, "");
+ICOMMAND(0, undo, "", (), intret(editundo()));
+ICOMMAND(0, redo, "", (), intret(editredo()));
 
 static vector<int *> editingvslots;
 struct vslotref
@@ -2211,6 +2228,19 @@ void linkedpush(cube &c, int d, int x, int y, int dc, int dir)
     }
 }
 
+void linkedset(cube &c, int d, int x, int y, int dc, int val)
+{
+    ivec v, p;
+    getcubevector(c, d, x, y, dc, v);
+
+    loopi(2) loopj(2)
+    {
+        getcubevector(c, d, i, j, dc, p);
+        if(v==p)
+            edgeset(cubeedge(c, d, i, j), bounded(val), dc);
+    }
+}
+
 static ushort getmaterial(cube &c)
 {
     if(c.children)
@@ -2224,15 +2254,11 @@ static ushort getmaterial(cube &c)
 
 VAR(0, invalidcubeguard, 0, 1, 1);
 
-void mpeditface(int dir, int mode, selinfo &sel, bool local)
+void editfaceinternal(int dir, int mode, selinfo &sel, bool local)
 {
-    if(mode==1 && (sel.cx || sel.cy || sel.cxs&1 || sel.cys&1)) mode = 0;
     int d = dimension(sel.orient);
     int dc = dimcoord(sel.orient);
     int seldir = dc ? -dir : dir;
-
-    if(local)
-        client::edittrigger(sel, EDIT_FACE, dir, mode);
 
     if(mode==1)
     {
@@ -2301,6 +2327,30 @@ void mpeditface(int dir, int mode, selinfo &sel, bool local)
     );
     if(mode==1 && dir>0)
         sel.o[d] += sel.grid * seldir;
+}
+
+VAR(0, editfacekeepsel, 0, 0, 1);
+
+void mpeditface(int dir, int mode, selinfo &sel, bool local)
+{
+    if(mode==1 && (sel.cx || sel.cy || sel.cxs&1 || sel.cys&1)) mode = 0;
+
+    if(local)
+        client::edittrigger(sel, EDIT_FACE, dir, mode);
+
+    selinfo oldsel = sel;
+    editfaceinternal(dir, mode, sel, local);
+
+    if(editfacekeepsel)
+    {
+        sel = oldsel;
+        int d = dimension(sel.orient);
+        int dc = dimcoord(sel.orient);
+        //int seldir = dc ? -dir : -dir;
+
+        sel.s[d] += -dir;
+        if(!dc) sel.o[d] += sel.grid * dir;
+    }
 }
 
 void editface(int *dir, int *mode)
@@ -2623,7 +2673,7 @@ void vshadow(float *shadow)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vshadow, "f");
-ICOMMAND(0, getvshadow, "f", (float *tex), intret(lookupvslot(*tex, false).shadow));
+ICOMMAND(0, getvshadow, "f", (float *tex), floatret(lookupvslot(*tex, false).shadow));
 
 void vrefract(float *k, float *r, float *g, float *b)
 {
@@ -2681,16 +2731,16 @@ COMMAND(0, vshaderparam, "sffffii");
 ICOMMAND(0, getvshaderparam, "is", (int *tex, const char *name),
 {
     VSlot &vslot = lookupvslot(*tex, false);
-    loopv(vslot.params)
+    float pal = 0;
+    float palidx = 0;
+    float *params = findslotparam(vslot, name, pal, palidx);
+
+    if(params)
     {
-        SlotShaderParam &p = vslot.params[i];
-        if(!strcmp(p.name, name))
-        {
-            defformatstring(str, "%s %s %s %s", floatstr(p.val[0]), floatstr(p.val[1]), floatstr(p.val[2]), floatstr(p.val[3]));
-            if(p.palette || p.palindex) concformatstring(str, " %d %d", p.palette, p.palindex);
-            result(str);
-            return;
-        }
+        defformatstring(str, "%s %s %s %s", floatstr(params[0]), floatstr(params[1]),
+            floatstr(params[2]), floatstr(params[3]));
+        if(pal || palidx) concformatstring(str, " %d %d", pal, palidx);
+        result(str);
     }
 });
 ICOMMAND(0, getvshaderparamnames, "i", (int *tex),
@@ -2980,20 +3030,34 @@ void getcurtex()
     intret(texmru[index]);
 }
 
-void getseltex()
+void getseltex(int *allcubes)
 {
     if(noedit(true))
     {
         intret(-1);
         return;
     }
-    cube &c = lookupcube(sel.o, -sel.grid);
-    if(c.children || isempty(c))
+
+    int tex = -1;
+
+    if(*allcubes)
     {
-        intret(-1);
-        return;
+        loopxyz(sel, -sel.grid, {
+            if(!c.children && !isempty(c))
+            {
+                tex = c.texture[sel.orient];
+                goto end;
+            }
+        });
     }
-    intret(c.texture[sel.orient]);
+    else
+    {
+        cube &c = lookupcube(sel.o, -sel.grid);
+        if(!c.children && !isempty(c)) tex = c.texture[sel.orient];
+    }
+
+    end:
+    intret(tex);
 }
 
 void gettexname(int *tex, int *subslot)
@@ -3001,6 +3065,14 @@ void gettexname(int *tex, int *subslot)
     if(*tex<0) return;
     VSlot &vslot = lookupvslot(*tex, false);
     Slot &slot = *vslot.slot;
+    if(!slot.sts.inrange(*subslot)) return;
+    result(slot.sts[*subslot].name);
+}
+
+void getdecalname(int *decal, int *subslot)
+{
+    if(*decal<0) return;
+    DecalSlot &slot = lookupdecalslot(*decal, false);
     if(!slot.sts.inrange(*subslot)) return;
     result(slot.sts[*subslot].name);
 }
@@ -3016,13 +3088,15 @@ COMMANDN(0, edittex, edittex_, "i");
 ICOMMAND(0, settex, "i", (int *tex), { if(!vslots.inrange(*tex) || noedit()) return; filltexlist(); edittex(*tex); });
 COMMAND(0, gettex, "");
 COMMAND(0, getcurtex, "");
-COMMAND(0, getseltex, "");
+COMMAND(0, getseltex, "i");
 ICOMMAND(0, getreptex, "", (), { if(!noedit()) intret(vslots.inrange(reptex) ? reptex : -1); });
 COMMAND(0, gettexname, "ii");
+COMMAND(0, getdecalname, "ii");
 ICOMMAND(0, texmru, "b", (int *idx), { filltexlist(); intret(texmru.inrange(*idx) ? texmru[*idx] : texmru.length()); });
 ICOMMAND(0, texmrufind, "i", (int *idx), { filltexlist(); intret(texmru.find(*idx)); });
 ICOMMAND(0, numvslots, "", (), intret(vslots.length()));
 ICOMMAND(0, numslots, "", (), intret(slots.length()));
+ICOMMAND(0, numdecalslots, "", (), intret(decalslots.length()));
 COMMAND(0, getslottex, "i");
 ICOMMAND(0, texloaded, "i", (int *tex), intret(slots.inrange(*tex) && slots[*tex]->loaded ? 1 : 0));
 

@@ -1011,7 +1011,7 @@ int main(int argc, char **argv)
             case 'h': serveroption(argv[i]); break;
         }
     }
-    setlogfile("log.txt");
+    setlogfile(LOG_FILE);
     execfile("init.cfg", false);
 
     for(int i = 1; i < argc; i++)

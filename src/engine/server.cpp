@@ -219,6 +219,13 @@ void setlogfile(const char *fname)
     if(f) setvbuf(f, NULL, _IOLBF, BUFSIZ);
 }
 
+void clearlog()
+{
+    if(logfile) setlogfile(LOG_FILE);
+}
+
+COMMAND(0, clearlog, "");
+
 void logoutf(const char *fmt, ...)
 {
     va_list args;
