@@ -2,7 +2,7 @@
 #ifndef STANDALONE
 namespace entities
 {
-    extern int numattrs(int type);
+    extern int numattrs(int type, bool unused = true);
     extern int triggertime(extentity &e, bool delay = false);
     extern void editent(int i, bool local);
     extern void readent(stream *g, int mver, char *gid, int gver, int id);
@@ -21,6 +21,7 @@ namespace entities
     extern bool maylink(int type, int ver = 0);
     extern bool canlink(int index, int node, bool msg = false);
     extern bool linkents(int index, int node, bool add = true, bool local = true, bool toggle = true);
+    extern void unlinkent(int index);
     extern extentity *newent();
     extern void deleteent(extentity *e);
     extern void clearents();

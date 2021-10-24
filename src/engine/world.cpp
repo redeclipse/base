@@ -578,8 +578,9 @@ void entdrag(const vec &ray)
     vec eo, es;
     int d = dimension(entorient),
         dc= dimcoord(entorient);
+    int eindex = enthover >= 0 ? enthover : entgroup.last();
 
-    entfocus(entgroup.last(),
+    entfocus(eindex,
         entselectionbox(e, eo, es);
 
         if(!editmoveplane(e.o, ray, d, eo[d] + (dc ? es[d] : 0), handle, dest, entmoving==1))
@@ -747,10 +748,11 @@ void entpush(int *dir)
 }
 
 VAR(0, entautoviewdist, 0, 25, 100);
-void entautoview(int *dir)
+void entautoview(int *dir, int *isidx)
 {
     if(!haveselent()) return;
     static int s = 0;
+    if(*isidx) s = 0;
     physent *player = (physent *)game::focusedent(true);
     if(!player) player = camera1;
     vec v(player->o);
@@ -767,7 +769,7 @@ void entautoview(int *dir)
     );
 }
 
-COMMAND(0, entautoview, "i");
+COMMAND(0, entautoview, "ii");
 COMMAND(0, entflip, "");
 COMMAND(0, entrotate, "i");
 COMMAND(0, entpush, "i");
@@ -1019,6 +1021,13 @@ void entlink(int *parent)
 }
 COMMAND(0, entlink, "i");
 
+void entunlink()
+{
+    loopv(entgroup)
+        entities::unlinkent(entgroup[i]);
+}
+COMMAND(0, entunlink, "");
+
 void selentlinks(int n, int recurse, uint *cond)
 {
     if(noentedit()) return;
@@ -1078,6 +1087,7 @@ COMMAND(0, nearestent, "");
 ICOMMAND(0, enthavesel,"", (), addimplicit(intret(entgroup.length())));
 ICOMMAND(0, entselect, "e", (uint *body), if(!noentedit()) addgroup(e.type != ET_EMPTY && entgroup.find(n)<0 && executebool(body)));
 ICOMMAND(0, entloop, "e", (uint *body), if(!noentedit()) { addimplicit(groupeditloop(((void)e, execute(body)))); commitchanges(); });
+ICOMMAND(0, entloopread, "e", (uint *body), if(entgroup.length()) loopv(entgroup) entfocus(entgroup[i], (void)e; execute(body);));
 ICOMMAND(0, insel, "", (), entfocus(efocus, intret(pointinsel(sel, e.o))));
 ICOMMAND(0, entget, "", (), entfocus(efocus,
 {
@@ -1090,6 +1100,21 @@ ICOMMAND(0, entget, "", (), entfocus(efocus,
     result(s);
 }));
 ICOMMAND(0, entindex, "", (), intret(efocus));
+
+void entlast(uint *body)
+{
+    if(noentedit()) return;
+
+    if(entgroup.length())
+    {
+        entfocus(entgroup.last(),
+            (void)e;
+            execute(body);
+        );
+    }
+    else execute(body);
+}
+COMMAND(0, entlast, "e");
 
 void enttype(char *type, int *numargs)
 {

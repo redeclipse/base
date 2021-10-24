@@ -65,21 +65,87 @@ struct keym
     {
         ACTION_DEFAULT = 0,
         ACTION_SPECTATOR,
-        ACTION_EDITING,
         ACTION_WAITING,
-        NUMACTIONS
+        NUM_GAME_ACTIONS,
+
+        ACTION_EDITING = NUM_GAME_ACTIONS,
+        NUM_ACTIONS
+    };
+
+    enum
+    {
+        ACTION_MOD_CTRL = 0,
+        ACTION_MOD_ALT,
+        ACTION_MOD_SHIFT,
+
+        ACTION_MODS,
+
+        NUM_EDIT_ACTIONS = ACTION_MODS * ACTION_MODS
     };
 
     int code;
     char *name;
-    char *actions[NUMACTIONS];
-    bool pressed, persist[NUMACTIONS];
+    char *gameactions[NUM_GAME_ACTIONS];
+    char *editactions[NUM_EDIT_ACTIONS];
+    bool pressed, gamepersist[NUM_GAME_ACTIONS], editpersist[NUM_EDIT_ACTIONS];
 
-    keym() : code(-1), name(NULL), pressed(false) { loopi(NUMACTIONS) { actions[i] = newstring(""); persist[i] = false; } }
-    ~keym() { DELETEA(name); loopi(NUMACTIONS) { DELETEA(actions[i]); persist[i] = false; } }
+    keym() : code(-1), name(NULL), pressed(false)
+    {
+        loopi(NUM_GAME_ACTIONS)
+        {
+            gameactions[i] = newstring("");
+            gamepersist[i] = false;
+        }
+
+        loopi(NUM_EDIT_ACTIONS)
+        {
+            editactions[i] = newstring("");
+            editpersist[i] = false;
+        }
+    }
+    ~keym()
+    {
+        DELETEA(name);
+        loopi(NUM_GAME_ACTIONS)
+        {
+            DELETEA(gameactions[i]);
+            gamepersist[i] = false;
+        }
+
+        loopi(NUM_EDIT_ACTIONS)
+        {
+            DELETEA(editactions[i]);
+            editpersist[i] = false;
+        }
+    }
+
+    bool &getpersist(int type, int modifiers = 0)
+    {
+        if(type == ACTION_EDITING) return editpersist[modifiers];
+        else return gamepersist[type];
+    }
+
+    char *&getbinding(int type, int modifiers = 0)
+    {
+        if(type == ACTION_EDITING) return editactions[modifiers];
+        else return gameactions[type];
+    }
+
+    char *&getbestbinding(int type, int modifiers = 0, bool force = false)
+    {
+        char **act = &getbinding(type, modifiers);
+
+        if((!*act || !**act) && !force)
+        {
+            act = &getbinding(type);
+            if(!*act || !**act) act = &getbinding(ACTION_DEFAULT);
+        }
+
+        return *act;
+    }
 
     void clear(int type);
-    void clear() { loopi(NUMACTIONS) clear(i); }
+    void clear() { loopi(NUM_ACTIONS) clear(i); }
 };
 
 hashtable<int, keym> keyms(128);
@@ -104,13 +170,14 @@ const char *getkeyname(int code)
     return km ? km->name : NULL;
 }
 
-void searchbindlist(const char *action, int type, int limit, const char *s1, const char *s2, const char *sep1, const char *sep2, vector<char> &names, bool force)
+void searchbindlist(const char *action, int type, int modifiers, int limit, const char *s1, const char *s2, const char *sep1, const char *sep2, vector<char> &names, bool force)
 {
     const char *name1 = NULL, *name2 = NULL, *lastname = NULL;
     int found = 0;
     enumerate(keyms, keym, km,
     {
-        char *act = type && force && (!km.actions[type] || !*km.actions[type]) ? km.actions[keym::ACTION_DEFAULT] : km.actions[type];
+        char *act = km.getbestbinding(type, modifiers, force);
+
         if(act && !strcmp(act, action))
         {
             if(!name1) name1 = km.name;
@@ -168,11 +235,11 @@ void searchbindlist(const char *action, int type, int limit, const char *s1, con
     names.add('\0');
 }
 
-const char *searchbind(const char *action, int type)
+const char *searchbind(const char *action, int type, int modifiers)
 {
     enumerate(keyms, keym, km,
     {
-        char *act = ((!km.actions[type] || !*km.actions[type]) && type ? km.actions[keym::ACTION_DEFAULT] : km.actions[type]);
+        char *act = km.getbestbinding(type, modifiers);
         if(!strcmp(act, action)) return km.name;
     });
     return NULL;
@@ -259,47 +326,47 @@ keym *findbind(char *key)
     return NULL;
 }
 
-void getbind(char *key, int type)
+void getbind(char *key, int type, int modifiers = 0)
 {
     keym *km = findbind(key);
-    result(km ? ((!km->actions[type] || !*km->actions[type]) && type ? km->actions[keym::ACTION_DEFAULT] : km->actions[type]) : "");
+    result(km ? (km->getbestbinding(type, modifiers, true)) : "");
 }
 
 int changedkeys = 0;
 
-void bindkey(char *key, char *action, int state, const char *cmd)
+void bindkey(char *key, char *action, int state, const char *cmd, int modifiers = 0)
 {
     if(identflags&IDF_WORLD) { conoutf("\frCannot override %s \"%s\"", cmd, key); return; }
     keym *km = findbind(key);
     if(!km) { conoutf("\frUnknown key \"%s\"", key); return; }
-    char *&binding = km->actions[state];
-    bool *persist = &km->persist[state];
+    char *&binding = km->getbinding(state, modifiers);
+    bool &persist = km->getpersist(state, modifiers);
     if(!keypressed || keyaction!=binding) delete[] binding;
     // trim white-space to make searchbinds more reliable
     while(iscubespace(*action)) action++;
     int len = strlen(action);
     while(len>0 && iscubespace(action[len-1])) len--;
     binding = newstring(action, len);
-    *persist = initing != INIT_DEFAULTS;
+    persist = initing != INIT_DEFAULTS;
     changedkeys = totalmillis;
 }
 
 ICOMMAND(0, bind,     "ss", (char *key, char *action), bindkey(key, action, keym::ACTION_DEFAULT, "bind"));
 ICOMMAND(0, specbind, "ss", (char *key, char *action), bindkey(key, action, keym::ACTION_SPECTATOR, "specbind"));
-ICOMMAND(0, editbind, "ss", (char *key, char *action), bindkey(key, action, keym::ACTION_EDITING, "editbind"));
+ICOMMAND(0, editbind, "ssi", (char *key, char *action, int *modifiers), bindkey(key, action, keym::ACTION_EDITING, "editbind", *modifiers));
 ICOMMAND(0, waitbind, "ss", (char *key, char *action), bindkey(key, action, keym::ACTION_WAITING, "waitbind"));
 ICOMMAND(0, getbind,     "s", (char *key), getbind(key, keym::ACTION_DEFAULT));
 ICOMMAND(0, getspecbind, "s", (char *key), getbind(key, keym::ACTION_SPECTATOR));
-ICOMMAND(0, geteditbind, "s", (char *key), getbind(key, keym::ACTION_EDITING));
+ICOMMAND(0, geteditbind, "si", (char *key, int *modifiers), getbind(key, keym::ACTION_EDITING, *modifiers));
 ICOMMAND(0, getwaitbind, "s", (char *key), getbind(key, keym::ACTION_WAITING));
-ICOMMAND(0, searchbinds,     "sissssb", (char *action, int *limit, char *s1, char *s2, char *sep1, char *sep2, int *force), { vector<char> list; searchbindlist(action, keym::ACTION_DEFAULT, max(*limit, 0), s1, s2, sep1, sep2, list, *force!=0); result(list.getbuf()); });
-ICOMMAND(0, searchspecbinds, "sissssb", (char *action, int *limit, char *s1, char *s2, char *sep1, char *sep2, int *force), { vector<char> list; searchbindlist(action, keym::ACTION_SPECTATOR, max(*limit, 0), s1, s2, sep1, sep2, list, *force!=0); result(list.getbuf()); });
-ICOMMAND(0, searcheditbinds, "sissssb", (char *action, int *limit, char *s1, char *s2, char *sep1, char *sep2, int *force), { vector<char> list; searchbindlist(action, keym::ACTION_EDITING, max(*limit, 0), s1, s2, sep1, sep2, list, *force!=0); result(list.getbuf()); });
-ICOMMAND(0, searchwaitbinds, "sissssb", (char *action, int *limit, char *s1, char *s2, char *sep1, char *sep2, int *force), { vector<char> list; searchbindlist(action, keym::ACTION_WAITING, max(*limit, 0), s1, s2, sep1, sep2, list, *force!=0); result(list.getbuf()); });
+ICOMMAND(0, searchbinds,     "sissssb", (char *action, int *limit, char *s1, char *s2, char *sep1, char *sep2, int *force), { vector<char> list; searchbindlist(action, keym::ACTION_DEFAULT, 0, max(*limit, 0), s1, s2, sep1, sep2, list, *force!=0); result(list.getbuf()); });
+ICOMMAND(0, searchspecbinds, "sissssb", (char *action, int *limit, char *s1, char *s2, char *sep1, char *sep2, int *force), { vector<char> list; searchbindlist(action, keym::ACTION_SPECTATOR, 0, max(*limit, 0), s1, s2, sep1, sep2, list, *force!=0); result(list.getbuf()); });
+ICOMMAND(0, searcheditbinds, "sissssbi", (char *action, int *limit, char *s1, char *s2, char *sep1, char *sep2, int *force, int *modifiers), { vector<char> list; searchbindlist(action, keym::ACTION_EDITING, *modifiers, max(*limit, 0), s1, s2, sep1, sep2, list, *force!=0); result(list.getbuf()); });
+ICOMMAND(0, searchwaitbinds, "sissssb", (char *action, int *limit, char *s1, char *s2, char *sep1, char *sep2, int *force), { vector<char> list; searchbindlist(action, keym::ACTION_WAITING, 0, max(*limit, 0), s1, s2, sep1, sep2, list, *force!=0); result(list.getbuf()); });
 
 void keym::clear(int type)
 {
-    char *&binding = actions[type];
+    char *&binding = getbinding(type);
     if(binding[0])
     {
         if(!keypressed || keyaction!=binding) delete[] binding;
@@ -490,6 +557,28 @@ void onrelease(const char *s)
 
 COMMAND(0, onrelease, "s");
 
+static inline bool iskeypressed(int code)
+{
+    keym *haskey = keyms.access(code);
+    return haskey && haskey->pressed;
+}
+
+static int getkeymodifiers()
+{
+    int modifiers = 0;
+
+    if(iskeypressed(SDLK_LCTRL) || iskeypressed(SDLK_RCTRL))
+        modifiers |= BIT(keym::ACTION_MOD_CTRL);
+
+    if(iskeypressed(SDLK_LALT) || iskeypressed(SDLK_RALT))
+        modifiers |= BIT(keym::ACTION_MOD_ALT);
+
+    if(iskeypressed(SDLK_LSHIFT) || iskeypressed(SDLK_RSHIFT))
+        modifiers |= BIT(keym::ACTION_MOD_SHIFT);
+
+    return modifiers;
+}
+
 void execbind(keym &k, bool isdown)
 {
     loopv(releaseactions)
@@ -509,15 +598,18 @@ void execbind(keym &k, bool isdown)
     if(isdown)
     {
 
-        int state = keym::ACTION_DEFAULT;
+        int state = keym::ACTION_DEFAULT, modifiers = 0;
         switch(client::state())
         {
             case CS_ALIVE: case CS_DEAD: default: break;
             case CS_SPECTATOR: state = keym::ACTION_SPECTATOR; break;
-            case CS_EDITING: state = keym::ACTION_EDITING; break;
             case CS_WAITING: state = keym::ACTION_WAITING; break;
+            case CS_EDITING:
+                state = keym::ACTION_EDITING;
+                modifiers = getkeymodifiers();
+                break;
         }
-        char *&action = k.actions[state][0] ? k.actions[state] : k.actions[keym::ACTION_DEFAULT];
+        char *&action = k.getbestbinding(state, modifiers);
         keyaction = action;
         keypressed = &k;
         execute(keyaction);
@@ -726,23 +818,44 @@ void clear_console(int type)
 ICOMMAND(0, clearconsole, "i", (int *type), clear_console(clamp(*type, -1, CON_MAX-1)));
 ICOMMAND(0, clearchat, "", (), clear_console(CON_MESG));
 
+static void writebind(stream *f, keym &km, int type, int modifiers = 0)
+{
+    static const char * const cmds[4] = { "bind", "specbind", "waitbind", "editbind" };
+    char *act = km.getbinding(type, modifiers);
+
+    if(!*act)
+        f->printf("%s %s []", cmds[type], escapestring(km.name));
+    else if(validateblock(act))
+        f->printf("%s %s [%s]", cmds[type], escapestring(km.name), act);
+    else
+        f->printf("%s %s %s", cmds[type], escapestring(km.name), escapestring(act));
+
+    if(type == keym::ACTION_EDITING && modifiers) f->printf(" %d", modifiers);
+    f->printf("\n");
+}
+
 void writebinds(stream *f)
 {
-    static const char * const cmds[4] = { "bind", "specbind", "editbind", "waitbind" };
     vector<keym *> binds;
     enumerate(keyms, keym, km, binds.add(&km));
     binds.sortname();
-    loopj(keym::NUMACTIONS)
+    loopj(keym::NUM_ACTIONS)
     {
         bool found = false;
         loopv(binds)
         {
             keym &km = *binds[i];
-            if(km.persist[j])
+            if(j == keym::ACTION_EDITING) loopk(keym::NUM_EDIT_ACTIONS)
             {
-                if(!*km.actions[j]) f->printf("%s %s []\n", cmds[j], escapestring(km.name));
-                else if(validateblock(km.actions[j])) f->printf("%s %s [%s]\n", cmds[j], escapestring(km.name), km.actions[j]);
-                else f->printf("%s %s %s\n", cmds[j], escapestring(km.name), escapestring(km.actions[j]));
+                if(km.getpersist(j, k))
+                {
+                    writebind(f, km, j, k);
+                    found = true;
+                }
+            }
+            else if (km.getpersist(j))
+            {
+                writebind(f, km, j);
                 found = true;
             }
         }

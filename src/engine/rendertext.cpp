@@ -807,7 +807,7 @@ static const char *gettklp(const char *str)
     }
     tklookup *t = findtklookup(str, type);
     if(!t) return "";
-    return t->blist.search(str, type, "", "", " ", " ", 5);
+    return t->blist.search(str, type, 0, "", "", " ", " ", 5);
 }
 
 #define defformatkey(dest, key) defformatstring(dest, "\fs\fa[\fS\fs\f[%d]%s\fS\fs\fa]\fS", textkeycolour, (key))

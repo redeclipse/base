@@ -702,7 +702,7 @@ struct VSlot
         coastscale = 1;
         refractscale = 0;
         refractcolor = vec(1, 1, 1);
-        shadow = 0;
+        shadow = 1;
     }
 
     vec getcolorscale() const { return palette || palindex ? vec(colorscale).mul(game::getpalette(palette, palindex)) : colorscale; }
@@ -890,6 +890,8 @@ extern int maxvsuniforms, maxfsuniforms;
 extern Shader *lookupshaderbyname(const char *name);
 extern Shader *useshaderbyname(const char *name);
 extern Shader *generateshader(const char *name, const char *cmd, ...);
+extern float *findslotparam(Slot &s, const char *name, float &pal, float &palidx, float *noval = NULL);
+extern float *findslotparam(VSlot &s, const char *name, float &pal, float &palidx, float *noval = NULL);
 extern void resetslotshader();
 extern void setslotshader(Slot &s);
 extern void linkslotshader(Slot &s, bool load = true);

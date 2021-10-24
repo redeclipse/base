@@ -1018,6 +1018,9 @@ ICOMMAND(0, getvardesc, "s", (char *n), result(getvardesc(n)));
 ICOMMAND(0, getvarfields, "sb", (char *n, int *p), getvarfields(n, *p));
 ICOMMAND(0, getvarargs, "s", (char *n), result(getvarargs(n)));
 
+VAR(IDF_READONLY, intmin, 1, INT_MIN, -1);
+VAR(IDF_READONLY, intmax, 1, INT_MAX, -1);
+
 bool identexists(const char *name) { return idents.access(name)!=NULL; }
 ICOMMAND(0, identexists, "s", (char *s), intret(identexists(s) ? 1 : 0));
 
@@ -2655,6 +2658,10 @@ cleanup:
 #define MAXRUNDEPTH 255
 static int rundepth = 0;
 
+uintptr_t runcodestack_max;
+VAR(0, debugruncodestack, 0, 0, 1);
+VAR(IDF_READONLY, runcodestack, 1, 0, 0);
+
 static const uint *runcode(const uint *code, tagval &result)
 {
     result.setnull();
@@ -2663,8 +2670,11 @@ static const uint *runcode(const uint *code, tagval &result)
         debugcode("Exceeded recursion limit");
         return skipcode(code, result);
     }
-    ++rundepth;
     int numargs = 0;
+
+    if(debugruncodestack && !rundepth) runcodestack_max = (uintptr_t)&numargs;
+
+    ++rundepth;
     tagval args[MAXARGS+MAXRESULTS], *prevret = commandret;
     commandret = &result;
     for(;;)
@@ -3252,6 +3262,21 @@ static const uint *runcode(const uint *code, tagval &result)
 exit:
     commandret = prevret;
     --rundepth;
+
+    if(debugruncodestack)
+    {
+        uintptr_t runcodestack_min = (uintptr_t)&runcodestack_min;
+        uintptr_t runcodestack_kB = (runcodestack_max - runcodestack_min) / 1024;
+        static int runcodestackmillis = 0;
+        if(lastmillis - runcodestackmillis >= 1000)
+        {
+            runcodestack = 0;
+            runcodestackmillis = lastmillis;
+        }
+
+        if(runcodestack < runcodestack_kB) runcodestack = runcodestack_kB;
+    }
+
     return code;
 }
 

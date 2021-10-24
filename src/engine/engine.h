@@ -4,6 +4,8 @@
 #include "version.h"
 #include "cube.h"
 
+#define LOG_FILE "log.txt"
+
 extern int version, versioning, versionmajor, versionminor, versionpatch, versionbuild, versionplatform, versionarch, versionisserver, versioncrc, versionsteamid;
 extern char *versionstring, *versionname, *versionfname, *versionuname, *versionvname, *versionrelease, *versionurl, *versioncopy, *versiondesc, *versionmaster, *versionplatname, *versionplatlongname, *versionbranch, *versionrevision, *versiondiscordid;
 #define CUR_VER_MAKE(a,b,c) (((a)<<16) | ((b)<<8) | (c))
@@ -748,11 +750,13 @@ extern ENetPeer *curpeer, *connpeer;
 // console
 #ifdef __APPLE__
     #define MOD_KEYS (KMOD_LGUI|KMOD_RGUI)
-    #define MOD_ALTS MOD_KEYS
+    #define MOD_ALTS KMOD_RALT
 #else
     #define MOD_KEYS (KMOD_LCTRL|KMOD_RCTRL)
     #define MOD_ALTS (KMOD_LALT|KMOD_RALT)
 #endif
+
+#define MOD_SHIFTS (KMOD_LSHIFT|KMOD_RSHIFT)
 
 extern char *pastetext(char *buf = NULL, size_t len = 0);
 extern void writebinds(stream *f);
