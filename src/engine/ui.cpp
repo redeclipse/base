@@ -789,8 +789,7 @@ namespace UI
     enum
     {
         WINDOW_NONE = 0,
-        WINDOW_MENU = 1<<0, WINDOW_PASS = 1<<1, WINDOW_TIP = 1<<2, WINDOW_POPUP = 1<<3, WINDOW_PERSIST = 1<<4,
-        WINDOW_ALL = WINDOW_MENU|WINDOW_PASS|WINDOW_TIP|WINDOW_POPUP|WINDOW_PERSIST
+        WINDOW_MENU = 1<<0, WINDOW_PASS = 1<<1, WINDOW_TIP = 1<<2, WINDOW_POPUP = 1<<3, WINDOW_PERSIST = 1<<4, WINDOW_TOP = 1<<5,        WINDOW_ALL = WINDOW_MENU|WINDOW_PASS|WINDOW_TIP|WINDOW_POPUP|WINDOW_PERSIST|WINDOW_TOP
     };
 
     struct Window : Object
@@ -1026,11 +1025,20 @@ namespace UI
             resetstate(); // IMPORTED
         }
 
+        bool forcetop()
+        {
+            if(children.empty()) return false;
+
+            Window *w = (Window *)children.last();
+            return w->windowflags&WINDOW_TOP;
+        }
+
         bool show(Window *w)
         {
             if(children.find(w) >= 0) return false;
             w->resetchildstate();
-            children.add(w);
+            if(forcetop()) children.insert(max(0, children.length() - 1), w);
+            else children.add(w);
             w->show();
             return true;
         }
