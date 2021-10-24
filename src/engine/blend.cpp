@@ -955,6 +955,7 @@ ICOMMAND(0, blendbrush, "sN$", (char *s, int *numargs, ident *id),
             else loopv(brushes) if(!strcmp(brushes[i]->name, s)) { n = i; break; }
         }
         if(brushes.inrange(n)) curbrush = n;
+        else if(n == -1) intret(brushes.length());
         else curbrush = -1;
     }
     else if(*numargs < 0) intret(curbrush);
