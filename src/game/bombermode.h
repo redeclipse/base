@@ -142,7 +142,7 @@ struct bomberservmode : bomberstate, servmode
         flag &f = flags[i];
         bool wasenabled = isbomberaffinity(f) && f.enabled;
         bomberstate::returnaffinity(i, gamemillis, enabled);
-        sendf(-1, 1, "ri3", N_RESETAFFIN, i, f.enabled ? 1 : 0);
+        sendf(-1, 1, "ri3", N_RESETAFFIN, i, f.enabled);
         if(wasenabled && !f.enabled)
         {
             loopvj(flags) if(i != j && flags[j].enabled) returnaffinity(j, false);
@@ -293,7 +293,7 @@ struct bomberservmode : bomberstate, servmode
             putint(p, f.team);
             putint(p, f.yaw);
             putint(p, f.pitch);
-            putint(p, f.enabled ? 1 : 0);
+            putint(p, f.enabled);
             putint(p, f.owner);
             loopj(3) putint(p, int(f.spawnloc[j]*DMF));
             if(f.owner < 0)
@@ -389,7 +389,7 @@ struct bomberservmode : bomberstate, servmode
     int points(clientinfo *m, clientinfo *v)
     {
         bool isteam = m == v || (m_team(gamemode, mutators) && m->team == v->team);
-        int p = isteam ? -1 : (m_team(gamemode, mutators) ? 1 : 0), q = p;
+        int p = isteam ? -1 : (m_team(gamemode, mutators)), q = p;
         if(p) { loopv(flags) if(flags[i].owner == m->clientnum) p += q; }
         return p;
     }

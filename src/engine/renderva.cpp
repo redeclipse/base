@@ -1105,12 +1105,12 @@ void findspotshadowvas(vector<vtxarray *> &vas, bool transparent)
             ivec bbmin, bbmax;
             getshadowvabb(v, bbmin, bbmax, transparent);
             bool insidespot = bbinsidespot(shadoworigin, shadowdir, shadowspot, bbmin, bbmax);
-            v.shadowmask = !smbbcull || insidespot ? 1 : 0;
+            v.shadowmask = !smbbcull || insidespot;
             if(transparent)
             {
                 if(v.alphatris)
                 {
-                    v.shadowtransparent = v.shadowmask && bbinsidespot(shadoworigin, shadowdir, shadowspot, v.alphamin, v.alphamax) ? 1 : 0;
+                    v.shadowtransparent = v.shadowmask && bbinsidespot(shadoworigin, shadowdir, shadowspot, v.alphamin, v.alphamax);
                     shadowtransparent |= v.shadowtransparent;
                 }
                 else v.shadowtransparent = 0;
@@ -1681,7 +1681,7 @@ static inline void changeshader(renderstate &cur, int pass, geombatch &b)
     if(pass == RENDERPASS_SMALPHA)
     {
         extern Shader *smalphaworldshader;
-        if(slot.texmask&(1<<TEX_ALPHA)) smalphaworldshader->setvariant(0, slot.texmask&(1<<TEX_NORMAL) ? 1 : 0, slot, vslot);
+        if(slot.texmask&(1<<TEX_ALPHA)) smalphaworldshader->setvariant(0, slot.texmask&(1<<TEX_NORMAL), slot, vslot);
         else smalphaworldshader->set(slot, vslot);
     }
     else if(pass == RENDERPASS_RSM)
@@ -1690,7 +1690,7 @@ static inline void changeshader(renderstate &cur, int pass, geombatch &b)
         if(b.es.layer&LAYER_BOTTOM) rsmworldshader->setvariant(0, 0, slot, vslot);
         else rsmworldshader->set(slot, vslot);
     }
-    else if(cur.alphaing) slot.shader->setvariant(cur.alphaing > 1 && vslot.refractscale > 0 ? 1 : 0, 1, slot, vslot);
+    else if(cur.alphaing) slot.shader->setvariant(cur.alphaing > 1 && vslot.refractscale > 0, 1, slot, vslot);
     else if(b.es.layer&LAYER_BOTTOM) slot.shader->setvariant(0, 0, slot, vslot);
     else slot.shader->set(slot, vslot);
     cur.globals = GlobalShaderParamState::nextversion;
@@ -2158,7 +2158,7 @@ int findalphavas()
             alpharefractsy2 = max(alpharefractsy2, sy2);
         }
     }
-    return (alpharefractvas ? 4 : 0) | (alphavas.length() ? 2 : 0) | (alphabackvas ? 1 : 0);
+    return (alpharefractvas ? 4 : 0) | (alphavas.length() ? 2 : 0) | (alphabackvas);
 }
 
 void renderrefractmask()
@@ -2790,7 +2790,7 @@ static inline void addshadowmeshtri(shadowmesh &m, int sides, shadowdrawinfo dra
     int sidemask = 0;
     switch(m.type)
     {
-        case SM_SPOT: sidemask = bbinsidespot(shadoworigin, shadowdir, shadowspot, ivec(vec(v0).min(v1).min(v2)), ivec(vec(v0).max(v1).max(v2).add(1))) ? 1 : 0; break;
+        case SM_SPOT: sidemask = bbinsidespot(shadoworigin, shadowdir, shadowspot, ivec(vec(v0).min(v1).min(v2)), ivec(vec(v0).max(v1).max(v2).add(1))); break;
         case SM_CUBEMAP: sidemask = calctrisidemask(l0.div(shadowradius), l1.div(shadowradius), l2.div(shadowradius), shadowbias); break;
     }
     if(!sidemask) return;

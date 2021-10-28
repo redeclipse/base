@@ -1191,6 +1191,6 @@ void saveblendmap(stream *f)
 
 uchar shouldsaveblendmap()
 {
-    return blendmap.solid!=&bmsolids[0xFF] ? 1 : 0;
+    return blendmap.solid!=&bmsolids[0xFF];
 }
 

@@ -226,11 +226,11 @@ void getcursounds(int idx, int prop)
             case 10: intret(sounds[idx].chan); break;
             case 11: defformatstring(pos, "%.f %.f %.f", sounds[idx].pos.x, sounds[idx].pos.y, sounds[idx].pos.z); result(pos); break;
             case 12: defformatstring(oldpos, "%.f %.f %.f", sounds[idx].oldpos.x, sounds[idx].oldpos.y, sounds[idx].oldpos.z); result(oldpos); break;
-            case 13: intret(sounds[idx].valid() ? 1 : 0); break;
-            case 14: intret(sounds[idx].playing() ? 1 : 0); break;
-            case 15: intret(sounds[idx].flags&SND_MAP ? 1 : 0); break;
-            case 16: intret(sounds[idx].owner!=NULL ? 1 : 0); break;
-            case 17: intret(sounds[idx].owner==camera1 ? 1 : 0); break;
+            case 13: intret(sounds[idx].valid()); break;
+            case 14: intret(sounds[idx].playing()); break;
+            case 15: intret(sounds[idx].flags&SND_MAP); break;
+            case 16: intret(sounds[idx].owner!=NULL); break;
+            case 17: intret(sounds[idx].owner==camera1); break;
             case 18: intret(client::getcn(sounds[idx].owner)); break;
             default: break;
         }

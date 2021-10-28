@@ -433,7 +433,7 @@ namespace ai
         if(!canmove || (!walk && d->feetpos().squaredist(pos) <= guard*guard))
         {
             if(actoverride >= 0) b.acttype = actoverride;
-            else b.acttype = enemy(d, b, pos, wander >= 0 ? wander : guard*2, canmove && W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0, false, !canmove) ? AI_A_PROTECT : AI_A_IDLE;
+            else b.acttype = enemy(d, b, pos, wander >= 0 ? wander : guard*2, canmove && W2(d->weapselect, aidist, false) < CLOSEDIST, false, !canmove) ? AI_A_PROTECT : AI_A_IDLE;
             return true;
         }
         return patrol(d, b, pos, guard, wander, walk);
@@ -501,7 +501,7 @@ namespace ai
         targets.sort(targcache::tcsort);
         d->ai->enemy = -1;
         d->ai->enemymillis = d->ai->enemyseen = 0;
-        loopv(targets) if(violence(d, b, targets[i].d, pursue || targets[i].dominated ? 1 : 0)) return true;
+        loopv(targets) if(violence(d, b, targets[i].d, pursue || targets[i].dominated)) return true;
         return false;
     }
 
@@ -625,7 +625,7 @@ namespace ai
         if(d->ai && (d->actortype >= A_ENEMY || (hitdealt(flags) && damage > 0) || d->ai->enemy < 0 || d->dominating.find(e))) // see if this ai is interested in a grudge
         {
             aistate &b = d->ai->getstate();
-            violence(d, b, e, d->actortype != A_BOT || W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0);
+            violence(d, b, e, d->actortype != A_BOT || W2(d->weapselect, aidist, false) < CLOSEDIST);
         }
         static vector<int> targets; // check if one of our ai is defending them
         targets.setsize(0);
@@ -635,7 +635,7 @@ namespace ai
             loopv(targets) if((t = game::getclient(targets[i])) && t->ai && t->actortype == A_BOT && ((hitdealt(flags) && damage > 0) || t->ai->enemy < 0 || t->dominating.find(e)))
             {
                 aistate &c = t->ai->getstate();
-                violence(t, c, e, W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0);
+                violence(t, c, e, W2(d->weapselect, aidist, false) < CLOSEDIST);
             }
         }
     }
@@ -1170,7 +1170,7 @@ namespace ai
                     {
                         if(targetable(d, f, true))
                         {
-                            if(!shootable) violence(d, b, f, !d->ai->dontmove && (b.type != AI_S_DEFEND || b.targtype != AI_T_AFFINITY) && W2(d->weapselect, aidist, altfire(d, f)) < CLOSEDIST ? 1 : 0);
+                            if(!shootable) violence(d, b, f, !d->ai->dontmove && (b.type != AI_S_DEFEND || b.targtype != AI_T_AFFINITY) && W2(d->weapselect, aidist, altfire(d, f)) < CLOSEDIST);
                             shootable = true;
                             e = f;
                         }
@@ -1545,7 +1545,7 @@ namespace ai
         if(d->state != CS_ALIVE || !game::allowmove(d)) d->stopmoving(true);
         else
         {
-            if(!request(d, b)) target(d, b, W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0);
+            if(!request(d, b)) target(d, b, W2(d->weapselect, aidist, false) < CLOSEDIST);
             weapons::shoot(d, d->ai->target);
         }
         if(d->state == CS_DEAD || d->state == CS_WAITING)

@@ -1826,8 +1826,8 @@ struct matrix4
 
     void clip(const plane &p, const matrix4 &m)
     {
-        float x = ((p.x<0 ? -1 : (p.x>0 ? 1 : 0)) + m.c.x) / m.a.x,
-              y = ((p.y<0 ? -1 : (p.y>0 ? 1 : 0)) + m.c.y) / m.b.y,
+        float x = ((p.x<0 ? -1 : (p.x>0)) + m.c.x) / m.a.x,
+              y = ((p.y<0 ? -1 : (p.y>0)) + m.c.y) / m.b.y,
               w = (1 + m.c.z) / m.d.z,
             scale = 2 / (x*p.x + y*p.y - p.z + w*p.offset);
         a = vec4(m.a.x, m.a.y, p.x*scale, m.a.w);

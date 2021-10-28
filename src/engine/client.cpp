@@ -199,8 +199,8 @@ ICOMMAND(0, disconnect, "i", (int *force), trydisconnect(*force!=0));
 ICOMMAND(0, lanconnect, "is", (int *a, char *pwd), connectserv(NULL, *a, pwd));
 ICOMMAND(0, localconnect, "i", (int *n), localconnect(*n ? false : true));
 
-ICOMMAND(0, isonline, "", (), intret(curpeer ? 1 : 0));
-ICOMMAND(0, isconnected, "ii", (int *a, int *b), intret(connected(*a==0, *b==0) ? 1 : 0));
+ICOMMAND(0, isonline, "", (), intret(curpeer));
+ICOMMAND(0, isconnected, "ii", (int *a, int *b), intret(connected(*a==0, *b==0)));
 
 void reconnect(const char *pass)
 {

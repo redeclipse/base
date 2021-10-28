@@ -203,7 +203,7 @@ static float disttooutsideent(const vec &o, const vec &ray, float radius, int mo
     cube *levels[20]; \
     levels[worldscale] = worldroot; \
     int lshift = worldscale, elvl = mode&RAY_BB ? worldscale : 0; \
-    ivec lsizemask(invray.x>0 ? 1 : 0, invray.y>0 ? 1 : 0, invray.z>0 ? 1 : 0); \
+    ivec lsizemask(invray.x>0, invray.y>0, invray.z>0); \
 
 #define CHECKINSIDEWORLD \
     if(!insideworld(o)) \
@@ -397,8 +397,8 @@ bool ellipseboxcollide(physent *d, const vec &dir, const vec &o, const vec &cent
           dist = sqrtf(dx*dx + dy*dy) - d->radius;
     if(dist < 0)
     {
-        int sx = yo.x <= -xr ? -1 : (yo.x >= xr ? 1 : 0),
-            sy = yo.y <= -yr ? -1 : (yo.y >= yr ? 1 : 0);
+        int sx = yo.x <= -xr ? -1 : (yo.x >= xr),
+            sy = yo.y <= -yr ? -1 : (yo.y >= yr);
         if(dist > (yo.z < 0 ? below : above) && (sx || sy))
         {
             vec ydir(dir);

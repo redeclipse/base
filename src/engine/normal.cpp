@@ -192,7 +192,7 @@ void addnormals(cube &c, const ivec &o, int size)
             ivec v[4];
             genfaceverts(c, i, v);
             if(!flataxisface(c, i)) convex = faceconvexity(v);
-            int order = vis&4 || convex < 0 ? 1 : 0;
+            int order = vis&4 || convex < 0;
             vec vo(o);
             pos[numverts++] = vec(v[order]).mul(size/8.0f).add(vo);
             if(vis&1) pos[numverts++] = vec(v[order+1]).mul(size/8.0f).add(vo);

@@ -1713,7 +1713,7 @@ namespace entities
             execlink(NULL, n, false);
         }
     }
-    ICOMMAND(0, entspawned, "i", (int *n), intret(ents.inrange(*n) && ents[*n]->spawned() ? 1 : 0));
+    ICOMMAND(0, entspawned, "i", (int *n), intret(ents.inrange(*n) && ents[*n]->spawned()));
 
     extentity *newent() { return new gameentity; }
     void deleteent(extentity *e) { delete (gameentity *)e; }
@@ -2933,7 +2933,7 @@ namespace entities
                     int colour = -1;
                     if(!active || (e.type != WEAPON && drawtex == DRAWTEX_HALO))
                     {
-                        if(showentmodels <= (e.type == PLAYERSTART || e.type == ACTOR ? 1 : 0)) continue;
+                        if(showentmodels <= (e.type == PLAYERSTART || e.type == ACTOR)) continue;
                         if(e.type == AFFINITY || e.type == PLAYERSTART)
                         {
                             mdl.yaw = e.attrs[1]+(e.type == PLAYERSTART ? 90 : 0);

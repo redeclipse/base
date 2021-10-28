@@ -752,7 +752,7 @@ namespace server
             }
         }
         else sents[ent].millis += G(itemspawntime);
-        if(msg && sents[ent].spawned != oldspawn) sendf(-1, 1, "ri3", N_ITEMSPAWN, ent, sents[ent].spawned ? 1 : 0);
+        if(msg && sents[ent].spawned != oldspawn) sendf(-1, 1, "ri3", N_ITEMSPAWN, ent, sents[ent].spawned);
     }
 
     void takeammo(clientinfo *ci, int weap, int amt = 1)
@@ -1302,7 +1302,7 @@ namespace server
             { "none", "player account", "global supporter", "global moderator", "global administrator", "project developer", "project founder" },
             { "none", "player account", "local supporter", "local moderator", "local administrator", "none", "none" }
         };
-        return privnames[priv&PRIV_LOCAL ? 1 : 0][clamp(priv&PRIV_TYPE, 0, int(priv&PRIV_LOCAL ? PRIV_ADMINISTRATOR : PRIV_LAST))];
+        return privnames[priv&PRIV_LOCAL][clamp(priv&PRIV_TYPE, 0, int(priv&PRIV_LOCAL ? PRIV_ADMINISTRATOR : PRIV_LAST))];
     }
 
     const char *privnamex(int priv, int actortype, bool local)
@@ -1312,7 +1312,7 @@ namespace server
             { "none", "player", "supporter", "moderator", "administrator", "developer", "founder" },
             { "none", "player", "localsupporter", "localmoderator", "localadministrator", "none", "none" }
         };
-        return privnames[local && priv&PRIV_LOCAL ? 1 : 0][clamp(priv&PRIV_TYPE, 0, int(priv&PRIV_LOCAL ? PRIV_ADMINISTRATOR : PRIV_LAST))];
+        return privnames[local && priv&PRIV_LOCAL][clamp(priv&PRIV_TYPE, 0, int(priv&PRIV_LOCAL ? PRIV_ADMINISTRATOR : PRIV_LAST))];
     }
 
     const char *colourname(clientinfo *ci, char *name = NULL, bool icon = true, bool dupname = true, int colour = 3)
@@ -3420,7 +3420,7 @@ namespace server
                     }
                 }
             }
-            requestmasterf("stats game %s %d %d %d %d %d\n", escapestring(smapname), gamemode, mutators, gamemillis/1000, unique, m_normweaps(gamemode, mutators) ? 1 : 0);
+            requestmasterf("stats game %s %d %d %d %d %d\n", escapestring(smapname), gamemode, mutators, gamemillis/1000, unique, m_normweaps(gamemode, mutators));
             flushmasteroutput();
             requestmasterf("stats server %s %s %d\n", escapestring(limitstring(G(serverdesc), MAXSDESCLEN+1)), versionstring, serverport);
             flushmasteroutput();
@@ -4109,8 +4109,8 @@ namespace server
             loopv(sents) if(enttype[sents[i].type].resyncs)
             {
                 putint(p, i);
-                if(enttype[sents[i].type].usetype == EU_ITEM) putint(p, finditem(i) ? 1 : 0);
-                else putint(p, sents[i].spawned ? 1 : 0);
+                if(enttype[sents[i].type].usetype == EU_ITEM) putint(p, finditem(i));
+                else putint(p, sents[i].spawned);
             }
             putint(p, -1);
         }
@@ -4703,7 +4703,7 @@ namespace server
     {
         if(isweap(weap))
         {
-            if(!ci->weapshots[weap][WS(flags) ? 1 : 0].find(id))
+            if(!ci->weapshots[weap][WS(flags)].find(id))
             {
                 srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s sticky [%d (%d)] failed - not found", colourname(ci), weap, id);
                 return;
@@ -4727,22 +4727,22 @@ namespace server
             case PRJ_SHOT:
             {
                 if(!isweap(weap)) break;
-                if(!ci->weapshots[weap][WS(flags) ? 1 : 0].find(id))
+                if(!ci->weapshots[weap][WS(flags)].find(id))
                 {
-                    srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s destroy [%d:%d (%d)] failed - not found", colourname(ci), weap, WS(flags) ? 1 : 0, id);
+                    srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s destroy [%d:%d (%d)] failed - not found", colourname(ci), weap, WS(flags), id);
                     return;
                 }
                 vector<clientinfo *> hitclients;
                 if(hits.empty())
                 {
-                    ci->weapshots[weap][WS(flags) ? 1 : 0].remove(id);
+                    ci->weapshots[weap][WS(flags)].remove(id);
                     if(id >= 0 && !m_insta(gamemode, mutators))
                     {
                         int f = W2(weap, fragweap, WS(flags));
                         if(f >= 0)
                         {
                             int w = f%W_MAX, r = min(W2(weap, fragrays, WS(flags)), MAXPARAMS);
-                            loopi(r) ci->weapshots[w][f >= W_MAX ? 1 : 0].add(-id);
+                            loopi(r) ci->weapshots[w][f >= W_MAX].add(-id);
                             if(WS(flags)) ci->weapstats[weap].flakshots2 += r;
                             else ci->weapstats[weap].flakshots1 += r;
                         }
@@ -4825,7 +4825,7 @@ namespace server
         sendf(-1, 1, "ri9i4vx", N_SHOTFX, ci->clientnum, weap, flags, scale, target, from.x, from.y, from.z, dest.x, dest.y, dest.z, shots.length(), shots.length()*sizeof(shotmsg)/sizeof(int), shots.getbuf(), ci->clientnum);
         ci->weapshot[weap] = sub;
         ci->shotdamage += W2(weap, damage, WS(flags))*shots.length();
-        loopv(shots) ci->weapshots[weap][WS(flags) ? 1 : 0].add(shots[i].id);
+        loopv(shots) ci->weapshots[weap][WS(flags)].add(shots[i].id);
         if(WS(flags)) ci->weapstats[weap].shots2++;
         else ci->weapstats[weap].shots1++;
         if(W2(weap, ammosub, WS(flags)))
@@ -5016,7 +5016,7 @@ namespace server
         }
         else setspawn(ent, false);
         ci->useitem(ent, sents[ent].type, attr, ammoamt, sweap, millis, W(attr, delayitem));
-        sendf(-1, 1, "ri9", N_ITEMACC, ci->clientnum, cn, ent, ammoamt, cn < 0 && sents[ent].spawned ? 1 : 0, weap, dropped, ammo);
+        sendf(-1, 1, "ri9", N_ITEMACC, ci->clientnum, cn, ent, ammoamt, cn < 0 && sents[ent].spawned, weap, dropped, ammo);
     }
 
     bool gameevent::flush(clientinfo *ci, int fmillis)
@@ -6703,7 +6703,7 @@ namespace server
                                 sents[ent].spawned = true;
                             }
                         }
-                        if(commit) sendf(-1, 1, "ri3x", N_TRIGGER, ent, sents[ent].spawned ? 1 : 0, cp->clientnum);
+                        if(commit) sendf(-1, 1, "ri3x", N_TRIGGER, ent, sents[ent].spawned, cp->clientnum);
                         if(kin) loopvj(sents[ent].kin) if(sents.inrange(sents[ent].kin[j]))
                         {
                             if(sents[sents[ent].kin[j]].type == TRIGGER && !checkmapvariant(sents[sents[ent].kin[j]].attrs[enttype[sents[sents[ent].kin[j]].type].mvattr]) && !m_check(sents[sents[ent].kin[j]].attrs[5], sents[sents[ent].kin[j]].attrs[6], gamemode, mutators))

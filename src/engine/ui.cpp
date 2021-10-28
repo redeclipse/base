@@ -250,7 +250,7 @@ namespace UI
     #define UIARGB(uitype, uiname, vname) \
         UICMD(uitype, uiname, vname, "i", (int *val), { \
             o->vname = *val!=0; \
-            intret(o->vname ? 1 : 0); \
+            intret(o->vname); \
         }); \
         UIGETCMD(uitype, uiname, vname, int);
 
@@ -297,7 +297,7 @@ namespace UI
     #define UIARGTB(uitype, uiname, vname) \
         UICMDT(uitype, uiname, vname, "i", (int *val), { \
             o->vname = *val!=0; \
-            intret(o->vname ? 1 : 0); \
+            intret(o->vname); \
         }); \
         UIGETCMDT(uitype, uiname, vname, int);
 
@@ -1158,10 +1158,10 @@ namespace UI
     });
 
     ICOMMAND(0, uiallowinput, "b", (int *val), { if(window) { if(*val >= 0) window->allowinput = clamp(*val, 0, 2); intret(window->allowinput); } });
-    ICOMMAND(0, uiexclusive, "b", (int *val), { if(window) { if(*val >= 0) window->exclusive = *val!=0; intret(window->exclusive ? 1 : 0); } });
+    ICOMMAND(0, uiexclusive, "b", (int *val), { if(window) { if(*val >= 0) window->exclusive = *val!=0; intret(window->exclusive); } });
     ICOMMAND(0, uiwindowflags, "b", (int *val), { if(window) { if(*val >= 0) window->windowflags = clamp(*val, 0, int(WINDOW_ALL)); intret(window->windowflags); } });
 
-    ICOMMAND(0, uioverridepos, "", (), { if(window) { intret(window->overridepos ? 1 : 0); } });
+    ICOMMAND(0, uioverridepos, "", (), { if(window) { intret(window->overridepos); } });
     ICOMMAND(0, uisetpos, "ff", (float *xpos, float *ypos), { if(window) { window->setpos(*xpos, *ypos); } });
     ICOMMAND(0, uiresetpos, "", (), { if(window) { window->resetpos(); } });
 
@@ -1254,17 +1254,17 @@ namespace UI
         window->closing = closing;
     }
 
-    ICOMMAND(0, showui, "s", (char *name), intret(showui(name) ? 1 : 0));
-    ICOMMAND(0, hideui, "s", (char *name), intret(hideui(name) ? 1 : 0));
-    ICOMMAND(0, hidetopui, "", (), intret(world->hidetop() ? 1 : 0));
+    ICOMMAND(0, showui, "s", (char *name), intret(showui(name)));
+    ICOMMAND(0, hideui, "s", (char *name), intret(hideui(name)));
+    ICOMMAND(0, hidetopui, "", (), intret(world->hidetop()));
     ICOMMAND(0, topui, "", (), result(world->topname()));
     ICOMMAND(0, hideallui, "", (), intret(world->hideall()));
-    ICOMMAND(0, toggleui, "s", (char *name), intret(toggleui(name) ? 1 : 0));
+    ICOMMAND(0, toggleui, "s", (char *name), intret(toggleui(name)));
     ICOMMAND(0, holdui, "sD", (char *name, int *down), holdui(name, *down!=0));
     ICOMMAND(0, pressui, "sD", (char *name, int *down), pressui(name, *down!=0));
-    ICOMMAND(0, uivisible, "s", (char *name), intret(uivisible(name) ? 1 : 0));
+    ICOMMAND(0, uivisible, "s", (char *name), intret(uivisible(name)));
     ICOMMAND(0, uiname, "", (), { if(window) result(window->name); });
-    ICOMMAND(0, uiclosing, "s", (char *name), intret(uiclosing(name) ? 1 : 0));
+    ICOMMAND(0, uiclosing, "s", (char *name), intret(uiclosing(name)));
     ICOMMAND(0, uisetclose, "si", (char *name, int *n), uisetclose(name, *n != 0));
 
     struct HorizontalList : Object

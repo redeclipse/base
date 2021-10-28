@@ -1022,7 +1022,7 @@ VAR(IDF_READONLY, intmin, 1, INT_MIN, -1);
 VAR(IDF_READONLY, intmax, 1, INT_MAX, -1);
 
 bool identexists(const char *name) { return idents.access(name)!=NULL; }
-ICOMMAND(0, identexists, "s", (char *s), intret(identexists(s) ? 1 : 0));
+ICOMMAND(0, identexists, "s", (char *s), intret(identexists(s)));
 
 ident *getident(const char *name) { return idents.access(name); }
 
@@ -3514,7 +3514,7 @@ bool execfile(const char *cfgfile, bool msg, int flags)
     if(verbose >= 2) conoutf("\faLoaded script %s", cfgfile);
     return true;
 }
-ICOMMAND(0, exec, "sib", (char *file, int *flags, int *msg), intret(execfile(file, *msg != 0, *flags) ? 1 : 0));
+ICOMMAND(0, exec, "sib", (char *file, int *flags, int *msg), intret(execfile(file, *msg != 0, *flags)));
 
 const char *escapestring(const char *s)
 {
@@ -4446,7 +4446,7 @@ void findfile_(char *name)
 #ifndef STANDALONE
         findzipfile(fname) ||
 #endif
-        fileexists(fname, "e") || findfile(fname, "e") ? 1 : 0
+        fileexists(fname, "e") || findfile(fname, "e")
     );
 }
 COMMANDN(0, findfile, findfile_, "s");
@@ -4865,7 +4865,7 @@ ICOMMAND(0, error, "C", (char *s), conoutf("\fr%s", s));
             for(int i = 2; i < numargs && val; i++) val = func(args[i-1].s, args[i].s) op 0; \
         } \
         else val = (numargs > 0 ? args[0].s[0] : 0) op 0; \
-        intret(val ? 1 : 0); \
+        intret(val); \
     })
 
 CMPSCMD(strcmp, strcmp, ==);
@@ -4895,7 +4895,7 @@ CMPSCMD(strcasecmp, >~=s, >=);
             for(int i = 3; i < last && val; i++) val = func(args[i-1].s, args[i].s, args[last].getint()) op 0; \
         } \
         else val = (numargs > 0 ? args[0].s[0] : 0) op 0; \
-        intret(val ? 1 : 0); \
+        intret(val); \
     })
 
 CMPSNCMD(strncmp, strncmp, ==);
@@ -4916,8 +4916,8 @@ CMPSNCMD(strncasecmp, >~=sn, >=);
 
 ICOMMAND(0, strstr, "ss", (char *a, char *b), { char *s = strstr(a, b); intret(s ? s-a : -1); });
 ICOMMAND(0, strcasestr, "ss", (char *a, char *b), { char *s = cubecasestr(a, b); intret(s ? s-a : -1); });
-ICOMMAND(0, strmatch, "ss", (char *a, char *b), { intret(cubematchstr(a, b) ? 1 : 0); });
-ICOMMAND(0, strcasematch, "ss", (char *a, char *b), { intret(cubematchstr(a, b, true) ? 1 : 0); });
+ICOMMAND(0, strmatch, "ss", (char *a, char *b), { intret(cubematchstr(a, b)); });
+ICOMMAND(0, strcasematch, "ss", (char *a, char *b), { intret(cubematchstr(a, b, true)); });
 ICOMMAND(0, strpattern, "ss", (char *a, char *b), { intret(cubepattern(a, b)); });
 ICOMMAND(0, strcasepattern, "ss", (char *a, char *b), { intret(cubepattern(a, b, true)); });
 
@@ -5141,7 +5141,7 @@ bool hasflag(const char *flags, char f)
         if(*c == f) return true;
     return false;
 }
-ICOMMAND(0, hasflag, "ss", (char *s, char *f), intret(*s && *f && hasflag(s, *f) ? 1 : 0));
+ICOMMAND(0, hasflag, "ss", (char *s, char *f), intret(*s && *f && hasflag(s, *f)));
 
 int scalecolour(int c, int m) { return vec::fromcolor(c).mul(vec::fromcolor(m)).tohexcolor(); }
 ICOMMAND(0, scalecolour, "ii", (int *c, int *m), intret(scalecolour(*c, *m)));

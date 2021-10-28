@@ -473,7 +473,7 @@ struct duelservmode : servmode
                                     sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
                                 }
                             }
-                            if(allowbroadcast(clients[i]->clientnum)) sendf(clients[i]->clientnum, 1, "ri4", N_DUELEND, duelwinner, wasplay ? 1 : 0, duelwins);
+                            if(allowbroadcast(clients[i]->clientnum)) sendf(clients[i]->clientnum, 1, "ri4", N_DUELEND, duelwinner, wasplay, duelwins);
                         }
                     }
                     clear();

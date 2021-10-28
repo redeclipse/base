@@ -293,7 +293,7 @@ void loadc(stream *f, cube &c, const ivec &co, int size, bool &failed)
             }
             else
             {
-                int vis = layerverts < 4 ? (vertmask&0x02 ? 2 : 1) : 3, order = vertmask&0x01 ? 1 : 0, k = 0;
+                int vis = layerverts < 4 ? (vertmask&0x02 ? 2 : 1) : 3, order = vertmask&0x01, k = 0;
                 verts[k++].setxyz(v[order].mul(size).add(vo));
                 if(vis&1) verts[k++].setxyz(v[order+1].mul(size).add(vo));
                 verts[k++].setxyz(v[order+2].mul(size).add(vo));

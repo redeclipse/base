@@ -203,7 +203,7 @@ void loadsmaashaders(bool split = false)
     string opts;
     int optslen = 0;
     if(!hasTRG) opts[optslen++] = 'a';
-    if((smaadepthmask && (!tqaa || msaalight)) || (smaastencil && ghasstencil > (msaasamples ? 1 : 0))) opts[optslen++] = 'd';
+    if((smaadepthmask && (!tqaa || msaalight)) || (smaastencil && ghasstencil > (msaasamples))) opts[optslen++] = 'd';
     if(split) opts[optslen++] = 's';
     if(tqaa || smaagreenluma || intel_texalpha_bug) opts[optslen++] = 'g';
     if(tqaa) opts[optslen++] = 't';
@@ -508,10 +508,10 @@ void setupsmaa(int w, int h)
     createtexture(smaaareatex, SMAA_AREATEX_WIDTH, SMAA_AREATEX_HEIGHT, smaaareadata, 3, 1, hasTRG ? GL_RG8 : GL_LUMINANCE8_ALPHA8, GL_TEXTURE_RECTANGLE, 0, 0, 0, false);
     createtexture(smaasearchtex, SMAA_SEARCHTEX_WIDTH, SMAA_SEARCHTEX_HEIGHT, smaasearchdata, 3, 0, hasTRG ? GL_R8 : GL_LUMINANCE8, GL_TEXTURE_RECTANGLE, 0, 0, 0, false);
     bool split = multisampledaa();
-    smaasubsampleorder = split ? (msaapositions[0].x < 0.5f ? 1 : 0) : -1;
-    smaat2x = tqaa ? 1 : 0;
-    smaas2x = split ? 1 : 0;
-    smaa4x = tqaa && split ? 1 : 0;
+    smaasubsampleorder = split ? (msaapositions[0].x < 0.5f) : -1;
+    smaat2x = tqaa;
+    smaas2x = split;
+    smaa4x = tqaa && split;
     loopi(split ? 4 : 3)
     {
         if(!smaatex[i]) glGenTextures(1, &smaatex[i]);
@@ -534,7 +534,7 @@ void setupsmaa(int w, int h)
             static const GLenum drawbufs[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
             glDrawBuffers_(2, drawbufs);
         }
-        if(!i || (smaadepthmask && (!tqaa || msaalight)) || (smaastencil && ghasstencil > (msaasamples ? 1 : 0))) bindgdepth();
+        if(!i || (smaadepthmask && (!tqaa || msaalight)) || (smaastencil && ghasstencil > (msaasamples))) bindgdepth();
         if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
             fatal("Failed allocating SMAA buffer!");
     }
@@ -586,7 +586,7 @@ void dosmaa(GLuint outfbo = 0, bool split = false)
 
     int cleardepth = msaalight ? GL_DEPTH_BUFFER_BIT | (ghasstencil > 1 ? GL_STENCIL_BUFFER_BIT : 0) : 0;
     bool depthmask = smaadepthmask && (!tqaa || msaalight),
-         stencil = smaastencil && ghasstencil > (msaasamples ? 1 : 0);
+         stencil = smaastencil && ghasstencil > (msaasamples);
     loop(pass, split ? 2 : 1)
     {
         glBindFramebuffer_(GL_FRAMEBUFFER, smaafbo[1]);
@@ -694,7 +694,7 @@ int aamaskstencil = -1, aamask = -1;
 
 void setaamask(bool on)
 {
-    int val = on && !drawtex ? 1 : 0;
+    int val = on && !drawtex;
     if(aamask == val) return;
 
     if(!aamaskstencil)

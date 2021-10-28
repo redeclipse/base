@@ -790,7 +790,7 @@ struct skelmodel : animmodel
         {
             if(!mask || *mask==BONEMASK_END) return;
             uchar *expansion = new uchar[numbones];
-            memset(expansion, *mask&BONEMASK_NOT ? 1 : 0, numbones);
+            memset(expansion, *mask&BONEMASK_NOT, numbones);
             while(*mask!=BONEMASK_END)
             {
                 expandbonemask(expansion, *mask&BONEMASK_BONE, *mask&BONEMASK_NOT ? 0 : 1);

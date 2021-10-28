@@ -1055,7 +1055,7 @@ void gencubeedges(cube &c, const ivec &co, int size)
         {
             ivec v[4];
             genfaceverts(c, i, v);
-            int order = vis&4 || (!flataxisface(c, i) && faceconvexity(v) < 0) ? 1 : 0;
+            int order = vis&4 || (!flataxisface(c, i) && faceconvexity(v) < 0);
             ivec vo = ivec(co).shl(3);
             pos[numverts++] = v[order].mul(size).add(vo);
             if(vis&1) pos[numverts++] = v[order+1].mul(size).add(vo);
@@ -1174,7 +1174,7 @@ void gencubeverts(cube &c, const ivec &co, int size, int csi)
             ivec v[4];
             genfaceverts(c, i, v);
             if(!flataxisface(c, i)) convex = faceconvexity(v);
-            int order = vis&4 || convex < 0 ? 1 : 0;
+            int order = vis&4 || convex < 0;
             vec vo(co);
             pos[numverts++] = vec(v[order]).mul(size/8.0f).add(vo);
             if(vis&1) pos[numverts++] = vec(v[order+1]).mul(size/8.0f).add(vo);

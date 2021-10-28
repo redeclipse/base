@@ -333,7 +333,7 @@ enet_host_bandwidth_throttle (ENetHost * host)
            bandwidth = ~0,
            throttle = 0,
            bandwidthLimit = 0;
-    int needsAdjustment = host -> bandwidthLimitedPeers > 0 ? 1 : 0;
+    int needsAdjustment = host -> bandwidthLimitedPeers > 0;
     ENetPeer * peer;
     ENetProtocol command;
 

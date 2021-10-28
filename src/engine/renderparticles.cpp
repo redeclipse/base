@@ -1058,7 +1058,7 @@ struct loopprimitiverenderer : listrenderer<loopprimitive>
         glBindTexture(GL_TEXTURE_2D, blanktexture->id);
         gle::colorub(p->color.r, p->color.g, p->color.b, uchar(p->blend*blend));
         gle::begin(p->fill ? GL_TRIANGLE_FAN : GL_LINE_LOOP);
-        loopi(15 + (p->fill ? 1 : 0))
+        loopi(15 + (p->fill))
         {
             const vec2 &sc = sincos360[i*(360/15)];
             vec v;

@@ -8,8 +8,8 @@ namespace client
     hashtable<int, const char *>demonames;
 
     VAR(0, debugmessages, 0, 0, 1);
-    ICOMMAND(0, getready, "", (), intret(isready ? 1 : 0));
-    ICOMMAND(0, getloadedmap, "", (), intret(maploading || loadedmap ? 1 : 0));
+    ICOMMAND(0, getready, "", (), intret(isready));
+    ICOMMAND(0, getloadedmap, "", (), intret(maploading || loadedmap));
 
     SVAR(IDF_PERSIST, demolist, "");
     VAR(0, demoendless, 0, 0, 1);
@@ -23,7 +23,7 @@ namespace client
     VAR(IDF_PERSIST, checkpointannouncefilter, 0, CP_ALL, CP_ALL); // which checkpoint types to announce for
     VARF(0, checkpointspawn, 0, 1, 1, game::player1->checkpointspawn = checkpointspawn; sendplayerinfo = true);
     VAR(IDF_PERSIST, demoautoclientsave, 0, 0, 1);
-    ICOMMAND(0, getdemoplayback, "", (), intret(demoplayback ? 1 : 0));
+    ICOMMAND(0, getdemoplayback, "", (), intret(demoplayback));
 
     int state() { return game::player1->state; }
     ICOMMAND(0, getplayerstate, "", (), intret(state()));
@@ -47,7 +47,7 @@ namespace client
 
     int otherclients(bool self, bool nospec)
     {
-        int n = self ? 1 : 0;
+        int n = self;
         loopv(game::players) if(game::players[i] && game::players[i]->actortype == A_PLAYER && (!nospec || game::players[i]->state != CS_SPECTATOR)) n++;
         return n;
     }
@@ -324,7 +324,7 @@ namespace client
         copystring(accountname, name && *name ? name : "");
         copystring(accountpass, key && *key ? key : "");
     });
-    ICOMMAND(0, hasauthkey, "i", (int *n), intret(accountname[0] && accountpass[0] && (!*n || authconnect) ? 1 : 0));
+    ICOMMAND(0, hasauthkey, "i", (int *n), intret(accountname[0] && accountpass[0] && (!*n || authconnect)));
 
     void rehash()
     {
@@ -616,7 +616,7 @@ namespace client
             {
                 if(!chunk[i] || !*chunk[i] || !isnumeric(*chunk[i])) continue;
                 int v = parseint(chunk[i]);
-                items.add(v ? 1 : 0);
+                items.add(v);
             }
             chunk.deletearrays();
         }
@@ -632,8 +632,8 @@ namespace client
 
     ICOMMAND(0, getrandweap, "i", (int *n), intret(game::player1->randweap.inrange(*n) ? game::player1->randweap[*n] : 1));
     ICOMMAND(0, getloadweap, "i", (int *n), intret(game::player1->loadweap.inrange(*n) ? game::player1->loadweap[*n] : -1));
-    ICOMMAND(0, allowedweap, "i", (int *n), intret(isweap(*n) && m_check(W(*n, modes), W(*n, muts), game::gamemode, game::mutators) && !W(*n, disabled) ? 1 : 0));
-    ICOMMAND(0, hasloadweap, "bb", (int *g, int *m), intret(m_loadout(m_game(*g) ? *g : game::gamemode, *m >= 0 ? *m : game::mutators) ? 1 : 0));
+    ICOMMAND(0, allowedweap, "i", (int *n), intret(isweap(*n) && m_check(W(*n, modes), W(*n, muts), game::gamemode, game::mutators) && !W(*n, disabled)));
+    ICOMMAND(0, hasloadweap, "bb", (int *g, int *m), intret(m_loadout(m_game(*g) ? *g : game::gamemode, *m >= 0 ? *m : game::mutators)));
 
     int teamfromname(const char *team)
     {
@@ -690,7 +690,7 @@ namespace client
         game::specreset();
         physics::entinmap(game::player1, true); // find spawn closest to current floating pos
         projs::removeplayer(game::player1);
-        if(m_edit(game::gamemode)) addmsg(N_EDITMODE, "ri", edit ? 1 : 0);
+        if(m_edit(game::gamemode)) addmsg(N_EDITMODE, "ri", edit);
     }
 
     ICOMMAND(0, getclientfocused, "", (), intret(game::focus ? game::focus->clientnum : game::player1->clientnum));
@@ -933,7 +933,7 @@ namespace client
     {
         vec dir(0, 0, 0);
         float dist = -1;
-        intret(radarallow(d, dir, dist) ? 1 : 0);
+        intret(radarallow(d, dir, dist));
     });
     CLCOMMAND(radardist,
     {
@@ -972,9 +972,9 @@ namespace client
     CLCOMMANDM(weaptime, "si", (char *who, int *n), intret(isweap(*n) ? d->weaptime[*n] : 0));
     CLCOMMANDM(weapwait, "si", (char *who, int *n), intret(isweap(*n) ? d->weapwait[*n] : 0));
     CLCOMMANDM(weapload, "sii", (char *who, int *n, int *m), intret(isweap(*n) ? d->weapload[*n][clamp(*m, 0, W_A_MAX-1)] : 0));
-    CLCOMMANDM(weaphold, "si", (char *who, int *n), intret(isweap(*n) && d->holdweap(*n, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis) ? 1 : 0));
+    CLCOMMANDM(weaphold, "si", (char *who, int *n), intret(isweap(*n) && d->holdweap(*n, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis)));
     CLCOMMAND(weapholdnum, intret(d->holdweapcount(m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis)));
-    CLCOMMANDM(action, "sb", (char *who, int *n), intret(d->action[clamp(*n, 0, int(AC_MAX-1))] ? 1 : 0));
+    CLCOMMANDM(action, "sb", (char *who, int *n), intret(d->action[clamp(*n, 0, int(AC_MAX-1))]));
     CLCOMMANDM(actiontime, "sb", (char *who, int *n), intret(d->actiontime[clamp(*n, 0, int(AC_MAX-1))]));
 
     CLCOMMAND(move, intret(d->move));
@@ -987,10 +987,10 @@ namespace client
     CLCOMMAND(lastshoot, intret(d->lastshoot));
     CLCOMMAND(airmillis, intret(d->airmillis));
     CLCOMMAND(floormillis, intret(d->floormillis));
-    CLCOMMAND(inliquid, intret(d->inliquid ? 1 : 0));
-    CLCOMMAND(onladder, intret(d->onladder ? 1 : 0));
-    CLCOMMAND(headless, intret(d->headless ? 1 : 0));
-    CLCOMMAND(obliterated, intret(d->obliterated ? 1 : 0));
+    CLCOMMAND(inliquid, intret(d->inliquid));
+    CLCOMMAND(onladder, intret(d->onladder));
+    CLCOMMAND(headless, intret(d->headless));
+    CLCOMMAND(obliterated, intret(d->obliterated));
     CLCOMMAND(actortype, intret(d->actortype));
     CLCOMMAND(pcolour, intret(d->colour));
     CLCOMMAND(model, intret(d->model%PLAYERTYPES));
@@ -1026,7 +1026,7 @@ namespace client
     CLCOMMAND(scoretime, floatret(d->scoretime()));
     CLCOMMANDM(kdratio, "si", (char *who, int *n), intret(d->kdratio(*n!=0)));
 
-    CLCOMMAND(allowimpulse, intret(physics::allowimpulse(d) ? 1 : 0));
+    CLCOMMAND(allowimpulse, intret(physics::allowimpulse(d)));
     CLCOMMAND(impulsemeter, intret(d->impulse[IM_METER]));
     CLCOMMAND(impulsetype, intret(d->impulse[IM_TYPE]));
     CLCOMMANDM(impulsetimer, "b", (char *who, int *n), intret(d->impulsetime[*n >= 0 && *n < IM_T_MAX ? *n : d->impulse[IM_TYPE]]));
@@ -1083,7 +1083,7 @@ namespace client
     CLISDOMCMD(dominated);
 
     CLCOMMAND(privilege, intret(d->privilege&PRIV_TYPE));
-    CLCOMMAND(privlocal, intret(d->privilege&PRIV_LOCAL ? 1 : 0));
+    CLCOMMAND(privlocal, intret(d->privilege&PRIV_LOCAL));
     CLCOMMAND(privtex, result(hud::privtex(d->privilege, d->actortype)));
     bool haspriv(gameent *d, int priv)
     {
@@ -1091,7 +1091,7 @@ namespace client
         if(!priv || (d == game::player1 && !remote)) return true;
         return (d->privilege&PRIV_TYPE) >= priv;
     }
-    #define CLPRIVCMD(pname,pval) CLCOMMAND(priv##pname, intret(haspriv(d, pval) ? 1 : 0));
+    #define CLPRIVCMD(pname,pval) CLCOMMAND(priv##pname, intret(haspriv(d, pval)));
     CLPRIVCMD(none, PRIV_NONE);
     CLPRIVCMD(player, PRIV_PLAYER);
     CLPRIVCMD(supporter, PRIV_SUPPORTER);
@@ -1099,7 +1099,7 @@ namespace client
     CLPRIVCMD(administrator, PRIV_ADMINISTRATOR);
     CLPRIVCMD(developer, PRIV_DEVELOPER);
     CLPRIVCMD(founder, PRIV_CREATOR);
-    CLCOMMANDM(priv, "si", (char *who, int *priv), intret(haspriv(d, clamp(*priv, 0, PRIV_MAX-1)) ? 1 : 0));
+    CLCOMMANDM(priv, "si", (char *who, int *priv), intret(haspriv(d, clamp(*priv, 0, PRIV_MAX-1))));
 
     void getclientversion(int cn, int prop)
     {
@@ -1140,14 +1140,14 @@ namespace client
         gameent *d = game::getclient(cn);
         return d && d->state == CS_SPECTATOR;
     }
-    ICOMMAND(IDF_NAMECOMPLETE, isspectator, "s", (char *who), intret(isspectator(parseplayer(who)) ? 1 : 0));
+    ICOMMAND(IDF_NAMECOMPLETE, isspectator, "s", (char *who), intret(isspectator(parseplayer(who))));
 
     bool isquarantine(int cn)
     {
         gameent *d = game::getclient(cn);
         return d && d->quarantine;
     }
-    ICOMMAND(IDF_NAMECOMPLETE, isquarantine, "s", (char *who), intret(isquarantine(parseplayer(who)) ? 1 : 0));
+    ICOMMAND(IDF_NAMECOMPLETE, isquarantine, "s", (char *who), intret(isquarantine(parseplayer(who))));
 
     bool isai(int cn, int type)
     {
@@ -1155,7 +1155,7 @@ namespace client
         int actortype = type > 0 && type < A_MAX ? type : A_BOT;
         return d && d->actortype == actortype;
     }
-    ICOMMAND(IDF_NAMECOMPLETE, isai, "si", (char *who, int *type), intret(isai(parseplayer(who), *type) ? 1 : 0));
+    ICOMMAND(IDF_NAMECOMPLETE, isai, "si", (char *who, int *type), intret(isai(parseplayer(who), *type)));
 
     bool mutscmp(int req, int limit)
     {
@@ -1223,7 +1223,7 @@ namespace client
         }
         return false;
     }
-    ICOMMAND(0, ismodelocked, "iiis", (int *g, int *m, int *a, char *s), intret(ismodelocked(*g, *m, *a, s) ? 1 : 0));
+    ICOMMAND(0, ismodelocked, "iiis", (int *g, int *m, int *a, char *s), intret(ismodelocked(*g, *m, *a, s)));
 
     void getmastermode(int n)
     {
@@ -1301,7 +1301,7 @@ namespace client
 
     ICOMMAND(IDF_NAMECOMPLETE, ignore, "s", (char *arg), ignore(parseplayer(arg)));
     ICOMMAND(IDF_NAMECOMPLETE, unignore, "s", (char *arg), unignore(parseplayer(arg)));
-    ICOMMAND(IDF_NAMECOMPLETE, isignored, "s", (char *arg), intret(isignored(parseplayer(arg)) ? 1 : 0));
+    ICOMMAND(IDF_NAMECOMPLETE, isignored, "s", (char *arg), intret(isignored(parseplayer(arg))));
 
     void setteam(const char *arg1, const char *arg2)
     {
@@ -1497,7 +1497,7 @@ namespace client
         if(wid && wid->type == ID_ALIAS && wid->getstr()[0])
         {
             defformatbigstring(act, "%s %d %d %s %s %s",
-                flags&SAY_ACTION ? "on_action" : "on_text", f->clientnum, flags&SAY_TEAM ? 1 : 0,
+                flags&SAY_ACTION ? "on_action" : "on_text", f->clientnum, flags&SAY_TEAM,
                 escapestring(game::colourname(f)), escapestring(text), escapestring(line));
             int ret = execute(act);
             if(ret > 0) snd = ret;
@@ -2358,12 +2358,12 @@ namespace client
                 d->strafe = (physstate>>5)&2 ? -1 : (physstate>>5)&1;
                 d->turnside = (physstate>>7)&2 ? -1 : (physstate>>7)&1;
                 d->impulse[IM_METER] = meter;
-                d->conopen = flags&(1<<10) ? true : false;
-                d->forcepos = flags&(1<<11) ? true : false;
+                d->conopen = flags&(1<<10);
+                d->forcepos = flags&(1<<11);
                 loopk(AC_MAX)
                 {
                     bool val = d->action[k];
-                    d->action[k] = flags&(1<<(12+k)) ? true : false;
+                    d->action[k] = flags&(1<<(12+k));
                     if(val != d->action[k])
                     {
                         if(d->action[k]) d->actiontime[k] = lastmillis;

@@ -686,7 +686,7 @@ static inline int shadowmaskmodel(const vec &center, float radius)
         {
             vec scenter = vec(center).sub(shadoworigin);
             float sradius = radius + shadowradius;
-            return scenter.squaredlen() < sradius*sradius && sphereinsidespot(shadowdir, shadowspot, scenter, radius) ? 1 : 0;
+            return scenter.squaredlen() < sradius*sradius && sphereinsidespot(shadowdir, shadowspot, scenter, radius);
         }
     }
     return 0;

@@ -1244,7 +1244,7 @@ ICOMMAND(0, dumpshader, "sbi", (const char *name, int *col, int *row),
     if(s->psstr) fprintf(l, "%s:%s\n%s\n", s->name, "FS", s->psstr);
 });
 
-ICOMMAND(0, isshaderdefined, "s", (char *name), intret(lookupshaderbyname(name) ? 1 : 0));
+ICOMMAND(0, isshaderdefined, "s", (char *name), intret(lookupshaderbyname(name)));
 
 static hashset<const char *> shaderparamnames(256);
 

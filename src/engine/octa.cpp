@@ -748,7 +748,7 @@ int faceconvexity(const cube &c, int orient)
 
 int faceorder(const cube &c, int orient) // gets above 'fv' so that each face is convex
 {
-    return faceconvexity(c, orient)<0 ? 1 : 0;
+    return faceconvexity(c, orient)<0;
 }
 
 static inline void faceedges(const cube &c, int orient, uchar edges[4])
@@ -1111,7 +1111,7 @@ int visibletris(const cube &c, int orient, const ivec &co, int size, ushort vmat
       // order 1: concave
         { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 3, 3, 2, 0 },
     };
-    int order = convex < 0 ? 1 : 0, notouch = notouchmasks[order][touching];
+    int order = convex < 0, notouch = notouchmasks[order][touching];
     if((vis&notouch)==vis) return vis;
 
     ivec no;
@@ -1210,7 +1210,7 @@ void genclipbounds(const cube &c, const ivec &co, int size, clipplanes &p)
 
 int genclipplane(const cube &c, int orient, vec *v, plane *clip)
 {
-    int planes = 0, convex = faceconvexity(c, orient), order = convex < 0 ? 1 : 0;
+    int planes = 0, convex = faceconvexity(c, orient), order = convex < 0;
     const vec &v0 = v[fv[orient][order]], &v1 = v[fv[orient][order+1]], &v2 = v[fv[orient][order+2]], &v3 = v[fv[orient][(order+3)&3]];
     if(v0==v2) return 0;
     if(v0!=v1 && v1!=v2) clip[planes++].toplane(v0, v1, v2);
@@ -1229,7 +1229,7 @@ void genclipplanes(const cube &c, const ivec &co, int size, clipplanes &p, bool 
             if(flataxisface(c, i)) p.visible |= 1<<i;
             else if((vis = visibletris(c, i, co, size, MAT_CLIP, MAT_NOCLIP, MATF_CLIP)))
             {
-                int convex = faceconvexity(c, i), order = vis&4 || convex < 0 ? 1 : 0;
+                int convex = faceconvexity(c, i), order = vis&4 || convex < 0;
                 const vec &v0 = p.v[fv[i][order]], &v1 = p.v[fv[i][order+1]], &v2 = p.v[fv[i][order+2]], &v3 = p.v[fv[i][(order+3)&3]];
                 if(vis&1) { p.side[p.size] = i; p.p[p.size++].toplane(v0, v1, v2); }
                 if(vis&2 && (!(vis&1) || convex)) { p.side[p.size] = i; p.p[p.size++].toplane(v0, v2, v3); }
@@ -1246,7 +1246,7 @@ void genclipplanes(const cube &c, const ivec &co, int size, clipplanes &p, bool 
             if(flataxisface(c, i)) p.visible |= 1<<i;
             else
             {
-                int convex = faceconvexity(c, i), order = vis&4 || convex < 0 ? 1 : 0;
+                int convex = faceconvexity(c, i), order = vis&4 || convex < 0;
                 const vec &v0 = p.v[fv[i][order]], &v1 = p.v[fv[i][order+1]], &v2 = p.v[fv[i][order+2]], &v3 = p.v[fv[i][(order+3)&3]];
                 if(vis&1) { p.side[p.size] = i; p.p[p.size++].toplane(v0, v1, v2); }
                 if(vis&2 && (!(vis&1) || convex)) { p.side[p.size] = i; p.p[p.size++].toplane(v0, v2, v3); }
@@ -1520,7 +1520,7 @@ bool genpoly(cube &cu, int orient, const ivec &o, int size, int vis, ivec &n, in
     loopk(4) v[k].mul(size).add(po);
     offset = -n.dot(v[3]);
 
-    int r = R[dim], c = C[dim], order = vis&4 ? 1 : 0;
+    int r = R[dim], c = C[dim], order = vis&4;
     p.numverts = 0;
     if(coord)
     {
@@ -1647,7 +1647,7 @@ bool mergepolys(int orient, hashset<plink> &links, vector<plink *> &queue, int o
     loopj(p.numverts)
     {
         pedge e(p.verts[prev], p.verts[j]);
-        int order = e.from.x > e.to.x || (e.from.x == e.to.x && e.from.y > e.to.y) ? 1 : 0;
+        int order = e.from.x > e.to.x || (e.from.x == e.to.x && e.from.y > e.to.y);
         if(order) swap(e.from, e.to);
         plink &l = links.access(e, e);
         bool shouldqueue = l.polys[order] < 0 && l.polys[order^1] >= 0;
@@ -1735,7 +1735,7 @@ void mergepolys(int orient, const ivec &co, const ivec &n, int offset, vector<po
         loopj(p.numverts)
         {
             pedge e(p.verts[prev], p.verts[j]);
-            int order = e.from.x > e.to.x || (e.from.x == e.to.x && e.from.y > e.to.y) ? 1 : 0;
+            int order = e.from.x > e.to.x || (e.from.x == e.to.x && e.from.y > e.to.y);
             if(order) swap(e.from, e.to);
             plink &l = links.access(e, e);
             l.polys[order] = i;

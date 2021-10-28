@@ -501,7 +501,7 @@ namespace game
     ICOMMAND(0, mutsallowed, "ii", (int *g, int *h), intret(*g >= 0 && *g < G_MAX ? gametype[*g].mutators[*h >= 0 && *h < G_M_GSP+1 ? *h : 0] : 0));
     ICOMMAND(0, mutsimplied, "ii", (int *g, int *m), intret(*g >= 0 && *g < G_MAX ? gametype[*g].implied : 0));
     ICOMMAND(0, gspmutname, "ii", (int *g, int *n), result(*g >= 0 && *g < G_MAX && *n >= 0 && *n < G_M_GSN ? gametype[*g].gsp[*n] : ""));
-    ICOMMAND(0, getintermission, "", (), intret(gs_intermission(gamestate) ? 1 : 0));
+    ICOMMAND(0, getintermission, "", (), intret(gs_intermission(gamestate)));
     ICOMMAND(0, getgameisplay, "b", (int *n), intret(m_play(*n >= 0 ? *n : gamemode) ? 1 :0));
     ICOMMAND(0, getgamestate, "", (), intret(gamestate));
     ICOMMAND(0, getgamestatestr, "ib", (int *n, int *b), result(gamestates[clamp(*n, 0, 3)][clamp(*b >= 0 ? *b : gamestate, 0, int(G_S_MAX))]));
@@ -679,7 +679,7 @@ namespace game
         if(!(d != player1 ? followthirdperson : thirdperson)) return false;
         return true;
     }
-    ICOMMAND(0, isthirdperson, "i", (int *viewonly), intret(thirdpersonview(*viewonly ? true : false) ? 1 : 0));
+    ICOMMAND(0, isthirdperson, "i", (int *viewonly), intret(thirdpersonview(*viewonly ? true : false)));
     ICOMMAND(0, thirdpersonswitch, "", (), int *n = (focus != player1 ? &followthirdperson : &thirdperson); *n = !*n);
 
     int fov()
@@ -724,7 +724,7 @@ namespace game
             return true;
         return false;
     }
-    ICOMMAND(0, iszooming, "", (), intret(inzoom() ? 1 : 0));
+    ICOMMAND(0, iszooming, "", (), intret(inzoom()));
 
     float zoomscale()
     {
@@ -976,7 +976,7 @@ namespace game
         if(!d || *d->name) return false; // || client::waiting()) return false;
         return true;
     }
-    ICOMMAND(0, needname, "b", (int *cn), intret(needname(*cn >= 0 ? getclient(*cn) : player1) ? 1 : 0));
+    ICOMMAND(0, needname, "b", (int *cn), intret(needname(*cn >= 0 ? getclient(*cn) : player1)));
 
     void respawn(gameent *d)
     {
@@ -3447,7 +3447,7 @@ namespace game
 
     void renderabovehead(gameent *d)
     {
-        vec pos = d->abovehead(d->state != CS_DEAD && d->state != CS_WAITING ? 1 : 0);
+        vec pos = d->abovehead(d->state != CS_DEAD && d->state != CS_WAITING);
         float blend = aboveheadblend*opacity(d, true);
         if(aboveheadnames && d != player1)
         {

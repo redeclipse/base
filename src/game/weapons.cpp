@@ -57,12 +57,12 @@ namespace weapons
     ICOMMAND(0, weapselect, "", (), intret(game::player1->weapselect));
     ICOMMAND(0, weaplast, "b", (int *n), intret(*n >= 0 ? (game::player1->lastweap.inrange(*n) ? game::player1->lastweap[*n] : -1) : game::player1->lastweap.length()));
     ICOMMAND(0, weapload, "b", (int *n), intret(*n >= 0 ? (game::player1->loadweap.inrange(*n) ? game::player1->loadweap[*n] : -1) : game::player1->loadweap.length()));
-    ICOMMAND(0, weapprev, "", (), intret(game::player1->lastweap.length() ? game::player1->lastweap.last() : (game::player1->loadweap.length() > 1 ? game::player1->loadweap[game::player1->weapselect == game::player1->loadweap[0] ? 1 : 0] : game::player1->weapselect)));
+    ICOMMAND(0, weapprev, "", (), intret(game::player1->lastweap.length() ? game::player1->lastweap.last() : (game::player1->loadweap.length() > 1 ? game::player1->loadweap[game::player1->weapselect == game::player1->loadweap[0]] : game::player1->weapselect)));
     ICOMMAND(0, ammo, "i", (int *n, int *m), intret(isweap(*n) ? game::player1->weapammo[*n][clamp(*m, 0, W_A_MAX-1)] : -1));
     ICOMMAND(0, ammoclip, "i", (int *n), intret(isweap(*n) ? game::player1->weapammo[*n][W_A_CLIP] : -1));
     ICOMMAND(0, ammostore, "i", (int *n), intret(isweap(*n) ? game::player1->weapammo[*n][W_A_STORE] : -1));
-    ICOMMAND(0, reloadweap, "i", (int *n), intret(isweap(*n) && W(*n, ammostore) < 0 ? 1 : 0));
-    ICOMMAND(0, hasweap, "ii", (int *n, int *o), intret(isweap(*n) && game::player1->hasweap(*n, *o) ? 1 : 0));
+    ICOMMAND(0, reloadweap, "i", (int *n), intret(isweap(*n) && W(*n, ammostore) < 0));
+    ICOMMAND(0, hasweap, "ii", (int *n, int *o), intret(isweap(*n) && game::player1->hasweap(*n, *o)));
     ICOMMAND(0, getweap, "ii", (int *n, int *o),
     {
         if(isweap(*n)) switch(*o)
@@ -308,7 +308,7 @@ namespace weapons
                             d->weapload[weap][W_A_CLIP] = -offset;
                         }
                         int offtime = hadcook && d->prevstate[weap] == type ? lastmillis-d->prevtime[weap] : 0;
-                        client::addmsg(N_WEAPCOOK, "ri5", d->clientnum, lastmillis-game::maptime, weap, zooming ? 2 : (secondary ? 1 : 0), offtime);
+                        client::addmsg(N_WEAPCOOK, "ri5", d->clientnum, lastmillis-game::maptime, weap, zooming ? 2 : (secondary), offtime);
                         d->setweapstate(weap, type, len, lastmillis, offtime);
                         d->lastcook = lastmillis;
                     }

@@ -430,7 +430,7 @@ static void calcsurfaces(cube &c, const ivec &co, int size, int usefacemask, int
             ivec v[4];
             genfaceverts(c, i, v);
             if(!flataxisface(c, i)) convex = faceconvexity(v);
-            int order = usefaces&4 || convex < 0 ? 1 : 0;
+            int order = usefaces&4 || convex < 0;
             ivec vo = ivec(co).mask(0xFFF).shl(3);
             curlitverts[numverts++].set(v[order].mul(size).add(vo));
             if(usefaces&1) curlitverts[numverts++].set(v[order+1].mul(size).add(vo));

@@ -538,7 +538,7 @@ namespace hud
         if(!m_play(game::gamemode)) return false;
         return teamkillwarn && m_team(game::gamemode, game::mutators) && numteamkills() >= teamkillwarn;
     }
-    ICOMMAND(0, hastkwarn, "N$", (int *n, ident *id), if(*n) intret(hastkwarn() ? 1 : 0); else printvar(id, hastkwarn() ? 1 : 0));
+    ICOMMAND(0, hastkwarn, "N$", (int *n, ident *id), if(*n) intret(hastkwarn()); else printvar(id, hastkwarn()));
 
     bool textinput(const char *str, int len)
     {
@@ -1242,7 +1242,7 @@ namespace hud
         }
         return false;
     }
-    ICOMMAND(0, specshowname, "N$", (int *n, ident *id), if(*n) intret(showname() ? 1 : 0); else printvar(id, showname() ? 1 : 0));
+    ICOMMAND(0, specshowname, "N$", (int *n, ident *id), if(*n) intret(showname()); else printvar(id, showname()));
 
     const char *specviewname()
     {
@@ -1304,7 +1304,7 @@ namespace hud
     ICOMMAND(0, getradarlimit, "f", (float *n), floatret(radarlimit(*n)));
 
     bool radarlimited(float dist) { return radardistlimit > 0 && dist > radardistlimit; }
-    ICOMMAND(0, getradarlimited, "f", (float *n), intret(radarlimited(*n) ? 1 : 0));
+    ICOMMAND(0, getradarlimited, "f", (float *n), intret(radarlimited(*n)));
 
     const char *teamtexname(int team)
     {
@@ -1319,7 +1319,7 @@ namespace hud
             { privnonetex, privplayertex, privsupportertex, privmoderatortex, privadministratortex, privdevelopertex, privfoundertex },
             { privnonetex, privplayertex, privlocalsupportertex, privlocalmoderatortex, privlocaladministratortex, privnonetex, privnonetex }
         };
-        return privtexs[priv&PRIV_LOCAL ? 1 : 0][clamp(priv&PRIV_TYPE, 0, int(priv&PRIV_LOCAL ? PRIV_ADMINISTRATOR : PRIV_LAST))];
+        return privtexs[priv&PRIV_LOCAL][clamp(priv&PRIV_TYPE, 0, int(priv&PRIV_LOCAL ? PRIV_ADMINISTRATOR : PRIV_LAST))];
     }
 
     const char *itemtex(int type, int stype)

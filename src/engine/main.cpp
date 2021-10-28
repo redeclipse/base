@@ -349,7 +349,7 @@ void restorevsync()
     if(initing || !glcontext) return;
     extern int vsync, vsynctear;
     if(!SDL_GL_SetSwapInterval(vsync ? (vsynctear ? -1 : 1) : 0)) curvsync = vsync;
-    else if(vsync && vsynctear && !SDL_GL_SetSwapInterval(vsync ? 1 : 0)) curvsync = vsync;
+    else if(vsync && vsynctear && !SDL_GL_SetSwapInterval(vsync)) curvsync = vsync;
 }
 
 VARF(IDF_PERSIST, vsync, 0, 0, 1, restorevsync());
@@ -425,7 +425,7 @@ void setupscreen(bool dogl = true)
 #endif
     loopi(sizeof(glversions)/sizeof(glversions[0]))
     {
-        glcompat = glversions[i] <= 30 ? 1 : 0;
+        glcompat = glversions[i] <= 30;
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, glversions[i] / 10);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, glversions[i] % 10);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, glversions[i] >= 32 ? SDL_GL_CONTEXT_PROFILE_CORE : 0);
@@ -873,7 +873,7 @@ void updatefps(int frames, int millis)
 
 #define ENGINEBOOL(name,val) \
     bool name = val; \
-    ICOMMAND(0, get##name, "", (), intret(name ? 1 : 0));
+    ICOMMAND(0, get##name, "", (), intret(name));
 ENGINEBOOL(engineready, false);
 ENGINEBOOL(inbetweenframes, false);
 ENGINEBOOL(renderedframe, true);
@@ -892,7 +892,7 @@ bool checkconn()
     return false;
 }
 ICOMMAND(0, getprogresswait, "", (), intret(client::waiting()));
-ICOMMAND(0, getprogressing, "", (), intret(progressing || checkconn() ? 1 : 0));
+ICOMMAND(0, getprogressing, "", (), intret(progressing || checkconn()));
 ICOMMAND(0, getprogresstype, "", (), intret(maploading ? 1 : (checkconn() ? 2 : 0)));
 FVAR(0, loadprogress, 0, 0, 1);
 SVAR(0, progresstitle, "");

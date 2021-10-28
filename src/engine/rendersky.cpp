@@ -394,7 +394,7 @@ namespace fogdome
     {
         const int tris = hres << (2*depth);
         numverts = numindices = capindices = 0;
-        verts = new vert[tris+1 + (capsize >= 0 ? 1 : 0)];
+        verts = new vert[tris+1 + (capsize >= 0)];
         indices = new GLushort[(tris + (capsize >= 0 ? hres<<depth : 0))*3];
         if(clipz >= 1)
         {

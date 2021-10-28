@@ -509,7 +509,7 @@ struct stainrenderer
         {
             ivec v[4];
             genfaceverts(cu, orient, v);
-            int vis = 3, convex = faceconvexity(v, vis), order = convex < 0 ? 1 : 0;
+            int vis = 3, convex = faceconvexity(v, vis), order = convex < 0;
             vec vo(o);
             pos[numverts++] = vec(v[order]).mul(size/8.0f).add(vo);
             if(vis&1) pos[numverts++] = vec(v[order+1]).mul(size/8.0f).add(vo);

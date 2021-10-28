@@ -70,7 +70,7 @@ void setupbloom(int w, int h)
     static const float grayf[12] = { 0.125f, 0.125f, 0.125f, 0.125f, 0.125f, 0.125f, 0.125f, 0.125f, 0.125f, 0.125f, 0.125f, 0.125f };
     createtexture(bloomtex[4], bloompbo ? 4 : 1, 1, hasTF ? (const void *)grayf : (const void *)gray, 3, 1, hasTF ? (hasTRG ? GL_R16F : GL_RGB16F) : (hasTRG ? GL_R16 : GL_RGB16));
 
-    loopi(5 + (bloomformat != GL_RGB ? 1 : 0))
+    loopi(5 + (bloomformat != GL_RGB))
     {
         glBindFramebuffer_(GL_FRAMEBUFFER, bloomfbo[i]);
         glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, i==4 ? GL_TEXTURE_2D : GL_TEXTURE_RECTANGLE, bloomtex[i], 0);
@@ -545,13 +545,13 @@ void initgbuffer()
 
     if(msaaminsamples)
     {
-        ghasstencil = (msaadepthstencil > 1 || (msaadepthstencil && gdepthformat)) && hasDS ? 2 : (msaastencil ? 1 : 0);
+        ghasstencil = (msaadepthstencil > 1 || (msaadepthstencil && gdepthformat)) && hasDS ? 2 : (msaastencil);
 
         checkmsaasamples();
 
         if(msaapreserve >= 0) msaalight = hasMSS ? 3 : (msaasamples==2 ? 2 : msaapreserve);
     }
-    else ghasstencil = (gdepthstencil > 1 || (gdepthstencil && gdepthformat)) && hasDS ? 2 : (gstencil ? 1 : 0);
+    else ghasstencil = (gdepthstencil > 1 || (gdepthstencil && gdepthformat)) && hasDS ? 2 : (gstencil);
 
     initao();
 }
@@ -559,7 +559,7 @@ void initgbuffer()
 VARF(0, forcepacknorm, 0, 0, 1, initwarning("g-buffer setup", INIT_LOAD, CHANGE_SHADERS));
 
 bool usepacknorm() { return forcepacknorm || msaasamples || !useavatarmask(); }
-ICOMMAND(0, usepacknorm, "", (), intret(usepacknorm() ? 1 : 0));
+ICOMMAND(0, usepacknorm, "", (), intret(usepacknorm()));
 
 void maskgbuffer(const char *mask)
 {
@@ -2741,7 +2741,7 @@ Shader *loaddeferredlightshader(const char *type = NULL)
     if(!minimap)
     {
         if(avatar && ao) sun[sunlen++] = 'a';
-        if(lighttilebatch && (!usecsm || batchsunlight > (userh ? 1 : 0))) sun[sunlen++] = 'b';
+        if(lighttilebatch && (!usecsm || batchsunlight > (userh))) sun[sunlen++] = 'b';
     }
     sun[sunlen] = '\0';
 
@@ -3108,8 +3108,8 @@ static inline void setlightparams(int i, const lightinfo &l)
 
 static inline void setlightshader(Shader *s, int n, bool baselight, bool shadowmap, bool spotlight, bool transparent = false, bool colorshadow = false, bool avatar = false)
 {
-    int variant = (shadowmap ? 1 : 0) + (baselight ? 0 : 2) + (spotlight ? 4 : 0) + (transparent ? 8 : (avatar ? 24 : (colorshadow ? 16 : 0)));
-    s->setvariant(n - (variant&7 ? 1 : 0), variant);
+    int variant = (shadowmap) + (baselight ? 0 : 2) + (spotlight ? 4 : 0) + (transparent ? 8 : (avatar ? 24 : (colorshadow ? 16 : 0)));
+    s->setvariant(n - (variant&7), variant);
     lightpos.setv(lightposv, n);
     lightcolor.setv(lightcolorv, n);
     if(spotlight) spotparams.setv(spotparamsv, n);
@@ -3364,7 +3364,7 @@ void renderlights(float bsx1 = -1, float bsy1 = -1, float bsx2 = 1, float bsy2 =
 
     if(hasDBT && depthtestlights > 1) glEnable(GL_DEPTH_BOUNDS_TEST_EXT);
 
-    bool sunpass = !lighttilebatch || drawtex == DRAWTEX_MINIMAP || (csm.rendered && batchsunlight <= (gi && getgiscale() && getgidist() ? 1 : 0));
+    bool sunpass = !lighttilebatch || drawtex == DRAWTEX_MINIMAP || (csm.rendered && batchsunlight <= (gi && getgiscale() && getgidist()));
     if(sunpass)
     {
         if(depthtestlights && depth) { glDisable(GL_DEPTH_TEST); depth = false; }
@@ -3475,7 +3475,7 @@ void rendervolumetric()
             volumetricshader->setvariant(0, l.shadowmap >= 0 ? (colorshadow ? 4 : 3) : 2);
             LOCALPARAM(spotparams, vec4(l.dir, 1/(1 - cos360(l.spot))));
         }
-        else if(l.shadowmap >= 0) volumetricshader->setvariant(0, colorshadow ? 1 : 0);
+        else if(l.shadowmap >= 0) volumetricshader->setvariant(0, colorshadow);
         else volumetricshader->set();
 
         LOCALPARAM(lightpos, vec4(l.o, 1).div(l.radius));

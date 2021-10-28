@@ -467,7 +467,7 @@ struct pvsworker
         if(order[1].dist > order[0].dist) swap(order[0], order[1]);
         loopi(6)
         {
-            int dim = order[i >= 3 ? i-3 : i].index, dc = (i >= 3) != (geom.max[dim] <= viewcellbb.min[dim]) ? 1 : 0, r = R[dim], c = C[dim];
+            int dim = order[i >= 3 ? i-3 : i].index, dc = (i >= 3) != (geom.max[dim] <= viewcellbb.min[dim]), r = R[dim], c = C[dim];
             int ccenter = geom.min[c];
             if(geom.min[r]==geom.max[r] || geom.min[c]==geom.max[c]) continue;
             while(ccenter < geom.max[c])

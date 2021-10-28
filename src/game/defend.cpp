@@ -22,7 +22,7 @@ namespace defend
     ICOMMAND(0, getdefendkinship, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].kinship : -1));
     ICOMMAND(0, getdefendname, "i", (int *n), result(st.flags.inrange(*n) ? st.flags[*n].name : ""));
     ICOMMAND(0, getdefendinfo, "i", (int *n), result(st.flags.inrange(*n) ? st.flags[*n].info : ""));
-    ICOMMAND(0, getdefendinside, "isi", (int *n, const char *who, int *h), gameent *d = game::getclient(client::parseplayer(who)); intret(d && st.flags.inrange(*n) && insideaffinity(st.flags[*n], d, *h!=0) ? 1 : 0));
+    ICOMMAND(0, getdefendinside, "isi", (int *n, const char *who, int *h), gameent *d = game::getclient(client::parseplayer(who)); intret(d && st.flags.inrange(*n) && insideaffinity(st.flags[*n], d, *h!=0)));
 
     bool radarallow(int id, int render, vec &dir, float &dist, bool justtest = false)
     {
@@ -48,7 +48,7 @@ namespace defend
     {
         vec dir(0, 0, 0);
         float dist = -1;
-        intret(radarallow(*n, *v, dir, dist, *q != 0) ? 1 : 0);
+        intret(radarallow(*n, *v, dir, dist, *q != 0));
     });
     ICOMMAND(0, getdefendradardist, "ib", (int *n, int *v),
     {
@@ -378,7 +378,7 @@ namespace defend
         if(!st.flags.inrange(b.target)) return false;
         defendstate::flag &f = st.flags[b.target];
         bool regen = d->actortype != A_BOT || !m_regen(game::gamemode, game::mutators) || d->health >= d->gethealth(game::gamemode, game::mutators);
-        int walk = regen && f.owner == d->team && !f.enemy ? 1 : 0;
+        int walk = regen && f.owner == d->team && !f.enemy;
         if(walk)
         {
             int teammembers = 1;

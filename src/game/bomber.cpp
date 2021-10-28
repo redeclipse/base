@@ -4,7 +4,7 @@ namespace bomber
     bomberstate st;
 
     ICOMMAND(0, getbombernum, "", (), intret(st.flags.length()));
-    ICOMMAND(0, getbomberenabled, "i", (int *n), intret(st.flags.inrange(*n) && st.flags[*n].enabled ? 1 : 0));
+    ICOMMAND(0, getbomberenabled, "i", (int *n), intret(st.flags.inrange(*n) && st.flags[*n].enabled));
     ICOMMAND(0, getbomberteam, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].team : -1));
     ICOMMAND(0, getbomberdroptime, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].droptime : -1));
     ICOMMAND(0, getbombertaketime, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].taketime : -1));
@@ -37,7 +37,7 @@ namespace bomber
     {
         vec dir(0, 0, 0);
         float dist = -1;
-        intret(radarallow(*n, *v, dir, dist, *q != 0) ? 1 : 0);
+        intret(radarallow(*n, *v, dir, dist, *q != 0));
     });
     ICOMMAND(0, getbomberradardist, "ib", (int *n, int *v),
     {
@@ -704,7 +704,7 @@ namespace bomber
         {
             bomberstate::flag &f = st.flags[b.target];
             if(isbomberaffinity(f) && f.owner && d->team != f.owner->team && ai::violence(d, b, f.owner, 4)) return true;
-            int walk = f.owner && f.owner->team != d->team ? 1 : 0;
+            int walk = f.owner && f.owner->team != d->team;
             if(d->actortype == A_BOT)
             {
                 if((!m_regen(game::gamemode, game::mutators) || d->health >= d->gethealth(game::gamemode, game::mutators)) && lastmillis-b.millis >= (201-d->skill)*33)

@@ -180,7 +180,7 @@
         };
 
     #define W(weap,name)         (*sv_weap_stat_##name[weap])
-    #define W2(weap,name,second) (*sv_weap_stat_##name[weap][second?1:0])
+    #define W2(weap,name,second) (*sv_weap_stat_##name[weap][second])
 #else
 #ifdef CPP_GAME_MAIN
     #define WPVAR(flags, level, name, mn, mx, w00, w01, w02, w03, w04, w05, w06, w07, w08, w09, w10, w11, w12) \
@@ -455,7 +455,7 @@
         extern char **weap_stat_##name[][2];
 #endif
     #define W(weap,name)         (*weap_stat_##name[weap])
-    #define W2(weap,name,second) (*weap_stat_##name[weap][second ? 1 : 0])
+    #define W2(weap,name,second) (*weap_stat_##name[weap][second])
 #endif
 #define WPVARK(flags, level, name, mn, mx, w100, w101, w102, w103, w104, w105, w106, w107, w108, w109, w110, w111, w112, w200, w201, w202, w203, w204, w205, w206, w207, w208, w209, w210, w211, w212, w300, w301, w302, w303, w304, w305, w306, w307, w308, w309, w310, w311, w312, w400, w401, w402, w403, w404, w405, w406, w407, w408, w409, w410, w411, w412) \
     WPVARM(flags, level, name, mn, mx, w100, w101, w102, w103, w104, w105, w106, w107, w108, w109, w110, w111, w112, w200, w201, w202, w203, w204, w205, w206, w207, w208, w209, w210, w211, w212); \

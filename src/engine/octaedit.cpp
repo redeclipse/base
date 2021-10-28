@@ -182,7 +182,7 @@ void toggleedit(bool force)
 {
     if(!force && (!connected(false) || !client::allowedittoggle(editmode))) return;
     editmode = !editmode;
-    editing = (editmode ? 1 : 0);
+    editing = (editmode);
     client::edittoggled(editmode);
     cancelsel();
     stoppaintblendmap();
@@ -247,7 +247,7 @@ COMMAND(0, cancelsel, "");
 COMMAND(0, reorient, "");
 COMMAND(0, selextend, "");
 
-ICOMMAND(0, selmoved, "", (), { if(noedit(true)) return; intret(sel.o != savedsel.o ? 1 : 0); });
+ICOMMAND(0, selmoved, "", (), { if(noedit(true)) return; intret(sel.o != savedsel.o); });
 ICOMMAND(0, selsave, "", (), { if(noedit(true)) return; savedsel = sel; });
 ICOMMAND(0, selrestore, "", (), { if(noedit(true)) return; sel = savedsel; });
 ICOMMAND(0, selswap, "", (), { if(noedit(true)) return; swap(sel, savedsel); });
@@ -1594,7 +1594,7 @@ static void genprefabmesh(prefabmesh &r, cube &c, const ivec &co, int size)
             genfaceverts(c, i, v);
             int convex = 0;
             if(!flataxisface(c, i)) convex = faceconvexity(v);
-            int order = vis&4 || convex < 0 ? 1 : 0, numverts = 0;
+            int order = vis&4 || convex < 0, numverts = 0;
             vec vo(co), pos[4], norm[4];
             pos[numverts++] = vec(v[order]).mul(size/8.0f).add(vo);
             if(vis&1) pos[numverts++] = vec(v[order+1]).mul(size/8.0f).add(vo);
@@ -2786,7 +2786,7 @@ ICOMMAND(0, getvgrasstexclamp, "i", (int *tex), intret(lookupvslot(*tex, false).
 ICOMMAND(0, getvgrasstexframe, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->frame));
 ICOMMAND(0, getvgrasstexdelay, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->delay));
 ICOMMAND(0, getvgrasstexlast, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->last));
-ICOMMAND(0, getvgrasstexthrob, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->throb ? 1 : 0));
+ICOMMAND(0, getvgrasstexthrob, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->throb));
 ICOMMAND(0, getvgrasstextype, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->type));
 ICOMMAND(0, getvgrasstexframes, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->frames.length()));
 
@@ -2879,13 +2879,13 @@ ICOMMAND(0, getvteximgmipmap, "ii", (int *tex, int *sts),
 {
     VSlot &vslot = lookupvslot(*tex, false);
     if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
-    intret(vslot.slot->sts[*sts].t->mipmap ? 1 : 0);
+    intret(vslot.slot->sts[*sts].t->mipmap);
 });
 ICOMMAND(0, getvteximgthrob, "ii", (int *tex, int *sts),
 {
     VSlot &vslot = lookupvslot(*tex, false);
     if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
-    intret(vslot.slot->sts[*sts].t->throb ? 1 : 0);
+    intret(vslot.slot->sts[*sts].t->throb);
 });
 ICOMMAND(0, getvteximgframes, "ii", (int *tex, int *sts),
 {
@@ -3098,7 +3098,7 @@ ICOMMAND(0, numvslots, "", (), intret(vslots.length()));
 ICOMMAND(0, numslots, "", (), intret(slots.length()));
 ICOMMAND(0, numdecalslots, "", (), intret(decalslots.length()));
 COMMAND(0, getslottex, "i");
-ICOMMAND(0, texloaded, "i", (int *tex), intret(slots.inrange(*tex) && slots[*tex]->loaded ? 1 : 0));
+ICOMMAND(0, texloaded, "i", (int *tex), intret(slots.inrange(*tex) && slots[*tex]->loaded));
 
 #define LOOPTEXMRU(name,op) \
     ICOMMAND(0, looptexmru##name, "iire", (int *count, int *skip, ident *id, uint *body), \
@@ -3154,7 +3154,7 @@ void replacetexcube(cube &c, int oldtex, int newtex)
 
 void mpreplacetex(int oldtex, int newtex, bool insel, selinfo &sel, bool local)
 {
-    if(local) client::edittrigger(sel, EDIT_REPLACE, oldtex, newtex, insel ? 1 : 0);
+    if(local) client::edittrigger(sel, EDIT_REPLACE, oldtex, newtex, insel);
     if(insel)
     {
         loopselxyz(replacetexcube(c, oldtex, newtex));

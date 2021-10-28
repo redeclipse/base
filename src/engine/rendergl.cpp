@@ -1079,7 +1079,7 @@ void gl_checkextensions()
     if(hasGPU5 && hasTG) tqaaresolvegather = 1;
 }
 
-ICOMMAND(0, glext, "s", (char *ext), intret(hasext(ext) ? 1 : 0));
+ICOMMAND(0, glext, "s", (char *ext), intret(hasext(ext)));
 
 struct timer
 {
@@ -1212,10 +1212,10 @@ void gettimers(int timenum, int prop, int idx)
         timer &t = timers[timerorder[timenum]];
         switch(prop)
         {
-            case -2: intret(t.print < 0 || (t.gpu && !(t.waiting&(1<<timercycle))) ? 1 : 0); break; // skip
+            case -2: intret(t.print < 0 || (t.gpu && !(t.waiting&(1<<timercycle)))); break; // skip
             case -1: intret(7); break;
             case 0: result(t.name); break;
-            case 1: intret(t.gpu ? 1 : 0); break;
+            case 1: intret(t.gpu); break;
             case 2:
             {
                 if(idx < 0) intret(timer::MAXQUERY);
@@ -2483,7 +2483,7 @@ bool hasnoview()
 {
     return forcenoview || progressing || client::waiting() > 0;
 }
-ICOMMAND(0, getnoview, "", (), intret(hasnoview() ? 1 : 0));
+ICOMMAND(0, getnoview, "", (), intret(hasnoview()));
 
 void usetexturing(bool on)
 {
