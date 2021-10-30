@@ -72,7 +72,7 @@ S_API void S_CALLTYPE SteamAPI_UnregisterCallResult( class CCallbackBase *pCallb
 			thisclass *pOuter = reinterpret_cast<thisclass*>( reinterpret_cast<char*>(this) - offsetof( thisclass, m_steamcallback_ ## func ) ); \
 			pOuter->func( reinterpret_cast<param*>( pvParam ) ); \
 		} \
-	} m_steamcallback_ ## func ; void func( param *pParam )
+	} m_steamcallback_ ## func; void func( param *pParam )
 #define _STEAM_CALLBACK_4( _, thisclass, func, param, var ) \
 	CCallback< thisclass, param > var; void func( param *pParam )
 #define _STEAM_CALLBACK_GS( _, thisclass, func, param, var ) \
@@ -208,7 +208,7 @@ struct CallbackMsg_t
 	#include "../../clientdll/steam_api_callback_inspection.h"
 #else
 	#define STEAM_CALLBACK_BEGIN( callbackname, callbackid )	struct callbackname { enum { k_iCallback = callbackid };
-	#define STEAM_CALLBACK_MEMBER( varidx, vartype, varname )	vartype varname ; 
+	#define STEAM_CALLBACK_MEMBER( varidx, vartype, varname )	vartype varname; 
 	#define STEAM_CALLBACK_MEMBER_ARRAY( varidx, vartype, varname, varcount ) vartype varname [ varcount ];
 	#define STEAM_CALLBACK_END(nArgs) };
 #endif

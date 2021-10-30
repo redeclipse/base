@@ -158,7 +158,7 @@ SDL_Swap64(Uint64 x)
         Uint64 u;
     } v;
     v.u = x;
-  __asm__("bswapl %0 ; bswapl %1 ; xchgl %0,%1": "=r"(v.s.a), "=r"(v.s.b):"0"(v.s.a),
+  __asm__("bswapl %0; bswapl %1; xchgl %0,%1": "=r"(v.s.a), "=r"(v.s.b):"0"(v.s.a),
             "1"(v.s.
                 b));
     return v.u;

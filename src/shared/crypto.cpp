@@ -56,9 +56,9 @@ namespace tiger
 #define round(a, b, c, x) \
       c ^= x; \
       a -= sb1[((c)>>(0*8))&0xFF] ^ sb2[((c)>>(2*8))&0xFF] ^ \
-       sb3[((c)>>(4*8))&0xFF] ^ sb4[((c)>>(6*8))&0xFF] ; \
+       sb3[((c)>>(4*8))&0xFF] ^ sb4[((c)>>(6*8))&0xFF]; \
       b += sb4[((c)>>(1*8))&0xFF] ^ sb3[((c)>>(3*8))&0xFF] ^ \
-       sb2[((c)>>(5*8))&0xFF] ^ sb1[((c)>>(7*8))&0xFF] ; \
+       sb2[((c)>>(5*8))&0xFF] ^ sb1[((c)>>(7*8))&0xFF]; \
       b *= mul;
 
             uint mul = !pass_no ? 5 : (pass_no==1 ? 7 : 9);

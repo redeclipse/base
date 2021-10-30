@@ -1199,7 +1199,7 @@ int main(int argc, char **argv)
         }
         if(initscript) execute(initscript, true);
 
-        for(int frameloops = 0; ; frameloops = frameloops >= INT_MAX-1 ? MAXFPSHISTORY+1 : frameloops+1)
+        for(int frameloops = 0;; frameloops = frameloops >= INT_MAX-1 ? MAXFPSHISTORY+1 : frameloops+1)
         {
             if(wantdisplaysetup) setupdisplay();
             curtextscale = textscale;

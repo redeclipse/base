@@ -36,7 +36,7 @@ CURL=curl --location --insecure --fail
 ../$(dirname):
 	rm -rfv $@
 	tar --exclude=.git --exclude=$(dirname) \
-		-cf - $(DISTFILES:%=../%) | (mkdir $@/; cd $@/ ; tar -xpf -)
+		-cf - $(DISTFILES:%=../%) | (mkdir $@/; cd $@/; tar -xpf -)
 	echo $(appbranch) > $@/branch.txt
 	$(CURL) $(appfiles)/base.txt --output $@/version.txt
 	$(CURL) $(appfiles)/bins.txt --output $@/bin/version.txt

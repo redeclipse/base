@@ -362,7 +362,7 @@ SDL_FORCE_INLINE void SDL_memset4(void *dst, Uint32 val, size_t dwords)
     int u0, u1, u2;
     __asm__ __volatile__ (
         "cld \n\t"
-        "rep ; stosl \n\t"
+        "rep; stosl \n\t"
         : "=&D" (u0), "=&a" (u1), "=&c" (u2)
         : "0" (dst), "1" (val), "2" (SDL_static_cast(Uint32, dwords))
         : "memory"

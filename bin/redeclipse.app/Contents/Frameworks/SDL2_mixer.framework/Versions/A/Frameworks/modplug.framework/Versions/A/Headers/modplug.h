@@ -102,8 +102,8 @@ void ModPlug_SetSettings(const ModPlug_Settings* settings);
 
 /* New ModPlug API Functions */
 /* NOTE: Master Volume (1-512) */
-unsigned int ModPlug_GetMasterVolume(ModPlugFile* file) ;
-void ModPlug_SetMasterVolume(ModPlugFile* file,unsigned int cvol) ;
+unsigned int ModPlug_GetMasterVolume(ModPlugFile* file);
+void ModPlug_SetMasterVolume(ModPlugFile* file,unsigned int cvol);
 
 int ModPlug_GetCurrentSpeed(ModPlugFile* file);
 int ModPlug_GetCurrentTempo(ModPlugFile* file);
@@ -153,7 +153,7 @@ ModPlugNote* ModPlug_GetPattern(ModPlugFile* file, int pattern, unsigned int* nu
  *
  * Use this callback if you want to 'modify' the mixed data of LibModPlug.
  * 
- * void proc(int* buffer,unsigned long channels,unsigned long nsamples) ;
+ * void proc(int* buffer,unsigned long channels,unsigned long nsamples);
  *
  * 'buffer': A buffer of mixed samples
  * 'channels': N. of channels in the buffer
@@ -161,8 +161,8 @@ ModPlugNote* ModPlug_GetPattern(ModPlugFile* file, int pattern, unsigned int* nu
  *
  * (Samples are signed 32-bit integers)
  */
-void ModPlug_InitMixerCallback(ModPlugFile* file,ModPlugMixerProc proc) ;
-void ModPlug_UnloadMixerCallback(ModPlugFile* file) ;
+void ModPlug_InitMixerCallback(ModPlugFile* file,ModPlugMixerProc proc);
+void ModPlug_UnloadMixerCallback(ModPlugFile* file);
 
 #ifdef __cplusplus
 } /* extern "C" */

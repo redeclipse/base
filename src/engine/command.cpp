@@ -1370,7 +1370,7 @@ char *parsetext(const char *&p)
     else
     {
         const char *start = p;
-        p += strcspn(p, " ;\t\r\n\0");
+        p += strcspn(p, ";\t\r\n\0");
         return newstring(start, p-start);
     }
 }
