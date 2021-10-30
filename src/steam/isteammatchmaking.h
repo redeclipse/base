@@ -899,7 +899,7 @@ struct PSNGameBootInviteResult_t
 	enum { k_iCallback = k_iSteamMatchmakingCallbacks + 15 };
 
 	bool m_bGameBootInviteExists;
-	CSteamID m_steamIDLobby;		// Should be valid if m_bGameBootInviteExists == true
+	CSteamID m_steamIDLobby;		// Should be valid if m_bGameBootInviteExists
 };
 
 

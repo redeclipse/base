@@ -1101,7 +1101,7 @@ static bool modifysystemtray()
     nid.uID = IDI_ICON1;
     nid.uFlags = NIF_TIP;
     strcpy(nid.szTip, apptip);
-    return Shell_NotifyIcon(NIM_MODIFY, &nid) == TRUE;
+    return Shell_NotifyIcon(NIM_MODIFY, &nid);
 }
 #endif
 
