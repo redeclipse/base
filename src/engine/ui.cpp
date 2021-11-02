@@ -326,12 +326,12 @@ namespace UI
     {
         Object *parent;
         float x, y, w, h, ox, oy;
-        bool overridepos;
+        bool overridepos, drawn;
         uchar adjust;
         ushort state, childstate;
         vector<Object *> children;
 
-        Object() : ox(0), oy(0), overridepos(false), adjust(0), state(0), childstate(0) {}
+        Object() : ox(0), oy(0), overridepos(false), drawn(false), adjust(0), state(0), childstate(0) {}
         virtual ~Object()
         {
             if(inputsteal == this) inputsteal = NULL;
@@ -576,12 +576,17 @@ namespace UI
             drawing = this;
         }
 
+        void skipdraw() { drawn = false; }
+
         virtual void draw(float sx, float sy)
         {
+            drawn = true;
+
             loopchildren(o,
             {
                 if(!isfullyclipped(sx + o->x, sy + o->y, o->w, o->h))
                     o->draw(sx + o->x, sy + o->y);
+                else o->skipdraw();
             });
         }
 
@@ -4768,6 +4773,9 @@ namespace UI
         executeret(buildparent && buildchild > 0 && buildparent->children.inrange(buildchild-1) && TextEditor::focus == buildparent->children[buildchild-1] ? t : f));
     ICOMMANDNS(0, "uifocus-?", uinextfocus__, "tt", (tagval *t, tagval *f),
         IFSTATEVAL(buildparent && buildchild > 0 && buildparent->children.inrange(buildchild-1) && TextEditor::focus == buildparent->children[buildchild-1], t, f));
+
+    ICOMMAND(0, uidrawn, "", (),
+        intret(buildparent && buildparent->drawn));
 
     ICOMMAND(0, uialign, "ii", (int *xalign, int *yalign),
     {
