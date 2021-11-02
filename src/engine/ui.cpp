@@ -1501,15 +1501,19 @@ namespace UI
 
         void draw(float sx, float sy)
         {
+            drawn = true;
+
             loopchildrange(columns, children.length(), o,
             {
                 if(!isfullyclipped(sx + o->x, sy + o->y, o->w, o->h))
                     o->draw(sx + o->x, sy + o->y);
+                else o->skipdraw();
             });
             loopchildrange(0, columns, o,
             {
                 if(!isfullyclipped(sx + o->x, sy + o->y, o->w, o->h))
                     o->draw(sx + o->x, sy + o->y);
+                else o->skipdraw();
             });
         }
     };
