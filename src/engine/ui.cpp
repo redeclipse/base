@@ -576,8 +576,6 @@ namespace UI
             drawing = this;
         }
 
-        void skipdraw() { drawn = false; }
-
         virtual void draw(float sx, float sy)
         {
             drawn = true;
@@ -586,12 +584,12 @@ namespace UI
             {
                 if(!isfullyclipped(sx + o->x, sy + o->y, o->w, o->h))
                     o->draw(sx + o->x, sy + o->y);
-                else o->skipdraw();
             });
         }
 
         void resetstate()
         {
+            drawn = false;
             state &= STATE_HOLD_MASK;
             childstate &= STATE_HOLD_MASK;
         }
@@ -1507,13 +1505,11 @@ namespace UI
             {
                 if(!isfullyclipped(sx + o->x, sy + o->y, o->w, o->h))
                     o->draw(sx + o->x, sy + o->y);
-                else o->skipdraw();
             });
             loopchildrange(0, columns, o,
             {
                 if(!isfullyclipped(sx + o->x, sy + o->y, o->w, o->h))
                     o->draw(sx + o->x, sy + o->y);
-                else o->skipdraw();
             });
         }
     };
