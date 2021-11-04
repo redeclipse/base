@@ -594,6 +594,8 @@ void saveslotconfig(stream *h, Slot &s, int index, bool decal)
             if(s.grassheight > 0) h->printf("texgrassheight %d\n", s.grassheight);
         }
         if(s.variants->coastscale != 1) h->printf("texcoastscale %f\n", s.variants->coastscale);
+        
+        if(s.tags && s.tags[0]) h->printf("textags %s\n", escapestring(s.tags));
     }
     h->printf("\n");
 }
