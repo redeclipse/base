@@ -562,12 +562,69 @@ bool entselectionbox(extentity &e, vec &eo, vec &es, bool full)
 VAR(0, entselsnap, 0, 1, 1);
 VAR(0, entmovingshadow, 0, 1, 1);
 
+ICOMMAND(0, entorient, "", (), intret(entorient));
+
 extern void boxs(int orient, vec o, const vec &s, float size);
 extern void boxs(int orient, vec o, const vec &s);
 extern void boxs3D(const vec &o, vec s, int g);
 extern bool editmoveplane(const vec &o, const vec &ray, int d, float off, vec &handle, vec &dest, bool first);
 
 int entmoving = 0;
+int entmoveaxis = -1;
+
+static int getentorient()
+{
+    int orient = -1;
+
+    if(entorient >= 0 && entmoveaxis < 0) orient = entorient;
+    else
+    {
+        vec dir;
+        vecfromyawpitch(camera1->yaw, camera1->pitch, 1, 0, dir);
+
+        float maxdot = -1;
+        orient = 0;
+
+        // maps normals to orientations
+        static vec dirs[] =
+        {
+            vec(-1,  0,  0),
+            vec( 1,  0,  0),
+            vec( 0, -1,  0),
+            vec( 0,  1,  0),
+            vec( 0,  0, -1),
+            vec( 0,  0,  1)
+        };
+
+        #define AXIS_X 1
+        #define AXIS_Y (1 << 1)
+        #define AXIS_Z (1 << 2)
+
+        // maps planes suitable for particular axes
+        static int sideaxes[] =
+        {
+            AXIS_Y | AXIS_Z,
+            AXIS_Y | AXIS_Z,
+            AXIS_X | AXIS_Z,
+            AXIS_X | AXIS_Z,
+            AXIS_X | AXIS_Y,
+            AXIS_X | AXIS_Y
+        };
+
+        // find most suitable plane in relation to the camera direction
+        loopi(6) if(entmoveaxis < 0 || sideaxes[i] & (1 << entmoveaxis))
+        {
+            float dot = dir.dot(dirs[i]);
+            if(dot > maxdot)
+            {
+                maxdot = dot;
+                orient = i;
+            }
+        }
+    }
+
+    return orient;
+}
 
 void entdrag(const vec &ray)
 {
@@ -576,8 +633,10 @@ void entdrag(const vec &ray)
     float r = 0, c = 0;
     static vec dest, handle;
     vec eo, es;
-    int d = dimension(entorient),
-        dc= dimcoord(entorient);
+
+    int orient = getentorient();
+    int d = dimension(orient),
+        dc= dimcoord(orient);
     int eindex = enthover >= 0 ? enthover : entgroup.last();
 
     entfocus(eindex,
@@ -587,12 +646,20 @@ void entdrag(const vec &ray)
             return;
 
         ivec g(dest);
+        ivec limit(1, 1, 1);
         int z = g[d]&(~(sel.grid-1));
         g.add(sel.grid/2).mask(~(sel.grid-1));
         g[d] = z;
 
-        r = (entselsnap ? g[R[d]] : dest[R[d]]) - e.o[R[d]];
-        c = (entselsnap ? g[C[d]] : dest[C[d]]) - e.o[C[d]];
+        switch(entmoveaxis)
+        {
+            case 0: limit.y = limit.z = 0; break;
+            case 1: limit.x = limit.z = 0; break;
+            case 2: limit.x = limit.y = 0; break;
+        }
+
+        r = ((entselsnap ? g[R[d]] : dest[R[d]]) - e.o[R[d]]) * limit[R[d]];
+        c = ((entselsnap ? g[C[d]] : dest[C[d]]) - e.o[C[d]]) * limit[C[d]];
     );
 
     if(entmoving==1) makeundoent();
@@ -648,17 +715,22 @@ void renderentselection(const vec &o, const vec &ray, bool entmoving)
             if(entselectionbox(e, eo, es)) full.add(enthover);
         ); // also ensures enthover is back in focus
         boxs3D(eo, es, 1);
-        if(entmoving && entmovingshadow==1)
-        {
-            vec a, b;
-            gle::colorub(128, 128, 128);
-            (a = eo).x = eo.x - fmod(eo.x, worldsize); (b = es).x = a.x + worldsize; boxs3D(a, b, 1);
-            (a = eo).y = eo.y - fmod(eo.y, worldsize); (b = es).y = a.x + worldsize; boxs3D(a, b, 1);
-            (a = eo).z = eo.z - fmod(eo.z, worldsize); (b = es).z = a.x + worldsize; boxs3D(a, b, 1);
-        }
         gle::colorub(200, 0, 0);
         boxs(entorient, eo, es);
         boxs(entorient, eo, es, clamp(0.015f*camera1->o.dist(eo)*tan(fovy*0.5f*RAD), 0.1f, 1.0f));
+    }
+
+    if(entmoving && entmovingshadow==1)
+    {
+        vec a, b;
+        loopi(3)
+        {
+            if(entmoveaxis == i) gle::colorub(0, 128, 0);
+            else gle::colorub(64, 64, 64);
+            (a = eo)[i] = eo[i] - fmod(eo[i], worldsize);
+            (b = es)[i] = a[i] + worldsize;
+            boxs3D(a, b, 1);
+        }
     }
 
     if(full.length())
@@ -713,18 +785,28 @@ ICOMMAND(0, enttoggle, "", (),
     else { if(entmoving > 1) entmoving = 1; intret(1); }
 });
 
-ICOMMAND(0, entmoving, "b", (int *n),
+ICOMMAND(0, entmoving, "bb", (int *n, int *force),
 {
+    bool hasents = enthover >= 0 || (!entgroup.empty() && *force);
+
     if(*n >= 0)
     {
-        if(!*n || enthover < 0 || noentedit()) entmoving = 0;
+        if(!*n || !hasents || noentedit()) entmoving = 0;
         else
         {
-            if(entgroup.find(enthover) < 0) { entadd(enthover); entmoving = 1; }
-            else if(!entmoving) entmoving = 1;
+            entmoveaxis = -1;
+
+            if(enthover >= 0 && entgroup.find(enthover) < 0) entadd(enthover);
+            if(!entmoving) entmoving = 1;
         }
     }
     intret(entmoving);
+});
+
+ICOMMAND(0, entmoveaxis, "bN", (int *axis, int *numargs),
+{
+    if(*numargs > 0) entmoveaxis = clamp(*axis, -1, 2);
+    else intret(entmoveaxis);
 });
 
 void entpush(int *dir)
