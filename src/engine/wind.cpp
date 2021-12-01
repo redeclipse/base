@@ -5,7 +5,7 @@
 #define WIND_ATTEN_SCALE 0.01f
 #define WIND_MAX_SPEED 2.0f
 
-static windemitter *windemitters;
+static vector<windemitter> windemitters;
 static int numwindemitters;
 static int windcost;
 
@@ -32,15 +32,15 @@ int getwindanimdist()
 
 void cleanupwind()
 {
-    if(!windemitters) return;
+    if(windemitters.empty()) return;
     clearwindemitters();
-    if(windemitters) DELETEA(windemitters);
+    if(!windemitters.empty()) windemitters.shrink(0);
 }
 
 void setupwind()
 {
     cleanupwind();
-    windemitters = new windemitter[windmaxemitters];
+    loopi(windmaxemitters) windemitters.add(windemitter());
 }
 
 // creates smooth periodic interpolation
@@ -57,7 +57,7 @@ static windemitter *getemitter(extentity *e = NULL)
     windemitter *we = NULL;
 
     // find a free emitter
-    loopi(windmaxemitters)
+    loopv(windemitters)
     {
         we = &windemitters[i];
         if(we->unused) break;
@@ -154,12 +154,12 @@ void windemitter::update()
     else curspeed = 1.0f; // constant wind
 }
 
-void clearwindemitters() { loopi(windmaxemitters) putemitter(&windemitters[i]); }
+void clearwindemitters() { loopv(windemitters) putemitter(&windemitters[i]); }
 
 // updates global wind and emitters
 void updatewind()
 {
-    loopi(windmaxemitters) windemitters[i].update();
+    loopv(windemitters) windemitters[i].update();
 
     // map settings
     float speed = checkmapvariant(MPV_ALT) ? windspeedalt : windspeed;
@@ -201,7 +201,7 @@ vec getwind(const vec &o, const dynent *d)
     wind.add(getentwindvec(d));
 
     // go through all active windemitters
-    loopi(windmaxemitters)
+    loopv(windemitters)
     {
         windemitter *we = &windemitters[i];
         if(we->unused) continue;
@@ -299,7 +299,7 @@ void addwind(extentity *e)
 
 void remwind(extentity *e)
 {
-    loopi(windmaxemitters)
+    loopv(windemitters)
     {
         windemitter *we = &windemitters[i];
         if(we->ent == e) putemitter(we);
