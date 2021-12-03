@@ -2017,22 +2017,23 @@ struct animmodel : model
     void addlod(const char *str, float dist)
     {
         if(!str || !*str || dist <= 0) return;
-        loopv(lod) if(!strcmp(lod[i].name, str) || lod[i].dist == dist) return;
+        float sqdist = dist*dist;
+        loopv(lod) if(!strcmp(lod[i].name, str) || lod[i].dist == sqdist) return;
         defformatstring(s, "%s/%s", name, str);
         lodmdl &lm = lod.add();
         lm.name = newstring(s);
-        lm.dist = dist;
+        lm.dist = sqdist;
     }
 
-    const char *lodmodel(float dist, float offset)
+    const char *lodmodel(float sqdist, float sqoff)
     {
-        if(dist <= 0) return NULL;
+        if(sqdist <= 0) return NULL;
         int curid = -1;
         float curdist = 0;
         loopv(lod)
         {
-            float curlod = lod[i].dist + offset;
-            if(dist >= curlod && (curid < 0 || curlod > curdist))
+            float curlod = lod[i].dist + sqoff;
+            if(sqdist >= curlod && (curid < 0 || curlod > curdist))
             {
                 curid = i;
                 curdist = curlod;

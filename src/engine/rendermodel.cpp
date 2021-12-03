@@ -993,30 +993,32 @@ void clearbatchedmapmodels()
     }
 }
 
+float lodmodelfovsqdist = 0;
 VAR(IDF_PERSIST, lodmodels, 0, 1, 1);
 VAR(IDF_PERSIST, lodmodelfov, 0, 1, 1);
 FVAR(IDF_PERSIST, lodmodelfovmax, 1, 90, 180);
 FVAR(IDF_PERSIST, lodmodelfovmin, 1, 10, 180);
-FVAR(IDF_PERSIST, lodmodelfovdist, 0, 0, FVAR_MAX);
+FVARF(IDF_PERSIST, lodmodelfovdist, 0, 0, FVAR_MAX, lodmodelfovsqdist = lodmodelfovdist*lodmodelfovdist);
 FVAR(IDF_PERSIST, lodmodelfovscale, 0, 1, 1000);
 
 model *loadlodmodel(model *m, const vec &pos, float offset)
 {
     if(!lodmodels || (drawtex && drawtex != DRAWTEX_HALO) || !m) return m;
-    float dist = camera1->o.dist(pos);
-    if(dist > 0 && lodmodelfov && (!lodmodelfovdist || dist <= lodmodelfovdist))
+    const char *mdl = NULL;
+    float sqdist = camera1->o.squaredist(pos);
+    if(sqdist > 0)
     {
-        float fovmin = min(lodmodelfovmin, lodmodelfovmax),
-              fovmax = max(lodmodelfovmax, fovmin+1.f),
-              fovnow = clamp(curfov, fovmin, fovmax);
-        if(fovnow < fovmax)
+        if(lodmodelfov && (!lodmodelfovdist || sqdist <= lodmodelfovsqdist))
         {
-            float x = fmod(fabs((dist > 0 ? asin((pos.z-camera1->o.z)/dist)/RAD : 0) - camera1->pitch), 360),
-                  y = fmod(fabs(-atan2(pos.x-camera1->o.x, pos.y-camera1->o.y)/RAD-camera1->yaw), 360);
-            if(min(x, 360-x) <= curfov && min(y, 360-y) <= fovy) dist *= fovnow/fovmax*lodmodelfovscale;
+            float fovmin = min(lodmodelfovmin, lodmodelfovmax), fovmax = max(lodmodelfovmax, fovmin+1.f), fovnow = clamp(curfov, fovmin, fovmax);
+            if(fovnow < fovmax)
+            {
+                float cx = 0, cy = 0, cz = 0;
+                if(vectocursor(pos, cx, cy, cz)) sqdist *= fovnow/fovmax*lodmodelfovscale;
+            }
         }
+        mdl = m->lodmodel(sqdist, offset*offset);
     }
-    const char *mdl = m->lodmodel(dist, offset);
     if(!mdl || !*mdl) return m;
     model *lm = loadmodel(mdl);
     return lm ? lm : m;
