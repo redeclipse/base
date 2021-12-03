@@ -6,6 +6,8 @@ VARF(0, dbgcolmesh, 0, 0, 1,
     cleanupmodels();
 });
 
+VAR(IDF_PERSIST, windmodels, 0, 1, 1);
+
 struct animmodel : model
 {
     struct animspec
@@ -1178,7 +1180,12 @@ struct animmodel : model
                         falloff = 1.0f - clamp((dist-getwindanimdist())/windanimfalloff, 0.0f, 1.0f);
 
                     GLOBALPARAMF(windparams, max(1.0f - dist/animdist, 0.0f), d ? 0 : pos.magnitude());
-                    GLOBALPARAM(windvec, getwind(pos, d).mul(resize * model->wind * falloff));
+
+                    vec wind = windmodels ?
+                        getwind(pos, d).mul(resize * model->wind * falloff) :
+                        vec(0, 0, 0);
+
+                    GLOBALPARAM(windvec, wind);
                     gle::colorf(0, 0, 0, 0);
                 }
             }
