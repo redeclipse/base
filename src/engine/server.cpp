@@ -7,7 +7,7 @@
 #include <shlobj.h>
 #endif
 
-int curtime = 0, totalmillis = 1, lastmillis = 1, timescale = 100, paused = 0, timeerr = 0, shutdownwait = 0;
+int curtime = 0, totalmillis = 1, lastmillis = 1, elapsedtime = 0, timescale = 100, paused = 0, timeerr = 0, shutdownwait = 0;
 time_t clocktime = 0, currenttime = 0, clockoffset = 0;
 uint totalsecs = 0;
 
@@ -1015,17 +1015,17 @@ int updatetimer(bool limit)
 #ifndef STANDALONE
     if(limit) limitfps(millis, totalmillis);
 #endif
-    int elapsed = millis-totalmillis;
+    elapsedtime = millis - totalmillis;
     if(paused) curtime = 0;
     else if(timescale != 100)
     {
-        int scaledtime = elapsed*timescale + timeerr;
+        int scaledtime = elapsedtime*timescale + timeerr;
         curtime = scaledtime/100;
         timeerr = scaledtime%100;
     }
     else
     {
-        curtime = elapsed + timeerr;
+        curtime = elapsedtime + timeerr;
         timeerr = 0;
     }
 #ifndef STANDALONE
@@ -1045,7 +1045,7 @@ int updatetimer(bool limit)
             shutdownwait = totalmillis;
         }
     }
-    return elapsed;
+    return elapsedtime;
 }
 
 #ifdef WIN32
