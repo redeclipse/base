@@ -93,7 +93,11 @@ struct md3 : vertloader<md3>
                 loopj(m.numtris)
                 {
                     md3triangle tri;
-                    f->read(&tri, sizeof(md3triangle)); // read the triangles
+                    if(f->read(&tri, sizeof(md3triangle)) != sizeof(md3triangle)) // read the triangles
+                    {
+                        memclear(&m.tris[j], (m.numtris - j) * sizeof(tri));
+                        break;
+                    }
                     lilswap(tri.vertexindices, 3);
                     loopk(3) m.tris[j].vert[k] = (ushort)tri.vertexindices[k];
                 }
@@ -109,7 +113,11 @@ struct md3 : vertloader<md3>
                 loopj(numframes*m.numverts)
                 {
                     md3vertex v;
-                    f->read(&v, sizeof(md3vertex)); // read the vertices
+                    if(f->read(&v, sizeof(md3vertex)) != sizeof(md3vertex)) // read the vertices
+                    {
+                        memclear(&m.verts[j], (numframes*m.numverts - j) * sizeof(vert));
+                        break;
+                    }
                     lilswap(v.vertex, 4);
 
                     m.verts[j].pos = vec(v.vertex[0]/64.0f, -v.vertex[1]/64.0f, v.vertex[2]/64.0f);
@@ -133,7 +141,11 @@ struct md3 : vertloader<md3>
 
                 loopi(header.numframes*header.numtags)
                 {
-                    f->read(&tag, sizeof(md3tag));
+                    if(f->read(&tag, sizeof(md3tag)) != sizeof(md3tag))
+                    {
+                        memclear(&tags[i], (header.numframes*header.numtags - i) * sizeof(tag));
+                        break;
+                    }
                     lilswap(tag.translation, 12);
                     if(tag.name[0] && i<header.numtags) tags[i].name = newstring(tag.name);
                     matrix4x3 &m = tags[i].matrix;
