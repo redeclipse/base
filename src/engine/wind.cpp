@@ -40,7 +40,7 @@ void cleanupwind()
 void setupwind()
 {
     cleanupwind();
-    loopi(windmaxemitters) windemitters.add(windemitter());
+    loopi(windmaxemitters) windemitters.add();
 }
 
 // creates smooth periodic interpolation
@@ -107,10 +107,7 @@ static void putemitter(windemitter *we)
         we->entindex, numwindemitters, windmaxemitters, we->hook);
 }
 
-windemitter::windemitter(extentity *e) : ent(e), hook(NULL), curspeed(0), lastimpulse(lastmillis),
-    unused(true) {}
-
-windemitter::~windemitter() {}
+windemitter::windemitter(extentity *e, int idx) : ent(e), entindex(idx), hook(NULL), curspeed(0), lastimpulse(lastmillis), unused(true) {}
 
 void windemitter::updateimpulse()
 {

@@ -3274,7 +3274,7 @@ exit:
             runcodestackmillis = lastmillis;
         }
 
-        if(runcodestack < runcodestack_kB) runcodestack = runcodestack_kB;
+        if(uintptr_t(runcodestack) < runcodestack_kB) runcodestack = int(runcodestack_kB);
     }
 
     return code;

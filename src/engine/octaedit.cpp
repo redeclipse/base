@@ -2739,7 +2739,7 @@ ICOMMAND(0, getvshaderparam, "is", (int *tex, const char *name),
     {
         defformatstring(str, "%s %s %s %s", floatstr(params[0]), floatstr(params[1]),
             floatstr(params[2]), floatstr(params[3]));
-        if(pal || palidx) concformatstring(str, " %d %d", pal, palidx);
+        if(pal || palidx) concformatstring(str, " %d %d", int(pal), int(palidx));
         result(str);
     }
 });

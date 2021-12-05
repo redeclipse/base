@@ -16,7 +16,7 @@ struct soundsample
     }
 };
 
-soundslot::soundslot() : vol(255), maxrad(-1), minrad(-1), name(NULL) {}
+soundslot::soundslot() : vol(255), maxrad(-1), minrad(-1), variants(1), fardistance(0), name(NULL) {}
 soundslot::~soundslot() { DELETEA(name); }
 
 void soundslot::reset()
