@@ -84,10 +84,10 @@ extern const enttypes enttype[] = {
                 "light",        { "radius", "red",      "green",    "blue",     "flare",    "fscale",   "flags",    "palette",  "palindex", "variant",  "fxlevel"  }
     },
     {
-        MAPMODEL,       1,          58,     0,      EU_NONE,    19,         -1,         -1,     13,     14,
+        MAPMODEL,       1,          58,     0,      EU_NONE,    20,         -1,         -1,     13,     14,
             (1<<TRIGGER), (1<<TRIGGER), 0,
             false,  false,  false,      false,      false,
-                "mapmodel",     { "type",   "yaw",      "pitch",    "roll",     "blend",    "scale",    "flags",    "colour",   "palette",  "palindex", "spinyaw",  "spinpitch", "spinroll",    "variant",  "fxlevel",  "lodoff",   "anim",     "aspeed",   "aoffset" }
+                "mapmodel",     { "type",   "yaw",      "pitch",    "roll",     "blend",    "scale",    "flags",    "colour",   "palette",  "palindex", "spinyaw",  "spinpitch", "spinroll",    "variant",  "fxlevel",  "lodoff",   "anim",     "aspeed",   "aoffset", "shadowdist" }
     },
     {
         PLAYERSTART,    1,          59,     0,      EU_NONE,    7,          3,          5,      6,      -1,

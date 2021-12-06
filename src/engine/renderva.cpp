@@ -1217,6 +1217,9 @@ void findshadowmms()
     }
 }
 
+VAR(IDF_PERSIST, mmshadowlod, 0, 1, 1);
+FVAR(IDF_PERSIST, mmshadowlodfactor, 0.01f, 1.0f, 100.0f);
+
 void batchshadowmapmodels(bool skipmesh)
 {
     if(!shadowmms) return;
@@ -1227,6 +1230,7 @@ void batchshadowmapmodels(bool skipmesh)
     {
         extentity &e = *ents[oe->mapmodels[k]];
         if(e.flags&nflags || !mapmodelvisible(e, oe->mapmodels[k])) continue;
+        if(mmshadowlod && e.attrs[19] && camera1->o.dist(e.o) > float(e.attrs[19]) * mmshadowlodfactor) continue;
         e.flags |= EF_RENDER;
     }
     for(octaentities *oe = shadowmms; oe; oe = oe->rnext) loopvj(oe->mapmodels)
