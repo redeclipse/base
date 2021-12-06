@@ -73,6 +73,22 @@ bool getentboundingbox(const extentity &e, ivec &o, ivec &r)
     return true;
 }
 
+ICOMMAND(0, getentbb, "i", (int *entidx),
+{
+    const vector<extentity *> &ents = entities::getents();
+    if(!ents.inrange(*entidx)) return;
+
+    ivec center;
+    ivec radius;
+
+    if(!getentboundingbox(*ents[*entidx], center, radius)) return;
+
+    defformatstring(str, "%d %d %d %d %d %d", center.x, center.y, center.z,
+                                              radius.x, radius.y, radius.z);
+
+    result(str);
+});
+
 enum
 {
     MODOE_ADD      = 1<<0,
