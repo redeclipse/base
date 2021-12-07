@@ -472,7 +472,34 @@ bool mapmodeltransparent(extentity &e)
     return false;
 }
 
-bool mapmodelvisible(extentity &e, int n, int colvis)
+VAR(IDF_PERSIST, mmshadowdist, 0, 1, 1);
+FVAR(IDF_PERSIST, mmshadowdistfactor, 0.01f, 1.0f, 100.0f);
+
+static inline float mmshadowreject(extentity &e, model *m)
+{
+    if(!e.attrs[19]) return false;
+
+    vec center, radius;
+    float size, maxdist;
+
+    m->boundbox(center, radius);
+    if(e.attrs[5] > 0) radius.mul(e.attrs[5]/100.0f);
+
+    size = max(radius.x, max(radius.y, radius.z));
+
+    // 2nd order polynomial shadow cutoff curve
+    // fit from 4 points:
+    // 1.8 ->  300
+    //  25 ->  750
+    // 130 -> 1700
+    // 400 -> 3000
+    maxdist = (351.7057f + 12.45513f*size - 0.01459957f*size*size) *
+        mmshadowdistfactor*(e.attrs[19]/100.0f);
+
+    return camera1->o.dist(e.o) > maxdist;
+}
+
+bool mapmodelvisible(extentity &e, int n, int colvis, bool shadowpass)
 {
     if(editmode && colvis&1) return true;
     if(!mapmodels.inrange(e.attrs[0])) return false;
@@ -495,6 +522,7 @@ bool mapmodelvisible(extentity &e, int n, int colvis)
     mapmodelinfo &mmi = mapmodels[e.attrs[0]];
     model *m = loadlodmodel(mmi.m ? mmi.m : loadmodel(mmi.name), e.o, e.attrs[15]);
     if(!m) return false;
+    if(shadowpass && mmshadowdist && mmshadowreject(e, m)) return false;
     return true;
 }
 
@@ -1217,9 +1245,6 @@ void findshadowmms()
     }
 }
 
-VAR(IDF_PERSIST, mmshadowdist, 0, 1, 1);
-FVAR(IDF_PERSIST, mmshadowdistfactor, 0.01f, 1.0f, 100.0f);
-
 void batchshadowmapmodels(bool skipmesh)
 {
     if(!shadowmms) return;
@@ -1229,8 +1254,7 @@ void batchshadowmapmodels(bool skipmesh)
     for(octaentities *oe = shadowmms; oe; oe = oe->rnext) loopvk(oe->mapmodels)
     {
         extentity &e = *ents[oe->mapmodels[k]];
-        if(e.flags&nflags || !mapmodelvisible(e, oe->mapmodels[k])) continue;
-        if(mmshadowdist && e.attrs[19] && camera1->o.dist(e.o) > float(e.attrs[19]) * mmshadowdistfactor) continue;
+        if(e.flags&nflags || !mapmodelvisible(e, oe->mapmodels[k], 0, true)) continue;
         e.flags |= EF_RENDER;
     }
     for(octaentities *oe = shadowmms; oe; oe = oe->rnext) loopvj(oe->mapmodels)
