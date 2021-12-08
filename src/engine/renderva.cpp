@@ -477,15 +477,13 @@ FVAR(IDF_PERSIST, mmshadowdistfactor, 0.01f, 1.0f, 100.0f);
 
 static inline float mmshadowreject(extentity &e, model *m)
 {
-    if(!e.attrs[19]) return false;
+    if(e.attrs[19] <= 0) return false;
 
     vec center, radius;
-    float size, maxdist;
-
     m->boundbox(center, radius);
-    if(e.attrs[5] > 0) radius.mul(e.attrs[5]/100.0f);
+    if(e.attrs[5] > 0) radius.mul(e.attrs[5]*0.01f);
 
-    size = max(radius.x, max(radius.y, radius.z));
+    float size = max(radius.x, max(radius.y, radius.z));
 
     // 2nd order polynomial shadow cutoff curve
     // fit from 4 points:
@@ -493,10 +491,12 @@ static inline float mmshadowreject(extentity &e, model *m)
     //  25 ->  750
     // 130 -> 1700
     // 400 -> 3000
-    maxdist = (351.7057f + 12.45513f*size - 0.01459957f*size*size) *
-        mmshadowdistfactor*(e.attrs[19]/100.0f);
+    const float x0 = 351.7057f * 0.01f;
+    const float x1 = 12.45513f * 0.01f;
+    const float x2 = -0.01459957f * 0.01f;
+    float maxdist = max(x0 + x1*size + x2*size*size, 0.0f) * mmshadowdistfactor * e.attrs[19];
 
-    return camera1->o.dist(e.o) > maxdist;
+    return camera1->o.squaredist(e.o) > maxdist*maxdist;
 }
 
 bool mapmodelvisible(extentity &e, int n, int colvis, bool shadowpass)
