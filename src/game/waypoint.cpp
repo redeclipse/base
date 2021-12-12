@@ -830,7 +830,7 @@ namespace ai
     }
     COMMAND(0, delselwaypoints, "");
 
-    void moveselwaypoints(vec &offset)
+    void moveselwaypoints(const vec &offset)
     {
         if(noedit(true)) return;
         vec o = vec(sel.o).sub(0.1f), s = vec(sel.s).mul(sel.grid).add(o).add(0.1f);
@@ -850,5 +850,5 @@ namespace ai
             clearwpcache();
         }
     }
-    ICOMMAND(0, moveselwaypoints, "fff", (float *x, float *y, float *z), vec v(*x, *y, *z); moveselwaypoints(v));
+    ICOMMAND(0, moveselwaypoints, "fff", (float *x, float *y, float *z), moveselwaypoints(vec(*x, *y, *z)));
 }
