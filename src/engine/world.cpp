@@ -1493,3 +1493,10 @@ void mpeditent(int i, const vec &o, int type, attrvector &attr, bool local)
     clearshadowcache();
     commitchanges();
 }
+
+void moveselents(vec &offset)
+{
+    if(noentedit()) return;
+    groupedit(e.o.add(offset));
+}
+ICOMMAND(0, moveselents, "fff", (float *x, float *y, float *z), vec v(*x, *y, *z); moveselents(v));
