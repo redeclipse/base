@@ -548,16 +548,16 @@ void texcolormask(ImageData &s, const vec &color1, const vec &color2)
     s.replace(d);
 }
 
-void texinvert(ImageData &d, int channel = -1)
+void texinvert(ImageData &d, int channelmask = 7)
 {
-    if(channel < 0)
-    {
-        writetex(d,
-            if(d.bpp >= 3) loopk(3) dst[k] = 255-dst[k];
-            else dst[0] = 255-dst[0];
-        );
-    }
-    else if(channel < d.bpp) writetex(d, dst[channel] = 255-dst[channel]);
+    writetex(d,
+        if(d.bpp >= 3)
+        {
+            loopk(3)
+                if(channelmask & (1 << k)) dst[k] = 255-dst[k];
+        }
+        else dst[0] = 255-dst[0];
+    );
 }
 
 void texdup(ImageData &s, int srcchan, int dstchan)
