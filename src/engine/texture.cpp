@@ -548,7 +548,7 @@ void texcolormask(ImageData &s, const vec &color1, const vec &color2)
     s.replace(d);
 }
 
-void texinvert(ImageData &d, int channelmask = 7)
+void texinvert(ImageData &d, int channelmask = 0xffffffff)
 {
     writetex(d,
         if(d.bpp >= 3)
