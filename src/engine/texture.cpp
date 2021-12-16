@@ -548,12 +548,16 @@ void texcolormask(ImageData &s, const vec &color1, const vec &color2)
     s.replace(d);
 }
 
-void texinvert(ImageData &d)
+void texinvert(ImageData &d, int channel = -1)
 {
-    writetex(d,
-        if(d.bpp >= 3) loopk(3) dst[k] = 255-dst[k];
-        else dst[0] = 255-dst[0];
-    );
+    if(channel < 0)
+    {
+        writetex(d,
+            if(d.bpp >= 3) loopk(3) dst[k] = 255-dst[k];
+            else dst[0] = 255-dst[0];
+        );
+    }
+    else if(channel < d.bpp) writetex(d, dst[channel] = 255-dst[channel]);
 }
 
 void texdup(ImageData &s, int srcchan, int dstchan)
@@ -1724,6 +1728,7 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
         else if(matchstring(cmd, len, "colorify") || matchstring(cmd, len, "colourify")) texcolorify(d, parsevec(arg[0]), parsevec(arg[1]));
         else if(matchstring(cmd, len, "colormask") || matchstring(cmd, len, "colourmask")) texcolormask(d, parsevec(arg[0]), *arg[1] ? parsevec(arg[1]) : vec(1, 1, 1));
         else if(matchstring(cmd, len, "invert")) texinvert(d);
+        else if(matchstring(cmd, len, "invertchan")) texinvert(d, atoi(arg[0]));
         else if(matchstring(cmd, len, "normal"))
         {
             int emphasis = atoi(arg[0]);
