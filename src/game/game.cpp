@@ -219,7 +219,9 @@ namespace game
     FVAR(IDF_PERSIST, firstpersonswaymin, 0, 0.15f, 1);
     FVAR(IDF_PERSIST, firstpersonswaystep, 1, 40.f, 1000);
     FVAR(IDF_PERSIST, firstpersonswayside, 0, 0.05f, 10);
-    FVAR(IDF_PERSIST, firstpersonswayup, 0, 0.06f, 10);
+    FVAR(IDF_PERSIST, firstpersonswayup, 0, 0.05f, 10);
+    FVAR(IDF_PERSIST, firstpersonswaydecay, 0.1f, 0.9f, 0.9999f);
+    FVAR(IDF_PERSIST, firstpersonswayinertia, 0.0f, 0.2f, 1.0f);
 
     VAR(IDF_PERSIST, firstpersonbob, 0, 1, 1);
     FVAR(IDF_PERSIST, firstpersonbobmin, 0, 0.2f, 1);
@@ -3505,6 +3507,63 @@ namespace game
         }
     }
 
+    static void calchwepsway(modelstate &mdl)
+    {
+        float steplen = firstpersonbob ? firstpersonbobstep : firstpersonswaystep;
+        float steps = swaydist/steplen*M_PI;
+
+        // Magic floats to generate the animation cycle
+        float f1 = cosf(steps) + 1,
+              f2 = sinf(steps*2.0f) + 1,
+              f3 = (f1*f1*0.25f)-0.5f,
+              f4 = (f2*f2*0.25f)-0.5f;
+
+        vec dirforward = vec(mdl.yaw*RAD, 0.0f),
+            dirside = vec((mdl.yaw+90)*RAD, 0.0f);
+
+        vec trans = vec(0, 0, 0);
+        float rotyaw = 0, rotpitch = 0;
+
+        // Walk cycle animation
+        trans.add(vec(dirforward).mul(firstpersonswayside*f4 * 2.0f));
+        trans.add(vec(swaydir).mul(-4.0f));
+        trans.add(swaypush);
+        trans.z += firstpersonswayup*f2 * 1.5f;
+
+        rotyaw += firstpersonswayside*f3 * 24.0f;
+        rotpitch += firstpersonswayup*f2 * -10.0f;
+
+        // "Look-around" animation
+        static int lastsway = 0;
+        static vec2 lastcam = vec2(camera1->yaw, camera1->pitch);
+        static vec2 camavel = vec2(0, 0);
+
+        // Prevent running the inertia math multiple times in the same frame
+        if(lastmillis != lastsway)
+        {
+            vec2 curcam = vec2(camera1->yaw, camera1->pitch);
+            vec2 camrot = vec2(lastcam).sub(curcam);
+
+            if(camrot.x > 180.0f) camrot.x -= 360.0f;
+            else if(camrot.x < -180.0f) camrot.x += 360.0f;
+
+            camavel.mul(firstpersonswaydecay / max(1.0f, (curtime * 0.05f)));
+            camavel.add(vec2(camrot).mul(firstpersonswayinertia));
+
+            lastcam = curcam;
+            lastsway = lastmillis;
+        }
+
+        trans.add(dirside.mul(camavel.x * 0.06f));
+        trans.z += camavel.y * 0.045f;
+        rotyaw += camavel.x * -0.3f;
+        rotpitch += camavel.y * -0.3f;
+
+        mdl.o.add(trans);
+        mdl.yaw += rotyaw;
+        mdl.pitch += rotpitch;
+    }
+
     const char *getplayerstate(gameent *d, modelstate &mdl, int third, float size, int flags, modelattach *mdlattach, int *lastoffset)
     {
         int weap = d->weapselect, ai = 0,
@@ -3678,13 +3737,8 @@ namespace game
             case 0:
             {
                 if(!firstpersoncamera && gs_playing(gamestate) && firstpersonsway)
-                {
-                    float steps = swaydist/(firstpersonbob ? firstpersonbobstep : firstpersonswaystep)*M_PI;
-                    vec dir = vec(mdl.yaw*RAD, 0.f).mul(firstpersonswayside*sinf(steps) * 2.0f);
-                    mdl.o.add(dir).add(swaydir).add(swaypush);
-                    mdl.yaw += firstpersonswayside*cosf(steps) * 24.0f;
-                    mdl.pitch += firstpersonswayside*sinf(steps*2.0f) * 8.0f;
-                }
+                    calchwepsway(mdl);
+
                 if(d->sliding(true) && firstpersonslidetime && firstpersonslideroll != 0)
                 {
                     int dur = min(impulseslidelen/2, firstpersonslidetime), millis = lastmillis-d->slidetime();
