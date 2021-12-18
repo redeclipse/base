@@ -222,6 +222,7 @@ namespace game
     FVAR(IDF_PERSIST, firstpersonswayup, 0, 0.05f, 10);
     FVAR(IDF_PERSIST, firstpersonswaydecay, 0.1f, 0.994f, 0.9999f);
     FVAR(IDF_PERSIST, firstpersonswayinertia, 0.0f, 0.2f, 1.0f);
+    FVAR(IDF_PERSIST, firstpersonswaymaxinertia, 0.0f, 32.0f, 1000.0f);
 
     VAR(IDF_PERSIST, firstpersonbob, 0, 0, 1);
     FVAR(IDF_PERSIST, firstpersonbobmin, 0, 0.2f, 1);
@@ -3549,6 +3550,7 @@ namespace game
 
             camavel.mul(powf(firstpersonswaydecay, curtime));
             camavel.add(vec2(camrot).mul(firstpersonswayinertia));
+            camavel.clamp(-firstpersonswaymaxinertia, firstpersonswaymaxinertia);
 
             lastcam = curcam;
             lastsway = lastmillis;
