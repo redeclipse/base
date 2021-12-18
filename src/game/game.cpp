@@ -3517,7 +3517,8 @@ namespace game
         float f1 = cosf(steps) + 1,
               f2 = sinf(steps*2.0f) + 1,
               f3 = (f1*f1*0.25f)-0.5f,
-              f4 = (f2*f2*0.25f)-0.5f;
+              f4 = (f2*f2*0.25f)-0.5f,
+              f5 = sinf(lastmillis*0.001f); // Low frequency detail
 
         vec dirforward = vec(mdl.yaw*RAD, 0.0f),
             dirside = vec((mdl.yaw+90)*RAD, 0.0f);
@@ -3527,6 +3528,7 @@ namespace game
 
         // Walk cycle animation
         trans.add(vec(dirforward).mul(firstpersonswayside*f4 * 2.0f));
+        trans.add(vec(dirside).mul(firstpersonswayside*f5 * 2.0f));
         trans.add(vec(swaydir).mul(-4.0f));
         trans.add(swaypush);
         trans.z += firstpersonswayup*f2 * 1.5f;
