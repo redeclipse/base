@@ -220,7 +220,7 @@ namespace game
     FVAR(IDF_PERSIST, firstpersonswaystep, 1, 40.f, 1000);
     FVAR(IDF_PERSIST, firstpersonswayside, 0, 0.05f, 10);
     FVAR(IDF_PERSIST, firstpersonswayup, 0, 0.05f, 10);
-    FVAR(IDF_PERSIST, firstpersonswaydecay, 0.1f, 0.9f, 0.9999f);
+    FVAR(IDF_PERSIST, firstpersonswaydecay, 0.1f, 0.994f, 0.9999f);
     FVAR(IDF_PERSIST, firstpersonswayinertia, 0.0f, 0.2f, 1.0f);
 
     VAR(IDF_PERSIST, firstpersonbob, 0, 0, 1);
@@ -3547,7 +3547,7 @@ namespace game
             if(camrot.x > 180.0f) camrot.x -= 360.0f;
             else if(camrot.x < -180.0f) camrot.x += 360.0f;
 
-            camavel.mul(firstpersonswaydecay / max(1.0f, (curtime * 0.05f)));
+            camavel.mul(powf(firstpersonswaydecay, curtime));
             camavel.add(vec2(camrot).mul(firstpersonswayinertia));
 
             lastcam = curcam;
