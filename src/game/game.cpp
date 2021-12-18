@@ -223,7 +223,7 @@ namespace game
     FVAR(IDF_PERSIST, firstpersonswaydecay, 0.1f, 0.9f, 0.9999f);
     FVAR(IDF_PERSIST, firstpersonswayinertia, 0.0f, 0.2f, 1.0f);
 
-    VAR(IDF_PERSIST, firstpersonbob, 0, 1, 1);
+    VAR(IDF_PERSIST, firstpersonbob, 0, 0, 1);
     FVAR(IDF_PERSIST, firstpersonbobmin, 0, 0.2f, 1);
     FVAR(IDF_PERSIST, firstpersonbobstep, 1, 40.f, 1000);
     FVAR(IDF_PERSIST, firstpersonbobroll, 0, 0.3f, 10);
@@ -232,7 +232,7 @@ namespace game
     FVAR(IDF_PERSIST, firstpersonbobtopspeed, 0, 50, 1000);
     FVAR(IDF_PERSIST, firstpersonbobfocusmindist, 0, 64, 10000);
     FVAR(IDF_PERSIST, firstpersonbobfocusmaxdist, 0, 256, 10000);
-    FVAR(IDF_PERSIST, firstpersonbobfocus, 0, 0.5f, 1);
+    FVAR(IDF_PERSIST, firstpersonbobfocus, 0, 0, 1);
 
     VAR(IDF_PERSIST, firstpersonslidetime, 0, 200, VAR_MAX);
     FVAR(IDF_PERSIST, firstpersonslideroll, -89.9f, -5.f, 89.9f);
