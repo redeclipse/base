@@ -2399,6 +2399,26 @@ namespace server
         sendpacket(cn, 1, p.finalize());
     }
 
+    void listbans(int cn)
+    {
+        packetbuf p(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
+        string ip = "";
+        int len = 0;
+        loopv(control) { if(control[i].type == ipinfo::BAN) len++; }
+        putint(p, N_SENDBANLIST);
+        putint(p, len);
+        loopv(control)
+        {
+            if(control[i].type == ipinfo::BAN)
+            {
+                printipinfo(control[i], ip);
+                sendstring(ip, p);
+                sendstring(control[i].reason, p);
+            }
+        }
+        sendpacket(cn, 1, p.finalize());
+    }
+
     void cleardemos(int n)
     {
         if(!n)
@@ -7321,6 +7341,11 @@ namespace server
 
                 case N_LISTDEMOS:
                     listdemos(sender);
+                    break;
+
+                case N_LISTBANS:
+                    if(!haspriv(ci, G(banlock), "list bans")) break;
+                    listbans(sender);
                     break;
 
                 case N_GETDEMO:
