@@ -1244,7 +1244,7 @@ namespace client
     }
     ICOMMAND(IDF_NAMECOMPLETE, kick, "ss", (char *s, char *m), addcontrol(s, -1, m));
     ICOMMAND(IDF_NAMECOMPLETE, allow, "ss", (char *s, char *m), addcontrol(s, ipinfo::ALLOW, m));
-    ICOMMAND(IDF_NAMECOMPLETE, ban, "ss", (char *s, char *m), addcontrol(s, ipinfo::BAN, m));
+    ICOMMAND(IDF_NAMECOMPLETE, ban, "ss", (char *s, char *m), addcontrol(s, ipinfo::BAN, tempformatstring("%s (%s)", m, getname())));
     ICOMMAND(IDF_NAMECOMPLETE, mute, "ss", (char *s, char *m), addcontrol(s, ipinfo::MUTE, m));
     ICOMMAND(IDF_NAMECOMPLETE, limit, "ss", (char *s, char *m), addcontrol(s, ipinfo::LIMIT, m));
     ICOMMAND(IDF_NAMECOMPLETE, except, "ss", (char *s, char *m), addcontrol(s, ipinfo::EXCEPT, m));
