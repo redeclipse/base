@@ -160,7 +160,7 @@ if [ "${BRANCH_NAME}" = master ]; then
     pushd "${HOME}" || exit 1
     semupdate_appimage || exit 1
     popd || exit 1
-    semupdate_wait
+    #semupdate_wait
     semupdate_steam || exit 1
 fi
 echo "done."
