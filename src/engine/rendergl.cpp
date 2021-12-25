@@ -1395,6 +1395,7 @@ int vieww = -1, viewh = -1, farplane;
 float curfov = 100, fovy = 100, aspect = 1, cursorx = 0.5f, cursory = 0.5f;
 vec cursordir(0, 0, 0);
 FVARN(IDF_PERSIST, aspect, forceaspect, 0, 0, 1e3f);
+FVAR(IDF_WORLD, farplanescale, FVAR_NONZERO, 2, FVAR_MAX);
 
 void vecfromcursor(float x, float y, float z, vec &dir)
 {
@@ -2097,7 +2098,7 @@ void drawminimap()
 
     float oldldrscale = ldrscale, oldldrscaleb = ldrscaleb;
     int oldfarplane = farplane, oldvieww = vieww, oldviewh = viewh;
-    farplane = worldsize*2;
+    farplane = worldsize*farplanescale;
     vieww = viewh = size;
 
     float zscale = max(float(minimapheight), minimapcenter.z + minimapradius.z + 1) + 1;
@@ -2186,7 +2187,7 @@ void drawcubemap(int size, const vec &o, float yaw, float pitch, bool onlysky)
     int oldfarplane = farplane, oldvieww = vieww, oldviewh = viewh;
     curfov = fovy = 90;
     aspect = 1;
-    farplane = worldsize*2;
+    farplane = worldsize*farplanescale;
     vieww = viewh = size;
     projmatrix.perspective(fovy, aspect, nearplane, farplane);
     setcamprojmatrix();
@@ -2368,7 +2369,7 @@ void gl_drawview()
     setfog(abovemat);
     //setfog(fogmat, fogbelow, 1, abovemat);
 
-    farplane = worldsize*2;
+    farplane = worldsize*farplanescale;
 
     projmatrix.perspective(fovy, aspect, nearplane, farplane);
     setcamprojmatrix();
