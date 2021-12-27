@@ -343,13 +343,13 @@ namespace hud
     VAR(IDF_PERSIST, onscreenhitstime, 1, 250, VAR_MAX);
     VAR(IDF_PERSIST, onscreenhitsfade, 1, 3000, VAR_MAX);
     FVAR(IDF_PERSIST, onscreenhitsswipe, 0, 6, 1000);
-    FVAR(IDF_PERSIST, onscreenhitsscale, 0, 1.5f, 1000);
+    FVAR(IDF_PERSIST, onscreenhitsscale, 0, 0.75f, 1000);
     FVAR(IDF_PERSIST, onscreenhitsblend, 0, 1, 1);
     FVAR(IDF_PERSIST, onscreenhitsheight, -1000, 0.25f, 1000);
     FVAR(IDF_PERSIST, onscreenhitsoffset, -1000, 3, 1000);
     VAR(IDF_PERSIST, onscreenhitsglow, 0, 1, 1);
     FVAR(IDF_PERSIST, onscreenhitsglowblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, onscreenhitsglowscale, 0, 2, 1000);
+    FVAR(IDF_PERSIST, onscreenhitsglowscale, 0, 1.5f, 1000);
     FVAR(IDF_PERSIST, onscreenhitsglowcolour, 0, 0.75f, 5);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, onscreenhitsglowtex, "<grey>textures/hud/glow", 3);
     VAR(IDF_PERSIST|IDF_HEX, onscreenhitscolour, PC(LAST), 0xFF4444, 0xFFFFFF);
