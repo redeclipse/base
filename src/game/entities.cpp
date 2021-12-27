@@ -23,7 +23,7 @@ namespace entities
     VAR(IDF_PERSIST, showentfull, 0, 0, 1);
     FVAR(IDF_PERSIST, showentsize, 0, 3, 10);
     FVAR(IDF_PERSIST, showentavailable, 0, 1, 1);
-    FVAR(IDF_PERSIST, showentunavailable, 0, 0.1f, 1);
+    FVAR(IDF_PERSIST, showentunavailable, 0, 0.35f, 1);
 
     FVAR(IDF_PERSIST, entselsize, 0, 1.5f, FVAR_MAX);
     FVAR(IDF_PERSIST, entselsizetop, 0, 3, FVAR_MAX);
@@ -2966,7 +2966,10 @@ namespace entities
                         {
                             colour = W(attr, colour);
                             if(!active || (!game::focus->isobserver() && !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !showentfull)))
+                            {
+                                if(drawtex == DRAWTEX_HALO) mdl.flags |= MDL_NORENDER;
                                 mdl.color.a *= showentunavailable;
+                            }
                             else mdl.color.a *= showentavailable;
                         }
                         else continue;
@@ -2976,6 +2979,11 @@ namespace entities
                         mdl.material[0] = bvec::fromcolor(game::getcolour(game::focus, game::playerovertone, game::playerovertonelevel));
                         mdl.material[1] = bvec::fromcolor(game::getcolour(game::focus, game::playerundertone, game::playerundertonelevel));
                         if(colour >= 0) mdl.material[0] = mdl.material[2] = bvec::fromcolor(colour);
+                        if(drawtex == DRAWTEX_HALO)
+                        {
+                            float maxdist = hud::radarlimit(halodist);
+                            if(maxdist > 0) loopj(3) mdl.material[j].mul(1.f-(mdl.o.dist(camera1->o)/maxdist));
+                        }
                         rendermodel(mdlname, mdl);
                     }
                 }

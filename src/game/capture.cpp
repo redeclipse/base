@@ -200,6 +200,11 @@ namespace capture
                 vec flagpos = pos;
                 mdl.o = flagpos;
                 mdl.color = vec4(1, 1, 1, blend);
+                if(drawtex == DRAWTEX_HALO)
+                {
+                    float maxdist = hud::radarlimit(halodist);
+                    if(maxdist > 0) loopj(3) mdl.material[j].mul(1.f-(mdl.o.dist(camera1->o)/maxdist));
+                }
                 rendermodel("props/flag", mdl);
             }
             else if(!f.owner || f.owner != game::focus || game::thirdpersonview(true))
@@ -219,12 +224,22 @@ namespace capture
                 while(mdl.yaw >= 360.f) mdl.yaw -= 360.f;
                 mdl.o = flagpos;
                 mdl.color = vec4(1, 1, 1, blend);
+                if(drawtex == DRAWTEX_HALO)
+                {
+                    float maxdist = hud::radarlimit(halodist);
+                    if(maxdist > 0) loopj(3) mdl.material[j].mul(1.f-(mdl.o.dist(camera1->o)/maxdist));
+                }
                 rendermodel("props/flag", mdl);
                 if(f.owner) iterflags[f.owner->clientnum]++;
             }
             basemdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
             basemdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED;
             basemdl.o = f.render;
+            if(drawtex == DRAWTEX_HALO)
+            {
+                float maxdist = hud::radarlimit(halodist);
+                if(maxdist > 0) loopj(3) basemdl.material[j].mul(1.f-(basemdl.o.dist(camera1->o)/maxdist));
+            }
             rendermodel("props/point", basemdl);
         }
     }

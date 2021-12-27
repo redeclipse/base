@@ -3462,6 +3462,8 @@ namespace game
                 bvec pc = bvec::fromcolor(pulsecolour(d, PULSE_BUFF));
                 flashcolour(mdl.material[0].r, mdl.material[0].g, mdl.material[0].b, pc.r, pc.g, pc.b, amt);
             }
+            float maxdist = hud::radarlimit(halodist);
+            if(maxdist > 0) mdl.material[0].mul(1.f-(d->o.dist(camera1->o)/maxdist));
             return;
         }
         mdl.material[0] = bvec::fromcolor(getcolour(d, playerovertone, playerovertonelevel));
@@ -3955,7 +3957,7 @@ namespace game
     bool haloallow(gameent *d)
     {
         if(drawtex != DRAWTEX_HALO) return true;
-        if(d == focus) return !inzoom();
+        if(d == focus || m_ffa(gamemode, mutators) || d->team != focus->team) return false;
         vec dir(0, 0, 0);
         float dist = -1;
         if(!client::radarallow(d, dir, dist)) return false;
@@ -3985,7 +3987,7 @@ namespace game
             if(d != focus || (d != player1 ? fullbrightfocus&1 : fullbrightfocus&2)) mdl.flags |= MDL_FULLBRIGHT;
             if((d != focus && playershadow < 2) || playershadow < 1) mdl.flags |= MDL_NOSHADOW;
         }
-        else if(drawtex == DRAWTEX_HALO && (d == focus ? inzoom() : !haloallow(d))) mdl.flags |= MDL_NORENDER;
+        else if(drawtex == DRAWTEX_HALO && ((d == focus && inzoom()) || !haloallow(d))) mdl.flags |= MDL_NORENDER;
 
         rendermodel(mdlname, mdl, e);
 

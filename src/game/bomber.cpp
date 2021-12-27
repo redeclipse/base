@@ -282,6 +282,11 @@ namespace bomber
                     if(f.owner == game::focus)
                         trans *= game::focus != game::player1 ? game::affinityfollowblend : game::affinitythirdblend;
                     mdl.color.a *= trans;
+                    if(drawtex == DRAWTEX_HALO)
+                    {
+                        float maxdist = hud::radarlimit(halodist);
+                        if(maxdist > 0) loopj(3) mdl.material[j].mul(1.f-(mdl.o.dist(camera1->o)/maxdist));
+                    }
                     rendermodel("props/ball", mdl);
                 }
             }
@@ -303,6 +308,11 @@ namespace bomber
                 basemdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED;
                 basemdl.o = f.render;
                 basemdl.yaw = f.yaw;
+                if(drawtex == DRAWTEX_HALO)
+                {
+                    float maxdist = hud::radarlimit(halodist);
+                    if(maxdist > 0) loopj(3) basemdl.material[j].mul(1.f-(basemdl.o.dist(camera1->o)/maxdist));
+                }
                 rendermodel("props/point", basemdl);
             }
         }

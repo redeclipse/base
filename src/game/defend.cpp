@@ -155,6 +155,11 @@ namespace defend
             mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED;
             mdl.yaw = b.yaw;
             mdl.o = b.render;
+            if(drawtex == DRAWTEX_HALO)
+            {
+                float maxdist = hud::radarlimit(halodist);
+                if(maxdist > 0) loopj(3) mdl.material[j].mul(1.f-(mdl.o.dist(camera1->o)/maxdist));
+            }
             rendermodel("props/point", mdl);
             if(drawtex != DRAWTEX_HALO)
             {
