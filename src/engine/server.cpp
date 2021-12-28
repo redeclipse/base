@@ -75,7 +75,7 @@ const char * const disc_reasons[] = { "normal", "end of packet", "client num", "
 
 SVAR(IDF_PERSIST, logtimeformat, "%Y-%m-%d %H:%M.%S");
 VAR(IDF_PERSIST, logtimelocal, 0, 1, 1); // use clockoffset to localise
-SVAR(IDF_PERSIST, filetimeformat, "%Y%m%d%H%M%S");
+SVAR(IDF_PERSIST, filetimeformat, "%Y%m%d_%H%M%S");
 VAR(IDF_PERSIST, filetimelocal, 0, 1, 1); // use clockoffset to localise
 
 const char *gettime(time_t ctime, const char *format)
