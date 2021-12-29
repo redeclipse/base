@@ -150,14 +150,14 @@ extern const enttypes enttype[] = {
                 "outline",      { "" }
     },
     {
-        WEAPON,         2,          59,     24,     EU_ITEM,    6,          2,          4,      5,      -1,
+        WEAPON,         2,          59,     16,     EU_ITEM,    6,          2,          4,      5,      -1,
             0, 0,
             (1<<ENT_PLAYER)|(1<<ENT_AI),
             false,  true,   true,      false,      false,
                 "weapon",       { "type",   "flags",    "modes",    "muts",     "id",       "variant" }
     },
     {
-        TELEPORT,       1,          50,     12,     EU_AUTO,    10,         -1,         -1,     9,      -1,
+        TELEPORT,       1,          50,     16,     EU_AUTO,    10,         -1,         -1,     9,      -1,
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX)|(1<<TELEPORT),
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<ENT_PLAYER)|(1<<ENT_AI)|(1<<ENT_PROJ),
@@ -179,7 +179,7 @@ extern const enttypes enttype[] = {
                 "trigger",      { "id",     "type",     "action",   "radius",   "state",    "modes",    "muts",     "variant" }
     },
     {
-        PUSHER,         1,          58,     12,     EU_AUTO,    11,         -1,         -1,     9,      -1,
+        PUSHER,         1,          58,     16,     EU_AUTO,    11,         -1,         -1,     9,      -1,
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<ENT_PLAYER)|(1<<ENT_AI)|(1<<ENT_PROJ),
@@ -187,7 +187,7 @@ extern const enttypes enttype[] = {
                 "pusher",       { "yaw",    "pitch",    "force",    "maxrad",   "minrad",   "type",     "modes",    "muts",     "id",       "variant",  "sdelay" }
     },
     {
-        AFFINITY,       1,          48,     48,     EU_NONE,    7,          3,          5,      6,      -1,
+        AFFINITY,       1,          48,     32,     EU_NONE,    7,          3,          5,      6,      -1,
             0, 0, 0,
             false,  false,  false,      false,      false,
                 "affinity",     { "team",   "yaw",      "pitch",    "modes",    "muts",     "id",       "variant" }

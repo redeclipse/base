@@ -12,12 +12,12 @@ struct actor
 };
 #ifdef CPP_GAME_SERVER
 actor actors[] = {
-    { "player", A_PLAYER,   true,   true,   true,   true,   true,   false,  24.f,   5.f,   NULL },
-    { "bot",    A_BOT,      true,   true,   true,   true,   true,   false,  24.f,   5.f,   NULL },
-    { "turret", A_TURRET,   true,   true,   true,   true,   true,   false,  24.f,   5.f,   NULL },
-    { "grunt",  A_GRUNT,    true,   true,   true,   true,   true,   false,  24.f,   5.f,   NULL },
-    { "drone",  A_DRONE,    true,   true,   true,   true,   true,   false,  24.f,   5.f,   NULL },
-    { "roller", A_ROLLER,   false,  false,  false,  false,  false,  true,   13.5f,  6.75f,  "actors/roller" },
+    { "player", A_PLAYER,   true,   true,   true,   true,   true,   false,  20.4f,      4.25f,  NULL },
+    { "bot",    A_BOT,      true,   true,   true,   true,   true,   false,  20.4f,      4.25f,  NULL },
+    { "turret", A_TURRET,   true,   true,   true,   true,   true,   false,  20.4f,      4.25f,  NULL },
+    { "grunt",  A_GRUNT,    true,   true,   true,   true,   true,   false,  20.4f,      4.25f,  NULL },
+    { "drone",  A_DRONE,    true,   true,   true,   true,   true,   false,  20.4f,      4.25f,  NULL },
+    { "roller", A_ROLLER,   false,  false,  false,  false,  false,  true,   11.475f,    5.75f,  "actors/roller" },
 };
 #else
 extern actor actors[];
