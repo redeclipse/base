@@ -1500,3 +1500,10 @@ void moveselents(const vec &offset)
     groupedit(e.o.add(offset));
 }
 ICOMMAND(0, moveselents, "fff", (float *x, float *y, float *z), moveselents(vec(*x, *y, *z)));
+
+void spaceselents(const vec &offset)
+{
+    if(noentedit()) return;
+    groupedit(e.o.mul(offset));
+}
+ICOMMAND(0, spaceselents, "fff", (float *x, float *y, float *z), spaceselents(vec(*x, *y, *z)));
