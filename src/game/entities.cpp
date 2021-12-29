@@ -39,6 +39,8 @@ namespace entities
     VAR(IDF_PERSIST|IDF_HEX, entdircolour, 0, 0x88FF88, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, entradiuscolour, 0, 0x88FF88, 0xFFFFFF);
 
+    VAR(IDF_PERSIST, entityhalos, 0, 1, 1);
+
     VARF(0, routeid, -1, -1, VAR_MAX, lastroutenode = -1; lastroutetime = 0; airnodes.setsize(0)); // selected route in race
     VARF(0, droproute, 0, 0, 1, lastroutenode = -1; lastroutetime = 0; airnodes.setsize(0); if(routeid < 0) routeid = 0);
     VAR(IDF_HEX, routecolour, 0, 0xFF22FF, 0xFFFFFF);
@@ -2851,7 +2853,7 @@ namespace entities
     {
         if(!ents.inrange(id)) return false;
         if(drawtex != DRAWTEX_HALO) return true;
-        if(ents[id]->type != WEAPON && (game::player1->state != CS_EDITING || (id != enthover && entgroup.find(id) < 0))) return false;
+        if(!entityhalos || (ents[id]->type != WEAPON && (game::player1->state != CS_EDITING || (id != enthover && entgroup.find(id) < 0)))) return false;
         vec dir(0, 0, 0);
         float dist = -1;
         if(!radarallow(id, dir, dist, justtest)) return false;

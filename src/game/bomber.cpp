@@ -3,6 +3,8 @@ namespace bomber
 {
     bomberstate st;
 
+    VAR(IDF_PERSIST, bomberhalos, 0, 1, 1);
+
     ICOMMAND(0, getbombernum, "", (), intret(st.flags.length()));
     ICOMMAND(0, getbomberenabled, "i", (int *n), intret(st.flags.inrange(*n) && st.flags[*n].enabled ? 1 : 0));
     ICOMMAND(0, getbomberteam, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].team : -1));
@@ -26,6 +28,7 @@ namespace bomber
     bool haloallow(int id, int render = 0, bool justtest = false)
     {
         if(drawtex != DRAWTEX_HALO) return true;
+        if(!bomberhalos) return false;
         vec dir(0, 0, 0);
         float dist = -1;
         if(!radarallow(id, render, dir, dist, justtest)) return false;

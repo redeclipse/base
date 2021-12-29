@@ -382,6 +382,7 @@ namespace game
     VAR(IDF_PERSIST, impulsefade, 0, 250, VAR_MAX);
     VAR(IDF_PERSIST, ragdolleffect, 2, 500, VAR_MAX);
 
+    VAR(IDF_PERSIST, playerhalos, 0, 2, 2);
     FVAR(IDF_PERSIST, playerblend, 0, 1, 1);
     FVAR(IDF_PERSIST, playereditblend, 0, 1, 1);
     FVAR(IDF_PERSIST, playerghostblend, 0, 0.35f, 1);
@@ -3957,7 +3958,8 @@ namespace game
     bool haloallow(gameent *d)
     {
         if(drawtex != DRAWTEX_HALO) return true;
-        if(d == focus || m_ffa(gamemode, mutators) || d->team != focus->team) return false;
+        if(!playerhalos || d == focus) return false;
+        if((!focus->isobserver() || playerhalos < 2) && (m_ffa(gamemode, mutators) || d->team != focus->team)) return false;
         vec dir(0, 0, 0);
         float dist = -1;
         if(!client::radarallow(d, dir, dist)) return false;

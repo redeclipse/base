@@ -3,6 +3,8 @@ namespace defend
 {
     defendstate st;
 
+    VAR(IDF_PERSIST, defendhalos, 0, 1, 1);
+
     bool insideaffinity(defendstate::flag &b, gameent *d, bool lasthad = false)
     {
         bool hasflag = st.insideaffinity(b, d->feetpos());
@@ -37,6 +39,7 @@ namespace defend
     bool haloallow(int id, int render = 0, bool justtest = false)
     {
         if(drawtex != DRAWTEX_HALO) return true;
+        if(!defendhalos) return false;
         vec dir(0, 0, 0);
         float dist = -1;
         if(!radarallow(id, render, dir, dist, justtest)) return false;

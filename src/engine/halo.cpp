@@ -4,9 +4,10 @@ static GLuint halofbo = 0, halotex = 0;
 static int halow = -1, haloh = -1;
 
 VAR(0, debughalo, 0, 0, 2);
+VAR(IDF_PERSIST, halos, 0, 1, 1);
 FVAR(IDF_PERSIST, halowireframe, 0, 0, FVAR_MAX);
 VAR(IDF_PERSIST, halodist, 32, 1024, VAR_MAX);
-FVARF(IDF_PERSIST, haloscale, 0, 1, 1, cleanuphalo());
+FVARF(IDF_PERSIST, haloscale, FVAR_NONZERO, 1, 1, cleanuphalo());
 FVAR(IDF_PERSIST, haloblend, 0, 1, 1);
 CVAR(IDF_PERSIST, halocolour, 0xFFFFFF);
 VARF(IDF_PERSIST, halooffset, 1, 2, 4, initwarning("halo setup", INIT_LOAD, CHANGE_SHADERS));
@@ -101,6 +102,8 @@ void viewhalo()
 
 void blendhalos()
 {
+    if(!halos) return;
+
     glBindFramebuffer_(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, hudw, hudh);
 

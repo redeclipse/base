@@ -3,6 +3,8 @@ namespace capture
 {
     capturestate st;
 
+    VAR(IDF_PERSIST, capturehalos, 0, 1, 1);
+
     ICOMMAND(0, getcapturedelay, "i", (int *n), intret(capturedelay));
     ICOMMAND(0, getcapturestore, "i", (int *n), intret(capturestore));
 
@@ -27,6 +29,7 @@ namespace capture
     bool haloallow(int id, int render = 0, bool justtest = false)
     {
         if(drawtex != DRAWTEX_HALO) return true;
+        if(!capturehalos) return false;
         vec dir(0, 0, 0);
         float dist = -1;
         if(!radarallow(id, render, dir, dist, justtest)) return false;
