@@ -2,6 +2,7 @@
 
 VARN(IDF_PERSIST, dynlights, usedynlights, 0, 1, 1);
 VAR(IDF_PERSIST, dynlightdist, 0, 1024, 10000);
+VAR(IDF_PERSIST, dynlightnoshadow, 0, 0, 3);
 
 struct dynlight
 {
@@ -69,6 +70,8 @@ void adddynlight(const vec &o, float radius, const vec &color, int fade, int pea
     d.peak = peak;
     d.expire = expire;
     d.flags = flags;
+    if(dynlightnoshadow&1) d.flags |= L_NOSHADOW;
+    if(dynlightnoshadow&2) d.flags |= L_NODYNSHADOW;
     d.owner = owner;
     d.dir = dir;
     d.spot = spot;
