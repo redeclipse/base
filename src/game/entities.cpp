@@ -3007,15 +3007,14 @@ namespace entities
                 if(e.attrs[0] != routeid || (!m_edit(game::gamemode) && !m_race(game::gamemode))) break;
                 loopv(e.links) if(ents.inrange(e.links[i]) && ents[e.links[i]]->type == ROUTE && (!routemaxdist || o.dist(ents[e.links[i]]->o) <= routemaxdist))
                 {
-                    char *colour = indexlist(routecolours, routeid);
-                    if(colour)
+                    int col = 0xFF22FF;
+                    char *rcol = indexlist(routecolours, routeid);
+                    if(rcol)
                     {
-                        if(*colour)
-                        {
-                            part_flare(o, ents[e.links[i]]->o, 1, PART_LIGHTNING_FLARE, parseint(colour));
-                        }
-                        delete[] colour;
+                        if(*rcol) col = parseint(rcol);
+                        delete[] rcol;
                     }
+                    part_flare(o, ents[e.links[i]]->o, 1, PART_LIGHTNING_FLARE, col);
                 }
 
                 if(showroutenames && getfirstroute() == idx)
