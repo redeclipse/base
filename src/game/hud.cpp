@@ -95,6 +95,8 @@ namespace hud
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, playertex, "<grey>textures/icons/player", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, playermaletex, "<grey>textures/icons/playermale", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, playerfemaletex, "<grey>textures/icons/playerfemale", 3);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, outlinemaletex, "<grey>textures/icons/outlinemale", 3);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, outlinefemaletex, "<grey>textures/icons/outlinefemale", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, deadtex, "<grey>textures/icons/dead", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, dominatingtex, "<grey>textures/icons/dominating", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, dominatedtex, "<grey>textures/icons/dominated", 3);
