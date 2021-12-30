@@ -499,7 +499,7 @@ template<class MDL> struct vertcommands : modelcommands<MDL, struct MDL::vertmes
         part &mdl = MDL::loading->addpart();
         if(mdl.index) mdl.disablepitch();
         mdl.meshes = MDL::loading->sharemeshes(path(filename), *smooth > 0 ? cosf(clamp(*smooth, 0.0f, 180.0f)*RAD) : 2);
-        if(!mdl.meshes) conoutf("\frCould not load %s", filename);
+        if(!mdl.meshes) conoutf("\frCould not load %s in %s", filename, MDL::loading->name);
         else mdl.initskins();
     }
 
@@ -539,7 +539,7 @@ template<class MDL> struct vertcommands : modelcommands<MDL, struct MDL::vertmes
         if(!MDL::loading || MDL::loading->parts.empty()) { conoutf("\frNot loading an %s", MDL::formatname()); return; }
         vector<int> anims;
         game::findanims(anim, anims);
-        if(anims.empty()) conoutf("\frCould not find animation %s", anim);
+        if(anims.empty()) conoutf("\frCould not find animation %s in %s", anim, MDL::loading->name);
         else loopv(anims)
         {
             MDL::loading->parts.last()->setanim(0, anims[i], *frame, *range, *speed, *priority);
