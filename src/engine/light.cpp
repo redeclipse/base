@@ -40,7 +40,7 @@ GETSKYPIE(lightpitch, float);
 
 bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, bool normalize, bool dyncheck)
 {
-    if(!checkmapvariant(e.attrs[9]) || !checkmapeffects(e.attrs[10])) return false;
+    if(!entities::isallowed(e)) return false;
     if(dyncheck && e.flags&EF_DYNAMIC) return false;
     if(color)
     {
@@ -57,7 +57,7 @@ bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, boo
     loopv(e.links) if(ents.inrange(e.links[i]))
     {
         extentity &f = *ents[e.links[i]];
-        if(f.type != ET_LIGHTFX || f.attrs[0] < 0 || f.attrs[0] >= LFX_MAX || !checkmapvariant(f.attrs[5]) || !checkmapeffects(f.attrs[6])) continue;
+        if(f.type != ET_LIGHTFX || f.attrs[0] < 0 || f.attrs[0] >= LFX_MAX || !entities::isallowed(f)) continue;
         bool hastrigger = false;
         loopvk(f.links) if(ents.inrange(f.links[k]) && ents[f.links[k]]->type != ET_LIGHT)
         {

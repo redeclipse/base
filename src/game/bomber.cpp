@@ -345,9 +345,7 @@ namespace bomber
         loopv(entities::ents) if(entities::ents[i]->type == AFFINITY)
         {
             gameentity &e = *(gameentity *)entities::ents[i];
-            if(!checkmapvariant(e.attrs[enttype[e.type].mvattr])) continue;
-            if(!m_check(e.attrs[3], e.attrs[4], game::gamemode, game::mutators)) continue;
-            if(!isteam(game::gamemode, game::mutators, e.attrs[0], T_NEUTRAL)) continue;
+            if(!isteam(game::gamemode, game::mutators, e.attrs[0], T_NEUTRAL) || !entities::isallowed(e)) continue;
             int team = e.attrs[0];
             if(m_bb_assault(game::gamemode, game::mutators)) switch(team)
             { // attack

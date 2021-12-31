@@ -607,13 +607,8 @@ namespace entities
         loopv(e.links)
         {
             int parent = e.links[i];
-            if(!ents.inrange(parent) || ents[parent]->type == RAIL || !(enttype[RAIL].canlink&(1<<ents[parent]->type))) continue;
+            if(!ents.inrange(parent) || ents[parent]->type == RAIL || !(enttype[RAIL].canlink&(1<<ents[parent]->type)) || !isallowed(parent)) continue;
             gameentity &f = *(gameentity *)ents[parent];
-
-            if(enttype[f.type].modesattr >= 0 && !m_check(f.attrs[enttype[f.type].modesattr], f.attrs[enttype[f.type].modesattr+1], game::gamemode, game::mutators)) continue;
-            if(enttype[f.type].mvattr >= 0 && !checkmapvariant(f.attrs[enttype[f.type].mvattr])) continue;
-            if(enttype[f.type].fxattr >= 0 && !checkmapeffects(f.attrs[enttype[f.type].fxattr])) continue;
-
             int cur = findrail(n);
             railway &w = railways.inrange(cur) ? railways[cur] : railways.add(railway(n, e.attrs[1], e.attrs[6], e.attrs[7], e.attrs[9], e.attrs[8]/100.f));
             w.addparent(parent);
@@ -687,6 +682,21 @@ namespace entities
 
     int numattrs(int type, bool unused) { return clamp(type >= 0 && type < MAXENTTYPES ? enttype[type].numattrs : 0, unused ? 5 : 0, MAXENTATTRS); }
     ICOMMAND(0, entityattrs, "bb", (int *n, int *used), intret(numattrs(*n, !*used)));
+
+    bool isallowed(const extentity &e)
+    {
+        if(enttype[e.type].modesattr >= 0 && !m_check(e.attrs[enttype[e.type].modesattr], e.attrs[enttype[e.type].modesattr+1], game::gamemode, game::mutators)) return false;
+        if(enttype[e.type].mvattr >= 0 && !checkmapvariant(e.attrs[enttype[e.type].mvattr])) return false;
+        if(enttype[e.type].fxattr >= 0 && !checkmapeffects(e.attrs[enttype[e.type].fxattr])) return false;
+        return true;
+    }
+
+    bool isallowed(int n)
+    {
+        if(!ents.inrange(n)) return false;
+        extentity &e = *(extentity *)ents[n];
+        return isallowed(e);
+    }
 
     #define ENTTYPE(value) ICOMMAND(0, entity##value, "b", (int *n), intret(*n >= 0 && *n < MAXENTTYPES ? enttype[*n].value : 0));
     ENTTYPE(priority);
@@ -1257,9 +1267,8 @@ namespace entities
         loopv(ents)
         {
             gameentity &e = *(gameentity *)ents[i];
-            if(enttype[e.type].usetype != EU_NONE && (enttype[e.type].usetype != EU_ITEM || (d->state == CS_ALIVE && e.spawned())))
+            if(enttype[e.type].usetype != EU_NONE && (enttype[e.type].usetype != EU_ITEM || (d->state == CS_ALIVE && e.spawned())) && isallowed(e))
             {
-                if(enttype[e.type].mvattr >= 0 && !checkmapvariant(e.attrs[enttype[e.type].mvattr])) continue;
                 float eradius = enttype[e.type].radius, edist = pos.dist(e.pos());
                 switch(e.type)
                 {
@@ -1278,8 +1287,7 @@ namespace entities
         {
             projent &proj = *projs::projs[i];
             if(!proj.owner || proj.projtype != PRJ_ENT || !proj.ready()) continue;
-            if(!ents.inrange(proj.id) || enttype[ents[proj.id]->type].usetype != EU_ITEM) continue;
-            if(enttype[ents[proj.id]->type].mvattr >= 0 && !checkmapvariant(ents[proj.id]->attrs[enttype[ents[proj.id]->type].mvattr])) continue;
+            if(!ents.inrange(proj.id) || enttype[ents[proj.id]->type].usetype != EU_ITEM || !isallowed(proj.id)) continue;
             if(!(enttype[ents[proj.id]->type].canuse&(1<<d->type))) continue;
             //if(!overlapsbox(m, eye, d->radius, proj.o, enttype[ents[proj.id]->type].radius, enttype[ents[proj.id]->type].radius))
             //    continue;
@@ -1316,8 +1324,7 @@ namespace entities
         {
             case TRIGGER:
             {
-                if(!checkmapvariant(e.attrs[enttype[e.type].mvattr])) return false;
-                if(!m_check(e.attrs[5], e.attrs[6], game::gamemode, game::mutators)) return false;
+                if(!isallowed(e)) return false;
                 if(d)
                 {
                     int millis = d->lastused(n);
@@ -1326,7 +1333,7 @@ namespace entities
                 return true;
                 break;
             }
-            default: if(enttype[e.type].mvattr < 0 || checkmapvariant(e.attrs[enttype[e.type].mvattr])) return true; break;
+            default: if(isallowed(e)) return true; break;
         }
         return false;
     }
@@ -1427,7 +1434,7 @@ namespace entities
             {
                 if(e.type == TELEPORT)
                 {
-                    if(!checkmapvariant(e.attrs[enttype[e.type].mvattr])) break;
+                    if(!isallowed(e)) break;
                     if(e.attrs[8]&(1<<TELE_NOAFFIN))
                     {
                         if(gameent::is(d) && physics::carryaffinity((gameent *)d)) break;
@@ -1539,7 +1546,7 @@ namespace entities
                 }
                 else if(e.type == PUSHER)
                 {
-                    if(!checkmapvariant(e.attrs[enttype[e.type].mvattr])) break;
+                    if(!isallowed(e)) break;
                     int millis = d->lastused(n);
                     if(e.attrs[5] != 3 && millis && lastmillis-millis < triggertime(e)) break;
                     bool inhibit = false;
@@ -1609,16 +1616,13 @@ namespace entities
                 }
                 else if(e.type == TRIGGER)
                 {
-                    if(d->state != CS_ALIVE || !gameent::is(d)) break;
-                    if(!checkmapvariant(e.attrs[enttype[e.type].mvattr])) break;
+                    if(d->state != CS_ALIVE || !gameent::is(d) || !isallowed(e)) break;
                     gameent *g = (gameent *)d;
                     if((e.attrs[2] == TA_ACTION && g->action[AC_USE] && g == game::player1) || e.attrs[2] == TA_AUTO) runtrigger(n, g);
                 }
                 else if(e.type == CHECKPOINT)
                 {
-                    if(!checkmapvariant(e.attrs[enttype[e.type].mvattr])) break;
-                    if(d->state != CS_ALIVE || !gameent::is(d) || !m_race(game::gamemode)) break;
-                    if(!m_check(e.attrs[3], e.attrs[4], game::gamemode, game::mutators)) break;
+                    if(d->state != CS_ALIVE || !gameent::is(d) || !m_race(game::gamemode) || !isallowed(e)) break;
                     gameent *g = (gameent *)d;
                     if(g->checkpoint == n || (m_ra_gauntlet(game::gamemode, game::mutators) && g->team != T_ALPHA)) break;
                     if(e.attrs[6] == CP_START)
@@ -1861,9 +1865,9 @@ namespace entities
                 while(e.attrs[7] > 0xFFFFFF) e.attrs[7] -= 0x1000000; // wrap both ways
                 if(e.attrs[8] < 0) e.attrs[8] = 0; // palette, clamp
                 if(e.attrs[9] < 0) e.attrs[9] = 0; // palindex, clamp
-                while(e.attrs[16] < 0) e.attrs[16] += ANIM_MAX;
-                while(e.attrs[16] >= ANIM_MAX) e.attrs[16] -= ANIM_MAX;
-                if(e.attrs[17] < 0) e.attrs[17] = 0; // anim speed, clamp
+                while(e.attrs[18] < 0) e.attrs[18] += ANIM_MAX;
+                while(e.attrs[18] >= ANIM_MAX) e.attrs[18] -= ANIM_MAX;
+                if(e.attrs[19] < 0) e.attrs[19] = 0; // anim speed, clamp
                 break;
             }
             case PLAYERSTART:
@@ -1897,8 +1901,6 @@ namespace entities
                 while(e.attrs[3] < 0) e.attrs[3] += 256; // volume
                 while(e.attrs[3] > 255) e.attrs[3] -= 256; // wrap both ways
                 if(e.attrs[4] < 0) e.attrs[4] = 0; // flags, clamp
-                while(e.attrs[5] < 0) e.attrs[5] += 101; // blend
-                while(e.attrs[5] > 100) e.attrs[5] -= 101; // wrap both ways
                 FIXEMIT;
                 break;
             }
@@ -2090,6 +2092,7 @@ namespace entities
         {
             gameentity &f = *(gameentity *)ents[i];
             if(ents.inrange(ignore) && ents[ignore]->links.find(index) >= 0) continue;
+            if(!isallowed(f)) continue;
             bool both = e.links.find(i) >= 0;
             switch(f.type)
             {
@@ -2173,21 +2176,19 @@ namespace entities
                     case 0:
                         if(m_team(game::gamemode, game::mutators))
                         {
-                            loopenti(PLAYERSTART) if(ents[i]->type == PLAYERSTART)
+                            loopenti(PLAYERSTART) if(ents[i]->type == PLAYERSTART && isallowed(i))
                             {
                                 gameentity &e = *(gameentity *)ents[i];
-                                if(!checkmapvariant(e.attrs[enttype[e.type].mvattr])) continue;
-                                if(e.attrs[0] != d->team || !m_check(e.attrs[3], e.attrs[4], game::gamemode, game::mutators)) continue;
+                                if(e.attrs[0] != d->team) continue;
                                 spawns.add(i);
                             }
                         }
                         break;
                     case 1: case 2:
-                        loopenti(PLAYERSTART) if(ents[i]->type == PLAYERSTART)
+                        loopenti(PLAYERSTART) if(ents[i]->type == PLAYERSTART && (k == 2 || isallowed(i)))
                         {
                             gameentity &e = *(gameentity *)ents[i];
-                            if(!checkmapvariant(e.attrs[enttype[e.type].mvattr])) continue;
-                            if(e.attrs[0] != d->team || (k != 2 && !m_check(e.attrs[3], e.attrs[4], game::gamemode, game::mutators))) continue;
+                            if(k == 1 && e.attrs[0] != d->team) continue;
                             spawns.add(i);
                         }
                         break;
@@ -2384,93 +2385,91 @@ namespace entities
 
     void importent(gameentity &e, int id, int mver, int gver)
     {
+        if(gver <= 255) switch(e.type)
+        { // adding in modes/muts attr, this is out of order because it is an attr move and palttr/modesattr needs it to be properly reflected below
+            case LIGHT: case PARTICLES: case MAPSOUND: case MAPMODEL: case LIGHTFX: case DECAL: case WIND: case TELEPORT:
+            {
+                for(int q = enttype[e.type].numattrs-1; q >= enttype[e.type].modesattr+2; q--) e.attrs[q] = e.attrs[q-2];
+                loopi(2) e.attrs[enttype[e.type].modesattr+i] = 0;
+                break;
+            }
+            default: break;
+        }
+
+        if(gver <= 218 && e.type == WEAPON)
+        { // insert mine before rockets (9 -> 10) after grenades (8)
+            if(e.attrs[0] >= 9) e.attrs[0]++;
+        }
+
+        if(gver <= 221 && e.type == WEAPON)
+        { // insert zapper before rifle (7 -> 8) after plasma (6)
+            if(e.attrs[0] >= 7) e.attrs[0]++;
+        }
+
+        if(gver <= 223 && e.type == ROUTE) e.type = NOTUSED;
+
+        if(gver <= 244)
+        {
+            if((e.type == PLAYERSTART || e.type == AFFINITY) && e.attrs[0] > T_OMEGA) e.type = NOTUSED;
+            if(e.type == PARTICLES) switch(e.attrs[0])
+            {
+                case 0: game::fixpalette(e.attrs[5], e.attrs[6], gver); break;
+                case 3: game::fixpalette(e.attrs[3], e.attrs[4], gver); break;
+                case 4: game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
+                case 5: game::fixpalette(e.attrs[3], e.attrs[4], gver); break;
+                case 6: game::fixpalette(e.attrs[4], e.attrs[5], gver); game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
+                case 7: game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
+                case 8: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
+                case 9: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
+                case 10: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
+                case 11: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
+                case 12: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
+                case 13: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
+                case 14: game::fixpalette(e.attrs[8], e.attrs[9], gver); break;
+                case 15: game::fixpalette(e.attrs[8], e.attrs[9], gver); break;
+                default: break;
+            }
+            if(enttype[e.type].palattr >= 0) game::fixpalette(e.attrs[enttype[e.type].palattr], e.attrs[enttype[e.type].palattr+1], gver);
+            if(enttype[e.type].modesattr >= 0)
+            {
+                int mattr = enttype[e.type].modesattr+1;
+                if(e.attrs[mattr] != 0)
+                {
+                    static const int G_M_MULTI = 0, G_M_FREESTYLE = 10, G_M_OLDNUM = 20;
+                    int offset = 0, oldmuts = e.attrs[mattr] > 0 ? e.attrs[mattr] : 0-e.attrs[mattr], newmuts = 0;
+                    loopi(G_M_OLDNUM) switch(i)
+                    {
+                        case G_M_MULTI: case G_M_FREESTYLE:
+                            offset++;
+                            break;
+                        default:
+                            if(oldmuts&(1<<i)) newmuts |= 1<<(i-offset);
+                            break;
+                    }
+                    e.attrs[mattr] = e.attrs[mattr] > 0 ? newmuts : 0-newmuts;
+                }
+            }
+        }
+
+        if(gver <= 247 && e.type == RAIL) e.type = NOTUSED;
+
+        if(gver <= 248 && e.type == RAIL && (e.attrs[1]&(1<<RAIL_YAW) || e.attrs[1]&(1<<RAIL_PITCH))) e.attrs[1] |= (1<<RAIL_SEEK);
+
+        if(gver <= 249 && e.type == RAIL && e.attrs[4] < 0)
+        {
+            e.attrs[5] = e.attrs[2]+e.attrs[4];
+            e.attrs[4] = 0-e.attrs[4];
+            e.attrs[5] = 0;
+        }
+
         if(e.type != RAIL && gver <= 250) loopv(e.links)
-        { // switch linking to a rail to linking from it
+        { // switch linking to a rail / linking from it
             int link = e.links[i];
             if(!ents.inrange(link) || ents[link]->type != RAIL) continue;
             gameentity &f = *(gameentity *)ents[link];
             f.links.add(id);
             e.links.remove(i--);
             conoutf("switched rail link between %d and %d", id, link);
-        }
-        switch(e.type)
-        {
-            case WEAPON:
-            {
-                if(gver <= 218)
-                { // insert mine before rockets (9 -> 10) after grenades (8)
-                    if(e.attrs[0] >= 9) e.attrs[0]++;
-                }
-                if(gver <= 221)
-                { // insert zapper before rifle (7 -> 8) after plasma (6)
-                    if(e.attrs[0] >= 7) e.attrs[0]++;
-                }
-                break;
-            }
-            case PLAYERSTART: case AFFINITY:
-            {
-                if(gver <= 244 && e.attrs[0] > T_OMEGA) e.type = NOTUSED;
-                break;
-            }
-            case PARTICLES:
-            {
-                if(gver <= 244) switch(e.attrs[0])
-                {
-                    case 0: game::fixpalette(e.attrs[5], e.attrs[6], gver); break;
-                    case 3: game::fixpalette(e.attrs[3], e.attrs[4], gver); break;
-                    case 4: game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
-                    case 5: game::fixpalette(e.attrs[3], e.attrs[4], gver); break;
-                    case 6: game::fixpalette(e.attrs[4], e.attrs[5], gver); game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
-                    case 7: game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
-                    case 8: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
-                    case 9: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
-                    case 10: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
-                    case 11: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
-                    case 12: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
-                    case 13: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
-                    case 14: game::fixpalette(e.attrs[8], e.attrs[9], gver); break;
-                    case 15: game::fixpalette(e.attrs[8], e.attrs[9], gver); break;
-                    default: break;
-                }
-                break;
-            }
-            case LIGHT: if(gver <= 244) game::fixpalette(e.attrs[7], e.attrs[8], gver); break;
-            case MAPMODEL: if(gver <= 244) game::fixpalette(e.attrs[8], e.attrs[9], gver); break;
-            case DECAL: if(gver <= 244) game::fixpalette(e.attrs[7], e.attrs[8], gver); break;
-            case TELEPORT: if(gver <= 244) game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
-            case ROUTE: if(gver <= 223) e.type = NOTUSED; break;
-            case RAIL:
-            {
-                if(gver <= 247) e.type = NOTUSED;
-                if(gver <= 248 && (e.attrs[1]&(1<<RAIL_YAW) || e.attrs[1]&(1<<RAIL_PITCH))) e.attrs[1] |= (1<<RAIL_SEEK);
-                if(gver <= 249 && e.attrs[4] < 0)
-                {
-                    e.attrs[5] = e.attrs[2]+e.attrs[4];
-                    e.attrs[4] = 0-e.attrs[4];
-                    e.attrs[5] = 0;
-                }
-                break;
-            }
-            default: break;
-        }
-        if(gver <= 244 && enttype[e.type].modesattr >= 0)
-        {
-            int mattr = enttype[e.type].modesattr+1;
-            if(e.attrs[mattr] != 0)
-            {
-                static const int G_M_MULTI = 0, G_M_FREESTYLE = 10, G_M_OLDNUM = 20;
-                int offset = 0, oldmuts = e.attrs[mattr] > 0 ? e.attrs[mattr] : 0-e.attrs[mattr], newmuts = 0;
-                loopi(G_M_OLDNUM) switch(i)
-                {
-                    case G_M_MULTI: case G_M_FREESTYLE:
-                        offset++;
-                        break;
-                    default:
-                        if(oldmuts&(1<<i)) newmuts |= 1<<(i-offset);
-                        break;
-                }
-                e.attrs[mattr] = e.attrs[mattr] > 0 ? newmuts : 0-newmuts;
-            }
         }
     }
 
@@ -2783,7 +2782,7 @@ namespace entities
         loopenti(MAPSOUND)
         {
             gameentity &e = *(gameentity *)ents[i];
-            if(e.type == MAPSOUND && checkmapvariant(e.attrs[enttype[e.type].mvattr]) && mapsounds.inrange(e.attrs[0]))
+            if(e.type == MAPSOUND && isallowed(e))
             {
                 bool triggered = false;
                 loopvj(e.links)
@@ -3029,7 +3028,7 @@ namespace entities
 
     bool checkparticle(extentity &e)
     {
-        if(!checkmapvariant(e.attrs[12]) || !checkmapeffects(e.attrs[13])) return false;
+        if(!isallowed(e)) return false;
         gameentity &f = (gameentity &)e;
         if(f.attrs[11])
         {

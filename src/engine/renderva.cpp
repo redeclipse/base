@@ -463,7 +463,7 @@ bool mapmodeltransparent(extentity &e)
     if(mapmodels.inrange(e.attrs[0]))
     {
         mapmodelinfo &mmi = mapmodels[e.attrs[0]];
-        model *m = loadlodmodel(mmi.m ? mmi.m : loadmodel(mmi.name), e.o, e.attrs[15]);
+        model *m = loadlodmodel(mmi.m ? mmi.m : loadmodel(mmi.name), e.o, e.attrs[17]);
         if(m && m->alphablended()) return true;
     #if 0
         if(m && m->alphatested(true)) return true;
@@ -477,7 +477,7 @@ FVAR(IDF_PERSIST, mmshadowdistfactor, 0.01f, 1.0f, 100.0f);
 
 static inline float mmshadowreject(extentity &e, model *m)
 {
-    if(e.attrs[19] <= 0) return false;
+    if(e.attrs[21] <= 0) return false;
 
     vec center, radius;
     m->boundbox(center, radius);
@@ -494,7 +494,7 @@ static inline float mmshadowreject(extentity &e, model *m)
     const float x0 = 351.7057f * 0.01f;
     const float x1 = 12.45513f * 0.01f;
     const float x2 = -0.01459957f * 0.01f;
-    float maxdist = max(x0 + x1*size + x2*size*size, 0.0f) * mmshadowdistfactor * e.attrs[19];
+    float maxdist = max(x0 + x1*size + x2*size*size, 0.0f) * mmshadowdistfactor * e.attrs[21];
 
     return camera1->o.squaredist(e.o) > maxdist*maxdist;
 }
@@ -504,7 +504,7 @@ bool mapmodelvisible(extentity &e, int n, int colvis, bool shadowpass)
     if(editmode && colvis&1) return true;
     if(!mapmodels.inrange(e.attrs[0])) return false;
     bool ingroup = editmode && (enthover == n || entgroup.find(n) >= 0);
-    if(!ingroup && (e.flags&EF_NOVIS || e.flags&EF_DYNAMIC || !checkmapvariant(e.attrs[13]) || !checkmapeffects(e.attrs[14]) || !mapmodels.inrange(e.attrs[0]))) return false;
+    if(!ingroup && (e.flags&EF_NOVIS || e.flags&EF_DYNAMIC || !mapmodels.inrange(e.attrs[0])) || !entities::isallowed(e)) return false;
     if(colvis&2 && (e.flags&EF_NOCOLLIDE || e.flags&EF_DYNAMIC)) return false;
     if(e.lastemit)
     {
@@ -520,7 +520,7 @@ bool mapmodelvisible(extentity &e, int n, int colvis, bool shadowpass)
         else if((colvis&2 || e.lastemit < 0) && e.spawned()) return false;
     }
     mapmodelinfo &mmi = mapmodels[e.attrs[0]];
-    model *m = loadlodmodel(mmi.m ? mmi.m : loadmodel(mmi.name), e.o, e.attrs[15]);
+    model *m = loadlodmodel(mmi.m ? mmi.m : loadmodel(mmi.name), e.o, e.attrs[17]);
     if(!m) return false;
     if(shadowpass && mmshadowdist && mmshadowreject(e, m)) return false;
     return true;
@@ -577,9 +577,9 @@ VAR(0, mmanimoverride, -1, 0, ANIM_ALL);
 
 void getmapmodelstate(extentity &e, entmodelstate &mdl)
 {
-    int anim = (e.attrs[16] > 0 ? e.attrs[16] : ANIM_MAPMODEL);
+    int anim = (e.attrs[18] > 0 ? e.attrs[18] : ANIM_MAPMODEL);
     mdl.anim = anim|ANIM_LOOP;
-    mdl.basetime = e.attrs[17];
+    mdl.basetime = e.attrs[19];
     if(e.lastemit)
     {
         mdl.anim = e.spawned() ? ANIM_TRIGGER_ON : ANIM_TRIGGER_OFF;
@@ -607,8 +607,8 @@ void getmapmodelstate(extentity &e, entmodelstate &mdl)
     if(e.attrs[11]) mdl.pitch += e.attrs[11]*lastmillis/1000.0f;
     if(e.attrs[12]) mdl.roll += e.attrs[12]*lastmillis/1000.0f;
     if(e.attrs[10] || e.attrs[11] || e.attrs[12]) mdl.flags |= MDL_FORCEDYNAMIC;
-    mdl.lodoffset = e.attrs[15];
-    if(e.attrs[17] > 0) mdl.speed = 1/float(e.attrs[17]/100.f);
+    mdl.lodoffset = e.attrs[17];
+    if(e.attrs[19] > 0) mdl.speed = 1/float(e.attrs[19]/100.f);
 }
 
 static inline void rendermapmodelent(extentity &e, int n, bool tpass)

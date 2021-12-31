@@ -2934,10 +2934,7 @@ namespace game
             loopv(entities::ents)
             {
                 gameentity &e = *(gameentity *)entities::ents[i];
-                if(k ? (e.type != PLAYERSTART && e.type != WEAPON && e.type != CAMERA) : (e.type != CAMERA || e.attrs[0] != CAMERA_NORMAL)) continue;
-                if(enttype[e.type].modesattr >= 0 && !m_check(e.attrs[enttype[e.type].modesattr], e.attrs[enttype[e.type].modesattr+1], gamemode, mutators)) continue;
-                if(enttype[e.type].mvattr >= 0 && !checkmapvariant(e.attrs[enttype[e.type].mvattr])) continue;
-                if(enttype[e.type].fxattr >= 0 && !checkmapeffects(e.attrs[enttype[e.type].fxattr])) continue;
+                if(k ? (e.type != PLAYERSTART && e.type != WEAPON && e.type != CAMERA) : (e.type != CAMERA || e.attrs[0] != CAMERA_NORMAL) || !entities::isallowed(e)) continue;
                 vec pos = e.o;
                 float radius = e.type == PLAYERSTART ? actors[A_PLAYER].height+2 : enttype[e.type].radius;
                 if(!camcheck(pos, radius)) continue;

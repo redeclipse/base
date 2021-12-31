@@ -2037,8 +2037,8 @@ namespace server
 
         loopv(sents) if(enttype[sents[i].type].idattr >= 0 && sents[i].attrs[enttype[sents[i].type].idattr] >= 0 && sents[i].attrs[enttype[sents[i].type].idattr] <= TRIGGERIDS)
         {
-            if(enttype[sents[i].type].mvattr >= 0 && !checkmapvariant(sents[i].attrs[enttype[sents[i].type].mvattr])) continue;
             if(enttype[sents[i].type].modesattr >= 0 && !m_check(sents[i].attrs[enttype[sents[i].type].modesattr], sents[i].attrs[enttype[sents[i].type].modesattr+1], gamemode, mutators)) continue;
+            if(enttype[sents[i].type].mvattr >= 0 && !checkmapvariant(sents[i].attrs[enttype[sents[i].type].mvattr])) continue;
             triggers[sents[i].attrs[enttype[sents[i].type].idattr]].ents.add(i);
         }
 

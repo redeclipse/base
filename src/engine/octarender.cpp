@@ -483,7 +483,7 @@ struct vacollect : verthash
             loopvj(oe->decals)
             {
                 extentity &e = *ents[oe->decals[j]];
-                if(e.flags&EF_RENDER || !checkmapvariant(e.attrs[9]) || !checkmapeffects(e.attrs[10])) continue;
+                if(e.flags&EF_RENDER || !entities::isallowed(e)) continue;
                 e.flags |= EF_RENDER;
                 DecalSlot &s = lookupdecalslot(e.attrs[0], true);
                 if(!s.shader) continue;
