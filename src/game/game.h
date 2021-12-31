@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 254
+#define VERSION_GAME 255
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -180,7 +180,7 @@ extern const enttypes enttype[] = {
     },
     {
         PUSHER,         1,          58,     16,     EU_AUTO,    11,         -1,         -1,     9,      -1,
-            (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
+            (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX)|(1<<PUSHER),
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<ENT_PLAYER)|(1<<ENT_AI)|(1<<ENT_PROJ),
             false,  false,  false,      false,      false,

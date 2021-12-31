@@ -371,16 +371,16 @@ struct dynent : physent                         // animated characters, or chara
     float getradius() { return rdradius(this); }
     float getheight() { return rdheight(this); }
 
-    int lastused(int n, bool millis = false)
+    int lastused(int n)
     {
-        loopv(used) if(used[i].ent == n) return millis ? used[i].millis : i;
-        return millis ? 0 : -1;
+        loopv(used) if(used[i].ent == n) return used[i].millis;
+        return 0;
     }
 
     void setused(int n, int millis)
     {
-        int p = lastused(n);
-        usedent &u = used.inrange(p) ? used[p] : used.add();
+        loopvrev(used) if(used[i].ent == n) used.remove(i);
+        usedent &u = used.add();
         u.ent = n;
         u.millis = millis ? millis : 1;
     }

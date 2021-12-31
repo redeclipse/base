@@ -531,7 +531,7 @@ namespace projs
             {
                 if(proj.projtype == PRJ_AFFINITY && entities::ents[list[i].ent]->attrs[8]&(1<<TELE_NOAFFIN))
                     continue;
-                int millis = proj.lastused(list[i].ent, true);
+                int millis = proj.lastused(list[i].ent);
                 if(millis && lastmillis-millis <= 100) continue;
             }
             float dist = 1e16f;

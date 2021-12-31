@@ -1320,7 +1320,7 @@ namespace entities
                 if(!m_check(e.attrs[5], e.attrs[6], game::gamemode, game::mutators)) return false;
                 if(d)
                 {
-                    int millis = d->lastused(n, true);
+                    int millis = d->lastused(n);
                     if(millis && lastmillis-millis < triggertime(e, true)) return false;
                 }
                 return true;
@@ -1433,7 +1433,7 @@ namespace entities
                         if(gameent::is(d) && physics::carryaffinity((gameent *)d)) break;
                         if(projent::is(d) && ((projent *)d)->type == PRJ_AFFINITY) break;
                     }
-                    int millis = d->lastused(n, true);
+                    int millis = d->lastused(n);
                     if(millis && lastmillis-millis < triggertime(e)) break;
                     e.lastemit = lastmillis;
                     static vector<int> teleports;
@@ -1540,8 +1540,29 @@ namespace entities
                 else if(e.type == PUSHER)
                 {
                     if(!checkmapvariant(e.attrs[enttype[e.type].mvattr])) break;
-                    int millis = d->lastused(n, true);
+                    int millis = d->lastused(n);
                     if(e.attrs[5] != 3 && millis && lastmillis-millis < triggertime(e)) break;
+                    bool inhibit = false;
+                    loopenti(PUSHER) if(ents[i]->type == PUSHER)
+                    { // check for a previous pusher in a chain
+                        gameentity &f = *(gameentity *)ents[i];
+                        loopvj(f.links) if(f.links[j] == n)
+                        { // pusher is part of this chain
+                            loopvkrev(d->used) if(ents.inrange(d->used[k].ent) && ents[d->used[k].ent]->type == PUSHER)
+                            {
+                                if(d->used[k].ent != i) inhibit = true; // not the previous in a chain
+                                else
+                                {
+                                    int fmillis = d->lastused(i);
+                                    if(fmillis && lastmillis-fmillis >= triggertime(e)) inhibit = true;
+                                }
+                                break;
+                            }
+                            break;
+                        }
+                        if(inhibit) break;
+                    }
+                    if(inhibit) break;
                     e.lastemit = lastmillis;
                     d->setused(n, lastmillis);
                     float mag = e.attrs[2] != 0 ? e.attrs[2] : 1, maxrad = e.attrs[3] ? e.attrs[3] : enttype[PUSHER].radius, minrad = e.attrs[4];
