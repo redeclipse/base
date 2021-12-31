@@ -2064,7 +2064,7 @@ namespace client
         uint physstate = d->physstate | ((d->move&3)<<3) | ((d->strafe&3)<<5) | ((d->turnside&3)<<7);
         putuint(q, physstate);
         putuint(q, d->impulse[IM_METER]);
-        ivec o = ivec(vec(d->o.x, d->o.y, d->o.z-d->height).mul(DMF)), f = ivec(vec(d->floorpos.x, d->floorpos.y, d->floorpos.z).mul(DMF));
+        ivec o = ivec(vec(d->feetpos()).mul(DMF)), f = ivec(vec(d->floorpos).mul(DMF));
         uint vel = min(int(d->vel.magnitude()*DVELF), 0xFFFF), fall = min(int(d->falling.magnitude()*DVELF), 0xFFFF);
         // 3 bits position, 3 bits floor, 1 bit velocity, 3 bits falling, 1 bit conopen, X bits actions
         uint flags = 0;
