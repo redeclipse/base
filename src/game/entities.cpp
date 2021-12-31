@@ -2137,15 +2137,16 @@ namespace entities
     {
         if(ent >= 0 && ents.inrange(ent))
         {
-            vec pos = ents[ent]->o;
-            switch(ents[ent]->type)
+            gameentity &e = *(gameentity *)ents[ent];
+            vec pos = e.pos();
+            switch(e.type)
             {
                 case PLAYERSTART: case ACTOR:
-                    if(tryspawn(d, pos, ents[ent]->attrs[1], ents[ent]->attrs[2])) return;
+                    if(tryspawn(d, pos, e.attrs[1], e.attrs[2])) return;
                     break;
                 case CHECKPOINT:
                 {
-                    float yaw = ents[ent]->attrs[1], pitch = ents[ent]->attrs[2];
+                    float yaw = e.attrs[1], pitch = e.attrs[2];
                     if(m_ra_gauntlet(game::gamemode, game::mutators) && d->team != T_ALPHA)
                     {
                         yaw -= 180;
