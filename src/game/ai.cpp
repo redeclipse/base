@@ -529,7 +529,7 @@ namespace ai
         loopusej(EU_ITEM)
         {
             gameentity &e = *(gameentity *)entities::ents[j];
-            if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON) continue;
+            if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON || !entities::isallowed(e)) continue;
             int attr = m_attr(e.type, e.attrs[0]);
             if(e.spawned() && isweap(attr) && wantsweap(d, attr, !force))
             { // go get a weapon upgrade
@@ -548,7 +548,7 @@ namespace ai
             projent &proj = *projs::projs[j];
             if(!entities::ents.inrange(proj.id)) continue;
             gameentity &e = *(gameentity *)entities::ents[proj.id];
-            if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON) continue;
+            if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON || !entities::isallowed(e)) continue;
             int attr = m_attr(e.type, e.attrs[0]);
             if(isweap(attr) && wantsweap(d, attr, !force) && proj.owner != d)
             { // go get a weapon upgrade
@@ -664,7 +664,7 @@ namespace ai
 
     void itemspawned(int ent, int spawned)
     {
-        if(!m_play(game::gamemode) || !entities::ents.inrange(ent) || entities::ents[ent]->type != WEAPON || spawned <= 0) return;
+        if(!m_play(game::gamemode) || !entities::ents.inrange(ent) || entities::ents[ent]->type != WEAPON || spawned <= 0 || !entities::isallowed(ent)) return;
         loopv(game::players) if(game::players[i] && game::players[i]->ai && game::players[i]->actortype == A_BOT && game::players[i]->state == CS_ALIVE && iswaypoint(game::players[i]->lastnode))
         {
             gameent *d = game::players[i];
@@ -721,7 +721,7 @@ namespace ai
             case AI_T_ENTITY:
             {
                 if(check(d, b)) return true;
-                if(entities::ents.inrange(b.target)) return defense(d, b, entities::ents[b.target]->o);
+                if(entities::ents.inrange(b.target) && entities::isallowed(b.target)) return defense(d, b, entities::ents[b.target]->o);
                 break;
             }
             case AI_T_AFFINITY:
@@ -762,7 +762,7 @@ namespace ai
                 if(entities::ents.inrange(b.target))
                 {
                     gameentity &e = *(gameentity *)entities::ents[b.target];
-                    if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON) return false;
+                    if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON || !entities::isallowed(e)) return false;
                     int attr = m_attr(e.type, e.attrs[0]);
                     if(!isweap(attr) || !e.spawned() || !wantsweap(d, attr, false)) return false;
                     return makeroute(d, b, e.pos());
@@ -776,7 +776,7 @@ namespace ai
                     projent &proj = *projs::projs[j];
                     if(!entities::ents.inrange(proj.id) || proj.owner == d) return false;
                     gameentity &e = *(gameentity *)entities::ents[proj.id];
-                    if(enttype[entities::ents[proj.id]->type].usetype != EU_ITEM || e.type != WEAPON) return false;
+                    if(enttype[entities::ents[proj.id]->type].usetype != EU_ITEM || e.type != WEAPON || !entities::isallowed(e)) return false;
                     int attr = m_attr(e.type, e.attrs[0]);
                     if(!isweap(attr) || !wantsweap(d, attr, false)) return false;
                     return makeroute(d, b, proj.o);
@@ -1046,7 +1046,7 @@ namespace ai
         }
         else if(b.type == AI_S_INTEREST && b.targtype == AI_T_ENTITY)
         {
-            if(entities::ents.inrange(b.target) && entities::ents[b.target]->o.dist(d->feetpos()) <= WAYPOINTRADIUS*2)
+            if(entities::ents.inrange(b.target) && entities::ents[b.target]->o.dist(d->feetpos()) <= WAYPOINTRADIUS*2 && entities::isallowed(b.target))
             {
                 d->ai->spot = entities::ents[b.target]->o;
                 d->ai->targnode = -1;
@@ -1355,7 +1355,7 @@ namespace ai
                         {
                             if(!entities::ents.inrange(t.target)) break;
                             extentity &e = *entities::ents[t.target];
-                            if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON) break;
+                            if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON || !entities::isallowed(e)) break;
                             ent = t.target;
                             break;
                         }
@@ -1364,7 +1364,7 @@ namespace ai
                             if(!projs::projs.inrange(t.target)) break;
                             projent &proj = *projs::projs[t.target];
                             extentity &e = *entities::ents[proj.id];
-                            if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON || proj.owner == d) break;
+                            if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON || proj.owner == d || !entities::isallowed(e)) break;
                             ent = proj.id;
                             break;
                         }
@@ -1398,7 +1398,7 @@ namespace ai
                 {
                     if(!entities::ents.inrange(t.target)) break;
                     extentity &e = *entities::ents[t.target];
-                    if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON) break;
+                    if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON || !entities::isallowed(e)) break;
                     ent = t.target;
                     break;
                 }
@@ -1407,7 +1407,7 @@ namespace ai
                     if(!projs::projs.inrange(t.target)) break;
                     projent &proj = *projs::projs[t.target];
                     extentity &e = *entities::ents[proj.id];
-                    if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON || proj.owner == d) break;
+                    if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON || proj.owner == d || !entities::isallowed(e)) break;
                     ent = proj.id;
                     break;
                 }
