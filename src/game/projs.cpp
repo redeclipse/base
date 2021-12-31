@@ -118,7 +118,7 @@ namespace projs
         if(proj.weap >= 0)
         {
             color = bvec(FWCOL(H, fxcol, proj));
-            scale = WF(WK(proj.flags), proj.weap, fxscale, WS(proj.flags))*proj.curscale;
+            scale = WF(WK(proj.flags), proj.weap, fxscale, WS(proj.flags))*proj.curscale*proj.lifesize;
             blend = WF(WK(proj.flags), proj.weap, fxblend, WS(proj.flags))*proj.curscale;
         }
 
