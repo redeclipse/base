@@ -81,7 +81,7 @@ extern const enttypes enttype[] = {
         LIGHT,          1,          59,     0,      EU_NONE,    13,         7,          9,          -1,     11,      12,
             (1<<LIGHTFX), (1<<LIGHTFX), 0,
             false,  false,  false,      false,      false,
-                "light",        { "radius", "red", "green", "blue", "flare", "fscale", "flags", "palette", "palindex", "mode", "muts", "variant", "fxlevel"  }
+                "light",        { "radius", "red", "green", "blue", "flare", "fscale", "flags", "palette", "palindex", "modes", "muts", "variant", "fxlevel"  }
     },
     {
         MAPMODEL,       1,          58,     0,      EU_NONE,    22,         8,          13,         -1,     15,     16,
@@ -157,7 +157,7 @@ extern const enttypes enttype[] = {
                 "weapon",       { "type", "flags", "modes", "muts", "id", "variant" }
     },
     {
-        TELEPORT,       1,          50,     16,     EU_AUTO,    12,         6,          -1,         -1,     11,      -1,
+        TELEPORT,       1,          50,     16,     EU_AUTO,    12,         6,          9,          -1,     11,      -1,
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX)|(1<<TELEPORT),
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<ENT_PLAYER)|(1<<ENT_AI)|(1<<ENT_PROJ),
