@@ -1063,19 +1063,37 @@ namespace ai
         bool sequenced = d->ai->blockseq > 1 || d->ai->targseq > 1, offground = airtime && !physics::liquidcheck(d) && !d->onladder,
              impulse = physics::canimpulse(d, A_A_BOOST, false) && airtime > (b.acttype >= AI_A_LOCKON ? 100 : 250) && d->hasparkour() && (b.acttype >= AI_A_LOCKON || off.z >= JUMPMIN) && (!impulsemeter || impulsemeter-d->impulse[IM_METER] >= impulsecost),
              jumper = AA(d->actortype, abilities)&(1<<A_A_JUMP) && !offground && (b.acttype == AI_A_LOCKON || sequenced || off.z >= JUMPMIN),
-             jump = (impulse || jumper) && lastmillis >= d->ai->jumpseed;
+             jump = (impulse || jumper) && lastmillis >= d->ai->jumpseed, allowspecial = !sequenced && !d->onladder && airtime;
         if(jump)
         {
             vec old = d->o;
             d->o = vec(pos).add(vec(0, 0, d->height));
             if(collide(d, vec(0, 0, 1))) jump = false;
             d->o = old;
-            if(jump) loopenti(PUSHER) if(entities::ents[i]->type == PUSHER)
+            if(jump) loopenti(PUSHER)
             {
                 gameentity &e = *(gameentity *)entities::ents[i];
-                float radius = (e.attrs[3] ? e.attrs[3] : enttype[e.type].radius)*1.5f; radius *= radius;
-                if(e.pos().squaredist(pos) <= radius) { jump = false; break; }
+                if(e.type != PUSHER || !entities::isallowed(e)) continue;
+                int radius = (e.attrs[3] ? e.attrs[3] : enttype[e.type].radius)*2;
+                radius *= radius;
+                if(e.pos().squaredist(pos) <= radius)
+                {
+                    jump = allowspecial = false;
+                    break;
+                }
             }
+            if(jump) loopvrev(d->used) if(entities::ents.inrange(d->used[i].ent))
+            {
+                gameentity &e = *(gameentity *)entities::ents[i];
+                if(e.type != PUSHER || !entities::isallowed(e)) continue;
+                int fmillis = d->lastused(i);
+                if(fmillis && lastmillis-fmillis < entities::triggertime(e))
+                {
+                    jump = allowspecial = false;
+                    break;
+                }
+            }
+
         }
         if(d->action[AC_JUMP] != jump)
         {
@@ -1087,7 +1105,7 @@ namespace ai
             int seed = (111-d->skill)*(b.acttype == AI_A_LOCKON ? 2 : 10);
             d->ai->jumpseed = lastmillis+seed+rnd(seed);
         }
-        if(!sequenced && !d->onladder && airtime)
+        if(allowspecial)
         {
             if(airtime > impulsejumpdelay && !d->hasparkour() && (d->skill >= 100 || !rnd(101-d->skill)) && physics::canimpulse(d, A_A_PARKOUR, true))
                 d->action[AC_SPECIAL] = true;

@@ -179,7 +179,7 @@ extern const enttypes enttype[] = {
                 "trigger",      { "id", "type", "action", "radius", "state", "modes", "muts", "variant" }
     },
     {
-        PUSHER,         1,          58,     16,     EU_AUTO,    11,         -1,         -1,         -1,     9,      -1,
+        PUSHER,         1,          58,     16,     EU_AUTO,    11,         -1,         6,          -1,     9,      -1,
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX)|(1<<PUSHER),
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<ENT_PLAYER)|(1<<ENT_AI)|(1<<ENT_PROJ),
