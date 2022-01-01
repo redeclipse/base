@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 256
+#define VERSION_GAME 257
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -1581,6 +1581,7 @@ struct gameent : dynent, clientstate
 
     float headsize()
     {
+        if(!(actors[actortype].collidezones&CLZ_HEAD)) return 0.f;
         return max(xradius*0.45f, yradius*0.45f);
     }
 
@@ -1609,6 +1610,7 @@ struct gameent : dynent, clientstate
 
     float torsosize()
     {
+        if(!(actors[actortype].collidezones&CLZ_TORSO)) return 0.f;
         return (headtag().z-headbox().z)-torsotag().z;
     }
 
@@ -1631,6 +1633,7 @@ struct gameent : dynent, clientstate
 
     float limbsize()
     {
+        if(!(actors[actortype].collidezones&CLZ_LIMBS)) return 0.f;
         return ((torsotag().z-torsobox().z)-(o.z-height))*0.5f;
     }
 

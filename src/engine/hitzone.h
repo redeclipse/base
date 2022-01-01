@@ -827,10 +827,10 @@ void skelhitdata::build(skelmodel::skelmeshgroup *g, const uchar *ids)
     delete[] bounds;
 }
 
-void skelmodel::skelmeshgroup::buildhitdata(const uchar *hitzones)
+void skelmodel::skelmeshgroup::buildhitdata(const uchar *collidezones)
 {
     if(hitdata) return;
     hitdata = new skelhitdata;
-    hitdata->build(this, hitzones);
+    hitdata->build(this, collidezones);
 }
 

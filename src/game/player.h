@@ -1,23 +1,22 @@
 // Player and other actor definitions
 
 enum { A_PLAYER = 0, A_BOT, A_TURRET, A_GRUNT, A_DRONE, A_ROLLER, A_MAX, A_ENEMY = A_TURRET, A_TOTAL = A_MAX-A_ENEMY };
-
 struct actor
 {
     const char *name;
-    int id;
-    bool hastags, jetfx, weapfx, steps, hitboxes, onlyfwd;
+    int id, collidezones;
+    bool hastags, jetfx, weapfx, steps, onlyfwd;
     float height, radius;
     const char *mdl;
 };
 #ifdef CPP_GAME_SERVER
 actor actors[] = {
-    { "player", A_PLAYER,   true,   true,   true,   true,   true,   false,  20.4f,      4.25f,  NULL },
-    { "bot",    A_BOT,      true,   true,   true,   true,   true,   false,  20.4f,      4.25f,  NULL },
-    { "turret", A_TURRET,   true,   true,   true,   true,   true,   false,  20.4f,      4.25f,  NULL },
-    { "grunt",  A_GRUNT,    true,   true,   true,   true,   true,   false,  20.4f,      4.25f,  NULL },
-    { "drone",  A_DRONE,    true,   true,   true,   true,   true,   false,  20.4f,      4.25f,  NULL },
-    { "roller", A_ROLLER,   false,  false,  false,  false,  false,  true,   11.475f,    5.75f,  "actors/roller" },
+    { "player", A_PLAYER,   CLZ_ALL,    true,   true,   true,   true,   false,  20.4f,      4.25f,  NULL },
+    { "bot",    A_BOT,      CLZ_ALL,    true,   true,   true,   true,   false,  20.4f,      4.25f,  NULL },
+    { "turret", A_TURRET,   CLZ_ALL,    true,   true,   true,   true,   false,  20.4f,      4.25f,  NULL },
+    { "grunt",  A_GRUNT,    CLZ_NOHEAD, true,   true,   true,   true,   false,  18.5f,      4.25f,  NULL },
+    { "drone",  A_DRONE,    CLZ_NOHEAD, true,   true,   true,   true,   false,  18.5f,      4.25f,  NULL },
+    { "roller", A_ROLLER,   CLZ_NONE,   false,  false,  false,  false,  true,   11.475f,    5.75f,  "actors/roller" },
 };
 #else
 extern actor actors[];

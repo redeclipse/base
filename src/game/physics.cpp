@@ -1349,7 +1349,7 @@ namespace physics
             case -1: return false;
             case 0: collidezones = CLZ_HEAD; break;
             case 1: collidezones = CLZ_TORSO; break;
-            default: collidezones = CLZ_LIMB; break;
+            default: collidezones = CLZ_LIMBS; break;
         }
         dist *= ray.magnitude();
         return true;
@@ -1360,13 +1360,13 @@ namespace physics
         collidezones = CLZ_HEAD;
         if(!d || !projent::shot(d) || !gameent::is(o)) return true;
         gameent *e = (gameent *)o;
-        if(!actors[e->actortype].hitboxes) return true;
+        if(!actors[e->actortype].collidezones) return true;
         collidezones = CLZ_NONE;
-        if(!d->o.reject(e->limbstag(), d->radius+max(e->limbsbox().x, e->limbsbox().y)) && ellipsecollide(d, dir, e->limbstag(), vec(0, 0, 0), e->yaw, e->limbsbox().x, e->limbsbox().y, e->limbsbox().z, e->limbsbox().z))
-            collidezones |= CLZ_LIMB;
-        if(!d->o.reject(e->torsotag(), d->radius+max(e->torsobox().x, e->torsobox().y)) && ellipsecollide(d, dir, e->torsotag(), vec(0, 0, 0), e->yaw, e->torsobox().x, e->torsobox().y, e->torsobox().z, e->torsobox().z))
+        if(actors[e->actortype].collidezones&CLZ_LIMBS && !d->o.reject(e->limbstag(), d->radius+max(e->limbsbox().x, e->limbsbox().y)) && ellipsecollide(d, dir, e->limbstag(), vec(0, 0, 0), e->yaw, e->limbsbox().x, e->limbsbox().y, e->limbsbox().z, e->limbsbox().z))
+            collidezones |= CLZ_LIMBS;
+        if(actors[e->actortype].collidezones&CLZ_TORSO && !d->o.reject(e->torsotag(), d->radius+max(e->torsobox().x, e->torsobox().y)) && ellipsecollide(d, dir, e->torsotag(), vec(0, 0, 0), e->yaw, e->torsobox().x, e->torsobox().y, e->torsobox().z, e->torsobox().z))
             collidezones |= CLZ_TORSO;
-        if(!d->o.reject(e->headtag(), d->radius+max(e->headbox().x, e->headbox().y)) && ellipsecollide(d, dir, e->headtag(), vec(0, 0, 0), e->yaw, e->headbox().x, e->headbox().y, e->headbox().z, e->headbox().z))
+        if(actors[e->actortype].collidezones&CLZ_HEAD && !d->o.reject(e->headtag(), d->radius+max(e->headbox().x, e->headbox().y)) && ellipsecollide(d, dir, e->headtag(), vec(0, 0, 0), e->yaw, e->headbox().x, e->headbox().y, e->headbox().z, e->headbox().z))
             collidezones |= CLZ_HEAD;
         return collidezones != CLZ_NONE;
     }
@@ -1376,10 +1376,10 @@ namespace physics
         collidezones = CLZ_HEAD;
         if(!d || !projent::shot(d) || !gameent::is(o)) return true;
         gameent *e = (gameent *)o;
-        if(!actors[e->actortype].hitboxes) return true;
+        if(!actors[e->actortype].collidezones) return true;
         collidezones = CLZ_NONE;
         float bestdist = 1e16f;
-        if(e->limbstag().x+e->limbsbox().x >= x1 && e->limbstag().y+e->limbsbox().y >= y1 && e->limbstag().x-e->limbsbox().x <= x2 && e->limbstag().y-e->limbsbox().y <= y2)
+        if(actors[e->actortype].collidezones&CLZ_LIMBS && e->limbstag().x+e->limbsbox().x >= x1 && e->limbstag().y+e->limbsbox().y >= y1 && e->limbstag().x-e->limbsbox().x <= x2 && e->limbstag().y-e->limbsbox().y <= y2)
         {
             vec bottom(e->limbstag()), top(e->limbstag());
             bottom.z -= e->limbsbox().z;
@@ -1387,11 +1387,11 @@ namespace physics
             float t = 1e16f;
             if(linecylinderintersect(from, to, bottom, top, max(e->limbsbox().x, e->limbsbox().y), t))
             {
-                collidezones |= CLZ_LIMB;
+                collidezones |= CLZ_LIMBS;
                 bestdist = min(bestdist, t);
             }
         }
-        if(e->torsotag().x+e->torsobox().x >= x1 && e->torsotag().y+e->torsobox().y >= y1 && e->torsotag().x-e->torsobox().x <= x2 && e->torsotag().y-e->torsobox().y <= y2)
+        if(actors[e->actortype].collidezones&CLZ_TORSO && e->torsotag().x+e->torsobox().x >= x1 && e->torsotag().y+e->torsobox().y >= y1 && e->torsotag().x-e->torsobox().x <= x2 && e->torsotag().y-e->torsobox().y <= y2)
         {
             vec bottom(e->torsotag()), top(e->torsotag());
             bottom.z -= e->torsobox().z;
@@ -1403,7 +1403,7 @@ namespace physics
                 bestdist = min(bestdist, t);
             }
         }
-        if(e->headtag().x+e->headbox().x >= x1 && e->headtag().y+e->headbox().y >= y1 && e->headtag().x-e->headbox().x <= x2 && e->headtag().y-e->headbox().y <= y2)
+        if(actors[e->actortype].collidezones&CLZ_HEAD && e->headtag().x+e->headbox().x >= x1 && e->headtag().y+e->headbox().y >= y1 && e->headtag().x-e->headbox().x <= x2 && e->headtag().y-e->headbox().y <= y2)
         {
             vec bottom(e->headtag()), top(e->headtag());
             bottom.z -= e->headbox().z;
@@ -1445,15 +1445,15 @@ namespace physics
         vec pos = vec(o).sub(GUARDRADIUS), radius = vec(rad).add(GUARDRADIUS*2);
         loopj(6) boxs(j, pos, radius);
         gameent *e = (gameent *)d;
-        if(!actors[e->actortype].hitboxes || (e == game::focus && !game::thirdpersonview())) return;
+        if(!actors[e->actortype].collidezones || (e == game::focus && !game::thirdpersonview())) return;
         vec headpos = vec(e->headtag()).sub(e->headbox()), headbox = vec(e->headbox()).mul(2),
             torsopos = vec(e->torsotag()).sub(e->torsobox()), torsobox = vec(e->torsobox()).mul(2),
             limbspos = vec(e->limbstag()).sub(e->limbsbox()), limbsbox = vec(e->limbsbox()).mul(2);
         loopj(6)
         {
-            boxs(j, headpos, headbox);
-            boxs(j, torsopos, torsobox);
-            boxs(j, limbspos, limbsbox);
+            if(actors[e->actortype].collidezones&CLZ_LIMBS) boxs(j, limbspos, limbsbox);
+            if(actors[e->actortype].collidezones&CLZ_TORSO) boxs(j, torsopos, torsobox);
+            if(actors[e->actortype].collidezones&CLZ_HEAD) boxs(j, headpos, headbox);
         }
     }
 

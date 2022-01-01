@@ -185,7 +185,7 @@ namespace projs
         float skew = clamp(scale, 0.f, 1.f)*damagescale;
 
         if(flags&HIT(WHIPLASH)) skew *= WF(WK(flags), weap, damagewhiplash, WS(flags));
-        else if(flags&HIT(HEAD)) skew *= WF(WK(flags), weap, damagehead, WS(flags));
+        else if(flags&HIT(HEAD) || flags&HIT(FULL)) skew *= WF(WK(flags), weap, damagehead, WS(flags));
         else if(flags&HIT(TORSO)) skew *= WF(WK(flags), weap, damagetorso, WS(flags));
         else if(flags&HIT(LIMB)) skew *= WF(WK(flags), weap, damagelimb, WS(flags));
         else return 0;
@@ -271,7 +271,7 @@ namespace projs
         else
         {
             hitmsg &h = hits.add();
-            h.flags = HIT(PROJ)|HIT(HEAD);
+            h.flags = HIT(PROJ)|HIT(FULL);
             h.proj = p->id;
             h.target = p->owner->clientnum;
             h.dist = int(dist*DNF);
@@ -283,6 +283,7 @@ namespace projs
     {
         bool push = WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags)) != 0, radiated = false;
         #define radialpush(rs,xx,yx,yy,yz1,yz2,zz) \
+        { \
             if(!proj.o.rejectxyz(xx, yx, yy, yz1, yz2)) zz = 0; \
             else if(!proj.o.reject(xx, rs+max(yx, yy))) \
             { \
@@ -290,17 +291,18 @@ namespace projs
                 bottom.z -= yz1; \
                 top.z += yz2; \
                 zz = closestpointcylinder(proj.o, bottom, top, max(yx, yy)).dist(proj.o); \
-            }
+            } \
+        }
         if(gameent::is(d))
         {
             gameent *e = (gameent *)d;
             float maxdist = push ? radius*WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags)) : radius;
-            if(actors[e->actortype].hitboxes)
+            if(actors[e->actortype].collidezones)
             {
                 float rdist[3] = { -1, -1, -1 };
-                radialpush(maxdist, e->limbstag(), e->limbsbox().x, e->limbsbox().y, e->limbsbox().z, e->limbsbox().z, rdist[0]);
-                radialpush(maxdist, e->torsotag(), e->torsobox().x, e->torsobox().y, e->torsobox().z, e->torsobox().z, rdist[1]);
-                radialpush(maxdist, e->headtag(), e->headbox().x, e->headbox().y, e->headbox().z, e->headbox().z, rdist[2]);
+                if(actors[e->actortype].collidezones&CLZ_LIMBS) radialpush(maxdist, e->limbstag(), e->limbsbox().x, e->limbsbox().y, e->limbsbox().z, e->limbsbox().z, rdist[0]);
+                if(actors[e->actortype].collidezones&CLZ_TORSO) radialpush(maxdist, e->torsotag(), e->torsobox().x, e->torsobox().y, e->torsobox().z, e->torsobox().z, rdist[1]);
+                if(actors[e->actortype].collidezones&CLZ_HEAD) radialpush(maxdist, e->headtag(), e->headbox().x, e->headbox().y, e->headbox().z, e->headbox().z, rdist[2]);
                 int closest = -1;
                 loopi(3) if(rdist[i] >= 0 && (closest < 0 || rdist[i] <= rdist[closest])) closest = i;
                 loopi(3) if(rdist[i] >= 0)
@@ -332,12 +334,12 @@ namespace projs
                 {
                     if(dist <= radius)
                     {
-                        hitpush(e, proj, HIT(HEAD)|flags, radius, dist, proj.curscale);
+                        hitpush(e, proj, HIT(FULL)|flags, radius, dist, proj.curscale);
                         radiated = true;
                     }
                     else if(push && dist <= maxdist)
                     {
-                        hitpush(e, proj, HIT(HEAD)|HIT(WAVE), maxdist, dist, proj.curscale);
+                        hitpush(e, proj, HIT(FULL)|HIT(WAVE), maxdist, dist, proj.curscale);
                         radiated = true;
                     }
                 }
@@ -377,9 +379,10 @@ namespace projs
                 else if(gameent::is(d))
                 {
                     int flags = 0;
-                    if(proj.collidezones&CLZ_LIMB) flags |= HIT(LIMB);
+                    if(proj.collidezones&CLZ_LIMBS) flags |= HIT(LIMB);
                     if(proj.collidezones&CLZ_TORSO) flags |= HIT(TORSO);
                     if(proj.collidezones&CLZ_HEAD) flags |= HIT(HEAD);
+                    if(proj.collidezones&CLZ_FULL) flags |= HIT(FULL);
                     if(flags) hitpush((gameent *)d, proj, flags|HIT(PROJ), 0, proj.lifesize, proj.curscale);
                 }
                 else if(d->type == ENT_PROJ) projpush((projent *)d);

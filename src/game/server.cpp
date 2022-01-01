@@ -4647,7 +4647,7 @@ namespace server
         float skew = clamp(scale, 0.f, 1.f)*G(damagescale);
 
         if(flags&HIT(WHIPLASH)) skew *= WF(WK(flags), weap, damagewhiplash, WS(flags));
-        else if(flags&HIT(HEAD)) skew *= WF(WK(flags), weap, damagehead, WS(flags));
+        else if(flags&HIT(HEAD) || flags&HIT(FULL)) skew *= WF(WK(flags), weap, damagehead, WS(flags));
         else if(flags&HIT(TORSO)) skew *= WF(WK(flags), weap, damagetorso, WS(flags));
         else if(flags&HIT(LIMB)) skew *= WF(WK(flags), weap, damagelimb, WS(flags));
         else return 0;

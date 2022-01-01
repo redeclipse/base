@@ -1463,7 +1463,7 @@ struct skelmodel : animmodel
 
         void cleanuphitdata();
         void deletehitdata();
-        void buildhitdata(const uchar *hitzones);
+        void buildhitdata(const uchar *collidezones);
         void intersect(skelhitdata *z, part *p, const skelmodel::skelcacheentry &sc, const vec &o, const vec &ray);
 
         void intersect(const animstate *as, float pitch, const vec &axis, const vec &forward, modelstate *state, dynent *d, part *p, const vec &o, const vec &ray)
@@ -1703,26 +1703,26 @@ struct skeladjustment
 template<class MDL> struct skelloader : modelloader<MDL, skelmodel>
 {
     static vector<skeladjustment> adjustments;
-    static vector<uchar> hitzones;
+    static vector<uchar> collidezones;
 
     skelloader(const char *name) : modelloader<MDL, skelmodel>(name) {}
 
     void flushpart()
     {
-        if(hitzones.length() && skelmodel::parts.length())
+        if(collidezones.length() && skelmodel::parts.length())
         {
             skelmodel::skelpart *p = (skelmodel::skelpart *)skelmodel::parts.last();
             skelmodel::skelmeshgroup *m = (skelmodel::skelmeshgroup *)p->meshes;
-            if(m) m->buildhitdata(hitzones.getbuf());
+            if(m) m->buildhitdata(collidezones.getbuf());
         }
 
         adjustments.setsize(0);
-        hitzones.setsize(0);
+        collidezones.setsize(0);
     }
 };
 
 template<class MDL> vector<skeladjustment> skelloader<MDL>::adjustments;
-template<class MDL> vector<uchar> skelloader<MDL>::hitzones;
+template<class MDL> vector<uchar> skelloader<MDL>::collidezones;
 
 template<class MDL> struct skelcommands : modelcommands<MDL, struct MDL::skelmesh>
 {
@@ -1992,8 +1992,8 @@ template<class MDL> struct skelcommands : modelcommands<MDL, struct MDL::skelmes
         bonemask.sort();
         bonemask.add(BONEMASK_END);
 
-        while(MDL::hitzones.length() < m->skel->numbones) MDL::hitzones.add(0xFF);
-        m->skel->applybonemask(bonemask.getbuf(), MDL::hitzones.getbuf(), *id < 0 ? 0xFF : *id);
+        while(MDL::collidezones.length() < m->skel->numbones) MDL::collidezones.add(0xFF);
+        m->skel->applybonemask(bonemask.getbuf(), MDL::collidezones.getbuf(), *id < 0 ? 0xFF : *id);
     }
 
     skelcommands()

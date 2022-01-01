@@ -151,7 +151,7 @@ enum
 #define HIT(x) (1<<(HIT_##x))
 enum
 {
-    HIT_HEAD = 0, HIT_TORSO, HIT_LIMB, HIT_WHIPLASH, HIT_ALT,
+    HIT_HEAD = 0, HIT_TORSO, HIT_LIMB, HIT_FULL, HIT_WHIPLASH, HIT_ALT,
     HIT_WAVE, HIT_PROJ, HIT_EXPLODE, HIT_BURN, HIT_BLEED, HIT_SHOCK,
     HIT_MATERIAL, HIT_SPAWN, HIT_LOST, HIT_KILL, HIT_FLAK, HIT_SPEC,
     HIT_TOUCH, HIT_CRUSH,
@@ -165,7 +165,6 @@ enum { W_R_BURN = 0, W_R_BLEED, W_R_SHOCK, W_R_MAX, W_R_ALL = WR(BURN)|WR(BLEED)
 struct shotmsg { int id; ivec pos; };
 struct hitmsg { int flags, proj, target, dist; ivec dir, vel; };
 
-#define hithead(x)       (x&HIT(WHIPLASH) || x&HIT(HEAD))
 #define hitdealt(x)      (x&HIT(BURN) || x&HIT(BLEED) || x&HIT(SHOCK) || x&HIT(EXPLODE) || x&HIT(PROJ) || x&HIT(MATERIAL))
 #define wr_burn(x,y)     (isweap(x) && (WF(WK(y), x, residual, WS(y))&WR(BURN)))
 #define wr_burns(x,y)    (G(noweapburn) && hitdealt(y) && ((x == -1 && y&HIT(BURN)) || wr_burn(x, y)))

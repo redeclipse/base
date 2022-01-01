@@ -587,7 +587,7 @@ extern physent *collideplayer;
 extern int collidezones;
 extern vec collidewall, hitsurface;
 
-enum { CLZ_NONE = 0, CLZ_HEAD = 1<<0, CLZ_TORSO = 1<<1, CLZ_LIMB = 1<<2 };
+enum { CLZ_NONE = 0, CLZ_LIMBS = 1<<0, CLZ_TORSO = 1<<1, CLZ_HEAD = 1<<2, CLZ_FULL = 1<<3, CLZ_NOHEAD = CLZ_LIMBS|CLZ_TORSO, CLZ_ALL = CLZ_LIMBS|CLZ_TORSO|CLZ_HEAD };
 
 enum
 {
