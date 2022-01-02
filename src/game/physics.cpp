@@ -290,6 +290,7 @@ namespace physics
             if(gameent::is(d))
             {
                 gameent *e = (gameent *)d;
+                if(!AA(e->actortype, magboots)) return false;
                 if(e->sliding() && e->impulse[IM_TYPE] != IM_T_VAULT) return false;
             }
         }
