@@ -1250,11 +1250,11 @@ namespace game
     {
         adjustscaled(d->quake, quakefade);
         int prevstate = isweap(d->weapselect) ? d->weapstate[d->weapselect] : W_S_IDLE;
-        float offset = d->height;
+        float offset = d->height, minz = d->feetpos().z;
+        d->o.z -= d->height;
 
         d->configure(lastmillis, gamemode, mutators, physics::carryaffinity(d), curtime);
 
-        d->o.z -= d->height;
         if(d->state == CS_ALIVE)
         {
             bool sliding = d->sliding(true), crouching = sliding || (d->crouching() && AA(d->actortype, abilities)&(1<<A_A_CROUCH)),
@@ -1301,7 +1301,10 @@ namespace game
             d->height = d->zradius;
             d->actiontime[AC_CROUCH] = 0;
         }
+
         d->o.z += d->airmillis && d->impulse[IM_TYPE] != IM_T_VAULT ? offset : d->height;
+        float feetz = d->feetpos().z;
+        if(feetz < minz) d->o.z += minz-feetz; // ensure player doesn't end up lower than they were
 
         if(impulsemeter && canregenimpulse(d) && d->impulse[IM_METER] > 0)
         {
