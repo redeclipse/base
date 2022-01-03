@@ -1359,11 +1359,8 @@ struct gameent : dynent, clientstate
         if(m_resize(gamemode, mutators) && cur)
         {
             float minscale = 1, amtscale = m_insta(gamemode, mutators) ? 1+(spree*G(instaresizeamt)) : max(health, 1)/float(max(gethealth(gamemode, mutators), 1));
-            if(m_resize(gamemode, mutators))
-            {
-                minscale = G(minresizescale);
-                if(amtscale < 1) amtscale = (amtscale*(1-minscale))+minscale;
-            }
+            minscale = G(minresizescale);
+            if(amtscale < 1) amtscale = (amtscale*(1-minscale))+minscale;
             scale *= clamp(amtscale, minscale, G(maxresizescale));
         }
 
