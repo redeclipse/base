@@ -41,24 +41,12 @@ namespace projs
     FVAR(IDF_PERSIST, ejectliquidcoast, 0, 1.75f, 10000);
     FVAR(IDF_PERSIST, ejectweight, -10000, 180, 10000);
 
-    VAR(IDF_PERSIST, projtrails, 0, 1, 1);
-    VAR(IDF_PERSIST, projtraildelay, 2, 50, VAR_MAX);
-    VAR(IDF_PERSIST, projtraillength, 1, 250, VAR_MAX);
-    VAR(IDF_PERSIST, projhints, 0, 0, 6);
-    VAR(IDF_PERSIST, projfirehint, 0, 0, 1);
-    FVAR(IDF_PERSIST, projhintblend, 0, 0.5f, 1);
-    FVAR(IDF_PERSIST, projhintsize, 0, 1.5f, FVAR_MAX);
-    FVAR(IDF_PERSIST, projfirehintsize, 0, 1.75f, FVAR_MAX);
-
     VAR(IDF_PERSIST, projburntime, 0, 5500, VAR_MAX);
     VAR(IDF_PERSIST, projburndelay, 0, 1000, VAR_MAX);
 
     VAR(0, projdebug, 0, 0, 1);
 
-    #define projhint(a,b)   (projhints >= 2 ? game::getcolour(a, projhints-2) : b)
-
-    VAR(IDF_PERSIST, muzzleflash, 0, 3, 3); // 0 = off, 1 = only other players, 2 = only thirdperson, 3 = all
-    VAR(IDF_PERSIST, muzzleflare, 0, 3, 3); // 0 = off, 1 = only other players, 2 = only thirdperson, 3 = all
+    VAR(IDF_PERSIST, muzzleflash, 0, 3, 3); // 0 = off, 1 = other players, 2 = focused players, 3 = all
     FVAR(IDF_PERSIST, muzzleblend, 0, 1, 1);
     FVAR(IDF_PERSIST, muzzlefade, 0, 0.5f, 1);
 
@@ -1270,7 +1258,7 @@ namespace projs
             }
         }
         vec orig = d == game::player1 || d->ai ? from : d->muzzletag();
-        if(delayattack >= 5 && weap < W_ALL && game::showweapfx)
+        if(delayattack >= 5 && weap < W_ALL && game::showweapfx && muzzleflash&(d == game::focus ? 2 : 1))
         {
             int color = WHCOL(d, weap, fxcol, WS(flags));
             float muz = muzzleblend*W2(weap, fxblend, WS(flags));
@@ -1283,7 +1271,7 @@ namespace projs
                 vec targ;
                 safefindorientation(d->o, d->yaw, d->pitch, targ);
                 targ.sub(from).normalize().add(from);
-                fx::createfx(fxindex, from, targ, 1.0f, fxscale, bvec(color), d, &d->weaponfx);
+                fx::createfx(fxindex, from, targ, muz, fxscale, bvec(color), d, &d->weaponfx);
                 if(d->weaponfx) d->weaponfx->setparam(W_FX_POWER_PARAM, scale);
             }
         }
@@ -2282,12 +2270,20 @@ namespace projs
                         {
                             mdl.material[0] = mdl.material[2] = bvec::fromcolor(W(attr, colour));
                             if(!game::focus->isobserver() && !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !entities::showentfull))
+                            {
+                                if(drawtex == DRAWTEX_HALO) mdl.flags |= MDL_NORENDER;
                                 mdl.color.a *= entities::showentunavailable;
+                            }
                             else mdl.color.a *= entities::showentavailable;
                         }
                         else continue;
                     }
                     if(mdl.color.a <= 0) continue;
+                    if(drawtex == DRAWTEX_HALO)
+                    {
+                        float maxdist = hud::radarlimit(halodist);
+                        if(maxdist > 0) loopj(3) mdl.material[j].mul(1.f-(mdl.o.dist(camera1->o)/maxdist));
+                    }
                     break;
                 }
                 default: break;
