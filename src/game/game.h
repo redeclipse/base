@@ -1356,7 +1356,7 @@ struct gameent : dynent, clientstate
             if(entities::ents[spawnpoint]->attrs[9] > 0) scale *= (entities::ents[spawnpoint]->attrs[9]/100.f);
         }
 
-        if(m_resize(gamemode, mutators))
+        if(m_resize(gamemode, mutators) && cur)
         {
             float minscale = 1, amtscale = m_insta(gamemode, mutators) ? 1+(spree*G(instaresizeamt)) : max(health, 1)/float(max(gethealth(gamemode, mutators), 1));
             if(m_resize(gamemode, mutators))
@@ -1374,12 +1374,13 @@ struct gameent : dynent, clientstate
             else curscale = scale;
         }
 
-        loopi(W_MAX) if(weapstate[i] != W_S_IDLE && (weapselect != i || (weapstate[i] != W_S_POWER && weapstate[i] != W_S_ZOOM)) && millis-weaptime[i] >= weapwait[i]+100)
+        loopi(W_MAX) if(!cur || (weapstate[i] != W_S_IDLE && (weapselect != i || (weapstate[i] != W_S_POWER && weapstate[i] != W_S_ZOOM)) && millis-weaptime[i] >= weapwait[i]+100))
             setweapstate(i, W_S_IDLE, 0, millis);
 
         xradius = yradius = actors[actortype].radius*curscale;
         zradius = actors[actortype].height*curscale;
-        if(!cur) height = zradius;
+        radius = max(xradius, yradius);
+        aboveeye = curscale;
 
         #define MODPHYS(a,b,c) a = AA(actortype, a)*c;
         MODPHYSL;
@@ -1390,94 +1391,96 @@ struct gameent : dynent, clientstate
             MODPHYSL;
             #undef MODPHYS
         }
-        if(affinities > 0)
+
+        if(cur)
         {
-            if(m_capture(gamemode))
+            if(affinities > 0)
             {
-                #define MODPHYS(a,b,c) a += G(capturecarry##a)+(affinities*G(capturecarry##a##each));
+                if(m_capture(gamemode))
+                {
+                    #define MODPHYS(a,b,c) a += G(capturecarry##a)+(affinities*G(capturecarry##a##each));
+                    MODPHYSL;
+                    #undef MODPHYS
+                }
+                else if(m_bomber(gamemode))
+                {
+                    #define MODPHYS(a,b,c) a += G(bombercarry##a);
+                    MODPHYSL;
+                    #undef MODPHYS
+                }
+            }
+            int sweap = m_weapon(actortype, gamemode, mutators);
+            loopi(W_MAX) if(hasweap(i, sweap))
+            {
+                int numammo = getammo(i, 0, true);
+                #define MODCARRY(a) (m_arena(gamemode, mutators) ? (a)*WEAPCARRY/W_LOADOUT : a)
+                #define MODPHYS(a,b,c) a += MODCARRY(W(i, mod##a)+(numammo*W(i, mod##a##ammo)));
                 MODPHYSL;
                 #undef MODPHYS
-            }
-            else if(m_bomber(gamemode))
-            {
-                #define MODPHYS(a,b,c) a += G(bombercarry##a);
+                if(i != weapselect) continue;
+                #define MODPHYS(a,b,c) a += W(i, mod##a##equip);
                 MODPHYSL;
                 #undef MODPHYS
+                switch(weapstate[i])
+                {
+                    case W_S_PRIMARY: case W_S_SECONDARY:
+                    {
+                        #define MODPHYS(a,b,c) a += W2(i, mod##a##attack, weapstate[i] == W_S_SECONDARY);
+                        MODPHYSL;
+                        #undef MODPHYS
+                        break;
+                    }
+                    case W_S_RELOAD:
+                    {
+                        #define MODPHYS(a,b,c) a += W(i, mod##a##reload);
+                        MODPHYSL;
+                        #undef MODPHYS
+                        break;
+                    }
+                    case W_S_SWITCH:
+                    {
+                        #define MODPHYS(a,b,c) a += W(i, mod##a##switch);
+                        MODPHYSL;
+                        #undef MODPHYS
+                        break;
+                    }
+                    case W_S_USE:
+                    {
+                        #define MODPHYS(a,b,c) a += W(i, mod##a##use);
+                        MODPHYSL;
+                        #undef MODPHYS
+                        break;
+                    }
+                    case W_S_POWER:
+                    {
+                        #define MODPHYS(a,b,c) a += W(i, mod##a##power);
+                        MODPHYSL;
+                        #undef MODPHYS
+                        break;
+                    }
+                    case W_S_ZOOM:
+                    {
+                        #define MODPHYS(a,b,c) a += W(i, mod##a##zoom);
+                        MODPHYSL;
+                        #undef MODPHYS
+                        break;
+                    }
+                }
             }
+            jitter(millis);
+            stunscale = stunned(millis, false);
+            stungravity = stunned(millis, true);
         }
-        int sweap = m_weapon(actortype, gamemode, mutators);
-        loopi(W_MAX) if(hasweap(i, sweap))
+        else
         {
-            int numammo = getammo(i, 0, true);
-            #define MODCARRY(a) (m_arena(gamemode, mutators) ? (a)*WEAPCARRY/W_LOADOUT : a)
-            #define MODPHYS(a,b,c) a += MODCARRY(W(i, mod##a)+(numammo*W(i, mod##a##ammo)));
-            MODPHYSL;
-            #undef MODPHYS
-            if(i != weapselect) continue;
-            #define MODPHYS(a,b,c) a += W(i, mod##a##equip);
-            MODPHYSL;
-            #undef MODPHYS
-            switch(weapstate[i])
-            {
-                case W_S_PRIMARY: case W_S_SECONDARY:
-                {
-                    #define MODPHYS(a,b,c) a += W2(i, mod##a##attack, weapstate[i] == W_S_SECONDARY);
-                    MODPHYSL;
-                    #undef MODPHYS
-                    break;
-                }
-                case W_S_RELOAD:
-                {
-                    #define MODPHYS(a,b,c) a += W(i, mod##a##reload);
-                    MODPHYSL;
-                    #undef MODPHYS
-                    break;
-                }
-                case W_S_SWITCH:
-                {
-                    #define MODPHYS(a,b,c) a += W(i, mod##a##switch);
-                    MODPHYSL;
-                    #undef MODPHYS
-                    break;
-                }
-                case W_S_USE:
-                {
-                    #define MODPHYS(a,b,c) a += W(i, mod##a##use);
-                    MODPHYSL;
-                    #undef MODPHYS
-                    break;
-                }
-                case W_S_POWER:
-                {
-                    #define MODPHYS(a,b,c) a += W(i, mod##a##power);
-                    MODPHYSL;
-                    #undef MODPHYS
-                    break;
-                }
-                case W_S_ZOOM:
-                {
-                    #define MODPHYS(a,b,c) a += W(i, mod##a##zoom);
-                    MODPHYSL;
-                    #undef MODPHYS
-                    break;
-                }
-            }
+            stunscale = stungravity = 0;
+            height = zradius;
         }
 
         #define MODPHYS(a,b,c) a = max(a, b(0));
         MODPHYSL;
         #undef MODPHYS
-
-        radius = max(xradius, yradius);
-        aboveeye = curscale;
-
         #undef MODPHYSL
-        if(cur)
-        {
-            jitter(millis);
-            stunscale = stunned(millis, false);
-            stungravity = stunned(millis, true);
-        }
     }
 
     int getprojid()

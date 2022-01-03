@@ -1041,13 +1041,13 @@ namespace game
 
     void respawned(gameent *d, bool local, int ent)
     { // remote clients wait until first position update to process this
+        d->configure(lastmillis, gamemode, mutators, physics::carryaffinity(d));
         if(local)
         {
             d->state = CS_ALIVE;
             entities::spawnplayer(d, ent, true);
             client::addmsg(N_SPAWN, "ri", d->clientnum);
         }
-        d->configure(lastmillis, gamemode, mutators, physics::carryaffinity(d));
 
         if(d == player1) specreset();
         else if(d == focus) resetcamera();
@@ -4113,12 +4113,15 @@ namespace game
         previewent->spawnstate(G_DEATHMATCH, 0, -1, previewent->gethealth(G_DEATHMATCH, 0));
         loopi(W_MAX) previewent->weapammo[i][W_A_CLIP] = W(i, ammoclip);
         loopi(W_MAX) previewent->weapammo[i][W_A_STORE] = W(i, ammostore) > 0 ? W(i, ammostore) : 0;
+        previewent->xradius = previewent->yradius = actors[previewent->actortype].radius;
+        previewent->zradius = actors[previewent->actortype].height;
+        previewent->radius = max(previewent->xradius, previewent->yradius);
+        previewent->aboveeye = 1;
     }
 
     void renderplayerpreview(float scale, const vec4 &mcolor, const char *actions, float yaw, float offsetyaw)
     {
         if(!previewent) initplayerpreview();
-        previewent->configure(lastmillis, gamemode, mutators);
         previewent->yaw = yaw;
         if(actions && *actions) execute(actions);
         float height = previewent->height + previewent->aboveeye, zrad = height/2;
