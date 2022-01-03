@@ -820,9 +820,9 @@ namespace projs
         else if(dist > 0 && !proj.vel.iszero()) dir = vec(proj.vel).normalize();
         if(dist > 0)
         {
-            float len = WF(WK(proj.flags), proj.weap, partlen, WS(proj.flags))*(1.1f-proj.lifespan)*proj.curscale,
-                  minsize = WF(WK(proj.flags), proj.weap, fxscale, WS(proj.flags))*proj.curscale,
-                  maxsize = min(WF(WK(proj.flags), proj.weap, partlen, WS(proj.flags)), dist),
+            float len = WF(WK(proj.flags), proj.weap, length, WS(proj.flags))*(1.1f-proj.lifespan)*proj.curscale,
+                  minsize = WF(WK(proj.flags), proj.weap, radius, WS(proj.flags))*proj.curscale,
+                  maxsize = min(WF(WK(proj.flags), proj.weap, length, WS(proj.flags)), dist),
                   cursize = clamp(len, min(minsize, maxsize), maxsize);
             if(cursize > 0)
             {

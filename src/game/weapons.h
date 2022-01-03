@@ -777,6 +777,12 @@ WPFVARM(IDF_GAMEMOD, 0, kickpush, FVAR_MIN, FVAR_MAX,
 WPVAR(IDF_GAMEMOD, 0, laser, 0, 1,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
 );
+WPFVARK(IDF_GAMEMOD, 0, length, 0, FVAR_MAX,
+    0.0f,       8.0f,       0.0f,       30.0f,      20.0f,      0.0f,       0.0f,       1024.0f,    512.0f,     0.0f,       4.0f,       0.0f,       0.0f,
+    0.0f,       16.0f,      0.0f,       10.0f,      15.0f,      0.0f,       0.0f,       1024.0f,    1024.0f,    0.0f,       4.0f,       0.0f,       0.0f,
+    0.0f,       8.0f,       0.0f,       10.0f,      15.0f,      0.0f,       0.0f,       1024.0f,    512.0f,     0.0f,       4.0f,       0.0f,       0.0f,
+    0.0f,       16.0f,      0.0f,       10.0f,      50.0f,      0.0f,       0.0f,       1024.0f,    1024.0f,    0.0f,       4.0f,       0.0f,       0.0f
+);
 WPVARK(IDF_GAMEMOD|IDF_HEX, 0, lightcol, PC(LAST), 0xFFFFFF,
     0x907020,   0xD0D0D0,   0x1010F0,   0xF0F020,   0xF05820,   PC(FIRE),   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   0x00F068,   PC(FIRE),   0xEEEE22,
     0x907020,   0xD0D0D0,   0x1010F0,   0xF0F020,   0xF05820,   0xF0F0F0,   0x40F0C8,   PC(SHOCK),  0xF020F0,   PC(FIRE),   0x00F068,   PC(FIRE),   0xEEEE22,
@@ -947,12 +953,6 @@ WPSVARK(IDF_GAMEMOD, 0, obituary,
     "given kung-fu lessons"
 );
 //  Claw        Pistol      Sword       Shotgun     SMG         Flamer      Plasma      Zapper      Rifle       Grenade     Mine        Rocket      Melee
-WPFVARK(IDF_GAMEMOD, 0, partlen, 0, FVAR_MAX,
-    0.0f,       8.0f,       0.0f,       30.0f,      20.0f,      0.0f,       0.0f,       1024.0f,    512.0f,     0.0f,       4.0f,       0.0f,       0.0f,
-    0.0f,       16.0f,      0.0f,       10.0f,      15.0f,      0.0f,       0.0f,       1024.0f,    1024.0f,    0.0f,       4.0f,       0.0f,       0.0f,
-    0.0f,       8.0f,       0.0f,       10.0f,      15.0f,      0.0f,       0.0f,       1024.0f,    512.0f,     0.0f,       4.0f,       0.0f,       0.0f,
-    0.0f,       16.0f,      0.0f,       10.0f,      50.0f,      0.0f,       0.0f,       1024.0f,    1024.0f,    0.0f,       4.0f,       0.0f,       0.0f
-);
 WPVARK(IDF_GAMEMOD, 0, proxdelay, 0, VAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          3000,       0,          0,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          1500000,    0,          0,
