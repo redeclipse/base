@@ -338,7 +338,6 @@ extern void lensflare(const vec &o, const vec &color, bool sun, int sparkle, flo
 // stain
 enum
 {
-    STAIN_NONE = 0,
     STAIN_SCORCH, STAIN_SCORCH_SHORT,
     STAIN_BLOOD,
     STAIN_BULLET,

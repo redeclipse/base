@@ -149,7 +149,7 @@ namespace fx
                         inst.getextprop<float>(FX_PART_PARTSIZE) * scale,
                         blend,
                         inst.getextprop<float>(FX_PART_GRAVITY),
-                        inst.getextprop<int>(FX_PART_COLLIDE),
+                        1+inst.getextprop<int>(FX_PART_COLLIDE),
                         trackent,
                         regdelay
                     );
@@ -162,7 +162,7 @@ namespace fx
                         inst.getextprop<float>(FX_PART_PARTSIZE) * scale,
                         blend,
                         inst.getextprop<float>(FX_PART_GRAVITY),
-                        inst.getextprop<int>(FX_PART_COLLIDE),
+                        1+inst.getextprop<int>(FX_PART_COLLIDE),
                         trackent
                     );
                 break;
@@ -182,7 +182,7 @@ namespace fx
                         inst.getextprop<float>(FX_PART_PARTSIZE) * scale,
                         blend,
                         inst.getextprop<float>(FX_PART_GRAVITY),
-                        inst.getextprop<int>(FX_PART_COLLIDE),
+                        1+inst.getextprop<int>(FX_PART_COLLIDE),
                         inst.getextprop<float>(FX_PART_SHAPESIZE) * scale,
                         inst.getextprop<float>(FX_PART_VEL),
                         regdelay
@@ -197,7 +197,7 @@ namespace fx
                         inst.getextprop<float>(FX_PART_PARTSIZE) * scale,
                         blend,
                         inst.getextprop<float>(FX_PART_GRAVITY),
-                        inst.getextprop<int>(FX_PART_COLLIDE),
+                        1+inst.getextprop<int>(FX_PART_COLLIDE),
                         inst.getextprop<float>(FX_PART_SHAPESIZE) * scale,
                         inst.getextprop<float>(FX_PART_VEL)
                     );
@@ -216,7 +216,7 @@ namespace fx
                     inst.getextprop<float>(FX_PART_PARTSIZE) * scale,
                     blend,
                     inst.getextprop<float>(FX_PART_GRAVITY),
-                    inst.getextprop<int>(FX_PART_COLLIDE),
+                    1+inst.getextprop<int>(FX_PART_COLLIDE),
                     inst.getextprop<float>(FX_PART_VEL)
                 );
                 break;
@@ -236,7 +236,7 @@ namespace fx
                     inst.getextprop<float>(FX_PART_PARTSIZE) * scale,
                     blend,
                     inst.getextprop<int>(FX_PART_GRAVITY),
-                    inst.getextprop<int>(FX_PART_COLLIDE),
+                    1+inst.getextprop<int>(FX_PART_COLLIDE),
                     trackent
                 );
                 break;
@@ -252,7 +252,7 @@ namespace fx
                     inst.getextprop<float>(FX_PART_PARTSIZE) * scale,
                     blend,
                     inst.getextprop<int>(FX_PART_GRAVITY),
-                    inst.getextprop<int>(FX_PART_COLLIDE)
+                    1+inst.getextprop<int>(FX_PART_COLLIDE)
                 );
                 break;
 
@@ -266,7 +266,7 @@ namespace fx
                     inst.getextprop<float>(FX_PART_PARTSIZE) * scale,
                     blend,
                     inst.getextprop<int>(FX_PART_GRAVITY),
-                    inst.getextprop<int>(FX_PART_COLLIDE),
+                    1+inst.getextprop<int>(FX_PART_COLLIDE),
                     trackent
                 );
                 break;
@@ -281,7 +281,7 @@ namespace fx
                     inst.getextprop<float>(FX_PART_PARTSIZE) * scale,
                     blend,
                     inst.getextprop<int>(FX_PART_GRAVITY),
-                    inst.getextprop<int>(FX_PART_COLLIDE),
+                    1+inst.getextprop<int>(FX_PART_COLLIDE),
                     trackent
                 );
                 break;

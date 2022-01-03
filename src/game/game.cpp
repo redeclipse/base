@@ -1196,8 +1196,8 @@ namespace game
         if(paused) return;
 
         float scale = 0.4f+(rnd(40)/100.f);
-        part_create(PART_HINT_BOLD_SOFT, shape ? len/2 : len/10, pos, getcolour(d, playereffecttone, playereffecttonelevel), scale*1.5f, scale*0.75f, 0, 0);
-        part_create(PART_FIREBALL_SOFT, shape ? len/2 : len/10, pos, pulsehexcol(d, PULSE_FIRE), scale*1.25f, scale*0.75f, 0, 0);
+        part_create(PART_HINT_BOLD_SOFT, shape ? len/2 : len/10, pos, getcolour(d, playereffecttone, playereffecttonelevel), scale*1.5f, scale*0.75f);
+        part_create(PART_FIREBALL_SOFT, shape ? len/2 : len/10, pos, pulsehexcol(d, PULSE_FIRE), scale*1.25f, scale*0.75f);
         if(shape) loopi(num) regularshape(PART_FIREBALL, int(d->radius)*2, pulsehexcol(d, PULSE_FIRE), 21, 1, len, pos, scale*1.25f, 0.75f, -5, 0, 10);
     }
 
@@ -1601,9 +1601,9 @@ namespace game
                 vec p = d->headpos(-d->height/4);
                 int hp = max(d->gethealth(gamemode, mutators)/5, 1);
                 if(!nogore && bloodscale > 0)
-                    part_splash(PART_BLOOD, int(clamp(damage/hp, 1, 5)*bloodscale)*(bleeding || material ? 2 : 1), bloodfade, p, 0x229999, (rnd(bloodsize/2)+(bloodsize/2))/10.f, 1, 100, STAIN_BLOOD, int(d->radius), 10);
+                    part_splash(PART_BLOOD, int(clamp(damage/hp, 1, 5)*bloodscale)*(bleeding || material ? 2 : 1), bloodfade, p, 0x229999, (rnd(bloodsize/2)+(bloodsize/2))/10.f, 1, 100, 1+STAIN_BLOOD, int(d->radius), 10);
                 if(nogore != 2 && (bloodscale <= 0 || bloodsparks))
-                    part_splash(PART_PLASMA, int(clamp(damage/hp, 1, 5))*(bleeding || material ? 2: 1), bloodfade, p, 0x882222, 1, 0.5f, 50, STAIN_STAIN, int(d->radius));
+                    part_splash(PART_PLASMA, int(clamp(damage/hp, 1, 5))*(bleeding || material ? 2: 1), bloodfade, p, 0x882222, 1, 0.5f, 50, 1+STAIN_STAIN, int(d->radius));
                 if(d != v)
                 {
                     bool sameteam = m_team(gamemode, mutators) && d->team == v->team;
@@ -4008,7 +4008,7 @@ namespace game
             if(d->burntime-millis < delay) pc *= float(d->burntime-millis)/float(delay);
             else pc *= 0.75f+(float(millis%delay)/float(delay*4));
             vec pos = vec(d->center()).sub(vec(rnd(11)-5, rnd(11)-5, rnd(5)-2).mul(pc));
-            regular_part_create(PART_FIREBALL, 200, pos, pulsehexcol(d, PULSE_FIRE), d->height*0.75f*intensity*blend*pc, fade*blend*pc*0.65f, -20, 0);
+            regular_part_create(PART_FIREBALL, 200, pos, pulsehexcol(d, PULSE_FIRE), d->height*0.75f*intensity*blend*pc, fade*blend*pc*0.65f, -20);
         }
         if(d->shocktime && d->shocking(lastmillis, d->shocktime))
         {

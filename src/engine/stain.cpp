@@ -809,9 +809,8 @@ VAR(IDF_PERSIST, maxstaindistance, 1, 512, 10000);
 
 void addstain(int type, const vec &center, const vec &surface, float radius, const bvec &color, int info)
 {
-    int id = type-1;
     if(!showstains || type<=0 || (size_t)type>sizeof(stains)/sizeof(stains[0]) || center.dist(camera1->o) - radius > maxstaindistance) return;
-    stainrenderer &d = stains[id];
+    stainrenderer &d = stains[type];
     d.addstain(center, surface, radius, color, info);
 }
 

@@ -195,7 +195,7 @@ struct partrenderer
                     if(p->o.z >= collidez+COLLIDEERROR) p->val = collidez+COLLIDEERROR;
                     else
                     {
-                        addstain(p->collide, vec(p->o.x, p->o.y, collidez), vec(o).sub(p->o).normalize(), 2*p->size, p->color, type&PT_RND4 ? (p->flags>>5)&3 : 0);
+                        addstain(p->collide-1, vec(p->o.x, p->o.y, collidez), vec(o).sub(p->o).normalize(), 2*p->size, p->color, type&PT_RND4 ? (p->flags>>5)&3 : 0);
                         blend = 0;
                     }
                 }
@@ -1789,7 +1789,7 @@ void makeparticle(const vec &o, attrvector &attr)
             break;
         }
         case 1: // smoke vent - <dir>
-            regularsplash(PART_SMOKE, 0x897661, 2, 1, 200, offsetvec(o, attr[1], rnd(10)), 2.4f, 1, 0);
+            regularsplash(PART_SMOKE, 0x897661, 2, 1, 200, offsetvec(o, attr[1], rnd(10)), 2.4f);
             break;
         case 2: // water fountain - <dir>
         {
@@ -1801,7 +1801,7 @@ void makeparticle(const vec &o, attrvector &attr)
                 const bvec &wcol = getwatercolour(mat);
                 color = (int(wcol[0])<<16) | (int(wcol[1])<<8) | int(wcol[2]);
             }
-            regularsplash(PART_SPARK, color, 10, 4, 200, offsetvec(o, attr[1], rnd(10)), 0.6f, 1, 0);
+            regularsplash(PART_SPARK, color, 10, 4, 200, offsetvec(o, attr[1], rnd(10)), 0.6f);
             break;
         }
         case 3: // fire ball - <size> <rgb> <type> <blend>
@@ -1809,7 +1809,7 @@ void makeparticle(const vec &o, attrvector &attr)
             int types[4] = { PART_EXPLOSION, PART_SHOCKWAVE, PART_SHOCKBALL, PART_GLIMMERY },
                 type = types[attr[3] >= 0 && attr[3] <= 3 ? attr[3] : 0];
             float blend = attr[4] > 0 && attr[4] < 100 ? attr[4]/100.f : 1.f;
-            newparticle(o, vec(0, 0, 0), 1, type, partcolour(attr[2], attr[3], attr[4]), 4.f, blend, 0)->val = 1+attr[1];
+            newparticle(o, vec(0, 0, 0), 1, type, partcolour(attr[2], attr[3], attr[4]), 4.f, blend)->val = 1+attr[1];
             break;
         }
         case 4:  // tape - <dir> <length> <rgb>
