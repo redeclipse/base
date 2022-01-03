@@ -1825,7 +1825,7 @@ void makeparticle(const vec &o, attrvector &attr)
             const float sizemap[] = { 0.28f, 0.0f, 0.0f, 0.25f, 4.f, 2.f, 0.6f, 4.f, 0.5f, 0.2f };
             int type = typemap[attr[0]-4], fade = attr[4] > 0 ? attr[4] : 250,
                 gravity = attr[0] > 7 ? attr[7] : 0,
-                stain = attr[0] > 7 ? (attr[6] > 0 && attr[6] <= STAIN_MAX ? attr[6] : -1) : 0,
+                stain = attr[0] > 7 ? (attr[6] >= 0 && attr[6] <= STAIN_MAX ? attr[6] : -1) : 0,
                 colour = attr[0] > 7 ? partcolour(attr[3], attr[9], attr[10]) : partcolour(attr[3], attr[6], attr[7]);
             float size = attr[5] != 0 ? attr[5]/100.f : sizemap[attr[0]-4],
                   vel = attr[0] > 7 ? attr[8] : 1;
