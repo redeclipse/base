@@ -130,7 +130,7 @@ namespace fx
         int color = getcolor(inst, FX_PART_COLOR).tohexcolor();
 
         int collidestain = inst.getextprop<int>(FX_PART_COLLIDE);
-        if(collidestain) collidestain++; // Particle stains need to be offeset by 1
+        if(collidestain) collidestain++; // Particle stains need to be offset by 1
 
         // tracking not supported when using offsets
         physent *trackent = !hasoffset && inst.getextprop<int>(FX_PART_TRACK) ?
