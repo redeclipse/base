@@ -197,7 +197,7 @@ namespace fx
         fxpropertydef(
             "collide",
             PROP_INT,
-            0, 0, (int)STAIN_MAX - 1,
+            -2, -1, (int)STAIN_MAX - 1,
             0
         ),
         fxpropertydef(
