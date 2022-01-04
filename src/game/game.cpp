@@ -2452,7 +2452,7 @@ namespace game
                 {
                      // Then do Quake Live-style power acceleration.
                      // Note that this behavior REPLACES the usual sensitivity, we then have to divide the result by the sensitivity again to no have double the sensitivity
-                     float speed = (sqrtf(dx * dx + dy * dy) / framemillis);
+                     float speed = (sqrtf(dx * dx + dy * dy) / curtime);
                      float adjustedspeedpxms = (speed - mouseacceloffset) * 0.001f * mouseaccel;
                      if(adjustedspeedpxms > 0)
                      {
