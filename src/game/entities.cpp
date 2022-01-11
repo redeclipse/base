@@ -2753,7 +2753,7 @@ namespace entities
                     spot = clamp(int(f.attrs[1]), 1, 89);
                 }
                 adddynlight(e.pos(), radius, color, 0, 0, e.attrs[6]|DL_ENVIRO, radius, color, NULL, dir, spot);
-                if(!flarelights) continue;
+                if(!(flarelights&2) && !(flarelights&1 && e.attrs[4])) continue;
                 bool sun = false;
                 int sparkle = 0;
                 float scale = 1.f;
