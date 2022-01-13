@@ -2146,7 +2146,7 @@ namespace UI
             changedraw(CHANGE_COLOR | CHANGE_BLEND);
             if(type==MODULATE) modblend(); else resetblend();
             int col = clamp(colstart, -1, colors.length()-1);
-            Color c = col >= 0 ? colors[col] : Color(colors[0]).scale(shadowcolor);
+            Color c = col >= 0 ? (colors.inrange(col) ? colors[col] : colors[0]) : Color(colors[0]).scale(shadowcolor);
             if(forced || lastmode != mode)
             {
                 if(lastmode != GL_POINTS) gle::end();
@@ -2183,7 +2183,7 @@ namespace UI
 
         bool drawmapped(float sx, float sy, vec2 coordmap[FC_MAX], vec2 tcoordmap[FC_MAX], int colstart = 0, int colcount = 0, bool forced = false, bool shading = false)
         {
-            int cols = clamp(colcount ? colcount : colors.length()-colstart, min(colstart, colors.length()-1), colors.length());
+            int cols = clamp(colcount ? colcount : colors.length()-colstart, 0, colors.length());
             if(!shading && outline)
             {
                 changedraw(CHANGE_SHADER);
@@ -2210,7 +2210,7 @@ namespace UI
                 loopi(cols-1)
                 {
                     int color1 = i+colstart,
-                        color2 = colcount>1 ? color1+1 : color1;
+                        color2 = cols>1 ? color1+1 : color1;
 
                     switch(dir)
                     {
@@ -2529,7 +2529,7 @@ namespace UI
                     gy += gs;
                 }
                 vec2 outline[FC_MAX], projdir[2], coordmap[CO_MAX][FC_MAX], tcoordmap[CO_MAX][FC_MAX];
-                loopi(FC_MAX) loopj(2) outline[i].v[j] = getcoord(i, j)*(j ? gh : gw);
+                loopi(FC_MAX) loopj(2) outline[i][j] = getcoord(i, j)*(j ? gh : gw);
 
                 // top left
                 projdir[0] = vec2(outline[1]).sub(outline[0]).normalize();
