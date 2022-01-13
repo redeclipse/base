@@ -870,6 +870,7 @@ extern void preloadusedmapmodels(bool msg = false, bool bih = false);
 extern int batcheddynamicmodels();
 extern int batcheddynamicmodelbounds(int mask, vec &bbmin, vec &bbmax);
 extern void cleanupmodels();
+extern int showmapmodels;
 
 static inline model *loadmapmodel(int n)
 {
