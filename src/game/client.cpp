@@ -1053,15 +1053,23 @@ namespace client
     CLCOMMANDM(rescolour, "sib", (char *who, int *n, int *c), intret(game::pulsehexcol(d, *n, *c > 0 ? *c : 50)));
     CLCOMMANDM(velocity, "si", (char *who, int *n), floatret(vec(d->vel).add(d->falling).magnitude()*(*n!=0 ? (*n > 0 ? 3.6f/8.f : 0.125f) : 1.f)));
 
-    int getoutline(gameent *d, int n, int c)
+    int getresidualfx(gameent *d, int n, int c)
     {
         int rescount = 0, len = n > 0 ? n : 1000;
+        bool critical = d->health <= d->gethealth(game::gamemode, game::mutators)*game::damagecritical;
+        if(critical) rescount++;
         #define RESIDUAL(name, type, pulse) if(d->name##time && d->name##ing(lastmillis, d->name##time)) rescount++;
         RESIDUALS
         #undef RESIDUAL
+
         if(rescount > 0)
         {
             int iter = len/rescount, count = 0, ptype = -1, cur = lastmillis%len;
+            if(critical)
+            {
+                if(cur >= count*iter) ptype = PULSE_WARN;
+                count++;
+            }
             #define RESIDUAL(name, type, pulse) \
                 if(d->name##time && d->name##ing(lastmillis, d->name##time)) \
                 { \
@@ -1074,7 +1082,7 @@ namespace client
         }
         return -1;
     }
-    CLCOMMANDM(outline, "sib", (char *who, int *n, int *c), intret(getoutline(d, *n, *c)));
+    CLCOMMANDM(residualfx, "sib", (char *who, int *n, int *c), intret(getresidualfx(d, *n, *c)));
 
     #define CLDOMCMD(dtype) \
         CLCOMMANDM(dtype, "sb", (char *who, int *n), \
