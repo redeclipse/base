@@ -760,7 +760,7 @@ namespace entities
     {
         switch(e.type)
         {
-            case TRIGGER: case MAPMODEL: case PARTICLES: case MAPSOUND: case LIGHTFX: case TELEPORT: case PUSHER:
+            case TRIGGER: case MAPMODEL: case PARTICLES: case MAPSOUND: case LIGHTFX: case TELEPORT: case LIGHT: case PUSHER:
                 return delay ? TRIGGERDELAY : TRIGGERTIME;
                 break;
             default: break;
@@ -1840,6 +1840,8 @@ namespace entities
                 if(e.attrs[6] < 0) e.attrs[6] = 0; // flags, clamp
                 if(e.attrs[7] < 0) e.attrs[7] = 0; // palette, clamp
                 if(e.attrs[8] < 0) e.attrs[8] = 0; // palindex, clamp
+                if(!e.spawned()) e.setspawned(1);
+                FIXEMIT;
                 break;
             }
             case MAPMODEL:
@@ -1966,7 +1968,7 @@ namespace entities
                 if(e.attrs[3] < 0) e.attrs[3] = 1; // radius, clamp
                 while(e.attrs[4] < 0) e.attrs[4] += 4; // state
                 while(e.attrs[4] >= 4) e.attrs[4] -= 4; // wrap both ways
-                if(cantrigger(n)) loopv(e.links) if(ents.inrange(e.links[i]) && (ents[e.links[i]]->type == MAPMODEL || ents[e.links[i]]->type == PARTICLES || ents[e.links[i]]->type == MAPSOUND || ents[e.links[i]]->type == LIGHTFX))
+                if(cantrigger(n)) loopv(e.links) if(ents.inrange(e.links[i]) && (ents[e.links[i]]->type == MAPMODEL || ents[e.links[i]]->type == PARTICLES || ents[e.links[i]]->type == MAPSOUND || ents[e.links[i]]->type == LIGHTFX || ents[e.links[i]]->type == LIGHT))
                 {
                     ents[e.links[i]]->lastemit = e.lastemit;
                     ents[e.links[i]]->setspawned(TRIGSTATE(e.spawned(), e.attrs[4]));
@@ -2086,8 +2088,8 @@ namespace entities
         if(e.type == TRIGGER && !cantrigger(index)) return;
         if(!local) e.lastemit = lastmillis;
         bool commit = false;
-        int fstent = min(firstent(MAPMODEL), min(firstent(LIGHTFX), min(firstent(PARTICLES), firstent(MAPSOUND)))),
-            lstent = max(lastent(MAPMODEL), max(lastent(LIGHTFX), max(lastent(PARTICLES), lastent(MAPSOUND))));
+        int fstent = min(firstent(MAPMODEL), min(firstent(LIGHTFX), min(firstent(LIGHT), min(firstent(PARTICLES), firstent(MAPSOUND))))),
+            lstent = max(lastent(MAPMODEL), max(lastent(LIGHTFX), max(lastent(LIGHT), max(lastent(PARTICLES), lastent(MAPSOUND)))));
         for(int i = fstent; i < lstent; ++i) if(ents[i]->links.find(index) >= 0)
         {
             gameentity &f = *(gameentity *)ents[i];
@@ -2103,6 +2105,13 @@ namespace entities
                     break;
                 }
                 case LIGHTFX:
+
+                case LIGHT:
+                {
+                    f.lastemit = e.lastemit;
+                    if(e.type == TRIGGER) f.setspawned(TRIGSTATE(e.spawned(), e.attrs[4]));
+                    break;
+                }
                 case PARTICLES:
                 {
                     f.lastemit = e.lastemit;

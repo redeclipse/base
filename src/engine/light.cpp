@@ -40,7 +40,7 @@ GETSKYPIE(lightpitch, float);
 
 bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, bool normalize, bool dyncheck)
 {
-    if(!entities::isallowed(e)) return false;
+    if(!entities::isallowed(e) || !e.spawned()) return false;
     if(dyncheck && e.flags&EF_DYNAMIC) return false;
     if(color)
     {
@@ -641,4 +641,3 @@ void initlights()
     clearshadowcache();
     loaddeferredlightshaders();
 }
-
