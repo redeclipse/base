@@ -270,15 +270,26 @@ namespace physics
 
     float gravityvel(physent *d)
     {
-        float vel = PHYS(gravity)*(d->weight/100.f);
+        float vel = PHYS(gravity)*(d->weight/100.f), buoy = 0.f;
+        if(liquidcheck(d)) buoy = PHYS(buoyancy)*(d->buoyancy/100.f);
         if(gameent::is(d))
         {
             gameent *e = (gameent *)d;
-            if(e->vel.z+e->falling.z <= gravitycutoff) vel *= e->crouching() ? gravityfallcrouch : gravityfall;
-            else if(e->actiontime[AC_JUMP] >= 0) vel *= e->crouching() ? gravityjumpcrouch : gravityjump;
-            else if(e->crouching()) vel *= gravitycrouch;
-            vel *= e->stungravity;
+            if(vel != 0)
+            {
+                if(e->vel.z+e->falling.z <= gravitycutoff) vel *= e->crouching() ? gravityfallcrouch : gravityfall;
+                else if(e->actiontime[AC_JUMP] >= 0) vel *= e->crouching() ? gravityjumpcrouch : gravityjump;
+                else if(e->crouching()) vel *= gravitycrouch;
+                vel *= e->stungravity;
+            }
+            if(buoy != 0)
+            {
+                if(e->actiontime[AC_JUMP] >= 0) buoy *= buoyancyjump;
+                else if(e->crouching()) buoy *= buoyancycrouch;
+                buoy *= e->stungravity;
+            }
         }
+        if(buoy != 0) vel -= buoy*d->submerged;
         return vel;
     }
 
@@ -1050,7 +1061,7 @@ namespace physics
 
     void modifygravity(physent *pl, int curtime)
     {
-        if(PHYS(gravity) > 0)
+        if(PHYS(gravity) > 0 || PHYS(buoyancy) > 0)
         {
             vec g(0, 0, 0);
             float secs = curtime/1000.0f;
@@ -1062,9 +1073,8 @@ namespace physics
                 g.normalize();
                 g.mul(gravityvel(pl)*secs);
             }
+            pl->falling.add(g);
             bool liquid = liquidcheck(pl);
-            if(!liquid || (!pl->move && !pl->strafe) || (gameent::is(pl) && ((gameent *)pl)->crouching()))
-                pl->falling.add(g);
             if(liquid || pl->physstate >= PHYS_SLOPE)
             {
                 float coast = liquid ? liquidmerge(pl, PHYS(aircoast), PHYS(liquidcoast)) : PHYS(floorcoast)*coastscale(pl->feetpos(-1)),
@@ -1125,11 +1135,12 @@ namespace physics
         if(pl->onladder && pl->physstate < PHYS_SLIDE) pl->floor = vec(0, 0, 1);
         if(gameent::is(pl))
         {
-            if(!prevliq && pl->inliquid) ((gameent *)pl)->resetjump();
+            gameent *d = (gameent *)pl;
+            if(!prevliq && d->inliquid) d->resetjump();
             if(local)
             {
-                if(pl->physstate < PHYS_SLIDE && submerged >= 0.5f && pl->submerged < 0.5f && pl->vel.z > 1e-3f) pl->vel.z = max(pl->vel.z, max(jumpvel(pl, false), gravityvel(pl)));
-                if(pl->inmaterial != oldmatid || pl->submerged != submerged) client::addmsg(N_SPHY, "ri3f", ((gameent *)pl)->clientnum, SPHY_MATERIAL, pl->inmaterial, pl->submerged);
+                if(d->physstate < PHYS_SLIDE && submerged >= PHYS(liquidboost) && d->submerged < PHYS(liquidboost) && d->vel.z > 1e-3f) d->vel.z = max(d->vel.z, jumpvel(d, false)*AA(d->actortype, liquidboost));
+                if(d->inmaterial != oldmatid || d->submerged != submerged) client::addmsg(N_SPHY, "ri3f", d->clientnum, SPHY_MATERIAL, d->inmaterial, d->submerged);
             }
         }
     }

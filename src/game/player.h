@@ -165,6 +165,9 @@ APVAR(IDF_GAMEMOD, 0, health, 1, VAR_MAX,
 APVAR(IDF_GAMEMOD, 0, hurtstop, 1, VAR_MAX,
     0,              0,              0,              100,            500,            100
 );
+APFVAR(IDF_GAMEMOD, 0, liquidboost, 0, FVAR_MAX,
+    1,              1,              1,              1,              1,              1
+);
 APVAR(IDF_GAMEMOD, 0, magboots, 0, WEAPCARRY,
     1,              1,              1,              1,              1,              1
 );
@@ -248,6 +251,12 @@ APFVAR(IDF_GAMEMOD, 0, weight, 0, FVAR_MAX,
     260,            260,            260,            260,            200,            150
 );
 APFVAR(IDF_GAMEMOD, 0, weightextra, FVAR_MIN, FVAR_MAX,
+    0,              0,              0,              0,              0,              0
+);
+APFVAR(IDF_GAMEMOD, 0, buoyancy, 0, FVAR_MAX,
+    300,            300,            300,            300,            250,            200
+);
+APFVAR(IDF_GAMEMOD, 0, buoyancyextra, FVAR_MIN, FVAR_MAX,
     0,              0,              0,              0,              0,              0
 );
 

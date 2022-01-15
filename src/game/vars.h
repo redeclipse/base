@@ -31,6 +31,10 @@ GFVAR(IDF_GAMEMOD, 0, gravityjumpcrouch, 0, 1, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, gravityfall, 0, 1, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, gravityfallcrouch, 0, 1.5f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, gravitycutoff, FVAR_MIN, 0, FVAR_MAX);
+GFVAR(IDF_WORLD, 0, buoyancy, 0, 50.f, 1000); // buoyancy
+GFVAR(IDF_GAMEMOD, 0, buoyancyscale, 0, 1, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, buoyancycrouch, 0, 0.75f, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, buoyancyjump, 0, 1.25f, FVAR_MAX);
 
 GFVAR(IDF_WORLD, 0, floorcoast, 0, 5.f, 1000);
 GFVAR(IDF_GAMEMOD, 0, floorcoastscale, 0, 1, FVAR_MAX);
@@ -43,6 +47,8 @@ GFVAR(IDF_WORLD, 0, liquidspeed, 0, 0.85f, 1);
 GFVAR(IDF_GAMEMOD, 0, liquidspeedscale, 0, 1, FVAR_MAX);
 GFVAR(IDF_WORLD, 0, liquidcoast, 0, 10.f, 1000);
 GFVAR(IDF_GAMEMOD, 0, liquidcoastscale, 0, 1, FVAR_MAX);
+GFVAR(IDF_WORLD, 0, liquidboost, 0, 0.5f, 1);
+GFVAR(IDF_GAMEMOD, 0, liquidboostscale, 0, 1, FVAR_MAX);
 GFVAR(IDF_WORLD, 0, liquidsubmerge, 0, 0.75f, 1);
 GFVAR(IDF_GAMEMOD, 0, liquidsubmergescale, 0, 1, FVAR_MAX);
 GFVAR(IDF_WORLD, 0, liquidextinguish, 0, 0.25f, 1);
@@ -253,6 +259,7 @@ GFVAR(IDF_GAMEMOD, 0, itemelasticity, FVAR_MIN, 0.4f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemrelativity, FVAR_MIN, 1, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemliquidcoast, 0, 1.75f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemweight, FVAR_MIN, 150, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, itembuoyancy, FVAR_MIN, 200, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemspeedmin, 0, 0, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemspeedmax, 0, 0, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemrepulsion, 0, 24, FVAR_MAX);
@@ -338,6 +345,7 @@ GFVAR(IDF_GAMEMOD, 0, capturerelativity, 0, 0, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, captureelasticity, FVAR_MIN, 0.65f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, captureliquidcoast, FVAR_MIN, 1.75f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, captureweight, FVAR_MIN, 400, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, capturebuoyancy, FVAR_MIN, 100, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, capturespeedmin, 0, 0, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, capturespeedmax, 0, 100, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, capturerepulsion, 0, 24, FVAR_MAX);
@@ -360,6 +368,8 @@ GFVAR(IDF_GAMEMOD, 0, capturecarryspeed, FVAR_MIN, 0, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, capturecarryspeedeach, FVAR_MIN, 0, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, capturecarryweight, FVAR_MIN, 0, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, capturecarryweighteach, FVAR_MIN, 5, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, capturecarrybuoyancy, FVAR_MIN, 0, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, capturecarrybuoyancyeach, FVAR_MIN, 0, FVAR_MAX);
 
 GVAR(IDF_GAMEMOD, 0, defendlimit, 0, 0, VAR_MAX); // finish when score is this or more
 GVAR(IDF_GAMEMOD, 0, defendpoints, 0, 1, VAR_MAX); // points added to score
@@ -409,6 +419,7 @@ GFVAR(IDF_GAMEMOD, 0, bomberrelativity, 0, 0.25f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, bomberelasticity, FVAR_MIN, 0.75f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, bomberliquidcoast, FVAR_MIN, 1.75f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, bomberweight, FVAR_MIN, 350, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, bomberbuoyancy, FVAR_MIN, 400, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, bomberthreshold, 0, 0, FVAR_MAX); // if someone 'warps' more than this distance, auto-drop
 GVAR(IDF_GAMEMOD, 0, bomberbuffing, 0, 1, 7); // buffed; 0 = off, &1 = when guarding, &2 = when securing, &4 = when secured as defender in attack
 GVAR(IDF_GAMEMOD, 0, bomberbuffdelay, 0, 3000, VAR_MAX); // buffed for this long after leaving
@@ -423,6 +434,7 @@ GFVAR(IDF_GAMEMOD, 0, bombercarryjumpspeed, FVAR_MIN, 0, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, bombercarryimpulsespeed, FVAR_MIN, 0, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, bombercarryspeed, FVAR_MIN, 0, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, bombercarryweight, FVAR_MIN, 5, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, bombercarrybuoyancy, FVAR_MIN, 5, FVAR_MAX);
 
 GFVAR(0, PRIV_MODERATOR, aihostnum, 0, 50, FVAR_MAX); // Multiply number of bots hosted by this much for the bot hosting decision.
 GFVAR(0, PRIV_MODERATOR, aihostping, 0, 1, FVAR_MAX); // Multiply host ping by this much for the bot hosting decision.

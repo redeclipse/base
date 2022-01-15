@@ -1346,7 +1346,8 @@ struct gameent : dynent, clientstate
             MODPHYS(speed, float, speedscale); \
             MODPHYS(jumpspeed, float, speedscale); \
             MODPHYS(impulsespeed, float, speedscale); \
-            MODPHYS(weight, float, curscale);
+            MODPHYS(weight, float, curscale); \
+            MODPHYS(buoyancy, float, curscale);
 
         float scale = AA(actortype, scale), speedscale = 1;
 

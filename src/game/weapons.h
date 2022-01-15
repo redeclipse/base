@@ -1236,6 +1236,12 @@ WPFVARK(IDF_GAMEMOD, 0, weight, FVAR_MIN, FVAR_MAX,
     0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       -25.0f,     0.0f,       0.0f,       0.0f,       75.0f,      150.0f,     0.0f,       0.0f,
     0.0f,       0.0f,       0.0f,       250.0f,     0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       75.0f,      150.0f,     0.0f,       0.0f
 );
+WPFVARK(IDF_GAMEMOD, 0, buoyancy, FVAR_MIN, FVAR_MAX,
+    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,
+    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,
+    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,
+    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f
+);
 WPFVARM(IDF_GAMEMOD, 0, znudge, FVAR_MIN, FVAR_MAX,
     0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.25f,      0.1f,       0.0f,       0.0f,
     0.0f,       0.0f,       0.0f,       0.1f,       0.0f,       0.0f,       0.1f,       0.0f,       0.0f,       0.25f,      0.1f,       0.0f,       0.0f
@@ -1365,6 +1371,35 @@ WPFVAR(IDF_GAMEMOD, 0, modweightuse, FVAR_MIN, FVAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
 );
 WPFVAR(IDF_GAMEMOD, 0, modweightzoom, FVAR_MIN, FVAR_MAX,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
+);
+// BUOYANCY
+WPFVAR(IDF_GAMEMOD, 0, modbuoyancy, FVAR_MIN, FVAR_MAX,
+    0,          0,           0,         0,          0,          0,          0,          0,          0,          0,          0,          0,          0
+);
+WPFVAR(IDF_GAMEMOD, 0, modbuoyancyammo, FVAR_MIN, FVAR_MAX,
+    0,          0,           0,         0,          0,          0,          0,          0,          0,          0,          0,          0,          0
+);
+WPFVARM(IDF_GAMEMOD, 0, modbuoyancyattack, FVAR_MIN, FVAR_MAX,
+    0,          0,           0,         0,          0,          0,          0,          0,          0,          0,          0,          0,          0,
+    0,          0,           0,         0,          0,          0,          0,          0,          0,          0,          0,          0,          0
+);
+WPFVAR(IDF_GAMEMOD, 0, modbuoyancyequip, FVAR_MIN, FVAR_MAX,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
+);
+WPFVAR(IDF_GAMEMOD, 0, modbuoyancyreload, FVAR_MIN, FVAR_MAX,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
+);
+WPFVAR(IDF_GAMEMOD, 0, modbuoyancyswitch, FVAR_MIN, FVAR_MAX,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
+);
+WPFVAR(IDF_GAMEMOD, 0, modbuoyancypower, FVAR_MIN, FVAR_MAX,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
+);
+WPFVAR(IDF_GAMEMOD, 0, modbuoyancyuse, FVAR_MIN, FVAR_MAX,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
+);
+WPFVAR(IDF_GAMEMOD, 0, modbuoyancyzoom, FVAR_MIN, FVAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
 );
 

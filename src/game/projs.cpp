@@ -26,20 +26,24 @@ namespace projs
     FVAR(IDF_PERSIST, gibsrelativity, -10000, 0.95f, 10000);
     FVAR(IDF_PERSIST, gibsliquidcoast, 0, 2, 10000);
     FVAR(IDF_PERSIST, gibsweight, -10000, 150, 10000);
+    FVAR(IDF_PERSIST, gibsbuoyancy, -10000, 200, 10000);
 
     FVAR(IDF_PERSIST, vanityelasticity, -10000, 0.5f, 10000);
     FVAR(IDF_PERSIST, vanityrelativity, -10000, 0.95f, 10000);
     FVAR(IDF_PERSIST, vanityliquidcoast, 0, 2, 10000);
     FVAR(IDF_PERSIST, vanityweight, -10000, 100, 10000);
+    FVAR(IDF_PERSIST, vanitybuoyancy, -10000, 50, 10000);
 
     FVAR(IDF_PERSIST, debriselasticity, -10000, 0.6f, 10000);
     FVAR(IDF_PERSIST, debrisliquidcoast, 0, 1.7f, 10000);
     FVAR(IDF_PERSIST, debrisweight, -10000, 165, 10000);
+    FVAR(IDF_PERSIST, debrisbuoyancy, -10000, 0, 10000);
 
     FVAR(IDF_PERSIST, ejectelasticity, -10000, 0.35f, 10000);
     FVAR(IDF_PERSIST, ejectrelativity, -10000, 1, 10000);
     FVAR(IDF_PERSIST, ejectliquidcoast, 0, 1.75f, 10000);
     FVAR(IDF_PERSIST, ejectweight, -10000, 180, 10000);
+    FVAR(IDF_PERSIST, ejectbuoyancy, -10000, 0, 10000);
 
     VAR(IDF_PERSIST, projburntime, 0, 5500, VAR_MAX);
     VAR(IDF_PERSIST, projburndelay, 0, 1000, VAR_MAX);
@@ -878,6 +882,7 @@ namespace projs
                 proj.relativity = W2(proj.weap, relativity, WS(proj.flags));
                 proj.liquidcoast = WF(WK(proj.flags), proj.weap, liquidcoast, WS(proj.flags));
                 proj.weight = WF(WK(proj.flags), proj.weap, weight, WS(proj.flags));
+                proj.buoyancy = WF(WK(proj.flags), proj.weap, buoyancy, WS(proj.flags));
                 proj.projcollide = WF(WK(proj.flags), proj.weap, collide, WS(proj.flags));
                 proj.speedmin = WF(WK(proj.flags), proj.weap, speedmin, WS(proj.flags));
                 proj.speedmax = WF(WK(proj.flags), proj.weap, speedmax, WS(proj.flags));
@@ -931,6 +936,7 @@ namespace projs
                     proj.relativity = gibsrelativity;
                     proj.liquidcoast = gibsliquidcoast;
                     proj.weight = gibsweight*proj.lifesize;
+                    proj.buoyancy = gibsbuoyancy*proj.lifesize;
                     proj.vel.add(vec(rnd(21)-10, rnd(21)-10, proj.owner && proj.owner->headless ? rnd(61)+10 : rnd(21)-10));
                     proj.projcollide = BOUNCE_GEOM|BOUNCE_PLAYER;
                     proj.escaped = !proj.owner || proj.owner->state != CS_ALIVE;
@@ -956,6 +962,7 @@ namespace projs
                 proj.elasticity = debriselasticity;
                 proj.liquidcoast = debrisliquidcoast;
                 proj.weight = debrisweight*proj.lifesize;
+                proj.buoyancy = debrisbuoyancy*proj.lifesize;
                 proj.vel.add(vec(rnd(101)-50, rnd(101)-50, rnd(151)-50)).mul(2);
                 proj.projcollide = BOUNCE_GEOM|BOUNCE_PLAYER|COLLIDE_OWNER;
                 proj.escaped = !proj.owner || proj.owner->state != CS_ALIVE;
@@ -988,6 +995,7 @@ namespace projs
                 proj.relativity = ejectrelativity;
                 proj.liquidcoast = ejectliquidcoast;
                 proj.weight = (ejectweight+(proj.speed*2))*proj.lifesize; // so they fall better in relation to their speed
+                proj.buoyancy = ejectbuoyancy*proj.lifesize;
                 proj.projcollide = BOUNCE_GEOM;
                 proj.escaped = true;
                 proj.fadetime = rnd(250)+250;
@@ -1009,6 +1017,7 @@ namespace projs
                 proj.relativity = itemrelativity;
                 proj.liquidcoast = itemliquidcoast;
                 proj.weight = itemweight;
+                proj.buoyancy = itembuoyancy;
                 proj.projcollide = itemcollide;
                 proj.speedmin = itemspeedmin;
                 proj.speedmax = itemspeedmax;
@@ -1043,6 +1052,7 @@ namespace projs
                         proj.interacts = bomberinteracts;
                         proj.elasticity = bomberelasticity;
                         proj.weight = bomberweight;
+                        proj.buoyancy = bomberbuoyancy;
                         proj.relativity = bomberrelativity;
                         proj.liquidcoast = bomberliquidcoast;
                         proj.speedmin = bomberspeedmin;
@@ -1055,6 +1065,7 @@ namespace projs
                         proj.interacts = captureinteracts;
                         proj.elasticity = captureelasticity;
                         proj.weight = captureweight;
+                        proj.buoyancy = capturebuoyancy;
                         proj.relativity = capturerelativity;
                         proj.liquidcoast = captureliquidcoast;
                         proj.speedmin = capturespeedmin;
@@ -1088,6 +1099,7 @@ namespace projs
                 proj.relativity = vanityrelativity;
                 proj.liquidcoast = vanityliquidcoast;
                 proj.weight = vanityweight;
+                proj.buoyancy = vanitybuoyancy;
                 proj.vel.add(vec(rnd(21)-10, rnd(21)-10, rnd(61)+10));
                 proj.projcollide = BOUNCE_GEOM|BOUNCE_PLAYER;
                 proj.escaped = !proj.owner || proj.owner->state != CS_ALIVE;
@@ -1932,7 +1944,7 @@ namespace projs
                 if(!dir.iszero()) (proj.vel = dir).mul(mag);
             }
         }
-        if(proj.weight != 0.f) proj.vel.z -= physics::gravityvel(&proj)*secs;
+        proj.vel.z -= physics::gravityvel(&proj)*secs;
         return moveproj(proj, secs);
     }
 

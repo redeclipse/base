@@ -1022,6 +1022,7 @@ namespace client
     CLCOMMAND(jumpspeed, floatret(d->jumpspeed));
     CLCOMMAND(impulsespeed, floatret(d->impulsespeed));
     CLCOMMAND(weight, floatret(d->weight));
+    CLCOMMAND(buoyancy, floatret(d->buoyancy));
 
     CLCOMMAND(scoretime, floatret(d->scoretime()));
     CLCOMMANDM(kdratio, "si", (char *who, int *n), intret(d->kdratio(*n!=0)));
