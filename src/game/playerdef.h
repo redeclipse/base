@@ -47,7 +47,7 @@
             &sv_roller##name, \
         };
 
-    #define AA(t,name)         (*sv_actor_stat_##name[t])
+    #define A(t,name)         (*sv_actor_stat_##name[t])
 #else
 #ifdef CPP_GAME_MAIN
     #define APVAR(flags, level, name, mn, mx, w00, w01, w02, w03, w04, w05) \
@@ -123,5 +123,5 @@
         GSVAR(flags, level, roller##name, w05); \
         extern char **actor_stat_##name[];
 #endif
-    #define AA(t,name)         (*actor_stat_##name[t])
+    #define A(t,name)         (*actor_stat_##name[t])
 #endif

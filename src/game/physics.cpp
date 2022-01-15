@@ -32,7 +32,7 @@ namespace physics
     bool allowimpulse(physent *d, int type)
     {
         if(d && gameent::is(d))
-            return (!type || AA(((gameent *)d)->actortype, abilities)&(1<<type)) && (impulsestyle || PHYS(gravity) == 0);
+            return (!type || A(((gameent *)d)->actortype, abilities)&(1<<type)) && (impulsestyle || PHYS(gravity) == 0);
         return false;
     }
 
@@ -179,15 +179,15 @@ namespace physics
         if(d->actortype < A_ENEMY && e->actortype < A_ENEMY && m_ghost(game::gamemode, game::mutators)) return true;
         switch(d->actortype)
         {
-            case A_PLAYER: if(!(AA(e->actortype, collide)&(1<<A_C_PLAYERS))) return true; break;
-            case A_BOT: if(!(AA(e->actortype, collide)&(1<<A_C_BOTS))) return true; break;
-            default: if(!(AA(e->actortype, collide)&(1<<A_C_ENEMIES))) return true; break;
+            case A_PLAYER: if(!(A(e->actortype, collide)&(1<<A_C_PLAYERS))) return true; break;
+            case A_BOT: if(!(A(e->actortype, collide)&(1<<A_C_BOTS))) return true; break;
+            default: if(!(A(e->actortype, collide)&(1<<A_C_ENEMIES))) return true; break;
         }
-        if(m_team(game::gamemode, game::mutators) && d->team == e->team && (proj || AA(e->actortype, teamdamage)&(1<<A_T_GHOST))) switch(d->actortype)
+        if(m_team(game::gamemode, game::mutators) && d->team == e->team && (proj || A(e->actortype, teamdamage)&(1<<A_T_GHOST))) switch(d->actortype)
         {
-            case A_PLAYER: if(!(AA(e->actortype, teamdamage)&(1<<A_T_PLAYERS))) return true; break;
-            case A_BOT: if(!(AA(e->actortype, teamdamage)&(1<<A_T_BOTS))) return true; break;
-            default: if(!(AA(e->actortype, teamdamage)&(1<<A_T_ENEMIES))) return true; break;
+            case A_PLAYER: if(!(A(e->actortype, teamdamage)&(1<<A_T_PLAYERS))) return true; break;
+            case A_BOT: if(!(A(e->actortype, teamdamage)&(1<<A_T_BOTS))) return true; break;
+            default: if(!(A(e->actortype, teamdamage)&(1<<A_T_ENEMIES))) return true; break;
         }
         return false;
     }
@@ -300,7 +300,7 @@ namespace physics
             if(gameent::is(d))
             {
                 gameent *e = (gameent *)d;
-                if(!AA(e->actortype, magboots)) return false;
+                if(!A(e->actortype, magboots)) return false;
                 if(e->sliding() && e->impulse[IM_TYPE] != IM_T_VAULT) return false;
             }
         }
@@ -820,7 +820,7 @@ namespace physics
                 }
             }
         }
-        else if(!impulseplayer(d, onfloor, vec(d->vel).add(d->falling)) && onfloor && d->action[AC_JUMP] && AA(d->actortype, abilities)&(1<<A_A_JUMP))
+        else if(!impulseplayer(d, onfloor, vec(d->vel).add(d->falling)) && onfloor && d->action[AC_JUMP] && A(d->actortype, abilities)&AA(JUMP))
         {
             float force = jumpvel(d);
             if(force > 0)
@@ -1139,7 +1139,7 @@ namespace physics
             if(!prevliq && d->inliquid) d->resetjump();
             if(local)
             {
-                if(d->physstate < PHYS_SLIDE && submerged >= PHYS(liquidboost) && d->submerged < PHYS(liquidboost) && d->vel.z > 1e-3f) d->vel.z = max(d->vel.z, jumpvel(d, false)*AA(d->actortype, liquidboost));
+                if(d->physstate < PHYS_SLIDE && submerged >= PHYS(liquidboost) && d->submerged < PHYS(liquidboost) && d->vel.z > 1e-3f) d->vel.z = max(d->vel.z, jumpvel(d, false)*A(d->actortype, liquidboost));
                 if(d->inmaterial != oldmatid || d->submerged != submerged) client::addmsg(N_SPHY, "ri3f", d->clientnum, SPHY_MATERIAL, d->inmaterial, d->submerged);
             }
         }

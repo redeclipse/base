@@ -280,9 +280,9 @@ extern mutstypes mutstype[];
 #define m_normweaps(a,b)    (!m_race(a) && !m_insta(a,b) && !m_medieval(a,b) && !m_kaboom(a,b) && !m_dm_gladiator(a,b))
 #define m_lasthit(a,b)      (m_dm_gladiator(a,b) && m_points(a,b))
 
-#define m_weapon(at,a,b)    (m_medieval(a, b) ? AA(at, weaponmedieval) : (m_kaboom(a, b) ? AA(at, weaponkaboom) : (m_insta(a, b) ? AA(at, weaponinsta) : (m_race(a) && !m_ra_gauntlet(a, b) ? AA(at, weaponrace) : (m_dm_gladiator(a, b) ? AA(at, weapongladiator) : AA(at, weaponspawn))))))
-#define m_maxcarry(at,a,b)  (at < A_ENEMY && m_arena(a, b) ? W_LOADOUT : AA(at, maxcarry))
-#define m_delay(at,a,b,c)   (!m_duke(a,b) ? int((m_edit(a) ? AA(at, spawndelayedit) : (m_race(a) ? (!m_ra_gauntlet(a, b) || c == T_ALPHA ? AA(at, spawndelayrace) : AA(at, spawndelaygauntlet)) : (m_bomber(a) ? AA(at, spawndelaybomber) : (m_defend(a) ? AA(at, spawndelaydefend) : (m_capture(a) ? AA(at, spawndelaycapture) : AA(at, spawndelay))))))*(m_insta(a, b) ? AA(at, spawndelayinstascale) : 1.f)) : 0)
+#define m_weapon(at,a,b)    (m_medieval(a, b) ? A(at, weaponmedieval) : (m_kaboom(a, b) ? A(at, weaponkaboom) : (m_insta(a, b) ? A(at, weaponinsta) : (m_race(a) && !m_ra_gauntlet(a, b) ? A(at, weaponrace) : (m_dm_gladiator(a, b) ? A(at, weapongladiator) : A(at, weaponspawn))))))
+#define m_maxcarry(at,a,b)  (at < A_ENEMY && m_arena(a, b) ? W_LOADOUT : A(at, maxcarry))
+#define m_delay(at,a,b,c)   (!m_duke(a,b) ? int((m_edit(a) ? A(at, spawndelayedit) : (m_race(a) ? (!m_ra_gauntlet(a, b) || c == T_ALPHA ? A(at, spawndelayrace) : A(at, spawndelaygauntlet)) : (m_bomber(a) ? A(at, spawndelaybomber) : (m_defend(a) ? A(at, spawndelaydefend) : (m_capture(a) ? A(at, spawndelaycapture) : A(at, spawndelay))))))*(m_insta(a, b) ? A(at, spawndelayinstascale) : 1.f)) : 0)
 #define m_protect(a,b)      (m_duke(a,b) ? DSG(a, b, protect) : (m_insta(a, b) ? G(instaprotect) : G(spawnprotect)))
 #define m_teamspawn(a,b)    (m_team(a, b) && (!m_race(a) || m_ra_gauntlet(a, b)))
 #define m_swapteam(a,b)     (m_play(a) && m_teamspawn(a, b) && (G(teambalanceduel) || !m_duel(a, b)) && !m_coop(gamemode, mutators) && G(teambalance) >= 3 && G(teambalanceswap))

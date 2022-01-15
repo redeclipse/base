@@ -510,7 +510,7 @@ namespace bomber
 
     void checkaffinity(gameent *d, int i)
     {
-        if(!(AA(d->actortype, abilities)&(1<<A_A_AFFINITY))) return;
+        if(!(A(d->actortype, abilities)&AA(AFFINITY))) return;
         bomberstate::flag &f = st.flags[i];
         if(f.owner)
         {

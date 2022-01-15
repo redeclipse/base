@@ -125,7 +125,7 @@ namespace aiman
                 ci->model = botrnd(ci, 4, PLAYERTYPES);
                 ci->pattern = botrnd(ci, 4, PLAYERPATTERNS);
                 setskill(ci, true);
-                copystring(ci->name, AA(ci->actortype, vname), MAXNAMELEN);
+                copystring(ci->name, A(ci->actortype, vname), MAXNAMELEN);
                 ci->loadweap.shrink(0);
                 if(ci->actortype == A_BOT)
                 {

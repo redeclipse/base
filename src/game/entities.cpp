@@ -949,7 +949,7 @@ namespace entities
                 if(full && attr[0] >= 0 && attr[0] < A_TOTAL)
                 {
                     addentinfo(actors[attr[0]+A_ENEMY].name);
-                    addentinfo(W(attr[6] > 0 && attr[6] <= W_ALL ? attr[6]-1 : AA(attr[0]+A_ENEMY, weaponspawn), name));
+                    addentinfo(W(attr[6] > 0 && attr[6] <= W_ALL ? attr[6]-1 : A(attr[0]+A_ENEMY, weaponspawn), name));
                 }
                 break;
             }
@@ -2967,8 +2967,8 @@ namespace entities
                         {
                             mdl.yaw = e.attrs[1]+90;
                             mdl.pitch = e.attrs[2];
-                            int weap = e.attrs[6] > 0 ? e.attrs[6]-1 : AA(e.attrs[0], weaponspawn);
-                            mdl.size = e.attrs[9] > 0 ? e.attrs[9]/100.f : AA(e.attrs[0], scale);
+                            int weap = e.attrs[6] > 0 ? e.attrs[6]-1 : A(e.attrs[0], weaponspawn);
+                            mdl.size = e.attrs[9] > 0 ? e.attrs[9]/100.f : A(e.attrs[0], scale);
                             if(isweap(weap)) colour = W(weap, colour);
                         }
                     }

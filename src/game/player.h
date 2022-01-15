@@ -22,20 +22,21 @@ actor actors[] = {
 extern actor actors[];
 #endif
 
+#define AA(type) (1<<A_A_##type)
 enum
 {
     A_A_MOVE = 0, A_A_JUMP, A_A_CROUCH, A_A_SLIDE, A_A_LAUNCH, A_A_BOOST, A_A_DASH, A_A_POUND, A_A_PARKOUR, A_A_VAULT, A_A_MELEE,
-    A_A_PRIMARY, A_A_SECONDARY, A_A_PUSHABLE, A_A_AFFINITY, A_A_REGEN, A_A_KAMIKAZE, A_A_MAX,
+    A_A_PRIMARY, A_A_SECONDARY, A_A_PUSHABLE, A_A_AFFINITY, A_A_REGEN, A_A_KAMIKAZE, A_A_GIBS, A_A_MAX,
     A_A_IMFIRST = A_A_SLIDE, A_A_IMLAST = A_A_VAULT, A_A_IMPULSE = A_A_IMLAST-A_A_IMFIRST, A_A_IMCOUNT = A_A_IMPULSE+1,
     A_A_IMOFFSET = (1<<(A_A_SLIDE-A_A_IMFIRST))|(1<<(A_A_BOOST-A_A_IMFIRST))|(1<<(A_A_POUND-A_A_IMFIRST))|(1<<(A_A_VAULT-A_A_IMFIRST)),
     A_A_IMRELAX = (1<<(A_A_VAULT-A_A_IMFIRST)),
-    A_A_ATTACK = (1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_KAMIKAZE),
-    A_A_ALL = (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_CROUCH)|(1<<A_A_SLIDE)|(1<<A_A_LAUNCH)|(1<<A_A_BOOST)|(1<<A_A_DASH)|(1<<A_A_POUND)|(1<<A_A_PARKOUR)|(1<<A_A_VAULT)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_AFFINITY)|(1<<A_A_REGEN),
-    A_A_PLAYER = (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_CROUCH)|(1<<A_A_SLIDE)|(1<<A_A_LAUNCH)|(1<<A_A_BOOST)|(1<<A_A_DASH)|(1<<A_A_POUND)|(1<<A_A_PARKOUR)|(1<<A_A_VAULT)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_AFFINITY)|(1<<A_A_REGEN),
-    A_A_MOVINGAI = (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_CROUCH)|(1<<A_A_SLIDE)|(1<<A_A_LAUNCH)|(1<<A_A_BOOST)|(1<<A_A_DASH)|(1<<A_A_POUND)|(1<<A_A_PARKOUR)|(1<<A_A_VAULT)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_AFFINITY)|(1<<A_A_REGEN),
-    A_A_LESSAI = (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE),
-    A_A_FIXEDAI = (1<<A_A_PRIMARY)|(1<<A_A_SECONDARY),
-    A_A_ROLLER = (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_PARKOUR)|(1<<A_A_VAULT)|(1<<A_A_PUSHABLE)|(1<<A_A_KAMIKAZE),
+    A_A_ATTACK = AA(MELEE)|AA(PRIMARY)|AA(SECONDARY)|AA(KAMIKAZE),
+    A_A_ALL = AA(MOVE)|AA(JUMP)|AA(CROUCH)|AA(SLIDE)|AA(LAUNCH)|AA(BOOST)|AA(DASH)|AA(POUND)|AA(PARKOUR)|AA(VAULT)|AA(MELEE)|AA(PRIMARY)|AA(SECONDARY)|AA(PUSHABLE)|AA(AFFINITY)|AA(REGEN)|AA(GIBS),
+    A_A_PLAYER = AA(MOVE)|AA(JUMP)|AA(CROUCH)|AA(SLIDE)|AA(LAUNCH)|AA(BOOST)|AA(DASH)|AA(POUND)|AA(PARKOUR)|AA(VAULT)|AA(MELEE)|AA(PRIMARY)|AA(SECONDARY)|AA(PUSHABLE)|AA(AFFINITY)|AA(REGEN)|AA(GIBS),
+    A_A_MOVINGAI = AA(MOVE)|AA(JUMP)|AA(CROUCH)|AA(SLIDE)|AA(LAUNCH)|AA(BOOST)|AA(DASH)|AA(POUND)|AA(PARKOUR)|AA(VAULT)|AA(MELEE)|AA(PRIMARY)|AA(SECONDARY)|AA(PUSHABLE)|AA(AFFINITY)|AA(REGEN)|AA(GIBS),
+    A_A_LESSAI = AA(MOVE)|AA(JUMP)|AA(MELEE)|AA(PRIMARY)|AA(SECONDARY)|AA(PUSHABLE)|AA(GIBS),
+    A_A_FIXEDAI = AA(PRIMARY)|AA(SECONDARY),
+    A_A_ROLLER = AA(MOVE)|AA(JUMP)|AA(PARKOUR)|AA(VAULT)|AA(PUSHABLE)|AA(KAMIKAZE),
 };
 
 enum
@@ -230,31 +231,31 @@ APVAR(IDF_GAMEMOD, 0, weaponspawn, 0, W_ALL-1,
 );
 // these are modified by gameent::configure() et al
 APFVAR(IDF_GAMEMOD, 0, speed, 0, FVAR_MAX,
-    100,            100,            0,              90,             100,            100
+    100,            100,            0,              90,             100,            50
 );
 APFVAR(IDF_GAMEMOD, 0, speedextra, FVAR_MIN, FVAR_MAX,
     0,              0,              0,              0,              0,              0
 );
 APFVAR(IDF_GAMEMOD, 0, jumpspeed, 0, FVAR_MAX,
-    140,            140,            0,              120,            90,             75
+    140,            140,            0,              140,            140,            70
 );
 APFVAR(IDF_GAMEMOD, 0, jumpspeedextra, FVAR_MIN, FVAR_MAX,
     0,              0,              0,              0,              0,              0
 );
 APFVAR(IDF_GAMEMOD, 0, impulsespeed, 0, FVAR_MAX,
-    100,            100,            0,              100,            100,            75
+    100,            100,            0,              100,            100,            50
 );
 APFVAR(IDF_GAMEMOD, 0, impulsespeedextra, FVAR_MIN, FVAR_MAX,
     0,              0,              0,              0,              0,              0
 );
 APFVAR(IDF_GAMEMOD, 0, weight, 0, FVAR_MAX,
-    250,            250,            250,            250,            200,            150
+    250,            250,            250,            250,            200,            200
 );
 APFVAR(IDF_GAMEMOD, 0, weightextra, FVAR_MIN, FVAR_MAX,
     0,              0,              0,              0,              0,              0
 );
 APFVAR(IDF_GAMEMOD, 0, buoyancy, 0, FVAR_MAX,
-    500,            500,            0,              500,            400,            300
+    500,            500,            0,              500,            400,            400
 );
 APFVAR(IDF_GAMEMOD, 0, buoyancyextra, FVAR_MIN, FVAR_MAX,
     0,              0,              0,              0,              0,              0

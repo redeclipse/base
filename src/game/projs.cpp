@@ -1289,7 +1289,7 @@ namespace projs
             d->weapload[weap][W_A_CLIP] = -offset;
         }
         d->lastshoot = lastmillis;
-        if(AA(d->actortype, abilities)&(1<<A_A_PUSHABLE))
+        if(A(d->actortype, abilities)&AA(PUSHABLE))
         {
             vec kick = vec(d->yaw*RAD, d->pitch*RAD).mul(-W2(weap, kickpush, WS(flags))*skew);
             if(!kick.iszero())

@@ -790,7 +790,7 @@ namespace server
     bool dropitems(clientinfo *ci, int flags = DROP_RESET)
     {
         bool kamikaze = false;
-        int ktype = AA(ci->actortype, abilities)&(1<<A_A_KAMIKAZE) ? 3 : G(kamikaze);
+        int ktype = A(ci->actortype, abilities)&AA(KAMIKAZE) ? 3 : G(kamikaze);
         vector<droplist> drop;
         if(flags&DROP_EXPLODE || (flags&DROP_KAMIKAZE && ktype && (ktype > 2 || (ci->hasweap(W_GRENADE, m_weapon(ci->actortype, gamemode, mutators)) && (ktype > 1 || ci->weapselect == W_GRENADE)))))
         {
@@ -4228,15 +4228,15 @@ namespace server
         if(d->actortype < A_ENEMY && e->actortype < A_ENEMY && m_ghost(gamemode, mutators)) return true;
         switch(d->actortype)
         {
-            case A_PLAYER: if(!(AA(e->actortype, collide)&(1<<A_C_PLAYERS))) return true; break;
-            case A_BOT: if(!(AA(e->actortype, collide)&(1<<A_C_BOTS))) return true; break;
-            default: if(!(AA(e->actortype, collide)&(1<<A_C_ENEMIES))) return true; break;
+            case A_PLAYER: if(!(A(e->actortype, collide)&(1<<A_C_PLAYERS))) return true; break;
+            case A_BOT: if(!(A(e->actortype, collide)&(1<<A_C_BOTS))) return true; break;
+            default: if(!(A(e->actortype, collide)&(1<<A_C_ENEMIES))) return true; break;
         }
         if(m_team(gamemode, mutators) && d->team == e->team) switch(d->actortype)
         {
-            case A_PLAYER: if(!(AA(e->actortype, teamdamage)&(1<<A_T_PLAYERS))) return true; break;
-            case A_BOT: if(!(AA(e->actortype, teamdamage)&(1<<A_T_BOTS))) return true; break;
-            default: if(!(AA(e->actortype, teamdamage)&(1<<A_T_ENEMIES))) return true; break;
+            case A_PLAYER: if(!(A(e->actortype, teamdamage)&(1<<A_T_PLAYERS))) return true; break;
+            case A_BOT: if(!(A(e->actortype, teamdamage)&(1<<A_T_BOTS))) return true; break;
+            default: if(!(A(e->actortype, teamdamage)&(1<<A_T_ENEMIES))) return true; break;
         }
         return false;
     }
@@ -4418,7 +4418,7 @@ namespace server
             int pointvalue = fragvalue, style = FRAG_NONE;
             if(!m_dm_oldschool(gamemode, mutators))
                 pointvalue = (smode && !isai ? smode->points(m, v) : fragvalue)*(isai ? G(enemybonus) : G(fragbonus));
-            if(realdamage >= (realflags&HIT(EXPLODE) ? max(m->gethealth(gamemode, mutators)/4, 1) : m->gethealth(gamemode, mutators)))
+            if(A(m->actortype, abilities)&AA(KAMIKAZE) || realdamage >= (realflags&HIT(EXPLODE) ? max(m->gethealth(gamemode, mutators)/4, 1) : m->gethealth(gamemode, mutators)))
                 style = FRAG_OBLITERATE;
             m->spree = 0;
             if(m_team(gamemode, mutators) && v->team == m->team)
@@ -5247,7 +5247,7 @@ namespace server
                 }
                 else if(ci->lastres[W_R_SHOCK]) ci->lastres[W_R_SHOCK] = ci->lastrestime[W_R_SHOCK] = 0;
                 // regen wear-off
-                if(m_regen(gamemode, mutators) && AA(ci->actortype, abilities)&(1<<A_A_REGEN))
+                if(m_regen(gamemode, mutators) && A(ci->actortype, abilities)&AA(REGEN))
                 {
                     int total = ci->gethealth(gamemode, mutators), amt = G(regenhealth),
                         delay = ci->lastregen ? G(regentime) : G(regendelay);

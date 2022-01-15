@@ -1000,7 +1000,7 @@ namespace game
     float spawnfade(gameent *d)
     {
         int len = m_delay(d->actortype, gamemode, mutators, d->team);
-        if(AA(d->actortype, abilities)&(1<<A_A_KAMIKAZE)) len = deathfadekamikaze;
+        if(A(d->actortype, abilities)&AA(KAMIKAZE)) len = deathfadekamikaze;
         else
         {
             if(m_edit(gamemode) && !len && deathfadeedit) len = deathfadeedit;
@@ -1257,11 +1257,11 @@ namespace game
 
         if(d->state == CS_ALIVE)
         {
-            bool sliding = d->sliding(true), crouching = sliding || (d->crouching() && AA(d->actortype, abilities)&(1<<A_A_CROUCH)),
+            bool sliding = d->sliding(true), crouching = sliding || (d->crouching() && A(d->actortype, abilities)&AA(CROUCH)),
                  moving = d->move || d->strafe || (d->physstate < PHYS_SLOPE && !d->onladder);
             float zrad = d->zradius*(moving && !sliding ? CROUCHHIGH : CROUCHLOW), zoff = d->zradius-zrad;
             vec old = d->o;
-            if(!crouching && AA(d->actortype, abilities)&(1<<A_A_CROUCH))
+            if(!crouching && A(d->actortype, abilities)&AA(CROUCH))
             {
                 d->o.z += d->zradius;
                 d->height = d->zradius;
@@ -1619,7 +1619,7 @@ namespace game
                 d->lastpain = lastmillis;
                 if(!WK(flags)) playsound(WSND2(weap, WS(flags), S_W_IMPACT), vec(d->center()).add(vec(dir).mul(dist)), NULL, 0, clamp(int(255*scale), 64, 255));
             }
-            if(AA(d->actortype, abilities)&(1<<A_A_PUSHABLE))
+            if(A(d->actortype, abilities)&AA(PUSHABLE))
             {
                 if(weap == -1 && shocking && d->shockstun)
                 {
@@ -2000,7 +2000,7 @@ namespace game
         if(nogore != 2 && gibscale > 0 && !(flags&HIT(LOST)))
         {
             int hp = max(d->gethealth(gamemode, mutators)/10, 1), gib = clamp(max(damage, hp)/(d->obliterated ? 5 : 20), 2, 10), amt = int((rnd(gib)+gib)*(1+gibscale));
-            loopi(amt) projs::create(pos, pos, true, d, nogore ? PRJ_DEBRIS : PRJ_GIBS, -1, 0, rnd(gibfade)+gibfade, 0, rnd(250)+1, rnd(d->obliterated ? 80 : 40)+10);
+            loopi(amt) projs::create(pos, pos, true, d, nogore || A(d->actortype, abilities)&AA(GIBS) ? PRJ_DEBRIS : PRJ_GIBS, -1, 0, rnd(gibfade)+gibfade, 0, rnd(250)+1, rnd(d->obliterated ? 80 : 40)+10);
         }
         if(m_team(gamemode, mutators) && d->team == v->team && d != v && v == player1 && isweap(weap) && WF(WK(flags), weap, damagepenalty, WS(flags)) != 0)
         {
@@ -3969,7 +3969,7 @@ namespace game
 
     void renderplayer(gameent *d, int third, float size, int flags = 0, const vec4 &color = vec4(1, 1, 1, 1), int *lastoffset = NULL)
     {
-        if(d->state == CS_SPECTATOR || (d->state != CS_ALIVE && color.a <= 0)) return;
+        if(d->state == CS_SPECTATOR || (d->state != CS_ALIVE && color.a <= 0) || d->obliterated) return;
         modelstate mdl;
         modelattach mdlattach[ATTACHMENTMAX];
         dynent *e = third ? (third != 2 ? (dynent *)d : (dynent *)&bodymodel) : (dynent *)&avatarmodel;
@@ -3999,6 +3999,7 @@ namespace game
 
     void rendercheck(gameent *d, bool third)
     {
+        if(d->obliterated) return;
         float blend = opacity(d, third);
         if(d->state == CS_ALIVE && (d->hasparkour() || d->impulsetime[IM_T_JUMP] || d->sliding(true))) impulseeffect(d, 1);
         if(d->burntime && d->burning(lastmillis, d->burntime))
@@ -4082,7 +4083,7 @@ namespace game
 
     void renderavatar()
     {
-        if(thirdpersonview()) return;
+        if(thirdpersonview() || focus->obliterated) return;
         static int lastoffset = 0;
         vec4 color = vec4(1, 1, 1, opacity(focus, false));
         if(drawtex == DRAWTEX_HALO) focus->cleartags();
