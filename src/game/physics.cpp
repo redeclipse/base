@@ -277,8 +277,7 @@ namespace physics
             gameent *e = (gameent *)d;
             if(vel != 0)
             {
-                if(e->vel.z+e->falling.z <= gravitycutoff) vel *= e->crouching() ? gravityfallcrouch : gravityfall;
-                else if(e->actiontime[AC_JUMP] >= 0) vel *= e->crouching() ? gravityjumpcrouch : gravityjump;
+                if(e->actiontime[AC_JUMP] >= 0) vel *= e->crouching() ? gravityjumpcrouch : gravityjump;
                 else if(e->crouching()) vel *= gravitycrouch;
                 vel *= e->stungravity;
             }
@@ -782,7 +781,7 @@ namespace physics
         return true;
     }
 
-    void modifyinput(gameent *d, vec &m, bool wantsmove, int millis)
+    void modifyinput(gameent *d, vec &m, bool wantsmove)
     {
         bool onfloor = d->physstate >= PHYS_SLOPE || d->onladder || liquidcheck(d);
         if(d->hasparkour())
@@ -1003,9 +1002,9 @@ namespace physics
         d->action[AC_DASH] = false;
     }
 
-    void modifymovement(gameent *d, vec &m, bool local, bool wantsmove, int millis)
+    void modifymovement(gameent *d, vec &m, bool local, bool wantsmove)
     {
-        if(local && game::allowmove(d)) modifyinput(d, m, wantsmove, millis);
+        if(local && game::allowmove(d)) modifyinput(d, m, wantsmove);
         if(wantsmove && !sticktospecial(d) && d->physstate >= PHYS_SLOPE)
         { // move up or down slopes in air but only move up slopes in liquid
             float dz = -(m.x*d->floor.x + m.y*d->floor.y)/d->floor.z;
@@ -1035,7 +1034,7 @@ namespace physics
         vec m(0, 0, 0);
         bool wantsmove = game::allowmove(pl) && (pl->move || pl->strafe);
         if(wantsmove) vecfromyawpitch(pl->yaw, movepitch(pl) ? pl->pitch : 0, pl->move, pl->strafe, m);
-        if(!floating && gameent::is(pl)) modifymovement((gameent *)pl, m, local, wantsmove, millis);
+        if(!floating && gameent::is(pl)) modifymovement((gameent *)pl, m, local, wantsmove);
         else if(pl->physstate == PHYS_FALL && !pl->onladder)
         {
             if(!pl->airmillis) pl->airmillis = lastmillis ? lastmillis : 1;
@@ -1059,12 +1058,12 @@ namespace physics
         pl->vel.lerp(m, pl->vel, pow(max(1.0f - 1.0f/coast, 0.0f), millis/20.0f));
     }
 
-    void modifygravity(physent *pl, int curtime)
+    void modifygravity(physent *pl, int millis)
     {
         if(PHYS(gravity) > 0 || PHYS(buoyancy) > 0)
         {
             vec g(0, 0, 0);
-            float secs = curtime/1000.0f;
+            float secs = millis/1000.0f;
             if(pl->physstate == PHYS_FALL) g.z -= gravityvel(pl)*secs;
             else if(pl->floor.z > 0 && pl->floor.z < floorz)
             {
@@ -1079,7 +1078,7 @@ namespace physics
             {
                 float coast = liquid ? liquidmerge(pl, PHYS(aircoast), PHYS(liquidcoast)) : PHYS(floorcoast)*coastscale(pl->feetpos(-1)),
                       c = liquid ? 1.0f : clamp((pl->floor.z-slopez)/(floorz-slopez), 0.0f, 1.0f);
-                pl->falling.mul(pow(max(1.0f - c/coast, 0.0f), curtime/20.0f));
+                pl->falling.mul(pow(max(1.0f - c/coast, 0.0f), millis/20.0f));
             }
         }
         else pl->falling = vec(0, 0, 0);
@@ -1088,39 +1087,16 @@ namespace physics
     void updatematerial(physent *pl, const vec &center, const vec &bottom, bool local)
     {
         float radius = center.z-bottom.z, height = radius*2, submerged = pl->submerged;
-        int matid = 0, oldmatid = pl->inmaterial, oldmat = oldmatid&MATF_VOLUME, iters = max(int(ceilf(height)), 1), liquid = 0;
+        int matid = 0, oldmatid = pl->inmaterial, oldmat = oldmatid&MATF_VOLUME, iters = max(int(ceilf(height)), 4), liquid = 0;
         float frac = height/float(iters); // guard against rounding errors
         bool prevliq = pl->inliquid;
         vec tmp = bottom;
+
         pl->inliquid = pl->onladder = false;
         loopi(iters+1)
         {
             int chkmat = lookupmaterial(tmp);
-            if(!i)
-            {
-                matid = chkmat;
-                int curmat = matid&MATF_VOLUME;
-                if(curmat != oldmat)
-                {
-                    #define mattrig(mo,mcol,ms,mt,mz,mq,mp,mw) \
-                    { \
-                        int col = (int(mcol[2]*(mq)) + (int(mcol[1]*(mq)) << 8) + (int(mcol[0]*(mq)) << 16)); \
-                        regularshape(mp, mt, col, 21, 20, mz, mo, ms, 1, 10, 0, 20); \
-                        if((mw) >= 0) playsound(mw, mo, pl);                    \
-                    }
-                    if(curmat == MAT_WATER || oldmat == MAT_WATER)
-                    {
-                        const bvec &watercol = getwatercolour((curmat == MAT_WATER ? matid : oldmatid)&MATF_INDEX);
-                        mattrig(bottom, watercol, 0.5f, int(radius), PHYSMILLIS, 0.25f, PART_SPARK, curmat != MAT_WATER ? S_SPLASH2 : S_SPLASH1);
-                    }
-                    if(curmat == MAT_LAVA)
-                    {
-                        const bvec &lavacol = getlavacolour(matid&MATF_INDEX);
-                        mattrig(center, lavacol, 2.f, int(radius), PHYSMILLIS*2, 1.f, PART_FIREBALL, S_BURNLAVA);
-                    }
-                }
-            }
-            else matid |= chkmat&MATF_FLAGS;
+            matid |= chkmat&MATF_FLAGS;
 
             if(isliquid(chkmat&MATF_VOLUME))
             {
@@ -1130,12 +1106,36 @@ namespace physics
             if((chkmat&MATF_FLAGS)&MAT_LADDER) pl->onladder = true;
             tmp.z += frac;
         }
+
         pl->inmaterial = matid;
         pl->submerged = liquid ? liquid/float(iters) : 0.f;
-        if(pl->onladder && pl->physstate < PHYS_SLIDE) pl->floor = vec(0, 0, 1);
+        if(prevliq && !pl->inliquid) pl->falling = vec(0, 0, 0);
+
+        int curmat = pl->inmaterial&MATF_VOLUME;
+        if(curmat != oldmat)
+        {
+            #define mattrig(mo,mcol,ms,mt,mz,mq,mp,mw) \
+            { \
+                int col = (int(mcol[2]*(mq)) + (int(mcol[1]*(mq)) << 8) + (int(mcol[0]*(mq)) << 16)); \
+                regularshape(mp, mt, col, 21, 20, mz, mo, ms, 1, 10, 0, 20); \
+                if((mw) >= 0) playsound(mw, mo, pl);                    \
+            }
+            if(curmat == MAT_WATER || oldmat == MAT_WATER)
+            {
+                const bvec &watercol = getwatercolour((curmat == MAT_WATER ? pl->inmaterial : oldmatid)&MATF_INDEX);
+                mattrig(bottom, watercol, 0.5f, int(radius), PHYSMILLIS, 0.25f, PART_SPARK, curmat != MAT_WATER ? S_SPLASH2 : S_SPLASH1);
+            }
+            if(curmat == MAT_LAVA)
+            {
+                const bvec &lavacol = getlavacolour(pl->inmaterial&MATF_INDEX);
+                mattrig(bottom, lavacol, 2.f, int(radius), PHYSMILLIS*2, 1.f, PART_FIREBALL, S_BURNLAVA);
+            }
+        }
+
         if(gameent::is(pl))
         {
             gameent *d = (gameent *)pl;
+            if(pl->onladder && pl->physstate < PHYS_SLIDE) pl->floor = vec(0, 0, 1);
             if(!prevliq && d->inliquid) d->resetjump();
             if(local)
             {

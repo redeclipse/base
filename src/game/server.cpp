@@ -4418,7 +4418,7 @@ namespace server
             int pointvalue = fragvalue, style = FRAG_NONE;
             if(!m_dm_oldschool(gamemode, mutators))
                 pointvalue = (smode && !isai ? smode->points(m, v) : fragvalue)*(isai ? G(enemybonus) : G(fragbonus));
-            if(realdamage >= (realflags&HIT(EXPLODE) ? max(m->gethealth(gamemode, mutators)/2, 1) : m->gethealth(gamemode, mutators)))
+            if(realdamage >= (realflags&HIT(EXPLODE) ? max(m->gethealth(gamemode, mutators)/4, 1) : m->gethealth(gamemode, mutators)))
                 style = FRAG_OBLITERATE;
             m->spree = 0;
             if(m_team(gamemode, mutators) && v->team == m->team)

@@ -248,13 +248,13 @@ APFVAR(IDF_GAMEMOD, 0, impulsespeedextra, FVAR_MIN, FVAR_MAX,
     0,              0,              0,              0,              0,              0
 );
 APFVAR(IDF_GAMEMOD, 0, weight, 0, FVAR_MAX,
-    260,            260,            260,            260,            200,            150
+    250,            250,            250,            250,            200,            150
 );
 APFVAR(IDF_GAMEMOD, 0, weightextra, FVAR_MIN, FVAR_MAX,
     0,              0,              0,              0,              0,              0
 );
 APFVAR(IDF_GAMEMOD, 0, buoyancy, 0, FVAR_MAX,
-    300,            300,            300,            300,            250,            200
+    500,            500,            0,              500,            400,            300
 );
 APFVAR(IDF_GAMEMOD, 0, buoyancyextra, FVAR_MIN, FVAR_MAX,
     0,              0,              0,              0,              0,              0

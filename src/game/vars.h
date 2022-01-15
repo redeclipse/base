@@ -25,16 +25,13 @@ GVAR(IDF_WORLD, 0, lavaburndelay, 1, 1000, VAR_MAX);
 
 GFVAR(IDF_WORLD, 0, gravity, 0, 50.f, 1000); // gravity
 GFVAR(IDF_GAMEMOD, 0, gravityscale, 0, 1, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, gravitycrouch, 0, 1.125f, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, gravitycrouch, 0, 1.25f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, gravityjump, 0, 0.85f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, gravityjumpcrouch, 0, 1, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, gravityfall, 0, 1, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, gravityfallcrouch, 0, 1.5f, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, gravitycutoff, FVAR_MIN, 0, FVAR_MAX);
 GFVAR(IDF_WORLD, 0, buoyancy, 0, 50.f, 1000); // buoyancy
 GFVAR(IDF_GAMEMOD, 0, buoyancyscale, 0, 1, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, buoyancycrouch, 0, 0.75f, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, buoyancyjump, 0, 1.25f, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, buoyancycrouch, 0, 0.5f, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, buoyancyjump, 0, 1.5f, FVAR_MAX);
 
 GFVAR(IDF_WORLD, 0, floorcoast, 0, 5.f, 1000);
 GFVAR(IDF_GAMEMOD, 0, floorcoastscale, 0, 1, FVAR_MAX);

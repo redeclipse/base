@@ -1470,7 +1470,7 @@ struct gameent : dynent, clientstate
         }
         else
         {
-            stunscale = stungravity = 0;
+            stunscale = stungravity = 1;
             height = zradius;
         }
 
@@ -2055,7 +2055,7 @@ struct projent : dynent
     float movement, distance, lifespan, lifesize, speedmin, speedmax;
     bool local, limited, escaped, child, bounced;
     int projtype, projcollide, interacts;
-    float elasticity, reflectivity, relativity, liquidcoast;
+    float elasticity, relativity, liquidcoast;
     int schan, id, weap, fromweap, fromflags, value, flags, collidezones;
     //entitylight light;
     gameent *owner, *target, *stick;
@@ -2193,6 +2193,7 @@ namespace physics
 {
     extern int smoothmove, smoothdist, physframetime, grabstyle, grabplayerstyle;
     extern bool isghost(gameent *d, gameent *e, bool proj = false);
+    extern float liquidmerge(physent *d, float from, float to);
     extern int carryaffinity(gameent *d);
     extern bool secondaryweap(gameent *d);
     extern bool allowimpulse(physent *d, int level = 0);

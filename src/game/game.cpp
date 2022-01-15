@@ -371,13 +371,13 @@ namespace game
     VAR(IDF_PERSIST, deathfadeedit, 0, 3000, VAR_MAX);
     VAR(IDF_PERSIST, deathbuttonmash, 0, 1000, VAR_MAX);
     FVAR(IDF_PERSIST, bloodscale, 0, 1, 1000);
-    VAR(IDF_PERSIST, bloodfade, 1, 5000, VAR_MAX);
+    VAR(IDF_PERSIST, bloodfade, 1, 15000, VAR_MAX);
     VAR(IDF_PERSIST, bloodsize, 1, 50, 1000);
     VAR(IDF_PERSIST, bloodsparks, 0, 0, 1);
     FVAR(IDF_PERSIST, debrisscale, 0, 1, 1000);
-    VAR(IDF_PERSIST, debrisfade, 1, 5000, VAR_MAX);
+    VAR(IDF_PERSIST, debrisfade, 1, 15000, VAR_MAX);
     FVAR(IDF_PERSIST, gibscale, 0, 1, 1000);
-    VAR(IDF_PERSIST, gibfade, 1, 5000, VAR_MAX);
+    VAR(IDF_PERSIST, gibfade, 1, 15000, VAR_MAX);
     FVAR(IDF_PERSIST, impulsescale, 0, 1, 1000);
     VAR(IDF_PERSIST, impulsefade, 0, 250, VAR_MAX);
     VAR(IDF_PERSIST, ragdolleffect, 2, 500, VAR_MAX);
@@ -1999,7 +1999,7 @@ namespace game
 
         if(nogore != 2 && gibscale > 0 && !(flags&HIT(LOST)))
         {
-            int hp = max(d->gethealth(gamemode, mutators)/10, 1), gib = clamp(max(damage, hp)/(d->obliterated ? 10 : 20), 2, 10), amt = int((rnd(gib)+gib)*(1+gibscale));
+            int hp = max(d->gethealth(gamemode, mutators)/10, 1), gib = clamp(max(damage, hp)/(d->obliterated ? 5 : 20), 2, 10), amt = int((rnd(gib)+gib)*(1+gibscale));
             loopi(amt) projs::create(pos, pos, true, d, nogore ? PRJ_DEBRIS : PRJ_GIBS, -1, 0, rnd(gibfade)+gibfade, 0, rnd(250)+1, rnd(d->obliterated ? 80 : 40)+10);
         }
         if(m_team(gamemode, mutators) && d->team == v->team && d != v && v == player1 && isweap(weap) && WF(WK(flags), weap, damagepenalty, WS(flags)) != 0)

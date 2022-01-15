@@ -26,7 +26,8 @@ namespace projs
     FVAR(IDF_PERSIST, gibsrelativity, -10000, 0.95f, 10000);
     FVAR(IDF_PERSIST, gibsliquidcoast, 0, 2, 10000);
     FVAR(IDF_PERSIST, gibsweight, -10000, 150, 10000);
-    FVAR(IDF_PERSIST, gibsbuoyancy, -10000, 200, 10000);
+    FVAR(IDF_PERSIST, gibsbuoyancymax, -10000, 200, 10000);
+    FVAR(IDF_PERSIST, gibsbuoyancymin, -10000, 0, 10000);
 
     FVAR(IDF_PERSIST, vanityelasticity, -10000, 0.5f, 10000);
     FVAR(IDF_PERSIST, vanityrelativity, -10000, 0.95f, 10000);
@@ -135,7 +136,7 @@ namespace projs
                 break;
 
             case PRJ_FX_BOUNCE:
-                param = clamp(proj.vel.magnitude()*proj.curscale*0.005f, 0.0f, 1.0f);
+                param = clamp(vec(proj.vel).add(proj.falling).magnitude()*proj.curscale*0.005f, 0.0f, 1.0f);
                 if(e) e->setparam(P_FX_BOUNCE_VEL_PARAM, param);
                 break;
         }
@@ -238,7 +239,7 @@ namespace projs
         if(dmag > 1e-3f) dir.div(dmag);
         else dir = vec(0, 0, 1);
         if(isweap(proj.weap) && !(WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_LENGTH) && flags&HIT(PROJ) && proj.weight != 0 && d->weight != 0)
-            vel = vec(proj.vel).mul(proj.weight).div(d->weight);
+            vel = vec(proj.vel).add(proj.falling).mul(proj.weight).div(d->weight);
         if(proj.owner && proj.local)
         {
             int hflags = proj.flags|flags;
@@ -441,7 +442,7 @@ namespace projs
                 proj.lifetime = lifetime;
                 proj.lifemillis = lifetime;
             }
-            proj.vel = vec(0, 0, 0);
+            proj.vel = proj.falling = vec(0, 0, 0);
         }
         if(proj.stick)
         {
@@ -481,7 +482,7 @@ namespace projs
             proj.sticknrm = proj.norm;
             proj.stuck = proj.lastbounce = lastmillis ? lastmillis : 1;
             #if 0
-            vec fwd = dir.iszero() ? vec(proj.vel).normalize() : dir;
+            vec fwd = dir.iszero() ? vec(proj.vel).add(proj.falling).normalize() : dir;
             if(!fwd.iszero()) loopi(20)
             {
                 proj.o.sub(fwd);
@@ -597,42 +598,28 @@ namespace projs
 
     void reflect(projent &proj, vec &pos)
     {
-        bool speed = proj.vel.magnitude() > 0.01f;
-        float elasticity = speed ? proj.elasticity : 1.f;
+        vec dir = vec(proj.vel).add(proj.falling);
+        float mag = dir.magnitude(), elasticity = mag > 0.01f ? proj.elasticity : 1.f;
+
         if(elasticity <= 0.f)
         {
-            proj.vel = vec(0, 0, 0);
+            proj.vel = proj.falling = vec(0, 0, 0);
             return;
         }
-        vec dir[2];
-        dir[0] = dir[1] = vec(proj.vel).normalize();
-        float mag = proj.vel.magnitude()*elasticity, reflectivity = speed ? proj.reflectivity : 0.f; // conservation of energy
-        dir[1].reflect(pos);
-        if(!proj.lastbounce && reflectivity > 0.f)
-        { // if projectile returns at 180 degrees [+/-]reflectivity, skew the reflection
-            float aim[2][2] = { { 0.f, 0.f }, { 0.f, 0.f } };
-            loopi(2) vectoyawpitch(dir[i], aim[0][i], aim[1][i]);
-            loopi(2)
-            {
-                float rmax = 180.f+reflectivity, rmin = 180.f-reflectivity,
-                    off = aim[i][1]-aim[i][0];
-                if(fabs(off) <= rmax && fabs(off) >= rmin)
-                {
-                    if(off > 0.f ? off > 180.f : off < -180.f)
-                        aim[i][1] += rmax-off;
-                    else aim[i][1] -= off-rmin;
-                }
-                while(aim[i][1] < 0.f) aim[i][1] += 360.f;
-                while(aim[i][1] >= 360.f) aim[i][1] -= 360.f;
-            }
-            vecfromyawpitch(aim[0][1], aim[1][1], 1, 0, dir[1]);
-        }
+
+        mag *= elasticity; // conservation of energy
+        dir.normalize().reflect(pos);
+        mag = max(mag, proj.speedmin);
+        if(proj.speedmax > 0) mag = min(mag, proj.speedmax);
+        proj.vel = vec(dir).mul(mag);
+        proj.falling = vec(0, 0, 0);
+
         #define repel(x,r,z) \
         { \
             if(overlapsbox(proj.o, r, r, x, r, r)) \
             { \
-                vec nrm = vec(proj.o).sub(x).normalize(); \
-                dir[1].add(nrm).normalize(); \
+                vec nrm = vec(proj.o).sub(x).normalize().mul(z); \
+                proj.vel.add(nrm); \
                 break; \
             } \
         }
@@ -658,12 +645,6 @@ namespace projs
                 }
                 break;
             }
-        }
-        if(!dir[1].iszero())
-        {
-            mag = max(mag, proj.speedmin);
-            if(proj.speedmax > 0) mag = min(mag, proj.speedmax);
-            proj.vel = vec(dir[1]).mul(mag);
         }
     }
 
@@ -704,7 +685,7 @@ namespace projs
     {
         if(!insideworld(proj.o)) return false;
         if(proj.stuck) return false;
-        vec dir = vec(proj.vel).normalize();
+        vec dir = vec(proj.vel).add(proj.falling).normalize();
         if(collide(&proj, dir, 1e-6f, false) || collideinside)
         {
             vec orig = proj.o;
@@ -715,9 +696,10 @@ namespace projs
                 {
                     if(rev)
                     {
-                        float mag = max(max(proj.vel.magnitude()*proj.elasticity, proj.speedmin), 1.f);
+                        float mag = max(max(vec(proj.vel).add(proj.falling).magnitude()*proj.elasticity, proj.speedmin), 1.f);
                         if(proj.speedmax > 0) mag = min(mag, proj.speedmax);
                         proj.vel = vec(proj.o).sub(orig).normalize().mul(mag);
+                        proj.falling = vec(0, 0, 0);
                     }
                     return true;
                 }
@@ -734,9 +716,10 @@ namespace projs
                 {
                     if(rev)
                     {
-                        float mag = max(max(proj.vel.magnitude()*proj.elasticity, proj.speedmin), 1.f);
+                        float mag = max(max(vec(proj.vel).add(proj.falling).magnitude()*proj.elasticity, proj.speedmin), 1.f);
                         if(proj.speedmax > 0) mag = min(mag, proj.speedmax);
                         proj.vel = vec(proj.o).sub(orig).normalize().mul(mag);
+                        proj.falling = vec(0, 0, 0);
                     }
                     return true;
                 }
@@ -821,7 +804,11 @@ namespace projs
         vec dir(0, 0, 0);
         float dist = proj.o.dist(proj.from);
         if(!proj.child && dist > 0) dir = vec(proj.from).sub(proj.o).normalize();
-        else if(dist > 0 && !proj.vel.iszero()) dir = vec(proj.vel).normalize();
+        else
+        {
+            vec vel = vec(proj.vel).add(proj.falling);
+            if(dist > 0 && !vel.iszero()) dir = vel.normalize();
+        }
         if(dist > 0)
         {
             float len = WF(WK(proj.flags), proj.weap, length, WS(proj.flags))*(1.1f-proj.lifespan)*proj.curscale,
@@ -878,7 +865,6 @@ namespace projs
             {
                 proj.height = proj.aboveeye = proj.radius = proj.xradius = proj.yradius = WF(WK(proj.flags), proj.weap, radius, WS(proj.flags));
                 proj.elasticity = WF(WK(proj.flags), proj.weap, elasticity, WS(proj.flags));
-                proj.reflectivity = WF(WK(proj.flags), proj.weap, reflectivity, WS(proj.flags));
                 proj.relativity = W2(proj.weap, relativity, WS(proj.flags));
                 proj.liquidcoast = WF(WK(proj.flags), proj.weap, liquidcoast, WS(proj.flags));
                 proj.weight = WF(WK(proj.flags), proj.weap, weight, WS(proj.flags));
@@ -931,12 +917,17 @@ namespace projs
                         case 1: proj.mdlname = "projectiles/gibs/gib02"; break;
                         case 0: default: proj.mdlname = "projectiles/gibs/gib01"; break;
                     }
-                    proj.reflectivity = 0.f;
+                    float buoy = gibsbuoyancymax;
+                    if(gibsbuoyancymax != gibsbuoyancymin)
+                    {
+                        float bmin = min(gibsbuoyancymax, gibsbuoyancymin), boff = max(gibsbuoyancymax, gibsbuoyancymin)-bmin;
+                        buoy = bmin+(rnd(1000)*boff/1000.f);
+                    }
                     proj.elasticity = gibselasticity;
                     proj.relativity = gibsrelativity;
                     proj.liquidcoast = gibsliquidcoast;
                     proj.weight = gibsweight*proj.lifesize;
-                    proj.buoyancy = gibsbuoyancy*proj.lifesize;
+                    proj.buoyancy = buoy*proj.lifesize;
                     proj.vel.add(vec(rnd(21)-10, rnd(21)-10, proj.owner && proj.owner->headless ? rnd(61)+10 : rnd(21)-10));
                     proj.projcollide = BOUNCE_GEOM|BOUNCE_PLAYER;
                     proj.escaped = !proj.owner || proj.owner->state != CS_ALIVE;
@@ -958,7 +949,7 @@ namespace projs
                     case 1: proj.mdlname = "projectiles/debris/debris02"; break;
                     case 0: default: proj.mdlname = "projectiles/debris/debris01"; break;
                 }
-                proj.relativity = proj.reflectivity = 0.f;
+                proj.relativity = 0.f;
                 proj.elasticity = debriselasticity;
                 proj.liquidcoast = debrisliquidcoast;
                 proj.weight = debrisweight*proj.lifesize;
@@ -990,7 +981,6 @@ namespace projs
                     proj.mdlname = "projectiles/catridge";
                     proj.lifesize = 1;
                 }
-                proj.reflectivity = 0.f;
                 proj.elasticity = ejectelasticity;
                 proj.relativity = ejectrelativity;
                 proj.liquidcoast = ejectliquidcoast;
@@ -1012,7 +1002,6 @@ namespace projs
             {
                 proj.height = proj.aboveeye = proj.radius = proj.xradius = proj.yradius = 4;
                 proj.mdlname = entities::entmdlname(entities::ents[proj.id]->type, entities::ents[proj.id]->attrs);
-                proj.reflectivity = 0.f;
                 proj.elasticity = itemelasticity;
                 proj.relativity = itemrelativity;
                 proj.liquidcoast = itemliquidcoast;
@@ -1040,7 +1029,6 @@ namespace projs
                 proj.height = proj.aboveeye = proj.radius = proj.xradius = proj.yradius = 4;
                 vec dir = vec(proj.dest).sub(proj.from).safenormalize();
                 vectoyawpitch(dir, proj.yaw, proj.pitch);
-                proj.reflectivity = 0.f;
                 proj.escaped = true;
                 proj.fadetime = 1;
                 switch(game::gamemode)
@@ -1094,7 +1082,6 @@ namespace projs
                     }
                 }
                 proj.mdlname = game::vanityfname(proj.owner, proj.weap, proj.value, true);
-                proj.reflectivity = 0.f;
                 proj.elasticity = vanityelasticity;
                 proj.relativity = vanityrelativity;
                 proj.liquidcoast = vanityliquidcoast;
@@ -1147,8 +1134,9 @@ namespace projs
                 }
                 dir = vec(proj.yaw*RAD, proj.pitch*RAD);
             }
-            vec rel = vec(proj.vel).add(dir).add(proj.inertia.mul(proj.relativity));
+            vec rel = vec(proj.vel).add(proj.falling).add(dir).add(proj.inertia.mul(proj.relativity));
             proj.vel = vec(rel).add(vec(dir).mul(physics::movevelocity(&proj)));
+            proj.falling = vec(0, 0, 0);
         }
         if(proj.projtype != PRJ_SHOT) spherecheck(proj, proj.projcollide&BOUNCE_GEOM);
         proj.resetinterp();
@@ -1410,9 +1398,10 @@ namespace projs
         if(projdebug)
         {
             float yaw, pitch;
-            vectoyawpitch(vec(proj.vel).normalize(), yaw, pitch);
+            vec vel = vec(proj.vel).add(proj.falling);
+            vectoyawpitch(vel.normalize(), yaw, pitch);
             part_radius(proj.o, vec(proj.radius, proj.radius, proj.radius), 2, 1, 1, 0x22FFFF);
-            part_dir(proj.o, yaw, pitch, max(proj.vel.magnitude(), proj.radius+2), 2, 1, 1, 0xFF22FF);
+            part_dir(proj.o, yaw, pitch, max(vel.magnitude(), proj.radius+2), 2, 1, 1, 0xFF22FF);
         }
 
         if(proj.projtype == PRJ_SHOT) updatetaper(proj, proj.distance);
@@ -1436,14 +1425,14 @@ namespace projs
                 {
                     if(!WK(proj.flags) && !m_insta(game::gamemode, game::mutators) && W2(proj.weap, fragweap, WS(proj.flags)) >= 0)
                     {
+                        vec vel = vec(proj.vel).add(proj.falling);
                         int f = W2(proj.weap, fragweap, WS(proj.flags)), w = f%W_MAX,
                             life = W2(proj.weap, fragtime, WS(proj.flags)), delay = W2(proj.weap, fragtimedelay, WS(proj.flags));
-                        float mag = max(proj.vel.magnitude(), W2(proj.weap, fragspeedmin, WS(proj.flags))),
+                        float mag = max(vel.magnitude(), W2(proj.weap, fragspeedmin, WS(proj.flags))),
                               scale = W2(proj.weap, fragscale, WS(proj.flags))*proj.curscale,
                               offset = proj.hit || proj.stick ? W2(proj.weap, fragoffset, WS(proj.flags)) : 1e-6f,
                               skew = proj.hit || proj.stuck ? W2(proj.weap, fragskew, WS(proj.flags)) : W2(proj.weap, fragspread, WS(proj.flags));
-                        vec dir = vec(proj.stuck ? proj.norm : proj.vel).normalize(),
-                            pos = vec(proj.o).sub(vec(dir).mul(offset));
+                        vec dir = vec(proj.stuck ? proj.norm : vel).normalize(), pos = vec(proj.o).sub(vec(dir).mul(offset));
                         if(W2(proj.weap, fragspeedmax, WS(proj.flags)) > 0) mag = min(mag, W2(proj.weap, fragspeedmax, WS(proj.flags)));
                         if(W2(proj.weap, fragjump, WS(proj.flags)) > 0) life -= int(ceilf(life*W2(proj.weap, fragjump, WS(proj.flags))));
                         loopi(W2(proj.weap, fragrays, WS(proj.flags)))
@@ -1481,15 +1470,14 @@ namespace projs
         doprojfx(proj, PRJ_FX_DESTROY);
     }
 
-    int check(projent &proj, const vec &dir, int mat = -1)
+    int check(projent &proj, const vec &dir)
     {
         if(proj.projtype == PRJ_SHOT ? proj.o.z < 0 : !insideworld(proj.o)) return 0; // remove, always..
         int chk = 0;
         if(proj.extinguish&1 || proj.extinguish&2)
         {
-            if(mat < 0) mat = lookupmaterial(proj.o);
-            if(proj.extinguish&1 && (mat&MATF_VOLUME) == MAT_WATER) chk |= 1;
-            if(proj.extinguish&2 && ((mat&MATF_FLAGS)&MAT_DEATH)) chk |= 2;
+            if(proj.extinguish&1 && (proj.inmaterial&MATF_VOLUME) == MAT_WATER) chk |= 1;
+            if(proj.extinguish&2 && ((proj.inmaterial&MATF_FLAGS)&MAT_DEATH)) chk |= 2;
         }
         if(chk)
         {
@@ -1526,7 +1514,7 @@ namespace projs
             {
                 if(inanimate::is(d)) return 0; // inanimates don't really work yet
                 if(proj.norm.iszero()) proj.norm = vec(proj.o).sub(d->center()).normalize();
-                if(proj.norm.iszero()) proj.norm = vec(proj.vel).normalize().neg();
+                if(proj.norm.iszero()) proj.norm = vec(proj.vel).add(proj.falling).normalize().neg();
                 if(gameent::is(d) && proj.projcollide&COLLIDE_PLAYER)
                 {
                     gameent *f = (gameent *)d;
@@ -1548,7 +1536,7 @@ namespace projs
             }
             else
             {
-                if(proj.norm.iszero()) proj.norm = vec(proj.vel).normalize().neg();
+                if(proj.norm.iszero()) proj.norm = vec(proj.vel).add(proj.falling).normalize().neg();
                 if(proj.projcollide&IMPACT_GEOM && proj.projcollide&STICK_GEOM)
                 {
                     stick(proj, dir);
@@ -1629,9 +1617,9 @@ namespace projs
         return ret;
     }
 
-    int trace(projent &proj, const vec &dir, const vec &pos, int mat, bool skip)
+    int trace(projent &proj, const vec &dir, const vec &pos, bool skip)
     {
-        int ret = check(proj, dir, mat);
+        int ret = check(proj, dir);
         if(!ret) return 0;
         float total = 0, dist = -1;
         if(proj.projcollide&COLLIDE_SCAN)
@@ -1691,8 +1679,8 @@ namespace projs
     bool moveproj(projent &proj, float secs, bool skip = false)
     {
         vec dir(proj.vel), pos(proj.o);
-        int mat = lookupmaterial(pos);
-        if(isliquid(mat&MATF_VOLUME) && proj.liquidcoast > 0) dir.div(proj.liquidcoast);
+        if(proj.inliquid) dir.mul(physics::liquidmerge(&proj, 1.f, PHYS(liquidspeed)));
+        dir.add(proj.falling);
         dir.mul(secs);
 
         if(!proj.escaped && proj.owner) escaped(proj, pos, dir);
@@ -1700,7 +1688,7 @@ namespace projs
         bool blocked = false;
         if(proj.projcollide&COLLIDE_FROMTO)
         {
-            switch(trace(proj, dir, pos, mat, skip))
+            switch(trace(proj, dir, pos, skip))
             {
                 case 2: blocked = true; break;
                 case 1: break;
@@ -1755,6 +1743,7 @@ namespace projs
         }
 
         float dist = proj.o.dist(pos), diff = dist/float(4*RAD);
+        vec vel = vec(proj.vel).add(proj.falling);
         if(!blocked) proj.movement += dist;
         proj.distance += dist;
         switch(proj.projtype)
@@ -1767,7 +1756,7 @@ namespace projs
                     if(!proj.lastbounce || proj.movement > 0)
                     {
                         vec axis(sinf(proj.yaw*RAD), -cosf(proj.yaw*RAD), 0);
-                        if(proj.vel.dot2(axis) >= 0)
+                        if(vel.dot2(axis) >= 0)
                         {
                             proj.pitch -= diff;
                             if(proj.pitch < -180) proj.pitch = 180 - fmod(180 - proj.pitch, 360);
@@ -1796,7 +1785,7 @@ namespace projs
                 }
                 if(proj.weap == W_ROCKET)
                 {
-                    vectoyawpitch(vec(proj.vel).normalize(), proj.yaw, proj.pitch);
+                    vectoyawpitch(vec(vel).normalize(), proj.yaw, proj.pitch);
                     break;
                 }
                 if(proj.weap != W_GRENADE) break;
@@ -1806,10 +1795,10 @@ namespace projs
                 if(!proj.lastbounce || proj.movement > 0)
                 {
                     float yaw = proj.yaw, pitch = proj.pitch, speed = diff*secs;
-                    vectoyawpitch(vec(proj.vel).normalize(), yaw, pitch);
+                    vectoyawpitch(vec(vel).normalize(), yaw, pitch);
                     game::scaleyawpitch(proj.yaw, proj.pitch, yaw, pitch, speed, speed);
                     vec axis(sinf(proj.yaw*RAD), -cosf(proj.yaw*RAD), 0);
-                    if(proj.vel.dot2(axis) >= 0)
+                    if(vel.dot2(axis) >= 0)
                     {
                         proj.roll -= diff;
                         if(proj.roll < -180) proj.roll = 180 - fmod(180 - proj.roll, 360);
@@ -1826,7 +1815,7 @@ namespace projs
                 if(!proj.lastbounce || proj.movement > 0)
                 {
                     vec axis(sinf(proj.yaw*RAD), -cosf(proj.yaw*RAD), 0);
-                    if(proj.vel.dot2(axis) >= 0)
+                    if(vel.dot2(axis) >= 0)
                     {
                         proj.pitch -= diff;
                         if(proj.pitch < -180) proj.pitch = 180 - fmod(180 - proj.pitch, 360);
@@ -1873,9 +1862,10 @@ namespace projs
         return true;
     }
 
-    bool move(projent &proj, int qtime)
+    bool move(projent &proj, int millis)
     {
-        float secs = float(qtime)/1000.f;
+        float secs = millis/1000.f;
+        physics::updatematerial(&proj, proj.o, vec(proj.o).sub(vec(0, 0, min(proj.height, 1.f))), true);
         if(proj.projtype == PRJ_AFFINITY && m_bomber(game::gamemode) && proj.target && !proj.lastbounce)
         {
             vec targ = vec(proj.target->o).sub(proj.o).safenormalize();
@@ -1944,7 +1934,13 @@ namespace projs
                 if(!dir.iszero()) (proj.vel = dir).mul(mag);
             }
         }
-        proj.vel.z -= physics::gravityvel(&proj)*secs;
+        float coast = proj.inliquid ? physics::liquidmerge(&proj, PHYS(aircoast), PHYS(liquidcoast)) : PHYS(aircoast), speed = pow(max(1.0f - 1.0f/coast, 0.0f), millis/100.f);
+        proj.vel.mul(speed);
+        if(PHYS(gravity) > 0 || PHYS(buoyancy) > 0)
+        {
+            proj.falling.z -= physics::gravityvel(&proj)*secs;
+            proj.falling.mul(speed);
+        }
         return moveproj(proj, secs);
     }
 
