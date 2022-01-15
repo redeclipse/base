@@ -2000,7 +2000,7 @@ namespace game
         if(nogore != 2 && gibscale > 0 && !(flags&HIT(LOST)))
         {
             int hp = max(d->gethealth(gamemode, mutators)/10, 1), gib = clamp(max(damage, hp)/(d->obliterated ? 5 : 20), 2, 10), amt = int((rnd(gib)+gib)*(1+gibscale));
-            loopi(amt) projs::create(pos, pos, true, d, nogore || A(d->actortype, abilities)&AA(GIBS) ? PRJ_DEBRIS : PRJ_GIBS, -1, 0, rnd(gibfade)+gibfade, 0, rnd(250)+1, rnd(d->obliterated ? 80 : 40)+10);
+            loopi(amt) projs::create(pos, pos, true, d, nogore || !(A(d->actortype, abilities)&AA(GIBS)) ? PRJ_DEBRIS : PRJ_GIBS, -1, 0, rnd(gibfade)+gibfade, 0, rnd(250)+1, rnd(d->obliterated ? 80 : 40)+10);
         }
         if(m_team(gamemode, mutators) && d->team == v->team && d != v && v == player1 && isweap(weap) && WF(WK(flags), weap, damagepenalty, WS(flags)) != 0)
         {
