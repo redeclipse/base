@@ -275,7 +275,7 @@ namespace entities
                         m->curstep = 0;
                         m->yawed = m->pitched = 0;
                         m->moved = vec(0, 0, 0);
-                        m->resized = vec4(0, 0, 0, 0);
+                        m->resized = vec(0, 0, 0);
                         break;
                     }
                 }
@@ -369,6 +369,7 @@ namespace entities
                         m->ent = parent;
                         m->control = INANIMATE_RAIL;
                         m->coltype = coltype;
+                        m->aboveeye = 0;
                         if(mmi->m->collide != COLLIDE_ELLIPSE) m->collidetype = COLLIDE_OBB;
                         inanimates.add(m);
                         slice = false;
@@ -393,8 +394,7 @@ namespace entities
                         checkteleport = false;
                     }
 
-                    vec newpos = e.pos();
-                    vec4 oldsize(m->xradius, m->yradius, m->height, m->aboveeye);
+                    vec newpos = e.pos(), oldsize(m->xradius, m->yradius, m->height);
                     float newyaw = e.attrs[1]+e.yaw, newpitch = e.attrs[2]+e.pitch, newroll = e.attrs[3];
                     game::fixrange(newyaw, newpitch);
 
@@ -409,17 +409,10 @@ namespace entities
                     rotatebb(center, radius, int(newyaw), int(newpitch), int(newroll));
 
                     float xradius = radius.x + fabs(center.x), yradius = radius.y + fabs(center.y), rradius = m->collidetype == COLLIDE_OBB ? sqrtf(xradius*xradius + yradius*yradius) : max(xradius, yradius),
-                          offz = center.z-radius.z, height = max(offz, 0.f) + radius.z*2*mmi->m->height, aboveeye = radius.z*2*(1.0f-mmi->m->height);
+                          offz = center.z-radius.z, height = max(offz, 0.f) + radius.z*2*mmi->m->height + radius.z*2*(1.0f-mmi->m->height);
 
                     newpos.z += height;
                     if(offz < 0) newpos.z += offz;
-
-                    if(aboveeye+height <= 0.5f)
-                    {
-                        float zrad = (0.5f-(aboveeye+height))/2;
-                        aboveeye += zrad;
-                        height += zrad;
-                    }
 
                     int numdynents = game::numdynents();
                     if(slice)
@@ -433,14 +426,14 @@ namespace entities
                         m->yawed = yaw-lastyaw;
                         m->pitched = pitch-lastpitch;
                         m->moved = vec(newpos).sub(prevpos);
-                        m->resized = vec4(xradius, yradius, height, aboveeye).sub(oldsize);
+                        m->resized = vec(xradius, yradius, height).sub(oldsize);
 
                         for(int s = curstep; s > 0; )
                         {
                             int step = min(s, physics::physframetime);
                             float part = step/float(curstep);
                             vec dir = vec(m->moved).mul(part);
-                            vec4 resize = vec4(m->resized).mul(part);
+                            vec resize = vec(m->resized).mul(part);
 
                             m->o.add(dir);
                             m->xradius += resize.x;
@@ -448,79 +441,78 @@ namespace entities
                             m->radius = m->collidetype == COLLIDE_OBB ? sqrtf(xradius*xradius + yradius*yradius) : max(xradius, yradius);
                             m->zradius += resize.z;
                             m->height = m->zradius;
-                            m->aboveeye += resize.w;
 
                             loopj(numdynents)
                             {
                                 gameent *d = (gameent *)game::iterdynents(j);
                                 if(!d || d->state != CS_ALIVE || m->findpassenger(d) >= 0) continue;
 
-                                vec rescale = vec(d->o.x, d->o.y, 0.f).sub(vec(m->o.x, m->o.y, 0.f)).safenormalize().mul(vec(resize.x, resize.y, 0)),
+                                vec rescale = vec(d->o.x, d->o.y, 0.f).sub(vec(m->o.x, m->o.y, 0.f)).safenormalize().mul(vec(resize.x, resize.y, 0.f)),
                                     curdir = vec(rescale).add(dir), oldpos = d->o, oldnew = d->newpos;
                                 m->coltarget = d; // restricts inanimate collisions to this entity, and filters out the reverse collision
 
-                                loopk(2) if(collide(m, vec(0, 0, 0), 0, true, true, 0, false) && collideplayer == d)
+                                bool crush = false;
+                                if(collide(m, vec(0, 0, 0), 0, true, true, 0, false) && collideplayer == d)
                                 {
                                     if(m->coltype&(1<<INANIMATE_C_KILL)) game::suicide(d, HIT(TOUCH));
-
-                                    if(curdir.z > 0) curdir.z = 0;
-                                    if(curdir.iszero()) continue;
-                                    d->o.add(curdir);
-                                    d->newpos.add(curdir);
-
-                                    if(collide(d))
+                                    else
                                     {
-                                        bool crush = true;
-                                        if(collidewall.z >= physics::slopez)
+                                        if(curdir.iszero()) crush = true;
+                                        else
                                         {
-                                            vec proj = vec(curdir).project(collidewall);
-                                            if(!proj.iszero())
+                                            d->o.add(curdir);
+                                            d->newpos.add(curdir);
+
+                                            if(collide(d, vec(0, 0, 0), 0, true, true))
                                             {
-                                                d->o = vec(oldpos).add(proj);
-                                                d->newpos = vec(oldnew).add(proj);
-                                                if(!collide(d)) crush = false;
+                                                crush = true;
+                                                vec proj = vec(curdir).project(collidewall);
+                                                if(!proj.iszero())
+                                                {
+                                                    d->o.add(proj);
+                                                    d->newpos.add(proj);
+                                                    if(!collide(d, vec(0, 0, 0), 0, true, true)) crush = false;
+                                                }
                                             }
                                         }
-
-                                        if(crush)
-                                        {
-                                            d->o = oldpos;
-                                            d->newpos = oldnew;
-                                            game::suicide(d, HIT(CRUSH));
-                                            break;
-                                        }
-
                                     }
-                                    oldpos = d->o;
-                                    oldnew = d->newpos;
                                 }
+                                if(crush)
+                                {
+                                    d->o = oldpos;
+                                    d->newpos = oldnew;
+                                    game::suicide(d, HIT(CRUSH));
+                                    break;
+                                }
+                                m->coltarget = NULL;
                             }
 
-                            m->coltarget = NULL;
-
-                            if(!(m->coltype&(1<<INANIMATE_C_NOPASS))) loopvj(m->passengers)
+                            if(!(m->coltype&(1<<INANIMATE_C_NOPASS))) loopvjrev(m->passengers)
                             {
                                 passenger &p = m->passengers[j];
                                 physent *d = p.ent;
                                 if(d->state != CS_ALIVE) continue;
 
                                 vec rotate = vec(p.offset).rotate_around_z(m->yawed*RAD).sub(p.offset).mul(part),
-                                    curdir = vec(rotate).add(dir).addz(resize.w),
+                                    curdir = vec(rotate).add(dir).addz(resize.z < 0 ? resize.z*0.5f : resize.z),
                                     oldpos = d->o, oldnew = d->newpos;
                                 m->coltarget = d; // filter collisions from the passenger
 
                                 d->o.add(curdir);
                                 d->newpos.add(curdir);
 
-                                if(collide(d) && !gameent::is(collideplayer))
+                                if(collide(d, vec(0, 0, 0), 0, true, true) && !gameent::is(collideplayer))
                                 {
                                     d->o = oldpos;
                                     d->newpos = oldnew;
                                     if(gameent::is(d) && collidewall.z < 0) game::suicide((gameent *)d, HIT(CRUSH));
+                                    m->passengers.remove(j);
+                                    continue;
                                 }
                                 if(m->yawed != 0) d->yaw += m->yawed*part;
                                 if(m->pitched != 0) d->pitch += m->pitched*part;
                                 game::fixrange(d->yaw, d->pitch);
+                                p.offset = vec(d->o).sub(m->o);
 
                                 m->coltarget = NULL;
                             }
@@ -534,7 +526,7 @@ namespace entities
                         m->curstep = 0;
                         m->yawed = m->pitched = 0;
                         m->moved = vec(0, 0, 0);
-                        m->resized = vec4(0, 0, 0, 0);
+                        m->resized = vec(0, 0, 0);
                     }
 
 
@@ -546,7 +538,6 @@ namespace entities
                     m->yradius = yradius;
                     m->radius = rradius;
                     m->height = m->zradius = height;
-                    m->aboveeye = aboveeye;
                     m->resetinterp();
 
                     loopj(numdynents)

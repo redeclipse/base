@@ -2009,12 +2009,11 @@ struct inanimate : dynent
 {
     int control, ent, coltype, curstep;
     float yawed, pitched;
-    vec moved;
-    vec4 resized;
+    vec moved, resized;
     vector<passenger> passengers;
     physent *coltarget;
 
-    inanimate() : control(INANIMATE_NONE), ent(-1), coltype(0), curstep(0), yawed(0), pitched(0), moved(0, 0, 0), resized(0, 0, 0, 0), coltarget(NULL)
+    inanimate() : control(INANIMATE_NONE), ent(-1), coltype(0), curstep(0), yawed(0), pitched(0), moved(0, 0, 0), resized(0, 0, 0), coltarget(NULL)
     {
         physent::reset();
         type = ENT_INANIMATE;
