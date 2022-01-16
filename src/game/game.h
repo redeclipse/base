@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 257
+#define VERSION_GAME 258
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -1999,8 +1999,9 @@ struct passenger
 {
     physent *ent;
     vec offset;
+    bool local;
 
-    passenger(physent *d = NULL, const vec &off = vec(0, 0, 0)) : ent(d), offset(off) {}
+    passenger(physent *d = NULL, const vec &off = vec(0, 0, 0), bool loc = true) : ent(d), offset(off), local(loc) {}
     ~passenger() {}
 };
 
@@ -2035,7 +2036,7 @@ struct inanimate : dynent
         return -1;
     }
 
-    void addpassenger(physent *d)
+    void localpassenger(physent *d)
     {
         int n = findpassenger(d);
         if(n >= 0)
@@ -2044,7 +2045,20 @@ struct inanimate : dynent
             p.offset = vec(d->o).sub(o);
             return;
         }
-        passengers.add(passenger(d, vec(d->o).sub(o)));
+        passengers.add(passenger(d, vec(d->o).sub(o), true));
+    }
+
+    void remotepassenger(physent *d, const vec &offset)
+    {
+        int n = findpassenger(d);
+        if(n >= 0)
+        {
+            passenger &p = passengers[n];
+            p.offset = offset;
+            p.local = false;
+            return;
+        }
+        passengers.add(passenger(d, offset, false));
     }
 };
 
@@ -2057,7 +2071,6 @@ struct projent : dynent
     int projtype, projcollide, interacts;
     float elasticity, relativity, liquidcoast;
     int schan, id, weap, fromweap, fromflags, value, flags, collidezones;
-    //entitylight light;
     gameent *owner, *target, *stick;
     physent *hit;
     const char *mdlname;
@@ -2349,8 +2362,12 @@ namespace entities
     extern vector<inanimate *> inanimates;
     extern int showentfull, showentweapons;
     extern float showentavailable, showentunavailable;
+    extern void runrails();
     extern void updaterails();
-    extern void addpassenger(inanimate *m, physent *d);
+    extern void localpassenger(inanimate *m, physent *d);
+    extern inanimate *remotepassenger(int ent, physent *d, const vec &offset);
+    extern void updatepassengers();
+    extern inanimate *currentpassenger(physent *d);
     extern bool execitem(int n, int cn, dynent *d, vec &pos, float dist);
     extern bool collateitems(dynent *d, vec &pos, float radius, vector<actitem> &actitems);
     extern void checkitems(dynent *d);

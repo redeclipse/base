@@ -2067,13 +2067,15 @@ namespace client
 
     static void sendposition(gameent *d, packetbuf &q)
     {
+        inanimate *m = entities::currentpassenger(d);
+        int pid = m ? m->findpassenger(d) : -1;
         putint(q, N_POS);
         putuint(q, d->clientnum);
         // 3 bits phys state, 2 bits move, 2 bits strafe, 2 bits turnside
         uint physstate = d->physstate | ((d->move&3)<<3) | ((d->strafe&3)<<5) | ((d->turnside&3)<<7);
         putuint(q, physstate);
         putuint(q, d->impulse[IM_METER]);
-        ivec o = ivec(vec(d->feetpos()).mul(DMF)), f = ivec(vec(d->floorpos).mul(DMF));
+        ivec o = ivec(vec(d->feetpos()).mul(DMF)), f = ivec(vec(d->floorpos).mul(DMF)), n = m ? ivec(vec(m->passengers[pid].offset).mul(DMF)) : ivec(0, 0, 0);
         uint vel = min(int(d->vel.magnitude()*DVELF), 0xFFFF), fall = min(int(d->falling.magnitude()*DVELF), 0xFFFF);
         // 3 bits position, 3 bits floor, 1 bit velocity, 3 bits falling, 1 bit conopen, X bits actions
         uint flags = 0;
@@ -2096,7 +2098,14 @@ namespace client
             flags |= 1<<11;
             d->forcepos = false;
         }
-        loopk(AC_MAX) if(d->action[k]) flags |= 1<<(12+k);
+        if(m)
+        {
+            flags |= 1<<12;
+            if(n.x < 0 || n.x > 0xFFFF) flags |= 1<<13;
+            if(n.y < 0 || n.y > 0xFFFF) flags |= 1<<14;
+            if(n.z < 0 || n.z > 0xFFFF) flags |= 1<<15;
+        }
+        loopk(AC_MAX) if(d->action[k]) flags |= 1<<(16+k);
         putuint(q, flags);
         loopk(3)
         {
@@ -2109,6 +2118,16 @@ namespace client
             q.put(f[k]&0xFF);
             q.put((f[k]>>8)&0xFF);
             if(f[k] < 0 || f[k] > 0xFFFF) q.put((f[k]>>16)&0xFF);
+        }
+        if(m)
+        {
+            putuint(q, m->ent);
+            loopk(3)
+            {
+                q.put(n[k]&0xFF);
+                q.put((n[k]>>8)&0xFF);
+                if(n[k] < 0 || n[k] > 0xFFFF) q.put((n[k]>>16)&0xFF);
+            }
         }
         float yaw = d->yaw, pitch = d->pitch;
         if(d == game::player1 && game::thirdpersonview(true, d))
@@ -2331,29 +2350,47 @@ namespace client
             case N_POS: // position of another client
             {
                 int lcn = getuint(p), physstate = getuint(p), meter = getuint(p), flags = getuint(p);
-                vec o, f, vel, falling;
+                gameent *d = game::getclient(lcn);
+                vec o, f, n, vel, falling;
                 float yaw, pitch, roll;
                 loopk(3)
                 {
-                    int n = p.get();
-                    n |= p.get()<<8;
+                    int z = p.get();
+                    z |= p.get()<<8;
                     if(flags&(1<<k))
                     {
-                        n |= p.get()<<16;
-                        if(n&0x800000) n |= ~0U<<24;
+                        z |= p.get()<<16;
+                        if(z&0x800000) z |= ~0U<<24;
                     }
-                    o[k] = n/DMF;
+                    o[k] = z/DMF;
                 }
                 loopk(3)
                 {
-                    int n = p.get();
-                    n |= p.get()<<8;
+                    int z = p.get();
+                    z |= p.get()<<8;
                     if(flags&(1<<(k+3)))
                     {
-                        n |= p.get()<<16;
-                        if(n&0x800000) n |= ~0U<<24;
+                        z |= p.get()<<16;
+                        if(z&0x800000) z |= ~0U<<24;
                     }
-                    f[k] = n/DMF;
+                    f[k] = z/DMF;
+                }
+                inanimate *m = NULL;
+                if(flags&(1<<12))
+                {
+                    int ent = getuint(p);
+                    loopk(3)
+                    {
+                        int z = p.get();
+                        z |= p.get()<<8;
+                        if(flags&(1<<(k+13)))
+                        {
+                            z |= p.get()<<16;
+                            if(z&0x800000) z |= ~0U<<24;
+                        }
+                        n[k] = z/DMF;
+                    }
+                    m = entities::remotepassenger(ent, d, n);
                 }
                 int dir = p.get();
                 dir |= p.get()<<8;
@@ -2380,7 +2417,6 @@ namespace client
                     falling.mul(mag/DVELF);
                 }
                 else falling = vec(0, 0, 0);
-                gameent *d = game::getclient(lcn);
                 if(!d || d == game::player1 || d->ai) continue;
                 float oldyaw = d->yaw, oldpitch = d->pitch;
                 d->yaw = yaw;
@@ -2395,7 +2431,7 @@ namespace client
                 loopk(AC_MAX)
                 {
                     bool val = d->action[k];
-                    d->action[k] = flags&(1<<(12+k)) ? true : false;
+                    d->action[k] = flags&(1<<(16+k)) ? true : false;
                     if(val != d->action[k])
                     {
                         if(d->action[k]) d->actiontime[k] = lastmillis;
@@ -2403,8 +2439,13 @@ namespace client
                     }
                 }
                 vec oldpos(d->o);
-                d->o = o;
-                d->o.z += d->height;
+                if(m) d->o = vec(m->o).add(n);
+                else
+                {
+                    entities::removepassenger(d);
+                    d->o = o;
+                    d->o.z += d->height;
+                }
                 d->floorpos = f;
                 d->vel = vel;
                 d->falling = falling;

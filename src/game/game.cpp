@@ -3336,10 +3336,12 @@ namespace game
                     physics::move(camera1, 10, true);
                 }
             }
+            entities::runrails();
             if(hud::canshowscores()) hud::showscores(true);
         }
 
         if(player1->clientnum >= 0) client::c2sinfo();
+        entities::updatepassengers();
     }
 
     void adjustorientation(vec &pos)

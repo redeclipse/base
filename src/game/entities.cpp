@@ -557,7 +557,6 @@ namespace entities
                         if(collide(m, vec(0, 0, 0), 0, true, true, 0, false) && collideplayer == d && collideinside) game::suicide(d, HIT(CRUSH));
                         m->coltarget = NULL;
                     }
-                    m->passengers.shrink(0);
                 }
             }
 
@@ -651,27 +650,73 @@ namespace entities
         loopv(inanimates)
         {
             inanimate *m = inanimates[i];
-            loopvj(m->passengers) if(m->passengers[j].ent == d) m->passengers.remove(i--);
+            loopvjrev(m->passengers) if(m->passengers[j].ent == d) m->passengers.remove(j);
         }
     }
 
-    void addpassenger(inanimate *m, physent *d)
+    void localpassenger(inanimate *m, physent *d)
     {
-        float dist = m->headpos().dist(d->feetpos());
+        float dist = m->headpos().squaredist(d->feetpos());
         loopv(inanimates)
         {
             inanimate *t = inanimates[i];
             if(t == m) continue;
             int cur = t->findpassenger(d);
             if(cur < 0) continue;
-            if(t->headpos().dist(d->feetpos()) > dist)
+            if(t->headpos().squaredist(d->feetpos()) > dist)
             {
                 t->passengers.remove(cur);
                 break;
             }
             else return;
         }
-        m->addpassenger(d);
+        m->localpassenger(d);
+    }
+
+    inanimate *remotepassenger(int ent, physent *d, const vec &offset)
+    {
+        inanimate *r = NULL;
+        loopv(inanimates)
+        {
+            inanimate *m = inanimates[i];
+            if(r || m->ent != ent)
+            {
+                int cur = m->findpassenger(d);
+                if(cur >= 0) m->passengers.remove(cur);
+                continue;
+            }
+            m->remotepassenger(d, offset);
+            r = m;
+        }
+        return r;
+    }
+
+    void updatepassengers()
+    {
+        loopv(inanimates)
+        {
+            inanimate *m = inanimates[i];
+            loopvjrev(m->passengers)
+            {
+                if(!m->passengers[j].local) continue;
+                m->passengers.remove(j);
+            }
+        }
+    }
+
+    inanimate *currentpassenger(physent *d)
+    {
+        loopv(inanimates)
+        {
+            inanimate *m = inanimates[i];
+            if(m->ent < 0) continue;
+            loopvj(m->passengers)
+            {
+                int cur = m->findpassenger(d);
+                if(cur >= 0) return m;
+            }
+        }
+        return NULL;
     }
 
     vector<extentity *> &getents() { return ents; }
@@ -2778,7 +2823,6 @@ namespace entities
 
     void update()
     {
-        runrails();
         loopenti(MAPSOUND)
         {
             gameentity &e = *(gameentity *)ents[i];

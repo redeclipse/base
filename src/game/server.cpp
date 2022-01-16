@@ -6214,6 +6214,20 @@ namespace server
                         }
                         floorpos[k] = n/DMF;
                     }
+                    if(flags&(1<<12))
+                    {
+                        getuint(p);
+                        loopk(3)
+                        {
+                            int n = p.get();
+                            n |= p.get()<<8;
+                            if(flags&(1<<(k+13)))
+                            {
+                                n |= p.get()<<16;
+                                if(n&0x800000) n |= ~0U<<24;
+                            }
+                        }
+                    }
                     int dir = p.get();
                     dir |= p.get()<<8;
                     yaw = dir%360;
