@@ -647,6 +647,7 @@ namespace entities
 
     void localpassenger(inanimate *m, physent *d)
     {
+        if(gameent::is(d) && d != game::player1 && !((gameent *)d)->ai) return;
         float dist = m->headpos().squaredist(d->feetpos());
         loopv(inanimates)
         {
@@ -654,6 +655,7 @@ namespace entities
             if(t == m) continue;
             int cur = t->findpassenger(d);
             if(cur < 0) continue;
+            if(!t->passengers[cur].local) return; // don't override remote passengers
             if(t->headpos().squaredist(d->feetpos()) > dist)
             {
                 t->passengers.remove(cur);

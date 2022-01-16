@@ -2035,19 +2035,20 @@ struct inanimate : dynent
         return -1;
     }
 
-    void localpassenger(physent *d)
+    bool localpassenger(physent *d)
     {
         int n = findpassenger(d);
         if(n >= 0)
         {
             passenger &p = passengers[n];
             p.offset = vec(d->o).sub(o);
-            return;
+            return false;
         }
         passengers.add(passenger(d, vec(d->o).sub(o), true));
+        return true;
     }
 
-    void remotepassenger(physent *d, const vec &offset)
+    bool remotepassenger(physent *d, const vec &offset)
     {
         int n = findpassenger(d);
         if(n >= 0)
@@ -2055,9 +2056,10 @@ struct inanimate : dynent
             passenger &p = passengers[n];
             p.offset = offset;
             p.local = false;
-            return;
+            return false;
         }
         passengers.add(passenger(d, offset, false));
+        return true;
     }
 };
 

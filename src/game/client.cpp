@@ -1424,7 +1424,7 @@ namespace client
         game::player1->privilege = PRIV_NONE;
         game::player1->handle[0] = game::player1->steamid[0] = '\0';
         game::gamemode = G_EDITMODE;
-        game::mutators = game::maptime = 0;
+        game::mutators = game::maptime = game::timesync = game::timelast = 0;
         loopv(game::players) if(game::players[i]) game::clientdisconnected(i);
         game::waiting.setsize(0);
         hud::cleanup();
@@ -1663,7 +1663,7 @@ namespace client
         game::nextmode = game::gamemode;
         game::nextmuts = game::mutators;
         game::timeremaining = -1;
-        game::maptime = game::timesync = 0;
+        game::maptime = game::timesync = game::timelast = 0;
         hud::resetscores();
         mapvotes.shrink(0);
         if(editmode) toggleedit();

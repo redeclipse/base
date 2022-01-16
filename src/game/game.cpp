@@ -482,12 +482,15 @@ namespace game
 
     int gettimeelapsed(bool force)
     {
+        if(!timeelapsed || !timelast) return 0;
         return connected() && gs_timeupdate(gamestate) ? max(timeelapsed+(lastmillis-timelast), 0) : (force && maptime > 0 ? lastmillis-maptime : 0);
     }
 
     int gettimesync()
     {
-        return connected() && gs_timeupdate(gamestate) ? max(lastmillis-timesync, 0) : 0;
+        if(!timeelapsed || !timelast) return 0;
+        timesync = connected() && gs_timeupdate(gamestate) ? max(timeelapsed+(lastmillis-timelast), timesync) : 0;
+        return timesync;
     }
 
     const char *gamestatename(int type)
@@ -2017,8 +2020,7 @@ namespace game
         gamestate = state;
         timeremaining = remain;
         timeelapsed = elapsed;
-        timelast = gs_timeupdate(gamestate) ? lastmillis : totalmillis;
-        timesync = gs_timeupdate(gamestate) ? max(lastmillis-elapsed-(player1->ping/2), timesync) : 0;
+        timelast = lastmillis;
         if(gs_timeupdate(gamestate) != gs_timeupdate(oldstate)) entities::updaterails();
         if(gs_intermission(gamestate) && gs_playing(oldstate))
         {
@@ -2138,7 +2140,7 @@ namespace game
         if(!empty)
         {
             gamestate = G_S_WAITING;
-            mapstart = maptime = 0;
+            mapstart = maptime = timesync = timelast = 0;
         }
         specreset();
         removedamagemergeall();
@@ -3245,6 +3247,7 @@ namespace game
             if(!maptime)
             {
                 maptime = -1;
+                timesync = timelast = 0;
                 return; // skip the first loop
             }
             else if(maptime < 0)
