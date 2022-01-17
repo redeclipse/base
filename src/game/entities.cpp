@@ -2940,6 +2940,7 @@ namespace entities
                 }
             }
 
+            if (editmode && !showmapmodels) return;
             loopvj(r.parents)
             {
                 int n = r.parents[j];

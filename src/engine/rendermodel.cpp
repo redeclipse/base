@@ -1024,9 +1024,11 @@ model *loadlodmodel(model *m, const vec &pos, float offset)
     return lm ? lm : m;
 }
 
+VAR(0, showmapmodels, 0, 1, 1);
+
 void rendermapmodel(int idx, entmodelstate &state, bool tpass)
 {
-    if(!mapmodels.inrange(idx)) return;
+    if(!mapmodels.inrange(idx) || (editmode && !showmapmodels)) return;
     mapmodelinfo &mmi = mapmodels[idx];
     model *m = loadlodmodel(mmi.m ? mmi.m : loadmodel(mmi.name), state.o, state.lodoffset);
     if(!m) return;
@@ -1210,4 +1212,3 @@ void setbbfrommodel(dynent *d, const char *mdl, float size)
         d->height += zrad;
     }
 }
-
