@@ -3084,6 +3084,13 @@ void getslottex(int *idx)
     intret(slot.variants->index);
 }
 
+void gettextags(int *idx)
+{
+    if(*idx < 0 || !slots.inrange(*idx)) { intret(-1); return; }
+    Slot &slot = lookupslot(*idx, false);
+    result(slot.tags);
+}
+
 COMMANDN(0, edittex, edittex_, "i");
 ICOMMAND(0, settex, "i", (int *tex), { if(!vslots.inrange(*tex) || noedit()) return; filltexlist(); edittex(*tex); });
 COMMAND(0, gettex, "");
@@ -3099,6 +3106,7 @@ ICOMMAND(0, numslots, "", (), intret(slots.length()));
 ICOMMAND(0, numdecalslots, "", (), intret(decalslots.length()));
 COMMAND(0, getslottex, "i");
 ICOMMAND(0, texloaded, "i", (int *tex), intret(slots.inrange(*tex) && slots[*tex]->loaded ? 1 : 0));
+COMMAND(0, gettextags, "i");
 
 #define LOOPTEXMRU(name,op) \
     ICOMMAND(0, looptexmru##name, "iire", (int *count, int *skip, ident *id, uint *body), \

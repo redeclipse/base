@@ -742,8 +742,9 @@ struct Slot
     float grassblend;
     int grassscale, grassheight;
     Texture *grasstex, *thumbnail;
-
-    Slot(int index = -1) : index(index), variants(NULL), grass(NULL) { reset(); }
+    char *tags;
+    
+    Slot(int index = -1) : index(index), variants(NULL), grass(NULL), tags(NULL) { reset(); }
     virtual ~Slot() {}
 
     virtual int type() const { return OCTA; }
@@ -775,6 +776,7 @@ struct Slot
         grassscale = grassheight = 0;
         grasstex = NULL;
         thumbnail = NULL;
+        DELETEA(tags);
     }
 
     void cleanup()

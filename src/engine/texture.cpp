@@ -2740,6 +2740,15 @@ void texsmooth(int *id, int *angle)
 }
 COMMAND(0, texsmooth, "ib");
 
+void textags(char *tags)
+{
+    if(!defslot) return;
+    Slot &s = *defslot;
+    DELETEA(s.tags);
+    s.tags = tags[0] ? newstring(tags) : NULL;
+}
+ICOMMAND(0, textags, "s", (char *tags), textags(tags));
+
 void decaldepth(float *depth, float *fade)
 {
     if(!defslot || defslot->type() != Slot::DECAL) return;
