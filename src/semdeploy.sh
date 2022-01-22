@@ -11,6 +11,7 @@ SEMABUILD_DIST="bz2 combined win zip mac"
 
 sudo ${SEMABUILD_APT} update || exit 1
 sudo ${SEMABUILD_APT} -fy install build-essential unzip zip nsis nsis-common mktorrent golang || exit 1
+sudo ${SEMABUILD_APT} clean || exit 1
 
 #export GOPATH="${HOME}/gofiles"
 #go get "github.com/itchio/gothub"
