@@ -139,7 +139,8 @@ semupdate_steam() {
     export LD_LIBRARY_PATH="${SEMUPDATE_DEPOT}/linux32:${LD_LIBRARY_PATH}"
     STEAM_ARGS="+login redeclipsenet ${STEAM_TOKEN} +run_app_build_http app_build.vdf +quit"
     if [ "${STEAM_GUARD}" != "0" ]; then STEAM_ARGS="+set_steam_guard_code ${STEAM_GUARD} ${STEAM_ARGS}"; fi
-    ls -la . linux32
+    df -ah
+    ls -la "${SEMAPHORE_CACHE_DIR}" . linux32
     STEAM_EXECS=0
     ./linux32/steamcmd ${STEAM_ARGS}
     while [ $? -eq 42 ] && [ ${STEAM_EXECS} -lt 2 ]; do
