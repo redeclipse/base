@@ -1095,15 +1095,18 @@ namespace physics
         pl->inliquid = pl->onladder = false;
         loopi(iters+1)
         {
-            int chkmat = lookupmaterial(tmp);
-            matid |= chkmat&MATF_FLAGS;
+            int chkmat = lookupmaterial(tmp), matvol = chkmat&MATF_VOLUME, matclip = chkmat&MATF_CLIP, matflags = chkmat&MATF_FLAGS;
+            // give priority to the lowest of each the volume/clip materials as they can't be OR'd together
+            if(matvol && !(matid&MATF_VOLUME)) matid |= matvol;
+            if(matclip && !(matid&MATF_CLIP)) matid |= matclip;
+            if(matflags) matid |= matflags;
 
-            if(isliquid(chkmat&MATF_VOLUME))
+            if(isliquid(matvol))
             {
                 pl->inliquid = true;
                 if(i) liquid++;
             }
-            if((chkmat&MATF_FLAGS)&MAT_LADDER) pl->onladder = true;
+            if(matflags&MAT_LADDER) pl->onladder = true;
             tmp.z += frac;
         }
 
