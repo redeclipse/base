@@ -1113,7 +1113,14 @@ namespace server
     extern void setteam(clientinfo *ci, int team, int flags = TT_RESET, bool swaps = true);
     extern int chooseteam(clientinfo *ci, int suggest = -1, bool wantbal = false);
 #endif
+    extern int getlavaburntime(int mat); \
+    extern int getlavaburndelay(int mat);
+    extern float getwaterextinguish(int mat);
+    extern float getwaterextinguishscale(int mat);
 }
+#ifdef CPP_GAME_SERVER
+#define WATERPHYS(name,mat) (server::getwater##name(mat)*server::getwater##name##scale(mat))
+#endif
 
 #if !defined(CPP_GAME_SERVER) && !defined(STANDALONE)
 template<class T> inline void flashcolour(T &r, T &g, T &b, T br, T bg, T bb, float amt)
@@ -2217,7 +2224,33 @@ namespace physics
     extern void smoothplayer(gameent *d, int res, bool local);
     extern void update();
     extern void reset();
+
+#define GETLIQUIDFUNCS(name) \
+    extern float get##name##buoyancy(int mat); \
+    extern float get##name##buoyancyscale(int mat); \
+    extern float get##name##buoyancycrouch(int mat); \
+    extern float get##name##buoyancyjump(int mat); \
+    extern float get##name##falldist(int mat); \
+    extern float get##name##fallspeed(int mat); \
+    extern float get##name##fallpush(int mat); \
+    extern float get##name##speed(int mat); \
+    extern float get##name##speedscale(int mat); \
+    extern float get##name##coast(int mat); \
+    extern float get##name##coastscale(int mat); \
+    extern float get##name##boost(int mat); \
+    extern float get##name##boostscale(int mat); \
+    extern float get##name##submerge(int mat); \
+    extern float get##name##submergescale(int mat); \
+
+    GETLIQUIDFUNCS(water)
+    GETLIQUIDFUNCS(lava)
+
+    extern float getwaterextinguish(int mat);
+    extern float getwaterextinguishscale(int mat);
 }
+#define LIQUIDPHYS(name,mat) ((mat&MATF_VOLUME) == MAT_LAVA ? physics::getlava##name(mat)*physics::getlava##name##scale(mat) : physics::getwater##name(mat)*physics::getwater##name##scale(mat))
+#define LIQUIDVAR(name,mat) ((mat&MATF_VOLUME) == MAT_LAVA ? physics::getlava##name(mat) : physics::getwater##name(mat))
+#define WATERPHYS(name,mat) (physics::getwater##name(mat)*physics::getwater##name##scale(mat))
 
 namespace projs
 {

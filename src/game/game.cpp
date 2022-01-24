@@ -1486,7 +1486,7 @@ namespace game
 
     bool burn(gameent *d, int weap, int flags)
     {
-        if(wr_burns(weap, flags) && (d->submerged < G(liquidextinguish) || (d->inmaterial&MATF_VOLUME) != MAT_WATER))
+        if(wr_burns(weap, flags) && ((d->inmaterial&MATF_VOLUME) != MAT_WATER || d->submerged < WATERPHYS(extinguish, d->inmaterial)))
         {
             d->lastrestime[W_R_BURN] = lastmillis;
             if(isweap(weap) || flags&HIT(MATERIAL)) d->lastres[W_R_BURN] = lastmillis;
@@ -3808,7 +3808,7 @@ namespace game
             {
                 // Test if the player is actually moving at a meaningful speed. This may not be the case if the player is running against a wall or another obstacle.
                 const bool moving = fabsf(d->vel.x) > 5.0f || fabsf(d->vel.y) > 5.0f;
-                if(d->inliquid && !d->onladder && d->submerged >= min(PHYS(liquidsubmerge), 0.1f) && d->physstate <= PHYS_FALL)
+                if(d->inliquid && !d->onladder && d->submerged >= min(LIQUIDPHYS(submerge, d->inmaterial), 0.1f) && d->physstate <= PHYS_FALL)
                 {
                     if(d->crouching())
                     {

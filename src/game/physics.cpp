@@ -27,6 +27,28 @@ namespace physics
     VAR(IDF_PERSIST, grabstyle, 0, 2, 2); // 0 = up=up down=down, 1 = up=down down=up, 2 = up=up, down=up
     VAR(IDF_PERSIST, grabplayerstyle, 0, 3, 3); // 0 = up=up down=down, 1 = up=down down=up, 2 = up=up, down=up, 3 = directly toward player
 
+    #define GETLIQUIDVARS(name) \
+        GETMATIDXVAR(name, buoyancy, float) \
+        GETMATIDXVAR(name, buoyancyscale, float) \
+        GETMATIDXVAR(name, buoyancycrouch, float) \
+        GETMATIDXVAR(name, buoyancyjump, float) \
+        GETMATIDXVAR(name, falldist, float) \
+        GETMATIDXVAR(name, fallspeed, float) \
+        GETMATIDXVAR(name, fallpush, float) \
+        GETMATIDXVAR(name, speed, float) \
+        GETMATIDXVAR(name, speedscale, float) \
+        GETMATIDXVAR(name, coast, float) \
+        GETMATIDXVAR(name, coastscale, float) \
+        GETMATIDXVAR(name, boost, float) \
+        GETMATIDXVAR(name, boostscale, float) \
+        GETMATIDXVAR(name, submerge, float) \
+        GETMATIDXVAR(name, submergescale, float)
+
+    GETLIQUIDVARS(water)
+    GETLIQUIDVARS(lava)
+    GETMATIDXVAR(water, extinguish, float) \
+    GETMATIDXVAR(water, extinguishscale, float)
+
     int physsteps = 0, lastphysframe = 0, lastmove = 0, lastdirmove = 0, laststrafe = 0, lastdirstrafe = 0, lastcrouch = 0, lastwalk = 0;
 
     bool allowimpulse(physent *d, int type)
@@ -243,7 +265,10 @@ namespace physics
         return false;
     }
 
-    bool liquidcheck(physent *d) { return d->inliquid && !d->onladder && d->submerged >= PHYS(liquidsubmerge); }
+    bool liquidcheck(physent *d)
+    {
+        return d->inliquid && !d->onladder && d->submerged >= LIQUIDPHYS(submerge, d->inmaterial);
+    }
 
     float liquidmerge(physent *d, float from, float to)
     {
@@ -259,7 +284,7 @@ namespace physics
     float jumpvel(physent *d, bool liquid = true)
     {
         float vel = d->jumpspeed;
-        if(liquid && d->inliquid) vel *= liquidmerge(d, 1.f, PHYS(liquidspeed));
+        if(liquid && d->inliquid) vel *= liquidmerge(d, 1.f, LIQUIDPHYS(speed, d->inmaterial));
         if(gameent::is(d))
         {
             gameent *e = (gameent *)d;
@@ -268,9 +293,10 @@ namespace physics
         return vel;
     }
 
-    bool liquidfall(physent *d, vec &f, bool lava, float dist)
+    bool liquidfall(physent *d, vec &f, int mat, float dist)
     {
         int ret = 0;
+        bool lava = (mat&MATF_VOLUME) == MAT_LAVA;
         ivec center = ivec(d->center()), bbrad = ivec(d->xradius+dist, d->yradius+dist, (d->zradius+dist)*0.5f),
              bbmin = ivec(center).sub(bbrad), bbmax = ivec(center).add(bbrad);
         loopk(4)
@@ -294,7 +320,7 @@ namespace physics
     void gravityvel(physent *d, vec &g, float secs)
     {
         float vel = PHYS(gravity)*(d->weight/100.f), buoy = 0.f;
-        if(liquidcheck(d)) buoy = PHYS(buoyancy)*(d->buoyancy/100.f)*d->submerged;
+        if(liquidcheck(d)) buoy = LIQUIDPHYS(buoyancy, d->inmaterial)*(d->buoyancy/100.f)*d->submerged;
         if(gameent::is(d))
         {
             gameent *e = (gameent *)d;
@@ -306,8 +332,8 @@ namespace physics
             }
             if(buoy != 0)
             {
-                if(e->actiontime[AC_JUMP] >= 0) buoy *= buoyancyjump;
-                else if(e->crouching()) buoy *= buoyancycrouch;
+                if(e->actiontime[AC_JUMP] >= 0) buoy *= LIQUIDVAR(buoyancyjump, d->inmaterial);
+                else if(e->crouching()) buoy *= LIQUIDVAR(buoyancycrouch, d->inmaterial);
                 buoy *= e->stungravity;
             }
         }
@@ -315,11 +341,10 @@ namespace physics
         if(d->inliquid)
         {
             vec f(0, 0, 0);
-            bool lava = (d->inmaterial&MATF_VOLUME) == MAT_LAVA;
-            int fall = liquidfall(d, f, lava, lava ? lavafalldist : waterfalldist);
+            int fall = liquidfall(d, f, d->inmaterial, LIQUIDVAR(falldist, d->inmaterial));
             if(fall)
             {
-                f.div(fall).mul(lava ? lavafallpush : waterfallpush).addz(-1).mul(lava ? lavafallspeed : waterfallspeed);
+                f.div(fall).mul(LIQUIDVAR(fallpush, d->inmaterial)).addz(-1).mul(LIQUIDVAR(fallspeed, d->inmaterial));
                 g.add(f);
             }
         }
@@ -862,7 +887,7 @@ namespace physics
                 d->vel.z += force;
                 if(d->inliquid)
                 {
-                    float scale = liquidmerge(d, 1.f, PHYS(liquidspeed));
+                    float scale = liquidmerge(d, 1.f, LIQUIDPHYS(speed, d->inmaterial));
                     d->vel.x *= scale;
                     d->vel.y *= scale;
                 }
@@ -1087,7 +1112,7 @@ namespace physics
         {
             bool slide = gameent::is(pl) && ((gameent *)pl)->sliding();
             float c = sticktospecial(pl) || pl->physstate >= PHYS_SLOPE || pl->onladder ? (slide ? PHYS(slidecoast) : PHYS(floorcoast))*coastscale(pl->feetpos(-1)) : PHYS(aircoast);
-            coast = pl->inliquid ? liquidmerge(pl, c, PHYS(liquidcoast)) : c;
+            coast = pl->inliquid ? liquidmerge(pl, c, LIQUIDPHYS(coast, pl->inmaterial)) : c;
         }
         pl->vel.lerp(m, pl->vel, pow(max(1.0f - 1.0f/coast, 0.0f), millis/20.0f));
     }
@@ -1102,7 +1127,7 @@ namespace physics
         bool liquid = liquidcheck(pl);
         if(liquid || pl->physstate >= PHYS_SLOPE)
         {
-            float coast = liquid ? liquidmerge(pl, PHYS(aircoast), PHYS(liquidcoast)) : PHYS(floorcoast)*coastscale(pl->feetpos(-1)),
+            float coast = liquid ? liquidmerge(pl, PHYS(aircoast), LIQUIDPHYS(coast, pl->inmaterial)) : PHYS(floorcoast)*coastscale(pl->feetpos(-1)),
                     c = liquid ? 1.0f : clamp((pl->floor.z-slopez)/(floorz-slopez), 0.0f, 1.0f);
             pl->falling.mul(pow(max(1.0f - c/coast, 0.0f), millis/20.0f));
         }
@@ -1165,7 +1190,11 @@ namespace physics
             if(!prevliq && d->inliquid) d->resetjump();
             if(local)
             {
-                if(d->physstate < PHYS_SLIDE && submerged >= PHYS(liquidboost) && d->submerged < PHYS(liquidboost) && d->vel.z > 1e-3f) d->vel.z = max(d->vel.z, jumpvel(d, false)*A(d->actortype, liquidboost));
+                if(d->physstate < PHYS_SLIDE && d->vel.z > 1e-3f)
+                {
+                    float boost = LIQUIDPHYS(boost, d->inmaterial);
+                    if(submerged >= boost && d->submerged < boost) d->vel.z = max(d->vel.z, jumpvel(d, false)*A(d->actortype, liquidboost));
+                }
                 if(d->inmaterial != oldmatid || d->submerged != submerged) client::addmsg(N_SPHY, "ri3f", d->clientnum, SPHY_MATERIAL, d->inmaterial, d->submerged);
             }
         }
@@ -1196,7 +1225,7 @@ namespace physics
         }
 
         vec vel(pl->vel);
-        if(player && pl->inliquid) vel.mul(liquidmerge(pl, 1.f, PHYS(liquidspeed)));
+        if(player && pl->inliquid) vel.mul(liquidmerge(pl, 1.f, LIQUIDPHYS(speed, pl->inmaterial)));
         vel.add(pl->falling);
         vel.mul(secs);
 

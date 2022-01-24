@@ -20,25 +20,73 @@ GFVAR(IDF_WORLD, 0, hurtshockstunscale, 0, 0.5f, FVAR_MAX);
 GFVAR(IDF_WORLD, 0, hurtshockstunfall, 0, 0.01f, FVAR_MAX);
 GVAR(IDF_WORLD, 0, hurtshockstuntime, 0, 500, VAR_MAX);
 
-GVAR(IDF_WORLD, 0, lavaburntime, 0, 5500, VAR_MAX);
-GVAR(IDF_WORLD, 0, lavaburndelay, 1, 1000, VAR_MAX);
-
-GFVAR(IDF_WORLD, 0, gravity, 0, 50.f, 1000); // gravity
+GFVAR(IDF_WORLD, 0, gravity, 0, 50.f, FVAR_MAX); // gravity
 GFVAR(IDF_GAMEMOD, 0, gravityscale, 0, 1, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, gravitycrouch, 0, 1.25f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, gravityjump, 0, 0.85f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, gravityjumpcrouch, 0, 1, FVAR_MAX);
-GFVAR(IDF_WORLD, 0, buoyancy, 0, 50.f, 1000); // buoyancy
-GFVAR(IDF_GAMEMOD, 0, buoyancyscale, 0, 1, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, buoyancycrouch, 0, 0.5f, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, buoyancyjump, 0, 1.5f, FVAR_MAX);
 
-GFVAR(IDF_WORLD, 0, waterfalldist, 0, 12.f, FVAR_MAX);
-GFVAR(IDF_WORLD, 0, waterfallspeed, 0, 250.f, FVAR_MAX);
-GFVAR(IDF_WORLD, 0, waterfallpush, 0, 0.35f, FVAR_MAX);
-GFVAR(IDF_WORLD, 0, lavafalldist, 0, 12.f, FVAR_MAX);
-GFVAR(IDF_WORLD, 0, lavafallspeed, 0, 250.f, FVAR_MAX);
-GFVAR(IDF_WORLD, 0, lavafallpush, 0, 0.35f, FVAR_MAX);
+#define LIQUIDVARS(type, name) \
+    GFVAR(IDF_WORLD, 0, name##buoyancy##type, FVAR_MIN, 50.f, FVAR_MAX); \
+    GFVAR(IDF_GAMEMOD, 0, name##buoyancyscale##type, 0, 1, FVAR_MAX); \
+    GFVAR(IDF_GAMEMOD, 0, name##buoyancycrouch##type, 0, 0.5f, FVAR_MAX); \
+    GFVAR(IDF_GAMEMOD, 0, name##buoyancyjump##type, 0, 1.5f, FVAR_MAX); \
+    GFVAR(IDF_WORLD, 0, name##falldist##type, 0, 12.f, FVAR_MAX); \
+    GFVAR(IDF_WORLD, 0, name##fallspeed##type, FVAR_MIN, 250.f, FVAR_MAX); \
+    GFVAR(IDF_WORLD, 0, name##fallpush##type, 0, 0.35f, FVAR_MAX); \
+    GFVAR(IDF_WORLD, 0, name##speed##type, 0, 0.85f, 1); \
+    GFVAR(IDF_GAMEMOD, 0, name##speedscale##type, 0, 1, FVAR_MAX); \
+    GFVAR(IDF_WORLD, 0, name##coast##type, 0, 10.f, 1000); \
+    GFVAR(IDF_GAMEMOD, 0, name##coastscale##type, 0, 1, FVAR_MAX); \
+    GFVAR(IDF_WORLD, 0, name##boost##type, 0, 0.5f, 1); \
+    GFVAR(IDF_GAMEMOD, 0, name##boostscale##type, 0, 1, FVAR_MAX); \
+    GFVAR(IDF_WORLD, 0, name##submerge##type, 0, 0.75f, 1); \
+    GFVAR(IDF_GAMEMOD, 0, name##submergescale##type, 0, 1, FVAR_MAX);
+
+
+LIQUIDVARS(, water)
+LIQUIDVARS(, water2)
+LIQUIDVARS(, water3)
+LIQUIDVARS(, water4)
+LIQUIDVARS(alt, water)
+LIQUIDVARS(alt, water2)
+LIQUIDVARS(alt, water3)
+LIQUIDVARS(alt, water4)
+LIQUIDVARS(, lava)
+LIQUIDVARS(, lava2)
+LIQUIDVARS(, lava3)
+LIQUIDVARS(, lava4)
+LIQUIDVARS(alt, lava)
+LIQUIDVARS(alt, lava2)
+LIQUIDVARS(alt, lava3)
+LIQUIDVARS(alt, lava4)
+
+#define WATERVARS(type, name) \
+    GFVAR(IDF_WORLD, 0, name##extinguish##type, 0, 0.25f, 1); \
+    GFVAR(IDF_GAMEMOD, 0, name##extinguishscale##type, 0, 1, FVAR_MAX);
+
+WATERVARS(, water)
+WATERVARS(, water2)
+WATERVARS(, water3)
+WATERVARS(, water4)
+WATERVARS(alt, water)
+WATERVARS(alt, water2)
+WATERVARS(alt, water3)
+WATERVARS(alt, water4)
+
+
+#define LAVAVARS(type, name) \
+    GVAR(IDF_WORLD, 0, name##burntime##type, 0, 5500, VAR_MAX); \
+    GVAR(IDF_WORLD, 0, name##burndelay##type, 1, 1000, VAR_MAX);
+
+LAVAVARS(, lava)
+LAVAVARS(, lava2)
+LAVAVARS(, lava3)
+LAVAVARS(, lava4)
+LAVAVARS(alt, lava)
+LAVAVARS(alt, lava2)
+LAVAVARS(alt, lava3)
+LAVAVARS(alt, lava4)
 
 GFVAR(IDF_WORLD, 0, floorcoast, 0, 5.f, 1000);
 GFVAR(IDF_GAMEMOD, 0, floorcoastscale, 0, 1, FVAR_MAX);
@@ -46,17 +94,6 @@ GFVAR(IDF_WORLD, 0, aircoast, 0, 25.f, 1000);
 GFVAR(IDF_GAMEMOD, 0, aircoastscale, 0, 1, FVAR_MAX);
 GFVAR(IDF_WORLD, 0, slidecoast, 0, 40.f, 1000);
 GFVAR(IDF_GAMEMOD, 0, slidecoastscale, 0, 1, FVAR_MAX);
-
-GFVAR(IDF_WORLD, 0, liquidspeed, 0, 0.85f, 1);
-GFVAR(IDF_GAMEMOD, 0, liquidspeedscale, 0, 1, FVAR_MAX);
-GFVAR(IDF_WORLD, 0, liquidcoast, 0, 10.f, 1000);
-GFVAR(IDF_GAMEMOD, 0, liquidcoastscale, 0, 1, FVAR_MAX);
-GFVAR(IDF_WORLD, 0, liquidboost, 0, 0.5f, 1);
-GFVAR(IDF_GAMEMOD, 0, liquidboostscale, 0, 1, FVAR_MAX);
-GFVAR(IDF_WORLD, 0, liquidsubmerge, 0, 0.75f, 1);
-GFVAR(IDF_GAMEMOD, 0, liquidsubmergescale, 0, 1, FVAR_MAX);
-GFVAR(IDF_WORLD, 0, liquidextinguish, 0, 0.25f, 1);
-GFVAR(IDF_GAMEMOD, 0, liquidextinguishscale, 0, 1, FVAR_MAX);
 
 GVARF(IDF_GAMEMOD, 0, forcemapvariant, 0, 0, MPV_MAX-1, if(sv_forcemapvariant) server::changemapvariant(sv_forcemapvariant), if(forcemapvariant) changemapvariant(forcemapvariant));
 
