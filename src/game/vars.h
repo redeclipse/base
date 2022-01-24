@@ -43,7 +43,6 @@ GFVAR(IDF_GAMEMOD, 0, gravityjumpcrouch, 0, 1, FVAR_MAX);
     GFVAR(IDF_WORLD, 0, name##submerge##type, 0, 0.75f, 1); \
     GFVAR(IDF_GAMEMOD, 0, name##submergescale##type, 0, 1, FVAR_MAX);
 
-
 LIQUIDVARS(, water)
 LIQUIDVARS(, water2)
 LIQUIDVARS(, water3)
@@ -73,7 +72,6 @@ WATERVARS(alt, water)
 WATERVARS(alt, water2)
 WATERVARS(alt, water3)
 WATERVARS(alt, water4)
-
 
 #define LAVAVARS(type, name) \
     GVAR(IDF_WORLD, 0, name##burntime##type, 0, 5500, VAR_MAX); \
@@ -317,7 +315,7 @@ MMVAR(IDF_GAMEMOD, 0, overtimelimit, 0, VAR_MAX,
     5,          2,          3,          2,          5,          5,          5,          5,          5,          5,          5,          5
 );
 #ifdef CPP_GAME_SERVER
-SVAR(0, limitidxname, "duel survivor gladiator capture defend defendking bomber bomberhold race racetimed racegauntlet");
+SVAR(IDF_READONLY, limitidxname, "duel survivor gladiator capture defend defendking bomber bomberhold race racetimed racegauntlet");
 #endif
 
 GVAR(IDF_GAMEMOD, 0, intermlimit, 0, 10000, VAR_MAX); // .. before vote menu comes up

@@ -297,7 +297,22 @@ namespace physics
     {
         int ret = 0;
         bool lava = (mat&MATF_VOLUME) == MAT_LAVA;
-        ivec center = ivec(d->center()), bbrad = ivec(d->xradius+dist, d->yradius+dist, (d->zradius+dist)*0.5f),
+        vec center(0, 0, 0);
+        float radius = 0, height = 0;
+        if(dynent::is(d))
+        {
+            dynent *e = (dynent *)d;
+            center = e->center();
+            radius = e->getradius();
+            height = e->getheight();
+        }
+        else
+        {
+            center = d->center();
+            radius = d->getradius();
+            height = d->getheight();
+        }
+        ivec bbrad = ivec(radius+dist, radius+dist, (height+dist)*0.5f),
              bbmin = ivec(center).sub(bbrad), bbmax = ivec(center).add(bbrad);
         loopk(4)
         {
