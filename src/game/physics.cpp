@@ -1118,7 +1118,7 @@ namespace physics
         {
             int chkmat = lookupmaterial(tmp), matvol = chkmat&MATF_VOLUME, matclip = chkmat&MATF_CLIP, matflags = chkmat&MATF_FLAGS;
             // give priority to the lowest of each the volume/clip materials as they can't be OR'd together
-            if(matvol && !(matid&MATF_VOLUME)) matid |= matvol;
+            if(matvol && !(matid&MATF_VOLUME)) matid |= (chkmat&MATF_INDEX)|matvol;
             if(matclip && !(matid&MATF_CLIP)) matid |= matclip;
             if(matflags) matid |= matflags;
 
