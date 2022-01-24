@@ -1136,7 +1136,6 @@ namespace physics
 
         pl->inmaterial = matid;
         pl->submerged = liquid ? liquid/float(iters) : 0.f;
-        if(prevliq && !pl->inliquid) pl->falling.min(0);
 
         int curmat = pl->inmaterial&MATF_VOLUME;
         if(curmat != oldmat)
