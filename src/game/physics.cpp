@@ -268,10 +268,27 @@ namespace physics
         return vel;
     }
 
+    bool findliquidfall(physent *d, bool lava, float dist)
+    {
+        ivec bbrad = ivec(d->xradius+dist, d->yradius+dist, d->zradius*0.5f), bbmin = ivec(d->center()).sub(bbrad), bbmax = ivec(d->center()).add(bbrad);
+        loopk(4)
+        {
+            vector<materialsurface> &surfs = lava ? lavafallsurfs[k] : waterfallsurfs[k];
+            loopv(surfs)
+            {
+                materialsurface &m = surfs[i];
+                int dim = dimension(m.orient);
+                int c = C[dim], r = R[dim];
+                if(m.o[dim] >= bbmin[dim] && m.o[dim] <= bbmax[dim] && m.o[c] + m.csize >= bbmin[c] && m.o[c] <= bbmax[c] && m.o[r] + m.rsize >= bbmin[r] && m.o[r] <= bbmax[r]) return true;
+            }
+        }
+        return false;
+    }
+
     float gravityvel(physent *d)
     {
         float vel = PHYS(gravity)*(d->weight/100.f), buoy = 0.f;
-        if(liquidcheck(d)) buoy = PHYS(buoyancy)*(d->buoyancy/100.f);
+        if(liquidcheck(d)) buoy = PHYS(buoyancy)*(d->buoyancy/100.f)*d->submerged;
         if(gameent::is(d))
         {
             gameent *e = (gameent *)d;
@@ -288,8 +305,12 @@ namespace physics
                 buoy *= e->stungravity;
             }
         }
-        if(buoy != 0) vel -= buoy*d->submerged;
-        return vel;
+        if(d->inliquid)
+        {
+            bool lava = (d->inmaterial&MATF_VOLUME) == MAT_LAVA;
+            if(findliquidfall(d, lava, lava ? lavafalldist : waterfalldist)) vel += lava ? lavafallspeed : waterfallspeed;
+        }
+        return vel - buoy;
     }
 
     bool sticktofloor(physent *d)

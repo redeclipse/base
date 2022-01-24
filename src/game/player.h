@@ -167,7 +167,7 @@ APVAR(IDF_GAMEMOD, 0, hurtstop, 1, VAR_MAX,
     0,              0,              0,              100,            500,            100
 );
 APFVAR(IDF_GAMEMOD, 0, liquidboost, 0, FVAR_MAX,
-    1,              1,              1,              1,              1,              1
+    0,              1,              1,              1,              1,              1
 );
 APVAR(IDF_GAMEMOD, 0, magboots, 0, WEAPCARRY,
     1,              1,              1,              1,              1,              1
