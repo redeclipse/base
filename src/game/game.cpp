@@ -3808,8 +3808,17 @@ namespace game
             {
                 // Test if the player is actually moving at a meaningful speed. This may not be the case if the player is running against a wall or another obstacle.
                 const bool moving = fabsf(d->vel.x) > 5.0f || fabsf(d->vel.y) > 5.0f;
-                if(physics::liquidcheck(d) && d->physstate <= PHYS_FALL)
-                    mdl.anim |= ((d->move || d->strafe || d->vel.z+d->falling.z > 0 ? int(ANIM_SWIM) : int(ANIM_SINK))|ANIM_LOOP)<<ANIM_SECONDARY;
+                if(d->inliquid && !d->onladder && d->submerged >= min(PHYS(liquidsubmerge), 0.1f) && d->physstate <= PHYS_FALL)
+                {
+                    if(d->crouching())
+                    {
+                        if(moving && d->strafe) mdl.anim |= ((d->strafe > 0 ? ANIM_CRAWL_LEFT : ANIM_CRAWL_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
+                        else if(moving && d->move > 0) mdl.anim |= (ANIM_CRAWL_FORWARD|ANIM_LOOP)<<ANIM_SECONDARY;
+                        else if(moving && d->move < 0) mdl.anim |= (ANIM_CRAWL_BACKWARD|ANIM_LOOP)<<ANIM_SECONDARY;
+                        else mdl.anim |= (ANIM_CROUCH|ANIM_LOOP)<<ANIM_SECONDARY;
+                    }
+                    else mdl.anim |= ((d->move || d->strafe ? int(ANIM_SWIM) : int(ANIM_SINK))|ANIM_LOOP)<<ANIM_SECONDARY;
+                }
                 else if(d->impulse[IM_TYPE] == IM_T_VAULT)
                 {
                     mdl.basetime2 = d->impulsetime[IM_T_VAULT];
