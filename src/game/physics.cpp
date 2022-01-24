@@ -268,9 +268,11 @@ namespace physics
         return vel;
     }
 
-    bool findliquidfall(physent *d, bool lava, float dist)
+    bool liquidfall(physent *d, vec &f, bool lava, float dist)
     {
-        ivec bbrad = ivec(d->xradius+dist, d->yradius+dist, d->zradius*0.5f), bbmin = ivec(d->center()).sub(bbrad), bbmax = ivec(d->center()).add(bbrad);
+        int ret = 0;
+        ivec center = ivec(d->center()), bbrad = ivec(d->xradius+dist, d->yradius+dist, (d->zradius+dist)*0.5f),
+             bbmin = ivec(center).sub(bbrad), bbmax = ivec(center).add(bbrad);
         loopk(4)
         {
             vector<materialsurface> &surfs = lava ? lavafallsurfs[k] : waterfallsurfs[k];
@@ -279,13 +281,17 @@ namespace physics
                 materialsurface &m = surfs[i];
                 int dim = dimension(m.orient);
                 int c = C[dim], r = R[dim];
-                if(m.o[dim] >= bbmin[dim] && m.o[dim] <= bbmax[dim] && m.o[c] + m.csize >= bbmin[c] && m.o[c] <= bbmax[c] && m.o[r] + m.rsize >= bbmin[r] && m.o[r] <= bbmax[r]) return true;
+                if(m.o[dim] >= bbmin[dim] && m.o[dim] <= bbmax[dim] && m.o[c] + m.csize >= bbmin[c] && m.o[c] <= bbmax[c] && m.o[r] + m.rsize >= bbmin[r] && m.o[r] <= bbmax[r])
+                {
+                    f[dim] -= 1 - dimcoord(m.orient) * 2;
+                    ret++;
+                }
             }
         }
-        return false;
+        return ret;
     }
 
-    float gravityvel(physent *d)
+    void gravityvel(physent *d, vec &g, float secs)
     {
         float vel = PHYS(gravity)*(d->weight/100.f), buoy = 0.f;
         if(liquidcheck(d)) buoy = PHYS(buoyancy)*(d->buoyancy/100.f)*d->submerged;
@@ -305,12 +311,19 @@ namespace physics
                 buoy *= e->stungravity;
             }
         }
+        g = vec(0, 0, -1).mul(vel).add(vec(0, 0, 1).mul(buoy));
         if(d->inliquid)
         {
+            vec f(0, 0, 0);
             bool lava = (d->inmaterial&MATF_VOLUME) == MAT_LAVA;
-            if(findliquidfall(d, lava, lava ? lavafalldist : waterfalldist)) vel += lava ? lavafallspeed : waterfallspeed;
+            int fall = liquidfall(d, f, lava, lava ? lavafalldist : waterfalldist);
+            if(fall)
+            {
+                f.div(fall).mul(lava ? lavafallpush : waterfallpush).addz(-1).mul(lava ? lavafallspeed : waterfallspeed);
+                g.add(f);
+            }
         }
-        return vel - buoy;
+        g.mul(secs);
     }
 
     bool sticktofloor(physent *d)
@@ -1081,28 +1094,18 @@ namespace physics
 
     void modifygravity(physent *pl, int millis)
     {
-        if(PHYS(gravity) > 0 || PHYS(buoyancy) > 0)
+        vec g(0, 0, 0);
+        float secs = millis/1000.0f;
+        gravityvel(pl, g, secs);
+        if(pl->physstate != PHYS_FALL && pl->floor.z > 0 && pl->floor.z < floorz) g.project(pl->floor);
+        pl->falling.add(g);
+        bool liquid = liquidcheck(pl);
+        if(liquid || pl->physstate >= PHYS_SLOPE)
         {
-            vec g(0, 0, 0);
-            float secs = millis/1000.0f;
-            if(pl->physstate == PHYS_FALL) g.z -= gravityvel(pl)*secs;
-            else if(pl->floor.z > 0 && pl->floor.z < floorz)
-            {
-                g.z = -1;
-                g.project(pl->floor);
-                g.normalize();
-                g.mul(gravityvel(pl)*secs);
-            }
-            pl->falling.add(g);
-            bool liquid = liquidcheck(pl);
-            if(liquid || pl->physstate >= PHYS_SLOPE)
-            {
-                float coast = liquid ? liquidmerge(pl, PHYS(aircoast), PHYS(liquidcoast)) : PHYS(floorcoast)*coastscale(pl->feetpos(-1)),
-                      c = liquid ? 1.0f : clamp((pl->floor.z-slopez)/(floorz-slopez), 0.0f, 1.0f);
-                pl->falling.mul(pow(max(1.0f - c/coast, 0.0f), millis/20.0f));
-            }
+            float coast = liquid ? liquidmerge(pl, PHYS(aircoast), PHYS(liquidcoast)) : PHYS(floorcoast)*coastscale(pl->feetpos(-1)),
+                    c = liquid ? 1.0f : clamp((pl->floor.z-slopez)/(floorz-slopez), 0.0f, 1.0f);
+            pl->falling.mul(pow(max(1.0f - c/coast, 0.0f), millis/20.0f));
         }
-        else pl->falling = vec(0, 0, 0);
     }
 
     void updatematerial(physent *pl, const vec &center, const vec &bottom, bool local)
@@ -1133,7 +1136,7 @@ namespace physics
 
         pl->inmaterial = matid;
         pl->submerged = liquid ? liquid/float(iters) : 0.f;
-        if(prevliq && !pl->inliquid) pl->falling = vec(0, 0, 0);
+        if(prevliq && !pl->inliquid) pl->falling.min(0);
 
         int curmat = pl->inmaterial&MATF_VOLUME;
         if(curmat != oldmat)

@@ -1936,11 +1936,9 @@ namespace projs
         }
         float coast = proj.inliquid ? physics::liquidmerge(&proj, PHYS(aircoast), PHYS(liquidcoast)) : PHYS(aircoast), speed = pow(max(1.0f - 1.0f/coast, 0.0f), millis/100.f);
         proj.vel.mul(speed);
-        if(PHYS(gravity) > 0 || PHYS(buoyancy) > 0)
-        {
-            proj.falling.z -= physics::gravityvel(&proj)*secs;
-            proj.falling.mul(speed);
-        }
+        vec g(0, 0, 0);
+        physics::gravityvel(&proj, g, secs);
+        proj.falling.add(g).mul(speed);
         return moveproj(proj, secs);
     }
 

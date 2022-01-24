@@ -33,10 +33,12 @@ GFVAR(IDF_GAMEMOD, 0, buoyancyscale, 0, 1, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, buoyancycrouch, 0, 0.5f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, buoyancyjump, 0, 1.5f, FVAR_MAX);
 
-GFVAR(IDF_WORLD, 0, waterfalldist, 0, 8.f, FVAR_MAX);
+GFVAR(IDF_WORLD, 0, waterfalldist, 0, 12.f, FVAR_MAX);
 GFVAR(IDF_WORLD, 0, waterfallspeed, 0, 250.f, FVAR_MAX);
-GFVAR(IDF_WORLD, 0, lavafalldist, 0, 8.f, FVAR_MAX);
-GFVAR(IDF_WORLD, 0, lavafallspeed, 0, 150.f, FVAR_MAX);
+GFVAR(IDF_WORLD, 0, waterfallpush, 0, 0.35f, FVAR_MAX);
+GFVAR(IDF_WORLD, 0, lavafalldist, 0, 12.f, FVAR_MAX);
+GFVAR(IDF_WORLD, 0, lavafallspeed, 0, 250.f, FVAR_MAX);
+GFVAR(IDF_WORLD, 0, lavafallpush, 0, 0.35f, FVAR_MAX);
 
 GFVAR(IDF_WORLD, 0, floorcoast, 0, 5.f, 1000);
 GFVAR(IDF_GAMEMOD, 0, floorcoastscale, 0, 1, FVAR_MAX);

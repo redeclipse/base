@@ -507,7 +507,8 @@ void ragdolldata::move(dynent *pl, float ts)
     if(collidemillis && lastmillis > collidemillis) return;
 
     physics::updatematerial(pl, pl->center(), pl->feetpos(), true);
-    float gravity = physics::gravityvel(pl)*ragdollgravity;
+    vec g(0, 0, 0);
+    physics::gravityvel(pl, g, ragdollgravity*ts*ts);
 
     calcrotfriction();
     float tsfric = timestep ? ts/timestep : 1,
@@ -517,8 +518,7 @@ void ragdolldata::move(dynent *pl, float ts)
     loopv(skel->verts)
     {
         vert &v = verts[i];
-        vec dpos = vec(v.pos).sub(v.oldpos);
-        dpos.z -= gravity*ts*ts;
+        vec dpos = vec(v.pos).sub(v.oldpos).add(g);
         if(liquid) dpos.z += 0.25f*sinf(detrnd(size_t(this)+i, 360)*RAD + lastmillis/10000.0f*M_PI)*ts*pl->submerged;
         dpos.mul(pow((liquid ? physics::liquidmerge(pl, 1.f, ragdollliquidfric) : 1.f) * (v.collided ? ragdollgroundfric : airfric), ts*1000.0f/ragdolltimestepmin)*tsfric);
         v.oldpos = v.pos;
