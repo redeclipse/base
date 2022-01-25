@@ -563,10 +563,10 @@ GVAR(IDF_GAMEMOD, 0, impulsestyle, 0, 1, 3); // impulse style; 0 = off, 1 = touc
 GVAR(IDF_GAMEMOD, 0, impulsepoundstyle, 0, 0, 1); // pound style: 0 = stop moving first, 1 = allow moving
 
 GVAR(IDF_GAMEMOD, 0, impulsecount, 0, 6, VAR_MAX); // number of impulse actions per air transit
-GVAR(IDF_GAMEMOD, 0, impulsesliplen, 0, 750, VAR_MAX); // time before floor friction kicks back in
-GVAR(IDF_GAMEMOD, 0, impulseslidelen, 0, 1000, VAR_MAX); // time before slides end
+GVAR(IDF_GAMEMOD, 0, impulsesliplen, 0, 250, VAR_MAX); // time before floor friction kicks back in
+GVAR(IDF_GAMEMOD, 0, impulseslidelen, 0, 750, VAR_MAX); // time before slides end
 GVAR(IDF_GAMEMOD, 0, impulseparkourlen, 0, 1250, VAR_MAX); // length of time a run along a wall can last
-GVAR(IDF_GAMEMOD, 0, impulsevaultlen, 0, 350, VAR_MAX); // length of time a vault can last
+GVAR(IDF_GAMEMOD, 0, impulsevaultlen, 0, 500, VAR_MAX); // length of time a vault can last
 
 GVAR(IDF_GAMEMOD, 0, impulsejumpdelay, 0, 200, VAR_MAX); // minimum time after jump for boost/dash
 GVAR(IDF_GAMEMOD, 0, impulseboostdelay, 0, 300, VAR_MAX); // minimum time between boosts/dashes
