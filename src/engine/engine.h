@@ -821,7 +821,7 @@ extern void conline(int type, const char *sf, int n);
 // physics
 extern int dynentsize;
 extern bool overlapsdynent(const vec &o, float radius);
-extern void rotatebb(vec &center, vec &radius, int yaw, int pitch, int roll = 0);
+extern void rotatebb(vec &center, vec &radius, int yaw, int pitch = 0, int roll = 0);
 extern bool getsight(const vec &o, float yaw, float pitch, const vec &q, vec &v, float mdist, float fovx, float fovy);
 
 // worldio

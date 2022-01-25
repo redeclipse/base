@@ -2176,24 +2176,35 @@ namespace game
         return best;
     }
 
-    int numdynents(bool all)
+    int numdynents(int level)
     {
         int i = 1+players.length();
-        if(all) i += projs::collideprojs.length();
-        if(all) i += entities::inanimates.length();
+        if(level)
+        {
+            i += level > 1 ? projs::projs.length() : projs::collideprojs.length();
+            i += entities::inanimates.length();
+        }
         return i;
     }
 
-    dynent *iterdynents(int i, bool all)
+    dynent *iterdynents(int i, int level)
     {
         if(!i) return player1;
         i--;
         if(i < players.length()) return players[i];
         i -= players.length();
-        if(all)
+        if(level)
         {
-            if(i < projs::collideprojs.length()) return projs::collideprojs[i];
-            i -= projs::collideprojs.length();
+            if(level > 1)
+            {
+                if(i < projs::projs.length()) return projs::projs[i];
+                i -= projs::projs.length();
+            }
+            else
+            {
+                if(i < projs::collideprojs.length()) return projs::collideprojs[i];
+                i -= projs::collideprojs.length();
+            }
             if(i < entities::inanimates.length()) return entities::inanimates[i];
         }
         return NULL;

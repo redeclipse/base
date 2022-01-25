@@ -384,7 +384,7 @@ GFVAR(IDF_GAMEMOD, 0, capturerelativity, 0, 0, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, captureelasticity, FVAR_MIN, 0.65f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, captureliquidcoast, FVAR_MIN, 1.75f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, captureweight, FVAR_MIN, 400, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, capturebuoyancy, FVAR_MIN, 100, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, capturebuoyancy, FVAR_MIN, 300, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, capturespeedmin, 0, 0, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, capturespeedmax, 0, 100, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, capturerepulsion, 0, 24, FVAR_MAX);

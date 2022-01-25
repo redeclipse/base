@@ -505,10 +505,10 @@ const vector<physent *> &checkdynentcache(int x, int y)
     dec.y = y;
     dec.frame = dynentframe;
     dec.dynents.setsize(0);
-    int numdyns = game::numdynents(true), dsize = 1<<dynentsize, dx = x<<dynentsize, dy = y<<dynentsize;
+    int numdyns = game::numdynents(1), dsize = 1<<dynentsize, dx = x<<dynentsize, dy = y<<dynentsize;
     loopi(numdyns)
     {
-        dynent *d = game::iterdynents(i, true);
+        dynent *d = game::iterdynents(i, 1);
         if(!d || d->state != CS_ALIVE ||
            d->o.x+d->radius <= dx || d->o.x-d->radius >= dx+dsize ||
            d->o.y+d->radius <= dy || d->o.y-d->radius >= dy+dsize)

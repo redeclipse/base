@@ -1589,10 +1589,10 @@ namespace ai
     {
         obstacles.clear();
         obstacles.add(wpavoid);
-        int numdyns = game::numdynents(true);
+        int numdyns = game::numdynents(1);
         loopi(numdyns)
         {
-            dynent *d = game::iterdynents(i, true);
+            dynent *d = game::iterdynents(i, 1);
             if(!d) continue; // || d->actortype >= A_ENEMY) continue;
             if(d->state != CS_ALIVE || !physics::issolid(d)) continue;
             if(projent::is(d))

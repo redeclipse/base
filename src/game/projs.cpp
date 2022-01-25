@@ -754,6 +754,7 @@ namespace projs
         model *m = NULL;
         if(proj.mdlname && *proj.mdlname && ((m = loadmodel(proj.mdlname)) != NULL))
         {
+            bool fullrot = proj.projtype == PRJ_GIBS || proj.projtype == PRJ_EJECT;
             vec center, radius;
             m->boundbox(center, radius);
             center.mul(size);
@@ -763,35 +764,35 @@ namespace projs
                 center.add(size*0.5f);
                 radius.add(size);
             }
-            rotatebb(center, radius, proj.yaw, proj.pitch, proj.roll);
-            proj.xradius = radius.x;
-            proj.yradius = radius.y;
+            rotatebb(center, radius, proj.projtype != PRJ_AFFINITY ? proj.yaw : 0.f, fullrot ? proj.pitch : 0.f, fullrot ? proj.roll : 0.f);
             proj.radius = max(radius.x, radius.y);
-            proj.height = proj.zradius = radius.z;
-            proj.aboveeye = 0;
+            if(proj.projtype == PRJ_AFFINITY) proj.xradius = proj.yradius = proj.radius;
+            else
+            {
+                proj.xradius = radius.x;
+                proj.yradius = radius.y;
+            }
+            proj.height = proj.zradius = proj.aboveeye = radius.z;
         }
         else switch(proj.projtype)
         {
             case PRJ_GIBS: case PRJ_DEBRIS: case PRJ_VANITY:
             {
-                proj.height = proj.radius = proj.xradius = proj.yradius = proj.zradius = 0.5f*size;
-                proj.aboveeye = 0;
+                proj.height = proj.radius = proj.xradius = proj.yradius = proj.zradius = proj.aboveeye = 0.5f*size;
                 break;
             }
             case PRJ_EJECT:
             {
-                proj.height = proj.zradius = 0.25f*size;
+                proj.height = proj.zradius = proj.aboveeye = 0.25f*size;
                 proj.radius = proj.yradius = 0.5f*size;
                 proj.xradius = 0.125f*size;
-                proj.aboveeye = 0;
                 break;
             }
             case PRJ_ENT:
             {
                 if(entities::ents.inrange(proj.id))
-                    proj.height = proj.radius = proj.xradius = proj.yradius = proj.zradius = enttype[entities::ents[proj.id]->type].radius*0.25f*size;
-                else proj.height = proj.radius = proj.xradius = proj.yradius = proj.zradius = size;
-                proj.aboveeye = 0;
+                    proj.radius = proj.xradius = proj.yradius = proj.height = proj.zradius = proj.aboveeye = enttype[entities::ents[proj.id]->type].radius*0.25f*size;
+                else proj.radius = proj.xradius = proj.yradius = proj.height = proj.zradius = proj.aboveeye = size;
                 break;
             }
         }
@@ -1869,7 +1870,7 @@ namespace projs
     bool move(projent &proj, int millis)
     {
         float secs = millis/1000.f;
-        physics::updatematerial(&proj, proj.o, vec(proj.o).sub(vec(0, 0, min(proj.height, 1.f))), true);
+        physics::updatematerial(&proj, proj.o, proj.feetpos(), true);
         if(proj.projtype == PRJ_AFFINITY && m_bomber(game::gamemode) && proj.target && !proj.lastbounce)
         {
             vec targ = vec(proj.target->o).sub(proj.o).safenormalize();
@@ -2156,12 +2157,12 @@ namespace projs
                     if(!(proj.projcollide&DRILL_PLAYER)) proj.hit = NULL;
                     if(!proj.limited && expl > 0)
                     {
-                        int numdyns = game::numdynents(true);
+                        int numdyns = game::numdynents(1);
                         gameent *oldstick = proj.stick;
                         proj.stick = NULL;
                         loopj(numdyns)
                         {
-                            dynent *f = game::iterdynents(j, true);
+                            dynent *f = game::iterdynents(j, 1);
                             if(!f || f->state != CS_ALIVE || !physics::issolid(f, &proj, false, false)) continue;
                             radialeffect(f, proj, HIT(EXPLODE), expl);
                         }
