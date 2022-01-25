@@ -3479,7 +3479,7 @@ namespace game
                 flashcolour(mdl.material[0].r, mdl.material[0].g, mdl.material[0].b, pc.r, pc.g, pc.b, amt);
             }
             float maxdist = hud::radarlimit(halodist);
-            if(maxdist > 0) mdl.material[0].mul(1.f-(d->center().dist(camera1->o)/maxdist));
+            if(maxdist > 0) mdl.material[0].mul(1.f-(d->center().dist(camera1->o)/maxdist)).mul(mdl.color.a);
             return;
         }
         mdl.material[0] = bvec::fromcolor(getcolour(d, playerovertone, playerovertonelevel));

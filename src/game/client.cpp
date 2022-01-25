@@ -922,7 +922,7 @@ namespace client
         if(d->state != CS_ALIVE && d->state != CS_EDITING && d->state != CS_DEAD && (!d->lastdeath || d->state != CS_WAITING)) return false;
         if(m_duke(game::gamemode, game::mutators) && (!d->lastdeath || lastmillis-d->lastdeath >= 1000)) return false;
         bool dominated = game::focus->dominated.find(d) >= 0;
-        if(!dominated && vec(d->vel).add(d->falling).magnitude() <= 0) return false;
+        if(!dominated && d->state == CS_ALIVE && vec(d->vel).add(d->falling).magnitude() <= 0) return false;
         dir = vec(d->center()).sub(camera1->o);
         dist = dir.magnitude();
         if(!dominated && hud::radarlimited(dist)) return false;
