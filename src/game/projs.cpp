@@ -763,31 +763,35 @@ namespace projs
                 center.add(size*0.5f);
                 radius.add(size);
             }
-            rotatebb(center, radius, proj.yaw, 0, 0);
+            rotatebb(center, radius, proj.yaw, proj.pitch, proj.roll);
             proj.xradius = radius.x;
             proj.yradius = radius.y;
             proj.radius = max(radius.x, radius.y);
-            proj.height = proj.zradius = proj.aboveeye = radius.z;
+            proj.height = proj.zradius = radius.z;
+            proj.aboveeye = 0;
         }
         else switch(proj.projtype)
         {
             case PRJ_GIBS: case PRJ_DEBRIS: case PRJ_VANITY:
             {
-                proj.height = proj.aboveeye = proj.radius = proj.xradius = proj.yradius = 0.5f*size;
+                proj.height = proj.radius = proj.xradius = proj.yradius = proj.zradius = 0.5f*size;
+                proj.aboveeye = 0;
                 break;
             }
             case PRJ_EJECT:
             {
-                proj.height = proj.aboveeye = 0.25f*size;
+                proj.height = proj.zradius = 0.25f*size;
                 proj.radius = proj.yradius = 0.5f*size;
                 proj.xradius = 0.125f*size;
+                proj.aboveeye = 0;
                 break;
             }
             case PRJ_ENT:
             {
                 if(entities::ents.inrange(proj.id))
-                    proj.height = proj.aboveeye = proj.radius = proj.xradius = proj.yradius = enttype[entities::ents[proj.id]->type].radius*0.25f*size;
-                else proj.height = proj.aboveeye = proj.radius = proj.xradius = proj.yradius = size;
+                    proj.height = proj.radius = proj.xradius = proj.yradius = proj.zradius = enttype[entities::ents[proj.id]->type].radius*0.25f*size;
+                else proj.height = proj.radius = proj.xradius = proj.yradius = proj.zradius = size;
+                proj.aboveeye = 0;
                 break;
             }
         }
