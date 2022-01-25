@@ -1127,10 +1127,14 @@ namespace physics
 
     void modifygravity(physent *d, int millis)
     {
-        vec g(0, 0, 0);
-        gravityvel(d, d->center(), g, millis/1000.f, d->getradius(), d->getheight(), d->inmaterial, d->submerged);
-        if(d->physstate != PHYS_FALL && d->floor.z > 0 && d->floor.z < floorz) g.project(d->floor);
-        d->falling.add(g);
+        bool floorchk = d->floor.z > 0 && d->floor.z < floorz;
+        if(d->physstate == PHYS_FALL || floorchk)
+        {
+            vec g(0, 0, 0);
+            gravityvel(d, d->center(), g, millis/1000.f, d->getradius(), d->getheight(), d->inmaterial, d->submerged);
+            if(d->physstate != PHYS_FALL && floorchk) g.project(d->floor);
+            d->falling.add(g);
+        }
         bool liquid = liquidcheck(d);
         if(liquid || d->physstate >= PHYS_SLOPE)
         {
