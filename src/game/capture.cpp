@@ -207,6 +207,7 @@ namespace capture
                 {
                     float maxdist = hud::radarlimit(halodist);
                     if(maxdist > 0) loopj(3) mdl.material[j].mul(1.f-(mdl.o.dist(camera1->o)/maxdist));
+                    loopj(3) mdl.material[j].mul(mdl.color.a);
                 }
                 rendermodel("props/flag", mdl);
             }
@@ -231,6 +232,7 @@ namespace capture
                 {
                     float maxdist = hud::radarlimit(halodist);
                     if(maxdist > 0) loopj(3) mdl.material[j].mul(1.f-(mdl.o.dist(camera1->o)/maxdist));
+                    loopj(3) mdl.material[j].mul(mdl.color.a);
                 }
                 rendermodel("props/flag", mdl);
                 if(f.owner) iterflags[f.owner->clientnum]++;

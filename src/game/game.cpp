@@ -374,8 +374,6 @@ namespace game
     VAR(IDF_PERSIST, bloodfade, 1, 15000, VAR_MAX);
     VAR(IDF_PERSIST, bloodsize, 1, 50, 1000);
     VAR(IDF_PERSIST, bloodsparks, 0, 0, 1);
-    FVAR(IDF_PERSIST, debrisscale, 0, 1, 1000);
-    VAR(IDF_PERSIST, debrisfade, 1, 15000, VAR_MAX);
     FVAR(IDF_PERSIST, gibscale, 0, 1, 1000);
     VAR(IDF_PERSIST, gibfade, 1, 15000, VAR_MAX);
     FVAR(IDF_PERSIST, impulsescale, 0, 1, 1000);
@@ -3479,7 +3477,8 @@ namespace game
                 flashcolour(mdl.material[0].r, mdl.material[0].g, mdl.material[0].b, pc.r, pc.g, pc.b, amt);
             }
             float maxdist = hud::radarlimit(halodist);
-            if(maxdist > 0) mdl.material[0].mul(1.f-(d->center().dist(camera1->o)/maxdist)).mul(mdl.color.a);
+            if(maxdist > 0) mdl.material[0].mul(1.f-(d->center().dist(camera1->o)/maxdist));
+            mdl.material[0].mul(mdl.color.a);
             return;
         }
         mdl.material[0] = bvec::fromcolor(getcolour(d, playerovertone, playerovertonelevel));

@@ -3044,6 +3044,7 @@ namespace entities
                         {
                             float maxdist = hud::radarlimit(halodist);
                             if(maxdist > 0) loopj(3) mdl.material[j].mul(1.f-(mdl.o.dist(camera1->o)/maxdist));
+                            loopj(3) mdl.material[j].mul(mdl.color.a);
                         }
                         rendermodel(mdlname, mdl);
                     }

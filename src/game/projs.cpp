@@ -2247,7 +2247,7 @@ namespace projs
                     mdl.size *= proj.lifesize;
                     fadeproj(proj, mdl.color.a, mdl.size);
                     if(mdl.color.a <= 0) continue;
-                    if(proj.owner && !proj.limited) game::getplayereffects(proj.owner, mdl);
+                    if(proj.owner && !proj.limited && drawtex != DRAWTEX_HALO) game::getplayereffects(proj.owner, mdl);
                     break;
                 }
                 case PRJ_SHOT:
@@ -2294,6 +2294,7 @@ namespace projs
                     {
                         float maxdist = hud::radarlimit(halodist);
                         if(maxdist > 0) loopj(3) mdl.material[j].mul(1.f-(mdl.o.dist(camera1->o)/maxdist));
+                        loopj(3) mdl.material[j].mul(mdl.color.a);
                     }
                     break;
                 }
