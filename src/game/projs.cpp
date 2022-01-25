@@ -1396,6 +1396,7 @@ namespace projs
             updatetaper(proj, proj.distance, true);
         }
         else if(updatebb(proj) && spherecheck(proj, proj.projcollide&BOUNCE_GEOM)) proj.resetinterp();
+        else proj.lastgood = proj.o;
     }
 
     void effect(projent &proj)
