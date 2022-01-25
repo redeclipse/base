@@ -49,7 +49,7 @@ namespace ai
 
     bool weaprange(gameent *d, int weap, bool alt, float dist)
     {
-        if(!isweap(weap) || (W2(weap, extinguish, alt) && d->inliquid)) return false;
+        if(!isweap(weap) || (W2(weap, extinguish, alt) && isliquid(d->inmaterial&MATF_VOLUME))) return false;
         float mindist = weapmindist(weap, alt), maxdist = weapmaxdist(weap, alt);
         return dist >= mindist*mindist && dist <= maxdist*maxdist;
     }
@@ -1060,10 +1060,10 @@ namespace ai
     {
         vec off = vec(pos).sub(d->feetpos());
         int airtime = d->airtime(lastmillis);
-        bool sequenced = d->ai->blockseq > 1 || d->ai->targseq > 1, offground = airtime && !physics::liquidcheck(d) && !d->onladder,
+        bool sequenced = d->ai->blockseq > 1 || d->ai->targseq > 1, offground = airtime && !physics::liquidcheck(d) && !isladder(d->inmaterial&MATF_FLAGS),
              impulse = physics::canimpulse(d, A_A_BOOST, false) && airtime > (b.acttype >= AI_A_LOCKON ? 100 : 250) && d->hasparkour() && (b.acttype >= AI_A_LOCKON || off.z >= JUMPMIN) && (!impulsemeter || impulsemeter-d->impulse[IM_METER] >= impulsecost),
              jumper = A(d->actortype, abilities)&AA(JUMP) && !offground && (b.acttype == AI_A_LOCKON || sequenced || off.z >= JUMPMIN),
-             jump = (impulse || jumper) && lastmillis >= d->ai->jumpseed, allowspecial = !sequenced && !d->onladder && airtime;
+             jump = (impulse || jumper) && lastmillis >= d->ai->jumpseed, allowspecial = !sequenced && !isladder(d->inmaterial&MATF_FLAGS) && airtime;
         if(jump)
         {
             vec old = d->o;

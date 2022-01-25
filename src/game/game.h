@@ -1557,7 +1557,7 @@ struct gameent : dynent, clientstate
         stopmoving(false);
         clearstate(lastmillis, gamemode, mutators);
         inmaterial = airmillis = floormillis = 0;
-        inliquid = onladder = forcepos = false;
+        forcepos = false;
         physstate = PHYS_FALL;
         vel = falling = vec(0, 0, 0);
         floor = vec(0, 0, 1);
@@ -2220,7 +2220,7 @@ namespace physics
     extern bool allowimpulse(physent *d, int level = 0);
     extern bool canimpulse(physent *d, int level = 0, bool touch = false);
     extern float impulsevelocity(physent *d, float amt, int &cost, int type, float redir, vec &keep);
-    extern bool movecamera(physent *pl, const vec &dir, float dist, float stepdist);
+    extern bool movecamera(physent *d, const vec &dir, float dist, float stepdist);
     extern void smoothplayer(gameent *d, int res, bool local);
     extern void update();
     extern void reset();

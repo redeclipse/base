@@ -748,7 +748,7 @@ namespace game
     {
         float speed = physics::movevelocity(d), step = firstpersonbob ? firstpersonbobstep : firstpersonswaystep;
         bool bobbed = false, sliding = d->sliding(true);
-        if(d->state == CS_ALIVE && (d->physstate >= PHYS_SLOPE || d->onladder || d->hasparkour() || sliding))
+        if(d->state == CS_ALIVE && (d->physstate >= PHYS_SLOPE || isladder(d->inmaterial&MATF_FLAGS) || d->hasparkour() || sliding))
         {
             float mag = d->vel.magnitude();
             if(sliding) mag *= firstpersonswayslide;
@@ -1226,7 +1226,7 @@ namespace game
     void footstep(gameent *d, int curfoot)
     {
         if(!actors[d->actortype].steps) return;
-        bool moving = d->move || d->strafe, liquid = physics::liquidcheck(d), onfloor = d->physstate >= PHYS_SLOPE || d->onladder || d->impulse[IM_TYPE] == IM_T_PARKOUR;
+        bool moving = d->move || d->strafe, liquid = physics::liquidcheck(d), onfloor = d->physstate >= PHYS_SLOPE || isladder(d->inmaterial&MATF_FLAGS) || d->impulse[IM_TYPE] == IM_T_PARKOUR;
         if(curfoot < 0 || (moving && (liquid || onfloor)))
         {
             float mag = d->vel.magnitude(), m = min(footstepsoundmax, footstepsoundmin), n = max(footstepsoundmax, footstepsoundmin);
@@ -1261,7 +1261,7 @@ namespace game
         if(d->state == CS_ALIVE)
         {
             bool sliding = d->sliding(true), crouching = sliding || (d->crouching() && A(d->actortype, abilities)&AA(CROUCH)),
-                 moving = d->move || d->strafe || (d->physstate < PHYS_SLOPE && !d->onladder);
+                 moving = d->move || d->strafe || (d->physstate < PHYS_SLOPE && !isladder(d->inmaterial&MATF_FLAGS));
             float zrad = d->zradius*(moving && !sliding ? CROUCHHIGH : CROUCHLOW), zoff = d->zradius-zrad;
             vec old = d->o;
             if(!crouching && A(d->actortype, abilities)&AA(CROUCH))
@@ -1311,7 +1311,7 @@ namespace game
 
         if(impulsemeter && canregenimpulse(d) && d->impulse[IM_METER] > 0)
         {
-            bool onfloor = d->physstate >= PHYS_SLOPE || d->onladder || physics::liquidcheck(d),
+            bool onfloor = d->physstate >= PHYS_SLOPE || isladder(d->inmaterial&MATF_FLAGS) || physics::liquidcheck(d),
                  collect = true; // collect time until we are able to act upon it
             int timeslice = int((curtime+d->impulse[IM_COLLECT])*impulseregen);
             #define impulsemod(x,y) \
@@ -1457,7 +1457,7 @@ namespace game
     {
         if(d->state != CS_ALIVE) return;
         vec pos = d->feetpos();
-        if(d->impulse[IM_TYPE] != IM_T_PARKOUR && (d->physstate >= PHYS_SLOPE || d->onladder || physics::liquidcheck(d)) && pos.z > 0 && d->floortime(lastmillis))
+        if(d->impulse[IM_TYPE] != IM_T_PARKOUR && (d->physstate >= PHYS_SLOPE || isladder(d->inmaterial&MATF_FLAGS) || physics::liquidcheck(d)) && pos.z > 0 && d->floortime(lastmillis))
         {
             int mat = lookupmaterial(pos);
             if(!isclipped(mat&MATF_VOLUME) && !((mat&MATF_FLAGS)&MAT_DEATH)) d->floorpos = pos;
@@ -3398,7 +3398,6 @@ namespace game
         else findorientation(focus->o, focus->yaw, focus->pitch, worldpos);
         adjustorientation(worldpos);
         camera1->inmaterial = lookupmaterial(camera1->o);
-        camera1->inliquid = isliquid(camera1->inmaterial&MATF_VOLUME);
         lastcamera = totalmillis;
     }
 
@@ -3583,7 +3582,7 @@ namespace game
         const char *mdlname = playertypes[mdltype][third];
         if(d->actortype > A_PLAYER && d->actortype < A_MAX && actors[d->actortype].mdl && *actors[d->actortype].mdl)
             mdlname = actors[d->actortype].mdl;
-        bool hasweapon = false, onfloor = d->physstate >= PHYS_SLOPE || d->onladder || physics::liquidcheck(d);
+        bool hasweapon = false, onfloor = d->physstate >= PHYS_SLOPE || isladder(d->inmaterial&MATF_FLAGS) || physics::liquidcheck(d);
 
         mdl.anim = ANIM_IDLE|ANIM_LOOP;
         mdl.flags = flags;
@@ -3808,7 +3807,7 @@ namespace game
             {
                 // Test if the player is actually moving at a meaningful speed. This may not be the case if the player is running against a wall or another obstacle.
                 const bool moving = fabsf(d->vel.x) > 5.0f || fabsf(d->vel.y) > 5.0f;
-                if(d->inliquid && !d->onladder && d->submerged >= min(LIQUIDPHYS(submerge, d->inmaterial), 0.1f) && d->physstate <= PHYS_FALL)
+                if(isliquid(d->inmaterial&MATF_VOLUME) && !isladder(d->inmaterial&MATF_FLAGS) && d->submerged >= min(LIQUIDPHYS(submerge, d->inmaterial), 0.1f) && d->physstate <= PHYS_FALL)
                 {
                     if(d->crouching())
                     {
@@ -3829,7 +3828,7 @@ namespace game
                     mdl.basetime2 = d->impulsetime[IM_T_PARKOUR];
                     mdl.anim |= ((d->turnside > 0 ? ANIM_PARKOUR_LEFT : (d->turnside < 0 ? ANIM_PARKOUR_RIGHT : ANIM_PARKOUR_UP))|ANIM_LOOP)<<ANIM_SECONDARY;
                 }
-                else if(d->physstate == PHYS_FALL && !d->onladder && d->impulsetime[d->impulse[IM_TYPE]] && lastmillis-d->impulsetime[d->impulse[IM_TYPE]] <= 1000)
+                else if(d->physstate == PHYS_FALL && !isladder(d->inmaterial&MATF_FLAGS) && d->impulsetime[d->impulse[IM_TYPE]] && lastmillis-d->impulsetime[d->impulse[IM_TYPE]] <= 1000)
                 {
                     mdl.basetime2 = d->impulsetime[d->impulse[IM_TYPE]];
                     if(d->impulse[IM_TYPE] == IM_T_KICK || d->impulse[IM_TYPE] == IM_T_GRAB) mdl.anim |= ANIM_PARKOUR_JUMP<<ANIM_SECONDARY;
@@ -3843,7 +3842,7 @@ namespace game
                     else if(moving && d->move < 0) mdl.anim |= ANIM_BOOST_BACKWARD<<ANIM_SECONDARY;
                     else mdl.anim |= ANIM_BOOST_UP<<ANIM_SECONDARY;
                 }
-                else if(d->physstate == PHYS_FALL && !d->onladder && d->airtime(lastmillis) >= 50)
+                else if(d->physstate == PHYS_FALL && !isladder(d->inmaterial&MATF_FLAGS) && d->airtime(lastmillis) >= 50)
                 {
                     mdl.basetime2 = max(d->airmillis, d->impulsetime[IM_T_JUMP]);
                     if(d->action[AC_SPECIAL] || d->impulse[IM_TYPE] == IM_T_POUND)
@@ -4181,23 +4180,6 @@ namespace game
     PLAYERPREV(impulse, "ii", (int *n, int *o), previewent->impulse[clamp(*n, 0, int(IM_MAX-1))] = *o);
     PLAYERPREV(impulsetime, "ii", (int *n, int *o), previewent->impulse[clamp(*n, 0, int(IM_T_MAX-1))] = *o);
     PLAYERPREV(headless, "i", (int *n), previewent->headless = *n != 0);
-    PLAYERPREV(inliquid, "i", (int *n),
-    {
-        if((previewent->inliquid = *n != 0) != false)
-        {
-            previewent->physstate = PHYS_FALL;
-            previewent->airmillis = *n;
-            previewent->floormillis = 0;
-            previewent->submerged = 1;
-        }
-        else
-        {
-            previewent->physstate = PHYS_FLOOR;
-            previewent->floormillis = *n;
-            previewent->airmillis = 0;
-            previewent->submerged = 0;
-        }
-    });
     PLAYERPREV(vanity, "s", (char *n), previewent->setvanity(n));
     void setplayerprevresidual(int n, int q, int r, int s)
     {

@@ -182,7 +182,7 @@ struct partrenderer
                 } d;
                 d.weight = weight;
                 vec g(0, 0, 0);
-                physics::gravityvel(&d, g, secs);
+                physics::gravityvel(&d, p->o, g, secs);
                 v.add(g);
             }
             p->o.add(v);
@@ -773,7 +773,7 @@ struct varenderer : partrenderer
             } p;
             p.weight = gravity;
             vec g(0, 0, 0);
-            physics::gravityvel(&p, g, secs);
+            physics::gravityvel(&d, p->o, g, secs);
             v.add(v).add(g);
         }
         end.add(v);

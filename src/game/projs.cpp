@@ -1683,7 +1683,7 @@ namespace projs
     bool moveproj(projent &proj, float secs, bool skip = false)
     {
         vec dir(proj.vel), pos(proj.o);
-        if(proj.inliquid) dir.mul(physics::liquidmerge(&proj, 1.f, LIQUIDPHYS(speed, proj.inmaterial)));
+        if(isliquid(proj.inmaterial&MATF_VOLUME)) dir.mul(physics::liquidmerge(&proj, 1.f, LIQUIDPHYS(speed, proj.inmaterial)));
         dir.add(proj.falling);
         dir.mul(secs);
 
@@ -1938,10 +1938,10 @@ namespace projs
                 if(!dir.iszero()) (proj.vel = dir).mul(mag);
             }
         }
-        float coast = proj.inliquid ? physics::liquidmerge(&proj, PHYS(aircoast), LIQUIDPHYS(coast, proj.inmaterial)) : PHYS(aircoast), speed = pow(max(1.0f - 1.0f/coast, 0.0f), millis/100.f);
+        float coast = isliquid(proj.inmaterial&MATF_VOLUME) ? physics::liquidmerge(&proj, PHYS(aircoast), LIQUIDPHYS(coast, proj.inmaterial)) : PHYS(aircoast), speed = pow(max(1.0f - 1.0f/coast, 0.0f), millis/100.f);
         proj.vel.mul(speed);
         vec g(0, 0, 0);
-        physics::gravityvel(&proj, g, secs);
+        physics::gravityvel(&proj, proj.o, g, secs, proj.radius, proj.height, proj.inmaterial, proj.submerged);
         proj.falling.add(g).mul(speed);
         return moveproj(proj, secs);
     }

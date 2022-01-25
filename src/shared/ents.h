@@ -197,7 +197,7 @@ struct physent : baseent                        // can be affected by physics
     float xradius, yradius, zradius, zmargin;
     vec floor;                                  // the normal of floor the dynent is on
 
-    bool blocked, inliquid, onladder, forcepos;
+    bool blocked, forcepos;
     float curscale;
     schar move, strafe;
 
@@ -228,7 +228,7 @@ struct physent : baseent                        // can be affected by physics
     {
         baseent::reset();
         airmillis = floormillis = 0;
-        blocked = inliquid = onladder = forcepos = false;
+        blocked = forcepos = false;
         strafe = move = 0;
         physstate = PHYS_FALL;
         floor = vec(0, 0, 1);
