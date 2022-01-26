@@ -1022,8 +1022,8 @@ namespace projs
                     if(mag <= 0) proj.inertia = vec(proj.yaw*RAD, proj.pitch*RAD);
                     proj.inertia.normalize().mul(50);
                 }
-                proj.dest.add(vec(proj.inertia).mul(proj.flags+1));
-                proj.dest.z += proj.flags*4;
+                proj.inertia.mul(proj.value+1);
+                proj.inertia.z += proj.value*10;
                 proj.fadetime = 500;
                 proj.extinguish = itemextinguish;
                 proj.interacts = iteminteracts;
@@ -1139,7 +1139,7 @@ namespace projs
                 }
                 dir = vec(proj.yaw*RAD, proj.pitch*RAD);
             }
-            vec rel = vec(proj.vel).add(proj.falling).add(dir).add(proj.inertia.mul(proj.relativity));
+            vec rel = vec(proj.vel).add(proj.falling).add(proj.inertia.mul(proj.relativity));
             proj.vel = vec(rel).add(vec(dir).mul(physics::movevelocity(&proj)));
             proj.falling = vec(0, 0, 0);
         }
