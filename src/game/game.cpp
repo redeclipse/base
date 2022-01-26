@@ -428,7 +428,6 @@ namespace game
     VAR(IDF_PERSIST, forceplayerpattern, -1, -1, PLAYERPATTERNS-1);
     VAR(IDF_PERSIST, vanitymodels, 0, 1, 1);
     FVAR(IDF_PERSIST, vanitymaxdist, FVAR_NONZERO, 1024, FVAR_MAX);
-    FVAR(IDF_PERSIST, twitchspeed, 0, 2.5f, FVAR_MAX);
 
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, mixerburntex, "textures/residuals/burn", 0);
     FVAR(IDF_PERSIST, mixerburnblend, 0.f, 1.f, 1.f);
@@ -4056,7 +4055,6 @@ namespace game
                     q *= 0.8f;
                 }
             }
-            if(d->ragdoll && twitchspeed > 0) twitchragdoll(d, twitchspeed*blend*rnd(100)/80.f);
         }
     }
 

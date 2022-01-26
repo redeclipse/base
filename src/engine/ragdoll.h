@@ -245,7 +245,6 @@ struct ragdolldata
     void applyrotfriction(float ts);
     void tryunstick(float speed);
     void warppos(const vec &vel, const vec &offset);
-    void twitch(float vel);
 
     static inline bool collidevert(const vec &pos, const vec &dir, float radius)
     {
@@ -459,17 +458,6 @@ void ragdolldata::warppos(const vec &vel, const vec &offset)
     collidemillis = 0;
 }
 
-void ragdolldata::twitch(float vel)
-{
-    float ts = ragdolltimestepmin/1000.0f;
-    loopv(skel->verts)
-    {
-        vert &v = verts[i];
-        v.oldpos.add(vec(rnd(201)-100, rnd(201)-100, rnd(201)-100).div(100.f).normalize().mul(vel).mul(ts));
-    }
-    collidemillis = 0;
-}
-
 void ragdolldata::updatepos()
 {
     loopv(skel->verts)
@@ -493,7 +481,7 @@ void ragdolldata::updatepos()
 
 FVAR(0, ragdollelasticity, 0, 1, 1000);
 FVAR(0, ragdollunstick, 0, 10, 1e3f);
-VAR(0, ragdollexpireoffset, 0, 1500, 30000);
+VAR(0, ragdollexpireoffset, 0, 5000, 30000);
 
 void ragdolldata::move(dynent *pl, int millis)
 {
@@ -506,7 +494,7 @@ void ragdolldata::move(dynent *pl, int millis)
     {
         vert &v = verts[i];
         vec dpos(0, 0, 0);
-        physics::updateragdoll(pl, i == 0, v.pos, v.oldpos, skel->verts[i].radius, v.collided, dpos, millis);
+        physics::updateragdoll(pl, i, skel->verts.length(), v.pos, v.oldpos, skel->verts[i].radius, v.collided, dpos, millis);
         v.oldpos = v.pos;
         v.pos.add(dpos);
     }
@@ -540,8 +528,10 @@ void ragdolldata::move(dynent *pl, int millis)
     calcboundsphere();
 }
 
+#if 0
 FVAR(0, ragdolleyesmooth, 0, 0.5f, 1);
 VAR(0, ragdolleyesmoothmillis, 1, 250, 10000);
+#endif
 
 bool validragdoll(dynent *d, int millis)
 {
@@ -582,12 +572,6 @@ void warpragdoll(dynent *d, const vec &vel, const vec &offset)
 {
     if(!d->ragdoll || (d->state != CS_DEAD && d->state != CS_WAITING)) return;
     d->ragdoll->warppos(vel, offset);
-}
-
-void twitchragdoll(dynent *d, float vel)
-{
-    if(!d->ragdoll || (d->state != CS_DEAD && d->state != CS_WAITING)) return;
-    d->ragdoll->twitch(vel);
 }
 
 vec rdabove(dynent *d, float offset)

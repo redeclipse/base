@@ -2226,8 +2226,6 @@ namespace physics
 #define GETLIQUIDFUNCS(name) \
     extern float get##name##buoyancy(int mat); \
     extern float get##name##buoyancyscale(int mat); \
-    extern float get##name##buoyancycrouch(int mat); \
-    extern float get##name##buoyancyjump(int mat); \
     extern float get##name##falldist(int mat); \
     extern float get##name##fallspeed(int mat); \
     extern float get##name##fallpush(int mat); \

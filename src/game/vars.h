@@ -19,25 +19,26 @@ GVAR(IDF_WORLD, 0, hurtshockstun, 0, W_N_ST, W_N_ALL);
 GFVAR(IDF_WORLD, 0, hurtshockstunscale, 0, 0.5f, FVAR_MAX);
 GFVAR(IDF_WORLD, 0, hurtshockstunfall, 0, 0.01f, FVAR_MAX);
 GVAR(IDF_WORLD, 0, hurtshockstuntime, 0, 500, VAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, shocktwitchvel, 0, 2, FVAR_MAX);
 
 GFVAR(IDF_WORLD, 0, gravity, 0, 50.f, FVAR_MAX); // gravity
 GFVAR(IDF_GAMEMOD, 0, gravityscale, 0, 1, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, gravitycrouch, 0, 1.25f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, gravityjump, 0, 0.85f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, gravityjumpcrouch, 0, 1, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, buoyancycrouch, 0, 0, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, buoyancyjump, 0, 1.5f, FVAR_MAX);
 
 #define LIQUIDVARS(type, name) \
     GFVAR(IDF_WORLD, 0, name##buoyancy##type, FVAR_MIN, 50.f, FVAR_MAX); \
     GFVAR(IDF_GAMEMOD, 0, name##buoyancyscale##type, 0, 1, FVAR_MAX); \
-    GFVAR(IDF_GAMEMOD, 0, name##buoyancycrouch##type, 0, 0.5f, FVAR_MAX); \
-    GFVAR(IDF_GAMEMOD, 0, name##buoyancyjump##type, 0, 1.5f, FVAR_MAX); \
     GFVAR(IDF_WORLD, 0, name##falldist##type, 0, 12.f, FVAR_MAX); \
     GFVAR(IDF_WORLD, 0, name##fallspeed##type, FVAR_MIN, 250.f, FVAR_MAX); \
     GFVAR(IDF_WORLD, 0, name##fallpush##type, 0, 0.35f, FVAR_MAX); \
     GFVAR(IDF_WORLD, 0, name##speed##type, 0, 0.85f, 1); \
     GFVAR(IDF_GAMEMOD, 0, name##speedscale##type, 0, 1, FVAR_MAX); \
-    GFVAR(IDF_WORLD, 0, name##coast##type, 0, 10.f, 1000); \
-    GFVAR(IDF_GAMEMOD, 0, name##coastscale##type, 0, 1, FVAR_MAX); \
+    GFVAR(IDF_WORLD, 0, name##coast##type, FVAR_NONZERO, 10.f, 1000); \
+    GFVAR(IDF_GAMEMOD, 0, name##coastscale##type, FVAR_NONZERO, 1, FVAR_MAX); \
     GFVAR(IDF_WORLD, 0, name##boost##type, 0, 0.5f, 1); \
     GFVAR(IDF_GAMEMOD, 0, name##boostscale##type, 0, 1, FVAR_MAX); \
     GFVAR(IDF_WORLD, 0, name##submerge##type, 0, 0.75f, 1); \
@@ -86,12 +87,12 @@ LAVAVARS(alt, lava2)
 LAVAVARS(alt, lava3)
 LAVAVARS(alt, lava4)
 
-GFVAR(IDF_WORLD, 0, floorcoast, 0, 5.f, 1000);
-GFVAR(IDF_GAMEMOD, 0, floorcoastscale, 0, 1, FVAR_MAX);
-GFVAR(IDF_WORLD, 0, aircoast, 0, 25.f, 1000);
-GFVAR(IDF_GAMEMOD, 0, aircoastscale, 0, 1, FVAR_MAX);
-GFVAR(IDF_WORLD, 0, slidecoast, 0, 40.f, 1000);
-GFVAR(IDF_GAMEMOD, 0, slidecoastscale, 0, 1, FVAR_MAX);
+GFVAR(IDF_WORLD, 0, floorcoast, FVAR_NONZERO, 5.f, 1000);
+GFVAR(IDF_GAMEMOD, 0, floorcoastscale, FVAR_NONZERO, 1, FVAR_MAX);
+GFVAR(IDF_WORLD, 0, aircoast, FVAR_NONZERO, 25.f, 1000);
+GFVAR(IDF_GAMEMOD, 0, aircoastscale, FVAR_NONZERO, 1, FVAR_MAX);
+GFVAR(IDF_WORLD, 0, slidecoast, FVAR_NONZERO, 40.f, 1000);
+GFVAR(IDF_GAMEMOD, 0, slidecoastscale, FVAR_NONZERO, 1, FVAR_MAX);
 
 GVARF(IDF_GAMEMOD, 0, forcemapvariant, 0, 0, MPV_MAX-1, if(sv_forcemapvariant) server::changemapvariant(sv_forcemapvariant), if(forcemapvariant) changemapvariant(forcemapvariant));
 
@@ -296,7 +297,7 @@ GVAR(IDF_GAMEMOD, 0, itemextinguish, 0, 6, 7);
 GVAR(IDF_GAMEMOD, 0, iteminteracts, 0, 3, 3);
 GFVAR(IDF_GAMEMOD, 0, itemelasticity, FVAR_MIN, 0.4f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemrelativity, FVAR_MIN, 1, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, itemliquidcoast, 0, 1.75f, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, itemliquidcoast, FVAR_NONZERO, 1.75f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemweight, FVAR_MIN, 150, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itembuoyancy, FVAR_MIN, 200, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemspeedmin, 0, 0, FVAR_MAX);
@@ -382,7 +383,7 @@ GVAR(IDF_GAMEMOD, 0, captureextinguish, 0, 6, 7);
 GVAR(IDF_GAMEMOD, 0, captureinteracts, 0, 3, 3);
 GFVAR(IDF_GAMEMOD, 0, capturerelativity, 0, 0, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, captureelasticity, FVAR_MIN, 0.65f, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, captureliquidcoast, FVAR_MIN, 1.75f, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, captureliquidcoast, FVAR_NONZERO, 1.75f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, captureweight, FVAR_MIN, 400, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, capturebuoyancy, FVAR_MIN, 300, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, capturespeedmin, 0, 0, FVAR_MAX);
@@ -456,7 +457,7 @@ GVAR(IDF_GAMEMOD, 0, bomberextinguish, 0, 6, 7);
 GVAR(IDF_GAMEMOD, 0, bomberinteracts, 0, 3, 3);
 GFVAR(IDF_GAMEMOD, 0, bomberrelativity, 0, 0.25f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, bomberelasticity, FVAR_MIN, 0.75f, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, bomberliquidcoast, FVAR_MIN, 1.75f, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, bomberliquidcoast, FVAR_NONZERO, 1.75f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, bomberweight, FVAR_MIN, 350, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, bomberbuoyancy, FVAR_MIN, 400, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, bomberthreshold, 0, 0, FVAR_MAX); // if someone 'warps' more than this distance, auto-drop

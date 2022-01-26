@@ -393,7 +393,6 @@ extern bool validragdoll(dynent *d, int millis);
 extern void moveragdoll(dynent *d);
 extern void cleanragdoll(dynent *d);
 extern void warpragdoll(dynent *d, const vec &vel, const vec &offset = vec(0, 0, 0));
-extern void twitchragdoll(dynent *d, float vel);
 
 // server
 #define MAXCLIENTS 256  // in a multiplayer game, can be arbitrarily changed

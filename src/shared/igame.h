@@ -96,7 +96,7 @@ namespace physics
     extern float floorz, slopez, wallz;
     extern float liquidmerge(physent *d, float from, float to);
     extern bool liquidcheck(physent *d);
-    extern void gravityvel(physent *d, const vec &center, vec &g, float secs, float radius = 1.f, float height = 1.f, int matid = 0, float submerged = 0.f);
+    extern vec gravityvel(physent *d, const vec &center, float secs, float radius = 1.f, float height = 1.f, int matid = 0, float submerged = 0.f);
     extern bool isfloating(physent *d);
     extern float movevelocity(physent *d, bool floating = false);
     extern bool issolid(physent *d, physent *e = NULL, bool esc = true, bool impact = true, bool reverse = false);
@@ -107,7 +107,7 @@ namespace physics
     extern bool droptofloor(vec &o, int type = ENT_CAMERA, float radius = 1, float height = 1);
     extern bool moveplayer(physent *d, int moveres, bool local, int millis);
     extern void interppos(physent *d);
-    extern void updateragdoll(dynent *d, bool start, const vec &pos, const vec &oldpos, float radius, bool collided, vec &dpos, int millis);
+    extern void updateragdoll(dynent *d, int index, int count, const vec &pos, const vec &oldpos, float radius, bool collided, vec &dpos, int millis);
     extern void updatematerial(physent *d, const vec &center, const vec &bottom, bool local = false);
     extern bool checkcollide(physent *d, const vec &dir, physent *o);
     extern bool checktracecollide(physent *d, const vec &from, const vec &to, float &dist, physent *o, float x1, float x2, float y1, float y2);

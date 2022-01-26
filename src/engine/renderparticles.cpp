@@ -181,9 +181,7 @@ struct partrenderer
                     }
                 } d;
                 d.weight = weight;
-                vec g(0, 0, 0);
-                physics::gravityvel(&d, p->o, g, secs);
-                v.add(g);
+                v.add(physics::gravityvel(&d, p->o, secs));
             }
             p->o.add(v);
             if(particlewind && type&PT_WIND) p->o.add(p->wind.probe(o).mul(secs * 10.0f));
@@ -772,9 +770,7 @@ struct varenderer : partrenderer
                 }
             } p;
             p.weight = gravity;
-            vec g(0, 0, 0);
-            physics::gravityvel(&d, p->o, g, secs);
-            v.add(v).add(g);
+            v.add(v).add(physics::gravityvel(&d, p->o, secs));
         }
         end.add(v);
         pe.extendbb(end, size);
