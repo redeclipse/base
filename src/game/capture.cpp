@@ -695,10 +695,14 @@ namespace capture
             }
             return ai::makeroute(d, b, aiflagpos(d, f));
         }
-        else loopv(st.flags) if(st.flags[i].owner == d && ai::makeroute(d, b, aiflagpos(d, st.flags[i])))
+        else
         {
-            b.acttype = ai::AI_A_HASTE;
-            return true;
+            if(f.owner && d->team != f.owner->team) return ai::violence(d, b, f.owner, 4);
+            loopv(st.flags) if(st.flags[i].owner == d && ai::makeroute(d, b, aiflagpos(d, f)))
+            {
+                b.acttype = ai::AI_A_HASTE;
+                return true;
+            }
         }
         if(b.owner >= 0) return ai::makeroute(d, b, aiflagpos(d, f));
         return false;
