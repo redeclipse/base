@@ -996,14 +996,16 @@ namespace projs
                 proj.speedmin = itemspeedmin;
                 proj.speedmax = itemspeedmax;
                 proj.escaped = true;
-                float mag = proj.inertia.magnitude();
-                if(mag <= 50)
+                float mag = proj.inertia.magnitude(), yaw = proj.yaw, pitch = proj.pitch;
+                if(mag > 0) vectoyawpitch(vec(proj.inertia).normalize(), yaw, pitch);
+                else mag = itemdropminspeed;
+                if(proj.value > 0 && (itemdropspreadxy > 0 || itemdropspreadz > 0))
                 {
-                    if(mag <= 0) proj.inertia = vec(proj.yaw*RAD, proj.pitch*RAD);
-                    proj.inertia.normalize().mul(50);
+                    int m = proj.value % 2, n = (2 + proj.value) / 2;
+                    if(itemdropspreadxy > 0) yaw += n * itemdropspreadxy * (m ? 1 : -1);
+                    if(itemdropspreadz > 0) pitch += n * itemdropspreadz * (m ? 1 : -1);
                 }
-                proj.inertia.mul(proj.value+1);
-                proj.inertia.z += proj.value*10;
+                proj.inertia = vec(yaw*RAD, pitch*RAD).mul(mag);
                 proj.fadetime = 500;
                 proj.extinguish = itemextinguish;
                 proj.interacts = iteminteracts;

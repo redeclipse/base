@@ -109,6 +109,7 @@ struct vec
 
     bool iszero() const { return x==0 && y==0 && z==0; }
     float squaredlen() const { return x*x + y*y + z*z; }
+    float squaredxy() const { return x*x + y*y; }
     float dot2(const vec2 &o) const { return x*o.x + y*o.y; }
     float dot2(const vec &o) const { return x*o.x + y*o.y; }
     float dot(const vec &o) const { return x*o.x + y*o.y + z*o.z; }
@@ -146,6 +147,7 @@ struct vec
     vec &clamp(float l, float h) { x = ::clamp(x, l, h); y = ::clamp(y, l, h); z = ::clamp(z, l, h); return *this; }
     float magnitude2() const { return sqrtf(dot2(*this)); }
     float magnitude() const  { return sqrtf(squaredlen()); }
+    float magxy() const  { return sqrtf(squaredxy()); }
     vec &normalize()         { div(magnitude()); return *this; }
     vec &safenormalize()     { float m = magnitude(); if(m) div(m); return *this; }
     bool isnormalized() const { float m = squaredlen(); return (m>0.99f && m<1.01f); }

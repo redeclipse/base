@@ -302,8 +302,11 @@ GFVAR(IDF_GAMEMOD, 0, itemweight, FVAR_MIN, 150, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itembuoyancy, FVAR_MIN, 200, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemspeedmin, 0, 0, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemspeedmax, 0, 0, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, itemrepulsion, 0, 24, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, itemrepelspeed, 0, 50, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, itemrepulsion, 0, 6, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, itemrepelspeed, 0, 20, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, itemdropminspeed, 0, 20, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, itemdropspreadxy, 0, 10, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, itemdropspreadz, 0, 0, FVAR_MAX);
 
 //  dm          duel        survivor    gladiator   capture     defend      defendking  bomber      bomberhold  race        racelapped  racegauntlet
 MMVAR(IDF_GAMEMOD, 0, timelimit, 0, VAR_MAX,
