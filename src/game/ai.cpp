@@ -1607,9 +1607,9 @@ namespace ai
         loopenti(MAPMODEL) if(entities::ents[i]->type == MAPMODEL)
         {
             gameentity &e = *(gameentity *)entities::ents[i];
-            if(!mapmodelvisible(e, i, 2)) continue;
+            if(e.attrs[6]&(1<<MDLF_NOCLIP) || !mapmodelvisible(e, i, 2)) continue;
             mapmodelinfo *mmi = getmminfo(e.attrs[0]);
-            if(!mmi || !mmi->m) continue;
+            if(!mmi || !mmi->m || mmi->m->collide == COLLIDE_NONE) continue;
             vec center, radius;
             mmi->m->collisionbox(center, radius);
             if(e.attrs[5])
