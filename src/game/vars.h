@@ -489,8 +489,8 @@ GVAR(IDF_GAMEMOD, 0, botbalance, -1, -1, VAR_MAX); // -1 = always use numplayers
 GFVAR(IDF_GAMEMOD, 0, botbalancescale, FVAR_NONZERO, 1, FVAR_MAX); // use balance*this
 GVAR(IDF_GAMEMOD, 0, botbalanceduel, -1, 2, VAR_MAX); // -1 = always use numplayers, 0 = don't balance, 1 or more = fill only with this many
 GVAR(IDF_GAMEMOD, 0, botbalancesurvivor, -1, 2, VAR_MAX); // -1 = always use numplayers, 0 = don't balance, 1 or more = fill only with this many
-GVAR(IDF_GAMEMOD, 0, botskillmin, 1, 75, 101);
-GVAR(IDF_GAMEMOD, 0, botskillmax, 1, 85, 101);
+GVAR(IDF_GAMEMOD, 0, botskillmin, 1, 80, 101);
+GVAR(IDF_GAMEMOD, 0, botskillmax, 1, 90, 101);
 GFVAR(IDF_GAMEMOD, 0, botskillfrags, -100, -1, 100);
 GFVAR(IDF_GAMEMOD, 0, botskilldeaths, -100, 1, 100);
 GVAR(IDF_GAMEMOD, 0, botlimit, 0, 32, MAXAI);

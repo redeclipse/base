@@ -133,7 +133,7 @@ namespace ai
         if(lastmillis >= d->ai->lastaimrnd)
         {
             int radius = ceilf(e->radius*W2(d->weapselect, aiskew, alt));
-            float speed = clamp(e->vel.magnitude()/max(e->speed, 1.f), 0.f, 1.f), scale = speed+((1-speed)*((101-d->skill)/100.f));
+            float scale = (101-d->skill)/100.f;
             loopk(3) d->ai->aimrnd[k] = (rnd((radius*2)+1)-radius)*scale;
             int dur = max(d->skill*2, 30)*5;
             d->ai->lastaimrnd = lastmillis+dur+rnd(dur);
@@ -1119,12 +1119,10 @@ namespace ai
 
     bool lockon(gameent *d, gameent *e, float maxdist)
     {
-        if(!d->blocked)
-        {
-            vec dir = vec(e->o).sub(d->o);
-            float xydist = dir.x*dir.x+dir.y*dir.y, zdist = dir.z*dir.z, mdist = maxdist*maxdist, ddist = d->radius*d->radius+e->radius*e->radius;
-            if(zdist <= ddist && xydist >= ddist+4 && xydist <= mdist+ddist) return true;
-        }
+        if(d->blocked) return false;
+        vec dir = vec(e->o).sub(d->o);
+        float xydist = dir.x*dir.x+dir.y*dir.y, zdist = dir.z*dir.z, mdist = maxdist*maxdist, ddist = d->radius*d->radius+e->radius*e->radius;
+        if(zdist <= ddist && xydist >= ddist+4 && xydist <= mdist+ddist) return true;
         return false;
     }
 
@@ -1218,14 +1216,17 @@ namespace ai
                 {
                     bool kamikaze = A(d->actortype, abilities)&AA(KAMIKAZE);
                     frame *= insight || d->skill > 100 ? 1.5f : (hasseen ? 1.25f : 1.f);
-                    if((kamikaze || W2(d->weapselect, aidist, alt) < CLOSEDIST) && lockon(d, e, CLOSEDIST))
+                    if(d->o.dist(e->o) < CLOSEDIST)
                     {
                         frame *= 2.f;
-                        b.acttype = AI_A_LOCKON;
-                        d->ai->dontmove = false;
-                        d->ai->targyaw = yaw;
-                        d->ai->targpitch = pitch;
-                        d->ai->spot = e->feetpos();
+                        if((kamikaze || W2(d->weapselect, aidist, alt) < CLOSEDIST) && lockon(d, e, CLOSEDIST))
+                        {
+                            b.acttype = AI_A_LOCKON;
+                            d->ai->dontmove = false;
+                            d->ai->targyaw = yaw;
+                            d->ai->targpitch = pitch;
+                            d->ai->spot = e->feetpos();
+                        }
                     }
                     game::scaleyawpitch(d->yaw, d->pitch, yaw, pitch, frame, frame*0.75f);
                     if(shootable)
