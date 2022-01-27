@@ -2397,7 +2397,7 @@ namespace entities
     extern inanimate *remotepassenger(int ent, physent *d, const vec &offset);
     extern void updatepassengers();
     extern inanimate *currentpassenger(physent *d);
-    extern bool execitem(int n, int cn, dynent *d, vec &pos, float dist);
+    extern bool execitem(int n, int cn, dynent *d, float dist);
     extern bool collateitems(dynent *d, vec &pos, float radius, vector<actitem> &actitems);
     extern void checkitems(dynent *d);
     extern void putitems(packetbuf &p);

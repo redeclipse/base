@@ -1428,7 +1428,7 @@ namespace entities
     }
     ICOMMAND(0, exectrigger, "i", (int *n), if(identflags&IDF_WORLD) runtriggers(*n, triggerclient ? triggerclient : game::player1));
 
-    bool execitem(int n, int cn, dynent *d, vec &pos, float dist)
+    bool execitem(int n, int cn, dynent *d, float dist)
     {
         gameentity &e = *(gameentity *)ents[n];
         switch(enttype[e.type].usetype)
@@ -1611,8 +1611,7 @@ namespace entities
                     e.lastemit = lastmillis;
                     d->setused(n, lastmillis);
                     float mag = e.attrs[2] != 0 ? e.attrs[2] : 1, maxrad = e.attrs[3] ? e.attrs[3] : enttype[PUSHER].radius, minrad = e.attrs[4];
-                    if(dist > 0 && minrad > 0 && maxrad > minrad && dist > minrad && maxrad >= dist)
-                        mag *= 1.f-clamp((dist-minrad)/float(maxrad-minrad), 0.f, 1.f);
+                    if(dist > 0 && minrad > 0 && maxrad > minrad && dist > minrad && maxrad >= dist) mag *= 1.f-clamp((dist-minrad)/float(maxrad-minrad), 0.f, 1.f);
                     if(!gameent::is(d)) mag *= d->weight/300.f;
                     vec dir(e.attrs[0]*RAD, e.attrs[1]*RAD), rel = vec(dir).mul(mag);
                     switch(e.attrs[5])
@@ -1713,7 +1712,7 @@ namespace entities
                     }
                     default: break;
                 }
-                if(ents.inrange(ent) && execitem(ent, cn, d, pos, dist)) tried = true;
+                if(ents.inrange(ent) && execitem(ent, cn, d, dist)) tried = true;
                 actitems.pop();
             }
             if(tried && gameent::is(d))

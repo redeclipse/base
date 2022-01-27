@@ -1135,7 +1135,7 @@ namespace physics
 
     int materialslice(const vec &start, float height, float &submerged)
     {
-        int matid = 0, iters = max(int(ceilf(height)), 4), liquid = 0;
+        int matid = MAT_AIR, iters = max(int(ceilf(height)), 4), liquid = 0;
         float frac = height/float(iters); // guard against rounding errors
         vec tmp = start;
         loopi(iters+1)

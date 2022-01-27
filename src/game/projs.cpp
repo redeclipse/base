@@ -8,13 +8,13 @@ namespace projs
 
     struct toolent
     {
-        int ent;
+        int ent, type;
         float radius;
         vec o;
 
         vec pos() const { return entities::ents.inrange(ent) ? ((gameentity *)entities::ents[ent])->pos() : o; }
     };
-    vector<toolent> teleports, pushers;
+    vector<toolent> toolents;
 
     VAR(IDF_PERSIST, maxprojectiles, 1, 128, VAR_MAX);
 
@@ -517,39 +517,19 @@ namespace projs
         }
     }
 
-    bool checkitems(projent &proj, vector<toolent> &list, const vec &o, const vec &dir, float maxdist, bool teleport = false)
+    int checkitems(projent &proj, const vec &o, const vec &dir, float maxdist)
     {
-        float closedist = 1e16f;
-        int closeent = -1;
-        loopv(list)
+        int ret = 0;
+        loopv(toolents)
         {
-            if(teleport)
-            {
-                if(proj.projtype == PRJ_AFFINITY && entities::ents[list[i].ent]->attrs[8]&(1<<TELE_NOAFFIN))
-                    continue;
-                int millis = proj.lastused(list[i].ent);
-                if(millis && lastmillis-millis <= 100) continue;
-            }
+            toolent &t = toolents[i];
+            if(!(proj.interacts&t.type) || !entities::ents.inrange(t.ent) || !entities::isallowed(t.ent) || !entities::ents[t.ent]->spawned()) continue;
             float dist = 1e16f;
-            if(raysphereintersect(list[i].pos(), list[i].radius, o, dir, dist) && dist <= maxdist && (closeent < 0 || dist < closedist))
-            {
-                closeent = list[i].ent;
-                closedist = dist;
-            }
+            if(!raysphereintersect(t.pos(), t.radius, o, dir, dist) || dist > maxdist) continue;
+            entities::execitem(t.ent, -1, &proj, dist);
+            ret++;
         }
-        if(entities::ents.inrange(closeent))
-        {
-            entities::execitem(closeent, -1, &proj, proj.o, closedist);
-            return true;
-        }
-        return false;
-    }
-
-    bool checkitems(projent &proj, const vec &o, const vec &dir, float maxdist)
-    {
-        if(proj.interacts&1) if(checkitems(proj, teleports, o, dir, maxdist, true)) return true;
-        if(proj.interacts&2) if(checkitems(proj, pushers, o, dir, maxdist)) return true;
-        return false;
+        return ret;
     }
 
     void reset()
@@ -558,15 +538,15 @@ namespace projs
         cleardynentcache();
         projs.deletecontents();
         projs.shrink(0);
-        teleports.shrink(0);
-        pushers.shrink(0);
+        toolents.shrink(0);
         loopv(entities::ents) switch(entities::ents[i]->type)
         {
             case TELEPORT: case PUSHER:
             {
                 bool teleport = entities::ents[i]->type == TELEPORT;
-                toolent &t = teleport ? teleports.add() : pushers.add();
+                toolent &t = toolents.add();
                 t.ent = i;
+                t.type = teleport ? 1 : 2;
                 t.radius = entities::ents[i]->attrs[3] > 0 ? entities::ents[i]->attrs[3] : enttype[entities::ents[i]->type].radius;
                 if(teleport) t.radius *= 1.5f;
                 t.o = entities::ents[i]->o;
