@@ -999,7 +999,7 @@ namespace projs
                 float mag = proj.inertia.magnitude(), yaw = proj.yaw, pitch = proj.pitch;
                 if(mag > 0) vectoyawpitch(vec(proj.inertia).normalize(), yaw, pitch);
                 else mag = itemdropminspeed;
-                if(proj.value > 0 && (itemdropspreadxy > 0 || itemdropspreadz > 0))
+                if(proj.flags > 1 && (itemdropspreadxy > 0 || itemdropspreadz > 0))
                 {
                     int m = proj.value % 2, n = (2 + proj.value) / 2;
                     if(itemdropspreadxy > 0) yaw += n * itemdropspreadxy * (m ? 1 : -1);
@@ -1180,14 +1180,14 @@ namespace projs
         return &proj;
     }
 
-    void drop(gameent *d, int weap, int ent, int ammo, bool local, int index, int targ)
+    void drop(gameent *d, int weap, int ent, int ammo, bool local, int targ, int index, int count)
     {
         if(isweap(weap) && weap >= W_OFFSET && weap < W_ALL)
         {
             if(ammo >= 0)
             {
                 if(ammo > 0 && entities::ents.inrange(ent))
-                    create(d->muzzletag(), d->muzzletag(), local, d, PRJ_ENT, -1, 0, W(weap, spawnstay), W(weap, spawnstay), 1, 1, ent, ammo, index);
+                    create(d->muzzletag(), d->muzzletag(), local, d, PRJ_ENT, -1, 0, W(weap, spawnstay), W(weap, spawnstay), 1, 1, ent, ammo, index, count);
                 d->weapammo[weap][W_A_CLIP] = -1;
                 d->weapammo[weap][W_A_STORE] = 0;
                 if(targ >= 0) d->setweapstate(weap, W_S_SWITCH, W(weap, delayswitch), lastmillis);

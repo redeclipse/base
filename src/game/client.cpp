@@ -2989,7 +2989,7 @@ namespace client
                     if(ds) loopj(ds)
                     {
                         int gs = getint(p), drop = getint(p), ammo = getint(p);
-                        if(m) projs::drop(m, gs, drop, ammo, local, j, weap);
+                        if(m) projs::drop(m, gs, drop, ammo, local, weap, j, ds);
                     }
                     if(isweap(weap) && m)
                     {

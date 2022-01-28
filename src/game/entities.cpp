@@ -1217,7 +1217,7 @@ namespace entities
         {
             gameentity &f = *(gameentity *)ents[drop];
             attr = m_attr(f.type, f.attrs[0]);
-            if(isweap(attr)) projs::drop(d, attr, drop, ammo, d == game::player1 || d->ai, 0, weap);
+            if(isweap(attr)) projs::drop(d, attr, drop, ammo, d == game::player1 || d->ai, weap);
         }
         if(cn >= 0)
         {
