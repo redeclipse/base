@@ -1836,19 +1836,17 @@ static float findsurface(int fogmat, const vec &v, int &abovemat)
 static void getcamfogmat(int &fogmat, int &abovemat, float &fogbelow)
 {
     float fogmargin = 1 + WATER_AMPLITUDE + nearplane;
-    abovemat = MAT_AIR;
-    fogmat = lookupmaterial(vec(camera1->o.x, camera1->o.y, camera1->o.z - fogmargin))&(MATF_VOLUME|MATF_INDEX), abovemat = MAT_AIR;
+    fogmat = abovemat = MAT_AIR;
+    int mat = lookupmaterial(vec(camera1->o.x, camera1->o.y, camera1->o.z - fogmargin));
     fogbelow = 0;
-    if(isliquid(fogmat&MATF_VOLUME))
+    if(isliquid(mat&MATF_VOLUME)) fogmat = mat&(MATF_VOLUME|MATF_INDEX);
+    else if(mat&MAT_VOLFOG) fogmat = MAT_VOLFOG;
+    if(fogmat != MAT_AIR)
     {
         float z = findsurface(fogmat, vec(camera1->o.x, camera1->o.y, camera1->o.z - fogmargin), abovemat) - WATER_OFFSET;
-        if(camera1->o.z < z + fogmargin)
-        {
-            fogbelow = z - camera1->o.z;
-        }
+        if(camera1->o.z < z + fogmargin) fogbelow = z - camera1->o.z;
         else fogmat = abovemat;
     }
-    else fogmat = MAT_AIR;
 }
 
 static void getmatfog(int fogmat, float &start, float &end)
@@ -1866,6 +1864,11 @@ static void getmatfog(int fogmat, float &start, float &end)
             break;
 
         default:
+            if(fogmat&MAT_VOLFOG)
+            {
+                end = getvolfogdist();
+                break;
+            }
             start = (getfog()+64)/8;
             end = getfog();
             break;
@@ -1901,6 +1904,17 @@ static void blendfog(int fogmat, float below, float blend, float logblend, float
         }
 
         default:
+            if(fogmat&MAT_VOLFOG)
+            {
+                const bvec &wcol = getvolfogcolour(), &wdeepcol = getvolfogdeepcolour();
+                float wdeep = getvolfogdeep();
+                float deepfade = clamp(below/max(wdeep, matend), 0.0f, 1.0f);
+                vec color;
+                color.lerp(wcol.tocolor(), wdeepcol.tocolor(), deepfade);
+                fogc.add(vec(color).mul(blend));
+                end += logblend*min((float)getfog(), max(matend*2, 16.0f));
+                break;
+            }
             fogc.add(getfogcolour().tocolor().mul(blend));
             start += logblend*matstart;
             end += logblend*matend;
@@ -1988,6 +2002,15 @@ static void blendfogoverlay(int fogmat, float below, float blend, vec &overlay)
         }
 
         default:
+            if(fogmat&MAT_VOLFOG)
+            {
+                const bvec &wcol = getvolfogcolour(), &wdeepcol = getvolfogdeepcolour();
+                int wfog = getvolfogdist(), wdeep = getvolfogdeep();
+                float deepfade = clamp(below/max(wdeep, wfog), 0.0f, 1.0f);
+                vec color = vec(wcol.r, wcol.g, wcol.b).lerp(vec(wdeepcol.r, wdeepcol.g, wdeepcol.b), deepfade);
+                overlay.add(color.div(min(32.0f + max(color.r, max(color.g, color.b))*7.0f/8.0f, 255.0f)).max(0.4f).mul(blend));
+                break;
+            }
             overlay.add(blend);
             break;
     }
@@ -2229,7 +2252,7 @@ void drawcubemap(int size, const vec &o, float yaw, float pitch, bool onlysky)
         {
             setfog(fogmat, fogbelow, 1, abovemat);
 
-            renderwaterfog(fogmat, fogbelow);
+            renderfogvolume(fogmat, fogbelow);
 
             setfog(fogmat, fogbelow, clamp(fogbelow, 0.0f, 1.0f), abovemat);
         }
@@ -2422,7 +2445,7 @@ void gl_drawview()
     {
         setfog(fogmat, fogbelow, 1, abovemat);
 
-        renderwaterfog(fogmat, fogbelow);
+        renderfogvolume(fogmat, fogbelow);
 
         setfog(fogmat, fogbelow, clamp(fogbelow, 0.0f, 1.0f), abovemat);
     }

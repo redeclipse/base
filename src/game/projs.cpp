@@ -1486,7 +1486,7 @@ namespace projs
         if(proj.extinguish&1 || proj.extinguish&2)
         {
             if(proj.extinguish&1 && (proj.inmaterial&MATF_VOLUME) == MAT_WATER) chk |= 1;
-            if(proj.extinguish&2 && ((proj.inmaterial&MATF_FLAGS)&MAT_DEATH)) chk |= 2;
+            if(proj.extinguish&2 && (proj.inmaterial&MAT_DEATH)) chk |= 2;
         }
         if(chk)
         {

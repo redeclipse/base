@@ -32,9 +32,9 @@ PIESKYVARS(alt, MPV_ALT);
         return sun##name; \
     }
 
-GETSKYPIE(light, bvec &);
+GETSKYPIE(light, const bvec &);
 GETSKYPIE(lightscale, float);
-GETSKYPIE(lightdir, vec &);
+GETSKYPIE(lightdir, const vec &);
 GETSKYPIE(lightyaw, float);
 GETSKYPIE(lightpitch, float);
 

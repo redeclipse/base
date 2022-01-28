@@ -288,7 +288,7 @@ float raycube(const vec &o, const vec &ray, float radius, int mode, int size, ex
 
         cube &c = *lc;
         if((dist>0 || !(mode&RAY_SKIPFIRST)) &&
-           (((mode&RAY_CLIPMAT) && (isclipped(c.material&MATF_VOLUME) || ((c.material&MATF_CLIP) == MAT_CLIP && (c.material&MATF_FLAGS)&MAT_HURT))) ||
+           (((mode&RAY_CLIPMAT) && (isclipped(c.material&MATF_VOLUME) || ((c.material&MATF_CLIP) == MAT_CLIP && c.material&MAT_HURT))) ||
             ((mode&RAY_EDITMAT) && c.material != MAT_AIR) ||
             (!(mode&RAY_PASS) && lsize==size && !isempty(c)) ||
             isentirelysolid(c) ||
@@ -1055,7 +1055,7 @@ static inline bool octacollide(physent *d, const vec &dir, float cutoff, const i
             {
                 case MAT_NOCLIP: continue;
                 case MAT_CLIP:
-                    if(isclipped(c[i].material&MATF_VOLUME) || (c[i].material&MATF_FLAGS)&MAT_HURT || d->type<ENT_CAMERA)
+                    if(isclipped(c[i].material&MATF_VOLUME) || c[i].material&MAT_HURT || d->type<ENT_CAMERA)
                     {
                         solid = true;
                         collidematerial = c[i].material;
@@ -1093,7 +1093,7 @@ static inline bool octacollide(physent *d, const vec &dir, float cutoff, const i
     {
         case MAT_NOCLIP: return false;
         case MAT_CLIP:
-            if(isclipped(c->material&MATF_VOLUME) || (c->material&MATF_FLAGS)&MAT_HURT || d->type<ENT_CAMERA)
+            if(isclipped(c->material&MATF_VOLUME) || c->material&MAT_HURT || d->type<ENT_CAMERA)
             {
                 solid = true;
                 collidematerial = c->material;

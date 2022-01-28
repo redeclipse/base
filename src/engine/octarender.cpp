@@ -548,7 +548,9 @@ struct vacollect : verthash
                 switch(m.material)
                 {
                     case MAT_GLASS: case MAT_LAVA: case MAT_WATER: break;
-                    default: continue;
+                    default:
+                        if(m.material&MAT_VOLFOG) break;
+                        continue;
                 }
                 va->matmask |= 1<<m.material;
             }
@@ -1308,6 +1310,8 @@ void updatevabb(vtxarray *va, bool force)
     va->bbmax.max(va->watermax);
     va->bbmin.min(va->glassmin);
     va->bbmax.max(va->glassmax);
+    va->bbmin.min(va->volfogmin);
+    va->bbmax.max(va->volfogmax);
     loopv(va->children)
     {
         vtxarray *child = va->children[i];

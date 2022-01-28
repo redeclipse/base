@@ -267,7 +267,7 @@ namespace physics
 
     bool liquidcheck(physent *d)
     {
-        return isliquid(d->inmaterial&MATF_VOLUME) && !isladder(d->inmaterial&MATF_FLAGS) && d->submerged >= LIQUIDPHYS(submerge, d->inmaterial);
+        return isliquid(d->inmaterial&MATF_VOLUME) && !isladder(d->inmaterial) && d->submerged >= LIQUIDPHYS(submerge, d->inmaterial);
     }
 
     float liquidmerge(physent *d, float from, float to)
@@ -351,7 +351,7 @@ namespace physics
 
     bool sticktofloor(physent *d)
     {
-        if(isladder(d->inmaterial&MATF_FLAGS)) return true;
+        if(isladder(d->inmaterial)) return true;
         if(liquidcheck(d)) return false;
         if(gameent::is(d))
         {
@@ -367,7 +367,7 @@ namespace physics
         if(gameent::is(d) && d->state == CS_ALIVE)
         {
             gameent *e = (gameent *)d;
-            if(isladder(e->inmaterial&MATF_FLAGS)) return true;
+            if(isladder(e->inmaterial)) return true;
             if(e->hasparkour()) return true;
         }
         return false;
@@ -387,7 +387,7 @@ namespace physics
         {
             gameent *e = (gameent *)p;
             vel *= e->stunscale;
-            if((d->physstate >= PHYS_SLOPE || isladder(d->inmaterial&MATF_FLAGS)) && !e->sliding(true) && e->crouching()) vel *= movecrawl;
+            if((d->physstate >= PHYS_SLOPE || isladder(d->inmaterial)) && !e->sliding(true) && e->crouching()) vel *= movecrawl;
             else if(isweap(e->weapselect) && e->weapstate[e->weapselect] == W_S_ZOOM) vel *= movecrawl;
             if(e->move >= 0) vel *= e->strafe ? movestrafe : movestraight;
             if(e->running()) vel *= moverun;
@@ -433,7 +433,7 @@ namespace physics
     bool movepitch(physent *d)
     {
         if(d->type == ENT_CAMERA || d->state == CS_EDITING || d->state == CS_SPECTATOR) return true;
-        if(isladder(d->inmaterial&MATF_FLAGS) || (isliquid(d->inmaterial&MATF_VOLUME) && (liquidcheck(d) || d->pitch < 0.f)) || PHYS(gravity) == 0) return true;
+        if(isladder(d->inmaterial) || (isliquid(d->inmaterial&MATF_VOLUME) && (liquidcheck(d) || d->pitch < 0.f)) || PHYS(gravity) == 0) return true;
         return false;
     }
 
@@ -843,7 +843,7 @@ namespace physics
 
     void modifyinput(gameent *d, vec &m, bool wantsmove)
     {
-        bool onfloor = d->physstate >= PHYS_SLOPE || isladder(d->inmaterial&MATF_FLAGS) || liquidcheck(d);
+        bool onfloor = d->physstate >= PHYS_SLOPE || isladder(d->inmaterial) || liquidcheck(d);
         if(d->hasparkour())
         {
             int length = 0, ms = 0, type = A_A_PARKOUR;
@@ -917,7 +917,7 @@ namespace physics
                     d->o.add(dir);
                     bool collided = collide(d);
                     if(!collided || (collideplayer && !inanimate::is(collideplayer)) || collidewall.iszero()) continue;
-                    if(collidematerial && (collidematerial&MATF_CLIP) == MAT_CLIP && (collidematerial&MATF_FLAGS)&MAT_LADDER) continue;
+                    if(collidematerial && (collidematerial&MATF_CLIP) == MAT_CLIP && collidematerial&MAT_LADDER) continue;
                     foundwall = true;
                     break;
                 }
@@ -1087,7 +1087,7 @@ namespace physics
                 m.z = inliquid ? max(m.z, dz) : dz;
                 if(!m.iszero()) m.normalize();
             }
-            if(!e->hasparkour() && isladder(d->inmaterial&MATF_FLAGS) && !m.iszero()) m.addz(m.z >= 0 ? 1 : -1).normalize();
+            if(!e->hasparkour() && isladder(d->inmaterial) && !m.iszero()) m.addz(m.z >= 0 ? 1 : -1).normalize();
             slide = e->sliding();
         }
 
@@ -1358,7 +1358,7 @@ namespace physics
 
     void updatephysstate(physent *d)
     {
-        if(d->physstate == PHYS_FALL && !isladder(d->inmaterial&MATF_FLAGS)) return;
+        if(d->physstate == PHYS_FALL && !isladder(d->inmaterial)) return;
         vec old(d->o);
         /* Attempt to reconstruct the floor state.
          * May be inaccurate since movement collisions are not considered.
@@ -1397,7 +1397,7 @@ namespace physics
                 break;
             default: break;
         }
-        if((d->physstate > PHYS_FALL && d->floor.z <= 0) || (isladder(d->inmaterial&MATF_FLAGS) && !foundfloor)) d->floor = vec(0, 0, 1);
+        if((d->physstate > PHYS_FALL && d->floor.z <= 0) || (isladder(d->inmaterial) && !foundfloor)) d->floor = vec(0, 0, 1);
         d->o = old;
     }
 

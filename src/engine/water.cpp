@@ -78,7 +78,7 @@ void rendercaustics(float surface, float syl, float syr)
     gle::end();
 }
 
-void renderwaterfog(int mat, float surface)
+void renderfogvolume(int mat, float surface)
 {
     glDepthFunc(GL_NOTEQUAL);
     glDepthMask(GL_FALSE);
@@ -106,9 +106,9 @@ void renderwaterfog(int mat, float surface)
     {
         const bvec &deepcolor = getwaterdeepcolour(mat);
         int deep = getwaterdeep(mat);
-        GLOBALPARAMF(waterdeepcolor, deepcolor.x*ldrscaleb, deepcolor.y*ldrscaleb, deepcolor.z*ldrscaleb);
+        GLOBALPARAMF(fogdeepcolor, deepcolor.x*ldrscaleb, deepcolor.y*ldrscaleb, deepcolor.z*ldrscaleb);
         vec deepfade = getwaterdeepfade(mat).tocolor().mul(deep);
-        GLOBALPARAMF(waterdeepfade,
+        GLOBALPARAMF(fogdeepfade,
             deepfade.x ? calcfogdensity(deepfade.x) : -1e4f,
             deepfade.y ? calcfogdensity(deepfade.y) : -1e4f,
             deepfade.z ? calcfogdensity(deepfade.z) : -1e4f,
@@ -116,17 +116,29 @@ void renderwaterfog(int mat, float surface)
 
         rendercaustics(surface, syl, syr);
     }
+    else if(mat&MAT_VOLFOG)
+    {
+        const bvec &deepcolor = getvolfogdeepcolour();
+        int deep = getvolfogdeep();
+        GLOBALPARAMF(fogdeepcolor, deepcolor.x*ldrscaleb, deepcolor.y*ldrscaleb, deepcolor.z*ldrscaleb);
+        vec deepfade = getvolfogdeepfade().tocolor().mul(deep);
+        GLOBALPARAMF(fogdeepfade,
+            deepfade.x ? calcfogdensity(deepfade.x) : -1e4f,
+            deepfade.y ? calcfogdensity(deepfade.y) : -1e4f,
+            deepfade.z ? calcfogdensity(deepfade.z) : -1e4f,
+            deep ? calcfogdensity(deep) : -1e4f);
+    }
     else
     {
-        GLOBALPARAMF(waterdeepcolor, 0, 0, 0);
-        GLOBALPARAMF(waterdeepfade, -1e4f, -1e4f, -1e4f, -1e4f);
+        GLOBALPARAMF(fogdeepcolor, 0, 0, 0);
+        GLOBALPARAMF(fogdeepfade, -1e4f, -1e4f, -1e4f, -1e4f);
     }
 
-    GLOBALPARAMF(waterheight, bz);
+    GLOBALPARAMF(fogheight, bz);
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    SETSHADER(waterfog);
+    SETSHADER(fogvolume);
     gle::defvertex(3);
     gle::begin(GL_TRIANGLE_STRIP);
     gle::attribf(1, -1, 1);
@@ -344,7 +356,7 @@ int renderwaterlod(int x, int y, int z, int size, int mat)
     }
 }
 
-void renderflatwater(int x, int y, int z, int rsize, int csize, int mat)
+void renderflatwater(int x, int y, int z, int rsize, int csize, int mat = MAT_AIR)
 {
     if(gle::attribbuf.empty()) { gle::defvertex(); gle::begin(GL_QUADS); }
     vertwn(x,       y,       z);
@@ -426,6 +438,37 @@ GETMATIDXVAR(lava, glowmin, float)
 GETMATIDXVAR(lava, glowmax, float)
 GETMATIDXVAR(lava, spec, int)
 
+#define MPVVARS(name, type) \
+    CVAR(IDF_WORLD, volfogcolour##name, 0); \
+    CVAR(IDF_WORLD, volfogdeepcolour##name, 0); \
+    CVAR(IDF_WORLD, volfogdeepfade##name, 0); \
+    VAR(IDF_WORLD, volfogdist##name, 0, 30, 10000); \
+    VAR(IDF_WORLD, volfogdeep##name, 0, 50, 10000);
+
+MPVVARS(, MPV_DEF)
+MPVVARS(alt, MPV_ALT)
+
+#define GETMPV(name, type) \
+    type get##name() \
+    { \
+        if(checkmapvariant(MPV_ALT)) return name##alt.iszero() ? getfogcolour() : name##alt; \
+        return name.iszero() ? getfogcolour() : name; \
+    }
+
+GETMPV(volfogcolour, const bvec &);
+GETMPV(volfogdeepcolour, const bvec &);
+GETMPV(volfogdeepfade, const bvec &);
+
+#undef GETMPV
+#define GETMPV(name, type) \
+    type get##name() \
+    { \
+        if(checkmapvariant(MPV_ALT)) return name##alt; \
+        return name; \
+    }
+GETMPV(volfogdist, int);
+GETMPV(volfogdeep, int);
+
 void preloadwatershaders(bool force)
 {
     static bool needwater = false;
@@ -449,9 +492,6 @@ void preloadwatershaders(bool force)
 
     if(waterfallenv) useshaderbyname("waterfallenv");
     useshaderbyname("waterfall");
-
-    useshaderbyname("waterfog");
-
     useshaderbyname("waterminimap");
 }
 
@@ -700,6 +740,65 @@ void renderwater()
             }
             flushwater();
         }
+    }
+}
+
+void rendervolfog()
+{
+    vector<materialsurface> &surfs = volfogsurfs;
+    if(surfs.empty()) return;
+
+    float colorscale = 0.5f/255;
+    const bvec &color = getvolfogcolour();
+    const bvec &deepcolor = getvolfogdeepcolour();
+    int fog = getvolfogdist(), deep = getvolfogdeep();
+    GLOBALPARAMF(volfogcolor, color.x*colorscale, color.y*colorscale, color.z*colorscale);
+    GLOBALPARAMF(volfogdeepcolor, deepcolor.x*colorscale, deepcolor.y*colorscale, deepcolor.z*colorscale);
+    float fogdensity = fog ? calcfogdensity(fog) : -1e4f;
+    GLOBALPARAMF(volfogdist, fogdensity);
+    vec deepfade = getvolfogdeepfade().tocolor().mul(deep);
+    GLOBALPARAMF(volfogdeepfade,
+        deepfade.x ? calcfogdensity(deepfade.x) : -1e4f,
+        deepfade.y ? calcfogdensity(deepfade.y) : -1e4f,
+        deepfade.z ? calcfogdensity(deepfade.z) : -1e4f,
+        deep ? calcfogdensity(deep) : -1e4f);
+
+    #define SETVOLFOGSHADER(which, name) \
+    do { \
+        static Shader *name##shader = NULL; \
+        if(!name##shader) name##shader = lookupshaderbyname(#name); \
+        which##shader = name##shader; \
+    } while(0)
+
+    Shader *aboveshader = NULL;
+    if(drawtex == DRAWTEX_MINIMAP) SETVOLFOGSHADER(above, waterminimap);
+    else SETVOLFOGSHADER(above, volfog);
+
+    Shader *belowshader = NULL;
+    if(drawtex != DRAWTEX_MINIMAP) SETVOLFOGSHADER(below, undervolfog);
+
+    if(aboveshader)
+    {
+        aboveshader->set();
+        loopv(surfs)
+        {
+            materialsurface &m = surfs[i];
+            if(camera1->o.z < m.o.z - WATER_OFFSET) continue;
+            renderflatwater(m.o.x, m.o.y, m.o.z, m.rsize, m.csize);
+        }
+        if(gle::attribbuf.length()) xtraverts += gle::end();
+    }
+
+    if(belowshader)
+    {
+        belowshader->set();
+        loopv(surfs)
+        {
+            materialsurface &m = surfs[i];
+            if(camera1->o.z >= m.o.z - WATER_OFFSET) continue;
+            renderflatwater(m.o.x, m.o.y, m.o.z, m.rsize, m.csize);
+        }
+        if(gle::attribbuf.length()) xtraverts += gle::end();
     }
 }
 

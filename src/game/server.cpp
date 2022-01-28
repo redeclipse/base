@@ -5195,7 +5195,7 @@ namespace server
             if(ci->state == CS_ALIVE)
             {
                 // hurt material
-                if((ci->inmaterial&MATF_FLAGS)&MAT_HURT)
+                if(ci->inmaterial&MAT_HURT)
                 {
                     if(!ci->lasthurt || gamemillis-ci->lasthurt >= G(hurtdelay))
                     {
@@ -6321,7 +6321,7 @@ namespace server
                                 cp->lastres[W_R_BURN] = cp->lastrestime[W_R_BURN] = 0;
                                 sendf(-1, 1, "ri3", N_SPHY, cp->clientnum, SPHY_EXTINGUISH);
                             }
-                            if(cp->state == CS_ALIVE && (cp->inmaterial&MATF_FLAGS)&MAT_DEATH)
+                            if(cp->state == CS_ALIVE && cp->inmaterial&MAT_DEATH)
                             {
                                 suicideevent ev;
                                 ev.flags = HIT(MATERIAL);

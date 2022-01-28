@@ -645,7 +645,7 @@ extern float matliquidsx1, matliquidsy1, matliquidsx2, matliquidsy2;
 extern float matsolidsx1, matsolidsy1, matsolidsx2, matsolidsy2;
 extern float matrefractsx1, matrefractsy1, matrefractsx2, matrefractsy2;
 extern uint matliquidtiles[LIGHTTILE_MAXH], matsolidtiles[LIGHTTILE_MAXH];
-extern vector<materialsurface> editsurfs, glasssurfs[4], watersurfs[4], waterfallsurfs[4], lavasurfs[4], lavafallsurfs[4];
+extern vector<materialsurface> editsurfs, glasssurfs[4], watersurfs[4], waterfallsurfs[4], lavasurfs[4], lavafallsurfs[4], volfogsurfs;
 extern const bvec4 matnormals[6];
 
 extern int showmat;
@@ -713,12 +713,19 @@ extern const bvec &getglasscolour(int mat);
 extern float getglassrefract(int mat);
 extern int getglassspec(int mat);
 
+extern const bvec &getvolfogcolour();
+extern const bvec &getvolfogdeepcolour();
+extern const bvec &getvolfogdeepfade();
+extern int getvolfogdist();
+extern int getvolfogdeep();
+
 extern void renderwater();
 extern void renderwaterfalls();
+extern void rendervolfog();
 extern void renderlava();
 extern void renderlava(const materialsurface &m, Texture *tex, float scale);
 extern void loadcaustics(bool force = false);
-extern void renderwaterfog(int mat, float blend);
+extern void renderfogvolume(int mat, float blend);
 extern void preloadwatershaders(bool force = false);
 
 // server
@@ -913,7 +920,7 @@ extern void genstainmmtri(stainrenderer *s, const vec v[3]);
 extern int explicitsky;
 
 extern int getfog();
-extern bvec &getfogcolour(), &getambient(), &getskylight();
+extern const bvec &getfogcolour(), &getambient(), &getskylight();
 extern int getskytexture(), getskyshadow();
 extern float getambientscale(), getskylightscale();
 

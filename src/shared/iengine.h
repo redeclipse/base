@@ -615,5 +615,6 @@ enum // cube empty-space materials
     MAT_LADDER = 2 << MATF_FLAG_SHIFT,  // acts as ladder (move up/down)
     MAT_ALPHA  = 4 << MATF_FLAG_SHIFT,  // alpha blended
     MAT_HURT   = 8 << MATF_FLAG_SHIFT,  // hurt at intervals
-    MAT_NOGI   = 16 << MATF_FLAG_SHIFT  // disable global illumination FIXME
+    MAT_NOGI   = 16 << MATF_FLAG_SHIFT, // disable global illumination
+    MAT_VOLFOG = 32 << MATF_FLAG_SHIFT  // volumetric fog
 };

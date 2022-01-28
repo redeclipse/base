@@ -109,7 +109,8 @@ extern const namemap materials[] =
     {"ladder", MAT_LADDER},
     {"alpha", MAT_ALPHA},
     {"hurt", MAT_HURT},
-    {"nogi", MAT_NOGI}
+    {"nogi", MAT_NOGI},
+    {"volfog", MAT_VOLFOG}
 };
 
 int findmaterial(const char *name, bool tryint)
@@ -126,7 +127,7 @@ const char *findmaterialname(int type)
 
 const char *getmaterialdesc(int mat, const char *prefix)
 {
-    static const ushort matmasks[] = { MATF_VOLUME|MATF_INDEX, MATF_CLIP, MAT_DEATH, MAT_LADDER, MAT_ALPHA, MAT_HURT, MAT_NOGI };
+    static const ushort matmasks[] = { MATF_VOLUME|MATF_INDEX, MATF_CLIP, MAT_DEATH, MAT_LADDER, MAT_ALPHA, MAT_HURT, MAT_NOGI, MAT_VOLFOG };
     static string desc;
     desc[0] = '\0';
     loopi(sizeof(matmasks)/sizeof(matmasks[0])) if(mat&matmasks[i])
@@ -160,9 +161,13 @@ int visiblematerial(const cube &c, int orient, const ivec &co, int size, ushort 
             return MATSURF_VISIBLE;
         break;
 
+    case MAT_VOLFOG:
+        if(visibleface(c, orient, co, size, MAT_VOLFOG, MAT_AIR, matmask))
+            return (orient != O_TOP ? MATSURF_EDIT_ONLY : MATSURF_VISIBLE);
+        break;
+
     default:
-        if(visibleface(c, orient, co, size, mat, MAT_AIR, matmask))
-            return MATSURF_EDIT_ONLY;
+        if(visibleface(c, orient, co, size, mat, MAT_AIR, matmask)) return MATSURF_EDIT_ONLY;
         break;
     }
     return MATSURF_NOT_VISIBLE;
@@ -172,7 +177,7 @@ void genmatsurfs(const cube &c, const ivec &co, int size, vector<materialsurface
 {
     loopi(6)
     {
-        static const ushort matmasks[] = { MATF_VOLUME|MATF_INDEX, MATF_CLIP, MAT_DEATH, MAT_LADDER, MAT_ALPHA, MAT_HURT, MAT_NOGI };
+        static const ushort matmasks[] = { MATF_VOLUME|MATF_INDEX, MATF_CLIP, MAT_DEATH, MAT_LADDER, MAT_ALPHA, MAT_HURT, MAT_NOGI, MAT_VOLFOG };
         loopj(sizeof(matmasks)/sizeof(matmasks[0]))
         {
             ushort matmask = matmasks[j];
@@ -206,8 +211,8 @@ static inline void addmatbb(ivec &matmin, ivec &matmax, const materialsurface &m
 
 void calcmatbb(vtxarray *va, const ivec &co, int size, vector<materialsurface> &matsurfs)
 {
-    va->lavamax = va->watermax = va->glassmax = co;
-    va->lavamin = va->watermin = va->glassmin = ivec(co).add(size);
+    va->lavamax = va->watermax = va->glassmax = va->volfogmin = co;
+    va->lavamin = va->watermin = va->glassmin = va->volfogmax = ivec(co).add(size);
     loopv(matsurfs)
     {
         materialsurface &m = matsurfs[i];
@@ -228,6 +233,11 @@ void calcmatbb(vtxarray *va, const ivec &co, int size, vector<materialsurface> &
                 break;
 
             default:
+                if(m.material&MAT_VOLFOG)
+                {
+                    addmatbb(va->volfogmin, va->volfogmax, m);
+                    break;
+                }
                 continue;
         }
     }
@@ -357,6 +367,7 @@ void preloadglassshaders(bool force = false)
 void setupmaterials(int start, int len)
 {
     int hasmat = 0;
+    bool hasvf = false;
     if(!len) len = valist.length();
     for(int i = start; i < len; i++)
     {
@@ -400,6 +411,7 @@ void setupmaterials(int start, int len)
                 center[C[dim]] += m.csize/2;
                 m.envmap = closestenvmap(center);
             }
+            if(m.material&MAT_VOLFOG) hasvf = true;
             if(matvol) hasmat |= 1<<m.material;
             m.skip = 0;
             if(skip && m.material == skip->material && m.orient == skip->orient && skip->skip < 0xFFFF)
@@ -407,6 +419,12 @@ void setupmaterials(int start, int len)
             else
                 skip = &m;
         }
+    }
+    if(hasvf || hasmat&(0xF<<MAT_WATER) || hasmat&(0xF<<MAT_LAVA)) useshaderbyname("fogvolume");
+    if(hasvf)
+    {
+        useshaderbyname("volfog");
+        useshaderbyname("undervolfog");
     }
     if(hasmat&(0xF<<MAT_WATER))
     {
@@ -417,7 +435,6 @@ void setupmaterials(int start, int len)
     if(hasmat&(0xF<<MAT_LAVA))
     {
         useshaderbyname("lava");
-        useshaderbyname("waterfog");
         loopi(4) if(hasmat&(1<<(MAT_LAVA+i))) lookupmaterialslot(MAT_LAVA+i);
     }
     if(hasmat&(0xF<<MAT_GLASS))
@@ -482,7 +499,8 @@ void sorteditmaterials()
     case MAT_LADDER: value = bvec4::fromcolor(colourviolet); break; \
     case MAT_ALPHA:  value = bvec4::fromcolor(colourpink); break; \
     case MAT_HURT:   value = bvec4::fromcolor(colourgrey); break; \
-    case MAT_NOGI:   value = bvec4::fromcolor(colourbrown); break;
+    case MAT_NOGI:   value = bvec4::fromcolor(colourbrown); break; \
+    case MAT_VOLFOG: value = bvec4::fromcolor(colourpurple); break;
 
 void rendermatgrid()
 {
@@ -543,7 +561,7 @@ static void drawglass(const materialsurface &m, float offset)
     }
 }
 
-vector<materialsurface> editsurfs, glasssurfs[4], watersurfs[4], waterfallsurfs[4], lavasurfs[4], lavafallsurfs[4];
+vector<materialsurface> editsurfs, glasssurfs[4], watersurfs[4], waterfallsurfs[4], lavasurfs[4], lavafallsurfs[4], volfogsurfs;
 
 float matliquidsx1 = -1, matliquidsy1 = -1, matliquidsx2 = 1, matliquidsy2 = 1;
 float matsolidsx1 = -1, matsolidsy1 = -1, matsolidsx2 = 1, matsolidsy2 = 1;
@@ -553,6 +571,7 @@ uint matliquidtiles[LIGHTTILE_MAXH], matsolidtiles[LIGHTTILE_MAXH];
 int findmaterials()
 {
     editsurfs.setsize(0);
+    volfogsurfs.setsize(0);
     loopi(4)
     {
         glasssurfs[i].setsize(0);
@@ -613,6 +632,22 @@ int findmaterials()
                 i += m.skip;
             }
         }
+        if(va->volfogmin.x <= va->volfogmax.x && calcbbscissor(va->volfogmin, va->volfogmax, sx1, sy1, sx2, sy2))
+        {
+            matliquidsx1 = min(matliquidsx1, sx1);
+            matliquidsy1 = min(matliquidsy1, sy1);
+            matliquidsx2 = max(matliquidsx2, sx2);
+            matliquidsy2 = max(matliquidsy2, sy2);
+            masktiles(matliquidtiles, sx1, sy1, sx2, sy2);
+            loopi(va->matsurfs)
+            {
+                materialsurface &m = va->matbuf[i];
+                if(!(m.material&MAT_VOLFOG) || m.visible == MATSURF_EDIT_ONLY) { i += m.skip; continue; }
+                hasmats |= 4|1;
+                if(m.orient == O_TOP) volfogsurfs.put(&m, 1+int(m.skip));
+                i += m.skip;
+            }
+        }
         if(drawtex != DRAWTEX_ENVMAP && va->glassmin.x <= va->glassmax.x && calcbbscissor(va->glassmin, va->glassmax, sx1, sy1, sx2, sy2))
         {
             matsolidsx1 = min(matsolidsx1, sx1);
@@ -643,6 +678,7 @@ void rendermaterialmask()
     loopk(4) { vector<materialsurface> &surfs = glasssurfs[k]; loopv(surfs) drawmaterial(surfs[i], 0.1f); }
     loopk(4) { vector<materialsurface> &surfs = watersurfs[k]; loopv(surfs) drawmaterial(surfs[i], WATER_OFFSET); }
     loopk(4) { vector<materialsurface> &surfs = waterfallsurfs[k]; loopv(surfs) drawmaterial(surfs[i], 0.1f); }
+    vector<materialsurface> &surfs = volfogsurfs; loopv(surfs) drawmaterial(surfs[i], WATER_OFFSET);
     xtraverts += gle::end();
     glEnable(GL_CULL_FACE);
 }
@@ -718,6 +754,7 @@ void renderliquidmaterials()
     renderlava();
     renderwater();
     renderwaterfalls();
+    rendervolfog();
 
     glEnable(GL_CULL_FACE);
 }
@@ -784,6 +821,7 @@ void renderminimapmaterials()
 
     renderlava();
     renderwater();
+    rendervolfog();
 
     glEnable(GL_CULL_FACE);
 }

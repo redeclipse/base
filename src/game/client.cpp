@@ -988,7 +988,7 @@ namespace client
     CLCOMMAND(airmillis, intret(d->airmillis));
     CLCOMMAND(floormillis, intret(d->floormillis));
     CLCOMMAND(inliquid, intret(isliquid(d->inmaterial&MATF_VOLUME) ? 1 : 0));
-    CLCOMMAND(onladder, intret(isladder(d->inmaterial&MATF_FLAGS) ? 1 : 0));
+    CLCOMMAND(onladder, intret(isladder(d->inmaterial) ? 1 : 0));
     CLCOMMAND(headless, intret(d->headless ? 1 : 0));
     CLCOMMAND(obliterated, intret(d->obliterated ? 1 : 0));
     CLCOMMAND(actortype, intret(d->actortype));

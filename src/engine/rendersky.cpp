@@ -127,15 +127,15 @@ MPVVARS(alt, MPV_ALT);
         return name; \
     }
 
-GETMPV(ambient, bvec &);
+GETMPV(ambient, const bvec &);
 GETMPV(ambientscale, float);
-GETMPV(skylight, bvec &);
+GETMPV(skylight, const bvec &);
 GETMPV(skylightscale, float);
 GETMPV(fog, int);
-GETMPV(fogcolour, bvec &);
-GETMPV(skybgcolour, bvec &);
+GETMPV(fogcolour, const bvec &);
+GETMPV(skybgcolour, const bvec &);
 GETMPV(skybox, const char *);
-GETMPV(skycolour, bvec &);
+GETMPV(skycolour, const bvec &);
 GETMPV(skyblend, float);
 GETMPV(skyoverbright, float);
 GETMPV(skyoverbrightmin, float);
@@ -147,7 +147,7 @@ GETMPV(yawsky, int);
 GETMPV(pitchsky, int);
 GETMPV(rollsky, int);
 GETMPV(cloudbox, const char *);
-GETMPV(cloudcolour, bvec &);
+GETMPV(cloudcolour, const bvec &);
 GETMPV(cloudblend, float);
 GETMPV(spinclouds, float);
 GETMPV(spincloudspitch, float);
@@ -157,7 +157,7 @@ GETMPV(pitchclouds, int);
 GETMPV(rollclouds, int);
 GETMPV(cloudclip, float);
 GETMPV(cloudlayer, const char *);
-GETMPV(cloudlayercolour, bvec &);
+GETMPV(cloudlayercolour, const bvec &);
 GETMPV(cloudlayerblend, float);
 GETMPV(cloudoffsetx, float);
 GETMPV(cloudoffsety, float);
@@ -170,7 +170,7 @@ GETMPV(cloudheight, float);
 GETMPV(cloudfade, float);
 GETMPV(cloudsubdiv, int);
 GETMPV(envlayer, const char *);
-GETMPV(envlayercolour, bvec &);
+GETMPV(envlayercolour, const bvec &);
 GETMPV(envlayerblend, float);
 GETMPV(envoffsetx, float);
 GETMPV(envoffsety, float);
@@ -186,9 +186,9 @@ GETMPV(atmo, int);
 GETMPV(atmoplanetsize, float);
 GETMPV(atmoheight, float);
 GETMPV(atmobright, float);
-GETMPV(atmolight, bvec &);
+GETMPV(atmolight, const bvec &);
 GETMPV(atmolightscale, float);
-GETMPV(atmodisk, bvec &);
+GETMPV(atmodisk, const bvec &);
 GETMPV(atmodisksize, float);
 GETMPV(atmodiskcorona, float);
 GETMPV(atmodiskbright, float);
@@ -202,7 +202,7 @@ GETMPV(fogdomemin, float);
 GETMPV(fogdomemax, float);
 GETMPV(fogdomecap, int);
 GETMPV(fogdomeclip, float);
-GETMPV(fogdomecolour, bvec &);
+GETMPV(fogdomecolour, const bvec &);
 GETMPV(fogdomeclouds, int);
 GETMPV(skytexture, int);
 GETMPV(skyshadow, int);
@@ -298,7 +298,7 @@ void drawenvboxbg(float z1clip = 0.0f, float z2clip = 1.0f)
     if(z2clip >= 1) drawenvboxbgface( w,  w,  w, -w,  w,  w, -w, -w,  w,  w, -w,  w);
 }
 
-void drawenvoverlay(Texture *overlay, float height, int subdiv, float fade, float scale, bvec &colour, float blend, float tx = 0, float ty = 0)
+void drawenvoverlay(Texture *overlay, float height, int subdiv, float fade, float scale, const bvec &colour, float blend, float tx = 0, float ty = 0)
 {
     int w = farplane/2;
     float z = w*height, tsz = 0.5f*(1-fade)/scale, psz = w*(1-fade);

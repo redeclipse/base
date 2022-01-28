@@ -80,6 +80,6 @@ extern volatile bool check_calclight_progress;
 
 extern void check_calclight_canceled();
 
-extern bvec &getpielight();
-extern vec &getpielightdir();
+extern const bvec &getpielight();
+extern const vec &getpielightdir();
 extern float getpielightscale(), getpielightyaw(), getpielightpitch();
