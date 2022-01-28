@@ -61,6 +61,7 @@ namespace projs
         PRJ_FX_BOUNCE,
         PRJ_FX_DESTROY,
         PRJ_FX_LIFE,
+        PRJ_FX_TRIPWIRE,
 
         PRJ_NUM_FX_SUBTYPES
     };
@@ -80,7 +81,7 @@ namespace projs
 
         static const char *subtypes[PRJ_NUM_FX_SUBTYPES] =
         {
-            "HIT", "BOUNCE", "DESTROY", "LIFE"
+            "HIT", "BOUNCE", "DESTROY", "LIFE", "TRIPWIRE"
         };
 
         loopi(FX_P_TYPES) loopj(PRJ_NUM_FX_SUBTYPES)
@@ -108,22 +109,31 @@ namespace projs
         fx::emitter **hook = NULL;
         vec from = proj.o, to = proj.norm;
 
-        if(proj.weap >= 0)
+        if(proj.projtype == PRJ_SHOT && proj.weap >= 0)
         {
             color = bvec(FWCOL(H, fxcol, proj));
             scale = WF(WK(proj.flags), proj.weap, fxscale, WS(proj.flags))*proj.curscale*proj.lifesize;
             blend = WF(WK(proj.flags), proj.weap, fxblend, WS(proj.flags))*proj.curscale;
         }
 
-        if(subtype == PRJ_FX_LIFE)
+        switch(subtype)
         {
-            hook = &proj.effect;
-            if(proj.projtype == PRJ_SHOT)
+            case PRJ_FX_LIFE:
             {
+                hook = &proj.effect;
+                if(proj.projtype != PRJ_SHOT) break;
                 from = proj.trailpos;
                 to = proj.o;
+                break;
             }
+            case PRJ_FX_TRIPWIRE:
+            {
+                if(proj.projtype != PRJ_SHOT) break;
+                to = proj.trailpos;
+            }
+            default: break;
         }
+
 
         fx::emitter *e = fx::createfx(fxindex, from, to, blend, scale, color, NULL, hook);
         float param;
@@ -786,6 +796,15 @@ namespace projs
             proj.trailpos = proj.from;
             return;
         }
+        if(proj.projtype == PRJ_SHOT && proj.stuck && !proj.beenused && WF(WK(proj.flags), proj.weap, proxtype, WS(proj.flags)) == 2)
+        {
+            float dist = WX(WK(proj.flags), proj.weap, proxdist, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
+            int stucktime = lastmillis-proj.stuck, stuckdelay = WF(WK(proj.flags), proj.weap, proxdelay, WS(proj.flags));
+            if(stuckdelay && stuckdelay > stucktime) dist *= stucktime/float(stuckdelay);
+            float blocked = tracecollide(&proj, proj.o, proj.norm, dist, RAY_CLIPMAT|RAY_ALPHAPOLY, true);
+            proj.trailpos = vec(proj.o).add(vec(proj.norm).mul(blocked >= 0 ? blocked : dist));
+            return;
+        }
         vec dir(0, 0, 0);
         float dist = proj.o.dist(proj.from);
         if(!proj.child && dist > 0) dir = vec(proj.from).sub(proj.o).normalize();
@@ -1394,6 +1413,8 @@ namespace projs
 
         if(proj.projtype == PRJ_SHOT) updatetaper(proj, proj.distance);
         doprojfx(proj, PRJ_FX_LIFE);
+        if(proj.projtype == PRJ_SHOT && proj.stuck && !proj.beenused && WF(WK(proj.flags), proj.weap, proxtype, WS(proj.flags)) == 2)
+            doprojfx(proj, PRJ_FX_TRIPWIRE);
     }
 
     void destroy(projent &proj)

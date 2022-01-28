@@ -33,6 +33,7 @@ enum
     W_N_ADD = W_N_STADD|W_N_GRADD, W_N_IMM = W_N_STIMM|W_N_GRIMM,
     W_N_ST = W_N_STADD|W_N_STIMM, W_N_GR = W_N_GRADD|W_N_GRIMM,
     W_N_AI = W_N_STADD|W_N_GRADD|W_N_STIMM|W_N_GRIMM,
+    W_N_PIN = W_N_STADD|W_N_GRADD|W_N_STIMM|W_N_GRIMM,
     W_N_ALL = W_N_STADD|W_N_GRADD|W_N_STIMM|W_N_GRIMM|W_N_SLIDE
 };
 
@@ -555,8 +556,8 @@ WPFVARM(IDF_GAMEMOD, 0, fragskew, 0, FVAR_MAX,
     1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       0.0f,       1.0f,       1.0f
 );
 WPVARM(IDF_GAMEMOD, 0, fragspeed, 0, VAR_MAX,
-    0,          0,          0,          0,          0,          200,        0,          0,          0,          250,        750,        400,        0,
-    0,          0,          0,          0,          350,        250,        0,          0,          0,          250,        7500,       400,        0
+    0,          0,          0,          0,          0,          200,        0,          0,          0,          250,        10000,      400,        0,
+    0,          0,          0,          0,          350,        250,        0,          0,          0,          250,        10000,      400,        0
 );
 WPFVARM(IDF_GAMEMOD, 0, fragspeedmin, 0, FVAR_MAX,
     10.0f,      10.0f,      10.0f,      10.0f,      10.0f,      1.0f,       10.0f,      10.0f,      10.0f,      10.0f,      10.0f,      10.0f,      10.0f,
@@ -568,11 +569,11 @@ WPFVARM(IDF_GAMEMOD, 0, fragspeedmax, 0, FVAR_MAX,
 );
 WPFVARM(IDF_GAMEMOD, 0, fragspread, 0, FVAR_MAX,
     1.0f,       1.0f,       1.0f,       1.0f,       0.2f,       0.1f,       1.0f,       0.25f,      0.25f,      1.0f,       0.5f,       1.0f,       1.0f,
-    1.0f,       1.0f,       1.0f,       0.2f,       0.75f,      0.1f,       1.0f,       0.25f,      0.25f,      1.0f,       0.1f,       1.0f,       1.0f
+    1.0f,       1.0f,       1.0f,       0.2f,       0.75f,      0.1f,       1.0f,       0.25f,      0.25f,      1.0f,       0.0f,       1.0f,       1.0f
 );
 WPVARM(IDF_GAMEMOD, 0, fragtime, 1, VAR_MAX,
     500,        500,        500,        250,        500,        1000,       500,        500,        500,        750,        1000,       1000,       500,
-    500,        500,        500,        2000,       250,        3000,       500,        500,        500,        750,        1000,       1000,       500
+    500,        500,        500,        2000,       250,        3000,       500,        500,        500,        750,        100,        1000,       500
 );
 WPVARM(IDF_GAMEMOD, 0, fragtimedelay, 0, VAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,
@@ -1006,7 +1007,7 @@ WPFVARM(IDF_GAMEMOD, 0, relativity, 0, FVAR_MAX,
 WPVARK(IDF_GAMEMOD, 0, residual, 0, W_R_ALL,
     0,          0,          WR(BLEED),  0,          0,          WR(BURN),   0,          0,          0,          WR(BURN),   WR(SHOCK),  WR(BURN),   0,
     0,          0,          WR(BLEED),  WR(BLEED),  0,          0,          0,          WR(SHOCK),  0,          WR(BURN),   WR(SHOCK),  WR(BURN),   0,
-    0,          0,          WR(BLEED),  0,          0,          WR(BURN),   0,          0,          0,          WR(BURN),   WR(SHOCK),  WR(BURN),   0,
+    0,          0,          WR(BLEED),  0,          0,          WR(BURN),   0,          WR(SHOCK),  0,          WR(BURN),   WR(SHOCK),  WR(BURN),   0,
     0,          0,          WR(BLEED),  WR(BLEED),  0,          0,          0,          WR(SHOCK),  0,          WR(BURN),   WR(SHOCK),  WR(BURN),   0
 );
 WPVARK(IDF_GAMEMOD, 0, residualundo, 0, W_R_ALL,
@@ -1037,20 +1038,20 @@ WPVARK(IDF_GAMEMOD, 0, shockdamage, 0, VAR_MAX,
 WPVARK(IDF_GAMEMOD, 0, shockstun, 0, W_N_ALL,
     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,
     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,
-    W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,
-    W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST
+    W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_PIN,    W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,
+    W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_PIN,    W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST
 );
 WPFVARK(IDF_GAMEMOD, 0, shockstunscale, 0, FVAR_MAX,
     0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,
     0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,
-    0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,
-    0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f
+    0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.9f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,
+    0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f,       0.9f,       0.1f,       0.1f,       0.1f,       0.1f,       0.1f
 );
 WPFVARK(IDF_GAMEMOD, 0, shockstunfall, 0, FVAR_MAX,
     0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,
     0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,
-    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,
-    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f
+    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.9f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,
+    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.9f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f
 );
 WPVARK(IDF_GAMEMOD, 0, shockstuntime, 0, VAR_MAX,
     500,        500,        500,        500,        500,        500,        500,        500,        500,        500,        500,        500,        500,
