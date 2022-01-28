@@ -2123,7 +2123,6 @@ namespace projs
                         float dist = WX(WK(proj.flags), proj.weap, proxdist, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
                         int stucktime = lastmillis-proj.stuck, stuckdelay = WF(WK(proj.flags), proj.weap, proxdelay, WS(proj.flags));
                         if(stuckdelay && stuckdelay > stucktime) dist *= stucktime/float(stuckdelay);
-                        if(dist <= 1e-6f) proxim = 0;
                         int numdyns = game::numdynents();
                         gameent *oldstick = proj.stick;
                         proj.stick = NULL;
@@ -2138,22 +2137,16 @@ namespace projs
                                 proj.lifetime = min(proj.lifetime, WF(WK(proj.flags), proj.weap, proxtime, WS(proj.flags)));
                             }
                         }
+                        proj.stick = oldstick;
                         if(proxim == 2 && !proj.beenused)
                         {
-                            vec from = vec(proj.o).add(vec(proj.norm).mul(proj.radius*2)), to = vec(from).add(vec(proj.norm).mul(dist)), dir = vec(to).sub(from);
-                            float mag = dir.magnitude();
-                            if(mag > 1e-6f)
+                            float blocked = tracecollide(&proj, proj.o, proj.norm, dist, RAY_CLIPMAT|RAY_ALPHAPOLY, true, GUARDRADIUS);
+                            if(blocked >= 0 && collideplayer && collideplayer->state == CS_ALIVE && physics::issolid(collideplayer, &proj, true, false))
                             {
-                                dir.div(mag);
-                                float blocked = tracecollide(&proj, from, dir, mag, RAY_CLIPMAT|RAY_ALPHAPOLY, true, GUARDRADIUS);
-                                if(blocked >= 0 && collideplayer && collideplayer->state == CS_ALIVE && physics::issolid(collideplayer, &proj, true, false))
-                                {
-                                    proj.beenused = 1;
-                                    proj.lifetime = min(proj.lifetime, WF(WK(proj.flags), proj.weap, proxtime, WS(proj.flags)));
-                                }
+                                proj.beenused = 1;
+                                proj.lifetime = min(proj.lifetime, WF(WK(proj.flags), proj.weap, proxtime, WS(proj.flags)));
                             }
                         }
-                        proj.stick = oldstick;
                     }
                 }
                 if(proj.state == CS_DEAD)
