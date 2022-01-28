@@ -368,7 +368,8 @@ namespace physics
         if(gameent::is(d) && d->state == CS_ALIVE)
         {
             gameent *e = (gameent *)d;
-            if(isladder(e->inmaterial&MATF_FLAGS) && e->hasparkour()) return true;
+            if(isladder(e->inmaterial&MATF_FLAGS)) return true;
+            if(e->hasparkour()) return true;
         }
         return false;
     }
@@ -1084,11 +1085,16 @@ namespace physics
                 m.z = inliquid ? max(m.z, dz) : dz;
                 if(!m.iszero()) m.normalize();
             }
-            if(!e->hasparkour() && isladder(d->inmaterial&MATF_FLAGS) && !m.iszero()) m.add(vec(0, 0, m.z >= 0 ? 1 : -1)).normalize();
+            if(!e->hasparkour() && isladder(d->inmaterial&MATF_FLAGS) && !m.iszero()) m.addz(m.z >= 0 ? 1 : -1).normalize();
             slide = e->sliding();
         }
 
-        if(onfloor)
+        if(floating && d->physstate != PHYS_FLOAT)
+        {
+            d->physstate = PHYS_FLOAT;
+            d->airmillis = d->floormillis = 0;
+        }
+        else if(onfloor)
         {
             d->airmillis = 0;
             if(!d->floormillis) d->floormillis = lastmillis ? lastmillis : 1;
@@ -1110,15 +1116,7 @@ namespace physics
         d->vel.lerp(m, d->vel, pow(max(1.0f - 1.0f/coast, 0.0f), millis/20.0f));
 
         bool floorchk = d->floor.z > 0 && d->floor.z < floorz;
-        if(floating || (onfloor && !floorchk))
-        {
-            d->resetphys(false);
-            if(floating && d->physstate != PHYS_FLOAT)
-            {
-                d->physstate = PHYS_FLOAT;
-                d->airmillis = d->floormillis = 0;
-            }
-        }
+        if(floating || sticktospecial(d) || (d->physstate != PHYS_FALL && !floorchk)) d->resetphys(false);
         else
         {
             vec g = gravityvel(d, d->center(), millis/1000.f, d->getradius(), d->getheight(), d->inmaterial, d->submerged);
@@ -1127,7 +1125,7 @@ namespace physics
             if(inliquid || d->physstate >= PHYS_SLOPE)
             {
                 float coast = inliquid ? liquidmerge(d, PHYS(aircoast), LIQUIDPHYS(coast, d->inmaterial)) : PHYS(floorcoast)*coastscale(d->feetpos(-1)),
-                        c = inliquid ? 1.0f : clamp((d->floor.z-slopez)/(floorz-slopez), 0.0f, 1.0f);
+                        floordiff = floorz-slopez, c = inliquid || floordiff == 0 ? 1.0f : clamp((d->floor.z-slopez)/floordiff, 0.0f, 1.0f);
                 d->falling.mul(pow(max(1.0f - c/coast, 0.0f), millis/20.0f));
             }
         }
