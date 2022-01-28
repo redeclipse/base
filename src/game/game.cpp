@@ -1223,7 +1223,7 @@ namespace game
     void footstep(gameent *d, int curfoot)
     {
         if(!actors[d->actortype].steps) return;
-        bool moving = d->move || d->strafe, liquid = physics::liquidcheck(d), onfloor = d->physstate >= PHYS_SLOPE || isladder(d->inmaterial&MATF_FLAGS) || d->impulse[IM_TYPE] == IM_T_PARKOUR;
+        bool moving = d->move || d->strafe, liquid = physics::liquidcheck(d), onfloor = d->physstate >= PHYS_SLOPE || isladder(d->inmaterial&MATF_FLAGS) || d->hasparkour();
         if(curfoot < 0 || (moving && (liquid || onfloor)))
         {
             float mag = d->vel.magnitude(), m = min(footstepsoundmax, footstepsoundmin), n = max(footstepsoundmax, footstepsoundmin);
@@ -1302,7 +1302,7 @@ namespace game
             d->actiontime[AC_CROUCH] = 0;
         }
 
-        d->o.z += d->airmillis && d->impulse[IM_TYPE] != IM_T_VAULT ? offset : d->height;
+        d->o.z += d->airmillis ? offset : d->height;
         float feetz = d->feetpos().z;
         if(feetz < minz) d->o.z += minz-feetz; // ensure player doesn't end up lower than they were
 

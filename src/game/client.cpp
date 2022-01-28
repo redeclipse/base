@@ -2555,12 +2555,12 @@ namespace client
                             createshape(PART_SMOKE, int(t->radius), 0x222222, 21, 20, 250, t->feetpos(), 1, 1, -10, 0, 10.f);
                             break;
                         }
-                        case SPHY_BOOST: case SPHY_DASH: case SPHY_POUND: case SPHY_SLIDE: case SPHY_LAUNCH: case SPHY_MELEE: case SPHY_KICK: case SPHY_GRAB: case SPHY_PARKOUR: case SPHY_VAULT: case SPHY_AFTER:
+                        case SPHY_BOOST: case SPHY_DASH: case SPHY_POUND: case SPHY_SLIDE: case SPHY_LAUNCH: case SPHY_MELEE: case SPHY_KICK: case SPHY_GRAB: case SPHY_PARKOUR: case SPHY_VAULT: case SPHY_AFTER: case SPHY_FLING:
                         {
                             if(!proceed) break;
-                            t->doimpulse(IM_T_BOOST+(st-SPHY_BOOST), lastmillis);
+                            if(st != SPHY_FLING) t->doimpulse(IM_T_BOOST+(st-SPHY_BOOST), lastmillis);
                             game::impulseeffect(t);
-                            if(st == SPHY_KICK || st == SPHY_PARKOUR || st == SPHY_MELEE) game::footstep(d);
+                            if(st == SPHY_KICK || st == SPHY_MELEE) game::footstep(d);
                             break;
                         }
                         case SPHY_EXTINGUISH:
