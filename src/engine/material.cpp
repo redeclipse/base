@@ -678,7 +678,7 @@ void rendermaterialmask()
     loopk(4) { vector<materialsurface> &surfs = glasssurfs[k]; loopv(surfs) drawmaterial(surfs[i], 0.1f); }
     loopk(4) { vector<materialsurface> &surfs = watersurfs[k]; loopv(surfs) drawmaterial(surfs[i], WATER_OFFSET); }
     loopk(4) { vector<materialsurface> &surfs = waterfallsurfs[k]; loopv(surfs) drawmaterial(surfs[i], 0.1f); }
-    vector<materialsurface> &surfs = volfogsurfs; loopv(surfs) drawmaterial(surfs[i], WATER_OFFSET);
+    vector<materialsurface> &surfs = volfogsurfs; loopv(surfs) drawmaterial(surfs[i], 0.f);
     xtraverts += gle::end();
     glEnable(GL_CULL_FACE);
 }

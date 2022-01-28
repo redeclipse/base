@@ -1814,13 +1814,14 @@ VAR(0, fogoverlay, 0, 1, 1);
 
 static float findsurface(int fogmat, const vec &v, int &abovemat)
 {
-    fogmat &= MATF_VOLUME;
+    bool isvol = (fogmat&MATF_VOLUME) != 0;
+    if(isvol) fogmat &= MATF_VOLUME;
     ivec o(v), co;
     int csize;
     do
     {
         cube &c = lookupcube(o, 0, co, csize);
-        int mat = c.material&MATF_VOLUME;
+        int mat = isvol ? c.material&MATF_VOLUME : c.material&MAT_VOLFOG;
         if(mat != fogmat)
         {
             abovemat = isliquid(mat) ? c.material : MAT_AIR;
@@ -1843,7 +1844,8 @@ static void getcamfogmat(int &fogmat, int &abovemat, float &fogbelow)
     else if(mat&MAT_VOLFOG) fogmat = MAT_VOLFOG;
     if(fogmat != MAT_AIR)
     {
-        float z = findsurface(fogmat, vec(camera1->o.x, camera1->o.y, camera1->o.z - fogmargin), abovemat) - WATER_OFFSET;
+        float z = findsurface(fogmat, vec(camera1->o.x, camera1->o.y, camera1->o.z - fogmargin), abovemat);
+        if(isliquid(mat&MATF_VOLUME)) z -= WATER_OFFSET;
         if(camera1->o.z < z + fogmargin) fogbelow = z - camera1->o.z;
         else fogmat = abovemat;
     }

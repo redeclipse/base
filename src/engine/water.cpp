@@ -187,10 +187,9 @@ static inline void vertwq(float v1, float v2, float v3)
     gle::attribf(v1, v2, v3+whphase);
 }
 
-static inline void vertwn(float v1, float v2, float v3)
+static inline void vertwn(float v1, float v2, float v3, float offset)
 {
-    float h = -WATER_OFFSET;
-    gle::attribf(v1, v2, v3+h);
+    gle::attribf(v1, v2, v3-offset);
 }
 
 struct waterstrip
@@ -356,20 +355,20 @@ int renderwaterlod(int x, int y, int z, int size, int mat)
     }
 }
 
-void renderflatwater(int x, int y, int z, int rsize, int csize, int mat = MAT_AIR)
+void renderflatwater(int x, int y, int z, int rsize, int csize, float offset, int mat = MAT_AIR)
 {
     if(gle::attribbuf.empty()) { gle::defvertex(); gle::begin(GL_QUADS); }
-    vertwn(x,       y,       z);
-    vertwn(x+rsize, y,       z);
-    vertwn(x+rsize, y+csize, z);
-    vertwn(x,       y+csize, z);
+    vertwn(x,       y,       z, offset);
+    vertwn(x+rsize, y,       z, offset);
+    vertwn(x+rsize, y+csize, z, offset);
+    vertwn(x,       y+csize, z, offset);
 }
 
 VARF(IDF_WORLD, vertwater, 0, 1, 1, if(!(identflags&IDF_WORLD)) allchanged());
 
 static inline void renderwater(const materialsurface &m, int mat = MAT_WATER)
 {
-    if(!vertwater || drawtex == DRAWTEX_MINIMAP) renderflatwater(m.o.x, m.o.y, m.o.z, m.rsize, m.csize, mat);
+    if(!vertwater || drawtex == DRAWTEX_MINIMAP) renderflatwater(m.o.x, m.o.y, m.o.z, m.rsize, m.csize, WATER_OFFSET, mat);
     else if(renderwaterlod(m.o.x, m.o.y, m.o.z, m.csize, mat) >= int(m.csize) * 2)
         rendervertwater(m.csize, m.o.x, m.o.y, m.o.z, m.csize, mat);
 }
@@ -783,8 +782,8 @@ void rendervolfog()
         loopv(surfs)
         {
             materialsurface &m = surfs[i];
-            if(camera1->o.z < m.o.z - WATER_OFFSET) continue;
-            renderflatwater(m.o.x, m.o.y, m.o.z, m.rsize, m.csize);
+            if(camera1->o.z < m.o.z) continue;
+            renderflatwater(m.o.x, m.o.y, m.o.z, m.rsize, m.csize, 0.f);
         }
         if(gle::attribbuf.length()) xtraverts += gle::end();
     }
@@ -795,8 +794,8 @@ void rendervolfog()
         loopv(surfs)
         {
             materialsurface &m = surfs[i];
-            if(camera1->o.z >= m.o.z - WATER_OFFSET) continue;
-            renderflatwater(m.o.x, m.o.y, m.o.z, m.rsize, m.csize);
+            if(camera1->o.z >= m.o.z) continue;
+            renderflatwater(m.o.x, m.o.y, m.o.z, m.rsize, m.csize, 0.f);
         }
         if(gle::attribbuf.length()) xtraverts += gle::end();
     }
