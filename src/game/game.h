@@ -1860,7 +1860,6 @@ struct gameent : dynent, clientstate
         }
         turnside = side;
         turnmillis = turn;
-        turnside = 0;
         turnyaw = yaw;
         turnroll = roll;
     }

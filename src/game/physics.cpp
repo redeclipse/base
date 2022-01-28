@@ -23,7 +23,6 @@ namespace physics
     VAR(IDF_PERSIST, impulseturntime, 0, 250, VAR_MAX);
     FVAR(IDF_PERSIST, impulseturnroll, 0, 15, 89);
     FVAR(IDF_PERSIST, impulseturnscale, 0, 1, 1);
-    FVAR(IDF_PERSIST, impulseturnswitch, 0, 1, 1);
 
     VAR(IDF_PERSIST, crouchstyle, 0, 0, 2); // 0 = press and hold, 1 = double-tap toggle, 2 = toggle
     VAR(IDF_PERSIST, walkstyle, 0, 0, 2); // 0 = press and hold, 1 = double-tap toggle, 2 = toggle
@@ -998,20 +997,19 @@ namespace physics
                             if(mag > 0)
                             {
                                 d->vel = vec(rft).mul(mag).add(keepvel);
-                                d->doimpulse(IM_T_PARKOUR, lastmillis, cost, side, impulseturntime, side ? off*impulseturnscale : 0, side ? (impulseturnroll*d->turnside)-d->roll : 0);
+                                d->doimpulse(IM_T_PARKOUR, lastmillis, cost, side, impulseturntime, side ? off*impulseturnscale : 0.f, side ? (impulseturnroll*side)-d->roll : 0.f);
                                 client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_PARKOUR);
                                 game::impulseeffect(d);
                                 game::footstep(d);
                             }
                             else continue;
                         }
-                        if(d->turnside != side)
+                        else if(d->turnside != side)
                         {
+                            d->turnside = side;
                             d->turnmillis = impulseturntime;
-                            d->turnyaw = side ? off*impulseturnswitch : 0;
-                            d->turnroll = side ? (impulseturnroll*d->turnside)-d->roll : 0;
+                            d->turnroll = side ? (impulseturnroll*side)-d->roll : 0.f;
                         }
-                        d->turnside = side;
                         m = rft; // re-project and override
                         found = true;
                         break;
