@@ -419,7 +419,7 @@ void setupmaterials(int start, int len)
         }
     }
     if(hasmat&(0xF<<MAT_WATER) || hasmat&(0xF<<MAT_VOLFOG)) useshaderbyname("minimapvol");
-    if(hasmat&(0xF<<MAT_WATER) || hasmat&(0xF<<MAT_LAVA) || hasmat&(0xF<<MAT_VOLFOG)) useshaderbyname("fogvolume");
+    if(hasmat&(0xF<<MAT_WATER) || hasmat&(0xF<<MAT_LAVA) || hasmat&(0xF<<MAT_VOLFOG)) useshaderbyname("depthfog");
     if(hasmat&(0xF<<MAT_WATER))
     {
         loadcaustics(true);

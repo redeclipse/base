@@ -78,7 +78,7 @@ void rendercaustics(float surface, float syl, float syr)
     gle::end();
 }
 
-void renderfogvolume(int mat, float surface)
+void renderdepthfog(int mat, float surface)
 {
     glDepthFunc(GL_NOTEQUAL);
     glDepthMask(GL_FALSE);
@@ -138,7 +138,7 @@ void renderfogvolume(int mat, float surface)
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    SETSHADER(fogvolume);
+    SETSHADER(depthfog);
     gle::defvertex(3);
     gle::begin(GL_TRIANGLE_STRIP);
     gle::attribf(1, -1, 1);
