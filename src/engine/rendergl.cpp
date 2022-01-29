@@ -1835,16 +1835,15 @@ static float findsurface(int fogmat, const vec &v, int &abovemat)
 
 static void getcamfogmat(int &fogmat, int &abovemat, float &fogbelow)
 {
-    float fogmargin = 1 + WATER_AMPLITUDE + nearplane;
     fogmat = abovemat = MAT_AIR;
-    int mat = lookupmaterial(vec(camera1->o.x, camera1->o.y, camera1->o.z - fogmargin));
+    int mat = lookupmaterial(camera1->o);
     fogbelow = 0;
     if(isfogvol(mat&MATF_VOLUME))
     {
         fogmat = mat&(MATF_VOLUME|MATF_INDEX);
-        float z = findsurface(fogmat, vec(camera1->o.x, camera1->o.y, camera1->o.z - fogmargin), abovemat);
-        if(isliquid(mat&MATF_VOLUME)) z -= WATER_OFFSET;
-        if(camera1->o.z < z + fogmargin) fogbelow = z - camera1->o.z;
+        float z = findsurface(fogmat, camera1->o, abovemat);
+        if(isliquid(fogmat)) z -= VOLUME_OFFSET;
+        if(camera1->o.z < z) fogbelow = z - camera1->o.z;
         else fogmat = abovemat;
     }
 }

@@ -27,8 +27,9 @@ struct mapzcompat43 : binary
     char gameid[4];
 };
 
-#define WATER_AMPLITUDE 0.4f
-#define WATER_OFFSET 1.1f
+#define VOLUME_AMPLITUDE 0.4f
+#define VOLUME_OFFSET 1.1f
+#define VOLUME_INSET 0.1f
 
 enum
 {

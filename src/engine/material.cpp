@@ -522,7 +522,7 @@ void rendermatgrid()
             }
             lastmat = m.material;
         }
-        drawmaterial(m, -0.1f, color);
+        drawmaterial(m, -VOLUME_INSET, color);
     }
     xtraverts += gle::end();
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -645,7 +645,7 @@ int findmaterials()
             {
                 materialsurface &m = va->matbuf[i];
                 if((m.material&MATF_VOLUME) != MAT_VOLFOG || m.visible == MATSURF_EDIT_ONLY) { i += m.skip; continue; }
-                hasmats |= 4|1;
+                hasmats |= 1;
                 if(m.orient == O_TOP) volfogsurfs[m.material&MATF_INDEX].put(&m, 1+int(m.skip));
                 i += m.skip;
             }
@@ -677,10 +677,10 @@ int findmaterials()
 void rendermaterialmask()
 {
     glDisable(GL_CULL_FACE);
-    loopk(4) { vector<materialsurface> &surfs = glasssurfs[k]; loopv(surfs) drawmaterial(surfs[i], 0.1f); }
-    loopk(4) { vector<materialsurface> &surfs = watersurfs[k]; loopv(surfs) drawmaterial(surfs[i], WATER_OFFSET); }
-    loopk(4) { vector<materialsurface> &surfs = waterfallsurfs[k]; loopv(surfs) drawmaterial(surfs[i], 0.1f); }
-    loopk(4) { vector<materialsurface> &surfs = volfogsurfs[k]; loopv(surfs) drawmaterial(surfs[i], 0.f); }
+    loopk(4) { vector<materialsurface> &surfs = glasssurfs[k]; loopv(surfs) drawmaterial(surfs[i], VOLUME_INSET); }
+    loopk(4) { vector<materialsurface> &surfs = watersurfs[k]; loopv(surfs) drawmaterial(surfs[i], VOLUME_OFFSET); }
+    loopk(4) { vector<materialsurface> &surfs = waterfallsurfs[k]; loopv(surfs) drawmaterial(surfs[i], VOLUME_INSET); }
+    //loopk(4) { vector<materialsurface> &surfs = volfogsurfs[k]; loopv(surfs) drawmaterial(surfs[i], 0.f); }
     xtraverts += gle::end();
     glEnable(GL_CULL_FACE);
 }
@@ -743,7 +743,7 @@ void renderglass()
                 glBindTexture(GL_TEXTURE_CUBE_MAP, lookupenvmap(m.envmap));
                 envmap = m.envmap;
             }
-            drawglass(m, 0.1f);
+            drawglass(m, VOLUME_INSET);
         }
         xtraverts += gle::end();
     }
@@ -803,7 +803,7 @@ void rendereditmaterials()
             color.mul(editmatscale, editmatscale, editmatscale, editmatblend);
             lastmat = m.material;
         }
-        drawmaterial(m, -0.1f, color);
+        drawmaterial(m, -VOLUME_INSET, color);
     }
 
     xtraverts += gle::end();
