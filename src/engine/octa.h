@@ -133,17 +133,17 @@ struct vtxarray
     materialsurface *matbuf; // buffer of material surfaces
     int verts, tris, texs, blendtris, blends, alphabacktris, alphaback, alphafronttris, alphafront, refracttris, refract, alphatris, texmask, sky, matsurfs, matmask, distance, rdistance, dyntexs, dynalphatexs, decaltris, decaltexs;
     ivec o;
-    int size;                // location and size of cube.
-    ivec geommin, geommax;   // BB of geom
-    ivec alphamin, alphamax; // BB of alpha geom
-    ivec refractmin, refractmax; // BB of refract geom
-    ivec skymin, skymax;     // BB of any sky geom
-    ivec lavamin, lavamax;   // BB of any lava
-    ivec watermin, watermax; // BB of any water
-    ivec glassmin, glassmax; // BB of any glass
-    ivec volfogmin, volfogmax;   // BB of any volfog
-    ivec nogimin, nogimax;   // BB of any nogi
-    ivec bbmin, bbmax;       // BB of everything including children
+    int size;                   // location and size of cube.
+    ivec geommin, geommax;      // BB of geom
+    ivec alphamin, alphamax;    // BB of alpha geom
+    ivec refractmin, refractmax;// BB of refract geom
+    ivec skymin, skymax;        // BB of any sky geom
+    ivec lavamin, lavamax;      // BB of any lava
+    ivec watermin, watermax;    // BB of any water
+    ivec glassmin, glassmax;    // BB of any glass
+    ivec volfogmin, volfogmax;  // BB of any volfog
+    ivec nogimin, nogimax;      // BB of any nogi
+    ivec bbmin, bbmax;          // BB of everything including children
     uchar curvfc, occluded;
     occludequery *query;
     vector<octaentities *> mapmodels, decals;

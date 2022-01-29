@@ -547,10 +547,8 @@ struct vacollect : verthash
                 if(m.visible == MATSURF_EDIT_ONLY) continue;
                 switch(m.material)
                 {
-                    case MAT_GLASS: case MAT_LAVA: case MAT_WATER: break;
-                    default:
-                        if(m.material&MAT_VOLFOG) break;
-                        continue;
+                    case MAT_GLASS: case MAT_LAVA: case MAT_WATER: case MAT_VOLFOG: break;
+                    default: continue;
                 }
                 va->matmask |= 1<<m.material;
             }

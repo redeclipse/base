@@ -1814,17 +1814,16 @@ VAR(0, fogoverlay, 0, 1, 1);
 
 static float findsurface(int fogmat, const vec &v, int &abovemat)
 {
-    bool isvol = (fogmat&MATF_VOLUME) != 0;
-    if(isvol) fogmat &= MATF_VOLUME;
+    fogmat &= MATF_VOLUME;
     ivec o(v), co;
     int csize;
     do
     {
         cube &c = lookupcube(o, 0, co, csize);
-        int mat = isvol ? c.material&MATF_VOLUME : c.material&MAT_VOLFOG;
+        int mat = c.material&MATF_VOLUME;
         if(mat != fogmat)
         {
-            abovemat = isliquid(mat) ? c.material : MAT_AIR;
+            abovemat = isfogvol(mat) ? c.material : MAT_AIR;
             return o.z;
         }
         o.z = co.z + csize;
@@ -1840,10 +1839,9 @@ static void getcamfogmat(int &fogmat, int &abovemat, float &fogbelow)
     fogmat = abovemat = MAT_AIR;
     int mat = lookupmaterial(vec(camera1->o.x, camera1->o.y, camera1->o.z - fogmargin));
     fogbelow = 0;
-    if(isliquid(mat&MATF_VOLUME)) fogmat = mat&(MATF_VOLUME|MATF_INDEX);
-    else if(mat&MAT_VOLFOG) fogmat = MAT_VOLFOG;
-    if(fogmat != MAT_AIR)
+    if(isfogvol(mat&MATF_VOLUME))
     {
+        fogmat = mat&(MATF_VOLUME|MATF_INDEX);
         float z = findsurface(fogmat, vec(camera1->o.x, camera1->o.y, camera1->o.z - fogmargin), abovemat);
         if(isliquid(mat&MATF_VOLUME)) z -= WATER_OFFSET;
         if(camera1->o.z < z + fogmargin) fogbelow = z - camera1->o.z;
@@ -1865,12 +1863,11 @@ static void getmatfog(int fogmat, float &start, float &end)
             end = getlavafog(fogmat);
             break;
 
+        case MAT_VOLFOG:
+            end = getvolfogdist(fogmat);
+            break;
+
         default:
-            if(fogmat&MAT_VOLFOG)
-            {
-                end = getvolfogdist();
-                break;
-            }
             start = (getfog()+64)/8;
             end = getfog();
             break;
@@ -1905,18 +1902,19 @@ static void blendfog(int fogmat, float below, float blend, float logblend, float
             break;
         }
 
+        case MAT_VOLFOG:
+        {
+            const bvec &wcol = getvolfogcolour(fogmat), &wdeepcol = getvolfogdeepcolour(fogmat);
+            float wdeep = getvolfogdeep(fogmat);
+            float deepfade = clamp(below/max(wdeep, matend), 0.0f, 1.0f);
+            vec color;
+            color.lerp(wcol.tocolor(), wdeepcol.tocolor(), deepfade);
+            fogc.add(vec(color).mul(blend));
+            end += logblend*min((float)getfog(), max(matend*2, 16.0f));
+            break;
+        }
+
         default:
-            if(fogmat&MAT_VOLFOG)
-            {
-                const bvec &wcol = getvolfogcolour(), &wdeepcol = getvolfogdeepcolour();
-                float wdeep = getvolfogdeep();
-                float deepfade = clamp(below/max(wdeep, matend), 0.0f, 1.0f);
-                vec color;
-                color.lerp(wcol.tocolor(), wdeepcol.tocolor(), deepfade);
-                fogc.add(vec(color).mul(blend));
-                end += logblend*min((float)getfog(), max(matend*2, 16.0f));
-                break;
-            }
             fogc.add(getfogcolour().tocolor().mul(blend));
             start += logblend*matstart;
             end += logblend*matend;
@@ -2003,16 +2001,17 @@ static void blendfogoverlay(int fogmat, float below, float blend, vec &overlay)
             break;
         }
 
+        case MAT_VOLFOG:
+        {
+            const bvec &wcol = getvolfogcolour(fogmat), &wdeepcol = getvolfogdeepcolour(fogmat);
+            int wfog = getvolfogdist(fogmat), wdeep = getvolfogdeep(fogmat);
+            float deepfade = clamp(below/max(wdeep, wfog), 0.0f, 1.0f);
+            vec color = vec(wcol.r, wcol.g, wcol.b).lerp(vec(wdeepcol.r, wdeepcol.g, wdeepcol.b), deepfade);
+            overlay.add(color.div(min(32.0f + max(color.r, max(color.g, color.b))*7.0f/8.0f, 255.0f)).max(0.4f).mul(blend));
+            break;
+        }
+
         default:
-            if(fogmat&MAT_VOLFOG)
-            {
-                const bvec &wcol = getvolfogcolour(), &wdeepcol = getvolfogdeepcolour();
-                int wfog = getvolfogdist(), wdeep = getvolfogdeep();
-                float deepfade = clamp(below/max(wdeep, wfog), 0.0f, 1.0f);
-                vec color = vec(wcol.r, wcol.g, wcol.b).lerp(vec(wdeepcol.r, wdeepcol.g, wdeepcol.b), deepfade);
-                overlay.add(color.div(min(32.0f + max(color.r, max(color.g, color.b))*7.0f/8.0f, 255.0f)).max(0.4f).mul(blend));
-                break;
-            }
             overlay.add(blend);
             break;
     }

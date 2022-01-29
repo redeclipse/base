@@ -594,7 +594,7 @@ void saveslotconfig(stream *h, Slot &s, int index, bool decal)
             if(s.grassheight > 0) h->printf("texgrassheight %d\n", s.grassheight);
         }
         if(s.variants->coastscale != 1) h->printf("texcoastscale %f\n", s.variants->coastscale);
-        
+
         if(s.tags && s.tags[0]) h->printf("textags %s\n", escapestring(s.tags));
     }
     h->printf("\n");
@@ -643,7 +643,7 @@ void save_config(char *mname, bool forcesave = false)
     {
         switch(i&MATF_VOLUME)
         {
-            case MAT_WATER: case MAT_GLASS: case MAT_LAVA:
+            case MAT_WATER: case MAT_GLASS: case MAT_LAVA: case MAT_VOLFOG:
                 saveslotconfig(h, materialslots[i], -i, false);
                 break;
         }
@@ -940,7 +940,7 @@ static void sanevars()
 
 const char *variantvars[] = {
     "ambient", "ambientscale", "skylight", "skylightscale", "fog", "fogcolour", "skybgcolour", "skybox", "skycolour", "skyblend", "skyoverbright", "skyoverbrightmin",
-    "skyoverbrightthreshold", "spinsky", "spinskypitch", "spinskyroll", "yawsky", "pitchsky", "rollsky", "cloudbox", "cloudcolour", "cloudblend", 
+    "skyoverbrightthreshold", "spinsky", "spinskypitch", "spinskyroll", "yawsky", "pitchsky", "rollsky", "cloudbox", "cloudcolour", "cloudblend",
     "spinclouds", "spincloudspitch", "spincloudsroll", "yawclouds", "pitchclouds", "rollclouds", "cloudclip", "cloudlayer", "cloudlayercolour",
     "cloudlayerblend", "cloudoffsetx", "cloudoffsety", "cloudscrollx", "cloudscrolly", "cloudscale", "spincloudlayer", "yawcloudlayer", "cloudheight", "cloudfade",
     "cloudsubdiv", "envlayer", "envlayercolour", "envlayerblend", "envoffsetx", "envoffsety", "envscrollx", "envscrolly", "envscale", "spinenvlayer", "yawenvlayer",

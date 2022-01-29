@@ -38,6 +38,7 @@ enum
 };
 
 #define isliquid(mat) ((mat) == MAT_WATER || (mat) == MAT_LAVA)
+#define isfogvol(mat) ((mat) == MAT_WATER || (mat) == MAT_LAVA || (mat) == MAT_VOLFOG)
 #define isclipped(mat) ((mat) == MAT_GLASS)
 #define isdeadly(mat) ((mat) == MAT_LAVA)
 #define isladder(mat) (((mat)&MAT_LADDER) != 0)

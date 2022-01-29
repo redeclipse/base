@@ -692,6 +692,7 @@ GSVAR(0, 0, obitspawn, "tried to spawn inside solid matter");
 GSVAR(0, 0, obitspectator, "gave up their corporeal form");
 GSVAR(0, 0, obitdrowned, "drowned");
 GSVAR(0, 0, obitmelted, "melted into a ball of fire");
+GSVAR(0, 0, obitchoked, "choked to death");
 GSVAR(0, 0, obitdeathmat, "met their end");
 GSVAR(0, 0, obithurtmat, "stayed under too long");
 GSVAR(0, 0, obitlost, "fell to their death");

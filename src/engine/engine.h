@@ -645,7 +645,7 @@ extern float matliquidsx1, matliquidsy1, matliquidsx2, matliquidsy2;
 extern float matsolidsx1, matsolidsy1, matsolidsx2, matsolidsy2;
 extern float matrefractsx1, matrefractsy1, matrefractsx2, matrefractsy2;
 extern uint matliquidtiles[LIGHTTILE_MAXH], matsolidtiles[LIGHTTILE_MAXH];
-extern vector<materialsurface> editsurfs, glasssurfs[4], watersurfs[4], waterfallsurfs[4], lavasurfs[4], lavafallsurfs[4], volfogsurfs;
+extern vector<materialsurface> editsurfs, glasssurfs[4], watersurfs[4], waterfallsurfs[4], lavasurfs[4], lavafallsurfs[4], volfogsurfs[4];
 extern const bvec4 matnormals[6];
 
 extern int showmat;
@@ -713,11 +713,11 @@ extern const bvec &getglasscolour(int mat);
 extern float getglassrefract(int mat);
 extern int getglassspec(int mat);
 
-extern const bvec &getvolfogcolour();
-extern const bvec &getvolfogdeepcolour();
-extern const bvec &getvolfogdeepfade();
-extern int getvolfogdist();
-extern int getvolfogdeep();
+extern const bvec &getvolfogcolour(int mat);
+extern const bvec &getvolfogdeepcolour(int mat);
+extern const bvec &getvolfogdeepfade(int mat);
+extern int getvolfogdist(int mat);
+extern int getvolfogdeep(int mat);
 
 extern void renderwater();
 extern void renderwaterfalls();

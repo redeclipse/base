@@ -602,19 +602,19 @@ enum
 
 enum // cube empty-space materials
 {
-    MAT_AIR   = 0,                      // the default, fill the empty space with air
-    MAT_WATER = 1 << MATF_VOLUME_SHIFT, // fill with water, showing waves at the surface
-    MAT_LAVA  = 2 << MATF_VOLUME_SHIFT, // fill with lava
-    MAT_GLASS = 3 << MATF_VOLUME_SHIFT, // behaves like clip but is textured, etc
+    MAT_AIR    = 0,                      // the default, fill the empty space with air
+    MAT_WATER  = 1 << MATF_VOLUME_SHIFT, // fill with water, showing waves at the surface
+    MAT_LAVA   = 2 << MATF_VOLUME_SHIFT, // fill with lava
+    MAT_GLASS  = 3 << MATF_VOLUME_SHIFT, // behaves like clip but is textured, etc
+    MAT_VOLFOG = 4 << MATF_VOLUME_SHIFT, // volumetric fog
 
-    MAT_NOCLIP = 1 << MATF_CLIP_SHIFT,  // collisions always treat cube as empty
-    MAT_CLIP   = 2 << MATF_CLIP_SHIFT,  // collisions always treat cube as solid
-    MAT_AICLIP = 3 << MATF_CLIP_SHIFT,  // clip waypoints etc
+    MAT_NOCLIP = 1 << MATF_CLIP_SHIFT,   // collisions always treat cube as empty
+    MAT_CLIP   = 2 << MATF_CLIP_SHIFT,   // collisions always treat cube as solid
+    MAT_AICLIP = 3 << MATF_CLIP_SHIFT,   // clip waypoints etc
 
-    MAT_DEATH  = 1 << MATF_FLAG_SHIFT,  // force player suicide
-    MAT_LADDER = 2 << MATF_FLAG_SHIFT,  // acts as ladder (move up/down)
-    MAT_ALPHA  = 4 << MATF_FLAG_SHIFT,  // alpha blended
-    MAT_HURT   = 8 << MATF_FLAG_SHIFT,  // hurt at intervals
-    MAT_NOGI   = 16 << MATF_FLAG_SHIFT, // disable global illumination
-    MAT_VOLFOG = 32 << MATF_FLAG_SHIFT  // volumetric fog
+    MAT_DEATH  = 1 << MATF_FLAG_SHIFT,   // force player suicide
+    MAT_LADDER = 2 << MATF_FLAG_SHIFT,   // acts as ladder (move up/down)
+    MAT_ALPHA  = 4 << MATF_FLAG_SHIFT,   // alpha blended
+    MAT_HURT   = 8 << MATF_FLAG_SHIFT,   // hurt at intervals
+    MAT_NOGI   = 16 << MATF_FLAG_SHIFT   // disable global illumination
 };

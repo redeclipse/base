@@ -162,6 +162,7 @@ namespace game
         }
     OBITVARS(lava)
     OBITVARS(water)
+    OBITVARS(volfog)
     SVAR(IDF_WORLD, obitdeath, "");
     SVAR(IDF_WORLD, obithurt, "");
     SVAR(IDF_WORLD, obitfall, "");
@@ -1754,6 +1755,7 @@ namespace game
             else if(flags&HIT(SPEC)) concatstring(d->obit, obitspectator);
             else if(flags&HIT(MATERIAL) && curmat&MAT_WATER) concatstring(d->obit, getobitwater(material, obitdrowned));
             else if(flags&HIT(MATERIAL) && curmat&MAT_LAVA) concatstring(d->obit, getobitlava(material, obitmelted));
+            else if(flags&HIT(MATERIAL) && curmat&MAT_VOLFOG) concatstring(d->obit, getobitvolfog(material, obitchoked));
             else if(flags&HIT(MATERIAL) && material&MAT_HURT) concatstring(d->obit, *obithurt ? obithurt : obithurtmat);
             else if(flags&HIT(MATERIAL)) concatstring(d->obit, *obitdeath ? obitdeath : obitdeathmat);
             else if(flags&HIT(LOST)) concatstring(d->obit, *obitfall ? obitfall : obitlost);
