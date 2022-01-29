@@ -1841,8 +1841,7 @@ static void getcamfogmat(int &fogmat, int &abovemat, float &fogbelow)
     if(isfogvol(mat&MATF_VOLUME))
     {
         fogmat = mat&(MATF_VOLUME|MATF_INDEX);
-        float z = findsurface(fogmat, camera1->o, abovemat);
-        if(isliquid(fogmat)) z -= VOLUME_OFFSET;
+        float z = findsurface(fogmat, camera1->o, abovemat) - VOLUME_OFFSET;
         if(camera1->o.z < z) fogbelow = z - camera1->o.z;
         else fogmat = abovemat;
     }

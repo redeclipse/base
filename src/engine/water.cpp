@@ -839,8 +839,8 @@ void rendervolfog()
             loopv(surfs)
             {
                 materialsurface &m = surfs[i];
-                if(camera1->o.z < m.o.z) continue;
-                renderflatvolume(m.o.x, m.o.y, m.o.z, m.rsize, m.csize, 0.f);
+                if(camera1->o.z < m.o.z - VOLUME_OFFSET) continue;
+                renderflatvolume(m.o.x, m.o.y, m.o.z, m.rsize, m.csize, VOLUME_OFFSET);
             }
             if(gle::attribbuf.length()) xtraverts += gle::end();
         }
@@ -851,8 +851,8 @@ void rendervolfog()
             loopv(surfs)
             {
                 materialsurface &m = surfs[i];
-                if(camera1->o.z >= m.o.z) continue;
-                renderflatvolume(m.o.x, m.o.y, m.o.z, m.rsize, m.csize, 0.f);
+                if(camera1->o.z >= m.o.z - VOLUME_OFFSET) continue;
+                renderflatvolume(m.o.x, m.o.y, m.o.z, m.rsize, m.csize, VOLUME_OFFSET);
             }
             if(gle::attribbuf.length()) xtraverts += gle::end();
         }
