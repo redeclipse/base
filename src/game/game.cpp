@@ -199,15 +199,17 @@ namespace game
     VAR(IDF_PERSIST, firstpersoncamera, 0, 0, 1);
     VAR(IDF_PERSIST, firstpersonfov, 90, 100, 150);
     FVAR(IDF_PERSIST, firstpersondepth, 0, 0.25f, 1);
-    FVAR(IDF_PERSIST, firstpersonbodydepth, 0, 0.65f, 1);
+    FVAR(IDF_PERSIST, firstpersonbodydepth, 0, 1, 1);
+    FVAR(IDF_PERSIST, firstpersonbodydepthkick, 0, 0.75f, 1);
     FVAR(IDF_PERSIST, firstpersondepthfov, 0, 70, 150);
     FVAR(IDF_PERSIST, firstpersonbodydepthfov, 0, 0, 150);
 
     FVAR(IDF_PERSIST, firstpersonbodydist, -10, 0, 10);
     FVAR(IDF_PERSIST, firstpersonbodyside, -10, 0, 10);
+    FVAR(IDF_PERSIST, firstpersonbodyoffset, -10, 1, 10);
     FVAR(IDF_PERSIST, firstpersonbodypitch, -1, 1, 1);
     FVAR(IDF_PERSIST, firstpersonbodyzoffset, 0, 1, 10);
-    FVAR(IDF_PERSIST, firstpersonbodypitchadjust, 0, 0.75f, 10);
+    FVAR(IDF_PERSIST, firstpersonbodypitchadjust, -10, 0.75f, 10);
 
     FVAR(IDF_PERSIST, firstpersonspine, 0, 0.45f, 1);
     FVAR(IDF_PERSIST, firstpersonpitchmin, 0, 90, 90);
@@ -3781,9 +3783,10 @@ namespace game
             case 2:
             {
                 if(firstpersoncamera) break;
-                mdl.o.sub(vec(mdl.yaw*RAD, 0.f).mul(firstpersonbodydist+firstpersonspineoffset));
-                mdl.o.sub(vec(mdl.yaw*RAD, 0.f).rotate_around_z(90*RAD).mul(firstpersonbodyside));
-                if(lastoffset)
+                if(firstpersonbodydist) mdl.o.sub(vec(mdl.yaw*RAD, 0.f).mul(firstpersonbodydist));
+                if(firstpersonbodyoffset) mdl.o.sub(vec(mdl.yaw*RAD, 0.f).mul(firstpersonspineoffset*firstpersonbodyoffset));
+                if(firstpersonbodyside) mdl.o.sub(vec(mdl.yaw*RAD, 0.f).rotate_around_z(90*RAD).mul(firstpersonbodyside));
+                if(firstpersonbodyzoffset && lastoffset)
                 {
                     float zoffset = (max(d->zradius-d->height, 0.f)+(d->radius*0.5f))*firstpersonbodyzoffset;
                     if(!onfloor && (d->action[AC_SPECIAL] || d->impulse[IM_TYPE] == IM_T_POUND || d->sliding(true) || d->impulse[IM_TYPE] == IM_T_KICK || d->impulse[IM_TYPE] == IM_T_GRAB))
@@ -3799,8 +3802,8 @@ namespace game
                         if(lmillis < 100) mdl.o.z -= zoffset*((100-lmillis)/100.f);
                     }
                 }
-                if(firstpersonbodypitchadjust > 0 && mdl.pitch < 0) mdl.o.sub(vec(mdl.yaw*RAD, 0.f).mul(d->radius*(0-mdl.pitch)/90.f*firstpersonbodypitchadjust));
-                mdl.pitch = firstpersonbodypitch >= 0 ? mdl.pitch*firstpersonbodypitch : mdl.pitch;
+                if(firstpersonbodypitchadjust && mdl.pitch < 0) mdl.o.sub(vec(mdl.yaw*RAD, 0.f).mul(d->radius*(0-mdl.pitch)/90.f*firstpersonbodypitchadjust));
+                if(firstpersonbodypitch) mdl.pitch = mdl.pitch*firstpersonbodypitch;
                 break;
             }
         }
@@ -4116,7 +4119,9 @@ namespace game
             if(focus->state == CS_ALIVE && firstpersonmodel&1) renderplayer(focus, 0, focus->curscale, MDL_NOBATCH, color);
             if(focus->state == CS_ALIVE && firstpersonmodel&2)
             {
-                setavatarscale(firstpersonbodydepthfov != 0 ? firstpersonbodydepthfov : curfov, firstpersonbodydepth);
+                bool onfloor = focus->physstate >= PHYS_SLOPE || isladder(focus->inmaterial) || physics::liquidcheck(focus);
+                float depth = (!onfloor && focus->action[AC_SPECIAL]) || focus->impulse[IM_TYPE] == IM_T_KICK || focus->hasparkour() ? firstpersonbodydepthkick : firstpersonbodydepth;
+                setavatarscale(firstpersonbodydepthfov != 0 ? firstpersonbodydepthfov : curfov, depth);
                 renderplayer(focus, 2, focus->curscale, MDL_NOBATCH, color, &lastoffset);
             }
             calcfirstpersontags(focus);
