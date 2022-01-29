@@ -1904,11 +1904,11 @@ static void blendfog(int fogmat, float below, float blend, float logblend, float
 
         case MAT_VOLFOG:
         {
-            const bvec &wcol = getvolfogcolour(fogmat), &wdeepcol = getvolfogdeepcolour(fogmat);
-            float wdeep = getvolfogdeep(fogmat);
-            float deepfade = clamp(below/max(wdeep, matend), 0.0f, 1.0f);
+            const bvec &fcol = getvolfogcolour(fogmat), &fdeepcol = getvolfogdeepcolour(fogmat);
+            float fdeep = getvolfogdeep(fogmat);
+            float deepfade = clamp(below/max(fdeep, matend), 0.0f, 1.0f);
             vec color;
-            color.lerp(wcol.tocolor(), wdeepcol.tocolor(), deepfade);
+            color.lerp(fcol.tocolor(), fdeepcol.tocolor(), deepfade);
             fogc.add(vec(color).mul(blend));
             end += logblend*min((float)getfog(), max(matend*2, 16.0f));
             break;

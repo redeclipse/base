@@ -702,12 +702,18 @@ extern float getwaterrefract(int mat);
 extern int getwaterfallspec(int mat);
 extern float getwaterfallrefract(int mat);
 extern int getwaterreflectstep(int mat);
+extern float getwaterfallscrollx(int mat);
+extern float getwaterfallscrolly(int mat);
 
 extern const bvec &getlavacolour(int mat);
 extern int getlavafog(int mat);
 extern float getlavaglowmin(int mat);
 extern float getlavaglowmax(int mat);
 extern int getlavaspec(int mat);
+extern float getlavascrollx(int mat);
+extern float getlavascrolly(int mat);
+extern float getlavafallscrollx(int mat);
+extern float getlavafallscrolly(int mat);
 
 extern const bvec &getglasscolour(int mat);
 extern float getglassrefract(int mat);
@@ -716,11 +722,16 @@ extern int getglassspec(int mat);
 extern const bvec &getvolfogcolour(int mat);
 extern const bvec &getvolfogdeepcolour(int mat);
 extern const bvec &getvolfogdeepfade(int mat);
+extern const bvec &getvolfogtexcolour(int mat);
 extern int getvolfogdist(int mat);
 extern int getvolfogdeep(int mat);
+extern int getvolfogtexture(int mat);
+extern float getvolfogtexblend(int mat);
+extern float getvolfogscrollx(int mat);
+extern float getvolfogscrolly(int mat);
 
 extern void renderwater();
-extern void renderwaterfalls();
+extern void rendervolumefalls();
 extern void rendervolfog();
 extern void renderlava();
 extern void renderlava(const materialsurface &m, Texture *tex, float scale);

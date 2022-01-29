@@ -439,7 +439,9 @@ void setupmaterials(int start, int len)
     if(hasmat&(0xF<<MAT_VOLFOG))
     {
         useshaderbyname("volfog");
+        useshaderbyname("volfogtextured");
         useshaderbyname("undervolfog");
+        useshaderbyname("undervolfogtextured");
         loopi(4) if(hasmat&(1<<(MAT_VOLFOG+i))) lookupmaterialslot(MAT_VOLFOG+i);
     }
 }
@@ -753,7 +755,7 @@ void renderliquidmaterials()
 
     renderlava();
     renderwater();
-    renderwaterfalls();
+    rendervolumefalls();
     rendervolfog();
 
     glEnable(GL_CULL_FACE);

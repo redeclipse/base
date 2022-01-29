@@ -315,7 +315,7 @@ int calcwatersubdiv(int x, int y, int z, int size)
     return subdiv >= 31 ? INT_MAX : 1<<subdiv;
 }
 
-int renderwaterlod(int x, int y, int z, int size, int mat)
+int rendervolumelod(int x, int y, int z, int size, int mat)
 {
     if(size <= (32 << waterlod))
     {
@@ -332,10 +332,10 @@ int renderwaterlod(int x, int y, int z, int size, int mat)
             return subdiv;
         }
         int childsize = size / 2,
-            subdiv1 = renderwaterlod(x, y, z, childsize, mat),
-            subdiv2 = renderwaterlod(x + childsize, y, z, childsize, mat),
-            subdiv3 = renderwaterlod(x + childsize, y + childsize, z, childsize, mat),
-            subdiv4 = renderwaterlod(x, y + childsize, z, childsize, mat),
+            subdiv1 = rendervolumelod(x, y, z, childsize, mat),
+            subdiv2 = rendervolumelod(x + childsize, y, z, childsize, mat),
+            subdiv3 = rendervolumelod(x + childsize, y + childsize, z, childsize, mat),
+            subdiv4 = rendervolumelod(x, y + childsize, z, childsize, mat),
             minsubdiv = subdiv1;
         minsubdiv = min(minsubdiv, subdiv2);
         minsubdiv = min(minsubdiv, subdiv3);
@@ -355,7 +355,7 @@ int renderwaterlod(int x, int y, int z, int size, int mat)
     }
 }
 
-void renderflatwater(int x, int y, int z, int rsize, int csize, float offset, int mat = MAT_AIR)
+void renderflatvolume(int x, int y, int z, int rsize, int csize, float offset, int mat = MAT_AIR)
 {
     if(gle::attribbuf.empty()) { gle::defvertex(); gle::begin(GL_QUADS); }
     vertwn(x,       y,       z, offset);
@@ -368,8 +368,8 @@ VARF(IDF_WORLD, vertwater, 0, 1, 1, if(!(identflags&IDF_WORLD)) allchanged());
 
 static inline void renderwater(const materialsurface &m, int mat = MAT_WATER)
 {
-    if(!vertwater || drawtex == DRAWTEX_MINIMAP) renderflatwater(m.o.x, m.o.y, m.o.z, m.rsize, m.csize, WATER_OFFSET, mat);
-    else if(renderwaterlod(m.o.x, m.o.y, m.o.z, m.csize, mat) >= int(m.csize) * 2)
+    if(!vertwater || drawtex == DRAWTEX_MINIMAP) renderflatvolume(m.o.x, m.o.y, m.o.z, m.rsize, m.csize, WATER_OFFSET, mat);
+    else if(rendervolumelod(m.o.x, m.o.y, m.o.z, m.csize, mat) >= int(m.csize) * 2)
         rendervertwater(m.csize, m.o.x, m.o.y, m.o.z, m.csize, mat);
 }
 
@@ -386,7 +386,9 @@ static inline void renderwater(const materialsurface &m, int mat = MAT_WATER)
     CVAR(IDF_WORLD, name##fallrefractcolour##type, 0); \
     VAR(IDF_WORLD, name##fallspec##type, 0, 150, 200); \
     FVAR(IDF_WORLD, name##fallrefract##type, 0, 0.1f, 1e3f); \
-    VAR(IDF_WORLD, name##reflectstep##type, 1, 32, 10000);
+    VAR(IDF_WORLD, name##reflectstep##type, 1, 32, 10000); \
+    FVAR(IDF_WORLD, name##fallscrollx##type, FVAR_MIN, 0, FVAR_MAX); \
+    FVAR(IDF_WORLD, name##fallscrolly##type, FVAR_MIN, -5, FVAR_MAX);
 
 WATERVARS(, water)
 WATERVARS(, water2)
@@ -410,6 +412,8 @@ GETMATIDXVAR(water, refract, float)
 GETMATIDXVAR(water, fallspec, int)
 GETMATIDXVAR(water, fallrefract, float)
 GETMATIDXVAR(water, reflectstep, int)
+GETMATIDXVAR(water, fallscrollx, float)
+GETMATIDXVAR(water, fallscrolly, float)
 
 VARF(IDF_PERSIST, waterreflect, 0, 1, 1, { preloadwatershaders(); });
 VARF(IDF_PERSIST, waterenvmap, 0, 1, 1, { preloadwatershaders(); });
@@ -420,7 +424,11 @@ VARF(IDF_PERSIST, waterfallenv, 0, 1, 1, preloadwatershaders());
     VAR(IDF_WORLD, name##fog##type, 0, 50, 10000); \
     FVAR(IDF_WORLD, name##glowmin##type, 0, 0.25f, 2); \
     FVAR(IDF_WORLD, name##glowmax##type, 0, 1.0f, 2); \
-    VAR(IDF_WORLD, name##spec##type, 0, 25, 200);
+    VAR(IDF_WORLD, name##spec##type, 0, 25, 200); \
+    FVAR(IDF_WORLD, name##scrollx##type, FVAR_MIN, 1, FVAR_MAX); \
+    FVAR(IDF_WORLD, name##scrolly##type, FVAR_MIN, 1, FVAR_MAX); \
+    FVAR(IDF_WORLD, name##fallscrollx##type, FVAR_MIN, 0, FVAR_MAX); \
+    FVAR(IDF_WORLD, name##fallscrolly##type, FVAR_MIN, -5, FVAR_MAX);
 
 LAVAVARS(, lava)
 LAVAVARS(, lava2)
@@ -436,13 +444,22 @@ GETMATIDXVAR(lava, fog, int)
 GETMATIDXVAR(lava, glowmin, float)
 GETMATIDXVAR(lava, glowmax, float)
 GETMATIDXVAR(lava, spec, int)
+GETMATIDXVAR(lava, scrollx, float)
+GETMATIDXVAR(lava, scrolly, float)
+GETMATIDXVAR(lava, fallscrollx, float)
+GETMATIDXVAR(lava, fallscrolly, float)
 
 #define VOLFOGVARS(type, name) \
     CVAR(IDF_WORLD, name##colour##type, 0); \
     CVAR(IDF_WORLD, name##deepcolour##type, 0); \
     CVAR(IDF_WORLD, name##deepfade##type, 0); \
     VAR(IDF_WORLD, name##dist##type, 0, 50, 10000); \
-    VAR(IDF_WORLD, name##deep##type, 0, 100, 10000);
+    VAR(IDF_WORLD, name##deep##type, 0, 100, 10000); \
+    VAR(IDF_WORLD, name##texture##type, 0, 1, 1); \
+    CVAR(IDF_WORLD, name##texcolour##type, 0xFFFFFF); \
+    FVAR(IDF_WORLD, name##texblend##type, 0, 0.125f, 1); \
+    FVAR(IDF_WORLD, name##scrollx##type, FVAR_MIN, 1, FVAR_MAX); \
+    FVAR(IDF_WORLD, name##scrolly##type, FVAR_MIN, 1, FVAR_MAX);
 
 VOLFOGVARS(, volfog)
 VOLFOGVARS(, volfog2)
@@ -476,9 +493,14 @@ VOLFOGVARS(alt, volfog4)
 GETVFIDXVAR(volfog, colour, const bvec &);
 GETVFIDXVAR(volfog, deepcolour, const bvec &);
 GETVFIDXVAR(volfog, deepfade, const bvec &);
+GETVFIDXVAR(volfog, texcolour, const bvec &);
 
 GETMATIDXVAR(volfog, dist, int);
 GETMATIDXVAR(volfog, deep, int);
+GETMATIDXVAR(volfog, texture, int);
+GETMATIDXVAR(volfog, texblend, float);
+GETMATIDXVAR(volfog, scrollx, float);
+GETMATIDXVAR(volfog, scrolly, float);
 
 void preloadwatershaders(bool force)
 {
@@ -507,7 +529,7 @@ void preloadwatershaders(bool force)
 
 static float wfwave = 0.0f;
 
-static void renderwaterfall(const materialsurface &m, float offset)
+static void rendervolumefall(const materialsurface &m, float offset)
 {
     if(gle::attribbuf.empty())
     {
@@ -555,10 +577,9 @@ void renderlava()
         if(lavasurfs[k].length())
         {
             Texture *tex = lslot.sts.inrange(0) ? lslot.sts[0].t: notexture;
-            float xscale = TEX_SCALE/(tex->xs*lslot.scale);
-            float yscale = TEX_SCALE/(tex->ys*lslot.scale);
-            float scroll = lastmillis/1000.0f;
-            LOCALPARAMF(lavatexgen, xscale, yscale, scroll, scroll);
+            float xscale = TEX_SCALE/(tex->xs*lslot.scale), yscale = TEX_SCALE/(tex->ys*lslot.scale),
+                  scroll = lastmillis/1000.0f, xscroll = getlavascrollx(k)*scroll, yscroll = getlavascrolly(k)*scroll;
+            LOCALPARAMF(lavatexgen, xscale, yscale, xscroll, yscroll);
 
             whoffset = fmod(float(lastmillis/2000.0f/(2*M_PI)), 1.0f);
             whphase = vertwphase(whoffset);
@@ -578,14 +599,12 @@ void renderlava()
         if(drawtex != DRAWTEX_MINIMAP && lavafallsurfs[k].length())
         {
             Texture *tex = lslot.sts.inrange(2) ? lslot.sts[2].t : (lslot.sts.inrange(0) ? lslot.sts[0].t : notexture);
-            float angle = fmod(float(lastmillis/2000.0f/(2*M_PI)), 1.0f),
-                  s = angle - int(angle) - 0.5f;
+            float angle = fmod(float(lastmillis/2000.0f/(2*M_PI)), 1.0f), s = angle - int(angle) - 0.5f;
             s *= 8 - fabs(s)*16;
             wfwave = vertwater ? WATER_AMPLITUDE*s-WATER_OFFSET : -WATER_OFFSET;
-            float scroll = -16.0f*lastmillis/3000.0f;
-            float xscale = TEX_SCALE/(tex->xs*lslot.scale);
-            float yscale = TEX_SCALE/(tex->ys*lslot.scale);
-            LOCALPARAMF(lavatexgen, xscale, yscale, 0.0f, scroll);
+            float xscale = TEX_SCALE/(tex->xs*lslot.scale), yscale = TEX_SCALE/(tex->ys*lslot.scale),
+                  scroll = lastmillis/1000.0f, xscroll = getlavafallscrollx(k)*scroll, yscroll = getlavafallscrolly(k)*scroll;
+            LOCALPARAMF(lavatexgen, xscale, yscale, xscroll, yscroll);
 
             glBindTexture(GL_TEXTURE_2D, tex->id);
             glActiveTexture_(GL_TEXTURE1);
@@ -596,14 +615,14 @@ void renderlava()
             loopv(surfs)
             {
                 materialsurface &m = surfs[i];
-                renderwaterfall(m, 0.1f);
+                rendervolumefall(m, 0.1f);
             }
             xtraverts += gle::end();
         }
     }
 }
 
-void renderwaterfalls()
+void rendervolumefalls()
 {
     loopk(4)
     {
@@ -617,10 +636,10 @@ void renderwaterfalls()
               s = angle - int(angle) - 0.5f;
         s *= 8 - fabs(s)*16;
         wfwave = vertwater ? WATER_AMPLITUDE*s-WATER_OFFSET : -WATER_OFFSET;
-        float scroll = -16.0f*lastmillis/1000.0f;
-        float xscale = TEX_SCALE/(tex->xs*wslot.scale);
-        float yscale = TEX_SCALE/(tex->ys*wslot.scale);
-        GLOBALPARAMF(waterfalltexgen, xscale, yscale, 0.0f, scroll);
+
+        float xscale = TEX_SCALE/(tex->xs*wslot.scale), yscale = TEX_SCALE/(tex->ys*wslot.scale),
+              scroll = lastmillis/1000.0f, xscroll = getwaterfallscrollx(k)*scroll, yscroll = getwaterfallscrolly(k)*scroll;
+        GLOBALPARAMF(waterfalltexgen, xscale, yscale, xscroll, yscroll);
 
         bvec color = getwaterfallcolour(k), refractcolor = getwaterfallrefractcolour(k);
         if(color.iszero()) color = getwatercolour(k);
@@ -648,7 +667,7 @@ void renderwaterfalls()
         loopv(surfs)
         {
             materialsurface &m = surfs[i];
-            renderwaterfall(m, 0.1f);
+            rendervolumefall(m, 0.1f);
         }
         xtraverts += gle::end();
     }
@@ -664,8 +683,7 @@ void renderwater()
         MatSlot &wslot = lookupmaterialslot(MAT_WATER+k);
 
         Texture *tex = wslot.sts.inrange(0) ? wslot.sts[0].t: notexture;
-        float xscale = TEX_SCALE/(tex->xs*wslot.scale);
-        float yscale = TEX_SCALE/(tex->ys*wslot.scale);
+        float xscale = TEX_SCALE/(tex->xs*wslot.scale), yscale = TEX_SCALE/(tex->ys*wslot.scale);
         GLOBALPARAMF(watertexgen, xscale, yscale);
 
         whoffset = fmod(float(lastmillis/600.0f/(2*M_PI)), 1.0f);
@@ -760,19 +778,16 @@ void rendervolfog()
         vector<materialsurface> &surfs = volfogsurfs[k];
         if(surfs.empty()) return;
 
-        #if 0
-        MatSlot &wslot = lookupmaterialslot(MAT_VOLFOG+k);
-
-        Texture *tex = wslot.sts.inrange(0) ? wslot.sts[0].t: notexture;
-        float xscale = TEX_SCALE/(tex->xs*wslot.scale);
-        float yscale = TEX_SCALE/(tex->ys*wslot.scale);
-        GLOBALPARAMF(volfogtexgen, xscale, yscale);
-
-        glBindTexture(GL_TEXTURE_2D, tex->id);
-        glActiveTexture_(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, wslot.sts.inrange(1) ? wslot.sts[1].t->id : notexture->id);
-        glActiveTexture_(GL_TEXTURE0);
-        #endif
+        bool textured = getvolfogtexture(k);
+        if(textured)
+        {
+            MatSlot &fslot = lookupmaterialslot(MAT_VOLFOG+k);
+            Texture *tex = fslot.sts.inrange(0) ? fslot.sts[0].t: notexture;
+            float xscale = TEX_SCALE/(tex->xs*fslot.scale), yscale = TEX_SCALE/(tex->ys*fslot.scale),
+                  scroll = lastmillis/1000.0f, xscroll = getvolfogscrollx(k)*scroll, yscroll = getvolfogscrolly(k)*scroll;
+            GLOBALPARAMF(volfogtexgen, xscale, yscale, xscroll, yscroll);
+            glBindTexture(GL_TEXTURE_2D, tex->id);
+        }
 
         float colorscale = 0.5f/255;
         const bvec &color = getvolfogcolour(k);
@@ -780,6 +795,14 @@ void rendervolfog()
         int fog = getvolfogdist(k), deep = getvolfogdeep(k);
         GLOBALPARAMF(volfogcolor, color.x*colorscale, color.y*colorscale, color.z*colorscale);
         GLOBALPARAMF(volfogdeepcolor, deepcolor.x*colorscale, deepcolor.y*colorscale, deepcolor.z*colorscale);
+        if(textured)
+        {
+            const bvec &texcolor = getvolfogtexcolour(k);
+            float texblend = getvolfogtexblend(k);
+            GLOBALPARAMF(volfogtexcolor, texcolor.x*colorscale, texcolor.y*colorscale, texcolor.z*colorscale, texblend);
+        }
+
+
         float fogdensity = fog ? calcfogdensity(fog) : -1e4f;
         GLOBALPARAMF(volfogdist, fogdensity);
         vec deepfade = getvolfogdeepfade(k).tocolor().mul(deep);
@@ -797,11 +820,20 @@ void rendervolfog()
         } while(0)
 
         Shader *aboveshader = NULL;
-        if(drawtex == DRAWTEX_MINIMAP) SETVOLFOGSHADER(above, minimapvol);
-        else SETVOLFOGSHADER(above, volfog);
+        if(drawtex != DRAWTEX_MINIMAP)
+        {
+            //gle::normal(vec(0, 0, 1));
+            if(textured) SETVOLFOGSHADER(above, volfogtextured);
+            else SETVOLFOGSHADER(above, volfog);
+        }
+        else SETVOLFOGSHADER(above, minimapvol);
 
         Shader *belowshader = NULL;
-        if(drawtex != DRAWTEX_MINIMAP) SETVOLFOGSHADER(below, undervolfog);
+        if(drawtex != DRAWTEX_MINIMAP)
+        {
+            if(textured) SETVOLFOGSHADER(below, undervolfogtextured);
+            else SETVOLFOGSHADER(below, undervolfog);
+        }
 
         if(aboveshader)
         {
@@ -810,7 +842,7 @@ void rendervolfog()
             {
                 materialsurface &m = surfs[i];
                 if(camera1->o.z < m.o.z) continue;
-                renderflatwater(m.o.x, m.o.y, m.o.z, m.rsize, m.csize, 0.f);
+                renderflatvolume(m.o.x, m.o.y, m.o.z, m.rsize, m.csize, 0.f);
             }
             if(gle::attribbuf.length()) xtraverts += gle::end();
         }
@@ -822,7 +854,7 @@ void rendervolfog()
             {
                 materialsurface &m = surfs[i];
                 if(camera1->o.z >= m.o.z) continue;
-                renderflatwater(m.o.x, m.o.y, m.o.z, m.rsize, m.csize, 0.f);
+                renderflatvolume(m.o.x, m.o.y, m.o.z, m.rsize, m.csize, 0.f);
             }
             if(gle::attribbuf.length()) xtraverts += gle::end();
         }
