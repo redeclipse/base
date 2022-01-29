@@ -1906,6 +1906,24 @@ void resetmaterials()
     loopi((MATF_VOLUME|MATF_INDEX)+1) materialslots[i].reset();
 }
 ICOMMAND(0, materialreset, "", (void), if(editmode || identflags&IDF_WORLD) resetmaterials(););
+
+bool materialcheck = false;
+void checkmaterials(const char *name)
+{
+    materialcheck = false;
+    loopi((MATF_VOLUME|MATF_INDEX)+1)
+    {
+        if(!materialslots[i].sts.empty()) continue;
+        materialcheck = true;
+        break;
+    }
+    if(materialcheck)
+    {
+        execfile("config/map/material.cfg");
+        materialcheck = false;
+    }
+}
+
 void resetdecals(int n)
 {
     defslot = NULL;
@@ -2540,6 +2558,7 @@ void texture(char *type, char *name, int *rot, int *xoffset, int *yoffset, float
     }
     else if((matslot = findmaterial(type)) >= 0)
     {
+        if(materialcheck && !materialslots[matslot].sts.empty()) return;
         tnum = TEX_DIFFUSE;
         defslot = &materialslots[matslot];
         defslot->reset();

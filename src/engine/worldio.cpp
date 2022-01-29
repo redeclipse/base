@@ -1356,6 +1356,7 @@ bool load_world(const char *mname, int crc, int variant)
             resetdecals();
             execfile("config/map/decals.cfg");
         }
+        else checkmaterials("config/map/material.cfg");
         identflags &= ~IDF_WORLD;
 
         progress(0, "Preloading map models..");

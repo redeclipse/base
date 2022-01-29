@@ -252,6 +252,7 @@ extern bool reloadtexture(Texture *t);
 extern bool reloadtexture(const char *name);
 extern void setuptexcompress();
 extern void resetmaterials();
+extern void checkmaterials(const char *name);
 extern void resetdecals(int n = 0);
 extern void clearslots();
 extern void compacteditvslots();
