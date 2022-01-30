@@ -102,7 +102,7 @@ extern const namemap materials[] =
     {"water", MAT_WATER}, {"water1", MAT_WATER}, {"water2", MAT_WATER+1}, {"water3", MAT_WATER+2}, {"water4", MAT_WATER+3},
     {"glass", MAT_GLASS}, {"glass1", MAT_GLASS}, {"glass2", MAT_GLASS+1}, {"glass3", MAT_GLASS+2}, {"glass4", MAT_GLASS+3},
     {"lava", MAT_LAVA}, {"lava1", MAT_LAVA}, {"lava2", MAT_LAVA+1}, {"lava3", MAT_LAVA+2}, {"lava4", MAT_LAVA+3},
-    {"volfog", MAT_VOLFOG}, {"volfog1", MAT_VOLFOG}, {"volfog2", MAT_VOLFOG+1}, {"volfog3", MAT_VOLFOG+2}, {"volfog4", MAT_WATER+3},
+    {"volfog", MAT_VOLFOG}, {"volfog1", MAT_VOLFOG}, {"volfog2", MAT_VOLFOG+1}, {"volfog3", MAT_VOLFOG+2}, {"volfog4", MAT_VOLFOG+3},
     {"clip", MAT_CLIP},
     {"noclip", MAT_NOCLIP},
     {"aiclip", MAT_AICLIP},
