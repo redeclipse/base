@@ -162,7 +162,7 @@ int visiblematerial(const cube &c, int orient, const ivec &co, int size, ushort 
         break;
 
     case MAT_VOLFOG:
-        if(visibleface(c, orient, co, size, mat, MAT_AIR, matmask))
+        if(visibleface(c, orient, co, size, MAT_VOLFOG, MAT_AIR, matmask))
             return (orient != O_TOP ? MATSURF_EDIT_ONLY : MATSURF_VISIBLE);
         break;
 
@@ -211,8 +211,8 @@ static inline void addmatbb(ivec &matmin, ivec &matmax, const materialsurface &m
 
 void calcmatbb(vtxarray *va, const ivec &co, int size, vector<materialsurface> &matsurfs)
 {
-    va->lavamax = va->watermax = va->glassmax = va->volfogmin = co;
-    va->lavamin = va->watermin = va->glassmin = va->volfogmax = ivec(co).add(size);
+    va->lavamax = va->watermax = va->glassmax = va->volfogmax = co;
+    va->lavamin = va->watermin = va->glassmin = va->volfogmin = ivec(co).add(size);
     loopv(matsurfs)
     {
         materialsurface &m = matsurfs[i];

@@ -776,7 +776,7 @@ void rendervolfog()
     loopk(4)
     {
         vector<materialsurface> &surfs = volfogsurfs[k];
-        if(surfs.empty()) return;
+        if(surfs.empty()) continue;
 
         bool textured = getvolfogtexture(k);
         if(textured)
