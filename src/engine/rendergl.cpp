@@ -1810,7 +1810,7 @@ void debugquad(float x, float y, float w, float h, float tx, float ty, float tw,
     HUDQUAD(x, y, x+w, y+h, tx, ty+th, tx+tw, ty);
 }
 
-VAR(0, fogoverlay, 0, 1, 3);
+VAR(0, fogoverlay, 0, 1, 2);
 
 static float findsurface(int fogmat, const vec &v, int &abovemat)
 {
@@ -1835,15 +1835,16 @@ static float findsurface(int fogmat, const vec &v, int &abovemat)
 
 static void getcamfogmat(int &fogmat, int &abovemat, float &fogbelow)
 {
+    vec pos = vec(camera1->o).subz(nearplane);
     fogmat = abovemat = MAT_AIR;
-    int mat = lookupmaterial(camera1->o);
+    int mat = lookupmaterial(pos);
     fogbelow = 0;
-    if(isfogvol(mat))
+    if(isfogvol(mat&MATF_VOLUME))
     {
         fogmat = mat&(MATF_VOLUME|MATF_INDEX);
-        float z = findsurface(fogmat, camera1->o, abovemat);
-        if(isliquid(fogmat)) z -= VOLUME_OFFSET;
-        if(camera1->o.z < z) fogbelow = z - camera1->o.z;
+        float z = findsurface(fogmat, pos, abovemat);
+        if(isliquid(fogmat&MATF_VOLUME)) z -= VOLUME_OFFSET;
+        if(camera1->o.z < z + nearplane) fogbelow = z - camera1->o.z;
         else fogmat = abovemat;
     }
 }
@@ -2486,7 +2487,7 @@ void gl_drawview()
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
 
-    if(fogoverlay && fogmat != MAT_AIR && (fogoverlay&2 || (fogmat&MATF_VOLUME) != MAT_VOLFOG)) drawfogoverlay(fogmat, fogbelow, clamp(fogbelow, 0.0f, 1.0f), abovemat);
+    if(fogoverlay && fogmat != MAT_AIR && (fogoverlay == 2 || (fogmat&MATF_VOLUME) != MAT_VOLFOG)) drawfogoverlay(fogmat, fogbelow, clamp(fogbelow, 0.0f, 1.0f), abovemat);
 
     if(!drawtex)
     {

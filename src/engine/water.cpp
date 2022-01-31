@@ -98,7 +98,7 @@ void renderdepthfog(int mat, float surface)
         invcamprojmatrix.perspectivetransform(vec(1, -1, -1)),
         invcamprojmatrix.perspectivetransform(vec(1, 1, -1))
     };
-    float bz = surface + camera1->o.z + (isliquid(mat) ? VOLUME_OFFSET : 0.25f),
+    float bz = surface + camera1->o.z + (isliquid(mat&MATF_VOLUME) ? VOLUME_OFFSET : 0.f),
           syl = p[1].z > p[0].z ? 2*(bz - p[0].z)/(p[1].z - p[0].z) - 1 : 1,
           syr = p[3].z > p[2].z ? 2*(bz - p[2].z)/(p[3].z - p[2].z) - 1 : 1;
 
