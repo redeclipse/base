@@ -439,9 +439,11 @@ void setupmaterials(int start, int len)
     if(hasmat&(0xF<<MAT_VOLFOG))
     {
         useshaderbyname("volfog");
-        useshaderbyname("volfogtextured");
+        useshaderbyname("volfogtex");
+        useshaderbyname("volfogtexsmp");
         useshaderbyname("undervolfog");
-        useshaderbyname("undervolfogtextured");
+        useshaderbyname("undervolfogtex");
+        useshaderbyname("undervolfogtexsmp");
         loopi(4) if(hasmat&(1<<(MAT_VOLFOG+i))) lookupmaterialslot(MAT_VOLFOG+i);
     }
 }

@@ -4997,7 +4997,7 @@ namespace server
             cp = (clientinfo *)getinfo(cn);
             if(!cp || !cp->dropped.find(ent))
             {
-                srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s use [%d] failed - doesn't seem to be dropped anywhere", colourname(ci), ent);
+                srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s use [%d:%d] failed - doesn't seem to be dropped anywhere", colourname(ci), ent, cn);
                 return;
             }
         }

@@ -455,9 +455,9 @@ GETMATIDXVAR(lava, fallscrolly, float)
     CVAR(IDF_WORLD, name##deepfade##type, 0); \
     VAR(IDF_WORLD, name##dist##type, 0, 50, 10000); \
     VAR(IDF_WORLD, name##deep##type, 0, 100, 10000); \
-    VAR(IDF_WORLD, name##texture##type, 0, 1, 1); \
+    VAR(IDF_WORLD, name##texture##type, 0, 1, 2); \
     CVAR(IDF_WORLD, name##texcolour##type, 0xFFFFFF); \
-    FVAR(IDF_WORLD, name##texblend##type, 0, 0.125f, 1); \
+    FVAR(IDF_WORLD, name##texblend##type, 0, 1, 1); \
     FVAR(IDF_WORLD, name##scrollx##type, FVAR_MIN, 1, FVAR_MAX); \
     FVAR(IDF_WORLD, name##scrolly##type, FVAR_MIN, 1, FVAR_MAX);
 
@@ -778,7 +778,7 @@ void rendervolfog()
         vector<materialsurface> &surfs = volfogsurfs[k];
         if(surfs.empty()) continue;
 
-        bool textured = getvolfogtexture(k);
+        int textured = getvolfogtexture(k);
         if(textured)
         {
             MatSlot &fslot = lookupmaterialslot(MAT_VOLFOG+k);
@@ -819,18 +819,20 @@ void rendervolfog()
         } while(0)
 
         Shader *aboveshader = NULL;
-        if(drawtex != DRAWTEX_MINIMAP)
+        if(drawtex != DRAWTEX_MINIMAP) switch(textured)
         {
-            if(textured) SETVOLFOGSHADER(above, volfogtextured);
-            else SETVOLFOGSHADER(above, volfog);
+            case 2: SETVOLFOGSHADER(above, volfogtex); break;
+            case 1: SETVOLFOGSHADER(above, volfogtexsmp); break;
+            default: SETVOLFOGSHADER(above, volfog); break;
         }
         else SETVOLFOGSHADER(above, minimapvol);
 
         Shader *belowshader = NULL;
-        if(drawtex != DRAWTEX_MINIMAP)
+        if(drawtex != DRAWTEX_MINIMAP) switch(textured)
         {
-            if(textured) SETVOLFOGSHADER(below, undervolfogtextured);
-            else SETVOLFOGSHADER(below, undervolfog);
+            case 2: SETVOLFOGSHADER(below, undervolfogtex); break;
+            case 1: SETVOLFOGSHADER(below, undervolfogtexsmp); break;
+            default: SETVOLFOGSHADER(below, undervolfog); break;
         }
 
         if(aboveshader)
