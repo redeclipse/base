@@ -98,7 +98,7 @@ void renderdepthfog(int mat, float surface)
         invcamprojmatrix.perspectivetransform(vec(1, -1, -1)),
         invcamprojmatrix.perspectivetransform(vec(1, 1, -1))
     };
-    float bz = surface + camera1->o.z + VOLUME_OFFSET,
+    float bz = surface + camera1->o.z + (isliquid(mat) ? VOLUME_OFFSET : 0.25f),
           syl = p[1].z > p[0].z ? 2*(bz - p[0].z)/(p[1].z - p[0].z) - 1 : 1,
           syr = p[3].z > p[2].z ? 2*(bz - p[2].z)/(p[3].z - p[2].z) - 1 : 1;
 
@@ -839,8 +839,8 @@ void rendervolfog()
             loopv(surfs)
             {
                 materialsurface &m = surfs[i];
-                if(camera1->o.z < m.o.z - VOLUME_OFFSET) continue;
-                renderflatvolume(m.o.x, m.o.y, m.o.z, m.rsize, m.csize, VOLUME_OFFSET);
+                if(camera1->o.z < m.o.z) continue;
+                renderflatvolume(m.o.x, m.o.y, m.o.z, m.rsize, m.csize, 0.f);
             }
             if(gle::attribbuf.length()) xtraverts += gle::end();
         }
@@ -851,8 +851,8 @@ void rendervolfog()
             loopv(surfs)
             {
                 materialsurface &m = surfs[i];
-                if(camera1->o.z >= m.o.z - VOLUME_OFFSET) continue;
-                renderflatvolume(m.o.x, m.o.y, m.o.z, m.rsize, m.csize, VOLUME_OFFSET);
+                if(camera1->o.z >= m.o.z) continue;
+                renderflatvolume(m.o.x, m.o.y, m.o.z, m.rsize, m.csize, 0.f);
             }
             if(gle::attribbuf.length()) xtraverts += gle::end();
         }
