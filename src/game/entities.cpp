@@ -3025,10 +3025,10 @@ namespace entities
                         if(isweap(attr))
                         {
                             colour = W(attr, colour);
-                            if(!active || (!game::focus->isobserver() && !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !showentfull)))
+                            if(!active || game::focus->isobserver() || !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !showentfull))
                             {
                                 if(drawtex == DRAWTEX_HALO) mdl.flags |= MDL_NORENDER;
-                                mdl.color.a *= showentunavailable;
+                                else mdl.color.a *= showentunavailable;
                             }
                             else mdl.color.a *= showentavailable;
                         }

@@ -182,7 +182,7 @@ struct baseent
         submerged = 0;
     }
 
-    bool isobserver() const { return state == CS_SPECTATOR || state == CS_EDITING; }
+    bool isobserver() const { return state == CS_SPECTATOR || state == CS_EDITING || state == CS_WAITING; }
     bool isactive() const { return state == CS_ALIVE || state == CS_DEAD || state == CS_WAITING; }
     bool isalive() const { return state == CS_ALIVE; }
     bool isdead() const { return state == CS_DEAD || state == CS_WAITING; }
