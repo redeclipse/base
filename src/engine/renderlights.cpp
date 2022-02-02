@@ -2673,6 +2673,16 @@ VOLVARS(alt);
 GETVARMPV(vol, colour, const bvec &);
 GETVARMPV(vol, scale, float);
 
+VAR(0, debugvol, 0, 0, 2);
+void viewvol()
+{
+    int w = min(hudw, hudh)/2, h = (w*hudh)/hudw;
+    gle::colorf(1, 1, 1);
+    SETSHADER(hudrect);
+    glBindTexture(GL_TEXTURE_RECTANGLE, voltex[debugvol]);
+    debugquad(0, 0, w, h, 0, 0, gw, gh);
+}
+
 static Shader *deferredlightshader = NULL, *deferredminimapshader = NULL, *deferredmsaapixelshader = NULL, *deferredmsaasampleshader = NULL;
 
 void cleardeferredlightshaders()
@@ -5406,6 +5416,7 @@ bool debuglights()
     else if(debuglightscissor) viewlightscissor();
     else if(debugrsm) viewrsm();
     else if(debugrh) viewrh();
+    else if(debugvol) viewvol();
     else if(debughalo) viewhalo();
     else if(!debugaa()) return false;
     return true;
