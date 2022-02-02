@@ -213,10 +213,8 @@ void renderhaze()
 {
     if(!hashaze) return;
 
-    glDepthFunc(GL_NOTEQUAL);
-    glDepthMask(GL_FALSE);
-    glDepthRange(1, 1);
-
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
 
     glActiveTexture_(GL_TEXTURE8);
@@ -248,10 +246,8 @@ void renderhaze()
     gle::end();
 
     glDisable(GL_BLEND);
-
-    glDepthFunc(GL_LESS);
-    glDepthMask(GL_TRUE);
-    glDepthRange(0, 1);
+    glEnable(GL_CULL_FACE);
+    glEnable(GL_DEPTH_TEST);
 }
 
 /* vertex water */
