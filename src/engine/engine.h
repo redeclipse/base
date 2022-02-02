@@ -446,7 +446,7 @@ enum { SM_NONE = 0, SM_REFLECT, SM_CUBEMAP, SM_CASCADE, SM_SPOT };
 extern int shadowmapping;
 
 extern vec shadoworigin, shadowdir;
-extern float shadowradius, shadowbias;
+extern float shadowradius, shadowbias, refractdepth;
 extern int shadowside, shadowspot, shadowtransparent;
 extern matrix4 shadowmatrix;
 
@@ -499,9 +499,9 @@ extern matrix4 worldmatrix, screenmatrix;
 extern int transparentlayer;
 
 extern int gw, gh, gdepthformat, ghasstencil;
-extern GLuint gdepthtex, gcolortex, gnormaltex, gglowtex, gdepthrb, gstencilrb;
+extern GLuint hdrtex, gdepthtex, gcolortex, gnormaltex, gglowtex, gdepthrb, gstencilrb, refracttex;
 extern int msaasamples, msaalight;
-extern GLuint msdepthtex, mscolortex, msnormaltex, msglowtex, msdepthrb, msstencilrb;
+extern GLuint mshdrtex, msdepthtex, mscolortex, msnormaltex, msglowtex, msdepthrb, msstencilrb, msrefracttex;
 extern vector<vec2> msaapositions;
 enum { AA_UNUSED = 0, AA_LUMA, AA_MASKED, AA_SPLIT, AA_SPLIT_LUMA, AA_SPLIT_MASKED };
 
@@ -732,12 +732,14 @@ extern float getvolfogscrollx(int mat);
 extern float getvolfogscrolly(int mat);
 
 extern void renderwater();
-extern void rendervolumefalls();
+extern void renderwaterfalls();
 extern void rendervolfog();
 extern void renderlava();
 extern void renderlava(const materialsurface &m, Texture *tex, float scale);
 extern void loadcaustics(bool force = false);
 extern void renderdepthfog(int mat, float blend);
+extern void inithaze();
+extern void renderhaze();
 extern void preloadwatershaders(bool force = false);
 
 // server

@@ -1809,6 +1809,7 @@ void allchanged(bool load)
     if(filltjoints) findtjoints();
     octarender();
     if(load) precachetextures();
+    inithaze();
     setupmaterials();
     clearshadowcache();
     updatevabbs(true);

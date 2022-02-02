@@ -756,7 +756,7 @@ void renderliquidmaterials()
 
     renderlava();
     renderwater();
-    rendervolumefalls();
+    renderwaterfalls();
     rendervolfog();
 
     glEnable(GL_CULL_FACE);

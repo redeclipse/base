@@ -154,6 +154,106 @@ void renderdepthfog(int mat, float surface)
     glDepthRange(0, 1);
 }
 
+#define MPVVARS(name, type) \
+    VARF(IDF_WORLD, haze##name, 0, 0, 1, inithaze()); \
+    SVARF(IDF_WORLD, hazetex##name, "textures/watern", inithaze()); \
+    FVAR(IDF_WORLD, hazemindist##name, 0, 256, FVAR_MAX); \
+    FVAR(IDF_WORLD, hazemaxdist##name, 0, 1024, FVAR_MAX); \
+    FVAR(IDF_WORLD, hazemargin##name, FVAR_NONZERO, 32, FVAR_MAX); \
+    FVAR(IDF_WORLD, hazescalex##name, FVAR_NONZERO, 1, FVAR_MAX); \
+    FVAR(IDF_WORLD, hazescaley##name, FVAR_NONZERO, 2, FVAR_MAX); \
+    FVAR(IDF_WORLD, hazerefract##name, FVAR_NONZERO, 2, 10); \
+    FVAR(IDF_WORLD, hazerefract2##name, FVAR_NONZERO, 4, 10); \
+    FVAR(IDF_WORLD, hazerefract3##name, FVAR_NONZERO, 8, 10); \
+    FVAR(IDF_WORLD, hazescrollx##name, FVAR_MIN, 0, FVAR_MAX); \
+    FVAR(IDF_WORLD, hazescrolly##name, FVAR_MIN, -0.5f, FVAR_MAX);
+
+MPVVARS(, MPV_DEF);
+MPVVARS(alt, MPV_ALT);
+
+#define GETMPV(name, type) \
+    type get##name() \
+    { \
+        if(checkmapvariant(MPV_ALT)) return name##alt; \
+        return name; \
+    }
+
+GETMPV(haze, int);
+GETMPV(hazetex, const char *);
+GETMPV(hazemindist, float);
+GETMPV(hazemaxdist, float);
+GETMPV(hazemargin, float);
+GETMPV(hazescalex, float);
+GETMPV(hazescaley, float);
+GETMPV(hazerefract, float);
+GETMPV(hazerefract2, float);
+GETMPV(hazerefract3, float);
+GETMPV(hazescrollx, float);
+GETMPV(hazescrolly, float);
+
+bool hashaze = false;
+Texture *hazetexture = NULL;
+void inithaze()
+{
+    hashaze = false;
+    if(!gethaze()) return;
+    const char *hazename = gethazetex();
+    if(hazename[0])
+    {
+        hazetexture = textureload(hazename, 0, true, false);
+        if(hazetexture && hazetexture != notexture)
+        {
+            useshaderbyname("haze");
+            hashaze = true;
+        }
+    }
+}
+
+void renderhaze()
+{
+    if(!hashaze) return;
+
+    glDepthFunc(GL_NOTEQUAL);
+    glDepthMask(GL_FALSE);
+    glDepthRange(1, 1);
+
+    glEnable(GL_BLEND);
+
+    glActiveTexture_(GL_TEXTURE8);
+    glBindTexture(GL_TEXTURE_RECTANGLE, hdrtex);
+    glActiveTexture_(GL_TEXTURE9);
+    if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
+    else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
+    glActiveTexture_(GL_TEXTURE0);
+
+    float xscale = gethazescalex(), yscale = gethazescaley(), scroll = lastmillis/1000.0f, xscroll = gethazescrollx()*scroll, yscroll = gethazescrolly()*scroll;
+    GLOBALPARAMF(hazetexgen, xscale, yscale, xscroll, yscroll);
+
+    float refract = gethazerefract(), refract2 = gethazerefract2(), refract3 = gethazerefract3();
+    GLOBALPARAMF(hazerefract, refract, refract2, refract3);
+    float margin = gethazemargin(), mindist = gethazemindist(), maxdist = max(max(mindist, gethazemaxdist())-mindist, margin);
+    GLOBALPARAMF(hazeparams, mindist, maxdist, margin);
+
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glBindTexture(GL_TEXTURE_2D, hazetexture->id);
+    SETSHADER(haze);
+
+    gle::defvertex(3);
+    gle::begin(GL_TRIANGLE_STRIP);
+    gle::attribf(1, -1, 1);
+    gle::attribf(-1, -1, 1);
+    gle::attribf(1, 1, 1);
+    gle::attribf(-1, 1, 1);
+    gle::end();
+
+    glDisable(GL_BLEND);
+
+    glDepthFunc(GL_LESS);
+    glDepthMask(GL_TRUE);
+    glDepthRange(0, 1);
+}
+
 /* vertex water */
 VAR(IDF_WORLD, watersubdiv, 0, 2, 3);
 VAR(IDF_WORLD, waterlod, 0, 1, 3);
@@ -622,7 +722,7 @@ void renderlava()
     }
 }
 
-void rendervolumefalls()
+void renderwaterfalls()
 {
     loopk(4)
     {
