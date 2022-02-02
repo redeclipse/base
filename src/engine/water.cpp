@@ -919,7 +919,7 @@ void rendervolfog()
         } while(0)
 
         Shader *aboveshader = NULL, *belowshader = NULL;
-        if(drawtex != DRAWTEX_MINIMAP) SETVOLFOGSHADER(above, minimapvol);
+        if(drawtex == DRAWTEX_MINIMAP) SETVOLFOGSHADER(above, minimapvol);
         else switch(textured)
         {
             case 2:
