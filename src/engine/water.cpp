@@ -919,21 +919,23 @@ void rendervolfog()
         } while(0)
 
         Shader *aboveshader = NULL;
-        if(drawtex != DRAWTEX_MINIMAP) switch(textured)
-        {
-            case 2: SETVOLFOGSHADER(above, volfogtex); break;
-            case 1: SETVOLFOGSHADER(above, volfogtexsmp); break;
-            default: SETVOLFOGSHADER(above, volfog); break;
-        }
-        else SETVOLFOGSHADER(above, minimapvol);
-
         Shader *belowshader = NULL;
         if(drawtex != DRAWTEX_MINIMAP) switch(textured)
         {
-            case 2: SETVOLFOGSHADER(below, undervolfogtex); break;
-            case 1: SETVOLFOGSHADER(below, undervolfogtexsmp); break;
-            default: SETVOLFOGSHADER(below, undervolfog); break;
+            case 2:
+                SETVOLFOGSHADER(above, volfogtex);
+                SETVOLFOGSHADER(below, undervolfogtex);
+                break;
+            case 1:
+                SETVOLFOGSHADER(above, volfogtexsmp);
+                SETVOLFOGSHADER(below, undervolfogtexsmp);
+                break;
+            default:
+                SETVOLFOGSHADER(above, volfog);
+                SETVOLFOGSHADER(below, undervolfog);
+                break;
         }
+        else SETVOLFOGSHADER(above, minimapvol);
 
         if(aboveshader)
         {
