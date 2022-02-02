@@ -918,9 +918,9 @@ void rendervolfog()
             which##shader = name##shader; \
         } while(0)
 
-        Shader *aboveshader = NULL;
-        Shader *belowshader = NULL;
-        if(drawtex != DRAWTEX_MINIMAP) switch(textured)
+        Shader *aboveshader = NULL, *belowshader = NULL;
+        if(drawtex != DRAWTEX_MINIMAP) SETVOLFOGSHADER(above, minimapvol);
+        else switch(textured)
         {
             case 2:
                 SETVOLFOGSHADER(above, volfogtex);
@@ -935,7 +935,6 @@ void rendervolfog()
                 SETVOLFOGSHADER(below, undervolfog);
                 break;
         }
-        else SETVOLFOGSHADER(above, minimapvol);
 
         if(aboveshader)
         {
