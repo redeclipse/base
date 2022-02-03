@@ -237,8 +237,11 @@ void renderhaze()
         if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msrefracttex);
         else glBindTexture(GL_TEXTURE_RECTANGLE, refracttex);
     }
-    glActiveTexture_(GL_TEXTURE8);
-    glBindTexture(GL_TEXTURE_RECTANGLE, hazertex);
+    if(textured)
+    {
+        glActiveTexture_(GL_TEXTURE8);
+        glBindTexture(GL_TEXTURE_RECTANGLE, hazertex);
+    }
     glActiveTexture_(GL_TEXTURE9);
     if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
     else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
