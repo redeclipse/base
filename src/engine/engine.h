@@ -494,7 +494,7 @@ static inline bool bbinsidespot(const vec &origin, const vec &dir, int spot, con
     return sphereinsidespot(dir, spot, center.sub(origin), radius.magnitude());
 }
 
-extern matrix4 worldmatrix, screenmatrix;
+extern matrix4 eyematrix, worldmatrix, screenmatrix;
 
 extern int transparentlayer;
 
