@@ -938,6 +938,7 @@ extern const bvec &getfogcolour(), &getambient(), &getskylight();
 extern int getskytexture(), getskyshadow();
 extern float getambientscale(), getskylightscale();
 
+extern void drawenvlayers(bool skyplane = false);
 extern void drawskybox(bool clear = false);
 extern bool hasskybox();
 extern bool limitsky();

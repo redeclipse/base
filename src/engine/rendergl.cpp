@@ -2460,9 +2460,13 @@ void gl_drawview()
     rendervolumetric();
     GLERROR;
 
+    drawenvlayers();
+    GLERROR;
+
     if(!drawtex)
     {
         renderhaze(fogmat);
+        GLERROR;
         if(editmode)
         {
             if(!wireframe && outline) renderoutline();
