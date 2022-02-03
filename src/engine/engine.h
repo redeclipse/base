@@ -602,7 +602,7 @@ extern void savevfcP();
 extern void restorevfcP();
 extern void rendergeom();
 extern int findalphavas();
-extern void renderalphavamask();
+extern void renderrefractmask();
 extern void renderalphageom(int side);
 extern void renderalphashadow(bool cullside = false);
 extern void rendermapmodels();

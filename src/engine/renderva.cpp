@@ -2189,7 +2189,7 @@ int findalphavas()
     return (alpharefractvas ? 4 : 0) | (alphavas.length() ? 2 : 0) | (alphabackvas ? 1 : 0);
 }
 
-void renderalphavamask()
+void renderrefractmask()
 {
     gle::enablevertex();
 
@@ -2208,7 +2208,7 @@ void renderalphavamask()
         }
 
         drawvatris(va, 3*va->alphatris, 3*(va->tris + va->blendtris));
-        xtravertsva += 3*va->refracttris;
+        xtravertsva += 3*va->alphatris;
 
         prev = va;
     }

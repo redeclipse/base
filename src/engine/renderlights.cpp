@@ -5004,7 +5004,7 @@ void rendertransparent()
         if(scissor) glDisable(GL_SCISSOR_TEST);
         GLOBALPARAMF(refractdepth, 1.0f/refractdepth);
         SETSHADER(refractmask);
-        if(hasalphavas) renderalphavamask();
+        if(hasalphavas) renderrefractmask();
         if(hasmats&4) rendermaterialmask();
 
         glDepthMask(GL_TRUE);
