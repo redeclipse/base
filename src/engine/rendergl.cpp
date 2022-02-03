@@ -2465,7 +2465,7 @@ void gl_drawview()
 
     if(!drawtex)
     {
-        renderhaze(fogmat);
+        renderhaze();
         GLERROR;
         if(editmode)
         {

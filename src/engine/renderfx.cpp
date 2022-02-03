@@ -163,7 +163,6 @@ GETMPV(hazerefract3, float);
 GETMPV(hazescrollx, float);
 GETMPV(hazescrolly, float);
 
-bool hashaze = false;
 Texture *hazetexture = NULL;
 GLuint hazertex = 0, hazerfbo = 0;
 int hazew = 0, hazeh = 0;
@@ -211,23 +210,17 @@ void cleanuphaze()
 
 void inithaze()
 {
-    hashaze = false;
+    hazetexture = NULL;
     if(!gethaze()) return;
     const char *hazename = gethazetex();
-    if(hazename[0])
-    {
-        hazetexture = textureload(hazename, 0, true, false);
-        if(hazetexture && hazetexture != notexture)
-        {
-            useshaderbyname("haze");
-            hashaze = true;
-        }
-    }
+    if(hazename[0]) hazetexture = textureload(hazename, 0, true, false);
+    if(hazetexture && hazetexture != notexture) useshaderbyname("hazetex");
+    else useshaderbyname("haze");
 }
 
-void renderhaze(int fogmat)
+void renderhaze()
 {
-    if(!hashaze) return;
+    if(!gethaze()) return;
 
     setuphaze(vieww, viewh);
 
@@ -250,20 +243,24 @@ void renderhaze(int fogmat)
     else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
     glActiveTexture_(GL_TEXTURE0);
 
-    float xscale = gethazescalex(), yscale = gethazescaley(), scroll = lastmillis/1000.0f, xscroll = gethazescrollx()*scroll, yscroll = gethazescrolly()*scroll;
-    GLOBALPARAMF(hazetexgen, xscale, yscale, xscroll, yscroll);
-
+    bool textured = hazetexture && hazetexture != notexture;
     bvec color = gethazecolour();
     float colormix = gethazecolourmix();
-    if(color.iszero()) colormix = 0;
+    if(textured && color.iszero()) colormix = 0;
     GLOBALPARAMF(hazecolor, color.x*ldrscaleb, color.y*ldrscaleb, color.z*ldrscaleb, colormix);
     float refract = gethazerefract(), refract2 = gethazerefract2(), refract3 = gethazerefract3();
     GLOBALPARAMF(hazerefract, refract, refract2, refract3);
     float margin = gethazemargin(), mindist = gethazemindist(), maxdist = max(max(mindist, gethazemaxdist())-mindist, margin), blend = gethazeblend();
     GLOBALPARAMF(hazeparams, mindist, maxdist, margin, blend);
 
-    glBindTexture(GL_TEXTURE_2D, hazetexture->id);
-    SETSHADER(haze);
+    if(textured)
+    {
+        float xscale = gethazescalex(), yscale = gethazescaley(), scroll = lastmillis/1000.0f, xscroll = gethazescrollx()*scroll, yscroll = gethazescrolly()*scroll;
+        GLOBALPARAMF(hazetexgen, xscale, yscale, xscroll, yscroll);
+        glBindTexture(GL_TEXTURE_2D, hazetexture->id);
+        SETSHADER(hazetex);
+    }
+    else SETSHADER(haze);
 
     gle::defvertex(3);
     gle::begin(GL_TRIANGLE_STRIP);
