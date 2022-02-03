@@ -243,7 +243,7 @@ void renderhaze()
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    if(hastransparent)
+    if(hasrefractmask)
     {
         glActiveTexture_(GL_TEXTURE7);
         if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msrefracttex);
@@ -272,10 +272,10 @@ void renderhaze()
         float xscale = gethazescalex(), yscale = gethazescaley(), scroll = lastmillis/1000.0f, xscroll = gethazescrollx()*scroll, yscroll = gethazescrolly()*scroll;
         GLOBALPARAMF(hazetexgen, xscale, yscale, xscroll, yscroll);
         glBindTexture(GL_TEXTURE_2D, hazetexture->id);
-        if(hastransparent) SETSHADER(hazetexref);
+        if(hasrefractmask) SETSHADER(hazetexref);
         else SETSHADER(hazetex);
     }
-        if(hastransparent) SETSHADER(hazeref);
+        if(hasrefractmask) SETSHADER(hazeref);
         else SETSHADER(haze);
 
     gle::defvertex(3);

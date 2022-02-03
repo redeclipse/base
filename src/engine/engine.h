@@ -505,7 +505,7 @@ extern int msaasamples, msaalight;
 extern GLuint mshdrtex, msdepthtex, mscolortex, msnormaltex, msglowtex, msdepthrb, msstencilrb, msrefracttex;
 extern vector<vec2> msaapositions;
 extern GLuint hdrfbo, mshdrfbo;
-extern bool hastransparent;
+extern bool hasrefractmask;
 enum { AA_UNUSED = 0, AA_LUMA, AA_MASKED, AA_SPLIT, AA_SPLIT_LUMA, AA_SPLIT_MASKED };
 
 extern void cleanupgbuffer();

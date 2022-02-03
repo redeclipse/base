@@ -4965,25 +4965,24 @@ FVAR(0, refractmargin, 0, 0.1f, 1);
 FVAR(0, refractdepth, 1e-3f, 16, 1e3f);
 
 int transparentlayer = 0;
-bool hastransparent = false;
+bool hasrefractmask = false;
 
 void rendertransparent()
 {
     int hasalphavas = findalphavas(), hasmats = findmaterials();
     bool hasmodels = transmdlsx1 < transmdlsx2 && transmdlsy1 < transmdlsy2, hashaze = gethaze() != 0;
+    hasrefractmask = false;
     if(!hasalphavas && !hasmats && !hasmodels)
     {
-        hastransparent = false;
         if(!editmode) renderparticles();
         return;
     }
 
-    hastransparent = true;
     if(!editmode && particlelayers && ghasstencil) renderparticles(PL_UNDER);
 
     timer *transtimer = begintimer("Transparent");
 
-    if(hashaze || hasalphavas&4 || hasmats&4)
+    if((hashaze ? hasalphavas : hasalphavas&4) || hasmats&4)
     {
         glBindFramebuffer_(GL_FRAMEBUFFER, msaalight ? msrefractfbo : refractfbo);
         glDepthMask(GL_FALSE);
@@ -5010,10 +5009,11 @@ void rendertransparent()
         if(scissor) glDisable(GL_SCISSOR_TEST);
         GLOBALPARAMF(refractdepth, 1.0f/refractdepth);
         SETSHADER(refractmask);
-        if(hasalphavas&4 || hashaze) renderrefractmask(hashaze);
+        if(hashaze ? hasalphavas : hasalphavas&4) renderrefractmask(hashaze);
         if(hasmats&4) rendermaterialmask();
 
         glDepthMask(GL_TRUE);
+        hasrefractmask = true;
     }
 
     glActiveTexture_(GL_TEXTURE7);
