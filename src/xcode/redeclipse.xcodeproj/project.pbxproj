@@ -9,7 +9,7 @@
 /* Begin PBXBuildFile section */
 		2AB901CF1AC1B72400A5F378 /* weapdef.h in Headers */ = {isa = PBXBuildFile; fileRef = 3E06CDDA14A30E1300F89530 /* weapdef.h */; };
 		2AB901D11AC1B8E900A5F378 /* version.h in Headers */ = {isa = PBXBuildFile; fileRef = 2AB901D01AC1B8E900A5F378 /* version.h */; };
-		3433FD3125207F4400A7E880 /* halo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3433FD3025207F4400A7E880 /* halo.cpp */; };
+		3433FD3125207F4400A7E880 /* renderfx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3433FD3025207F4400A7E880 /* renderfx.cpp */; };
 		3433FD3425207FC500A7E880 /* fx.h in Headers */ = {isa = PBXBuildFile; fileRef = 3433FD3325207FC500A7E880 /* fx.h */; };
 		3433FD3725207FD000A7E880 /* fxprop.h in Headers */ = {isa = PBXBuildFile; fileRef = 3433FD3625207FD000A7E880 /* fxprop.h */; };
 		3486181E22F6CD05008363EE /* wind.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3486181C22F6CD04008363EE /* wind.cpp */; };
@@ -160,7 +160,7 @@
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
 		2AB901D01AC1B8E900A5F378 /* version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = version.h; sourceTree = "<group>"; };
-		3433FD3025207F4400A7E880 /* halo.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = halo.cpp; sourceTree = "<group>"; };
+		3433FD3025207F4400A7E880 /* renderfx.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = renderfx.cpp; sourceTree = "<group>"; };
 		3433FD3325207FC500A7E880 /* fx.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fx.h; sourceTree = "<group>"; };
 		3433FD3625207FD000A7E880 /* fxprop.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fxprop.h; sourceTree = "<group>"; };
 		3486181C22F6CD04008363EE /* wind.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = wind.cpp; sourceTree = "<group>"; };
@@ -440,7 +440,7 @@
 			children = (
 				3433FD3625207FD000A7E880 /* fxprop.h */,
 				3433FD3325207FC500A7E880 /* fx.h */,
-				3433FD3025207F4400A7E880 /* halo.cpp */,
+				3433FD3025207F4400A7E880 /* renderfx.cpp */,
 				3486181C22F6CD04008363EE /* wind.cpp */,
 				3486181D22F6CD05008363EE /* wind.h */,
 				B91D401E0D525FD3004EF78A /* animmodel.h */,
@@ -776,7 +776,7 @@
 				B9AC7AF70D06DB44005506F8 /* worldio.cpp in Sources */,
 				B9AC7B0D0D06DB44005506F8 /* geom.cpp in Sources */,
 				B9AC7B0D0D06DB44000506F8 /* prop.cpp in Sources */,
-				3433FD3125207F4400A7E880 /* halo.cpp in Sources */,
+				3433FD3125207F4400A7E880 /* renderfx.cpp in Sources */,
 				B9AC7B150D06DB44005506F8 /* tools.cpp in Sources */,
 				FD88C2981B6C824B004CEB1D /* glexts.h in Sources */,
 				D1C660CA0D5467C8002E52C1 /* pvs.cpp in Sources */,

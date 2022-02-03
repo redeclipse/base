@@ -254,7 +254,6 @@ CLIENT_OBJS = \
     engine/fxemit.o \
     engine/fxprop.o \
     engine/grass.o \
-    engine/halo.o \
     engine/http.o \
     engine/irc.o \
     engine/light.o \
@@ -269,8 +268,9 @@ CLIENT_OBJS = \
     engine/octarender.o \
     engine/physics.o \
     engine/pvs.o \
-    engine/rendergl.o \
     engine/renderlights.o \
+    engine/renderfx.o \
+    engine/rendergl.o \
     engine/rendermodel.o \
     engine/renderparticles.o \
     engine/rendersky.o \
@@ -591,12 +591,6 @@ engine/grass.o: engine/wind.h engine/fx.h shared/glexts.h shared/glemu.h
 engine/grass.o: shared/iengine.h shared/igame.h engine/http.h engine/irc.h
 engine/grass.o: engine/sound.h engine/world.h engine/octa.h engine/light.h
 engine/grass.o: engine/texture.h engine/bih.h engine/model.h
-engine/halo.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h
-engine/halo.o: shared/command.h shared/geom.h shared/prop.h shared/ents.h
-engine/halo.o: engine/wind.h engine/fx.h shared/glexts.h shared/glemu.h
-engine/halo.o: shared/iengine.h shared/igame.h engine/http.h engine/irc.h
-engine/halo.o: engine/sound.h engine/world.h engine/octa.h engine/light.h
-engine/halo.o: engine/texture.h engine/bih.h engine/model.h
 engine/http.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h
 engine/http.o: shared/command.h shared/geom.h shared/prop.h shared/ents.h
 engine/http.o: engine/wind.h engine/fx.h shared/glexts.h shared/glemu.h
@@ -686,6 +680,12 @@ engine/pvs.o: engine/wind.h engine/fx.h shared/glexts.h shared/glemu.h
 engine/pvs.o: shared/iengine.h shared/igame.h engine/http.h engine/irc.h
 engine/pvs.o: engine/sound.h engine/world.h engine/octa.h engine/light.h
 engine/pvs.o: engine/texture.h engine/bih.h engine/model.h
+engine/renderfx.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h
+engine/renderfx.o: shared/command.h shared/geom.h shared/prop.h shared/ents.h
+engine/renderfx.o: engine/wind.h engine/fx.h shared/glexts.h shared/glemu.h
+engine/renderfx.o: shared/iengine.h shared/igame.h engine/http.h engine/irc.h
+engine/renderfx.o: engine/sound.h engine/world.h engine/octa.h engine/light.h
+engine/renderfx.o: engine/texture.h engine/bih.h engine/model.h
 engine/rendergl.o: engine/engine.h engine/version.h shared/cube.h
 engine/rendergl.o: shared/tools.h shared/command.h shared/geom.h
 engine/rendergl.o: shared/prop.h shared/ents.h engine/wind.h engine/fx.h
