@@ -4981,14 +4981,14 @@ void rendertransparent()
 
     timer *transtimer = begintimer("Transparent");
 
-    if(hasalphavas&4 || hasmats&4)
+    if(hasalphavas || hasmats&4)
     {
         glBindFramebuffer_(GL_FRAMEBUFFER, msaalight ? msrefractfbo : refractfbo);
         glDepthMask(GL_FALSE);
         if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
         else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
-        float sx1 = min(alpharefractsx1, matrefractsx1), sy1 = min(alpharefractsy1, matrefractsy1),
-              sx2 = max(alpharefractsx2, matrefractsx2), sy2 = max(alpharefractsy2, matrefractsy2);
+        float sx1 = min(alphafrontsx1, matrefractsx1), sy1 = min(alphafrontsy1, matrefractsy1),
+              sx2 = max(alphafrontsx2, matrefractsx2), sy2 = max(alphafrontsy2, matrefractsy2);
         bool scissor = sx1 > -1 || sy1 > -1 || sx2 < 1 || sy2 < 1;
         if(scissor)
         {
@@ -5004,7 +5004,7 @@ void rendertransparent()
         if(scissor) glDisable(GL_SCISSOR_TEST);
         GLOBALPARAMF(refractdepth, 1.0f/refractdepth);
         SETSHADER(refractmask);
-        if(hasalphavas&4) renderrefractmask();
+        if(hasalphavas) renderalphavamask();
         if(hasmats&4) rendermaterialmask();
 
         glDepthMask(GL_TRUE);

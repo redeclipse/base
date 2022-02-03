@@ -643,11 +643,15 @@ int findmaterials()
             matliquidsx2 = max(matliquidsx2, sx2);
             matliquidsy2 = max(matliquidsy2, sy2);
             masktiles(matliquidtiles, sx1, sy1, sx2, sy2);
+            matrefractsx1 = min(matrefractsx1, sx1);
+            matrefractsy1 = min(matrefractsy1, sy1);
+            matrefractsx2 = max(matrefractsx2, sx2);
+            matrefractsy2 = max(matrefractsy2, sy2);
             loopi(va->matsurfs)
             {
                 materialsurface &m = va->matbuf[i];
                 if((m.material&MATF_VOLUME) != MAT_VOLFOG || m.visible == MATSURF_EDIT_ONLY) { i += m.skip; continue; }
-                hasmats |= 1;
+                hasmats |= 4|1;
                 if(m.orient == O_TOP) volfogsurfs[m.material&MATF_INDEX].put(&m, 1+int(m.skip));
                 i += m.skip;
             }
@@ -682,6 +686,7 @@ void rendermaterialmask()
     loopk(4) { vector<materialsurface> &surfs = glasssurfs[k]; loopv(surfs) drawmaterial(surfs[i], VOLUME_INSET); }
     loopk(4) { vector<materialsurface> &surfs = watersurfs[k]; loopv(surfs) drawmaterial(surfs[i], VOLUME_OFFSET); }
     loopk(4) { vector<materialsurface> &surfs = waterfallsurfs[k]; loopv(surfs) drawmaterial(surfs[i], VOLUME_INSET); }
+    loopk(4) { vector<materialsurface> &surfs = volfogsurfs[k]; loopv(surfs) drawmaterial(surfs[i], 0.f); }
     xtraverts += gle::end();
     glEnable(GL_CULL_FACE);
 }

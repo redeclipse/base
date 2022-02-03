@@ -235,6 +235,9 @@ void renderhaze()
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+    glActiveTexture_(GL_TEXTURE7);
+    if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msrefracttex);
+    else glBindTexture(GL_TEXTURE_RECTANGLE, refracttex);
     glActiveTexture_(GL_TEXTURE8);
     if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, mshdrtex);
     else glBindTexture(GL_TEXTURE_RECTANGLE, hdrtex);
