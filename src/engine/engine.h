@@ -740,10 +740,6 @@ extern void renderlava();
 extern void renderlava(const materialsurface &m, Texture *tex, float scale);
 extern void loadcaustics(bool force = false);
 extern void renderdepthfog(int mat, float blend);
-extern void cleanuphaze();
-extern void inithaze();
-extern void renderhaze();
-extern void viewhaze();
 extern void preloadwatershaders(bool force = false);
 
 // server
@@ -1017,7 +1013,7 @@ namespace recorder
     extern void cleanup();
 }
 
-// halo
+// renderfx
 extern int debughalo;
 extern int halodist;
 extern float haloblend;
@@ -1027,6 +1023,12 @@ extern void renderhalo();
 extern void viewhalo();
 extern void blendhalos();
 extern void cleanuphalo();
+
+extern int debughaze;
+extern void cleanuphaze();
+extern void inithaze();
+extern void renderhaze();
+extern void viewhaze();
 
 #endif // STANDALONE
 
