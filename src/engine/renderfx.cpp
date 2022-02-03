@@ -254,7 +254,7 @@ void renderhaze()
     float refract = gethazerefract(), refract2 = gethazerefract2(), refract3 = gethazerefract3();
     GLOBALPARAMF(hazerefract, refract, refract2, refract3);
     float margin = gethazemargin(), mindist = gethazemindist(), maxdist = max(max(mindist, gethazemaxdist())-mindist, margin), blend = gethazeblend();
-    GLOBALPARAMF(hazeparams, mindist, maxdist, margin, blend);
+    GLOBALPARAMF(hazeparams, mindist, 1.0f/maxdist, 1.0f/margin, blend);
 
     if(textured)
     {
