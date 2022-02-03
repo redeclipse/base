@@ -4965,46 +4965,52 @@ FVAR(0, refractmargin, 0, 0.1f, 1);
 FVAR(0, refractdepth, 1e-3f, 16, 1e3f);
 
 int transparentlayer = 0;
+bool hastransparent = false;
 
 void rendertransparent()
 {
-    int hasalphavas = findalphavas();
-    int hasmats = findmaterials();
-    bool hasmodels = transmdlsx1 < transmdlsx2 && transmdlsy1 < transmdlsy2;
+    int hasalphavas = findalphavas(), hasmats = findmaterials();
+    bool hasmodels = transmdlsx1 < transmdlsx2 && transmdlsy1 < transmdlsy2, hashaze = gethaze() != 0;
     if(!hasalphavas && !hasmats && !hasmodels)
     {
+        hastransparent = false;
         if(!editmode) renderparticles();
         return;
     }
 
+    hastransparent = true;
     if(!editmode && particlelayers && ghasstencil) renderparticles(PL_UNDER);
 
     timer *transtimer = begintimer("Transparent");
 
-    if(hasalphavas || hasmats&4)
+    if(hashaze || hasalphavas&4 || hasmats&4)
     {
         glBindFramebuffer_(GL_FRAMEBUFFER, msaalight ? msrefractfbo : refractfbo);
         glDepthMask(GL_FALSE);
         if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
         else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
-        float sx1 = min(alphafrontsx1, matrefractsx1), sy1 = min(alphafrontsy1, matrefractsy1),
-              sx2 = max(alphafrontsx2, matrefractsx2), sy2 = max(alphafrontsy2, matrefractsy2);
-        bool scissor = sx1 > -1 || sy1 > -1 || sx2 < 1 || sy2 < 1;
-        if(scissor)
+        bool scissor = false;
+        if(!hashaze)
         {
-            int x1 = int(floor(max(sx1*0.5f+0.5f-refractmargin*viewh/vieww, 0.0f)*vieww)),
-                y1 = int(floor(max(sy1*0.5f+0.5f-refractmargin, 0.0f)*viewh)),
-                x2 = int(ceil(min(sx2*0.5f+0.5f+refractmargin*viewh/vieww, 1.0f)*vieww)),
-                y2 = int(ceil(min(sy2*0.5f+0.5f+refractmargin, 1.0f)*viewh));
-            glEnable(GL_SCISSOR_TEST);
-            glScissor(x1, y1, x2 - x1, y2 - y1);
+            float sx1 = min(alpharefractsx1, matrefractsx1), sy1 = min(alpharefractsy1, matrefractsy1),
+                sx2 = max(alpharefractsx2, matrefractsx2), sy2 = max(alpharefractsy2, matrefractsy2);
+            scissor = sx1 > -1 || sy1 > -1 || sx2 < 1 || sy2 < 1;
+            if(scissor)
+            {
+                int x1 = int(floor(max(sx1*0.5f+0.5f-refractmargin*viewh/vieww, 0.0f)*vieww)),
+                    y1 = int(floor(max(sy1*0.5f+0.5f-refractmargin, 0.0f)*viewh)),
+                    x2 = int(ceil(min(sx2*0.5f+0.5f+refractmargin*viewh/vieww, 1.0f)*vieww)),
+                    y2 = int(ceil(min(sy2*0.5f+0.5f+refractmargin, 1.0f)*viewh));
+                glEnable(GL_SCISSOR_TEST);
+                glScissor(x1, y1, x2 - x1, y2 - y1);
+            }
         }
         glClearColor(0, 0, 0, 0);
         glClear(GL_COLOR_BUFFER_BIT);
         if(scissor) glDisable(GL_SCISSOR_TEST);
         GLOBALPARAMF(refractdepth, 1.0f/refractdepth);
         SETSHADER(refractmask);
-        if(hasalphavas) renderrefractmask();
+        if(hasalphavas&4 || hashaze) renderrefractmask(hashaze);
         if(hasmats&4) rendermaterialmask();
 
         glDepthMask(GL_TRUE);

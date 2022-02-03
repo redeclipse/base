@@ -2189,7 +2189,7 @@ int findalphavas()
     return (alpharefractvas ? 4 : 0) | (alphavas.length() ? 2 : 0) | (alphabackvas ? 1 : 0);
 }
 
-void renderrefractmask()
+void renderrefractmask(bool alphas)
 {
     gle::enablevertex();
 
@@ -2197,7 +2197,7 @@ void renderrefractmask()
     loopv(alphavas)
     {
         vtxarray *va = alphavas[i];
-        if(!va->alphatris) continue;
+        if(alphas ? !va->alphatris : !va->refracttris) continue;
 
         if(!prev || va->vbuf != prev->vbuf)
         {
@@ -2207,8 +2207,10 @@ void renderrefractmask()
             gle::vertexpointer(sizeof(vertex), ptr->pos.v);
         }
 
-        drawvatris(va, 3*va->alphatris, 3*(va->tris + va->blendtris));
-        xtravertsva += 3*va->alphatris;
+        int tris = alphas ? 3*va->alphatris : 3*va->refracttris,
+            offset = alphas ? 3*(va->tris + va->blendtris) : 3*(va->tris + va->blendtris + va->alphabacktris + va->alphafronttris);
+        drawvatris(va, tris, offset);
+        xtravertsva += tris;
 
         prev = va;
     }

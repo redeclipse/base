@@ -214,8 +214,16 @@ void inithaze()
     if(!gethaze()) return;
     const char *hazename = gethazetex();
     if(hazename[0]) hazetexture = textureload(hazename, 0, true, false);
-    if(hazetexture && hazetexture != notexture) useshaderbyname("hazetex");
-    else useshaderbyname("haze");
+    if(hazetexture && hazetexture != notexture)
+    {
+        useshaderbyname("hazetex");
+        useshaderbyname("hazetexref");
+    }
+    else
+    {
+        useshaderbyname("haze");
+        useshaderbyname("hazeref");
+    }
 }
 
 void renderhaze()
@@ -235,9 +243,12 @@ void renderhaze()
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    glActiveTexture_(GL_TEXTURE7);
-    if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msrefracttex);
-    else glBindTexture(GL_TEXTURE_RECTANGLE, refracttex);
+    if(hastransparent)
+    {
+        glActiveTexture_(GL_TEXTURE7);
+        if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msrefracttex);
+        else glBindTexture(GL_TEXTURE_RECTANGLE, refracttex);
+    }
     glActiveTexture_(GL_TEXTURE8);
     if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, mshdrtex);
     else glBindTexture(GL_TEXTURE_RECTANGLE, hdrtex);
@@ -261,9 +272,11 @@ void renderhaze()
         float xscale = gethazescalex(), yscale = gethazescaley(), scroll = lastmillis/1000.0f, xscroll = gethazescrollx()*scroll, yscroll = gethazescrolly()*scroll;
         GLOBALPARAMF(hazetexgen, xscale, yscale, xscroll, yscroll);
         glBindTexture(GL_TEXTURE_2D, hazetexture->id);
-        SETSHADER(hazetex);
+        if(hastransparent) SETSHADER(hazetexref);
+        else SETSHADER(hazetex);
     }
-    else SETSHADER(haze);
+        if(hastransparent) SETSHADER(hazeref);
+        else SETSHADER(haze);
 
     gle::defvertex(3);
     gle::begin(GL_TRIANGLE_STRIP);
