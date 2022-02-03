@@ -122,6 +122,9 @@ void blendhalos()
 
 #define MPVVARS(name, type) \
     VARF(IDF_WORLD, haze##name, 0, 0, 1, inithaze()); \
+    CVAR(IDF_WORLD, hazecolour##name, 0); \
+    FVAR(IDF_WORLD, hazecolourmix##name, 0, 0.5f, 1); \
+    FVAR(IDF_WORLD, hazeblend##name, 0, 1, 1); \
     SVARF(IDF_WORLD, hazetex##name, "textures/watern", inithaze()); \
     FVAR(IDF_WORLD, hazemindist##name, 0, 256, FVAR_MAX); \
     FVAR(IDF_WORLD, hazemaxdist##name, 0, 1024, FVAR_MAX); \
@@ -146,6 +149,9 @@ MPVVARS(alt, MPV_ALT);
 
 GETMPV(haze, int);
 GETMPV(hazetex, const char *);
+GETMPV(hazecolour, const bvec &);
+GETMPV(hazecolourmix, float);
+GETMPV(hazeblend, float);
 GETMPV(hazemindist, float);
 GETMPV(hazemaxdist, float);
 GETMPV(hazemargin, float);
@@ -219,7 +225,7 @@ void inithaze()
     }
 }
 
-void renderhaze()
+void renderhaze(int fogmat)
 {
     if(!hashaze) return;
 
@@ -247,10 +253,14 @@ void renderhaze()
     float xscale = gethazescalex(), yscale = gethazescaley(), scroll = lastmillis/1000.0f, xscroll = gethazescrollx()*scroll, yscroll = gethazescrolly()*scroll;
     GLOBALPARAMF(hazetexgen, xscale, yscale, xscroll, yscroll);
 
+    bvec color = gethazecolour();
+    float colormix = gethazecolourmix();
+    if(color.iszero()) colormix = 0;
+    GLOBALPARAMF(hazecolor, color.x*ldrscaleb, color.y*ldrscaleb, color.z*ldrscaleb, colormix);
     float refract = gethazerefract(), refract2 = gethazerefract2(), refract3 = gethazerefract3();
     GLOBALPARAMF(hazerefract, refract, refract2, refract3);
-    float margin = gethazemargin(), mindist = gethazemindist(), maxdist = max(max(mindist, gethazemaxdist())-mindist, margin);
-    GLOBALPARAMF(hazeparams, mindist, maxdist, margin);
+    float margin = gethazemargin(), mindist = gethazemindist(), maxdist = max(max(mindist, gethazemaxdist())-mindist, margin), blend = gethazeblend();
+    GLOBALPARAMF(hazeparams, mindist, maxdist, margin, blend);
 
     glBindTexture(GL_TEXTURE_2D, hazetexture->id);
     SETSHADER(haze);

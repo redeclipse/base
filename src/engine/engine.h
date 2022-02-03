@@ -1027,7 +1027,7 @@ extern void cleanuphalo();
 extern int debughaze;
 extern void cleanuphaze();
 extern void inithaze();
-extern void renderhaze();
+extern void renderhaze(int fogmat);
 extern void viewhaze();
 
 #endif // STANDALONE

@@ -2462,7 +2462,7 @@ void gl_drawview()
 
     if(!drawtex)
     {
-        renderhaze();
+        renderhaze(fogmat);
         if(editmode)
         {
             if(!wireframe && outline) renderoutline();
