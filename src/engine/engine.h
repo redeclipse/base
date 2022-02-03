@@ -498,11 +498,13 @@ extern matrix4 worldmatrix, screenmatrix;
 
 extern int transparentlayer;
 
+extern GLenum hdrformat;
 extern int gw, gh, gdepthformat, ghasstencil;
 extern GLuint hdrtex, gdepthtex, gcolortex, gnormaltex, gglowtex, gdepthrb, gstencilrb, refracttex;
 extern int msaasamples, msaalight;
 extern GLuint mshdrtex, msdepthtex, mscolortex, msnormaltex, msglowtex, msdepthrb, msstencilrb, msrefracttex;
 extern vector<vec2> msaapositions;
+extern GLuint hdrfbo, mshdrfbo;
 enum { AA_UNUSED = 0, AA_LUMA, AA_MASKED, AA_SPLIT, AA_SPLIT_LUMA, AA_SPLIT_MASKED };
 
 extern void cleanupgbuffer();
@@ -738,8 +740,10 @@ extern void renderlava();
 extern void renderlava(const materialsurface &m, Texture *tex, float scale);
 extern void loadcaustics(bool force = false);
 extern void renderdepthfog(int mat, float blend);
+extern void cleanuphaze();
 extern void inithaze();
 extern void renderhaze();
+extern void viewhaze();
 extern void preloadwatershaders(bool force = false);
 
 // server

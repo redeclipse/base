@@ -1509,6 +1509,7 @@ void resetshaders()
 
     cleanuplights();
     cleanuphalo();
+    cleanuphaze();
     cleanupmodels();
     cleanupshaders();
     setupshaders();

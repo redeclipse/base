@@ -193,6 +193,49 @@ GETMPV(hazescrolly, float);
 
 bool hashaze = false;
 Texture *hazetexture = NULL;
+GLuint hazertex = 0, hazerfbo = 0;
+int hazew = 0, hazeh = 0;
+
+void setuphaze(int w, int h)
+{
+    if(w != hazew || h != hazeh)
+    {
+        cleanuphaze();
+        hazew = w;
+        hazeh = h;
+    }
+
+    GLERROR;
+    if(!hazertex)
+    {
+        glGenTextures(1, &hazertex);
+        createtexture(hazertex, hazew, hazeh, NULL, 3, 1, GL_RGBA8, GL_TEXTURE_RECTANGLE);
+    }
+
+    if(!hazerfbo)
+    {
+        glGenFramebuffers_(1, &hazerfbo);
+        glBindFramebuffer_(GL_FRAMEBUFFER, hazerfbo);
+        glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, hazertex, 0);
+    }
+    GLERROR;
+}
+
+void cleanuphaze()
+{
+    if(hazerfbo)
+    {
+        glDeleteFramebuffers_(1, &hazerfbo);
+        hazerfbo = 0;
+    }
+
+    if(hazertex)
+    {
+        glDeleteTextures(1, &hazertex);
+        hazertex = 0;
+    }
+}
+
 void inithaze()
 {
     hashaze = false;
@@ -213,12 +256,22 @@ void renderhaze()
 {
     if(!hashaze) return;
 
+    setuphaze(vieww, viewh);
+
+    glBindFramebuffer_(GL_FRAMEBUFFER, hazerfbo);
+    glViewport(0, 0, hazew, hazeh);
+
+    glClearColor(0, 0, 0, 0);
+    glClear(GL_COLOR_BUFFER_BIT);
+
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     glActiveTexture_(GL_TEXTURE8);
-    glBindTexture(GL_TEXTURE_RECTANGLE, hdrtex);
+    if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, mshdrtex);
+    else glBindTexture(GL_TEXTURE_RECTANGLE, hdrtex);
     glActiveTexture_(GL_TEXTURE9);
     if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
     else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
@@ -232,8 +285,6 @@ void renderhaze()
     float margin = gethazemargin(), mindist = gethazemindist(), maxdist = max(max(mindist, gethazemaxdist())-mindist, margin);
     GLOBALPARAMF(hazeparams, mindist, maxdist, margin);
 
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
     glBindTexture(GL_TEXTURE_2D, hazetexture->id);
     SETSHADER(haze);
 
@@ -245,9 +296,27 @@ void renderhaze()
     gle::attribf(-1, 1, 1);
     gle::end();
 
+    glBindFramebuffer_(GL_FRAMEBUFFER, msaalight ? mshdrfbo : hdrfbo);
+    glViewport(0, 0, vieww, viewh);
+
+    glBindTexture(GL_TEXTURE_RECTANGLE, hazertex);
+    SETSHADER(scalelinear);
+    gle::colorf(1, 1, 1);
+    screenquad(vieww, viewh);
+
     glDisable(GL_BLEND);
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
+}
+
+void viewhaze()
+{
+    if(!hazertex) return;
+    int w = min(hudw, hudh)/(debughaze == 2 ? 2 : 3), h = (w*hudh)/hudw;
+    SETSHADER(hudrect);
+    gle::colorf(1, 1, 1);
+    glBindTexture(GL_TEXTURE_RECTANGLE, hazertex);
+    debugquad(0, 0, w, h, 0, 0, hazew, hazeh);
 }
 
 /* vertex water */

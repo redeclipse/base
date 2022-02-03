@@ -454,6 +454,7 @@ void resetgl()
     cleanupblendmap();
     cleanuplights();
     cleanuphalo();
+    cleanuphaze();
     cleanupshaders();
     cleanupgl();
 

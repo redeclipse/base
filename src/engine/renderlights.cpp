@@ -5417,6 +5417,7 @@ bool debuglights()
     else if(debugrsm) viewrsm();
     else if(debugrh) viewrh();
     else if(debugvol) viewvol();
+    else if(debughaze) viewhaze();
     else if(debughalo) viewhalo();
     else if(!debugaa()) return false;
     return true;
