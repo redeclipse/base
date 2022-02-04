@@ -1228,7 +1228,7 @@ namespace physics
         float secs = millis/1000.f;
 
         d->blocked = false;
-        updatematerial(d, d->center(), d->feetpos(), local);
+        if(!isfloating) updatematerial(d, d->center(), d->feetpos(), local); // no material in editing, camera updates itself
         modifyvelocity(d, local, millis);
 
         vec vel(d->vel);
