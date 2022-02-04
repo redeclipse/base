@@ -216,61 +216,66 @@ void inithaze()
 
 void renderhaze()
 {
-    if(!gethaze()) return;
+    bool hashaze = gethaze() != 0;
+    if(!hashaze && !hazeparticles) return;
 
     setuphaze(vieww, viewh);
 
     bool textured = hazetexture && hazetexture != notexture;
-    if(textured)
+    if(textured || hazeparticles)
     {
         glBindTexture(GL_TEXTURE_RECTANGLE, hazertex);
         glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE, 0, 0, 0, 0, 0, hazew, hazeh);
     }
 
-    glDisable(GL_DEPTH_TEST);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    if(hasrefractmask)
+    if(hazeparticles) renderhazeparticles(hazertex);
+    if(hashaze)
     {
-        glActiveTexture_(GL_TEXTURE7);
-        if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msrefracttex);
-        else glBindTexture(GL_TEXTURE_RECTANGLE, refracttex);
+        glDisable(GL_DEPTH_TEST);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        if(hasrefractmask)
+        {
+            glActiveTexture_(GL_TEXTURE7);
+            if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msrefracttex);
+            else glBindTexture(GL_TEXTURE_RECTANGLE, refracttex);
+        }
+        if(textured)
+        {
+            glActiveTexture_(GL_TEXTURE8);
+            glBindTexture(GL_TEXTURE_RECTANGLE, hazertex);
+        }
+        glActiveTexture_(GL_TEXTURE9);
+        if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
+        else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
+        glActiveTexture_(GL_TEXTURE0);
+
+        bvec color = gethazecolour();
+        float colormix = gethazecolourmix();
+        if(textured && color.iszero()) colormix = 0;
+        GLOBALPARAMF(hazecolor, color.x*ldrscaleb, color.y*ldrscaleb, color.z*ldrscaleb, colormix);
+        float refract = gethazerefract(), refract2 = gethazerefract2(), refract3 = gethazerefract3();
+        GLOBALPARAMF(hazerefract, refract, refract2, refract3);
+        float margin = gethazemargin(), mindist = gethazemindist(), maxdist = max(max(mindist, gethazemaxdist())-mindist, margin), blend = gethazeblend();
+        GLOBALPARAMF(hazeparams, mindist, 1.0f/maxdist, 1.0f/margin, blend);
+
+        if(textured)
+        {
+            float xscale = gethazescalex(), yscale = gethazescaley(), scroll = lastmillis/1000.0f, xscroll = gethazescrollx()*scroll, yscroll = gethazescrolly()*scroll;
+            GLOBALPARAMF(hazetexgen, xscale, yscale, xscroll, yscroll);
+            glBindTexture(GL_TEXTURE_2D, hazetexture->id);
+            if(hasrefractmask) SETSHADER(hazetexref);
+            else SETSHADER(hazetex);
+        }
+        else if(hasrefractmask) SETSHADER(hazeref);
+        else SETSHADER(haze);
+
+        screenquad();
+
+        glDisable(GL_BLEND);
+        glEnable(GL_DEPTH_TEST);
     }
-    if(textured)
-    {
-        glActiveTexture_(GL_TEXTURE8);
-        glBindTexture(GL_TEXTURE_RECTANGLE, hazertex);
-    }
-    glActiveTexture_(GL_TEXTURE9);
-    if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
-    else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
-    glActiveTexture_(GL_TEXTURE0);
-
-    bvec color = gethazecolour();
-    float colormix = gethazecolourmix();
-    if(textured && color.iszero()) colormix = 0;
-    GLOBALPARAMF(hazecolor, color.x*ldrscaleb, color.y*ldrscaleb, color.z*ldrscaleb, colormix);
-    float refract = gethazerefract(), refract2 = gethazerefract2(), refract3 = gethazerefract3();
-    GLOBALPARAMF(hazerefract, refract, refract2, refract3);
-    float margin = gethazemargin(), mindist = gethazemindist(), maxdist = max(max(mindist, gethazemaxdist())-mindist, margin), blend = gethazeblend();
-    GLOBALPARAMF(hazeparams, mindist, 1.0f/maxdist, 1.0f/margin, blend);
-
-    if(textured)
-    {
-        float xscale = gethazescalex(), yscale = gethazescaley(), scroll = lastmillis/1000.0f, xscroll = gethazescrollx()*scroll, yscroll = gethazescrolly()*scroll;
-        GLOBALPARAMF(hazetexgen, xscale, yscale, xscroll, yscroll);
-        glBindTexture(GL_TEXTURE_2D, hazetexture->id);
-        if(hasrefractmask) SETSHADER(hazetexref);
-        else SETSHADER(hazetex);
-    }
-    else if(hasrefractmask) SETSHADER(hazeref);
-    else SETSHADER(haze);
-
-    screenquad();
-
-    glDisable(GL_BLEND);
-    glEnable(GL_DEPTH_TEST);
 }
 
 void viewhaze()

@@ -2,7 +2,7 @@
 
 #include "engine.h"
 
-Shader *particleshader = NULL, *particlenotextureshader = NULL, *particlesoftshader = NULL, *particletextshader = NULL;
+Shader *particleshader = NULL, *particlenotextureshader = NULL, *particlesoftshader = NULL, *particlehazeshader = NULL, *particletextshader = NULL;
 
 VAR(IDF_PERSIST, particlelayers, 0, 1, 1);
 FVAR(IDF_PERSIST, particlebright, 0, 2, 100);
@@ -12,6 +12,21 @@ VAR(IDF_PERSIST, softparticles, 0, 1, 1);
 VAR(IDF_PERSIST, softparticleblend, 1, 8, 64);
 
 VAR(IDF_PERSIST, particlewind, 0, 1, 1);
+
+Texture *particlehazetexture = NULL;
+
+VAR(IDF_PERSIST, particlehaze, 0, 1, 1);
+FVAR(IDF_PERSIST, particlehazeflame, 0, 3, FVAR_MAX);
+FVAR(IDF_PERSIST, particlehazeblend, 0, 1, 1);
+SVARF(IDF_PERSIST, particlehazetex, "textures/watern", particlehazetexture = textureload(particlehazetex, 0, true, false));
+FVAR(IDF_PERSIST, particlehazeghost, 0, 128, FVAR_MAX);
+FVAR(IDF_PERSIST, particlehazescalex, FVAR_NONZERO, 0.5f, FVAR_MAX);
+FVAR(IDF_PERSIST, particlehazescaley, FVAR_NONZERO, 1, FVAR_MAX);
+FVAR(IDF_PERSIST, particlehazerefract, FVAR_NONZERO, 2, 10);
+FVAR(IDF_PERSIST, particlehazerefract2, FVAR_NONZERO, 4, 10);
+FVAR(IDF_PERSIST, particlehazerefract3, FVAR_NONZERO, 8, 10);
+FVAR(IDF_PERSIST, particlehazescrollx, FVAR_MIN, 0, FVAR_MAX);
+FVAR(IDF_PERSIST, particlehazescrolly, FVAR_MIN, -0.5f, FVAR_MAX);
 
 // Check canemitparticles() to limit the rate that paricles can be emitted for models/sparklies
 // Automatically stops particles being emitted when paused or in reflective drawing
@@ -1191,6 +1206,9 @@ static partrenderer *parts[] =
     new taperenderer("<grey>particles/lightzap", PT_TAPE|PT_BRIGHT|PT_HFLIP|PT_VFLIP, 2),
     new quadrenderer("<grey>particles/muzzle", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP),
     new quadrenderer("<grey>particles/snow", PT_PART|PT_BRIGHT|PT_FLIP|PT_WIND),
+    new quadrenderer("<grey>particles/hint", PT_HAZE|PT_PART),
+    new quadrenderer("<grey>particles/hint", PT_HAZE|PT_PART|PT_SHRINK|PT_WIND),
+    new taperenderer("<grey>particles/sflare", PT_HAZE|PT_TAPE),
     &texts, &textontop,
     &explosions, &shockwaves, &shockballs, &glimmerballs, &lightnings, &lightzaps,
     &flares // must be done last!
@@ -1214,6 +1232,7 @@ void initparticles()
     if(!particleshader) particleshader = lookupshaderbyname("particle");
     if(!particlenotextureshader) particlenotextureshader = lookupshaderbyname("particlenotexture");
     if(!particlesoftshader) particlesoftshader = lookupshaderbyname("particlesoft");
+    if(!particlehazeshader) particlehazeshader = lookupshaderbyname("particlehaze");
     if(!particletextshader) particletextshader = lookupshaderbyname("particletext");
     loopi(sizeof(parts)/sizeof(parts[0])) parts[i]->init(parts[i]->type&PT_FEW ? min(fewparticles, maxparticles) : maxparticles);
     loopi(sizeof(parts)/sizeof(parts[0]))
@@ -1254,6 +1273,8 @@ void debugparticles()
     pophudmatrix();
 }
 
+bool hazeparticles = false;
+
 void renderparticles(int layer)
 {
     timer *parttimer = begintimer("Particles", false);
@@ -1272,6 +1293,12 @@ void renderparticles(int layer)
     {
         partrenderer *p = parts[partsorder[i]];
         if((p->type&PT_NOLAYER) == excludemask || !p->haswork()) continue;
+        if(p->type&PT_HAZE)
+        {
+            if(particlehaze) hazeparticles = true;
+            else p->reset();
+            continue;
+        }
 
         if(!rendered)
         {
@@ -1333,6 +1360,54 @@ void renderparticles(int layer)
         glDisable(GL_BLEND);
         glDepthMask(GL_TRUE);
     }
+
+    endtimer(parttimer);
+}
+
+void renderhazeparticles(GLuint hazertex)
+{
+    if(!particlehaze)
+    {
+        hazeparticles = false;
+        return;
+    }
+    timer *parttimer = begintimer("Particles", false);
+    if(!particlehazetexture) particlehazetexture = textureload(particlehazetex, 0, true, false);
+    canstep = true;
+
+    glDepthMask(GL_FALSE);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glActiveTexture_(GL_TEXTURE2);
+    if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
+    else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
+
+    glActiveTexture_(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, particlehazetexture->id);
+
+    glActiveTexture_(GL_TEXTURE4);
+    glBindTexture(GL_TEXTURE_RECTANGLE, hazertex);
+    glActiveTexture_(GL_TEXTURE0);
+
+    GLOBALPARAMF(hazerefract, particlehazerefract, particlehazerefract2, particlehazerefract3);
+    GLOBALPARAMF(hazeparams, 1.0f/particlehazeghost, particlehazeblend);
+    float scroll = lastmillis/1000.0f;
+    GLOBALPARAMF(hazetexgen, particlehazescalex, particlehazescaley, particlehazescrollx*scroll, particlehazescrolly*scroll);
+
+    particlehazeshader->set();
+    LOCALPARAMF(colorscale, 1, 1, 1, 1);
+
+    loopi(sizeof(parts)/sizeof(parts[0]))
+    {
+        partrenderer *p = parts[partsorder[i]];
+        if(!(p->type&PT_HAZE) || !p->haswork()) continue;
+        p->render();
+    }
+
+    glDisable(GL_BLEND);
+    glDepthMask(GL_TRUE);
+    hazeparticles = false;
 
     endtimer(parttimer);
 }
@@ -1730,6 +1805,7 @@ void regularflame(int type, const vec &p, float radius, float height, int color,
     {
         vec q = vec(p).add(vec(rndscale(radius*2.f)-radius, rndscale(radius*2.f)-radius, 0));
         newparticle(q, v, rnd(max(int(fade*height), 1))+1, type, color, s, blend, gravity, collide)->val = collidez;
+        if(particlehazeflame > 0 && type == PART_FLAME) newparticle(q, v, rnd(max(int(fade*height), 1))+1, PART_HAZE_FLAME, 0xFFFFFF, s*particlehazeflame, 1, gravity, -1)->val = collidez;
     }
 }
 
@@ -1802,17 +1878,19 @@ void makeparticle(const vec &o, attrvector &attr)
         case 11: // plasma
         case 12: // snow
         case 13: // sparks
+        case 16: case 17: case 18: // haze
         {
-            const int typemap[] = { PART_FLARE, -1, -1, PART_LIGHTNING, PART_FIREBALL, PART_SMOKE, PART_ELECTRIC, PART_PLASMA, PART_SNOW, PART_SPARK };
-            const float sizemap[] = { 0.28f, 0.0f, 0.0f, 0.25f, 4.f, 2.f, 0.6f, 4.f, 0.5f, 0.2f };
-            int type = typemap[attr[0]-4], fade = attr[4] > 0 ? attr[4] : 250,
-                gravity = attr[0] > 7 ? attr[7] : 0,
-                stain = attr[0] > 7 ? (attr[6] >= 0 && attr[6] <= STAIN_MAX ? attr[6] : -1) : 0,
-                colour = attr[0] > 7 ? partcolour(attr[3], attr[9], attr[10]) : partcolour(attr[3], attr[6], attr[7]);
-            float size = attr[5] != 0 ? attr[5]/100.f : sizemap[attr[0]-4],
-                  vel = attr[0] > 7 ? attr[8] : 1;
-            if(attr[1] >= 256) regularshape(type, max(1+attr[2], 1), colour, attr[1]-256, 5, fade, o, size, 1, gravity, stain, vel);
-            else newparticle(o, vec(offsetvec(attr[0] > 7 ? vec(0, 0, 0) : o, attr[1], max(1+attr[2], 0))).mul(vel), fade, type, colour, size, 1, gravity, stain);
+            const int typemap[] =   { PART_FLARE,   -1,     -1,     PART_LIGHTNING, PART_FIREBALL,  PART_SMOKE, PART_ELECTRIC,  PART_PLASMA,    PART_SNOW,  PART_SPARK,     -1,     -1,     PART_HAZE,  PART_HAZE_FLAME,    PART_HAZE_TAPE };
+            const bool tapemap[] =  { true,         false,  false,  true,           false,          false,      false,          false,          false,      false,          false,  false,  false,      false,              true };
+            const float sizemap[] = { 0.28f,        0.0f,   0.0f,   0.25f,          4.f,            2.f,        0.6f,           4.f,            0.5f,       0.2f,           0.0f,   0.0f,   8.0f,       8.0f,               1.0f };
+            int mapped = attr[0] - 4;
+            bool istape = tapemap[mapped];
+            int type = typemap[mapped], fade = attr[4] > 0 ? attr[4] : 250, gravity = !istape ? attr[7] : 0,
+                stain = !istape ? (attr[6] >= 0 && attr[6] <= STAIN_MAX ? attr[6] : -1) : 0,
+                colour = !istape ? partcolour(attr[3], attr[9], attr[10]) : partcolour(attr[3], attr[6], attr[7]);
+            float size = attr[5] != 0 ? attr[5]/100.f : sizemap[mapped], vel = !istape ? attr[8] : 1, blend = attr[10] > 0 ? attr[10]/100.f : 1.f;
+            if(attr[1] >= 256) regularshape(type, max(1+attr[2], 1), colour, attr[1]-256, 5, fade, o, size, blend, gravity, stain, vel);
+            else newparticle(o, vec(offsetvec(!istape ? vec(0, 0, 0) : o, attr[1], max(1+attr[2], 0))).mul(vel), fade, type, colour, size, blend, gravity, stain);
             break;
         }
         case 14: // flames <radius> <height> <rgb>
@@ -1821,7 +1899,8 @@ void makeparticle(const vec &o, attrvector &attr)
             const int typemap[] = { PART_FLAME, PART_SMOKE }, fademap[] = { 500, 1000 }, densitymap[] = { 3, 1 }, gravitymap[] = { -5, -10 };
             const float sizemap[] = { 2, 2 }, velmap[] = { 25, 50 };
             int type = typemap[attr[0]-14], density = densitymap[attr[0]-14];
-            regularflame(type, o, float(attr[1])/100.0f, float(attr[2])/100.0f, attr[3], density, attr[4] > 0 ? attr[4] : fademap[attr[0]-14], attr[5] != 0 ? attr[5]/100.f : sizemap[attr[0]-14], 1, attr[6] != 0 ? attr[6] : gravitymap[attr[0]-14], 0, attr[7] != 0 ? attr[7] : velmap[attr[0]-14]);
+            float blend = attr[10] > 0 ? attr[10]/100.f : 1.f;
+            regularflame(type, o, float(attr[1])/100.0f, float(attr[2])/100.0f, attr[3], density, attr[4] > 0 ? attr[4] : fademap[attr[0]-14], attr[5] != 0 ? attr[5]/100.f : sizemap[attr[0]-14], blend, attr[6] != 0 ? attr[6] : gravitymap[attr[0]-14], 0, attr[7] != 0 ? attr[7] : velmap[attr[0]-14]);
             break;
         }
         case 6: // meter, metervs - <percent> <rgb> <rgb2>

@@ -907,6 +907,7 @@ static inline mapmodelinfo *getmminfo(int n) { return mapmodels.inrange(n) ? &ma
 
 // renderparticles
 extern int particlelayers;
+extern bool hazeparticles;
 
 enum { PL_ALL = 0, PL_UNDER, PL_OVER, PL_NOLAYER };
 
@@ -918,6 +919,8 @@ extern void seedparticles();
 extern void updateparticles();
 extern void debugparticles();
 extern void renderparticles(int layer = PL_ALL);
+extern void initparticlehaze();
+extern void renderhazeparticles(GLuint hazertex);
 extern void cleanupparticles();
 
 // stain

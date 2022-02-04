@@ -247,6 +247,7 @@ enum
     PT_SHRINK   = 1<<22,    // shrink particle as it fades
     PT_GROW     = 1<<23,    // grow particle as it fades
     PT_WIND     = 1<<24,    // particles affected by the wind
+    PT_HAZE     = 1<<25,    // creates haze effect
     PT_FLIP     = PT_HFLIP | PT_VFLIP | PT_ROT
 };
 
@@ -272,8 +273,8 @@ enum
     PART_ELECZAP_SOFT, PART_ELECZAP,
     PART_FLAME,
     PART_FLARE, PART_MUZZLE_FLARE, PART_LIGHTNING_FLARE, PART_LIGHTZAP_FLARE,
-    PART_MUZZLE_FLASH,
-    PART_SNOW,
+    PART_MUZZLE_FLASH, PART_SNOW,
+    PART_HAZE, PART_HAZE_FLAME, PART_HAZE_TAPE,
     PART_TEXT, PART_TEXT_ONTOP,
     PART_EXPLOSION, PART_SHOCKWAVE, PART_SHOCKBALL, PART_GLIMMERY,
     PART_LIGHTNING, PART_LIGHTZAP,

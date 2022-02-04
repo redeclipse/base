@@ -2465,6 +2465,11 @@ void gl_drawview()
 
     if(!drawtex)
     {
+        if(editmode)
+        {
+            renderparticles();
+            GLERROR;
+        }
         renderhaze();
         GLERROR;
         if(editmode)
@@ -2472,8 +2477,6 @@ void gl_drawview()
             if(!wireframe && outline) renderoutline();
             GLERROR;
             rendereditmaterials();
-            GLERROR;
-            renderparticles();
             GLERROR;
 
             glDepthMask(GL_FALSE);
