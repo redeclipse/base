@@ -329,7 +329,7 @@ extern void part_cone(const vec &o, const vec &dir, float radius, float angle = 
 extern void removetrackedparticles(physent *pl = NULL);
 extern int particletext, maxparticledistance, flarelights;
 
-extern particle *newparticle(const vec &o, const vec &d, int fade, int type, int color = colourwhite, float size = 2, float blend = 1, float gravity = 0, int collide = 0, physent *pl = NULL);
+extern particle *newparticle(const vec &o, const vec &d, int fade, int type, int color = colourwhite, float size = 2, float blend = 1, float gravity = 0, int collide = 0, float val = 0, physent *pl = NULL);
 extern void create(int type, int color, int fade, const vec &p, float size = 2, float blend = 1, float gravity = 0, int collide = 0, physent *pl = NULL);
 extern void regularcreate(int type, int color, int fade, const vec &p, float size = 2, float blend = 1, float gravity = 0, int collide = 0, physent *pl = NULL, int delay = 0);
 extern void splash(int type, int color, float radius, int num, int fade, const vec &p, float size = 2, float blend = 1, float gravity = 0, int collide = 0, float vel = 1);

@@ -221,16 +221,16 @@ void renderhaze()
 
     setuphaze(vieww, viewh);
 
-    bool textured = hazetexture && hazetexture != notexture;
-    if(textured || hazeparticles)
+    if(hazeparticles)
     {
         glBindTexture(GL_TEXTURE_RECTANGLE, hazertex);
         glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE, 0, 0, 0, 0, 0, hazew, hazeh);
+        renderhazeparticles(hazertex);
     }
 
-    if(hazeparticles) renderhazeparticles(hazertex);
     if(hashaze)
     {
+        bool textured = hazetexture && hazetexture != notexture;
         glDisable(GL_DEPTH_TEST);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -243,6 +243,8 @@ void renderhaze()
         }
         if(textured)
         {
+            glBindTexture(GL_TEXTURE_RECTANGLE, hazertex);
+            glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE, 0, 0, 0, 0, 0, hazew, hazeh);
             glActiveTexture_(GL_TEXTURE8);
             glBindTexture(GL_TEXTURE_RECTANGLE, hazertex);
         }
