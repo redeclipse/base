@@ -19,7 +19,7 @@ VAR(IDF_PERSIST, particlehaze, 0, 1, 1);
 FVAR(IDF_PERSIST, particlehazeflame, 0, 3, FVAR_MAX);
 FVAR(IDF_PERSIST, particlehazeblend, 0, 1, 1);
 SVARF(IDF_PERSIST, particlehazetex, "textures/watern", particlehazetexture = textureload(particlehazetex, 0, true, false));
-FVAR(IDF_PERSIST, particlehazeghost, 0, 128, FVAR_MAX);
+FVAR(IDF_PERSIST, particlehazedist, 0, 64, FVAR_MAX);
 FVAR(IDF_PERSIST, particlehazescalex, FVAR_NONZERO, 0.5f, FVAR_MAX);
 FVAR(IDF_PERSIST, particlehazescaley, FVAR_NONZERO, 1, FVAR_MAX);
 FVAR(IDF_PERSIST, particlehazerefract, FVAR_NONZERO, 2, 10);
@@ -1390,13 +1390,12 @@ void renderhazeparticles(GLuint hazertex)
     glBindTexture(GL_TEXTURE_RECTANGLE, hazertex);
     glActiveTexture_(GL_TEXTURE0);
 
-    GLOBALPARAMF(hazerefract, particlehazerefract, particlehazerefract2, particlehazerefract3);
-    GLOBALPARAMF(hazeparams, 1.0f/particlehazeghost, particlehazeblend);
     float scroll = lastmillis/1000.0f;
+    GLOBALPARAMF(hazerefract, particlehazerefract, particlehazerefract2, particlehazerefract3, 1.0f/particlehazedist);
     GLOBALPARAMF(hazetexgen, particlehazescalex, particlehazescaley, particlehazescrollx*scroll, particlehazescrolly*scroll);
 
     particlehazeshader->set();
-    LOCALPARAMF(colorscale, 1, 1, 1, 1);
+    LOCALPARAMF(colorscale, 1, 1, 1, particlehazeblend);
 
     loopi(sizeof(parts)/sizeof(parts[0]))
     {
