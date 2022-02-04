@@ -908,14 +908,6 @@ typedef varenderer<PT_TRAIL> trailrenderer;
 #include "lensflare.h"
 #include "lightning.h"
 
-struct softquadrenderer : quadrenderer
-{
-    softquadrenderer(const char *texname, int type)
-        : quadrenderer(texname, type|PT_SOFT)
-    {
-    }
-};
-
 struct lineprimitive : listparticle<lineprimitive>
 {
     vec value;
@@ -1164,41 +1156,42 @@ static partrenderer *parts[] =
     new portalrenderer("<grey>particles/teleport"), &icons,
     &lineprimitives, &lineontopprimitives, &trisprimitives, &trisontopprimitives,
     &loopprimitives, &loopontopprimitives, &coneprimitives, &coneontopprimitives,
-    new softquadrenderer("<grey>particles/fire", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK|PT_WIND),
-    new softquadrenderer("<grey>particles/plasma", PT_PART|PT_BRIGHT|PT_FLIP|PT_SHRINK|PT_WIND),
+    new quadrenderer("<grey>particles/fire", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK|PT_WIND),
+    new quadrenderer("<grey>particles/plasma", PT_SOFT|PT_PART|PT_BRIGHT|PT_FLIP|PT_SHRINK|PT_WIND),
     new taperenderer("<grey>particles/sflare", PT_TAPE|PT_BRIGHT|PT_FEW),
     new taperenderer("<grey>particles/mflare", PT_TAPE|PT_BRIGHT|PT_RND4|PT_VFLIP|PT_FEW),
-    new softquadrenderer("<grey>particles/smoke", PT_PART|PT_LERP|PT_FLIP|PT_SHRINK|PT_WIND),
+    new quadrenderer("<grey>particles/smoke", PT_SOFT|PT_PART|PT_LERP|PT_FLIP|PT_SHRINK|PT_WIND),
     new quadrenderer("<grey>particles/smoke", PT_PART|PT_LERP|PT_FLIP|PT_SHRINK|PT_WIND),
-    new softquadrenderer("<grey>particles/hint", PT_PART|PT_BRIGHT),
+    new quadrenderer("<grey>particles/hint", PT_SOFT|PT_PART|PT_BRIGHT),
     new quadrenderer("<grey>particles/hint", PT_PART|PT_BRIGHT),
-    new softquadrenderer("<grey>particles/hint_bold", PT_PART|PT_BRIGHT),
+    new quadrenderer("<grey>particles/hint_bold", PT_SOFT|PT_PART|PT_BRIGHT),
     new quadrenderer("<grey>particles/hint_bold", PT_PART|PT_BRIGHT),
-    new softquadrenderer("<grey>particles/hint_vert", PT_PART|PT_BRIGHT),
+    new quadrenderer("<grey>particles/hint_vert", PT_SOFT|PT_PART|PT_BRIGHT),
     new quadrenderer("<grey><rotate:1>particles/hint_vert", PT_PART|PT_BRIGHT),
-    new softquadrenderer("<grey><rotate:1>particles/hint_vert", PT_PART|PT_BRIGHT),
+    new quadrenderer("<grey><rotate:1>particles/hint_vert", PT_SOFT|PT_PART|PT_BRIGHT),
     new quadrenderer("<grey>particles/hint_vert", PT_PART|PT_BRIGHT),
-    new softquadrenderer("<grey>particles/smoke", PT_PART|PT_FLIP|PT_SHRINK|PT_WIND),
+    new quadrenderer("<grey>particles/smoke", PT_SOFT|PT_PART|PT_FLIP|PT_SHRINK|PT_WIND),
     new quadrenderer("<grey>particles/smoke", PT_PART|PT_FLIP|PT_SHRINK|PT_WIND),
-    new softquadrenderer("<grey>particles/hint", PT_PART|PT_BRIGHT),
+    new quadrenderer("<grey>particles/hint", PT_SOFT|PT_PART|PT_BRIGHT),
     new quadrenderer("<grey>particles/hint", PT_PART|PT_BRIGHT),
-    new softquadrenderer("<grey>particles/hint_bold", PT_PART|PT_BRIGHT),
+    new quadrenderer("<grey>particles/hint", PT_PART|PT_BRIGHT),
+    new quadrenderer("<grey>particles/hint_bold", PT_SOFT|PT_PART|PT_BRIGHT),
     new quadrenderer("<grey>particles/hint_bold", PT_PART|PT_BRIGHT),
-    new softquadrenderer("<grey>particles/hint_vert", PT_PART|PT_BRIGHT),
+    new quadrenderer("<grey>particles/hint_vert", PT_SOFT|PT_PART|PT_BRIGHT),
     new quadrenderer("<grey>particles/hint_vert", PT_PART|PT_BRIGHT),
-    new softquadrenderer("<grey><rotate:1>particles/hint_vert", PT_PART|PT_BRIGHT),
+    new quadrenderer("<grey><rotate:1>particles/hint_vert", PT_SOFT|PT_PART|PT_BRIGHT),
     new quadrenderer("<grey><rotate:1>particles/hint_vert", PT_PART|PT_BRIGHT),
     new quadrenderer("<grey>particles/blood", PT_PART|PT_MOD|PT_RND4|PT_FLIP),
     new quadrenderer("<grey>particles/entity", PT_PART|PT_BRIGHT),
     new quadrenderer("<grey>particles/entity", PT_PART|PT_BRIGHT|PT_ONTOP),
     new quadrenderer("<grey>particles/spark", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK),
-    new softquadrenderer("<grey>particles/fire", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK|PT_WIND),
+    new quadrenderer("<grey>particles/fire", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK|PT_WIND),
     new quadrenderer("<grey>particles/fire", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK|PT_WIND),
-    new softquadrenderer("<grey>particles/plasma", PT_PART|PT_BRIGHT|PT_FLIP|PT_SHRINK|PT_WIND),
+    new quadrenderer("<grey>particles/plasma", PT_SOFT|PT_PART|PT_BRIGHT|PT_FLIP|PT_SHRINK|PT_WIND),
     new quadrenderer("<grey>particles/plasma", PT_PART|PT_BRIGHT|PT_FLIP|PT_SHRINK|PT_WIND),
-    new softquadrenderer("<grey>particles/electric", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK|PT_WIND),
+    new quadrenderer("<grey>particles/electric", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK|PT_WIND),
     new quadrenderer("<grey>particles/electric", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK|PT_WIND),
-    new softquadrenderer("<grey>particles/eleczap", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK|PT_WIND),
+    new quadrenderer("<grey>particles/eleczap", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK|PT_WIND),
     new quadrenderer("<grey>particles/eleczap", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK|PT_WIND),
     new quadrenderer("<grey>particles/fire", PT_PART|PT_BRIGHT|PT_FLIP|PT_RND4|PT_BRIGHT|PT_SHRINK|PT_WIND),
     new taperenderer("<grey>particles/sflare", PT_TAPE|PT_BRIGHT),
