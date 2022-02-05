@@ -221,8 +221,8 @@ void renderhaze()
 
     setuphaze(vieww, viewh);
 
-    bool textured = hazetexture && hazetexture != notexture;
-    if((hashaze && textured) || hazeparticles)
+    bool textured = hashaze && hazetexture && hazetexture != notexture;
+    if(textured || hazeparticles)
     {
         glBindTexture(GL_TEXTURE_RECTANGLE, hazertex);
         glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE, 0, 0, 0, 0, 0, hazew, hazeh);
