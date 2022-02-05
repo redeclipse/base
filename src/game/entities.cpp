@@ -876,7 +876,8 @@ namespace entities
                     case 14: addentinfo("flames"); break;
                     case 15: addentinfo("smoke-plume"); break;
                     case 16: addentinfo("haze"); break;
-                    case 17: addentinfo("haze-tape"); break;
+                    case 17: addentinfo("haze-flame"); break;
+                    case 18: addentinfo("haze-tape"); break;
                     case 6: addentinfo("progress-vs"); break;
                     case 5: addentinfo("progress"); break;
                     case 32: addentinfo("lensflare-plain"); break;

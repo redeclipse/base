@@ -20,6 +20,7 @@ FVAR(IDF_PERSIST, particlehazeflame, 0, 3, FVAR_MAX);
 FVAR(IDF_PERSIST, particlehazeblend, 0, 1, 1);
 SVARF(IDF_PERSIST, particlehazetex, "textures/watern", particlehazetexture = textureload(particlehazetex, 0, true, false));
 FVAR(IDF_PERSIST, particlehazedist, 0, 64, FVAR_MAX);
+FVAR(IDF_PERSIST, particlehazemargin, 0, 8, FVAR_MAX);
 FVAR(IDF_PERSIST, particlehazescalex, FVAR_NONZERO, 0.5f, FVAR_MAX);
 FVAR(IDF_PERSIST, particlehazescaley, FVAR_NONZERO, 1, FVAR_MAX);
 FVAR(IDF_PERSIST, particlehazerefract, FVAR_NONZERO, 2, 10);
@@ -1394,8 +1395,9 @@ void renderhazeparticles(GLuint hazertex, bool hazemix)
     glActiveTexture_(GL_TEXTURE0);
 
     float scroll = lastmillis/1000.0f;
-    GLOBALPARAMF(hazerefract, particlehazerefract, particlehazerefract2, particlehazerefract3, 1.0f/particlehazedist);
+    GLOBALPARAMF(hazerefract, particlehazerefract, particlehazerefract2, particlehazerefract3);
     GLOBALPARAMF(hazetexgen, particlehazescalex, particlehazescaley, particlehazescrollx*scroll, particlehazescrolly*scroll);
+    GLOBALPARAMF(hazeparams, 1.0f/particlehazedist, 1.0f/particlehazemargin);
 
     if(hazemix)
     {
