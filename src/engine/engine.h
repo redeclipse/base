@@ -920,7 +920,7 @@ extern void updateparticles();
 extern void debugparticles();
 extern void renderparticles(int layer = PL_ALL);
 extern void initparticlehaze();
-extern void renderhazeparticles(GLuint hazertex);
+extern void renderhazeparticles(GLuint hazertex, bool hazemix);
 extern void cleanupparticles();
 
 // stain
@@ -1030,7 +1030,15 @@ extern void blendhalos();
 extern void cleanuphalo();
 
 extern int debughaze;
+
 extern int gethaze();
+extern const bvec &gethazecolour();
+extern float gethazecolourmix();
+extern float gethazemargin();
+extern float gethazemindist();
+extern float gethazemaxdist();
+extern float gethazeblend();
+
 extern void cleanuphaze();
 extern void inithaze();
 extern void renderhaze();

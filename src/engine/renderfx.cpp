@@ -221,7 +221,7 @@ void renderhaze()
 
     setuphaze(vieww, viewh);
 
-    bool textured = hashaze && hazetexture && hazetexture != notexture;
+    bool textured = hashaze && hazetexture && hazetexture != notexture, hazemix = false;
     if(textured || hazeparticles)
     {
         glBindTexture(GL_TEXTURE_RECTANGLE, hazertex);
@@ -250,9 +250,10 @@ void renderhaze()
         else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
         glActiveTexture_(GL_TEXTURE0);
 
-        bvec color = gethazecolour();
+        const bvec &color = gethazecolour();
         float colormix = gethazecolourmix();
         if(textured && color.iszero()) colormix = 0;
+        else hazemix = true;
         GLOBALPARAMF(hazecolor, color.x*ldrscaleb, color.y*ldrscaleb, color.z*ldrscaleb, colormix);
         float refract = gethazerefract(), refract2 = gethazerefract2(), refract3 = gethazerefract3();
         GLOBALPARAMF(hazerefract, refract, refract2, refract3);
@@ -276,7 +277,7 @@ void renderhaze()
         glEnable(GL_DEPTH_TEST);
     }
 
-    if(hazeparticles) renderhazeparticles(hazertex);
+    if(hazeparticles) renderhazeparticles(hazertex, hazemix);
 }
 
 void viewhaze()

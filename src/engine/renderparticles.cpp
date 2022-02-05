@@ -2,7 +2,7 @@
 
 #include "engine.h"
 
-Shader *particleshader = NULL, *particlenotextureshader = NULL, *particlesoftshader = NULL, *particlehazeshader = NULL, *particletextshader = NULL;
+Shader *particleshader = NULL, *particlenotextureshader = NULL, *particlesoftshader = NULL, *particlehazeshader = NULL, *particlehazemixshader = NULL, *particletextshader = NULL;
 
 VAR(IDF_PERSIST, particlelayers, 0, 1, 1);
 FVAR(IDF_PERSIST, particlebright, 0, 2, 100);
@@ -1235,6 +1235,7 @@ void initparticles()
     if(!particlenotextureshader) particlenotextureshader = lookupshaderbyname("particlenotexture");
     if(!particlesoftshader) particlesoftshader = lookupshaderbyname("particlesoft");
     if(!particlehazeshader) particlehazeshader = lookupshaderbyname("particlehaze");
+    if(!particlehazemixshader) particlehazemixshader = lookupshaderbyname("particlehazemix");
     if(!particletextshader) particletextshader = lookupshaderbyname("particletext");
     loopi(sizeof(parts)/sizeof(parts[0])) parts[i]->init(parts[i]->type&PT_FEW ? min(fewparticles, maxparticles) : maxparticles);
     loopi(sizeof(parts)/sizeof(parts[0]))
@@ -1366,7 +1367,7 @@ void renderparticles(int layer)
     endtimer(parttimer);
 }
 
-void renderhazeparticles(GLuint hazertex)
+void renderhazeparticles(GLuint hazertex, bool hazemix)
 {
     if(!particlehaze)
     {
@@ -1396,7 +1397,16 @@ void renderhazeparticles(GLuint hazertex)
     GLOBALPARAMF(hazerefract, particlehazerefract, particlehazerefract2, particlehazerefract3, 1.0f/particlehazedist);
     GLOBALPARAMF(hazetexgen, particlehazescalex, particlehazescaley, particlehazescrollx*scroll, particlehazescrolly*scroll);
 
-    particlehazeshader->set();
+    if(hazemix)
+    {
+        const bvec &color = gethazecolour();
+        float colormix = gethazecolourmix(), blend = gethazeblend();
+        GLOBALPARAMF(worldhazecolor, color.x*ldrscaleb, color.y*ldrscaleb, color.z*ldrscaleb, colormix*blend);
+        float margin = gethazemargin(), mindist = gethazemindist(), maxdist = max(max(mindist, gethazemaxdist())-mindist, margin);
+        GLOBALPARAMF(worldhazeparams, mindist, 1.0f/maxdist, 1.0f/margin);
+        particlehazemixshader->set();
+    }
+    else particlehazeshader->set();
     LOCALPARAMF(colorscale, 1, 1, 1, particlehazeblend);
 
     loopi(sizeof(parts)/sizeof(parts[0]))
