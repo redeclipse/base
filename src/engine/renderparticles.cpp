@@ -5,16 +5,23 @@
 Shader *particleshader = NULL, *particlenotextureshader = NULL, *particlesoftshader = NULL, *particlehazeshader = NULL, *particlehazemixshader = NULL, *particletextshader = NULL;
 
 VAR(IDF_PERSIST, particlelayers, 0, 1, 1);
+VAR(IDF_PERSIST, particletext, 0, 1, 1);
+VAR(IDF_PERSIST, particleicon, 0, 1, 1);
 FVAR(IDF_PERSIST, particlebright, 0, 2, 100);
 VAR(IDF_PERSIST, particlesize, 20, 100, 500);
+VAR(IDF_PERSIST, particlewind, 0, 1, 1);
+
+VARF(IDF_PERSIST, maxparticles, 10, 5000, 10000, initparticles());
+VARF(IDF_PERSIST, fewparticles, 10, 100, 10000, initparticles());
+VAR(IDF_PERSIST, maxparticledistance, 256, 1536, 4096);
+VAR(IDF_PERSIST, maxparticletrail, 256, 512, VAR_MAX);
+VAR(IDF_PERSIST, maxparticletextdistance, 0, 512, 10000);
+VAR(IDF_PERSIST, maxparticleicondistance, 0, 512, 10000);
 
 VAR(IDF_PERSIST, softparticles, 0, 1, 1);
 VAR(IDF_PERSIST, softparticleblend, 1, 8, 64);
 
-VAR(IDF_PERSIST, particlewind, 0, 1, 1);
-
 Texture *particlehazetexture = NULL;
-
 VAR(IDF_PERSIST, particlehaze, 0, 1, 1);
 FVAR(IDF_PERSIST, particlehazeflame, 0, 3, FVAR_MAX);
 FVAR(IDF_PERSIST, particlehazeblend, 0, 1, 1);
@@ -40,6 +47,7 @@ static bool canemitparticles()
     return canemit || emitoffset;
 }
 
+VARN(0, debugparticles, dbgparts, 0, 0, 1);
 VAR(IDF_PERSIST, showparticles, 0, 1, 1);
 VAR(0, cullparticles, 0, 1, 1);
 VAR(0, replayparticles, 0, 1, 1);
@@ -1217,9 +1225,6 @@ static partrenderer *parts[] =
     &flares // must be done last!
 };
 
-VARF(IDF_PERSIST, maxparticles, 10, 5000, 10000, initparticles());
-VARF(IDF_PERSIST, fewparticles, 10, 100, 10000, initparticles());
-
 int partsorder[sizeof(parts)/sizeof(parts[0])];
 
 void orderparts()
@@ -1263,8 +1268,6 @@ void removetrackedparticles(physent *owner)
 {
     loopi(sizeof(parts)/sizeof(parts[0])) parts[i]->resettracked(owner);
 }
-
-VARN(0, debugparticles, dbgparts, 0, 0, 1);
 
 void debugparticles()
 {
@@ -1459,8 +1462,6 @@ void regularcreate(int type, int color, int fade, const vec &p, float size, floa
     create(type, color, fade, p, size, blend, gravity, collide, pl);
 }
 
-VAR(IDF_PERSIST, maxparticledistance, 256, 1536, 4096);
-
 void splash(int type, int color, float radius, int num, int fade, const vec &p, float size, float blend, float gravity, int collide, float vel)
 {
     if(camera1->o.dist(p) > maxparticledistance && !seedemitter) return;
@@ -1512,8 +1513,6 @@ void part_splash(int type, int num, int fade, const vec &p, int color, float siz
     splash(type, color, radius, num, fade, p, size, blend, gravity, collide, vel);
 }
 
-VAR(IDF_PERSIST, maxparticletrail, 256, 512, VAR_MAX);
-
 void part_trail(int type, int fade, const vec &s, const vec &e, int color, float size, float blend, float gravity, int collide)
 {
     if(!canaddparticles()) return;
@@ -1529,9 +1528,6 @@ void part_trail(int type, int fade, const vec &s, const vec &e, int color, float
         newparticle(p, tmp, rnd(fade)+fade, type, color, size, blend, gravity, collide);
     }
 }
-
-VAR(IDF_PERSIST, particletext, 0, 1, 1);
-VAR(IDF_PERSIST, maxparticletextdistance, 0, 512, 10000);
 
 void part_text(const vec &s, const char *t, int type, int fade, int color, float size, float blend, float gravity, int collide, physent *pl)
 {
@@ -1602,9 +1598,6 @@ void part_portal(const vec &o, float size, float blend, float yaw, float pitch, 
     portalrenderer *p = (portalrenderer *)parts[type];
     p->addportal(o, fade, color, size, blend, yaw, pitch);
 }
-
-VAR(IDF_PERSIST, particleicon, 0, 1, 1);
-VAR(IDF_PERSIST, maxparticleicondistance, 0, 512, 10000);
 
 void part_icon(const vec &o, Texture *tex, float size, float blend, float gravity, int collide, int fade, int color, float start, float length, physent *pl)
 {
