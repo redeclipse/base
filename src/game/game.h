@@ -99,7 +99,7 @@ extern const enttypes enttype[] = {
     },
     {
         ENVMAP,         1,          260,    0,      EU_NONE,    3,          -1,         -1,         -1,     -1,     -1,
-            0, 0, 0,
+            (1<<TELEPORT), (1<<TELEPORT), 0,
             false,  false,  false,      false,      false,
                 "envmap",       { "radius", "size", "blur" }
     },
@@ -159,7 +159,7 @@ extern const enttypes enttype[] = {
     {
         TELEPORT,       1,          50,     16,     EU_AUTO,    15,         6,          9,          -1,     11,      -1,
             (1<<ENVMAP)|(1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX)|(1<<TELEPORT),
-            (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
+            (1<<ENVMAP)|(1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<ENT_PLAYER)|(1<<ENT_AI)|(1<<ENT_PROJ),
             false,  false,  false,      false,      false,
                 "teleport",     { "yaw", "pitch", "push", "radius", "colour", "type", "palette", "palindex", "flags", "modes", "muts", "variant", "blend", "size", "envblend" }

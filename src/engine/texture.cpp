@@ -3442,9 +3442,11 @@ ushort closestenvmap(const vec &o)
 {
     ushort minemid = EMID_SKY;
     float mindist = 1e16f;
+    const vector<extentity *> &ents = entities::getents();
     loopv(envmaps)
     {
         envmap &em = envmaps[i];
+        if(ents.inrange(em.id) && !ents[em.id]->links.empty()) continue;
         float dist, radius = em.radius ? em.radius : envmapradius;
         if(envmapbb)
         {
