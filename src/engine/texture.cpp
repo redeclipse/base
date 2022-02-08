@@ -1318,7 +1318,6 @@ static Texture *newtexture(Texture *t, const char *rname, ImageData &s, int clam
     if(t->frames.empty()) t->frames.add(0);
 
     int filter = !canreduce || reducefilter ? (mipit ? 2 : 1) : 0;
-    if(t->frames.empty()) t->frames.add(0);
     glGenTextures(1, &t->frames[0]);
     if(s.compressed)
     {
