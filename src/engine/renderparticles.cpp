@@ -37,14 +37,6 @@ FVAR(IDF_PERSIST, particlehazerefract3, FVAR_NONZERO, 8, 10);
 FVAR(IDF_PERSIST, particlehazescrollx, FVAR_MIN, 0, FVAR_MAX);
 FVAR(IDF_PERSIST, particlehazescrolly, FVAR_MIN, -0.5f, FVAR_MAX);
 
-Texture *particleportaltexture = NULL;
-SVARF(IDF_PERSIST, particleportaltex, "textures/watern", particleportaltexture = textureload(particleportaltex, 0, true, false));
-FVAR(IDF_PERSIST, particleportalscalex, FVAR_NONZERO, 0.5f, FVAR_MAX);
-FVAR(IDF_PERSIST, particleportalscaley, FVAR_NONZERO, 1, FVAR_MAX);
-FVAR(IDF_PERSIST, particleportalrefract, FVAR_NONZERO, 2, 10);
-FVAR(IDF_PERSIST, particleportalscrollx, FVAR_MIN, 0, FVAR_MAX);
-FVAR(IDF_PERSIST, particleportalscrolly, FVAR_MIN, -0.5f, FVAR_MAX);
-
 // Check canemitparticles() to limit the rate that paricles can be emitted for models/sparklies
 // Automatically stops particles being emitted when paused or in reflective drawing
 VAR(IDF_PERSIST, emitmillis, 1, 17, VAR_MAX);
