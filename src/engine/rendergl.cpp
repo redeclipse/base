@@ -2460,14 +2460,14 @@ void gl_drawview()
     rendervolumetric();
     GLERROR;
 
-    drawenvlayers();
-    GLERROR;
-
     if(!drawtex && editmode)
     {
         renderparticles();
         GLERROR;
     }
+
+    drawenvlayers();
+    GLERROR;
 
     if(drawtex <= DRAWTEX_HAZE)
     {
