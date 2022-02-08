@@ -248,12 +248,13 @@ enum
     PT_GROW     = 1<<23,    // grow particle as it fades
     PT_WIND     = 1<<24,    // particles affected by the wind
     PT_HAZE     = 1<<25,    // creates haze effect
+    PT_ENVMAP   = 1<<26,    // has envmap
     PT_FLIP     = PT_HFLIP | PT_VFLIP | PT_ROT
 };
 
 enum
 {
-    PART_TELEPORT = 0, PART_ICON,
+    PART_PORTAL = 0, PART_PORTAL_ENV, PART_ICON,
     PART_LINE, PART_LINE_ONTOP, PART_TRIANGLE, PART_TRIANGLE_ONTOP,
     PART_ELLIPSE, PART_ELLIPSE_ONTOP, PART_CONE, PART_CONE_ONTOP,
     PART_FIREBALL_LERP, PART_PLASMA_LERP,
@@ -303,28 +304,6 @@ struct particle
     };
     physent *owner;
 };
-
-extern void regular_part_create(int type, int fade, const vec &p, int color = colourwhite, float size = 4, float blend = 1, float gravity = 0, int collide = 0, physent *pl = NULL, int delay = 0);
-extern void part_create(int type, int fade, const vec &p, int color = colourwhite, float size = 4, float blend = 1, float gravity = 0, int collide = 0, physent *pl = NULL);
-extern void regular_part_splash(int type, int num, int fade, const vec &p, int color = colourwhite, float size = 4, float blend = 1, float gravity = 0, int collide = 0, float radius = 150, float vel = 1, int delay = 0);
-extern void part_splash(int type, int num, int fade, const vec &p, int color = colourwhite, float size = 4, float blend = 1, float gravity = 0, int collide = 0, float radius = 4, float vel = 1);
-extern void part_trail(int type, int fade, const vec &s, const vec &e, int color = colourwhite, float size = .8f, float blend = 1, float gravity = 0, int collide = 0);
-extern void part_text(const vec &s, const char *t, int type = PART_TEXT, int fade = 1, int color = colourwhite, float size = 2, float blend = 1, float gravity = 0, int collide = 0, physent *pl = NULL);
-extern void part_textcopy(const vec &s, const char *t, int type = PART_TEXT, int fade = 1, int color = colourwhite, float size = 2, float blend = 1, float gravity = 0, int collide = 0, physent *pl = NULL);
-extern void part_flare(const vec &p, const vec &dest, int fade, int type, int color = colourwhite, float size = 2, float blend = 1, float gravity = 0, int collide = 0, physent *pl = NULL);
-extern void regular_part_explosion(const vec &dest, float maxsize, int type, int fade = 1, int color = colourwhite, float size = 4, float blend = 1, float gravity = 0, int collide = 0);
-extern void part_explosion(const vec &dest, float maxsize, int type, int fade = 1, int color = colourwhite, float size = 4, float blend = 1, float gravity = 0, int collide = 0, physent *pl = NULL);
-extern void part_spawn(const vec &o, const vec &v, float z, uchar type, int amt = 1, int fade = 1, int color = colourwhite, float size = 4, float blend = 1, float gravity = 0, int collide = 0);
-extern void part_flares(const vec &o, const vec &v, float z1, const vec &d, const vec &w, float z2, uchar type, int amt = 1, int fade = 1, int color = colourwhite, float size = 4, float blend = 1, float gravity = 0, int collide = 0, physent *pl = NULL);
-extern void part_portal(const vec &o, float size, float blend = 1, float yaw = 0, float pitch = 0, int type = PART_TELEPORT, int fade = 1, int color = colourwhite);
-extern void part_icon(const vec &o, Texture *tex, float size = 2, float blend = 1, float gravity = 0, int collide = 0, int fade = 1, int color = colourwhite, float start = 0, float length = 1, physent *pl = NULL);
-extern void part_line(const vec &o, const vec &v, float size = 1, float blend = 1, int fade = 1, int color = colourwhite, int type = PART_LINE);
-extern void part_triangle(const vec &o, float yaw, float pitch, float size = 1, float blend = 1, int fade = 1, int color = colourwhite, bool fill = true, int type = PART_TRIANGLE);
-extern void part_dir(const vec &o, float yaw, float pitch, float length = 1, float size = 1, float blend = 1, int fade = 1, int color = colourpink, int interval = 0, bool fill = true);
-extern void part_trace(const vec &o, const vec &v, float size = 1, float blend = 1, int fade = 1, int color = colourwhite, int interval = 0, bool fill = true);
-extern void part_ellipse(const vec &o, const vec &v, float size = 1, float blend = 1, int fade = 1, int color = colourwhite, int axis = 0, bool fill = false, int type = PART_ELLIPSE);
-extern void part_radius(const vec &o, const vec &v, float size = 1, float blend = 1, int fade = 1, int color = colourcyan, bool fill = false);
-extern void part_cone(const vec &o, const vec &dir, float radius, float angle = 0.f, float size = 1, float blend = 1, int fade = 1, int color = colourcyan, bool fill = false, int spokenum = 15, int type = PART_CONE);
 
 extern void removetrackedparticles(physent *pl = NULL);
 extern int particletext, maxparticledistance, flarelights;

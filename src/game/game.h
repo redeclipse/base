@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 259
+#define VERSION_GAME 260
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -98,7 +98,7 @@ extern const enttypes enttype[] = {
                 "playerstart",  { "team", "yaw", "pitch", "modes", "muts", "id", "variant" }
     },
     {
-        ENVMAP,         1,          0,      0,      EU_NONE,    3,          -1,         -1,         -1,     -1,     -1,
+        ENVMAP,         1,          260,    0,      EU_NONE,    3,          -1,         -1,         -1,     -1,     -1,
             0, 0, 0,
             false,  false,  false,      false,      false,
                 "envmap",       { "radius", "size", "blur" }
@@ -157,12 +157,12 @@ extern const enttypes enttype[] = {
                 "weapon",       { "type", "flags", "modes", "muts", "id", "variant" }
     },
     {
-        TELEPORT,       1,          50,     16,     EU_AUTO,    12,         6,          9,          -1,     11,      -1,
-            (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX)|(1<<TELEPORT),
+        TELEPORT,       1,          50,     16,     EU_AUTO,    15,         6,          9,          -1,     11,      -1,
+            (1<<ENVMAP)|(1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX)|(1<<TELEPORT),
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<ENT_PLAYER)|(1<<ENT_AI)|(1<<ENT_PROJ),
             false,  false,  false,      false,      false,
-                "teleport",     { "yaw", "pitch", "push", "radius", "colour", "type", "palette", "palindex", "flags", "modes", "muts", "variant" }
+                "teleport",     { "yaw", "pitch", "push", "radius", "colour", "type", "palette", "palindex", "flags", "modes", "muts", "variant", "blend", "size", "envblend" }
     },
     {
         ACTOR,          1,          59,     0,      EU_NONE,    11,         -1,         3,          5,      10,     -1,
@@ -2358,8 +2358,8 @@ namespace game
     extern void spawneffect(int type, const vec &pos, float radius, int colour, float size);
     extern void impulseeffect(gameent *d, int effect = 0);
     extern void suicide(gameent *d, int flags = 0);
-    extern void fixrange(float &yaw, float &pitch);
     extern void fixfullrange(float &yaw, float &pitch, float &roll, bool full = false);
+    extern void fixrange(float &yaw, float &pitch, bool full = false);
     extern void getyawpitch(const vec &from, const vec &pos, float &yaw, float &pitch);
     extern void scaleyawpitch(float &yaw, float &pitch, float targyaw, float targpitch, float yawspeed = 1, float pitchspeed = 1, float rotate = 0);
     extern bool allowmove(physent *d);

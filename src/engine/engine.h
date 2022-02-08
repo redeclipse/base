@@ -246,6 +246,7 @@ extern ushort closestenvmap(const vec &o);
 extern ushort closestenvmap(int orient, const ivec &o, int size);
 extern GLuint lookupenvmap(ushort emid);
 extern GLuint lookupenvmap(Slot &slot);
+extern GLuint entityenvmap(int id);
 extern void initenvtexs();
 extern void genenvtexs();
 extern bool reloadtexture(Texture *t);
@@ -287,7 +288,7 @@ extern int glversion, glslversion, glcompat;
 extern char *gfxvendor, *gfxrenderer, *gfxversion;
 extern int maxdrawbufs, maxdualdrawbufs;
 
-enum { DRAWTEX_NONE = 0, DRAWTEX_ENVMAP, DRAWTEX_MINIMAP, DRAWTEX_MODELPREVIEW, DRAWTEX_MAPSHOT, DRAWTEX_HALO };
+enum { DRAWTEX_NONE = 0, DRAWTEX_ENVMAP, DRAWTEX_MAPSHOT, DRAWTEX_MINIMAP, DRAWTEX_MODELPREVIEW, DRAWTEX_HALO, DRAWTEX_HAZE = DRAWTEX_MAPSHOT };
 
 extern int vieww, viewh;
 extern float curfov, fovy, aspect, forceaspect;
@@ -922,6 +923,28 @@ extern void renderparticles(int layer = PL_ALL);
 extern void initparticlehaze();
 extern void renderhazeparticles(GLuint hazertex, bool hazemix);
 extern void cleanupparticles();
+
+extern void regular_part_create(int type, int fade, const vec &p, int color = colourwhite, float size = 4, float blend = 1, float gravity = 0, int collide = 0, physent *pl = NULL, int delay = 0);
+extern void part_create(int type, int fade, const vec &p, int color = colourwhite, float size = 4, float blend = 1, float gravity = 0, int collide = 0, physent *pl = NULL);
+extern void regular_part_splash(int type, int num, int fade, const vec &p, int color = colourwhite, float size = 4, float blend = 1, float gravity = 0, int collide = 0, float radius = 150, float vel = 1, int delay = 0);
+extern void part_splash(int type, int num, int fade, const vec &p, int color = colourwhite, float size = 4, float blend = 1, float gravity = 0, int collide = 0, float radius = 4, float vel = 1);
+extern void part_trail(int type, int fade, const vec &s, const vec &e, int color = colourwhite, float size = .8f, float blend = 1, float gravity = 0, int collide = 0);
+extern void part_text(const vec &s, const char *t, int type = PART_TEXT, int fade = 1, int color = colourwhite, float size = 2, float blend = 1, float gravity = 0, int collide = 0, physent *pl = NULL);
+extern void part_textcopy(const vec &s, const char *t, int type = PART_TEXT, int fade = 1, int color = colourwhite, float size = 2, float blend = 1, float gravity = 0, int collide = 0, physent *pl = NULL);
+extern void part_flare(const vec &p, const vec &dest, int fade, int type, int color = colourwhite, float size = 2, float blend = 1, float gravity = 0, int collide = 0, physent *pl = NULL);
+extern void regular_part_explosion(const vec &dest, float maxsize, int type, int fade = 1, int color = colourwhite, float size = 4, float blend = 1, float gravity = 0, int collide = 0);
+extern void part_explosion(const vec &dest, float maxsize, int type, int fade = 1, int color = colourwhite, float size = 4, float blend = 1, float gravity = 0, int collide = 0, physent *pl = NULL);
+extern void part_spawn(const vec &o, const vec &v, float z, uchar type, int amt = 1, int fade = 1, int color = colourwhite, float size = 4, float blend = 1, float gravity = 0, int collide = 0);
+extern void part_flares(const vec &o, const vec &v, float z1, const vec &d, const vec &w, float z2, uchar type, int amt = 1, int fade = 1, int color = colourwhite, float size = 4, float blend = 1, float gravity = 0, int collide = 0, physent *pl = NULL);
+extern void part_portal(const vec &o, float size, float blend = 1, float yaw = 0, float pitch = 0, int type = PART_PORTAL, int fade = 1, int color = colourwhite, GLuint envmap = 0, float envblend = 1, float destyaw = 0, float destpitch = 0);
+extern void part_icon(const vec &o, Texture *tex, float size = 2, float blend = 1, float gravity = 0, int collide = 0, int fade = 1, int color = colourwhite, float start = 0, float length = 1, physent *pl = NULL);
+extern void part_line(const vec &o, const vec &v, float size = 1, float blend = 1, int fade = 1, int color = colourwhite, int type = PART_LINE);
+extern void part_triangle(const vec &o, float yaw, float pitch, float size = 1, float blend = 1, int fade = 1, int color = colourwhite, bool fill = true, int type = PART_TRIANGLE);
+extern void part_dir(const vec &o, float yaw, float pitch, float length = 1, float size = 1, float blend = 1, int fade = 1, int color = colourpink, int interval = 0, bool fill = true);
+extern void part_trace(const vec &o, const vec &v, float size = 1, float blend = 1, int fade = 1, int color = colourwhite, int interval = 0, bool fill = true);
+extern void part_ellipse(const vec &o, const vec &v, float size = 1, float blend = 1, int fade = 1, int color = colourwhite, int axis = 0, bool fill = false, int type = PART_ELLIPSE);
+extern void part_radius(const vec &o, const vec &v, float size = 1, float blend = 1, int fade = 1, int color = colourcyan, bool fill = false);
+extern void part_cone(const vec &o, const vec &dir, float radius, float angle = 0.f, float size = 1, float blend = 1, int fade = 1, int color = colourcyan, bool fill = false, int spokenum = 15, int type = PART_CONE);
 
 // stain
 enum { STAINBUF_OPAQUE = 0, STAINBUF_TRANSPARENT, STAINBUF_MAPMODEL, NUMSTAINBUFS };

@@ -2431,10 +2431,10 @@ namespace game
         else if(yaw >= 360.0f) yaw = fmodf(yaw, 360.0f);
     }
 
-    void fixrange(float &yaw, float &pitch)
+    void fixrange(float &yaw, float &pitch, bool full)
     {
         float r = 0.f;
-        fixfullrange(yaw, pitch, r, false);
+        fixfullrange(yaw, pitch, r, full);
     }
 
     void fixview()

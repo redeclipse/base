@@ -2,7 +2,7 @@
 
 #include "engine.h"
 
-Shader *particleshader = NULL, *particlenotextureshader = NULL, *particlesoftshader = NULL, *particletextshader = NULL,
+Shader *particleshader = NULL, *particleenvshader = NULL, *particlenotextureshader = NULL, *particlesoftshader = NULL, *particletextshader = NULL,
        *particlehazeshader = NULL, *particlehazemixshader = NULL, *particlehazerefshader = NULL, *particlehazerefmixshader = NULL;
 
 VAR(IDF_PERSIST, particlelayers, 0, 1, 1);
@@ -36,6 +36,14 @@ FVAR(IDF_PERSIST, particlehazerefract2, FVAR_NONZERO, 4, 10);
 FVAR(IDF_PERSIST, particlehazerefract3, FVAR_NONZERO, 8, 10);
 FVAR(IDF_PERSIST, particlehazescrollx, FVAR_MIN, 0, FVAR_MAX);
 FVAR(IDF_PERSIST, particlehazescrolly, FVAR_MIN, -0.5f, FVAR_MAX);
+
+Texture *particleportaltexture = NULL;
+SVARF(IDF_PERSIST, particleportaltex, "textures/watern", particleportaltexture = textureload(particleportaltex, 0, true, false));
+FVAR(IDF_PERSIST, particleportalscalex, FVAR_NONZERO, 0.5f, FVAR_MAX);
+FVAR(IDF_PERSIST, particleportalscaley, FVAR_NONZERO, 1, FVAR_MAX);
+FVAR(IDF_PERSIST, particleportalrefract, FVAR_NONZERO, 2, 10);
+FVAR(IDF_PERSIST, particleportalscrollx, FVAR_MIN, 0, FVAR_MAX);
+FVAR(IDF_PERSIST, particleportalscrolly, FVAR_MIN, -0.5f, FVAR_MAX);
 
 // Check canemitparticles() to limit the rate that paricles can be emitted for models/sparklies
 // Automatically stops particles being emitted when paused or in reflective drawing
@@ -444,15 +452,22 @@ struct textrenderer : sharedlistrenderer
 };
 static textrenderer texts, textontop(PT_ONTOP);
 
+#define TEXVERT(vx,vy) do { \
+    gle::attrib(m.transform(vec2(vx, vy))); \
+    gle::attribf(0.5f*(vx) + 0.5f, 0.5f*(vy) + 0.5f); \
+    gle::attrib(color); \
+} while(0)
+
 struct portal : listparticle<portal>
 {
-    float yaw, pitch;
+    GLuint envmap;
+    float yaw, pitch, envblend, destyaw, destpitch;
 };
 
 struct portalrenderer : listrenderer<portal>
 {
-    portalrenderer(const char *texname)
-        : listrenderer<portal>(texname, 3, PT_PORTAL|PT_LERP)
+    portalrenderer(const char *texname, int type = 0)
+        : listrenderer<portal>(texname, 3, type|PT_PORTAL|PT_LERP)
     {}
 
     void startrender()
@@ -461,33 +476,60 @@ struct portalrenderer : listrenderer<portal>
         gle::defvertex();
         gle::deftexcoord0();
         gle::defcolor(4, GL_UNSIGNED_BYTE);
-        gle::begin(GL_QUADS);
+        if(type&PT_ENVMAP)
+        {
+            if(!particlehazetexture) particlehazetexture = textureload(particlehazetex, 0, true, false);
+
+            glActiveTexture_(GL_TEXTURE4);
+            glBindTexture(GL_TEXTURE_2D, particlehazetexture->id);
+            glActiveTexture_(GL_TEXTURE0);
+        }
+        else gle::begin(GL_QUADS);
     }
 
     void endrender()
     {
-        gle::end();
+        if(!(type&PT_ENVMAP)) gle::end();
         glEnable(GL_CULL_FACE);
     }
 
     void renderpart(portal *p, int blend, int ts, float size)
     {
+        if(type&PT_ENVMAP)
+        {
+            matrix3 e;
+            e.identity();
+            e.rotate_around_y(-p->destpitch*RAD);
+            e.rotate_around_z(-(p->destyaw+180.f)*RAD);
+            LOCALPARAM(envmatrix, e);
+            LOCALPARAMF(envblend, p->envblend);
+            glActiveTexture_(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_CUBE_MAP, p->envmap);
+            glActiveTexture_(GL_TEXTURE0);
+            gle::begin(GL_QUADS);
+        }
+
         matrix4x3 m(vec(size, 0, 0), vec(0, size, 0), vec(0, 0, size), p->o);
         m.rotate_around_z(p->yaw*RAD);
-        m.rotate_around_x(p->pitch*RAD);
+        m.rotate_around_x((p->pitch+90.f)*RAD);
 
         bvec4 color(p->color.r, p->color.g, p->color.b, uchar(p->blend*blend));
-        gle::attrib(m.transform(vec(-1, 0,  1))); gle::attribf(1, 0); gle::color(color);
-        gle::attrib(m.transform(vec( 1, 0,  1))); gle::attribf(0, 0); gle::color(color);
-        gle::attrib(m.transform(vec( 1, 0, -1))); gle::attribf(0, 1); gle::color(color);
-        gle::attrib(m.transform(vec(-1, 0, -1))); gle::attribf(1, 1); gle::color(color);
+        TEXVERT( 1,  1);
+        TEXVERT(-1,  1);
+        TEXVERT(-1, -1);
+        TEXVERT( 1, -1);
+        if(type&PT_ENVMAP) gle::end();
     }
 
-    portal *addportal(const vec &o, int fade, int color, float size, float blend, float yaw, float pitch)
+    portal *addportal(const vec &o, int fade, int color, float size, float blend, float yaw, float pitch, GLuint envmap, float envblend, float destyaw, float destpitch)
     {
         portal *p = (portal *)listrenderer<portal>::addpart(o, vec(0, 0, 0), fade, color, size, blend);
         p->yaw = yaw;
         p->pitch = pitch;
+        p->envmap = envmap;
+        p->envblend = envblend;
+        p->destyaw = destyaw;
+        p->destpitch = destpitch;
         return p;
     }
 
@@ -504,9 +546,10 @@ struct icon : listparticle<icon>
 struct iconrenderer : listrenderer<icon>
 {
     Texture *lasttex;
+    bool inrender;
 
     iconrenderer(int type = 0)
-        : listrenderer<icon>(type|PT_ICON|PT_LERP)
+        : listrenderer<icon>(type|PT_ICON|PT_LERP), inrender(false)
     {}
 
     void startrender()
@@ -515,19 +558,19 @@ struct iconrenderer : listrenderer<icon>
         gle::defvertex();
         gle::deftexcoord0();
         gle::defcolor(4, GL_UNSIGNED_BYTE);
-        gle::begin(GL_QUADS);
     }
 
     void endrender()
     {
-        gle::end();
+        if(inrender) gle::end();
     }
 
     void renderpart(icon *p, int blend, int ts, float size)
     {
         if(p->tex != lasttex)
         {
-            gle::end();
+            if(inrender) gle::end();
+            inrender = false;
             glBindTexture(GL_TEXTURE_2D, p->tex->id);
             lasttex = p->tex;
         }
@@ -536,42 +579,40 @@ struct iconrenderer : listrenderer<icon>
         float aspect = p->tex->w/float(p->tex->h);
         m.scale(size*aspect, size, 1);
 
-        #define iconvert(vx,vy) do { \
-            gle::attrib(m.transform(vec2(vx, vy))); \
-            gle::attribf(0.5f*(vx) + 0.5f, 0.5f*(vy) + 0.5f); \
-            gle::attrib(color); \
-        } while(0)
-
         bvec4 color(p->color.r, p->color.g, p->color.b, uchar(p->blend*blend));
         if(p->start > 0 || p->length < 1)
         {
             float sx = cosf((p->start + 0.25f)*2*M_PI), sy = -sinf((p->start + 0.25f)*2*M_PI),
                   ex = cosf((p->end + 0.25f)*2*M_PI), ey = -sinf((p->end + 0.25f)*2*M_PI);
-            gle::end(); gle::begin(GL_TRIANGLE_FAN);
-            iconvert(0, 0);
+            if(inrender) gle::end();
+            gle::begin(GL_TRIANGLE_FAN);
+            TEXVERT(0, 0);
 
-            if(p->start < 0.125f || p->start >= 0.875f) iconvert(sx/sy, -1);
-            else if(p->start < 0.375f) iconvert(1, -sy/sx);
-            else if(p->start < 0.625f) iconvert(-sx/sy, 1);
-            else iconvert(-1, sy/sx);
+            if(p->start < 0.125f || p->start >= 0.875f) TEXVERT(sx/sy, -1);
+            else if(p->start < 0.375f) TEXVERT(1, -sy/sx);
+            else if(p->start < 0.625f) TEXVERT(-sx/sy, 1);
+            else TEXVERT(-1, sy/sx);
 
-            if(p->start <= 0.125f && p->end >= 0.125f) iconvert(1, -1);
-            if(p->start <= 0.375f && p->end >= 0.375f) iconvert(1, 1);
-            if(p->start <= 0.625f && p->end >= 0.625f) iconvert(-1, 1);
-            if(p->start <= 0.875f && p->end >= 0.875f) iconvert(-1, -1);
+            if(p->start <= 0.125f && p->end >= 0.125f) TEXVERT(1, -1);
+            if(p->start <= 0.375f && p->end >= 0.375f) TEXVERT(1, 1);
+            if(p->start <= 0.625f && p->end >= 0.625f) TEXVERT(-1, 1);
+            if(p->start <= 0.875f && p->end >= 0.875f) TEXVERT(-1, -1);
 
-            if(p->end < 0.125f || p->end >= 0.875f) iconvert(ex/ey, -1);
-            else if(p->end < 0.375f) iconvert(1, -ey/ex);
-            else if(p->end < 0.625f) iconvert(-ex/ey, 1);
-            else iconvert(-1, ey/ex);
-            gle::end(); gle::begin(GL_QUADS);
+            if(p->end < 0.125f || p->end >= 0.875f) TEXVERT(ex/ey, -1);
+            else if(p->end < 0.375f) TEXVERT(1, -ey/ex);
+            else if(p->end < 0.625f) TEXVERT(-ex/ey, 1);
+            else TEXVERT(-1, ey/ex);
+            gle::end();
+            inrender = false;
         }
         else
         {
-            iconvert( 1,  1);
-            iconvert(-1,  1);
-            iconvert(-1, -1);
-            iconvert( 1, -1);
+            if(!inrender) gle::begin(GL_QUADS);
+            inrender = true;
+            TEXVERT( 1,  1);
+            TEXVERT(-1,  1);
+            TEXVERT(-1, -1);
+            TEXVERT( 1, -1);
         }
     }
 
@@ -1180,8 +1221,9 @@ static coneprimitiverenderer coneprimitives, coneontopprimitives(PT_ONTOP);
 
 static partrenderer *parts[] =
 {
-    new portalrenderer("<grey>particles/teleport"), &icons,
-    &lineprimitives, &lineontopprimitives, &trisprimitives, &trisontopprimitives,
+    new portalrenderer("<grey>particles/teleport"),
+    new portalrenderer("<grey>particles/teleport", PT_ENVMAP),
+    &icons, &lineprimitives, &lineontopprimitives, &trisprimitives, &trisontopprimitives,
     &loopprimitives, &loopontopprimitives, &coneprimitives, &coneontopprimitives,
     new quadrenderer("<grey>particles/fire", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK|PT_WIND),
     new quadrenderer("<grey>particles/plasma", PT_SOFT|PT_PART|PT_BRIGHT|PT_FLIP|PT_SHRINK|PT_WIND),
@@ -1239,6 +1281,7 @@ void initparticles()
 {
     if(initing) return;
     if(!particleshader) particleshader = lookupshaderbyname("particle");
+    if(!particleenvshader) particleenvshader = lookupshaderbyname("particleenv");
     if(!particlenotextureshader) particlenotextureshader = lookupshaderbyname("particlenotexture");
     if(!particlesoftshader) particlesoftshader = lookupshaderbyname("particlesoft");
     if(!particlehazeshader) particlehazeshader = lookupshaderbyname("particlehaze");
@@ -1296,7 +1339,7 @@ void renderparticles(int layer)
 
     bool rendered = false;
     uint lastflags = PT_LERP|PT_SHADER,
-         flagmask = PT_LERP|PT_MOD|PT_ONTOP|PT_BRIGHT|PT_NOTEX|PT_SOFT|PT_SHADER,
+         flagmask = PT_LERP|PT_MOD|PT_ONTOP|PT_BRIGHT|PT_NOTEX|PT_SOFT|PT_SHADER|PT_ENVMAP,
          excludemask = layer == PL_ALL ? ~0 : (layer != PL_NOLAYER ? PT_NOLAYER : 0);
 
     loopi(sizeof(parts)/sizeof(parts[0]))
@@ -1335,9 +1378,10 @@ void renderparticles(int layer)
             }
             if(!(flags&PT_SHADER))
             {
-                if(changedbits&(PT_LERP|PT_SOFT|PT_NOTEX|PT_SHADER))
+                if(changedbits&(PT_LERP|PT_SOFT|PT_NOTEX|PT_SHADER|PT_ENVMAP))
                 {
-                    if(flags&PT_SOFT && softparticles)
+                    if(flags&PT_ENVMAP) particleenvshader->set();
+                    else if(flags&PT_SOFT && softparticles)
                     {
                         particlesoftshader->set();
                         LOCALPARAMF(softparams, -1.0f/softparticleblend, 0, 0);
@@ -1603,11 +1647,11 @@ void part_flares(const vec &o, const vec &v, float z1, const vec &d, const vec &
     }
 }
 
-void part_portal(const vec &o, float size, float blend, float yaw, float pitch, int type, int fade, int color)
+void part_portal(const vec &o, float size, float blend, float yaw, float pitch, int type, int fade, int color, GLuint envmap, float envblend, float destyaw, float destpitch)
 {
     if(!canaddparticles() || (parts[type]->type&PT_TYPE) != PT_PORTAL) return;
     portalrenderer *p = (portalrenderer *)parts[type];
-    p->addportal(o, fade, color, size, blend, yaw, pitch);
+    p->addportal(o, fade, color, size, blend, yaw, pitch, envmap, envblend, destyaw, destpitch);
 }
 
 void part_icon(const vec &o, Texture *tex, float size, float blend, float gravity, int collide, int fade, int color, float start, float length, physent *pl)

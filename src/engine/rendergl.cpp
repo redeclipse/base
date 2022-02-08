@@ -2463,15 +2463,20 @@ void gl_drawview()
     drawenvlayers();
     GLERROR;
 
-    if(!drawtex)
+    if(!drawtex && editmode)
     {
-        if(editmode)
-        {
-            renderparticles();
-            GLERROR;
-        }
+        renderparticles();
+        GLERROR;
+    }
+
+    if(drawtex <= DRAWTEX_HAZE)
+    {
         renderhaze();
         GLERROR;
+    }
+
+    if(!drawtex)
+    {
         if(editmode)
         {
             if(!wireframe && outline) renderoutline();

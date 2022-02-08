@@ -3273,7 +3273,7 @@ Texture *cubemapload(const char *name, bool mipit, bool msg, bool transient)
 
 struct envmap
 {
-    int radius, size, blur;
+    int id, radius, size, blur;
     vec o;
     GLuint tex;
 
@@ -3418,6 +3418,7 @@ void initenvmaps()
         const extentity &ent = *ents[i];
         if(ent.type != ET_ENVMAP) continue;
         envmap &em = envmaps.add();
+        em.id = i;
         em.radius = clamp(int(ent.attrs[0]), 0, 10000);
         em.size = ent.attrs[1] ? clamp(int(ent.attrs[1]), 0, 12) : 0;
         em.blur = ent.attrs[2] ? clamp(int(ent.attrs[2]), 0, 2) : 0;
@@ -3491,6 +3492,17 @@ GLuint lookupenvmap(ushort emid)
     if(emid==EMID_NONE || !envmaps.inrange(emid-EMID_RESERVED)) return 0;
     GLuint tex = envmaps[emid-EMID_RESERVED].tex;
     return tex ? tex : lookupskyenvmap();
+}
+
+GLuint entityenvmap(int id)
+{
+    loopv(envmaps)
+    {
+        envmap &em = envmaps[i];
+        if(em.id != id) continue;
+        return em.tex;
+    }
+    return 0;
 }
 
 void clearenvtexs()

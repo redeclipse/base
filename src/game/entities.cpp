@@ -2517,6 +2517,8 @@ namespace entities
             e.links.remove(i--);
             conoutf("switched rail link between %d and %d", id, link);
         }
+
+        if(gver <= 259 && e.type == TELEPORT && e.attrs[4]) e.attrs[4] = (((e.attrs[4]&0xF)<<4)|((e.attrs[4]&0xF0)<<8)|((e.attrs[4]&0xF00)<<12))+0x0F0F0F;
     }
 
     int getfirstroute()
@@ -3061,16 +3063,54 @@ namespace entities
         }
     }
 
+    struct teledest
+    {
+        int id, ed;
+    };
+
     void maketeleport(gameentity &e)
     {
-        float yaw = e.attrs[0] < 0 ? (lastmillis/5)%360 : e.attrs[0], radius = float(e.attrs[3] ? e.attrs[3] : enttype[e.type].radius);
-        int attr = int(e.attrs[4]), colour = (((attr&0xF)<<4)|((attr&0xF0)<<8)|((attr&0xF00)<<12))+0x0F0F0F;
-        if(e.attrs[6] || e.attrs[7])
+        static vector<teledest> teledests;
+        teledests.setsize(0);
+        loopv(e.links)
         {
-            vec r = vec::fromcolor(colour).mul(game::getpalette(e.attrs[6], e.attrs[7]));
-            colour = (int(r.x*255)<<16)|(int(r.y*255)<<8)|(int(r.z*255));
+            int id = e.links[i];
+            if(!ents.inrange(id) || ents[id]->type != TELEPORT) continue;
+            loopvk(ents[id]->links)
+            {
+                int ed = ents[id]->links[k];
+                if(!ents.inrange(ed) || ents[ed]->type != ENVMAP) continue;
+                teledest &d = teledests.add();
+                d.id = id;
+                d.ed = ed;
+                break;
+            }
         }
-        part_portal(e.pos(), radius, 1, yaw, e.attrs[1], PART_TELEPORT, 1, colour);
+        int destid = -1, colour = e.attrs[4] ? e.attrs[4] : (e.attrs[6] || e.attrs[7] ? 0xFFFFFF : 0);
+        if(!teledests.empty())
+        {
+            destid = (lastmillis%(teledests.length()*1000))/1000;
+            if(!colour) colour = 0x8888FF;
+        }
+        if(colour)
+        {
+            if(e.attrs[6] || e.attrs[7])
+            {
+                vec r = vec::fromcolor(colour).mul(game::getpalette(e.attrs[6], e.attrs[7]));
+                colour = (int(r.x*255)<<16)|(int(r.y*255)<<8)|(int(r.z*255));
+            }
+            float yaw = e.attrs[0] < 0 ? (lastmillis/5)%360 : e.attrs[0], blend = e.attrs[12] ? e.attrs[12]/100.f : 1.f,
+                  size = e.attrs[13] ? e.attrs[13]/100.f : float(e.attrs[3] ? e.attrs[3] : enttype[e.type].radius), pitch = e.attrs[1];
+            if(destid >= 0)
+            {
+                teledest &d = teledests[destid];
+                gameentity &f = *(gameentity *)ents[d.id];
+                GLuint envmap = entityenvmap(d.ed);
+                float envblend = e.attrs[14] ? e.attrs[14]/100.f : 0.75f, destyaw = (f.attrs[0] < 0 ? (lastmillis/5)%360 : f.attrs[0])-yaw, destpitch = f.attrs[1]-pitch;
+                part_portal(e.pos(), size, blend, yaw, pitch, PART_PORTAL_ENV, 1, colour, envmap, envblend, destyaw, destpitch);
+            }
+            else part_portal(e.pos(), size, blend, yaw, pitch, PART_PORTAL, 1, colour);
+        }
     }
 
     bool checkparticle(extentity &e)
@@ -3099,7 +3139,7 @@ namespace entities
         switch(e.type)
         {
             case TELEPORT:
-                if(e.attrs[4]) maketeleport(e);
+                maketeleport(e);
                 break;
             case ROUTE:
             {
