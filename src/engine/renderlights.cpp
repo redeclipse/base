@@ -2130,11 +2130,13 @@ struct cascadedshadowmap
         vec center, bounds;  // max extents of shadowmap in sunlight model space
         plane cull[4];       // world space culling planes of the split's projected sides
     };
+    ivec bbmin, bbmax;              // shadowed bounding box
     matrix4 model;                // model view is shared by all splits
     splitinfo splits[CSM_MAXSPLITS]; // per-split parameters
     vec lightview;                  // view vector for light
     int rendered;
     void setup();                   // insert shadowmaps for each split frustum if there is sunlight
+    void calcbb();                  // compute shadowed bounding box
     void updatesplitdist();         // compute split frustum distances
     void getmodelmatrix();          // compute the shared model matrix
     void getprojmatrix();           // compute each cropped projection matrix
@@ -2144,6 +2146,8 @@ struct cascadedshadowmap
 
 void cascadedshadowmap::setup()
 {
+    calcbb();
+
     int size = ((csmmaxsize * shadowatlaspacker.w) / SHADOWATLAS_SIZE + smalign)&~smalign;
     loopi(csmsplits)
     {
@@ -2152,6 +2156,7 @@ void cascadedshadowmap::setup()
         if(shadowatlaspacker.insert(smx, smy, size, size))
             addshadowmap(smx, smy, size, splits[i].idx);
     }
+
     getmodelmatrix();
     getprojmatrix();
     gencullplanes();
@@ -2177,6 +2182,18 @@ CSMVARS(alt);
 
 GETVARMPV(csm, nearplane, float);
 GETVARMPV(csm, farplane, float);
+
+void cascadedshadowmap::calcbb()
+{
+    bbmin = worldmin;
+    bbmax = worldmax;
+
+    ivec cloudbbmin, cloudbbmax;
+    calccloudbb(cloudbbmin, cloudbbmax);
+
+    bbmin.min(cloudbbmin);
+    bbmax.max(cloudbbmax);
+}
 
 void cascadedshadowmap::updatesplitdist()
 {
@@ -2206,7 +2223,7 @@ void cascadedshadowmap::getprojmatrix()
     updatesplitdist();
 
     // find z extent
-    float minz = lightview.project_bb(worldmin, worldmax), maxz = lightview.project_bb(worldmax, worldmin),
+    float minz = lightview.project_bb(bbmin, bbmax), maxz = lightview.project_bb(bbmax, bbmin),
           zmargin = max((maxz - minz)*csmdepthmargin, 0.5f*(csmdepthrange - (maxz - minz)));
     minz -= zmargin;
     maxz += zmargin;
@@ -4523,11 +4540,13 @@ void rendercsmshadowmaps()
 
     csm.setup();
 
+    bool envshadow = hasenvshadow() && smalpha;
+
     shadowmapping = SM_CASCADE;
     shadoworigin = vec(0, 0, 0);
     shadowdir = csm.lightview;
-    shadowbias = csm.lightview.project_bb(worldmin, worldmax);
-    shadowradius = fabs(csm.lightview.project_bb(worldmax, worldmin));
+    shadowbias = csm.lightview.project_bb(csm.bbmin, csm.bbmax);
+    shadowradius = fabs(csm.lightview.project_bb(csm.bbmax, csm.bbmin));
 
     float polyfactor = csmpolyfactor, polyoffset = csmpolyoffset;
     if(smfilter > 2) { polyfactor = csmpolyfactor2; polyoffset = csmpolyoffset2; }
@@ -4538,8 +4557,6 @@ void rendercsmshadowmaps()
     }
 
     glEnable(GL_SCISSOR_TEST);
-
-    bool envshadow = hasenvshadow() && smalpha;
 
     findshadowvas(smalpha && alphashadow);
     if(shadowtransparent || envshadow) csm.rendered = 2;

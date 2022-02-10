@@ -646,6 +646,25 @@ bool hasenvshadow()
     return (getcloudshadow() && !getcloudfarplane()) || (getenvshadow() && !getenvfarplane());
 }
 
+void calccloudbb(ivec &bbmin, ivec &bbmax)
+{
+    if(!hasenvshadow())
+    {
+        bbmin = ivec(1, 1, 1);
+        bbmax = ivec(-1, -1, -1);
+        return;
+    }
+
+    int w = farplane;
+    bbmin.x = bbmin.y = -w;
+    bbmax.x = bbmax.y =  w;
+
+    float cloudmax = (getcloudshadow() && !getcloudfarplane()) ? w*getcloudheight() : 0.0f;
+    float envmax = (getenvshadow() && !getenvfarplane()) ? w*getenvheight() : 0.0f;
+
+    bbmin.z = bbmax.z = max(cloudmax, envmax)*0.5f;
+}
+
 #define ENVLAYER(name) \
     const char *cur##name##layer = get##name##layer(); \
     if(cur##name##layer[0] && get##name##height() && get##name##farplane() == (skyplane ? 1 : 0)) \

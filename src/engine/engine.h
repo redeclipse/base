@@ -970,6 +970,7 @@ extern void drawskybox(bool clear = false);
 extern bool hasskybox();
 extern bool limitsky();
 extern bool hasenvshadow();
+extern void calccloudbb(ivec &bbmin, ivec &bbmax);
 extern bool renderexplicitsky(bool outline = false);
 extern void cleanupsky();
 extern void initskybox();
