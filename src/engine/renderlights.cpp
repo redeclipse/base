@@ -4484,7 +4484,7 @@ static inline bool clearshadowtransparent(int idx, int side)
     return true;
 }
 
-void rendershadowtransparent(int idx, int side, bool cullside = false)
+void rendershadowtransparent(int idx, int side, bool cullside = false, bool cleartransparent = false)
 {
     const shadowmapinfo &sm = shadowmaps[idx];
     int sidex = 0, sidey = 0;
@@ -4499,7 +4499,8 @@ void rendershadowtransparent(int idx, int side, bool cullside = false)
 
     shadowside = side;
 
-    renderalphashadow(cullside);
+    if(!cleartransparent) renderalphashadow(cullside);
+    drawenvlayers(false, true);
 
     if(smfilter) shadowcolorblurs.add(idx * 6 + side);
 }
@@ -4565,16 +4566,18 @@ void rendercsmshadowmaps()
 
     if(shadowtransparent)
     {
+        bool envshadow = hasenvshadow(), cleartransparent = false;
+
         setupshadowtransparent();
         loopi(csmsplits) if(csm.splits[i].idx >= 0)
         {
             const cascadedshadowmap::splitinfo &split = csm.splits[i];
-            if(clearshadowtransparent(split.idx, i)) continue;
+            if((cleartransparent = clearshadowtransparent(split.idx, i)) && !envshadow) continue;
 
             shadowmatrix.mul(split.proj, csm.model);
             GLOBALPARAM(shadowmatrix, shadowmatrix);
 
-            rendershadowtransparent(split.idx, i);
+            rendershadowtransparent(split.idx, i, false, cleartransparent);
         }
         cleanupshadowtransparent();
     }
