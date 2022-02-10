@@ -2187,12 +2187,6 @@ void cascadedshadowmap::calcbb()
 {
     bbmin = worldmin;
     bbmax = worldmax;
-
-    ivec cloudbbmin, cloudbbmax;
-    calccloudbb(cloudbbmin, cloudbbmax);
-
-    bbmin.min(cloudbbmin);
-    bbmax.max(cloudbbmax);
 }
 
 void cascadedshadowmap::updatesplitdist()
@@ -4501,7 +4495,7 @@ static inline bool clearshadowtransparent(int idx, int side)
     return true;
 }
 
-void rendershadowtransparent(int idx, int side, bool cullside = false, bool cleartransparent = false)
+void rendershadowtransparent(int idx, int side, bool cullside = false, bool clear = false, bool env = false)
 {
     const shadowmapinfo &sm = shadowmaps[idx];
     int sidex = 0, sidey = 0;
@@ -4516,8 +4510,9 @@ void rendershadowtransparent(int idx, int side, bool cullside = false, bool clea
 
     shadowside = side;
 
-    if(!cleartransparent) renderalphashadow(cullside);
-    drawenvlayers(false, true);
+    if(env) drawenvlayers(true, true);
+    if(!clear) renderalphashadow(cullside);
+    if(env) drawenvlayers(false, true);
 
     if(smfilter) shadowcolorblurs.add(idx * 6 + side);
 }
@@ -4585,19 +4580,16 @@ void rendercsmshadowmaps()
 
     if(shadowtransparent || envshadow)
     {
-        bool cleartransparent = !shadowtransparent;
-
         setupshadowtransparent();
         loopi(csmsplits) if(csm.splits[i].idx >= 0)
         {
             const cascadedshadowmap::splitinfo &split = csm.splits[i];
-            if(shadowtransparent && !envshadow &&
-               (cleartransparent = clearshadowtransparent(split.idx, i))) continue;
+            if (!envshadow && clearshadowtransparent(split.idx, i)) continue;
 
             shadowmatrix.mul(split.proj, csm.model);
             GLOBALPARAM(shadowmatrix, shadowmatrix);
 
-            rendershadowtransparent(split.idx, i, false, cleartransparent);
+            rendershadowtransparent(split.idx, i, false, !(shadowtransparent & (1 << i)), envshadow);
         }
         cleanupshadowtransparent();
     }

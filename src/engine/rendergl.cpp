@@ -2466,7 +2466,7 @@ void gl_drawview()
         GLERROR;
     }
 
-    drawenvlayers();
+    drawenvlayers(false);
     GLERROR;
 
     if(drawtex <= DRAWTEX_HAZE)
