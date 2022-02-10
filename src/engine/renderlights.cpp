@@ -4539,8 +4539,10 @@ void rendercsmshadowmaps()
 
     glEnable(GL_SCISSOR_TEST);
 
+    bool envshadow = hasenvshadow() && smalpha;
+
     findshadowvas(smalpha && alphashadow);
-    if(shadowtransparent) csm.rendered = 2;
+    if(shadowtransparent || envshadow) csm.rendered = 2;
     findshadowmms();
 
     shadowmaskbatchedmodels(smdynshadow!=0);
@@ -4564,9 +4566,9 @@ void rendercsmshadowmaps()
         rendershadowmodelbatches();
     }
 
-    if(shadowtransparent)
+    if(shadowtransparent || envshadow)
     {
-        bool envshadow = hasenvshadow(), cleartransparent = false;
+        bool cleartransparent = !shadowtransparent;
 
         setupshadowtransparent();
         loopi(csmsplits) if(csm.splits[i].idx >= 0)
