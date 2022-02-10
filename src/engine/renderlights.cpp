@@ -4574,7 +4574,8 @@ void rendercsmshadowmaps()
         loopi(csmsplits) if(csm.splits[i].idx >= 0)
         {
             const cascadedshadowmap::splitinfo &split = csm.splits[i];
-            if((cleartransparent = clearshadowtransparent(split.idx, i)) && !envshadow) continue;
+            if(shadowtransparent && !envshadow &&
+               (cleartransparent = clearshadowtransparent(split.idx, i))) continue;
 
             shadowmatrix.mul(split.proj, csm.model);
             GLOBALPARAM(shadowmatrix, shadowmatrix);
