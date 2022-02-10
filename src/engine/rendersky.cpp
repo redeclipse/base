@@ -654,11 +654,18 @@ bool hasenvshadow()
         glDisable(GL_CULL_FACE); \
         glEnable(GL_BLEND); \
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); \
-        if(shadowpass) LOCALPARAM(skymatrix, shadowmatrix); \
+        if(shadowpass) \
+        { \
+            matrix4 skymatrix = shadowmatrix; \
+            if(!skyplane) skymatrix.translate(worldsize*0.5, worldsize*0.5, 0); \
+            skymatrix.rotate_around_z((getspin##name##layer()*lastmillis/1000.0f+getyaw##name##layer())*-RAD); \
+            LOCALPARAM(skymatrix, skymatrix); \
+        } \
         else \
         { \
             matrix4 skymatrix = cammatrix, skyprojmatrix; \
             if(skyplane) skymatrix.settranslation(0, 0, 0); \
+            else skymatrix.translate(worldsize*0.5, worldsize*0.5, 0); \
             skymatrix.rotate_around_z((getspin##name##layer()*lastmillis/1000.0f+getyaw##name##layer())*-RAD); \
             skyprojmatrix.mul(projmatrix, skymatrix); \
             LOCALPARAM(skymatrix, skyprojmatrix); \
