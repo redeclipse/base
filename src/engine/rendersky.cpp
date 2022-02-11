@@ -633,6 +633,7 @@ static void drawatmosphere()
 
 VAR(0, showsky, 0, 1, 1);
 VAR(0, clampsky, 0, 1, 1);
+VAR(0, cloudshadowclamp, 0, 1, 1);
 
 int explicitsky = 0;
 
@@ -657,6 +658,7 @@ bool hasenvshadow()
         if(shadowpass) \
         { \
             glDisable(GL_DEPTH_TEST); \
+            if(hasDC && cloudshadowclamp) glEnable(GL_DEPTH_CLAMP); \
             matrix4 skymatrix = shadowmatrix; \
             if(!skyplane) skymatrix.translate(worldsize*0.5, worldsize*0.5, 0); \
             skymatrix.rotate_around_z((getspin##name##layer()*lastmillis/1000.0f+getyaw##name##layer())*-RAD); \
@@ -672,7 +674,10 @@ bool hasenvshadow()
             LOCALPARAM(skymatrix, skyprojmatrix); \
         } \
         drawenvoverlay(name##overlay, get##name##height(), get##name##subdiv(), get##name##fade(), get##name##scale(), get##name##layercolour(), get##name##layerblend(), get##name##offsetx() + get##name##scrollx() * lastmillis/1000.0f, get##name##offsety() + get##name##scrolly() * lastmillis/1000.0f); \
-        if(shadowpass) glEnable(GL_DEPTH_TEST); \
+        if(shadowpass) { \
+            glEnable(GL_DEPTH_TEST); \
+            if(hasDC && cloudshadowclamp) glDisable(GL_DEPTH_CLAMP); \
+        } \
         glDisable(GL_BLEND); \
         glEnable(GL_CULL_FACE); \
     }
