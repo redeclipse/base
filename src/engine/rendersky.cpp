@@ -656,7 +656,7 @@ bool hasenvshadow()
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); \
         if(shadowpass) \
         { \
-            glDepthRange(0, 0); \
+            glDisable(GL_DEPTH_TEST); \
             matrix4 skymatrix = shadowmatrix; \
             if(!skyplane) skymatrix.translate(worldsize*0.5, worldsize*0.5, 0); \
             skymatrix.rotate_around_z((getspin##name##layer()*lastmillis/1000.0f+getyaw##name##layer())*-RAD); \
@@ -672,7 +672,7 @@ bool hasenvshadow()
             LOCALPARAM(skymatrix, skyprojmatrix); \
         } \
         drawenvoverlay(name##overlay, get##name##height(), get##name##subdiv(), get##name##fade(), get##name##scale(), get##name##layercolour(), get##name##layerblend(), get##name##offsetx() + get##name##scrollx() * lastmillis/1000.0f, get##name##offsety() + get##name##scrolly() * lastmillis/1000.0f); \
-        if(shadowpass) glDepthRange(0, 1); \
+        if(shadowpass) glEnable(GL_DEPTH_TEST); \
         glDisable(GL_BLEND); \
         glEnable(GL_CULL_FACE); \
     }
