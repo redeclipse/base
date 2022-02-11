@@ -674,7 +674,8 @@ bool hasenvshadow()
             LOCALPARAM(skymatrix, skyprojmatrix); \
         } \
         drawenvoverlay(name##overlay, get##name##height(), get##name##subdiv(), get##name##fade(), get##name##scale(), get##name##layercolour(), get##name##layerblend(), get##name##offsetx() + get##name##scrollx() * lastmillis/1000.0f, get##name##offsety() + get##name##scrolly() * lastmillis/1000.0f); \
-        if(shadowpass) { \
+        if(shadowpass) \
+        { \
             glEnable(GL_DEPTH_TEST); \
             if(hasDC && cloudshadowclamp) glDisable(GL_DEPTH_CLAMP); \
         } \
