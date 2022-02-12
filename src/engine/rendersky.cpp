@@ -658,8 +658,6 @@ bool hasenvshadow()
         if(shadowpass) SETSHADER(cloudshadow); \
         else SETSHADER(skybox); \
         glDisable(GL_CULL_FACE); \
-        glEnable(GL_BLEND); \
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); \
         if(shadowpass) \
         { \
             if(skyplane) glDisable(GL_DEPTH_TEST); \
@@ -672,6 +670,8 @@ bool hasenvshadow()
         } \
         else \
         { \
+            glEnable(GL_BLEND); \
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); \
             matrix4 skymatrix = cammatrix, skyprojmatrix; \
             if(skyplane) skymatrix.settranslation(0, 0, 0); \
             else skymatrix.translate(worldsize*0.5f, worldsize*0.5f, 0); \
@@ -685,7 +685,10 @@ bool hasenvshadow()
             if(hasDC && cloudshadowclamp) glDisable(GL_DEPTH_CLAMP); \
             if(skyplane) glEnable(GL_DEPTH_TEST); \
         } \
-        glDisable(GL_BLEND); \
+        else \
+        { \
+            glDisable(GL_BLEND); \
+        } \
         glEnable(GL_CULL_FACE); \
     }
 
