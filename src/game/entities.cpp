@@ -953,11 +953,11 @@ namespace entities
             {
                 if(full)
                 {
-                    if(attr[6]&(1<<LIGHT_NOSHADOW)) addentinfo("no-shadow");
-                    if(attr[6]&(1<<LIGHT_STATIC)) addentinfo("static");
-                    if(attr[6]&(1<<LIGHT_VOLUMETRIC)) addentinfo("volumetric");
-                    if(attr[6]&(1<<LIGHT_NOSPEC)) addentinfo("no-specular");
-                    if(attr[6]&(1<<LIGHT_SMALPHA)) addentinfo("color-shadow");
+                    if(attr[6]&L_NOSHADOW) addentinfo("no-shadow");
+                    if(attr[6]&L_NODYNSHADOW) addentinfo("no-dynshadow");
+                    if(attr[6]&L_VOLUMETRIC) addentinfo("volumetric");
+                    if(attr[6]&L_NOSPEC) addentinfo("no-specular");
+                    if(attr[6]&L_SMALPHA) addentinfo("color-shadow");
 
                 }
                 break;
