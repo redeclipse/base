@@ -692,7 +692,7 @@ void rendermaterialmask()
 }
 
 #define GLASSVARS(type, name) \
-    CVAR0(IDF_WORLD, name##colour##type, 0xB0D8FF); \
+    CVAR(IDF_WORLD, name##colour##type, 0xB0D8FF); \
     FVAR(IDF_WORLD, name##refract##type, 0, 0.1f, 1e3f); \
     VAR(IDF_WORLD, name##spec##type, 0, 150, 200);
 

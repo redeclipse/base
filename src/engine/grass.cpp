@@ -84,7 +84,7 @@ static void animategrass()
 }
 
 VAR(IDF_WORLD, grassscale, 1, 2, 64);
-CVAR0(IDF_WORLD, grasscolour, 0xFFFFFF);
+CVAR(IDF_WORLD, grasscolour, 0xFFFFFF);
 FVAR(IDF_WORLD, grassblend, 0, 1, 1);
 FVAR(IDF_WORLD, grasstest, 0, 0.6f, 1);
 

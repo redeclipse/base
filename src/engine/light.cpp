@@ -9,7 +9,7 @@ void setlightdir(vec &dir, float yaw, float pitch)
 }
 
 #define PIESKYVARS(name, type) \
-    CVAR1F(IDF_WORLD, sunlight##name, 0, \
+    CVARF(IDF_WORLD, sunlight##name, 0, \
     { \
         if(!checkmapvariant(type)) return; \
         clearradiancehintscache(); \

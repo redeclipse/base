@@ -2044,7 +2044,7 @@ void clearminimap()
 }
 
 VAR(IDF_WORLD, minimapheight, 0, 0, 2<<16);
-CVAR0(IDF_WORLD, minimapcolour, 0);
+CVAR(IDF_WORLD, minimapcolour, 0);
 VAR(IDF_WORLD, minimapclip, 0, 0, 1);
 VARF(IDF_PERSIST, minimapsize, 7, 8, 10, { if(minimaptex) drawminimap(); });
 CVARF(IDF_PERSIST, nominimapcolour, 0x101010, { if(minimaptex) drawminimap(); });

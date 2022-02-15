@@ -2675,7 +2675,7 @@ FVAR(0, voldistclamp, 0, 0.99f, 2);
 VAR(0, volderiv, -1, 1, 1);
 
 #define VOLVARS(name) \
-    CVAR1(IDF_WORLD, volcolour##name, 0x808080); \
+    CVAR(IDF_WORLD, volcolour##name, 0x808080); \
     FVAR(IDF_WORLD, volscale##name, 0, 1, 16);
 
 VOLVARS();

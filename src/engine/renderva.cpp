@@ -738,7 +738,7 @@ bool bboccluded(const ivec &bo, const ivec &br)
 }
 
 VAR(IDF_PERSIST, outline, 0, 1, 1);
-CVAR0(IDF_PERSIST, outlinecolour, 0);
+CVAR(IDF_PERSIST, outlinecolour, 0);
 VAR(0, dtoutline, 0, 1, 1);
 
 void renderoutline()
@@ -792,7 +792,7 @@ void renderoutline()
     gle::disablevertex();
 }
 
-CVAR0(IDF_PERSIST, blendbrushcolour, 0x0000C0);
+CVAR(IDF_PERSIST, blendbrushcolour, 0x0000C0);
 
 void renderblendbrush(GLuint tex, float x, float y, float w, float h)
 {

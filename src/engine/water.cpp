@@ -374,10 +374,10 @@ static inline void rendervolume(const materialsurface &m, int mat = MAT_WATER)
 }
 
 #define WATERVARS(type, name) \
-    CVAR0(IDF_WORLD, name##colour##type, 0x01212C); \
-    CVAR0(IDF_WORLD, name##deepcolour##type, 0x010A10); \
-    CVAR0(IDF_WORLD, name##deepfade##type, 0x60BFFF); \
-    CVAR0(IDF_WORLD, name##refractcolour##type, 0xFFFFFF); \
+    CVAR(IDF_WORLD, name##colour##type, 0x01212C); \
+    CVAR(IDF_WORLD, name##deepcolour##type, 0x010A10); \
+    CVAR(IDF_WORLD, name##deepfade##type, 0x60BFFF); \
+    CVAR(IDF_WORLD, name##refractcolour##type, 0xFFFFFF); \
     VAR(IDF_WORLD, name##fog##type, 0, 30, 10000); \
     VAR(IDF_WORLD, name##deep##type, 0, 50, 10000); \
     VAR(IDF_WORLD, name##spec##type, 0, 150, 200); \
@@ -420,7 +420,7 @@ VARF(IDF_PERSIST, waterenvmap, 0, 1, 1, { preloadwatershaders(); });
 VARF(IDF_PERSIST, waterfallenv, 0, 1, 1, preloadwatershaders());
 
 #define LAVAVARS(type, name) \
-    CVAR0(IDF_WORLD, name##colour##type, 0xFF4000); \
+    CVAR(IDF_WORLD, name##colour##type, 0xFF4000); \
     VAR(IDF_WORLD, name##fog##type, 0, 50, 10000); \
     FVAR(IDF_WORLD, name##glowmin##type, 0, 0.25f, 2); \
     FVAR(IDF_WORLD, name##glowmax##type, 0, 1.0f, 2); \

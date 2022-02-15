@@ -488,10 +488,6 @@ extern char *limitstring(const char *str, size_t len);
 #define _CVAR(name, cur, init, body, flags, level) bvec name = bvec::fromcolor(cur); _VARF(name, _##name, 0, cur, 0xFFFFFF, { init; name = bvec::fromcolor(_##name); body; }, IDF_HEX|flags, level)
 #define CVARF(flags, name, cur, body) _CVAR(name, cur, , body, flags, 0)
 #define CVAR(flags, name, cur) _CVAR(name, cur, , , flags, 0)
-#define CVAR0F(flags, name, cur, body) _CVAR(name, cur, { if(!_##name) _##name = cur; }, body, flags, 0)
-#define CVAR1F(flags, name, cur, body) _CVAR(name, cur, { if(_##name <= 255) _##name |= (_##name<<8) | (_##name<<16); }, body, flags, 0)
-#define CVAR0(flags, name, cur) CVAR0F(flags, name, cur, )
-#define CVAR1(flags, name, cur) CVAR1F(flags, name, cur, )
 
 // game world controlling stuff
 #define WITHWORLD(body) { int _oldflags = identflags; identflags |= IDF_WORLD; body; identflags = _oldflags; }

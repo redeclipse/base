@@ -37,12 +37,12 @@ Texture *loadskyoverlay(const char *basename)
 }
 
 #define MPVVARS(name, type) \
-    CVAR1(IDF_WORLD, ambient##name, 0x191919); \
+    CVAR(IDF_WORLD, ambient##name, 0x191919); \
     FVAR(IDF_WORLD, ambientscale##name, 0, 1, 16); \
-    CVAR1(IDF_WORLD, skylight##name, 0); \
+    CVAR(IDF_WORLD, skylight##name, 0); \
     FVAR(IDF_WORLD, skylightscale##name, 0, 1, 16); \
     VAR(IDF_WORLD, fog##name, 16, 4000, 1000024); \
-    CVAR0(IDF_WORLD, fogcolour##name, 0x8099B3); \
+    CVAR(IDF_WORLD, fogcolour##name, 0x8099B3); \
     CVAR(IDF_WORLD, skybgcolour##name, 0x000000); \
     SVARF(IDF_WORLD, skybox##name, "", { if(skybox##name[0] && checkmapvariant(type)) loadsky(skybox##name, sky); }); \
     CVAR(IDF_WORLD, skycolour##name, 0xFFFFFF); \
@@ -103,9 +103,9 @@ Texture *loadskyoverlay(const char *basename)
     FVAR(IDF_WORLD, atmoheight##name, FVAR_NONZERO, 1, FVAR_MAX); \
     FVAR(IDF_WORLD, atmobright##name, 0, 1, 16); \
     FVAR(IDF_WORLD|IDF_READONLY, atmoclarity##name, 0, 0, 10); /* old map compat for fixatmo, don't use */ \
-    CVAR1(IDF_WORLD, atmolight##name, 0); \
+    CVAR(IDF_WORLD, atmolight##name, 0); \
     FVAR(IDF_WORLD, atmolightscale##name, 0, 1, 16); \
-    CVAR1(IDF_WORLD, atmodisk##name, 0); \
+    CVAR(IDF_WORLD, atmodisk##name, 0); \
     FVAR(IDF_WORLD, atmodisksize##name, 0, 12, 90); \
     FVAR(IDF_WORLD, atmodiskcorona##name, 0, 0.4f, 1); \
     FVAR(IDF_WORLD, atmodiskbright##name, 0, 1, 16); \
