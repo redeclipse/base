@@ -793,7 +793,7 @@ void rendervolfog()
         const bvec &color = getvolfogcolour(k);
         const bvec &deepcolor = getvolfogdeepcolour(k);
         int fog = getvolfogdist(k), deep = getvolfogdeep(k);
-        GLOBALPARAMF(volfogcolor, color.x*colorscale, color.y*colorscale, color.z*colorscale);
+        GLOBALPARAMF(volfogcolor, color.x*colorscale, color.y*colorscale, color.z*colorscale, colorscale/ldrscale);
         GLOBALPARAMF(volfogdeepcolor, deepcolor.x*colorscale, deepcolor.y*colorscale, deepcolor.z*colorscale);
         if(textured)
         {
