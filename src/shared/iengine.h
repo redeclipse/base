@@ -580,7 +580,9 @@ enum
     MATF_INDEX  = 3 << MATF_INDEX_SHIFT,
     MATF_VOLUME = 7 << MATF_VOLUME_SHIFT,
     MATF_CLIP   = 7 << MATF_CLIP_SHIFT,
-    MATF_FLAGS  = 0xFF << MATF_FLAG_SHIFT
+    MATF_FLAGS  = 0xFF << MATF_FLAG_SHIFT,
+
+    MATF_NUMVOL = MATF_VOLUME >> MATF_VOLUME_SHIFT
 };
 
 enum // cube empty-space materials

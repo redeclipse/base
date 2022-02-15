@@ -125,17 +125,17 @@ const char *findmaterialname(int type)
     return NULL;
 }
 
-const char *getmaterialdesc(int mat, const char *prefix)
+const char *getmaterialdesc(ushort *mat, const char *prefix)
 {
     static const ushort matmasks[] = { MATF_VOLUME|MATF_INDEX, MATF_CLIP, MAT_DEATH, MAT_LADDER, MAT_ALPHA, MAT_HURT, MAT_NOGI };
     static string desc;
     desc[0] = '\0';
-    loopi(sizeof(matmasks)/sizeof(matmasks[0])) if(mat&matmasks[i])
+    loopj(MATF_NUMVOL) loopi(sizeof(matmasks)/sizeof(matmasks[0])) if(mat[j]&matmasks[i])
     {
-        const char *matname = findmaterialname(mat&matmasks[i]);
+        const char *matname = findmaterialname(mat[j]&matmasks[i]);
         if(matname)
         {
-            concatstring(desc, desc[0] ? ", " : prefix);
+            concatstring(desc, desc[0] ? " " : prefix);
             concatstring(desc, matname);
         }
     }
@@ -144,7 +144,7 @@ const char *getmaterialdesc(int mat, const char *prefix)
 
 int visiblematerial(const cube &c, int orient, const ivec &co, int size, ushort matmask)
 {
-    ushort mat = c.material&matmask;
+    ushort mat = c.material&matmask&vismatmask;
     switch(mat)
     {
     case MAT_AIR:
@@ -449,6 +449,11 @@ void setupmaterials(int start, int len)
 }
 
 VAR(IDF_PERSIST, showmat, 0, 0, 1);
+VARF(0, vismatmask, 0, 0xFFFF, 0xFFFF,
+{
+    if(!noedit(true)) allchanged(true);
+    else vismatmask = 0xFFFF;
+});
 
 static int sortdim[3];
 static ivec sortorigin;
@@ -595,6 +600,7 @@ int findmaterials()
         if(editmode && showmat && !drawtex)
         {
             loopi(va->matsurfs) editsurfs.add(va->matbuf[i]);
+
             continue;
         }
         float sx1, sy1, sx2, sy2;

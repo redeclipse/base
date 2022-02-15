@@ -653,11 +653,11 @@ extern uint matliquidtiles[LIGHTTILE_MAXH], matsolidtiles[LIGHTTILE_MAXH];
 extern vector<materialsurface> editsurfs, glasssurfs[4], watersurfs[4], waterfallsurfs[4], lavasurfs[4], lavafallsurfs[4], volfogsurfs[4];
 extern const bvec4 matnormals[6];
 
-extern int showmat;
+extern int showmat, vismatmask;
 
 extern int findmaterial(const char *name, bool tryint = false);
 extern const char *findmaterialname(int type);
-extern const char *getmaterialdesc(int mat, const char *prefix = "");
+extern const char *getmaterialdesc(ushort *mat, const char *prefix = "");
 extern void genmatsurfs(const cube &c, const ivec &co, int size, vector<materialsurface> &matsurfs);
 extern void calcmatbb(vtxarray *va, const ivec &co, int size, vector<materialsurface> &matsurfs);
 extern int optimizematsurfs(materialsurface *matbuf, int matsurfs);

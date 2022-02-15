@@ -297,11 +297,21 @@ cube &blockcube(int x, int y, int z, const block3 &b, int rgrid) // looks up a w
 
 ////////////// cursor ///////////////
 
-int selchildcount = 0, selchildmat = -1;
+bool hasselchildmat = false;
+int selchildcount = 0;
+ushort selchildmat[MATF_NUMVOL] = { 0, 0, 0, 0, 0, 0, 0 };
 
 ICOMMAND(0, havesel, "", (), intret(havesel ? selchildcount : 0));
 ICOMMAND(0, selchildcount, "", (), { if(selchildcount < 0) result(tempformatstring("1/%d", -selchildcount)); else intret(selchildcount); });
-ICOMMAND(0, selchildmat, "s", (char *prefix), { if(selchildmat > 0) result(getmaterialdesc(selchildmat, prefix)); });
+ICOMMAND(0, selchildmat, "s", (char *prefix), { result(getmaterialdesc(selchildmat, prefix)); });
+
+// Count material and material variants
+void countselmat(ushort mat)
+{
+    selchildmat[(mat & MATF_VOLUME) >> MATF_VOLUME_SHIFT] |= mat & (MATF_VOLUME | MATF_INDEX);
+    selchildmat[(mat & MATF_CLIP) >> MATF_CLIP_SHIFT] |= mat & MATF_CLIP;
+    selchildmat[0] |= mat & MATF_FLAGS;
+}
 
 void countselchild(cube *c, const ivec &cor, int size)
 {
@@ -313,11 +323,7 @@ void countselchild(cube *c, const ivec &cor, int size)
         else
         {
             selchildcount++;
-            if(c[i].material != MAT_AIR && selchildmat != MAT_AIR)
-            {
-                if(selchildmat < 0) selchildmat = c[i].material;
-                else if(selchildmat != c[i].material) selchildmat = MAT_AIR;
-            }
+            if(c[i].material != MAT_AIR) countselmat(c[i].material);
         }
     }
 }
@@ -470,7 +476,7 @@ void rendereditcursor()
             if(!havesel)
             {
                 selchildcount = 0;
-                selchildmat = -1;
+                memset(selchildmat, 0, sizeof(selchildmat));
                 sel.s = ivec(0, 0, 0);
             }
         }
@@ -544,11 +550,11 @@ void rendereditcursor()
 
             sel.corner = (cor[R[d]]-(lu[R[d]]*2)/gridsize)+(cor[C[d]]-(lu[C[d]]*2)/gridsize)*2;
             selchildcount = 0;
-            selchildmat = -1;
+            memset(selchildmat, 0, sizeof(selchildmat));
             countselchild(worldroot, ivec(0, 0, 0), worldsize/2);
             if(mag>=1 && selchildcount==1)
             {
-                selchildmat = c->material;
+                countselmat(c->material);
                 if(mag>1) selchildcount = -mag;
             }
         }
@@ -3358,7 +3364,7 @@ void setmat(cube &c, ushort mat, ushort matmask, ushort filtermat, ushort filter
             c.material &= matmask;
             c.material |= mat;
         }
-        else c.material = MAT_AIR;
+        else c.material &= (filtermat ? ~filtermat : 0);
     }
 }
 
@@ -3370,9 +3376,9 @@ void mpeditmat(int matid, int filter, int style, selinfo &sel, bool local)
     int filtergeom = 0;
     if(filter >= 0)
     {
-        filtermat = filter&0xFF;
+        filtermat = filter&0xFFFF;
         filtermask = filtermat&(MATF_VOLUME|MATF_INDEX) ? MATF_VOLUME|MATF_INDEX : (filtermat&MATF_CLIP ? MATF_CLIP : filtermat);
-        filtergeom = filter&~0xFF;
+        filtergeom = filter&~0xFFFF;
     }
     switch(style)
     {

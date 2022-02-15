@@ -51,7 +51,7 @@ namespace hud
             int(vec(game::focus->vel).add(game::focus->falling).magnitude()*0.45f),
             int(camera1->o.x), int(camera1->o.y), int(camera1->o.z), int(camera1->yaw), int(camera1->pitch), int(camera1->roll),
             sel.o.x, sel.o.y, sel.o.z, sel.s.x, sel.s.y, sel.s.z, sel.cx, sel.cxs, sel.cy, sel.cys,
-            selchildcount, selchildmat, sel.corner, sel.orient, sel.grid
+            selchildcount, selchildmat[0], sel.corner, sel.orient, sel.grid
         };
         loopi(NUMSTATS) if(prevstats[i] == curstats[i]) curstats[i] = nextstats[i];
     }

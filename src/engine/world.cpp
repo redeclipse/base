@@ -1334,6 +1334,7 @@ void resetmap(bool empty, int variant)
     nospeclights = 0;
     smalphalights = 0;
     volumetricsmalphalights = 0;
+    vismatmask = 0xFFFF;
     game::resetmap(empty);
 }
 
