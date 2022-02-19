@@ -964,7 +964,7 @@ void resolvemsaacolor(int w = vieww, int h = viewh)
 }
 
 #define HDRVARS(name) \
-    FVAR(IDF_WORLD, hdrbright##name, 1e-4f, 1.0f, 1e4f);
+    FVAR(IDF_WORLD, hdrbright##name, 1e-4f, 2.0f, 1e4f);
 
 HDRVARS();
 HDRVARS(alt);
