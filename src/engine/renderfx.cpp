@@ -167,6 +167,7 @@ Texture *hazetexture = NULL;
 GLuint hazertex = 0;
 int hazew = 0, hazeh = 0;
 VAR(0, debughaze, 0, 0, 2);
+VARF(IDF_PERSIST, hazeprec, 0, 1, 1, cleanuphaze());
 
 void setuphaze(int w, int h)
 {
@@ -181,7 +182,7 @@ void setuphaze(int w, int h)
     if(!hazertex)
     {
         glGenTextures(1, &hazertex);
-        createtexture(hazertex, hazew, hazeh, NULL, 3, 1, GL_RGBA8, GL_TEXTURE_RECTANGLE);
+        createtexture(hazertex, hazew, hazeh, NULL, 3, 1, hazeprec ? GL_RGB10 : GL_RGB8, GL_TEXTURE_RECTANGLE);
     }
 
     GLERROR;
