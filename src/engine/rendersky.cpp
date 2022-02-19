@@ -555,6 +555,8 @@ void fixatmo()
 }
 COMMAND(0, fixatmo, "");
 
+FVAR(IDF_PERSIST, atmodither, 0, 0.008f, 1.0f);
+
 static void drawatmosphere()
 {
     if(getatmoblend() < 1)
@@ -623,6 +625,8 @@ static void drawatmosphere()
     float coronamu = 1 - (1-getatmodiskcorona())*(1-getatmodiskcorona());
     if(sundiskscale > 0) LOCALPARAMF(sundiskparams, 1.0f/(sundiskscale*sundiskscale), 1.0f/max(coronamu, 1e-3f));
     else LOCALPARAMF(sundiskparams, 0, 0);
+
+    LOCALPARAMF(atmodither, atmodither);
 
     gle::defvertex();
     gle::begin(GL_TRIANGLE_STRIP);
