@@ -866,6 +866,7 @@ static inline int clipfacevec(const ivec2 &o, const ivec2 &dir, int cx, int cy, 
 static inline bool insideface(const ivec2 *p, int nump, const ivec2 *o, int numo)
 {
     int bounds = 0;
+    if (numo == 0) return false;
     ivec2 prev = o[numo-1];
     loopi(numo)
     {
@@ -886,6 +887,7 @@ static inline int clipfacevecs(const ivec2 *o, int numo, int cx, int cy, int siz
     size <<= 3;
 
     int r = 0;
+    if (numo == 0) return 0;
     ivec2 prev = o[numo-1];
     loopi(numo)
     {
