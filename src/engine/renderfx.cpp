@@ -165,24 +165,25 @@ GETMPV(hazescrolly, float);
 
 Texture *hazetexture = NULL;
 GLuint hazertex = 0;
+GLenum hazerformat = 0;
 int hazew = 0, hazeh = 0;
 VAR(0, debughaze, 0, 0, 2);
-VARF(IDF_PERSIST, hazeprec, 0, 1, 1, cleanuphaze());
 
 void setuphaze(int w, int h)
 {
-    if(w != hazew || h != hazeh)
+    if(w != hazew || h != hazeh || hazerformat != hdrformat)
     {
         cleanuphaze();
         hazew = w;
         hazeh = h;
+        hazerformat = hdrformat;
     }
 
     GLERROR;
     if(!hazertex)
     {
         glGenTextures(1, &hazertex);
-        createtexture(hazertex, hazew, hazeh, NULL, 3, 1, hazeprec ? GL_RGB10 : GL_RGB8, GL_TEXTURE_RECTANGLE);
+        createtexture(hazertex, hazew, hazeh, NULL, 3, 1, hazerformat, GL_TEXTURE_RECTANGLE);
     }
 
     GLERROR;
