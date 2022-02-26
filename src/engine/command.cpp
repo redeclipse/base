@@ -4786,7 +4786,7 @@ ICOMMAND(0, cond, "ee2V", (tagval *args, int numargs),
 CASECOMMAND(case, "i", int, args[0].getint(), args[i].type == VAL_NULL || args[i].getint() == val);
 CASECOMMAND(casef, "f", float, args[0].getfloat(), args[i].type == VAL_NULL || args[i].getfloat() == val);
 CASECOMMAND(cases, "s", const char *, args[0].getstr(), args[i].type == VAL_NULL || !strcmp(args[i].getstr(), val));
-CASECOMMAND(cases~, "s", const char *, args[0].getstr(), args[i].type == VAL_NULL || !strcasecmp(args[i].getstr(), val));
+CASECOMMAND(cases~, "s", const char *, args[0].getstr(), args[i].type == VAL_NULL || cubecaseequal(args[i].getstr(), val));
 
 ICOMMAND(0, caseif, "te2V", (tagval *args, int numargs),
 {
@@ -4876,13 +4876,13 @@ CMPSCMD(strcmp, >s, >);
 CMPSCMD(strcmp, <=s, <=);
 CMPSCMD(strcmp, >=s, >=);
 
-CMPSCMD(strcasecmp, strcasecmp, ==);
-CMPSCMD(strcasecmp, ~=s, ==);
-CMPSCMD(strcasecmp, !~=s, !=);
-CMPSCMD(strcasecmp, <~s, <);
-CMPSCMD(strcasecmp, >~s, >);
-CMPSCMD(strcasecmp, <~=s, <=);
-CMPSCMD(strcasecmp, >~=s, >=);
+CMPSCMD(cubecasecmp, strcasecmp, ==);
+CMPSCMD(cubecasecmp, ~=s, ==);
+CMPSCMD(cubecasecmp, !~=s, !=);
+CMPSCMD(cubecasecmp, <~s, <);
+CMPSCMD(cubecasecmp, >~s, >);
+CMPSCMD(cubecasecmp, <~=s, <=);
+CMPSCMD(cubecasecmp, >~=s, >=);
 
 #define CMPSNCMD(func, name, op) \
     ICOMMAND(0, name, "s1V", (tagval *args, int numargs), \
@@ -4906,16 +4906,16 @@ CMPSNCMD(strncmp, >sn, >);
 CMPSNCMD(strncmp, <=sn, <=);
 CMPSNCMD(strncmp, >=sn, >=);
 
-CMPSNCMD(strncasecmp, strncasecmp, ==);
-CMPSNCMD(strncasecmp, ~=sn, ==);
-CMPSNCMD(strncasecmp, !~=sn, !=);
-CMPSNCMD(strncasecmp, <~sn, <);
-CMPSNCMD(strncasecmp, >~sn, >);
-CMPSNCMD(strncasecmp, <~=sn, <=);
-CMPSNCMD(strncasecmp, >~=sn, >=);
+CMPSNCMD(cubecasecmp, strncasecmp, ==);
+CMPSNCMD(cubecasecmp, ~=sn, ==);
+CMPSNCMD(cubecasecmp, !~=sn, !=);
+CMPSNCMD(cubecasecmp, <~sn, <);
+CMPSNCMD(cubecasecmp, >~sn, >);
+CMPSNCMD(cubecasecmp, <~=sn, <=);
+CMPSNCMD(cubecasecmp, >~=sn, >=);
 
 ICOMMAND(0, strstr, "ss", (char *a, char *b), { char *s = strstr(a, b); intret(s ? s-a : -1); });
-ICOMMAND(0, strcasestr, "ss", (char *a, char *b), { char *s = cubecasestr(a, b); intret(s ? s-a : -1); });
+ICOMMAND(0, strcasestr, "ss", (char *a, char *b), { char *s = cubecasefind(a, b); intret(s ? s-a : -1); });
 ICOMMAND(0, strmatch, "ss", (char *a, char *b), { intret(cubematchstr(a, b) ? 1 : 0); });
 ICOMMAND(0, strcasematch, "ss", (char *a, char *b), { intret(cubematchstr(a, b, true) ? 1 : 0); });
 ICOMMAND(0, strpattern, "ss", (char *a, char *b), { intret(cubepattern(a, b)); });
@@ -4974,7 +4974,7 @@ char *strreplace(const char *s, const char *oldval, const char *newval, const ch
     if(!oldlen) return newstring(s);
     for(int i = 0;; i++)
     {
-        const char *found = docase ? cubecasestr(s, oldval) : strstr(s, oldval);
+        const char *found = docase ? cubecasefind(s, oldval) : strstr(s, oldval);
         if(found)
         {
             while(s < found) buf.add(*s++);
@@ -5106,7 +5106,7 @@ void getvarinfo(int n, int types, int notypes, int flags, int noflags, char *str
         if(ids[1].empty() || !laststr || strcmp(str, laststr))
         {
             ids[1].setsize(0);
-            loopv(ids[0]) if(cubecasestr(ids[0][i]->name, str)) ids[1].add(ids[0][i]);
+            loopv(ids[0]) if(cubecasefind(ids[0][i]->name, str)) ids[1].add(ids[0][i]);
             if(laststr) DELETEA(laststr);
             laststr = newstring(str);
         }

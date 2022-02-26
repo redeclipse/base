@@ -223,27 +223,42 @@ done:
 
 bool cubecaseequal(const char *s1, const char *s2, int n)
 {
+    if(!s1 || !s2) return s1 == s2;
     while(n-- > 0)
     {
-        int c1 = *s1++, c2 = *s2++;
-        if(cubelower(c1) != cubelower(c2)) return false;
-        if(!c1) return true;
+        int c1 = cubelower(*s1++), c2 = cubelower(*s2++);
+        if(c1 != c2) return false;
+        if(!c1) break;
     }
     return true;
 }
 
-const char *cubecasefind(const char *haystack, const char *needle)
+int cubecasecmp(const char *s1, const char *s2, int n)
 {
-    for(const char *h = haystack, *n = needle;;)
+    if(!s1) return !s2 ? 0 : -1;
+    if(!s2) return 1;
+    while(n-- > 0)
     {
-        int hc = *h++, nc = *n++;
-        if(!nc) return h - (n - needle);
-        if(cubelower(hc) != cubelower(nc))
+        int c1 = cubelower(*s1++), c2 = cubelower(*s2++);
+        if(c1 != c2) return c1 < c2 ? -1 : 1;
+        if(!c1) return 0;
+    }
+    return 0;
+}
+
+char *cubecasefind(const char *haystack, const char *needle)
+{
+    if(haystack && needle) for(const char *h = haystack, *n = needle;;)
+    {
+        int hc = cubelower(*h++), nc = cubelower(*n++);
+        if(!nc) return (char*)h - (n - needle);
+        if(hc != nc)
         {
-            if(!hc) return NULL;
+            if(!hc) break;
             n = needle;
         }
     }
+    return NULL;
 }
 
 ///////////////////////// file system ///////////////////////

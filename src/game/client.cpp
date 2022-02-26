@@ -644,7 +644,7 @@ namespace client
                 int t = atoi(team);
                 loopi(numteams(game::gamemode, game::mutators))
                 {
-                    if((t && t == i+T_FIRST) || !strcasecmp(TEAM(i+T_FIRST, name), team))
+                    if((t && t == i+T_FIRST) || cubecaseequal(TEAM(i+T_FIRST, name), team))
                     {
                         return i+T_FIRST;
                     }
@@ -714,32 +714,32 @@ namespace client
         #define PARSEPLAYER(op,val) \
         { \
             gameent *o = game::player1; \
-            if(!op(arg, val)) return o->clientnum; \
+            if(op(arg, val)) return o->clientnum; \
             loopv(game::players) if(game::players[i]) \
             { \
                 o = game::players[i]; \
-                if(!op(arg, val)) return o->clientnum; \
+                if(op(arg, val)) return o->clientnum; \
             } \
         }
-        PARSEPLAYER(strcmp, game::colourname(o, NULL, false, true, 0));
-        PARSEPLAYER(strcasecmp, game::colourname(o, NULL, false, true, 0));
-        PARSEPLAYER(strcmp, o->name);
-        PARSEPLAYER(strcasecmp, o->name);
+        PARSEPLAYER(!strcmp, game::colourname(o, NULL, false, true, 0));
+        PARSEPLAYER(cubecaseequal, game::colourname(o, NULL, false, true, 0));
+        PARSEPLAYER(!strcmp, o->name);
+        PARSEPLAYER(cubecaseequal, o->name);
         #define PARSEPLAYERN(op,val) \
         { \
             gameent *o = game::player1; \
-            if(!op(arg, val, len)) return o->clientnum; \
+            if(op(arg, val, len)) return o->clientnum; \
             loopv(game::players) if(game::players[i]) \
             { \
                 o = game::players[i]; \
-                if(!op(arg, val, len)) return o->clientnum; \
+                if(op(arg, val, len)) return o->clientnum; \
             } \
         }
         size_t len = strlen(arg);
-        PARSEPLAYERN(strncmp, game::colourname(o, NULL, false, true, 0));
-        PARSEPLAYERN(strncasecmp, game::colourname(o, NULL, false, true, 0));
-        PARSEPLAYERN(strncmp, o->name);
-        PARSEPLAYERN(strncasecmp, o->name);
+        PARSEPLAYERN(!strncmp, game::colourname(o, NULL, false, true, 0));
+        PARSEPLAYERN(cubecaseequal, game::colourname(o, NULL, false, true, 0));
+        PARSEPLAYERN(!strncmp, o->name);
+        PARSEPLAYERN(cubecaseequal, o->name);
         return -1;
     }
     ICOMMAND(IDF_NAMECOMPLETE, getclientnum, "s", (char *who), intret(parseplayer(who)));
