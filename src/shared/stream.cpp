@@ -221,18 +221,6 @@ done:
     return dst - dstbuf;
 }
 
-bool cubecaseequal(const char *s1, const char *s2, int n)
-{
-    if(!s1 || !s2) return s1 == s2;
-    while(n-- > 0)
-    {
-        int c1 = cubelower(*s1++), c2 = cubelower(*s2++);
-        if(c1 != c2) return false;
-        if(!c1) break;
-    }
-    return true;
-}
-
 int cubecasecmp(const char *s1, const char *s2, int n)
 {
     if(!s1) return !s2 ? 0 : -1;
@@ -241,7 +229,7 @@ int cubecasecmp(const char *s1, const char *s2, int n)
     {
         int c1 = cubelower(*s1++), c2 = cubelower(*s2++);
         if(c1 != c2) return c1 < c2 ? -1 : 1;
-        if(!c1) return 0;
+        if(!c1) break;
     }
     return 0;
 }
