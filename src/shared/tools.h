@@ -1923,6 +1923,8 @@ static inline uchar cubeupper(uchar c)
 }
 extern size_t decodeutf8(uchar *dst, size_t dstlen, const uchar *src, size_t srclen, size_t *carry = NULL);
 extern size_t encodeutf8(uchar *dstbuf, size_t dstlen, const uchar *srcbuf, size_t srclen, size_t *carry = NULL);
+extern bool cubecaseequal(const char *s1, const char *s2, int n = INT_MAX);
+extern const char *cubecasefind(const char *haystack, const char *needle);
 
 extern int crcstream(stream *f);
 extern int crcfile(const char *s);

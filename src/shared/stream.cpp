@@ -221,6 +221,31 @@ done:
     return dst - dstbuf;
 }
 
+bool cubecaseequal(const char *s1, const char *s2, int n)
+{
+    while(n-- > 0)
+    {
+        int c1 = *s1++, c2 = *s2++;
+        if(cubelower(c1) != cubelower(c2)) return false;
+        if(!c1) return true;
+    }
+    return true;
+}
+
+const char *cubecasefind(const char *haystack, const char *needle)
+{
+    for(const char *h = haystack, *n = needle;;)
+    {
+        int hc = *h++, nc = *n++;
+        if(!nc) return h - (n - needle);
+        if(cubelower(hc) != cubelower(nc))
+        {
+            if(!hc) return NULL;
+            n = needle;
+        }
+    }
+}
+
 ///////////////////////// file system ///////////////////////
 
 #ifndef WIN32
