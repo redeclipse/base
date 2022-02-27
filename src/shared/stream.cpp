@@ -244,6 +244,7 @@ char *cubecasefind(const char *haystack, const char *needle)
         {
             if(!hc) break;
             n = needle;
+            h = ++haystack;
         }
     }
     return NULL;
