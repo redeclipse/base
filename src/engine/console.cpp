@@ -680,7 +680,7 @@ bool consolekey(int code, bool isdown)
                 break;
 
             case SDLK_HOME:
-                if(strlen(commandbuf)) commandpos = 0;
+                if(commandbuf[0]) commandpos = 0;
                 break;
 
             case SDLK_END:
@@ -729,11 +729,21 @@ bool consolekey(int code, bool isdown)
 
             case SDLK_UP:
                 if(histpos > history.length()) histpos = history.length();
-                if(histpos > 0) history[--histpos]->restore();
+                if(histpos > 0)
+                {
+                    if(SDL_GetModState()&SKIP_KEYS) histpos = 0;
+                    else --histpos;
+                    history[histpos]->restore();
+                }
                 break;
 
             case SDLK_DOWN:
-                if(histpos + 1 < history.length()) history[++histpos]->restore();
+                if(histpos + 1 < history.length())
+                {
+                    if(SDL_GetModState()&SKIP_KEYS) histpos = history.length()-1;
+                    else ++histpos;
+                    history[histpos]->restore();
+                }
                 break;
 
             case SDLK_TAB:
