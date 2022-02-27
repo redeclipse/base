@@ -772,9 +772,11 @@ extern ENetPeer *curpeer, *connpeer;
 #ifdef __APPLE__
     #define MOD_KEYS (KMOD_LGUI|KMOD_RGUI)
     #define MOD_ALTS KMOD_RALT
+    #define SKIP_KEYS (KMOD_LALT|KMOD_RALT)
 #else
     #define MOD_KEYS (KMOD_LCTRL|KMOD_RCTRL)
     #define MOD_ALTS (KMOD_LALT|KMOD_RALT)
+    #define SKIP_KEYS (KMOD_LCTRL|KMOD_RCTRL)
 #endif
 
 #define MOD_SHIFTS (KMOD_LSHIFT|KMOD_RSHIFT)
