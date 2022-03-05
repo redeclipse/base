@@ -134,8 +134,13 @@ namespace projs
             default: break;
         }
 
+        physent *pe = NULL;
 
-        fx::emitter *e = fx::createfx(fxindex, from, to, blend, scale, color, NULL, hook);
+        // allow parttrack for hit-scan projectiles
+        if(subtype == PRJ_FX_LIFE && proj.projcollide&COLLIDE_SCAN)
+            pe = proj.owner;
+
+        fx::emitter *e = fx::createfx(fxindex, from, to, blend, scale, color, pe, hook);
         float param;
 
         if(e) switch(subtype)
