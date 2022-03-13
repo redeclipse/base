@@ -1841,6 +1841,14 @@ uchar *loadalphamask(Texture *t)
     return t->alphamask;
 }
 
+Texture *textureloaded(const char *name)
+{
+    string tname;
+    copystring(tname, name);
+    path(tname);
+    return textures.access(tname);
+}
+
 Texture *textureload(const char *name, int clamp, bool mipit, bool msg)
 {
     string tname;

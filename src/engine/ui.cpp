@@ -8,6 +8,8 @@ namespace UI
 
     vec2 mousetrackvec;
 
+    static int lastthumbnail = 0;
+
     FVAR(0, uitextscale, 1, 0, 0);
 
     SVAR(0, uiopencmd, "showui");
@@ -24,6 +26,11 @@ namespace UI
     VAR(IDF_PERSIST, uislotviewtime, 0, 25, VAR_MAX);
 
     FVAR(IDF_PERSIST, uitipoffset, -1, 0.001f, 1);
+
+    #define SETSTR(dst, src) do { \
+        if(dst) { if(dst != src && strcmp(dst, src)) { delete[] dst; dst = newstring(src); } } \
+        else dst = newstring(src); \
+    } while(0)
 
     static void quads(float x, float y, float w, float h, float tx = 0, float ty = 0, float tw = 1, float th = 1)
     {
@@ -2736,6 +2743,48 @@ namespace UI
     UIARG(TiledImage, image, tilew, "f", float, FVAR_NONZERO, FVAR_MAX);
     UIARG(TiledImage, image, tileh, "f", float, FVAR_NONZERO, FVAR_MAX);
 
+    struct Thumbnail : Target
+    {
+        char *texname;
+
+        Thumbnail() : texname(NULL) {}
+        ~Thumbnail() { delete[] texname; }
+
+        void setup(const char *texname_, float minw_ = 0, float minh_ = 0)
+        {
+            Target::setup(minw_, minh_, Color(colourwhite));
+            SETSTR(texname, texname_);
+        }
+
+        static const char *typestr() { return "#Thumbnail"; }
+        const char *gettype() const { return typestr(); }
+
+        void draw(float sx, float sy)
+        {
+            Texture *t = textureloaded(texname);
+            if(!t)
+            {
+                if(totalmillis - lastthumbnail < uislotviewtime) return;
+                t = textureload(texname, 3, true, false);
+            }
+
+            if(!t || t == notexture) return;
+
+            changedraw(CHANGE_SHADER);
+
+            SETSHADER(hudrgb);
+            vec2 tc[4] = { vec2(0, 0), vec2(1, 0), vec2(1, 1), vec2(0, 1) };
+
+            glBindTexture(GL_TEXTURE_2D, t->id);
+            quad(sx, sy, w, h, tc);
+
+            Object::draw(sx, sy);
+        }
+    };
+
+    ICOMMAND(0, uithumbnail, "sffe", (char *texname, float *minw, float *minh, uint *children),
+        BUILD(Thumbnail, o, o->setup(texname, *minw*uiscale, *minh*uiscale), children));
+
     struct Shape : Target
     {
         void setup(const Color &color_, int type_ = SOLID, float minw_ = 0, float minh_ = 0)
@@ -2874,11 +2923,6 @@ namespace UI
 
     ICOMMAND(0, uimodcircle, "ife", (int *c, float *size, uint *children),
         BUILD(Circle, o, o->setup(Color(*c), *size*uiscale, Circle::MODULATE), children));
-
-    #define SETSTR(dst, src) do { \
-        if(dst) { if(dst != src && strcmp(dst, src)) { delete[] dst; dst = newstring(src); } } \
-        else dst = newstring(src); \
-    } while(0)
 
     struct Text : Colored
     {
@@ -4319,8 +4363,6 @@ namespace UI
 
     ICOMMAND(0, uiprefabpreview, "sifffe", (char *prefab, int *colour, float *blend, float *minw, float *minh, uint *children),
         BUILD(PrefabPreview, o, o->setup(prefab, Color(*colour), *blend, *minw*uiscale, *minh*uiscale), children));
-
-    static int lastthumbnail = 0;
 
     struct SlotViewer : Target
     {

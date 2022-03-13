@@ -226,6 +226,7 @@ static inline void text_pos(const char *str, int cursor, int &cx, int &cy, float
 extern int hwtexsize, hwcubetexsize, hwmaxaniso, maxtexsize, hwtexunits, hwvtexunits;
 extern bool loadedshaders;
 
+extern Texture *textureloaded(const char *name);
 extern Texture *textureload(const char *name, int clamp = 0, bool mipit = true, bool msg = true);
 extern int texalign(const void *data, int w, int bpp);
 extern bool floatformat(GLenum format);
