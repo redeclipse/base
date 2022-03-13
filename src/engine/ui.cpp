@@ -2766,6 +2766,7 @@ namespace UI
             {
                 if(totalmillis - lastthumbnail < uislotviewtime) return;
                 t = textureload(texname, 3, true, false);
+                lastthumbnail = totalmillis;
             }
 
             if(!t || t == notexture) return;
