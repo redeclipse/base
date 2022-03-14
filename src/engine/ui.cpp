@@ -17,6 +17,8 @@ namespace UI
     SVAR(0, uiprecmd, "");
     SVAR(0, uipostcmd, "");
 
+    TVAR(IDF_PERSIST|IDF_PRELOAD, uiloadtex, "<anim:100,4,3>textures/loading", 3);
+
     VAR(0, uihidden, 0, 0, 1);
     FVAR(IDF_PERSIST, uiscale, FVAR_NONZERO, 1, 100);
     VAR(IDF_PERSIST, uitextrows, 1, 48, VAR_MAX);
@@ -2764,9 +2766,12 @@ namespace UI
             Texture *t = textureloaded(texname);
             if(!t)
             {
-                if(totalmillis - lastthumbnail < uislotviewtime) return;
-                t = textureload(texname, 3, true, false);
-                lastthumbnail = totalmillis;
+                if(totalmillis - lastthumbnail < uislotviewtime) t = textureload(uiloadtex);
+                else
+                {
+                    t = textureload(texname, 3, true, false);
+                    lastthumbnail = totalmillis;
+                }
             }
 
             if(!t || t == notexture) return;
@@ -4399,13 +4404,17 @@ namespace UI
             {
                 if(!slot.thumbnail)
                 {
-                    if(totalmillis - lastthumbnail < uislotviewtime) return;
-                    slot.loadthumbnail();
-                    lastthumbnail = totalmillis;
+                    if(totalmillis - lastthumbnail < uislotviewtime) t = textureload(uiloadtex);
+                    else
+                    {
+                        slot.loadthumbnail();
+                        lastthumbnail = totalmillis;
+                    }
                 }
-                if(slot.thumbnail != notexture) t = slot.thumbnail;
-                else return;
+                if(slot.thumbnail && slot.thumbnail != notexture) t = slot.thumbnail;
             }
+
+            if(!t || t == notexture) return;
 
             changedraw(CHANGE_SHADER | CHANGE_COLOR);
 
@@ -4504,13 +4513,17 @@ namespace UI
             {
                 if(!slot.thumbnail)
                 {
-                    if(totalmillis - lastthumbnail < uislotviewtime) return;
-                    slot.loadthumbnail();
-                    lastthumbnail = totalmillis;
+                    if(totalmillis - lastthumbnail < uislotviewtime) t = textureload(uiloadtex);
+                    else
+                    {
+                        slot.loadthumbnail();
+                        lastthumbnail = totalmillis;
+                    }
                 }
-                if(slot.thumbnail != notexture) t = slot.thumbnail;
-                else return;
+                if(slot.thumbnail && slot.thumbnail != notexture) t = slot.thumbnail;
             }
+
+            if(!t || t == notexture) return;
 
             changedraw(CHANGE_SHADER | CHANGE_COLOR);
 
