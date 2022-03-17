@@ -647,9 +647,9 @@ bool consoleinput(const char *str, int len)
 
 static char *skipword(char *s)
 {
-    while(int c = *s++) if(iscubespace(c))
+    while(int c = *s++) if(!iscubespace(c))
     {
-        while(iscubespace(*s++));
+        while(int c = *s++) if(iscubespace(c)) break;
         break;
     }
     return s-1;
