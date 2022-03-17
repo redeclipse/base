@@ -223,12 +223,11 @@ done:
 
 int cubecasecmp(const char *s1, const char *s2, int n)
 {
-    if(!s1) return !s2 ? 0 : -1;
-    if(!s2) return 1;
+    if(!s1 || !s2) return !s2 - !s1;
     while(n-- > 0)
     {
         int c1 = cubelower(*s1++), c2 = cubelower(*s2++);
-        if(c1 != c2) return c1 < c2 ? -1 : 1;
+        if(c1 != c2) return c1 - c2;
         if(!c1) break;
     }
     return 0;
