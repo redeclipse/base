@@ -164,7 +164,7 @@ GETMPV(hazescrollx, float);
 GETMPV(hazescrolly, float);
 
 Texture *hazetexture = NULL;
-GLuint hazertex = 0;
+GLuint hazertex = 0, hazerfbo = 0;
 GLenum hazerformat = 0;
 int hazew = 0, hazeh = 0;
 VAR(0, debughaze, 0, 0, 2);
@@ -185,17 +185,22 @@ void setuphaze(int w, int h)
         glGenTextures(1, &hazertex);
         createtexture(hazertex, hazew, hazeh, NULL, 3, 1, hazerformat, GL_TEXTURE_RECTANGLE);
     }
-
+    if(msaalight && !hazerfbo)
+    {
+        glGenFramebuffers_(1, &hazerfbo);
+        glBindFramebuffer_(GL_FRAMEBUFFER, hazerfbo);
+        glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, hazertex, 0);
+        if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+            fatal("Failed allocating haze buffer!");
+        glBindFramebuffer_(GL_FRAMEBUFFER, mshdrfbo);
+    }
     GLERROR;
 }
 
 void cleanuphaze()
 {
-    if(hazertex)
-    {
-        glDeleteTextures(1, &hazertex);
-        hazertex = 0;
-    }
+    if(hazerfbo) { glDeleteFramebuffers_(1, &hazerfbo); hazerfbo = 0; }
+    if(hazertex) { glDeleteTextures(1, &hazertex); hazertex = 0; }
 }
 
 void inithaze()
@@ -226,8 +231,18 @@ void renderhaze()
     bool textured = hashaze && hazetexture && hazetexture != notexture, hazemix = false;
     if(textured || hazeparticles)
     {
-        glBindTexture(GL_TEXTURE_RECTANGLE, hazertex);
-        glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE, 0, 0, 0, 0, 0, hazew, hazeh);
+        if(msaalight)
+        {
+            glBindFramebuffer_(GL_READ_FRAMEBUFFER, mshdrfbo);
+            glBindFramebuffer_(GL_DRAW_FRAMEBUFFER, hazerfbo);
+            glBlitFramebuffer_(0, 0, hazew, hazeh, 0, 0, hazew, hazeh, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+            glBindFramebuffer_(GL_FRAMEBUFFER, mshdrfbo);
+        }
+        else
+        {
+            glBindTexture(GL_TEXTURE_RECTANGLE, hazertex);
+            glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE, 0, 0, 0, 0, 0, hazew, hazeh);
+        }
     }
 
     if(hashaze)
