@@ -28,7 +28,7 @@ void changemapvariant(int variant)
     }
 }
 
-VARF(0, mapeffects, 1, 3, 3, allchanged(true));
+VARF(IDF_PERSIST, mapeffects, 1, 3, 3, allchanged(true));
 
 bool checkmapeffects(int fxlevel)
 {
