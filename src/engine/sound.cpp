@@ -422,13 +422,13 @@ void calcvol(int flags, int vol, int slotvol, int maxrad, int minrad, const vec 
 {
     vec v;
     float dist = pos.dist(camera1->o, v);
-    int svol = flags&SND_CLAMPED ? 255 : clamp(vol, 0, 255), span = 127;
+    float svol = flags&SND_CLAMPED ? 255 : clamp(vol, 0, 255), span = 0.5f;
     if(!(flags&SND_NOATTEN) && dist > 0)
     {
         if(!(flags&SND_NOPAN) && !soundmono && (v.x != 0 || v.y != 0))
         {
             v.rotate_around_z(-camera1->yaw*RAD);
-            span = int(255.9f*(0.5f - 0.5f*v.x/v.magnitude2())); // range is from 0 (left) to 255 (right)
+            span = 0.5f - 0.5f*v.x/v.magnitude2(); // range is from 0 (left) to 1 (right)
         }
         if(!(flags&SND_NODIST))
         {
@@ -436,15 +436,15 @@ void calcvol(int flags, int vol, int slotvol, int maxrad, int minrad, const vec 
                   nrad = minrad > 0 ? (minrad <= mrad ? minrad : mrad) : soundminrad;
             if(dist > nrad)
             {
-                if(dist <= mrad) svol = int(svol*(1.f-((dist-nrad)/max(mrad-nrad,1e-16f))));
+                if(dist <= mrad) svol *= 1.f-((dist-nrad)/max(mrad-nrad,1e-16f));
                 else svol = 0;
             }
         }
     }
-    if(!(flags&SND_NOQUIET) && svol > 0 && liquid) svol = int(svol*0.65f);
-    if(flags&SND_CLAMPED) svol = max(svol, clamp(vol, 0, 255));
-    *curvol = clamp(int((mastervol/255.f)*(soundvol/255.f)*(slotvol/255.f)*(svol/255.f)*MIX_MAX_VOLUME*(flags&SND_MAP ? soundenvvol : soundevtvol)), 0, MIX_MAX_VOLUME);
-    *curpan = span;
+    if(!(flags&SND_NOQUIET) && svol > 0 && liquid) svol *= 0.65f;
+    if(flags&SND_CLAMPED) svol = max(svol, float(clamp(vol, 0, 255)));
+    *curvol = clamp(int((mastervol/255.f)*(soundvol/255.f)*(slotvol/255.f)*(svol/255.f)*MIX_MAX_VOLUME*(flags&SND_MAP ? soundenvvol : soundevtvol)+0.5f), 0, MIX_MAX_VOLUME);
+    *curpan = clamp(int(span*255.9f), 0, 255);
 }
 
 void updatesound(int chan)
