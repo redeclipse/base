@@ -1400,8 +1400,6 @@ FVAR(IDF_WORLD, farplanescale, FVAR_NONZERO, 2, FVAR_MAX);
 void vecfromcursor(float x, float y, float z, vec &dir)
 {
     matrix4 invcamprojnojittermatrix;
-
-    invcamprojnojittermatrix.identity();
     invcamprojnojittermatrix.muld(nojittermatrix, cammatrix);
     invcamprojnojittermatrix.invert(invcamprojnojittermatrix);
 
