@@ -1399,8 +1399,14 @@ FVAR(IDF_WORLD, farplanescale, FVAR_NONZERO, 2, FVAR_MAX);
 
 void vecfromcursor(float x, float y, float z, vec &dir)
 {
-    vec dir1 = invcamprojmatrix.perspectivetransform(vec(x*2-1, 1-2*y, z*2-1)),
-        dir2 = invcamprojmatrix.perspectivetransform(vec(x*2-1, 1-2*y, -1));
+    matrix4 invcamprojnojittermatrix;
+
+    invcamprojnojittermatrix.identity();
+    invcamprojnojittermatrix.muld(nojittermatrix, cammatrix);
+    invcamprojnojittermatrix.invert(invcamprojnojittermatrix);
+
+    vec dir1 = invcamprojnojittermatrix.perspectivetransform(vec(x*2-1, 1-2*y, z*2-1)),
+        dir2 = invcamprojnojittermatrix.perspectivetransform(vec(x*2-1, 1-2*y, -1));
     (dir = dir1).sub(dir2).normalize();
 }
 
