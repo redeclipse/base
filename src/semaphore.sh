@@ -95,7 +95,7 @@ semabuild_build() {
         make \
             CC=clang-12 \
             CXX=clang++-12 \
-            PLATFORM="x86-pc-windows-msvc" \
+            PLATFORM="i386-pc-windows-msvc" \
             PLATFORM_BIN="x86" \
             PLATFORM_BUILD="${SEMAPHORE_BUILD_NUMBER}" \
             PLATFORM_BRANCH="${BRANCH_NAME}" \
