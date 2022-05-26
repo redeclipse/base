@@ -66,6 +66,13 @@ semabuild_build() {
     src/msvcsetup.sh
 
     if [ $? -eq 0 ]; then
+        msvc_ver=$(ls ${HOME}/sys/msvc/Contents/VC/Tools/MSVC/)
+        sdk_ver=$(ls ${HOME}/sys/winsdk/c/Include/)
+
+        export MSVC_DIR="${HOME}/sys/msvc/Contents/VC/Tools/MSVC/$msvc_ver"
+        export WINKIT_INC_DIR="${HOME}/sys/winsdk/c/Include/$sdk_ver"
+        export WINKIT_LIB_DIR="${HOME}/sys/winsdk_lib/c/"
+
         make \
             CC=clang-12 \
             CXX=clang++-12 \
