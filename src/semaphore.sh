@@ -61,7 +61,7 @@ semabuild_build() {
     sudo ${SEMABUILD_APT} -fy install build-essential multiarch-support gcc-multilib g++-multilib zlib1g-dev libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev libfreetype6-dev binutils-mingw-w64 g++-mingw-w64 || return 1
     sudo ${SEMABUILD_APT} clean || return 1
 
-    ./msvcsetup.sh
+    src/msvcsetup.sh
     if [ $? -eq 0 ]; then
         make \
             CC=clang-12 \
