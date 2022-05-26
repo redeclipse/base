@@ -1321,7 +1321,7 @@ void setcammatrix()
 
 void setcamprojmatrix(bool init = true, bool flush = false)
 {
-    if(init)
+    if(init) 
     {
         setcammatrix();
     }
