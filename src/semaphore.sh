@@ -91,22 +91,22 @@ semabuild_build() {
             -O -j $numjobs \
             -C src clean install || return 1
 
-        # make \
-        #     CC=clang-12 \
-        #     CXX=clang++-12 \
-        #     PLATFORM="i386-pc-windows-msvc" \
-        #     PLATFORM_BIN="x86" \
-        #     PLATFORM_BUILD="${SEMAPHORE_BUILD_NUMBER}" \
-        #     PLATFORM_BRANCH="${BRANCH_NAME}" \
-        #     PLATFORM_REVISION="${REVISION}" \
-        #     WANT_DISCORD=1 \
-        #     WANT_STEAM=1 \
-        #     INSTDIR="${SEMABUILD_DIR}/windows/bin/x86" \
-        #     CFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math" \
-        #     CXXFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math" \
-        #     LDFLAGS="-m32" \
-        #     -O -j $numjobs \
-        #     -C src clean install || return 1
+        make \
+            CC=clang-12 \
+            CXX=clang++-12 \
+            PLATFORM="i386-pc-windows-msvc" \
+            PLATFORM_BIN="x86" \
+            PLATFORM_BUILD="${SEMAPHORE_BUILD_NUMBER}" \
+            PLATFORM_BRANCH="${BRANCH_NAME}" \
+            PLATFORM_REVISION="${REVISION}" \
+            WANT_DISCORD=1 \
+            WANT_STEAM=1 \
+            INSTDIR="${SEMABUILD_DIR}/windows/bin/x86" \
+            CFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math" \
+            CXXFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math" \
+            LDFLAGS="-m32" \
+            -O -j $numjobs \
+            -C src clean install || return 1
     else
         # mingw fallback when msvc setup fails
         make \
@@ -124,20 +124,20 @@ semabuild_build() {
             -O -j $numjobs \
             -C src clean install || return 1
 
-        # make \
-        #     PLATFORM="crossmingw32" \
-        #     PLATFORM_BIN="x86" \
-        #     PLATFORM_BUILD="${SEMAPHORE_BUILD_NUMBER}" \
-        #     PLATFORM_BRANCH="${BRANCH_NAME}" \
-        #     PLATFORM_REVISION="${REVISION}" \
-        #     WANT_DISCORD=1 \
-        #     WANT_STEAM=1 \
-        #     INSTDIR="${SEMABUILD_DIR}/windows/bin/x86" \
-        #     CFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math" \
-        #     CXXFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math" \
-        #     LDFLAGS="-m32" \
-        #     -O -j $numjobs \
-        #     -C src clean install || return 1
+        make \
+            PLATFORM="crossmingw32" \
+            PLATFORM_BIN="x86" \
+            PLATFORM_BUILD="${SEMAPHORE_BUILD_NUMBER}" \
+            PLATFORM_BRANCH="${BRANCH_NAME}" \
+            PLATFORM_REVISION="${REVISION}" \
+            WANT_DISCORD=1 \
+            WANT_STEAM=1 \
+            INSTDIR="${SEMABUILD_DIR}/windows/bin/x86" \
+            CFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math" \
+            CXXFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math" \
+            LDFLAGS="-m32" \
+            -O -j $numjobs \
+            -C src clean install || return 1
     fi
 
     make \
@@ -155,9 +155,23 @@ semabuild_build() {
         -O -j $numjobs \
         -C src clean install || return 1
 
-    # sudo ${SEMABUILD_APT} purge -fy sbt || return 1
-    # sudo ${SEMABUILD_APT} -o Dpkg::Options::="--force-overwrite" -fy --no-install-recommends install pkg-config:i386 gcc:i386 g++:i386 cpp:i386 g++-4.8:i386 gcc-4.8:i386 cpp-4.8:i386 binutils:i386 zlib1g-dev:i386 libsdl2-dev:i386 libsdl2-mixer-dev:i386 libsdl2-image-dev:i386 libpng-dev:i386 libfreetype6-dev:i386 || return 1
-    # PKG_CONFIG_PATH="/usr/lib/i386-linux-gnu/pkgconfig" make PLATFORM="linux32" PLATFORM_BIN="x86" PLATFORM_BUILD="${SEMAPHORE_BUILD_NUMBER}" PLATFORM_BRANCH="${BRANCH_NAME}" PLATFORM_REVISION="${REVISION}" WANT_DISCORD=1 WANT_STEAM=1 INSTDIR="${SEMABUILD_DIR}/linux/bin/x86" CFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math" CXXFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math" LDFLAGS="-m32" -C src clean install || return 1
+    sudo ${SEMABUILD_APT} purge -fy sbt || return 1
+    sudo ${SEMABUILD_APT} -o Dpkg::Options::="--force-overwrite" -fy --no-install-recommends install pkg-config:i386 gcc:i386 g++:i386 cpp:i386 g++-4.8:i386 gcc-4.8:i386 cpp-4.8:i386 binutils:i386 zlib1g-dev:i386 libsdl2-dev:i386 libsdl2-mixer-dev:i386 libsdl2-image-dev:i386 libpng-dev:i386 libfreetype6-dev:i386 || return 1
+
+    PKG_CONFIG_PATH="/usr/lib/i386-linux-gnu/pkgconfig" make \
+        PLATFORM="linux32" \
+        PLATFORM_BIN="x86" \
+        PLATFORM_BUILD="${SEMAPHORE_BUILD_NUMBER}" \
+        PLATFORM_BRANCH="${BRANCH_NAME}" \
+        PLATFORM_REVISION="${REVISION}" \
+        WANT_DISCORD=1 \
+        WANT_STEAM=1 \
+        INSTDIR="${SEMABUILD_DIR}/linux/bin/x86" \
+        CFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math" \
+        CXXFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math" \
+        LDFLAGS="-m32" \
+        -O -j $numjobs \
+        -C src clean install || return 1
 
     #sudo ${SEMABUILD_APT} purge -fy ".*:i386" || return 1
     #sudo dpkg --remove-architecture i386 || return 1
