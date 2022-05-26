@@ -28,7 +28,6 @@ semabuild_setup() {
 semabuild_archive() {
     echo "archiving ${BRANCH_NAME}.."
     # ensure updater and scripts updated at least if base fails
-    cp -fv "*.pdb" "${SEMABUILD_DIR}/windows/" || return 1
     cp -fv "redeclipse.bat" "${SEMABUILD_DIR}/windows/redeclipse.bat" || return 1
     cp -fv "redeclipse_server.bat" "${SEMABUILD_DIR}/windows/redeclipse_server.bat" || return 1
     cp -fv "redeclipse.sh" "${SEMABUILD_DIR}/linux/redeclipse.sh" || return 1

@@ -37,7 +37,10 @@ ifeq (,$(INSTDIR))
     INSTDIR = ../bin/$(PLATFORM_BIN)
 endif
 
-PDBDIR = ../
+ifeq (,$(PDBDIR))
+    PDBDIR = $(INSTDIR)/../../
+endif
+
 
 TOOLSET_PREFIX =
 ifneq (,$(findstring cross,$(PLATFORM)))
