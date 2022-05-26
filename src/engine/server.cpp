@@ -38,6 +38,7 @@ SVAR(IDF_READONLY, versionrelease, VERSION_RELEASE);
 SVAR(IDF_READONLY, versionurl, VERSION_URL);
 SVAR(IDF_READONLY, versioncopy, VERSION_COPY);
 SVAR(IDF_READONLY, versiondesc, VERSION_DESC);
+SVAR(IDF_READONLY, versioncomp, VERSION_COMP);
 SVAR(IDF_READONLY, versionplatname, plat_name(CUR_PLATFORM));
 SVAR(IDF_READONLY, versionplatlongname, plat_longname(CUR_PLATFORM));
 VAR(IDF_READONLY, versionbuild, 0, VERSION_BUILD, VAR_MAX);
@@ -62,7 +63,7 @@ const char *getverstr()
     {
         defformatstring(branch, "%s", versionbranch);
         if(versionbuild > 0) concformatstring(branch, "-%d", versionbuild);
-        formatstring(verstr, "%s %s-%s%d-%s %s (%s)", versionname, versionstring, versionplatname, versionarch, branch, versionisserver ? "server" : "client", versionrelease);
+        formatstring(verstr, "%s %s-%s%d-%s %s (%s) [%s]", versionname, versionstring, versionplatname, versionarch, branch, versionisserver ? "server" : "client", versionrelease, versioncomp);
     }
     return verstr;
 }

@@ -1,3 +1,18 @@
+#define STR_MACRO_HELPER(s) #s
+#define STR_MACRO(s) STR_MACRO_HELPER(s)
+
+#ifdef __clang__
+  #define VERSION_COMP "clang-" \
+    STR_MACRO(__clang_major__) "." \
+    STR_MACRO(__clang_minor__) "." \
+    STR_MACRO(__clang_patchlevel__)
+#else
+  #define VERSION_COMP "gnuc-" \
+    STR_MACRO(__GNUC__) "." \
+    STR_MACRO(__GNUC_MINOR__) "." \
+    STR_MACRO(__GNUC_PATCHLEVEL__)
+#endif
+
 #define VERSION_MAJOR 2
 #define VERSION_MINOR 0
 #define VERSION_PATCH 1
