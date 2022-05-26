@@ -1348,7 +1348,7 @@ int hudmatrixpos = 0;
 
 void resethudmatrix()
 {
-    hudmatrixpos = 0;
+    hudmatrixpos = 0; 
     GLOBALPARAM(hudmatrix, hudmatrix);
 }
 
