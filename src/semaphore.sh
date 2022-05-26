@@ -62,6 +62,8 @@ semabuild_build() {
     sudo ${SEMABUILD_APT} -fy install build-essential multiarch-support gcc-multilib g++-multilib zlib1g-dev libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev libfreetype6-dev binutils-mingw-w64 g++-mingw-w64 || return 1
     sudo ${SEMABUILD_APT} clean || return 1
 
+    numjobs=$(nproc)
+
     chmod +x src/msvcsetup.sh
     src/msvcsetup.sh
 
@@ -87,6 +89,7 @@ semabuild_build() {
             CFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math" \
             CXXFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math" \
             LDFLAGS="-m64" \
+            -O -j $numjobs \
             -C src clean install || return 1
 
         make \
@@ -103,6 +106,7 @@ semabuild_build() {
             CFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math" \
             CXXFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math" \
             LDFLAGS="-m32" \
+            -O -j $numjobs \
             -C src clean install || return 1
     else
         # mingw fallback when msvc setup fails
@@ -118,6 +122,7 @@ semabuild_build() {
             CFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math" \
             CXXFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math" \
             LDFLAGS="-m64" \
+            -O -j $numjobs \
             -C src clean install || return 1
 
         make \
@@ -132,6 +137,7 @@ semabuild_build() {
             CFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math" \
             CXXFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math" \
             LDFLAGS="-m32" \
+            -O -j $numjobs \
             -C src clean install || return 1
     fi
 
