@@ -156,6 +156,16 @@ ifneq (,$(findstring msvc,$(PLATFORM)))
 endif
 
 ifeq (1,$(BUILD_WINDOWS))
+    ifneq (,$(findstring arm,$(PLATFORM)))
+        PLATFORM_SUFFIX = _arm
+    else
+        ifneq (,$(findstring 64,$(PLATFORM)))
+            PLATFORM_SUFFIX = _amd64
+        else
+            PLATFORM_SUFFIX = _x86
+        endif
+    endif
+
     APPMODIFIER = _windows
     BIN_SUFFIX = .exe
     WINDRES = windres
@@ -197,6 +207,7 @@ ifeq (1,$(BUILD_WINDOWS))
         override CLIENT_LIBS += -ldiscord-rpc
     endif
 else
+    PLATFORM_SUFFIX =
     APPMODIFIER =
     ifneq (,$(findstring linux,$(PLATFORM)))
         BIN_SUFFIX = _linux
@@ -394,23 +405,23 @@ $(filter game/%,$(CLIENT_OBJS)): $(filter game/%,$(CLIENT_PCH))
 
 $(SERVER_OBJS): CXXFLAGS += $(SERVER_INCLUDES)
 
-$(APPCLIENT)_windows$(BIN_SUFFIX): $(CLIENT_OBJS)
+$(APPCLIENT)_windows$(PLATFORM_SUFFIX)$(BIN_SUFFIX): $(CLIENT_OBJS)
 	$(WINDRES) -i $(APPNAME).rc -J rc -o $(APPNAME).res -O coff
 	$(CXX) $(LDFLAGS) -o $@ $(APPNAME).res $(CLIENT_OBJS) $(CLIENT_LIBS)
 
-$(APPSERVER)_windows$(BIN_SUFFIX): $(SERVER_OBJS)
+$(APPSERVER)_windows$(PLATFORM_SUFFIX)$(BIN_SUFFIX): $(SERVER_OBJS)
 	$(WINDRES) -i $(APPNAME).rc -J rc -o $(APPNAME).res -O coff
 	$(CXX) $(LDFLAGS) -o $@ $(APPNAME).res $(SERVER_OBJS) $(SERVER_LIBS)
 
-$(APPCLIENT)$(BIN_SUFFIX): $(LIBENET) $(CLIENT_OBJS)
+$(APPCLIENT)$(PLATFORM_SUFFIX)$(BIN_SUFFIX): $(LIBENET) $(CLIENT_OBJS)
 	$(CXX) $(LDFLAGS) -o $@ $(CLIENT_OBJS) $(CLIENT_LIBS)
 
-$(APPSERVER)$(BIN_SUFFIX): $(LIBENET) $(SERVER_OBJS)
+$(APPSERVER)$(PLATFORM_SUFFIX)$(BIN_SUFFIX): $(LIBENET) $(SERVER_OBJS)
 	$(CXX) $(LDFLAGS) -o $@ $(SERVER_OBJS) $(SERVER_LIBS)
 
-client: $(APPCLIENT)$(APPMODIFIER)$(BIN_SUFFIX)
+client: $(APPCLIENT)$(APPMODIFIER)$(PLATFORM_SUFFIX)$(BIN_SUFFIX)
 
-server: $(APPSERVER)$(APPMODIFIER)$(BIN_SUFFIX)
+server: $(APPSERVER)$(APPMODIFIER)$(PLATFORM_SUFFIX)$(BIN_SUFFIX)
 
 genkey: genkey$(BIN_SUFFIX)
 
@@ -428,19 +439,19 @@ tessfont$(BIN_SUFFIX): $(CTFONT_OBJS)
 shared/tessfont.o: shared/tessfont.cpp
 	$(CXX) $(SYS_FLAGS) $(CTFONT_INCLUDES) -c -o shared/tessfont.o shared/tessfont.cpp
 
-$(PDBDIR)/$(APPCLIENT)$(APPMODIFIER).pdb: $(APPCLIENT)$(APPMODIFIER)$(BIN_SUFFIX)
+$(PDBDIR)/$(APPCLIENT)$(APPMODIFIER)$(PLATFORM_SUFFIX).pdb: $(APPCLIENT)$(APPMODIFIER)$(PLATFORM_SUFFIX)$(BIN_SUFFIX)
 ifneq (,$(findstring msvc,$(PLATFORM)))
 	$(MKDIR) $(PDBDIR)
-	$(CP) $(APPCLIENT)$(APPMODIFIER).pdb $(PDBDIR)/
+	$(CP) $(APPCLIENT)$(APPMODIFIER)$(PLATFORM_SUFFIX).pdb $(PDBDIR)/
 endif
 
-$(PDBDIR)/$(APPSERVER)$(APPMODIFIER).pdb: $(APPSERVER)$(APPMODIFIER)$(BIN_SUFFIX)
+$(PDBDIR)/$(APPSERVER)$(APPMODIFIER)$(PLATFORM_SUFFIX).pdb: $(APPSERVER)$(APPMODIFIER)$(PLATFORM_SUFFIX)$(BIN_SUFFIX)
 ifneq (,$(findstring msvc,$(PLATFORM)))
 	$(MKDIR) $(PDBDIR)
-	$(CP) $(APPSERVER)$(APPMODIFIER).pdb $(PDBDIR)/
+	$(CP) $(APPSERVER)$(APPMODIFIER)$(PLATFORM_SUFFIX).pdb $(PDBDIR)/
 endif
 
-$(INSTDIR)/%$(BIN_SUFFIX): %$(APPMODIFIER)$(BIN_SUFFIX)
+$(INSTDIR)/%$(BIN_SUFFIX): %$(APPMODIFIER)$(PLATFORM_SUFFIX)$(BIN_SUFFIX)
 	$(MKDIR) $(INSTDIR)
 	$(CP) $< $@
 ifneq (,$(STRIP))
@@ -461,9 +472,9 @@ ifneq (,$(STRIP))
 	$(STRIP) $@
 endif
 
-install-client: $(INSTDIR)/$(APPCLIENT)$(BIN_SUFFIX) $(PDBDIR)/$(APPCLIENT)$(APPMODIFIER).pdb
+install-client: $(INSTDIR)/$(APPCLIENT)$(BIN_SUFFIX) $(PDBDIR)/$(APPCLIENT)$(APPMODIFIER)$(PLATFORM_SUFFIX).pdb
 
-install-server: $(INSTDIR)/$(APPSERVER)$(BIN_SUFFIX) $(PDBDIR)/$(APPSERVER)$(APPMODIFIER).pdb
+install-server: $(INSTDIR)/$(APPSERVER)$(BIN_SUFFIX) $(PDBDIR)/$(APPSERVER)$(APPMODIFIER)$(PLATFORM_SUFFIX).pdb
 
 install-genkey: $(INSTDIR)/genkey$(BIN_SUFFIX)
 
