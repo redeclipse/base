@@ -172,7 +172,7 @@ ifeq (1,$(BUILD_WINDOWS))
     override WINDRES := $(TOOLSET_PREFIX)$(WINDRES)
 
     ifneq (,$(findstring msvc,$(PLATFORM)))
-        STD_LIBS = -static
+        STD_LIBS = -static /NODEFAULTLIB:oldnames.lib
         SUP_LIBS = -Lvcpp/$(PLATFORM_BIN) -Llib/$(PLATFORM_BIN)
     else
         STD_LIBS = -static-libgcc -static-libstdc++
