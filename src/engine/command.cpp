@@ -4927,6 +4927,17 @@ ICOMMAND(0, codestr, "i", (int *i), { char *s = newstring(1); s[0] = char(*i); s
 ICOMMAND(0, struni, "si", (char *s, int *i), intret(*i > 0 ? (memchr(s, 0, *i) ? 0 : cube2uni(s[*i])) : cube2uni(s[0])));
 ICOMMAND(0, unistr, "i", (int *i), { char *s = newstring(1); s[0] = uni2cube(*i); s[1] = '\0'; stringret(s); });
 
+ICOMMAND(0, strpbrk, "ssi", (char *str, char *chars, int *begin),
+{
+    if(*begin < 0 || *begin >= strlen(str)) intret(-1);
+    else
+    {
+        char *c = strpbrk(&str[*begin], chars);
+        if(!c) intret(-1);
+        else intret(c - str);
+    }
+});
+
 int naturalsort(const char *a, const char *b)
 {
     for(;;)
