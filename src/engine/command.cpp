@@ -4403,10 +4403,12 @@ void listsplice(const char *s, const char *vals, int *skip, int *count)
 }
 COMMAND(0, listsplice, "ssii");
 
-ICOMMAND(0, listfiles, "ss", (char *dir, char *ext),
+ICOMMAND(0, listfiles, "ssi", (char *dir, char *ext, int *filter),
 {
+    if(*filter <= 0) *filter = LIST_ALL;
+
     vector<char *> files;
-    listfiles(dir, ext[0] ? ext : NULL, files);
+    listfiles(dir, ext[0] ? ext : NULL, files, *filter);
 
     vector<char> p;
     loopv(files)
@@ -4421,12 +4423,13 @@ ICOMMAND(0, listfiles, "ss", (char *dir, char *ext),
     commandret->setstr(p.disown());
 });
 
-ICOMMAND(0, loopfiles, "rsse", (ident *id, char *dir, char *ext, uint *body),
+ICOMMAND(0, loopfiles, "rssei", (ident *id, char *dir, char *ext, uint *body, int *filter),
 {
     if(id->type!=ID_ALIAS) return;
     identstack stack;
     vector<char *> files;
-    listfiles(dir, ext[0] ? ext : NULL, files);
+    if(*filter <= 0) *filter = LIST_ALL;
+    listfiles(dir, ext[0] ? ext : NULL, files, *filter);
     files.sort();
     files.uniquedeletearrays();
     loopv(files)

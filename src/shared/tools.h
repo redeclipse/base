@@ -1950,8 +1950,17 @@ extern stream *opengzfile(const char *filename, const char *mode, stream *file =
 extern stream *openutf8file(const char *filename, const char *mode, stream *file = NULL);
 extern char *loadstream(stream *f, size_t *size, bool utf8 = true);
 extern char *loadfile(const char *fn, size_t *size, bool utf8 = true);
-extern bool listdir(const char *dir, bool rel, const char *ext, vector<char *> &files);
-extern int listfiles(const char *dir, const char *ext, vector<char *> &files);
+
+enum
+{
+    LIST_FILES = 1,
+    LIST_DIRS = 1 << 1,
+
+    LIST_ALL = LIST_FILES | LIST_DIRS
+};
+
+extern bool listdir(const char *dir, bool rel, const char *ext, vector<char *> &files, int filter = LIST_ALL);
+extern int listfiles(const char *dir, const char *ext, vector<char *> &files, int filter = LIST_ALL);
 extern int listzipfiles(const char *dir, const char *ext, vector<char *> &files);
 extern void backup(const char *fname, const char *ext, int revision = 0, int start = 1, bool store = false, bool full = true);
 
