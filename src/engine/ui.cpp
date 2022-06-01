@@ -2748,14 +2748,16 @@ namespace UI
     struct Thumbnail : Target
     {
         char *texname;
+        int clamp;
 
         Thumbnail() : texname(NULL) {}
         ~Thumbnail() { delete[] texname; }
 
-        void setup(const char *texname_, float minw_ = 0, float minh_ = 0)
+        void setup(const char *texname_, float minw_ = 0, float minh_ = 0, int clamp_ = 3)
         {
             Target::setup(minw_, minh_, Color(colourwhite));
             SETSTR(texname, texname_);
+            clamp = clamp_;
         }
 
         static const char *typestr() { return "#Thumbnail"; }
@@ -2769,7 +2771,7 @@ namespace UI
                 if(totalmillis - lastthumbnail < uislotviewtime) t = textureload(uiloadtex);
                 else
                 {
-                    t = textureload(texname, 3, true, false);
+                    t = textureload(texname, clamp, true, false);
                     lastthumbnail = totalmillis;
                 }
             }
@@ -2780,6 +2782,9 @@ namespace UI
 
             SETSHADER(hudrgb);
             vec2 tc[4] = { vec2(0, 0), vec2(1, 0), vec2(1, 1), vec2(0, 1) };
+            float xt = min(1.0f, t->xs/float(t->ys)), yt = min(1.0f, t->ys/float(t->xs));
+            float xoff = (1.0f - xt) * 0.5f, yoff = (1.0f - yt) * 0.5f;
+            loopk(4) { tc[k].x = (tc[k].x - xoff)/xt; tc[k].y = (tc[k].y - yoff)/yt; }
 
             glBindTexture(GL_TEXTURE_2D, t->id);
             quad(sx, sy, w, h, tc);
@@ -2789,7 +2794,10 @@ namespace UI
     };
 
     ICOMMAND(0, uithumbnail, "sffe", (char *texname, float *minw, float *minh, uint *children),
-        BUILD(Thumbnail, o, o->setup(texname, *minw*uiscale, *minh*uiscale), children));
+        BUILD(Thumbnail, o, o->setup(texname, *minw*uiscale, *minh*uiscale, 3), children));
+
+    ICOMMAND(0, uithumbnailclamped, "sffe", (char *texname, float *minw, float *minh, uint *children),
+        BUILD(Thumbnail, o, o->setup(texname, *minw*uiscale, *minh*uiscale, 0x7000), children));
 
     struct Shape : Target
     {

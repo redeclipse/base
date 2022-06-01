@@ -1765,7 +1765,10 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
         {
             int w = atoi(arg[0]), h = atoi(arg[1]);
             if(w <= 0 || w > (1<<12)) w = 64;
-            if(h <= 0 || h > (1<<12)) h = w;
+
+            if(h < 0) h = ((float)d.h / d.w) * w; // keep aspect ratio when supplied h < 0
+            else if(h == 0 || h > (1<<12)) h = w;
+
             if(d.w > w || d.h > h) scaleimage(d, w, h);
         }
         else if(matchstring(cmd, len, "compress") || matchstring(cmd, len, "dds"))
