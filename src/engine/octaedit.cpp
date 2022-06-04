@@ -3191,7 +3191,7 @@ bool mpreplacetex(int oldtex, int newtex, bool insel, selinfo &sel, ucharbuf &bu
 
 void replacetex(bool insel, int oldtex = -1, int newtex = -1)
 {
-    if(noedit()) return;
+    if(noedit(!insel)) return;
     mpreplacetex(oldtex, vslots.inrange(newtex) ? newtex : lasttex, insel, sel, true);
 }
 

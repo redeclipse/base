@@ -2000,14 +2000,18 @@ void compactvslots(cube *c, int n)
     }
 }
 
-int compactvslots(bool cull)
+int compactvslots(bool cull, int from, int to)
 {
     defslot = NULL;
     clonedvslots = 0;
     markingvslots = cull;
     compactedvslots = 0;
     compactvslotsprogress = 0;
-    loopv(vslots) vslots[i]->index = -1;
+
+    if(!vslots.inrange(from)) from = 0;
+    if(!vslots.inrange(to)) to = vslots.length() - 1;
+    for(int i = from; i <= to; i++) vslots[i]->index = -1;
+
     if(cull)
     {
         int numdefaults = min(int(NUMDEFAULTSLOTS), slots.length());
@@ -2086,11 +2090,17 @@ int compactvslots(bool cull)
     return total;
 }
 
-ICOMMAND(0, compactvslots, "i", (int *cull),
+ICOMMAND(0, compactvslots, "iiiN", (int *cull, int *from, int *to, int *numargs),
 {
     if(nompedit && multiplayer()) return;
-    compactvslots(*cull!=0);
+    compactvslots(*cull!=0, *from, *numargs > 2 ? *to : -1);
     allchanged();
+});
+
+ICOMMAND(0, texhasvariants, "i", (int *index),
+{
+    if(slots.inrange(*index)) intret(slots[*index]->variants->next != NULL);
+    else intret(0);
 });
 
 static void clampvslotoffset(VSlot &dst, Slot *slot = NULL)
