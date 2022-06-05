@@ -532,8 +532,15 @@ void loadvslots(stream *f, int numvslots)
     delete[] prev;
 }
 
+static char *lasttexgroup;
+
 void saveslotconfig(stream *h, Slot &s, int index, bool decal)
 {
+    if(((bool)lasttexgroup != (bool)s.group) || (lasttexgroup && s.group && strcmp(lasttexgroup, s.group)))
+        h->printf("texgroup %s\n\n", s.group ? escapestring(s.group) : "");
+
+    lasttexgroup = s.group;
+
     if(index >= 0 && s.shader)
     {
         h->printf("setshader %s\n", escapeid(s.shader->name));
@@ -639,6 +646,7 @@ void save_config(char *mname, bool forcesave = false)
     // texture slots
     int nummats = sizeof(materialslots)/sizeof(materialslots[0]);
     progress(0, "Saving material slots..");
+    lasttexgroup = NULL;
     loopi(nummats)
     {
         switch(i&MATF_VOLUME)
@@ -658,6 +666,7 @@ void save_config(char *mname, bool forcesave = false)
     }
 
     progress(0, "Saving texture slots..");
+    lasttexgroup = NULL;
     loopv(slots)
     {
         saveslotconfig(h, *slots[i], i, false);
@@ -666,6 +675,7 @@ void save_config(char *mname, bool forcesave = false)
     if(verbose) conoutf("Saved %d texture slots", slots.length());
 
     progress(0, "Saving decal slots..");
+    lasttexgroup = NULL;
     loopv(decalslots)
     {
         saveslotconfig(h, *decalslots[i], i, true);

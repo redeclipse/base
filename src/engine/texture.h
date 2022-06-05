@@ -742,9 +742,9 @@ struct Slot
     float grassblend;
     int grassscale, grassheight;
     Texture *grasstex, *thumbnail;
-    char *tags;
-    
-    Slot(int index = -1) : index(index), variants(NULL), grass(NULL), tags(NULL) { reset(); }
+    char *tags, *group;
+
+    Slot(int index = -1) : index(index), variants(NULL), grass(NULL), tags(NULL), group(NULL) { reset(); }
     virtual ~Slot() {}
 
     virtual int type() const { return OCTA; }

@@ -2,6 +2,7 @@
 
 #include "engine.h"
 #include "SDL_image.h"
+#include "tools.h"
 
 TVAR(IDF_PERSIST|IDF_PRELOAD, notexturetex, "textures/notexture", 3);
 TVAR(IDF_PERSIST|IDF_PRELOAD, blanktex, "textures/blank", 3);
@@ -1883,6 +1884,8 @@ vector<DecalSlot *> decalslots;
 DecalSlot dummydecalslot;
 Slot *defslot = NULL;
 
+static char *curtexgroup;
+
 const char *Slot::name() const { return tempformatstring("slot %d", index); }
 
 MatSlot::MatSlot() : Slot(int(this - materialslots)), VSlot(this) {}
@@ -1954,6 +1957,12 @@ void clearslots()
     loopi((MATF_VOLUME|MATF_INDEX)+1) materialslots[i].reset();
     decalslots.deletecontents();
     clonedvslots = 0;
+
+    if(curtexgroup)
+    {
+        delete[] curtexgroup;
+        curtexgroup = NULL;
+    }
 }
 
 static void assignvslot(VSlot &vs);
@@ -2569,6 +2578,7 @@ void texture(char *type, char *name, int *rot, int *xoffset, int *yoffset, float
     {
         if(slots.length() >= 0x10000) return;
         defslot = slots.add(new Slot(slots.length()));
+        defslot->group = curtexgroup && curtexgroup[0] ? newstring(curtexgroup) : NULL;
     }
     else if(!strcmp(type, "decal"))
     {
@@ -2605,6 +2615,13 @@ void texture(char *type, char *name, int *rot, int *xoffset, int *yoffset, float
     }
 }
 COMMAND(0, texture, "ssiiif");
+
+ICOMMAND(0, texgroup, "s", (char *group), group[0] ? curtexgroup = newstring(group) : NULL);
+ICOMMAND(0, gettexgroup, "i", (int *slot),
+{
+    Slot &s = lookupslot(*slot, false);
+    result(s.group ? s.group : "");
+});
 
 void texgrass(char *name)
 {
