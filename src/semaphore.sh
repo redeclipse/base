@@ -158,7 +158,10 @@ semabuild_build() {
     sudo ${SEMABUILD_APT} purge -fy sbt || return 1
     sudo ${SEMABUILD_APT} -o Dpkg::Options::="--force-overwrite" -fy --no-install-recommends install binutils:i386 || return 1
     sudo ${SEMABUILD_APT} -o Dpkg::Options::="--force-overwrite" -fy --no-install-recommends install pkg-config:i386 || return 1
-    sudo ${SEMABUILD_APT} -o Dpkg::Options::="--force-overwrite" -fy --no-install-recommends install gcc:i386 g++:i386 cpp:i386 zlib1g-dev:i386 libsdl2-dev:i386 libsdl2-mixer-dev:i386 libsdl2-image-dev:i386 libpng-dev:i386 libfreetype6-dev:i386 || return 1
+    sudo ${SEMABUILD_APT} -o Dpkg::Options::="--force-overwrite" -fy --no-install-recommends install cpp:i386 || return 1
+    sudo ${SEMABUILD_APT} -o Dpkg::Options::="--force-overwrite" -fy --no-install-recommends install gcc:i386 || return 1
+    sudo ${SEMABUILD_APT} -o Dpkg::Options::="--force-overwrite" -fy --no-install-recommends install libdbus-1-dev:i386 || return 1
+    sudo ${SEMABUILD_APT} -o Dpkg::Options::="--force-overwrite" -fy --no-install-recommends install g++:i386 zlib1g-dev:i386 libsdl2-dev:i386 libsdl2-mixer-dev:i386 libsdl2-image-dev:i386 libpng-dev:i386 libfreetype6-dev:i386 || return 1
 
     PKG_CONFIG_PATH="/usr/lib/i386-linux-gnu/pkgconfig" make \
         PLATFORM="linux32" \
@@ -169,9 +172,6 @@ semabuild_build() {
         WANT_DISCORD=1 \
         WANT_STEAM=1 \
         INSTDIR="${SEMABUILD_DIR}/linux/bin/x86" \
-        CFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math" \
-        CXXFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math" \
-        LDFLAGS="-m32" \
         -O -j $numjobs \
         -C src clean install || return 1
 
