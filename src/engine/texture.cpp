@@ -2617,10 +2617,10 @@ void texture(char *type, char *name, int *rot, int *xoffset, int *yoffset, float
 COMMAND(0, texture, "ssiiif");
 
 ICOMMAND(0, texgroup, "s", (char *group), group[0] ? curtexgroup = newstring(group) : NULL);
-ICOMMAND(0, gettexgroup, "i", (int *slot),
+ICOMMAND(0, gettexgroup, "i", (int *index),
 {
-    Slot &s = lookupslot(*slot, false);
-    result(s.group ? s.group : "");
+    VSlot &vs = lookupvslot(*index, false);
+    result(vs.slot->group ? vs.slot->group : "");
 });
 
 void texgrass(char *name)
