@@ -3114,6 +3114,12 @@ COMMAND(0, getslottex, "i");
 ICOMMAND(0, texloaded, "i", (int *tex), intret(slots.inrange(*tex) && slots[*tex]->loaded ? 1 : 0));
 COMMAND(0, gettextags, "i");
 
+ICOMMAND(0, texhasvariants, "i", (int *index),
+{
+    if(slots.inrange(*index)) intret(slots[*index]->variants->next != NULL);
+    else intret(0);
+});
+
 #define LOOPTEXMRU(name,op) \
     ICOMMAND(0, looptexmru##name, "iire", (int *count, int *skip, ident *id, uint *body), \
     { \

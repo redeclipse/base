@@ -2106,12 +2106,6 @@ ICOMMAND(0, compactvslots, "iiiN", (int *cull, int *from, int *to, int *numargs)
     allchanged();
 });
 
-ICOMMAND(0, texhasvariants, "i", (int *index),
-{
-    if(slots.inrange(*index)) intret(slots[*index]->variants->next != NULL);
-    else intret(0);
-});
-
 static void clampvslotoffset(VSlot &dst, Slot *slot = NULL)
 {
     if(!slot) slot = dst.slot;
