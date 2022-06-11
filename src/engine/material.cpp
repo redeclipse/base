@@ -141,6 +141,26 @@ const char *getmaterialdesc(ushort *mat, const char *prefix)
     }
     return desc;
 }
+#define ORIENTS_ALL (1<<O_LEFT)|(1<<O_RIGHT)|(1<<O_FRONT)|(1<<O_BACK)|(1<<O_TOP)|(1<<O_BOTTOM)
+#define ORIENTS_LIQUID (1<<O_LEFT)|(1<<O_RIGHT)|(1<<O_FRONT)|(1<<O_BACK)|(1<<O_TOP)
+
+#define MATFACEVARS(name, def) \
+    VARF(IDF_WORLD, name##faces, 0, def, def, if(!(identflags&IDF_WORLD)) allchanged()); \
+    VARF(IDF_WORLD, name##2faces, 0, def, def, if(!(identflags&IDF_WORLD)) allchanged()); \
+    VARF(IDF_WORLD, name##3faces, 0, def, def, if(!(identflags&IDF_WORLD)) allchanged()); \
+    VARF(IDF_WORLD, name##4faces, 0, def, def, if(!(identflags&IDF_WORLD)) allchanged()); \
+    VARF(IDF_WORLD, name##facesalt, 0, def, def, if(!(identflags&IDF_WORLD)) allchanged()); \
+    VARF(IDF_WORLD, name##2facesalt, 0, def, def, if(!(identflags&IDF_WORLD)) allchanged()); \
+    VARF(IDF_WORLD, name##3facesalt, 0, def, def, if(!(identflags&IDF_WORLD)) allchanged()); \
+    VARF(IDF_WORLD, name##4facesalt, 0, def, def, if(!(identflags&IDF_WORLD)) allchanged());
+
+MATFACEVARS(water, ORIENTS_LIQUID);
+MATFACEVARS(lava, ORIENTS_LIQUID);
+MATFACEVARS(glass, ORIENTS_ALL);
+
+GETMATIDXVAR(water, faces, int)
+GETMATIDXVAR(lava, faces, int)
+GETMATIDXVAR(glass, faces, int)
 
 int visiblematerial(const cube &c, int orient, const ivec &co, int size, ushort matmask)
 {
@@ -151,14 +171,18 @@ int visiblematerial(const cube &c, int orient, const ivec &co, int size, ushort 
          break;
 
     case MAT_LAVA:
+        if(visibleface(c, orient, co, size, mat, MAT_AIR, matmask))
+            return ((1<<orient)&getlavafaces(c.material) ? MATSURF_VISIBLE : MATSURF_EDIT_ONLY);
+        break;
+
     case MAT_WATER:
         if(visibleface(c, orient, co, size, mat, MAT_AIR, matmask))
-            return (orient != O_BOTTOM ? MATSURF_VISIBLE : MATSURF_EDIT_ONLY);
+            return ((1<<orient)&getwaterfaces(c.material) ? MATSURF_VISIBLE : MATSURF_EDIT_ONLY);
         break;
 
     case MAT_GLASS:
         if(visibleface(c, orient, co, size, MAT_GLASS, MAT_AIR, matmask))
-            return MATSURF_VISIBLE;
+            return ((1<<orient)&getglassfaces(c.material) ? MATSURF_VISIBLE : MATSURF_EDIT_ONLY);
         break;
 
     case MAT_VOLFOG:
