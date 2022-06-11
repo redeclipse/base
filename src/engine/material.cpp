@@ -700,7 +700,7 @@ int findmaterials()
             loopi(va->matsurfs)
             {
                 materialsurface &m = va->matbuf[i];
-                if((m.material&MATF_VOLUME) != MAT_GLASS) { i += m.skip; continue; }
+                if((m.material&MATF_VOLUME) != MAT_GLASS || m.visible == MATSURF_EDIT_ONLY) { i += m.skip; continue; }
                 hasmats |= 4|2;
                 glasssurfs[m.material&MATF_INDEX].put(&m, 1+int(m.skip));
                 i += m.skip;
