@@ -63,7 +63,7 @@ int musictime = -1, musicdonetime = -1;
 void updatemusic()
 {
     changedvol = true;
-    if(!music && musicvol > 0 && mastervol > 0) smartmusic(true);
+    if(!connected() && !music && musicvol > 0 && mastervol > 0) smartmusic(true);
 }
 
 VARF(IDF_PERSIST, mastervol, 0, 255, 255, updatemusic());
