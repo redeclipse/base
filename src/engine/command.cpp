@@ -495,7 +495,7 @@ static inline void setarg(ident &id, tagval &v)
     }
 }
 
-static inline void setalias(ident &id, tagval &v, bool world)
+static inline void setalias(ident &id, tagval &v, bool world, bool quiet = false)
 {
     if(world && !(id.flags&IDF_WORLD) && !(id.flags&IDF_UNKNOWN))
     {
@@ -512,13 +512,20 @@ static inline void setalias(ident &id, tagval &v, bool world)
     if(id.valtype == VAL_STR) delete[] id.val.s;
     id.setval(v);
     cleancode(id);
-    id.flags = (world || id.flags&IDF_WORLD ? IDF_WORLD : 0)|(id.flags&IDF_PERSIST ? IDF_PERSIST : 0);
+
+    int oldflags = id.flags;
+    id.flags = 0;
+
+    // In order to stop abuse, do not add the quiet flag if it was absent before
+    if(quiet) id.flags |= oldflags&IDF_QUIET;
+    if(world || oldflags&IDF_WORLD) id.flags |= IDF_WORLD;
+    id.flags |= oldflags&IDF_PERSIST;
 #ifndef STANDALONE
     client::editvar(&id, !(identflags&IDF_WORLD));
 #endif
 }
 
-static void setalias(const char *name, tagval &v, bool world)
+static void setalias(const char *name, tagval &v, bool world, bool quiet = false)
 {
     ident *id = idents.access(name);
     if(id)
@@ -527,7 +534,7 @@ static void setalias(const char *name, tagval &v, bool world)
         {
             case ID_ALIAS:
                 if(id->index < MAXARGS) setarg(*id, v);
-                else setalias(*id, v, world);
+                else setalias(*id, v, world, quiet);
                 return;
             case ID_VAR:
                 setvarchecked(id, v.getint());
@@ -565,23 +572,27 @@ static void setalias(const char *name, tagval &v, bool world)
             return;
         }
 #endif
-        id = addident(ident(ID_ALIAS, newstring(name), v, identflags|(world ? IDF_WORLD : 0), 0));
+        int extraflags = 0;
+        if(world) extraflags |= IDF_WORLD;
+        if(quiet) extraflags |= IDF_QUIET;
+
+        id = addident(ident(ID_ALIAS, newstring(name), v, identflags|extraflags, 0));
 #ifndef STANDALONE
         client::editvar(id, !(identflags&IDF_WORLD));
 #endif
     }
 }
 
-void alias(const char *name, const char *action, bool world)
+void alias(const char *name, const char *action, bool world, bool quiet)
 {
     tagval v;
     v.setstr(newstring(action));
-    setalias(name, v, world);
+    setalias(name, v, world, quiet);
 }
 
-void alias(const char *name, tagval &v, bool world)
+void alias(const char *name, tagval &v, bool world, bool quiet)
 {
-    setalias(name, v, world);
+    setalias(name, v, world, quiet);
 }
 
 ICOMMAND(0, alias, "sT", (const char *name, tagval *v),
@@ -595,6 +606,12 @@ void worldalias(const char *name, const char *action)
     alias(name, action, true);
 }
 COMMAND(0, worldalias, "ss");
+
+void quietworldalias(const char *name, const char *action)
+{
+    alias(name, action, true, true);
+}
+COMMAND(0, quietworldalias, "ss");
 
 void loadalias(const char *name, const char *fname, int *world)
 {

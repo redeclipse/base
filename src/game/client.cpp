@@ -1873,26 +1873,26 @@ namespace client
 
     void editvar(ident *id, bool local)
     {
-        if(id && id->flags&IDF_WORLD && !(id->flags&IDF_SERVER) && local && m_edit(game::gamemode) && game::player1->state == CS_EDITING)
+        if(id && id->flags&IDF_WORLD && !(id->flags&IDF_QUIET) && !(id->flags&IDF_SERVER) && local && m_edit(game::gamemode) && game::player1->state == CS_EDITING)
         {
             switch(id->type)
             {
                 case ID_VAR:
-                    addmsg(N_EDITVAR, "risi", id->type, id->name, *id->storage.i);
+                    addmsg(N_EDITVAR, "riisi", id->type, id->flags&IDF_TX_MASK, id->name, *id->storage.i);
                     conoutft(CON_EVENT, "\fy%s set world variable \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(game::player1), id->name, intstr(id));
                     break;
                 case ID_FVAR:
-                    addmsg(N_EDITVAR, "risf", id->type, id->name, *id->storage.f);
+                    addmsg(N_EDITVAR, "riisf", id->type, id->flags&IDF_TX_MASK, id->name, *id->storage.f);
                     conoutft(CON_EVENT, "\fy%s set world variable \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(game::player1), id->name, floatstr(*id->storage.f));
                     break;
                 case ID_SVAR:
-                    addmsg(N_EDITVAR, "risis", id->type, id->name, strlen(*id->storage.s), *id->storage.s);
+                    addmsg(N_EDITVAR, "riisis", id->type, id->flags&IDF_TX_MASK, id->name, strlen(*id->storage.s), *id->storage.s);
                     conoutft(CON_EVENT, "\fy%s set world variable \fs\fc%s\fS to \fy\fc%s\fS", game::colourname(game::player1), id->name, *id->storage.s);
                     break;
                 case ID_ALIAS:
                 {
                     const char *s = id->getstr();
-                    addmsg(N_EDITVAR, "risis", id->type, id->name, strlen(s), s);
+                    addmsg(N_EDITVAR, "riisis", id->type, id->flags&IDF_TX_MASK, id->name, strlen(s), s);
                     conoutft(CON_EVENT, "\fy%s set world alias \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(game::player1), id->name, s);
                     break;
                 }
@@ -3075,7 +3075,7 @@ namespace client
 
                 case N_EDITVAR:
                 {
-                    int t = getint(p);
+                    int t = getint(p), flags = getint(p)&IDF_TX_MASK;
                     bool commit = true;
                     getstring(text, p);
                     ident *id = idents.access(text);
@@ -3133,8 +3133,12 @@ namespace client
                             getstring(val, p, vlen+1);
                             if(commit || !id) // set aliases anyway
                             {
-                                worldalias(text, val);
-                                conoutft(CON_EVENT, "\fy%s set world alias \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(d), text, val);
+                                if(flags&IDF_QUIET) quietworldalias(text, val);
+                                else
+                                {
+                                    worldalias(text, val);
+                                    conoutft(CON_EVENT, "\fy%s set world alias \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(d), text, val);
+                                }
                             }
                             delete[] val;
                             break;

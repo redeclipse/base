@@ -1294,7 +1294,10 @@ void clearworldvars(bool msg)
                 case ID_VAR: setvar(id.name, id.def.i, true); break;
                 case ID_FVAR: setfvar(id.name, id.def.f, true); break;
                 case ID_SVAR: setsvar(id.name, id.def.s && *id.def.s ? id.def.s : "", true); break;
-                case ID_ALIAS: worldalias(id.name, ""); break;
+                case ID_ALIAS:
+                    if(id.flags&IDF_QUIET) quietworldalias(id.name, "");
+                    else worldalias(id.name, "");
+                    break;
                 default: break;
             }
         }

@@ -635,7 +635,11 @@ void save_config(char *mname, bool forcesave = false)
             if(str[0])
             {
                 aliases++;
-                if(validateblock(str)) h->printf("%s = [%s]\n", escapeid(id), str);
+                if(validateblock(str))
+                {
+                    if(id.flags&IDF_QUIET) h->printf("quietworldalias %s [%s]\n", escapeid(id), str);
+                    else h->printf("%s = [%s]\n", escapeid(id), str);
+                }
                 else h->printf("%s = %s\n", escapeid(id), escapestring(str));
             }
         }
