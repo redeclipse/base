@@ -2157,6 +2157,8 @@ namespace game
         if(showloadoutmenu && m_loadout(gamemode, mutators)) wantsloadoutmenu = true;
         resetcamera();
         resetsway();
+
+        triggereventcallbacks(CMD_EVENT_MAPLOAD);
     }
 
     gameent *intersectclosest(vec &from, vec &to, gameent *at)

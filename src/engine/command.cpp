@@ -5038,6 +5038,61 @@ void strsplice(const char *s, const char *vals, int *skip, int *count)
 }
 COMMAND(0, strsplice, "ssii");
 
+struct eventcallback
+{
+    int event, flags;
+    ident *callback;
+};
+vector<eventcallback> eventcallbacks;
+
+ICOMMAND(0, onevent, "ir", (int *event, ident *callback),
+{
+    if(callback->type != ID_ALIAS) return;
+
+    // Check if callback is already registered
+    loopv(eventcallbacks)
+    {
+        eventcallback &ec = eventcallbacks[i];
+        if(ec.callback == callback && ec.event == *event) return;
+    }
+
+    eventcallback &ec = eventcallbacks.add();
+    ec.event = *event;
+    ec.flags = identflags;
+    ec.callback = callback;
+});
+
+ICOMMAND(0, remcallback, "ir", (int *event, ident *callback),
+{
+    if(callback->type != ID_ALIAS) return;
+
+    loopv(eventcallbacks)
+    {
+        eventcallback &ec = eventcallbacks[i];
+        if(ec.event == *event && ec.callback == callback)
+        {
+            eventcallbacks.remove(i);
+            return;
+        }
+    }
+});
+
+void triggereventcallbacks(int event)
+{
+    loopv(eventcallbacks)
+    {
+        eventcallback &ec = eventcallbacks[i];
+        if(ec.event != event) continue;
+
+        int oldflags = identflags;
+        identflags = ec.flags;
+        tagval v;
+        v.setint(event);
+        execute(ec.callback, &v, 1);
+        identflags = oldflags;
+    }
+}
+
 struct sleepcmd
 {
     int delay, millis, flags;

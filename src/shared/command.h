@@ -421,6 +421,10 @@ static inline void loopiter(ident *id, identstack &stack, const char *s) { tagva
 
 extern int identflags;
 
+enum { CMD_EVENT_MAPLOAD = 0 };
+
+extern void triggereventcallbacks(int event);
+
 extern void checksleep(int millis);
 extern void clearsleep(bool clearworlds = true);
 
