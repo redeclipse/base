@@ -632,12 +632,26 @@ void entdrag(const vec &ray)
 
     float r = 0, c = 0;
     static vec dest, handle;
+    static vector<vec> oldpos;
     vec eo, es;
 
     int orient = getentorient();
     int d = dimension(orient),
         dc= dimcoord(orient);
     int eindex = enthover >= 0 ? enthover : entgroup.last();
+
+    // Store old positions
+    if(entmoving == 1)
+    {
+        oldpos.setsize(0);
+        oldpos.reserve(entgroup.length());
+        loopv(entgroup)
+        {
+            vector<extentity *> &ents = entities::getents();
+            entity &e = *(entity *)ents[entgroup[i]];
+            oldpos.add(e.o);
+        }
+    }
 
     entfocus(eindex,
         entselectionbox(e, eo, es);
@@ -651,19 +665,27 @@ void entdrag(const vec &ray)
         g.add(sel.grid/2).mask(~(sel.grid-1));
         g[d] = z;
 
-        switch(entmoveaxis)
-        {
-            case 0: limit.y = limit.z = 0; break;
-            case 1: limit.x = limit.z = 0; break;
-            case 2: limit.x = limit.y = 0; break;
-        }
-
         r = ((entselsnap ? g[R[d]] : dest[R[d]]) - e.o[R[d]]) * limit[R[d]];
         c = ((entselsnap ? g[C[d]] : dest[C[d]]) - e.o[C[d]]) * limit[C[d]];
     );
 
     if(entmoving==1) makeundoent();
-    groupeditpure(e.o[R[d]] += r; e.o[C[d]] += c);
+
+    int groupiter = 0;
+    groupeditpure(
+        e.o[R[d]] += r;
+        e.o[C[d]] += c;
+
+        switch(entmoveaxis)
+        {
+            case 0: e.o.y = oldpos[groupiter].y; e.o.z = oldpos[groupiter].z; break;
+            case 1: e.o.x = oldpos[groupiter].x; e.o.z = oldpos[groupiter].z; break;
+            case 2: e.o.x = oldpos[groupiter].x; e.o.y = oldpos[groupiter].y; break;
+        }
+
+        groupiter++;
+    );
+
     entmoving = 2;
 }
 
