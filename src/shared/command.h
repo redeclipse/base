@@ -56,10 +56,10 @@ enum
     IDF_INIT = 1<<0, IDF_PERSIST = 1<<1, IDF_READONLY = 1<<2, IDF_REWRITE = 1<<3, IDF_WORLD = 1<<4, IDF_COMPLETE = 1<<5,
     IDF_TEXTURE = 1<<6, IDF_CLIENT = 1<<7, IDF_SERVER = 1<<8, IDF_HEX = 1<<9, IDF_UNKNOWN = 1<<10, IDF_ARG = 1<<11,
     IDF_PRELOAD = 1<<12, IDF_GAMEPRELOAD = 1<<13, IDF_GAMEMOD = 1<<14, IDF_NAMECOMPLETE = 1<<15, IDF_EMUVAR = 1<<16,
-    IDF_QUIET = 1<<17
+    IDF_META = 1<<17
 };
 
-#define IDF_TX_MASK IDF_QUIET
+#define IDF_TX_MASK IDF_META
 
 struct ident;
 struct identval
@@ -390,7 +390,7 @@ extern bool execfile(const char *cfgfile, bool msg = true, int flags = 0);
 extern void alias(const char *name, const char *action, bool world = false, bool quiet = false);
 extern void alias(const char *name, tagval &v, bool world = false, bool quiet = false);
 extern void worldalias(const char *name, const char *action);
-extern void quietworldalias(const char *name, const char *action);
+extern void worldmeta(const char *name, const char *action);
 extern const char *getalias(const char *name);
 extern const char *escapestring(const char *s);
 extern const char *escapeid(const char *s);

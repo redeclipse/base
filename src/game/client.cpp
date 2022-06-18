@@ -1873,7 +1873,7 @@ namespace client
 
     void editvar(ident *id, bool local)
     {
-        if(id && id->flags&IDF_WORLD && !(id->flags&IDF_QUIET) && !(id->flags&IDF_SERVER) && local && m_edit(game::gamemode) && game::player1->state == CS_EDITING)
+        if(id && id->flags&IDF_WORLD && !(id->flags&IDF_META) && !(id->flags&IDF_SERVER) && local && m_edit(game::gamemode) && game::player1->state == CS_EDITING)
         {
             switch(id->type)
             {
@@ -3133,7 +3133,7 @@ namespace client
                             getstring(val, p, vlen+1);
                             if(commit || !id) // set aliases anyway
                             {
-                                if(flags&IDF_QUIET) quietworldalias(text, val);
+                                if(flags&IDF_META) worldmeta(text, val);
                                 else
                                 {
                                     worldalias(text, val);

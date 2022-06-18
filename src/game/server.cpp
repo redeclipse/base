@@ -7453,7 +7453,7 @@ namespace server
                         {
                             int val = getint(p);
 
-                            if(!(flags&IDF_QUIET))
+                            if(!(flags&IDF_META))
                                 relayf(3, "\fy%s set world variable %s to %d", colourname(ci), text, val);
 
                             QUEUE_INT(val);
@@ -7463,7 +7463,7 @@ namespace server
                         {
                             float val = getfloat(p);
 
-                            if(!(flags&IDF_QUIET))
+                            if(!(flags&IDF_META))
                                 relayf(3, "\fy%s set world variable %s to %s", colourname(ci), text, floatstr(val));
 
                             QUEUE_FLT(val);
@@ -7477,7 +7477,7 @@ namespace server
                             char *val = newstring(vlen);
                             getstring(val, p, vlen+1);
 
-                            if(!(flags&IDF_QUIET))
+                            if(!(flags&IDF_META))
                                 relayf(3, "\fy%s set world %s %s to %s", colourname(ci), t == ID_ALIAS ? "alias" : "variable", text, val);
 
                             QUEUE_INT(vlen);

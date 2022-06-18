@@ -517,7 +517,7 @@ static inline void setalias(ident &id, tagval &v, bool world, bool quiet = false
     id.flags = 0;
 
     // In order to stop abuse, do not add the quiet flag if it was absent before
-    if(quiet) id.flags |= oldflags&IDF_QUIET;
+    if(quiet) id.flags |= oldflags&IDF_META;
     if(world || oldflags&IDF_WORLD) id.flags |= IDF_WORLD;
     id.flags |= oldflags&IDF_PERSIST;
 #ifndef STANDALONE
@@ -574,7 +574,7 @@ static void setalias(const char *name, tagval &v, bool world, bool quiet = false
 #endif
         int extraflags = 0;
         if(world) extraflags |= IDF_WORLD;
-        if(quiet) extraflags |= IDF_QUIET;
+        if(quiet) extraflags |= IDF_META;
 
         id = addident(ident(ID_ALIAS, newstring(name), v, identflags|extraflags, 0));
 #ifndef STANDALONE
@@ -607,11 +607,11 @@ void worldalias(const char *name, const char *action)
 }
 COMMAND(0, worldalias, "ss");
 
-void quietworldalias(const char *name, const char *action)
+void worldmeta(const char *name, const char *action)
 {
     alias(name, action, true, true);
 }
-COMMAND(0, quietworldalias, "ss");
+COMMAND(0, worldmeta, "ss");
 
 void loadalias(const char *name, const char *fname, int *world)
 {
