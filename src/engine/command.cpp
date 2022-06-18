@@ -503,7 +503,7 @@ static inline void setalias(ident &id, tagval &v, bool world, bool quiet = false
         return;
     }
 #ifndef STANDALONE
-    if(!(identflags&IDF_WORLD) && !editmode && (world || (id.flags&IDF_WORLD && !(id.flags&IDF_REWRITE))))
+    if(!quiet && !(identflags&IDF_WORLD) && !editmode && (world || (id.flags&IDF_WORLD && !(id.flags&IDF_REWRITE))))
     {
         printeditonly(&id);
         return;
@@ -566,7 +566,7 @@ static void setalias(const char *name, tagval &v, bool world, bool quiet = false
     else
     {
 #ifndef STANDALONE
-        if(!(identflags&IDF_WORLD) && !editmode && world)
+        if(!(identflags&IDF_WORLD) && !editmode && world && !quiet)
         {
             debugcode("\frCannot create %s as a world alias outside editmode", name);
             return;
