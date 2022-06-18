@@ -905,6 +905,8 @@ void dropenttofloor(extentity *e)
     e->o = d.o;
 }
 
+FVAR(0, entdropzoffset, -1000.0f, 0.0f, 1000.0f);
+
 bool dropentity(extentity &e, int drop = -1)
 {
     vec radius(4.0f, 4.0f, 4.0f);
@@ -948,6 +950,9 @@ bool dropentity(extentity &e, int drop = -1)
             dropenttofloor(&e);
         break;
     }
+
+    e.o.z += entdropzoffset;
+
     return true;
 }
 
