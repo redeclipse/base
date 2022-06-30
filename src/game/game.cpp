@@ -3235,6 +3235,7 @@ namespace game
 
     void resetworld()
     {
+        clearshadowcache();
         specreset();
         hud::showscores(false);
         UI::closeui(NULL);
