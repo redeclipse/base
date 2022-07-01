@@ -343,10 +343,19 @@ char *entname(entity &e)
 }
 extern bool havesel, selectcorners;
 int entlooplevel = 0;
-int efocus = -1, enthover = -1, entorient = -1, oldhover = -1;
+int efocus = -1, entorient = -1;
+vector<int> enthover, oldhover;
 bool undonext = true;
 
-VARF(0, entediting, 0, 1, 1, { if(!entediting) { entcancel(); efocus = enthover = -1; } });
+VARF(0, entediting, 0, 1, 1,
+{
+    if(!entediting)
+    {
+        entcancel();
+        efocus = -1;
+        enthover.setsize(0);
+    }
+});
 
 bool noentedit()
 {
@@ -418,7 +427,22 @@ void makeundoent()
 // convenience macros implicitly define:
 // e         entity, currently edited ent
 // n         int,    index to currently edited ent
-#define addimplicit(f)    { if(entgroup.empty() && enthover>=0) { entadd(enthover); undonext = (enthover != oldhover); f; entgroup.drop(); } else f; }
+#define addimplicit(f) { \
+    if(entgroup.empty() && !enthover.empty()) \
+    { \
+        int numhover = enthover.length(); \
+        loopv(enthover) entadd(enthover[i]); \
+        if(enthover.length() != oldhover.length()) undonext = true; \
+        else loopv(enthover) if(oldhover.find(enthover[i]) < 0) \
+        {\
+            undonext = true; \
+            break; \
+        } \
+        f; \
+        loopi(numhover) entgroup.drop(); \
+    } \
+    else f; \
+}
 #define enteditv(i, f, v) \
 { \
     entfocusv(i, \
@@ -442,7 +466,7 @@ vec getselpos()
 {
     vector<extentity *> &ents = entities::getents();
     if(entgroup.length() && ents.inrange(entgroup[0])) return ents[entgroup[0]]->o;
-    if(ents.inrange(enthover)) return ents[enthover]->o;
+    if(enthover.length() && ents.inrange(enthover[0])) return ents[enthover[0]]->o;
     return vec(sel.o);
 }
 
@@ -638,7 +662,10 @@ void entdrag(const vec &ray)
     int orient = getentorient();
     int d = dimension(orient),
         dc= dimcoord(orient);
-    int eindex = enthover >= 0 ? enthover : entgroup.last();
+    int eindex;
+
+    if(enthover.length()) eindex = enthover[0];
+    else eindex = entgroup.last();
 
     // Store old positions
     if(entmoving == 1)
@@ -714,10 +741,11 @@ static void renderentbox(const vec &eo, vec es)
 
 void renderentselection(const vec &o, const vec &ray, bool entmoving)
 {
-    if(noentedit() || (entgroup.empty() && enthover < 0)) return;
+    if(noentedit() || (entgroup.empty() && enthover.empty())) return;
     vec eo, es;
 
     vector<int> full;
+
     if(entgroup.length())
     {
         gle::colorub(0, 128, 0);
@@ -730,11 +758,11 @@ void renderentselection(const vec &o, const vec &ray, bool entmoving)
         xtraverts += gle::end();
     }
 
-    if(enthover >= 0)
+    loopv(enthover)
     {
         gle::colorub(0, 128, 0);
-        entfocus(enthover,
-            if(entselectionbox(e, eo, es)) full.add(enthover);
+        entfocus(enthover[i],
+            if(entselectionbox(e, eo, es)) full.add(enthover[i]);
         ); // also ensures enthover is back in focus
         boxs3D(eo, es, 1);
         gle::colorub(200, 0, 0);
@@ -779,14 +807,17 @@ bool enttoggle(int id)
     return i < 0;
 }
 
-bool hoveringonent(int ent, int orient)
+bool hoveringonent(vector<int> ents, int orient)
 {
     if(noentedit()) return false;
     entorient = orient;
-    if((efocus = enthover = ent) >= 0)
+    enthover = ents;
+    if(ents.length())
+    {
+        efocus = ents[0];
         return true;
-    efocus   = entgroup.empty() ? -1 : entgroup.last();
-    enthover = -1;
+    }
+    efocus = entgroup.empty() ? -1 : entgroup.last();
     return false;
 }
 
@@ -794,22 +825,40 @@ VAR(0, entitysurf, 0, 0, 1);
 
 ICOMMAND(0, entadd, "", (),
 {
-    if(enthover >= 0 && !noentedit())
+    if(enthover.length() && !noentedit())
     {
-        if(entgroup.find(enthover) < 0) entadd(enthover);
+        loopv(enthover) if(entgroup.find(enthover[i]) < 0) entadd(enthover[i]);
         if(entmoving > 1) entmoving = 1;
     }
 });
 
-ICOMMAND(0, enttoggle, "", (),
+ICOMMAND(0, enttoggleidx, "i", (int *idx),
 {
-    if(enthover < 0 || noentedit() || !enttoggle(enthover)) { entmoving = 0; intret(0); }
+    vector<extentity *> &ents = entities::getents();
+    if(!ents.inrange(*idx)) intret(0);
+    else intret(enttoggle(*idx));
+});
+
+ICOMMAND(0, enttoggle, "iN", (int *hoveridx, int *numargs),
+{
+    bool toggled = false;
+    if(!enthover.empty() && !noentedit())
+    {
+        if(*numargs > 0)
+        {
+            if(enthover.inrange(*hoveridx))
+                toggled = enttoggle(enthover[*hoveridx]);
+        }
+        else loopv(enthover) if(enttoggle(enthover[i])) toggled = true;
+    }
+
+    if(enthover.empty() || noentedit() || !toggled) { entmoving = 0; intret(0); }
     else { if(entmoving > 1) entmoving = 1; intret(1); }
 });
 
-ICOMMAND(0, entmoving, "bb", (int *n, int *force),
+ICOMMAND(0, entmoving, "bbN", (int *n, int *allhover, int *numargs),
 {
-    bool hasents = enthover >= 0 || (!entgroup.empty() && *force);
+    bool hasents = !enthover.empty() || !entgroup.empty();
 
     if(*n >= 0)
     {
@@ -818,7 +867,15 @@ ICOMMAND(0, entmoving, "bb", (int *n, int *force),
         {
             entmoveaxis = -1;
 
-            if(enthover >= 0 && entgroup.find(enthover) < 0) entadd(enthover);
+            if(enthover.length())
+            {
+                if(*numargs > 1 && *allhover)
+                {
+                    loopv(enthover) if(entgroup.find(enthover[i]) < 0) entadd(enthover[i]);
+                }
+                else if(entgroup.find(enthover[0]) < 0) entadd(enthover[0]);
+            }
+
             if(!entmoving) entmoving = 1;
         }
     }
@@ -1071,7 +1128,7 @@ void entreplace()
 {
     if(noentedit() || entcopybuf.empty()) return;
     const entity &c = entcopybuf[0];
-    if(entgroup.length() || enthover >= 0)
+    if(entgroup.length() || enthover.length())
     {
         groupedit({
             e.type = c.type;
@@ -1143,12 +1200,8 @@ void selentlinks(int n, int recurse, uint *cond)
     const vector<extentity *> &ents = entities::getents();
     if(n < 0)
     {
-        if(entgroup.length())
-        {
-            loopv(entgroup) selentlinks(entgroup[i], recurse, cond);
-            return;
-        }
-        if(ents.inrange(enthover)) n = enthover;
+        if(entgroup.length()) loopv(entgroup) selentlinks(entgroup[i], recurse, cond);
+        else if(enthover.length()) loopv(entgroup) selentlinks(enthover[i], recurse, cond);
         else return;
     }
     if(!ents.inrange(n)) return;
@@ -1197,6 +1250,7 @@ ICOMMAND(0, enthavesel,"", (), addimplicit(intret(entgroup.length())));
 ICOMMAND(0, entselect, "e", (uint *body), if(!noentedit()) addgroup(e.type != ET_EMPTY && entgroup.find(n)<0 && executebool(body)));
 ICOMMAND(0, entloop, "e", (uint *body), if(!noentedit()) { addimplicit(groupeditloop(((void)e, execute(body)))); commitchanges(); });
 ICOMMAND(0, entloopread, "e", (uint *body), if(entgroup.length()) loopv(entgroup) entfocus(entgroup[i], (void)e; execute(body);));
+ICOMMAND(0, enthoverloopread, "e", (uint *body), if(enthover.length()) loopv(enthover) entfocus(enthover[i], (void)e; execute(body);));
 ICOMMAND(0, insel, "", (), entfocus(efocus, intret(pointinsel(sel, e.o))));
 ICOMMAND(0, entget, "", (), entfocus(efocus,
 {
@@ -1209,6 +1263,7 @@ ICOMMAND(0, entget, "", (), entfocus(efocus,
     result(s);
 }));
 ICOMMAND(0, entindex, "", (), intret(efocus));
+ICOMMAND(0, numenthover, "", (), intret(enthover.length()));
 
 void entlast(uint *body)
 {
@@ -1224,6 +1279,21 @@ void entlast(uint *body)
     else execute(body);
 }
 COMMAND(0, entlast, "e");
+
+void entnth(int *idx, uint *body)
+{
+    if(noentedit()) return;
+
+    if(!entgroup.inrange(*idx))
+    {
+        entfocus(entgroup[*idx],
+            (void)e;
+            execute(body);
+        );
+    }
+    else execute(body);
+}
+COMMAND(0, entnth, "ie");
 
 void enttype(char *type, int *numargs)
 {

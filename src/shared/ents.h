@@ -136,7 +136,8 @@ struct extentity : entity                       // part of the entity that doesn
 #define MAXENTATTRS 100
 #define MAXENTKIN 100
 
-extern int efocus, enthover, entorient;
+extern int efocus, entorient;
+extern vector<int> enthover;
 #define entfocusv(i, f, v) { int n = efocus = (i); if(n>=0) { extentity &e = *v[n]; f; } }
 #define entfocus(i, f) entfocusv(i, f, entities::getents())
 

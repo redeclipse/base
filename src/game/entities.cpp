@@ -1805,7 +1805,7 @@ namespace entities
     {
         if(game::player1->state != CS_EDITING && !(showentinfo&64)) return false;
         if(!ents.inrange(n)) return false;
-        if(ents[n]->type == NOTUSED && (n != enthover && entgroup.find(n) < 0)) return false;
+        if(ents[n]->type == NOTUSED && (enthover.find(n) < 0 && entgroup.find(n) < 0)) return false;
         return true;
     }
 
@@ -2904,7 +2904,7 @@ namespace entities
 
     int showlevel(int n)
     {
-        return game::player1->state == CS_EDITING ? ((entgroup.find(n) >= 0 || enthover == n) ? 1 : 2) : 3;
+        return game::player1->state == CS_EDITING ? ((entgroup.find(n) >= 0 || enthover.find(n) >= 0) ? 1 : 2) : 3;
     }
 
     bool radarallow(int id, vec &dir, float &dist, bool justtest = false)
@@ -2921,7 +2921,7 @@ namespace entities
     {
         if(!ents.inrange(id)) return false;
         if(drawtex != DRAWTEX_HALO) return true;
-        if(!entityhalos || (ents[id]->type != WEAPON && (game::player1->state != CS_EDITING || (id != enthover && entgroup.find(id) < 0)))) return false;
+        if(!entityhalos || (ents[id]->type != WEAPON && (game::player1->state != CS_EDITING || (enthover.find(id) < 0 && entgroup.find(id) < 0)))) return false;
         vec dir(0, 0, 0);
         float dist = -1;
         if(!radarallow(id, dir, dist, justtest)) return false;
@@ -2981,7 +2981,7 @@ namespace entities
 
         if(drawtex && drawtex != DRAWTEX_HALO) return;
 
-        if(shouldshowents(game::player1->state == CS_EDITING ? 1 : (!entgroup.empty() || ents.inrange(enthover) ? 2 : 3)))
+        if(shouldshowents(game::player1->state == CS_EDITING ? 1 : (!entgroup.empty() || !enthover.empty() ? 2 : 3)))
             loopv(ents) renderfocus(i, renderentshow(e, i, showlevel(i), j!=0));
 
         int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators),
@@ -3181,7 +3181,7 @@ namespace entities
         if(enttype[e.type].usetype == EU_ITEM) pos.add(off);
         bool edit = m_edit(game::gamemode) && idx >= 0 && cansee(idx),
              isedit = edit && game::player1->state == CS_EDITING,
-             hasent = isedit && (enthover == idx || entgroup.find(idx) >= 0),
+             hasent = isedit && (enthover.find(idx) >= 0 || entgroup.find(idx) >= 0),
              hastop = hasent && o.squaredist(camera1->o) <= showentdist*showentdist;
         if(edit)
         {

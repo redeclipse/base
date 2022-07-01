@@ -374,9 +374,9 @@ bool editmoveplane(const vec &o, const vec &ray, int d, float off, vec &handle, 
 
 namespace hmap { inline bool isheightmap(int orient, int d, bool empty, cube *c); }
 extern void entdrag(const vec &ray);
-extern bool hoveringonent(int ent, int orient);
+extern bool hoveringonent(vector<int> ents, int orient);
 extern void renderentselection(const vec &o, const vec &ray, bool entmoving);
-extern float rayent(const vec &o, const vec &ray, float radius, int mode, int size, int &orient, int &ent);
+extern float rayent(const vec &o, const vec &ray, float radius, int mode, int size, int &orient, vector<int> &ents);
 
 VAR(0, gridlookup, 0, 0, 1);
 VAR(0, passthroughcube, 0, 1, 1);
@@ -455,13 +455,14 @@ void rendereditcursor()
     {
         ivec w;
         float sdist = 0, wdist = 0, t;
-        int entorient = 0, ent = -1;
+        int entorient = 0;
+        vector<int> ents;
 
         wdist = rayent(player->o, cursordir, 1e16f,
                        (editmode && showmat ? RAY_EDITMAT : 0)   // select cubes first
                        | (!dragging && entediting && (!passthrough || !passthroughent) ? RAY_ENTS : 0)
                        | RAY_SKIPFIRST
-                       | (passthroughcube || passthrough ? RAY_PASS : 0), gridsize, entorient, ent);
+                       | (passthroughcube || passthrough ? RAY_PASS : 0), gridsize, entorient, ents);
 
         if((havesel || dragging) && !passthroughsel && !hmapedit)     // now try selecting the selection
             if(rayboxintersect(vec(sel.o), vec(sel.s).mul(sel.grid), player->o, cursordir, sdist, orient))
@@ -469,11 +470,12 @@ void rendereditcursor()
                 if(sdist < wdist)
                 {
                     wdist = sdist;
-                    ent   = -1;
+                    ents.setsize(0);
                 }
             }
 
-        if((hovering = hoveringonent(hidecursor ? -1 : ent, entorient)))
+        if(hidecursor) ents.setsize(0);
+        if((hovering = hoveringonent(ents, entorient)))
         {
             if(!havesel)
             {

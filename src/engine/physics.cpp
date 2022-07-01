@@ -125,7 +125,8 @@ static inline bool raycubeintersect(const clipplanes &p, const cube &c, const ve
 }
 
 float hitentdist;
-int hitent, hitorient;
+int hitorient;
+vector<int> hitents;
 
 static float disttoent(octaentities *oc, const vec &o, const vec &ray, float radius, int mode, extentity *t)
 {
@@ -141,10 +142,11 @@ static float disttoent(octaentities *oc, const vec &o, const vec &ray, float rad
             extentity &e = *ents[n]; \
             if(!(e.flags&EF_OCTA) || &e==t) continue; \
             func; \
-            if(f<dist && f>0 && vec(ray).mul(f).add(o).insidebb(oc->o, oc->size)) \
+            if(f<=dist && f>0 && vec(ray).mul(f).add(o).insidebb(oc->o, oc->size)) \
             { \
+                if(f<dist) hitents.setsize(0); \
                 hitentdist = dist = f; \
-                hitent = n; \
+                hitents.add(n); \
                 hitorient = orient; \
             } \
         } \
@@ -187,10 +189,11 @@ static float disttooutsideent(const vec &o, const vec &ray, float radius, int mo
         if(!(e.flags&EF_OCTA) || &e == t) continue;
         entselectionbox(e, eo, es);
         if(!rayboxintersect(eo, es, o, ray, f, orient)) continue;
-        if(f<dist && f>0)
+        if(f<=dist && f>0)
         {
+            if(f<dist) hitents.setsize(0);
             hitentdist = dist = f;
-            hitent = outsideents[i];
+            hitents.add(outsideents[i]);
             hitorient = orient;
         }
     }
@@ -329,9 +332,9 @@ float raycube(const vec &o, const vec &ray, float radius, int mode, int size, ex
     }
 }
 
-float rayent(const vec &o, const vec &ray, float radius, int mode, int size, int &orient, int &ent)
+float rayent(const vec &o, const vec &ray, float radius, int mode, int size, int &orient, vector<int> &ents)
 {
-    hitent = -1;
+    hitents.setsize(0);
     hitentdist = radius;
     hitorient = -1;
     float dist = raycube(o, ray, radius, mode, size);
@@ -341,7 +344,8 @@ float rayent(const vec &o, const vec &ray, float radius, int mode, int size, int
         if(dent < 1e15f && (dist < 0 || dent < dist)) dist = dent;
     }
     orient = hitorient;
-    ent = hitentdist == dist ? hitent : -1;
+    if(hitentdist == dist) ents = hitents;
+    else ents.setsize(0);
     return dist;
 }
 
