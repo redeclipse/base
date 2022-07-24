@@ -391,6 +391,11 @@ template<size_t N> inline bool matchstring(const char *s, size_t len, const char
     return len == N-1 && !memcmp(s, d, N-1);
 }
 
+inline bool matchstring(const char *s, size_t len, const char *d, size_t len2)
+{
+    return len == len2 && !memcmp(s, d, len);
+}
+
 inline char *newstring(size_t l)                { return new char[l+1]; }
 inline char *newstring(const char *s, size_t l) { return copystring(newstring(l), s, l+1); }
 inline char *newstring(const char *s)           { if(!s) s = ""; size_t l = strlen(s); char *d = newstring(l); memcpy(d, s, l+1); return d; }

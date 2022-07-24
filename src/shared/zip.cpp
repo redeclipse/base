@@ -573,7 +573,7 @@ int listzipfiles(const char *dir, const char *ext, vector<char *> &files)
             if(!ext)
             {
                 if(!div) files.add(newstring(name));
-                else if(files.empty() || strncmp(files.last(), name, div - name)) files.add(newstring(name, div - name));
+                else if(files.empty() || !matchstring(files.last(), strlen(files.last()), name, div - name)) files.add(newstring(name, div - name));
             }
             else if(!div)
             {
