@@ -569,9 +569,13 @@ int listzipfiles(const char *dir, const char *ext, vector<char *> &files)
             if(strncmp(f.name, dir, dirsize)) continue;
             const char *name = f.name + dirsize;
             if(name[0] == PATHDIV) name++;
-            if(strchr(name, PATHDIV)) continue;
-            if(!ext) files.add(newstring(name));
-            else
+            const char *div = strchr(name, PATHDIV);
+            if(!ext)
+            {
+                if(!div) files.add(newstring(name));
+                else if(files.empty() || strncmp(files.last(), name, div - name)) files.add(newstring(name, div - name));
+            }
+            else if(!div)
             {
                 size_t namelen = strlen(name);
                 if(namelen > extsize)
