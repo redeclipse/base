@@ -579,12 +579,12 @@ bool listdir(const char *dirname, bool rel, const char *ext, vector<char *> &fil
 
             if(de->d_type == DT_UNKNOWN && filter != LIST_ALL)
             {
-                struct stat *filestat;
+                struct stat filestat;
                 defformatstring(filepath, "%s/%s", pathname, de->d_name);
 
-                lstat(filepath, filestat);
+                lstat(filepath, &filestat);
 
-                isdir = S_ISDIR(filestat->st_mode);
+                isdir = S_ISDIR(filestat.st_mode);
             }
 
             if(!(filter & LIST_FILES) && !isdir)

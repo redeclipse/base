@@ -4949,12 +4949,11 @@ ICOMMAND(0, unistr, "i", (int *i), { char *s = newstring(1); s[0] = uni2cube(*i)
 
 ICOMMAND(0, strpbrk, "ssi", (char *str, char *chars, int *begin),
 {
-    if(*begin < 0 || *begin >= strlen(str)) intret(-1);
+    if(*begin < 0 || *begin >= int(strlen(str))) intret(-1);
     else
     {
         char *c = strpbrk(&str[*begin], chars);
-        if(!c) intret(-1);
-        else intret(c - str);
+        intret(c ? c - str : -1);
     }
 });
 
