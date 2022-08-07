@@ -688,16 +688,13 @@ hashnameset<defvar> defvars;
     });
 
 #define DEFIVAR(cmdname, flags) \
-    DEFVAR(cmdname, "siiis", (char *name, int *min, int *cur, int *max, char *onchange), \
-        setvar(name, *cur, true, true), \
+    DEFVAR(cmdname, "siiis", (char *name, int *min, int *cur, int *max, char *onchange), , \
         def.i = variable(name, *min, *cur, *max, &def.i, def.onchange ? defvar::changed : NULL, flags))
 #define DEFFVAR(cmdname, flags) \
-    DEFVAR(cmdname, "sfffs", (char *name, float *min, float *cur, float *max, char *onchange), \
-        setfvar(name, *cur, true, true), \
+    DEFVAR(cmdname, "sfffs", (char *name, float *min, float *cur, float *max, char *onchange), , \
         def.f = fvariable(name, *min, *cur, *max, &def.f, def.onchange ? defvar::changed : NULL, flags))
 #define DEFSVAR(cmdname, flags) \
-    DEFVAR(cmdname, "sss", (char *name, char *cur, char *onchange), \
-        setsvar(name, cur, true, true), \
+    DEFVAR(cmdname, "sss", (char *name, char *cur, char *onchange), , \
         def.s = svariable(name, cur, &def.s, def.onchange ? defvar::changed : NULL, flags))
 
 DEFIVAR(defvar, IDF_COMPLETE);
