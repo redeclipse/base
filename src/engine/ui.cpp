@@ -335,12 +335,15 @@ namespace UI
     {
         Object *parent;
         float x, y, w, h, ox, oy;
+        float lastx, lasty, lastw, lasth;
         bool overridepos, drawn;
         uchar adjust;
         ushort state, childstate;
         vector<Object *> children;
 
-        Object() : ox(0), oy(0), overridepos(false), drawn(false), adjust(0), state(0), childstate(0) {}
+        Object() : ox(0), oy(0), lastx(0), lasty(0), lastw(0), lasth(0), overridepos(false),
+            drawn(false), adjust(0), state(0), childstate(0) {}
+
         virtual ~Object()
         {
             if(inputsteal == this) inputsteal = NULL;
@@ -485,6 +488,8 @@ namespace UI
             }
 
             adjustchildren();
+            lastx = x; lasty = y;
+            lastw = w; lasth = h;
         }
 
         virtual void setalign(int xalign, int yalign)
@@ -4876,6 +4881,11 @@ namespace UI
     {
         if(buildparent) loopi(buildchild) buildparent->children[i]->setpos(*x, *y);
     });
+
+    ICOMMAND(0, uigetlastx, "", (), if(buildparent) floatret(buildparent->lastx));
+    ICOMMAND(0, uigetlasty, "", (), if(buildparent) floatret(buildparent->lasty));
+    ICOMMAND(0, uigetlastw, "", (), if(buildparent) floatret(buildparent->lastw));
+    ICOMMAND(0, uigetlasth, "", (), if(buildparent) floatret(buildparent->lasth));
 
     #define UICOLOURCMDS(t) \
         if(o->iscolour()) \
