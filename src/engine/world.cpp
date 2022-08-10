@@ -559,7 +559,7 @@ bool entselectionbox(extentity &e, vec &eo, vec &es, bool full)
     return faked;
 }
 
-VAR(0, entselsnap, 0, 1, 1);
+VAR(IDF_PERSIST, entselsnap, 0, 1, 1);
 VAR(0, entmovingshadow, 0, 1, 1);
 
 ICOMMAND(0, entorient, "", (), intret(entorient));
