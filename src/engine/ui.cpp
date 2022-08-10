@@ -3333,9 +3333,12 @@ namespace UI
 
     struct Scroller : Clipper
     {
+        bool scrolllock;
+
         void setup(float sizew_ = 0, float sizeh_ = 0)
         {
             Clipper::setup(sizew_, sizeh_);
+            scrolllock = false;
         }
 
         static const char *typestr() { return "#Scroller"; }
@@ -3343,10 +3346,22 @@ namespace UI
 
         void scrollup(float cx, float cy, bool inside);
         void scrolldown(float cx, float cy, bool inside);
+        bool canscroll() const { return !scrolllock; }
+        void setscrolllock(bool scrolllock_) { scrolllock = scrolllock_; }
     };
 
     ICOMMAND(0, uiscroll, "ffe", (float *sizew, float *sizeh, uint *children),
         BUILD(Scroller, o, o->setup(*sizew*uiscale, *sizeh*uiscale), children));
+
+    ICOMMANDNS(0, "uiscrolllock-", uiscrolllock_, "i", (int *scrolllock),
+    {
+        if(buildparent && buildchild > 0)
+        {
+            Object *o = buildparent->children[buildchild-1];
+            if(o->istype<Scroller>())
+                ((Scroller*)(buildparent->children[buildchild-1]))->setscrolllock(*scrolllock != 0);
+        }
+    });
 
     struct ScrollButton : Object
     {
@@ -3392,7 +3407,7 @@ namespace UI
         void addscroll(float dir)
         {
             Scroller *scroller = (Scroller *)findsibling(Scroller::typestr());
-            if(scroller) addscroll(scroller, dir);
+            if(scroller && scroller->canscroll()) addscroll(scroller, dir);
         }
 
         void arrowscroll(float dir) { addscroll(dir*curtime/1000.0f); }
@@ -3407,12 +3422,14 @@ namespace UI
 
     void Scroller::scrollup(float cx, float cy, bool inside)
     {
+        if(!canscroll()) return;
         ScrollBar *scrollbar = (ScrollBar *)findsibling(ScrollBar::typestr());
         if(scrollbar) scrollbar->wheelscroll(-scrollbar->wheelscrolldirection());
     }
 
     void Scroller::scrolldown(float cx, float cy, bool inside)
     {
+        if(!canscroll()) return;
         ScrollBar *scrollbar = (ScrollBar *)findsibling(ScrollBar::typestr());
         if(scrollbar) scrollbar->wheelscroll(scrollbar->wheelscrolldirection());
     }
