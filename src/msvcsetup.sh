@@ -11,8 +11,8 @@ msvc_pkgs=()
 msvc_needs_fetch=0
 
 # DESIRED VERSION DEFINITIONS
-SDK_VER=10.0.22621.1
-VS_VER=17
+SDK_VER=10.0.22000.196
+VS_VER=16
 # LLVM 13 results in a crashing game binary
 LLVM_VER=12
 
