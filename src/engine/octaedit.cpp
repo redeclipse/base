@@ -126,6 +126,8 @@ bool havesel = false;
 bool hmapsel = false;
 int horient = 0;
 
+ICOMMAND(0, hassel, "", (), intret(havesel));
+
 extern int entmoving;
 
 VARF(0, dragging, 0, 0, 1,
