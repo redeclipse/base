@@ -1237,7 +1237,7 @@ namespace game
                 float amt = clamp(mag/n, 0.f, 1.f)*(d != focus ? footstepsoundlevel : footstepsoundfocus);
                 if(onfloor && !d->running(moveslow)) amt *= footstepsoundlight;
                 int vol = clamp(int(amt*footstepsoundmaxvol), footstepsoundminvol, footstepsoundmaxvol);
-                playsound(liquid && (!onfloor || rnd(4)) ? S_SWIMSTEP : S_FOOTSTEP, pos, NULL, d != focus ? 0 : SND_NOCULL, vol, footstepsoundmaxrad, footstepsoundminrad, &d->sschan[curfoot]);
+                playsound(liquid && (!onfloor || rnd(4)) ? S_SWIMSTEP : S_FOOTSTEP, pos, NULL, d != focus ? 0 : SND_NOCULL|SND_NOPAN, vol, footstepsoundmaxrad, footstepsoundminrad, &d->sschan[curfoot]);
             }
         }
     }
