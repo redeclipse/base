@@ -4359,3 +4359,10 @@ COMMAND(0, flipnormalmapy, "ss");
 COMMAND(0, mergenormalmaps, "ss");
 COMMAND(0, normalizenormalmap, "ss");
 COMMAND(0, removealphachannel, "ss");
+
+ICOMMAND(0, gettexaspect, "s", (char *tex),
+{
+    Texture *t = textureloaded(tex);
+    if(!t) return;
+    floatret((float)t->w / (float)t->h);
+});
