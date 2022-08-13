@@ -1335,6 +1335,20 @@ void entprop(int *attr, int *val)
 }
 COMMAND(0, entprop, "ii");
 
+void entpos(float *x, float *y, float *z, int *numargs)
+{
+    if(*numargs >= 3)
+    {
+        groupedit(e.o = vec(*x, *y, *z));
+    }
+    else entfocus(efocus,
+    {
+        defformatstring(str, "%f %f %f", e.o.x, e.o.y, e.o.z);
+        result(str);
+    });
+}
+COMMAND(0, entpos, "fffN");
+
 int findentity(int type, int index, vector<int> &attr)
 {
     const vector<extentity *> &ents = entities::getents();
