@@ -584,6 +584,7 @@ bool entselectionbox(extentity &e, vec &eo, vec &es, bool full)
 }
 
 VAR(IDF_PERSIST, entselsnap, 0, 1, 1);
+VAR(IDF_PERSIST, entselsnapmode, 0, 0, 1);
 VAR(0, entmovingshadow, 0, 1, 1);
 
 ICOMMAND(0, entorient, "", (), intret(entorient));
@@ -595,6 +596,7 @@ extern bool editmoveplane(const vec &o, const vec &ray, int d, float off, vec &h
 
 int entmoving = 0;
 int entmoveaxis = -1;
+int entmovesnapent = -1;
 
 static int getentorient()
 {
@@ -654,15 +656,16 @@ void entdrag(const vec &ray)
 {
     if(noentedit() || !haveselent()) return;
 
-    float r = 0, c = 0;
     static vec dest, handle;
     static vector<vec> oldpos;
-    vec eo, es;
+    vec eo, es, snappos, move(0, 0, 0);
 
     int orient = getentorient();
     int d = dimension(orient),
         dc= dimcoord(orient);
     int eindex;
+
+    bool snaptoent = entselsnap && entselsnapmode == 1 && entmovesnapent >= 0;
 
     if(enthover.length()) eindex = enthover[0];
     else eindex = entgroup.last();
@@ -680,28 +683,37 @@ void entdrag(const vec &ray)
         }
     }
 
+    if(snaptoent) entfocus(entmovesnapent, snappos = e.o);
+
     entfocus(eindex,
         entselectionbox(e, eo, es);
 
         if(!editmoveplane(e.o, ray, d, eo[d] + (dc ? es[d] : 0), handle, dest, entmoving==1))
             return;
 
-        ivec g(dest);
-        ivec limit(1, 1, 1);
-        int z = g[d]&(~(sel.grid-1));
-        g.add(sel.grid/2).mask(~(sel.grid-1));
-        g[d] = z;
+        if(snaptoent) move = vec(snappos).sub(e.o);
+        else if(entselsnap && entselsnapmode == 0)
+        {
+            ivec g(dest);
+            int z = g[d]&(~(sel.grid-1));
+            g.add(sel.grid/2).mask(~(sel.grid-1));
+            g[d] = z;
 
-        r = ((entselsnap ? g[R[d]] : dest[R[d]]) - e.o[R[d]]) * limit[R[d]];
-        c = ((entselsnap ? g[C[d]] : dest[C[d]]) - e.o[C[d]]) * limit[C[d]];
+            move[R[d]] = g[R[d]] - e.o[R[d]];
+            move[C[d]] = g[C[d]] - e.o[C[d]];
+        }
+        else
+        {
+            move[R[d]] = dest[R[d]] - e.o[R[d]];
+            move[C[d]] = dest[C[d]] - e.o[C[d]];
+        }
     );
 
     if(entmoving==1) makeundoent();
 
     int groupiter = 0;
     groupeditpure(
-        e.o[R[d]] += r;
-        e.o[C[d]] += c;
+        e.o.add(move);
 
         switch(entmoveaxis)
         {
@@ -793,6 +805,13 @@ void renderentselection(const vec &o, const vec &ray, bool entmoving)
             renderentbox(eo, es);
         );
         xtraverts += gle::end();
+    }
+
+    if(entmovesnapent >= 0)
+    {
+        gle::colorub(0, 0, 255);
+        entfocus(entmovesnapent, entselectionbox(e, eo, es));
+        boxs3D(eo, es, 1);
     }
 }
 

@@ -129,6 +129,9 @@ int horient = 0;
 ICOMMAND(0, hassel, "", (), intret(havesel));
 
 extern int entmoving;
+extern int entselsnap;
+extern int entselsnapmode;
+extern int entmovesnapent;
 
 VARF(0, dragging, 0, 0, 1,
     if(!dragging || cor[0]<0) return;
@@ -376,7 +379,6 @@ namespace hmap { inline bool isheightmap(int orient, int d, bool empty, cube *c)
 extern void entdrag(const vec &ray);
 extern bool hoveringonent(vector<int> ents, int orient);
 extern void renderentselection(const vec &o, const vec &ray, bool entmoving);
-extern float rayent(const vec &o, const vec &ray, float radius, int mode, int size, int &orient, vector<int> &ents);
 
 VAR(0, gridlookup, 0, 0, 1);
 VAR(0, passthroughcube, 0, 1, 1);
@@ -426,6 +428,7 @@ void rendereditcursor()
 
     bool hidecursor = hud::hasinput() == 1 || blendpaintmode, hovering = false;
     hmapsel = false;
+    entmovesnapent = -1;
 
     physent *player = (physent *)game::focusedent(true);
     if(!player) player = camera1;
@@ -449,6 +452,15 @@ void rendereditcursor()
     }
     else if(entmoving)
     {
+        vector<int> ents;
+        int entorient = 0;
+
+        if(entselsnap && entselsnapmode == 1)
+            rayent(player->o, cursordir, 1e16f, RAY_ENTS | RAY_SKIPFIRST, gridsize, entorient, ents,
+                   &entgroup);
+
+        if(ents.length()) entmovesnapent = ents[0];
+
         entdrag(cursordir);
     }
     else
@@ -462,7 +474,7 @@ void rendereditcursor()
                        (editmode && showmat ? RAY_EDITMAT : 0)   // select cubes first
                        | (!dragging && entediting && (!passthrough || !passthroughent) ? RAY_ENTS : 0)
                        | RAY_SKIPFIRST
-                       | (passthroughcube || passthrough ? RAY_PASS : 0), gridsize, entorient, ents);
+                       | (passthroughcube || passthrough ? RAY_PASS : 0), gridsize, entorient, ents, NULL);
 
         if((havesel || dragging) && !passthroughsel && !hmapedit)     // now try selecting the selection
             if(rayboxintersect(vec(sel.o), vec(sel.s).mul(sel.grid), player->o, cursordir, sdist, orient))

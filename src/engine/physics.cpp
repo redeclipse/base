@@ -128,7 +128,7 @@ float hitentdist;
 int hitorient;
 vector<int> hitents;
 
-static float disttoent(octaentities *oc, const vec &o, const vec &ray, float radius, int mode, extentity *t)
+static float disttoent(octaentities *oc, const vec &o, const vec &ray, float radius, int mode, vector<int> *t)
 {
     vec eo, es;
     int orient = -1;
@@ -140,7 +140,7 @@ static float disttoent(octaentities *oc, const vec &o, const vec &ray, float rad
         { \
             int n = oc->type[i]; \
             extentity &e = *ents[n]; \
-            if(!(e.flags&EF_OCTA) || &e==t) continue; \
+            if(!(e.flags&EF_OCTA) || (t && t->find(n) >= 0)) continue; \
             func; \
             if(f<=dist && f>0 && vec(ray).mul(f).add(o).insidebb(oc->o, oc->size)) \
             { \
@@ -177,7 +177,7 @@ static float disttoent(octaentities *oc, const vec &o, const vec &ray, float rad
     return dist;
 }
 
-static float disttooutsideent(const vec &o, const vec &ray, float radius, int mode, extentity *t)
+static float disttooutsideent(const vec &o, const vec &ray, float radius, int mode, vector<int> *t)
 {
     vec eo, es;
     int orient;
@@ -186,7 +186,7 @@ static float disttooutsideent(const vec &o, const vec &ray, float radius, int mo
     loopv(outsideents)
     {
         extentity &e = *ents[outsideents[i]];
-        if(!(e.flags&EF_OCTA) || &e == t) continue;
+        if(!(e.flags&EF_OCTA) || (t && t->find(outsideents[i]) >= 0)) continue;
         entselectionbox(e, eo, es);
         if(!rayboxintersect(eo, es, o, ray, f, orient)) continue;
         if(f<=dist && f>0)
@@ -275,7 +275,7 @@ static float disttooutsideent(const vec &o, const vec &ray, float radius, int mo
             diff >>= 1; \
         } while(diff);
 
-float raycube(const vec &o, const vec &ray, float radius, int mode, int size, extentity *t)
+float raycube(const vec &o, const vec &ray, float radius, int mode, int size, vector<int> *t)
 {
     if(ray.iszero()) return 0;
 
@@ -332,12 +332,12 @@ float raycube(const vec &o, const vec &ray, float radius, int mode, int size, ex
     }
 }
 
-float rayent(const vec &o, const vec &ray, float radius, int mode, int size, int &orient, vector<int> &ents)
+float rayent(const vec &o, const vec &ray, float radius, int mode, int size, int &orient, vector<int> &ents, vector<int> *filter)
 {
     hitents.setsize(0);
     hitentdist = radius;
     hitorient = -1;
-    float dist = raycube(o, ray, radius, mode, size);
+    float dist = raycube(o, ray, radius, mode, size, filter);
     if((mode&RAY_ENTS) == RAY_ENTS)
     {
         float dent = disttooutsideent(o, ray, dist < 0 ? 1e16f : dist, mode, NULL);

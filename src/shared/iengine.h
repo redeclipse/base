@@ -35,7 +35,8 @@ extern void lightent(extentity &e, float height = 8);
 
 enum { RAY_BB = 1, RAY_POLY = 3, RAY_ALPHAPOLY = 7, RAY_ENTS = 9, RAY_CLIPMAT = 16, RAY_SKIPFIRST = 32, RAY_EDITMAT = 64, RAY_PASS = 128 };
 
-extern float raycube   (const vec &o, const vec &ray,     float radius = 0, int mode = RAY_CLIPMAT, int size = 0, extentity *t = 0);
+extern float raycube   (const vec &o, const vec &ray,           float radius = 0, int mode = RAY_CLIPMAT, int size = 0, vector<int> *t = NULL);
+extern float rayent    (const vec &o, const vec &ray,           float radius,     int mode,               int size, int &orient, vector<int> &ents, vector<int> *filter);
 extern float raycubepos(const vec &o, const vec &ray, vec &hit, float radius = 0, int mode = RAY_CLIPMAT, int size = 0);
 extern float rayfloor  (const vec &o, vec &floor, int mode = 0, float radius = 0);
 extern bool  raycubelos(const vec &o, const vec &dest, vec &hitpos);
