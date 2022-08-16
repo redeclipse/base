@@ -140,7 +140,7 @@ static float disttoent(octaentities *oc, const vec &o, const vec &ray, float rad
         { \
             int n = oc->type[i]; \
             extentity &e = *ents[n]; \
-            if(!(e.flags&EF_OCTA) || (t && t->find(n) >= 0)) continue; \
+            if(!(e.flags&EF_OCTA) || (t && t->find(n) >= 0) || (hitents.find(n) >= 0)) continue; \
             func; \
             if(f<=dist && f>0 && vec(ray).mul(f).add(o).insidebb(oc->o, oc->size)) \
             { \
@@ -185,15 +185,16 @@ static float disttooutsideent(const vec &o, const vec &ray, float radius, int mo
     const vector<extentity *> &ents = entities::getents();
     loopv(outsideents)
     {
-        extentity &e = *ents[outsideents[i]];
-        if(!(e.flags&EF_OCTA) || (t && t->find(outsideents[i]) >= 0)) continue;
+        int n = outsideents[i];
+        extentity &e = *ents[n];
+        if(!(e.flags&EF_OCTA) || (t && t->find(n) >= 0) || (hitents.find(n) >= 0)) continue;
         entselectionbox(e, eo, es);
         if(!rayboxintersect(eo, es, o, ray, f, orient)) continue;
         if(f<=dist && f>0)
         {
             if(f<dist) hitents.setsize(0);
             hitentdist = dist = f;
-            hitents.add(outsideents[i]);
+            hitents.add(n);
             hitorient = orient;
         }
     }
