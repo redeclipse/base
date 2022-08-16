@@ -85,8 +85,8 @@ semabuild_build() {
             WANT_DISCORD=1 \
             WANT_STEAM=1 \
             INSTDIR="${SEMABUILD_DIR}/windows/bin/amd64" \
-            CFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math" \
-            CXXFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math" \
+            CFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math -fno-finite-math-only -fhonor-infinities" \
+            CXXFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math -fno-finite-math-only -fhonor-infinities" \
             LDFLAGS="-m64" \
             -O -j $numjobs \
             -C src clean install || return 1
@@ -102,8 +102,8 @@ semabuild_build() {
             WANT_DISCORD=1 \
             WANT_STEAM=1 \
             INSTDIR="${SEMABUILD_DIR}/windows/bin/x86" \
-            CFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math" \
-            CXXFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math" \
+            CFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math -fno-finite-math-only -fhonor-infinities" \
+            CXXFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math -fno-finite-math-only -fhonor-infinities" \
             LDFLAGS="-m32" \
             -O -j $numjobs \
             -C src clean install || return 1
@@ -118,8 +118,8 @@ semabuild_build() {
             WANT_DISCORD=1 \
             WANT_STEAM=1 \
             INSTDIR="${SEMABUILD_DIR}/windows/bin/amd64" \
-            CFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math" \
-            CXXFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math" \
+            CFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math -fno-finite-math-only" \
+            CXXFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math -fno-finite-math-only" \
             LDFLAGS="-m64" \
             -O -j $numjobs \
             -C src clean install || return 1
@@ -133,8 +133,8 @@ semabuild_build() {
             WANT_DISCORD=1 \
             WANT_STEAM=1 \
             INSTDIR="${SEMABUILD_DIR}/windows/bin/x86" \
-            CFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math" \
-            CXXFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math" \
+            CFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math -fno-finite-math-only" \
+            CXXFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math -fno-finite-math-only" \
             LDFLAGS="-m32" \
             -O -j $numjobs \
             -C src clean install || return 1
@@ -149,8 +149,8 @@ semabuild_build() {
         WANT_DISCORD=1 \
         WANT_STEAM=1 \
         INSTDIR="${SEMABUILD_DIR}/linux/bin/amd64" \
-        CFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math" \
-        CXXFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math" \
+        CFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math -fno-finite-math-only" \
+        CXXFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math -fno-finite-math-only" \
         LDFLAGS="-m64" \
         -O -j $numjobs \
         -C src clean install || return 1

@@ -3,7 +3,7 @@ APPCLIENT = $(APPNAME)
 APPSERVER = $(APPNAME)_server
 
 #CXXFLAGS = -ggdb3
-CXXFLAGS ?= -O3 -fomit-frame-pointer -ffast-math
+CXXFLAGS ?= -O3 -fomit-frame-pointer -ffast-math -fno-finite-math-only
 override CXXFLAGS += -Wall -fsigned-char -fno-exceptions -fno-rtti -Wno-invalid-offsetof -std=c++11
 PLATFORM = $(shell $(CC) -dumpmachine)
 RMFLAGS = -fv
@@ -85,7 +85,7 @@ ifneq (,$(findstring msvc,$(PLATFORM)))
         -isystem $(INC_WINKIT_UM) \
         -Wno-deprecated-declarations
 
-    override CXXFLAGS += $(SYS_FLAGS)
+    override CXXFLAGS += -fhonor-infinities $(SYS_FLAGS)
 
     override LDFLAGS += \
         -fuse-ld=lld \
