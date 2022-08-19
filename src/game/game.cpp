@@ -4015,7 +4015,7 @@ namespace game
                 if(d->actortype >= A_ENEMY) mdl.flags |= MDL_CULL_DIST;
             }
             if(d != focus || (d != player1 ? fullbrightfocus&1 : fullbrightfocus&2)) mdl.flags |= MDL_FULLBRIGHT;
-            if((d != focus && playershadow < 2) || playershadow < 1) mdl.flags |= MDL_NOSHADOW;
+            if((d != focus && playershadow < 2) || playershadow < 1 || (d == focus && d->state == CS_EDITING)) mdl.flags |= MDL_NOSHADOW;
         }
         else if(drawtex == DRAWTEX_HALO && ((d == focus && inzoom()) || !haloallow(d))) mdl.flags |= MDL_NORENDER;
 
