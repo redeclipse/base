@@ -4149,6 +4149,70 @@ namespace UI
             children);
     });
 
+    struct AxisView : Filler
+    {
+        void startdraw()
+        {
+            hudnotextureshader->set();
+
+            gle::defvertex();
+            gle::defcolor();
+        }
+
+        void draw(float sx, float sy)
+        {
+            changedraw(CHANGE_SHADER | CHANGE_COLOR);
+
+            pushhudmatrix();
+            matrix4 axismatrix, axisprojmatrix;
+            axismatrix.identity();
+
+            axismatrix.translate(0, 0, -0.5f);
+            axismatrix.rotate_around_y(camera1->roll*RAD);
+            axismatrix.rotate_around_x((camera1->pitch+90)*-RAD);
+            axismatrix.rotate_around_z(camera1->yaw*RAD);
+
+            axisprojmatrix.perspective(25, w/h, 0.1f, 10.0f);
+            hudmatrix.muld(axisprojmatrix, axismatrix);
+            flushhudmatrix();
+
+            float hudaspect = hudw/float(hudh);
+            glViewport(hudw*sx*(1/hudaspect), hudh*(1.0f-(sy+h)), hudw*w*(1/hudaspect), hudh*h);
+
+            glLineWidth(4);
+
+            const float offset = 0.08;
+
+            gle::begin(GL_LINES);
+
+            gle::attrib(0, 0, 0); gle::attribf(0.5f, 0.25f, 0.25f);
+                gle::attribf(offset, 0, 0); gle::attribf(0.5f, 0.25f, 0.25f);
+            gle::attribf(0, 0, 0); gle::attribf(0.25f, 0.5f, 0.25f);
+                gle::attribf(0, -offset, 0); gle::attribf(0.25f, 0.5f, 0.25f);
+            gle::attribf(0, 0, 0); gle::attribf(0.25f, 0.25f, 0.5f);
+                gle::attribf(0, 0, -offset); gle::attribf(0.25f, 0.25f, 0.5f);
+
+            gle::attribf(0, 0, 0); gle::attribf(1, 0, 0);
+                gle::attribf(-offset, 0, 0); gle::attribf(1, 0, 0);
+            gle::attribf(0, 0, 0); gle::attribf(0, 1, 0);
+                gle::attribf(0, offset, 0); gle::attribf(0, 1, 0);
+            gle::attribf(0, 0, 0); gle::attribf(0, 0, 1);
+                gle::attribf(0, 0, offset); gle::attribf(0, 0, 1);
+
+            gle::end();
+
+            glLineWidth(1);
+            glViewport(0, 0, hudw, hudh);
+
+            pophudmatrix();
+
+            Object::draw(sx, sy);
+        }
+    };
+
+    ICOMMAND(0, uiaxisview, "ffe", (float *minw, float *minh, uint *children),
+        BUILD(AxisView, o, o->setup(*minw*uiscale, *minh*uiscale), children));
+
     struct Preview : Target
     {
         float yaw, pitch, roll, fov;
