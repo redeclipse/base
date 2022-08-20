@@ -74,6 +74,9 @@ semabuild_build() {
         export WINKIT_INC_DIR="${HOME}/sys/winsdk/c/Include/$sdk_ver"
         export WINKIT_LIB_DIR="${HOME}/sys/winsdk_lib/c/"
 
+        make -C src clean || return 1
+        sleep 1
+
         make \
             CC=clang-12 \
             CXX=clang++-12 \
@@ -89,7 +92,10 @@ semabuild_build() {
             CXXFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math -fno-finite-math-only -fhonor-infinities" \
             LDFLAGS="-m64" \
             -O -j $numjobs \
-            -C src clean install || return 1
+            -C src install || return 1
+
+        make -C src clean || return 1
+        sleep 1
 
         make \
             CC=clang-12 \
@@ -106,7 +112,7 @@ semabuild_build() {
             CXXFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math -fno-finite-math-only -fhonor-infinities" \
             LDFLAGS="-m32" \
             -O -j $numjobs \
-            -C src clean install || return 1
+            -C src install || return 1
     else
         # mingw fallback when msvc setup fails
         make \
@@ -122,7 +128,10 @@ semabuild_build() {
             CXXFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math -fno-finite-math-only" \
             LDFLAGS="-m64" \
             -O -j $numjobs \
-            -C src clean install || return 1
+            -C src install || return 1
+
+        make -C src clean || return 1
+        sleep 1
 
         make \
             PLATFORM="crossmingw32" \
@@ -137,8 +146,11 @@ semabuild_build() {
             CXXFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math -fno-finite-math-only" \
             LDFLAGS="-m32" \
             -O -j $numjobs \
-            -C src clean install || return 1
+            -C src install || return 1
     fi
+
+    make -C src clean || return 1
+    sleep 1
 
     make \
         PLATFORM="linux64" \
@@ -153,7 +165,7 @@ semabuild_build() {
         CXXFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math -fno-finite-math-only" \
         LDFLAGS="-m64" \
         -O -j $numjobs \
-        -C src clean install || return 1
+        -C src install || return 1
 
     # sudo ${SEMABUILD_APT} purge -fy sbt || return 1
     # sudo ${SEMABUILD_APT} -o Dpkg::Options::="--force-overwrite" -fy --no-install-recommends install binutils:i386 || return 1
