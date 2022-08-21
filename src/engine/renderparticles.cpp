@@ -1817,6 +1817,16 @@ static inline vec offsetvec(vec o, int dir, int dist)
             to.add(p);
             from = to;
         }
+        else if(dir < 28) // field
+        {
+            from.x += float(rnd(int(ceilf(radius))<<4)-(int(ceilf(radius))<<3))/8.0;
+            from.y += float(rnd(int(ceilf(radius))<<4)-(int(ceilf(radius))<<3))/8.0;
+            from.z += float(rnd(int(ceilf(radius))<<4)-(int(ceilf(radius))<<3))/8.0;
+            to.x    = float(rnd(int(ceilf(radius))<<4)-(int(ceilf(radius))<<3))/8.0;
+            to.y    = float(rnd(int(ceilf(radius))<<4)-(int(ceilf(radius))<<3))/8.0;
+            to.z    = float(rnd(int(ceilf(radius))<<4)-(int(ceilf(radius))<<3))/8.0;
+            to.add(from);
+        }
         else to = p;
 
         if(inv) swap(from, to);
