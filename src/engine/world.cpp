@@ -1206,6 +1206,26 @@ void entlink(int *parent)
 }
 COMMAND(0, entlink, "i");
 
+void entlinkidx(int *ent1, int *ent2, int *mode, int *numargs)
+{
+    const vector<extentity *> &ents = entities::getents();
+    bool linked = false;
+
+    if(noentedit() || !ents.inrange(*ent1) || !ents.inrange(*ent2)) return;
+
+    if (*numargs < 3) *mode = 0;
+
+    switch(*mode)
+    {
+        case 0: linked = entities::linkents(*ent1, *ent2); break;
+        case 1: linked = entities::linkents(*ent2, *ent1); break;
+        case 2: linked = entities::linkents(*ent1, *ent2) && entities::linkents(*ent1, *ent2); break;
+    }
+
+    if(!linked) conoutf("\frFailed linking %d and %d", *ent1, *ent2);
+}
+COMMAND(0, entlinkidx, "iiiN");
+
 void entunlink()
 {
     loopv(entgroup)
