@@ -1104,7 +1104,7 @@ void newent(char *what, char *attr)
     int type = entities::findtype(what);
     attrvector attrs;
     entattrs(attr, attrs);
-    if(type != ET_EMPTY) newentity(type, attrs);
+    if(type != ET_EMPTY) intret(newentity(type, attrs));
 }
 COMMAND(0, newent, "ss");
 
