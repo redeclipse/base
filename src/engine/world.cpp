@@ -658,7 +658,7 @@ void entdrag(const vec &ray)
 
     static vec dest, handle;
     static vector<vec> oldpos;
-    vec eo, es, snappos, move(0, 0, 0);
+    vec eo, es, snappos(0, 0, 0), move(0, 0, 0);
 
     int orient = getentorient();
     int d = dimension(orient),
