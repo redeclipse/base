@@ -613,6 +613,14 @@ void worldmeta(const char *name, const char *action)
 }
 COMMAND(0, worldmeta, "ss");
 
+void remworldmeta(const char *name)
+{
+    ident *id = idents.access(name);
+    if(id && (id->flags & (IDF_META | IDF_WORLD)) == (IDF_META | IDF_WORLD))
+        id->flags &= ~(IDF_META | IDF_WORLD);
+}
+COMMAND(0, remworldmeta, "s");
+
 void loadalias(const char *name, const char *fname, int *world)
 {
     string s;
