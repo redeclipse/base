@@ -4183,21 +4183,28 @@ namespace UI
 
             const float offset = 0.08;
 
+            const vec vbo[12][2] = {
+                { vec(0,       0,       0),       vec(0.25f, 0.25f, 0.5f ) }, // -Z
+                { vec(0,       0,       -offset), vec(0.25f, 0.25f, 0.5f ) },
+
+                { vec(0,       0,       0),       vec(0.5f,  0.25f, 0.25f) }, // -X
+                { vec(offset,  0,       0),       vec(0.5f,  0.25f, 0.25f) },
+                { vec(0,       0,       0),       vec(1,     0,     0    ) }, // X
+                { vec(-offset, 0,       0),       vec(1,     0,     0    ) },
+
+                { vec(0,       0,       0),       vec(0.25f, 0.5f,  0.25f) }, // -Y
+                { vec(0,       -offset, 0),       vec(0.25f, 0.5f,  0.25f) },
+                { vec(0,       0,       0),       vec(0,     1,     0    ) }, // Y
+                { vec(0,       offset,  0),       vec(0,     1,     0    ) },
+
+                { vec(0,       0,       0),       vec(0,     0,     1    ) }, // Z
+                { vec(0,       0,       offset),  vec(0,     0,     1    ) }
+            };
+
             gle::begin(GL_LINES);
 
-            gle::attrib(0, 0, 0); gle::attribf(0.5f, 0.25f, 0.25f);
-                gle::attribf(offset, 0, 0); gle::attribf(0.5f, 0.25f, 0.25f);
-            gle::attribf(0, 0, 0); gle::attribf(0.25f, 0.5f, 0.25f);
-                gle::attribf(0, -offset, 0); gle::attribf(0.25f, 0.5f, 0.25f);
-            gle::attribf(0, 0, 0); gle::attribf(0.25f, 0.25f, 0.5f);
-                gle::attribf(0, 0, -offset); gle::attribf(0.25f, 0.25f, 0.5f);
-
-            gle::attribf(0, 0, 0); gle::attribf(1, 0, 0);
-                gle::attribf(-offset, 0, 0); gle::attribf(1, 0, 0);
-            gle::attribf(0, 0, 0); gle::attribf(0, 1, 0);
-                gle::attribf(0, offset, 0); gle::attribf(0, 1, 0);
-            gle::attribf(0, 0, 0); gle::attribf(0, 0, 1);
-                gle::attribf(0, 0, offset); gle::attribf(0, 0, 1);
+            if(camera1->pitch > 0) loopirev(12) loopj(2) gle::attrib(vbo[i][j]);
+            else loopi(12) loopj(2) gle::attrib(vbo[i][j]);
 
             gle::end();
 
