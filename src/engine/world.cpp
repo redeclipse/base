@@ -981,7 +981,16 @@ void dropenttofloor(extentity *e)
     e->o = d.o;
 }
 
-FVAR(0, entdropzoffset, -1000.0f, 0.0f, 1000.0f);
+vec entdropoffset = vec(0, 0, 0);
+ICOMMAND(0, entdropoffset, "fffN", (float *x, float *y, float *z, int *numargs),
+{
+    if (*numargs >= 3) entdropoffset = vec(*x, *y, *z);
+    else
+    {
+        defformatstring(str, "%f %f %f", entdropoffset.x, entdropoffset.y, entdropoffset.z);
+        result(str);
+    }
+});
 
 bool dropentity(extentity &e, int drop = -1)
 {
@@ -1027,7 +1036,7 @@ bool dropentity(extentity &e, int drop = -1)
         break;
     }
 
-    e.o.z += entdropzoffset;
+    e.o.add(entdropoffset);
 
     return true;
 }
