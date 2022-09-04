@@ -586,6 +586,7 @@ bool entselectionbox(extentity &e, vec &eo, vec &es, bool full)
 VAR(IDF_PERSIST, entselsnap, 0, 1, 1);
 VAR(IDF_PERSIST, entselsnapmode, 0, 0, 1);
 VAR(0, entmovingshadow, 0, 1, 1);
+VAR(IDF_PERSIST, entmoveselect, 0, 0, 1);
 
 ICOMMAND(0, entorient, "", (), intret(entorient));
 
@@ -667,7 +668,7 @@ void entdrag(const vec &ray)
 
     bool snaptoent = entselsnap && entselsnapmode == 1 && entmovesnapent >= 0;
 
-    if(enthover.length()) eindex = enthover[0];
+    if(enthover.length() && entgroup.find(enthover[0]) >= 0) eindex = enthover[0];
     else eindex = entgroup.last();
 
     // Store old positions
@@ -886,7 +887,7 @@ ICOMMAND(0, entmoving, "bbN", (int *n, int *allhover, int *numargs),
         {
             entmoveaxis = -1;
 
-            if(enthover.length())
+            if(enthover.length() && (entmoveselect || entgroup.empty()))
             {
                 if(*numargs > 1 && *allhover)
                 {
