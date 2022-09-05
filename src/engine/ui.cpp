@@ -4,7 +4,7 @@
 namespace UI
 {
     int cursortype = CURSOR_DEFAULT;
-    bool cursorlocked = false, mousetracking = false;
+    bool cursorlocked = false, mousetracking = false, globalscrolllocked = false;
 
     vec2 mousetrackvec;
 
@@ -1185,6 +1185,7 @@ namespace UI
     ICOMMAND(0, uicursorx, "", (), floatret(cursorx*float(hudw)/hudh));
     ICOMMAND(0, uicursory, "", (), floatret(cursory));
     ICOMMAND(0, uilockcursor, "", (), cursorlocked = true);
+    ICOMMAND(0, uilockscroll, "", (), globalscrolllocked = true);
 
     ICOMMAND(0, uiaspect, "", (), floatret(float(hudw)/hudh));
 
@@ -3346,20 +3347,20 @@ namespace UI
 
         void scrollup(float cx, float cy, bool inside);
         void scrolldown(float cx, float cy, bool inside);
-        bool canscroll() const { return !scrolllock; }
+        bool canscroll() const { return !scrolllock && !globalscrolllocked; }
         void setscrolllock(bool scrolllock_) { scrolllock = scrolllock_; }
     };
 
     ICOMMAND(0, uiscroll, "ffe", (float *sizew, float *sizeh, uint *children),
         BUILD(Scroller, o, o->setup(*sizew*uiscale, *sizeh*uiscale), children));
 
-    ICOMMANDNS(0, "uiscrolllock-", uiscrolllock_, "i", (int *scrolllock),
+    ICOMMANDNS(0, "uicanscroll-", uicanscroll_, "i", (int *canscroll),
     {
         if(buildparent && buildchild > 0)
         {
             Object *o = buildparent->children[buildchild-1];
             if(o->istype<Scroller>())
-                ((Scroller*)(buildparent->children[buildchild-1]))->setscrolllock(*scrolllock != 0);
+                ((Scroller*)(buildparent->children[buildchild-1]))->setscrolllock(*canscroll == 0);
         }
     });
 
@@ -5126,6 +5127,7 @@ namespace UI
         cursortype = CURSOR_DEFAULT;
         mousetracking = false;
         cursorlocked = false;
+        globalscrolllocked = false;
         pushfont();
         readyeditors();
 
