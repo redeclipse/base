@@ -1253,7 +1253,7 @@ struct gameent : dynent, clientstate
         type = ENT_PLAYER;
         copystring(hostip, "0.0.0.0");
         name[0] = handle[0] = steamid[0] = info[0] = obit[0] = '\0';
-        removesounds();
+        removesounds(true);
         respawn(-1, 0, 0);
     }
     ~gameent()
@@ -1495,21 +1495,22 @@ struct gameent : dynent, clientstate
 
     void removefx() { if(weaponfx) fx::stopfx(weaponfx); }
 
-    void removesounds()
+    void removesounds(bool init = false)
     {
-        if(issound(aschan)) removesound(aschan);
-        if(issound(cschan)) removesound(cschan);
-        if(issound(vschan)) removesound(vschan);
-        if(issound(pschan)) removesound(pschan);
-        aschan = cschan = vschan = pschan = -1;
+        int *chan[] = { &aschan, &cschan, &vschan, &pschan, NULL };
+        for(int i = 0; chan[i] != NULL; i++)
+        {
+            if(!init && issound(*chan[i])) removesound(*chan[i]);
+            *chan[i] = -1;
+        }
         loopi(WS_CHANS)
         {
-            if(issound(wschan[i])) removesound(wschan[i]);
+            if(!init && issound(wschan[i])) removesound(wschan[i]);
             wschan[i] = -1;
         }
         loopi(2)
         {
-            if(issound(sschan[i])) removesound(sschan[i]);
+            if(!init && issound(sschan[i])) removesound(sschan[i]);
             sschan[i] = -1;
         }
     }
