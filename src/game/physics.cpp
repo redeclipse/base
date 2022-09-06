@@ -735,7 +735,7 @@ namespace physics
 
     bool move(physent *d, vec &dir)
     {
-        vec old(d->o), obstacle;
+        vec old(d->o), obstacle(0, 0, 0);
         d->o.add(dir);
         bool collided = false, slidecollide = false;
         if(gameent::is(d))
