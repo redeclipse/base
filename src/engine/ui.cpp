@@ -29,6 +29,23 @@ namespace UI
 
     FVAR(IDF_PERSIST, uitipoffset, -1, 0.001f, 1);
 
+    static Texture *loadthumbnail(const char *name, int clamp)
+    {
+        Texture *t = textureloaded(name);
+
+        if(!t)
+        {
+            if(totalmillis - lastthumbnail < uislotviewtime) t = textureload(uiloadtex);
+            else
+            {
+                t = textureload(name, 3, true, false);
+                lastthumbnail = totalmillis;
+            }
+        }
+
+        return t;
+    }
+
     #define SETSTR(dst, src) do { \
         if(dst) { if(dst != src && strcmp(dst, src)) { delete[] dst; dst = newstring(src); } } \
         else dst = newstring(src); \
@@ -2753,17 +2770,14 @@ namespace UI
 
     struct Thumbnail : Target
     {
-        char *texname;
-        int clamp;
+        Texture *t;
 
-        Thumbnail() : texname(NULL) {}
-        ~Thumbnail() { delete[] texname; }
+        Thumbnail() : t(NULL) {}
 
-        void setup(const char *texname_, float minw_ = 0, float minh_ = 0, int clamp_ = 3)
+        void setup(Texture *_t, float minw_ = 0, float minh_ = 0)
         {
             Target::setup(minw_, minh_, Color(colourwhite));
-            SETSTR(texname, texname_);
-            clamp = clamp_;
+            t = _t;
         }
 
         static const char *typestr() { return "#Thumbnail"; }
@@ -2771,17 +2785,6 @@ namespace UI
 
         void draw(float sx, float sy)
         {
-            Texture *t = textureloaded(texname);
-            if(!t)
-            {
-                if(totalmillis - lastthumbnail < uislotviewtime) t = textureload(uiloadtex);
-                else
-                {
-                    t = textureload(texname, clamp, true, false);
-                    lastthumbnail = totalmillis;
-                }
-            }
-
             if(!t || t == notexture) return;
 
             changedraw(CHANGE_SHADER);
@@ -2800,10 +2803,16 @@ namespace UI
     };
 
     ICOMMAND(0, uithumbnail, "sffe", (char *texname, float *minw, float *minh, uint *children),
-        BUILD(Thumbnail, o, o->setup(texname, *minw*uiscale, *minh*uiscale, 3), children));
+    {
+        Texture *t = loadthumbnail(texname, 3);
+        BUILD(Thumbnail, o, o->setup(t, *minw*uiscale, *minh*uiscale), children);
+    });
 
     ICOMMAND(0, uithumbnailclamped, "sffe", (char *texname, float *minw, float *minh, uint *children),
-        BUILD(Thumbnail, o, o->setup(texname, *minw*uiscale, *minh*uiscale, 0x7000), children));
+    {
+        Texture *t = loadthumbnail(texname, 0x7000);
+        BUILD(Thumbnail, o, o->setup(t, *minw*uiscale, *minh*uiscale), children);
+    });
 
     struct Shape : Target
     {
