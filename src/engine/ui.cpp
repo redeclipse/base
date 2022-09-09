@@ -352,14 +352,14 @@ namespace UI
     {
         Object *parent;
         float x, y, w, h, ox, oy;
-        float lastx, lasty, lastw, lasth;
+        float lastx, lasty, lastsx, lastsy, lastw, lasth;
         bool overridepos, drawn;
         uchar adjust;
         ushort state, childstate;
         vector<Object *> children;
 
-        Object() : ox(0), oy(0), lastx(0), lasty(0), lastw(0), lasth(0), overridepos(false),
-            drawn(false), adjust(0), state(0), childstate(0) {}
+        Object() : ox(0), oy(0), lastx(0), lasty(0), lastsx(0), lastsy(0), lastw(0), lasth(0),
+            overridepos(false), drawn(false), adjust(0), state(0), childstate(0) {}
 
         virtual ~Object()
         {
@@ -609,6 +609,8 @@ namespace UI
 
         virtual void draw(float sx, float sy)
         {
+            lastsx = sx;
+            lastsy = sy;
             drawn = true;
 
             loopchildren(o,
@@ -4980,10 +4982,12 @@ namespace UI
         if(buildparent) loopi(buildchild) buildparent->children[i]->setpos(*x, *y);
     });
 
-    ICOMMAND(0, uigetlastx, "", (), if(buildparent) floatret(buildparent->lastx));
-    ICOMMAND(0, uigetlasty, "", (), if(buildparent) floatret(buildparent->lasty));
-    ICOMMAND(0, uigetlastw, "", (), if(buildparent) floatret(buildparent->lastw));
-    ICOMMAND(0, uigetlasth, "", (), if(buildparent) floatret(buildparent->lasth));
+    ICOMMAND(0, uigetlastx,  "", (), if(buildparent) floatret(buildparent->lastx));
+    ICOMMAND(0, uigetlasty,  "", (), if(buildparent) floatret(buildparent->lasty));
+    ICOMMAND(0, uigetlastsx, "", (), if(buildparent) floatret(buildparent->lastsx));
+    ICOMMAND(0, uigetlastsy, "", (), if(buildparent) floatret(buildparent->lastsy));
+    ICOMMAND(0, uigetlastw,  "", (), if(buildparent) floatret(buildparent->lastw));
+    ICOMMAND(0, uigetlasth,  "", (), if(buildparent) floatret(buildparent->lasth));
 
     #define UICOLOURCMDS(t) \
         if(o->iscolour()) \
