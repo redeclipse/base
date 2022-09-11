@@ -1,4 +1,6 @@
-cmake_minimum_required(VERSION 2.8.11)
+cmake_minimum_required(VERSION 2.8.12)
+
+project(redeclipse)
 
 # link_deps([FATAL] DEPS <deps>..)
 # Calls link_directories for <deps>. <deps> is a list of dependencies.
