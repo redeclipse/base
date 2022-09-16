@@ -4218,13 +4218,13 @@ void looplist4(ident *id, ident *id2, ident *id3, ident *id4, const char *list, 
 {
     if(id->type!=ID_ALIAS || id2->type!=ID_ALIAS || id3->type!=ID_ALIAS || id4->type!=ID_ALIAS) return;
     identstack stack, stack2, stack3, stack4;
-    int n = 0, r = 0;
-    for(const char *s = list, *start, *end, *qstart; parselist(s, start, end, qstart); n += 3)
+    int n = 0;
+    for(const char *s = list, *start, *end, *qstart; parselist(s, start, end, qstart); n += 4)
     {
         setiter(*id, listelem(start, end, qstart), stack);
         setiter(*id2, parselist(s, start, end, qstart) ? listelem(start, end, qstart) : newstring(""), stack2);
         setiter(*id3, parselist(s, start, end, qstart) ? listelem(start, end, qstart) : newstring(""), stack3);
-        setiter(*id4, r, stack4);
+        setiter(*id4, parselist(s, start, end, qstart) ? listelem(start, end, qstart) : newstring(""), stack4);
         execute(body);
     }
     if(n) { poparg(*id); poparg(*id2); poparg(*id3); poparg(*id4); }
