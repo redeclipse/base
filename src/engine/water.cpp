@@ -454,9 +454,9 @@ GETMATIDXVAR(lava, fallscrolly, float)
     CVAR(IDF_WORLD, name##deepcolour##type, 0); \
     CVAR(IDF_WORLD, name##deepfade##type, 0); \
     VAR(IDF_WORLD, name##dist##type, 0, 50, 10000); \
-    VAR(IDF_WORLD, name##deep##type, 0, 100, 10000); \
+    VAR(IDF_WORLD, name##deep##type, 0, 10000, 10000); \
     VAR(IDF_WORLD, name##texture##type, 0, 1, 2); \
-    CVAR(IDF_WORLD, name##texcolour##type, 0xFFFFFF); \
+    CVAR(IDF_WORLD, name##texcolour##type, 0x000000); \
     FVAR(IDF_WORLD, name##texblend##type, 0, 1, 1); \
     FVAR(IDF_WORLD, name##scrollx##type, FVAR_MIN, 1, FVAR_MAX); \
     FVAR(IDF_WORLD, name##scrolly##type, FVAR_MIN, 1, FVAR_MAX);
