@@ -141,11 +141,20 @@ VARF(0, dragging, 0, 0, 1,
     sel.orient = orient;
 );
 
+int movingaxis = -1;
+ICOMMAND(0, movingaxis, "bN", (int *axis, int *numargs),
+{
+    if(*numargs > 0) movingaxis = clamp(*axis, -1, 2);
+    else intret(movingaxis);
+});
+
 int moving = 0;
 ICOMMAND(0, moving, "b", (int *n),
 {
     if(*n >= 0)
     {
+        movingaxis = -1;
+
         if(!*n || (moving<=1 && !pointinsel(sel, vec(cur).add(1)))) moving = 0;
         else if(!moving) moving = 1;
     }
@@ -420,11 +429,67 @@ CVAR(IDF_PERSIST, selectionskew, 0x101010);
 VAR(IDF_PERSIST, selectionpulse, 0, 500, VAR_MAX);
 FVAR(IDF_PERSIST, selectionwidth, 0, 4, 10);
 
+int geteditorient(int curorient, int axis)
+{
+    int finalorient = -1;
+
+    if(curorient >= 0 && axis < 0) finalorient = curorient;
+    else
+    {
+        vec dir;
+        vecfromyawpitch(camera1->yaw, camera1->pitch, 1, 0, dir);
+
+        float maxdot = -1;
+        finalorient = 0;
+
+        // maps normals to orientations
+        static vec dirs[] =
+        {
+            vec(-1,  0,  0),
+            vec( 1,  0,  0),
+            vec( 0, -1,  0),
+            vec( 0,  1,  0),
+            vec( 0,  0, -1),
+            vec( 0,  0,  1)
+        };
+
+        #define AXIS_X 1
+        #define AXIS_Y (1 << 1)
+        #define AXIS_Z (1 << 2)
+
+        // maps planes suitable for particular axes
+        static int sideaxes[] =
+        {
+            AXIS_Y | AXIS_Z,
+            AXIS_Y | AXIS_Z,
+            AXIS_X | AXIS_Z,
+            AXIS_X | AXIS_Z,
+            AXIS_X | AXIS_Y,
+            AXIS_X | AXIS_Y
+        };
+
+        // find most suitable plane in relation to the camera direction
+        loopi(6) if(axis < 0 || sideaxes[i] & (1 << axis))
+        {
+            float dot = dir.dot(dirs[i]);
+            if(dot > maxdot)
+            {
+                maxdot = dot;
+                finalorient = i;
+            }
+        }
+    }
+
+    return finalorient;
+}
+
 void rendereditcursor()
 {
+    int editorient = geteditorient(orient, movingaxis);
+
     int d   = dimension(sel.orient),
-        od  = dimension(orient),
-        odc = dimcoord(orient);
+        od  = dimension(editorient),
+        odc = dimcoord(editorient);
 
     bool hidecursor = hud::hasinput() == 1 || blendpaintmode, hovering = false;
     hmapsel = false;
@@ -436,18 +501,31 @@ void rendereditcursor()
     if(moving)
     {
         static vec dest, handle;
+        static ivec oldpos;
         if(editmoveplane(vec(sel.o), cursordir, od, sel.o[D[od]]+odc*sel.grid*sel.s[D[od]], handle, dest, moving==1))
         {
             if(moving==1)
             {
+                oldpos = sel.o;
                 dest.add(handle);
                 handle = vec(ivec(handle).mask(~(sel.grid-1)));
                 dest.sub(handle);
                 moving = 2;
             }
             ivec o = ivec(dest).mask(~(sel.grid-1));
-            sel.o[R[od]] = o[R[od]];
-            sel.o[C[od]] = o[C[od]];
+            ivec newpos = sel.o;
+
+            newpos[R[od]] = o[R[od]];
+            newpos[C[od]] = o[C[od]];
+
+            switch(movingaxis)
+            {
+                case 0: newpos.y = oldpos.y; newpos.z = oldpos.z; break;
+                case 1: newpos.x = oldpos.x; newpos.z = oldpos.z; break;
+                case 2: newpos.x = oldpos.x; newpos.y = oldpos.y; break;
+            }
+
+            sel.o = newpos;
         }
     }
     else if(entmoving)
@@ -693,6 +771,21 @@ void rendereditcursor()
         {
             gle::colorub(30, 30, 30);
             planargrid(vec(sel.o), vec(sel.s), sel.grid);
+        }
+
+        if(movingaxis >= 0)
+        {
+            vec selpos = vec(sel.o);
+            vec selend = vec(sel.s);
+
+            vec from = selpos,
+                to   = selend;
+
+            from[movingaxis] = selpos[movingaxis] - fmod(selpos[movingaxis], worldsize);
+            to[movingaxis]   = from[movingaxis] + worldsize;
+
+            gle::colorub(0, 128, 0);
+            boxs3D(from, to, sel.grid);
         }
     }
 

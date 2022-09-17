@@ -594,64 +594,11 @@ extern void boxs(int orient, vec o, const vec &s, float size);
 extern void boxs(int orient, vec o, const vec &s);
 extern void boxs3D(const vec &o, vec s, int g);
 extern bool editmoveplane(const vec &o, const vec &ray, int d, float off, vec &handle, vec &dest, bool first);
+extern int geteditorient(int curorient, int axis);
 
 int entmoving = 0;
 int entmoveaxis = -1;
 int entmovesnapent = -1;
-
-static int getentorient()
-{
-    int orient = -1;
-
-    if(entorient >= 0 && entmoveaxis < 0) orient = entorient;
-    else
-    {
-        vec dir;
-        vecfromyawpitch(camera1->yaw, camera1->pitch, 1, 0, dir);
-
-        float maxdot = -1;
-        orient = 0;
-
-        // maps normals to orientations
-        static vec dirs[] =
-        {
-            vec(-1,  0,  0),
-            vec( 1,  0,  0),
-            vec( 0, -1,  0),
-            vec( 0,  1,  0),
-            vec( 0,  0, -1),
-            vec( 0,  0,  1)
-        };
-
-        #define AXIS_X 1
-        #define AXIS_Y (1 << 1)
-        #define AXIS_Z (1 << 2)
-
-        // maps planes suitable for particular axes
-        static int sideaxes[] =
-        {
-            AXIS_Y | AXIS_Z,
-            AXIS_Y | AXIS_Z,
-            AXIS_X | AXIS_Z,
-            AXIS_X | AXIS_Z,
-            AXIS_X | AXIS_Y,
-            AXIS_X | AXIS_Y
-        };
-
-        // find most suitable plane in relation to the camera direction
-        loopi(6) if(entmoveaxis < 0 || sideaxes[i] & (1 << entmoveaxis))
-        {
-            float dot = dir.dot(dirs[i]);
-            if(dot > maxdot)
-            {
-                maxdot = dot;
-                orient = i;
-            }
-        }
-    }
-
-    return orient;
-}
 
 void entdrag(const vec &ray)
 {
@@ -661,7 +608,7 @@ void entdrag(const vec &ray)
     static vector<vec> oldpos;
     vec eo, es, snappos(0, 0, 0), move(0, 0, 0);
 
-    int orient = getentorient();
+    int orient = geteditorient(entorient, entmoveaxis);
     int d = dimension(orient),
         dc= dimcoord(orient);
     int eindex;
