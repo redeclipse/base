@@ -940,6 +940,7 @@ void progress(float amt, const char *s, ...)
 
 
 bool pixeling = false;
+int pixelingx, pixelingy;
 bvec pixel(0, 0, 0);
 char *pixelact = NULL;
 
@@ -955,15 +956,26 @@ ICOMMAND(0, getpixel, "i", (int *n),
     }
 });
 
-void readpixel(char *act)
+void readpixel(char *act, int x, int y, int numargs)
 {
     if(pixeling) return;
     if(!editmode) { conoutf("\frOperation only allowed in edit mode"); return; }
     if(pixelact) delete[] pixelact;
     pixelact = act && *act ? newstring(act) : NULL;
     pixeling = true;
+
+    if(numargs > 1)
+    {
+        pixelingx = x;
+        pixelingy = y;
+    }
+    else
+    {
+        pixelingx = screenw/2;
+        pixelingy = screenh/2;
+    }
 }
-ICOMMAND(0, readpixel, "s", (char *act), readpixel(act));
+ICOMMAND(0, readpixel, "siiN", (char *act, int *x, int *y, int *numargs), readpixel(act, *x, *y, *numargs));
 
 static void mapslots()
 {
@@ -1244,7 +1256,7 @@ int main(int argc, char **argv)
                     {
                         if(editmode)
                         {
-                            glReadPixels(screenw/2, screenh/2, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, &pixel.v[0]);
+                            glReadPixels(pixelingx, pixelingy, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, &pixel.v[0]);
                             if(pixelact) execute(pixelact);
                         }
                         if(pixelact) delete[] pixelact;
