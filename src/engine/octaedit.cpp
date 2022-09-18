@@ -182,6 +182,7 @@ void cubecancel()
 {
     havesel = false;
     moving = dragging = hmapedit = passthroughsel = 0;
+    movingaxis = -1;
     forcenextundo();
     hmap::cancel();
 }
