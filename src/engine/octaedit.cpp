@@ -2322,25 +2322,33 @@ void edithmap(int dir, int mode)
 
 int bounded(int n) { return n<0 ? 0 : (n>8 ? 8 : n); }
 
-void pushedge(uchar &edge, int dir, int dc)
+int pushedge(uchar &edge, int dir, int dc)
 {
     int ne = bounded(edgeget(edge, dc)+dir);
     edgeset(edge, dc, ne);
     int oe = edgeget(edge, 1-dc);
     if((dir<0 && dc && oe>ne) || (dir>0 && dc==0 && oe<ne)) edgeset(edge, 1-dc, ne);
+
+    return ne;
 }
 
-void linkedpush(cube &c, int d, int x, int y, int dc, int dir)
+int linkedpush(cube &c, int d, int x, int y, int dc, int dir)
 {
     ivec v, p;
     getcubevector(c, d, x, y, dc, v);
+    int minedge = 8, newedge = 0;
 
     loopi(2) loopj(2)
     {
         getcubevector(c, d, i, j, dc, p);
         if(v==p)
-            pushedge(cubeedge(c, d, i, j), dir, dc);
+        {
+            newedge = pushedge(cubeedge(c, d, i, j), dir, dc);
+            if(newedge < minedge) minedge = newedge;
+        }
     }
+
+    return minedge;
 }
 
 void linkedset(cube &c, int d, int x, int y, int dc, int val)
@@ -2369,17 +2377,19 @@ static ushort getmaterial(cube &c)
 
 VAR(0, invalidcubeguard, 0, 1, 1);
 
-void editfaceinternal(int dir, int mode, selinfo &sel, bool local)
+int editfaceinternal(int dir, int mode, selinfo &sel, bool local)
 {
     int d = dimension(sel.orient);
     int dc = dimcoord(sel.orient);
     int seldir = dc ? -dir : dir;
+    int state = 8;
 
     if(mode==1)
     {
         int h = sel.o[d]+dc*sel.grid;
-        if(((dir>0) == dc && h<=0) || ((dir<0) == dc && h>=worldsize)) return;
+        if(((dir>0) == dc && h<=0) || ((dir<0) == dc && h>=worldsize)) return 0;
         if(dir<0) sel.o[d] += sel.grid * seldir;
+        state = dir;
     }
 
     if(dc) sel.o[d] += sel.us(d)-sel.grid;
@@ -2408,7 +2418,7 @@ void editfaceinternal(int dir, int mode, selinfo &sel, bool local)
             uchar *p = (uchar *)&c.faces[d];
 
             if(mode==2)
-                linkedpush(c, d, sel.corner&1, sel.corner>>1, dc, seldir); // corner command
+                state = linkedpush(c, d, sel.corner&1, sel.corner>>1, dc, seldir); // corner command
             else
             {
                 loop(mx,2) loop(my,2)                                       // pull/push edges command
@@ -2419,7 +2429,8 @@ void editfaceinternal(int dir, int mode, selinfo &sel, bool local)
                     if(y==sel.s[C[d]]-1 && my==1 && (sel.cy+sel.cys)&1) continue;
                     if(p[mx+my*2] != ((uchar *)&bak)[mx+my*2]) continue;
 
-                    linkedpush(c, d, mx, my, dc, seldir);
+                    int minedge = linkedpush(c, d, mx, my, dc, seldir);
+                    if(minedge < state) state = minedge;
                 }
             }
 
@@ -2442,11 +2453,13 @@ void editfaceinternal(int dir, int mode, selinfo &sel, bool local)
     );
     if(mode==1 && dir>0)
         sel.o[d] += sel.grid * seldir;
+
+    return state;
 }
 
 VAR(0, editfacekeepsel, 0, 0, 1);
 
-void mpeditface(int dir, int mode, selinfo &sel, bool local)
+int mpeditface(int dir, int mode, selinfo &sel, bool local)
 {
     if(mode==1 && (sel.cx || sel.cy || sel.cxs&1 || sel.cys&1)) mode = 0;
 
@@ -2454,7 +2467,7 @@ void mpeditface(int dir, int mode, selinfo &sel, bool local)
         client::edittrigger(sel, EDIT_FACE, dir, mode);
 
     selinfo oldsel = sel;
-    editfaceinternal(dir, mode, sel, local);
+    int state = editfaceinternal(dir, mode, sel, local);
 
     if(editfacekeepsel)
     {
@@ -2466,15 +2479,21 @@ void mpeditface(int dir, int mode, selinfo &sel, bool local)
         sel.s[d] += -dir;
         if(!dc) sel.o[d] += sel.grid * dir;
     }
+
+    return state;
 }
 
-void editface(int *dir, int *mode)
+int editface(int *dir, int *mode)
 {
-    if(noedit(moving!=0)) return;
+    int state = 0;
+
+    if(noedit(moving!=0)) return 0;
     if(hmapedit!=1)
-        mpeditface(*dir, *mode, sel, true);
+        state = mpeditface(*dir, *mode, sel, true);
     else
         edithmap(*dir, *mode);
+
+    return state;
 }
 
 VAR(0, selectionsurf, 0, 0, 1);
@@ -2507,7 +2526,7 @@ void delcube()
 }
 
 COMMAND(0, pushsel, "i");
-COMMAND(0, editface, "ii");
+ICOMMAND(0, editface, "ii", (int *dir, int *mode), intret(editface(dir, mode)));
 COMMAND(0, delcube, "");
 
 /////////// texture editing //////////////////
