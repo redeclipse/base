@@ -57,7 +57,7 @@ namespace game
     {
         static const char *names[S_GAME - S_GAMESPECIFIC] =
         {
-            "S_JUMP", "S_IMPULSE", "S_LAND", "S_FOOTSTEP", "S_SWIMSTEP", "S_PAIN", "S_DEATH",
+            "S_JUMP", "S_IMPULSE", "S_LAND", "S_FOOTSTEP_L", "S_FOOTSTEP_R", "S_SWIMSTEP", "S_PAIN", "S_DEATH",
             "S_SPLASH1", "S_SPLASH2", "S_SPLOSH", "S_DEBRIS", "S_BURNLAVA",
             "S_EXTINGUISH", "S_SHELL", "S_ITEMUSE", "S_ITEMSPAWN",
             "S_REGEN_BEGIN", "S_REGEN", "S_CRITICAL", "S_DAMAGE", "S_DAMAGE2", "S_DAMAGE3", "S_DAMAGE4", "S_DAMAGE5", "S_DAMAGE6", "S_DAMAGE7", "S_DAMAGE8",
@@ -1233,11 +1233,16 @@ namespace game
             if(n > m && mag > m)
             {
                 if(curfoot < 0) curfoot = d->lastfoot;
+                int sound = -1;
+
+                if(liquid && (!onfloor || rnd(4))) sound = S_SWIMSTEP;
+                else sound = curfoot ? S_FOOTSTEP_L : S_FOOTSTEP_R;
+
                 vec pos = d->toetag(curfoot);
                 float amt = clamp(mag/n, 0.f, 1.f)*(d != focus ? footstepsoundlevel : footstepsoundfocus);
                 if(onfloor && !d->running(moveslow)) amt *= footstepsoundlight;
                 int vol = clamp(int(amt*footstepsoundmaxvol), footstepsoundminvol, footstepsoundmaxvol);
-                playsound(liquid && (!onfloor || rnd(4)) ? S_SWIMSTEP : S_FOOTSTEP, pos, NULL, d != focus ? 0 : SND_NOCULL|SND_NOPAN, vol, footstepsoundmaxrad, footstepsoundminrad, &d->sschan[curfoot]);
+                playsound(sound, pos, NULL, d != focus ? 0 : SND_NOCULL|SND_NOPAN, vol, footstepsoundmaxrad, footstepsoundminrad, &d->sschan[curfoot]);
             }
         }
     }
