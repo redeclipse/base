@@ -2211,6 +2211,7 @@ namespace client
 namespace physics
 {
     extern int smoothmove, smoothdist, physframetime, grabstyle, grabplayerstyle;
+    extern float deathplane;
     extern bool isghost(gameent *d, gameent *e, bool proj = false);
     extern float liquidmerge(physent *d, float from, float to);
     extern int carryaffinity(gameent *d);

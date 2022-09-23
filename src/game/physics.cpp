@@ -6,6 +6,7 @@ namespace physics
     FVAR(IDF_WORLD, slopez, 0, 0.5f, 1);
     FVAR(IDF_WORLD, wallz, 0, 0.2f, 1);
     FVAR(IDF_WORLD, stepspeed, 1e-4f, 1.f, 1000);
+    FVAR(IDF_WORLD, deathplane, FVAR_MIN, 0, FVAR_MAX);
 
     FVAR(IDF_PERSIST, floatspeed, FVAR_NONZERO, 200, FVAR_MAX);
     FVAR(IDF_PERSIST, floatcoast, 0, 3.f, FVAR_MAX);
@@ -1273,7 +1274,7 @@ namespace physics
                 gameent *e = (gameent *)d;
                 if(e->state == CS_ALIVE && !floating)
                 {
-                    if(e->o.z < 0)
+                    if(e->o.z < deathplane)
                     {
                         game::suicide(e, HIT(LOST));
                         return false;
