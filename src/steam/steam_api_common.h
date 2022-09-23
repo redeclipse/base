@@ -19,23 +19,23 @@
 // S_API defines the linkage and calling conventions for steam_api.dll exports
 #if defined( _WIN32 ) && !defined( _X360 )
 	#if defined( STEAM_API_EXPORTS )
-	#define S_API extern "C" __declspec( dllexport )
+	#define S_API extern "C" __declspec( dllexport ) 
 	#elif defined( STEAM_API_NODLL )
 	#define S_API extern "C"
 	#else
-	#define S_API extern "C" __declspec( dllimport )
+	#define S_API extern "C" __declspec( dllimport ) 
 	#endif // STEAM_API_EXPORTS
 #elif defined( GNUC )
 	#if defined( STEAM_API_EXPORTS )
-	#define S_API extern "C" __attribute__ ((visibility("default")))
+	#define S_API extern "C" __attribute__ ((visibility("default"))) 
 	#else
-	#define S_API extern "C"
+	#define S_API extern "C" 
 	#endif // STEAM_API_EXPORTS
 #else // !WIN32
 	#if defined( STEAM_API_EXPORTS )
-	#define S_API extern "C"
+	#define S_API extern "C"  
 	#else
-	#define S_API extern "C"
+	#define S_API extern "C" 
 	#endif // STEAM_API_EXPORTS
 #endif
 
@@ -52,6 +52,9 @@ typedef int32 HSteamPipe;
 // handle to single instance of a steam user
 typedef int32 HSteamUser;
 // function prototype
+#if defined( POSIX )
+#define __cdecl
+#endif
 extern "C" typedef void (__cdecl *SteamAPIWarningMessageHook_t)(int, const char *);
 extern "C" typedef uint32 ( *SteamAPI_CheckCallbackRegistered_t )( int iCallbackNum );
 #if defined( __SNC__ )
@@ -169,7 +172,7 @@ public:
 
 	CCallResult();
 	~CCallResult();
-
+	
 	void Set( SteamAPICall_t hAPICall, T *p, func_t func );
 	bool IsActive() const;
 	void Cancel();
@@ -207,7 +210,7 @@ public:
 
 protected:
 	virtual void Run( void *pvParam );
-
+	
 	T *m_pObj;
 	func_t m_Func;
 };

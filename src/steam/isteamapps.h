@@ -108,6 +108,9 @@ public:
 
 	// check if game is a timed trial with limited playtime
 	virtual bool BIsTimedTrial( uint32* punSecondsAllowed, uint32* punSecondsPlayed ) = 0; 
+
+	// set current DLC AppID being played (or 0 if none). Allows Steam to track usage of major DLC extensions
+	virtual bool SetDlcContext( AppId_t nAppID ) = 0; 
 };
 
 #define STEAMAPPS_INTERFACE_VERSION "STEAMAPPS_INTERFACE_VERSION008"
@@ -115,10 +118,6 @@ public:
 // Global interface accessor
 inline ISteamApps *SteamApps();
 STEAM_DEFINE_USER_INTERFACE_ACCESSOR( ISteamApps *, SteamApps, STEAMAPPS_INTERFACE_VERSION );
-
-// Global accessor for the gameserver client
-inline ISteamApps *SteamGameServerApps();
-STEAM_DEFINE_GAMESERVER_INTERFACE_ACCESSOR( ISteamApps *, SteamGameServerApps, STEAMAPPS_INTERFACE_VERSION );
 
 // callbacks
 #if defined( VALVE_CALLBACK_PACK_SMALL )

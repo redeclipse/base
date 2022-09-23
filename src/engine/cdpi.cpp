@@ -143,7 +143,7 @@ namespace cdpi
             }
             if(check&SWSERVER)
             {
-                SteamAPI_ISteamGameServer_EnableHeartbeats(serv, false);
+                SteamAPI_ISteamGameServer_SetAdvertiseServerActive(serv, false);
                 SteamAPI_ISteamGameServer_LogOff(serv);
                 SteamGameServer_Shutdown();
                 sclient = NULL;
@@ -203,7 +203,7 @@ namespace cdpi
         void initserver()
         {
             if(!steamserver) return;
-            if(!SteamGameServer_Init(INADDR_ANY, serverport+3, serverport, serverport+2, EServerMode(steamserver), versionstring))
+            if(!SteamGameServer_Init(INADDR_ANY, serverport, serverport+2, EServerMode(steamserver), versionstring))
             {
                 conoutf("Steam GameServer API failed to start.");
                 return;
@@ -226,7 +226,7 @@ namespace cdpi
             SteamAPI_ISteamGameServer_SetGameDescription(serv, versiondesc);
             SteamAPI_ISteamGameServer_SetDedicatedServer(serv, servertype >= 3);
             SteamAPI_ISteamGameServer_LogOnAnonymous(serv);
-            SteamAPI_ISteamGameServer_EnableHeartbeats(serv, true);
+            SteamAPI_ISteamGameServer_SetAdvertiseServerActive(serv, true);
             conoutf("Steam GameServer API initialised successfully.");
         }
 

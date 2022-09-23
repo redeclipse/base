@@ -99,6 +99,7 @@ enum EUGCQuery
 	k_EUGCQuery_RankedByLifetimeAveragePlaytime				  = 16,
 	k_EUGCQuery_RankedByPlaytimeSessionsTrend				  = 17,
 	k_EUGCQuery_RankedByLifetimePlaytimeSessions			  = 18,
+	k_EUGCQuery_RankedByLastUpdatedDate						  = 19,
 };
 
 enum EItemUpdateStatus
@@ -220,6 +221,9 @@ public:
 
 	// Retrieve an individual result after receiving the callback for querying UGC
 	virtual bool GetQueryUGCResult( UGCQueryHandle_t handle, uint32 index, SteamUGCDetails_t *pDetails ) = 0;
+	virtual uint32 GetQueryUGCNumTags( UGCQueryHandle_t handle, uint32 index ) = 0;
+	virtual bool GetQueryUGCTag( UGCQueryHandle_t handle, uint32 index, uint32 indexTag, STEAM_OUT_STRING_COUNT( cchValueSize ) char* pchValue, uint32 cchValueSize ) = 0;
+	virtual bool GetQueryUGCTagDisplayName( UGCQueryHandle_t handle, uint32 index, uint32 indexTag, STEAM_OUT_STRING_COUNT( cchValueSize ) char* pchValue, uint32 cchValueSize ) = 0;
 	virtual bool GetQueryUGCPreviewURL( UGCQueryHandle_t handle, uint32 index, STEAM_OUT_STRING_COUNT(cchURLSize) char *pchURL, uint32 cchURLSize ) = 0;
 	virtual bool GetQueryUGCMetadata( UGCQueryHandle_t handle, uint32 index, STEAM_OUT_STRING_COUNT(cchMetadatasize) char *pchMetadata, uint32 cchMetadatasize ) = 0;
 	virtual bool GetQueryUGCChildren( UGCQueryHandle_t handle, uint32 index, PublishedFileId_t* pvecPublishedFileID, uint32 cMaxEntries ) = 0;
@@ -227,7 +231,6 @@ public:
 	virtual uint32 GetQueryUGCNumAdditionalPreviews( UGCQueryHandle_t handle, uint32 index ) = 0;
 	virtual bool GetQueryUGCAdditionalPreview( UGCQueryHandle_t handle, uint32 index, uint32 previewIndex, STEAM_OUT_STRING_COUNT(cchURLSize) char *pchURLOrVideoID, uint32 cchURLSize, STEAM_OUT_STRING_COUNT(cchURLSize) char *pchOriginalFileName, uint32 cchOriginalFileNameSize, EItemPreviewType *pPreviewType ) = 0;
 	virtual uint32 GetQueryUGCNumKeyValueTags( UGCQueryHandle_t handle, uint32 index ) = 0;
-
 	virtual bool GetQueryUGCKeyValueTag( UGCQueryHandle_t handle, uint32 index, uint32 keyValueTagIndex, STEAM_OUT_STRING_COUNT(cchKeySize) char *pchKey, uint32 cchKeySize, STEAM_OUT_STRING_COUNT(cchValueSize) char *pchValue, uint32 cchValueSize ) = 0;
 
 	// Return the first value matching the pchKey. Note that a key may map to multiple values.  Returns false if there was an error or no matching value was found.
@@ -259,6 +262,8 @@ public:
 	virtual bool SetMatchAnyTag( UGCQueryHandle_t handle, bool bMatchAnyTag ) = 0;
 	virtual bool SetSearchText( UGCQueryHandle_t handle, const char *pSearchText ) = 0;
 	virtual bool SetRankedByTrendDays( UGCQueryHandle_t handle, uint32 unDays ) = 0;
+	virtual bool SetTimeCreatedDateRange( UGCQueryHandle_t handle, RTime32 rtStart, RTime32 rtEnd ) = 0;
+	virtual bool SetTimeUpdatedDateRange( UGCQueryHandle_t handle, RTime32 rtStart, RTime32 rtEnd ) = 0;
 	virtual bool AddRequiredKeyValueTag( UGCQueryHandle_t handle, const char *pKey, const char *pValue ) = 0;
 
 	// DEPRECATED - Use CreateQueryUGCDetailsRequest call above instead!
@@ -358,9 +363,15 @@ public:
 	// delete the item without prompting the user
 	STEAM_CALL_RESULT( DeleteItemResult_t )
 	virtual SteamAPICall_t DeleteItem( PublishedFileId_t nPublishedFileID ) = 0;
+
+	// Show the app's latest Workshop EULA to the user in an overlay window, where they can accept it or not
+	virtual bool ShowWorkshopEULA() = 0;
+	// Retrieve information related to the user's acceptance or not of the app's specific Workshop EULA
+	STEAM_CALL_RESULT( WorkshopEULAStatus_t )
+	virtual SteamAPICall_t GetWorkshopEULAStatus() = 0;
 };
 
-#define STEAMUGC_INTERFACE_VERSION "STEAMUGC_INTERFACE_VERSION014"
+#define STEAMUGC_INTERFACE_VERSION "STEAMUGC_INTERFACE_VERSION016"
 
 // Global interface accessor
 inline ISteamUGC *SteamUGC();
@@ -375,7 +386,7 @@ STEAM_DEFINE_GAMESERVER_INTERFACE_ACCESSOR( ISteamUGC *, SteamGameServerUGC, STE
 //-----------------------------------------------------------------------------
 struct SteamUGCQueryCompleted_t
 {
-	enum { k_iCallback = k_iClientUGCCallbacks + 1 };
+	enum { k_iCallback = k_iSteamUGCCallbacks + 1 };
 	UGCQueryHandle_t m_handle;
 	EResult m_eResult;
 	uint32 m_unNumResultsReturned;
@@ -390,7 +401,7 @@ struct SteamUGCQueryCompleted_t
 //-----------------------------------------------------------------------------
 struct SteamUGCRequestUGCDetailsResult_t
 {
-	enum { k_iCallback = k_iClientUGCCallbacks + 2 };
+	enum { k_iCallback = k_iSteamUGCCallbacks + 2 };
 	SteamUGCDetails_t m_details;
 	bool m_bCachedData; // indicates whether this data was retrieved from the local on-disk cache
 };
@@ -401,7 +412,7 @@ struct SteamUGCRequestUGCDetailsResult_t
 //-----------------------------------------------------------------------------
 struct CreateItemResult_t
 {
-	enum { k_iCallback = k_iClientUGCCallbacks + 3 };
+	enum { k_iCallback = k_iSteamUGCCallbacks + 3 };
 	EResult m_eResult;
 	PublishedFileId_t m_nPublishedFileId; // new item got this UGC PublishFileID
 	bool m_bUserNeedsToAcceptWorkshopLegalAgreement;
@@ -413,7 +424,7 @@ struct CreateItemResult_t
 //-----------------------------------------------------------------------------
 struct SubmitItemUpdateResult_t
 {
-	enum { k_iCallback = k_iClientUGCCallbacks + 4 };
+	enum { k_iCallback = k_iSteamUGCCallbacks + 4 };
 	EResult m_eResult;
 	bool m_bUserNeedsToAcceptWorkshopLegalAgreement;
 	PublishedFileId_t m_nPublishedFileId;
@@ -425,7 +436,7 @@ struct SubmitItemUpdateResult_t
 //-----------------------------------------------------------------------------
 struct ItemInstalled_t
 {
-	enum { k_iCallback = k_iClientUGCCallbacks + 5 };
+	enum { k_iCallback = k_iSteamUGCCallbacks + 5 };
 	AppId_t m_unAppID;
 	PublishedFileId_t m_nPublishedFileId;
 };
@@ -436,7 +447,7 @@ struct ItemInstalled_t
 //-----------------------------------------------------------------------------
 struct DownloadItemResult_t
 {
-	enum { k_iCallback = k_iClientUGCCallbacks + 6 };
+	enum { k_iCallback = k_iSteamUGCCallbacks + 6 };
 	AppId_t m_unAppID;
 	PublishedFileId_t m_nPublishedFileId;
 	EResult m_eResult;
@@ -447,7 +458,7 @@ struct DownloadItemResult_t
 //-----------------------------------------------------------------------------
 struct UserFavoriteItemsListChanged_t
 {
-	enum { k_iCallback = k_iClientUGCCallbacks + 7 };
+	enum { k_iCallback = k_iSteamUGCCallbacks + 7 };
 	PublishedFileId_t m_nPublishedFileId;
 	EResult m_eResult;
 	bool m_bWasAddRequest;
@@ -458,7 +469,7 @@ struct UserFavoriteItemsListChanged_t
 //-----------------------------------------------------------------------------
 struct SetUserItemVoteResult_t
 {
-	enum { k_iCallback = k_iClientUGCCallbacks + 8 };
+	enum { k_iCallback = k_iSteamUGCCallbacks + 8 };
 	PublishedFileId_t m_nPublishedFileId;
 	EResult m_eResult;
 	bool m_bVoteUp;
@@ -469,7 +480,7 @@ struct SetUserItemVoteResult_t
 //-----------------------------------------------------------------------------
 struct GetUserItemVoteResult_t
 {
-	enum { k_iCallback = k_iClientUGCCallbacks + 9 };
+	enum { k_iCallback = k_iSteamUGCCallbacks + 9 };
 	PublishedFileId_t m_nPublishedFileId;
 	EResult m_eResult;
 	bool m_bVotedUp;
@@ -482,7 +493,7 @@ struct GetUserItemVoteResult_t
 //-----------------------------------------------------------------------------
 struct StartPlaytimeTrackingResult_t
 {
-	enum { k_iCallback = k_iClientUGCCallbacks + 10 };
+	enum { k_iCallback = k_iSteamUGCCallbacks + 10 };
 	EResult m_eResult;
 };
 
@@ -491,7 +502,7 @@ struct StartPlaytimeTrackingResult_t
 //-----------------------------------------------------------------------------
 struct StopPlaytimeTrackingResult_t
 {
-	enum { k_iCallback = k_iClientUGCCallbacks + 11 };
+	enum { k_iCallback = k_iSteamUGCCallbacks + 11 };
 	EResult m_eResult;
 };
 
@@ -500,7 +511,7 @@ struct StopPlaytimeTrackingResult_t
 //-----------------------------------------------------------------------------
 struct AddUGCDependencyResult_t
 {
-	enum { k_iCallback = k_iClientUGCCallbacks + 12 };
+	enum { k_iCallback = k_iSteamUGCCallbacks + 12 };
 	EResult m_eResult;
 	PublishedFileId_t m_nPublishedFileId;
 	PublishedFileId_t m_nChildPublishedFileId;
@@ -511,7 +522,7 @@ struct AddUGCDependencyResult_t
 //-----------------------------------------------------------------------------
 struct RemoveUGCDependencyResult_t
 {
-	enum { k_iCallback = k_iClientUGCCallbacks + 13 };
+	enum { k_iCallback = k_iSteamUGCCallbacks + 13 };
 	EResult m_eResult;
 	PublishedFileId_t m_nPublishedFileId;
 	PublishedFileId_t m_nChildPublishedFileId;
@@ -523,7 +534,7 @@ struct RemoveUGCDependencyResult_t
 //-----------------------------------------------------------------------------
 struct AddAppDependencyResult_t
 {
-	enum { k_iCallback = k_iClientUGCCallbacks + 14 };
+	enum { k_iCallback = k_iSteamUGCCallbacks + 14 };
 	EResult m_eResult;
 	PublishedFileId_t m_nPublishedFileId;
 	AppId_t m_nAppID;
@@ -534,7 +545,7 @@ struct AddAppDependencyResult_t
 //-----------------------------------------------------------------------------
 struct RemoveAppDependencyResult_t
 {
-	enum { k_iCallback = k_iClientUGCCallbacks + 15 };
+	enum { k_iCallback = k_iSteamUGCCallbacks + 15 };
 	EResult m_eResult;
 	PublishedFileId_t m_nPublishedFileId;
 	AppId_t m_nAppID;
@@ -546,7 +557,7 @@ struct RemoveAppDependencyResult_t
 //-----------------------------------------------------------------------------
 struct GetAppDependenciesResult_t
 {
-	enum { k_iCallback = k_iClientUGCCallbacks + 16 };
+	enum { k_iCallback = k_iSteamUGCCallbacks + 16 };
 	EResult m_eResult;
 	PublishedFileId_t m_nPublishedFileId;
 	AppId_t m_rgAppIDs[32];
@@ -559,9 +570,34 @@ struct GetAppDependenciesResult_t
 //-----------------------------------------------------------------------------
 struct DeleteItemResult_t
 {
-	enum { k_iCallback = k_iClientUGCCallbacks + 17 };
+	enum { k_iCallback = k_iSteamUGCCallbacks + 17 };
 	EResult m_eResult;
 	PublishedFileId_t m_nPublishedFileId;
+};
+
+
+//-----------------------------------------------------------------------------
+// Purpose: signal that the list of subscribed items changed
+//-----------------------------------------------------------------------------
+struct UserSubscribedItemsListChanged_t
+{
+	enum { k_iCallback = k_iSteamUGCCallbacks + 18 };
+	AppId_t m_nAppID;
+};
+
+
+//-----------------------------------------------------------------------------
+// Purpose: Status of the user's acceptable/rejection of the app's specific Workshop EULA
+//-----------------------------------------------------------------------------
+struct WorkshopEULAStatus_t
+{
+	enum { k_iCallback = k_iSteamUGCCallbacks + 20 };
+	EResult m_eResult;
+	AppId_t m_nAppID;
+	uint32 m_unVersion;
+	RTime32 m_rtAction;
+	bool m_bAccepted;
+	bool m_bNeedsAction;
 };
 
 #pragma pack( pop )
