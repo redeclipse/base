@@ -6,7 +6,25 @@ namespace physics
     FVAR(IDF_WORLD, slopez, 0, 0.5f, 1);
     FVAR(IDF_WORLD, wallz, 0, 0.2f, 1);
     FVAR(IDF_WORLD, stepspeed, 1e-4f, 1.f, 1000);
-    FVAR(IDF_WORLD, deathplane, FVAR_MIN, 0, FVAR_MAX);
+
+    #define MPVVARS(type) \
+        FVAR(IDF_WORLD, deathplane##type, -1, 0, 1);
+    MPVVARS();
+    MPVVARS(alt);
+
+    #define GETMPV(name, type) \
+        type get##name() \
+        { \
+            if(checkmapvariant(MPV_ALT)) return name##alt; \
+            return name; \
+        }
+    GETMPV(deathplane, float);
+
+    VAR(IDF_PERSIST, showphyslayers, 0, 0, 1);
+    FVAR(IDF_PERSIST, physlayerscale, 0, 0.125f, 1);
+    FVAR(IDF_PERSIST, physlayerblend, 0, 0.75f, 1);
+    VAR(IDF_PERSIST, physlayersubdiv, 4, 4, 64);
+    FVAR(IDF_PERSIST, physlayerfade, 0, 0.01f, 1);
 
     FVAR(IDF_PERSIST, floatspeed, FVAR_NONZERO, 200, FVAR_MAX);
     FVAR(IDF_PERSIST, floatcoast, 0, 3.f, FVAR_MAX);
@@ -1274,7 +1292,7 @@ namespace physics
                 gameent *e = (gameent *)d;
                 if(e->state == CS_ALIVE && !floating)
                 {
-                    if(e->o.z < deathplane)
+                    if(e->o.z < getdeathplane()*worldsize)
                     {
                         game::suicide(e, HIT(LOST));
                         return false;
@@ -1520,6 +1538,13 @@ namespace physics
             if(actors[e->actortype].collidezones&CLZ_TORSO) boxs(j, torsopos, torsobox);
             if(actors[e->actortype].collidezones&CLZ_HEAD) boxs(j, headpos, headbox);
         }
+    }
+
+    void drawenvlayers(bool skyplane, bool shadowpass)
+    {
+        if(skyplane || shadowpass || !showphyslayers || game::player1->state != CS_EDITING) return;
+        drawenvlayer(blanktexture, getdeathplane(), bvec::fromcolor(colourdarkgrey).mul(physlayerscale), physlayerblend, physlayersubdiv, physlayerfade);
+
     }
 
     bool entinmap(physent *d, bool avoidplayers)

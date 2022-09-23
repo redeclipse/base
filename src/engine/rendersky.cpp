@@ -655,51 +655,57 @@ bool hasenvshadow()
     return getcloudshadow() || getenvshadow();
 }
 
+void drawenvlayer(Texture *tex, float height, const bvec &colour, float blend, float subdiv, float fade, float scale, float offsetx, float offsety, float shadowblend, float zrot, bool skyplane, bool shadowpass)
+{
+    if(shadowpass) SETSHADER(cloudshadow);
+    else SETSHADER(skybox);
+    glDisable(GL_CULL_FACE);
+    if(shadowpass)
+    {
+        if(skyplane) glDisable(GL_DEPTH_TEST);
+        if(hasDC && cloudshadowclamp) glEnable(GL_DEPTH_CLAMP);
+        matrix4 skymatrix = shadowmatrix;
+        if(!skyplane) skymatrix.translate(worldsize*0.5f, worldsize*0.5f, 0);
+        skymatrix.rotate_around_z(zrot);
+        LOCALPARAM(skymatrix, skymatrix);
+        LOCALPARAMF(shadowstrength, shadowblend);
+    }
+    else
+    {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        matrix4 skymatrix = cammatrix, skyprojmatrix;
+        if(skyplane) skymatrix.settranslation(0, 0, 0);
+        else skymatrix.translate(worldsize*0.5f, worldsize*0.5f, 0);
+        skymatrix.rotate_around_z(zrot);
+        skyprojmatrix.mul(projmatrix, skymatrix);
+        LOCALPARAM(skymatrix, skyprojmatrix);
+    }
+    drawenvoverlay(tex, height, subdiv, fade, scale, colour, blend, offsetx, offsety);
+    if(shadowpass)
+    {
+        if(hasDC && cloudshadowclamp) glDisable(GL_DEPTH_CLAMP);
+        if(skyplane) glEnable(GL_DEPTH_TEST);
+    }
+    else
+    {
+        glDisable(GL_BLEND);
+    }
+    glEnable(GL_CULL_FACE);
+}
+
 #define ENVLAYER(name) \
     const char *cur##name##layer = get##name##layer(); \
     if(cur##name##layer[0] && get##name##height() && (!shadowpass || get##name##shadow()) && get##name##farplane() == (skyplane ? 1 : 0)) \
-    { \
-        if(shadowpass) SETSHADER(cloudshadow); \
-        else SETSHADER(skybox); \
-        glDisable(GL_CULL_FACE); \
-        if(shadowpass) \
-        { \
-            if(skyplane) glDisable(GL_DEPTH_TEST); \
-            if(hasDC && cloudshadowclamp) glEnable(GL_DEPTH_CLAMP); \
-            matrix4 skymatrix = shadowmatrix; \
-            if(!skyplane) skymatrix.translate(worldsize*0.5f, worldsize*0.5f, 0); \
-            skymatrix.rotate_around_z((getspin##name##layer()*lastmillis/1000.0f+getyaw##name##layer())*-RAD); \
-            LOCALPARAM(skymatrix, skymatrix); \
-            LOCALPARAMF(shadowstrength, get##name##shadowblend()); \
-        } \
-        else \
-        { \
-            glEnable(GL_BLEND); \
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); \
-            matrix4 skymatrix = cammatrix, skyprojmatrix; \
-            if(skyplane) skymatrix.settranslation(0, 0, 0); \
-            else skymatrix.translate(worldsize*0.5f, worldsize*0.5f, 0); \
-            skymatrix.rotate_around_z((getspin##name##layer()*lastmillis/1000.0f+getyaw##name##layer())*-RAD); \
-            skyprojmatrix.mul(projmatrix, skymatrix); \
-            LOCALPARAM(skymatrix, skyprojmatrix); \
-        } \
-        drawenvoverlay(name##overlay, get##name##height(), get##name##subdiv(), get##name##fade(), get##name##scale(), get##name##layercolour(), get##name##layerblend(), get##name##offsetx() + get##name##scrollx() * lastmillis/1000.0f, get##name##offsety() + get##name##scrolly() * lastmillis/1000.0f); \
-        if(shadowpass) \
-        { \
-            if(hasDC && cloudshadowclamp) glDisable(GL_DEPTH_CLAMP); \
-            if(skyplane) glEnable(GL_DEPTH_TEST); \
-        } \
-        else \
-        { \
-            glDisable(GL_BLEND); \
-        } \
-        glEnable(GL_CULL_FACE); \
-    }
+        drawenvlayer(name##overlay, get##name##height(), get##name##layercolour(), get##name##layerblend(), get##name##subdiv(), get##name##fade(), get##name##scale(), \
+            get##name##offsetx() + get##name##scrollx() * lastmillis/1000.0f, get##name##offsety() + get##name##scrolly() * lastmillis/1000.0f, \
+            get##name##shadowblend(), (getspin##name##layer()*lastmillis/1000.0f+getyaw##name##layer())*-RAD, skyplane, shadowpass);
 
 void drawenvlayers(bool skyplane, bool shadowpass)
 {
     ENVLAYER(cloud)
     ENVLAYER(env)
+    physics::drawenvlayers(skyplane, shadowpass);
 }
 
 void drawskybox(bool clear)
