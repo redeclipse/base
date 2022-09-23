@@ -5175,7 +5175,7 @@ void getvariable(int num)
 }
 ICOMMAND(0, getvariable, "i", (int *n), getvariable(*n));
 
-void getvarinfo(int n, int types, int notypes, int flags, int noflags, char *str)
+void getvarinfo(int n, int types, int notypes, int flags, int noflags, char *str, int searchtype)
 {
     static vector<ident *> ids[2];
     static int lastupdate = 0, lasttypes = 0, lastnotypes = 0, lastflags = 0, lastnoflags = 0, curids = 0;
@@ -5196,7 +5196,27 @@ void getvarinfo(int n, int types, int notypes, int flags, int noflags, char *str
         if(ids[1].empty() || !laststr || strcmp(str, laststr))
         {
             ids[1].setsize(0);
-            loopv(ids[0]) if(cubecasefind(ids[0][i]->name, str)) ids[1].add(ids[0][i]);
+            loopv(ids[0]) switch(searchtype)
+            {
+                case 0: default:
+                    if(strstr(ids[0][i]->name, str)) ids[1].add(ids[0][i]);
+                    break;
+                case 1:
+                    if(cubecasefind(ids[0][i]->name, str)) ids[1].add(ids[0][i]);
+                    break;
+                case 2:
+                    if(cubematchstr(ids[0][i]->name, str)) ids[1].add(ids[0][i]);
+                    break;
+                case 3:
+                    if(cubematchstr(ids[0][i]->name, str, true)) ids[1].add(ids[0][i]);
+                    break;
+                case 4:
+                    if(cubepattern(ids[0][i]->name, str)) ids[1].add(ids[0][i]);
+                    break;
+                case 5:
+                    if(cubepattern(ids[0][i]->name, str, true)) ids[1].add(ids[0][i]);
+                    break;
+            }
             if(laststr) DELETEA(laststr);
             laststr = newstring(str);
         }
@@ -5207,7 +5227,7 @@ void getvarinfo(int n, int types, int notypes, int flags, int noflags, char *str
     else if(ids[curids].inrange(n)) result(ids[curids][n]->name);
 }
 
-ICOMMAND(0, getvarinfo, "biiiis", (int *n, int *w, int *x, int *t, int *o, char *s), getvarinfo(*n, *w, *x, *t, *o, s));
+ICOMMAND(0, getvarinfo, "biiiisi", (int *n, int *w, int *x, int *t, int *o, char *s, int *r), getvarinfo(*n, *w, *x, *t, *o, s, *r));
 
 void hexcolour(int *n)
 {

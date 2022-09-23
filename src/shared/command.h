@@ -603,6 +603,7 @@ SVAR(IDF_READONLY, idnameand, "And-condition");
 VAR(IDF_READONLY, ididxor, 0, ID_OR, -1);
 SVAR(IDF_READONLY, idnameor, "Or-condition");
 VAR(IDF_READONLY, ididxmax, 0, ID_MAX, -1);
+VAR(IDF_READONLY, idbitmax, 0, (1<<ID_VAR)|(1<<ID_FVAR)|(1<<ID_SVAR)|(1<<ID_COMMAND)|(1<<ID_ALIAS)|(1<<ID_LOCAL)|(1<<ID_DO)|(1<<ID_DOARGS)|(1<<ID_IF)|(1<<ID_RESULT)|(1<<ID_NOT)|(1<<ID_AND)|(1<<ID_OR), -1);
 SVAR(IDF_READONLY, idfidxname, "init persist readonly rewrite world complete texture client server hex unknown arg preload gamepreload gamemod namecomplete");
 VAR(IDF_READONLY, idfbitinit, 0, IDF_INIT, -1);
 SVAR(IDF_READONLY, idfnameinit, "Initialiser");
