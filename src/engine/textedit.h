@@ -151,15 +151,18 @@ struct editor
 
     int scrolly; // vertical scroll offset
 
-    bool linewrap;
+    bool linewrap, linewrapmark;
     int pixelwidth; // required for up/down/hit/draw/bounds
     int pixelheight; // -1 for variable sized, i.e. from bounds()
+    int len, limit;
 
     vector<editline> lines; // MUST always contain at least one line!
 
     editor(const char *name, int mode, const char *initval) :
         mode(mode), active(true), rendered(false), unfocus(false), name(newstring(name)), filename(NULL),
-        cx(0), cy(0), mx(-1), my(-1), maxx(-1), maxy(-1), scrolly(mode==EDITORREADONLY ? SCROLLEND : 0), linewrap(false), pixelwidth(-1), pixelheight(-1)
+        cx(0), cy(0), mx(-1), my(-1), maxx(-1), maxy(-1),
+        scrolly(mode==EDITORREADONLY ? SCROLLEND : 0), linewrap(false), linewrapmark(true),
+        pixelwidth(-1), pixelheight(-1), len(0), limit(0)
     {
         //printf("editor %08x '%s'\n", this, name);
         clear(initval ? initval : "");
@@ -171,6 +174,12 @@ struct editor
         DELETEA(name);
         DELETEA(filename);
         clear(NULL);
+    }
+
+    void count()
+    {
+        len = 0;
+        loopv(lines) len += lines[i].len;
     }
 
     bool empty() { return lines.length() == 1 && lines[0].empty(); }
@@ -187,6 +196,7 @@ struct editor
             lines.add().set(init);
             cx = lines[0].len;
         }
+        count();
     }
 
     void updateheight()
@@ -213,6 +223,7 @@ struct editor
             delete file;
         }
         if(lines.empty()) lines.add().set("");
+        count();
     }
 
     void save()
@@ -308,6 +319,7 @@ struct editor
             b->lines.add().set(line, len);
         }
         if(b->lines.empty()) b->lines.add().set("");
+        count();
     }
 
     char *tostring()
@@ -351,13 +363,14 @@ struct editor
         return newstring(buf.getbuf(), buf.length()-1);
     }
 
-    void removelines(int start, int count)
+    void removelines(int start, int num)
     {
-        loopi(count) lines[start+i].clear();
-        lines.remove(start, count);
+        loopi(num) lines[start+i].clear();
+        lines.remove(start, num);
+        count();
     }
 
-    bool del() // removes the current selection (if any)
+    bool del(bool docount = true) // removes the current selection (if any)
     {
         int sx, sy, ex, ey;
         if(!region(sx, sy, ex, ey))
@@ -386,12 +399,17 @@ struct editor
             current.append(lines[cy+1].text);
             removelines(cy + 1, 1);
         }
+
+        if(docount) count();
+
         return true;
     }
 
-    void insert(char ch)
+    bool insert(char ch, bool docount = true)
     {
-        del();
+        if(limit && len >= limit) return false;
+
+        del(false);
         editline &current = currentline();
         if(ch == '\n')
         {
@@ -410,18 +428,23 @@ struct editor
             int len = current.len;
             if(maxx < 0 || len <= maxx-1) current.insert(&ch, cx++, 1);
         }
+
+        if(docount) count();
+
+        return true;
     }
 
     void insert(const char *s)
     {
-        while(*s) insert(*s++);
+        while(*s && insert(*s++, false));
+        count();
     }
 
     void insertallfrom(editor *b)
     {
         if(b == this) return;
 
-        del();
+        del(false);
 
         if(b->lines.length() == 1 || maxy == 1)
         {
@@ -453,6 +476,8 @@ struct editor
                 else if(maxy < 0 || lines.length() < maxy) lines.insert(cy++, editline(b->lines[i].text));
             }
         }
+
+        count();
     }
 
     void scrollup()
@@ -522,7 +547,11 @@ struct editor
                 if(!del())
                 {
                     editline &current = currentline();
-                    if(cx < current.len) current.del(cx, 1);
+                    if(cx < current.len)
+                    {
+                        current.del(cx, 1);
+                        count();
+                    }
                     else if(cy < lines.length()-1)
                     {   // combine with next line
                         current.append(lines[cy+1].text);
@@ -534,7 +563,11 @@ struct editor
                 if(!del())
                 {
                     editline &current = currentline();
-                    if(cx > 0) current.del(--cx, 1);
+                    if(cx > 0)
+                    {
+                        current.del(--cx, 1);
+                        count();
+                    }
                     else if(cy > 0)
                     {   // combine with previous line
                         cx = lines[cy-1].len;
@@ -565,7 +598,8 @@ struct editor
 
     void input(const char *str, int len)
     {
-        loopi(len) insert(str[i]);
+        loopi(len) insert(str[i], false);
+        count();
     }
 
     void hit(int hitx, int hity, bool dragged)
@@ -695,7 +729,7 @@ struct editor
             text_bounds(lines[i].text, width, height, 0, 0, maxwidth, TEXT_NO_INDENT);
             if(h+height > pixelheight) break;
             draw_text(lines[i].text, x, y+h, color>>16, (color>>8)&0xFF, color&0xFF, alpha, TEXT_NO_INDENT, hit && (cy == i) ? cx : -1, maxwidth);
-            if(linewrap && height > FONTH) // line wrap indicator
+            if(linewrap && linewrapmark && height > FONTH) // line wrap indicator
             {
                 hudnotextureshader->set();
                 gle::colorf(1, 1, 1, alpha/255.f);

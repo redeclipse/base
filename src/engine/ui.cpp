@@ -3813,13 +3813,13 @@ namespace UI
         float scale, offsetx, offsety;
         editor *edit;
         char *keyfilter;
-        bool canfocus;
+        bool canfocus, allowlines;
 
-        TextEditor() : edit(NULL), keyfilter(NULL), canfocus(true) {}
+        TextEditor() : edit(NULL), keyfilter(NULL), canfocus(true), allowlines(true) {}
 
         bool iseditor() const { return true; }
 
-        void setup(const char *name, int length, int height, float scale_ = 1, const char *initval = NULL, int mode = EDITORUSED, const char *keyfilter_ = NULL)
+        void setup(const char *name, int length, int height, float scale_ = 1, const char *initval = NULL, int mode = EDITORUSED, const char *keyfilter_ = NULL, bool _allowlines = true, int limit = 0)
         {
             Colored::setup(Color(colourwhite));
             editor *edit_ = useeditor(name, mode, false, initval);
@@ -3834,11 +3834,13 @@ namespace UI
             edit->maxx = edit->linewrap ? -1 : length;
             edit->maxy = height <= 0 ? 1 : -1;
             edit->pixelwidth = abs(length)*FONTMW;
+            edit->limit = limit;
             if(edit->linewrap && edit->maxy == 1) edit->updateheight();
             else edit->pixelheight = FONTH*max(height, 1);
             scale = scale_;
             if(keyfilter_ && *keyfilter_) SETSTR(keyfilter, keyfilter_);
             else DELETEA(keyfilter);
+            allowlines = _allowlines;
         }
         ~TextEditor()
         {
@@ -3960,7 +3962,7 @@ namespace UI
                     return true;
                 case SDLK_RETURN:
                 case SDLK_TAB:
-                    if(edit->maxy != 1) break;
+                    if(edit->maxy != 1 && allowlines) break;
                     // fall-through
                 case SDLK_KP_ENTER:
                     if(isdown) commit();
@@ -3990,14 +3992,18 @@ namespace UI
             }
             return true;
         }
+
+        int count() const { return isfocus() && edit ? edit->len : -1; }
     };
 
     TextEditor *TextEditor::focus = NULL;
     ICOMMAND(0, uitexteditor, "siifsies", (char *name, int *length, int *height, float *scale, char *initval, int *mode, uint *children, char *keyfilter),
         BUILD(TextEditor, o, o->setup(name, *length, *height, (*scale <= 0 ? 1 : *scale)*uiscale * uitextscale, initval, *mode <= 0 ? EDITORFOREVER : *mode, keyfilter), children));
 
+    UICMDT(TextEditor, editor, isfocus, "", (), intret(o->isfocus()));
     UICMDT(TextEditor, editor, setfocus, "", (), o->setfocus());
     UICMDT(TextEditor, editor, setfocusable, "i", (int *focusable), o->setfocusable(*focusable));
+    UICMDT(TextEditor, editor, getcount, "", (), intret(o->count()));
 
     static const char *getsval(ident *id, bool &shouldfree, const char *val = "")
     {
@@ -4038,7 +4044,7 @@ namespace UI
 
         Field() : id(NULL), changed(false) {}
 
-        void setup(ident *id_, int length, uint *onchange, float scale = 1, const char *keyfilter_ = NULL, bool immediate = false)
+        void setup(ident *id_, int length, uint *onchange, float scale = 1, const char *keyfilter_ = NULL, bool immediate = false, int height = 0, int limit = 0)
         {
             if(isfocus() && immediate && edit && id == id_)
             {
@@ -4054,9 +4060,10 @@ namespace UI
             }
             bool shouldfree = false;
             const char *initval = id != id_ || !isfocus() ? getsval(id_, shouldfree) : NULL;
-            TextEditor::setup(id_->name, length, 0, scale, initval, EDITORFOCUSED, keyfilter_);
+            TextEditor::setup(id_->name, length, height, scale, initval, EDITORFOCUSED, keyfilter_, false, limit);
             if(shouldfree) delete[] initval;
             id = id_;
+            edit->linewrapmark = false;
         }
 
         static const char *typestr() { return "#Field"; }
@@ -4077,6 +4084,9 @@ namespace UI
 
     ICOMMAND(0, uifield, "riefies", (ident *var, int *length, uint *onchange, float *scale, int *immediate, uint *children, char *keyfilter),
         BUILD(Field, o, o->setup(var, *length, onchange, (*scale <= 0 ? 1 : *scale)*uiscale * uitextscale, keyfilter, *immediate!=0), children));
+
+    ICOMMAND(0, uimlfield, "riiiefies", (ident *var, int *length, int *height, int *limit, uint *onchange, float *scale, int *immediate, uint *children, char *keyfilter),
+        BUILD(Field, o, o->setup(var, *length, onchange, (*scale <= 0 ? 1 : *scale)*uiscale * uitextscale, keyfilter, *immediate!=0, *height, *limit), children));
 
     struct KeyField : Field
     {
