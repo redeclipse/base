@@ -1039,7 +1039,7 @@ namespace entities
                 {
                     if(attr[4]&SND_NOATTEN) addentinfo("no-atten");
                     if(attr[4]&SND_NODELAY) addentinfo("no-delay");
-                    if(attr[4]&SND_NOCULL) addentinfo("no-cull");
+                    if(attr[4]&SND_PRIORITY) addentinfo("priority");
                     if(attr[4]&SND_NOPAN) addentinfo("no-pan");
                     if(attr[4]&SND_NODIST) addentinfo("no-dist");
                     if(attr[4]&SND_NOQUIET) addentinfo("no-quiet");
@@ -1814,7 +1814,7 @@ namespace entities
         gameentity &e = *(gameentity *)ents[n];
         if(issound(e.schan))
         {
-            removesound(e.schan);
+            sounds[e.schan].clear();
             e.schan = -1; // prevent clipping when moving around
             if(e.type == MAPSOUND) e.lastemit = lastmillis+500;
         }
@@ -2842,7 +2842,7 @@ namespace entities
                 if(issound(e.schan))
                 {
                     if(triggered && sounds[e.schan].flags&SND_LOOP && !e.spawned() && (e.lastemit < 0 || lastmillis-e.lastemit > triggertime(e, true)))
-                        removesound(e.schan);
+                        sounds[e.schan].clear();
                     else sounds[e.schan].pos = e.pos();
                 }
                 if(triggered || issound(e.schan)) continue;

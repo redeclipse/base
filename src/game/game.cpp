@@ -1242,7 +1242,7 @@ namespace game
                 float amt = clamp(mag/n, 0.f, 1.f)*(d != focus ? footstepsoundlevel : footstepsoundfocus);
                 if(onfloor && !d->running(moveslow)) amt *= footstepsoundlight;
                 int vol = clamp(int(amt*footstepsoundmaxvol), footstepsoundminvol, footstepsoundmaxvol);
-                playsound(sound, pos, NULL, d != focus ? 0 : SND_NOCULL|SND_NOPAN, vol, footstepsoundmaxrad, footstepsoundminrad, &d->sschan[curfoot]);
+                playsound(sound, pos, NULL, d != focus ? 0 : SND_PRIORITY|SND_NOPAN, vol, footstepsoundmaxrad, footstepsoundminrad, &d->sschan[curfoot]);
             }
         }
     }
@@ -1379,13 +1379,13 @@ namespace game
                 }
                 else if(d->pschan >= 0)
                 {
-                    if(issound(d->pschan)) removesound(d->pschan);
+                    if(issound(d->pschan)) sounds[d->pschan].clear();
                     d->pschan = -1;
                 }
             }
             else if(d->pschan >= 0)
             {
-                if(issound(d->pschan)) removesound(d->pschan);
+                if(issound(d->pschan)) sounds[d->pschan].clear();
                 d->pschan = -1;
             }
             if(W2(d->weapselect, cooked, true)&W_C_KEEP && d->prevstate[d->weapselect] == W_S_ZOOM && !d->action[AC_SECONDARY])
@@ -1396,7 +1396,7 @@ namespace game
         }
         else if(d->pschan >= 0)
         {
-            if(issound(d->pschan)) removesound(d->pschan);
+            if(issound(d->pschan)) sounds[d->pschan].clear();
             d->pschan = -1;
         }
 
@@ -1414,7 +1414,7 @@ namespace game
             bool hassound = footstepsounds&(d != focus ? 2 : 1);
             if(!hassound) loopi(2) if(d->sschan[i] >= 0)
             {
-                if(issound(d->sschan[i])) removesound(d->sschan[i]);
+                if(issound(d->sschan[i])) sounds[d->sschan[i]].clear();
                 d->sschan[i] = -1;
             }
             if(curfoot >= 0)

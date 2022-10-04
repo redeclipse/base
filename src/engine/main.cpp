@@ -121,7 +121,6 @@ extern void cleargamma();
 void cleanup()
 {
     engineready = false;
-    recorder::stop();
     cleanupserver();
     SDL_ShowCursor(SDL_TRUE);
     SDL_SetRelativeMouseMode(SDL_FALSE);
@@ -266,7 +265,7 @@ void setupdisplay(bool dogl = true, bool msg = true)
     hudh = renderh;
     if(dogl) gl_resize();
 
-    if(msg) conoutf("Display [%d]: %dx%d [%d Hz] %s: %dx%d, Renderer: %dx%d", index, display.w, display.h, display.refresh_rate, SDL_GetWindowFlags(screen)&SDL_WINDOW_FULLSCREEN ? (fullscreendesktop ? "Fullscreen" : "Exclusive") : "Windowed", screenw, screenh, renderw, renderh);
+    if(msg) conoutf("Display [%d]: %dx%d [%d Hz] %s: %dx%d [%dx%d]", index, display.w, display.h, display.refresh_rate, SDL_GetWindowFlags(screen)&SDL_WINDOW_FULLSCREEN ? (fullscreendesktop ? "Fullscreen" : "Exclusive") : "Windowed", screenw, screenh, renderw, renderh);
 
     wantdisplaysetup = false;
 }
@@ -443,7 +442,6 @@ void resetgl()
     progress(0, "Resetting OpenGL..");
     engineready = false;
 
-    recorder::cleanup();
     cleanupva();
     cleanupparticles();
     cleanupstains();
@@ -715,7 +713,6 @@ void checkinput()
 
 void swapbuffers(bool overlay)
 {
-    recorder::capture(overlay);
     gle::disable();
     SDL_GL_SwapWindow(screen);
 }
@@ -1086,7 +1083,9 @@ int main(int argc, char **argv)
     numcpus = clamp(SDL_GetCPUCount(), 1, 16);
 
     conoutf("Loading SDL..");
-    if(SDL_Init(SDL_INIT_TIMER|SDL_INIT_VIDEO|SDL_INIT_AUDIO)<0) fatal("Unable to initialize SDL: %s", SDL_GetError());
+    int sdlflags = SDL_INIT_TIMER|SDL_INIT_VIDEO;
+    if(SDL_Init(sdlflags) < 0)
+        fatal("Unable to initialize SDL: %s", SDL_GetError());
 
 #ifdef SDL_VIDEO_DRIVER_X11
     SDL_version version;

@@ -185,7 +185,7 @@ ifeq (1,$(BUILD_WINDOWS))
     CLIENT_INCLUDES = $(INCLUDES) -isystem include
 
     CLIENT_LIBS = $(STD_LIBS) $(SUP_LIBS) \
-                  -lSDL2 -lSDL2_image -lSDL2_mixer -lzlib1 -lopengl32 -lenet -lws2_32 -lwinmm
+                  -lSDL2 -lSDL2_image -lOpenAL32 -lsndfile-1 -lzlib1 -lopengl32 -lenet -lws2_32 -lwinmm
 
     ifneq (,$(findstring msvc,$(PLATFORM)))
         CLIENT_LIBS += -ldbghelp -luser32 -lshell32
@@ -225,8 +225,8 @@ else
         endif
     endif
 
-    CLIENT_INCLUDES = $(INCLUDES) `$(PKG_CONFIG) --cflags x11 sdl2 SDL2_image SDL2_mixer zlib gl`
-    CLIENT_LIBS = -Lenet -lenet `$(PKG_CONFIG) --libs x11 sdl2 SDL2_image SDL2_mixer zlib gl`
+    CLIENT_INCLUDES = $(INCLUDES) `$(PKG_CONFIG) --cflags x11 sdl2 SDL2_image openal sndfile zlib gl`
+    CLIENT_LIBS = -Lenet -lenet `$(PKG_CONFIG) --libs x11 sdl2 SDL2_image openal sndfile zlib gl`
 
     ifneq (,$(WANT_STEAM))
         override CLIENT_LIBS += -L../bin/$(PLATFORM_BIN) -lsteam_api
@@ -275,7 +275,6 @@ CLIENT_OBJS = \
     engine/master.o \
     engine/material.o \
     engine/menus.o \
-    engine/movie.o \
     engine/normal.o \
     engine/octa.o \
     engine/octaedit.o \
@@ -649,12 +648,6 @@ engine/menus.o: engine/wind.h engine/fx.h shared/glexts.h shared/glemu.h
 engine/menus.o: shared/iengine.h shared/igame.h engine/http.h engine/irc.h
 engine/menus.o: engine/sound.h engine/world.h engine/octa.h engine/light.h
 engine/menus.o: engine/texture.h engine/bih.h engine/model.h
-engine/movie.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h
-engine/movie.o: shared/command.h shared/geom.h shared/prop.h shared/ents.h
-engine/movie.o: engine/wind.h engine/fx.h shared/glexts.h shared/glemu.h
-engine/movie.o: shared/iengine.h shared/igame.h engine/http.h engine/irc.h
-engine/movie.o: engine/sound.h engine/world.h engine/octa.h engine/light.h
-engine/movie.o: engine/texture.h engine/bih.h engine/model.h
 engine/normal.o: engine/engine.h engine/version.h shared/cube.h
 engine/normal.o: shared/tools.h shared/command.h shared/geom.h shared/prop.h
 engine/normal.o: shared/ents.h engine/wind.h engine/fx.h shared/glexts.h

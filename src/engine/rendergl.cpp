@@ -377,8 +377,7 @@ void gl_checkextensions()
     setsvar("gfxrenderer", (const char *)glGetString(GL_RENDERER));
     setsvar("gfxversion", (const char *)glGetString(GL_VERSION));
 
-    conoutf("Renderer: %s (%s)", gfxrenderer, gfxvendor);
-    conoutf("Driver: %s", gfxversion);
+    conoutf("Video: %s (%s) %s", gfxrenderer, gfxvendor, gfxversion);
 
 #ifdef __APPLE__
     // extern int mac_osversion();
@@ -1348,7 +1347,7 @@ int hudmatrixpos = 0;
 
 void resethudmatrix()
 {
-    hudmatrixpos = 0; 
+    hudmatrixpos = 0;
     GLOBALPARAM(hudmatrix, hudmatrix);
 }
 
