@@ -4,7 +4,6 @@ ALCdevice *snddev = NULL;
 ALCcontext *sndctx = NULL;
 
 bool nosound = true, changedvol = false, canmusic = false;
-
 bool al_ext_efx = false, al_soft_spatialize = false;
 
 hashnameset<soundsample> soundsamples;
@@ -14,26 +13,6 @@ vector<sound> sounds;
 
 char *musicfile = NULL, *musicdonecmd = NULL;
 int musictime = -1, musicdonetime = -1;
-
-const char *sounderror(bool msg)
-{
-    ALenum err = alGetError();
-    if(!msg && err == AL_NO_ERROR) return NULL;
-    return alGetString(err);
-}
-
-ICOMMAND(0, mapsoundinfo, "i", (int *index), {
-    if(*index < 0) intret(mapsounds.length());
-    else if(*index < mapsounds.length()) result(mapsounds[*index].name);
-});
-
-void updatemusic()
-{
-    changedvol = true;
-#if 0
-    if(!connected() && !music && musicvol > 0 && mastervol > 0) smartmusic(true);
-#endif
-}
 
 VAR(IDF_PERSIST, mastervol, 0, 255, 255);
 VAR(IDF_PERSIST, soundvol, 0, 255, 255);
@@ -49,10 +28,255 @@ FVAR(IDF_PERSIST, soundevtscale, 0, 1, FVAR_MAX);
 FVAR(IDF_PERSIST, soundenvvol, 0, 1, FVAR_MAX);
 FVAR(IDF_PERSIST, soundenvscale, 0, 1, FVAR_MAX);
 
+void updatemusic()
+{
+    changedvol = true;
+#if 0
+    if(!connected() && !music && musicvol > 0 && mastervol > 0) smartmusic(true);
+#endif
+}
 VARF(IDF_PERSIST, musicvol, 0, 25, 255, updatemusic());
 VAR(IDF_PERSIST, musicfadein, 0, 1000, VAR_MAX);
 VAR(IDF_PERSIST, musicfadeout, 0, 2500, VAR_MAX);
 SVAR(0, titlemusic, "sounds/theme");
+
+const char *sounderror(bool msg)
+{
+    ALenum err = alGetError();
+    if(!msg && err == AL_NO_ERROR) return NULL;
+    return alGetString(err);
+}
+
+ALenum soundsample::setup(soundfile *s)
+{
+    SOUNDERROR();
+    alGenBuffers(1, &buffer);
+    SOUNDERROR(cleanup(); return err);
+    alBufferData(buffer, s->format, s->data, s->len, s->info.samplerate);
+    SOUNDERROR(cleanup(); return err);
+    return AL_NO_ERROR;
+}
+
+void soundsample::reset()
+{
+    buffer = 0;
+}
+
+void soundsample::cleanup()
+{
+    if(valid()) alDeleteBuffers(1, &buffer);
+    buffer = 0;
+}
+
+bool soundsample::valid()
+{
+    if(!buffer || !alIsBuffer(buffer)) return false;
+    return true;
+}
+
+void soundslot::reset()
+{
+    DELETEA(name);
+    samples.shrink(0);
+}
+
+ALenum sound::setup(soundsample *s)
+{
+    if(!s->valid()) return AL_NO_ERROR;
+
+    SOUNDERROR();
+    alGenSources(1, &source);
+    SOUNDERROR(clear(); return err);
+
+    alSourcei(source, AL_BUFFER, s->buffer);
+    SOUNDERROR(clear(); return err);
+
+    if(flags&SND_NOATTEN)
+    {
+        alSourcei(source, AL_SOURCE_RELATIVE, AL_TRUE);
+        SOUNDERROR(clear(); return err);
+        pos = vel = vec(0, 0, 0);
+    }
+    else
+    {
+        if(al_soft_spatialize)
+        {
+            alSourcei(source, AL_SOURCE_SPATIALIZE_SOFT, AL_TRUE);
+            SOUNDERROR(clear(); return err);
+        }
+        alSourcei(source, AL_SOURCE_RELATIVE, AL_FALSE);
+        SOUNDERROR(clear(); return err);
+    }
+
+    alSourcei(source, AL_LOOPING, flags&SND_LOOP ? AL_TRUE : AL_FALSE);
+    SOUNDERROR(clear(); return err);
+
+    minrad = clamp(minrad, 1.f, maxrad); // must be > 0
+    alSourcef(source, AL_REFERENCE_DISTANCE, minrad);
+    SOUNDERROR(clear(); return err);
+
+    maxrad = max(maxrad, minrad);
+    alSourcef(source, AL_MAX_DISTANCE, maxrad);
+    SOUNDERROR(clear(); return err);
+
+    alSourcef(source, AL_ROLLOFF_FACTOR, 1.f);
+    SOUNDERROR(clear(); return err);
+
+    return AL_NO_ERROR;
+}
+
+void sound::cleanup()
+{
+    if(!valid()) return;
+    alSourceStop(source);
+    alDeleteSources(1, &source);
+}
+
+void sound::reset()
+{
+    source = 0;
+    pos = vel = vec(0, 0, 0);
+    slot = NULL;
+    owner = NULL;
+    vol = 255;
+    curvol = 1;
+    material = MAT_AIR;
+    flags = millis = ends = 0;
+    maxrad = soundmaxrad;
+    minrad = soundminrad;
+    index = slotnum = -1;
+    if(hook) *hook = -1;
+    hook = NULL;
+    buffer.shrink(0);
+}
+
+void sound::clear()
+{
+    cleanup();
+    reset();
+}
+
+ALenum sound::update()
+{
+    if(owner && !(flags&SND_NOATTEN))
+    {
+        pos = owner->o;
+        vel = owner->vel;
+    }
+    material = lookupmaterial(pos);
+    curvol = clamp((soundvol/255.f)*(vol/255.f)*(slot->vol/255.f)*(flags&SND_MAP ? soundenvvol : soundevtvol), 0.f, 1.f);
+
+    SOUNDERROR();
+    alSourcef(source, AL_GAIN, curvol);
+    SOUNDERROR(clear(); return err);
+
+    SOUNDERROR();
+    alSourcefv(source, AL_POSITION, (ALfloat *) &pos);
+    SOUNDERROR(clear(); return err);
+
+    alSourcefv(source, AL_VELOCITY, (ALfloat *) &vel);
+    SOUNDERROR(clear(); return err);
+
+    return AL_NO_ERROR;
+}
+
+bool sound::valid()
+{
+    if(!source || !alIsSource(source)) return false;
+    return true;
+}
+
+bool sound::active()
+{
+    if(!valid()) return false;
+    ALint value;
+    alGetSourcei(source, AL_SOURCE_STATE, &value);
+    if(value != AL_PLAYING && value != AL_PAUSED) return false;
+    return true;
+}
+
+bool sound::playing()
+{
+    if(!valid()) return false;
+    ALint value;
+    alGetSourcei(source, AL_SOURCE_STATE, &value);
+    if(value != AL_PLAYING) return false;
+    return true;
+}
+
+ALenum sound::play()
+{
+    if(playing()) return AL_NO_ERROR;
+    SOUNDERROR();
+    alSourcePlay(source);
+    SOUNDERROR(clear(); return err);
+    return AL_NO_ERROR;
+}
+
+ALenum sound::push(soundsample *s)
+{
+    SOUNDCHECK(setup(s), , return err);
+    SOUNDCHECK(update(), , return err);
+    SOUNDCHECK(play(), , return err);
+    return AL_NO_ERROR;
+}
+
+ICOMMAND(0, mapsoundinfo, "i", (int *index), {
+    if(*index < 0) intret(mapsounds.length());
+    else if(*index < mapsounds.length()) result(mapsounds[*index].name);
+});
+
+void getsounds(bool mapsnd, int idx, int prop)
+{
+    slotmanager<soundslot> &soundset = mapsnd ? mapsounds : gamesounds;
+    if(idx < 0) intret(soundset.length());
+    else if(soundset.inrange(idx))
+    {
+        if(prop < 0) intret(4);
+        else switch(prop)
+        {
+            case 0: intret(soundset[idx].vol); break;
+            case 1: intret(soundset[idx].maxrad); break;
+            case 2: intret(soundset[idx].minrad); break;
+            case 3: result(soundset[idx].name); break;
+            default: break;
+        }
+    }
+}
+ICOMMAND(0, getsound, "ibb", (int *n, int *v, int *p), getsounds(*n!=0, *v, *p));
+
+void getcursounds(int idx, int prop)
+{
+    if(idx < 0) intret(sounds.length());
+    else if(sounds.inrange(idx))
+    {
+        if(prop < 0) intret(19);
+        else switch(prop)
+        {
+            case 0: intret(sounds[idx].vol); break;
+            case 1: intret(int(sounds[idx].curvol*255)); break;
+            case 2: intret(0); break; // curpan
+            case 3: intret(sounds[idx].flags); break;
+            case 4: intret(sounds[idx].maxrad); break;
+            case 5: intret(sounds[idx].minrad); break;
+            case 6: intret(sounds[idx].material); break;
+            case 7: intret(sounds[idx].millis); break;
+            case 8: intret(sounds[idx].ends); break;
+            case 9: intret(sounds[idx].slotnum); break;
+            case 10: intret(sounds[idx].source); break;
+            case 11: defformatstring(pos, "%.f %.f %.f", sounds[idx].pos.x, sounds[idx].pos.y, sounds[idx].pos.z); result(pos); break;
+            case 12: defformatstring(vel, "%.f %.f %.f", sounds[idx].vel.x, sounds[idx].vel.y, sounds[idx].vel.z); result(vel); break;
+            case 13: intret(sounds[idx].valid() ? 1 : 0); break;
+            case 14: intret(sounds[idx].playing() ? 1 : 0); break;
+            case 15: intret(sounds[idx].flags&SND_MAP ? 1 : 0); break;
+            case 16: intret(sounds[idx].owner!=NULL ? 1 : 0); break;
+            case 17: intret(sounds[idx].owner==camera1 ? 1 : 0); break;
+            case 18: intret(client::getcn(sounds[idx].owner)); break;
+            default: break;
+        }
+    }
+}
+ICOMMAND(0, getcursound, "bb", (int *n, int *p), getcursounds(*n, *p));
 
 void mapsoundslot(int index, const char *name)
 {
@@ -107,7 +331,7 @@ void initsound()
             return;
         }
         alcMakeContextCurrent(sndctx);
-        alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
+        alDistanceModel(AL_LINEAR_DISTANCE);
 
         conoutf("Sound: %s (%s) %s", alGetString(AL_RENDERER), alGetString(AL_VENDOR), alGetString(AL_VERSION));
 
@@ -128,13 +352,7 @@ void initsound()
         if(alIsExtensionPresent("AL_EXT_EFX")) al_ext_efx = true;
 
         if(alIsExtensionPresent("AL_SOFT_source_spatialize")) al_soft_spatialize = true;
-        else conoutf("\frWARNING: AL_SOFT_source_spatialize not present, stereo sounds will not play in 3D!");
-
-        //ALCint major, minor;
-        //alcGetIntegerv(snddev, ALC_MAJOR_VERSION, 1, &major);
-        //alcGetIntegerv(snddev, ALC_MINOR_VERSION, 1, &minor);
-        //conoutf("Audio ALC version: %d.%d", major, minor);
-        //conoutf("Audio extensions: %s", alcGetString(snddev, ALC_EXTENSIONS));
+        else conoutf("\frAL_SOFT_source_spatialize not found, stereo sounds will be downmixed to mono");
 
         nosound = false;
     }
@@ -197,58 +415,6 @@ void clearsound()
     loopv(sounds) sounds[i].clear();
     mapsounds.clear(false);
 }
-
-void getsounds(bool mapsnd, int idx, int prop)
-{
-    slotmanager<soundslot> &soundset = mapsnd ? mapsounds : gamesounds;
-    if(idx < 0) intret(soundset.length());
-    else if(soundset.inrange(idx))
-    {
-        if(prop < 0) intret(4);
-        else switch(prop)
-        {
-            case 0: intret(soundset[idx].vol); break;
-            case 1: intret(soundset[idx].maxrad); break;
-            case 2: intret(soundset[idx].minrad); break;
-            case 3: result(soundset[idx].name); break;
-            default: break;
-        }
-    }
-}
-ICOMMAND(0, getsound, "ibb", (int *n, int *v, int *p), getsounds(*n!=0, *v, *p));
-
-void getcursounds(int idx, int prop)
-{
-    if(idx < 0) intret(sounds.length());
-    else if(sounds.inrange(idx))
-    {
-        if(prop < 0) intret(19);
-        else switch(prop)
-        {
-            case 0: intret(sounds[idx].vol); break;
-            case 1: intret(int(sounds[idx].curvol*255)); break;
-            case 2: intret(0); break; // curpan
-            case 3: intret(sounds[idx].flags); break;
-            case 4: intret(sounds[idx].maxrad); break;
-            case 5: intret(sounds[idx].minrad); break;
-            case 6: intret(sounds[idx].material); break;
-            case 7: intret(sounds[idx].millis); break;
-            case 8: intret(sounds[idx].ends); break;
-            case 9: intret(sounds[idx].slotnum); break;
-            case 10: intret(sounds[idx].source); break;
-            case 11: defformatstring(pos, "%.f %.f %.f", sounds[idx].pos.x, sounds[idx].pos.y, sounds[idx].pos.z); result(pos); break;
-            case 12: defformatstring(oldpos, "%.f %.f %.f", sounds[idx].oldpos.x, sounds[idx].oldpos.y, sounds[idx].oldpos.z); result(oldpos); break;
-            case 13: intret(sounds[idx].valid() ? 1 : 0); break;
-            case 14: intret(sounds[idx].playing() ? 1 : 0); break;
-            case 15: intret(sounds[idx].flags&SND_MAP ? 1 : 0); break;
-            case 16: intret(sounds[idx].owner!=NULL ? 1 : 0); break;
-            case 17: intret(sounds[idx].owner==camera1 ? 1 : 0); break;
-            case 18: intret(client::getcn(sounds[idx].owner)); break;
-            default: break;
-        }
-    }
-}
-ICOMMAND(0, getcursound, "bb", (int *n, int *p), getcursounds(*n, *p));
 
 #if 0
 Mix_Music *loadmusic(const char *name)
@@ -342,7 +508,7 @@ int findsound(const char *name, int vol, vector<soundslot> &soundset)
     return -1;
 }
 
-soundfile *loadwav(const char *name)
+soundfile *loadwav(const char *name, bool source = true)
 {
     soundfile *w = new soundfile;
     SNDFILE *sndfile = sf_open(findfile(name, "rb"), SFM_READ, &w->info);
@@ -374,7 +540,7 @@ soundfile *loadwav(const char *name)
 
     if(!w->format)
     {
-        conoutf("\frUnsupported channel count: %d", w->info.channels);
+        conoutf("\frUnsupported channel count in %s: %d", name, w->info.channels);
         sf_close(sndfile);
         delete w;
         return NULL;
@@ -388,11 +554,26 @@ soundfile *loadwav(const char *name)
         delete[] w->data;
         sf_close(sndfile);
         defformatstring(fr, SI64, w->frames);
-        conoutf("\frFailed to read samples in %s (%s)", name, fr);
+        conoutf("\frFailed to read samples in %s: %s", name, fr);
         delete w;
         return NULL;
     }
-    w->len = (ALsizei)(w->frames * w->info.channels) * (ALsizei)sizeof(short);
+
+    if(source && !al_soft_spatialize)
+    { // sources need to be downmixed to mono if soft spatialize extension isn't found
+        short *data = w->data;
+        w->data = new short[(size_t)w->frames * sizeof(short)];
+        loopi(w->frames)
+        {
+            int avg = 0;
+            loopj(w->info.channels) avg += data[i*w->info.channels + j];
+            w->data[i] = short(avg/w->info.channels);
+        }
+        w->format = AL_FORMAT_MONO16;
+        w->info.channels = 1;
+        w->len = (ALsizei)(w->frames) * (ALsizei)sizeof(short);
+    }
+    else w->len = (ALsizei)(w->frames * w->info.channels) * (ALsizei)sizeof(short);
 
     sf_close(sndfile);
 
@@ -522,9 +703,6 @@ void updatesounds()
 
         if((!s.ends || lastmillis < s.ends) && sounds[i].playing())
         {
-            if(s.owner) s.pos = game::camerapos(s.owner);
-            if(s.pos != s.oldpos) s.material = lookupmaterial(s.pos);
-            s.oldpos = s.pos;
             s.update();
             continue;
         }
@@ -556,12 +734,11 @@ void updatesounds()
         }
     }
 #endif
-
     vec o[2];
     o[0].x = (float)(cosf(RAD*(camera1->yaw-90)));
     o[0].y = (float)(sinf(RAD*(camera1->yaw-90)));
     o[0].z = o[1].x = o[1].y = 0.0f;
-    o[1].z = -1.0f;
+    o[1].z = 1.0f;
     alListenerf(AL_GAIN, mastervol/255.f);
     alListenerfv(AL_ORIENTATION, (ALfloat *) &o);
     alListenerfv(AL_POSITION, (ALfloat *) &camera1->o);
@@ -573,11 +750,11 @@ void updatesounds()
 
 int playsound(int n, const vec &pos, physent *d, int flags, int vol, int maxrad, int minrad, int *hook, int ends)
 {
-    bool gamespecific = !(flags&SND_UNMAPPED) && n >= S_GAMESPECIFIC;
+    if(nosound || !vol || !mastervol || !soundvol || (flags&SND_MAP ? !soundenvvol : !soundevtvol)) return -1;
+    if(((flags&SND_MAP || (!(flags&SND_UNMAPPED) && n >= S_GAMESPECIFIC)) && client::waiting(true)) || (!d && !insideworld(pos))) return -1;
 
-    if(!(flags&SND_UNMAPPED) && !(flags&SND_MAP)) n = getsoundslot(n);
-    if(nosound || !mastervol || !soundvol || ((flags&SND_MAP || gamespecific) && client::waiting(true)) || (!d && !insideworld(pos))) return -1;
     slotmanager<soundslot> &soundset = flags&SND_MAP ? mapsounds : gamesounds;
+    if(!(flags&SND_UNMAPPED) && !(flags&SND_MAP)) n = getsoundslot(n);
 
     if(soundset.inrange(n))
     {
@@ -589,12 +766,7 @@ int playsound(int n, const vec &pos, physent *d, int flags, int vol, int maxrad,
             return *hook;
         }
 
-        vec o = d ? game::camerapos(d) : pos;
-        int v = clamp(vol >= 0 ? vol : 255, flags&SND_CLAMPED ? 64 : 0, 255),
-            x = maxrad > 0 ? maxrad : (flags&SND_CLAMPED ? worldsize : (slot->maxrad > 0 ? slot->maxrad : soundmaxrad)),
-            y = minrad >= 0 ? minrad : (flags&SND_CLAMPED ? 32 : (slot->minrad >= 0 ? slot->minrad : soundminrad)),
-            mat = lookupmaterial(o);
-
+        vec o = d ? d->o : pos, v = d ? d->vel : vec(0, 0, 0);
         int variant = rnd(slot->variants);
         if(slot->fardistance && o.dist(camera1->o) >= slot->fardistance) variant += slot->variants;
         soundsample *sample = slot->samples[variant];
@@ -606,16 +778,16 @@ int playsound(int n, const vec &pos, physent *d, int flags, int vol, int maxrad,
         if(s.hook && s.hook != hook) *s.hook = -1;
 
         s.slot = slot;
-        s.vol = v;
-        s.maxrad = x;
-        s.minrad = y;
-        s.material = mat;
+        s.vol = vol;
+        s.maxrad = maxrad > 0 ? maxrad : (slot->maxrad > 0 ? slot->maxrad : soundmaxrad);
+        s.minrad = minrad >= 0 ? minrad : (slot->minrad >= 0 ? slot->minrad : soundminrad);
         s.flags = flags;
         s.millis = lastmillis;
         s.ends = ends;
         s.slotnum = n;
         s.owner = d;
-        s.pos = s.oldpos = o;
+        s.pos = o;
+        s.vel = v;
         s.index = index;
         if(hook)
         {

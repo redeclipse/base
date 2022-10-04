@@ -12,7 +12,7 @@ enum
     SND_PRIORITY = 1<<2,    // high priority
     SND_NOPAN    = 1<<3,    // disable panning (distance only attenuation)
     SND_NODIST   = 1<<4,    // disable distance (panning only)
-    SND_NOQUIET  = 1<<5,    // disable water effects (panning only)
+    SND_NOQUIET  = 1<<5,    // disable water effects
     SND_CLAMPED  = 1<<6,    // makes volume the minimum volume to clamp to
     SND_LOOP     = 1<<7,    // loops when it reaches the end
     SND_BUFFER   = 1<<8,    // source becomes/adds to a buffer for sounds
@@ -73,32 +73,10 @@ struct soundsample
     soundsample() : name(NULL) { reset(); }
     ~soundsample() { DELETEA(name); }
 
-    ALenum setup(soundfile *s)
-    {
-        SOUNDERROR();
-        alGenBuffers(1, &buffer);
-        SOUNDERROR(cleanup(); return err);
-        alBufferData(buffer, s->format, s->data, s->len, s->info.samplerate);
-        SOUNDERROR(cleanup(); return err);
-        return AL_NO_ERROR;
-    }
-
-    void reset()
-    {
-        buffer = 0;
-    }
-
-    void cleanup()
-    {
-        if(valid()) alDeleteBuffers(1, &buffer);
-        buffer = 0;
-    }
-
-    bool valid()
-    {
-        if(!buffer || !alIsBuffer(buffer)) return false;
-        return true;
-    }
+    ALenum setup(soundfile *s);
+    void reset();
+    void cleanup();
+    bool valid();
 };
 extern hashnameset<soundsample> soundsamples;
 
@@ -111,11 +89,7 @@ struct soundslot
     soundslot() : vol(255), maxrad(-1), minrad(-1), variants(1), fardistance(0), name(NULL) {}
     ~soundslot() { DELETEA(name); }
 
-    void reset()
-    {
-        DELETEA(name);
-        samples.shrink(0);
-    }
+    void reset();
 };
 extern slotmanager<soundslot> gamesounds, mapsounds;
 
@@ -123,7 +97,7 @@ struct sound
 {
     ALuint source;
     soundslot *slot;
-    vec pos, oldpos;
+    vec pos, vel;
     physent *owner;
     int index, vol;
     int flags, material;
@@ -134,152 +108,16 @@ struct sound
     sound() : hook(NULL) { reset(); }
     ~sound() {}
 
-    ALenum setup(soundsample *s)
-    {
-        if(!s->valid()) return AL_NO_ERROR;
-
-        SOUNDERROR();
-        alGenSources(1, &source);
-        SOUNDERROR(clear(); return err);
-
-        alSourcei(source, AL_BUFFER, s->buffer);
-        SOUNDERROR(clear(); return err);
-
-        if(al_soft_spatialize)
-        {
-            alSourcei(source, AL_SOURCE_SPATIALIZE_SOFT, AL_TRUE);
-            SOUNDERROR(clear(); return err);
-        }
-        /*
-        alSourcei(source, AL_SOURCE_RELATIVE, AL_TRUE);
-        SOUNDERROR(clear(); return err);
-        */
-        alSourcei(source, AL_LOOPING, flags&SND_LOOP ? AL_TRUE : AL_FALSE);
-        SOUNDERROR(clear(); return err);
-
-        minrad = clamp(minrad, 1.f, maxrad); // avoid divide by zero in distance model
-        alSourcef(source, AL_REFERENCE_DISTANCE, minrad);
-        SOUNDERROR(clear(); return err);
-
-        maxrad = max(maxrad, minrad);
-        alSourcef(source, AL_MAX_DISTANCE, maxrad);
-        SOUNDERROR(clear(); return err);
-
-        alSourcef(source, AL_ROLLOFF_FACTOR, 1.f);
-        SOUNDERROR(clear(); return err);
-
-        /*
-        alSourcef(source, AL_PITCH, 1.f);
-        SOUNDERROR(clear(); return err);
-
-        alSourcef(source, AL_MIN_GAIN, 0.f);
-        SOUNDERROR(clear(); return err);
-
-        alSourcef(source, AL_MAX_GAIN, 1.f);
-        SOUNDERROR(clear(); return err);
-
-        alSourcef(source, AL_GAIN, 1.f);
-        SOUNDERROR(clear(); return err);
-        */
-
-        return AL_NO_ERROR;
-    }
-
-    void cleanup()
-    {
-        if(!valid()) return;
-        alSourceStop(source);
-        alDeleteSources(1, &source);
-    }
-
-    void reset()
-    {
-        source = 0;
-        pos = oldpos = vec(-1, -1, -1);
-        slot = NULL;
-        owner = NULL;
-        vol = 255;
-        curvol = 1;
-        material = MAT_AIR;
-        flags = millis = ends = 0;
-        maxrad = soundmaxrad;
-        minrad = soundminrad;
-        index = slotnum = -1;
-        if(hook) *hook = -1;
-        hook = NULL;
-        buffer.shrink(0);
-    }
-
-    void clear()
-    {
-        cleanup();
-        reset();
-    }
-
-    ALenum update()
-    {
-        //if(!valid()) return AL_NO_ERROR;
-        /*
-        float ovol = clamp(vol, 0, 255)/255.f, svol = flags&SND_CLAMPED ? 1.f : ovol;
-        if(!(flags&SND_NOQUIET) && svol > 0 && (isliquid(lookupmaterial(pos)&MATF_VOLUME) || isliquid(lookupmaterial(camera1->o)&MATF_VOLUME))) svol *= 0.65f;
-        if(flags&SND_CLAMPED) svol = max(svol, ovol);
-        curvol = (soundvol/255.f)*(vol/255.f)*svol;
-
-        SOUNDERROR();
-        alSourcef(source, AL_GAIN, curvol);
-        SOUNDERROR(clear(); return err);
-        */
-
-        SOUNDERROR();
-        alSourcefv(source, AL_POSITION, (ALfloat *) &pos);
-        SOUNDERROR(clear(); return err);
-
-        alSource3f(source, AL_VELOCITY, 0.f, 0.f, 0.f);
-        SOUNDERROR(clear(); return err);
-
-        return AL_NO_ERROR;
-    }
-
-    bool valid()
-    {
-        if(!source || !alIsSource(source)) return false;
-        return true;
-    }
-
-    bool active()
-    {
-        if(!valid()) return false;
-        ALint value;
-        alGetSourcei(source, AL_SOURCE_STATE, &value);
-        if(value != AL_PLAYING && value != AL_PAUSED) return false;
-        return true;
-    }
-
-    bool playing()
-    {
-        if(!valid()) return false;
-        ALint value;
-        alGetSourcei(source, AL_SOURCE_STATE, &value);
-        if(value != AL_PLAYING) return false;
-        return true;
-    }
-
-    ALenum play()
-    {
-        if(playing()) return AL_NO_ERROR;
-        SOUNDERROR();
-        alSourcePlay(source);
-        SOUNDERROR(clear(); return err);
-        return AL_NO_ERROR;
-    }
-
-    ALenum push(soundsample *s)
-    {
-        SOUNDCHECK(setup(s), , return err);
-        SOUNDCHECK(update(), , return err);
-        SOUNDCHECK(play(), , return err);
-        return AL_NO_ERROR;
-    }
+    ALenum setup(soundsample *s);
+    void cleanup();
+    void reset();
+    void clear();
+    ALenum update();
+    bool valid();
+    bool active();
+    bool playing();
+    ALenum play();
+    ALenum push(soundsample *s);
 };
 extern vector<sound> sounds;
 
