@@ -1495,8 +1495,8 @@ namespace hud
     FVAR(IDF_PERSIST, backgroundcoloursafe, 0, 0.5f, 1);
     TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundwatertex, "<grey><noswizzle>textures/water", 0x300);
     TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundcausttex, "<grey><noswizzle>caustics/caust00", 0x300);
-    TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundtex, "textures/menubg", 3);
-    TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundmasktex, "textures/menubg_mask", 3);
+    TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundtex, "<nocompress>textures/menubg", 3);
+    TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundmasktex, "<nocompress>textures/menubg_mask", 3);
 
     void drawbackground(int w, int h)
     {
