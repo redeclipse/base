@@ -86,7 +86,6 @@ extern int nextcontrolversion();
 
 #include "http.h"
 #include "irc.h"
-#include "sound.h"
 
 extern const char * const disc_reasons[];
 struct ipinfo
@@ -1038,14 +1037,6 @@ extern void bindblendtexture(const ivec &p);
 extern void clearblendtextures();
 extern void cleanupblendmap();
 
-// recorder
-namespace recorder
-{
-    extern void stop();
-    extern void capture(bool overlay = true);
-    extern void cleanup();
-}
-
 // renderfx
 extern int debughalo;
 extern int halodist;
@@ -1073,5 +1064,5 @@ extern void renderhaze();
 extern void viewhaze();
 
 #endif // STANDALONE
-
+#include "sound.h"
 #endif
