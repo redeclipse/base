@@ -4,7 +4,7 @@ ALCdevice *snddev = NULL;
 ALCcontext *sndctx = NULL;
 
 bool nosound = true, changedvol = false, canmusic = false;
-bool al_ext_efx = false, al_soft_spatialize = false;
+bool al_ext_efx = false, al_soft_spatialize = false, al_ext_float32 = false;
 
 hashnameset<soundsample> soundsamples;
 slotmanager<soundslot> gamesounds, mapsounds;
@@ -52,7 +52,12 @@ ALenum soundsample::setup(soundfile *s)
     SOUNDERROR();
     alGenBuffers(1, &buffer);
     SOUNDERROR(cleanup(); return err);
-    alBufferData(buffer, s->format, s->data, s->len, s->info.samplerate);
+    switch(s->type)
+    {
+        case soundfile::SHORT: alBufferData(buffer, s->format, s->data_s, s->len, s->info.samplerate); break;
+        case soundfile::FLOAT: alBufferData(buffer, s->format, s->data_f, s->len, s->info.samplerate); break;
+        default: return AL_INVALID_OPERATION;
+    }
     SOUNDERROR(cleanup(); return err);
     return AL_NO_ERROR;
 }
@@ -361,6 +366,7 @@ void initsound()
         else conoutf("Audio device: %s", alcGetString(snddev, ALC_DEVICE_SPECIFIER));
 
         if(alIsExtensionPresent("AL_EXT_EFX")) al_ext_efx = true;
+        if(alIsExtensionPresent("AL_EXT_FLOAT32")) al_ext_float32 = true;
 
         if(alIsExtensionPresent("AL_SOFT_source_spatialize")) al_soft_spatialize = true;
         else conoutf("\frAL_SOFT_source_spatialize not found, stereo sounds will be downmixed to mono");
@@ -521,11 +527,11 @@ int findsound(const char *name, int vol, vector<soundslot> &soundset)
 
 soundfile *loadwav(const char *name, bool source = true)
 {
-    soundfile *w = new soundfile;
+    soundfile *w = new soundfile(al_ext_float32);
     SNDFILE *sndfile = sf_open(findfile(name, "rb"), SFM_READ, &w->info);
     if(!sndfile) return NULL;
 
-    if(w->info.frames < 1 || w->info.frames > (sf_count_t)(INT_MAX/sizeof(short))/w->info.channels)
+    if(w->info.frames < 1 || w->info.frames > (sf_count_t)(INT_MAX/w->size)/w->info.channels)
     {
         defformatstring(fr, SI64, w->info.frames);
         conoutf("\frInvalid numver of frames in %s: %s", name, fr);
@@ -534,8 +540,8 @@ soundfile *loadwav(const char *name, bool source = true)
         return NULL;
     }
 
-    if(w->info.channels == 1) w->format = AL_FORMAT_MONO16;
-    else if(w->info.channels == 2) w->format = AL_FORMAT_STEREO16;
+    if(w->info.channels == 1) w->format = al_ext_float32 ? AL_FORMAT_MONO_FLOAT32 : AL_FORMAT_MONO16;
+    else if(w->info.channels == 2) w->format = al_ext_float32 ? AL_FORMAT_STEREO_FLOAT32 : AL_FORMAT_STEREO16;
 #if 0
     else if(w->info.channels == 3)
     {
@@ -557,12 +563,20 @@ soundfile *loadwav(const char *name, bool source = true)
         return NULL;
     }
 
-    w->data = new short[(size_t)(w->info.frames * w->info.channels) * sizeof(short)];
-    w->frames = sf_readf_short(sndfile, w->data, w->info.frames);
+    if(al_ext_float32)
+    {
+        w->data_f = new float[(size_t)(w->info.frames * w->info.channels) * w->size];
+        w->frames = sf_readf_float(sndfile, w->data_f, w->info.frames);
+    }
+    else
+    {
+        w->data_s = new short[(size_t)(w->info.frames * w->info.channels) * w->size];
+        w->frames = sf_readf_short(sndfile, w->data_s, w->info.frames);
+    }
 
     if(w->frames < 1)
     {
-        delete[] w->data;
+        w->clear();
         sf_close(sndfile);
         defformatstring(fr, SI64, w->frames);
         conoutf("\frFailed to read samples in %s: %s", name, fr);
@@ -572,19 +586,43 @@ soundfile *loadwav(const char *name, bool source = true)
 
     if(source && !al_soft_spatialize)
     { // sources need to be downmixed to mono if soft spatialize extension isn't found
-        short *data = w->data;
-        w->data = new short[(size_t)w->frames * sizeof(short)];
-        loopi(w->frames)
+        switch(w->type)
         {
-            int avg = 0;
-            loopj(w->info.channels) avg += data[i*w->info.channels + j];
-            w->data[i] = short(avg/w->info.channels);
+            case soundfile::SHORT:
+            {
+                short *data = w->data_s;
+                w->data_s = new short[(size_t)w->frames * w->size];
+                loopi(w->frames)
+                {
+                    int avg = 0;
+                    loopj(w->info.channels) avg += data[i*w->info.channels + j];
+                    w->data_s[i] = short(avg/w->info.channels);
+                }
+                w->format = AL_FORMAT_MONO16;
+                w->info.channels = 1;
+                delete[] data;
+                break;
+            }
+            case soundfile::FLOAT:
+            {
+                float *data = w->data_f;
+                w->data_f = new float[(size_t)w->frames * w->size];
+                loopi(w->frames)
+                {
+                    float avg = 0;
+                    loopj(w->info.channels) avg += data[i*w->info.channels + j];
+                    w->data_f[i] = avg/w->info.channels;
+                }
+                w->format = AL_FORMAT_MONO_FLOAT32;
+                w->info.channels = 1;
+                delete[] data;
+                break;
+            }
+            default: break;
         }
-        w->format = AL_FORMAT_MONO16;
-        w->info.channels = 1;
-        w->len = (ALsizei)(w->frames) * (ALsizei)sizeof(short);
+        w->len = (ALsizei)(w->frames) * (ALsizei)w->size;
     }
-    else w->len = (ALsizei)(w->frames * w->info.channels) * (ALsizei)sizeof(short);
+    else w->len = (ALsizei)(w->frames * w->info.channels) * (ALsizei)w->size;
 
     sf_close(sndfile);
 

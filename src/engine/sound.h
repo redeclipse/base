@@ -30,10 +30,7 @@ enum
 #define SOUNDMAXDIST        10000.f
 
 extern bool nosound;
-extern int mastervol, soundvol, musicvol, soundmono, soundmaxrad, soundminrad;
-extern float soundevtvol, soundevtscale, soundenvvol, soundenvscale;
-
-extern bool al_ext_efx, al_soft_spatialize;
+extern int mastervol, soundvol, musicvol;
 
 #include "AL/al.h"
 #include "AL/alc.h"
@@ -55,14 +52,46 @@ extern bool al_ext_efx, al_soft_spatialize;
 
 struct soundfile
 {
-	short *data;
+	enum { SHORT = 0, FLOAT, MAX };
+    int type;
+    union
+    {
+        short *data_s;
+        float *data_f;
+    };
 	ALsizei len;
     ALenum format;
     SF_INFO info;
     sf_count_t frames;
+    size_t size;
 
-    soundfile() : data(NULL), len(0), format(AL_NONE) {}
-    ~soundfile() { if(data) delete[] data; }
+    soundfile(bool f) : len(0), format(AL_NONE)
+    {
+        if(f)
+        {
+            type = FLOAT;
+            size = sizeof(float);
+            data_f = NULL;
+        }
+        else
+        {
+            type = SHORT;
+            size = sizeof(short);
+            data_s = NULL;
+        }
+
+    }
+    ~soundfile() { clear(); }
+
+    void clear()
+    {
+        switch(type)
+        {
+            case SHORT: if(data_s) delete[] data_s; break;
+            case FLOAT: if(data_f) delete[] data_f; break;
+            default: break;
+        }
+    }
 };
 
 struct soundsample
