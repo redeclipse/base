@@ -791,7 +791,7 @@ void updatesounds()
     alListenerf(AL_GAIN, mastervol/255.f);
     alListenerfv(AL_ORIENTATION, (ALfloat *) &o);
     alListenerfv(AL_POSITION, (ALfloat *) &camera1->o);
-    alListener3f(AL_VELOCITY, 0.f, 0.f, 0.f);
+    alListenerfv(AL_VELOCITY, (ALfloat *) &game::focusedent()->vel);
     if(al_ext_efx) alListenerf(AL_METERS_PER_UNIT, 0.125f); // 8 units = 1 meter
 
     alcProcessContext(sndctx);
