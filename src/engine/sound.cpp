@@ -380,11 +380,6 @@ void initsound()
         }
 
         alcMakeContextCurrent(sndctx);
-
-        alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
-        soundsetdoppler(sounddoppler);
-        soundsetspeed(soundspeed);
-
         conoutf("Sound: %s (%s) %s", alGetString(AL_RENDERER), alGetString(AL_VENDOR), alGetString(AL_VERSION));
 
         if(alcIsExtensionPresent(NULL, "ALC_ENUMERATE_ALL_EXT") != AL_FALSE)
@@ -408,6 +403,10 @@ void initsound()
         else conoutf("\frAL_SOFT_source_spatialize not found, stereo sounds will be downmixed to mono");
 
         nosound = false;
+
+        alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
+        soundsetdoppler(sounddoppler);
+        soundsetspeed(soundspeed);
     }
     initmumble();
 }
