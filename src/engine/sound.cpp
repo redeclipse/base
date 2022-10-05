@@ -91,11 +91,12 @@ ALenum sound::setup(soundsample *s)
     alSourcei(source, AL_BUFFER, s->buffer);
     SOUNDERROR(clear(); return err);
 
+    if(flags&SND_NOPAN && flags&SND_NODIST) flags |= SND_NOATTEN; // superfluous
     if(flags&SND_NOATTEN)
     {
+        flags &= ~(SND_NOPAN|SND_NODIST); // unnecessary
         alSourcei(source, AL_SOURCE_RELATIVE, AL_TRUE);
         SOUNDERROR(clear(); return err);
-        pos = vel = vec(0, 0, 0);
     }
     else
     {
@@ -163,6 +164,7 @@ ALenum sound::update()
         pos = owner->o;
         vel = owner->vel;
     }
+
     material = lookupmaterial(pos);
     curvol = clamp((soundvol/255.f)*(vol/255.f)*(slot->vol/255.f)*(flags&SND_MAP ? soundenvvol : soundevtvol), 0.f, 1.f);
 
@@ -170,11 +172,20 @@ ALenum sound::update()
     alSourcef(source, AL_GAIN, curvol);
     SOUNDERROR(clear(); return err);
 
+    vec o = pos, v = vel;
+    if(flags&SND_NOATTEN) o = v = vec(0, 0, 0);
+    else if(flags&SND_NOPAN)
+    {
+        float mag = vec(o).sub(camera1->o).magnitude();
+        o = vec(camera1->yaw*RAD, camera1->pitch*RAD).mul(mag).add(camera1->o);
+    }
+    else if(flags&SND_NODIST) o.sub(camera1->o).safenormalize().mul(2).add(camera1->o);
+
     SOUNDERROR();
-    alSourcefv(source, AL_POSITION, (ALfloat *) &pos);
+    alSourcefv(source, AL_POSITION, (ALfloat *) &o);
     SOUNDERROR(clear(); return err);
 
-    alSourcefv(source, AL_VELOCITY, (ALfloat *) &vel);
+    alSourcefv(source, AL_VELOCITY, (ALfloat *) &v);
     SOUNDERROR(clear(); return err);
 
     return AL_NO_ERROR;
@@ -750,7 +761,7 @@ void updatesounds()
 
 int playsound(int n, const vec &pos, physent *d, int flags, int vol, int maxrad, int minrad, int *hook, int ends)
 {
-    if(nosound || !vol || !mastervol || !soundvol || (flags&SND_MAP ? !soundenvvol : !soundevtvol)) return -1;
+    if(nosound || !vol || !mastervol || !soundvol || !vol || (flags&SND_MAP ? !soundenvvol : !soundevtvol)) return -1;
     if(((flags&SND_MAP || (!(flags&SND_UNMAPPED) && n >= S_GAMESPECIFIC)) && client::waiting(true)) || (!d && !insideworld(pos))) return -1;
 
     slotmanager<soundslot> &soundset = flags&SND_MAP ? mapsounds : gamesounds;
@@ -778,7 +789,7 @@ int playsound(int n, const vec &pos, physent *d, int flags, int vol, int maxrad,
         if(s.hook && s.hook != hook) *s.hook = -1;
 
         s.slot = slot;
-        s.vol = vol;
+        s.vol = vol > 0 ? vol : 255;
         s.maxrad = maxrad > 0 ? maxrad : (slot->maxrad > 0 ? slot->maxrad : soundmaxrad);
         s.minrad = minrad >= 0 ? minrad : (slot->minrad >= 0 ? slot->minrad : soundminrad);
         s.flags = flags;
