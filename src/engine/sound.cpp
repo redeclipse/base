@@ -29,6 +29,36 @@ FVAR(IDF_PERSIST, soundevtscale, 0, 1, FVAR_MAX);
 FVAR(IDF_PERSIST, soundenvvol, 0, 1, FVAR_MAX);
 FVAR(IDF_PERSIST, soundenvscale, 0, 1, FVAR_MAX);
 
+const char *sounderror(bool msg)
+{
+    ALenum err = alGetError();
+    if(!msg && err == AL_NO_ERROR) return NULL;
+    return alGetString(err);
+}
+
+void soundsetdoppler(float v)
+{
+    if(nosound) return;
+    alGetError();
+    alDopplerFactor(v);
+    const char *err = sounderror(false);
+    if(err) conoutf("\frFailed to set doppler factor: %s", err);
+}
+FVARF(IDF_PERSIST, sounddoppler, 0, 0.05f, FVAR_MAX, soundsetdoppler(sounddoppler));
+
+void soundsetspeed(float v)
+{
+    if(nosound) return;
+    alGetError();
+    alSpeedOfSound(v * 8.f);
+    const char *err = sounderror(false);
+    if(err) conoutf("\frFailed to set speed of sound: %s", err);
+}
+FVARF(IDF_PERSIST, soundspeed, FVAR_NONZERO, 343.3f, FVAR_MAX, soundsetspeed(sounddoppler));
+
+FVAR(IDF_PERSIST, soundrefdist, FVAR_NONZERO, 8, FVAR_MAX);
+FVAR(IDF_PERSIST, soundrolloff, FVAR_NONZERO, 128, FVAR_MAX);
+
 void updatemusic()
 {
     changedvol = true;
@@ -40,13 +70,6 @@ VARF(IDF_PERSIST, musicvol, 0, 25, 255, updatemusic());
 VAR(IDF_PERSIST, musicfadein, 0, 1000, VAR_MAX);
 VAR(IDF_PERSIST, musicfadeout, 0, 2500, VAR_MAX);
 SVAR(0, titlemusic, "sounds/theme");
-
-const char *sounderror(bool msg)
-{
-    ALenum err = alGetError();
-    if(!msg && err == AL_NO_ERROR) return NULL;
-    return alGetString(err);
-}
 
 ALenum soundsample::setup(soundfile *s)
 {
@@ -118,6 +141,7 @@ ALenum sound::setup(soundsample *s)
     alSourcei(source, AL_LOOPING, flags&SND_LOOP ? AL_TRUE : AL_FALSE);
     SOUNDERROR(clear(); return err);
 
+    /*
     minrad = clamp(minrad, 1.f, maxrad); // must be > 0
     alSourcef(source, AL_REFERENCE_DISTANCE, minrad);
     SOUNDERROR(clear(); return err);
@@ -127,6 +151,13 @@ ALenum sound::setup(soundsample *s)
     SOUNDERROR(clear(); return err);
 
     alSourcef(source, AL_ROLLOFF_FACTOR, 1.f);
+    SOUNDERROR(clear(); return err);
+    */
+
+    alSourcef(source, AL_REFERENCE_DISTANCE, soundrefdist);
+    SOUNDERROR(clear(); return err);
+
+    alSourcef(source, AL_ROLLOFF_FACTOR, soundrolloff / maxrad);
     SOUNDERROR(clear(); return err);
 
     return AL_NO_ERROR;
@@ -319,7 +350,7 @@ void initsound()
 {
     if(nosound)
     {
-        if(sounddev && *sounddev)
+        if(*sounddev)
         {
             alGetError();
             snddev = alcOpenDevice(sounddev);
@@ -347,9 +378,12 @@ void initsound()
             snddev = NULL;
             return;
         }
+
         alcMakeContextCurrent(sndctx);
-        alDistanceModel(AL_LINEAR_DISTANCE);
-        alSpeedOfSound(343.0f / 0.125f);
+
+        alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
+        soundsetdoppler(sounddoppler);
+        soundsetspeed(soundspeed);
 
         conoutf("Sound: %s (%s) %s", alGetString(AL_RENDERER), alGetString(AL_VENDOR), alGetString(AL_VERSION));
 
