@@ -52,8 +52,9 @@ extern int mastervol, soundvol, musicvol;
 
 struct soundfile
 {
-	enum { SHORT = 0, FLOAT, MAX };
-    int type;
+	enum { SHORT = 0, FLOAT, INVALID };
+    enum { MONO = 0, SPATIAL, MUSIC, MAXMIX };
+    int type, mixtype;
     union
     {
         short *data_s;
@@ -64,34 +65,17 @@ struct soundfile
     SF_INFO info;
     sf_count_t frames;
     size_t size;
+    SNDFILE *sndfile;
 
-    soundfile(bool f) : len(0), format(AL_NONE)
-    {
-        if(f)
-        {
-            type = FLOAT;
-            size = sizeof(float);
-            data_f = NULL;
-        }
-        else
-        {
-            type = SHORT;
-            size = sizeof(short);
-            data_s = NULL;
-        }
-
-    }
+    soundfile() { reset(); }
     ~soundfile() { clear(); }
 
-    void clear()
-    {
-        switch(type)
-        {
-            case SHORT: if(data_s) delete[] data_s; break;
-            case FLOAT: if(data_f) delete[] data_f; break;
-            default: break;
-        }
-    }
+    bool setup(const char *name, int t, int m);
+    bool setupmus();
+    bool fillmus(bool retry = false);
+    bool setupwav();
+    void reset();
+    void clear();
 };
 
 struct soundsample
@@ -135,7 +119,7 @@ struct sound
     vector<int> buffer;
 
     sound() : hook(NULL) { reset(); }
-    ~sound() {}
+    ~sound() { clear(); }
 
     ALenum setup(soundsample *s);
     void cleanup();
@@ -149,6 +133,33 @@ struct sound
     ALenum push(soundsample *s);
 };
 extern vector<sound> sounds;
+
+#define MUSICBUFS 4
+#define MUSICSAMP 8192
+struct music
+{
+    char *name, *donecmd;
+    int donetime;
+    ALuint source;
+    ALuint buffer[MUSICBUFS];
+    soundfile *data;
+
+    music() { reset(); }
+    ~music() { clear(); }
+
+    ALenum setup(const char *n, const char *c, soundfile *s);
+    ALenum fill(ALint bufid);
+    void cleanup();
+    void reset();
+    void clear();
+    ALenum update();
+    bool valid();
+    bool active();
+    bool playing();
+    ALenum play();
+    ALenum push(const char *n, const char *c, soundfile *s);
+};
+extern music *mstream;
 
 #define issound(c) (sounds.inrange(c) && sounds[c].valid())
 

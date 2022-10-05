@@ -931,6 +931,7 @@ void progress(float amt, const char *s, ...)
     //if(engineready) UI::update();
     gl_drawnoview();
     swapbuffers(false);
+    updatesounds();
     progressing = false;
     identflags = oldflags;
 }
