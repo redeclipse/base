@@ -37,7 +37,7 @@ enum
 enum                                // entity types
 {
     NOTUSED = ET_EMPTY, LIGHT = ET_LIGHT, MAPMODEL = ET_MAPMODEL, PLAYERSTART = ET_PLAYERSTART, ENVMAP = ET_ENVMAP, PARTICLES = ET_PARTICLES,
-    MAPSOUND = ET_SOUND, LIGHTFX = ET_LIGHTFX, DECAL = ET_DECAL, WIND = ET_WIND, OUTLINE = ET_OUTLINE, WEAPON = ET_GAMESPECIFIC,
+    MAPSOUND = ET_SOUND, LIGHTFX = ET_LIGHTFX, DECAL = ET_DECAL, WIND = ET_WIND, OUTLINE = ET_OUTLINE, SOUNDENV = ET_SOUNDENV, WEAPON = ET_GAMESPECIFIC,
     TELEPORT, ACTOR, TRIGGER, PUSHER, AFFINITY, CHECKPOINT,
     ROUTE, RAIL, CAMERA,
     MAXENTTYPES
@@ -147,6 +147,12 @@ extern const enttypes enttype[] = {
             0,
             false,  false,  false,      false,      false,
                 "outline",      { "" }
+    },
+    {
+        SOUNDENV,        1,          0,      0,      EU_NONE,   5,        -1,          -1,          -1,     -1,      -1,
+            0, 0, 0,
+            false,  false,  false,      false,      false,
+                "soundenv",     { "type", "width", "length", "height", "fade" }
     },
     {
         WEAPON,         2,          59,     16,     EU_ITEM,    6,          -1,         2,          4,      5,      -1,
