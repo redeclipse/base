@@ -1,4 +1,5 @@
 #include "engine.h"
+#include <AL/al.h>
 
 ALCdevice *snddev = NULL;
 ALCcontext *sndctx = NULL;
@@ -348,6 +349,7 @@ void initsound()
         }
         alcMakeContextCurrent(sndctx);
         alDistanceModel(AL_LINEAR_DISTANCE);
+        alSpeedOfSound(343.0f / 0.125f);
 
         conoutf("Sound: %s (%s) %s", alGetString(AL_RENDERER), alGetString(AL_VENDOR), alGetString(AL_VERSION));
 
