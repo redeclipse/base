@@ -140,6 +140,7 @@ struct music
 {
     char *name, *donecmd;
     int donetime;
+    float gain;
     ALuint source;
     ALuint buffer[MUSICBUFS];
     soundfile *data;
