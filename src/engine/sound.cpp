@@ -18,6 +18,10 @@ SDL_Thread *mstream_thread;
 SDL_mutex *mstream_mutex;
 music *mstream = NULL;
 
+slotmanager<soundenv> soundenvs, mapsoundenvs;
+int newsoundenvidx = -1;
+soundenv *newsoundenv = NULL;
+
 VAR(IDF_PERSIST, mastervol, 0, 255, 255);
 VAR(IDF_PERSIST, soundvol, 0, 255, 255);
 SVARF(IDF_INIT, sounddev, "", initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
@@ -268,6 +272,7 @@ void clearsound()
 {
     loopv(sounds) sounds[i].clear();
     mapsounds.clear(false);
+    mapsoundenvs.clear();
 }
 
 soundfile *loadsoundfile(const char *name, int mixtype)
@@ -642,6 +647,7 @@ void resetsound()
     {
         gamesounds.clear(false);
         mapsounds.clear(false);
+        mapsoundenvs.clear();
         soundsamples.clear();
         return;
     }
@@ -1346,3 +1352,69 @@ void getcursounds(int idx, int prop)
     }
 }
 ICOMMAND(0, getcursound, "bb", (int *n, int *p), getcursounds(*n, *p));
+
+static void initsoundenv() { initprops(newsoundenv->props, soundenvprops, SOUNDENV_PROPS); }
+
+static void defsoundenv(const char *name, uint *code, slotmanager<soundenv> &envs)
+{
+    newsoundenvidx = envs.add(name);
+    newsoundenv = &envs[newsoundenvidx];
+    newsoundenv->name = envs.getname(newsoundenvidx);
+
+    initsoundenv();
+    execute(code);
+
+    newsoundenvidx = -1;
+    newsoundenv = NULL;
+}
+ICOMMAND(0, defsoundenv, "se", (char *name, uint *code), defsoundenv(name, code, soundenvs));
+ICOMMAND(0, defmapsoundenv, "se", (char *name, uint *code), defsoundenv(name, code, mapsoundenvs));
+
+template<class T>
+static void setsoundenvprop(const char *name, const T &val)
+{
+    if(!newsoundenv)
+    {
+        conoutf("\frError: cannot assign property %s, not loading soundenvs", name);
+        return;
+    }
+
+    property *p = findprop(name, newsoundenv->props, SOUNDENV_PROPS);
+
+    if(!p)
+    {
+        conoutf("\frError: %s, soundenv property %s not found", newsoundenv->getname(), name);
+        return;
+    }
+
+    p->set(val);
+}
+
+ICOMMAND(0, soundenvpropi, "siie", (char *name, int *ival),
+    setsoundenvprop(name, *ival));
+ICOMMAND(0, soundenvpropf, "sfie", (char *name, float *fval),
+    setsoundenvprop(name, *fval));
+
+static void dumpsoundenv(soundenv &env, stream *s)
+{
+    s->printf("defsoundenv %s [\n", escapestring(env.name));
+
+    loopi(SOUNDENV_PROPS)
+    {
+        property &prop = env.props[i];
+        switch(prop.type)
+        {
+            case PROP_INT:
+                s->printf("    soundenvpropi %s %d\n", prop.def->name, prop.get<int>());
+                break;
+
+            case PROP_FLOAT:
+                s->printf("    soundenvpropf %s %f\n", prop.def->name, prop.get<float>());
+                break;
+        }
+    }
+
+    s->printf("]\n");
+}
+
+void dumpsoundenvs(stream *s) { loopv(mapsoundenvs) dumpsoundenv(mapsoundenvs[i], s); }
