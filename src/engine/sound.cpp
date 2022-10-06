@@ -18,19 +18,22 @@ slotmanager<soundenv> soundenvs, mapsoundenvs;
 int newsoundenvidx = -1;
 soundenv *newsoundenv = NULL;
 
-VAR(IDF_PERSIST, mastervol, 0, 255, 255);
-VAR(IDF_PERSIST, soundvol, 0, 255, 255);
-SVARF(IDF_INIT, sounddev, "", initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
-VARF(IDF_INIT, soundmono, 0, 0, 1, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
-VARF(IDF_INIT, soundsrcs, 16, 256, 1024, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
-VARF(IDF_INIT, soundfreq, 0, 44100, 48000, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
-VARF(IDF_INIT, soundbuflen, 128, 1024, VAR_MAX, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
-VAR(IDF_PERSIST, soundmaxrad, 0, 512, VAR_MAX);
-VAR(IDF_PERSIST, soundminrad, 0, 0, VAR_MAX);
-FVAR(IDF_PERSIST, soundevtvol, 0, 1, FVAR_MAX);
-FVAR(IDF_PERSIST, soundevtscale, 0, 1, FVAR_MAX);
-FVAR(IDF_PERSIST, soundenvvol, 0, 1, FVAR_MAX);
-FVAR(IDF_PERSIST, soundenvscale, 0, 1, FVAR_MAX);
+SVARF(IDF_INIT, sounddevice, "", initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
+VARF(IDF_INIT, soundsources, 16, 256, 1024, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
+
+#define SOUNDVOL(oldname, newname, def) \
+    FVAR(IDF_PERSIST, sound##newname##vol, 0, def, 1); \
+    ICOMMAND(0, oldname##vol, "iN$", (int *n, int *numargs, ident *id), \
+        if(*numargs > 0) sound##newname##vol = clamp(*n, 0, 255) / 255.f; \
+        else if(*numargs < 0) intret(int(sound##newname##vol * 255)); \
+        else printvar(id, int(sound##newname##vol * 255)); \
+    );
+
+SOUNDVOL(master, master, 1.f);
+SOUNDVOL(sound, effect, 1.f);
+SOUNDVOL(music, music, 0.25f);
+FVAR(IDF_PERSIST, soundeffectevent, 0, 1, 2);
+FVAR(IDF_PERSIST, soundeffectenv, 0, 1, 2);
 
 const char *sounderror(bool msg)
 {
@@ -68,15 +71,12 @@ void updatemusic()
     bool hasmstream = mstream != NULL;
     SDL_UnlockMutex(mstream_mutex);
 
-    if(!connected() && !hasmstream && musicvol && mastervol) smartmusic(true);
+    if(!connected() && !hasmstream && soundmusicvol && soundmastervol) smartmusic(true);
 
     SDL_LockMutex(mstream_mutex);
-    if(mstream) mstream->gain = musicvol / 255.0f;
+    if(mstream) mstream->gain = soundmusicvol;
     SDL_UnlockMutex(mstream_mutex);
 }
-VARF(IDF_PERSIST, musicvol, 0, 64, 255, updatemusic());
-VAR(IDF_PERSIST, musicfadein, 0, 1000, VAR_MAX);
-VAR(IDF_PERSIST, musicfadeout, 0, 2500, VAR_MAX);
 SVAR(0, titlemusic, "sounds/theme");
 
 void mapsoundslot(int index, const char *name)
@@ -153,11 +153,11 @@ void initsound()
 {
     if(nosound)
     {
-        if(*sounddev)
+        if(*sounddevice)
         {
             alGetError();
-            snddev = alcOpenDevice(sounddev);
-            if(!snddev) conoutf("\frSound device initialisation failed: %s (with '%s', retrying default device)", sounderror(), sounddev);
+            snddev = alcOpenDevice(sounddevice);
+            if(!snddev) conoutf("\frSound device initialisation failed: %s (with '%s', retrying default device)", sounderror(), sounddevice);
         }
 
         if(!snddev)
@@ -286,7 +286,7 @@ bool playmusic(const char *name, bool looping)
         if(!w) continue;
         SOUNDCHECK(mstream->setup(name, w),
         {
-            mstream->gain = musicvol / 255.0f;
+            mstream->gain = soundmusicvol;
             mstream->looping = looping;
             SDL_UnlockMutex(mstream_mutex);
             mstreamloopinit();
@@ -328,7 +328,7 @@ void smartmusic(bool cond, bool init)
     SDL_UnlockMutex(mstream_mutex);
 
     if(init) canmusic = true;
-    if(!canmusic || nosound || !mastervol || !musicvol || (!cond && isplayingmusic) || !*titlemusic)
+    if(!canmusic || nosound || !soundmastervol || !soundmusicvol || (!cond && isplayingmusic) || !*titlemusic)
         return;
 
     if(!playingmusic() || (cond && !isplayingtitlemusic)) playmusic(titlemusic);
@@ -452,7 +452,7 @@ int soundindex()
     }
     sources.sort(sourcecmp);
 
-    while(sources.length() >= soundsrcs)
+    while(sources.length() >= soundsources)
     {
         sources[0]->clear();
         sources.remove(0);
@@ -499,7 +499,7 @@ void updatesounds()
     bool mstreamvalid = mstream && mstream->valid();
     SDL_UnlockMutex(mstream_mutex);
 
-    if(!mstreamvalid || (hasmstream && (nosound || !mastervol || !musicvol || !playingmusic())))
+    if(!mstreamvalid || (hasmstream && (nosound || !soundmastervol || !soundmusicvol || !playingmusic())))
         stopmusic();
 
     vec o[2];
@@ -507,7 +507,7 @@ void updatesounds()
     o[0].y = (float)(sinf(RAD*(camera1->yaw-90)));
     o[0].z = o[1].x = o[1].y = 0.0f;
     o[1].z = 1.0f;
-    alListenerf(AL_GAIN, mastervol/255.f);
+    alListenerf(AL_GAIN, soundmastervol);
     alListenerfv(AL_ORIENTATION, (ALfloat *) &o);
     alListenerfv(AL_POSITION, (ALfloat *) &camera1->o);
     alListenerfv(AL_VELOCITY, (ALfloat *) &game::focusedent()->vel);
@@ -518,7 +518,7 @@ void updatesounds()
 
 int playsound(int n, const vec &pos, physent *d, int flags, int vol, int maxrad, int minrad, int *hook, int ends)
 {
-    if(nosound || !vol || !mastervol || !soundvol || !vol || (flags&SND_MAP ? !soundenvvol : !soundevtvol)) return -1;
+    if(nosound || !vol || !soundmastervol || !soundeffectvol || !vol || (flags&SND_MAP ? !soundeffectenv : !soundeffectevent)) return -1;
     if(((flags&SND_MAP || (!(flags&SND_UNMAPPED) && n >= S_GAMESPECIFIC)) && client::waiting(true)) || (!d && !insideworld(pos))) return -1;
 
     slotmanager<soundslot> &soundset = flags&SND_MAP ? mapsounds : gamesounds;
@@ -547,8 +547,8 @@ int playsound(int n, const vec &pos, physent *d, int flags, int vol, int maxrad,
 
         s.slot = slot;
         s.vol = vol > 0 ? vol : 255;
-        s.maxrad = maxrad > 0 ? maxrad : (slot->maxrad > 0 ? slot->maxrad : soundmaxrad);
-        s.minrad = minrad >= 0 ? minrad : (slot->minrad >= 0 ? slot->minrad : soundminrad);
+        s.maxrad = maxrad > 0 ? maxrad : (slot->maxrad > 0 ? slot->maxrad : 0);
+        s.minrad = minrad >= 0 ? minrad : (slot->minrad >= 0 ? slot->minrad : 0);
         s.flags = flags;
         s.millis = lastmillis;
         s.ends = ends;
@@ -1006,8 +1006,7 @@ void sound::reset()
     curgain = 1;
     material = MAT_AIR;
     flags = millis = ends = 0;
-    maxrad = soundmaxrad;
-    minrad = soundminrad;
+    minrad = maxrad = 0;
     index = slotnum = -1;
     if(hook) *hook = -1;
     hook = NULL;
@@ -1029,7 +1028,7 @@ ALenum sound::update()
     }
 
     material = lookupmaterial(pos);
-    curgain = clamp((soundvol/255.f)*(slot->vol/255.f)*(flags&SND_MAP ? soundenvvol : soundevtvol), 0.f, 1.f);
+    curgain = clamp(soundeffectvol*(slot->vol/255.f)*(flags&SND_MAP ? soundeffectenv : soundeffectevent), 0.f, 1.f);
 
     if(flags&SND_CLAMPED)
     {
