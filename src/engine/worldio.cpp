@@ -710,6 +710,9 @@ void save_config(char *mname, bool forcesave = false)
     if(mapsounds.length()) h->printf("\n");
     if(verbose) conoutf("Saved %d mapsound slots", mapsounds.length());
 
+    progress(0, "Saving mapsoundenvs..");
+    dumpsoundenvs(h);
+
     delete h;
     if(verbose) conoutf("Saved config %s", fname);
 }

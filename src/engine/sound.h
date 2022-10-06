@@ -1,3 +1,5 @@
+#include "soundenvprop.h"
+
 enum
 {
     S_PRESS = 0, S_BACK, S_ACTION, S_NUM_GENERIC,
@@ -106,6 +108,15 @@ struct soundslot
 };
 extern slotmanager<soundslot> gamesounds, mapsounds;
 
+struct soundenv
+{
+    const char *name;
+    property props[SOUNDENV_PROPS];
+
+    const char *getname() const { return name ? name : ""; }
+};
+extern slotmanager<soundenv> soundenvs, mapsoundenvs;
+
 struct sound
 {
     ALuint source;
@@ -180,6 +191,7 @@ extern void clearsound();
 extern int playsound(int n, const vec &pos, physent *d = NULL, int flags = 0, int vol = -1, int maxrad = -1, int minrad = -1, int *hook = NULL, int ends = 0);
 extern void removetrackedsounds(physent *d);
 extern void removemapsounds();
+extern void dumpsoundenvs(stream *s);
 
 extern void initmumble();
 extern void closemumble();
