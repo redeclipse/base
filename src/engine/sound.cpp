@@ -1,5 +1,8 @@
 #include "engine.h"
 #include <AL/al.h>
+#include <SDL_mutex.h>
+#include <SDL_thread.h>
+#include <synchapi.h>
 
 ALCdevice *snddev = NULL;
 ALCcontext *sndctx = NULL;
@@ -11,6 +14,8 @@ hashnameset<soundsample> soundsamples;
 slotmanager<soundslot> gamesounds, mapsounds;
 vector<slot *> soundmap;
 vector<sound> sounds;
+SDL_Thread *mstream_thread;
+SDL_mutex *mstream_mutex;
 music *mstream = NULL;
 
 VAR(IDF_PERSIST, mastervol, 0, 255, 255);
@@ -60,7 +65,9 @@ FVAR(IDF_PERSIST, soundrolloff, FVAR_NONZERO, 128, FVAR_MAX);
 void updatemusic()
 {
     changedvol = true;
+    SDL_LockMutex(mstream_mutex);
     if(!connected() && !mstream && musicvol && mastervol) smartmusic(true);
+    SDL_UnlockMutex(mstream_mutex);
 }
 VARF(IDF_PERSIST, musicvol, 0, 64, 255, updatemusic());
 VAR(IDF_PERSIST, musicfadein, 0, 1000, VAR_MAX);
@@ -85,6 +92,58 @@ void mapsoundslots()
     loopi(S_NUM_GENERIC) mapsoundslot(i, names[i]);
 
     game::mapgamesounds();
+}
+
+int mstreamloop(void *data)
+{
+    SDL_Thread *thread = NULL;
+
+    SDL_LockMutex(mstream_mutex);
+    if(!mstream_thread || SDL_GetThreadID(mstream_thread) != SDL_ThreadID())
+    {
+        SDL_UnlockMutex(mstream_mutex);
+        return 0;
+
+    }
+    SDL_UnlockMutex(mstream_mutex);
+
+    while(true)
+    {
+        SDL_LockMutex(mstream_mutex);
+
+        if(!mstream_thread || SDL_GetThreadID(mstream_thread) != SDL_ThreadID() || !mstream)
+        {
+            SDL_UnlockMutex(mstream_mutex);
+            break;
+        }
+
+        if(mstream) mstream->update();
+
+        SDL_UnlockMutex(mstream_mutex);
+        Sleep(10);
+    }
+
+    return 0;
+}
+
+void mstreamloopinit()
+{
+    SDL_LockMutex(mstream_mutex);
+    mstream_thread = SDL_CreateThread(mstreamloop, "mstream", NULL);
+    SDL_UnlockMutex(mstream_mutex);
+}
+
+void mstreamloopstop()
+{
+    SDL_LockMutex(mstream_mutex);
+
+    if(mstream_thread)
+    {
+        SDL_DetachThread(mstream_thread);
+        mstream_thread = NULL;
+    }
+
+    SDL_UnlockMutex(mstream_mutex);
 }
 
 void initsound()
@@ -148,16 +207,28 @@ void initsound()
         alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
         soundsetdoppler(sounddoppler);
         soundsetspeed(soundspeed);
+
+        mstream_mutex = SDL_CreateMutex();
     }
     initmumble();
 }
 
 void stopmusic(bool docmd)
 {
-    if(!mstream) return;
+    SDL_LockMutex(mstream_mutex);
+
+    if(!mstream)
+    {
+        SDL_UnlockMutex(mstream_mutex);
+        return;
+    }
+
     if(docmd && mstream->donecmd) execute(mstream->donecmd);
     delete mstream;
     mstream = NULL;
+    SDL_UnlockMutex(mstream_mutex);
+
+    mstreamloopstop();
 }
 
 void musicdone(bool docmd)
@@ -211,6 +282,8 @@ bool playmusic(const char *name, const char *cmd)
     stopmusic(false);
     if(!name || !*name) return false;
 
+    SDL_LockMutex(mstream_mutex);
+
     string buf;
     const char *dirs[] = { "", "sounds/" }, *exts[] = { "", ".wav", ".ogg" };
     mstream = new music;
@@ -220,11 +293,18 @@ bool playmusic(const char *name, const char *cmd)
         formatstring(buf, "%s%s%s", dirs[i], name, exts[k]);
         soundfile *w = loadsoundfile(buf, soundfile::MUSIC);
         if(!w) continue;
-        SOUNDCHECK(mstream->setup(name, cmd, w), return true, conoutf("Error loading %s: %s", buf, alGetString(err)));
+        SOUNDCHECK(mstream->setup(name, cmd, w),
+        {
+            SDL_UnlockMutex(mstream_mutex);
+            mstreamloopinit();
+            return true;
+        }, conoutf("Error loading %s: %s", buf, alGetString(err)));
     }
 
     conoutf("\frCould not play music: %s", name);
     delete mstream;
+
+    SDL_UnlockMutex(mstream_mutex);
 
     return false;
 }
@@ -233,26 +313,44 @@ COMMANDN(0, music, playmusic, "ss");
 
 bool playingmusic(bool check)
 {
-    if(!mstream) return false;
-    if(mstream->playing())
+    bool result = false;
+
+    SDL_LockMutex(mstream_mutex);
+
+    if(mstream)
     {
-        if(mstream->donetime >= 0) mstream->donetime = -1;
-        return true;
+        if(mstream->playing())
+        {
+            if(mstream->donetime >= 0) mstream->donetime = -1;
+            result = true;
+        }
+        else if(!check)
+        {
+            if(mstream->donetime < 0)
+            {
+                mstream->donetime = totalmillis;
+                result = true;
+            }
+            if(totalmillis-mstream->donetime < 500) result = true;
+        }
     }
-    if(!check) return false;
-    if(mstream->donetime < 0)
-    {
-        mstream->donetime = totalmillis;
-        return true;
-    }
-    if(totalmillis-mstream->donetime < 500) return true;
-    return false;
+
+    SDL_UnlockMutex(mstream_mutex);
+
+    return result;
 }
 
 void smartmusic(bool cond, bool init)
 {
+    SDL_LockMutex(mstream_mutex);
+
     if(init) canmusic = true;
-    if(!canmusic || nosound || !mastervol || !musicvol || (!cond && mstream && mstream->playing()) || !*titlemusic) return;
+    if(!canmusic || nosound || !mastervol || !musicvol || (!cond && mstream && mstream->playing()) || !*titlemusic)
+    {
+        SDL_UnlockMutex(mstream_mutex);
+        return;
+    }
+
     if(!playingmusic() || (cond && strcmp(mstream->name, titlemusic))) playmusic(titlemusic);
 #if 0
     else
@@ -261,6 +359,8 @@ void smartmusic(bool cond, bool init)
         changedvol = true;
     }
 #endif
+
+    SDL_UnlockMutex(mstream_mutex);
 }
 ICOMMAND(0, smartmusic, "i", (int *a), smartmusic(*a));
 
@@ -410,7 +510,10 @@ void updatesounds()
         //conoutf("Clearing sound source %d [%d] %d [%d] %s", s.source, s.index, s.ends, lastmillis, sounds[i].playing() ? "playing" : "not playing");
         s.clear();
     }
-    if(mstream)
+    SDL_LockMutex(mstream_mutex);
+    bool hasmstream = mstream != NULL;
+    SDL_UnlockMutex(mstream_mutex);
+    if(hasmstream)
     {
         if(nosound || !mastervol || !musicvol) stopmusic(false);
         else if(!playingmusic()) musicdone(true);
@@ -422,7 +525,6 @@ void updatesounds()
         }
 #endif
     }
-    if(mstream) mstream->update();
 
     vec o[2];
     o[0].x = (float)(cosf(RAD*(camera1->yaw-90)));
@@ -524,7 +626,10 @@ void resetsound()
     clearchanges(CHANGE_SOUND);
     loopv(sounds) sounds[i].clear();
     enumerate(soundsamples, soundsample, s, s.cleanup());
+    SDL_LockMutex(mstream_mutex);
     if(mstream) delete mstream;
+    SDL_UnlockMutex(mstream_mutex);
+    mstreamloopstop();
     nosound = true;
     initsound();
     if(nosound)
