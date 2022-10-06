@@ -180,12 +180,18 @@ namespace fx
         virtual ~fxproperty();
 
         const fxpropertydef *getdef() const { return (fxpropertydef *)def; }
+
+        virtual void pack(vector<uchar> &buf) const;
+        virtual int unpack(uchar *buf, int bufsize);
     };
 
     struct propmodlerp
     {
         fxproperty lerp;
         property props[FX_MOD_LERP_PROPS];
+
+        void pack(vector<uchar> &buf);
+        int unpack(uchar *buf, int bufsize);
     };
 
     struct fxdef
