@@ -156,12 +156,12 @@ void property::pack(vector<uchar> &buf) const
     }
 }
 
-int property::unpack(uchar *buf, int bufsize)
+int property::unpack(uchar *buf, size_t bufsize)
 {
     ASSERT(def);
 
     int bufread = 0;
-    int *datasize_packed = 0;
+    size_t *datasize_packed = 0;
 
     if(bufsize <= sizeof(*datasize_packed))
     {
@@ -169,7 +169,7 @@ int property::unpack(uchar *buf, int bufsize)
         return 0;
     }
 
-    datasize_packed = (int*)buf;
+    datasize_packed = (size_t*)buf;
     bufread += sizeof(*datasize_packed);
 
     switch(type)
@@ -179,7 +179,7 @@ int property::unpack(uchar *buf, int bufsize)
         case PROP_FLOAT:
             if(*datasize_packed != size())
             {
-                conoutf("Error unpacking prop '%s': unexpected data size! Wanted: %d, got: %d",
+                conoutf("Error unpacking prop '%s': unexpected data size! Wanted: %lu, got: %lu",
                     def->name, size(), *datasize_packed);
 
                 return 0;

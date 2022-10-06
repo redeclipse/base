@@ -351,6 +351,7 @@ SERVER_OBJS = \
     shared/stream-standalone.o \
     shared/tools-standalone.o \
     shared/zip-standalone.o \
+    shared/prop.o \
     support/jsmn.o \
     support/sqlite3.o \
     engine/cdpi-standalone.o \
