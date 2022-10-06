@@ -182,7 +182,7 @@ namespace fx
         const fxpropertydef *getdef() const { return (fxpropertydef *)def; }
 
         virtual void pack(vector<uchar> &buf) const;
-        virtual int unpack(uchar *buf, int bufsize);
+        virtual int unpack(uchar *buf, size_t bufsize);
     };
 
     struct propmodlerp
@@ -191,7 +191,7 @@ namespace fx
         property props[FX_MOD_LERP_PROPS];
 
         void pack(vector<uchar> &buf);
-        int unpack(uchar *buf, int bufsize);
+        int unpack(uchar *buf, size_t bufsize);
     };
 
     struct fxdef

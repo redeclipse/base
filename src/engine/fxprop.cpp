@@ -56,7 +56,7 @@ namespace fx
         if(lerp) lerp->pack(buf);
     }
 
-    int fxproperty::unpack(uchar *buf, int bufsize)
+    int fxproperty::unpack(uchar *buf, size_t bufsize)
     {
         static constexpr int EXTRA_RAND = 1;
         static constexpr int EXTRA_LERP = (1 << 1);
@@ -109,7 +109,7 @@ namespace fx
         loopi(FX_MOD_LERP_PROPS) props[i].pack(buf);
     }
 
-    int propmodlerp::unpack(uchar *buf, int bufsize)
+    int propmodlerp::unpack(uchar *buf, size_t bufsize)
     {
         int bufread = lerp.unpack(buf, bufsize);
         if(bufread) loopi(FX_MOD_LERP_PROPS)

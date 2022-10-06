@@ -46,7 +46,7 @@ struct property
     void reset();
     size_t size() const;
     virtual void pack(vector<uchar> &buf) const;
-    virtual int unpack(uchar *buf, int size);
+    virtual int unpack(uchar *buf, size_t size);
 
     void operator=(int value) { ival = value; }
     void operator=(float value) { fval = value; }
