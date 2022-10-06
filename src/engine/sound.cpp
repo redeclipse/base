@@ -1,5 +1,4 @@
 #include "engine.h"
-#include <AL/al.h>
 #include <SDL_mutex.h>
 #include <SDL_thread.h>
 #include <synchapi.h>
@@ -7,7 +6,7 @@
 ALCdevice *snddev = NULL;
 ALCcontext *sndctx = NULL;
 
-bool nosound = true, changedvol = false, canmusic = false;
+bool nosound = true, canmusic = false;
 bool al_ext_efx = false, al_soft_spatialize = false, al_ext_float32 = false;
 
 hashnameset<soundsample> soundsamples;
@@ -68,8 +67,6 @@ FVAR(IDF_PERSIST, soundrolloff, FVAR_NONZERO, 128, FVAR_MAX);
 
 void updatemusic()
 {
-    changedvol = true;
-
     SDL_LockMutex(mstream_mutex);
     bool hasmstream = mstream != NULL;
     SDL_UnlockMutex(mstream_mutex);
@@ -116,6 +113,7 @@ int mstreamloop(void *data)
     }
     SDL_UnlockMutex(mstream_mutex);
 
+    bool isvalid = false;
     while(true)
     {
         SDL_LockMutex(mstream_mutex);
@@ -126,11 +124,16 @@ int mstreamloop(void *data)
             break;
         }
 
-        if(mstream) mstream->update();
+        if(mstream)
+        {
+            mstream->update();
+            if(mstream->valid()) isvalid = true;
+        }
 
         SDL_UnlockMutex(mstream_mutex);
         Sleep(10);
     }
+    if(!isvalid) stopmusic();
 
     return 0;
 }
@@ -222,7 +225,7 @@ void initsound()
     initmumble();
 }
 
-void stopmusic(bool docmd)
+void stopmusic()
 {
     SDL_LockMutex(mstream_mutex);
 
@@ -232,7 +235,6 @@ void stopmusic(bool docmd)
         return;
     }
 
-    if(docmd && mstream->donecmd) execute(mstream->donecmd);
     delete mstream;
     mstream = NULL;
     SDL_UnlockMutex(mstream_mutex);
@@ -240,23 +242,10 @@ void stopmusic(bool docmd)
     mstreamloopstop();
 }
 
-void musicdone(bool docmd)
-{
-    if(nosound) return;
-#if 0
-    if(musicfadeout && !docmd)
-    {
-        if(Mix_PlayingMusic()) Mix_FadeOutMusic(musicfadeout);
-    }
-    else stopmusic(docmd);
-#endif
-    stopmusic(docmd);
-}
-
 void stopsound()
 {
     if(nosound) return;
-    stopmusic(false);
+    stopmusic();
     clearsound();
     enumerate(soundsamples, soundsample, s, s.cleanup());
     soundsamples.clear();
@@ -286,26 +275,28 @@ soundfile *loadsoundfile(const char *name, int mixtype)
     return w;
 }
 
-bool playmusic(const char *name, const char *cmd)
+const char *sounddirs[] = { "", "sounds/" }, *soundexts[] = { "", ".ogg", ".flac", ".wav" };
+
+bool playmusic(const char *name, bool looping)
 {
     if(nosound) return false;
-    stopmusic(false);
+    stopmusic();
     if(!name || !*name) return false;
 
     SDL_LockMutex(mstream_mutex);
 
     string buf;
-    const char *dirs[] = { "", "sounds/" }, *exts[] = { "", ".wav", ".ogg" };
     mstream = new music;
 
-    loopi(sizeof(dirs)/sizeof(dirs[0])) loopk(sizeof(exts)/sizeof(exts[0]))
+    loopi(sizeof(sounddirs)/sizeof(sounddirs[0])) loopk(sizeof(soundexts)/sizeof(soundexts[0]))
     {
-        formatstring(buf, "%s%s%s", dirs[i], name, exts[k]);
+        formatstring(buf, "%s%s%s", sounddirs[i], name, soundexts[k]);
         soundfile *w = loadsoundfile(buf, soundfile::MUSIC);
         if(!w) continue;
-        SOUNDCHECK(mstream->setup(name, cmd, w),
+        SOUNDCHECK(mstream->setup(name, w),
         {
             mstream->gain = musicvol / 255.0f;
+            mstream->looping = looping;
             SDL_UnlockMutex(mstream_mutex);
             mstreamloopinit();
             return true;
@@ -314,37 +305,22 @@ bool playmusic(const char *name, const char *cmd)
 
     conoutf("\frCould not play music: %s", name);
     delete mstream;
+    mstream = NULL;
 
     SDL_UnlockMutex(mstream_mutex);
 
     return false;
 }
 
-COMMANDN(0, music, playmusic, "ss");
+ICOMMAND(0, music, "sb", (char *s, int *n), playmusic(s, *n != 0));
 
-bool playingmusic(bool check)
+bool playingmusic()
 {
     bool result = false;
 
     SDL_LockMutex(mstream_mutex);
 
-    if(mstream)
-    {
-        if(mstream->playing())
-        {
-            if(mstream->donetime >= 0) mstream->donetime = -1;
-            result = true;
-        }
-        else if(!check)
-        {
-            if(mstream->donetime < 0)
-            {
-                mstream->donetime = totalmillis;
-                result = true;
-            }
-            if(totalmillis-mstream->donetime < 500) result = true;
-        }
-    }
+    if(mstream && mstream->playing()) result = true;
 
     SDL_UnlockMutex(mstream_mutex);
 
@@ -365,13 +341,6 @@ void smartmusic(bool cond, bool init)
         return;
 
     if(!playingmusic() || (cond && !isplayingtitlemusic)) playmusic(titlemusic);
-#if 0
-    else
-    {
-        Mix_VolumeMusic(int((mastervol/255.f)*(musicvol/255.f)*MIX_MAX_VOLUME));
-        changedvol = true;
-    }
-#endif
 }
 ICOMMAND(0, smartmusic, "i", (int *a), smartmusic(*a));
 
@@ -392,26 +361,23 @@ static soundsample *loadsound(const char *name)
         sample->reset();
     }
 
-    if(!sample->valid())
+    if(sample->valid()) return sample;
+
+    string buf;
+    loopi(sizeof(sounddirs)/sizeof(sounddirs[0])) loopk(sizeof(soundexts)/sizeof(soundexts[0]))
     {
-        string buf;
-        const char *dirs[] = { "", "sounds/" }, *exts[] = { "", ".wav", ".ogg", ".mp3" };
-        bool found = false;
-        loopi(sizeof(dirs)/sizeof(dirs[0]))
-        {
-            loopk(sizeof(exts)/sizeof(exts[0]))
-            {
-                formatstring(buf, "%s%s%s", dirs[i], sample->name, exts[k]);
-                soundfile *w = loadsoundfile(buf, al_soft_spatialize ? soundfile::SPATIAL : soundfile::MONO);
-                if(!w) continue;
-                SOUNDCHECK(sample->setup(w), found = true, conoutf("Error loading %s: %s", buf, alGetString(err)));
-                delete w; // don't need to keep around the data
-                if(found) break;
-            }
-            if(found) break;
-        }
+        formatstring(buf, "%s%s%s", sounddirs[i], sample->name, soundexts[k]);
+        soundfile *w = loadsoundfile(buf, al_soft_spatialize ? soundfile::SPATIAL : soundfile::MONO);
+        if(!w) continue;
+        SOUNDCHECK(sample->setup(w), {
+            delete w;
+            return sample;
+        }, {
+            delete w;
+            conoutf("Error loading %s: %s", buf, alGetString(err));
+        });
     }
-    return sample;
+    return NULL;
 }
 
 static void loadsamples(soundslot &slot, const char *name, int variants, bool farvariant)
@@ -461,12 +427,27 @@ int addsound(const char *id, const char *name, int vol, int maxrad, int minrad, 
 ICOMMAND(0, registersound, "ssissii", (char *i, char *n, int *v, char *w, char *x, int *u, int *f), intret(addsound(i, n, *v, *w ? parseint(w) : -1, *x ? parseint(x) : -1, *u, *f, gamesounds)));
 ICOMMAND(0, mapsound, "sissi", (char *n, int *v, char *w, char *x, int *u), intret(addsound(NULL, n, *v, *w ? parseint(w) : -1, *x ? parseint(x) : -1, *u, 0, mapsounds)));
 
-static inline bool sourcecmp(const sound *x, const sound *y)
+static inline bool sourcecmp(const sound *x, const sound *y) // sort with most likely to be culled first!
 {
-    if(x->flags&SND_PRIORITY && !(y->flags&SND_PRIORITY)) return true;
-    if(!(x->flags&SND_PRIORITY) && y->flags&SND_PRIORITY) return false;
-    if(x->pos.dist(camera1->o) < y->pos.dist(camera1->o)) return true;
-    if(x->pos.dist(camera1->o) > y->pos.dist(camera1->o)) return false;
+    bool xprio = x->flags&SND_PRIORITY, yprio = y->flags&SND_PRIORITY;
+    if(!xprio && yprio) return true;
+    if(xprio && !yprio) return false;
+
+    bool xmap = x->flags&SND_MAP, ymap = y->flags&SND_MAP;
+    if(!xmap && ymap) return true;
+    if(xmap && !ymap) return false;
+
+    bool xnoatt = x->flags&SND_NOATTEN || x->flags&SND_NODIST, ynoatt = y->flags&SND_NOATTEN || y->flags&SND_NODIST;
+    if(!xnoatt && ynoatt) return true;
+    if(xnoatt && !ynoatt) return false;
+
+    if(!xnoatt && !ynoatt)
+    {
+        float xdist = x->pos.dist(camera1->o), ydist = y->pos.dist(camera1->o);
+        if(xdist > ydist) return true;
+        if(xdist < ydist) return false;
+    }
+
     return rnd(2);
 }
 
@@ -521,21 +502,11 @@ void updatesounds()
         //conoutf("Clearing sound source %d [%d] %d [%d] %s", s.source, s.index, s.ends, lastmillis, sounds[i].playing() ? "playing" : "not playing");
         s.clear();
     }
+
     SDL_LockMutex(mstream_mutex);
     bool hasmstream = mstream != NULL;
     SDL_UnlockMutex(mstream_mutex);
-    if(hasmstream)
-    {
-        if(nosound || !mastervol || !musicvol) stopmusic(false);
-        else if(!playingmusic()) musicdone(true);
-#if 0
-        else if(changedvol)
-        {
-            Mix_VolumeMusic(int((mastervol/255.f)*(musicvol/255.f)*MIX_MAX_VOLUME));
-            changedvol = false;
-        }
-#endif
-    }
+    if(hasmstream && (nosound || !mastervol || !musicvol || !playingmusic())) stopmusic();
 
     vec o[2];
     o[0].x = (float)(cosf(RAD*(camera1->yaw-90)));
@@ -637,10 +608,7 @@ void resetsound()
     clearchanges(CHANGE_SOUND);
     loopv(sounds) sounds[i].clear();
     enumerate(soundsamples, soundsample, s, s.cleanup());
-    SDL_LockMutex(mstream_mutex);
-    if(mstream) delete mstream;
-    SDL_UnlockMutex(mstream_mutex);
-    mstreamloopstop();
+    stopmusic();
     nosound = true;
     initsound();
     if(nosound)
@@ -808,7 +776,7 @@ bool soundfile::setup(const char *name, int t, int m)
         return false;
     }
 
-    return mixtype == soundfile::MUSIC ? setupmus() : setupwav();
+    return mixtype == soundfile::MUSIC ? setupmus() : setupsnd();
 }
 
 bool soundfile::setupmus()
@@ -853,7 +821,7 @@ bool soundfile::fillmus(bool retry)
     return true;
 }
 
-bool soundfile::setupwav()
+bool soundfile::setupsnd()
 {
     switch(type)
     {
@@ -1041,7 +1009,7 @@ void sound::reset()
     slot = NULL;
     owner = NULL;
     vol = 255;
-    curvol = 1;
+    curgain = 1;
     material = MAT_AIR;
     flags = millis = ends = 0;
     maxrad = soundmaxrad;
@@ -1067,10 +1035,18 @@ ALenum sound::update()
     }
 
     material = lookupmaterial(pos);
-    curvol = clamp((soundvol/255.f)*(vol/255.f)*(slot->vol/255.f)*(flags&SND_MAP ? soundenvvol : soundevtvol), 0.f, 1.f);
+    curgain = clamp((soundvol/255.f)*(slot->vol/255.f)*(flags&SND_MAP ? soundenvvol : soundevtvol), 0.f, 1.f);
+
+    if(flags&SND_CLAMPED)
+    {
+        SOUNDERROR();
+        alSourcef(source, AL_MIN_GAIN, vol / 255.f);
+        SOUNDERROR(clear(); return err);
+    }
+    else curgain *= vol / 255.f;
 
     SOUNDERROR();
-    alSourcef(source, AL_GAIN, curvol);
+    alSourcef(source, AL_GAIN, curgain);
     SOUNDERROR(clear(); return err);
 
     vec o = pos, v = vel;
@@ -1133,12 +1109,11 @@ ALenum sound::push(soundsample *s)
     return AL_NO_ERROR;
 }
 
-ALenum music::setup(const char *n, const char *c, soundfile *s)
+ALenum music::setup(const char *n, soundfile *s)
 {
     if(!s) return AL_NO_ERROR;
 
     name = newstring(n);
-    if(c && *c) donecmd = newstring(c);
 
     SOUNDERROR();
     alGenBuffers(MUSICBUFS, buffer);
@@ -1162,8 +1137,7 @@ ALenum music::setup(const char *n, const char *c, soundfile *s)
     for(; r < MUSICBUFS; r++)
     {
         if(!data->fillmus()) break;
-        ALenum err = fill(buffer[r]);
-        if(err != AL_NO_ERROR) return err;
+        SOUNDCHECK(fill(buffer[r]), , return err);
     }
 
     alSourceQueueBuffers(source, r, buffer);
@@ -1191,17 +1165,17 @@ void music::cleanup()
     alDeleteSources(1, &source);
     alDeleteBuffers(MUSICBUFS, buffer);
     if(name) delete[] name;
-    if(donecmd) delete[] donecmd;
     if(data) delete data;
 }
 
 void music::reset()
 {
-    name = donecmd = NULL;
-    donetime = -1;
+    name = NULL;
     source = 0;
     loopi(MUSICBUFS) buffer[i] = 0;
     data = NULL;
+    gain = 1;
+    looping = true;
 }
 
 void music::clear()
@@ -1226,9 +1200,8 @@ ALenum music::update()
         SOUNDERROR(clear(); return err);
         processed--;
 
-        if(!data->fillmus()) continue;
-        ALenum err = fill(bufid);
-        if(err != AL_NO_ERROR) return err;
+        if(!data->fillmus(!looping)) continue;
+        SOUNDCHECK(fill(bufid), , return err);
 
         alSourceQueueBuffers(source, 1, &bufid);
         SOUNDERROR(clear(); return err);
@@ -1249,6 +1222,7 @@ ALenum music::update()
             alSourcePlay(source);
             SOUNDERROR(clear(); return err);
         }
+        else clear();
     }
 
     return AL_NO_ERROR;
@@ -1288,9 +1262,9 @@ ALenum music::play()
     return AL_NO_ERROR;
 }
 
-ALenum music::push(const char *n, const char *c, soundfile *s)
+ALenum music::push(const char *n, soundfile *s)
 {
-    SOUNDCHECK(setup(n, c, s), , return err);
+    SOUNDCHECK(setup(n, s), , return err);
     SOUNDCHECK(update(), , return err);
     SOUNDCHECK(play(), , return err);
     return AL_NO_ERROR;
@@ -1329,7 +1303,7 @@ void getcursounds(int idx, int prop)
         else switch(prop)
         {
             case 0: intret(sounds[idx].vol); break;
-            case 1: intret(int(sounds[idx].curvol*255)); break;
+            case 1: intret(int(sounds[idx].curgain*255)); break;
             case 2: intret(0); break; // curpan
             case 3: intret(sounds[idx].flags); break;
             case 4: intret(sounds[idx].maxrad); break;
@@ -1352,6 +1326,27 @@ void getcursounds(int idx, int prop)
     }
 }
 ICOMMAND(0, getcursound, "bb", (int *n, int *p), getcursounds(*n, *p));
+
+void getmusics(int prop)
+{
+    if(prop < 0)
+    {
+        intret(5);
+        return;
+    }
+    SDL_LockMutex(mstream_mutex);
+    if(mstream) switch(prop)
+    {
+        case 0: intret(mstream->looping ? 1 : 0); break;
+        case 1: floatret(mstream->gain); break;
+        case 2: intret(mstream->valid() ? 1 : 0); break;
+        case 3: intret(mstream->active() ? 1 : 0); break;
+        case 4: intret(mstream->playing() ? 1 : 0); break;
+        default: break;
+    }
+    SDL_UnlockMutex(mstream_mutex);
+}
+ICOMMAND(0, getmusic, "b", (int *p), getmusics(*p));
 
 static void initsoundenv() { initprops(newsoundenv->props, soundenvprops, SOUNDENV_PROPS); }
 
