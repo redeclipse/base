@@ -1,7 +1,4 @@
 #include "engine.h"
-#include <SDL_mutex.h>
-#include <SDL_thread.h>
-#include <synchapi.h>
 
 ALCdevice *snddev = NULL;
 ALCcontext *sndctx = NULL;
@@ -126,7 +123,7 @@ int mstreamloop(void *data)
         if(mstream) mstream->update();
 
         SDL_UnlockMutex(mstream_mutex);
-        Sleep(10);
+        SDL_Delay(10);
     }
 
     return 0;
