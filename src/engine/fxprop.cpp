@@ -4,6 +4,29 @@
 
 namespace fx
 {
+    static const struct
+    {
+        fxpropertydef *defs;
+        int num;
+    } extdefs[FX_TYPES] =
+    {
+        { propdefpart, FX_PART_PROPS },
+        { propdeflight, FX_LIGHT_PROPS },
+        { propdefsound, FX_SOUND_PROPS },
+        { propdefwind, FX_WIND_PROPS },
+        { propdefstain, FX_STAIN_PROPS }
+    };
+
+    static const struct
+    {
+        propertydef *defs;
+        int num;
+    } moddefs[FX_MODS] =
+    {
+        { NULL, 0 },
+        { propdeflerp, FX_MOD_LERP_PROPS }
+    };
+
     static slotmanager<fxdef> fxdefs;
 
     bool isfx(int index) { return fxdefs.inrange(index); }
@@ -15,6 +38,88 @@ namespace fx
     {
         if(rand) delete rand;
         if(lerp) delete lerp;
+    }
+
+    void fxproperty::pack(vector<uchar> &buf) const
+    {
+        static constexpr int EXTRA_RAND = 1;
+        static constexpr int EXTRA_LERP = (1 << 1);
+
+        property::pack(buf);
+
+        uchar extra = 0;
+        if(rand) extra |= EXTRA_RAND;
+        if(lerp) extra |= EXTRA_LERP;
+        buf.put(extra);
+
+        if(rand) rand->pack(buf);
+        if(lerp) lerp->pack(buf);
+    }
+
+    int fxproperty::unpack(uchar *buf, int bufsize)
+    {
+        static constexpr int EXTRA_RAND = 1;
+        static constexpr int EXTRA_LERP = (1 << 1);
+
+        int bufread = property::unpack(buf, bufsize);
+        if(bufread)
+        {
+            if(bufsize - bufread < 1)
+            {
+                conoutf("Error unpacking fxprop '%s': not enough data!", def->name);
+                return 0;
+            }
+
+            uchar extra = buf[bufread++];
+
+            if(extra & EXTRA_RAND)
+            {
+                if(!rand)
+                {
+                    rand = new fxproperty;
+                    rand->setdef(getdef());
+                }
+
+                int randbufread = rand->unpack(buf + bufread, bufsize - bufread);
+                if(!randbufread) return 0;
+                bufread += randbufread;
+            }
+
+            if(extra & EXTRA_LERP)
+            {
+                if(!lerp)
+                {
+                    lerp = new propmodlerp;
+                    lerp->lerp.setdef(getdef());
+                    initprops(lerp->props, moddefs[FX_MOD_LERP].defs, moddefs[FX_MOD_LERP].num);
+                }
+
+                int lerpbufread = lerp->unpack(buf + bufread, bufsize - bufread);
+                if(!lerpbufread) return 0;
+                bufread += lerpbufread;
+            }
+        }
+
+        return bufread;
+    }
+
+    void propmodlerp::pack(vector<uchar> &buf)
+    {
+        lerp.pack(buf);
+        loopi(FX_MOD_LERP_PROPS) props[i].pack(buf);
+    }
+
+    int propmodlerp::unpack(uchar *buf, int bufsize)
+    {
+        int bufread = lerp.unpack(buf, bufsize);
+        if(bufread) loopi(FX_MOD_LERP_PROPS)
+        {
+            int propbufread = props[i].unpack(buf + bufread, bufsize - bufread);
+            if(!propbufread) return 0;
+            bufread += propbufread;
+        }
+
+        return bufread;
     }
 
     fxdef *newfx;
@@ -43,29 +148,6 @@ namespace fx
 
         return strings[min(mod, (int)FX_MODS)];
     }
-
-    static const struct
-    {
-        fxpropertydef *defs;
-        int num;
-    } extdefs[FX_TYPES] =
-    {
-        { propdefpart, FX_PART_PROPS },
-        { propdeflight, FX_LIGHT_PROPS },
-        { propdefsound, FX_SOUND_PROPS },
-        { propdefwind, FX_WIND_PROPS },
-        { propdefstain, FX_STAIN_PROPS }
-    };
-
-    static const struct
-    {
-        propertydef *defs;
-        int num;
-    } moddefs[FX_MODS] =
-    {
-        { NULL, 0 },
-        { propdeflerp, FX_MOD_LERP_PROPS }
-    };
 
     static float calclerptime(instance &inst, fxproperty &prop)
     {
@@ -398,15 +480,15 @@ namespace fx
         intret(getfxmodproptype(name, *mod)));
 
     ICOMMAND(0, fxpropi, "siie", (char *name, int *ival, int *mod, uint *modcode),
-        setfxprop(name, *mod, *ival, modcode))
+        setfxprop(name, *mod, *ival, modcode));
     ICOMMAND(0, fxpropf, "sfie", (char *name, float *fval, int *mod, uint *modcode),
-        setfxprop(name, *mod, *fval, modcode))
+        setfxprop(name, *mod, *fval, modcode));
     ICOMMAND(0, fxpropc, "siiiie", (char *name, int *r, int *g, int *b, int *mod, uint *modcode),
-        setfxprop(name, *mod, bvec(*r, *g, *b), modcode))
+        setfxprop(name, *mod, bvec(*r, *g, *b), modcode));
     ICOMMAND(0, fxpropiv, "siiiie", (char *name, int *x, int *y, int *z, int *mod, uint *modcode),
-        setfxprop(name, *mod, ivec(*x, *y, *z), modcode))
+        setfxprop(name, *mod, ivec(*x, *y, *z), modcode));
     ICOMMAND(0, fxpropfv, "sfffie", (char *name, float *x, float *y, float *z, int *mod, uint *modcode),
-        setfxprop(name, *mod, vec(*x, *y, *z), modcode))
+        setfxprop(name, *mod, vec(*x, *y, *z), modcode));
     ICOMMAND(0, fxprops, "ssie", (char *name, char *str, int *mod, uint *modcode),
-        setfxprop(name, *mod, str, modcode))
+        setfxprop(name, *mod, str, modcode));
 }

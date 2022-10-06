@@ -102,7 +102,7 @@ void property::reset()
     set(def->defaultval);
 }
 
-size_t property::size()
+size_t property::size() const
 {
     switch(type)
     {
@@ -126,39 +126,107 @@ size_t property::size()
     return 0;
 }
 
-// vector<uchar> packprops(property *props, int num)
-// {
-//     // TODO: implement in property struct
-//     vector<uchar> buf;
+void property::pack(vector<uchar> &buf) const
+{
+    if(!def) return;
 
-//     loopi(num)
-//     {
-//         property &p = props[i];
+    int datasize = size();
 
-//         buf.put((uchar *)p.def->name, strlen(p.def->name) + 1); // include terminator
+    buf.put((uchar *)&datasize, sizeof(datasize));
 
-//         switch(p.def->type)
-//         {
-//             case PROP_INT:
-//             case PROP_COLOR:
-//                 buf.put((uchar *)&p, p.size());
-//                 break;
+    switch(type)
+    {
+        case PROP_INT:
+            buf.put((uchar *)&ival, datasize);
+            break;
 
-//             case PROP_FLOAT:
-//                 buf.put((uchar *)&p, p.size());
-//                 break;
+        case PROP_COLOR:
+            buf.put((uchar *)&ival, datasize);
+            break;
 
-//             case PROP_IVEC:
-//                 buf.put((uchar *)p.other, p.size());
-//                 break;
+        case PROP_FLOAT:
+            buf.put((uchar *)&fval, datasize);
+            break;
 
-//             case PROP_FVEC:
-//                 buf.put((uchar *)p.other, p.size());
-//                 break;
+        case PROP_IVEC:
+        case PROP_FVEC:
+        case PROP_STRING:
+            buf.put((uchar *)data, datasize);
+            break;
+    }
+}
 
-//             case PROP_STRING:
-//                 buf.put((uchar *)p.other, p.size());
-//                 break;
-//         }
-//     }
-// }
+int property::unpack(uchar *buf, int bufsize)
+{
+    ASSERT(def);
+
+    int bufread = 0;
+    int *datasize_packed = 0;
+
+    if(bufsize <= sizeof(*datasize_packed))
+    {
+        conoutf("Error unpacking prop '%s': not enough data to get the size!", def->name);
+        return 0;
+    }
+
+    datasize_packed = (int*)buf;
+    bufread += sizeof(*datasize_packed);
+
+    switch(type)
+    {
+        case PROP_INT:
+        case PROP_COLOR:
+        case PROP_FLOAT:
+            if(*datasize_packed != size())
+            {
+                conoutf("Error unpacking prop '%s': unexpected data size! Wanted: %d, got: %d",
+                    def->name, size(), *datasize_packed);
+
+                return 0;
+            }
+            break;
+    }
+
+    switch(type)
+    {
+        case PROP_INT:
+        case PROP_COLOR:
+            if(bufsize - bufread <= size())
+            {
+                conoutf("Error unpacking prop '%s': not enough data!", def->name);
+                return 0;
+            }
+
+            memcpy(&ival, buf + bufread, size());
+            bufread += size();
+            break;
+
+        case PROP_FLOAT:
+            if(bufsize - bufread <= size())
+            {
+                conoutf("Error unpacking prop '%s': not enough data!", def->name);
+                return 0;
+            }
+
+            memcpy(&fval, buf + bufread, size());
+            bufread += size();
+            break;
+
+        case PROP_IVEC:
+        case PROP_FVEC:
+        case PROP_STRING:
+            if(bufsize - bufread <= *datasize_packed)
+            {
+                conoutf("Error unpacking prop '%s': not enough data!", def->name);
+                return 0;
+            }
+
+            clear();
+            data = new uchar[*datasize_packed];
+            memcpy(data, buf + bufread, *datasize_packed);
+            bufread += *datasize_packed;
+            break;
+    }
+
+    return bufread;
+}
