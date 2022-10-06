@@ -20,18 +20,23 @@ soundenv *newsoundenv = NULL;
 
 SVARF(IDF_INIT, sounddevice, "", initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
 VARF(IDF_INIT, soundsources, 16, 256, 1024, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
+VARF(IDF_INIT, sounddownmix, 0, 0, 1, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
 
-#define SOUNDVOL(oldname, newname, def) \
-    FVAR(IDF_PERSIST, sound##newname##vol, 0, def, 1); \
+#define SOUNDVOL(oldname, newname, def, body) \
+    FVARF(IDF_PERSIST, sound##newname##vol, 0, def, 1, body); \
     ICOMMAND(0, oldname##vol, "iN$", (int *n, int *numargs, ident *id), \
-        if(*numargs > 0) sound##newname##vol = clamp(*n, 0, 255) / 255.f; \
+        if(*numargs > 0) \
+        { \
+            sound##newname##vol = clamp(*n, 0, 255) / 255.f; \
+            body; \
+        } \
         else if(*numargs < 0) intret(int(sound##newname##vol * 255)); \
         else printvar(id, int(sound##newname##vol * 255)); \
     );
 
-SOUNDVOL(master, master, 1.f);
-SOUNDVOL(sound, effect, 1.f);
-SOUNDVOL(music, music, 0.25f);
+SOUNDVOL(master, master, 1.f, );
+SOUNDVOL(sound, effect, 1.f, );
+SOUNDVOL(music, music, 0.25f, updatemusic());
 FVAR(IDF_PERSIST, soundeffectevent, 0, 1, 2);
 FVAR(IDF_PERSIST, soundeffectenv, 0, 1, 2);
 
@@ -50,7 +55,7 @@ void soundsetdoppler(float v)
     const char *err = sounderror(false);
     if(err) conoutf("\frFailed to set doppler factor: %s", err);
 }
-FVARF(IDF_PERSIST, sounddoppler, 0, 0.05f, FVAR_MAX, soundsetdoppler(sounddoppler));
+FVARF(IDF_PERSIST, sounddoppler, 0, 0.1f, FVAR_MAX, soundsetdoppler(sounddoppler));
 
 void soundsetspeed(float v)
 {
@@ -199,11 +204,9 @@ void initsound()
         }
         else conoutf("Audio device: %s", alcGetString(snddev, ALC_DEVICE_SPECIFIER));
 
-        if(alIsExtensionPresent("AL_EXT_EFX")) al_ext_efx = true;
-        if(alIsExtensionPresent("AL_EXT_FLOAT32")) al_ext_float32 = true;
-
-        if(alIsExtensionPresent("AL_SOFT_source_spatialize")) al_soft_spatialize = true;
-        else conoutf("\frAL_SOFT_source_spatialize not found, stereo sounds will be downmixed to mono");
+        al_ext_efx = alIsExtensionPresent("AL_EXT_EFX") ? true : false;
+        al_ext_float32 = alIsExtensionPresent("AL_EXT_FLOAT32") ? true : false;
+        al_soft_spatialize = !sounddownmix && alIsExtensionPresent("AL_SOFT_source_spatialize") ? true : false;
 
         nosound = false;
 
@@ -371,14 +374,14 @@ static soundsample *loadsound(const char *name)
     return NULL;
 }
 
-static void loadsamples(soundslot &slot, const char *name, int variants, bool farvariant)
+static void loadsamples(soundslot &slot, bool farvariant = false)
 {
     soundsample *sample;
     string sam;
 
-    loopi(variants)
+    loopi(slot.variants)
     {
-        copystring(sam, name);
+        copystring(sam, slot.name);
         if(farvariant) concatstring(sam, "far");
         if(i) concatstring(sam, intstr(i + 1));
 
@@ -387,6 +390,8 @@ static void loadsamples(soundslot &slot, const char *name, int variants, bool fa
 
         if(!sample || !sample->valid()) conoutf("\frFailed to load sample: %s", sam);
     }
+
+    if(!farvariant && slot.fardistance > 0) loadsamples(slot, true);
 }
 
 int addsound(const char *id, const char *name, int vol, int maxrad, int minrad, int variants, int fardistance, slotmanager<soundslot> &soundset)
@@ -409,8 +414,7 @@ int addsound(const char *id, const char *name, int vol, int maxrad, int minrad, 
     slot.variants = variants;
     slot.fardistance = fardistance;
 
-    loadsamples(slot, name, variants, false);
-    if(fardistance > 0) loadsamples(slot, name, variants, true);
+    loadsamples(slot);
 
     return newidx;
 }
@@ -547,7 +551,7 @@ int playsound(int n, const vec &pos, physent *d, int flags, int vol, int maxrad,
 
         s.slot = slot;
         s.vol = vol > 0 ? vol : 255;
-        s.maxrad = maxrad > 0 ? maxrad : (slot->maxrad > 0 ? slot->maxrad : 0);
+        s.maxrad = maxrad > 0 ? maxrad : (slot->maxrad > 0 ? slot->maxrad : 512);
         s.minrad = minrad >= 0 ? minrad : (slot->minrad >= 0 ? slot->minrad : 0);
         s.flags = flags;
         s.millis = lastmillis;
@@ -613,117 +617,12 @@ void resetsound()
         soundsamples.clear();
         return;
     }
-    rehash(true);
+    loopv(gamesounds) loadsamples(gamesounds[i]);
+    loopv(mapsounds) loadsamples(mapsounds[i]);
+    //rehash(true);
 }
 
 COMMAND(0, resetsound, "");
-
-#ifdef WIN32
-
-#include <wchar.h>
-
-#else
-
-#include <unistd.h>
-
-#if _POSIX_SHARED_MEMORY_OBJECTS > 0
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/mman.h>
-#include <fcntl.h>
-#include <wchar.h>
-#endif
-
-#endif
-
-#if defined(WIN32) || _POSIX_SHARED_MEMORY_OBJECTS > 0
-struct MumbleInfo
-{
-    int version, timestamp;
-    vec pos, front, top;
-    wchar_t name[256];
-};
-#endif
-
-#ifdef WIN32
-static HANDLE mumblelink = NULL;
-static MumbleInfo *mumbleinfo = NULL;
-#define VALID_MUMBLELINK (mumblelink && mumbleinfo)
-#elif _POSIX_SHARED_MEMORY_OBJECTS > 0
-static int mumblelink = -1;
-static MumbleInfo *mumbleinfo = (MumbleInfo *)-1;
-#define VALID_MUMBLELINK (mumblelink >= 0 && mumbleinfo != (MumbleInfo *)-1)
-#endif
-
-#ifdef VALID_MUMBLELINK
-VARF(IDF_PERSIST, mumble, 0, 1, 1, { if(mumble) initmumble(); else closemumble(); });
-#else
-VARF(IDF_PERSIST, mumble, 0, 0, 1, { if(mumble) initmumble(); else closemumble(); });
-#endif
-
-void initmumble()
-{
-    if(!mumble) return;
-#ifdef VALID_MUMBLELINK
-    if(VALID_MUMBLELINK) return;
-
-    #ifdef WIN32
-        mumblelink = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, "MumbleLink");
-        if(mumblelink)
-        {
-            mumbleinfo = (MumbleInfo *)MapViewOfFile(mumblelink, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(MumbleInfo));
-            if(mumbleinfo) wcsncpy(mumbleinfo->name, (const wchar_t *)versionuname, 256);
-        }
-    #elif _POSIX_SHARED_MEMORY_OBJECTS > 0
-        defformatstring(shmname, "/MumbleLink.%d", getuid());
-        mumblelink = shm_open(shmname, O_RDWR, 0);
-        if(mumblelink >= 0)
-        {
-            mumbleinfo = (MumbleInfo *)mmap(NULL, sizeof(MumbleInfo), PROT_READ|PROT_WRITE, MAP_SHARED, mumblelink, 0);
-            if(mumbleinfo != (MumbleInfo *)-1) wcsncpy(mumbleinfo->name, (const wchar_t *)versionuname, 256);
-        }
-    #endif
-    if(!VALID_MUMBLELINK) closemumble();
-#else
-    conoutft(CON_DEBUG, "Mumble positional audio is not available on this platform.");
-#endif
-}
-
-void closemumble()
-{
-#ifdef WIN32
-    if(mumbleinfo) { UnmapViewOfFile(mumbleinfo); mumbleinfo = NULL; }
-    if(mumblelink) { CloseHandle(mumblelink); mumblelink = NULL; }
-#elif _POSIX_SHARED_MEMORY_OBJECTS > 0
-    if(mumbleinfo != (MumbleInfo *)-1) { munmap(mumbleinfo, sizeof(MumbleInfo)); mumbleinfo = (MumbleInfo *)-1; }
-    if(mumblelink >= 0) { close(mumblelink); mumblelink = -1; }
-#endif
-}
-
-static inline vec mumblevec(const vec &v, bool pos = false)
-{
-    // change from X left, Z up, Y forward to X right, Y up, Z forward
-    // 8 cube units = 1 meter
-    vec m(-v.x, v.z, v.y);
-    if(pos) m.div(8);
-    return m;
-}
-
-void updatemumble()
-{
-#ifdef VALID_MUMBLELINK
-    if(!VALID_MUMBLELINK) return;
-
-    static int timestamp = 0;
-
-    mumbleinfo->version = 1;
-    mumbleinfo->timestamp = ++timestamp;
-
-    mumbleinfo->pos = mumblevec(camera1->o, true);
-    mumbleinfo->front = mumblevec(vec(RAD*camera1->yaw, RAD*camera1->pitch));
-    mumbleinfo->top = mumblevec(vec(RAD*camera1->yaw, RAD*(camera1->pitch+90)));
-#endif
-}
 
 bool soundfile::setup(const char *name, int t, int m)
 {
@@ -983,7 +882,7 @@ ALenum sound::setup(soundsample *s)
     alSourcef(source, AL_REFERENCE_DISTANCE, soundrefdist);
     SOUNDERROR(clear(); return err);
 
-    alSourcef(source, AL_ROLLOFF_FACTOR, soundrolloff / maxrad);
+    alSourcef(source, AL_ROLLOFF_FACTOR, maxrad > 0 ? soundrolloff / maxrad : 1.f);
     SOUNDERROR(clear(); return err);
 
     return AL_NO_ERROR;
@@ -1406,3 +1305,110 @@ static void dumpsoundenv(soundenv &env, stream *s)
 }
 
 void dumpsoundenvs(stream *s) { loopv(mapsoundenvs) dumpsoundenv(mapsoundenvs[i], s); }
+
+#ifdef WIN32
+
+#include <wchar.h>
+
+#else
+
+#include <unistd.h>
+
+#if _POSIX_SHARED_MEMORY_OBJECTS > 0
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <wchar.h>
+#endif
+
+#endif
+
+#if defined(WIN32) || _POSIX_SHARED_MEMORY_OBJECTS > 0
+struct MumbleInfo
+{
+    int version, timestamp;
+    vec pos, front, top;
+    wchar_t name[256];
+};
+#endif
+
+#ifdef WIN32
+static HANDLE mumblelink = NULL;
+static MumbleInfo *mumbleinfo = NULL;
+#define VALID_MUMBLELINK (mumblelink && mumbleinfo)
+#elif _POSIX_SHARED_MEMORY_OBJECTS > 0
+static int mumblelink = -1;
+static MumbleInfo *mumbleinfo = (MumbleInfo *)-1;
+#define VALID_MUMBLELINK (mumblelink >= 0 && mumbleinfo != (MumbleInfo *)-1)
+#endif
+
+#ifdef VALID_MUMBLELINK
+VARF(IDF_PERSIST, mumble, 0, 1, 1, { if(mumble) initmumble(); else closemumble(); });
+#else
+VARF(IDF_PERSIST, mumble, 0, 0, 1, { if(mumble) initmumble(); else closemumble(); });
+#endif
+
+void initmumble()
+{
+    if(!mumble) return;
+#ifdef VALID_MUMBLELINK
+    if(VALID_MUMBLELINK) return;
+
+    #ifdef WIN32
+        mumblelink = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, "MumbleLink");
+        if(mumblelink)
+        {
+            mumbleinfo = (MumbleInfo *)MapViewOfFile(mumblelink, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(MumbleInfo));
+            if(mumbleinfo) wcsncpy(mumbleinfo->name, (const wchar_t *)versionuname, 256);
+        }
+    #elif _POSIX_SHARED_MEMORY_OBJECTS > 0
+        defformatstring(shmname, "/MumbleLink.%d", getuid());
+        mumblelink = shm_open(shmname, O_RDWR, 0);
+        if(mumblelink >= 0)
+        {
+            mumbleinfo = (MumbleInfo *)mmap(NULL, sizeof(MumbleInfo), PROT_READ|PROT_WRITE, MAP_SHARED, mumblelink, 0);
+            if(mumbleinfo != (MumbleInfo *)-1) wcsncpy(mumbleinfo->name, (const wchar_t *)versionuname, 256);
+        }
+    #endif
+    if(!VALID_MUMBLELINK) closemumble();
+#else
+    conoutft(CON_DEBUG, "Mumble positional audio is not available on this platform.");
+#endif
+}
+
+void closemumble()
+{
+#ifdef WIN32
+    if(mumbleinfo) { UnmapViewOfFile(mumbleinfo); mumbleinfo = NULL; }
+    if(mumblelink) { CloseHandle(mumblelink); mumblelink = NULL; }
+#elif _POSIX_SHARED_MEMORY_OBJECTS > 0
+    if(mumbleinfo != (MumbleInfo *)-1) { munmap(mumbleinfo, sizeof(MumbleInfo)); mumbleinfo = (MumbleInfo *)-1; }
+    if(mumblelink >= 0) { close(mumblelink); mumblelink = -1; }
+#endif
+}
+
+static inline vec mumblevec(const vec &v, bool pos = false)
+{
+    // change from X left, Z up, Y forward to X right, Y up, Z forward
+    // 8 cube units = 1 meter
+    vec m(-v.x, v.z, v.y);
+    if(pos) m.div(8);
+    return m;
+}
+
+void updatemumble()
+{
+#ifdef VALID_MUMBLELINK
+    if(!VALID_MUMBLELINK) return;
+
+    static int timestamp = 0;
+
+    mumbleinfo->version = 1;
+    mumbleinfo->timestamp = ++timestamp;
+
+    mumbleinfo->pos = mumblevec(camera1->o, true);
+    mumbleinfo->front = mumblevec(vec(RAD*camera1->yaw, RAD*camera1->pitch));
+    mumbleinfo->top = mumblevec(vec(RAD*camera1->yaw, RAD*(camera1->pitch+90)));
+#endif
+}
