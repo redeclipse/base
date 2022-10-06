@@ -324,6 +324,7 @@ static void loadsamples(soundslot &slot, const char *name, int variants, bool fa
 int addsound(const char *id, const char *name, int vol, int maxrad, int minrad, int variants, int fardistance, slotmanager<soundslot> &soundset)
 {
     if(nosound || !strcmp(name, "<none>")) return -1;
+    progress(0, "Loading sound: %s", name);
 
     if(vol <= 0 || vol >= 255) vol = 255;
     if(maxrad <= 0) maxrad = -1;
