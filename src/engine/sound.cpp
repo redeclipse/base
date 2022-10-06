@@ -113,7 +113,6 @@ int mstreamloop(void *data)
     }
     SDL_UnlockMutex(mstream_mutex);
 
-    bool isvalid = false;
     while(true)
     {
         SDL_LockMutex(mstream_mutex);
@@ -124,16 +123,11 @@ int mstreamloop(void *data)
             break;
         }
 
-        if(mstream)
-        {
-            mstream->update();
-            if(mstream->valid()) isvalid = true;
-        }
+        if(mstream) mstream->update();
 
         SDL_UnlockMutex(mstream_mutex);
         Sleep(10);
     }
-    if(!isvalid) stopmusic();
 
     return 0;
 }
@@ -505,8 +499,11 @@ void updatesounds()
 
     SDL_LockMutex(mstream_mutex);
     bool hasmstream = mstream != NULL;
+    bool mstreamvalid = mstream && mstream->valid();
     SDL_UnlockMutex(mstream_mutex);
-    if(hasmstream && (nosound || !mastervol || !musicvol || !playingmusic())) stopmusic();
+
+    if(!mstreamvalid || (hasmstream && (nosound || !mastervol || !musicvol || !playingmusic())))
+        stopmusic();
 
     vec o[2];
     o[0].x = (float)(cosf(RAD*(camera1->yaw-90)));
