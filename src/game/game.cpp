@@ -3279,7 +3279,7 @@ namespace game
                 resetsway();
                 return;
             }
-            else if(!nosound && mastervol && musicvol && type && !playingmusic())
+            else if(!nosound && soundmastervol && soundmusicvol && type && !playingmusic())
             {
                 if(type == 6) smartmusic(true);
                 else

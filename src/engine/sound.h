@@ -32,7 +32,7 @@ enum
 #define SOUNDMAXDIST        10000.f
 
 extern bool nosound;
-extern int mastervol, soundvol, musicvol;
+extern float soundmastervol, soundeffectvol, soundmusicvol;
 
 #include "AL/al.h"
 #include "AL/alc.h"
