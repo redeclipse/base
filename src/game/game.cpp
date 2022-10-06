@@ -171,7 +171,7 @@ namespace game
 
     void stopmapmusic()
     {
-        if(connected() && maptime > 0) musicdone(true);
+        if(connected() && maptime > 0) stopmusic();
     }
     VARF(IDF_PERSIST, musictype, 0, 1, 6, stopmapmusic()); // 0 = no in-game music, 1 = map music (or random if none), 2 = always random, 3 = map music (silence if none), 4-5 = same as 1-2 but pick new tracks when done, 6 = always use theme song
     VARF(IDF_PERSIST, musicedit, -1, 0, 6, stopmapmusic()); // same as above for editmode, -1 = use musictype
@@ -3273,7 +3273,7 @@ namespace game
             {
                 maptime = lastmillis ? lastmillis : 1;
                 mapstart = totalmillis ? totalmillis : 1;
-                if(type != 6) musicdone(false);
+                if(type != 6) stopmusic();
                 RUNWORLD("on_start");
                 resetcamera();
                 resetsway();
@@ -3293,11 +3293,11 @@ namespace game
                         {
                             int r = rnd(files.length());
                             formatstring(musicfile, "%s/%s", musicdir, files[r]);
-                            if(files[r][0] != '.' && strcmp(files[r], "readme.txt") && playmusic(musicfile, type >= 4 ? "music" : NULL)) break;
+                            if(files[r][0] != '.' && strcmp(files[r], "readme.txt") && playmusic(musicfile, type < 4)) break;
                             else files.remove(r);
                         }
                     }
-                    else if(musicfile[0]) playmusic(musicfile, type >= 4 ? "music" : NULL);
+                    else if(musicfile[0]) playmusic(musicfile, type < 4);
                 }
             }
             player1->conopen = commandmillis > 0 || hud::hasinput(true);

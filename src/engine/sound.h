@@ -75,7 +75,7 @@ struct soundfile
     bool setup(const char *name, int t, int m);
     bool setupmus();
     bool fillmus(bool retry = false);
-    bool setupwav();
+    bool setupsnd();
     void reset();
     void clear();
 };
@@ -126,7 +126,7 @@ struct sound
     int index, vol;
     int flags, material;
     int millis, ends, slotnum, *hook;
-    float curvol, maxrad, minrad;
+    float curgain, maxrad, minrad;
     vector<int> buffer;
 
     sound() : hook(NULL) { reset(); }
@@ -149,17 +149,17 @@ extern vector<sound> sounds;
 #define MUSICSAMP 8192
 struct music
 {
-    char *name, *donecmd;
-    int donetime;
-    float gain;
+    char *name;
     ALuint source;
     ALuint buffer[MUSICBUFS];
     soundfile *data;
+    float gain;
+    bool looping;
 
     music() { reset(); }
     ~music() { clear(); }
 
-    ALenum setup(const char *n, const char *c, soundfile *s);
+    ALenum setup(const char *n, soundfile *s);
     ALenum fill(ALint bufid);
     void cleanup();
     void reset();
@@ -169,7 +169,7 @@ struct music
     bool active();
     bool playing();
     ALenum play();
-    ALenum push(const char *n, const char *c, soundfile *s);
+    ALenum push(const char *n, soundfile *s);
 };
 extern music *mstream;
 
@@ -181,10 +181,10 @@ extern void mapsoundslot(int index, const char *name);
 extern int getsoundslot(int index);
 extern void initsound();
 extern void stopsound();
-extern bool playmusic(const char *name, const char *cmd = NULL);
-extern bool playingmusic(bool check = true);
+extern bool playmusic(const char *name, bool looping = true);
+extern bool playingmusic();
 extern void smartmusic(bool cond, bool init = false);
-extern void musicdone(bool docmd);
+extern void stopmusic();
 extern void updatesounds();
 extern int addsound(const char *id, const char *name, int vol, int maxrad, int minrad, int value, slotmanager<soundslot> &soundset);
 extern void clearsound();
