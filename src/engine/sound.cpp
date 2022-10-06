@@ -65,8 +65,15 @@ FVAR(IDF_PERSIST, soundrolloff, FVAR_NONZERO, 128, FVAR_MAX);
 void updatemusic()
 {
     changedvol = true;
+
     SDL_LockMutex(mstream_mutex);
-    if(!connected() && !mstream && musicvol && mastervol) smartmusic(true);
+    bool hasmstream = mstream != NULL;
+    SDL_UnlockMutex(mstream_mutex);
+
+    if(!connected() && !hasmstream && musicvol && mastervol) smartmusic(true);
+
+    SDL_LockMutex(mstream_mutex);
+    if(mstream) mstream->gain = musicvol / 255.0f;
     SDL_UnlockMutex(mstream_mutex);
 }
 VARF(IDF_PERSIST, musicvol, 0, 64, 255, updatemusic());
@@ -96,8 +103,6 @@ void mapsoundslots()
 
 int mstreamloop(void *data)
 {
-    SDL_Thread *thread = NULL;
-
     SDL_LockMutex(mstream_mutex);
     if(!mstream_thread || SDL_GetThreadID(mstream_thread) != SDL_ThreadID())
     {
@@ -295,6 +300,7 @@ bool playmusic(const char *name, const char *cmd)
         if(!w) continue;
         SOUNDCHECK(mstream->setup(name, cmd, w),
         {
+            mstream->gain = musicvol / 255.0f;
             SDL_UnlockMutex(mstream_mutex);
             mstreamloopinit();
             return true;
@@ -344,14 +350,16 @@ void smartmusic(bool cond, bool init)
 {
     SDL_LockMutex(mstream_mutex);
 
-    if(init) canmusic = true;
-    if(!canmusic || nosound || !mastervol || !musicvol || (!cond && mstream && mstream->playing()) || !*titlemusic)
-    {
-        SDL_UnlockMutex(mstream_mutex);
-        return;
-    }
+    bool isplayingmusic = mstream && mstream->playing();
+    bool isplayingtitlemusic = mstream && !strcmp(mstream->name, titlemusic);
 
-    if(!playingmusic() || (cond && strcmp(mstream->name, titlemusic))) playmusic(titlemusic);
+    SDL_UnlockMutex(mstream_mutex);
+
+    if(init) canmusic = true;
+    if(!canmusic || nosound || !mastervol || !musicvol || (!cond && isplayingmusic) || !*titlemusic)
+        return;
+
+    if(!playingmusic() || (cond && !isplayingtitlemusic)) playmusic(titlemusic);
 #if 0
     else
     {
@@ -359,8 +367,6 @@ void smartmusic(bool cond, bool init)
         changedvol = true;
     }
 #endif
-
-    SDL_UnlockMutex(mstream_mutex);
 }
 ICOMMAND(0, smartmusic, "i", (int *a), smartmusic(*a));
 
@@ -1223,7 +1229,7 @@ ALenum music::update()
     }
 
     SOUNDERROR();
-    alSourcef(source, AL_GAIN, musicvol/255.f);
+    alSourcef(source, AL_GAIN, gain);
     SOUNDERROR(clear(); return err);
 
     if(!playing())
