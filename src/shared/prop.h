@@ -140,11 +140,7 @@ int unpackprops(vector<uchar> &buf, P *props, int numprops)
 
     while(readpos < buf.length())
     {
-        if(propidx >= numprops)
-        {
-            conoutf("Error unpacking props: too much data!");
-            break;
-        }
+        if(propidx >= numprops) break;
 
         P &prop = props[propidx];
 
