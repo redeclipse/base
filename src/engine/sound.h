@@ -185,6 +185,7 @@ extern bool playmusic(const char *name, bool looping = true);
 extern bool playingmusic();
 extern void smartmusic(bool cond, bool init = false);
 extern void stopmusic();
+extern void updatemusic();
 extern void updatesounds();
 extern int addsound(const char *id, const char *name, int vol, int maxrad, int minrad, int value, slotmanager<soundslot> &soundset);
 extern void clearsound();
