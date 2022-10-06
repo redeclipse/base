@@ -2163,7 +2163,7 @@ namespace game
         resetcamera();
         resetsway();
 
-        triggereventcallbacks(CMD_EVENT_MAPLOAD);
+        if(!empty) triggereventcallbacks(CMD_EVENT_MAPLOAD);
     }
 
     gameent *intersectclosest(vec &from, vec &to, gameent *at)
