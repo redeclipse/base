@@ -573,6 +573,16 @@ bool entselectionbox(extentity &e, vec &eo, vec &es, bool full)
             found = true;
         }
     }
+    else if(e.type == ET_SOUNDENV)
+    {
+        if(!full) faked = true;
+        else
+        {
+            eo = e.o;
+            es = vec(e.attrs[1], e.attrs[2], e.attrs[3]);
+            found = true;
+        }
+    }
     if(!found)
     {
         es = vec(entselradius);
