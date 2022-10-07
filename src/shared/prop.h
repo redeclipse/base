@@ -30,6 +30,7 @@ struct property
     operator bvec() const { return bvec(ival); }
     operator ivec() const { return *(ivec *)data; }
     operator vec() const { return *(vec *)data; }
+    operator float*() const { return (float*)data; }
     operator char *() const { return (char *)data; }
 
     void setdef(const propertydef *newdef);

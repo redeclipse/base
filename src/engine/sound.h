@@ -34,10 +34,22 @@ enum
 extern bool nosound;
 extern float soundmastervol, soundeffectvol, soundmusicvol;
 
+extern bool al_ext_efx, al_soft_spatialize, al_ext_float32;
+
 #include "AL/al.h"
 #include "AL/alc.h"
 #include "AL/alext.h"
 #include "sndfile.h"
+
+extern LPALGENAUXILIARYEFFECTSLOTS alGenAuxiliaryEffectSlots;
+extern LPALDELETEAUXILIARYEFFECTSLOTS alDeleteAuxiliaryEffectSlots;
+extern LPALAUXILIARYEFFECTSLOTI alAuxiliaryEffectSloti;
+extern LPALGENEFFECTS alGenEffects;
+extern LPALDELETEEFFECTS alDeleteEffects;
+extern LPALISEFFECT alIsEffect;
+extern LPALEFFECTI alEffecti;
+extern LPALEFFECTF alEffectf;
+extern LPALEFFECTFV alEffectfv;
 
 #define SOUNDERROR(body) \
     do { \
@@ -109,14 +121,55 @@ struct soundslot
 };
 extern slotmanager<soundslot> gamesounds, mapsounds;
 
+struct soundefxslot
+{
+    ALuint id;
+    soundefxslot **hook;
+    int lastused;
+
+    soundefxslot() : id(-1), hook(NULL), lastused(0) {}
+
+    void gen() { alGenAuxiliaryEffectSlots(1, &id); }
+    void del() { alDeleteAuxiliaryEffectSlots(1, &id); id = AL_INVALID; }
+    void put() { if(hook) *hook = NULL; hook = NULL; }
+};
+
 struct soundenv
 {
     const char *name;
     property props[SOUNDENV_PROPS];
 
+    soundenv() : name(NULL) {}
+
     const char *getname() const { return name ? name : ""; }
+    void setparams(ALuint effect);
+    void updatezoneparams();
 };
 extern slotmanager<soundenv> soundenvs, mapsoundenvs;
+
+struct soundenvzone
+{
+    entity *ent;
+    soundenv *env;
+    ALuint effect;
+    soundefxslot *efxslot;
+    vec bbmin, bbmax;
+
+    soundenvzone() : ent(NULL), env(NULL), effect(AL_INVALID), efxslot(NULL) {}
+    ~soundenvzone()
+    {
+        if(!al_ext_efx) return;
+
+        if(efxslot) efxslot->put();
+        if(alIsEffect(effect)) alDeleteEffects(1, &effect);
+        effect = AL_INVALID;
+    }
+
+    void attachparams();
+    ALuint getefxslot();
+    void froment(entity *newent);
+    int getvolume();
+};
 
 struct sound
 {
@@ -175,6 +228,8 @@ extern music *mstream;
 
 #define issound(c) (sounds.inrange(c) && sounds[c].valid())
 
+extern void buildenvzones();
+extern void updateenvzone(entity *ent);
 extern const char *sounderror(bool msg = true);
 extern void mapsoundslots();
 extern void mapsoundslot(int index, const char *name);
