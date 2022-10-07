@@ -408,7 +408,6 @@ int addsound(const char *id, const char *name, float gain, float pitch, float ro
     slot.maxdist = maxdist > 0 ? maxdist : 0.f;
     slot.fardist = fardist >= 0 ? fardist : -1.f;
     slot.variants = clamp(variants, 1, 32); // keep things sane please
-    slot.fardist = fardist;
 
     loadsamples(slot);
 
