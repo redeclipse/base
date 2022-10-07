@@ -114,7 +114,7 @@ struct soundslot
     int variants;
     float gain, pitch, rolloff, refdist, maxdist, fardist;
 
-    soundslot() : name(NULL), variants(1), gain(1), pitch(1), rolloff(1), refdist(-1), maxdist(-1), fardist(0) {}
+    soundslot() : name(NULL), variants(1), gain(1), pitch(1), rolloff(1), refdist(-1), maxdist(-1), fardist(-1) {}
     ~soundslot() { DELETEA(name); }
 
     void reset();
@@ -244,7 +244,7 @@ extern void updatemusic();
 extern void updatesounds();
 extern int addsound(const char *id, const char *name, float gain, float pitch, float rolloff, float refdist, float maxdist, int variants, float fardist, slotmanager<soundslot> &soundset);
 extern void clearsound();
-extern int emitsound(int n, const vec &pos, int flags = 0, float gain = 1, float pitch = 1, float rolloff = 1, float refdist = -1, float maxdist = 0, physent *d = NULL, int *hook = NULL, int ends = 0);
+extern int emitsound(int n, const vec &pos, int flags = 0, float gain = 1, float pitch = 1, float rolloff = 1, float refdist = -1, float maxdist = -1, physent *d = NULL, int *hook = NULL, int ends = 0);
 extern int playsound(int n, const vec &pos, physent *d = NULL, int flags = 0, int vol = -1, int maxrad = -1, int minrad = -1, int *hook = NULL, int ends = 0);
 extern void removetrackedsounds(physent *d);
 extern void removemapsounds();
