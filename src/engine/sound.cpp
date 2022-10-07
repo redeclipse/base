@@ -654,11 +654,7 @@ static void loadsamples(soundslot &slot, bool farvariant = false)
         sample = loadsoundsample(sam);
         slot.samples.add(sample);
 
-        if(!sample || !sample->valid())
-        {
-            conoutf("\frFailed to load sample: %s", sam);
-            if(i) break; // stop if missing a variant
-        }
+        if(!sample || !sample->valid()) conoutf("\frFailed to load sample: %s", sam);
     }
 
     if(!farvariant && slot.fardist > 0) loadsamples(slot, true);
@@ -678,7 +674,7 @@ int addsound(const char *id, const char *name, float gain, float pitch, float ro
     slot.rolloff = rolloff > 0 ? rolloff : 1.f;
     slot.refdist = refdist >= 0 ? refdist : -1.f;
     slot.maxdist = maxdist > 0 ? maxdist : 0.f;
-    slot.fardist = fardist >= 0 ? fardist : -1.f;
+    slot.fardist = fardist >= 0 ? fardist : 0.f;
     slot.variants = clamp(variants, 1, 32); // keep things sane please
 
     loadsamples(slot);
@@ -686,24 +682,27 @@ int addsound(const char *id, const char *name, float gain, float pitch, float ro
     return newidx;
 }
 
-ICOMMAND(0, loadsound, "ssggggfif", (const char *id, const char *name, float *gain, float *pitch, float *rolloff, float *refdist, float *maxdist, int *variants, float *fardist),
+ICOMMAND(0, loadsound, "ssggggfif", (char *id, char *name, float *gain, float *pitch, float *rolloff, float *refdist, float *maxdist, int *variants, float *fardist),
     intret(addsound(id, name, *gain, *pitch, *rolloff, *refdist, *maxdist, *variants, *fardist, gamesounds));
 );
 
-#define addsoundcompat(i, n, v, x, r, t, f, s) \
-    addsound(i, n, v > 0 ? v / 255.f : 1.f, 1.f, x > 0 ? soundrolloff / x : 1.f, r > 0 ? float(r) : -1.f, 0.f, t, f, s)
+int addsoundcompat(char *id, char *name, int vol, int maxrad, int minrad, int variants, int fardist, slotmanager<soundslot> &soundset)
+{
+    float gain = vol > 0 ? vol / 255.f : 1.f, rolloff = maxrad > 0 ? soundrolloff / float(maxrad) : 1.f, refdist = minrad > 0 ? float(minrad) : -1.f;
+    return addsound(id, name, gain, 1.f, rolloff, refdist, 0.f, variants, fardist, soundset);
+}
 
-ICOMMAND(0, registersound, "ssissii", (char *id, char *name, int *vol, char *maxrad, char *minrad, int *variants, float *fardist),
+ICOMMAND(0, registersound, "ssissii", (char *id, char *name, int *vol, char *maxrad, char *minrad, int *variants, int *fardist),
     intret(addsoundcompat(id, name, *vol, *maxrad ? parseint(maxrad) : -1, *minrad ? parseint(minrad) : -1, *variants, *fardist, gamesounds))
 );
 
-ICOMMAND(0, mapsound, "sggggfif", (const char *name, float *gain, float *pitch, float *rolloff, float *refdist, float *maxdist, int *variants, float *fardist),
+ICOMMAND(0, mapsound, "sggggfif", (char *name, float *gain, float *pitch, float *rolloff, float *refdist, float *maxdist, int *variants, float *fardist),
     if(maploading && hdr.version < 52)
     {
         intret(addsoundcompat(NULL, name, *gain, *pitch, *rolloff, int(*refdist), -1.f, mapsounds));
         return;
     }
-    intret(addsound(NULL, name, *gain, *pitch, *rolloff, *refdist, *maxdist, *variants, *fardist, gamesounds));
+    intret(addsound(NULL, name, *gain, *pitch, *rolloff, *refdist, *maxdist, *variants, *fardist, mapsounds));
 );
 
 ICOMMAND(0, mapsound, "sissi", (char *name, int *vol, char *maxrad, char *minrad, int *variants),
@@ -873,7 +872,8 @@ int emitsound(int n, const vec &pos, int flags, float gain, float pitch, float r
 
 int playsound(int n, const vec &pos, physent *d, int flags, int vol, int maxrad, int minrad, int *hook, int ends)
 {
-    return emitsound(n, pos, flags, vol > 0 ? vol / 255.f : 1.f, 1.f, maxrad > 0 ? soundrolloff / maxrad : 1.f, minrad > 0 ? float(minrad) : -1.f, -1.f, d, hook, ends);
+    float gain = vol > 0 ? vol / 255.f : 1.f, rolloff = maxrad > 0 ? soundrolloff / float(maxrad) : 1.f, refdist = minrad > 0 ? float(minrad) : -1.f;
+    return emitsound(n, pos, flags, gain, 1.f, rolloff, refdist, 0, d, hook, ends);
 }
 
 ICOMMAND(0, sound, "iib", (int *n, int *vol, int *flags),
