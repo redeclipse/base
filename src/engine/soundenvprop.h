@@ -1,26 +1,29 @@
 #include "cube.h"
+#include <AL/efx.h>
 
 enum
 {
-    SOUNDENV_PROP_RVB_DENSITY = 0,
-    SOUNDENV_PROP_RVB_DIFFUSION,
-    SOUNDENV_PROP_RVB_GAIN,
-    SOUNDENV_PROP_RVB_GAINHF,
-    SOUNDENV_PROP_RVB_DECAY_TIME,
-    SOUNDENV_PROP_RVB_DECAY_HFRATIO,
-    SOUNDENV_PROP_RVB_REFL_GAIN,
-    SOUNDENV_PROP_RVB_REFL_DELAY,
-    SOUNDENV_PROP_RVB_LATE_GAIN,
-    SOUNDENV_PROP_RVB_LATE_DELAY,
-    SOUNDENV_PROP_RVB_ABSORBTION_GAINHF,
-    SOUNDENV_PROP_RVB_ROOM_ROLLOFF,
-    SOUNDENV_PROP_RVB_DECAY_HFLIMIT,
-
+    SOUNDENV_PROP_DENSITY = 0,
+    SOUNDENV_PROP_DIFFUSION,
+    SOUNDENV_PROP_GAIN,
+    SOUNDENV_PROP_GAINHF,
+    SOUNDENV_PROP_GAINLF,
+    SOUNDENV_PROP_DECAY_TIME,
+    SOUNDENV_PROP_DECAY_HFRATIO,
+    SOUNDENV_PROP_DECAY_LFRATIO,
+    SOUNDENV_PROP_REFL_GAIN,
+    SOUNDENV_PROP_REFL_DELAY,
+    SOUNDENV_PROP_LATE_GAIN,
+    SOUNDENV_PROP_LATE_DELAY,
+    SOUNDENV_PROP_ECHO_TIME,
     SOUNDENV_PROP_ECHO_DELAY,
-    SOUNDENV_PROP_ECHO_LRDELAY,
-    SOUNDENV_PROP_ECHO_DAMPING,
-    SOUNDENV_PROP_ECHO_FEEDBACK,
-    SOUNDENV_PROP_ECHO_SPREAD,
+    SOUNDENV_PROP_MOD_TIME,
+    SOUNDENV_PROP_MOD_DELAY,
+    SOUNDENV_PROP_ABSORBTION_GAINHF,
+    SOUNDENV_PROP_HFREFERENCE,
+    SOUNDENV_PROP_LFREFERENCE,
+    SOUNDENV_PROP_ROOM_ROLLOFF,
+    SOUNDENV_PROP_DECAY_HFLIMIT,
 
     SOUNDENV_PROPS
 };
@@ -28,94 +31,108 @@ enum
 static propertydef soundenvprops[SOUNDENV_PROPS] =
 {
     propertydef(
-        "reverb_density",
+        "density",
         PROP_FLOAT,
-        0.0f, 1.0f, 1.0f
+        AL_EAXREVERB_MIN_DENSITY, AL_EAXREVERB_DEFAULT_DENSITY, AL_EAXREVERB_MAX_DENSITY
     ),
     propertydef(
-        "reverb_diffusion",
+        "diffusion",
         PROP_FLOAT,
-        0.0f, 1.0f, 1.0f
+        AL_EAXREVERB_MIN_DIFFUSION, AL_EAXREVERB_DEFAULT_DIFFUSION, AL_EAXREVERB_MAX_DIFFUSION
     ),
     propertydef(
-        "reverb_gain",
+        "gain",
         PROP_FLOAT,
-        0.0f, 0.32f, 1.0f
+        AL_EAXREVERB_MIN_GAIN, AL_EAXREVERB_DEFAULT_GAIN, AL_EAXREVERB_MAX_GAIN
     ),
     propertydef(
-        "reverb_gainhf",
+        "gainhf",
         PROP_FLOAT,
-        0.0f, 0.89f, 1.0f
+        AL_EAXREVERB_MIN_GAINHF, AL_EAXREVERB_DEFAULT_GAINHF, AL_EAXREVERB_MAX_GAINHF
     ),
     propertydef(
-        "reverb_decay_time",
+        "gainlf",
         PROP_FLOAT,
-        0.1f, 1.49f, 20.0f
+        AL_EAXREVERB_MIN_GAINLF, AL_EAXREVERB_DEFAULT_GAINLF, AL_EAXREVERB_MAX_GAINLF
     ),
     propertydef(
-        "reverb_decay_hfratio",
+        "decay_time",
         PROP_FLOAT,
-        0.1f, 0.83f, 2.0f
+        AL_EAXREVERB_MIN_DECAY_TIME, AL_EAXREVERB_DEFAULT_DECAY_TIME, AL_EAXREVERB_MAX_DECAY_TIME
     ),
     propertydef(
-        "reverb_reflections_gain",
+        "decay_hfratio",
         PROP_FLOAT,
-        0.0f, 0.05f, 3.16f
+        AL_EAXREVERB_MIN_DECAY_HFRATIO, AL_EAXREVERB_DEFAULT_DECAY_HFRATIO, AL_EAXREVERB_MAX_DECAY_HFRATIO
     ),
     propertydef(
-        "reverb_reflections_delay",
+        "decay_lfratio",
         PROP_FLOAT,
-        0.0f, 0.007f, 0.3f
+        AL_EAXREVERB_MIN_DECAY_LFRATIO, AL_EAXREVERB_DEFAULT_DECAY_LFRATIO, AL_EAXREVERB_MAX_DECAY_LFRATIO
     ),
     propertydef(
-        "reverb_late_gain",
+        "reflections_gain",
         PROP_FLOAT,
-        0.0f, 1.26f, 10.0f
+        AL_EAXREVERB_MIN_REFLECTIONS_GAIN, AL_EAXREVERB_DEFAULT_REFLECTIONS_GAIN, AL_EAXREVERB_MAX_REFLECTIONS_GAIN
     ),
     propertydef(
-        "reverb_late_delay",
+        "reflections_delay",
         PROP_FLOAT,
-        0.0f, 0.011f, 0.1f
+        AL_EAXREVERB_MIN_REFLECTIONS_DELAY, AL_EAXREVERB_DEFAULT_REFLECTIONS_DELAY, AL_EAXREVERB_MAX_REFLECTIONS_DELAY
     ),
     propertydef(
-        "reverb_air_absorbtion_gainhf",
+        "late_gain",
         PROP_FLOAT,
-        0.892f, 0.994f, 1.0f
+        AL_EAXREVERB_MIN_LATE_REVERB_GAIN, AL_EAXREVERB_DEFAULT_LATE_REVERB_GAIN, AL_EAXREVERB_MAX_LATE_REVERB_GAIN
     ),
     propertydef(
-        "reverb_room_rolloff_factor",
+        "late_delay",
         PROP_FLOAT,
-        0.0f, 0.0f, 10.0f
+        AL_EAXREVERB_MIN_LATE_REVERB_DELAY, AL_EAXREVERB_DEFAULT_LATE_REVERB_DELAY, AL_EAXREVERB_MAX_LATE_REVERB_DELAY
     ),
     propertydef(
-        "reverb_decay_hflimit",
+        "echo_time",
+        PROP_FLOAT,
+        AL_EAXREVERB_MIN_ECHO_TIME, AL_EAXREVERB_DEFAULT_ECHO_TIME, AL_EAXREVERB_MAX_ECHO_TIME
+    ),
+    propertydef(
+        "echo_depth",
+        PROP_FLOAT,
+        AL_EAXREVERB_MIN_ECHO_DEPTH, AL_EAXREVERB_DEFAULT_ECHO_DEPTH, AL_EAXREVERB_MAX_ECHO_DEPTH
+    ),
+    propertydef(
+        "mod_time",
+        PROP_FLOAT,
+        AL_EAXREVERB_MIN_MODULATION_TIME, AL_EAXREVERB_DEFAULT_MODULATION_TIME, AL_EAXREVERB_MAX_MODULATION_TIME
+    ),
+    propertydef(
+        "mod_depth",
+        PROP_FLOAT,
+        AL_EAXREVERB_MIN_MODULATION_DEPTH, AL_EAXREVERB_DEFAULT_MODULATION_DEPTH, AL_EAXREVERB_MAX_MODULATION_DEPTH
+    ),
+    propertydef(
+        "air_absorbtion_gainhf",
+        PROP_FLOAT,
+        AL_EAXREVERB_MIN_AIR_ABSORPTION_GAINHF, AL_EAXREVERB_DEFAULT_AIR_ABSORPTION_GAINHF, AL_EAXREVERB_MAX_AIR_ABSORPTION_GAINHF
+    ),
+    propertydef(
+        "hfref",
+        PROP_FLOAT,
+        AL_EAXREVERB_MIN_HFREFERENCE, AL_EAXREVERB_DEFAULT_HFREFERENCE, AL_EAXREVERB_MAX_HFREFERENCE
+    ),
+    propertydef(
+        "lfref",
+        PROP_FLOAT,
+        AL_EAXREVERB_MIN_LFREFERENCE, AL_EAXREVERB_DEFAULT_LFREFERENCE, AL_EAXREVERB_MAX_LFREFERENCE
+    ),
+    propertydef(
+        "room_rolloff_factor",
+        PROP_FLOAT,
+        AL_EAXREVERB_MIN_ROOM_ROLLOFF_FACTOR, AL_EAXREVERB_DEFAULT_ROOM_ROLLOFF_FACTOR, AL_EAXREVERB_MAX_ROOM_ROLLOFF_FACTOR
+    ),
+    propertydef(
+        "decay_hflimit",
         PROP_INT,
-        0, 1, 1
-    ),
-
-    propertydef(
-        "echo_delay",
-        PROP_FLOAT,
-        0.0f, 0.1f, 0.207f
-    ),
-    propertydef(
-        "echo_lrdelay",
-        PROP_FLOAT,
-        0.0f, 0.1f, 0.404f
-    ),
-    propertydef(
-        "echo_damping",
-        PROP_FLOAT,
-        0.0f, 0.5f, 0.99f
-    ),
-    propertydef(
-        "echo_feedback",
-        PROP_FLOAT,
-        0.0f, 0.5f, 1.0f
-    ),
-    propertydef(
-        "echo_spread",
-        PROP_FLOAT,
-        -1.0f, -1.0f, 1.0f
+        AL_EAXREVERB_MIN_DECAY_HFLIMIT, AL_EAXREVERB_DEFAULT_DECAY_HFLIMIT, AL_EAXREVERB_MAX_DECAY_HFLIMIT
     )
 };

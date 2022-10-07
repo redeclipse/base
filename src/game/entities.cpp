@@ -1825,6 +1825,9 @@ namespace entities
         gameentity &e = *(gameentity *)ents[n];
         cleansound(n);
         e.attrs.setsize(numattrs(e.type), 0);
+
+        if(e.type == SOUNDENV) updateenvzone(&e);
+
         loopvrev(e.links)
         {
             int ent = e.links[i];
@@ -2605,6 +2608,7 @@ namespace entities
             progress((i+1)/float(ents.length()), "Preparing entities..");
         }
         initrails();
+        buildenvzones();
     }
 
     #define renderfocus(i,f) \

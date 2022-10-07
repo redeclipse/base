@@ -6,6 +6,31 @@ ALCcontext *sndctx = NULL;
 bool nosound = true, canmusic = false;
 bool al_ext_efx = false, al_soft_spatialize = false, al_ext_float32 = false;
 
+LPALGENAUXILIARYEFFECTSLOTS    alGenAuxiliaryEffectSlots    = NULL;
+LPALDELETEAUXILIARYEFFECTSLOTS alDeleteAuxiliaryEffectSlots = NULL;
+LPALAUXILIARYEFFECTSLOTI       alAuxiliaryEffectSloti       = NULL;
+LPALGENEFFECTS                 alGenEffects                 = NULL;
+LPALDELETEEFFECTS              alDeleteEffects              = NULL;
+LPALISEFFECT                   alIsEffect                   = NULL;
+LPALEFFECTI                    alEffecti                    = NULL;
+LPALEFFECTF                    alEffectf                    = NULL;
+LPALEFFECTFV                   alEffectfv                   = NULL;
+
+static void getextsoundprocs()
+{
+    if(!al_ext_efx) return;
+
+    alGenAuxiliaryEffectSlots    = (LPALGENAUXILIARYEFFECTSLOTS)   alGetProcAddress("alGenAuxiliaryEffectSlots");
+    alDeleteAuxiliaryEffectSlots = (LPALDELETEAUXILIARYEFFECTSLOTS)alGetProcAddress("alDeleteAuxiliaryEffectSlots");
+    alAuxiliaryEffectSloti       = (LPALAUXILIARYEFFECTSLOTI)      alGetProcAddress("alAuxiliaryEffectSloti");
+    alGenEffects                 = (LPALGENEFFECTS)                alGetProcAddress("alGenEffects");
+    alDeleteEffects              = (LPALDELETEEFFECTS)             alGetProcAddress("alDeleteEffects");
+    alIsEffect                   = (LPALISEFFECT)                  alGetProcAddress("alIsEffect");
+    alEffecti                    = (LPALEFFECTI)                   alGetProcAddress("alEffecti");
+    alEffectf                    = (LPALEFFECTF)                   alGetProcAddress("alEffectf");
+    alEffectfv                   = (LPALEFFECTFV)                  alGetProcAddress("alEffectfv");
+}
+
 hashnameset<soundsample> soundsamples;
 slotmanager<soundslot> gamesounds, mapsounds;
 vector<slot *> soundmap;
@@ -15,8 +40,251 @@ SDL_mutex *mstream_mutex;
 music *mstream = NULL;
 
 slotmanager<soundenv> soundenvs, mapsoundenvs;
-int newsoundenvidx = -1;
+vector<soundenvzone> envzones;
+vector<soundenvzone *> sortedenvzones;
+soundenvzone *insideenvzone = NULL;
+
 soundenv *newsoundenv = NULL;
+vector<soundefxslot> soundefxslots;
+
+static soundenv *soundenvfroment(entity *ent)
+{
+    ASSERT(ent);
+
+    int index = ent->attrs[0];
+
+    // Indices above 255 are for map environment definitions
+    if(index > 255)
+    {
+        index &= 0xFF;
+        if(mapsoundenvs.inrange(index)) return &mapsoundenvs[index];
+    }
+    else if(soundenvs.inrange(index)) return &soundenvs[index];
+
+    return NULL;
+}
+
+void allocsoundefxslots();
+VARF(IDF_PERSIST, maxsoundefxslots, 1, 2, 10, allocsoundefxslots());
+
+static void putsoundefxslots() { loopv(soundefxslots) soundefxslots[i].put(); }
+
+static void delsoundfxslots()
+{
+    sortedenvzones.setsize(0);
+    putsoundefxslots();
+    loopv(soundefxslots) soundefxslots[i].del();
+    soundefxslots.shrink(0);
+}
+
+static void allocsoundefxslots()
+{
+    delsoundfxslots();
+
+    loopi(maxsoundefxslots)
+    {
+        soundefxslot &slot = soundefxslots.add();
+        slot.gen();
+    }
+}
+
+static void getsoundefxslot(soundefxslot **hook, bool priority = false)
+{
+    if(soundefxslots.empty()) return;
+
+    loopv(soundefxslots) if(!soundefxslots[i].hook)
+    {
+        soundefxslots[i].hook = hook;
+        *hook = &soundefxslots[i];
+
+        conoutf("getsoundefxslot: free slot found: %u", soundefxslots[i].id);
+
+        return;
+    }
+
+    // Free slot not found, find one that hasn't been used recently
+    soundefxslot *oldest = &soundefxslots[0];
+    for(int i = 1; i < soundefxslots.length(); ++i)
+    {
+        if(soundefxslots[i].lastused < oldest->lastused)
+            oldest = &soundefxslots[i];
+    }
+    oldest->put();
+    oldest->hook = hook;
+    *hook = oldest;
+
+    conoutf("getsoundefxslot: oldest slot found: %u, last used %u ms ago", oldest->id,
+        lastmillis - oldest->lastused);
+}
+
+void soundenv::setparams(ALuint effect)
+{
+    alEffecti (effect, AL_EFFECT_TYPE,                     AL_EFFECT_EAXREVERB);
+    alEffectf (effect, AL_EAXREVERB_DENSITY,               props[SOUNDENV_PROP_DENSITY]);
+    alEffectf (effect, AL_EAXREVERB_DIFFUSION,             props[SOUNDENV_PROP_DIFFUSION]);
+    alEffectf (effect, AL_EAXREVERB_GAIN,                  props[SOUNDENV_PROP_GAIN]);
+    alEffectf (effect, AL_EAXREVERB_GAINHF,                props[SOUNDENV_PROP_GAINHF]);
+    alEffectf (effect, AL_EAXREVERB_GAINLF,                props[SOUNDENV_PROP_GAINLF]);
+    alEffectf (effect, AL_EAXREVERB_DECAY_TIME,            props[SOUNDENV_PROP_DECAY_TIME]);
+    alEffectf (effect, AL_EAXREVERB_DECAY_HFRATIO,         props[SOUNDENV_PROP_DECAY_HFRATIO]);
+    alEffectf (effect, AL_EAXREVERB_DECAY_LFRATIO,         props[SOUNDENV_PROP_DECAY_LFRATIO]);
+    alEffectf (effect, AL_EAXREVERB_REFLECTIONS_GAIN,      props[SOUNDENV_PROP_REFL_GAIN]);
+    alEffectf (effect, AL_EAXREVERB_REFLECTIONS_DELAY,     props[SOUNDENV_PROP_REFL_DELAY]);
+    alEffectf (effect, AL_EAXREVERB_LATE_REVERB_GAIN,      props[SOUNDENV_PROP_LATE_GAIN]);
+    alEffectf (effect, AL_EAXREVERB_LATE_REVERB_DELAY,     props[SOUNDENV_PROP_LATE_DELAY]);
+    alEffectf (effect, AL_EAXREVERB_ECHO_TIME,             props[SOUNDENV_PROP_ECHO_TIME]);
+    alEffectf (effect, AL_EAXREVERB_ECHO_DEPTH,            props[SOUNDENV_PROP_ECHO_DELAY]);
+    alEffectf (effect, AL_EAXREVERB_MODULATION_TIME,       props[SOUNDENV_PROP_MOD_TIME]);
+    alEffectf (effect, AL_EAXREVERB_MODULATION_DEPTH,      props[SOUNDENV_PROP_MOD_DELAY]);
+    alEffectf (effect, AL_EAXREVERB_AIR_ABSORPTION_GAINHF, props[SOUNDENV_PROP_ABSORBTION_GAINHF]);
+    alEffectf (effect, AL_EAXREVERB_HFREFERENCE,           props[SOUNDENV_PROP_HFREFERENCE]);
+    alEffectf (effect, AL_EAXREVERB_LFREFERENCE,           props[SOUNDENV_PROP_LFREFERENCE]);
+    alEffectf (effect, AL_EAXREVERB_ROOM_ROLLOFF_FACTOR,   props[SOUNDENV_PROP_ROOM_ROLLOFF]);
+    alEffecti (effect, AL_EAXREVERB_DECAY_HFLIMIT,         props[SOUNDENV_PROP_DECAY_HFLIMIT]);
+
+    ASSERT(alGetError() == AL_NO_ERROR);
+}
+
+void soundenv::updatezoneparams()
+{
+    loopv(envzones)
+    {
+        soundenvzone &zone = envzones[i];
+        if(zone.env == this) zone.attachparams();
+    }
+}
+
+void soundenvzone::attachparams()
+{
+    ASSERT(efxslot && env);
+
+    if(!alIsEffect(effect))
+    {
+        alGenEffects(1, &effect);
+        ASSERT(alGetError() == AL_NO_ERROR);
+    }
+
+    env->setparams(effect);
+
+    alAuxiliaryEffectSloti(efxslot->id, AL_EFFECTSLOT_EFFECT, effect);
+    ASSERT(alGetError() == AL_NO_ERROR);
+}
+
+ALuint soundenvzone::getefxslot()
+{
+    if(!efxslot)
+    {
+        getsoundefxslot(&efxslot);
+
+        if(!efxslot) return AL_INVALID;
+
+        attachparams();
+    }
+
+    efxslot->lastused = lastmillis;
+
+    return efxslot->id;
+}
+
+void soundenvzone::froment(entity *newent)
+{
+    ent = newent;
+    env = soundenvfroment(ent);
+    bbmin = vec(ent->o).sub(vec(ent->attrs[1], ent->attrs[2], ent->attrs[3]));
+    bbmax = vec(ent->o).add(vec(ent->attrs[1], ent->attrs[2], ent->attrs[3]));
+    if(efxslot) efxslot->put();
+}
+
+int soundenvzone::getvolume()
+{
+    if(!ent) return 0;
+    return ent->attrs[1] * ent->attrs[2] * ent->attrs[3];
+}
+
+static void sortenvzones()
+{
+    if(envzones.empty()) return;
+
+    sortedenvzones.reserve(envzones.length());
+    sortedenvzones.setsize(0);
+
+    sortedenvzones.add(&envzones[0]);
+    insideenvzone = NULL;
+
+    for(int i = 0; i < envzones.length(); ++i)
+    {
+        soundenvzone &zone = envzones[i];
+        float dist = camera1->o.dist_to_bb(zone.bbmin, zone.bbmax);
+
+        if(camera1->o.insidebb(zone.bbmin, zone.bbmax))
+        {
+            // smaller zones take priority over larger ones in case of overlap
+            int curvolume = !insideenvzone ? 0 : insideenvzone->getvolume();
+            int newvolume = zone.getvolume();
+
+            if(!insideenvzone || newvolume < curvolume) insideenvzone = &zone;
+        }
+
+        for(int j = 0; i && j <= sortedenvzones.length(); ++j)
+        {
+            if(j >= sortedenvzones.length() ||
+                dist <= camera1->o.dist_to_bb(sortedenvzones[j]->bbmin, sortedenvzones[j]->bbmax))
+            {
+                sortedenvzones.insert(j, &zone);
+                break;
+            }
+        }
+    }
+}
+
+static soundenvzone *getactiveenvzone(const vec &pos)
+{
+    soundenvzone *bestzone = NULL;
+
+    loopi(min(sortedenvzones.length(), maxsoundefxslots))
+    {
+        soundenvzone *zone = sortedenvzones[i];
+
+        if(!pos.insidebb(zone->bbmin, zone->bbmax)) continue;
+
+        int curvolume = !bestzone ? 0 : bestzone->getvolume();
+        int newvolume = zone->getvolume();
+
+        if(!bestzone || newvolume < curvolume) bestzone = zone;
+    }
+
+    return bestzone;
+}
+
+static soundenvzone *buildenvzone(entity *ent)
+{
+    soundenvzone &newzone = envzones.add();
+    newzone.froment(ent);
+
+    return &newzone;
+}
+
+void buildenvzones()
+{
+    envzones.setsize(0);
+    vector<extentity *> &ents = entities::getents();
+    loopv(ents)
+    {
+        extentity *ent = ents[i];
+        if(ent->type == ET_SOUNDENV) buildenvzone(ent);
+    }
+}
+
+void updateenvzone(entity *ent)
+{
+    soundenvzone *zone = NULL;
+
+    loopv(envzones) if(envzones[i].ent == ent) zone = &envzones[i];
+
+    // zone hasn't been created for this ent
+    if(!zone) buildenvzone(ent);
+    else zone->froment(ent);
+}
 
 SVARF(IDF_INIT, sounddevice, "", initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
 VARF(IDF_INIT, soundsources, 16, 256, 1024, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
@@ -204,9 +472,12 @@ void initsound()
         }
         else conoutf("Audio device: %s", alcGetString(snddev, ALC_DEVICE_SPECIFIER));
 
-        al_ext_efx = alIsExtensionPresent("AL_EXT_EFX") ? true : false;
+        al_ext_efx = alcIsExtensionPresent(snddev, "ALC_EXT_EFX") ? true : false;
         al_ext_float32 = alIsExtensionPresent("AL_EXT_FLOAT32") ? true : false;
         al_soft_spatialize = !sounddownmix && alIsExtensionPresent("AL_SOFT_source_spatialize") ? true : false;
+
+        getextsoundprocs();
+        allocsoundefxslots();
 
         nosound = false;
 
@@ -239,6 +510,7 @@ void stopmusic()
 void stopsound()
 {
     if(nosound) return;
+    delsoundfxslots();
     stopmusic();
     clearsound();
     enumerate(soundsamples, soundsample, s, s.cleanup());
@@ -488,6 +760,8 @@ void updatesounds()
     if(nosound) return;
     alcSuspendContext(sndctx);
 
+    sortenvzones();
+
     loopv(sounds) if(sounds[i].valid())
     {
         sound &s = sounds[i];
@@ -629,6 +903,7 @@ void removetrackedsounds(physent *d)
 void resetsound()
 {
     clearchanges(CHANGE_SOUND);
+    delsoundfxslots();
     loopv(sounds) sounds[i].clear();
     enumerate(soundsamples, soundsample, s, s.cleanup());
     stopmusic();
@@ -981,6 +1256,13 @@ ALenum sound::update()
     alSourcefv(source, AL_VELOCITY, (ALfloat *) &v);
     SOUNDERROR(clear(); return err);
 
+    soundenvzone *zone = getactiveenvzone(pos);
+    if(zone)
+    {
+        alSource3i(source, AL_AUXILIARY_SEND_FILTER, zone->getefxslot(), 0, AL_FILTER_NULL);
+        SOUNDERROR(clear(); return err);
+    }
+
     return AL_NO_ERROR;
 }
 
@@ -1283,14 +1565,15 @@ static void initsoundenv() { initprops(newsoundenv->props, soundenvprops, SOUNDE
 
 static void defsoundenv(const char *name, uint *code, slotmanager<soundenv> &envs)
 {
-    newsoundenvidx = envs.add(name);
+    int newsoundenvidx = -1;
+
+    if((newsoundenvidx = envs.getindex(name)) < 0) newsoundenvidx = envs.add(name);
     newsoundenv = &envs[newsoundenvidx];
     newsoundenv->name = envs.getname(newsoundenvidx);
 
     initsoundenv();
     execute(code);
 
-    newsoundenvidx = -1;
     newsoundenv = NULL;
 }
 ICOMMAND(0, defsoundenv, "se", (char *name, uint *code), defsoundenv(name, code, soundenvs));
@@ -1314,11 +1597,12 @@ static void setsoundenvprop(const char *name, const T &val)
     }
 
     p->set(val);
+    newsoundenv->updatezoneparams();
 }
 
-ICOMMAND(0, soundenvpropi, "siie", (char *name, int *ival),
+ICOMMAND(0, soundenvpropi, "si", (char *name, int *ival),
     setsoundenvprop(name, *ival));
-ICOMMAND(0, soundenvpropf, "sfie", (char *name, float *fval),
+ICOMMAND(0, soundenvpropf, "sf", (char *name, float *fval),
     setsoundenvprop(name, *fval));
 
 static void dumpsoundenv(soundenv &env, stream *s)
