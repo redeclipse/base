@@ -331,7 +331,7 @@ namespace fx
         }
         else if(issound(sound))
         {
-            sounds[sound].vol = vol;
+            sounds[sound].gain = vol / 255.f;
             sounds[sound].pos = from;
         }
     }

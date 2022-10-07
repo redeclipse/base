@@ -1367,15 +1367,15 @@ namespace game
                 int millis = lastmillis-d->weaptime[d->weapselect];
                 if(millis >= 0 && millis <= d->weapwait[d->weapselect])
                 {
-                    float amt = millis/float(d->weapwait[d->weapselect]);
-                    int vol = 255, snd = d->weapstate[d->weapselect] == W_S_POWER ? WSND2(d->weapselect, secondary, S_W_POWER) : WSND(d->weapselect, S_W_ZOOM);
+                    float amt = millis/float(d->weapwait[d->weapselect]), gain = 1.f;
+                    int snd = d->weapstate[d->weapselect] == W_S_POWER ? WSND2(d->weapselect, secondary, S_W_POWER) : WSND(d->weapselect, S_W_ZOOM);
                     if(W2(d->weapselect, cooktime, secondary)) switch(W2(d->weapselect, cooked, secondary))
                     {
-                        case 4: case 5: vol = 10+int(245*(1.f-amt)); break; // longer
-                        case 1: case 2: case 3: default: vol = 10+int(245*amt); break; // shorter
+                        case 4: case 5: gain = 0.1f+int((1.f-amt)*0.9f); break; // longer
+                        case 1: case 2: case 3: default: gain = 0.1f+int(amt*0.9f); break; // shorter
                     }
-                    if(issound(d->pschan)) sounds[d->pschan].vol = vol;
-                    else playsound(snd, d->o, d, SND_LOOP, vol, -1, -1, &d->pschan);
+                    if(issound(d->pschan)) sounds[d->pschan].gain = gain;
+                    else playsound(snd, d->o, d, SND_LOOP, int(gain * 255), -1, -1, &d->pschan);
                 }
                 else if(d->pschan >= 0)
                 {

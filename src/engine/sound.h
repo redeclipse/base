@@ -98,10 +98,11 @@ extern hashnameset<soundsample> soundsamples;
 struct soundslot
 {
     vector<soundsample *> samples;
-    int vol, maxrad, minrad, variants, fardistance;
     char *name;
+    int variants;
+    float gain, pitch, rolloff, refdist, maxdist, fardist;
 
-    soundslot() : vol(255), maxrad(-1), minrad(-1), variants(1), fardistance(0), name(NULL) {}
+    soundslot() : name(NULL), variants(1), gain(1), pitch(1), rolloff(1), refdist(-1), maxdist(-1), fardist(0) {}
     ~soundslot() { DELETEA(name); }
 
     void reset();
@@ -121,15 +122,14 @@ struct sound
 {
     ALuint source;
     soundslot *slot;
-    vec pos, vel;
+    vec pos, vel, *vpos;
     physent *owner;
-    int index, vol;
-    int flags, material;
+    int index, flags, material;
     int millis, ends, slotnum, *hook;
-    float curgain, maxrad, minrad;
+    float gain, curgain, pitch, curpitch, rolloff, refdist, maxdist;
     vector<int> buffer;
 
-    sound() : hook(NULL) { reset(); }
+    sound() : vpos(NULL), hook(NULL) { reset(); }
     ~sound() { clear(); }
 
     ALenum setup(soundsample *s);
@@ -187,8 +187,9 @@ extern void smartmusic(bool cond, bool init = false);
 extern void stopmusic();
 extern void updatemusic();
 extern void updatesounds();
-extern int addsound(const char *id, const char *name, int vol, int maxrad, int minrad, int value, slotmanager<soundslot> &soundset);
+extern int addsound(const char *id, const char *name, float gain, float pitch, float rolloff, float refdist, float maxdist, int variants, float fardist, slotmanager<soundslot> &soundset);
 extern void clearsound();
+extern int emitsound(int n, const vec &pos, int flags = 0, float gain = 1, float pitch = 1, float rolloff = 1, float refdist = -1, float maxdist = 0, physent *d = NULL, int *hook = NULL, int ends = 0);
 extern int playsound(int n, const vec &pos, physent *d = NULL, int flags = 0, int vol = -1, int maxrad = -1, int minrad = -1, int *hook = NULL, int ends = 0);
 extern void removetrackedsounds(physent *d);
 extern void removemapsounds();
