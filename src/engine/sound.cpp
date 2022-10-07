@@ -77,7 +77,7 @@ static void delsoundfxslots()
     soundefxslots.shrink(0);
 }
 
-static void allocsoundefxslots()
+void allocsoundefxslots()
 {
     delsoundfxslots();
 
@@ -335,8 +335,8 @@ void soundsetspeed(float v)
 }
 FVARF(IDF_PERSIST, soundspeed, FVAR_NONZERO, 343.3f, FVAR_MAX, soundsetspeed(sounddoppler));
 
-FVAR(IDF_PERSIST, soundrefdist, FVAR_NONZERO, 8, FVAR_MAX);
-FVAR(IDF_PERSIST, soundrolloff, FVAR_NONZERO, 128, FVAR_MAX);
+FVARF(IDF_PERSIST, soundrefdist, FVAR_NONZERO, 16, FVAR_MAX, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
+FVARF(IDF_PERSIST, soundrolloff, FVAR_NONZERO, 256, FVAR_MAX, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
 
 void updatemusic()
 {
@@ -669,12 +669,12 @@ int addsound(const char *id, const char *name, float gain, float pitch, float ro
 
     slot.reset();
     slot.name = newstring(name);
-    slot.gain = clamp(gain, 0.f, 1.f);
-    slot.pitch = pitch > 0 ? clamp(pitch, 1e-6f, 100.f) : 1.f;
-    slot.rolloff = rolloff > 0 ? rolloff : 1.f;
+    slot.gain = gain > 0 ? clamp(gain, 0.f, 1.f) : 1.f;
+    slot.pitch = pitch >= 0 ? clamp(pitch, 1e-6f, 100.f) : 1.f;
+    slot.rolloff = rolloff >= 0 ? rolloff : 1.f;
     slot.refdist = refdist >= 0 ? refdist : -1.f;
-    slot.maxdist = maxdist > 0 ? maxdist : 0.f;
-    slot.fardist = fardist >= 0 ? fardist : 0.f;
+    slot.maxdist = maxdist >= 0 ? maxdist : -1.f;
+    slot.fardist = fardist >= 0 ? fardist : -1.f;
     slot.variants = clamp(variants, 1, 32); // keep things sane please
 
     loadsamples(slot);
@@ -682,21 +682,21 @@ int addsound(const char *id, const char *name, float gain, float pitch, float ro
     return newidx;
 }
 
-ICOMMAND(0, loadsound, "ssggggfif", (char *id, char *name, float *gain, float *pitch, float *rolloff, float *refdist, float *maxdist, int *variants, float *fardist),
+ICOMMAND(0, loadsound, "ssgggggig", (char *id, char *name, float *gain, float *pitch, float *rolloff, float *refdist, float *maxdist, int *variants, float *fardist),
     intret(addsound(id, name, *gain, *pitch, *rolloff, *refdist, *maxdist, *variants, *fardist, gamesounds));
 );
 
 int addsoundcompat(char *id, char *name, int vol, int maxrad, int minrad, int variants, int fardist, slotmanager<soundslot> &soundset)
 {
-    float gain = vol > 0 ? vol / 255.f : 1.f, rolloff = maxrad > 0 ? soundrolloff / float(maxrad) : 1.f, refdist = minrad > 0 ? float(minrad) : -1.f;
-    return addsound(id, name, gain, 1.f, rolloff, refdist, 0.f, variants, fardist, soundset);
+    float gain = vol > 0 ? vol / 255.f : 1.f, rolloff = maxrad > soundrolloff ? soundrolloff / float(maxrad) : 1.f, refdist = max(soundrefdist, float(minrad));
+    return addsound(id, name, gain, 1.f, rolloff, refdist, -1.f, variants, fardist, soundset);
 }
 
 ICOMMAND(0, registersound, "ssissii", (char *id, char *name, int *vol, char *maxrad, char *minrad, int *variants, int *fardist),
     intret(addsoundcompat(id, name, *vol, *maxrad ? parseint(maxrad) : -1, *minrad ? parseint(minrad) : -1, *variants, *fardist, gamesounds))
 );
 
-ICOMMAND(0, mapsound, "sggggfif", (char *name, float *gain, float *pitch, float *rolloff, float *refdist, float *maxdist, int *variants, float *fardist),
+ICOMMAND(0, mapsound, "sgggggif", (char *name, float *gain, float *pitch, float *rolloff, float *refdist, float *maxdist, int *variants, float *fardist),
     if(maploading && hdr.version < 52)
     {
         intret(addsoundcompat(NULL, name, *gain, *pitch, *rolloff, int(*refdist), -1.f, mapsounds));
@@ -811,7 +811,7 @@ void updatesounds()
 
 int emitsound(int n, const vec &pos, int flags, float gain, float pitch, float rolloff, float refdist, float maxdist, physent *d, int *hook, int ends)
 {
-    if(nosound || !gain || !soundmastervol || !soundeffectvol || (flags&SND_MAP ? !soundeffectenv : !soundeffectevent)) return -1;
+    if(nosound || gain <= 0 || !soundmastervol || !soundeffectvol || (flags&SND_MAP ? !soundeffectenv : !soundeffectevent)) return -1;
     if(((flags&SND_MAP || (!(flags&SND_UNMAPPED) && n >= S_GAMESPECIFIC)) && client::waiting(true)) || (!d && !insideworld(pos))) return -1;
 
     slotmanager<soundslot> &soundset = flags&SND_MAP ? mapsounds : gamesounds;
@@ -845,16 +845,16 @@ int emitsound(int n, const vec &pos, int flags, float gain, float pitch, float r
         s.slotnum = n;
         s.flags = flags;
         s.pos = o;
-        s.gain = clamp(gain, 0.f, 1.f);
-        s.pitch = pitch > 0 ? clamp(pitch, 1e-6f, 100.f) : 1.f;
+        s.gain = gain > 0 ? clamp(gain, 0.f, 1.f) : 1.f;
+        s.pitch = pitch >= 0 ? clamp(pitch, 1e-6f, 100.f) : 1.f;
         s.rolloff = rolloff >= 0 ? rolloff : slot->rolloff;
         s.refdist = refdist >= 0 ? refdist : slot->refdist;
-        s.maxdist = maxdist > 0 ? maxdist : slot->maxdist;
+        s.maxdist = maxdist >= 0 ? maxdist : slot->maxdist;
         s.owner = d;
         s.ends = ends;
         s.vel = v;
 
-        if(hook)
+        if(hook && *hook != s.index)
         {
             if(issound(*hook)) sounds[*hook].clear();
             *hook = s.index;
@@ -872,8 +872,8 @@ int emitsound(int n, const vec &pos, int flags, float gain, float pitch, float r
 
 int playsound(int n, const vec &pos, physent *d, int flags, int vol, int maxrad, int minrad, int *hook, int ends)
 {
-    float gain = vol > 0 ? vol / 255.f : 1.f, rolloff = maxrad > 0 ? soundrolloff / float(maxrad) : 1.f, refdist = minrad > 0 ? float(minrad) : -1.f;
-    return emitsound(n, pos, flags, gain, 1.f, rolloff, refdist, 0, d, hook, ends);
+    float gain = vol > 0 ? vol / 255.f : 1.f, rolloff = maxrad > soundrolloff ? soundrolloff / float(maxrad) : 1.f, refdist = max(soundrefdist, float(minrad));
+    return emitsound(n, pos, flags, gain, 1.f, rolloff, refdist, -1.f, d, hook, ends);
 }
 
 ICOMMAND(0, sound, "iib", (int *n, int *vol, int *flags),
@@ -1172,7 +1172,7 @@ ALenum sound::setup(soundsample *s)
     alSourcef(source, AL_REFERENCE_DISTANCE, refdist >= 0 ? refdist : soundrefdist);
     SOUNDERROR(clear(); return err);
 
-    if(maxdist > 0)
+    if(maxdist >= 0)
     {
         alSourcef(source, AL_MAX_DISTANCE, maxdist);
         SOUNDERROR(clear(); return err);
@@ -1198,8 +1198,7 @@ void sound::reset()
     material = MAT_AIR;
     flags = millis = ends = 0;
     rolloff = 1;
-    refdist = -1;
-    maxdist = 0;
+    refdist = maxdist = -1;
     index = slotnum = -1;
     if(hook) *hook = -1;
     hook = NULL;
