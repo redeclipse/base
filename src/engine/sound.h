@@ -173,9 +173,9 @@ struct sound
 {
     ALuint source;
     soundslot *slot;
-    vec pos, vel, *vpos;
+    vec pos, curpos, vel, *vpos;
     physent *owner;
-    int index, flags, material;
+    int index, flags, material, lastupdate;
     int millis, ends, slotnum, *hook;
     float gain, curgain, pitch, curpitch, rolloff, refdist, maxdist;
     vector<int> buffer;

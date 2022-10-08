@@ -1208,7 +1208,7 @@ void sound::cleanup()
 void sound::reset()
 {
     source = 0;
-    pos = vel = vec(0, 0, 0);
+    pos = curpos, vel = vec(0, 0, 0);
     vpos = &pos;
     slot = NULL;
     owner = NULL;
@@ -1217,7 +1217,7 @@ void sound::reset()
     flags = millis = ends = 0;
     rolloff = 1;
     refdist = maxdist = -1;
-    index = slotnum = -1;
+    index = slotnum = lastupdate = -1;
     if(hook) *hook = -1;
     hook = NULL;
     buffer.shrink(0);
@@ -1231,8 +1231,6 @@ void sound::clear()
 
 ALenum sound::update()
 {
-    if(owner) vel = owner->vel;
-
     material = lookupmaterial(*vpos);
     curgain = clamp(soundeffectvol*slot->gain*(flags&SND_MAP ? soundeffectenv : soundeffectevent), 0.f, 1.f);
 
@@ -1253,20 +1251,33 @@ ALenum sound::update()
     alSourcef(source, AL_PITCH, pitch);
     SOUNDERROR(clear(); return err);
 
-    vec o = *vpos, v = vel;
-    if(flags&SND_NOATTEN) o = v = vec(0, 0, 0);
+    vec rpos = *vpos;
+    if(flags&SND_NOATTEN) rpos = vel = vec(0, 0, 0);
     else if(flags&SND_NOPAN)
     {
-        float mag = vec(o).sub(camera1->o).magnitude();
-        o = vec(camera1->yaw*RAD, camera1->pitch*RAD).mul(mag).add(camera1->o);
+        float mag = vec(rpos).sub(camera1->o).magnitude();
+        rpos = vec(camera1->yaw*RAD, camera1->pitch*RAD).mul(mag).add(camera1->o);
     }
-    else if(flags&SND_NODIST) o.sub(camera1->o).safenormalize().mul(2).add(camera1->o);
+    else if(flags&SND_NODIST) rpos.sub(camera1->o).safenormalize().mul(2).add(camera1->o);
 
     SOUNDERROR();
-    alSourcefv(source, AL_POSITION, (ALfloat *) &o);
+    alSourcefv(source, AL_POSITION, (ALfloat *) &rpos);
     SOUNDERROR(clear(); return err);
 
-    alSourcefv(source, AL_VELOCITY, (ALfloat *) &v);
+    if(owner) vel = owner->vel;
+    if(totalmillis != lastupdate && (lastupdate < 0 || totalmillis-lastupdate > physics::physframetime))
+    {
+        if(!owner && flags&SND_TRACKED && lastupdate >= 0)
+        {
+            int n = physics::physframetime;
+            while(lastupdate+n < totalmillis) n += physics::physframetime;
+            vel = vec(*vpos).sub(curpos).mul(1000).div(n);
+        }
+        lastupdate = totalmillis;
+        curpos = *vpos;
+    }
+
+    alSourcefv(source, AL_VELOCITY, (ALfloat *) &vel);
     SOUNDERROR(clear(); return err);
 
     if(!(flags&SND_NOENV))
