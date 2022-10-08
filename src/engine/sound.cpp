@@ -895,12 +895,12 @@ int playsound(int n, const vec &pos, physent *d, int flags, int vol, int maxrad,
 
 ICOMMAND(0, sound, "iib", (int *n, int *vol, int *flags),
 {
-    intret(playsound(*n, camera1->o, camera1, (*flags >= 0 ? *flags : SND_FORCED) | SND_UNMAPPED, *vol ? *vol : -1));
+    intret(playsound(*n, camera1->o, camera1, (*flags >= 0 ? *flags : SND_PRIORITY|SND_NOENV|SND_NOATTEN)|SND_UNMAPPED, *vol ? *vol : -1));
 });
 
 ICOMMAND(0, soundbyname, "sib", (char *i, int *vol, int *flags),
 {
-    intret(playsound(gamesounds.getindex(i), camera1->o, camera1, (*flags >= 0 ? *flags : SND_FORCED) | SND_UNMAPPED, *vol ? *vol : -1));
+    intret(playsound(gamesounds.getindex(i), camera1->o, camera1, (*flags >= 0 ? *flags : SND_PRIORITY|SND_NOENV|SND_NOATTEN)|SND_UNMAPPED, *vol ? *vol : -1));
 });
 
 ICOMMAND(0, soundslot, "s", (char *i), intret(gamesounds.getindex(i)));
@@ -1269,11 +1269,14 @@ ALenum sound::update()
     alSourcefv(source, AL_VELOCITY, (ALfloat *) &v);
     SOUNDERROR(clear(); return err);
 
-    soundenvzone *zone = getactiveenvzone(*vpos);
-    if(zone)
+    if(!(flags&SND_NOENV))
     {
-        alSource3i(source, AL_AUXILIARY_SEND_FILTER, zone->getefxslot(), 0, AL_FILTER_NULL);
-        SOUNDERROR(clear(); return err);
+        soundenvzone *zone = getactiveenvzone(*vpos);
+        if(zone)
+        {
+            alSource3i(source, AL_AUXILIARY_SEND_FILTER, zone->getefxslot(), 0, AL_FILTER_NULL);
+            SOUNDERROR(clear(); return err);
+        }
     }
 
     return AL_NO_ERROR;
