@@ -1,4 +1,5 @@
 #include "engine.h"
+#include <AL/efx.h>
 
 ALCdevice *snddev = NULL;
 ALCcontext *sndctx = NULL;
@@ -167,6 +168,8 @@ void soundenvzone::attachparams()
     env->setparams(effect);
 
     alAuxiliaryEffectSloti(efxslot->id, AL_EFFECTSLOT_EFFECT, effect);
+    alAuxiliaryEffectSloti(efxslot->id, AL_EFFECTSLOT_AUXILIARY_SEND_AUTO, AL_TRUE);
+
     ASSERT(alGetError() == AL_NO_ERROR);
 }
 
@@ -199,6 +202,35 @@ int soundenvzone::getvolume()
 {
     if(!ent) return 0;
     return ent->attrs[1] * ent->attrs[2] * ent->attrs[3];
+}
+
+void soundenvzone::updatepan()
+{
+    if(!efxslot) return;
+
+    if(this == insideenvzone)
+    {
+        alEffectfv(effect, AL_EAXREVERB_REFLECTIONS_PAN, vec(0, 0, 0).v);
+        alEffectfv(effect, AL_EAXREVERB_LATE_REVERB_PAN, vec(0, 0, 0).v);
+    }
+    else
+    {
+        ASSERT(ent);
+
+        static constexpr float PANFACTOR_DIST = 1.0f/128.0f;
+
+        float dist = camera1->o.dist_to_bb(bbmin, bbmax);
+        float panfactor = clamp(dist * PANFACTOR_DIST, 0.0f, 1.0f);
+
+        vec pan = vec(ent->o).sub(camera1->o);
+        pan.rotate_around_z(-camera1->yaw*RAD).normalize().mul(panfactor);
+        pan.x *= -1.0f;
+
+        alEffectfv(effect, AL_EAXREVERB_REFLECTIONS_PAN, pan.v);
+        alEffectfv(effect, AL_EAXREVERB_LATE_REVERB_PAN, pan.v);
+    }
+
+    alAuxiliaryEffectSloti(efxslot->id, AL_EFFECTSLOT_EFFECT, effect);
 }
 
 static void sortenvzones()
@@ -237,11 +269,19 @@ static void sortenvzones()
     }
 }
 
+static inline int maxactivezones() { return min(sortedenvzones.length(), maxsoundefxslots); }
+
+static void panenvzones()
+{
+    loopi(maxactivezones()) sortedenvzones[i]->updatepan();
+    if(insideenvzone) insideenvzone->updatepan();
+}
+
 static soundenvzone *getactiveenvzone(const vec &pos)
 {
     soundenvzone *bestzone = NULL;
 
-    loopi(min(sortedenvzones.length(), maxsoundefxslots))
+    loopi(maxactivezones())
     {
         soundenvzone *zone = sortedenvzones[i];
 
@@ -760,6 +800,7 @@ void updatesounds()
     alcSuspendContext(sndctx);
 
     sortenvzones();
+    panenvzones();
 
     loopv(sounds) if(sounds[i].valid())
     {
@@ -1283,11 +1324,16 @@ ALenum sound::update()
     if(!(flags&SND_NOENV))
     {
         soundenvzone *zone = getactiveenvzone(*vpos);
+
+        alSourcei(source, AL_AUXILIARY_SEND_FILTER_GAIN_AUTO, AL_TRUE);
+
         if(zone)
-        {
             alSource3i(source, AL_AUXILIARY_SEND_FILTER, zone->getefxslot(), 0, AL_FILTER_NULL);
-            SOUNDERROR(clear(); return err);
-        }
+
+        if(insideenvzone && zone != insideenvzone)
+            alSource3i(source, AL_AUXILIARY_SEND_FILTER, insideenvzone->getefxslot(), 1, AL_FILTER_NULL);
+
+        SOUNDERROR(clear(); return err);
     }
 
     return AL_NO_ERROR;
