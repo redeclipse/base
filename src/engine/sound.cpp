@@ -309,7 +309,7 @@ static soundenvzone *buildenvzone(entity *ent)
 
 void buildenvzones()
 {
-    envzones.setsize(0);
+    envzones.deletecontents();
     vector<extentity *> &ents = entities::getents();
     loopv(ents)
     {
@@ -578,6 +578,7 @@ void clearsound()
     loopv(sounds) sounds[i].clear();
     mapsounds.clear(false);
     mapsoundenvs.clear();
+    envzones.deletecontents();
 }
 
 soundfile *loadsoundfile(const char *name, int mixtype)
