@@ -234,6 +234,8 @@ void soundenvzone::updatepan()
     alAuxiliaryEffectSloti(efxslot->id, AL_EFFECTSLOT_EFFECT, effect);
 }
 
+bool soundenvzone::isvalid() { return ent && env; }
+
 static void sortenvzones()
 {
     sortedenvzones.setsize(0);
@@ -1333,13 +1335,15 @@ ALenum sound::update()
     {
         soundenvzone *zone = getactiveenvzone(*vpos);
 
+        ALuint zoneslot = zone && zone->isvalid() ?
+            zone->getefxslot() : AL_EFFECTSLOT_NULL;
+
+        ALuint insideslot = insideenvzone && insideenvzone->isvalid() && zone != insideenvzone ?
+            insideenvzone->getefxslot() : AL_EFFECTSLOT_NULL;
+
         alSourcei(source, AL_AUXILIARY_SEND_FILTER_GAIN_AUTO, AL_TRUE);
-
-        if(zone)
-            alSource3i(source, AL_AUXILIARY_SEND_FILTER, zone->getefxslot(), 0, AL_FILTER_NULL);
-
-        if(insideenvzone && zone != insideenvzone)
-            alSource3i(source, AL_AUXILIARY_SEND_FILTER, insideenvzone->getefxslot(), 1, AL_FILTER_NULL);
+        alSource3i(source, AL_AUXILIARY_SEND_FILTER, zoneslot, 0, AL_FILTER_NULL);
+        alSource3i(source, AL_AUXILIARY_SEND_FILTER, insideslot, 1, AL_FILTER_NULL);
 
         SOUNDERROR(clear(); return err);
     }

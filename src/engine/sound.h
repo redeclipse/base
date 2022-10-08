@@ -168,6 +168,7 @@ struct soundenvzone
     void froment(entity *newent);
     int getvolume();
     void updatepan();
+    bool isvalid();
 };
 
 struct sound
