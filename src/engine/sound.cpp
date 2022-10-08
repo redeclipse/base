@@ -236,13 +236,13 @@ void soundenvzone::updatepan()
 
 static void sortenvzones()
 {
+    sortedenvzones.setsize(0);
+    insideenvzone = NULL;
+
     if(envzones.empty()) return;
 
     sortedenvzones.reserve(envzones.length());
-    sortedenvzones.setsize(0);
-
     sortedenvzones.add(&envzones[0]);
-    insideenvzone = NULL;
 
     for(int i = 0; i < envzones.length(); ++i)
     {
@@ -318,13 +318,20 @@ void buildenvzones()
 
 void updateenvzone(entity *ent)
 {
-    soundenvzone *zone = NULL;
+    int index = -1;
 
-    loopv(envzones) if(envzones[i].ent == ent) zone = &envzones[i];
+    loopv(envzones) if(envzones[i].ent == ent)
+    {
+        index = i;
+        break;
+    }
 
-    // zone hasn't been created for this ent
-    if(!zone) buildenvzone(ent);
-    else zone->froment(ent);
+    if(ent->type != ET_SOUNDENV && index >= 0) envzones.remove(index);
+    else if(ent->type == ET_SOUNDENV)
+    {
+        if(index >= 0) envzones[index].froment(ent);
+        else buildenvzone(ent); // zone hasn't been created for this ent
+    }
 }
 
 SVARF(IDF_INIT, sounddevice, "", initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));

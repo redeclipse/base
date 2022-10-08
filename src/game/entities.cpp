@@ -1826,8 +1826,6 @@ namespace entities
         cleansound(n);
         e.attrs.setsize(numattrs(e.type), 0);
 
-        if(e.type == SOUNDENV) updateenvzone(&e);
-
         loopvrev(e.links)
         {
             int ent = e.links[i];
@@ -2274,6 +2272,8 @@ namespace entities
     {
         extentity &e = *ents[i];
         cleansound(i);
+        updateenvzone(&e);
+
         if(local && m_edit(game::gamemode) && game::player1->state == CS_EDITING)
             client::addmsg(N_EDITENT, "ri5iv", i, (int)(e.o.x*DMF), (int)(e.o.y*DMF), (int)(e.o.z*DMF), e.type, e.attrs.length(), e.attrs.length(), e.attrs.getbuf());
         if(e.type < MAXENTTYPES)
