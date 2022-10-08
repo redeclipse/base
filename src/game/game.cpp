@@ -788,7 +788,7 @@ namespace game
     void errorsnd(gameent *d)
     {
         if(d == player1 && !issound(errorchan))
-            emitsound(S_ERROR, &d->o, d, &errorchan, SND_FORCED);
+            emitsound(S_ERROR, &d->o, d, &errorchan, SND_PRIORITY|SND_NOENV|SND_NOATTEN);
     }
 
     int announcerchan = -1;
@@ -797,7 +797,7 @@ namespace game
         if(idx < 0) return;
         physent *t = !d || d == player1 || forced ? camera1 : d;
         int *chan = d && !forced ? &d->aschan : &announcerchan;
-        emitsound(idx, &t->o, t, chan, (unmapped ? SND_UNMAPPED : 0)|(t != camera1 ? SND_IMPORT : SND_FORCED)|SND_BUFFER);
+        emitsound(idx, &t->o, t, chan, (unmapped ? SND_UNMAPPED : 0)|(t != camera1 ? 0 : SND_NOATTEN)|SND_NOENV|SND_PRIORITY|SND_BUFFER);
     }
 
     void announcef(int idx, int targ, gameent *d, bool forced, const char *msg, ...)
@@ -1550,7 +1550,7 @@ namespace game
                 else if(flags&BLEED) snd = S_BLEED;
                 else if(flags&SHOCK) snd = S_SHOCK;
                 else loopirev(8) if(damage >= hp*dmgsnd[i]) { snd = S_DAMAGE+i; break; }
-                if(snd >= 0) emitsound(snd, &d->o, d, NULL, SND_IMPORT|(v == focus ? SND_NODIST : SND_CLAMPED), damagetonegain);
+                if(snd >= 0) emitsound(snd, &d->o, d, NULL, SND_NOENV|SND_CLAMPED, damagetonegain);
             }
             if(aboveheaddamage)
             {

@@ -14,16 +14,13 @@ enum
     SND_PRIORITY = 1<<2,    // high priority
     SND_NOPAN    = 1<<3,    // disable panning (distance only attenuation)
     SND_NODIST   = 1<<4,    // disable distance (panning only)
-    SND_NOQUIET  = 1<<5,    // disable water effects
+    SND_NOENV    = 1<<5,    // disable environmental effects
     SND_CLAMPED  = 1<<6,    // makes volume the minimum volume to clamp to
     SND_LOOP     = 1<<7,    // loops when it reaches the end
     SND_BUFFER   = 1<<8,    // source becomes/adds to a buffer for sounds
     SND_MAP      = 1<<9,    // sound created by map
     SND_UNMAPPED = 1<<10,   // skip slot index mapping
     SND_TRACKED  = 1<<11,   // sound vpos is tracked
-    SND_IMPORT   = SND_NODELAY|SND_PRIORITY|SND_NOQUIET,
-    SND_FORCED   = SND_IMPORT|SND_NOATTEN|SND_NODIST,
-    SND_DIRECT   = SND_IMPORT|SND_CLAMPED,
     SND_MASKF    = SND_LOOP|SND_MAP,
     SND_LAST     = 8        // top N are used for entities
 };

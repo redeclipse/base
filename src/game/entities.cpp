@@ -1042,7 +1042,7 @@ namespace entities
                     if(attr[6]&SND_PRIORITY) addentinfo("priority");
                     if(attr[6]&SND_NOPAN) addentinfo("no-pan");
                     if(attr[6]&SND_NODIST) addentinfo("no-dist");
-                    if(attr[6]&SND_NOQUIET) addentinfo("no-quiet");
+                    if(attr[6]&SND_NOENV) addentinfo("no-env");
                     if(attr[6]&SND_CLAMPED) addentinfo("clamped");
                 }
                 break;
