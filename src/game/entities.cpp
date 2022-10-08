@@ -2129,7 +2129,7 @@ namespace entities
     }
 
     // these functions are called when the client touches the item
-    int emitmapsound(gameentity &e, vec *pos, bool looping)
+    int emitmapsound(gameentity &e, bool looping)
     {
         if(!mapsounds.inrange(e.attrs[0])) return -1;
         if(issound(e.schan)) return e.schan;
@@ -2138,7 +2138,7 @@ namespace entities
         loopk(SND_LAST) if(e.attrs[6]&(1<<k)) flags |= 1<<k;
         float gain = e.attrs[1] > 0 ? e.attrs[1]/100.f : 1.f, pitch = e.attrs[2] > 0 ? e.attrs[2]/100.f : 1.f,
               rolloff = e.attrs[3] > 0 ? e.attrs[3]/100.f : -1.f, refdist = e.attrs[4] > 0 ? e.attrs[4]/100.f : -1.f, maxdist = e.attrs[5] > 0 ? e.attrs[5]/100.f : -1.f;
-        return emitsound(e.attrs[0], pos, NULL, &e.schan, flags, gain, pitch, rolloff, refdist, maxdist);
+        return emitsound(e.attrs[0], e.getpos(), NULL, &e.schan, flags, gain, pitch, rolloff, refdist, maxdist);
     }
 
     void execlink(dynent *d, int index, bool local, int ignore)
@@ -2155,7 +2155,6 @@ namespace entities
             gameentity &f = *(gameentity *)ents[i];
             if(ents.inrange(ignore) && ents[ignore]->links.find(index) >= 0) continue;
             if(!isallowed(f)) continue;
-            bool both = e.links.find(i) >= 0;
             switch(f.type)
             {
                 case MAPMODEL:
@@ -2177,7 +2176,7 @@ namespace entities
                     f.lastemit = e.lastemit;
                     if(e.type == TRIGGER) f.setspawned(TRIGSTATE(e.spawned(), e.attrs[4]));
                     else if(local) commit = true;
-                    emitmapsound(f, both ? f.getpos() : e.getpos(), false);
+                    emitmapsound(f, false);
                     break;
                 }
                 default: break;
@@ -2872,7 +2871,7 @@ namespace entities
                     continue;
                 }
                 if(triggered) continue;
-                emitmapsound(e, e.getpos(), true);
+                emitmapsound(e, true);
             }
         }
         if((m_edit(game::gamemode) || m_race(game::gamemode)) && routeid >= 0 && droproute)
