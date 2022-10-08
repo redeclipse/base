@@ -144,7 +144,7 @@ set_source_files_properties(support/sqlite3.c PROPERTIES
 # platform specific code
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     list(APPEND client_deps x11)
-    set(link_libs rt openal sndfile)
+    set(link_libs rt openal sndfile-1)
     if(${WANT_STEAM})
         add_library(steam_lib SHARED IMPORTED)
         if(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "i[3-6]86")
