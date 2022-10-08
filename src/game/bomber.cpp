@@ -444,7 +444,7 @@ namespace bomber
         part_explosion(o, enttype[AFFINITY].radius, PART_EXPLOSION, 500, 0xAA4400, 1.f, 0.5f);
         part_explosion(o, enttype[AFFINITY].radius*2, PART_SHOCKWAVE, 250, 0xAA4400, 1.f, 0.1f);
         part_create(PART_SMOKE_LERP_SOFT, 500, o, 0x333333, enttype[AFFINITY].radius*0.75f, 0.5f, -15);
-        playsound(WSND2(W_GRENADE, false, S_W_EXPLODE), o, NULL, 0, 255);
+        emitsoundpos(WSND2(W_GRENADE, false, S_W_EXPLODE), o);
     }
 
     void resetaffinity(int i, int value, const vec &pos)
@@ -487,7 +487,7 @@ namespace bomber
     {
         if(!st.flags.inrange(i)) return;
         bomberstate::flag &f = st.flags[i];
-        playsound(S_CATCH, d->o, d);
+        emitsound(S_CATCH, &d->o, d);
         if(!f.droptime)
         {
             affinityeffect(i, d->team, d->feetpos(), f.pos(true, true));

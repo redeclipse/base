@@ -111,12 +111,12 @@ extern const enttypes enttype[] = {
                 "particles",    { "type", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "millis", "modes", "muts", "variant", "fxlevel" }
     },
     {
-        MAPSOUND,       1,          58,     0,      EU_NONE,    8,          -1,         5,          -1,     5,      -1,
+        MAPSOUND,       1,          58,     0,      EU_NONE,    10,         -1,         7,          -1,     9,      -1,
             (1<<TELEPORT)|(1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT)|(1<<WIND),
             (1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT)|(1<<WIND),
             0,
             false,  false,  false,      false,      false,
-                "sound",        { "type", "maxrad", "minrad", "volume", "flags", "modes", "muts", "variant" }
+                "sound",        { "type", "gain", "pitch", "rolloff", "refdist", "maxdist", "flags", "modes", "muts", "variant" }
     },
     {
         LIGHTFX,        1,          1,      0,      EU_NONE,    9,          -1,         5,          -1,     7,      8,
@@ -1147,7 +1147,7 @@ struct gameentity : extentity
 {
     int schan, lastspawn, nextemit;
     linkvector kin;
-    vec offset;
+    vec offset, curpos;
     float yaw, pitch;
 
     gameentity() : schan(-1), lastspawn(0), nextemit(0), offset(0, 0, 0), yaw(0), pitch(0) {}
@@ -1157,7 +1157,13 @@ struct gameentity : extentity
         schan = -1;
     }
 
-    vec pos() const { return flags&EF_DYNAMIC ? vec(o).add(offset) : o; }
+    void getcurpos()
+    {
+        curpos = o;
+        if(flags&EF_DYNAMIC) curpos.add(offset);
+    }
+    vec pos() { getcurpos(); return curpos; }
+    vec *getpos() { getcurpos(); return &curpos; }
 };
 
 struct actitem
@@ -1228,6 +1234,7 @@ enum
     WS_BEGIN_CHAN = 0,
     WS_MAIN_CHAN,
     WS_END_CHAN,
+    WS_POWER_CHAN,
     WS_OTHER_CHAN,
 
     WS_CHANS
@@ -1238,7 +1245,7 @@ struct gameent : dynent, clientstate
     editinfo *edit;
     ai::aiinfo *ai;
     int team, clientnum, privilege, projid, lastnode, checkpoint, cplast, respawned, suicided, lastupdate, lastpredict, plag, ping, lastflag, totaldamage,
-        actiontime[AC_MAX], impulse[IM_MAX], impulsetime[IM_T_MAX], smoothmillis, turnside, turnmillis, aschan, cschan, vschan, wschan[WS_CHANS], pschan, sschan[2],
+        actiontime[AC_MAX], impulse[IM_MAX], impulsetime[IM_T_MAX], smoothmillis, turnside, turnmillis, aschan, cschan, vschan, wschan[WS_CHANS], sschan[2],
         lasthit, lastteamhit, lastkill, lastattacker, lastpoints, quake, wasfiring, lastfoot, lastimpulsecollect;
     float deltayaw, deltapitch, newyaw, newpitch, stunscale, stungravity, turnyaw, turnroll;
     bool action[AC_MAX], conopen, k_up, k_down, k_left, k_right, obliterated, headless;
@@ -1503,7 +1510,7 @@ struct gameent : dynent, clientstate
 
     void removesounds(bool init = false)
     {
-        int *chan[] = { &aschan, &cschan, &vschan, &pschan, NULL };
+        int *chan[] = { &aschan, &cschan, &vschan, NULL };
         for(int i = 0; chan[i] != NULL; i++)
         {
             if(!init && issound(*chan[i])) sounds[*chan[i]].clear();
@@ -1826,6 +1833,33 @@ struct gameent : dynent, clientstate
             default: break;
         }
         return foottag(0);
+    }
+
+    vec *gettag(int idx)
+    {
+        if(idx < 0 || idx >= TAG_MAX) return NULL;
+        switch(idx)
+        {
+            case TAG_CAMERA: cameratag(); break;
+            case TAG_CROWN: headtag(); break;
+            case TAG_R_CROWN: headbox(); break;
+            case TAG_TORSO: torsotag(); break;
+            case TAG_R_TORSO: torsobox(); break;
+            case TAG_LIMBS: limbstag(); break;
+            case TAG_R_LIMBS: limbsbox(); break;
+            case TAG_WAIST: waisttag(); break;
+            case TAG_MUZZLE: muzzletag(); break;
+            case TAG_ORIGIN: origintag(); break;
+            case TAG_EJECT1: ejecttag(-1, 0); break;
+            case TAG_EJECT2: ejecttag(-1, 1); break;
+            case TAG_JET_LEFT: jetlefttag(); break;
+            case TAG_JET_RIGHT: jetrighttag(); break;
+            case TAG_JET_BACK: jetbacktag(); break;
+            case TAG_TOE_LEFT: toetag(0); break;
+            case TAG_TOE_RIGHT: toetag(1); break;
+            default: return NULL;
+        }
+        return &tag[idx];
     }
 
     void resetjump(bool wait = false)

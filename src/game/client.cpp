@@ -1537,7 +1537,7 @@ namespace client
         if(m_demo(game::gamemode) || ((!(flags&SAY_TEAM) || f->team == game::player1->team) && (!(flags&SAY_WHISPER) || f == game::player1 || t == game::player1)))
         {
             conoutft(CON_MESG, "%s", line);
-            if(snd >= 0 && !issound(f->cschan)) playsound(snd, f->o, f, snd != S_CHAT ? SND_UNMAPPED : SND_DIRECT, -1, -1, -1, &f->cschan);
+            if(snd >= 0 && !issound(f->cschan)) emitsound(snd, &f->o, f, &f->cschan, snd != S_CHAT ? SND_UNMAPPED : SND_DIRECT);
         }
         ai::scanchat(f, t, flags, text);
     }
@@ -2551,7 +2551,7 @@ namespace client
                         {
                             if(!proceed) break;
                             t->doimpulse(IM_T_JUMP, lastmillis);
-                            playsound(S_JUMP, t->o, t);
+                            emitsound(S_JUMP, &t->o, t);
                             createshape(PART_SMOKE, int(t->radius), 0x222222, 21, 20, 250, t->feetpos(), 1, 1, -10, 0, 10.f);
                             break;
                         }
@@ -2567,7 +2567,7 @@ namespace client
                         {
                             if(!proceed) break;
                             t->resetresidual(W_R_BURN);
-                            playsound(S_EXTINGUISH, t->o, t);
+                            emitsound(S_EXTINGUISH, &t->o, t);
                             part_create(PART_SMOKE, 500, t->feetpos(t->height/2), 0xAAAAAA, t->radius*4, 1, -10);
                             break;
                         }
@@ -2914,8 +2914,8 @@ namespace client
                     else if(amt > 0 && (!f->lastregen || lastmillis-f->lastregen >= 500))
                     {
                         if(f->health < f->gethealth(game::gamemode, game::mutators) && !f->lastregen)
-                            playsound(S_REGEN_BEGIN, f->o, f);
-                        else playsound(S_REGEN, f->o, f);
+                            emitsound(S_REGEN_BEGIN, &f->o, f);
+                        else emitsound(S_REGEN, &f->o, f);
                     }
                     f->health = heal;
                     f->lastregen = lastmillis;
@@ -2994,7 +2994,7 @@ namespace client
                     if(isweap(weap) && m)
                     {
                         if(m->weapswitch(weap, lastmillis, W(weap, delayswitch)))
-                            playsound(WSND(weap, S_W_SWITCH), m->o, m, 0, -1, -1, -1, &m->wschan[WS_MAIN_CHAN]);
+                            emitsound(WSND(weap, S_W_SWITCH), m->gettag(TAG_ORIGIN), m, &m->wschan[WS_MAIN_CHAN]);
                     }
                     break;
                 }
@@ -3048,7 +3048,7 @@ namespace client
                     if(e.spawned())
                     {
                         int attr = m_attr(e.type, e.attrs[0]), colour = e.type == WEAPON && isweap(attr) ? W(attr, colour) : colourwhite;
-                        playsound(e.type == WEAPON && attr >= W_OFFSET && attr < W_ALL ? WSND(attr, S_W_SPAWN) : S_ITEMSPAWN, e.pos(), NULL, 0, -1, -1, -1, &e.schan);
+                        emitsoundpos(e.type == WEAPON && attr >= W_OFFSET && attr < W_ALL ? WSND(attr, S_W_SPAWN) : S_ITEMSPAWN, e.pos(), &e.schan);
                         game::spawneffect(PART_SPARK, e.pos(), enttype[e.type].radius*0.25f, colour, 1);
                         if(game::dynlighteffects) adddynlight(e.pos(), enttype[e.type].radius, vec::fromcolor(colour).mul(2.f), 250, 250);
                     }

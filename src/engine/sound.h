@@ -20,6 +20,7 @@ enum
     SND_BUFFER   = 1<<8,    // source becomes/adds to a buffer for sounds
     SND_MAP      = 1<<9,    // sound created by map
     SND_UNMAPPED = 1<<10,   // skip slot index mapping
+    SND_TRACKED  = 1<<11,   // sound vpos is tracked
     SND_IMPORT   = SND_NODELAY|SND_PRIORITY|SND_NOQUIET,
     SND_FORCED   = SND_IMPORT|SND_NOATTEN|SND_NODIST,
     SND_DIRECT   = SND_IMPORT|SND_CLAMPED,
@@ -32,7 +33,7 @@ enum
 #define SOUNDMAXDIST        10000.f
 
 extern bool nosound;
-extern float soundmastervol, soundeffectvol, soundmusicvol;
+extern float soundmastervol, soundeffectvol, soundmusicvol, soundrefdist, soundrolloff;
 
 extern bool al_ext_efx, al_soft_spatialize, al_ext_float32;
 
@@ -226,7 +227,7 @@ struct music
 };
 extern music *mstream;
 
-#define issound(c) (sounds.inrange(c) && sounds[c].valid())
+#define issound(c) (sounds.inrange(c) && sounds[c].active())
 
 extern void buildenvzones();
 extern void updateenvzone(entity *ent);
@@ -244,7 +245,8 @@ extern void updatemusic();
 extern void updatesounds();
 extern int addsound(const char *id, const char *name, float gain, float pitch, float rolloff, float refdist, float maxdist, int variants, float fardist, slotmanager<soundslot> &soundset);
 extern void clearsound();
-extern int emitsound(int n, const vec &pos, int flags = 0, float gain = 1, float pitch = 1, float rolloff = 1, float refdist = -1, float maxdist = -1, physent *d = NULL, int *hook = NULL, int ends = 0);
+extern int emitsound(int n, vec *pos, physent *d = NULL, int *hook = NULL, int flags = 0, float gain = 1, float pitch = 1, float rolloff = 1, float refdist = -1, float maxdist = -1, int ends = 0);
+extern int emitsoundpos(int n, const vec &pos, int *hook = NULL, int flags = 0, float gain = 1, float pitch = 1, float rolloff = 1, float refdist = -1, float maxdist = -1, int ends = 0);
 extern int playsound(int n, const vec &pos, physent *d = NULL, int flags = 0, int vol = -1, int maxrad = -1, int minrad = -1, int *hook = NULL, int ends = 0);
 extern void removetrackedsounds(physent *d);
 extern void removemapsounds();

@@ -1194,10 +1194,23 @@ namespace projs
                 proj.yaw = d->yaw;
                 proj.pitch = d->pitch;
                 proj.inertia = vec(d->vel).add(d->falling);
-                if(proj.projtype == PRJ_SHOT && isweap(proj.weap) && issound(d->pschan) && weaptype[proj.weap].thrown)
+                if(proj.projtype == PRJ_SHOT && isweap(proj.weap))
                 {
-                    playsound(WSND2(proj.weap, WS(proj.flags), S_W_TRANSIT), proj.o, &proj, SND_LOOP, int(sounds[d->pschan].gain * 255), -1, -1, &proj.schan);//, 0, &d->pschan);
-                    sounds[d->pschan].clear();
+                    if(issound(d->wschan[WS_POWER_CHAN]))
+                    {
+                        if(weaptype[proj.weap].thrown)
+                        {
+                            int index = d->wschan[WS_POWER_CHAN];
+                            sounds[index].owner = &proj;
+                            sounds[index].vpos = &proj.o;
+                            sounds[index].vel = proj.vel;
+                            sounds[index].hook = &proj.schan;
+                            sounds[index].flags |= SND_LOOP;
+                        }
+                        sounds[d->wschan[WS_POWER_CHAN]].clear();
+                        d->wschan[WS_POWER_CHAN] = -1;
+                    }
+                    else emitsound(WSND2(proj.weap, WS(proj.flags), S_W_TRANSIT), &proj.o, &proj, &proj.schan, SND_LOOP);
                 }
             }
             else vectoyawpitch(vec(proj.dest).sub(proj.from).normalize(), proj.yaw, proj.pitch);
@@ -1243,12 +1256,12 @@ namespace projs
 
         if(weaptype[weap].sound >= 0 && (weap != W_MELEE || !(WS(flags))))
         {
-            int slot = WSNDF(weap, WS(flags)), vol = clamp(int(ceilf(255*skew)), 0, 255);
-            if(slot >= 0 && vol > 0)
+            int slot = WSNDF(weap, WS(flags));
+            if(slot >= 0 && skew > 0)
             {
                 // quick hack to have additional audio feedback for zapper
                 if(weap == W_ZAPPER && !(WS(flags)))
-                    playsound(WSND2(weap, WS(flags), S_W_TRANSIT), d->o, d, 0, vol, -1, -1, &d->wschan[WS_OTHER_CHAN]);
+                    emitsound(WSND2(weap, WS(flags), S_W_TRANSIT), d->gettag(TAG_MUZZLE), d, &d->wschan[WS_OTHER_CHAN], 0, skew);
 
                 if((weap == W_FLAMER || weap == W_ZAPPER) && !(WS(flags)))
                 {
@@ -1256,7 +1269,7 @@ namespace projs
                     if(issound(d->wschan[WS_MAIN_CHAN]) &&
                        sounds[d->wschan[WS_MAIN_CHAN]].slotnum == getsoundslot(slot))
                         sounds[d->wschan[WS_MAIN_CHAN]].ends = ends;
-                    else playsound(slot, d->o, d, SND_LOOP, vol, -1, -1, &d->wschan[WS_MAIN_CHAN], ends);
+                    else emitsound(slot, d->gettag(TAG_MUZZLE), d, &d->wschan[WS_MAIN_CHAN], SND_LOOP, skew, 1, 1, -1, -1, ends);
                 }
                 else if(!W2(weap, time, WS(flags)) || life)
                 {
@@ -1267,7 +1280,7 @@ namespace projs
                         sounds[d->wschan[WS_MAIN_CHAN]].hook = NULL;
                         d->wschan[WS_MAIN_CHAN] = -1;
                     }
-                    playsound(slot, d->o, d, 0, vol, -1, -1, &d->wschan[WS_MAIN_CHAN]);
+                    emitsound(slot, d->gettag(TAG_MUZZLE), d, &d->wschan[WS_MAIN_CHAN], 0, skew);
                 }
             }
         }
@@ -1500,18 +1513,18 @@ namespace projs
         {
             if(chk&1 && !proj.limited && !WK(proj.flags) && proj.weap != W_MELEE)
             {
-                int vol = clamp(int(ceilf(48*proj.curscale)), 0, 255), snd = S_EXTINGUISH;
-                float size = max(proj.radius, 1.f);
+                int snd = S_EXTINGUISH;
+                float gain = clamp(0.2f*proj.curscale, 0.f, 1.f), size = max(proj.radius, 1.f);
                 if(proj.projtype == PRJ_SHOT && isweap(proj.weap))
                 {
                     snd = WSND2(proj.weap, WS(proj.flags), S_W_EXTINGUISH);
-                    vol = clamp(10+int(245*proj.lifespan*proj.lifesize*proj.curscale), 0, 255);
+                    gain = clamp(0.1f+(0.9f*proj.lifespan*proj.lifesize*proj.curscale), 0.f, 1.f);
                     float expl = WX(WK(proj.flags), proj.weap, radial, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
                     if(expl > 0) size *= expl*1.5f;
                     else size *= 2.5f;
                 }
                 else size *= 2.5f;
-                if(vol > 0) playsound(snd, proj.o, NULL, 0, vol);
+                if(gain > 0) emitsound(snd, &proj.o, NULL, NULL, 0, gain);
                 part_create(PART_SMOKE, 500, proj.o, 0xAAAAAA, max(size, 1.5f), 1, -10);
                 proj.limited = true;
                 if(proj.projtype == PRJ_DEBRIS) proj.material = bvec::fromcolor(colourwhite);

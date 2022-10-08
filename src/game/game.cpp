@@ -362,9 +362,9 @@ namespace game
     VAR(IDF_PERSIST, damagemergebleed, 0, 250, VAR_MAX);
     VAR(IDF_PERSIST, damagemergeshock, 0, 250, VAR_MAX);
     VAR(IDF_PERSIST, playdamagetones, 0, 1, 3);
-    VAR(IDF_PERSIST, damagetonevol, -1, -1, 255);
+    FVAR(IDF_PERSIST, damagetonegain, 0, 1, 100);
     VAR(IDF_PERSIST, playreloadnotify, 0, 3, 15);
-    VAR(IDF_PERSIST, reloadnotifyvol, -1, -1, 255);
+    FVAR(IDF_PERSIST, reloadnotifygain, 0, 1, 100);
 
     VAR(IDF_PERSIST, deathanim, 0, 2, 3); // 0 = hide player when dead, 1 = old death animation, 2 = ragdolls, 3 = ragdolls, but hide in duke
     VAR(IDF_PERSIST, deathfade, 0, 1, 1); // 0 = don't fade out dead players, 1 = fade them out
@@ -421,10 +421,10 @@ namespace game
     FVAR(IDF_PERSIST, footstepsoundlevel, 0, 1, 10); // a way to scale the volume
     FVAR(IDF_PERSIST, footstepsoundfocus, 0, 0.85f, 10); // focused player version of above
     FVAR(IDF_PERSIST, footstepsoundlight, 0, 0.5f, 10); // crouch/walk player version of above
-    VAR(IDF_PERSIST, footstepsoundminvol, 0, 64, 255);
-    VAR(IDF_PERSIST, footstepsoundmaxvol, 0, 255, 255);
-    VAR(IDF_PERSIST, footstepsoundminrad, -1, -1, 255);
-    VAR(IDF_PERSIST, footstepsoundmaxrad, -1, -1, 255);
+    FVAR(IDF_PERSIST, footstepsoundmingain, 0, 0.2f, 100);
+    FVAR(IDF_PERSIST, footstepsoundmaxgain, 0, 1, 100);
+    FVAR(IDF_PERSIST, footstepsoundrolloff, 0, 0, FVAR_MAX);
+    FVAR(IDF_PERSIST, footstepsoundrefdist, 0, 0, FVAR_MAX);
 
     VAR(IDF_PERSIST, nogore, 0, 0, 2); // turns off all gore, 0 = off, 1 = replace, 2 = remove
     VAR(IDF_PERSIST, forceplayermodel, -1, -1, PLAYERTYPES-1);
@@ -788,7 +788,7 @@ namespace game
     void errorsnd(gameent *d)
     {
         if(d == player1 && !issound(errorchan))
-            playsound(S_ERROR, d->o, d, SND_FORCED, -1, -1, -1, &errorchan);
+            emitsound(S_ERROR, &d->o, d, &errorchan, SND_FORCED);
     }
 
     int announcerchan = -1;
@@ -797,7 +797,7 @@ namespace game
         if(idx < 0) return;
         physent *t = !d || d == player1 || forced ? camera1 : d;
         int *chan = d && !forced ? &d->aschan : &announcerchan;
-        playsound(idx, t->o, t, (unmapped ? SND_UNMAPPED : 0)|(t != camera1 ? SND_IMPORT : SND_FORCED)|SND_BUFFER, -1, -1, -1, chan);
+        emitsound(idx, &t->o, t, chan, (unmapped ? SND_UNMAPPED : 0)|(t != camera1 ? SND_IMPORT : SND_FORCED)|SND_BUFFER);
     }
 
     void announcef(int idx, int targ, gameent *d, bool forced, const char *msg, ...)
@@ -1059,7 +1059,7 @@ namespace game
         if(d->actortype < A_ENEMY)
         {
             vec center = d->center();
-            playsound(S_RESPAWN, d->o, d);
+            emitsound(S_RESPAWN, &d->o, d);
             spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playerovertone, playerovertonelevel), 1);
             spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playerundertone, playerundertonelevel), 1);
             if(dynlighteffects) adddynlight(center, d->height*2, vec::fromcolor(getcolour(d, playereffecttone, playereffecttonelevel)).mul(2.f), 250, 250);
@@ -1209,7 +1209,7 @@ namespace game
         int num = int((effect ? 3 : 10)*impulsescale);
         switch(effect)
         {
-            case 0: playsound(S_IMPULSE, d->o, d); // fail through
+            case 0: emitsound(S_IMPULSE, &d->o, d); // fail through
             case 1:
             {
                 if(!actors[d->actortype].jetfx) break;
@@ -1225,7 +1225,7 @@ namespace game
 
     void footstep(gameent *d, int curfoot)
     {
-        if(!actors[d->actortype].steps) return;
+        if(!actors[d->actortype].steps || footstepsoundmaxgain <= 0) return;
         bool moving = d->move || d->strafe, liquid = physics::liquidcheck(d), onfloor = d->physstate >= PHYS_SLOPE || isladder(d->inmaterial) || d->hasparkour();
         if(curfoot < 0 || (moving && (liquid || onfloor)))
         {
@@ -1233,16 +1233,16 @@ namespace game
             if(n > m && mag > m)
             {
                 if(curfoot < 0) curfoot = d->lastfoot;
+                if(curfoot < 0 || curfoot > 1) curfoot = 0;
                 int sound = -1;
 
                 if(liquid && (!onfloor || rnd(4))) sound = S_SWIMSTEP;
                 else sound = curfoot ? S_FOOTSTEP_L : S_FOOTSTEP_R;
 
-                vec pos = d->toetag(curfoot);
                 float amt = clamp(mag/n, 0.f, 1.f)*(d != focus ? footstepsoundlevel : footstepsoundfocus);
                 if(onfloor && !d->running(moveslow)) amt *= footstepsoundlight;
-                int vol = clamp(int(amt*footstepsoundmaxvol), footstepsoundminvol, footstepsoundmaxvol);
-                playsound(sound, pos, NULL, d != focus ? 0 : SND_PRIORITY, vol, footstepsoundmaxrad, footstepsoundminrad, &d->sschan[curfoot]);
+                float gain = clamp(amt*footstepsoundmaxgain, footstepsoundmingain, footstepsoundmaxgain);
+                emitsound(sound, d->gettag(TAG_TOE+curfoot), d, &d->sschan[curfoot], d != focus ? 0 : SND_PRIORITY, gain, -1, footstepsoundrolloff > 0 ? footstepsoundrolloff : -1.f, footstepsoundrefdist > 0 ? footstepsoundrefdist : -1.f);;
             }
         }
     }
@@ -1352,16 +1352,17 @@ namespace game
             if(d->wasfiring != d->weapselect && firing)
             {
                 d->wasfiring = d->weapselect;
-                playsound(WSNDFB(d->weapselect, secondary), d->o, d, 0, 255, -1, -1, &d->wschan[WS_BEGIN_CHAN]);
+                emitsound(WSNDFB(d->weapselect, secondary), d->gettag(TAG_MUZZLE), d, &d->wschan[WS_BEGIN_CHAN]);
             }
             else if(d->wasfiring == d->weapselect && !firing)
             {
                 d->wasfiring = -1;
-                playsound(WSNDFE(d->weapselect, secondary), d->o, d, 0, 255, -1, -1, &d->wschan[WS_END_CHAN]);
+                emitsound(WSNDFE(d->weapselect, secondary), d->gettag(TAG_MUZZLE), d, &d->wschan[WS_END_CHAN]);
             }
 
-            if(d->weapselect < W_ALL && d->weapstate[d->weapselect] != W_S_RELOAD && prevstate == W_S_RELOAD && playreloadnotify&(d == focus ? 1 : 2) && (d->weapammo[d->weapselect][W_A_CLIP] >= W(d->weapselect, ammoclip) || playreloadnotify&(d == focus ? 4 : 8)))
-                    playsound(WSND(d->weapselect, S_W_NOTIFY), d->o, d, 0, reloadnotifyvol, -1, -1, &d->wschan[WS_MAIN_CHAN]);
+            if(d->weapselect < W_ALL && d->weapstate[d->weapselect] != W_S_RELOAD && prevstate == W_S_RELOAD && playreloadnotify&(d == focus ? 1 : 2) && (d->weapammo[d->weapselect][W_A_CLIP] >= W(d->weapselect, ammoclip) || playreloadnotify&(d == focus ? 4 : 8)) && reloadnotifygain > 0)
+                    emitsound(WSND(d->weapselect, S_W_NOTIFY), d->gettag(TAG_ORIGIN), d, &d->wschan[WS_MAIN_CHAN], 0, reloadnotifygain);
+
             if(d->weapstate[d->weapselect] == W_S_POWER || d->weapstate[d->weapselect] == W_S_ZOOM)
             {
                 int millis = lastmillis-d->weaptime[d->weapselect];
@@ -1371,22 +1372,22 @@ namespace game
                     int snd = d->weapstate[d->weapselect] == W_S_POWER ? WSND2(d->weapselect, secondary, S_W_POWER) : WSND(d->weapselect, S_W_ZOOM);
                     if(W2(d->weapselect, cooktime, secondary)) switch(W2(d->weapselect, cooked, secondary))
                     {
-                        case 4: case 5: gain = 0.1f+int((1.f-amt)*0.9f); break; // longer
-                        case 1: case 2: case 3: default: gain = 0.1f+int(amt*0.9f); break; // shorter
+                        case 4: case 5: gain = 0.1f+((1.f-amt)*0.9f); break; // longer
+                        case 1: case 2: case 3: default: gain = 0.1f+(amt*0.9f); break; // shorter
                     }
-                    if(issound(d->pschan)) sounds[d->pschan].gain = gain;
-                    else playsound(snd, d->o, d, SND_LOOP, int(gain * 255), -1, -1, &d->pschan);
+                    if(issound(d->wschan[WS_POWER_CHAN])) sounds[d->wschan[WS_POWER_CHAN]].gain = gain;
+                    else emitsound(snd, d->gettag(TAG_ORIGIN), d, &d->wschan[WS_POWER_CHAN], SND_LOOP, gain);
                 }
-                else if(d->pschan >= 0)
+                else if(d->wschan[WS_POWER_CHAN] >= 0)
                 {
-                    if(issound(d->pschan)) sounds[d->pschan].clear();
-                    d->pschan = -1;
+                    if(issound(d->wschan[WS_POWER_CHAN])) sounds[d->wschan[WS_POWER_CHAN]].clear();
+                    d->wschan[WS_POWER_CHAN] = -1;
                 }
             }
-            else if(d->pschan >= 0)
+            else if(d->wschan[WS_POWER_CHAN] >= 0)
             {
-                if(issound(d->pschan)) sounds[d->pschan].clear();
-                d->pschan = -1;
+                if(issound(d->wschan[WS_POWER_CHAN])) sounds[d->wschan[WS_POWER_CHAN]].clear();
+                d->wschan[WS_POWER_CHAN] = -1;
             }
             if(W2(d->weapselect, cooked, true)&W_C_KEEP && d->prevstate[d->weapselect] == W_S_ZOOM && !d->action[AC_SECONDARY])
             {
@@ -1394,10 +1395,10 @@ namespace game
                 d->prevtime[d->weapselect] = 0;
             }
         }
-        else if(d->pschan >= 0)
+        else if(d->wschan[WS_POWER_CHAN] >= 0)
         {
-            if(issound(d->pschan)) sounds[d->pschan].clear();
-            d->pschan = -1;
+            if(issound(d->wschan[WS_POWER_CHAN])) sounds[d->wschan[WS_POWER_CHAN]].clear();
+            d->wschan[WS_POWER_CHAN] = -1;
         }
 
         if(local)
@@ -1541,7 +1542,7 @@ namespace game
 
         void play()
         {
-            if(playdamagetones >= (v == focus ? 1 : (d == focus ? 2 : 3)))
+            if(playdamagetones >= (v == focus ? 1 : (d == focus ? 2 : 3)) && damagetonegain > 0)
             {
                 const float dmgsnd[8] = { 0, 0.1f, 0.25f, 0.5f, 0.75f, 1.f, 1.5f, 2.f };
                 int hp = d->gethealth(gamemode, mutators), snd = -1;
@@ -1549,7 +1550,7 @@ namespace game
                 else if(flags&BLEED) snd = S_BLEED;
                 else if(flags&SHOCK) snd = S_SHOCK;
                 else loopirev(8) if(damage >= hp*dmgsnd[i]) { snd = S_DAMAGE+i; break; }
-                if(snd >= 0) playsound(snd, d->o, d, SND_IMPORT|(v == focus ? SND_NODIST : SND_CLAMPED), damagetonevol);
+                if(snd >= 0) emitsound(snd, &d->o, d, NULL, SND_IMPORT|(v == focus ? SND_NODIST : SND_CLAMPED), damagetonegain);
             }
             if(aboveheaddamage)
             {
@@ -1619,13 +1620,13 @@ namespace game
                     else if(v == player1 && !burning && !bleeding && !shocking && !material)
                     {
                         player1->lastteamhit = d->lastteamhit = totalmillis;
-                        if(!issound(alarmchan)) playsound(S_ALARM, v->o, v, 0, -1, -1, -1, &alarmchan);
+                        if(!issound(alarmchan)) emitsound(S_ALARM, &v->o, v, &alarmchan);
                     }
                     if(!burning && !bleeding && !shocking && !material && !sameteam) v->lasthit = totalmillis ? totalmillis : 1;
                 }
-                if(d->actortype < A_ENEMY && !issound(d->vschan)) playsound(S_PAIN, d->o, d, 0, -1, -1, -1, &d->vschan);
+                if(d->actortype < A_ENEMY && !issound(d->vschan)) emitsound(S_PAIN, &d->o, d, &d->vschan);
                 d->lastpain = lastmillis;
-                if(!WK(flags)) playsound(WSND2(weap, WS(flags), S_W_IMPACT), vec(d->center()).add(vec(dir).mul(dist)), NULL, 0, clamp(int(255*scale), 64, 255));
+                if(!WK(flags)) emitsoundpos(WSND2(weap, WS(flags), S_W_IMPACT), vec(d->center()).add(vec(dir).mul(dist)), NULL, 0, clamp(scale, 0.2f, 1.f));
             }
             if(A(d->actortype, abilities)&AA(PUSHABLE))
             {
@@ -1716,7 +1717,7 @@ namespace game
             if(!m_insta(gamemode, mutators) && damagecritical > 0 && damagecriticalsound&(d == focus ? 1 : 2))
             {
                 int hp = d->gethealth(gamemode, mutators), crit = int(hp*damagecritical);
-                if(d->health > crit && health <= crit) playsound(S_CRITICAL, d->o, d);
+                if(d->health > crit && health <= crit) emitsound(S_CRITICAL, &d->o, d);
             }
             d->health = health;
             if(damage > 0)
@@ -1970,7 +1971,7 @@ namespace game
                 v->lastkill = totalmillis ? totalmillis : 1;
             }
         }
-        if(dth >= 0) playsound(dth, d->o, d, 0, -1, -1, -1, &d->vschan);
+        if(dth >= 0) emitsound(dth, &d->o, d, &d->vschan);
         if(d->actortype < A_ENEMY)
         {
             if(showobituaries)
