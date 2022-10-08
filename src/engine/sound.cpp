@@ -67,6 +67,7 @@ static soundenv *soundenvfroment(entity *ent)
 
 void allocsoundefxslots();
 VARF(IDF_PERSIST, maxsoundefxslots, 1, 2, 10, allocsoundefxslots());
+VAR(0, soundefxslotdebug, 0, 0, 1);
 
 static void putsoundefxslots() { loopv(soundefxslots) soundefxslots[i].put(); }
 
@@ -98,7 +99,7 @@ static void getsoundefxslot(soundefxslot **hook, bool priority = false)
         soundefxslots[i].hook = hook;
         *hook = &soundefxslots[i];
 
-        conoutf("getsoundefxslot: free slot found: %u", soundefxslots[i].id);
+        if(soundefxslotdebug) conoutf("getsoundefxslot: free slot found: %u", soundefxslots[i].id);
 
         return;
     }
@@ -114,8 +115,8 @@ static void getsoundefxslot(soundefxslot **hook, bool priority = false)
     oldest->hook = hook;
     *hook = oldest;
 
-    conoutf("getsoundefxslot: oldest slot found: %u, last used %u ms ago", oldest->id,
-        lastmillis - oldest->lastused);
+    if(soundefxslotdebug) conoutf("getsoundefxslot: oldest slot found: %u, last used %u ms ago",
+        oldest->id, lastmillis - oldest->lastused);
 }
 
 void soundenv::setparams(ALuint effect)
