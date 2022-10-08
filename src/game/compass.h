@@ -128,7 +128,7 @@ void showcmenu(const char *name)
         compasspos = 0;
         curcompass->reset();
         execute(curcompass->contents);
-        playsound(S_PRESS, camera1->o, camera1, SND_FORCED);
+        emitsound(S_PRESS, &camera1->o, camera1, NULL, SND_FORCED);
         return;
     }
     conoutft(CON_DEBUG, "\frNo such compass menu: %s", name);

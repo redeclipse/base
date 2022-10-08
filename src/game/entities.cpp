@@ -1037,13 +1037,13 @@ namespace entities
                 }
                 if(full)
                 {
-                    if(attr[4]&SND_NOATTEN) addentinfo("no-atten");
-                    if(attr[4]&SND_NODELAY) addentinfo("no-delay");
-                    if(attr[4]&SND_PRIORITY) addentinfo("priority");
-                    if(attr[4]&SND_NOPAN) addentinfo("no-pan");
-                    if(attr[4]&SND_NODIST) addentinfo("no-dist");
-                    if(attr[4]&SND_NOQUIET) addentinfo("no-quiet");
-                    if(attr[4]&SND_CLAMPED) addentinfo("clamped");
+                    if(attr[6]&SND_NOATTEN) addentinfo("no-atten");
+                    if(attr[6]&SND_NODELAY) addentinfo("no-delay");
+                    if(attr[6]&SND_PRIORITY) addentinfo("priority");
+                    if(attr[6]&SND_NOPAN) addentinfo("no-pan");
+                    if(attr[6]&SND_NODIST) addentinfo("no-dist");
+                    if(attr[6]&SND_NOQUIET) addentinfo("no-quiet");
+                    if(attr[6]&SND_CLAMPED) addentinfo("clamped");
                 }
                 break;
             }
@@ -1220,7 +1220,7 @@ namespace entities
             d->weapammo[weap][W_A_STORE] = 0;
         }
         d->useitem(ent, e.type, attr, ammoamt, sweap, lastmillis, W(attr, delayitem));
-        playsound(e.type == WEAPON && attr >= W_OFFSET && attr < W_ALL ? WSND(attr, S_W_USE) : S_ITEMUSE, d->o, d, 0, -1, -1, -1, &d->wschan[WS_MAIN_CHAN]);
+        emitsound(e.type == WEAPON && attr >= W_OFFSET && attr < W_ALL ? WSND(attr, S_W_USE) : S_ITEMUSE, d->gettag(TAG_ORIGIN), d, &d->wschan[WS_MAIN_CHAN]);
         if(game::dynlighteffects) adddynlight(d->center(), enttype[e.type].radius*2, vec::fromcolor(colour).mul(2.f), 250, 250);
         if(ents.inrange(drop) && ents[drop]->type == WEAPON)
         {
@@ -1945,11 +1945,12 @@ namespace entities
                     while(e.attrs[0] < 0) e.attrs[0] += numsounds;
                     while(e.attrs[0] >= numsounds) e.attrs[0] -= numsounds;
                 }
-                if(e.attrs[1] < 0) e.attrs[1] = 0; // minrad, clamp
-                if(e.attrs[2] < 0) e.attrs[2] = 0; // maxrad, clamp
-                while(e.attrs[3] < 0) e.attrs[3] += 256; // volume
-                while(e.attrs[3] > 255) e.attrs[3] -= 256; // wrap both ways
-                if(e.attrs[4] < 0) e.attrs[4] = 0; // flags, clamp
+                if(e.attrs[1] < 0) e.attrs[1] = 100; // gain, clamp
+                if(e.attrs[2] < 0) e.attrs[2] = 100; // pitch, clamp
+                if(e.attrs[3] < 0) e.attrs[3] = 100; // rolloff, clamp
+                if(e.attrs[4] < 0) e.attrs[4] = 0; // refdist, clamp
+                if(e.attrs[5] < 0) e.attrs[5] = 0; // maxdist, clamp
+                if(e.attrs[6] < 0) e.attrs[6] = 0; // flags, clamp
                 FIXEMIT;
                 break;
             }
@@ -2128,6 +2129,18 @@ namespace entities
     }
 
     // these functions are called when the client touches the item
+    int emitmapsound(gameentity &e, vec *pos, bool looping)
+    {
+        if(!mapsounds.inrange(e.attrs[0])) return -1;
+        if(issound(e.schan)) return e.schan;
+        int flags = SND_MAP|SND_TRACKED;
+        if(looping) flags |= SND_LOOP;
+        loopk(SND_LAST) if(e.attrs[6]&(1<<k)) flags |= 1<<k;
+        float gain = e.attrs[1] > 0 ? e.attrs[1]/100.f : 1.f, pitch = e.attrs[2] > 0 ? e.attrs[2]/100.f : 1.f,
+              rolloff = e.attrs[3] > 0 ? e.attrs[3]/100.f : -1.f, refdist = e.attrs[4] > 0 ? e.attrs[4]/100.f : -1.f, maxdist = e.attrs[5] > 0 ? e.attrs[5]/100.f : -1.f;
+        return emitsound(e.attrs[0], pos, NULL, &e.schan, flags, gain, pitch, rolloff, refdist, maxdist);
+    }
+
     void execlink(dynent *d, int index, bool local, int ignore)
     {
         if(!ents.inrange(index) || !maylink(ents[index]->type)) return;
@@ -2164,12 +2177,7 @@ namespace entities
                     f.lastemit = e.lastemit;
                     if(e.type == TRIGGER) f.setspawned(TRIGSTATE(e.spawned(), e.attrs[4]));
                     else if(local) commit = true;
-                    if(mapsounds.inrange(f.attrs[0]) && !issound(f.schan))
-                    {
-                        int flags = SND_MAP;
-                        loopk(SND_LAST) if(f.attrs[4]&(1<<k)) flags |= 1<<k;
-                        playsound(f.attrs[0], both ? f.pos() : e.pos(), NULL, flags, f.attrs[3] ? f.attrs[3] : -1, f.attrs[1] || f.attrs[2] ? f.attrs[1] : -1, f.attrs[2] ? f.attrs[2] : -1, &f.schan);
-                    }
+                    emitmapsound(f, both ? f.getpos() : e.getpos(), false);
                     break;
                 }
                 default: break;
@@ -2445,6 +2453,17 @@ namespace entities
             default: break;
         }
 
+        if(mver <= 51 && e.type == MAPSOUND)
+        {
+            int gain = e.attrs[3] > 0 ? int(e.attrs[3] / 255.f * 100) : 0, rolloff = e.attrs[1] > soundrolloff ? int(soundrolloff / float(e.attrs[1]) * 100) : 0, refdist = e.attrs[2] > soundrefdist ? e.attrs[2] : 0;
+            loopi(4) e.attrs[6-i] = e.attrs[4-i];
+            e.attrs[1] = gain;
+            e.attrs[2] = 0;
+            e.attrs[3] = rolloff;
+            e.attrs[4] = refdist;
+            e.attrs[5] = 0;
+        }
+
         if(gver <= 218 && e.type == WEAPON)
         { // insert mine before rockets (9 -> 10) after grenades (8)
             if(e.attrs[0] >= 9) e.attrs[0]++;
@@ -2680,8 +2699,8 @@ namespace entities
                 }
                 case MAPSOUND:
                 {
-                    part_radius(pos, vec(float(e.attrs[1])), showentsize, 1, 1, entradiuscolour);
-                    part_radius(pos, vec(float(e.attrs[2])), showentsize, 1, 1, entradiuscolour);
+                    part_radius(pos, vec(float(e.attrs[4])), showentsize, 1, 1, entradiuscolour);
+                    part_radius(pos, vec(float(e.attrs[5])), showentsize, 1, 1, entradiuscolour);
                     break;
                 }
                 case WIND:
@@ -2846,13 +2865,14 @@ namespace entities
                 if(issound(e.schan))
                 {
                     if(triggered && sounds[e.schan].flags&SND_LOOP && !e.spawned() && (e.lastemit < 0 || lastmillis-e.lastemit > triggertime(e, true)))
+                    {
                         sounds[e.schan].clear();
-                    else sounds[e.schan].pos = e.pos();
+                        e.schan = -1;
+                    }
+                    continue;
                 }
-                if(triggered || issound(e.schan)) continue;
-                int flags = SND_MAP|SND_LOOP; // ambient sounds loop
-                loopk(SND_LAST)  if(e.attrs[4]&(1<<k)) flags |= 1<<k;
-                playsound(e.attrs[0], e.pos(), NULL, flags, e.attrs[3] ? e.attrs[3] : 255, e.attrs[1] || e.attrs[2] ? e.attrs[1] : -1, e.attrs[2] ? e.attrs[2] : -1, &e.schan);
+                if(triggered) continue;
+                emitmapsound(e, e.getpos(), true);
             }
         }
         if((m_edit(game::gamemode) || m_race(game::gamemode)) && routeid >= 0 && droproute)

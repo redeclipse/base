@@ -914,7 +914,7 @@ namespace physics
                 d->doimpulse(IM_T_JUMP, lastmillis);
                 d->action[AC_JUMP] = d->action[AC_DASH] = onfloor = false;
                 client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_JUMP);
-                playsound(S_JUMP, d->o, d);
+                emitsound(S_JUMP, &d->o, d);
                 createshape(PART_SMOKE, int(d->radius), 0x222222, 21, 20, 250, d->feetpos(), 1, 1, -10, 0, 10.f);
             }
         }
@@ -1185,7 +1185,7 @@ namespace physics
             { \
                 int col = (int(mcol[2]*(mq)) + (int(mcol[1]*(mq)) << 8) + (int(mcol[0]*(mq)) << 16)); \
                 regularshape(mp, mt, col, 21, 20, mz, mo, ms, 1, 10, 0, 20); \
-                if((mw) >= 0) playsound(mw, mo, d);                    \
+                if((mw) >= 0) emitsoundpos(mw, mo);                    \
             }
             if(curmat == MAT_WATER || oldmat == MAT_WATER)
             {
@@ -1273,9 +1273,9 @@ namespace physics
                     {
                         if(mag >= 20)
                         {
-                            int vol = min(int(mag*1.25f), 255);
-                            if(isliquid(e->inmaterial&MATF_VOLUME)) vol *= 0.5f;
-                            playsound(S_LAND, e->o, e, 0, vol);
+                            float gain = min(mag*1.25f, 1.f);
+                            if(isliquid(e->inmaterial&MATF_VOLUME)) gain *= 0.5f;
+                            emitsound(S_LAND, &e->o, e, NULL, 0, gain);
                         }
                         else game::footstep(e);
                     }
