@@ -47,7 +47,7 @@ semabuild_archive() {
 semabuild_test() {
     echo "testing ${BRANCH_NAME}.."
     sudo ${SEMABUILD_APT} update || return 1
-    sudo ${SEMABUILD_APT} -fy install build-essential multiarch-support gcc-multilib g++-multilib zlib1g-dev libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev libfreetype6-dev binutils-mingw-w64 g++-mingw-w64 || return 1
+    sudo ${SEMABUILD_APT} -fy install build-essential multiarch-support gcc-multilib g++-multilib zlib1g-dev libsdl2-dev libsndfile1-dev libopenal-dev libsdl2-image-dev libfreetype6-dev binutils-mingw-w64 g++-mingw-w64 || return 1
     sudo ${SEMABUILD_APT} clean || return 1
     make PLATFORM="crossmingw64" PLATFORM_BIN="amd64" PLATFORM_BUILD="${SEMAPHORE_BUILD_NUMBER}" PLATFORM_BRANCH="${BRANCH_NAME}" PLATFORM_REVISION="${REVISION}" WANT_DISCORD=1 WANT_STEAM=1 INSTDIR="${SEMABUILD_DIR}/windows/bin/amd64" CFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math" CXXFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math" LDFLAGS="-m64" -C src clean install || return 1
     make PLATFORM="linux64" PLATFORM_BIN="amd64" PLATFORM_BUILD="${SEMAPHORE_BUILD_NUMBER}" PLATFORM_BRANCH="${BRANCH_NAME}" PLATFORM_REVISION="${REVISION}" WANT_DISCORD=1 WANT_STEAM=1 INSTDIR="${SEMABUILD_DIR}/linux/bin/amd64" CFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math" CXXFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math" LDFLAGS="-m64" -C src clean install || return 1
@@ -58,7 +58,7 @@ semabuild_build() {
     echo "building ${BRANCH_NAME}.."
     sudo dpkg --add-architecture i386 || return 1
     sudo ${SEMABUILD_APT} update || return 1
-    sudo ${SEMABUILD_APT} -fy install build-essential multiarch-support gcc-multilib g++-multilib zlib1g-dev libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev libfreetype6-dev binutils-mingw-w64 g++-mingw-w64 || return 1
+    sudo ${SEMABUILD_APT} -fy install build-essential multiarch-support gcc-multilib g++-multilib zlib1g-dev libsdl2-dev libsndfile1-dev libopenal-dev libsdl2-image-dev libfreetype6-dev binutils-mingw-w64 g++-mingw-w64 || return 1
     sudo ${SEMABUILD_APT} clean || return 1
 
     numjobs=$(nproc)
@@ -174,7 +174,7 @@ semabuild_build() {
     # sudo ${SEMABUILD_APT} -o Dpkg::Options::="--force-overwrite" -fy --no-install-recommends install gcc:i386 || return 1
     # sudo ${SEMABUILD_APT} -o Dpkg::Options::="--force-overwrite" -fy --no-install-recommends install libdbus-1-dev:i386 || return 1
     # sudo ${SEMABUILD_APT} -o Dpkg::Options::="--force-overwrite" -fy --no-install-recommends install g++:i386 || return 1
-    # sudo ${SEMABUILD_APT} -o Dpkg::Options::="--force-overwrite" -fy --no-install-recommends install zlib1g-dev:i386 libsdl2-dev:i386 libsdl2-mixer-dev:i386 libsdl2-image-dev:i386 libpng-dev:i386 libfreetype6-dev:i386 || return 1
+    # sudo ${SEMABUILD_APT} -o Dpkg::Options::="--force-overwrite" -fy --no-install-recommends install zlib1g-dev:i386 libsdl2-dev:i386 libsndfile1-dev:i386 libopenal-dev:i386 libsdl2-image-dev:i386 libpng-dev:i386 libfreetype6-dev:i386 || return 1
 
     # PKG_CONFIG_PATH="/usr/lib/i386-linux-gnu/pkgconfig" make \
     #     PLATFORM="linux32" \
