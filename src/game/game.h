@@ -2309,6 +2309,7 @@ namespace projs
 namespace weapons
 {
     extern int slot(gameent *d, int n, bool back = false);
+    extern vec *getweapsoundpos(gameent *d, int weaptag);
     extern bool weapselect(gameent *d, int weap, int filter, bool local = true);
     extern bool weapreload(gameent *d, int weap, int load = -1, int ammo = -1, int store = 0, bool local = true);
     extern void weapdrop(gameent *d, int w = -1);

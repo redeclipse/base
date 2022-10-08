@@ -53,6 +53,13 @@ namespace weapons
         return -1;
     }
 
+    vec *getweapsoundpos(gameent *d, int weaptag)
+    {
+        // Sound source at camera in FPP view, otherwise at requested tag position
+        return d == game::focus && !game::thirdpersonview(true) ?
+            &d->o : d->gettag(weaptag);
+    }
+
     ICOMMAND(0, weapslot, "i", (int *o), intret(slot(game::player1, *o >= 0 ? *o : game::player1->weapselect))); // -1 = weapselect slot
     ICOMMAND(0, weapselect, "", (), intret(game::player1->weapselect));
     ICOMMAND(0, weaplast, "b", (int *n), intret(*n >= 0 ? (game::player1->lastweap.inrange(*n) ? game::player1->lastweap[*n] : -1) : game::player1->lastweap.length()));
@@ -102,7 +109,7 @@ namespace weapons
             }
             client::addmsg(N_WEAPSELECT, "ri3", d->clientnum, lastmillis-game::maptime, weap);
         }
-        emitsound(WSND(weap, S_W_SWITCH), d->gettag(TAG_ORIGIN), d, &d->wschan[WS_MAIN_CHAN]);
+        emitsound(WSND(weap, S_W_SWITCH), getweapsoundpos(d, TAG_ORIGIN), d, &d->wschan[WS_MAIN_CHAN]);
         return true;
     }
 
@@ -131,7 +138,7 @@ namespace weapons
         d->weapload[weap][W_A_CLIP] = load;
         d->weapammo[weap][W_A_CLIP] = min(ammo, W(weap, ammoclip));
         if(W(weap, ammostore) > 0) d->weapammo[weap][W_A_STORE] = clamp(store, 0, W(weap, ammostore));
-        emitsound(WSND(weap, S_W_RELOAD), d->gettag(TAG_ORIGIN), d, &d->wschan[WS_MAIN_CHAN]);
+        emitsound(WSND(weap, S_W_RELOAD), getweapsoundpos(d, TAG_ORIGIN), d, &d->wschan[WS_MAIN_CHAN]);
         d->setweapstate(weap, W_S_RELOAD, W(weap, delayreload), lastmillis);
         return true;
     }

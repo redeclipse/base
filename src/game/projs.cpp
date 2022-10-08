@@ -1259,9 +1259,11 @@ namespace projs
             int slot = WSNDF(weap, WS(flags));
             if(slot >= 0 && skew > 0)
             {
+                vec *sndpos = weapons::getweapsoundpos(d, TAG_MUZZLE);
+
                 // quick hack to have additional audio feedback for zapper
                 if(weap == W_ZAPPER && !(WS(flags)))
-                    emitsound(WSND2(weap, WS(flags), S_W_TRANSIT), d->gettag(TAG_MUZZLE), d, &d->wschan[WS_OTHER_CHAN], 0, skew);
+                    emitsound(WSND2(weap, WS(flags), S_W_TRANSIT), sndpos, d, &d->wschan[WS_OTHER_CHAN], 0, skew);
 
                 if((weap == W_FLAMER || weap == W_ZAPPER) && !(WS(flags)))
                 {
@@ -1269,7 +1271,7 @@ namespace projs
                     if(issound(d->wschan[WS_MAIN_CHAN]) &&
                        sounds[d->wschan[WS_MAIN_CHAN]].slotnum == getsoundslot(slot))
                         sounds[d->wschan[WS_MAIN_CHAN]].ends = ends;
-                    else emitsound(slot, d->gettag(TAG_MUZZLE), d, &d->wschan[WS_MAIN_CHAN], SND_LOOP, skew, 1, 1, -1, -1, ends);
+                    else emitsound(slot, sndpos, d, &d->wschan[WS_MAIN_CHAN], SND_LOOP, skew, 1, 1, -1, -1, ends);
                 }
                 else if(!W2(weap, time, WS(flags)) || life)
                 {
@@ -1280,7 +1282,7 @@ namespace projs
                         sounds[d->wschan[WS_MAIN_CHAN]].hook = NULL;
                         d->wschan[WS_MAIN_CHAN] = -1;
                     }
-                    emitsound(slot, d->gettag(TAG_MUZZLE), d, &d->wschan[WS_MAIN_CHAN], 0, skew);
+                    emitsound(slot, sndpos, d, &d->wschan[WS_MAIN_CHAN], 0, skew);
                 }
             }
         }
