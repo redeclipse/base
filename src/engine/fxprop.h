@@ -281,9 +281,33 @@ namespace fx
             0
         ),
         fxpropertydef(
-            "volume",
-            PROP_INT,
-            0, 255, 255,
+            "gain",
+            PROP_FLOAT,
+            0.0f, 1.0f, 100.0f,
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+        ),
+        fxpropertydef(
+            "pitch",
+            PROP_FLOAT,
+            0.0f, 1.0f, 100.0f,
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+        ),
+        fxpropertydef(
+            "rolloff",
+            PROP_FLOAT,
+            -1.0f, -1.0f, FLT_MAX,
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+        ),
+        fxpropertydef(
+            "refdist",
+            PROP_FLOAT,
+            -1.0f, -1.0f, FLT_MAX,
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+        ),
+        fxpropertydef(
+            "maxdist",
+            PROP_FLOAT,
+            -1.0f, -1.0f, FLT_MAX,
             BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
         ),
         fxpropertydef(
@@ -291,18 +315,6 @@ namespace fx
             PROP_INT,
             0, 0, INT_MAX,
             0
-        ),
-        fxpropertydef(
-            "minrad",
-            PROP_INT,
-            -1, -1, INT_MAX,
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
-        ),
-        fxpropertydef(
-            "maxrad",
-            PROP_INT,
-            -1, -1, INT_MAX,
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
         )
     };
 

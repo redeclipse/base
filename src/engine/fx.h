@@ -84,10 +84,12 @@ namespace fx
     enum
     {
         FX_SOUND_SOUND = 0,
-        FX_SOUND_VOL,
+        FX_SOUND_GAIN,
+        FX_SOUND_PITCH,
+        FX_SOUND_ROLLOFF,
+        FX_SOUND_REFDIST,
+        FX_SOUND_MAXDIST,
         FX_SOUND_FLAGS,
-        FX_SOUND_MINRAD,
-        FX_SOUND_MAXRAD,
 
         FX_SOUND_PROPS
     };

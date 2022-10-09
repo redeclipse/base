@@ -310,7 +310,7 @@ namespace fx
         vec from, to;
         getpos(inst, from, to, scale);
 
-        int vol = inst.getextprop<int>(FX_SOUND_VOL) * getblend(inst);
+        float gain = inst.getextprop<float>(FX_SOUND_GAIN) * getblend(inst);
         int sound = inst.soundhook;
         int flags = inst.getextprop<int>(FX_SOUND_FLAGS);
 
@@ -318,27 +318,22 @@ namespace fx
         {
             fxdef &def = getfxdef(inst.fxindex);
 
-            // playsound(
-            //     def.sound->index,
-            //     from,
-            //     NULL,
-            //     flags | SND_UNMAPPED,
-            //     vol,
-            //     inst.getextprop<int>(FX_SOUND_MAXRAD),
-            //     inst.getextprop<int>(FX_SOUND_MINRAD),
-            //     &inst.soundhook
-            // );
             emitsound(
                 def.sound->index,
                 &from,
                 NULL,
                 &inst.soundhook,
-                flags | SND_UNMAPPED
+                flags | SND_UNMAPPED | SND_VELEST,
+                gain,
+                inst.getextprop<float>(FX_SOUND_PITCH),
+                inst.getextprop<float>(FX_SOUND_ROLLOFF),
+                inst.getextprop<float>(FX_SOUND_REFDIST),
+                inst.getextprop<float>(FX_SOUND_MAXDIST)
             );
         }
         else if(issound(sound))
         {
-            sounds[sound].gain = vol / 255.f;
+            sounds[sound].gain = gain;
             sounds[sound].pos = from;
         }
     }
