@@ -2129,8 +2129,17 @@ namespace entities
     // these functions are called when the client touches the item
     int emitmapsound(gameentity &e, bool looping)
     {
-        if(!mapsounds.inrange(e.attrs[0])) return -1;
-        if(issound(e.schan)) return e.schan;
+        if(!mapsounds.inrange(e.attrs[0]))
+        {
+            if(issound(e.schan)) sounds[e.schan].clear();
+            e.schan = -1;
+            return -1;
+        }
+        if(issound(e.schan))
+        {
+            e.getcurpos();
+            return e.schan;
+        }
         int flags = SND_MAP|SND_TRACKED;
         if(looping) flags |= SND_LOOP;
         loopk(SND_LAST) if(e.attrs[6]&(1<<k)) flags |= 1<<k;
