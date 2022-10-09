@@ -1271,7 +1271,7 @@ namespace projs
                     if(issound(d->wschan[WS_MAIN_CHAN]) &&
                        sounds[d->wschan[WS_MAIN_CHAN]].slotnum == getsoundslot(slot))
                         sounds[d->wschan[WS_MAIN_CHAN]].ends = ends;
-                    else emitsound(slot, sndpos, d, &d->wschan[WS_MAIN_CHAN], SND_LOOP, skew, 1, 1, -1, -1, ends);
+                    else emitsound(slot, sndpos, d, &d->wschan[WS_MAIN_CHAN], SND_LOOP, skew, 1, -1, -1, -1, ends);
                 }
                 else if(!W2(weap, time, WS(flags)) || life)
                 {

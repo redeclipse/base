@@ -362,7 +362,7 @@ namespace game
     VAR(IDF_PERSIST, damagemergebleed, 0, 250, VAR_MAX);
     VAR(IDF_PERSIST, damagemergeshock, 0, 250, VAR_MAX);
     VAR(IDF_PERSIST, playdamagetones, 0, 1, 3);
-    FVAR(IDF_PERSIST, damagetonegain, 0, 1, 100);
+    FVAR(IDF_PERSIST, damagetonegain, 0, 0.25f, 100);
     VAR(IDF_PERSIST, playreloadnotify, 0, 3, 15);
     FVAR(IDF_PERSIST, reloadnotifygain, 0, 1, 100);
 
@@ -797,7 +797,7 @@ namespace game
         if(idx < 0) return;
         physent *t = !d || d == player1 || forced ? camera1 : d;
         int *chan = d && !forced ? &d->aschan : &announcerchan;
-        emitsound(idx, &t->o, t, chan, (unmapped ? SND_UNMAPPED : 0)|(t != camera1 ? 0 : SND_NOATTEN)|SND_NOENV|SND_PRIORITY|SND_BUFFER);
+        emitsound(idx, &t->o, t, chan, (unmapped ? SND_UNMAPPED : 0)|(t != camera1 ? 0 : SND_NOATTEN)|SND_PRIORITY|SND_BUFFER);
     }
 
     void announcef(int idx, int targ, gameent *d, bool forced, const char *msg, ...)
@@ -1253,7 +1253,7 @@ namespace game
                 float amt = clamp(mag/n, 0.f, 1.f)*(d != focus ? footstepsoundlevel : footstepsoundfocus);
                 if(onfloor && !d->running(moveslow)) amt *= footstepsoundlight;
                 float gain = clamp(amt*footstepsoundmaxgain, footstepsoundmingain, footstepsoundmaxgain);
-                emitsound(sound, d->gettag(TAG_TOE+curfoot), d, &d->sschan[curfoot], d != focus ? 0 : SND_PRIORITY, gain, -1, footstepsoundrolloff > 0 ? footstepsoundrolloff : -1.f, footstepsoundrefdist > 0 ? footstepsoundrefdist : -1.f);;
+                emitsound(sound, d->gettag(TAG_TOE+curfoot), d, &d->sschan[curfoot], d != focus ? 0 : SND_PRIORITY, gain, 1, footstepsoundrolloff > 0 ? footstepsoundrolloff : -1.f, footstepsoundrefdist > 0 ? footstepsoundrefdist : -1.f);;
             }
         }
     }
@@ -1582,7 +1582,7 @@ namespace game
                 else if(flags&BLEED) snd = S_BLEED;
                 else if(flags&SHOCK) snd = S_SHOCK;
                 else loopirev(8) if(damage >= hp*dmgsnd[i]) { snd = S_DAMAGE+i; break; }
-                if(snd >= 0) emitsound(snd, &d->o, d, NULL, SND_NOENV|SND_CLAMPED, damagetonegain);
+                if(snd >= 0) emitsound(snd, &d->o, d, NULL, SND_CLAMPED, damagetonegain);
             }
             if(aboveheaddamage)
             {

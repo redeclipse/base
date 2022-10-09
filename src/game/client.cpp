@@ -1537,7 +1537,7 @@ namespace client
         if(m_demo(game::gamemode) || ((!(flags&SAY_TEAM) || f->team == game::player1->team) && (!(flags&SAY_WHISPER) || f == game::player1 || t == game::player1)))
         {
             conoutft(CON_MESG, "%s", line);
-            if(snd >= 0 && !issound(f->cschan)) emitsound(snd, &f->o, f, &f->cschan, snd != S_CHAT ? SND_UNMAPPED : SND_PRIORITY|SND_NOENV|SND_CLAMPED);
+            if(snd >= 0 && !issound(f->cschan)) emitsound(snd, &f->o, f, &f->cschan, (snd != S_CHAT ? SND_UNMAPPED : 0)|SND_PRIORITY|SND_CLAMPED);
         }
         ai::scanchat(f, t, flags, text);
     }
