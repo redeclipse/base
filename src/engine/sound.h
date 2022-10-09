@@ -22,6 +22,7 @@ enum
     SND_UNMAPPED = 1<<10,   // skip slot index mapping
     SND_TRACKED  = 1<<11,   // sound vpos is tracked
     SND_VELEST   = 1<<12,   // sound vpos is estimated
+    SND_NOFILTER = 1<<13,   // disable filtering
     SND_MASKF    = SND_LOOP|SND_MAP,
     SND_LAST     = 8        // top N are used for entities
 };
@@ -49,6 +50,11 @@ extern LPALISEFFECT alIsEffect;
 extern LPALEFFECTI alEffecti;
 extern LPALEFFECTF alEffectf;
 extern LPALEFFECTFV alEffectfv;
+extern LPALGENFILTERS alGenFilters;
+extern LPALDELETEFILTERS alDeleteFilters;
+extern LPALISFILTER alIsFilter;
+extern LPALFILTERI alFilteri;
+extern LPALFILTERF alFilterf;
 
 #define SOUNDERROR(body) \
     do { \
@@ -174,13 +180,14 @@ struct soundenvzone
 
 struct sound
 {
-    ALuint source;
+    ALuint source, filter;
     soundslot *slot;
     vec pos, curpos, vel, *vpos;
     physent *owner;
     int index, flags, material, lastupdate;
     int millis, ends, slotnum, *hook;
     float gain, curgain, pitch, curpitch, rolloff, refdist, maxdist;
+    float finalrolloff, finalrefdist;
     vector<int> buffer;
 
     sound() : vpos(NULL), hook(NULL) { reset(); }
@@ -191,6 +198,7 @@ struct sound
     void reset();
     void clear();
     void unhook();
+    ALenum updatefilter();
     ALenum update();
     bool valid();
     bool active();

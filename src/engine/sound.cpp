@@ -1,4 +1,5 @@
 #include "engine.h"
+#include <AL/al.h>
 #include <AL/efx.h>
 
 ALCdevice *snddev = NULL;
@@ -16,6 +17,11 @@ LPALISEFFECT                   alIsEffect                   = NULL;
 LPALEFFECTI                    alEffecti                    = NULL;
 LPALEFFECTF                    alEffectf                    = NULL;
 LPALEFFECTFV                   alEffectfv                   = NULL;
+LPALGENFILTERS                 alGenFilters                 = NULL;
+LPALDELETEFILTERS              alDeleteFilters              = NULL;
+LPALISFILTER                   alIsFilter                   = NULL;
+LPALFILTERI                    alFilteri                    = NULL;
+LPALFILTERF                    alFilterf                    = NULL;
 
 static void getextsoundprocs()
 {
@@ -30,6 +36,11 @@ static void getextsoundprocs()
     alEffecti                    = (LPALEFFECTI)                   alGetProcAddress("alEffecti");
     alEffectf                    = (LPALEFFECTF)                   alGetProcAddress("alEffectf");
     alEffectfv                   = (LPALEFFECTFV)                  alGetProcAddress("alEffectfv");
+    alGenFilters                 = (LPALGENFILTERS)                alGetProcAddress("alGenFilters");
+    alDeleteFilters              = (LPALDELETEFILTERS)             alGetProcAddress("alDeleteFilters");
+    alIsFilter                   = (LPALISFILTER)                  alGetProcAddress("alIsFilter");
+    alFilteri                    = (LPALFILTERI)                   alGetProcAddress("alFilteri");
+    alFilterf                    = (LPALFILTERF)                   alGetProcAddress("alFilterf");
 }
 
 hashnameset<soundsample> soundsamples;
@@ -868,7 +879,7 @@ void updatesounds()
 
             soundslot *slot = &soundset[n];
             int variant = slot->variants > 1 ? rnd(slot->variants) : 0;
-            if(slot->fardist > 0 && s.vpos->dist(camera1->o) >= slot->fardist) variant += slot->variants;
+            // if(slot->fardist > 0 && s.vpos->dist(camera1->o) >= slot->fardist) variant += slot->variants;
             soundsample *sample = slot->samples.inrange(variant) ? slot->samples[variant] : NULL;
             if(!sample || !sample->valid()) continue;
 
@@ -1257,6 +1268,15 @@ ALenum sound::setup(soundsample *s)
     alGenSources(1, &source);
     SOUNDERROR(clear(); return err);
 
+    if(al_ext_efx && !(flags&SND_NOFILTER))
+    {
+        alGenFilters(1, &filter);
+        alFilteri(filter, AL_FILTER_TYPE, AL_FILTER_BANDPASS);
+        alSourcei(source, AL_DIRECT_FILTER, filter);
+
+        SOUNDERROR(clear(); return err);
+    }
+
     alSourcei(source, AL_BUFFER, s->buffer);
     SOUNDERROR(clear(); return err);
 
@@ -1281,7 +1301,8 @@ ALenum sound::setup(soundsample *s)
     alSourcei(source, AL_LOOPING, flags&SND_LOOP ? AL_TRUE : AL_FALSE);
     SOUNDERROR(clear(); return err);
 
-    alSourcef(source, AL_ROLLOFF_FACTOR, rolloff >= 0 ? rolloff : slot->rolloff);
+    finalrolloff = rolloff >= 0 ? rolloff : slot->rolloff;
+    alSourcef(source, AL_ROLLOFF_FACTOR, finalrolloff);
     SOUNDERROR(clear(); return err);
 
     alSourcef(source, AL_REFERENCE_DISTANCE, refdist >= 0 ? refdist : (slot->refdist >= 0 ? slot->refdist : soundrefdist));
@@ -1300,6 +1321,7 @@ ALenum sound::setup(soundsample *s)
 void sound::cleanup()
 {
     if(!valid()) return;
+    if(al_ext_efx && alIsFilter(filter)) alDeleteFilters(1, &filter);
     alSourceStop(source);
     alDeleteSources(1, &source);
 }
@@ -1339,6 +1361,24 @@ void sound::unhook()
         owner = NULL;
         flags &= ~(SND_TRACKED|SND_LOOP);
     }
+}
+
+ALenum sound::updatefilter()
+{
+    if(!al_ext_efx || !alIsFilter(filter)) return AL_NO_ERROR;
+
+    static constexpr float ROLLOFF_RATIO = 2.0f;
+    static constexpr float REFDIST       = 100.0f;
+
+    float dist = camera1->o.dist(*vpos);
+    float gain = 1.0f - (clamp((dist * logf(1 + (ROLLOFF_RATIO * finalrolloff))) / REFDIST, 0.0f, 1.0f) * 0.3f);
+
+    alFilteri(filter, AL_FILTER_TYPE, AL_FILTER_BANDPASS);
+    alFilterf(filter, AL_BANDPASS_GAINHF, gain);
+    alFilterf(filter, AL_BANDPASS_GAINLF, gain);
+    alSourcei(source, AL_DIRECT_FILTER, filter);
+
+    return alGetError();
 }
 
 ALenum sound::update()
@@ -1391,6 +1431,8 @@ ALenum sound::update()
 
     alSourcefv(source, AL_VELOCITY, (ALfloat *) &vel);
     SOUNDERROR(clear(); return err);
+
+    updatefilter();
 
     if(!(flags&SND_NOENV))
     {
