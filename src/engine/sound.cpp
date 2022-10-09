@@ -720,7 +720,7 @@ int addsound(const char *id, const char *name, float gain, float pitch, float ro
 
     slot.reset();
     slot.name = newstring(name);
-    slot.gain = gain > 0 ? clamp(gain, 0.f, 1.f) : 1.f;
+    slot.gain = gain > 0 ? clamp(gain, 0.f, 100.f) : 1.f;
     slot.pitch = pitch >= 0 ? clamp(pitch, 1e-6f, 100.f) : 1.f;
     slot.rolloff = rolloff >= 0 ? rolloff : 1.f;
     slot.refdist = refdist >= 0 ? refdist : -1.f;
@@ -927,7 +927,7 @@ int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, flo
         soundsample *sample = slot->samples.inrange(variant) ? slot->samples[variant] : NULL;
         if(!sample || !sample->valid()) return -1;
 
-        float sgain = gain > 0 ? clamp(gain, 0.f, 1.f) : 1.f, spitch = pitch >= 0 ? clamp(pitch, 1e-6f, 100.f) : 1.f,
+        float sgain = gain > 0 ? clamp(gain, 0.f, 100.f) : 1.f, spitch = pitch >= 0 ? clamp(pitch, 1e-6f, 100.f) : 1.f,
               srolloff = rolloff >= 0 ? rolloff : -1.f, srefdist = refdist >= 0 ? refdist : -1.f, smaxdist = maxdist >= 0 ? maxdist : -1.f;
 
         int index = soundindex(slot, n, *pos, flags, sgain, spitch, srolloff, srefdist, smaxdist);
@@ -1344,7 +1344,7 @@ void sound::unhook()
 ALenum sound::update()
 {
     material = lookupmaterial(*vpos);
-    curgain = clamp(soundeffectvol*slot->gain*(flags&SND_MAP ? soundeffectenv : soundeffectevent), 0.f, 1.f);
+    curgain = clamp(soundeffectvol*slot->gain*(flags&SND_MAP ? soundeffectenv : soundeffectevent), 0.f, 100.f);
 
     if(flags&SND_CLAMPED)
     {
