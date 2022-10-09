@@ -1889,7 +1889,7 @@ struct gameent : dynent, clientstate
         {
             if(!impulsetime[IM_T_JUMP] && type != IM_T_SLIDE)
                 impulsetime[IM_T_JUMP] = millis;
-            if(type != IM_T_AFTER) impulse[IM_COUNT]++;
+            if(type != IM_T_AFTER && type != IM_T_PUSHER) impulse[IM_COUNT]++;
         }
         if(type != IM_T_AFTER)
         {
