@@ -21,6 +21,7 @@ enum
     SND_MAP      = 1<<9,    // sound created by map
     SND_UNMAPPED = 1<<10,   // skip slot index mapping
     SND_TRACKED  = 1<<11,   // sound vpos is tracked
+    SND_VELEST   = 1<<12,   // sound vpos is estimated
     SND_MASKF    = SND_LOOP|SND_MAP,
     SND_LAST     = 8        // top N are used for entities
 };
@@ -189,6 +190,7 @@ struct sound
     void cleanup();
     void reset();
     void clear();
+    void unhook();
     ALenum update();
     bool valid();
     bool active();
@@ -244,8 +246,8 @@ extern void updatemusic();
 extern void updatesounds();
 extern int addsound(const char *id, const char *name, float gain, float pitch, float rolloff, float refdist, float maxdist, int variants, float fardist, slotmanager<soundslot> &soundset);
 extern void clearsound();
-extern int emitsound(int n, vec *pos, physent *d = NULL, int *hook = NULL, int flags = 0, float gain = 1, float pitch = 1, float rolloff = 1, float refdist = -1, float maxdist = -1, int ends = 0);
-extern int emitsoundpos(int n, const vec &pos, int *hook = NULL, int flags = 0, float gain = 1, float pitch = 1, float rolloff = 1, float refdist = -1, float maxdist = -1, int ends = 0);
+extern int emitsound(int n, vec *pos, physent *d = NULL, int *hook = NULL, int flags = 0, float gain = 1, float pitch = 1, float rolloff = -1, float refdist = -1, float maxdist = -1, int ends = 0);
+extern int emitsoundpos(int n, const vec &pos, int *hook = NULL, int flags = 0, float gain = 1, float pitch = 1, float rolloff = -1, float refdist = -1, float maxdist = -1, int ends = 0);
 extern int playsound(int n, const vec &pos, physent *d = NULL, int flags = 0, int vol = -1, int maxrad = -1, int minrad = -1, int *hook = NULL, int ends = 0);
 extern void removetrackedsounds(physent *d);
 extern void removemapsounds();

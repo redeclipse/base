@@ -2391,6 +2391,7 @@ namespace game
     extern void errorsnd(gameent *d);
     extern void announce(int idx, gameent *d = NULL, bool forced = false, bool unmapped = false);
     extern void announcef(int idx, int targ, gameent *d, bool forced, const char *msg, ...);
+    extern void announcev(int idx, int targ, const vec &pos, int *hook, bool forced, const char *msg, ...);
     extern void specreset(gameent *d = NULL, bool clear = false);
     extern float opacity(gameent *d);
     extern void respawn(gameent *d);

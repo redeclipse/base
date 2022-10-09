@@ -22,12 +22,15 @@ struct bomberstate
 #else
         gameent *owner, *lastowner;
         projent *proj;
-        int displaytime, movetime, inittime, viewtime, rendertime, interptime;
+        int displaytime, movetime, inittime, viewtime, rendertime, interptime, schan;
         vec viewpos, renderpos, interppos, render;
         modelstate mdl, basemdl;
 #endif
 
         flag() { reset(); }
+#ifndef CPP_GAME_SERVER
+        ~flag() { if(issound(schan)) sounds[schan].unhook(); }
+#endif
 
         void reset()
         {
@@ -41,6 +44,7 @@ struct bomberstate
             proj = NULL;
             displaytime = movetime = inittime = viewtime = rendertime = interptime = 0;
             viewpos = renderpos = vec(-1, -1, -1);
+            schan = -1;
 #endif
             team = T_NEUTRAL;
             yaw = pitch = taketime = droptime = 0;
@@ -105,6 +109,11 @@ struct bomberstate
                 offset = 0;
             }
             if(offset < 4) spawnloc.z += 4-offset;
+        }
+
+        void update()
+        {
+            if(issound(schan)) sounds[schan].pos = pos(true, true);
         }
 #endif
         bool travel(const vec &o, float dist)

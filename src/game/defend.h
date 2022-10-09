@@ -15,7 +15,7 @@ struct defendstate
 #ifndef CPP_GAME_SERVER
         string info;
         bool hasflag;
-        int lasthad;
+        int lasthad, schan;
         vec render;
         modelstate mdl;
 #endif
@@ -26,6 +26,9 @@ struct defendstate
             kinship = T_NEUTRAL;
             reset();
         }
+#ifndef CPP_GAME_SERVER
+        ~flag() { if(issound(schan)) sounds[schan].unhook(); }
+#endif
 
         void noenemy()
         {

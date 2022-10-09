@@ -19,12 +19,15 @@ struct capturestate
 #else
         gameent *owner, *lastowner;
         projent *proj;
-        int displaytime, movetime, viewtime, interptime;
+        int displaytime, movetime, viewtime, interptime, schan;
         vec viewpos, interppos, render;
         modelstate mdl, basemdl;
 #endif
 
         flag() { reset(); }
+#ifndef CPP_GAME_SERVER
+        ~flag() { if(issound(schan)) sounds[schan].unhook(); }
+#endif
 
         void reset()
         {
@@ -83,6 +86,11 @@ struct capturestate
                 offset = 0;
             }
             if(offset < 4) spawnloc.z += 4-offset;
+        }
+
+        void update()
+        {
+            if(issound(schan)) sounds[schan].pos = pos(true);
         }
 #endif
 

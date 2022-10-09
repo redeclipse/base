@@ -822,21 +822,30 @@ void updatesounds()
             s.update();
             continue;
         }
+        s.cleanup();
 
         slotmanager<soundslot> &soundset = s.flags&SND_MAP ? mapsounds : gamesounds;
-        while(!s.buffer.empty() && (!soundset.inrange(s.buffer[0]) || soundset[s.buffer[0]].samples.empty() || !soundset[s.buffer[0]].gain)) s.buffer.remove(0);
-        if(!s.buffer.empty())
+        while(!s.buffer.empty())
         {
             int n = s.buffer[0];
-            s.cleanup();
             s.buffer.remove(0);
+
+            if((!soundset.inrange(n) || soundset[n].samples.empty() || !soundset[n].gain)) continue;
+
             soundslot *slot = &soundset[n];
-            soundsample *sample = slot->samples[rnd(slot->samples.length())];
+            int variant = slot->variants > 1 ? rnd(slot->variants) : 0;
+            if(slot->fardist > 0 && s.vpos->dist(camera1->o) >= slot->fardist) variant += slot->variants;
+            soundsample *sample = slot->samples.inrange(variant) ? slot->samples[variant] : NULL;
+            if(!sample || !sample->valid()) continue;
+
+            s.slot = slot;
+            s.slotnum = n;
             s.push(sample);
-            continue;
+
+            break;
         }
         //conoutf("Clearing sound source %d [%d] %d [%d] %s", s.source, s.index, s.ends, lastmillis, sounds[i].playing() ? "playing" : "not playing");
-        s.clear();
+        if(!sounds[i].playing()) s.clear();
     }
 
     SDL_LockMutex(mstream_mutex);
@@ -890,10 +899,10 @@ int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, flo
         if(s.hook && s.hook != hook) *s.hook = -1;
 
         s.slot = slot;
+        s.slotnum = n;
         s.millis = lastmillis;
         s.index = index;
 
-        s.slotnum = n;
         s.flags = flags;
         if(d || s.flags&SND_TRACKED)
         {
@@ -910,9 +919,9 @@ int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, flo
 
         s.gain = gain > 0 ? clamp(gain, 0.f, 1.f) : 1.f;
         s.pitch = pitch >= 0 ? clamp(pitch, 1e-6f, 100.f) : 1.f;
-        s.rolloff = rolloff >= 0 ? rolloff : slot->rolloff;
-        s.refdist = refdist >= 0 ? refdist : slot->refdist;
-        s.maxdist = maxdist >= 0 ? maxdist : slot->maxdist;
+        s.rolloff = rolloff >= 0 ? rolloff : -1.f;
+        s.refdist = refdist >= 0 ? refdist : -1.f;
+        s.maxdist = maxdist >= 0 ? maxdist : -1.f;
         s.owner = d;
         s.ends = ends;
 
@@ -935,6 +944,7 @@ int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, flo
 int emitsoundpos(int n, const vec &pos, int *hook, int flags, float gain, float pitch, float rolloff, float refdist, float maxdist, int ends)
 {
     vec curpos = pos;
+    flags &= ~SND_TRACKED; // can't do that here
     return emitsound(n, &curpos, NULL, hook, flags, gain, pitch, rolloff, refdist, maxdist, ends);
 }
 
@@ -964,9 +974,7 @@ void removemapsounds()
 
 void removetrackedsounds(physent *d)
 {
-    loopv(sounds)
-        if(sounds[i].index >= 0 && sounds[i].owner == d)
-            sounds[i].clear();
+    loopv(sounds) if(sounds[i].owner == d) sounds[i].clear();
 }
 
 void resetsound()
@@ -1235,15 +1243,16 @@ ALenum sound::setup(soundsample *s)
     alSourcei(source, AL_LOOPING, flags&SND_LOOP ? AL_TRUE : AL_FALSE);
     SOUNDERROR(clear(); return err);
 
-    alSourcef(source, AL_ROLLOFF_FACTOR, rolloff);
+    alSourcef(source, AL_ROLLOFF_FACTOR, rolloff >= 0 ? rolloff : slot->rolloff);
     SOUNDERROR(clear(); return err);
 
-    alSourcef(source, AL_REFERENCE_DISTANCE, refdist >= 0 ? refdist : soundrefdist);
+    alSourcef(source, AL_REFERENCE_DISTANCE, refdist >= 0 ? refdist : (slot->refdist >= 0 ? slot->refdist : soundrefdist));
     SOUNDERROR(clear(); return err);
 
-    if(maxdist >= 0)
+    float dist = maxdist >= 0 ? maxdist : slot->maxdist;
+    if(dist >= 0)
     {
-        alSourcef(source, AL_MAX_DISTANCE, maxdist);
+        alSourcef(source, AL_MAX_DISTANCE, dist);
         SOUNDERROR(clear(); return err);
     }
 
@@ -1267,8 +1276,7 @@ void sound::reset()
     gain = curgain = pitch = curpitch = 1;
     material = MAT_AIR;
     flags = millis = ends = 0;
-    rolloff = 1;
-    refdist = maxdist = -1;
+    rolloff = refdist = maxdist = -1;
     index = slotnum = lastupdate = -1;
     if(hook) *hook = -1;
     hook = NULL;
@@ -1279,6 +1287,20 @@ void sound::clear()
 {
     cleanup();
     reset();
+}
+
+void sound::unhook()
+{
+    if(hook) *hook = -1;
+    hook = NULL;
+    if(owner || flags&SND_TRACKED)
+    {
+        pos = *vpos;
+        vpos = &pos;
+        vel = vec(0, 0, 0);
+        owner = NULL;
+        flags &= ~(SND_TRACKED|SND_LOOP);
+    }
 }
 
 ALenum sound::update()
@@ -1319,7 +1341,7 @@ ALenum sound::update()
     if(owner) vel = owner->vel;
     if(totalmillis != lastupdate && (lastupdate < 0 || totalmillis-lastupdate > physics::physframetime))
     {
-        if(!owner && flags&SND_TRACKED && lastupdate >= 0)
+        if(!owner && (flags&SND_TRACKED || flags&SND_VELEST) && lastupdate >= 0)
         {
             int n = physics::physframetime;
             while(lastupdate+n < totalmillis) n += physics::physframetime;

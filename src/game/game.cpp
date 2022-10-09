@@ -810,6 +810,17 @@ namespace game
         announce(idx, d, forced);
     }
 
+    void announcev(int idx, int targ, const vec &pos, int *hook, bool forced, const char *msg, ...)
+    {
+        if(targ >= 0 && msg && *msg)
+        {
+            defvformatbigstring(text, msg, msg);
+            conoutft(targ, "%s", text);
+        }
+        if(idx < 0) return;
+        emitsoundpos(idx, pos, hook, SND_PRIORITY|SND_CLAMPED|SND_VELEST|SND_BUFFER, 0.25f);
+    }
+
     ICOMMAND(0, announce, "iiisN", (int *idx, int *targ, int *cn, int *forced, char *s, int *numargs),
     {
         if(*numargs >= 5) announcef(*numargs >= 1 ? *idx : -1, *numargs >= 2 ? *targ : CON_EVENT, *numargs >= 3 ? getclient(*cn) : NULL, *numargs >= 4 ? *forced!=0 : false, "\fw%s", s);
