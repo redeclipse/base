@@ -798,7 +798,9 @@ static inline bool sourcecmp(const sound *x, const sound *y) // sort with most l
 
 int soundindex(soundslot *slot, int slotnum, const vec &pos, int flags, float gain, float pitch, float rolloff, float refdist, float maxdist)
 {
-    vector<sound *> sources;
+    static vector<sound *> sources;
+    sources.setsize(0);
+
     static sound indexsource;
     indexsource.clear();
     indexsource.index = -1;
@@ -812,6 +814,7 @@ int soundindex(soundslot *slot, int slotnum, const vec &pos, int flags, float ga
     indexsource.refdist = refdist;
     indexsource.maxdist = maxdist;
     sources.add(&indexsource);
+
     loopv(sounds)
     {
         if(sounds[i].valid()) sources.add(&sounds[i]);
@@ -819,14 +822,19 @@ int soundindex(soundslot *slot, int slotnum, const vec &pos, int flags, float ga
     }
     sources.sort(sourcecmp);
 
-    while(sources.length() >= soundsources)
+    if(sources[0]->index >= 0 && sources.length() > soundsources)
     {
-        if(sources[0]->index) return -1;
+        int index = sources[0]->index;
         sources[0]->clear();
-        sources.remove(0);
+        return index;
     }
-
-    return sources.length();
+    if(sources.length() < soundsources)
+    {
+        int index = sounds.length();
+        sounds.add();
+        return index;
+    }
+    return -1;
 }
 
 void updatesounds()
@@ -921,8 +929,10 @@ int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, flo
 
         float sgain = gain > 0 ? clamp(gain, 0.f, 1.f) : 1.f, spitch = pitch >= 0 ? clamp(pitch, 1e-6f, 100.f) : 1.f,
               srolloff = rolloff >= 0 ? rolloff : -1.f, srefdist = refdist >= 0 ? refdist : -1.f, smaxdist = maxdist >= 0 ? maxdist : -1.f;
+
         int index = soundindex(slot, n, *pos, flags, sgain, spitch, srolloff, srefdist, smaxdist);
-        while(index >= sounds.length()) sounds.add();
+        if(index < 0) return -1;
+
         sound &s = sounds[index];
         if(s.hook && s.hook != hook) *s.hook = -1;
 
