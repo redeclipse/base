@@ -784,9 +784,14 @@ static inline bool sourcecmp(const sound *x, const sound *y) // sort with most l
     return rnd(2);
 }
 
-int soundindex()
+int soundindex(const vec &pos, int flags)
 {
     vector<sound *> sources;
+    static sound indexsource;
+    indexsource.clear();
+    indexsource.pos = pos;
+    indexsource.flags = flags;
+    indexsource.index = -1;
     loopv(sounds)
     {
         if(sounds[i].valid()) sources.add(&sounds[i]);
@@ -796,6 +801,7 @@ int soundindex()
 
     while(sources.length() >= soundsources)
     {
+        if(sources[0]->index) return -1;
         sources[0]->clear();
         sources.remove(0);
     }
@@ -893,7 +899,7 @@ int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, flo
         soundsample *sample = slot->samples.inrange(variant) ? slot->samples[variant] : NULL;
         if(!sample || !sample->valid()) return -1;
 
-        int index = soundindex();
+        int index = soundindex(*pos, flags);
         while(index >= sounds.length()) sounds.add();
         sound &s = sounds[index];
         if(s.hook && s.hook != hook) *s.hook = -1;
@@ -1269,7 +1275,7 @@ void sound::cleanup()
 void sound::reset()
 {
     source = 0;
-    pos = curpos, vel = vec(0, 0, 0);
+    pos = curpos = vel = vec(0, 0, 0);
     vpos = &pos;
     slot = NULL;
     owner = NULL;
