@@ -318,15 +318,22 @@ namespace fx
         {
             fxdef &def = getfxdef(inst.fxindex);
 
-            playsound(
+            // playsound(
+            //     def.sound->index,
+            //     from,
+            //     NULL,
+            //     flags | SND_UNMAPPED,
+            //     vol,
+            //     inst.getextprop<int>(FX_SOUND_MAXRAD),
+            //     inst.getextprop<int>(FX_SOUND_MINRAD),
+            //     &inst.soundhook
+            // );
+            emitsound(
                 def.sound->index,
-                from,
+                &from,
                 NULL,
-                flags | SND_UNMAPPED,
-                vol,
-                inst.getextprop<int>(FX_SOUND_MAXRAD),
-                inst.getextprop<int>(FX_SOUND_MINRAD),
-                &inst.soundhook
+                &inst.soundhook,
+                flags | SND_UNMAPPED
             );
         }
         else if(issound(sound))

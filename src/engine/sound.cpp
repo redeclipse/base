@@ -152,7 +152,7 @@ void soundenv::updatezoneparams()
     loopv(envzones)
     {
         soundenvzone &zone = envzones[i];
-        if(zone.env == this) zone.attachparams();
+        if(zone.env == this && zone.efxslot) zone.attachparams();
     }
 }
 
