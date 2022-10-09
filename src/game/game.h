@@ -1864,7 +1864,7 @@ struct gameent : dynent, clientstate
 
     void resetjump(bool wait = false)
     {
-        airmillis = turnside = impulse[IM_COUNT] = impulse[IM_FLING] = 0;
+        airmillis = turnside = impulse[IM_FLING] = 0;
         impulsetime[IM_T_JUMP] = impulsetime[IM_T_BOOST] = impulsetime[IM_T_POUND] = 0;
         if(!wait)
         {

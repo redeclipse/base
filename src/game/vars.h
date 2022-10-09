@@ -534,11 +534,11 @@ GFVAR(IDF_GAMEMOD, 0, impulsedashback, 0, 1.1f, FVAR_MAX); // dash modifier
 GFVAR(IDF_GAMEMOD, 0, impulsedashredir, 0, 1.f, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, 0, impulsepound, 0, 1.3f, FVAR_MAX); // pound modifier
 GFVAR(IDF_GAMEMOD, 0, impulsepoundredir, 0, 1.f, FVAR_MAX); // how much of the old velocity is redirected into the new one
-GFVAR(IDF_GAMEMOD, 0, impulselaunch, 0, 0.9f, FVAR_MAX); // launch modifier
+GFVAR(IDF_GAMEMOD, 0, impulselaunch, 0, 0.5f, FVAR_MAX); // launch modifier
 GFVAR(IDF_GAMEMOD, 0, impulselaunchredir, 0, 1.f, FVAR_MAX); // how much of the old velocity is redirected into the new one
-GFVAR(IDF_GAMEMOD, 0, impulselaunchpitchmin, -89.9f, 20.f, 89.9f); // launch pitch minimum
+GFVAR(IDF_GAMEMOD, 0, impulselaunchpitchmin, -89.9f, 30.f, 89.9f); // launch pitch minimum
 GFVAR(IDF_GAMEMOD, 0, impulselaunchpitchmax, -89.9f, 89.9f, 89.9f); // launch pitch maximum
-GFVAR(IDF_GAMEMOD, 0, impulseslide, 0, 0.6f, FVAR_MAX); // slide modifier
+GFVAR(IDF_GAMEMOD, 0, impulseslide, 0, 0.1f, FVAR_MAX); // slide modifier
 GFVAR(IDF_GAMEMOD, 0, impulseslideredir, 0, 1.f, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, 0, impulsejump, 0, 1.2f, FVAR_MAX); // jump upward modifier
 GFVAR(IDF_GAMEMOD, 0, impulsejumpredir, 0, 1.f, FVAR_MAX); // how much of the old velocity is redirected into the new one
@@ -567,6 +567,7 @@ GVAR(IDF_GAMEMOD, 0, impulsestyle, 0, 1, 3); // impulse style; 0 = off, 1 = touc
 GVAR(IDF_GAMEMOD, 0, impulsepoundstyle, 0, 0, 1); // pound style: 0 = stop moving first, 1 = allow moving
 
 GVAR(IDF_GAMEMOD, 0, impulsecount, 0, 6, VAR_MAX); // number of impulse actions per air transit
+GVAR(IDF_GAMEMOD, 0, impulsecountregen, 0, 1, 1); // use regeneration system for move count
 GVAR(IDF_GAMEMOD, 0, impulsesliplen, 0, 250, VAR_MAX); // time before floor friction kicks back in
 GVAR(IDF_GAMEMOD, 0, impulseslidelen, 0, 750, VAR_MAX); // time before slides end
 GVAR(IDF_GAMEMOD, 0, impulseparkourlen, 0, 1250, VAR_MAX); // length of time a run along a wall can last
@@ -596,7 +597,11 @@ GFVAR(IDF_GAMEMOD, 0, impulsecostgrab, 0, 0.5f, FVAR_MAX); // scale cost of grab
 GFVAR(IDF_GAMEMOD, 0, impulsecostgrabplayer, 0, 0.25f, FVAR_MAX); // scale cost of grab move
 GVAR(IDF_GAMEMOD, 0, impulsecostrelax, 0, A_A_IMRELAX, A_A_IMOFFSET); // whether the cost of an impulse move is unimportant
 GVAR(IDF_GAMEMOD, 0, impulsecostscale, 0, 0, 1); // whether the cost scales depending on the amount the impulse scales
-GFVAR(IDF_GAMEMOD, 0, impulseregen, 0, 5, FVAR_MAX); // impulse regen multiplier
+
+GFVAR(IDF_GAMEMOD, 0, impulsecostcount, 0, 0.25f, FVAR_MAX); // scale cost move count
+GVAR(IDF_GAMEMOD, 0, impulsecostcountinair, 0, 0, 1); // allow while in-air
+
+GFVAR(IDF_GAMEMOD, 0, impulseregen, FVAR_NONZERO, 5, FVAR_MAX); // impulse regen multiplier
 GFVAR(IDF_GAMEMOD, 0, impulseregencrouch, 0, 2.5f, FVAR_MAX); // impulse regen crouch modifier
 GFVAR(IDF_GAMEMOD, 0, impulseregenrun, 0, 0.75f, FVAR_MAX); // impulse regen running modifier
 GFVAR(IDF_GAMEMOD, 0, impulseregenmove, 0, 1, FVAR_MAX); // impulse regen moving modifier

@@ -1249,7 +1249,7 @@ namespace game
 
     bool canregenimpulse(gameent *d)
     {
-        if(d->state == CS_ALIVE && impulseregen > 0 && (!impulseregendelay || lastmillis-d->impulse[IM_REGEN] >= impulseregendelay))
+        if(d->state == CS_ALIVE && ((impulsecountregen && d->impulse[IM_COUNT] > 0) || (impulsemeter && d->impulse[IM_METER] > 0)) && (!impulseregendelay || lastmillis-d->impulse[IM_REGEN] >= impulseregendelay))
             return true;
         return false;
     }
@@ -1314,35 +1314,56 @@ namespace game
         float feetz = d->feetpos().z;
         if(feetz < minz) d->o.z += minz-feetz; // ensure player doesn't end up lower than they were
 
-        if(impulsemeter && canregenimpulse(d) && d->impulse[IM_METER] > 0)
+        bool collected = false;
+        if(canregenimpulse(d))
         {
-            bool onfloor = d->physstate >= PHYS_SLOPE || isladder(d->inmaterial) || physics::liquidcheck(d),
-                 collect = true; // collect time until we are able to act upon it
-            int timeslice = int((curtime+d->impulse[IM_COLLECT])*impulseregen);
-            #define impulsemod(x,y) \
-                if(collect && (x)) \
-                { \
-                    if(y > 0) { if(timeslice > 0) timeslice = int(timeslice*y); } \
-                    else collect = false; \
-                }
-            impulsemod(d->running(), impulseregenrun);
-            impulsemod(d->move || d->strafe, impulseregenmove);
-            impulsemod((!onfloor && PHYS(gravity) > 0) || d->sliding(), impulseregeninair);
-            impulsemod(onfloor && d->crouching() && !d->sliding(), impulseregencrouch);
-            impulsemod(d->sliding(true), impulseregenslide);
-            if(collect)
+            bool onfloor = d->physstate >= PHYS_SLOPE || isladder(d->inmaterial) || physics::liquidcheck(d); // collect time until we are able to act upon it
+            float skew = impulseregen;
+            #define impulsemod(x,y) if(x > 0 && (y)) skew *= y;
+            impulsemod(impulseregenrun, d->running());
+            impulsemod(impulseregenmove, d->move || d->strafe);
+            impulsemod(impulseregeninair, (!onfloor && PHYS(gravity) > 0) || d->sliding());
+            impulsemod(impulseregencrouch, onfloor && d->crouching() && !d->sliding());
+            impulsemod(impulseregenslide, d->sliding(true));
+            bool hasmeter = false;
+            if(skew > 0)
             {
-                if(timeslice > 0)
+                bool inhibit = false;
+                int timeslice = int((curtime+d->impulse[IM_COLLECT])*skew);
+                if(impulsecountregen && d->impulse[IM_COUNT] > 0)
                 {
-                    if((d->impulse[IM_METER] -= timeslice) < 0) d->impulse[IM_METER] = 0;
-                    d->impulse[IM_COLLECT] = 0;
+                    if(impulsecostcountinair || onfloor)
+                    {
+                        int cost = int(impulsecost*impulsecostcount);
+                        if(timeslice >= cost)
+                        {
+                            timeslice -= cost;
+                            d->impulse[IM_COUNT]--;
+                            hasmeter = true;
+                        }
+                    }
+                    else inhibit = true;
                 }
-                else d->impulse[IM_COLLECT] += curtime;
-                if(!d->lastimpulsecollect) d->lastimpulsecollect = lastmillis;
+                if(!hasmeter && impulsemeter && d->impulse[IM_METER] > 0)
+                {
+                    timeslice -= d->impulse[IM_METER];
+                    d->impulse[IM_METER] = max(-timeslice, 0);
+                    hasmeter = true;
+                }
+                else if(inhibit) hasmeter = true; // don't collect if there's nothing
             }
-            else d->lastimpulsecollect = 0;
+            if(!hasmeter)
+            {
+                d->impulse[IM_COLLECT] += curtime;
+                if(!d->lastimpulsecollect) d->lastimpulsecollect = lastmillis;
+                collected = true;
+            }
         }
-        else d->lastimpulsecollect = 0;
+        if(!collected)
+        {
+            d->impulse[IM_COLLECT] = 0;
+            d->lastimpulsecollect = 0;
+        }
 
         if(isweap(d->weapselect) && gs_playing(gamestate) && d->state == CS_ALIVE)
         {
