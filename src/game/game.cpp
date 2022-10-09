@@ -1384,16 +1384,16 @@ namespace game
             if(d->wasfiring != d->weapselect && firing)
             {
                 d->wasfiring = d->weapselect;
-                emitsound(WSNDFB(d->weapselect, secondary), d->gettag(TAG_MUZZLE), d, &d->wschan[WS_BEGIN_CHAN]);
+                emitsound(WSNDFB(d->weapselect, secondary), weapons::getweapsoundpos(d, TAG_MUZZLE), d, &d->wschan[WS_BEGIN_CHAN]);
             }
             else if(d->wasfiring == d->weapselect && !firing)
             {
                 d->wasfiring = -1;
-                emitsound(WSNDFE(d->weapselect, secondary), d->gettag(TAG_MUZZLE), d, &d->wschan[WS_END_CHAN]);
+                emitsound(WSNDFE(d->weapselect, secondary), weapons::getweapsoundpos(d, TAG_MUZZLE), d, &d->wschan[WS_END_CHAN]);
             }
 
             if(d->weapselect < W_ALL && d->weapstate[d->weapselect] != W_S_RELOAD && prevstate == W_S_RELOAD && playreloadnotify&(d == focus ? 1 : 2) && (d->weapammo[d->weapselect][W_A_CLIP] >= W(d->weapselect, ammoclip) || playreloadnotify&(d == focus ? 4 : 8)) && reloadnotifygain > 0)
-                    emitsound(WSND(d->weapselect, S_W_NOTIFY), d->gettag(TAG_ORIGIN), d, &d->wschan[WS_MAIN_CHAN], 0, reloadnotifygain);
+                    emitsound(WSND(d->weapselect, S_W_NOTIFY), weapons::getweapsoundpos(d, TAG_ORIGIN), d, &d->wschan[WS_MAIN_CHAN], 0, reloadnotifygain);
 
             if(d->weapstate[d->weapselect] == W_S_POWER || d->weapstate[d->weapselect] == W_S_ZOOM)
             {
@@ -1408,7 +1408,7 @@ namespace game
                         case 1: case 2: case 3: default: gain = 0.1f+(amt*0.9f); break; // shorter
                     }
                     if(issound(d->wschan[WS_POWER_CHAN])) sounds[d->wschan[WS_POWER_CHAN]].gain = gain;
-                    else emitsound(snd, d->gettag(TAG_ORIGIN), d, &d->wschan[WS_POWER_CHAN], SND_LOOP, gain);
+                    else emitsound(snd, weapons::getweapsoundpos(d, TAG_ORIGIN), d, &d->wschan[WS_POWER_CHAN], SND_LOOP, gain);
                 }
                 else if(d->wschan[WS_POWER_CHAN] >= 0)
                 {

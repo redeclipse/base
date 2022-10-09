@@ -2994,7 +2994,7 @@ namespace client
                     if(isweap(weap) && m)
                     {
                         if(m->weapswitch(weap, lastmillis, W(weap, delayswitch)))
-                            emitsound(WSND(weap, S_W_SWITCH), m->gettag(TAG_ORIGIN), m, &m->wschan[WS_MAIN_CHAN]);
+                            emitsound(WSND(weap, S_W_SWITCH), weapons::getweapsoundpos(m, TAG_ORIGIN), m, &m->wschan[WS_MAIN_CHAN]);
                     }
                     break;
                 }

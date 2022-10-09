@@ -57,7 +57,7 @@ namespace weapons
     {
         // Sound source at camera in FPP view, otherwise at requested tag position
         return d == game::focus && !game::thirdpersonview(true) ?
-            &d->o : d->gettag(weaptag);
+            &camera1->o : d->gettag(weaptag);
     }
 
     ICOMMAND(0, weapslot, "i", (int *o), intret(slot(game::player1, *o >= 0 ? *o : game::player1->weapselect))); // -1 = weapselect slot
