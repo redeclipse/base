@@ -1883,12 +1883,12 @@ struct gameent : dynent, clientstate
     {
         if(type < 0 || type >= IM_T_MAX) return;
         if(cost) impulse[IM_METER] += cost;
-        impulsetime[type] = millis;
-        if(type != IM_T_KICK) impulse[IM_SLIP] = millis;
+        impulse[IM_SLIP] = impulsetime[type] = millis;
         impulse[IM_TYPE] = type;
-        if(type != IM_T_JUMP && type != IM_T_DASH && type != IM_T_SLIDE && type != IM_T_VAULT)
+        if(type != IM_T_JUMP)
         {
-            if(!impulsetime[IM_T_JUMP]) impulsetime[IM_T_JUMP] = millis;
+            if(!impulsetime[IM_T_JUMP] && type != IM_T_SLIDE && type != IM_T_VAULT)
+                impulsetime[IM_T_JUMP] = millis;
             if(type != IM_T_AFTER) impulse[IM_COUNT]++;
         }
         if(type != IM_T_AFTER)
