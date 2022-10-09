@@ -83,7 +83,7 @@ namespace physics
         gameent *e = (gameent *)d;
         if(e->impulse[IM_TYPE] == IM_T_PUSHER && e->impulsetime[IM_T_PUSHER] > lastmillis) return false;
         if(!touch && impulsestyle == 1 && e->impulse[IM_TYPE] > IM_T_JUMP && e->impulse[IM_TYPE] < IM_T_TOUCH) return false;
-        if(impulsestyle <= 2 && e->impulse[IM_COUNT] >= impulsecount) return false;
+        if(impulsestyle <= 2 && type != A_A_VAULT && e->impulse[IM_COUNT] >= impulsecount) return false;
         int time = 0, delay = 0;
         switch(type)
         {

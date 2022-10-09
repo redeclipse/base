@@ -1885,9 +1885,9 @@ struct gameent : dynent, clientstate
         if(cost) impulse[IM_METER] += cost;
         impulse[IM_SLIP] = impulsetime[type] = millis;
         impulse[IM_TYPE] = type;
-        if(type != IM_T_JUMP)
+        if(type != IM_T_JUMP && type != IM_T_VAULT)
         {
-            if(!impulsetime[IM_T_JUMP] && type != IM_T_SLIDE && type != IM_T_VAULT)
+            if(!impulsetime[IM_T_JUMP] && type != IM_T_SLIDE)
                 impulsetime[IM_T_JUMP] = millis;
             if(type != IM_T_AFTER) impulse[IM_COUNT]++;
         }
