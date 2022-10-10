@@ -1495,11 +1495,20 @@ ALenum soundsource::push(soundsample *s)
     return AL_NO_ERROR;
 }
 
+#define MUSICTAG(x,y) \
+    do { \
+        const char *tag##x = sf_get_string(s->sndfile, y); \
+        if(tag##x != NULL) x = newstring(tag##x); \
+    } while(false);
+
 ALenum musicstream::setup(const char *n, soundfile *s)
 {
     if(!s) return AL_NO_ERROR;
 
     name = newstring(n);
+    MUSICTAG(artist, SF_STR_ARTIST);
+    MUSICTAG(title, SF_STR_TITLE);
+    MUSICTAG(album, SF_STR_ALBUM);
 
     SOUNDERROR();
     alGenBuffers(MUSICBUFS, buffer);
@@ -1551,12 +1560,15 @@ void musicstream::cleanup()
     alDeleteSources(1, &source);
     alDeleteBuffers(MUSICBUFS, buffer);
     if(name) delete[] name;
+    if(artist) delete[] artist;
+    if(title) delete[] title;
+    if(album) delete[] album;
     if(data) delete data;
 }
 
 void musicstream::reset()
 {
-    name = NULL;
+    name = artist = title = album = NULL;
     source = 0;
     loopi(MUSICBUFS) buffer[i] = 0;
     data = NULL;
@@ -1732,18 +1744,21 @@ void getmusics(int prop)
 {
     if(prop < 0)
     {
-        intret(6);
+        intret(9);
         return;
     }
     SDL_LockMutex(music_mutex);
     if(music) switch(prop)
     {
-        case 0: result(music->name);
-        case 1: intret(music->looping ? 1 : 0); break;
-        case 2: floatret(music->gain); break;
-        case 3: intret(music->valid() ? 1 : 0); break;
-        case 4: intret(music->active() ? 1 : 0); break;
-        case 5: intret(music->playing() ? 1 : 0); break;
+        case 0: result(music->name); break;
+        case 1: result(music->artist); break;
+        case 2: result(music->title); break;
+        case 3: result(music->album); break;
+        case 4: intret(music->looping ? 1 : 0); break;
+        case 5: floatret(music->gain); break;
+        case 6: intret(music->valid() ? 1 : 0); break;
+        case 7: intret(music->active() ? 1 : 0); break;
+        case 8: intret(music->playing() ? 1 : 0); break;
         default: break;
     }
     SDL_UnlockMutex(music_mutex);

@@ -212,7 +212,7 @@ extern vector<soundsource> soundsources;
 #define MUSICSAMP 8192
 struct musicstream
 {
-    char *name;
+    char *name, *artist, *title, *album;
     ALuint source;
     ALuint buffer[MUSICBUFS];
     soundfile *data;
