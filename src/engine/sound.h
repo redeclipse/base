@@ -150,7 +150,7 @@ struct soundenv
     void setparams(ALuint effect);
     void updatezoneparams();
 };
-extern slotmanager<soundenv> soundenvs, mapsoundenvs;
+extern slotmanager<soundenv> soundenvs;
 
 struct soundenvzone
 {

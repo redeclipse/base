@@ -49,7 +49,7 @@ SDL_Thread *music_thread;
 SDL_mutex *music_mutex;
 musicstream *music = NULL;
 
-slotmanager<soundenv> soundenvs, mapsoundenvs;
+slotmanager<soundenv> soundenvs;
 vector<soundenvzone> envzones;
 vector<soundenvzone *> sortedenvzones;
 soundenvzone *insideenvzone = NULL;
@@ -62,14 +62,7 @@ static soundenv *soundenvfroment(entity *ent)
     ASSERT(ent);
 
     int index = ent->attrs[0];
-
-    // Indices above 255 are for map environment definitions
-    if(index > 255)
-    {
-        index &= 0xFF;
-        if(mapsoundenvs.inrange(index)) return &mapsoundenvs[index];
-    }
-    else if(soundenvs.inrange(index)) return &soundenvs[index];
+    if(soundenvs.inrange(index)) return &soundenvs[index];
 
     return NULL;
 }
@@ -587,7 +580,7 @@ void clearsound()
 {
     loopv(soundsources) soundsources[i].clear();
     mapsounds.clear(false);
-    mapsoundenvs.clear();
+    soundenvs.clear();
     envzones.shrink(0);
 }
 
@@ -1033,7 +1026,7 @@ void resetsound()
     {
         gamesounds.clear(false);
         mapsounds.clear(false);
-        mapsoundenvs.clear();
+        soundenvs.clear();
         soundsamples.clear();
         return;
     }
@@ -1759,21 +1752,20 @@ ICOMMAND(0, getmusic, "b", (int *p), getmusics(*p));
 
 static void initsoundenv() { initprops(newsoundenv->props, soundenvprops, SOUNDENV_PROPS); }
 
-static void defsoundenv(const char *name, uint *code, slotmanager<soundenv> &envs)
+static void defsoundenv(const char *name, uint *code)
 {
     int newsoundenvidx = -1;
 
-    if((newsoundenvidx = envs.getindex(name)) < 0) newsoundenvidx = envs.add(name);
-    newsoundenv = &envs[newsoundenvidx];
-    newsoundenv->name = envs.getname(newsoundenvidx);
+    if((newsoundenvidx = soundenvs.getindex(name)) < 0) newsoundenvidx = soundenvs.add(name);
+    newsoundenv = &soundenvs[newsoundenvidx];
+    newsoundenv->name = soundenvs.getname(newsoundenvidx);
 
     initsoundenv();
     execute(code);
 
     newsoundenv = NULL;
 }
-ICOMMAND(0, defsoundenv, "se", (char *name, uint *code), defsoundenv(name, code, soundenvs));
-ICOMMAND(0, defmapsoundenv, "se", (char *name, uint *code), defsoundenv(name, code, mapsoundenvs));
+ICOMMAND(0, defsoundenv, "se", (char *name, uint *code), defsoundenv(name, code));
 
 template<class T>
 static void setsoundenvprop(const char *name, const T &val)
@@ -1823,7 +1815,12 @@ static void dumpsoundenv(soundenv &env, stream *s)
     s->printf("]\n");
 }
 
-void dumpsoundenvs(stream *s) { loopv(mapsoundenvs) dumpsoundenv(mapsoundenvs[i], s); }
+void dumpsoundenvs(stream *s) { loopv(soundenvs) dumpsoundenv(soundenvs[i], s); }
+
+ICOMMAND(0, soundenvinfo, "i", (int *index), {
+    if(*index < 0) intret(soundenvs.length());
+    else if(*index < soundenvs.length()) result(soundenvs[*index].name);
+});
 
 #ifdef WIN32
 
