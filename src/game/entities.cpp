@@ -2857,6 +2857,7 @@ namespace entities
 
     void update()
     {
+        loopv(ents) ((gameentity *)ents[i])->getcurpos();
         loopenti(MAPSOUND)
         {
             gameentity &e = *(gameentity *)ents[i];
