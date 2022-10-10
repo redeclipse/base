@@ -885,9 +885,7 @@ void updatesounds()
 
             s.slot = slot;
             s.slotnum = n;
-            s.push(sample);
-
-            break;
+            SOUNDCHECK(s.push(sample), break, conoutf("Error playing sample %s [%d]: %s", sample->name, s.index, alGetString(err)));
         }
         //conoutf("Clearing sound source %d [%d] %d [%d] %s", s.source, s.index, s.ends, lastmillis, soundsources[i].playing() ? "playing" : "not playing");
         if(!s.playing()) s.clear();
@@ -981,10 +979,7 @@ int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, flo
         }
         s.hook = hook;
 
-        SOUNDCHECK(s.push(sample), return index, {
-            conoutf("Error playing sample %s [%d]: %s", sample->name, index, alGetString(err));
-            s.clear();
-        });
+        SOUNDCHECK(s.push(sample), return index, conoutf("Error playing sample %s [%d]: %s", sample->name, index, alGetString(err)));
     }
     else if(n > 0) conoutf("\frUnregistered sound: %d", n);
     return -1;
