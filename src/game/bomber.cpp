@@ -502,7 +502,7 @@ namespace bomber
     {
         if(!st.flags.inrange(i)) return;
         bomberstate::flag &f = st.flags[i];
-        emitsound(S_CATCH, &d->o, d);
+        emitsound(S_CATCH, game::getplayersoundpos(d), d);
         if(!f.droptime)
         {
             affinityeffect(i, d->team, d->feetpos(), f.pos(true, true));

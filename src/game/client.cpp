@@ -1537,7 +1537,7 @@ namespace client
         if(m_demo(game::gamemode) || ((!(flags&SAY_TEAM) || f->team == game::player1->team) && (!(flags&SAY_WHISPER) || f == game::player1 || t == game::player1)))
         {
             conoutft(CON_MESG, "%s", line);
-            if(snd >= 0 && !issound(f->cschan)) emitsound(snd, &f->o, f, &f->cschan, (snd != S_CHAT ? SND_UNMAPPED : 0)|SND_CLAMPED, 0.25f);
+            if(snd >= 0 && !issound(f->cschan)) emitsound(snd, game::getplayersoundpos(f), f, &f->cschan, (snd != S_CHAT ? SND_UNMAPPED : 0)|SND_CLAMPED, 0.25f);
         }
         ai::scanchat(f, t, flags, text);
     }
@@ -2551,7 +2551,7 @@ namespace client
                         {
                             if(!proceed) break;
                             t->doimpulse(IM_T_JUMP, lastmillis);
-                            emitsound(S_JUMP, &t->o, t);
+                            emitsound(S_JUMP, game::getplayersoundpos(t), t);
                             createshape(PART_SMOKE, int(t->radius), 0x222222, 21, 20, 250, t->feetpos(), 1, 1, -10, 0, 10.f);
                             break;
                         }
@@ -2567,7 +2567,7 @@ namespace client
                         {
                             if(!proceed) break;
                             t->resetresidual(W_R_BURN);
-                            emitsound(S_EXTINGUISH, &t->o, t);
+                            emitsound(S_EXTINGUISH, game::getplayersoundpos(t), t);
                             part_create(PART_SMOKE, 500, t->feetpos(t->height/2), 0xAAAAAA, t->radius*4, 1, -10);
                             break;
                         }
@@ -2914,8 +2914,8 @@ namespace client
                     else if(amt > 0 && (!f->lastregen || lastmillis-f->lastregen >= 500))
                     {
                         if(f->health < f->gethealth(game::gamemode, game::mutators) && !f->lastregen)
-                            emitsound(S_REGEN_BEGIN, &f->o, f);
-                        else emitsound(S_REGEN, &f->o, f);
+                            emitsound(S_REGEN_BEGIN, game::getplayersoundpos(f), f);
+                        else emitsound(S_REGEN, game::getplayersoundpos(f), f);
                     }
                     f->health = heal;
                     f->lastregen = lastmillis;

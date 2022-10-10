@@ -434,7 +434,7 @@ namespace capture
     {
         if(!st.flags.inrange(i)) return;
         capturestate::flag &f = st.flags[i];
-        emitsound(S_CATCH, &d->o, d);
+        emitsound(S_CATCH, game::getplayersoundpos(d), d);
         affinityeffect(i, d->team, d->feetpos(), f.pos(true));
         game::announcev(f.team == d->team ? S_V_FLAGSECURED : S_V_FLAGPICKUP, CON_EVENT, f.ent, "\fa%s %s the %s flag", game::colourname(d), f.team == d->team ? "secured" : (f.droptime ? "picked up" : "stole"), game::colourteam(f.team, "flagtex"));
         st.takeaffinity(i, d, lastmillis);

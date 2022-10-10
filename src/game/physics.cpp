@@ -914,7 +914,7 @@ namespace physics
                 d->doimpulse(IM_T_JUMP, lastmillis);
                 d->action[AC_JUMP] = d->action[AC_DASH] = onfloor = false;
                 client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_JUMP);
-                emitsound(S_JUMP, &d->o, d);
+                emitsound(S_JUMP, game::getplayersoundpos(d), d);
                 createshape(PART_SMOKE, int(d->radius), 0x222222, 21, 20, 250, d->feetpos(), 1, 1, -10, 0, 10.f);
             }
         }
@@ -1275,7 +1275,7 @@ namespace physics
                         {
                             float gain = min(mag*1.25f, 1.f);
                             if(isliquid(e->inmaterial&MATF_VOLUME)) gain *= 0.5f;
-                            emitsound(S_LAND, &e->o, e, NULL, 0, gain);
+                            emitsound(S_LAND, game::getplayersoundpos(e), e, NULL, 0, gain);
                         }
                         else game::footstep(e);
                     }

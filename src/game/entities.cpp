@@ -2134,7 +2134,7 @@ namespace entities
         int flags = (unmapped ? SND_UNMAPPED : 0)|SND_PRIORITY|SND_BUFFER;
         if(d)
         {
-            emitsound(idx, &d->o, d, &d->aschan, flags, 0.25f);
+            emitsound(idx, game::getplayersoundpos(d), d, &d->aschan, flags, 0.25f);
             return;
         }
         bool found = false;

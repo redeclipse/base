@@ -16,6 +16,12 @@ namespace game
     vector<gameent *> players, waiting;
     vector<cament *> cameras;
 
+    vec *getplayersoundpos(gameent *d)
+    {
+        return d == game::focus && !game::thirdpersonview(true) ?
+            &camera1->o : &d->o;
+    }
+
     VAR(0, showweapfx, 0, 1, 1);
 
     void mapweapsounds()
@@ -788,7 +794,7 @@ namespace game
     void errorsnd(gameent *d)
     {
         if(d == player1 && !issound(errorchan))
-            emitsound(S_ERROR, &d->o, d, &errorchan, SND_PRIORITY|SND_NOENV|SND_NOATTEN);
+            emitsound(S_ERROR, game::getplayersoundpos(d), d, &errorchan, SND_PRIORITY|SND_NOENV|SND_NOATTEN);
     }
 
     void announcef(int idx, int targ, gameent *d, const char *msg, ...)
@@ -1058,7 +1064,7 @@ namespace game
         if(d->actortype < A_ENEMY)
         {
             vec center = d->center();
-            emitsound(S_RESPAWN, &d->o, d);
+            emitsound(S_RESPAWN, game::getplayersoundpos(d), d);
             spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playerovertone, playerovertonelevel), 1);
             spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playerundertone, playerundertonelevel), 1);
             if(dynlighteffects) adddynlight(center, d->height*2, vec::fromcolor(getcolour(d, playereffecttone, playereffecttonelevel)).mul(2.f), 250, 250);
@@ -1208,7 +1214,7 @@ namespace game
         int num = int((effect ? 3 : 10)*impulsescale);
         switch(effect)
         {
-            case 0: emitsound(S_IMPULSE, &d->o, d); // fail through
+            case 0: emitsound(S_IMPULSE, game::getplayersoundpos(d), d); // fail through
             case 1:
             {
                 if(!actors[d->actortype].jetfx) break;
@@ -1570,7 +1576,7 @@ namespace game
                 else if(flags&BLEED) snd = S_BLEED;
                 else if(flags&SHOCK) snd = S_SHOCK;
                 else loopirev(8) if(damage >= hp*dmgsnd[i]) { snd = S_DAMAGE+i; break; }
-                if(snd >= 0) emitsound(snd, &d->o, d, NULL, SND_CLAMPED, damagetonegain);
+                if(snd >= 0) emitsound(snd, game::getplayersoundpos(d), d, NULL, SND_CLAMPED, damagetonegain);
             }
             if(aboveheaddamage)
             {
@@ -1640,11 +1646,11 @@ namespace game
                     else if(v == player1 && !burning && !bleeding && !shocking && !material)
                     {
                         player1->lastteamhit = d->lastteamhit = totalmillis;
-                        if(!issound(alarmchan)) emitsound(S_ALARM, &v->o, v, &alarmchan);
+                        if(!issound(alarmchan)) emitsound(S_ALARM, game::getplayersoundpos(v), v, &alarmchan);
                     }
                     if(!burning && !bleeding && !shocking && !material && !sameteam) v->lasthit = totalmillis ? totalmillis : 1;
                 }
-                if(d->actortype < A_ENEMY && !issound(d->vschan)) emitsound(S_PAIN, &d->o, d, &d->vschan);
+                if(d->actortype < A_ENEMY && !issound(d->vschan)) emitsound(S_PAIN, game::getplayersoundpos(d), d, &d->vschan);
                 d->lastpain = lastmillis;
                 if(!WK(flags)) emitsoundpos(WSND2(weap, WS(flags), S_W_IMPACT), vec(d->center()).add(vec(dir).mul(dist)), NULL, 0, clamp(scale, 0.2f, 1.f));
             }
@@ -1737,7 +1743,7 @@ namespace game
             if(!m_insta(gamemode, mutators) && damagecritical > 0 && damagecriticalsound&(d == focus ? 1 : 2))
             {
                 int hp = d->gethealth(gamemode, mutators), crit = int(hp*damagecritical);
-                if(d->health > crit && health <= crit) emitsound(S_CRITICAL, &d->o, d);
+                if(d->health > crit && health <= crit) emitsound(S_CRITICAL, game::getplayersoundpos(d), d);
             }
             d->health = health;
             if(damage > 0)
@@ -1991,7 +1997,7 @@ namespace game
                 v->lastkill = totalmillis ? totalmillis : 1;
             }
         }
-        if(dth >= 0) emitsound(dth, &d->o, d, &d->vschan);
+        if(dth >= 0) emitsound(dth, game::getplayersoundpos(d), d, &d->vschan);
         if(d->actortype < A_ENEMY)
         {
             if(showobituaries)
