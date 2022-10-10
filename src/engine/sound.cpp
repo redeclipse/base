@@ -1,6 +1,4 @@
 #include "engine.h"
-#include <AL/al.h>
-#include <AL/efx.h>
 
 ALCdevice *snddev = NULL;
 ALCcontext *sndctx = NULL;
@@ -368,6 +366,7 @@ SOUNDVOL(sound, effect, 1.f, );
 SOUNDVOL(music, music, 0.25f, updatemusic());
 FVARF(IDF_PERSIST, soundeffectevent, 0, 1, 100, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
 FVARF(IDF_PERSIST, soundeffectenv, 0, 1, 100, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
+FVAR(IDF_PERSIST, sounddistfilter, 0.0f, 0.3f, 1.0f);
 
 const char *sounderror(bool msg)
 {
@@ -1263,7 +1262,7 @@ ALenum soundsource::setup(soundsample *s)
     alGenSources(1, &source);
     SOUNDERROR(clear(); return err);
 
-    if(al_ext_efx && !(flags&SND_NOFILTER))
+    if(al_ext_efx && !(flags&SND_NOFILTER) && sounddistfilter > 0.0f)
     {
         alGenFilters(1, &filter);
         alFilteri(filter, AL_FILTER_TYPE, AL_FILTER_BANDPASS);
@@ -1362,11 +1361,9 @@ ALenum soundsource::updatefilter()
 {
     if(!al_ext_efx || !alIsFilter(filter)) return AL_NO_ERROR;
 
-    static constexpr float ROLLOFF_RATIO = 2.0f;
-    static constexpr float REFDIST       = 100.0f;
-
     float dist = camera1->o.dist(*vpos);
-    float gain = 1.0f - (clamp((dist * logf(1 + (ROLLOFF_RATIO * finalrolloff))) / REFDIST, 0.0f, 1.0f) * 0.3f);
+    float gain = 1.0f - (((dist * log10f(finalrolloff + 1.0f)) / finalrefdist) * sounddistfilter);
+    gain = clamp(gain, 1.0f - sounddistfilter, 1.0f);
 
     alFilteri(filter, AL_FILTER_TYPE, AL_FILTER_BANDPASS);
     alFilterf(filter, AL_BANDPASS_GAINHF, gain);
