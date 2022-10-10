@@ -341,6 +341,17 @@ namespace bomber
         st.reset();
     }
 
+    void setaffinity()
+    {
+        loopv(entities::ents) ((gameentity *)entities::ents[i])->affinity = -1;
+        loopv(st.flags)
+        {
+            bomberstate::flag &f = st.flags[i];
+            if(!entities::ents.inrange(f.ent)) continue;
+            ((gameentity *)entities::ents[f.ent])->affinity = i;
+        }
+    }
+
     void setup()
     {
         loopv(entities::ents) if(entities::ents[i]->type == AFFINITY)
@@ -354,9 +365,10 @@ namespace bomber
                 case T_OMEGA: team = T_NEUTRAL; break; // ball
                 default: continue; // remove
             }
-            st.addaffinity(e.o, team, e.attrs[1], e.attrs[2]);
+            st.addaffinity(i, e.o, team, e.attrs[1], e.attrs[2]);
             if(st.flags.length() >= MAXPARAMS) break;
         }
+        setaffinity();
     }
 
     void sendaffinity(packetbuf &p)
@@ -366,6 +378,7 @@ namespace bomber
         loopv(st.flags)
         {
             bomberstate::flag &f = st.flags[i];
+            putint(p, f.ent);
             putint(p, f.team);
             putint(p, f.yaw);
             putint(p, f.pitch);
@@ -385,7 +398,7 @@ namespace bomber
         while(st.flags.length() > numflags) st.flags.pop();
         loopi(numflags)
         {
-            int team = getint(p), yaw = getint(p), pitch = getint(p), enabled = getint(p), owner = getint(p), dropped = 0, target = -1;
+            int ent = getint(p), team = getint(p), yaw = getint(p), pitch = getint(p), enabled = getint(p), owner = getint(p), dropped = 0, target = -1;
             vec spawnloc(0, 0, 0), droploc(0, 0, 0), inertia(0, 0, 0);
             loopj(3) spawnloc[j] = getint(p)/DMF;
             if(owner < 0)
@@ -403,6 +416,7 @@ namespace bomber
             while(!st.flags.inrange(i)) st.flags.add();
             bomberstate::flag &f = st.flags[i];
             f.reset();
+            f.ent = ent;
             f.team = team;
             f.yaw = yaw;
             f.pitch = pitch;
@@ -411,6 +425,7 @@ namespace bomber
             if(owner >= 0) st.takeaffinity(i, game::newclient(owner), lastmillis);
             else if(dropped) st.dropaffinity(i, droploc, inertia, lastmillis, target);
         }
+        setaffinity();
     }
 
     void dropaffinity(gameent *d, int i, const vec &droploc, const vec &inertia, int target)
@@ -457,7 +472,7 @@ namespace bomber
             if(isbomberaffinity(f))
             {
                 affinityeffect(i, T_NEUTRAL, f.pos(true, true), f.spawnloc);
-                game::announcev(S_V_BOMBRESET, CON_EVENT, f.pos(true, true), &f.schan, true, "\faThe \fs\fzwvbomb\fS has been reset");
+                game::announcev(S_V_BOMBRESET, CON_EVENT, f.ent, "\faThe \fs\fzwvbomb\fS has been reset");
             }
         }
         if(value == 2) st.dropaffinity(i, pos, vec(0, 0, 1), lastmillis);
@@ -479,7 +494,7 @@ namespace bomber
         destroyaffinity(g.spawnloc);
         hud::teamscore(d->team).total = score;
         defformatstring(gteam, "%s", game::colourteam(g.team, "pointtex"));
-        game::announcev(S_V_BOMBSCORE, CON_EVENT, g.pos(true, true), &g.schan, true, "\fa%s destroyed the %s base for team %s%s (score: \fs\fc%d\fS, time taken: \fs\fc%s\fS)", game::colourname(d), gteam, game::colourteam(d->team), extra, score, timestr(lastmillis-f.inittime, 1));
+        game::announcev(S_V_BOMBSCORE, CON_EVENT, g.ent, "\fa%s destroyed the %s base for team %s%s (score: \fs\fc%d\fS, time taken: \fs\fc%s\fS)", game::colourname(d), gteam, game::colourteam(d->team), extra, score, timestr(lastmillis-f.inittime, 1));
         st.returnaffinity(relay, lastmillis, false);
     }
 
@@ -491,7 +506,7 @@ namespace bomber
         if(!f.droptime)
         {
             affinityeffect(i, d->team, d->feetpos(), f.pos(true, true));
-            game::announcev(S_V_BOMBPICKUP, CON_EVENT, f.pos(true, true), &f.schan, true, "\fa%s picked up the \fs\fzwv\f($bombtex)bomb\fS", game::colourname(d));
+            game::announcev(S_V_BOMBPICKUP, CON_EVENT, f.ent, "\fa%s picked up the \fs\fzwv\f($bombtex)bomb\fS", game::colourname(d));
         }
         st.takeaffinity(i, d, lastmillis);
         if(d->ai) aihomerun(d, d->ai->state.last());
@@ -545,7 +560,6 @@ namespace bomber
         loopv(st.flags)
         {
             bomberstate::flag &f = st.flags[i];
-            f.update();
             if(!f.enabled || !isbomberaffinity(f)) continue;
             if(f.droptime)
             {
@@ -561,6 +575,13 @@ namespace bomber
             }
             loopj(numdyn) if(((d = (gameent *)game::iterdynents(j))) && d->state == CS_ALIVE && (d == game::player1 || d->ai)) checkaffinity(d, i);
         }
+    }
+
+    bool getpos(int idx, vec &o)
+    {
+        if(!st.flags.inrange(idx)) return false;
+        o = st.flags[idx].pos(true, true);
+        return true;
     }
 
     bool aihomerun(gameent *d, ai::aistate &b)

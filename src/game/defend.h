@@ -10,12 +10,12 @@ struct defendstate
     struct flag
     {
         vec o;
-        int kinship, yaw, pitch, owner, enemy;
+        int ent, kinship, yaw, pitch, owner, enemy;
         string name;
 #ifndef CPP_GAME_SERVER
         string info;
         bool hasflag;
-        int lasthad, schan;
+        int lasthad;
         vec render;
         modelstate mdl;
 #endif
@@ -26,9 +26,6 @@ struct defendstate
             kinship = T_NEUTRAL;
             reset();
         }
-#ifndef CPP_GAME_SERVER
-        ~flag() { if(issound(schan)) sounds[schan].unhook(); }
-#endif
 
         void noenemy()
         {
@@ -46,6 +43,7 @@ struct defendstate
             hasflag = false;
             lasthad = 0;
 #endif
+            ent = -1;
         }
 
         bool enter(int team)
@@ -147,11 +145,12 @@ struct defendstate
         flags.shrink(0);
     }
 
-    void addaffinity(const vec &o, int team, int yaw, int pitch, const char *name)
+    void addaffinity(int n, const vec &o, int team, int yaw, int pitch, const char *name)
     {
         flag &b = flags.add();
         b.kinship = team;
         b.reset();
+        b.ent = n;
         b.yaw = yaw;
         b.pitch = pitch;
 #ifdef CPP_GAME_SERVER
@@ -162,12 +161,13 @@ struct defendstate
         copystring(b.name, name);
     }
 
-    void initaffinity(int i, int kin, int yaw, int pitch, vec &o, int owner, int enemy, int converted, const char *name)
+    void initaffinity(int i, int n, int kin, int yaw, int pitch, vec &o, int owner, int enemy, int converted, const char *name)
     {
         if(!flags.inrange(i)) return;
         flag &b = flags[i];
         b.kinship = kin;
         b.reset();
+        b.ent = n;
         b.yaw = yaw;
         b.pitch = pitch;
 #ifdef CPP_GAME_SERVER

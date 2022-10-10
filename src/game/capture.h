@@ -11,7 +11,7 @@ struct capturestate
     struct flag
     {
         vec droploc, inertia, spawnloc;
-        int team, yaw, pitch, droptime, taketime, dropoffset;
+        int ent, team, yaw, pitch, droptime, taketime, dropoffset;
 #ifdef CPP_GAME_SERVER
         int owner, lastowner, lastownerteam, returntime;
         vector<int> votes;
@@ -19,15 +19,12 @@ struct capturestate
 #else
         gameent *owner, *lastowner;
         projent *proj;
-        int displaytime, movetime, viewtime, interptime, schan;
+        int displaytime, movetime, viewtime, interptime;
         vec viewpos, interppos, render;
         modelstate mdl, basemdl;
 #endif
 
         flag() { reset(); }
-#ifndef CPP_GAME_SERVER
-        ~flag() { if(issound(schan)) sounds[schan].unhook(); }
-#endif
 
         void reset()
         {
@@ -43,6 +40,7 @@ struct capturestate
             proj = NULL;
             displaytime = movetime = viewtime = interptime = 0;
 #endif
+            ent = -1;
             team = T_NEUTRAL;
             yaw = pitch = taketime = droptime = dropoffset = 0;
         }
@@ -87,11 +85,6 @@ struct capturestate
             }
             if(offset < 4) spawnloc.z += 4-offset;
         }
-
-        void update()
-        {
-            if(issound(schan)) sounds[schan].pos = pos(true);
-        }
 #endif
 
         int dropleft(int t, bool b)
@@ -106,10 +99,11 @@ struct capturestate
         flags.shrink(0);
     }
 
-    void addaffinity(const vec &o, int team, int yaw, int pitch)
+    void addaffinity(int n, const vec &o, int team, int yaw, int pitch)
     {
         flag &f = flags.add();
         f.reset();
+        f.ent = n;
         f.team = team;
         f.yaw = yaw;
         f.pitch = pitch;

@@ -205,7 +205,7 @@ namespace defend
         int df = m_dac_king(game::gamemode, game::mutators) ? 0 : defendflags;
         loopv(entities::ents) if(entities::ents[i]->type == AFFINITY)
         {
-            extentity &e = *entities::ents[i];
+            gameentity &e = *(gameentity *)entities::ents[i];
             if(!entities::isallowed(e)) continue;
             int team = e.attrs[0];
             switch(df)
@@ -228,7 +228,7 @@ namespace defend
                 formatstring(alias, "Point #%d", st.flags.length()+1);
                 name = alias;
             }
-            st.addaffinity(e.o, team, e.attrs[1], e.attrs[2], name);
+            st.addaffinity(i, e.o, team, e.attrs[1], e.attrs[2], name);
         }
         if(!st.flags.length()) return; // map doesn't seem to support this mode at all..
         if(df != 0)
@@ -269,6 +269,13 @@ namespace defend
                 while(st.flags.length() > 1) st.flags.remove(1);
             }
         }
+        loopv(entities::ents) ((gameentity *)entities::ents[i])->affinity = -1;
+        loopv(st.flags)
+        {
+            defendstate::flag &f = st.flags[i];
+            if(!entities::ents.inrange(f.ent)) continue;
+            ((gameentity *)entities::ents[f.ent])->affinity = i;
+        }
     }
 
     void sendaffinity(packetbuf &p)
@@ -278,6 +285,7 @@ namespace defend
         loopv(st.flags)
         {
             defendstate::flag &b = st.flags[i];
+            putint(p, b.ent);
             putint(p, b.kinship);
             putint(p, b.yaw);
             putint(p, b.pitch);
@@ -293,7 +301,7 @@ namespace defend
         while(st.flags.length() > numflags) st.flags.pop();
         loopi(numflags)
         {
-            int kin = getint(p), yaw = getint(p), pitch = getint(p), converted = getint(p), owner = getint(p), enemy = getint(p);
+            int ent = getint(p), kin = getint(p), yaw = getint(p), pitch = getint(p), converted = getint(p), owner = getint(p), enemy = getint(p);
             vec o;
             loopj(3) o[j] = getint(p)/DMF;
             string name;
@@ -301,7 +309,7 @@ namespace defend
             if(p.overread()) break;
             if(i >= MAXPARAMS) continue;
             while(!st.flags.inrange(i)) st.flags.add();
-            st.initaffinity(i, kin, yaw, pitch, o, owner, enemy, converted, name);
+            st.initaffinity(i, ent, kin, yaw, pitch, o, owner, enemy, converted, name);
         }
     }
 
@@ -319,7 +327,7 @@ namespace defend
                     int numdyns = game::numdynents();
                     loopi(numdyns) if((e = (gameent *)game::iterdynents(i)) && e->actortype < A_ENEMY && insideaffinity(b, e))
                         if((d = e) == game::focus) break;
-                    game::announcev(S_V_FLAGSECURED, CON_EVENT, b.o, &b.schan, true, "\faTeam %s secured \fw\f($pointtex)%s", game::colourteam(owner), b.name);
+                    game::announcev(S_V_FLAGSECURED, CON_EVENT, b.ent, "\faTeam %s secured \fw\f($pointtex)%s", game::colourteam(owner), b.name);
                     if(game::dynlighteffects) adddynlight(b.o, enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(owner, colour)).mul(2.f), 500, 250);
                 }
             }
@@ -329,7 +337,7 @@ namespace defend
                 int numdyns = game::numdynents();
                 loopi(numdyns) if((e = (gameent *)game::iterdynents(i)) && e->actortype < A_ENEMY && insideaffinity(b, e))
                     if((d = e) == game::focus) break;
-                game::announcev(S_V_FLAGOVERTHROWN, CON_EVENT, b.o, &b.schan, true, "\faTeam %s overthrew \fw\f($pointtex)%s", game::colourteam(enemy), b.name);
+                game::announcev(S_V_FLAGOVERTHROWN, CON_EVENT, b.ent, "\faTeam %s overthrew \fw\f($pointtex)%s", game::colourteam(enemy), b.name);
                 if(game::dynlighteffects) adddynlight(b.o, enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(enemy, colour)).mul(2.f), 500, 250);
             }
             b.converted = converted;
@@ -341,6 +349,13 @@ namespace defend
     void setscore(int team, int total)
     {
         hud::teamscore(team).total = total;
+    }
+
+    bool getpos(int idx, vec &o)
+    {
+        if(!st.flags.inrange(idx)) return false;
+        o = st.flags[idx].o;
+        return true;
     }
 
     bool aicheck(gameent *d, ai::aistate &b)

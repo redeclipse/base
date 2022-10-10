@@ -13,7 +13,7 @@ struct bomberstate
     struct flag
     {
         vec droploc, droppos, inertia, spawnloc;
-        int team, yaw, pitch, droptime, taketime, target;
+        int ent, team, yaw, pitch, droptime, taketime, target;
         bool enabled;
         float distance;
 #ifdef CPP_GAME_SERVER
@@ -22,15 +22,12 @@ struct bomberstate
 #else
         gameent *owner, *lastowner;
         projent *proj;
-        int displaytime, movetime, inittime, viewtime, rendertime, interptime, schan;
+        int displaytime, movetime, inittime, viewtime, rendertime, interptime;
         vec viewpos, renderpos, interppos, render;
         modelstate mdl, basemdl;
 #endif
 
         flag() { reset(); }
-#ifndef CPP_GAME_SERVER
-        ~flag() { if(issound(schan)) sounds[schan].unhook(); }
-#endif
 
         void reset()
         {
@@ -44,8 +41,8 @@ struct bomberstate
             proj = NULL;
             displaytime = movetime = inittime = viewtime = rendertime = interptime = 0;
             viewpos = renderpos = vec(-1, -1, -1);
-            schan = -1;
 #endif
+            ent = -1;
             team = T_NEUTRAL;
             yaw = pitch = taketime = droptime = 0;
             target = -1;
@@ -110,11 +107,6 @@ struct bomberstate
             }
             if(offset < 4) spawnloc.z += 4-offset;
         }
-
-        void update()
-        {
-            if(issound(schan)) sounds[schan].pos = pos(true, true);
-        }
 #endif
         bool travel(const vec &o, float dist)
         {
@@ -130,10 +122,11 @@ struct bomberstate
         flags.shrink(0);
     }
 
-    void addaffinity(const vec &o, int team, int yaw, int pitch)
+    void addaffinity(int n, const vec &o, int team, int yaw, int pitch)
     {
         flag &f = flags.add();
         f.reset();
+        f.ent = n;
         f.team = team;
         f.yaw = yaw;
         f.pitch = pitch;

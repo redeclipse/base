@@ -114,6 +114,7 @@ struct defendservmode : defendstate, servmode
         loopv(flags)
         {
             flag &b = flags[i];
+            putint(p, b.ent);
             putint(p, b.kinship);
             putint(p, b.yaw);
             putint(p, b.pitch);
@@ -201,13 +202,13 @@ struct defendservmode : defendstate, servmode
         if(numflags <= 0) return;
         loopi(numflags)
         {
-            int kin = getint(p), yaw = getint(p), pitch = getint(p);
+            int ent = getint(p), kin = getint(p), yaw = getint(p), pitch = getint(p);
             vec o;
             loopj(3) o[j] = getint(p)/DMF;
             string name;
             getstring(name, p);
             if(p.overread()) break;
-            if(!hasflaginfo && i < MAXPARAMS) addaffinity(o, kin, yaw, pitch, name);
+            if(!hasflaginfo && i < MAXPARAMS) addaffinity(ent, o, kin, yaw, pitch, name);
         }
         if(!hasflaginfo)
         {

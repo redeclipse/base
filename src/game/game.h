@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 261
+#define VERSION_GAME 262
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -1143,14 +1143,26 @@ template<class T> inline void flashcolourf(T &r, T &g, T &b, T &f, T br, T bg, T
     f += (bf-f)*amt;
 }
 
+namespace game
+{
+    extern int gamestate, gamemode, mutators;
+}
+#define AFFINITYPOS(n) \
+    namespace n \
+    { \
+        extern bool getpos(int idx, vec &o); \
+    }
+AFFINITYPOS(capture);
+AFFINITYPOS(defend);
+AFFINITYPOS(bomber);
 struct gameentity : extentity
 {
-    int schan, lastspawn, nextemit;
+    int schan, affinity, lastspawn, nextemit;
     linkvector kin;
     vec offset, curpos;
     float yaw, pitch;
 
-    gameentity() : schan(-1), lastspawn(0), nextemit(0), offset(0, 0, 0), yaw(0), pitch(0) {}
+    gameentity() : schan(-1), affinity(-1), lastspawn(0), nextemit(0), offset(0, 0, 0), yaw(0), pitch(0) {}
     ~gameentity()
     {
         if(issound(schan)) sounds[schan].clear();
@@ -1160,6 +1172,14 @@ struct gameentity : extentity
     void getcurpos()
     {
         curpos = o;
+
+        if(affinity >= 0)
+        {
+            if(m_capture(game::gamemode)) capture::getpos(affinity, curpos);
+            else if(m_defend(game::gamemode)) defend::getpos(affinity, curpos);
+            else if(m_bomber(game::gamemode)) bomber::getpos(affinity, curpos);
+        }
+
         if(flags&EF_DYNAMIC) curpos.add(offset);
     }
     vec pos() { getcurpos(); return curpos; }
@@ -2354,7 +2374,7 @@ namespace hud
 enum { CTONE_TEAM = 0, CTONE_TONE, CTONE_TEAMED, CTONE_ALONE, CTONE_MIXED, CTONE_TMIX, CTONE_AMIX, CTONE_MAX };
 namespace game
 {
-    extern int gamestate, gamemode, mutators, nextmode, nextmuts, lastzoom, lasttvcam, lasttvchg, spectvtime, waittvtime,
+    extern int nextmode, nextmuts, lastzoom, lasttvcam, lasttvchg, spectvtime, waittvtime,
             maptime, mapstart, timeremaining, timeelapsed, timelast, timesync, bloodfade, bloodsize, bloodsparks, eventiconfade, eventiconshort, damageinteger,
             announcefilter, dynlighteffects, aboveheadnames, followthirdperson, nogore, forceplayermodel, forceplayerpattern,
             playerovertone, playerundertone, playerdisplaytone, playereffecttone, playerteamtone, follow, specmode, spectvfollow, clientcrc;
@@ -2391,7 +2411,7 @@ namespace game
     extern void errorsnd(gameent *d);
     extern void announce(int idx, gameent *d = NULL, bool forced = false, bool unmapped = false);
     extern void announcef(int idx, int targ, gameent *d, bool forced, const char *msg, ...);
-    extern void announcev(int idx, int targ, const vec &pos, int *hook, bool forced, const char *msg, ...);
+    extern void announcev(int idx, int targ, int ent, const char *msg, ...);
     extern void specreset(gameent *d = NULL, bool clear = false);
     extern float opacity(gameent *d);
     extern void respawn(gameent *d);

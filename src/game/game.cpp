@@ -810,15 +810,16 @@ namespace game
         announce(idx, d, forced);
     }
 
-    void announcev(int idx, int targ, const vec &pos, int *hook, bool forced, const char *msg, ...)
+    void announcev(int idx, int targ, int ent, const char *msg, ...)
     {
         if(targ >= 0 && msg && *msg)
         {
             defvformatbigstring(text, msg, msg);
             conoutft(targ, "%s", text);
         }
-        if(idx < 0) return;
-        emitsoundpos(idx, pos, hook, SND_PRIORITY|SND_CLAMPED|SND_VELEST|SND_BUFFER, 0.25f);
+        if(idx < 0 || !entities::ents.inrange(ent)) return;
+        gameentity &e = *(gameentity *)entities::ents[ent];
+        emitsound(idx, e.getpos(), NULL, &e.schan, SND_PRIORITY|SND_TRACKED|SND_CLAMPED|SND_VELEST|SND_BUFFER, 0.25f);
     }
 
     ICOMMAND(0, announce, "iiisN", (int *idx, int *targ, int *cn, int *forced, char *s, int *numargs),
