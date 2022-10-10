@@ -1,10 +1,13 @@
 #include "engine.h"
 
-ALCdevice *snddev = NULL;
-ALCcontext *sndctx = NULL;
+bool nosound = true, canmusic = false, al_soft_spatialize = false, al_ext_float32 = false, al_ext_efx = false;
 
-bool nosound = true, canmusic = false;
-bool al_ext_efx = false, al_soft_spatialize = false, al_ext_float32 = false;
+const char *sounderror(bool msg)
+{
+    ALenum err = alGetError();
+    if(!msg && err == AL_NO_ERROR) return NULL;
+    return alGetString(err);
+}
 
 LPALGENAUXILIARYEFFECTSLOTS    alGenAuxiliaryEffectSlots    = NULL;
 LPALDELETEAUXILIARYEFFECTSLOTS alDeleteAuxiliaryEffectSlots = NULL;
@@ -41,6 +44,7 @@ static void getextsoundprocs()
     alFilterf                    = (LPALFILTERF)                   alGetProcAddress("alFilterf");
 }
 
+vector<sounddevice *> sounddevices;
 hashnameset<soundsample> soundsamples;
 slotmanager<soundslot> gamesounds, mapsounds;
 vector<slot *> soundmap;
@@ -338,7 +342,8 @@ void updateenvzone(entity *ent)
     }
 }
 
-SVARF(IDF_INIT, sounddevice, "", initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
+SVARF(IDF_INIT, soundaudio, "", initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
+SVARF(IDF_INIT, soundhaptic, "", initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
 VARF(IDF_INIT, soundmaxsources, 16, 256, 1024, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
 VARF(IDF_INIT, sounddownmix, 0, 0, 1, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
 
@@ -361,16 +366,9 @@ FVARF(IDF_PERSIST, soundeffectevent, 0, 1, 100, initwarning("sound configuration
 FVARF(IDF_PERSIST, soundeffectenv, 0, 1, 100, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
 FVAR(IDF_PERSIST, sounddistfilter, 0.0f, 0.3f, 1.0f);
 
-const char *sounderror(bool msg)
-{
-    ALenum err = alGetError();
-    if(!msg && err == AL_NO_ERROR) return NULL;
-    return alGetString(err);
-}
-
 void soundsetdoppler(float v)
 {
-    if(nosound) return;
+    if(sounddevices.empty()) return;
     alGetError();
     alDopplerFactor(v);
     const char *err = sounderror(false);
@@ -380,7 +378,7 @@ FVARF(IDF_PERSIST, sounddoppler, 0, 0.1f, FVAR_MAX, soundsetdoppler(sounddoppler
 
 void soundsetspeed(float v)
 {
-    if(nosound) return;
+    if(sounddevices.empty()) return;
     alGetError();
     alSpeedOfSound(v * 8.f);
     const char *err = sounderror(false);
@@ -475,71 +473,71 @@ void musicloopstop()
     SDL_UnlockMutex(music_mutex);
 }
 
+int createsound(const char *s, int type)
+{
+    if(!s || !*s)
+    {
+        if(type == sounddevice::AUDIO)
+        {
+            sounddevice *d = new sounddevice;
+            if(d->setup(NULL, type, true))
+            {
+                sounddevices.add(d);
+                return 1;
+            }
+            delete d;
+        }
+        return 0;
+    }
+
+    int result = 0;
+    vector<char *> list;
+    explodelist(s, list);
+
+    loopv(list)
+    {
+        sounddevice *d = new sounddevice;
+        if(!d->setup(list[i], type, type == sounddevice::AUDIO && sounddevices.empty()))
+        {
+            delete d;
+            continue;
+        }
+        sounddevices.add(d);
+        result++;
+    }
+    list.deletearrays();
+
+    return result;
+}
+
 void initsound()
 {
-    if(nosound)
+    if(!nosound) return;
+
+    createsound(soundaudio, sounddevice::AUDIO);
+    createsound(soundhaptic, sounddevice::HAPTICS);
+
+    if(sounddevices.empty()) return;
+    sounddevices[0]->current();
+    nosound = false;
+
+    loopv(sounddevices) if(sounddevices[i]->al_ext_efx)
     {
-        if(*sounddevice)
-        {
-            alGetError();
-            snddev = alcOpenDevice(sounddevice);
-            if(!snddev) conoutf("\frSound device initialisation failed: %s (with '%s', retrying default device)", sounderror(), sounddevice);
-        }
-
-        if(!snddev)
-        {
-            alGetError();
-            snddev = alcOpenDevice(NULL); // fallback to default device
-        }
-
-        if(!snddev)
-        {
-            conoutf("\frSound device initialisation failed: %s", sounderror());
-            return;
-        }
-
-        alGetError();
-        sndctx = alcCreateContext(snddev, NULL);
-        if(!sndctx)
-        {
-            conoutf("\frSound context initialisation failed: %s", sounderror());
-            alcCloseDevice(snddev);
-            snddev = NULL;
-            return;
-        }
-
-        alcMakeContextCurrent(sndctx);
-        conoutf("Sound: %s (%s) %s", alGetString(AL_RENDERER), alGetString(AL_VENDOR), alGetString(AL_VERSION));
-
-        if(alcIsExtensionPresent(NULL, "ALC_ENUMERATE_ALL_EXT") != AL_FALSE)
-        {
-            const ALCchar *d = alcGetString(NULL, ALC_DEFAULT_ALL_DEVICES_SPECIFIER),
-                          *s = alcGetString(NULL, ALC_ALL_DEVICES_SPECIFIER);
-            if(s)
-            {
-                conoutf("Audio device list:");
-                for(const ALchar *c = s; *c; c += strlen(c)+1)
-                    conoutf("- %s%s", c, !strcmp(c, d) ? " [default]" : "");
-            }
-            conoutf("Audio device: %s", alcGetString(snddev, ALC_DEFAULT_ALL_DEVICES_SPECIFIER));
-        }
-        else conoutf("Audio device: %s", alcGetString(snddev, ALC_DEVICE_SPECIFIER));
-
-        al_ext_efx = alcIsExtensionPresent(snddev, "ALC_EXT_EFX") ? true : false;
-        al_ext_float32 = alIsExtensionPresent("AL_EXT_FLOAT32") ? true : false;
-        al_soft_spatialize = !sounddownmix && alIsExtensionPresent("AL_SOFT_source_spatialize") ? true : false;
-
-        getextsoundprocs();
-        allocsoundefxslots();
-
-        nosound = false;
-
-        alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
-        soundsetdoppler(sounddoppler);
-        soundsetspeed(soundspeed);
-
-        music_mutex = SDL_CreateMutex();
+        al_ext_efx = true;
+        break;
     }
+    al_ext_float32 = alIsExtensionPresent("AL_EXT_FLOAT32") ? true : false;
+    al_soft_spatialize = !sounddownmix && alIsExtensionPresent("AL_SOFT_source_spatialize") ? true : false;
+
+    getextsoundprocs();
+    allocsoundefxslots();
+
+    alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
+    soundsetdoppler(sounddoppler);
+    soundsetspeed(soundspeed);
+
+    music_mutex = SDL_CreateMutex();
+
     initmumble();
 }
 
@@ -571,8 +569,7 @@ void stopsound()
     gamesounds.clear(false);
     closemumble();
     alcMakeContextCurrent(NULL);
-    alcDestroyContext(sndctx);
-    alcCloseDevice(snddev);
+    sounddevices.deletecontents();
     nosound = true;
 }
 
@@ -843,66 +840,72 @@ int soundindex(soundslot *slot, int slotnum, const vec &pos, int flags, float ga
 void updatesounds()
 {
     updatemumble();
-
-    if(nosound) return;
-    alcSuspendContext(sndctx);
+    if(nosound || sounddevices.empty()) return;
 
     sortenvzones();
     panenvzones();
 
-    loopv(soundsources) if(soundsources[i].valid())
+    bool updated = false;
+    loopv(sounddevices)
     {
-        soundsource &s = soundsources[i];
+        sounddevice *d = sounddevices[i];
+        d->current();
+        d->suspend();
 
-        if((!s.ends || lastmillis < s.ends) && s.playing())
+        loopv(soundsources) if(soundsources[i].valid())
         {
-            s.update();
-            continue;
-        }
-        s.cleanup();
+            soundsource &s = soundsources[i];
 
-        slotmanager<soundslot> &soundset = s.flags&SND_MAP ? mapsounds : gamesounds;
-        while(!s.buffer.empty())
+            if(updated)
+            {
+                s.update(i);
+                continue;
+            }
+
+            if((!s.ends || lastmillis < s.ends) && s.playing())
+            {
+                s.update(i);
+                continue;
+            }
+            s.cleanup();
+
+            slotmanager<soundslot> &soundset = s.flags&SND_MAP ? mapsounds : gamesounds;
+            while(!s.buffer.empty())
+            {
+                int n = s.buffer[0];
+                s.buffer.remove(0);
+
+                if((!soundset.inrange(n) || soundset[n].samples.empty() || !soundset[n].gain)) continue;
+
+                soundslot *slot = &soundset[n];
+                int variant = slot->variants > 1 ? rnd(slot->variants) : 0;
+                // if(slot->fardist > 0 && s.vpos->dist(camera1->o) >= slot->fardist) variant += slot->variants;
+                soundsample *sample = slot->samples.inrange(variant) ? slot->samples[variant] : NULL;
+                if(!sample || !sample->valid()) continue;
+
+                s.slot = slot;
+                s.slotnum = n;
+                SOUNDCHECK(s.push(sample), break, conoutf("Error playing sample %s [%d]: %s", sample->name, s.index, alGetString(err)));
+            }
+            //conoutf("Clearing sound source %d [%d] %d [%d] %s", s.source, s.index, s.ends, lastmillis, soundsources[i].playing() ? "playing" : "not playing");
+            if(!s.playing()) s.clear();
+        }
+
+        if(!updated)
         {
-            int n = s.buffer[0];
-            s.buffer.remove(0);
-
-            if((!soundset.inrange(n) || soundset[n].samples.empty() || !soundset[n].gain)) continue;
-
-            soundslot *slot = &soundset[n];
-            int variant = slot->variants > 1 ? rnd(slot->variants) : 0;
-            // if(slot->fardist > 0 && s.vpos->dist(camera1->o) >= slot->fardist) variant += slot->variants;
-            soundsample *sample = slot->samples.inrange(variant) ? slot->samples[variant] : NULL;
-            if(!sample || !sample->valid()) continue;
-
-            s.slot = slot;
-            s.slotnum = n;
-            SOUNDCHECK(s.push(sample), break, conoutf("Error playing sample %s [%d]: %s", sample->name, s.index, alGetString(err)));
+            SDL_LockMutex(music_mutex);
+            bool hasmusic = music != NULL;
+            bool musicvalid = music && music->valid();
+            SDL_UnlockMutex(music_mutex);
+            if(!musicvalid || (hasmusic && (nosound || !soundmastervol || !soundmusicvol || !playingmusic())))
+                stopmusic();
         }
-        //conoutf("Clearing sound source %d [%d] %d [%d] %s", s.source, s.index, s.ends, lastmillis, soundsources[i].playing() ? "playing" : "not playing");
-        if(!s.playing()) s.clear();
+
+        d->push();
+        updated = true;
     }
 
-    SDL_LockMutex(music_mutex);
-    bool hasmusic = music != NULL;
-    bool musicvalid = music && music->valid();
-    SDL_UnlockMutex(music_mutex);
-
-    if(!musicvalid || (hasmusic && (nosound || !soundmastervol || !soundmusicvol || !playingmusic())))
-        stopmusic();
-
-    vec o[2];
-    o[0].x = (float)(cosf(RAD*(camera1->yaw-90)));
-    o[0].y = (float)(sinf(RAD*(camera1->yaw-90)));
-    o[0].z = o[1].x = o[1].y = 0.0f;
-    o[1].z = 1.0f;
-    alListenerf(AL_GAIN, soundmastervol);
-    alListenerfv(AL_ORIENTATION, (ALfloat *) &o);
-    alListenerfv(AL_POSITION, (ALfloat *) &camera1->o);
-    alListenerfv(AL_VELOCITY, (ALfloat *) &game::focusedent()->vel);
-    if(al_ext_efx) alListenerf(AL_METERS_PER_UNIT, 0.125f); // 8 units = 1 meter
-
-    alcProcessContext(sndctx);
+    sounddevices[0]->current();
 }
 
 int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, float pitch, float rolloff, float refdist, float maxdist, int ends)
@@ -1036,6 +1039,90 @@ void resetsound()
 }
 
 COMMAND(0, resetsound, "");
+
+bool sounddevice::setup(const char *s, int t, bool fallback)
+{
+    if(t < 0 || t >= MAX) return false;
+    type = t;
+
+    alcMakeContextCurrent(NULL);
+
+    if(s && *s)
+    {
+        conoutf("%s trying: %s", gettype(), s);
+        dev = alcOpenDevice(s);
+        if(!dev) conoutf("\fr%s device initialisation failed: %s [%s]", gettype(), s, fallback ? "retrying" : "aborting");
+    }
+    if(fallback && !dev) dev = alcOpenDevice(NULL); // fallback to default device
+    if(!dev) return false;
+
+    alGetError();
+    ctx = alcCreateContext(dev, NULL);
+    if(!ctx)
+    {
+        conoutf("\fr%s context initialisation failed: %s", gettype(), sounderror());
+        return false;
+    }
+
+    alcMakeContextCurrent(ctx);
+    conoutf("%s: %s (%s) %s", gettype(), alGetString(AL_RENDERER), alGetString(AL_VENDOR), alGetString(AL_VERSION));
+
+    if(alcIsExtensionPresent(NULL, "ALC_ENUMERATE_ALL_EXT") != AL_FALSE)
+    {
+        const ALCchar *d = alcGetString(NULL, ALC_DEFAULT_ALL_DEVICES_SPECIFIER), *s = alcGetString(NULL, ALC_ALL_DEVICES_SPECIFIER);
+        if(s) for(const ALchar *c = s; *c; c += strlen(c)+1) conoutf("- %s%s", c, !strcmp(c, d) ? " [default]" : "");
+        name = newstring(alcGetString(dev, ALC_DEFAULT_ALL_DEVICES_SPECIFIER));
+    }
+    else name = newstring(alcGetString(dev, ALC_DEVICE_SPECIFIER));
+
+    al_ext_efx = alcIsExtensionPresent(dev, "ALC_EXT_EFX") ? true : false;
+    conoutf("%s device: %s", gettype(), name);
+
+    return true;
+}
+
+void sounddevice::destroy()
+{
+    if(name) delete[] name;
+    if(ctx) alcDestroyContext(ctx);
+    if(dev) alcCloseDevice(dev);
+    reset();
+}
+
+void sounddevice::reset()
+{
+    name = NULL;
+    dev = NULL;
+    ctx = NULL;
+    type = -1;
+    al_ext_efx = false;
+}
+
+void sounddevice::current()
+{
+    alcMakeContextCurrent(ctx);
+}
+
+void sounddevice::suspend()
+{
+    alcSuspendContext(ctx);
+}
+
+void sounddevice::push()
+{
+    vec o[2];
+    o[0].x = (float)(cosf(RAD*(camera1->yaw-90)));
+    o[0].y = (float)(sinf(RAD*(camera1->yaw-90)));
+    o[0].z = o[1].x = o[1].y = 0.0f;
+    o[1].z = 1.0f;
+    alListenerf(AL_GAIN, soundmastervol);
+    alListenerfv(AL_ORIENTATION, (ALfloat *) &o);
+    alListenerfv(AL_POSITION, (ALfloat *) &camera1->o);
+    alListenerfv(AL_VELOCITY, (ALfloat *) &game::focusedent()->vel);
+    if(al_ext_efx) alListenerf(AL_METERS_PER_UNIT, 0.125f); // 8 units = 1 meter
+
+    alcProcessContext(ctx);
+}
 
 bool soundfile::setup(const char *name, int t, int m)
 {
@@ -1247,58 +1334,62 @@ void soundslot::reset()
     samples.shrink(0);
 }
 
-ALenum soundsource::setup(soundsample *s)
+ALenum soundsource::setup(soundsample *s, int n)
 {
     if(!s->valid()) return AL_NO_ERROR;
+    while(n >= devparams.length()) devparams.add();
+    devparam &p = devparams[n];
+    p.index = n;
+    p.dev = sounddevices[n];
 
     SOUNDERROR();
-    alGenSources(1, &source);
+    alGenSources(1, &p.source);
     SOUNDERROR(clear(); return err);
 
-    if(al_ext_efx && !(flags&SND_NOFILTER) && sounddistfilter > 0.0f)
+    if(p.dev->al_ext_efx && !(flags&SND_NOFILTER) && sounddistfilter > 0.0f)
     {
-        alGenFilters(1, &filter);
-        alFilteri(filter, AL_FILTER_TYPE, AL_FILTER_BANDPASS);
-        alSourcei(source, AL_DIRECT_FILTER, filter);
+        alGenFilters(1, &p.filter);
+        alFilteri(p.filter, AL_FILTER_TYPE, AL_FILTER_BANDPASS);
+        alSourcei(p.source, AL_DIRECT_FILTER, p.filter);
 
         SOUNDERROR(clear(); return err);
     }
 
-    alSourcei(source, AL_BUFFER, s->buffer);
+    alSourcei(p.source, AL_BUFFER, s->buffer);
     SOUNDERROR(clear(); return err);
 
     if(flags&SND_NOPAN && flags&SND_NODIST) flags |= SND_NOATTEN; // superfluous
     if(flags&SND_NOATTEN)
     {
         flags &= ~(SND_NOPAN|SND_NODIST); // unnecessary
-        alSourcei(source, AL_SOURCE_RELATIVE, AL_TRUE);
+        alSourcei(p.source, AL_SOURCE_RELATIVE, AL_TRUE);
         SOUNDERROR(clear(); return err);
     }
     else
     {
         if(al_soft_spatialize)
         {
-            alSourcei(source, AL_SOURCE_SPATIALIZE_SOFT, AL_TRUE);
+            alSourcei(p.source, AL_SOURCE_SPATIALIZE_SOFT, AL_TRUE);
             SOUNDERROR(clear(); return err);
         }
-        alSourcei(source, AL_SOURCE_RELATIVE, AL_FALSE);
+        alSourcei(p.source, AL_SOURCE_RELATIVE, AL_FALSE);
         SOUNDERROR(clear(); return err);
     }
 
-    alSourcei(source, AL_LOOPING, flags&SND_LOOP ? AL_TRUE : AL_FALSE);
+    alSourcei(p.source, AL_LOOPING, flags&SND_LOOP ? AL_TRUE : AL_FALSE);
     SOUNDERROR(clear(); return err);
 
-    finalrolloff = rolloff >= 0 ? rolloff : (slot->rolloff >= 0 ? slot->rolloff : 1.f);
-    alSourcef(source, AL_ROLLOFF_FACTOR, finalrolloff);
+    if(!n) finalrolloff = rolloff >= 0 ? rolloff : (slot->rolloff >= 0 ? slot->rolloff : 1.f);
+    alSourcef(p.source, AL_ROLLOFF_FACTOR, finalrolloff);
     SOUNDERROR(clear(); return err);
 
-    alSourcef(source, AL_REFERENCE_DISTANCE, refdist >= 0 ? refdist : (slot->refdist >= 0 ? slot->refdist : soundrefdist));
+    alSourcef(p.source, AL_REFERENCE_DISTANCE, refdist >= 0 ? refdist : (slot->refdist >= 0 ? slot->refdist : soundrefdist));
     SOUNDERROR(clear(); return err);
 
     float dist = maxdist >= 0 ? maxdist : slot->maxdist;
     if(dist >= 0)
     {
-        alSourcef(source, AL_MAX_DISTANCE, dist);
+        alSourcef(p.source, AL_MAX_DISTANCE, dist);
         SOUNDERROR(clear(); return err);
     }
 
@@ -1308,14 +1399,17 @@ ALenum soundsource::setup(soundsample *s)
 void soundsource::cleanup()
 {
     if(!valid()) return;
-    if(al_ext_efx && alIsFilter(filter)) alDeleteFilters(1, &filter);
-    alSourceStop(source);
-    alDeleteSources(1, &source);
+    loopv(devparams)
+    {
+        devparam &p = devparams[i];
+        if(p.dev->al_ext_efx && alIsFilter(p.filter)) alDeleteFilters(1, &p.filter);
+        alSourceStop(p.source);
+        alDeleteSources(1, &p.source);
+    }
 }
 
 void soundsource::reset()
 {
-    source = 0;
     pos = curpos = vel = vec(0, 0, 0);
     vpos = &pos;
     slot = NULL;
@@ -1328,6 +1422,7 @@ void soundsource::reset()
     if(hook) *hook = -1;
     hook = NULL;
     buffer.shrink(0);
+    devparams.setsize(0);
 }
 
 void soundsource::clear()
@@ -1350,42 +1445,49 @@ void soundsource::unhook()
     }
 }
 
-ALenum soundsource::updatefilter()
+ALenum soundsource::updatefilter(devparam &p)
 {
-    if(!al_ext_efx || !alIsFilter(filter)) return AL_NO_ERROR;
+    if(!p.dev->al_ext_efx || !alIsFilter(p.filter)) return AL_NO_ERROR;
 
     float dist = camera1->o.dist(*vpos);
     float gain = 1.0f - (((dist * log10f(finalrolloff + 1.0f)) / finalrefdist) * sounddistfilter);
     gain = clamp(gain, 1.0f - sounddistfilter, 1.0f);
 
-    alFilteri(filter, AL_FILTER_TYPE, AL_FILTER_BANDPASS);
-    alFilterf(filter, AL_BANDPASS_GAINHF, gain);
-    alFilterf(filter, AL_BANDPASS_GAINLF, gain);
-    alSourcei(source, AL_DIRECT_FILTER, filter);
+    alFilteri(p.filter, AL_FILTER_TYPE, AL_FILTER_BANDPASS);
+    alFilterf(p.filter, AL_BANDPASS_GAINHF, gain);
+    alFilterf(p.filter, AL_BANDPASS_GAINLF, gain);
+    alSourcei(p.source, AL_DIRECT_FILTER, p.filter);
 
     return alGetError();
 }
 
-ALenum soundsource::update()
+
+ALenum soundsource::update(int n)
 {
-    material = lookupmaterial(*vpos);
-    curgain = clamp(soundeffectvol*slot->gain*(flags&SND_MAP ? soundeffectenv : soundeffectevent), 0.f, 100.f);
+    if(!devparams.inrange(n)) return AL_INVALID_VALUE;
+    devparam &p = devparams[n];
+
+    if(!n)
+    {
+        material = lookupmaterial(*vpos);
+        curgain = clamp(soundeffectvol*slot->gain*(flags&SND_MAP ? soundeffectenv : soundeffectevent), 0.f, 100.f);
+        curpitch = clamp(pitch * slot->pitch, 1e-6f, 100.f);
+        if(!(flags&SND_CLAMPED)) curgain *= gain;
+    }
 
     if(flags&SND_CLAMPED)
     {
         SOUNDERROR();
-        alSourcef(source, AL_MIN_GAIN, gain);
+        alSourcef(p.source, AL_MIN_GAIN, gain);
         SOUNDERROR(clear(); return err);
     }
-    else curgain *= gain;
 
     SOUNDERROR();
-    alSourcef(source, AL_GAIN, curgain);
+    alSourcef(p.source, AL_GAIN, curgain);
     SOUNDERROR(clear(); return err);
 
-    curpitch = clamp(pitch * slot->pitch, 1e-6f, 100.f);
     SOUNDERROR();
-    alSourcef(source, AL_PITCH, pitch);
+    alSourcef(p.source, AL_PITCH, pitch);
     SOUNDERROR(clear(); return err);
 
     vec rpos = *vpos;
@@ -1398,26 +1500,29 @@ ALenum soundsource::update()
     else if(flags&SND_NODIST) rpos.sub(camera1->o).safenormalize().mul(2).add(camera1->o);
 
     SOUNDERROR();
-    alSourcefv(source, AL_POSITION, (ALfloat *) &rpos);
+    alSourcefv(p.source, AL_POSITION, (ALfloat *) &rpos);
     SOUNDERROR(clear(); return err);
 
-    if(owner) vel = owner->vel;
-    if(totalmillis != lastupdate && (lastupdate < 0 || totalmillis-lastupdate > physics::physframetime))
+    if(!n)
     {
-        if(!owner && (flags&SND_TRACKED || flags&SND_VELEST) && lastupdate >= 0)
+        if(owner) vel = owner->vel;
+        if(totalmillis != lastupdate && (lastupdate < 0 || totalmillis-lastupdate > physics::physframetime))
         {
-            int n = physics::physframetime;
-            while(lastupdate+n < totalmillis) n += physics::physframetime;
-            vel = vec(*vpos).sub(curpos).mul(1000).div(n);
+            if(!owner && (flags&SND_TRACKED || flags&SND_VELEST) && lastupdate >= 0)
+            {
+                int n = physics::physframetime;
+                while(lastupdate+n < totalmillis) n += physics::physframetime;
+                vel = vec(*vpos).sub(curpos).mul(1000).div(n);
+            }
+            lastupdate = totalmillis;
+            curpos = *vpos;
         }
-        lastupdate = totalmillis;
-        curpos = *vpos;
+
+        alSourcefv(p.source, AL_VELOCITY, (ALfloat *) &vel);
+        SOUNDERROR(clear(); return err);
     }
 
-    alSourcefv(source, AL_VELOCITY, (ALfloat *) &vel);
-    SOUNDERROR(clear(); return err);
-
-    updatefilter();
+    updatefilter(p);
 
     if(!(flags&SND_NOENV))
     {
@@ -1429,9 +1534,9 @@ ALenum soundsource::update()
         ALuint insideslot = insideenvzone && insideenvzone->isvalid() && zone != insideenvzone ?
             insideenvzone->getefxslot() : AL_EFFECTSLOT_NULL;
 
-        alSourcei(source, AL_AUXILIARY_SEND_FILTER_GAIN_AUTO, AL_TRUE);
-        alSource3i(source, AL_AUXILIARY_SEND_FILTER, zoneslot, 0, AL_FILTER_NULL);
-        alSource3i(source, AL_AUXILIARY_SEND_FILTER, insideslot, 1, AL_FILTER_NULL);
+        alSourcei(p.source, AL_AUXILIARY_SEND_FILTER_GAIN_AUTO, AL_TRUE);
+        alSource3i(p.source, AL_AUXILIARY_SEND_FILTER, zoneslot, 0, AL_FILTER_NULL);
+        alSource3i(p.source, AL_AUXILIARY_SEND_FILTER, insideslot, 1, AL_FILTER_NULL);
 
         SOUNDERROR(clear(); return err);
     }
@@ -1441,42 +1546,58 @@ ALenum soundsource::update()
 
 bool soundsource::valid()
 {
-    if(!source || !alIsSource(source)) return false;
-    return true;
+    loopv(devparams) if(alIsSource(devparams[i].source)) return true;
+    return false;
 }
 
 bool soundsource::active()
 {
     if(!valid()) return false;
     ALint value;
-    alGetSourcei(source, AL_SOURCE_STATE, &value);
-    if(value != AL_PLAYING && value != AL_PAUSED) return false;
-    return true;
+    loopv(devparams)
+    {
+        alGetSourcei(devparams[i].source, AL_SOURCE_STATE, &value);
+        if(value == AL_PLAYING || value == AL_PAUSED) return true;
+    }
+    return false;
 }
 
 bool soundsource::playing()
 {
     if(!valid()) return false;
     ALint value;
-    alGetSourcei(source, AL_SOURCE_STATE, &value);
-    if(value != AL_PLAYING) return false;
-    return true;
+    loopv(devparams)
+    {
+        alGetSourcei(devparams[i].source, AL_SOURCE_STATE, &value);
+        if(value == AL_PLAYING) return true;
+    }
+    return false;
 }
 
-ALenum soundsource::play()
+ALenum soundsource::play(int n)
 {
+    if(!devparams.inrange(n)) return AL_INVALID_VALUE;
     if(playing()) return AL_NO_ERROR;
     SOUNDERROR();
-    alSourcePlay(source);
+    alSourcePlay(devparams[n].source);
     SOUNDERROR(clear(); return err);
     return AL_NO_ERROR;
 }
 
 ALenum soundsource::push(soundsample *s)
 {
-    SOUNDCHECK(setup(s), , return err);
-    SOUNDCHECK(update(), , return err);
-    SOUNDCHECK(play(), , return err);
+    loopv(sounddevices)
+    {
+        sounddevice *d = sounddevices[i];
+        switch(d->type)
+        {
+            case sounddevice::AUDIO: break;
+            case sounddevice::HAPTICS: if(!(flags&SND_HAPTICS)) continue;
+        }
+        SOUNDCHECK(setup(s, i), , return err);
+        SOUNDCHECK(update(i), , return err);
+        SOUNDCHECK(play(i), , return err);
+    }
     return AL_NO_ERROR;
 }
 

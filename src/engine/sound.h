@@ -23,6 +23,7 @@ enum
     SND_TRACKED  = 1<<11,   // sound vpos is tracked
     SND_VELEST   = 1<<12,   // sound vpos is estimated
     SND_NOFILTER = 1<<13,   // disable filtering
+    SND_HAPTICS  = 1<<14,   // send to haptics device
     SND_MASKF    = SND_LOOP|SND_MAP,
     SND_LAST     = 8        // top N are used for entities
 };
@@ -31,10 +32,8 @@ enum
 #define SOUNDMINDIST        16.0f
 #define SOUNDMAXDIST        10000.f
 
-extern bool nosound;
+extern bool nosound, al_ext_efx, al_soft_spatialize, al_ext_float32;
 extern float soundmastervol, soundeffectvol, soundmusicvol, soundrefdist, soundrolloff;
-
-extern bool al_ext_efx, al_soft_spatialize, al_ext_float32;
 
 #include "AL/al.h"
 #include "AL/alc.h"
@@ -68,6 +67,33 @@ extern LPALFILTERF alFilterf;
         if(err == AL_NO_ERROR) { tbody; } \
         else { fbody; } \
     } while(false);
+
+struct sounddevice
+{
+    enum { AUDIO, HAPTICS, MAX };
+
+    char *name;
+    ALCdevice *dev;
+    ALCcontext *ctx;
+    int type;
+    bool al_ext_efx;
+
+    sounddevice() { reset();  }
+    ~sounddevice() { destroy(); }
+
+    const char *gettype()
+    {
+        const char *typenames[MAX] = { "Sound", "Haptic" };
+        return typenames[type];
+    }
+
+    bool setup(const char *s, int t, bool fallback = false);
+    void destroy();
+    void reset();
+    void current();
+    void suspend();
+    void push();
+};
 
 struct soundfile
 {
@@ -180,7 +206,6 @@ struct soundenvzone
 
 struct soundsource
 {
-    ALuint source, filter;
     soundslot *slot;
     vec pos, curpos, vel, *vpos;
     physent *owner;
@@ -190,20 +215,28 @@ struct soundsource
     float finalrolloff, finalrefdist;
     vector<int> buffer;
 
+    struct devparam
+    {
+        int index;
+        sounddevice *dev;
+        ALuint source, filter;
+    };
+    vector<devparam> devparams;
+
     soundsource() : vpos(NULL), hook(NULL) { reset(); }
     ~soundsource() { clear(); }
 
-    ALenum setup(soundsample *s);
+    ALenum setup(soundsample *s, int n);
     void cleanup();
     void reset();
     void clear();
     void unhook();
-    ALenum updatefilter();
-    ALenum update();
+    ALenum updatefilter(devparam &p);
+    ALenum update(int n);
     bool valid();
     bool active();
     bool playing();
-    ALenum play();
+    ALenum play(int n);
     ALenum push(soundsample *s);
 };
 extern vector<soundsource> soundsources;
