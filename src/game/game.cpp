@@ -791,23 +791,14 @@ namespace game
             emitsound(S_ERROR, &d->o, d, &errorchan, SND_PRIORITY|SND_NOENV|SND_NOATTEN);
     }
 
-    int announcerchan = -1;
-    void announce(int idx, gameent *d, bool forced, bool unmapped)
-    {
-        if(idx < 0) return;
-        physent *t = !d || d == player1 || forced ? camera1 : d;
-        int *chan = d && !forced ? &d->aschan : &announcerchan;
-        emitsound(idx, &t->o, t, chan, (unmapped ? SND_UNMAPPED : 0)|(t != camera1 ? 0 : SND_NOATTEN)|SND_PRIORITY|SND_BUFFER);
-    }
-
-    void announcef(int idx, int targ, gameent *d, bool forced, const char *msg, ...)
+    void announcef(int idx, int targ, gameent *d, const char *msg, ...)
     {
         if(targ >= 0 && msg && *msg)
         {
             defvformatbigstring(text, msg, msg);
             conoutft(targ, "%s", text);
         }
-        announce(idx, d, forced);
+        entities::announce(idx, d);
     }
 
     void announcev(int idx, int targ, int ent, const char *msg, ...)
@@ -822,11 +813,7 @@ namespace game
         emitsound(idx, e.getpos(), NULL, &e.schan, SND_PRIORITY|SND_TRACKED|SND_CLAMPED|SND_VELEST|SND_BUFFER, 0.25f);
     }
 
-    ICOMMAND(0, announce, "iiisN", (int *idx, int *targ, int *cn, int *forced, char *s, int *numargs),
-    {
-        if(*numargs >= 5) announcef(*numargs >= 1 ? *idx : -1, *numargs >= 2 ? *targ : CON_EVENT, *numargs >= 3 ? getclient(*cn) : NULL, *numargs >= 4 ? *forced!=0 : false, "\fw%s", s);
-        else announcef(*numargs >= 1 ? *idx : -1, *numargs >= 2 ? *targ : CON_DEBUG, *numargs >= 3 ? getclient(*cn) : NULL, *numargs >= 4 ? *forced!=0 : false, NULL);
-    });
+    ICOMMAND(0, announce, "gggs", (int *idx, int *targ, int *cn, char *s), announcef(*idx >= 0 ? *idx : -1, *targ >= 0 ? *targ : CON_EVENT, *cn >= 0 ? getclient(*cn) : NULL, "\fw%s", s));
 
     void resetfollow()
     {
@@ -2018,10 +2005,10 @@ namespace game
                     case 4: if(isme || d->actortype == A_PLAYER || v->actortype == A_PLAYER || anc >= 0 || m_duke(gamemode, mutators)) show = true; break;
                     case 5: default: show = true; break;
                 }
-                if(show) announcef(anc, CON_GAME, d, false, "\fw%s", d->obit);
+                if(show) announcef(anc, CON_GAME, d, "\fw%s", d->obit);
             }
-            else if(anc >= 0) announce(anc, d);
-            if(anc >= 0 && d != v) announce(anc, v);
+            else if(anc >= 0) entities::announce(anc, d);
+            if(anc >= 0 && d != v) entities::announce(anc, v);
         }
         vec pos = d->headtag();
         pos.z -= d->zradius*0.125f;

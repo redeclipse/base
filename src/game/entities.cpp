@@ -1029,7 +1029,8 @@ namespace entities
             }
             case MAPSOUND:
             {
-                if(mapsounds.inrange(attr[0]))
+                if(attr[0] == -1) { addentinfo("announcer"); }
+                else if(mapsounds.inrange(attr[0]))
                 {
                     int samples = mapsounds[attr[0]].samples.length();
                     defformatstring(ds, "%s (%d %s)", mapsounds[attr[0]].name, samples, samples == 1 ? "sample" : "samples");
@@ -1940,8 +1941,8 @@ namespace entities
                 int numsounds = mapsounds.length();
                 if(numsounds)
                 {
-                    while(e.attrs[0] < 0) e.attrs[0] += numsounds;
-                    while(e.attrs[0] >= numsounds) e.attrs[0] -= numsounds;
+                    while(e.attrs[0] < -1) e.attrs[0] += numsounds+1;
+                    while(e.attrs[0] >= numsounds) e.attrs[0] -= numsounds+1;
                 }
                 if(e.attrs[1] < 0) e.attrs[1] = 100; // gain, clamp
                 if(e.attrs[2] < 0) e.attrs[2] = 100; // pitch, clamp
@@ -2014,7 +2015,7 @@ namespace entities
                 if(e.attrs[3] < 0) e.attrs[3] = 1; // radius, clamp
                 while(e.attrs[4] < 0) e.attrs[4] += 4; // state
                 while(e.attrs[4] >= 4) e.attrs[4] -= 4; // wrap both ways
-                if(cantrigger(n)) loopv(e.links) if(ents.inrange(e.links[i]) && (ents[e.links[i]]->type == MAPMODEL || ents[e.links[i]]->type == PARTICLES || ents[e.links[i]]->type == MAPSOUND || ents[e.links[i]]->type == LIGHTFX))
+                if(cantrigger(n)) loopv(e.links) if(ents.inrange(e.links[i]) && (ents[e.links[i]]->type == MAPMODEL || ents[e.links[i]]->type == PARTICLES || (ents[e.links[i]]->type == MAPSOUND && ents[e.links[i]]->attrs[0] >= 0) || ents[e.links[i]]->type == LIGHTFX))
                 {
                     ents[e.links[i]]->lastemit = e.lastemit;
                     ents[e.links[i]]->setspawned(TRIGSTATE(e.spawned(), e.attrs[4]));
@@ -2127,6 +2128,31 @@ namespace entities
     }
 
     // these functions are called when the client touches the item
+    int announcerchan = -1;
+    void announce(int idx, gameent *d, bool unmapped)
+    {
+        int flags = (unmapped ? SND_UNMAPPED : 0)|SND_PRIORITY|SND_BUFFER;
+        if(d)
+        {
+            emitsound(idx, &d->o, d, &d->aschan, flags, 0.25f);
+            return;
+        }
+        bool found = false;
+        loopenti(MAPSOUND)
+        {
+            gameentity &e = *(gameentity *)ents[i];
+            if(e.attrs[0] >= 0) continue;
+            int eflags = flags|SND_TRACKED;
+            loopk(SND_LAST) if(e.attrs[6]&(1<<k)) flags |= 1<<k;
+            eflags &= ~SND_LOOP;
+            float gain = e.attrs[1] > 0 ? e.attrs[1]/100.f : 1.f, pitch = e.attrs[2] > 0 ? e.attrs[2]/100.f : 1.f,
+                  rolloff = e.attrs[3] > 0 ? e.attrs[3]/100.f : -1.f, refdist = e.attrs[4] > 0 ? e.attrs[4]/100.f : -1.f, maxdist = e.attrs[5] > 0 ? e.attrs[5]/100.f : -1.f;
+            emitsound(idx, e.getpos(), NULL, &e.schan, eflags, gain, pitch, rolloff, refdist, maxdist);
+            found = true;
+        }
+        if(!found) emitsoundpos(idx, vec(worldsize/2, worldsize/2, worldsize), &announcerchan, flags|SND_CLAMPED, 0.5f);
+    }
+
     int emitmapsound(gameentity &e, bool looping)
     {
         if(!mapsounds.inrange(e.attrs[0]))
@@ -2180,6 +2206,7 @@ namespace entities
                 }
                 case MAPSOUND:
                 {
+                    if(f.attrs[0] < 0) break;
                     f.lastemit = e.lastemit;
                     if(e.type == TRIGGER) f.setspawned(TRIGSTATE(e.spawned(), e.attrs[4]));
                     else if(local) commit = true;
@@ -2861,7 +2888,7 @@ namespace entities
         loopenti(MAPSOUND)
         {
             gameentity &e = *(gameentity *)ents[i];
-            if(e.type == MAPSOUND && isallowed(e))
+            if(e.type == MAPSOUND && e.attrs[0] >= 0 && isallowed(e))
             {
                 bool triggered = false;
                 loopvj(e.links)

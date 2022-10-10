@@ -918,7 +918,7 @@ void updatesounds()
 int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, float pitch, float rolloff, float refdist, float maxdist, int ends)
 {
     if(nosound || !pos || gain <= 0 || !soundmastervol || !soundeffectvol || (flags&SND_MAP ? !soundeffectenv : !soundeffectevent)) return -1;
-    if(((flags&SND_MAP || (!(flags&SND_UNMAPPED) && n >= S_GAMESPECIFIC)) && client::waiting(true)) || (!d && !insideworld(*pos))) return -1;
+    if((flags&SND_MAP || (!(flags&SND_UNMAPPED) && n >= S_GAMESPECIFIC)) && client::waiting(true)) return -1;
 
     slotmanager<soundslot> &soundset = flags&SND_MAP ? mapsounds : gamesounds;
     if(!(flags&SND_UNMAPPED) && !(flags&SND_MAP)) n = getsoundslot(n);
@@ -1301,7 +1301,7 @@ ALenum sound::setup(soundsample *s)
     alSourcei(source, AL_LOOPING, flags&SND_LOOP ? AL_TRUE : AL_FALSE);
     SOUNDERROR(clear(); return err);
 
-    finalrolloff = rolloff >= 0 ? rolloff : slot->rolloff;
+    finalrolloff = rolloff >= 0 ? rolloff : (slot->rolloff >= 0 ? slot->rolloff : 1.f);
     alSourcef(source, AL_ROLLOFF_FACTOR, finalrolloff);
     SOUNDERROR(clear(); return err);
 

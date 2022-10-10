@@ -1537,7 +1537,7 @@ namespace client
         if(m_demo(game::gamemode) || ((!(flags&SAY_TEAM) || f->team == game::player1->team) && (!(flags&SAY_WHISPER) || f == game::player1 || t == game::player1)))
         {
             conoutft(CON_MESG, "%s", line);
-            if(snd >= 0 && !issound(f->cschan)) emitsound(snd, &f->o, f, &f->cschan, (snd != S_CHAT ? SND_UNMAPPED : 0)|SND_PRIORITY|SND_CLAMPED);
+            if(snd >= 0 && !issound(f->cschan)) emitsound(snd, &f->o, f, &f->cschan, (snd != S_CHAT ? SND_UNMAPPED : 0)|SND_CLAMPED, 0.25f);
         }
         ai::scanchat(f, t, flags, text);
     }
@@ -2590,7 +2590,7 @@ namespace client
                     int snd = gamesounds.getindex(text);
                     getstring(text, p);
                     if(targ >= 0 && text[0]) conoutft(targ, "%s", text);
-                    if(snd >= 0) game::announce(snd, NULL, true, true);
+                    if(snd >= 0) entities::announce(snd, NULL, true);
                     break;
                 }
 
@@ -3524,9 +3524,9 @@ namespace client
                             {
                                 switch(entities::ents[ent]->attrs[6])
                                 {
-                                    case CP_START: game::announce(S_V_START, t); break;
-                                    case CP_FINISH: case CP_LAST: game::announce(S_V_COMPLETE, t); break;
-                                    default: game::announce(S_V_CHECKPOINT, t); break;
+                                    case CP_START: entities::announce(S_V_START, t); break;
+                                    case CP_FINISH: case CP_LAST: entities::announce(S_V_COMPLETE, t); break;
+                                    default: entities::announce(S_V_CHECKPOINT, t); break;
                                 }
                             }
                             entities::execlink(t, ent, false);
@@ -3568,7 +3568,7 @@ namespace client
                     int winner = getint(p); // Round winner (-1 if everyone died, team in team modes, cn otherwise).
                     if(winner == -1)
                     { // If nobody won, just announce draw.
-                        game::announcef(S_V_DRAW, CON_EVENT, NULL, false, "\fyEveryone died, \fzoyEPIC FAIL!");
+                        game::announcef(S_V_DRAW, CON_EVENT, NULL, "\fyEveryone died, \fzoyEPIC FAIL!");
                         break;
                     }
                     int playing = getint(p); // Were we playing?
@@ -3576,8 +3576,8 @@ namespace client
                     {
                         defformatstring(msg, "\fyTeam %s are the winners", game::colourteam(winner));
                         // If we were playing, announce with appropriate sound for if we won or lost.
-                        if(playing == 3) game::announcef((winner == game::player1->team) ? S_V_YOUWIN : S_V_YOULOSE, CON_EVENT, NULL, false, "%s", msg);
-                        else game::announcef(S_V_BOMBSCORE, CON_EVENT, NULL, false, "%s", msg);
+                        if(playing == 3) game::announcef((winner == game::player1->team) ? S_V_YOUWIN : S_V_YOULOSE, CON_EVENT, NULL, "%s", msg);
+                        else game::announcef(S_V_BOMBSCORE, CON_EVENT, NULL, "%s", msg);
                     }
                     else
                     {
@@ -3598,8 +3598,8 @@ namespace client
                         if(wins == 1) formatstring(msg, "\fy%s was the winner%s", game::colourname(t), hp);
                         else formatstring(msg, "\fy%s was the winner%s (\fs\fc%d\fS in a row)", game::colourname(t), hp, wins);
                         // If we were playing, announce with appropriate sound for if we won or lost.
-                        if(playing) game::announcef((winner == game::player1->clientnum) ? S_V_YOUWIN : S_V_YOULOSE, CON_EVENT, NULL, false, "%s", msg);
-                        else game::announcef(S_V_BOMBSCORE, CON_EVENT, NULL, false, "%s", msg);
+                        if(playing) game::announcef((winner == game::player1->clientnum) ? S_V_YOUWIN : S_V_YOULOSE, CON_EVENT, NULL, "%s", msg);
+                        else game::announcef(S_V_BOMBSCORE, CON_EVENT, NULL, "%s", msg);
                     }
                     break;
                 }

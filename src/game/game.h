@@ -2412,8 +2412,7 @@ namespace game
     extern int findcolour(gameent *d, bool tone = true, bool mix = false, float level = 1);
     extern int getcolour(gameent *d, int type = 0, float level = 1.f);
     extern void errorsnd(gameent *d);
-    extern void announce(int idx, gameent *d = NULL, bool forced = false, bool unmapped = false);
-    extern void announcef(int idx, int targ, gameent *d, bool forced, const char *msg, ...);
+    extern void announcef(int idx, int targ, gameent *d, const char *msg, ...);
     extern void announcev(int idx, int targ, int ent, const char *msg, ...);
     extern void specreset(gameent *d = NULL, bool clear = false);
     extern float opacity(gameent *d);
@@ -2463,6 +2462,7 @@ namespace entities
     extern inanimate *remotepassenger(int ent, physent *d, const vec &offset);
     extern void updatepassengers();
     extern inanimate *currentpassenger(physent *d);
+    extern void announce(int idx, gameent *d = NULL, bool unmapped = false);
     extern bool execitem(int n, int cn, dynent *d, float dist);
     extern bool collateitems(dynent *d, vec &pos, float radius, vector<actitem> &actitems);
     extern void checkitems(dynent *d);

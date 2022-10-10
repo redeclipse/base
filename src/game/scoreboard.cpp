@@ -179,9 +179,9 @@ namespace hud
             scoregroup &sg = *groups[0];
             if(m_team(game::gamemode, game::mutators))
             {
-                int anc = sg.players.find(game::player1) >= 0 ? S_V_YOUWIN : (game::player1->state != CS_SPECTATOR ? S_V_YOULOSE : -1);
+                int anc = sg.players.find(game::player1) >= 0 ? S_V_YOUWIN : (game::player1->state != CS_SPECTATOR ? S_V_YOULOSE : S_V_COMPLETE);
                 if(m_defend(game::gamemode) && sg.total == INT_MAX)
-                    game::announcef(anc, CON_EVENT, NULL, true, "\fwTeam %s secured all points", game::colourteam(sg.team));
+                    game::announcef(anc, CON_EVENT, NULL, "\fwTeam %s secured all points", game::colourteam(sg.team));
                 else
                 {
                     if(numgroups > 1 && sg.total == groups[1]->total)
@@ -196,9 +196,9 @@ namespace hud
                             }
                             else break;
                         }
-                        game::announcef(S_V_DRAW, CON_EVENT, NULL, true, "\fw%s tied %swith a total score of \fs\fc%s\fS", game::colourteam(sg.team), winner, m_ra_timed(game::gamemode, game::mutators) ? timestr(sg.total, scoreracestyle) : intstr(sg.total));
+                        game::announcef(S_V_DRAW, CON_EVENT, NULL, "\fw%s tied %swith a total score of \fs\fc%s\fS", game::colourteam(sg.team), winner, m_ra_timed(game::gamemode, game::mutators) ? timestr(sg.total, scoreracestyle) : intstr(sg.total));
                     }
-                    else game::announcef(anc, CON_EVENT, NULL, true, "\fwTeam %s won the match with a total score of \fs\fc%s\fS", game::colourteam(sg.team), m_ra_timed(game::gamemode, game::mutators) ? timestr(sg.total, scoreracestyle) : intstr(sg.total));
+                    else game::announcef(anc, CON_EVENT, NULL, "\fwTeam %s won the match with a total score of \fs\fc%s\fS", game::colourteam(sg.team), m_ra_timed(game::gamemode, game::mutators) ? timestr(sg.total, scoreracestyle) : intstr(sg.total));
                 }
             }
             else
@@ -218,9 +218,9 @@ namespace hud
                             }
                             else break;
                         }
-                        game::announcef(S_V_DRAW, CON_EVENT, NULL, true, "\fw%s tied %swith the fastest lap \fs\fc%s\fS", game::colourname(sg.players[0]), winner, sg.players[0]->cptime ? timestr(sg.players[0]->cptime, scoreracestyle) : "dnf");
+                        game::announcef(S_V_DRAW, CON_EVENT, NULL, "\fw%s tied %swith the fastest lap \fs\fc%s\fS", game::colourname(sg.players[0]), winner, sg.players[0]->cptime ? timestr(sg.players[0]->cptime, scoreracestyle) : "dnf");
                     }
-                    else game::announcef(anc, CON_EVENT, NULL, true, "\fw%s won the match with the fastest lap \fs\fc%s\fS", game::colourname(sg.players[0]), sg.players[0]->cptime ? timestr(sg.players[0]->cptime, scoreracestyle) : "dnf");
+                    else game::announcef(anc, CON_EVENT, NULL, "\fw%s won the match with the fastest lap \fs\fc%s\fS", game::colourname(sg.players[0]), sg.players[0]->cptime ? timestr(sg.players[0]->cptime, scoreracestyle) : "dnf");
                 }
                 else
                 {
@@ -236,9 +236,9 @@ namespace hud
                             }
                             else break;
                         }
-                        game::announcef(S_V_DRAW, CON_EVENT, NULL, true, "\fw%s tied %swith a total score of \fs\fc%d\fS", game::colourname(sg.players[0]), winner, sg.players[0]->points);
+                        game::announcef(S_V_DRAW, CON_EVENT, NULL, "\fw%s tied %swith a total score of \fs\fc%d\fS", game::colourname(sg.players[0]), winner, sg.players[0]->points);
                     }
-                    else game::announcef(anc, CON_EVENT, NULL, true, "\fw%s won the match with a total score of \fs\fc%d\fS", game::colourname(sg.players[0]), sg.players[0]->points);
+                    else game::announcef(anc, CON_EVENT, NULL, "\fw%s won the match with a total score of \fs\fc%d\fS", game::colourname(sg.players[0]), sg.players[0]->points);
                 }
             }
         }
