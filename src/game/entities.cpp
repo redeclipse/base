@@ -2147,8 +2147,7 @@ namespace entities
             eflags &= ~SND_LOOP;
             float gain = e.attrs[1] > 0 ? e.attrs[1]/100.f : 1.f, pitch = e.attrs[2] > 0 ? e.attrs[2]/100.f : 1.f,
                   rolloff = e.attrs[3] > 0 ? e.attrs[3]/100.f : -1.f, refdist = e.attrs[4] > 0 ? e.attrs[4]/100.f : -1.f, maxdist = e.attrs[5] > 0 ? e.attrs[5]/100.f : -1.f;
-            emitsound(idx, e.getpos(), NULL, &e.schan, eflags, gain, pitch, rolloff, refdist, maxdist);
-            found = true;
+            if(emitsound(idx, e.getpos(), NULL, &e.schan, eflags, gain, pitch, rolloff, refdist, maxdist) >= 0) found = true;
         }
         if(!found) emitsoundpos(idx, vec(worldsize/2, worldsize/2, worldsize), &announcerchan, flags|SND_CLAMPED, 0.5f);
     }
