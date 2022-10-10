@@ -1165,7 +1165,7 @@ struct gameentity : extentity
     gameentity() : schan(-1), affinity(-1), lastspawn(0), nextemit(0), lastpos(-1), offset(0, 0, 0), yaw(0), pitch(0) {}
     ~gameentity()
     {
-        if(issound(schan)) sounds[schan].clear();
+        if(issound(schan)) soundsources[schan].clear();
         schan = -1;
     }
 
@@ -1536,17 +1536,17 @@ struct gameent : dynent, clientstate
         int *chan[] = { &aschan, &cschan, &vschan, NULL };
         for(int i = 0; chan[i] != NULL; i++)
         {
-            if(!init && issound(*chan[i])) sounds[*chan[i]].clear();
+            if(!init && issound(*chan[i])) soundsources[*chan[i]].clear();
             *chan[i] = -1;
         }
         loopi(WS_CHANS)
         {
-            if(!init && issound(wschan[i])) sounds[wschan[i]].clear();
+            if(!init && issound(wschan[i])) soundsources[wschan[i]].clear();
             wschan[i] = -1;
         }
         loopi(2)
         {
-            if(!init && issound(sschan[i])) sounds[sschan[i]].clear();
+            if(!init && issound(sschan[i])) soundsources[sschan[i]].clear();
             sschan[i] = -1;
         }
     }
@@ -2153,7 +2153,7 @@ struct projent : dynent
     {
         removetrackedparticles(this);
         removetrackedsounds(this);
-        if(issound(schan)) sounds[schan].clear();
+        if(issound(schan)) soundsources[schan].clear();
         if(effect) effect->unhook();
         schan = -1;
     }

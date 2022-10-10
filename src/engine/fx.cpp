@@ -114,8 +114,8 @@ namespace fx
             case FX_TYPE_SOUND:
                 if(!initialize && issound(soundhook))
                 {
-                    if(sounds[soundhook].flags & SND_LOOP) sounds[soundhook].clear();
-                    else sounds[soundhook].hook = NULL; // let the sound finish if not looped
+                    if(soundsources[soundhook].flags & SND_LOOP) soundsources[soundhook].clear();
+                    else soundsources[soundhook].hook = NULL; // let the sound finish if not looped
                 }
                 soundhook = -1;
                 break;

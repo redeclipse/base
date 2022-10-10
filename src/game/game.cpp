@@ -1395,18 +1395,18 @@ namespace game
                         case 4: case 5: gain = 0.1f+((1.f-amt)*0.9f); break; // longer
                         case 1: case 2: case 3: default: gain = 0.1f+(amt*0.9f); break; // shorter
                     }
-                    if(issound(d->wschan[WS_POWER_CHAN])) sounds[d->wschan[WS_POWER_CHAN]].gain = gain;
+                    if(issound(d->wschan[WS_POWER_CHAN])) soundsources[d->wschan[WS_POWER_CHAN]].gain = gain;
                     else emitsound(snd, weapons::getweapsoundpos(d, TAG_ORIGIN), d, &d->wschan[WS_POWER_CHAN], SND_LOOP, gain);
                 }
                 else if(d->wschan[WS_POWER_CHAN] >= 0)
                 {
-                    if(issound(d->wschan[WS_POWER_CHAN])) sounds[d->wschan[WS_POWER_CHAN]].clear();
+                    if(issound(d->wschan[WS_POWER_CHAN])) soundsources[d->wschan[WS_POWER_CHAN]].clear();
                     d->wschan[WS_POWER_CHAN] = -1;
                 }
             }
             else if(d->wschan[WS_POWER_CHAN] >= 0)
             {
-                if(issound(d->wschan[WS_POWER_CHAN])) sounds[d->wschan[WS_POWER_CHAN]].clear();
+                if(issound(d->wschan[WS_POWER_CHAN])) soundsources[d->wschan[WS_POWER_CHAN]].clear();
                 d->wschan[WS_POWER_CHAN] = -1;
             }
             if(W2(d->weapselect, cooked, true)&W_C_KEEP && d->prevstate[d->weapselect] == W_S_ZOOM && !d->action[AC_SECONDARY])
@@ -1417,7 +1417,7 @@ namespace game
         }
         else if(d->wschan[WS_POWER_CHAN] >= 0)
         {
-            if(issound(d->wschan[WS_POWER_CHAN])) sounds[d->wschan[WS_POWER_CHAN]].clear();
+            if(issound(d->wschan[WS_POWER_CHAN])) soundsources[d->wschan[WS_POWER_CHAN]].clear();
             d->wschan[WS_POWER_CHAN] = -1;
         }
 
@@ -1435,7 +1435,7 @@ namespace game
             bool hassound = footstepsounds&(d != focus ? 2 : 1);
             if(!hassound) loopi(2) if(d->sschan[i] >= 0)
             {
-                if(issound(d->sschan[i])) sounds[d->sschan[i]].clear();
+                if(issound(d->sschan[i])) soundsources[d->sschan[i]].clear();
                 d->sschan[i] = -1;
             }
             if(curfoot >= 0)
@@ -1444,12 +1444,12 @@ namespace game
                 {
                     if(hassound)
                     {
-                        if(d->lastfoot >= 0 && issound(d->sschan[d->lastfoot])) sounds[d->sschan[d->lastfoot]].pos = d->toetag(d->lastfoot);
+                        if(d->lastfoot >= 0 && issound(d->sschan[d->lastfoot])) soundsources[d->sschan[d->lastfoot]].pos = d->toetag(d->lastfoot);
                         footstep(d, curfoot);
                         d->lastfoot = curfoot;
                     }
                 }
-                else if(hassound) loopi(2) if(issound(d->sschan[i])) sounds[d->sschan[i]].pos = d->toetag(i);
+                else if(hassound) loopi(2) if(issound(d->sschan[i])) soundsources[d->sschan[i]].pos = d->toetag(i);
             }
         }
         loopv(d->icons) if(totalmillis-d->icons[i].millis > d->icons[i].fade) d->icons.remove(i--);

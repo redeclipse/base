@@ -178,7 +178,7 @@ struct soundenvzone
     bool isvalid();
 };
 
-struct sound
+struct soundsource
 {
     ALuint source, filter;
     soundslot *slot;
@@ -190,8 +190,8 @@ struct sound
     float finalrolloff, finalrefdist;
     vector<int> buffer;
 
-    sound() : vpos(NULL), hook(NULL) { reset(); }
-    ~sound() { clear(); }
+    soundsource() : vpos(NULL), hook(NULL) { reset(); }
+    ~soundsource() { clear(); }
 
     ALenum setup(soundsample *s);
     void cleanup();
@@ -206,11 +206,11 @@ struct sound
     ALenum play();
     ALenum push(soundsample *s);
 };
-extern vector<sound> sounds;
+extern vector<soundsource> soundsources;
 
 #define MUSICBUFS 4
 #define MUSICSAMP 8192
-struct music
+struct musicstream
 {
     char *name;
     ALuint source;
@@ -219,8 +219,8 @@ struct music
     float gain;
     bool looping;
 
-    music() { reset(); }
-    ~music() { clear(); }
+    musicstream() { reset(); }
+    ~musicstream() { clear(); }
 
     ALenum setup(const char *n, soundfile *s);
     ALenum fill(ALint bufid);
@@ -234,9 +234,9 @@ struct music
     ALenum play();
     ALenum push(const char *n, soundfile *s);
 };
-extern music *mstream;
+extern musicstream *music;
 
-#define issound(c) (sounds.inrange(c) && sounds[c].active())
+#define issound(c) (soundsources.inrange(c) && soundsources[c].active())
 
 extern void buildenvzones();
 extern void updateenvzone(entity *ent);

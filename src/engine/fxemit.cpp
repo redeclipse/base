@@ -333,8 +333,8 @@ namespace fx
         }
         else if(issound(sound))
         {
-            sounds[sound].gain = gain;
-            sounds[sound].pos = from;
+            soundsources[sound].gain = gain;
+            soundsources[sound].pos = from;
         }
     }
 

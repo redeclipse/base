@@ -46,10 +46,10 @@ static void getextsoundprocs()
 hashnameset<soundsample> soundsamples;
 slotmanager<soundslot> gamesounds, mapsounds;
 vector<slot *> soundmap;
-vector<sound> sounds;
-SDL_Thread *mstream_thread;
-SDL_mutex *mstream_mutex;
-music *mstream = NULL;
+vector<soundsource> soundsources;
+SDL_Thread *music_thread;
+SDL_mutex *music_mutex;
+musicstream *music = NULL;
 
 slotmanager<soundenv> soundenvs, mapsoundenvs;
 vector<soundenvzone> envzones;
@@ -348,7 +348,7 @@ void updateenvzone(entity *ent)
 }
 
 SVARF(IDF_INIT, sounddevice, "", initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
-VARF(IDF_INIT, soundsources, 16, 256, 1024, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
+VARF(IDF_INIT, soundmaxsources, 16, 256, 1024, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
 VARF(IDF_INIT, sounddownmix, 0, 0, 1, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
 
 #define SOUNDVOL(oldname, newname, def, body) \
@@ -401,15 +401,15 @@ FVARF(IDF_PERSIST, soundrolloff, FVAR_NONZERO, 256, FVAR_MAX, initwarning("sound
 
 void updatemusic()
 {
-    SDL_LockMutex(mstream_mutex);
-    bool hasmstream = mstream != NULL;
-    SDL_UnlockMutex(mstream_mutex);
+    SDL_LockMutex(music_mutex);
+    bool hasmusic = music != NULL;
+    SDL_UnlockMutex(music_mutex);
 
-    if(!connected() && !hasmstream && soundmusicvol && soundmastervol) smartmusic(true);
+    if(!connected() && !hasmusic && soundmusicvol && soundmastervol) smartmusic(true);
 
-    SDL_LockMutex(mstream_mutex);
-    if(mstream) mstream->gain = soundmusicvol;
-    SDL_UnlockMutex(mstream_mutex);
+    SDL_LockMutex(music_mutex);
+    if(music) music->gain = soundmusicvol;
+    SDL_UnlockMutex(music_mutex);
 }
 SVAR(0, titlemusic, "sounds/theme");
 
@@ -433,54 +433,54 @@ void mapsoundslots()
     game::mapgamesounds();
 }
 
-int mstreamloop(void *data)
+int musicloop(void *data)
 {
-    SDL_LockMutex(mstream_mutex);
-    if(!mstream_thread || SDL_GetThreadID(mstream_thread) != SDL_ThreadID())
+    SDL_LockMutex(music_mutex);
+    if(!music_thread || SDL_GetThreadID(music_thread) != SDL_ThreadID())
     {
-        SDL_UnlockMutex(mstream_mutex);
+        SDL_UnlockMutex(music_mutex);
         return 0;
 
     }
-    SDL_UnlockMutex(mstream_mutex);
+    SDL_UnlockMutex(music_mutex);
 
     while(true)
     {
-        SDL_LockMutex(mstream_mutex);
+        SDL_LockMutex(music_mutex);
 
-        if(!mstream_thread || SDL_GetThreadID(mstream_thread) != SDL_ThreadID() || !mstream)
+        if(!music_thread || SDL_GetThreadID(music_thread) != SDL_ThreadID() || !music)
         {
-            SDL_UnlockMutex(mstream_mutex);
+            SDL_UnlockMutex(music_mutex);
             break;
         }
 
-        if(mstream) mstream->update();
+        if(music) music->update();
 
-        SDL_UnlockMutex(mstream_mutex);
+        SDL_UnlockMutex(music_mutex);
         SDL_Delay(10);
     }
 
     return 0;
 }
 
-void mstreamloopinit()
+void musicloopinit()
 {
-    SDL_LockMutex(mstream_mutex);
-    mstream_thread = SDL_CreateThread(mstreamloop, "mstream", NULL);
-    SDL_UnlockMutex(mstream_mutex);
+    SDL_LockMutex(music_mutex);
+    music_thread = SDL_CreateThread(musicloop, "music", NULL);
+    SDL_UnlockMutex(music_mutex);
 }
 
-void mstreamloopstop()
+void musicloopstop()
 {
-    SDL_LockMutex(mstream_mutex);
+    SDL_LockMutex(music_mutex);
 
-    if(mstream_thread)
+    if(music_thread)
     {
-        SDL_DetachThread(mstream_thread);
-        mstream_thread = NULL;
+        SDL_DetachThread(music_thread);
+        music_thread = NULL;
     }
 
-    SDL_UnlockMutex(mstream_mutex);
+    SDL_UnlockMutex(music_mutex);
 }
 
 void initsound()
@@ -546,26 +546,26 @@ void initsound()
         soundsetdoppler(sounddoppler);
         soundsetspeed(soundspeed);
 
-        mstream_mutex = SDL_CreateMutex();
+        music_mutex = SDL_CreateMutex();
     }
     initmumble();
 }
 
 void stopmusic()
 {
-    SDL_LockMutex(mstream_mutex);
+    SDL_LockMutex(music_mutex);
 
-    if(!mstream)
+    if(!music)
     {
-        SDL_UnlockMutex(mstream_mutex);
+        SDL_UnlockMutex(music_mutex);
         return;
     }
 
-    delete mstream;
-    mstream = NULL;
-    SDL_UnlockMutex(mstream_mutex);
+    delete music;
+    music = NULL;
+    SDL_UnlockMutex(music_mutex);
 
-    mstreamloopstop();
+    musicloopstop();
 }
 
 void stopsound()
@@ -586,7 +586,7 @@ void stopsound()
 
 void clearsound()
 {
-    loopv(sounds) sounds[i].clear();
+    loopv(soundsources) soundsources[i].clear();
     mapsounds.clear(false);
     mapsoundenvs.clear();
     envzones.shrink(0);
@@ -611,31 +611,31 @@ bool playmusic(const char *name, bool looping)
     stopmusic();
     if(!name || !*name) return false;
 
-    SDL_LockMutex(mstream_mutex);
+    SDL_LockMutex(music_mutex);
 
     string buf;
-    mstream = new music;
+    music = new musicstream;
 
     loopi(sizeof(sounddirs)/sizeof(sounddirs[0])) loopk(sizeof(soundexts)/sizeof(soundexts[0]))
     {
         formatstring(buf, "%s%s%s", sounddirs[i], name, soundexts[k]);
         soundfile *w = loadsoundfile(buf, soundfile::MUSIC);
         if(!w) continue;
-        SOUNDCHECK(mstream->setup(name, w),
+        SOUNDCHECK(music->setup(name, w),
         {
-            mstream->gain = soundmusicvol;
-            mstream->looping = looping;
-            SDL_UnlockMutex(mstream_mutex);
-            mstreamloopinit();
+            music->gain = soundmusicvol;
+            music->looping = looping;
+            SDL_UnlockMutex(music_mutex);
+            musicloopinit();
             return true;
         }, conoutf("Error loading %s: %s", buf, alGetString(err)));
     }
 
     conoutf("\frCould not play music: %s", name);
-    delete mstream;
-    mstream = NULL;
+    delete music;
+    music = NULL;
 
-    SDL_UnlockMutex(mstream_mutex);
+    SDL_UnlockMutex(music_mutex);
 
     return false;
 }
@@ -646,23 +646,23 @@ bool playingmusic()
 {
     bool result = false;
 
-    SDL_LockMutex(mstream_mutex);
+    SDL_LockMutex(music_mutex);
 
-    if(mstream && mstream->playing()) result = true;
+    if(music && music->playing()) result = true;
 
-    SDL_UnlockMutex(mstream_mutex);
+    SDL_UnlockMutex(music_mutex);
 
     return result;
 }
 
 void smartmusic(bool cond, bool init)
 {
-    SDL_LockMutex(mstream_mutex);
+    SDL_LockMutex(music_mutex);
 
-    bool isplayingmusic = mstream && mstream->playing();
-    bool isplayingtitlemusic = mstream && !strcmp(mstream->name, titlemusic);
+    bool isplayingmusic = music && music->playing();
+    bool isplayingtitlemusic = music && !strcmp(music->name, titlemusic);
 
-    SDL_UnlockMutex(mstream_mutex);
+    SDL_UnlockMutex(music_mutex);
 
     if(init) canmusic = true;
     if(!canmusic || nosound || !soundmastervol || !soundmusicvol || (!cond && isplayingmusic) || !*titlemusic)
@@ -771,7 +771,7 @@ ICOMMAND(0, mapsound, "sissi", (char *name, int *vol, char *maxrad, char *minrad
     intret(addsoundcompat(NULL, name, *vol, *maxrad ? parseint(maxrad) : -1, *minrad ? parseint(minrad) : -1, *variants, 0, mapsounds))
 );
 
-static inline bool sourcecmp(const sound *x, const sound *y) // sort with most likely to be culled first!
+static inline bool sourcecmp(const soundsource *x, const soundsource *y) // sort with most likely to be culled first!
 {
     bool xprio = x->flags&SND_PRIORITY, yprio = y->flags&SND_PRIORITY;
     if(!xprio && yprio) return true;
@@ -809,10 +809,10 @@ static inline bool sourcecmp(const sound *x, const sound *y) // sort with most l
 
 int soundindex(soundslot *slot, int slotnum, const vec &pos, int flags, float gain, float pitch, float rolloff, float refdist, float maxdist)
 {
-    static vector<sound *> sources;
+    static vector<soundsource *> sources;
     sources.setsize(0);
 
-    static sound indexsource;
+    static soundsource indexsource;
     indexsource.clear();
     indexsource.index = -1;
     indexsource.slot = slot;
@@ -826,23 +826,23 @@ int soundindex(soundslot *slot, int slotnum, const vec &pos, int flags, float ga
     indexsource.maxdist = maxdist;
     sources.add(&indexsource);
 
-    loopv(sounds)
+    loopv(soundsources)
     {
-        if(sounds[i].valid()) sources.add(&sounds[i]);
+        if(soundsources[i].valid()) sources.add(&soundsources[i]);
         else return i;
     }
     sources.sort(sourcecmp);
 
-    if(sources[0]->index >= 0 && sources.length() > soundsources)
+    if(sources[0]->index >= 0 && sources.length() > soundmaxsources)
     {
         int index = sources[0]->index;
         sources[0]->clear();
         return index;
     }
-    if(sources.length() < soundsources)
+    if(sources.length() < soundmaxsources)
     {
-        int index = sounds.length();
-        sounds.add();
+        int index = soundsources.length();
+        soundsources.add();
         return index;
     }
     return -1;
@@ -858,11 +858,11 @@ void updatesounds()
     sortenvzones();
     panenvzones();
 
-    loopv(sounds) if(sounds[i].valid())
+    loopv(soundsources) if(soundsources[i].valid())
     {
-        sound &s = sounds[i];
+        soundsource &s = soundsources[i];
 
-        if((!s.ends || lastmillis < s.ends) && sounds[i].playing())
+        if((!s.ends || lastmillis < s.ends) && s.playing())
         {
             s.update();
             continue;
@@ -889,16 +889,16 @@ void updatesounds()
 
             break;
         }
-        //conoutf("Clearing sound source %d [%d] %d [%d] %s", s.source, s.index, s.ends, lastmillis, sounds[i].playing() ? "playing" : "not playing");
-        if(!sounds[i].playing()) s.clear();
+        //conoutf("Clearing sound source %d [%d] %d [%d] %s", s.source, s.index, s.ends, lastmillis, soundsources[i].playing() ? "playing" : "not playing");
+        if(!s.playing()) s.clear();
     }
 
-    SDL_LockMutex(mstream_mutex);
-    bool hasmstream = mstream != NULL;
-    bool mstreamvalid = mstream && mstream->valid();
-    SDL_UnlockMutex(mstream_mutex);
+    SDL_LockMutex(music_mutex);
+    bool hasmusic = music != NULL;
+    bool musicvalid = music && music->valid();
+    SDL_UnlockMutex(music_mutex);
 
-    if(!mstreamvalid || (hasmstream && (nosound || !soundmastervol || !soundmusicvol || !playingmusic())))
+    if(!musicvalid || (hasmusic && (nosound || !soundmastervol || !soundmusicvol || !playingmusic())))
         stopmusic();
 
     vec o[2];
@@ -929,7 +929,7 @@ int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, flo
         if(slot->samples.empty() || !slot->gain) return -1;
         if(hook && issound(*hook) && flags&SND_BUFFER)
         {
-            sounds[*hook].buffer.add(n);
+            soundsources[*hook].buffer.add(n);
             return *hook;
         }
 
@@ -944,7 +944,7 @@ int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, flo
         int index = soundindex(slot, n, *pos, flags, sgain, spitch, srolloff, srefdist, smaxdist);
         if(index < 0) return -1;
 
-        sound &s = sounds[index];
+        soundsource &s = soundsources[index];
         if(s.hook && s.hook != hook) *s.hook = -1;
 
         s.slot = slot;
@@ -976,7 +976,7 @@ int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, flo
 
         if(hook && *hook != s.index)
         {
-            if(issound(*hook)) sounds[*hook].clear();
+            if(issound(*hook)) soundsources[*hook].clear();
             *hook = s.index;
         }
         s.hook = hook;
@@ -1018,19 +1018,19 @@ ICOMMAND(0, soundslot, "s", (char *i), intret(gamesounds.getindex(i)));
 
 void removemapsounds()
 {
-    loopv(sounds) if(sounds[i].index >= 0 && sounds[i].flags&SND_MAP) sounds[i].clear();
+    loopv(soundsources) if(soundsources[i].index >= 0 && soundsources[i].flags&SND_MAP) soundsources[i].clear();
 }
 
 void removetrackedsounds(physent *d)
 {
-    loopv(sounds) if(sounds[i].owner == d) sounds[i].clear();
+    loopv(soundsources) if(soundsources[i].owner == d) soundsources[i].clear();
 }
 
 void resetsound()
 {
     clearchanges(CHANGE_SOUND);
     delsoundfxslots();
-    loopv(sounds) sounds[i].clear();
+    loopv(soundsources) soundsources[i].clear();
     enumerate(soundsamples, soundsample, s, s.cleanup());
     stopmusic();
     nosound = true;
@@ -1260,7 +1260,7 @@ void soundslot::reset()
     samples.shrink(0);
 }
 
-ALenum sound::setup(soundsample *s)
+ALenum soundsource::setup(soundsample *s)
 {
     if(!s->valid()) return AL_NO_ERROR;
 
@@ -1318,7 +1318,7 @@ ALenum sound::setup(soundsample *s)
     return AL_NO_ERROR;
 }
 
-void sound::cleanup()
+void soundsource::cleanup()
 {
     if(!valid()) return;
     if(al_ext_efx && alIsFilter(filter)) alDeleteFilters(1, &filter);
@@ -1326,7 +1326,7 @@ void sound::cleanup()
     alDeleteSources(1, &source);
 }
 
-void sound::reset()
+void soundsource::reset()
 {
     source = 0;
     pos = curpos = vel = vec(0, 0, 0);
@@ -1343,13 +1343,13 @@ void sound::reset()
     buffer.shrink(0);
 }
 
-void sound::clear()
+void soundsource::clear()
 {
     cleanup();
     reset();
 }
 
-void sound::unhook()
+void soundsource::unhook()
 {
     if(hook) *hook = -1;
     hook = NULL;
@@ -1363,7 +1363,7 @@ void sound::unhook()
     }
 }
 
-ALenum sound::updatefilter()
+ALenum soundsource::updatefilter()
 {
     if(!al_ext_efx || !alIsFilter(filter)) return AL_NO_ERROR;
 
@@ -1381,7 +1381,7 @@ ALenum sound::updatefilter()
     return alGetError();
 }
 
-ALenum sound::update()
+ALenum soundsource::update()
 {
     material = lookupmaterial(*vpos);
     curgain = clamp(soundeffectvol*slot->gain*(flags&SND_MAP ? soundeffectenv : soundeffectevent), 0.f, 100.f);
@@ -1454,13 +1454,13 @@ ALenum sound::update()
     return AL_NO_ERROR;
 }
 
-bool sound::valid()
+bool soundsource::valid()
 {
     if(!source || !alIsSource(source)) return false;
     return true;
 }
 
-bool sound::active()
+bool soundsource::active()
 {
     if(!valid()) return false;
     ALint value;
@@ -1469,7 +1469,7 @@ bool sound::active()
     return true;
 }
 
-bool sound::playing()
+bool soundsource::playing()
 {
     if(!valid()) return false;
     ALint value;
@@ -1478,7 +1478,7 @@ bool sound::playing()
     return true;
 }
 
-ALenum sound::play()
+ALenum soundsource::play()
 {
     if(playing()) return AL_NO_ERROR;
     SOUNDERROR();
@@ -1487,7 +1487,7 @@ ALenum sound::play()
     return AL_NO_ERROR;
 }
 
-ALenum sound::push(soundsample *s)
+ALenum soundsource::push(soundsample *s)
 {
     SOUNDCHECK(setup(s), , return err);
     SOUNDCHECK(update(), , return err);
@@ -1495,7 +1495,7 @@ ALenum sound::push(soundsample *s)
     return AL_NO_ERROR;
 }
 
-ALenum music::setup(const char *n, soundfile *s)
+ALenum musicstream::setup(const char *n, soundfile *s)
 {
     if(!s) return AL_NO_ERROR;
 
@@ -1532,7 +1532,7 @@ ALenum music::setup(const char *n, soundfile *s)
     return AL_NO_ERROR;
 }
 
-ALenum music::fill(ALint bufid)
+ALenum musicstream::fill(ALint bufid)
 {
     switch(data->type)
     {
@@ -1544,7 +1544,7 @@ ALenum music::fill(ALint bufid)
     return AL_NO_ERROR;
 }
 
-void music::cleanup()
+void musicstream::cleanup()
 {
     if(!valid()) return;
     alSourceStop(source);
@@ -1554,7 +1554,7 @@ void music::cleanup()
     if(data) delete data;
 }
 
-void music::reset()
+void musicstream::reset()
 {
     name = NULL;
     source = 0;
@@ -1564,13 +1564,13 @@ void music::reset()
     looping = true;
 }
 
-void music::clear()
+void musicstream::clear()
 {
     cleanup();
     reset();
 }
 
-ALenum music::update()
+ALenum musicstream::update()
 {
     if(!valid()) return AL_INVALID_OPERATION;
 
@@ -1614,14 +1614,14 @@ ALenum music::update()
     return AL_NO_ERROR;
 }
 
-bool music::valid()
+bool musicstream::valid()
 {
     if(!source || !alIsSource(source)) return false;
     loopi(MUSICBUFS) if(!alIsBuffer(buffer[i])) return false;
     return true;
 }
 
-bool music::active()
+bool musicstream::active()
 {
     if(!valid()) return false;
     ALint value;
@@ -1630,7 +1630,7 @@ bool music::active()
     return true;
 }
 
-bool music::playing()
+bool musicstream::playing()
 {
     if(!valid()) return false;
     ALint value;
@@ -1639,7 +1639,7 @@ bool music::playing()
     return true;
 }
 
-ALenum music::play()
+ALenum musicstream::play()
 {
     if(playing()) return AL_NO_ERROR;
     SOUNDERROR();
@@ -1648,7 +1648,7 @@ ALenum music::play()
     return AL_NO_ERROR;
 }
 
-ALenum music::push(const char *n, soundfile *s)
+ALenum musicstream::push(const char *n, soundfile *s)
 {
     SOUNDCHECK(setup(n, s), , return err);
     SOUNDCHECK(update(), , return err);
@@ -1686,41 +1686,42 @@ ICOMMAND(0, getsound, "ibb", (int *n, int *v, int *p), getsounds(*n!=0, *v, *p))
 
 void getcursounds(int idx, int prop, int buf)
 {
-    if(idx < 0) intret(sounds.length());
-    else if(sounds.inrange(idx))
+    if(idx < 0) intret(soundsources.length());
+    else if(soundsources.inrange(idx))
     {
+        soundsource &s = soundsources[idx];
         if(prop < 0) intret(20);
         else switch(prop)
         {
-            case 0: intret(sounds[idx].index); break;
-            case 1: intret(sounds[idx].flags); break;
-            case 2: intret(sounds[idx].material); break;
-            case 3: intret(sounds[idx].millis); break;
-            case 4: intret(sounds[idx].ends); break;
-            case 5: intret(sounds[idx].slotnum); break;
-            case 6: floatret(sounds[idx].gain); break;
-            case 7: floatret(sounds[idx].curgain); break;
-            case 8: floatret(sounds[idx].pitch); break;
-            case 9: floatret(sounds[idx].curpitch); break;
-            case 10: floatret(sounds[idx].rolloff); break;
-            case 11: floatret(sounds[idx].refdist); break;
-            case 12: floatret(sounds[idx].maxdist); break;
-            case 13: defformatstring(pos, "%.f %.f %.f", sounds[idx].vpos->x, sounds[idx].vpos->y, sounds[idx].vpos->z); result(pos); break;
-            case 14: defformatstring(vel, "%.f %.f %.f", sounds[idx].vel.x, sounds[idx].vel.y, sounds[idx].vel.z); result(vel); break;
+            case 0: intret(s.index); break;
+            case 1: intret(s.flags); break;
+            case 2: intret(s.material); break;
+            case 3: intret(s.millis); break;
+            case 4: intret(s.ends); break;
+            case 5: intret(s.slotnum); break;
+            case 6: floatret(s.gain); break;
+            case 7: floatret(s.curgain); break;
+            case 8: floatret(s.pitch); break;
+            case 9: floatret(s.curpitch); break;
+            case 10: floatret(s.rolloff); break;
+            case 11: floatret(s.refdist); break;
+            case 12: floatret(s.maxdist); break;
+            case 13: defformatstring(pos, "%.f %.f %.f", s.vpos->x, s.vpos->y, s.vpos->z); result(pos); break;
+            case 14: defformatstring(vel, "%.f %.f %.f", s.vel.x, s.vel.y, s.vel.z); result(vel); break;
             case 15:
             {
-                if(!sounds[idx].buffer.inrange(buf))
+                if(!s.buffer.inrange(buf))
                 {
-                    intret(sounds[idx].buffer.length());
+                    intret(s.buffer.length());
                     break;
                 }
-                intret(sounds[idx].buffer[buf]);
+                intret(s.buffer[buf]);
                 break;
             }
-            case 16: intret(sounds[idx].valid() ? 1 : 0); break;
-            case 17: intret(sounds[idx].playing() ? 1 : 0); break;
-            case 18: intret(client::getcn(sounds[idx].owner)); break;
-            case 19: intret(sounds[idx].owner == camera1 ? 1 : 0); break;
+            case 16: intret(s.valid() ? 1 : 0); break;
+            case 17: intret(s.playing() ? 1 : 0); break;
+            case 18: intret(client::getcn(s.owner)); break;
+            case 19: intret(s.owner == camera1 ? 1 : 0); break;
             default: break;
         }
     }
@@ -1734,18 +1735,18 @@ void getmusics(int prop)
         intret(6);
         return;
     }
-    SDL_LockMutex(mstream_mutex);
-    if(mstream) switch(prop)
+    SDL_LockMutex(music_mutex);
+    if(music) switch(prop)
     {
-        case 0: result(mstream->name);
-        case 1: intret(mstream->looping ? 1 : 0); break;
-        case 2: floatret(mstream->gain); break;
-        case 3: intret(mstream->valid() ? 1 : 0); break;
-        case 4: intret(mstream->active() ? 1 : 0); break;
-        case 5: intret(mstream->playing() ? 1 : 0); break;
+        case 0: result(music->name);
+        case 1: intret(music->looping ? 1 : 0); break;
+        case 2: floatret(music->gain); break;
+        case 3: intret(music->valid() ? 1 : 0); break;
+        case 4: intret(music->active() ? 1 : 0); break;
+        case 5: intret(music->playing() ? 1 : 0); break;
         default: break;
     }
-    SDL_UnlockMutex(mstream_mutex);
+    SDL_UnlockMutex(music_mutex);
 }
 ICOMMAND(0, getmusic, "b", (int *p), getmusics(*p));
 

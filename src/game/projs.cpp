@@ -1201,13 +1201,13 @@ namespace projs
                         if(weaptype[proj.weap].thrown)
                         {
                             int index = d->wschan[WS_POWER_CHAN];
-                            sounds[index].owner = &proj;
-                            sounds[index].vpos = &proj.o;
-                            sounds[index].vel = proj.vel;
-                            sounds[index].hook = &proj.schan;
-                            sounds[index].flags |= SND_LOOP;
+                            soundsources[index].owner = &proj;
+                            soundsources[index].vpos = &proj.o;
+                            soundsources[index].vel = proj.vel;
+                            soundsources[index].hook = &proj.schan;
+                            soundsources[index].flags |= SND_LOOP;
                         }
-                        sounds[d->wschan[WS_POWER_CHAN]].clear();
+                        soundsources[d->wschan[WS_POWER_CHAN]].clear();
                         d->wschan[WS_POWER_CHAN] = -1;
                     }
                     else emitsound(WSND2(proj.weap, WS(proj.flags), S_W_TRANSIT), &proj.o, &proj, &proj.schan, SND_LOOP);
@@ -1269,17 +1269,17 @@ namespace projs
                 {
                     int ends = lastmillis+delayattack+PHYSMILLIS;
                     if(issound(d->wschan[WS_MAIN_CHAN]) &&
-                       sounds[d->wschan[WS_MAIN_CHAN]].slotnum == getsoundslot(slot))
-                        sounds[d->wschan[WS_MAIN_CHAN]].ends = ends;
+                       soundsources[d->wschan[WS_MAIN_CHAN]].slotnum == getsoundslot(slot))
+                        soundsources[d->wschan[WS_MAIN_CHAN]].ends = ends;
                     else emitsound(slot, sndpos, d, &d->wschan[WS_MAIN_CHAN], SND_LOOP, skew, 1, -1, -1, -1, ends);
                 }
                 else if(!W2(weap, time, WS(flags)) || life)
                 {
                     if(issound(d->wschan[WS_MAIN_CHAN]) &&
-                       (sounds[d->wschan[WS_MAIN_CHAN]].slotnum == getsoundslot(WSNDF(weap, false)) ||
-                        sounds[d->wschan[WS_MAIN_CHAN]].slotnum == getsoundslot(WSNDF(weap, true))))
+                       (soundsources[d->wschan[WS_MAIN_CHAN]].slotnum == getsoundslot(WSNDF(weap, false)) ||
+                        soundsources[d->wschan[WS_MAIN_CHAN]].slotnum == getsoundslot(WSNDF(weap, true))))
                     {
-                        sounds[d->wschan[WS_MAIN_CHAN]].hook = NULL;
+                        soundsources[d->wschan[WS_MAIN_CHAN]].hook = NULL;
                         d->wschan[WS_MAIN_CHAN] = -1;
                     }
                     emitsound(slot, sndpos, d, &d->wschan[WS_MAIN_CHAN], 0, skew);
