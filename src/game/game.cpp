@@ -368,9 +368,9 @@ namespace game
     VAR(IDF_PERSIST, damagemergebleed, 0, 250, VAR_MAX);
     VAR(IDF_PERSIST, damagemergeshock, 0, 250, VAR_MAX);
     VAR(IDF_PERSIST, playdamagetones, 0, 1, 3);
-    FVAR(IDF_PERSIST, damagetonegain, 0, 0.25f, 100);
+    FVAR(IDF_PERSIST, damagetonegain, 0, 0.25f, FVAR_MAX);
     VAR(IDF_PERSIST, playreloadnotify, 0, 3, 15);
-    FVAR(IDF_PERSIST, reloadnotifygain, 0, 1, 100);
+    FVAR(IDF_PERSIST, reloadnotifygain, 0, 1, FVAR_MAX);
 
     VAR(IDF_PERSIST, deathanim, 0, 2, 3); // 0 = hide player when dead, 1 = old death animation, 2 = ragdolls, 3 = ragdolls, but hide in duke
     VAR(IDF_PERSIST, deathfade, 0, 1, 1); // 0 = don't fade out dead players, 1 = fade them out
@@ -427,8 +427,8 @@ namespace game
     FVAR(IDF_PERSIST, footstepsoundlevel, 0, 1, 10); // a way to scale the volume
     FVAR(IDF_PERSIST, footstepsoundfocus, 0, 0.85f, 10); // focused player version of above
     FVAR(IDF_PERSIST, footstepsoundlight, 0, 0.5f, 10); // crouch/walk player version of above
-    FVAR(IDF_PERSIST, footstepsoundmingain, 0, 0.2f, 100);
-    FVAR(IDF_PERSIST, footstepsoundmaxgain, 0, 1, 100);
+    FVAR(IDF_PERSIST, footstepsoundmingain, 0, 0.2f, FVAR_MAX);
+    FVAR(IDF_PERSIST, footstepsoundmaxgain, 0, 1, FVAR_MAX);
     FVAR(IDF_PERSIST, footstepsoundrolloff, 0, 0, FVAR_MAX);
     FVAR(IDF_PERSIST, footstepsoundrefdist, 0, 0, FVAR_MAX);
 
