@@ -1030,10 +1030,10 @@ namespace entities
             case MAPSOUND:
             {
                 if(attr[0] == -1) { addentinfo("announcer"); }
-                else if(mapsounds.inrange(attr[0]))
+                else if(!sounddevices.empty() && sounddevices[0]->mapsounds.inrange(attr[0]))
                 {
-                    int samples = mapsounds[attr[0]].samples.length();
-                    defformatstring(ds, "%s (%d %s)", mapsounds[attr[0]].name, samples, samples == 1 ? "sample" : "samples");
+                    int samples = sounddevices[0]->mapsounds[attr[0]].samples.length();
+                    defformatstring(ds, "%s (%d %s)", sounddevices[0]->mapsounds[attr[0]].name, samples, samples == 1 ? "sample" : "samples");
                     addentinfo(ds);
                 }
                 if(full)
@@ -1938,12 +1938,14 @@ namespace entities
             }
             case MAPSOUND:
             {
-                int numsounds = mapsounds.length();
+                int numsounds = sounddevices.empty() ? -1 : sounddevices[0]->mapsounds.length();
                 if(numsounds)
                 {
                     while(e.attrs[0] < -1) e.attrs[0] += numsounds+1;
                     while(e.attrs[0] >= numsounds) e.attrs[0] -= numsounds+1;
                 }
+                else if(e.attrs[0] < -1) e.attrs[0] = -1;
+
                 if(e.attrs[1] < 0) e.attrs[1] = 100; // gain, clamp
                 if(e.attrs[2] < 0) e.attrs[2] = 100; // pitch, clamp
                 if(e.attrs[3] < 0) e.attrs[3] = 100; // rolloff, clamp
@@ -2154,12 +2156,6 @@ namespace entities
 
     int emitmapsound(gameentity &e, bool looping)
     {
-        if(!mapsounds.inrange(e.attrs[0]))
-        {
-            if(issound(e.schan)) soundsources[e.schan].clear();
-            e.schan = -1;
-            return -1;
-        }
         if(issound(e.schan))
         {
             e.getcurpos();

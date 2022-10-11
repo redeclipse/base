@@ -2587,7 +2587,7 @@ namespace client
                 {
                     int targ = getint(p);
                     getstring(text, p);
-                    int snd = gamesounds.getindex(text);
+                    int snd = sounddevices.empty() ? -1 : sounddevices[0]->gamesounds.getindex(text);
                     getstring(text, p);
                     if(targ >= 0 && text[0]) conoutft(targ, "%s", text);
                     if(snd >= 0) entities::announce(snd, NULL, true);

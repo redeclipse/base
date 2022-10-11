@@ -697,21 +697,24 @@ void save_config(char *mname, bool forcesave = false)
     if(verbose) conoutf("Saved %d mapmodel slots", mapmodels.length());
 
     progress(0, "Saving mapsound slots..");
-    loopv(mapsounds)
-    {
-        h->printf("mapsound %s", escapestring(mapsounds[i].name));
-        h->printf(" %s", floatstr(mapsounds[i].gain));
-        h->printf(" %s", floatstr(mapsounds[i].pitch));
-        h->printf(" %s", floatstr(mapsounds[i].rolloff));
-        h->printf(" %s", floatstr(mapsounds[i].refdist));
-        h->printf(" %s", floatstr(mapsounds[i].maxdist));
-        h->printf(" %d", mapsounds[i].variants);
-        h->printf(" %s", floatstr(mapsounds[i].fardist));
-        h->printf("\n");
-        progress((i+1)/float(mapsounds.length()), "Saving mapsound slots..");
+    if(!sounddevices.empty())
+    { // FIXME
+        loopv(sounddevices[0]->mapsounds)
+        {
+            h->printf("mapsound %s", escapestring(sounddevices[0]->mapsounds[i].name));
+            h->printf(" %s", floatstr(sounddevices[0]->mapsounds[i].gain));
+            h->printf(" %s", floatstr(sounddevices[0]->mapsounds[i].pitch));
+            h->printf(" %s", floatstr(sounddevices[0]->mapsounds[i].rolloff));
+            h->printf(" %s", floatstr(sounddevices[0]->mapsounds[i].refdist));
+            h->printf(" %s", floatstr(sounddevices[0]->mapsounds[i].maxdist));
+            h->printf(" %d", sounddevices[0]->mapsounds[i].variants);
+            h->printf(" %s", floatstr(sounddevices[0]->mapsounds[i].fardist));
+            h->printf("\n");
+            progress((i+1)/float(sounddevices[0]->mapsounds.length()), "Saving mapsound slots..");
+        }
+        if(sounddevices[0]->mapsounds.length()) h->printf("\n");
+        if(verbose) conoutf("Saved %d mapsound slots", sounddevices[0]->mapsounds.length());
     }
-    if(mapsounds.length()) h->printf("\n");
-    if(verbose) conoutf("Saved %d mapsound slots", mapsounds.length());
 
     progress(0, "Saving mapsoundenvs..");
     dumpsoundenvs(h);
