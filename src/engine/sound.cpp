@@ -345,8 +345,8 @@ void updateenvzone(entity *ent)
     }
 }
 
-//SVARF(IDF_INIT, soundaudio, "", initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
-//SVARF(IDF_INIT, soundhaptic, "", initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
+SVARF(IDF_INIT, soundaudio, "", initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
+SVARF(IDF_INIT, soundhaptic, "", initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
 VARF(IDF_INIT, soundmaxsources, 16, 256, 1024, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
 VARF(IDF_INIT, sounddownmix, 0, 0, 1, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
 
@@ -441,9 +441,9 @@ void initsound()
 {
     if(!nosound) return;
 
-    //createsound(soundaudio, sounddevice::AUDIO);
+    createsound(soundaudio, sounddevice::AUDIO);
     //createsound(soundhaptic, sounddevice::HAPTICS);
-    createsound(NULL, sounddevice::AUDIO);
+    //createsound(NULL, sounddevice::AUDIO);
 
     if(sounddevices.empty()) return;
 
@@ -486,11 +486,10 @@ void clearsound()
     envzones.shrink(0);
 }
 
-soundfile *loadsoundfile(sounddevice *d, const char *name, int mixtype)
+soundfile *loadsoundfile(const char *name, int dattype, int mixtype)
 {
     soundfile *w = new soundfile;
-    d->current();
-    if(!w->setup(name, d->has_ext_float32 ? soundfile::FLOAT : soundfile::SHORT, mixtype))
+    if(!w->setup(name, dattype, mixtype))
     {
         delete w;
         return NULL;
@@ -552,12 +551,13 @@ static soundsample *loadsoundsample(sounddevice *dev, const char *name)
     }
 
     if(sample->valid()) return sample;
+    dev->current();
 
     string buf;
     loopi(sizeof(sounddirs)/sizeof(sounddirs[0])) loopk(sizeof(soundexts)/sizeof(soundexts[0]))
     {
         formatstring(buf, "%s%s%s", sounddirs[i], sample->name, soundexts[k]);
-        soundfile *w = loadsoundfile(dev, buf, dev->has_soft_spatialize ? soundfile::SPATIAL : soundfile::MONO);
+        soundfile *w = loadsoundfile(buf, dev->has_ext_float32 ? soundfile::FLOAT : soundfile::SHORT, dev->has_soft_spatialize ? soundfile::SPATIAL : soundfile::MONO);
         if(!w) continue;
         SOUNDCHECK(sample->setup(w), {
             delete w;
@@ -1685,16 +1685,20 @@ bool sounddevice::setup(const char *s, int t, bool fallback)
 
     clearcursound();
 
+    SOUNDERROR();
     if(s && *s)
     {
         conoutf("%s trying: %s", gettype(), s);
         device = alcOpenDevice(s);
         if(!device) conoutf("\fr%s device initialisation failed: %s%s", gettype(), s, fallback ? " (retrying)" : "");
     }
-    if(fallback && !device) device = alcOpenDevice(NULL); // fallback to default device
+    if(fallback && !device)
+    {
+        device = alcOpenDevice(NULL); // fallback to default device
+        if(!device) conoutf("\fr%s fallback device initialisation failed", gettype());
+    }
     if(!device) return false;
 
-    alGetError();
     context = alcCreateContext(device, NULL);
     if(!context)
     {
@@ -1707,9 +1711,9 @@ bool sounddevice::setup(const char *s, int t, bool fallback)
 
     if(alcIsExtensionPresent(NULL, "ALC_ENUMERATE_ALL_EXT") != AL_FALSE)
     {
-        const ALCchar *d = alcGetString(NULL, ALC_DEFAULT_ALL_DEVICES_SPECIFIER), *s = alcGetString(NULL, ALC_ALL_DEVICES_SPECIFIER);
-        if(s) for(const ALchar *c = s; *c; c += strlen(c)+1) conoutf("- %s%s", c, !strcmp(c, d) ? " [default]" : "");
-        name = newstring(alcGetString(device, ALC_DEFAULT_ALL_DEVICES_SPECIFIER));
+        const ALCchar *d = alcGetString(NULL, ALC_DEFAULT_ALL_DEVICES_SPECIFIER), *e = alcGetString(NULL, ALC_ALL_DEVICES_SPECIFIER);
+        if(s) for(const ALchar *c = e; *c; c += strlen(c)+1) conoutf("- %s%s%s", c, !strcasecmp(c, d) ? " [default]" : "", s && !strcasecmp(c, s) ? " [requested]" : "");
+        name = newstring(alcGetString(device, ALC_ALL_DEVICES_SPECIFIER));
     }
     else name = newstring(alcGetString(device, ALC_DEVICE_SPECIFIER));
 
@@ -1751,7 +1755,7 @@ void sounddevice::reset()
     music_thread = NULL;
     music_mutex = NULL;
     type = -1;
-    al_ext_efx = false;
+    has_soft_spatialize = has_ext_float32 = al_ext_efx = false;
 }
 
 void sounddevice::current()
@@ -1889,7 +1893,7 @@ bool sounddevice::playmusic(const char *name, bool looping)
     loopi(sizeof(sounddirs)/sizeof(sounddirs[0])) loopk(sizeof(soundexts)/sizeof(soundexts[0]))
     {
         formatstring(buf, "%s%s%s", sounddirs[i], name, soundexts[k]);
-        soundfile *w = loadsoundfile(this, buf, soundfile::MUSIC);
+        soundfile *w = loadsoundfile(buf, has_ext_float32 ? soundfile::FLOAT : soundfile::SHORT, soundfile::MUSIC);
         if(!w) continue;
         SOUNDCHECK(music->setup(name, w),
         {
