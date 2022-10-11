@@ -42,6 +42,7 @@ extern float soundmastervol, soundeffectvol, soundmusicvol, soundrefdist, soundr
 
 extern LPALGENAUXILIARYEFFECTSLOTS alGenAuxiliaryEffectSlots;
 extern LPALDELETEAUXILIARYEFFECTSLOTS alDeleteAuxiliaryEffectSlots;
+extern LPALISAUXILIARYEFFECTSLOT alIsAuxiliaryEffectSlot;
 extern LPALAUXILIARYEFFECTSLOTI alAuxiliaryEffectSloti;
 extern LPALGENEFFECTS alGenEffects;
 extern LPALDELETEEFFECTS alDeleteEffects;
@@ -133,8 +134,18 @@ struct soundefxslot
 
     soundefxslot() : id(-1), hook(NULL), lastused(0) {}
 
-    void gen() { alGenAuxiliaryEffectSlots(1, &id); }
-    void del() { alDeleteAuxiliaryEffectSlots(1, &id); id = AL_INVALID; }
+    bool gen()
+    {
+        alGenAuxiliaryEffectSlots(1, &id);
+        return alIsAuxiliaryEffectSlot(id);
+    }
+
+    void del()
+    {
+        if(alIsAuxiliaryEffectSlot(id)) alDeleteAuxiliaryEffectSlots(1, &id);
+        id = AL_INVALID;
+    }
+
     void put() { if(hook) *hook = NULL; hook = NULL; }
 };
 
@@ -262,16 +273,17 @@ struct sounddevice
     ALCcontext *context;
 
     int type;
-    bool has_soft_spatialize, has_ext_float32, has_ext_efx;
+    bool has_soft_spatialize, has_ext_float32, has_ext_efx, efx_inited;
 
     hashnameset<soundsample> soundsamples;
     slotmanager<soundslot> gamesounds, mapsounds;
+    vector<soundefxslot> soundefxslots;
 
     musicstream *music;
     SDL_Thread *music_thread;
     SDL_mutex *music_mutex;
 
-    sounddevice() { reset();  }
+    sounddevice() : efx_inited(false) { reset(); }
     ~sounddevice() { destroy(); }
 
     const char *gettype()
@@ -279,6 +291,12 @@ struct sounddevice
         const char *typenames[MAX] = { "Sound", "Haptic" };
         return typenames[type];
     }
+
+    void allocsoundefxslots();
+    void putsoundefxslots();
+    void delsoundfxslots();
+    void getsoundefxslot(soundefxslot **hook, bool priority = false);
+    bool cansoundefx() const { return efx_inited; }
 
     bool setup(const char *s, int t, bool fallback = false);
     void destroy();

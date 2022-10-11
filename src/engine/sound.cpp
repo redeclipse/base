@@ -11,6 +11,7 @@ const char *sounderror(bool msg)
 
 LPALGENAUXILIARYEFFECTSLOTS    alGenAuxiliaryEffectSlots    = NULL;
 LPALDELETEAUXILIARYEFFECTSLOTS alDeleteAuxiliaryEffectSlots = NULL;
+LPALISAUXILIARYEFFECTSLOT      alIsAuxiliaryEffectSlot      = NULL;
 LPALAUXILIARYEFFECTSLOTI       alAuxiliaryEffectSloti       = NULL;
 LPALGENEFFECTS                 alGenEffects                 = NULL;
 LPALDELETEEFFECTS              alDeleteEffects              = NULL;
@@ -30,6 +31,7 @@ static void getextsoundprocs()
 
     alGenAuxiliaryEffectSlots    = (LPALGENAUXILIARYEFFECTSLOTS)   alGetProcAddress("alGenAuxiliaryEffectSlots");
     alDeleteAuxiliaryEffectSlots = (LPALDELETEAUXILIARYEFFECTSLOTS)alGetProcAddress("alDeleteAuxiliaryEffectSlots");
+    alIsAuxiliaryEffectSlot      = (LPALISAUXILIARYEFFECTSLOT)     alGetProcAddress("alIsAuxiliaryEffectSlot");
     alAuxiliaryEffectSloti       = (LPALAUXILIARYEFFECTSLOTI)      alGetProcAddress("alAuxiliaryEffectSloti");
     alGenEffects                 = (LPALGENEFFECTS)                alGetProcAddress("alGenEffects");
     alDeleteEffects              = (LPALDELETEEFFECTS)             alGetProcAddress("alDeleteEffects");
@@ -62,7 +64,6 @@ vector<soundenvzone *> sortedenvzones;
 soundenvzone *insideenvzone = NULL;
 
 soundenv *newsoundenv = NULL;
-vector<soundefxslot> soundefxslots;
 
 static soundenv *soundenvfroment(entity *ent)
 {
@@ -74,13 +75,24 @@ static soundenv *soundenvfroment(entity *ent)
     return NULL;
 }
 
-void allocsoundefxslots();
-VARF(IDF_PERSIST, maxsoundefxslots, 1, 2, 10, allocsoundefxslots());
+VARF(IDF_PERSIST, maxsoundefxslots, 1, 2, 10,
+{
+    if(nosound) return;
+
+    sounddevice *oldcursound = cursound;
+
+    if(cursound != sounddevices[0]) sounddevices[0]->current();
+    cursound->allocsoundefxslots();
+
+    if(oldcursound) oldcursound->current();
+    else clearcursound();
+});
+
 VAR(0, soundefxslotdebug, 0, 0, 1);
 
-static void putsoundefxslots() { loopv(soundefxslots) soundefxslots[i].put(); }
+void sounddevice::putsoundefxslots() { loopv(soundefxslots) soundefxslots[i].put(); }
 
-static void delsoundfxslots()
+void sounddevice::delsoundfxslots()
 {
     sortedenvzones.setsize(0);
     putsoundefxslots();
@@ -88,20 +100,26 @@ static void delsoundfxslots()
     soundefxslots.shrink(0);
 }
 
-void allocsoundefxslots()
+void sounddevice::allocsoundefxslots()
 {
     delsoundfxslots();
 
     loopi(maxsoundefxslots)
     {
         soundefxslot &slot = soundefxslots.add();
-        slot.gen();
+        if(!slot.gen()) soundefxslots.drop();
     }
+
+    efx_inited = !soundefxslots.empty();
 }
 
-static void getsoundefxslot(soundefxslot **hook, bool priority = false)
+void sounddevice::getsoundefxslot(soundefxslot **hook, bool priority)
 {
-    if(soundefxslots.empty()) return;
+    if(soundefxslots.empty())
+    {
+        *hook = NULL;
+        return;
+    }
 
     loopv(soundefxslots) if(!soundefxslots[i].hook)
     {
@@ -187,7 +205,7 @@ ALuint soundenvzone::getefxslot()
 {
     if(!efxslot)
     {
-        getsoundefxslot(&efxslot);
+        cursound->getsoundefxslot(&efxslot);
 
         if(!efxslot) return AL_INVALID;
 
@@ -456,8 +474,12 @@ void initsound()
         break;
     }
 
-    getextsoundprocs();
-    allocsoundefxslots();
+    if(sounddevices[0]->has_ext_efx)
+    {
+        getextsoundprocs();
+        sounddevices[0]->allocsoundefxslots();
+    }
+
     initmumble();
 }
 
@@ -469,7 +491,6 @@ void stopmusic()
 void stopsound()
 {
     if(nosound) return;
-    delsoundfxslots();
     stopmusic();
     clearsound();
     closemumble();
@@ -899,7 +920,6 @@ void removetrackedsounds(physent *d)
 void resetsound()
 {
     clearchanges(CHANGE_SOUND);
-    delsoundfxslots();
     loopv(soundsources) soundsources[i].clear();
     loopv(sounddevices)
     {
@@ -1280,7 +1300,7 @@ ALenum soundoutput::update(const vec &pos, const vec &vel, int flags, float gain
 
     updatefilter(pos);
 
-    if(!(flags&SND_NOENV))
+    if(!(flags&SND_NOENV) && device->cansoundefx())
     {
         soundenvzone *zone = getactiveenvzone(pos);
 
@@ -1740,6 +1760,7 @@ void sounddevice::destroy()
     soundsamples.clear();
     gamesounds.clear(false);
     mapsounds.clear(false);
+    delsoundfxslots();
     if(name) delete[] name;
     if(context) alcDestroyContext(context);
     if(device) alcCloseDevice(device);
@@ -1755,7 +1776,7 @@ void sounddevice::reset()
     music_thread = NULL;
     music_mutex = NULL;
     type = -1;
-    has_soft_spatialize = has_ext_float32 = al_ext_efx = false;
+    has_soft_spatialize = has_ext_float32 = al_ext_efx = efx_inited = false;
 }
 
 void sounddevice::current()
