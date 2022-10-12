@@ -235,11 +235,10 @@ namespace fx
 
     static void initdef()
     {
-        if(sounddevices.empty()) return;
         if(newfx->type == FX_TYPE_SOUND)
         {
             const char *soundname = newfx->getextprops()[FX_SOUND_SOUND].get<char *>();
-            newfx->sound = sounddevices[0]->gamesounds.getslot(soundname);
+            newfx->sound = gamesounds.getslot(soundname);
         }
     }
 

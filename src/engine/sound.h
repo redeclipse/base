@@ -23,7 +23,6 @@ enum
     SND_TRACKED  = 1<<11,   // sound vpos is tracked
     SND_VELEST   = 1<<12,   // sound vpos is estimated
     SND_NOFILTER = 1<<13,   // disable filtering
-    SND_HAPTICS  = 1<<14,   // send to haptics device
     SND_MASKF    = SND_LOOP|SND_MAP,
     SND_LAST     = 8        // top N are used for entities
 };
@@ -32,8 +31,10 @@ enum
 #define SOUNDMINDIST        16.0f
 #define SOUNDMAXDIST        10000.f
 
-extern bool nosound, al_ext_efx, al_soft_spatialize, al_ext_float32;
+extern bool nosound;
 extern float soundmastervol, soundeffectvol, soundmusicvol, soundrefdist, soundrolloff;
+
+extern bool al_ext_efx, al_soft_spatialize, al_ext_float32;
 
 #include "AL/al.h"
 #include "AL/alc.h"
@@ -42,7 +43,6 @@ extern float soundmastervol, soundeffectvol, soundmusicvol, soundrefdist, soundr
 
 extern LPALGENAUXILIARYEFFECTSLOTS alGenAuxiliaryEffectSlots;
 extern LPALDELETEAUXILIARYEFFECTSLOTS alDeleteAuxiliaryEffectSlots;
-extern LPALISAUXILIARYEFFECTSLOT alIsAuxiliaryEffectSlot;
 extern LPALAUXILIARYEFFECTSLOTI alAuxiliaryEffectSloti;
 extern LPALGENEFFECTS alGenEffects;
 extern LPALDELETEEFFECTS alDeleteEffects;
@@ -68,8 +68,6 @@ extern LPALFILTERF alFilterf;
         if(err == AL_NO_ERROR) { tbody; } \
         else { fbody; } \
     } while(false);
-
-struct sounddevice;
 
 struct soundfile
 {
@@ -112,6 +110,7 @@ struct soundsample
     void cleanup();
     bool valid();
 };
+extern hashnameset<soundsample> soundsamples;
 
 struct soundslot
 {
@@ -125,6 +124,7 @@ struct soundslot
 
     void reset();
 };
+extern slotmanager<soundslot> gamesounds, mapsounds;
 
 struct soundefxslot
 {
@@ -134,18 +134,8 @@ struct soundefxslot
 
     soundefxslot() : id(-1), hook(NULL), lastused(0) {}
 
-    bool gen()
-    {
-        alGenAuxiliaryEffectSlots(1, &id);
-        return alIsAuxiliaryEffectSlot(id);
-    }
-
-    void del()
-    {
-        if(alIsAuxiliaryEffectSlot(id)) alDeleteAuxiliaryEffectSlots(1, &id);
-        id = AL_INVALID;
-    }
-
+    void gen() { alGenAuxiliaryEffectSlots(1, &id); }
+    void del() { alDeleteAuxiliaryEffectSlots(1, &id); id = AL_INVALID; }
     void put() { if(hook) *hook = NULL; hook = NULL; }
 };
 
@@ -188,52 +178,33 @@ struct soundenvzone
     bool isvalid();
 };
 
-struct soundoutput
+struct soundsource
 {
     ALuint source, filter;
     soundslot *slot;
-    float curgain, curpitch, finalrolloff, finalrefdist;
-    sounddevice *device;
-
-    soundoutput() { reset(); }
-    ~soundoutput() { cleanup(); }
-
-    ALenum setup(sounddevice *dev, soundsample *s, soundslot *t, int flags = 0, float rolloff = -1, float refdist = -1, float maxdist = -1);
-    void reset();
-    void cleanup();
-    void clear();
-    ALenum update(const vec &pos, const vec &vel = vec(0, 0, 0), int flags = 0, float gain = 1, float pitch = 1);
-    bool valid();
-    bool active();
-    bool playing();
-    ALenum play();
-    ALenum updatefilter(const vec &pos);
-};
-
-struct soundsource
-{
     vec pos, curpos, vel, *vpos;
     physent *owner;
-    int index, flags, slotnum, material, lastupdate, millis, ends, *hook;
-    float gain, pitch, rolloff, refdist, maxdist;
-    vector<soundoutput *> outputs;
+    int index, flags, material, lastupdate;
+    int millis, ends, slotnum, *hook;
+    float gain, curgain, pitch, curpitch, rolloff, refdist, maxdist;
+    float finalrolloff, finalrefdist;
     vector<int> buffer;
 
     soundsource() : vpos(NULL), hook(NULL) { reset(); }
     ~soundsource() { clear(); }
 
-    soundoutput *findoutput(sounddevice *dev);
-    ALenum setup(sounddevice *dev, soundsample *s, soundslot *t);
-    void cleanup(sounddevice *dev = NULL);
+    ALenum setup(soundsample *s);
+    void cleanup();
     void reset();
     void clear();
     void unhook();
+    ALenum updatefilter();
     ALenum update();
-    bool valid(sounddevice *dev = NULL);
-    bool active(sounddevice *dev = NULL);
-    bool playing(sounddevice *dev = NULL);
-    ALenum play(sounddevice *dev = NULL);
-    void start();
+    bool valid();
+    bool active();
+    bool playing();
+    ALenum play();
+    ALenum push(soundsample *s);
 };
 extern vector<soundsource> soundsources;
 
@@ -263,62 +234,7 @@ struct musicstream
     ALenum play();
     ALenum push(const char *n, soundfile *s);
 };
-
-struct sounddevice
-{
-    enum { AUDIO, HAPTICS, MAX };
-
-    char *name;
-    ALCdevice *device;
-    ALCcontext *context;
-
-    int type;
-    bool has_soft_spatialize, has_ext_float32, has_ext_efx, efx_inited;
-
-    hashnameset<soundsample> soundsamples;
-    slotmanager<soundslot> gamesounds, mapsounds;
-    vector<soundefxslot> soundefxslots;
-
-    musicstream *music;
-    SDL_Thread *music_thread;
-    SDL_mutex *music_mutex;
-
-    sounddevice() : efx_inited(false) { reset(); }
-    ~sounddevice() { destroy(); }
-
-    const char *gettype()
-    {
-        const char *typenames[MAX] = { "Sound", "Haptic" };
-        return typenames[type];
-    }
-
-    void allocsoundefxslots();
-    void putsoundefxslots();
-    void delsoundfxslots();
-    void getsoundefxslot(soundefxslot **hook, bool priority = false);
-    bool cansoundefx() const { return efx_inited; }
-
-    bool setup(const char *s, int t, bool fallback = false);
-    void destroy();
-    void reset();
-    void current();
-    void suspend();
-    void process();
-    void push();
-
-    void updatemusic();
-    void musicloopinit();
-    void musicloopstop();
-    void stopmusic();
-    bool playmusic(const char *name, bool looping = true);
-    bool playingmusic();
-    void lockmusic();
-    void unlockmusic();
-
-    void setdoppler(float v);
-    void setspeed(float v);
-};
-extern vector<sounddevice *> sounddevices;
+extern musicstream *music;
 
 #define issound(c) (soundsources.inrange(c) && soundsources[c].active())
 
@@ -330,13 +246,13 @@ extern void mapsoundslot(int index, const char *name);
 extern int getsoundslot(int index);
 extern void initsound();
 extern void stopsound();
-extern int playmusic(const char *name, bool looping = true);
+extern bool playmusic(const char *name, bool looping = true);
 extern bool playingmusic();
 extern void smartmusic(bool cond, bool init = false);
 extern void stopmusic();
 extern void updatemusic();
 extern void updatesounds();
-extern int addsound(const char *id, const char *name, float gain, float pitch, float rolloff, float refdist, float maxdist, int variants, float fardist, bool game);
+extern int addsound(const char *id, const char *name, float gain, float pitch, float rolloff, float refdist, float maxdist, int variants, float fardist, slotmanager<soundslot> &soundset);
 extern void clearsound();
 extern int emitsound(int n, vec *pos, physent *d = NULL, int *hook = NULL, int flags = 0, float gain = 1, float pitch = 1, float rolloff = -1, float refdist = -1, float maxdist = -1, int ends = 0);
 extern int emitsoundpos(int n, const vec &pos, int *hook = NULL, int flags = 0, float gain = 1, float pitch = 1, float rolloff = -1, float refdist = -1, float maxdist = -1, int ends = 0);

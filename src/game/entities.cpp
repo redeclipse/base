@@ -1030,10 +1030,10 @@ namespace entities
             case MAPSOUND:
             {
                 if(attr[0] == -1) { addentinfo("announcer"); }
-                else if(!sounddevices.empty() && sounddevices[0]->mapsounds.inrange(attr[0]))
+                else if(mapsounds.inrange(attr[0]))
                 {
-                    int samples = sounddevices[0]->mapsounds[attr[0]].samples.length();
-                    defformatstring(ds, "%s (%d %s)", sounddevices[0]->mapsounds[attr[0]].name, samples, samples == 1 ? "sample" : "samples");
+                    int samples = mapsounds[attr[0]].samples.length();
+                    defformatstring(ds, "%s (%d %s)", mapsounds[attr[0]].name, samples, samples == 1 ? "sample" : "samples");
                     addentinfo(ds);
                 }
                 if(full)
@@ -1938,7 +1938,7 @@ namespace entities
             }
             case MAPSOUND:
             {
-                int numsounds = sounddevices.empty() ? -1 : sounddevices[0]->mapsounds.length();
+                int numsounds = mapsounds.length();
                 if(numsounds)
                 {
                     while(e.attrs[0] < -1) e.attrs[0] += numsounds+1;
