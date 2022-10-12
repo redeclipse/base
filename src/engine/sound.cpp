@@ -1301,7 +1301,7 @@ void soundsource::cleanup()
 
 void soundsource::reset()
 {
-    source = filter = 0;
+    source = filter = AL_INVALID;
     pos = curpos = vel = vec(0, 0, 0);
     vpos = &pos;
     slot = NULL;
