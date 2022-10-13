@@ -5,6 +5,9 @@ ALCcontext *sndctx = NULL;
 
 bool nosound = true, canmusic = false;
 bool al_ext_efx = false, al_soft_spatialize = false, al_ext_float32 = false;
+ALCint al_sample_rate = ALC_INVALID;
+const char *al_errfunc = NULL, *al_errfile = NULL;
+uint al_errline = 0;
 
 LPALGENAUXILIARYEFFECTSLOTS    alGenAuxiliaryEffectSlots    = NULL;
 LPALDELETEAUXILIARYEFFECTSLOTS alDeleteAuxiliaryEffectSlots = NULL;
@@ -509,6 +512,10 @@ void initsound()
 
         alcMakeContextCurrent(sndctx);
         conoutf("Sound: %s (%s) %s", alGetString(AL_RENDERER), alGetString(AL_VENDOR), alGetString(AL_VERSION));
+        al_ext_efx = alcIsExtensionPresent(snddev, "ALC_EXT_EFX") ? true : false;
+        al_ext_float32 = alIsExtensionPresent("AL_EXT_FLOAT32") ? true : false;
+        al_soft_spatialize = alIsExtensionPresent("AL_SOFT_source_spatialize") ? true : false;
+        alcGetIntegerv(snddev, ALC_FREQUENCY, 1, &al_sample_rate);
 
         if(alcIsExtensionPresent(NULL, "ALC_ENUMERATE_ALL_EXT") != AL_FALSE)
         {
@@ -520,13 +527,9 @@ void initsound()
                 for(const ALchar *c = s; *c; c += strlen(c)+1)
                     conoutf("- %s%s", c, !strcmp(c, d) ? " [default]" : "");
             }
-            conoutf("Audio device: %s", alcGetString(snddev, ALC_ALL_DEVICES_SPECIFIER));
+            conoutf("Audio device: %s [%d]", alcGetString(snddev, ALC_ALL_DEVICES_SPECIFIER), al_sample_rate);
         }
-        else conoutf("Audio device: %s", alcGetString(snddev, ALC_DEVICE_SPECIFIER));
-
-        al_ext_efx = alcIsExtensionPresent(snddev, "ALC_EXT_EFX") ? true : false;
-        al_ext_float32 = alIsExtensionPresent("AL_EXT_FLOAT32") ? true : false;
-        al_soft_spatialize = alIsExtensionPresent("AL_SOFT_source_spatialize") ? true : false;
+        else conoutf("Audio device: %s [%d]", alcGetString(snddev, ALC_DEVICE_SPECIFIER), al_sample_rate);
 
         getextsoundprocs();
         allocsoundefxslots();
@@ -619,7 +622,7 @@ bool playmusic(const char *name, bool looping)
             SDL_UnlockMutex(music_mutex);
             musicloopinit();
             return true;
-        }, conoutf("Error loading %s: %s", buf, alGetString(err)));
+        }, conoutf("Error loading %s: %s [%s@%s:%d]", buf, alGetString(err), al_errfunc, al_errfile, al_errline));
     }
 
     conoutf("\frCould not play music: %s", name);
@@ -687,7 +690,7 @@ static soundsample *loadsoundsample(const char *name)
             return sample;
         }, {
             delete w;
-            conoutf("Error loading %s: %s", buf, alGetString(err));
+            conoutf("Error loading %s: %s [%s@%s:%d]", buf, alGetString(err), al_errfunc, al_errfile, al_errline);
         });
     }
     return NULL;
@@ -776,23 +779,21 @@ static inline bool sourcecmp(const soundsource *x, const soundsource *y) // sort
     if(!xnoatt && ynoatt) return true;
     if(xnoatt && !ynoatt) return false;
 
-    if(!xnoatt && !ynoatt)
-    {
-        float xdist = x->vpos->dist(camera1->o), ydist = y->vpos->dist(camera1->o);
-        if(xdist > ydist) return true;
-        if(xdist < ydist) return false;
-    }
-    else
-    {
-        if(x->curgain < y->curgain) return true;
-        if(x->curgain > y->curgain) return false;
-    }
+    float xdist = x->vpos->dist(camera1->o), ydist = y->vpos->dist(camera1->o);
+    if(xdist > ydist) return true;
+    if(xdist < ydist) return false;
 
     return true;
 }
 
-int soundindex(soundslot *slot, int slotnum, const vec &pos, int flags)
+int soundindex(soundslot *slot, int slotnum, const vec &pos, int flags, int *hook)
 {
+    if(hook && soundsources.inrange(*hook))
+    {
+        if(issound(*hook)) soundsources[*hook].clear();
+        return *hook;
+    }
+
     static vector<soundsource *> sources;
     sources.setsize(0);
 
@@ -861,9 +862,10 @@ void updatesounds()
             soundsample *sample = slot->samples.inrange(variant) ? slot->samples[variant] : NULL;
             if(!sample || !sample->valid()) continue;
 
+            int index = s.index;
             s.slot = slot;
             s.slotnum = n;
-            SOUNDCHECK(s.push(sample), break, conoutf("Error playing sample %s [%d]: %s", sample->name, s.index, alGetString(err)));
+            SOUNDCHECK(s.push(sample), break, conoutf("Error playing buffered sample [%d] %s (%d): %s [%s@%s:%d]", n, sample->name, index, alGetString(err), al_errfunc, al_errfile, al_errline));
         }
         //conoutf("Clearing sound source %d [%d] %d [%d] %s", s.source, s.index, s.ends, lastmillis, soundsources[i].playing() ? "playing" : "not playing");
         if(!s.playing()) s.clear();
@@ -914,13 +916,7 @@ int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, flo
         soundsample *sample = slot->samples.inrange(variant) ? slot->samples[variant] : NULL;
         if(!sample || !sample->valid()) return -1;
 
-        int index = -1;
-        if(hook && soundsources.inrange(*hook))
-        {
-            if(issound(*hook)) soundsources[*hook].clear();
-            index = *hook;
-        }
-        else index = soundindex(slot, n, *pos, flags);
+        int index = soundindex(slot, n, *pos, flags, hook);
         if(index < 0) return -1;
 
         soundsource &s = soundsources[index];
@@ -956,7 +952,7 @@ int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, flo
         if(hook) *hook = s.index;
         s.hook = hook;
 
-        SOUNDCHECK(s.push(sample), return index, conoutf("Error playing sample %s [%d]: %s", sample->name, index, alGetString(err)));
+        SOUNDCHECK(s.push(sample), return index, conoutf("Error playing sample [%d] %s (%d): %s [%s@%s:%d]", n, sample->name, index, alGetString(err), al_errfunc, al_errfile, al_errline));
     }
     else if(n > 0) conoutf("\frUnregistered sound: %d", n);
     return -1;
@@ -1198,14 +1194,14 @@ ALenum soundsample::setup(soundfile *s)
 {
     SOUNDERROR();
     alGenBuffers(1, &buffer);
-    SOUNDERROR(cleanup(); return err);
+    SOUNDERRORTRACK(cleanup(); return err);
     switch(s->type)
     {
         case soundfile::SHORT: alBufferData(buffer, s->format, s->data_s, s->len, s->info.samplerate); break;
         case soundfile::FLOAT: alBufferData(buffer, s->format, s->data_f, s->len, s->info.samplerate); break;
         default: return AL_INVALID_OPERATION;
     }
-    SOUNDERROR(cleanup(); return err);
+    SOUNDERRORTRACK(cleanup(); return err);
     return AL_NO_ERROR;
 }
 
@@ -1238,54 +1234,57 @@ ALenum soundsource::setup(soundsample *s)
 
     SOUNDERROR();
     alGenSources(1, &source);
-    SOUNDERROR(clear(); return err);
+    SOUNDERRORTRACK(clear(); return err);
 
     if(al_ext_efx && !(flags&SND_NOFILTER) && sounddistfilter > 0.0f)
     {
         alGenFilters(1, &filter);
-        alFilteri(filter, AL_FILTER_TYPE, AL_FILTER_BANDPASS);
-        alSourcei(source, AL_DIRECT_FILTER, filter);
+        SOUNDERRORTRACK(clear(); return err);
 
-        SOUNDERROR(clear(); return err);
+        alFilteri(filter, AL_FILTER_TYPE, AL_FILTER_BANDPASS);
+        SOUNDERRORTRACK(clear(); return err);
+
+        alSourcei(source, AL_DIRECT_FILTER, filter);
+        SOUNDERRORTRACK(clear(); return err);
     }
 
     alSourcei(source, AL_BUFFER, s->buffer);
-    SOUNDERROR(clear(); return err);
+    SOUNDERRORTRACK(clear(); return err);
 
     if(flags&SND_NOPAN && flags&SND_NODIST) flags |= SND_NOATTEN; // superfluous
     if(flags&SND_NOATTEN)
     {
         flags &= ~(SND_NOPAN|SND_NODIST); // unnecessary
         alSourcei(source, AL_SOURCE_RELATIVE, AL_TRUE);
-        SOUNDERROR(clear(); return err);
+        SOUNDERRORTRACK(clear(); return err);
     }
     else
     {
         if(al_soft_spatialize)
         {
             alSourcei(source, AL_SOURCE_SPATIALIZE_SOFT, AL_TRUE);
-            SOUNDERROR(clear(); return err);
+            SOUNDERRORTRACK(clear(); return err);
         }
         alSourcei(source, AL_SOURCE_RELATIVE, AL_FALSE);
-        SOUNDERROR(clear(); return err);
+        SOUNDERRORTRACK(clear(); return err);
     }
 
     alSourcei(source, AL_LOOPING, flags&SND_LOOP ? AL_TRUE : AL_FALSE);
-    SOUNDERROR(clear(); return err);
+    SOUNDERRORTRACK(clear(); return err);
 
     finalrolloff = rolloff >= 0 ? rolloff : (slot->rolloff >= 0 ? slot->rolloff : 1.f);
     alSourcef(source, AL_ROLLOFF_FACTOR, finalrolloff);
-    SOUNDERROR(clear(); return err);
+    SOUNDERRORTRACK(clear(); return err);
 
     finalrefdist = refdist >= 0 ? refdist : (slot->refdist >= 0 ? slot->refdist : soundrefdist);
     alSourcef(source, AL_REFERENCE_DISTANCE, finalrefdist);
-    SOUNDERROR(clear(); return err);
+    SOUNDERRORTRACK(clear(); return err);
 
     float dist = maxdist >= 0 ? maxdist : slot->maxdist;
     if(dist >= 0)
     {
         alSourcef(source, AL_MAX_DISTANCE, dist);
-        SOUNDERROR(clear(); return err);
+        SOUNDERRORTRACK(clear(); return err);
     }
 
     return AL_NO_ERROR;
@@ -1357,22 +1356,21 @@ ALenum soundsource::update()
     material = lookupmaterial(*vpos);
     curgain = clamp(soundeffectvol*slot->gain*(flags&SND_MAP ? soundeffectenv : soundeffectevent), 0.f, 100.f);
 
+    SOUNDERROR();
     if(flags&SND_CLAMPED)
     {
-        SOUNDERROR();
         alSourcef(source, AL_MIN_GAIN, gain);
-        SOUNDERROR(clear(); return err);
+        SOUNDERRORTRACK(clear(); return err);
     }
     else curgain *= gain;
 
-    SOUNDERROR();
     alSourcef(source, AL_GAIN, curgain);
-    SOUNDERROR(clear(); return err);
+    SOUNDERRORTRACK(clear(); return err);
 
     curpitch = clamp(pitch * slot->pitch, 1e-6f, 100.f);
-    SOUNDERROR();
+
     alSourcef(source, AL_PITCH, pitch);
-    SOUNDERROR(clear(); return err);
+    SOUNDERRORTRACK(clear(); return err);
 
     vec rpos = *vpos;
     if(flags&SND_NOATTEN) rpos = vel = vec(0, 0, 0);
@@ -1383,9 +1381,10 @@ ALenum soundsource::update()
     }
     else if(flags&SND_NODIST) rpos.sub(camera1->o).safenormalize().mul(2).add(camera1->o);
 
-    SOUNDERROR();
+    if(owner) conoutf("[%d / %d] %.6f %.6f %.6f [%.6f %.6f %.6f] (%d)", index, slotnum, rpos.x, rpos.y, rpos.z, vpos->x, vpos->y, vpos->z, owner->state);
+    else conoutf("[%d / %d] %.6f %.6f %.6f [%.6f %.6f %.6f]", index, slotnum, rpos.x, rpos.y, rpos.z, vpos->x, vpos->y, vpos->z);
     alSourcefv(source, AL_POSITION, (ALfloat *) &rpos);
-    SOUNDERROR(clear(); return err);
+    SOUNDERRORTRACK(clear(); return err);
 
     if(owner) vel = owner->vel;
     if(totalmillis != lastupdate && (lastupdate < 0 || totalmillis-lastupdate > physics::physframetime))
@@ -1401,7 +1400,7 @@ ALenum soundsource::update()
     }
 
     alSourcefv(source, AL_VELOCITY, (ALfloat *) &vel);
-    SOUNDERROR(clear(); return err);
+    SOUNDERRORTRACK(clear(); return err);
 
     updatefilter();
 
@@ -1419,7 +1418,7 @@ ALenum soundsource::update()
         alSource3i(source, AL_AUXILIARY_SEND_FILTER, zoneslot, 0, AL_FILTER_NULL);
         alSource3i(source, AL_AUXILIARY_SEND_FILTER, insideslot, 1, AL_FILTER_NULL);
 
-        SOUNDERROR(clear(); return err);
+        SOUNDERRORTRACK(clear(); return err);
     }
 
     return AL_NO_ERROR;
@@ -1454,7 +1453,7 @@ ALenum soundsource::play()
     if(playing()) return AL_NO_ERROR;
     SOUNDERROR();
     alSourcePlay(source);
-    SOUNDERROR(clear(); return err);
+    SOUNDERRORTRACK(clear(); return err);
     return AL_NO_ERROR;
 }
 
@@ -1483,19 +1482,19 @@ ALenum musicstream::setup(const char *n, soundfile *s)
 
     SOUNDERROR();
     alGenBuffers(MUSICBUFS, buffer);
-    SOUNDERROR(clear(); return err);
+    SOUNDERRORTRACK(clear(); return err);
 
     alGenSources(1, &source);
-    SOUNDERROR(clear(); return err);
+    SOUNDERRORTRACK(clear(); return err);
 
     alSourcei(source, AL_SOURCE_RELATIVE, AL_TRUE);
-    SOUNDERROR(clear(); return err);
+    SOUNDERRORTRACK(clear(); return err);
 
     alSourcef(source, AL_ROLLOFF_FACTOR, 0.f);
-    SOUNDERROR(clear(); return err);
+    SOUNDERRORTRACK(clear(); return err);
 
     alSource3f(source, AL_POSITION, 0.f, 0.f, 0.f);
-    SOUNDERROR(clear(); return err);
+    SOUNDERRORTRACK(clear(); return err);
 
     data = s;
 
@@ -1503,24 +1502,25 @@ ALenum musicstream::setup(const char *n, soundfile *s)
     for(; r < MUSICBUFS; r++)
     {
         if(!data->fillmus()) break;
-        SOUNDCHECK(fill(buffer[r]), , return err);
+        SOUNDCHECKTRACK(fill(buffer[r]), , return err);
     }
 
     alSourceQueueBuffers(source, r, buffer);
-    SOUNDERROR(clear(); return err);
+    SOUNDERRORTRACK(clear(); return err);
 
     return AL_NO_ERROR;
 }
 
 ALenum musicstream::fill(ALint bufid)
 {
+    SOUNDERROR();
     switch(data->type)
     {
         case soundfile::SHORT: alBufferData(bufid, data->format, data->data_s, (ALsizei)data->len, data->info.samplerate); break;
         case soundfile::FLOAT: alBufferData(bufid, data->format, data->data_f, (ALsizei)data->len, data->info.samplerate); break;
         default: return AL_INVALID_OPERATION;
     }
-    SOUNDERROR(clear(); return err);
+    SOUNDERRORTRACK(clear(); return err);
     return AL_NO_ERROR;
 }
 
@@ -1560,36 +1560,34 @@ ALenum musicstream::update()
     SOUNDERROR();
     ALint processed;
     alGetSourcei(source, AL_BUFFERS_PROCESSED, &processed);
-    SOUNDERROR(clear(); return err);
+    SOUNDERRORTRACK(clear(); return err);
 
     while(processed > 0)
     {
         ALuint bufid;
         alSourceUnqueueBuffers(source, 1, &bufid);
-        SOUNDERROR(clear(); return err);
+        SOUNDERRORTRACK(clear(); return err);
         processed--;
 
         if(!data->fillmus(!looping)) continue;
-        SOUNDCHECK(fill(bufid), , return err);
+        SOUNDCHECKTRACK(fill(bufid), , return err);
 
         alSourceQueueBuffers(source, 1, &bufid);
-        SOUNDERROR(clear(); return err);
+        SOUNDERRORTRACK(clear(); return err);
     }
-
-    SOUNDERROR();
     alSourcef(source, AL_GAIN, gain);
-    SOUNDERROR(clear(); return err);
+    SOUNDERRORTRACK(clear(); return err);
 
     if(!playing())
     {
         ALint queued;
 
         alGetSourcei(source, AL_BUFFERS_QUEUED, &queued);
-        SOUNDERROR(clear(); return err);
+        SOUNDERRORTRACK(clear(); return err);
         if(queued)
         {
             alSourcePlay(source);
-            SOUNDERROR(clear(); return err);
+            SOUNDERRORTRACK(clear(); return err);
         }
         else clear();
     }
@@ -1627,7 +1625,7 @@ ALenum musicstream::play()
     if(playing()) return AL_NO_ERROR;
     SOUNDERROR();
     alSourcePlay(source);
-    SOUNDERROR(clear(); return err);
+    SOUNDERRORTRACK(clear(); return err);
     return AL_NO_ERROR;
 }
 

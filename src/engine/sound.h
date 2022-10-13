@@ -69,6 +69,19 @@ extern LPALFILTERF alFilterf;
         else { fbody; } \
     } while(false);
 
+#define SOUNDERRORTRACK(body) \
+    do { \
+        ALenum err = alGetError(); \
+        if(err != AL_NO_ERROR) { al_errfunc = __PRETTY_FUNCTION__; al_errfile = __FILE__; al_errline = __LINE__; body; } \
+    } while(false);
+
+#define SOUNDCHECKTRACK(expr, tbody, fbody) \
+    do { \
+        ALenum err = expr; \
+        if(err == AL_NO_ERROR) { tbody; } \
+        else { al_errfunc = __PRETTY_FUNCTION__; al_errfile = __FILE__; al_errline = __LINE__; fbody; } \
+    } while(false);
+
 struct soundfile
 {
 	enum { SHORT = 0, FLOAT, INVALID };
