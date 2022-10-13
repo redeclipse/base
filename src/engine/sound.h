@@ -130,9 +130,9 @@ struct soundslot
     vector<soundsample *> samples;
     char *name;
     int variants;
-    float gain, pitch, rolloff, refdist, maxdist, fardist;
+    float gain, pitch, rolloff, refdist, maxdist;
 
-    soundslot() : name(NULL), variants(1), gain(1), pitch(1), rolloff(1), refdist(-1), maxdist(-1), fardist(-1) {}
+    soundslot() : name(NULL), variants(1), gain(1), pitch(1), rolloff(1), refdist(-1), maxdist(-1) {}
     ~soundslot() { DELETEA(name); }
 
     void reset();
@@ -265,7 +265,7 @@ extern void smartmusic(bool cond, bool init = false);
 extern void stopmusic();
 extern void updatemusic();
 extern void updatesounds();
-extern int addsound(const char *id, const char *name, float gain, float pitch, float rolloff, float refdist, float maxdist, int variants, float fardist, slotmanager<soundslot> &soundset);
+extern int addsound(const char *id, const char *name, float gain, float pitch, float rolloff, float refdist, float maxdist, int variants, slotmanager<soundslot> &soundset);
 extern void clearsound();
 extern int emitsound(int n, vec *pos, physent *d = NULL, int *hook = NULL, int flags = 0, float gain = 1, float pitch = 1, float rolloff = -1, float refdist = -1, float maxdist = -1, int ends = 0);
 extern int emitsoundpos(int n, const vec &pos, int *hook = NULL, int flags = 0, float gain = 1, float pitch = 1, float rolloff = -1, float refdist = -1, float maxdist = -1, int ends = 0);

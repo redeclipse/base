@@ -706,7 +706,6 @@ void save_config(char *mname, bool forcesave = false)
         h->printf(" %s", floatstr(mapsounds[i].refdist));
         h->printf(" %s", floatstr(mapsounds[i].maxdist));
         h->printf(" %d", mapsounds[i].variants);
-        h->printf(" %s", floatstr(mapsounds[i].fardist));
         h->printf("\n");
         progress((i+1)/float(mapsounds.length()), "Saving mapsound slots..");
     }
