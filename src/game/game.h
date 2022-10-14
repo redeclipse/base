@@ -1182,7 +1182,7 @@ struct gameentity : extentity
             else if(m_bomber(game::gamemode)) bomber::getpos(affinity, curpos);
         }
 
-        if(flags&EF_DYNAMIC) curpos.add(offset);
+        if(dynamic()) curpos.add(offset);
         lastpos = totalmillis;
     }
     vec pos() { getcurpos(); return curpos; }

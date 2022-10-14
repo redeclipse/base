@@ -41,7 +41,7 @@ GETSKYPIE(lightpitch, float);
 bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, bool normalize, bool dyncheck)
 {
     if(!entities::isallowed(e)) return false;
-    if(dyncheck && e.flags&EF_DYNAMIC) return false;
+    if(dyncheck && e.dynamic()) return false;
     if(color)
     {
         *color = vec(e.attrs[1], e.attrs[2], e.attrs[3]);

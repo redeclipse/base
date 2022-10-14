@@ -2788,7 +2788,7 @@ namespace game
                     pitch = 0;
                     break;
             }
-            if(dynamic && e.flags&EF_DYNAMIC)
+            if(dynamic && e.dynamic())
             {
                 yaw += e.yaw;
                 pitch += e.pitch;

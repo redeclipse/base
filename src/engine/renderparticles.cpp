@@ -2037,7 +2037,7 @@ void updateparticles()
         {
             particleemitter &pe = emitters[i];
             extentity &e = *pe.ent;
-            if(e.flags&EF_DYNAMIC || !entities::checkparticle(e) || e.o.dist(camera1->o) > maxparticledistance) { pe.lastemit = lastmillis; continue; }
+            if(e.dynamic() || !entities::checkparticle(e) || e.o.dist(camera1->o) > maxparticledistance) { pe.lastemit = lastmillis; continue; }
             if(cullparticles && pe.maxfade >= 0)
             {
                 if(isfoggedsphere(pe.radius, pe.center)) { pe.lastcull = lastmillis; continue; }

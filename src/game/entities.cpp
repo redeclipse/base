@@ -2691,7 +2691,7 @@ namespace entities
 
     void renderentshow(gameentity &e, int idx, int level, bool dynamic = false)
     {
-        if(dynamic && (!(e.flags&EF_DYNAMIC) || showentdynamic >= level)) return;
+        if(dynamic && (e.dynamic() || showentdynamic >= level)) return;
         vec pos = dynamic ? e.pos() : e.o;
         if(pos.squaredist(camera1->o) > showentdist*showentdist) return;
         #define entdirpart(o,y,p,length,fade,colour) \
@@ -3240,7 +3240,7 @@ namespace entities
              hastop = hasent && o.squaredist(camera1->o) <= showentdist*showentdist;
         if(edit)
         {
-            loopj(hastop && e.flags&EF_DYNAMIC ? 2 : 1)
+            loopj(hastop && e.dynamic() ? 2 : 1)
             {
                 part_create(hastop && !j ? PART_EDIT_ONTOP : PART_EDIT, 1, j ? e.pos() : o, j ? entselcolourdyn : (hastop ? entselcolourtop : entselcolour), hastop && !j ? entselsizetop : entselsize);
                 if(j) part_line(o, e.pos(), entselsize, 1, 1, entselcolourdyn);

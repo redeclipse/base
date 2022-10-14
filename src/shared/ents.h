@@ -148,7 +148,7 @@ SVAR(IDF_READONLY, stateidxname, "alive dead editing spectator waiting");
 VAR(IDF_READONLY, stateidxalive, 0, CS_ALIVE, -1);
 SVAR(IDF_READONLY, statenamealive, "Alive");
 VAR(IDF_READONLY, stateidxdead, 0, CS_DEAD, -1);
-SVAR(IDF_READONLY, statenamedead, "DEAD");
+SVAR(IDF_READONLY, statenamedead, "Dead");
 VAR(IDF_READONLY, stateidxediting, 0, CS_EDITING, -1);
 SVAR(IDF_READONLY, statenameediting, "Editing");
 VAR(IDF_READONLY, stateidxspectator, 0, CS_SPECTATOR, -1);

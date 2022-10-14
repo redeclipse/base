@@ -114,7 +114,7 @@ struct flarerenderer : partrenderer
         loopenti(ET_LIGHT)
         {
             extentity &e = *ents[i];
-            if(e.type != ET_LIGHT || e.flags&EF_DYNAMIC || (!(flarelights&2) && !(flarelights&1 && e.attrs[4])) || !entities::isallowed(e)) continue;
+            if(e.type != ET_LIGHT || e.dynamic() || (!(flarelights&2) && !(flarelights&1 && e.attrs[4])) || !entities::isallowed(e)) continue;
             bool sun = false;
             int sparkle = 0;
             uchar r = e.attrs[1], g = e.attrs[2], b = e.attrs[3];

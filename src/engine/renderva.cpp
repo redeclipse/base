@@ -504,8 +504,8 @@ bool mapmodelvisible(extentity &e, int n, int colvis, bool shadowpass)
     if(editmode && colvis&1) return true;
     if(!mapmodels.inrange(e.attrs[0])) return false;
     bool ingroup = editmode && (enthover.find(n) >= 0 || entgroup.find(n) >= 0);
-    if(!ingroup && (e.flags&EF_NOVIS || e.flags&EF_DYNAMIC || !mapmodels.inrange(e.attrs[0]) || !entities::isallowed(e))) return false;
-    if(colvis&2 && (e.flags&EF_NOCOLLIDE || e.flags&EF_DYNAMIC)) return false;
+    if(!ingroup && (e.flags&EF_NOVIS || e.dynamic() || !mapmodels.inrange(e.attrs[0]) || !entities::isallowed(e))) return false;
+    if(colvis&2 && (e.flags&EF_NOCOLLIDE || e.dynamic())) return false;
     if(e.lastemit)
     {
         if(e.flags&EF_HIDE)
