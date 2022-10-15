@@ -82,29 +82,29 @@ namespace game
         mapweapsounds();
     }
 
-    int getweapfx(int type)
+    fx::FxHandle getweapfx(int type)
     {
-        static slot *weapfx[FX_W_TYPES] =
+        static fx::FxHandle weapfx[FX_W_TYPES] =
         {
-            fx::getfxslot("FX_W_MUZZLE1"),
-            fx::getfxslot("FX_W_MUZZLE2"),
-            fx::getfxslot("FX_W_MUZZLE3"),
-            fx::getfxslot("FX_W_MUZZLE4"),
-            fx::getfxslot("FX_W_MUZZLE5"),
-            fx::getfxslot("FX_W_MUZZLE6"),
-            fx::getfxslot("FX_W_FLAME"),
-            fx::getfxslot("FX_W_AIRBLAST"),
-            fx::getfxslot("FX_W_PLASMA1"),
-            fx::getfxslot("FX_W_PLASMA2"),
-            fx::getfxslot("FX_W_PLASMA_P"),
-            fx::getfxslot("FX_W_ENERGY1"),
-            fx::getfxslot("FX_W_ENERGY2"),
-            fx::getfxslot("FX_W_ENERGY_P"),
-            fx::getfxslot("FX_W_BEAM1"),
-            fx::getfxslot("FX_W_BEAM2")
+            fx::getfxhandle("FX_W_MUZZLE1"),
+            fx::getfxhandle("FX_W_MUZZLE2"),
+            fx::getfxhandle("FX_W_MUZZLE3"),
+            fx::getfxhandle("FX_W_MUZZLE4"),
+            fx::getfxhandle("FX_W_MUZZLE5"),
+            fx::getfxhandle("FX_W_MUZZLE6"),
+            fx::getfxhandle("FX_W_FLAME"),
+            fx::getfxhandle("FX_W_AIRBLAST"),
+            fx::getfxhandle("FX_W_PLASMA1"),
+            fx::getfxhandle("FX_W_PLASMA2"),
+            fx::getfxhandle("FX_W_PLASMA_P"),
+            fx::getfxhandle("FX_W_ENERGY1"),
+            fx::getfxhandle("FX_W_ENERGY2"),
+            fx::getfxhandle("FX_W_ENERGY_P"),
+            fx::getfxhandle("FX_W_BEAM1"),
+            fx::getfxhandle("FX_W_BEAM2")
         };
 
-        return type >= 0 && type < FX_W_TYPES ? weapfx[type]->index : -1;
+        return type >= 0 && type < FX_W_TYPES ? weapfx[type] : fx::FxHandle();
     }
 
     void mapslots() { projs::mapprojfx(); }
@@ -1471,14 +1471,14 @@ namespace game
             if(powering && showweapfx)
             {
                 int fxtype = W2(d->weapselect, fxtypepower, secondary);
-                int fxindex = getweapfx(fxtype);
-                if(fxindex >= 0)
+                fx::FxHandle fxhandle = getweapfx(fxtype);
+                if(fxhandle.isvalid())
                 {
                     vec from = d->muzzletag(d->weapselect);
                     vec targ;
                     safefindorientation(d->o, d->yaw, d->pitch, targ);
                     targ.sub(from).normalize().add(from);
-                    fx::createfx(fxindex, from, targ, 1.0f, 1.0f, bvec(color), d, &d->weaponfx);
+                    fx::createfx(fxhandle, from, targ, 1.0f, 1.0f, bvec(color), d, &d->weaponfx);
                     if(d->weaponfx) d->weaponfx->setparam(W_FX_POWER_PARAM, amt);
                 }
             }

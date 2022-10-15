@@ -315,6 +315,11 @@ CLIENT_OBJS = \
     game/waypoint.o \
     game/weapons.o
 
+# Build tests
+ifneq (,$(findstring -D_DEBUG,$(CXXFLAGS)))
+    CLIENT_OBJS += tests/slotmanager.o
+endif
+
 CLIENT_PCH = shared/cube.h.gch engine/engine.h.gch
 
 ifeq (1,$(BUILD_WINDOWS))

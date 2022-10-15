@@ -66,7 +66,7 @@ namespace projs
         PRJ_NUM_FX_SUBTYPES
     };
 
-    static slot *projfx[FX_P_TYPES * PRJ_NUM_FX_SUBTYPES];
+    static fx::FxHandle projfx[FX_P_TYPES * PRJ_NUM_FX_SUBTYPES];
     #define PROJFXINDEX(type, subtype) (((type) * PRJ_NUM_FX_SUBTYPES) + (subtype))
 
     void mapprojfx()
@@ -88,21 +88,21 @@ namespace projs
         {
             string slotname;
             formatstring(slotname, "%s%s", typeprefixes[i], subtypes[j]);
-            projfx[PROJFXINDEX(i, j)] = fx::getfxslot(slotname);
+            projfx[PROJFXINDEX(i, j)] = fx::getfxhandle(slotname);
         }
     }
 
-    static inline int getprojfx(int fxtype, int subtype)
+    static inline fx::FxHandle getprojfx(int fxtype, int subtype)
     {
         return fxtype >= 0 && fxtype < FX_P_TYPES &&
             subtype >= 0 && subtype < PRJ_NUM_FX_SUBTYPES ?
-                projfx[PROJFXINDEX(fxtype, subtype)]->index : -1;
+                projfx[PROJFXINDEX(fxtype, subtype)] : fx::FxHandle();
     }
 
     static void doprojfx(projent &proj, int subtype)
     {
-        int fxindex = getprojfx(proj.fxtype, subtype);
-        if(fxindex < 0) return;
+        fx::FxHandle fxhandle = getprojfx(proj.fxtype, subtype);
+        if(!fxhandle.isvalid()) return;
 
         bvec color(255, 255, 255);
         float scale = 1.0f, blend = 1.0f;
@@ -140,7 +140,7 @@ namespace projs
         if(subtype == PRJ_FX_LIFE && proj.projcollide&COLLIDE_SCAN)
             pe = proj.owner;
 
-        fx::emitter *e = fx::createfx(fxindex, from, to, blend, scale, color, pe, hook);
+        fx::emitter *e = fx::createfx(fxhandle, from, to, blend, scale, color, pe, hook);
         float param;
 
         if(e) switch(subtype)
@@ -1289,14 +1289,14 @@ namespace projs
             float muz = muzzleblend*W2(weap, fxblend, WS(flags));
             if(d == game::focus) muz *= muzzlefade;
             int fxtype = WF(WK(flags), weap, fxtype, WS(flags));
-            int fxindex = game::getweapfx(fxtype);
-            if(fxindex >= 0)
+            fx::FxHandle fxhandle = game::getweapfx(fxtype);
+            if(fxhandle.isvalid())
             {
                 float fxscale = WF(WK(flags), weap, fxscale, WS(flags));
                 vec targ;
                 safefindorientation(d->o, d->yaw, d->pitch, targ);
                 targ.sub(from).normalize().add(from);
-                fx::createfx(fxindex, from, targ, muz, fxscale, bvec(color), d, &d->weaponfx);
+                fx::createfx(fxhandle, from, targ, muz, fxscale, bvec(color), d, &d->weaponfx);
                 if(d->weaponfx) d->weaponfx->setparam(W_FX_POWER_PARAM, scale);
             }
         }

@@ -316,10 +316,10 @@ namespace fx
 
         if(!inst.emitted) // first emission
         {
-            fxdef &def = getfxdef(inst.fxindex);
+            fxdef &def = inst.fxhandle.get();
 
             emitsound(
-                def.sound->index,
+                def.sound.getindex(),
                 &from,
                 NULL,
                 &inst.soundhook,
@@ -383,7 +383,7 @@ namespace fx
 
     void instance::emitfx()
     {
-        fxdef &def = getfxdef(fxindex);
+        fxdef &def = fxhandle.get();
 
         switch(def.type)
         {

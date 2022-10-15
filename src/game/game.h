@@ -2399,7 +2399,7 @@ namespace game
     extern avatarent avatarmodel, bodymodel;
 
     extern vec *getplayersoundpos(gameent *d);
-    extern int getweapfx(int type);
+    extern fx::FxHandle getweapfx(int type);
     extern bool needname(gameent *d);
     extern const char *vanityfname(gameent *d, int n, int head = -1, bool proj = false);
     extern void followswitch(int n, bool other = false);

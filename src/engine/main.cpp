@@ -994,6 +994,12 @@ int main(int argc, char **argv)
     #endif
     #endif
 
+    #ifdef _DEBUG
+        // Run unit tests
+        extern void testslotmanager();
+        testslotmanager();
+    #endif
+
     currenttime = time(NULL); // initialise
     clocktime = mktime(gmtime(&currenttime));
     clockoffset = currenttime-clocktime;

@@ -107,7 +107,7 @@ namespace fx
 
     void instance::reset(bool initialize)
     {
-        fxdef &def = getfxdef(fxindex);
+        fxdef &def = fxhandle.get();
 
         switch(def.type)
         {
@@ -124,10 +124,10 @@ namespace fx
         }
     }
 
-    void instance::init(emitter *em, int index, instance *prnt)
+    void instance::init(emitter *em, FxHandle newhandle, instance *prnt)
     {
         e = em;
-        fxindex = index;
+        fxhandle = newhandle;
         parent = prnt;
         sync = true;
         emitted = false;
@@ -238,12 +238,12 @@ namespace fx
 
     void instance::stop()
     {
-        fxdef &def = getfxdef(fxindex);
+        fxdef &def = fxhandle.get();
 
         reset();
 
-        if(def.endfx && isfx(def.endfx->index) && endmillis)
-            createfx(def.endfx->index, e->from, e->to, e->blend, e->scale, e->color, e->pl, NULL);
+        if(def.endfx.isvalid() && endmillis)
+            createfx(def.endfx, e->from, e->to, e->blend, e->scale, e->color, e->pl, NULL);
 
         beginmillis = endmillis = 0;
     }
@@ -272,11 +272,11 @@ namespace fx
         bumpstat(FX_STAT_EMITTER_INIT);
     }
 
-    bool emitter::instantiate(int index, instance *parent)
+    bool emitter::instantiate(FxHandle handle, instance *parent)
     {
-        if(!isfx(index))
+        if(!handle.isvalid())
         {
-            conoutf("\frError: cannot instantiate fx, invalid index %d", index);
+            conoutf("\frError: cannot instantiate fx, invalid handle");
             return false;
         }
 
@@ -288,11 +288,11 @@ namespace fx
             return false;
         }
 
-        inst->init(this, index, parent);
+        inst->init(this, handle, parent);
 
         listdpushback(inst, firstfx, lastfx, prev, next);
 
-        fxdef &def = getfxdef(index);
+        fxdef &def = handle.get();
         loopv(def.children) instantiate(def.children[i], inst);
 
         return true;
@@ -360,12 +360,12 @@ namespace fx
         putemitter(e);
     }
 
-    emitter *createfx(int index, const vec &from, const vec &to, float blend, float scale,
+    emitter *createfx(FxHandle fxhandle, const vec &from, const vec &to, float blend, float scale,
         const bvec &color, physent *pl, emitter **hook)
     {
         // stop hooked FX if we want to make a different one under the same hook,
         // old hook is invalidated automatically
-        if(hook && *hook && (*hook)->firstfx->fxindex != index) stopfx(*hook);
+        if(hook && *hook && (*hook)->firstfx->fxhandle != fxhandle) stopfx(*hook);
 
         emitter *e = hook && *hook ? *hook : getemitter();
 
@@ -378,7 +378,7 @@ namespace fx
         if(!e->hook)
         {
             e->init(hook);
-            if(!e->instantiate(index))
+            if(!e->instantiate(fxhandle))
             {
                 // no free instances, emitter has nothing to do
                 putemitter(e);
@@ -426,8 +426,7 @@ namespace fx
 
     ICOMMAND(0, testfx, "si", (char *name, int *sameinstance),
     {
-        int fxindex = getfxindex(name);
-        if(!isfx(fxindex)) return;
+        if(!hasfx(name)) return;
 
         vec dir;
         vec from;
@@ -438,7 +437,7 @@ namespace fx
         from.sub(dir.mul(16));
         to = vec(from).add(vec(0, 0, 32));
 
-        createfx(fxindex, from, to, 1, 1, bvec(255, 255, 255), NULL, *sameinstance ? &testemitter : NULL);
+        createfx(getfxhandle(name), from, to, 1, 1, bvec(255, 255, 255), NULL, *sameinstance ? &testemitter : NULL);
         if(*sameinstance) testmillis = lastmillis;
     });
 }

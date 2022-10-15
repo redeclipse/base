@@ -45,14 +45,14 @@ static void getextsoundprocs()
 }
 
 hashnameset<soundsample> soundsamples;
-slotmanager<soundslot> gamesounds, mapsounds;
-vector<slot *> soundmap;
+Slotmanager<soundslot> gamesounds, mapsounds;
+vector<SoundHandle> soundmap;
 vector<soundsource> soundsources;
 SDL_Thread *music_thread;
 SDL_mutex *music_mutex;
 musicstream *music = NULL;
 
-slotmanager<soundenv> soundenvs;
+Slotmanager<soundenv> soundenvs;
 vector<soundenvzone> envzones;
 vector<soundenvzone *> sortedenvzones;
 soundenvzone *insideenvzone = NULL;
@@ -410,13 +410,13 @@ SVAR(0, titlemusic, "sounds/theme");
 void mapsoundslot(int index, const char *name)
 {
     while(index >= soundmap.length()) soundmap.add();
-    soundmap[index] = gamesounds.getslot(name);
+    soundmap[index] = gamesounds[name];
 }
 
 int getsoundslot(int index)
 {
-    if(!soundmap.inrange(index) || !soundmap[index]) return -1;
-    return soundmap[index]->index;
+    if(!soundmap.inrange(index) || !soundmap[index].isvalid()) return -1;
+    return soundmap[index].getindex();
 }
 
 void mapsoundslots()
@@ -570,7 +570,7 @@ void stopsound()
     clearsound();
     enumerate(soundsamples, soundsample, s, s.cleanup());
     soundsamples.clear();
-    gamesounds.clear(false);
+    gamesounds.clear();
     closemumble();
     alcMakeContextCurrent(NULL);
     alcDestroyContext(sndctx);
@@ -581,7 +581,7 @@ void stopsound()
 void clearsound()
 {
     loopv(soundsources) soundsources[i].clear();
-    mapsounds.clear(false);
+    mapsounds.clear();
     soundenvs.clear();
     envzones.shrink(0);
 }
@@ -713,12 +713,12 @@ static void loadsamples(soundslot &slot)
     }
 }
 
-int addsound(const char *id, const char *name, float gain, float pitch, float rolloff, float refdist, float maxdist, int variants, slotmanager<soundslot> &soundset)
+int addsound(const char *id, const char *name, float gain, float pitch, float rolloff, float refdist, float maxdist, int variants, Slotmanager<soundslot> &soundset)
 {
     if(nosound || !strcmp(name, "<none>")) return -1;
 
-    int newidx = soundset.add(id);
-    soundslot &slot = soundset[newidx];
+    SoundHandle newhandle = soundset.add(id);
+    soundslot &slot = newhandle.get();
 
     slot.reset();
     slot.name = newstring(name);
@@ -731,14 +731,14 @@ int addsound(const char *id, const char *name, float gain, float pitch, float ro
 
     loadsamples(slot);
 
-    return newidx;
+    return newhandle.getindex();
 }
 
 ICOMMAND(0, loadsound, "ssgggggi", (char *id, char *name, float *gain, float *pitch, float *rolloff, float *refdist, float *maxdist, int *variants),
     intret(addsound(id, name, *gain, *pitch, *rolloff, *refdist, *maxdist, *variants, gamesounds));
 );
 
-int addsoundcompat(char *id, char *name, int vol, int maxrad, int minrad, int variants, slotmanager<soundslot> &soundset)
+int addsoundcompat(char *id, char *name, int vol, int maxrad, int minrad, int variants, Slotmanager<soundslot> &soundset)
 {
     float gain = vol > 0 ? vol / 255.f : 1.f, rolloff = maxrad > soundrolloff ? soundrolloff / float(maxrad) : 1.f, refdist = minrad > soundrefdist ? float(minrad) : -1.f;
     return addsound(id, name, gain, 1.f, rolloff, refdist, -1.f, variants, soundset);
@@ -846,7 +846,7 @@ void updatesounds()
         }
         s.cleanup();
 
-        slotmanager<soundslot> &soundset = s.flags&SND_MAP ? mapsounds : gamesounds;
+        Slotmanager<soundslot> &soundset = s.flags&SND_MAP ? mapsounds : gamesounds;
         while(!s.buffer.empty())
         {
             int n = s.buffer[0];
@@ -895,7 +895,7 @@ int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, flo
     if(nosound || !pos || gain <= 0 || !soundmastervol || !soundeffectvol || (flags&SND_MAP ? !soundeffectenv : !soundeffectevent)) return -1;
     if((flags&SND_MAP || (!(flags&SND_UNMAPPED) && n >= S_GAMESPECIFIC)) && client::waiting(true)) return -1;
 
-    slotmanager<soundslot> &soundset = flags&SND_MAP ? mapsounds : gamesounds;
+    Slotmanager<soundslot> &soundset = flags&SND_MAP ? mapsounds : gamesounds;
     if(!(flags&SND_UNMAPPED) && !(flags&SND_MAP)) n = getsoundslot(n);
 
     if(soundset.inrange(n))
@@ -975,10 +975,10 @@ ICOMMAND(0, sound, "iib", (int *n, int *vol, int *flags),
 
 ICOMMAND(0, soundbyname, "sib", (char *i, int *vol, int *flags),
 {
-    intret(playsound(gamesounds.getindex(i), camera1->o, camera1, (*flags >= 0 ? *flags : SND_PRIORITY|SND_NOENV|SND_NOATTEN)|SND_UNMAPPED, *vol ? *vol : -1));
+    intret(playsound(gamesounds[i].getindex(), camera1->o, camera1, (*flags >= 0 ? *flags : SND_PRIORITY|SND_NOENV|SND_NOATTEN)|SND_UNMAPPED, *vol ? *vol : -1));
 });
 
-ICOMMAND(0, soundslot, "s", (char *i), intret(gamesounds.getindex(i)));
+ICOMMAND(0, soundslot, "s", (char *i), intret(gamesounds[i].getindex()));
 
 void removemapsounds()
 {
@@ -1001,8 +1001,8 @@ void resetsound()
     initsound();
     if(nosound)
     {
-        gamesounds.clear(false);
-        mapsounds.clear(false);
+        gamesounds.clear();
+        mapsounds.clear();
         soundenvs.clear();
         soundsamples.clear();
         return;
@@ -1644,7 +1644,7 @@ ICOMMAND(0, mapsoundinfo, "i", (int *index), {
 
 void getsounds(bool mapsnd, int idx, int prop)
 {
-    slotmanager<soundslot> &soundset = mapsnd ? mapsounds : gamesounds;
+    Slotmanager<soundslot> &soundset = mapsnd ? mapsounds : gamesounds;
     if(idx < 0) intret(soundset.length());
     else if(soundset.inrange(idx))
     {
@@ -1737,11 +1737,9 @@ static void initsoundenv() { initprops(newsoundenv->props, soundenvprops, SOUNDE
 
 static void defsoundenv(const char *name, uint *code)
 {
-    int newsoundenvidx = -1;
-
-    if((newsoundenvidx = soundenvs.getindex(name)) < 0) newsoundenvidx = soundenvs.add(name);
-    newsoundenv = &soundenvs[newsoundenvidx];
-    newsoundenv->name = soundenvs.getname(newsoundenvidx);
+    SoundenvHandle newhandle = soundenvs.add(name);
+    newsoundenv = &newhandle.get();
+    newsoundenv->name = soundenvs.getname(newhandle);
 
     initsoundenv();
     execute(code);

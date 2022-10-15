@@ -1670,98 +1670,244 @@ template <class T, int SIZE> struct reversequeue : queue<T, SIZE>
     const T &operator[](int offset) const { return queue<T, SIZE>::added(offset); }
 };
 
-struct slot
-{
-    int index;
-    char *name;
-
-    slot() : index(-1), name(NULL) {}
-    ~slot() { DELETEA(name); }
-
-    bool isfree() const { return index < 0; }
-};
-
 template<class T>
-struct slotmanager
+class Slotmanager
 {
-    vector<T> slots;
-    hashnameset<slot> slotmap;
+    class ResSlot;
 
-    int length() const { return slots.length(); }
-    bool inrange(int index) const { return slots.inrange(index); }
-
-    slot *getslot(const char *name)
+public:
+    class Handle
     {
-        slot *s = slotmap.access(name);
+        friend class ResSlot;
 
-        if(!s)
+    private:
+        vector<T> *elems;
+        int *index, *refcount;
+
+        void setindex(int newindex) { *index = newindex; }
+        void setelems(vector<T> *newelems) { elems = newelems; }
+
+        void remref()
         {
-            s = &slotmap[name];
-            s->name = newstring(name);
+            if(!refcount) return;
+
+            (*refcount)--;
+
+            ASSERT(*refcount > -1);
+
+            if(*refcount <= 0)
+            {
+                DELETEP(index);
+                DELETEP(refcount);
+            }
         }
 
-        return s;
+        void copyref(const Handle &copy)
+        {
+            remref();
+
+            index = copy.index;
+            refcount = copy.refcount;
+            elems = copy.elems;
+
+            if(refcount) (*refcount)++;
+        }
+
+        void init()
+        {
+            index = new int;
+            refcount = new int;
+
+            *index = -1;
+            *refcount = 1;
+        }
+
+    public:
+        Handle() : elems(NULL), index(NULL), refcount(NULL) {}
+
+        Handle(const Handle &copy) : Handle() { copyref(copy); }
+
+        ~Handle() { remref(); }
+
+        int getindex() const { return *index; }
+        bool isvalid() const { return index && *index >= 0; }
+
+        Handle &operator=(const Handle &copy)
+        {
+            copyref(copy);
+            return *this;
+        }
+
+        const T &get() const
+        {
+            ASSERT(isvalid());
+            return (*elems)[*index];
+        }
+
+        T &get()
+        {
+            ASSERT(isvalid());
+            return (*elems)[*index];
+        }
+
+        void set(const T &val)
+        {
+            ASSERT(isvalid());
+            (*elems)[*index] = val;
+        }
+
+        bool operator==(const Handle &comp) const { return index == comp.index; }
+        bool operator!=(const Handle &comp) const { return index != comp.index; }
+    };
+
+private:
+    class ResSlot
+    {
+        friend class Slotmanager;
+        friend struct hashnameset<ResSlot>;
+
+    private:
+        Handle handle;
+        char *name;
+
+    public:
+        ResSlot() : name(NULL) {}
+
+        ~ResSlot() { DELETEA(name); }
+
+        ResSlot(const ResSlot &copy)
+        {
+            handle = copy.handle;
+            name = copy.name;
+        }
+
+        ResSlot(ResSlot &&move)
+        {
+            handle = move.handle;
+            swap(name, move.name);
+        }
+
+    private:
+        void init(int index, const char *newname, vector<T> *elems)
+        {
+            handle.init();
+            handle.setindex(index);
+            handle.setelems(elems);
+
+            ASSERT(!name);
+
+            name = newstring(newname);
+        }
+
+        void init(Handle newhandle, const char *newname)
+        {
+            handle = newhandle;
+
+            ASSERT(!name);
+
+            name = newstring(newname);
+        }
+
+        void setindex(int newindex) { handle.setindex(newindex); }
+        int getindex() const { return handle.getindex(); }
+        Handle gethandle() const { return handle; }
+    };
+
+    vector<T> elems;
+    hashnameset<ResSlot> slotmap;
+
+public:
+    bool inrange(int index) const { return elems.inrange(index); }
+    int length() const { return elems.length(); }
+
+    Handle operator[](const char *name)
+    {
+        ResSlot *slot = slotmap.access(name);
+
+        int index = slot ? slot->getindex() : elems.length();
+
+        if(!slot)
+        {
+            slot = &slotmap[name];
+            slot->init(index, name, &elems);
+        }
+        else if(slot->getindex() < 0)
+        {
+            // elem previously removed and slot points to nothing
+            index = elems.length();
+            slot->setindex(index);
+        }
+
+        if(index == elems.length()) elems.add(T());
+
+        return slot->gethandle();
     }
 
-    int getindex(const char *name)
+    Handle add(const char *name) { return operator[](name); }
+
+    T& operator[](int index) { return elems[index]; }
+
+    vector<T> &vec() { return elems; }
+
+    void remove(const char *name)
     {
-        slot *s = slotmap.access(name);
-        return s ? s->index : -1;
+        ResSlot *slot = slotmap.access(name);
+        if(!slot) return;
+
+        int index = slot->getindex();
+
+        slot->setindex(-1);
+        slotmap.remove(name);
+
+        enumerate(slotmap, ResSlot, slot,
+            if(slot.getindex() > index) slot.setindex(slot.getindex() - 1);
+        );
+
+        elems.remove(index);
     }
 
-    const char *getname(int index)
+    bool rename(const char *oldname, const char *newname)
     {
-        enumerate(slotmap, slot, s, if(s.index == index) return s.name; );
+        ResSlot *slot = slotmap.access(oldname);
+
+        if(slot && !slotmap.access(newname))
+        {
+            Handle handle = slot->gethandle();
+
+            slotmap.remove(oldname);
+
+            slot = &slotmap[newname];
+            slot->init(handle, newname);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    const char *getname(Handle handle)
+    {
+        enumerate(slotmap, ResSlot, slot,
+            if(slot.gethandle() == handle) return slot.name;
+        );
         return NULL;
     }
 
-    int assign(const char *name)
-    {
-        slot *s = getslot(name);
-        int index = s->isfree() ? slots.length() : s->index;
-        s->index = index;
+    bool hasslot(const char *name) { return slotmap.access(name) != NULL; }
 
-        return index;
+    bool haselem(const char *name)
+    {
+        ResSlot *slot = slotmap.access(name);
+        return slot && slot->gethandle().isvalid();
     }
 
-    int add(const T &x, const char *name = NULL)
+    void clear(bool clearslots = false)
     {
-        int slotidx = (name && *name) ? assign(name) : slots.length();
-
-        if(slotidx > slots.length()) slots.add(T(), slotidx - slots.length());
-        if(slotidx == slots.length()) slots.add(x);
-        else slots[slotidx] = x;
-
-        return slotidx;
-    }
-
-    int add(const char *name = NULL) { return add(T(), name); }
-
-    void clear(bool freeres = true)
-    {
-        if(freeres) slots.shrink(0);
-        else slots.setsize(0);
-
-        enumerate(slotmap, slot, s, s.index = -1);
-    }
-
-    T &operator[](int index) { return slots[index]; }
-    const T &operator[](int index) const { return slots[index]; }
-
-    T& last() { return slots.last(); }
-    const T& last() const { return slots.last(); }
-
-    T& first() { return slots.first(); }
-    const T& first() const { return slots.first(); }
-
-    T *get(const char *name)
-    {
-        if(!name || !*name) return NULL;
-
-        slot *s = slotmap.access(name);
-        if(s && slots.inrange(s->index)) return &slots[s->index];
-
-        return NULL;
+        elems.shrink(0);
+        enumerate(slotmap, ResSlot, slot,
+            slot.setindex(-1);
+        );
+        if(clearslots) slotmap.clear();
     }
 };
 

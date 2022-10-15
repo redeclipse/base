@@ -1,3 +1,9 @@
+// Workaround for header mess:
+#ifndef soundslot
+    struct soundslot;
+    typedef Slotmanager<soundslot>::Handle SoundHandle;
+#endif
+
 namespace fx
 {
     enum
@@ -157,10 +163,6 @@ namespace fx
     struct instance;
     struct emitter;
 
-    bool isfx(int index);
-    fxdef &getfxdef(int index);
-    int getfxindex(const char *name);
-
     struct fxpropertydef : propertydef
     {
         int modflags;
@@ -196,13 +198,20 @@ namespace fx
         int unpack(uchar *buf, size_t bufsize);
     };
 
+    struct fxdef;
+    typedef Slotmanager<fxdef>::Handle FxHandle;
+
+    extern FxHandle getfxhandle(const char *name);
+    extern bool hasfx(const char *name);
+
     struct fxdef
     {
         const char *name;
         int type;
         fxproperty props[FX_TOTAL_PROPS];
-        vector<int> children;
-        slot *endfx, *sound;
+        vector<FxHandle> children;
+        SoundHandle sound;
+        FxHandle endfx;
 
         const char *getname() const { return name ? name : ""; }
         fxproperty *getextprops() { return &props[FX_STD_PROPS]; }
@@ -213,7 +222,7 @@ namespace fx
         instance *prev, *next; // linked list for chained FX and tracking unused instances
         instance *parent;
         emitter *e;
-        int fxindex;
+        FxHandle fxhandle;
         int beginmillis, endmillis, activeendmillis;
         bool sync, emitted;
 
@@ -224,7 +233,7 @@ namespace fx
         };
 
         void reset(bool initialize = false);
-        void init(emitter *em, int index, instance *prnt);
+        void init(emitter *em, FxHandle newhandle, instance *prnt);
         void calcactiveend();
         void calcend(int from);
         void prolong();
@@ -236,7 +245,8 @@ namespace fx
 
         template<class T> T getprop(int propindex)
         {
-            fxproperty &prop = getfxdef(fxindex).props[propindex];
+            fxdef &def = fxhandle.get();
+            fxproperty &prop = def.props[propindex];
             T ret = prop;
             if(prop.calcmodifiers) prop.calcmodifiers(*this, prop, &ret);
             return ret;
@@ -265,7 +275,7 @@ namespace fx
         void unhook();
         void updateend(int end);
         void init(emitter **newhook);
-        bool instantiate(int index, instance *parent = NULL);
+        bool instantiate(FxHandle handle, instance *parent = NULL);
         void prolong();
         bool done();
         void update();
@@ -281,8 +291,7 @@ namespace fx
 
     extern void update();
     extern void stopfx(emitter *e);
-    extern slot *getfxslot(const char *name);
-    extern emitter *createfx(int index, const vec &from, const vec &to, float blend = 1.0f,
+    extern emitter *createfx(FxHandle fxhandle, const vec &from, const vec &to, float blend = 1.0f,
         float scale = 1.0f, const bvec &color = bvec(255, 255, 255), physent *pl = NULL,
         emitter **hook = NULL);
     extern void clear();

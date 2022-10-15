@@ -27,12 +27,10 @@ namespace fx
         { propdeflerp, FX_MOD_LERP_PROPS }
     };
 
-    static slotmanager<fxdef> fxdefs;
+    static Slotmanager<fxdef> fxdefs;
 
-    bool isfx(int index) { return fxdefs.inrange(index); }
-    fxdef &getfxdef(int index) { return fxdefs[index]; }
-    int getfxindex(const char *name) { return fxdefs.getindex(name); }
-    slot *getfxslot(const char *name) { return fxdefs.getslot(name); }
+    FxHandle getfxhandle(const char *name) { return fxdefs[name]; }
+    bool hasfx(const char *name) { return fxdefs.hasslot(name); }
 
     fxproperty::~fxproperty()
     {
@@ -123,7 +121,7 @@ namespace fx
     }
 
     fxdef *newfx;
-    int newfxindex;
+    FxHandle newfxhandle;
     fxproperty *lastfxprop;
     static int curmodifier = -1;
 
@@ -238,21 +236,22 @@ namespace fx
         if(newfx->type == FX_TYPE_SOUND)
         {
             const char *soundname = newfx->getextprops()[FX_SOUND_SOUND].get<char *>();
-            newfx->sound = gamesounds.getslot(soundname);
+            newfx->sound = gamesounds[soundname];
         }
     }
 
     static void fxregister(const char *name, int type, uint *code)
     {
-        newfxindex = fxdefs.add(name);
-        newfx = &getfxdef(newfxindex);
-        newfx->name = fxdefs.getname(newfxindex);
+        newfxhandle = fxdefs.add(name);
+        newfx = &newfxhandle.get();
+        newfx->name = fxdefs.getname(newfxhandle);
         newfx->type = type;
-        newfx->sound = newfx->endfx = NULL;
+        newfx->sound = SoundHandle();
         newfx->children.shrink(0);
 
         if(fxdebug) conoutf("New FX registered: %s, index %d, type %s", name,
-            newfxindex, fxtypestring(newfx->type));
+            newfxhandle.getindex(), fxtypestring(newfx->type));
+
 
         resetdef();
         execute(code);
@@ -431,25 +430,25 @@ namespace fx
             return;
         }
 
-        int parentindex = getfxindex(name);
+        FxHandle parenthandle = fxdefs[name];
 
-        if(parentindex < 0)
+        if(!parenthandle.isvalid())
         {
             conoutf("\frError: cannot assign parent to %s, FX %s does not exist",
                 newfx->name, name);
             return;
         }
 
-        if(parentindex == newfxindex)
+        if(parenthandle == newfxhandle)
         {
             conoutf("\frError: cannot assign parent %s to itself",
                 newfx->name);
             return;
         }
 
-        fxdef &parent = getfxdef(parentindex);
+        fxdef &parent = parenthandle.get();
 
-        if(parent.children.find(newfxindex) < 0) parent.children.add(newfxindex);
+        if(parent.children.find(newfxhandle) < 0) parent.children.add(newfxhandle);
         else
         {
             conoutf("\fyWarning: %s already assigned to parent %s", newfx->name, name);
@@ -466,7 +465,7 @@ namespace fx
             return;
         }
 
-        newfx->endfx = fxdefs.getslot(name);
+        newfx->endfx = fxdefs[name];
     }
 
     ICOMMAND(0, fxend, "s", (char *name),
