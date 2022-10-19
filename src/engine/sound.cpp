@@ -1375,8 +1375,9 @@ ALenum soundsource::update()
     }
     else if(flags&SND_NODIST) rpos.sub(camera1->o).safenormalize().mul(2).add(camera1->o);
 
-    if(owner) conoutf("[%d / %d] %.6f %.6f %.6f [%.6f %.6f %.6f] (%d)", index, slotnum, rpos.x, rpos.y, rpos.z, vpos->x, vpos->y, vpos->z, owner->state);
-    else conoutf("[%d / %d] %.6f %.6f %.6f [%.6f %.6f %.6f]", index, slotnum, rpos.x, rpos.y, rpos.z, vpos->x, vpos->y, vpos->z);
+    //if(owner) conoutf("[%d / %d] %.6f %.6f %.6f [%.6f %.6f %.6f] (%d)", index, slotnum, rpos.x, rpos.y, rpos.z, vpos->x, vpos->y, vpos->z, owner->state);
+    //else conoutf("[%d / %d] %.6f %.6f %.6f [%.6f %.6f %.6f]", index, slotnum, rpos.x, rpos.y, rpos.z, vpos->x, vpos->y, vpos->z);
+
     alSourcefv(source, AL_POSITION, (ALfloat *) &rpos);
     SOUNDERRORTRACK(clear(); return err);
 
