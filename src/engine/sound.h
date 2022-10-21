@@ -137,7 +137,8 @@ struct soundslot
 
     void reset();
 };
-extern Slotmanager<soundslot> gamesounds, mapsounds;
+extern Slotmanager<soundslot> gamesounds;
+extern vector<soundslot> mapsounds;
 typedef Slotmanager<soundslot>::Handle SoundHandle;
 
 struct soundefxslot
@@ -162,20 +163,19 @@ struct soundenv
 
     const char *getname() const { return name ? name : ""; }
     void setparams(ALuint effect);
-    void updatezoneparams();
+    void updatezoneparams(int envindex);
 };
-extern Slotmanager<soundenv> soundenvs;
-typedef Slotmanager<soundenv>::Handle SoundenvHandle;
+extern vector<Sharedptr<soundenv>> soundenvs;
 
 struct soundenvzone
 {
     entity *ent;
-    soundenv *env;
+    Sharedptr<soundenv> env;
     ALuint effect;
     soundefxslot *efxslot;
     vec bbmin, bbmax;
 
-    soundenvzone() : ent(NULL), env(NULL), effect(AL_INVALID), efxslot(NULL) {}
+    soundenvzone() : ent(NULL), effect(AL_INVALID), efxslot(NULL) {}
     ~soundenvzone()
     {
         if(!al_ext_efx) return;
@@ -188,6 +188,7 @@ struct soundenvzone
     void attachparams();
     ALuint getefxslot();
     void froment(entity *newent);
+    void refreshfroment();
     int getvolume();
     void updatepan();
     bool isvalid();
@@ -267,7 +268,6 @@ extern void smartmusic(bool cond, bool init = false);
 extern void stopmusic();
 extern void updatemusic();
 extern void updatesounds();
-extern int addsound(const char *id, const char *name, float gain, float pitch, float rolloff, float refdist, float maxdist, int variants, Slotmanager<soundslot> &soundset);
 extern void clearsound();
 extern int emitsound(int n, vec *pos, physent *d = NULL, int *hook = NULL, int flags = 0, float gain = 1, float pitch = 1, float rolloff = -1, float refdist = -1, float maxdist = -1, int ends = 0);
 extern int emitsoundpos(int n, const vec &pos, int *hook = NULL, int flags = 0, float gain = 1, float pitch = 1, float rolloff = -1, float refdist = -1, float maxdist = -1, int ends = 0);

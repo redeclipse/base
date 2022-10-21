@@ -45,29 +45,30 @@ static void getextsoundprocs()
 }
 
 hashnameset<soundsample> soundsamples;
-Slotmanager<soundslot> gamesounds, mapsounds;
+Slotmanager<soundslot> gamesounds;
+vector<soundslot> mapsounds;
 vector<SoundHandle> soundmap;
 vector<soundsource> soundsources;
 SDL_Thread *music_thread;
 SDL_mutex *music_mutex;
 musicstream *music = NULL;
 
-Slotmanager<soundenv> soundenvs;
+vector<Sharedptr<soundenv>> soundenvs;
 vector<soundenvzone> envzones;
 vector<soundenvzone *> sortedenvzones;
 soundenvzone *insideenvzone = NULL;
 
-soundenv *newsoundenv = NULL;
+Sharedptr<soundenv> newsoundenv;
 vector<soundefxslot> soundefxslots;
 
-static soundenv *soundenvfroment(entity *ent)
+static Sharedptr<soundenv> soundenvfroment(entity *ent)
 {
     ASSERT(ent);
 
     int index = ent->attrs[0];
-    if(soundenvs.inrange(index)) return &soundenvs[index];
+    if(soundenvs.inrange(index)) return soundenvs[index];
 
-    return NULL;
+    return Sharedptr<soundenv>();
 }
 
 void allocsoundefxslots();
@@ -152,12 +153,13 @@ void soundenv::setparams(ALuint effect)
     ASSERT(alGetError() == AL_NO_ERROR);
 }
 
-void soundenv::updatezoneparams()
+void soundenv::updatezoneparams(int envindex)
 {
     loopv(envzones)
     {
         soundenvzone &zone = envzones[i];
-        if(zone.env == this && zone.efxslot) zone.attachparams();
+        if(zone.ent && zone.ent->attrs[0] == envindex) zone.refreshfroment();
+        if(zone.env.get() == this && zone.efxslot) zone.attachparams();
     }
 }
 
@@ -175,6 +177,14 @@ void soundenvzone::attachparams()
 
     alAuxiliaryEffectSloti(efxslot->id, AL_EFFECTSLOT_EFFECT, effect);
     alAuxiliaryEffectSloti(efxslot->id, AL_EFFECTSLOT_AUXILIARY_SEND_AUTO, AL_TRUE);
+
+    ALenum err = alGetError();
+
+    if(err != AL_NO_ERROR)
+    {
+        conoutf("ERROR %d", err);
+        ASSERT(err == AL_NO_ERROR);
+    }
 
     ASSERT(alGetError() == AL_NO_ERROR);
 }
@@ -202,6 +212,12 @@ void soundenvzone::froment(entity *newent)
     bbmin = vec(ent->o).sub(vec(ent->attrs[1], ent->attrs[2], ent->attrs[3]));
     bbmax = vec(ent->o).add(vec(ent->attrs[1], ent->attrs[2], ent->attrs[3]));
     if(efxslot) efxslot->put();
+}
+
+void soundenvzone::refreshfroment()
+{
+    ASSERT(ent);
+    froment(ent);
 }
 
 int soundenvzone::getvolume()
@@ -581,8 +597,8 @@ void stopsound()
 void clearsound()
 {
     loopv(soundsources) soundsources[i].clear();
-    mapsounds.clear();
-    soundenvs.clear();
+    mapsounds.shrink(0);
+    soundenvs.shrink(0);
     envzones.shrink(0);
 }
 
@@ -713,12 +729,26 @@ static void loadsamples(soundslot &slot)
     }
 }
 
-int addsound(const char *id, const char *name, float gain, float pitch, float rolloff, float refdist, float maxdist, int variants, Slotmanager<soundslot> &soundset)
+soundslot &addsoundslot(const char *id, int &index, Slotmanager<soundslot> &soundset)
+{
+    SoundHandle handle = soundset[id];
+    index = handle.getindex();
+    return handle.get();
+}
+
+soundslot &addsoundslot(const char *id, int &index, vector<soundslot> &soundset)
+{
+    index = soundset.length();
+    return soundset.add();
+}
+
+template<class SetType>
+int addsound(const char *id, const char *name, float gain, float pitch, float rolloff, float refdist, float maxdist, int variants, SetType &soundset)
 {
     if(nosound || !strcmp(name, "<none>")) return -1;
 
-    SoundHandle newhandle = soundset.add(id);
-    soundslot &slot = newhandle.get();
+    int index = -1;
+    soundslot &slot = addsoundslot(id, index, soundset);
 
     slot.reset();
     slot.name = newstring(name);
@@ -731,14 +761,15 @@ int addsound(const char *id, const char *name, float gain, float pitch, float ro
 
     loadsamples(slot);
 
-    return newhandle.getindex();
+    return index;
 }
 
 ICOMMAND(0, loadsound, "ssgggggi", (char *id, char *name, float *gain, float *pitch, float *rolloff, float *refdist, float *maxdist, int *variants),
     intret(addsound(id, name, *gain, *pitch, *rolloff, *refdist, *maxdist, *variants, gamesounds));
 );
 
-int addsoundcompat(char *id, char *name, int vol, int maxrad, int minrad, int variants, Slotmanager<soundslot> &soundset)
+template<class SetType>
+int addsoundcompat(char *id, char *name, int vol, int maxrad, int minrad, int variants, SetType &soundset)
 {
     float gain = vol > 0 ? vol / 255.f : 1.f, rolloff = maxrad > soundrolloff ? soundrolloff / float(maxrad) : 1.f, refdist = minrad > soundrefdist ? float(minrad) : -1.f;
     return addsound(id, name, gain, 1.f, rolloff, refdist, -1.f, variants, soundset);
@@ -846,7 +877,7 @@ void updatesounds()
         }
         s.cleanup();
 
-        Slotmanager<soundslot> &soundset = s.flags&SND_MAP ? mapsounds : gamesounds;
+        vector<soundslot> &soundset = s.flags&SND_MAP ? mapsounds : gamesounds.vec();
         while(!s.buffer.empty())
         {
             int n = s.buffer[0];
@@ -895,7 +926,7 @@ int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, flo
     if(nosound || !pos || gain <= 0 || !soundmastervol || !soundeffectvol || (flags&SND_MAP ? !soundeffectenv : !soundeffectevent)) return -1;
     if((flags&SND_MAP || (!(flags&SND_UNMAPPED) && n >= S_GAMESPECIFIC)) && client::waiting(true)) return -1;
 
-    Slotmanager<soundslot> &soundset = flags&SND_MAP ? mapsounds : gamesounds;
+    vector<soundslot> &soundset = flags&SND_MAP ? mapsounds : gamesounds.vec();
     if(!(flags&SND_UNMAPPED) && !(flags&SND_MAP)) n = getsoundslot(n);
 
     if(soundset.inrange(n))
@@ -1002,8 +1033,8 @@ void resetsound()
     if(nosound)
     {
         gamesounds.clear();
-        mapsounds.clear();
-        soundenvs.clear();
+        mapsounds.shrink(0);
+        soundenvs.shrink(0);
         soundsamples.clear();
         return;
     }
@@ -1644,7 +1675,7 @@ ICOMMAND(0, mapsoundinfo, "i", (int *index), {
 
 void getsounds(bool mapsnd, int idx, int prop)
 {
-    Slotmanager<soundslot> &soundset = mapsnd ? mapsounds : gamesounds;
+    vector<soundslot> &soundset = mapsnd ? mapsounds : gamesounds.vec();
     if(idx < 0) intret(soundset.length());
     else if(soundset.inrange(idx))
     {
@@ -1735,18 +1766,79 @@ ICOMMAND(0, getmusic, "b", (int *p), getmusics(*p));
 
 static void initsoundenv() { initprops(newsoundenv->props, soundenvprops, SOUNDENV_PROPS); }
 
-static void defsoundenv(const char *name, uint *code)
+static int findsoundenv(const char *name)
 {
-    SoundenvHandle newhandle = soundenvs.add(name);
-    newsoundenv = &newhandle.get();
-    newsoundenv->name = soundenvs.getname(newhandle);
+    loopv(soundenvs) if(!strcmp(soundenvs[i]->name, name))
+        return i;
 
-    initsoundenv();
+    return -1;
+}
+
+static int makesoundenv(const char *name, bool noinit)
+{
+    int index = findsoundenv(name);
+
+    if(index < 0)
+    {
+        newsoundenv = Sharedptr<soundenv>::make();
+        newsoundenv->name = newstring(name);
+
+        index = soundenvs.length();
+        soundenvs.add(newsoundenv);
+    }
+    else newsoundenv = soundenvs[index];
+
+    if(!noinit) initsoundenv();
+
+    return index;
+}
+
+static void defsoundenv(const char *name, uint *code, bool noinit)
+{
+    int index = makesoundenv(name, noinit);
+
     execute(code);
 
-    newsoundenv = NULL;
+    newsoundenv->updatezoneparams(index);
 }
-ICOMMAND(0, defsoundenv, "se", (char *name, uint *code), defsoundenv(name, code));
+ICOMMAND(0, defsoundenv, "seiN", (char *name, uint *code, int *noinit, int *numargs),
+    defsoundenv(name, code, *numargs > 2 && *noinit));
+
+static void dupsoundenv(const char *name, const char *srcname)
+{
+    int srcindex = findsoundenv(srcname);
+    if(srcindex < 0) return;
+
+    int newindex = makesoundenv(name, false);
+    Sharedptr<soundenv> srcenv = soundenvs[srcindex],
+                        newenv = soundenvs[newindex];
+
+    vector<uchar> props = packprops(srcenv.get()->props, SOUNDENV_PROPS);
+    unpackprops(props, newenv.get()->props, SOUNDENV_PROPS);
+}
+ICOMMAND(0, dupsoundenv, "ss", (char *name, char *srcname), dupsoundenv(name, srcname));
+
+ICOMMAND(0, remsoundenv, "s", (char *name),
+{
+    int index = findsoundenv(name);
+    if(index >= 0) soundenvs.remove(index);
+});
+
+ICOMMAND(0, renamesoundenv, "ss", (char *oldname, char *newname),
+{
+    bool result = false;
+    int index = findsoundenv(oldname);
+
+    if(index >=0 && findsoundenv(newname) < 0)
+    {
+        Sharedptr<soundenv> env = soundenvs[index];
+        DELETEA(env->name);
+        env->name = newstring(newname);
+        result = true;
+    }
+
+    intret(result);
+});
 
 template<class T>
 static void setsoundenvprop(const char *name, const T &val)
@@ -1766,13 +1858,52 @@ static void setsoundenvprop(const char *name, const T &val)
     }
 
     p->set(val);
-    newsoundenv->updatezoneparams();
 }
 
 ICOMMAND(0, soundenvpropi, "si", (char *name, int *ival),
     setsoundenvprop(name, *ival));
 ICOMMAND(0, soundenvpropf, "sf", (char *name, float *fval),
     setsoundenvprop(name, *fval));
+
+ICOMMAND(0, getsoundenvprop, "ss", (char *envname, char *propname),
+{
+    int index = findsoundenv(envname);
+    if(index >= 0)
+    {
+        property *p = findprop(propname, soundenvs[index]->props, SOUNDENV_PROPS);
+        if(p) p->commandret();
+    }
+});
+
+ICOMMAND(0, getsoundenvpropmin, "ss", (char *envname, char *propname),
+{
+    int index = findsoundenv(envname);
+    if(index >= 0)
+    {
+        property *p = findprop(propname, soundenvs[index]->props, SOUNDENV_PROPS);
+        if(p) p->commandretmin();
+    }
+});
+
+ICOMMAND(0, getsoundenvpropmax, "ss", (char *envname, char *propname),
+{
+    int index = findsoundenv(envname);
+    if(index >= 0)
+    {
+        property *p = findprop(propname, soundenvs[index]->props, SOUNDENV_PROPS);
+        if(p) p->commandretmax();
+    }
+});
+
+ICOMMAND(0, getsoundenvpropdef, "ss", (char *envname, char *propname),
+{
+    int index = findsoundenv(envname);
+    if(index >= 0)
+    {
+        property *p = findprop(propname, soundenvs[index]->props, SOUNDENV_PROPS);
+        if(p) p->commandretdefault();
+    }
+});
 
 static void dumpsoundenv(soundenv &env, stream *s)
 {
@@ -1796,11 +1927,11 @@ static void dumpsoundenv(soundenv &env, stream *s)
     s->printf("]\n");
 }
 
-void dumpsoundenvs(stream *s) { loopv(soundenvs) dumpsoundenv(soundenvs[i], s); }
+void dumpsoundenvs(stream *s) { loopv(soundenvs) dumpsoundenv(*soundenvs[i], s); }
 
 ICOMMAND(0, soundenvinfo, "i", (int *index), {
     if(*index < 0) intret(soundenvs.length());
-    else if(*index < soundenvs.length()) result(soundenvs[*index].name);
+    else if(*index < soundenvs.length()) result(soundenvs[*index]->name);
 });
 
 #ifdef WIN32
