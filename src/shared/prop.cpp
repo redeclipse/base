@@ -210,7 +210,7 @@ int property::unpack(uchar *buf, size_t bufsize)
     ASSERT(def);
 
     int bufread = 0;
-    size_t *datasize_packed = 0;
+    uint *datasize_packed = 0;
 
     if(bufsize <= sizeof(*datasize_packed))
     {
@@ -218,7 +218,7 @@ int property::unpack(uchar *buf, size_t bufsize)
         return 0;
     }
 
-    datasize_packed = (size_t*)buf;
+    datasize_packed = (uint*)buf;
     bufread += sizeof(*datasize_packed);
 
     switch(type)
@@ -228,7 +228,7 @@ int property::unpack(uchar *buf, size_t bufsize)
         case PROP_FLOAT:
             if(*datasize_packed != size())
             {
-                conoutf("Error unpacking prop '%s': unexpected data size! Wanted: %lu, got: %lu",
+                conoutf("Error unpacking prop '%s': unexpected data size! Wanted: %u, got: %u",
                     def->name, size(), *datasize_packed);
 
                 return 0;
@@ -240,7 +240,7 @@ int property::unpack(uchar *buf, size_t bufsize)
     {
         case PROP_INT:
         case PROP_COLOR:
-            if(bufsize - bufread <= size())
+            if(bufsize - bufread < size())
             {
                 conoutf("Error unpacking prop '%s': not enough data!", def->name);
                 return 0;
@@ -251,7 +251,7 @@ int property::unpack(uchar *buf, size_t bufsize)
             break;
 
         case PROP_FLOAT:
-            if(bufsize - bufread <= size())
+            if(bufsize - bufread < size())
             {
                 conoutf("Error unpacking prop '%s': not enough data!", def->name);
                 return 0;
@@ -264,7 +264,7 @@ int property::unpack(uchar *buf, size_t bufsize)
         case PROP_IVEC:
         case PROP_FVEC:
         case PROP_STRING:
-            if(bufsize - bufread <= *datasize_packed)
+            if(bufsize - bufread < *datasize_packed)
             {
                 conoutf("Error unpacking prop '%s': not enough data!", def->name);
                 return 0;
