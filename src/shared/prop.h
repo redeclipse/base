@@ -44,6 +44,10 @@ struct property
     void set(const char *value);
     void set(const property &prop);
     template<class T> T get() const { return *this; }
+    void commandret() const;
+    void commandretmin() const;
+    void commandretmax() const;
+    void commandretdefault() const;
     void reset();
     size_t size() const;
     virtual void pack(vector<uchar> &buf) const;

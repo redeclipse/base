@@ -96,6 +96,55 @@ void property::set(const property &prop)
     }
 }
 
+void property::commandret() const
+{
+    switch(type)
+    {
+        case PROP_INT:
+        case PROP_COLOR:
+            intret(ival);
+            break;
+
+        case PROP_FLOAT:
+            floatret(fval);
+            break;
+
+        case PROP_IVEC:
+        {
+            const ivec &v = get<ivec>();
+            defformatstring(str, "%d %d %d", v.x, v.y, v.z);
+            result(str);
+            break;
+        }
+
+        case PROP_FVEC:
+        {
+            const vec &v = get<vec>();
+            defformatstring(str, "%f %f %f", v.x, v.y, v.z);
+            result(str);
+            break;
+        }
+    }
+}
+
+void property::commandretmin() const
+{
+    ASSERT(def);
+    def->minval.commandret();
+}
+
+void property::commandretmax() const
+{
+    ASSERT(def);
+    def->maxval.commandret();
+}
+
+void property::commandretdefault() const
+{
+    ASSERT(def);
+    def->defaultval.commandret();
+}
+
 void property::reset()
 {
     ASSERT(def);
