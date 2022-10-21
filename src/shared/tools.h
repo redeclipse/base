@@ -1671,6 +1671,83 @@ template <class T, int SIZE> struct reversequeue : queue<T, SIZE>
 };
 
 template<class T>
+class Sharedptr
+{
+    T *ptr;
+    int *refcount;
+
+    void remref()
+    {
+        if(!refcount) return;
+
+        (*refcount)--;
+
+        if(*refcount <= 0)
+        {
+            DELETEP(ptr);
+            DELETEP(refcount);
+        }
+
+        ptr = nullptr;
+        refcount = nullptr;
+    }
+
+    void copyref(const Sharedptr &copy)
+    {
+        remref();
+
+        ptr = copy.ptr;
+        refcount = copy.refcount;
+
+        if(refcount) (*refcount)++;
+    }
+
+public:
+    template<class... Args>
+    static Sharedptr make(Args&&... args)
+    {
+        Sharedptr sptr;
+
+        sptr.ptr = new T(args...);
+        sptr.refcount = new int;
+        *(sptr.refcount) = 1;
+
+        return sptr;
+    }
+
+    Sharedptr() : ptr(nullptr), refcount(nullptr) {}
+    Sharedptr(const Sharedptr &copy) : Sharedptr() { copyref(copy); }
+    ~Sharedptr() { remref(); }
+
+    Sharedptr &operator=(const Sharedptr &copy)
+    {
+        copyref(copy);
+        return *this;
+    }
+
+    T &operator*() { return *ptr; }
+    const T &operator*() const { return *ptr; }
+
+    T *operator->() { return ptr; }
+    const T *operator->() const { return ptr; }
+
+    T *get() { return ptr; }
+    const T *get() const { return ptr; }
+
+    operator bool() const { return ptr != nullptr; }
+
+    bool operator==(const Sharedptr &comp) const
+    {
+        return ptr == comp.ptr && refcount == comp.refcount;
+    }
+
+    bool operator!=(const Sharedptr &comp) const { return !(*this == comp); }
+
+    int refs() const { return refcount ? *refcount : 0; }
+    void reset() { remref(); }
+};
+
+template<class T>
 class Slotmanager
 {
     class ResSlot;
