@@ -359,8 +359,8 @@ VARF(IDF_INIT, soundmaxsources, 16, 256, 1024, initwarning("sound configuration"
 SOUNDVOL(master, master, 1.f, );
 SOUNDVOL(sound, effect, 1.f, );
 SOUNDVOL(music, music, 0.25f, updatemusic());
-FVARF(IDF_PERSIST, soundeffectevent, 0, 1, 100, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
-FVARF(IDF_PERSIST, soundeffectenv, 0, 1, 100, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
+FVAR(IDF_PERSIST, soundeffectevent, 0, 1, 100);
+FVAR(IDF_PERSIST, soundeffectenv, 0, 1, 100);
 FVAR(IDF_PERSIST, sounddistfilter, 0.0f, 0.3f, 1.0f);
 
 const char *sounderror(bool msg)
@@ -390,8 +390,8 @@ void soundsetspeed(float v)
 }
 FVARF(IDF_PERSIST, soundspeed, FVAR_NONZERO, 343.3f, FVAR_MAX, soundsetspeed(sounddoppler));
 
-FVARF(IDF_PERSIST, soundrefdist, FVAR_NONZERO, 16, FVAR_MAX, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
-FVARF(IDF_PERSIST, soundrolloff, FVAR_NONZERO, 256, FVAR_MAX, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
+FVARF(IDF_INIT, soundrefdist, FVAR_NONZERO, 16, FVAR_MAX, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
+FVARF(IDF_INIT, soundrolloff, FVAR_NONZERO, 256, FVAR_MAX, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
 
 void updatemusic()
 {
