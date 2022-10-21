@@ -785,8 +785,8 @@ static inline bool sourcecmp(const soundsource *x, const soundsource *y) // sort
 int soundindex(soundslot *slot, int slotnum, const vec &pos, int flags, int *hook)
 {
     if(hook && soundsources.inrange(*hook))
-    {
-        if(issound(*hook)) soundsources[*hook].clear();
+    { // hooks can just take over their original index
+        soundsources[*hook].clear(false); // don't clear a hook we're about to re-use
         return *hook;
     }
 
@@ -804,22 +804,24 @@ int soundindex(soundslot *slot, int slotnum, const vec &pos, int flags, int *hoo
     loopv(soundsources)
     {
         if(soundsources[i].valid()) sources.add(&soundsources[i]);
-        else return i;
+        else return i; // unused index
     }
-    sources.sort(sourcecmp);
 
-    if(sources[0]->index >= 0 && sources.length() > soundmaxsources)
-    {
-        int index = sources[0]->index;
-        sources[0]->clear();
-        return index;
-    }
-    if(sources.length() < soundmaxsources)
-    {
+    if(soundsources.length() < soundmaxsources)
+    { // if we get here, can't re-use an old index, try a new one first
         int index = soundsources.length();
         soundsources.add();
         return index;
     }
+
+    sources.sort(sourcecmp); // sort as a last resort
+    if(sources[0]->index >= 0 && sources.length() > soundmaxsources)
+    { // as long as the top isn't our dummy we can clear it
+        int index = sources[0]->index;
+        sources[0]->clear();
+        return index;
+    }
+
     return -1;
 }
 
@@ -1201,7 +1203,7 @@ ALenum soundsample::setup(soundfile *s)
 
 void soundsample::reset()
 {
-    buffer = 0;
+    buffer = AL_INVALID;
 }
 
 void soundsample::cleanup()
@@ -1212,7 +1214,7 @@ void soundsample::cleanup()
 
 bool soundsample::valid()
 {
-    if(!buffer || !alIsBuffer(buffer)) return false;
+    if(!alIsBuffer(buffer)) return false;
     return true;
 }
 
@@ -1292,7 +1294,7 @@ void soundsource::cleanup()
     alDeleteSources(1, &source);
 }
 
-void soundsource::reset()
+void soundsource::reset(bool dohook)
 {
     source = filter = AL_INVALID;
     pos = curpos = vel = vec(0, 0, 0);
@@ -1304,15 +1306,18 @@ void soundsource::reset()
     flags = millis = ends = 0;
     rolloff = refdist = maxdist = -1;
     index = slotnum = lastupdate = -1;
-    if(hook) *hook = -1;
-    hook = NULL;
+    if(dohook)
+    {
+        if(hook) *hook = -1;
+        hook = NULL;
+    }
     buffer.shrink(0);
 }
 
-void soundsource::clear()
+void soundsource::clear(bool dohook)
 {
     cleanup();
-    reset();
+    reset(dohook);
 }
 
 void soundsource::unhook()
@@ -1421,7 +1426,7 @@ ALenum soundsource::update()
 
 bool soundsource::valid()
 {
-    if(!source || !alIsSource(source)) return false;
+    if(!alIsSource(source)) return false;
     return true;
 }
 
@@ -1535,7 +1540,7 @@ void musicstream::cleanup()
 void musicstream::reset()
 {
     name = artist = title = album = NULL;
-    source = 0;
+    source = AL_INVALID;
     loopi(MUSICBUFS) buffer[i] = 0;
     data = NULL;
     gain = 1;
@@ -1592,7 +1597,7 @@ ALenum musicstream::update()
 
 bool musicstream::valid()
 {
-    if(!source || !alIsSource(source)) return false;
+    if(!alIsSource(source)) return false;
     loopi(MUSICBUFS) if(!alIsBuffer(buffer[i])) return false;
     return true;
 }

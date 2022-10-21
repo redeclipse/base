@@ -1268,8 +1268,7 @@ namespace projs
                 if((weap == W_FLAMER || weap == W_ZAPPER) && !(WS(flags)))
                 {
                     int ends = lastmillis+delayattack+PHYSMILLIS;
-                    if(issound(d->wschan[WS_MAIN_CHAN]) &&
-                       soundsources[d->wschan[WS_MAIN_CHAN]].slotnum == getsoundslot(slot))
+                    if(issound(d->wschan[WS_MAIN_CHAN]) && soundsources[d->wschan[WS_MAIN_CHAN]].slotnum == getsoundslot(slot))
                         soundsources[d->wschan[WS_MAIN_CHAN]].ends = ends;
                     else emitsound(slot, sndpos, d, &d->wschan[WS_MAIN_CHAN], SND_LOOP, skew, 1, -1, -1, -1, ends);
                 }
@@ -1278,10 +1277,7 @@ namespace projs
                     if(issound(d->wschan[WS_MAIN_CHAN]) &&
                        (soundsources[d->wschan[WS_MAIN_CHAN]].slotnum == getsoundslot(WSNDF(weap, false)) ||
                         soundsources[d->wschan[WS_MAIN_CHAN]].slotnum == getsoundslot(WSNDF(weap, true))))
-                    {
-                        soundsources[d->wschan[WS_MAIN_CHAN]].hook = NULL;
-                        d->wschan[WS_MAIN_CHAN] = -1;
-                    }
+                            soundsources[d->wschan[WS_MAIN_CHAN]].unhook();
                     emitsound(slot, sndpos, d, &d->wschan[WS_MAIN_CHAN], 0, skew);
                 }
             }

@@ -208,8 +208,8 @@ struct soundsource
 
     ALenum setup(soundsample *s);
     void cleanup();
-    void reset();
-    void clear();
+    void reset(bool dohook = true);
+    void clear(bool dohook = true);
     void unhook();
     ALenum updatefilter();
     ALenum update();
