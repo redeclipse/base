@@ -1652,7 +1652,7 @@ namespace game
                 }
                 if(d->actortype < A_ENEMY && !issound(d->vschan)) emitsound(S_PAIN, game::getplayersoundpos(d), d, &d->vschan);
                 d->lastpain = lastmillis;
-                if(!WK(flags)) emitsoundpos(WSND2(weap, WS(flags), S_W_IMPACT), vec(d->center()).add(vec(dir).mul(dist)), NULL, 0, clamp(scale, 0.2f, 1.f));
+                if(isweap(weap) && !WK(flags)) emitsoundpos(WSND2(weap, WS(flags), S_W_IMPACT), vec(d->center()).add(vec(dir).mul(dist)), NULL, 0, clamp(scale, 0.2f, 1.f));
             }
             if(A(d->actortype, abilities)&AA(PUSHABLE))
             {
