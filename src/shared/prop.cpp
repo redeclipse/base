@@ -186,19 +186,38 @@ void property::pack(vector<uchar> &buf) const
     switch(type)
     {
         case PROP_INT:
-            buf.put((uchar *)&ival, datasize);
-            break;
-
         case PROP_COLOR:
-            buf.put((uchar *)&ival, datasize);
+        {
+            int _ival = *this;
+            lilswap(&_ival, 1);
+            buf.put((uchar *)&_ival, datasize);
             break;
+        }
 
         case PROP_FLOAT:
+        {
+            float _fval = *this;
+            lilswap(&_fval, 1);
             buf.put((uchar *)&fval, datasize);
             break;
+        }
 
         case PROP_IVEC:
+        {
+            ivec _ivval = *this;
+            lilswap(_ivval.v, 3);
+            buf.put((uchar *)_ivval.v, datasize);
+            break;
+        }
+
         case PROP_FVEC:
+        {
+            vec _fvval = *this;
+            lilswap(_fvval.v, 3);
+            buf.put((uchar *)_fvval.v, datasize);
+            break;
+        }
+
         case PROP_STRING:
             buf.put((uchar *)data, datasize);
             break;
@@ -219,6 +238,8 @@ int property::unpack(uchar *buf, size_t bufsize)
     }
 
     datasize_packed = (uint*)buf;
+    lilswap(datasize_packed, 1);
+
     bufread += sizeof(*datasize_packed);
 
     switch(type)
@@ -247,6 +268,7 @@ int property::unpack(uchar *buf, size_t bufsize)
             }
 
             memcpy(&ival, buf + bufread, size());
+            lilswap(&ival, 1);
             bufread += size();
             break;
 
@@ -258,6 +280,7 @@ int property::unpack(uchar *buf, size_t bufsize)
             }
 
             memcpy(&fval, buf + bufread, size());
+            lilswap(&fval, 1);
             bufread += size();
             break;
 
@@ -273,6 +296,10 @@ int property::unpack(uchar *buf, size_t bufsize)
             clear();
             data = new uchar[*datasize_packed];
             memcpy(data, buf + bufread, *datasize_packed);
+
+            if(type == PROP_IVEC) lilswap((int*)data, 3);
+            else if(type == PROP_FVEC) lilswap((float*)data, 3);
+
             bufread += *datasize_packed;
             break;
     }
