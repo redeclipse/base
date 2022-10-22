@@ -196,7 +196,15 @@ struct soundenvzone
 
 struct soundsource
 {
-    ALuint source, filter;
+    enum
+    {
+        SNDSRC_FILTER_DIRECT = 0,
+        SNDSRC_FILTER_EFFECT,
+
+        SNDSRC_NUM_FILTERS
+    };
+
+    ALuint source, filters[SNDSRC_NUM_FILTERS];
     soundslot *slot;
     vec pos, curpos, vel, *vpos;
     physent *owner;
