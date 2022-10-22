@@ -3942,16 +3942,21 @@ namespace server
         return false;
     }
 
-    void sendresume(clientinfo *ci, bool reset = false)
+    void sendresume(clientinfo *ci, int reset = 0)
     {
         int target = -1, state = ci->state;
-        if(reset)
+        switch(reset)
         {
-            if(ci->state != CS_ALIVE || ci->needsresume) return; // useless / waiting for ack
-            target = ci->clientnum;
-            state = -1;
-            ci->needsresume = true;
-            ci->weapreset(false);
+            case 2:
+                if(ci->state != CS_ALIVE || ci->needsresume) return; // useless / waiting for ack
+                target = ci->clientnum;
+                ci->needsresume = true;
+                // fall-through
+            case 1:
+                state = -1;
+                ci->weapreset(false);
+                break;
+            default: break;
         }
         ci->updatetimeplayed();
         sendf(target, 1, "ri9fi4vvi", N_RESUME, ci->clientnum, state, ci->points, ci->frags, ci->deaths, ci->totalpoints, ci->totalfrags, ci->totaldeaths, ci->totalavgpos, ci->timeplayed, ci->health, ci->cptime, ci->weapselect, W_MAX*W_A_MAX, &ci->weapammo[0][0], W_MAX, &ci->weapent[0], -1);
@@ -4840,7 +4845,7 @@ namespace server
             {
                 if(sub && W(weap, ammoclip)) ci->weapammo[weap][W_A_CLIP] = max(ci->weapammo[weap][W_A_CLIP]-sub, 0);
                 srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s shoot [%d] failed - current state disallows it", colourname(ci), weap);
-                sendresume(ci, true);
+                sendresume(ci, 2);
                 return;
             }
             checkweapload(ci, ci->weapselect);
@@ -4885,7 +4890,7 @@ namespace server
             if(!ci->canswitch(weap, m_weapon(ci->actortype, gamemode, mutators), millis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
             {
                 srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s switch [%d] failed - current state disallows it", colourname(ci), weap);
-                sendresume(ci, true);
+                sendresume(ci, 2);
                 return;
             }
             checkweapload(ci, ci->weapselect);
@@ -4907,7 +4912,7 @@ namespace server
             if(!ci->weapwaited(weap, gamemillis, (1<<W_S_RELOAD)))
             {
                 srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s cook [%d] failed - current state disallows it", colourname(ci), weap);
-                sendresume(ci, true);
+                sendresume(ci, 2);
                 return;
             }
             checkweapload(ci, weap);
@@ -4937,7 +4942,7 @@ namespace server
             if(!ci->candrop(weap, sweap, millis, m_classic(gamemode, mutators), (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
             {
                 srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s drop [%d] failed - current state disallows it", colourname(ci), weap);
-                sendresume(ci, true);
+                sendresume(ci, 2);
                 return;
             }
             checkweapload(ci, ci->weapselect);
@@ -4965,7 +4970,7 @@ namespace server
         if(!ci->canreload(weap, m_weapon(ci->actortype, gamemode, mutators), true, millis))
         {
             srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s reload [%d] failed - current state disallows it", colourname(ci), weap);
-            sendresume(ci, true);
+            sendresume(ci, 2);
             return;
         }
         int oldammo = max(ci->weapammo[weap][W_A_CLIP], 0), ammoadd = W(weap, ammoadd);
@@ -4973,7 +4978,7 @@ namespace server
         if(!ammoadd)
         {
             srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s reload [%d] failed - no ammo available", colourname(ci), weap);
-            sendresume(ci, true);
+            sendresume(ci, 2);
             return;
         }
         ci->setweapstate(weap, W_S_RELOAD, W(weap, delayreload), millis);
@@ -5014,7 +5019,7 @@ namespace server
             if(!ci->canuse(gamemode, mutators, sents[ent].type, attr, sents[ent].attrs, sweap, millis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
             {
                 srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s use [%d] failed - current state disallows it", colourname(ci), ent);
-                sendresume(ci, true);
+                sendresume(ci, 2);
                 return;
             }
             checkweapload(ci, ci->weapselect);
@@ -6364,6 +6369,7 @@ namespace server
                         ci->state = CS_ALIVE;
                         if(smode) smode->entergame(ci);
                         mutate(smuts, mut->entergame(ci));
+                        sendresume(ci, 1); // workaround for randomised loadout sync
                     }
                     QUEUE_MSG;
                     break;
