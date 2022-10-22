@@ -363,6 +363,8 @@ namespace fx
     emitter *createfx(FxHandle fxhandle, const vec &from, const vec &to, float blend, float scale,
         const bvec &color, physent *pl, emitter **hook)
     {
+        if(!fxhandle.isvalid()) return NULL;
+
         // stop hooked FX if we want to make a different one under the same hook,
         // old hook is invalidated automatically
         if(hook && *hook && (*hook)->firstfx->fxhandle != fxhandle) stopfx(*hook);
