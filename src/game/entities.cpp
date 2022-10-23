@@ -2658,7 +2658,7 @@ namespace entities
             progress((i+1)/float(ents.length()), "Preparing entities..");
         }
         initrails();
-        buildenvzones();
+        initmapsound();
     }
 
     #define renderfocus(i,f) \

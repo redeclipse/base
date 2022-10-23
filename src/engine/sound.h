@@ -114,6 +114,7 @@ struct soundsample
 {
     char *name;
     ALuint buffer;
+    float time;
 
     soundsample() : name(NULL) { reset(); }
     ~soundsample() { DELETEA(name); }
@@ -262,7 +263,7 @@ extern musicstream *music;
 
 #define issound(c) (soundsources.inrange(c) && soundsources[c].active())
 
-extern void buildenvzones();
+extern void initmapsound();
 extern void updateenvzone(entity *ent);
 extern const char *sounderror(bool msg = true);
 extern void mapsoundslots();

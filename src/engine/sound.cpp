@@ -8,6 +8,7 @@ bool al_ext_efx = false, al_soft_spatialize = false, al_ext_float32 = false;
 ALCint al_sample_rate = ALC_INVALID;
 const char *al_errfunc = NULL, *al_errfile = NULL;
 uint al_errline = 0;
+static int mapsoundmillis;
 
 LPALGENAUXILIARYEFFECTSLOTS    alGenAuxiliaryEffectSlots    = NULL;
 LPALDELETEAUXILIARYEFFECTSLOTS alDeleteAuxiliaryEffectSlots = NULL;
@@ -328,7 +329,7 @@ static soundenvzone *buildenvzone(entity *ent)
     return &newzone;
 }
 
-void buildenvzones()
+static void buildenvzones()
 {
     envzones.shrink(0);
     vector<extentity *> &ents = entities::getents();
@@ -355,6 +356,12 @@ void updateenvzone(entity *ent)
         if(index >= 0) envzones[index].froment(ent);
         else buildenvzone(ent); // zone hasn't been created for this ent
     }
+}
+
+void initmapsound()
+{
+    buildenvzones();
+    mapsoundmillis = lastmillis;
 }
 
 SVARF(IDF_INIT, sounddevice, "", initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
@@ -1223,6 +1230,9 @@ ALenum soundsample::setup(soundfile *s)
     SOUNDERROR();
     alGenBuffers(1, &buffer);
     SOUNDERRORTRACK(cleanup(); return err);
+
+    time = s->frames / (float)s->info.samplerate;
+
     switch(s->type)
     {
         case soundfile::SHORT: alBufferData(buffer, s->format, s->data_s, s->len, s->info.samplerate); break;
@@ -1332,8 +1342,13 @@ ALenum soundsource::setup(soundsample *s)
         SOUNDERRORTRACK(clear(); return err);
     }
 
-    alSourcef(source, AL_SEC_OFFSET, offset);
-    SOUNDERRORTRACK(clear(); return err);
+    if(flags&SND_MAP && flags&SND_LOOP)
+    {
+        int millis = lastmillis - mapsoundmillis;
+        float finaloffset = fmodf((millis / 1000.0f) + offset, s->time);
+        alSourcef(source, AL_SEC_OFFSET, finaloffset);
+        SOUNDERRORTRACK(clear(); return err);
+    }
 
     return AL_NO_ERROR;
 }
