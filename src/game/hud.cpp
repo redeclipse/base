@@ -875,6 +875,7 @@ namespace hud
         {
             case W_S_PRIMARY: case W_S_SECONDARY:
             {
+                if(!W2(weap, ammosub, game::focus->weapstate[weap] == W_S_SECONDARY)) break;
                 amt = 1.f-clamp(interval/float(game::focus->weapwait[weap]), 0.f, 1.f);
                 fade *= amt;
                 if(clipanims)

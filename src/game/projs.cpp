@@ -573,10 +573,10 @@ namespace projs
 
     void preload()
     {
-        loopi(W_ALL)
+        loopi(W_ALL) loopj(2)
         {
-            if(*weaptype[i].proj) preloadmodel(weaptype[i].proj);
-            if(*weaptype[i].eprj) preloadmodel(weaptype[i].eprj);
+            if(*weaptype[i].proj[j]) preloadmodel(weaptype[i].proj[j]);
+            if(*weaptype[i].eprj[j]) preloadmodel(weaptype[i].eprj[j]);
         }
         const char *mdls[] = {
             "projectiles/gibs/gib01",
@@ -883,7 +883,7 @@ namespace projs
                 proj.speedmax = WF(WK(proj.flags), proj.weap, speedmax, WS(proj.flags));
                 proj.extinguish = WF(WK(proj.flags), proj.weap, extinguish, WS(proj.flags))|4;
                 proj.interacts = WF(WK(proj.flags), proj.weap, interacts, WS(proj.flags));
-                proj.mdlname = weaptype[proj.weap].proj;
+                proj.mdlname = weaptype[proj.weap].proj[WS(proj.flags) ? 1 : 0];
                 proj.fxtype = WF(WK(proj.flags), proj.weap, fxtypeproj, WS(proj.flags));
                 proj.escaped = !proj.owner || proj.child || WK(proj.flags) || WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_LENGTH || proj.weap == W_MELEE;
                 updatetargets(proj, waited);
@@ -981,7 +981,7 @@ namespace projs
                 if(proj.owner) proj.o = proj.from = proj.owner->ejecttag();
                 if(isweap(proj.weap))
                 {
-                    proj.mdlname = weaptype[proj.weap].eject && *weaptype[proj.weap].eprj ? weaptype[proj.weap].eprj : "projectiles/catridge";
+                    proj.mdlname = *weaptype[proj.weap].eprj[WS(proj.flags) ? 1 : 0] ? weaptype[proj.weap].eprj[WS(proj.flags) ? 1 : 0] : "projectiles/catridge";
                     proj.lifesize = weaptype[proj.weap].esize;
                     proj.material = bvec::fromcolor(W(proj.weap, colour));
                 }
@@ -1302,7 +1302,7 @@ namespace projs
         }
         loopv(shots)
             create(orig, vec(shots[i].pos).div(DMF), local, d, PRJ_SHOT, weap, flags, max(life, 1), W2(weap, time, WS(flags)), delay+(iter*i), speed, shots[i].id, weap, -1, flags, skew, false, v);
-        if(W2(weap, ammosub, WS(flags)) && ejectfade && weaptype[weap].eject && *weaptype[weap].eprj) loopi(W2(weap, ammosub, WS(flags)))
+        if(W2(weap, ammosub, WS(flags)) && ejectfade && *weaptype[weap].eprj[WS(flags) ? 1 : 0]) loopi(W2(weap, ammosub, WS(flags)))
             create(d->ejecttag(), d->ejecttag(), local, d, PRJ_EJECT, -1, 0, rnd(ejectfade)+ejectfade, 0, delay, rnd(weaptype[weap].espeed)+weaptype[weap].espeed, 0, weap, -1, flags);
 
         d->setweapstate(weap, WS(flags) ? W_S_SECONDARY : W_S_PRIMARY, delayattack, lastmillis);
