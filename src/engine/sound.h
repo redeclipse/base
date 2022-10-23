@@ -210,7 +210,7 @@ struct soundsource
     physent *owner;
     int index, flags, material, lastupdate;
     int millis, ends, slotnum, *hook;
-    float gain, curgain, pitch, curpitch, rolloff, refdist, maxdist;
+    float gain, curgain, pitch, curpitch, rolloff, refdist, maxdist, offset;
     float finalrolloff, finalrefdist;
     vector<int> buffer;
 
@@ -277,9 +277,9 @@ extern void stopmusic();
 extern void updatemusic();
 extern void updatesounds();
 extern void clearsound();
-extern int emitsound(int n, vec *pos, physent *d = NULL, int *hook = NULL, int flags = 0, float gain = 1, float pitch = 1, float rolloff = -1, float refdist = -1, float maxdist = -1, int ends = 0);
-extern int emitsoundpos(int n, const vec &pos, int *hook = NULL, int flags = 0, float gain = 1, float pitch = 1, float rolloff = -1, float refdist = -1, float maxdist = -1, int ends = 0);
-extern int playsound(int n, const vec &pos, physent *d = NULL, int flags = 0, int vol = -1, int maxrad = -1, int minrad = -1, int *hook = NULL, int ends = 0);
+extern int emitsound(int n, vec *pos, physent *d = NULL, int *hook = NULL, int flags = 0, float gain = 1, float pitch = 1, float rolloff = -1, float refdist = -1, float maxdist = -1, int ends = 0, float offset = 0);
+extern int emitsoundpos(int n, const vec &pos, int *hook = NULL, int flags = 0, float gain = 1, float pitch = 1, float rolloff = -1, float refdist = -1, float maxdist = -1, int ends = 0, float offset = 0);
+extern int playsound(int n, const vec &pos, physent *d = NULL, int flags = 0, int vol = -1, int maxrad = -1, int minrad = -1, int *hook = NULL, int ends = 0, float offset = 0);
 extern void removetrackedsounds(physent *d);
 extern void removemapsounds();
 extern void dumpsoundenvs(stream *s);

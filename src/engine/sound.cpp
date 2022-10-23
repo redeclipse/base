@@ -921,7 +921,7 @@ void updatesounds()
     alcProcessContext(sndctx);
 }
 
-int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, float pitch, float rolloff, float refdist, float maxdist, int ends)
+int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, float pitch, float rolloff, float refdist, float maxdist, int ends, float offset)
 {
     if(nosound || !pos || gain <= 0 || !soundmastervol || !soundeffectvol || (flags&SND_MAP ? !soundeffectenv : !soundeffectevent)) return -1;
     if((flags&SND_MAP || (!(flags&SND_UNMAPPED) && n >= S_GAMESPECIFIC)) && client::waiting(true)) return -1;
@@ -975,6 +975,7 @@ int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, flo
         s.maxdist = maxdist >= 0 ? maxdist : -1.f;
         s.owner = d;
         s.ends = ends;
+        s.offset = clamp(offset, 0.0f, FLT_MAX);
 
         if(hook) *hook = s.index;
         s.hook = hook;
@@ -985,18 +986,18 @@ int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, flo
     return -1;
 }
 
-int emitsoundpos(int n, const vec &pos, int *hook, int flags, float gain, float pitch, float rolloff, float refdist, float maxdist, int ends)
+int emitsoundpos(int n, const vec &pos, int *hook, int flags, float gain, float pitch, float rolloff, float refdist, float maxdist, int ends, float offset)
 {
     vec curpos = pos;
     flags &= ~SND_TRACKED; // can't do that here
-    return emitsound(n, &curpos, NULL, hook, flags, gain, pitch, rolloff, refdist, maxdist, ends);
+    return emitsound(n, &curpos, NULL, hook, flags, gain, pitch, rolloff, refdist, maxdist, ends, offset);
 }
 
-int playsound(int n, const vec &pos, physent *d, int flags, int vol, int maxrad, int minrad, int *hook, int ends)
+int playsound(int n, const vec &pos, physent *d, int flags, int vol, int maxrad, int minrad, int *hook, int ends, float offset)
 {
     vec o = d ? d->o : pos;
     float gain = vol > 0 ? vol / 255.f : 1.f, rolloff = maxrad > soundrolloff ? soundrolloff / float(maxrad) : 1.f, refdist = minrad > soundrefdist ? float(minrad) : -1.f;
-    return emitsound(n, &o, d, hook, flags, gain, 1.f, rolloff, refdist, -1.f, ends);
+    return emitsound(n, &o, d, hook, flags, gain, 1.f, rolloff, refdist, -1.f, ends, offset);
 }
 
 ICOMMAND(0, sound, "iib", (int *n, int *vol, int *flags),
@@ -1322,6 +1323,9 @@ ALenum soundsource::setup(soundsample *s)
         SOUNDERRORTRACK(clear(); return err);
     }
 
+    alSourcef(source, AL_SEC_OFFSET, offset);
+    SOUNDERRORTRACK(clear(); return err);
+
     return AL_NO_ERROR;
 }
 
@@ -1347,6 +1351,7 @@ void soundsource::reset(bool dohook)
     flags = millis = ends = 0;
     rolloff = refdist = maxdist = -1;
     index = slotnum = lastupdate = -1;
+    offset = 0;
     if(dohook)
     {
         if(hook) *hook = -1;
