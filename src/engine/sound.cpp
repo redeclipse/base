@@ -66,7 +66,7 @@ static Sharedptr<soundenv> soundenvfroment(entity *ent)
 {
     ASSERT(ent);
 
-    int index = ent->attrs[0];
+    int index = ent->attrs[0] - 1;
     if(soundenvs.inrange(index)) return soundenvs[index];
 
     return Sharedptr<soundenv>();
