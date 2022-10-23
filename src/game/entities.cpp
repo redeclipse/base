@@ -2169,7 +2169,7 @@ namespace entities
         float gain = e.attrs[1] > 0 ? e.attrs[1]/100.f : 1.f, pitch = e.attrs[2] > 0 ? e.attrs[2]/100.f : 1.f,
               rolloff = e.attrs[3] > 0 ? e.attrs[3]/100.f : -1.f, refdist = e.attrs[4] > 0 ? e.attrs[4]/100.f : -1.f, maxdist = e.attrs[5] > 0 ? e.attrs[5]/100.f : -1.f,
               offset = e.attrs[10] / 1000.0f;
-        return emitsound(e.attrs[0], e.getpos(), NULL, &e.schan, flags, gain, pitch, rolloff, refdist, maxdist, 0, offset);
+        return emitsound(e.attrs[0], e.getpos(), NULL, &e.schan, flags, gain, pitch, rolloff, refdist, maxdist, 0, offset, e.attrs[11]);
     }
 
     void execlink(dynent *d, int index, bool local, int ignore)

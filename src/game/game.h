@@ -111,12 +111,12 @@ extern const enttypes enttype[] = {
                 "particles",    { "type", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "millis", "modes", "muts", "variant", "fxlevel" }
     },
     {
-        MAPSOUND,       1,          58,     0,      EU_NONE,    11,         -1,         7,          -1,     9,      -1,
+        MAPSOUND,       1,          58,     0,      EU_NONE,    12,         -1,         7,          -1,     9,      -1,
             (1<<TELEPORT)|(1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT)|(1<<WIND),
             (1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT)|(1<<WIND),
             0,
             false,  false,  false,      false,      false,
-                "sound",        { "type", "gain", "pitch", "rolloff", "refdist", "maxdist", "flags", "modes", "muts", "variant", "offset" }
+                "sound",        { "type", "gain", "pitch", "rolloff", "refdist", "maxdist", "flags", "modes", "muts", "variant", "offset", "groupid" }
     },
     {
         LIGHTFX,        1,          1,      0,      EU_NONE,    9,          -1,         5,          -1,     7,      8,
@@ -152,7 +152,7 @@ extern const enttypes enttype[] = {
         SOUNDENV,        1,          0,      0,      EU_NONE,   5,        -1,          -1,          -1,     -1,      -1,
             0, 0, 0,
             false,  false,  false,      false,      false,
-                "soundenv",     { "type", "width", "length", "height", "fade" }
+                "soundenv",     { "type", "width", "length", "height", "mutemask" }
     },
     {
         WEAPON,         2,          59,     16,     EU_ITEM,    6,          -1,         2,          4,      5,      -1,
