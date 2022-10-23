@@ -1267,25 +1267,6 @@ ALenum soundsource::setup(soundsample *s)
     finalrolloff = rolloff >= 0 ? rolloff : (slot->rolloff >= 0 ? slot->rolloff : 1.f);
     finalrefdist = refdist >= 0 ? refdist : (slot->refdist >= 0 ? slot->refdist : soundrefdist);
 
-    if(al_ext_efx && !(flags&SND_NOFILTER) && sounddistfilter > 0.0f)
-    {
-        alGenFilters(2, filters);
-        SOUNDERRORTRACK(clear(); return err);
-
-        alFilteri(filters[SNDSRC_FILTER_DIRECT], AL_FILTER_TYPE, AL_FILTER_BANDPASS);
-        alFilteri(filters[SNDSRC_FILTER_EFFECT], AL_FILTER_TYPE, AL_FILTER_HIGHPASS);
-        SOUNDERRORTRACK(clear(); return err);
-
-        float effectgain = 1.0f - clamp(finalrolloff / finalrefdist, 0.0f, 1.0f);
-
-        alFilterf(filters[SNDSRC_FILTER_EFFECT], AL_HIGHPASS_GAIN,   effectgain);
-        alFilterf(filters[SNDSRC_FILTER_EFFECT], AL_HIGHPASS_GAINLF, effectgain * effectgain);
-        SOUNDERRORTRACK(clear(); return err);
-
-        alSourcei(source, AL_DIRECT_FILTER, filters[SNDSRC_FILTER_DIRECT]);
-        SOUNDERRORTRACK(clear(); return err);
-    }
-
     alSourcei(source, AL_BUFFER, s->buffer);
     SOUNDERRORTRACK(clear(); return err);
 
@@ -1305,6 +1286,34 @@ ALenum soundsource::setup(soundsample *s)
         }
         alSourcei(source, AL_SOURCE_RELATIVE, AL_FALSE);
         SOUNDERRORTRACK(clear(); return err);
+    }
+
+    if(al_ext_efx)
+    {
+        if(!(flags&SND_NOFILTER) && !(flags&SND_NOATTEN) && sounddistfilter > 0.0f)
+        {
+            alGenFilters(1, &dirfilter);
+            SOUNDERRORTRACK(clear(); return err);
+
+            alFilteri(dirfilter, AL_FILTER_TYPE, AL_FILTER_BANDPASS);
+            SOUNDERRORTRACK(clear(); return err);
+
+            alSourcei(source, AL_DIRECT_FILTER, dirfilter);
+            SOUNDERRORTRACK(clear(); return err);
+        }
+
+        if(!(flags&SND_NOENV))
+        {
+            alGenFilters(1, &efxfilter);
+            SOUNDERRORTRACK(clear(); return err);
+
+            float effectgain = 1.0f - clamp(finalrolloff / finalrefdist, 0.0f, 1.0f);
+
+            alFilteri(efxfilter, AL_FILTER_TYPE, AL_FILTER_HIGHPASS);
+            alFilterf(efxfilter, AL_HIGHPASS_GAIN, effectgain);
+            alFilterf(efxfilter, AL_HIGHPASS_GAINLF, effectgain * effectgain);
+            SOUNDERRORTRACK(clear(); return err);
+        }
     }
 
     alSourcei(source, AL_LOOPING, flags&SND_LOOP ? AL_TRUE : AL_FALSE);
@@ -1332,16 +1341,20 @@ ALenum soundsource::setup(soundsample *s)
 void soundsource::cleanup()
 {
     if(!valid()) return;
-    if(al_ext_efx) alDeleteFilters(2, filters);
+
+    if(al_ext_efx)
+    {
+        if(alIsFilter(dirfilter)) alDeleteFilters(1, &dirfilter);
+        if(alIsFilter(efxfilter)) alDeleteFilters(1, &efxfilter);
+    }
+
     alSourceStop(source);
     alDeleteSources(1, &source);
 }
 
 void soundsource::reset(bool dohook)
 {
-    source = AL_INVALID;
-    loopi(SNDSRC_NUM_FILTERS) filters[i] = AL_INVALID;
-
+    source = dirfilter = efxfilter = AL_INVALID;
     pos = curpos = vel = vec(0, 0, 0);
     vpos = &pos;
     slot = NULL;
@@ -1382,16 +1395,16 @@ void soundsource::unhook()
 
 ALenum soundsource::updatefilter()
 {
-    if(!al_ext_efx || !alIsFilter(filters[SNDSRC_FILTER_DIRECT])) return AL_NO_ERROR;
+    if(!al_ext_efx || !alIsFilter(dirfilter)) return AL_NO_ERROR;
 
     float dist = camera1->o.dist(*vpos);
     float gain = 1.0f - (((dist * log10f(finalrolloff + 1.0f)) / finalrefdist) * sounddistfilter);
     gain = clamp(gain, 1.0f - sounddistfilter, 1.0f);
 
-    alFilteri(filters[SNDSRC_FILTER_DIRECT], AL_FILTER_TYPE, AL_FILTER_BANDPASS);
-    alFilterf(filters[SNDSRC_FILTER_DIRECT], AL_BANDPASS_GAINHF, gain);
-    alFilterf(filters[SNDSRC_FILTER_DIRECT], AL_BANDPASS_GAINLF, gain);
-    alSourcei(source, AL_DIRECT_FILTER, filters[SNDSRC_FILTER_DIRECT]);
+    alFilteri(dirfilter, AL_FILTER_TYPE, AL_FILTER_BANDPASS);
+    alFilterf(dirfilter, AL_BANDPASS_GAINHF, gain);
+    alFilterf(dirfilter, AL_BANDPASS_GAINLF, gain);
+    alSourcei(source, AL_DIRECT_FILTER, dirfilter);
 
     return alGetError();
 }
@@ -1460,9 +1473,11 @@ ALenum soundsource::update()
         ALuint insideslot = insideenvzone && insideenvzone->isvalid() && zone != insideenvzone ?
             insideenvzone->getefxslot() : AL_EFFECTSLOT_NULL;
 
+        ALuint filter = alIsFilter(efxfilter) ? efxfilter : AL_FILTER_NULL;
+
         alSourcei(source, AL_AUXILIARY_SEND_FILTER_GAIN_AUTO, AL_TRUE);
-        alSource3i(source, AL_AUXILIARY_SEND_FILTER, zoneslot, 0, filters[SNDSRC_FILTER_EFFECT]);
-        alSource3i(source, AL_AUXILIARY_SEND_FILTER, insideslot, 1, filters[SNDSRC_FILTER_EFFECT]);
+        alSource3i(source, AL_AUXILIARY_SEND_FILTER, zoneslot, 0, filter);
+        alSource3i(source, AL_AUXILIARY_SEND_FILTER, insideslot, 1, filter);
 
         SOUNDERRORTRACK(clear(); return err);
     }

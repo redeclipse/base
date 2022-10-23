@@ -204,7 +204,7 @@ struct soundsource
         SNDSRC_NUM_FILTERS
     };
 
-    ALuint source, filters[SNDSRC_NUM_FILTERS];
+    ALuint source, dirfilter, efxfilter;
     soundslot *slot;
     vec pos, curpos, vel, *vpos;
     physent *owner;
