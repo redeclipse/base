@@ -1374,7 +1374,7 @@ void soundsource::reset(bool dohook)
     vpos = &pos;
     slot = NULL;
     owner = NULL;
-    gain = curgain = pitch = curpitch = 1;
+    gain = curgain = pitch = curpitch;
     material = MAT_AIR;
     flags = millis = ends = 0;
     rolloff = refdist = maxdist = -1;
@@ -1386,6 +1386,7 @@ void soundsource::reset(bool dohook)
         hook = NULL;
     }
     buffer.shrink(0);
+    mute = false;
 }
 
 void soundsource::clear(bool dohook)
@@ -1428,6 +1429,7 @@ ALenum soundsource::update()
 {
     material = lookupmaterial(*vpos);
     curgain = clamp(soundeffectvol*slot->gain*(flags&SND_MAP ? soundeffectenv : soundeffectevent), 0.f, 100.f);
+    if(mute) curgain = 0.0f;
 
     SOUNDERROR();
     if(flags&SND_CLAMPED)

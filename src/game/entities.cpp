@@ -41,6 +41,8 @@ namespace entities
 
     VAR(IDF_PERSIST, entityhalos, 0, 1, 1);
 
+    VAR(0, mapsoundautomute, 0, 0, 1);
+
     VARF(0, routeid, -1, -1, VAR_MAX, lastroutenode = -1; lastroutetime = 0; airnodes.setsize(0)); // selected route in race
     VARF(0, droproute, 0, 0, 1, lastroutenode = -1; lastroutetime = 0; airnodes.setsize(0); if(routeid < 0) routeid = 0);
     VAR(0, droproutedist, 1, 16, VAR_MAX);
@@ -2878,6 +2880,19 @@ namespace entities
         if(load) reset();
     }
 
+    static bool hasmapsoundsel()
+    {
+        bool result = false;
+
+        loopv(entgroup) if(ents[entgroup[i]]->type == MAPSOUND)
+        {
+            result = true;
+            break;
+        }
+
+        return result;
+    }
+
     void update()
     {
         loopv(ents) ((gameentity *)ents[i])->getcurpos();
@@ -2896,6 +2911,13 @@ namespace entities
                 }
                 if(issound(e.schan))
                 {
+                    // Mute non-selected mapsounds
+                    soundsources[e.schan].mute =
+                        game::player1->state == CS_EDITING &&
+                        hasmapsoundsel() &&
+                        mapsoundautomute &&
+                        entgroup.find(i) < 0;
+
                     if(triggered && soundsources[e.schan].flags&SND_LOOP && !e.spawned() && (e.lastemit < 0 || lastmillis-e.lastemit > triggertime(e, true)))
                     {
                         soundsources[e.schan].clear();

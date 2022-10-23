@@ -213,6 +213,7 @@ struct soundsource
     int millis, ends, slotnum, *hook;
     float gain, curgain, pitch, curpitch, rolloff, refdist, maxdist, offset;
     float finalrolloff, finalrefdist;
+    bool mute;
     vector<int> buffer;
 
     soundsource() : vpos(NULL), hook(NULL) { reset(); }
