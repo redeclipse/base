@@ -1378,7 +1378,7 @@ void soundsource::reset(bool dohook)
     vpos = &pos;
     slot = NULL;
     owner = NULL;
-    gain = curgain = pitch = curpitch;
+    gain = curgain = pitch = curpitch = 1;
     material = MAT_AIR;
     flags = millis = ends = 0;
     rolloff = refdist = maxdist = -1;
