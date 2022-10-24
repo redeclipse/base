@@ -4999,6 +4999,19 @@ namespace UI
     ICOMMAND(0, uigetlastw,  "", (), if(buildparent) floatret(buildparent->lastw));
     ICOMMAND(0, uigetlasth,  "", (), if(buildparent) floatret(buildparent->lasth));
 
+    ICOMMANDNS(0, "uigetlastx-",  uigetlastx_,  "", (),
+        if(buildparent && buildchild > 0) floatret(buildparent->children[buildchild-1]->lastx));
+    ICOMMANDNS(0, "uigetlasty-",  uigetlasty_,  "", (),
+        if(buildparent && buildchild > 0) floatret(buildparent->children[buildchild-1]->lasty));
+    ICOMMANDNS(0, "uigetlastsx-", uigetlastsx_, "", (),
+        if(buildparent && buildchild > 0) floatret(buildparent->children[buildchild-1]->lastsx));
+    ICOMMANDNS(0, "uigetlastsy-", uigetlastsy_, "", (),
+        if(buildparent && buildchild > 0) floatret(buildparent->children[buildchild-1]->lastsy));
+    ICOMMANDNS(0, "uigetlastw-",  uigetlastw_,  "", (),
+        if(buildparent && buildchild > 0) floatret(buildparent->children[buildchild-1]->lastw));
+    ICOMMANDNS(0, "uigetlasth-",  uigetlasth_,  "", (),
+        if(buildparent && buildchild > 0) floatret(buildparent->children[buildchild-1]->lasth));
+
     #define UICOLOURCMDS(t) \
         if(o->iscolour()) \
         { \
