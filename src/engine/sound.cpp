@@ -991,7 +991,7 @@ int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, flo
         s.owner = d;
         s.ends = ends;
         s.offset = clamp(offset, 0.0f, FLT_MAX);
-        s.groupid = groupid;
+        s.groupid = clamp(groupid, 0, 16);
 
         if(hook) *hook = s.index;
         s.hook = hook;
