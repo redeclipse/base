@@ -175,9 +175,9 @@ struct soundenvzone
     ALuint effect;
     soundefxslot *efxslot;
     vec bbmin, bbmax;
-    int mutemask;
+    uchar fadevals[16];
 
-    soundenvzone() : ent(NULL), effect(AL_INVALID), efxslot(NULL), mutemask(0) {}
+    soundenvzone() : ent(NULL), effect(AL_INVALID), efxslot(NULL), fadevals{0} {}
     ~soundenvzone()
     {
         if(!al_ext_efx) return;

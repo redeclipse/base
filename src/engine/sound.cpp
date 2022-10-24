@@ -212,7 +212,12 @@ void soundenvzone::froment(entity *newent)
     env = soundenvfroment(ent);
     bbmin = vec(ent->o).sub(vec(ent->attrs[1], ent->attrs[2], ent->attrs[3]));
     bbmax = vec(ent->o).add(vec(ent->attrs[1], ent->attrs[2], ent->attrs[3]));
-    mutemask = ent->attrs[4];
+    loopi(16)
+    {
+        uint val = ent->attrs[4 + (i / 4)];
+        val = (val >> ((i % 4) * 8)) & 0xFF;
+        fadevals[i] = clamp(val, 0, 100);
+    }
     if(efxslot) efxslot->put();
 }
 
@@ -1439,9 +1444,11 @@ ALenum soundsource::update()
 
     if(flags&SND_MAP)
     {
-        bool fademode = groupid && insideenvzone && insideenvzone->mutemask & (1 << (groupid - 1));
-        if(fademode) fade = clamp(fade - (curtime*mapsoundfadespeed), 0.0f, 1.0f);
-        else fade = clamp(fade + (curtime*mapsoundfadespeed), 0.0f, 1.0f);
+        float fadeval = groupid && insideenvzone ?
+            (1.0f - (insideenvzone->fadevals[groupid - 1] / 100.0f)) :
+            1.0f;
+
+        fade = lerpstep(fade, fadeval, mapsoundfadespeed*curtime);
 
         curgain *= fade;
     }

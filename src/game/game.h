@@ -149,10 +149,10 @@ extern const enttypes enttype[] = {
                 "outline",      { "" }
     },
     {
-        SOUNDENV,        1,          0,      0,      EU_NONE,   5,        -1,          -1,          -1,     -1,      -1,
+        SOUNDENV,        1,          0,      0,      EU_NONE,   8,        -1,          -1,          -1,     -1,      -1,
             0, 0, 0,
             false,  false,  false,      false,      false,
-                "soundenv",     { "type", "width", "length", "height", "mutemask" }
+                "soundenv",     { "type", "width", "length", "height", "fadevals1", "fadevals2", "fadevals3", "fadevals4" }
     },
     {
         WEAPON,         2,          59,     16,     EU_ITEM,    6,          -1,         2,          4,      5,      -1,

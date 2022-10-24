@@ -2075,6 +2075,15 @@ static inline float lerp360(float angle, float target, float factor)
 template<class T>
 static inline T lerp(T a, T b, float t) { return a + (b-a)*t; }
 
+template<class T>
+static inline T lerpstep(T a, T b, T step)
+{
+    if(a == b) return a;
+    return a > b ?
+        a - min(step, a - b) :
+        a + min(step, b - a);
+}
+
 static inline const vec2 &sincosmod360(int angle) { return sincos360[mod360(angle)]; }
 static inline float cos360(int angle) { return sincos360[angle].x; }
 static inline float sin360(int angle) { return sincos360[angle].y; }
