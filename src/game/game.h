@@ -1157,12 +1157,12 @@ AFFINITYPOS(defend);
 AFFINITYPOS(bomber);
 struct gameentity : extentity
 {
-    int schan, affinity, lastspawn, nextemit, lastpos;
+    int schan, affinity, lastspawn, nextemit;
     linkvector kin;
     vec offset, curpos;
     float yaw, pitch;
 
-    gameentity() : schan(-1), affinity(-1), lastspawn(0), nextemit(0), lastpos(-1), offset(0, 0, 0), yaw(0), pitch(0) {}
+    gameentity() : schan(-1), affinity(-1), lastspawn(0), nextemit(0), offset(0, 0, 0), yaw(0), pitch(0) {}
     ~gameentity()
     {
         if(issound(schan)) soundsources[schan].clear();
@@ -1171,8 +1171,6 @@ struct gameentity : extentity
 
     void getcurpos()
     {
-        if(lastpos == totalmillis) return;
-
         curpos = o;
 
         if(affinity >= 0)
@@ -1183,7 +1181,6 @@ struct gameentity : extentity
         }
 
         if(dynamic()) curpos.add(offset);
-        lastpos = totalmillis;
     }
     vec pos() { getcurpos(); return curpos; }
     vec *getpos() { getcurpos(); return &curpos; }
