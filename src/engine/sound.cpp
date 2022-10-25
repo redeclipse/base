@@ -290,8 +290,8 @@ static void sortenvzones()
 
         for(int j = 0; i && j <= sortedenvzones.length(); ++j)
         {
-            if(j >= sortedenvzones.length() ||
-                dist <= camera1->o.dist_to_bb(sortedenvzones[j]->bbmin, sortedenvzones[j]->bbmax))
+            if(zone.isvalid() && (j >= sortedenvzones.length() ||
+                dist <= camera1->o.dist_to_bb(sortedenvzones[j]->bbmin, sortedenvzones[j]->bbmax)))
             {
                 sortedenvzones.insert(j, &zone);
                 break;
