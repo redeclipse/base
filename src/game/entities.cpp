@@ -964,6 +964,18 @@ namespace entities
                 }
                 break;
             }
+            case LIGHTFX:
+            {
+                if(full)
+                {
+                    const char *lfxnames[LFX_MAX+1] = { "spotlight", "flicker", "pulse", "glow", "inv-pulse", "inv-glow", "normal" };
+                    addentinfo(lfxnames[attr[0] < 0 || attr[0] >= LFX_MAX ? LFX_MAX : attr[0]]);
+                    loopi(LFX_MAX-1) if(attr[4]&(1<<(LFX_S_MAX+i))) { defformatstring(ds, "+%s", lfxnames[i+1]); addentinfo(ds); break; }
+                    if(attr[4]&LFX_S_RAND1) addentinfo("rnd-min");
+                    if(attr[4]&LFX_S_RAND2) addentinfo("rnd-max");
+                }
+                break;
+            }
             case WIND:
             {
                 if(full)
@@ -981,16 +993,11 @@ namespace entities
                 }
                 break;
             }
-            case LIGHTFX:
+            case SOUNDENV:
             {
-                if(full)
-                {
-                    const char *lfxnames[LFX_MAX+1] = { "spotlight", "flicker", "pulse", "glow", "inv-pulse", "inv-glow", "normal" };
-                    addentinfo(lfxnames[attr[0] < 0 || attr[0] >= LFX_MAX ? LFX_MAX : attr[0]]);
-                    loopi(LFX_MAX-1) if(attr[4]&(1<<(LFX_S_MAX+i))) { defformatstring(ds, "+%s", lfxnames[i+1]); addentinfo(ds); break; }
-                    if(attr[4]&LFX_S_RAND1) addentinfo("rnd-min");
-                    if(attr[4]&LFX_S_RAND2) addentinfo("rnd-max");
-                }
+                int sattr = attr[0] - 1;
+                if(sattr < 0 || !soundenvs.inrange(sattr)) break;
+                addentinfo(soundenvs[sattr]->name);
                 break;
             }
             case ACTOR:
