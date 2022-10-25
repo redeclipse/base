@@ -29,6 +29,8 @@ namespace entities
     FVAR(IDF_PERSIST, entselsizetop, 0, 3, FVAR_MAX);
     FVAR(IDF_PERSIST, entdirsize, 0, 10, FVAR_MAX);
     FVAR(IDF_PERSIST, entrailoffset, 0, 0.1f, FVAR_MAX);
+    FVAR(IDF_PERSIST, entinfospace, 0, 1.25f, FVAR_MAX);
+    FVAR(IDF_PERSIST, entinfostrut, 0, 0.5f, FVAR_MAX);
 
     VAR(IDF_PERSIST|IDF_HEX, entselcolour, 0, 0xFF00FF, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, entselcolourtop, 0, 0xFF88FF, 0xFFFFFF);
@@ -3262,8 +3264,8 @@ namespace entities
             default: break;
         }
 
-        vec off(0, 0, 2.f), pos = o;
-        if(enttype[e.type].usetype == EU_ITEM) pos.add(off);
+        vec pos = o;
+        if(enttype[e.type].usetype == EU_ITEM) pos.addz(entinfospace);
         bool edit = m_edit(game::gamemode) && idx >= 0 && cansee(idx),
              isedit = edit && game::player1->state == CS_EDITING,
              hasent = isedit && (enthover.find(idx) >= 0 || entgroup.find(idx) >= 0),
@@ -3278,12 +3280,12 @@ namespace entities
             if(showentinfo&(hasent ? 4 : 8))
             {
                 defformatstring(s, "<bold>%s%s (%d)", hastop ? "\fc" : "\fC", enttype[e.type].name, idx >= 0 ? idx : 0);
-                part_textcopy(pos.add(off), s, hastop ? PART_TEXT_ONTOP : PART_TEXT);
+                part_textcopy(pos.addz(entinfospace), s, hastop ? PART_TEXT_ONTOP : PART_TEXT);
                 if(idx >= 0) loopv(railways)
                 {
                     if(railways[i].ent != idx && railways[i].findparent(idx) < 0) continue;
                     formatstring(s, "railway [%d] %d ms (%d/%d)", i, railways[i].millis, railways[i].length[0], railways[i].length[1]);
-                    part_textcopy(pos.add(vec(off).mul(0.5f)), s, hastop ? PART_TEXT_ONTOP : PART_TEXT);
+                    part_textcopy(pos.addz(entinfospace), s, hastop ? PART_TEXT_ONTOP : PART_TEXT);
                 }
             }
         }
@@ -3293,38 +3295,47 @@ namespace entities
             if(itxt && *itxt)
             {
                 defformatstring(ds, "%s", itxt);
-                part_textcopy(pos.add(off), ds, hastop ? PART_TEXT_ONTOP : PART_TEXT, 1, colourwhite);
+                part_textcopy(pos.addz(entinfospace), ds, hastop ? PART_TEXT_ONTOP : PART_TEXT, 1, colourwhite);
             }
         }
-        if(edit && showentinfo&(hasent ? 16 : 32)) loopk(numattrs(e.type))
+        if(edit && showentinfo&(hasent ? 16 : 32))
         {
-            const char *attrname = getentattribute(e.type, k, e.attrs[0]);
-            if(attrname && *attrname)
+            bool strut = false;
+            loopk(numattrs(e.type))
             {
-                string attrval; attrval[0] = 0;
-                if(showentattrinfo&1)
+                const char *attrname = getentattribute(e.type, k, e.attrs[0]);
+                if(attrname && *attrname)
                 {
-                    defformatstring(s, "\fs\fy%d\fS:", k+1);
-                    concatstring(attrval, s);
-                }
-                if(showentattrinfo&2)
-                {
-                    if(*attrval) concatstring(attrval, " ");
-                    concatstring(attrval, attrname);
-                }
-                if(showentattrinfo&4)
-                {
-                    if(*attrval) concatstring(attrval, " = ");
-                    defformatstring(s, "\fs\fc%d\fS", e.attrs[k]);
-                    concatstring(attrval, s);
-                    if(enttype[e.type].mvattr == k)
+                    string attrval; attrval[0] = 0;
+                    if(showentattrinfo&1)
                     {
-                        formatstring(s, " (%s)", mapvariants[clamp(e.attrs[enttype[e.type].mvattr], 0, MPV_MAX-1)]);
+                        defformatstring(s, "\fs\fy%d\fS:", k+1);
                         concatstring(attrval, s);
                     }
+                    if(showentattrinfo&2)
+                    {
+                        if(*attrval) concatstring(attrval, " ");
+                        concatstring(attrval, attrname);
+                    }
+                    if(showentattrinfo&4)
+                    {
+                        if(*attrval) concatstring(attrval, " = ");
+                        defformatstring(s, "\fs\fc%d\fS", e.attrs[k]);
+                        concatstring(attrval, s);
+                        if(enttype[e.type].mvattr == k)
+                        {
+                            formatstring(s, " (%s)", mapvariants[clamp(e.attrs[enttype[e.type].mvattr], 0, MPV_MAX-1)]);
+                            concatstring(attrval, s);
+                        }
+                    }
+                    if(!strut)
+                    {
+                        pos.addz(entinfostrut);
+                        strut = true;
+                    }
+                    defformatstring(s, "%s%s", hastop ? "\fw" : "\fW", attrval);
+                    part_textcopy(pos.addz(entinfospace), s, hastop ? PART_TEXT_ONTOP : PART_TEXT);
                 }
-                defformatstring(s, "%s%s", hastop ? "\fw" : "\fW", attrval);
-                part_textcopy(pos.add(off), s, hastop ? PART_TEXT_ONTOP : PART_TEXT);
             }
         }
     }
