@@ -1545,12 +1545,25 @@ namespace hud
             Texture *t = textureloaded(backgroundtex);
 
             // Calculate cropping of the background
-            float scaley = hudh / (float)t->h;
-            float scaledw = t->w * scaley;
-            float ratiox = hudw / scaledw;
-            float offsetx = (1.0f - ratiox) * 0.5f;
+            float offsetx = 0, offsety = 0;
+            float hudratio = hudh / (float)hudw, bgratio = t->h / (float)t->w;
 
-            drawquad(0, 0, 1, 1, offsetx, 0, 1-offsetx, 1);
+            if(hudratio < bgratio)
+            {
+                float scalex = hudw / (float)t->w;
+                float scaledh = t->h * scalex;
+                float ratioy = hudh / scaledh;
+                offsety = (1.0f - ratioy) * 0.5f;
+            }
+            else
+            {
+                float scaley = hudh / (float)t->h;
+                float scaledw = t->w * scaley;
+                float ratiox = hudw / scaledw;
+                offsetx = (1.0f - ratiox) * 0.5f;
+            }
+
+            drawquad(0, 0, 1, 1, offsetx, offsety, 1-offsetx, 1-offsety);
             pophudmatrix();
         }
         else
