@@ -1042,6 +1042,7 @@ ICOMMAND(0, getvarargs, "s", (char *n), result(getvarargs(n)));
 
 VAR(IDF_READONLY, intmin, 1, INT_MIN, -1);
 VAR(IDF_READONLY, intmax, 1, INT_MAX, -1);
+FVAR(IDF_READONLY, pi, 1, PI, -1);
 
 bool identexists(const char *name) { return idents.access(name)!=NULL; }
 ICOMMAND(0, identexists, "s", (char *s), intret(identexists(s) ? 1 : 0));
