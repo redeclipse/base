@@ -103,7 +103,7 @@ ifneq (,$(findstring msvc,$(PLATFORM)))
     CC = clang
 else
     override CXX := $(TOOLSET_PREFIX)$(CXX)
-    override CC := $(TOOLSET_PREFIX)$(CC)
+    override CC  := $(TOOLSET_PREFIX)$(CC)
 endif
 
 INCLUDES = -DVERSION_BUILD=$(PLATFORM_BUILD) \
@@ -393,6 +393,14 @@ clean-tessfont:
 
 clean: clean-enet clean-client clean-server clean-genkey clean-tessfont
 
+
+DEPENDS  = $(shell find . -name '*.d')
+ALL_OBJS = $(shell find . -name '*.o')
+
+clean2:
+	@echo "'clean' = remove all *.d & *.o in project:" 
+	@rm -rf $(DEPENDS) $(ALL_OBJS)
+
 %.h.gch: %.h
 	$(CXX) $(CXXFLAGS) -x c++-header -o $(subst .h.gch,.tmp.h.gch,$@) $(subst .h.gch,.h,$@)
 	$(MV) $(subst .h.gch,.tmp.h.gch,$@) $@
@@ -505,6 +513,7 @@ include dist.mk
 include wiki.mk
 
 engine/engine.h.gch: engine/version.h shared/cube.h.gch
+
 
 # DO NOT DELETE
 

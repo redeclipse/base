@@ -251,13 +251,16 @@ void setupdisplay(bool dogl = true, bool msg = true)
     SDL_GL_GetDrawableSize(screen, &renderw, &renderh);
 
     int index = getdisplaymode();
+    
     if(windowfocus && SDL_GetWindowFlags(screen)&SDL_WINDOW_FULLSCREEN && (display.w != screenw || display.h != screenh))
     {
-        scr_w = clamp(display.w, SCR_MINW, SCR_MAXW);
-        scr_h = clamp(display.h, SCR_MINH, SCR_MAXH);
-        resetfullscreen();
-        SDL_GetWindowSize(screen, &screenw, &screenh);
-        SDL_GL_GetDrawableSize(screen, &renderw, &renderh);
+        // FIX fullscreen loop:
+        SDL_MaximizeWindow(screen);
+        //scr_w = clamp(display.w, SCR_MINW, SCR_MAXW);
+        //scr_h = clamp(display.h, SCR_MINH, SCR_MAXH);
+        //resetfullscreen();
+        //SDL_GetWindowSize(screen, &screenw, &screenh);
+        //SDL_GL_GetDrawableSize(screen, &renderw, &renderh);
     }
     scr_w = screenw;
     scr_h = screenh;
@@ -276,8 +279,10 @@ void setfullscreen(bool enable)
     SDL_SetWindowFullscreen(screen, enable ? (fullscreendesktop ? SDL_WINDOW_FULLSCREEN_DESKTOP : SDL_WINDOW_FULLSCREEN) : 0);
     if(!enable)
     {
-        SDL_SetWindowSize(screen, scr_w, scr_h);
-        SDL_SetWindowPosition(screen, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+        // FIX fullscreen loop:
+        if(SDL_GetWindowFlags(screen)&SDL_WINDOW_MAXIMIZED) { SDL_RestoreWindow(screen); }
+        //SDL_SetWindowSize(screen, scr_w, scr_h);
+        //SDL_SetWindowPosition(screen, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
     }
     wantdisplaysetup = true;
 }
