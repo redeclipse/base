@@ -506,7 +506,6 @@ include wiki.mk
 
 engine/engine.h.gch: engine/version.h shared/cube.h.gch
 
-
 # DO NOT DELETE
 
 shared/crypto.o: shared/cube.h shared/tools.h shared/command.h shared/geom.h
