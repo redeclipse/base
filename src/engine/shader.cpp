@@ -334,8 +334,10 @@ static void bindworldtexlocs(Shader &s)
     UNIFORMTEX("normalmap", TEX_NORMAL);
     UNIFORMTEX("glowmap", TEX_GLOW);
     UNIFORMTEX("envmap", TEX_ENVMAP);
+    UNIFORMTEX("dispmap", TEX_DISPMAP);
     UNIFORMTEX("detaildiffusemap", TEX_DETAIL+TEX_DIFFUSE);
     UNIFORMTEX("detailnormalmap", TEX_DETAIL+TEX_NORMAL);
+    UNIFORMTEX("detaildispmap", TEX_DETAIL+TEX_DISPMAP);
     UNIFORMTEX("blendmap", 7);
     UNIFORMTEX("refractmask", 7);
     UNIFORMTEX("refractlight", 8);

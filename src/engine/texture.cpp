@@ -420,7 +420,7 @@ void texreorient(ImageData &s, bool flipx, bool flipy, bool swapxy, int type = T
             uchar *dst = d.data, *src = s.data;
             loopi(s.levels)
             {
-                reorients3tc(s.compressed, s.bpp, max(s.w>>i, 1), max(s.h>>i, 1), src, dst, flipx, flipy, swapxy, type==TEX_NORMAL);
+                reorients3tc(s.compressed, s.bpp, max(s.w>>i, 1), max(s.h>>i, 1), src, dst, flipx, flipy, swapxy, type==TEX_NORMAL || type==TEX_DISPMAP);
                 src += s.calclevelsize(i);
                 dst += d.calclevelsize(i);
             }
@@ -441,7 +441,7 @@ void texreorient(ImageData &s, bool flipx, bool flipy, bool swapxy, int type = T
             break;
         }
     default:
-        if(type==TEX_NORMAL && s.bpp >= 3) reorientnormals(s.data, s.w, s.h, s.bpp, s.pitch, d.data, flipx, flipy, swapxy);
+        if((type==TEX_NORMAL || type==TEX_DISPMAP) && s.bpp >= 3) reorientnormals(s.data, s.w, s.h, s.bpp, s.pitch, d.data, flipx, flipy, swapxy);
         else reorienttexture(s.data, s.w, s.h, s.bpp, s.pitch, d.data, flipx, flipy, swapxy);
         break;
     }
@@ -2550,7 +2550,8 @@ extern const namemap slottexs[] =
     {"s", TEX_SPEC},
     {"z", TEX_DEPTH},
     {"a", TEX_ALPHA},
-    {"e", TEX_ENVMAP}
+    {"e", TEX_ENVMAP},
+    {"v", TEX_DISPMAP}
 };
 
 int findslottex(char *name, bool tryint)

@@ -628,6 +628,7 @@ enum
     TEX_SPEC,
     TEX_DEPTH,
     TEX_ALPHA,
+    TEX_DISPMAP,
     TEX_UNKNOWN,
     TEX_MAX,
     TEX_DETAIL = TEX_SPEC

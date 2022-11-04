@@ -1628,6 +1628,7 @@ static void changeslottmus(renderstate &cur, int pass, Slot &slot, VSlot &vslot)
                 break;
             case TEX_NORMAL:
             case TEX_GLOW:
+            case TEX_DISPMAP:
                 bindslottex(cur, t.type, t.t);
                 break;
         }
@@ -1649,6 +1650,7 @@ static void changeslottmus(renderstate &cur, int pass, Slot &slot, VSlot &vslot)
                     }
                     // fall-through
                 case TEX_NORMAL:
+                case TEX_DISPMAP:
                     bindslottex(cur, TEX_DETAIL + t.type, t.t);
                     break;
             }
@@ -2540,6 +2542,7 @@ static void changeslottmus(decalrenderer &cur, int pass, DecalSlot &slot)
                 break;
             case TEX_NORMAL:
             case TEX_GLOW:
+            case TEX_DISPMAP:
                 bindslottex(cur, t.type, t.t);
                 break;
             case TEX_SPEC:
