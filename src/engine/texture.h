@@ -563,9 +563,9 @@ struct ImageData
 
 struct TextureAnim
 {
-    int count, delay, x, y, w, h;
+    int delay, x, y, w, h, skip, count;
     bool throb;
-    TextureAnim() : count(0), delay(0), throb(false) {}
+    TextureAnim() : delay(0), x(0), y(0), skip(0), count(0), throb(false) {}
 };
 
 struct Texture

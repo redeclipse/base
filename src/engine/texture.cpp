@@ -1357,7 +1357,7 @@ static Texture *newtexture(Texture *t, const char *rname, ImageData &s, int clam
             int pitch = s.pitch;
             if(hasanim)
             {
-                int sx = (i%anim->x)*anim->w, sy = (((i-(i%anim->x))/anim->x)%anim->y)*anim->h;
+                int n = i + anim->skip, sx = (n%anim->x)*anim->w, sy = (((n-(n%anim->x))/anim->x)%anim->y)*anim->h;
                 texcrop(s, cropped, sx, sy, anim->w, anim->h);
                 data = cropped.data;
                 pitch = cropped.pitch;
@@ -1676,13 +1676,13 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
     for(const char *pcmds = cmds; pcmds;)
     {
         #define PARSETEXCOMMANDS(cmds) \
-            const char *cmd = NULL, *end = NULL, *arg[4] = { NULL, NULL, NULL, NULL }; \
+            const char *cmd = NULL, *end = NULL, *arg[6] = { NULL, NULL, NULL, NULL }; \
             cmd = &cmds[1]; \
             end = strchr(cmd, '>'); \
             if(!end) break; \
             cmds = strchr(cmd, '<'); \
             size_t len = strcspn(cmd, ":,><"); \
-            loopi(4) \
+            loopi(6) \
             { \
                 arg[i] = strchr(i ? arg[i-1] : cmd, i ? ',' : ':'); \
                 if(!arg[i] || arg[i] >= end) arg[i] = ""; \
@@ -1789,10 +1789,15 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
                 anim->delay = *arg[0] ? atoi(arg[0]) : 50;
                 anim->x = max(1, *arg[1] ? atoi(arg[1]) : 1);
                 anim->y = max(1, *arg[2] ? atoi(arg[2]) : 2);
-                anim->throb = *arg[3] && atoi(arg[3]);
                 anim->w = d.w/anim->x;
                 anim->h = d.h/anim->y;
-                anim->count = anim->x*anim->y;
+                anim->throb = *arg[3] && atoi(arg[3]);
+                anim->skip = max(*arg[4] ? atoi(arg[4]) : 0, 0);
+                int maxcount = anim->x*anim->y;
+                if(anim->skip >= maxcount) anim->skip = 0;
+                else maxcount -= anim->skip;
+                anim->count = *arg[5] ? atoi(arg[5]) : 0;
+                if(anim->count <= 0 || anim->count > maxcount) anim->count = maxcount;
             }
         }
         else
