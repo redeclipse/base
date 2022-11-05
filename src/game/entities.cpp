@@ -328,6 +328,7 @@ namespace entities
 
                 span += r.length;
             }
+            if(lastpoint != curpoint && rails.inrange(curpoint)) execlink(NULL, rails[curpoint].ent, false);
 
             offset.sub(rails[0].pos); // all coordinates translate based on first rail
             if(flags&(1<<RAIL_YAW) || flags&(1<<RAIL_PITCH)) vectoyawpitch(dir, yaw, pitch);
