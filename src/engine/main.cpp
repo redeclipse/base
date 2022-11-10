@@ -905,7 +905,7 @@ void progress(float amt, const char *s, ...)
     if(progressfps)
     {
         int curprog = progressfps >= 0 ? progressfps : refresh, ticks = SDL_GetTicks(), diff = ticks - lastprogress;
-        if(amt > 0 && diff >= 0 && diff < (1000 + curprog-1)/curprog) return;
+        if(curprog > 0 && amt > 0 && diff >= 0 && diff < (1000 + curprog-1)/curprog) return;
         lastprogress = ticks;
     }
     clientkeepalive();
