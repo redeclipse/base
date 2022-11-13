@@ -3894,7 +3894,7 @@ namespace UI
 
         void draw(float sx, float sy)
         {
-            changedraw(CHANGE_COLOR);
+            changedraw(CHANGE_COLOR | CHANGE_SHADER);
 
             edit->rendered = true;
 
