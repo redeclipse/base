@@ -2772,6 +2772,7 @@ namespace UI
 
     struct Thumbnail : Target
     {
+        static Color lastcolor;
         Texture *t;
 
         Thumbnail() : t(NULL) {}
@@ -2785,13 +2786,30 @@ namespace UI
         static const char *typestr() { return "#Thumbnail"; }
         const char *gettype() const { return typestr(); }
 
+        void startdraw()
+        {
+            lastcolor = Color(0, 0, 0, 0);
+        }
+
         void draw(float sx, float sy)
         {
-            if(!t || t == notexture) return;
+            if(!t || t == notexture)
+            {
+                Object::draw(sx, sy);
+                return;
+            }
 
-            changedraw(CHANGE_SHADER);
+            changedraw(CHANGE_COLOR | CHANGE_BLEND);
+            if(type==MODULATE) modblend(); else resetblend();
 
-            SETSHADER(hudrgb);
+            Color c = colors[0];
+
+            if(lastcolor != c)
+            {
+                lastcolor = c;
+                c.init();
+            }
+
             vec2 tc[4] = { vec2(0, 0), vec2(1, 0), vec2(1, 1), vec2(0, 1) };
             float xt = min(1.0f, t->xs/float(t->ys)), yt = min(1.0f, t->ys/float(t->xs));
             float xoff = (1.0f - xt) * 0.5f, yoff = (1.0f - yt) * 0.5f;
@@ -2803,6 +2821,8 @@ namespace UI
             Object::draw(sx, sy);
         }
     };
+
+    Color Thumbnail::lastcolor(255, 255, 255);
 
     ICOMMAND(0, uithumbnail, "sffe", (char *texname, float *minw, float *minh, uint *children),
     {
