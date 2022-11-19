@@ -227,7 +227,7 @@ namespace client
 
         static int compare(demoinfo &a, demoinfo &b)
         {
-            return strcmp(a.file, b.file);
+            return naturalsort(a.file, b.file) <= 0;
         }
     };
     vector<demoinfo> demoinfos;
