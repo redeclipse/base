@@ -293,6 +293,7 @@ namespace client
                 case 2: intret(d.hdr.gamemode); break;
                 case 3: intret(d.hdr.mutators); break;
                 case 4: intret(d.hdr.starttime); break;
+                case 5: result(d.file); break;
                 default: break;
             }
         }
