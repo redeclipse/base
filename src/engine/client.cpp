@@ -65,6 +65,8 @@ ICOMMAND(0, connectedport, "", (),
     intret(address ? address->port : -1);
 });
 
+VAR(IDF_READONLY, connectstatus, 1, 0, 0);
+
 void abortconnect(bool msg)
 {
     if(!connpeer) return;
@@ -79,6 +81,7 @@ void abortconnect(bool msg)
 
 void connectfail()
 {
+    connectstatus = -1;
     abortconnect(false);
     localconnect(false);
 }
@@ -151,6 +154,7 @@ void connectserv(const char *name, int port, const char *password)
     enet_host_flush(clienthost);
     connmillis = totalmillis;
     connattempts = 0;
+    connectstatus = 1;
     client::connectattempt(name ? name : "", port, password ? password : "", address);
     conoutft(CON_DEBUG, "\fgConnecting to %s:[%d]", name != NULL ? name : "local server", port);
 }
@@ -261,11 +265,16 @@ void gets2c()           // get updates from the server
             connectfail();
             return;
         }
-        else conoutft(CON_DEBUG, "\faConnection attempt %d", connattempts);
+        else
+        {
+            conoutft(CON_DEBUG, "\faConnection attempt %d", connattempts);
+            connectstatus = connattempts + 1;
+        }
     }
     while(clienthost && enet_host_service(clienthost, &event, 0) > 0) switch(event.type)
     {
         case ENET_EVENT_TYPE_CONNECT:
+            connectstatus = 0;
             disconnect(1);
             curpeer = connpeer;
             connpeer = NULL;
