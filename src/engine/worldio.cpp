@@ -1644,7 +1644,7 @@ struct mapcinfo
 
     static int compare(mapcinfo &a, mapcinfo &b)
     {
-        return strcmp(a.title, b.title);
+        return naturalsort(a.title, b.title) <= 0;
     }
 };
 vector<mapcinfo> mapcinfos;
