@@ -4304,7 +4304,7 @@ namespace UI
             if(clipstack.length()) glEnable(GL_SCISSOR_TEST);
         }
 
-        void althold(float cx, float cy, bool inside)
+        void hold(float cx, float cy, bool inside)
         {
             if(!interactive) return;
             float rx = (cx - x) / w, ry = (cy - y) / h;
@@ -4321,6 +4321,13 @@ namespace UI
                 offsety = ry;
                 dragging = true;
             }
+        }
+
+        void release(float cx, float cy, bool inside)
+        {
+            offsetx = 0;
+            offsety = 0;
+            dragging = false;
         }
     };
 
