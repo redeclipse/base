@@ -1047,7 +1047,7 @@ namespace physics
                 {
                     if(!d->impulse[IM_FLING])
                     {
-                        vec rft(d->yaw*RAD, impulsevaultpitch*RAD);
+                        vec rft(d->yaw*RAD, (impulsevaultpitchclamp && d->pitch > impulsevaultpitch ? d->pitch : impulsevaultpitch)*RAD);
                         d->vel = vec(rft).mul(d->vel.magnitude());
                         d->impulse[IM_FLING] = lastmillis ? lastmillis : 1;
                         client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_FLING);
