@@ -1,6 +1,7 @@
 // main.cpp: initialisation & main loop
 
 #include "engine.h"
+#include "tools.h"
 #include <signal.h>
 
 #ifdef SDL_VIDEO_DRIVER_X11
@@ -322,6 +323,49 @@ static void setgamma(int val)
     if(screen && SDL_SetWindowBrightness(screen, val/100.0f) < 0) conoutf("\frCould not set gamma: %s", SDL_GetError());
 }
 
+ICOMMAND(0, enumresolutions, "", (),
+{
+    if(!screen) return;
+    int index = SDL_GetWindowDisplayIndex(screen);
+    int modes = SDL_GetNumDisplayModes(index);
+    if(modes <= 0) return;
+
+    vector<int> resolutions;
+
+    // Fill list with unique resolutions
+    for(int i = 0; i < modes; i++)
+    {
+        SDL_DisplayMode mode;
+        if(SDL_GetDisplayMode(index, i, &mode)) continue;
+
+        // Pack resolution into a single int
+        int res = mode.w | (mode.h << 16);
+
+        // Add to list if not already present
+        if(resolutions.find(res) < 0) resolutions.add(res);
+    }
+
+    // Make a list of resolutions
+    string reslist;
+    reslist[0] = 0;
+
+    loopvrev(resolutions)
+    {
+        int res = resolutions[i];
+        int w = res & 0xFFFF;
+        int h = res >> 16;
+
+        if(reslist[0]) concatstring(reslist, " ");
+        concatstring(reslist, intstr(w));
+        concatstring(reslist, "x");
+        concatstring(reslist, intstr(h));
+    }
+
+    result(reslist);
+});
+
+ICOMMAND(0, getrefreshrate, "", (), intret(refresh));
+
 static int curgamma = 100;
 VARFN(IDF_PERSIST, gamma, reqgamma, 30, 100, 300,
 {
@@ -342,13 +386,27 @@ void cleargamma()
     if(curgamma != 100 && screen) SDL_SetWindowBrightness(screen, 1.0f);
 }
 
+VAR(IDF_READONLY, hasvsynctear, 1, -1, 0);
+
 int curvsync = -1;
 void restorevsync()
 {
     if(initing || !glcontext) return;
     extern int vsync, vsynctear;
-    if(!SDL_GL_SetSwapInterval(vsync ? (vsynctear ? -1 : 1) : 0)) curvsync = vsync;
-    else if(vsync && vsynctear && !SDL_GL_SetSwapInterval(vsync ? 1 : 0)) curvsync = vsync;
+    int err = 0;
+
+    if(hasvsynctear < 0 || (vsync && vsynctear))
+    {
+        err = SDL_GL_SetSwapInterval(-1);
+        hasvsynctear = err ? 0 : 1;
+    }
+
+    if(err || !vsynctear)
+    {
+        err = SDL_GL_SetSwapInterval(vsync);
+    }
+
+    if(!err) curvsync = vsync;
 }
 
 VARF(IDF_PERSIST, vsync, 0, 0, 1, restorevsync());

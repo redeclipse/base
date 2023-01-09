@@ -2354,7 +2354,6 @@ namespace hud
     extern vector<int> teamkills;
     extern const char *icontex(int type, int value);
     extern void drawindicator(int weap, int x, int y, int s);
-    extern void drawclip(int weap, int x, int y, float s);
     extern void drawpointertex(const char *tex, int x, int y, int s, float r = 1, float g = 1, float b = 1, float fade = 1);
     extern void drawpointer(int w, int h, int index);
     extern int numteamkills();
@@ -2445,7 +2444,7 @@ namespace game
     #undef RESIDUAL
     extern void getplayermaterials(gameent *d, modelstate &mdl);
     extern void getplayereffects(gameent *d, modelstate &mdl);
-    extern const char *getplayerstate(gameent *d, modelstate &mdl, int third = 1, float size = 1, int flags = 0, modelattach *mdlattach = NULL, int *lastoffset = NULL);
+    extern const char *getplayerstate(gameent *d, modelstate &mdl, int third = 1, float size = 1, int flags = 0, modelattach *mdlattach = NULL, int *lastoffset = NULL, bool vanitypoints = false);
     extern bool haloallow(gameent *d);
 }
 

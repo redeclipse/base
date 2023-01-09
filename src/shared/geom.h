@@ -2062,14 +2062,13 @@ static inline int mod360(int angle)
 static inline float lerp360(float angle, float target, float factor)
 {
     float diff = target - angle;
+
     if(diff > 180) angle += 360;
     else if(diff < -180) angle -= 360;
-    float oldangle = angle, offset = target - angle;
-    angle += offset * factor;
-    if((oldangle > target && angle < target) || (oldangle < target && angle > target))
-        angle = target;
 
-    return angle;
+    angle = fmod((angle + ((target - angle) * factor)), 360.0f);
+
+    return angle < 0 ? angle + 360.0f : angle;
 }
 
 template<class T>

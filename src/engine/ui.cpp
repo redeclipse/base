@@ -733,6 +733,7 @@ namespace UI
         virtual bool isradar() const { return false; }
         virtual bool ispreview() const { return false; }
         virtual bool ismodelpreview() const { return false; }
+        virtual bool iskeycatcher() const { return false; }
 
         Object *find(const char *name, bool recurse = true, const Object *exclude = NULL) const
         {
@@ -4108,6 +4109,93 @@ namespace UI
     ICOMMAND(0, uimlfield, "riiiefies", (ident *var, int *length, int *height, int *limit, uint *onchange, float *scale, int *immediate, uint *children, char *keyfilter),
         BUILD(Field, o, o->setup(var, *length, onchange, (*scale <= 0 ? 1 : *scale)*uiscale * uitextscale, keyfilter, *immediate!=0, *height, *limit), children));
 
+    struct KeyCatcher : Target
+    {
+        static KeyCatcher *focus;
+
+        ident *id;
+        int pressedkey;
+
+        // Workaround to prevent the focusing event from being treated as a keypress
+        int focusmillis, keymillis;
+
+        KeyCatcher() : id(NULL), pressedkey(0) {}
+
+        bool iskeycatcher() const { return true; }
+
+        static const char *typestr() { return "#KeyCatcher"; }
+        const char *gettype() const { return typestr(); }
+
+        bool target(float cx, float cy) { return true; }
+
+        void setup(ident *id_, float minw, float minh, uint *onkey)
+        {
+            Target::setup(minw, minh);
+
+            id = id_;
+            bool shouldfree = false;
+            const char *curval = getsval(id, shouldfree);
+            if(isfocus() && pressedkey && keymillis > focusmillis)
+            {
+                setsval(id, getkeyname(pressedkey), onkey);
+                pressedkey = 0;
+                clearfocus();
+            }
+        }
+
+        static void setfocus(KeyCatcher *kc)
+        {
+            if(focus == kc) return;
+            focus = kc;
+            if(kc)
+            {
+                inputsteal = kc;
+                kc->focusmillis = lastmillis;
+            }
+        }
+        void setfocus() { setfocus(this); }
+        void clearfocus() { if(focus == this) setfocus(NULL); }
+        bool isfocus() const { return focus == this; }
+
+        void press(float cx, float cy, bool inside)
+        {
+            setfocus();
+        }
+
+        bool key(int code, bool isdown)
+        {
+            if(Object::key(code, isdown)) return true;
+            if(!isfocus()) return false;
+            switch(code)
+            {
+                case SDLK_ESCAPE:
+                    return true;
+            }
+            return true;
+        }
+
+        bool rawkey(int code, bool isdown)
+        {
+            if(Object::rawkey(code, isdown)) return true;
+            if(!isfocus() || !isdown) return false;
+            if(code == SDLK_ESCAPE) clearfocus();
+            else
+            {
+                pressedkey = code;
+                keymillis = lastmillis;
+            }
+            return true;
+        }
+    };
+
+    KeyCatcher *KeyCatcher::focus = NULL;
+    ICOMMAND(0, uikeycatcher, "rffee", (ident *var, float *minw, float *minh, uint *onkey,
+        uint *children),
+        BUILD(KeyCatcher, o, o->setup(var, *minw, *minh, onkey), children));
+
+    UICMDT(KeyCatcher, keycatcher, isfocus, "", (), intret(o->isfocus()));
+    UICMDT(KeyCatcher, keycatcher, setfocus, "", (), o->setfocus());
+
     struct KeyField : Field
     {
         enum { MODE_MULTI = 0, MODE_COMBO };
@@ -4262,6 +4350,46 @@ namespace UI
     ICOMMAND(0, uiaxisview, "ffe", (float *minw, float *minh, uint *children),
         BUILD(AxisView, o, o->setup(*minw*uiscale, *minh*uiscale), children));
 
+    struct AmmoClip : Target
+    {
+        int weap;
+
+        void setup(float weap_, float minw_, float minh_)
+        {
+            Target::setup(minw_, minh_);
+            weap = int(weap_);
+        }
+
+        void startdraw()
+        {
+            hudshader->set();
+
+            gle::defvertex();
+            gle::defcolor();
+
+            gle::colorf(1, 1, 1);
+        }
+
+        void draw(float sx, float sy)
+        {
+            changedraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
+
+            pushhudmatrix();
+            hudmatrix.ortho(0, hud::hudwidth, hud::hudheight, 0, -1, 1);
+            flushhudmatrix();
+
+            hud::drawclip(weap, (sx / (float(hud::hudwidth)/hud::hudheight)) * hud::hudwidth, sy * hud::hudheight, hud::hudsize);
+            // hud::drawclip(weap, 1882, 1024, 2048);
+
+            pophudmatrix();
+
+            Object::draw(sx, sy);
+        }
+    };
+
+    ICOMMAND(0, uiammoclip, "iffe", (int *weap, float *minw, float *minh, uint *children),
+        BUILD(AmmoClip, o, o->setup(*weap, *minw*uiscale, *minh*uiscale), children));
+
     struct Preview : Target
     {
         float yaw, pitch, roll, fov;
@@ -4347,6 +4475,7 @@ namespace UI
     {
         char *name;
         modelstate mdl;
+        vec prevoffset;
 
         ModelPreview() : name(NULL) { resetoffset(); }
         ~ModelPreview() { delete[] name; }
@@ -4396,7 +4525,7 @@ namespace UI
 
             int sx1, sy1, sx2, sy2;
             window->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
-            modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch+offsetpitch, roll, fov, false, clipstack.length() > 0);
+            modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch+offsetpitch, roll, fov, false, clipstack.length() > 0, prevoffset);
             model *m = loadmodel(name);
             if(m)
             {
@@ -4413,6 +4542,8 @@ namespace UI
 
             Object::draw(sx, sy);
         }
+
+        void offset(vec offset) { prevoffset = offset; }
     };
 
     ICOMMAND(0, uimodelpreview, "ssffffe", (char *model, char *animspec, float *scale, float *blend, float *minw, float *minh, uint *children),
@@ -4442,11 +4573,14 @@ namespace UI
     UICMDT(ModelPreview, modelpreview, patternscale, "f", (float *n), o->mdl.patternscale = *n);
     UICMDT(ModelPreview, modelpreview, mixer, "s", (const char *texname), o->mdl.mixer = textureload(texname, 3, true, false));
     UICMDT(ModelPreview, modelpreview, pattern, "s", (const char *texname), o->mdl.pattern = textureload(texname, 3, true, false));
+    UICMDT(ModelPreview, modelpreview, offset, "fff", (float *x, float *y, float *z), o->offset(vec(*x, *y, *z)));
 
     struct PlayerPreview : Preview
     {
         float scale, blend;
         char *actions;
+        matrix4 lastmatrix;
+        vec prevoffset;
 
         PlayerPreview() : actions(NULL) { resetoffset(); }
         ~PlayerPreview() { delete[] actions; }
@@ -4456,6 +4590,7 @@ namespace UI
             Preview::setup(minw_, minh_, yaw_, pitch_, roll_,fov_, skycol_, suncol_, sundir_, excol_, exdir_);
             scale = scale_;
             blend = blend_;
+            prevoffset = vec(0, 0, 0);
             SETSTR(actions, actions_);
         }
 
@@ -4470,18 +4605,58 @@ namespace UI
 
             int sx1, sy1, sx2, sy2;
             window->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
-            modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch+offsetpitch, roll, fov, false, clipstack.length() > 0);
+            modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch+offsetpitch, roll, fov, false, clipstack.length() > 0, prevoffset);
             colors[0].a = uchar(colors[0].a*blend);
             game::renderplayerpreview(scale, colors[0].tocolor4(), actions, yaw, offsetyaw);
             if(clipstack.length()) clipstack.last().scissor();
+            lastmatrix = camprojmatrix;
             modelpreview::end(skycol, suncol, sundir, excol, exdir);
 
             Object::draw(sx, sy);
         }
+
+        vec2 vanitypos(int vanity)
+        {
+            vec pos2d;
+            lastmatrix.transform(game::playerpreviewvanitypos(vanity), pos2d);
+            if(pos2d.z <= 0) return vec2(0, 0);
+
+            pos2d.div(pos2d.z);
+
+            int sx1, sy1, sx2, sy2;
+            window->calcscissor(lastsx, lastsy, lastsx+lastw, lastsy+lasth, sx1, sy1, sx2, sy2, false);
+
+            pos2d.add(vec(1.0f, 1.0f, 0.0f)).mul(vec(0.5f, 0.5f, 0.0f));
+            pos2d.y = 1.0f - pos2d.y;
+            pos2d.mul(vec((sx2-sx1)/(float)hudw, (sy2-sy1)/(float)hudh, 0.0f));
+            pos2d.x *= hudw/(float)hudh;
+
+            return vec2(pos2d.x, pos2d.y);
+        }
+
+        vec vanitypos3d(int vanity) { return game::playerpreviewvanitypos(vanity, true); }
+
+        void offset(vec offset) { prevoffset = offset; }
     };
 
     ICOMMAND(0, uiplayerpreview, "ffffse", (float *scale, float *blend, float *minw, float *minh, char *actions, uint *children),
         BUILD(PlayerPreview, o, o->setup(*scale, *blend, *minw*uiscale, *minh*uiscale, actions), children));
+
+    UICMD(PlayerPreview, playerpreview, vanitypos, "i", (int *vanity),
+    {
+        vec2 pos = o->vanitypos(*vanity);
+        defformatbigstring(str, "%f %f", pos.x, pos.y);
+        result(str);
+    });
+
+    UICMD(PlayerPreview, playerpreview, vanitypos3d, "i", (int *vanity),
+    {
+        vec pos = o->vanitypos3d(*vanity);
+        defformatbigstring(str, "%f %f %f", pos.x, pos.y, pos.z);
+        result(str);
+    });
+
+    UICMD(PlayerPreview, playerpreview, offset, "fff", (float *x, float *y, float *z), o->offset(vec(*x, *y, *z)));
 
     struct PrefabPreview : Preview
     {

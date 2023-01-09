@@ -373,7 +373,7 @@ namespace fx
 
         if(!e)
         {
-            conoutf("\fyWarning: cannot create fx, no free emitters");
+            if(fxdebug == 2) conoutf("\fyWarning: cannot create fx, no free emitters");
             return NULL;
         }
 

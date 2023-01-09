@@ -73,7 +73,7 @@ static Sharedptr<soundenv> soundenvfroment(entity *ent)
 }
 
 void allocsoundefxslots();
-VARF(IDF_PERSIST, maxsoundefxslots, 1, 2, 10, allocsoundefxslots());
+VARF(IDF_PERSIST, maxsoundefxslots, 1, 5, 10, allocsoundefxslots());
 VAR(0, soundefxslotdebug, 0, 0, 1);
 
 static void putsoundefxslots() { loopv(soundefxslots) soundefxslots[i].put(); }

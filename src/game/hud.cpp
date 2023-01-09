@@ -149,6 +149,7 @@ namespace hud
     VAR(IDF_PERSIST, crosshairdistancey, VAR_MIN, 80, VAR_MAX); // offset from the crosshair
     VAR(IDF_PERSIST, crosshairweapons, 0, 1, 3); // 0 = off, &1 = crosshair-specific weapons, &2 = also appy colour
     FVAR(IDF_PERSIST, crosshairsize, 0, 0.05f, 1000);
+    FVAR(IDF_PERSIST, crosshairscale, 0, 1.0f, 4.0f);
     VAR(IDF_PERSIST, crosshairhitspeed, 0, 500, VAR_MAX);
     FVAR(IDF_PERSIST, crosshairblend, 0, 1, 1);
     FVAR(IDF_PERSIST, crosshairaccamt, 0, 0, 1);
@@ -1114,7 +1115,7 @@ namespace hud
 
     void drawpointer(int w, int h, int index)
     {
-        float csize = crosshairsize, fade = crosshairblend;
+        float csize = crosshairsize * crosshairscale, fade = crosshairblend;
         switch(index)
         {
             case POINTER_EDIT: csize = editcursorsize; fade = editcursorblend; break;
@@ -1123,7 +1124,7 @@ namespace hud
             case POINTER_ZOOM:
                 if(game::inzoom())
                 {
-                    csize = zoomcrosshairsize;
+                    csize = zoomcrosshairsize * crosshairscale;
                     fade = zoomcrosshairblend;
                     break;
                 } // fall through
@@ -1138,7 +1139,7 @@ namespace hud
                         clawcrosshairblend, pistolcrosshairblend, swordcrosshairblend, shotguncrosshairblend, smgcrosshairblend,
                         flamercrosshairblend, plasmacrosshairblend, zappercrosshairblend, riflecrosshairblend, grenadecrosshairblend, minecrosshairblend, rocketcrosshairblend
                     };
-                    csize = crosshairsizes[game::focus->weapselect];
+                    csize = crosshairsizes[game::focus->weapselect] * crosshairscale;
                     fade = crosshairblends[game::focus->weapselect];
                 }
                 break;

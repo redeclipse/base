@@ -872,20 +872,6 @@ int getvar(const char *name)
     return 0;
 }
 
-float getfvar(const char *name)
-{
-    ident *id = idents.access(name);
-    if(id) switch(id->type)
-    {
-        case ID_VAR: return float(*id->storage.i);
-        case ID_FVAR: return *id->storage.f;
-        case ID_SVAR: return parsefloat(*id->storage.s);
-        case ID_ALIAS: return id->getfloat();
-        default: break;
-    }
-    return 0.0f;
-}
-
 int getvartype(const char *name)
 {
     ident *id = idents.access(name);
@@ -1069,6 +1055,34 @@ const char *getalias(const char *name)
 }
 
 ICOMMAND(0, getalias, "s", (char *s), result(getalias(s)));
+
+ICOMMAND(0, get, "s", (char *name),
+{
+    ident *i = idents.access(name);
+    if(!i) return;
+
+    switch(i->type)
+    {
+        case ID_ALIAS:
+            if(i->index >= MAXARGS || aliasstack->usedargs&(1<<i->index)) result(i->getstr());
+            else result("");
+            return;
+
+        case ID_VAR:
+            intret(*i->storage.i);
+            return;
+
+        case ID_FVAR:
+            floatret(*i->storage.f);
+            return;
+
+        case ID_SVAR:
+            result(*i->storage.s);
+            return;
+    }
+
+    result("");
+});
 
 #ifndef STANDALONE
 #define CHECKVAR(argstr) \
@@ -5274,3 +5288,16 @@ char *limitstring(const char *str, size_t len)
     return limitstrtext;
 }
 ICOMMAND(0, limitstring, "si", (char *s, int *n), result(limitstring(s, *n)));
+
+ICOMMAND(0, lerp,    "iif", (int *a, int *b, float *t),     intret(lerp(*a, *b, *t)));
+ICOMMAND(0, lerpf,   "fff", (float *a, float *b, float *t), floatret(lerp(*a, *b, *t)));
+ICOMMAND(0, lerp360, "fff", (float *a, float *b, float *t), floatret(lerp360(*a, *b, *t)));
+
+ICOMMAND(0, animstep, "fii", (float *value, int *ms, int *dir),
+{
+    float change = (1.0f / (*ms / (float)curtime) * *dir);
+
+    floatret(clamp(*value + change, 0.0f, 1.0f));
+});
+
+ICOMMAND(0, smoothstep, "f", (float *t), floatret(smoothinterp(clamp(*t, 0.0f, 1.0f))));

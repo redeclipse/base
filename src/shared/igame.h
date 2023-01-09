@@ -88,6 +88,7 @@ namespace hud
     extern void drawsized(float x, float y, float s, bool flipx = false, bool flipy = false);
     extern void drawblend(int x, int y, int w, int h, float r, float g, float b, bool blend = false);
     extern void colourskew(float &r, float &g, float &b, float skew = 1);
+    extern void drawclip(int weap, int x, int y, float s);
 }
 
 namespace physics
@@ -154,6 +155,7 @@ namespace game
     extern void renderpost();
     extern void renderavatar();
     extern void renderplayerpreview(float scale = 1, const vec4 &mcolor = vec4(1, 1, 1, 1), const char *actions = NULL, float yaw = -1, float offsetyaw = 0);
+    extern vec playerpreviewvanitypos(int vanity, bool relative = false);
     extern bool thirdpersonview(bool viewonly = false, physent *d = NULL);
     extern vec thirdpos(const vec &pos, float yaw, float pitch, float dist = 1, float side = 0);
     extern vec camerapos(physent *d, bool hasfoc = false, bool hasyp = false, float yaw = 0, float pitch = 0);
