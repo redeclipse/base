@@ -1514,18 +1514,18 @@ FVAR(0, depthoffset, -1e4f, 0.01f, 1e4f);
 
 matrix4 nooffsetmatrix;
 
-void enablepolygonoffset(GLenum type)
+void enablepolygonoffset(GLenum type, float scale)
 {
     if(!depthoffset)
     {
-        glPolygonOffset(polygonoffsetfactor, polygonoffsetunits);
+        glPolygonOffset(polygonoffsetfactor * scale, polygonoffsetunits * scale);
         glEnable(type);
         return;
     }
 
     projmatrix = nojittermatrix;
     nooffsetmatrix = projmatrix;
-    projmatrix.d.z += depthoffset * projmatrix.c.z;
+    projmatrix.d.z += depthoffset * scale * projmatrix.c.z;
     setcamprojmatrix(false, true);
 }
 

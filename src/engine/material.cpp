@@ -473,6 +473,7 @@ void setupmaterials(int start, int len)
 }
 
 VAR(IDF_PERSIST, showmat, 0, 0, 1);
+VAR(IDF_PERSIST, editmatoffset, 0, 1, 1);
 VARF(0, vismatmask, 0, 0xFFFF, 0xFFFF,
 {
     if(!noedit(true)) allchanged(true);
@@ -537,7 +538,7 @@ void sorteditmaterials()
 
 void rendermatgrid()
 {
-    enablepolygonoffset(GL_POLYGON_OFFSET_LINE);
+    enablepolygonoffset(GL_POLYGON_OFFSET_LINE, editmatoffset ? 1.0f : 2.0f);
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     int lastmat = -1;
     bvec4 color(0, 0, 0, 0);
@@ -553,7 +554,7 @@ void rendermatgrid()
             }
             lastmat = m.material;
         }
-        drawmaterial(m, -VOLUME_INSET, color);
+        drawmaterial(m, editmatoffset ? -VOLUME_INSET : 0.0f, color);
     }
     xtraverts += gle::end();
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -821,6 +822,8 @@ void rendereditmaterials()
 
     foggednotextureshader->set();
 
+    if(!editmatoffset) enablepolygonoffset(GL_POLYGON_OFFSET_FILL);
+
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_BLEND);
 
@@ -839,12 +842,14 @@ void rendereditmaterials()
             color.mul(editmatscale, editmatscale, editmatscale, editmatblend);
             lastmat = m.material;
         }
-        drawmaterial(m, -VOLUME_INSET, color);
+        drawmaterial(m, editmatoffset ? -VOLUME_INSET : 0.0f, color);
     }
 
     xtraverts += gle::end();
 
     glDisable(GL_BLEND);
+
+    if(!editmatoffset) disablepolygonoffset(GL_POLYGON_OFFSET_FILL);
 
     resetfogcolor();
 
