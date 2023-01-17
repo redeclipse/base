@@ -124,24 +124,20 @@ static inline PD *findpropdef(const char *name, PD *propdefs, int num)
 }
 
 template<class P>
-vector<uchar> packprops(P *props, int num)
+void packprops(vector<uchar> &buf, P *props, int num)
 {
-    vector<uchar> buf;
-
     loopi(num)
     {
         P &p = props[i];
         p.pack(buf);
     }
-
-    return buf;
 }
 
 template<class P>
 int unpackprops(vector<uchar> &buf, P *props, int numprops)
 {
     int propidx = 0;
-    size_t readpos = 0;
+    int readpos = 0;
 
     while(readpos < buf.length())
     {

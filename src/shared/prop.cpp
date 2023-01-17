@@ -250,7 +250,7 @@ int property::unpack(uchar *buf, size_t bufsize)
             if(*datasize_packed != size())
             {
                 conoutf("Error unpacking prop '%s': unexpected data size! Wanted: %u, got: %u",
-                    def->name, size(), *datasize_packed);
+                    def->name, uint(size()), *datasize_packed);
 
                 return 0;
             }

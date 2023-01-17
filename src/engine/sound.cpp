@@ -1882,7 +1882,8 @@ static void dupsoundenv(const char *name, const char *srcname)
     Sharedptr<soundenv> srcenv = soundenvs[srcindex],
                         newenv = soundenvs[newindex];
 
-    vector<uchar> props = packprops(srcenv.get()->props, SOUNDENV_PROPS);
+    vector<uchar> props;
+    packprops(props, srcenv.get()->props, SOUNDENV_PROPS);
     unpackprops(props, newenv.get()->props, SOUNDENV_PROPS);
 }
 ICOMMAND(0, dupsoundenv, "ss", (char *name, char *srcname), dupsoundenv(name, srcname));
