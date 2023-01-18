@@ -843,7 +843,7 @@ namespace hud
         gle::end();
     }
 
-    void drawclip(int weap, int x, int y, float s)
+    void drawclip(int weap, int x, int y, float s, bool preview)
     {
         if(!isweap(weap) || weap >= W_ALL || (!W2(weap, ammosub, false) && !W2(weap, ammosub, true))) return;
         const char *cliptexs[W_ALL] = {
@@ -862,7 +862,7 @@ namespace hud
             clawcliprotate, pistolcliprotate, swordcliprotate, shotguncliprotate, smgcliprotate,
             flamercliprotate, plasmacliprotate, zappercliprotate, riflecliprotate, grenadecliprotate, minecliprotate, rocketcliprotate
         };
-        int ammo = game::focus->weapammo[weap][W_A_CLIP], maxammo = W(weap, ammoclip),
+        int maxammo = W(weap, ammoclip), ammo = preview ? maxammo : game::focus->weapammo[weap][W_A_CLIP],
             store = game::focus->actortype >= A_ENEMY || W(weap, ammostore) < 0 ? maxammo : game::focus->weapammo[weap][W_A_STORE], interval = lastmillis-game::focus->weaptime[weap];
         float fade = clipblend*hudblend, skew = clipskew[weap]*clipsize, size = s*skew, offset = s*clipoffset,
               slice = 360/float(maxammo), angle = (maxammo > (cliprots[weap]&4 ? 4 : 3) || maxammo%2 ? 360.f : 360.f-slice*0.5f)-((maxammo-ammo)*slice),
@@ -871,7 +871,7 @@ namespace hud
         vec c(1, 1, 1);
         if(clipstone) skewcolour(c.r, c.g, c.b, clipstone);
         if(clipcolour) skewcolour(c.r, c.g, c.b, W(weap, colour));
-        if(interval <= game::focus->weapwait[weap]) switch(game::focus->weapstate[weap])
+        if(!preview && interval <= game::focus->weapwait[weap]) switch(game::focus->weapstate[weap])
         {
             case W_S_PRIMARY: case W_S_SECONDARY:
             {

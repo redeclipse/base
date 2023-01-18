@@ -88,6 +88,7 @@ namespace hud
     extern void drawsized(float x, float y, float s, bool flipx = false, bool flipy = false);
     extern void drawblend(int x, int y, int w, int h, float r, float g, float b, bool blend = false);
     extern void colourskew(float &r, float &g, float &b, float skew = 1);
+    extern void drawclip(int weap, int x, int y, float s, bool preview = false);
 }
 
 namespace physics
