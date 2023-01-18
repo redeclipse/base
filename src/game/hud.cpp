@@ -570,6 +570,7 @@ namespace hud
                 if(game::player1->state == CS_DEAD) { if(scoreson) shownscores = true; }
                 else shownscores = false;
             }
+            else UI::showui("main");
         }
         UI::update();
     }
