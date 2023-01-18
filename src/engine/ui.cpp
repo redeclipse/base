@@ -733,6 +733,7 @@ namespace UI
         virtual bool isradar() const { return false; }
         virtual bool ispreview() const { return false; }
         virtual bool ismodelpreview() const { return false; }
+        virtual bool iskeycatcher() const { return false; }
 
         Object *find(const char *name, bool recurse = true, const Object *exclude = NULL) const
         {
@@ -4107,6 +4108,91 @@ namespace UI
 
     ICOMMAND(0, uimlfield, "riiiefies", (ident *var, int *length, int *height, int *limit, uint *onchange, float *scale, int *immediate, uint *children, char *keyfilter),
         BUILD(Field, o, o->setup(var, *length, onchange, (*scale <= 0 ? 1 : *scale)*uiscale * uitextscale, keyfilter, *immediate!=0, *height, *limit), children));
+
+    struct KeyCatcher : Target
+    {
+        static KeyCatcher *focus;
+
+        ident *id;
+        int pressedkey;
+
+        // Workaround to prevent the focusing event from being treated as a keypress
+        int focusmillis, keymillis;
+
+        KeyCatcher() : id(NULL), pressedkey(0) {}
+
+        bool iskeycatcher() const { return true; }
+
+        static const char *typestr() { return "#KeyCatcher"; }
+        const char *gettype() const { return typestr(); }
+
+        bool target(float cx, float cy) { return true; }
+
+        void setup(ident *id_, float minw, float minh, uint *onkey)
+        {
+            Target::setup(minw, minh);
+
+            id = id_;
+            if(isfocus() && pressedkey && keymillis > focusmillis)
+            {
+                setsval(id, getkeyname(pressedkey), onkey);
+                pressedkey = 0;
+                clearfocus();
+            }
+        }
+
+        static void setfocus(KeyCatcher *kc)
+        {
+            if(focus == kc) return;
+            focus = kc;
+            if(kc)
+            {
+                inputsteal = kc;
+                kc->focusmillis = lastmillis;
+            }
+        }
+        void setfocus() { setfocus(this); }
+        void clearfocus() { if(focus == this) setfocus(NULL); }
+        bool isfocus() const { return focus == this; }
+
+        void press(float cx, float cy, bool inside)
+        {
+            setfocus();
+        }
+
+        bool key(int code, bool isdown)
+        {
+            if(Object::key(code, isdown)) return true;
+            if(!isfocus()) return false;
+            switch(code)
+            {
+                case SDLK_ESCAPE:
+                    return true;
+            }
+            return true;
+        }
+
+        bool rawkey(int code, bool isdown)
+        {
+            if(Object::rawkey(code, isdown)) return true;
+            if(!isfocus() || !isdown) return false;
+            if(code == SDLK_ESCAPE) clearfocus();
+            else
+            {
+                pressedkey = code;
+                keymillis = lastmillis;
+            }
+            return true;
+        }
+    };
+
+    KeyCatcher *KeyCatcher::focus = NULL;
+    ICOMMAND(0, uikeycatcher, "rffee", (ident *var, float *minw, float *minh, uint *onkey,
+        uint *children),
+        BUILD(KeyCatcher, o, o->setup(var, *minw, *minh, onkey), children));
+
+    UICMDT(KeyCatcher, keycatcher, isfocus, "", (), intret(o->isfocus()));
+    UICMDT(KeyCatcher, keycatcher, setfocus, "", (), o->setfocus());
 
     struct KeyField : Field
     {
