@@ -2296,7 +2296,7 @@ namespace modelpreview
     int x = 0, y = 0, w = 0, h = 0;
     bool background = true, scissor = false;
 
-    void start(int x, int y, int w, int h, float pitch, float roll, float fov, bool background, bool scissor)
+    void start(int x, int y, int w, int h, float pitch, float roll, float fov, bool background, bool scissor, vec translate)
     {
         modelpreview::x = x;
         modelpreview::y = y;
@@ -2315,7 +2315,7 @@ namespace modelpreview
         mpcam = *camera1;
         mpcam.reset();
         mpcam.type = ENT_CAMERA;
-        mpcam.o = vec(0, 0, 0);
+        mpcam.o = translate;
         mpcam.yaw = 0;
         mpcam.pitch = pitch;
         mpcam.roll = roll;

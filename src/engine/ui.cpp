@@ -4265,7 +4265,7 @@ namespace UI
     struct Preview : Target
     {
         float yaw, pitch, roll, fov;
-        vec skycol, suncol, sundir, excol, exdir;
+        vec skycol, suncol, sundir, excol, exdir, translate;
         float offsetx, offsety, offsetyaw, offsetpitch;
         bool dragging, interactive;
 
@@ -4342,6 +4342,7 @@ namespace UI
     UICMDT(Preview, preview, fov, "f", (float *n), o->fov = *n);
     UICMDT(Preview, preview, interactive, "i", (int *c), o->interactive = *c != 0);
     UICMDT(Preview, preview, resetoffset, "", (void), o->resetoffset());
+    UICMDT(Preview, preview, translate, "fff", (float *x, float *y, float *z), o->translate = vec(*x, *y, *z));
 
     struct ModelPreview : Preview
     {
@@ -4396,7 +4397,7 @@ namespace UI
 
             int sx1, sy1, sx2, sy2;
             window->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
-            modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch+offsetpitch, roll, fov, false, clipstack.length() > 0);
+            modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch+offsetpitch, roll, fov, false, clipstack.length() > 0, translate);
             model *m = loadmodel(name);
             if(m)
             {
@@ -4470,7 +4471,7 @@ namespace UI
 
             int sx1, sy1, sx2, sy2;
             window->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
-            modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch+offsetpitch, roll, fov, false, clipstack.length() > 0);
+            modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch+offsetpitch, roll, fov, false, clipstack.length() > 0, translate);
             colors[0].a = uchar(colors[0].a*blend);
             game::renderplayerpreview(scale, colors[0].tocolor4(), actions, yaw, offsetyaw);
             if(clipstack.length()) clipstack.last().scissor();
