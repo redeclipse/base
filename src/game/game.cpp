@@ -402,6 +402,7 @@ namespace game
     VAR(IDF_PERSIST, playerteamtone, -1, CTONE_TEAM, CTONE_MAX-1);
 
     VAR(IDF_PERSIST, playershadow, 0, 2, 2);
+    VAR(IDF_PERSIST, playershadowsqdist, 32, 512, VAR_MAX);
 
     FVAR(IDF_PERSIST, playerovertonelevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playerundertonelevel, 0.f, 1.f, 10.f);
@@ -4069,7 +4070,10 @@ namespace game
                 if(d->actortype >= A_ENEMY) mdl.flags |= MDL_CULL_DIST;
             }
             if(d != focus || (d != player1 ? fullbrightfocus&1 : fullbrightfocus&2)) mdl.flags |= MDL_FULLBRIGHT;
-            if((d != focus && playershadow < 2) || playershadow < 1 || (d == focus && d->state == CS_EDITING)) mdl.flags |= MDL_NOSHADOW;
+            if((d != focus && playershadow < 2) || playershadow < 1 ||
+                (d == focus && d->state == CS_EDITING) ||
+                (camera1->o.squaredist(d->o) > playershadowsqdist))
+                mdl.flags |= MDL_NOSHADOW;
         }
         else if(drawtex == DRAWTEX_HALO && ((d == focus && inzoom()) || !haloallow(d))) mdl.flags |= MDL_NORENDER;
 
