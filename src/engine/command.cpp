@@ -1070,6 +1070,34 @@ const char *getalias(const char *name)
 
 ICOMMAND(0, getalias, "s", (char *s), result(getalias(s)));
 
+ICOMMAND(0, get, "s", (char *name),
+{
+    ident *i = idents.access(name);
+    if(!i) return;
+
+    switch(i->type)
+    {
+        case ID_ALIAS:
+            if(i->index >= MAXARGS || aliasstack->usedargs&(1<<i->index)) result(i->getstr());
+            else result("");
+            return;
+
+        case ID_VAR:
+            intret(*i->storage.i);
+            return;
+
+        case ID_FVAR:
+            floatret(*i->storage.f);
+            return;
+
+        case ID_SVAR:
+            result(*i->storage.s);
+            return;
+    }
+
+    result("");
+});
+
 #ifndef STANDALONE
 #define CHECKVAR(argstr) \
     if(!versioning) \
