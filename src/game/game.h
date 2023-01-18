@@ -2444,7 +2444,7 @@ namespace game
     #undef RESIDUAL
     extern void getplayermaterials(gameent *d, modelstate &mdl);
     extern void getplayereffects(gameent *d, modelstate &mdl);
-    extern const char *getplayerstate(gameent *d, modelstate &mdl, int third = 1, float size = 1, int flags = 0, modelattach *mdlattach = NULL, int *lastoffset = NULL);
+    extern const char *getplayerstate(gameent *d, modelstate &mdl, int third = 1, float size = 1, int flags = 0, modelattach *mdlattach = NULL, int *lastoffset = NULL, bool vanitypoints = false);
     extern bool haloallow(gameent *d);
 }
 

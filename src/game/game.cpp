@@ -530,8 +530,16 @@ namespace game
         loopvrev(vanities) vanities.remove(i);
         loopv(players) if(players[i]) players[i]->vitems.shrink(0);
         player1->vitems.shrink(0);
+        vanitytypetags.shrink(0);
     }
     ICOMMAND(0, resetvanity, "", (), vanityreset());
+
+    ICOMMAND(0, vanitytype, "s", (char *s), vanitytypetags.add(newstring(s)));
+    ICOMMAND(0, vanitytypetag, "i", (int *i),
+    {
+        if(*i < 0) intret(vanitytypetags.length());
+        else if(vanitytypetags.inrange(*i)) result(vanitytypetags[*i]);
+    });
 
     int vanityitem(int type, const char *ref, const char *name, const char *tag, int cond, int style)
     {
@@ -545,6 +553,9 @@ namespace game
         v.tag = newstring(tag);
         v.cond = cond;
         v.style = style;
+
+        if(!vanitytypetags.inrange(type)) conoutf("WARNING: Vanity type %d is not declared", type);
+
         return num;
     }
     ICOMMAND(0, addvanity, "isssii", (int *t, char *r, char *n, char *g, int *c, int *s), intret(vanityitem(*t, r, n, g, *c, *s)));
@@ -651,6 +662,8 @@ namespace game
         }
         return file;
     }
+
+    ICOMMAND(0, vanityfname, "i", (int *n), result(vanityfname(player1, *n, vanitybuild(player1), false)));
 
     bool vanitycheck(gameent *d)
     {
@@ -3622,7 +3635,7 @@ namespace game
         mdl.pitch += rotpitch;
     }
 
-    const char *getplayerstate(gameent *d, modelstate &mdl, int third, float size, int flags, modelattach *mdlattach, int *lastoffset)
+    const char *getplayerstate(gameent *d, modelstate &mdl, int third, float size, int flags, modelattach *mdlattach, int *lastoffset, bool vanitypoints)
     {
         int weap = d->weapselect, ai = 0, mdltype = forceplayermodel >= 0 ? forceplayermodel : d->model%PLAYERTYPES;
         const char *mdlname = playertypes[mdltype][third];
@@ -3744,29 +3757,38 @@ namespace game
         }
         if(mdlattach)
         {
-            if(!(mdl.flags&MDL_ONLYSHADOW) && actors[d->actortype].hastags)
+            // Used for showing vanity slots in the UI
+            if(vanitypoints)
             {
-                if(third != 2 || firstpersoncamera)
+                loopvk(vanitytypetags)
+                    mdlattach[ai++] = modelattach(vanitytypetags[k], &d->tag[k]);
+            }
+            else
+            {
+                if(!(mdl.flags&MDL_ONLYSHADOW) && actors[d->actortype].hastags)
                 {
-                    mdlattach[ai++] = modelattach(hasweapon ? "tag_muzzle" : "tag_weapon", &d->tag[TAG_MUZZLE]); // 1
-                    mdlattach[ai++] = modelattach("tag_weapon", &d->tag[TAG_ORIGIN]); // 2
-                    if(weaptype[weap].eject || weaptype[weap].tape)
+                    if(third != 2 || firstpersoncamera)
                     {
-                        mdlattach[ai++] = modelattach("tag_eject", &d->tag[TAG_EJECT1]); // 3
-                        mdlattach[ai++] = modelattach("tag_eject2", &d->tag[TAG_EJECT2]); // 4
+                        mdlattach[ai++] = modelattach(hasweapon ? "tag_muzzle" : "tag_weapon", &d->tag[TAG_MUZZLE]); // 1
+                        mdlattach[ai++] = modelattach("tag_weapon", &d->tag[TAG_ORIGIN]); // 2
+                        if(weaptype[weap].eject || weaptype[weap].tape)
+                        {
+                            mdlattach[ai++] = modelattach("tag_eject", &d->tag[TAG_EJECT1]); // 3
+                            mdlattach[ai++] = modelattach("tag_eject2", &d->tag[TAG_EJECT2]); // 4
+                        }
                     }
-                }
-                if(third)
-                {
-                    mdlattach[ai++] = modelattach("tag_camera", &d->tag[TAG_CAMERA]); // 5
-                    mdlattach[ai++] = modelattach("tag_crown", &d->tag[TAG_CROWN]); // 6
-                    mdlattach[ai++] = modelattach("tag_torso", &d->tag[TAG_TORSO]); // 7
-                    mdlattach[ai++] = modelattach("tag_waist", &d->tag[TAG_WAIST]); // 8
-                    mdlattach[ai++] = modelattach("tag_ljet", &d->tag[TAG_JET_LEFT]); // 9
-                    mdlattach[ai++] = modelattach("tag_rjet", &d->tag[TAG_JET_RIGHT]); // 10
-                    mdlattach[ai++] = modelattach("tag_bjet", &d->tag[TAG_JET_BACK]); // 11
-                    mdlattach[ai++] = modelattach("tag_ltoe", &d->tag[TAG_TOE_LEFT]); // 12
-                    mdlattach[ai++] = modelattach("tag_rtoe", &d->tag[TAG_TOE_RIGHT]); // 13
+                    if(third)
+                    {
+                        mdlattach[ai++] = modelattach("tag_camera", &d->tag[TAG_CAMERA]); // 5
+                        mdlattach[ai++] = modelattach("tag_crown", &d->tag[TAG_CROWN]); // 6
+                        mdlattach[ai++] = modelattach("tag_torso", &d->tag[TAG_TORSO]); // 7
+                        mdlattach[ai++] = modelattach("tag_waist", &d->tag[TAG_WAIST]); // 8
+                        mdlattach[ai++] = modelattach("tag_ljet", &d->tag[TAG_JET_LEFT]); // 9
+                        mdlattach[ai++] = modelattach("tag_rjet", &d->tag[TAG_JET_RIGHT]); // 10
+                        mdlattach[ai++] = modelattach("tag_bjet", &d->tag[TAG_JET_BACK]); // 11
+                        mdlattach[ai++] = modelattach("tag_ltoe", &d->tag[TAG_TOE_LEFT]); // 12
+                        mdlattach[ai++] = modelattach("tag_rtoe", &d->tag[TAG_TOE_RIGHT]); // 13
+                    }
                 }
             }
             if(third)
@@ -4027,13 +4049,13 @@ namespace game
         return true;
     }
 
-    void renderplayer(gameent *d, int third, float size, int flags = 0, const vec4 &color = vec4(1, 1, 1, 1), int *lastoffset = NULL)
+    void renderplayer(gameent *d, int third, float size, int flags = 0, const vec4 &color = vec4(1, 1, 1, 1), int *lastoffset = NULL, bool vanitypoints = false)
     {
         if(d->state == CS_SPECTATOR || (d->state != CS_ALIVE && color.a <= 0) || d->obliterated) return;
         modelstate mdl;
         modelattach mdlattach[ATTACHMENTMAX];
         dynent *e = third ? (third != 2 ? (dynent *)d : (dynent *)&bodymodel) : (dynent *)&avatarmodel;
-        const char *mdlname = getplayerstate(d, mdl, third, size, flags, mdlattach, lastoffset);
+        const char *mdlname = getplayerstate(d, mdl, third, size, flags, mdlattach, lastoffset, vanitypoints);
 
         mdl.color = color;
         getplayermaterials(d, mdl);
@@ -4166,6 +4188,7 @@ namespace game
     }
 
     static gameent *previewent = NULL;
+
     void initplayerpreview()
     {
         previewent = new gameent;
@@ -4191,7 +4214,14 @@ namespace game
         previewent->o = calcmodelpreviewpos(vec(xyrad, zrad), previewent->yaw).addz(previewent->height - zrad);
         previewent->yaw += offsetyaw;
         previewent->cleartags();
-        renderplayer(previewent, 1, scale, 0, mcolor);
+        renderplayer(previewent, 1, scale, 0, mcolor, NULL, true);
+    }
+
+    vec playerpreviewvanitypos(int vanity, bool relative)
+    {
+        if(!previewent || !vanitytypetags.inrange(vanity)) return vec(0, 0, 0);
+
+        return relative ? vec(previewent->o).sub(previewent->tag[vanity]) : previewent->tag[vanity];
     }
 
     #define PLAYERPREV(name, arglist, argexpr, body) ICOMMAND(0, uiplayerpreview##name, arglist, argexpr, if(previewent) { body; });

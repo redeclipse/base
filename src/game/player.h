@@ -294,6 +294,8 @@ struct vanity
 };
 #ifdef CPP_GAME_MAIN
 vector<vanity> vanities;
+vector<const char *> vanitytypetags;
 #else
 extern vector<vanity> vanities;
+extern vector<const char *> vanitytypetags;
 #endif

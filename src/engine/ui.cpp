@@ -4573,6 +4573,7 @@ namespace UI
     {
         float scale, blend;
         char *actions;
+        matrix4 lastmatrix;
 
         PlayerPreview() : actions(NULL) { resetoffset(); }
         ~PlayerPreview() { delete[] actions; }
@@ -4596,18 +4597,60 @@ namespace UI
 
             int sx1, sy1, sx2, sy2;
             window->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
+
             modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch+offsetpitch, roll, fov, false, clipstack.length() > 0, translate);
+
             colors[0].a = uchar(colors[0].a*blend);
             game::renderplayerpreview(scale, colors[0].tocolor4(), actions, yaw, offsetyaw);
             if(clipstack.length()) clipstack.last().scissor();
+            // Steal the matrix for calculating positions on the model
+            lastmatrix = camprojmatrix;
+
             modelpreview::end(skycol, suncol, sundir, excol, exdir);
 
             Object::draw(sx, sy);
         }
+
+        vec2 vanityscreenpos(int vanity)
+        {
+            vec pos2d;
+            lastmatrix.transform(game::playerpreviewvanitypos(vanity), pos2d);
+            if(pos2d.z <= 0) return vec2(0, 0);
+
+            pos2d.div(pos2d.z);
+
+            int sx1, sy1, sx2, sy2;
+            window->calcscissor(lastsx, lastsy, lastsx+lastw, lastsy+lasth, sx1, sy1, sx2, sy2, false);
+
+            pos2d.add(vec(1.0f, 1.0f, 0.0f)).mul(vec(0.5f, 0.5f, 0.0f));
+            pos2d.y = 1.0f - pos2d.y;
+            pos2d.mul(vec((sx2-sx1)/(float)hudw, (sy2-sy1)/(float)hudh, 0.0f));
+
+            // Correct for uiaspect
+            pos2d.x *= hudw/(float)hudh;
+
+            return vec2(pos2d.x, pos2d.y);
+        }
+
+        vec vanitypos(int vanity) { return game::playerpreviewvanitypos(vanity, true); }
     };
 
     ICOMMAND(0, uiplayerpreview, "ffffse", (float *scale, float *blend, float *minw, float *minh, char *actions, uint *children),
         BUILD(PlayerPreview, o, o->setup(*scale, *blend, *minw*uiscale, *minh*uiscale, actions), children));
+
+    UICMD(PlayerPreview, playerpreview, vanityscreenpos, "i", (int *vanity),
+    {
+        vec2 pos = o->vanityscreenpos(*vanity);
+        defformatbigstring(str, "%f %f", pos.x, pos.y);
+        result(str);
+    });
+
+    UICMD(PlayerPreview, playerpreview, vanitypos, "i", (int *vanity),
+    {
+        vec pos = o->vanitypos(*vanity);
+        defformatbigstring(str, "%f %f %f", pos.x, pos.y, pos.z);
+        result(str);
+    });
 
     struct PrefabPreview : Preview
     {
