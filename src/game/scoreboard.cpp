@@ -43,6 +43,7 @@ namespace hud
     VAR(IDF_PERSIST, scoresdelay, 0, 0, VAR_MAX); // otherwise use respawn delay
     VAR(IDF_PERSIST, scoreconnecting, 0, 0, 1);
     VAR(IDF_PERSIST, scoreracestyle, 0, 1, 4);
+    VAR(IDF_PERSIST, scoresortteams, 0, 0, 1);
 
     bool scoreson = false, scoresoff = false, shownscores = false;
     int scorespress = 0;
@@ -91,18 +92,24 @@ namespace hud
             if(y->team) return false;
         }
         else if(!y->team) return true;
-        if(m_ra_timed(game::gamemode, game::mutators))
+
+        if(scoresortteams)
         {
-            if((x->total && !y->total) || (x->total && y->total && x->total < y->total)) return true;
-            if((y->total && !x->total) || (x->total && y->total && x->total > y->total)) return false;
+            if(m_ra_timed(game::gamemode, game::mutators))
+            {
+                if((x->total && !y->total) || (x->total && y->total && x->total < y->total)) return true;
+                if((y->total && !x->total) || (x->total && y->total && x->total > y->total)) return false;
+            }
+            else
+            {
+                if(x->total > y->total) return true;
+                if(x->total < y->total) return false;
+            }
+            if(x->players.length() > y->players.length()) return true;
+            if(x->players.length() < y->players.length()) return false;
+
         }
-        else
-        {
-            if(x->total > y->total) return true;
-            if(x->total < y->total) return false;
-        }
-        if(x->players.length() > y->players.length()) return true;
-        if(x->players.length() < y->players.length()) return false;
+
         return x->team && y->team && x->team < y->team;
     }
 
