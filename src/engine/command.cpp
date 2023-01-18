@@ -5274,3 +5274,16 @@ char *limitstring(const char *str, size_t len)
     return limitstrtext;
 }
 ICOMMAND(0, limitstring, "si", (char *s, int *n), result(limitstring(s, *n)));
+
+ICOMMAND(0, lerp,    "iif", (int *a, int *b, float *t),     intret(lerp(*a, *b, *t)));
+ICOMMAND(0, lerpf,   "fff", (float *a, float *b, float *t), floatret(lerp(*a, *b, *t)));
+ICOMMAND(0, lerp360, "fff", (float *a, float *b, float *t), floatret(lerp360(*a, *b, *t)));
+
+ICOMMAND(0, animstep, "fii", (float *value, int *ms, int *dir),
+{
+    float change = (1.0f / (*ms / (float)curtime) * *dir);
+
+    floatret(clamp(*value + change, 0.0f, 1.0f));
+});
+
+ICOMMAND(0, smoothstep, "f", (float *t), floatret(smoothinterp(clamp(*t, 0.0f, 1.0f))));
