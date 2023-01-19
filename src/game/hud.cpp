@@ -559,12 +559,13 @@ namespace hud
         UI::showui("hud");
         if(!UI::hasmenu())
         {
-            if(game::needname(game::player1) || game::wantsloadoutmenu)
-            {
-                UI::openui("profile");
-                game::wantsloadoutmenu = false;
-            }
-            else if(connected())
+            // if(game::needname(game::player1) || game::wantsloadoutmenu)
+            // {
+            //     UI::openui("profile");
+            //     game::wantsloadoutmenu = false;
+            // }
+            // else
+            if(connected())
             {
                 UI::pressui("scoreboard", scoreson);
                 if(game::player1->state == CS_DEAD) { if(scoreson) shownscores = true; }
