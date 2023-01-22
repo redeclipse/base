@@ -61,7 +61,7 @@ namespace fx
         fxpropertydef(
             "emittimeliness",
             PROP_INT,
-            0, 0, 1,
+            0, 1, 1,
             0
         ),
         fxpropertydef(
