@@ -468,6 +468,12 @@ namespace fx
         newfx->endfx = fxdefs[name];
     }
 
+    ICOMMAND(0, fxcleardefs, "", (),
+    {
+        clear();
+        fxdefs.clear();
+    });
+
     ICOMMAND(0, fxend, "s", (char *name),
         setfxend(name));
     ICOMMAND(0, fxparent, "s", (char *name),
