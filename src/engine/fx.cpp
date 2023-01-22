@@ -426,7 +426,7 @@ namespace fx
         listinit(emitters, maxfxemitters, freeemitters, prev, next);
     }
 
-    ICOMMAND(0, testfx, "si", (char *name, int *sameinstance),
+    ICOMMAND(0, testfx, "siiN", (char *name, int *sameinstance, int *color, int *numargs),
     {
         if(!hasfx(name)) return;
 
@@ -439,7 +439,9 @@ namespace fx
         from.sub(dir.mul(16));
         to = vec(from).add(vec(0, 0, 32));
 
-        createfx(getfxhandle(name), from, to, 1, 1, bvec(255, 255, 255), NULL, *sameinstance ? &testemitter : NULL);
+        bvec col = *numargs > 2 ? bvec(*color) : bvec(255, 255, 255);
+
+        createfx(getfxhandle(name), from, to, 1, 1, col, NULL, *sameinstance ? &testemitter : NULL);
         if(*sameinstance) testmillis = lastmillis;
     });
 }
