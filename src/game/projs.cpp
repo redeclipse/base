@@ -107,7 +107,7 @@ namespace projs
         bvec color(255, 255, 255);
         float scale = 1.0f, blend = 1.0f;
         fx::emitter **hook = NULL;
-        vec from = proj.o, to = proj.norm;
+        vec from = proj.o, to = vec(proj.o).add(proj.norm);
 
         if(proj.projtype == PRJ_SHOT && proj.weap >= 0)
         {
