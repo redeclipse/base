@@ -141,7 +141,7 @@ namespace fx
         int interval = getprop<int>(FX_PROP_EMIT_INTERVAL);
         int length = interval > 1 ?
             getprop<int>(FX_PROP_ACTIVE_LENGTH) :
-            getprop<int>(FX_PROP_EMIT_LENGTH);
+            getprop<int>(FX_PROP_EMIT_LENGTH) + getprop<int>(FX_PROP_EMIT_DELAY);
 
         activeendmillis = lastmillis + length;
         e->updateend(activeendmillis);
