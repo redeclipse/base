@@ -20,9 +20,9 @@ namespace fx
             0, 0, FX_PARAMS
         ),
         propertydef(
-            "lerpsquare",
+            "lerpshape",
             PROP_INT,
-            0, 0, 1
+            FX_MOD_LERP_SHAPE_LINEAR, FX_MOD_LERP_SHAPE_LINEAR, FX_MOD_LERP_SHAPES
         )
     };
 

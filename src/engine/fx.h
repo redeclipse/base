@@ -138,7 +138,7 @@ namespace fx
         FX_MOD_LERP_PROP_TIME = 0,
         FX_MOD_LERP_PROP_MODE,
         FX_MOD_LERP_PROP_PARAM,
-        FX_MOD_LERP_PROP_SQUARE,
+        FX_MOD_LERP_PROP_SHAPE,
 
         FX_MOD_LERP_PROPS
     };
@@ -150,6 +150,15 @@ namespace fx
         FX_MOD_LERP_PARAM,      // param based lerp
 
         FX_MOD_LERP_MODES
+    };
+
+    enum
+    {
+        FX_MOD_LERP_SHAPE_LINEAR = 0,
+        FX_MOD_LERP_SHAPE_SQUARE,
+        FX_MOD_LERP_SHAPE_SMOOTH,
+
+        FX_MOD_LERP_SHAPES
     };
 
     #define FX_PARAMS 2

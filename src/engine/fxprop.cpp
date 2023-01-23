@@ -167,7 +167,17 @@ namespace fx
         }
 
         t = clamp(t, 0.0f, 1.0f);
-        if(prop.lerp->props[FX_MOD_LERP_PROP_SQUARE].get<int>()) t *= t;
+
+        switch(prop.lerp->props[FX_MOD_LERP_PROP_SHAPE].get<int>())
+        {
+            case FX_MOD_LERP_SHAPE_SQUARE:
+                t *= t;
+                break;
+
+            case FX_MOD_LERP_SHAPE_SMOOTH:
+                t = smoothinterp(t);
+                break;
+        }
 
         return t;
     }
