@@ -120,6 +120,7 @@ Texture *loadskyoverlay(const char *basename)
     FVAR(IDF_WORLD, fogdomeclip##name, 0, 1, 1); \
     CVAR(IDF_WORLD, fogdomecolour##name, 0xFFFFFF); \
     VAR(IDF_WORLD, fogdomeclouds##name, 0, 1, 1); \
+    VAR(IDF_WORLD, fogdomesquare##name, 0, 0, 1); \
     VAR(IDF_WORLD, skytexture##name, 0, 0, 1); \
     VARF(IDF_WORLD, skyshadow##name, 0, 0, 1, if(checkmapvariant(type)) clearshadowcache());
 
@@ -508,7 +509,7 @@ namespace fogdome
 
 static void drawfogdome()
 {
-    SETSHADER(skyfog);
+    SETVARIANT(skyfog, fogdomesquare ? 0 : -1, 0);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
