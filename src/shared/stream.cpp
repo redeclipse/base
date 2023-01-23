@@ -478,6 +478,7 @@ size_t fixdir(char *dir)
 void sethomedir(const char *dir)
 {
     fixdir(copystring(homedir, dir));
+    conoutf("Using home directory: %s", homedir);
 }
 
 int maskpackagedirs(int flags)
