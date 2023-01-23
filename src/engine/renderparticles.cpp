@@ -178,19 +178,8 @@ struct partrenderer
             ts = lastmillis-p->millis;
             blend = max(255-((ts<<8)/p->fade), 0);
             float weight = p->gravity;
-            if((type&PT_SHRINK || type&PT_GROW) && p->fade >= 50)
-            {
-                float amt = clamp(ts/float(p->fade), 0.f, 1.f);
-                if(type&PT_SHRINK)
-                {
-                    if(type&PT_GROW) { if((amt *= 2) > 1) amt = 2-amt; amt *= amt; }
-                    else amt = 1-(amt*amt);
-                }
-                else amt *= amt;
-                size = p->size*amt;
-                if(weight != 0) weight += weight*(p->size-size);
-            }
-            else size = p->size;
+            size = p->size + (p->sizechange * ts);
+
             float secs = curtime/1000.f;
             int part = type&0xFF;
             vec v = part == PT_PART ? vec(p->d).mul(secs) : vec(0, 0, 0);
@@ -1217,14 +1206,14 @@ static partrenderer *parts[] =
     new portalrenderer("<grey>particles/teleport", PT_ENVMAP),
     &icons, &lineprimitives, &lineontopprimitives, &trisprimitives, &trisontopprimitives,
     &loopprimitives, &loopontopprimitives, &coneprimitives, &coneontopprimitives,
-    new quadrenderer("<grey>particles/fire", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK|PT_WIND),
-    new quadrenderer("<grey>particles/plasma", PT_SOFT|PT_PART|PT_BRIGHT|PT_FLIP|PT_SHRINK|PT_WIND),
+    new quadrenderer("<grey>particles/fire", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
+    new quadrenderer("<grey>particles/plasma", PT_SOFT|PT_PART|PT_BRIGHT|PT_FLIP|PT_WIND),
     new taperenderer("<grey>particles/sflare", PT_TAPE|PT_BRIGHT|PT_FEW),
     new taperenderer("<grey>particles/mflare", PT_TAPE|PT_BRIGHT|PT_RND4|PT_VFLIP|PT_FEW),
-    new quadrenderer("<grey>particles/smoke", PT_SOFT|PT_PART|PT_LERP|PT_FLIP|PT_SHRINK|PT_WIND),
-    new quadrenderer("<grey>particles/smoke", PT_PART|PT_LERP|PT_FLIP|PT_SHRINK|PT_WIND),
-    new quadrenderer("<grey>particles/smoke", PT_SOFT|PT_PART|PT_FLIP|PT_SHRINK|PT_WIND),
-    new quadrenderer("<grey>particles/smoke", PT_PART|PT_FLIP|PT_SHRINK|PT_WIND),
+    new quadrenderer("<grey>particles/smoke", PT_SOFT|PT_PART|PT_LERP|PT_FLIP|PT_WIND),
+    new quadrenderer("<grey>particles/smoke", PT_PART|PT_LERP|PT_FLIP|PT_WIND),
+    new quadrenderer("<grey>particles/smoke", PT_SOFT|PT_PART|PT_FLIP|PT_WIND),
+    new quadrenderer("<grey>particles/smoke", PT_PART|PT_FLIP|PT_WIND),
     new quadrenderer("<grey>particles/hint", PT_SOFT|PT_PART|PT_BRIGHT),
     new quadrenderer("<grey>particles/hint", PT_PART|PT_BRIGHT),
     new quadrenderer("<grey>particles/hint_bold", PT_SOFT|PT_PART|PT_BRIGHT),
@@ -1236,16 +1225,16 @@ static partrenderer *parts[] =
     new quadrenderer("<grey>particles/blood", PT_PART|PT_MOD|PT_RND4|PT_FLIP),
     new quadrenderer("<grey>particles/entity", PT_PART|PT_BRIGHT),
     new quadrenderer("<grey>particles/entity", PT_PART|PT_BRIGHT|PT_ONTOP),
-    new quadrenderer("<grey>particles/spark", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK),
-    new quadrenderer("<grey>particles/fire", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK|PT_WIND),
-    new quadrenderer("<grey>particles/fire", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK|PT_WIND),
-    new quadrenderer("<grey>particles/plasma", PT_SOFT|PT_PART|PT_BRIGHT|PT_FLIP|PT_SHRINK|PT_WIND),
-    new quadrenderer("<grey>particles/plasma", PT_PART|PT_BRIGHT|PT_FLIP|PT_SHRINK|PT_WIND),
-    new quadrenderer("<grey>particles/electric", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK|PT_WIND),
-    new quadrenderer("<grey>particles/electric", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK|PT_WIND),
-    new quadrenderer("<grey>particles/eleczap", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK|PT_WIND),
-    new quadrenderer("<grey>particles/eleczap", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK|PT_WIND),
-    new quadrenderer("<grey>particles/fire", PT_PART|PT_BRIGHT|PT_FLIP|PT_RND4|PT_BRIGHT|PT_SHRINK|PT_WIND),
+    new quadrenderer("<grey>particles/spark", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP),
+    new quadrenderer("<grey>particles/fire", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
+    new quadrenderer("<grey>particles/fire", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
+    new quadrenderer("<grey>particles/plasma", PT_SOFT|PT_PART|PT_BRIGHT|PT_FLIP|PT_WIND),
+    new quadrenderer("<grey>particles/plasma", PT_PART|PT_BRIGHT|PT_FLIP|PT_WIND),
+    new quadrenderer("<grey>particles/electric", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
+    new quadrenderer("<grey>particles/electric", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
+    new quadrenderer("<grey>particles/eleczap", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
+    new quadrenderer("<grey>particles/eleczap", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
+    new quadrenderer("<grey>particles/fire", PT_PART|PT_BRIGHT|PT_FLIP|PT_RND4|PT_BRIGHT|PT_WIND),
     new taperenderer("<grey>particles/sflare", PT_TAPE|PT_BRIGHT),
     new taperenderer("<grey>particles/mflare", PT_TAPE|PT_BRIGHT|PT_RND4|PT_VFLIP|PT_BRIGHT),
     new taperenderer("<grey>particles/lightning", PT_TAPE|PT_BRIGHT|PT_HFLIP|PT_VFLIP, 2), // uses same clamp setting as normal lightning to avoid conflict
@@ -1253,7 +1242,7 @@ static partrenderer *parts[] =
     new quadrenderer("<grey>particles/muzzle", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP),
     new quadrenderer("<grey>particles/snow", PT_PART|PT_BRIGHT|PT_FLIP|PT_WIND),
     new quadrenderer("<grey>particles/hint", PT_HAZE|PT_PART),
-    new quadrenderer("<grey>particles/hint", PT_HAZE|PT_PART|PT_SHRINK|PT_WIND),
+    new quadrenderer("<grey>particles/hint", PT_HAZE|PT_PART|PT_WIND),
     new taperenderer("<grey>particles/sflare", PT_HAZE|PT_TAPE),
     &texts, &textontop,
     &explosions, &shockwaves, &shockballs, &glimmerballs, &lightnings, &lightzaps,
@@ -1482,7 +1471,7 @@ float partcollide(const vec &p, int collide)
     return collide ? p.z - raycube(p, vec(0, 0, -1), collide > 0 ? COLLIDERADIUS : max(p.z, 0.0f), RAY_CLIPMAT) + (collide > 0 ? COLLIDEERROR : 0) : 0;
 }
 
-particle *newparticle(const vec &o, const vec &d, int fade, int type, int color, float size, float blend, float gravity, int collide, float val, physent *pl)
+particle *newparticle(const vec &o, const vec &d, int fade, int type, int color, float size, float blend, float gravity, int collide, float val, physent *pl, float sizechange)
 {
     static particle dummy;
     if(seedemitter)
@@ -1492,24 +1481,27 @@ particle *newparticle(const vec &o, const vec &d, int fade, int type, int color,
     }
     if(fade + emitoffset < 0) return &dummy;
     addedparticles++;
-    if(particlehazeflame > 0 && type == PART_FLAME) newparticle(o, d, fade, PART_HAZE_FLAME, 0xFFFFFF, size*particlehazeflame, 1, gravity, collide ? -1 : 0, val, pl);
-    return parts[type]->addpart(o, d, fade, color, size, blend, gravity, collide, val, pl);
+    if(particlehazeflame > 0 && type == PART_FLAME) newparticle(o, d, fade, PART_HAZE_FLAME, 0xFFFFFF, size*particlehazeflame, 1, gravity, collide ? -1 : 0, val, pl, sizechange);
+
+    particle *newpart = parts[type]->addpart(o, d, fade, color, size, blend, gravity, collide, val, pl);
+    newpart->sizechange = sizechange;
+
+    return newpart;
 }
 
-void create(int type, int color, int fade, const vec &p, float size, float blend, float gravity, int collide, physent *pl)
+void create(int type, int color, int fade, const vec &p, float size, float blend, float gravity, int collide, physent *pl, float sizechange)
 {
     if(camera1->o.dist(p) > maxparticledistance) return;
-    int fmin = 1, fmax = fade*3, f = fmin + rnd(fmax); // help deallocater by using fade distribution rather than random
-    newparticle(p, vec(0, 0, 0), f, type, color, size, blend, gravity, collide, partcollide(p, collide), pl);
+    newparticle(p, vec(0, 0, 0), fade, type, color, size, blend, gravity, collide, partcollide(p, collide), pl, sizechange);
 }
 
-void regularcreate(int type, int color, int fade, const vec &p, float size, float blend, float gravity, int collide, physent *pl, int delay)
+void regularcreate(int type, int color, int fade, const vec &p, float size, float blend, float gravity, int collide, physent *pl, int delay, float sizechange)
 {
     if(!canemitparticles() || (delay > 0 && rnd(delay) != 0)) return;
-    create(type, color, fade, p, size, blend, gravity, collide, pl);
+    create(type, color, fade, p, size, blend, gravity, collide, pl, sizechange);
 }
 
-void splash(int type, int color, float radius, int num, int fade, const vec &p, float size, float blend, float gravity, int collide, float vel)
+void splash(int type, int color, float radius, int num, int fade, const vec &p, float size, float blend, float gravity, int collide, float vel, float sizechange)
 {
     if(camera1->o.dist(p) > maxparticledistance && !seedemitter) return;
 #if 0
@@ -1519,16 +1511,16 @@ void splash(int type, int color, float radius, int num, int fade, const vec &p, 
     {
         vec tmp(rnd(max(int(ceilf(radius*2)),1))-radius, rnd(max(int(ceilf(radius*2)),1))-radius, rnd(max(int(ceilf(radius*2)),1))-radius);
         int f = (num < 10) ? (fmin + rnd(fmax)) : (fmax - (i*(fmax-fmin))/(num-1)); // help deallocater by using fade distribution rather than random
-        newparticle(p, tmp, f, type, color, size, blend, gravity, collide, partcollide(p, collide));
+        newparticle(p, tmp, f, type, color, size, blend, gravity, collide, partcollide(p, collide), NULL, sizechange);
     }
 #endif
-    regularshape(type, radius, color, 21, num, fade, p, size, blend, gravity, collide, vel);
+    regularshape(type, radius, color, 21, num, fade, p, size, blend, gravity, collide, vel, sizechange);
 }
 
-void regularsplash(int type, int color, float radius, int num, int fade, const vec &p, float size, float blend, float gravity, int collide, float vel, int delay)
+void regularsplash(int type, int color, float radius, int num, int fade, const vec &p, float size, float blend, float gravity, int collide, float vel, int delay, float sizechange)
 {
     if(!canemitparticles() || (delay > 0 && rnd(delay) != 0)) return;
-    splash(type, color, radius, num, fade, p, size, blend, gravity, collide, vel);
+    splash(type, color, radius, num, fade, p, size, blend, gravity, collide, vel, sizechange);
 }
 
 bool canaddparticles()
@@ -1536,31 +1528,31 @@ bool canaddparticles()
     return !minimized || renderunfocused;
 }
 
-void regular_part_create(int type, int fade, const vec &p, int color, float size, float blend, float gravity, int collide, physent *pl, int delay)
+void regular_part_create(int type, int fade, const vec &p, int color, float size, float blend, float gravity, int collide, physent *pl, int delay, float sizechange)
 {
     if(!canaddparticles()) return;
-    regularcreate(type, color, fade, p, size, blend, gravity, collide, pl, delay);
+    regularcreate(type, color, fade, p, size, blend, gravity, collide, pl, delay, sizechange);
 }
 
-void part_create(int type, int fade, const vec &p, int color, float size, float blend, float gravity, int collide, physent *pl)
+void part_create(int type, int fade, const vec &p, int color, float size, float blend, float gravity, int collide, physent *pl, float sizechange)
 {
     if(!canaddparticles()) return;
-    create(type, color, fade, p, size, blend, gravity, collide, pl);
+    create(type, color, fade, p, size, blend, gravity, collide, pl, sizechange);
 }
 
-void regular_part_splash(int type, int num, int fade, const vec &p, int color, float size, float blend, float gravity, int collide, float radius, float vel, int delay)
+void regular_part_splash(int type, int num, int fade, const vec &p, int color, float size, float blend, float gravity, int collide, float radius, float vel, int delay, float sizechange)
 {
     if(!canaddparticles()) return;
-    regularsplash(type, color, radius, num, fade, p, size, blend, gravity, collide, vel, delay);
+    regularsplash(type, color, radius, num, fade, p, size, blend, gravity, collide, vel, delay, sizechange);
 }
 
-void part_splash(int type, int num, int fade, const vec &p, int color, float size, float blend, float gravity, int collide, float radius, float vel)
+void part_splash(int type, int num, int fade, const vec &p, int color, float size, float blend, float gravity, int collide, float radius, float vel, float sizechange)
 {
     if(!canaddparticles()) return;
-    splash(type, color, radius, num, fade, p, size, blend, gravity, collide, vel);
+    splash(type, color, radius, num, fade, p, size, blend, gravity, collide, vel, sizechange);
 }
 
-void part_trail(int type, int fade, const vec &s, const vec &e, int color, float size, float blend, float gravity, int collide)
+void part_trail(int type, int fade, const vec &s, const vec &e, int color, float size, float blend, float gravity, int collide, float sizechange)
 {
     if(!canaddparticles()) return;
     vec v;
@@ -1572,15 +1564,15 @@ void part_trail(int type, int fade, const vec &s, const vec &e, int color, float
     {
         p.add(v);
         vec tmp = vec(float(rnd(11)-5), float(rnd(11)-5), float(rnd(11)-5));
-        newparticle(p, tmp, rnd(fade)+fade, type, color, size, blend, gravity, collide);
+        newparticle(p, tmp, rnd(fade)+fade, type, color, size, blend, gravity, collide, 0, NULL, sizechange);
     }
 }
 
-void part_text(const vec &s, const char *t, int type, int fade, int color, float size, float blend, float gravity, int collide, physent *pl)
+void part_text(const vec &s, const char *t, int type, int fade, int color, float size, float blend, float gravity, int collide, physent *pl, float sizechange)
 {
     if(!canaddparticles() || !t[0]) return;
     if(!particletext || camera1->o.dist(s) > maxparticletextdistance) return;
-    particle *p = newparticle(s, vec(0, 0, 0), fade, type, color, size, blend, gravity, collide, 0, pl);
+    particle *p = newparticle(s, vec(0, 0, 0), fade, type, color, size, blend, gravity, collide, 0, pl, sizechange);
     p->text = t;
 }
 
@@ -1593,10 +1585,10 @@ void part_textcopy(const vec &s, const char *t, int type, int fade, int color, f
     p->flags = 1;
 }
 
-void part_flare(const vec &p, const vec &dest, int fade, int type, int color, float size, float blend, float gravity, int collide, physent *pl)
+void part_flare(const vec &p, const vec &dest, int fade, int type, int color, float size, float blend, float gravity, int collide, physent *pl, float sizechange)
 {
     if(!canaddparticles()) return;
-    newparticle(p, dest, fade, type, color, size, blend, gravity, collide, 0, pl);
+    newparticle(p, dest, fade, type, color, size, blend, gravity, collide, 0, pl, sizechange);
 }
 
 void part_explosion(const vec &dest, float maxsize, int type, int fade, int color, float size, float blend, float gravity, int collide, physent *pl)
@@ -1748,7 +1740,7 @@ static inline vec offsetvec(vec o, int dir, int dist)
  * 24..26 flat plane
  * +32 to inverse direction
  */
- void createshape(int type, float radius, int color, int dir, int num, int fade, const vec &p, float size, float blend, float gravity, int collide, float vel)
+ void createshape(int type, float radius, int color, int dir, int num, int fade, const vec &p, float size, float blend, float gravity, int collide, float vel, float sizechange)
 {
     int basetype = parts[type]->type&PT_TYPE;
     bool flare = (basetype == PT_TAPE) || (basetype == PT_LIGHTNING),
@@ -1842,19 +1834,19 @@ static inline vec offsetvec(vec o, int dir, int dist)
         }
 
         if(flare)
-            newparticle(from, to, rnd(fade*3)+1, type, color, size, blend, gravity, collide);
+            newparticle(from, to, rnd(fade*3)+1, type, color, size, blend, gravity, collide, 0, NULL, sizechange);
         else
         {
             vec d = vec(from).sub(to).rescale(vel);
-            newparticle(from, d, rnd(fade*3)+1, type, color, size, blend, gravity, collide, partcollide(from, collide));
+            newparticle(from, d, rnd(fade*3)+1, type, color, size, blend, gravity, collide, partcollide(from, collide), NULL, sizechange);
         }
     }
 }
 
-void regularshape(int type, float radius, int color, int dir, int num, int fade, const vec &p, float size, float blend, float gravity, int collide, float vel)
+void regularshape(int type, float radius, int color, int dir, int num, int fade, const vec &p, float size, float blend, float gravity, int collide, float vel, float sizechange)
 {
     if(!canemitparticles()) return;
-    createshape(type, radius, color, dir, num, fade, p, size, blend, gravity, collide, vel);
+    createshape(type, radius, color, dir, num, fade, p, size, blend, gravity, collide, vel, sizechange);
 }
 
 void regularflame(int type, const vec &p, float radius, float height, int color, int density, int fade, float size, float blend, float gravity, int collide, float vel)

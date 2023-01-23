@@ -56,6 +56,7 @@ namespace fx
         FX_PART_REGDELAY,
         FX_PART_SHAPESIZE,
         FX_PART_PARTSIZE,
+        FX_PART_PARTSIZECHANGE,
         FX_PART_MAXPARTSIZE,
         FX_PART_VEL,
         FX_PART_GRAVITY,
@@ -153,7 +154,7 @@ namespace fx
 
     #define FX_PARAMS 2
 
-    #define FX_EXT_PROPS 15
+    #define FX_EXT_PROPS 16
     #define FX_EXT_PROP(idx) (idx + FX_STD_PROPS)
 
     #define FX_TOTAL_PROPS (FX_STD_PROPS + FX_EXT_PROPS)

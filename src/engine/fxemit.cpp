@@ -154,7 +154,8 @@ namespace fx
                         inst.getextprop<float>(FX_PART_GRAVITY),
                         collidestain,
                         trackent,
-                        regdelay
+                        regdelay,
+                        inst.getextprop<float>(FX_PART_PARTSIZECHANGE) * scale
                     );
                 else
                     part_create(
@@ -166,7 +167,8 @@ namespace fx
                         blend,
                         inst.getextprop<float>(FX_PART_GRAVITY),
                         collidestain,
-                        trackent
+                        trackent,
+                        inst.getextprop<float>(FX_PART_PARTSIZECHANGE) * scale
                     );
                 break;
             }
@@ -188,7 +190,8 @@ namespace fx
                         collidestain,
                         inst.getextprop<float>(FX_PART_SHAPESIZE) * scale,
                         inst.getextprop<float>(FX_PART_VEL),
-                        regdelay
+                        regdelay,
+                        inst.getextprop<float>(FX_PART_PARTSIZECHANGE) * scale
                     );
                 else
                     part_splash(
@@ -202,7 +205,8 @@ namespace fx
                         inst.getextprop<float>(FX_PART_GRAVITY),
                         collidestain,
                         inst.getextprop<float>(FX_PART_SHAPESIZE) * scale,
-                        inst.getextprop<float>(FX_PART_VEL)
+                        inst.getextprop<float>(FX_PART_VEL),
+                        inst.getextprop<float>(FX_PART_PARTSIZECHANGE) * scale
                     );
                 break;
             }
@@ -220,7 +224,8 @@ namespace fx
                     blend,
                     inst.getextprop<float>(FX_PART_GRAVITY),
                     collidestain,
-                    inst.getextprop<float>(FX_PART_VEL)
+                    inst.getextprop<float>(FX_PART_VEL),
+                    inst.getextprop<float>(FX_PART_PARTSIZECHANGE) * scale
                 );
                 break;
 
@@ -240,7 +245,8 @@ namespace fx
                     blend,
                     inst.getextprop<int>(FX_PART_GRAVITY),
                     collidestain,
-                    trackent
+                    trackent,
+                    inst.getextprop<float>(FX_PART_PARTSIZECHANGE) * scale
                 );
                 break;
             }
@@ -255,7 +261,8 @@ namespace fx
                     inst.getextprop<float>(FX_PART_PARTSIZE) * scale,
                     blend,
                     inst.getextprop<int>(FX_PART_GRAVITY),
-                    collidestain
+                    collidestain,
+                    inst.getextprop<float>(FX_PART_PARTSIZECHANGE) * scale
                 );
                 break;
 
@@ -285,7 +292,8 @@ namespace fx
                     blend,
                     inst.getextprop<int>(FX_PART_GRAVITY),
                     collidestain,
-                    trackent
+                    trackent,
+                    inst.getextprop<float>(FX_PART_PARTSIZECHANGE) * scale
                 );
                 break;
         }

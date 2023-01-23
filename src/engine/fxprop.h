@@ -219,6 +219,12 @@ namespace fx
             BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
         ),
         fxpropertydef(
+            "partsizechange",
+            PROP_FLOAT,
+            -FLT_MAX, 0.0f, FLT_MAX,
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+        ),
+        fxpropertydef(
             "maxpartsize",
             PROP_FLOAT,
             FLT_MIN, 16.0f, FLT_MAX,
