@@ -647,7 +647,7 @@ int explicitsky = 0;
 
 bool limitsky()
 {
-    return explicitsky && (getskytexture() || editmode);
+    return explicitsky && (getskytexture() || (editmode && showsky));
 }
 
 bool hasenvshadow()

@@ -2416,8 +2416,9 @@ void gl_drawview()
 
     if(!drawtex)
     {
+        extern int showsky;
         if(wireframe && editmode) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        else if(limitsky() && editmode) renderexplicitsky(true);
+        else if(limitsky() && editmode && showsky) renderexplicitsky(true);
     }
 
     renderao();
