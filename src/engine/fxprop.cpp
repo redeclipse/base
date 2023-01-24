@@ -252,6 +252,12 @@ namespace fx
 
     static void fxregister(const char *name, int type, uint *code)
     {
+        if(newfx)
+        {
+            conoutf("FX registration error: already registering %s, tried to register %s", newfx->name, name);
+            return;
+        }
+
         newfxhandle = fxdefs.add(name);
         newfx = &newfxhandle.get();
         newfx->name = fxdefs.getname(newfxhandle);
@@ -261,7 +267,6 @@ namespace fx
 
         if(fxdebug) conoutf("New FX registered: %s, index %d, type %s", name,
             newfxhandle.getindex(), fxtypestring(newfx->type));
-
 
         resetdef();
         execute(code);
