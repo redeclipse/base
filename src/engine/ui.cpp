@@ -4411,6 +4411,7 @@ namespace UI
             excol = excol_;
             exdir = exdir_;
             interactive = false;
+            translate = vec(0, 0, 0);
         }
 
         bool ispreview() const { return true; }
