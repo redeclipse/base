@@ -116,8 +116,6 @@ union identvalptr
 
 typedef void (__cdecl *identfun)(ident *id);
 
-extern void freeidentstr(char *s);
-
 struct ident
 {
     uchar type; // one of ID_* above
@@ -206,11 +204,7 @@ struct ident
         val = v.val;
     }
 
-    void forcenull()
-    {
-        if(valtype==VAL_STR) freeidentstr(val.s);
-        valtype = VAL_NULL;
-    }
+    void forcenull();
 
     float getfloat() const;
     int getint() const;

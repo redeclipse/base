@@ -132,7 +132,7 @@ struct lockstr
     }
 };
 
-void freeidentstr(char *s)
+static inline void freeidentstr(char *s)
 {
     for(lockstr *prev = NULL, *cur = lockedstrings; cur; prev = cur, cur = cur->next) if(cur->s == s)
     {
@@ -141,6 +141,12 @@ void freeidentstr(char *s)
         return;
     }
     delete[] s;
+}
+
+inline void ident::forcenull()
+{
+    if(valtype==VAL_STR) freeidentstr(val.s);
+    valtype = VAL_NULL;
 }
 
 struct nullval : tagval
