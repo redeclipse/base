@@ -112,6 +112,37 @@ static inline void cleancode(ident &id)
     }
 }
 
+static struct lockstr* lockedstrings = NULL;
+
+struct lockstr
+{
+    const char *s;
+    lockstr* next;
+
+    lockstr(const char *s) : s(s)
+    {
+        next = lockedstrings;
+        lockedstrings = this;
+    }
+
+    ~lockstr()
+    {
+        if(lockedstrings == this) lockedstrings = next;
+        else delete[] s;
+    }
+};
+
+void freeidentstr(char *s)
+{
+    for(lockstr *prev = NULL, *cur = lockedstrings; cur; prev = cur, cur = cur->next) if(cur->s == s)
+    {
+        if(prev) prev->next = cur->next;
+        else lockedstrings = cur->next;
+        return;
+    }
+    delete[] s;
+}
+
 struct nullval : tagval
 {
     nullval() { setnull(); }
@@ -139,7 +170,7 @@ void clearoverride(ident &i)
             if(i.valtype==VAL_STR)
             {
                 if(!i.val.s[0]) break;
-                delete[] i.val.s;
+                freeidentstr(i.val.s);
             }
             cleancode(i);
             i.valtype = VAL_STR;
@@ -154,7 +185,7 @@ void clearoverride(ident &i)
             i.changed();
             break;
         case ID_SVAR:
-            delete[] *i.storage.s;
+            freeidentstr(*i.storage.s);
             *i.storage.s = i.def.s;
             i.changed();
             break;
@@ -298,7 +329,7 @@ static inline void poparg(ident &id)
 {
     if(!id.stack) return;
     identstack *stack = id.stack;
-    if(id.valtype == VAL_STR) delete[] id.val.s;
+    if(id.valtype == VAL_STR) freeidentstr(id.val.s);
     id.setval(*stack);
     cleancode(id);
     id.stack = stack->next;
@@ -484,7 +515,7 @@ static inline void setarg(ident &id, tagval &v)
 {
     if(aliasstack->usedargs&(1<<id.index))
     {
-        if(id.valtype == VAL_STR) delete[] id.val.s;
+        if(id.valtype == VAL_STR) freeidentstr(id.val.s);
         id.setval(v);
         cleancode(id);
     }
@@ -509,7 +540,7 @@ static inline void setalias(ident &id, tagval &v, bool world, bool quiet = false
         return;
     }
 #endif
-    if(id.valtype == VAL_STR) delete[] id.val.s;
+    if(id.valtype == VAL_STR) freeidentstr(id.val.s);
     id.setval(v);
     cleancode(id);
 
@@ -780,15 +811,15 @@ void setfvar(const char *name, float f, bool dofunc, bool def, bool force)
 void setsvar(const char *name, const char *str, bool dofunc, bool def)
 {
     GETVAR(id, ID_SVAR, name, );
-    delete[] *id->storage.s;
+    freeidentstr(*id->storage.s);
     *id->storage.s = newstring(str);
     if(def || versioning)
     {
-        delete[] id->def.s;
+        freeidentstr(id->def.s);
         id->def.s = newstring(*id->storage.s);
         if(versioning == 2)
         {
-            delete[] id->bin.s;
+            freeidentstr(id->bin.s);
             id->bin.s = newstring(*id->storage.s);
         }
     }
@@ -1184,15 +1215,15 @@ void setsvarchecked(ident *id, const char *val)
 #ifndef STANDALONE
         CHECKVAR(val)
 #endif
-        delete[] *id->storage.s;
+        freeidentstr(*id->storage.s);
         *id->storage.s = newstring(val);
         if(versioning)
         {
-            delete[] id->def.s;
+            freeidentstr(id->def.s);
             id->def.s = newstring(val);
             if(versioning == 2)
             {
-                delete[] id->bin.s;
+                freeidentstr(id->bin.s);
                 id->bin.s = newstring(val);
             }
         }
@@ -3723,7 +3754,7 @@ void loopiter(ident *id, identstack &stack, const tagval &v)
     }
     else
     {
-        if(id->valtype == VAL_STR) delete[] id->val.s;
+        if(id->valtype == VAL_STR) freeidentstr(id->val.s);
         cleancode(*id);
         id->setval(v);
     }
@@ -3740,7 +3771,7 @@ static inline void setiter(ident &id, int i, identstack &stack)
     {
         if(id.valtype != VAL_INT)
         {
-            if(id.valtype == VAL_STR) delete[] id.val.s;
+            if(id.valtype == VAL_STR) freeidentstr(id.val.s);
             cleancode(id);
             id.valtype = VAL_INT;
         }
@@ -4106,7 +4137,7 @@ static inline void setiter(ident &id, char *val, identstack &stack)
 {
     if(id.stack == &stack)
     {
-        if(id.valtype == VAL_STR) delete[] id.val.s;
+        if(id.valtype == VAL_STR) freeidentstr(id.val.s);
         else id.valtype = VAL_STR;
         cleancode(id);
         id.val.s = val;
@@ -4125,6 +4156,7 @@ void listfind(ident *id, const char *list, const uint *body)
     if(id->type!=ID_ALIAS) { intret(-1); return; }
     identstack stack;
     int n = -1;
+    lockstr locked(list);
     for(const char *s = list, *start, *end; parselist(s, start, end);)
     {
         ++n;
@@ -4142,6 +4174,7 @@ void listassoc(ident *id, const char *list, const uint *body)
     if(id->type!=ID_ALIAS) return;
     identstack stack;
     int n = -1;
+    lockstr locked(list);
     for(const char *s = list, *start, *end, *qstart; parselist(s, start, end);)
     {
         ++n;
@@ -4189,6 +4222,7 @@ void looplist(ident *id, const char *list, const uint *body)
     if(id->type!=ID_ALIAS) return;
     identstack stack;
     int n = 0;
+    lockstr locked(list);
     for(const char *s = list, *start, *end, *qstart; parselist(s, start, end, qstart); n++)
     {
         setiter(*id, listelem(start, end, qstart), stack);
@@ -4203,6 +4237,7 @@ void loopsublist(ident *id, const char *list, int *skip, int *count, const uint 
     if(id->type!=ID_ALIAS) return;
     identstack stack;
     int n = 0, offset = max(*skip, 0), len = *count < 0 ? INT_MAX : offset + *count;
+    lockstr locked(list);
     for(const char *s = list, *start, *end, *qstart; parselist(s, start, end, qstart) && n < len; n++) if(n >= offset)
     {
         setiter(*id, listelem(start, end, qstart), stack);
@@ -4217,6 +4252,7 @@ void looplist2(ident *id, ident *id2, const char *list, const uint *body)
     if(id->type!=ID_ALIAS || id2->type!=ID_ALIAS) return;
     identstack stack, stack2;
     int n = 0;
+    lockstr locked(list);
     for(const char *s = list, *start, *end, *qstart; parselist(s, start, end, qstart); n += 2)
     {
         setiter(*id, listelem(start, end, qstart), stack);
@@ -4232,6 +4268,7 @@ void looplist3(ident *id, ident *id2, ident *id3, const char *list, const uint *
     if(id->type!=ID_ALIAS || id2->type!=ID_ALIAS || id3->type!=ID_ALIAS) return;
     identstack stack, stack2, stack3;
     int n = 0;
+    lockstr locked(list);
     for(const char *s = list, *start, *end, *qstart; parselist(s, start, end, qstart); n += 3)
     {
         setiter(*id, listelem(start, end, qstart), stack);
@@ -4248,6 +4285,7 @@ void looplist4(ident *id, ident *id2, ident *id3, ident *id4, const char *list, 
     if(id->type!=ID_ALIAS || id2->type!=ID_ALIAS || id3->type!=ID_ALIAS || id4->type!=ID_ALIAS) return;
     identstack stack, stack2, stack3, stack4;
     int n = 0;
+    lockstr locked(list);
     for(const char *s = list, *start, *end, *qstart; parselist(s, start, end, qstart); n += 4)
     {
         setiter(*id, listelem(start, end, qstart), stack);
@@ -4265,6 +4303,7 @@ void looplistn(ident *id, ident *id2, const char *list, const uint *body)
     if(id->type!=ID_ALIAS || id2->type!=ID_ALIAS) return;
     identstack stack, stack2;
     int n = 0;
+    lockstr locked(list);
     for(const char *s = list, *start, *end, *qstart; parselist(s, start, end, qstart); n++)
     {
         setiter(*id, listelem(start, end, qstart), stack);
@@ -4281,6 +4320,7 @@ void looplistconc(ident *id, const char *list, const uint *body, bool space)
     identstack stack;
     vector<char> r;
     int n = 0;
+    lockstr locked(list);
     for(const char *s = list, *start, *end, *qstart; parselist(s, start, end, qstart); n++)
     {
         char *val = listelem(start, end, qstart);
@@ -4308,6 +4348,7 @@ void listfilter(ident *id, const char *list, const uint *body)
     identstack stack;
     vector<char> r;
     int n = 0;
+    lockstr locked(list);
     for(const char *s = list, *start, *end, *qstart, *qend; parselist(s, start, end, qstart, qend); n++)
     {
         char *val = newstring(start, end-start);
@@ -4330,6 +4371,7 @@ void listcount(ident *id, const char *list, const uint *body)
     if(id->type!=ID_ALIAS) return;
     identstack stack;
     int n = 0, r = 0;
+    lockstr locked(list);
     for(const char *s = list, *start, *end; parselist(s, start, end); n++)
     {
         char *val = newstring(start, end-start);
@@ -4551,6 +4593,7 @@ void sortlist(char *list, ident *x, ident *y, uint *body, uint *unique)
         return;
     }
 
+    lockstr locked(list);
     identstack xstack, ystack;
     pusharg(*x, nullval, xstack); x->flags &= ~IDF_UNKNOWN;
     pusharg(*y, nullval, ystack); y->flags &= ~IDF_UNKNOWN;
