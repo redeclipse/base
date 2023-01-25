@@ -118,29 +118,30 @@ struct lockstr
 {
     const char *s;
     lockstr* next;
+    bool deleted;
 
-    lockstr(const char *s) : s(s)
+    lockstr(const char *s) : s(s), next(lockedstrings), deleted(false)
     {
-        next = lockedstrings;
         lockedstrings = this;
     }
 
-    ~lockstr()
-    {
-        if(lockedstrings == this) lockedstrings = next;
-        else delete[] s;
-    }
+    ~lockstr();
 };
 
-static inline void freeidentstr(char *s)
+static inline void freeidentstr(const char *s)
 {
-    for(lockstr *prev = NULL, *cur = lockedstrings; cur; prev = cur, cur = cur->next) if(cur->s == s)
+    for(lockstr *cur = lockedstrings; cur; cur = cur->next) if(cur->s == s)
     {
-        if(prev) prev->next = cur->next;
-        else lockedstrings = cur->next;
+        cur->deleted = true;
         return;
     }
     delete[] s;
+}
+
+inline lockstr::~lockstr()
+{
+    lockedstrings = next;
+    if(deleted) freeidentstr(s);
 }
 
 inline void ident::forcenull()
