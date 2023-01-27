@@ -5019,6 +5019,12 @@ CMPSNCMD(cubecasecmp, <~=sn, <=);
 CMPSNCMD(cubecasecmp, >~=sn, >=);
 
 ICOMMAND(0, strstr, "ss", (char *a, char *b), { char *s = strstr(a, b); intret(s ? s-a : -1); });
+ICOMMAND(0, strrstr, "ss", (char *a, char *b),
+{
+    char *last = NULL;
+    for(char *cur = a; char *s = strstr(cur, b); last = s, ++cur);
+    intret(last ? last-a : -1);
+});
 ICOMMAND(0, strcasestr, "ss", (char *a, char *b), { char *s = cubecasefind(a, b); intret(s ? s-a : -1); });
 ICOMMAND(0, strmatch, "ss", (char *a, char *b), { intret(cubematchstr(a, b) ? 1 : 0); });
 ICOMMAND(0, strcasematch, "ss", (char *a, char *b), { intret(cubematchstr(a, b, true) ? 1 : 0); });
