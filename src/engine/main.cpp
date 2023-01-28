@@ -1232,6 +1232,13 @@ int main(int argc, char **argv)
 
     initing = NOT_INITING;
 
+    if(firstrun)
+    {
+        conoutf("First run!");
+        firstrun = 0;
+        triggereventcallbacks(CMD_EVENT_FIRSTRUN);
+    }
+
     if(shouldload)
     {
         conoutf("Loading required data..");

@@ -1612,6 +1612,7 @@ void setlocations(const char *bin)
 
 #ifndef STANDALONE
 VAR(IDF_INIT, noconfigfile, 0, 0, 1);
+VAR(IDF_INIT, firstrun, 0, 1, 1);
 
 void writecfg(const char *name, int flags)
 {

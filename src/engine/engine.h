@@ -803,7 +803,7 @@ enum
     INIT_DEFAULTS,
     INIT_QUIT
 };
-extern int initing, fullscreen, fullscreendesktop, numcpus, noconfigfile;
+extern int initing, fullscreen, fullscreendesktop, numcpus, noconfigfile, firstrun;
 void setfullscreen(bool enable);
 extern bool progressing, pixeling;
 extern float loadprogress, progressamt;
