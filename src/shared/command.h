@@ -419,8 +419,12 @@ extern int identflags;
 
 enum
 {
+    // Engine events
     CMD_EVENT_MAPLOAD = 0,
-    CMD_EVENT_FIRSTRUN
+    CMD_EVENT_FIRSTRUN,
+
+    // Game events
+    CMD_EVENT_GAME_VOTE
 };
 
 extern void triggereventcallbacks(int event);

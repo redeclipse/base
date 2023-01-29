@@ -2078,7 +2078,7 @@ namespace game
         if(gamestate == G_S_VOTING && oldstate != G_S_VOTING)
         {
             hud::showscores(false);
-            UI::openui("maps");
+            triggereventcallbacks(CMD_EVENT_GAME_VOTE);
         }
     }
 
