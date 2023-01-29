@@ -430,6 +430,8 @@ CVAR(IDF_PERSIST, selectionskew, 0x101010);
 VAR(IDF_PERSIST, selectionpulse, 0, 500, VAR_MAX);
 FVAR(IDF_PERSIST, selectionwidth, 0, 4, 10);
 
+VAR(IDF_PERSIST, selectionoffset, 0, 1, 1);
+
 int geteditorient(int curorient, int axis)
 {
     int finalorient = -1;
@@ -665,9 +667,14 @@ void rendereditcursor()
 
     renderentselection(player->o, cursordir, entmoving!=0);
 
-    boxoutline = outline || (fullbright && blankgeom);
-
-    enablepolygonoffset(GL_POLYGON_OFFSET_LINE);
+    if (outline || (fullbright && blankgeom)) {
+      if (selectionoffset) {
+        boxoutline = true;
+        enablepolygonoffset(GL_POLYGON_OFFSET_LINE);
+      } else {
+        enablepolygonoffset(GL_POLYGON_OFFSET_LINE, 2.0f);
+      }
+    }
 
     #define planargrid(q,r,s) \
     { \
