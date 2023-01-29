@@ -2163,6 +2163,7 @@ extern char *path(char *s, bool simple = false);
 extern char *copypath(const char *s, bool simple = false);
 extern const char *parentdir(const char *directory);
 extern bool fileexists(const char *path, const char *mode);
+extern int filemodifystamp(const char *path);
 extern bool createdir(const char *path);
 extern void sethomedir(const char *dir);
 extern void appendhomedir(const char *dir);

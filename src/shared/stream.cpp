@@ -448,6 +448,22 @@ bool fileexists(const char *path, const char *mode)
     return exists;
 }
 
+int filemodifystamp(const char *path)
+{
+    const char *filepath = findfile(path, "r");
+    if(!filepath) return -1;
+
+#ifdef WIN32
+    struct _stat buf;
+    if(_stat(filepath, &buf) < 0) return -1;
+#else
+    struct stat buf;
+    if(stat(filepath, &buf) < 0) return -1;
+#endif
+
+    return buf.st_mtime;
+}
+
 bool createdir(const char *path)
 {
     size_t len = strlen(path);

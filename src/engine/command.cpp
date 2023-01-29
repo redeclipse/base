@@ -4554,6 +4554,8 @@ void findfile_(char *name)
 }
 COMMANDN(0, findfile, findfile_, "s");
 
+ICOMMAND(0, filemodifystamp, "s", (char *name), intret(filemodifystamp(name)));
+
 struct sortitem
 {
     const char *str, *quotestart, *quoteend;
