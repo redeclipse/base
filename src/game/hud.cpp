@@ -143,6 +143,7 @@ namespace hud
     VAR(IDF_PERSIST, indicatorminattack, 0, 1000, VAR_MAX);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, indicatortex, "<grey>textures/hud/indicator", 3);
 
+    VAR(0, hidecrosshair, 0, 0, 1); // temporarily hides crosshair, needs to be set each frame you want it hidden
     VAR(IDF_PERSIST, showcrosshair, 0, 2, 2); // 0 = off, 1 = on, 2 = blend depending on current accuracy level
     VAR(IDF_PERSIST, crosshairdistance, 0, 0, 1); // 0 = off, 1 = shows distance to crosshair target
     VAR(IDF_PERSIST, crosshairdistancex, VAR_MIN, 160, VAR_MAX); // offset from the crosshair
@@ -556,6 +557,8 @@ namespace hud
 
     void checkui()
     {
+        hidecrosshair = 0;
+
         UI::showui("hud");
         if(!UI::hasmenu())
         {
@@ -1207,7 +1210,7 @@ namespace hud
     {
         int index = POINTER_NONE;
         if(hasinput()) index = hasinput(true) ? POINTER_UI : POINTER_NONE;
-        else if(!showhud || !showcrosshair || game::focus->state == CS_DEAD || !gs_playing(game::gamestate) || client::waiting() || (game::thirdpersonview(true) && game::focus != game::player1))
+        else if(hidecrosshair || !showhud || !showcrosshair || game::focus->state == CS_DEAD || !gs_playing(game::gamestate) || client::waiting() || (game::thirdpersonview(true) && game::focus != game::player1))
             index = POINTER_NONE;
         else if(game::focus->state == CS_EDITING) index = POINTER_EDIT;
         else if(game::focus->state >= CS_SPECTATOR) index = POINTER_SPEC;
