@@ -667,14 +667,15 @@ void rendereditcursor()
 
     renderentselection(player->o, cursordir, entmoving!=0);
 
+    float offset = 1.0f;
     if (outline || (fullbright && blankgeom)) {
       if (selectionoffset) {
         boxoutline = true;
-        enablepolygonoffset(GL_POLYGON_OFFSET_LINE);
       } else {
-        enablepolygonoffset(GL_POLYGON_OFFSET_LINE, 2.0f);
+        offset = 2.0f;
       }
     }
+    enablepolygonoffset(GL_POLYGON_OFFSET_LINE, offset);
 
     #define planargrid(q,r,s) \
     { \
