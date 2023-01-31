@@ -174,6 +174,10 @@ namespace fx
                 t *= t;
                 break;
 
+            case FX_MOD_LERP_SHAPE_SQUARE_OUT:
+                t = 1.0f - (1.0f - t) * (1.0f - t);
+                break;
+
             case FX_MOD_LERP_SHAPE_SMOOTH:
                 t = smoothinterp(t);
                 break;
