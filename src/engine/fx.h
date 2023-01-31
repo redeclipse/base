@@ -155,7 +155,7 @@ namespace fx
     enum
     {
         FX_MOD_LERP_SHAPE_LINEAR = 0,
-        FX_MOD_LERP_SHAPE_SQUARE,
+        FX_MOD_LERP_SHAPE_SQUARE_IN,
         FX_MOD_LERP_SHAPE_SMOOTH,
 
         FX_MOD_LERP_SHAPES

@@ -170,7 +170,7 @@ namespace fx
 
         switch(prop.lerp->props[FX_MOD_LERP_PROP_SHAPE].get<int>())
         {
-            case FX_MOD_LERP_SHAPE_SQUARE:
+            case FX_MOD_LERP_SHAPE_SQUARE_IN:
                 t *= t;
                 break;
 
