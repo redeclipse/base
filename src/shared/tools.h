@@ -976,26 +976,26 @@ template <class T> struct vector
         if(find(o) < 0) add(o);
     }
 
-    void removeobj(const T &o)
+    bool removeobj(const T &o)
     {
         loopi(ulen) if(buf[i] == o)
         {
             int dst = i;
             for(int j = i+1; j < ulen; j++) if(!(buf[j] == o)) buf[dst++] = buf[j];
             setsize(dst);
-            break;
+            return true;
         }
+        return false;
     }
 
-    void replacewithlast(const T &o)
+    bool replacewithlast(const T &o)
     {
-        if(!ulen) return;
-        loopi(ulen-1) if(buf[i]==o)
+        loopi(ulen) if(buf[i]==o)
         {
-            buf[i] = buf[ulen-1];
-            break;
+            buf[i] = buf[--ulen];
+            return true;
         }
-        ulen--;
+        return false;
     }
 
     T &insert(int i, const T &e)

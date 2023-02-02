@@ -196,6 +196,7 @@ void modifyoctaentity(int flags, int id, extentity &e, cube *c, const ivec &cor,
     }
 }
 
+VAR(0, numoctaents, 1, 0, 0);
 vector<int> outsideents;
 int spotlights = 0, volumetriclights = 0, nospeclights = 0, smalphalights = 0, volumetricsmalphalights = 0;
 
@@ -224,6 +225,8 @@ static bool modifyoctaent(int flags, int id, extentity &e)
         modifyoctaentity(flags, id, e, worldroot, ivec(0, 0, 0), worldsize>>1, o, r, leafsize);
     }
     e.flags ^= EF_OCTA;
+    if(e.flags&EF_OCTA) ++numoctaents;
+    else --numoctaents;
     switch(e.type)
     {
         case ET_LIGHT:
@@ -1449,6 +1452,7 @@ void resetmap(bool empty, int variant)
 
     entities::clearents();
     outsideents.setsize(0);
+    numoctaents = 0;
     spotlights = 0;
     volumetriclights = 0;
     nospeclights = 0;
