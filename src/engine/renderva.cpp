@@ -1657,7 +1657,7 @@ static void changeslottmus(renderstate &cur, int pass, Slot &slot, VSlot &vslot)
         }
     }
 
-    if(!cur.vslot || vslot.angle.x != cur.vslot->angle.x)
+    if(!cur.vslot || vslot.angle.x != cur.vslot->angle.x || vslot.slot != cur.vslot->slot)
         GLOBALPARAM(rotate, vec(vslot.angle.z, (vslot.angle.y*diffuse->h)/diffuse->w, -(vslot.angle.y*diffuse->w)/diffuse->h));
 
     if(cur.tmu != 0)
