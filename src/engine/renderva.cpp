@@ -1660,7 +1660,10 @@ static void changeslottmus(renderstate &cur, int pass, Slot &slot, VSlot &vslot)
 
     float aspect = float(diffuse->w) / diffuse->h;
     if(!cur.vslot || vslot.angle.x != cur.vslot->angle.x || aspect != cur.aspect)
+    {
+        cur.aspect = aspect;
         GLOBALPARAM(rotate, vec(vslot.angle.z, vslot.angle.y / aspect, -vslot.angle.y * aspect));
+    }
 
     if(cur.tmu != 0)
     {
