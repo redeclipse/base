@@ -1280,6 +1280,7 @@ struct renderstate
     float shadowopacity;
     float refractscale;
     vec refractcolor;
+    float aspect;
     bool blend;
     int blendx, blendy;
     int globals, tmu;
@@ -1289,7 +1290,7 @@ struct renderstate
     vec2 texgenscroll;
     int texgenorient, texgenmillis;
 
-    renderstate() : colormask(true), depthmask(true), alphaing(0), shadowing(false), vbuf(0), vattribs(false), vquery(false), colorscale(1, 1, 1), alphascale(0), shadowopacity(-1), refractscale(0), refractcolor(1, 1, 1), blend(false), blendx(-1), blendy(-1), globals(-1), tmu(-1), slot(NULL), texgenslot(NULL), vslot(NULL), texgenvslot(NULL), texgenscroll(0, 0), texgenorient(-1), texgenmillis(lastmillis)
+    renderstate() : colormask(true), depthmask(true), alphaing(0), shadowing(false), vbuf(0), vattribs(false), vquery(false), colorscale(1, 1, 1), alphascale(0), shadowopacity(-1), refractscale(0), refractcolor(1, 1, 1), aspect(1), blend(false), blendx(-1), blendy(-1), globals(-1), tmu(-1), slot(NULL), texgenslot(NULL), vslot(NULL), texgenvslot(NULL), texgenscroll(0, 0), texgenorient(-1), texgenmillis(lastmillis)
     {
         loopk(7) textures[k] = 0;
     }
@@ -1657,8 +1658,9 @@ static void changeslottmus(renderstate &cur, int pass, Slot &slot, VSlot &vslot)
         }
     }
 
-    if(!cur.vslot || vslot.angle.x != cur.vslot->angle.x || vslot.slot != cur.vslot->slot)
-        GLOBALPARAM(rotate, vec(vslot.angle.z, (vslot.angle.y*diffuse->h)/diffuse->w, -(vslot.angle.y*diffuse->w)/diffuse->h));
+    float aspect = float(diffuse->w) / diffuse->h;
+    if(!cur.vslot || vslot.angle.x != cur.vslot->angle.x || aspect != cur.aspect)
+        GLOBALPARAM(rotate, vec(vslot.angle.z, vslot.angle.y / aspect, -vslot.angle.y * aspect));
 
     if(cur.tmu != 0)
     {
