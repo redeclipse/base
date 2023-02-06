@@ -429,8 +429,7 @@ char *pastetext(char *buf, size_t len)
     {
         size_t start = 0;
         if(buf) start = strlen(buf);
-        else if(len) return NULL;
-        else { buf = newstring(cblen); len = cblen+1; }
+        else { len = len ? min(len, cblen+1) : cblen+1; buf = newstring(len); }
         size_t decoded = decodeutf8((uchar *)&buf[start], len-1-start, (const uchar *)cb, cblen);
         buf[start + decoded] = '\0';
     }
@@ -755,7 +754,15 @@ bool consolekey(int code, bool isdown)
                 break;
 
             case SDLK_v:
-                if(SDL_GetModState()&MOD_KEYS) pastetext(commandbuf, min(client::maxmsglen(), int(sizeof(commandbuf))));
+                if(SDL_GetModState()&MOD_KEYS)
+                {
+                    char *pastebuf = pastetext();
+                    if(pastebuf)
+                    {
+                        consoleinput(pastebuf, strlen(pastebuf));
+                        delete[] pastebuf;
+                    }
+                }
                 break;
         }
     }
