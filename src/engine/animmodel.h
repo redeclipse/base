@@ -2279,7 +2279,7 @@ template<class MDL, class MESH> struct modelcommands
     template<class F> void modelcommand(F *fun, const char *suffix, const char *args)
     {
         defformatstring(name, "%s%s", MDL::formatname(), suffix);
-        addcommand(newstring(name), (identfun)fun, args);
+        addcommand(newstring(name), fun, args);
     }
 
     modelcommands()

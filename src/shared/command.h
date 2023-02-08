@@ -158,37 +158,37 @@ struct ident
 
     ident() {}
     // ID_VAR
-    ident(int t, const char *n, int m, int c, int x, int *s, void *f = NULL, int flags = IDF_COMPLETE, int level = 0)
-        : type(t), flags(flags | ((flags&IDF_HEX && uint(x) == 0xFFFFFFFFU ? uint(m) > uint(x) : m > x) ? IDF_READONLY : 0)), level(level), name(n), minval(m), maxval(x), fun((identfun)f), desc(NULL)
-    { fields.shrink(0); def.i = c; bin.i = c; storage.i = s; }
+    ident(int t, const char *n, int m, int c, int x, int *s, identfun f = NULL, int flags = IDF_COMPLETE, int level = 0)
+        : type(t), flags(flags | ((flags&IDF_HEX && uint(x) == 0xFFFFFFFFU ? uint(m) > uint(x) : m > x) ? IDF_READONLY : 0)), level(level), name(n), minval(m), maxval(x), fun(f), desc(NULL)
+    { def.i = c; bin.i = c; storage.i = s; }
     // ID_FVAR
-    ident(int t, const char *n, float m, float c, float x, float *s, void *f = NULL, int flags = IDF_COMPLETE, int level = 0)
-        : type(t), flags(flags | ((flags&IDF_HEX && uint(x) == 0xFFFFFFFFU ? uint(m) > uint(x) : m > x) ? IDF_READONLY : 0)), level(level), name(n), minvalf(m), maxvalf(x), fun((identfun)f), desc(NULL)
-    { fields.shrink(0); def.f = c; bin.f = c; storage.f = s; }
+    ident(int t, const char *n, float m, float c, float x, float *s, identfun f = NULL, int flags = IDF_COMPLETE, int level = 0)
+        : type(t), flags(flags | ((flags&IDF_HEX && uint(x) == 0xFFFFFFFFU ? uint(m) > uint(x) : m > x) ? IDF_READONLY : 0)), level(level), name(n), minvalf(m), maxvalf(x), fun(f), desc(NULL)
+    { def.f = c; bin.f = c; storage.f = s; }
     // ID_SVAR
-    ident(int t, const char *n, char *c, char **s, void *f = NULL, int flags = IDF_COMPLETE, int level = 0)
-        : type(t), flags(flags), level(level), name(n), fun((identfun)f), desc(NULL)
-    { fields.shrink(0); def.s = c; bin.s = newstring(c); storage.s = s; }
+    ident(int t, const char *n, char *c, char **s, identfun f = NULL, int flags = IDF_COMPLETE, int level = 0)
+        : type(t), flags(flags), level(level), name(n), fun(f), desc(NULL)
+    { def.s = c; bin.s = newstring(c); storage.s = s; }
     // ID_ALIAS
     ident(int t, const char *n, char *a, int flags, int level)
         : type(t), valtype(VAL_STR), flags(flags), level(level), name(n), code(NULL), stack(NULL), desc(NULL)
-    { fields.shrink(0); val.s = a; }
+    { val.s = a; }
     ident(int t, const char *n, int a, int flags, int level)
         : type(t), valtype(VAL_INT), flags(flags), level(level), name(n), code(NULL), stack(NULL), desc(NULL)
-    { fields.shrink(0); val.i = a; }
+    { val.i = a; }
     ident(int t, const char *n, float a, int flags, int level)
         : type(t), valtype(VAL_FLOAT), flags(flags), level(level), name(n), code(NULL), stack(NULL), desc(NULL)
-    { fields.shrink(0); val.f = a; }
+    { val.f = a; }
     ident(int t, const char *n, int flags, int level)
         : type(t), valtype(VAL_NULL), flags(flags), level(level), name(n), code(NULL), stack(NULL), desc(NULL)
-    { fields.shrink(0); }
+    {}
     ident(int t, const char *n, const tagval &v, int flags, int level)
         : type(t), valtype(v.type), flags(flags), level(level), name(n), code(NULL), stack(NULL), desc(NULL)
-    { fields.shrink(0); val = v; }
+    { val = v; }
     // ID_COMMAND
-    ident(int t, const char *n, const char *args, uint argmask, int numargs, void *f = NULL, int flags = IDF_COMPLETE, int level = 0)
-        : type(t), numargs(numargs), flags(flags), level(level), name(n), args(args), argmask(argmask), fun((identfun)f), desc(NULL)
-    { fields.shrink(0); }
+    ident(int t, const char *n, const char *args, uint argmask, int numargs, identfun f = NULL, int flags = IDF_COMPLETE, int level = 0)
+        : type(t), numargs(numargs), flags(flags), level(level), name(n), args(args), argmask(argmask), fun(f), desc(NULL)
+    {}
 
     void changed() { if(fun) fun(this); }
 
@@ -356,8 +356,8 @@ extern ident *getident(const char *name);
 extern ident *newident(const char *name, int flags = 0, int level = 0);
 extern ident *readident(const char *name);
 extern ident *writeident(const char *name, int flags = 0, int level = 0);
-extern bool addcommand(const char *name, identfun fun, const char *args, int type = ID_COMMAND, int flags = IDF_COMPLETE, int levle = 0);
-
+extern bool addcommand(const char *name, identfun fun, const char *args, int type = ID_COMMAND, int flags = IDF_COMPLETE, int level = 0);
+template<class F> static inline bool addcommand(const char *name, F *fun, const char *narg, int type = ID_COMMAND, int flags = IDF_COMPLETE, int level = 0) { return ::addcommand(name, (identfun)fun, narg, type, flags, level); }
 extern uint *compilecode(const char *p);
 extern void keepcode(uint *p);
 extern void freecode(uint *p);
@@ -441,8 +441,8 @@ extern bool hasflag(const char *flags, char f);
 extern char *limitstring(const char *str, size_t len);
 
 // nasty macros for registering script functions, abuses globals to avoid excessive infrastructure
-#define KEYWORD(flags, name, type) UNUSED static bool __dummy_##type = addcommand(#name, (identfun)NULL, NULL, type, flags|IDF_COMPLETE)
-#define COMMANDKN(flags, level, name, type, fun, nargs) UNUSED static bool __dummy_##fun = addcommand(#name, (identfun)fun, nargs, type, flags|IDF_COMPLETE, level)
+#define KEYWORD(flags, name, type) UNUSED static bool __dummy_##type = addcommand(#name, NULL, NULL, type, flags|IDF_COMPLETE)
+#define COMMANDKN(flags, level, name, type, fun, nargs) UNUSED static bool __dummy_##fun = addcommand(#name, fun, nargs, type, flags|IDF_COMPLETE, level)
 #define COMMANDK(flags, name, type, nargs) COMMANDKN(flags, 0, name, type, name, nargs)
 #define COMMANDN(flags, name, fun, nargs) COMMANDKN(flags, 0, name, ID_COMMAND, fun, nargs)
 #define COMMAND(flags, name, nargs) COMMANDN(flags, name, name, nargs)
@@ -450,7 +450,7 @@ extern char *limitstring(const char *str, size_t len);
 // anonymous inline commands, uses nasty template trick with line numbers to keep names unique
 #define ICOMMANDNAME(name) _icmd_##name
 #define ICOMMANDSNAME _icmds_
-#define ICOMMANDKNS(flags, level, name, type, cmdname, nargs, proto, b) template<int N> struct cmdname; template<> struct cmdname<__LINE__> { static bool init; static void run proto; }; bool cmdname<__LINE__>::init = addcommand(name, (identfun)cmdname<__LINE__>::run, nargs, type, flags|IDF_COMPLETE, level); void cmdname<__LINE__>::run proto \
+#define ICOMMANDKNS(flags, level, name, type, cmdname, nargs, proto, b) template<int N> struct cmdname; template<> struct cmdname<__LINE__> { static bool init; static void run proto; }; bool cmdname<__LINE__>::init = addcommand(name, cmdname<__LINE__>::run, nargs, type, flags|IDF_COMPLETE, level); void cmdname<__LINE__>::run proto \
     { b; }
 #define ICOMMANDKN(flags, level, name, type, cmdname, nargs, proto, b) ICOMMANDKNS(flags, level, #name, type, cmdname, nargs, proto, b)
 #define ICOMMANDK(flags, name, type, nargs, proto, b) ICOMMANDKN(flags, 0, name, type, ICOMMANDNAME(name), nargs, proto, b)
