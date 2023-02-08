@@ -23,7 +23,11 @@ install_llvm() {
     sed -i 's/add-apt-repository "\${REPO_NAME}"/add-apt-repository "${REPO_NAME}" -y/g' llvm.sh || return 1
 
     chmod +x llvm.sh || return 1
-    sudo ./llvm.sh ${LLVM_VER} || return 1
+    sudo ./llvm.sh ${LLVM_VER}
+
+    # Check installed packages instead of return code from the script
+    dpkg -l clang-${LLVM_VER} || return 1
+    dpkg -l llvm-${LLVM_VER} || return 1
 
     return 0
 }
