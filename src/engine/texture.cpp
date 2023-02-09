@@ -1888,6 +1888,7 @@ VSlot dummyvslot(&dummyslot);
 vector<DecalSlot *> decalslots;
 DecalSlot dummydecalslot;
 Slot *defslot = NULL;
+bool slotedit = false;
 
 static char *curtexgroup;
 
@@ -1897,6 +1898,29 @@ MatSlot::MatSlot() : Slot(int(this - materialslots)), VSlot(this) {}
 const char *MatSlot::name() const { return tempformatstring("material slot %s", findmaterialname(Slot::index)); }
 
 const char *DecalSlot::name() const { return tempformatstring("decal slot %d", Slot::index); }
+
+void editslot(int *idx, uint *code)
+{
+    if(!editmode || !slots.inrange(*idx)) return;
+
+    Slot *olddefslot = defslot;
+    defslot = slots[*idx];
+    slotedit = true;
+
+    execute(code);
+
+    for(VSlot *vs = defslot->variants; vs; vs = vs->next)
+        vs->cleanup();
+
+    defslot->cleanup();
+    defslot->load();
+
+    defslot = olddefslot;
+    slotedit = false;
+
+    allchanged();
+}
+COMMAND(0, editslot, "ie");
 
 void resettextures(int n)
 {
@@ -2571,40 +2595,71 @@ const char *findtexturetypename(int type)
     return NULL;
 }
 
+static int findstidx(Slot &s, int tnum)
+{
+    loopv(s.sts) if(s.sts[i].type == tnum) return i;
+    return -1;
+}
+
+void remtexture(char *type)
+{
+    if(!slotedit || !defslot) return;
+
+    Slot &s = *defslot;
+    int tnum = findslottex(type);
+    int stidx = findstidx(s, tnum);
+
+    s.loaded = false;
+    s.texmask &= ~(1<<tnum);
+
+    if(stidx >= 0) s.sts.remove(stidx);
+}
+COMMAND(0, remtexture, "s");
+
 void texture(char *type, char *name, int *rot, int *xoffset, int *yoffset, float *scale)
 {
     int tnum = findslottex(type), matslot = -1;
-    if(tnum == TEX_DIFFUSE)
+
+    if(!slotedit)
     {
-        if(slots.length() >= 0x10000) return;
-        defslot = slots.add(new Slot(slots.length()));
-        defslot->group = curtexgroup && curtexgroup[0] ? newstring(curtexgroup) : NULL;
+        if(tnum == TEX_DIFFUSE)
+        {
+            if(slots.length() >= 0x10000) return;
+            defslot = slots.add(new Slot(slots.length()));
+            defslot->group = curtexgroup && curtexgroup[0] ? newstring(curtexgroup) : NULL;
+        }
+        else if(!strcmp(type, "decal"))
+        {
+            if(decalslots.length() >= 0x10000) return;
+            tnum = TEX_DIFFUSE;
+            defslot = decalslots.add(new DecalSlot(decalslots.length()));
+        }
+        else if((matslot = findmaterial(type)) >= 0)
+        {
+            if(materialcheck && !materialslots[matslot].sts.empty()) return;
+            tnum = TEX_DIFFUSE;
+            defslot = &materialslots[matslot];
+            defslot->reset();
+        }
     }
-    else if(!strcmp(type, "decal"))
-    {
-        if(decalslots.length() >= 0x10000) return;
-        tnum = TEX_DIFFUSE;
-        defslot = decalslots.add(new DecalSlot(decalslots.length()));
-    }
-    else if((matslot = findmaterial(type)) >= 0)
-    {
-        if(materialcheck && !materialslots[matslot].sts.empty()) return;
-        tnum = TEX_DIFFUSE;
-        defslot = &materialslots[matslot];
-        defslot->reset();
-    }
-    else if(!defslot) { conoutf("\frNo default slot set for texture (%s)", name); return; }
+
+    if(!defslot) { conoutf("\frNo default slot set for texture (%s)", name); return; }
     else if(tnum < 0) tnum = TEX_UNKNOWN;
     if(materialcheck && matslot < 0) return;
     Slot &s = *defslot;
     s.loaded = false;
     s.texmask |= 1<<tnum;
-    if(s.sts.length() >= TEX_MAX) conoutf("\frWarning: too many textures, [%d] %s (%d)", slots.length()-1, name, matslot);
-    Slot::Tex &st = s.sts.add();
+
+    int stidx = -1;
+    if(slotedit) stidx = findstidx(s, tnum);
+
+    if(s.sts.length() >= TEX_MAX && stidx < 0) conoutf("\frWarning: too many textures, [%d] %s (%d)", slots.length()-1, name, matslot);
+    Slot::Tex &st = stidx < 0 ? s.sts.add() : s.sts[stidx];
     st.type = tnum;
     copystring(st.name, name);
     path(st.name);
-    if(tnum == TEX_DIFFUSE)
+
+    if(tnum == TEX_DIFFUSE && !slotedit)
     {
         setslotshader(s);
         VSlot &vs = s.emptyvslot();
@@ -2981,6 +3036,7 @@ void Slot::load(int index, Slot::Tex &t)
 void Slot::load()
 {
     linkslotshader(*this);
+
     loopv(sts)
     {
         Slot::Tex &t = sts[i];

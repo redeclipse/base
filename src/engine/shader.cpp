@@ -1162,6 +1162,24 @@ void setslotshader(Slot &s)
     loopv(slotparams) s.params.add(slotparams[i]);
 }
 
+void changeslotshader(const char *name)
+{
+    extern Slot *defslot;
+    extern bool slotedit;
+
+    if(!slotedit || !defslot) return;
+
+    Shader *shader = shaders.access(name);
+    if(!shader)
+    {
+        conoutf("\frNo such shader: %s", name);
+        return;
+    }
+
+    defslot->shader = shader;
+}
+COMMAND(0, changeslotshader, "s");
+
 static void linkslotshaderparams(vector<SlotShaderParam> &params, Shader *sh, bool load)
 {
     if(sh->loaded()) loopv(params)
