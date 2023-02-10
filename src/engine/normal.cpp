@@ -278,4 +278,5 @@ int smoothangle(int id, int angle)
 }
 
 ICOMMAND(0, smoothangle, "ib", (int *id, int *angle), intret(smoothangle(*id, *angle)));
+ICOMMAND(0, getsmoothangle, "i", (int *id), intret(smoothgroups.inrange(*id) ? smoothgroups[*id] : -1));
 
