@@ -729,19 +729,19 @@ hashnameset<defvar> defvars;
         name = newstring(name); \
         defvar &def = defvars[name]; \
         def.name = name; \
-        def.onchange = onchange[0] ? compilecode(onchange) : NULL; \
         body; \
+        def.onchange = onchange[0] ? compilecode(onchange) : NULL; \
     });
 
 #define DEFIVAR(cmdname, flags) \
     DEFVAR(cmdname, "siiis", (char *name, int *min, int *cur, int *max, char *onchange), , \
-        def.i = variable(name, *min, *cur, *max, &def.i, def.onchange ? defvar::changed : NULL, flags))
+        def.i = variable(name, *min, *cur, *max, &def.i, defvar::changed, flags))
 #define DEFFVAR(cmdname, flags) \
     DEFVAR(cmdname, "sfffs", (char *name, float *min, float *cur, float *max, char *onchange), , \
-        def.f = fvariable(name, *min, *cur, *max, &def.f, def.onchange ? defvar::changed : NULL, flags))
+        def.f = fvariable(name, *min, *cur, *max, &def.f, defvar::changed, flags))
 #define DEFSVAR(cmdname, flags) \
     DEFVAR(cmdname, "sss", (char *name, char *cur, char *onchange), , \
-        def.s = svariable(name, cur, &def.s, def.onchange ? defvar::changed : NULL, flags))
+        def.s = svariable(name, cur, &def.s, defvar::changed, flags))
 
 DEFIVAR(defvar, IDF_COMPLETE);
 DEFIVAR(defvarp, IDF_COMPLETE|IDF_PERSIST);
