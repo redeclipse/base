@@ -5053,6 +5053,23 @@ ICOMMAND(0, strpbrk, "ssi", (char *str, char *chars, int *begin),
     }
 });
 
+// Function to check if all characters are preset in a string
+ICOMMAND(0, strhaschars, "ss", (char *str, char *chars),
+{
+    bool haschars = true;
+    int len = strlen(chars);
+
+    loopi(len)
+    {
+        if(!strchr(str, chars[i]))
+        {
+            haschars = false;
+            break;
+        }
+    }
+    intret(haschars ? 1 : 0);
+});
+
 int naturalsort(const char *a, const char *b)
 {
     for(;;)
