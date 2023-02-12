@@ -1901,10 +1901,15 @@ const char *DecalSlot::name() const { return tempformatstring("decal slot %d", S
 
 void editslot(int *idx, uint *code)
 {
-    if(!editmode || !slots.inrange(*idx)) return;
+    if(!editmode) return;
+
+    VSlot &vslot = lookupvslot(*idx, false);
+
+    if(&vslot == &dummyvslot) return;
 
     Slot *olddefslot = defslot;
-    defslot = slots[*idx];
+
+    defslot = vslot.slot;
     slotedit = true;
 
     execute(code);
