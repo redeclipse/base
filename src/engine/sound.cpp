@@ -394,6 +394,52 @@ FVAR(IDF_PERSIST, sounddistfilter, 0.0f, 0.5f, 1.0f);
 
 FVAR(IDF_WORLD, mapsoundfadespeed, 0.0001f, 0.001f, 1.0f);
 
+SF_VIRTUAL_IO soundvfio;
+
+static sf_count_t soundvfsize(void *data)
+{
+    stream *f = (stream *)data;
+    if(f) return f->size();
+    return -1;
+}
+
+static sf_count_t soundvfseek(sf_count_t pos, int whence, void *data)
+{
+    stream *f = (stream *)data;
+    if(f) return f->seek(pos, whence);
+    return -1;
+}
+
+static sf_count_t soundvfread(void *buf, sf_count_t len, void *data)
+{
+    stream *f = (stream *)data;
+    if(f) return f->read(buf, len);
+    return 0;
+}
+
+static sf_count_t soundvfwrite(const void *buf, sf_count_t len, void *data)
+{
+    stream *f = (stream *)data;
+    if(f) return f->write(buf, len);
+    return 0;
+}
+
+static sf_count_t soundvftell(void *data)
+{
+    stream *f = (stream *)data;
+    if(f) return f->tell();
+    return -1;
+}
+
+static void soundvfsetup()
+{
+	soundvfio.get_filelen = soundvfsize;
+	soundvfio.seek = soundvfseek;
+	soundvfio.read = soundvfread;
+	soundvfio.write = soundvfwrite;
+	soundvfio.tell = soundvftell;
+}
+
 const char *sounderror(bool msg)
 {
     ALenum err = alGetError();
@@ -512,6 +558,8 @@ void initsound()
 {
     if(nosound)
     {
+        soundvfsetup(); // create virtual io interface
+
         if(*sounddevice)
         {
             alGetError();
@@ -1083,7 +1131,9 @@ bool soundfile::setup(const char *name, int t, int m)
     }
     mixtype = clamp(m, 0, int(MAXMIX-1));
 
-    sndfile = sf_open(findfile(name, "rb"), SFM_READ, &info);
+    viofile = openfile(name, "rb");
+    if(!viofile) return false;
+    sndfile = sf_open_virtual(&soundvfio, SFM_READ, &info, viofile);
     if(!sndfile || info.frames <= 0) return false;
 
     if(info.channels == 1) format = type == soundfile::FLOAT ? AL_FORMAT_MONO_FLOAT32 : AL_FORMAT_MONO16;
@@ -1231,6 +1281,7 @@ void soundfile::clear()
         default: break;
     }
     if(sndfile) sf_close(sndfile);
+    if(viofile) viofile->close();
     reset();
 }
 
