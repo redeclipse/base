@@ -399,35 +399,35 @@ SF_VIRTUAL_IO soundvfio;
 static sf_count_t soundvfsize(void *data)
 {
     stream *f = (stream *)data;
-    if(f) return f->size();
+    if(f) return (sf_count_t)f->size();
     return -1;
 }
 
 static sf_count_t soundvfseek(sf_count_t pos, int whence, void *data)
 {
     stream *f = (stream *)data;
-    if(f) return f->seek(pos, whence);
+    if(f && ((!pos && whence==SEEK_CUR) || f->seek(pos, whence))) return (sf_count_t)f->tell();
     return -1;
 }
 
 static sf_count_t soundvfread(void *buf, sf_count_t len, void *data)
 {
     stream *f = (stream *)data;
-    if(f) return f->read(buf, len);
+    if(f) return (sf_count_t)f->read(buf, len);
     return 0;
 }
 
 static sf_count_t soundvfwrite(const void *buf, sf_count_t len, void *data)
 {
     stream *f = (stream *)data;
-    if(f) return f->write(buf, len);
+    if(f) return (sf_count_t)f->write(buf, len);
     return 0;
 }
 
 static sf_count_t soundvftell(void *data)
 {
     stream *f = (stream *)data;
-    if(f) return f->tell();
+    if(f) return (sf_count_t)f->tell();
     return -1;
 }
 
