@@ -433,11 +433,11 @@ static sf_count_t soundvftell(void *data)
 
 static void soundvfsetup()
 {
-	soundvfio.get_filelen = soundvfsize;
-	soundvfio.seek = soundvfseek;
-	soundvfio.read = soundvfread;
-	soundvfio.write = soundvfwrite;
-	soundvfio.tell = soundvftell;
+    soundvfio.get_filelen = soundvfsize;
+    soundvfio.seek = soundvfseek;
+    soundvfio.read = soundvfread;
+    soundvfio.write = soundvfwrite;
+    soundvfio.tell = soundvftell;
 }
 
 const char *sounderror(bool msg)
