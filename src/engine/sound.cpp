@@ -1126,15 +1126,28 @@ bool soundfile::setup(const char *name, int t, int m)
             type = SHORT;
             size = sizeof(short);
             data_s = NULL;
+            break;
         }
-        default: return false;
+        default:
+        {
+            clear();
+            return false;
+        }
     }
     mixtype = clamp(m, 0, int(MAXMIX-1));
 
     viofile = openfile(name, "rb");
-    if(!viofile) return false;
+    if(!viofile)
+    {
+        clear();
+        return false;
+    }
     sndfile = sf_open_virtual(&soundvfio, SFM_READ, &info, viofile);
-    if(!sndfile || info.frames <= 0) return false;
+    if(!sndfile || info.frames <= 0 || info.frames >= SF_COUNT_MAX)
+    {
+        clear();
+        return false;
+    }
 
     if(info.channels == 1) format = type == soundfile::FLOAT ? AL_FORMAT_MONO_FLOAT32 : AL_FORMAT_MONO16;
     else if(info.channels == 2) format = type == soundfile::FLOAT ? AL_FORMAT_STEREO_FLOAT32 : AL_FORMAT_STEREO16;
@@ -1154,6 +1167,7 @@ bool soundfile::setup(const char *name, int t, int m)
     if(!format)
     {
         conoutf("\frUnsupported channel count in %s: %d", name, info.channels);
+        clear();
         return false;
     }
 
@@ -1270,6 +1284,7 @@ void soundfile::reset()
     format = AL_NONE;
     data_s = NULL;
     sndfile = NULL;
+    memset(&info, 0, sizeof (info));
 }
 
 void soundfile::clear()
