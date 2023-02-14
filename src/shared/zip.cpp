@@ -283,7 +283,7 @@ bool addzip(const char *name, const char *mount = NULL, const char *strip = NULL
     FILE *f = fopen(findfile(pname, "rb"), "rb");
     if(!f)
     {
-        conoutf("Could not open file %s: %s", pname, strerror(errno));
+        conoutf("Could not open file %s", pname);
         return false;
     }
     zipdirectoryheader h;
