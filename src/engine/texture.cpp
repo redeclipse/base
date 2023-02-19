@@ -4434,6 +4434,14 @@ ICOMMAND(0, gettexaspect, "si", (char *tex, int *load),
     floatret((float)t->w / (float)t->h);
 });
 
+ICOMMAND(0, gettexsize, "si", (char *tex, int *load),
+{
+    Texture *t = *load ? textureload(tex) : textureloaded(tex);
+    if(!t) return;
+    defformatstring(str, "%d %d", t->w, t->h);
+    result(str);
+});
+
 ICOMMAND(0, gettexbpp, "si", (char *tex, int *load),
 {
     Texture *t = *load ? textureload(tex) : textureloaded(tex);
