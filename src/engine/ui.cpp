@@ -38,7 +38,7 @@ namespace UI
             if(totalmillis - lastthumbnail < uislotviewtime) t = textureload(uiloadtex);
             else
             {
-                t = textureload(name, 3, true, false);
+                t = textureload(name, clamp, true, false);
                 lastthumbnail = totalmillis;
             }
         }
@@ -2824,6 +2824,12 @@ namespace UI
     };
 
     Color Thumbnail::lastcolor(255, 255, 255);
+
+    ICOMMAND(0, uithumbnailunclamped, "sffe", (char *texname, float *minw, float *minh, uint *children),
+    {
+        Texture *t = loadthumbnail(texname, 0);
+        BUILD(Thumbnail, o, o->setup(t, *minw*uiscale, *minh*uiscale), children);
+    });
 
     ICOMMAND(0, uithumbnail, "sffe", (char *texname, float *minw, float *minh, uint *children),
     {
