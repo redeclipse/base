@@ -375,12 +375,12 @@ void forcergbimage(ImageData &s)
         } \
     }
 
-void forcergbaimage(ImageData &s)
+void forcergbaimage(ImageData &s, uchar newalpha = 255)
 {
     if(s.bpp >= 4) return;
     ImageData d(s.w, s.h, 4);
-    if(s.bpp==3) readwritetex(d, s, { dst[0] = src[0]; dst[1] = src[1]; dst[2] = src[2]; });
-    else readwritetex(d, s, { dst[0] = dst[1] = dst[2] = src[0]; });
+    if(s.bpp==3) readwritetex(d, s, { dst[0] = src[0]; dst[1] = src[1]; dst[2] = src[2]; dst[3] = newalpha; });
+    else readwritetex(d, s, { dst[0] = dst[1] = dst[2] = src[0]; dst[3] = newalpha; });
     s.replace(d);
 }
 
@@ -1801,6 +1801,7 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
                 if(anim->count <= 0 || anim->count > maxcount) anim->count = maxcount;
             }
         }
+        else if(matchstring(cmd, len, "rgba")) forcergbaimage(d);
         else
     compressed:
         if(matchstring(cmd, len, "mirror"))
