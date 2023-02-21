@@ -3011,7 +3011,11 @@ void Slot::load(int index, Slot::Tex &t)
     }
     key.add('\0');
     t.t = textures.access(key.getbuf());
-    if(t.t) return;
+    if(t.t)
+    {
+        if(t.t->type&Texture::GC) t.t->type &= ~Texture::GC;
+        return;
+    }
     int compress = 0, wrap = 0;
     ImageData ts;
     TextureAnim anim;
