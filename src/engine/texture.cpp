@@ -1266,7 +1266,7 @@ bool floatformat(GLenum format)
     }
 }
 
-static Texture *newtexture(Texture *t, const char *rname, ImageData &s, int clamp = 0, bool mipit = true, bool canreduce = false, bool transient = false, int compress = 0, TextureAnim *anim = NULL)
+static Texture *newtexture(Texture *t, const char *rname, ImageData &s, int clamp = 0, bool mipit = true, bool canreduce = false, bool transient = false, int compress = 0, TextureAnim *anim = NULL, bool gc = false)
 {
     if(!t)
     {
@@ -1280,6 +1280,7 @@ static Texture *newtexture(Texture *t, const char *rname, ImageData &s, int clam
     t->clamp = clamp;
     t->mipmap = mipit;
     t->type = Texture::IMAGE;
+    if(gc) t->type |= Texture::GC;
     if(transient) t->type |= Texture::TRANSIENT;
     if(clamp&0x300) t->type |= Texture::MIRROR;
     if(!s.data)
@@ -1858,18 +1859,23 @@ Texture *textureloaded(const char *name)
     return textures.access(tname);
 }
 
-Texture *textureload(const char *name, int clamp, bool mipit, bool msg)
+Texture *textureload(const char *name, int clamp, bool mipit, bool msg, bool gc)
 {
     string tname;
     copystring(tname, name);
     path(tname);
     Texture *t = textures.access(tname);
-    if(t) return t;
+    if(t)
+    {
+        // Strip GC flag with gc=false
+        if(!gc && t->type&Texture::GC) t->type &= ~Texture::GC;
+        return t;
+    }
     int compress = 0;
     ImageData s;
     TextureAnim anim;
     if(texturedata(s, tname, NULL, msg, &compress, &clamp, &anim))
-       return newtexture(NULL, tname, s, clamp, mipit, false, false, compress, &anim);
+       return newtexture(NULL, tname, s, clamp, mipit, false, false, compress, &anim, gc);
     return notexture;
 }
 
@@ -3257,6 +3263,7 @@ Texture *cubemaploadwildcard(Texture *t, const char *name, bool mipit, bool msg,
         t = textures.access(path(tname));
         if(t)
         {
+            if(t->type&Texture::GC) t->type &= ~Texture::GC;
             if(!transient && t->type&Texture::TRANSIENT) t->type &= ~Texture::TRANSIENT;
             return t;
         }
@@ -3640,7 +3647,7 @@ void cleanuptexture(Texture *t)
     t->frames.shrink(0);
     t->id = 0;
 
-    if(t->type&Texture::TRANSIENT) textures.remove(t->name);
+    if(t->type&Texture::TRANSIENT || t->type&Texture::GC) textures.remove(t->name);
 }
 
 void cleanuptextures()
@@ -3653,6 +3660,23 @@ void cleanuptextures()
     loopv(decalslots) decalslots[i]->cleanup();
     enumerate(textures, Texture, tex, cleanuptexture(&tex));
 }
+
+void gctextures()
+{
+    vector<Texture*> gctexs;
+
+    enumerate(textures, Texture, tex,
+    {
+        if(tex.type&Texture::GC)
+        {
+            conoutf("garbage collecting texture %s", tex.name);
+            gctexs.add(&tex);
+        }
+    });
+
+    loopv(gctexs) cleanuptexture(gctexs[i]);
+}
+COMMAND(0, gctextures, "");
 
 bool reloadtexture(const char *name)
 {
