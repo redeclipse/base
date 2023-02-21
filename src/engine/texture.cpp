@@ -3667,11 +3667,7 @@ void gctextures()
 
     enumerate(textures, Texture, tex,
     {
-        if(tex.type&Texture::GC)
-        {
-            conoutf("garbage collecting texture %s", tex.name);
-            gctexs.add(&tex);
-        }
+        if(tex.type&Texture::GC) gctexs.add(&tex);
     });
 
     loopv(gctexs) cleanuptexture(gctexs[i]);
