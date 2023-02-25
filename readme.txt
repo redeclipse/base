@@ -46,7 +46,6 @@ The project is Free and Open Source, meaning that you can both use it for free a
 * Dale "graphitemaster" Weiler - Check out Neothyne @ https://neothyne.org/
 * Daniel "Imerion" Eriksson
 * David "srbs" Forrest
-* "Lucienne" - Maps, Textures, Design/Testing
 * Derek "JoJo" Stegall - Maps, Models, Textures, HUD, Sound FX, Design/Testing
 * Eddie "skedz4u" Webb
 * Henrik "ahven" Pihl
