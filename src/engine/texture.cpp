@@ -719,6 +719,17 @@ VARF(IDF_PERSIST, aniso, 0, 0, 16, initwarning("texture filtering", INIT_LOAD));
 
 extern int usetexcompress;
 
+void gettexfilesize(const char *path, int &w, int &h)
+{
+    SDL_Surface *s = loadsurface(path);
+    if(!s) return;
+
+    w = s->w;
+    h = s->h;
+
+    SDL_FreeSurface(s);
+}
+
 void setuptexcompress()
 {
     if(!usetexcompress) return;
@@ -1906,7 +1917,13 @@ const char *MatSlot::name() const { return tempformatstring("material slot %s", 
 
 const char *DecalSlot::name() const { return tempformatstring("decal slot %d", Slot::index); }
 
-void editslot(int *idx, uint *code)
+static int findstidx(Slot &s, int tnum)
+{
+    loopv(s.sts) if(s.sts[i].type == tnum) return i;
+    return -1;
+}
+
+void editslot(int *idx, uint *code, int *rescale)
 {
     if(!editmode) return;
 
@@ -1919,20 +1936,57 @@ void editslot(int *idx, uint *code)
     defslot = vslot.slot;
     slotedit = true;
 
+    bool loaded = defslot->loaded;
+    int slotdiffuse = findstidx(*defslot, TEX_DIFFUSE);
+    int oldw, oldh, neww, newh, xscale, yscale;
+
+    if(slotdiffuse >= 0 && *rescale)
+    {
+        if(loaded)
+        {
+            oldw = defslot->sts[slotdiffuse].t->w;
+            oldh = defslot->sts[slotdiffuse].t->h;
+        }
+        else gettexfilesize(defslot->sts[slotdiffuse].name, oldw, oldh);
+    }
+
     execute(code);
 
-    for(VSlot *vs = defslot->variants; vs; vs = vs->next)
-        vs->cleanup();
+    if(loaded)
+    {
+        defslot->cleanup();
+        defslot->load();
+    }
 
-    defslot->cleanup();
-    defslot->load();
+    if(slotdiffuse >= 0 && *rescale)
+    {
+        if(loaded)
+        {
+            neww = defslot->sts[slotdiffuse].t->w;
+            newh = defslot->sts[slotdiffuse].t->h;
+        }
+        else gettexfilesize(defslot->sts[slotdiffuse].name, neww, newh);
+
+        xscale = neww/float(oldw);
+        yscale = newh/float(oldh);
+
+        for(VSlot *vs = defslot->variants; vs; vs = vs->next)
+        {
+            vs->cleanup();
+
+            // Compensate for texture size changes
+            vs->scale    *= 1.0f/xscale;
+            vs->offset.x *= xscale;
+            vs->offset.y *= yscale;
+        }
+    }
 
     defslot = olddefslot;
     slotedit = false;
 
     allchanged();
 }
-COMMAND(0, editslot, "ie");
+COMMAND(0, editslot, "iei");
 
 void resettextures(int n)
 {
@@ -2605,12 +2659,6 @@ const char *findtexturetypename(int type)
 {
     loopi(sizeof(slottexs)/sizeof(slottexs[0])) if(slottexs[i].id == type) { return slottexs[i].name; }
     return NULL;
-}
-
-static int findstidx(Slot &s, int tnum)
-{
-    loopv(s.sts) if(s.sts[i].type == tnum) return i;
-    return -1;
 }
 
 void remtexture(char *type)
