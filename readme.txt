@@ -1,4 +1,4 @@
-# Red Eclipse 2
+# Red Eclipse
 * A modern first-person arena shooter; released as free and open source software
 * Available for Windows, GNU/Linux, BSD, and macOS
 * Features parkour gameplay, such as impulse boosts, dashing, and other tricks
@@ -8,7 +8,7 @@
 
 ## About
 
-Building on over 12 years of gameplay design and the lessons learned from Red Eclipse 1.x, Red Eclipse 2 focuses on agile, easily accessible arena shooter gameplay over adherence to antiquated arena shooter tropes. For creators, the full power of the [Tesseract](http://tesseract.gg/) engine is at your fingertips in the included realtime multiplayer editor.
+Building on over 14 years of gameplay design and the lessons learned from Red Eclipse 1.x, Red Eclipse 2.x+ focuses on agile, easily accessible arena shooter gameplay over adherence to antiquated arena shooter tropes. For creators, the full power of the [Tesseract](http://tesseract.gg/) engine is at your fingertips in the included realtime multiplayer editor.
 
 The project is a free and open source game built using SDL and OpenGL which allows it to be ported to many platforms; you can [download a package](https://redeclipse.net/download) for Windows, GNU/Linux, BSD, and macOS; or grab a development copy from our [Git repository](https://redeclipse.net/devel) and live on the bleeding edge.
 
@@ -46,7 +46,6 @@ The project is Free and Open Source, meaning that you can both use it for free a
 * Dale "graphitemaster" Weiler - Check out Neothyne @ https://neothyne.org/
 * Daniel "Imerion" Eriksson
 * David "srbs" Forrest
-* "Lucienne" - Maps, Textures, Design/Testing
 * Derek "JoJo" Stegall - Maps, Models, Textures, HUD, Sound FX, Design/Testing
 * Eddie "skedz4u" Webb
 * Henrik "ahven" Pihl

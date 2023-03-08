@@ -6,6 +6,8 @@ namespace UI
     int cursortype = CURSOR_DEFAULT;
     bool cursorlocked = false, mousetracking = false, globalscrolllocked = false;
 
+    static bool texgc = false;
+
     vec2 mousetrackvec;
 
     static int lastthumbnail = 0;
@@ -38,7 +40,7 @@ namespace UI
             if(totalmillis - lastthumbnail < uislotviewtime) t = textureload(uiloadtex);
             else
             {
-                t = textureload(name, 3, true, false);
+                t = textureload(name, clamp, true, false, texgc);
                 lastthumbnail = totalmillis;
             }
         }
@@ -2330,13 +2332,13 @@ namespace UI
 
     #define UIIMGCMDS(name, value) \
         ICOMMAND(0, uiimage##name, "siiffe", (char *texname, int *c, int *a, float *minw, float *minh, uint *children), \
-            BUILD(Image, o, o->setup(textureload(texname, value, true, false), Color(*c), *a!=0, *minw*uiscale, *minh*uiscale), children)); \
+            BUILD(Image, o, o->setup(textureload(texname, value, true, false, texgc), Color(*c), *a!=0, *minw*uiscale, *minh*uiscale), children)); \
         ICOMMAND(0, uiimagevgradient##name, "siiiffe", (char *texname, int *c, int *c2, int *a, float *minw, float *minh, uint *children), \
-            BUILD(Image, o, o->setup(textureload(texname, value, true, false), Color(*c), Color(*c2), *a!=0, *minw*uiscale, *minh*uiscale, Image::VERTICAL), children)); \
+            BUILD(Image, o, o->setup(textureload(texname, value, true, false, texgc), Color(*c), Color(*c2), *a!=0, *minw*uiscale, *minh*uiscale, Image::VERTICAL), children)); \
         ICOMMAND(0, uiimagehgradient##name, "siiiffe", (char *texname, int *c, int *c2, int *a, float *minw, float *minh, uint *children), \
-            BUILD(Image, o, o->setup(textureload(texname, value, true, false), Color(*c), Color(*c2), *a!=0, *minw*uiscale, *minh*uiscale, Image::HORIZONTAL), children)); \
-        UICMDT(Image, image, tex##name, "s", (char *texname), if(texname && *texname) o->tex = textureload(texname, value, true, false)); \
-        UICMDT(Image, image, alttex##name, "s", (char *texname), if(texname && *texname && o->tex == notexture) o->tex = textureload(texname, value, true, false));
+            BUILD(Image, o, o->setup(textureload(texname, value, true, false, texgc), Color(*c), Color(*c2), *a!=0, *minw*uiscale, *minh*uiscale, Image::HORIZONTAL), children)); \
+        UICMDT(Image, image, tex##name, "s", (char *texname), if(texname && *texname) o->tex = textureload(texname, value, true, false, texgc)); \
+        UICMDT(Image, image, alttex##name, "s", (char *texname), if(texname && *texname && o->tex == notexture) o->tex = textureload(texname, value, true, false, texgc));
 
     UIIMGCMDS(, 3);
     UIIMGCMDS(clamped, 0x7000);
@@ -2419,7 +2421,7 @@ namespace UI
     #define UICIMGCMDS(name, value) \
         ICOMMAND(0, uicroppedimage##name, "siifftttte", (char *texname, int *c, int *a, float *minw, float *minh, tagval *cropx, tagval *cropy, tagval *cropw, tagval *croph, uint *children), \
             BUILD(CroppedImage, o, { \
-                Texture *tex = textureload(texname, value, true, false); \
+                Texture *tex = textureload(texname, value, true, false, texgc); \
                 o->setup(tex, Color(*c), *a!=0, *minw*uiscale, *minh*uiscale, \
                     parsepixeloffset(cropx, tex->xs), parsepixeloffset(cropy, tex->ys), \
                     parsepixeloffset(cropw, tex->xs), parsepixeloffset(croph, tex->ys)); \
@@ -2515,7 +2517,7 @@ namespace UI
 
     #define UISIMGCMDS(name, value) \
         ICOMMAND(0, uistretchedimage##name, "siiffe", (char *texname, int *c, int *a, float *minw, float *minh, uint *children), \
-            BUILD(StretchedImage, o, o->setup(textureload(texname, value, true, false), Color(*c), *a!=0, *minw*uiscale, *minh*uiscale), children));
+            BUILD(StretchedImage, o, o->setup(textureload(texname, value, true, false, texgc), Color(*c), *a!=0, *minw*uiscale, *minh*uiscale), children));
 
     UISIMGCMDS(, 3);
     UISIMGCMDS(clamped, 0x7000);
@@ -2691,7 +2693,7 @@ namespace UI
     #define UIBIMGCMDS(name, value) \
         ICOMMAND(0, uiborderedimage##name, "siitfffe", (char *texname, int *c, int *a, tagval *texborder, float *screenborder, float *minw, float *minh, uint *children), \
             BUILD(BorderedImage, o, { \
-                Texture *tex = textureload(texname, value, true, false); \
+                Texture *tex = textureload(texname, value, true, false, texgc); \
                 o->setup(tex, Color(*c), *a!=0, \
                     parsepixeloffset(texborder, tex->xs), \
                     *screenborder*uiscale, *minw*uiscale, *minh*uiscale); \
@@ -2764,7 +2766,7 @@ namespace UI
 
     #define UITIMGCMDS(name, value) \
         ICOMMAND(0, uitiledimage##name, "siiffffe", (char *texname, int *c, int *a, float *tilew, float *tileh, float *minw, float *minh, uint *children), \
-            BUILD(TiledImage, o, o->setup(textureload(texname, value, true, false), Color(*c), *a!=0, *minw*uiscale, *minh*uiscale, *tilew <= 0 ? 1 : *tilew, *tileh <= 0 ? 1 : *tileh), children));
+            BUILD(TiledImage, o, o->setup(textureload(texname, value, true, false, texgc), Color(*c), *a!=0, *minw*uiscale, *minh*uiscale, *tilew <= 0 ? 1 : *tilew, *tileh <= 0 ? 1 : *tileh), children));
 
     UITIMGCMDS(, 3);
     UITIMGCMDS(clamped, 0x7000);
@@ -2824,6 +2826,12 @@ namespace UI
     };
 
     Color Thumbnail::lastcolor(255, 255, 255);
+
+    ICOMMAND(0, uithumbnailunclamped, "sffe", (char *texname, float *minw, float *minh, uint *children),
+    {
+        Texture *t = loadthumbnail(texname, 0);
+        BUILD(Thumbnail, o, o->setup(t, *minw*uiscale, *minh*uiscale), children);
+    });
 
     ICOMMAND(0, uithumbnail, "sffe", (char *texname, float *minw, float *minh, uint *children),
     {
@@ -3281,6 +3289,89 @@ namespace UI
 
     ICOMMAND(0, uifont, "se", (char *name, uint *children),
         BUILD(Font, o, o->setup(name), children));
+
+    struct TexGC : Object
+    {
+        void layout()
+        {
+            bool oldtexgx = texgc;
+            texgc = true;
+
+            Object::layout();
+
+            texgc = oldtexgx;
+        }
+
+        void draw(float sx, float sy)
+        {
+            bool oldtexgx = texgc;
+            texgc = true;
+
+            Object::draw(sx, sy);
+
+            texgc = oldtexgx;
+        }
+
+        void buildchildren(uint *contents)
+        {
+            bool oldtexgx = texgc;
+            texgc = true;
+
+            Object::buildchildren(contents);
+
+            texgc = oldtexgx;
+        }
+
+        #define DOSTATE(flags, func) \
+            void func##children(float cx, float cy, bool cinside, int mask, int mode, int setflags) \
+            { \
+                bool oldtexgx = texgc; \
+                texgc = true; \
+                Object::func##children(cx, cy, cinside, mask, mode, setflags); \
+                texgc = oldtexgx; \
+            }
+        DOSTATES
+        #undef DOSTATE
+
+        bool rawkey(int code, bool isdown)
+        {
+            bool oldtexgx = texgc;
+            texgc = true;
+
+            bool result = Object::rawkey(code, isdown);
+
+            texgc = oldtexgx;
+
+            return result;
+        }
+
+        bool key(int code, bool isdown)
+        {
+            bool oldtexgx = texgc;
+            texgc = true;
+
+            bool result = Object::key(code, isdown);
+
+            texgc = oldtexgx;
+
+            return result;
+        }
+
+        bool textinput(const char *str, int len)
+        {
+            bool oldtexgx = texgc;
+            texgc = true;
+
+            bool result = Object::textinput(str, len);
+
+            texgc = oldtexgx;
+
+            return result;
+        }
+    };
+
+    ICOMMAND(0, uitexgc, "e", (uint *children),
+        BUILD(TexGC, o, o->setup(), children));
 
     struct Clipper : Object
     {
@@ -4968,9 +5059,9 @@ namespace UI
     };
 
     ICOMMAND(0, uiminimap, "siffffe", (char *texname, int *c, float *dist, float *border, float *minw, float *minh, uint *children),
-        BUILD(MiniMap, o, o->setup(textureload(texname, 0x7000, true, false), Color(*c), *dist, *border, *minw*uiscale, *minh*uiscale), children));
+        BUILD(MiniMap, o, o->setup(textureload(texname, 0x7000, true, false, texgc), Color(*c), *dist, *border, *minw*uiscale, *minh*uiscale), children));
     ICOMMAND(0, uiminimapcolour, "siiffffe", (char *texname, int *c, int *c2, float *dist, float *border, float *minw, float *minh, uint *children),
-        BUILD(MiniMap, o, o->setup(textureload(texname, 0x7000, true, false), Color(*c), Color(*c2), *dist, *border, *minw*uiscale, *minh*uiscale), children));
+        BUILD(MiniMap, o, o->setup(textureload(texname, 0x7000, true, false, texgc), Color(*c), Color(*c2), *dist, *border, *minw*uiscale, *minh*uiscale), children));
 
     struct Radar : Target
     {
@@ -5114,7 +5205,7 @@ namespace UI
     };
 
     ICOMMAND(0, uiradarblip, "sifffffe", (char *texname, int *c, float *yaw, float *blipyaw, float *dist, float *minw, float *minh, uint *children),
-        BUILD(RadarBlip, o, o->setup(textureload(texname, 3, true, false), Color(*c), *yaw, *blipyaw, *dist, *minw*uiscale, *minh*uiscale), children));
+        BUILD(RadarBlip, o, o->setup(textureload(texname, 3, true, false, texgc), Color(*c), *yaw, *blipyaw, *dist, *minw*uiscale, *minh*uiscale), children));
 
     #define IFSTATEVAL(state,t,f) { if(state) { if(t->type == VAL_NULL) intret(1); else result(*t); } else if(f->type == VAL_NULL) intret(0); else result(*f); }
     #define DOSTATE(flags, func) \

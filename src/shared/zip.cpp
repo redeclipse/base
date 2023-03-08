@@ -271,7 +271,7 @@ bool addzip(const char *name, const char *mount = NULL, const char *strip = NULL
     copystring(pname, name);
     path(pname);
     size_t plen = strlen(pname);
-    if(plen < 4 || !strchr(&pname[plen-4], '.')) concatstring(pname, ".zip");
+    if(plen < 4 || strcasecmp(&pname[plen-4], ".zip")) concatstring(pname, ".zip");
 
     ziparchive *exists = findzip(pname);
     if(exists)

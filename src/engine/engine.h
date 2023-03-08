@@ -226,7 +226,7 @@ extern int hwtexsize, hwcubetexsize, hwmaxaniso, maxtexsize, hwtexunits, hwvtexu
 extern bool loadedshaders;
 
 extern Texture *textureloaded(const char *name);
-extern Texture *textureload(const char *name, int clamp = 0, bool mipit = true, bool msg = true);
+extern Texture *textureload(const char *name, int clamp = 0, bool mipit = true, bool msg = true, bool gc = false);
 extern int texalign(const void *data, int w, int bpp);
 extern bool floatformat(GLenum format);
 extern void cleanuptexture(Texture *t);

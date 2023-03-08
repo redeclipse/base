@@ -581,6 +581,7 @@ struct Texture
         COMPRESSED = 1<<10,
         ALPHA      = 1<<11,
         MIRROR     = 1<<12,
+        GC         = 1<<13,
         FLAGS      = 0xFF00
     };
 

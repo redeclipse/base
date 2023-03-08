@@ -98,6 +98,7 @@ struct soundfile
     sf_count_t frames;
     size_t size;
     SNDFILE *sndfile;
+    stream *viofile;
 
     soundfile() { reset(); }
     ~soundfile() { clear(); }

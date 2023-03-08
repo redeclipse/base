@@ -375,12 +375,12 @@ void forcergbimage(ImageData &s)
         } \
     }
 
-void forcergbaimage(ImageData &s)
+void forcergbaimage(ImageData &s, uchar newalpha = 255)
 {
     if(s.bpp >= 4) return;
     ImageData d(s.w, s.h, 4);
-    if(s.bpp==3) readwritetex(d, s, { dst[0] = src[0]; dst[1] = src[1]; dst[2] = src[2]; });
-    else readwritetex(d, s, { dst[0] = dst[1] = dst[2] = src[0]; });
+    if(s.bpp==3) readwritetex(d, s, { dst[0] = src[0]; dst[1] = src[1]; dst[2] = src[2]; dst[3] = newalpha; });
+    else readwritetex(d, s, { dst[0] = dst[1] = dst[2] = src[0]; dst[3] = newalpha; });
     s.replace(d);
 }
 
@@ -718,6 +718,17 @@ VARF(0, bilinear, 0, 1, 1, initwarning("texture filtering", INIT_LOAD));
 VARF(IDF_PERSIST, aniso, 0, 0, 16, initwarning("texture filtering", INIT_LOAD));
 
 extern int usetexcompress;
+
+void gettexfilesize(const char *path, int &w, int &h)
+{
+    SDL_Surface *s = loadsurface(path);
+    if(!s) return;
+
+    w = s->w;
+    h = s->h;
+
+    SDL_FreeSurface(s);
+}
 
 void setuptexcompress()
 {
@@ -1266,7 +1277,7 @@ bool floatformat(GLenum format)
     }
 }
 
-static Texture *newtexture(Texture *t, const char *rname, ImageData &s, int clamp = 0, bool mipit = true, bool canreduce = false, bool transient = false, int compress = 0, TextureAnim *anim = NULL)
+static Texture *newtexture(Texture *t, const char *rname, ImageData &s, int clamp = 0, bool mipit = true, bool canreduce = false, bool transient = false, int compress = 0, TextureAnim *anim = NULL, bool gc = false)
 {
     if(!t)
     {
@@ -1280,6 +1291,7 @@ static Texture *newtexture(Texture *t, const char *rname, ImageData &s, int clam
     t->clamp = clamp;
     t->mipmap = mipit;
     t->type = Texture::IMAGE;
+    if(gc) t->type |= Texture::GC;
     if(transient) t->type |= Texture::TRANSIENT;
     if(clamp&0x300) t->type |= Texture::MIRROR;
     if(!s.data)
@@ -1800,6 +1812,7 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
                 if(anim->count <= 0 || anim->count > maxcount) anim->count = maxcount;
             }
         }
+        else if(matchstring(cmd, len, "rgba")) forcergbaimage(d);
         else
     compressed:
         if(matchstring(cmd, len, "mirror"))
@@ -1858,18 +1871,23 @@ Texture *textureloaded(const char *name)
     return textures.access(tname);
 }
 
-Texture *textureload(const char *name, int clamp, bool mipit, bool msg)
+Texture *textureload(const char *name, int clamp, bool mipit, bool msg, bool gc)
 {
     string tname;
     copystring(tname, name);
     path(tname);
     Texture *t = textures.access(tname);
-    if(t) return t;
+    if(t)
+    {
+        // Strip GC flag with gc=false
+        if(!gc && t->type&Texture::GC) t->type &= ~Texture::GC;
+        return t;
+    }
     int compress = 0;
     ImageData s;
     TextureAnim anim;
     if(texturedata(s, tname, NULL, msg, &compress, &clamp, &anim))
-       return newtexture(NULL, tname, s, clamp, mipit, false, false, compress, &anim);
+       return newtexture(NULL, tname, s, clamp, mipit, false, false, compress, &anim, gc);
     return notexture;
 }
 
@@ -1888,6 +1906,7 @@ VSlot dummyvslot(&dummyslot);
 vector<DecalSlot *> decalslots;
 DecalSlot dummydecalslot;
 Slot *defslot = NULL;
+bool slotedit = false;
 
 static char *curtexgroup;
 
@@ -1897,6 +1916,77 @@ MatSlot::MatSlot() : Slot(int(this - materialslots)), VSlot(this) {}
 const char *MatSlot::name() const { return tempformatstring("material slot %s", findmaterialname(Slot::index)); }
 
 const char *DecalSlot::name() const { return tempformatstring("decal slot %d", Slot::index); }
+
+static int findstidx(Slot &s, int tnum)
+{
+    loopv(s.sts) if(s.sts[i].type == tnum) return i;
+    return -1;
+}
+
+void editslot(int *idx, uint *code, int *rescale)
+{
+    if(!editmode) return;
+
+    VSlot &vslot = lookupvslot(*idx, false);
+
+    if(&vslot == &dummyvslot) return;
+
+    Slot *olddefslot = defslot;
+
+    defslot = vslot.slot;
+    slotedit = true;
+
+    bool loaded = defslot->loaded;
+    int slotdiffuse = findstidx(*defslot, TEX_DIFFUSE);
+    int oldw, oldh, neww, newh, xscale, yscale;
+
+    if(slotdiffuse >= 0 && *rescale)
+    {
+        if(loaded)
+        {
+            oldw = defslot->sts[slotdiffuse].t->w;
+            oldh = defslot->sts[slotdiffuse].t->h;
+        }
+        else gettexfilesize(defslot->sts[slotdiffuse].name, oldw, oldh);
+    }
+
+    execute(code);
+
+    if(loaded)
+    {
+        defslot->cleanup();
+        defslot->load();
+    }
+
+    if(slotdiffuse >= 0 && *rescale)
+    {
+        if(loaded)
+        {
+            neww = defslot->sts[slotdiffuse].t->w;
+            newh = defslot->sts[slotdiffuse].t->h;
+        }
+        else gettexfilesize(defslot->sts[slotdiffuse].name, neww, newh);
+
+        xscale = neww/float(oldw);
+        yscale = newh/float(oldh);
+
+        for(VSlot *vs = defslot->variants; vs; vs = vs->next)
+        {
+            vs->cleanup();
+
+            // Compensate for texture size changes
+            vs->scale    *= 1.0f/xscale;
+            vs->offset.x *= xscale;
+            vs->offset.y *= yscale;
+        }
+    }
+
+    defslot = olddefslot;
+    slotedit = false;
+
+    allchanged();
+}
+COMMAND(0, editslot, "iei");
 
 void resettextures(int n)
 {
@@ -2571,40 +2661,65 @@ const char *findtexturetypename(int type)
     return NULL;
 }
 
+void remtexture(char *type)
+{
+    if(!slotedit || !defslot) return;
+
+    Slot &s = *defslot;
+    int tnum = findslottex(type);
+    int stidx = findstidx(s, tnum);
+
+    s.loaded = false;
+    s.texmask &= ~(1<<tnum);
+
+    if(stidx >= 0) s.sts.remove(stidx);
+}
+COMMAND(0, remtexture, "s");
+
 void texture(char *type, char *name, int *rot, int *xoffset, int *yoffset, float *scale)
 {
     int tnum = findslottex(type), matslot = -1;
-    if(tnum == TEX_DIFFUSE)
+
+    if(!slotedit)
     {
-        if(slots.length() >= 0x10000) return;
-        defslot = slots.add(new Slot(slots.length()));
-        defslot->group = curtexgroup && curtexgroup[0] ? newstring(curtexgroup) : NULL;
+        if(tnum == TEX_DIFFUSE)
+        {
+            if(slots.length() >= 0x10000) return;
+            defslot = slots.add(new Slot(slots.length()));
+            defslot->group = curtexgroup && curtexgroup[0] ? newstring(curtexgroup) : NULL;
+        }
+        else if(!strcmp(type, "decal"))
+        {
+            if(decalslots.length() >= 0x10000) return;
+            tnum = TEX_DIFFUSE;
+            defslot = decalslots.add(new DecalSlot(decalslots.length()));
+        }
+        else if((matslot = findmaterial(type)) >= 0)
+        {
+            if(materialcheck && !materialslots[matslot].sts.empty()) return;
+            tnum = TEX_DIFFUSE;
+            defslot = &materialslots[matslot];
+            defslot->reset();
+        }
     }
-    else if(!strcmp(type, "decal"))
-    {
-        if(decalslots.length() >= 0x10000) return;
-        tnum = TEX_DIFFUSE;
-        defslot = decalslots.add(new DecalSlot(decalslots.length()));
-    }
-    else if((matslot = findmaterial(type)) >= 0)
-    {
-        if(materialcheck && !materialslots[matslot].sts.empty()) return;
-        tnum = TEX_DIFFUSE;
-        defslot = &materialslots[matslot];
-        defslot->reset();
-    }
-    else if(!defslot) { conoutf("\frNo default slot set for texture (%s)", name); return; }
+
+    if(!defslot) { conoutf("\frNo default slot set for texture (%s)", name); return; }
     else if(tnum < 0) tnum = TEX_UNKNOWN;
     if(materialcheck && matslot < 0) return;
     Slot &s = *defslot;
     s.loaded = false;
     s.texmask |= 1<<tnum;
-    if(s.sts.length() >= TEX_MAX) conoutf("\frWarning: too many textures, [%d] %s (%d)", slots.length()-1, name, matslot);
-    Slot::Tex &st = s.sts.add();
+
+    int stidx = -1;
+    if(slotedit) stidx = findstidx(s, tnum);
+
+    if(s.sts.length() >= TEX_MAX && stidx < 0) conoutf("\frWarning: too many textures, [%d] %s (%d)", slots.length()-1, name, matslot);
+    Slot::Tex &st = stidx < 0 ? s.sts.add() : s.sts[stidx];
     st.type = tnum;
     copystring(st.name, name);
     path(st.name);
-    if(tnum == TEX_DIFFUSE)
+
+    if(tnum == TEX_DIFFUSE && !slotedit)
     {
         setslotshader(s);
         VSlot &vs = s.emptyvslot();
@@ -2944,7 +3059,11 @@ void Slot::load(int index, Slot::Tex &t)
     }
     key.add('\0');
     t.t = textures.access(key.getbuf());
-    if(t.t) return;
+    if(t.t)
+    {
+        if(t.t->type&Texture::GC) t.t->type &= ~Texture::GC;
+        return;
+    }
     int compress = 0, wrap = 0;
     ImageData ts;
     TextureAnim anim;
@@ -2981,6 +3100,7 @@ void Slot::load(int index, Slot::Tex &t)
 void Slot::load()
 {
     linkslotshader(*this);
+
     loopv(sts)
     {
         Slot::Tex &t = sts[i];
@@ -3196,6 +3316,7 @@ Texture *cubemaploadwildcard(Texture *t, const char *name, bool mipit, bool msg,
         t = textures.access(path(tname));
         if(t)
         {
+            if(t->type&Texture::GC) t->type &= ~Texture::GC;
             if(!transient && t->type&Texture::TRANSIENT) t->type &= ~Texture::TRANSIENT;
             return t;
         }
@@ -3579,7 +3700,7 @@ void cleanuptexture(Texture *t)
     t->frames.shrink(0);
     t->id = 0;
 
-    if(t->type&Texture::TRANSIENT) textures.remove(t->name);
+    if(t->type&Texture::TRANSIENT || t->type&Texture::GC) textures.remove(t->name);
 }
 
 void cleanuptextures()
@@ -3592,6 +3713,19 @@ void cleanuptextures()
     loopv(decalslots) decalslots[i]->cleanup();
     enumerate(textures, Texture, tex, cleanuptexture(&tex));
 }
+
+void gctextures()
+{
+    vector<Texture*> gctexs;
+
+    enumerate(textures, Texture, tex,
+    {
+        if(tex.type&Texture::GC) gctexs.add(&tex);
+    });
+
+    loopv(gctexs) cleanuptexture(gctexs[i]);
+}
+COMMAND(0, gctextures, "");
 
 bool reloadtexture(const char *name)
 {
@@ -4366,9 +4500,24 @@ COMMAND(0, mergenormalmaps, "ss");
 COMMAND(0, normalizenormalmap, "ss");
 COMMAND(0, removealphachannel, "ss");
 
-ICOMMAND(0, gettexaspect, "s", (char *tex),
+ICOMMAND(0, gettexaspect, "si", (char *tex, int *load),
 {
-    Texture *t = textureloaded(tex);
+    Texture *t = *load ? textureload(tex) : textureloaded(tex);
     if(!t) return;
     floatret((float)t->w / (float)t->h);
+});
+
+ICOMMAND(0, gettexsize, "si", (char *tex, int *load),
+{
+    Texture *t = *load ? textureload(tex) : textureloaded(tex);
+    if(!t) return;
+    defformatstring(str, "%d %d", t->w, t->h);
+    result(str);
+});
+
+ICOMMAND(0, gettexbpp, "si", (char *tex, int *load),
+{
+    Texture *t = *load ? textureload(tex) : textureloaded(tex);
+    if(!t) return;
+    intret(t->bpp);
 });
