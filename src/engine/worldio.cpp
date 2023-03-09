@@ -607,9 +607,9 @@ void saveslotconfig(stream *h, Slot &s, int index, bool decal)
     h->printf("\n");
 }
 
-void save_config(char *mname, bool forcesave = false)
+void save_config(char *mname, bool forcesave = false, int backuprev = -1)
 {
-    if(autosavebackups && !forcesave) backup(mname, ".cfg", hdr.revision, autosavebackups > 2, !(autosavebackups%2));
+    if(autosavebackups && !forcesave) backup(mname, ".cfg", backuprev >= 0 ? backuprev : hdr.revision, autosavebackups > 2, !(autosavebackups%2));
     defformatstring(fname, "%s.cfg", mname);
     stream *h = openutf8file(fname, "w");
     if(!h) { conoutf("\frCould not write config to %s", fname); return; }
@@ -622,7 +622,7 @@ void save_config(char *mname, bool forcesave = false)
     if(*mapdesc) filterstring(desc, mapdesc);
     else copystring(desc, mapdesc);
     // config
-    h->printf("// %s by %s (%s)\n", title, author, mapname);
+    h->printf("// %s by %s (%s [r%d])\n", title, author, mapname, hdr.revision);
     if(*desc) h->printf("// %s\n", desc);
     h->printf("\n");
 
@@ -722,7 +722,7 @@ ICOMMAND(0, savemapconfig, "s", (char *mname), if(!(identflags&IDF_WORLD)) save_
 
 VARF(IDF_PERSIST, mapshotsize, 2, 512, INT_MAX-1, mapshotsize -= mapshotsize%2);
 
-void save_mapshot(char *mname, bool forcesave = false)
+void save_mapshot(char *mname, bool forcesave = false, int backuprev = -1)
 {
     drawtex = DRAWTEX_MAPSHOT;
     progress(0, "Saving map preview image..");
@@ -756,7 +756,7 @@ void save_mapshot(char *mname, bool forcesave = false)
     gl_drawview();
     glReadPixels(0, 0, vieww, viewh, GL_RGB, GL_UNSIGNED_BYTE, image.data);
 
-    if(autosavebackups && !forcesave) backup(mname, ifmtexts[imageformat], hdr.revision, autosavebackups > 2, !(autosavebackups%2));
+    if(autosavebackups && !forcesave) backup(mname, ifmtexts[imageformat], backuprev >= 0 ? backuprev : hdr.revision, autosavebackups > 2, !(autosavebackups%2));
     texmad(image, vec(2, 2, 2));
     scaleimage(image, mapshotsize, mapshotsize);
     saveimage(mname, image, imageformat, compresslevel, true);
@@ -784,31 +784,16 @@ ICOMMAND(0, savemapshot, "s", (char *mname), if(!(identflags&IDF_WORLD)) save_ma
 
 void save_world(const char *mname, bool nodata, bool forcesave)
 {
-    int savingstart = SDL_GetTicks();
+    int savingstart = SDL_GetTicks(), backuprev = hdr.revision;
 
     setnames(mname, forcesave ? -1 : 0);
 
-    if(autosavebackups && !forcesave) backup(mapname, ".mpz", hdr.revision, autosavebackups > 2, !(autosavebackups%2));
+    if(autosavebackups && !forcesave) backup(mapname, ".mpz", backuprev, autosavebackups > 2, !(autosavebackups%2));
     conoutf("Saving: %s (%s)", mapname, forcesave ? "forced" : "normal");
 
     stream *f = opengzfile(mapfile, "wb");
     if(!f) { conoutf("\frError saving %s to %s: file error", mapname, mapfile); return; }
 
-    if(autosavemapshot || forcesave) save_mapshot(mapname, forcesave);
-    if(autosaveconfigs || forcesave) save_config(mapname, forcesave);
-    if(maptext[0] && (autosavetexts || forcesave))
-    {
-        defformatstring(fname, "%s.txt", mapname);
-        if(autosavebackups && !forcesave) backup(mapname, ".txt", hdr.revision, autosavebackups > 2, !(autosavebackups%2));
-        stream *h = openutf8file(fname, "w");
-        if(!h) conoutf("\frCould not write text to %s", fname);
-        else
-        {
-            h->printf("%s", maptext);
-            delete h;
-            if(verbose) conoutf("Saved text %s", fname);
-        }
-    }
     game::savemap(forcesave, mapname);
 
     int numvslots = vslots.length();
@@ -946,6 +931,23 @@ void save_world(const char *mname, bool nodata, bool forcesave)
     }
     delete f;
     mapcrc = crcfile(mapfile);
+
+    if(autosavemapshot || forcesave) save_mapshot(mapname, forcesave, backuprev);
+    if(autosaveconfigs || forcesave) save_config(mapname, forcesave, backuprev);
+    if(maptext[0] && (autosavetexts || forcesave))
+    {
+        defformatstring(fname, "%s.txt", mapname);
+        if(autosavebackups && !forcesave) backup(mapname, ".txt", backuprev, autosavebackups > 2, !(autosavebackups%2));
+        stream *h = openutf8file(fname, "w");
+        if(!h) conoutf("\frCould not write text to %s", fname);
+        else
+        {
+            h->printf("%s", maptext);
+            delete h;
+            if(verbose) conoutf("Saved text %s", fname);
+        }
+    }
+
     conoutf("Saved %s (\fs%s\fS by \fs%s\fS) v%d:%d(r%d) [0x%.8x] in %.1f secs", mapname, *maptitle ? maptitle : "Untitled", *mapauthor ? mapauthor : "Unknown", hdr.version, hdr.gamever, hdr.revision, mapcrc, (SDL_GetTicks()-savingstart)/1000.0f);
 }
 
