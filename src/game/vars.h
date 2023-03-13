@@ -181,22 +181,23 @@ GSVAR(0, PRIV_ADMINISTRATOR, defaultmap, "");
 GVAR(0, PRIV_ADMINISTRATOR, defaultmode, G_START, G_DEATHMATCH, G_MAX-1);
 GVAR(0, PRIV_ADMINISTRATOR, defaultmuts, 0, 0, G_M_ALL);
 
-GSVAR(0, PRIV_ADMINISTRATOR, allowmaps, "untitled");
+GSVAR(0, PRIV_ADMINISTRATOR, allowmaps, "");
+GSVAR(0, PRIV_ADMINISTRATOR, wipmaps, "");
 
-GSVAR(0, PRIV_ADMINISTRATOR, mainmaps, "untitled");
-GSVAR(0, PRIV_ADMINISTRATOR, capturemaps, "untitled");
-GSVAR(0, PRIV_ADMINISTRATOR, defendmaps, "untitled");
-GSVAR(0, PRIV_ADMINISTRATOR, kingmaps, "untitled");
-GSVAR(0, PRIV_ADMINISTRATOR, bombermaps, "untitled");
-GSVAR(0, PRIV_ADMINISTRATOR, holdmaps, "untitled");
-GSVAR(0, PRIV_ADMINISTRATOR, racemaps, "untitled");
+GSVAR(0, PRIV_ADMINISTRATOR, mainmaps, "");
+GSVAR(0, PRIV_ADMINISTRATOR, capturemaps, "");
+GSVAR(0, PRIV_ADMINISTRATOR, defendmaps, "");
+GSVAR(0, PRIV_ADMINISTRATOR, kingmaps, "");
+GSVAR(0, PRIV_ADMINISTRATOR, bombermaps, "");
+GSVAR(0, PRIV_ADMINISTRATOR, holdmaps, "");
+GSVAR(0, PRIV_ADMINISTRATOR, racemaps, "");
 
-GSVAR(0, PRIV_ADMINISTRATOR, duelmaps, "untitled");
-GSVAR(0, PRIV_ADMINISTRATOR, gladiatormaps, "untitled");
+GSVAR(0, PRIV_ADMINISTRATOR, duelmaps, "");
+GSVAR(0, PRIV_ADMINISTRATOR, gladiatormaps, "");
 
-GSVAR(0, PRIV_ADMINISTRATOR, smallmaps, "untitled");
-GSVAR(0, PRIV_ADMINISTRATOR, mediummaps, "untitled");
-GSVAR(0, PRIV_ADMINISTRATOR, largemaps, "untitled");
+GSVAR(0, PRIV_ADMINISTRATOR, smallmaps, "");
+GSVAR(0, PRIV_ADMINISTRATOR, mediummaps, "");
+GSVAR(0, PRIV_ADMINISTRATOR, largemaps, "");
 
 GVAR(0, PRIV_MODERATOR, modelock, 0, PRIV_MODERATOR, PRIV_MAX);
 GVAR(0, PRIV_MODERATOR, modelocktype, 0, 2, 2); // 0 = off, 1 = only lock level can change modes, 2 = lock level can set limited modes
