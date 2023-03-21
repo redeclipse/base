@@ -1232,7 +1232,7 @@ int main(int argc, char **argv)
 
     initing = NOT_INITING;
 
-    if(firstrun)
+    if(firstrun || noconfigfile)
     {
         conoutf("First run!");
         firstrun = 0;
