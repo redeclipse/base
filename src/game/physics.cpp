@@ -1307,7 +1307,7 @@ namespace physics
                     else
                     {
                         e->turnmillis = 0;
-                        if(e->roll != 0 && !e->turnside) adjustscaled(e->roll, impulseturntime);
+                        if(e->roll != 0 && !e->turnside) adjustscaled(e->roll, impulseturntime/3);
                     }
                 }
                 else e->roll = 0;
