@@ -424,7 +424,8 @@ enum
     CMD_EVENT_FIRSTRUN,
 
     // Game events
-    CMD_EVENT_GAME_VOTE
+    CMD_EVENT_GAME_VOTE,
+    CMD_EVENT_GAME_LOADOUT
 };
 
 extern void triggereventcallbacks(int event);

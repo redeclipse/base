@@ -2762,7 +2762,7 @@ namespace client
                 case N_LOADOUT:
                 {
                     hud::showscores(false);
-                    if(!UI::hasmenu()) UI::openui("profile");
+                    triggereventcallbacks(CMD_EVENT_GAME_LOADOUT);
                     lastplayerinfo = 0;
                     break;
                 }
