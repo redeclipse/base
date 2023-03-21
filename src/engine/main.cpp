@@ -400,7 +400,7 @@ void restorevsync()
         hasvsynctear = err ? 0 : 1;
     }
 
-    if(err || !vsynctear)
+    if(err || !vsynctear || !vsync)
     {
         err = SDL_GL_SetSwapInterval(vsync);
     }
