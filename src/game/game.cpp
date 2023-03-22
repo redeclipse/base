@@ -2200,7 +2200,7 @@ namespace game
         int numdyns = numdynents();
         loopi(numdyns) if((d = (gameent *)iterdynents(i)) && gameent::is(d)) d->mapchange(lastmillis, gamemode, mutators);
         entities::spawnplayer(player1); // prevent the player from being in the middle of nowhere
-        if(showloadoutmenu && m_loadout(gamemode, mutators)) wantsloadoutmenu = true;
+        if(showloadoutmenu && m_loadout(gamemode, mutators)) triggereventcallbacks(CMD_EVENT_GAME_LOADOUT);
         resetcamera();
         resetsway();
 
