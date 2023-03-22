@@ -268,6 +268,8 @@ void setupdisplay(bool dogl = true, bool msg = true)
     if(msg) conoutf("Display [%d]: %dx%d [%d Hz] %s: %dx%d [%dx%d]", index, display.w, display.h, display.refresh_rate, SDL_GetWindowFlags(screen)&SDL_WINDOW_FULLSCREEN ? (fullscreendesktop ? "Fullscreen" : "Exclusive") : "Windowed", screenw, screenh, renderw, renderh);
 
     wantdisplaysetup = false;
+
+    triggereventcallbacks(CMD_EVENT_SETUPDISPLAY);
 }
 
 void setfullscreen(bool enable)
