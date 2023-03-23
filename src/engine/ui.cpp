@@ -5228,6 +5228,8 @@ namespace UI
     DOSTATES
     #undef DOSTATE
 
+    ICOMMANDNS(0, "uianyfocus", uifocus_, "", (),
+        intret(buildparent && TextEditor::focus != NULL));
     ICOMMANDNS(0, "uifocus", uifocus_, "ee", (uint *t, uint *f),
         executeret(buildparent && TextEditor::focus == buildparent ? t : f));
     ICOMMANDNS(0, "uifocus?", uifocus__, "tt", (tagval *t, tagval *f),
