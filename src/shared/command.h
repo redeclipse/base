@@ -426,7 +426,8 @@ enum
 
     // Game events
     CMD_EVENT_GAME_VOTE,
-    CMD_EVENT_GAME_LOADOUT
+    CMD_EVENT_GAME_LOADOUT,
+    CMD_EVENT_GAME_GUIDELINES
 };
 
 extern void triggereventcallbacks(int event);

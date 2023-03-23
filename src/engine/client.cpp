@@ -118,7 +118,7 @@ void connectserv(const char *name, int port, const char *password)
         {
             defformatstring(s, "connect %s %d %s", name, port, password && *password ? password : "");
             setsvar("guidelinesaction", s);
-            UI::openui("guidelines");
+            triggereventcallbacks(CMD_EVENT_GAME_GUIDELINES);
             return;
         }
         addserver(name, port);
