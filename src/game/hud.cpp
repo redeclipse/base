@@ -562,12 +562,6 @@ namespace hud
         UI::showui("hud");
         if(!UI::hasmenu())
         {
-            // if(game::needname(game::player1) || game::wantsloadoutmenu)
-            // {
-            //     UI::openui("profile");
-            //     game::wantsloadoutmenu = false;
-            // }
-            // else
             if(connected())
             {
                 UI::pressui("scoreboard", scoreson);
