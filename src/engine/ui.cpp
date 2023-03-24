@@ -638,7 +638,7 @@ namespace UI
         bool haschildstate(int flags) const
         {
             bool cs = ((state | childstate) & flags) != 0;
-            bool steal = (this == inputsteal || !inputsteal);
+            bool steal = (this == inputsteal || !inputsteal) || (state & (STATE_SCROLL_UP|STATE_SCROLL_DOWN));
             return cs && steal;
         }
 
@@ -5390,7 +5390,9 @@ namespace UI
             case -4: action = STATE_SCROLL_UP; break;
             case -5: action = STATE_SCROLL_DOWN; break;
         }
-        int setmode = inputsteal ? SETSTATE_FOCUSED : SETSTATE_INSIDE;
+        int setmode = inputsteal && action != STATE_SCROLL_UP && action != STATE_SCROLL_DOWN ?
+            SETSTATE_FOCUSED : SETSTATE_INSIDE;
+
         if(action)
         {
             if(isdown)
