@@ -251,6 +251,7 @@ void clientkeepalive()
 
 VAR(IDF_PERSIST, connectretry, 0, 5000, VAR_MAX);
 VAR(IDF_PERSIST, connectattempts, 0, 3, VAR_MAX);
+SVAR(IDF_READONLY, disconnectreason, "");
 
 void gets2c()           // get updates from the server
 {
@@ -297,14 +298,19 @@ void gets2c()           // get updates from the server
             {
                 conoutft(CON_DEBUG, "\frCould not connect to server");
                 connectfail();
+
+                setsvar("disconnectreason", "Unknown error");
+                triggereventcallbacks(CMD_EVENT_GAME_DISCONNECT);
             }
             else
             {
                 if(!discmillis || event.data)
                 {
                     const char *msg = disc_reasons[event.data];
-                    if(msg) conoutf("\frServer network error, disconnecting (%s) ..", msg);
-                    else conoutf("\frServer network error, disconnecting..");
+                    if(msg) setsvar("disconnectreason", msg);
+                    else setsvar("disconnectreason", "Unknown error");
+
+                    triggereventcallbacks(CMD_EVENT_GAME_DISCONNECT);
                 }
                 disconnect();
             }
@@ -314,4 +320,3 @@ void gets2c()           // get updates from the server
             break;
     }
 }
-

@@ -72,7 +72,25 @@ ICOMMAND(0, platname, "ii", (int *p, int *g), result(*p >= 0 && *p < MAX_PLATFOR
 
 VAR(0, rehashing, 1, 0, -1);
 
-const char * const disc_reasons[] = { "normal", "end of packet", "client num", "user was kicked", "message error", "address is banned", "server is in private mode", "server is password protected", "server requires pure official builds", "server is at maximum capacity", "server and client are incompatible", "connection timed out", "packet overflow", "server shutting down", "hostname lookup failure", "client with same handle authenticated" };
+const char * const disc_reasons[] =
+{
+    "Requested by server",
+    "End of packet",
+    "Client number",
+    "Kicked",
+    "Communication error",
+    "Address is banned",
+    "Server is in private mode",
+    "Incorrect password",
+    "Server requires pure official builds",
+    "Server is at maximum capacity",
+    "Server and client are incompatible",
+    "Connection timed out",
+    "Packet overflow",
+    "Server shutting down",
+    "Hostname lookup failure",
+    "Client with same handle authenticated"
+};
 
 SVAR(IDF_PERSIST, logtimeformat, "%Y-%m-%d %H:%M.%S");
 VAR(IDF_PERSIST, logtimelocal, 0, 1, 1); // use clockoffset to localise
