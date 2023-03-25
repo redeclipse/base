@@ -3376,8 +3376,9 @@ namespace UI
     struct Clipper : Object
     {
         float sizew, sizeh, virtw, virth, offsetx, offsety;
+        bool inverted;
 
-        Clipper() : offsetx(0), offsety(0) {}
+        Clipper() : offsetx(0), offsety(0), inverted(false) {}
 
         void setup(float sizew_ = 0, float sizeh_ = 0, float offsetx_ = -1, float offsety_ = -1)
         {
@@ -3423,9 +3424,22 @@ namespace UI
         {
             if((sizew && virtw > sizew) || (sizeh && virth > sizeh))
             {
+                float drawx, drawy;
+
+                if(inverted)
+                {
+                    drawx = sx - (hlimit() - offsetx);
+                    drawy = sy - (vlimit() - offsety);
+                }
+                else
+                {
+                    drawx = sx - offsetx;
+                    drawy = sy - offsety;
+                }
+
                 stopdrawing();
                 pushclip(sx, sy, w, h);
-                Object::draw(sx - offsetx, sy - offsety);
+                Object::draw(drawx, drawy);
                 stopdrawing();
                 popclip();
             }
@@ -3439,8 +3453,8 @@ namespace UI
         float hscale() const { return w / max(virtw, w); }
         float vscale() const { return h / max(virth, h); }
 
-        void addhscroll(float hscroll) { sethscroll(offsetx + hscroll); }
-        void addvscroll(float vscroll) { setvscroll(offsety + vscroll); }
+        void addhscroll(float hscroll) { sethscroll(offsetx + (hscroll * (inverted ? -1 : 1))); }
+        void addvscroll(float vscroll) { setvscroll(offsety + (vscroll * (inverted ? -1 : 1))); }
         void sethscroll(float hscroll) { offsetx = clamp(hscroll, 0.0f, hlimit()); }
         void setvscroll(float vscroll) { offsety = clamp(vscroll, 0.0f, vlimit()); }
     };
@@ -3454,6 +3468,7 @@ namespace UI
     UIARGSCALEDT(Clipper, clip, virth, "f", float, 0.f, FVAR_MAX);
     UIARGSCALEDT(Clipper, clip, offsetx, "f", float, FVAR_MIN, FVAR_MAX);
     UIARGSCALEDT(Clipper, clip, offsety, "f", float, FVAR_MIN, FVAR_MAX);
+    UIARGT(Clipper, clip, inverted, "i", int, 0, 1);
 
     struct Scroller : Clipper
     {
@@ -3607,7 +3622,9 @@ namespace UI
             if(!button) return;
             float bscale = (w - button->w) / (1 - scroller->hscale()),
                   offset = bscale > 1e-3f ? (closest && cx >= button->x + button->w ? cx - button->w : cx)/bscale : 0;
-            scroller->sethscroll(offset*scroller->virtw);
+
+            if(scroller->inverted) scroller->sethscroll(scroller->hlimit() - (offset*scroller->virtw));
+            else scroller->sethscroll(offset*scroller->virtw);
         }
 
         void adjustchildren()
@@ -3619,7 +3636,10 @@ namespace UI
             float bw = w*scroller->hscale();
             button->w = max(button->w, bw);
             float bscale = scroller->hscale() < 1 ? (w - button->w) / (1 - scroller->hscale()) : 1;
-            button->x = scroller->hoffset()*bscale;
+
+            if(scroller->inverted) button->x = ((1 - scroller->hoffset())*bscale) - button->w;
+            else button->x = scroller->hoffset()*bscale;
+
             button->adjust &= ~ALIGN_HMASK;
 
             ScrollBar::adjustchildren();
@@ -3652,7 +3672,9 @@ namespace UI
             if(!button) return;
             float bscale = (h - button->h) / (1 - scroller->vscale()),
                   offset = bscale > 1e-3f ? (closest && cy >= button->y + button->h ? cy - button->h : cy)/bscale : 0;
-            scroller->setvscroll(offset*scroller->virth);
+
+            if(scroller->inverted) scroller->setvscroll(scroller->vlimit() - (offset*scroller->virth));
+            else scroller->setvscroll(offset*scroller->virth);
         }
 
         void adjustchildren()
@@ -3664,7 +3686,10 @@ namespace UI
             float bh = h*scroller->vscale();
             button->h = max(button->h, bh);
             float bscale = scroller->vscale() < 1 ? (h - button->h) / (1 - scroller->vscale()) : 1;
-            button->y = scroller->voffset()*bscale;
+
+            if(scroller->inverted) button->y = ((1 - scroller->voffset())*bscale) - button->h;
+            else button->y = scroller->voffset()*bscale;
+
             button->adjust &= ~ALIGN_VMASK;
 
             ScrollBar::adjustchildren();
