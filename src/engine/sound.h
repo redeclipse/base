@@ -23,6 +23,7 @@ enum
     SND_TRACKED  = 1<<11,   // sound vpos is tracked
     SND_VELEST   = 1<<12,   // sound vpos is estimated
     SND_NOFILTER = 1<<13,   // disable filtering
+    SND_PREVIEW  = 1<<14,   // sound is a preview
     SND_MASKF    = SND_LOOP|SND_MAP,
     SND_LAST     = 8        // top N are used for entities
 };

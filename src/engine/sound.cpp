@@ -45,6 +45,7 @@ static void getextsoundprocs()
     alFilterf                    = (LPALFILTERF)                   alGetProcAddress("alFilterf");
 }
 
+soundslot previewslot;
 hashnameset<soundsample> soundsamples;
 Slotmanager<soundslot> gamesounds;
 vector<soundslot> mapsounds;
@@ -1013,12 +1014,20 @@ int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, flo
     if(nosound || !pos || gain <= 0 || !soundmastervol || !soundeffectvol || (flags&SND_MAP ? !soundeffectenv : !soundeffectevent)) return -1;
     if((flags&SND_MAP || (!(flags&SND_UNMAPPED) && n >= S_GAMESPECIFIC)) && client::waiting(true)) return -1;
 
-    vector<soundslot> &soundset = flags&SND_MAP ? mapsounds : gamesounds.vec();
-    if(!(flags&SND_UNMAPPED) && !(flags&SND_MAP)) n = getsoundslot(n);
+    soundslot *slot = NULL;
 
-    if(soundset.inrange(n))
+    if(n < 0) slot = &previewslot;
+    else
     {
-        soundslot *slot = &soundset[n];
+        vector<soundslot> &soundset = flags&SND_MAP ? mapsounds : gamesounds.vec();
+        if(!(flags&SND_UNMAPPED) && !(flags&SND_MAP)) n = getsoundslot(n);
+
+        if(!soundset.inrange(n)) conoutf("\frUnregistered sound: %d", n);
+        else slot = &soundset[n];
+    }
+
+    if(slot)
+    {
         if(slot->samples.empty() || !slot->gain) return -1;
         if(hook && issound(*hook) && flags&SND_BUFFER)
         {
@@ -1070,7 +1079,7 @@ int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, flo
 
         SOUNDCHECK(s.push(sample), return index, conoutf("Error playing sample [%d] %s (%d): %s [%s@%s:%d]", n, sample->name, index, alGetString(err), al_errfunc, al_errfile, al_errline));
     }
-    else if(n > 0) conoutf("\frUnregistered sound: %d", n);
+
     return -1;
 }
 
@@ -1080,6 +1089,27 @@ int emitsoundpos(int n, const vec &pos, int *hook, int flags, float gain, float 
     flags &= ~SND_TRACKED; // can't do that here
     return emitsound(n, &curpos, NULL, hook, flags, gain, pitch, rolloff, refdist, maxdist, ends, offset);
 }
+
+VAR(IDF_PERSIST, soundpreviewlength, 1000, 4000, 10000);
+
+void previewsound(const char *s, float *gain)
+{
+    loopv(soundsources) if(soundsources[i].slot == &previewslot) soundsources[i].clear();
+
+    previewslot.reset();
+    previewslot.name     = newstring(s);
+    previewslot.gain     = *gain > 0 ? clamp(*gain, 0.f, 100.f) : 1.f;
+    previewslot.pitch    = 1.0;
+    previewslot.rolloff  = 1.0f;
+    previewslot.refdist  = -1.0f;
+    previewslot.maxdist  = -1.0f;
+    previewslot.variants = 1;
+
+    loadsamples(previewslot);
+
+    emitsound(-1, &camera1->o, camera1, NULL, SND_PREVIEW);
+}
+COMMAND(0, previewsound, "sf");
 
 int playsound(int n, const vec &pos, physent *d, int flags, int vol, int maxrad, int minrad, int *hook, int ends, float offset, int groupid)
 {
@@ -1610,6 +1640,8 @@ ALenum soundsource::update()
 
         SOUNDERRORTRACK(clear(); return err);
     }
+
+    if(flags&SND_PREVIEW && lastmillis - millis > soundpreviewlength) clear();
 
     return AL_NO_ERROR;
 }
