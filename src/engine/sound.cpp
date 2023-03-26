@@ -855,6 +855,30 @@ ICOMMAND(0, mapsound, "sissi", (char *name, int *vol, char *maxrad, char *minrad
     intret(addsoundcompat(NULL, name, *vol, *maxrad ? parseint(maxrad) : -1, *minrad ? parseint(minrad) : -1, *variants, mapsounds))
 );
 
+void clearmapsounds()
+{
+    loopv(soundsources) if(soundsources[i].flags&SND_MAP) soundsources[i].clear();
+    mapsounds.shrink(0);
+}
+COMMAND(0, clearmapsounds, "");
+
+void remmapsound(int *index)
+{
+    if(!mapsounds.inrange(*index)) return;
+
+    loopv(soundsources) if(soundsources[i].flags&SND_MAP) soundsources[i].clear();
+    mapsounds.remove(*index);
+
+    // Correct entities
+    vector<extentity *> &ents = entities::getents();
+    loopv(ents)
+    {
+        extentity &e = *ents[i];
+        if(e.type == ET_SOUND && e.attrs[0] && e.attrs[0] >= *index) e.attrs[0]--;
+    }
+}
+COMMAND(0, remmapsound, "i");
+
 static inline bool sourcecmp(const soundsource *x, const soundsource *y) // sort with most likely to be culled first!
 {
     bool xprio = x->flags&SND_PRIORITY, yprio = y->flags&SND_PRIORITY;
