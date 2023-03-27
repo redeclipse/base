@@ -2063,6 +2063,34 @@ void clearslots()
     }
 }
 
+void removedecalslots(int *from, int *to)
+{
+    *from = clamp(*from, 0, decalslots.length());
+
+    if(*to < 0) *to = decalslots.length() - 1;
+    else *to = clamp(*to, *from, decalslots.length());
+
+    int num = *to - *from + 1;
+
+    for(int i = *to; i >= *from; i--)
+    {
+        DecalSlot *ds = decalslots[i];
+        decalslots.remove(i);
+        delete ds;
+    }
+
+    // Correct entities that were previously using the removed decals
+    vector<extentity *> &ents = entities::getents();
+    loopv(ents)
+    {
+        extentity &e = *ents[i];
+        if(e.type == ET_DECAL && e.attrs[0] > *to) e.attrs[0] -= num;
+    }
+
+    allchanged();
+}
+COMMAND(0, removedecalslots, "ii");
+
 static void assignvslot(VSlot &vs);
 
 static inline void assignvslotlayer(VSlot &vs)
