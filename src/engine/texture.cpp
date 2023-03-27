@@ -2696,6 +2696,7 @@ void texture(char *type, char *name, int *rot, int *xoffset, int *yoffset, float
             if(decalslots.length() >= 0x10000) return;
             tnum = TEX_DIFFUSE;
             defslot = decalslots.add(new DecalSlot(decalslots.length()));
+            defslot->group = curtexgroup && curtexgroup[0] ? newstring(curtexgroup) : NULL;
         }
         else if((matslot = findmaterial(type)) >= 0)
         {
@@ -2735,9 +2736,9 @@ void texture(char *type, char *name, int *rot, int *xoffset, int *yoffset, float
 COMMAND(0, texture, "ssiiif");
 
 ICOMMAND(0, texgroup, "s", (char *group), group[0] ? curtexgroup = newstring(group) : NULL);
-ICOMMAND(0, gettexgroup, "i", (int *index),
+ICOMMAND(0, gettexgroup, "ii", (int *index, int *decal),
 {
-    VSlot &vs = lookupvslot(*index, false);
+    VSlot &vs = universallookup(*index, *decal);
     result(vs.slot->group ? vs.slot->group : "");
 });
 
