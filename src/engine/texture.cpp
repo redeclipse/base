@@ -1923,17 +1923,20 @@ static int findstidx(Slot &s, int tnum)
     return -1;
 }
 
-void editslot(int *idx, uint *code, int *rescale)
+void editslot(int *idx, uint *code, int *rescale, int *decal)
 {
     if(!editmode) return;
 
-    VSlot &vslot = lookupvslot(*idx, false);
+    VSlot *vslot = NULL;
 
-    if(&vslot == &dummyvslot) return;
+    if(*decal) vslot = &lookupdecalslot(*idx, false);
+    else vslot = &lookupvslot(*idx, false);
+
+    if(!vslot || vslot == &dummyvslot) return;
 
     Slot *olddefslot = defslot;
 
-    defslot = vslot.slot;
+    defslot = vslot->slot;
     slotedit = true;
 
     bool loaded = defslot->loaded;
@@ -1986,7 +1989,7 @@ void editslot(int *idx, uint *code, int *rescale)
 
     allchanged();
 }
-COMMAND(0, editslot, "iei");
+COMMAND(0, editslot, "ieii");
 
 void resettextures(int n)
 {
@@ -3172,6 +3175,12 @@ DecalSlot &lookupdecalslot(int index, bool load)
         s.linked = true;
     }
     return s;
+}
+
+VSlot &universallookup(int index, bool decal)
+{
+    if(decal) return lookupdecalslot(index, false);
+    else return lookupvslot(index, false);
 }
 
 void linkslotshaders()
