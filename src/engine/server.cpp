@@ -1831,6 +1831,7 @@ int main(int argc, char **argv)
     if(enet_initialize() < 0) fatal("Unable to initialise network module");
     atexit(enet_deinitialize);
 
+#if !defined(_DEBUG)
     signal(SIGINT, fatalsignal);
     signal(SIGILL, fatalsignal);
     signal(SIGABRT, fatalsignal);
@@ -1845,6 +1846,8 @@ int main(int argc, char **argv)
     signal(SIGALRM, fatalsignal);
     signal(SIGSTOP, fatalsignal);
 #endif
+#endif
+
     enet_time_set(0);
     bool shouldload = initgame();
     if(shouldload)
