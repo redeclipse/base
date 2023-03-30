@@ -2625,6 +2625,54 @@ static VSlot *clonevslot(const VSlot &src, const VSlot &delta)
     return dst;
 }
 
+static Slot *cloneslot(const Slot &src)
+{
+    Slot *dst = slots.add(new Slot(slots.length()));
+
+    dst->smooth      = src.smooth;
+    dst->shader      = src.shader;
+    dst->loaded      = false;
+    dst->texmask     = src.texmask;
+    dst->grass       = src.grass ? newstring(src.grass) : NULL;
+    dst->grasscolor  = src.grasscolor;
+    dst->grassblend  = src.grassblend;
+    dst->grassscale  = src.grassscale;
+    dst->grassheight = src.grassheight;
+    dst->grasstex    = src.grasstex;
+    dst->tags        = src.tags ? newstring(src.tags) : NULL;
+    dst->group       = src.group ? newstring(src.group) : NULL;
+
+    loopv(src.sts)
+    {
+        Slot::Tex &t = dst->sts.add();
+        t.type = src.sts[i].type;
+        copystring(t.name, src.sts[i].name);
+    }
+
+    loopv(src.params)
+    {
+        SlotShaderParam &p = dst->params.add();
+        p.name     = newstring(src.params[i].name);
+        p.loc      = src.params[i].loc;
+        p.flags    = src.params[i].flags;
+        p.palette  = src.params[i].palette;
+        p.palindex = src.params[i].palindex;
+        memcpy(p.val, src.params[i].val, sizeof(p.val));
+    }
+
+    VSlot &vs  = dst->emptyvslot();
+    VSlot &vs2 = src.variants[0];
+    propagatevslot(vs, vs2, (1<<VSLOT_NUM)-1);
+
+    return dst;
+}
+
+ICOMMAND(0, cloneslot, "i", (int *n),
+{
+    if(!slots.inrange(*n)) return;
+    intret(cloneslot(*slots[*n])->index);
+});
+
 VAR(IDF_PERSIST, autocompactvslots, 0, 256, 0x10000);
 
 VSlot *editvslot(const VSlot &src, const VSlot &delta)
