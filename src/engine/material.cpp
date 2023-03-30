@@ -118,6 +118,7 @@ int findmaterial(const char *name, bool tryint)
     loopi(sizeof(materials)/sizeof(materials[0])) if(!strcmp(materials[i].name, name)) { return materials[i].id; }
     return tryint && isnumeric(*name) ? atoi(name) : -1;
 }
+ICOMMAND(0, findmaterial, "s", (char *mat), intret(findmaterial(mat)));
 
 const char *findmaterialname(int type)
 {

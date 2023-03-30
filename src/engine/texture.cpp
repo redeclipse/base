@@ -1923,21 +1923,20 @@ static int findstidx(Slot &s, int tnum)
     return -1;
 }
 
-void editslot(int *idx, uint *code, int *rescale, int *decal)
+void editslot(int *idx, uint *code, int *rescale, int *type)
 {
     if(!editmode) return;
 
     VSlot *vslot = NULL;
 
-    if(*decal) vslot = &lookupdecalslot(*idx, false);
-    else vslot = &lookupvslot(*idx, false);
+    vslot = &universallookup(*idx, *type);
 
     if(!vslot || vslot == &dummyvslot) return;
 
     Slot *olddefslot = defslot;
 
     defslot = vslot->slot;
-    slotedit = true;
+    slotedit = *type != TEXSLOT_MATERIAL;
 
     bool loaded = defslot->loaded;
     int slotdiffuse = findstidx(*defslot, TEX_DIFFUSE);
@@ -3206,10 +3205,16 @@ DecalSlot &lookupdecalslot(int index, bool load)
     return s;
 }
 
-VSlot &universallookup(int index, bool decal)
+VSlot &universallookup(int index, int type)
 {
-    if(decal) return lookupdecalslot(index, false);
-    else return lookupvslot(index, false);
+    switch(type)
+    {
+        case TEXSLOT_NORMAL:   return lookupvslot(index, false);
+        case TEXSLOT_DECAL:    return lookupdecalslot(index, false);
+        case TEXSLOT_MATERIAL: return lookupmaterialslot(index, false);
+    }
+
+    return dummyvslot;
 }
 
 void linkslotshaders()

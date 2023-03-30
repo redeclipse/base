@@ -2669,7 +2669,7 @@ void vrotate(int *n)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vrotate, "i");
-ICOMMAND(0, getvrotate, "i", (int *tex), intret(lookupvslot(*tex, false).rotation));
+ICOMMAND(0, getvrotate, "ii", (int *tex, int *type), intret(universallookup(*tex, *type).rotation));
 
 void vangle(float *a)
 {
@@ -2680,7 +2680,7 @@ void vangle(float *a)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vangle, "f");
-ICOMMAND(0, getvangle, "i", (int *tex), floatret(lookupvslot(*tex, false).angle.x));
+ICOMMAND(0, getvangle, "ii", (int *tex, int *type), floatret(universallookup(*tex, *type).angle.x));
 
 void voffset(int *x, int *y)
 {
@@ -2691,9 +2691,9 @@ void voffset(int *x, int *y)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, voffset, "ii");
-ICOMMAND(0, getvoffset, "i", (int *tex),
+ICOMMAND(0, getvoffset, "ii", (int *tex, int *type),
 {
-    VSlot &vslot = lookupvslot(*tex, false);
+    VSlot &vslot = universallookup(*tex, *type);
     defformatstring(str, "%d %d", vslot.offset.x, vslot.offset.y);
     result(str);
 });
@@ -2707,9 +2707,9 @@ void vscroll(float *s, float *t)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vscroll, "ff");
-ICOMMAND(0, getvscroll, "i", (int *tex),
+ICOMMAND(0, getvscroll, "ii", (int *tex, int *type),
 {
-    VSlot &vslot = lookupvslot(*tex, false);
+    VSlot &vslot = universallookup(*tex, *type);
     defformatstring(str, "%s %s", floatstr(vslot.scroll.x*1000.0f), floatstr(vslot.scroll.y*1000.0f));
     result(str);
 });
@@ -2723,7 +2723,7 @@ void vscale(float *scale)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vscale, "f");
-ICOMMAND(0, getvscale, "i", (int *tex), floatret(lookupvslot(*tex, false).scale));
+ICOMMAND(0, getvscale, "ii", (int *tex, int *type), floatret(universallookup(*tex, *type).scale));
 
 void vlayer(int *n)
 {
@@ -2739,7 +2739,7 @@ void vlayer(int *n)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vlayer, "i");
-ICOMMAND(0, getvlayer, "i", (int *tex), intret(lookupvslot(*tex, false).layer));
+ICOMMAND(0, getvlayer, "ii", (int *tex, int *type), intret(universallookup(*tex, *type).layer));
 
 void vdetail(int *n)
 {
@@ -2755,7 +2755,7 @@ void vdetail(int *n)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vdetail, "i");
-ICOMMAND(0, getvdetail, "i", (int *tex), intret(lookupvslot(*tex, false).detail));
+ICOMMAND(0, getvdetail, "ii", (int *tex, int *type), intret(universallookup(*tex, *type).detail));
 
 void valpha(float *front, float *back)
 {
@@ -2767,9 +2767,9 @@ void valpha(float *front, float *back)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, valpha, "ff");
-ICOMMAND(0, getvalpha, "i", (int *tex),
+ICOMMAND(0, getvalpha, "ii", (int *tex, int *type),
 {
-    VSlot &vslot = lookupvslot(*tex, false);
+    VSlot &vslot = universallookup(*tex, *type);
     defformatstring(str, "%s %s", floatstr(vslot.alphafront), floatstr(vslot.alphaback));
     result(str);
 });
@@ -2783,9 +2783,9 @@ void vcolour(float *r, float *g, float *b)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vcolour, "fff");
-ICOMMAND(0, getvcolour, "i", (int *tex),
+ICOMMAND(0, getvcolour, "ii", (int *tex, int *type),
 {
-    VSlot &vslot = lookupvslot(*tex, false);
+    VSlot &vslot = universallookup(*tex, *type);
     defformatstring(str, "%s %s %s", floatstr(vslot.colorscale.r), floatstr(vslot.colorscale.g), floatstr(vslot.colorscale.b));
     result(str);
 });
@@ -2800,9 +2800,9 @@ void vpalette(int *p, int *x)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vpalette, "ii");
-ICOMMAND(0, getvpalette, "i", (int *tex),
+ICOMMAND(0, getvpalette, "ii", (int *tex, int *type),
 {
-    VSlot &vslot = lookupvslot(*tex, false);
+    VSlot &vslot = universallookup(*tex, *type);
     defformatstring(str, "%d %d", vslot.palette, vslot.palindex);
     result(str);
 });
@@ -2816,7 +2816,7 @@ void vshadow(float *shadow)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vshadow, "f");
-ICOMMAND(0, getvshadow, "f", (float *tex), floatret(lookupvslot(*tex, false).shadow));
+ICOMMAND(0, getvshadow, "fi", (float *tex, int *type), floatret(universallookup(*tex, *type).shadow));
 
 void vrefract(float *k, float *r, float *g, float *b)
 {
@@ -2832,9 +2832,9 @@ void vrefract(float *k, float *r, float *g, float *b)
 
 }
 COMMAND(0, vrefract, "ffff");
-ICOMMAND(0, getvrefract, "i", (int *tex),
+ICOMMAND(0, getvrefract, "ii", (int *tex, int *type),
 {
-    VSlot &vslot = lookupvslot(*tex, false);
+    VSlot &vslot = universallookup(*tex, *type);
     defformatstring(str, "%s %s %s %s", floatstr(vslot.refractscale), floatstr(vslot.refractcolor.r), floatstr(vslot.refractcolor.g), floatstr(vslot.refractcolor.b));
     result(str);
 });
@@ -2848,7 +2848,7 @@ void vcoastscale(float *value)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vcoastscale, "f");
-ICOMMAND(0, getvcoastscale, "i", (int *tex), floatret(lookupvslot(*tex, false).coastscale));
+ICOMMAND(0, getvcoastscale, "ii", (int *tex, int *type), floatret(universallookup(*tex, *type).coastscale));
 
 void vreset()
 {
@@ -2871,9 +2871,9 @@ void vshaderparam(const char *name, float *x, float *y, float *z, float *w, int 
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vshaderparam, "sffffii");
-ICOMMAND(0, getvshaderparam, "is", (int *tex, const char *name),
+ICOMMAND(0, getvshaderparam, "isi", (int *tex, const char *name, int *type),
 {
-    VSlot &vslot = lookupvslot(*tex, false);
+    VSlot &vslot = universallookup(*tex, *type);
     float pal = 0;
     float palidx = 0;
     float *params = findslotparam(vslot, name, pal, palidx);
@@ -2886,9 +2886,9 @@ ICOMMAND(0, getvshaderparam, "is", (int *tex, const char *name),
         result(str);
     }
 });
-ICOMMAND(0, getvshaderparamnames, "i", (int *tex),
+ICOMMAND(0, getvshaderparamnames, "ii", (int *tex, int *type),
 {
-    VSlot &vslot = lookupvslot(*tex, false);
+    VSlot &vslot = universallookup(*tex, *type);
     vector<char> str;
     loopv(vslot.params)
     {
@@ -2900,12 +2900,12 @@ ICOMMAND(0, getvshaderparamnames, "i", (int *tex),
     stringret(newstring(str.getbuf(), str.length()-1));
 });
 
-ICOMMAND(0, getvshadername, "ii", (int *tex, int *decal), result(universallookup(*tex, *decal).slot->shader->name));
-ICOMMAND(0, getvshadertype, "ii", (int *tex, int *decal), intret(universallookup(*tex, *decal).slot->shader->type));
+ICOMMAND(0, getvshadername, "ii", (int *tex, int *type), result(universallookup(*tex, *type).slot->shader->name));
+ICOMMAND(0, getvshadertype, "ii", (int *tex, int *type), intret(universallookup(*tex, *type).slot->shader->type));
 
-ICOMMAND(0, getvindex, "ii", (int *tex, int *decal), intret(universallookup(*tex, *decal).slot->index));
-ICOMMAND(0, getvsmooth, "ii", (int *tex, int *decal), intret(universallookup(*tex, *decal).slot->smooth));
-ICOMMAND(0, getvtexmask, "ii", (int *tex, int *decal), intret(universallookup(*tex, *decal).slot->texmask));
+ICOMMAND(0, getvindex, "ii", (int *tex, int *type), intret(universallookup(*tex, *type).slot->index));
+ICOMMAND(0, getvsmooth, "ii", (int *tex, int *type), intret(universallookup(*tex, *type).slot->smooth));
+ICOMMAND(0, getvtexmask, "ii", (int *tex, int *type), intret(universallookup(*tex, *type).slot->texmask));
 
 ICOMMAND(0, getvgrassname, "i", (int *tex),  result(lookupvslot(*tex, false).slot->grass));
 ICOMMAND(0, getvgrasscolour, "i", (int *tex),
@@ -2933,106 +2933,106 @@ ICOMMAND(0, getvgrasstexthrob, "i", (int *tex), intret(lookupvslot(*tex, false).
 ICOMMAND(0, getvgrasstextype, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->type));
 ICOMMAND(0, getvgrasstexframes, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->frames.length()));
 
-ICOMMAND(0, getvtexcount, "ii", (int *tex, int *decal), intret(universallookup(*tex, *decal).slot->sts.length()));
-ICOMMAND(0, getvtexname, "iii", (int *tex, int *sts, int *decal),
+ICOMMAND(0, getvtexcount, "ii", (int *tex, int *type), intret(universallookup(*tex, *type).slot->sts.length()));
+ICOMMAND(0, getvtexname, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = universallookup(*tex, *decal);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts)) return;
     result(vslot.slot->sts[*sts].name);
 });
-ICOMMAND(0, getvtextype, "iii", (int *tex, int *sts, int *decal),
+ICOMMAND(0, getvtextype, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = universallookup(*tex, *decal);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts)) return;
     intret(vslot.slot->sts[*sts].type);
 });
-ICOMMAND(0, getvtexcombined, "iii", (int *tex, int *sts, int *decal),
+ICOMMAND(0, getvtexcombined, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = universallookup(*tex, *decal);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts)) return;
     intret(vslot.slot->sts[*sts].combined);
 });
-ICOMMAND(0, getvteximgname, "iii", (int *tex, int *sts, int *decal),
+ICOMMAND(0, getvteximgname, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = universallookup(*tex, *decal);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
     result(vslot.slot->sts[*sts].t->name);
 });
-ICOMMAND(0, getvteximgtype, "iii", (int *tex, int *sts, int *decal),
+ICOMMAND(0, getvteximgtype, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = universallookup(*tex, *decal);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
     intret(vslot.slot->sts[*sts].t->type);
 });
-ICOMMAND(0, getvteximgwidth, "iii", (int *tex, int *sts, int *decal),
+ICOMMAND(0, getvteximgwidth, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = universallookup(*tex, *decal);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
     intret(vslot.slot->sts[*sts].t->w);
 });
-ICOMMAND(0, getvteximgheight, "iii", (int *tex, int *sts, int *decal),
+ICOMMAND(0, getvteximgheight, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = universallookup(*tex, *decal);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
     intret(vslot.slot->sts[*sts].t->h);
 });
-ICOMMAND(0, getvteximgxs, "iii", (int *tex, int *sts, int *decal),
+ICOMMAND(0, getvteximgxs, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = universallookup(*tex, *decal);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
     intret(vslot.slot->sts[*sts].t->xs);
 });
-ICOMMAND(0, getvteximgys, "iii", (int *tex, int *sts, int *decal),
+ICOMMAND(0, getvteximgys, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = universallookup(*tex, *decal);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
     intret(vslot.slot->sts[*sts].t->ys);
 });
-ICOMMAND(0, getvteximgbpp, "iii", (int *tex, int *sts, int *decal),
+ICOMMAND(0, getvteximgbpp, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = universallookup(*tex, *decal);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
     intret(vslot.slot->sts[*sts].t->bpp);
 });
-ICOMMAND(0, getvteximgclamp, "iii", (int *tex, int *sts, int *decal),
+ICOMMAND(0, getvteximgclamp, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = universallookup(*tex, *decal);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
     intret(vslot.slot->sts[*sts].t->clamp);
 });
-ICOMMAND(0, getvteximgframe, "iii", (int *tex, int *sts, int *decal),
+ICOMMAND(0, getvteximgframe, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = universallookup(*tex, *decal);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
     intret(vslot.slot->sts[*sts].t->frame);
 });
-ICOMMAND(0, getvteximgdelay, "iii", (int *tex, int *sts, int *decal),
+ICOMMAND(0, getvteximgdelay, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = universallookup(*tex, *decal);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
     intret(vslot.slot->sts[*sts].t->delay);
 });
-ICOMMAND(0, getvteximglast, "iii", (int *tex, int *sts, int *decal),
+ICOMMAND(0, getvteximglast, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = universallookup(*tex, *decal);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
     intret(vslot.slot->sts[*sts].t->last);
 });
-ICOMMAND(0, getvteximgmipmap, "iii", (int *tex, int *sts, int *decal),
+ICOMMAND(0, getvteximgmipmap, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = universallookup(*tex, *decal);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
     intret(vslot.slot->sts[*sts].t->mipmap ? 1 : 0);
 });
-ICOMMAND(0, getvteximgthrob, "iii", (int *tex, int *sts, int *decal),
+ICOMMAND(0, getvteximgthrob, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = universallookup(*tex, *decal);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
     intret(vslot.slot->sts[*sts].t->throb ? 1 : 0);
 });
-ICOMMAND(0, getvteximgframes, "iii", (int *tex, int *sts, int *decal),
+ICOMMAND(0, getvteximgframes, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = universallookup(*tex, *decal);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
     intret(vslot.slot->sts[*sts].t->frames.length());
 });

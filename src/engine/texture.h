@@ -932,12 +932,21 @@ extern bool loadimage(const char *name, ImageData &image);
 extern bool loaddds(const char *filename, ImageData &image, int force = 0);
 extern bool loadimage(const char *filename, ImageData &image);
 
+enum
+{
+    TEXSLOT_NORMAL = 0,
+    TEXSLOT_DECAL,
+    TEXSLOT_MATERIAL,
+
+    TEXSLOT_TYPES
+};
+
 extern MatSlot materialslots[(MATF_VOLUME|MATF_INDEX)+1];
 extern MatSlot &lookupmaterialslot(int slot, bool load = true);
 extern Slot &lookupslot(int slot, bool load = true);
 extern VSlot &lookupvslot(int slot, bool load = true);
 extern DecalSlot &lookupdecalslot(int slot, bool load = true);
-extern VSlot &universallookup(int slot, bool decal);
+extern VSlot &universallookup(int slot, int type);
 extern VSlot *findvslot(Slot &slot, const VSlot &src, const VSlot &delta);
 extern VSlot *editvslot(const VSlot &src, const VSlot &delta);
 extern void mergevslot(VSlot &dst, const VSlot &src, const VSlot &delta);
