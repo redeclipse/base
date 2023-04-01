@@ -37,6 +37,8 @@ FVAR(IDF_PERSIST, particlehazerefract3, FVAR_NONZERO, 8, 10);
 FVAR(IDF_PERSIST, particlehazescrollx, FVAR_MIN, 0, FVAR_MAX);
 FVAR(IDF_PERSIST, particlehazescrolly, FVAR_MIN, -0.5f, FVAR_MAX);
 
+VAR(IDF_READONLY, numenvparts, 1, 0, 0);
+
 // Check canemitparticles() to limit the rate that paricles can be emitted for models/sparklies
 // Automatically stops particles being emitted when paused or in reflective drawing
 VAR(IDF_PERSIST, emitmillis, 1, 17, VAR_MAX);
@@ -166,6 +168,7 @@ struct partrenderer
     // blend = 0 => remove it
     void calc(particle *p, int &blend, int &ts, float &size, bool step = true)
     {
+        if(p->enviro) numenvparts++;
         vec o = p->o;
         if(p->fade <= 5)
         {
@@ -2015,6 +2018,8 @@ void updateparticles()
         lastemitframe = lastmillis - (lastmillis%emitmillis);
     }
     else canemit = false;
+
+    numenvparts = 0;
 
     loopi(sizeof(parts)/sizeof(parts[0])) parts[i]->update();
 
