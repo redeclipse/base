@@ -1023,7 +1023,7 @@ int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, flo
         if(!(flags&SND_UNMAPPED) && !(flags&SND_MAP)) n = getsoundslot(n);
 
         if(!soundset.inrange(n) && n > 0) conoutf("\frUnregistered sound: %d", n);
-        else slot = &soundset[n];
+        else if(soundset.inrange(n)) slot = &soundset[n];
     }
 
     if(slot)

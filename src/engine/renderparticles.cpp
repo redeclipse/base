@@ -169,6 +169,7 @@ struct partrenderer
     void calc(particle *p, int &blend, int &ts, float &size, bool step = true)
     {
         if(p->enviro) numenvparts++;
+        p->prev = p->o;
         vec o = p->o;
         if(p->fade <= 5)
         {
@@ -185,7 +186,7 @@ struct partrenderer
 
             float secs = curtime/1000.f;
             int part = type&0xFF;
-            vec v = part == PT_PART ? vec(p->d).mul(secs) : vec(0, 0, 0);
+            vec v = (part == PT_PART || part == PT_TRAIL) ? vec(p->d).mul(secs) : vec(0, 0, 0);
             if(weight != 0)
             {
                 if(ts > p->fade) ts = p->fade;
@@ -206,13 +207,16 @@ struct partrenderer
             {
                 if(p->collide > 0)
                 {
-                    vec surface;
-                    float floorz = rayfloor(vec(p->o.x, p->o.y, p->val), surface, RAY_CLIPMAT, COLLIDERADIUS);
-                    float collidez = floorz<0 ? o.z-COLLIDERADIUS : p->val - floorz;
-                    if(p->o.z >= collidez+COLLIDEERROR) p->val = collidez+COLLIDEERROR;
-                    else
+                    if(!p->precollide)
                     {
-                        addstain(p->collide-1, vec(p->o.x, p->o.y, collidez), vec(o).sub(p->o).normalize(), 2*p->size, p->color, type&PT_RND4 ? (p->flags>>5)&3 : 0);
+                        vec surface;
+                        float floorz = rayfloor(vec(p->o.x, p->o.y, p->val), surface, RAY_CLIPMAT, COLLIDERADIUS);
+                        float collidez = floorz<0 ? o.z-COLLIDERADIUS : p->val - floorz;
+                        if(p->o.z >= collidez+COLLIDEERROR) p->val = collidez+COLLIDEERROR;
+                    }
+                    if(p->o.z < p->val)
+                    {
+                        addstain(p->collide-1, vec(p->o.x, p->o.y, p->val), vec(o).sub(p->o).normalize(), 2*p->size, p->color, type&PT_RND4 ? (p->flags>>5)&3 : 0);
                         blend = 0;
                     }
                 }
@@ -628,7 +632,7 @@ inline void modifyblend<PT_TAPE>(const vec &o, int &blend)
 }
 
 template<int T>
-static inline void genpos(const vec &o, const vec &d, float size, float gravity, int ts, partvert *vs)
+static inline void genpos(const vec &o, const vec &d, float size, float gravity, int ts, partvert *vs, particle *p)
 {
     vec udir = vec(camup).sub(camright).mul(size);
     vec vdir = vec(camup).add(camright).mul(size);
@@ -639,7 +643,7 @@ static inline void genpos(const vec &o, const vec &d, float size, float gravity,
 }
 
 template<>
-inline void genpos<PT_TAPE>(const vec &o, const vec &d, float size, float gravity, int ts, partvert *vs)
+inline void genpos<PT_TAPE>(const vec &o, const vec &d, float size, float gravity, int ts, partvert *vs, particle *p)
 {
     vec dir1 = vec(d).sub(o), dir2 = vec(d).sub(camera1->o), c;
     c.cross(dir2, dir1).normalize().mul(size);
@@ -650,18 +654,17 @@ inline void genpos<PT_TAPE>(const vec &o, const vec &d, float size, float gravit
 }
 
 template<>
-inline void genpos<PT_TRAIL>(const vec &o, const vec &d, float size, float gravity, int ts, partvert *vs)
+inline void genpos<PT_TRAIL>(const vec &o, const vec &d, float size, float gravity, int ts, partvert *vs, particle *p)
 {
-    vec e = d;
-    if(gravity) e.z -= float(ts)/gravity;
-    e.div(-75.0f).add(o);
-    genpos<PT_TAPE>(o, e, size, gravity, ts, vs);
+    vec dir = vec(p->o).sub(p->prev).normalize();
+    vec e = vec(o).sub(vec(dir).mul(8));
+    genpos<PT_TAPE>(o, e, size, gravity, ts, vs, p);
 }
 
 template<int T>
-static inline void genrotpos(const vec &o, const vec &d, float size, float gravity, int ts, partvert *vs, int rot)
+static inline void genrotpos(const vec &o, const vec &d, float size, float gravity, int ts, partvert *vs, int rot, particle *p)
 {
-    genpos<T>(o, d, size, gravity, ts, vs);
+    genpos<T>(o, d, size, gravity, ts, vs, p);
 }
 
 #define ROTCOEFFS(n) { \
@@ -679,7 +682,7 @@ static const vec2 rotcoeffs[32][4] =
 };
 
 template<>
-inline void genrotpos<PT_PART>(const vec &o, const vec &d, float size, float gravity, int ts, partvert *vs, int rot)
+inline void genrotpos<PT_PART>(const vec &o, const vec &d, float size, float gravity, int ts, partvert *vs, int rot, particle *p)
 {
     const vec2 *coeffs = rotcoeffs[rot];
     vs[0].pos = vec(o).madd(camright, coeffs[0].x*size).madd(camup, coeffs[0].y*size);
@@ -784,6 +787,7 @@ struct varenderer : partrenderer
         p->o = o;
         p->d = d;
         p->m = vec(0, 0, 0);
+        p->prev = o;
         p->fade = fade;
         p->millis = lastmillis + emitoffset;
         p->color = bvec::hexcolor(color);
@@ -887,8 +891,8 @@ struct varenderer : partrenderer
         else if(type&PT_MOD) SETMODCOLOR;
         else loopi(4) vs[i].color.a = uchar(p->blend*blend);
 
-        if(type&PT_ROT) genrotpos<T>(p->o, p->d, size, ts, p->gravity, vs, (p->flags>>2)&0x1F);
-        else genpos<T>(p->o, p->d, size, p->gravity, ts, vs);
+        if(type&PT_ROT) genrotpos<T>(p->o, p->d, size, ts, p->gravity, vs, (p->flags>>2)&0x1F, p);
+        else genpos<T>(p->o, p->d, size, p->gravity, ts, vs, p);
     }
 
     void genverts()
@@ -1247,6 +1251,7 @@ static partrenderer *parts[] =
     new quadrenderer("<grey>particles/hint", PT_HAZE|PT_PART),
     new quadrenderer("<grey>particles/hint", PT_HAZE|PT_PART|PT_WIND),
     new taperenderer("<grey>particles/sflare", PT_HAZE|PT_TAPE),
+    new trailrenderer("<grey>particles/hint", PT_TRAIL|PT_LERP|PT_WIND),
     &texts, &textontop,
     &explosions, &shockwaves, &shockballs, &glimmerballs, &lightnings, &lightzaps,
     &flares // must be done last!
@@ -1732,6 +1737,88 @@ static inline vec offsetvec(vec o, int dir, int dist)
     return v;
 }
 
+FVAR(IDF_PERSIST, weatherdropnumscale, 0, 1.0f, 1.0f);
+
+FVAR(IDF_WORLD, weatherdrops,    0, 0, 10.0f);
+FVAR(IDF_WORLD, weatherdropsalt, 0, 0, 10.0f);
+
+VAR(IDF_WORLD, weatherdroppart,    PART_FIREBALL_LERP, PART_RAIN, PART_RAIN);
+VAR(IDF_WORLD, weatherdroppartalt, PART_FIREBALL_LERP, PART_RAIN, PART_RAIN);
+
+VAR(IDF_WORLD, weatherdropfade,    1, 750, 10000);
+VAR(IDF_WORLD, weatherdropfadealt, 1, 750, 10000);
+
+VAR(IDF_WORLD, weatherdropgravity,    1, 300, 2000);
+VAR(IDF_WORLD, weatherdropgravityalt, 1, 300, 2000);
+
+CVAR(IDF_WORLD, weatherdropcolor,    0xFFFFFF);
+CVAR(IDF_WORLD, weatherdropcoloralt, 0xFFFFFF);
+
+FVAR(IDF_WORLD, weatherdropsize,    0.01f, 0.15f, 100.0f);
+FVAR(IDF_WORLD, weatherdropsizealt, 0.01f, 0.15f, 100.0f);
+
+FVAR(IDF_WORLD, weatherdropvariance,    0.0f, 0.05f, 1.0f);
+FVAR(IDF_WORLD, weatherdropvariancealt, 0.0f, 0.05f, 1.0f);
+
+void part_weather()
+{
+    if(!canaddparticles()) return;
+
+    // Spawn drops within a 200^3 cube around the camera
+    constexpr int dist = 200;
+
+    enviroparts = true;
+
+    // Calculate the number of drops to spawn
+    int drops = round(curtime * (checkmapvariant(MPV_ALT) ? weatherdropsalt : weatherdrops) *
+        weatherdropnumscale);
+
+    int   part     = checkmapvariant(MPV_ALT) ? weatherdroppartalt     : weatherdroppart;
+    int   fade     = checkmapvariant(MPV_ALT) ? weatherdropfadealt     : weatherdropfade;
+    float variance = checkmapvariant(MPV_ALT) ? weatherdropvariancealt : weatherdropvariance;
+    int   gravity  = checkmapvariant(MPV_ALT) ? weatherdropgravityalt  : weatherdropgravity;
+    float size     = checkmapvariant(MPV_ALT) ? weatherdropsizealt     : weatherdropsize;
+    bvec  color    = checkmapvariant(MPV_ALT) ? weatherdropcoloralt    : weatherdropcolor;
+
+    loopi(drops)
+    {
+        // Pick a random position within the cube
+        vec o = camera1->o;
+        o.x += rnd(dist * 2) - dist;
+        o.y += rnd(dist * 2) - dist;
+        o.z += rnd(dist * 2) - dist;
+
+        vec dir = vec(0, 0, -1);
+
+        // Add random jitter to the drop direction
+        dir.x = rndscale(variance * 2) - variance;
+        dir.y = rndscale(variance * 2) - variance;
+        dir.normalize();
+
+        // Follow the inverse direction to find the sky position
+        vec skypos = o;
+        skypos.sub(vec(dir).mul(worldsize - o.z));
+
+        // Raycast downwards from the sky to find obstructions
+        vec surface;
+        float floorz = raycube(skypos, dir, worldsize, RAY_CLIPMAT);
+        float collidez = max(worldsize - floorz, camera1->o.z - (dist*0.5f));
+
+        // If the hit is above the picked position, skip this drop
+        if(collidez >= o.z)
+            continue;
+
+        dir.mul(gravity);
+
+        particle *newpart = newparticle(o, dir, fade, part, color.tohexcolor(), size, 1.0, 0, 1,
+            collidez);
+
+         if(newpart) newpart->precollide = true;
+    }
+
+    enviroparts = false;
+}
+
 /* Experiments in shapes...
  * dir: (where dir%3 is similar to offsetvec with 0=up)
  * 0..2 circle
@@ -1935,10 +2022,11 @@ void makeparticle(const vec &o, attrvector &attr)
         case 12: // snow
         case 13: // sparks
         case 16: case 17: case 18: // haze
+        case 19: // rain
         {
-            const int typemap[] =   { PART_FLARE,   -1,     -1,     PART_LIGHTNING, PART_FIREBALL,  PART_SMOKE, PART_ELECTRIC,  PART_PLASMA,    PART_SNOW,  PART_SPARK,     -1,     -1,     PART_HAZE,  PART_HAZE_FLAME,    PART_HAZE_TAPE };
-            const bool tapemap[] =  { true,         false,  false,  true,           false,          false,      false,          false,          false,      false,          false,  false,  false,      false,              true };
-            const float sizemap[] = { 0.28f,        0.0f,   0.0f,   0.25f,          4.f,            2.f,        0.6f,           4.f,            0.5f,       0.2f,           0.0f,   0.0f,   8.0f,       8.0f,               1.0f };
+            const int typemap[] =   { PART_FLARE,   -1,     -1,     PART_LIGHTNING, PART_FIREBALL,  PART_SMOKE, PART_ELECTRIC,  PART_PLASMA,    PART_SNOW,  PART_SPARK,     -1,     -1,     PART_HAZE,  PART_HAZE_FLAME,    PART_HAZE_TAPE, PART_RAIN };
+            const bool tapemap[] =  { true,         false,  false,  true,           false,          false,      false,          false,          false,      false,          false,  false,  false,      false,              true,           false };
+            const float sizemap[] = { 0.28f,        0.0f,   0.0f,   0.25f,          4.f,            2.f,        0.6f,           4.f,            0.5f,       0.2f,           0.0f,   0.0f,   8.0f,       8.0f,               1.0f,           1.0f };
             int mapped = attr[0] - 4;
             bool istape = tapemap[mapped];
             int type = typemap[mapped], fade = attr[4] > 0 ? attr[4] : 250, gravity = !istape ? attr[7] : 0,
@@ -2026,6 +2114,8 @@ void updateparticles()
     entities::drawparticles();
     flares.drawflares(); // do after drawparticles so that we can make flares for them too
 
+    part_weather();
+
     if(!editmode || showparticles)
     {
         int emitted = 0, replayed = 0;
@@ -2035,7 +2125,7 @@ void updateparticles()
             particleemitter &pe = emitters[i];
             extentity &e = *pe.ent;
             if(e.dynamic() || !entities::checkparticle(e) || e.o.dist(camera1->o) > maxparticledistance) { pe.lastemit = lastmillis; continue; }
-            if(cullparticles && pe.maxfade >= 0)
+            if(cullparticles && pe.maxfade >= 0 && e.attrs[0] != 19)
             {
                 if(isfoggedsphere(pe.radius, pe.center)) { pe.lastcull = lastmillis; continue; }
                 if(pvsoccluded(pe.cullmin, pe.cullmax)) { pe.lastcull = lastmillis; continue; }

@@ -277,6 +277,7 @@ enum
     PART_FLARE, PART_MUZZLE_FLARE, PART_LIGHTNING_FLARE, PART_LIGHTZAP_FLARE,
     PART_MUZZLE_FLASH, PART_SNOW,
     PART_HAZE, PART_HAZE_FLAME, PART_HAZE_TAPE,
+    PART_RAIN,
     PART_TEXT, PART_TEXT_ONTOP,
     PART_EXPLOSION, PART_SHOCKWAVE, PART_SHOCKBALL, PART_GLIMMERY,
     PART_LIGHTNING, PART_LIGHTZAP,
@@ -286,13 +287,13 @@ enum
 
 struct particle
 {
-    vec o, d, m;
+    vec o, d, m, prev;
     int collide, fade, gravity, millis;
     bvec color;
     uchar flags;
     windprobe wind;
     float size, sizechange, blend;
-    bool enviro;
+    bool enviro, precollide;
     union
     {
         const char *text;
