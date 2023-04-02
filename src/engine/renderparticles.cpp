@@ -1754,6 +1754,9 @@ VAR(IDF_WORLD, weatherdropgravityalt, 1, 300, 2000);
 CVAR(IDF_WORLD, weatherdropcolor,    0xFFFFFF);
 CVAR(IDF_WORLD, weatherdropcoloralt, 0xFFFFFF);
 
+FVAR(IDF_WORLD, weatherdropblend,    0.0f, 0.4f, 1.0f);
+FVAR(IDF_WORLD, weatherdropblendalt, 0.0f, 0.4f, 1.0f);
+
 FVAR(IDF_WORLD, weatherdropsize,    0.01f, 0.15f, 100.0f);
 FVAR(IDF_WORLD, weatherdropsizealt, 0.01f, 0.15f, 100.0f);
 
@@ -1778,6 +1781,7 @@ void part_weather()
     float variance = checkmapvariant(MPV_ALT) ? weatherdropvariancealt : weatherdropvariance;
     int   gravity  = checkmapvariant(MPV_ALT) ? weatherdropgravityalt  : weatherdropgravity;
     float size     = checkmapvariant(MPV_ALT) ? weatherdropsizealt     : weatherdropsize;
+    float blend    = checkmapvariant(MPV_ALT) ? weatherdropblendalt    : weatherdropblend;
     bvec  color    = checkmapvariant(MPV_ALT) ? weatherdropcoloralt    : weatherdropcolor;
 
     loopi(drops)
@@ -1810,7 +1814,7 @@ void part_weather()
 
         dir.mul(gravity);
 
-        particle *newpart = newparticle(o, dir, fade, part, color.tohexcolor(), size, 1.0, 0, 1,
+        particle *newpart = newparticle(o, dir, fade, part, color.tohexcolor(), size, blend, 0, 1,
             collidez);
 
          if(newpart) newpart->precollide = true;
