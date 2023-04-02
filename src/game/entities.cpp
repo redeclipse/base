@@ -912,9 +912,9 @@ namespace entities
                             }
                             if(hasval) switch((val%32)%3)
                             {
-                                case 0: addentinfo("x-axis"); break;
-                                case 1: addentinfo("y-axis"); break;
-                                case 2: addentinfo("z-axis"); break;
+                                case 0: addentinfo("z-axis"); break;
+                                case 1: addentinfo("x-axis"); break;
+                                case 2: addentinfo("y-axis"); break;
                                 default: break;
                             }
                             if(val%64 >= 32) addentinfo("inverted");
@@ -926,9 +926,9 @@ namespace entities
                     {
                         switch(attr[1]%3)
                         {
-                            case 0: addentinfo("x-axis"); break;
-                            case 1: addentinfo("y-axis"); break;
-                            case 2: addentinfo("z-axis"); break;
+                            case 0: addentinfo("z-axis"); break;
+                            case 1: addentinfo("x-axis"); break;
+                            case 2: addentinfo("y-axis"); break;
                         }
                         if(attr[1]%6 >= 3) addentinfo("inverted");
                         break;
