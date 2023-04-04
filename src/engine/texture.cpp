@@ -1940,7 +1940,7 @@ void editslot(int *idx, uint *code, int *rescale, int *type)
 
     bool loaded = defslot->loaded;
     int slotdiffuse = findstidx(*defslot, TEX_DIFFUSE);
-    int oldw, oldh, neww, newh, xscale, yscale;
+    int oldw = 0, oldh = 0, neww = 0, newh = 0, xscale = 1, yscale = 1;
 
     if(slotdiffuse >= 0 && *rescale)
     {
