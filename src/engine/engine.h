@@ -967,7 +967,7 @@ extern const bvec &getfogcolour(), &getambient(), &getskylight();
 extern int getskytexture(), getskyshadow();
 extern float getambientscale(), getskylightscale();
 
-extern void drawenvlayer(Texture *tex, float height = 0.f, const bvec &colour = bvec(255, 255 ,255), float blend = 1.f, float subdiv = 4.f, float fade = 0.f, float scale = 1.f, float offsetx = 0.f, float offsety = 0.f, float shadowblend = 0.5f, float zrot = 0.f, bool skyplane = false, bool shadowpass = false, bool texsmp = false);
+extern void drawenvlayer(Texture *tex, float height = 0.f, const bvec &colour = bvec(255, 255 ,255), float blend = 1.f, float subdiv = 4.f, float fade = 0.f, float scale = 1.f, float offsetx = 0.f, float offsety = 0.f, float shadowblend = 0.5f, float zrot = 0.f, bool skyplane = false, bool shadowpass = false);
 extern void drawenvlayers(bool skyplane, bool shadowpass = false);
 extern void drawskybox(bool clear = false);
 extern bool hasskybox();

@@ -82,7 +82,6 @@ Texture *loadskyoverlay(const char *basename)
     VAR(IDF_WORLD, cloudfarplane##name, 0, 1, 1); \
     VAR(IDF_WORLD, cloudshadow##name, 0, 0, 1); \
     FVAR(IDF_WORLD, cloudshadowblend##name, 0, 0.66f, 1); \
-    VAR(IDF_WORLD, cloudtexsmp##name, 0, 0, 1); \
     SVARF(IDF_WORLD, envlayer##name, "", { if(envlayer##name[0] && checkmapvariant(type)) envoverlay = loadskyoverlay(envlayer##name); }); \
     CVAR(IDF_WORLD, envlayercolour##name, 0xFFFFFF); \
     FVAR(IDF_WORLD, envlayerblend##name, 0, 1.0f, 1); \
@@ -99,7 +98,6 @@ Texture *loadskyoverlay(const char *basename)
     VAR(IDF_WORLD, envfarplane##name, 0, 1, 1); \
     VAR(IDF_WORLD, envshadow##name, 0, 0, 1); \
     FVAR(IDF_WORLD, envshadowblend##name, 0, 0.66f, 1); \
-    VAR(IDF_WORLD, envtexsmp##name, 0, 0, 1); \
     VAR(IDF_WORLD, atmo##name, 0, 0, 2); \
     VAR(IDF_WORLD, atmostyle##name, 0, 0, 1); \
     FVAR(IDF_WORLD, atmoplanetsize##name, FVAR_NONZERO, 1, FVAR_MAX); \
@@ -182,7 +180,6 @@ GETMPV(cloudsubdiv, int);
 GETMPV(cloudfarplane, int);
 GETMPV(cloudshadow, int);
 GETMPV(cloudshadowblend, float);
-GETMPV(cloudtexsmp, int);
 GETMPV(envlayer, const char *);
 GETMPV(envlayercolour, const bvec &);
 GETMPV(envlayerblend, float);
@@ -199,7 +196,6 @@ GETMPV(envsubdiv, int);
 GETMPV(envfarplane, int);
 GETMPV(envshadow, int);
 GETMPV(envshadowblend, float);
-GETMPV(envtexsmp, int);
 GETMPV(atmo, int);
 GETMPV(atmostyle, int);
 GETMPV(atmoplanetsize, float);
@@ -664,10 +660,9 @@ bool hasenvshadow()
     return getcloudshadow() || getenvshadow();
 }
 
-void drawenvlayer(Texture *tex, float height, const bvec &colour, float blend, float subdiv, float fade, float scale, float offsetx, float offsety, float shadowblend, float zrot, bool skyplane, bool shadowpass, bool texsmp)
+void drawenvlayer(Texture *tex, float height, const bvec &colour, float blend, float subdiv, float fade, float scale, float offsetx, float offsety, float shadowblend, float zrot, bool skyplane, bool shadowpass)
 {
-    if(shadowpass) SETSHADER(cloudshadow);
-    else if(texsmp) SETSHADER(skyboxsmp);
+    if(shadowpass) SETSHADER(skyboxshadow);
     else SETSHADER(skybox);
     glDisable(GL_CULL_FACE);
     if(shadowpass)
@@ -709,7 +704,7 @@ void drawenvlayer(Texture *tex, float height, const bvec &colour, float blend, f
     if(cur##name##layer[0] && get##name##height() && (!shadowpass || get##name##shadow()) && get##name##farplane() == (skyplane ? 1 : 0)) \
         drawenvlayer(name##overlay, get##name##height(), get##name##layercolour(), get##name##layerblend(), get##name##subdiv(), get##name##fade(), get##name##scale(), \
             get##name##offsetx() + get##name##scrollx() * lastmillis/1000.0f, get##name##offsety() + get##name##scrolly() * lastmillis/1000.0f, \
-            get##name##shadowblend(), (getspin##name##layer()*lastmillis/1000.0f+getyaw##name##layer())*-RAD, skyplane, shadowpass, get##name##texsmp() != 0);
+            get##name##shadowblend(), (getspin##name##layer()*lastmillis/1000.0f+getyaw##name##layer())*-RAD, skyplane, shadowpass);
 
 void drawenvlayers(bool skyplane, bool shadowpass)
 {
