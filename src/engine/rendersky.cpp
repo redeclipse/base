@@ -101,6 +101,7 @@ Texture *loadskyoverlay(const char *basename)
     FVAR(IDF_WORLD, envshadowblend##name, 0, 0.66f, 1); \
     VAR(IDF_WORLD, envtexsmp##name, 0, 0, 1); \
     VAR(IDF_WORLD, atmo##name, 0, 0, 2); \
+    VAR(IDF_WORLD, atmostyle##name, 0, 0, 1); \
     FVAR(IDF_WORLD, atmoplanetsize##name, FVAR_NONZERO, 1, FVAR_MAX); \
     FVAR(IDF_WORLD, atmoheight##name, FVAR_NONZERO, 1, FVAR_MAX); \
     FVAR(IDF_WORLD, atmobright##name, 0, 1, 16); \
@@ -200,6 +201,7 @@ GETMPV(envshadow, int);
 GETMPV(envshadowblend, float);
 GETMPV(envtexsmp, int);
 GETMPV(atmo, int);
+GETMPV(atmostyle, int);
 GETMPV(atmoplanetsize, float);
 GETMPV(atmoheight, float);
 GETMPV(atmobright, float);
@@ -564,13 +566,15 @@ FVAR(IDF_PERSIST, atmodither, 0, 0.008f, 1.0f);
 
 static void drawatmosphere()
 {
-    if(getatmoblend() < 1)
+    bool diskonly = getatmostyle() == 1, blended = diskonly || getatmoblend() < 1;
+    if(blended)
     {
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     }
     vec sundir = getpielightdir();
-    SETSHADER(atmosphere);
+    if(diskonly) SETSHADER(atmospheredisk);
+    else SETSHADER(atmosphere);
 
     matrix4 sunmatrix = invcammatrix;
     sunmatrix.settranslation(0, 0, 0);
@@ -641,7 +645,7 @@ static void drawatmosphere()
     gle::attribf(1, -1, 1);
     xtraverts += gle::end();
 
-    if(getatmoblend() < 1) glDisable(GL_BLEND);
+    if(blended) glDisable(GL_BLEND);
 }
 
 VAR(0, showsky, 0, 1, 1);
@@ -747,7 +751,7 @@ void drawskybox(bool clear)
         glClearColor(color.x, color.y, color.z, 0);
         glClear(GL_COLOR_BUFFER_BIT);
     }
-    else if(blendsky && (!getatmo() || getatmoblend() < 1))
+    else if(blendsky && (!getatmo() || getatmostyle() == 1 || getatmoblend() < 1))
     {
         SETSHADER(skyfog);
 
