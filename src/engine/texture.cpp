@@ -1211,6 +1211,7 @@ static void updatetexture(Texture *t)
     t->id = t->frames.inrange(frame) ? t->frames[frame] : 0;
 }
 
+
 void updatetextures()
 {
     loopv(animtextures) updatetexture(animtextures[i]);
@@ -1684,11 +1685,11 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
 
     if(!file) { if(msg) conoutf("\frCould not load texture: %s", tname); return false; }
 
-    bool raw = !usedds || !compress, dds = false;
+    bool raw = !usedds || !compress, dds = false, proc = false;
     for(const char *pcmds = cmds; pcmds;)
     {
         #define PARSETEXCOMMANDS(cmds) \
-            const char *cmd = NULL, *end = NULL, *arg[6] = { NULL, NULL, NULL, NULL }; \
+            const char *cmd = NULL, *end = NULL, *arg[6] = { NULL, NULL, NULL, NULL, NULL, NULL }; \
             cmd = &cmds[1]; \
             end = strchr(cmd, '>'); \
             if(!end) break; \
@@ -1706,6 +1707,7 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
         else if(matchstring(cmd, len, "thumbnail")) raw = true;
         else if(matchstring(cmd, len, "stub")) return canloadsurface(file);
     }
+
     if(msg) progress(loadprogress, "Loading texture: %s", file);
 
     int flen = strlen(file);
