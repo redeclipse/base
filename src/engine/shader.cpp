@@ -1082,9 +1082,14 @@ Shader *useshaderbyname(const char *name)
 }
 ICOMMAND(0, forceshader, "s", (const char *name), useshaderbyname(name));
 
-void shader(int *type, char *name, char *vs, char *ps)
+void shader(int *type, char *name, char *vs, char *ps, bool proc = false)
 {
-    if(lookupshaderbyname(name)) return;
+    Shader *o = lookupshaderbyname(name);
+    if(proc && o && o->proc)
+    { // procedural shaders are only temporary and can be overridden
+        o->cleanup(true);
+        shaders.remove(name);
+    }
 
     if(!initshaders) progress(loadprogress, "Loading shader: %s", name);
     vector<char> vsbuf, psbuf, vsbak, psbak;
@@ -1102,11 +1107,13 @@ void shader(int *type, char *name, char *vs, char *ps)
     Shader *s = newshader(*type, name, vs, ps);
     if(s)
     {
+        s->proc = proc;
         if(strstr(ps, "//:variant") || strstr(vs, "//:variant")) gengenericvariant(*s, name, vs, ps);
     }
     slotparams.shrink(0);
 }
 COMMAND(0, shader, "isss");
+ICOMMAND(0, procshader, "isss", (int *type, char *name, char *vs, char *ps), shader(type, name, vs, ps, true));
 
 void variantshader(int *type, char *name, int *row, char *vs, char *ps, int *maxvariants)
 {

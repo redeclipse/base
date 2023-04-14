@@ -1587,9 +1587,9 @@ namespace client
                     char *s = newstring(slen+1);
                     formatstring(s, slen, "%s %s", cmd, arg);
                     char *ret = executestr(s);
-                    delete[] s;
+                    DELETEA(s);
                     if(ret) conoutft(CON_EVENT, "\fg%s: \fc%s", cmd, ret);
-                    delete[] ret;
+                    DELETEA(ret);
 #endif
                     return;
                 }

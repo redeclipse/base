@@ -3631,8 +3631,8 @@ namespace server
                     else nformatstring(s, slen+1, "%s %s", id->name, arg);
                     char *ret = executestr(s);
                     conoutft(CON_DEBUG, "\fy\fs\fc%s\fS returned \fs\fc%s\fS", id->name, ret && *ret ? ret : "failed");
-                    delete[] s;
-                    delete[] ret;
+                    DELETEA(s);
+                    DELETEA(ret);
                     return true;
                 }
                 case ID_VAR:
@@ -3780,8 +3780,8 @@ namespace server
                     else nformatstring(s, slen+1, "%s %s", id->name, arg);
                     char *ret = executestr(s);
                     srvoutf(3, "\fy%s executed \fs\fc%s\fS (returned: \fs\fc%s\fS)", colourname(ci), name, ret && * ret ? ret : "failed");
-                    delete[] s;
-                    delete[] ret;
+                    DELETEA(s);
+                    DELETEA(ret);
                     return;
                 }
                 case ID_VAR:
