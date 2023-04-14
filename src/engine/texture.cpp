@@ -1683,14 +1683,18 @@ void cleanproctex()
     if(proctexture) { glDeleteTextures(1, &proctexture); proctexture = 0; }
 }
 
-void proctexparams(vector<char *> &paramlist, const char *params, int limit = 0)
+void proctexparams(vector<char *> &paramlist, const char *params, int limit = 0, bool allowempty = false)
 {
     if(!params || !*params || (limit && paramlist.length() >= limit)) return;
     vector<char *> list;
     explodelist(params, list);
     loopv(list)
     {
-        if(!list[i] || !*list[i]) continue;
+        if(!list[i] || !*list[i])
+        {
+            if(allowempty) paramlist.add(newstring(""));
+            continue;
+        }
         char *val = NULL;
         switch(*list[i])
         {
@@ -1716,7 +1720,7 @@ void proctexparams(vector<char *> &paramlist, const char *params, int limit = 0)
     list.deletearrays();
 }
 
-bool drawproctex(ImageData &d, int w, int h, const char *name, const char *body, const char *params, const char *file, bool msg = true)
+bool drawproctex(ImageData &d, int w, int h, const char *name, const char *body, const char *params, const char *textures, bool msg = true)
 {
     if(!name || !*name) return false; // need a name
     setsvar("proctexname", name);
@@ -1746,14 +1750,21 @@ bool drawproctex(ImageData &d, int w, int h, const char *name, const char *body,
         cmdlist.deletearrays();
     }
     if(params && *params) proctexparams(paramlist, params); // process after so they override
-    if(file && *file) // a file provided will replace or create the first texture
+    if(textures && *textures) // override defined textures
     {
-        if(texlist.length())
+        vector<char *> overridelist;
+        proctexparams(overridelist, textures, 9, true); // allow empty statements to keep originals
+        loopv(overridelist)
         {
-            DELETEA(texlist[0]);
-            texlist[0] = newstring(file);
+            if(!overridelist[i] || !*overridelist[i]) continue; // skip empty
+            if(i >= texlist.length()) texlist.add(newstring(overridelist[i]));
+            else
+            {
+                DELETEA(texlist[i]);
+                texlist[i] = newstring(overridelist[i]);
+            }
         }
-        else texlist.add(newstring(file));
+        overridelist.deletearrays();
     }
     loopv(texlist) textureload(texlist[i]); // preload or things break
 
@@ -1890,14 +1901,14 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
             if(w <= 0 || w > (1<<12)) w = 512;
             if(h <= 0 || h > (1<<12)) h = 512;
 
-            string procstr[5];
-            loopi(5)
+            string procstr[6];
+            loopi(6)
             {
                 if(arg[i] && *arg[i]) COPYTEXARG(procstr[i], arg[i]);
                 else procstr[i][0] = 0;
             }
 
-            if(drawproctex(d, atoi(procstr[0]), atoi(procstr[1]), procstr[2], procstr[3], procstr[4], file, msg)) proc = true;
+            if(drawproctex(d, atoi(procstr[0]), atoi(procstr[1]), procstr[2], procstr[3], procstr[4], procstr[5], msg)) proc = true;
             else if(!file && !*file) return false; // fall back to just the file if this fails
         }
     }
