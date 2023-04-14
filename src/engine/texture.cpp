@@ -1692,7 +1692,11 @@ void proctexparams(vector<char *> &paramlist, const char *params, int limit = 0,
     {
         if(!list[i] || !*list[i])
         {
-            if(allowempty) paramlist.add(newstring(""));
+            if(allowempty)
+            {
+                paramlist.add(newstring(""));
+                if(limit && paramlist.length() >= limit) break;
+            }
             continue;
         }
         char *val = NULL;
