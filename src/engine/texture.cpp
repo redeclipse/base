@@ -4012,6 +4012,7 @@ void cleanuptexture(Texture *t)
 
 void cleanuptextures()
 {
+    cleanproctex();
     cleanupmipmaps();
     clearenvtexs();
     loopv(slots) slots[i]->cleanup();
