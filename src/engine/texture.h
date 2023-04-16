@@ -623,6 +623,8 @@ struct Texture
         return id;
     }
 };
+extern hashnameset<Texture> textures;
+extern vector<Texture *> animtextures;
 
 enum
 {

@@ -1199,14 +1199,15 @@ vector<Texture *> animtextures;
 
 Texture *notexture = NULL, *blanktexture = NULL; // used as default, ensured to be loaded
 
+VAR(IDF_PERSIST, comptexmindelay, 1, 25, VAR_MAX);
 static void updatetexture(Texture *t)
 {
     if(t->type&Texture::COMPOSITE)
     {
         if(t->delay <= 0) return;
-        int elapsed = lastmillis-t->last;
-        if(elapsed < t->delay) return;
-        t->last = lastmillis-(lastmillis%t->delay);
+        int delay = max(comptexmindelay, t->delay), elapsed = lastmillis-t->last;
+        if(elapsed < delay) return;
+        t->last = lastmillis-(lastmillis%delay);
         UI::composite(&t->id, t->comp, t->w, t->h, t->tclamp, t->mipmap, false);
         return;
     }

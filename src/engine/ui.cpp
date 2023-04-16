@@ -1184,6 +1184,7 @@ namespace UI
     };
 
     static World *world = NULL, *wmain = NULL, *wprogress = NULL, *wcomp = NULL;
+    static World *worlds[3] = { wmain, wprogress, wcomp };
 
     void Window::build()
     {
@@ -1194,24 +1195,41 @@ namespace UI
         window = NULL;
     }
 
-    ICOMMAND(0, newui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *windowflags),
+    void newui(char *name, char *contents, char *onshow, char *onhide, int windowflags, bool worldui = false)
     {
+        if(!name || !*name || !contents || !*contents) return;
+        if(worldui && !(identflags&IDF_WORLD) && !editmode)
+        {
+            conoutf("\frWorld UI %s is only directly modifiable in editmode", name);
+            return;
+        }
+
+        bool found = false;
         Window *window = windows.find(name, NULL);
-        bool worldui = (identflags&IDF_WORLD) != 0;
         if(window)
         {
             if(window == UI::window) return;
             if(!window->worldui && worldui)
             {
-                conoutf("\frCannot override builtin UI %s with one from the map", window->name);
+                conoutf("\frCannot override builtin UI %s with a World UI", window->name);
                 return;
             }
-            world->hide(window);
+            loopi(3) if(worlds[i]) worlds[i]->hide(window);
             windows.remove(name);
             delete window;
+            found = true;
         }
-        windows[name] = new Window(name, contents, onshow, onhide, *windowflags, worldui);
-    });
+
+        windows[name] = new Window(name, contents, onshow, onhide, windowflags, worldui);
+
+        if(found && !strncmp(name, "comp_", 5))
+        {
+            char *tname = &name[5];
+            enumerate(textures, Texture, t, if(t.type&Texture::COMPOSITE && t.comp && !strcmp(tname, t.comp)) composite(&t.id, t.comp, t.w, t.h, t.tclamp, t.mipmap, true));
+        }
+    }
+    ICOMMAND(0, newui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *windowflags), newui(name, contents, onshow, onhide, *windowflags));
+    ICOMMAND(0, worldui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *windowflags), newui(name, contents, onshow, onhide, *windowflags, true));
 
     ICOMMAND(0, uiallowinput, "b", (int *val), { if(window) { if(*val >= 0) window->allowinput = clamp(*val, 0, 2); intret(window->allowinput); } });
     ICOMMAND(0, uiexclusive, "b", (int *val), { if(window) { if(*val >= 0) window->exclusive = *val!=0; intret(window->exclusive ? 1 : 0); } });
@@ -5643,14 +5661,18 @@ namespace UI
 
     bool composite(uint *tex, const char *name, int w, int h, int tclamp, bool mipit, bool msg)
     {
-        if(!name || !*name || drawtex) return false; // need a name and can't be inside FBO already
+        if(!name || !*name) return false; // need a name
         if(msg) progress(loadprogress, "Compositing texture: %s [%dx%d]", name, w, h);
+
+        GLint oldfbo = 0;
+        if(progressing || !inbetweenframes || drawtex) glGetIntegerv(GL_FRAMEBUFFER_BINDING, &oldfbo);
 
         GLERROR;
         if(!comptexfbo) glGenFramebuffers_(1, &comptexfbo);
         glBindFramebuffer_(GL_FRAMEBUFFER, comptexfbo);
 
-        if(!*tex)
+        bool hastex = *tex != 0;
+        if(!hastex)
         {
             glGenTextures(1, tex);
             createtexture(*tex, w, h, NULL, tclamp, mipit ? 3 : 0, GL_RGBA, GL_TEXTURE_2D);
@@ -5661,27 +5683,27 @@ namespace UI
         if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         {
             if(msg) conoutf("\frFailed allocating composite texture framebuffer");
-            glDeleteTextures(1, tex);
-            glBindFramebuffer_(GL_FRAMEBUFFER, 0);
+            if(!hastex) glDeleteTextures(1, tex);
+            glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
             return false;
         }
-
-        World *oldworld = world;
-        int oldhudw = hudw, oldhudh = hudh, olddrawtex = drawtex;
-        float oldtextscale = curtextscale;
+        int olddrawtex = drawtex;
         drawtex = DRAWTEX_COMPOSITE;
 
-        hudw = w;
-        hudh = h;
-        glViewport(0, 0, hudw, hudh);
-        glClearColor(0, 0, 0, 1);
-        glClear(GL_COLOR_BUFFER_BIT);
-
+        World *oldworld = world;
         world = wcomp;
         defformatstring(compname, "comp_%s", name);
         showui(compname);
 
+        int oldhudw = hudw, oldhudh = hudh;
+
+        hudw = w;
+        hudh = h;
+        glViewport(0, 0, hudw, hudh);
+
+        float oldtextscale = curtextscale;
         curtextscale = 1;
+
         cursortype = CURSOR_DEFAULT;
         mousetracking = false;
         cursorlocked = false;
@@ -5703,14 +5725,14 @@ namespace UI
         glGenerateMipmap_(GL_TEXTURE_2D);
 
         curtextscale = oldtextscale;
-        world = oldworld;
         hudw = oldhudw;
         hudh = oldhudh;
+        world = oldworld;
         drawtex = olddrawtex;
-        glBindFramebuffer_(GL_FRAMEBUFFER, 0);
+        glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
         glViewport(0, 0, hudw, hudh);
 
-        return true ;
+        return true;
     }
 
     void cleangl()
@@ -5726,7 +5748,7 @@ namespace UI
         enumerate(windows, Window *, w,
         {
             if(!w->worldui || !w->body) continue;
-            h->printf("newui %s [%s]\n", w->name, w->body);
+            h->printf("worldui %s [%s]\n", w->name, w->body);
             worldmenus++;
         });
         return worldmenus;
