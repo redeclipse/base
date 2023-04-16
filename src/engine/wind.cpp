@@ -210,6 +210,9 @@ vec getwind(const vec &o, const dynent *d)
         // outside the radius
         if(we->attrs.radius > 0 && dist > we->attrs.radius) continue;
 
+        // disabled by parameters/game mode/variant
+        if(we->ent && !entities::isallowed(*we->ent)) continue;
+
         // attenuate the strength depending on the distance
         float atten = we->attrs.atten;
         float div = max(1.0f, distsq * atten * WIND_ATTEN_SCALE);
