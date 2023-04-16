@@ -226,7 +226,7 @@ extern int hwtexsize, hwcubetexsize, hwmaxaniso, maxtexsize, hwtexunits, hwvtexu
 extern bool loadedshaders;
 
 extern Texture *textureloaded(const char *name);
-extern Texture *textureload(const char *name, int clamp = 0, bool mipit = true, bool msg = true, bool gc = false);
+extern Texture *textureload(const char *name, int tclamp = 0, bool mipit = true, bool msg = true, bool gc = false);
 extern int texalign(const void *data, int w, int bpp);
 extern bool floatformat(GLenum format);
 extern void cleanuptexture(Texture *t);
@@ -234,9 +234,9 @@ extern uchar *loadalphamask(Texture *t);
 extern Texture *cubemapload(const char *name, bool mipit = true, bool msg = true, bool transient = false);
 extern void drawcubemap(int size, const vec &o, float yaw, float pitch, bool onlysky = false);
 extern void loadshaders();
-extern void setuptexparameters(int tnum, const void *pixels, int clamp, int filter, GLenum format = GL_RGB, GLenum target = GL_TEXTURE_2D, bool swizzle = false);
-extern void createtexture(int tnum, int w, int h, const void *pixels, int clamp, int filter, GLenum component = GL_RGB, GLenum target = GL_TEXTURE_2D, int pw = 0, int ph = 0, int pitch = 0, bool resize = true, GLenum format = GL_FALSE, bool swizzle = false);
-extern void create3dtexture(int tnum, int w, int h, int d, const void *pixels, int clamp, int filter, GLenum component = GL_RGB, GLenum target = GL_TEXTURE_3D, bool swizzle = false);
+extern void setuptexparameters(int tnum, const void *pixels, int tclamp, int filter, GLenum format = GL_RGB, GLenum target = GL_TEXTURE_2D, bool swizzle = false);
+extern void createtexture(int tnum, int w, int h, const void *pixels, int tclamp, int filter, GLenum component = GL_RGB, GLenum target = GL_TEXTURE_2D, int pw = 0, int ph = 0, int pitch = 0, bool resize = true, GLenum format = GL_FALSE, bool swizzle = false);
+extern void create3dtexture(int tnum, int w, int h, int d, const void *pixels, int tclamp, int filter, GLenum component = GL_RGB, GLenum target = GL_TEXTURE_3D, bool swizzle = false);
 extern void blurtexture(int n, int bpp, int w, int h, uchar *dst, const uchar *src, int margin = 0);
 extern void blurnormals(int n, int w, int h, bvec *dst, const bvec *src, int margin = 0);
 extern GLuint setuppostfx(int w, int h, GLuint outfbo = 0);

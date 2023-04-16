@@ -584,40 +584,42 @@ struct Texture
         ALPHA      = 1<<11,
         MIRROR     = 1<<12,
         GC         = 1<<13,
+        COMPOSITE  = 1<<14,
         FLAGS      = 0xFF00
     };
 
-    char *name;
-    int type, w, h, xs, ys, bpp, clamp, frame, delay, last;
+    char *name, *comp;
+    int type, w, h, xs, ys, bpp, tclamp, frame, delay, last;
     bool mipmap, canreduce, throb;
     vector<GLuint> frames;
     GLuint id;
     uchar *alphamask;
 
 
-    Texture() : frame(0), delay(0), last(0), throb(false), alphamask(NULL)
+    Texture() : comp(NULL), frame(0), delay(0), last(0), throb(false), alphamask(NULL)
     {
         frames.shrink(0);
     }
+    ~Texture() { DELETEA(comp); }
 
     GLuint idframe(int id)
     {
         if(!frames.empty())
-            return frames[::clamp(id, 0, frames.length()-1)];
+            return frames[clamp(id, 0, frames.length()-1)];
         return id;
     }
 
     GLuint getframe(float amt)
     {
         if(!frames.empty())
-            return frames[::clamp(int((frames.length()-1)*amt), 0, frames.length()-1)];
+            return frames[clamp(int((frames.length()-1)*amt), 0, frames.length()-1)];
         return id;
     }
 
     GLuint retframe(int cur, int total)
     {
         if(!frames.empty())
-            return frames[::clamp((frames.length()-1)*cur/min(1, total), 0, frames.length()-1)];
+            return frames[clamp((frames.length()-1)*cur/min(1, total), 0, frames.length()-1)];
         return id;
     }
 };

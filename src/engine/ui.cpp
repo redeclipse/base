@@ -5,8 +5,7 @@ namespace UI
 {
     int cursortype = CURSOR_DEFAULT;
     bool cursorlocked = false, mousetracking = false, globalscrolllocked = false;
-    GLuint comptexture = 0, comptexfbo = 0;
-    int comptexw = 0, comptexh = 0;
+    GLuint comptexfbo = 0;
 
     static bool texgc = false;
 
@@ -33,7 +32,7 @@ namespace UI
 
     FVAR(IDF_PERSIST, uitipoffset, -1, 0.001f, 1);
 
-    static Texture *loadthumbnail(const char *name, int clamp)
+    static Texture *loadthumbnail(const char *name, int tclamp)
     {
         Texture *t = textureloaded(name);
 
@@ -42,7 +41,7 @@ namespace UI
             if(totalmillis - lastthumbnail < uislotviewtime) t = textureload(uiloadtex);
             else
             {
-                t = textureload(name, clamp, true, false, texgc);
+                t = textureload(name, tclamp, true, false, texgc);
                 lastthumbnail = totalmillis;
             }
         }
@@ -2860,7 +2859,7 @@ namespace UI
                     LOCALPARAMF(textparams, 0.15f, 0.35f, 0.35f, 0.55f);
                 }
                 bindtex(GL_QUADS, shading ? -1 : 0);
-                if(tex->clamp)
+                if(tex->tclamp)
                 {
                     for(float dy = 0; dy < gh; dy += tileh)
                     {
@@ -5049,7 +5048,7 @@ namespace UI
         static const char *typestr() { return "#DecalSlotViewer"; }
         const char *gettype() const { return typestr(); }
 
-        void previewslot(Slot &slot, VSlot &vslot, float x, float y, bool clamp = false)
+        void previewslot(Slot &slot, VSlot &vslot, float x, float y)
         {
             if(!loadedshaders || slot.sts.empty()) return;
             Texture *t = NULL, *glowtex = NULL;
@@ -5118,7 +5117,7 @@ namespace UI
             if(decalslots.inrange(index))
             {
                 DecalSlot &slot = lookupdecalslot(index, false);
-                previewslot(slot, *slot.variants, sx, sy, true);
+                previewslot(slot, *slot.variants, sx, sy);
             }
 
             Object::draw(sx, sy);
@@ -5637,43 +5636,32 @@ namespace UI
         world = wmain;
     }
 
-    void cleancomptex()
+    void cleancomposite()
     {
         if(comptexfbo) { glDeleteFramebuffers_(1, &comptexfbo); comptexfbo = 0; }
-        if(comptexture) { glDeleteTextures(1, &comptexture); comptexture = 0; }
-        comptexw = comptexh = 0;
     }
 
-    bool composite(ImageData &d, int w, int h, const char *name, bool msg)
+    bool composite(uint *tex, const char *name, int w, int h, int tclamp, bool mipit, bool msg)
     {
         if(!name || !*name || drawtex) return false; // need a name and can't be inside FBO already
-        int oldw = comptexw, oldh = comptexh;
-
-        comptexw = clamp(w > 0 ? w : 512, 1, 1<<12);
-        comptexh = clamp(h > 0 ? h : 512, 1, 1<<12);
-
-        if(oldw != comptexw || oldh != comptexh)
-        {
-            cleancomptex();
-            comptexw = w;
-            comptexh = h;
-        }
-
-        if(msg) progress(loadprogress, "Compositing texture: %s [%dx%d]", name, comptexw, comptexh);
+        if(msg) progress(loadprogress, "Compositing texture: %s [%dx%d]", name, w, h);
 
         GLERROR;
         if(!comptexfbo) glGenFramebuffers_(1, &comptexfbo);
         glBindFramebuffer_(GL_FRAMEBUFFER, comptexfbo);
-        if(!comptexture)
+
+        if(!*tex)
         {
-            glGenTextures(1, &comptexture);
-            createtexture(comptexture, comptexw, comptexh, NULL, 3, 1, GL_RGBA, GL_TEXTURE_2D);
-            glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, comptexture, 0);
+            glGenTextures(1, tex);
+            createtexture(*tex, w, h, NULL, tclamp, mipit ? 3 : 0, GL_RGBA, GL_TEXTURE_2D);
         }
+        glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *tex, 0);
+
         GLERROR;
         if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         {
             if(msg) conoutf("\frFailed allocating composite texture framebuffer");
+            glDeleteTextures(1, tex);
             glBindFramebuffer_(GL_FRAMEBUFFER, 0);
             return false;
         }
@@ -5683,10 +5671,10 @@ namespace UI
         float oldtextscale = curtextscale;
         drawtex = DRAWTEX_COMPOSITE;
 
-        hudw = comptexw;
-        hudh = comptexh;
+        hudw = w;
+        hudh = h;
         glViewport(0, 0, hudw, hudh);
-        glClearColor(0, 0, 0, 0);
+        glClearColor(0, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT);
 
         world = wcomp;
@@ -5709,13 +5697,12 @@ namespace UI
         world->adjustchildren();
         world->draw();
         popfont();
+
+        glActiveTexture_(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, *tex);
+        glGenerateMipmap_(GL_TEXTURE_2D);
+
         curtextscale = oldtextscale;
-
-        ImageData s(comptexw, comptexh, 4);
-        glPixelStorei(GL_PACK_ALIGNMENT, 1);
-        glReadPixels(0, 0, s.w, s.h, GL_RGBA, GL_UNSIGNED_BYTE, s.data);
-        d.replace(s);
-
         world = oldworld;
         hudw = oldhudw;
         hudh = oldhudh;
@@ -5723,12 +5710,12 @@ namespace UI
         glBindFramebuffer_(GL_FRAMEBUFFER, 0);
         glViewport(0, 0, hudw, hudh);
 
-        return true;
+        return true ;
     }
 
     void cleangl()
     {
-        cleancomptex();
+        cleancomposite();
     }
 
     void mousetrack(float dx, float dy) { mousetrackvec.add(vec2(dx, dy)); }

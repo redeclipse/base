@@ -986,20 +986,20 @@ const GLint *swizzlemask(GLenum format)
     return NULL;
 }
 
-void setuptexparameters(int tnum, const void *pixels, int clamp, int filter, GLenum format, GLenum target, bool swizzle)
+void setuptexparameters(int tnum, const void *pixels, int tclamp, int filter, GLenum format, GLenum target, bool swizzle)
 {
     glBindTexture(target, tnum);
-    glTexParameteri(target, GL_TEXTURE_WRAP_S, clamp&0x001 ? GL_CLAMP_TO_EDGE : (clamp&0x1000 ? GL_CLAMP_TO_BORDER : (clamp&0x100 ? GL_MIRRORED_REPEAT : GL_REPEAT)));
-    glTexParameteri(target, GL_TEXTURE_WRAP_T, clamp&0x002 ? GL_CLAMP_TO_EDGE : (clamp&0x2000 ? GL_CLAMP_TO_BORDER : (clamp&0x200 ? GL_MIRRORED_REPEAT : GL_REPEAT)));
-    if(target==GL_TEXTURE_3D) glTexParameteri(target, GL_TEXTURE_WRAP_R, clamp&0x004 ? GL_CLAMP_TO_EDGE : (clamp&0x4000 ? GL_CLAMP_TO_BORDER : (clamp&0x400 ? GL_MIRRORED_REPEAT : GL_REPEAT)));
+    glTexParameteri(target, GL_TEXTURE_WRAP_S, tclamp&0x001 ? GL_CLAMP_TO_EDGE : (tclamp&0x1000 ? GL_CLAMP_TO_BORDER : (tclamp&0x100 ? GL_MIRRORED_REPEAT : GL_REPEAT)));
+    glTexParameteri(target, GL_TEXTURE_WRAP_T, tclamp&0x002 ? GL_CLAMP_TO_EDGE : (tclamp&0x2000 ? GL_CLAMP_TO_BORDER : (tclamp&0x200 ? GL_MIRRORED_REPEAT : GL_REPEAT)));
+    if(target==GL_TEXTURE_3D) glTexParameteri(target, GL_TEXTURE_WRAP_R, tclamp&0x004 ? GL_CLAMP_TO_EDGE : (tclamp&0x4000 ? GL_CLAMP_TO_BORDER : (tclamp&0x400 ? GL_MIRRORED_REPEAT : GL_REPEAT)));
     if(target==GL_TEXTURE_2D && hasAF && min(aniso, hwmaxaniso) > 0 && filter > 1) glTexParameteri(target, GL_TEXTURE_MAX_ANISOTROPY_EXT, min(aniso, hwmaxaniso));
-    glTexParameteri(target, GL_TEXTURE_MAG_FILTER, !(clamp&0x8000) && filter && bilinear ? GL_LINEAR : GL_NEAREST);
+    glTexParameteri(target, GL_TEXTURE_MAG_FILTER, !(tclamp&0x8000) && filter && bilinear ? GL_LINEAR : GL_NEAREST);
     glTexParameteri(target, GL_TEXTURE_MIN_FILTER,
-        !(clamp&0x8000) && filter > 1 ?
+        !(tclamp&0x8000) && filter > 1 ?
             (trilinear ?
                 (bilinear ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_LINEAR) :
                 (bilinear ? GL_LINEAR_MIPMAP_NEAREST : GL_NEAREST_MIPMAP_NEAREST)) :
-            (!(clamp&0x8000) && filter && bilinear ? GL_LINEAR : GL_NEAREST));
+            (!(tclamp&0x8000) && filter && bilinear ? GL_LINEAR : GL_NEAREST));
     if(swizzle && hasTRG && hasTSW)
     {
         const GLint *mask = swizzlemask(format);
@@ -1153,7 +1153,7 @@ static int miplevels(int n)
     return levels;
 }
 
-void createtexture(int tnum, int w, int h, const void *pixels, int clamp, int filter, GLenum component, GLenum subtarget, int pw, int ph, int pitch, bool resize, GLenum format, bool swizzle)
+void createtexture(int tnum, int w, int h, const void *pixels, int tclamp, int filter, GLenum component, GLenum subtarget, int pw, int ph, int pitch, bool resize, GLenum format, bool swizzle)
 {
     GLenum target = textarget(subtarget), type = textype(component, format);
     if(!pw) pw = w;
@@ -1166,30 +1166,31 @@ void createtexture(int tnum, int w, int h, const void *pixels, int clamp, int fi
         if(mipmap) component = compressedformat(component, tw, th);
     }
     bool prealloc = !resize && hasTS && hasTRG && hasTSW && !uncompressedformat(component);
-    if(filter >= 0 && clamp >= 0)
+    if(filter >= 0 && tclamp >= 0)
     {
-        setuptexparameters(tnum, pixels, clamp, filter, format, target, swizzle);
+        setuptexparameters(tnum, pixels, tclamp, filter, format, target, swizzle);
         if(prealloc) glTexStorage2D_(target, mipmap ? miplevels(max(tw, th)) : 1, sizedformat(component), tw, th);
     }
     uploadtexture(tnum, subtarget, component, tw, th, format, type, pixels, pw, ph, pitch, mipmap, prealloc);
+    if(filter > 2) glGenerateMipmap_(GL_TEXTURE_2D);
 }
 
-void createcompressedtexture(int tnum, int w, int h, const uchar *data, int align, int blocksize, int levels, int clamp, int filter, GLenum format, GLenum subtarget, bool swizzle = false)
+void createcompressedtexture(int tnum, int w, int h, const uchar *data, int align, int blocksize, int levels, int tclamp, int filter, GLenum format, GLenum subtarget, bool swizzle = false)
 {
     GLenum target = textarget(subtarget);
     bool mipmap = filter > 1, prealloc = hasTS && hasTRG && hasTSW;
-    if(filter >= 0 && clamp >= 0)
+    if(filter >= 0 && tclamp >= 0)
     {
-        setuptexparameters(tnum, data, clamp, filter, format, target, swizzle);
+        setuptexparameters(tnum, data, tclamp, filter, format, target, swizzle);
         if(prealloc) glTexStorage2D_(target, mipmap ? miplevels(max(w, h)) : 1, format, w, h);
     }
     uploadcompressedtexture(target, subtarget, format, w, h, data, align, blocksize, levels, mipmap, prealloc);
 }
 
-void create3dtexture(int tnum, int w, int h, int d, const void *pixels, int clamp, int filter, GLenum component, GLenum target, bool swizzle)
+void create3dtexture(int tnum, int w, int h, int d, const void *pixels, int tclamp, int filter, GLenum component, GLenum target, bool swizzle)
 {
     GLenum format = GL_FALSE, type = textype(component, format);
-    if(filter >= 0 && clamp >= 0) setuptexparameters(tnum, pixels, clamp, filter, format, target, swizzle);
+    if(filter >= 0 && tclamp >= 0) setuptexparameters(tnum, pixels, tclamp, filter, format, target, swizzle);
     glTexImage3D_(target, 0, component, w, h, d, 0, format, type, pixels);
 }
 
@@ -1200,6 +1201,15 @@ Texture *notexture = NULL, *blanktexture = NULL; // used as default, ensured to 
 
 static void updatetexture(Texture *t)
 {
+    if(t->type&Texture::COMPOSITE)
+    {
+        if(t->delay <= 0) return;
+        int elapsed = lastmillis-t->last;
+        if(elapsed < t->delay) return;
+        t->last = lastmillis-(lastmillis%t->delay);
+        UI::composite(&t->id, t->comp, t->w, t->h, t->tclamp, t->mipmap, false);
+        return;
+    }
     if(t->frames.length() <= 1 || t->delay <= 0) return;
     int elapsed = lastmillis-t->last;
     if(elapsed < t->delay) return;
@@ -1278,7 +1288,7 @@ bool floatformat(GLenum format)
     }
 }
 
-static Texture *newtexture(Texture *t, const char *rname, ImageData &s, int clamp = 0, bool mipit = true, bool canreduce = false, bool transient = false, int compress = 0, TextureAnim *anim = NULL, bool gc = false)
+static Texture *newtexture(Texture *t, const char *rname, ImageData &s, int tclamp = 0, bool mipit = true, bool canreduce = false, bool transient = false, int compress = 0, TextureAnim *anim = NULL, bool gc = false)
 {
     if(!t)
     {
@@ -1289,12 +1299,12 @@ static Texture *newtexture(Texture *t, const char *rname, ImageData &s, int clam
         t->frame = 0;
     }
 
-    t->clamp = clamp;
+    t->tclamp = tclamp;
     t->mipmap = mipit;
     t->type = Texture::IMAGE;
     if(gc) t->type |= Texture::GC;
     if(transient) t->type |= Texture::TRANSIENT;
-    if(clamp&0x300) t->type |= Texture::MIRROR;
+    if(tclamp&0x300) t->type |= Texture::MIRROR;
     if(!s.data)
     {
         t->type |= Texture::STUB;
@@ -1302,7 +1312,7 @@ static Texture *newtexture(Texture *t, const char *rname, ImageData &s, int clam
         return t;
     }
 
-    bool swizzle = !(clamp&0x10000);
+    bool swizzle = !(tclamp&0x10000);
     GLenum format;
     if(s.compressed)
     {
@@ -1352,7 +1362,7 @@ static Texture *newtexture(Texture *t, const char *rname, ImageData &s, int clam
             if(t->w > 1) t->w /= 2;
             if(t->h > 1) t->h /= 2;
         }
-        createcompressedtexture(t->frames[0], t->w, t->h, data, s.align, s.bpp, levels, clamp, filter, s.compressed, GL_TEXTURE_2D, swizzle);
+        createcompressedtexture(t->frames[0], t->w, t->h, data, s.align, s.bpp, levels, tclamp, filter, s.compressed, GL_TEXTURE_2D, swizzle);
     }
     else
     {
@@ -1375,7 +1385,7 @@ static Texture *newtexture(Texture *t, const char *rname, ImageData &s, int clam
                 data = cropped.data;
                 pitch = cropped.pitch;
             }
-            createtexture(t->frames[i], t->w, t->h, data, clamp, filter, component, GL_TEXTURE_2D, t->xs, t->ys, pitch, false, format, swizzle);
+            createtexture(t->frames[i], t->w, t->h, data, tclamp, filter, component, GL_TEXTURE_2D, t->xs, t->ys, pitch, false, format, swizzle);
             if(verbose >= 3)
                 conoutf("\faAdding frame: %s (%d) [%d,%d:%d,%d]", t->name, i+1, t->w, t->h, t->xs, t->ys);
         }
@@ -1686,7 +1696,7 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
 
     if(!file && !cmds) { if(msg) conoutf("\frCould not load null texture"); return false; }
 
-    bool raw = !usedds || !compress, dds = false, comp = false;
+    bool raw = !usedds || !compress, dds = false;
     for(const char *pcmds = cmds; pcmds;)
     {
         #define PARSETEXCOMMANDS(cmds) \
@@ -1707,54 +1717,34 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
         if(matchstring(cmd, len, "dds")) dds = true;
         else if(matchstring(cmd, len, "thumbnail")) raw = true;
         else if(matchstring(cmd, len, "stub")) return canloadsurface(file);
-        else if(matchstring(cmd, len, "comp"))
-        {
-            int w = atoi(arg[0]);
-            int h = atoi(arg[1]);
-            if(w <= 0 || w > (1<<12)) w = 512;
-            if(h <= 0 || h > (1<<12)) h = 512;
-
-            string compstr[3];
-            loopi(3)
-            {
-                if(arg[i] && *arg[i]) COPYTEXARG(compstr[i], arg[i]);
-                else compstr[i][0] = 0;
-            }
-
-            if(UI::composite(d, atoi(compstr[0]), atoi(compstr[1]), compstr[2], msg)) comp = true;
-            else if(!file && !*file) return false; // fall back to just the file if this fails
-        }
     }
 
-    if(!comp)
+    if(!file) { if(msg) conoutf("\frCould not load texture: %s", tname); return false; }
+
+    if(msg) progress(loadprogress, "Loading texture: %s", file);
+
+    int flen = strlen(file);
+    if(flen >= 4 && (!strcasecmp(file + flen - 4, ".dds") || (dds && !raw)))
     {
-        if(!file) { if(msg) conoutf("\frCould not load texture: %s", tname); return false; }
-
-        if(msg) progress(loadprogress, "Loading texture: %s", file);
-
-        int flen = strlen(file);
-        if(flen >= 4 && (!strcasecmp(file + flen - 4, ".dds") || (dds && !raw)))
+        string dfile;
+        copystring(dfile, file);
+        memcpy(dfile + flen - 4, ".dds", 4);
+        if(!loaddds(dfile, d, raw ? 1 : (dds ? 0 : -1)) && (!dds || raw))
         {
-            string dfile;
-            copystring(dfile, file);
-            memcpy(dfile + flen - 4, ".dds", 4);
-            if(!loaddds(dfile, d, raw ? 1 : (dds ? 0 : -1)) && (!dds || raw))
-            {
-                if(msg) conoutf("\frCould not load texture: %s", dfile);
-                return false;
-            }
-            if(d.data && !d.compressed && !dds && compress) *compress = scaledds;
+            if(msg) conoutf("\frCould not load texture: %s", dfile);
+            return false;
         }
+        if(d.data && !d.compressed && !dds && compress) *compress = scaledds;
+    }
 
-        if(!d.data)
-        {
-            SDL_Surface *s = loadsurface(file);
-            if(!s) { if(msg) conoutf("\frCould not load texture: %s", file); return false; }
-            int bpp = s->format->BitsPerPixel;
-            if(bpp%8 || !texformat(bpp/8)) { SDL_FreeSurface(s); conoutf("\frTexture must be 8, 16, 24, or 32 bpp: %s", file); return false; }
-            if(max(s->w, s->h) > (1<<12)) { SDL_FreeSurface(s); conoutf("\frTexture size exceeded %dx%d pixels: %s", 1<<12, 1<<12, file); return false; }
-            d.wrap(s);
-        }
+    if(!d.data)
+    {
+        SDL_Surface *s = loadsurface(file);
+        if(!s) { if(msg) conoutf("\frCould not load texture: %s", file); return false; }
+        int bpp = s->format->BitsPerPixel;
+        if(bpp%8 || !texformat(bpp/8)) { SDL_FreeSurface(s); conoutf("\frTexture must be 8, 16, 24, or 32 bpp: %s", file); return false; }
+        if(max(s->w, s->h) > (1<<12)) { SDL_FreeSurface(s); conoutf("\frTexture size exceeded %dx%d pixels: %s", 1<<12, 1<<12, file); return false; }
+        d.wrap(s);
     }
 
     while(cmds)
@@ -1896,11 +1886,73 @@ Texture *textureloaded(const char *name)
     return textures.access(tname);
 }
 
-Texture *textureload(const char *name, int clamp, bool mipit, bool msg, bool gc)
+static Texture *texturecomp(const char *name, int tclamp = 0, bool mipit = true, bool msg = true, bool gc = false)
 {
+    if(!name || !*name) return notexture;
+
+    Texture *t = textures.access(name);
+    if(t)
+    {
+        // Strip GC flag with gc=false
+        if(!gc && t->type&Texture::GC) t->type &= ~Texture::GC;
+        return t;
+    }
+
+    vector<char *> list;
+    explodelist(&name[1], list, 4); // w h name delay
+    if(list.empty()) // need at least the name
+    {
+        list.deletearrays();
+        if(msg) conoutf("\frCould not composite texture: %s", name);
+        return notexture;
+    }
+
+    int w = list.length() >= 2 ? clamp(atoi(list[1]), 0, 1<<12) : 512,
+        h = list.length() >= 3 ? clamp(atoi(list[2]), 0, 1<<12) : 512,
+        delay = list.length() >= 4 ? max(atoi(list[3]), 0) : 0;
+    if(w < 0) w = 512;
+    if(h < 0) h = 512;
+
+    GLuint tex = 0;
+    if(!UI::composite(&tex, list[0], w, h, tclamp, mipit, msg) || !tex)
+    {
+        if(msg) conoutf("\frFailed to composite texture: %s", name);
+        list.deletearrays();
+        return notexture;
+    }
+
+    char *key = newstring(name);
+    t = &textures[key];
+    t->name = key;
+    t->comp = newstring(list[0]);
+    t->tclamp = tclamp;
+    t->mipmap = mipit;
+    t->type = Texture::IMAGE | Texture::COMPOSITE | Texture::ALPHA;
+    if(gc) t->type |= Texture::GC;
+    if(t->tclamp&0x300) t->type |= Texture::MIRROR;
+    t->w = t->xs = w;
+    t->h = t->ys = h;
+    t->bpp = 4;
+    t->delay = delay;
+    t->id = tex;
+    if(t->delay > 0) animtextures.add(t);
+    list.deletearrays();
+    return t;
+}
+
+static inline Texture *texturecomp(Slot &slot, Slot::Tex &tex, bool msg = true)
+{
+    return texturecomp(tex.name, 0, true, msg, false);
+}
+
+Texture *textureload(const char *name, int tclamp, bool mipit, bool msg, bool gc)
+{
+    if(name && *name == '!') return texturecomp(name, tclamp, mipit, msg, gc);
+
     string tname;
     copystring(tname, name);
     path(tname);
+
     Texture *t = textures.access(tname);
     if(t)
     {
@@ -1908,17 +1960,19 @@ Texture *textureload(const char *name, int clamp, bool mipit, bool msg, bool gc)
         if(!gc && t->type&Texture::GC) t->type &= ~Texture::GC;
         return t;
     }
+
     int compress = 0;
     ImageData s;
     TextureAnim anim;
-    if(texturedata(s, tname, NULL, msg, &compress, &clamp, &anim))
-       return newtexture(NULL, tname, s, clamp, mipit, false, false, compress, &anim, gc);
+    if(texturedata(s, tname, NULL, msg, &compress, &tclamp, &anim))
+        return newtexture(NULL, tname, s, tclamp, mipit, false, false, compress, &anim, gc);
+
     return notexture;
 }
 
-bool settexture(const char *name, int clamp)
+bool settexture(const char *name, int tclamp)
 {
-    Texture *t = textureload(name, clamp, true, false);
+    Texture *t = textureload(name, tclamp, true, false);
     glBindTexture(GL_TEXTURE_2D, t->id);
     return t != notexture;
 }
@@ -3148,6 +3202,11 @@ static void addname(vector<char> &key, Slot &slot, Slot::Tex &t, bool combined =
 
 void Slot::load(int index, Slot::Tex &t)
 {
+    if(*t.name == '!')
+    {
+        t.t = texturecomp(*this, t, true);
+        return;
+    }
     vector<char> key;
     addname(key, *this, t, false, shouldpremul(t.type) ? "<premul>" : NULL);
     Slot::Tex *combine = NULL;
@@ -3322,6 +3381,7 @@ static void blitthumbnail(ImageData &d, ImageData &s, int x, int y)
 
 Texture *Slot::loadthumbnail()
 {
+    if(sts.inrange(0) && *sts[0].name == '!') return sts[0].t; // TODO: composite this
     if(thumbnail) return thumbnail;
     if(!variants)
     {
@@ -3493,7 +3553,7 @@ Texture *cubemaploadwildcard(Texture *t, const char *name, bool mipit, bool msg,
     }
     if(alphaformat(format)) t->type |= Texture::ALPHA;
     t->mipmap = mipit;
-    t->clamp = 3;
+    t->tclamp = 3;
     t->xs = t->ys = tsize;
     t->w = t->h = min(1<<envmapsize, tsize);
     resizetexture(t->w, t->h, mipit, false, GL_TEXTURE_CUBE_MAP, compress, t->w, t->h);
@@ -3800,11 +3860,12 @@ void genenvtexs()
 
 void cleanuptexture(Texture *t)
 {
-    if(t->frames.length() > 1 && t->delay > 0) animtextures.removeobj(t);
+    if(animtextures.find(t) >= 0) animtextures.removeobj(t);
 
     DELETEA(t->alphamask);
 
-    loopvk(t->frames) if(t->frames[k])
+    if(t->frames.empty() && t->id) glDeleteTextures(1, &t->id);
+    else loopvk(t->frames) if(t->frames[k])
     {
         if(t->frames[k])
         {
@@ -3860,10 +3921,15 @@ bool reloadtexture(Texture *t)
     {
         case Texture::IMAGE:
         {
+            if(t->type&Texture::COMPOSITE)
+            {
+                if(!texturecomp(t->name, t->tclamp, t->mipmap, false)) return false;
+                break;
+            }
             int compress = 0;
             ImageData s;
             TextureAnim anim;
-            if(!texturedata(s, t->name, NULL, true, &compress, NULL, &anim) || !newtexture(t, NULL, s, t->clamp, t->mipmap, false, false, compress, &anim)) return false;
+            if(!texturedata(s, t->name, NULL, true, &compress, NULL, &anim) || !newtexture(t, NULL, s, t->tclamp, t->mipmap, false, false, compress, &anim)) return false;
             break;
         }
 

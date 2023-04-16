@@ -2925,7 +2925,7 @@ ICOMMAND(0, getvgrasstexheight, "i", (int *tex), intret(lookupvslot(*tex, false)
 ICOMMAND(0, getvgrasstexxs, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->xs));
 ICOMMAND(0, getvgrasstexys, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->ys));
 ICOMMAND(0, getvgrasstexbpp, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->bpp));
-ICOMMAND(0, getvgrasstexclamp, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->clamp));
+ICOMMAND(0, getvgrasstexclamp, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->tclamp));
 ICOMMAND(0, getvgrasstexframe, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->frame));
 ICOMMAND(0, getvgrasstexdelay, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->delay));
 ICOMMAND(0, getvgrasstexlast, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->last));
@@ -2998,7 +2998,7 @@ ICOMMAND(0, getvteximgclamp, "iii", (int *tex, int *sts, int *type),
 {
     VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
-    intret(vslot.slot->sts[*sts].t->clamp);
+    intret(vslot.slot->sts[*sts].t->tclamp);
 });
 ICOMMAND(0, getvteximgframe, "iii", (int *tex, int *sts, int *type),
 {

@@ -43,7 +43,7 @@ extern bool  raycubelos(const vec &o, const vec &dest, vec &hitpos);
 
 struct Texture;
 
-extern bool settexture(const char *name, int clamp = 0);
+extern bool settexture(const char *name, int tclamp = 0);
 
 // world
 extern bool emptymap(int scale, bool force = false, const char *mname = NULL, bool usecfg = true);
@@ -510,9 +510,8 @@ extern void freechallenge(void *answer);
 extern bool checkchallenge(const char *answerstr, void *correct);
 
 // UI
-enum { EDITORFOCUSED = 1, EDITORUSED, EDITORFOREVER, EDITORREADONLY };
 struct editor;
-struct ImageData;
+enum { EDITORFOCUSED = 1, EDITORUSED, EDITORFOREVER, EDITORREADONLY };
 enum { CURSOR_DEFAULT = 0, CURSOR_HOVER, CURSOR_HIDDEN, CURSOR_MAX };
 
 namespace UI
@@ -540,7 +539,7 @@ namespace UI
     extern void cleangl();
     extern void update();
     extern void render();
-    extern bool composite(ImageData &d, int w, int h, const char *name, bool msg = true);
+    extern bool composite(uint *tex, const char *name, int w = 512, int h = 512, int tclamp = 0, bool mipit = true, bool msg = true);
     extern void mousetrack(float dx, float dy);
     extern int saveworldmenus(stream *h);
     extern void resetworldmenus();
