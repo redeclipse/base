@@ -109,7 +109,8 @@ enum
     SHADER_TRIPLANAR  = 1<<5,
 
     SHADER_INVALID    = 1<<8,
-    SHADER_DEFERRED   = 1<<9
+    SHADER_DEFERRED   = 1<<9,
+    SHADER_PROCEDURAL = 1<<10
 };
 
 #define MAXVARIANTROWS 32
@@ -155,14 +156,14 @@ struct Shader
     Shader *variantshader;
     vector<Shader *> variants;
     ushort *variantrows;
-    bool standard, forced, used, proc;
+    bool standard, forced, used;
     Shader *reusevs, *reuseps;
     vector<UniformLoc> uniformlocs;
     vector<AttribLoc> attriblocs;
     vector<FragDataLoc> fragdatalocs;
     const void *owner;
 
-    Shader() : name(NULL), vsstr(NULL), psstr(NULL), defer(NULL), type(SHADER_DEFAULT), program(0), vsobj(0), psobj(0), variantshader(NULL), variantrows(NULL), standard(false), forced(false), used(false), proc(false), reusevs(NULL), reuseps(NULL), owner(NULL)
+    Shader() : name(NULL), vsstr(NULL), psstr(NULL), defer(NULL), type(SHADER_DEFAULT), program(0), vsobj(0), psobj(0), variantshader(NULL), variantrows(NULL), standard(false), forced(false), used(false), reusevs(NULL), reuseps(NULL), owner(NULL)
     {
     }
 
@@ -467,6 +468,7 @@ struct LocalShaderParam
         if(name##shader) name##shader->setvariant(__VA_ARGS__); \
     } while(0)
 
+extern Shader *shader(int type, char *name, char *vs, char *ps);
 struct ImageData
 {
     int w, h, bpp, levels, align, pitch;

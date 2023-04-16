@@ -1082,13 +1082,17 @@ Shader *useshaderbyname(const char *name)
 }
 ICOMMAND(0, forceshader, "s", (const char *name), useshaderbyname(name));
 
-void shader(int *type, char *name, char *vs, char *ps, bool proc = false)
+Shader *shader(int type, char *name, char *vs, char *ps)
 {
     Shader *o = lookupshaderbyname(name);
-    if(proc && o && o->proc)
-    { // procedural shaders are only temporary and can be overridden
-        o->cleanup(true);
-        shaders.remove(name);
+    if(o)
+    {
+        if(type&SHADER_PROCEDURAL && o->type&SHADER_PROCEDURAL)
+        { // procedural shaders are only temporary and can be overridden
+            o->cleanup(true);
+            shaders.remove(name);
+        }
+        else return o;
     }
 
     if(!initshaders) progress(loadprogress, "Loading shader: %s", name);
@@ -1104,41 +1108,43 @@ void shader(int *type, char *name, char *vs, char *ps, bool proc = false)
     }
     GENSHADER(slotparams.length(), genuniformdefs(vsbuf, psbuf, vs, ps));
     GENSHADER(strstr(vs, "//:fog") || strstr(ps, "//:fog"), genfogshader(vsbuf, psbuf, vs, ps));
-    Shader *s = newshader(*type, name, vs, ps);
+    Shader *s = newshader(type, name, vs, ps);
     if(s)
     {
-        s->proc = proc;
         if(strstr(ps, "//:variant") || strstr(vs, "//:variant")) gengenericvariant(*s, name, vs, ps);
+        return s;
     }
     slotparams.shrink(0);
+    return NULL;
 }
-COMMAND(0, shader, "isss");
-ICOMMAND(0, procshader, "isss", (int *type, char *name, char *vs, char *ps), shader(type, name, vs, ps, true));
+ICOMMAND(0, shader, "isss", (int *type, char *name, char *vs, char *ps), shader(*type, name, vs, ps));
 
-void variantshader(int *type, char *name, int *row, char *vs, char *ps, int *maxvariants)
+Shader *variantshader(int type, char *name, int row, char *vs, char *ps, int maxvariants)
 {
-    if(*row < 0)
+    if(row < 0)
     {
-        shader(type, name, vs, ps);
-        return;
+        Shader *o = shader(type, name, vs, ps);
+        return o;
     }
-    else if(*row >= MAXVARIANTROWS) return;
+    else if(row >= MAXVARIANTROWS) return NULL;
 
     Shader *s = lookupshaderbyname(name);
-    if(!s) return;
+    if(!s) return NULL;
 
-    defformatstring(varname, "<variant:%d,%d>%s", s->numvariants(*row), *row, name);
-    if(*maxvariants > 0) progress(min(s->variants.length() / float(*maxvariants), 1.0f), "Generating shader: %s", name);
+    defformatstring(varname, "<variant:%d,%d>%s", s->numvariants(row), row, name);
+    if(maxvariants > 0) progress(min(s->variants.length() / float(maxvariants), 1.0f), "Generating shader: %s", name);
     vector<char> vsbuf, psbuf, vsbak, psbak;
     GENSHADER(s->defaultparams.length(), genuniformdefs(vsbuf, psbuf, vs, ps, s));
     GENSHADER(strstr(vs, "//:fog") || strstr(ps, "//:fog"), genfogshader(vsbuf, psbuf, vs, ps));
-    Shader *v = newshader(*type, varname, vs, ps, s, *row);
+    Shader *v = newshader(type, varname, vs, ps, s, row);
     if(v)
     {
-        if(strstr(ps, "//:variant") || strstr(vs, "//:variant")) gengenericvariant(*s, varname, vs, ps, *row);
+        if(strstr(ps, "//:variant") || strstr(vs, "//:variant")) gengenericvariant(*s, varname, vs, ps, row);
+        return v;
     }
+    return NULL;
 }
-COMMAND(0, variantshader, "isissi");
+ICOMMAND(0, variantshader, "isissi", (int *type, char *name, int *row, char *vs, char *ps, int *maxvariants), variantshader(*type, name, *row, vs, ps, *maxvariants));
 
 void setshader(char *name)
 {

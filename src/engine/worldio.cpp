@@ -647,6 +647,10 @@ void save_config(char *mname, bool forcesave = false, int backuprev = -1)
     if(aliases) h->printf("\n");
     if(verbose) conoutf("Saved %d aliases", aliases);
 
+    int worldmenus = UI::saveworldmenus(h);
+    if(worldmenus) h->printf("\n");
+    if(verbose) conoutf("Saved %d world menus", aliases);
+
     // texture slots
     int nummats = sizeof(materialslots)/sizeof(materialslots[0]);
     progress(0, "Saving material slots..");

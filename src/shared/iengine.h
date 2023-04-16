@@ -512,7 +512,7 @@ extern bool checkchallenge(const char *answerstr, void *correct);
 // UI
 enum { EDITORFOCUSED = 1, EDITORUSED, EDITORFOREVER, EDITORREADONLY };
 struct editor;
-
+struct ImageData;
 enum { CURSOR_DEFAULT = 0, CURSOR_HOVER, CURSOR_HIDDEN, CURSOR_MAX };
 
 namespace UI
@@ -536,10 +536,14 @@ namespace UI
     extern bool textinput(const char *str, int len);
 
     extern void setup();
+    extern void cleanup();
+    extern void cleangl();
     extern void update();
     extern void render();
-    extern void cleanup();
+    extern bool composite(ImageData &d, int w, int h, const char *name, bool msg = true);
     extern void mousetrack(float dx, float dy);
+    extern int saveworldmenus(stream *h);
+    extern void resetworldmenus();
 }
 
 // menus

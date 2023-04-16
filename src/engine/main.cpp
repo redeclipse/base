@@ -501,6 +501,7 @@ void resetgl()
     progress(0, "Resetting OpenGL..");
     engineready = false;
 
+    UI::cleangl();
     cleanupva();
     cleanupparticles();
     cleanupstains();

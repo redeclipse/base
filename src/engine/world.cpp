@@ -1446,6 +1446,7 @@ void resetmap(bool empty, int variant)
     clearsleep();
     cancelsel();
     pruneundos();
+    UI::resetworldmenus();
     setsvar("maptext", "", false);
     mapcrc = 0;
     mapvariant = variant;

@@ -288,7 +288,7 @@ extern int glversion, glslversion, glcompat;
 extern char *gfxvendor, *gfxrenderer, *gfxversion;
 extern int maxdrawbufs, maxdualdrawbufs;
 
-enum { DRAWTEX_NONE = 0, DRAWTEX_ENVMAP, DRAWTEX_MAPSHOT, DRAWTEX_MINIMAP, DRAWTEX_MODELPREVIEW, DRAWTEX_HALO, DRAWTEX_HAZE = DRAWTEX_MAPSHOT };
+enum { DRAWTEX_NONE = 0, DRAWTEX_ENVMAP, DRAWTEX_MAPSHOT, DRAWTEX_MINIMAP, DRAWTEX_MODELPREVIEW, DRAWTEX_HALO, DRAWTEX_COMPOSITE, DRAWTEX_HAZE = DRAWTEX_MAPSHOT };
 
 extern int vieww, viewh;
 extern float curfov, fovy, aspect, forceaspect;

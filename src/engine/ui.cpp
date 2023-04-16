@@ -5,6 +5,8 @@ namespace UI
 {
     int cursortype = CURSOR_DEFAULT;
     bool cursorlocked = false, mousetracking = false, globalscrolllocked = false;
+    GLuint comptexture = 0, comptexfbo = 0;
+    int comptexw = 0, comptexh = 0;
 
     static bool texgc = false;
 
@@ -729,6 +731,7 @@ namespace UI
         virtual bool isfill() const { return false; }
         virtual bool iscolour() const { return false; }
         virtual bool istext() const { return false; }
+        virtual bool iscomp() const { return false; }
         virtual bool isimage() const { return false; }
         virtual bool iseditor() const { return false; }
         virtual bool isclip() const { return false; }
@@ -828,28 +831,30 @@ namespace UI
     enum
     {
         WINDOW_NONE = 0,
-        WINDOW_MENU = 1<<0, WINDOW_PASS = 1<<1, WINDOW_TIP = 1<<2, WINDOW_POPUP = 1<<3, WINDOW_PERSIST = 1<<4, WINDOW_TOP = 1<<5,        WINDOW_ALL = WINDOW_MENU|WINDOW_PASS|WINDOW_TIP|WINDOW_POPUP|WINDOW_PERSIST|WINDOW_TOP
+        WINDOW_MENU = 1<<0, WINDOW_PASS = 1<<1, WINDOW_TIP = 1<<2, WINDOW_POPUP = 1<<3, WINDOW_PERSIST = 1<<4, WINDOW_TOP = 1<<5,
+        WINDOW_ALL = WINDOW_MENU|WINDOW_PASS|WINDOW_TIP|WINDOW_POPUP|WINDOW_PERSIST|WINDOW_TOP
     };
 
     struct Window : Object
     {
-        char *name;
+        char *name, *body;
         uint *contents, *onshow, *onhide;
-        bool exclusive, closing;
+        bool exclusive, closing, worldui;
         int allowinput, windowflags;
         float px, py, pw, ph;
         vec2 sscale, soffset;
 
-        Window(const char *name, const char *contents, const char *onshow, const char *onhide, int windowflags_) :
-            name(newstring(name)),
+        Window(const char *name, const char *contents, const char *onshow, const char *onhide, int windowflags_, bool worldui_) :
+            name(newstring(name)), body(NULL),
             contents(compilecode(contents)),
-            onshow(onshow && onshow[0] ? compilecode(onshow) : NULL),
-            onhide(onhide && onhide[0] ? compilecode(onhide) : NULL),
-            exclusive(false), closing(false), allowinput(1),
+            onshow(!worldui_ && onshow && onshow[0] ? compilecode(onshow) : NULL),
+            onhide(!worldui_ && onhide && onhide[0] ? compilecode(onhide) : NULL),
+            exclusive(false), closing(false), worldui(worldui_), allowinput(1),
             px(0), py(0), pw(0), ph(0),
             sscale(1, 1), soffset(0, 0)
         {
-            windowflags = clamp(windowflags_, 0, int(WINDOW_ALL));
+            if(worldui) body = newstring(contents);
+            windowflags = worldui ? 0 : clamp(windowflags_, 0, int(WINDOW_ALL));
         }
         ~Window()
         {
@@ -955,7 +960,8 @@ namespace UI
 
         void projection()
         {
-            hudmatrix.ortho(px, px + pw, py + ph, py, -1, 1);
+            if(drawtex == DRAWTEX_COMPOSITE) hudmatrix.ortho(px, px + pw * 0.5f, py, py + ph * 0.5f, -1, 1);
+            else hudmatrix.ortho(px, px + pw, py + ph, py, -1, 1);
             resethudmatrix();
             sscale = vec2(hudmatrix.a.x, hudmatrix.b.y).mul(0.5f);
             soffset = vec2(hudmatrix.d.x, hudmatrix.d.y).mul(0.5f).add(0.5f);
@@ -1178,7 +1184,7 @@ namespace UI
         }
     };
 
-    static World *world = NULL, *wmain = NULL, *wprogress = NULL;
+    static World *world = NULL, *wmain = NULL, *wprogress = NULL, *wcomp = NULL;
 
     void Window::build()
     {
@@ -1192,8 +1198,20 @@ namespace UI
     ICOMMAND(0, newui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *windowflags),
     {
         Window *window = windows.find(name, NULL);
-        if(window) { if(window == UI::window) return; world->hide(window); windows.remove(name); delete window; }
-        windows[name] = new Window(name, contents, onshow, onhide, *windowflags);
+        bool worldui = (identflags&IDF_WORLD) != 0;
+        if(window)
+        {
+            if(window == UI::window) return;
+            if(!window->worldui && worldui)
+            {
+                conoutf("\frCannot override builtin UI %s with one from the map", window->name);
+                return;
+            }
+            world->hide(window);
+            windows.remove(name);
+            delete window;
+        }
+        windows[name] = new Window(name, contents, onshow, onhide, *windowflags, worldui);
     });
 
     ICOMMAND(0, uiallowinput, "b", (int *val), { if(window) { if(*val >= 0) window->allowinput = clamp(*val, 0, 2); intret(window->allowinput); } });
@@ -2122,6 +2140,103 @@ namespace UI
         if(tex->alphamask[ty*((tex->xs+7)/8) + tx/8] & (1<<(tx%8))) return true;
         return false;
     }
+
+    struct Composite : Target
+    {
+        Shader *shdr;
+        struct param
+        {
+            char *name;
+            vec4 value;
+
+            param() : name(NULL), value(0, 0, 0, 0) {}
+            ~param() { DELETEA(name); }
+        };
+
+        vector<param> params;
+        vector<Texture *> texs;
+
+        Composite() : shdr(NULL) {}
+
+        void setup(uint *body, float minw_ = 0, float minh_ = 0, const Color &color_ = Color(colourwhite))
+        {
+            Target::setup(minw_, minh_, color_);
+            char *name = executestr(body);
+            if(name)
+            {
+                shdr = lookupshaderbyname(name);
+                DELETEA(name);
+            }
+            params.setsize(0);
+            texs.setsize(0);
+        }
+
+        static const char *typestr() { return "#Composite"; }
+        const char *gettype() const { return typestr(); }
+        bool iscomp() const { return true; }
+
+        void startdraw()
+        {
+            (shdr && shdr->loaded() ? shdr : hudshader)->set();
+            gle::defvertex(2);
+            gle::deftexcoord0();
+        }
+
+        void draw(float sx, float sy)
+        {
+            changedraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
+            resetblend();
+
+            vector<LocalShaderParam> list;
+            loopv(params)
+            {
+                LocalShaderParam param = list.add(LocalShaderParam(params[i].name));
+                param.set(params[i].value); // automatically converts to correct type
+            }
+            loopv(texs)
+            {
+                glActiveTexture_(GL_TEXTURE0+i);
+                glBindTexture(GL_TEXTURE_2D, texs[i]->id);
+            }
+            glActiveTexture_(GL_TEXTURE0);
+
+            colors[0].init();
+            gle::begin(GL_TRIANGLE_STRIP);
+            gle::attribf(sx+(w*getcoord(FC_TL, 0)), sy+(h*getcoord(FC_TL, 1))); gle::attribf(0, 0);
+            gle::attribf(sx+(w*getcoord(FC_TR, 0)), sy+(h*getcoord(FC_TR, 1))); gle::attribf(1, 0);
+            gle::attribf(sx+(w*getcoord(FC_BL, 0)), sy+(h*getcoord(FC_BL, 1))); gle::attribf(0, 1);
+            gle::attribf(sx+(w*getcoord(FC_BR, 0)), sy+(h*getcoord(FC_BR, 1))); gle::attribf(1, 1);
+            gle::end();
+
+            Object::draw(sx, sy);
+        }
+    };
+
+    ICOMMAND(0, uicomp, "effe", (uint *body, float *minw, float *minh, uint *children), \
+        BUILD(Composite, o, o->setup(body, *minw*uiscale, *minh*uiscale), children));
+
+    UICMDT(Composite, comp, param, "sffff", (char *name, float *x, float *y, float *z, float *w),
+    {
+        if(!name || !*name) return;
+        Composite::param *p = NULL;
+        loopv(o->params) if(!strcmp(o->params[i].name, name))
+        {
+            p = &o->params[i];
+            break;
+        }
+        if(!p)
+        {
+            p = &o->params.add();
+            p->name = newstring(name);
+        }
+        p->value = vec4(*x, *y, *z, *w);
+    });
+
+    UICMDT(Composite, comp, tex, "s", (char *name),
+    {
+        if(!name || !*name || o->texs.length() >= 10) return;
+        o->texs.add(textureload(name, 3, true, false, texgc));
+    });
 
     struct Image : Target
     {
@@ -5447,6 +5562,7 @@ namespace UI
     {
         world = wmain = new World;
         wprogress = new World;
+        wcomp = new World;
         inputsteal = NULL;
     }
 
@@ -5454,11 +5570,13 @@ namespace UI
     {
         wmain->children.setsize(0);
         wprogress->children.setsize(0);
+        wcomp->children.setsize(0);
         enumerate(windows, Window *, w, delete w);
         windows.clear();
+        world = NULL;
         DELETEP(wmain);
         DELETEP(wprogress);
-        world = NULL;
+        DELETEP(wcomp);
         inputsteal = NULL;
     }
 
@@ -5519,5 +5637,120 @@ namespace UI
         world = wmain;
     }
 
+    void cleancomptex()
+    {
+        if(comptexfbo) { glDeleteFramebuffers_(1, &comptexfbo); comptexfbo = 0; }
+        if(comptexture) { glDeleteTextures(1, &comptexture); comptexture = 0; }
+        comptexw = comptexh = 0;
+    }
+
+    bool composite(ImageData &d, int w, int h, const char *name, bool msg)
+    {
+        if(!name || !*name || drawtex) return false; // need a name and can't be inside FBO already
+        int oldw = comptexw, oldh = comptexh;
+
+        comptexw = clamp(w > 0 ? w : 512, 1, 1<<12);
+        comptexh = clamp(h > 0 ? h : 512, 1, 1<<12);
+
+        if(oldw != comptexw || oldh != comptexh)
+        {
+            cleancomptex();
+            comptexw = w;
+            comptexh = h;
+        }
+
+        if(msg) progress(loadprogress, "Compositing texture: %s [%dx%d]", name, comptexw, comptexh);
+
+        GLERROR;
+        if(!comptexfbo) glGenFramebuffers_(1, &comptexfbo);
+        glBindFramebuffer_(GL_FRAMEBUFFER, comptexfbo);
+        if(!comptexture)
+        {
+            glGenTextures(1, &comptexture);
+            createtexture(comptexture, comptexw, comptexh, NULL, 3, 1, GL_RGBA, GL_TEXTURE_2D);
+            glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, comptexture, 0);
+        }
+        GLERROR;
+        if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        {
+            if(msg) conoutf("\frFailed allocating composite texture framebuffer");
+            glBindFramebuffer_(GL_FRAMEBUFFER, 0);
+            return false;
+        }
+
+        World *oldworld = world;
+        int oldhudw = hudw, oldhudh = hudh, olddrawtex = drawtex;
+        float oldtextscale = curtextscale;
+        drawtex = DRAWTEX_COMPOSITE;
+
+        hudw = comptexw;
+        hudh = comptexh;
+        glViewport(0, 0, hudw, hudh);
+        glClearColor(0, 0, 0, 0);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        world = wcomp;
+        defformatstring(compname, "comp_%s", name);
+        showui(compname);
+
+        curtextscale = 1;
+        cursortype = CURSOR_DEFAULT;
+        mousetracking = false;
+        cursorlocked = false;
+        globalscrolllocked = false;
+        pushfont();
+        calctextscale();
+        world->build();
+        popfont();
+
+        curtextscale = 1;
+        pushfont();
+        world->layout();
+        world->adjustchildren();
+        world->draw();
+        popfont();
+        curtextscale = oldtextscale;
+
+        ImageData s(comptexw, comptexh, 4);
+        glPixelStorei(GL_PACK_ALIGNMENT, 1);
+        glReadPixels(0, 0, s.w, s.h, GL_RGBA, GL_UNSIGNED_BYTE, s.data);
+        d.replace(s);
+
+        world = oldworld;
+        hudw = oldhudw;
+        hudh = oldhudh;
+        drawtex = olddrawtex;
+        glBindFramebuffer_(GL_FRAMEBUFFER, 0);
+        glViewport(0, 0, hudw, hudh);
+
+        return true;
+    }
+
+    void cleangl()
+    {
+        cleancomptex();
+    }
+
     void mousetrack(float dx, float dy) { mousetrackvec.add(vec2(dx, dy)); }
+
+    int saveworldmenus(stream *h)
+    {
+        int worldmenus = 0;
+        enumerate(windows, Window *, w,
+        {
+            if(!w->worldui || !w->body) continue;
+            h->printf("newui %s [%s]\n", w->name, w->body);
+            worldmenus++;
+        });
+        return worldmenus;
+    }
+
+    void resetworldmenus()
+    {
+        enumerate(windows, Window *, w,
+        {
+            if(!w->worldui || !w->body) continue;
+            DELETEA(w->body);
+        });
+    }
 }

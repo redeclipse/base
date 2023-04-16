@@ -1671,197 +1671,6 @@ VAR(0, usedds, 0, 1, 1);
 VAR(0, dbgdds, 0, 0, 1);
 VAR(0, scaledds, 0, 2, 4);
 
-GLuint proctexture = 0, proctexfbo = 0;
-SVAR(0, proctexname, "");
-SVAR(0, proctexshader, "");
-VAR(0, proctexw, 0, 0, 1<<12);
-VAR(0, proctexh, 0, 0, 1<<12);
-
-void cleanproctex()
-{
-    if(proctexfbo) { glDeleteFramebuffers_(1, &proctexfbo); proctexfbo = 0; }
-    if(proctexture) { glDeleteTextures(1, &proctexture); proctexture = 0; }
-}
-
-void proctexparams(vector<char *> &paramlist, const char *params, int limit = 0, bool allowempty = false)
-{
-    if(!params || !*params || (limit && paramlist.length() >= limit)) return;
-    vector<char *> list;
-    explodelist(params, list);
-    loopv(list)
-    {
-        if(!list[i] || !*list[i])
-        {
-            if(allowempty)
-            {
-                paramlist.add(newstring(""));
-                if(limit && paramlist.length() >= limit) break;
-            }
-            continue;
-        }
-        char *val = NULL;
-        switch(*list[i])
-        {
-            case '$': // lookup variable as value
-            {
-                ident *id = getident((const char *)&list[1]);
-                if(id) switch(id->type)
-                {
-                    case ID_VAR: val = newstring(intstr(id->val.i)); break;
-                    case ID_FVAR: val = newstring(floatstr(id->val.f)); break;
-                    case ID_SVAR: val = newstring(id->val.s); break;
-                    case ID_ALIAS: val = newstring(id->getstr()); break;
-                    default: break;
-                }
-                break;
-            }
-            case '@': val = executestr((const char *)&list[1]); break; // execute script and use return as value
-            default: val = newstring(list[i]); break; // use the string itself
-        }
-        paramlist.add(val);
-        if(limit && paramlist.length() >= limit) break;
-    }
-    list.deletearrays();
-}
-
-bool drawproctex(ImageData &d, int w, int h, const char *name, const char *body, const char *params, const char *textures, bool msg = true)
-{
-    if(!name || !*name) return false; // need a name
-    setsvar("proctexname", name);
-    setsvar("proctexshader", name);
-    int oldw = proctexw, oldh = proctexh;
-    setvar("proctexw", w > 0 ? w : 512);
-    setvar("proctexh", h > 0 ? h : 512);
-
-    vector<char *> paramlist, texlist;
-    if(body && *body)
-    {
-        const char *contents = *body == '$' ? getalias(&body[1]) : body;
-        vector<char *> cmdlist;
-        explodelist(contents, cmdlist);
-        for(int p = 0; p+1 < cmdlist.length(); p += 2)
-        {
-            if(!cmdlist[p] || !*cmdlist[p] || !cmdlist[p+1] || !*cmdlist[p+1]) continue;
-            if(!strcmp(cmdlist[p], "code"))
-            {
-                char *ret = executestr(cmdlist[p+1]);
-                if(ret && *ret) setsvar("proctexshader", ret); // allow the code to override the shader name if necessary
-                DELETEA(ret);
-            }
-            else if(!strcmp(cmdlist[p], "params")) proctexparams(paramlist, cmdlist[p+1]);
-            else if(!strcmp(cmdlist[p], "textures")) proctexparams(texlist, cmdlist[p+1], 9);
-        }
-        cmdlist.deletearrays();
-    }
-    if(params && *params) proctexparams(paramlist, params); // process after so they override
-    if(textures && *textures) // override defined textures
-    {
-        vector<char *> overridelist;
-        proctexparams(overridelist, textures, 9, true); // allow empty statements to keep originals
-        loopv(overridelist)
-        {
-            if(!overridelist[i] || !*overridelist[i]) continue; // skip empty
-            if(i >= texlist.length()) texlist.add(newstring(overridelist[i]));
-            else
-            {
-                DELETEA(texlist[i]);
-                texlist[i] = newstring(overridelist[i]);
-            }
-        }
-        overridelist.deletearrays();
-    }
-    loopv(texlist) textureload(texlist[i]); // preload or things break
-
-    Shader *procshader = lookupshaderbyname(proctexshader);
-    if(!procshader)
-    {
-        if(msg) conoutf("\frCould not load procedural texture shader: %s (%s)", proctexname, proctexshader);
-        paramlist.deletearrays();
-        texlist.deletearrays();
-        return false;
-    }
-
-    if(oldw != proctexw || oldh != proctexh)
-    {
-        cleanproctex();
-        proctexw = w;
-        proctexh = h;
-    }
-
-    GLERROR;
-    if(!proctexfbo) glGenFramebuffers_(1, &proctexfbo);
-    glBindFramebuffer_(GL_FRAMEBUFFER, proctexfbo);
-    if(!proctexture)
-    {
-        glGenTextures(1, &proctexture);
-        createtexture(proctexture, proctexw, proctexh, NULL, 3, 1, GL_RGBA, GL_TEXTURE_2D);
-        glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, proctexture, 0);
-    }
-    GLERROR;
-    if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-    {
-        if(msg) conoutf("\frFailed allocating procedural texture framebuffer");
-        paramlist.deletearrays();
-        texlist.deletearrays();
-        return false;
-    }
-
-    if(msg) progress(loadprogress, "Generating texture: %s (%s) [%dx%d]", proctexname, proctexshader, proctexw, proctexh);
-
-    glViewport(0, 0, proctexw, proctexh);
-    glClearColor(0, 0, 0, 0);
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    pushhudmatrix();
-    hudmatrix.ortho(0, 1, 1, 0, -1, 1);
-    flushhudmatrix();
-
-    procshader->set();
-    vector<LocalShaderParam> lsplist;
-    for(int p = 0; p+1 < paramlist.length(); p += 2)
-    {
-        if(!paramlist[p] || !*paramlist[p] || !paramlist[p+1] || !*paramlist[p+1]) continue;
-        vector<char *> vallist;
-        proctexparams(vallist, paramlist[p+1], 4);
-        float values[4] = { 0.f, 0.f, 0.f, 0.f };
-        loopi(min(vallist.length(), 4)) values[i] = parsefloat(vallist[i]);
-        LocalShaderParam param = lsplist.add(LocalShaderParam(paramlist[p]));
-        param.setf(values[0], values[1], values[2], values[3]); // setf automatically converts to correct type
-        vallist.deletearrays();
-    }
-    paramlist.deletearrays();
-
-    loopv(texlist)
-    {
-        Texture *t = textureload(texlist[i]);
-        glActiveTexture_(GL_TEXTURE0+i);
-        glBindTexture(GL_TEXTURE_2D, (t ? t : notexture)->id);
-    }
-    texlist.deletearrays();
-    glActiveTexture_(GL_TEXTURE0);
-
-    gle::defvertex(2);
-    gle::deftexcoord0();
-    gle::begin(GL_TRIANGLE_STRIP);
-    gle::attribf(-1, -1); gle::attribf(0, 0);
-    gle::attribf(1, -1); gle::attribf(1, 0);
-    gle::attribf(-1, 1); gle::attribf(0, 1);
-    gle::attribf(1, 1); gle::attribf(1, 1);
-    gle::end();
-
-    ImageData s(proctexw, proctexh, 4);
-    glPixelStorei(GL_PACK_ALIGNMENT, 1);
-    glReadPixels(0, 0, s.w, s.h, GL_RGBA, GL_UNSIGNED_BYTE, s.data);
-    d.replace(s);
-
-    pophudmatrix();
-    resethudshader();
-
-    glBindFramebuffer_(GL_FRAMEBUFFER, 0);
-    glViewport(0, 0, hudw, hudh);
-
-    return true;
-}
 
 static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, bool msg = true, int *compress = NULL, int *wrap = NULL, TextureAnim *anim = NULL)
 {
@@ -1877,7 +1686,7 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
 
     if(!file && !cmds) { if(msg) conoutf("\frCould not load null texture"); return false; }
 
-    bool raw = !usedds || !compress, dds = false, proc = false;
+    bool raw = !usedds || !compress, dds = false, comp = false;
     for(const char *pcmds = cmds; pcmds;)
     {
         #define PARSETEXCOMMANDS(cmds) \
@@ -1898,26 +1707,26 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
         if(matchstring(cmd, len, "dds")) dds = true;
         else if(matchstring(cmd, len, "thumbnail")) raw = true;
         else if(matchstring(cmd, len, "stub")) return canloadsurface(file);
-        else if(matchstring(cmd, len, "proc"))
+        else if(matchstring(cmd, len, "comp"))
         {
             int w = atoi(arg[0]);
             int h = atoi(arg[1]);
             if(w <= 0 || w > (1<<12)) w = 512;
             if(h <= 0 || h > (1<<12)) h = 512;
 
-            string procstr[6];
-            loopi(6)
+            string compstr[3];
+            loopi(3)
             {
-                if(arg[i] && *arg[i]) COPYTEXARG(procstr[i], arg[i]);
-                else procstr[i][0] = 0;
+                if(arg[i] && *arg[i]) COPYTEXARG(compstr[i], arg[i]);
+                else compstr[i][0] = 0;
             }
 
-            if(drawproctex(d, atoi(procstr[0]), atoi(procstr[1]), procstr[2], procstr[3], procstr[4], procstr[5], msg)) proc = true;
+            if(UI::composite(d, atoi(compstr[0]), atoi(compstr[1]), compstr[2], msg)) comp = true;
             else if(!file && !*file) return false; // fall back to just the file if this fails
         }
     }
 
-    if(!proc)
+    if(!comp)
     {
         if(!file) { if(msg) conoutf("\frCould not load texture: %s", tname); return false; }
 
@@ -4012,7 +3821,6 @@ void cleanuptexture(Texture *t)
 
 void cleanuptextures()
 {
-    cleanproctex();
     cleanupmipmaps();
     clearenvtexs();
     loopv(slots) slots[i]->cleanup();
