@@ -918,7 +918,11 @@ COMMAND(0, entpush, "i");
 void delent()
 {
     if(noentedit()) return;
-    groupedit(e.type = ET_EMPTY;);
+    groupedit(
+    {
+        entities::unlinkent(n);
+        e.type = ET_EMPTY;
+    });
     entcancel();
 }
 COMMAND(0, delent, "");
