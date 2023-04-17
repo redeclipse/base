@@ -516,8 +516,7 @@ enum { CURSOR_DEFAULT = 0, CURSOR_HOVER, CURSOR_HIDDEN, CURSOR_MAX };
 
 namespace UI
 {
-    extern bool cursorlocked;
-    extern int uihidden, cursortype;
+    extern int uihidden;
     extern char *uiopencmd, *uiclosecmd;
     extern bool showui(const char *name);
     extern bool hideui(const char *name = NULL);
@@ -540,7 +539,11 @@ namespace UI
     extern void update();
     extern void render();
     extern bool composite(uint *tex, const char *name, const char *args = NULL, int w = 512, int h = 512, int tclamp = 0, bool mipit = true, bool msg = true);
+
     extern void mousetrack(float dx, float dy);
+    extern bool cursorlock();
+    extern int cursortype();
+
     extern int saveworldmenus(stream *h);
     extern void resetworldmenus();
 }

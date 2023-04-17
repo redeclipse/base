@@ -2507,7 +2507,7 @@ namespace game
 
             UI::mousetrack(mousemovex, mousemovey);
 
-            if(!UI::cursorlocked)
+            if(!UI::cursorlock())
             {
                 cursorx = clamp(cursorx+mousemovex, 0.f, 1.f);
                 cursory = clamp(cursory+mousemovey, 0.f, 1.f);

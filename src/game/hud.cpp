@@ -720,7 +720,7 @@ namespace hud
             case POINTER_UI:
             {
                 if(UI::uihidden) return NULL;
-                switch(UI::cursortype)
+                switch(UI::cursortype())
                 {
                     case CURSOR_HIDDEN: return NULL; break;
                     case CURSOR_HOVER: return cursorhovertex; break;
@@ -1579,7 +1579,7 @@ namespace hud
         }
 
         resethudshader();
-        if(progressing)// && !engineready)
+        if(progressing && !engineready)
         {
             if(showloadinglogos)
             {
@@ -1833,7 +1833,7 @@ namespace hud
                 resethudshader();
                 drawpointers(hudwidth, hudheight);
             }
-            //else UI::render();
+            else UI::render();
         }
         glDisable(GL_BLEND);
     }

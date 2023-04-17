@@ -3,14 +3,8 @@
 
 namespace UI
 {
-    int cursortype = CURSOR_DEFAULT;
-    bool cursorlocked = false, mousetracking = false, globalscrolllocked = false;
     GLuint comptexfbo = 0;
-
     static bool texgc = false;
-
-    vec2 mousetrackvec;
-
     static int lastthumbnail = 0;
 
     FVAR(0, uitextscale, 1, 0, 0);
@@ -1020,6 +1014,13 @@ namespace UI
 
     struct World : Object
     {
+        int cursortype;
+        bool cursorlocked, mousetracking, lockscroll;
+        vec2 mousetrackvec;
+
+        World() : cursortype(CURSOR_DEFAULT), cursorlocked(false), mousetracking(false), lockscroll(false), mousetrackvec(0, 0) {}
+        ~World() {}
+
         static const char *typestr() { return "#World"; }
         const char *gettype() const { return typestr(); }
 
@@ -1115,12 +1116,12 @@ namespace UI
             return false;
         }
 
-        int hideall()
+        int hideall(bool force = false)
         {
             int hidden = 0;
             loopwindowsrev(w,
             {
-                if(w->windowflags&WINDOW_PERSIST) continue;
+                if(!force && w->windowflags&WINDOW_PERSIST) continue;
                 hide(w, i);
                 hidden++;
             });
@@ -1185,11 +1186,12 @@ namespace UI
         }
     };
 
-    static World *world = NULL, *wmain = NULL, *wprogress = NULL, *wcomp = NULL;
-    static World *worlds[3] = { wmain, wprogress, wcomp };
+    enum { WORLD_MAIN = 0, WORLD_PROGRESS, WORLD_COMPOSITE, WORLD_MAX };
+    World *world = NULL, *worlds[WORLD_MAX] = { NULL, NULL, NULL };
 
     void Window::build()
     {
+        if(!world) return;
         reset(world);
         setup();
         window = this;
@@ -1243,25 +1245,32 @@ namespace UI
 
     ICOMMAND(0, uicursorx, "", (), floatret(cursorx*float(hudw)/hudh));
     ICOMMAND(0, uicursory, "", (), floatret(cursory));
-    ICOMMAND(0, uilockcursor, "", (), cursorlocked = true);
-    ICOMMAND(0, uilockscroll, "", (), globalscrolllocked = true);
+    ICOMMAND(0, uilockcursor, "", (), if(world) world->cursorlocked = true);
+    ICOMMAND(0, uilockscroll, "", (), if(world) world->lockscroll = true);
 
     ICOMMAND(0, uiaspect, "", (), floatret(float(hudw)/hudh));
 
-    ICOMMAND(0, uicursortype, "b", (int *val), { if(*val >= 0) cursortype = clamp(*val, 0, CURSOR_MAX-1); intret(cursortype); });
+    ICOMMAND(0, uicursortype, "b", (int *val), if(world) { if(*val >= 0) world->cursortype = clamp(*val, 0, CURSOR_MAX-1); intret(world->cursortype); });
 
     ICOMMAND(0, uimousetrackx, "", (), {
-        mousetracking = true;
-        floatret(mousetrackvec.x);
+        if(world)
+        {
+            world->mousetracking = true;
+            floatret(world->mousetrackvec.x);
+        }
     });
 
     ICOMMAND(0, uimousetracky, "", (), {
-        mousetracking = true;
-        floatret(mousetrackvec.y);
+        if(world)
+        {
+            world->mousetracking = true;
+            floatret(world->mousetrackvec.y);
+        }
     });
 
     bool showui(const char *name)
     {
+        if(!world) return false;
         Window *window = windows.find(name, NULL);
         if(!window) return false;
         return world->show(window);
@@ -1269,6 +1278,7 @@ namespace UI
 
     bool hideui(const char *name)
     {
+        if(!world) return false;
         if(!name) return world->hideall() > 0;
         else
         {
@@ -1311,6 +1321,7 @@ namespace UI
 
     bool uivisible(const char *name)
     {
+        if(!world) return false;
         if(!name) return world->children.length() > 0;
         Window *window = windows.find(name, NULL);
         return window && !window->closing && world->children.find(window) >= 0;
@@ -1333,9 +1344,9 @@ namespace UI
 
     ICOMMAND(0, showui, "s", (char *name), intret(showui(name) ? 1 : 0));
     ICOMMAND(0, hideui, "s", (char *name), intret(hideui(name) ? 1 : 0));
-    ICOMMAND(0, hidetopui, "", (), intret(world->hidetop() ? 1 : 0));
-    ICOMMAND(0, topui, "", (), result(world->topname()));
-    ICOMMAND(0, hideallui, "", (), intret(world->hideall()));
+    ICOMMAND(0, hidetopui, "", (), intret(world && world->hidetop() ? 1 : 0));
+    ICOMMAND(0, topui, "", (), result(world ? world->topname() : ""));
+    ICOMMAND(0, hideallui, "i", (int *n), intret(world ? world->hideall(*n != 0) : 0));
     ICOMMAND(0, toggleui, "s", (char *name), intret(toggleui(name) ? 1 : 0));
     ICOMMAND(0, holdui, "sD", (char *name, int *down), holdui(name, *down!=0));
     ICOMMAND(0, pressui, "sD", (char *name, int *down), pressui(name, *down!=0));
@@ -3619,7 +3630,7 @@ namespace UI
 
         void scrollup(float cx, float cy, bool inside);
         void scrolldown(float cx, float cy, bool inside);
-        bool canscroll() const { return !scrolllock && !globalscrolllocked; }
+        bool canscroll() const { return !scrolllock && !world->lockscroll; }
         void setscrolllock(bool scrolllock_) { scrolllock = scrolllock_; }
     };
 
@@ -5528,16 +5539,17 @@ namespace UI
 
     int hasinput()
     {
-        return world->allowinput();
+        return world && world->allowinput();
     }
 
     bool hasmenu(bool pass)
     {
-        return world->hasmenu(pass);
+        return world && world->hasmenu(pass);
     }
 
     bool keypress(int code, bool isdown)
     {
+        if(!world) return false;
         if(world->rawkey(code, isdown)) return true;
         int action = 0, hold = 0;
         switch(code)
@@ -5574,28 +5586,23 @@ namespace UI
 
     bool textinput(const char *str, int len)
     {
-        return world->textinput(str, len);
+        return world && world->textinput(str, len);
     }
 
     void setup()
     {
-        world = wmain = new World;
-        wprogress = new World;
-        wcomp = new World;
+        loopi(WORLD_MAX) worlds[i] = new World;
+        world = worlds[WORLD_MAIN];
         inputsteal = NULL;
     }
 
     void cleanup()
     {
-        wmain->children.setsize(0);
-        wprogress->children.setsize(0);
-        wcomp->children.setsize(0);
+        loopi(WORLD_MAX) worlds[i]->children.setsize(0);
         enumerate(windows, Window *, w, delete w);
         windows.clear();
         world = NULL;
-        DELETEP(wmain);
-        DELETEP(wprogress);
-        DELETEP(wcomp);
+        loopi(3) DELETEP(worlds[i]);
         inputsteal = NULL;
     }
 
@@ -5606,18 +5613,19 @@ namespace UI
 
     void update()
     {
-        if(progressing)
-        {
-            world = wprogress;
-            showui("progress");
-        }
-        else if(uihidden) return;
+        if(!progressing && uihidden) return;
+
+        World *oldworld = world;
+        world = worlds[progressing ? WORLD_PROGRESS : WORLD_MAIN];
+        if(progressing) showui("progress");
+
         float oldtextscale = curtextscale;
         curtextscale = 1;
-        cursortype = CURSOR_DEFAULT;
-        mousetracking = false;
-        cursorlocked = false;
-        globalscrolllocked = false;
+        world->cursortype = CURSOR_DEFAULT;
+        world->cursorlocked = false;
+        world->mousetracking = false;
+        world->lockscroll = false;
+
         pushfont();
         readyeditors();
 
@@ -5635,25 +5643,33 @@ namespace UI
         if(inputsteal && !inputsteal->isfocus())
             inputsteal = NULL;
 
-        if(!mousetracking) mousetrackvec = vec2(0, 0);
+        if(!world->mousetracking) world->mousetrackvec = vec2(0, 0);
 
         flusheditors();
         popfont();
+
         curtextscale = oldtextscale;
+        world = oldworld;
     }
 
     void render()
     {
         if(!progressing && uihidden) return;
+
+        World *oldworld = world;
+        world = worlds[progressing ? WORLD_PROGRESS : WORLD_MAIN];
+
         float oldtextscale = curtextscale;
         curtextscale = 1;
+
         pushfont();
         world->layout();
         world->adjustchildren();
         world->draw();
         popfont();
+
         curtextscale = oldtextscale;
-        world = wmain;
+        world = oldworld;
     }
 
     void cleancomposite()
@@ -5695,7 +5711,7 @@ namespace UI
 
         setsvar("uicompargs", args ? args : "");
         World *oldworld = world;
-        world = wcomp;
+        world = worlds[WORLD_COMPOSITE];
         defformatstring(compname, "comp_%s", name);
         showui(compname);
 
@@ -5710,10 +5726,6 @@ namespace UI
         float oldtextscale = curtextscale;
         curtextscale = 1;
 
-        cursortype = CURSOR_DEFAULT;
-        mousetracking = false;
-        cursorlocked = false;
-        globalscrolllocked = false;
         pushfont();
         calctextscale();
         world->build();
@@ -5734,7 +5746,7 @@ namespace UI
         hudw = oldhudw;
         hudh = oldhudh;
 
-        hideui();
+        world->hideall(true);
         world = oldworld;
 
         drawtex = olddrawtex;
@@ -5749,7 +5761,22 @@ namespace UI
         cleancomposite();
     }
 
-    void mousetrack(float dx, float dy) { mousetrackvec.add(vec2(dx, dy)); }
+    void mousetrack(float dx, float dy)
+    {
+        loopi(WORLD_MAX) if(worlds[i]) worlds[i]->mousetrackvec.add(vec2(dx, dy));
+    }
+
+    bool cursorlock()
+    {
+        if(worlds[WORLD_MAIN]) return worlds[WORLD_MAIN]->cursorlocked;
+        return false;
+    }
+
+    int cursortype()
+    {
+        if(worlds[WORLD_MAIN]) return worlds[WORLD_MAIN]->cursortype;
+        return CURSOR_DEFAULT;
+    }
 
     int saveworldmenus(stream *h)
     {
