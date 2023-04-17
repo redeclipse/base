@@ -1199,16 +1199,15 @@ vector<Texture *> animtextures;
 
 Texture *notexture = NULL, *blanktexture = NULL; // used as default, ensured to be loaded
 
-VAR(IDF_PERSIST, comptexmindelay, 1, 25, VAR_MAX);
 static void updatetexture(Texture *t)
 {
     if(t->type&Texture::COMPOSITE)
     {
         if(t->delay <= 0) return;
-        int delay = max(comptexmindelay, t->delay), elapsed = lastmillis-t->last;
-        if(elapsed < delay) return;
-        t->last = lastmillis-(lastmillis%delay);
-        UI::composite(&t->id, t->comp, t->w, t->h, t->tclamp, t->mipmap, false);
+        int elapsed = lastmillis-t->last;
+        if(elapsed < t->delay) return;
+        t->last = lastmillis-(lastmillis%t->delay);
+        UI::composite(&t->id, t->comp, t->args, t->w, t->h, t->tclamp, t->mipmap, false);
         return;
     }
     if(t->frames.length() <= 1 || t->delay <= 0) return;
@@ -1900,7 +1899,7 @@ static Texture *texturecomp(const char *name, int tclamp = 0, bool mipit = true,
     }
 
     vector<char *> list;
-    explodelist(&name[1], list, 4); // w h name delay
+    explodelist(&name[1], list, 5); // name delay args w h
     if(list.empty()) // need at least the name
     {
         list.deletearrays();
@@ -1908,14 +1907,15 @@ static Texture *texturecomp(const char *name, int tclamp = 0, bool mipit = true,
         return notexture;
     }
 
-    int w = list.length() >= 2 ? clamp(atoi(list[1]), 0, 1<<12) : 512,
-        h = list.length() >= 3 ? clamp(atoi(list[2]), 0, 1<<12) : 512,
-        delay = list.length() >= 4 ? max(atoi(list[3]), 0) : 0;
-    if(w < 0) w = 512;
-    if(h < 0) h = 512;
+    char *n = list[0], *a = list.length() >= 3 ? list[2] : NULL;
+    int w = list.length() >= 4 ? clamp(atoi(list[3]), 0, 1<<12) : 1024,
+        h = list.length() >= 5 ? clamp(atoi(list[4]), 0, 1<<12) : 1024,
+        delay = list.length() >= 2 ? max(atoi(list[1]), 0) : 0;
+    if(w <= 0) w = 1024;
+    if(h <= 0) h = 1024;
 
     GLuint tex = 0;
-    if(!UI::composite(&tex, list[0], w, h, tclamp, mipit, msg) || !tex)
+    if(!UI::composite(&tex, n, a, w, h, tclamp, mipit, msg) || !tex)
     {
         if(msg) conoutf("\frFailed to composite texture: %s", name);
         list.deletearrays();
@@ -1925,7 +1925,8 @@ static Texture *texturecomp(const char *name, int tclamp = 0, bool mipit = true,
     char *key = newstring(name);
     t = &textures[key];
     t->name = key;
-    t->comp = newstring(list[0]);
+    t->comp = newstring(n); n = NULL;
+    t->args = newstring(a); a = NULL;
     t->tclamp = tclamp;
     t->mipmap = mipit;
     t->type = Texture::IMAGE | Texture::COMPOSITE | Texture::ALPHA;

@@ -588,7 +588,7 @@ struct Texture
         FLAGS      = 0xFF00
     };
 
-    char *name, *comp;
+    char *name, *comp, *args;
     int type, w, h, xs, ys, bpp, tclamp, frame, delay, last;
     bool mipmap, canreduce, throb;
     vector<GLuint> frames;
@@ -596,11 +596,15 @@ struct Texture
     uchar *alphamask;
 
 
-    Texture() : comp(NULL), frame(0), delay(0), last(0), throb(false), alphamask(NULL)
+    Texture() : comp(NULL), args(NULL), frame(0), delay(0), last(0), throb(false), alphamask(NULL)
     {
         frames.shrink(0);
     }
-    ~Texture() { DELETEA(comp); }
+    ~Texture()
+    {
+        DELETEA(comp);
+        DELETEA(args);
+    }
 
     GLuint idframe(int id)
     {

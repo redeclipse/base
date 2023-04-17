@@ -334,7 +334,7 @@ ICOMMAND(0, enumresolutions, "", (),
     vector<int> resolutions;
 
     // Fill list with unique resolutions
-    for(int i = 0; i < modes; i++)
+    loopi(modes)
     {
         SDL_DisplayMode mode;
         if(SDL_GetDisplayMode(index, i, &mode)) continue;

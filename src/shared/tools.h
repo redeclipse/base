@@ -1214,13 +1214,13 @@ template <class T> struct smallvector
 
     void deletecontents()
     {
-        for(int i = 0; i < len; i++) delete buf[i];
+        loopi(len) delete buf[i];
         setsize(0);
     }
 
     void deletearrays()
     {
-        for(int i = 0; i < len; i++) delete[] buf[i];
+        loopi(len) delete[] buf[i];
         setsize(0);
     }
 

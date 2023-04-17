@@ -520,11 +520,11 @@ namespace UI
     extern int uihidden, cursortype;
     extern char *uiopencmd, *uiclosecmd;
     extern bool showui(const char *name);
-    extern bool hideui(const char *name);
+    extern bool hideui(const char *name = NULL);
     extern bool toggleui(const char *name);
 
     extern int openui(const char *name);
-    extern int closeui(const char *name);
+    extern int closeui(const char *name = NULL);
 
     extern void holdui(const char *name, bool on);
     extern void pressui(const char *name, bool on);
@@ -539,7 +539,7 @@ namespace UI
     extern void cleangl();
     extern void update();
     extern void render();
-    extern bool composite(uint *tex, const char *name, int w = 512, int h = 512, int tclamp = 0, bool mipit = true, bool msg = true);
+    extern bool composite(uint *tex, const char *name, const char *args = NULL, int w = 512, int h = 512, int tclamp = 0, bool mipit = true, bool msg = true);
     extern void mousetrack(float dx, float dy);
     extern int saveworldmenus(stream *h);
     extern void resetworldmenus();

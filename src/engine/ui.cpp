@@ -959,7 +959,8 @@ namespace UI
 
         void projection()
         {
-            if(drawtex == DRAWTEX_COMPOSITE) hudmatrix.ortho(px, px + pw * 0.5f, py, py + ph * 0.5f, -1, 1);
+            if(drawtex == DRAWTEX_COMPOSITE) // composites have flipped Y axis
+                hudmatrix.ortho(px, px + pw, py, py + ph, -1, 1);
             else hudmatrix.ortho(px, px + pw, py + ph, py, -1, 1);
             resethudmatrix();
             sscale = vec2(hudmatrix.a.x, hudmatrix.b.y).mul(0.5f);
@@ -986,10 +987,11 @@ namespace UI
 
     Window *uirootwindow(Object *o)
     {
-        while(o != NULL)
+        Object *p = o;
+        while(p)
         {
-            if(o->istype<Window>()) return (Window *)o;
-            o = o->parent;
+            if(p->istype<Window>()) return (Window *)p;
+            p = p->parent;
         }
         return NULL;
     }
@@ -1225,7 +1227,7 @@ namespace UI
         if(found && !strncmp(name, "comp_", 5))
         {
             char *tname = &name[5];
-            enumerate(textures, Texture, t, if(t.type&Texture::COMPOSITE && t.comp && !strcmp(tname, t.comp)) composite(&t.id, t.comp, t.w, t.h, t.tclamp, t.mipmap, true));
+            enumerate(textures, Texture, t, if(t.type&Texture::COMPOSITE && t.comp && !strcmp(tname, t.comp)) composite(&t.id, t.comp, t.args, t.w, t.h, t.tclamp, t.mipmap, true));
         }
     }
     ICOMMAND(0, newui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *windowflags), newui(name, contents, onshow, onhide, *windowflags));
@@ -1376,7 +1378,7 @@ namespace UI
             if(children.empty()) return;
 
             float offset = 0, sx = 0, cspace = (w - subw) / max(children.length() - 1, 1), cstep = (w - subw) / children.length();
-            for(int i = 0; i < children.length(); i++)
+            loopv(children)
             {
                 Object *o = children[i];
                 o->x = offset;
@@ -5659,7 +5661,8 @@ namespace UI
         if(comptexfbo) { glDeleteFramebuffers_(1, &comptexfbo); comptexfbo = 0; }
     }
 
-    bool composite(uint *tex, const char *name, int w, int h, int tclamp, bool mipit, bool msg)
+    SVAR(0, uicompargs, "");
+    bool composite(uint *tex, const char *name, const char *args, int w, int h, int tclamp, bool mipit, bool msg)
     {
         if(!name || !*name) return false; // need a name
         if(msg) progress(loadprogress, "Compositing texture: %s [%dx%d]", name, w, h);
@@ -5690,6 +5693,7 @@ namespace UI
         int olddrawtex = drawtex;
         drawtex = DRAWTEX_COMPOSITE;
 
+        setsvar("uicompargs", args ? args : "");
         World *oldworld = world;
         world = wcomp;
         defformatstring(compname, "comp_%s", name);
@@ -5700,6 +5704,8 @@ namespace UI
         hudw = w;
         hudh = h;
         glViewport(0, 0, hudw, hudh);
+        glClearColor(0, 0, 0, 0);
+        glClear(GL_COLOR_BUFFER_BIT);
 
         float oldtextscale = curtextscale;
         curtextscale = 1;
@@ -5727,7 +5733,10 @@ namespace UI
         curtextscale = oldtextscale;
         hudw = oldhudw;
         hudh = oldhudh;
+
+        hideui();
         world = oldworld;
+
         drawtex = olddrawtex;
         glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
         glViewport(0, 0, hudw, hudh);

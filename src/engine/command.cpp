@@ -223,7 +223,7 @@ static inline ident *addident(const ident &id)
 static bool initidents()
 {
     initedidents = true;
-    for(int i = 0; i < MAXARGS; i++)
+    loopi(MAXARGS)
     {
         defformatstring(argname, "arg%d", i+1);
         newident(argname, IDF_ARG);
@@ -3237,8 +3237,7 @@ static const uint *runcode(const uint *code, tagval &result)
                 }
                 #define CALLALIAS { \
                     identstack argstack[MAXARGS]; \
-                    for(int i = 0; i < callargs; i++) \
-                        pusharg(*identmap[i], args[offset + i], argstack[i]); \
+                    loopi(callargs) pusharg(*identmap[i], args[offset + i], argstack[i]); \
                     int oldargs = _numargs; \
                     _numargs = callargs; \
                     int oldflags = identflags; \
@@ -3252,8 +3251,7 @@ static const uint *runcode(const uint *code, tagval &result)
                     if(int(code[0]) < 0x100) delete[] code; \
                     aliasstack = aliaslink.next; \
                     identflags = oldflags; \
-                    for(int i = 0; i < callargs; i++) \
-                        poparg(*identmap[i]); \
+                    loopi(callargs) poparg(*identmap[i]); \
                     for(int argmask = aliaslink.usedargs&(~0U<<callargs), i = callargs; argmask; i++) \
                         if(argmask&(1<<i)) { poparg(*identmap[i]); argmask &= ~(1<<i); } \
                     forcearg(result, op&CODE_RET_MASK); \

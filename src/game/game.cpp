@@ -3283,7 +3283,7 @@ namespace game
     {
         specreset();
         hud::showscores(false);
-        UI::closeui(NULL);
+        UI::closeui();
     }
 
     void resetstate()
