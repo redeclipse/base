@@ -5522,7 +5522,7 @@ namespace UI
 
     int hasinput()
     {
-        return world && world->allowinput();
+        return world ? world->allowinput() : 0;
     }
 
     bool hasmenu(bool pass)
