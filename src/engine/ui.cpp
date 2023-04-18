@@ -1279,7 +1279,7 @@ namespace UI
     bool hideui(const char *name)
     {
         if(!world) return false;
-        if(!name) return world->hideall() > 0;
+        if(!name || !*name) return world->hideall() > 0;
         else
         {
             Window *window = windows.find(name, NULL);
@@ -1322,21 +1322,21 @@ namespace UI
     bool uivisible(const char *name)
     {
         if(!world) return false;
-        if(!name) return world->children.length() > 0;
+        if(!name || !*name) return world->children.length() > 0;
         Window *window = windows.find(name, NULL);
         return window && !window->closing && world->children.find(window) >= 0;
     }
 
     bool uiclosing(const char *name)
     {
-        if(!name) return false;
+        if(!name || !*name) return false;
         Window *window = windows.find(name, NULL);
         return window && window->closing;
     }
 
     void uisetclose(const char *name, bool closing)
     {
-        if(!name) return;
+        if(!name || !*name) return;
         Window *window = windows.find(name, NULL);
         if(!window) return;
         window->closing = closing;
