@@ -1157,27 +1157,6 @@ namespace game
         int numdyns = numdynents();
         loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL)
         {
-            if(d->state == CS_ALIVE && isweap(d->weapselect))
-            {
-                bool last = lastmillis-d->weaptime[d->weapselect] > 0,
-                     powering = last && d->weapstate[d->weapselect] == W_S_POWER,
-                     reloading = last && d->weapstate[d->weapselect] == W_S_RELOAD,
-                     secondary = physics::secondaryweap(d);
-                float amt = last ? clamp(float(lastmillis-d->weaptime[d->weapselect])/d->weapwait[d->weapselect], 0.f, 1.f) : 0.f;
-                vec col = WPCOL(d, d->weapselect, lightcol, secondary);
-                if(d->weapselect == W_FLAMER && (!reloading || amt > 0.5f) && !physics::liquidcheck(d))
-                {
-                    float scale = powering ? 1.f+(amt*1.5f) : (d->weapstate[d->weapselect] == W_S_IDLE ? 1.f : (reloading ? (amt-0.5f)*2 : amt));
-                    adddynlight(d->ejecttag(d->weapselect), 16*scale, col, 0, 0);
-                }
-                if((W(d->weapselect, lightpersist)&1 || powering) && W(d->weapselect, lightradius) > 0)
-                {
-                    float thresh = max(amt, 0.25f), size = W(d->weapselect, lightradius)*thresh;
-                    int span = max(W2(d->weapselect, cooktime, physics::secondaryweap(d))/4, 500), interval = lastmillis%span, part = span/2;
-                    if(interval) size += size*0.5f*(interval <= part ? interval/float(part) : (span-interval)/float(part));
-                    adddynlight(d->muzzletag(d->weapselect), size, vec(col).mul(thresh), 0, 0);
-                }
-            }
             if(d->burntime && d->burning(lastmillis, d->burntime))
             {
                 int millis = lastmillis-d->lastres[W_R_BURN], delay = max(d->burndelay, 1);
