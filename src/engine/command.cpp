@@ -3791,15 +3791,6 @@ static inline void setiter(ident &id, int i, identstack &stack)
     }
 }
 
-#define EXECUTEBREAK(body, fail) \
-{ \
-    tagval exbrkv; \
-    executeret(body, exbrkv); \
-    int exbrki = exbrkv.getint(); \
-    freearg(exbrkv); \
-    if(exbrki) fail; \
-}
-
 static inline void doloop(ident &id, int offset, int n, int step, bool rev, uint *body)
 {
     if(n <= 0 || id.type != ID_ALIAS) return;
@@ -3809,7 +3800,7 @@ static inline void doloop(ident &id, int offset, int n, int step, bool rev, uint
         loopirev(n)
         {
             setiter(id, offset + i*step, stack);
-            EXECUTEBREAK(body, break);
+            execute(body);
         }
     }
     else
@@ -3817,7 +3808,7 @@ static inline void doloop(ident &id, int offset, int n, int step, bool rev, uint
         loopi(n)
         {
             setiter(id, offset + i*step, stack);
-            EXECUTEBREAK(body, break);
+            execute(body);
         }
     }
     poparg(id);
@@ -3842,7 +3833,7 @@ static inline void loopwhile(ident &id, int offset, int n, int step, bool rev, u
         {
             setiter(id, offset + i*step, stack);
             if(!executebool(cond)) break;
-            EXECUTEBREAK(body, break);
+            execute(body);
         }
     }
     else
@@ -3851,7 +3842,7 @@ static inline void loopwhile(ident &id, int offset, int n, int step, bool rev, u
         {
             setiter(id, offset + i*step, stack);
             if(!executebool(cond)) break;
-            EXECUTEBREAK(body, break);
+            execute(body);
         }
     }
     poparg(id);
@@ -3865,7 +3856,7 @@ ICOMMAND(0, loopwhilerev+, "riiee", (ident *id, int *offset, int *n, uint *cond,
 ICOMMAND(0, loopwhilerev*, "riiee", (ident *id, int *step, int *n, uint *cond, uint *body), loopwhile(*id, 0, *n, *step, true, cond, body));
 ICOMMAND(0, loopwhilerev+*, "riiiee", (ident *id, int *offset, int *step, int *n, uint *cond, uint *body), loopwhile(*id, *offset, *n, *step, true, cond, body));
 
-ICOMMAND(0, while, "ee", (uint *cond, uint *body), while(executebool(cond)) { EXECUTEBREAK(body, break); });
+ICOMMAND(0, while, "ee", (uint *cond, uint *body), while(executebool(cond)) { execute(body); });
 
 static inline void loopconc(ident &id, int offset, int n, int step, bool rev, uint *body, bool space)
 {
@@ -4240,7 +4231,7 @@ void looplist(ident *id, const char *list, const uint *body)
     for(const char *s = list, *start, *end, *qstart; parselist(s, start, end, qstart); n++)
     {
         setiter(*id, listelem(start, end, qstart), stack);
-        EXECUTEBREAK(body, break);
+        execute(body);
     }
     if(n) poparg(*id);
 }
@@ -4255,7 +4246,7 @@ void loopsublist(ident *id, const char *list, int *skip, int *count, const uint 
     for(const char *s = list, *start, *end, *qstart; parselist(s, start, end, qstart) && n < len; n++) if(n >= offset)
     {
         setiter(*id, listelem(start, end, qstart), stack);
-        EXECUTEBREAK(body, break);
+        execute(body);
     }
     if(n) poparg(*id);
 }
@@ -4271,7 +4262,7 @@ void looplist2(ident *id, ident *id2, const char *list, const uint *body)
     {
         setiter(*id, listelem(start, end, qstart), stack);
         setiter(*id2, parselist(s, start, end, qstart) ? listelem(start, end, qstart) : newstring(""), stack2);
-        EXECUTEBREAK(body, break);
+        execute(body);
     }
     if(n) { poparg(*id); poparg(*id2); }
 }
@@ -4288,7 +4279,7 @@ void looplist3(ident *id, ident *id2, ident *id3, const char *list, const uint *
         setiter(*id, listelem(start, end, qstart), stack);
         setiter(*id2, parselist(s, start, end, qstart) ? listelem(start, end, qstart) : newstring(""), stack2);
         setiter(*id3, parselist(s, start, end, qstart) ? listelem(start, end, qstart) : newstring(""), stack3);
-        EXECUTEBREAK(body, break);
+        execute(body);
     }
     if(n) { poparg(*id); poparg(*id2); poparg(*id3); }
 }
@@ -4306,7 +4297,7 @@ void looplist4(ident *id, ident *id2, ident *id3, ident *id4, const char *list, 
         setiter(*id2, parselist(s, start, end, qstart) ? listelem(start, end, qstart) : newstring(""), stack2);
         setiter(*id3, parselist(s, start, end, qstart) ? listelem(start, end, qstart) : newstring(""), stack3);
         setiter(*id4, parselist(s, start, end, qstart) ? listelem(start, end, qstart) : newstring(""), stack4);
-        EXECUTEBREAK(body, break);
+        execute(body);
     }
     if(n) { poparg(*id); poparg(*id2); poparg(*id3); poparg(*id4); }
 }
@@ -4322,7 +4313,7 @@ void looplistn(ident *id, ident *id2, const char *list, const uint *body)
     {
         setiter(*id, listelem(start, end, qstart), stack);
         setiter(*id2, n, stack2);
-        EXECUTEBREAK(body, break);
+        execute(body);
     }
     if(n) { poparg(*id); poparg(*id2); }
 }
@@ -4542,7 +4533,7 @@ ICOMMAND(0, loopfiles, "rssei", (ident *id, char *dir, char *ext, uint *body, in
     loopv(files)
     {
         setiter(*id, files[i], stack);
-        EXECUTEBREAK(body, break);
+        execute(body);
     }
     if(files.length()) poparg(*id);
 });
