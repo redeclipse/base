@@ -119,6 +119,7 @@ namespace physics
 
 namespace game
 {
+    extern vec *getplayersoundpos(physent *d);
     extern void mapslots();
     extern void mapgamesounds();
     extern void start();
@@ -137,7 +138,21 @@ namespace game
     extern vec getpalette(int palette, int index);
     extern void fixpalette(int &palette, int &index, int gver);
     extern void adddynlights();
-    extern void fxtrack(fx::emitter *e);
+
+    enum
+    {
+        ENT_POS_ORIGIN = 0,
+        ENT_POS_BOTTOM,
+        ENT_POS_MIDDLE,
+        ENT_POS_TOP,
+        ENT_POS_DIR,
+
+        // gameent only
+        ENT_POS_MUZZLE,
+        ENT_POS_TAG
+    };
+
+    extern void fxtrack(vec &pos, physent *owner, int mode, int tag = 0);
     extern void particletrack(particle *p, uint type, int &ts, bool step);
     extern void dynlighttrack(physent *owner, vec &o, vec &hud);
     extern bool mousemove(int dx, int dy, int x, int y, int w, int h);

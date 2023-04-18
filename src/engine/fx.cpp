@@ -10,6 +10,8 @@ namespace fx
     static emitter *emitters, *freeemitters, *activeemitters;
     static int numinstances, numemitters;
 
+    static emitter dummyemitter;
+
     enum
     {
         FX_STAT_EMITTER_INIT = 0,
@@ -224,7 +226,7 @@ namespace fx
         {
             if(checkconditions())
             {
-                emitfx();
+                loopi(getprop<int>(FX_PROP_ITER)) emitfx(i);
                 emitted = true;
             }
             else reset();
@@ -243,7 +245,15 @@ namespace fx
         reset();
 
         if(def.endfx.isvalid() && endmillis)
-            createfx(def.endfx, e->from, e->to, e->blend, e->scale, e->color, e->pl, NULL);
+        {
+            createfx(def.endfx)
+                .setfrom(e->from)
+                .setto(e->to)
+                .setblend(e->blend)
+                .setscale(e->scale)
+                .setcolor(e->color)
+                .setentity(e->pl);
+        }
 
         beginmillis = endmillis = 0;
     }
@@ -313,8 +323,6 @@ namespace fx
 
     void emitter::update()
     {
-        game::fxtrack(this);
-
         calcrandom();
         firstfx->update();
         if(done()) putemitter(this);
@@ -329,6 +337,65 @@ namespace fx
             inst = inst->next;
         }
     }
+
+    emitter &emitter::setfrom(const vec &newfrom)
+    {
+        from = newfrom;
+
+        // Not emitted previously, initialize prevfrom
+        if(!firstfx) prevfrom = from;
+
+        return *this;
+    }
+
+    emitter &emitter::setto(const vec &newto)
+    {
+        to = newto;
+        return *this;
+    }
+
+    emitter &emitter::setcolor(const bvec &newcolor)
+    {
+        color = newcolor;
+        return *this;
+    }
+
+    emitter &emitter::setblend(float newblend)
+    {
+        blend = newblend;
+        return *this;
+    }
+
+    emitter &emitter::setscale(float newscale)
+    {
+        scale = newscale;
+        return *this;
+    }
+
+    emitter &emitter::setparam(int index, float param)
+    {
+        ASSERT(index >= 0 && index < FX_PARAMS);
+
+        params[index] = param;
+        return *this;
+    }
+
+    emitter &emitter::setentity(physent *newpl)
+    {
+        if(!newpl) return *this;
+
+        pl = newpl;
+
+        // If "from" is not set, use entity position
+        if(from.iszero()) from = pl->o;
+
+        // If "to" is not set, use entity direction
+        if(to.iszero()) to = vec(from).add(vec(pl->yaw*RAD, pl->pitch*RAD));
+
+        return *this;
+    }
+
+    bool emitter::isvalid() { return this != &dummyemitter; }
 
     static emitter *testemitter = NULL;
     static int testmillis;
@@ -360,10 +427,9 @@ namespace fx
         putemitter(e);
     }
 
-    emitter *createfx(FxHandle fxhandle, const vec &from, const vec &to, float blend, float scale,
-        const bvec &color, physent *pl, emitter **hook)
+    emitter &createfx(FxHandle fxhandle, emitter **hook)
     {
-        if(!fxhandle.isvalid()) return NULL;
+        if(!fxhandle.isvalid()) return dummyemitter;
 
         // stop hooked FX if we want to make a different one under the same hook,
         // old hook is invalidated automatically
@@ -374,7 +440,7 @@ namespace fx
         if(!e)
         {
             if(fxdebug == 2) conoutf("\fyWarning: cannot create fx, no free emitters");
-            return NULL;
+            return dummyemitter;
         }
 
         if(!e->hook)
@@ -384,10 +450,10 @@ namespace fx
             {
                 // no free instances, emitter has nothing to do
                 putemitter(e);
-                return NULL;
+                return dummyemitter;
             }
 
-            e->prevfrom = from;
+            e->prevfrom = vec(0, 0, 0);
         }
         else
         {
@@ -395,14 +461,14 @@ namespace fx
             e->prevfrom = e->from;
         }
 
-        e->from = from;
-        e->to = to;
-        e->blend = blend;
-        e->scale = scale;
-        e->color = color;
-        e->pl = pl;
+        e->from      = vec(0, 0, 0);
+        e->to        = vec(0, 0, 0);
+        e->blend     = 1.0f;
+        e->scale     = 1.0f;
+        e->color     = bvec(255, 255, 255);
+        e->pl        = NULL;
 
-        return e;
+        return *e;
     }
 
     void clear() { while(activeemitters) putemitter(activeemitters); }
@@ -426,6 +492,17 @@ namespace fx
         listinit(emitters, maxfxemitters, freeemitters, prev, next);
     }
 
+    void removetracked(physent *pl)
+    {
+        emitter *e = activeemitters;
+        while(e)
+        {
+            emitter *next = e->next;
+            if(e->pl == pl) stopfx(e);
+            e = next;
+        }
+    }
+
     ICOMMAND(0, testfx, "siiN", (char *name, int *sameinstance, int *color, int *numargs),
     {
         if(!hasfx(name)) return;
@@ -441,7 +518,13 @@ namespace fx
 
         bvec col = *numargs > 2 ? bvec(*color) : bvec(255, 255, 255);
 
-        createfx(getfxhandle(name), from, to, 1, 1, col, NULL, *sameinstance ? &testemitter : NULL);
+        createfx(getfxhandle(name), *sameinstance ? &testemitter : NULL)
+            .setfrom(from)
+            .setto(to)
+            .setblend(1)
+            .setscale(1)
+            .setcolor(col);
+
         if(*sameinstance) testmillis = lastmillis;
     });
 }

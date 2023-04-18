@@ -153,6 +153,42 @@ namespace fx
             PROP_INT,
             0, 0, 1,
             0
+        ),
+        fxpropertydef(
+            "posfromenttag",
+            PROP_INT,
+            -1, -1, INT_MAX,
+            0
+        ),
+        fxpropertydef(
+            "endfromenttag",
+            PROP_INT,
+            -1, -1, INT_MAX,
+            0
+        ),
+        fxpropertydef(
+            "posfroment",
+            PROP_INT,
+            game::ENT_POS_ORIGIN, game::ENT_POS_ORIGIN, game::ENT_POS_MUZZLE,
+            0
+        ),
+        fxpropertydef(
+            "endfroment",
+            PROP_INT,
+            game::ENT_POS_ORIGIN, game::ENT_POS_ORIGIN, game::ENT_POS_MUZZLE,
+            0
+        ),
+        fxpropertydef(
+            "iter",
+            PROP_INT,
+            1, 1, 1000,
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+        ),
+        fxpropertydef(
+            "iteroffset",
+            PROP_FVEC,
+            vec(-FLT_MAX), vec(0.0f), vec(FLT_MAX),
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
         )
     };
 
@@ -320,6 +356,12 @@ namespace fx
             "flags",
             PROP_INT,
             0, 0, INT_MAX,
+            0
+        ),
+        fxpropertydef(
+            "onplayer",
+            PROP_INT,
+            0, 0, 1,
             0
         )
     };

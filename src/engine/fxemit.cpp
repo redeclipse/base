@@ -36,7 +36,7 @@ namespace fx
         return inst.getprop<float>(FX_PROP_SCALE) * inst.e->scale;
     }
 
-    static bool getpos(instance &inst, vec &from, vec &to, float scale)
+    static bool getpos(instance &inst, vec &from, vec &to, float scale, int iter)
     {
         bool hasoffset = false;
         bool endfromprev = inst.getprop<int>(FX_PROP_END_FROM_PREV);
@@ -58,23 +58,50 @@ namespace fx
         }
 
         vec dir(0), up(0), right(0);
+        vec iteroffset = inst.getprop<vec>(FX_PROP_ITER_OFFSET);
         vec fromoffset = inst.getprop<vec>(FX_PROP_POS_OFFSET);
         vec tooffset = inst.getprop<vec>(FX_PROP_END_OFFSET);
         vec endfrompos = inst.getprop<vec>(FX_PROP_END_FROM_POS);
         vec posfromend = inst.getprop<vec>(FX_PROP_POS_FROM_END);
         bool reloffset = inst.getprop<int>(FX_RPOP_REL_OFFSET);
 
+        int posfromtag = inst.getprop<int>(FX_RPOP_POS_FROM_ENTTAG);
+        int posfroment = inst.getprop<int>(FX_PROP_POS_FROM_ENTPOS);
+        int endfromtag = inst.getprop<int>(FX_PROP_END_FROM_ENTTAG);
+        int endfroment = inst.getprop<int>(FX_PROP_END_FROM_ENTPOS);
+
         if(reloffset) calcdir(from, to, dir, up, right);
 
-        if(!endfrompos.iszero())
+        if(inst.e->pl && posfromtag >= 0)
+            game::fxtrack(from, inst.e->pl, game::ENT_POS_TAG, posfromtag);
+        else if(inst.e->pl && posfroment)
         {
-            to = from;
-            tooffset.add(endfrompos);
+            from = to; // Base when calculating from ent direction
+            game::fxtrack(from, inst.e->pl, posfroment);
         }
         else if(!posfromend.iszero())
         {
             from = to;
             fromoffset.add(posfromend);
+        }
+
+        if(inst.e->pl && endfromtag >= 0)
+            game::fxtrack(to, inst.e->pl, game::ENT_POS_TAG, endfromtag);
+        else if(inst.e->pl && endfroment)
+        {
+            to = from; // Base when calculating from ent direction
+            game::fxtrack(to, inst.e->pl, endfroment);
+        }
+        else if(!endfrompos.iszero())
+        {
+            to = from;
+            tooffset.add(endfrompos);
+        }
+
+        if(!iteroffset.iszero() && iter > 0)
+        {
+            fromoffset.add(iteroffset.mul(scale).mul(iter));
+            tooffset.add(iteroffset.mul(scale).mul(iter));
         }
 
         if(!fromoffset.iszero())
@@ -120,11 +147,11 @@ namespace fx
             inst.e->color : inst.getextprop<bvec>(colprop);
     }
 
-    static void particlefx(instance &inst)
+    static void particlefx(instance &inst, int iter)
     {
         float scale = getscale(inst);
         vec from, to;
-        bool hasoffset = getpos(inst, from, to, scale);
+        bool hasoffset = getpos(inst, from, to, scale, iter);
 
         float blend = getblend(inst);
         int color = getcolor(inst, FX_PART_COLOR).tohexcolor();
@@ -299,11 +326,11 @@ namespace fx
         }
     }
 
-    static void lightfx(instance &inst)
+    static void lightfx(instance &inst, int iter)
     {
         float scale = getscale(inst);
         vec from, to;
-        getpos(inst, from, to, scale);
+        getpos(inst, from, to, scale, iter);
 
         float radius = inst.getextprop<float>(FX_LIGHT_RADIUS) * scale;
         vec color = getcolor(inst, FX_LIGHT_COLOR).mul(getblend(inst)).tocolor();
@@ -312,26 +339,42 @@ namespace fx
         adddynlight(from, radius, vec(color), 0, 0, flags);
     }
 
-    static void soundfx(instance &inst)
+    static void soundfx(instance &inst, int iter)
     {
-        float scale = getscale(inst);
         vec from, to;
-        getpos(inst, from, to, scale);
 
+        bool onplayer = inst.getextprop<int>(FX_SOUND_ONPLAYER) && inst.e->pl;
         float gain = inst.getextprop<float>(FX_SOUND_GAIN) * getblend(inst);
         int sound = inst.soundhook;
-        int flags = inst.getextprop<int>(FX_SOUND_FLAGS);
 
         if(!inst.emitted) // first emission
         {
             fxdef &def = inst.fxhandle.get();
+            int extraflags = 0;
+            int flags = inst.getextprop<int>(FX_SOUND_FLAGS);
+
+            physent *ent = NULL;
+            vec *soundpos = NULL;
+
+            if(onplayer)
+            {
+                soundpos = game::getplayersoundpos(inst.e->pl);
+                ent = inst.e->pl;
+            }
+            else
+            {
+                float scale = getscale(inst);
+                getpos(inst, from, to, scale, iter);
+                soundpos = &from;
+                extraflags = SND_VELEST;
+            }
 
             emitsound(
                 def.sound.getindex(),
-                &from,
-                NULL,
+                soundpos,
+                ent,
                 &inst.soundhook,
-                flags | SND_UNMAPPED | SND_VELEST,
+                flags | SND_UNMAPPED | extraflags,
                 gain,
                 inst.getextprop<float>(FX_SOUND_PITCH),
                 inst.getextprop<float>(FX_SOUND_ROLLOFF),
@@ -342,15 +385,15 @@ namespace fx
         else if(issound(sound))
         {
             soundsources[sound].gain = gain;
-            soundsources[sound].pos = from;
+            if(!onplayer) soundsources[sound].pos = from;
         }
     }
 
-    static void windfx(instance &inst)
+    static void windfx(instance &inst, int iter)
     {
         float scale = getscale(inst);
         vec from, to;
-        getpos(inst, from, to, scale);
+        getpos(inst, from, to, scale, iter);
 
         float speed = inst.getextprop<float>(FX_WIND_SPEED) * getblend(inst);
 
@@ -367,13 +410,13 @@ namespace fx
         );
     }
 
-    static void stainfx(instance &inst)
+    static void stainfx(instance &inst, int iter)
     {
         if(inst.emitted) return;
 
         float scale = getscale(inst);
         vec from, to, dir;
-        getpos(inst, from, to, scale);
+        getpos(inst, from, to, scale, iter);
 
         if(to.isnormalized()) dir = to;
         else dir = vec(to).sub(from).safenormalize();
@@ -389,17 +432,17 @@ namespace fx
         );
     }
 
-    void instance::emitfx()
+    void instance::emitfx(int iter)
     {
         fxdef &def = fxhandle.get();
 
         switch(def.type)
         {
-            case FX_TYPE_PARTICLE: particlefx(*this); break;
-            case FX_TYPE_LIGHT: lightfx(*this); break;
-            case FX_TYPE_SOUND: soundfx(*this); break;
-            case FX_TYPE_WIND: windfx(*this); break;
-            case FX_TYPE_STAIN: stainfx(*this); break;
+            case FX_TYPE_PARTICLE: particlefx(*this, iter); break;
+            case FX_TYPE_LIGHT: lightfx(*this, iter); break;
+            case FX_TYPE_SOUND: soundfx(*this, iter); break;
+            case FX_TYPE_WIND: windfx(*this, iter); break;
+            case FX_TYPE_STAIN: stainfx(*this, iter); break;
         }
     }
 }

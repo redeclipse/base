@@ -16,7 +16,7 @@ namespace game
     vector<gameent *> players, waiting;
     vector<cament *> cameras;
 
-    vec *getplayersoundpos(gameent *d)
+    vec *getplayersoundpos(physent *d)
     {
         return d == game::focus && !game::thirdpersonview(true) ?
             &camera1->o : &d->o;
@@ -1471,8 +1471,13 @@ namespace game
                     vec targ;
                     safefindorientation(d->o, d->yaw, d->pitch, targ);
                     targ.sub(from).normalize().add(from);
-                    fx::createfx(fxhandle, from, targ, 1.0f, 1.0f, bvec(color), d, &d->weaponfx);
-                    if(d->weaponfx) d->weaponfx->setparam(W_FX_POWER_PARAM, amt);
+                    fx::emitter &e = fx::createfx(fxhandle, &d->weaponfx)
+                        .setfrom(from)
+                        .setto(targ)
+                        .setcolor(bvec(color))
+                        .setentity(d);
+
+                    e.setparam(W_FX_POWER_PARAM, amt);
                 }
             }
         }
@@ -2420,13 +2425,26 @@ namespace game
         }
     }
 
-    void fxtrack(fx::emitter *e)
+    void fxtrack(vec &pos, physent *owner, int mode, int tag)
     {
-        if(!e || !e->pl || !gameent::is(e->pl)) return;
-        gameent *d = (gameent *)e->pl;
-        float dist = e->from.dist(e->to);
-        e->to = e->from = d->muzzletag(d->weapselect);
-        e->to.add(vec(d->yaw*RAD, d->pitch*RAD).mul(dist));
+        if(!owner) return;
+
+        switch(mode)
+        {
+            case ENT_POS_ORIGIN: pos = owner->o; break;
+            case ENT_POS_BOTTOM: pos = owner->feetpos(); break;
+            case ENT_POS_MIDDLE: pos = owner->feetpos(owner->height * 0.5f); break;
+            case ENT_POS_TOP:    pos = owner->feetpos(owner->height); break;
+            case ENT_POS_DIR:    pos.add(vec(owner->yaw*RAD, owner->pitch*RAD)); break;
+            case ENT_POS_MUZZLE:
+                if(gameent::is(owner))
+                    pos = ((gameent *)owner)->muzzletag(tag);
+                break;
+            case ENT_POS_TAG:
+                if(gameent::is(owner) && tag >= 0 && tag < TAG_MAX)
+                    pos = *((gameent *)owner)->gettag(tag);
+                break;
+        }
     }
 
     void dynlighttrack(physent *owner, vec &o, vec &hud)

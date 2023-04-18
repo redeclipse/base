@@ -140,19 +140,26 @@ namespace projs
         if(subtype == PRJ_FX_LIFE && proj.projcollide&COLLIDE_SCAN)
             pe = proj.owner;
 
-        fx::emitter *e = fx::createfx(fxhandle, from, to, blend, scale, color, pe, hook);
+        fx::emitter &e = fx::createfx(fxhandle, hook)
+            .setfrom(from)
+            .setto(to)
+            .setblend(blend)
+            .setscale(scale)
+            .setcolor(color)
+            .setentity(pe);
+
         float param;
 
-        if(e) switch(subtype)
+        switch(subtype)
         {
             case PRJ_FX_LIFE:
                 param = clamp(proj.lifespan, 0.0f, 1.0f);
-                if(e) e->setparam(P_FX_LIFETIME_PARAM, param);
+                e.setparam(P_FX_LIFETIME_PARAM, param);
                 break;
 
             case PRJ_FX_BOUNCE:
                 param = clamp(vec(proj.vel).add(proj.falling).magnitude()*proj.curscale*0.005f, 0.0f, 1.0f);
-                if(e) e->setparam(P_FX_BOUNCE_VEL_PARAM, param);
+                e.setparam(P_FX_BOUNCE_VEL_PARAM, param);
                 break;
         }
     }
@@ -1296,8 +1303,15 @@ namespace projs
                 vec targ;
                 safefindorientation(d->o, d->yaw, d->pitch, targ);
                 targ.sub(from).normalize().add(from);
-                fx::createfx(fxhandle, from, targ, muz, fxscale, bvec(color), d, &d->weaponfx);
-                if(d->weaponfx) d->weaponfx->setparam(W_FX_POWER_PARAM, scale);
+                fx::emitter &e = fx::createfx(fxhandle, &d->weaponfx)
+                    .setfrom(from)
+                    .setto(targ)
+                    .setblend(muz)
+                    .setscale(fxscale)
+                    .setcolor(bvec(color))
+                    .setentity(d);
+
+                e.setparam(W_FX_POWER_PARAM, scale);
             }
         }
         loopv(shots)

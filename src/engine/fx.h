@@ -19,6 +19,14 @@ namespace fx
 
     enum
     {
+        FX_POSCALC_NONE = 0,
+        FX_POSCALC_TIP,
+        FX_POSCALC_ENTTAG,
+        FX_POSCALC_ENTPOS
+    };
+
+    enum
+    {
         FX_PROP_ACTIVE_LENGTH = 0,
         FX_PROP_EMIT_LENGTH,
         FX_PROP_EMIT_INTERVAL,
@@ -40,6 +48,12 @@ namespace fx
         FX_PROP_POS_FROM_END,
         FX_PROP_POS_FLIP,
         FX_PROP_END_FROM_PREV,
+        FX_RPOP_POS_FROM_ENTTAG,
+        FX_PROP_END_FROM_ENTTAG,
+        FX_PROP_POS_FROM_ENTPOS,
+        FX_PROP_END_FROM_ENTPOS,
+        FX_PROP_ITER,
+        FX_PROP_ITER_OFFSET,
 
         FX_STD_PROPS
     };
@@ -97,6 +111,7 @@ namespace fx
         FX_SOUND_REFDIST,
         FX_SOUND_MAXDIST,
         FX_SOUND_FLAGS,
+        FX_SOUND_ONPLAYER,
 
         FX_SOUND_PROPS
     };
@@ -251,7 +266,7 @@ namespace fx
         void schedule(bool resync);
         bool checkconditions();
         void update();
-        void emitfx();
+        void emitfx(int iter);
         void stop();
 
         template<class T> T getprop(int propindex)
@@ -291,23 +306,25 @@ namespace fx
         bool done();
         void update();
         void stop();
+        bool isvalid();
 
-        emitter &setparam(int index, float param)
-        {
-            ASSERT(index >= 0 && index < FX_PARAMS);
-            params[index] = param;
-            return *this;
-        }
+        // Setters
+        emitter &setfrom(const vec &newfrom);
+        emitter &setto(const vec &newto);
+        emitter &setcolor(const bvec &newcolor);
+        emitter &setblend(float newblend);
+        emitter &setscale(float newscale);
+        emitter &setentity(physent *newpl);
+        emitter &setparam(int index, float param);
     };
 
     extern void update();
     extern void stopfx(emitter *e);
-    extern emitter *createfx(FxHandle fxhandle, const vec &from, const vec &to, float blend = 1.0f,
-        float scale = 1.0f, const bvec &color = bvec(255, 255, 255), physent *pl = NULL,
-        emitter **hook = NULL);
+    extern emitter &createfx(FxHandle fxhandle, emitter **hook = NULL);
     extern void clear();
     extern void cleanup();
     extern void setup();
+    extern void removetracked(physent *pl);
 
     extern int fxdebug;
 }

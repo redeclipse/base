@@ -1297,6 +1297,7 @@ struct gameent : dynent, clientstate
         if(ai) delete ai;
         removetrackedparticles(this);
         removetrackedsounds(this);
+        fx::removetracked(this);
         entities::removepassenger(this);
     }
 
@@ -2394,7 +2395,6 @@ namespace game
     };
     extern avatarent avatarmodel, bodymodel;
 
-    extern vec *getplayersoundpos(gameent *d);
     extern fx::FxHandle getweapfx(int type);
     extern bool needname(gameent *d);
     extern const char *vanityfname(gameent *d, int n, int head = -1, bool proj = false);
