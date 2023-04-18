@@ -1,6 +1,6 @@
 // script binding functionality
 
-enum { VAL_NULL = 0, VAL_INT, VAL_FLOAT, VAL_STR, VAL_ANY, VAL_CODE, VAL_MACRO, VAL_IDENT, VAL_CSTR, VAL_CANY, VAL_WORD, VAL_POP, VAL_COND, VAL_MAX };
+enum { VAL_NULL = 0, VAL_INT, VAL_FLOAT, VAL_STR, VAL_ANY, VAL_CODE, VAL_MACRO, VAL_IDENT, VAL_LOCAL, VAL_CSTR, VAL_CANY, VAL_WORD, VAL_POP, VAL_COND, VAL_MAX };
 
 enum
 {
@@ -56,7 +56,7 @@ enum
     IDF_INIT = 1<<0, IDF_PERSIST = 1<<1, IDF_READONLY = 1<<2, IDF_REWRITE = 1<<3, IDF_WORLD = 1<<4, IDF_COMPLETE = 1<<5,
     IDF_TEXTURE = 1<<6, IDF_CLIENT = 1<<7, IDF_SERVER = 1<<8, IDF_HEX = 1<<9, IDF_UNKNOWN = 1<<10, IDF_ARG = 1<<11,
     IDF_PRELOAD = 1<<12, IDF_GAMEPRELOAD = 1<<13, IDF_GAMEMOD = 1<<14, IDF_NAMECOMPLETE = 1<<15, IDF_EMUVAR = 1<<16,
-    IDF_META = 1<<17
+    IDF_META = 1<<17, IDF_LOCAL = 1<<18
 };
 
 #define IDF_TX_MASK IDF_META
@@ -70,7 +70,7 @@ struct identval
         float f;    // ID_FVAR, VAL_FLOAT
         char *s;    // ID_SVAR, VAL_STR
         const uint *code; // VAL_CODE
-        ident *id;  // VAL_IDENT
+        ident *id;  // VAL_IDENT, VAL_LOCAL
         const char *cstr; // VAL_CSTR
     };
 };
@@ -88,6 +88,7 @@ struct tagval : identval
     void setmacro(const uint *val) { type = VAL_MACRO; code = val; }
     void setcstr(const char *val) { type = VAL_CSTR; cstr = val; }
     void setident(ident *val) { type = VAL_IDENT; id = val; }
+    void setlocal(ident *val) { type = VAL_LOCAL; id = val; }
 
     const char *getstr() const;
     int getint() const;
@@ -574,6 +575,8 @@ VAR(IDF_READONLY, validxmacro, 0, VAL_MACRO, -1);
 SVAR(IDF_READONLY, valnamemacro, "Macro");
 VAR(IDF_READONLY, validxident, 0, VAL_IDENT, -1);
 SVAR(IDF_READONLY, valnameident, "Identifier");
+VAR(IDF_READONLY, validxlocal, 0, VAL_LOCAL, -1);
+SVAR(IDF_READONLY, valnamelocal, "Local");
 VAR(IDF_READONLY, validxcstr, 0, VAL_CSTR, -1);
 SVAR(IDF_READONLY, valnamecstr, "Constant-string");
 VAR(IDF_READONLY, validxcany, 0, VAL_CANY, -1);

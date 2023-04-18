@@ -453,7 +453,7 @@ static inline ident *forceident(tagval &v)
 {
     switch(v.type)
     {
-        case VAL_IDENT: return v.id;
+        case VAL_IDENT: case VAL_LOCAL: return v.id;
         case VAL_MACRO: case VAL_CSTR:
         {
             ident *id = newident(v.s, IDF_UNKNOWN);
@@ -535,13 +535,13 @@ static inline void setarg(ident &id, tagval &v)
 
 static inline void setalias(ident &id, tagval &v, bool world, bool quiet = false)
 {
-    if(world && !(id.flags&IDF_WORLD) && !(id.flags&IDF_UNKNOWN))
+    if(world && !(id.flags&IDF_LOCAL) && !(id.flags&IDF_WORLD) && !(id.flags&IDF_UNKNOWN))
     {
-        debugcode("\frCannot redefine %s as a world alias", id.name);
+        debugcode("\frCannot redefine %s as a world alias [%d]", id.name, id.flags);
         return;
     }
 #ifndef STANDALONE
-    if(!quiet && !(identflags&IDF_WORLD) && !editmode && (world || (id.flags&IDF_WORLD && !(id.flags&IDF_REWRITE))))
+    if(!quiet && !(id.flags&IDF_LOCAL) && !(identflags&IDF_WORLD) && !editmode && (world || (id.flags&IDF_WORLD && !(id.flags&IDF_REWRITE))))
     {
         printeditonly(&id);
         return;
@@ -556,10 +556,10 @@ static inline void setalias(ident &id, tagval &v, bool world, bool quiet = false
 
     // In order to stop abuse, do not add the quiet flag if it was absent before
     if(quiet) id.flags |= oldflags&IDF_META;
-    if(world || oldflags&IDF_WORLD) id.flags |= IDF_WORLD;
+    if(!(id.flags&IDF_LOCAL) && (world || oldflags&IDF_WORLD)) id.flags |= IDF_WORLD;
     id.flags |= oldflags&IDF_PERSIST;
 #ifndef STANDALONE
-    client::editvar(&id, !(identflags&IDF_WORLD));
+    if(!(id.flags&IDF_LOCAL)) client::editvar(&id, !(identflags&IDF_WORLD));
 #endif
 }
 
@@ -1599,9 +1599,9 @@ static inline void compileident(vector<uint> &code, ident *id = dummyident)
     code.add((id->index < MAXARGS ? CODE_IDENTARG : CODE_IDENT)|(id->index<<8));
 }
 
-static inline void compileident(vector<uint> &code, const stringslice &word)
+static inline void compileident(vector<uint> &code, const stringslice &word, bool local = false)
 {
-    compileident(code, newident(word, IDF_UNKNOWN));
+    compileident(code, newident(word, (local ? IDF_LOCAL : 0)|IDF_UNKNOWN));
 }
 
 static inline void compileint(vector<uint> &code, const stringslice &word)
@@ -1679,7 +1679,7 @@ static inline void compileval(vector<uint> &code, int wordtype, const stringslic
         case VAL_INT: compileint(code, word); break;
         case VAL_COND: if(word.len) compileblock(code, word.str); else compilenull(code); break;
         case VAL_CODE: compileblock(code, word.str); break;
-        case VAL_IDENT: compileident(code, word); break;
+        case VAL_IDENT: case VAL_LOCAL: compileident(code, word, wordtype == VAL_LOCAL); break;
         default: break;
     }
 }
@@ -1716,7 +1716,7 @@ static void compilelookup(vector<uint> &code, const char *&p, int ltype, int pre
                     {
                         case VAL_POP: code.pop(); break;
                         case VAL_CODE: code.add(CODE_COMPILE); break;
-                        case VAL_IDENT: code.add(CODE_IDENTU); break;
+                        case VAL_IDENT: case VAL_LOCAL: code.add(CODE_IDENTU); break;
                     }
                     return;
                 case ID_FVAR:
@@ -1725,14 +1725,14 @@ static void compilelookup(vector<uint> &code, const char *&p, int ltype, int pre
                     {
                         case VAL_POP: code.pop(); break;
                         case VAL_CODE: code.add(CODE_COMPILE); break;
-                        case VAL_IDENT: code.add(CODE_IDENTU); break;
+                        case VAL_IDENT: case VAL_LOCAL: code.add(CODE_IDENTU); break;
                     }
                     return;
                 case ID_SVAR:
                     switch(ltype)
                     {
                         case VAL_POP: return;
-                        case VAL_CANY: case VAL_CSTR: case VAL_CODE: case VAL_IDENT: case VAL_COND:
+                        case VAL_CANY: case VAL_CSTR: case VAL_CODE: case VAL_IDENT: case VAL_LOCAL: case VAL_COND:
                             code.add(CODE_SVARM|(id->index<<8));
                             break;
                         default:
@@ -1747,7 +1747,7 @@ static void compilelookup(vector<uint> &code, const char *&p, int ltype, int pre
                         case VAL_CANY: case VAL_COND:
                             code.add((id->index < MAXARGS ? CODE_LOOKUPMARG : CODE_LOOKUPM)|(id->index<<8));
                             break;
-                        case VAL_CSTR: case VAL_CODE: case VAL_IDENT:
+                        case VAL_CSTR: case VAL_CODE: case VAL_IDENT: case VAL_LOCAL:
                             code.add((id->index < MAXARGS ? CODE_LOOKUPMARG : CODE_LOOKUPM)|RET_STR|(id->index<<8));
                             break;
                         default:
@@ -1801,7 +1801,7 @@ static void compilelookup(vector<uint> &code, const char *&p, int ltype, int pre
         case VAL_CANY: case VAL_COND:
             code.add(CODE_LOOKUPMU);
             break;
-        case VAL_CSTR: case VAL_CODE: case VAL_IDENT:
+        case VAL_CSTR: case VAL_CODE: case VAL_IDENT: case VAL_LOCAL:
             code.add(CODE_LOOKUPMU|RET_STR);
             break;
         default:
@@ -1814,7 +1814,7 @@ done:
         case VAL_POP: code.add(CODE_POP); break;
         case VAL_CODE: code.add(CODE_COMPILE); break;
         case VAL_COND: code.add(CODE_COND); break;
-        case VAL_IDENT: code.add(CODE_IDENTU); break;
+        case VAL_IDENT: case VAL_LOCAL: code.add(CODE_IDENTU); break;
     }
     return;
 invalid:
@@ -1969,13 +1969,13 @@ done:
             case VAL_CODE: case VAL_COND:
                 p = compileblock(code, start, RET_NULL, ']');
                 return;
-            case VAL_IDENT:
-                compileident(code, stringslice(start, p-1));
+            case VAL_IDENT: case VAL_LOCAL:
+                compileident(code, stringslice(start, p-1), wordtype == VAL_LOCAL);
                 return;
         }
         switch(wordtype)
         {
-            case VAL_CSTR: case VAL_CODE: case VAL_IDENT: case VAL_CANY: case VAL_COND:
+            case VAL_CSTR: case VAL_CODE: case VAL_IDENT: case VAL_LOCAL: case VAL_CANY: case VAL_COND:
                 compileblockstr(code, start, p-1, true);
                 break;
             default:
@@ -1998,7 +1998,7 @@ done:
         case VAL_POP: if(concs || p-1 > start) code.add(CODE_POP); break;
         case VAL_COND: if(!concs && p-1 <= start) compilenull(code); else code.add(CODE_COND); break;
         case VAL_CODE: if(!concs && p-1 <= start) compileblock(code); else code.add(CODE_COMPILE); break;
-        case VAL_IDENT: if(!concs && p-1 <= start) compileident(code); else code.add(CODE_IDENTU); break;
+        case VAL_IDENT: case VAL_LOCAL: if(!concs && p-1 <= start) compileident(code); else code.add(CODE_IDENTU); break;
         case VAL_CSTR: case VAL_CANY:
             if(!concs && p-1 <= start) compilestr(code, NULL, 0, true);
             break;
@@ -2083,7 +2083,7 @@ static bool compilearg(vector<uint> &code, const char *&p, int wordtype, int pre
                 case VAL_POP: code.add(CODE_POP); break;
                 case VAL_COND: code.add(CODE_COND); break;
                 case VAL_CODE: code.add(CODE_COMPILE); break;
-                case VAL_IDENT: code.add(CODE_IDENTU); break;
+                case VAL_IDENT: case VAL_LOCAL: code.add(CODE_IDENTU); break;
             }
             return true;
         case '[':
@@ -2274,7 +2274,7 @@ static void compilestatements(vector<uint> &code, const char *&p, int rettype, i
                     break;
                 }
                 case ID_LOCAL:
-                    if(more) while(numargs < MAXARGS && (more = compilearg(code, p, VAL_IDENT, prevargs+numargs))) numargs++;
+                    if(more) while(numargs < MAXARGS && (more = compilearg(code, p, VAL_LOCAL, prevargs+numargs))) numargs++;
                     if(more) while((more = compilearg(code, p, VAL_POP)));
                     code.add(CODE_LOCAL|(numargs<<8));
                     break;
@@ -2653,7 +2653,7 @@ static inline void copyarg(tagval &dst, const tagval &src)
     {
         case VAL_INT:
         case VAL_FLOAT:
-        case VAL_IDENT:
+        case VAL_IDENT: case VAL_LOCAL:
             dst = src;
             break;
         case VAL_STR:
@@ -3791,6 +3791,15 @@ static inline void setiter(ident &id, int i, identstack &stack)
     }
 }
 
+#define EXECUTEBREAK(body, fail) \
+{ \
+    tagval exbrkv; \
+    executeret(body, exbrkv); \
+    int exbrki = exbrkv.getint(); \
+    freearg(exbrkv); \
+    if(exbrki) fail; \
+}
+
 static inline void doloop(ident &id, int offset, int n, int step, bool rev, uint *body)
 {
     if(n <= 0 || id.type != ID_ALIAS) return;
@@ -3800,7 +3809,7 @@ static inline void doloop(ident &id, int offset, int n, int step, bool rev, uint
         loopirev(n)
         {
             setiter(id, offset + i*step, stack);
-            execute(body);
+            EXECUTEBREAK(body, break);
         }
     }
     else
@@ -3808,7 +3817,7 @@ static inline void doloop(ident &id, int offset, int n, int step, bool rev, uint
         loopi(n)
         {
             setiter(id, offset + i*step, stack);
-            execute(body);
+            EXECUTEBREAK(body, break);
         }
     }
     poparg(id);
@@ -3833,7 +3842,7 @@ static inline void loopwhile(ident &id, int offset, int n, int step, bool rev, u
         {
             setiter(id, offset + i*step, stack);
             if(!executebool(cond)) break;
-            execute(body);
+            EXECUTEBREAK(body, break);
         }
     }
     else
@@ -3842,7 +3851,7 @@ static inline void loopwhile(ident &id, int offset, int n, int step, bool rev, u
         {
             setiter(id, offset + i*step, stack);
             if(!executebool(cond)) break;
-            execute(body);
+            EXECUTEBREAK(body, break);
         }
     }
     poparg(id);
@@ -3856,7 +3865,7 @@ ICOMMAND(0, loopwhilerev+, "riiee", (ident *id, int *offset, int *n, uint *cond,
 ICOMMAND(0, loopwhilerev*, "riiee", (ident *id, int *step, int *n, uint *cond, uint *body), loopwhile(*id, 0, *n, *step, true, cond, body));
 ICOMMAND(0, loopwhilerev+*, "riiiee", (ident *id, int *offset, int *step, int *n, uint *cond, uint *body), loopwhile(*id, *offset, *n, *step, true, cond, body));
 
-ICOMMAND(0, while, "ee", (uint *cond, uint *body), while(executebool(cond)) execute(body));
+ICOMMAND(0, while, "ee", (uint *cond, uint *body), while(executebool(cond)) { EXECUTEBREAK(body, break); });
 
 static inline void loopconc(ident &id, int offset, int n, int step, bool rev, uint *body, bool space)
 {
@@ -4231,7 +4240,7 @@ void looplist(ident *id, const char *list, const uint *body)
     for(const char *s = list, *start, *end, *qstart; parselist(s, start, end, qstart); n++)
     {
         setiter(*id, listelem(start, end, qstart), stack);
-        execute(body);
+        EXECUTEBREAK(body, break);
     }
     if(n) poparg(*id);
 }
@@ -4246,7 +4255,7 @@ void loopsublist(ident *id, const char *list, int *skip, int *count, const uint 
     for(const char *s = list, *start, *end, *qstart; parselist(s, start, end, qstart) && n < len; n++) if(n >= offset)
     {
         setiter(*id, listelem(start, end, qstart), stack);
-        execute(body);
+        EXECUTEBREAK(body, break);
     }
     if(n) poparg(*id);
 }
@@ -4262,7 +4271,7 @@ void looplist2(ident *id, ident *id2, const char *list, const uint *body)
     {
         setiter(*id, listelem(start, end, qstart), stack);
         setiter(*id2, parselist(s, start, end, qstart) ? listelem(start, end, qstart) : newstring(""), stack2);
-        execute(body);
+        EXECUTEBREAK(body, break);
     }
     if(n) { poparg(*id); poparg(*id2); }
 }
@@ -4279,7 +4288,7 @@ void looplist3(ident *id, ident *id2, ident *id3, const char *list, const uint *
         setiter(*id, listelem(start, end, qstart), stack);
         setiter(*id2, parselist(s, start, end, qstart) ? listelem(start, end, qstart) : newstring(""), stack2);
         setiter(*id3, parselist(s, start, end, qstart) ? listelem(start, end, qstart) : newstring(""), stack3);
-        execute(body);
+        EXECUTEBREAK(body, break);
     }
     if(n) { poparg(*id); poparg(*id2); poparg(*id3); }
 }
@@ -4297,7 +4306,7 @@ void looplist4(ident *id, ident *id2, ident *id3, ident *id4, const char *list, 
         setiter(*id2, parselist(s, start, end, qstart) ? listelem(start, end, qstart) : newstring(""), stack2);
         setiter(*id3, parselist(s, start, end, qstart) ? listelem(start, end, qstart) : newstring(""), stack3);
         setiter(*id4, parselist(s, start, end, qstart) ? listelem(start, end, qstart) : newstring(""), stack4);
-        execute(body);
+        EXECUTEBREAK(body, break);
     }
     if(n) { poparg(*id); poparg(*id2); poparg(*id3); poparg(*id4); }
 }
@@ -4313,7 +4322,7 @@ void looplistn(ident *id, ident *id2, const char *list, const uint *body)
     {
         setiter(*id, listelem(start, end, qstart), stack);
         setiter(*id2, n, stack2);
-        execute(body);
+        EXECUTEBREAK(body, break);
     }
     if(n) { poparg(*id); poparg(*id2); }
 }
@@ -4533,7 +4542,7 @@ ICOMMAND(0, loopfiles, "rssei", (ident *id, char *dir, char *ext, uint *body, in
     loopv(files)
     {
         setiter(*id, files[i], stack);
-        execute(body);
+        EXECUTEBREAK(body, break);
     }
     if(files.length()) poparg(*id);
 });
