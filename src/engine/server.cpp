@@ -1628,6 +1628,8 @@ void setlocations(const char *bin)
     sethomedir(dir);
 }
 
+ICOMMAND(0, printhomedir, "", (), printhomedir());
+
 #ifndef STANDALONE
 VAR(IDF_INIT, noconfigfile, 0, 0, 1);
 VAR(IDF_INIT, firstrun, 0, 1, 1);

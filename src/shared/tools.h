@@ -2166,6 +2166,7 @@ extern bool fileexists(const char *path, const char *mode);
 extern int filemodifystamp(const char *path);
 extern bool createdir(const char *path);
 extern void sethomedir(const char *dir);
+extern void printhomedir();
 extern void appendhomedir(const char *dir);
 extern void addpackagedir(const char *dir, int flags = 0);
 extern int maskpackagedirs(int flags);

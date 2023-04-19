@@ -497,6 +497,11 @@ void sethomedir(const char *dir)
     conoutf("Using home directory: %s", homedir);
 }
 
+void printhomedir()
+{
+    conoutf("Home directory: %s", homedir);
+}
+
 int maskpackagedirs(int flags)
 {
     int oldmask = packagedirmask;
