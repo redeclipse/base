@@ -848,7 +848,6 @@ namespace UI
         {
             if(worldui) body = newstring(contents);
             windowflags = worldui ? 0 : clamp(windowflags_, 0, int(WINDOW_ALL));
-            if(!strncmp(name, "comp_", 5)) conoutf("%s: %s", name, contents);
         }
         ~Window()
         {

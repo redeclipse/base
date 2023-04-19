@@ -3458,7 +3458,7 @@ ICOMMAND(0, execid, "s", (char *s), {
     ident *id = idents.access(s);
     if(id) switch(id->type)
     {
-        case ID_ALIAS: case ID_SVAR: if(*id->storage.s) { conoutf("%s: %s", id->name, *id->storage.s); commandret->setstr(executestr(*id->storage.s)); } break;
+        case ID_ALIAS: case ID_SVAR: if(*id->storage.s) commandret->setstr(executestr(*id->storage.s)); break;
         default: break;
     }
 });
