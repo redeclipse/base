@@ -748,7 +748,7 @@ struct editor
 };
 
 // a 'stack' where the last is the current focused editor
-static vector <editor*> editors;
+static vector <editor *> editors;
 static editor *textfocus = NULL;
 
 static void readyeditors()
@@ -768,7 +768,7 @@ static void flusheditors()
 
 static editor *useeditor(const char *name, int mode, bool focus, const char *initval = NULL)
 {
-    loopv(editors) if(!strcmp(editors[i]->name, name))
+    loopv(editors) if(editors[i] && !strcmp(editors[i]->name, name))
     {
         editor *e = editors[i];
         if(focus) textfocus = e;
@@ -781,14 +781,6 @@ static editor *useeditor(const char *name, int mode, bool focus, const char *ini
     if(focus) textfocus = e;
     return e;
 }
-
-#if 0
-static editor *findeditor(const char *name)
-{
-    loopv(editors) if(strcmp(editors[i]->name, name) == 0) return editors[i];
-    return NULL;
-}
-#endif // 0
 
 #define TEXTCOMMAND(f, s, d, body) ICOMMAND(0, f, s, d,\
     if(!textfocus || identflags&IDF_WORLD) return;\

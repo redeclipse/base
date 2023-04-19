@@ -5581,10 +5581,10 @@ namespace UI
 
     void cleanup()
     {
-        loopi(WORLD_MAX) worlds[i]->children.setsize(0);
         enumerate(windows, Window *, w, delete w);
         windows.clear();
         world = NULL;
+        loopi(WORLD_MAX) worlds[i]->children.setsize(0);
         loopi(3) DELETEP(worlds[i]);
         inputsteal = NULL;
     }
