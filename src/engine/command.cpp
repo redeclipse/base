@@ -554,13 +554,17 @@ static inline void setalias(ident &id, tagval &v, bool world, bool quiet = false
     int oldflags = id.flags;
     id.flags = 0;
 
-    // In order to stop abuse, do not add the quiet flag if it was absent before
-    if(quiet) id.flags |= oldflags&IDF_META;
-    if(!(oldflags&IDF_LOCAL) && (world || oldflags&IDF_WORLD)) id.flags |= IDF_WORLD;
-    id.flags |= oldflags&IDF_PERSIST;
+    if(oldflags&IDF_LOCAL) id.flags |= IDF_LOCAL;
+    else
+    {
+        // In order to stop abuse, do not add the quiet flag if it was absent before
+        if(quiet) id.flags |= oldflags&IDF_META;
+        if(world || oldflags&IDF_WORLD) id.flags |= IDF_WORLD;
+        id.flags |= oldflags&IDF_PERSIST;
 #ifndef STANDALONE
-    if(!(id.flags&IDF_LOCAL)) client::editvar(&id, !(identflags&IDF_WORLD));
+        client::editvar(&id, !(identflags&IDF_WORLD));
 #endif
+    }
 }
 
 static void setalias(const char *name, tagval &v, bool world, bool quiet = false)
