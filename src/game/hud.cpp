@@ -1282,7 +1282,7 @@ namespace hud
             int millis = totalmillis-game::focus->icons[i].millis;
             if(millis <= game::focus->icons[i].fade)
             {
-                Texture *t = textureload(icontex(game::focus->icons[i].type, game::focus->icons[i].value));
+                Texture *t = textureload(geticon(game::focus->icons[i].type, game::focus->icons[i].value));
                 if(t && t != notexture)
                 {
                     int olen = min(game::focus->icons[i].length/5, 1000), ilen = olen/2, colour = colourwhite;
@@ -1347,7 +1347,7 @@ namespace hud
         return "";
     }
 
-    const char *icontex(int type, int value)
+    const char *geticon(int type, int value)
     {
         switch(type)
         {

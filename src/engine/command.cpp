@@ -3453,6 +3453,16 @@ char *executestr(const char *p)
     return result.s;
 }
 
+ICOMMAND(0, execute, "s", (char *s), commandret->setstr(executestr(s)));
+ICOMMAND(0, execid, "s", (char *s), {
+    ident *id = idents.access(s);
+    if(id) switch(id->type)
+    {
+        case ID_ALIAS: case ID_SVAR: if(*id->storage.s) { conoutf("%s: %s", id->name, *id->storage.s); commandret->setstr(executestr(*id->storage.s)); } break;
+        default: break;
+    }
+});
+
 char *executestr(ident *id, tagval *args, int numargs, bool lookup)
 {
     tagval result;
