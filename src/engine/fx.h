@@ -36,6 +36,7 @@ namespace fx
         FX_PROP_EMIT_SINGLE,
         FX_PROP_EMIT_RESTART,
         FX_PROP_EMIT_MOVE,
+        FX_PROP_EMIT_PARAM,
         FX_PROP_FADEIN,
         FX_PROP_FADEOUT,
         FX_PROP_BLEND,
@@ -185,6 +186,8 @@ namespace fx
 
     #define FX_TOTAL_PROPS (FX_STD_PROPS + FX_EXT_PROPS)
 
+    #define FX_ITER_MAX 8
+
     struct propmodlerp;
     struct fxdef;
     struct instance;
@@ -251,7 +254,8 @@ namespace fx
         emitter *e;
         FxHandle fxhandle;
         int beginmillis, endmillis, activeendmillis, curiter, iters;
-        bool sync, emitted;
+        bool sync, emitted, canparttrack;
+        vec from, to, prevfrom[FX_ITER_MAX];
 
         union
         {
@@ -265,10 +269,13 @@ namespace fx
         void calcend(int from);
         void prolong();
         void schedule(bool resync);
+        void calcpos();
         bool checkconditions();
         void update();
         void emitfx();
         void stop();
+
+        float getscale();
 
         template<class T> T getprop(int propindex)
         {

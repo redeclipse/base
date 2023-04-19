@@ -3,122 +3,6 @@
 
 namespace fx
 {
-    static void calcdir(const vec &from, const vec &to, vec &dir, vec &up, vec &right)
-    {
-        dir = vec(to).sub(from).normalize();
-        if(fabsf(dir.z) == 1.0f)
-        {
-            up = vec(0, dir.z, 0);
-            right = vec(dir.z, 0, 0);
-        }
-        else
-        {
-            up = vec(0, 0, 1);
-            right.cross(up, dir).normalize();
-            up.cross(right, dir).normalize();
-        }
-    }
-
-    static inline void offsetpos(vec &pos, const vec &offset, bool rel = false,
-        const vec &dir = vec(0), const vec &up = vec(0), const vec &right = vec(0))
-    {
-        if(rel)
-        {
-            pos.madd(right, offset.x);
-            pos.madd(dir, offset.y);
-            pos.madd(up, offset.z);
-        }
-        else pos.add(offset);
-    }
-
-    static float getscale(instance &inst)
-    {
-        return inst.getprop<float>(FX_PROP_SCALE) * inst.e->scale;
-    }
-
-    static bool getpos(instance &inst, vec &from, vec &to, float scale)
-    {
-        bool hasoffset = false;
-        bool endfromprev = inst.getprop<int>(FX_PROP_END_FROM_PREV);
-
-        vec emit_from = inst.e->from;
-        vec emit_to = endfromprev ? inst.e->prevfrom : inst.e->to;
-        if(endfromprev) hasoffset = true;
-
-        if(inst.getprop<int>(FX_PROP_POS_FLIP))
-        {
-            from = emit_to;
-            to = emit_from;
-            hasoffset = true;
-        }
-        else
-        {
-            from = emit_from;
-            to = emit_to;
-        }
-
-        vec dir(0), up(0), right(0);
-        vec iteroffset = inst.getprop<vec>(FX_PROP_ITER_OFFSET);
-        vec fromoffset = inst.getprop<vec>(FX_PROP_POS_OFFSET);
-        vec tooffset = inst.getprop<vec>(FX_PROP_END_OFFSET);
-        vec endfrompos = inst.getprop<vec>(FX_PROP_END_FROM_POS);
-        vec posfromend = inst.getprop<vec>(FX_PROP_POS_FROM_END);
-        bool reloffset = inst.getprop<int>(FX_RPOP_REL_OFFSET);
-
-        int posfromtag = inst.getprop<int>(FX_RPOP_POS_FROM_ENTTAG);
-        int posfroment = inst.getprop<int>(FX_PROP_POS_FROM_ENTPOS);
-        int endfromtag = inst.getprop<int>(FX_PROP_END_FROM_ENTTAG);
-        int endfroment = inst.getprop<int>(FX_PROP_END_FROM_ENTPOS);
-
-        if(reloffset) calcdir(from, to, dir, up, right);
-
-        if(inst.e->pl && posfromtag >= 0)
-            game::fxtrack(from, inst.e->pl, game::ENT_POS_TAG, posfromtag);
-        else if(inst.e->pl && posfroment)
-        {
-            from = to; // Base when calculating from ent direction
-            game::fxtrack(from, inst.e->pl, posfroment);
-        }
-        else if(!posfromend.iszero())
-        {
-            from = to;
-            fromoffset.add(posfromend);
-        }
-
-        if(inst.e->pl && endfromtag >= 0)
-            game::fxtrack(to, inst.e->pl, game::ENT_POS_TAG, endfromtag);
-        else if(inst.e->pl && endfroment)
-        {
-            to = from; // Base when calculating from ent direction
-            game::fxtrack(to, inst.e->pl, endfroment);
-        }
-        else if(!endfrompos.iszero())
-        {
-            to = from;
-            tooffset.add(endfrompos);
-        }
-
-        if(!iteroffset.iszero() && inst.curiter > 0)
-        {
-            fromoffset.add(iteroffset.mul(scale).mul(inst.curiter));
-            tooffset.add(iteroffset.mul(scale).mul(inst.curiter));
-        }
-
-        if(!fromoffset.iszero())
-        {
-            offsetpos(from, fromoffset.mul(scale), reloffset, dir, up, right);
-            hasoffset = true;
-        }
-
-        if(!tooffset.iszero())
-        {
-            offsetpos(to, tooffset.mul(scale), reloffset, dir, up, right);
-            hasoffset = true;
-        }
-
-        return hasoffset;
-    }
-
     static void calcto(instance &inst, const vec &from, vec &to, float length)
     {
         vec dir = vec(to).sub(from).normalize();
@@ -149,9 +33,7 @@ namespace fx
 
     static void particlefx(instance &inst)
     {
-        float scale = getscale(inst);
-        vec from, to;
-        bool hasoffset = getpos(inst, from, to, scale);
+        float scale = inst.getscale();
 
         float blend = getblend(inst);
         int color = getcolor(inst, FX_PART_COLOR).tohexcolor();
@@ -159,8 +41,8 @@ namespace fx
         // Particle stains need to be offset by 1
         int collidestain = inst.getextprop<int>(FX_PART_COLLIDE) + 1;
 
-        // tracking not supported when using offsets
-        physent *trackent = !hasoffset && inst.getextprop<int>(FX_PART_TRACK) ?
+        // particle tracking not supported when overriding positions
+        physent *trackent = inst.canparttrack && inst.getextprop<int>(FX_PART_TRACK) ?
             inst.e->pl :
             NULL;
 
@@ -174,7 +56,7 @@ namespace fx
                     regular_part_create(
                         inst.getextprop<int>(FX_PART_PARTICLE),
                         inst.getextprop<int>(FX_PART_FADE),
-                        from,
+                        inst.from,
                         color,
                         inst.getextprop<float>(FX_PART_PARTSIZE) * scale,
                         blend,
@@ -188,7 +70,7 @@ namespace fx
                     part_create(
                         inst.getextprop<int>(FX_PART_PARTICLE),
                         inst.getextprop<int>(FX_PART_FADE),
-                        from,
+                        inst.from,
                         color,
                         inst.getextprop<float>(FX_PART_PARTSIZE) * scale,
                         blend,
@@ -209,7 +91,7 @@ namespace fx
                         inst.getextprop<int>(FX_PART_PARTICLE),
                         inst.getextprop<int>(FX_PART_NUM),
                         inst.getextprop<int>(FX_PART_FADE),
-                        from,
+                        inst.from,
                         color,
                         inst.getextprop<float>(FX_PART_PARTSIZE) * scale,
                         blend,
@@ -225,7 +107,7 @@ namespace fx
                         inst.getextprop<int>(FX_PART_PARTICLE),
                         inst.getextprop<int>(FX_PART_NUM),
                         inst.getextprop<int>(FX_PART_FADE),
-                        from,
+                        inst.from,
                         color,
                         inst.getextprop<float>(FX_PART_PARTSIZE) * scale,
                         blend,
@@ -246,7 +128,7 @@ namespace fx
                     inst.getextprop<int>(FX_PART_SHAPE),
                     inst.getextprop<int>(FX_PART_NUM),
                     inst.getextprop<int>(FX_PART_FADE),
-                    from,
+                    inst.from,
                     inst.getextprop<float>(FX_PART_PARTSIZE) * scale,
                     blend,
                     inst.getextprop<float>(FX_PART_GRAVITY),
@@ -260,11 +142,11 @@ namespace fx
             {
                 float flarelen = inst.getextprop<float>(FX_PART_SHAPESIZE);
                 if(flarelen > 0)
-                    calcto(inst, from, to, inst.getextprop<float>(FX_PART_SHAPESIZE) * scale);
+                    calcto(inst, inst.from, inst.to, inst.getextprop<float>(FX_PART_SHAPESIZE) * scale);
 
                 part_flare(
-                    from,
-                    to,
+                    inst.from,
+                    inst.to,
                     inst.getextprop<int>(FX_PART_FADE),
                     inst.getextprop<int>(FX_PART_PARTICLE),
                     color,
@@ -282,8 +164,8 @@ namespace fx
                 part_trail(
                     inst.getextprop<int>(FX_PART_PARTICLE),
                     inst.getextprop<int>(FX_PART_FADE),
-                    from,
-                    to,
+                    inst.from,
+                    inst.to,
                     color,
                     inst.getextprop<float>(FX_PART_PARTSIZE) * scale,
                     blend,
@@ -295,7 +177,7 @@ namespace fx
 
             case FX_PART_TYPE_EXPLODE:
                 part_explosion(
-                    from,
+                    inst.from,
                     inst.getextprop<float>(FX_PART_MAXPARTSIZE) * scale,
                     inst.getextprop<int>(FX_PART_PARTICLE),
                     inst.getextprop<int>(FX_PART_FADE),
@@ -310,7 +192,7 @@ namespace fx
 
             case FX_PART_TYPE_TEXT:
                 part_text(
-                    from,
+                    inst.from,
                     inst.getextprop<char *>(FX_PART_TEXT),
                     inst.getextprop<int>(FX_PART_PARTICLE),
                     inst.getextprop<int>(FX_PART_FADE),
@@ -328,21 +210,17 @@ namespace fx
 
     static void lightfx(instance &inst)
     {
-        float scale = getscale(inst);
-        vec from, to;
-        getpos(inst, from, to, scale);
+        float scale = inst.getscale();
 
         float radius = inst.getextprop<float>(FX_LIGHT_RADIUS) * scale;
         vec color = getcolor(inst, FX_LIGHT_COLOR).mul(getblend(inst)).tocolor();
         int flags = inst.getextprop<int>(FX_LIGHT_FLAGS);
 
-        adddynlight(from, radius, vec(color), 0, 0, flags);
+        adddynlight(inst.from, radius, vec(color), 0, 0, flags);
     }
 
     static void soundfx(instance &inst)
     {
-        vec from, to;
-
         bool onplayer = inst.getextprop<int>(FX_SOUND_ONPLAYER) && inst.e->pl;
         float gain = inst.getextprop<float>(FX_SOUND_GAIN) * getblend(inst);
         int sound = inst.soundhook;
@@ -363,9 +241,7 @@ namespace fx
             }
             else
             {
-                float scale = getscale(inst);
-                getpos(inst, from, to, scale);
-                soundpos = &from;
+                soundpos = &inst.from;
                 extraflags = SND_VELEST;
             }
 
@@ -375,7 +251,7 @@ namespace fx
                 ent,
                 &inst.soundhook,
                 flags | SND_UNMAPPED | extraflags,
-                gain,
+                max(gain, 0.00001f),
                 inst.getextprop<float>(FX_SOUND_PITCH),
                 inst.getextprop<float>(FX_SOUND_ROLLOFF),
                 inst.getextprop<float>(FX_SOUND_REFDIST),
@@ -385,20 +261,16 @@ namespace fx
         else if(issound(sound))
         {
             soundsources[sound].gain = gain;
-            if(!onplayer) soundsources[sound].pos = from;
+            if(!onplayer) soundsources[sound].pos = inst.from;
         }
     }
 
     static void windfx(instance &inst)
     {
-        float scale = getscale(inst);
-        vec from, to;
-        getpos(inst, from, to, scale);
-
         float speed = inst.getextprop<float>(FX_WIND_SPEED) * getblend(inst);
 
         addwind(
-            from,
+            inst.from,
             inst.getextprop<int>(FX_WIND_MODE),
             speed,
             &inst.windhook,
@@ -414,18 +286,16 @@ namespace fx
     {
         if(inst.emitted) return;
 
-        float scale = getscale(inst);
-        vec from, to, dir;
-        getpos(inst, from, to, scale);
+        vec dir;
 
-        if(to.isnormalized()) dir = to;
-        else dir = vec(to).sub(from).safenormalize();
+        if(inst.to.isnormalized()) dir = inst.to;
+        else dir = vec(inst.to).sub(inst.from).safenormalize();
 
-        float radius = inst.getextprop<float>(FX_STAIN_RADIUS) * scale;
+        float radius = inst.getextprop<float>(FX_STAIN_RADIUS) * inst.getscale();
 
         addstain(
             inst.getextprop<int>(FX_STAIN_TYPE),
-            from,
+            inst.from,
             dir,
             radius,
             getcolor(inst, FX_STAIN_COLOR)

@@ -133,9 +133,11 @@ namespace fx
         parent = prnt;
         sync = true;
         emitted = false;
+        canparttrack = true;
         reset(true);
         calcactiveend();
         beginmillis = endmillis = lastmillis;
+        loopi(FX_ITER_MAX) prevfrom[i] = vec(0, 0, 0);
     }
 
     void instance::calcactiveend()
@@ -198,12 +200,137 @@ namespace fx
         if(!resync) sync = true;
     }
 
+    static void calcdir(const vec &from, const vec &to, vec &dir, vec &up, vec &right)
+    {
+        dir = vec(to).sub(from).normalize();
+        if(fabsf(dir.z) == 1.0f)
+        {
+            up = vec(0, dir.z, 0);
+            right = vec(dir.z, 0, 0);
+        }
+        else
+        {
+            up = vec(0, 0, 1);
+            right.cross(up, dir).normalize();
+            up.cross(right, dir).normalize();
+        }
+    }
+
+    static inline void offsetpos(vec &pos, const vec &offset, bool rel = false,
+        const vec &dir = vec(0), const vec &up = vec(0), const vec &right = vec(0))
+    {
+        if(rel)
+        {
+            pos.madd(right, offset.x);
+            pos.madd(dir, offset.y);
+            pos.madd(up, offset.z);
+        }
+        else pos.add(offset);
+    }
+
+    float instance::getscale() { return getprop<float>(FX_PROP_SCALE) * e->scale; }
+
+    void instance::calcpos()
+    {
+        float scale = getscale();
+
+        canparttrack = true;
+
+        vec dir(0), up(0), right(0);
+        vec iteroffset = getprop<vec>(FX_PROP_ITER_OFFSET);
+        vec fromoffset = getprop<vec>(FX_PROP_POS_OFFSET);
+        vec tooffset = getprop<vec>(FX_PROP_END_OFFSET);
+        vec endfrompos = getprop<vec>(FX_PROP_END_FROM_POS);
+        vec posfromend = getprop<vec>(FX_PROP_POS_FROM_END);
+        bool reloffset = getprop<int>(FX_RPOP_REL_OFFSET);
+        bool endfromprev = getprop<int>(FX_PROP_END_FROM_PREV);
+
+        int posfromtag = getprop<int>(FX_RPOP_POS_FROM_ENTTAG);
+        int posfroment = getprop<int>(FX_PROP_POS_FROM_ENTPOS);
+        int endfromtag = getprop<int>(FX_PROP_END_FROM_ENTTAG);
+        int endfroment = getprop<int>(FX_PROP_END_FROM_ENTPOS);
+
+        if(reloffset) calcdir(from, to, dir, up, right);
+
+        if(e->pl && posfromtag >= 0)
+        {
+            game::fxtrack(from, e->pl, game::ENT_POS_TAG, posfromtag);
+            canparttrack = false;
+        }
+        else if(e->pl && posfroment)
+        {
+            from = to; // Base when calculating from ent direction
+            game::fxtrack(from, e->pl, posfroment);
+            canparttrack = false;
+        }
+        else if(!posfromend.iszero())
+        {
+            from = to;
+            fromoffset.add(posfromend);
+            canparttrack = false;
+        }
+        else from = e->from;
+
+        if(endfromprev)
+        {
+            to = prevfrom[curiter].iszero() ? from : prevfrom[curiter];
+            canparttrack = false;
+        }
+        else if(e->pl && endfromtag >= 0)
+        {
+            game::fxtrack(to, e->pl, game::ENT_POS_TAG, endfromtag);
+            canparttrack = false;
+        }
+        else if(e->pl && endfroment)
+        {
+            to = from; // Base when calculating from ent direction
+            game::fxtrack(to, e->pl, endfroment);
+            canparttrack = false;
+        }
+        else if(!endfrompos.iszero())
+        {
+            to = from;
+            tooffset.add(endfrompos);
+            canparttrack = false;
+        }
+        else to = e->to;
+
+        if(!iteroffset.iszero() && curiter > 0)
+        {
+            fromoffset.add(iteroffset.mul(scale).mul(curiter));
+            tooffset.add(iteroffset.mul(scale).mul(curiter));
+        }
+
+        if(!fromoffset.iszero())
+        {
+            offsetpos(from, fromoffset.mul(scale), reloffset, dir, up, right);
+            canparttrack = false;
+        }
+
+        if(!tooffset.iszero())
+        {
+            offsetpos(to, tooffset.mul(scale), reloffset, dir, up, right);
+            canparttrack = false;
+        }
+
+        if(getprop<int>(FX_PROP_POS_FLIP))
+        {
+            swap(from, to);
+            canparttrack = false;
+        }
+
+        prevfrom[curiter] = from;
+    }
+
     bool instance::checkconditions()
     {
         bool canemit = true;
 
         float movethreshold = getprop<float>(FX_PROP_EMIT_MOVE);
         if(movethreshold > 0 && e->from.dist(e->prevfrom) < movethreshold) canemit = false;
+
+        int paramtrigger = getprop<float>(FX_PROP_EMIT_PARAM);
+        if(paramtrigger >= 0 && e->params[paramtrigger] == 0.0f) canemit = false;
 
         return canemit;
     }
@@ -230,6 +357,7 @@ namespace fx
                 loopi(iters)
                 {
                     curiter = i;
+                    calcpos();
                     emitfx();
                 }
 
@@ -459,7 +587,6 @@ namespace fx
                 return dummyemitter;
             }
 
-            e->prevfrom = vec(0, 0, 0);
         }
         else
         {

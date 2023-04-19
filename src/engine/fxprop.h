@@ -83,6 +83,12 @@ namespace fx
             0
         ),
         fxpropertydef(
+            "emitparam",
+            PROP_INT,
+            -1, -1, FX_PARAMS,
+            0
+        ),
+        fxpropertydef(
             "fadein",
             PROP_INT,
             0, 0, INT_MAX,
@@ -181,7 +187,7 @@ namespace fx
         fxpropertydef(
             "iter",
             PROP_INT,
-            1, 1, 1000,
+            1, 1, FX_ITER_MAX,
             BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
         ),
         fxpropertydef(
