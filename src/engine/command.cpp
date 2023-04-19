@@ -499,12 +499,12 @@ ident *readident(const char *name)
 
 void printreadonly(ident *id)
 {
-    debugcode("\frVariable %s is read-only", id->name);
+    debugcode("\frVariable %s is read-only (%d [%d])", id->name, id->type, id->flags);
 }
 
 void printeditonly(ident *id)
 {
-    debugcode("\frVariable %s is only directly modifiable in editmode", id->name);
+    debugcode("\frVariable %s is only directly modifiable in editmode (%d [%d])", id->name, id->type, id->flags);
 }
 
 void resetvar(char *name)
@@ -512,7 +512,7 @@ void resetvar(char *name)
     ident *id = idents.access(name);
     if(!id) return;
     if(id->flags&IDF_READONLY) printreadonly(id);
-    else if(id->flags&IDF_WORLD || id->flags&IDF_CLIENT || id->flags&IDF_SERVER) debugcode("\frVariable %s cannot be reset", id->name);
+    else if(id->flags&IDF_WORLD || id->flags&IDF_CLIENT || id->flags&IDF_SERVER) debugcode("\frVariable %s cannot be reset (%d [%d])", id->name, id->type, id->flags);
     else clearoverride(*id);
 }
 
@@ -537,7 +537,7 @@ static inline void setalias(ident &id, tagval &v, bool world, bool quiet = false
 {
     if(world && !(id.flags&IDF_LOCAL) && !(id.flags&IDF_WORLD) && !(id.flags&IDF_UNKNOWN))
     {
-        debugcode("\frCannot redefine %s as a world alias [%d]", id.name, id.flags);
+        debugcode("\frCannot redefine %s as a world alias (%d [%d])", id.name, id.type, id.flags);
         return;
     }
 #ifndef STANDALONE
@@ -556,7 +556,7 @@ static inline void setalias(ident &id, tagval &v, bool world, bool quiet = false
 
     // In order to stop abuse, do not add the quiet flag if it was absent before
     if(quiet) id.flags |= oldflags&IDF_META;
-    if(!(id.flags&IDF_LOCAL) && (world || oldflags&IDF_WORLD)) id.flags |= IDF_WORLD;
+    if(!(oldflags&IDF_LOCAL) && (world || oldflags&IDF_WORLD)) id.flags |= IDF_WORLD;
     id.flags |= oldflags&IDF_PERSIST;
 #ifndef STANDALONE
     if(!(id.flags&IDF_LOCAL)) client::editvar(&id, !(identflags&IDF_WORLD));
@@ -591,7 +591,7 @@ static void setalias(const char *name, tagval &v, bool world, bool quiet = false
                 }
                 // fall through
             default:
-                debugcode("\frCannot redefine builtin %s with an alias", id->name);
+                debugcode("\frCannot redefine builtin %s with an alias (%d [%d])", id->name, id->type, id->flags);
                 break;
         }
         freearg(v);
@@ -1149,7 +1149,7 @@ ICOMMAND(0, get, "s", (char *name),
         { \
             if((identflags&IDF_WORLD) && !(id->flags&IDF_WORLD)) \
             { \
-                debugcode("\frCannot set variable %s from map config", id->name); \
+                debugcode("\frCannot set variable %s from map config (%d [%d])", id->name, id->type, id->flags); \
                 return; \
             } \
             if(client::sendcmd(2, id->name, argstr)) return; \
@@ -1268,7 +1268,7 @@ ICOMMAND(0, set, "rT", (ident *id, tagval *v),
             }
             // fall through
         default:
-            debugcode("\frCannot redefine builtin %s with an alias", id->name);
+            debugcode("\frCannot redefine builtin %s with an alias (%d [%d])", id->name, id->type, id->flags);
             break;
     }
 });
