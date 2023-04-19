@@ -385,8 +385,6 @@ namespace game
     VAR(IDF_PERSIST, bloodsparks, 0, 0, 1);
     FVAR(IDF_PERSIST, gibscale, 0, 1, 1000);
     VAR(IDF_PERSIST, gibfade, 1, 15000, VAR_MAX);
-    FVAR(IDF_PERSIST, impulsescale, 0, 1, 1000);
-    VAR(IDF_PERSIST, impulsefade, 0, 250, VAR_MAX);
     VAR(IDF_PERSIST, ragdolleffect, 2, 500, VAR_MAX);
 
     VAR(IDF_PERSIST, playerhalos, 0, 2, 2);
@@ -1190,28 +1188,22 @@ namespace game
         }
     }
 
-    void boosteffect(gameent *d, const vec &pos, int num, int len, bool shape = false)
-    {
-        // Prevent spawning particles while the game is paused, as it doesn't clear particles in this state.
-        // Otherwise, the number of particles could become very large, causing the renderer to slow down to a crawl.
-        if(paused) return;
-
-        float scale = 0.4f+(rnd(40)/100.f);
-        part_create(PART_HINT_BOLD_SOFT, shape ? len/2 : len/10, pos, getcolour(d, playereffecttone, playereffecttonelevel), scale*1.5f, scale*0.75f);
-        part_create(PART_FIREBALL_SOFT, shape ? len/2 : len/10, pos, pulsehexcol(d, PULSE_FIRE), scale*1.25f, scale*0.75f);
-        if(shape) loopi(num) regularshape(PART_FIREBALL, int(d->radius)*2, pulsehexcol(d, PULSE_FIRE), 21, 1, len, pos, scale*1.25f, 0.75f, -5, 0, 10);
-    }
-
     void impulseeffect(gameent *d, int effect)
     {
-        int num = int((effect ? 3 : 10)*impulsescale);
+        static fx::FxHandle impulsesound = fx::getfxhandle("FX_PLAYER_IMPULSE_SOUND");
+        static fx::FxHandle impulsejet = fx::getfxhandle("FX_PLAYER_IMPULSE_JET");
+
         switch(effect)
         {
-            case 0: emitsound(S_IMPULSE, game::getplayersoundpos(d), d); // fail through
+            case 0: fx::createfx(impulsesound).setentity(d); // fall through
             case 1:
             {
-                if(!actors[d->actortype].jetfx) break;
-                if(num > 0 && impulsefade > 0) loopi(TAG_N_JET) boosteffect(d, d->jettag(i), num, impulsefade, effect == 0);
+                if(!actors[d->actortype].jetfx || paused) break;
+                fx::createfx(impulsejet, &d->impulsefx)
+                    .setentity(d)
+                    .setparam(0, effect ? 0.0f : 1.0f)
+                    .setcolor(bvec(getcolour(d)));
+
                 break;
             }
             default: break;
@@ -4185,7 +4177,7 @@ namespace game
             }
             calcfirstpersontags(focus);
         }
-        rendercheck(focus, false);
+        if(drawtex != DRAWTEX_HALO) rendercheck(focus, false);
     }
 
     static gameent *previewent = NULL;

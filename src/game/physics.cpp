@@ -914,8 +914,9 @@ namespace physics
                 d->doimpulse(IM_T_JUMP, lastmillis);
                 d->action[AC_JUMP] = d->action[AC_DASH] = onfloor = false;
                 client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_JUMP);
-                emitsound(S_JUMP, game::getplayersoundpos(d), d);
-                createshape(PART_SMOKE, int(d->radius), 0x222222, 21, 20, 250, d->feetpos(), 1, 1, -10, 0, 10.f);
+
+                static fx::FxHandle fx = fx::getfxhandle("FX_PLAYER_JUMP");
+                fx::createfx(fx).setentity(d).setcolor(bvec(game::getcolour(d)));
             }
         }
         if(d->hasparkour() || d->action[AC_SPECIAL])

@@ -2552,8 +2552,9 @@ namespace client
                         {
                             if(!proceed) break;
                             t->doimpulse(IM_T_JUMP, lastmillis);
-                            emitsound(S_JUMP, game::getplayersoundpos(t), t);
-                            createshape(PART_SMOKE, int(t->radius), 0x222222, 21, 20, 250, t->feetpos(), 1, 1, -10, 0, 10.f);
+
+                            static fx::FxHandle fx = fx::getfxhandle("FX_PLAYER_JUMP");
+                            fx::createfx(fx).setentity(t).setcolor(bvec(game::getcolour(t)));
                             break;
                         }
                         case SPHY_BOOST: case SPHY_DASH: case SPHY_POUND: case SPHY_SLIDE: case SPHY_LAUNCH: case SPHY_MELEE: case SPHY_KICK: case SPHY_GRAB: case SPHY_PARKOUR: case SPHY_VAULT: case SPHY_AFTER: case SPHY_FLING:
@@ -2568,8 +2569,9 @@ namespace client
                         {
                             if(!proceed) break;
                             t->resetresidual(W_R_BURN);
-                            emitsound(S_EXTINGUISH, game::getplayersoundpos(t), t);
-                            part_create(PART_SMOKE, 500, t->feetpos(t->height/2), 0xAAAAAA, t->radius*4, 1, -10);
+
+                            static fx::FxHandle fx = fx::getfxhandle("FX_PLAYER_EXTINGUISH");
+                            fx::createfx(fx).setentity(t).setcolor(bvec(game::getcolour(t)));
                             break;
                         }
                         case SPHY_BUFF:
