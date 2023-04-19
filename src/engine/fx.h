@@ -163,6 +163,7 @@ namespace fx
         FX_MOD_LERP_ACTIVE = 0, // lerp since emitter activation
         FX_MOD_LERP_EMIT,       // lerp since emit begin
         FX_MOD_LERP_PARAM,      // param based lerp
+        FX_MOD_LERP_ITER,       // iteration based lerp
 
         FX_MOD_LERP_MODES
     };
@@ -249,7 +250,7 @@ namespace fx
         instance *parent;
         emitter *e;
         FxHandle fxhandle;
-        int beginmillis, endmillis, activeendmillis;
+        int beginmillis, endmillis, activeendmillis, curiter, iters;
         bool sync, emitted;
 
         union
@@ -266,7 +267,7 @@ namespace fx
         void schedule(bool resync);
         bool checkconditions();
         void update();
-        void emitfx(int iter);
+        void emitfx();
         void stop();
 
         template<class T> T getprop(int propindex)

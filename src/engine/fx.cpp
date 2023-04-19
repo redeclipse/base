@@ -226,7 +226,13 @@ namespace fx
         {
             if(checkconditions())
             {
-                loopi(getprop<int>(FX_PROP_ITER)) emitfx(i);
+                iters = getprop<int>(FX_PROP_ITER);
+                loopi(iters)
+                {
+                    curiter = i;
+                    emitfx();
+                }
+
                 emitted = true;
             }
             else reset();

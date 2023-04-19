@@ -152,7 +152,9 @@ namespace fx
         float t = 1.0f;
         int lerpmode = prop.lerp->props[FX_MOD_LERP_PROP_MODE].get<int>();
 
-        if(lerpmode == FX_MOD_LERP_PARAM)
+        if(lerpmode == FX_MOD_LERP_ITER && inst.iters > 1)
+            t = float(inst.curiter) / float(inst.iters - 1);
+        else if(lerpmode == FX_MOD_LERP_PARAM)
         {
             int lerpparam = prop.lerp->props[FX_MOD_LERP_PROP_PARAM].get<int>();
             t = inst.e->params[lerpparam];

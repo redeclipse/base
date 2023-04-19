@@ -158,25 +158,25 @@ namespace fx
             "posfromenttag",
             PROP_INT,
             -1, -1, INT_MAX,
-            0
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
         ),
         fxpropertydef(
             "endfromenttag",
             PROP_INT,
             -1, -1, INT_MAX,
-            0
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
         ),
         fxpropertydef(
             "posfroment",
             PROP_INT,
             game::ENT_POS_ORIGIN, game::ENT_POS_ORIGIN, game::ENT_POS_MUZZLE,
-            0
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
         ),
         fxpropertydef(
             "endfroment",
             PROP_INT,
             game::ENT_POS_ORIGIN, game::ENT_POS_ORIGIN, game::ENT_POS_MUZZLE,
-            0
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
         ),
         fxpropertydef(
             "iter",

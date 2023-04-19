@@ -36,7 +36,7 @@ namespace fx
         return inst.getprop<float>(FX_PROP_SCALE) * inst.e->scale;
     }
 
-    static bool getpos(instance &inst, vec &from, vec &to, float scale, int iter)
+    static bool getpos(instance &inst, vec &from, vec &to, float scale)
     {
         bool hasoffset = false;
         bool endfromprev = inst.getprop<int>(FX_PROP_END_FROM_PREV);
@@ -98,10 +98,10 @@ namespace fx
             tooffset.add(endfrompos);
         }
 
-        if(!iteroffset.iszero() && iter > 0)
+        if(!iteroffset.iszero() && inst.curiter > 0)
         {
-            fromoffset.add(iteroffset.mul(scale).mul(iter));
-            tooffset.add(iteroffset.mul(scale).mul(iter));
+            fromoffset.add(iteroffset.mul(scale).mul(inst.curiter));
+            tooffset.add(iteroffset.mul(scale).mul(inst.curiter));
         }
 
         if(!fromoffset.iszero())
@@ -147,11 +147,11 @@ namespace fx
             inst.e->color : inst.getextprop<bvec>(colprop);
     }
 
-    static void particlefx(instance &inst, int iter)
+    static void particlefx(instance &inst)
     {
         float scale = getscale(inst);
         vec from, to;
-        bool hasoffset = getpos(inst, from, to, scale, iter);
+        bool hasoffset = getpos(inst, from, to, scale);
 
         float blend = getblend(inst);
         int color = getcolor(inst, FX_PART_COLOR).tohexcolor();
@@ -326,11 +326,11 @@ namespace fx
         }
     }
 
-    static void lightfx(instance &inst, int iter)
+    static void lightfx(instance &inst)
     {
         float scale = getscale(inst);
         vec from, to;
-        getpos(inst, from, to, scale, iter);
+        getpos(inst, from, to, scale);
 
         float radius = inst.getextprop<float>(FX_LIGHT_RADIUS) * scale;
         vec color = getcolor(inst, FX_LIGHT_COLOR).mul(getblend(inst)).tocolor();
@@ -339,7 +339,7 @@ namespace fx
         adddynlight(from, radius, vec(color), 0, 0, flags);
     }
 
-    static void soundfx(instance &inst, int iter)
+    static void soundfx(instance &inst)
     {
         vec from, to;
 
@@ -364,7 +364,7 @@ namespace fx
             else
             {
                 float scale = getscale(inst);
-                getpos(inst, from, to, scale, iter);
+                getpos(inst, from, to, scale);
                 soundpos = &from;
                 extraflags = SND_VELEST;
             }
@@ -389,11 +389,11 @@ namespace fx
         }
     }
 
-    static void windfx(instance &inst, int iter)
+    static void windfx(instance &inst)
     {
         float scale = getscale(inst);
         vec from, to;
-        getpos(inst, from, to, scale, iter);
+        getpos(inst, from, to, scale);
 
         float speed = inst.getextprop<float>(FX_WIND_SPEED) * getblend(inst);
 
@@ -410,13 +410,13 @@ namespace fx
         );
     }
 
-    static void stainfx(instance &inst, int iter)
+    static void stainfx(instance &inst)
     {
         if(inst.emitted) return;
 
         float scale = getscale(inst);
         vec from, to, dir;
-        getpos(inst, from, to, scale, iter);
+        getpos(inst, from, to, scale);
 
         if(to.isnormalized()) dir = to;
         else dir = vec(to).sub(from).safenormalize();
@@ -432,17 +432,17 @@ namespace fx
         );
     }
 
-    void instance::emitfx(int iter)
+    void instance::emitfx()
     {
         fxdef &def = fxhandle.get();
 
         switch(def.type)
         {
-            case FX_TYPE_PARTICLE: particlefx(*this, iter); break;
-            case FX_TYPE_LIGHT: lightfx(*this, iter); break;
-            case FX_TYPE_SOUND: soundfx(*this, iter); break;
-            case FX_TYPE_WIND: windfx(*this, iter); break;
-            case FX_TYPE_STAIN: stainfx(*this, iter); break;
+            case FX_TYPE_PARTICLE: particlefx(*this); break;
+            case FX_TYPE_LIGHT: lightfx(*this); break;
+            case FX_TYPE_SOUND: soundfx(*this); break;
+            case FX_TYPE_WIND: windfx(*this); break;
+            case FX_TYPE_STAIN: stainfx(*this); break;
         }
     }
 }
