@@ -191,8 +191,11 @@ namespace UI
         if(buildparent) \
         { \
             type *o = buildparent->buildtype<type>(); \
-            setup; \
-            o->buildchildren(contents); \
+            if(o) \
+            { \
+                setup; \
+                o->buildchildren(contents); \
+            } \
         } \
     } while(0)
 
@@ -721,6 +724,7 @@ namespace UI
         template<class T> bool istype() const { return T::typestr() == gettype(); }
         bool isnamed(const char *name) const { return name[0] == '#' ? name == gettypename() : !strcmp(name, getname()); }
 
+        virtual bool isallowed() const { return true; }
         virtual bool isfill() const { return false; }
         virtual bool iscolour() const { return false; }
         virtual bool istext() const { return false; }
@@ -778,6 +782,12 @@ namespace UI
             {
                 t = new T;
                 children.add(t);
+            }
+            if(!t->isallowed())
+            {
+                delete t;
+                children.remove(buildchild);
+                return NULL;
             }
             t->reset(this);
             buildchild++;
@@ -1585,8 +1595,11 @@ namespace UI
         if(buildparent) \
         { \
             type *o = buildparent->buildtype<type>(); \
-            setup; \
-            o->buildchildren(columndata, contents); \
+            if(o) \
+            { \
+                setup; \
+                o->buildchildren(columndata, contents); \
+            } \
         } \
     } while(0)
 
@@ -4082,6 +4095,7 @@ namespace UI
 
         TextEditor() : edit(NULL), keyfilter(NULL), canfocus(true), allowlines(true) {}
 
+        bool isallowed() const { return world == worlds[WORLD_MAIN]; }
         bool iseditor() const { return true; }
 
         void setup(const char *name, int length, int height, float scale_ = 1, const char *initval = NULL, int mode = EDITORUSED, const char *keyfilter_ = NULL, bool _allowlines = true, int limit = 0)
@@ -4365,6 +4379,7 @@ namespace UI
 
         KeyCatcher() : id(NULL), pressedkey(0) {}
 
+        bool isallowed() const { return world == worlds[WORLD_MAIN]; }
         bool iskeycatcher() const { return true; }
 
         static const char *typestr() { return "#KeyCatcher"; }
