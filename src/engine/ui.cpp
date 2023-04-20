@@ -1214,7 +1214,7 @@ namespace UI
         if(!name || !*name || !contents || !*contents) return;
         if(mapdef && !(identflags&IDF_WORLD) && !editmode)
         {
-            conoutf("\frWorld UI %s is only directly modifiable in editmode", name);
+            conoutf("\frMap UI %s is only directly modifiable in editmode", name);
             return;
         }
 
@@ -1225,7 +1225,7 @@ namespace UI
             if(window == UI::window) return;
             if(!window->mapdef && mapdef)
             {
-                conoutf("\frCannot override builtin UI %s with a World UI", window->name);
+                conoutf("\frCannot override builtin UI %s with a one from the map", window->name);
                 return;
             }
             loopi(3) if(worlds[i]) worlds[i]->hide(window);

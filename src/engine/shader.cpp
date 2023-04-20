@@ -1090,6 +1090,19 @@ Shader *shader(int type, char *name, char *vs, char *ps, bool mapdef, bool overw
     if(o)
     {
         if(!overwrite) return o;
+        else if(o->mapdef)
+        {
+            if(!(identflags&IDF_WORLD) && !editmode)
+            {
+                conoutf("\frMap shader %s is only directly modifiable in editmode", o->name);
+                return o;
+            }
+        }
+        else if(mapdef)
+        {
+            conoutf("\frCannot override builtin shader %s with a one from the map", o->name);
+            return o;
+        }
         o->cleanup(true);
     }
     if(!initshaders) progress(loadprogress, "Loading shader: %s", name);
