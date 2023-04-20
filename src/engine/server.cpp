@@ -1617,8 +1617,7 @@ void setlocations(const char *bin)
         const char *str = getenv("HOME");
         if(str && *str) formatstring(dir, "%s/.%s", str, versionuname);
 #endif
-        if(homedirappend && dir[0] && strncmp(versionbranch, "stable", 5) && strncmp(versionbranch, "steam", 5) && strncmp(versionbranch, "none", 5))
-            appendhomedir(versionbranch);
+        if(homedirappend && dir[0] && *versionbranch) appendhomedir(versionbranch);
     }
     if(!dir[0]) copystring(dir, "home"); // failsafe
     for(int n = 0, len = strlen(dir); n < len; n++)

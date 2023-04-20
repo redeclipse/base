@@ -2213,6 +2213,10 @@ namespace UI
             changedraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
             resetblend();
 
+            GLOBALPARAMF(millis, lastmillis/1000.0f);
+            GLOBALPARAMF(viewsize, hudw*w, hudh*h, 1.0f/(hudw*w), 1.0f/(hudh*h));
+            GLOBALPARAMF(composite, sx, sy, w, h);
+
             vector<LocalShaderParam> list;
             loopv(params)
             {
@@ -5782,7 +5786,7 @@ namespace UI
         enumerate(windows, Window *, w,
         {
             if(!w->mapdef || !w->body) continue;
-            h->printf("mapdef %s [%s]\n", w->name, w->body);
+            h->printf("mapui %s [%s]\n", w->name, w->body);
             mapmenus++;
         });
         return mapmenus;
