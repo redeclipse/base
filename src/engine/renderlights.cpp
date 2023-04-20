@@ -239,12 +239,12 @@ void cleanupao()
     }
 
 #define AOVARS(name) \
-    FVAR(IDF_WORLD, aoradius##name, 0, 5, 256); \
-    FVAR(IDF_WORLD, aodark##name, 1e-3f, 11.0f, 1e3f); \
-    FVAR(IDF_WORLD, aomin##name, 0, 0.25f, 1); \
-    VARF(IDF_WORLD, aosun##name, 0, 1, 1, cleardeferredlightshaders()); \
-    FVAR(IDF_WORLD, aosunmin##name, 0, 0.5f, 1); \
-    FVAR(IDF_WORLD, aosharp##name, 1e-3f, 1, 1e3f);
+    FVAR(IDF_MAP, aoradius##name, 0, 5, 256); \
+    FVAR(IDF_MAP, aodark##name, 1e-3f, 11.0f, 1e3f); \
+    FVAR(IDF_MAP, aomin##name, 0, 0.25f, 1); \
+    VARF(IDF_MAP, aosun##name, 0, 1, 1, cleardeferredlightshaders()); \
+    FVAR(IDF_MAP, aosunmin##name, 0, 0.5f, 1); \
+    FVAR(IDF_MAP, aosharp##name, 1e-3f, 1, 1e3f);
 
 AOVARS();
 AOVARS(alt);
@@ -964,7 +964,7 @@ void resolvemsaacolor(int w = vieww, int h = viewh)
 }
 
 #define HDRVARS(name) \
-    FVAR(IDF_WORLD, hdrbright##name, 1e-4f, 1.0f, 1e4f);
+    FVAR(IDF_MAP, hdrbright##name, 1e-4f, 1.0f, 1e4f);
 
 HDRVARS();
 HDRVARS(alt);
@@ -1558,8 +1558,8 @@ VAR(0, rhdyntex, 0, 0, 1);
 VAR(0, rhdynmm, 0, 0, 1);
 
 #define RHVARS(name) \
-    VARF(IDF_WORLD, rhnearplane##name, 1, 1, 16, clearradiancehintscache()); \
-    VARF(IDF_WORLD, rhfarplane##name, 64, 1024, 16384, clearradiancehintscache());
+    VARF(IDF_MAP, rhnearplane##name, 1, 1, 16, clearradiancehintscache()); \
+    VARF(IDF_MAP, rhfarplane##name, 64, 1024, 16384, clearradiancehintscache());
 
 RHVARS();
 RHVARS(alt);
@@ -1568,9 +1568,9 @@ GETVARMPV(rh, nearplane, float);
 GETVARMPV(rh, farplane, float);
 
 #define GIVARS(name) \
-    VARF(IDF_WORLD, gidist##name, 0, 384, 1024, { clearradiancehintscache(); cleardeferredlightshaders(); if(!gidist##name) cleanupradiancehints(); }); \
-    FVARF(IDF_WORLD, giscale##name, 0, 1.5f, 1e3f, { cleardeferredlightshaders(); if(!giscale##name) cleanupradiancehints(); }); \
-    FVAR(IDF_WORLD, giaoscale##name, 0, 3, 1e3f);
+    VARF(IDF_MAP, gidist##name, 0, 384, 1024, { clearradiancehintscache(); cleardeferredlightshaders(); if(!gidist##name) cleanupradiancehints(); }); \
+    FVARF(IDF_MAP, giscale##name, 0, 1.5f, 1e3f, { cleardeferredlightshaders(); if(!giscale##name) cleanupradiancehints(); }); \
+    FVAR(IDF_MAP, giaoscale##name, 0, 3, 1e3f);
 
 GIVARS();
 GIVARS(alt);
@@ -1973,10 +1973,10 @@ VARN(0, lightbatches, lightbatchesused, 1, 0, 0);
 VARN(0, lightbatchrects, lightbatchrectsused, 1, 0, 0);
 VARN(0, lightbatchstacks, lightbatchstacksused, 1, 0, 0);
 
-VARF(IDF_WORLD, alphashadow, 0, 1, 2, { cleardeferredlightshaders(); cleanupshadowatlas(); });
+VARF(IDF_MAP, alphashadow, 0, 1, 2, { cleardeferredlightshaders(); cleanupshadowatlas(); });
 
 #define ALPHASHADOWVARS(name) \
-    FVARF(IDF_WORLD, alphashadowscale##name, 0, 1, 2, clearshadowcache());
+    FVARF(IDF_MAP, alphashadowscale##name, 0, 1, 2, clearshadowcache());
 
 ALPHASHADOWVARS();
 ALPHASHADOWVARS(alt);
@@ -2174,8 +2174,8 @@ FVAR(0, csmbias2, -1e16f, 2e-4f, 1e6f);
 VAR(0, csmcull, 0, 1, 1);
 
 #define CSMVARS(name) \
-    VAR(IDF_WORLD, csmnearplane##name, 1, 1, 16); \
-    VAR(IDF_WORLD, csmfarplane##name, 64, 1024, 16384);
+    VAR(IDF_MAP, csmnearplane##name, 1, 1, 16); \
+    VAR(IDF_MAP, csmfarplane##name, 64, 1024, 16384);
 
 CSMVARS();
 CSMVARS(alt);
@@ -2675,8 +2675,8 @@ FVAR(0, voldistclamp, 0, 0.99f, 2);
 VAR(0, volderiv, -1, 1, 1);
 
 #define VOLVARS(name) \
-    CVAR(IDF_WORLD, volcolour##name, 0x808080); \
-    FVAR(IDF_WORLD, volscale##name, 0, 1, 16);
+    CVAR(IDF_MAP, volcolour##name, 0x808080); \
+    FVAR(IDF_MAP, volscale##name, 0, 1, 16);
 
 VOLVARS();
 VOLVARS(alt);

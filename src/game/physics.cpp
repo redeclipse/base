@@ -1,14 +1,14 @@
 #include "game.h"
 namespace physics
 {
-    FVAR(IDF_WORLD, stairheight, 0, 4.1f, 1000);
-    FVAR(IDF_WORLD, floorz, 0, 0.867f, 1);
-    FVAR(IDF_WORLD, slopez, 0, 0.5f, 1);
-    FVAR(IDF_WORLD, wallz, 0, 0.2f, 1);
-    FVAR(IDF_WORLD, stepspeed, 1e-4f, 1.f, 1000);
+    FVAR(IDF_MAP, stairheight, 0, 4.1f, 1000);
+    FVAR(IDF_MAP, floorz, 0, 0.867f, 1);
+    FVAR(IDF_MAP, slopez, 0, 0.5f, 1);
+    FVAR(IDF_MAP, wallz, 0, 0.2f, 1);
+    FVAR(IDF_MAP, stepspeed, 1e-4f, 1.f, 1000);
 
     #define MPVVARS(type) \
-        FVAR(IDF_WORLD, deathplane##type, -1, 0, 1);
+        FVAR(IDF_MAP, deathplane##type, -1, 0, 1);
     MPVVARS();
     MPVVARS(alt);
 

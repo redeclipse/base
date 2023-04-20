@@ -121,21 +121,21 @@ void blendhalos()
 }
 
 #define MPVVARS(name, type) \
-    VARF(IDF_WORLD, haze##name, 0, 0, 1, inithaze()); \
-    CVAR(IDF_WORLD, hazecolour##name, 0); \
-    FVAR(IDF_WORLD, hazecolourmix##name, 0, 0.5f, 1); \
-    FVAR(IDF_WORLD, hazeblend##name, 0, 1, 1); \
-    SVARF(IDF_WORLD, hazetex##name, "textures/watern", inithaze()); \
-    FVAR(IDF_WORLD, hazemindist##name, 0, 256, FVAR_MAX); \
-    FVAR(IDF_WORLD, hazemaxdist##name, 0, 1024, FVAR_MAX); \
-    FVAR(IDF_WORLD, hazemargin##name, FVAR_NONZERO, 32, FVAR_MAX); \
-    FVAR(IDF_WORLD, hazescalex##name, FVAR_NONZERO, 1, FVAR_MAX); \
-    FVAR(IDF_WORLD, hazescaley##name, FVAR_NONZERO, 2, FVAR_MAX); \
-    FVAR(IDF_WORLD, hazerefract##name, FVAR_NONZERO, 2, 10); \
-    FVAR(IDF_WORLD, hazerefract2##name, FVAR_NONZERO, 4, 10); \
-    FVAR(IDF_WORLD, hazerefract3##name, FVAR_NONZERO, 8, 10); \
-    FVAR(IDF_WORLD, hazescrollx##name, FVAR_MIN, 0, FVAR_MAX); \
-    FVAR(IDF_WORLD, hazescrolly##name, FVAR_MIN, -0.5f, FVAR_MAX);
+    VARF(IDF_MAP, haze##name, 0, 0, 1, inithaze()); \
+    CVAR(IDF_MAP, hazecolour##name, 0); \
+    FVAR(IDF_MAP, hazecolourmix##name, 0, 0.5f, 1); \
+    FVAR(IDF_MAP, hazeblend##name, 0, 1, 1); \
+    SVARF(IDF_MAP, hazetex##name, "textures/watern", inithaze()); \
+    FVAR(IDF_MAP, hazemindist##name, 0, 256, FVAR_MAX); \
+    FVAR(IDF_MAP, hazemaxdist##name, 0, 1024, FVAR_MAX); \
+    FVAR(IDF_MAP, hazemargin##name, FVAR_NONZERO, 32, FVAR_MAX); \
+    FVAR(IDF_MAP, hazescalex##name, FVAR_NONZERO, 1, FVAR_MAX); \
+    FVAR(IDF_MAP, hazescaley##name, FVAR_NONZERO, 2, FVAR_MAX); \
+    FVAR(IDF_MAP, hazerefract##name, FVAR_NONZERO, 2, 10); \
+    FVAR(IDF_MAP, hazerefract2##name, FVAR_NONZERO, 4, 10); \
+    FVAR(IDF_MAP, hazerefract3##name, FVAR_NONZERO, 8, 10); \
+    FVAR(IDF_MAP, hazescrollx##name, FVAR_MIN, 0, FVAR_MAX); \
+    FVAR(IDF_MAP, hazescrolly##name, FVAR_MIN, -0.5f, FVAR_MAX);
 
 MPVVARS(, MPV_DEF);
 MPVVARS(alt, MPV_ALT);

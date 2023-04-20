@@ -38,7 +38,7 @@ vector<normal> normals;
 vector<tnormal> tnormals;
 vector<int> smoothgroups;
 
-VAR(IDF_WORLD, lerpangle, 0, 44, 180);
+VAR(IDF_MAP, lerpangle, 0, 44, 180);
 
 static bool usetnormals = true;
 
@@ -141,8 +141,8 @@ void findnormal(const vec &pos, int smooth, const vec &surface, vec &v)
     else v = surface;
 }
 
-VAR(IDF_WORLD, lerpsubdiv, 0, 2, 4);
-VAR(IDF_WORLD, lerpsubdivsize, 4, 4, 128);
+VAR(IDF_MAP, lerpsubdiv, 0, 2, 4);
+VAR(IDF_MAP, lerpsubdivsize, 4, 4, 128);
 
 static uint normalprogress = 0;
 

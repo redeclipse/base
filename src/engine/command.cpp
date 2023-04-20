@@ -512,7 +512,7 @@ void resetvar(char *name)
     ident *id = idents.access(name);
     if(!id) return;
     if(id->flags&IDF_READONLY) printreadonly(id);
-    else if(id->flags&IDF_WORLD || id->flags&IDF_CLIENT || id->flags&IDF_SERVER) debugcode("\frVariable %s cannot be reset (%d [%d])", id->name, id->type, id->flags);
+    else if(id->flags&IDF_MAP || id->flags&IDF_CLIENT || id->flags&IDF_SERVER) debugcode("\frVariable %s cannot be reset (%d [%d])", id->name, id->type, id->flags);
     else clearoverride(*id);
 }
 
@@ -533,15 +533,15 @@ static inline void setarg(ident &id, tagval &v)
     }
 }
 
-static inline void setalias(ident &id, tagval &v, bool world, bool quiet = false)
+static inline void setalias(ident &id, tagval &v, bool mapdef, bool quiet = false)
 {
-    if(world && !(id.flags&IDF_LOCAL) && !(id.flags&IDF_WORLD) && !(id.flags&IDF_UNKNOWN))
+    if(mapdef && !(id.flags&IDF_LOCAL) && !(id.flags&IDF_MAP) && !(id.flags&IDF_UNKNOWN))
     {
-        debugcode("\frCannot redefine %s as a world alias (%d [%d])", id.name, id.type, id.flags);
+        debugcode("\frCannot redefine %s as a map alias (%d [%d])", id.name, id.type, id.flags);
         return;
     }
 #ifndef STANDALONE
-    if(!quiet && !(id.flags&IDF_LOCAL) && !(identflags&IDF_WORLD) && !editmode && (world || (id.flags&IDF_WORLD && !(id.flags&IDF_REWRITE))))
+    if(!quiet && !(id.flags&IDF_LOCAL) && !(identflags&IDF_MAP) && !editmode && (mapdef || (id.flags&IDF_MAP && !(id.flags&IDF_REWRITE))))
     {
         printeditonly(&id);
         return;
@@ -559,15 +559,15 @@ static inline void setalias(ident &id, tagval &v, bool world, bool quiet = false
     {
         // In order to stop abuse, do not add the quiet flag if it was absent before
         if(quiet) id.flags |= oldflags&IDF_META;
-        if(world || oldflags&IDF_WORLD) id.flags |= IDF_WORLD;
+        if(mapdef || oldflags&IDF_MAP) id.flags |= IDF_MAP;
         id.flags |= oldflags&IDF_PERSIST;
 #ifndef STANDALONE
-        client::editvar(&id, !(identflags&IDF_WORLD));
+        client::editvar(&id, !(identflags&IDF_MAP));
 #endif
     }
 }
 
-static void setalias(const char *name, tagval &v, bool world, bool quiet = false)
+static void setalias(const char *name, tagval &v, bool mapdef, bool quiet = false)
 {
     ident *id = idents.access(name);
     if(id)
@@ -576,7 +576,7 @@ static void setalias(const char *name, tagval &v, bool world, bool quiet = false
         {
             case ID_ALIAS:
                 if(id->index < MAXARGS) setarg(*id, v);
-                else setalias(*id, v, world, quiet);
+                else setalias(*id, v, mapdef, quiet);
                 return;
             case ID_VAR:
                 setvarchecked(id, v.getint());
@@ -608,62 +608,64 @@ static void setalias(const char *name, tagval &v, bool world, bool quiet = false
     else
     {
 #ifndef STANDALONE
-        if(!(identflags&IDF_WORLD) && !editmode && world && !quiet)
+        if(!(identflags&IDF_MAP) && !editmode && mapdef && !quiet)
         {
-            debugcode("\frCannot create %s as a world alias outside editmode", name);
+            debugcode("\frCannot create %s as a map alias outside editmode", name);
             return;
         }
 #endif
         int extraflags = 0;
-        if(world) extraflags |= IDF_WORLD;
+        if(mapdef) extraflags |= IDF_MAP;
         if(quiet) extraflags |= IDF_META;
 
         id = addident(ident(ID_ALIAS, newstring(name), v, identflags|extraflags, 0));
 #ifndef STANDALONE
-        client::editvar(id, !(identflags&IDF_WORLD));
+        client::editvar(id, !(identflags&IDF_MAP));
 #endif
     }
 }
 
-void alias(const char *name, const char *action, bool world, bool quiet)
+void alias(const char *name, const char *action, bool mapdef, bool quiet)
 {
     tagval v;
     v.setstr(newstring(action));
-    setalias(name, v, world, quiet);
+    setalias(name, v, mapdef, quiet);
 }
 
-void alias(const char *name, tagval &v, bool world, bool quiet)
+void alias(const char *name, tagval &v, bool mapdef, bool quiet)
 {
-    setalias(name, v, world, quiet);
+    setalias(name, v, mapdef, quiet);
 }
 
 ICOMMAND(0, alias, "sT", (const char *name, tagval *v),
 {
-    setalias(name, *v, (identflags&IDF_WORLD)!=0);
+    setalias(name, *v, (identflags&IDF_MAP)!=0);
     v->type = VAL_NULL;
 });
 
-void worldalias(const char *name, const char *action)
+void mapalias(const char *name, const char *action)
 {
     alias(name, action, true);
 }
-COMMAND(0, worldalias, "ss");
+COMMAND(0, mapalias, "ss");
+ICOMMAND(0, worldalias, "ss", (char *name, char *action), mapalias(name, action)); // backwards-comaptibility
 
-void worldmeta(const char *name, const char *action)
+void mapmeta(const char *name, const char *action)
 {
     alias(name, action, true, true);
 }
-COMMAND(0, worldmeta, "ss");
+COMMAND(0, mapmeta, "ss");
+ICOMMAND(0, worldmeta, "ss", (char *name, char *action), mapmeta(name, action)); // backwards-comaptibility
 
-void remworldmeta(const char *name)
+void remmapmeta(const char *name)
 {
     ident *id = idents.access(name);
-    if(id && (id->flags & (IDF_META | IDF_WORLD)) == (IDF_META | IDF_WORLD))
-        id->flags &= ~(IDF_META | IDF_WORLD);
+    if(id && (id->flags & (IDF_META | IDF_MAP)) == (IDF_META | IDF_MAP))
+        id->flags &= ~(IDF_META | IDF_MAP);
 }
-COMMAND(0, remworldmeta, "s");
+COMMAND(0, remmapmeta, "s");
 
-void loadalias(const char *name, const char *fname, int *world)
+void loadalias(const char *name, const char *fname, int *mapdef)
 {
     string s;
     copystring(s, fname);
@@ -675,7 +677,7 @@ void loadalias(const char *name, const char *fname, int *world)
     }
     tagval v;
     v.setstr(buf);
-    setalias(name, v, *world!=0);
+    setalias(name, v, *mapdef!=0);
 }
 COMMAND(0, loadalias, "ssi");
 
@@ -1144,14 +1146,14 @@ ICOMMAND(0, get, "s", (char *name),
 #define CHECKVAR(argstr) \
     if(!versioning) \
     { \
-        if(!(identflags&IDF_WORLD) && !editmode && id->flags&IDF_WORLD && !(id->flags&IDF_REWRITE)) \
+        if(!(identflags&IDF_MAP) && !editmode && id->flags&IDF_MAP && !(id->flags&IDF_REWRITE)) \
         { \
             printeditonly(id); \
             return; \
         } \
         if(id->flags&IDF_CLIENT) \
         { \
-            if((identflags&IDF_WORLD) && !(id->flags&IDF_WORLD)) \
+            if((identflags&IDF_MAP) && !(id->flags&IDF_MAP)) \
             { \
                 debugcode("\frCannot set variable %s from map config (%d [%d])", id->name, id->type, id->flags); \
                 return; \
@@ -1178,7 +1180,7 @@ void setvarchecked(ident *id, int val)
         }
         id->changed();                                             // call trigger function if available
 #ifndef STANDALONE
-        client::editvar(id, !(identflags&IDF_WORLD));
+        client::editvar(id, !(identflags&IDF_MAP));
         if(versioning && id->flags&IDF_SERVER) setvar(&id->name[3], val);
 #endif
     }
@@ -1212,7 +1214,7 @@ void setfvarchecked(ident *id, float val)
         }
         id->changed();
 #ifndef STANDALONE
-        client::editvar(id, !(identflags&IDF_WORLD));
+        client::editvar(id, !(identflags&IDF_MAP));
         if(versioning && id->flags&IDF_SERVER) setfvar(&id->name[3], val, true);
 #endif
     }
@@ -1240,7 +1242,7 @@ void setsvarchecked(ident *id, const char *val)
         }
         id->changed();
 #ifndef STANDALONE
-        client::editvar(id, !(identflags&IDF_WORLD));
+        client::editvar(id, !(identflags&IDF_MAP));
         if(versioning && id->flags&IDF_SERVER) setsvar(&id->name[3], val, true);
 #endif
     }
@@ -1251,7 +1253,7 @@ ICOMMAND(0, set, "rT", (ident *id, tagval *v),
     switch(id->type)
     {
         case ID_ALIAS:
-            if(id->index < MAXARGS) setarg(*id, *v); else setalias(*id, *v, (identflags&IDF_WORLD)!=0);
+            if(id->index < MAXARGS) setarg(*id, *v); else setalias(*id, *v, (identflags&IDF_MAP)!=0);
             v->type = VAL_NULL;
             break;
         case ID_VAR:
@@ -2195,7 +2197,7 @@ static void compilestatements(vector<uint> &code, const char *&p, int rettype, i
         else
         {
             ident *id = idents.access(idname);
-            if(!id || (id->flags&IDF_REWRITE && (!(identflags&IDF_WORLD) || !(id->flags&IDF_WORLD))))
+            if(!id || (id->flags&IDF_REWRITE && (!(identflags&IDF_MAP) || !(id->flags&IDF_MAP))))
             {
                 if(!checknumber(idname)) { compilestr(code, idname, true); goto noid; }
                 switch(rettype)
@@ -3220,14 +3222,14 @@ static const uint *runcode(const uint *code, tagval &result)
             }
 
             case CODE_ALIAS:
-                setalias(*identmap[op>>8], args[--numargs], (identflags&IDF_WORLD)!=0);
+                setalias(*identmap[op>>8], args[--numargs], (identflags&IDF_MAP)!=0);
                 continue;
             case CODE_ALIASARG:
                 setarg(*identmap[op>>8], args[--numargs]);
                 continue;
             case CODE_ALIASU:
                 numargs -= 2;
-                setalias(args[numargs].getstr(), args[numargs+1], (identflags&IDF_WORLD)!=0);
+                setalias(args[numargs].getstr(), args[numargs+1], (identflags&IDF_MAP)!=0);
                 freearg(args[numargs]);
                 continue;
 
@@ -3299,7 +3301,7 @@ static const uint *runcode(const uint *code, tagval &result)
                     continue;
                 }
                 ident *id = idents.access(idarg.s);
-                bool idrewrite = !id || (id->flags&IDF_REWRITE && (!(identflags&IDF_WORLD) || !(id->flags&IDF_WORLD)));
+                bool idrewrite = !id || (id->flags&IDF_REWRITE && (!(identflags&IDF_MAP) || !(id->flags&IDF_MAP)));
                 if(idrewrite)
                 {
                 noid:
@@ -3500,12 +3502,12 @@ int execute(const char *p)
     return i;
 }
 
-int execute(const char *p, bool nonworld)
+int execute(const char *p, bool nonmapdef)
 {
     int oldflags = identflags;
-    if(nonworld) identflags &= ~IDF_WORLD;
+    if(nonmapdef) identflags &= ~IDF_MAP;
     int result = execute(p);
-    if(nonworld) identflags = oldflags;
+    if(nonmapdef) identflags = oldflags;
     return result;
 }
 
@@ -3601,7 +3603,7 @@ bool execfile(const char *cfgfile, bool msg, int flags)
         return false;
     }
     int oldflags = identflags, oldversion = versioning;
-    if(flags&EXEC_NOWORLD) identflags &= ~IDF_WORLD;
+    if(flags&EXEC_NOMAP) identflags &= ~IDF_MAP;
     if(flags&EXEC_VERSION) versioning = flags&EXEC_BUILTIN ? 2 : 1;
     const char *oldsourcefile = sourcefile, *oldsourcestr = sourcestr;
     sourcefile = cfgfile;
@@ -3609,7 +3611,7 @@ bool execfile(const char *cfgfile, bool msg, int flags)
     execute(buf);
     sourcefile = oldsourcefile;
     sourcestr = oldsourcestr;
-    if(flags&EXEC_NOWORLD) identflags = oldflags;
+    if(flags&EXEC_NOMAP) identflags = oldflags;
     if(flags&EXEC_VERSION) versioning = oldversion;
     delete[] buf;
     if(verbose >= 2) conoutf("\faLoaded script %s", cfgfile);
@@ -3671,7 +3673,7 @@ bool validateblock(const char *s)
 void changedvars()
 {
     vector<ident *> ids;
-    enumerate(idents, ident, id, if(id.flags&IDF_WORLD) ids.add(&id));
+    enumerate(idents, ident, id, if(id.flags&IDF_MAP) ids.add(&id));
     ids.sortname();
     loopv(ids) printvar(ids[i]);
 }
@@ -3946,7 +3948,7 @@ void append(ident *id, tagval *v, bool space)
     if(prefix[0]) r.setstr(conc(v, 1, space, prefix));
     else v->getval(r);
     if(id->index < MAXARGS) setarg(*id, r);
-    else setalias(*id, r, (identflags&IDF_WORLD)!=0);
+    else setalias(*id, r, (identflags&IDF_MAP)!=0);
 }
 ICOMMAND(0, append, "rt", (ident *id, tagval *v), append(id, v, true));
 ICOMMAND(0, appendword, "rt", (ident *id, tagval *v), append(id, v, false));
@@ -5254,19 +5256,19 @@ void checksleep(int millis)
     }
 }
 
-void clearsleep(bool clearworlds)
+void clearsleep(bool clearmapdefs)
 {
     int len = 0;
     loopv(sleepcmds) if(sleepcmds[i].command)
     {
-        if(!clearworlds || sleepcmds[i].flags&IDF_WORLD)
+        if(!clearmapdefs || sleepcmds[i].flags&IDF_MAP)
             delete[] sleepcmds[i].command;
         else sleepcmds[len++] = sleepcmds[i];
     }
     sleepcmds.shrink(len);
 }
 
-ICOMMAND(0, clearsleep, "i", (int *worlds), clearsleep(*worlds!=0 || identflags&IDF_WORLD));
+ICOMMAND(0, clearsleep, "i", (int *mapdefs), clearsleep(*mapdefs!=0 || identflags&IDF_MAP));
 ICOMMAND(0, exists, "ss", (char *a, char *b), intret(fileexists(a, *b ? b : "r")));
 ICOMMAND(0, getupdatemillis, "", (), intret(curtime));
 ICOMMAND(0, getmillis, "i", (int *total),

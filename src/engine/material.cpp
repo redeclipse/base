@@ -146,14 +146,14 @@ const char *getmaterialdesc(ushort *mat, const char *prefix)
 #define ORIENTS_LIQUID (1<<O_LEFT)|(1<<O_RIGHT)|(1<<O_FRONT)|(1<<O_BACK)|(1<<O_TOP)
 
 #define MATFACEVARS(name) \
-    VARF(IDF_WORLD, name##faces, 0, ORIENTS_ALL, ORIENTS_ALL, if(!(identflags&IDF_WORLD)) allchanged()); \
-    VARF(IDF_WORLD, name##2faces, 0, ORIENTS_ALL, ORIENTS_ALL, if(!(identflags&IDF_WORLD)) allchanged()); \
-    VARF(IDF_WORLD, name##3faces, 0, ORIENTS_ALL, ORIENTS_ALL, if(!(identflags&IDF_WORLD)) allchanged()); \
-    VARF(IDF_WORLD, name##4faces, 0, ORIENTS_ALL, ORIENTS_ALL, if(!(identflags&IDF_WORLD)) allchanged()); \
-    VARF(IDF_WORLD, name##facesalt, 0, ORIENTS_ALL, ORIENTS_ALL, if(!(identflags&IDF_WORLD)) allchanged()); \
-    VARF(IDF_WORLD, name##2facesalt, 0, ORIENTS_ALL, ORIENTS_ALL, if(!(identflags&IDF_WORLD)) allchanged()); \
-    VARF(IDF_WORLD, name##3facesalt, 0, ORIENTS_ALL, ORIENTS_ALL, if(!(identflags&IDF_WORLD)) allchanged()); \
-    VARF(IDF_WORLD, name##4facesalt, 0, ORIENTS_ALL, ORIENTS_ALL, if(!(identflags&IDF_WORLD)) allchanged());
+    VARF(IDF_MAP, name##faces, 0, ORIENTS_ALL, ORIENTS_ALL, if(!(identflags&IDF_MAP)) allchanged()); \
+    VARF(IDF_MAP, name##2faces, 0, ORIENTS_ALL, ORIENTS_ALL, if(!(identflags&IDF_MAP)) allchanged()); \
+    VARF(IDF_MAP, name##3faces, 0, ORIENTS_ALL, ORIENTS_ALL, if(!(identflags&IDF_MAP)) allchanged()); \
+    VARF(IDF_MAP, name##4faces, 0, ORIENTS_ALL, ORIENTS_ALL, if(!(identflags&IDF_MAP)) allchanged()); \
+    VARF(IDF_MAP, name##facesalt, 0, ORIENTS_ALL, ORIENTS_ALL, if(!(identflags&IDF_MAP)) allchanged()); \
+    VARF(IDF_MAP, name##2facesalt, 0, ORIENTS_ALL, ORIENTS_ALL, if(!(identflags&IDF_MAP)) allchanged()); \
+    VARF(IDF_MAP, name##3facesalt, 0, ORIENTS_ALL, ORIENTS_ALL, if(!(identflags&IDF_MAP)) allchanged()); \
+    VARF(IDF_MAP, name##4facesalt, 0, ORIENTS_ALL, ORIENTS_ALL, if(!(identflags&IDF_MAP)) allchanged());
 
 MATFACEVARS(water);
 MATFACEVARS(lava);
@@ -724,9 +724,9 @@ void rendermaterialmask()
 }
 
 #define GLASSVARS(type, name) \
-    CVAR(IDF_WORLD, name##colour##type, 0xB0D8FF); \
-    FVAR(IDF_WORLD, name##refract##type, 0, 0.1f, 1e3f); \
-    VAR(IDF_WORLD, name##spec##type, 0, 150, 200);
+    CVAR(IDF_MAP, name##colour##type, 0xB0D8FF); \
+    FVAR(IDF_MAP, name##refract##type, 0, 0.1f, 1e3f); \
+    VAR(IDF_MAP, name##spec##type, 0, 150, 200);
 
 GLASSVARS(, glass)
 GLASSVARS(, glass2)

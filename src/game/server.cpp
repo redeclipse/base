@@ -1073,7 +1073,7 @@ namespace server
         numgamevars = numgamemods = 0;
         enumerate(idents, ident, id,
         {
-            if(id.flags&IDF_SERVER && !(id.flags&IDF_READONLY) && (all || !(id.flags&IDF_WORLD))) // reset vars
+            if(id.flags&IDF_SERVER && !(id.flags&IDF_READONLY) && (all || !(id.flags&IDF_MAP))) // reset vars
             {
                 const char *val = NULL;
                 if(id.flags&IDF_GAMEMOD) numgamevars++;
@@ -1120,7 +1120,7 @@ namespace server
     {
         enumerate(idents, ident, id,
         {
-            if(id.flags&IDF_SERVER && !(id.flags&IDF_READONLY) && !(id.flags&IDF_WORLD)) switch(id.type)
+            if(id.flags&IDF_SERVER && !(id.flags&IDF_READONLY) && !(id.flags&IDF_MAP)) switch(id.type)
             {
                 case ID_VAR: id.def.i = *id.storage.i; break;
                 case ID_FVAR: id.def.f = *id.storage.f; break;
@@ -3904,7 +3904,7 @@ namespace server
     {
         bool found = false;
         const char *argstr = numargs > 2 ? conc(&args[1], numargs-1, true) : (numargs > 1 ? args[1].getstr() : "");
-        if(id && id->flags&IDF_WORLD && identflags&IDF_WORLD) found = true;
+        if(id && id->flags&IDF_MAP && identflags&IDF_MAP) found = true;
         else if(id && id->flags&IDF_SERVER && id->type != ID_COMMAND) found = servcmd(numargs, args[0].getstr(), argstr);
 #ifndef STANDALONE
         else if(!id || id->flags&IDF_CLIENT) found = client::sendcmd(numargs, args[0].getstr(), argstr);
@@ -4067,7 +4067,7 @@ namespace server
 
         enumerate(idents, ident, id,
         {
-            if(id.flags&IDF_SERVER && !(id.flags&IDF_WORLD)) // reset vars
+            if(id.flags&IDF_SERVER && !(id.flags&IDF_MAP)) // reset vars
             {
                 const char *val = NULL;
                 switch(id.type)
@@ -7001,7 +7001,7 @@ namespace server
                         getstring(text, p);
                         defformatstring(cmdname, "sv_%s", text);
                         ident *id = idents.access(cmdname);
-                        if(!skip && id && id->flags&IDF_SERVER && id->flags&IDF_WORLD && n == id->type)
+                        if(!skip && id && id->flags&IDF_SERVER && id->flags&IDF_MAP && n == id->type)
                         {
                             switch(id->type)
                             {
@@ -7460,7 +7460,7 @@ namespace server
                             int val = getint(p);
 
                             if(!(flags&IDF_META))
-                                relayf(3, "\fy%s set world variable %s to %d", colourname(ci), text, val);
+                                relayf(3, "\fy%s set map variable %s to %d", colourname(ci), text, val);
 
                             QUEUE_INT(val);
                             break;
@@ -7470,7 +7470,7 @@ namespace server
                             float val = getfloat(p);
 
                             if(!(flags&IDF_META))
-                                relayf(3, "\fy%s set world variable %s to %s", colourname(ci), text, floatstr(val));
+                                relayf(3, "\fy%s set map variable %s to %s", colourname(ci), text, floatstr(val));
 
                             QUEUE_FLT(val);
                             break;
@@ -7484,7 +7484,7 @@ namespace server
                             getstring(val, p, vlen+1);
 
                             if(!(flags&IDF_META))
-                                relayf(3, "\fy%s set world %s %s to %s", colourname(ci), t == ID_ALIAS ? "alias" : "variable", text, val);
+                                relayf(3, "\fy%s set map %s %s to %s", colourname(ci), t == ID_ALIAS ? "alias" : "variable", text, val);
 
                             QUEUE_INT(vlen);
                             QUEUE_STR(val);

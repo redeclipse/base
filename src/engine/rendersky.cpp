@@ -37,106 +37,106 @@ Texture *loadskyoverlay(const char *basename)
 }
 
 #define MPVVARS(name, type) \
-    CVAR(IDF_WORLD, ambient##name, 0x191919); \
-    FVAR(IDF_WORLD, ambientscale##name, 0, 1, 16); \
-    CVAR(IDF_WORLD, skylight##name, 0); \
-    FVAR(IDF_WORLD, skylightscale##name, 0, 1, 16); \
-    VAR(IDF_WORLD, fog##name, 16, 4000, 1000024); \
-    CVAR(IDF_WORLD, fogcolour##name, 0x8099B3); \
-    CVAR(IDF_WORLD, skybgcolour##name, 0x000000); \
-    SVARF(IDF_WORLD, skybox##name, "", { if(skybox##name[0] && checkmapvariant(type)) loadsky(skybox##name, sky); }); \
-    CVAR(IDF_WORLD, skycolour##name, 0xFFFFFF); \
-    FVAR(IDF_WORLD, skyblend##name, 0, 1.0f, 1); \
-    FVAR(IDF_WORLD, skyoverbright##name, 1, 2, 16); \
-    FVAR(IDF_WORLD, skyoverbrightmin##name, 0, 1, 16); \
-    FVAR(IDF_WORLD, skyoverbrightthreshold##name, 0, 0.7f, 1); \
-    FVAR(IDF_WORLD, spinsky##name, -720, 0, 720); \
-    FVAR(IDF_WORLD, spinskypitch##name, -720, 0, 720); \
-    FVAR(IDF_WORLD, spinskyroll##name, -720, 0, 720); \
-    VAR(IDF_WORLD, yawsky##name, 0, 0, 360); \
-    VAR(IDF_WORLD, pitchsky##name, 0, 0, 360); \
-    VAR(IDF_WORLD, rollsky##name, 0, 0, 360); \
-    SVARF(IDF_WORLD, cloudbox##name, "", { if(cloudbox##name[0] && checkmapvariant(type)) loadsky(cloudbox##name, clouds); }); \
-    CVAR(IDF_WORLD, cloudcolour##name, 0xFFFFFF); \
-    FVAR(IDF_WORLD, cloudblend##name, 0, 1.0f, 1); \
-    FVAR(IDF_WORLD, spinclouds##name, -720, 0, 720); \
-    FVAR(IDF_WORLD, spincloudspitch##name, -720, 0, 720); \
-    FVAR(IDF_WORLD, spincloudsroll##name, -720, 0, 720); \
-    VAR(IDF_WORLD, yawclouds##name, 0, 0, 360); \
-    VAR(IDF_WORLD, pitchclouds##name, 0, 0, 360); \
-    VAR(IDF_WORLD, rollclouds##name, 0, 0, 360); \
-    FVAR(IDF_WORLD, cloudclip##name, 0, 0.5f, 1); \
-    SVARF(IDF_WORLD, cloudlayer##name, "", { if(cloudlayer##name[0] && checkmapvariant(type)) cloudoverlay = loadskyoverlay(cloudlayer##name); }); \
-    CVAR(IDF_WORLD, cloudlayercolour##name, 0xFFFFFF); \
-    FVAR(IDF_WORLD, cloudlayerblend##name, 0, 1.0f, 1); \
-    FVAR(IDF_WORLD, cloudoffsetx##name, 0, 0, 1); \
-    FVAR(IDF_WORLD, cloudoffsety##name, 0, 0, 1); \
-    FVAR(IDF_WORLD, cloudscrollx##name, -16, 0, 16); \
-    FVAR(IDF_WORLD, cloudscrolly##name, -16, 0, 16); \
-    FVAR(IDF_WORLD, cloudscale##name, FVAR_NONZERO, 1, 64); \
-    FVAR(IDF_WORLD, spincloudlayer##name, -720, 0, 720); \
-    VAR(IDF_WORLD, yawcloudlayer##name, 0, 0, 360); \
-    FVAR(IDF_WORLD, cloudheight##name, -1, 0.2f, 1); \
-    FVAR(IDF_WORLD, cloudfade##name, 0, 0.2f, 1); \
-    VAR(IDF_WORLD, cloudsubdiv##name, 4, 16, 64); \
-    VAR(IDF_WORLD, cloudfarplane##name, 0, 1, 1); \
-    VAR(IDF_WORLD, cloudshadow##name, 0, 0, 1); \
-    FVAR(IDF_WORLD, cloudshadowblend##name, 0, 0.66f, 1); \
-    SVARF(IDF_WORLD, envlayer##name, "", { if(envlayer##name[0] && checkmapvariant(type)) envoverlay = loadskyoverlay(envlayer##name); }); \
-    CVAR(IDF_WORLD, envlayercolour##name, 0xFFFFFF); \
-    FVAR(IDF_WORLD, envlayerblend##name, 0, 1.0f, 1); \
-    FVAR(IDF_WORLD, envoffsetx##name, 0, 0, 1); \
-    FVAR(IDF_WORLD, envoffsety##name, 0, 0, 1); \
-    FVAR(IDF_WORLD, envscrollx##name, -16, 0, 16); \
-    FVAR(IDF_WORLD, envscrolly##name, -16, 0, 16); \
-    FVAR(IDF_WORLD, envscale##name, FVAR_NONZERO, 1, 64); \
-    FVAR(IDF_WORLD, spinenvlayer##name, -720, 0, 720); \
-    VAR(IDF_WORLD, yawenvlayer##name, 0, 0, 360); \
-    FVAR(IDF_WORLD, envheight##name, -1, 0.2f, 1); \
-    FVAR(IDF_WORLD, envfade##name, 0, 0.2f, 1); \
-    VAR(IDF_WORLD, envsubdiv##name, 4, 16, 64); \
-    VAR(IDF_WORLD, envfarplane##name, 0, 1, 1); \
-    VAR(IDF_WORLD, envshadow##name, 0, 0, 1); \
-    FVAR(IDF_WORLD, envshadowblend##name, 0, 0.66f, 1); \
-    VAR(IDF_WORLD, atmo##name, 0, 0, 2); \
-    VAR(IDF_WORLD, atmostyle##name, 0, 0, 1); \
-    FVAR(IDF_WORLD, atmoplanetsize##name, FVAR_NONZERO, 1, FVAR_MAX); \
-    FVAR(IDF_WORLD, atmoheight##name, FVAR_NONZERO, 1, FVAR_MAX); \
-    FVAR(IDF_WORLD, atmobright##name, 0, 1, 16); \
-    FVAR(IDF_WORLD|IDF_READONLY, atmoclarity##name, 0, 0, 10); /* old map compat for fixatmo, don't use */ \
-    CVAR(IDF_WORLD, atmolight##name, 0); \
-    FVAR(IDF_WORLD, atmolightscale##name, 0, 1, 16); \
-    FVAR(IDF_WORLD, atmohaze##name, 0, 0.1f, 100); \
-    FVAR(IDF_WORLD, atmodensity##name, 0, 1, 100); \
-    FVAR(IDF_WORLD, atmoozone##name, 0, 1, 100); \
-    FVAR(IDF_WORLD, atmoblend##name, 0, 1, 1); \
-    CVAR(IDF_WORLD, atmodisk##name, 0); \
-    FVAR(IDF_WORLD, atmodisksize##name, 0, 12, 90); \
-    FVAR(IDF_WORLD, atmodiskcorona##name, 0, 0.4f, 1); \
-    FVAR(IDF_WORLD, atmodiskbright##name, 0, 1, 16); \
-    CVAR(IDF_WORLD, atmoclouds##name, 0); \
-    FVAR(IDF_WORLD, atmocloudscale##name, FVAR_NONZERO, 10, 256); \
-    FVAR(IDF_WORLD, atmocloudlight##name, 0, 0.3f, 16); \
-    FVAR(IDF_WORLD, atmoclouddark##name, 0, 0.1f, 16); \
-    FVAR(IDF_WORLD, atmocloudcover##name, 0, 0.25f, 16); \
-    FVAR(IDF_WORLD, atmocloudsharp##name, 0, 2, 64); \
-    FVAR(IDF_WORLD, atmocloudblend##name, 0, 1, 1); \
-    FVAR(IDF_WORLD, atmocloudsun##name, 0, 1, 16); \
-    FVAR(IDF_WORLD, atmocloudsky##name, 0, 0.1f, 16); \
-    FVAR(IDF_WORLD, atmocloudfademin##name, 0, 0.01f, 16); \
-    FVAR(IDF_WORLD, atmocloudfademax##name, 0, 0.2f, 1); \
-    FVAR(IDF_WORLD, atmocloudscrollx##name, -16, 0.01f, 1); \
-    FVAR(IDF_WORLD, atmocloudscrolly##name, -16, 0, 16); \
-    FVAR(IDF_WORLD, fogdomeheight##name, -1, -0.5f, 1); \
-    FVAR(IDF_WORLD, fogdomemin##name, 0, 0, 1); \
-    FVAR(IDF_WORLD, fogdomemax##name, 0, 0, 1); \
-    VAR(IDF_WORLD, fogdomecap##name, 0, 1, 1); \
-    FVAR(IDF_WORLD, fogdomeclip##name, 0, 1, 1); \
-    CVAR(IDF_WORLD, fogdomecolour##name, 0xFFFFFF); \
-    VAR(IDF_WORLD, fogdomeclouds##name, 0, 1, 1); \
-    VAR(IDF_WORLD, fogdomesquare##name, 0, 0, 1); \
-    VAR(IDF_WORLD, skytexture##name, 0, 0, 1); \
-    VARF(IDF_WORLD, skyshadow##name, 0, 0, 1, if(checkmapvariant(type)) clearshadowcache());
+    CVAR(IDF_MAP, ambient##name, 0x191919); \
+    FVAR(IDF_MAP, ambientscale##name, 0, 1, 16); \
+    CVAR(IDF_MAP, skylight##name, 0); \
+    FVAR(IDF_MAP, skylightscale##name, 0, 1, 16); \
+    VAR(IDF_MAP, fog##name, 16, 4000, 1000024); \
+    CVAR(IDF_MAP, fogcolour##name, 0x8099B3); \
+    CVAR(IDF_MAP, skybgcolour##name, 0x000000); \
+    SVARF(IDF_MAP, skybox##name, "", { if(skybox##name[0] && checkmapvariant(type)) loadsky(skybox##name, sky); }); \
+    CVAR(IDF_MAP, skycolour##name, 0xFFFFFF); \
+    FVAR(IDF_MAP, skyblend##name, 0, 1.0f, 1); \
+    FVAR(IDF_MAP, skyoverbright##name, 1, 2, 16); \
+    FVAR(IDF_MAP, skyoverbrightmin##name, 0, 1, 16); \
+    FVAR(IDF_MAP, skyoverbrightthreshold##name, 0, 0.7f, 1); \
+    FVAR(IDF_MAP, spinsky##name, -720, 0, 720); \
+    FVAR(IDF_MAP, spinskypitch##name, -720, 0, 720); \
+    FVAR(IDF_MAP, spinskyroll##name, -720, 0, 720); \
+    VAR(IDF_MAP, yawsky##name, 0, 0, 360); \
+    VAR(IDF_MAP, pitchsky##name, 0, 0, 360); \
+    VAR(IDF_MAP, rollsky##name, 0, 0, 360); \
+    SVARF(IDF_MAP, cloudbox##name, "", { if(cloudbox##name[0] && checkmapvariant(type)) loadsky(cloudbox##name, clouds); }); \
+    CVAR(IDF_MAP, cloudcolour##name, 0xFFFFFF); \
+    FVAR(IDF_MAP, cloudblend##name, 0, 1.0f, 1); \
+    FVAR(IDF_MAP, spinclouds##name, -720, 0, 720); \
+    FVAR(IDF_MAP, spincloudspitch##name, -720, 0, 720); \
+    FVAR(IDF_MAP, spincloudsroll##name, -720, 0, 720); \
+    VAR(IDF_MAP, yawclouds##name, 0, 0, 360); \
+    VAR(IDF_MAP, pitchclouds##name, 0, 0, 360); \
+    VAR(IDF_MAP, rollclouds##name, 0, 0, 360); \
+    FVAR(IDF_MAP, cloudclip##name, 0, 0.5f, 1); \
+    SVARF(IDF_MAP, cloudlayer##name, "", { if(cloudlayer##name[0] && checkmapvariant(type)) cloudoverlay = loadskyoverlay(cloudlayer##name); }); \
+    CVAR(IDF_MAP, cloudlayercolour##name, 0xFFFFFF); \
+    FVAR(IDF_MAP, cloudlayerblend##name, 0, 1.0f, 1); \
+    FVAR(IDF_MAP, cloudoffsetx##name, 0, 0, 1); \
+    FVAR(IDF_MAP, cloudoffsety##name, 0, 0, 1); \
+    FVAR(IDF_MAP, cloudscrollx##name, -16, 0, 16); \
+    FVAR(IDF_MAP, cloudscrolly##name, -16, 0, 16); \
+    FVAR(IDF_MAP, cloudscale##name, FVAR_NONZERO, 1, 64); \
+    FVAR(IDF_MAP, spincloudlayer##name, -720, 0, 720); \
+    VAR(IDF_MAP, yawcloudlayer##name, 0, 0, 360); \
+    FVAR(IDF_MAP, cloudheight##name, -1, 0.2f, 1); \
+    FVAR(IDF_MAP, cloudfade##name, 0, 0.2f, 1); \
+    VAR(IDF_MAP, cloudsubdiv##name, 4, 16, 64); \
+    VAR(IDF_MAP, cloudfarplane##name, 0, 1, 1); \
+    VAR(IDF_MAP, cloudshadow##name, 0, 0, 1); \
+    FVAR(IDF_MAP, cloudshadowblend##name, 0, 0.66f, 1); \
+    SVARF(IDF_MAP, envlayer##name, "", { if(envlayer##name[0] && checkmapvariant(type)) envoverlay = loadskyoverlay(envlayer##name); }); \
+    CVAR(IDF_MAP, envlayercolour##name, 0xFFFFFF); \
+    FVAR(IDF_MAP, envlayerblend##name, 0, 1.0f, 1); \
+    FVAR(IDF_MAP, envoffsetx##name, 0, 0, 1); \
+    FVAR(IDF_MAP, envoffsety##name, 0, 0, 1); \
+    FVAR(IDF_MAP, envscrollx##name, -16, 0, 16); \
+    FVAR(IDF_MAP, envscrolly##name, -16, 0, 16); \
+    FVAR(IDF_MAP, envscale##name, FVAR_NONZERO, 1, 64); \
+    FVAR(IDF_MAP, spinenvlayer##name, -720, 0, 720); \
+    VAR(IDF_MAP, yawenvlayer##name, 0, 0, 360); \
+    FVAR(IDF_MAP, envheight##name, -1, 0.2f, 1); \
+    FVAR(IDF_MAP, envfade##name, 0, 0.2f, 1); \
+    VAR(IDF_MAP, envsubdiv##name, 4, 16, 64); \
+    VAR(IDF_MAP, envfarplane##name, 0, 1, 1); \
+    VAR(IDF_MAP, envshadow##name, 0, 0, 1); \
+    FVAR(IDF_MAP, envshadowblend##name, 0, 0.66f, 1); \
+    VAR(IDF_MAP, atmo##name, 0, 0, 2); \
+    VAR(IDF_MAP, atmostyle##name, 0, 0, 1); \
+    FVAR(IDF_MAP, atmoplanetsize##name, FVAR_NONZERO, 1, FVAR_MAX); \
+    FVAR(IDF_MAP, atmoheight##name, FVAR_NONZERO, 1, FVAR_MAX); \
+    FVAR(IDF_MAP, atmobright##name, 0, 1, 16); \
+    FVAR(IDF_MAP|IDF_READONLY, atmoclarity##name, 0, 0, 10); /* old map compat for fixatmo, don't use */ \
+    CVAR(IDF_MAP, atmolight##name, 0); \
+    FVAR(IDF_MAP, atmolightscale##name, 0, 1, 16); \
+    FVAR(IDF_MAP, atmohaze##name, 0, 0.1f, 100); \
+    FVAR(IDF_MAP, atmodensity##name, 0, 1, 100); \
+    FVAR(IDF_MAP, atmoozone##name, 0, 1, 100); \
+    FVAR(IDF_MAP, atmoblend##name, 0, 1, 1); \
+    CVAR(IDF_MAP, atmodisk##name, 0); \
+    FVAR(IDF_MAP, atmodisksize##name, 0, 12, 90); \
+    FVAR(IDF_MAP, atmodiskcorona##name, 0, 0.4f, 1); \
+    FVAR(IDF_MAP, atmodiskbright##name, 0, 1, 16); \
+    CVAR(IDF_MAP, atmoclouds##name, 0); \
+    FVAR(IDF_MAP, atmocloudscale##name, FVAR_NONZERO, 10, 256); \
+    FVAR(IDF_MAP, atmocloudlight##name, 0, 0.3f, 16); \
+    FVAR(IDF_MAP, atmoclouddark##name, 0, 0.1f, 16); \
+    FVAR(IDF_MAP, atmocloudcover##name, 0, 0.25f, 16); \
+    FVAR(IDF_MAP, atmocloudsharp##name, 0, 2, 64); \
+    FVAR(IDF_MAP, atmocloudblend##name, 0, 1, 1); \
+    FVAR(IDF_MAP, atmocloudsun##name, 0, 1, 16); \
+    FVAR(IDF_MAP, atmocloudsky##name, 0, 0.1f, 16); \
+    FVAR(IDF_MAP, atmocloudfademin##name, 0, 0.01f, 16); \
+    FVAR(IDF_MAP, atmocloudfademax##name, 0, 0.2f, 1); \
+    FVAR(IDF_MAP, atmocloudscrollx##name, -16, 0.01f, 1); \
+    FVAR(IDF_MAP, atmocloudscrolly##name, -16, 0, 16); \
+    FVAR(IDF_MAP, fogdomeheight##name, -1, -0.5f, 1); \
+    FVAR(IDF_MAP, fogdomemin##name, 0, 0, 1); \
+    FVAR(IDF_MAP, fogdomemax##name, 0, 0, 1); \
+    VAR(IDF_MAP, fogdomecap##name, 0, 1, 1); \
+    FVAR(IDF_MAP, fogdomeclip##name, 0, 1, 1); \
+    CVAR(IDF_MAP, fogdomecolour##name, 0xFFFFFF); \
+    VAR(IDF_MAP, fogdomeclouds##name, 0, 1, 1); \
+    VAR(IDF_MAP, fogdomesquare##name, 0, 0, 1); \
+    VAR(IDF_MAP, skytexture##name, 0, 0, 1); \
+    VARF(IDF_MAP, skyshadow##name, 0, 0, 1, if(checkmapvariant(type)) clearshadowcache());
 
 MPVVARS(, MPV_DEF);
 MPVVARS(alt, MPV_ALT);

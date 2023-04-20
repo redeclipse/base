@@ -5,7 +5,7 @@ VAR(0, dbggrass, 0, 0, 1);
 VAR(IDF_PERSIST, grassdist, 0, 1024, 10000);
 FVAR(IDF_PERSIST, grasstaper, 0, 0.2f, 1);
 FVAR(IDF_PERSIST, grassstep, 0.5f, 3, 8);
-VAR(IDF_WORLD, grassheight, 1, 4, 64);
+VAR(IDF_MAP, grassheight, 1, 4, 64);
 VAR(IDF_PERSIST, grassmargin, 0, 8, 32);
 FVAR(0, grassmarginfade, 0, 1, 1);
 
@@ -74,8 +74,8 @@ VARFN(IDF_PERSIST, grassoffsets, numgrassoffsets, 8, 32, 1024, resetgrassoffsets
 
 static int lastgrassanim = -1;
 
-VAR(IDF_WORLD, grassanimmillis, 0, 3000, 60000);
-FVAR(IDF_WORLD, grassanimscale, 0, 0.03f, 1);
+VAR(IDF_MAP, grassanimmillis, 0, 3000, 60000);
+FVAR(IDF_MAP, grassanimscale, 0, 0.03f, 1);
 
 static void animategrass()
 {
@@ -83,10 +83,10 @@ static void animategrass()
     lastgrassanim = lastmillis;
 }
 
-VAR(IDF_WORLD, grassscale, 1, 2, 64);
-CVAR(IDF_WORLD, grasscolour, 0xFFFFFF);
-FVAR(IDF_WORLD, grassblend, 0, 1, 1);
-FVAR(IDF_WORLD, grasstest, 0, 0.6f, 1);
+VAR(IDF_MAP, grassscale, 1, 2, 64);
+CVAR(IDF_MAP, grasscolour, 0xFFFFFF);
+FVAR(IDF_MAP, grassblend, 0, 1, 1);
+FVAR(IDF_MAP, grasstest, 0, 0.6f, 1);
 
 static void gengrassquads(grassgroup *&group, const grasswedge &w, const grasstri &g, Texture *tex, const vec &col, float blend, int scale, int height)
 {

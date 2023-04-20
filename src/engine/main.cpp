@@ -219,8 +219,8 @@ void screenshot(char *sname)
     saveimage(fname, image, imageformat, compresslevel, true);
 }
 
-ICOMMAND(0, screenshot, "s", (char *s), if(!(identflags&IDF_WORLD)) screenshot(s));
-ICOMMAND(0, quit, "", (void), if(!(identflags&IDF_WORLD)) quit());
+ICOMMAND(0, screenshot, "s", (char *s), if(!(identflags&IDF_MAP)) screenshot(s));
+ICOMMAND(0, quit, "", (void), if(!(identflags&IDF_MAP)) quit());
 
 #define SCR_MINW 320
 #define SCR_MINH 200
@@ -284,7 +284,7 @@ void setfullscreen(bool enable)
     wantdisplaysetup = true;
 }
 
-VARF(IDF_INIT, fullscreen, 0, 1, 1, if(!(identflags&IDF_WORLD)) setfullscreen(fullscreen!=0));
+VARF(IDF_INIT, fullscreen, 0, 1, 1, if(!(identflags&IDF_MAP)) setfullscreen(fullscreen!=0));
 
 void resetfullscreen()
 {
@@ -292,7 +292,7 @@ void resetfullscreen()
     setfullscreen(true);
 }
 
-VARF(IDF_INIT, fullscreendesktop, 0, 1, 1, if(!(identflags&IDF_WORLD) && fullscreen) resetfullscreen());
+VARF(IDF_INIT, fullscreendesktop, 0, 1, 1, if(!(identflags&IDF_MAP) && fullscreen) resetfullscreen());
 
 void screenres(int w, int h)
 {
@@ -535,7 +535,7 @@ void resetgl()
     engineready = true;
 }
 
-ICOMMAND(0, resetgl, "", (void), if(!(identflags&IDF_WORLD)) resetgl());
+ICOMMAND(0, resetgl, "", (void), if(!(identflags&IDF_MAP)) resetgl());
 
 bool warping = false, minimized = false;
 VAR(IDF_PERSIST, renderunfocused, 0, 0, 1);
@@ -986,7 +986,7 @@ void progress(float amt, const char *s, ...)
     if(verbose >= 4) conoutf("%s [%.2f%%]", sf, amt*100.f);
 
     int oldflags = identflags;
-    identflags &= ~IDF_WORLD;
+    identflags &= ~IDF_MAP;
     progressing = true;
     if(engineready) UI::update();
     gl_drawnoview();

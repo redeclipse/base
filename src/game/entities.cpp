@@ -51,8 +51,8 @@ namespace entities
     VAR(0, routemaxdist, 0, 64, VAR_MAX);
     VAR(IDF_PERSIST, showroutenames, 0, 1, 1);
     FVAR(IDF_PERSIST, routenameblend, 0, 1, 1);
-    SVARF(IDF_WORLD, routenames, "Easy Medium Hard", { string s; if(filterstring(s, routenames)) { delete[] routenames; routenames = newstring(s); } });
-    SVARF(IDF_WORLD, routecolours, "0x00FF00 0xFF7700 0xFF0000", { string s; if(filterstring(s, routecolours)) { delete[] routecolours; routecolours = newstring(s); } });
+    SVARF(IDF_MAP, routenames, "Easy Medium Hard", { string s; if(filterstring(s, routenames)) { delete[] routenames; routenames = newstring(s); } });
+    SVARF(IDF_MAP, routecolours, "0x00FF00 0xFF7700 0xFF0000", { string s; if(filterstring(s, routecolours)) { delete[] routecolours; routecolours = newstring(s); } });
 
     struct rail
     {
@@ -1448,7 +1448,7 @@ namespace entities
     {
         loopenti(TRIGGER) if(ents[i]->type == TRIGGER && ents[i]->attrs[0] == n && ents[i]->attrs[2] == TA_MANUAL) runtrigger(i, d, false);
     }
-    ICOMMAND(0, exectrigger, "i", (int *n), if(identflags&IDF_WORLD) runtriggers(*n, triggerclient ? triggerclient : game::player1));
+    ICOMMAND(0, exectrigger, "i", (int *n), if(identflags&IDF_MAP) runtriggers(*n, triggerclient ? triggerclient : game::player1));
 
     bool execitem(int n, int cn, dynent *d, float dist)
     {

@@ -353,7 +353,7 @@ namespace client
         loopv(ids)
         {
             ident &id = *ids[i];
-            if(id.flags&IDF_CLIENT && !(id.flags&IDF_READONLY) && !(id.flags&IDF_WORLD)) switch(id.type)
+            if(id.flags&IDF_CLIENT && !(id.flags&IDF_READONLY) && !(id.flags&IDF_MAP)) switch(id.type)
             {
                 case ID_VAR:
                     if(*id.storage.i == id.def.i)
@@ -386,7 +386,7 @@ namespace client
         }
         delete f;
     }
-    ICOMMAND(0, writevars, "sii", (char *name, int *all, int *sv), if(!(identflags&IDF_WORLD)) writegamevars(name, *all!=0, *sv!=0));
+    ICOMMAND(0, writevars, "sii", (char *name, int *all, int *sv), if(!(identflags&IDF_MAP)) writegamevars(name, *all!=0, *sv!=0));
 
     void writegamevarsinfo(const char *name)
     {
@@ -462,7 +462,7 @@ namespace client
         }
         delete f;
     }
-    ICOMMAND(0, writevarsinfo, "s", (char *name), if(!(identflags&IDF_WORLD)) writegamevarsinfo(name));
+    ICOMMAND(0, writevarsinfo, "s", (char *name), if(!(identflags&IDF_MAP)) writegamevarsinfo(name));
 
     // collect c2s messages conveniently
     vector<uchar> messages;
@@ -1874,27 +1874,27 @@ namespace client
 
     void editvar(ident *id, bool local)
     {
-        if(id && id->flags&IDF_WORLD && !(id->flags&IDF_META) && !(id->flags&IDF_SERVER) && local && m_edit(game::gamemode) && game::player1->state == CS_EDITING)
+        if(id && id->flags&IDF_MAP && !(id->flags&IDF_META) && !(id->flags&IDF_SERVER) && local && m_edit(game::gamemode) && game::player1->state == CS_EDITING)
         {
             switch(id->type)
             {
                 case ID_VAR:
                     addmsg(N_EDITVAR, "riisi", id->type, id->flags&IDF_TX_MASK, id->name, *id->storage.i);
-                    conoutft(CON_EVENT, "\fy%s set world variable \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(game::player1), id->name, intstr(id));
+                    conoutft(CON_EVENT, "\fy%s set map variable \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(game::player1), id->name, intstr(id));
                     break;
                 case ID_FVAR:
                     addmsg(N_EDITVAR, "riisf", id->type, id->flags&IDF_TX_MASK, id->name, *id->storage.f);
-                    conoutft(CON_EVENT, "\fy%s set world variable \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(game::player1), id->name, floatstr(*id->storage.f));
+                    conoutft(CON_EVENT, "\fy%s set map variable \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(game::player1), id->name, floatstr(*id->storage.f));
                     break;
                 case ID_SVAR:
                     addmsg(N_EDITVAR, "riisis", id->type, id->flags&IDF_TX_MASK, id->name, strlen(*id->storage.s), *id->storage.s);
-                    conoutft(CON_EVENT, "\fy%s set world variable \fs\fc%s\fS to \fy\fc%s\fS", game::colourname(game::player1), id->name, *id->storage.s);
+                    conoutft(CON_EVENT, "\fy%s set map variable \fs\fc%s\fS to \fy\fc%s\fS", game::colourname(game::player1), id->name, *id->storage.s);
                     break;
                 case ID_ALIAS:
                 {
                     const char *s = id->getstr();
                     addmsg(N_EDITVAR, "riisis", id->type, id->flags&IDF_TX_MASK, id->name, strlen(s), s);
-                    conoutft(CON_EVENT, "\fy%s set world alias \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(game::player1), id->name, s);
+                    conoutft(CON_EVENT, "\fy%s set map alias \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(game::player1), id->name, s);
                     break;
                 }
                 default: break;
@@ -2220,7 +2220,7 @@ namespace client
                 putint(p, N_GAMEINFO);
                 enumerate(idents, ident, id,
                 {
-                    if(id.flags&IDF_CLIENT && id.flags&IDF_WORLD) switch(id.type)
+                    if(id.flags&IDF_CLIENT && id.flags&IDF_MAP) switch(id.type)
                     {
                         case ID_VAR:
                             putint(p, id.type);
@@ -3082,7 +3082,7 @@ namespace client
                     bool commit = true;
                     getstring(text, p);
                     ident *id = idents.access(text);
-                    if(!d || !id || !(id->flags&IDF_WORLD) || id->type != t) commit = false;
+                    if(!d || !id || !(id->flags&IDF_MAP) || id->type != t) commit = false;
                     switch(t)
                     {
                         case ID_VAR:
@@ -3098,7 +3098,7 @@ namespace client
                                 else if(val > id->maxval) val = id->maxval;
                                 else if(val < id->minval) val = id->minval;
                                 setvar(text, val, true);
-                                conoutft(CON_EVENT, "\fy%s set world variable \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(d), id->name, intstr(id));
+                                conoutft(CON_EVENT, "\fy%s set map variable \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(d), id->name, intstr(id));
                             }
                             break;
                         }
@@ -3110,7 +3110,7 @@ namespace client
                                 if(val > id->maxvalf) val = id->maxvalf;
                                 else if(val < id->minvalf) val = id->minvalf;
                                 setfvar(text, val, true);
-                                conoutft(CON_EVENT, "\fy%s set world variable \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(d), id->name, floatstr(*id->storage.f));
+                                conoutft(CON_EVENT, "\fy%s set map variable \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(d), id->name, floatstr(*id->storage.f));
                             }
                             break;
                         }
@@ -3123,7 +3123,7 @@ namespace client
                             if(commit)
                             {
                                 setsvar(text, val, true);
-                                conoutft(CON_EVENT, "\fy%s set world variable \fs\fc%s\fS to \fy\fc%s\fS", game::colourname(d), id->name, *id->storage.s);
+                                conoutft(CON_EVENT, "\fy%s set map variable \fs\fc%s\fS to \fy\fc%s\fS", game::colourname(d), id->name, *id->storage.s);
                             }
                             delete[] val;
                             break;
@@ -3136,11 +3136,11 @@ namespace client
                             getstring(val, p, vlen+1);
                             if(commit || !id) // set aliases anyway
                             {
-                                if(flags&IDF_META) worldmeta(text, val);
+                                if(flags&IDF_META) mapmeta(text, val);
                                 else
                                 {
-                                    worldalias(text, val);
-                                    conoutft(CON_EVENT, "\fy%s set world alias \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(d), text, val);
+                                    mapalias(text, val);
+                                    conoutft(CON_EVENT, "\fy%s set map alias \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(d), text, val);
                                 }
                             }
                             delete[] val;

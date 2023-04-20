@@ -1394,7 +1394,7 @@ int vieww = -1, viewh = -1, farplane;
 float curfov = 100, fovy = 100, aspect = 1, cursorx = 0.5f, cursory = 0.5f;
 vec cursordir(0, 0, 0);
 FVARN(IDF_PERSIST, aspect, forceaspect, 0, 0, 1e3f);
-FVAR(IDF_WORLD, farplanescale, FVAR_NONZERO, 2, FVAR_MAX);
+FVAR(IDF_MAP, farplanescale, FVAR_NONZERO, 2, FVAR_MAX);
 
 void vecfromcursor(float x, float y, float z, vec &dir)
 {
@@ -2046,9 +2046,9 @@ void clearminimap()
     if(minimaptex) { glDeleteTextures(1, &minimaptex); minimaptex = 0; }
 }
 
-VAR(IDF_WORLD, minimapheight, 0, 0, 2<<16);
-CVAR(IDF_WORLD, minimapcolour, 0);
-VAR(IDF_WORLD, minimapclip, 0, 0, 1);
+VAR(IDF_MAP, minimapheight, 0, 0, 2<<16);
+CVAR(IDF_MAP, minimapcolour, 0);
+VAR(IDF_MAP, minimapclip, 0, 0, 1);
 VARF(IDF_PERSIST, minimapsize, 7, 8, 10, { if(minimaptex) drawminimap(); });
 CVARF(IDF_PERSIST, nominimapcolour, 0x101010, { if(minimaptex) drawminimap(); });
 

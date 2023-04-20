@@ -393,7 +393,7 @@ FVAR(IDF_PERSIST, soundeffectevent, 0, 1, 100);
 FVAR(IDF_PERSIST, soundeffectenv, 0, 1, 100);
 FVAR(IDF_PERSIST, sounddistfilter, 0.0f, 0.5f, 1.0f);
 
-FVAR(IDF_WORLD, mapsoundfadespeed, 0.0001f, 0.001f, 1.0f);
+FVAR(IDF_MAP, mapsoundfadespeed, 0.0001f, 0.001f, 1.0f);
 
 SF_VIRTUAL_IO soundvfio;
 

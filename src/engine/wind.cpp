@@ -11,17 +11,17 @@ static int windcost;
 
 VAR(0, winddebug, 0, 0, 1);
 VAR(IDF_PERSIST, windanimdist, 100, 1200, 10000);
-VAR(IDF_WORLD, windanimdistbias, 0, 0, 10000);
+VAR(IDF_MAP, windanimdistbias, 0, 0, 10000);
 VAR(IDF_PERSIST, windanimfalloff, 0, 300, 10000);
 VARF(IDF_PERSIST, windmaxemitters, 1, 100, 1000, { setupwind(); });
 VAR(IDF_PERSIST, windcostdiv, 1, 2000, 10000);
 
-VAR(IDF_WORLD, windyaw, 0, 45, 360);
-VAR(IDF_WORLD, windyawalt, 0, 45, 360);
-FVAR(IDF_WORLD, windspeed, 0, 1, 10);
-FVAR(IDF_WORLD, windspeedalt, 0, 1, 10);
-VAR(IDF_WORLD, windinterval, 0, 50000, VAR_MAX);
-VAR(IDF_WORLD, windintervalalt, 0, 50000, VAR_MAX);
+VAR(IDF_MAP, windyaw, 0, 45, 360);
+VAR(IDF_MAP, windyawalt, 0, 45, 360);
+FVAR(IDF_MAP, windspeed, 0, 1, 10);
+FVAR(IDF_MAP, windspeedalt, 0, 1, 10);
+VAR(IDF_MAP, windinterval, 0, 50000, VAR_MAX);
+VAR(IDF_MAP, windintervalalt, 0, 50000, VAR_MAX);
 
 static vec2 globalwind;
 

@@ -134,8 +134,8 @@ namespace game
     }
 
     #define ILLUMVARS(name) \
-        FVAR(IDF_WORLD, illumlevel##name, 0, 0, 2); \
-        VAR(IDF_WORLD, illumradius##name, 0, 0, VAR_MAX);
+        FVAR(IDF_MAP, illumlevel##name, 0, 0, 2); \
+        VAR(IDF_MAP, illumradius##name, 0, 0, VAR_MAX);
 
     ILLUMVARS();
     ILLUMVARS(alt);
@@ -151,10 +151,10 @@ namespace game
     GETMPV(illumradius, int);
 
     #define OBITVARS(name) \
-        SVAR(IDF_WORLD, obit##name, ""); \
-        SVAR(IDF_WORLD, obit##name##2, ""); \
-        SVAR(IDF_WORLD, obit##name##3, ""); \
-        SVAR(IDF_WORLD, obit##name##4, ""); \
+        SVAR(IDF_MAP, obit##name, ""); \
+        SVAR(IDF_MAP, obit##name##2, ""); \
+        SVAR(IDF_MAP, obit##name##3, ""); \
+        SVAR(IDF_MAP, obit##name##4, ""); \
         const char *getobit##name(int mat, const char *def = NULL) \
         { \
             loopi(2) switch(i ? 0 : mat&MATF_INDEX) \
@@ -169,11 +169,11 @@ namespace game
     OBITVARS(lava)
     OBITVARS(water)
     OBITVARS(volfog)
-    SVAR(IDF_WORLD, obitdeath, "");
-    SVAR(IDF_WORLD, obithurt, "");
-    SVAR(IDF_WORLD, obitfall, "");
-    SVAR(IDF_WORLD, obittouch, "");
-    SVAR(IDF_WORLD, obitcrush, "");
+    SVAR(IDF_MAP, obitdeath, "");
+    SVAR(IDF_MAP, obithurt, "");
+    SVAR(IDF_MAP, obitfall, "");
+    SVAR(IDF_MAP, obittouch, "");
+    SVAR(IDF_MAP, obitcrush, "");
 
     void stopmapmusic()
     {
@@ -182,7 +182,7 @@ namespace game
     VARF(IDF_PERSIST, musictype, 0, 1, 6, stopmapmusic()); // 0 = no in-game music, 1 = map music (or random if none), 2 = always random, 3 = map music (silence if none), 4-5 = same as 1-2 but pick new tracks when done, 6 = always use theme song
     VARF(IDF_PERSIST, musicedit, -1, 0, 6, stopmapmusic()); // same as above for editmode, -1 = use musictype
     SVARF(IDF_PERSIST, musicdir, "sounds/music", stopmapmusic());
-    SVARF(IDF_WORLD, mapmusic, "", stopmapmusic());
+    SVARF(IDF_MAP, mapmusic, "", stopmapmusic());
 
     VAR(IDF_PERSIST, thirdperson, 0, 0, 1);
     VAR(IDF_PERSIST, dynlighteffects, 0, 2, 2);

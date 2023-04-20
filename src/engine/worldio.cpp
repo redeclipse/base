@@ -62,9 +62,9 @@ void fixmaptitle()
     }
 }
 
-SVARF(IDF_WORLD, maptitle, "", fixmaptitle());
-SVARF(IDF_WORLD, mapauthor, "", { string s; if(filterstring(s, mapauthor)) setsvar("mapauthor", s, false); });
-SVARF(IDF_WORLD, mapdesc, "", { string s; if(filterstring(s, mapdesc)) setsvar("mapdesc", s, false); });
+SVARF(IDF_MAP, maptitle, "", fixmaptitle());
+SVARF(IDF_MAP, mapauthor, "", { string s; if(filterstring(s, mapauthor)) setsvar("mapauthor", s, false); });
+SVARF(IDF_MAP, mapdesc, "", { string s; if(filterstring(s, mapdesc)) setsvar("mapdesc", s, false); });
 
 void validmapname(char *dst, const char *src, const char *prefix = NULL, const char *alt = "untitled", size_t maxlen = 200)
 {
@@ -629,7 +629,7 @@ void save_config(char *mname, bool forcesave = false, int backuprev = -1)
     int aliases = 0;
     enumerate(idents, ident, id,
     {
-        if(id.type == ID_ALIAS && id.flags&IDF_WORLD && !(id.flags&IDF_SERVER) && strlen(id.name))
+        if(id.type == ID_ALIAS && id.flags&IDF_MAP && !(id.flags&IDF_SERVER) && strlen(id.name))
         {
             const char *str = id.getstr();
             if(str[0])
@@ -637,23 +637,23 @@ void save_config(char *mname, bool forcesave = false, int backuprev = -1)
                 aliases++;
                 if(validateblock(str))
                 {
-                    if(id.flags&IDF_META) h->printf("worldmeta %s [%s]\n", escapeid(id), str);
-                    else h->printf("%s = [%s]\n", escapeid(id), str);
+                    if(id.flags&IDF_META) h->printf("mapmeta %s [%s]\n", escapeid(id), str);
+                    else h->printf("mapalias %s [%s]\n", escapeid(id), str);
                 }
                 else h->printf("%s = %s\n", escapeid(id), escapestring(str));
             }
         }
     });
     if(aliases) h->printf("\n");
-    if(verbose) conoutf("Saved %d aliases", aliases);
+    if(verbose) conoutf("Saved %d map aliases", aliases);
 
     int mapshaders = savemapshaders(h);
     if(mapshaders) h->printf("\n");
-    if(verbose) conoutf("Saved %d map shaders", aliases);
+    if(verbose) conoutf("Saved %d map shaders", mapshaders);
 
     int mapmenus = UI::savemapmenus(h);
     if(mapmenus) h->printf("\n");
-    if(verbose) conoutf("Saved %d map menus", aliases);
+    if(verbose) conoutf("Saved %d map menus", mapmenus);
 
     // texture slots
     int nummats = sizeof(materialslots)/sizeof(materialslots[0]);
@@ -726,7 +726,7 @@ void save_config(char *mname, bool forcesave = false, int backuprev = -1)
     delete h;
     if(verbose) conoutf("Saved config %s", fname);
 }
-ICOMMAND(0, savemapconfig, "s", (char *mname), if(!(identflags&IDF_WORLD)) save_config(*mname ? mname : mapname));
+ICOMMAND(0, savemapconfig, "s", (char *mname), if(!(identflags&IDF_MAP)) save_config(*mname ? mname : mapname));
 
 VARF(IDF_PERSIST, mapshotsize, 2, 512, INT_MAX-1, mapshotsize -= mapshotsize%2);
 
@@ -788,7 +788,7 @@ void save_mapshot(char *mname, bool forcesave = false, int backuprev = -1)
 
     progress(1, "Saved map preview image..");
 }
-ICOMMAND(0, savemapshot, "s", (char *mname), if(!(identflags&IDF_WORLD)) save_mapshot(*mname ? mname : mapname));
+ICOMMAND(0, savemapshot, "s", (char *mname), if(!(identflags&IDF_MAP)) save_mapshot(*mname ? mname : mapname));
 
 void save_world(const char *mname, bool nodata, bool forcesave)
 {
@@ -835,15 +835,15 @@ void save_world(const char *mname, bool nodata, bool forcesave)
 
     // world variables
     int numvars = 0, vars = 0;
-    progress(0, "Saving world variables..");
+    progress(0, "Saving map variables..");
     enumerate(idents, ident, id,
     {
-        if((id.type == ID_VAR || id.type == ID_FVAR || id.type == ID_SVAR) && id.flags&IDF_WORLD && !(id.flags&IDF_SERVER) && strlen(id.name)) numvars++;
+        if((id.type == ID_VAR || id.type == ID_FVAR || id.type == ID_SVAR) && id.flags&IDF_MAP && !(id.flags&IDF_SERVER) && strlen(id.name)) numvars++;
     });
     f->putlil<int>(numvars);
     enumerate(idents, ident, id,
     {
-        if((id.type == ID_VAR || id.type == ID_FVAR || id.type == ID_SVAR) && id.flags&IDF_WORLD && !(id.flags&IDF_SERVER) && strlen(id.name))
+        if((id.type == ID_VAR || id.type == ID_FVAR || id.type == ID_SVAR) && id.flags&IDF_MAP && !(id.flags&IDF_SERVER) && strlen(id.name))
         {
             vars++;
             f->putlil<int>((int)strlen(id.name));
@@ -863,7 +863,7 @@ void save_world(const char *mname, bool nodata, bool forcesave)
                     break;
                 default: break;
             }
-            progress(vars/float(numvars), "Saving world variables..");
+            progress(vars/float(numvars), "Saving map variables..");
         }
     });
 
@@ -959,7 +959,7 @@ void save_world(const char *mname, bool nodata, bool forcesave)
     conoutf("Saved %s (\fs%s\fS by \fs%s\fS) v%d:%d(r%d) [0x%.8x] in %.1f secs", mapname, *maptitle ? maptitle : "Untitled", *mapauthor ? mapauthor : "Unknown", hdr.version, hdr.gamever, hdr.revision, mapcrc, (SDL_GetTicks()-savingstart)/1000.0f);
 }
 
-ICOMMAND(0, savemap, "s", (char *mname), if(!(identflags&IDF_WORLD)) save_world(*mname ? mname : mapname));
+ICOMMAND(0, savemap, "s", (char *mname), if(!(identflags&IDF_MAP)) save_world(*mname ? mname : mapname));
 
 static void sanevars()
 {
@@ -1049,7 +1049,7 @@ bool load_world(const char *mname, int crc, int variant)
         }
         lilswap(&newhdr.version, 2);
 
-        clearworldvars();
+        clearmapvars();
         setvar("mapscale", 0, true, false, true);
         setvar("mapsize", 0, true, false, true);
         setvar("emptymap", 0, true, false, true);
@@ -1109,7 +1109,7 @@ bool load_world(const char *mname, int crc, int variant)
             if(verbose) conoutf("Loading v%d map from %s game v%d [%d]", hdr.version, hdr.gameid, hdr.gamever, hdr.worldsize);
 
             int numvars = f->getlil<int>(), vars = 0;
-            identflags |= IDF_WORLD;
+            identflags |= IDF_MAP;
             progress(0, "Loading variables..");
             loopi(numvars)
             {
@@ -1139,7 +1139,7 @@ bool load_world(const char *mname, int crc, int variant)
                     }
                     bool proceed = true;
                     int type = f->getlil<int>();
-                    if(!id || type != id->type || !(id->flags&IDF_WORLD) || id->flags&IDF_SERVER)
+                    if(!id || type != id->type || !(id->flags&IDF_MAP) || id->flags&IDF_SERVER)
                         proceed = false;
 
                     switch(type)
@@ -1197,7 +1197,7 @@ bool load_world(const char *mname, int crc, int variant)
                 }
                 progress((i+1)/float(numvars), "Loading variables..");
             }
-            identflags &= ~IDF_WORLD;
+            identflags &= ~IDF_MAP;
             if(verbose) conoutf("Loaded %d/%d variables", vars, numvars);
             sanevars();
 
@@ -1296,7 +1296,7 @@ bool load_world(const char *mname, int crc, int variant)
                 e.attrs[5] = e.attrs[6] = 0;
             }
             if(!insideworld(e.o) && e.type != ET_LIGHT && e.type != ET_LIGHTFX)
-                conoutf("\frWARNING: ent outside of world: enttype[%d](%s) index %d (%f, %f, %f) [%d, %d]", e.type, entities::findname(e.type), i, e.o.x, e.o.y, e.o.z, worldsize, worldscale);
+                conoutf("\frWARNING: ent outside of map: enttype[%d](%s) index %d (%f, %f, %f) [%d, %d]", e.type, entities::findname(e.type), i, e.o.x, e.o.y, e.o.z, worldsize, worldscale);
 
             entities::readent(f, hdr.version, hdr.gameid, hdr.gamever, i);
 
@@ -1383,7 +1383,7 @@ bool load_world(const char *mname, int crc, int variant)
         }
 
         progress(0, "Initialising map config..");
-        identflags |= IDF_WORLD;
+        identflags |= IDF_MAP;
         defformatstring(cfgname, "%s.cfg", mapname);
         if(!execfile(cfgname, false)) execfile("config/map/default.cfg");
         if(hdr.version <= 43)
@@ -1394,13 +1394,13 @@ bool load_world(const char *mname, int crc, int variant)
             execfile("config/map/decals.cfg");
         }
         else checkmaterials("config/map/material.cfg");
-        identflags &= ~IDF_WORLD;
+        identflags &= ~IDF_MAP;
 
         progress(0, "Preloading map models..");
         preloadusedmapmodels(true);
         conoutf("Loaded %s (\fs%s\fS by \fs%s\fS) v.%d:%d(r%d) [0x%.8x] in %.1fs", mapname, *maptitle ? maptitle : "Untitled", *mapauthor ? mapauthor : "Unknown", hdr.version, hdr.gamever, hdr.revision, mapcrc, (SDL_GetTicks()-loadingstart)/1000.0f);
 
-        progress(0, "Checking world..");
+        progress(0, "Checking map..");
 
         entitiesinoctanodes();
         initlights();
@@ -1409,7 +1409,7 @@ bool load_world(const char *mname, int crc, int variant)
         progress(0, "Preloading textures..");
         preloadtextures(IDF_GAMEPRELOAD);
 
-        progress(0, "Starting world..");
+        progress(0, "Starting map..");
         game::startmap();
         maploading = 0;
         return true;
@@ -1514,7 +1514,7 @@ void writeobj(char *name)
     conoutf("Generated model: %s", fname);
 }
 
-ICOMMAND(0, writeobj, "s", (char *s), if(!(identflags&IDF_WORLD)) writeobj(s));
+ICOMMAND(0, writeobj, "s", (char *s), if(!(identflags&IDF_MAP)) writeobj(s));
 
 void writecollideobj(char *name)
 {

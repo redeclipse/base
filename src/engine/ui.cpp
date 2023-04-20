@@ -1212,7 +1212,7 @@ namespace UI
     void newui(char *name, char *contents, char *onshow, char *onhide, int windowflags, bool mapdef = false)
     {
         if(!name || !*name || !contents || !*contents) return;
-        if(mapdef && !(identflags&IDF_WORLD) && !editmode)
+        if(mapdef && !(identflags&IDF_MAP) && !editmode)
         {
             conoutf("\frMap UI %s is only directly modifiable in editmode", name);
             return;

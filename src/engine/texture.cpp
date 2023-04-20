@@ -2090,14 +2090,14 @@ void resettextures(int n)
         delete vslots.pop();
     }
 }
-ICOMMAND(0, texturereset, "i", (int *n), if(editmode || identflags&IDF_WORLD) resettextures(*n););
+ICOMMAND(0, texturereset, "i", (int *n), if(editmode || identflags&IDF_MAP) resettextures(*n););
 
 void resetmaterials()
 {
     defslot = NULL;
     loopi((MATF_VOLUME|MATF_INDEX)+1) materialslots[i].reset();
 }
-ICOMMAND(0, materialreset, "", (void), if(editmode || identflags&IDF_WORLD) resetmaterials(););
+ICOMMAND(0, materialreset, "", (void), if(editmode || identflags&IDF_MAP) resetmaterials(););
 
 bool materialcheck = false;
 void checkmaterials(const char *name)
@@ -2122,7 +2122,7 @@ void resetdecals(int n)
     resetslotshader();
     decalslots.deletecontents(n);
 }
-ICOMMAND(0, decalreset, "i", (int *n), if(editmode || identflags&IDF_WORLD) resetdecals(*n););
+ICOMMAND(0, decalreset, "i", (int *n), if(editmode || identflags&IDF_MAP) resetdecals(*n););
 
 static int compactedvslots = 0, compactvslotsprogress = 0, clonedvslots = 0;
 static bool markingvslots = false;
@@ -3481,8 +3481,8 @@ const cubemapside cubemapsides[6] =
 };
 
 VARF(IDF_PERSIST, envmapsize, 0, 7, 12, setupmaterials());
-VAR(IDF_WORLD, envmapradius, 0, 128, 10000);
-VAR(IDF_WORLD, envmapbb, 0, 0, 1);
+VAR(IDF_MAP, envmapradius, 0, 128, 10000);
+VAR(IDF_MAP, envmapbb, 0, 0, 1);
 VAR(IDF_PERSIST, aaenvmap, 0, 1, 1);
 
 Texture *cubemaploadwildcard(Texture *t, const char *name, bool mipit, bool msg, bool transient = false)

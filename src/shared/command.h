@@ -53,7 +53,7 @@ enum { ID_VAR = 0, ID_FVAR, ID_SVAR, ID_COMMAND, ID_ALIAS, ID_LOCAL, ID_DO, ID_D
 
 enum
 {
-    IDF_INIT = 1<<0, IDF_PERSIST = 1<<1, IDF_READONLY = 1<<2, IDF_REWRITE = 1<<3, IDF_WORLD = 1<<4, IDF_COMPLETE = 1<<5,
+    IDF_INIT = 1<<0, IDF_PERSIST = 1<<1, IDF_READONLY = 1<<2, IDF_REWRITE = 1<<3, IDF_MAP = 1<<4, IDF_COMPLETE = 1<<5,
     IDF_TEXTURE = 1<<6, IDF_CLIENT = 1<<7, IDF_SERVER = 1<<8, IDF_HEX = 1<<9, IDF_UNKNOWN = 1<<10, IDF_ARG = 1<<11,
     IDF_PRELOAD = 1<<12, IDF_GAMEPRELOAD = 1<<13, IDF_GAMEMOD = 1<<14, IDF_NAMECOMPLETE = 1<<15, IDF_EMUVAR = 1<<16,
     IDF_META = 1<<17, IDF_LOCAL = 1<<18
@@ -371,7 +371,7 @@ extern char *executestr(ident *id, tagval *args, int numargs, bool lookup = fals
 extern char *execidentstr(const char *name, bool lookup = false);
 extern int execute(const uint *code);
 extern int execute(const char *p);
-extern int execute(const char *p, bool nonworld);
+extern int execute(const char *p, bool nonmapdef);
 extern int execute(ident *id, tagval *args, int numargs, bool lookup = false);
 extern int execident(const char *name, int noid = 0, bool lookup = false);
 extern float executefloat(const uint *code);
@@ -382,12 +382,12 @@ extern bool executebool(const uint *code);
 extern bool executebool(const char *p);
 extern bool executebool(ident *id, tagval *args, int numargs, bool lookup = false);
 extern bool execidentbool(const char *name, bool noid = false, bool lookup = false);
-enum { EXEC_NOWORLD = 1<<0, EXEC_VERSION = 1<<1, EXEC_BUILTIN = 1<<2 };
+enum { EXEC_NOMAP = 1<<0, EXEC_VERSION = 1<<1, EXEC_BUILTIN = 1<<2 };
 extern bool execfile(const char *cfgfile, bool msg = true, int flags = 0);
-extern void alias(const char *name, const char *action, bool world = false, bool quiet = false);
-extern void alias(const char *name, tagval &v, bool world = false, bool quiet = false);
-extern void worldalias(const char *name, const char *action);
-extern void worldmeta(const char *name, const char *action);
+extern void alias(const char *name, const char *action, bool mapdef = false, bool quiet = false);
+extern void alias(const char *name, tagval &v, bool mapdef = false, bool quiet = false);
+extern void mapalias(const char *name, const char *action);
+extern void mapmeta(const char *name, const char *action);
 extern const char *getalias(const char *name);
 extern const char *escapestring(const char *s);
 extern const char *escapeid(const char *s);
@@ -435,7 +435,7 @@ enum
 extern void triggereventcallbacks(int event);
 
 extern void checksleep(int millis);
-extern void clearsleep(bool clearworlds = true);
+extern void clearsleep(bool clearmapdefs = true);
 
 extern int naturalsort(const char *a, const char *b);
 
@@ -509,8 +509,8 @@ extern char *limitstring(const char *str, size_t len);
 #define CVAR(flags, name, cur) _CVAR(name, cur, , , flags, 0)
 
 // game world controlling stuff
-#define WITHWORLD(body) { int _oldflags = identflags; identflags |= IDF_WORLD; body; identflags = _oldflags; }
-#define RUNWORLD(n) { ident *wid = idents.access(n); if(wid && wid->type==ID_ALIAS && wid->flags&IDF_WORLD) { WITHWORLD(execute(wid->getstr())); } }
+#define WITHMAP(body) { int _oldflags = identflags; identflags |= IDF_MAP; body; identflags = _oldflags; }
+#define RUNWORLD(n) { ident *wid = idents.access(n); if(wid && wid->type==ID_ALIAS && wid->flags&IDF_MAP) { WITHMAP(execute(wid->getstr())); } }
 
 #if defined(CPP_GAME_MAIN)
 #define IDF_GAME (IDF_CLIENT|IDF_REWRITE)
@@ -582,7 +582,7 @@ SVAR(IDF_READONLY, valnamecstr, "Constant-string");
 VAR(IDF_READONLY, validxcany, 0, VAL_CANY, -1);
 SVAR(IDF_READONLY, valnamecany, "Constant-any");
 VAR(IDF_READONLY, validxword, 0, VAL_WORD, -1);
-SVAR(IDF_READONLY, valnameworld, "Word");
+SVAR(IDF_READONLY, valnameword, "Word");
 VAR(IDF_READONLY, validxpop, 0, VAL_POP, -1);
 SVAR(IDF_READONLY, valnamepop, "Pop");
 VAR(IDF_READONLY, validxcond, 0, VAL_COND, -1);
@@ -617,7 +617,7 @@ VAR(IDF_READONLY, ididxor, 0, ID_OR, -1);
 SVAR(IDF_READONLY, idnameor, "Or-condition");
 VAR(IDF_READONLY, ididxmax, 0, ID_MAX, -1);
 VAR(IDF_READONLY, idbitmax, 0, (1<<ID_VAR)|(1<<ID_FVAR)|(1<<ID_SVAR)|(1<<ID_COMMAND)|(1<<ID_ALIAS)|(1<<ID_LOCAL)|(1<<ID_DO)|(1<<ID_DOARGS)|(1<<ID_IF)|(1<<ID_RESULT)|(1<<ID_NOT)|(1<<ID_AND)|(1<<ID_OR), -1);
-SVAR(IDF_READONLY, idfidxname, "init persist readonly rewrite world complete texture client server hex unknown arg preload gamepreload gamemod namecomplete");
+SVAR(IDF_READONLY, idfidxname, "init persist readonly rewrite map complete texture client server hex unknown arg preload gamepreload gamemod namecomplete");
 VAR(IDF_READONLY, idfbitinit, 0, IDF_INIT, -1);
 SVAR(IDF_READONLY, idfnameinit, "Initialiser");
 VAR(IDF_READONLY, idfbitpersist, 0, IDF_PERSIST, -1);
@@ -626,8 +626,8 @@ VAR(IDF_READONLY, idfbitreadonly, 0, IDF_READONLY, -1);
 SVAR(IDF_READONLY, idfnamereadonly, "Read-only");
 VAR(IDF_READONLY, idfbitrewrite, 0, IDF_REWRITE, -1);
 SVAR(IDF_READONLY, idfnamerewrite, "Rewrite");
-VAR(IDF_READONLY, idfbitworld, 0, IDF_WORLD, -1);
-SVAR(IDF_READONLY, idfnameworld, "World");
+VAR(IDF_READONLY, idfbitmap, 0, IDF_MAP, -1);
+SVAR(IDF_READONLY, idfnamemap, "Map");
 VAR(IDF_READONLY, idfbitcomplete, 0, IDF_COMPLETE, -1);
 SVAR(IDF_READONLY, idfnamecomplete, "Complete");
 VAR(IDF_READONLY, idfbittexture, 0, IDF_TEXTURE, -1);

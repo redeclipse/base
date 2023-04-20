@@ -1092,7 +1092,7 @@ Shader *shader(int type, char *name, char *vs, char *ps, bool mapdef, bool overw
         if(!overwrite) return o;
         else if(o->mapdef)
         {
-            if(!(identflags&IDF_WORLD) && !editmode)
+            if(!(identflags&IDF_MAP) && !editmode)
             {
                 conoutf("\frMap shader %s is only directly modifiable in editmode", o->name);
                 return o;

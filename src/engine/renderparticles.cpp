@@ -1739,29 +1739,29 @@ static inline vec offsetvec(vec o, int dir, int dist)
 
 FVAR(IDF_PERSIST, weatherdropnumscale, 0, 1.0f, 1.0f);
 
-FVAR(IDF_WORLD, weatherdrops,    0, 0, 10.0f);
-FVAR(IDF_WORLD, weatherdropsalt, 0, 0, 10.0f);
+FVAR(IDF_MAP, weatherdrops,    0, 0, 10.0f);
+FVAR(IDF_MAP, weatherdropsalt, 0, 0, 10.0f);
 
-VAR(IDF_WORLD, weatherdroppart,    PART_FIREBALL_LERP, PART_RAIN, PART_RAIN);
-VAR(IDF_WORLD, weatherdroppartalt, PART_FIREBALL_LERP, PART_RAIN, PART_RAIN);
+VAR(IDF_MAP, weatherdroppart,    PART_FIREBALL_LERP, PART_RAIN, PART_RAIN);
+VAR(IDF_MAP, weatherdroppartalt, PART_FIREBALL_LERP, PART_RAIN, PART_RAIN);
 
-VAR(IDF_WORLD, weatherdropfade,    1, 750, 10000);
-VAR(IDF_WORLD, weatherdropfadealt, 1, 750, 10000);
+VAR(IDF_MAP, weatherdropfade,    1, 750, 10000);
+VAR(IDF_MAP, weatherdropfadealt, 1, 750, 10000);
 
-VAR(IDF_WORLD, weatherdropgravity,    1, 300, 2000);
-VAR(IDF_WORLD, weatherdropgravityalt, 1, 300, 2000);
+VAR(IDF_MAP, weatherdropgravity,    1, 300, 2000);
+VAR(IDF_MAP, weatherdropgravityalt, 1, 300, 2000);
 
-CVAR(IDF_WORLD, weatherdropcolor,    0xFFFFFF);
-CVAR(IDF_WORLD, weatherdropcoloralt, 0xFFFFFF);
+CVAR(IDF_MAP, weatherdropcolor,    0xFFFFFF);
+CVAR(IDF_MAP, weatherdropcoloralt, 0xFFFFFF);
 
-FVAR(IDF_WORLD, weatherdropblend,    0.0f, 0.4f, 1.0f);
-FVAR(IDF_WORLD, weatherdropblendalt, 0.0f, 0.4f, 1.0f);
+FVAR(IDF_MAP, weatherdropblend,    0.0f, 0.4f, 1.0f);
+FVAR(IDF_MAP, weatherdropblendalt, 0.0f, 0.4f, 1.0f);
 
-FVAR(IDF_WORLD, weatherdropsize,    0.01f, 0.15f, 100.0f);
-FVAR(IDF_WORLD, weatherdropsizealt, 0.01f, 0.15f, 100.0f);
+FVAR(IDF_MAP, weatherdropsize,    0.01f, 0.15f, 100.0f);
+FVAR(IDF_MAP, weatherdropsizealt, 0.01f, 0.15f, 100.0f);
 
-FVAR(IDF_WORLD, weatherdropvariance,    0.0f, 0.05f, 1.0f);
-FVAR(IDF_WORLD, weatherdropvariancealt, 0.0f, 0.05f, 1.0f);
+FVAR(IDF_MAP, weatherdropvariance,    0.0f, 0.05f, 1.0f);
+FVAR(IDF_MAP, weatherdropvariancealt, 0.0f, 0.05f, 1.0f);
 
 void part_weather()
 {

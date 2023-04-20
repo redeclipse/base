@@ -1678,7 +1678,7 @@ void writecfg(const char *name, int flags)
     }
     delete f;
 }
-ICOMMAND(0, writecfg, "i", (int *icfg), if(!(identflags&IDF_WORLD)) writecfg(*icfg ? "init.cfg" : "config.cfg", *icfg ? IDF_INIT : IDF_PERSIST));
+ICOMMAND(0, writecfg, "i", (int *icfg), if(!(identflags&IDF_MAP)) writecfg(*icfg ? "init.cfg" : "config.cfg", *icfg ? IDF_INIT : IDF_PERSIST));
 #endif
 
 void rehash(bool reload)
@@ -1715,7 +1715,7 @@ void rehash(bool reload)
     if(reload) engineready = true;
 #endif
 }
-ICOMMAND(0, rehash, "i", (int *nosave), if(!(identflags&IDF_WORLD)) rehash(*nosave ? false : true));
+ICOMMAND(0, rehash, "i", (int *nosave), if(!(identflags&IDF_MAP)) rehash(*nosave ? false : true));
 
 #ifndef WIN32
 #include <pwd.h>

@@ -1406,12 +1406,12 @@ void splitocta(cube *c, int size)
     }
 }
 
-void clearworldvars(bool msg)
+void clearmapvars(bool msg)
 {
-    identflags |= IDF_WORLD;
+    identflags |= IDF_MAP;
     enumerate(idents, ident, id,
     {
-        if(id.flags&IDF_WORLD && !(id.flags&IDF_SERVER)) // reset world vars
+        if(id.flags&IDF_MAP && !(id.flags&IDF_SERVER)) // reset world vars
         {
             switch (id.type)
             {
@@ -1419,18 +1419,18 @@ void clearworldvars(bool msg)
                 case ID_FVAR: setfvar(id.name, id.def.f, true); break;
                 case ID_SVAR: setsvar(id.name, id.def.s && *id.def.s ? id.def.s : "", true); break;
                 case ID_ALIAS:
-                    if(id.flags&IDF_META) worldmeta(id.name, "");
-                    else worldalias(id.name, "");
+                    if(id.flags&IDF_META) mapmeta(id.name, "");
+                    else mapalias(id.name, "");
                     break;
                 default: break;
             }
         }
     });
-    if(msg) conoutf("World variables reset");
-    identflags &= ~IDF_WORLD;
+    if(msg) conoutf("Map variables reset");
+    identflags &= ~IDF_MAP;
 }
 
-ICOMMAND(0, resetworldvars, "", (), if(editmode || identflags&IDF_WORLD) clearworldvars(true));
+ICOMMAND(0, resetmapvars, "", (), if(editmode || identflags&IDF_MAP) clearmapvars(true));
 
 void resetmap(bool empty, int variant)
 {
@@ -1476,7 +1476,7 @@ bool emptymap(int scale, bool force, const char *mname, bool usecfg)    // main 
         return false;
     }
 
-    clearworldvars();
+    clearmapvars();
     resetmap(!usecfg);
     setnames(mname);
     setvar("mapscale", scale<10 ? 10 : (scale>16 ? 16 : scale), true, false, true);
@@ -1502,9 +1502,9 @@ bool emptymap(int scale, bool force, const char *mname, bool usecfg)    // main 
 
     if(usecfg)
     {
-        identflags |= IDF_WORLD;
+        identflags |= IDF_MAP;
         execfile("config/map/default.cfg");
-        identflags &= ~IDF_WORLD;
+        identflags &= ~IDF_MAP;
     }
 
     allchanged(initing != INIT_QUIT);

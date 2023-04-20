@@ -1,27 +1,27 @@
-GVAR(IDF_WORLD, 0, numplayers, 0, 4, MAXCLIENTS); // 0 = determine from number of spawns
-GVAR(IDF_WORLD, 0, maxplayers, 0, 0, MAXCLIENTS); // 0 = numplayers*3
-GVAR(IDF_WORLD, 0, mapbalance, 0, 0, 3); // switches teams for asymmetrical maps, 0 = off, 1 = ctf/dnc/bb, 2 = with team spawns, 3 = forced
+GVAR(IDF_MAP, 0, numplayers, 0, 4, MAXCLIENTS); // 0 = determine from number of spawns
+GVAR(IDF_MAP, 0, maxplayers, 0, 0, MAXCLIENTS); // 0 = numplayers*3
+GVAR(IDF_MAP, 0, mapbalance, 0, 0, 3); // switches teams for asymmetrical maps, 0 = off, 1 = ctf/dnc/bb, 2 = with team spawns, 3 = forced
 
-GVAR(IDF_WORLD, 0, hurtdelay, 0, 1000, VAR_MAX);
-GVAR(IDF_WORLD, 0, hurtdamage, 0, 30, VAR_MAX);
-GVAR(IDF_WORLD, 0, hurtresidual, 0, 0, W_R_ALL);
+GVAR(IDF_MAP, 0, hurtdelay, 0, 1000, VAR_MAX);
+GVAR(IDF_MAP, 0, hurtdamage, 0, 30, VAR_MAX);
+GVAR(IDF_MAP, 0, hurtresidual, 0, 0, W_R_ALL);
 
-GVAR(IDF_WORLD, 0, hurtburntime, 0, 5500, VAR_MAX);
-GVAR(IDF_WORLD, 0, hurtburndelay, 1, 1000, VAR_MAX);
-GVAR(IDF_WORLD, 0, hurtburndamage, 0, 30, VAR_MAX);
-GVAR(IDF_WORLD, 0, hurtbleedtime, 0, 5500, VAR_MAX);
-GVAR(IDF_WORLD, 0, hurtbleeddelay, 0, 1000, VAR_MAX);
-GVAR(IDF_WORLD, 0, hurtbleeddamage, 0, 30, VAR_MAX);
-GVAR(IDF_WORLD, 0, hurtshocktime, 0, 5500, VAR_MAX);
-GVAR(IDF_WORLD, 0, hurtshockdelay, 0, 1000, VAR_MAX);
-GVAR(IDF_WORLD, 0, hurtshockdamage, 0, 20, VAR_MAX);
-GVAR(IDF_WORLD, 0, hurtshockstun, 0, W_N_ST, W_N_ALL);
-GFVAR(IDF_WORLD, 0, hurtshockstunscale, 0, 0.5f, FVAR_MAX);
-GFVAR(IDF_WORLD, 0, hurtshockstunfall, 0, 0.01f, FVAR_MAX);
-GVAR(IDF_WORLD, 0, hurtshockstuntime, 0, 500, VAR_MAX);
+GVAR(IDF_MAP, 0, hurtburntime, 0, 5500, VAR_MAX);
+GVAR(IDF_MAP, 0, hurtburndelay, 1, 1000, VAR_MAX);
+GVAR(IDF_MAP, 0, hurtburndamage, 0, 30, VAR_MAX);
+GVAR(IDF_MAP, 0, hurtbleedtime, 0, 5500, VAR_MAX);
+GVAR(IDF_MAP, 0, hurtbleeddelay, 0, 1000, VAR_MAX);
+GVAR(IDF_MAP, 0, hurtbleeddamage, 0, 30, VAR_MAX);
+GVAR(IDF_MAP, 0, hurtshocktime, 0, 5500, VAR_MAX);
+GVAR(IDF_MAP, 0, hurtshockdelay, 0, 1000, VAR_MAX);
+GVAR(IDF_MAP, 0, hurtshockdamage, 0, 20, VAR_MAX);
+GVAR(IDF_MAP, 0, hurtshockstun, 0, W_N_ST, W_N_ALL);
+GFVAR(IDF_MAP, 0, hurtshockstunscale, 0, 0.5f, FVAR_MAX);
+GFVAR(IDF_MAP, 0, hurtshockstunfall, 0, 0.01f, FVAR_MAX);
+GVAR(IDF_MAP, 0, hurtshockstuntime, 0, 500, VAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, shocktwitchvel, 0, 2, FVAR_MAX);
 
-GFVAR(IDF_WORLD, 0, gravity, 0, 50.f, FVAR_MAX); // gravity
+GFVAR(IDF_MAP, 0, gravity, 0, 50.f, FVAR_MAX); // gravity
 GFVAR(IDF_GAMEMOD, 0, gravityscale, 0, 1, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, gravitycrouch, 0, 1.25f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, gravityjump, 0, 0.85f, FVAR_MAX);
@@ -30,18 +30,18 @@ GFVAR(IDF_GAMEMOD, 0, buoyancycrouch, 0, 0, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, buoyancyjump, 0, 1.5f, FVAR_MAX);
 
 #define LIQUIDVARS(type, name) \
-    GFVAR(IDF_WORLD, 0, name##buoyancy##type, FVAR_MIN, 50.f, FVAR_MAX); \
+    GFVAR(IDF_MAP, 0, name##buoyancy##type, FVAR_MIN, 50.f, FVAR_MAX); \
     GFVAR(IDF_GAMEMOD, 0, name##buoyancyscale##type, 0, 1, FVAR_MAX); \
-    GFVAR(IDF_WORLD, 0, name##falldist##type, 0, 12.f, FVAR_MAX); \
-    GFVAR(IDF_WORLD, 0, name##fallspeed##type, FVAR_MIN, 250.f, FVAR_MAX); \
-    GFVAR(IDF_WORLD, 0, name##fallpush##type, 0, 0.35f, FVAR_MAX); \
-    GFVAR(IDF_WORLD, 0, name##speed##type, 0, 0.85f, 1); \
+    GFVAR(IDF_MAP, 0, name##falldist##type, 0, 12.f, FVAR_MAX); \
+    GFVAR(IDF_MAP, 0, name##fallspeed##type, FVAR_MIN, 250.f, FVAR_MAX); \
+    GFVAR(IDF_MAP, 0, name##fallpush##type, 0, 0.35f, FVAR_MAX); \
+    GFVAR(IDF_MAP, 0, name##speed##type, 0, 0.85f, 1); \
     GFVAR(IDF_GAMEMOD, 0, name##speedscale##type, 0, 1, FVAR_MAX); \
-    GFVAR(IDF_WORLD, 0, name##coast##type, FVAR_NONZERO, 10.f, 1000); \
+    GFVAR(IDF_MAP, 0, name##coast##type, FVAR_NONZERO, 10.f, 1000); \
     GFVAR(IDF_GAMEMOD, 0, name##coastscale##type, FVAR_NONZERO, 1, FVAR_MAX); \
-    GFVAR(IDF_WORLD, 0, name##boost##type, 0, 0.5f, 1); \
+    GFVAR(IDF_MAP, 0, name##boost##type, 0, 0.5f, 1); \
     GFVAR(IDF_GAMEMOD, 0, name##boostscale##type, 0, 1, FVAR_MAX); \
-    GFVAR(IDF_WORLD, 0, name##submerge##type, 0, 0.75f, 1); \
+    GFVAR(IDF_MAP, 0, name##submerge##type, 0, 0.75f, 1); \
     GFVAR(IDF_GAMEMOD, 0, name##submergescale##type, 0, 1, FVAR_MAX);
 
 LIQUIDVARS(, water)
@@ -62,7 +62,7 @@ LIQUIDVARS(alt, lava3)
 LIQUIDVARS(alt, lava4)
 
 #define WATERVARS(type, name) \
-    GFVAR(IDF_WORLD, 0, name##extinguish##type, 0, 0.25f, 1); \
+    GFVAR(IDF_MAP, 0, name##extinguish##type, 0, 0.25f, 1); \
     GFVAR(IDF_GAMEMOD, 0, name##extinguishscale##type, 0, 1, FVAR_MAX);
 
 WATERVARS(, water)
@@ -75,8 +75,8 @@ WATERVARS(alt, water3)
 WATERVARS(alt, water4)
 
 #define LAVAVARS(type, name) \
-    GVAR(IDF_WORLD, 0, name##burntime##type, 0, 5500, VAR_MAX); \
-    GVAR(IDF_WORLD, 0, name##burndelay##type, 1, 1000, VAR_MAX);
+    GVAR(IDF_MAP, 0, name##burntime##type, 0, 5500, VAR_MAX); \
+    GVAR(IDF_MAP, 0, name##burndelay##type, 1, 1000, VAR_MAX);
 
 LAVAVARS(, lava)
 LAVAVARS(, lava2)
@@ -87,11 +87,11 @@ LAVAVARS(alt, lava2)
 LAVAVARS(alt, lava3)
 LAVAVARS(alt, lava4)
 
-GFVAR(IDF_WORLD, 0, floorcoast, FVAR_NONZERO, 5.f, 1000);
+GFVAR(IDF_MAP, 0, floorcoast, FVAR_NONZERO, 5.f, 1000);
 GFVAR(IDF_GAMEMOD, 0, floorcoastscale, FVAR_NONZERO, 1, FVAR_MAX);
-GFVAR(IDF_WORLD, 0, aircoast, FVAR_NONZERO, 25.f, 1000);
+GFVAR(IDF_MAP, 0, aircoast, FVAR_NONZERO, 25.f, 1000);
 GFVAR(IDF_GAMEMOD, 0, aircoastscale, FVAR_NONZERO, 1, FVAR_MAX);
-GFVAR(IDF_WORLD, 0, slidecoast, FVAR_NONZERO, 40.f, 1000);
+GFVAR(IDF_MAP, 0, slidecoast, FVAR_NONZERO, 40.f, 1000);
 GFVAR(IDF_GAMEMOD, 0, slidecoastscale, FVAR_NONZERO, 1, FVAR_MAX);
 
 GVARF(IDF_GAMEMOD, 0, forcemapvariant, 0, 0, MPV_MAX-1, if(sv_forcemapvariant) server::changemapvariant(sv_forcemapvariant), if(forcemapvariant) changemapvariant(forcemapvariant));
