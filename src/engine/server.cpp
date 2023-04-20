@@ -1499,10 +1499,10 @@ bool serveroption(char *opt)
 {
     switch(opt[1])
     {
-        case 'h': sethomedir(&opt[2]); logoutf("set home directory: %s", &opt[2]); return true;
-        case 'o': logoutf("sauerbraten maps are no longer supported, the -o switch no longer works"); return true; // Break Sauerbraten support with 1.9.9 and above
-        case 'p': addpackagedir(&opt[2]); logoutf("add package directory: %s", &opt[2]); return true;
-        case 'g': setlogfile(&opt[2]); logoutf("set log file: %s", opt[2] ? &opt[2] : "<stdout>"); return true;
+        case 'h': sethomedir(&opt[2]); logoutf("Home directory: %s", &opt[2]); return true;
+        case 'o': logoutf("Sauerbraten maps are no longer supported, the -o switch no longer works"); return true; // Break Sauerbraten support with 1.9.9 and above
+        case 'p': addpackagedir(&opt[2]); logoutf("Add package directory: %s", &opt[2]); return true;
+        case 'g': setlogfile(&opt[2]); logoutf("Set log file: %s", opt[2] ? &opt[2] : "<stdout>"); return true;
         case 'v': setvar("verbose", atoi(opt+2)); return true;
         case 's':
         {
@@ -1554,6 +1554,7 @@ void loadextras(const char *dirs)
     setsvar("extrapackages", dirs);
 }
 
+VAR(0, homedirappend, 0, 0, 1);
 void setlocations(const char *bin)
 {
     string cwd;
@@ -1616,7 +1617,8 @@ void setlocations(const char *bin)
         const char *str = getenv("HOME");
         if(str && *str) formatstring(dir, "%s/.%s", str, versionuname);
 #endif
-        if(dir[0] && strncmp(versionbranch, "stable", 5) && strncmp(versionbranch, "steam", 5)) concformatstring(dir, "\\%s", versionbranch);
+        if(homedirappend && dir[0] && strncmp(versionbranch, "stable", 5) && strncmp(versionbranch, "steam", 5) && strncmp(versionbranch, "none", 5))
+            appendhomedir(versionbranch);
     }
     if(!dir[0]) copystring(dir, "home"); // failsafe
     for(int n = 0, len = strlen(dir); n < len; n++)
@@ -1626,6 +1628,7 @@ void setlocations(const char *bin)
         break;
     }
     sethomedir(dir);
+    printhomedir();
 }
 
 ICOMMAND(0, printhomedir, "", (), printhomedir());
