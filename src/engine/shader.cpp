@@ -50,6 +50,7 @@ Shader *lookupshaderbyname(const char *name)
     Shader *s = shaders.access(name);
     return s && s->loaded() ? s : NULL;
 }
+ICOMMAND(0, hasshader, "s", (char *name), intret(lookupshaderbyname(name) ? 1 : 0));
 
 Shader *generateshader(const char *name, const char *fmt, ...)
 {
@@ -792,7 +793,7 @@ static void genuniformlocs(Shader &s, const char *vs, const char *ps, Shader *re
     }
 }
 
-Shader *newshader(int type, const char *name, const char *vs, const char *ps, Shader *variant = NULL, int row = 0)
+Shader *newshader(int type, const char *name, const char *vs, const char *ps, bool mapdef = false, Shader *variant = NULL, int row = 0)
 {
     if(Shader::lastshader)
     {
@@ -811,6 +812,7 @@ Shader *newshader(int type, const char *name, const char *vs, const char *ps, Sh
     s.variantshader = variant;
     s.standard = standardshaders;
     if(forceshaders) s.forced = true;
+    s.mapdef = mapdef;
     s.reusevs = s.reuseps = NULL;
     if(variant)
     {
@@ -904,7 +906,7 @@ static void gengenericvariant(Shader &s, const char *sname, const char *vs, cons
     string reuse;
     if(col) formatstring(reuse, "%d", row);
     else copystring(reuse, "");
-    newshader(s.type, varname, vschanged ? vsv.getbuf() : reuse, pschanged ? psv.getbuf() : reuse, &s, row);
+    newshader(s.type, varname, vschanged ? vsv.getbuf() : reuse, pschanged ? psv.getbuf() : reuse, s.mapdef, &s, row);
 }
 
 static void genfogshader(vector<char> &vsbuf, vector<char> &psbuf, const char *vs, const char *ps)
@@ -1082,19 +1084,14 @@ Shader *useshaderbyname(const char *name)
 }
 ICOMMAND(0, forceshader, "s", (const char *name), useshaderbyname(name));
 
-Shader *shader(int type, char *name, char *vs, char *ps)
+Shader *shader(int type, char *name, char *vs, char *ps, bool mapdef, bool overwrite)
 {
     Shader *o = lookupshaderbyname(name);
     if(o)
     {
-        if(type&SHADER_PROCEDURAL && o->type&SHADER_PROCEDURAL)
-        { // procedural shaders are only temporary and can be overridden
-            o->cleanup(true);
-            shaders.remove(name);
-        }
-        else return o;
+        if(!overwrite) return o;
+        o->cleanup(true);
     }
-
     if(!initshaders) progress(loadprogress, "Loading shader: %s", name);
     vector<char> vsbuf, psbuf, vsbak, psbak;
 #define GENSHADER(cond, body) \
@@ -1108,16 +1105,44 @@ Shader *shader(int type, char *name, char *vs, char *ps)
     }
     GENSHADER(slotparams.length(), genuniformdefs(vsbuf, psbuf, vs, ps));
     GENSHADER(strstr(vs, "//:fog") || strstr(ps, "//:fog"), genfogshader(vsbuf, psbuf, vs, ps));
-    Shader *s = newshader(type, name, vs, ps);
+    Shader *s = newshader(type, name, vs, ps, mapdef);
     if(s)
     {
         if(strstr(ps, "//:variant") || strstr(vs, "//:variant")) gengenericvariant(*s, name, vs, ps);
+        s->mapdef = mapdef;
         return s;
     }
     slotparams.shrink(0);
     return NULL;
 }
 ICOMMAND(0, shader, "isss", (int *type, char *name, char *vs, char *ps), shader(*type, name, vs, ps));
+ICOMMAND(0, mapshader, "isssi", (int *type, char *name, char *vs, char *ps, int *overwrite), shader(*type, name, vs, ps, true, *overwrite != 0));
+
+void resetmapshaders()
+{
+    enumerate(shaders, Shader, s, if(s.mapdef) s.cleanup(true));
+}
+
+int savemapshaders(stream *h)
+{
+    int mapshaders = 0;
+    enumerate(shaders, Shader, s, if(s.mapdef)
+    {
+        h->printf("mapshader %d %s [%s] [%s]\n", s.type, s.name, s.vsstr, s.psstr);
+        mapshaders++;
+    });
+    return mapshaders;
+}
+
+VAR(IDF_READONLY, shaderbitdefault, 1, SHADER_DEFAULT, -1);
+VAR(IDF_READONLY, shaderbitworld, 1, SHADER_WORLD, -1);
+VAR(IDF_READONLY, shaderbitenvmap, 1, SHADER_ENVMAP, -1);
+VAR(IDF_READONLY, shaderbitrefract, 1, SHADER_REFRACT, -1);
+VAR(IDF_READONLY, shaderbitoption, 1, SHADER_OPTION, -1);
+VAR(IDF_READONLY, shaderbitdynamic, 1, SHADER_DYNAMIC, -1);
+VAR(IDF_READONLY, shaderbittriplanar, 1, SHADER_TRIPLANAR, -1);
+VAR(IDF_READONLY, shaderbitinvalid, 1, SHADER_INVALID, -1);
+VAR(IDF_READONLY, shaderbitdeferred, 1, SHADER_DEFERRED, -1);
 
 Shader *variantshader(int type, char *name, int row, char *vs, char *ps, int maxvariants)
 {
@@ -1136,7 +1161,7 @@ Shader *variantshader(int type, char *name, int row, char *vs, char *ps, int max
     vector<char> vsbuf, psbuf, vsbak, psbak;
     GENSHADER(s->defaultparams.length(), genuniformdefs(vsbuf, psbuf, vs, ps, s));
     GENSHADER(strstr(vs, "//:fog") || strstr(ps, "//:fog"), genfogshader(vsbuf, psbuf, vs, ps));
-    Shader *v = newshader(type, varname, vs, ps, s, row);
+    Shader *v = newshader(type, varname, vs, ps, s->mapdef, s, row);
     if(v)
     {
         if(strstr(ps, "//:variant") || strstr(vs, "//:variant")) gengenericvariant(*s, varname, vs, ps, row);

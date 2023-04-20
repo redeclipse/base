@@ -842,22 +842,22 @@ namespace UI
     {
         char *name, *body;
         uint *contents, *onshow, *onhide;
-        bool exclusive, worldui;
+        bool exclusive, mapdef;
         int allowinput, windowflags;
         float px, py, pw, ph;
         vec2 sscale, soffset;
 
-        Window(const char *name, const char *contents, const char *onshow, const char *onhide, int windowflags_, bool worldui_) :
+        Window(const char *name, const char *contents, const char *onshow, const char *onhide, int windowflags_, bool mapdef_) :
             name(newstring(name)), body(NULL),
             contents(compilecode(contents)),
-            onshow(!worldui_ && onshow && onshow[0] ? compilecode(onshow) : NULL),
-            onhide(!worldui_ && onhide && onhide[0] ? compilecode(onhide) : NULL),
-            exclusive(false), worldui(worldui_), allowinput(1),
+            onshow(!mapdef_ && onshow && onshow[0] ? compilecode(onshow) : NULL),
+            onhide(!mapdef_ && onhide && onhide[0] ? compilecode(onhide) : NULL),
+            exclusive(false), mapdef(mapdef_), allowinput(1),
             px(0), py(0), pw(0), ph(0),
             sscale(1, 1), soffset(0, 0)
         {
-            if(worldui) body = newstring(contents);
-            windowflags = worldui ? 0 : clamp(windowflags_, 0, int(WINDOW_ALL));
+            if(mapdef) body = newstring(contents);
+            windowflags = mapdef ? 0 : clamp(windowflags_, 0, int(WINDOW_ALL));
         }
         ~Window()
         {
@@ -1209,10 +1209,10 @@ namespace UI
         window = NULL;
     }
 
-    void newui(char *name, char *contents, char *onshow, char *onhide, int windowflags, bool worldui = false)
+    void newui(char *name, char *contents, char *onshow, char *onhide, int windowflags, bool mapdef = false)
     {
         if(!name || !*name || !contents || !*contents) return;
-        if(worldui && !(identflags&IDF_WORLD) && !editmode)
+        if(mapdef && !(identflags&IDF_WORLD) && !editmode)
         {
             conoutf("\frWorld UI %s is only directly modifiable in editmode", name);
             return;
@@ -1223,7 +1223,7 @@ namespace UI
         if(window)
         {
             if(window == UI::window) return;
-            if(!window->worldui && worldui)
+            if(!window->mapdef && mapdef)
             {
                 conoutf("\frCannot override builtin UI %s with a World UI", window->name);
                 return;
@@ -1234,7 +1234,7 @@ namespace UI
             found = true;
         }
 
-        windows[name] = new Window(name, contents, onshow, onhide, windowflags, worldui);
+        windows[name] = new Window(name, contents, onshow, onhide, windowflags, mapdef);
 
         if(found && !strncmp(name, "comp_", 5))
         {
@@ -1243,7 +1243,7 @@ namespace UI
         }
     }
     ICOMMAND(0, newui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *windowflags), newui(name, contents, onshow, onhide, *windowflags));
-    ICOMMAND(0, worldui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *windowflags), newui(name, contents, onshow, onhide, *windowflags, true));
+    ICOMMAND(0, mapui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *windowflags), newui(name, contents, onshow, onhide, *windowflags, true));
 
     ICOMMAND(0, uiallowinput, "b", (int *val), { if(window) { if(*val >= 0) window->allowinput = clamp(*val, 0, 2); intret(window->allowinput); } });
     ICOMMAND(0, uiexclusive, "b", (int *val), { if(window) { if(*val >= 0) window->exclusive = *val!=0; intret(window->exclusive ? 1 : 0); } });
@@ -5776,23 +5776,23 @@ namespace UI
         return CURSOR_DEFAULT;
     }
 
-    int saveworldmenus(stream *h)
+    int savemapmenus(stream *h)
     {
-        int worldmenus = 0;
+        int mapmenus = 0;
         enumerate(windows, Window *, w,
         {
-            if(!w->worldui || !w->body) continue;
-            h->printf("worldui %s [%s]\n", w->name, w->body);
-            worldmenus++;
+            if(!w->mapdef || !w->body) continue;
+            h->printf("mapdef %s [%s]\n", w->name, w->body);
+            mapmenus++;
         });
-        return worldmenus;
+        return mapmenus;
     }
 
-    void resetworldmenus()
+    void resetmapmenus()
     {
         enumerate(windows, Window *, w,
         {
-            if(!w->worldui || !w->body) continue;
+            if(!w->mapdef || !w->body) continue;
             DELETEA(w->body);
         });
     }

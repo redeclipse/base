@@ -647,9 +647,13 @@ void save_config(char *mname, bool forcesave = false, int backuprev = -1)
     if(aliases) h->printf("\n");
     if(verbose) conoutf("Saved %d aliases", aliases);
 
-    int worldmenus = UI::saveworldmenus(h);
-    if(worldmenus) h->printf("\n");
-    if(verbose) conoutf("Saved %d world menus", aliases);
+    int mapshaders = savemapshaders(h);
+    if(mapshaders) h->printf("\n");
+    if(verbose) conoutf("Saved %d map shaders", aliases);
+
+    int mapmenus = UI::savemapmenus(h);
+    if(mapmenus) h->printf("\n");
+    if(verbose) conoutf("Saved %d map menus", aliases);
 
     // texture slots
     int nummats = sizeof(materialslots)/sizeof(materialslots[0]);

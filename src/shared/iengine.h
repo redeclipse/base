@@ -544,8 +544,8 @@ namespace UI
     extern bool cursorlock();
     extern int cursortype();
 
-    extern int saveworldmenus(stream *h);
-    extern void resetworldmenus();
+    extern int savemapmenus(stream *h);
+    extern void resetmapmenus();
 }
 
 // menus

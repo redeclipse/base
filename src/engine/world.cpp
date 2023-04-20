@@ -1450,7 +1450,8 @@ void resetmap(bool empty, int variant)
     clearsleep();
     cancelsel();
     pruneundos();
-    UI::resetworldmenus();
+    resetmapshaders();
+    UI::resetmapmenus();
     setsvar("maptext", "", false);
     mapcrc = 0;
     mapvariant = variant;
