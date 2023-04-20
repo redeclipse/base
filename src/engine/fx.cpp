@@ -250,7 +250,7 @@ namespace fx
         int endfromtag = getprop<int>(FX_PROP_END_FROM_ENTTAG);
         int endfroment = getprop<int>(FX_PROP_END_FROM_ENTPOS);
 
-        if(reloffset) calcdir(from, to, dir, up, right);
+        if(reloffset) calcdir(e->from, e->to, dir, up, right);
 
         if(e->pl && posfromtag >= 0)
         {
