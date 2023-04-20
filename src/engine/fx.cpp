@@ -257,7 +257,7 @@ namespace fx
             game::fxtrack(from, e->pl, game::ENT_POS_TAG, posfromtag);
             canparttrack = false;
         }
-        else if(e->pl && posfroment)
+        else if(e->pl && posfroment != game::ENT_POS_NONE)
         {
             from = to; // Base when calculating from ent direction
             game::fxtrack(from, e->pl, posfroment);
@@ -281,7 +281,7 @@ namespace fx
             game::fxtrack(to, e->pl, game::ENT_POS_TAG, endfromtag);
             canparttrack = false;
         }
-        else if(e->pl && endfroment)
+        else if(e->pl && endfroment != game::ENT_POS_NONE)
         {
             to = from; // Base when calculating from ent direction
             game::fxtrack(to, e->pl, endfroment);

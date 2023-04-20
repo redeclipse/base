@@ -141,7 +141,9 @@ namespace game
 
     enum
     {
-        ENT_POS_ORIGIN = 0,
+        ENT_POS_NONE = -1,
+
+        ENT_POS_ORIGIN,
         ENT_POS_BOTTOM,
         ENT_POS_MIDDLE,
         ENT_POS_TOP,

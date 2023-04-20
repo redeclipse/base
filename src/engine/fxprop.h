@@ -175,13 +175,13 @@ namespace fx
         fxpropertydef(
             "posfroment",
             PROP_INT,
-            game::ENT_POS_ORIGIN, game::ENT_POS_ORIGIN, game::ENT_POS_MUZZLE,
+            game::ENT_POS_NONE, game::ENT_POS_NONE, game::ENT_POS_MUZZLE,
             BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
         ),
         fxpropertydef(
             "endfroment",
             PROP_INT,
-            game::ENT_POS_ORIGIN, game::ENT_POS_ORIGIN, game::ENT_POS_MUZZLE,
+            game::ENT_POS_NONE, game::ENT_POS_NONE, game::ENT_POS_MUZZLE,
             BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
         ),
         fxpropertydef(
