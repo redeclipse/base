@@ -1207,7 +1207,7 @@ static void updatetexture(Texture *t)
         if(t->delay <= 0) return;
         int elapsed = lastmillis-t->last;
         if(elapsed < t->delay) return;
-        t->last = lastmillis-(lastmillis%t->delay);
+        t->last = t->delay > 1 ? lastmillis-(lastmillis%t->delay) : lastmillis;
         UI::composite(&t->id, t->comp, t->args, t->w, t->h, t->tclamp, t->mipmap, false);
         return;
     }
@@ -3863,8 +3863,6 @@ void genenvtexs()
 
 void cleanuptexture(Texture *t)
 {
-    if(animtextures.find(t) >= 0) animtextures.removeobj(t);
-
     DELETEA(t->alphamask);
 
     if(t->frames.empty() && t->id) glDeleteTextures(1, &t->id);
@@ -3880,7 +3878,12 @@ void cleanuptexture(Texture *t)
     t->frames.shrink(0);
     t->id = 0;
 
-    if(t->type&Texture::TRANSIENT || t->type&Texture::GC) textures.remove(t->name);
+    if(t->type&Texture::TRANSIENT || t->type&Texture::GC)
+    {
+        conoutf("Removing texture: %s", t->name);
+        if(animtextures.find(t) >= 0) animtextures.removeobj(t);
+        textures.remove(t->name);
+    }
 }
 
 void cleanuptextures()

@@ -1237,13 +1237,6 @@ int main(int argc, char **argv)
 
     initing = NOT_INITING;
 
-    if(firstrun || noconfigfile)
-    {
-        conoutf("First run!");
-        firstrun = 0;
-        triggereventcallbacks(CMD_EVENT_FIRSTRUN);
-    }
-
     if(shouldload)
     {
         conoutf("Loading required data..");
@@ -1255,6 +1248,12 @@ int main(int argc, char **argv)
         preloadtextures();
         initparticles();
         initstains();
+        if(firstrun || noconfigfile)
+        {
+            conoutf("First run!");
+            firstrun = 0;
+            triggereventcallbacks(CMD_EVENT_FIRSTRUN);
+        }
 
         conoutf("Loading main..");
         progress(0, "Loading main..");
