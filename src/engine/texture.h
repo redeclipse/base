@@ -146,7 +146,7 @@ struct Shader
     static Shader *lastshader;
 
     char *name, *vsstr, *psstr, *defer;
-    int type, mapdef;
+    int type;
     GLuint program, vsobj, psobj;
     vector<SlotShaderParamState> defaultparams;
     vector<GlobalShaderParamUse> globalparams;
@@ -155,14 +155,14 @@ struct Shader
     Shader *variantshader;
     vector<Shader *> variants;
     ushort *variantrows;
-    bool standard, forced, used;
+    bool standard, forced, used, mapdef;
     Shader *reusevs, *reuseps;
     vector<UniformLoc> uniformlocs;
     vector<AttribLoc> attriblocs;
     vector<FragDataLoc> fragdatalocs;
     const void *owner;
 
-    Shader() : name(NULL), vsstr(NULL), psstr(NULL), defer(NULL), type(SHADER_DEFAULT), mapdef(0), program(0), vsobj(0), psobj(0), variantshader(NULL), variantrows(NULL), standard(false), forced(false), used(false), reusevs(NULL), reuseps(NULL), owner(NULL)
+    Shader() : name(NULL), vsstr(NULL), psstr(NULL), defer(NULL), type(SHADER_DEFAULT), program(0), vsobj(0), psobj(0), variantshader(NULL), variantrows(NULL), standard(false), forced(false), used(false), mapdef(false), reusevs(NULL), reuseps(NULL), owner(NULL)
     {
     }
 
