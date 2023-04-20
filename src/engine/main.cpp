@@ -1299,7 +1299,7 @@ int main(int argc, char **argv)
 
             if(frameloops)
             {
-                RUNWORLD("on_update");
+                RUNMAP("on_update");
                 game::updateworld();
             }
 

@@ -1433,7 +1433,7 @@ namespace entities
                     defformatstring(s, "on_trigger_%d", e.attrs[0]);
                     triggerent = n;
                     triggerclient = d;
-                    RUNWORLD(s);
+                    RUNMAP(s);
                     triggerent = -1;
                     triggerclient = NULL;
                     break;

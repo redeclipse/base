@@ -3304,7 +3304,7 @@ namespace game
                 maptime = lastmillis ? lastmillis : 1;
                 mapstart = totalmillis ? totalmillis : 1;
                 if(type != 6) stopmusic();
-                RUNWORLD("on_start");
+                RUNMAP("on_start");
                 resetcamera();
                 resetsway();
                 return;

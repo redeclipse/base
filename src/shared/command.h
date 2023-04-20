@@ -510,7 +510,7 @@ extern char *limitstring(const char *str, size_t len);
 
 // game world controlling stuff
 #define WITHMAP(body) { int _oldflags = identflags; identflags |= IDF_MAP; body; identflags = _oldflags; }
-#define RUNWORLD(n) { ident *wid = idents.access(n); if(wid && wid->type==ID_ALIAS && wid->flags&IDF_MAP) { WITHMAP(execute(wid->getstr())); } }
+#define RUNMAP(n) { ident *wid = idents.access(n); if(wid && wid->type==ID_ALIAS && wid->flags&IDF_MAP) { WITHMAP(execute(wid->getstr())); } }
 
 #if defined(CPP_GAME_MAIN)
 #define IDF_GAME (IDF_CLIENT|IDF_REWRITE)
