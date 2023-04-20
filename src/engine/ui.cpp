@@ -2213,9 +2213,9 @@ namespace UI
             changedraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
             resetblend();
 
-            GLOBALPARAMF(millis, lastmillis/1000.0f);
-            GLOBALPARAMF(viewsize, hudw*w, hudh*h, 1.0f/(hudw*w), 1.0f/(hudh*h));
-            GLOBALPARAMF(composite, sx, sy, w, h);
+            LOCALPARAMF(millis, lastmillis/1000.0f);
+            LOCALPARAMF(viewsize, hudw*w, hudh*h, 1.0f/(hudw*w), 1.0f/(hudh*h));
+            LOCALPARAMF(composite, sx, sy, w, h);
 
             vector<LocalShaderParam> list;
             loopv(params)
@@ -5682,7 +5682,7 @@ namespace UI
     SVAR(0, uicompargs, "");
     bool composite(uint *tex, const char *name, const char *args, int w, int h, int tclamp, bool mipit, bool msg)
     {
-        if(!name || !*name) return false; // need a name
+        if(!name || !*name || !tex) return false; // need a name
         if(msg) progress(loadprogress, "Compositing texture: %s [%dx%d]", name, w, h);
 
         GLint oldfbo = 0;

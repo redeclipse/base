@@ -3929,7 +3929,7 @@ bool reloadtexture(Texture *t)
         {
             if(t->type&Texture::COMPOSITE)
             {
-                if(!texturecomp(t->name, t->tclamp, t->mipmap, false)) return false;
+                if(!UI::composite(&t->id, t->comp, t->args, t->w, t->h, t->tclamp, t->mipmap, true)) return false;
                 break;
             }
             int compress = 0;
