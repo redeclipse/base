@@ -2,7 +2,8 @@
 
 #include "engine.h"
 
-Shader *particleshader = NULL, *particleenvshader = NULL, *particlenotextureshader = NULL, *particlesoftshader = NULL, *particletextshader = NULL,
+Shader *particleshader = NULL, *particlenotextureshader = NULL, *particletextshader = NULL,
+       *particleenvshader = NULL, *particlefireshader = NULL, *particlesoftshader = NULL, *particlefiresoftshader = NULL,
        *particlehazeshader = NULL, *particlehazemixshader = NULL, *particlehazerefshader = NULL, *particlehazerefmixshader = NULL;
 
 VAR(IDF_PERSIST, particlelayers, 0, 1, 1);
@@ -1213,7 +1214,7 @@ static partrenderer *parts[] =
     new portalrenderer("<grey>particles/teleport", PT_ENVMAP),
     &icons, &lineprimitives, &lineontopprimitives, &trisprimitives, &trisontopprimitives,
     &loopprimitives, &loopontopprimitives, &coneprimitives, &coneontopprimitives,
-    new quadrenderer("!fireparticle 1", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
+    new quadrenderer("!fireparticle 1", PT_FIRE|PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
     new quadrenderer("<grey>particles/plasma", PT_SOFT|PT_PART|PT_BRIGHT|PT_FLIP|PT_WIND),
     new taperenderer("<grey>particles/sflare", PT_TAPE|PT_BRIGHT|PT_FEW),
     new taperenderer("<grey>particles/mflare", PT_TAPE|PT_BRIGHT|PT_RND4|PT_VFLIP|PT_FEW),
@@ -1233,15 +1234,15 @@ static partrenderer *parts[] =
     new quadrenderer("<grey>particles/entity", PT_PART|PT_BRIGHT),
     new quadrenderer("<grey>particles/entity", PT_PART|PT_BRIGHT|PT_ONTOP),
     new quadrenderer("<grey>particles/spark", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP),
-    new quadrenderer("!fireparticle 1", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
-    new quadrenderer("!fireparticle 1", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
+    new quadrenderer("!fireparticle 1", PT_FIRE|PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
+    new quadrenderer("!fireparticle 1", PT_FIRE|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
     new quadrenderer("<grey>particles/plasma", PT_SOFT|PT_PART|PT_BRIGHT|PT_FLIP|PT_WIND),
     new quadrenderer("<grey>particles/plasma", PT_PART|PT_BRIGHT|PT_FLIP|PT_WIND),
     new quadrenderer("<grey>particles/electric", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
     new quadrenderer("<grey>particles/electric", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
     new quadrenderer("<grey>particles/eleczap", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
     new quadrenderer("<grey>particles/eleczap", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
-    new quadrenderer("!fireparticle 1", PT_PART|PT_BRIGHT|PT_FLIP|PT_RND4|PT_BRIGHT|PT_WIND),
+    new quadrenderer("!fireparticle 1", PT_FIRE|PT_PART|PT_BRIGHT|PT_FLIP|PT_RND4|PT_BRIGHT|PT_WIND),
     new taperenderer("<grey>particles/sflare", PT_TAPE|PT_BRIGHT),
     new taperenderer("<grey>particles/mflare", PT_TAPE|PT_BRIGHT|PT_RND4|PT_VFLIP|PT_BRIGHT),
     new taperenderer("<grey>particles/lightning", PT_TAPE|PT_BRIGHT|PT_HFLIP|PT_VFLIP, 2), // uses same clamp setting as normal lightning to avoid conflict
@@ -1270,14 +1271,16 @@ void initparticles()
 {
     if(initing) return;
     if(!particleshader) particleshader = lookupshaderbyname("particle");
-    if(!particleenvshader) particleenvshader = lookupshaderbyname("particleenv");
     if(!particlenotextureshader) particlenotextureshader = lookupshaderbyname("particlenotexture");
+    if(!particletextshader) particletextshader = lookupshaderbyname("particletext");
+    if(!particleenvshader) particleenvshader = lookupshaderbyname("particleenv");
+    if(!particlefireshader) particlefireshader = lookupshaderbyname("particlefire");
     if(!particlesoftshader) particlesoftshader = lookupshaderbyname("particlesoft");
+    if(!particlefiresoftshader) particlefiresoftshader = lookupshaderbyname("particlefiresoft");
     if(!particlehazeshader) particlehazeshader = lookupshaderbyname("particlehaze");
     if(!particlehazemixshader) particlehazemixshader = lookupshaderbyname("particlehazemix");
     if(!particlehazerefshader) particlehazerefshader = lookupshaderbyname("particlehazeref");
     if(!particlehazerefmixshader) particlehazerefmixshader = lookupshaderbyname("particlehazerefmix");
-    if(!particletextshader) particletextshader = lookupshaderbyname("particletext");
     loopi(sizeof(parts)/sizeof(parts[0])) parts[i]->init(parts[i]->type&PT_FEW ? min(fewparticles, maxparticles) : maxparticles);
     loopi(sizeof(parts)/sizeof(parts[0]))
     {
@@ -1328,7 +1331,7 @@ void renderparticles(int layer)
 
     bool rendered = false;
     uint lastflags = PT_LERP|PT_SHADER,
-         flagmask = PT_LERP|PT_MOD|PT_ONTOP|PT_BRIGHT|PT_NOTEX|PT_SOFT|PT_SHADER|PT_ENVMAP,
+         flagmask = PT_LERP|PT_MOD|PT_ONTOP|PT_BRIGHT|PT_NOTEX|PT_SOFT|PT_FIRE|PT_SHADER|PT_ENVMAP,
          excludemask = layer == PL_ALL ? ~0 : (layer != PL_NOLAYER ? PT_NOLAYER : 0);
 
     loopi(sizeof(parts)/sizeof(parts[0]))
@@ -1367,18 +1370,20 @@ void renderparticles(int layer)
             }
             if(!(flags&PT_SHADER))
             {
-                if(changedbits&(PT_LERP|PT_SOFT|PT_NOTEX|PT_SHADER|PT_ENVMAP))
+                if(changedbits&(PT_LERP|PT_SOFT|PT_FIRE|PT_NOTEX|PT_SHADER|PT_ENVMAP))
                 {
                     if(flags&PT_ENVMAP) particleenvshader->set();
                     else if(flags&PT_SOFT && softparticles)
                     {
-                        particlesoftshader->set();
+                        if(flags&PT_FIRE) particlefiresoftshader->set();
+                        else particlesoftshader->set();
                         LOCALPARAMF(softparams, -1.0f/softparticleblend, 0, 0);
                     }
+                    else if(flags&PT_FIRE) particlefireshader->set();
                     else if(flags&PT_NOTEX) particlenotextureshader->set();
                     else particleshader->set();
                 }
-                if(changedbits&(PT_MOD|PT_BRIGHT|PT_SOFT|PT_NOTEX|PT_SHADER))
+                if(changedbits&(PT_MOD|PT_BRIGHT|PT_SOFT|PT_FIRE|PT_NOTEX|PT_SHADER))
                 {
                     float colorscale = flags&PT_MOD ? 1 : ldrscale;
                     if(flags&PT_BRIGHT) colorscale *= particlebright;

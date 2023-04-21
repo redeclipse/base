@@ -245,7 +245,7 @@ enum
     PT_NOTEX    = 1<<19,
     PT_SHADER   = 1<<20,
     PT_NOLAYER  = 1<<21,
-    // unused   = 1<<22,
+    PT_FIRE     = 1<<22,    // use fire particle shader
     // unused   = 1<<23,
     PT_WIND     = 1<<24,    // particles affected by the wind
     PT_HAZE     = 1<<25,    // creates haze effect

@@ -1200,14 +1200,14 @@ vector<Texture *> animtextures;
 
 Texture *notexture = NULL, *blanktexture = NULL; // used as default, ensured to be loaded
 
-VAR(IDF_PERSIST, compositeuprate, 0, 33, VAR_MAX);
+VAR(IDF_PERSIST, compositeuprate, 0, 16, VAR_MAX);
 
 static void updatetexture(Texture *t)
 {
     if(t->delay <= 0) return;
     int elapsed = lastmillis-t->last, delay = t->delay;
     if(t->type&Texture::COMPOSITE && delay < compositeuprate) delay = compositeuprate;
-    if(elapsed < t->delay) return;
+    if(elapsed < delay) return;
 
     if(t->type&Texture::COMPOSITE)
     {
