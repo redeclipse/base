@@ -2182,17 +2182,11 @@ namespace UI
         vector<param> params;
         vector<Texture *> texs;
 
-        Composite() : shdr(NULL) {}
-
-        void setup(uint *body, float minw_ = 0, float minh_ = 0, const Color &color_ = Color(colourwhite))
+        void setup(char *name_, float minw_ = 0, float minh_ = 0, const Color &color_ = Color(colourwhite))
         {
             Target::setup(minw_, minh_, color_);
-            char *name = executestr(body);
-            if(name)
-            {
-                shdr = lookupshaderbyname(name);
-                DELETEA(name);
-            }
+            shdr = lookupshaderbyname(name_);
+            if(!shdr) shdr = hudshader;
             params.setsize(0);
             texs.setsize(0);
         }
@@ -2203,7 +2197,7 @@ namespace UI
 
         void startdraw()
         {
-            (shdr && shdr->loaded() ? shdr : hudshader)->set();
+            shdr->set();
             gle::defvertex(2);
             gle::deftexcoord0();
         }
@@ -2242,8 +2236,8 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uicomp, "effe", (uint *body, float *minw, float *minh, uint *children), \
-        BUILD(Composite, o, o->setup(body, *minw*uiscale, *minh*uiscale), children));
+    ICOMMAND(0, uicomp, "sffe", (char *name, float *minw, float *minh, uint *children), \
+        BUILD(Composite, o, o->setup(name, *minw*uiscale, *minh*uiscale), children));
 
     UICMDT(Composite, comp, param, "sffff", (char *name, float *x, float *y, float *z, float *w),
     {
