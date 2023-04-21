@@ -115,6 +115,7 @@ Texture *loadskyoverlay(const char *basename)
     FVAR(IDF_MAP, atmodiskcorona##name, 0, 0.4f, 1); \
     FVAR(IDF_MAP, atmodiskbright##name, 0, 1, 16); \
     CVAR(IDF_MAP, atmoclouds##name, 0); \
+    VAR(IDF_MAP, atmocloudsteps##name, 0, 8, 64); \
     FVAR(IDF_MAP, atmocloudscale##name, FVAR_NONZERO, 10, 256); \
     FVAR(IDF_MAP, atmocloudlight##name, 0, 0.3f, 16); \
     FVAR(IDF_MAP, atmoclouddark##name, 0, 0.1f, 16); \
@@ -226,6 +227,7 @@ GETMPV(atmodisksize, float);
 GETMPV(atmodiskcorona, float);
 GETMPV(atmodiskbright, float);
 GETMPV(atmoclouds, const bvec &);
+GETMPV(atmocloudsteps, int);
 GETMPV(atmocloudscale, float);
 GETMPV(atmocloudlight, float);
 GETMPV(atmoclouddark, float);
@@ -665,10 +667,10 @@ static void drawatmosphere()
     {
         vec cloudcolor = curatmoclouds.tocolor();
         LOCALPARAM(cloudcolor, cloudcolor);
-        LOCALPARAMF(cloudparams, 1.0f/atmocloudscale, atmocloudcover, atmocloudsharp);
-        LOCALPARAMF(cloudshade, atmocloudlight, atmoclouddark, atmocloudsun, atmocloudsky);
-        LOCALPARAMF(cloudfade, min(atmocloudfademin, atmocloudfademax), max(atmocloudfademin, atmocloudfademax), atmocloudblend);
-        LOCALPARAMF(cloudscroll, atmocloudscrollx, atmocloudscrolly);
+        LOCALPARAMF(cloudparams, 1.0f/getatmocloudscale(), getatmocloudcover(), getatmocloudsharp(), getatmocloudsteps());
+        LOCALPARAMF(cloudshade, getatmocloudlight(), getatmoclouddark(), getatmocloudsun(), getatmocloudsky());
+        LOCALPARAMF(cloudfade, min(getatmocloudfademin(), getatmocloudfademax()), max(getatmocloudfademin(), getatmocloudfademax()), getatmocloudblend());
+        LOCALPARAMF(cloudscroll, getatmocloudscrollx(), getatmocloudscrolly());
     }
 
     gle::defvertex();

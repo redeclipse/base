@@ -1200,26 +1200,30 @@ vector<Texture *> animtextures;
 
 Texture *notexture = NULL, *blanktexture = NULL; // used as default, ensured to be loaded
 
+VAR(IDF_PERSIST, compositeuprate, 0, 33, VAR_MAX);
+
 static void updatetexture(Texture *t)
 {
+    if(t->delay <= 0) return;
+    int elapsed = lastmillis-t->last, delay = t->delay;
+    if(t->type&Texture::COMPOSITE && delay < compositeuprate) delay = compositeuprate;
+    if(elapsed < t->delay) return;
+
     if(t->type&Texture::COMPOSITE)
     {
-        if(t->delay <= 0) return;
-        int elapsed = lastmillis-t->last;
-        if(elapsed < t->delay) return;
-        t->last = t->delay > 1 ? lastmillis-(lastmillis%t->delay) : lastmillis;
-        UI::composite(&t->id, t->comp, t->args, t->w, t->h, t->tclamp, t->mipmap, false);
-        return;
+        if(!UI::composite(&t->id, t->comp, t->args, t->w, t->h, t->tclamp, t->mipmap, false) || !t->id)
+            return;
     }
-    if(t->frames.length() <= 1 || t->delay <= 0) return;
-    int elapsed = lastmillis-t->last;
-    if(elapsed < t->delay) return;
-    int animlen = t->throb ? (t->frames.length()-1)*2 : t->frames.length();
-    t->frame += elapsed/t->delay;
-    t->frame %= animlen;
-    t->last = lastmillis-(lastmillis%t->delay);
-    int frame = t->throb && t->frame >= t->frames.length() ? animlen-t->frame : t->frame;
-    t->id = t->frames.inrange(frame) ? t->frames[frame] : 0;
+    else if(t->frames.length() > 1)
+    {
+        int animlen = t->throb ? (t->frames.length()-1)*2 : t->frames.length();
+        t->frame += elapsed/t->delay;
+        t->frame %= animlen;
+        int frame = t->throb && t->frame >= t->frames.length() ? animlen-t->frame : t->frame;
+        t->id = t->frames.inrange(frame) ? t->frames[frame] : 0;
+    }
+    else return;
+    t->last = t->delay > 1 ? lastmillis-(elapsed%t->delay) : lastmillis;
 }
 
 
@@ -1392,7 +1396,11 @@ static Texture *newtexture(Texture *t, const char *rname, ImageData &s, int tcla
         }
     }
     t->id = t->frames.length() ? t->frames[0] : 0;
-    if(t->frames.length() > 1 && t->delay > 0) animtextures.add(t);
+    if(t->frames.length() > 1 && t->delay > 0)
+    {
+        animtextures.add(t);
+        t->last = lastmillis;
+    }
     return t;
 }
 
@@ -1938,7 +1946,11 @@ static Texture *texturecomp(const char *name, int tclamp = 0, bool mipit = true,
     t->bpp = 4;
     t->delay = delay;
     t->id = tex;
-    if(t->delay > 0) animtextures.add(t);
+    if(t->delay > 0)
+    {
+        t->last = lastmillis;
+        animtextures.add(t);
+    }
     list.deletearrays();
     return t;
 }
@@ -3863,6 +3875,7 @@ void genenvtexs()
 
 void cleanuptexture(Texture *t)
 {
+    if(animtextures.find(t) >= 0) animtextures.removeobj(t);
     DELETEA(t->alphamask);
 
     if(t->frames.empty() && t->id) glDeleteTextures(1, &t->id);
@@ -3881,7 +3894,6 @@ void cleanuptexture(Texture *t)
     if(t->type&Texture::TRANSIENT || t->type&Texture::GC)
     {
         conoutf("Removing texture: %s", t->name);
-        if(animtextures.find(t) >= 0) animtextures.removeobj(t);
         textures.remove(t->name);
     }
 }
