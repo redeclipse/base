@@ -829,7 +829,28 @@ namespace UI
 
     struct Window;
 
-    static Window *window = NULL;
+    enum { WINTYPE_NORMAL = 0, WINTYPE_COMPOSITE, WINTYPE_MAX };
+    const char *windowtype[WINTYPE_MAX] = { "Normal", "Composite" };
+    const char *windowaffix[WINTYPE_MAX] = { "", "comp" };
+    static Window *window[WINTYPE_MAX] = { NULL, NULL };
+
+    const char *getwinprefix(int type, const char *suffix = " ")
+    {
+        type = clamp(type, 0, int(WINTYPE_MAX)-1);
+        if(type > 0)
+        {
+            static string winprefix;
+            formatstring(winprefix, "%s%s", windowtype[type], suffix);
+            return winprefix;
+        }
+        return "";
+    }
+
+    int getwindowtype()
+    {
+        if(drawtex == DRAWTEX_COMPOSITE) return WINTYPE_COMPOSITE;
+        return WINTYPE_NORMAL;
+    }
 
     enum
     {
@@ -898,15 +919,15 @@ namespace UI
         void layout()
         {
             if(state&STATE_HIDDEN) { w = h = 0; return; }
-            window = this;
+            window[getwindowtype()] = this;
             Object::layout();
-            window = NULL;
+            window[getwindowtype()] = NULL;
         }
 
         void draw(float sx, float sy)
         {
             if(state&STATE_HIDDEN) return;
-            window = this;
+            window[getwindowtype()] = this;
 
             projection();
 
@@ -924,7 +945,7 @@ namespace UI
 
             glDisable(GL_BLEND);
 
-            window = NULL;
+            window[getwindowtype()] = NULL;
         }
 
         void draw()
@@ -935,9 +956,9 @@ namespace UI
         void adjustchildren()
         {
             if(state&STATE_HIDDEN) return;
-            window = this;
+            window[getwindowtype()] = this;
             Object::adjustchildren();
-            window = NULL;
+            window[getwindowtype()] = NULL;
         }
 
         void adjustlayout()
@@ -1013,12 +1034,12 @@ namespace UI
             if(o) { body; } \
         });
 
-    static hashnameset<Window *> windows;
+    static hashnameset<Window *> windows[WINTYPE_MAX];
 
     void ClipArea::scissor()
     {
         int sx1, sy1, sx2, sy2;
-        window->calcscissor(x1, y1, x2, y2, sx1, sy1, sx2, sy2);
+        window[getwindowtype()]->calcscissor(x1, y1, x2, y2, sx1, sy1, sx2, sy2);
         glScissor(sx1, sy1, sx2-sx1, sy2-sy1);
     }
 
@@ -1204,54 +1225,54 @@ namespace UI
         if(!world) return;
         reset(world);
         setup();
-        window = this;
+        window[getwindowtype()] = this;
         buildchildren(contents);
-        window = NULL;
+        window[getwindowtype()] = NULL;
     }
 
-    void newui(char *name, char *contents, char *onshow, char *onhide, int windowflags, bool mapdef = false)
+    void newui(int type, char *name, char *contents, char *onshow, char *onhide, int windowflags, bool mapdef = false)
     {
         if(!name || !*name || !contents || !*contents) return;
+        type = clamp(type, 0, int(WINTYPE_MAX)-1);
         if(mapdef && !(identflags&IDF_MAP) && !editmode)
         {
-            conoutf("\frMap UI %s is only directly modifiable in editmode", name);
+            conoutf("\frMap %sUI %s is only directly modifiable in editmode", getwinprefix(type), name);
             return;
         }
 
         bool found = false;
-        Window *window = windows.find(name, NULL);
-        if(window)
+        Window *w = windows[type].find(name, NULL);
+        if(w)
         {
-            if(window == UI::window) return;
-            if(!window->mapdef && mapdef)
+            if(w == UI::window[type]) return;
+            if(!w->mapdef && mapdef)
             {
-                conoutf("\frCannot override builtin UI %s with a one from the map", window->name);
+                conoutf("\frCannot override builtin %sUI %s with a one from the map", getwinprefix(type), w->name);
                 return;
             }
-            loopi(3) if(worlds[i]) worlds[i]->hide(window);
-            windows.remove(name);
-            delete window;
+            loopi(3) if(worlds[i]) worlds[i]->hide(w);
+            windows[type].remove(name);
+            delete w;
             found = true;
         }
 
-        windows[name] = new Window(name, contents, onshow, onhide, windowflags, mapdef);
+        windows[type][name] = new Window(name, contents, onshow, onhide, windowflags, mapdef);
 
-        if(found && !strncmp(name, "comp_", 5))
-        {
-            char *tname = &name[5];
-            enumerate(textures, Texture, t, if(t.type&Texture::COMPOSITE && t.comp && !strcmp(tname, t.comp)) composite(&t.id, t.comp, t.args, t.w, t.h, t.tclamp, t.mipmap, true));
-        }
+        if(found && type == WINTYPE_COMPOSITE)
+            enumerate(textures, Texture, t, if(t.type&Texture::COMPOSITE && t.comp && !strcmp(name, t.comp)) composite(&t.id, t.comp, t.args, t.w, t.h, t.tclamp, t.mipmap, true));
     }
-    ICOMMAND(0, newui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *windowflags), newui(name, contents, onshow, onhide, *windowflags));
-    ICOMMAND(0, mapui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *windowflags), newui(name, contents, onshow, onhide, *windowflags, true));
+    ICOMMAND(0, newui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *windowflags), newui(WINTYPE_NORMAL, name, contents, onshow, onhide, *windowflags));
+    ICOMMAND(0, mapui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *windowflags), newui(WINTYPE_NORMAL, name, contents, onshow, onhide, *windowflags, true));
+    ICOMMAND(0, newcompui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *windowflags), newui(WINTYPE_COMPOSITE, name, contents, onshow, onhide, *windowflags));
+    ICOMMAND(0, mapcompui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *windowflags), newui(WINTYPE_COMPOSITE, name, contents, onshow, onhide, *windowflags, true));
 
-    ICOMMAND(0, uiallowinput, "b", (int *val), { if(window) { if(*val >= 0) window->allowinput = clamp(*val, 0, 2); intret(window->allowinput); } });
-    ICOMMAND(0, uiexclusive, "b", (int *val), { if(window) { if(*val >= 0) window->exclusive = *val!=0; intret(window->exclusive ? 1 : 0); } });
-    ICOMMAND(0, uiwindowflags, "b", (int *val), { if(window) { if(*val >= 0) window->windowflags = clamp(*val, 0, int(WINDOW_ALL)); intret(window->windowflags); } });
+    ICOMMAND(0, uiallowinput, "b", (int *val), { if(window[getwindowtype()]) { if(*val >= 0) window[getwindowtype()]->allowinput = clamp(*val, 0, 2); intret(window[getwindowtype()]->allowinput); } });
+    ICOMMAND(0, uiexclusive, "b", (int *val), { if(window[getwindowtype()]) { if(*val >= 0) window[getwindowtype()]->exclusive = *val!=0; intret(window[getwindowtype()]->exclusive ? 1 : 0); } });
+    ICOMMAND(0, uiwindowflags, "b", (int *val), { if(window[getwindowtype()]) { if(*val >= 0) window[getwindowtype()]->windowflags = clamp(*val, 0, int(WINDOW_ALL)); intret(window[getwindowtype()]->windowflags); } });
 
-    ICOMMAND(0, uioverridepos, "", (), { if(window) { intret(window->overridepos ? 1 : 0); } });
-    ICOMMAND(0, uisetpos, "ff", (float *xpos, float *ypos), { if(window) { window->setpos(*xpos, *ypos); } });
-    ICOMMAND(0, uiresetpos, "", (), { if(window) { window->resetpos(); } });
+    ICOMMAND(0, uioverridepos, "", (), { if(window[getwindowtype()]) { intret(window[getwindowtype()]->overridepos ? 1 : 0); } });
+    ICOMMAND(0, uisetpos, "ff", (float *xpos, float *ypos), { if(window[getwindowtype()]) { window[getwindowtype()]->setpos(*xpos, *ypos); } });
+    ICOMMAND(0, uiresetpos, "", (), { if(window[getwindowtype()]) { window[getwindowtype()]->resetpos(); } });
 
     ICOMMAND(0, uicursorx, "", (), floatret(cursorx*float(hudw)/hudh));
     ICOMMAND(0, uicursory, "", (), floatret(cursory));
@@ -1281,9 +1302,9 @@ namespace UI
     bool showui(const char *name)
     {
         if(!world) return false;
-        Window *window = windows.find(name, NULL);
-        if(!window) return false;
-        return world->show(window);
+        Window *w = windows[getwindowtype()].find(name, NULL);
+        if(!w) return false;
+        return world->show(w);
     }
 
     bool hideui(const char *name)
@@ -1292,8 +1313,8 @@ namespace UI
         if(!name || !*name) return world->hideall() > 0;
         else
         {
-            Window *window = windows.find(name, NULL);
-            if(window) return world->hide(window);
+            Window *w = windows[getwindowtype()].find(name, NULL);
+            if(w) return world->hide(w);
         }
         return false;
     }
@@ -1333,8 +1354,8 @@ namespace UI
     {
         if(!world) return false;
         if(!name || !*name) return world->children.length() > 0;
-        Window *window = windows.find(name, NULL);
-        return window && world->children.find(window) >= 0;
+        Window *w = windows[getwindowtype()].find(name, NULL);
+        return w && world->children.find(w) >= 0;
     }
 
     ICOMMAND(0, showui, "s", (char *name), intret(showui(name) ? 1 : 0));
@@ -1346,7 +1367,7 @@ namespace UI
     ICOMMAND(0, holdui, "sD", (char *name, int *down), holdui(name, *down!=0));
     ICOMMAND(0, pressui, "sD", (char *name, int *down), pressui(name, *down!=0));
     ICOMMAND(0, uivisible, "s", (char *name), intret(uivisible(name) ? 1 : 0));
-    ICOMMAND(0, uiname, "", (), { if(window) result(window->name); });
+    ICOMMAND(0, uiname, "", (), { if(window[getwindowtype()]) result(window[getwindowtype()]->name); });
 
     struct HorizontalList : Object
     {
@@ -4779,7 +4800,7 @@ namespace UI
             changedraw(CHANGE_SHADER);
 
             int sx1, sy1, sx2, sy2;
-            window->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
+            window[getwindowtype()]->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
             modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch+offsetpitch, roll, fov, false, clipstack.length() > 0, translate);
             model *m = loadmodel(name);
             if(m)
@@ -4854,7 +4875,7 @@ namespace UI
             changedraw(CHANGE_SHADER);
 
             int sx1, sy1, sx2, sy2;
-            window->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
+            window[getwindowtype()]->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
 
             modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch+offsetpitch, roll, fov, false, clipstack.length() > 0, translate);
 
@@ -4878,7 +4899,7 @@ namespace UI
             pos2d.div(pos2d.z);
 
             int sx1, sy1, sx2, sy2;
-            window->calcscissor(lastsx, lastsy, lastsx+lastw, lastsy+lasth, sx1, sy1, sx2, sy2, false);
+            window[getwindowtype()]->calcscissor(lastsx, lastsy, lastsx+lastw, lastsy+lasth, sx1, sy1, sx2, sy2, false);
 
             pos2d.add(vec(1.0f, 1.0f, 0.0f)).mul(vec(0.5f, 0.5f, 0.0f));
             pos2d.y = 1.0f - pos2d.y;
@@ -4936,7 +4957,7 @@ namespace UI
             changedraw(CHANGE_SHADER);
 
             int sx1, sy1, sx2, sy2;
-            window->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
+            window[getwindowtype()]->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
             modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch, roll, fov, false, clipstack.length() > 0);
             previewprefab(name, colors[0].tocolor(), blend*(colors[0].a/255.f), yaw, offsetyaw);
             if(clipstack.length()) clipstack.last().scissor();
@@ -5595,8 +5616,11 @@ namespace UI
     void cleanup()
     {
         loopi(WORLD_MAX) worlds[i]->children.setsize(0);
-        enumerate(windows, Window *, w, delete w);
-        windows.clear();
+        loopi(WINTYPE_MAX)
+        {
+            enumerate(windows[i], Window *, w, delete w);
+            windows[i].clear();
+        }
         world = NULL;
         loopi(WORLD_MAX) DELETEP(worlds[i]);
         inputsteal = NULL;
@@ -5708,8 +5732,7 @@ namespace UI
         setsvar("uicompargs", args ? args : "");
         World *oldworld = world;
         world = worlds[WORLD_COMPOSITE];
-        defformatstring(compname, "comp_%s", name);
-        showui(compname);
+        showui(name);
 
         int oldhudw = hudw, oldhudh = hudh;
 
@@ -5777,10 +5800,10 @@ namespace UI
     int savemapmenus(stream *h)
     {
         int mapmenus = 0;
-        enumerate(windows, Window *, w,
+        loopi(WINTYPE_MAX) enumerate(windows[i], Window *, w,
         {
             if(!w->mapdef || !w->body) continue;
-            h->printf("mapui %s [%s]\n", w->name, w->body);
+            h->printf("map%sui %s [%s]\n", windowaffix[i], w->name, w->body);
             mapmenus++;
         });
         return mapmenus;
@@ -5788,7 +5811,7 @@ namespace UI
 
     void resetmapmenus()
     {
-        enumerate(windows, Window *, w,
+        loopi(WINTYPE_MAX) enumerate(windows[i], Window *, w,
         {
             if(!w->mapdef || !w->body) continue;
             DELETEA(w->body);
