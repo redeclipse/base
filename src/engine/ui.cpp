@@ -2242,6 +2242,9 @@ namespace UI
             {
                 glActiveTexture_(GL_TEXTURE0+i);
                 glBindTexture(GL_TEXTURE_2D, texs[i]->id);
+                defformatstring(texparam, "texsize%d", i);
+                LocalShaderParam param = list.add(LocalShaderParam(texparam));
+                param.setf(texs[i]->w, texs[i]->h, texs[i]->xs, texs[i]->ys);
             }
             glActiveTexture_(GL_TEXTURE0);
 
