@@ -25,8 +25,8 @@ namespace entities
     FVAR(IDF_PERSIST, showentavailable, 0, 1, 1);
     FVAR(IDF_PERSIST, showentunavailable, 0, 0.35f, 1);
 
-    FVAR(IDF_PERSIST, entselsize, 0, 1.5f, FVAR_MAX);
-    FVAR(IDF_PERSIST, entselsizetop, 0, 3, FVAR_MAX);
+    FVAR(IDF_PERSIST, entselsize, 0, 0.5f, FVAR_MAX);
+    FVAR(IDF_PERSIST, entselsizetop, 0, 1, FVAR_MAX);
     FVAR(IDF_PERSIST, entdirsize, 0, 10, FVAR_MAX);
     FVAR(IDF_PERSIST, entrailoffset, 0, 0.1f, FVAR_MAX);
     FVAR(IDF_PERSIST, entinfospace, 0, 1.25f, FVAR_MAX);
@@ -3275,7 +3275,7 @@ namespace entities
         {
             loopj(hastop && e.dynamic() ? 2 : 1)
             {
-                part_create(hastop && !j ? PART_EDIT_ONTOP : PART_EDIT, 1, j ? e.pos() : o, j ? entselcolourdyn : (hastop ? entselcolourtop : entselcolour), hastop && !j ? entselsizetop : entselsize);
+                part_create(hastop && !j ? PART_ENTITY_ONTOP : PART_ENTITY, 1, j ? e.pos() : o, j ? entselcolourdyn : (hastop ? entselcolourtop : entselcolour), hastop && !j ? entselsizetop : entselsize);
                 if(j) part_line(o, e.pos(), entselsize, 1, 1, entselcolourdyn);
             }
             if(showentinfo&(hasent ? 4 : 8))
