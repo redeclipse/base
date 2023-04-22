@@ -447,7 +447,6 @@ void setupmaterials(int start, int len)
     if(hasmat&(0xF<<MAT_WATER) || hasmat&(0xF<<MAT_LAVA) || hasmat&(0xF<<MAT_VOLFOG)) useshaderbyname("depthfog");
     if(hasmat&(0xF<<MAT_WATER))
     {
-        loadcaustics(true);
         preloadwatershaders(true);
         loopi(4) if(hasmat&(1<<(MAT_WATER+i))) lookupmaterialslot(MAT_WATER+i);
     }

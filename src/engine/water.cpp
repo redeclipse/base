@@ -1,8 +1,6 @@
 #include "engine.h"
 
-#define NUMCAUSTICS 32
-
-static Texture *caustictex[NUMCAUSTICS] = { NULL };
+static Texture *caustictex = NULL;
 
 void loadcaustics(bool force)
 {
@@ -10,37 +8,27 @@ void loadcaustics(bool force)
     if(force) needcaustics = true;
     if(!caustics || !needcaustics) return;
     useshaderbyname("caustics");
-    if(caustictex[0]) return;
-    loopi(NUMCAUSTICS)
-    {
-        defformatstring(name, "<grey><noswizzle>caustics/caust%.2d.png", i);
-        caustictex[i] = textureload(name);
-    }
+    if(caustictex) return;
+    caustictex = textureload("!caustic 1");
 }
 
 void cleanupcaustics()
 {
-    loopi(NUMCAUSTICS) caustictex[i] = NULL;
+    caustictex = NULL;
 }
 
-VARF(IDF_MAP, causticscale, 0, 50, 10000, preloadwatershaders());
-VARF(IDF_MAP, causticmillis, 0, 75, 1000, preloadwatershaders());
+VARF(IDF_MAP, causticscale, 0, 100, 10000, preloadwatershaders());
 FVAR(IDF_MAP, causticcontrast, 0, 0.6f, 2);
 FVAR(IDF_MAP, causticoffset, 0, 0.7f, 1);
-VARF(IDF_PERSIST, caustics, 0, 1, 1, { loadcaustics(); preloadwatershaders(); });
+VARF(IDF_PERSIST, caustics, 0, 1, 1, { loadcaustics(false); preloadwatershaders(); });
 
 void setupcaustics(int tmu, float surface = -1e16f)
 {
-    if(!caustictex[0]) loadcaustics(true);
+    if(!caustictex) loadcaustics(true);
 
     vec s = vec(0.011f, 0, 0.0066f).mul(100.0f/causticscale), t = vec(0, 0.011f, 0.0066f).mul(100.0f/causticscale);
-    int tex = (lastmillis/causticmillis)%NUMCAUSTICS;
-    float frac = float(lastmillis%causticmillis)/causticmillis;
-    loopi(2)
-    {
-        glActiveTexture_(GL_TEXTURE0+tmu+i);
-        glBindTexture(GL_TEXTURE_2D, caustictex[(tex+i)%NUMCAUSTICS]->id);
-    }
+    glActiveTexture_(GL_TEXTURE0+tmu);
+    glBindTexture(GL_TEXTURE_2D, caustictex->id);
     glActiveTexture_(GL_TEXTURE0);
     float blendscale = causticcontrast, blendoffset = 1;
     if(surface > -1e15f)
@@ -60,12 +48,12 @@ void setupcaustics(int tmu, float surface = -1e16f)
         GLOBALPARAM(causticsS, s);
         GLOBALPARAM(causticsT, t);
     }
-    GLOBALPARAMF(causticsblend, blendscale*(1-frac), blendscale*frac, blendoffset - causticoffset*blendscale);
+    GLOBALPARAMF(causticsblend, blendscale, blendoffset - causticoffset*blendscale);
 }
 
 void rendercaustics(float surface, float syl, float syr)
 {
-    if(!caustics || !causticscale || !causticmillis) return;
+    if(!caustics || !causticscale) return;
     glBlendFunc(GL_DST_COLOR, GL_SRC_COLOR);
     setupcaustics(0, surface);
     SETSHADER(caustics);
@@ -508,7 +496,7 @@ void preloadwatershaders(bool force)
     if(force) needwater = true;
     if(!needwater) return;
 
-    if(caustics && causticscale && causticmillis)
+    if(caustics && causticscale)
     {
         if(waterreflect) useshaderbyname("waterreflectcaustics");
         else if(waterenvmap) useshaderbyname("waterenvcaustics");
@@ -692,7 +680,7 @@ void renderwater()
         glBindTexture(GL_TEXTURE_2D, tex->id);
         glActiveTexture_(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, wslot.sts.inrange(1) ? wslot.sts[1].t->id : notexture->id);
-        if(caustics && causticscale && causticmillis) setupcaustics(2);
+        if(caustics && causticscale) setupcaustics(2);
         if(waterenvmap && !waterreflect && drawtex != DRAWTEX_MINIMAP)
         {
             glActiveTexture_(GL_TEXTURE4);
@@ -729,7 +717,7 @@ void renderwater()
 
         Shader *aboveshader = NULL;
         if(drawtex == DRAWTEX_MINIMAP) SETWATERSHADER(above, minimapvol);
-        else if(caustics && causticscale && causticmillis)
+        else if(caustics && causticscale)
         {
             if(waterreflect) SETWATERSHADER(above, waterreflectcaustics);
             else if(waterenvmap) SETWATERSHADER(above, waterenvcaustics);

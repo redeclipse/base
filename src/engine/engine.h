@@ -740,7 +740,6 @@ extern void renderwaterfalls();
 extern void rendervolfog();
 extern void renderlava();
 extern void renderlava(const materialsurface &m, Texture *tex, float scale);
-extern void loadcaustics(bool force = false);
 extern void renderdepthfog(int mat, float blend);
 extern void preloadwatershaders(bool force = false);
 
