@@ -29,7 +29,7 @@ static void setuplightning()
     }
 }
 
-static void renderlightning(Texture *tex, const vec &o, const vec &d, float sz, const bvec4 &midcol, const bvec4 &endcol, float jitterscale, float scrollscale, const bvec4 &midhintcol, const bvec4 &endhintcol, const vec2 &hintblend)
+static void renderlightning(Texture *tex, const vec &o, const vec &d, float sz, const bvec4 &midcol, const bvec4 &endcol, float jitterscale, float scrollscale)
 {
     vec step(d);
     step.sub(o);
@@ -72,27 +72,27 @@ static void renderlightning(Texture *tex, const vec &o, const vec &d, float sz, 
             vec start = vec(cur).sub(vec(step).mul(fadescale));
             float startscroll = scroll - scrollscale*fadescale;
             gle::attribf(start.x-across.x, start.y-across.y, start.z-across.z);
-                gle::attribf(startscroll, 1); gle::attrib(endcol); gle::attrib(endhintcol); gle::attrib(hintblend);
+                gle::attribf(startscroll, 1); gle::attrib(endcol);
             gle::attribf(start.x+across.x, start.y+across.y, start.z+across.z);
-                gle::attribf(startscroll, 0); gle::attrib(endcol); gle::attrib(endhintcol); gle::attrib(hintblend);
+                gle::attribf(startscroll, 0); gle::attrib(endcol);
         }
         gle::attribf(cur.x-across.x, cur.y-across.y, cur.z-across.z);
-            gle::attribf(scroll, 1); gle::attrib(midcol); gle::attrib(midhintcol); gle::attrib(hintblend);
+            gle::attribf(scroll, 1); gle::attrib(midcol);
         gle::attribf(cur.x+across.x, cur.y+across.y, cur.z+across.z);
-            gle::attribf(scroll, 0); gle::attrib(midcol); gle::attrib(midhintcol); gle::attrib(hintblend);
+            gle::attribf(scroll, 0); gle::attrib(midcol);
         scroll += scrollscale;
         if(j+1==numsteps)
         {
             gle::attribf(next.x-across.x, next.y-across.y, next.z-across.z);
-                gle::attribf(scroll, 1); gle::attrib(midcol); gle::attrib(midhintcol); gle::attrib(hintblend);
+                gle::attribf(scroll, 1); gle::attrib(midcol);
             gle::attribf(next.x+across.x, next.y+across.y, next.z+across.z);
-                gle::attribf(scroll, 0); gle::attrib(midcol); gle::attrib(midhintcol); gle::attrib(hintblend);
+                gle::attribf(scroll, 0); gle::attrib(midcol);
             vec end = vec(next).add(vec(step).mul(fadescale));
             float endscroll = scroll + scrollscale*fadescale;
             gle::attribf(end.x-across.x, end.y-across.y, end.z-across.z);
-                gle::attribf(endscroll, 1); gle::attrib(endcol); gle::attrib(endhintcol); gle::attrib(hintblend);
+                gle::attribf(endscroll, 1); gle::attrib(endcol);
             gle::attribf(end.x+across.x, end.y+across.y, end.z+across.z);
-                gle::attribf(endscroll, 0); gle::attrib(endcol); gle::attrib(endhintcol); gle::attrib(hintblend);
+                gle::attribf(endscroll, 0); gle::attrib(endcol);
         }
         cur = next;
     }
@@ -115,8 +115,6 @@ struct lightningrenderer : sharedlistrenderer
         gle::defattrib(gle::ATTRIB_VERTEX, 3, GL_FLOAT);
         gle::defattrib(gle::ATTRIB_TEXCOORD0, 2, GL_FLOAT);
         gle::defattrib(gle::ATTRIB_COLOR, 4, GL_UNSIGNED_BYTE);
-        gle::defattrib(gle::ATTRIB_HINTCOLOR, 3, GL_UNSIGNED_BYTE);
-        gle::defattrib(gle::ATTRIB_HINTBLEND, 2, GL_FLOAT);
     }
 
     void endrender()
@@ -134,23 +132,18 @@ struct lightningrenderer : sharedlistrenderer
     void renderpart(sharedlistparticle *p, int blend, int ts, float size)
     {
         blend = int(min(blend<<2, 255)*p->blend);
-        bvec4 midcol, endcol, midhintcol, endhintcol;
+        bvec4 midcol, endcol;
         if(type&PT_MOD) // multiply alpha into color
         {
             midcol = bvec4((p->color.r*blend)>>8, (p->color.g*blend)>>8, (p->color.b*blend)>>8, 0xFF);
             endcol = bvec4(0, 0, 0, 0xFF);
-            midhintcol = bvec((p->hintcolor.r*blend)>>8, (p->hintcolor.g*blend)>>8, (p->hintcolor.b*blend)>>8);
-            endhintcol = bvec(0, 0, 0);
         }
         else
         {
             midcol = bvec4(p->color, blend);
             endcol = bvec4(p->color, 0);
-            midhintcol = bvec(p->hintcolor);
-            endhintcol = bvec(p->hintcolor);
         }
-        vec2 hintblend(p->hintblend, p->hintblend > 0 ? 1.f/p->hintblend : 0.f);
-        renderlightning(tex, p->o, p->d, size, midcol, endcol, jitterscale, scrollscale, midhintcol, endhintcol, hintblend);
+        renderlightning(tex, p->o, p->d, size, midcol, endcol, jitterscale, scrollscale);
     }
 };
 

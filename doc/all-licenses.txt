@@ -177,8 +177,7 @@ Copyright: public-domain
 License: public-domain
  public-domain sources
 
-Files: data/particles/smoke.png data/particles/explosion.png
-       data/textures/lava.jpg
+Files: data/particles/explosion.png data/textures/lava.jpg
 Copyright: RaZgRiZ
 License: RaZgRiZ-simple-attribution
  Created by RaZgRiZ Made with Filter Forge II Beta 3

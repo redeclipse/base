@@ -1253,14 +1253,14 @@ static partrenderer *parts[] =
     new portalrenderer("<grey>particles/teleport", PT_ENVMAP),
     &icons, &lineprimitives, &lineontopprimitives, &trisprimitives, &trisontopprimitives,
     &loopprimitives, &loopontopprimitives, &coneprimitives, &coneontopprimitives,
-    new quadrenderer("!fireparticle 1", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
+    new quadrenderer("!fire 1", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
     new quadrenderer("<grey>particles/plasma", PT_SOFT|PT_PART|PT_BRIGHT|PT_FLIP|PT_WIND),
     new taperenderer("<grey>particles/sflare", PT_TAPE|PT_BRIGHT|PT_FEW),
     new taperenderer("<grey>particles/mflare", PT_TAPE|PT_BRIGHT|PT_RND4|PT_VFLIP|PT_FEW),
-    new quadrenderer("<grey>particles/smoke", PT_SOFT|PT_PART|PT_LERP|PT_FLIP|PT_WIND),
-    new quadrenderer("<grey>particles/smoke", PT_PART|PT_LERP|PT_FLIP|PT_WIND),
-    new quadrenderer("<grey>particles/smoke", PT_SOFT|PT_PART|PT_FLIP|PT_WIND),
-    new quadrenderer("<grey>particles/smoke", PT_PART|PT_FLIP|PT_WIND),
+    new quadrenderer("!smoke 1", PT_SOFT|PT_PART|PT_LERP|PT_FLIP|PT_RND4|PT_FLIP|PT_WIND),
+    new quadrenderer("!smoke 1", PT_PART|PT_LERP|PT_FLIP|PT_RND4|PT_FLIP|PT_WIND),
+    new quadrenderer("!smoke 1", PT_SOFT|PT_PART|PT_FLIP|PT_RND4|PT_FLIP|PT_WIND),
+    new quadrenderer("!smoke 1", PT_PART|PT_FLIP|PT_RND4|PT_FLIP|PT_WIND),
     new quadrenderer("!hint", PT_SOFT|PT_PART|PT_BRIGHT),
     new quadrenderer("!hint", PT_PART|PT_BRIGHT),
     new quadrenderer("!hintbold", PT_SOFT|PT_PART|PT_BRIGHT),
@@ -1273,15 +1273,15 @@ static partrenderer *parts[] =
     new quadrenderer("!hintent", PT_PART|PT_BRIGHT),
     new quadrenderer("!hintent", PT_PART|PT_BRIGHT|PT_ONTOP),
     new quadrenderer("<grey>particles/spark", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP),
-    new quadrenderer("!fireparticle 1", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
-    new quadrenderer("!fireparticle 1", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
+    new quadrenderer("!fire 1", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
+    new quadrenderer("!fire 1", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
     new quadrenderer("<grey>particles/plasma", PT_SOFT|PT_PART|PT_BRIGHT|PT_FLIP|PT_WIND),
     new quadrenderer("<grey>particles/plasma", PT_PART|PT_BRIGHT|PT_FLIP|PT_WIND),
     new quadrenderer("<grey>particles/electric", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
     new quadrenderer("<grey>particles/electric", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
     new quadrenderer("<grey>particles/eleczap", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
     new quadrenderer("<grey>particles/eleczap", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
-    new quadrenderer("!fireparticle 1", PT_PART|PT_BRIGHT|PT_FLIP|PT_RND4|PT_BRIGHT|PT_WIND),
+    new quadrenderer("!fire 1", PT_PART|PT_BRIGHT|PT_FLIP|PT_RND4|PT_BRIGHT|PT_WIND),
     new taperenderer("<grey>particles/sflare", PT_TAPE|PT_BRIGHT),
     new taperenderer("<grey>particles/mflare", PT_TAPE|PT_BRIGHT|PT_RND4|PT_VFLIP|PT_BRIGHT),
     new taperenderer("<grey>particles/lightning", PT_TAPE|PT_BRIGHT|PT_HFLIP|PT_VFLIP, 2), // uses same clamp setting as normal lightning to avoid conflict
@@ -2041,11 +2041,11 @@ void makeparticle(const vec &o, attrvector &attr)
             int color = partcolour(attr[3] ? attr[3] : 0xF05010, attr[5], attr[6]),
                 fade = attr[4] > 0 ? attr[4] : 1000, gravity = attr[9] ? attr[9] : -10;
             regularflame(PART_FLAME, o, radius, height, color, 3, fade/2, size, blend, 0x0000FF, 0.5f, gravity/2, 0, vel);
-            regularflame(PART_SMOKE, vec(o).addz(2.f*min(radius, height)), radius, height, 0x101008, 1, fade, size, blend, 0, 0, gravity, 0, vel);
+            regularflame(PART_SMOKE, vec(o).addz(2.f*min(radius, height)), radius, height, 0x101008, 1, fade, size, blend, 0x000000, 0.25f, gravity, 0, vel);
             break;
         }
         case 1: // smoke vent - <dir>
-            regularsplash(PART_SMOKE, 0x897661, 2, 1, 200, offsetvec(o, attr[1], rnd(10)), 2.4f);
+            regularsplash(PART_SMOKE, 0x897661, 2, 1, 200, offsetvec(o, attr[1], rnd(10)), 2.4f, 1.f, 0x000000, 0.25f);
             break;
         case 2: // water fountain - <dir>
         {
@@ -2062,8 +2062,7 @@ void makeparticle(const vec &o, attrvector &attr)
         }
         case 3: // fire ball - <size> <rgb> <type> <blend>
         {
-            int types[4] = { PART_EXPLOSION, PART_SHOCKWAVE, PART_SHOCKBALL, PART_GLIMMERY },
-                type = types[attr[3] >= 0 && attr[3] <= 3 ? attr[3] : 0];
+            int types[4] = { PART_EXPLOSION, PART_SHOCKWAVE, PART_SHOCKBALL, PART_GLIMMERY }, type = types[attr[3] >= 0 && attr[3] <= 3 ? attr[3] : 0];
             float blend = attr[4] > 0 && attr[4] < 100 ? attr[4]/100.f : 1.f;
             newparticle(o, vec(0, 0, 0), 1, type, partcolour(attr[2], attr[3], attr[4]), 4.f, blend, 0, 0, 0, 0, 1+attr[1]);
             break;
@@ -2082,8 +2081,8 @@ void makeparticle(const vec &o, attrvector &attr)
             const int typemap[] =        { PART_FLARE,   -1,     -1,     PART_LIGHTNING, PART_FIREBALL,  PART_SMOKE, PART_ELECTRIC,  PART_PLASMA,    PART_SNOW,  PART_SPARK,     -1,     -1,     PART_HAZE,  PART_HAZE_FLAME,    PART_HAZE_TAPE, PART_RAIN };
             const bool tapemap[] =       { true,         false,  false,  true,           false,          false,      false,          false,          false,      false,          false,  false,  false,      false,              true,           false };
             const float sizemap[] =      { 0.28f,        0.0f,   0.0f,   0.25f,          4.f,            2.f,        0.6f,           4.f,            0.5f,       0.2f,           0.0f,   0.0f,   8.0f,       8.0f,               1.0f,           1.0f };
-            const int hintmap[] =        { 0,            0,      0,      0,              0x0000FF,       0,          0,              0,              0,          0,              0,      0,      0,          0,                  0,              0 };
-            const float hintblendmap[] = { 0.f,          0.f,    0.f,    0.f,            0.5f,           0.f,        0.f,            0.f,            0.f,        0.f,            0.f,    0.f,    0.f,        0.f,                0.f,            0.f };
+            const int hintmap[] =        { 0,            0,      0,      0,              0x0000FF,       0x000000,   0,              0,              0,          0,              0,      0,      0,          0,                  0,              0 };
+            const float hintblendmap[] = { 0.f,          0.f,    0.f,    0.f,            0.5f,           0.25f,      0.f,            0.f,            0.f,        0.f,            0.f,    0.f,    0.f,        0.f,                0.f,            0.f };
             int mapped = attr[0] - 4;
             bool istape = tapemap[mapped];
             int type = typemap[mapped], fade = attr[4] > 0 ? attr[4] : 250, gravity = !istape ? attr[7] : 0,
@@ -2097,8 +2096,8 @@ void makeparticle(const vec &o, attrvector &attr)
         case 14: // flames <radius> <height> <rgb>
         case 15: // smoke plume
         {
-            const int typemap[] = { PART_FLAME, PART_SMOKE }, fademap[] = { 500, 1000 }, densitymap[] = { 3, 1 }, gravitymap[] = { -5, -10 }, hintmap[] = { 0x0000FF, 0 };
-            const float sizemap[] = { 2, 2 }, velmap[] = { 25, 50 }, hintblendmap[] = { 0.25f, 0.f };
+            const int typemap[] = { PART_FLAME, PART_SMOKE }, fademap[] = { 500, 1000 }, densitymap[] = { 3, 1 }, gravitymap[] = { -5, -10 }, hintmap[] = { 0x0000FF, 0x000000 };
+            const float sizemap[] = { 2, 2 }, velmap[] = { 25, 50 }, hintblendmap[] = { 0.5f, 0.25f };
             regularflame(typemap[attr[0]-14], o, float(attr[1])/100.0f, float(attr[2])/100.0f, attr[3], densitymap[attr[0]-14], attr[4] > 0 ? attr[4] : fademap[attr[0]-14], attr[5] != 0 ? attr[5]/100.f : sizemap[attr[0]-14], attr[10] > 0 ? attr[10]/100.f : 1.f, hintmap[attr[0]-14], hintblendmap[attr[0]-14], attr[6] != 0 ? attr[6] : gravitymap[attr[0]-14], 0, attr[7] != 0 ? attr[7] : velmap[attr[0]-14]);
             break;
         }
