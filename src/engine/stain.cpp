@@ -752,7 +752,7 @@ stainrenderer stains[] =
     stainrenderer("<grey>particles/blood", SF_RND4|SF_ROTATE|SF_INVMOD, 0, 1000, 10000),
     stainrenderer("<grey>particles/bullet", SF_OVERBRIGHT, 0, 1000, 10000),
     stainrenderer("<grey>particles/energy", SF_ROTATE|SF_GLOW|SF_SATURATE, 150, 500, 3000),
-    stainrenderer("<grey>particles/stain", SF_SATURATE, 100, 900, 1000)
+    stainrenderer("!stain", SF_SATURATE, 100, 900, 1000)
 };
 
 void initstains()
