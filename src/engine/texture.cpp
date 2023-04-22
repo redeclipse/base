@@ -1895,11 +1895,15 @@ Texture *textureloaded(const char *name)
     return textures.access(tname);
 }
 
-static Texture *texturecomp(const char *name, int tclamp = 0, bool mipit = true, bool msg = true, bool gc = false)
+extern void reloadcomp();
+#define COMPOSITESIZE 1<<8
+VARF(IDF_PERSIST, compositesize, 1<<1, COMPOSITESIZE, 1<<12, reloadcomp());
+
+static Texture *texturecomp(const char *name, int tclamp = 0, bool mipit = true, bool msg = true, bool gc = false, Texture *tex = NULL)
 {
     if(!name || !*name) return notexture;
 
-    Texture *t = textures.access(name);
+    Texture *t = tex ? NULL : textures.access(name);
     if(t)
     {
         // Strip GC flag with gc=false
@@ -1917,35 +1921,44 @@ static Texture *texturecomp(const char *name, int tclamp = 0, bool mipit = true,
     }
 
     char *n = list[0], *a = list.length() >= 3 ? list[2] : NULL;
-    int w = list.length() >= 4 ? clamp(atoi(list[3]), 0, 1<<12) : 1024,
-        h = list.length() >= 5 ? clamp(atoi(list[4]), 0, 1<<12) : 1024,
-        delay = list.length() >= 2 ? max(atoi(list[1]), 0) : 0;
-    if(w <= 0) w = 1024;
-    if(h <= 0) h = 1024;
+    float sw = list.length() >= 4 ? parsefloat(list[3]) : 1.f, sh = list.length() >= 5 ? parsefloat(list[4]) : 1.f;
+    int m = min(maxtexsize, hwtexsize), w = clamp(int(sw * compositesize), 0, m), h = clamp(int(sh * compositesize), 0, m), delay = list.length() >= 2 ? max(atoi(list[1]), 0) : 0;
+    if(w <= 0) w = compositesize;
+    if(h <= 0) h = compositesize;
 
-    GLuint tex = 0;
-    if(!UI::composite(&tex, n, a, w, h, tclamp, mipit, msg) || !tex)
+    GLuint texid = 0;
+    if(!UI::composite(&texid, n, a, w, h, tclamp, mipit, msg) || !texid)
     {
         if(msg) conoutf("\frFailed to composite texture: %s", name);
         list.deletearrays();
         return notexture;
     }
 
-    char *key = newstring(name);
-    t = &textures[key];
-    t->name = key;
-    t->comp = newstring(n); n = NULL;
-    t->args = newstring(a); a = NULL;
+    if(tex)
+    {
+        t = tex;
+        if(t->id) glDeleteTextures(1, &t->id);
+    }
+    else
+    {
+        char *key = newstring(name);
+        t = &textures[key];
+        t->name = key;
+        t->comp = newstring(n);
+        t->args = newstring(a);
+    }
+    t->type = Texture::IMAGE | Texture::COMPOSITE | Texture::ALPHA;
     t->tclamp = tclamp;
     t->mipmap = mipit;
-    t->type = Texture::IMAGE | Texture::COMPOSITE | Texture::ALPHA;
     if(gc) t->type |= Texture::GC;
     if(t->tclamp&0x300) t->type |= Texture::MIRROR;
-    t->w = t->xs = w;
-    t->h = t->ys = h;
+    t->w = w;
+    t->xs = int(t->w * (1.f / (t->w / float(COMPOSITESIZE))));
+    t->h = h;
+    t->ys = int(t->h * (1.f / (t->h / float(COMPOSITESIZE))));
     t->bpp = 4;
     t->delay = delay;
-    t->id = tex;
+    t->id = texid;
     if(t->delay > 0)
     {
         t->last = lastmillis;
@@ -1953,6 +1966,15 @@ static Texture *texturecomp(const char *name, int tclamp = 0, bool mipit = true,
     }
     list.deletearrays();
     return t;
+}
+
+void reloadcomp()
+{
+    enumerate(textures, Texture, t,
+    {
+        if(!(t.type&Texture::COMPOSITE)) continue;
+        texturecomp(t.name, t.tclamp, t.mipmap, true, t.type&Texture::GC, &t);
+    });
 }
 
 static inline Texture *texturecomp(Slot &slot, Slot::Tex &tex, bool msg = true)
@@ -3942,6 +3964,7 @@ bool reloadtexture(Texture *t)
             if(t->type&Texture::COMPOSITE)
             {
                 if(!UI::composite(&t->id, t->comp, t->args, t->w, t->h, t->tclamp, t->mipmap, true)) return false;
+                if(t->delay > 0 && animtextures.find(t) < 0) animtextures.add(t);
                 break;
             }
             int compress = 0;
