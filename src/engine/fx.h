@@ -77,6 +77,8 @@ namespace fx
         FX_PART_GRAVITY,
         FX_PART_TEXT,
         FX_PART_TRACK,
+        FX_PART_HINTCOLOR,
+        FX_PART_HINTBLEND,
 
         FX_PART_PROPS
     };
@@ -181,7 +183,7 @@ namespace fx
 
     #define FX_PARAMS 2
 
-    #define FX_EXT_PROPS 16
+    #define FX_EXT_PROPS 18
     #define FX_EXT_PROP(idx) (idx + FX_STD_PROPS)
 
     #define FX_TOTAL_PROPS (FX_STD_PROPS + FX_EXT_PROPS)

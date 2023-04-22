@@ -245,7 +245,7 @@ enum
     PT_NOTEX    = 1<<19,
     PT_SHADER   = 1<<20,
     PT_NOLAYER  = 1<<21,
-    PT_FIRE     = 1<<22,    // use fire particle shader
+    // unused   = 1<<22,
     // unused   = 1<<23,
     PT_WIND     = 1<<24,    // particles affected by the wind
     PT_HAZE     = 1<<25,    // creates haze effect
@@ -289,10 +289,10 @@ struct particle
 {
     vec o, d, m, prev;
     int collide, fade, gravity, millis;
-    bvec color;
+    bvec color, hintcolor;
     uchar flags;
     windprobe wind;
-    float size, sizechange, blend;
+    float size, sizechange, blend, hintblend;
     bool enviro, precollide;
     union
     {
@@ -310,14 +310,14 @@ struct particle
 extern void removetrackedparticles(physent *pl = NULL);
 extern int particletext, maxparticledistance, flarelights;
 
-extern particle *newparticle(const vec &o, const vec &d, int fade, int type, int color = colourwhite, float size = 2, float blend = 1, float gravity = 0, int collide = 0, float val = 0, physent *pl = NULL, float sizechange = 0);
-extern void create(int type, int color, int fade, const vec &p, float size = 2, float blend = 1, float gravity = 0, int collide = 0, physent *pl = NULL, float sizechange = 0);
-extern void regularcreate(int type, int color, int fade, const vec &p, float size = 2, float blend = 1, float gravity = 0, int collide = 0, physent *pl = NULL, int delay = 0, float sizechange = 0);
-extern void splash(int type, int color, float radius, int num, int fade, const vec &p, float size = 2, float blend = 1, float gravity = 0, int collide = 0, float vel = 1, float sizechange = 0);
-extern void regularsplash(int type, int color, float radius, int num, int fade, const vec &p, float size = 2, float blend = 1, float gravity = 0, int collide = 0, float vel = 1, int delay = 0, float sizechange = 0);
-extern void createshape(int type, float radius, int color, int dir, int num, int fade, const vec &p, float size = 2, float blend = 1, float gravity = 0, int collide = 0, float vel = 1, float sizechange = 0);
-extern void regularshape(int type, float radius, int color, int dir, int num, int fade, const vec &p, float size = 2, float blend = 1, float gravity = 0, int collide = 0, float vel = 1, float sizechange = 0);
-extern void regularflame(int type, const vec &p, float radius, float height, int color, int density = 3, int fade = 500, float size = 2, float blend = 1, float gravity = -1, int collide = 0, float vel = 1);
+extern particle *newparticle(const vec &o, const vec &d, int fade, int type, int color = colourwhite, float size = 2, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, float val = 0, physent *pl = NULL, float sizechange = 0);
+extern void create(int type, int color, int fade, const vec &p, float size = 2, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, physent *pl = NULL, float sizechange = 0);
+extern void regularcreate(int type, int color, int fade, const vec &p, float size = 2, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, physent *pl = NULL, int delay = 0, float sizechange = 0);
+extern void splash(int type, int color, float radius, int num, int fade, const vec &p, float size = 2, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, float vel = 1, float sizechange = 0);
+extern void regularsplash(int type, int color, float radius, int num, int fade, const vec &p, float size = 2, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, float vel = 1, int delay = 0, float sizechange = 0);
+extern void createshape(int type, float radius, int color, int dir, int num, int fade, const vec &p, float size = 2, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, float vel = 1, float sizechange = 0);
+extern void regularshape(int type, float radius, int color, int dir, int num, int fade, const vec &p, float size = 2, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, float vel = 1, float sizechange = 0);
+extern void regularflame(int type, const vec &p, float radius, float height, int color, int density = 3, int fade = 500, float size = 2, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = -1, int collide = 0, float vel = 1);
 extern void lensflare(const vec &o, const vec &color, bool sun, int sparkle, float scale = 1);
 
 // stain

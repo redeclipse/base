@@ -295,6 +295,18 @@ namespace fx
             PROP_INT,
             0, 1, 1,
             0
+        ),
+        fxpropertydef(
+            "hintcolour",
+            PROP_COLOR,
+            bvec(0, 0, 0), bvec(0, 0, 255), bvec(255, 255, 255),
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+        ),
+        fxpropertydef(
+            "hintblend",
+            PROP_FLOAT,
+            0.0f, 0.0f, 1.0f,
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
         )
     };
 

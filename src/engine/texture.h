@@ -443,6 +443,8 @@ struct LocalShaderParam
 
     void setu(uint x = 0, uint y = 0, uint z = 0, uint w = 0) { sett<uint>(x, y, z, w); }
     void setv(const uint *u, int n = 1) { ShaderParamBinding *b = resolve(); if(b) glUniform1uiv_(b->loc, n, u); }
+    void set(const bvec &v, int w = 0) { setu(v.x, v.y, v.z, w); }
+    void set(const bvec4 &v) { setu(v.x, v.y, v.z, v.w); }
 };
 
 #define LOCALPARAM(name, vals) do { static LocalShaderParam param( #name ); param.set(vals); } while(0)
