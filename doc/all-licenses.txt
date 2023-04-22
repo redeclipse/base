@@ -148,8 +148,7 @@ Files: data/skyboxes/skyhigh*
 Copyright: Pieter Verhoeven
 License: CC-BY-SA-3.0
 
-Files: data/particles/entity.png data/particles/lightning.png
-       data/particles/hint.png data/particles/mflare.png
+Files: data/particles/lightning.png data/particles/mflare.png
        data/particles/sflare.png data/particles/spark.png
 Copyright: Quinton Reeves <qreeves@gmail.com>
 License: CC-BY-SA-4.0+
@@ -174,7 +173,6 @@ License: CC-BY-3.0
 Files: data/particles/bullet.png
        data/particles/energy.png
        data/particles/scorch.png
-       data/particles/blob.png
 Copyright: public-domain
 License: public-domain
  public-domain sources
