@@ -5,7 +5,7 @@
 #include "tools.h"
 
 TVAR(IDF_PERSIST|IDF_PRELOAD, notexturetex, "textures/notexture", 3);
-TVAR(IDF_PERSIST|IDF_PRELOAD, blanktex, "textures/blank", 3);
+TVAR(IDF_PERSIST|IDF_PRELOAD, blanktex, "!blank 0 [] [] -2 -2", 3);
 TVAR(IDF_PERSIST|IDF_PRELOAD, logotex, "textures/logo", 3);
 TVAR(IDF_PERSIST|IDF_PRELOAD, emblemtex, "textures/emblem", 3);
 TVAR(IDF_PERSIST|IDF_PRELOAD, icontex, "textures/icon", 3);
@@ -1922,7 +1922,7 @@ static Texture *texturecomp(const char *name, int tclamp = 0, bool mipit = true,
 
     char *n = list[0], *a = list.length() >= 3 ? list[2] : NULL;
     float sw = list.length() >= 4 ? parsefloat(list[3]) : 1.f, sh = list.length() >= 5 ? parsefloat(list[4]) : 1.f;
-    int w = int(sw * compositesize), h = int(sh * compositesize), delay = list.length() >= 2 ? max(atoi(list[1]), 0) : 0;
+    int w = sw >= 0 ? int(sw * compositesize) : int(0 - sw), h = sh >= 0 ? int(sh * compositesize) : int(0 - sh), delay = list.length() >= 2 ? max(atoi(list[1]), 0) : 0;
     if(w < 1<<1) w = compositesize;
     if(h < 1<<1) h = compositesize;
 

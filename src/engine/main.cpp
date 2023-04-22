@@ -1205,8 +1205,6 @@ int main(int argc, char **argv)
     conoutf("Loading GL..");
     gl_checkextensions();
     gl_init();
-    if(!(notexture = textureload(notexturetex)) || !(blanktexture = textureload(blanktex)))
-        fatal("Could not find core textures");
 
     conoutf("Loading sound..");
     initsound();
@@ -1218,6 +1216,8 @@ int main(int argc, char **argv)
     if(!setfont()) fatal("No default font specified");
 
     UI::setup();
+    if(!(notexture = textureload(notexturetex)) || !(blanktexture = textureload(blanktex)))
+        fatal("Could not find core textures");
 
     inbetweenframes = true;
     progress(0, "Please wait..");

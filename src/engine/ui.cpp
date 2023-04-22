@@ -1034,7 +1034,7 @@ namespace UI
             if(o) { body; } \
         });
 
-    static hashnameset<Window *> windows[WINTYPE_MAX];
+    hashnameset<Window *> windows[WINTYPE_MAX];
 
     void ClipArea::scissor()
     {
@@ -5616,10 +5616,10 @@ namespace UI
     void cleanup()
     {
         loopi(WORLD_MAX) worlds[i]->children.setsize(0);
-        loopi(WINTYPE_MAX)
+        loopj(WINTYPE_MAX)
         {
-            enumerate(windows[i], Window *, w, delete w);
-            windows[i].clear();
+            enumerate(windows[j], Window *, w, delete w);
+            windows[j].clear();
         }
         world = NULL;
         loopi(WORLD_MAX) DELETEP(worlds[i]);
@@ -5800,10 +5800,10 @@ namespace UI
     int savemapmenus(stream *h)
     {
         int mapmenus = 0;
-        loopi(WINTYPE_MAX) enumerate(windows[i], Window *, w,
+        loopj(WINTYPE_MAX) enumerate(windows[j], Window *, w,
         {
             if(!w->mapdef || !w->body) continue;
-            h->printf("map%sui %s [%s]\n", windowaffix[i], w->name, w->body);
+            h->printf("map%sui %s [%s]\n", windowaffix[j], w->name, w->body);
             mapmenus++;
         });
         return mapmenus;
@@ -5811,7 +5811,7 @@ namespace UI
 
     void resetmapmenus()
     {
-        loopi(WINTYPE_MAX) enumerate(windows[i], Window *, w,
+        loopj(WINTYPE_MAX) enumerate(windows[j], Window *, w,
         {
             if(!w->mapdef || !w->body) continue;
             DELETEA(w->body);
