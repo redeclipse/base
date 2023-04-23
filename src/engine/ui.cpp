@@ -153,6 +153,7 @@ namespace UI
         CLAMP_BOTTOM  = 0x80,
 
         NO_ADJUST     = ALIGN_HNONE | ALIGN_VNONE,
+        ALIGN_DEFAULT = ALIGN_HCENTER | ALIGN_VCENTER
     };
 
     enum
@@ -381,16 +382,16 @@ namespace UI
         {
             resetlayout();
             parent = NULL;
-            adjust = ALIGN_HCENTER | ALIGN_VCENTER;
+            adjust = ALIGN_DEFAULT;
         }
 
-        virtual uchar childalign() const { return ALIGN_HCENTER | ALIGN_VCENTER; }
+        virtual uchar childalign() const { return ALIGN_DEFAULT; }
 
         void reset(Object *parent_)
         {
             resetlayout();
             parent = parent_;
-            adjust = parent ? parent->childalign() : (ALIGN_HCENTER | ALIGN_VCENTER);
+            adjust = parent ? parent->childalign() : ALIGN_DEFAULT;
         }
 
         void setup()
@@ -1571,7 +1572,7 @@ namespace UI
         static const char *typestr() { return "#TableHeader"; }
         const char *gettype() const { return typestr(); }
 
-        uchar childalign() const { return columns < 0 ? ALIGN_VCENTER : ALIGN_HCENTER | ALIGN_VCENTER; }
+        uchar childalign() const { return columns < 0 ? ALIGN_VCENTER : ALIGN_DEFAULT; }
 
         int childcolumns() const { return columns; }
 
@@ -5295,7 +5296,7 @@ namespace UI
             blipyaw = blipyaw_; // rotation of the blip itself
             dist = dist_; // how far away the blip is
             blipx = blipy = texx = texy = 0;
-            blipadjust = ALIGN_HCENTER | ALIGN_VCENTER;
+            blipadjust = ALIGN_DEFAULT;
         }
 
         static const char *typestr() { return "#RadarBlip"; }
@@ -5325,7 +5326,7 @@ namespace UI
 
         void setalign(int xalign, int yalign)
         {
-            adjust = ALIGN_HCENTER | ALIGN_VCENTER; // always align center and use our own adjustment
+            adjust = ALIGN_DEFAULT; // always align center and use our own adjustment
             blipadjust &= ~ALIGN_MASK;
             blipadjust |= (clamp(xalign, -2, 1)+2)<<ALIGN_HSHIFT;
             blipadjust |= (clamp(yalign, -2, 1)+2)<<ALIGN_VSHIFT;
