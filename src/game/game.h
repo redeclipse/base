@@ -103,12 +103,12 @@ extern const enttypes enttype[] = {
                 "envmap",       { "radius", "size", "blur" }
     },
     {
-        PARTICLES,      1,          59,     0,      EU_NONE,    16,         -1,         12,         -1,     14,     15,
+        PARTICLES,      1,          59,     0,      EU_NONE,    18,         -1,         12,         -1,     14,     15,
             (1<<TELEPORT)|(1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT)|(1<<RAIL),
             (1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT),
             0,
             false,  false,  false,      false,      false,
-                "particles",    { "type", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "millis", "modes", "muts", "variant", "fxlevel" }
+                "particles",    { "type", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "millis", "modes", "muts", "variant", "fxlevel", "hintcolour", "hintblend" }
     },
     {
         MAPSOUND,       1,          58,     0,      EU_NONE,    12,         -1,         7,          -1,     9,      -1,
@@ -162,12 +162,12 @@ extern const enttypes enttype[] = {
                 "weapon",       { "type", "flags", "modes", "muts", "id", "variant" }
     },
     {
-        TELEPORT,       1,          50,     16,     EU_AUTO,    15,         6,          9,          -1,     11,      -1,
+        TELEPORT,       1,          50,     16,     EU_AUTO,    17,         6,          9,          -1,     11,      -1,
             (1<<ENVMAP)|(1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX)|(1<<TELEPORT),
             (1<<ENVMAP)|(1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<ENT_PLAYER)|(1<<ENT_AI)|(1<<ENT_PROJ),
             false,  false,  false,      false,      false,
-                "teleport",     { "yaw", "pitch", "push", "radius", "colour", "type", "palette", "palindex", "flags", "modes", "muts", "variant", "blend", "size", "envblend" }
+                "teleport",     { "yaw", "pitch", "push", "radius", "colour", "type", "palette", "palindex", "flags", "modes", "muts", "variant", "blend", "size", "envblend", "hintcolour", "hintblend" }
     },
     {
         ACTOR,          1,          59,     0,      EU_NONE,    11,         -1,         3,          5,      10,     -1,

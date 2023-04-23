@@ -3187,17 +3187,19 @@ namespace entities
                 vec r = vec::fromcolor(colour).mul(game::getpalette(e.attrs[6], e.attrs[7]));
                 colour = (int(r.x*255)<<16)|(int(r.y*255)<<8)|(int(r.z*255));
             }
+            int hintcolor = e.attrs[15] > 0 ? e.attrs[15] : vec::fromcolor(colour).neg().tohexcolor();
             float yaw = e.attrs[0] < 0 ? (lastmillis/5)%360 : e.attrs[0], blend = e.attrs[12] ? e.attrs[12]/100.f : 1.f,
-                  size = e.attrs[13] ? e.attrs[13]/100.f : float(e.attrs[3] ? e.attrs[3] : enttype[e.type].radius), pitch = e.attrs[1];
+                  size = e.attrs[13] > 0 ? e.attrs[13]/100.f : float(e.attrs[3] > 0 ? e.attrs[3] : enttype[e.type].radius), pitch = e.attrs[1],
+                  hintblend = e.attrs[16] > 0 ? e.attrs[16]/100.f : 0.f;
             if(destid >= 0)
             {
                 teledest &d = teledests[destid];
                 gameentity &f = *(gameentity *)ents[d.id];
                 GLuint envmap = entityenvmap(d.ed);
                 float envblend = e.attrs[14] ? e.attrs[14]/100.f : 0.75f, destyaw = (f.attrs[0] < 0 ? (lastmillis/5)%360 : f.attrs[0])-yaw, destpitch = f.attrs[1]-pitch;
-                part_portal(e.pos(), size, blend, yaw, pitch, PART_PORTAL_ENV, 1, colour, envmap, envblend, destyaw, destpitch);
+                part_portal(e.pos(), size, blend, yaw, pitch, PART_PORTAL_ENV, 1, colour, envmap, envblend, destyaw, destpitch, hintcolor, hintblend);
             }
-            else part_portal(e.pos(), size, blend, yaw, pitch, PART_PORTAL, 1, colour);
+            else part_portal(e.pos(), size, blend, yaw, pitch, PART_PORTAL, 1, colour, 0, 1, 0, 0, hintcolor, hintblend);
         }
     }
 

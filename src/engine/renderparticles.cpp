@@ -2037,16 +2037,22 @@ void makeparticle(const vec &o, attrvector &attr)
                   height = attr[2] ? float(attr[2])/100.0f : radius*3,
                   size = attr[7] ? float(attr[7])/100.f : 2.f,
                   blend = attr[8] ? float(attr[8])/100.f : 1.f,
-                  vel = attr[10] ? float(attr[10]) : 30.f;
+                  vel = attr[10] ? float(attr[10]) : 30.f,
+                  hintblend = attr[17] > 0 ? attr[17]/100.f : 0.f;
             int color = partcolour(attr[3] ? attr[3] : 0xF05010, attr[5], attr[6]),
-                fade = attr[4] > 0 ? attr[4] : 1000, gravity = attr[9] ? attr[9] : -10;
-            regularflame(PART_FLAME, o, radius, height, color, 3, fade/2, size, blend, vec::fromcolor(attr[3] ? attr[3] : 0xF05010).neg().tohexcolor(), 0.5f, gravity/2, 0, vel);
+                fade = attr[4] > 0 ? attr[4] : 1000, gravity = attr[9] ? attr[9] : -10,
+                hintcolor = attr[16] > 0 ? attr[16] : vec::fromcolor(color).neg().tohexcolor();
+            regularflame(PART_FLAME, o, radius, height, color, 3, fade/2, size, blend, hintcolor, hintblend, gravity/2, 0, vel);
             regularflame(PART_SMOKE, vec(o).addz(2.f*min(radius, height)), radius, height, 0x101008, 1, fade, size, blend, 0x000000, 0.25f, gravity, 0, vel);
             break;
         }
         case 1: // smoke vent - <dir>
-            regularsplash(PART_SMOKE, 0x897661, 2, 1, 200, offsetvec(o, attr[1], rnd(10)), 2.4f, 1.f, 0x000000, 0.25f);
+        {
+            float hintblend = attr[17] > 0 ? attr[17]/100.f : 0.f;
+            int hintcolor = attr[16] > 0 ? attr[16] : vec::fromcolor(0x897661).neg().tohexcolor();
+            regularsplash(PART_SMOKE, 0x897661, 2, 1, 200, offsetvec(o, attr[1], rnd(10)), 2.4f, 1.f, hintcolor, hintblend);
             break;
+        }
         case 2: // water fountain - <dir>
         {
             int mat = MAT_WATER + clamp(-attr[2], 0, 3);
@@ -2057,14 +2063,18 @@ void makeparticle(const vec &o, attrvector &attr)
                 const bvec &wcol = getwatercolour(mat);
                 color = (int(wcol[0])<<16) | (int(wcol[1])<<8) | int(wcol[2]);
             }
-            regularsplash(PART_SPARK, color, 10, 4, 200, offsetvec(o, attr[1], rnd(10)), 0.6f);
+            float hintblend = attr[17] > 0 ? attr[17]/100.f : 0.f;
+            int hintcolor = attr[16] > 0 ? attr[16] : vec::fromcolor(color).neg().tohexcolor();
+            regularsplash(PART_SPARK, color, 10, 4, 200, offsetvec(o, attr[1], rnd(10)), 0.6f, 1.f, hintcolor, hintblend);
             break;
         }
         case 3: // fire ball - <size> <rgb> <type> <blend>
         {
             int types[4] = { PART_EXPLOSION, PART_SHOCKWAVE, PART_SHOCKBALL, PART_GLIMMERY }, type = types[attr[3] >= 0 && attr[3] <= 3 ? attr[3] : 0];
             float blend = attr[4] > 0 && attr[4] < 100 ? attr[4]/100.f : 1.f;
-            newparticle(o, vec(0, 0, 0), 1, type, partcolour(attr[2], attr[3], attr[4]), 4.f, blend, 0, 0, 0, 0, 1+attr[1]);
+            float hintblend = attr[17] > 0 ? attr[17]/100.f : 0.f;
+            int color = partcolour(attr[2], attr[3], attr[4]), hintcolor = attr[16] > 0 ? attr[16] : vec::fromcolor(color).neg().tohexcolor();
+            newparticle(o, vec(0, 0, 0), 1, type, color, 4.f, blend, hintcolor, hintblend, 0, 0, 1+attr[1]);
             break;
         }
         case 4:  // tape - <dir> <length> <rgb>
@@ -2081,23 +2091,25 @@ void makeparticle(const vec &o, attrvector &attr)
             const int typemap[] =        { PART_FLARE,   -1,     -1,     PART_LIGHTNING, PART_FIREBALL,  PART_SMOKE, PART_ELECTRIC,  PART_PLASMA,    PART_SNOW,  PART_SPARK,     -1,     -1,     PART_HAZE,  PART_HAZE_FLAME,    PART_HAZE_TAPE, PART_RAIN };
             const bool tapemap[] =       { true,         false,  false,  true,           false,          false,      false,          false,          false,      false,          false,  false,  false,      false,              true,           false };
             const float sizemap[] =      { 0.28f,        0.0f,   0.0f,   0.25f,          4.f,            2.f,        0.6f,           4.f,            0.5f,       0.2f,           0.0f,   0.0f,   8.0f,       8.0f,               1.0f,           1.0f };
-            const float hintblendmap[] = { 0.f,          0.f,    0.f,    0.f,            0.5f,           0.25f,      0.f,            0.f,            0.f,        0.f,            0.f,    0.f,    0.f,        0.f,                0.f,            0.f };
             int mapped = attr[0] - 4;
             bool istape = tapemap[mapped];
             int type = typemap[mapped], fade = attr[4] > 0 ? attr[4] : 250, gravity = !istape ? attr[7] : 0,
                 stain = !istape ? (attr[6] >= 0 && attr[6] <= STAIN_MAX ? attr[6] : -1) : 0,
-                colour = !istape ? partcolour(attr[3], attr[9], attr[10]) : partcolour(attr[3], attr[6], attr[7]);
-            float size = attr[5] != 0 ? attr[5]/100.f : sizemap[mapped], vel = !istape ? attr[8] : 1, blend = attr[11] > 0 ? attr[11]/100.f : 1.f;
-            if(attr[1] >= 256) regularshape(type, max(1+attr[2], 1), colour, attr[1]-256, 5, fade, o, size, blend, vec::fromcolor(attr[3] ? attr[3] : 0xFFFFFF).neg().tohexcolor(), hintblendmap[mapped], gravity, stain, vel);
-            else newparticle(o, vec(offsetvec(!istape ? vec(0, 0, 0) : o, attr[1], max(1+attr[2], 0))).mul(vel), fade, type, colour, size, blend, vec::fromcolor(attr[3] ? attr[3] : 0xFFFFFF).neg().tohexcolor(), hintblendmap[mapped], gravity, stain);
+                color = !istape ? partcolour(attr[3], attr[9], attr[10]) : partcolour(attr[3], attr[6], attr[7]),
+                hintcolor = attr[16] > 0 ? attr[16] : vec::fromcolor(color).neg().tohexcolor();
+            float size = attr[5] != 0 ? attr[5]/100.f : sizemap[mapped], vel = !istape ? attr[8] : 1, blend = attr[11] > 0 ? attr[11]/100.f : 1.f, hintblend = attr[17] > 0 ? attr[17]/100.f : 0.f;
+            if(attr[1] >= 256) regularshape(type, max(1+attr[2], 1), color, attr[1]-256, 5, fade, o, size, blend, hintcolor, hintblend, gravity, stain, vel);
+            else newparticle(o, vec(offsetvec(!istape ? vec(0, 0, 0) : o, attr[1], max(1+attr[2], 0))).mul(vel), fade, type, color, size, blend, hintcolor, hintblend, gravity, stain);
             break;
         }
         case 14: // flames <radius> <height> <rgb>
         case 15: // smoke plume
         {
-            const int typemap[] = { PART_FLAME, PART_SMOKE }, fademap[] = { 500, 1000 }, densitymap[] = { 3, 1 }, gravitymap[] = { -5, -10 };
-            const float sizemap[] = { 2, 2 }, velmap[] = { 25, 50 }, hintblendmap[] = { 0.5f, 0.25f };
-            regularflame(typemap[attr[0]-14], o, float(attr[1])/100.0f, float(attr[2])/100.0f, attr[3], densitymap[attr[0]-14], attr[4] > 0 ? attr[4] : fademap[attr[0]-14], attr[5] != 0 ? attr[5]/100.f : sizemap[attr[0]-14], attr[10] > 0 ? attr[10]/100.f : 1.f, vec::fromcolor(attr[3] ? attr[3] : 0xFFFFFF).neg().tohexcolor(), hintblendmap[attr[0]-14], attr[6] != 0 ? attr[6] : gravitymap[attr[0]-14], 0, attr[7] != 0 ? attr[7] : velmap[attr[0]-14]);
+            const int typemap[] = { PART_FLAME, PART_SMOKE }, colormap[] = { 0xF05010, 0x101008 }, fademap[] = { 500, 1000 }, densitymap[] = { 3, 1 }, gravitymap[] = { -5, -10 };
+            const float sizemap[] = { 2, 2 }, velmap[] = { 25, 50 };
+            float hintblend = attr[17] > 0 ? attr[17]/100.f : 0.f;
+            int color = attr[3] ? attr[3] : colormap[attr[0]-14], hintcolor = attr[16] > 0 ? attr[16] : vec::fromcolor(color).neg().tohexcolor();
+            regularflame(typemap[attr[0]-14], o, float(attr[1])/100.0f, float(attr[2])/100.0f, color, densitymap[attr[0]-14], attr[4] > 0 ? attr[4] : fademap[attr[0]-14], attr[5] != 0 ? attr[5]/100.f : sizemap[attr[0]-14], attr[10] > 0 ? attr[10]/100.f : 1.f, hintcolor, hintblend, attr[6] != 0 ? attr[6] : gravitymap[attr[0]-14], 0, attr[7] != 0 ? attr[7] : velmap[attr[0]-14]);
             break;
         }
         case 6: // meter, metervs - <percent> <rgb> <rgb2>
