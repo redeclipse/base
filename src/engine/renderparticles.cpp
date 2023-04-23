@@ -505,7 +505,7 @@ struct portalrenderer : listrenderer<portal>
 
         matrix4x3 m(vec(size, 0, 0), vec(0, size, 0), vec(0, 0, size), p->o);
         m.rotate_around_z(p->yaw*RAD);
-        m.rotate_around_x((p->pitch+90.f)*RAD);
+        m.rotate_around_x((p->pitch-90.f)*RAD);
 
         bvec4 color(p->color.r, p->color.g, p->color.b, uchar(p->blend*blend));
         bvec hintcolor(p->hintcolor);
@@ -1249,8 +1249,8 @@ static coneprimitiverenderer coneprimitives, coneontopprimitives(PT_ONTOP);
 
 static partrenderer *parts[] =
 {
-    new portalrenderer("<grey>particles/teleport"),
-    new portalrenderer("<grey>particles/teleport", PT_ENVMAP),
+    new portalrenderer("!portal 1"),
+    new portalrenderer("!portal 1", PT_ENVMAP),
     &icons, &lineprimitives, &lineontopprimitives, &trisprimitives, &trisontopprimitives,
     &loopprimitives, &loopontopprimitives, &coneprimitives, &coneontopprimitives,
     new quadrenderer("!fire 1", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
