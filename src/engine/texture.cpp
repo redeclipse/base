@@ -1917,8 +1917,10 @@ static Texture *texturecomp(const char *name, int tclamp = 0, bool mipit = true,
     char *n = list[0], *a = list.length() >= 3 ? list[2] : NULL;
     float sw = list.length() >= 4 ? parsefloat(list[3]) : 1.f, sh = list.length() >= 5 ? parsefloat(list[4]) : 1.f;
     int w = sw >= 0 ? int(sw * compositesize) : int(0 - sw), h = sh >= 0 ? int(sh * compositesize) : int(0 - sh), delay = list.length() >= 2 ? max(atoi(list[1]), 0) : 0;
-    if(w < 1<<1) w = compositesize;
-    if(h < 1<<1) h = compositesize;
+    if(w <= 0) w = compositesize;
+    else if(w < 1<<1) w = 1<<1;
+    if(h <= 0) h = compositesize;
+    else if(h < 1<<1) h = 1<<1;
 
     GLuint texid = 0;
     if(!UI::composite(&texid, n, a, w, h, tclamp, mipit, msg) || !texid)
