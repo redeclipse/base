@@ -1925,7 +1925,7 @@ static Texture *texturecomp(const char *name, int tclamp = 0, bool mipit = true,
     GLuint texid = 0;
     if(!UI::composite(&texid, n, a, w, h, tclamp, mipit, msg) || !texid)
     {
-        if(msg) conoutf("\frFailed to composite texture: %s", name);
+        if(msg) conoutf("\frFailed to composite texture: %s [%d]", name, texid);
         list.deletearrays();
         return notexture;
     }
