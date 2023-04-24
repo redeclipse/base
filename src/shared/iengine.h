@@ -516,28 +516,31 @@ enum { CURSOR_DEFAULT = 0, CURSOR_HOVER, CURSOR_HIDDEN, CURSOR_MAX };
 
 namespace UI
 {
-    extern int uihidden;
+    enum { SURFACE_MAIN = 0, SURFACE_PROGRESS, SURFACE_COMPOSITE, SURFACE_MAX, SURFACE_INTERACT = SURFACE_MAIN+1, SURFACE_LIMIT = SURFACE_PROGRESS+1 };
+
+    extern int uihidden, cursurface;
     extern char *uiopencmd, *uiclosecmd;
-    extern bool showui(const char *name);
-    extern bool hideui(const char *name = NULL);
-    extern bool toggleui(const char *name);
+    extern bool showui(const char *name, int surface = SURFACE_MAIN);
+    extern bool hideui(const char *name = NULL, int surface = SURFACE_MAIN);
+    extern bool toggleui(const char *name, int surface = SURFACE_MAIN);
 
-    extern int openui(const char *name);
-    extern int closeui(const char *name = NULL);
+    extern int openui(const char *name, int surface = SURFACE_MAIN);
+    extern int closeui(const char *name = NULL, int surface = SURFACE_MAIN);
+    extern void closeall();
 
-    extern void holdui(const char *name, bool on);
-    extern void pressui(const char *name, bool on);
-    extern bool uivisible(const char *name);
-    extern int hasinput();
-    extern bool hasmenu(bool pass = true);
+    extern void holdui(const char *name, bool on, int surface = SURFACE_MAIN);
+    extern void pressui(const char *name, bool on, int surface = SURFACE_MAIN);
+    extern bool uivisible(const char *name, int surface = SURFACE_MAIN);
+    extern int hasinput(int surface = -1);
+    extern bool hasmenu(bool pass = true, int surface = -1);
     extern bool keypress(int code, bool isdown);
     extern bool textinput(const char *str, int len);
 
     extern void setup();
     extern void cleanup();
     extern void cleangl();
-    extern void update();
-    extern void render();
+    extern void update(int surface);
+    extern void render(int surface);
     extern bool composite(uint *tex, const char *name, const char *args = NULL, int w = 512, int h = 512, int tclamp = 0, bool mipit = true, bool msg = true);
 
     extern void mousetrack(float dx, float dy);

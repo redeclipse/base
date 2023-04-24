@@ -829,7 +829,6 @@ namespace UI
     }
 
     struct Surface;
-    enum { SURFACE_MAIN = 0, SURFACE_PROGRESS, SURFACE_COMPOSITE, SURFACE_MAX };
     int cursurface = -1;
     Surface *surfaces[SURFACE_MAX] = { NULL, NULL, NULL };
 
@@ -1252,7 +1251,7 @@ namespace UI
         Window *w = windows[type].find(name, NULL);
         if(w)
         {
-            if(w == UI::window[type]) return;
+            if(w == window[type]) return;
             if(!w->mapdef && mapdef)
             {
                 conoutf("\frCannot override builtin %sUI %s with a one from the map", getwinprefix(type), w->name);
@@ -1307,74 +1306,105 @@ namespace UI
         }
     });
 
-    bool showui(const char *name)
-    {
-        if(cursurface < 0 || !surfaces[cursurface]) return false;
-        Window *w = windows[getwindowtype()].find(name, NULL);
-        if(!w) return false;
-        return surfaces[cursurface]->show(w);
+    #define DOSURFACE(surf, body, failure, success) \
+    { \
+        if(surf < 0 || surf >= SURFACE_MAX || !surfaces[surf]) failure; \
+        int oldsurface = cursurface; \
+        cursurface = surf; \
+        body; \
+        cursurface = oldsurface; \
+        success; \
     }
 
-    bool hideui(const char *name)
+    #define SWITCHSURFACE(surf, body, failure, success) \
+    { \
+        if(surface >= 0) DOSURFACE(surface, body, failure, success) \
+        else loopi(SURFACE_INTERACT) DOSURFACE(i, body, failure, success) \
+    }
+
+    bool showui(const char *name, int surface)
     {
-        if(cursurface < 0 || !surfaces[cursurface]) return false;
-        if(!name || !*name) return surfaces[cursurface]->hideall() > 0;
-        else
-        {
+        DOSURFACE(surface,
             Window *w = windows[getwindowtype()].find(name, NULL);
-            if(w) return surfaces[cursurface]->hide(w);
-        }
-        return false;
+            bool ret = w && surfaces[surface]->show(w);
+        , return false, return ret);
     }
 
-    bool toggleui(const char *name)
+    bool hideui(const char *name, int surface)
     {
-        if(showui(name)) return true;
+        DOSURFACE(surface,
+            bool ret = false;
+            if(!name || !*name) ret = surfaces[cursurface]->hideall() > 0;
+            else
+            {
+                Window *w = windows[getwindowtype()].find(name, NULL);
+                if(w) ret = surfaces[cursurface]->hide(w);
+            }
+        , return false, return ret);
+    }
+
+    bool toggleui(const char *name, int surface)
+    {
+        if(showui(name, surface)) return true;
         hideui(name);
         return false;
     }
 
-    int openui(const char *name)
+    int openui(const char *name, int surface)
     {
-        defformatstring(cmd, "%s \"%s\"", uiopencmd, name ? name : "");
-        return execute(cmd);
+        DOSURFACE(surface,
+            defformatstring(cmd, "%s \"%s\"", uiopencmd, name ? name : "");
+            int ret = execute(cmd);
+        , return 0, return ret);
     }
 
-    int closeui(const char *name)
+    int closeui(const char *name, int surface)
     {
-        defformatstring(cmd, "%s \"%s\"", uiclosecmd, name ? name : "");
-        return execute(cmd);
+        DOSURFACE(surface,
+            defformatstring(cmd, "%s \"%s\"", uiclosecmd, name ? name : "");
+            int ret = execute(cmd);
+        , return 0, return ret);
     }
 
-    void holdui(const char *name, bool on)
+    void closeall()
     {
-        if(on) showui(name);
-        else hideui(name);
+        loopi(SURFACE_INTERACT) closeui(NULL, i);
     }
 
-    void pressui(const char *name, bool on)
+    void holdui(const char *name, bool on, int surface)
     {
-        if(on) { if(!uivisible(name)) openui(name); }
-        else if(uivisible(name)) closeui(name);
+        if(on) showui(name, surface);
+        else hideui(name, surface);
     }
 
-    bool uivisible(const char *name)
+    void pressui(const char *name, bool on, int surface)
     {
-        if(cursurface < 0 || !surfaces[cursurface]) return false;
-        if(!name || !*name) return surfaces[cursurface]->children.length() > 0;
-        Window *w = windows[getwindowtype()].find(name, NULL);
-        return w && surfaces[cursurface]->children.find(w) >= 0;
+        if(on) { if(!uivisible(name, surface)) openui(name, surface); }
+        else if(uivisible(name, surface)) closeui(name, surface);
     }
 
-    ICOMMAND(0, showui, "s", (char *name), intret(showui(name) ? 1 : 0));
-    ICOMMAND(0, hideui, "s", (char *name), intret(hideui(name) ? 1 : 0));
+    bool uivisible(const char *name, int surface)
+    {
+        DOSURFACE(surface,
+            bool ret = false;
+            if(!name || !*name) ret = surfaces[cursurface]->children.length() > 0;
+            else
+            {
+                Window *w = windows[getwindowtype()].find(name, NULL);
+                ret = w && surfaces[cursurface]->children.find(w) >= 0;
+            }
+        , return false, return ret);
+    }
+
+    ICOMMAND(0, showui, "si", (char *name, int *surface), intret(showui(name, *surface) ? 1 : 0));
+    ICOMMAND(0, hideui, "si", (char *name, int *surface), intret(hideui(name, *surface) ? 1 : 0));
     ICOMMAND(0, hidetopui, "", (), intret(cursurface >= 0 && surfaces[cursurface] && surfaces[cursurface]->hidetop() ? 1 : 0));
     ICOMMAND(0, topui, "", (), result(cursurface >= 0 && surfaces[cursurface] ? surfaces[cursurface]->topname() : ""));
     ICOMMAND(0, hideallui, "i", (int *n), intret(cursurface >= 0 && surfaces[cursurface] ? surfaces[cursurface]->hideall(*n != 0) : 0));
-    ICOMMAND(0, toggleui, "s", (char *name), intret(toggleui(name) ? 1 : 0));
-    ICOMMAND(0, holdui, "sD", (char *name, int *down), holdui(name, *down!=0));
-    ICOMMAND(0, pressui, "sD", (char *name, int *down), pressui(name, *down!=0));
-    ICOMMAND(0, uivisible, "s", (char *name), intret(uivisible(name) ? 1 : 0));
+    ICOMMAND(0, toggleui, "si", (char *name, int *surface), intret(toggleui(name, *surface) ? 1 : 0));
+    ICOMMAND(0, holdui, "siD", (char *name, int *surface, int *down), holdui(name, *down!=0, *surface));
+    ICOMMAND(0, pressui, "siD", (char *name, int *surface, int *down), pressui(name, *down!=0, *surface));
+    ICOMMAND(0, uivisible, "si", (char *name, int *surface), intret(uivisible(name, *surface) ? 1 : 0));
     ICOMMAND(0, uiname, "", (), { if(window[getwindowtype()]) result(window[getwindowtype()]->name); });
 
     struct HorizontalList : Object
@@ -5565,51 +5595,57 @@ namespace UI
     }
     UIWINCMDC(rotatecolours, "fii", (float *amt, int *start, int *count), rotchildcolours(o, amt, start, count));
 
-    int hasinput()
+    int hasinput(int surface)
     {
-        return cursurface >= 0 && surfaces[cursurface] ? surfaces[cursurface]->allowinput() : 0;
+        SWITCHSURFACE(i, int ret = surfaces[cursurface]->allowinput(), return 0, if(ret) return ret);
+        return 0;
     }
 
-    bool hasmenu(bool pass)
+    bool hasmenu(bool pass, int surface)
     {
-        return cursurface >= 0 && surfaces[cursurface] && surfaces[cursurface]->hasmenu(pass);
+        SWITCHSURFACE(i, bool ret = surfaces[cursurface]->hasmenu(pass), return 0, if(ret) return ret);
+        return false;
     }
 
     bool keypress(int code, bool isdown)
     {
-        if(cursurface < 0 || !surfaces[cursurface]) return false;
-        if(surfaces[cursurface]->rawkey(code, isdown)) return true;
-        int action = 0, hold = 0;
-        switch(code)
-        {
-            case SDLK_ESCAPE: action = isdown ? STATE_ESC_PRESS : STATE_ESC_RELEASE; hold = STATE_ESC_HOLD; break;
-            case -1: action = isdown ? STATE_PRESS : STATE_RELEASE; hold = STATE_HOLD; break;
-            case -2: action = isdown ? STATE_ESC_PRESS : STATE_ESC_RELEASE; hold = STATE_ESC_HOLD; break;
-            case -3: action = isdown ? STATE_ALT_PRESS : STATE_ALT_RELEASE; hold = STATE_ALT_HOLD; break;
-            case -4: action = STATE_SCROLL_UP; break;
-            case -5: action = STATE_SCROLL_DOWN; break;
-        }
-        int setmode = inputsteal && action != STATE_SCROLL_UP && action != STATE_SCROLL_DOWN ?
-            SETSTATE_FOCUSED : SETSTATE_INSIDE;
-
-        if(action)
-        {
-            if(isdown)
+        DOSURFACE(SURFACE_MAIN,
+            bool ret = false;
+            if(surfaces[cursurface]->rawkey(code, isdown)) ret = true;
             {
-                if(hold) surfaces[cursurface]->clearstate(hold);
-                if(surfaces[cursurface]->setstate(action, cursorx, cursory, 0, setmode, action|hold)) return true;
-            }
-            else if(hold)
-            {
-                if(surfaces[cursurface]->setstate(action, cursorx, cursory, hold, setmode, action))
+                int action = 0;
+                int hold = 0;
+                switch(code)
                 {
-                    surfaces[cursurface]->clearstate(hold);
-                    return true;
+                    case SDLK_ESCAPE: action = isdown ? STATE_ESC_PRESS : STATE_ESC_RELEASE; hold = STATE_ESC_HOLD; break;
+                    case -1: action = isdown ? STATE_PRESS : STATE_RELEASE; hold = STATE_HOLD; break;
+                    case -2: action = isdown ? STATE_ESC_PRESS : STATE_ESC_RELEASE; hold = STATE_ESC_HOLD; break;
+                    case -3: action = isdown ? STATE_ALT_PRESS : STATE_ALT_RELEASE; hold = STATE_ALT_HOLD; break;
+                    case -4: action = STATE_SCROLL_UP; break;
+                    case -5: action = STATE_SCROLL_DOWN; break;
                 }
-                surfaces[cursurface]->clearstate(hold);
+                int setmode = inputsteal && action != STATE_SCROLL_UP && action != STATE_SCROLL_DOWN ? SETSTATE_FOCUSED : SETSTATE_INSIDE;
+
+                if(action)
+                {
+                    if(isdown)
+                    {
+                        if(hold) surfaces[cursurface]->clearstate(hold);
+                        if(surfaces[cursurface]->setstate(action, cursorx, cursory, 0, setmode, action|hold)) return true;
+                    }
+                    else if(hold)
+                    {
+                        if(surfaces[cursurface]->setstate(action, cursorx, cursory, hold, setmode, action))
+                        {
+                            surfaces[cursurface]->clearstate(hold);
+                            ret = true;
+                        }
+                        else surfaces[cursurface]->clearstate(hold);
+                    }
+                }
+                if(!ret) ret = surfaces[cursurface]->key(code, isdown);
             }
-        }
-        return surfaces[cursurface]->key(code, isdown);
+        , return false, return ret);
     }
 
     bool textinput(const char *str, int len)
@@ -5620,19 +5656,18 @@ namespace UI
     void setup()
     {
         loopi(SURFACE_MAX) surfaces[i] = new Surface;
-        cursurface = SURFACE_MAIN;
         inputsteal = NULL;
     }
 
     void cleanup()
     {
+        cursurface = -1;
         loopi(SURFACE_MAX) surfaces[i]->children.setsize(0);
         loopj(WINTYPE_MAX)
         {
             enumerate(windows[j], Window *, w, delete w);
             windows[j].clear();
         }
-        cursurface = NULL;
         loopi(SURFACE_MAX) DELETEP(surfaces[i]);
         inputsteal = NULL;
     }
@@ -5642,65 +5677,81 @@ namespace UI
         uitextscale = 1.0f/uitextrows;
     }
 
-    void update()
+    void update(int surface)
     {
-        if(!progressing && uihidden) return;
+        if(surface < 0 || surface >= SURFACE_LIMIT) return;
+        switch(surface)
+        {
+            case SURFACE_MAIN:
+                if(uihidden) return;
+                break;
+            case SURFACE_PROGRESS:
+                if(!progressing) return;
+                showui("progress", SURFACE_PROGRESS);
+                break;
+            default: break;
+        }
 
-        int oldsurface = cursurface;
-        cursurface = progressing ? SURFACE_PROGRESS : SURFACE_MAIN;
-        if(progressing) showui("progress");
+        DOSURFACE(surface,
+            float oldtextscale = curtextscale;
+            curtextscale = 1;
+            surfaces[cursurface]->cursortype = CURSOR_DEFAULT;
+            surfaces[cursurface]->cursorlocked = false;
+            surfaces[cursurface]->mousetracking = false;
+            surfaces[cursurface]->lockscroll = false;
 
-        float oldtextscale = curtextscale;
-        curtextscale = 1;
-        surfaces[cursurface]->cursortype = CURSOR_DEFAULT;
-        surfaces[cursurface]->cursorlocked = false;
-        surfaces[cursurface]->mousetracking = false;
-        surfaces[cursurface]->lockscroll = false;
+            pushfont();
+            readyeditors();
 
-        pushfont();
-        readyeditors();
+            surfaces[cursurface]->setstate(STATE_HOVER, cursorx, cursory, surfaces[cursurface]->childstate&STATE_HOLD_MASK);
+            if(surfaces[cursurface]->childstate&STATE_HOLD) surfaces[cursurface]->setstate(STATE_HOLD, cursorx, cursory, STATE_HOLD, SETSTATE_ANY);
+            if(surfaces[cursurface]->childstate&STATE_ALT_HOLD) surfaces[cursurface]->setstate(STATE_ALT_HOLD, cursorx, cursory, STATE_ALT_HOLD, SETSTATE_ANY);
+            if(surfaces[cursurface]->childstate&STATE_ESC_HOLD) surfaces[cursurface]->setstate(STATE_ESC_HOLD, cursorx, cursory, STATE_ESC_HOLD, SETSTATE_ANY);
 
-        surfaces[cursurface]->setstate(STATE_HOVER, cursorx, cursory, surfaces[cursurface]->childstate&STATE_HOLD_MASK);
-        if(surfaces[cursurface]->childstate&STATE_HOLD) surfaces[cursurface]->setstate(STATE_HOLD, cursorx, cursory, STATE_HOLD, SETSTATE_ANY);
-        if(surfaces[cursurface]->childstate&STATE_ALT_HOLD) surfaces[cursurface]->setstate(STATE_ALT_HOLD, cursorx, cursory, STATE_ALT_HOLD, SETSTATE_ANY);
-        if(surfaces[cursurface]->childstate&STATE_ESC_HOLD) surfaces[cursurface]->setstate(STATE_ESC_HOLD, cursorx, cursory, STATE_ESC_HOLD, SETSTATE_ANY);
+            calctextscale();
 
-        calctextscale();
+            if(*uiprecmd) execute(uiprecmd);
+            surfaces[cursurface]->build();
+            if(*uipostcmd) execute(uipostcmd);
 
-        if(*uiprecmd) execute(uiprecmd);
-        surfaces[cursurface]->build();
-        if(*uipostcmd) execute(uipostcmd);
+            if(inputsteal && !inputsteal->isfocus())
+                inputsteal = NULL;
 
-        if(inputsteal && !inputsteal->isfocus())
-            inputsteal = NULL;
+            if(!surfaces[cursurface]->mousetracking) surfaces[cursurface]->mousetrackvec = vec2(0, 0);
 
-        if(!surfaces[cursurface]->mousetracking) surfaces[cursurface]->mousetrackvec = vec2(0, 0);
+            flusheditors();
+            popfont();
 
-        flusheditors();
-        popfont();
-
-        curtextscale = oldtextscale;
-        cursurface = oldsurface;
+            curtextscale = oldtextscale;
+        , return, return);
     }
 
-    void render()
+    void render(int surface)
     {
-        if(!progressing && uihidden) return;
+        if(surface < 0 || surface >= SURFACE_LIMIT) return;
+        switch(surface)
+        {
+            case SURFACE_MAIN:
+                if(uihidden) return;
+                break;
+            case SURFACE_PROGRESS:
+                if(!progressing) return;
+                break;
+            default: break;
+        }
 
-        int oldsurface = cursurface;
-        cursurface = progressing ? SURFACE_PROGRESS : SURFACE_MAIN;
+        DOSURFACE(surface,
+            float oldtextscale = curtextscale;
+            curtextscale = 1;
 
-        float oldtextscale = curtextscale;
-        curtextscale = 1;
+            pushfont();
+            surfaces[cursurface]->layout();
+            surfaces[cursurface]->adjustchildren();
+            surfaces[cursurface]->draw();
+            popfont();
 
-        pushfont();
-        surfaces[cursurface]->layout();
-        surfaces[cursurface]->adjustchildren();
-        surfaces[cursurface]->draw();
-        popfont();
-
-        curtextscale = oldtextscale;
-        cursurface = oldsurface;
+            curtextscale = oldtextscale;
+        , return, return);
     }
 
     void cleancomposite()
@@ -5741,49 +5792,47 @@ namespace UI
         drawtex = DRAWTEX_COMPOSITE;
 
         setsvar("uicompargs", args ? args : "");
-        int oldsurface = cursurface;
-        cursurface = SURFACE_COMPOSITE;
-        showui(name);
+        showui(name, SURFACE_COMPOSITE);
+        DOSURFACE(SURFACE_COMPOSITE,
+            int oldhudw = hudw;
+            int oldhudh = hudh;
 
-        int oldhudw = hudw, oldhudh = hudh;
+            hudw = w;
+            hudh = h;
+            glViewport(0, 0, hudw, hudh);
+            glClearColor(0, 0, 0, 0);
+            glClear(GL_COLOR_BUFFER_BIT);
 
-        hudw = w;
-        hudh = h;
-        glViewport(0, 0, hudw, hudh);
-        glClearColor(0, 0, 0, 0);
-        glClear(GL_COLOR_BUFFER_BIT);
+            float oldtextscale = curtextscale;
+            curtextscale = 1;
 
-        float oldtextscale = curtextscale;
-        curtextscale = 1;
+            pushfont();
+            calctextscale();
+            surfaces[cursurface]->build();
+            popfont();
 
-        pushfont();
-        calctextscale();
-        surfaces[cursurface]->build();
-        popfont();
+            curtextscale = 1;
+            pushfont();
+            surfaces[cursurface]->layout();
+            surfaces[cursurface]->adjustchildren();
+            surfaces[cursurface]->draw();
+            popfont();
 
-        curtextscale = 1;
-        pushfont();
-        surfaces[cursurface]->layout();
-        surfaces[cursurface]->adjustchildren();
-        surfaces[cursurface]->draw();
-        popfont();
+            glActiveTexture_(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, *tex);
+            glGenerateMipmap_(GL_TEXTURE_2D);
 
-        glActiveTexture_(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, *tex);
-        glGenerateMipmap_(GL_TEXTURE_2D);
+            curtextscale = oldtextscale;
+            hudw = oldhudw;
+            hudh = oldhudh;
 
-        curtextscale = oldtextscale;
-        hudw = oldhudw;
-        hudh = oldhudh;
-
-        surfaces[cursurface]->hideall(true);
-        cursurface = oldsurface;
-
-        drawtex = olddrawtex;
-        glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
-        glViewport(0, 0, hudw, hudh);
-
-        return true;
+            surfaces[cursurface]->hideall(true);
+        , return false,
+            drawtex = olddrawtex;
+            glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
+            glViewport(0, 0, hudw, hudh);
+            return true;
+        );
     }
 
     void cleangl()

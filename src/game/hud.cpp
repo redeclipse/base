@@ -559,18 +559,18 @@ namespace hud
     {
         hidecrosshair = 0;
 
-        UI::showui("hud");
+        UI::showui("hud", UI::SURFACE_MAIN);
         if(!UI::hasmenu())
         {
             if(connected())
             {
-                UI::pressui("scoreboard", scoreson);
+                UI::pressui("scoreboard", scoreson, UI::SURFACE_MAIN);
                 if(game::player1->state == CS_DEAD) { if(scoreson) shownscores = true; }
                 else shownscores = false;
             }
-            else UI::showui("main");
+            else UI::showui("main", UI::SURFACE_MAIN);
         }
-        UI::update();
+        UI::update(progressing ? UI::SURFACE_PROGRESS : UI::SURFACE_MAIN);
     }
 
     void damage(int n, const vec &loc, gameent *v, int weap, int flags)
@@ -1838,13 +1838,13 @@ namespace hud
             if(!progressing)
             {
                 if(showhud && commandmillis <= 0 && curcompass) rendercmenu();
-                else UI::render();
+                else UI::render(UI::SURFACE_MAIN);
                 hudmatrix.ortho(0, hudwidth, hudheight, 0, -1, 1);
                 flushhudmatrix();
                 resethudshader();
                 drawpointers(hudwidth, hudheight);
             }
-            else UI::render();
+            else UI::render(UI::SURFACE_PROGRESS);
         }
         glDisable(GL_BLEND);
     }
