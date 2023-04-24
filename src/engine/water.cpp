@@ -28,7 +28,7 @@ void setupcaustics(int tmu, float surface = -1e16f)
 
     vec s = vec(0.011f, 0, 0.0066f).mul(100.0f/causticscale), t = vec(0, 0.011f, 0.0066f).mul(100.0f/causticscale);
     glActiveTexture_(GL_TEXTURE0+tmu);
-    glBindTexture(GL_TEXTURE_2D, caustictex->id);
+    settexture(caustictex);
     glActiveTexture_(GL_TEXTURE0);
     float blendscale = causticcontrast, blendoffset = 1;
     if(surface > -1e15f)
@@ -572,9 +572,9 @@ void renderlava()
             whoffset = fmod(float(lastmillis/2000.0f/(2*M_PI)), 1.0f);
             whphase = vertwphase(whoffset);
 
-            glBindTexture(GL_TEXTURE_2D, tex->id);
+            settexture(tex);
             glActiveTexture_(GL_TEXTURE1);
-            glBindTexture(GL_TEXTURE_2D, lslot.sts.inrange(1) ? lslot.sts[1].t->id : notexture->id);
+            settexture(lslot.sts.inrange(1) ? lslot.sts[1].t : notexture);
             glActiveTexture_(GL_TEXTURE0);
 
             gle::normal(vec(0, 0, 1));
@@ -594,9 +594,9 @@ void renderlava()
                   scroll = lastmillis/1000.0f, xscroll = getlavafallscrollx(k)*scroll, yscroll = getlavafallscrolly(k)*scroll;
             LOCALPARAMF(lavatexgen, xscale, yscale, xscroll, yscroll);
 
-            glBindTexture(GL_TEXTURE_2D, tex->id);
+            settexture(tex);
             glActiveTexture_(GL_TEXTURE1);
-            glBindTexture(GL_TEXTURE_2D, lslot.sts.inrange(2) ? (lslot.sts.inrange(3) ? lslot.sts[3].t->id : notexture->id) : (lslot.sts.inrange(1) ? lslot.sts[1].t->id : notexture->id));
+            settexture(lslot.sts.inrange(2) ? (lslot.sts.inrange(3) ? lslot.sts[3].t : notexture) : (lslot.sts.inrange(1) ? lslot.sts[1].t : notexture));
             glActiveTexture_(GL_TEXTURE0);
 
             vector<materialsurface> &surfs = lavafallsurfs[k];
@@ -642,9 +642,9 @@ void renderwaterfalls()
         if(waterfallenv) SETSHADER(waterfallenv);
         else SETSHADER(waterfall);
 
-        glBindTexture(GL_TEXTURE_2D, tex->id);
+        settexture(tex);
         glActiveTexture_(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, wslot.sts.inrange(2) ? (wslot.sts.inrange(3) ? wslot.sts[3].t->id : notexture->id) : (wslot.sts.inrange(1) ? wslot.sts[1].t->id : notexture->id));
+        settexture(wslot.sts.inrange(2) ? (wslot.sts.inrange(3) ? wslot.sts[3].t : notexture) : (wslot.sts.inrange(1) ? wslot.sts[1].t : notexture));
         if(waterfallenv)
         {
             glActiveTexture_(GL_TEXTURE3);
@@ -677,9 +677,9 @@ void renderwater()
         whoffset = fmod(float(lastmillis/600.0f/(2*M_PI)), 1.0f);
         whphase = vertwphase(whoffset);
 
-        glBindTexture(GL_TEXTURE_2D, tex->id);
+        settexture(tex);
         glActiveTexture_(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, wslot.sts.inrange(1) ? wslot.sts[1].t->id : notexture->id);
+        settexture(wslot.sts.inrange(1) ? wslot.sts[1].t : notexture);
         if(caustics && causticscale) setupcaustics(2);
         if(waterenvmap && !waterreflect && drawtex != DRAWTEX_MINIMAP)
         {
@@ -774,7 +774,7 @@ void rendervolfog()
             float xscale = TEX_SCALE/(tex->xs*fslot.scale), yscale = TEX_SCALE/(tex->ys*fslot.scale),
                   scroll = lastmillis/1000.0f, xscroll = getvolfogscrollx(k)*scroll, yscroll = getvolfogscrolly(k)*scroll;
             GLOBALPARAMF(volfogtexgen, xscale, yscale, xscroll, yscroll);
-            glBindTexture(GL_TEXTURE_2D, tex->id);
+            settexture(tex);
         }
 
         float colorscale = 0.5f/255;

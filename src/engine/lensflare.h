@@ -142,7 +142,7 @@ struct flarerenderer : partrenderer
     void render()
     {
         glDisable(GL_DEPTH_TEST);
-        glBindTexture(GL_TEXTURE_2D, tex->id);
+        settexture(tex);
         gle::defattrib(gle::ATTRIB_VERTEX, 3, GL_FLOAT);
         gle::defattrib(gle::ATTRIB_TEXCOORD0, 2, GL_FLOAT);
         gle::defattrib(gle::ATTRIB_COLOR, 4, GL_UNSIGNED_BYTE);

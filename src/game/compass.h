@@ -172,7 +172,7 @@ void renderaction(int idx, int size, Texture *t, char code, const char *name, bo
         r = 255, g = hit && idx ? 0 : 255, b = hit && idx ? 0 : 255, f = hit || !idx ? 255 : 128;
     if(t && t != notexture)
     {
-        glBindTexture(GL_TEXTURE_2D, t->id);
+        settexture(t);
         gle::colorf(r/255.f, g/255.f, b/255.f, f/255.f*compassblend);
         if(idx) drawslice(0.5f/8+(idx-2)/float(8), 1/float(8), hudwidth/2, hudheight/2, size);
         else drawsized(hudwidth/2-size*3/8, hudheight/2-size*3/8, size*3/4);

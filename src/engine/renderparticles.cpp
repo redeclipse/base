@@ -370,7 +370,7 @@ struct listrenderer : partrenderer
     void render()
     {
         startrender();
-        if(tex) glBindTexture(GL_TEXTURE_2D, tex->id);
+        if(tex) settexture(tex);
         if(canstep) for(T **prev = &list, *p = list; p; p = *prev)
         {
             if((drawtex && !p->enviro) || renderpart(p)) prev = &p->next;
@@ -475,7 +475,7 @@ struct portalrenderer : listrenderer<portal>
             if(!particlehazetexture) particlehazetexture = textureload(particlehazetex, 0, true, false);
 
             glActiveTexture_(GL_TEXTURE4);
-            glBindTexture(GL_TEXTURE_2D, particlehazetexture->id);
+            settexture(particlehazetexture);
             glActiveTexture_(GL_TEXTURE0);
         }
         else gle::begin(GL_QUADS);
@@ -569,7 +569,7 @@ struct iconrenderer : listrenderer<icon>
         {
             if(inrender) gle::end();
             inrender = false;
-            glBindTexture(GL_TEXTURE_2D, p->tex->id);
+            settexture(p->tex);
             lasttex = p->tex;
         }
 
@@ -968,7 +968,7 @@ struct varenderer : partrenderer
     {
         genvbo();
 
-        glBindTexture(GL_TEXTURE_2D, tex->id);
+        settexture(tex);
 
         gle::bindvbo(vbo);
         const partvert *ptr = 0;
@@ -1033,7 +1033,7 @@ struct lineprimitiverenderer : listrenderer<lineprimitive>
 
     void renderpart(lineprimitive *p, int blend, int ts, float size)
     {
-        glBindTexture(GL_TEXTURE_2D, blanktexture->id);
+        settexture(blanktexture);
         bvec4 color(p->color.r, p->color.g, p->color.b, uchar(p->blend*blend));
         gle::attrib(p->o);
             gle::attrib(color);
@@ -1083,7 +1083,7 @@ struct trisprimitiverenderer : listrenderer<trisprimitive>
 
     void renderpart(trisprimitive *p, int blend, int ts, float size)
     {
-        glBindTexture(GL_TEXTURE_2D, blanktexture->id);
+        settexture(blanktexture);
         bvec4 color(p->color.r, p->color.g, p->color.b, uchar(p->blend*blend));
         if(!p->fill) { gle::end(); gle::begin(GL_LINE_LOOP); }
         gle::attrib(p->o);
@@ -1142,7 +1142,7 @@ struct loopprimitiverenderer : listrenderer<loopprimitive>
 
     void renderpart(loopprimitive *p, int blend, int ts, float size)
     {
-        glBindTexture(GL_TEXTURE_2D, blanktexture->id);
+        settexture(blanktexture);
         gle::colorub(p->color.r, p->color.g, p->color.b, uchar(p->blend*blend));
         gle::begin(p->fill ? GL_TRIANGLE_FAN : GL_LINE_LOOP);
         loopi(15 + (p->fill ? 1 : 0))
@@ -1209,7 +1209,7 @@ struct coneprimitiverenderer : listrenderer<coneprimitive>
 
     void renderpart(coneprimitive *p, int blend, int ts, float size)
     {
-        glBindTexture(GL_TEXTURE_2D, blanktexture->id);
+        settexture(blanktexture);
         gle::colorub(p->color.r, p->color.g, p->color.b, uchar(p->blend*blend));
 
         gle::begin(GL_LINES);
@@ -1475,7 +1475,7 @@ void renderhazeparticles(GLuint hazertex, bool hazemix)
     else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
 
     glActiveTexture_(GL_TEXTURE4);
-    glBindTexture(GL_TEXTURE_2D, particlehazetexture->id);
+    settexture(particlehazetexture);
 
     glActiveTexture_(GL_TEXTURE5);
     glBindTexture(GL_TEXTURE_RECTANGLE, hazertex);

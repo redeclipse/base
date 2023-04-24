@@ -2242,7 +2242,7 @@ namespace UI
             loopv(texs)
             {
                 glActiveTexture_(GL_TEXTURE0+i);
-                glBindTexture(GL_TEXTURE_2D, texs[i]->id);
+                settexture(texs[i]);
                 defformatstring(texparam, "texsize%d", i);
                 LocalShaderParam param = list.add(LocalShaderParam(texparam));
                 param.setf(texs[i]->w, texs[i]->h, texs[i]->xs, texs[i]->ys);
@@ -2363,7 +2363,7 @@ namespace UI
                 gle::end();
             changetex:
                 lasttex = tex;
-                glBindTexture(GL_TEXTURE_2D, tex->id);
+                settexture(tex);
                 goto changecolor;
             }
             if(lastcolor != c)
@@ -2982,7 +2982,7 @@ namespace UI
             float xoff = (1.0f - xt) * 0.5f, yoff = (1.0f - yt) * 0.5f;
             loopk(4) { tc[k].x = (tc[k].x - xoff)/xt; tc[k].y = (tc[k].y - yoff)/yt; }
 
-            glBindTexture(GL_TEXTURE_2D, t->id);
+            settexture(t);
             quad(sx, sy, w, h, tc);
 
             Object::draw(sx, sy);
@@ -5032,20 +5032,20 @@ namespace UI
             }
             float xt = min(1.0f, t->xs/float(t->ys)), yt = min(1.0f, t->ys/float(t->xs));
             loopk(4) { tc[k].x = tc[k].x/xt - float(xoff)/t->xs; tc[k].y = tc[k].y/yt - float(yoff)/t->ys; }
-            glBindTexture(GL_TEXTURE_2D, t->id);
+            settexture(t);
             vec colorscale = vslot.getcolorscale();
             if(slot.loaded) gle::colorf(colorscale.x*colors[0].r/255.f, colorscale.y*colors[0].g/255.f, colorscale.z*colors[0].b/255.f, colors[0].a/255.f);
             else gle::colorf(1, 1, 1);
             quad(x, y, w, h, tc);
             if(detailtex)
             {
-                glBindTexture(GL_TEXTURE_2D, detailtex->id);
+                settexture(detailtex);
                 quad(x + w/2, y + h/2, w/2, h/2, tc);
             }
             if(glowtex)
             {
                 glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-                glBindTexture(GL_TEXTURE_2D, glowtex->id);
+                settexture(glowtex);
                 vec glowcolor = vslot.getglowcolor();
                 gle::colorf(glowcolor.x*colors[0].r/255.f, glowcolor.y*colors[0].g/255.f, glowcolor.z*colors[0].b/255.f, colors[0].a/255.f);
                 quad(x, y, w, h, tc);
@@ -5054,7 +5054,7 @@ namespace UI
             if(layertex)
             {
                 vec layerscale = layer->getcolorscale();
-                glBindTexture(GL_TEXTURE_2D, layertex->id);
+                settexture(layertex);
                 gle::colorf(layerscale.x*colors[0].r/255.f, layerscale.y*colors[0].g/255.f, layerscale.z*colors[0].g/255.f, colors[0].a/255.f);
                 quad(x, y, w/2, h/2, tc);
             }
@@ -5144,7 +5144,7 @@ namespace UI
                 if(r.flipy) { yoff *= -1; loopk(4) tc[k].y *= -1; }
             }
             loopk(4) { tc[k].x = (tc[k].x - xoff)/xt; tc[k].y = (tc[k].y - yoff)/yt; }
-            glBindTexture(GL_TEXTURE_2D, t->id);
+            settexture(t);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
             vec colorscale = vslot.getcolorscale();
@@ -5154,7 +5154,7 @@ namespace UI
             if(glowtex)
             {
                 glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-                glBindTexture(GL_TEXTURE_2D, glowtex->id);
+                settexture(glowtex);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
                 vec glowcolor = vslot.getglowcolor();
@@ -5240,7 +5240,7 @@ namespace UI
                 gle::defvertex(2);
                 gle::deftexcoord0();
                 gle::begin(GL_QUADS);
-                glBindTexture(GL_TEXTURE_2D, tex->id);
+                settexture(tex);
                 quads(sx, sy, w, h);
                 gle::end();
             }

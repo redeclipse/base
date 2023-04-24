@@ -796,7 +796,7 @@ namespace hud
         Texture *t = textureload(indicatortex, 3);
         if(t->type&Texture::ALPHA) glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         else glBlendFunc(GL_ONE, GL_ONE);
-        glBindTexture(GL_TEXTURE_2D, t->id);
+        settexture(t);
         float val = amt < 0.25f ? amt : (amt > 0.75f ? 1.f-amt : 0.25f);
         gle::colorf(val*4.f, val*4.f, val*4.f, indicatorblend*hudblend*val);
         drawsized(x-s, y-s, s*2);
@@ -820,7 +820,7 @@ namespace hud
         while(rot >= 360.0f) rot -= 360.0f;
         vec2 loc(x+offset*sinf(RAD*angle), y+offset*-cosf(RAD*angle));
         gle::color(colour, blend);
-        glBindTexture(GL_TEXTURE_2D, t->id);
+        settexture(t);
         gle::defvertex(2);
         gle::deftexcoord0();
         gle::begin(GL_TRIANGLE_STRIP);
@@ -980,7 +980,7 @@ namespace hud
         float slice = 1.f/num, pos = num%2 ? slice*0.5f : 0.f;
         if(t->type&Texture::ALPHA) glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         else glBlendFunc(GL_ONE, GL_ONE);
-        glBindTexture(GL_TEXTURE_2D, t->id);
+        settexture(t);
         loopi(3) if(circlebartype&(1<<i))
         {
             float val = 0, fade = hudblend*circlebarblend;
@@ -1108,7 +1108,7 @@ namespace hud
         if(t->type&Texture::ALPHA) glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         else glBlendFunc(GL_ONE, GL_ONE);
         gle::colorf(r, g, b, fade);
-        glBindTexture(GL_TEXTURE_2D, t->id);
+        settexture(t);
         drawsized(x, y, s);
     }
 
@@ -1295,7 +1295,7 @@ namespace hud
                         case eventicon::AFFINITY: colour = m_bomber(game::gamemode) ? game::pulsehexcol(game::focus, PULSE_DISCO) : TEAM(game::focus->icons[i].value, colour); break;
                         default: break;
                     }
-                    glBindTexture(GL_TEXTURE_2D, t->id);
+                    settexture(t);
                     gle::color(vec::fromcolor(colour), fade);
                     drawtexture(tx-width/2, ty-rsize/2, width, size);
                     ty -= rsize;
@@ -1490,7 +1490,7 @@ namespace hud
         else c = h;
         Texture *t = textureload(zoomtex, 3);
         if(!t || t == notexture) return;
-        glBindTexture(GL_TEXTURE_2D, t->id);
+        settexture(t);
         gle::colorf(1, 1, 1, pc);
         drawtexture(x, y, c, c);
     }
@@ -1571,7 +1571,7 @@ namespace hud
         }
         else
         {
-            glBindTexture(GL_TEXTURE_2D, t->id);
+            settexture(t);
             float offsetx = 0, offsety = 0;
             if(showloadingaspect)
             {
@@ -1588,7 +1588,7 @@ namespace hud
                 gle::colorf(1, 1, 1, 1);
 
                 t = textureload(logotex, 3);
-                glBindTexture(GL_TEXTURE_2D, t->id);
+                settexture(t);
                 drawtexture(w-w/2-w/4, h/2-w/8, w/2, w/4);
             }
 
@@ -1702,7 +1702,7 @@ namespace hud
             Texture *t = textureload(hurttex, 3);
             if(t != notexture)
             {
-                glBindTexture(GL_TEXTURE_2D, t->id);
+                settexture(t);
                 gle::defvertex(2);
                 gle::deftexcoord0();
                 gle::begin(GL_TRIANGLE_STRIP);
@@ -1799,7 +1799,7 @@ namespace hud
                             if(!hasbound)
                             {
                                 Texture *t = textureload(warningtex, 3);
-                                glBindTexture(GL_TEXTURE_2D, t->id);
+                                settexture(t);
                                 float amt = float(totalmillis%250)/250.f, value = (amt > 0.5f ? 1.f-amt : amt)*2.f;
                                 gle::colorf(value, value*0.125f, value*0.125f, value);
                                 hasbound = true;

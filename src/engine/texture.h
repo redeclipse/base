@@ -593,14 +593,14 @@ struct Texture
     };
 
     char *name, *comp, *args;
-    int type, w, h, xs, ys, bpp, tclamp, frame, delay, last;
+    int type, w, h, xs, ys, bpp, tclamp, used, frame, delay, last;
     bool mipmap, canreduce, throb;
     vector<GLuint> frames;
     GLuint id;
     uchar *alphamask;
 
 
-    Texture() : comp(NULL), args(NULL), frame(0), delay(0), last(0), throb(false), alphamask(NULL)
+    Texture() : comp(NULL), args(NULL), used(0), frame(0), delay(0), last(0), throb(false), alphamask(NULL)
     {
         frames.shrink(0);
     }
@@ -610,10 +610,10 @@ struct Texture
         DELETEA(args);
     }
 
-    GLuint idframe(int id)
+    GLuint idframe(int idx)
     {
         if(!frames.empty())
-            return frames[clamp(id, 0, frames.length()-1)];
+            return frames[clamp(idx, 0, frames.length()-1)];
         return id;
     }
 
@@ -632,7 +632,6 @@ struct Texture
     }
 };
 extern hashnameset<Texture> textures;
-extern vector<Texture *> animtextures;
 
 enum
 {
@@ -884,8 +883,8 @@ struct DecalSlot : Slot, VSlot
 extern void scaleimage(ImageData &s, int w, int h);
 extern void texcrop(ImageData &s, ImageData &d, int x, int y, int w, int h);
 extern void texmad(ImageData &s, const vec &mul, const vec &add = vec(0 , 0, 0));
-extern void updatetextures();
 extern void preloadtextures(uint flags = IDF_PRELOAD);
+extern void updatetextures();
 
 struct texrotation
 {

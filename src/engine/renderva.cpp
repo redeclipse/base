@@ -1553,7 +1553,8 @@ static inline void bindslottex(renderstate &cur, int type, Texture *tex, GLenum 
             cur.tmu = type;
             glActiveTexture_(GL_TEXTURE0 + type);
         }
-        glBindTexture(target, cur.textures[type] = tex->id);
+        settexture(tex);
+        cur.textures[type] = tex->id;
     }
 }
 
@@ -2508,7 +2509,8 @@ static inline void bindslottex(decalrenderer &cur, int type, Texture *tex, GLenu
             cur.tmu = type;
             glActiveTexture_(GL_TEXTURE0 + type);
         }
-        glBindTexture(target, cur.textures[type] = tex->id);
+        settexture(tex);
+        cur.textures[type] = tex->id;
     }
 }
 

@@ -42,7 +42,7 @@ extern float rayfloor  (const vec &o, vec &floor, int mode = 0, float radius = 0
 extern bool  raycubelos(const vec &o, const vec &dest, vec &hitpos);
 
 struct Texture;
-
+extern bool settexture(Texture *t = NULL);
 extern bool settexture(const char *name, int tclamp = 0);
 
 // world

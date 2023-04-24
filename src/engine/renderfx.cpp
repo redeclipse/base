@@ -281,7 +281,7 @@ void renderhaze()
         {
             float xscale = gethazescalex(), yscale = gethazescaley(), scroll = lastmillis/1000.0f, xscroll = gethazescrollx()*scroll, yscroll = gethazescrolly()*scroll;
             GLOBALPARAMF(hazetexgen, xscale, yscale, xscroll, yscroll);
-            glBindTexture(GL_TEXTURE_2D, hazetexture->id);
+            settexture(hazetexture);
             if(hasrefractmask) SETSHADER(hazetexref);
             else SETSHADER(hazetex);
         }

@@ -56,7 +56,8 @@ VAR(0, maxgrass, 10, 10000, 10000);
 struct grassgroup
 {
     const grasstri *tri;
-    int tex, offset, numquads, scale, height;
+    Texture *tex;
+    int offset, numquads, scale, height;
 };
 
 static vector<grassgroup> grassgroups;
@@ -183,7 +184,7 @@ static void gengrassquads(grassgroup *&group, const grasswedge &w, const grasstr
         {
             group = &grassgroups.add();
             group->tri = &g;
-            group->tex = tex->id;
+            group->tex = tex;
             group->offset = grassverts.length()/4;
             group->numquads = 0;
             group->scale = gs;
@@ -325,15 +326,16 @@ void rendergrass()
     GLOBALPARAMF(grasstest, grasstest);
     GLOBALPARAMF(grassmargin, grassmargin, grassmargin ? grassmarginfade / grassmargin : 0.0f, grassmargin ? grassmarginfade : 1.0f);
 
-    int texid = -1, blend = -1;
+    Texture *tex = NULL;
+    int blend = -1;
     loopv(grassgroups)
     {
         grassgroup &g = grassgroups[i];
 
-        if(texid != g.tex)
+        if(tex != g.tex)
         {
-            glBindTexture(GL_TEXTURE_2D, g.tex);
-            texid = g.tex;
+            settexture(g.tex);
+            tex = g.tex;
         }
 
         if(blend != g.tri->blend)

@@ -271,7 +271,7 @@ static float draw_char(Texture *&tex, int c, float x, float y, float scale)
         {
             xtraverts += gle::end();
             tex = curfont->texs[info.tex];
-            glBindTexture(GL_TEXTURE_2D, tex->id);
+            settexture(tex);
         }
 
         float x1 = x + scale*info.offsetx,
@@ -404,7 +404,7 @@ static float draw_icon(Texture *&tex, const char *name, float x, float y, float 
         {
             xtraverts += gle::end();
             tex = t;
-            glBindTexture(GL_TEXTURE_2D, tex->id);
+            settexture(tex);
         }
         textvert(x,     y    ); gle::attribf(0, 0);
         textvert(x + w, y    ); gle::attribf(1, 0);
@@ -857,7 +857,7 @@ static float draw_key(Texture *&tex, const char *str, float sx, float sy, bvec4 
                 {
                     xtraverts += gle::end();
                     tex = oldtex;
-                    glBindTexture(GL_TEXTURE_2D, tex->id);
+                    settexture(tex);
                 }
                 draw_text(" or ", sx + width, sy, color.r, color.g, color.b, color.a, 0, -1, -1, 1);
             }
@@ -875,7 +875,7 @@ static float draw_key(Texture *&tex, const char *str, float sx, float sy, bvec4 
                     {
                         xtraverts += gle::end();
                         tex = t->tex;
-                        glBindTexture(GL_TEXTURE_2D, tex->id);
+                        settexture(tex);
                     }
                     float oh = h-sh, oy = sy-oh*0.5f;
                     textvert(sx + width,     oy    ); gle::attribf(0, 0);
@@ -896,7 +896,7 @@ static float draw_key(Texture *&tex, const char *str, float sx, float sy, bvec4 
             {
                 xtraverts += gle::end();
                 tex = oldtex;
-                glBindTexture(GL_TEXTURE_2D, tex->id);
+                settexture(tex);
             }
             draw_text(keystr, sx + width, sy, color.r, color.g, color.b, color.a, 0, -1, -1, 1);
         }
@@ -961,7 +961,7 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
     wantfontpass = false;
     curfontpass = 0;
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glBindTexture(GL_TEXTURE_2D, tex->id);
+    settexture(tex);
     gle::color(color);
     gle::defvertex(textmatrix ? 3 : 2);
     gle::deftexcoord0();

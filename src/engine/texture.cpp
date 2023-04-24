@@ -1196,16 +1196,13 @@ void create3dtexture(int tnum, int w, int h, int d, const void *pixels, int tcla
 }
 
 hashnameset<Texture> textures;
-vector<Texture *> animtextures;
-
 Texture *notexture = NULL, *blanktexture = NULL; // used as default, ensured to be loaded
 
 VAR(IDF_PERSIST, compositeuprate, 0, 16, VAR_MAX);
 
 static void updatetexture(Texture *t)
 {
-    if(t->delay <= 0) return;
-    int elapsed = lastmillis-t->last, delay = t->delay;
+    int elapsed = lastmillis - t->last, delay = t->delay;
     if(t->type&Texture::COMPOSITE && delay < compositeuprate) delay = compositeuprate;
     if(elapsed < delay) return;
 
@@ -1229,7 +1226,7 @@ static void updatetexture(Texture *t)
 
 void updatetextures()
 {
-    loopv(animtextures) updatetexture(animtextures[i]);
+    enumerate(textures, Texture, t, if(t.delay > 0 && t.used >= t.last) updatetexture(&t));
 }
 
 void preloadtextures(uint flags)
@@ -1396,11 +1393,7 @@ static Texture *newtexture(Texture *t, const char *rname, ImageData &s, int tcla
         }
     }
     t->id = t->frames.length() ? t->frames[0] : 0;
-    if(t->frames.length() > 1 && t->delay > 0)
-    {
-        animtextures.add(t);
-        t->last = lastmillis;
-    }
+    t->used = t->last = lastmillis;
     return t;
 }
 
@@ -1926,7 +1919,6 @@ static Texture *texturecomp(const char *name, int tclamp = 0, bool mipit = true,
     if(w < 1<<1) w = compositesize;
     if(h < 1<<1) h = compositesize;
 
-    conoutf("Generating composite: %s [%s] %d %d [%d]", n, a, w, h, tclamp);
     GLuint texid = 0;
     if(!UI::composite(&texid, n, a, w, h, tclamp, mipit, msg) || !texid)
     {
@@ -1960,11 +1952,7 @@ static Texture *texturecomp(const char *name, int tclamp = 0, bool mipit = true,
     t->bpp = 4;
     t->delay = delay;
     t->id = texid;
-    if(t->delay > 0)
-    {
-        t->last = lastmillis;
-        animtextures.add(t);
-    }
+    t->used = t->last = lastmillis;
     list.deletearrays();
     return t;
 }
@@ -2008,11 +1996,17 @@ Texture *textureload(const char *name, int tclamp, bool mipit, bool msg, bool gc
     return notexture;
 }
 
-bool settexture(const char *name, int tclamp)
+bool settexture(Texture *t)
 {
-    Texture *t = textureload(name, tclamp, true, false);
+    if(!t) t = notexture;
+    t->used = lastmillis;
     glBindTexture(GL_TEXTURE_2D, t->id);
     return t != notexture;
+}
+
+bool settexture(const char *name, int tclamp)
+{
+    return settexture(textureload(name, tclamp, true, false));
 }
 
 vector<VSlot *> vslots;
@@ -3898,7 +3892,6 @@ void genenvtexs()
 
 void cleanuptexture(Texture *t)
 {
-    if(animtextures.find(t) >= 0) animtextures.removeobj(t);
     DELETEA(t->alphamask);
 
     if(t->frames.empty() && t->id) glDeleteTextures(1, &t->id);
@@ -3965,7 +3958,6 @@ bool reloadtexture(Texture *t)
             if(t->type&Texture::COMPOSITE)
             {
                 if(!UI::composite(&t->id, t->comp, t->args, t->w, t->h, t->tclamp, t->mipmap, true)) return false;
-                if(t->delay > 0 && animtextures.find(t) < 0) animtextures.add(t);
                 break;
             }
             int compress = 0;
@@ -4308,7 +4300,7 @@ void gendds(char *infile, char *outfile)
     if(t==notexture || t->frames.empty()) { conoutf("\frFailed loading %s", infile); return; }
 
     if(t->frames.empty()) t->frames.add(0);
-    glBindTexture(GL_TEXTURE_2D, t->frames[0]);
+    settexture(t);
     GLint compressed = 0, format = 0, width = 0, height = 0;
     glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_COMPRESSED, &compressed);
     glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &format);

@@ -307,9 +307,9 @@ struct animmodel : model
                 {
                     if(alphatested() && owner->model->alphashadow)
                     {
-                        if(tex!=lasttex)
+                        if(tex != lasttex)
                         {
-                            glBindTexture(GL_TEXTURE_2D, tex->id);
+                            settexture(tex);
                             lasttex = tex;
                         }
                         if(owner->model->wind) SETMODELSHADER(b, windhalomodel);
@@ -323,9 +323,9 @@ struct animmodel : model
                 }
                 else if(alphatested() && owner->model->alphashadow)
                 {
-                    if(tex!=lasttex)
+                    if(tex != lasttex)
                     {
-                        glBindTexture(GL_TEXTURE_2D, tex->id);
+                        settexture(tex);
                         lasttex = tex;
                     }
                     if(owner->model->wind) SETMODELSHADER(b, windshadowmodel);
@@ -341,28 +341,28 @@ struct animmodel : model
             int activetmu = 0;
             if(tex!=lasttex)
             {
-                glBindTexture(GL_TEXTURE_2D, tex->id);
+                settexture(tex);
                 lasttex = tex;
             }
             if(bumpmapped() && normalmap!=lastnormalmap)
             {
                 glActiveTexture_(GL_TEXTURE3);
                 activetmu = 3;
-                glBindTexture(GL_TEXTURE_2D, normalmap->id);
+                settexture(normalmap);
                 lastnormalmap = normalmap;
             }
             if(decaled() && decal!=lastdecal)
             {
                 glActiveTexture_(GL_TEXTURE4);
                 activetmu = 4;
-                glBindTexture(GL_TEXTURE_2D, decal->id);
+                settexture(decal);
                 lastdecal = decal;
             }
             if(masked() && masks!=lastmasks)
             {
                 glActiveTexture_(GL_TEXTURE1);
                 activetmu = 1;
-                glBindTexture(GL_TEXTURE_2D, masks->id);
+                settexture(masks);
                 lastmasks = masks;
             }
             int oldflags = flags;
@@ -375,7 +375,7 @@ struct animmodel : model
                     {
                         glActiveTexture_(GL_TEXTURE5);
                         activetmu = 5;
-                        glBindTexture(GL_TEXTURE_2D, state->mixer->id);
+                        settexture(state->mixer);
                         lastmixer = state->mixer;
                     }
                 }
@@ -390,7 +390,7 @@ struct animmodel : model
                     {
                         glActiveTexture_(GL_TEXTURE6);
                         activetmu = 6;
-                        glBindTexture(GL_TEXTURE_2D, state->pattern->id);
+                        settexture(state->pattern);
                         lastpattern = state->pattern;
                     }
                 }
