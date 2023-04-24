@@ -64,6 +64,10 @@ semupdate_wait() {
 }
 
 semupdate_appimage() {
+    sudo ${SEMUPDATE_APT} update || return 1
+    sudo ${SEMUPDATE_APT} -fy install build-essential multiarch-support gcc-multilib g++-multilib zlib1g-dev libsdl2-dev libsndfile1-dev libalut-dev libopenal-dev libsdl2-image-dev jq zsync || return 1
+    sudo ${SEMUPDATE_APT} clean || return 1
+    pushd "${HOME}" || return 1
     git clone --depth 1 "${SEMUPDATE_APPIMAGE}" appimage || return 1
     pushd appimage || return 1
     export BRANCH="${BRANCH_NAME}"
@@ -84,6 +88,7 @@ semupdate_appimage() {
     popd || return 1
     # Clear the appimage building directory to save space.
     rm -rf appimage
+    popd || return 1
     return 0
 }
 
@@ -162,14 +167,9 @@ semupdate_steam() {
 
 if [ "${BRANCH_NAME}" = master ]; then
     semupdate_setup || exit 1
-    sudo ${SEMUPDATE_APT} update || exit 1
-    sudo ${SEMUPDATE_APT} -fy install build-essential multiarch-support gcc-multilib g++-multilib zlib1g-dev libsdl2-dev libsndfile1-dev libalut-dev libopenal-dev libsdl2-image-dev jq zsync || exit 1
-    sudo ${SEMUPDATE_APT} clean || exit 1
     case $1 in
         appimage)
-            pushd "${HOME}" || exit 1
             semupdate_appimage || exit 1
-            popd || exit 1
             ;;
         steam)
             semupdate_steam || exit 1
