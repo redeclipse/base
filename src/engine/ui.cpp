@@ -828,6 +828,11 @@ namespace UI
         }
     }
 
+    struct Surface;
+    enum { SURFACE_MAIN = 0, SURFACE_PROGRESS, SURFACE_COMPOSITE, SURFACE_MAX };
+    int cursurface = -1;
+    Surface *surfaces[SURFACE_MAX] = { NULL, NULL, NULL };
+
     struct Window;
 
     enum { WINTYPE_NORMAL = 0, WINTYPE_COMPOSITE, WINTYPE_MAX };
@@ -849,7 +854,7 @@ namespace UI
 
     int getwindowtype()
     {
-        if(drawtex == DRAWTEX_COMPOSITE) return WINTYPE_COMPOSITE;
+        if(cursurface == SURFACE_COMPOSITE) return WINTYPE_COMPOSITE;
         return WINTYPE_NORMAL;
     }
 
@@ -985,7 +990,7 @@ namespace UI
 
         void projection()
         {
-            if(drawtex == DRAWTEX_COMPOSITE) // composites have flipped Y axis
+            if(cursurface == SURFACE_COMPOSITE) // composites have flipped Y axis
                 hudmatrix.ortho(px, px + pw, py, py + ph, -1, 1);
             else hudmatrix.ortho(px, px + pw, py + ph, py, -1, 1);
             resethudmatrix();
@@ -1044,16 +1049,16 @@ namespace UI
         glScissor(sx1, sy1, sx2-sx1, sy2-sy1);
     }
 
-    struct World : Object
+    struct Surface : Object
     {
         int cursortype;
         bool cursorlocked, mousetracking, lockscroll;
         vec2 mousetrackvec;
 
-        World() : cursortype(CURSOR_DEFAULT), cursorlocked(false), mousetracking(false), lockscroll(false), mousetrackvec(0, 0) {}
-        ~World() {}
+        Surface() : cursortype(CURSOR_DEFAULT), cursorlocked(false), mousetracking(false), lockscroll(false), mousetrackvec(0, 0) {}
+        ~Surface() {}
 
-        static const char *typestr() { return "#World"; }
+        static const char *typestr() { return "#Surface"; }
         const char *gettype() const { return typestr(); }
 
         #define loopwindows(o, body) do { \
@@ -1218,13 +1223,15 @@ namespace UI
         }
     };
 
-    enum { WORLD_MAIN = 0, WORLD_PROGRESS, WORLD_COMPOSITE, WORLD_MAX };
-    World *world = NULL, *worlds[WORLD_MAX] = { NULL, NULL, NULL };
+    bool inputsurface()
+    {
+        return cursurface == SURFACE_MAIN;
+    }
 
     void Window::build()
     {
-        if(!world) return;
-        reset(world);
+        if(cursurface < 0 || !surfaces[cursurface]) return;
+        reset(surfaces[cursurface]);
         setup();
         window[getwindowtype()] = this;
         buildchildren(contents);
@@ -1251,7 +1258,7 @@ namespace UI
                 conoutf("\frCannot override builtin %sUI %s with a one from the map", getwinprefix(type), w->name);
                 return;
             }
-            loopi(3) if(worlds[i]) worlds[i]->hide(w);
+            loopi(3) if(surfaces[i]) surfaces[i]->hide(w);
             windows[type].remove(name);
             delete w;
             found = true;
@@ -1277,45 +1284,45 @@ namespace UI
 
     ICOMMAND(0, uicursorx, "", (), floatret(cursorx*float(hudw)/hudh));
     ICOMMAND(0, uicursory, "", (), floatret(cursory));
-    ICOMMAND(0, uilockcursor, "", (), if(world) world->cursorlocked = true);
-    ICOMMAND(0, uilockscroll, "", (), if(world) world->lockscroll = true);
+    ICOMMAND(0, uilockcursor, "", (), if(cursurface >= 0 && surfaces[cursurface]) surfaces[cursurface]->cursorlocked = true);
+    ICOMMAND(0, uilockscroll, "", (), if(cursurface >= 0 && surfaces[cursurface]) surfaces[cursurface]->lockscroll = true);
 
     ICOMMAND(0, uiaspect, "", (), floatret(float(hudw)/hudh));
 
-    ICOMMAND(0, uicursortype, "b", (int *val), if(world) { if(*val >= 0) world->cursortype = clamp(*val, 0, CURSOR_MAX-1); intret(world->cursortype); });
+    ICOMMAND(0, uicursortype, "b", (int *val), if(cursurface >= 0 && surfaces[cursurface]) { if(*val >= 0) surfaces[cursurface]->cursortype = clamp(*val, 0, CURSOR_MAX-1); intret(surfaces[cursurface]->cursortype); });
 
     ICOMMAND(0, uimousetrackx, "", (), {
-        if(world)
+        if(cursurface >= 0 && surfaces[cursurface])
         {
-            world->mousetracking = true;
-            floatret(world->mousetrackvec.x);
+            surfaces[cursurface]->mousetracking = true;
+            floatret(surfaces[cursurface]->mousetrackvec.x);
         }
     });
 
     ICOMMAND(0, uimousetracky, "", (), {
-        if(world)
+        if(cursurface >= 0 && surfaces[cursurface])
         {
-            world->mousetracking = true;
-            floatret(world->mousetrackvec.y);
+            surfaces[cursurface]->mousetracking = true;
+            floatret(surfaces[cursurface]->mousetrackvec.y);
         }
     });
 
     bool showui(const char *name)
     {
-        if(!world) return false;
+        if(cursurface < 0 || !surfaces[cursurface]) return false;
         Window *w = windows[getwindowtype()].find(name, NULL);
         if(!w) return false;
-        return world->show(w);
+        return surfaces[cursurface]->show(w);
     }
 
     bool hideui(const char *name)
     {
-        if(!world) return false;
-        if(!name || !*name) return world->hideall() > 0;
+        if(cursurface < 0 || !surfaces[cursurface]) return false;
+        if(!name || !*name) return surfaces[cursurface]->hideall() > 0;
         else
         {
             Window *w = windows[getwindowtype()].find(name, NULL);
-            if(w) return world->hide(w);
+            if(w) return surfaces[cursurface]->hide(w);
         }
         return false;
     }
@@ -1353,17 +1360,17 @@ namespace UI
 
     bool uivisible(const char *name)
     {
-        if(!world) return false;
-        if(!name || !*name) return world->children.length() > 0;
+        if(cursurface < 0 || !surfaces[cursurface]) return false;
+        if(!name || !*name) return surfaces[cursurface]->children.length() > 0;
         Window *w = windows[getwindowtype()].find(name, NULL);
-        return w && world->children.find(w) >= 0;
+        return w && surfaces[cursurface]->children.find(w) >= 0;
     }
 
     ICOMMAND(0, showui, "s", (char *name), intret(showui(name) ? 1 : 0));
     ICOMMAND(0, hideui, "s", (char *name), intret(hideui(name) ? 1 : 0));
-    ICOMMAND(0, hidetopui, "", (), intret(world && world->hidetop() ? 1 : 0));
-    ICOMMAND(0, topui, "", (), result(world ? world->topname() : ""));
-    ICOMMAND(0, hideallui, "i", (int *n), intret(world ? world->hideall(*n != 0) : 0));
+    ICOMMAND(0, hidetopui, "", (), intret(cursurface >= 0 && surfaces[cursurface] && surfaces[cursurface]->hidetop() ? 1 : 0));
+    ICOMMAND(0, topui, "", (), result(cursurface >= 0 && surfaces[cursurface] ? surfaces[cursurface]->topname() : ""));
+    ICOMMAND(0, hideallui, "i", (int *n), intret(cursurface >= 0 && surfaces[cursurface] ? surfaces[cursurface]->hideall(*n != 0) : 0));
     ICOMMAND(0, toggleui, "s", (char *name), intret(toggleui(name) ? 1 : 0));
     ICOMMAND(0, holdui, "sD", (char *name, int *down), holdui(name, *down!=0));
     ICOMMAND(0, pressui, "sD", (char *name, int *down), pressui(name, *down!=0));
@@ -3649,7 +3656,7 @@ namespace UI
 
         void scrollup(float cx, float cy, bool inside);
         void scrolldown(float cx, float cy, bool inside);
-        bool canscroll() const { return !scrolllock && !world->lockscroll; }
+        bool canscroll() const { return !scrolllock && !surfaces[cursurface]->lockscroll; }
         void setscrolllock(bool scrolllock_) { scrolllock = scrolllock_; }
     };
 
@@ -4118,7 +4125,7 @@ namespace UI
 
         TextEditor() : edit(NULL), keyfilter(NULL), canfocus(true), allowlines(true) {}
 
-        bool isallowed() const { return world == worlds[WORLD_MAIN]; }
+        bool isallowed() const { return inputsurface(); }
         bool iseditor() const { return true; }
 
         void setup(const char *name, int length, int height, float scale_ = 1, const char *initval = NULL, int mode = EDITORUSED, const char *keyfilter_ = NULL, bool _allowlines = true, int limit = 0)
@@ -4402,7 +4409,7 @@ namespace UI
 
         KeyCatcher() : id(NULL), pressedkey(0) {}
 
-        bool isallowed() const { return world == worlds[WORLD_MAIN]; }
+        bool isallowed() const { return inputsurface(); }
         bool iskeycatcher() const { return true; }
 
         static const char *typestr() { return "#KeyCatcher"; }
@@ -5560,18 +5567,18 @@ namespace UI
 
     int hasinput()
     {
-        return world ? world->allowinput() : 0;
+        return cursurface >= 0 && surfaces[cursurface] ? surfaces[cursurface]->allowinput() : 0;
     }
 
     bool hasmenu(bool pass)
     {
-        return world && world->hasmenu(pass);
+        return cursurface >= 0 && surfaces[cursurface] && surfaces[cursurface]->hasmenu(pass);
     }
 
     bool keypress(int code, bool isdown)
     {
-        if(!world) return false;
-        if(world->rawkey(code, isdown)) return true;
+        if(cursurface < 0 || !surfaces[cursurface]) return false;
+        if(surfaces[cursurface]->rawkey(code, isdown)) return true;
         int action = 0, hold = 0;
         switch(code)
         {
@@ -5589,44 +5596,44 @@ namespace UI
         {
             if(isdown)
             {
-                if(hold) world->clearstate(hold);
-                if(world->setstate(action, cursorx, cursory, 0, setmode, action|hold)) return true;
+                if(hold) surfaces[cursurface]->clearstate(hold);
+                if(surfaces[cursurface]->setstate(action, cursorx, cursory, 0, setmode, action|hold)) return true;
             }
             else if(hold)
             {
-                if(world->setstate(action, cursorx, cursory, hold, setmode, action))
+                if(surfaces[cursurface]->setstate(action, cursorx, cursory, hold, setmode, action))
                 {
-                    world->clearstate(hold);
+                    surfaces[cursurface]->clearstate(hold);
                     return true;
                 }
-                world->clearstate(hold);
+                surfaces[cursurface]->clearstate(hold);
             }
         }
-        return world->key(code, isdown);
+        return surfaces[cursurface]->key(code, isdown);
     }
 
     bool textinput(const char *str, int len)
     {
-        return world && world->textinput(str, len);
+        return cursurface >= 0 && surfaces[cursurface] && surfaces[cursurface]->textinput(str, len);
     }
 
     void setup()
     {
-        loopi(WORLD_MAX) worlds[i] = new World;
-        world = worlds[WORLD_MAIN];
+        loopi(SURFACE_MAX) surfaces[i] = new Surface;
+        cursurface = SURFACE_MAIN;
         inputsteal = NULL;
     }
 
     void cleanup()
     {
-        loopi(WORLD_MAX) worlds[i]->children.setsize(0);
+        loopi(SURFACE_MAX) surfaces[i]->children.setsize(0);
         loopj(WINTYPE_MAX)
         {
             enumerate(windows[j], Window *, w, delete w);
             windows[j].clear();
         }
-        world = NULL;
-        loopi(WORLD_MAX) DELETEP(worlds[i]);
+        cursurface = NULL;
+        loopi(SURFACE_MAX) DELETEP(surfaces[i]);
         inputsteal = NULL;
     }
 
@@ -5639,61 +5646,61 @@ namespace UI
     {
         if(!progressing && uihidden) return;
 
-        World *oldworld = world;
-        world = worlds[progressing ? WORLD_PROGRESS : WORLD_MAIN];
+        int oldsurface = cursurface;
+        cursurface = progressing ? SURFACE_PROGRESS : SURFACE_MAIN;
         if(progressing) showui("progress");
 
         float oldtextscale = curtextscale;
         curtextscale = 1;
-        world->cursortype = CURSOR_DEFAULT;
-        world->cursorlocked = false;
-        world->mousetracking = false;
-        world->lockscroll = false;
+        surfaces[cursurface]->cursortype = CURSOR_DEFAULT;
+        surfaces[cursurface]->cursorlocked = false;
+        surfaces[cursurface]->mousetracking = false;
+        surfaces[cursurface]->lockscroll = false;
 
         pushfont();
         readyeditors();
 
-        world->setstate(STATE_HOVER, cursorx, cursory, world->childstate&STATE_HOLD_MASK);
-        if(world->childstate&STATE_HOLD) world->setstate(STATE_HOLD, cursorx, cursory, STATE_HOLD, SETSTATE_ANY);
-        if(world->childstate&STATE_ALT_HOLD) world->setstate(STATE_ALT_HOLD, cursorx, cursory, STATE_ALT_HOLD, SETSTATE_ANY);
-        if(world->childstate&STATE_ESC_HOLD) world->setstate(STATE_ESC_HOLD, cursorx, cursory, STATE_ESC_HOLD, SETSTATE_ANY);
+        surfaces[cursurface]->setstate(STATE_HOVER, cursorx, cursory, surfaces[cursurface]->childstate&STATE_HOLD_MASK);
+        if(surfaces[cursurface]->childstate&STATE_HOLD) surfaces[cursurface]->setstate(STATE_HOLD, cursorx, cursory, STATE_HOLD, SETSTATE_ANY);
+        if(surfaces[cursurface]->childstate&STATE_ALT_HOLD) surfaces[cursurface]->setstate(STATE_ALT_HOLD, cursorx, cursory, STATE_ALT_HOLD, SETSTATE_ANY);
+        if(surfaces[cursurface]->childstate&STATE_ESC_HOLD) surfaces[cursurface]->setstate(STATE_ESC_HOLD, cursorx, cursory, STATE_ESC_HOLD, SETSTATE_ANY);
 
         calctextscale();
 
         if(*uiprecmd) execute(uiprecmd);
-        world->build();
+        surfaces[cursurface]->build();
         if(*uipostcmd) execute(uipostcmd);
 
         if(inputsteal && !inputsteal->isfocus())
             inputsteal = NULL;
 
-        if(!world->mousetracking) world->mousetrackvec = vec2(0, 0);
+        if(!surfaces[cursurface]->mousetracking) surfaces[cursurface]->mousetrackvec = vec2(0, 0);
 
         flusheditors();
         popfont();
 
         curtextscale = oldtextscale;
-        world = oldworld;
+        cursurface = oldsurface;
     }
 
     void render()
     {
         if(!progressing && uihidden) return;
 
-        World *oldworld = world;
-        world = worlds[progressing ? WORLD_PROGRESS : WORLD_MAIN];
+        int oldsurface = cursurface;
+        cursurface = progressing ? SURFACE_PROGRESS : SURFACE_MAIN;
 
         float oldtextscale = curtextscale;
         curtextscale = 1;
 
         pushfont();
-        world->layout();
-        world->adjustchildren();
-        world->draw();
+        surfaces[cursurface]->layout();
+        surfaces[cursurface]->adjustchildren();
+        surfaces[cursurface]->draw();
         popfont();
 
         curtextscale = oldtextscale;
-        world = oldworld;
+        cursurface = oldsurface;
     }
 
     void cleancomposite()
@@ -5734,8 +5741,8 @@ namespace UI
         drawtex = DRAWTEX_COMPOSITE;
 
         setsvar("uicompargs", args ? args : "");
-        World *oldworld = world;
-        world = worlds[WORLD_COMPOSITE];
+        int oldsurface = cursurface;
+        cursurface = SURFACE_COMPOSITE;
         showui(name);
 
         int oldhudw = hudw, oldhudh = hudh;
@@ -5751,14 +5758,14 @@ namespace UI
 
         pushfont();
         calctextscale();
-        world->build();
+        surfaces[cursurface]->build();
         popfont();
 
         curtextscale = 1;
         pushfont();
-        world->layout();
-        world->adjustchildren();
-        world->draw();
+        surfaces[cursurface]->layout();
+        surfaces[cursurface]->adjustchildren();
+        surfaces[cursurface]->draw();
         popfont();
 
         glActiveTexture_(GL_TEXTURE0);
@@ -5769,8 +5776,8 @@ namespace UI
         hudw = oldhudw;
         hudh = oldhudh;
 
-        world->hideall(true);
-        world = oldworld;
+        surfaces[cursurface]->hideall(true);
+        cursurface = oldsurface;
 
         drawtex = olddrawtex;
         glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
@@ -5786,18 +5793,18 @@ namespace UI
 
     void mousetrack(float dx, float dy)
     {
-        loopi(WORLD_MAX) if(worlds[i]) worlds[i]->mousetrackvec.add(vec2(dx, dy));
+        loopi(SURFACE_MAX) if(surfaces[i]) surfaces[i]->mousetrackvec.add(vec2(dx, dy));
     }
 
     bool cursorlock()
     {
-        if(worlds[WORLD_MAIN]) return worlds[WORLD_MAIN]->cursorlocked;
+        if(surfaces[SURFACE_MAIN]) return surfaces[SURFACE_MAIN]->cursorlocked;
         return false;
     }
 
     int cursortype()
     {
-        if(worlds[WORLD_MAIN]) return worlds[WORLD_MAIN]->cursortype;
+        if(surfaces[SURFACE_MAIN]) return surfaces[SURFACE_MAIN]->cursortype;
         return CURSOR_DEFAULT;
     }
 
