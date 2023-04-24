@@ -1316,7 +1316,7 @@ namespace UI
         success; \
     }
 
-    #define SWITCHSURFACE(surf, body, failure, success) \
+    #define SWSURFACE(surf, body, failure, success) \
     { \
         if(surface >= 0) DOSURFACE(surface, body, failure, success) \
         else loopi(SURFACE_INTERACT) DOSURFACE(i, body, failure, success) \
@@ -1346,7 +1346,7 @@ namespace UI
     bool toggleui(const char *name, int surface)
     {
         if(showui(name, surface)) return true;
-        hideui(name);
+        hideui(name, surface);
         return false;
     }
 
@@ -5597,13 +5597,13 @@ namespace UI
 
     int hasinput(int surface)
     {
-        SWITCHSURFACE(i, int ret = surfaces[cursurface]->allowinput(), return 0, if(ret) return ret);
+        SWSURFACE(i, int ret = surfaces[cursurface]->allowinput(), return 0, if(ret) return ret);
         return 0;
     }
 
     bool hasmenu(bool pass, int surface)
     {
-        SWITCHSURFACE(i, bool ret = surfaces[cursurface]->hasmenu(pass), return 0, if(ret) return ret);
+        SWSURFACE(i, bool ret = surfaces[cursurface]->hasmenu(pass), return 0, if(ret) return ret);
         return false;
     }
 
@@ -5661,8 +5661,13 @@ namespace UI
 
     void cleanup()
     {
+        loopi(SURFACE_MAX)
+        {
+            cursurface = i;
+            surfaces[i]->hideall(true);
+            surfaces[i]->children.setsize(0);
+        }
         cursurface = -1;
-        loopi(SURFACE_MAX) surfaces[i]->children.setsize(0);
         loopj(WINTYPE_MAX)
         {
             enumerate(windows[j], Window *, w, delete w);

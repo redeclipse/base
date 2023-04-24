@@ -531,8 +531,8 @@ namespace hud
     int hasinput(bool pass, bool focus)
     {
         if(focus && (cdpi::getoverlay() > 0 || commandmillis > 0 || curcompass)) return true;
-        int cur = UI::hasinput();
-        if(!cur && UI::hasmenu(pass)) cur = 1;
+        int cur = UI::hasinput(UI::SURFACE_MAIN);
+        if(!cur && UI::hasmenu(pass, UI::SURFACE_MAIN)) cur = 1;
         return cur;
     }
     ICOMMAND(0, hasinput, "N$", (int *n, ident *id), if(*n) intret(hasinput()); else printvar(id, hasinput()));
@@ -560,7 +560,7 @@ namespace hud
         hidecrosshair = 0;
 
         UI::showui("hud", UI::SURFACE_MAIN);
-        if(!UI::hasmenu())
+        if(!UI::hasmenu(true, UI::SURFACE_MAIN))
         {
             if(connected())
             {
@@ -570,7 +570,7 @@ namespace hud
             }
             else UI::showui("main", UI::SURFACE_MAIN);
         }
-        UI::update(progressing ? UI::SURFACE_PROGRESS : UI::SURFACE_MAIN);
+        UI::update(UI::SURFACE_MAIN);
     }
 
     void damage(int n, const vec &loc, gameent *v, int weap, int flags)

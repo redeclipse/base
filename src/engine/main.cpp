@@ -1264,7 +1264,6 @@ int main(int argc, char **argv)
 
         localconnect(false);
         resetfps();
-        hud::checkui();
 
         if(reprotoarg)
         {
