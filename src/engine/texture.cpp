@@ -1926,6 +1926,7 @@ static Texture *texturecomp(const char *name, int tclamp = 0, bool mipit = true,
     if(w < 1<<1) w = compositesize;
     if(h < 1<<1) h = compositesize;
 
+    conoutf("Generating composite: %s [%s] %d %d [%d]", n, a, w, h, tclamp);
     GLuint texid = 0;
     if(!UI::composite(&texid, n, a, w, h, tclamp, mipit, msg) || !texid)
     {
@@ -1945,7 +1946,7 @@ static Texture *texturecomp(const char *name, int tclamp = 0, bool mipit = true,
         t = &textures[key];
         t->name = key;
         t->comp = newstring(n);
-        t->args = newstring(a);
+        t->args = a ? newstring(a) : NULL;
     }
     t->type = Texture::IMAGE | Texture::COMPOSITE | Texture::ALPHA;
     t->tclamp = tclamp;

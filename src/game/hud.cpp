@@ -1495,8 +1495,7 @@ namespace hud
         drawtexture(x, y, c, c);
     }
 
-    CVAR(IDF_PERSIST, backgroundcolour, 0x900000);
-    FVAR(IDF_PERSIST, backgroundcoloursafe, 0, 0.5f, 1);
+    CVAR(IDF_PERSIST, backgroundcolour, 0x000000);
     TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundwatertex, "<grey><noswizzle>textures/water", 0x300);
     TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundcausttex, "!caustic 1", 0x300);
     TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundtex, "<nocompress>textures/menubg", 3);
@@ -1507,18 +1506,20 @@ namespace hud
         gle::colorf(1, 1, 1, 1);
 
         Texture *t = NULL;
-        if(showloadingmapbg && *mapname && strcmp(mapname, "maps/untitled"))
+        if(engineready && showloadingmapbg && *mapname && strcmp(mapname, "maps/untitled"))
         {
             defformatstring(tex, "<blur:2>%s", mapname);
             t = textureload(tex, 3, true, false);
         }
-        if(!t || t == notexture)
+        if(!engineready || !t || t == notexture)
         {
             pushhudmatrix();
             hudmatrix.ortho(0, 1, 1, 0, -1, 1);
             flushhudmatrix();
 
-            if(hudbackgroundshader)
+            t = textureloaded(backgroundtex);
+
+            if(engineready && t && hudbackgroundshader)
             {
                 hudbackgroundshader->set();
                 LOCALPARAMF(time, lastmillis/1000.0f);
@@ -1538,33 +1539,35 @@ namespace hud
             else if(hudnotextureshader)
             {
                 hudnotextureshader->set();
-                gle::color(backgroundcolour.tocolor().mul(backgroundcoloursafe), 1.f);
+                gle::color(backgroundcolour.tocolor(), 1.f);
             }
             else nullshader->set();
 
-            Texture *t = textureloaded(backgroundtex);
-
-            // Calculate cropping of the background
             float offsetx = 0, offsety = 0;
-            float hudratio = hudh / (float)hudw, bgratio = t->h / (float)t->w;
+            if(t)
+            {
+                // Calculate cropping of the background
+                float hudratio = hudh / (float)hudw, bgratio = t->h / (float)t->w;
 
-            if(hudratio < bgratio)
-            {
-                float scalex = hudw / (float)t->w;
-                float scaledh = t->h * scalex;
-                float ratioy = hudh / scaledh;
-                offsety = (1.0f - ratioy) * 0.5f;
-            }
-            else
-            {
-                float scaley = hudh / (float)t->h;
-                float scaledw = t->w * scaley;
-                float ratiox = hudw / scaledw;
-                offsetx = (1.0f - ratiox) * 0.5f;
+                if(hudratio < bgratio)
+                {
+                    float scalex = hudw / (float)t->w;
+                    float scaledh = t->h * scalex;
+                    float ratioy = hudh / scaledh;
+                    offsety = (1.0f - ratioy) * 0.5f;
+                }
+                else
+                {
+                    float scaley = hudh / (float)t->h;
+                    float scaledw = t->w * scaley;
+                    float ratiox = hudw / scaledw;
+                    offsetx = (1.0f - ratiox) * 0.5f;
+                }
             }
 
             drawquad(0, 0, 1, 1, offsetx, offsety, 1-offsetx, 1-offsety);
             pophudmatrix();
+            resethudshader();
         }
         else
         {
@@ -1578,7 +1581,6 @@ namespace hud
             drawquad(0, 0, w, h, offsetx, offsety, 1-offsetx, 1-offsety);
         }
 
-        resethudshader();
         if(progressing && !engineready)
         {
             if(showloadinglogos)
@@ -1587,11 +1589,11 @@ namespace hud
 
                 t = textureload(logotex, 3);
                 glBindTexture(GL_TEXTURE_2D, t->id);
-                drawtexture(w-w/2-w/8, h/2-w/16, w/4, w/8);
+                drawtexture(w-w/2-w/4, h/2-w/8, w/2, w/4);
             }
 
-            if(progressamt > 0) draw_textf("%s [%.1f%%]", w-w/2, h-w/6, 0, 0, 255, 255, 255, 255, TEXT_CENTERED, -1, -1, 1, *progresstitle ? progresstitle : "Loading, please wait..", progressamt*100);
-            else draw_textf("%s", w-w/2, h-w/6, 0, 0, 255, 255, 255, 255, TEXT_CENTERED, -1, -1, 1, *progresstitle ? progresstitle : "Loading, please wait..");
+            draw_textf("%s", FONTH/2, h-FONTH*5/4, 0, 0, 255, 255, 255, 255, TEXT_LEFT_JUSTIFY, -1, -1, 1, *progresstitle ? progresstitle : "Loading, please wait..");
+            if(progressamt > 0) draw_textf("[ %.1f%% ]", w-FONTH/2, h-FONTH*5/4, 0, 0, 255, 255, 255, 255, TEXT_RIGHT_JUSTIFY, -1, -1, 1, progressamt*100);
         }
     }
 

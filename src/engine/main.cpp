@@ -1345,7 +1345,6 @@ int main(int argc, char **argv)
                 }
                 setcaption(game::gametitle(), game::gametext());
             }
-            //popfont(-1);
         }
     }
 
