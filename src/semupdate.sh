@@ -165,10 +165,18 @@ if [ "${BRANCH_NAME}" = master ]; then
     sudo ${SEMUPDATE_APT} update || exit 1
     sudo ${SEMUPDATE_APT} -fy install build-essential multiarch-support gcc-multilib g++-multilib zlib1g-dev libsdl2-dev libsndfile1-dev libalut-dev libopenal-dev libsdl2-image-dev jq zsync || exit 1
     sudo ${SEMUPDATE_APT} clean || exit 1
-    pushd "${HOME}" || exit 1
-    semupdate_appimage || exit 1
-    popd || exit 1
-    #semupdate_wait
-    semupdate_steam || exit 1
+    case $1 in
+        appimage)
+            pushd "${HOME}" || exit 1
+            semupdate_appimage || exit 1
+            popd || exit 1
+            ;;
+        steam)
+            semupdate_steam || exit 1
+            ;;
+        *)
+            echo "Usage: $0 <appimage|steam>"
+            ;;
+    esac
 fi
 echo "done."
