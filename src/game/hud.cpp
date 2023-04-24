@@ -1517,24 +1517,33 @@ namespace hud
             hudmatrix.ortho(0, 1, 1, 0, -1, 1);
             flushhudmatrix();
 
-            t = textureloaded(backgroundtex);
+            t = textureload(backgroundtex, 3);
 
-            if(engineready && t && hudbackgroundshader)
+            if(t)
             {
-                hudbackgroundshader->set();
-                LOCALPARAMF(time, lastmillis/1000.0f);
-                LOCALPARAMF(aspect, hudh/(float)hudw);
+                if(engineready && hudbackgroundshader)
+                {
+                    hudbackgroundshader->set();
+                    LOCALPARAMF(time, lastmillis/1000.0f);
+                    LOCALPARAMF(aspect, hudh/(float)hudw);
 
-                glActiveTexture_(GL_TEXTURE0);
-                settexture(backgroundtex, 3);
-                glActiveTexture_(GL_TEXTURE1);
-                settexture(backgroundwatertex, 0x300);
-                glActiveTexture_(GL_TEXTURE2);
-                settexture(backgroundcausttex, 0x300);
-                glActiveTexture_(GL_TEXTURE3);
-                settexture(backgroundmasktex, 3);
+                    glActiveTexture_(GL_TEXTURE0);
+                    settexture(t);
+                    glActiveTexture_(GL_TEXTURE1);
+                    settexture(backgroundwatertex, 0x300);
+                    glActiveTexture_(GL_TEXTURE2);
+                    settexture(backgroundcausttex, 0x300);
+                    glActiveTexture_(GL_TEXTURE3);
+                    settexture(backgroundmasktex, 3);
 
-                glActiveTexture_(GL_TEXTURE0);
+                    glActiveTexture_(GL_TEXTURE0);
+                }
+                else
+                {
+                    hudshader->set();
+                    glActiveTexture_(GL_TEXTURE0);
+                    settexture(t);
+                }
             }
             else if(hudnotextureshader)
             {
@@ -1589,7 +1598,7 @@ namespace hud
 
                 t = textureload(logotex, 3);
                 settexture(t);
-                drawtexture(w-w/2-w/4, h/2-w/8, w/2, w/4);
+                drawtexture(w-w/4-w/3, h/2-w/6, w/2, w/4);
             }
 
             draw_textf("%s", FONTH/2, h-FONTH*5/4, 0, 0, 255, 255, 255, 255, TEXT_LEFT_JUSTIFY, -1, -1, 1, *progresstitle ? progresstitle : "Loading, please wait..");

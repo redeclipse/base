@@ -1264,9 +1264,8 @@ int main(int argc, char **argv)
 
         localconnect(false);
         resetfps();
-
-        engineready = true;
         hud::checkui();
+
         if(reprotoarg)
         {
             if(connecthost && *connecthost) connectserv(connecthost, connectport, connectpassword);
@@ -1274,17 +1273,11 @@ int main(int argc, char **argv)
         }
 
         // housekeeping
-        if(connectstr)
-        {
-            delete[] connectstr;
-            connectstr = NULL;
-        }
-        if(reprotoarg)
-        {
-            delete[] reprotoarg;
-            reprotoarg = NULL;
-        }
+        DELETEA(connectstr);
+        DELETEA(reprotoarg);
+
         if(initscript) execute(initscript, true);
+        engineready = true;
 
         for(int frameloops = 0; ; frameloops = frameloops >= INT_MAX-1 ? MAXFPSHISTORY+1 : frameloops+1)
         {
