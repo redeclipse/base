@@ -1199,6 +1199,7 @@ hashnameset<Texture> textures;
 Texture *notexture = NULL, *blanktexture = NULL; // used as default, ensured to be loaded
 
 VAR(IDF_PERSIST, compositeuprate, 0, 16, VAR_MAX);
+VAR(IDF_PERSIST, texturepause, 0, 30000, VAR_MAX);
 
 static void updatetexture(Texture *t)
 {
@@ -1226,7 +1227,7 @@ static void updatetexture(Texture *t)
 
 void updatetextures()
 {
-    enumerate(textures, Texture, t, if(t.delay > 0 && t.used >= t.last) updatetexture(&t));
+    enumerate(textures, Texture, t, if(t.delay > 0 && t.used >= t.last && (!texturepause || lastmillis-t.used < texturepause)) updatetexture(&t));
 }
 
 void preloadtextures(uint flags)
@@ -1999,7 +2000,7 @@ Texture *textureload(const char *name, int tclamp, bool mipit, bool msg, bool gc
 bool settexture(Texture *t)
 {
     if(!t) t = notexture;
-    t->used = lastmillis;
+    if(t->used != lastmillis) t->used = lastmillis;
     glBindTexture(GL_TEXTURE_2D, t->id);
     return t != notexture;
 }
