@@ -27,7 +27,7 @@ namespace entities
     FVAR(IDF_PERSIST, showentavailable, 0, 1, 1);
     FVAR(IDF_PERSIST, showentunavailable, 0, 0.35f, 1);
 
-    VAR(IDF_PERSIST, showentinfoui, 0, 0, 4); // 0 = off, 1 = only first, 2 = only selected, 3 = always when editing, 4 = always in editmode
+    VAR(IDF_PERSIST, showentinfoui, 0, 2, 4); // 0 = off, 1 = only first, 2 = only selected, 3 = always when editing, 4 = always in editmode
     FVAR(IDF_PERSIST, showentinfouiyaw, 0, -1, 360);
     FVAR(IDF_PERSIST, showentinfouipitch, -90, 0, 90);
     FVAR(IDF_PERSIST, showentinfouiscale, FVAR_NONZERO, 1, FVAR_MAX);
@@ -3453,11 +3453,7 @@ namespace entities
             if(showentinfoui) loopv(visents)
             {
                 visibleent &v = visents[i];
-                if(UI::uivisible("entinfo", UI::SURFACE_MAIN, v.idx))
-                {
-                    conoutf("hiding: %d", v.idx);
-                    hideui("entinfo", UI::SURFACE_MAIN, v.idx);
-                }
+                if(UI::uivisible("entinfo", UI::SURFACE_MAIN, v.idx)) hideui("entinfo", UI::SURFACE_MAIN, v.idx);
             }
         }
         else if(hasdynui)
