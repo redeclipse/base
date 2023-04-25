@@ -886,7 +886,7 @@ namespace UI
         uint *contents, *onshow, *onhide;
         bool exclusive, mapdef, inworld;
         int allowinput, windowflags, param;
-        float px, py, pw, ph, yaw, pitch, scale;
+        float px, py, pw, ph, yaw, pitch, scale, dist;
         vec2 sscale, soffset;
         vec origin;
 
@@ -896,7 +896,7 @@ namespace UI
             onshow(!mapdef_ && onshow_ && *onshow_ ? compilecode(onshow_) : NULL),
             onhide(!mapdef_ && onhide_ && *onhide_ ? compilecode(onhide_) : NULL),
             exclusive(false), mapdef(mapdef_), inworld(false), allowinput(1), param(param_),
-            px(0), py(0), pw(0), ph(0), yaw(-1), pitch(-1), scale(1),
+            px(0), py(0), pw(0), ph(0), yaw(-1), pitch(-1), scale(1), dist(0),
             sscale(1, 1), soffset(0, 0),
             origin(-1, -1, -1)
         {
@@ -1105,6 +1105,26 @@ namespace UI
                 sy2 = clamp(sy2, 0, hudh);
             }
         }
+
+        static bool compare(const Object *a, const Object *b)
+        {
+            Window *aa = (Window *)a, *bb = (Window *)b;
+            // top windows last
+            if(aa->windowflags&WINDOW_TOP && !(bb->windowflags&WINDOW_TOP)) return false;
+            if(!(aa->windowflags&WINDOW_TOP) && bb->windowflags&WINDOW_TOP) return true;
+            // sort world windows first for speed
+            if(aa->inworld && !bb->inworld) return true;
+            if(!aa->inworld && bb->inworld) return false;
+            // if same x/y origin draw lower first
+            if(aa->origin.x == bb->origin.x && aa->origin.y == bb->origin.y)
+            {
+                if(aa->origin.z > bb->origin.z) return true;
+                if(aa->origin.z <= bb->origin.z) return false;
+            }
+            // reverse order so further gets drawn first
+            if(aa->dist > bb->dist) return true;
+            return false;
+        }
     };
 
     ICOMMAND(0, uiwindowname, "", (), result(window ? window->name : ""));
@@ -1193,23 +1213,15 @@ namespace UI
                 if(!children.inrange(i)) break;
                 if(children[i] != w) i--;
             });
+            children.sort(Window::compare);
             resetstate(); // IMPORTED
-        }
-
-        bool forcetop()
-        {
-            if(children.empty()) return false;
-
-            Window *w = (Window *)children.last();
-            return w->windowflags&WINDOW_TOP;
         }
 
         bool show(Window *w, const vec &pos = vec(-1, -1, -1), float y = 0, float p = 0, float s = 1)
         {
             if(children.find(w) >= 0) return false;
             w->resetchildstate();
-            if(pos != vec(-1, -1, -1) || !forcetop()) children.add(w);
-            else children.insert(max(0, children.length() - 1), w);
+            children.add(w);
             w->show(pos, y, p, s);
             return true;
         }
@@ -1329,6 +1341,7 @@ namespace UI
         reset(surface);
         setup();
         window = this;
+        if(inworld) dist = origin.squaredist(camera1->o);
         uiparam = param;
         buildchildren(contents);
         window = NULL;

@@ -761,17 +761,17 @@ namespace entities
     ENTTYPE(reclink);
     ENTTYPE(canuse);
 
-    ICOMMAND(0, getentinfo, "b", (int *n),
+    ICOMMAND(0, getentinfo, "bi", (int *n, int *x),
     {
         if(*n < 0) intret(MAXENTTYPES);
-        else if(*n < MAXENTTYPES) result(enttype[*n].name);
+        else if(*n < MAXENTTYPES) result(*x ? enttype[*n].displayname : enttype[*n].name);
     });
 
     const char *getentattribute(int type, int attr, int attr1)
     {
         if(type < 0 || type >= MAXENTTYPES) return "";
         const char *attrname = enttype[type].attrs[attr];
-        if(type == PARTICLES) switch(attr1)
+        if(type == PARTICLES && attr < 11) switch(attr1)
         {
             case -1: break; // not given
             case 0:  switch(attr) { case 0: break; case 1: attrname = "length"; break; case 2: attrname = "height"; break; case 3: attrname = "colour"; break; case 4: attrname = "fade"; break; case 5: attrname = "palette"; break; case 6: attrname = "palindex"; break; case 7: attrname = "size"; break; case 8: attrname = "blend"; break; case 9: attrname = "gravity"; break; case 10: attrname = "velocity"; break; default: attrname = ""; break; } break;
