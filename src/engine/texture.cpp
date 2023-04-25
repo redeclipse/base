@@ -1221,7 +1221,7 @@ static void updatetexture(Texture *t)
         t->id = t->frames.inrange(frame) ? t->frames[frame] : 0;
     }
     else return;
-    t->last = t->delay > 1 ? lastmillis-(elapsed%t->delay) : lastmillis;
+    t->last = delay > 1 ? lastmillis-(elapsed%delay) : lastmillis;
 }
 
 
