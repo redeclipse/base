@@ -519,28 +519,24 @@ namespace UI
     enum { SURFACE_MAIN = 0, SURFACE_PROGRESS, SURFACE_COMPOSITE, SURFACE_MAX };
 
     extern int uihidden;
-    extern char *uiopencmd, *uiclosecmd;
-    extern bool showui(const char *name, int stype = SURFACE_MAIN);
+    extern bool showui(const char *name, int stype = SURFACE_MAIN, const vec &origin = vec(-1, -1, -1), float yaw = -1, float pitch = -1, const vec2 &sz = vec2(1, 1));
     extern bool hideui(const char *name = NULL, int stype = SURFACE_MAIN);
-    extern bool toggleui(const char *name, int stype = SURFACE_MAIN);
+    extern bool toggleui(const char *name, int stype = SURFACE_MAIN, const vec &origin = vec(-1, -1, -1), float yaw = -1, float pitch = -1, const vec2 &sz = vec2(1, 1));
+    extern void hideall();
 
-    extern int openui(const char *name, int stype = SURFACE_MAIN);
-    extern int closeui(const char *name = NULL, int stype = SURFACE_MAIN);
-    extern void closeall();
-
-    extern void holdui(const char *name, bool on, int stype = SURFACE_MAIN);
-    extern void pressui(const char *name, bool on, int stype = SURFACE_MAIN);
+    extern void holdui(const char *name, bool on, int stype = SURFACE_MAIN, const vec &origin = vec(-1, -1, -1), float yaw = -1, float pitch = -1, const vec2 &sz = vec2(1, 1));
+    extern void pressui(const char *name, bool on, int stype = SURFACE_MAIN, const vec &origin = vec(-1, -1, -1), float yaw = -1, float pitch = -1, const vec2 &sz = vec2(1, 1));
     extern bool uivisible(const char *name, int stype = SURFACE_MAIN);
-    extern int hasinput(int stype = -1);
-    extern bool hasmenu(bool pass = true, int stype = -1);
+    extern int hasinput(int stype = SURFACE_MAIN);
+    extern bool hasmenu(bool pass = true, int stype = SURFACE_MAIN);
     extern bool keypress(int code, bool isdown);
     extern bool textinput(const char *str, int len);
 
     extern void setup();
     extern void cleanup();
     extern void cleangl();
-    extern void update(int stype);
-    extern void render(int stype);
+    extern void update(int stype = SURFACE_MAIN);
+    extern void render(bool world = false, int stype = SURFACE_MAIN);
     extern bool composite(uint *tex, const char *name, const char *args = NULL, int w = 512, int h = 512, int tclamp = 0, bool mipit = true, bool msg = true);
 
     extern void mousetrack(float dx, float dy);

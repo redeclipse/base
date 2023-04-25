@@ -14,7 +14,8 @@ enum
 {
     MAXARGS = 25,
     MAXRESULTS = 7,
-    MAXCOMARGS = 16
+    MAXCOMARGS = 16,
+    MAXRET = 8
 };
 
 VARN(0, numargs, _numargs, MAXARGS, 0, 0);
@@ -1428,7 +1429,7 @@ static inline void skipcomments(const char *&p)
     }
 }
 
-static vector<char> strbuf[4];
+static vector<char> strbuf[MAXRET];
 static int stridx = 0;
 
 static inline void cutstring(const char *&p, stringslice &s)
@@ -1437,7 +1438,7 @@ static inline void cutstring(const char *&p, stringslice &s)
     const char *end = parsestring(p);
     int maxlen = int(end-p) + 1;
 
-    stridx = (stridx + 1)%4;
+    stridx = (stridx + 1)%MAXRET;
     vector<char> &buf = strbuf[stridx];
     if(buf.alen < maxlen) buf.growbuf(maxlen);
 
@@ -3621,7 +3622,7 @@ ICOMMAND(0, exec, "sib", (char *file, int *flags, int *msg), intret(execfile(fil
 
 const char *escapestring(const char *s)
 {
-    stridx = (stridx + 1)%4;
+    stridx = (stridx + 1)%MAXRET;
     vector<char> &buf = strbuf[stridx];
     buf.setsize(0);
     buf.add('"');
@@ -3682,19 +3683,19 @@ COMMAND(0, changedvars, "");
 // below the commands that implement a small imperative language. thanks to the semantics of
 // () and [] expressions, any control construct can be defined trivially.
 
-static string retbuf[4];
+static string retbuf[MAXRET];
 static int retidx = 0;
 
 const char *intstr(int v)
 {
-    retidx = (retidx + 1)%4;
+    retidx = (retidx + 1)%MAXRET;
     intformat(retbuf[retidx], v);
     return retbuf[retidx];
 }
 
 const char *intstr(ident *id)
 {
-    retidx = (retidx + 1)%4;
+    retidx = (retidx + 1)%MAXRET;
     formatstring(retbuf[retidx], id->flags&IDF_HEX && *id->storage.i >= 0 ? (id->maxval==0xFFFFFF ? "0x%.6X" : (uint(id->maxval)==0xFFFFFFFFU ? "0x%.8X" : "0x%X")) : "%d", id->flags&IDF_HEX && uint(id->maxval)==0xFFFFFFFFU ? uint(*id->storage.i) : *id->storage.i);
     return retbuf[retidx];
 }
@@ -3706,7 +3707,7 @@ void intret(int v)
 
 const char *floatstr(float v)
 {
-    retidx = (retidx + 1)%4;
+    retidx = (retidx + 1)%MAXRET;
     floatformat(retbuf[retidx], v);
     return retbuf[retidx];
 }
@@ -3718,7 +3719,7 @@ void floatret(float v)
 
 const char *numberstr(double v)
 {
-    retidx = (retidx + 1)%4;
+    retidx = (retidx + 1)%MAXRET;
     numberformat(retbuf[retidx], v);
     return retbuf[retidx];
 }

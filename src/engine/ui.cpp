@@ -9,8 +9,6 @@ namespace UI
 
     FVAR(0, uitextscale, 1, 0, 0);
 
-    SVAR(0, uiopencmd, "showui");
-    SVAR(0, uiclosecmd, "hideui");
     SVAR(0, uiprecmd, "");
     SVAR(0, uipostcmd, "");
 
@@ -839,7 +837,7 @@ namespace UI
     enum { WINTYPE_NORMAL = 0, WINTYPE_COMPOSITE, WINTYPE_MAX };
     const char *windowtype[WINTYPE_MAX] = { "Normal", "Composite" };
     const char *windowaffix[WINTYPE_MAX] = { "", "comp" };
-    static Window *window[WINTYPE_MAX] = { NULL, NULL };
+    static Window *window = NULL;
 
     const char *getwinprefix(int type, const char *suffix = " ")
     {
@@ -864,19 +862,21 @@ namespace UI
     {
         char *name, *body;
         uint *contents, *onshow, *onhide;
-        bool exclusive, mapdef;
+        bool exclusive, mapdef, inworld;
         int allowinput, windowflags;
-        float px, py, pw, ph;
-        vec2 sscale, soffset;
+        float px, py, pw, ph, yaw, pitch;
+        vec2 sscale, soffset, ssize, srot;
+        vec origin;
 
         Window(const char *name, const char *contents, const char *onshow, const char *onhide, int windowflags_, bool mapdef_) :
             name(newstring(name)), body(NULL),
             contents(compilecode(contents)),
             onshow(!mapdef_ && onshow && onshow[0] ? compilecode(onshow) : NULL),
             onhide(!mapdef_ && onhide && onhide[0] ? compilecode(onhide) : NULL),
-            exclusive(false), mapdef(mapdef_), allowinput(1),
-            px(0), py(0), pw(0), ph(0),
-            sscale(1, 1), soffset(0, 0)
+            exclusive(false), mapdef(mapdef_), inworld(false), allowinput(1),
+            px(0), py(0), pw(0), ph(0), yaw(-1), pitch(-1),
+            sscale(1, 1), soffset(0, 0), ssize(1, 1),
+            origin(-1, -1, -1)
         {
             if(mapdef) body = newstring(contents);
             windowflags = mapdef ? 0 : clamp(windowflags_, 0, int(WINDOW_ALL));
@@ -895,17 +895,35 @@ namespace UI
 
         void build();
 
+        void resetworld()
+        {
+            inworld = false;
+            yaw = pitch = -1;
+            ssize = vec2(hudw, hudh);
+            origin = vec(-1, -1, -1);
+        }
+
         void hide()
         {
             overridepos = false;
             if(onhide) execute(onhide);
+            resetworld();
         }
 
-        void show()
+        void show(const vec &pos = vec(-1, -1, -1), float y = 0, float p = 0, const vec2 &sz = vec2(1, 1))
         {
             overridepos = false;
             state |= STATE_HIDDEN;
             clearstate(STATE_HOLD_MASK);
+            if(pos != vec(-1, -1, -1))
+            {
+                yaw = y;
+                pitch = p;
+                origin = pos;
+                (ssize = sz).max(1.f);
+                inworld = true;
+            }
+            else resetworld();
             if(onshow) execute(onshow);
         }
 
@@ -920,15 +938,16 @@ namespace UI
         void layout()
         {
             if(state&STATE_HIDDEN) { w = h = 0; return; }
-            window[getwindowtype()] = this;
+            window = this;
             Object::layout();
-            window[getwindowtype()] = NULL;
+            window = NULL;
         }
 
-        void draw(float sx, float sy)
+        void draw(bool world, float sx, float sy)
         {
             if(state&STATE_HIDDEN) return;
-            window[getwindowtype()] = this;
+            if(world != inworld) return;
+            window = this;
 
             projection();
 
@@ -940,31 +959,42 @@ namespace UI
             changed = 0;
             drawing = NULL;
 
+            if(inworld)
+            {
+                glDepthFunc(windowflags&WINDOW_TOP ? GL_ALWAYS : GL_LESS);
+                glDepthMask(GL_FALSE);
+            }
+
             Object::draw(sx, sy);
 
             stopdrawing();
 
+            if(inworld)
+            {
+                glDepthFunc(GL_LESS);
+                glDepthMask(GL_TRUE);
+            }
             glDisable(GL_BLEND);
 
-            window[getwindowtype()] = NULL;
+            window = NULL;
         }
 
-        void draw()
+        void draw(bool world)
         {
-            draw(x, y);
+            draw(world, x, y);
         }
 
         void adjustchildren()
         {
             if(state&STATE_HIDDEN) return;
-            window[getwindowtype()] = this;
+            window = this;
             Object::adjustchildren();
-            window[getwindowtype()] = NULL;
+            window = NULL;
         }
 
         void adjustlayout()
         {
-            float aspect = float(hudw)/hudh;
+            float aspect = ssize.x/ssize.y;
             ph = max(max(h, w/aspect), 1.0f);
             pw = aspect*ph;
             Object::adjustlayout(0, 0, pw, ph);
@@ -987,7 +1017,36 @@ namespace UI
         {
             if(surfacetype == SURFACE_COMPOSITE) // composites have flipped Y axis
                 hudmatrix.ortho(px, px + pw, py, py + ph, -1, 1);
+            else if(inworld)
+            {
+                float fyaw = yaw, fpitch = pitch;
+                if(fyaw < 0) fyaw = atan2f(origin.y - camera1->o.y, origin.x - camera1->o.x);
+                if(fpitch < 0) fpitch = -atan2f(origin.z - camera1->o.z, sqrtf(powf(origin.x - camera1->o.x, 2) + powf(origin.y - camera1->o.y, 2)));
+
+                hudmatrix = camprojmatrix;
+                hudmatrix.translate(origin);
+                hudmatrix.rotate_around_z(fyaw + 90*RAD);
+                hudmatrix.rotate_around_x(fpitch - 90*RAD);
+
+                vec trans(0, 0, 0);
+                switch(adjust&ALIGN_HMASK)
+                {
+                    case ALIGN_LEFT:    trans.x = -ssize.x; break;
+                    case ALIGN_RIGHT:   trans.x = 0; break;
+                    default:            trans.x = -ssize.x * 0.5f; break;
+                }
+                switch(adjust&ALIGN_VMASK)
+                {
+                    case ALIGN_TOP:     trans.y = -ssize.y; break;
+                    case ALIGN_BOTTOM:  trans.y = 0; break;
+                    default:            trans.y = -ssize.y * 0.5f; break;
+                }
+
+                hudmatrix.translate(trans);
+                hudmatrix.scale(ssize.x, ssize.y, 1);
+            }
             else hudmatrix.ortho(px, px + pw, py + ph, py, -1, 1);
+
             resethudmatrix();
             sscale = vec2(hudmatrix.a.x, hudmatrix.b.y).mul(0.5f);
             soffset = vec2(hudmatrix.d.x, hudmatrix.d.y).mul(0.5f).add(0.5f);
@@ -1011,22 +1070,19 @@ namespace UI
         }
     };
 
-    Window *uirootwindow(Object *o)
-    {
-        Object *p = o;
-        while(p)
-        {
-            if(p->istype<Window>()) return (Window *)p;
-            p = p->parent;
-        }
-        return NULL;
-    }
-    ICOMMAND(0, uirootname, "", (), { Window *o = uirootwindow(buildparent); result(o ? o->name : ""); });
+    ICOMMAND(0, uiwindowname, "", (), result(window ? window->name : ""));
+    ICOMMAND(0, uiwindowflags, "i", (int *n), if(window) window->windowflags = *n);
+    ICOMMAND(0, uiwindoworigin, "ggg", (float *x, float *y, float *z), if(window && window->inworld) window->origin = vec(*x, *y, *z));
+    ICOMMAND(0, uiwindowyaw, "g", (float *yaw), if(window && window->inworld) window->yaw = *yaw);
+    ICOMMAND(0, uiwindowpitch, "g", (float *pitch), if(window && window->inworld) window->pitch = *pitch);
+    ICOMMAND(0, uiwindowangle, "gg", (float *yaw, float *pitch), if(window && window->inworld) { window->yaw = *yaw; window->pitch = *pitch; });
+    ICOMMAND(0, uiwindowsize, "ff", (float *w, float *h), if(window && window->inworld) window->ssize = vec2(*w, *h));
+    ICOMMAND(0, uiwindowworld, "ff", (float *w, float *h), intret(window && window->inworld ? 1 : 0));
 
     #define UIWINCMDC(func, types, argtypes, body) \
         ICOMMAND(0, ui##func##root, types, argtypes, \
         { \
-            Object *o = uirootwindow(buildparent); \
+            Object *o = window; \
             if(o) { body; } \
         }); \
         ICOMMAND(0, ui##func, types, argtypes, \
@@ -1040,7 +1096,7 @@ namespace UI
     void ClipArea::scissor()
     {
         int sx1, sy1, sx2, sy2;
-        window[getwindowtype()]->calcscissor(x1, y1, x2, y2, sx1, sy1, sx2, sy2);
+        window->calcscissor(x1, y1, x2, y2, sx1, sy1, sx2, sy2);
         glScissor(sx1, sy1, sx2-sx1, sy2-sy1);
     }
 
@@ -1112,13 +1168,13 @@ namespace UI
             return w->windowflags&WINDOW_TOP;
         }
 
-        bool show(Window *w)
+        bool show(Window *w, const vec &pos = vec(-1, -1, -1), float y = 0, float p = 0, const vec2 &sz = vec2(1, 1))
         {
             if(children.find(w) >= 0) return false;
             w->resetchildstate();
-            if(forcetop()) children.insert(max(0, children.length() - 1), w);
-            else children.add(w);
-            w->show();
+            if(pos != vec(-1, -1, -1) || !forcetop()) children.add(w);
+            else children.insert(max(0, children.length() - 1), w);
+            w->show(pos, y, p, sz);
             return true;
         }
 
@@ -1142,7 +1198,7 @@ namespace UI
         {
             loopwindowsrev(w,
             {
-                if(w->state&STATE_HIDDEN || w->windowflags&WINDOW_PERSIST) continue;
+                if(w->inworld || w->state&STATE_HIDDEN || w->windowflags&WINDOW_PERSIST) continue;
                 if(w->allowinput || w->windowflags&WINDOW_PASS) { hide(w, i); return true; }
             });
             return false;
@@ -1162,7 +1218,7 @@ namespace UI
 
         bool hasexclusive() const
         {
-            loopwindows(w, if(w->exclusive) return true);
+            loopwindows(w, if(!w->inworld && w->exclusive) return true);
             return false;
         }
 
@@ -1182,7 +1238,8 @@ namespace UI
         {
             loopwindows(w,
             {
-                if(w->windowflags&WINDOW_MENU && !(w->state&STATE_HIDDEN)) return !pass || !(w->windowflags&WINDOW_PASS);
+                if(!w->inworld || w->state&STATE_HIDDEN || !(w->windowflags&WINDOW_MENU)) continue;
+                return !pass || !(w->windowflags&WINDOW_PASS);
             });
             return false;
         }
@@ -1191,14 +1248,15 @@ namespace UI
         {
             loopwindowsrev(w,
             {
-                if((w->allowinput || w->windowflags&WINDOW_PASS) && !(w->state&STATE_HIDDEN)) { return w->name; }
+                if(w->inworld || !w->allowinput || w->state&STATE_HIDDEN || !(w->windowflags&WINDOW_PASS)) continue;
+                return w->name;
             });
             return NULL;
         }
 
         void draw(float sx, float sy) {}
 
-        void draw()
+        void draw(bool world)
         {
             if(children.empty()) return;
             bool hasexcl = hasexclusive();
@@ -1213,7 +1271,7 @@ namespace UI
             loopwindows(w,
             {
                 if(hasexcl && !w->exclusive) continue;
-                w->draw();
+                w->draw(world);
             });
         }
     };
@@ -1234,9 +1292,9 @@ namespace UI
         if(!surface) return;
         reset(surface);
         setup();
-        window[getwindowtype()] = this;
+        window = this;
         buildchildren(contents);
-        window[getwindowtype()] = NULL;
+        window = NULL;
     }
 
     void newui(int type, char *name, char *contents, char *onshow, char *onhide, int windowflags, bool mapdef = false)
@@ -1253,7 +1311,7 @@ namespace UI
         Window *w = windows[type].find(name, NULL);
         if(w)
         {
-            if(w == window[type]) return;
+            if(w == window) return; // can't remove the calling window
             if(!w->mapdef && mapdef)
             {
                 conoutf("\frCannot override builtin %sUI %s with a one from the map", getwinprefix(type), w->name);
@@ -1275,20 +1333,20 @@ namespace UI
     ICOMMAND(0, newcompui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *windowflags), newui(WINTYPE_COMPOSITE, name, contents, onshow, onhide, *windowflags));
     ICOMMAND(0, mapcompui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *windowflags), newui(WINTYPE_COMPOSITE, name, contents, onshow, onhide, *windowflags, true));
 
-    ICOMMAND(0, uiallowinput, "b", (int *val), { if(window[getwindowtype()]) { if(*val >= 0) window[getwindowtype()]->allowinput = clamp(*val, 0, 2); intret(window[getwindowtype()]->allowinput); } });
-    ICOMMAND(0, uiexclusive, "b", (int *val), { if(window[getwindowtype()]) { if(*val >= 0) window[getwindowtype()]->exclusive = *val!=0; intret(window[getwindowtype()]->exclusive ? 1 : 0); } });
-    ICOMMAND(0, uiwindowflags, "b", (int *val), { if(window[getwindowtype()]) { if(*val >= 0) window[getwindowtype()]->windowflags = clamp(*val, 0, int(WINDOW_ALL)); intret(window[getwindowtype()]->windowflags); } });
+    ICOMMAND(0, uiallowinput, "b", (int *val), { if(window) { if(*val >= 0) window->allowinput = clamp(*val, 0, 2); intret(window->allowinput); } });
+    ICOMMAND(0, uiexclusive, "b", (int *val), { if(window) { if(*val >= 0) window->exclusive = *val!=0; intret(window->exclusive ? 1 : 0); } });
+    ICOMMAND(0, uiwindowflags, "b", (int *val), { if(window) { if(*val >= 0) window->windowflags = clamp(*val, 0, int(WINDOW_ALL)); intret(window->windowflags); } });
 
-    ICOMMAND(0, uioverridepos, "", (), { if(window[getwindowtype()]) { intret(window[getwindowtype()]->overridepos ? 1 : 0); } });
-    ICOMMAND(0, uisetpos, "ff", (float *xpos, float *ypos), { if(window[getwindowtype()]) { window[getwindowtype()]->setpos(*xpos, *ypos); } });
-    ICOMMAND(0, uiresetpos, "", (), { if(window[getwindowtype()]) { window[getwindowtype()]->resetpos(); } });
+    ICOMMAND(0, uioverridepos, "", (), { if(window) { intret(window->overridepos ? 1 : 0); } });
+    ICOMMAND(0, uisetpos, "ff", (float *xpos, float *ypos), { if(window) { window->setpos(*xpos, *ypos); } });
+    ICOMMAND(0, uiresetpos, "", (), { if(window) { window->resetpos(); } });
 
     ICOMMAND(0, uicursorx, "", (), floatret(cursorx*float(hudw)/hudh));
     ICOMMAND(0, uicursory, "", (), floatret(cursory));
     ICOMMAND(0, uilockcursor, "", (), if(surface) surface->cursorlocked = true);
     ICOMMAND(0, uilockscroll, "", (), if(surface) surface->lockscroll = true);
 
-    ICOMMAND(0, uiaspect, "", (), floatret(float(hudw)/hudh));
+    ICOMMAND(0, uiaspect, "", (), floatret(window ? float(window->ssize.x)/window->ssize.y : float(hudw)/hudh));
 
     ICOMMAND(0, uicursortype, "b", (int *val), if(surface) { if(*val >= 0) surface->cursortype = clamp(*val, 0, CURSOR_MAX-1); intret(surface->cursortype); });
 
@@ -1326,11 +1384,11 @@ namespace UI
         else loopi(SURFACE_MAX) if(surfaces[i] && surfaces[i]->interactive) DOSURFACE(i, body, failure, success) \
     }
 
-    bool showui(const char *name, int stype)
+    bool showui(const char *name, int stype, const vec &origin, float yaw, float pitch, const vec2 &sz)
     {
         DOSURFACE(stype,
             Window *w = windows[getwindowtype()].find(name, NULL);
-            bool ret = w && surface->show(w);
+            bool ret = w && surface->show(w, origin, yaw, pitch, sz);
         , return false, return ret);
     }
 
@@ -1347,44 +1405,28 @@ namespace UI
         , return false, return ret);
     }
 
-    bool toggleui(const char *name, int stype)
+    bool toggleui(const char *name, int stype, const vec &origin, float yaw, float pitch, const vec2 &sz)
     {
-        if(showui(name, stype)) return true;
+        if(showui(name, stype, origin, yaw, pitch, sz)) return true;
         hideui(name, stype);
         return false;
     }
 
-    int openui(const char *name, int stype)
+    void hideall()
     {
-        DOSURFACE(stype,
-            defformatstring(cmd, "%s \"%s\"", uiopencmd, name ? name : "");
-            int ret = execute(cmd);
-        , return 0, return ret);
+        loopi(SURFACE_MAX) if(surfaces[i] && surfaces[i]->interactive) hideui(NULL, i);
     }
 
-    int closeui(const char *name, int stype)
+    void holdui(const char *name, bool on, int stype, const vec &origin, float yaw, float pitch, const vec2 &sz)
     {
-        DOSURFACE(stype,
-            defformatstring(cmd, "%s \"%s\"", uiclosecmd, name ? name : "");
-            int ret = execute(cmd);
-        , return 0, return ret);
-    }
-
-    void closeall()
-    {
-        loopi(SURFACE_MAX) if(surfaces[i] && surfaces[i]->interactive) closeui(NULL, i);
-    }
-
-    void holdui(const char *name, bool on, int stype)
-    {
-        if(on) showui(name, stype);
+        if(on) showui(name, stype, origin, yaw, pitch, sz);
         else hideui(name, stype);
     }
 
-    void pressui(const char *name, bool on, int stype)
+    void pressui(const char *name, bool on, int stype, const vec &origin, float yaw, float pitch, const vec2 &sz)
     {
-        if(on) { if(!uivisible(name, stype)) openui(name, stype); }
-        else if(uivisible(name, stype)) closeui(name, stype);
+        if(on) { if(!uivisible(name, stype)) showui(name, stype, origin, yaw, pitch, sz); }
+        else if(uivisible(name, stype)) hideui(name, stype);
     }
 
     bool uivisible(const char *name, int stype)
@@ -1400,16 +1442,16 @@ namespace UI
         , return false, return ret);
     }
 
-    ICOMMAND(0, showui, "si", (char *name, int *surface), intret(showui(name, *surface) ? 1 : 0));
+    ICOMMAND(0, showui, "siggggggg", (char *name, int *surface, float *x, float *y, float *z, float *yaw, float *pitch, float *w, float *h), intret(showui(name, *surface, vec(*x, *y, *z), *yaw, *pitch, vec2(*w, *h)) ? 1 : 0));
     ICOMMAND(0, hideui, "si", (char *name, int *surface), intret(hideui(name, *surface) ? 1 : 0));
     ICOMMAND(0, hidetopui, "", (), intret(surface && surface->hidetop() ? 1 : 0));
     ICOMMAND(0, topui, "", (), result(surface ? surface->topname() : ""));
     ICOMMAND(0, hideallui, "i", (int *n), intret(surface ? surface->hideall(*n != 0) : 0));
-    ICOMMAND(0, toggleui, "si", (char *name, int *surface), intret(toggleui(name, *surface) ? 1 : 0));
-    ICOMMAND(0, holdui, "siD", (char *name, int *surface, int *down), holdui(name, *down!=0, *surface));
-    ICOMMAND(0, pressui, "siD", (char *name, int *surface, int *down), pressui(name, *down!=0, *surface));
+    ICOMMAND(0, toggleui, "siggggggg", (char *name, int *surface, float *x, float *y, float *z, float *yaw, float *pitch, float *w, float *h), intret(toggleui(name, *surface, vec(*x, *y, *z), *yaw, *pitch, vec2(*w, *h)) ? 1 : 0));
+    ICOMMAND(0, holdui, "sigggggggD", (char *name, int *surface, float *x, float *y, float *z, float *yaw, float *pitch, float *w, float *h, int *down), holdui(name, *down!=0, *surface, vec(*x, *y, *z), *yaw, *pitch, vec2(*w, *h)));
+    ICOMMAND(0, pressui, "sigggggggD", (char *name, int *surface, float *x, float *y, float *z, float *yaw, float *pitch, float *w, float *h, int *down), pressui(name, *down!=0, *surface, vec(*x, *y, *z), *yaw, *pitch, vec2(*w, *h)));
     ICOMMAND(0, uivisible, "si", (char *name, int *surface), intret(uivisible(name, *surface) ? 1 : 0));
-    ICOMMAND(0, uiname, "", (), { if(window[getwindowtype()]) result(window[getwindowtype()]->name); });
+    ICOMMAND(0, uiname, "", (), { if(window) result(window->name); });
 
     struct HorizontalList : Object
     {
@@ -2271,7 +2313,7 @@ namespace UI
             resetblend();
 
             LOCALPARAMF(millis, lastmillis/1000.0f);
-            LOCALPARAMF(viewsize, hudw*w, hudh*h, 1.0f/(hudw*w), 1.0f/(hudh*h));
+            LOCALPARAMF(viewsize, window->ssize.x*w, window->ssize.y*h, 1.0f/(window->ssize.x*w), 1.0f/(window->ssize.y*h));
             LOCALPARAMF(composite, sx, sy, w, h);
 
             vector<LocalShaderParam> list;
@@ -4627,8 +4669,8 @@ namespace UI
             hudmatrix.muld(axisprojmatrix, axismatrix);
             flushhudmatrix();
 
-            float hudaspect = hudw/float(hudh);
-            glViewport(hudw*sx*(1/hudaspect), hudh*(1.0f-(sy+h)), hudw*w*(1/hudaspect), hudh*h);
+            float hudaspect = window->ssize.x/float(window->ssize.y);
+            glViewport(window->ssize.x*sx*(1/hudaspect), window->ssize.y*(1.0f-(sy+h)), window->ssize.x*w*(1/hudaspect), window->ssize.y*h);
 
             glLineWidth(4);
 
@@ -4660,7 +4702,7 @@ namespace UI
             gle::end();
 
             glLineWidth(1);
-            glViewport(0, 0, hudw, hudh);
+            glViewport(0, 0, window->ssize.x, window->ssize.y);
 
             pophudmatrix();
 
@@ -4845,7 +4887,7 @@ namespace UI
             changedraw(CHANGE_SHADER);
 
             int sx1, sy1, sx2, sy2;
-            window[getwindowtype()]->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
+            window->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
             modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch+offsetpitch, roll, fov, false, clipstack.length() > 0, translate);
             model *m = loadmodel(name);
             if(m)
@@ -4920,7 +4962,7 @@ namespace UI
             changedraw(CHANGE_SHADER);
 
             int sx1, sy1, sx2, sy2;
-            window[getwindowtype()]->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
+            window->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
 
             modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch+offsetpitch, roll, fov, false, clipstack.length() > 0, translate);
 
@@ -4944,14 +4986,14 @@ namespace UI
             pos2d.div(pos2d.z);
 
             int sx1, sy1, sx2, sy2;
-            window[getwindowtype()]->calcscissor(lastsx, lastsy, lastsx+lastw, lastsy+lasth, sx1, sy1, sx2, sy2, false);
+            window->calcscissor(lastsx, lastsy, lastsx+lastw, lastsy+lasth, sx1, sy1, sx2, sy2, false);
 
             pos2d.add(vec(1.0f, 1.0f, 0.0f)).mul(vec(0.5f, 0.5f, 0.0f));
             pos2d.y = 1.0f - pos2d.y;
-            pos2d.mul(vec((sx2-sx1)/(float)hudw, (sy2-sy1)/(float)hudh, 0.0f));
+            pos2d.mul(vec((sx2-sx1)/(float)window->ssize.x, (sy2-sy1)/(float)window->ssize.y, 0.0f));
 
             // Correct for uiaspect
-            pos2d.x *= hudw/(float)hudh;
+            pos2d.x *= window->ssize.x/(float)window->ssize.y;
 
             return vec2(pos2d.x, pos2d.y);
         }
@@ -5002,7 +5044,7 @@ namespace UI
             changedraw(CHANGE_SHADER);
 
             int sx1, sy1, sx2, sy2;
-            window[getwindowtype()]->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
+            window->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
             modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch, roll, fov, false, clipstack.length() > 0);
             previewprefab(name, colors[0].tocolor(), blend*(colors[0].a/255.f), yaw, offsetyaw);
             if(clipstack.length()) clipstack.last().scissor();
@@ -5748,7 +5790,7 @@ namespace UI
         , return, return);
     }
 
-    void render(int stype)
+    void render(bool world, int stype)
     {
         if(!issurface(stype) || !surfaces[stype] || surfaces[stype]->standalone) return;
         switch(stype)
@@ -5758,8 +5800,10 @@ namespace UI
                 break;
             case SURFACE_PROGRESS:
                 if(!progressing) return;
+                // fall-through
+            default:
+                if(world) return; // only main surface can render in-world
                 break;
-            default: break;
         }
 
         float oldtextscale = curtextscale;
@@ -5768,7 +5812,7 @@ namespace UI
             pushfont();
             surface->layout();
             surface->adjustchildren();
-            surface->draw();
+            surface->draw(world);
             popfont();
             curtextscale = oldtextscale;
         , return, return);
@@ -5816,12 +5860,20 @@ namespace UI
         int olddrawtex = drawtex, oldhudw = hudw, oldhudh = hudh;
         float oldtextscale = curtextscale;
         drawtex = DRAWTEX_COMPOSITE;
+        hudw = w;
+        hudh = h;
+
         setsvar("uicompargs", args ? args : "");
         showui(name, SURFACE_COMPOSITE);
 
+        #define COMPOSITECLEAN \
+            drawtex = olddrawtex; \
+            hudw = oldhudw; \
+            hudh = oldhudh; \
+            glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo); \
+            glViewport(0, 0, hudw, hudh);
+
         DOSURFACE(SURFACE_COMPOSITE,
-            hudw = w;
-            hudh = h;
             glViewport(0, 0, hudw, hudh);
             glClearColor(0, 0, 0, 0);
             glClear(GL_COLOR_BUFFER_BIT);
@@ -5836,7 +5888,7 @@ namespace UI
             pushfont();
             surface->layout();
             surface->adjustchildren();
-            surface->draw();
+            surface->draw(false);
             popfont();
 
             glActiveTexture_(GL_TEXTURE0);
@@ -5844,20 +5896,13 @@ namespace UI
             glGenerateMipmap_(GL_TEXTURE_2D);
 
             curtextscale = oldtextscale;
-            hudw = oldhudw;
-            hudh = oldhudh;
-
             surface->hideall(true);
         ,
             if(msg) conoutf("\frFailed to find composite UI surface!");
-            drawtex = olddrawtex;
-            glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
-            glViewport(0, 0, hudw, hudh);
+            COMPOSITECLEAN;
             return false;
         ,
-            drawtex = olddrawtex;
-            glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
-            glViewport(0, 0, hudw, hudh);
+            COMPOSITECLEAN;
             return true;
         );
     }

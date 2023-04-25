@@ -531,8 +531,8 @@ namespace hud
     int hasinput(bool pass, bool focus)
     {
         if(focus && (cdpi::getoverlay() > 0 || commandmillis > 0 || curcompass)) return true;
-        int cur = UI::hasinput(UI::SURFACE_MAIN);
-        if(!cur && UI::hasmenu(pass, UI::SURFACE_MAIN)) cur = 1;
+        int cur = UI::hasinput();
+        if(!cur && UI::hasmenu(pass)) cur = 1;
         return cur;
     }
     ICOMMAND(0, hasinput, "N$", (int *n, ident *id), if(*n) intret(hasinput()); else printvar(id, hasinput()));
@@ -559,18 +559,18 @@ namespace hud
     {
         hidecrosshair = 0;
 
-        UI::showui("hud", UI::SURFACE_MAIN);
-        if(!UI::hasmenu(true, UI::SURFACE_MAIN))
+        UI::showui("hud");
+        if(!UI::hasmenu(true))
         {
             if(connected())
             {
-                UI::pressui("scoreboard", scoreson, UI::SURFACE_MAIN);
+                UI::pressui("scoreboard", scoreson);
                 if(game::player1->state == CS_DEAD) { if(scoreson) shownscores = true; }
                 else shownscores = false;
             }
-            else UI::showui("main", UI::SURFACE_MAIN);
+            else UI::showui("main");
         }
-        UI::update(UI::SURFACE_MAIN);
+        UI::update();
     }
 
     void damage(int n, const vec &loc, gameent *v, int weap, int flags)
@@ -1838,13 +1838,13 @@ namespace hud
             if(!progressing)
             {
                 if(showhud && commandmillis <= 0 && curcompass) rendercmenu();
-                else UI::render(UI::SURFACE_MAIN);
+                else UI::render();
                 hudmatrix.ortho(0, hudwidth, hudheight, 0, -1, 1);
                 flushhudmatrix();
                 resethudshader();
                 drawpointers(hudwidth, hudheight);
             }
-            else UI::render(UI::SURFACE_PROGRESS);
+            else UI::render(false, UI::SURFACE_PROGRESS);
         }
         glDisable(GL_BLEND);
     }
