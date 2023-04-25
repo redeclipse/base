@@ -8,9 +8,11 @@ namespace entities
     vector<int> airnodes;
     vector<inanimate *> inanimates;
 
-    VAR(IDF_PERSIST, showentmodels, 0, 1, 2);
     VAR(IDF_PERSIST, showentinfo, 0, 21, 127);
     VAR(IDF_PERSIST, showentattrinfo, 0, 7, 7);
+    VAR(IDF_PERSIST, showentinfomax, 1, 32, VAR_MAX);
+    FVAR(IDF_PERSIST, showentinfodist, 0, 256, FVAR_MAX);
+    VAR(IDF_PERSIST, showentmodels, 0, 1, 2);
     VAR(IDF_PERSIST, showentweapons, 0, 0, 2);
 
     VAR(IDF_PERSIST, showentdir, 0, 1, 3); // 0 = off, 1 = only selected, 2 = always when editing, 3 = always in editmode
@@ -19,17 +21,22 @@ namespace entities
     VAR(IDF_PERSIST, showentdynamic, 0, 1, 3);
     VAR(IDF_PERSIST, showentrails, 0, 1, 3);
     VAR(IDF_PERSIST, showentinterval, 0, 32, VAR_MAX);
-    VAR(IDF_PERSIST, showentdist, 0, 512, VAR_MAX);
+    VAR(IDF_PERSIST, showentdist, 0, 256, VAR_MAX);
     VAR(IDF_PERSIST, showentfull, 0, 0, 1);
     FVAR(IDF_PERSIST, showentsize, 0, 3, 10);
     FVAR(IDF_PERSIST, showentavailable, 0, 1, 1);
     FVAR(IDF_PERSIST, showentunavailable, 0, 0.35f, 1);
 
+    VAR(IDF_PERSIST, showentinfoui, 0, 0, 4); // 0 = off, 1 = only first, 2 = only selected, 3 = always when editing, 4 = always in editmode
+    FVAR(IDF_PERSIST, showentinfouiyaw, 0, -1, 360);
+    FVAR(IDF_PERSIST, showentinfouipitch, -90, 0, 90);
+    FVAR(IDF_PERSIST, showentinfouiscale, FVAR_NONZERO, 1, FVAR_MAX);
+
     FVAR(IDF_PERSIST, entselsize, 0, 0.5f, FVAR_MAX);
     FVAR(IDF_PERSIST, entselsizetop, 0, 1, FVAR_MAX);
     FVAR(IDF_PERSIST, entdirsize, 0, 10, FVAR_MAX);
     FVAR(IDF_PERSIST, entrailoffset, 0, 0.1f, FVAR_MAX);
-    FVAR(IDF_PERSIST, entinfospace, 0, 1.25f, FVAR_MAX);
+    FVAR(IDF_PERSIST, entinfospace, 0, 2, FVAR_MAX);
     FVAR(IDF_PERSIST, entinfostrut, 0, 0.5f, FVAR_MAX);
 
     VAR(IDF_PERSIST|IDF_HEX, entselcolour, 0, 0xFF00FF, 0xFFFFFF);
@@ -1816,7 +1823,7 @@ namespace entities
 
     bool cansee(int n)
     {
-        if(game::player1->state != CS_EDITING && !(showentinfo&64)) return false;
+        if(game::player1->state != CS_EDITING && (showentinfoui || !(showentinfo&64))) return false;
         if(!ents.inrange(n)) return false;
         if(ents[n]->type == NOTUSED && (enthover.find(n) < 0 && entgroup.find(n) < 0)) return false;
         return true;
@@ -3224,9 +3231,9 @@ namespace entities
         return ret;
     }
 
-    void drawparticle(gameentity &e, const vec &o, int idx, bool spawned, bool active, float skew)
+    bool drawparticle(gameentity &e, const vec &o, int idx, bool spawned, bool active, float skew, float dist, float maxdist)
     {
-        switch(e.type)
+        if(dist <= maxdist) switch(e.type)
         {
             case TELEPORT:
                 maketeleport(e);
@@ -3266,91 +3273,44 @@ namespace entities
             }
             default: break;
         }
+        if(idx < 0 || !m_edit(game::gamemode) || !cansee(idx)) return false;
 
-        vec pos = o;
-        if(enttype[e.type].usetype == EU_ITEM) pos.addz(entinfospace);
-        bool edit = m_edit(game::gamemode) && idx >= 0 && cansee(idx),
-             isedit = edit && game::player1->state == CS_EDITING,
-             hasent = isedit && (enthover.find(idx) >= 0 || entgroup.find(idx) >= 0),
-             hastop = hasent && o.squaredist(camera1->o) <= showentdist*showentdist;
-        if(edit)
+        bool hastop = game::player1->state == CS_EDITING && (enthover.find(idx) >= 0 || entgroup.find(idx) >= 0) && dist <= showentdist*showentdist, dotop = hastop && e.dynamic(),
+             visible = getvisible(camera1->o, camera1->yaw, camera1->pitch, o, curfov, fovy, 2) <= VFC_PART_VISIBLE, visiblepos = dotop && getvisible(camera1->o, camera1->yaw, camera1->pitch, e.pos(), curfov, fovy, 2) <= VFC_PART_VISIBLE;
+        loopj(dotop ? 2 : 1)
         {
-            loopj(hastop && e.dynamic() ? 2 : 1)
-            {
-                part_create(hastop && !j ? PART_ENTITY_ONTOP : PART_ENTITY, 1, j ? e.pos() : o, j ? entselcolourdyn : (hastop ? entselcolourtop : entselcolour), hastop && !j ? entselsizetop : entselsize);
-                if(j) part_line(o, e.pos(), entselsize, 1, 1, entselcolourdyn);
-            }
-            if(showentinfo&(hasent ? 4 : 8))
-            {
-                defformatstring(s, "<bold>%s%s (%d)", hastop ? "\fc" : "\fC", enttype[e.type].name, idx >= 0 ? idx : 0);
-                part_textcopy(pos.addz(entinfospace), s, hastop ? PART_TEXT_ONTOP : PART_TEXT);
-                if(idx >= 0) loopv(railways)
-                {
-                    if(railways[i].ent != idx && railways[i].findparent(idx) < 0) continue;
-                    formatstring(s, "railway [%d] %d ms (%d/%d)", i, railways[i].millis, railways[i].length[0], railways[i].length[1]);
-                    part_textcopy(pos.addz(entinfospace), s, hastop ? PART_TEXT_ONTOP : PART_TEXT);
-                }
-            }
+            if(j ? visiblepos : visible) part_create(hastop && !j ? PART_ENTITY_ONTOP : PART_ENTITY, 1, j ? e.pos() : o, j ? entselcolourdyn : (hastop ? entselcolourtop : entselcolour), hastop && !j ? entselsizetop : entselsize);
+            if(j && (visible || visiblepos)) part_line(o, e.pos(), entselsize, 1, 1, entselcolourdyn);
         }
-        if(isedit && showentinfo&(hasent ? 1 : 2))
-        {
-            const char *itxt = entinfo(e.type, e.attrs, isedit);
-            if(itxt && *itxt)
-            {
-                defformatstring(ds, "%s", itxt);
-                part_textcopy(pos.addz(entinfospace), ds, hastop ? PART_TEXT_ONTOP : PART_TEXT, 1, colourwhite);
-            }
-        }
-        if(edit && showentinfo&(hasent ? 16 : 32))
-        {
-            bool strut = false;
-            loopk(numattrs(e.type))
-            {
-                const char *attrname = getentattribute(e.type, k, e.attrs[0]);
-                if(attrname && *attrname)
-                {
-                    string attrval; attrval[0] = 0;
-                    if(showentattrinfo&1)
-                    {
-                        defformatstring(s, "\fs\fy%d\fS:", k+1);
-                        concatstring(attrval, s);
-                    }
-                    if(showentattrinfo&2)
-                    {
-                        if(*attrval) concatstring(attrval, " ");
-                        concatstring(attrval, attrname);
-                    }
-                    if(showentattrinfo&4)
-                    {
-                        if(*attrval) concatstring(attrval, " = ");
-                        defformatstring(s, "\fs\fc%d\fS", e.attrs[k]);
-                        concatstring(attrval, s);
-                        if(enttype[e.type].mvattr == k)
-                        {
-                            formatstring(s, " (%s)", mapvariants[clamp(e.attrs[enttype[e.type].mvattr], 0, MPV_MAX-1)]);
-                            concatstring(attrval, s);
-                        }
-                    }
-                    if(!strut)
-                    {
-                        pos.addz(entinfostrut);
-                        strut = true;
-                    }
-                    defformatstring(s, "%s%s", hastop ? "\fw" : "\fW", attrval);
-                    part_textcopy(pos.addz(entinfospace), s, hastop ? PART_TEXT_ONTOP : PART_TEXT);
-                }
-            }
-        }
+        return visible;
     }
 
+    struct visibleent
+    {
+        int idx;
+        float dist;
+        bool visible;
+        vec pos;
+
+        visibleent() {}
+        ~visibleent() {}
+
+        static bool compare(const visibleent &a, const visibleent &b)
+        {
+            return a.dist > b.dist; // reverse order so we can reverse through it
+        }
+    };
+
+    bool hasdynui = false;
     void drawparticles()
     {
+        float maxdist = maxparticledistance*maxparticledistance;
         loopv(railways) loopvj(railways[i].parents)
         {
             int n = railways[i].parents[j];
             if(!ents.inrange(n) || ents[n]->type != PARTICLES) continue;
             gameentity &e = *(gameentity *)ents[n];
-            if(!checkparticle(e) || e.pos().dist(camera1->o) > maxparticledistance) continue;
+            if(!checkparticle(e) || e.pos().squaredist(camera1->o) > maxdist) continue;
             makeparticle(e.pos(), e.attrs);
         }
         if(drawtex) return;
@@ -3359,13 +3319,13 @@ namespace entities
         int fstent = m_edit(game::gamemode) ? 0 : min(firstuse(EU_ITEM), firstent(hasroute ? ROUTE : TELEPORT)),
             lstent = m_edit(game::gamemode) ? ents.length() : max(lastuse(EU_ITEM), lastent(hasroute ? ROUTE : TELEPORT));
 
+        static vector<visibleent> visents; visents.shrink(0);
         for(int i = fstent; i < lstent; ++i)
         {
             gameentity &e = *(gameentity *)ents[i];
             if(e.type == NOTUSED || e.attrs.empty()) continue;
             if(e.type != TELEPORT && e.type != ROUTE && !m_edit(game::gamemode) && enttype[e.type].usetype != EU_ITEM) continue;
-            else if(e.o.dist(camera1->o) > maxparticledistance) continue;
-            float skew = 1;
+            float skew = 1, dist = e.o.squaredist(camera1->o);
             bool active = false;
             if(e.spawned())
             {
@@ -3382,7 +3342,128 @@ namespace entities
                     active = true;
                 }
             }
-            drawparticle(e, e.o, i, e.spawned(), active, skew);
+            visibleent &v = visents.add();
+            v.idx = i;
+            v.dist = dist;
+            v.pos = e.o;
+            v.visible = drawparticle(e, e.o, i, e.spawned(), active, skew, dist, maxdist);
+        }
+
+        if(m_edit(game::gamemode))
+        {
+            int numdrawn = 0;
+            float infodist = showentinfodist*showentinfodist;
+            visents.sort(visibleent::compare);
+            loopvrev(visents)
+            {
+                visibleent &v = visents[i];
+                if(!v.visible) continue;
+                if(showentinfodist > 0 && v.dist >= infodist) break;
+                if(!ents.inrange(v.idx)) continue;
+                gameentity &e = *(gameentity *)ents[v.idx];
+                bool found = false, isedit = game::player1->state == CS_EDITING,
+                    hasent = isedit && (enthover.find(v.idx) >= 0 || entgroup.find(v.idx) >= 0);
+                vec pos = vec(e.o).addz(entinfospace);
+                if(enttype[e.type].usetype == EU_ITEM) pos.addz(entinfospace);
+                if(showentinfoui)
+                {
+                    if(showentinfoui >= (hasent && !entgroup.empty() && entgroup[0] == v.idx ? 1 : (hasent ? 2 : (isedit ? 3 : 4))))
+                    {
+                        gameentity &e = *(gameentity *)ents[v.idx];
+                        vec pos = vec(e.o).addz(entinfospace);
+                        if(enttype[e.type].usetype == EU_ITEM) pos.addz(entinfospace);
+                        if(!UI::uivisible("entinfo", UI::SURFACE_MAIN, v.idx)) showui("entinfo", UI::SURFACE_MAIN, v.idx, pos, showentinfouiyaw, showentinfouipitch, showentinfouiscale);
+                        hasdynui = found = true;
+                    }
+                }
+                else
+                {
+                    if(showentinfo&(hasent ? 4 : 8))
+                    {
+                        defformatstring(s, "<bold>%s%s (%d)", hasent ? "\fc" : "\fC", enttype[e.type].name, v.idx >= 0 ? v.idx : 0);
+                        part_textcopy(pos.addz(entinfospace), s, hasent ? PART_TEXT_ONTOP : PART_TEXT);
+                        if(v.idx >= 0) loopv(railways)
+                        {
+                            if(railways[i].ent != v.idx && railways[i].findparent(v.idx) < 0) continue;
+                            formatstring(s, "railway [%d] %d ms (%d/%d)", i, railways[i].millis, railways[i].length[0], railways[i].length[1]);
+                            part_textcopy(pos.addz(entinfospace), s, hasent ? PART_TEXT_ONTOP : PART_TEXT);
+                        }
+                        found = true;
+                    }
+
+                    if(showentinfo&(hasent ? 1 : 2))
+                    {
+                        const char *itxt = entinfo(e.type, e.attrs, isedit);
+                        if(itxt && *itxt)
+                        {
+                            defformatstring(ds, "%s", itxt);
+                            part_textcopy(pos.addz(entinfospace), ds, hasent ? PART_TEXT_ONTOP : PART_TEXT, 1, colourwhite);
+                            found = true;
+                        }
+                    }
+
+                    if(showentinfo&(hasent ? 16 : 32))
+                    {
+                        bool strut = false;
+                        loopk(numattrs(e.type))
+                        {
+                            const char *attrname = getentattribute(e.type, k, e.attrs[0]);
+                            if(attrname && *attrname)
+                            {
+                                string attrval; attrval[0] = 0;
+                                if(showentattrinfo&1)
+                                {
+                                    defformatstring(s, "\fs\fy%d\fS:", k+1);
+                                    concatstring(attrval, s);
+                                }
+                                if(showentattrinfo&2)
+                                {
+                                    if(*attrval) concatstring(attrval, " ");
+                                    concatstring(attrval, attrname);
+                                }
+                                if(showentattrinfo&4)
+                                {
+                                    if(*attrval) concatstring(attrval, " = ");
+                                    defformatstring(s, "\fs\fc%d\fS", e.attrs[k]);
+                                    concatstring(attrval, s);
+                                    if(enttype[e.type].mvattr == k)
+                                    {
+                                        formatstring(s, " (%s)", mapvariants[clamp(e.attrs[enttype[e.type].mvattr], 0, MPV_MAX-1)]);
+                                        concatstring(attrval, s);
+                                    }
+                                }
+                                if(!strut)
+                                {
+                                    pos.addz(entinfostrut);
+                                    strut = true;
+                                }
+                                defformatstring(s, "%s%s", hasent ? "\fw" : "\fW", attrval);
+                                part_textcopy(pos.addz(entinfospace), s, hasent ? PART_TEXT_ONTOP : PART_TEXT);
+                                found = true;
+                            }
+                        }
+                    }
+                }
+                if(found)
+                {
+                    visents.remove(i);
+                    if(++numdrawn >= showentinfomax) break;
+                }
+            }
+            if(showentinfoui) loopv(visents)
+            {
+                visibleent &v = visents[i];
+                if(UI::uivisible("entinfo", UI::SURFACE_MAIN, v.idx))
+                {
+                    conoutf("hiding: %d", v.idx);
+                    hideui("entinfo", UI::SURFACE_MAIN, v.idx);
+                }
+            }
+        }
+        else if(hasdynui)
+        {
+            UI::closedynui("entinfo");
+            hasdynui = false;
         }
 
         loopv(projs::projs)
@@ -3391,7 +3472,7 @@ namespace entities
             if(proj.projtype != PRJ_ENT || !ents.inrange(proj.id) || !proj.ready()) continue;
             gameentity &e = *(gameentity *)ents[proj.id];
             if(e.type == NOTUSED || e.attrs.empty()) continue;
-            float skew = 1;
+            float skew = 1, dist = proj.o.squaredist(camera1->o);
             if(proj.fadetime && proj.lifemillis)
             {
                 int interval = min(proj.lifemillis, proj.fadetime);
@@ -3402,7 +3483,7 @@ namespace entities
                     if(proj.lifemillis-proj.lifetime < interval) skew = float(proj.lifemillis-proj.lifetime)/float(interval);
                 }
             }
-            drawparticle(e, proj.o, -1, true, true, skew);
+            drawparticle(e, proj.o, -1, true, true, skew, dist, maxdist);
         }
     }
 

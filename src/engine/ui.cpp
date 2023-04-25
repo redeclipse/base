@@ -16,6 +16,7 @@ namespace UI
 
     VAR(0, uihidden, 0, 0, 1);
     FVAR(IDF_PERSIST, uiscale, FVAR_NONZERO, 1, 100);
+    FVAR(IDF_PERSIST, uiworldscale, FVAR_NONZERO, 50, VAR_MAX);
     VAR(IDF_PERSIST, uitextrows, 1, 48, VAR_MAX);
 
     VAR(IDF_PERSIST, uiscrollsteptime, 0, 50, VAR_MAX);
@@ -151,7 +152,8 @@ namespace UI
         CLAMP_BOTTOM  = 0x80,
 
         NO_ADJUST     = ALIGN_HNONE | ALIGN_VNONE,
-        ALIGN_DEFAULT = ALIGN_HCENTER | ALIGN_VCENTER
+        ALIGN_DEFAULT = ALIGN_HCENTER | ALIGN_VCENTER,
+        ALIGN_WORLD   = ALIGN_HCENTER | ALIGN_TOP
     };
 
     enum
@@ -831,6 +833,24 @@ namespace UI
     Surface *surface = NULL, *surfaces[SURFACE_MAX] = { NULL, NULL, NULL };
     bool issurface(int stype) { return stype >= 0 && stype < SURFACE_MAX; }
 
+    #define DOSURFACE(surf, body, failure, success) \
+    { \
+        if(!issurface(surf) || !surfaces[surf]) { failure; } \
+        Surface *oldsurface = surface; \
+        surface = surfaces[surf]; \
+        surfacetype = surface->type; \
+        body; \
+        surface = oldsurface; \
+        surfacetype = surface ? surface->type : -1; \
+        success; \
+    }
+
+    #define SWSURFACE(surf, body, failure, success) \
+    { \
+        if(surf >= 0) DOSURFACE(surf, body, failure, success) \
+        else loopi(SURFACE_MAX) if(surfaces[i] && surfaces[i]->interactive) DOSURFACE(i, body, failure, success) \
+    }
+
     struct Window;
     extern int getwindowtype();
 
@@ -858,28 +878,30 @@ namespace UI
         WINDOW_ALL = WINDOW_MENU|WINDOW_PASS|WINDOW_TIP|WINDOW_POPUP|WINDOW_PERSIST|WINDOW_TOP
     };
 
+    VAR(IDF_READONLY, uiparam, -1, 0, 1);
+
     struct Window : Object
     {
-        char *name, *body;
+        char *name, *body, *dyn;
         uint *contents, *onshow, *onhide;
         bool exclusive, mapdef, inworld;
-        int allowinput, windowflags;
-        float px, py, pw, ph, yaw, pitch;
-        vec2 sscale, soffset, ssize, srot;
+        int allowinput, windowflags, param;
+        float px, py, pw, ph, yaw, pitch, scale;
+        vec2 sscale, soffset;
         vec origin;
 
-        Window(const char *name, const char *contents, const char *onshow, const char *onhide, int windowflags_, bool mapdef_) :
-            name(newstring(name)), body(NULL),
-            contents(compilecode(contents)),
-            onshow(!mapdef_ && onshow && onshow[0] ? compilecode(onshow) : NULL),
-            onhide(!mapdef_ && onhide && onhide[0] ? compilecode(onhide) : NULL),
-            exclusive(false), mapdef(mapdef_), inworld(false), allowinput(1),
-            px(0), py(0), pw(0), ph(0), yaw(-1), pitch(-1),
-            sscale(1, 1), soffset(0, 0), ssize(1, 1),
+        Window(const char *name_, const char *contents_, const char *onshow_, const char *onhide_, int windowflags_, bool mapdef_, const char *dyn_ = NULL, int param_ = -1) :
+            name(newstring(name_)), body(NULL), dyn(dyn_ && *dyn_ ? newstring(dyn_) : NULL),
+            contents(compilecode(contents_)),
+            onshow(!mapdef_ && onshow_ && *onshow_ ? compilecode(onshow_) : NULL),
+            onhide(!mapdef_ && onhide_ && *onhide_ ? compilecode(onhide_) : NULL),
+            exclusive(false), mapdef(mapdef_), inworld(false), allowinput(1), param(param_),
+            px(0), py(0), pw(0), ph(0), yaw(-1), pitch(-1), scale(1),
+            sscale(1, 1), soffset(0, 0),
             origin(-1, -1, -1)
         {
-            if(mapdef) body = newstring(contents);
-            windowflags = mapdef ? 0 : clamp(windowflags_, 0, int(WINDOW_ALL));
+            windowflags = clamp(windowflags_, 0, int(WINDOW_ALL));
+            if(mapdef_) body = newstring(contents_);
         }
         ~Window()
         {
@@ -899,18 +921,22 @@ namespace UI
         {
             inworld = false;
             yaw = pitch = -1;
-            ssize = vec2(hudw, hudh);
+            scale = 1;
             origin = vec(-1, -1, -1);
         }
 
         void hide()
         {
             overridepos = false;
-            if(onhide) execute(onhide);
+            if(onhide)
+            {
+                uiparam = param;
+                execute(onhide);
+            }
             resetworld();
         }
 
-        void show(const vec &pos = vec(-1, -1, -1), float y = 0, float p = 0, const vec2 &sz = vec2(1, 1))
+        void show(const vec &pos = vec(-1, -1, -1), float y = 0, float p = 0, float s = 1)
         {
             overridepos = false;
             state |= STATE_HIDDEN;
@@ -920,11 +946,15 @@ namespace UI
                 yaw = y;
                 pitch = p;
                 origin = pos;
-                (ssize = sz).max(1.f);
+                scale = s > 0 ? s : 1.f;
                 inworld = true;
             }
             else resetworld();
-            if(onshow) execute(onshow);
+            if(onshow)
+            {
+                uiparam = param;
+                execute(onshow);
+            }
         }
 
         void setup()
@@ -994,9 +1024,17 @@ namespace UI
 
         void adjustlayout()
         {
-            float aspect = ssize.x/ssize.y;
-            ph = max(max(h, w/aspect), 1.0f);
-            pw = aspect*ph;
+            if(inworld)
+            {
+                pw = w;
+                ph = h;
+            }
+            else
+            {
+                float aspect = hudw/float(hudh);
+                ph = max(max(h, w/aspect), 1.0f);
+                pw = aspect*ph;
+            }
             Object::adjustlayout(0, 0, pw, ph);
         }
 
@@ -1027,23 +1065,22 @@ namespace UI
                 hudmatrix.translate(origin);
                 hudmatrix.rotate_around_z(fyaw + 90*RAD);
                 hudmatrix.rotate_around_x(fpitch - 90*RAD);
+                hudmatrix.scale(scale * uiworldscale);
 
                 vec trans(0, 0, 0);
                 switch(adjust&ALIGN_HMASK)
                 {
-                    case ALIGN_LEFT:    trans.x = -ssize.x; break;
+                    case ALIGN_LEFT:    trans.x = -pw; break;
                     case ALIGN_RIGHT:   trans.x = 0; break;
-                    default:            trans.x = -ssize.x * 0.5f; break;
+                    default:            trans.x = -pw * 0.5f; break;
                 }
                 switch(adjust&ALIGN_VMASK)
                 {
-                    case ALIGN_TOP:     trans.y = -ssize.y; break;
+                    case ALIGN_TOP:     trans.y = -ph; break;
                     case ALIGN_BOTTOM:  trans.y = 0; break;
-                    default:            trans.y = -ssize.y * 0.5f; break;
+                    default:            trans.y = -ph * 0.5f; break;
                 }
-
                 hudmatrix.translate(trans);
-                hudmatrix.scale(ssize.x, ssize.y, 1);
             }
             else hudmatrix.ortho(px, px + pw, py + ph, py, -1, 1);
 
@@ -1076,7 +1113,6 @@ namespace UI
     ICOMMAND(0, uiwindowyaw, "g", (float *yaw), if(window && window->inworld) window->yaw = *yaw);
     ICOMMAND(0, uiwindowpitch, "g", (float *pitch), if(window && window->inworld) window->pitch = *pitch);
     ICOMMAND(0, uiwindowangle, "gg", (float *yaw, float *pitch), if(window && window->inworld) { window->yaw = *yaw; window->pitch = *pitch; });
-    ICOMMAND(0, uiwindowsize, "ff", (float *w, float *h), if(window && window->inworld) window->ssize = vec2(*w, *h));
     ICOMMAND(0, uiwindowworld, "ff", (float *w, float *h), intret(window && window->inworld ? 1 : 0));
 
     #define UIWINCMDC(func, types, argtypes, body) \
@@ -1168,13 +1204,13 @@ namespace UI
             return w->windowflags&WINDOW_TOP;
         }
 
-        bool show(Window *w, const vec &pos = vec(-1, -1, -1), float y = 0, float p = 0, const vec2 &sz = vec2(1, 1))
+        bool show(Window *w, const vec &pos = vec(-1, -1, -1), float y = 0, float p = 0, float s = 1)
         {
             if(children.find(w) >= 0) return false;
             w->resetchildstate();
             if(pos != vec(-1, -1, -1) || !forcetop()) children.add(w);
             else children.insert(max(0, children.length() - 1), w);
-            w->show(pos, y, p, sz);
+            w->show(pos, y, p, s);
             return true;
         }
 
@@ -1293,29 +1329,30 @@ namespace UI
         reset(surface);
         setup();
         window = this;
+        uiparam = param;
         buildchildren(contents);
         window = NULL;
     }
 
-    void newui(int type, char *name, char *contents, char *onshow, char *onhide, int windowflags, bool mapdef = false)
+    bool newui(int type, char *name, char *contents, char *onshow, char *onhide, int windowflags, bool mapdef = false, const char *dyn = NULL, int param = -1)
     {
-        if(!name || !*name || !contents || !*contents) return;
+        if(!name || !*name || !contents || !*contents) return false;
         type = clamp(type, 0, int(WINTYPE_MAX)-1);
         if(mapdef && !(identflags&IDF_MAP) && !editmode)
         {
             conoutf("\frMap %sUI %s is only directly modifiable in editmode", getwinprefix(type), name);
-            return;
+            return false;
         }
 
         bool found = false;
         Window *w = windows[type].find(name, NULL);
         if(w)
         {
-            if(w == window) return; // can't remove the calling window
+            if(w == window) return false; // can't remove the calling window
             if(!w->mapdef && mapdef)
             {
                 conoutf("\frCannot override builtin %sUI %s with a one from the map", getwinprefix(type), w->name);
-                return;
+                return false;
             }
             loopi(SURFACE_MAX) if(surfaces[i]) surfaces[i]->hide(w);
             windows[type].remove(name);
@@ -1323,15 +1360,149 @@ namespace UI
             found = true;
         }
 
-        windows[type][name] = new Window(name, contents, onshow, onhide, windowflags, mapdef);
+        windows[type][name] = new Window(name, contents, onshow, onhide, windowflags, mapdef, dyn, param);
 
         if(found && type == WINTYPE_COMPOSITE)
             enumerate(textures, Texture, t, if(t.type&Texture::COMPOSITE && t.comp && !strcmp(name, t.comp)) composite(&t.id, t.comp, t.args, t.w, t.h, t.tclamp, t.mipmap, true));
+
+        return true;
     }
-    ICOMMAND(0, newui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *windowflags), newui(WINTYPE_NORMAL, name, contents, onshow, onhide, *windowflags));
+    ICOMMAND(0, newui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *windowflags), newui(WINTYPE_NORMAL, name, contents, onshow, onhide, *windowflags, (identflags&IDF_MAP) != 0));
     ICOMMAND(0, mapui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *windowflags), newui(WINTYPE_NORMAL, name, contents, onshow, onhide, *windowflags, true));
-    ICOMMAND(0, newcompui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *windowflags), newui(WINTYPE_COMPOSITE, name, contents, onshow, onhide, *windowflags));
+    ICOMMAND(0, newcompui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *windowflags), newui(WINTYPE_COMPOSITE, name, contents, onshow, onhide, *windowflags, (identflags&IDF_MAP) != 0));
     ICOMMAND(0, mapcompui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *windowflags), newui(WINTYPE_COMPOSITE, name, contents, onshow, onhide, *windowflags, true));
+
+    void closedynui(const char *name, int stype)
+    {
+        if(stype >= 0 && (!issurface(stype) || !surfaces[stype])) return;
+
+        static vector<Window *> wins; wins.shrink(0);
+        enumerate(windows[WINTYPE_NORMAL], Window *, w,
+        {
+            if(!w->dyn || !*w->dyn || (name && *name && strcmp(w->dyn, name))) continue;
+            wins.add(w);
+        });
+        Surface *oldsurface = surface;
+        loopvrev(wins)
+        {
+            Window *w = wins[i];
+            if(stype >= 0)
+            {
+                surface = surfaces[stype];
+                surface->hide(w);
+            }
+            else loopj(SURFACE_MAX) if(surfaces[i])
+            {
+                surface = surfaces[i];
+                surface->hide(w);
+            }
+        }
+        surface = oldsurface;
+    }
+
+    ICOMMAND(0, closedynui, "si", (char *name, int *stype), closedynui(name, *stype));
+
+    void cleardynui(const char *name, int wintype, bool mapdef)
+    {
+        vector<Window *> wins;
+        enumerate(windows[wintype], Window *, w,
+        {
+            if(!w->dyn || !*w->dyn || (name && *name && strcmp(w->dyn, name)) || w->mapdef != mapdef) continue;
+            wins.add(w);
+        });
+        Surface *oldsurface = surface;
+        loopvrev(wins)
+        {
+            Window *w = wins[i];
+            loopj(SURFACE_MAX)
+            {
+                surface = surfaces[i];
+                surface->hide(w);
+            }
+            windows[wintype].remove(w->name);
+            delete w;
+        }
+        surface = oldsurface;
+    }
+
+    ICOMMAND(0, cleardynui, "si", (char *name, int *wintype), cleardynui(name, clamp(*wintype, 0, int(WINTYPE_MAX)-1), (identflags&IDF_MAP) != 0));
+    ICOMMAND(0, clearmapdynui, "si", (char *name, int *wintype), cleardynui(name, clamp(*wintype, 0, int(WINTYPE_MAX)-1), true));
+
+    struct DynUI
+    {
+        char *name, *contents, *onshow, *onhide;
+        int windowflags;
+        bool mapdef;
+
+        DynUI() : name(NULL), contents(NULL), onshow(NULL), onhide(NULL), mapdef(false) {}
+        ~DynUI()
+        {
+            DELETEA(name);
+            DELETEA(contents);
+        }
+    };
+    vector<DynUI> dynuis;
+
+    void dynui(const char *name, const char *contents, const char *onshow, const char *onhide, int windowflags, bool mapdef)
+    {
+        if(!name || !*name || !contents || !*contents) return;
+
+        DynUI *m = NULL;
+        loopv(dynuis) if(!strcmp(dynuis[i].name, name))
+        {
+            m = &dynuis[i];
+            break;
+        }
+
+        if(m && !m->mapdef && mapdef)
+        {
+            conoutf("\frCannot override builtin DynUI %s with one from the map", name);
+            return;
+        }
+
+        if(!m)
+        {
+            m = &dynuis.add();
+            m->name = newstring(name);
+        }
+        else
+        {
+            DELETEA(m->contents);
+            DELETEA(m->onshow);
+            DELETEA(m->onhide);
+        }
+
+        m->contents = newstring(contents);
+        m->onshow = onshow && *onshow ? newstring(onshow) : NULL;
+        m->onhide = onhide && *onhide ? newstring(onhide) : NULL;
+        m->windowflags = windowflags;
+        m->mapdef = mapdef;
+    }
+
+    ICOMMAND(0, dynui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *windowflags), dynui(name, contents, onshow, onhide, *windowflags, (identflags&IDF_MAP) != 0));
+    ICOMMAND(0, dynmapui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *windowflags), dynui(name, contents, onshow, onhide, *windowflags, true));
+
+    const char *dynuiref(const char *name, int param)
+    {
+        if(!name || !*name || param < 0) return name;
+        static string refname;
+        formatstring(refname, "%s_%d", name, param);
+        return refname;
+    }
+
+    bool dynuiexec(const char *name, int param)
+    {
+        if(!name || !*name || param < 0) return false;
+
+        loopv(dynuis) if(!strcmp(dynuis[i].name, name))
+        {
+            defformatstring(paramname, "%s_%d", dynuis[i].name, param);
+            if(newui(WINTYPE_NORMAL, paramname, dynuis[i].contents, dynuis[i].onshow, dynuis[i].onhide, dynuis[i].windowflags, dynuis[i].mapdef, dynuis[i].name, param)) return true;
+            return false;
+        }
+
+        return false;
+    }
 
     ICOMMAND(0, uiallowinput, "b", (int *val), { if(window) { if(*val >= 0) window->allowinput = clamp(*val, 0, 2); intret(window->allowinput); } });
     ICOMMAND(0, uiexclusive, "b", (int *val), { if(window) { if(*val >= 0) window->exclusive = *val!=0; intret(window->exclusive ? 1 : 0); } });
@@ -1346,7 +1517,7 @@ namespace UI
     ICOMMAND(0, uilockcursor, "", (), if(surface) surface->cursorlocked = true);
     ICOMMAND(0, uilockscroll, "", (), if(surface) surface->lockscroll = true);
 
-    ICOMMAND(0, uiaspect, "", (), floatret(window ? float(window->ssize.x)/window->ssize.y : float(hudw)/hudh));
+    ICOMMAND(0, uiaspect, "", (), floatret(float(hudw)/hudh));
 
     ICOMMAND(0, uicursortype, "b", (int *val), if(surface) { if(*val >= 0) surface->cursortype = clamp(*val, 0, CURSOR_MAX-1); intret(surface->cursortype); });
 
@@ -1366,49 +1537,34 @@ namespace UI
         }
     });
 
-    #define DOSURFACE(surf, body, failure, success) \
-    { \
-        if(!issurface(surf) || !surfaces[surf]) { failure; } \
-        Surface *oldsurface = surface; \
-        surface = surfaces[surf]; \
-        surfacetype = surface->type; \
-        body; \
-        surface = oldsurface; \
-        surfacetype = surface ? surface->type : -1; \
-        success; \
-    }
-
-    #define SWSURFACE(surf, body, failure, success) \
-    { \
-        if(surf >= 0) DOSURFACE(surf, body, failure, success) \
-        else loopi(SURFACE_MAX) if(surfaces[i] && surfaces[i]->interactive) DOSURFACE(i, body, failure, success) \
-    }
-
-    bool showui(const char *name, int stype, const vec &origin, float yaw, float pitch, const vec2 &sz)
+    bool showui(const char *name, int stype, int param, const vec &origin, float yaw, float pitch, float s)
     {
+        const char *ref = dynuiref(name, param);
         DOSURFACE(stype,
-            Window *w = windows[getwindowtype()].find(name, NULL);
-            bool ret = w && surface->show(w, origin, yaw, pitch, sz);
+            Window *w = windows[getwindowtype()].find(ref, NULL);
+            if(!w && param >= 0 && dynuiexec(name, param)) w = windows[getwindowtype()].find(ref, NULL);
+            bool ret = w && surface->show(w, origin, yaw, pitch, s);
         , return false, return ret);
     }
 
-    bool hideui(const char *name, int stype)
+    bool hideui(const char *name, int stype, int param)
     {
+        const char *ref = dynuiref(name, param);
         DOSURFACE(stype,
             bool ret = false;
-            if(!name || !*name) ret = surface->hideall() > 0;
+            if(!ref || !*ref) ret = surface->hideall() > 0;
             else
             {
-                Window *w = windows[getwindowtype()].find(name, NULL);
+                Window *w = windows[getwindowtype()].find(ref, NULL);
                 if(w) ret = surface->hide(w);
             }
         , return false, return ret);
     }
 
-    bool toggleui(const char *name, int stype, const vec &origin, float yaw, float pitch, const vec2 &sz)
+    bool toggleui(const char *name, int stype, int param, const vec &origin, float yaw, float pitch, float s)
     {
-        if(showui(name, stype, origin, yaw, pitch, sz)) return true;
-        hideui(name, stype);
+        if(showui(name, stype, param, origin, yaw, pitch, s)) return true;
+        hideui(name, stype, param);
         return false;
     }
 
@@ -1417,40 +1573,41 @@ namespace UI
         loopi(SURFACE_MAX) if(surfaces[i] && surfaces[i]->interactive) hideui(NULL, i);
     }
 
-    void holdui(const char *name, bool on, int stype, const vec &origin, float yaw, float pitch, const vec2 &sz)
+    void holdui(const char *name, bool on, int stype, int param, const vec &origin, float yaw, float pitch, float s)
     {
-        if(on) showui(name, stype, origin, yaw, pitch, sz);
-        else hideui(name, stype);
+        if(on) showui(name, stype, param, origin, yaw, pitch, s);
+        else hideui(name, stype, param);
     }
 
-    void pressui(const char *name, bool on, int stype, const vec &origin, float yaw, float pitch, const vec2 &sz)
+    void pressui(const char *name, bool on, int stype, int param, const vec &origin, float yaw, float pitch, float s)
     {
-        if(on) { if(!uivisible(name, stype)) showui(name, stype, origin, yaw, pitch, sz); }
-        else if(uivisible(name, stype)) hideui(name, stype);
+        if(on) { if(!uivisible(name, stype, param)) showui(name, stype, param, origin, yaw, pitch, s); }
+        else if(uivisible(name, stype, param)) hideui(name, stype, param);
     }
 
-    bool uivisible(const char *name, int stype)
+    bool uivisible(const char *name, int stype, int param)
     {
+        const char *ref = dynuiref(name, param);
         DOSURFACE(stype,
             bool ret = false;
-            if(!name || !*name) ret = surface->children.length() > 0;
+            if(!ref || !*ref) ret = surface->children.length() > 0;
             else
             {
-                Window *w = windows[getwindowtype()].find(name, NULL);
+                Window *w = windows[getwindowtype()].find(ref, NULL);
                 ret = w && surface->children.find(w) >= 0;
             }
         , return false, return ret);
     }
 
-    ICOMMAND(0, showui, "siggggggg", (char *name, int *surface, float *x, float *y, float *z, float *yaw, float *pitch, float *w, float *h), intret(showui(name, *surface, vec(*x, *y, *z), *yaw, *pitch, vec2(*w, *h)) ? 1 : 0));
-    ICOMMAND(0, hideui, "si", (char *name, int *surface), intret(hideui(name, *surface) ? 1 : 0));
+    ICOMMAND(0, showui, "sibgggggg", (char *name, int *surface, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *s), intret(showui(name, *surface, *param, vec(*x, *y, *z), *yaw, *pitch, *s > 0 ? *s : 1.f) ? 1 : 0));
+    ICOMMAND(0, hideui, "sib", (char *name, int *surface, int *param), intret(hideui(name, *surface) ? 1 : 0));
     ICOMMAND(0, hidetopui, "", (), intret(surface && surface->hidetop() ? 1 : 0));
     ICOMMAND(0, topui, "", (), result(surface ? surface->topname() : ""));
     ICOMMAND(0, hideallui, "i", (int *n), intret(surface ? surface->hideall(*n != 0) : 0));
-    ICOMMAND(0, toggleui, "siggggggg", (char *name, int *surface, float *x, float *y, float *z, float *yaw, float *pitch, float *w, float *h), intret(toggleui(name, *surface, vec(*x, *y, *z), *yaw, *pitch, vec2(*w, *h)) ? 1 : 0));
-    ICOMMAND(0, holdui, "sigggggggD", (char *name, int *surface, float *x, float *y, float *z, float *yaw, float *pitch, float *w, float *h, int *down), holdui(name, *down!=0, *surface, vec(*x, *y, *z), *yaw, *pitch, vec2(*w, *h)));
-    ICOMMAND(0, pressui, "sigggggggD", (char *name, int *surface, float *x, float *y, float *z, float *yaw, float *pitch, float *w, float *h, int *down), pressui(name, *down!=0, *surface, vec(*x, *y, *z), *yaw, *pitch, vec2(*w, *h)));
-    ICOMMAND(0, uivisible, "si", (char *name, int *surface), intret(uivisible(name, *surface) ? 1 : 0));
+    ICOMMAND(0, toggleui, "sibgggggg", (char *name, int *surface, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *s), intret(toggleui(name, *surface, *param, vec(*x, *y, *z), *yaw, *pitch, *s > 0 ? *s : 1.f) ? 1 : 0));
+    ICOMMAND(0, holdui, "sibggggggD", (char *name, int *surface, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *s, int *down), holdui(name, *down!=0, *surface, *param, vec(*x, *y, *z), *yaw, *pitch, *s > 0 ? *s : 1.f));
+    ICOMMAND(0, pressui, "sibggggggD", (char *name, int *surface, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *s, int *down), pressui(name, *down!=0, *surface, *param, vec(*x, *y, *z), *yaw, *pitch, *s > 0 ? *s : 1.f));
+    ICOMMAND(0, uivisible, "sii", (char *name, int *surface, int *param), intret(uivisible(name, *surface, *param) ? 1 : 0));
     ICOMMAND(0, uiname, "", (), { if(window) result(window->name); });
 
     struct HorizontalList : Object
@@ -2313,7 +2470,7 @@ namespace UI
             resetblend();
 
             LOCALPARAMF(millis, lastmillis/1000.0f);
-            LOCALPARAMF(viewsize, window->ssize.x*w, window->ssize.y*h, 1.0f/(window->ssize.x*w), 1.0f/(window->ssize.y*h));
+            LOCALPARAMF(viewsize, hudw*w, hudh*h, 1.0f/(hudw*w), 1.0f/(hudh*h));
             LOCALPARAMF(composite, sx, sy, w, h);
 
             vector<LocalShaderParam> list;
@@ -4669,8 +4826,8 @@ namespace UI
             hudmatrix.muld(axisprojmatrix, axismatrix);
             flushhudmatrix();
 
-            float hudaspect = window->ssize.x/float(window->ssize.y);
-            glViewport(window->ssize.x*sx*(1/hudaspect), window->ssize.y*(1.0f-(sy+h)), window->ssize.x*w*(1/hudaspect), window->ssize.y*h);
+            float hudaspect = hudw/float(hudh);
+            glViewport(hudw*sx*(1/hudaspect), hudh*(1.0f-(sy+h)), hudw*w*(1/hudaspect), hudh*h);
 
             glLineWidth(4);
 
@@ -4702,7 +4859,7 @@ namespace UI
             gle::end();
 
             glLineWidth(1);
-            glViewport(0, 0, window->ssize.x, window->ssize.y);
+            glViewport(0, 0, hudw, hudh);
 
             pophudmatrix();
 
@@ -4990,10 +5147,10 @@ namespace UI
 
             pos2d.add(vec(1.0f, 1.0f, 0.0f)).mul(vec(0.5f, 0.5f, 0.0f));
             pos2d.y = 1.0f - pos2d.y;
-            pos2d.mul(vec((sx2-sx1)/(float)window->ssize.x, (sy2-sy1)/(float)window->ssize.y, 0.0f));
+            pos2d.mul(vec((sx2-sx1)/(float)hudw, (sy2-sy1)/(float)hudh, 0.0f));
 
             // Correct for uiaspect
-            pos2d.x *= window->ssize.x/(float)window->ssize.y;
+            pos2d.x *= hudw/(float)hudh;
 
             return vec2(pos2d.x, pos2d.y);
         }
@@ -5719,6 +5876,7 @@ namespace UI
 
     void cleanup()
     {
+        dynuis.setsize(0);
         loopi(SURFACE_MAX)
         {
             surface = surfaces[i];

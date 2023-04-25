@@ -519,18 +519,21 @@ namespace UI
     enum { SURFACE_MAIN = 0, SURFACE_PROGRESS, SURFACE_COMPOSITE, SURFACE_MAX };
 
     extern int uihidden;
-    extern bool showui(const char *name, int stype = SURFACE_MAIN, const vec &origin = vec(-1, -1, -1), float yaw = -1, float pitch = -1, const vec2 &sz = vec2(1, 1));
-    extern bool hideui(const char *name = NULL, int stype = SURFACE_MAIN);
-    extern bool toggleui(const char *name, int stype = SURFACE_MAIN, const vec &origin = vec(-1, -1, -1), float yaw = -1, float pitch = -1, const vec2 &sz = vec2(1, 1));
+    extern bool showui(const char *name, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-1, -1, -1), float yaw = -1, float pitch = -1, float s = 1);
+    extern bool hideui(const char *name = NULL, int stype = SURFACE_MAIN, int param = -1);
+    extern bool toggleui(const char *name, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-1, -1, -1), float yaw = -1, float pitch = -1, float s = 1);
     extern void hideall();
 
-    extern void holdui(const char *name, bool on, int stype = SURFACE_MAIN, const vec &origin = vec(-1, -1, -1), float yaw = -1, float pitch = -1, const vec2 &sz = vec2(1, 1));
-    extern void pressui(const char *name, bool on, int stype = SURFACE_MAIN, const vec &origin = vec(-1, -1, -1), float yaw = -1, float pitch = -1, const vec2 &sz = vec2(1, 1));
-    extern bool uivisible(const char *name, int stype = SURFACE_MAIN);
+    extern void holdui(const char *name, bool on, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-1, -1, -1), float yaw = -1, float pitch = -1, float s = 1);
+    extern void pressui(const char *name, bool on, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-1, -1, -1), float yaw = -1, float pitch = -1, float s = 1);
+    extern bool uivisible(const char *name, int stype = SURFACE_MAIN, int param = -1);
     extern int hasinput(int stype = SURFACE_MAIN);
     extern bool hasmenu(bool pass = true, int stype = SURFACE_MAIN);
     extern bool keypress(int code, bool isdown);
     extern bool textinput(const char *str, int len);
+
+    extern void closedynui(const char *name, int stype = SURFACE_MAIN);
+    extern void cleardynui(const char *name, int wintype, bool mapdef);
 
     extern void setup();
     extern void cleanup();
