@@ -519,13 +519,17 @@ namespace UI
     enum { SURFACE_MAIN = 0, SURFACE_PROGRESS, SURFACE_COMPOSITE, SURFACE_MAX };
 
     extern int uihidden;
-    extern bool showui(const char *name, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-1, -1, -1), float yaw = -1, float pitch = -1, float s = 1);
+    extern char *uiopencmd, *uiclosecmd;
+
+    extern bool showui(const char *name, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float yaw = -1, float pitch = -1, float s = 1);
     extern bool hideui(const char *name = NULL, int stype = SURFACE_MAIN, int param = -1);
-    extern bool toggleui(const char *name, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-1, -1, -1), float yaw = -1, float pitch = -1, float s = 1);
+    extern bool toggleui(const char *name, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float yaw = -1, float pitch = -1, float s = 1);
+    extern int openui(const char *name, int stype = SURFACE_MAIN);
+    extern int closeui(const char *name, int stype = SURFACE_MAIN);
     extern void hideall();
 
-    extern void holdui(const char *name, bool on, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-1, -1, -1), float yaw = -1, float pitch = -1, float s = 1);
-    extern void pressui(const char *name, bool on, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-1, -1, -1), float yaw = -1, float pitch = -1, float s = 1);
+    extern void holdui(const char *name, bool on, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float yaw = -1, float pitch = -1, float s = 1);
+    extern void pressui(const char *name, bool on, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float yaw = -1, float pitch = -1, float s = 1);
     extern bool uivisible(const char *name, int stype = SURFACE_MAIN, int param = -1);
     extern int hasinput(int stype = SURFACE_MAIN);
     extern bool hasmenu(bool pass = true, int stype = SURFACE_MAIN);

@@ -11,6 +11,8 @@ namespace UI
 
     SVAR(0, uiprecmd, "");
     SVAR(0, uipostcmd, "");
+    SVAR(0, uiopencmd, "showui");
+    SVAR(0, uiclosecmd, "hideui");
 
     TVAR(IDF_PERSIST|IDF_PRELOAD, uiloadtex, "<anim:100,4,3>textures/loading", 3);
 
@@ -922,7 +924,7 @@ namespace UI
             inworld = false;
             yaw = pitch = -1;
             scale = 1;
-            origin = vec(-1, -1, -1);
+            origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX);
         }
 
         void hide()
@@ -936,12 +938,12 @@ namespace UI
             resetworld();
         }
 
-        void show(const vec &pos = vec(-1, -1, -1), float y = 0, float p = 0, float s = 1)
+        void show(const vec &pos = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float y = 0, float p = 0, float s = 1)
         {
             overridepos = false;
             state |= STATE_HIDDEN;
             clearstate(STATE_HOLD_MASK);
-            if(pos != vec(-1, -1, -1))
+            if(pos != vec(-FLT_MAX, -FLT_MAX, -FLT_MAX))
             {
                 yaw = y;
                 pitch = p;
@@ -1217,7 +1219,7 @@ namespace UI
             resetstate(); // IMPORTED
         }
 
-        bool show(Window *w, const vec &pos = vec(-1, -1, -1), float y = 0, float p = 0, float s = 1)
+        bool show(Window *w, const vec &pos = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float y = 0, float p = 0, float s = 1)
         {
             if(children.find(w) >= 0) return false;
             w->resetchildstate();
@@ -1286,8 +1288,7 @@ namespace UI
         {
             loopwindows(w,
             {
-                if(!w->inworld || w->state&STATE_HIDDEN || !(w->windowflags&WINDOW_MENU)) continue;
-                return !pass || !(w->windowflags&WINDOW_PASS);
+                if(w->windowflags&WINDOW_MENU && !(w->state&STATE_HIDDEN)) return !pass || !(w->windowflags&WINDOW_PASS);
             });
             return false;
         }
@@ -1296,8 +1297,7 @@ namespace UI
         {
             loopwindowsrev(w,
             {
-                if(w->inworld || !w->allowinput || w->state&STATE_HIDDEN || !(w->windowflags&WINDOW_PASS)) continue;
-                return w->name;
+                if(!w->inworld && (w->allowinput || w->windowflags&WINDOW_PASS) && !(w->state&STATE_HIDDEN)) { return w->name; }
             });
             return NULL;
         }
@@ -1579,6 +1579,22 @@ namespace UI
         if(showui(name, stype, param, origin, yaw, pitch, s)) return true;
         hideui(name, stype, param);
         return false;
+    }
+
+    int openui(const char *name, int stype)
+    {
+        DOSURFACE(stype,
+            defformatstring(cmd, "%s \"%s\" %d", uiopencmd, name ? name : "",  stype);
+            int ret = execute(cmd);
+        , return 0, return ret);
+    }
+
+    int closeui(const char *name, int stype)
+    {
+        DOSURFACE(stype,
+            defformatstring(cmd, "%s \"%s\" %d", uiclosecmd, name ? name : "", stype);
+            int ret = execute(cmd);
+        , return 0, return ret);
     }
 
     void hideall()
