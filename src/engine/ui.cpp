@@ -185,6 +185,8 @@ namespace UI
     };
 
     struct Object;
+    struct Window;
+    struct Surface;
 
     static Object *buildparent = NULL;
     static Object *inputsteal = NULL;
@@ -728,6 +730,7 @@ namespace UI
         bool isnamed(const char *name) const { return name[0] == '#' ? name == gettypename() : !strcmp(name, getname()); }
 
         virtual bool isallowed() const { return true; }
+        virtual bool iswindow() const { return true; }
         virtual bool isfill() const { return false; }
         virtual bool iscolour() const { return false; }
         virtual bool istext() const { return false; }
@@ -830,7 +833,6 @@ namespace UI
         }
     }
 
-    struct Surface;
     int surfacetype = -1;
     Surface *surface = NULL, *surfaces[SURFACE_MAX] = { NULL, NULL, NULL };
     bool issurface(int stype) { return stype >= 0 && stype < SURFACE_MAX; }
@@ -853,7 +855,6 @@ namespace UI
         else loopi(SURFACE_MAX) if(surfaces[i] && surfaces[i]->interactive) DOSURFACE(i, body, failure, success) \
     }
 
-    struct Window;
     extern int getwindowtype();
 
     enum { WINTYPE_NORMAL = 0, WINTYPE_COMPOSITE, WINTYPE_MAX };
@@ -887,20 +888,20 @@ namespace UI
         char *name, *body, *dyn;
         uint *contents, *onshow, *onhide;
         bool exclusive, mapdef, inworld;
-        int allowinput, windowflags, param;
-        float px, py, pw, ph, yaw, pitch, scale, dist;
+        int allowinput, windowflags, param, lasthit;
+        float px, py, pw, ph, yaw, pitch, scale, dist, hitx, hity;
         vec2 sscale, soffset;
-        vec origin;
+        vec origin, pos;
 
         Window(const char *name_, const char *contents_, const char *onshow_, const char *onhide_, int windowflags_, bool mapdef_, const char *dyn_ = NULL, int param_ = -1) :
             name(newstring(name_)), body(NULL), dyn(dyn_ && *dyn_ ? newstring(dyn_) : NULL),
             contents(compilecode(contents_)),
             onshow(!mapdef_ && onshow_ && *onshow_ ? compilecode(onshow_) : NULL),
             onhide(!mapdef_ && onhide_ && *onhide_ ? compilecode(onhide_) : NULL),
-            exclusive(false), mapdef(mapdef_), inworld(false), allowinput(1), param(param_),
-            px(0), py(0), pw(0), ph(0), yaw(-1), pitch(-1), scale(1), dist(0),
+            exclusive(false), mapdef(mapdef_), inworld(false), allowinput(1), param(param_), lasthit(0),
+            px(0), py(0), pw(0), ph(0), yaw(-1), pitch(-1), scale(1), dist(0), hitx(-1), hity(-1),
             sscale(1, 1), soffset(0, 0),
-            origin(-1, -1, -1)
+            origin(-1, -1, -1), pos(-1, -1, -1)
         {
             windowflags = clamp(windowflags_, 0, int(WINDOW_ALL));
             if(mapdef_) body = newstring(contents_);
@@ -916,6 +917,8 @@ namespace UI
         static const char *typestr() { return "#Window"; }
         const char *gettype() const { return typestr(); }
         const char *getname() const { return name; }
+
+        bool iswindow() const { return true; }
 
         void build();
 
@@ -1040,10 +1043,101 @@ namespace UI
             Object::adjustlayout(0, 0, pw, ph);
         }
 
+        float worldcalc(vec &pos, float &y, float &p)
+        {
+            vec ray = vec(origin).sub(camera1->o);
+            y = yaw;
+            p = pitch;
+            if(y < 0 || p < 0)
+            {
+                float y2, p2;
+                vectoyawpitch(vec(ray).normalize(), y2, p2);
+                if(y < 0) y = y2 + 180;
+                if(p < 0) p = -p2;
+            }
+
+            pos = origin;
+            vec right((y + 90) * RAD, 0.f), up(0.f, (p + 90) * RAD);
+            switch(adjust&ALIGN_HMASK)
+            {
+                case ALIGN_LEFT:    pos.add(vec(right).mul(pw * scale * uiworldscale)); break;
+                case ALIGN_RIGHT:   break;
+                default:            pos.add(vec(right).mul(pw * scale * uiworldscale * 0.5f)); break;
+            }
+            switch(adjust&ALIGN_VMASK)
+            {
+                case ALIGN_TOP:     pos.add(vec(up).mul(ph * scale * uiworldscale)); break;
+                case ALIGN_BOTTOM:  break;
+                default:            pos.add(vec(up).mul(ph * scale * uiworldscale * 0.5f)); break;
+            }
+
+            return ray.magnitude();
+        }
+
+        bool planeintersect(const vec &o, const vec &d, const vec &p, const vec &n, vec &v)
+        {
+            float denom = d.dot(n);
+            if(fabs(denom) < 1e-6f) return false;
+            float t = vec(p).sub(o).dot(n) / denom;
+            if(t < 0) return false;
+            v = vec(o).add(vec(d).mul(t));
+            return true;
+        }
+
+        void hitintersect(const vec &o, const vec &p, const vec &n, float a, float &x, float &y)
+        {
+            vec r(1, 0, 0);
+
+            vec v, u;
+            v.cross(n, vec(1, 0, 0)).normalize();
+            u.cross(v, n).normalize();
+
+            x = vec(o).sub(p).dot(u);
+            y = vec(o).sub(p).dot(v);
+
+            if(a > 90 && a < 270) // hack
+            {
+                x = -x;
+                y = -y;
+            }
+        }
+
+        bool getcursor(float &cx, float &cy)
+        {
+            if(!inworld) return false;
+            if(totalmillis == lasthit)
+            {
+                cx = hitx;
+                cy = hity;
+                return true;
+            }
+
+            hitx = hity = -1;
+            float fyaw, fpitch, mag = worldcalc(pos, fyaw, fpitch);
+
+            if(mag >= 1e-6f)
+            {
+                vec n = vec(fyaw*RAD, fpitch*RAD), v;
+                if(planeintersect(camera1->o, cursordir, pos, n, v))
+                {
+                    float qx = 0, qy = 0;
+                    hitintersect(v, pos, n, fyaw, qx, qy);
+                    hitx = qx / (pw * scale * uiworldscale);
+                    hity = qy / (ph * scale * uiworldscale);
+                }
+            }
+
+            cx = hitx;
+            cy = hity;
+            lasthit = totalmillis;
+            return true;
+        }
+
         #define DOSTATE(flags, func) \
             void func##children(float cx, float cy, bool cinside, int mask, int mode, int setflags) \
             { \
                 if(!allowinput || state&STATE_HIDDEN || pw <= 0 || ph <= 0) return; \
+                getcursor(cx, cy); \
                 cx = cx*pw + px-x; \
                 cy = cy*ph + py-y; \
                 bool inside = (cx >= 0 && cy >= 0 && cx < w && cy < h); \
@@ -1059,30 +1153,14 @@ namespace UI
                 hudmatrix.ortho(px, px + pw, py, py + ph, -1, 1);
             else if(inworld)
             {
-                float fyaw = yaw, fpitch = pitch;
-                if(fyaw < 0) fyaw = atan2f(origin.y - camera1->o.y, origin.x - camera1->o.x);
-                if(fpitch < 0) fpitch = -atan2f(origin.z - camera1->o.z, sqrtf(powf(origin.x - camera1->o.x, 2) + powf(origin.y - camera1->o.y, 2)));
+                float fyaw, fpitch;
+                worldcalc(pos, fyaw, fpitch);
 
                 hudmatrix = camprojmatrix;
-                hudmatrix.translate(origin);
-                hudmatrix.rotate_around_z(fyaw + 90*RAD);
-                hudmatrix.rotate_around_x(fpitch - 90*RAD);
+                hudmatrix.translate(pos);
+                hudmatrix.rotate_around_z(fyaw*RAD);
+                hudmatrix.rotate_around_x(fpitch*RAD - 90*RAD);
                 hudmatrix.scale(scale * uiworldscale);
-
-                vec trans(0, 0, 0);
-                switch(adjust&ALIGN_HMASK)
-                {
-                    case ALIGN_LEFT:    trans.x = -pw; break;
-                    case ALIGN_RIGHT:   trans.x = 0; break;
-                    default:            trans.x = -pw * 0.5f; break;
-                }
-                switch(adjust&ALIGN_VMASK)
-                {
-                    case ALIGN_TOP:     trans.y = -ph; break;
-                    case ALIGN_BOTTOM:  trans.y = 0; break;
-                    default:            trans.y = -ph * 0.5f; break;
-                }
-                hudmatrix.translate(trans);
             }
             else hudmatrix.ortho(px, px + pw, py + ph, py, -1, 1);
 
@@ -1136,6 +1214,8 @@ namespace UI
     ICOMMAND(0, uiwindowpitch, "g", (float *pitch), if(window && window->inworld) window->pitch = *pitch);
     ICOMMAND(0, uiwindowangle, "gg", (float *yaw, float *pitch), if(window && window->inworld) { window->yaw = *yaw; window->pitch = *pitch; });
     ICOMMAND(0, uiwindowworld, "ff", (float *w, float *h), intret(window && window->inworld ? 1 : 0));
+    ICOMMAND(0, uiwindowhitx, "", (), floatret(window && window->inworld ? window->hitx : -1.f));
+    ICOMMAND(0, uiwindowhity, "", (), floatret(window && window->inworld ? window->hity : -1.f));
 
     #define UIWINCMDC(func, types, argtypes, body) \
         ICOMMAND(0, ui##func##root, types, argtypes, \
@@ -1272,14 +1352,15 @@ namespace UI
             return false;
         }
 
-        int allowinput() const
+        int allowinput(bool cursor) const
         {
             bool hasexcl = hasexclusive();
             int ret = 0;
             loopwindows(w,
             {
                 if(hasexcl && !w->exclusive) continue;
-                if(w->allowinput && !(w->state&STATE_HIDDEN) && ret != 1) ret = w->allowinput;
+                if(w->inworld && (!cursor || w->hitx < 0 || w->hitx > 1 || w->hity < 0 || w->hity > 1)) continue;
+                if(w->allowinput && !(w->state&STATE_HIDDEN) && ret != 1) ret = max(w->allowinput, ret);
             });
             return ret;
         }
@@ -1288,7 +1369,8 @@ namespace UI
         {
             loopwindows(w,
             {
-                if(w->windowflags&WINDOW_MENU && !(w->state&STATE_HIDDEN)) return !pass || !(w->windowflags&WINDOW_PASS);
+                if(!w->inworld && w->windowflags&WINDOW_MENU && !(w->state&STATE_HIDDEN))
+                    return !pass || !(w->windowflags&WINDOW_PASS);
             });
             return false;
         }
@@ -5827,9 +5909,9 @@ namespace UI
     }
     UIWINCMDC(rotatecolours, "fii", (float *amt, int *start, int *count), rotchildcolours(o, amt, start, count));
 
-    int hasinput(int stype)
+    int hasinput(bool cursor, int stype)
     {
-        SWSURFACE(stype, int ret = surface->allowinput(), return 0, if(ret) return ret);
+        SWSURFACE(stype, int ret = surface->allowinput(cursor), return 0, if(ret) return ret);
         return 0;
     }
 

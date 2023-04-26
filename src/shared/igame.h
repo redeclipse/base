@@ -74,7 +74,7 @@ namespace hud
     extern const char *modeimage();
     extern float radarlimit(float dist = -1);
     extern bool radarlimited(float dist);
-    extern int hasinput(bool pass = false, bool focus = true);
+    extern int hasinput(bool pass = false, bool cursor = false);
     extern bool textinput(const char *str, int len);
     extern bool keypress(int code, bool isdown);
     extern void render(bool noview = false);

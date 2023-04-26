@@ -528,10 +528,10 @@ namespace hud
 
     bool needminimap() { return true; }
 
-    int hasinput(bool pass, bool focus)
+    int hasinput(bool pass, bool cursor)
     {
-        if(focus && (cdpi::getoverlay() > 0 || commandmillis > 0 || curcompass)) return true;
-        int cur = UI::hasinput();
+        if(cdpi::getoverlay() > 0 || commandmillis > 0 || curcompass) return true;
+        int cur = UI::hasinput(cursor);
         if(!cur && UI::hasmenu(pass)) cur = 1;
         return cur;
     }
@@ -1203,7 +1203,7 @@ namespace hud
     void drawpointers(int w, int h)
     {
         int index = POINTER_NONE;
-        if(hasinput()) index = hasinput(true) ? POINTER_UI : POINTER_NONE;
+        if(hasinput(false, true)) index = hasinput(true, true) ? POINTER_UI : POINTER_NONE;
         else if(hidecrosshair || !showhud || !showcrosshair || game::focus->state == CS_DEAD || !gs_playing(game::gamestate) || client::waiting() || (game::thirdpersonview(true) && game::focus != game::player1))
             index = POINTER_NONE;
         else if(game::focus->state == CS_EDITING) index = POINTER_EDIT;

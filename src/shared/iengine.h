@@ -531,7 +531,7 @@ namespace UI
     extern void holdui(const char *name, bool on, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float yaw = -1, float pitch = -1, float s = 1);
     extern void pressui(const char *name, bool on, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float yaw = -1, float pitch = -1, float s = 1);
     extern bool uivisible(const char *name, int stype = SURFACE_MAIN, int param = -1);
-    extern int hasinput(int stype = SURFACE_MAIN);
+    extern int hasinput(bool cursor = false, int stype = SURFACE_MAIN);
     extern bool hasmenu(bool pass = true, int stype = SURFACE_MAIN);
     extern bool keypress(int code, bool isdown);
     extern bool textinput(const char *str, int len);
