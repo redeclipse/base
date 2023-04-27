@@ -62,7 +62,7 @@ semabuild_build() {
         OUTPUT_DIR="${SEMABUILD_DIR}" \
         PLATFORM_BUILD="${SEMAPHORE_BUILD_NUMBER}" \
         PLATFORM_BRANCH="${BRANCH_NAME}" \
-        PLATFORM_REVISION="${REVISION}" && \
+        PLATFORM_REVISION="${REVISION}" \
         ./src/buildindocker.sh
 
     return 0
