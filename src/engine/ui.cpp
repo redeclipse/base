@@ -259,52 +259,33 @@ namespace UI
             else conoutf("Warning: parent not a %s in ui%s%s", #uitype, #uiname, #vname); \
         });
 
-    #define UIGETOBJ(uitype, uiname, vname, type) \
-        ICOMMAND(0, uiget##uiname##vname, "", (), { \
-            if(buildparent) \
-            { \
-                uitype *o = (uitype *)buildparent; \
-                type##ret(o->vname); \
-            } \
-        });
-
-    #define UIGETCMD(uitype, uiname, vname, type) \
-        ICOMMAND(0, uiget##uiname##vname, "", (), { \
-            if(buildparent && buildparent->istype<uitype>()) \
-            { \
-                uitype *o = (uitype *)buildparent; \
-                type##ret(o->vname); \
-            } \
-            else conoutf("Warning: parent not a %s in ui%s%s", #uitype, #uiname, #vname); \
-        });
-
     #define UIARGB(uitype, uiname, vname) \
-        UICMD(uitype, uiname, vname, "i", (int *val), { \
-            o->vname = *val!=0; \
-            intret(o->vname ? 1 : 0); \
-        }); \
-        UIGETCMD(uitype, uiname, vname, int);
+        UICMD(uitype, uiname, vname, "iN$", (int *val, int *numargs, ident *id), { \
+            if(*numargs > 0) o->vname = *val!=0; \
+            else if(*numargs < 0) intret(o->vname ? 1 : 0); \
+            else printvar(id, o->vname ? 1 : 0); \
+        });
 
     #define UIARGK(uitype, uiname, vname, valtype, type, cmin, cmax, valdef) \
-        UICMD(uitype, uiname, vname, valtype, (type *val), { \
-            o->vname = type(clamp((valdef), cmin, cmax)); \
-            type##ret(o->vname); \
-        }); \
-        UIGETCMD(uitype, uiname, vname, type);
+        UICMD(uitype, uiname, vname, valtype "N$", (type *val, int *numargs, ident *id), { \
+            if(*numargs > 0) o->vname = type(clamp((valdef), cmin, cmax)); \
+            else if(*numargs < 0) type##ret(o->vname); \
+            else print##type##var(id, o->vname); \
+        });
 
     #define UIARGSCALED(uitype, uiname, vname, valtype, type, cmin, cmax) \
-        UICMD(uitype, uiname, vname, valtype, (type *val), { \
-            o->vname = type(clamp(*val, cmin, cmax)*uiscale); \
-            type##ret(o->vname); \
-        }); \
-        UIGETCMD(uitype, uiname, vname, type);
+        UICMD(uitype, uiname, vname, valtype "N$", (type *val, int *numargs, ident *id), { \
+            if(*numargs > 0) o->vname = type(clamp(*val, cmin, cmax) * uiscale); \
+            else if(*numargs < 0) type##ret(o->vname * uiscale); \
+            else print##type##var(id, o->vname * uiscale); \
+        });
 
     #define UIARG(uitype, uiname, vname, valtype, type, cmin, cmax) \
-        UICMD(uitype, uiname, vname, valtype, (type *val), { \
-            o->vname = type(clamp(*val, cmin, cmax)); \
-            type##ret(o->vname); \
-        }); \
-        UIGETCMD(uitype, uiname, vname, type);
+        UICMD(uitype, uiname, vname, valtype "N$", (type *val, int *numargs, ident *id), { \
+            if(*numargs > 0) o->vname = type(clamp(*val, cmin, cmax)); \
+            else if(*numargs < 0) type##ret(o->vname); \
+            else print##type##var(id, o->vname); \
+        });
 
     #define UICMDT(uitype, uiname, vname, valtype, args, body) \
         ICOMMAND(0, ui##uiname##vname, valtype, args, { \
@@ -316,42 +297,33 @@ namespace UI
             else conoutf("Warning: parent not a is%s in ui%s%s", #uiname, #uiname, #vname); \
         });
 
-    #define UIGETCMDT(uitype, uiname, vname, type) \
-        ICOMMAND(0, uiget##uiname##vname, "", (), { \
-            if(buildparent && buildparent->is##uiname()) \
-            { \
-                uitype *o = (uitype *)buildparent; \
-                type##ret(o->vname); \
-            } \
+    #define UIARGTB(uitype, uiname, vname) \
+        UICMDT(uitype, uiname, vname, "iN$", (int *val, int *numargs, ident *id), { \
+            if(*numargs > 0) o->vname = *val!=0; \
+            else if(*numargs < 0) intret(o->vname ? 1 : 0); \
+            else printvar(id, o->vname ? 1 : 0); \
         });
 
-    #define UIARGTB(uitype, uiname, vname) \
-        UICMDT(uitype, uiname, vname, "i", (int *val), { \
-            o->vname = *val!=0; \
-            intret(o->vname ? 1 : 0); \
-        }); \
-        UIGETCMDT(uitype, uiname, vname, int);
-
     #define UIARGTK(uitype, uiname, vname, valtype, type, cmin, cmax, valdef) \
-        UICMDT(uitype, uiname, vname, valtype, (type *val), { \
-            o->vname = type(clamp((valdef), cmin, cmax)); \
-            type##ret(o->vname); \
-        }); \
-        UIGETCMDT(uitype, uiname, vname, type);
+        UICMDT(uitype, uiname, vname, valtype "N$", (type *val, int *numargs, ident *id), { \
+            if(*numargs > 0) o->vname = type(clamp((valdef), cmin, cmax)); \
+            else if(*numargs < 0) type##ret(o->vname); \
+            else print##type##var(id, o->vname); \
+        });
 
     #define UIARGSCALEDT(uitype, uiname, vname, valtype, type, cmin, cmax) \
-        UICMDT(uitype, uiname, vname, valtype, (type *val), { \
-            o->vname = type(clamp(*val, cmin, cmax)*uiscale); \
-            type##ret(o->vname); \
-        }); \
-        UIGETCMDT(uitype, uiname, vname, type);
+        UICMDT(uitype, uiname, vname, valtype "N$", (type *val, int *numargs, ident *id), { \
+            if(*numargs > 0) o->vname = type(clamp(*val, cmin, cmax) * uiscale); \
+            else if(*numargs < 0) type##ret(o->vname * uiscale); \
+            else print##type##var(id, o->vname * uiscale); \
+        });
 
     #define UIARGT(uitype, uiname, vname, valtype, type, cmin, cmax) \
-        UICMDT(uitype, uiname, vname, valtype, (type *val), { \
-            o->vname = type(clamp(*val, cmin, cmax)); \
-            type##ret(o->vname); \
-        }); \
-        UIGETCMDT(uitype, uiname, vname, type);
+        UICMDT(uitype, uiname, vname, valtype "N$", (type *val, int *numargs, ident *id), { \
+            if(*numargs > 0) o->vname = type(clamp(*val, cmin, cmax)); \
+            else if(*numargs < 0) type##ret(o->vname); \
+            else print##type##var(id, o->vname); \
+        });
 
     struct Object
     {
@@ -637,10 +609,10 @@ namespace UI
             loopchildren(o, o->resetchildstate());
         }
 
-        bool hasstate(int flags) const { return ((state & ~childstate) & flags) != 0; }
-        bool haschildstate(int flags) const
+        bool hasstate(int chkflags) const { return ((state & ~childstate) & chkflags) != 0; }
+        bool haschildstate(int chkflags) const
         {
-            bool cs = ((state | childstate) & flags) != 0;
+            bool cs = ((state | childstate) & chkflags) != 0;
             bool steal = (this == inputsteal || !inputsteal) || (state & (STATE_SCROLL_UP|STATE_SCROLL_DOWN));
             return cs && steal;
         }
@@ -663,20 +635,20 @@ namespace UI
         {
             switch(state)
             {
-            #define DOSTATE(flags, func) case flags: func##children(cx, cy, true, mask, mode, setflags | flags); return haschildstate(flags);
+            #define DOSTATE(chkflags, func) case chkflags: func##children(cx, cy, true, mask, mode, setflags | chkflags); return haschildstate(chkflags);
             DOSTATES
             #undef DOSTATE
             }
             return false;
         }
 
-        void clearstate(int flags)
+        void clearstate(int chkflags)
         {
-            state &= ~flags;
-            if(childstate & flags)
+            state &= ~chkflags;
+            if(childstate & chkflags)
             {
-                loopchildren(o, { if((o->state | o->childstate) & flags) o->clearstate(flags); });
-                childstate &= ~flags;
+                loopchildren(o, { if((o->state | o->childstate) & chkflags) o->clearstate(chkflags); });
+                childstate &= ~chkflags;
             }
         }
 
@@ -703,7 +675,7 @@ namespace UI
                 } \
             })
 
-        #define DOSTATE(flags, func) \
+        #define DOSTATE(chkflags, func) \
             virtual void func##children(float cx, float cy, bool cinside, int mask, int mode, int setflags) \
             { \
                 propagatestate(o, cx, cy, mask, mode, \
@@ -888,12 +860,12 @@ namespace UI
         char *name, *body, *dyn;
         uint *contents, *onshow, *onhide;
         bool exclusive, mapdef, inworld;
-        int allowinput, windowflags, param, lasthit;
+        int allowinput, flags, param, lasthit;
         float px, py, pw, ph, yaw, pitch, scale, dist, hitx, hity;
         vec2 sscale, soffset;
         vec origin, pos;
 
-        Window(const char *name_, const char *contents_, const char *onshow_, const char *onhide_, int windowflags_, bool mapdef_, const char *dyn_ = NULL, int param_ = -1) :
+        Window(const char *name_, const char *contents_, const char *onshow_, const char *onhide_, int flags_, bool mapdef_, const char *dyn_ = NULL, int param_ = -1) :
             name(newstring(name_)), body(NULL), dyn(dyn_ && *dyn_ ? newstring(dyn_) : NULL),
             contents(compilecode(contents_)),
             onshow(!mapdef_ && onshow_ && *onshow_ ? compilecode(onshow_) : NULL),
@@ -903,7 +875,7 @@ namespace UI
             sscale(1, 1), soffset(0, 0),
             origin(-1, -1, -1), pos(-1, -1, -1)
         {
-            windowflags = clamp(windowflags_, 0, int(WINDOW_ALL));
+            flags = clamp(flags_, 0, int(WINDOW_ALL));
             if(mapdef_) body = newstring(contents_);
         }
         ~Window()
@@ -996,7 +968,7 @@ namespace UI
 
             if(inworld)
             {
-                glDepthFunc(windowflags&WINDOW_TOP ? GL_ALWAYS : GL_LESS);
+                glDepthFunc(flags&WINDOW_TOP ? GL_ALWAYS : GL_LESS);
                 glDepthMask(GL_FALSE);
             }
 
@@ -1102,44 +1074,47 @@ namespace UI
             }
         }
 
-        bool getcursor(float &cx, float &cy)
+        void getcursor(float &cx, float &cy)
         {
-            if(!inworld) return false;
             if(totalmillis == lasthit)
             {
-                cx = hitx;
-                cy = hity;
-                return true;
+                cx = hitx * pw + px - x;
+                cy = hity * ph + py - y;
+                return;
             }
 
-            hitx = hity = -1;
-            float fyaw, fpitch, mag = worldcalc(pos, fyaw, fpitch);
-
-            if(mag >= 1e-6f)
+            if(!inworld)
             {
-                vec n = vec(fyaw*RAD, fpitch*RAD), v;
-                if(planeintersect(camera1->o, cursordir, pos, n, v))
+                hitx = cx;
+                hity = cy;
+            }
+            else
+            {
+                hitx = hity = -1;
+                float fyaw, fpitch, mag = worldcalc(pos, fyaw, fpitch);
+
+                if(mag >= 1e-6f)
                 {
-                    float qx = 0, qy = 0;
-                    hitintersect(v, pos, n, fyaw, qx, qy);
-                    hitx = qx / (pw * scale * uiworldscale);
-                    hity = qy / (ph * scale * uiworldscale);
+                    vec n = vec(fyaw*RAD, fpitch*RAD), v;
+                    if(planeintersect(camera1->o, cursordir, pos, n, v))
+                    {
+                        float qx = 0, qy = 0;
+                        hitintersect(v, pos, n, fyaw, qx, qy);
+                        hitx = qx / (pw * scale * uiworldscale);
+                        hity = qy / (ph * scale * uiworldscale);
+                    }
                 }
             }
-
-            cx = hitx;
-            cy = hity;
+            cx = hitx * pw + px - x;
+            cy = hity * ph + py - y;
             lasthit = totalmillis;
-            return true;
         }
 
-        #define DOSTATE(flags, func) \
+        #define DOSTATE(chkflags, func) \
             void func##children(float cx, float cy, bool cinside, int mask, int mode, int setflags) \
             { \
                 if(!allowinput || state&STATE_HIDDEN || pw <= 0 || ph <= 0) return; \
                 getcursor(cx, cy); \
-                cx = cx*pw + px-x; \
-                cy = cy*ph + py-y; \
                 bool inside = (cx >= 0 && cy >= 0 && cx < w && cy < h); \
                 if(mode != SETSTATE_INSIDE || inside) \
                     Object::func##children(cx, cy, inside, mask, mode, setflags); \
@@ -1190,8 +1165,8 @@ namespace UI
         {
             Window *aa = (Window *)a, *bb = (Window *)b;
             // top windows last
-            if(aa->windowflags&WINDOW_TOP && !(bb->windowflags&WINDOW_TOP)) return false;
-            if(!(aa->windowflags&WINDOW_TOP) && bb->windowflags&WINDOW_TOP) return true;
+            if(aa->flags&WINDOW_TOP && !(bb->flags&WINDOW_TOP)) return false;
+            if(!(aa->flags&WINDOW_TOP) && bb->flags&WINDOW_TOP) return true;
             // sort world windows first for speed
             if(aa->inworld && !bb->inworld) return true;
             if(!aa->inworld && bb->inworld) return false;
@@ -1207,15 +1182,90 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uiwindowname, "", (), result(window ? window->name : ""));
-    ICOMMAND(0, uiwindowflags, "i", (int *n), if(window) window->windowflags = *n);
-    ICOMMAND(0, uiwindoworigin, "ggg", (float *x, float *y, float *z), if(window && window->inworld) window->origin = vec(*x, *y, *z));
-    ICOMMAND(0, uiwindowyaw, "g", (float *yaw), if(window && window->inworld) window->yaw = *yaw);
-    ICOMMAND(0, uiwindowpitch, "g", (float *pitch), if(window && window->inworld) window->pitch = *pitch);
-    ICOMMAND(0, uiwindowangle, "gg", (float *yaw, float *pitch), if(window && window->inworld) { window->yaw = *yaw; window->pitch = *pitch; });
-    ICOMMAND(0, uiwindowworld, "ff", (float *w, float *h), intret(window && window->inworld ? 1 : 0));
-    ICOMMAND(0, uiwindowhitx, "", (), floatret(window && window->inworld ? window->hitx : -1.f));
-    ICOMMAND(0, uiwindowhity, "", (), floatret(window && window->inworld ? window->hity : -1.f));
+    #define UIWINCMD(vname, valtype, args, body) \
+        ICOMMAND(0, ui##vname, valtype, args, { \
+            if(window) \
+            { \
+                Window *o = window; \
+                body; \
+            } \
+            else conoutf("Warning: No window available for ui%s", #vname); \
+        });
+
+    #define UIWINARGB(vname) \
+        UIWINCMD(vname, "iN$", (int *val, int *numargs, ident *id), { \
+            if(*numargs > 0) o->vname = *val!=0; \
+            else if(*numargs < 0) intret(o->vname ? 1 : 0); \
+            else printvar(id, o->vname ? 1 : 0); \
+        });
+
+    #define UIWINARGK(vname, valtype, type, cmin, cmax, valdef) \
+        UIWINCMD(vname, valtype "N$", (type *val, int *numargs, ident *id), { \
+            if(*numargs > 0) o->vname = type(clamp((valdef), cmin, cmax)); \
+            else if(*numargs < 0) type##ret(o->vname); \
+            else print##type##var(id, o->vname); \
+        });
+
+    #define UIWINARGSCALED(vname, valtype, type, cmin, cmax) \
+        UIWINCMD(vname, valtype "N$", (type *val, int *numargs, ident *id), { \
+            if(*numargs > 0) o->vname = type(clamp(*val, cmin, cmax) * uiscale); \
+            else if(*numargs < 0) type##ret(o->vname * uiscale); \
+            else print##type##var(id, o->vname * uiscale); \
+        });
+
+    #define UIWINARG(vname, valtype, type, cmin, cmax) \
+        UIWINCMD(vname, valtype "N$", (type *val, int *numargs, ident *id), { \
+            if(*numargs > 0) o->vname = type(clamp(*val, cmin, cmax)); \
+            else if(*numargs < 0) type##ret(o->vname); \
+            else print##type##var(id, o->vname); \
+        });
+
+    #define UIWINARGV(vname) \
+        UIWINCMD(vname, "fffN$", (float *x, float *y, float *z, int *numargs, ident *id), { \
+            if(*numargs > 0) o->vname = vec(*x, *y, *z); \
+            else \
+            { \
+                defformatstring(pos, "%s %s %s", floatstr(o->vname.x), floatstr(o->vname.y), floatstr(o->vname.z)); \
+                if(*numargs < 0) result(pos); \
+                else printsvar(id, pos); \
+            } \
+        }); \
+        UIWINCMD(vname##x, "fN$", (float *v, int *numargs, ident *id), { \
+            if(*numargs > 0) o->vname.x = *v; \
+            else if(*numargs < 0) floatret(o->vname.x); \
+            else printfvar(id, o->vname.x); \
+        }); \
+        UIWINCMD(vname##y, "fN$", (float *v, int *numargs, ident *id), { \
+            if(*numargs > 0) o->vname.y = *v; \
+            else if(*numargs < 0) floatret(o->vname.y); \
+            else printfvar(id, o->vname.y); \
+        }); \
+        UIWINCMD(vname##z, "fN$", (float *v, int *numargs, ident *id), { \
+            if(*numargs > 0) o->vname.z = *v; \
+            else if(*numargs < 0) floatret(o->vname.z); \
+            else printfvar(id, o->vname.z); \
+        });
+
+    ICOMMAND(0, uiname, "N$", (int *numargs, ident *id), if(*numargs != 0) result(window ? window->name : ""); else printsvar(id, window ? window->name : ""));
+
+    UIWINARG(allowinput, "b", int, 0, 2);
+    UIWINARGB(exclusive);
+    UIWINARG(flags, "i", int, 0, int(WINDOW_ALL));
+
+    UIWINARGV(origin);
+    UIWINARG(yaw, "f", float, -360, 360);
+    UIWINARG(pitch, "f", float, -90, 90);
+
+    UIWINARGB(overridepos);
+    ICOMMAND(0, uisetpos, "ff", (float *xpos, float *ypos), { if(window) { window->setpos(*xpos, *ypos); } });
+    ICOMMAND(0, uiresetpos, "", (), { if(window) { window->resetpos(); } });
+
+    ICOMMAND(0, uihitx, "N$", (int *numargs, ident *id), if(*numargs != 0) floatret(window ? window->hitx : -1.f); else printfvar(id, window ? window->hitx : -1.f));
+    ICOMMAND(0, uihity, "N$", (int *numargs, ident *id), if(*numargs != 0) floatret(window ? window->hity : -1.f); else printfvar(id, window ? window->hity : -1.f));
+    ICOMMAND(0, uiworld, "N$", (int *numargs, ident *id), if(*numargs != 0) intret(window && window->inworld ? 1 : 0); else printvar(id, window && window->inworld ? 1 : 0));
+    ICOMMAND(0, uicursorx, "N$", (int *numargs, ident *id), if(*numargs != 0) floatret(cursorx*float(hudw)/hudh); else printfvar(id, cursorx*float(hudw)/hudh));
+    ICOMMAND(0, uicursory, "N$", (int *numargs, ident *id), if(*numargs != 0) floatret(cursory); else printfvar(id, cursory));
+    ICOMMAND(0, uiaspect, "N$", (int *numargs, ident *id), if(*numargs != 0) floatret(float(hudw)/hudh); else printfvar(id, float(hudw)/hudh));
 
     #define UIWINCMDC(func, types, argtypes, body) \
         ICOMMAND(0, ui##func##root, types, argtypes, \
@@ -1241,10 +1291,10 @@ namespace UI
     struct Surface : Object
     {
         int type, cursortype;
-        bool cursorlocked, mousetracking, lockscroll, standalone, interactive;
+        bool lockcursor, mousetracking, lockscroll, standalone, interactive;
         vec2 mousetrackvec;
 
-        Surface() : type(SURFACE_MAIN), cursortype(CURSOR_DEFAULT), cursorlocked(false), mousetracking(false), lockscroll(false), standalone(false), interactive(true), mousetrackvec(0, 0) {}
+        Surface() : type(SURFACE_MAIN), cursortype(CURSOR_DEFAULT), lockcursor(false), mousetracking(false), lockscroll(false), standalone(false), interactive(true), mousetrackvec(0, 0) {}
         ~Surface() {}
 
         static const char *typestr() { return "#Surface"; }
@@ -1271,7 +1321,7 @@ namespace UI
             loopwindows(w, w->adjustlayout());
         }
 
-        #define DOSTATE(flags, func) \
+        #define DOSTATE(chkflags, func) \
             void func##children(float cx, float cy, bool cinside, int mask, int mode, int setflags) \
             { \
                 loopwindowsrev(w, \
@@ -1328,8 +1378,8 @@ namespace UI
         {
             loopwindowsrev(w,
             {
-                if(w->inworld || w->state&STATE_HIDDEN || w->windowflags&WINDOW_PERSIST) continue;
-                if(w->allowinput || w->windowflags&WINDOW_PASS) { hide(w, i); return true; }
+                if(w->inworld || w->state&STATE_HIDDEN || w->flags&WINDOW_PERSIST) continue;
+                if(w->allowinput || w->flags&WINDOW_PASS) { hide(w, i); return true; }
             });
             return false;
         }
@@ -1339,7 +1389,7 @@ namespace UI
             int hidden = 0;
             loopwindowsrev(w,
             {
-                if(!force && w->windowflags&WINDOW_PERSIST) continue;
+                if(!force && w->flags&WINDOW_PERSIST) continue;
                 hide(w, i);
                 hidden++;
             });
@@ -1369,8 +1419,8 @@ namespace UI
         {
             loopwindows(w,
             {
-                if(!w->inworld && w->windowflags&WINDOW_MENU && !(w->state&STATE_HIDDEN))
-                    return !pass || !(w->windowflags&WINDOW_PASS);
+                if(!w->inworld && w->flags&WINDOW_MENU && !(w->state&STATE_HIDDEN))
+                    return !pass || !(w->flags&WINDOW_PASS);
             });
             return false;
         }
@@ -1379,7 +1429,7 @@ namespace UI
         {
             loopwindowsrev(w,
             {
-                if(!w->inworld && (w->allowinput || w->windowflags&WINDOW_PASS) && !(w->state&STATE_HIDDEN)) { return w->name; }
+                if(!w->inworld && (w->allowinput || w->flags&WINDOW_PASS) && !(w->state&STATE_HIDDEN)) { return w->name; }
             });
             return NULL;
         }
@@ -1393,9 +1443,9 @@ namespace UI
             loopwindows(w,
             {
                 if(hasexcl && !w->exclusive) continue;
-                if(w->windowflags&WINDOW_TIP) // follows cursor
+                if(w->flags&WINDOW_TIP) // follows cursor
                     w->setpos((cursorx*float(hudw)/float(hudh))-(w->w*cursorx), cursory >= 0.5f ? cursory-w->h-uitipoffset : cursory+hud::cursorsize+uitipoffset);
-                else if(w->windowflags&WINDOW_POPUP && !w->overridepos)
+                else if(w->flags&WINDOW_POPUP && !w->overridepos)
                     w->setpos((cursorx*float(hudw)/float(hudh))-(w->w*cursorx), cursory-w->h*0.5f);
             });
             loopwindows(w,
@@ -1405,6 +1455,89 @@ namespace UI
             });
         }
     };
+
+    #define UISURFCMD(vname, valtype, args, body) \
+        ICOMMAND(0, ui##vname, valtype, args, { \
+            if(surface) \
+            { \
+                Surface *o = surface; \
+                body; \
+            } \
+            else conoutf("Warning: No surface available for ui%s", #vname); \
+        });
+
+    #define UISURFARGB(vname) \
+        UISURFCMD(vname, "iN$", (int *val, int *numargs, ident *id), { \
+            if(*numargs > 0) o->vname = *val!=0; \
+            else if(*numargs < 0) intret(o->vname ? 1 : 0); \
+            else printvar(id, o->vname ? 1 : 0); \
+        });
+
+    #define UISURFARGK(vname, valtype, type, cmin, cmax, valdef) \
+        UISURFCMD(vname, valtype "N$", (type *val, int *numargs, ident *id), { \
+            if(*numargs > 0) o->vname = type(clamp((valdef), cmin, cmax)); \
+            else if(*numargs < 0) type##ret(o->vname); \
+            else print##type##var(id, o->vname); \
+        });
+
+    #define UISURFARGSCALED(vname, valtype, type, cmin, cmax) \
+        UISURFCMD(vname, valtype "N$", (type *val, int *numargs, ident *id), { \
+            if(*numargs > 0) o->vname = type(clamp(*val, cmin, cmax) * uiscale); \
+            else if(*numargs < 0) type##ret(o->vname * uiscale); \
+            else print##type##var(id, o->vname * uiscale); \
+        });
+
+    #define UISURFARG(vname, valtype, type, cmin, cmax) \
+        UISURFCMD(vname, valtype "N$", (type *val, int *numargs, ident *id), { \
+            if(*numargs > 0) o->vname = type(clamp(*val, cmin, cmax)); \
+            else if(*numargs < 0) type##ret(o->vname); \
+            else print##type##var(id, o->vname); \
+        });
+
+    #define UISURFARGV(vname) \
+        UISURFCMD(vname, "fffN$", (float *x, float *y, float *z, int *numargs, ident *id), { \
+            if(*numargs > 0) o->vname = vec(*x, *y, *z); \
+            else \
+            { \
+                defformatstring(pos, "%s %s %s", floatstr(o->vname.x), floatstr(o->vname.y), floatstr(o->vname.z)); \
+                if(*numargs < 0) result(pos); \
+                else printsvar(id, pos); \
+            } \
+        }); \
+        UISURFCMD(vname##x, "fN$", (float *v, int *numargs, ident *id), { \
+            if(*numargs > 0) o->vname.x = *v; \
+            else if(*numargs < 0) floatret(o->vname.x); \
+            else printfvar(id, o->vname.x); \
+        }); \
+        UISURFCMD(vname##y, "fN$", (float *v, int *numargs, ident *id), { \
+            if(*numargs > 0) o->vname.y = *v; \
+            else if(*numargs < 0) floatret(o->vname.y); \
+            else printfvar(id, o->vname.y); \
+        }); \
+        UISURFCMD(vname##z, "fN$", (float *v, int *numargs, ident *id), { \
+            if(*numargs > 0) o->vname.z = *v; \
+            else if(*numargs < 0) floatret(o->vname.z); \
+            else printfvar(id, o->vname.z); \
+        });
+
+    UISURFARGB(lockcursor);
+    UISURFARGB(lockscroll);
+    UISURFARG(cursortype, "i", int, 0, int(CURSOR_MAX)-1);
+
+    ICOMMAND(0, uimousetrackx, "", (), {
+        if(surface)
+        {
+            surface->mousetracking = true;
+            floatret(surface->mousetrackvec.x);
+        }
+    });
+    ICOMMAND(0, uimousetracky, "", (), {
+        if(surface)
+        {
+            surface->mousetracking = true;
+            floatret(surface->mousetrackvec.y);
+        }
+    });
 
     int getwindowtype()
     {
@@ -1429,7 +1562,7 @@ namespace UI
         window = NULL;
     }
 
-    bool newui(int type, char *name, char *contents, char *onshow, char *onhide, int windowflags, bool mapdef = false, const char *dyn = NULL, int param = -1)
+    bool newui(int type, char *name, char *contents, char *onshow, char *onhide, int flags, bool mapdef = false, const char *dyn = NULL, int param = -1)
     {
         if(!name || !*name || !contents || !*contents) return false;
         type = clamp(type, 0, int(WINTYPE_MAX)-1);
@@ -1455,17 +1588,18 @@ namespace UI
             found = true;
         }
 
-        windows[type][name] = new Window(name, contents, onshow, onhide, windowflags, mapdef, dyn, param);
+        windows[type][name] = new Window(name, contents, onshow, onhide, flags, mapdef, dyn, param);
 
         if(found && type == WINTYPE_COMPOSITE)
             enumerate(textures, Texture, t, if(t.type&Texture::COMPOSITE && t.comp && !strcmp(name, t.comp)) composite(&t.id, t.comp, t.args, t.w, t.h, t.tclamp, t.mipmap, true));
 
         return true;
     }
-    ICOMMAND(0, newui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *windowflags), newui(WINTYPE_NORMAL, name, contents, onshow, onhide, *windowflags, (identflags&IDF_MAP) != 0));
-    ICOMMAND(0, mapui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *windowflags), newui(WINTYPE_NORMAL, name, contents, onshow, onhide, *windowflags, true));
-    ICOMMAND(0, newcompui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *windowflags), newui(WINTYPE_COMPOSITE, name, contents, onshow, onhide, *windowflags, (identflags&IDF_MAP) != 0));
-    ICOMMAND(0, mapcompui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *windowflags), newui(WINTYPE_COMPOSITE, name, contents, onshow, onhide, *windowflags, true));
+
+    ICOMMAND(0, newui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *flags), newui(WINTYPE_NORMAL, name, contents, onshow, onhide, *flags, (identflags&IDF_MAP) != 0));
+    ICOMMAND(0, mapui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *flags), newui(WINTYPE_NORMAL, name, contents, onshow, onhide, *flags, true));
+    ICOMMAND(0, newcompui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *flags), newui(WINTYPE_COMPOSITE, name, contents, onshow, onhide, *flags, (identflags&IDF_MAP) != 0));
+    ICOMMAND(0, mapcompui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *flags), newui(WINTYPE_COMPOSITE, name, contents, onshow, onhide, *flags, true));
 
     void closedynui(const char *name, int stype)
     {
@@ -1526,7 +1660,7 @@ namespace UI
     struct DynUI
     {
         char *name, *contents, *onshow, *onhide;
-        int windowflags;
+        int flags;
         bool mapdef;
 
         DynUI() : name(NULL), contents(NULL), onshow(NULL), onhide(NULL), mapdef(false) {}
@@ -1538,7 +1672,7 @@ namespace UI
     };
     vector<DynUI> dynuis;
 
-    void dynui(const char *name, const char *contents, const char *onshow, const char *onhide, int windowflags, bool mapdef)
+    void dynui(const char *name, const char *contents, const char *onshow, const char *onhide, int flags, bool mapdef)
     {
         if(!name || !*name || !contents || !*contents) return;
 
@@ -1570,12 +1704,12 @@ namespace UI
         m->contents = newstring(contents);
         m->onshow = onshow && *onshow ? newstring(onshow) : NULL;
         m->onhide = onhide && *onhide ? newstring(onhide) : NULL;
-        m->windowflags = windowflags;
+        m->flags = flags;
         m->mapdef = mapdef;
     }
 
-    ICOMMAND(0, dynui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *windowflags), dynui(name, contents, onshow, onhide, *windowflags, (identflags&IDF_MAP) != 0));
-    ICOMMAND(0, dynmapui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *windowflags), dynui(name, contents, onshow, onhide, *windowflags, true));
+    ICOMMAND(0, dynui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *flags), dynui(name, contents, onshow, onhide, *flags, (identflags&IDF_MAP) != 0));
+    ICOMMAND(0, dynmapui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *flags), dynui(name, contents, onshow, onhide, *flags, true));
 
     const char *dynuiref(const char *name, int param)
     {
@@ -1592,45 +1726,12 @@ namespace UI
         loopv(dynuis) if(!strcmp(dynuis[i].name, name))
         {
             defformatstring(paramname, "%s_%d", dynuis[i].name, param);
-            if(newui(WINTYPE_NORMAL, paramname, dynuis[i].contents, dynuis[i].onshow, dynuis[i].onhide, dynuis[i].windowflags, dynuis[i].mapdef, dynuis[i].name, param)) return true;
+            if(newui(WINTYPE_NORMAL, paramname, dynuis[i].contents, dynuis[i].onshow, dynuis[i].onhide, dynuis[i].flags, dynuis[i].mapdef, dynuis[i].name, param)) return true;
             return false;
         }
 
         return false;
     }
-
-    ICOMMAND(0, uiallowinput, "b", (int *val), { if(window) { if(*val >= 0) window->allowinput = clamp(*val, 0, 2); intret(window->allowinput); } });
-    ICOMMAND(0, uiexclusive, "b", (int *val), { if(window) { if(*val >= 0) window->exclusive = *val!=0; intret(window->exclusive ? 1 : 0); } });
-    ICOMMAND(0, uiwindowflags, "b", (int *val), { if(window) { if(*val >= 0) window->windowflags = clamp(*val, 0, int(WINDOW_ALL)); intret(window->windowflags); } });
-
-    ICOMMAND(0, uioverridepos, "", (), { if(window) { intret(window->overridepos ? 1 : 0); } });
-    ICOMMAND(0, uisetpos, "ff", (float *xpos, float *ypos), { if(window) { window->setpos(*xpos, *ypos); } });
-    ICOMMAND(0, uiresetpos, "", (), { if(window) { window->resetpos(); } });
-
-    ICOMMAND(0, uicursorx, "", (), floatret(cursorx*float(hudw)/hudh));
-    ICOMMAND(0, uicursory, "", (), floatret(cursory));
-    ICOMMAND(0, uilockcursor, "", (), if(surface) surface->cursorlocked = true);
-    ICOMMAND(0, uilockscroll, "", (), if(surface) surface->lockscroll = true);
-
-    ICOMMAND(0, uiaspect, "", (), floatret(float(hudw)/hudh));
-
-    ICOMMAND(0, uicursortype, "b", (int *val), if(surface) { if(*val >= 0) surface->cursortype = clamp(*val, 0, CURSOR_MAX-1); intret(surface->cursortype); });
-
-    ICOMMAND(0, uimousetrackx, "", (), {
-        if(surface)
-        {
-            surface->mousetracking = true;
-            floatret(surface->mousetrackvec.x);
-        }
-    });
-
-    ICOMMAND(0, uimousetracky, "", (), {
-        if(surface)
-        {
-            surface->mousetracking = true;
-            floatret(surface->mousetrackvec.y);
-        }
-    });
 
     bool showui(const char *name, int stype, int param, const vec &origin, float yaw, float pitch, float s)
     {
@@ -1713,13 +1814,14 @@ namespace UI
     ICOMMAND(0, showui, "sibgggggg", (char *name, int *surface, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *s), intret(showui(name, *surface, *param, vec(*x, *y, *z), *yaw, *pitch, *s > 0 ? *s : 1.f) ? 1 : 0));
     ICOMMAND(0, hideui, "sib", (char *name, int *surface, int *param), intret(hideui(name, *surface) ? 1 : 0));
     ICOMMAND(0, hidetopui, "", (), intret(surface && surface->hidetop() ? 1 : 0));
-    ICOMMAND(0, topui, "", (), result(surface ? surface->topname() : ""));
     ICOMMAND(0, hideallui, "i", (int *n), intret(surface ? surface->hideall(*n != 0) : 0));
     ICOMMAND(0, toggleui, "sibgggggg", (char *name, int *surface, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *s), intret(toggleui(name, *surface, *param, vec(*x, *y, *z), *yaw, *pitch, *s > 0 ? *s : 1.f) ? 1 : 0));
     ICOMMAND(0, holdui, "sibggggggD", (char *name, int *surface, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *s, int *down), holdui(name, *down!=0, *surface, *param, vec(*x, *y, *z), *yaw, *pitch, *s > 0 ? *s : 1.f));
     ICOMMAND(0, pressui, "sibggggggD", (char *name, int *surface, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *s, int *down), pressui(name, *down!=0, *surface, *param, vec(*x, *y, *z), *yaw, *pitch, *s > 0 ? *s : 1.f));
     ICOMMAND(0, uivisible, "sii", (char *name, int *surface, int *param), intret(uivisible(name, *surface, *param) ? 1 : 0));
-    ICOMMAND(0, uiname, "", (), { if(window) result(window->name); });
+
+    ICOMMAND(0, uitopname, "N$", (int *numargs, ident *id), if(*numargs != 0) result(surface ? surface->topname() : ""); else printsvar(id, surface ? surface->topname() : ""));
+    ICOMMAND(0, uiname, "N$", (int *numargs, ident *id), if(*numargs != 0) result(window ? window->name : ""); else printsvar(id, window ? window->name : ""));
 
     struct HorizontalList : Object
     {
@@ -3767,7 +3869,7 @@ namespace UI
             popfont();
         }
 
-        #define DOSTATE(flags, func) \
+        #define DOSTATE(chkflags, func) \
             void func##children(float cx, float cy, bool cinside, int mask, int mode, int setflags) \
             { \
                 pushfont(str); \
@@ -3837,7 +3939,7 @@ namespace UI
             texgc = oldtexgx;
         }
 
-        #define DOSTATE(flags, func) \
+        #define DOSTATE(chkflags, func) \
             void func##children(float cx, float cy, bool cinside, int mask, int mode, int setflags) \
             { \
                 bool oldtexgx = texgc; \
@@ -3925,7 +4027,7 @@ namespace UI
             adjustchildrento(0, 0, virtw, virth);
         }
 
-        #define DOSTATE(flags, func) \
+        #define DOSTATE(chkflags, func) \
             void func##children(float cx, float cy, bool cinside, int mask, int mode, int setflags) \
             { \
                 cx += offsetx; \
@@ -5750,23 +5852,23 @@ namespace UI
         BUILD(RadarBlip, o, o->setup(textureload(texname, 3, true, false, texgc), Color(*c), *yaw, *blipyaw, *dist, *minw*uiscale, *minh*uiscale), children));
 
     #define IFSTATEVAL(state,t,f) { if(state) { if(t->type == VAL_NULL) intret(1); else result(*t); } else if(f->type == VAL_NULL) intret(0); else result(*f); }
-    #define DOSTATE(flags, func) \
+    #define DOSTATE(chkflags, func) \
         ICOMMANDNS(0, "ui!" #func, uinot##func##_, "ee", (uint *t, uint *f), \
-            executeret(buildparent && buildparent->hasstate(flags) ? t : f)); \
+            executeret(buildparent && buildparent->hasstate(chkflags) ? t : f)); \
         ICOMMANDNS(0, "ui" #func, ui##func##_, "ee", (uint *t, uint *f), \
-            executeret(buildparent && buildparent->haschildstate(flags) ? t : f)); \
+            executeret(buildparent && buildparent->haschildstate(chkflags) ? t : f)); \
         ICOMMANDNS(0, "ui!" #func "?", uinot##func##__, "tt", (tagval *t, tagval *f), \
-            IFSTATEVAL(buildparent && buildparent->hasstate(flags), t, f)); \
+            IFSTATEVAL(buildparent && buildparent->hasstate(chkflags), t, f)); \
         ICOMMANDNS(0, "ui" #func "?", ui##func##__, "tt", (tagval *t, tagval *f), \
-            IFSTATEVAL(buildparent && buildparent->haschildstate(flags), t, f)); \
+            IFSTATEVAL(buildparent && buildparent->haschildstate(chkflags), t, f)); \
         ICOMMANDNS(0, "ui!" #func "+", uinextnot##func##_, "ee", (uint *t, uint *f), \
-            executeret(buildparent && buildparent->children.inrange(buildchild) && buildparent->children[buildchild]->hasstate(flags) ? t : f)); \
+            executeret(buildparent && buildparent->children.inrange(buildchild) && buildparent->children[buildchild]->hasstate(chkflags) ? t : f)); \
         ICOMMANDNS(0, "ui" #func "+", uinext##func##_, "ee", (uint *t, uint *f), \
-            executeret(buildparent && buildparent->children.inrange(buildchild) && buildparent->children[buildchild]->haschildstate(flags) ? t : f)); \
+            executeret(buildparent && buildparent->children.inrange(buildchild) && buildparent->children[buildchild]->haschildstate(chkflags) ? t : f)); \
         ICOMMANDNS(0, "ui!" #func "+?", uinextnot##func##__, "tt", (tagval *t, tagval *f), \
-            IFSTATEVAL(buildparent && buildparent->children.inrange(buildchild) && buildparent->children[buildchild]->hasstate(flags), t, f)); \
+            IFSTATEVAL(buildparent && buildparent->children.inrange(buildchild) && buildparent->children[buildchild]->hasstate(chkflags), t, f)); \
         ICOMMANDNS(0, "ui" #func "+?", uinext##func##__, "tt", (tagval *t, tagval *f), \
-            IFSTATEVAL(buildparent && buildparent->children.inrange(buildchild) && buildparent->children[buildchild]->haschildstate(flags), t, f));
+            IFSTATEVAL(buildparent && buildparent->children.inrange(buildchild) && buildparent->children[buildchild]->haschildstate(chkflags), t, f));
     DOSTATES
     #undef DOSTATE
 
@@ -5824,25 +5926,22 @@ namespace UI
         if(buildparent) loopi(buildchild) buildparent->children[i]->setpos(*x, *y);
     });
 
-    ICOMMAND(0, uigetlastx,  "", (), if(buildparent) floatret(buildparent->lastx));
-    ICOMMAND(0, uigetlasty,  "", (), if(buildparent) floatret(buildparent->lasty));
-    ICOMMAND(0, uigetlastsx, "", (), if(buildparent) floatret(buildparent->lastsx));
-    ICOMMAND(0, uigetlastsy, "", (), if(buildparent) floatret(buildparent->lastsy));
-    ICOMMAND(0, uigetlastw,  "", (), if(buildparent) floatret(buildparent->lastw));
-    ICOMMAND(0, uigetlasth,  "", (), if(buildparent) floatret(buildparent->lasth));
+    #define UIGETFVAL(vname) \
+        ICOMMAND(0, ui##vname, "N$", (int *numargs, ident *id), { \
+            if(*numargs != 0) floatret(buildparent ? buildparent->vname : 0.f); \
+            else printvar(id, buildparent ? buildparent->vname : 0.f); \
+        }); \
+        ICOMMANDNS(0, "ui" STRINGIFY(vname) "-", ui##vname##_, "N$", (int *numargs, ident *id), { \
+            if(*numargs != 0) floatret(buildparent && buildchild > 0 ? buildparent->children[buildchild-1]->vname : 0.f); \
+            else printvar(id, buildparent && buildchild > 0 ? buildparent->children[buildchild-1]->vname : 0.f); \
+        });
 
-    ICOMMANDNS(0, "uigetlastx-",  uigetlastx_,  "", (),
-        if(buildparent && buildchild > 0) floatret(buildparent->children[buildchild-1]->lastx));
-    ICOMMANDNS(0, "uigetlasty-",  uigetlasty_,  "", (),
-        if(buildparent && buildchild > 0) floatret(buildparent->children[buildchild-1]->lasty));
-    ICOMMANDNS(0, "uigetlastsx-", uigetlastsx_, "", (),
-        if(buildparent && buildchild > 0) floatret(buildparent->children[buildchild-1]->lastsx));
-    ICOMMANDNS(0, "uigetlastsy-", uigetlastsy_, "", (),
-        if(buildparent && buildchild > 0) floatret(buildparent->children[buildchild-1]->lastsy));
-    ICOMMANDNS(0, "uigetlastw-",  uigetlastw_,  "", (),
-        if(buildparent && buildchild > 0) floatret(buildparent->children[buildchild-1]->lastw));
-    ICOMMANDNS(0, "uigetlasth-",  uigetlasth_,  "", (),
-        if(buildparent && buildchild > 0) floatret(buildparent->children[buildchild-1]->lasth));
+    UIGETFVAL(lastx);
+    UIGETFVAL(lasty);
+    UIGETFVAL(lastsx);
+    UIGETFVAL(lastsy);
+    UIGETFVAL(lastw);
+    UIGETFVAL(lasth);
 
     #define UICOLOURCMDS(t) \
         if(o->iscolour()) \
@@ -6030,7 +6129,7 @@ namespace UI
         DOSURFACE(stype,
             curtextscale = 1;
             surface->cursortype = CURSOR_DEFAULT;
-            surface->cursorlocked = false;
+            surface->lockcursor = false;
             surface->mousetracking = false;
             surface->lockscroll = false;
 
@@ -6188,7 +6287,7 @@ namespace UI
 
     bool cursorlock()
     {
-        if(surfaces[SURFACE_MAIN]) return surfaces[SURFACE_MAIN]->cursorlocked;
+        if(surfaces[SURFACE_MAIN]) return surfaces[SURFACE_MAIN]->lockcursor;
         return false;
     }
 

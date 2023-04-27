@@ -2535,6 +2535,7 @@ void printvar(ident *id, int n, const char *str)
     if(str && *str) concformatstring(output, " (%s)", str);
     conoutft(CON_DEBUG, "%s", output);
 }
+void printintvar(ident *id, int n, const char *str) { printvar(id, n, str); }
 
 void printfvar(ident *id, float f, const char *str)
 {
@@ -2542,6 +2543,7 @@ void printfvar(ident *id, float f, const char *str)
     if(str && *str) concformatstring(output, " (%s)", str);
     conoutft(CON_DEBUG, "%s", output);
 }
+void printfloatvar(ident *id, float f, const char *str) { printfvar(id, f, str); }
 
 void printsvar(ident *id, const char *s, const char *str)
 {

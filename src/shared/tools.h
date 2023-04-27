@@ -8,6 +8,9 @@
 #endif
 #define NULL 0
 
+#define STRINGIFYX(A) #A
+#define STRINGIFY(A) STRINGIFYX(A)
+
 typedef signed char schar;
 typedef unsigned char uchar;
 typedef unsigned short ushort;
