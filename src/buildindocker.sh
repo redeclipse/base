@@ -6,6 +6,13 @@ SYS_DIR=${WORK_DIR}/sys
 CACHE_DIR=${CACHE_DIR:-"${WORK_DIR}/cache"}
 CACHE_IMAGE="${CACHE_DIR}/image.tar"
 
+GAME_DIR=${GAME_DIR:-""}
+OUTPUT_DIR=${OUTPUT_DIR:-""}
+
+PLATFORM_BUILD=${PLATFORM_BUILD:-""}
+PLATFORM_BRANCH=${PLATFORM_BRANCH:-""}
+PLATFORM_REVISION=${PLATFORM_REVISION:-""}
+
 cleanup() {
     sudo umount ${SYS_DIR} 2> /dev/null
     rm -rf ${WORK_DIR}/sys.img 2> /dev/null
@@ -67,9 +74,12 @@ get_image ||
     fail "Unable to get Docker image for building"
 
 docker run \
-    -v /mnt/f/Red\ Eclipse:/ci/game \
-    -v /mnt/f/Red\ Eclipse/build:/ci/output \
-    -v ${SYS_DIR}:/ci/sys \
+    -v "${GAME_DIR}:/ci/game" \
+    -v "${OUTPUT_DIR}:/ci/output" \
+    -v "${SYS_DIR}:/ci/sys" \
+    -e PLATFORM_BUILD=${PLATFORM_BUILD} \
+    -e PLATFORM_BRANCH=${PLATFORM_BRANCH} \
+    -e PLATFORM_REVISION=${PLATFORM_REVISION} \
     --rm \
     redeclipse/build
 

@@ -57,7 +57,13 @@ semabuild_test() {
 semabuild_build() {
     echo "building ${BRANCH_NAME}.."
 
-    CACHE_DIR="${SEMAPHORE_CACHE_DIR}" ./buildindocker.sh
+    CACHE_DIR="${SEMAPHORE_CACHE_DIR}" \
+        GAME_DIR="$(pwd)" \
+        OUTPUT_DIR="${SEMABUILD_DIR}" \
+        PLATFORM_BUILD="${SEMAPHORE_BUILD_NUMBER}" \
+        PLATFORM_BRANCH="${BRANCH_NAME}" \
+        PLATFORM_REVISION="${REVISION}" && \
+        ./buildindocker.sh
 
     return 0
 }
