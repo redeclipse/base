@@ -104,7 +104,6 @@ docker run \
     -e PLATFORM_BUILD=${PLATFORM_BUILD} \
     -e PLATFORM_BRANCH=${PLATFORM_BRANCH} \
     -e PLATFORM_REVISION=${PLATFORM_REVISION} \
-    --rm \
     redeclipse/build
 
 cleanup
