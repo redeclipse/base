@@ -4,7 +4,8 @@ WORK_DIR=${HOME}/.redeclipse_build
 SYS_DIR=${WORK_DIR}/sys
 
 CACHE_DIR=${CACHE_DIR:-"${WORK_DIR}/cache"}
-CACHE_IMAGE="${CACHE_DIR}/image.tar"
+IMAGE_DIR="${CACHE_DIR}/image"
+CACHE_IMAGE="${IMAGE_DIR}/image.tar"
 
 GAME_DIR=${GAME_DIR:-""}
 OUTPUT_DIR=${OUTPUT_DIR:-""}
@@ -28,14 +29,14 @@ fail() {
 get_image() {
     echo "Getting Docker image..."
 
-    mkdir -p "${CACHE_DIR}"
+    mkdir -p "${IMAGE_DIR}"
 
     sudo apt update && \
         sudo apt install -y git-lfs
 
-    pushd "${CACHE_DIR}"
+    pushd "${IMAGE_DIR}"
 
-    if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+    if [ "$(git rev-parse --show-toplevel)" == "$(pwd)" ]; then
         git pull || return 1
     else
         git clone -b dockerimg https://github.com/redeclipse/deploy.git . --depth 1 || return 1
