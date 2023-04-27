@@ -1906,7 +1906,7 @@ static Texture *texturecomp(const char *name, int tclamp = 0, bool mipit = true,
     }
 
     vector<char *> list;
-    explodelist(&name[1], list, 5); // name delay args size
+    explodelist(&name[1], list, 4); // name delay args size
     if(list.empty()) // need at least the name
     {
         list.deletearrays();
