@@ -2131,7 +2131,10 @@ namespace entities
             {
                 while(e.attrs[1] < 0) e.attrs[1] += UI::MAPUI_ALL+1; // flags, clamp
                 while(e.attrs[1] > UI::MAPUI_ALL) e.attrs[1] -= UI::MAPUI_ALL+1; // flags, clamp
-                FIXDIRYPL(2, 3); // yaw, pitch
+                while(e.attrs[2] < -1) e.attrs[2] += 361; // yaw
+                while(e.attrs[2] >= 360) e.attrs[2] -= 361; // has -1 for rotating effect
+                while(e.attrs[3] < -91) e.attrs[3] += 182; // pitch
+                while(e.attrs[3] > 91) e.attrs[3] -= 182; // has -91/91 for rotating effect
                 if(e.attrs[4] < 0) e.attrs[4] = 0; // radius, limit
                 if(e.attrs[5] < 0) e.attrs[5] = 0; // scale, limit
                 while(e.attrs[6] < 0) e.attrs[6] += 0xFFFFFF + 1; // colour, clamp
