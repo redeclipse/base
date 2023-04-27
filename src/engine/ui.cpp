@@ -857,33 +857,48 @@ namespace UI
 
     struct Window : Object
     {
-        char *name, *body, *dyn;
-        uint *contents, *onshow, *onhide;
-        bool exclusive, mapdef, inworld;
+        struct Code
+        {
+            char *body;
+            uint *code;
+
+            Code() : body(NULL), code(NULL) {}
+            Code(const char *str) : body(newstring(str)), code(compilecode(str)) {}
+            ~Code()
+            {
+                DELETEA(body);
+                freecode(code);
+            }
+        };
+
+        char *name, *dyn;
+        Code *contents, *onshow, *onhide;
+        bool exclusive, mapdef, inworld, saved;
         int allowinput, flags, param, lasthit;
         float px, py, pw, ph, yaw, pitch, scale, dist, hitx, hity;
         vec2 sscale, soffset;
         vec origin, pos;
 
         Window(const char *name_, const char *contents_, const char *onshow_, const char *onhide_, int flags_, bool mapdef_, const char *dyn_ = NULL, int param_ = -1) :
-            name(newstring(name_)), body(NULL), dyn(dyn_ && *dyn_ ? newstring(dyn_) : NULL),
-            contents(compilecode(contents_)),
-            onshow(!mapdef_ && onshow_ && *onshow_ ? compilecode(onshow_) : NULL),
-            onhide(!mapdef_ && onhide_ && *onhide_ ? compilecode(onhide_) : NULL),
-            exclusive(false), mapdef(mapdef_), inworld(false), allowinput(1), param(param_), lasthit(0),
+            name(newstring(name_)), dyn(dyn_ && *dyn_ ? newstring(dyn_) : NULL),
+            contents(NULL), onshow(NULL), onhide(NULL),
+            exclusive(false), mapdef(mapdef_), inworld(false),
+            allowinput(1), param(param_), lasthit(0),
             px(0), py(0), pw(0), ph(0), yaw(-1), pitch(-1), scale(1), dist(0), hitx(-1), hity(-1),
             sscale(1, 1), soffset(0, 0),
             origin(-1, -1, -1), pos(-1, -1, -1)
         {
             flags = clamp(flags_, 0, int(WINDOW_ALL));
-            if(mapdef_) body = newstring(contents_);
+            if(contents_ && *contents_) contents = new Code(contents_);
+            if(onshow_ && *onshow_) onshow = new Code(onshow_);
+            if(onhide_ && *onhide_) onhide = new Code(onhide_);
         }
         ~Window()
         {
             delete[] name;
-            freecode(contents);
-            freecode(onshow);
-            freecode(onhide);
+            if(contents) delete contents;
+            if(onshow) delete onshow;
+            if(onhide) delete onhide;
         }
 
         static const char *typestr() { return "#Window"; }
@@ -908,7 +923,7 @@ namespace UI
             if(onhide)
             {
                 uiparam = param;
-                execute(onhide);
+                executeret(onhide->code);
             }
             resetworld();
         }
@@ -930,7 +945,7 @@ namespace UI
             if(onshow)
             {
                 uiparam = param;
-                execute(onshow);
+                executeret(onshow->code);
             }
         }
 
@@ -1558,7 +1573,7 @@ namespace UI
         window = this;
         if(inworld) dist = origin.squaredist(camera1->o);
         uiparam = param;
-        buildchildren(contents);
+        if(contents) buildchildren(contents->code);
         window = NULL;
     }
 
@@ -1709,7 +1724,7 @@ namespace UI
     }
 
     ICOMMAND(0, dynui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *flags), dynui(name, contents, onshow, onhide, *flags, (identflags&IDF_MAP) != 0));
-    ICOMMAND(0, dynmapui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *flags), dynui(name, contents, onshow, onhide, *flags, true));
+    ICOMMAND(0, mapdynui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *flags), dynui(name, contents, onshow, onhide, *flags, true));
 
     const char *dynuiref(const char *name, int param)
     {
@@ -6302,19 +6317,74 @@ namespace UI
         int mapmenus = 0;
         loopj(WINTYPE_MAX) enumerate(windows[j], Window *, w,
         {
-            if(!w->mapdef || !w->body) continue;
-            h->printf("map%sui %s [%s]\n", windowaffix[j], w->name, w->body);
+            if(!w->mapdef || !w->contents) continue;
+
+            h->printf("map%sui %s [%s]", windowaffix[j], w->name, w->contents->body);
+            if(w->onshow) h->printf(" [%s]", w->onshow->body);
+            else if(w->onhide || w->flags) h->printf(" []");
+            if(w->onhide) h->printf(" [%s]", w->onhide->body);
+            else if(w->flags) h->printf(" []");
+            if(w->flags) h->printf(" %d", w->flags);
+            h->printf("\n");
+
             mapmenus++;
         });
+
+        loopv(dynuis)
+        {
+            DynUI *d = &dynuis[i];
+            if(!d->mapdef || !d->contents) continue;
+
+            h->printf("mapdynui %s [%s]", d->name, d->contents);
+            if(d->onshow) h->printf(" [%s]", d->onshow);
+            else if(d->onhide || d->flags) h->printf(" []");
+            if(d->onhide) h->printf(" [%s]", d->onhide);
+            else if(d->flags) h->printf(" []");
+            if(d->flags) h->printf(" %d", d->flags);
+            h->printf("\n");
+
+            mapmenus++;
+        }
+
         return mapmenus;
     }
 
+    struct WindowClear
+    {
+        Window *w;
+        int type;
+    };
+
     void resetmapmenus()
     {
+        vector<WindowClear> wins;
         loopj(WINTYPE_MAX) enumerate(windows[j], Window *, w,
         {
-            if(!w->mapdef || !w->body) continue;
-            DELETEA(w->body);
+            if(!w->mapdef) continue;
+            WindowClear &c = wins.add();
+            c.w = w;
+            c.type = j;
         });
+
+        Surface *oldsurface = surface;
+        loopv(wins)
+        {
+            Window *w = wins[i].w;
+            loopj(SURFACE_MAX)
+            {
+                surface = surfaces[i];
+                surface->hide(w);
+            }
+            windows[wins[i].type].remove(w->name);
+            delete w;
+        }
+        surface = oldsurface;
+
+        loopvrev(dynuis)
+        {
+            DynUI *d = &dynuis[i];
+            if(!d->mapdef) continue;
+            dynuis.remove(i);
+        }
     }
 }
