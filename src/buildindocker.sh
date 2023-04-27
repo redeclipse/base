@@ -99,8 +99,8 @@ get_image ||
 
 docker run \
     -v "${GAME_DIR}:/ci/game" \
-    -v "${OUTPUT_DIR}:/ci/output" \
     -v "${SYS_DIR}:/ci/sys" \
+    --mount type=bind,src="${OUTPUT_DIR}",dst=/ci/output \
     -e PLATFORM_BUILD=${PLATFORM_BUILD} \
     -e PLATFORM_BRANCH=${PLATFORM_BRANCH} \
     -e PLATFORM_REVISION=${PLATFORM_REVISION} \
