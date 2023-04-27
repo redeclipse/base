@@ -547,7 +547,7 @@ namespace UI
     extern void closemapuis(int n);
     extern void update(int stype = SURFACE_MAIN);
     extern void render(bool world = false, int stype = SURFACE_MAIN);
-    extern bool composite(uint *tex, const char *name, const char *args = NULL, int w = 512, int h = 512, int tclamp = 0, bool mipit = true, bool msg = true);
+    extern bool composite(uint *tex, const char *name, const char *args = NULL, int w = 512, int tclamp = 0, bool mipit = true, bool msg = true);
 
     extern void mousetrack(float dx, float dy);
     extern bool cursorlock();

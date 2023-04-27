@@ -5,7 +5,7 @@
 #include "tools.h"
 
 TVAR(IDF_PERSIST|IDF_PRELOAD, notexturetex, "textures/notexture", 3);
-TVAR(IDF_PERSIST|IDF_PRELOAD, blanktex, "!blank 0 [] [] -2 -2", 3);
+TVAR(IDF_PERSIST|IDF_PRELOAD, blanktex, "!blank", 3);
 TVAR(IDF_PERSIST|IDF_PRELOAD, logotex, "textures/logo", 3);
 TVAR(IDF_PERSIST|IDF_PRELOAD, emblemtex, "textures/emblem", 3);
 TVAR(IDF_PERSIST|IDF_PRELOAD, icontex, "textures/icon", 3);
@@ -1209,7 +1209,7 @@ static void updatetexture(Texture *t)
 
     if(t->type&Texture::COMPOSITE)
     {
-        if(!UI::composite(&t->id, t->comp, t->args, t->w, t->h, t->tclamp, t->mipmap, false) || !t->id)
+        if(!UI::composite(&t->id, t->comp, t->args, t->w, t->tclamp, t->mipmap, false) || !t->id)
             return;
     }
     else if(t->frames.length() > 1)
@@ -1890,7 +1890,7 @@ Texture *textureloaded(const char *name)
 }
 
 extern void reloadcomp();
-#define COMPOSITESIZE 1<<9
+#define COMPOSITESIZE (1<<9)
 VARF(IDF_PERSIST, compositesize, 1<<1, COMPOSITESIZE, 1<<12, reloadcomp());
 
 static Texture *texturecomp(const char *name, int tclamp = 0, bool mipit = true, bool msg = true, bool gc = false, Texture *tex = NULL)
@@ -1906,7 +1906,7 @@ static Texture *texturecomp(const char *name, int tclamp = 0, bool mipit = true,
     }
 
     vector<char *> list;
-    explodelist(&name[1], list, 5); // name delay args w h
+    explodelist(&name[1], list, 5); // name delay args size
     if(list.empty()) // need at least the name
     {
         list.deletearrays();
@@ -1915,15 +1915,13 @@ static Texture *texturecomp(const char *name, int tclamp = 0, bool mipit = true,
     }
 
     char *n = list[0], *a = list.length() >= 3 ? list[2] : NULL;
-    float sw = list.length() >= 4 ? parsefloat(list[3]) : 1.f, sh = list.length() >= 5 ? parsefloat(list[4]) : 1.f;
-    int w = sw >= 0 ? int(sw * compositesize) : int(0 - sw), h = sh >= 0 ? int(sh * compositesize) : int(0 - sh), delay = list.length() >= 2 ? max(atoi(list[1]), 0) : 0;
+    float sw = list.length() >= 4 ? parsefloat(list[3]) : 1.f;
+    int w = sw >= 0 ? int(sw * compositesize) : int(0 - sw), delay = list.length() >= 2 ? max(atoi(list[1]), 0) : 0;
     if(w <= 0) w = compositesize;
     else if(w < 1<<1) w = 1<<1;
-    if(h <= 0) h = compositesize;
-    else if(h < 1<<1) h = 1<<1;
 
     GLuint texid = 0;
-    if(!UI::composite(&texid, n, a, w, h, tclamp, mipit, msg) || !texid)
+    if(!UI::composite(&texid, n, a, w, tclamp, mipit, msg) || !texid)
     {
         if(msg) conoutf("\frFailed to composite texture: %s [%d]", name, texid);
         list.deletearrays();
@@ -1948,10 +1946,8 @@ static Texture *texturecomp(const char *name, int tclamp = 0, bool mipit = true,
     t->mipmap = mipit;
     if(gc) t->type |= Texture::GC;
     if(t->tclamp&0x300) t->type |= Texture::MIRROR;
-    t->w = w;
-    t->xs = int(t->w * (1.f / (t->w / float(COMPOSITESIZE))));
-    t->h = h;
-    t->ys = int(t->h * (1.f / (t->h / float(COMPOSITESIZE))));
+    t->w = t->h = w;
+    t->xs = t->ys = sw >= 0 ? int(t->w * (COMPOSITESIZE / float(t->w))) : t->w;
     t->bpp = 4;
     t->delay = delay;
     t->id = texid;
@@ -3960,7 +3956,7 @@ bool reloadtexture(Texture *t)
         {
             if(t->type&Texture::COMPOSITE)
             {
-                if(!UI::composite(&t->id, t->comp, t->args, t->w, t->h, t->tclamp, t->mipmap, true)) return false;
+                if(!UI::composite(&t->id, t->comp, t->args, t->w, t->tclamp, t->mipmap, true)) return false;
                 break;
             }
             int compress = 0;

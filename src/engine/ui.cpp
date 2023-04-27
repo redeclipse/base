@@ -1020,7 +1020,8 @@ namespace UI
 
         void adjustlayout()
         {
-            if(inworld)
+            if(surfacetype == SURFACE_COMPOSITE) pw = ph = 1;
+            else if(inworld)
             {
                 pw = w;
                 ph = h;
@@ -1610,7 +1611,7 @@ namespace UI
         windows[type][name] = new Window(name, contents, onshow, onhide, flags, mapdef, dyn, param);
 
         if(found && type == WINTYPE_COMPOSITE)
-            enumerate(textures, Texture, t, if(t.type&Texture::COMPOSITE && t.comp && !strcmp(name, t.comp)) composite(&t.id, t.comp, t.args, t.w, t.h, t.tclamp, t.mipmap, true));
+            enumerate(textures, Texture, t, if(t.type&Texture::COMPOSITE && t.comp && !strcmp(name, t.comp)) composite(&t.id, t.comp, t.args, t.w, t.tclamp, t.mipmap, true));
 
         return true;
     }
@@ -6299,14 +6300,14 @@ namespace UI
     }
 
     SVAR(0, uicompargs, "");
-    bool composite(uint *tex, const char *name, const char *args, int w, int h, int tclamp, bool mipit, bool msg)
+    bool composite(uint *tex, const char *name, const char *args, int w, int tclamp, bool mipit, bool msg)
     {
         if(!name || !*name || !tex)
         {
             if(msg) conoutf("\frCannot create null composite texture: %s", name);
             return false; // need a name
         }
-        if(msg) progress(loadprogress, "Compositing texture: %s [%dx%d]", name, w, h);
+        if(msg) progress(loadprogress, "Compositing texture: %s [%dpx]", name, w);
 
         GLint oldfbo = 0;
         if(progressing || !inbetweenframes || drawtex) glGetIntegerv(GL_FRAMEBUFFER_BINDING, &oldfbo);
@@ -6319,7 +6320,7 @@ namespace UI
         if(!hastex)
         {
             glGenTextures(1, tex);
-            createtexture(*tex, w, h, NULL, tclamp, mipit ? 3 : 0, GL_RGBA, GL_TEXTURE_2D);
+            createtexture(*tex, w, w, NULL, tclamp, mipit ? 3 : 0, GL_RGBA, GL_TEXTURE_2D);
         }
         glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *tex, 0);
 
@@ -6335,8 +6336,7 @@ namespace UI
         int olddrawtex = drawtex, oldhudw = hudw, oldhudh = hudh;
         float oldtextscale = curtextscale;
         drawtex = DRAWTEX_COMPOSITE;
-        hudw = w;
-        hudh = h;
+        hudw = hudh = w;
 
         setsvar("uicompargs", args ? args : "");
         showui(name, SURFACE_COMPOSITE);
