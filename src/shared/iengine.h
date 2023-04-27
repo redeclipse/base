@@ -522,6 +522,7 @@ namespace UI
     extern char *uiopencmd, *uiclosecmd;
 
     extern bool showui(const char *name, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float yaw = -1, float pitch = 0, float s = 1);
+    extern bool setui(const char *name, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float yaw = -1, float pitch = 0, float s = 1);
     extern bool hideui(const char *name = NULL, int stype = SURFACE_MAIN, int param = -1, bool world = false);
     extern bool toggleui(const char *name, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float yaw = -1, float pitch = 0, float s = 1);
     extern int openui(const char *name, int stype = SURFACE_MAIN);

@@ -3372,7 +3372,9 @@ namespace entities
                         gameentity &e = *(gameentity *)ents[v.idx];
                         vec pos = vec(e.o).addz(entinfospace);
                         if(enttype[e.type].usetype == EU_ITEM) pos.addz(entinfospace);
-                        if(!UI::uivisible("entinfo", UI::SURFACE_MAIN, v.idx)) UI::showui("entinfo", UI::SURFACE_MAIN, v.idx, pos, showentinfouiyaw, showentinfouipitch, showentinfouiscale);
+                        if(UI::uivisible("entinfo", UI::SURFACE_MAIN, v.idx))
+                            UI::setui("entinfo", UI::SURFACE_MAIN, v.idx, pos, showentinfouiyaw, showentinfouipitch, showentinfouiscale);
+                        else UI::showui("entinfo", UI::SURFACE_MAIN, v.idx, pos, showentinfouiyaw, showentinfouipitch, showentinfouiscale);
                         hasdynui = found = true;
                     }
                 }

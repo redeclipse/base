@@ -1763,6 +1763,23 @@ namespace UI
         , return false, return ret);
     }
 
+    bool setui(const char *name, int stype, int param, const vec &origin, float yaw, float pitch, float s)
+    {
+        const char *ref = dynuiref(name, param);
+        DOSURFACE(stype,
+            Window *w = windows[getwindowtype()].find(ref, NULL);
+            bool ret = false;
+            if(w)
+            {
+                w->origin = origin;
+                w->yaw = yaw;
+                w->pitch = pitch;
+                w->scale = s;
+                ret = true;
+            }
+        , return false, return ret);
+    }
+
     bool hideui(const char *name, int stype, int param, bool world)
     {
         const char *ref = dynuiref(name, param);
