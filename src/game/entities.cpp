@@ -748,6 +748,19 @@ namespace entities
         return isallowed(e);
     }
 
+    vec getpos(const extentity &e)
+    {
+        gameentity &f = *(gameentity *)&e;
+        return f.pos();
+    }
+
+    vec getpos(int n)
+    {
+        if(!ents.inrange(n)) return vec(0, 0, 0);
+        extentity &e = *(extentity *)ents[n];
+        return getpos(e);
+    }
+
     #define ENTTYPE(value) ICOMMAND(0, entity##value, "b", (int *n), intret(*n >= 0 && *n < MAXENTTYPES ? enttype[*n].value : 0));
     ENTTYPE(priority);
     ENTTYPE(links);

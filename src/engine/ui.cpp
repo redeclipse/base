@@ -6188,7 +6188,7 @@ namespace UI
             }
 
             w->allowinput = inside && (e.attrs[1]&MAPUI_INPUTPROX) != 0;
-            w->origin = e.o;
+            w->origin = entities::getpos(e);
         }
         identflags = oldflags;
     }

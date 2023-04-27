@@ -5,6 +5,8 @@ namespace entities
     extern int numattrs(int type, bool unused = true);
     extern bool isallowed(const extentity &e);
     extern bool isallowed(int n);
+    extern vec getpos(const extentity &e);
+    extern vec getpos(int n);
     extern int triggertime(extentity &e, bool delay = false);
     extern void editent(int i, bool local);
     extern void readent(stream *g, int mver, char *gid, int gver, int id);

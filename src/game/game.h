@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 262
+#define VERSION_GAME 263
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -141,14 +141,14 @@ extern const enttypes enttype[] = {
                 "wind",        "Wind",              { "mode", "yaw", "speed", "radius", "atten", "interval", "implen", "modes", "muts", "variant", "fxlevel" }
     },
     {
-        MAPUI,          1,          0,      0,      EU_NONE,    12,          -1,         8,          -1,     10,      11,
+        MAPUI,          1,          263,    0,      EU_NONE,    12,          -1,         8,          -1,     10,      11,
             0, 0,
             0,
             false,  false,  false,      false,      false,
                 "mapui",       "Map UI",            { "type", "flags", "yaw", "pitch", "radius", "scale", "colour" "blend", "modes", "muts", "variant", "fxlevel" }
     },
     {
-        SOUNDENV,        1,          0,      0,      EU_NONE,   8,           -1,          -1,        -1,     -1,      -1,
+        SOUNDENV,        1,          0,     0,      EU_NONE,    8,           -1,          -1,        -1,     -1,      -1,
             0, 0, 0,
             false,  false,  false,      false,      false,
                 "soundenv",     "Sound Env",        { "type", "width", "length", "height", "fadevals1", "fadevals2", "fadevals3", "fadevals4" }
@@ -212,7 +212,7 @@ extern const enttypes enttype[] = {
     },
     {
         RAIL,           -1,         228,    0,      EU_NONE,    13,         -1,         10,         -1,     12,     -1,
-            (1<<LIGHT)|(1<<MAPMODEL)|(1<<PLAYERSTART)|(1<<PARTICLES)|(1<<MAPSOUND)|(1<<LIGHTFX)|(1<<WEAPON)|(1<<TELEPORT)|(1<<ACTOR)|(1<<TRIGGER)|(1<<PUSHER)|(1<<RAIL)|(1<<CAMERA), 0, 0,
+            (1<<LIGHT)|(1<<MAPMODEL)|(1<<PLAYERSTART)|(1<<PARTICLES)|(1<<MAPSOUND)|(1<<MAPUI)|(1<<LIGHTFX)|(1<<WEAPON)|(1<<TELEPORT)|(1<<ACTOR)|(1<<TRIGGER)|(1<<PUSHER)|(1<<RAIL)|(1<<CAMERA), 0, 0,
             false,   false,  false,      false,      false,
                 "rail",         "Rail",             { "time", "flags", "yaw", "pitch", "rotlen", "rotwait", "collide", "anim", "aspeed", "aoffset", "modes", "muts", "variant" }
     },

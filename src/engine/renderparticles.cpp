@@ -1012,7 +1012,7 @@ struct lineprimitive : listparticle<lineprimitive>
 struct lineprimitiverenderer : listrenderer<lineprimitive>
 {
     lineprimitiverenderer(int type = 0)
-        : listrenderer<lineprimitive>(type|PT_LINE|PT_LERP)
+        : listrenderer<lineprimitive>(type|PT_LINE|PT_LERP|PT_NOTEX)
     {}
 
     void startrender()
@@ -1033,7 +1033,6 @@ struct lineprimitiverenderer : listrenderer<lineprimitive>
 
     void renderpart(lineprimitive *p, int blend, int ts, float size)
     {
-        settexture(blanktexture);
         bvec4 color(p->color.r, p->color.g, p->color.b, uchar(p->blend*blend));
         gle::attrib(p->o);
             gle::attrib(color);
@@ -1062,7 +1061,7 @@ struct trisprimitive : listparticle<trisprimitive>
 struct trisprimitiverenderer : listrenderer<trisprimitive>
 {
     trisprimitiverenderer(int type = 0)
-        : listrenderer<trisprimitive>(type|PT_TRIANGLE|PT_LERP)
+        : listrenderer<trisprimitive>(type|PT_TRIANGLE|PT_LERP|PT_NOTEX)
     {}
 
     void startrender()
@@ -1083,7 +1082,6 @@ struct trisprimitiverenderer : listrenderer<trisprimitive>
 
     void renderpart(trisprimitive *p, int blend, int ts, float size)
     {
-        settexture(blanktexture);
         bvec4 color(p->color.r, p->color.g, p->color.b, uchar(p->blend*blend));
         if(!p->fill) { gle::end(); gle::begin(GL_LINE_LOOP); }
         gle::attrib(p->o);
@@ -1124,7 +1122,7 @@ struct loopprimitive : listparticle<loopprimitive>
 struct loopprimitiverenderer : listrenderer<loopprimitive>
 {
     loopprimitiverenderer(int type = 0)
-        : listrenderer<loopprimitive>(type|PT_ELLIPSE|PT_LERP)
+        : listrenderer<loopprimitive>(type|PT_ELLIPSE|PT_LERP|PT_NOTEX)
     {}
 
     void startrender()
@@ -1142,7 +1140,6 @@ struct loopprimitiverenderer : listrenderer<loopprimitive>
 
     void renderpart(loopprimitive *p, int blend, int ts, float size)
     {
-        settexture(blanktexture);
         gle::colorub(p->color.r, p->color.g, p->color.b, uchar(p->blend*blend));
         gle::begin(p->fill ? GL_TRIANGLE_FAN : GL_LINE_LOOP);
         loopi(15 + (p->fill ? 1 : 0))
@@ -1191,7 +1188,7 @@ struct coneprimitive : listparticle<coneprimitive>
 struct coneprimitiverenderer : listrenderer<coneprimitive>
 {
     coneprimitiverenderer(int type = 0)
-        : listrenderer<coneprimitive>(type|PT_CONE|PT_LERP)
+        : listrenderer<coneprimitive>(type|PT_CONE|PT_LERP|PT_NOTEX)
     {}
 
     void startrender()
@@ -1209,7 +1206,6 @@ struct coneprimitiverenderer : listrenderer<coneprimitive>
 
     void renderpart(coneprimitive *p, int blend, int ts, float size)
     {
-        settexture(blanktexture);
         gle::colorub(p->color.r, p->color.g, p->color.b, uchar(p->blend*blend));
 
         gle::begin(GL_LINES);
