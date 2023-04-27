@@ -6142,7 +6142,7 @@ namespace UI
         inputsteal = NULL;
     }
 
-    enum { MAPUI_NONE = 0, MAPUI_SHOWPROX = 1<<0, MAPUI_ALL = MAPUI_SHOWPROX };
+    enum { MAPUI_NONE = 0, MAPUI_SHOWPROX = 1<<0, MAPUI_INPUTPROX = 1<<1, MAPUI_ALL = MAPUI_SHOWPROX|MAPUI_INPUTPROX, MAPUI_PROXIMITY = MAPUI_SHOWPROX|MAPUI_INPUTPROX };
 
     void checkmapuis()
     {
@@ -6171,23 +6171,25 @@ namespace UI
                 continue;
             }
 
-            float radius = e.attrs[4] > 0 ? e.attrs[4] : 64;
+            physent *player = (physent *)game::focusedent(true);
+            if(!player) player = camera1;
 
-            if(e.attrs[1]&MAPUI_SHOWPROX)
+            float radius = e.attrs[4] > 0 ? e.attrs[4] : 64;
+            bool inside = e.attrs[1]&MAPUI_PROXIMITY ? player->o.dist(e.o) <= radius : true;
+
+            if(haswindow && !inside && e.attrs[1]&MAPUI_SHOWPROX)
             {
-                physent *player = (physent *)game::focusedent(true);
-                if(!player) player = camera1;
-                if(player->o.dist(e.o) > radius && haswindow)
-                {
-                    surface->hide(w);
-                    continue;
-                }
+                surface->hide(w);
+                continue;
             }
+
             if(!haswindow)
             {
                 surface->show(w, camera1->o, e.attrs[2], e.attrs[3], e.attrs[4] > 0 ? e.attrs[4]/100.f : 1.f);
                 continue;
             }
+
+            w->allowinput = inside && (e.attrs[1]&MAPUI_INPUTPROX) != 0;
             w->origin = e.o;
         }
         identflags = oldflags;
