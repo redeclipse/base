@@ -521,15 +521,15 @@ namespace UI
     extern int uihidden;
     extern char *uiopencmd, *uiclosecmd;
 
-    extern bool showui(const char *name, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float yaw = -1, float pitch = -1, float s = 1);
-    extern bool hideui(const char *name = NULL, int stype = SURFACE_MAIN, int param = -1);
-    extern bool toggleui(const char *name, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float yaw = -1, float pitch = -1, float s = 1);
+    extern bool showui(const char *name, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float yaw = -1, float pitch = 0, float s = 1);
+    extern bool hideui(const char *name = NULL, int stype = SURFACE_MAIN, int param = -1, bool world = false);
+    extern bool toggleui(const char *name, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float yaw = -1, float pitch = 0, float s = 1);
     extern int openui(const char *name, int stype = SURFACE_MAIN);
     extern int closeui(const char *name, int stype = SURFACE_MAIN);
-    extern void hideall();
+    extern void hideall(bool world = false);
 
-    extern void holdui(const char *name, bool on, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float yaw = -1, float pitch = -1, float s = 1);
-    extern void pressui(const char *name, bool on, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float yaw = -1, float pitch = -1, float s = 1);
+    extern void holdui(const char *name, bool on, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float yaw = -1, float pitch = 0, float s = 1);
+    extern void pressui(const char *name, bool on, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float yaw = -1, float pitch = 0, float s = 1);
     extern bool uivisible(const char *name, int stype = SURFACE_MAIN, int param = -1);
     extern int hasinput(bool cursor = false, int stype = SURFACE_MAIN);
     extern bool hasmenu(bool pass = true, int stype = SURFACE_MAIN);
@@ -542,6 +542,7 @@ namespace UI
     extern void setup();
     extern void cleanup();
     extern void cleangl();
+    extern void closemapuis(int n);
     extern void update(int stype = SURFACE_MAIN);
     extern void render(bool world = false, int stype = SURFACE_MAIN);
     extern bool composite(uint *tex, const char *name, const char *args = NULL, int w = 512, int h = 512, int tclamp = 0, bool mipit = true, bool msg = true);

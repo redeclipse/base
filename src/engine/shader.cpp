@@ -1140,7 +1140,7 @@ int savemapshaders(stream *h)
     int mapshaders = 0;
     enumerate(shaders, Shader, s, if(s.mapdef)
     {
-        h->printf("mapshader %d %s [%s] [%s]\n", s.type, s.name, s.vsstr, s.psstr);
+        h->printf("mapshader %d %s [%s] [%s]\n\n", s.type, s.name, s.vsstr, s.psstr);
         mapshaders++;
     });
     return mapshaders;

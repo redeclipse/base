@@ -37,7 +37,7 @@ enum
 enum                                // entity types
 {
     NOTUSED = ET_EMPTY, LIGHT = ET_LIGHT, MAPMODEL = ET_MAPMODEL, PLAYERSTART = ET_PLAYERSTART, ENVMAP = ET_ENVMAP, PARTICLES = ET_PARTICLES,
-    MAPSOUND = ET_SOUND, LIGHTFX = ET_LIGHTFX, DECAL = ET_DECAL, WIND = ET_WIND, OUTLINE = ET_OUTLINE, SOUNDENV = ET_SOUNDENV, WEAPON = ET_GAMESPECIFIC,
+    MAPSOUND = ET_SOUND, LIGHTFX = ET_LIGHTFX, DECAL = ET_DECAL, WIND = ET_WIND, MAPUI = ET_MAPUI, SOUNDENV = ET_SOUNDENV, WEAPON = ET_GAMESPECIFIC,
     TELEPORT, ACTOR, TRIGGER, PUSHER, AFFINITY, CHECKPOINT,
     ROUTE, RAIL, CAMERA,
     MAXENTTYPES
@@ -141,15 +141,14 @@ extern const enttypes enttype[] = {
                 "wind",        "Wind",              { "mode", "yaw", "speed", "radius", "atten", "interval", "implen", "modes", "muts", "variant", "fxlevel" }
     },
     {
-        OUTLINE,        1,          241,    0,      EU_NONE,    0,          -1,         -1,         -1,     -1,     -1,
-            (1<<OUTLINE),
-            (1<<OUTLINE),
+        MAPUI,          1,          0,      0,      EU_NONE,    12,          -1,         8,          -1,     10,      11,
+            0, 0,
             0,
             false,  false,  false,      false,      false,
-                "outline",      "Outline",          { "" }
+                "mapui",       "Map UI",            { "type", "flags", "yaw", "pitch", "radius", "scale", "colour" "blend", "modes", "muts", "variant", "fxlevel" }
     },
     {
-        SOUNDENV,        1,          0,      0,      EU_NONE,   8,        -1,          -1,          -1,     -1,      -1,
+        SOUNDENV,        1,          0,      0,      EU_NONE,   8,           -1,          -1,        -1,     -1,      -1,
             0, 0, 0,
             false,  false,  false,      false,      false,
                 "soundenv",     "Sound Env",        { "type", "width", "length", "height", "fadevals1", "fadevals2", "fadevals3", "fadevals4" }

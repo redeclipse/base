@@ -648,11 +648,9 @@ void save_config(char *mname, bool forcesave = false, int backuprev = -1)
     if(verbose) conoutf("Saved %d map aliases", aliases);
 
     int mapshaders = savemapshaders(h);
-    if(mapshaders) h->printf("\n");
     if(verbose) conoutf("Saved %d map shaders", mapshaders);
 
     int mapmenus = UI::savemapmenus(h);
-    if(mapmenus) h->printf("\n");
     if(verbose) conoutf("Saved %d map menus", mapmenus);
 
     // texture slots
@@ -1248,7 +1246,7 @@ bool load_world(const char *mname, int crc, int variant)
 
             // version increments
             if(hdr.version < 47 && e.type >= ET_WIND) e.type++;
-            if(hdr.version < 48 && e.type >= ET_OUTLINE) e.type++;
+            if(hdr.version < 48 && e.type >= ET_MAPUI) e.type++;
             if(hdr.version < 52 && e.type >= ET_SOUNDENV) e.type++;
             bool oldsun = hdr.version <= 43 && e.type == ET_DECAL;
             if(!samegame && e.type >= ET_GAMESPECIFIC)
@@ -1295,6 +1293,7 @@ bool load_world(const char *mname, int crc, int variant)
                 e.attrs[10] = e.attrs[6];
                 e.attrs[5] = e.attrs[6] = 0;
             }
+            if(hdr.version <= 52 && e.type == ET_MAPUI) e.type = ET_EMPTY;
             if(!insideworld(e.o) && e.type != ET_LIGHT && e.type != ET_LIGHTFX)
                 conoutf("\frWARNING: ent outside of map: enttype[%d](%s) index %d (%f, %f, %f) [%d, %d]", e.type, entities::findname(e.type), i, e.o.x, e.o.y, e.o.z, worldsize, worldscale);
 

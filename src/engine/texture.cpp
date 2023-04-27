@@ -1198,7 +1198,7 @@ void create3dtexture(int tnum, int w, int h, int d, const void *pixels, int tcla
 hashnameset<Texture> textures;
 Texture *notexture = NULL, *blanktexture = NULL; // used as default, ensured to be loaded
 
-VAR(IDF_PERSIST, compositeuprate, 0, 16, VAR_MAX);
+VAR(IDF_PERSIST, compositeuprate, 0, 33, VAR_MAX);
 VAR(IDF_PERSIST, texturepause, 0, 30000, VAR_MAX);
 
 static void updatetexture(Texture *t)
@@ -1890,7 +1890,7 @@ Texture *textureloaded(const char *name)
 }
 
 extern void reloadcomp();
-#define COMPOSITESIZE 1<<8
+#define COMPOSITESIZE 1<<9
 VARF(IDF_PERSIST, compositesize, 1<<1, COMPOSITESIZE, 1<<12, reloadcomp());
 
 static Texture *texturecomp(const char *name, int tclamp = 0, bool mipit = true, bool msg = true, bool gc = false, Texture *tex = NULL)

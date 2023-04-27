@@ -453,6 +453,7 @@ void makeundoent()
         removeentityedit(n);  \
         f; \
         if(e.type!=ET_EMPTY) addentityedit(n); \
+        UI::closemapuis(n); \
         entities::editent(n, true); \
         clearshadowcache(); \
     }, v); \
@@ -1620,6 +1621,7 @@ void mpeditent(int i, const vec &o, int type, attrvector &attr, bool local)
         loopk(min(attr.length(), e.attrs.length())) e.attrs[k] = attr[k];
         addentityedit(i);
     }
+    UI::closemapuis(i);
     entities::editent(i, local);
     clearshadowcache();
     commitchanges();
