@@ -4,6 +4,9 @@ VAR(0, showpastegrid, 0, 0, 1);
 VAR(0, showcursorgrid, 0, 0, 1);
 VAR(0, showselboxgrid, 0, 0, 1);
 
+VAR(IDF_PERSIST, showselui, 0, 1, 2);
+FVAR(IDF_PERSIST, showseluiscale, FVAR_NONZERO, 1, FVAR_MAX);
+
 bool boxoutline = false;
 
 void boxs(int orient, vec o, const vec &s, float size)
@@ -719,6 +722,7 @@ void rendereditcursor()
     }
 
     // selections
+    bool hasselui = false;
     if(havesel || moving)
     {
         d = dimension(sel.orient);
@@ -796,7 +800,36 @@ void rendereditcursor()
             gle::colorub(0, 128, 0);
             boxs3D(from, to, sel.grid);
         }
+
+        if(showselui)
+        {
+            vec pos(sel.o);
+            float mindist = 1e16f;
+            loop(x, 2) loop(y, 2) loop(z, 2)
+            {
+                if(!x && !y && !z) continue;
+                vec o = vec(sel.o);
+                if(x) o.x += sel.s.x * gridsize;
+                if(y) o.y += sel.s.y * gridsize;
+                if(z) o.z += sel.s.z * gridsize;
+                float dist = camera1->o.squaredist(o);
+                if(dist < mindist && getvisible(camera1->o, camera1->yaw, camera1->pitch, o, curfov, fovy, 0) <= VFC_FULL_VISIBLE)
+                {
+                    mindist = dist;
+                    pos = o;
+                    hasselui = true;
+                }
+
+            }
+            if(hasselui)
+            {
+                if(UI::uivisible("selection", UI::SURFACE_MAIN, -1))
+                    UI::setui("selection", UI::SURFACE_MAIN, -1, pos, -1, -91, showseluiscale);
+                else UI::showui("selection", UI::SURFACE_MAIN, -1, pos, -1, -91, showseluiscale);
+            }
+        }
     }
+    if(!hasselui && UI::uivisible("selection")) UI::hideui("selection");
 
     if(showpastegrid && localedit && localedit->copy)
     {

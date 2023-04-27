@@ -982,10 +982,12 @@ namespace UI
             changed = 0;
             drawing = NULL;
 
+            bool hastop = (flags&WINDOW_TOP) != 0;
             if(inworld)
             {
-                glDepthFunc(flags&WINDOW_TOP ? GL_ALWAYS : GL_LESS);
+                glDepthFunc(GL_LESS);
                 glDepthMask(GL_FALSE);
+                if(hastop) glDisable(GL_DEPTH_TEST);
             }
 
             Object::draw(sx, sy);
@@ -994,6 +996,7 @@ namespace UI
 
             if(inworld)
             {
+                if(hastop) glEnable(GL_DEPTH_TEST);
                 glDepthFunc(GL_LESS);
                 glDepthMask(GL_TRUE);
             }
