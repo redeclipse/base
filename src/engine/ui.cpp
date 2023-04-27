@@ -1684,6 +1684,8 @@ namespace UI
         {
             DELETEA(name);
             DELETEA(contents);
+            DELETEA(onshow);
+            DELETEA(onhide);
         }
     };
     vector<DynUI> dynuis;
@@ -6142,8 +6144,6 @@ namespace UI
         inputsteal = NULL;
     }
 
-    enum { MAPUI_NONE = 0, MAPUI_SHOWPROX = 1<<0, MAPUI_INPUTPROX = 1<<1, MAPUI_ALL = MAPUI_SHOWPROX|MAPUI_INPUTPROX, MAPUI_PROXIMITY = MAPUI_SHOWPROX|MAPUI_INPUTPROX };
-
     void checkmapuis()
     {
         int oldflags = identflags;
@@ -6173,9 +6173,7 @@ namespace UI
 
             physent *player = (physent *)game::focusedent(true);
             if(!player) player = camera1;
-
-            float radius = e.attrs[4] > 0 ? e.attrs[4] : 64;
-            bool inside = e.attrs[1]&MAPUI_PROXIMITY ? player->o.dist(e.o) <= radius : true;
+            bool inside = e.attrs[4] > 0 && e.attrs[1]&MAPUI_PROXIMITY ? player->o.dist(e.o) <= e.attrs[4] : true;
 
             if(haswindow && !inside && e.attrs[1]&MAPUI_SHOWPROX)
             {

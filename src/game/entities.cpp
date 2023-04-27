@@ -2114,6 +2114,19 @@ namespace entities
                 while(e.attrs[11] >= 150) e.attrs[11] -= 151; // fov, clamp
                 break;
             }
+            case MAPUI:
+            {
+                while(e.attrs[1] < 0) e.attrs[1] += UI::MAPUI_ALL+1; // flags, clamp
+                while(e.attrs[1] > UI::MAPUI_ALL) e.attrs[1] -= UI::MAPUI_ALL+1; // flags, clamp
+                FIXDIRYPL(2, 3); // yaw, pitch
+                if(e.attrs[4] < 0) e.attrs[4] = 0; // radius, limit
+                if(e.attrs[5] < 0) e.attrs[5] = 0; // scale, limit
+                while(e.attrs[6] < 0) e.attrs[6] += 0xFFFFFF + 1; // colour, clamp
+                while(e.attrs[6] > 0xFFFFFF) e.attrs[6] -= 0xFFFFFF + 1; // colour, clamp
+                while(e.attrs[7] < 0) e.attrs[7] += 101; // blend, clamp
+                while(e.attrs[7] > 100) e.attrs[7] -= 101; // blend, clamp
+                break;
+            }
             default: break;
         }
         #undef FIXEMIT
@@ -2737,7 +2750,7 @@ namespace entities
                 case ENVMAP:
                 {
                     int s = e.attrs[0] ? clamp(e.attrs[0], 0, 10000) : envmapradius;
-                    part_radius(pos, vec(float(s)), showentsize, 1, 1, entradiuscolour);
+                    if(s > 0) part_radius(pos, vec(float(s)), showentsize, 1, 1, entradiuscolour);
                     break;
                 }
                 case ACTOR:
@@ -2749,13 +2762,13 @@ namespace entities
                 }
                 case MAPSOUND:
                 {
-                    part_radius(pos, vec(float(e.attrs[4])), showentsize, 1, 1, entradiuscolour);
-                    part_radius(pos, vec(float(e.attrs[5])), showentsize, 1, 1, entradiuscolour);
+                    if(e.attrs[4] > 0) part_radius(pos, vec(float(e.attrs[4])), showentsize, 1, 1, entradiuscolour);
+                    if(e.attrs[5] > 0) part_radius(pos, vec(float(e.attrs[5])), showentsize, 1, 1, entradiuscolour);
                     break;
                 }
                 case WIND:
                 {
-                    part_radius(pos, vec(float(e.attrs[3])), showentsize, 1, 1, entradiuscolour);
+                    if(e.attrs[3] > 0) part_radius(pos, vec(float(e.attrs[3])), showentsize, 1, 1, entradiuscolour);
                     break;
                 }
                 case LIGHT:
@@ -2763,9 +2776,9 @@ namespace entities
                     int radius = e.attrs[0], spotlight = -1;
                     vec color(1, 1, 1);
                     getlightfx(e, &radius, &spotlight, &color, true);
-                    if(e.attrs[0] && e.attrs[0] != radius)
+                    if(e.attrs[0] > 0 && e.attrs[0] != radius)
                         part_radius(pos, vec(float(e.attrs[0])), showentsize, 1, 1, color.tohexcolor());
-                    part_radius(pos, vec(float(radius)), showentsize, 1, 1, color.tohexcolor());
+                    if(radius > 0) part_radius(pos, vec(float(radius)), showentsize, 1, 1, color.tohexcolor());
                     if(ents.inrange(spotlight))
                     {
                         gameentity &f = *(gameentity *)ents[spotlight];
@@ -2783,9 +2796,14 @@ namespace entities
                 }
                 case CAMERA:
                 {
-                    part_radius(pos, vec(float(e.attrs[4])), showentsize, 1, 1, entradiuscolour);
-                    part_radius(pos, vec(float(e.attrs[5])), showentsize, 1, 1, entradiuscolour);
+                    if(e.attrs[4] > 0) part_radius(pos, vec(float(e.attrs[4])), showentsize, 1, 1, entradiuscolour);
+                    if(e.attrs[5] > 0) part_radius(pos, vec(float(e.attrs[5])), showentsize, 1, 1, entradiuscolour);
                     part_cone(pos, vec(e.attrs[2]*RAD, e.attrs[3]*RAD).safenormalize(), 128, e.attrs[11] > 0 ? clamp(e.attrs[11], 1, 89) : 89, 0, showentsize, 1, 1, entradiuscolour);
+                    break;
+                }
+                case MAPUI:
+                {
+                    if(e.attrs[4] > 0) part_radius(pos, vec(float(e.attrs[4])), showentsize, 1, 1, entradiuscolour);
                     break;
                 }
                 default:
@@ -2842,6 +2860,11 @@ namespace entities
                     break;
                 }
                 case CAMERA:
+                {
+                    entdirpart(pos, e.attrs[2], e.attrs[3], 4.f, 1, entdircolour);
+                    break;
+                }
+                case MAPUI:
                 {
                     entdirpart(pos, e.attrs[2], e.attrs[3], 4.f, 1, entdircolour);
                     break;
