@@ -64,8 +64,31 @@ prep_sys_fs() {
 
 cleanup
 
-echo "Preparing to build Red Eclipse..."
-echo "Cache directory: ${CACHE_DIR}"
+cat << EOF
+
+
+
+#####################################
+#                                   #
+# Preparing to build Red Eclipse... #
+#                                   #
+#####################################
+
+Directories:
+* Game: ${GAME_DIR}
+* Output: ${OUTPUT_DIR}
+* Cache: ${CACHE_DIR}
+
+Build information:
+* Number: ${PLATFORM_BUILD}
+* Branch: ${PLATFORM_BRANCH}
+* Commit: ${PLATFORM_REVISION}
+
+
+
+EOF
+
+
 
 prep_sys_fs ||
     fail "Unable to create a filesystem for Windows libraries"
