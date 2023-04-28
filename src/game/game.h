@@ -141,7 +141,7 @@ extern const enttypes enttype[] = {
                 "wind",        "Wind",              { "mode", "yaw", "speed", "radius", "atten", "interval", "implen", "modes", "muts", "variant", "fxlevel" }
     },
     {
-        MAPUI,          1,          263,    0,      EU_NONE,    12,          -1,         8,          -1,     10,      11,
+        MAPUI,          1,          241,    0,      EU_NONE,    12,          -1,         8,          -1,     10,      11,
             0, 0,
             0,
             false,  false,  false,      false,      false,
