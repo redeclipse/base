@@ -871,7 +871,7 @@ namespace UI
     #define LOOPSURFACE(body) { loopk(SURFACE_MAX) if(surfaces[k] && surfaces[k]->interactive) DOSURFACE(k, body) }
 
     const char *windowtype[SURFACE_MAX] = { "Main", "Progress", "Composite" };
-    const char *windowaffix[SURFACE_MAX] = { "", "prog", "comp" };
+    const char *windowaffix[SURFACE_MAX] = { "", "progress", "comp" };
     static Window *window = NULL;
 
     enum
@@ -1634,7 +1634,7 @@ namespace UI
 
     ICOMMAND(0, newui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *flags), newui(SURFACE_MAIN, name, contents, onshow, onhide, *flags, (identflags&IDF_MAP) != 0));
     ICOMMAND(0, mapui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *flags), newui(SURFACE_MAIN, name, contents, onshow, onhide, *flags, true));
-    ICOMMAND(0, progui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *flags), if(!(identflags&IDF_MAP)) newui(SURFACE_PROGRESS, name, contents, onshow, onhide, *flags));
+    ICOMMAND(0, progressui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *flags), if(!(identflags&IDF_MAP)) newui(SURFACE_PROGRESS, name, contents, onshow, onhide, *flags));
     ICOMMAND(0, newcompui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *flags), newui(SURFACE_COMPOSITE, name, contents, onshow, onhide, *flags, (identflags&IDF_MAP) != 0));
     ICOMMAND(0, mapcompui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *flags), newui(SURFACE_COMPOSITE, name, contents, onshow, onhide, *flags, true));
 
@@ -6212,7 +6212,7 @@ namespace UI
     extern void reloadcomp();
     VARF(IDF_PERSIST, compositesize, 1<<1, COMPOSITESIZE, 1<<12, reloadcomp());
     VAR(IDF_PERSIST, compositeuprate, 0, 33, VAR_MAX);
-    SVAR(0, uicompargs, "");
+    SVAR(0, compositeargs, "");
 
     Texture *composite(const char *name, int tclamp, bool mipit, bool msg, bool gc, Texture *tex, bool reload)
     {
@@ -6387,7 +6387,7 @@ namespace UI
                 Window *w = surface->windows.find(t->comp, NULL);
                 if(w)
                 {
-                    setsvar("uicompargs", t->args ? t->args : "");
+                    setsvar("compositeargs", t->args ? t->args : "");
                     surface->show(w);
 
                     curtextscale = 1;

@@ -1844,7 +1844,7 @@ namespace hud
                 resethudshader();
                 drawpointers(hudwidth, hudheight);
             }
-            else UI::render(false, UI::SURFACE_PROGRESS);
+            else UI::render(true);
         }
         glDisable(GL_BLEND);
     }
