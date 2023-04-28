@@ -539,7 +539,7 @@ namespace UI
     extern bool textinput(const char *str, int len);
 
     extern void closedynui(const char *name, int stype = SURFACE_MAIN);
-    extern void cleardynui(const char *name, int wintype, bool mapdef);
+    extern void cleardynui(const char *name, int stype = SURFACE_MAIN, bool mapdef = false);
 
     extern void setup();
     extern void cleanup();

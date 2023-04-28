@@ -847,7 +847,6 @@ namespace UI
         }
     }
 
-    int surfacetype = -1;
     Surface *surface = NULL, *surfaces[SURFACE_MAX] = { NULL, NULL, NULL };
     bool issurface(int stype) { return stype >= 0 && stype < SURFACE_MAX; }
 
@@ -856,37 +855,25 @@ namespace UI
         if(!issurface(surf) || !surfaces[surf]) { failure; } \
         Surface *oldsurface = surface; \
         surface = surfaces[surf]; \
-        surfacetype = surface->type; \
         body; \
         surface = oldsurface; \
-        surfacetype = surface ? surface->type : -1; \
         success; \
     }
 
     #define SWSURFACE(surf, body, failure, success) \
     { \
         if(surf >= 0) DOSURFACE(surf, body, failure, success) \
-        else loopi(SURFACE_MAX) if(surfaces[i] && surfaces[i]->interactive) DOSURFACE(i, body, failure, success) \
+        else loopk(SURFACE_MAX) if(surfaces[k] && surfaces[k]->interactive) DOSURFACE(k, body, failure, success) \
     }
 
-    extern int getwindowtype();
+    #define LOOPSURFACE(body) \
+    { \
+        loopk(SURFACE_MAX) if(surfaces[k] && surfaces[k]->interactive) DOSURFACE(k, body, continue, ) \
+    }
 
-    enum { WINTYPE_NORMAL = 0, WINTYPE_COMPOSITE, WINTYPE_MAX };
-    const char *windowtype[WINTYPE_MAX] = { "Normal", "Composite" };
-    const char *windowaffix[WINTYPE_MAX] = { "", "comp" };
+    const char *windowtype[SURFACE_MAX] = { "Main", "Progress", "Composite" };
+    const char *windowaffix[SURFACE_MAX] = { "", "prog", "comp" };
     static Window *window = NULL;
-
-    const char *getwinprefix(int type, const char *suffix = " ")
-    {
-        type = clamp(type, 0, int(WINTYPE_MAX)-1);
-        if(type > 0)
-        {
-            static string winprefix;
-            formatstring(winprefix, "%s%s", windowtype[type], suffix);
-            return winprefix;
-        }
-        return "";
-    }
 
     enum
     {
@@ -1008,13 +995,13 @@ namespace UI
             window = NULL;
         }
 
-        void draw(bool world, float sx, float sy)
+        void draw(int stype, bool world, float sx, float sy)
         {
             if(state&STATE_HIDDEN) return;
             if(world != inworld) return;
             window = this;
 
-            projection();
+            projection(stype);
 
             glEnable(GL_BLEND);
             blendtype = BLEND_ALPHA;
@@ -1047,9 +1034,9 @@ namespace UI
             window = NULL;
         }
 
-        void draw(bool world)
+        void draw(int stype, bool world)
         {
-            draw(world, x, y);
+            draw(stype, world, x, y);
         }
 
         void adjustchildren()
@@ -1060,9 +1047,9 @@ namespace UI
             window = NULL;
         }
 
-        void adjustlayout()
+        void adjustlayout(int stype)
         {
-            if(surfacetype == SURFACE_COMPOSITE) pw = ph = 1;
+            if(stype == SURFACE_COMPOSITE) pw = ph = 1;
             else if(inworld)
             {
                 pw = w;
@@ -1184,9 +1171,9 @@ namespace UI
         DOSTATES
         #undef DOSTATE
 
-        void projection()
+        void projection(int stype)
         {
-            if(surfacetype == SURFACE_COMPOSITE) // composites have flipped Y axis
+            if(stype == SURFACE_COMPOSITE) // composites have flipped Y axis
                 hudmatrix.ortho(px, px + pw, py, py + ph, -1, 1);
             else if(inworld)
             {
@@ -1337,8 +1324,6 @@ namespace UI
             if(o) { body; } \
         });
 
-    hashnameset<Window *> windows[WINTYPE_MAX];
-
     void ClipArea::scissor()
     {
         int sx1, sy1, sx2, sy2;
@@ -1351,6 +1336,8 @@ namespace UI
         int type, cursortype;
         bool lockcursor, mousetracking, lockscroll, standalone, interactive;
         vec2 mousetrackvec;
+
+        hashnameset<Window *> windows;
 
         Surface() : type(SURFACE_MAIN), cursortype(CURSOR_DEFAULT), lockcursor(false), mousetracking(false), lockscroll(false), standalone(false), interactive(true), mousetrackvec(0, 0) {}
         ~Surface() {}
@@ -1376,7 +1363,7 @@ namespace UI
 
         void adjustchildren()
         {
-            loopwindows(w, w->adjustlayout());
+            loopwindows(w, w->adjustlayout(type));
         }
 
         #define DOSTATE(chkflags, func) \
@@ -1509,7 +1496,7 @@ namespace UI
             loopwindows(w,
             {
                 if(hasexcl && !w->exclusive) continue;
-                w->draw(world);
+                w->draw(type, world);
             });
         }
     };
@@ -1597,17 +1584,6 @@ namespace UI
         }
     });
 
-    int getwindowtype()
-    {
-        if(surface && surfacetype == SURFACE_COMPOSITE) return WINTYPE_COMPOSITE;
-        return WINTYPE_NORMAL;
-    }
-
-    bool inputsurface()
-    {
-        return surface && surfacetype == SURFACE_MAIN;
-    }
-
     void Window::build()
     {
         if(!surface) return;
@@ -1620,100 +1596,82 @@ namespace UI
         window = NULL;
     }
 
-    bool newui(int type, const char *name, const char *contents, const char *onshow, const char *onhide, int flags, bool mapdef = false, const char *dyn = NULL, int param = -1)
+    bool newui(int stype, const char *name, const char *contents, const char *onshow, const char *onhide, int flags, bool mapdef = false, const char *dyn = NULL, int param = -1)
     {
-        if(!name || !*name || !contents || !*contents) return false;
-        type = clamp(type, 0, int(WINTYPE_MAX)-1);
+        if(!name || !*name || !contents || !*contents || !issurface(stype) || !surfaces[stype]) return false;
+
         if(mapdef && !(identflags&IDF_MAP) && !editmode)
         {
-            conoutf("\frMap %sUI %s is only directly modifiable in editmode", getwinprefix(type), name);
+            conoutf("\frMap %s UI %s is only directly modifiable in editmode", windowtype[stype], name);
             return false;
         }
 
         bool found = false;
-        Window *w = windows[type].find(name, NULL);
+        Surface *oldsurface = surface;
+        surface = surfaces[stype];
+        Window *w = surface->windows.find(name, NULL);
         if(w)
         {
-            if(w == window) return false; // can't remove the calling window
+            if(w == window)
+            {
+                surface = oldsurface;
+                return false; // can't remove the calling window
+            }
             if(!w->mapdef && mapdef)
             {
-                conoutf("\frCannot override builtin %sUI %s with a one from the map", getwinprefix(type), w->name);
+                conoutf("\frCannot override builtin %s UI %s with a one from the map", windowtype[stype], w->name);
+                surface = oldsurface;
                 return false;
             }
-            loopi(SURFACE_MAX) if(surfaces[i]) surfaces[i]->hide(w);
-            windows[type].remove(name);
+            surface->hide(w);
+            surface->windows.remove(name);
             delete w;
             found = true;
         }
 
-        windows[type][name] = new Window(name, contents, onshow, onhide, flags, mapdef, dyn, param);
+        surface->windows[name] = new Window(name, contents, onshow, onhide, flags, mapdef, dyn, param);
+        surface = oldsurface;
 
-        if(found && type == WINTYPE_COMPOSITE)
+        if(found && stype == SURFACE_COMPOSITE)
             enumerate(textures, Texture, t, if(t.type&Texture::COMPOSITE && t.comp && !strcmp(name, t.comp)) composite(&t.id, t.comp, t.args, t.w, t.tclamp, t.mipmap, true));
-
         return true;
     }
 
-    ICOMMAND(0, newui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *flags), newui(WINTYPE_NORMAL, name, contents, onshow, onhide, *flags, (identflags&IDF_MAP) != 0));
-    ICOMMAND(0, mapui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *flags), newui(WINTYPE_NORMAL, name, contents, onshow, onhide, *flags, true));
-    ICOMMAND(0, newcompui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *flags), newui(WINTYPE_COMPOSITE, name, contents, onshow, onhide, *flags, (identflags&IDF_MAP) != 0));
-    ICOMMAND(0, mapcompui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *flags), newui(WINTYPE_COMPOSITE, name, contents, onshow, onhide, *flags, true));
+    ICOMMAND(0, newui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *flags), newui(SURFACE_MAIN, name, contents, onshow, onhide, *flags, (identflags&IDF_MAP) != 0));
+    ICOMMAND(0, mapui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *flags), newui(SURFACE_MAIN, name, contents, onshow, onhide, *flags, true));
+    ICOMMAND(0, progui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *flags), if(!(identflags&IDF_MAP)) newui(SURFACE_PROGRESS, name, contents, onshow, onhide, *flags));
+    ICOMMAND(0, newcompui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *flags), newui(SURFACE_COMPOSITE, name, contents, onshow, onhide, *flags, (identflags&IDF_MAP) != 0));
+    ICOMMAND(0, mapcompui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *flags), newui(SURFACE_COMPOSITE, name, contents, onshow, onhide, *flags, true));
 
     void closedynui(const char *name, int stype)
     {
-        if(stype >= 0 && (!issurface(stype) || !surfaces[stype])) return;
-
-        static vector<Window *> wins; wins.shrink(0);
-        enumerate(windows[WINTYPE_NORMAL], Window *, w,
+        SWSURFACE(stype,
         {
-            if(!w->dyn || !*w->dyn || (name && *name && strcmp(w->dyn, name))) continue;
-            wins.add(w);
-        });
-        Surface *oldsurface = surface;
-        loopvrev(wins)
-        {
-            Window *w = wins[i];
-            if(stype >= 0)
+            enumerate(surface->windows, Window *, w,
             {
-                surface = surfaces[stype];
+                if(!w->dyn || !*w->dyn || (name && *name && strcmp(w->dyn, name))) continue;
                 surface->hide(w);
-            }
-            else loopj(SURFACE_MAX) if(surfaces[i])
-            {
-                surface = surfaces[i];
-                surface->hide(w);
-            }
-        }
-        surface = oldsurface;
+            });
+        }, return, return);
     }
 
     ICOMMAND(0, closedynui, "si", (char *name, int *stype), closedynui(name, *stype));
 
-    void cleardynui(const char *name, int wintype, bool mapdef)
+    void cleardynui(const char *name, int stype, bool mapdef)
     {
-        vector<Window *> wins;
-        enumerate(windows[wintype], Window *, w,
+        SWSURFACE(stype,
         {
-            if(!w->dyn || !*w->dyn || (name && *name && strcmp(w->dyn, name)) || w->mapdef != mapdef) continue;
-            wins.add(w);
-        });
-        Surface *oldsurface = surface;
-        loopvrev(wins)
-        {
-            Window *w = wins[i];
-            loopj(SURFACE_MAX)
+            enumerate(surface->windows, Window *, w,
             {
-                surface = surfaces[i];
+                if(!w->dyn || !*w->dyn || (name && *name && strcmp(w->dyn, name)) || w->mapdef != mapdef) continue;
                 surface->hide(w);
-            }
-            windows[wintype].remove(w->name);
-            delete w;
-        }
-        surface = oldsurface;
+                surface->windows.remove(w->name);
+            });
+        }, return, return);
     }
 
-    ICOMMAND(0, cleardynui, "si", (char *name, int *wintype), cleardynui(name, clamp(*wintype, 0, int(WINTYPE_MAX)-1), (identflags&IDF_MAP) != 0));
-    ICOMMAND(0, clearmapdynui, "si", (char *name, int *wintype), cleardynui(name, clamp(*wintype, 0, int(WINTYPE_MAX)-1), true));
+    ICOMMAND(0, cleardynui, "si", (char *name, int *stype), cleardynui(name, clamp(*stype, 0, int(SURFACE_MAX)-1), (identflags&IDF_MAP) != 0));
+    ICOMMAND(0, clearmapdynui, "si", (char *name, int *stype), cleardynui(name, clamp(*stype, 0, int(SURFACE_MAX)-1), true));
 
     struct DynUI
     {
@@ -1791,7 +1749,7 @@ namespace UI
         loopv(dynuis) if(!strcmp(dynuis[i].name, name))
         {
             defformatstring(refname, "%s_%d", name, param);
-            if(newui(WINTYPE_NORMAL, refname, dynuis[i].contents, dynuis[i].onshow, dynuis[i].onhide, dynuis[i].flags, dynuis[i].mapdef, dynuis[i].name, param)) return true;
+            if(newui(SURFACE_MAIN, refname, dynuis[i].contents, dynuis[i].onshow, dynuis[i].onhide, dynuis[i].flags, dynuis[i].mapdef, dynuis[i].name, param)) return true;
             return false;
         }
         return false;
@@ -1801,8 +1759,8 @@ namespace UI
     {
         const char *ref = dynuiref(name, param);
         DOSURFACE(stype,
-            Window *w = windows[getwindowtype()].find(ref, NULL);
-            if(!w && param >= 0 && dynuiexec(name, param)) w = windows[getwindowtype()].find(ref, NULL);
+            Window *w = surface->windows.find(ref, NULL);
+            if(!w && param >= 0 && dynuiexec(name, param)) w = surface->windows.find(ref, NULL);
             bool ret = w && surface->show(w, origin, yaw, pitch, s);
         , return false, return ret);
     }
@@ -1811,7 +1769,7 @@ namespace UI
     {
         const char *ref = dynuiref(name, param);
         DOSURFACE(stype,
-            Window *w = windows[getwindowtype()].find(ref, NULL);
+            Window *w = surface->windows.find(ref, NULL);
             bool ret = false;
             if(w)
             {
@@ -1832,7 +1790,7 @@ namespace UI
             if(!ref || !*ref) ret = surface->hideall(false, true) > 0;
             else
             {
-                Window *w = windows[getwindowtype()].find(ref, NULL);
+                Window *w = surface->windows.find(ref, NULL);
                 if(w && (!world || w->inworld)) ret = surface->hide(w);
             }
         , return false, return ret);
@@ -1886,7 +1844,7 @@ namespace UI
             if(!ref || !*ref) ret = surface->children.length() > 0;
             else
             {
-                Window *w = windows[getwindowtype()].find(ref, NULL);
+                Window *w = surface->windows.find(ref, NULL);
                 ret = w && surface->children.find(w) >= 0;
             }
         , return false, return ret);
@@ -4675,7 +4633,7 @@ namespace UI
 
         TextEditor() : edit(NULL), keyfilter(NULL), canfocus(true), allowlines(true) {}
 
-        bool isallowed() const { return inputsurface(); }
+        bool isallowed() const { return surface && surface->type == SURFACE_MAIN; }
         bool iseditor() const { return true; }
 
         void setup(const char *name, int length, int height, float scale_ = 1, const char *initval = NULL, int mode = EDITORUSED, const char *keyfilter_ = NULL, bool _allowlines = true, int limit = 0)
@@ -4959,7 +4917,7 @@ namespace UI
 
         KeyCatcher() : id(NULL), pressedkey(0) {}
 
-        bool isallowed() const { return inputsurface(); }
+        bool isallowed() const { return surface && surface->type == SURFACE_MAIN; }
         bool iskeycatcher() const { return true; }
 
         static const char *typestr() { return "#KeyCatcher"; }
@@ -6194,17 +6152,12 @@ namespace UI
         loopi(SURFACE_MAX)
         {
             surface = surfaces[i];
-            surfacetype = i;
             surface->hideall(true);
             surface->children.setsize(0);
+            enumerate(surface->windows, Window *, w, delete w);
+            surface->windows.clear();
         }
         surface = NULL;
-        surfacetype = -1;
-        loopj(WINTYPE_MAX)
-        {
-            enumerate(windows[j], Window *, w, delete w);
-            windows[j].clear();
-        }
         loopi(SURFACE_MAX) DELETEP(surfaces[i]);
         inputsteal = NULL;
     }
@@ -6221,11 +6174,11 @@ namespace UI
 
             defformatstring(name, "entity_%s%d", e.attrs[0] < 0 ? "builtin_" : "", abs(e.attrs[0]));
             const char *ref = dynuiref(name, i);
-            Window *w = windows[WINTYPE_NORMAL].find(ref, NULL);
+            Window *w = surface->windows.find(ref, NULL);
             if(!w)
             {
                 if(!dynuiexec(name, i)) continue;
-                w = windows[WINTYPE_NORMAL].find(ref, NULL);
+                w = surface->windows.find(ref, NULL);
                 if(!w) continue;
             }
 
@@ -6265,7 +6218,7 @@ namespace UI
         if(!ents.inrange(n)) return;
         Surface *oldsurface = surface;
         surface = surfaces[SURFACE_MAIN];
-        enumerate(windows[WINTYPE_NORMAL], Window *, w, {
+        enumerate(surface->windows, Window *, w, {
             if(w->param != n || strncmp(w->name, "entity_", 7)) continue;
             surface->hide(w);
         });
@@ -6287,14 +6240,14 @@ namespace UI
                 break;
             case SURFACE_PROGRESS:
                 if(!progressing) return;
-                showui("progress", SURFACE_PROGRESS);
+                showui("default", SURFACE_PROGRESS);
                 break;
             default: break;
         }
 
         float oldtextscale = curtextscale;
         DOSURFACE(stype,
-            if(stype == SURFACE_MAIN) checkmapuis();
+            if(surface->type == SURFACE_MAIN) checkmapuis();
 
             curtextscale = 1;
             surface->cursortype = CURSOR_DEFAULT;
@@ -6303,7 +6256,7 @@ namespace UI
             surface->lockscroll = false;
 
             pushfont();
-            if(inputsurface()) readyeditors();
+            if(surface->type == SURFACE_MAIN) readyeditors();
 
             surface->setstate(STATE_HOVER, cursorx, cursory, surface->childstate&STATE_HOLD_MASK);
             if(surface->childstate&STATE_HOLD) surface->setstate(STATE_HOLD, cursorx, cursory, STATE_HOLD, SETSTATE_ANY);
@@ -6321,7 +6274,7 @@ namespace UI
 
             if(!surface->mousetracking) surface->mousetrackvec = vec2(0, 0);
 
-            if(inputsurface()) flusheditors();
+            if(surface->type == SURFACE_MAIN) flusheditors();
             popfont();
             curtextscale = oldtextscale;
         , return, return);
@@ -6468,11 +6421,11 @@ namespace UI
     int savemapmenus(stream *h)
     {
         int mapmenus = 0;
-        loopj(WINTYPE_MAX) enumerate(windows[j], Window *, w,
+        LOOPSURFACE(enumerate(surface->windows, Window *, w,
         {
-            if(!w->mapdef || !w->contents || w->dyn) continue;
+            if(surface->type == SURFACE_PROGRESS || !w->mapdef || !w->contents || w->dyn) continue;
 
-            h->printf("map%sui %s [%s]", windowaffix[j], w->name, w->contents->body);
+            h->printf("map%sui %s [%s]", windowaffix[surface->type], w->name, w->contents->body);
             if(w->onshow) h->printf(" [%s]", w->onshow->body);
             else if(w->onhide || w->flags) h->printf(" []");
             if(w->onhide) h->printf(" [%s]", w->onhide->body);
@@ -6481,7 +6434,7 @@ namespace UI
             h->printf("\n\n");
 
             mapmenus++;
-        });
+        }));
 
         loopv(dynuis)
         {
@@ -6502,36 +6455,14 @@ namespace UI
         return mapmenus;
     }
 
-    struct WindowClear
-    {
-        Window *w;
-        int type;
-    };
-
     void resetmapmenus()
     {
-        vector<WindowClear> wins;
-        loopj(WINTYPE_MAX) enumerate(windows[j], Window *, w,
+        LOOPSURFACE(enumerate(surface->windows, Window *, w,
         {
-            if(!w->mapdef) continue;
-            WindowClear &c = wins.add();
-            c.w = w;
-            c.type = j;
-        });
-
-        Surface *oldsurface = surface;
-        loopv(wins)
-        {
-            Window *w = wins[i].w;
-            loopj(SURFACE_MAX)
-            {
-                surface = surfaces[i];
-                surface->hide(w);
-            }
-            windows[wins[i].type].remove(w->name);
-            delete w;
-        }
-        surface = oldsurface;
+            if(surface->type == SURFACE_PROGRESS || !w->mapdef) continue;
+            surface->hide(w);
+            surface->windows.remove(w->name);
+        }));
 
         loopvrev(dynuis)
         {
