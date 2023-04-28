@@ -847,6 +847,7 @@ namespace UI
     }
 
     Surface *surface = NULL, *surfaces[SURFACE_MAX] = { NULL, NULL, NULL };
+    int surfacetype = -1;
 
     #define DOSURFACE(surf, body) \
     { \
@@ -854,8 +855,10 @@ namespace UI
         { \
             Surface *oldsurface = surface; \
             surface = surfaces[surf]; \
+            surfacetype = surface->type; \
             body; \
             surface = oldsurface; \
+            surfacetype = surface ? surface->type : -1; \
         } \
     }
 
@@ -991,13 +994,13 @@ namespace UI
             window = NULL;
         }
 
-        void draw(int stype, bool world, float sx, float sy)
+        void draw(bool world, float sx, float sy)
         {
             if(state&STATE_HIDDEN) return;
             if(world != inworld) return;
             window = this;
 
-            projection(stype);
+            projection();
 
             glEnable(GL_BLEND);
             blendtype = BLEND_ALPHA;
@@ -1030,9 +1033,9 @@ namespace UI
             window = NULL;
         }
 
-        void draw(int stype, bool world)
+        void draw(bool world)
         {
-            draw(stype, world, x, y);
+            draw(world, x, y);
         }
 
         void adjustchildren()
@@ -1043,9 +1046,9 @@ namespace UI
             window = NULL;
         }
 
-        void adjustlayout(int stype)
+        void adjustlayout()
         {
-            if(stype == SURFACE_COMPOSITE) pw = ph = 1;
+            if(surfacetype == SURFACE_COMPOSITE) pw = ph = 1;
             else if(inworld)
             {
                 pw = w;
@@ -1167,9 +1170,9 @@ namespace UI
         DOSTATES
         #undef DOSTATE
 
-        void projection(int stype)
+        void projection()
         {
-            if(stype == SURFACE_COMPOSITE) // composites have flipped Y axis
+            if(surfacetype == SURFACE_COMPOSITE) // composites have flipped Y axis
                 hudmatrix.ortho(px, px + pw, py, py + ph, -1, 1);
             else if(inworld)
             {
@@ -1204,6 +1207,7 @@ namespace UI
                 sx2 = clamp(sx2, 0, hudw);
                 sy2 = clamp(sy2, 0, hudh);
             }
+            if(surfacetype == SURFACE_COMPOSITE) swap(sy1, sy2);
         }
 
         static bool compare(const Object *a, const Object *b)
@@ -1324,7 +1328,7 @@ namespace UI
     {
         int sx1, sy1, sx2, sy2;
         window->calcscissor(x1, y1, x2, y2, sx1, sy1, sx2, sy2);
-        glScissor(sx1, sy1, sx2-sx1, sy2-sy1);
+        glScissor(sx1, surfacetype == SURFACE_COMPOSITE ? sy2-sy1 : sy1, sx2-sx1, surfacetype == SURFACE_COMPOSITE ? sy1 : sy2-sy1);
     }
 
     struct Surface : Object
@@ -1360,7 +1364,7 @@ namespace UI
 
         void adjustchildren()
         {
-            loopwindows(w, w->adjustlayout(type));
+            loopwindows(w, w->adjustlayout());
         }
 
         #define DOSTATE(chkflags, func) \
@@ -1493,7 +1497,7 @@ namespace UI
             loopwindows(w,
             {
                 if(hasexcl && !w->exclusive) continue;
-                w->draw(type, world);
+                w->draw(world);
             });
         }
     };
@@ -4634,7 +4638,7 @@ namespace UI
 
         TextEditor() : edit(NULL), keyfilter(NULL), canfocus(true), allowlines(true) {}
 
-        bool isallowed() const { return surface && surface->type == SURFACE_MAIN; }
+        bool isallowed() const { return surfacetype == SURFACE_MAIN; }
         bool iseditor() const { return true; }
 
         void setup(const char *name, int length, int height, float scale_ = 1, const char *initval = NULL, int mode = EDITORUSED, const char *keyfilter_ = NULL, bool _allowlines = true, int limit = 0)
@@ -4918,7 +4922,7 @@ namespace UI
 
         KeyCatcher() : id(NULL), pressedkey(0) {}
 
-        bool isallowed() const { return surface && surface->type == SURFACE_MAIN; }
+        bool isallowed() const { return surfacetype == SURFACE_MAIN; }
         bool iskeycatcher() const { return true; }
 
         static const char *typestr() { return "#KeyCatcher"; }
@@ -6192,13 +6196,11 @@ namespace UI
         if(n < 0 || !surfaces[SURFACE_MAIN]) return;
         vector<extentity *> &ents = entities::getents();
         if(!ents.inrange(n)) return;
-        Surface *oldsurface = surface;
-        surface = surfaces[SURFACE_MAIN];
-        enumerate(surface->windows, Window *, w, {
+        DOSURFACE(SURFACE_MAIN, enumerate(surface->windows, Window *, w,
+        {
             if(w->param != n || strncmp(w->name, "entity_", 7)) continue;
             surface->hide(w);
-        });
-        surface = oldsurface;
+        }));
     }
 
     void calctextscale()
@@ -6278,7 +6280,7 @@ namespace UI
             GLERROR;
             if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
             {
-                if(msg) conoutf("\frFailed allocating composite texture framebuffer: %s", name);
+                if(msg) conoutf("\frFailed allocating composite texture framebuffer: %s [%u / %u]", name, id, fbo);
                 if(id) glDeleteTextures(1, &id);
                 if(fbo) glDeleteFramebuffers_(1, &fbo);
                 glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
@@ -6568,14 +6570,13 @@ namespace UI
     void cleanup()
     {
         dynuis.setsize(0);
-        loopi(SURFACE_MAX)
+        LOOPSURFACE(
         {
-            surface = surfaces[i];
             surface->hideall(true);
             surface->children.setsize(0);
             enumerate(surface->windows, Window *, w, delete w);
             surface->windows.clear();
-        }
+        });
         surface = NULL;
         loopi(SURFACE_MAX) DELETEP(surfaces[i]);
         inputsteal = NULL;
