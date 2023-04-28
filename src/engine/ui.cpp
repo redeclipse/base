@@ -1329,7 +1329,7 @@ namespace UI
     {
         int sx1, sy1, sx2, sy2;
         window->calcscissor(x1, y1, x2, y2, sx1, sy1, sx2, sy2);
-        glScissor(sx1, surfacetype == SURFACE_COMPOSITE ? sy2-sy1 : sy1, sx2-sx1, surfacetype == SURFACE_COMPOSITE ? sy1 : sy2-sy1);
+        glScissor(sx1, sy1, sx2-sx1, sy2-sy1);
     }
 
     struct Surface : Object
@@ -1489,7 +1489,7 @@ namespace UI
             bool hasexcl = hasexclusive();
             loopwindows(w,
             {
-                if(hasexcl && !w->exclusive) continue;
+                if(!w->inworld && hasexcl && !w->exclusive) continue;
                 if(w->flags&WINDOW_TIP) // follows cursor
                     w->setpos((cursorx*float(hudw)/float(hudh))-(w->w*cursorx), cursory >= 0.5f ? cursory-w->h-uitipoffset : cursory+hud::cursorsize+uitipoffset);
                 else if(w->flags&WINDOW_POPUP && !w->overridepos)
@@ -1497,7 +1497,7 @@ namespace UI
             });
             loopwindows(w,
             {
-                if(hasexcl && !w->exclusive) continue;
+                if(!w->inworld && hasexcl && !w->exclusive) continue;
                 w->draw(world);
             });
         }

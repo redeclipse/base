@@ -2361,7 +2361,7 @@ namespace game
         return teamed;
     }
 
-    ICOMMAND(0, getteamname, "i", (int *team), result(*team >= 0 && *team < T_MAX ? TEAM(*team, name) : ""));
+    ICOMMAND(0, getteamname, "ibb", (int *team, int *fmt, int *icon), result(*team >= 0 && *team < T_MAX ? (*fmt ? colourteam(*team, *icon ? "" : NULL) : TEAM(*team, name)) : ""));
     ICOMMAND(0, getteamcolour, "i", (int *team), intret(*team >= 0 && *team < T_MAX ? TEAM(*team, colour) : 0));
 
     void suicide(gameent *d, int flags)
