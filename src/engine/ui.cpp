@@ -3,7 +3,6 @@
 
 namespace UI
 {
-    GLuint comptexfbo = 0;
     static bool texgc = false;
     static int lastthumbnail = 0;
 
@@ -1335,6 +1334,7 @@ namespace UI
         vec2 mousetrackvec;
 
         hashnameset<Window *> windows;
+        vector<Texture *> texs;
 
         Surface() : type(SURFACE_MAIN), cursortype(CURSOR_DEFAULT), lockcursor(false), mousetracking(false), lockscroll(false), standalone(false), interactive(true), mousetrackvec(0, 0) {}
         ~Surface() {}
@@ -1595,7 +1595,7 @@ namespace UI
 
     bool newui(int stype, const char *name, const char *contents, const char *onshow, const char *onhide, int flags, bool mapdef = false, const char *dyn = NULL, int param = -1)
     {
-        if(!name || !*name || !contents || !*contents || stype < 0 || stype >= SURFACE_MAX || !surfaces[stype]) return false;
+        if(!name || !*name || !contents || !*contents) return false;
 
         if(mapdef && !(identflags&IDF_MAP) && !editmode)
         {
@@ -1603,34 +1603,28 @@ namespace UI
             return false;
         }
 
-        bool found = false;
-        Surface *oldsurface = surface;
-        surface = surfaces[stype];
-        Window *w = surface->windows.find(name, NULL);
-        if(w)
+        DOSURFACE(stype,
         {
-            if(w == window)
+            Window *w = surface->windows.find(name, NULL);
+            if(w && w != window)
             {
-                surface = oldsurface;
-                return false; // can't remove the calling window
+                if(!w->mapdef && mapdef) conoutf("\frCannot override builtin %s UI %s with a one from the map", windowtype[stype], w->name);
+                else
+                {
+                    surface->hide(w);
+                    surface->windows.remove(name);
+                    delete w;
+                    loopv(surface->texs)
+                    {
+                        Texture *t = surface->texs[i];
+                        if(strcmp(name, t->comp)) continue;
+                        t->rendered = false; // redraw
+                    }
+                }
             }
-            if(!w->mapdef && mapdef)
-            {
-                conoutf("\frCannot override builtin %s UI %s with a one from the map", windowtype[stype], w->name);
-                surface = oldsurface;
-                return false;
-            }
-            surface->hide(w);
-            surface->windows.remove(name);
-            delete w;
-            found = true;
-        }
+            surface->windows[name] = new Window(name, contents, onshow, onhide, flags, mapdef, dyn, param);
+        });
 
-        surface->windows[name] = new Window(name, contents, onshow, onhide, flags, mapdef, dyn, param);
-        surface = oldsurface;
-
-        if(found && stype == SURFACE_COMPOSITE)
-            enumerate(textures, Texture, t, if(t.type&Texture::COMPOSITE && t.comp && !strcmp(name, t.comp)) composite(&t.id, t.comp, t.args, t.w, t.tclamp, t.mipmap, true));
         return true;
     }
 
@@ -1658,6 +1652,7 @@ namespace UI
             if(!w->dyn || !*w->dyn || (name && *name && strcmp(w->dyn, name)) || w->mapdef != mapdef) continue;
             surface->hide(w);
             surface->windows.remove(w->name);
+            delete w;
         }));
     }
 
@@ -6143,40 +6138,6 @@ namespace UI
         return surface && surface->textinput(str, len);
     }
 
-    void setup()
-    {
-        loopi(SURFACE_MAX)
-        {
-            surfaces[i] = new Surface;
-            surfaces[i]->type = i;
-            switch(i)
-            {
-                case SURFACE_COMPOSITE:
-                    surfaces[i]->standalone = true;   // fall-through
-                case SURFACE_PROGRESS:
-                    surfaces[i]->interactive = false; // fall-through
-                default: break;
-            }
-        }
-        inputsteal = NULL;
-    }
-
-    void cleanup()
-    {
-        dynuis.setsize(0);
-        loopi(SURFACE_MAX)
-        {
-            surface = surfaces[i];
-            surface->hideall(true);
-            surface->children.setsize(0);
-            enumerate(surface->windows, Window *, w, delete w);
-            surface->windows.clear();
-        }
-        surface = NULL;
-        loopi(SURFACE_MAX) DELETEP(surfaces[i]);
-        inputsteal = NULL;
-    }
-
     void checkmapuis()
     {
         int oldflags = identflags;
@@ -6245,199 +6206,222 @@ namespace UI
         uitextscale = 1.0f/uitextrows;
     }
 
-    void build(int stype)
-    {
-        if(stype < 0 || stype >= SURFACE_MAX || !surfaces[stype] || surfaces[stype]->standalone) return;
-        switch(stype)
-        {
-            case SURFACE_MAIN:
-                if(uihidden) return;
-                break;
-            case SURFACE_PROGRESS:
-                if(!progressing) return;
-                showui("default", SURFACE_PROGRESS);
-                break;
-            default: break;
-        }
-
-        float oldtextscale = curtextscale;
-        DOSURFACE(stype,
-        {
-            if(surface->type == SURFACE_MAIN) checkmapuis();
-
-            curtextscale = 1;
-            surface->cursortype = CURSOR_DEFAULT;
-            surface->lockcursor = false;
-            surface->mousetracking = false;
-            surface->lockscroll = false;
-
-            pushfont();
-            if(surface->type == SURFACE_MAIN) readyeditors();
-
-            surface->setstate(STATE_HOVER, cursorx, cursory, surface->childstate&STATE_HOLD_MASK);
-            if(surface->childstate&STATE_HOLD) surface->setstate(STATE_HOLD, cursorx, cursory, STATE_HOLD, SETSTATE_ANY);
-            if(surface->childstate&STATE_ALT_HOLD) surface->setstate(STATE_ALT_HOLD, cursorx, cursory, STATE_ALT_HOLD, SETSTATE_ANY);
-            if(surface->childstate&STATE_ESC_HOLD) surface->setstate(STATE_ESC_HOLD, cursorx, cursory, STATE_ESC_HOLD, SETSTATE_ANY);
-
-            calctextscale();
-
-            if(surface->type == SURFACE_MAIN && *uiprecmd) execute(uiprecmd);
-            surface->build();
-            if(surface->type == SURFACE_MAIN && *uipostcmd) execute(uipostcmd);
-
-            if(inputsteal && !inputsteal->isfocus())
-                inputsteal = NULL;
-
-            if(!surface->mousetracking) surface->mousetrackvec = vec2(0, 0);
-
-            if(surface->type == SURFACE_MAIN) flusheditors();
-            popfont();
-            curtextscale = oldtextscale;
-        });
-    }
-
-    void update(bool prog)
-    {
-        if(prog) build(SURFACE_PROGRESS);
-        else
-        {
-            build(SURFACE_MAIN);
-            build(SURFACE_COMPOSITE);
-        }
-    }
-
-    void draw(int stype, bool world)
-    {
-        if(stype < 0 || stype >= SURFACE_MAX || !surfaces[stype] || surfaces[stype]->standalone) return;
-        switch(stype)
-        {
-            case SURFACE_MAIN:
-                if(uihidden) return;
-                break;
-            case SURFACE_PROGRESS:
-                if(!progressing) return;
-                // fall-through
-            default:
-                if(world) return; // only main surface can render in-world
-                break;
-        }
-
-        float oldtextscale = curtextscale;
-        DOSURFACE(stype,
-        {
-            curtextscale = 1;
-            pushfont();
-            surface->layout();
-            surface->adjustchildren();
-            surface->draw(world);
-            popfont();
-            curtextscale = oldtextscale;
-        });
-    }
-
-    void render(bool prog, bool world)
-    {
-        if(prog)
-        {
-            if(world) return; // nope
-            draw(SURFACE_PROGRESS, false);
-        }
-        else
-        {
-            draw(SURFACE_MAIN, world);
-            draw(SURFACE_COMPOSITE, false);
-        }
-    }
-
-    void cleancomposite()
-    {
-        if(comptexfbo) { glDeleteFramebuffers_(1, &comptexfbo); comptexfbo = 0; }
-    }
-
+    #define COMPOSITESIZE (1<<9)
+    extern void reloadcomp();
+    VARF(IDF_PERSIST, compositesize, 1<<1, COMPOSITESIZE, 1<<12, reloadcomp());
+    VAR(IDF_PERSIST, compositeuprate, 0, 33, VAR_MAX);
     SVAR(0, uicompargs, "");
-    bool composite(uint *tex, const char *name, const char *args, int w, int tclamp, bool mipit, bool msg)
+
+    Texture *composite(const char *name, int tclamp, bool mipit, bool msg, bool gc, Texture *tex, bool reload)
     {
-        if(!name || !*name || !tex)
+        if(!name || !*name)
         {
             if(msg) conoutf("\frCannot create null composite texture: %s", name);
-            return false; // need a name
+            return notexture; // need a name
         }
-        if(msg) progress(loadprogress, "Compositing texture: %s [%dpx]", name, w);
 
-        GLint oldfbo = 0;
-        if(progressing || !inbetweenframes || drawtex) glGetIntegerv(GL_FRAMEBUFFER_BINDING, &oldfbo);
-
-        GLERROR;
-        if(!comptexfbo) glGenFramebuffers_(1, &comptexfbo);
-        glBindFramebuffer_(GL_FRAMEBUFFER, comptexfbo);
-
-        bool hastex = *tex != 0;
-        if(!hastex)
+        Texture *t = tex ? NULL : textures.access(name);
+        if(t && !reload)
         {
-            glGenTextures(1, tex);
-            createtexture(*tex, w, w, NULL, tclamp, mipit ? 3 : 0, GL_RGBA, GL_TEXTURE_2D);
-        }
-        glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *tex, 0);
-
-        GLERROR;
-        if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        {
-            if(msg) conoutf("\frFailed allocating composite texture framebuffer");
-            if(!hastex) glDeleteTextures(1, tex);
-            glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
-            return false;
+            // Strip GC flag with gc=false
+            if(!gc && t->type&Texture::GC) t->type &= ~Texture::GC;
+            return t;
         }
 
-        int olddrawtex = drawtex, oldhudw = hudw, oldhudh = hudh;
-        float oldtextscale = curtextscale;
-        drawtex = DRAWTEX_COMPOSITE;
-        hudw = hudh = w;
+        if(msg) progress(loadprogress, "Compositing texture: %s", name);
 
-        setsvar("uicompargs", args ? args : "");
-        showui(name, SURFACE_COMPOSITE);
-
-        bool drawn = false;
         DOSURFACE(SURFACE_COMPOSITE,
         {
-            glViewport(0, 0, hudw, hudh);
+            vector<char *> list;
+            explodelist(&name[1], list, 4); // name delay args size
+            if(list.empty()) // need at least the name
+            {
+                list.deletearrays();
+                if(msg) conoutf("\frCould not composite texture: %s", name);
+                return notexture;
+            }
+
+            char *n = list[0];
+            Window *w = surface->windows.find(n, NULL);
+            if(!w)
+            {
+                if(msg) conoutf("\frFailed to locate Composite UI: %s", name);
+                list.deletearrays();
+                return notexture;
+            }
+
+            char *a = list.length() >= 3 ? list[2] : NULL;
+            float sw = list.length() >= 4 ? parsefloat(list[3]) : 1.f;
+            int tw = sw >= 0 ? int(sw * compositesize) : int(0 - sw);
+            int delay = list.length() >= 2 ? max(atoi(list[1]), 0) : 0;
+            if(tw <= 0) tw = compositesize;
+            else if(tw < 1<<1) tw = 1<<1;
+
+            GLint oldfbo = 0;
+            glGetIntegerv(GL_FRAMEBUFFER_BINDING, &oldfbo);
+
+            GLERROR;
+            GLuint fbo = t ? t->fbo : 0;
+            if(!fbo) glGenFramebuffers_(1, &fbo);
+            glBindFramebuffer_(GL_FRAMEBUFFER, fbo);
+
+            GLuint id = 0;
+            if(tex && tex->id)
+            {
+                glDeleteTextures(1, &tex->id);
+                tex->id = 0;
+            }
+            glGenTextures(1, &id);
+            createtexture(id, tw, tw, NULL, tclamp, mipit ? 3 : 0, GL_RGBA, GL_TEXTURE_2D);
+            glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, id, 0);
+
+            GLERROR;
+            if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+            {
+                if(msg) conoutf("\frFailed allocating composite texture framebuffer: %s", name);
+                if(id) glDeleteTextures(1, &id);
+                if(fbo) glDeleteFramebuffers_(1, &fbo);
+                glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
+                list.deletearrays();
+                return notexture;
+            }
+
+            glViewport(0, 0, tw, tw);
             glClearColor(0, 0, 0, 0);
             glClear(GL_COLOR_BUFFER_BIT);
 
-            curtextscale = 1;
-            pushfont();
-            calctextscale();
-            surface->build();
-            popfont();
+            if(!t)
+            {
+                char *key = newstring(name);
+                t = &textures[key];
+                t->name = key;
+                t->comp = newstring(n);
+                t->args = a ? newstring(a) : NULL;
+            }
+            t->type = Texture::IMAGE | Texture::COMPOSITE | Texture::ALPHA;
+            t->tclamp = tclamp;
+            t->mipmap = mipit;
+            if(gc) t->type |= Texture::GC;
+            if(t->tclamp&0x300) t->type |= Texture::MIRROR;
+            t->w = t->h = tw;
+            t->xs = t->ys = sw >= 0 ? int(t->w * (COMPOSITESIZE / float(t->w))) : t->w;
+            t->bpp = 4;
+            t->delay = delay;
+            t->id = id;
+            t->fbo = fbo;
+            t->used = t->last = lastmillis;
 
-            curtextscale = 1;
-            pushfont();
-            surface->layout();
-            surface->adjustchildren();
-            surface->draw(false);
-            popfont();
+            bool hastex = false;
+            loopv(surface->texs)
+            {
+                if(surface->texs[i] != t) continue;
+                hastex = true;
+                break;
+            }
+            if(!hastex) surface->texs.add(t);
+            list.deletearrays();
 
             glActiveTexture_(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, *tex);
+            glBindTexture(GL_TEXTURE_2D, id);
             glGenerateMipmap_(GL_TEXTURE_2D);
 
-            curtextscale = oldtextscale;
-            surface->hideall(true);
-            drawn = true;
+            glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
+            glViewport(0, 0, hudw, hudh);
         });
 
-        drawtex = olddrawtex;
-        hudw = oldhudw;
-        hudh = oldhudh;
-        glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
-        glViewport(0, 0, hudw, hudh);
-
-        if(!drawn && msg) conoutf("\frFailed to find composite UI surface!");
-        return drawn;
+        return t;
     }
 
-    void cleangl()
+    void reloadcomp()
     {
-        cleancomposite();
+        enumerate(textures, Texture, t,
+        {
+            if(!(t.type&Texture::COMPOSITE)) continue;
+            composite(t.name, t.tclamp, t.mipmap, true, t.type&Texture::GC, &t);
+        });
+    }
+
+    void rendercomp()
+    {
+        GLint oldfbo = 0;
+        bool found = false;
+        int olddrawtex = drawtex, oldhudw = hudw, oldhudh = hudh;
+        float oldtextscale = curtextscale;
+
+        DOSURFACE(SURFACE_COMPOSITE,
+        {
+            loopv(surface->texs)
+            {
+                Texture *t = surface->texs[i];
+                int delay = 0;
+                int elapsed = t->update(delay, compositeuprate);
+                if(t->rendered && elapsed < 0) continue;
+
+                if(!found)
+                {
+                    GLERROR;
+                    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &oldfbo);
+                    drawtex = DRAWTEX_COMPOSITE;
+                    found = true;
+                }
+
+                GLERROR;
+                if(!t->fbo) glGenFramebuffers_(1, &t->fbo);
+                glBindFramebuffer_(GL_FRAMEBUFFER, t->fbo);
+                //glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, t->id, 0);
+
+                GLERROR;
+                if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+                {
+                    conoutf("\frFailed rendering composite texture framebuffer: %s [%u / %u]", t->name, t->id, t->fbo);
+                    continue;
+                }
+
+                hudw = hudh = t->w;
+                glViewport(0, 0, hudw, hudh);
+                glClearColor(0, 0, 0, 0);
+                glClear(GL_COLOR_BUFFER_BIT);
+
+                Window *w = surface->windows.find(t->comp, NULL);
+                if(w)
+                {
+                    setsvar("uicompargs", t->args ? t->args : "");
+                    surface->show(w);
+
+                    curtextscale = 1;
+                    pushfont();
+                    calctextscale();
+                    surface->build();
+                    popfont();
+
+                    curtextscale = 1;
+                    pushfont();
+                    surface->layout();
+                    surface->adjustchildren();
+                    surface->draw(false);
+                    popfont();
+
+                    glActiveTexture_(GL_TEXTURE0);
+                    glBindTexture(GL_TEXTURE_2D, t->id);
+                    glGenerateMipmap_(GL_TEXTURE_2D);
+
+                    surface->hideall(true);
+                }
+
+                t->last = delay > 1 ? lastmillis - (elapsed % delay) : lastmillis;
+                t->rendered = true;
+            }
+        });
+
+        if(found)
+        {
+            curtextscale = oldtextscale;
+            drawtex = olddrawtex;
+            hudw = oldhudw;
+            hudh = oldhudh;
+            glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
+            glViewport(0, 0, hudw, hudh);
+        }
     }
 
     void mousetrack(float dx, float dy)
@@ -6501,6 +6485,7 @@ namespace UI
             if(surface->type == SURFACE_PROGRESS || !w->mapdef) continue;
             surface->hide(w);
             surface->windows.remove(w->name);
+            delete w;
         }));
 
         loopvrev(dynuis)
@@ -6509,5 +6494,142 @@ namespace UI
             if(!d->mapdef) continue;
             dynuis.remove(i);
         }
+    }
+
+    void build(int stype)
+    {
+        if(stype < 0 || stype >= SURFACE_MAX || !surfaces[stype] || surfaces[stype]->standalone) return;
+        switch(stype)
+        {
+            case SURFACE_MAIN:
+                if(uihidden) return;
+                break;
+            case SURFACE_PROGRESS:
+                if(!progressing) return;
+                showui("default", SURFACE_PROGRESS);
+                break;
+            default: break;
+        }
+
+        float oldtextscale = curtextscale;
+        DOSURFACE(stype,
+        {
+            if(surface->type == SURFACE_MAIN) checkmapuis();
+
+            curtextscale = 1;
+            surface->cursortype = CURSOR_DEFAULT;
+            surface->lockcursor = false;
+            surface->mousetracking = false;
+            surface->lockscroll = false;
+
+            pushfont();
+            if(surface->type == SURFACE_MAIN) readyeditors();
+
+            surface->setstate(STATE_HOVER, cursorx, cursory, surface->childstate&STATE_HOLD_MASK);
+            if(surface->childstate&STATE_HOLD) surface->setstate(STATE_HOLD, cursorx, cursory, STATE_HOLD, SETSTATE_ANY);
+            if(surface->childstate&STATE_ALT_HOLD) surface->setstate(STATE_ALT_HOLD, cursorx, cursory, STATE_ALT_HOLD, SETSTATE_ANY);
+            if(surface->childstate&STATE_ESC_HOLD) surface->setstate(STATE_ESC_HOLD, cursorx, cursory, STATE_ESC_HOLD, SETSTATE_ANY);
+
+            calctextscale();
+
+            if(surface->type == SURFACE_MAIN && *uiprecmd) execute(uiprecmd);
+            surface->build();
+            if(surface->type == SURFACE_MAIN && *uipostcmd) execute(uipostcmd);
+
+            if(inputsteal && !inputsteal->isfocus())
+                inputsteal = NULL;
+
+            if(!surface->mousetracking) surface->mousetrackvec = vec2(0, 0);
+
+            if(surface->type == SURFACE_MAIN) flusheditors();
+            popfont();
+            curtextscale = oldtextscale;
+        });
+    }
+
+    void setup()
+    {
+        loopi(SURFACE_MAX)
+        {
+            surfaces[i] = new Surface;
+            surfaces[i]->type = i;
+            switch(i)
+            {
+                case SURFACE_COMPOSITE:
+                    surfaces[i]->standalone = true;   // fall-through
+                case SURFACE_PROGRESS:
+                    surfaces[i]->interactive = false; // fall-through
+                default: break;
+            }
+        }
+        inputsteal = NULL;
+    }
+
+    void cleanup()
+    {
+        dynuis.setsize(0);
+        loopi(SURFACE_MAX)
+        {
+            surface = surfaces[i];
+            surface->hideall(true);
+            surface->children.setsize(0);
+            enumerate(surface->windows, Window *, w, delete w);
+            surface->windows.clear();
+        }
+        surface = NULL;
+        loopi(SURFACE_MAX) DELETEP(surfaces[i]);
+        inputsteal = NULL;
+    }
+
+    void cleangl()
+    {
+    }
+
+    void update(bool prog)
+    {
+        if(prog) build(SURFACE_PROGRESS);
+        else build(SURFACE_MAIN);
+    }
+
+    void draw(int stype, bool world)
+    {
+        if(stype < 0 || stype >= SURFACE_MAX || !surfaces[stype] || surfaces[stype]->standalone) return;
+        switch(stype)
+        {
+            case SURFACE_MAIN:
+                if(uihidden) return;
+                break;
+            case SURFACE_PROGRESS:
+                if(!progressing) return;
+                showui("default", SURFACE_PROGRESS);
+                // fall-through
+            default:
+                if(world) return; // only main surface can render in-world
+                break;
+        }
+
+        float oldtextscale = curtextscale;
+        DOSURFACE(stype,
+        {
+            curtextscale = 1;
+            pushfont();
+            surface->layout();
+            surface->adjustchildren();
+            surface->draw(world);
+            popfont();
+            curtextscale = oldtextscale;
+        });
+    }
+
+    void render(bool prog, bool world)
+    {
+        if(prog)
+        {
+            if(world) return; // nope
+            draw(SURFACE_PROGRESS, false);
+            return;
+        }
+        draw(SURFACE_MAIN, world);
+        if(!world) rendercomp();
     }
 }

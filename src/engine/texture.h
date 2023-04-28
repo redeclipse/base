@@ -574,6 +574,7 @@ struct TextureAnim
     TextureAnim() : delay(0), x(0), y(0), skip(0), count(0), throb(false) {}
 };
 
+extern int texturepause;
 struct Texture
 {
     enum
@@ -594,18 +595,20 @@ struct Texture
 
     char *name, *comp, *args;
     int type, w, h, xs, ys, bpp, tclamp, used, frame, delay, last;
-    bool mipmap, canreduce, throb;
+    bool mipmap, canreduce, throb, rendered;
     vector<GLuint> frames;
-    GLuint id;
+    GLuint id, fbo;
     uchar *alphamask;
 
 
-    Texture() : comp(NULL), args(NULL), used(0), frame(0), delay(0), last(0), throb(false), alphamask(NULL)
+    Texture() : comp(NULL), args(NULL), used(0), frame(0), delay(0), last(0), throb(false), rendered(false), id(0), fbo(0), alphamask(NULL)
     {
         frames.shrink(0);
     }
+
     ~Texture()
     {
+        if(fbo) { glDeleteFramebuffers_(1, &fbo); fbo = 0; }
         DELETEA(comp);
         DELETEA(args);
     }
@@ -629,6 +632,16 @@ struct Texture
         if(!frames.empty())
             return frames[clamp((frames.length()-1)*cur/min(1, total), 0, frames.length()-1)];
         return id;
+    }
+
+    int update(int &d, int mindelay = -1)
+    {
+        if(delay <= 0 || (used < last && texturepause && lastmillis - used >= texturepause)) return -1;
+        int elapsed = lastmillis - last, wait = delay;
+        if(mindelay >= 0 && wait < mindelay) wait = mindelay;
+        if(elapsed < wait) return -1;
+        d = wait;
+        return elapsed;
     }
 };
 extern hashnameset<Texture> textures;

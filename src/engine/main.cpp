@@ -1214,28 +1214,25 @@ int main(int argc, char **argv)
     conoutf("Loading defaults..");
     if(!execfile("config/stdlib.cfg", false)) fatal("Cannot find data files");
     if(!setfont()) fatal("No default font specified");
-
     UI::setup();
-    if(!(notexture = textureload(notexturetex)) || !(blanktexture = textureload(blanktex)))
-        fatal("Could not find core textures");
 
     inbetweenframes = true;
-    progress(0, "Please wait..");
+
+    conoutf("Loading config..");
+    progress(0, "Loading config..");
+    initing = INIT_LOAD;
+    rehash(false);
+    initing = NOT_INITING;
+
+    if(!(notexture = textureload(notexturetex)) || !(blanktexture = textureload(blanktex))) fatal("Could not find core textures");
+    if(shouldload) smartmusic(true, true);
 
     conoutf("Loading world..");
     progress(0, "Loading world..");
     setupwind();
     fx::setup();
     emptymap(0, true, NULL, false);
-
-    conoutf("Loading config..");
-    progress(0, "Loading config..");
-    initing = INIT_LOAD;
-    rehash(false);
-    if(shouldload) smartmusic(true, true);
     mapslots();
-
-    initing = NOT_INITING;
 
     if(shouldload)
     {

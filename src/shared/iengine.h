@@ -540,14 +540,9 @@ namespace UI
 
     extern void closedynui(const char *name, int stype = SURFACE_MAIN);
     extern void cleardynui(const char *name, int stype = SURFACE_MAIN, bool mapdef = false);
-
-    extern void setup();
-    extern void cleanup();
-    extern void cleangl();
     extern void closemapuis(int n);
-    extern void update(bool prog = false);
-    extern void render(bool prog = false, bool world = false);
-    extern bool composite(uint *tex, const char *name, const char *args = NULL, int w = 512, int tclamp = 0, bool mipit = true, bool msg = true);
+
+    extern Texture *composite(const char *name, int tclamp = 0, bool mipit = true, bool msg = true, bool gc = false, Texture *tex = NULL, bool reload = false);
 
     extern void mousetrack(float dx, float dy);
     extern bool cursorlock();
@@ -555,6 +550,12 @@ namespace UI
 
     extern int savemapmenus(stream *h);
     extern void resetmapmenus();
+
+    extern void setup();
+    extern void cleanup();
+    extern void cleangl();
+    extern void update(bool prog = false);
+    extern void render(bool prog = false, bool world = false);
 }
 
 // menus

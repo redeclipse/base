@@ -1198,36 +1198,23 @@ void create3dtexture(int tnum, int w, int h, int d, const void *pixels, int tcla
 hashnameset<Texture> textures;
 Texture *notexture = NULL, *blanktexture = NULL; // used as default, ensured to be loaded
 
-VAR(IDF_PERSIST, compositeuprate, 0, 33, VAR_MAX);
 VAR(IDF_PERSIST, texturepause, 0, 30000, VAR_MAX);
-
-static void updatetexture(Texture *t)
-{
-    int elapsed = lastmillis - t->last, delay = t->delay;
-    if(t->type&Texture::COMPOSITE && delay < compositeuprate) delay = compositeuprate;
-    if(elapsed < delay) return;
-
-    if(t->type&Texture::COMPOSITE)
-    {
-        if(!UI::composite(&t->id, t->comp, t->args, t->w, t->tclamp, t->mipmap, false) || !t->id)
-            return;
-    }
-    else if(t->frames.length() > 1)
-    {
-        int animlen = t->throb ? (t->frames.length()-1)*2 : t->frames.length();
-        t->frame += elapsed/t->delay;
-        t->frame %= animlen;
-        int frame = t->throb && t->frame >= t->frames.length() ? animlen-t->frame : t->frame;
-        t->id = t->frames.inrange(frame) ? t->frames[frame] : 0;
-    }
-    else return;
-    t->last = delay > 1 ? lastmillis-(elapsed%delay) : lastmillis;
-}
-
 
 void updatetextures()
 {
-    enumerate(textures, Texture, t, if(t.delay > 0 && t.used >= t.last && (!texturepause || lastmillis-t.used < texturepause)) updatetexture(&t));
+    enumerate(textures, Texture, t,
+    {
+        if(t.type&Texture::COMPOSITE || t.frames.length() <= 1) continue;
+        int delay = 0;
+        int elapsed = t.update(delay);
+        if(elapsed < 0) continue;
+        int animlen = t.throb ? (t.frames.length() - 1) * 2 : t.frames.length();
+        t.frame += elapsed / t.delay;
+        t.frame %= animlen;
+        int frame = t.throb && t.frame >= t.frames.length() ? animlen-t.frame : t.frame;
+        t.id = t.frames.inrange(frame) ? t.frames[frame] : 0;
+        t.last = delay > 1 ? lastmillis - (elapsed % delay) : lastmillis;
+    });
 }
 
 void preloadtextures(uint flags)
@@ -1395,6 +1382,7 @@ static Texture *newtexture(Texture *t, const char *rname, ImageData &s, int tcla
     }
     t->id = t->frames.length() ? t->frames[0] : 0;
     t->used = t->last = lastmillis;
+    t->rendered = true;
     return t;
 }
 
@@ -1889,90 +1877,9 @@ Texture *textureloaded(const char *name)
     return textures.access(tname);
 }
 
-extern void reloadcomp();
-#define COMPOSITESIZE (1<<9)
-VARF(IDF_PERSIST, compositesize, 1<<1, COMPOSITESIZE, 1<<12, reloadcomp());
-
-static Texture *texturecomp(const char *name, int tclamp = 0, bool mipit = true, bool msg = true, bool gc = false, Texture *tex = NULL)
-{
-    if(!name || !*name) return notexture;
-
-    Texture *t = tex ? NULL : textures.access(name);
-    if(t)
-    {
-        // Strip GC flag with gc=false
-        if(!gc && t->type&Texture::GC) t->type &= ~Texture::GC;
-        return t;
-    }
-
-    vector<char *> list;
-    explodelist(&name[1], list, 4); // name delay args size
-    if(list.empty()) // need at least the name
-    {
-        list.deletearrays();
-        if(msg) conoutf("\frCould not composite texture: %s", name);
-        return notexture;
-    }
-
-    char *n = list[0], *a = list.length() >= 3 ? list[2] : NULL;
-    float sw = list.length() >= 4 ? parsefloat(list[3]) : 1.f;
-    int w = sw >= 0 ? int(sw * compositesize) : int(0 - sw), delay = list.length() >= 2 ? max(atoi(list[1]), 0) : 0;
-    if(w <= 0) w = compositesize;
-    else if(w < 1<<1) w = 1<<1;
-
-    GLuint texid = 0;
-    if(!UI::composite(&texid, n, a, w, tclamp, mipit, msg) || !texid)
-    {
-        if(msg) conoutf("\frFailed to composite texture: %s [%d]", name, texid);
-        list.deletearrays();
-        return notexture;
-    }
-
-    if(tex)
-    {
-        t = tex;
-        if(t->id) glDeleteTextures(1, &t->id);
-    }
-    else
-    {
-        char *key = newstring(name);
-        t = &textures[key];
-        t->name = key;
-        t->comp = newstring(n);
-        t->args = a ? newstring(a) : NULL;
-    }
-    t->type = Texture::IMAGE | Texture::COMPOSITE | Texture::ALPHA;
-    t->tclamp = tclamp;
-    t->mipmap = mipit;
-    if(gc) t->type |= Texture::GC;
-    if(t->tclamp&0x300) t->type |= Texture::MIRROR;
-    t->w = t->h = w;
-    t->xs = t->ys = sw >= 0 ? int(t->w * (COMPOSITESIZE / float(t->w))) : t->w;
-    t->bpp = 4;
-    t->delay = delay;
-    t->id = texid;
-    t->used = t->last = lastmillis;
-    list.deletearrays();
-    return t;
-}
-
-void reloadcomp()
-{
-    enumerate(textures, Texture, t,
-    {
-        if(!(t.type&Texture::COMPOSITE)) continue;
-        texturecomp(t.name, t.tclamp, t.mipmap, true, t.type&Texture::GC, &t);
-    });
-}
-
-static inline Texture *texturecomp(Slot &slot, Slot::Tex &tex, bool msg = true)
-{
-    return texturecomp(tex.name, 0, true, msg, false);
-}
-
 Texture *textureload(const char *name, int tclamp, bool mipit, bool msg, bool gc)
 {
-    if(name && *name == '!') return texturecomp(name, tclamp, mipit, msg, gc);
+    if(name && *name == '!') return UI::composite(name, tclamp, mipit, msg, gc);
 
     string tname;
     copystring(tname, name);
@@ -3235,7 +3142,7 @@ void Slot::load(int index, Slot::Tex &t)
 {
     if(*t.name == '!')
     {
-        t.t = texturecomp(*this, t, true);
+        t.t = UI::composite(t.name, 0, true, true, false);
         return;
     }
     vector<char> key;
@@ -3620,6 +3527,7 @@ Texture *cubemaploadwildcard(Texture *t, const char *name, bool mipit, bool msg,
         else createtexture(t->frames[0], t->w, t->h, s.data, i ? -1 : 3, mipit ? 2 : 1, component, side.target, s.w, s.h, s.pitch, false, format, true);
     }
     t->id = t->frames.length() ? t->frames[0] : 0;
+    t->rendered = true;
     return t;
 }
 
@@ -3956,7 +3864,7 @@ bool reloadtexture(Texture *t)
         {
             if(t->type&Texture::COMPOSITE)
             {
-                if(!UI::composite(&t->id, t->comp, t->args, t->w, t->tclamp, t->mipmap, true)) return false;
+                if(!UI::composite(t->name, t->tclamp, t->mipmap, true, false, t, true)) return false;
                 break;
             }
             int compress = 0;
