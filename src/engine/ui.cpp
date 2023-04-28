@@ -865,10 +865,10 @@ namespace UI
     #define SWSURFACE(surf, body) \
     { \
         if(surf >= 0) DOSURFACE(surf, body) \
-        else loopk(SURFACE_MAX) if(surfaces[k] && surfaces[k]->interactive) DOSURFACE(k, body) \
+        else loopk(SURFACE_MAX) if(surfaces[k]) DOSURFACE(k, body) \
     }
 
-    #define LOOPSURFACE(body) { loopk(SURFACE_MAX) if(surfaces[k] && surfaces[k]->interactive) DOSURFACE(k, body) }
+    #define LOOPSURFACE(body) { loopk(SURFACE_MAX) if(surfaces[k]) DOSURFACE(k, body) }
 
     const char *windowtype[SURFACE_MAX] = { "Main", "Progress", "Composite" };
     const char *windowaffix[SURFACE_MAX] = { "", "progress", "comp" };
@@ -882,6 +882,7 @@ namespace UI
     };
 
     VAR(IDF_READONLY, uiparam, -1, 0, 1);
+    SVAR(0, uiargs, "");
 
     struct Window : Object
     {
@@ -6212,7 +6213,6 @@ namespace UI
     extern void reloadcomp();
     VARF(IDF_PERSIST, compositesize, 1<<1, COMPOSITESIZE, 1<<12, reloadcomp());
     VAR(IDF_PERSIST, compositeuprate, 0, 33, VAR_MAX);
-    SVAR(0, compositeargs, "");
 
     Texture *composite(const char *name, int tclamp, bool mipit, bool msg, bool gc, Texture *tex, bool reload)
     {
@@ -6323,9 +6323,12 @@ namespace UI
             if(!hastex) surface->texs.add(t);
             list.deletearrays();
 
-            glActiveTexture_(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, id);
-            glGenerateMipmap_(GL_TEXTURE_2D);
+            if(t->mipmap)
+            {
+                glActiveTexture_(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, id);
+                glGenerateMipmap_(GL_TEXTURE_2D);
+            }
 
             glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
             glViewport(0, 0, hudw, hudh);
@@ -6341,89 +6344,6 @@ namespace UI
             if(!(t.type&Texture::COMPOSITE)) continue;
             composite(t.name, t.tclamp, t.mipmap, true, t.type&Texture::GC, &t);
         });
-    }
-
-    void rendercomp()
-    {
-        GLint oldfbo = 0;
-        bool found = false;
-        int olddrawtex = drawtex, oldhudw = hudw, oldhudh = hudh;
-        float oldtextscale = curtextscale;
-
-        DOSURFACE(SURFACE_COMPOSITE,
-        {
-            loopv(surface->texs)
-            {
-                Texture *t = surface->texs[i];
-                int delay = 0;
-                int elapsed = t->update(delay, compositeuprate);
-                if(t->rendered && elapsed < 0) continue;
-
-                if(!found)
-                {
-                    GLERROR;
-                    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &oldfbo);
-                    drawtex = DRAWTEX_COMPOSITE;
-                    found = true;
-                }
-
-                GLERROR;
-                if(!t->fbo) glGenFramebuffers_(1, &t->fbo);
-                glBindFramebuffer_(GL_FRAMEBUFFER, t->fbo);
-                //glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, t->id, 0);
-
-                GLERROR;
-                if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-                {
-                    conoutf("\frFailed rendering composite texture framebuffer: %s [%u / %u]", t->name, t->id, t->fbo);
-                    continue;
-                }
-
-                hudw = hudh = t->w;
-                glViewport(0, 0, hudw, hudh);
-                glClearColor(0, 0, 0, 0);
-                glClear(GL_COLOR_BUFFER_BIT);
-
-                Window *w = surface->windows.find(t->comp, NULL);
-                if(w)
-                {
-                    setsvar("compositeargs", t->args ? t->args : "");
-                    surface->show(w);
-
-                    curtextscale = 1;
-                    pushfont();
-                    calctextscale();
-                    surface->build();
-                    popfont();
-
-                    curtextscale = 1;
-                    pushfont();
-                    surface->layout();
-                    surface->adjustchildren();
-                    surface->draw(false);
-                    popfont();
-
-                    glActiveTexture_(GL_TEXTURE0);
-                    glBindTexture(GL_TEXTURE_2D, t->id);
-                    glGenerateMipmap_(GL_TEXTURE_2D);
-
-                    surface->hideall(true);
-                }
-
-                t->last = delay > 1 ? lastmillis - (elapsed % delay) : lastmillis;
-                t->rendered = true;
-            }
-        });
-
-        if(found)
-        {
-            curtextscale = oldtextscale;
-            drawtex = olddrawtex;
-            hudw = oldhudw;
-            hudh = oldhudh;
-            glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
-            glViewport(0, 0, hudw, hudh);
-        }
     }
 
     void mousetrack(float dx, float dy)
@@ -6630,7 +6550,98 @@ namespace UI
             draw(SURFACE_PROGRESS, false);
             return;
         }
+
         draw(SURFACE_MAIN, world);
-        if(!world) rendercomp();
+        if(world) return;
+
+        GLint oldfbo = 0;
+        bool found = false;
+        int olddrawtex = drawtex, oldhudw = hudw, oldhudh = hudh;
+        float oldtextscale = curtextscale;
+
+        LOOPSURFACE(loopv(surface->texs)
+        {
+            Texture *t = surface->texs[i];
+            if(t->rendering) continue; // avoid infinite stack
+            int delay = 0;
+            int elapsed = t->update(delay, compositeuprate);
+            if(t->rendered && elapsed < 0) continue;
+
+            if(!found)
+            {
+                GLERROR;
+                glGetIntegerv(GL_FRAMEBUFFER_BINDING, &oldfbo);
+                drawtex = DRAWTEX_COMPOSITE;
+                found = true;
+            }
+
+            t->rendering = true;
+
+            GLERROR;
+            if(!t->fbo) glGenFramebuffers_(1, &t->fbo);
+            glBindFramebuffer_(GL_FRAMEBUFFER, t->fbo);
+            if(!t->id)
+            {
+                glGenTextures(1, &t->id);
+                createtexture(t->id, t->w, t->w, NULL, t->tclamp, t->mipmap ? 3 : 0, GL_RGBA, GL_TEXTURE_2D);
+                glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, t->id, 0);
+            }
+
+            GLERROR;
+            if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+            {
+                conoutf("\frFailed rendering composite texture framebuffer: %s [%u / %u]", t->name, t->id, t->fbo);
+                t->rendering = false;
+                continue;
+            }
+
+            hudw = hudh = t->w;
+            glViewport(0, 0, hudw, hudh);
+            glClearColor(0, 0, 0, 0);
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            Window *w = surface->windows.find(t->comp, NULL);
+            if(w)
+            {
+                setsvar("uiargs", t->args ? t->args : "");
+                surface->show(w);
+
+                curtextscale = 1;
+                pushfont();
+                calctextscale();
+                surface->build();
+                popfont();
+
+                curtextscale = 1;
+                pushfont();
+                surface->layout();
+                surface->adjustchildren();
+                surface->draw(false);
+                popfont();
+
+                if(t->mipmap)
+                {
+                    glActiveTexture_(GL_TEXTURE0);
+                    glBindTexture(GL_TEXTURE_2D, t->id);
+                    glGenerateMipmap_(GL_TEXTURE_2D);
+                }
+
+                surface->hide(w);
+            }
+
+            t->last = delay > 1 ? lastmillis - (elapsed % delay) : lastmillis;
+            t->rendering = false;
+            t->rendered = true;
+        });
+
+        if(found)
+        {
+            curtextscale = oldtextscale;
+            drawtex = olddrawtex;
+            hudw = oldhudw;
+            hudh = oldhudh;
+            glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
+            glViewport(0, 0, hudw, hudh);
+        }
     }
 }
