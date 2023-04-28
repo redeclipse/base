@@ -848,28 +848,25 @@ namespace UI
     }
 
     Surface *surface = NULL, *surfaces[SURFACE_MAX] = { NULL, NULL, NULL };
-    bool issurface(int stype) { return stype >= 0 && stype < SURFACE_MAX; }
 
-    #define DOSURFACE(surf, body, failure, success) \
+    #define DOSURFACE(surf, body) \
     { \
-        if(!issurface(surf) || !surfaces[surf]) { failure; } \
-        Surface *oldsurface = surface; \
-        surface = surfaces[surf]; \
-        body; \
-        surface = oldsurface; \
-        success; \
+        if(surf >= 0 && surf < SURFACE_MAX && surfaces[surf])\
+        { \
+            Surface *oldsurface = surface; \
+            surface = surfaces[surf]; \
+            body; \
+            surface = oldsurface; \
+        } \
     }
 
-    #define SWSURFACE(surf, body, failure, success) \
+    #define SWSURFACE(surf, body) \
     { \
-        if(surf >= 0) DOSURFACE(surf, body, failure, success) \
-        else loopk(SURFACE_MAX) if(surfaces[k] && surfaces[k]->interactive) DOSURFACE(k, body, failure, success) \
+        if(surf >= 0) DOSURFACE(surf, body) \
+        else loopk(SURFACE_MAX) if(surfaces[k] && surfaces[k]->interactive) DOSURFACE(k, body) \
     }
 
-    #define LOOPSURFACE(body) \
-    { \
-        loopk(SURFACE_MAX) if(surfaces[k] && surfaces[k]->interactive) DOSURFACE(k, body, continue, ) \
-    }
+    #define LOOPSURFACE(body) { loopk(SURFACE_MAX) if(surfaces[k] && surfaces[k]->interactive) DOSURFACE(k, body) }
 
     const char *windowtype[SURFACE_MAX] = { "Main", "Progress", "Composite" };
     const char *windowaffix[SURFACE_MAX] = { "", "prog", "comp" };
@@ -1598,7 +1595,7 @@ namespace UI
 
     bool newui(int stype, const char *name, const char *contents, const char *onshow, const char *onhide, int flags, bool mapdef = false, const char *dyn = NULL, int param = -1)
     {
-        if(!name || !*name || !contents || !*contents || !issurface(stype) || !surfaces[stype]) return false;
+        if(!name || !*name || !contents || !*contents || stype < 0 || stype >= SURFACE_MAX || !surfaces[stype]) return false;
 
         if(mapdef && !(identflags&IDF_MAP) && !editmode)
         {
@@ -1645,29 +1642,23 @@ namespace UI
 
     void closedynui(const char *name, int stype)
     {
-        SWSURFACE(stype,
+        SWSURFACE(stype, enumerate(surface->windows, Window *, w,
         {
-            enumerate(surface->windows, Window *, w,
-            {
-                if(!w->dyn || !*w->dyn || (name && *name && strcmp(w->dyn, name))) continue;
-                surface->hide(w);
-            });
-        }, return, return);
+            if(!w->dyn || !*w->dyn || (name && *name && strcmp(w->dyn, name))) continue;
+            surface->hide(w);
+        }));
     }
 
     ICOMMAND(0, closedynui, "si", (char *name, int *stype), closedynui(name, *stype));
 
     void cleardynui(const char *name, int stype, bool mapdef)
     {
-        SWSURFACE(stype,
+        SWSURFACE(stype, enumerate(surface->windows, Window *, w,
         {
-            enumerate(surface->windows, Window *, w,
-            {
-                if(!w->dyn || !*w->dyn || (name && *name && strcmp(w->dyn, name)) || w->mapdef != mapdef) continue;
-                surface->hide(w);
-                surface->windows.remove(w->name);
-            });
-        }, return, return);
+            if(!w->dyn || !*w->dyn || (name && *name && strcmp(w->dyn, name)) || w->mapdef != mapdef) continue;
+            surface->hide(w);
+            surface->windows.remove(w->name);
+        }));
     }
 
     ICOMMAND(0, cleardynui, "si", (char *name, int *stype), cleardynui(name, clamp(*stype, 0, int(SURFACE_MAX)-1), (identflags&IDF_MAP) != 0));
@@ -1757,20 +1748,24 @@ namespace UI
 
     bool showui(const char *name, int stype, int param, const vec &origin, float yaw, float pitch, float s)
     {
+        bool ret = false;
         const char *ref = dynuiref(name, param);
         DOSURFACE(stype,
+        {
             Window *w = surface->windows.find(ref, NULL);
             if(!w && param >= 0 && dynuiexec(name, param)) w = surface->windows.find(ref, NULL);
-            bool ret = w && surface->show(w, origin, yaw, pitch, s);
-        , return false, return ret);
+            ret = w && surface->show(w, origin, yaw, pitch, s);
+        });
+        return ret;
     }
 
     bool setui(const char *name, int stype, int param, const vec &origin, float yaw, float pitch, float s)
     {
+        bool ret = false;
         const char *ref = dynuiref(name, param);
         DOSURFACE(stype,
+        {
             Window *w = surface->windows.find(ref, NULL);
-            bool ret = false;
             if(w)
             {
                 w->origin = origin;
@@ -1779,21 +1774,24 @@ namespace UI
                 w->scale = s;
                 ret = true;
             }
-        , return false, return ret);
+        });
+        return ret;
     }
 
     bool hideui(const char *name, int stype, int param, bool world)
     {
+        bool ret = false;
         const char *ref = dynuiref(name, param);
         DOSURFACE(stype,
-            bool ret = false;
+        {
             if(!ref || !*ref) ret = surface->hideall(false, true) > 0;
             else
             {
                 Window *w = surface->windows.find(ref, NULL);
                 if(w && (!world || w->inworld)) ret = surface->hide(w);
             }
-        , return false, return ret);
+        });
+        return ret;
     }
 
     bool toggleui(const char *name, int stype, int param, const vec &origin, float yaw, float pitch, float s)
@@ -1805,18 +1803,24 @@ namespace UI
 
     int openui(const char *name, int stype)
     {
+        int ret = 0;
         DOSURFACE(stype,
+        {
             defformatstring(cmd, "%s \"%s\" %d", uiopencmd, name ? name : "",  stype);
-            int ret = execute(cmd);
-        , return 0, return ret);
+            ret = execute(cmd);
+        });
+        return ret;
     }
 
     int closeui(const char *name, int stype)
     {
+        int ret = 0;
         DOSURFACE(stype,
+        {
             defformatstring(cmd, "%s \"%s\" %d", uiclosecmd, name ? name : "", stype);
-            int ret = execute(cmd);
-        , return 0, return ret);
+            ret = execute(cmd);
+        });
+        return ret;
     }
 
     void hideall(bool world)
@@ -1838,16 +1842,18 @@ namespace UI
 
     bool uivisible(const char *name, int stype, int param)
     {
+        bool ret = false;
         const char *ref = dynuiref(name, param);
         DOSURFACE(stype,
-            bool ret = false;
+        {
             if(!ref || !*ref) ret = surface->children.length() > 0;
             else
             {
                 Window *w = surface->windows.find(ref, NULL);
                 ret = w && surface->children.find(w) >= 0;
             }
-        , return false, return ret);
+        });
+        return ret;
     }
 
     ICOMMAND(0, showui, "sibggggfg", (char *name, int *surface, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *s), intret(showui(name, *surface, *param, vec(*x, *y, *z), *yaw, *pitch, *s > 0 ? *s : 1.f) ? 1 : 0));
@@ -6072,21 +6078,29 @@ namespace UI
 
     int hasinput(bool cursor, int stype)
     {
-        SWSURFACE(stype, int ret = surface->allowinput(cursor), return 0, if(ret) return ret);
-        return 0;
+        int ret = 0;
+        SWSURFACE(stype,
+        {
+            int val = surface->allowinput(cursor);
+            ret = max(val, ret);
+        });
+        return ret;
     }
 
     bool hasmenu(bool pass, int stype)
     {
-        SWSURFACE(stype, bool ret = surface->hasmenu(pass), return 0, if(ret) return ret);
-        return false;
+        bool ret = false;
+        SWSURFACE(stype, if(surface->hasmenu(pass)) ret = true);
+        return ret;
     }
 
     bool keypress(int code, bool isdown)
     {
+        bool ret = false;
         DOSURFACE(SURFACE_MAIN,
-            bool ret = false;
+        {
             if(surface->rawkey(code, isdown)) ret = true;
+            else
             {
                 int action = 0;
                 int hold = 0;
@@ -6120,7 +6134,8 @@ namespace UI
                 }
                 if(!ret) ret = surface->key(code, isdown);
             }
-        , return false, return ret);
+        });
+        return ret;
     }
 
     bool textinput(const char *str, int len)
@@ -6230,9 +6245,9 @@ namespace UI
         uitextscale = 1.0f/uitextrows;
     }
 
-    void update(int stype)
+    void build(int stype)
     {
-        if(!issurface(stype) || !surfaces[stype] || surfaces[stype]->standalone) return;
+        if(stype < 0 || stype >= SURFACE_MAX || !surfaces[stype] || surfaces[stype]->standalone) return;
         switch(stype)
         {
             case SURFACE_MAIN:
@@ -6247,6 +6262,7 @@ namespace UI
 
         float oldtextscale = curtextscale;
         DOSURFACE(stype,
+        {
             if(surface->type == SURFACE_MAIN) checkmapuis();
 
             curtextscale = 1;
@@ -6265,9 +6281,9 @@ namespace UI
 
             calctextscale();
 
-            if(*uiprecmd) execute(uiprecmd);
+            if(surface->type == SURFACE_MAIN && *uiprecmd) execute(uiprecmd);
             surface->build();
-            if(*uipostcmd) execute(uipostcmd);
+            if(surface->type == SURFACE_MAIN && *uipostcmd) execute(uipostcmd);
 
             if(inputsteal && !inputsteal->isfocus())
                 inputsteal = NULL;
@@ -6277,12 +6293,22 @@ namespace UI
             if(surface->type == SURFACE_MAIN) flusheditors();
             popfont();
             curtextscale = oldtextscale;
-        , return, return);
+        });
     }
 
-    void render(bool world, int stype)
+    void update(bool prog)
     {
-        if(!issurface(stype) || !surfaces[stype] || surfaces[stype]->standalone) return;
+        if(prog) build(SURFACE_PROGRESS);
+        else
+        {
+            build(SURFACE_MAIN);
+            build(SURFACE_COMPOSITE);
+        }
+    }
+
+    void draw(int stype, bool world)
+    {
+        if(stype < 0 || stype >= SURFACE_MAX || !surfaces[stype] || surfaces[stype]->standalone) return;
         switch(stype)
         {
             case SURFACE_MAIN:
@@ -6298,6 +6324,7 @@ namespace UI
 
         float oldtextscale = curtextscale;
         DOSURFACE(stype,
+        {
             curtextscale = 1;
             pushfont();
             surface->layout();
@@ -6305,7 +6332,21 @@ namespace UI
             surface->draw(world);
             popfont();
             curtextscale = oldtextscale;
-        , return, return);
+        });
+    }
+
+    void render(bool prog, bool world)
+    {
+        if(prog)
+        {
+            if(world) return; // nope
+            draw(SURFACE_PROGRESS, false);
+        }
+        else
+        {
+            draw(SURFACE_MAIN, world);
+            draw(SURFACE_COMPOSITE, false);
+        }
     }
 
     void cleancomposite()
@@ -6355,14 +6396,9 @@ namespace UI
         setsvar("uicompargs", args ? args : "");
         showui(name, SURFACE_COMPOSITE);
 
-        #define COMPOSITECLEAN \
-            drawtex = olddrawtex; \
-            hudw = oldhudw; \
-            hudh = oldhudh; \
-            glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo); \
-            glViewport(0, 0, hudw, hudh);
-
+        bool drawn = false;
         DOSURFACE(SURFACE_COMPOSITE,
+        {
             glViewport(0, 0, hudw, hudh);
             glClearColor(0, 0, 0, 0);
             glClear(GL_COLOR_BUFFER_BIT);
@@ -6386,14 +6422,17 @@ namespace UI
 
             curtextscale = oldtextscale;
             surface->hideall(true);
-        ,
-            if(msg) conoutf("\frFailed to find composite UI surface!");
-            COMPOSITECLEAN;
-            return false;
-        ,
-            COMPOSITECLEAN;
-            return true;
-        );
+            drawn = true;
+        });
+
+        drawtex = olddrawtex;
+        hudw = oldhudw;
+        hudh = oldhudh;
+        glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
+        glViewport(0, 0, hudw, hudh);
+
+        if(!drawn && msg) conoutf("\frFailed to find composite UI surface!");
+        return drawn;
     }
 
     void cleangl()
