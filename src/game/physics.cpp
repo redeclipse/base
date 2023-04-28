@@ -1544,7 +1544,7 @@ namespace physics
     void drawenvlayers(bool skyplane, bool shadowpass)
     {
         if(skyplane || shadowpass || !showphyslayers || game::player1->state != CS_EDITING) return;
-        drawenvlayer(blanktexture, getdeathplane(), bvec::fromcolor(colourdarkgrey).mul(physlayerscale), physlayerblend, physlayersubdiv, physlayerfade);
+        drawenvlayer((blanktexture ? blanktexture : notexture), getdeathplane(), bvec::fromcolor(colourdarkgrey).mul(physlayerscale), physlayerblend, physlayersubdiv, physlayerfade);
 
     }
 

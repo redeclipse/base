@@ -1564,7 +1564,7 @@ FVAR(0, lightintensity, 0, 1, 10);
 
 static void changeslottmus(renderstate &cur, int pass, Slot &slot, VSlot &vslot)
 {
-    Texture *diffuse = blankgeom ? blanktexture : (!slot.sts.empty() ? slot.sts[0].t : notexture);
+    Texture *diffuse = blankgeom ? (blanktexture ? blanktexture : notexture) : (!slot.sts.empty() ? slot.sts[0].t : notexture);
 
     if(pass==RENDERPASS_GBUFFER || pass==RENDERPASS_RSM || pass==RENDERPASS_SMALPHA)
     {
