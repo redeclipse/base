@@ -796,6 +796,48 @@ namespace UI
     ICOMMAND(0, uigroup, "e", (uint *children),
         BUILD(Object, o, o->setup(), children));
 
+    #define UIOBJCMD(vname, valtype, args, body) \
+        ICOMMAND(0, ui##vname, valtype, args, { \
+            if(buildparent) \
+            { \
+                Object *o = buildparent; \
+                body; \
+            } \
+            else conoutf("Warning: No object available for ui%s", #vname); \
+        });
+
+    #define UIOBJARGB(vname) \
+        UIOBJCMD(vname, "iN$", (int *val, int *numargs, ident *id), { \
+            if(*numargs > 0) o->vname = *val!=0; \
+            else if(*numargs < 0) intret(o->vname ? 1 : 0); \
+            else printvar(id, o->vname ? 1 : 0); \
+        });
+
+    #define UIOBJARGK(vname, valtype, type, cmin, cmax, valdef) \
+        UIOBJCMD(vname, valtype "N$", (type *val, int *numargs, ident *id), { \
+            if(*numargs > 0) o->vname = type(clamp((valdef), cmin, cmax)); \
+            else if(*numargs < 0) type##ret(o->vname); \
+            else print##type##var(id, o->vname); \
+        });
+
+    #define UIOBJARGSCALED(vname, valtype, type, cmin, cmax) \
+        UIOBJCMD(vname, valtype "N$", (type *val, int *numargs, ident *id), { \
+            if(*numargs > 0) o->vname = type(clamp(*val, cmin, cmax) * uiscale); \
+            else if(*numargs < 0) type##ret(o->vname * uiscale); \
+            else print##type##var(id, o->vname * uiscale); \
+        });
+
+    #define UIOBJARG(vname, valtype, type, cmin, cmax) \
+        UIOBJCMD(vname, valtype "N$", (type *val, int *numargs, ident *id), { \
+            if(*numargs > 0) o->vname = type(clamp(*val, cmin, cmax)); \
+            else if(*numargs < 0) type##ret(o->vname); \
+            else print##type##var(id, o->vname); \
+        });
+
+    UIOBJARGB(overridepos);
+    UIOBJCMD(setpos, "ff", (float *xpos, float *ypos), o->setpos(*xpos, *ypos));
+    UIOBJCMD(resetpos, "", (), o->resetpos());
+
     static inline void stopdrawing()
     {
         if(drawing)
@@ -1275,10 +1317,6 @@ namespace UI
     UIWINARGV(origin);
     UIWINARG(yaw, "f", float, -1, 360);
     UIWINARG(pitch, "f", float, -91, 91);
-
-    UIWINARGB(overridepos);
-    ICOMMAND(0, uisetpos, "ff", (float *xpos, float *ypos), { if(window) { window->setpos(*xpos, *ypos); } });
-    ICOMMAND(0, uiresetpos, "", (), { if(window) { window->resetpos(); } });
 
     ICOMMAND(0, uihitx, "N$", (int *numargs, ident *id), if(*numargs != 0) floatret(window ? window->hitx : -1.f); else printfvar(id, window ? window->hitx : -1.f));
     ICOMMAND(0, uihity, "N$", (int *numargs, ident *id), if(*numargs != 0) floatret(window ? window->hity : -1.f); else printfvar(id, window ? window->hity : -1.f));
@@ -2614,6 +2652,14 @@ namespace UI
 
     struct Line : Target
     {
+        float width;
+
+        void setup(float minw_ = 0, float minh_ = 0, const Color &color_ = Color(colourwhite), float width_ = 1)
+        {
+            Target::setup(minw_, minh_, color_);
+            width = width_;
+        }
+
         static const char *typestr() { return "#Line"; }
         const char *gettype() const { return typestr(); }
 
@@ -2628,11 +2674,13 @@ namespace UI
             changedraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
             if(type==MODULATE) modblend(); else resetblend();
 
+            if(width != 1) glLineWidth(width);
             colors[0].init();
             gle::begin(GL_LINES);
             gle::attribf(sx,   sy);
             gle::attribf(sx+w, sy+h);
             gle::end();
+            if(width != 1) glLineWidth(1);
 
             Object::draw(sx, sy);
         }
@@ -2641,8 +2689,18 @@ namespace UI
     ICOMMAND(0, uiline, "iffe", (int *c, float *minw, float *minh, uint *children),
         BUILD(Line, o, o->setup(*minw*uiscale, *minh*uiscale, Color(*c)), children));
 
+    UIARG(Line, line, width, "f", float, FVAR_NONZERO, FVAR_MAX);
+
     struct Outline : Target
     {
+        float width;
+
+        void setup(float minw_ = 0, float minh_ = 0, const Color &color_ = Color(colourwhite), float width_ = 1)
+        {
+            Target::setup(minw_, minh_, color_);
+            width = width_;
+        }
+
         static const char *typestr() { return "#Outline"; }
         const char *gettype() const { return typestr(); }
 
@@ -2657,6 +2715,7 @@ namespace UI
             changedraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
             if(type==MODULATE) modblend(); else resetblend();
 
+            if(width != 1) glLineWidth(width);
             colors[0].init();
             gle::begin(GL_LINE_LOOP);
             gle::attribf(sx+(w*getcoord(FC_TL, 0)), sy+(h*getcoord(FC_TL, 1))); // 0
@@ -2664,10 +2723,12 @@ namespace UI
             gle::attribf(sx+(w*getcoord(FC_BR, 0)), sy+(h*getcoord(FC_BR, 1))); // 2
             gle::attribf(sx+(w*getcoord(FC_BL, 0)), sy+(h*getcoord(FC_BL, 1))); // 3
             gle::end();
+            if(width != 1) glLineWidth(1);
 
             Object::draw(sx, sy);
         }
     };
+    UIARG(Outline, outline, width, "f", float, FVAR_NONZERO, FVAR_MAX);
 
     ICOMMAND(0, uioutline, "iffe", (int *c, float *minw, float *minh, uint *children),
         BUILD(Outline, o, o->setup(*minw*uiscale, *minh*uiscale, Color(*c)), children));
