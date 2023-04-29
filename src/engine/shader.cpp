@@ -1138,7 +1138,7 @@ void resetmapshaders()
 int savemapshaders(stream *h)
 {
     int mapshaders = 0;
-    enumerate(shaders, Shader, s, if(s.mapdef)
+    enumerate(shaders, Shader, s, if(s.mapdef && !(s.type&SHADER_INVALID))
     {
         h->printf("mapshader %d %s [%s] [%s]\n\n", s.type, s.name, s.vsstr, s.psstr);
         mapshaders++;

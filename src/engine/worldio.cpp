@@ -640,7 +640,8 @@ void save_config(char *mname, bool forcesave = false, int backuprev = -1)
                     if(id.flags&IDF_META) h->printf("mapmeta %s [%s]\n", escapeid(id), str);
                     else h->printf("mapalias %s [%s]\n", escapeid(id), str);
                 }
-                else h->printf("%s = %s\n", escapeid(id), escapestring(str));
+                else if(id.flags&IDF_META) h->printf("mapmeta %s %s\n", escapeid(id), escapestring(str));
+                else h->printf("mapalias %s %s\n", escapeid(id), escapestring(str));
             }
         }
     });
