@@ -6,7 +6,7 @@ VAR(0, showselboxgrid, 0, 0, 1);
 
 VAR(IDF_PERSIST, showselui, 0, 2, 2);
 FVAR(IDF_PERSIST, showseluiyaw, -1, -1, 360);
-FVAR(IDF_PERSIST, showseluipitch, -91, -1, 91);
+FVAR(IDF_PERSIST, showseluipitch, -181, -1, 181);
 FVAR(IDF_PERSIST, showseluiscale, FVAR_NONZERO, 1, FVAR_MAX);
 FVAR(IDF_PERSIST, showseluidetentyaw, 0, 90, 180);
 FVAR(IDF_PERSIST, showseluidetentpitch, 0, 90, 90);

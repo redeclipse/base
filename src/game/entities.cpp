@@ -29,7 +29,7 @@ namespace entities
 
     VAR(IDF_PERSIST, showentinfoui, 0, 2, 4); // 0 = off, 1 = only first, 2 = only selected, 3 = always when editing, 4 = always in editmode
     FVAR(IDF_PERSIST, showentinfouiyaw, -1, -1, 360);
-    FVAR(IDF_PERSIST, showentinfouipitch, -91, 0, 91);
+    FVAR(IDF_PERSIST, showentinfouipitch, -181, 0, 181);
     FVAR(IDF_PERSIST, showentinfouiscale, FVAR_NONZERO, 1, FVAR_MAX);
     FVAR(IDF_PERSIST, showentinfouidetentyaw, 0, 0, 180);
     FVAR(IDF_PERSIST, showentinfouidetentpitch, 0, 0, 90);
