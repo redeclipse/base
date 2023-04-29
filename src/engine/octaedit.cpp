@@ -5,7 +5,10 @@ VAR(0, showcursorgrid, 0, 0, 1);
 VAR(0, showselboxgrid, 0, 0, 1);
 
 VAR(IDF_PERSIST, showselui, 0, 1, 2);
+FVAR(IDF_PERSIST, showseluiyaw, -1, -1, 360);
+FVAR(IDF_PERSIST, showseluipitch, -91, 0, 91);
 FVAR(IDF_PERSIST, showseluiscale, FVAR_NONZERO, 1, FVAR_MAX);
+FVAR(IDF_PERSIST, showseluidetent, 0, 90, 180);
 
 bool boxoutline = false;
 
@@ -824,8 +827,8 @@ void rendereditcursor()
             if(hasselui)
             {
                 if(UI::uivisible("selection", UI::SURFACE_MAIN, -1))
-                    UI::setui("selection", UI::SURFACE_MAIN, -1, pos, -1, -91, showseluiscale);
-                else UI::showui("selection", UI::SURFACE_MAIN, -1, pos, -1, -91, showseluiscale);
+                    UI::setui("selection", UI::SURFACE_MAIN, -1, pos, -1, showseluipitch, showseluiscale, showseluidetent);
+                else UI::showui("selection", UI::SURFACE_MAIN, -1, pos, -1, showseluipitch, showseluiscale, showseluidetent);
             }
         }
     }

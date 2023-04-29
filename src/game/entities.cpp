@@ -28,9 +28,10 @@ namespace entities
     FVAR(IDF_PERSIST, showentunavailable, 0, 0.35f, 1);
 
     VAR(IDF_PERSIST, showentinfoui, 0, 2, 4); // 0 = off, 1 = only first, 2 = only selected, 3 = always when editing, 4 = always in editmode
-    FVAR(IDF_PERSIST, showentinfouiyaw, 0, -1, 360);
-    FVAR(IDF_PERSIST, showentinfouipitch, -90, 0, 90);
+    FVAR(IDF_PERSIST, showentinfouiyaw, -1, -1, 360);
+    FVAR(IDF_PERSIST, showentinfouipitch, -91, 0, 91);
     FVAR(IDF_PERSIST, showentinfouiscale, FVAR_NONZERO, 1, FVAR_MAX);
+    FVAR(IDF_PERSIST, showentinfouidetent, 0, 0, 180);
 
     FVAR(IDF_PERSIST, entselsize, 0, 0.5f, FVAR_MAX);
     FVAR(IDF_PERSIST, entselsizetop, 0, 1, FVAR_MAX);
@@ -2137,10 +2138,12 @@ namespace entities
                 while(e.attrs[3] > 91) e.attrs[3] -= 182; // has -91/91 for rotating effect
                 if(e.attrs[4] < 0) e.attrs[4] = 0; // radius, limit
                 if(e.attrs[5] < 0) e.attrs[5] = 0; // scale, limit
-                while(e.attrs[6] < 0) e.attrs[6] += 0xFFFFFF + 1; // colour, clamp
-                while(e.attrs[6] > 0xFFFFFF) e.attrs[6] -= 0xFFFFFF + 1; // colour, clamp
-                while(e.attrs[7] < 0) e.attrs[7] += 101; // blend, clamp
-                while(e.attrs[7] > 100) e.attrs[7] -= 101; // blend, clamp
+                while(e.attrs[6] < 0) e.attrs[2] += 181; // detent, clamp
+                while(e.attrs[6] > 180) e.attrs[2] -= 181; // detent, clamp
+                while(e.attrs[7] < 0) e.attrs[7] += 0xFFFFFF + 1; // colour, clamp
+                while(e.attrs[7] > 0xFFFFFF) e.attrs[7] -= 0xFFFFFF + 1; // colour, clamp
+                while(e.attrs[8] < 0) e.attrs[8] += 101; // blend, clamp
+                while(e.attrs[8] > 100) e.attrs[8] -= 101; // blend, clamp
                 break;
             }
             default: break;
@@ -3412,8 +3415,8 @@ namespace entities
                         vec pos = vec(e.o).addz(entinfospace);
                         if(enttype[e.type].usetype == EU_ITEM) pos.addz(entinfospace);
                         if(UI::uivisible("entinfo", UI::SURFACE_MAIN, v.idx))
-                            UI::setui("entinfo", UI::SURFACE_MAIN, v.idx, pos, showentinfouiyaw, showentinfouipitch, showentinfouiscale);
-                        else UI::showui("entinfo", UI::SURFACE_MAIN, v.idx, pos, showentinfouiyaw, showentinfouipitch, showentinfouiscale);
+                            UI::setui("entinfo", UI::SURFACE_MAIN, v.idx, pos, showentinfouiyaw, showentinfouipitch, showentinfouiscale, showentinfouidetent);
+                        else UI::showui("entinfo", UI::SURFACE_MAIN, v.idx, pos, showentinfouiyaw, showentinfouipitch, showentinfouiscale, showentinfouidetent);
                         hasdynui = found = true;
                     }
                 }
