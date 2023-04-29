@@ -42,9 +42,7 @@ get_image() {
         git clone -b dockerimg https://github.com/redeclipse/deploy.git . --depth 1 || return 1
     fi
 
-    unzip image.tar.zip || return 1
-    docker load -i image.tar || return 1
-    rm image.tar || return 1
+    docker load -i image.tar.gz || return 1
 
     popd
 
