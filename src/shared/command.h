@@ -511,6 +511,7 @@ extern char *limitstring(const char *str, size_t len);
 #define CVAR(flags, name, cur) _CVAR(name, cur, , , flags, 0)
 
 // game world controlling stuff
+#define DOMAP(cond, body) { int _oldflags = identflags; if((cond)) { identflags |= IDF_MAP; body; } else { identflags &= ~IDF_MAP; }; body; identflags = _oldflags; }
 #define WITHMAP(body) { int _oldflags = identflags; identflags |= IDF_MAP; body; identflags = _oldflags; }
 #define RUNMAP(n) { ident *wid = idents.access(n); if(wid && wid->type==ID_ALIAS && wid->flags&IDF_MAP) { WITHMAP(execute(wid->getstr())); } }
 

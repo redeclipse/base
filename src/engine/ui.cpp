@@ -756,7 +756,7 @@ namespace UI
             return t;
         }
 
-        void buildchildren(uint *contents)
+        void buildchildren(uint *contents, bool mapdef = false)
         {
             if((*contents&CODE_OP_MASK) == CODE_EXIT) children.deletecontents();
             else
@@ -765,7 +765,7 @@ namespace UI
                 int oldchild = buildchild;
                 buildparent = this;
                 buildchild = 0;
-                executeret(contents);
+                DOMAP(mapdef, executeret(contents));
                 while(children.length() > buildchild)
                     delete children.pop();
                 buildparent = oldparent;
@@ -938,7 +938,7 @@ namespace UI
             if(onhide)
             {
                 uiparam = param;
-                executeret(onhide->code);
+                DOMAP(mapdef, executeret(onhide->code));
             }
             resetworld();
         }
@@ -960,7 +960,7 @@ namespace UI
             if(onshow)
             {
                 uiparam = param;
-                executeret(onshow->code);
+                DOMAP(mapdef, executeret(onshow->code));
             }
         }
 
@@ -1639,7 +1639,7 @@ namespace UI
         window = this;
         if(inworld) dist = origin.squaredist(camera1->o);
         uiparam = param;
-        if(contents) buildchildren(contents->code);
+        if(contents) buildchildren(contents->code, mapdef);
         window = NULL;
     }
 
