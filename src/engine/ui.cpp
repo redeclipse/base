@@ -82,52 +82,6 @@ namespace UI
         gle::end();
     }
 
-    struct ClipArea
-    {
-        float x1, y1, x2, y2;
-
-        ClipArea(float x, float y, float w, float h) : x1(x), y1(y), x2(x+w), y2(y+h) {}
-
-        void intersect(const ClipArea &c)
-        {
-            x1 = max(x1, c.x1);
-            y1 = max(y1, c.y1);
-            x2 = max(x1, min(x2, c.x2));
-            y2 = max(y1, min(y2, c.y2));
-
-        }
-
-        bool isfullyclipped(float x, float y, float w, float h)
-        {
-            return x1 == x2 || y1 == y2 || x >= x2 || y >= y2 || x+w <= x1 || y+h <= y1;
-        }
-
-        void scissor();
-    };
-
-    static vector<ClipArea> clipstack;
-
-    static void pushclip(float x, float y, float w, float h)
-    {
-        if(clipstack.empty()) glEnable(GL_SCISSOR_TEST);
-        ClipArea &c = clipstack.add(ClipArea(x, y, w, h));
-        if(clipstack.length() >= 2) c.intersect(clipstack[clipstack.length()-2]);
-        c.scissor();
-    }
-
-    static void popclip()
-    {
-        clipstack.pop();
-        if(clipstack.empty()) glDisable(GL_SCISSOR_TEST);
-        else clipstack.last().scissor();
-    }
-
-    static inline bool isfullyclipped(float x, float y, float w, float h)
-    {
-        if(clipstack.empty()) return false;
-        return clipstack.last().isfullyclipped(x, y, w, h);
-    }
-
     enum
     {
         ALIGN_MASK    = 0xF,
@@ -323,6 +277,37 @@ namespace UI
             else if(*numargs < 0) type##ret(o->vname); \
             else print##type##var(id, o->vname); \
         });
+
+    struct ClipArea
+    {
+        float x1, y1, x2, y2;
+
+        ClipArea(float x, float y, float w, float h) : x1(x), y1(y), x2(x+w), y2(y+h) {}
+
+        void intersect(const ClipArea &c)
+        {
+            x1 = max(x1, c.x1);
+            y1 = max(y1, c.y1);
+            x2 = max(x1, min(x2, c.x2));
+            y2 = max(y1, min(y2, c.y2));
+
+        }
+
+        bool isfullyclipped(float x, float y, float w, float h)
+        {
+            return x1 == x2 || y1 == y2 || x >= x2 || y >= y2 || x+w <= x1 || y+h <= y1;
+        }
+
+        void scissor();
+    };
+
+    static vector<ClipArea> clipstack;
+
+    static inline bool isfullyclipped(float x, float y, float w, float h)
+    {
+        if(clipstack.empty()) return false;
+        return clipstack.last().isfullyclipped(x, y, w, h);
+    }
 
     struct Object
     {
@@ -1325,11 +1310,71 @@ namespace UI
             if(o) { body; } \
         });
 
+    static void pushclip(float x, float y, float w, float h)
+    {
+        if(clipstack.empty())
+        {
+            if(!window->inworld) glEnable(GL_SCISSOR_TEST);
+            else glEnable(GL_STENCIL_TEST);
+        }
+        ClipArea &c = clipstack.add(ClipArea(x, y, w, h));
+        if(clipstack.length() >= 2) c.intersect(clipstack[clipstack.length()-2]);
+        c.scissor();
+    }
+
+    static void popclip()
+    {
+        clipstack.pop();
+        if(clipstack.empty())
+        {
+            if(!window->inworld) glDisable(GL_SCISSOR_TEST);
+            else glDisable(GL_STENCIL_TEST);
+        }
+        else clipstack.last().scissor();
+    }
+
+    static void enableclip()
+    {
+        if(clipstack.empty()) return;
+
+        if(!window->inworld) glEnable(GL_SCISSOR_TEST);
+        else glEnable(GL_STENCIL_TEST);
+    }
+
+    static void disableclip()
+    {
+        if(clipstack.empty()) return;
+        if(!window->inworld) glDisable(GL_SCISSOR_TEST);
+        else glDisable(GL_STENCIL_TEST);
+    }
+
     void ClipArea::scissor()
     {
         int sx1, sy1, sx2, sy2;
         window->calcscissor(x1, y1, x2, y2, sx1, sy1, sx2, sy2);
-        glScissor(sx1, sy1, sx2-sx1, sy2-sy1);
+        if(!window->inworld) glScissor(sx1, sy1, sx2-sx1, sy2-sy1);
+        else
+        {
+            glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+            glStencilFunc(GL_ALWAYS, 1, ~0);
+            glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
+
+            Shader *oldshader = Shader::lastshader;
+            hudnotextureshader->set();
+            gle::defvertex(2);
+            gle::colorf(1, 1, 1, 1);
+            gle::begin(GL_TRIANGLE_STRIP);
+            gle::attribf(x2, y1);
+            gle::attribf(x1, y1);
+            gle::attribf(x2, y2);
+            gle::attribf(x1, y2);
+            gle::end();
+            if(oldshader) oldshader->set();
+
+            glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+            glStencilFunc(GL_EQUAL, 1, ~0);
+            glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+       }
     }
 
     struct Surface : Object
@@ -5222,15 +5267,13 @@ namespace UI
         void startdraw()
         {
             glDisable(GL_BLEND);
-
-            if(clipstack.length()) glDisable(GL_SCISSOR_TEST);
+            disableclip();
         }
 
         void enddraw()
         {
             glEnable(GL_BLEND);
-
-            if(clipstack.length()) glEnable(GL_SCISSOR_TEST);
+            enableclip();
         }
 
         void hold(float cx, float cy, bool inside)
