@@ -6225,12 +6225,11 @@ namespace UI
 
             if(!haswindow)
             {
-                surface->show(w, camera1->o, e.attrs[2], e.attrs[3], e.attrs[4] > 0 ? e.attrs[4]/100.f : 1.f);
+                surface->show(w, entities::getpos(e), e.attrs[2], e.attrs[3], e.attrs[5] > 0 ? e.attrs[5]/100.f : 1.f);
                 continue;
             }
-
+            else w->origin = entities::getpos(e);
             w->allowinput = inside && (e.attrs[1]&MAPUI_INPUTPROX) != 0;
-            w->origin = entities::getpos(e);
         }
         identflags = oldflags;
     }
