@@ -209,7 +209,7 @@ namespace UI
                 uitype *o = (uitype *)buildparent; \
                 body; \
             } \
-            else conoutf("Warning: parent not a %s in ui%s%s", #uitype, #uiname, #vname); \
+            else conoutf("Warning: parent %s not a %s for ui%s%s", buildparent ? buildparent->gettype() : "<null>", #uitype, #uiname, #vname); \
         });
 
     #define UIARGB(uitype, uiname, vname) \
@@ -247,7 +247,7 @@ namespace UI
                 uitype *o = (uitype *)buildparent; \
                 body; \
             } \
-            else conoutf("Warning: parent not a is%s in ui%s%s", #uiname, #uiname, #vname); \
+            else conoutf("Warning: parent %s not a %s for ui%s%s", buildparent ? buildparent->gettype() : "<null>", #uiname, #uiname, #vname); \
         });
 
     #define UIARGTB(uitype, uiname, vname) \
@@ -1356,7 +1356,7 @@ namespace UI
         else
         {
             glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-            glStencilFunc(GL_ALWAYS, 1, ~0);
+            glStencilFunc(GL_ALWAYS, 0xFF, ~0);
             glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
 
             Shader *oldshader = Shader::lastshader;
@@ -1372,7 +1372,7 @@ namespace UI
             if(oldshader) oldshader->set();
 
             glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-            glStencilFunc(GL_EQUAL, 1, ~0);
+            glStencilFunc(GL_EQUAL, 0xFF, ~0);
             glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
        }
     }
@@ -2366,7 +2366,8 @@ namespace UI
         };
 
         Color() : mask(0xFFFFFFFFU) {}
-        Color(uint c) : r((c>>16)&0xFF), g((c>>8)&0xFF), b(c&0xFF), a(c>>24 ? c>>24 : 0xFF) {}
+        Color(int c, bool force = false) : r((uint(c)>>16)&0xFF), g((uint(c)>>8)&0xFF), b(uint(c)&0xFF), a(uint(c)>>24 || force ? uint(c)>>24 : 0xFF) {}
+        Color(uint c, bool force = false) : r((c>>16)&0xFF), g((c>>8)&0xFF), b(c&0xFF), a(c>>24 || force ? c>>24 : 0xFF) {}
         Color(uint c, uchar a) : r((c>>16)&0xFF), g((c>>8)&0xFF), b(c&0xFF), a(a) {}
         Color(uchar r, uchar g, uchar b, uchar a = 255) : r(r), g(g), b(b), a(a) {}
         Color(const Color &c) : r(c.r), g(c.g), b(c.b), a(c.a) {}
@@ -2389,7 +2390,7 @@ namespace UI
         int tohexcolor() const { return (int(r)<<16)|(int(g)<<8)|int(b); }
 
         vec4 tocolor4() const { return vec4(r*(1.0f/255.0f), g*(1.0f/255.0f), b*(1.0f/255.0f), a*(1.0f/255.0f)); }
-        int tohexcolor4() const { return (int(a)<<24)|(int(r)<<16)|(int(g)<<8)|int(b); }
+        uint tohexcolor4() const { return uint((int(a)<<24)|(int(r)<<16)|(int(g)<<8)|int(b)); }
 
         bool operator==(const Color &o) const { return mask == o.mask; }
         bool operator!=(const Color &o) const { return mask != o.mask; }
@@ -2456,12 +2457,12 @@ namespace UI
     UIARGT(Colored, colour, type, "i", int, int(Colored::SOLID), int(Colored::OUTLINED));
     UIARGT(Colored, colour, dir, "i", int, int(Colored::VERTICAL), int(Colored::HORIZONTAL));
 
-    UICMDT(Colored, colour, set, "ii", (int *c, int *pos),
+    UICMDT(Colored, colour, set, "iii", (int *c, int *pos, int *force),
     {
-        if(*pos >= 0 && *pos < o->colors.length()) o->colors[*pos] = Color(*c);
+        if(*pos >= 0 && *pos < o->colors.length()) o->colors[*pos] = Color(*c, *force != 0);
     });
     UICMDT(Colored, colour, get, "i", (int *pos), intret(o->colors[clamp(*pos, 0, o->colors.length()-1)].mask));
-    UICMDT(Colored, colour, add, "i", (int *c), o->colors.add(Color(*c)));
+    UICMDT(Colored, colour, add, "ii", (int *c, int *force), o->colors.add(Color(*c, *force != 0)));
     UICMDT(Colored, colour, del, "i", (int *c),
     {
         loopvrev(o->colors) if(o->colors[i] == Color(*c)) o->colors.remove(i);
@@ -2976,9 +2977,7 @@ namespace UI
                     tdh1 = tcoordmap[FC_TR][1]-tcoordmap[FC_TL][1], tdh2 = tcoordmap[FC_BR][1]-tcoordmap[FC_BL][1];
                 loopi(cols-1)
                 {
-                    int color1 = i+colstart,
-                        color2 = cols>1 ? color1+1 : color1;
-
+                    int color1 = i+colstart, color2 = cols>1 ? color1+1 : color1;
                     switch(dir)
                     {
                         case HORIZONTAL:
@@ -6254,7 +6253,7 @@ namespace UI
     #define COMPOSITESIZE (1<<9)
     extern void reloadcomp();
     VARF(IDF_PERSIST, compositesize, 1<<1, COMPOSITESIZE, 1<<12, reloadcomp());
-    VAR(IDF_PERSIST, compositeuprate, 0, 33, VAR_MAX);
+    VAR(IDF_PERSIST, compositeuprate, 0, 10, VAR_MAX);
 
     Texture *composite(const char *name, int tclamp, bool mipit, bool msg, bool gc, Texture *tex, bool reload)
     {
