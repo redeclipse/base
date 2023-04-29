@@ -2423,8 +2423,6 @@ namespace game
     extern void spawneffect(int type, const vec &pos, float radius, int colour, float size);
     extern void impulseeffect(gameent *d, int effect = 0);
     extern void suicide(gameent *d, int flags = 0);
-    extern void fixfullrange(float &yaw, float &pitch, float &roll, bool full = false);
-    extern void fixrange(float &yaw, float &pitch, bool full = false);
     extern void getyawpitch(const vec &from, const vec &pos, float &yaw, float &pitch);
     extern void scaleyawpitch(float &yaw, float &pitch, float targyaw, float targpitch, float yawspeed = 1, float pitchspeed = 1, float rotate = 0);
     extern bool allowmove(physent *d);

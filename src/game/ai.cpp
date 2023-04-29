@@ -1268,7 +1268,7 @@ namespace ai
         }
         if(!firing) d->action[AC_PRIMARY] = d->action[AC_SECONDARY] = false;
 
-        game::fixrange(d->ai->targyaw, d->ai->targpitch);
+        fixrange(d->ai->targyaw, d->ai->targpitch);
         if(dancing || !occupied)
         {
             if(dancing || actors[d->actortype].onlyfwd) frame *= 10;

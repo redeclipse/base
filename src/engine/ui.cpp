@@ -1066,7 +1066,7 @@ namespace UI
             offyaw += 180;
             offpitch = -offpitch;
             if(curyaw < 0) curyaw = offyaw;
-            if(curpitch < -90 || curpitch > 90) curpitch = offpitch;
+            if(curpitch < -180 || curpitch > 180) curpitch = offpitch;
             if(detentyaw > 0) curyaw = round(curyaw / detentyaw) * detentyaw;
             if(detentpitch > 0) curpitch = round(curpitch / detentpitch) * detentpitch;
 
@@ -1296,7 +1296,7 @@ namespace UI
 
     UIWINARGV(origin);
     UIWINARG(yaw, "f", float, -1, 360);
-    UIWINARG(pitch, "f", float, -91, 91);
+    UIWINARG(pitch, "f", float, -181, 181);
     ICOMMAND(0, uicuryaw, "N$", (int *numargs, ident *id), if(*numargs != 0) floatret(window ? window->curyaw : -1.f); else printfvar(id, window ? window->curyaw : -1.f));
     ICOMMAND(0, uicurpitch, "N$", (int *numargs, ident *id), if(*numargs != 0) floatret(window ? window->curpitch : -1.f); else printfvar(id, window ? window->curpitch : -1.f));
     ICOMMAND(0, uioffyaw, "N$", (int *numargs, ident *id), if(*numargs != 0) floatret(window ? window->offyaw : -1.f); else printfvar(id, window ? window->offyaw : -1.f));
@@ -6237,10 +6237,25 @@ namespace UI
 
             if(!haswindow)
             {
-                surface->show(w, entities::getpos(e), e.attrs[2], e.attrs[3], e.attrs[5] > 0 ? e.attrs[5]/100.f : 1.f, e.attrs[6] > 0 ? e.attrs[6] : 0.f, e.attrs[7] > 0 ? e.attrs[7] : 0.f);
+                surface->show(w, e.o, e.attrs[2], e.attrs[3], e.attrs[5] > 0 ? e.attrs[5]/100.f : 1.f, e.attrs[6] > 0 ? e.attrs[6] : 0.f, e.attrs[7] > 0 ? e.attrs[7] : 0.f);
                 continue;
             }
-            else w->origin = entities::getpos(e);
+            float yaw = 0, pitch = 0;
+            if(entities::getdynamic(e, w->origin, yaw, pitch))
+            {
+                if(e.attrs[2] >= 0)
+                {
+                    w->yaw = e.attrs[2] + yaw;
+                    if(w->yaw < 0.0f) w->yaw = 360.0f - fmodf(-w->yaw, 360.0f);
+                    else if(w->yaw >= 360.0f) w->yaw = fmodf(w->yaw, 360.0f);
+                }
+                if(e.attrs[3] <= 180 || e.attrs[3] >= -180)
+                {
+                    w->pitch = e.attrs[2] + pitch + 90;
+                    if(w->pitch < -180.0f) w->pitch = 180.0f - fmodf(-180.0f - w->pitch, 360.0f);
+                    else if(w->pitch >= 180.0f) w->pitch = fmodf(w->pitch + 180.0f, 360.0f) - 180.0f;
+                }
+            }
             w->allowinput = inside && (e.attrs[1]&MAPUI_INPUTPROX) != 0;
         }
         identflags = oldflags;

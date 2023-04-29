@@ -449,7 +449,7 @@ namespace projs
     {
         vectoyawpitch(proj.norm, proj.yaw, proj.pitch);
         proj.pitch -= 90;
-        game::fixfullrange(proj.yaw, proj.pitch, proj.roll, true);
+        fixfullrange(proj.yaw, proj.pitch, proj.roll, true);
         proj.resetinterp();
     }
 

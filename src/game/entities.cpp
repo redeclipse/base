@@ -410,7 +410,7 @@ namespace entities
 
                     vec newpos = e.pos(), oldsize(m->xradius, m->yradius, m->height);
                     float newyaw = e.attrs[1]+e.yaw, newpitch = e.attrs[2]+e.pitch, newroll = e.attrs[3];
-                    game::fixrange(newyaw, newpitch);
+                    fixrange(newyaw, newpitch);
 
                     vec center, radius;
                     mmi->m->collisionbox(center, radius);
@@ -525,7 +525,7 @@ namespace entities
                                 }
                                 if(m->yawed != 0) d->yaw += m->yawed*part;
                                 if(m->pitched != 0) d->pitch += m->pitched*part;
-                                game::fixrange(d->yaw, d->pitch);
+                                fixrange(d->yaw, d->pitch);
                                 p.offset = vec(d->o).sub(m->o);
 
                                 m->coltarget = NULL;
@@ -750,17 +750,27 @@ namespace entities
         return isallowed(e);
     }
 
-    vec getpos(const extentity &e)
+    bool getdynamic(const extentity &e, vec &pos, float &yaw, float &pitch)
     {
         gameentity &f = *(gameentity *)&e;
-        return f.pos();
+        if(!e.dynamic())
+        {
+            pos = e.o;
+            yaw = 0;
+            pitch = 0;
+            return false;
+        }
+        pos = f.pos();
+        yaw = f.yaw;
+        pitch = f.pitch;
+        return true;
     }
 
-    vec getpos(int n)
+    bool getdynamic(int n, vec &pos, float &yaw, float &pitch)
     {
-        if(!ents.inrange(n)) return vec(0, 0, 0);
+        if(!ents.inrange(n)) return false;
         extentity &e = *(extentity *)ents[n];
-        return getpos(e);
+        return getdynamic(e, pos, yaw, pitch);
     }
 
     #define ENTTYPE(value) ICOMMAND(0, entity##value, "b", (int *n), intret(*n >= 0 && *n < MAXENTTYPES ? enttype[*n].value : 0));
@@ -1544,7 +1554,7 @@ namespace entities
                             if(f.attrs[2] > 0) mag = max(mag, float(f.attrs[2]));
                             else if(f.attrs[2] < 0) mag = min(mag, float(-f.attrs[2]));
                         }
-                        game::fixrange(yaw, pitch);
+                        fixrange(yaw, pitch);
                         if(mag != 0 && f.attrs[5] < 6) d->vel = vec(yaw*RAD, pitch*RAD).mul(mag);
                         switch(f.attrs[5]%3)
                         {
@@ -1552,7 +1562,7 @@ namespace entities
                             case 1: // relative
                             {
                                 float relyaw = (e.attrs[0] < 0 ? (lastmillis/5)%360 : e.attrs[0])-180, relpitch = e.attrs[1];
-                                game::fixrange(relyaw, relpitch);
+                                fixrange(relyaw, relpitch);
                                 d->yaw = yaw+(d->yaw-relyaw);
                                 d->pitch = pitch+(d->pitch-relpitch);
                                 break;
@@ -1564,7 +1574,7 @@ namespace entities
                                 break;
                             }
                         }
-                        game::fixrange(d->yaw, d->pitch);
+                        fixrange(d->yaw, d->pitch);
                         if(mag == 0) d->vel = vec(0, 0, 0);
                         else if(f.attrs[5] >= 6) d->vel = vec(d->yaw*RAD, d->pitch*RAD).mul(mag);
                         if(physics::entinmap(d, gameent::is(d))) // entinmap first for getting position
@@ -2135,14 +2145,14 @@ namespace entities
                 while(e.attrs[1] > UI::MAPUI_ALL) e.attrs[1] -= UI::MAPUI_ALL+1; // flags, clamp
                 while(e.attrs[2] < -1) e.attrs[2] += 361; // yaw
                 while(e.attrs[2] >= 360) e.attrs[2] -= 361; // has -1 for rotating effect
-                while(e.attrs[3] < -91) e.attrs[3] += 182; // pitch
-                while(e.attrs[3] > 91) e.attrs[3] -= 182; // has -91/91 for rotating effect
+                while(e.attrs[3] < -181) e.attrs[3] += 362; // pitch
+                while(e.attrs[3] > 181) e.attrs[3] -= 362; // has -181/181 for rotating effect
                 if(e.attrs[4] < 0) e.attrs[4] = 0; // radius, limit
                 if(e.attrs[5] < 0) e.attrs[5] = 0; // scale, limit
                 while(e.attrs[6] < 0) e.attrs[6] += 181; // yaw detent, clamp
                 while(e.attrs[6] > 180) e.attrs[6] -= 181; // yaw detent, clamp
-                while(e.attrs[7] < 0) e.attrs[7] += 91; // pitch detent, clamp
-                while(e.attrs[7] > 90) e.attrs[7] -= 91; // pitch detent, clamp
+                while(e.attrs[7] < 0) e.attrs[7] += 181; // pitch detent, clamp
+                while(e.attrs[7] > 180) e.attrs[7] -= 181; // pitch detent, clamp
                 while(e.attrs[8] < 0) e.attrs[8] += 0xFFFFFF + 1; // colour, clamp
                 while(e.attrs[8] > 0xFFFFFF) e.attrs[8] -= 0xFFFFFF + 1; // colour, clamp
                 while(e.attrs[9] < 0) e.attrs[9] += 101; // blend, clamp
@@ -2271,7 +2281,7 @@ namespace entities
 
     bool tryspawn(dynent *d, const vec &o, float yaw, float pitch)
     {
-        game::fixfullrange(d->yaw = yaw, d->pitch = pitch, d->roll = 0);
+        fixfullrange(d->yaw = yaw, d->pitch = pitch, d->roll = 0);
         (d->o = o).z += d->height+d->aboveeye;
         return physics::entinmap(d, true);
     }
@@ -2756,7 +2766,7 @@ namespace entities
             { \
                 targyaw += e.yaw; \
                 targpitch += e.pitch; \
-                game::fixrange(targyaw, targpitch); \
+                fixrange(targyaw, targpitch); \
             } \
             part_dir(o, targyaw, targpitch, length, showentsize, 1, fade, colour, showentinterval); \
         }
@@ -3555,7 +3565,7 @@ namespace entities
             yaw = e.attrs[e.type == PLAYERSTART ? 1 : 2]+e.yaw;
             pitch = e.attrs[e.type == PLAYERSTART ? 2 : 3]+e.pitch;
             if(e.type == CAMERA && e.attrs[11] > 0) fov = e.attrs[11];
-            game::fixrange(yaw, pitch);
+            fixrange(yaw, pitch);
         }
     }
 }

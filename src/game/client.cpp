@@ -2137,7 +2137,7 @@ namespace client
         if(d == game::player1 && game::thirdpersonview(true, d))
         {
             vectoyawpitch(vec(worldpos).sub(d->headpos()).normalize(), yaw, pitch);
-            game::fixrange(yaw, pitch);
+            fixrange(yaw, pitch);
         }
         uint dir = (yaw < 0 ? 360 + int(yaw)%360 : int(yaw)%360) + clamp(int(pitch+90), 0, 180)*360;
         q.put(dir&0xFF);
