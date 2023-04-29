@@ -2493,7 +2493,7 @@ void gl_drawview()
             rendereditcursor();
             glDepthMask(GL_TRUE);
         }
-        else if(UI::uivisible("selection")) UI::hideui("selection");
+        else loopk(8) if(UI::uivisible("selection", k)) UI::hideui("selection", UI::SURFACE_MAIN, k);
 
         if(showboundingboxes)
         {

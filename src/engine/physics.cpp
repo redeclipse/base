@@ -1218,9 +1218,13 @@ bool getsight(const vec &o, float yaw, float pitch, const vec &q, vec &v, float 
     return false;
 }
 
-int getvisible(const vec &o, float yaw, float pitch, const vec &q, float fovx, float fovy, float radius)
+bool getvisible(const vec &o, float yaw, float pitch, const vec &q, float fovx, float fovy, float radius, int vfc)
 {
     float x = fmod(fabs(-pitch), 360), y = fmod(fabs(-atan2(q.x-o.x, q.y-o.y)/RAD-yaw), 360);
-    if(min(x, 360-x) <= fovx && min(y, 360-y) <= fovy) return isvisiblesphere(radius, q);
-    return VFC_NOT_VISIBLE;
+    if(min(x, 360-x) <= fovx && min(y, 360-y) <= fovy)
+    {
+        if(vfc >= 0) return isvisiblesphere(radius, q) <= vfc;
+        return true;
+    }
+    return false;
 }

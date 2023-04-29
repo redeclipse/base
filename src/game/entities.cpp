@@ -31,7 +31,8 @@ namespace entities
     FVAR(IDF_PERSIST, showentinfouiyaw, -1, -1, 360);
     FVAR(IDF_PERSIST, showentinfouipitch, -91, 0, 91);
     FVAR(IDF_PERSIST, showentinfouiscale, FVAR_NONZERO, 1, FVAR_MAX);
-    FVAR(IDF_PERSIST, showentinfouidetent, 0, 0, 180);
+    FVAR(IDF_PERSIST, showentinfouidetentyaw, 0, 0, 180);
+    FVAR(IDF_PERSIST, showentinfouidetentpitch, 0, 0, 90);
 
     FVAR(IDF_PERSIST, entselsize, 0, 0.5f, FVAR_MAX);
     FVAR(IDF_PERSIST, entselsizetop, 0, 1, FVAR_MAX);
@@ -2138,12 +2139,14 @@ namespace entities
                 while(e.attrs[3] > 91) e.attrs[3] -= 182; // has -91/91 for rotating effect
                 if(e.attrs[4] < 0) e.attrs[4] = 0; // radius, limit
                 if(e.attrs[5] < 0) e.attrs[5] = 0; // scale, limit
-                while(e.attrs[6] < 0) e.attrs[2] += 181; // detent, clamp
-                while(e.attrs[6] > 180) e.attrs[2] -= 181; // detent, clamp
-                while(e.attrs[7] < 0) e.attrs[7] += 0xFFFFFF + 1; // colour, clamp
-                while(e.attrs[7] > 0xFFFFFF) e.attrs[7] -= 0xFFFFFF + 1; // colour, clamp
-                while(e.attrs[8] < 0) e.attrs[8] += 101; // blend, clamp
-                while(e.attrs[8] > 100) e.attrs[8] -= 101; // blend, clamp
+                while(e.attrs[6] < 0) e.attrs[6] += 181; // yaw detent, clamp
+                while(e.attrs[6] > 180) e.attrs[6] -= 181; // yaw detent, clamp
+                while(e.attrs[7] < 0) e.attrs[7] += 91; // pitch detent, clamp
+                while(e.attrs[7] > 90) e.attrs[7] -= 91; // pitch detent, clamp
+                while(e.attrs[8] < 0) e.attrs[8] += 0xFFFFFF + 1; // colour, clamp
+                while(e.attrs[8] > 0xFFFFFF) e.attrs[8] -= 0xFFFFFF + 1; // colour, clamp
+                while(e.attrs[9] < 0) e.attrs[9] += 101; // blend, clamp
+                while(e.attrs[9] > 100) e.attrs[9] -= 101; // blend, clamp
                 break;
             }
             default: break;
@@ -3318,7 +3321,7 @@ namespace entities
         if(idx < 0 || !m_edit(game::gamemode) || !cansee(idx)) return false;
 
         bool hastop = game::player1->state == CS_EDITING && (enthover.find(idx) >= 0 || entgroup.find(idx) >= 0) && dist <= showentdist*showentdist, dotop = hastop && e.dynamic(),
-             visible = getvisible(camera1->o, camera1->yaw, camera1->pitch, o, curfov, fovy, 2) <= VFC_PART_VISIBLE, visiblepos = dotop && getvisible(camera1->o, camera1->yaw, camera1->pitch, e.pos(), curfov, fovy, 2) <= VFC_PART_VISIBLE;
+             visible = getvisible(camera1->o, camera1->yaw, camera1->pitch, o, curfov, fovy, 2, VFC_PART_VISIBLE), visiblepos = dotop && getvisible(camera1->o, camera1->yaw, camera1->pitch, e.pos(), curfov, fovy, 2, VFC_PART_VISIBLE);
         loopj(dotop ? 2 : 1)
         {
             if(j ? visiblepos : visible) part_create(hastop && !j ? PART_ENTITY_ONTOP : PART_ENTITY, 1, j ? e.pos() : o, j ? entselcolourdyn : (hastop ? entselcolourtop : entselcolour), hastop && !j ? entselsizetop : entselsize);
@@ -3415,8 +3418,8 @@ namespace entities
                         vec pos = vec(e.o).addz(entinfospace);
                         if(enttype[e.type].usetype == EU_ITEM) pos.addz(entinfospace);
                         if(UI::uivisible("entinfo", UI::SURFACE_MAIN, v.idx))
-                            UI::setui("entinfo", UI::SURFACE_MAIN, v.idx, pos, showentinfouiyaw, showentinfouipitch, showentinfouiscale, showentinfouidetent);
-                        else UI::showui("entinfo", UI::SURFACE_MAIN, v.idx, pos, showentinfouiyaw, showentinfouipitch, showentinfouiscale, showentinfouidetent);
+                            UI::setui("entinfo", UI::SURFACE_MAIN, v.idx, pos, showentinfouiyaw, showentinfouipitch, showentinfouiscale, showentinfouidetentyaw, showentinfouidetentpitch);
+                        else UI::showui("entinfo", UI::SURFACE_MAIN, v.idx, pos, showentinfouiyaw, showentinfouipitch, showentinfouiscale, showentinfouidetentyaw, showentinfouidetentpitch);
                         hasdynui = found = true;
                     }
                 }

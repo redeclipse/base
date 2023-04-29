@@ -4,11 +4,12 @@ VAR(0, showpastegrid, 0, 0, 1);
 VAR(0, showcursorgrid, 0, 0, 1);
 VAR(0, showselboxgrid, 0, 0, 1);
 
-VAR(IDF_PERSIST, showselui, 0, 1, 2);
+VAR(IDF_PERSIST, showselui, 0, 2, 2);
 FVAR(IDF_PERSIST, showseluiyaw, -1, -1, 360);
-FVAR(IDF_PERSIST, showseluipitch, -91, 0, 91);
+FVAR(IDF_PERSIST, showseluipitch, -91, -1, 91);
 FVAR(IDF_PERSIST, showseluiscale, FVAR_NONZERO, 1, FVAR_MAX);
-FVAR(IDF_PERSIST, showseluidetent, 0, 90, 180);
+FVAR(IDF_PERSIST, showseluidetentyaw, 0, 90, 180);
+FVAR(IDF_PERSIST, showseluidetentpitch, 0, 90, 90);
 
 bool boxoutline = false;
 
@@ -725,7 +726,7 @@ void rendereditcursor()
     }
 
     // selections
-    bool hasselui = false;
+    int hasselui = -1;
     if(havesel || moving)
     {
         d = dimension(sel.orient);
@@ -808,31 +809,36 @@ void rendereditcursor()
         {
             vec pos(sel.o);
             float mindist = 1e16f;
-            loop(x, 2) loop(y, 2) loop(z, 2)
+            int curcorner = 0;
+            loopk(2)
             {
-                if(!x && !y && !z) continue;
-                vec o = vec(sel.o);
-                if(x) o.x += sel.s.x * gridsize;
-                if(y) o.y += sel.s.y * gridsize;
-                if(z) o.z += sel.s.z * gridsize;
-                float dist = camera1->o.squaredist(o);
-                if(dist < mindist && getvisible(camera1->o, camera1->yaw, camera1->pitch, o, curfov, fovy, 0) <= VFC_FULL_VISIBLE)
+                loop(x, 2) loop(y, 2) loop(z, 2)
                 {
-                    mindist = dist;
-                    pos = o;
-                    hasselui = true;
+                    vec o = vec(sel.o);
+                    if(x) o.x += sel.s.x * gridsize;
+                    if(y) o.y += sel.s.y * gridsize;
+                    if(z) o.z += sel.s.z * gridsize;
+                    float dist = camera1->o.squaredist(o);
+                    if(dist < mindist && getvisible(camera1->o, camera1->yaw, camera1->pitch, o, curfov, fovy, 0, k ? -1 : VFC_FULL_VISIBLE))
+                    {
+                        mindist = dist;
+                        pos = o;
+                        hasselui = curcorner;
+                    }
+                    curcorner++;
                 }
-
+                if(hasselui >= 0) break;
+                curcorner = 0;
             }
-            if(hasselui)
+            if(hasselui >= 0)
             {
-                if(UI::uivisible("selection", UI::SURFACE_MAIN, -1))
-                    UI::setui("selection", UI::SURFACE_MAIN, -1, pos, -1, showseluipitch, showseluiscale, showseluidetent);
-                else UI::showui("selection", UI::SURFACE_MAIN, -1, pos, -1, showseluipitch, showseluiscale, showseluidetent);
+                if(UI::uivisible("selection", UI::SURFACE_MAIN, hasselui))
+                    UI::setui("selection", UI::SURFACE_MAIN, hasselui, pos, showseluiyaw, showseluipitch, showseluiscale, showseluidetentyaw, showseluidetentpitch);
+                else UI::showui("selection", UI::SURFACE_MAIN, hasselui, pos, showseluipitch, showseluipitch, showseluiscale, showseluidetentyaw, showseluidetentpitch);
             }
         }
     }
-    if(!hasselui && UI::uivisible("selection")) UI::hideui("selection");
+    loopk(8) if(k != hasselui && UI::uivisible("selection", UI::SURFACE_MAIN, k)) UI::hideui("selection", UI::SURFACE_MAIN, k);
 
     if(showpastegrid && localedit && localedit->copy)
     {

@@ -846,7 +846,7 @@ extern int dynentsize;
 extern bool overlapsdynent(const vec &o, float radius);
 extern void rotatebb(vec &center, vec &radius, int yaw, int pitch = 0, int roll = 0);
 extern bool getsight(const vec &o, float yaw, float pitch, const vec &q, vec &v, float mdist, float fovx, float fovy);
-extern int getvisible(const vec &o, float yaw, float pitch, const vec &q, float fovx, float fovy, float radius);
+extern bool getvisible(const vec &o, float yaw, float pitch, const vec &q, float fovx, float fovy, float radius, int vfc = VFC_FULL_VISIBLE);
 
 // worldio
 extern char *maptitle, *mapauthor, *mapname, *maptext, *mapdesc;
