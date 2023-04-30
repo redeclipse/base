@@ -8,8 +8,8 @@ WORK_DIR=${HOME}/.redeclipse_build
 SYS_DIR=${WORK_DIR}/sys
 
 CACHE_DIR=""
-IMAGE_DIR="${CACHE_DIR}/image"
-CACHE_IMAGE="${IMAGE_DIR}/image.tar.gz"
+IMAGE_DIR=""
+CACHE_IMAGE=""
 
 GAME_DIR="${SCRIPT_DIR}/.."
 OUTPUT_DIR="${SCRIPT_DIR}/../build"
@@ -196,6 +196,8 @@ while getopts "ihc:g:o:n:b:r:m:t:" opt; do
         c)
             IMAGE_CACHE_ENABLED=1
             CACHE_DIR=${OPTARG}
+            IMAGE_DIR="${CACHE_DIR}/image"
+            CACHE_IMAGE="${IMAGE_DIR}/image.tar.gz"
             ;;
         g)
             GAME_DIR=${OPTARG}
