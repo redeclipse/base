@@ -66,7 +66,7 @@ semabuild_build() {
         PLATFORM_BUILD="${SEMAPHORE_BUILD_NUMBER}" \
         PLATFORM_BRANCH="${BRANCH_NAME}" \
         PLATFORM_REVISION="${REVISION}" \
-        src/buildindocker.sh || return 1
+        src/buildindocker.sh -c || return 1
 
     sudo chmod -R a+rw "${SEMABUILD_DIR}" || return 1
 
