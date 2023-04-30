@@ -349,6 +349,11 @@ void backup(const char *fname, const char *ext, int revision, int start, bool st
 char *makerelpath(const char *dir, const char *file, const char *prefix, const char *cmd)
 {
     static string tmp;
+    if(file && *file == '!')
+    {
+        copystring(tmp, file);
+        return tmp;
+    }
     if(prefix) copystring(tmp, prefix);
     else tmp[0] = '\0';
     if(file[0]=='<')
