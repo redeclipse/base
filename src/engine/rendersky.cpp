@@ -114,20 +114,6 @@ Texture *loadskyoverlay(const char *basename)
     FVAR(IDF_MAP, atmodisksize##name, 0, 12, 90); \
     FVAR(IDF_MAP, atmodiskcorona##name, 0, 0.4f, 1); \
     FVAR(IDF_MAP, atmodiskbright##name, 0, 1, 16); \
-    CVAR(IDF_MAP, atmoclouds##name, 0); \
-    VAR(IDF_MAP, atmocloudsteps##name, 0, 8, 64); \
-    FVAR(IDF_MAP, atmocloudscale##name, FVAR_NONZERO, 10, 256); \
-    FVAR(IDF_MAP, atmocloudlight##name, 0, 0.3f, 16); \
-    FVAR(IDF_MAP, atmoclouddark##name, 0, 0.1f, 16); \
-    FVAR(IDF_MAP, atmocloudcover##name, 0, 0.25f, 16); \
-    FVAR(IDF_MAP, atmocloudsharp##name, 0, 2, 64); \
-    FVAR(IDF_MAP, atmocloudblend##name, 0, 1, 1); \
-    FVAR(IDF_MAP, atmocloudsun##name, 0, 1, 16); \
-    FVAR(IDF_MAP, atmocloudsky##name, 0, 0.1f, 16); \
-    FVAR(IDF_MAP, atmocloudfademin##name, 0, 0.01f, 16); \
-    FVAR(IDF_MAP, atmocloudfademax##name, 0, 0.2f, 1); \
-    FVAR(IDF_MAP, atmocloudscrollx##name, -16, 0.01f, 1); \
-    FVAR(IDF_MAP, atmocloudscrolly##name, -16, 0, 16); \
     FVAR(IDF_MAP, fogdomeheight##name, -1, -0.5f, 1); \
     FVAR(IDF_MAP, fogdomemin##name, 0, 0, 1); \
     FVAR(IDF_MAP, fogdomemax##name, 0, 0, 1); \
@@ -226,20 +212,6 @@ GETMPV(atmodisk, const bvec &);
 GETMPV(atmodisksize, float);
 GETMPV(atmodiskcorona, float);
 GETMPV(atmodiskbright, float);
-GETMPV(atmoclouds, const bvec &);
-GETMPV(atmocloudsteps, int);
-GETMPV(atmocloudscale, float);
-GETMPV(atmocloudlight, float);
-GETMPV(atmoclouddark, float);
-GETMPV(atmocloudcover, float);
-GETMPV(atmocloudsharp, float);
-GETMPV(atmocloudblend, float);
-GETMPV(atmocloudsun, float);
-GETMPV(atmocloudsky, float);
-GETMPV(atmocloudfademin, float);
-GETMPV(atmocloudfademax, float);
-GETMPV(atmocloudscrollx, float);
-GETMPV(atmocloudscrolly, float);
 GETMPV(fogdomeheight, float);
 GETMPV(fogdomemin, float);
 GETMPV(fogdomemax, float);
@@ -597,9 +569,7 @@ static void drawatmosphere()
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     }
     vec sundir = getpielightdir();
-    bvec curatmoclouds = getatmoclouds();
     if(diskonly) SETSHADER(atmospheredisk);
-    else if(!curatmoclouds.iszero()) SETSHADER(atmospherecloud);
     else SETSHADER(atmosphere);
 
     matrix4 sunmatrix = invcammatrix;
@@ -662,16 +632,6 @@ static void drawatmosphere()
     else LOCALPARAMF(sundiskparams, 0, 0);
 
     LOCALPARAMF(atmodither, atmodither);
-
-    if(!curatmoclouds.iszero())
-    {
-        vec cloudcolor = curatmoclouds.tocolor();
-        LOCALPARAM(cloudcolor, cloudcolor);
-        LOCALPARAMF(cloudparams, 1.0f/getatmocloudscale(), getatmocloudcover(), getatmocloudsharp(), getatmocloudsteps());
-        LOCALPARAMF(cloudshade, getatmocloudlight(), getatmoclouddark(), getatmocloudsun(), getatmocloudsky());
-        LOCALPARAMF(cloudfade, min(getatmocloudfademin(), getatmocloudfademax()), max(getatmocloudfademin(), getatmocloudfademax()), getatmocloudblend());
-        LOCALPARAMF(cloudscroll, getatmocloudscrollx(), getatmocloudscrolly());
-    }
 
     gle::defvertex();
     gle::begin(GL_TRIANGLE_STRIP);
