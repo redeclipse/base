@@ -654,6 +654,7 @@ static void checkmousemotion(int &dx, int &dy)
 
 void checkinput()
 {
+
     if(interceptkeysym) clearinterceptkey();
     //int lasttype = 0, lastbut = 0;
     bool mousemoved = false, shouldwarp = false;
