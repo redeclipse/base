@@ -5,7 +5,7 @@
 #include "tools.h"
 
 TVAR(IDF_PERSIST|IDF_PRELOAD, notexturetex, "textures/notexture", 3);
-TVAR(IDF_PERSIST|IDF_PRELOAD, blanktex, "!blank", 3);
+TVAR(IDF_PERSIST|IDF_PRELOAD, blanktex, "<comp>blank", 3);
 TVAR(IDF_PERSIST|IDF_PRELOAD, logotex, "textures/logo", 3);
 TVAR(IDF_PERSIST|IDF_PRELOAD, emblemtex, "textures/emblem", 3);
 TVAR(IDF_PERSIST|IDF_PRELOAD, icontex, "textures/icon", 3);
@@ -1879,7 +1879,7 @@ Texture *textureloaded(const char *name)
 
 Texture *textureload(const char *name, int tclamp, bool mipit, bool msg, bool gc)
 {
-    if(name && *name == '!') return UI::composite(name, tclamp, mipit, msg, gc);
+    if(name && !strncmp(name, "<comp>", 6)) return UI::composite(name, tclamp, mipit, msg, gc);
 
     string tname;
     copystring(tname, name);
@@ -3140,7 +3140,7 @@ static void addname(vector<char> &key, Slot &slot, Slot::Tex &t, bool combined =
 
 void Slot::load(int index, Slot::Tex &t)
 {
-    if(*t.name == '!')
+    if(!strncmp(t.name, "<comp>", 6))
     {
         t.t = UI::composite(t.name, 0, true, true, false);
         return;

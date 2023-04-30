@@ -6304,7 +6304,7 @@ namespace UI
         DOSURFACE(SURFACE_COMPOSITE,
         {
             vector<char *> list;
-            explodelist(&name[1], list, 4); // name delay args size
+            explodelist(&name[6], list, 4); // name delay args size
             if(list.empty()) // need at least the name
             {
                 list.deletearrays();

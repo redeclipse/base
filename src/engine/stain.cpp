@@ -746,13 +746,13 @@ struct stainrenderer
 
 stainrenderer stains[] =
 {
-    stainrenderer("!smoke 1", SF_ROTATE, 500, 1000, 10000),
+    stainrenderer("<comp>smoke 1", SF_ROTATE, 500, 1000, 10000),
     stainrenderer("<grey>particles/scorch", SF_ROTATE, 500, 1000, 10000),
     stainrenderer("<grey>particles/scorch", SF_ROTATE, 500, 1000, 2000),
     stainrenderer("<grey>particles/blood", SF_RND4|SF_ROTATE|SF_INVMOD, 0, 1000, 10000),
     stainrenderer("<grey>particles/bullet", SF_OVERBRIGHT, 0, 1000, 10000),
     stainrenderer("<grey>particles/energy", SF_ROTATE|SF_GLOW|SF_SATURATE, 150, 500, 3000),
-    stainrenderer("!stain", SF_SATURATE, 100, 900, 1000)
+    stainrenderer("<comp>stain", SF_SATURATE, 100, 900, 1000)
 };
 
 void initstains()
