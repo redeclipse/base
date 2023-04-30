@@ -57,6 +57,9 @@ semabuild_test() {
 semabuild_build() {
     echo "building ${BRANCH_NAME}.."
 
+    # remove now irrelevant cache
+    rm -rf "${SEMAPHORE_CACHE_DIR}/sys_archives" 2> /dev/null
+
     CACHE_DIR="${SEMAPHORE_CACHE_DIR}" \
         GAME_DIR="$(pwd)" \
         OUTPUT_DIR="${SEMABUILD_DIR}" \
@@ -64,6 +67,8 @@ semabuild_build() {
         PLATFORM_BRANCH="${BRANCH_NAME}" \
         PLATFORM_REVISION="${REVISION}" \
         src/buildindocker.sh || return 1
+
+    sudo chmod -R a+rw "${SEMABUILD_DIR}" || return 1
 
     return 0
 }
