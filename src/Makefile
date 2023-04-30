@@ -55,6 +55,8 @@ ifneq (,$(findstring cross,$(PLATFORM)))
 endif
 
 SYS_FLAGS =
+WINRES_INC =
+
 ifneq (,$(findstring msvc,$(PLATFORM)))
     INC_MSVC = $(MSVC_DIR)/include
     INC_WINKIT_SHARED = $(WINKIT_INC_DIR)/shared
@@ -84,6 +86,11 @@ ifneq (,$(findstring msvc,$(PLATFORM)))
         -isystem $(INC_WINKIT_UCRT) \
         -isystem $(INC_WINKIT_UM) \
         -Wno-deprecated-declarations
+
+    override WINRES_INC += \
+        -I $(INC_WINKIT_SHARED) \
+        -I $(INC_WINKIT_UCRT) \
+        -I $(INC_WINKIT_UM)
 
     override CXXFLAGS += -fhonor-infinities $(SYS_FLAGS)
 
@@ -171,15 +178,25 @@ ifeq (1,$(BUILD_WINDOWS))
 
     APPMODIFIER = _windows
     BIN_SUFFIX = .exe
-    WINDRES = windres
-    override WINDRES := $(TOOLSET_PREFIX)$(WINDRES)
+
 
     ifneq (,$(findstring msvc,$(PLATFORM)))
         STD_LIBS = -static -Xlinker /NODEFAULTLIB:oldnames.lib -Xlinker /SAFESEH:no
         SUP_LIBS = -Lvcpp/$(PLATFORM_BIN) -Llib/$(PLATFORM_BIN)
+        WINDRES = llvm-rc
+        WINRES_FLAGS = $(APPNAME).rc $(WINRES_INC)
     else
         STD_LIBS = -static-libgcc -static-libstdc++
         SUP_LIBS = -L../bin/$(PLATFORM_BIN) -Llib/$(PLATFORM_BIN)
+        WINDRES = windres
+        override WINDRES := $(TOOLSET_PREFIX)$(WINDRES)
+        WINRES_FLAGS = -i $(APPNAME).rc -J rc -o $(APPNAME).res -O coff
+
+        ifneq (,$(findstring 64,$(PLATFORM)))
+            override WINRES_FLAGS += -F pe-x86-64
+        else
+            override WINRES_FLAGS += -F pe-i386
+        endif
     endif
 
     CLIENT_INCLUDES = $(INCLUDES) -isystem include
@@ -196,12 +213,10 @@ ifeq (1,$(BUILD_WINDOWS))
     endif
 
     ifneq (,$(findstring 64,$(PLATFORM)))
-        override WINDRES += -F pe-x86-64
         ifneq (,$(WANT_STEAM))
             override CLIENT_LIBS += -lsteam_api64
         endif
     else
-        override WINDRES += -F pe-i386
         ifneq (,$(WANT_STEAM))
             override CLIENT_LIBS += -lsteam_api
         endif
@@ -414,11 +429,11 @@ $(filter game/%,$(CLIENT_OBJS)): $(filter game/%,$(CLIENT_PCH))
 $(SERVER_OBJS): CXXFLAGS += $(SERVER_INCLUDES)
 
 $(APPCLIENT)_windows$(PLATFORM_SUFFIX)$(BIN_SUFFIX): $(CLIENT_OBJS)
-	$(WINDRES) -i $(APPNAME).rc -J rc -o $(APPNAME).res -O coff
+	$(WINDRES) $(WINRES_FLAGS)
 	$(CXX) $(LDFLAGS) -o $@ $(APPNAME).res $(CLIENT_OBJS) $(CLIENT_LIBS)
 
 $(APPSERVER)_windows$(PLATFORM_SUFFIX)$(BIN_SUFFIX): $(SERVER_OBJS)
-	$(WINDRES) -i $(APPNAME).rc -J rc -o $(APPNAME).res -O coff
+	$(WINDRES) $(WINRES_FLAGS)
 	$(CXX) $(LDFLAGS) -o $@ $(APPNAME).res $(SERVER_OBJS) $(SERVER_LIBS)
 
 $(APPCLIENT)$(PLATFORM_SUFFIX)$(BIN_SUFFIX): $(LIBENET) $(CLIENT_OBJS)
