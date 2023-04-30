@@ -157,19 +157,6 @@ struct nullval : tagval
 } nullval;
 tagval noret = nullval, *commandret = &noret;
 
-void clear_command()
-{
-    enumerate(idents, ident, i,
-    {
-        if(i.type==ID_ALIAS)
-        {
-            DELETEA(i.name);
-            i.forcenull();
-            DELETEA(i.code);
-        }
-    });
-}
-
 void clearoverride(ident &i)
 {
     switch(i.type)
@@ -5411,3 +5398,55 @@ ICOMMAND(0, animstep, "fii", (float *value, int *ms, int *dir),
 });
 
 ICOMMAND(0, smoothstep, "f", (float *t), floatret(smoothinterp(clamp(*t, 0.0f, 1.0f))));
+
+struct mrandom
+{
+    int delay, limit, iter, last, value;
+    mrandom() : delay(0), limit(0), iter(0), last(0), value(0) {}
+    ~mrandom() {}
+};
+vector<mrandom> mrandoms;
+
+int mrnd(int delay, int limit, int millis)
+{
+    if(delay <= 0 || limit <= 0 || millis <= 0) return 0;
+    int iter = round(floorf(millis / delay));
+    loopvrev(mrandoms)
+    {
+        mrandom &m = mrandoms[i];
+        if(m.delay != delay || m.limit != limit)
+        {
+            if(totalmillis - m.last > m.delay * 10) mrandoms.remove(i);
+            continue;
+        }
+        if(iter != m.iter)
+        {
+            m.value = rnd(m.limit);
+            m.iter = iter;
+        }
+        m.last = totalmillis;
+        return m.value;
+    }
+    mrandom &m = mrandoms.add();
+    m.delay = delay;
+    m.limit = limit;
+    m.iter = iter;
+    m.last = totalmillis;
+    m.value = rnd(m.limit);
+    return m.value;
+}
+ICOMMAND(0, mrnd, "iii", (int *delay, int *limit, int *millis), intret(mrnd(*delay, *limit, *millis > 0 ? *millis : lastmillis)));
+
+void clear_command()
+{
+    enumerate(idents, ident, i,
+    {
+        if(i.type==ID_ALIAS)
+        {
+            DELETEA(i.name);
+            i.forcenull();
+            DELETEA(i.code);
+        }
+    });
+    mrandoms.setsize(0);
+}

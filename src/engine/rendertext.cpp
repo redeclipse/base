@@ -12,6 +12,7 @@ FVAR(IDF_PERSIST, textspacescale, 0, 0.5f, 10);
 
 VAR(IDF_PERSIST, textkeyimages, 0, 1, 1);
 FVAR(IDF_PERSIST, textkeyimagescale, 0, 0.8f, FVAR_MAX);
+SVAR(IDF_PERSIST, textkeyprefix, "<invert>textures/keys/");
 VAR(IDF_PERSIST, textkeyseps, 0, 1, 1);
 VAR(IDF_PERSIST|IDF_HEX, textkeycolour, 0, 0x00FFFF, 0xFFFFFF);
 SVAR(IDF_PERSIST, textfont, "default");
@@ -760,7 +761,8 @@ vector<textkey *> textkeys;
 textkey *findtextkey(const char *str)
 {
     loopv(textkeys) if(!strcmp(textkeys[i]->name, str)) return textkeys[i];
-    string key = "textures/keys/";
+    static string key;
+    copystring(key, textkeyprefix);
     int q = strlen(key);
     concatstring(key, str);
     for(int r = strlen(key); q < r; q++) key[q] = tolower(key[q]);
