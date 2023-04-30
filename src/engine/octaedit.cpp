@@ -809,9 +809,9 @@ void rendereditcursor()
         {
             vec pos(sel.o);
             float mindist = 1e16f;
-            int curcorner = 0;
             loopk(2)
             {
+                int curcorner = 0;
                 loop(x, 2) loop(y, 2) loop(z, 2)
                 {
                     vec o = vec(sel.o);
@@ -828,7 +828,6 @@ void rendereditcursor()
                     curcorner++;
                 }
                 if(hasselui >= 0) break;
-                curcorner = 0;
             }
             if(hasselui >= 0)
             {
