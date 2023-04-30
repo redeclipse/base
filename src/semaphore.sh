@@ -56,141 +56,15 @@ semabuild_test() {
 
 semabuild_build() {
     echo "building ${BRANCH_NAME}.."
-    sudo dpkg --add-architecture i386 || return 1
-    sudo ${SEMABUILD_APT} update || return 1
-    sudo ${SEMABUILD_APT} -fy install build-essential multiarch-support gcc-multilib g++-multilib zlib1g-dev libsdl2-dev libsndfile1-dev libalut-dev libopenal-dev libsdl2-image-dev libfreetype6-dev binutils-mingw-w64 g++-mingw-w64 || return 1
-    sudo ${SEMABUILD_APT} clean || return 1
 
-    numjobs=$(nproc)
-
-    chmod +x src/msvcsetup.sh
-    src/msvcsetup.sh
-
-    if [ $? -eq 0 ]; then
-        msvc_ver=$(ls ${HOME}/sys/msvc/Contents/VC/Tools/MSVC/)
-        sdk_ver=$(ls ${HOME}/sys/winsdk/c/Include/)
-
-        export MSVC_DIR="${HOME}/sys/msvc/Contents/VC/Tools/MSVC/$msvc_ver"
-        export WINKIT_INC_DIR="${HOME}/sys/winsdk/c/Include/$sdk_ver"
-        export WINKIT_LIB_DIR="${HOME}/sys/winsdk_lib/c/"
-
-        make -C src clean || return 1
-        sleep 1
-
-        make \
-            CC=clang-12 \
-            CXX=clang++-12 \
-            PLATFORM="x86_64-pc-windows-msvc" \
-            PLATFORM_BIN="amd64" \
-            PLATFORM_BUILD="${SEMAPHORE_BUILD_NUMBER}" \
-            PLATFORM_BRANCH="${BRANCH_NAME}" \
-            PLATFORM_REVISION="${REVISION}" \
-            WANT_DISCORD=1 \
-            WANT_STEAM=1 \
-            INSTDIR="${SEMABUILD_DIR}/windows/bin/amd64" \
-            CFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math -fno-finite-math-only -fhonor-infinities" \
-            CXXFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math -fno-finite-math-only -fhonor-infinities" \
-            LDFLAGS="-m64" \
-            -O -j $numjobs \
-            -C src install || return 1
-
-        make -C src clean || return 1
-        sleep 1
-
-        make \
-            CC=clang-12 \
-            CXX=clang++-12 \
-            PLATFORM="i386-pc-windows-msvc" \
-            PLATFORM_BIN="x86" \
-            PLATFORM_BUILD="${SEMAPHORE_BUILD_NUMBER}" \
-            PLATFORM_BRANCH="${BRANCH_NAME}" \
-            PLATFORM_REVISION="${REVISION}" \
-            WANT_DISCORD=1 \
-            WANT_STEAM=1 \
-            INSTDIR="${SEMABUILD_DIR}/windows/bin/x86" \
-            CFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math -fno-finite-math-only -fhonor-infinities" \
-            CXXFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math -fno-finite-math-only -fhonor-infinities" \
-            LDFLAGS="-m32" \
-            -O -j $numjobs \
-            -C src install || return 1
-    else
-        # mingw fallback when msvc setup fails
-        make \
-            PLATFORM="crossmingw64" \
-            PLATFORM_BIN="amd64" \
-            PLATFORM_BUILD="${SEMAPHORE_BUILD_NUMBER}" \
-            PLATFORM_BRANCH="${BRANCH_NAME}" \
-            PLATFORM_REVISION="${REVISION}" \
-            WANT_DISCORD=1 \
-            WANT_STEAM=1 \
-            INSTDIR="${SEMABUILD_DIR}/windows/bin/amd64" \
-            CFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math -fno-finite-math-only" \
-            CXXFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math -fno-finite-math-only" \
-            LDFLAGS="-m64" \
-            -O -j $numjobs \
-            -C src install || return 1
-
-        make -C src clean || return 1
-        sleep 1
-
-        make \
-            PLATFORM="crossmingw32" \
-            PLATFORM_BIN="x86" \
-            PLATFORM_BUILD="${SEMAPHORE_BUILD_NUMBER}" \
-            PLATFORM_BRANCH="${BRANCH_NAME}" \
-            PLATFORM_REVISION="${REVISION}" \
-            WANT_DISCORD=1 \
-            WANT_STEAM=1 \
-            INSTDIR="${SEMABUILD_DIR}/windows/bin/x86" \
-            CFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math -fno-finite-math-only" \
-            CXXFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math -fno-finite-math-only" \
-            LDFLAGS="-m32" \
-            -O -j $numjobs \
-            -C src install || return 1
-    fi
-
-    make -C src clean || return 1
-    sleep 1
-
-    make \
-        PLATFORM="linux64" \
-        PLATFORM_BIN="amd64" \
+    CACHE_DIR="${SEMAPHORE_CACHE_DIR}" \
+        GAME_DIR="$(pwd)" \
+        OUTPUT_DIR="${SEMABUILD_DIR}" \
         PLATFORM_BUILD="${SEMAPHORE_BUILD_NUMBER}" \
         PLATFORM_BRANCH="${BRANCH_NAME}" \
         PLATFORM_REVISION="${REVISION}" \
-        WANT_DISCORD=1 \
-        WANT_STEAM=1 \
-        INSTDIR="${SEMABUILD_DIR}/linux/bin/amd64" \
-        CFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math -fno-finite-math-only" \
-        CXXFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math -fno-finite-math-only" \
-        LDFLAGS="-m64" \
-        -O -j $numjobs \
-        -C src install || return 1
+        src/buildindocker.sh || return 1
 
-    # sudo ${SEMABUILD_APT} purge -fy sbt || return 1
-    # sudo ${SEMABUILD_APT} -o Dpkg::Options::="--force-overwrite" -fy --no-install-recommends install binutils:i386 || return 1
-    # sudo ${SEMABUILD_APT} -o Dpkg::Options::="--force-overwrite" -fy --no-install-recommends install pkg-config:i386 || return 1
-    # sudo ${SEMABUILD_APT} -o Dpkg::Options::="--force-overwrite" -fy --no-install-recommends install cpp:i386 || return 1
-    # sudo ${SEMABUILD_APT} -o Dpkg::Options::="--force-overwrite" -fy --no-install-recommends install gcc:i386 || return 1
-    # sudo ${SEMABUILD_APT} -o Dpkg::Options::="--force-overwrite" -fy --no-install-recommends install libdbus-1-dev:i386 || return 1
-    # sudo ${SEMABUILD_APT} -o Dpkg::Options::="--force-overwrite" -fy --no-install-recommends install g++:i386 || return 1
-    # sudo ${SEMABUILD_APT} -o Dpkg::Options::="--force-overwrite" -fy --no-install-recommends install zlib1g-dev:i386 libsdl2-dev:i386 libsndfile1-dev:i386 libalut-dev:i386 libopenal-dev:i386 libsdl2-image-dev:i386 libpng-dev:i386 libfreetype6-dev:i386 || return 1
-
-    # PKG_CONFIG_PATH="/usr/lib/i386-linux-gnu/pkgconfig" make \
-    #     PLATFORM="linux32" \
-    #     PLATFORM_BIN="x86" \
-    #     PLATFORM_BUILD="${SEMAPHORE_BUILD_NUMBER}" \
-    #     PLATFORM_BRANCH="${BRANCH_NAME}" \
-    #     PLATFORM_REVISION="${REVISION}" \
-    #     WANT_DISCORD=1 \
-    #     WANT_STEAM=1 \
-    #     INSTDIR="${SEMABUILD_DIR}/linux/bin/x86" \
-    #     -O -j $numjobs \
-    #     -C src clean install || return 1
-
-    #sudo ${SEMABUILD_APT} purge -fy ".*:i386" || return 1
-    #sudo dpkg --remove-architecture i386 || return 1
-    #sudo ${SEMABUILD_APT} update || return 1
     return 0
 }
 
