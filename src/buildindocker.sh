@@ -1,18 +1,18 @@
 #!/bin/bash
 
-IMAGE_NAME=${IMAGE_NAME:-"q009/redeclipse_build"}
-IMAGE_TAG=${IMAGE_TAG:-"v1.0.0"}
+IMAGE_NAME="q009/redeclipse_build"
+IMAGE_TAG="v1.0.0"
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 WORK_DIR=${HOME}/.redeclipse_build
 SYS_DIR=${WORK_DIR}/sys
 
-CACHE_DIR=${CACHE_DIR:-"${WORK_DIR}/cache"}
+CACHE_DIR=""
 IMAGE_DIR="${CACHE_DIR}/image"
 CACHE_IMAGE="${IMAGE_DIR}/image.tar.gz"
 
-GAME_DIR=${GAME_DIR:-"${SCRIPT_DIR}/.."}
-OUTPUT_DIR=${OUTPUT_DIR:-"${SCRIPT_DIR}/../build"}
+GAME_DIR="${SCRIPT_DIR}/.."
+OUTPUT_DIR="${SCRIPT_DIR}/../build"
 
 IMAGE_CACHE_ENABLED=0
 INSTALL_BINARIES_ENABLED=0
@@ -39,9 +39,9 @@ get_revision() {
     popd &>/dev/null || return 1
 }
 
-PLATFORM_BUILD=${PLATFORM_BUILD:-""}
-PLATFORM_BRANCH=${PLATFORM_BRANCH:-$(get_branch)}
-PLATFORM_REVISION=${PLATFORM_REVISION:-$(get_revision)}
+PLATFORM_BUILD="0"
+PLATFORM_BRANCH=$(get_branch)
+PLATFORM_REVISION=$(get_revision)
 
 cleanup() {
     sudo umount ${SYS_DIR} 2> /dev/null
@@ -143,6 +143,8 @@ prep_sys_fs() {
 }
 
 build() {
+    mkdir -p "${OUTPUT_DIR}" || return 1
+
     docker run \
         -v "${GAME_DIR}:/ci/game" \
         -v "${SYS_DIR}:/ci/sys" \
@@ -166,15 +168,62 @@ install_binaries() {
 }
 
 help() {
-    echo "Usage: buildindocker.sh [-i] [-h] [-c]"
+    echo "Usage: buildindocker.sh [options]"
     echo "Options:"
     echo "  -i - Install binaries"
     echo "  -h - Help"
-    echo "  -c - Enable image cache"
+    echo "  -c - Enable image cache <dir>"
+    echo "  -g - Game directory <dir>"
+    echo "  -o - Output directory <dir>"
+    echo "  -n - Build number <number>"
+    echo "  -b - Branch name <branch>"
+    echo "  -r - Revision <revision>"
+    echo "  -m - Image name <name>"
+    echo "  -t - Image tag <tag>"
     exit 0
 }
 
 cleanup
+
+while getopts "ihc:g:o:n:b:r:m:t:" opt; do
+    case ${opt} in
+        i)
+            INSTALL_BINARIES_ENABLED=1
+            ;;
+        h)
+            help
+            ;;
+        c)
+            IMAGE_CACHE_ENABLED=1
+            CACHE_DIR=${OPTARG}
+            ;;
+        g)
+            GAME_DIR=${OPTARG}
+            ;;
+        o)
+            OUTPUT_DIR=${OPTARG}
+            ;;
+        n)
+            PLATFORM_BUILD=${OPTARG}
+            ;;
+        b)
+            PLATFORM_BRANCH=${OPTARG}
+            ;;
+        r)
+            PLATFORM_REVISION=${OPTARG}
+            ;;
+        m)
+            IMAGE_NAME=${OPTARG}
+            ;;
+        t)
+            IMAGE_TAG=${OPTARG}
+            ;;
+        \?)
+            echo "Invalid option: -${OPTARG}" 1>&2
+            exit 1
+            ;;
+    esac
+done
 
 cat << EOF
 
@@ -187,36 +236,26 @@ cat << EOF
 #####################################
 
 Directories:
-* Game: ${GAME_DIR}
+* Game:   ${GAME_DIR}
 * Output: ${OUTPUT_DIR}
-* Cache: ${CACHE_DIR}
+* Cache:  ${CACHE_DIR}
 
 Build information:
 * Number: ${PLATFORM_BUILD}
 * Branch: ${PLATFORM_BRANCH}
 * Commit: ${PLATFORM_REVISION}
 
+Image:
+* Name: ${IMAGE_NAME}
+* Tag:  ${IMAGE_TAG}
+
+Flags:
+* Install binaries: ${INSTALL_BINARIES_ENABLED}
+* Image cache:      ${IMAGE_CACHE_ENABLED}
+
 
 
 EOF
-
-while getopts "ihc" opt; do
-    case ${opt} in
-        i)
-            INSTALL_BINARIES_ENABLED=1
-            ;;
-        h)
-            help
-            ;;
-        c)
-            IMAGE_CACHE_ENABLED=1
-            ;;
-        \?)
-            echo "Invalid option: -${OPTARG}" 1>&2
-            exit 1
-            ;;
-    esac
-done
 
 prep_sys_fs ||
     fail "Unable to create a filesystem for Windows libraries"

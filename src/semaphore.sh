@@ -60,13 +60,13 @@ semabuild_build() {
     # remove now irrelevant cache
     rm -rf "${SEMAPHORE_CACHE_DIR}/sys_archives" 2> /dev/null
 
-    CACHE_DIR="${SEMAPHORE_CACHE_DIR}" \
-        GAME_DIR="$(pwd)" \
-        OUTPUT_DIR="${SEMABUILD_DIR}" \
-        PLATFORM_BUILD="${SEMAPHORE_BUILD_NUMBER}" \
-        PLATFORM_BRANCH="${BRANCH_NAME}" \
-        PLATFORM_REVISION="${REVISION}" \
-        src/buildindocker.sh -c || return 1
+    src/buildindocker.sh \
+        -c "${SEMAPHORE_CACHE_DIR}" \
+        -g "$(pwd)" \
+        -o "${SEMABUILD_DIR}" \
+        -n "${SEMAPHORE_BUILD_NUMBER}" \
+        -r "${REVISION}" \
+        -b "${BRANCH_NAME}" || return 1
 
     sudo chmod -R a+rw "${SEMABUILD_DIR}" || return 1
 
