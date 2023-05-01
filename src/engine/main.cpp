@@ -1238,6 +1238,7 @@ int main(int argc, char **argv)
     mapslots();
 
     initing = NOT_INITING;
+
     if(shouldload)
     {
         conoutf("Loading required data..");
@@ -1255,6 +1256,7 @@ int main(int argc, char **argv)
             firstrun = 0;
             triggereventcallbacks(CMD_EVENT_FIRSTRUN);
         }
+        engineready = true;
 
         conoutf("Loading main..");
         progress(0, "Loading main..");
@@ -1277,7 +1279,6 @@ int main(int argc, char **argv)
         DELETEA(reprotoarg);
 
         if(initscript) execute(initscript, true);
-        engineready = true;
 
         for(int frameloops = 0; ; frameloops = frameloops >= INT_MAX-1 ? MAXFPSHISTORY+1 : frameloops+1)
         {
