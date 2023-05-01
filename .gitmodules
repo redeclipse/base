@@ -132,10 +132,6 @@
 	path = data/ulukai
 	url = https://github.com/redeclipse/ulukai.git
 	branch = master
-[submodule "unixfreak"]
-	path = data/unixfreak
-	url = https://github.com/redeclipse/unixfreak.git
-	branch = master
 [submodule "unnamed"]
 	path = data/unnamed
 	url = https://github.com/redeclipse/unnamed.git
