@@ -63,12 +63,6 @@ check_image_cache() {
 
     echo "Checking for Docker image ${IMAGE_NAME}:${IMAGE_TAG}..."
 
-    # Debug stuff
-    sudo apt install -y tree
-    pushd "${CACHE_DIR}"
-    tree
-    popd
-
     # Check if the cached image name and tag match the ones we want
     if [ $(cat "${CACHE_IMAGE}.ver" 2> /dev/null) != "${IMAGE_NAME}:${IMAGE_TAG}" ]; then
         # No match, we'll pull a new image
