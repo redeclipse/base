@@ -1075,6 +1075,7 @@ namespace UI
             vec n = vec(curyaw * RAD, curpitch * RAD).normalize(), up(0, 0, 1), right;
             if(fabsf(n.z) < 1.f) right.cross(up, n).normalize();
             else right.cross(n, up).normalize();
+            up.cross(n, right).normalize();
 
             switch(adjust&ALIGN_HMASK)
             {
