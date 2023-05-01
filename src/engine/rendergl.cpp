@@ -2574,6 +2574,7 @@ void gl_drawhud(bool noview = false)
     resethudshader();
     if(!noview) blendhalos();
     hud::render(noview);
+    debugparticles();
     debuglights();
 }
 
