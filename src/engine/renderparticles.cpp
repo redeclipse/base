@@ -1367,8 +1367,6 @@ void renderparticles(int layer)
          flagmask = PT_LERP|PT_MOD|PT_ONTOP|PT_BRIGHT|PT_NOTEX|PT_SOFT|PT_SHADER|PT_ENVMAP,
          excludemask = layer == PL_ALL ? ~0 : (layer != PL_NOLAYER ? PT_NOLAYER : 0);
 
-    bvec lasthintcolor(0, 0, 0);
-    vec2 lasthintblend(0, 0);
     loopi(sizeof(parts)/sizeof(parts[0]))
     {
         partrenderer *p = parts[partsorder[i]];
