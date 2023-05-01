@@ -1084,9 +1084,9 @@ namespace UI
             }
             switch(adjust&ALIGN_VMASK)
             {
-                case ALIGN_TOP:     pos.sub(vec(up).mul(ph * scale * uiworldscale)); break;
+                case ALIGN_TOP:     pos.add(vec(up).mul(ph * scale * uiworldscale)); break;
                 case ALIGN_BOTTOM:  break;
-                default:            pos.sub(vec(up).mul(ph * scale * uiworldscale * 0.5f)); break;
+                default:            pos.add(vec(up).mul(ph * scale * uiworldscale * 0.5f)); break;
             }
 
             return ray.magnitude();
