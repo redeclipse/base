@@ -63,14 +63,12 @@ check_image_cache() {
 
     echo "Checking for Docker image ${IMAGE_NAME}:${IMAGE_TAG}..."
 
-    if [[ ! -f "${CACHE_IMAGE}" ]]; then
-        echo "Cached image not found, will pull."
-        NEEDS_CACHE=1
-        return 0
-    fi
+    # Debug stuff
+    echo "Cache directory: ${CACHE_DIR}"
+    ls -la "${CACHE_DIR}"
 
     # Check if the cached image name and tag match the ones we want
-    if [ $(cat "${CACHE_IMAGE}.ver") != "${IMAGE_NAME}:${IMAGE_TAG}" ]; then
+    if [ $(cat "${CACHE_IMAGE}.ver" 2>/dev/null) != "${IMAGE_NAME}:${IMAGE_TAG}" ]; then
         # No match, we'll pull a new image
         echo "Cached image name and tag do not match, will pull."
         NEEDS_CACHE=1
