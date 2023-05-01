@@ -17,7 +17,7 @@ namespace UI
 
     VAR(0, uihidden, 0, 0, 1);
     FVAR(IDF_PERSIST, uiscale, FVAR_NONZERO, 1, 100);
-    FVAR(IDF_PERSIST, uiworldscale, FVAR_NONZERO, 50, VAR_MAX);
+    FVAR(IDF_PERSIST, uiworldscale, FVAR_NONZERO, 50, FVAR_MAX);
     VAR(IDF_PERSIST, uitextrows, 1, 48, VAR_MAX);
 
     VAR(IDF_PERSIST, uiscrollsteptime, 0, 50, VAR_MAX);
@@ -568,7 +568,7 @@ namespace UI
             drawing = this;
         }
 
-        virtual void draw(float sx, float sy)
+        virtual void draw(bool world, float sx, float sy)
         {
             lastsx = sx;
             lastsy = sy;
@@ -577,7 +577,7 @@ namespace UI
             loopchildren(o,
             {
                 if(!isfullyclipped(sx + o->x, sy + o->y, o->w, o->h))
-                    o->draw(sx + o->x, sy + o->y);
+                    o->draw(world, sx + o->x, sy + o->y);
             });
         }
 
@@ -1012,7 +1012,7 @@ namespace UI
                 if(hastop) glDisable(GL_DEPTH_TEST);
             }
 
-            Object::draw(sx, sy);
+            Object::draw(world, sx, sy);
 
             stopdrawing();
 
@@ -1537,7 +1537,7 @@ namespace UI
             return NULL;
         }
 
-        void draw(float sx, float sy) {}
+        void draw(bool world, float sx, float sy) {}
 
         void draw(bool world)
         {
@@ -2153,19 +2153,19 @@ namespace UI
             loopchildrange(columns, children.length(), o, o->adjustlayout(0, 0, w, h));
         }
 
-        void draw(float sx, float sy)
+        void draw(bool world, float sx, float sy)
         {
             drawn = true;
 
             loopchildrange(columns, children.length(), o,
             {
                 if(!isfullyclipped(sx + o->x, sy + o->y, o->w, o->h))
-                    o->draw(sx + o->x, sy + o->y);
+                    o->draw(world, sx + o->x, sy + o->y);
             });
             loopchildrange(0, columns, o,
             {
                 if(!isfullyclipped(sx + o->x, sy + o->y, o->w, o->h))
-                    o->draw(sx + o->x, sy + o->y);
+                    o->draw(world, sx + o->x, sy + o->y);
             });
         }
     };
@@ -2582,7 +2582,7 @@ namespace UI
             Color::def();
         }
 
-        void draw(float sx, float sy)
+        void draw(bool world, float sx, float sy)
         {
             changedraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
             if(type==MODULATE) modblend(); else resetblend();
@@ -2591,7 +2591,7 @@ namespace UI
             gle::begin(GL_TRIANGLE_STRIP);
             if(cols >= 2)
             {
-                float vr = 1/float(cols-1), vcx1 = 0, vcx2 = 0, vcy1 = 0, vcy2 = 0, ts = 0,
+                float vr = 1/float(cols-1), vcx1 = 0, vcx2 = 0, vcy1 = 0, vcy2 = 0,
                       vw1 = w*(getcoord(FC_TR, 0)-getcoord(FC_TL, 0)), vx1 = w*getcoord(FC_TL, 0),
                       vw2 = w*(getcoord(FC_BR, 0)-getcoord(FC_BL, 0)), vx2 = w*getcoord(FC_BL, 0),
                       vdw1 = w*(getcoord(FC_BL, 0)-getcoord(FC_TL, 0)), vdw2 = w*(getcoord(FC_BR, 0)-getcoord(FC_TR, 0)),
@@ -2627,7 +2627,6 @@ namespace UI
                             break;
                         }
                     }
-                    ts += vr;
                 }
             }
             else
@@ -2639,7 +2638,7 @@ namespace UI
             }
             gle::end();
 
-            Object::draw(sx, sy);
+            Object::draw(world, sx, sy);
         }
     };
 
@@ -2692,7 +2691,7 @@ namespace UI
             gle::defvertex(2);
         }
 
-        void draw(float sx, float sy)
+        void draw(bool world, float sx, float sy)
         {
             changedraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
             if(type==MODULATE) modblend(); else resetblend();
@@ -2705,7 +2704,7 @@ namespace UI
             gle::end();
             if(width != 1) glLineWidth(1);
 
-            Object::draw(sx, sy);
+            Object::draw(world, sx, sy);
         }
     };
 
@@ -2733,7 +2732,7 @@ namespace UI
             gle::defvertex(2);
         }
 
-        void draw(float sx, float sy)
+        void draw(bool world, float sx, float sy)
         {
             changedraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
             if(type==MODULATE) modblend(); else resetblend();
@@ -2748,7 +2747,7 @@ namespace UI
             gle::end();
             if(width != 1) glLineWidth(1);
 
-            Object::draw(sx, sy);
+            Object::draw(world, sx, sy);
         }
     };
     UIARG(Outline, outline, width, "f", float, FVAR_NONZERO, FVAR_MAX);
@@ -2804,7 +2803,7 @@ namespace UI
             gle::deftexcoord0();
         }
 
-        void draw(float sx, float sy)
+        void draw(bool world, float sx, float sy)
         {
             changedraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
             resetblend();
@@ -2837,7 +2836,7 @@ namespace UI
             gle::attribf(sx+(w*getcoord(FC_BR, 0)), sy+(h*getcoord(FC_BR, 1))); gle::attribf(1, 1);
             gle::end();
 
-            Object::draw(sx, sy);
+            Object::draw(world, sx, sy);
         }
     };
 
@@ -2974,7 +2973,7 @@ namespace UI
             if(!shading && cols >= 2)
             {
                 bindtex(GL_TRIANGLE_STRIP, colstart, forced);
-                float vr = 1/float(cols-1), vs = 0, vcx1 = 0, vcx2 = 0, vcy1 = 0, vcy2 = 0,
+                float vr = 1/float(cols-1), vcx1 = 0, vcx2 = 0, vcy1 = 0, vcy2 = 0,
                     vw1 = coordmap[FC_TR][0]-coordmap[FC_TL][0], vx1 = coordmap[FC_TL][0],
                     vw2 = coordmap[FC_BR][0]-coordmap[FC_BL][0], vx2 = coordmap[FC_BL][0],
                     vdw1 = coordmap[FC_BL][0]-coordmap[FC_TL][0], vdw2 = coordmap[FC_BR][0]-coordmap[FC_TR][0],
@@ -3027,7 +3026,6 @@ namespace UI
                         }
                     }
                     lastcolor = colors[color2];
-                    vs += vr;
                 }
             }
             else
@@ -3041,9 +3039,9 @@ namespace UI
             return false;
         }
 
-        void draw(float sx, float sy)
+        void draw(bool world, float sx, float sy)
         {
-            if(tex == notexture) { Object::draw(sx, sy); return; }
+            if(tex == notexture) { Object::draw(world, sx, sy); return; }
 
             float gs = fabs(shadowsize), gw = max(w-(shadowsize != 0 ? float(gs) : 0.f), 0.f), gh = max(h-(shadowsize != 0 ? float(gs) : 0.f), 0.f);
             loopk(shadowsize != 0 ? 2 : 1)
@@ -3064,7 +3062,7 @@ namespace UI
                 drawmapped(gx, gy, coordmap, tcoordmap, shading ? -1 : 0, 0, false, shading);
             }
 
-            Object::draw(sx, sy);
+            Object::draw(world, sx, sy);
         }
     };
 
@@ -3115,9 +3113,9 @@ namespace UI
             return !alphatarget || !(tex->type&Texture::ALPHA) || checkalphamask(tex, cropx + cx/w*cropw, cropy + cy/h*croph);
         }
 
-        void draw(float sx, float sy)
+        void draw(bool world, float sx, float sy)
         {
-            if(tex == notexture) { Object::draw(sx, sy); return; }
+            if(tex == notexture) { Object::draw(world, sx, sy); return; }
 
             float gs = fabs(shadowsize), gw = max(w-(shadowsize != 0 ? float(gs) : 0.f), 0.f), gh = max(h-(shadowsize != 0 ? float(gs) : 0.f), 0.f);
             loopk(shadowsize != 0 ? 2 : 1)
@@ -3139,7 +3137,7 @@ namespace UI
                 drawmapped(gx, gy, coordmap, tcoordmap, shading ? -1 : 0, 0, false, shading);
             }
 
-            Object::draw(sx, sy);
+            Object::draw(world, sx, sy);
         }
     };
 
@@ -3198,9 +3196,9 @@ namespace UI
             return checkalphamask(tex, mx, my);
         }
 
-        void draw(float sx, float sy)
+        void draw(bool world, float sx, float sy)
         {
-            if(tex == notexture) { Object::draw(sx, sy); return; }
+            if(tex == notexture) { Object::draw(world, sx, sy); return; }
 
             float gs = fabs(shadowsize), gw = max(w-(shadowsize != 0 ? float(gs) : 0.f), 0.f), gh = max(h-(shadowsize != 0 ? float(gs) : 0.f), 0.f);
             loopk(shadowsize != 0 ? 2 : 1)
@@ -3253,7 +3251,7 @@ namespace UI
                 }
             }
 
-            Object::draw(sx, sy);
+            Object::draw(world, sx, sy);
         }
     };
 
@@ -3293,9 +3291,9 @@ namespace UI
             return checkalphamask(tex, mx, my);
         }
 
-        void draw(float sx, float sy)
+        void draw(bool world, float sx, float sy)
         {
-            if(tex == notexture) { Object::draw(sx, sy); return; }
+            if(tex == notexture) { Object::draw(world, sx, sy); return; }
 
             float gs = fabs(shadowsize), gw = max(w-(shadowsize != 0 ? float(gs) : 0.f), 0.f), gh = max(h-(shadowsize != 0 ? float(gs) : 0.f), 0.f);
             loopk(shadowsize != 0 ? 2 : 1)
@@ -3428,7 +3426,7 @@ namespace UI
                 }
                 else loopi(CO_MAX) drawmapped(gx, gy, coordmap[i], tcoordmap[i], shading ? -1 : 0, 0, false, shading);
             }
-            Object::draw(sx, sy);
+            Object::draw(world, sx, sy);
         }
     };
 
@@ -3466,9 +3464,9 @@ namespace UI
             return checkalphamask(tex, fmod(cx/tilew, 1), fmod(cy/tileh, 1));
         }
 
-        void draw(float sx, float sy)
+        void draw(bool world, float sx, float sy)
         {
-            if(tex == notexture) { Object::draw(sx, sy); return; }
+            if(tex == notexture) { Object::draw(world, sx, sy); return; }
 
             float gs = fabs(shadowsize), gw = max(w-(shadowsize != 0 ? float(gs) : 0.f), 0.f), gh = max(h-(shadowsize != 0 ? float(gs) : 0.f), 0.f);
             loopk(shadowsize != 0 ? 2 : 1)
@@ -3502,7 +3500,7 @@ namespace UI
                 else quads(gx, gy, gw, gh, 0, 0, w/tilew, h/tileh);
             }
 
-            Object::draw(sx, sy);
+            Object::draw(world, sx, sy);
         }
     };
 
@@ -3536,11 +3534,11 @@ namespace UI
             lastcolor = Color(0, 0, 0, 0);
         }
 
-        void draw(float sx, float sy)
+        void draw(bool world, float sx, float sy)
         {
             if(!t || t == notexture)
             {
-                Object::draw(sx, sy);
+                Object::draw(world, sx, sy);
                 return;
             }
 
@@ -3563,7 +3561,7 @@ namespace UI
             settexture(t);
             quad(sx, sy, w, h, tc);
 
-            Object::draw(sx, sy);
+            Object::draw(world, sx, sy);
         }
     };
 
@@ -3637,9 +3635,9 @@ namespace UI
                    (vec2(cx, cy).sub(a).cross(vec2(c).sub(a)) < 0) == side;
         }
 
-        void draw(float sx, float sy)
+        void draw(bool world, float sx, float sy)
         {
-            Object::draw(sx, sy);
+            Object::draw(world, sx, sy);
 
             changedraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
             if(type==MODULATE) modblend(); else resetblend();
@@ -3683,9 +3681,9 @@ namespace UI
             return vec2(cx, cy).sub(r).squaredlen() <= r*r;
         }
 
-        void draw(float sx, float sy)
+        void draw(bool world, float sx, float sy)
         {
-            Object::draw(sx, sy);
+            Object::draw(world, sx, sy);
 
             changedraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
             if(type==MODULATE) modblend(); else resetblend();
@@ -3753,7 +3751,7 @@ namespace UI
 
         virtual const char *getstr() const { return ""; }
 
-        void draw(float sx, float sy)
+        void draw(bool world, float sx, float sy)
         {
             changedraw(CHANGE_COLOR|CHANGE_SHADER);
 
@@ -3781,7 +3779,7 @@ namespace UI
             draw_text(getstr(), 0, 0, colors[0].r, colors[0].g, colors[0].b, colors[0].a, a, pos, wlen, 1);
             pophudmatrix();
 
-            Object::draw(sx, sy);
+            Object::draw(world, sx, sy);
         }
 
         void layout()
@@ -3980,10 +3978,10 @@ namespace UI
             popfont();
         }
 
-        void draw(float sx, float sy)
+        void draw(bool world, float sx, float sy)
         {
             pushfont(str);
-            Object::draw(sx, sy);
+            Object::draw(world, sx, sy);
             popfont();
         }
 
@@ -4044,12 +4042,12 @@ namespace UI
             texgc = oldtexgx;
         }
 
-        void draw(float sx, float sy)
+        void draw(bool world, float sx, float sy)
         {
             bool oldtexgx = texgc;
             texgc = true;
 
-            Object::draw(sx, sy);
+            Object::draw(world, sx, sy);
 
             texgc = oldtexgx;
         }
@@ -4162,7 +4160,7 @@ namespace UI
         DOSTATES
         #undef DOSTATE
 
-        void draw(float sx, float sy)
+        void draw(bool world, float sx, float sy)
         {
             if((sizew && virtw > sizew) || (sizeh && virth > sizeh))
             {
@@ -4181,11 +4179,11 @@ namespace UI
 
                 stopdrawing();
                 pushclip(sx, sy, w, h);
-                Object::draw(drawx, drawy);
+                Object::draw(world, drawx, drawy);
                 stopdrawing();
                 popclip();
             }
-            else Object::draw(sx, sy);
+            else Object::draw(world, sx, sy);
         }
 
         float hlimit() const { return max(virtw - w, 0.0f); }
@@ -4752,7 +4750,7 @@ namespace UI
 
         float drawscale() const { return scale / FONTH; }
 
-        void draw(float sx, float sy)
+        void draw(bool world, float sx, float sy)
         {
             changedraw(CHANGE_COLOR | CHANGE_SHADER);
 
@@ -4765,7 +4763,7 @@ namespace UI
 
             pophudmatrix();
 
-            Object::draw(sx, sy);
+            Object::draw(world, sx, sy);
         }
 
         void layout()
@@ -5147,7 +5145,7 @@ namespace UI
             gle::defcolor();
         }
 
-        void draw(float sx, float sy)
+        void draw(bool world, float sx, float sy)
         {
             changedraw(CHANGE_SHADER | CHANGE_COLOR);
 
@@ -5201,7 +5199,7 @@ namespace UI
 
             pophudmatrix();
 
-            Object::draw(sx, sy);
+            Object::draw(world, sx, sy);
         }
     };
 
@@ -5228,7 +5226,7 @@ namespace UI
             gle::colorf(1, 1, 1);
         }
 
-        void draw(float sx, float sy)
+        void draw(bool world, float sx, float sy)
         {
             changedraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
 
@@ -5240,7 +5238,7 @@ namespace UI
 
             pophudmatrix();
 
-            Object::draw(sx, sy);
+            Object::draw(world, sx, sy);
         }
     };
 
@@ -5373,9 +5371,9 @@ namespace UI
             mdl.anim |= ANIM_LOOP;
         }
 
-        void draw(float sx, float sy)
+        void draw(bool world, float sx, float sy)
         {
-            if(!loadedshaders) { Object::draw(sx, sy); return; }
+            if(!loadedshaders) { Object::draw(world, sx, sy); return; }
 
             changedraw(CHANGE_SHADER);
 
@@ -5396,7 +5394,7 @@ namespace UI
             if(clipstack.length()) clipstack.last().scissor();
             modelpreview::end(skycol, suncol, sundir, excol, exdir);
 
-            Object::draw(sx, sy);
+            Object::draw(world, sx, sy);
         }
     };
 
@@ -5448,9 +5446,9 @@ namespace UI
         static const char *typestr() { return "#PlayerPreview"; }
         const char *gettype() const { return typestr(); }
 
-        void draw(float sx, float sy)
+        void draw(bool world, float sx, float sy)
         {
-            if(!loadedshaders) { Object::draw(sx, sy); return; }
+            if(!loadedshaders) { Object::draw(world, sx, sy); return; }
 
             changedraw(CHANGE_SHADER);
 
@@ -5467,7 +5465,7 @@ namespace UI
 
             modelpreview::end(skycol, suncol, sundir, excol, exdir);
 
-            Object::draw(sx, sy);
+            Object::draw(world, sx, sy);
         }
 
         vec2 vanityscreenpos(int vanity)
@@ -5528,9 +5526,9 @@ namespace UI
         static const char *typestr() { return "#PrefabPreview"; }
         const char *gettype() const { return typestr(); }
 
-        void draw(float sx, float sy)
+        void draw(bool world, float sx, float sy)
         {
-            Object::draw(sx, sy);
+            Object::draw(world, sx, sy);
 
             if(!loadedshaders) return;
 
@@ -5636,7 +5634,7 @@ namespace UI
             }
         }
 
-        void draw(float sx, float sy)
+        void draw(bool world, float sx, float sy)
         {
             if(slots.inrange(index))
             {
@@ -5644,7 +5642,7 @@ namespace UI
                 previewslot(slot, *slot.variants, sx, sy);
             }
 
-            Object::draw(sx, sy);
+            Object::draw(world, sx, sy);
         }
     };
 
@@ -5656,7 +5654,7 @@ namespace UI
         static const char *typestr() { return "#VSlotViewer"; }
         const char *gettype() const { return typestr(); }
 
-        void draw(float sx, float sy)
+        void draw(bool world, float sx, float sy)
         {
             if(vslots.inrange(index))
             {
@@ -5664,7 +5662,7 @@ namespace UI
                 previewslot(*vslot.slot, vslot, sx, sy);
             }
 
-            Object::draw(sx, sy);
+            Object::draw(world, sx, sy);
         }
     };
 
@@ -5740,7 +5738,7 @@ namespace UI
             }
         }
 
-        void draw(float sx, float sy)
+        void draw(bool world, float sx, float sy)
         {
             if(decalslots.inrange(index))
             {
@@ -5748,7 +5746,7 @@ namespace UI
                 previewslot(slot, *slot.variants, sx, sy);
             }
 
-            Object::draw(sx, sy);
+            Object::draw(world, sx, sy);
         }
     };
 
@@ -5786,7 +5784,7 @@ namespace UI
             return true;
         }
 
-        void draw(float sx, float sy)
+        void draw(bool world, float sx, float sy)
         {
             changedraw(CHANGE_COLOR);
             while(colors.length() < 2) colors.add(Color(colourwhite));
@@ -5821,7 +5819,7 @@ namespace UI
                 gle::end();
             }
 
-            Object::draw(sx, sy);
+            Object::draw(world, sx, sy);
         }
     };
 
@@ -5851,9 +5849,9 @@ namespace UI
             return true;
         }
 
-        void draw(float sx, float sy)
+        void draw(bool world, float sx, float sy)
         {
-            Object::draw(sx, sy);
+            Object::draw(world, sx, sy);
         }
     };
 
@@ -5918,7 +5916,7 @@ namespace UI
             return true;
         }
 
-        void draw(float sx, float sy)
+        void draw(bool world, float sx, float sy)
         {
             Radar *r = getradar();
             if(r)
@@ -5966,7 +5964,7 @@ namespace UI
                         gle::attrib(norm); gle::attribf(tx, ty);
                     }
                 }
-                Object::draw(rx+bbx*w*RAD, ry+bby*h*RAD); // don't descend unless we process the blip
+                Object::draw(world, rx+bbx*w*RAD, ry+bby*h*RAD); // don't descend unless we process the blip
             }
         }
     };
