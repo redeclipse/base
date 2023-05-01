@@ -124,7 +124,8 @@ const char *partnames[] = { "part", "tape", "trail", "text", "explosion", "light
 struct partvert
 {
     vec pos;
-    bvec4 color, hintcolor;
+    bvec4 color;
+    bvec hintcolor;
     vec2 tc, hintblend;
 };
 
@@ -324,9 +325,9 @@ struct listrenderer : partrenderer
         p->millis = lastmillis;
         p->color = bvec::hexcolor(color);
         p->size = size;
-        p->blend = blend;
+        p->blend = clamp(blend, 0.f, 1.f);
         p->hintcolor = bvec::hexcolor(hintcolor);
-        p->hintblend = hintblend;
+        p->hintblend = clamp(hintblend, 0.f, 1.f);
         p->gravity = gravity;
         p->collide = collide;
         p->val = val;
@@ -523,7 +524,7 @@ struct portalrenderer : listrenderer<portal>
         p->yaw = yaw;
         p->pitch = pitch;
         p->envmap = envmap;
-        p->envblend = envblend;
+        p->envblend = clamp(envblend, 0.f, 1.f);
         p->destyaw = destyaw;
         p->destpitch = destpitch;
         return p;
@@ -804,8 +805,8 @@ struct varenderer : partrenderer
         p->millis = lastmillis + emitoffset;
         p->color = bvec::hexcolor(color);
         p->hintcolor = bvec::hexcolor(hintcolor);
-        p->hintblend = hintblend;
-        p->blend = blend;
+        p->hintblend = clamp(hintblend, 0.f, 1.f);
+        p->blend = clamp(blend, 0.f, 1.f);
         p->size = size;
         p->gravity = gravity;
         p->collide = collide;
@@ -923,7 +924,7 @@ struct varenderer : partrenderer
             else SETCOLOR
         }
         else if(type&PT_MOD) SETMODCOLOR
-        else SETCOLOR
+        else loopi(4) vs[i].color.a = uchar(p->blend*blend);
 
         if(type&PT_ROT) genrotpos<T>(p->o, p->d, size, ts, p->gravity, vs, (p->flags>>2)&0x1F, p);
         else genpos<T>(p->o, p->d, size, p->gravity, ts, vs, p);
@@ -2021,7 +2022,7 @@ static int partcolour(int c, int p, int x)
 void makeparticle(const vec &o, attrvector &attr)
 {
     bool oldemit = canemit;
-    if(attr[11]) canemit = true;
+    if(attr[12]) canemit = true;
     enviroparts = true;
     switch(attr[0])
     {
@@ -2032,18 +2033,18 @@ void makeparticle(const vec &o, attrvector &attr)
                   size = attr[7] ? float(attr[7])/100.f : 2.f,
                   blend = attr[8] ? float(attr[8])/100.f : 1.f,
                   vel = attr[10] ? float(attr[10]) : 30.f,
-                  hintblend = attr[17] > 0 ? attr[17]/100.f : 0.f;
+                  hintblend = attr[18] > 0 ? attr[18]/100.f : 0.f;
             int color = partcolour(attr[3] ? attr[3] : 0xF05010, attr[5], attr[6]),
                 fade = attr[4] > 0 ? attr[4] : 1000, gravity = attr[9] ? attr[9] : -10,
-                hintcolor = attr[16] > 0 ? attr[16] : vec::fromcolor(color).neg().tohexcolor();
+                hintcolor = attr[17] > 0 ? attr[17] : vec::fromcolor(color).neg().tohexcolor();
             regularflame(PART_FLAME, o, radius, height, color, 3, fade/2, size, blend, hintcolor, hintblend, gravity/2, 0, vel);
             regularflame(PART_SMOKE, vec(o).addz(2.f*min(radius, height)), radius, height, 0x101008, 1, fade, size, blend, 0x000000, 0.25f, gravity, 0, vel);
             break;
         }
         case 1: // smoke vent - <dir>
         {
-            float hintblend = attr[17] > 0 ? attr[17]/100.f : 0.f;
-            int hintcolor = attr[16] > 0 ? attr[16] : vec::fromcolor(0x897661).neg().tohexcolor();
+            float hintblend = attr[18] > 0 ? attr[18]/100.f : 0.f;
+            int hintcolor = attr[17] > 0 ? attr[17] : vec::fromcolor(0x897661).neg().tohexcolor();
             regularsplash(PART_SMOKE, 0x897661, 2, 1, 200, offsetvec(o, attr[1], rnd(10)), 2.4f, 1.f, hintcolor, hintblend);
             break;
         }
@@ -2057,8 +2058,8 @@ void makeparticle(const vec &o, attrvector &attr)
                 const bvec &wcol = getwatercolour(mat);
                 color = (int(wcol[0])<<16) | (int(wcol[1])<<8) | int(wcol[2]);
             }
-            float hintblend = attr[17] > 0 ? attr[17]/100.f : 0.f;
-            int hintcolor = attr[16] > 0 ? attr[16] : vec::fromcolor(color).neg().tohexcolor();
+            float hintblend = attr[18] > 0 ? attr[18]/100.f : 0.f;
+            int hintcolor = attr[17] > 0 ? attr[17] : vec::fromcolor(color).neg().tohexcolor();
             regularsplash(PART_SPARK, color, 10, 4, 200, offsetvec(o, attr[1], rnd(10)), 0.6f, 1.f, hintcolor, hintblend);
             break;
         }
@@ -2066,8 +2067,8 @@ void makeparticle(const vec &o, attrvector &attr)
         {
             int types[4] = { PART_EXPLOSION, PART_SHOCKWAVE, PART_SHOCKBALL, PART_GLIMMERY }, type = types[attr[3] >= 0 && attr[3] <= 3 ? attr[3] : 0];
             float blend = attr[4] > 0 && attr[4] < 100 ? attr[4]/100.f : 1.f;
-            float hintblend = attr[17] > 0 ? attr[17]/100.f : 0.f;
-            int color = partcolour(attr[2], attr[3], attr[4]), hintcolor = attr[16] > 0 ? attr[16] : vec::fromcolor(color).neg().tohexcolor();
+            float hintblend = attr[18] > 0 ? attr[18]/100.f : 0.f;
+            int color = partcolour(attr[2], attr[3], attr[4]), hintcolor = attr[17] > 0 ? attr[17] : vec::fromcolor(color).neg().tohexcolor();
             newparticle(o, vec(0, 0, 0), 1, type, color, 4.f, blend, hintcolor, hintblend, 0, 0, 1+attr[1]);
             break;
         }
@@ -2090,8 +2091,8 @@ void makeparticle(const vec &o, attrvector &attr)
             int type = typemap[mapped], fade = attr[4] > 0 ? attr[4] : 250, gravity = !istape ? attr[7] : 0,
                 stain = !istape ? (attr[6] >= 0 && attr[6] <= STAIN_MAX ? attr[6] : -1) : 0,
                 color = !istape ? partcolour(attr[3], attr[9], attr[10]) : partcolour(attr[3], attr[6], attr[7]),
-                hintcolor = attr[16] > 0 ? attr[16] : vec::fromcolor(color).neg().tohexcolor();
-            float size = attr[5] != 0 ? attr[5]/100.f : sizemap[mapped], vel = !istape ? attr[8] : 1, blend = attr[11] > 0 ? attr[11]/100.f : 1.f, hintblend = attr[17] > 0 ? attr[17]/100.f : 0.f;
+                hintcolor = attr[17] > 0 ? attr[17] : vec::fromcolor(color).neg().tohexcolor();
+            float size = attr[5] != 0 ? attr[5]/100.f : sizemap[mapped], vel = !istape ? attr[8] : 1, blend = attr[11] > 0 ? attr[11]/100.f : 1.f, hintblend = attr[18] > 0 ? attr[18]/100.f : 0.f;
             if(attr[1] >= 256) regularshape(type, max(1+attr[2], 1), color, attr[1]-256, 5, fade, o, size, blend, hintcolor, hintblend, gravity, stain, vel);
             else newparticle(o, vec(offsetvec(!istape ? vec(0, 0, 0) : o, attr[1], max(1+attr[2], 0))).mul(vel), fade, type, color, size, blend, hintcolor, hintblend, gravity, stain);
             break;
@@ -2101,9 +2102,9 @@ void makeparticle(const vec &o, attrvector &attr)
         {
             const int typemap[] = { PART_FLAME, PART_SMOKE }, colormap[] = { 0xF05010, 0x101008 }, fademap[] = { 500, 1000 }, densitymap[] = { 3, 1 }, gravitymap[] = { -5, -10 };
             const float sizemap[] = { 2, 2 }, velmap[] = { 25, 50 };
-            float hintblend = attr[17] > 0 ? attr[17]/100.f : 0.f;
-            int color = attr[3] ? attr[3] : colormap[attr[0]-14], hintcolor = attr[16] > 0 ? attr[16] : vec::fromcolor(color).neg().tohexcolor();
-            regularflame(typemap[attr[0]-14], o, float(attr[1])/100.0f, float(attr[2])/100.0f, color, densitymap[attr[0]-14], attr[4] > 0 ? attr[4] : fademap[attr[0]-14], attr[5] != 0 ? attr[5]/100.f : sizemap[attr[0]-14], attr[10] > 0 ? attr[10]/100.f : 1.f, hintcolor, hintblend, attr[6] != 0 ? attr[6] : gravitymap[attr[0]-14], 0, attr[7] != 0 ? attr[7] : velmap[attr[0]-14]);
+            float hintblend = attr[18] > 0 ? attr[18]/100.f : 0.f;
+            int color = attr[3] ? attr[3] : colormap[attr[0]-14], hintcolor = attr[17] > 0 ? attr[17] : vec::fromcolor(color).neg().tohexcolor();
+            regularflame(typemap[attr[0]-14], o, float(attr[1])/100.0f, float(attr[2])/100.0f, partcolour(color, attr[8], attr[9]), densitymap[attr[0]-14], attr[4] > 0 ? attr[4] : fademap[attr[0]-14], attr[5] != 0 ? attr[5]/100.f : sizemap[attr[0]-14], attr[10] > 0 ? attr[10]/100.f : 1.f, hintcolor, hintblend, attr[6] != 0 ? attr[6] : gravitymap[attr[0]-14], 0, attr[7] != 0 ? attr[7] : velmap[attr[0]-14]);
             break;
         }
         case 6: // meter, metervs - <percent> <rgb> <rgb2>

@@ -1295,6 +1295,11 @@ bool load_world(const char *mname, int crc, int variant)
                 e.attrs[5] = e.attrs[6] = 0;
             }
             if(hdr.version <= 52 && e.type == ET_MAPUI) e.type = ET_EMPTY;
+            if(hdr.version <= 53 && e.type == ET_PARTICLES)
+            {
+                loopi(7) e.attrs[18-i] = e.attrs[17-i];
+                e.attrs[11] = 0;
+            }
             if(!insideworld(e.o) && e.type != ET_LIGHT && e.type != ET_LIGHTFX)
                 conoutf("\frWARNING: ent outside of map: enttype[%d](%s) index %d (%f, %f, %f) [%d, %d]", e.type, entities::findname(e.type), i, e.o.x, e.o.y, e.o.z, worldsize, worldscale);
 

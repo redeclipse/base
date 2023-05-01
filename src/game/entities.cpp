@@ -796,15 +796,15 @@ namespace entities
     {
         if(type < 0 || type >= MAXENTTYPES) return "";
         const char *attrname = enttype[type].attrs[attr];
-        if(type == PARTICLES && attr < 11) switch(attr1)
+        if(type == PARTICLES && attr < 12) switch(attr1)
         {
             case -1: break; // not given
             case 0:  switch(attr) { case 0: break; case 1: attrname = "length"; break; case 2: attrname = "height"; break; case 3: attrname = "colour"; break; case 4: attrname = "fade"; break; case 5: attrname = "palette"; break; case 6: attrname = "palindex"; break; case 7: attrname = "size"; break; case 8: attrname = "blend"; break; case 9: attrname = "gravity"; break; case 10: attrname = "velocity"; break; default: attrname = ""; break; } break;
-            case 1:  switch(attr) { case 0: break; case 1: attrname = "dir"; break; case 11: attrname = "millis"; break; case 12: attrname = "variant"; break; default: attrname = ""; } break;
-            case 2:  switch(attr) { case 0: break; case 1: attrname = "dir"; break; case 11: attrname = "millis"; break; case 12: attrname = "variant"; break; default: attrname = ""; } break;
-            case 3:  switch(attr) { case 0: break; case 1: attrname = "size"; break; case 2: attrname = "colour"; break; case 3: attrname = "palette"; break; case 4: attrname = "palindex"; break; case 11: attrname = "millis"; break; case 12: attrname = "variant"; break; default: attrname = ""; } break;
-            case 5:  switch(attr) { case 0: break; case 1: attrname = "amt"; break; case 2: attrname = "colour"; break; case 3: attrname = "palette"; break; case 4: attrname = "palindex"; break; case 11: attrname = "millis"; break; case 12: attrname = "variant"; break; default: attrname = ""; } break;
-            case 6:  switch(attr) { case 0: break; case 1: attrname = "amt"; break; case 2: attrname = "colour"; break; case 3: attrname = "colour2"; break; case 4: attrname = "palette1"; break; case 5: attrname = "palindex1"; break; case 6: attrname = "palette2"; break; case 7: attrname = "palindex2"; break; case 11: attrname = "millis"; break; case 12: attrname = "variant"; break; default: attrname = ""; } break;
+            case 1:  switch(attr) { case 0: break; case 1: attrname = "dir"; break; break; default: attrname = ""; } break;
+            case 2:  switch(attr) { case 0: break; case 1: attrname = "dir"; break; break; default: attrname = ""; } break;
+            case 3:  switch(attr) { case 0: break; case 1: attrname = "size"; break; case 2: attrname = "colour"; break; case 3: attrname = "palette"; break; case 4: attrname = "palindex"; break; break; default: attrname = ""; } break;
+            case 5:  switch(attr) { case 0: break; case 1: attrname = "amt"; break; case 2: attrname = "colour"; break; case 3: attrname = "palette"; break; case 4: attrname = "palindex"; break; break; default: attrname = ""; } break;
+            case 6:  switch(attr) { case 0: break; case 1: attrname = "amt"; break; case 2: attrname = "colour"; break; case 3: attrname = "colour2"; break; case 4: attrname = "palette1"; break; case 5: attrname = "palindex1"; break; case 6: attrname = "palette2"; break; case 7: attrname = "palindex2"; break; break; default: attrname = ""; } break;
             case 4:
             case 7:  switch(attr) { case 0: break; case 1: attrname = "dir"; break; case 2: attrname = "length"; break; case 3: attrname = "colour"; break; case 4: attrname = "fade"; break; case 5: attrname = "size"; break; case 6: attrname = "palette"; break; case 7: attrname = "palindex"; break; default: attrname = ""; break; } break;
             case 8:
@@ -3269,11 +3269,11 @@ namespace entities
     {
         if(!isallowed(e)) return false;
         gameentity &f = (gameentity &)e;
-        if(f.attrs[11])
+        if(f.attrs[12])
         {
             if((f.nextemit -= curtime) <= 0) f.nextemit = 0;
             if(f.nextemit) return false;
-            f.nextemit += f.attrs[11];
+            f.nextemit += f.attrs[12];
         }
         bool ret = true;
         loopv(f.links)

@@ -103,12 +103,12 @@ extern const enttypes enttype[] = {
                 "envmap",       "Envrionment Map",  { "radius", "size", "blur" }
     },
     {
-        PARTICLES,      1,          59,     0,      EU_NONE,    18,         -1,         12,         -1,     14,     15,
+        PARTICLES,      1,          59,     0,      EU_NONE,    19,         -1,         13,         -1,     15,     16,
             (1<<TELEPORT)|(1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT)|(1<<RAIL),
             (1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT),
             0,
             false,  false,  false,      false,      false,
-                "particles",    "Particles",        { "type", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "millis", "modes", "muts", "variant", "fxlevel", "hintcolour", "hintblend" }
+                "particles",    "Particles",        { "type", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "millis", "modes", "muts", "variant", "fxlevel", "hintcolour", "hintblend" }
     },
     {
         MAPSOUND,       1,          58,     0,      EU_NONE,    12,         -1,         7,          -1,     9,      -1,
