@@ -497,8 +497,9 @@ void setupscreen(bool dogl = true)
 void resetgl()
 {
     clearchanges(CHANGE_GFX|CHANGE_SHADERS);
-
     progress(0, "Resetting OpenGL..");
+
+    bool oldengineready = engineready;
     engineready = false;
 
     UI::cleangl();
@@ -532,7 +533,8 @@ void resetgl()
     reloadshaders();
     reloadtextures();
     allchanged(true);
-    engineready = true;
+
+    engineready = oldengineready;
 }
 
 ICOMMAND(0, resetgl, "", (void), if(!(identflags&IDF_MAP)) resetgl());
