@@ -1071,7 +1071,20 @@ namespace UI
             if(detentpitch > 0) curpitch = round(curpitch / detentpitch) * detentpitch;
 
             pos = origin;
-            vec right((curyaw + 90) * RAD, 0.f), up(0.f, (curpitch + 90) * RAD);
+
+            vec n = vec(curyaw * RAD, curpitch * RAD).normalize(), up, right;
+            if(fabsf(n.z) == 1.0f)
+            {
+                up = vec(0, n.z, 0);
+                right = vec(n.z, 0, 0);
+            }
+            else
+            {
+                up = vec(0, 0, 1);
+                right.cross(up, n).normalize();
+                up.cross(right, n).normalize();
+            }
+
             switch(adjust&ALIGN_HMASK)
             {
                 case ALIGN_LEFT:    pos.add(vec(right).mul(pw * scale * uiworldscale)); break;
@@ -1080,9 +1093,9 @@ namespace UI
             }
             switch(adjust&ALIGN_VMASK)
             {
-                case ALIGN_TOP:     pos.add(vec(up).mul(ph * scale * uiworldscale)); break;
+                case ALIGN_TOP:     pos.sub(vec(up).mul(ph * scale * uiworldscale)); break;
                 case ALIGN_BOTTOM:  break;
-                default:            pos.add(vec(up).mul(ph * scale * uiworldscale * 0.5f)); break;
+                default:            pos.sub(vec(up).mul(ph * scale * uiworldscale * 0.5f)); break;
             }
 
             return ray.magnitude();
@@ -1137,7 +1150,7 @@ namespace UI
 
                 if(mag >= 1e-6f)
                 {
-                    vec n = vec(curyaw*RAD, curpitch*RAD), v;
+                    vec n = vec(curyaw  *RAD, curpitch * RAD), v;
                     if(planeintersect(camera1->o, cursordir, pos, n, v))
                     {
                         float qx = 0, qy = 0;

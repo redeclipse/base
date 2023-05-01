@@ -6,7 +6,7 @@ VAR(0, showselboxgrid, 0, 0, 1);
 
 VAR(IDF_PERSIST, showselui, 0, 2, 2);
 FVAR(IDF_PERSIST, showseluiyaw, -1, -1, 360);
-FVAR(IDF_PERSIST, showseluipitch, -181, -1, 181);
+FVAR(IDF_PERSIST, showseluipitch, -181, 0, 181);
 FVAR(IDF_PERSIST, showseluiscale, FVAR_NONZERO, 1, FVAR_MAX);
 FVAR(IDF_PERSIST, showseluidetentyaw, 0, 90, 180);
 FVAR(IDF_PERSIST, showseluidetentpitch, 0, 90, 90);
@@ -3291,6 +3291,35 @@ ICOMMAND(0, numdecalslots, "", (), intret(decalslots.length()));
 COMMAND(0, getslottex, "i");
 ICOMMAND(0, texloaded, "i", (int *tex), intret(slots.inrange(*tex) && slots[*tex]->loaded ? 1 : 0));
 COMMAND(0, gettextags, "i");
+
+int getseltexs(int idx)
+{
+    static int lastgetseltex = 0;
+    static vector<int> seltexs;
+    if(lastgetseltex != totalmillis)
+    {
+        seltexs.shrink(0);
+        loopxyz(sel, -sel.grid,
+        {
+            if(c.children || isempty(c)) continue;
+
+            bool found = false;
+            int tex = lookupslot(universallookup(c.texture[sel.orient], TEXSLOT_NORMAL).slot->index, false).variants->index;
+            loopv(seltexs) if(seltexs[i] == tex)
+            {
+                found = true;
+                break;
+            }
+            if(found) continue;
+            seltexs.add(tex);
+        });
+        lastgetseltex = totalmillis;
+    }
+    if(idx < 0) return seltexs.length();
+    if(seltexs.inrange(idx)) return seltexs[idx];
+    return -1;
+}
+ICOMMAND(0, getseltexs, "b", (int *idx), intret(getseltexs(*idx)));
 
 ICOMMAND(0, texhasvariants, "i", (int *index),
 {
