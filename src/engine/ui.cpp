@@ -1072,16 +1072,15 @@ namespace UI
 
             pos = origin;
 
-            vec n = vec(curyaw * RAD, curpitch * RAD).normalize(), up, right;
-            if(fabsf(n.z) == 1.0f)
+            vec n = vec(curyaw * RAD, curpitch * RAD).normalize(), up(0, 0, 1), right;
+            if(fabsf(n.z) < 1.f)
             {
-                up = vec(0, n.z, 0);
-                right = vec(n.z, 0, 0);
+                right.cross(up, n).normalize();
+                up.cross(right, n).normalize();
             }
             else
             {
-                up = vec(0, 0, 1);
-                right.cross(up, n).normalize();
+                right.cross(n, up).normalize();
                 up.cross(right, n).normalize();
             }
 
