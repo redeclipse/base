@@ -148,3 +148,6 @@
 	path = data/weapons
 	url = https://github.com/redeclipse/weapons.git
 	branch = master
+[submodule "data/unixfreak"]
+	path = data/unixfreak
+	url = https://github.com/redeclipse/unixfreak.git
