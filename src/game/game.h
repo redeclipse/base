@@ -1259,6 +1259,8 @@ enum
     WS_CHANS
 };
 
+struct projent;
+
 struct gameent : dynent, clientstate
 {
     editinfo *edit;
@@ -1276,10 +1278,11 @@ struct gameent : dynent, clientstate
     vector<jitterevent> jitters;
     vector<int> vitems;
     fx::emitter *weaponfx, *impulsefx;
+    projent *projchain;
 
     gameent() : edit(NULL), ai(NULL), team(T_NEUTRAL), clientnum(-1), privilege(PRIV_NONE), projid(0), checkpoint(-1), cplast(0), lastupdate(0), lastpredict(0), plag(0), ping(0),
         totaldamage(0), smoothmillis(-1), lastattacker(-1), lastpoints(0), quake(0), wasfiring(-1), conopen(false), k_up(false), k_down(false), k_left(false), k_right(false), obliterated(false),
-        weaponfx(NULL), impulsefx(NULL)
+        weaponfx(NULL), impulsefx(NULL), projchain(NULL)
     {
         state = CS_DEAD;
         type = ENT_PLAYER;
@@ -2134,6 +2137,8 @@ struct inanimate : dynent
 
 struct projent : dynent
 {
+    projent *prev, *next;
+
     vec from, dest, norm, inertia, sticknrm, stickpos, effectpos, trailpos, lastgood;
     int addtime, lifetime, lifemillis, waittime, spawntime, fadetime, lastradial, lasteffect, lastbounce, beenused, extinguish, stuck;
     float movement, distance, lifespan, lifesize, speedmin, speedmax;
@@ -2152,6 +2157,8 @@ struct projent : dynent
         stick(NULL), hit(NULL), mdlname(NULL), effect(NULL), fxtype(FX_P_NONE) { reset(); }
     ~projent()
     {
+        if(owner) listremove(this, owner->projchain, prev, next);
+
         removetrackedparticles(this);
         removetrackedsounds(this);
         if(issound(schan)) soundsources[schan].clear();

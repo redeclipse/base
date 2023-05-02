@@ -123,7 +123,7 @@ namespace projs
                 hook = &proj.effect;
                 if(proj.projtype != PRJ_SHOT) break;
                 from = proj.trailpos;
-                to = proj.o;
+                to = proj.next ? proj.next->trailpos : proj.o;
                 break;
             }
             case PRJ_FX_TRIPWIRE:
@@ -1177,6 +1177,7 @@ namespace projs
         proj.curscale = scale;
         proj.target = target;
         proj.movement = proj.distance = 0;
+        proj.prev = proj.next = NULL;
         if(proj.projtype == PRJ_AFFINITY)
         {
             proj.vel = proj.inertia = proj.dest;
@@ -1315,7 +1316,15 @@ namespace projs
             }
         }
         loopv(shots)
-            create(orig, vec(shots[i].pos).div(DMF), local, d, PRJ_SHOT, weap, flags, max(life, 1), W2(weap, time, WS(flags)), delay+(iter*i), speed, shots[i].id, weap, -1, flags, skew, false, v);
+        {
+            projent *shotproj = create(orig, vec(shots[i].pos).div(DMF), local, d, PRJ_SHOT, weap, flags, max(life, 1), W2(weap, time, WS(flags)), delay+(iter*i), speed, shots[i].id, weap, -1, flags, skew, false, v);
+
+            if(W2(weap, fxchain, WS(flags)))
+            {
+                if(d->wasfiring < 0) d->projchain = NULL;
+                listpushfront(shotproj, d->projchain, prev, next);
+            }
+        }
         if(W2(weap, ammosub, WS(flags)) && ejectfade && *weaptype[weap].eprj[WS(flags) ? 1 : 0]) loopi(W2(weap, ammosub, WS(flags)))
             create(d->ejecttag(), d->ejecttag(), local, d, PRJ_EJECT, -1, 0, rnd(ejectfade)+ejectfade, 0, delay, rnd(weaptype[weap].espeed)+weaptype[weap].espeed, 0, weap, -1, flags);
 
