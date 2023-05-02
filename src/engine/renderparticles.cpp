@@ -1597,18 +1597,18 @@ void part_splash(int type, int num, int fade, const vec &p, int color, float siz
     splash(type, color, radius, num, fade, p, size, blend, hintcolor, hintblend, gravity, collide, vel, sizechange);
 }
 
-void part_trail(int type, int fade, const vec &s, const vec &e, int color, float size, float blend, int hintcolor, float hintblend, float gravity, int collide, float sizechange)
+void part_trail(int type, int fade, const vec &s, const vec &e, int color, float size, float blend, int hintcolor, float hintblend, float gravity, int collide, float sizechange, float vel, float stepscale)
 {
     if(!canaddparticles()) return;
     vec v;
     float d = e.dist(s, v);
-    int steps = clamp(int(d*2), 1, maxparticletrail);
+    int steps = clamp(int(d*stepscale), 1, maxparticletrail);
     v.div(steps);
     vec p = s;
     loopi(steps)
     {
         p.add(v);
-        vec tmp = vec(float(rnd(11)-5), float(rnd(11)-5), float(rnd(11)-5));
+        vec tmp(rnd(max(int(ceilf(vel*2)),1))-vel, rnd(max(int(ceilf(vel*2)),1))-vel, rnd(max(int(ceilf(vel*2)),1))-vel);
         newparticle(p, tmp, rnd(fade)+fade, type, color, size, blend, hintcolor, hintblend, gravity, collide, 0, NULL, sizechange);
     }
 }
