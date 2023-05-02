@@ -122,6 +122,8 @@ namespace physics
 namespace game
 {
     extern vec *getplayersoundpos(physent *d);
+    extern int getweapsound(int weap, int sound);
+    extern int getweapcolor(int weap);
     extern void mapslots();
     extern void mapgamesounds();
     extern void start();

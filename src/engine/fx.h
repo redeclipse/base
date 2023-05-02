@@ -55,6 +55,7 @@ namespace fx
         FX_PROP_END_FROM_ENTPOS,
         FX_PROP_ITER,
         FX_PROP_ITER_OFFSET,
+        FX_PROP_WEAPON,
 
         FX_STD_PROPS
     };
@@ -108,6 +109,7 @@ namespace fx
     enum
     {
         FX_SOUND_SOUND = 0,
+        FX_SOUND_WEAPONSOUND,
         FX_SOUND_GAIN,
         FX_SOUND_PITCH,
         FX_SOUND_ROLLOFF,

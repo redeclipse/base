@@ -59,6 +59,9 @@ namespace game
         }
     }
 
+    int getweapsound(int weap, int sound) { return WSND(weap, sound); }
+    int getweapcolor(int weap) { return W(weap, colour); }
+
     void mapgamesounds()
     {
         static const char *names[S_GAME - S_GAMESPECIFIC] =

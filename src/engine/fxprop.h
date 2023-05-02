@@ -215,6 +215,12 @@ namespace fx
             PROP_FVEC,
             vec(-FLT_MAX), vec(0.0f), vec(FLT_MAX),
             BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
+        ),
+        fxpropertydef(
+            "weapon",
+            PROP_INT,
+            -1, -1, INT_MAX,
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         )
     };
 
@@ -359,6 +365,12 @@ namespace fx
             PROP_STRING,
             "", "", "",
             0
+        ),
+        fxpropertydef(
+            "weaponsound",
+            PROP_INT,
+            -1, -1, INT_MAX,
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "gain",

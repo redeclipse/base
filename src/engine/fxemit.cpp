@@ -27,8 +27,13 @@ namespace fx
 
     static bvec getcolor(instance &inst, int colprop)
     {
-        return inst.getprop<int>(FX_PROP_COLORIZED) ?
-            inst.e->color : inst.getextprop<bvec>(colprop);
+        if(inst.getprop<int>(FX_PROP_COLORIZED))
+        {
+            int weap = inst.getprop<int>(FX_PROP_WEAPON);
+            if(weap >= 0) return bvec(game::getweapcolor(weap));
+            else return inst.e->color;
+        }
+        else return inst.getextprop<bvec>(colprop);
     }
 
     static void particlefx(instance &inst)
@@ -244,8 +249,16 @@ namespace fx
         if(!inst.emitted) // first emission
         {
             fxdef &def = inst.fxhandle.get();
+
             int extraflags = 0;
             int flags = inst.getextprop<int>(FX_SOUND_FLAGS);
+
+            int soundindex = def.sound.getindex();
+            int weap = inst.getprop<int>(FX_PROP_WEAPON);
+            int weapsound = inst.getextprop<int>(FX_SOUND_WEAPONSOUND);
+
+            if(weap >= 0 && weapsound >= 0) soundindex = game::getweapsound(weap, weapsound);
+            else extraflags |= SND_UNMAPPED;
 
             physent *ent = NULL;
             vec *soundpos = NULL;
@@ -258,15 +271,15 @@ namespace fx
             else
             {
                 soundpos = &inst.from;
-                extraflags = SND_VELEST;
+                extraflags |= SND_VELEST;
             }
 
             emitsound(
-                def.sound.getindex(),
+                soundindex,
                 soundpos,
                 ent,
                 &inst.soundhook,
-                flags | SND_UNMAPPED | extraflags,
+                flags | extraflags,
                 max(gain, 0.00001f),
                 inst.getextprop<float>(FX_SOUND_PITCH),
                 inst.getextprop<float>(FX_SOUND_ROLLOFF),
