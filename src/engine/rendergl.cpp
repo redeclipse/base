@@ -2517,6 +2517,11 @@ void gl_drawview()
         renderpostfx(scalefbo);
         if(scalefbo) doscale();
     }
+    else if(drawtex == DRAWTEX_MAPSHOT)
+    {
+        processhdr(scalefbo, AA_UNUSED);
+        if(scalefbo) doscale();
+    }
 }
 
 void resethudshader()

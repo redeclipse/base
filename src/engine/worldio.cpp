@@ -732,6 +732,7 @@ VARF(IDF_PERSIST, mapshotsize, 2, 512, INT_MAX-1, mapshotsize -= mapshotsize%2);
 
 void save_mapshot(char *mname, bool forcesave = false, int backuprev = -1)
 {
+    int olddrawtex = drawtex;
     drawtex = DRAWTEX_MAPSHOT;
     progress(0, "Saving map preview image..");
 
@@ -765,7 +766,6 @@ void save_mapshot(char *mname, bool forcesave = false, int backuprev = -1)
     glReadPixels(0, 0, vieww, viewh, GL_RGB, GL_UNSIGNED_BYTE, image.data);
 
     if(autosavebackups && !forcesave) backup(mname, ifmtexts[imageformat], backuprev >= 0 ? backuprev : hdr.revision, autosavebackups > 2, !(autosavebackups%2));
-    texmad(image, vec(2, 2, 2));
     scaleimage(image, mapshotsize, mapshotsize);
     saveimage(mname, image, imageformat, compresslevel, true);
     glDeleteTextures(1, &tex);
@@ -784,7 +784,7 @@ void save_mapshot(char *mname, bool forcesave = false, int backuprev = -1)
     viewh = oldviewh;
 
     camera1 = oldcamera;
-    drawtex = 0;
+    drawtex = olddrawtex;
 
     progress(1, "Saved map preview image..");
 }
