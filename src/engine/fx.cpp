@@ -636,7 +636,7 @@ namespace fx
         }
     }
 
-    ICOMMAND(0, testfx, "siiN", (char *name, int *sameinstance, int *color, int *numargs),
+    void testfx(char *name, int *sameinstance, int *color, int *numargs)
     {
         if(!hasfx(name)) return;
 
@@ -659,5 +659,6 @@ namespace fx
             .setcolor(col);
 
         if(*sameinstance) testmillis = lastmillis;
-    });
+    }
+    COMMAND(0, testfx, "siiN");
 }
