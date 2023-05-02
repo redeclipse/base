@@ -3,6 +3,7 @@
 #include "engine.h"
 
 VAR(0, maploading, 1, 0, -1);
+VAR(0, mapsaving, 1, 0, -1);
 VAR(0, mapcrc, 1, 0, -1);
 SVAR(0, mapfile, "");
 SVAR(0, mapname, "");
@@ -793,13 +794,14 @@ void save_world(const char *mname, bool nodata, bool forcesave)
 {
     int savingstart = SDL_GetTicks(), backuprev = hdr.revision;
 
+    mapsaving = 1;
     setnames(mname, forcesave ? -1 : 0);
 
     if(autosavebackups && !forcesave) backup(mapname, ".mpz", backuprev, autosavebackups > 2, !(autosavebackups%2));
     conoutf("Saving: %s (%s)", mapname, forcesave ? "forced" : "normal");
 
     stream *f = opengzfile(mapfile, "wb");
-    if(!f) { conoutf("\frError saving %s to %s: file error", mapname, mapfile); return; }
+    if(!f) { conoutf("\frError saving %s to %s: file error", mapname, mapfile); mapsaving = 0; return; }
 
     game::savemap(forcesave, mapname);
 
@@ -956,6 +958,7 @@ void save_world(const char *mname, bool nodata, bool forcesave)
     }
 
     conoutf("Saved %s (\fs%s\fS by \fs%s\fS) v%d:%d(r%d) [0x%.8x] in %.1f secs", mapname, *maptitle ? maptitle : "Untitled", *mapauthor ? mapauthor : "Unknown", hdr.version, hdr.gamever, hdr.revision, mapcrc, (SDL_GetTicks()-savingstart)/1000.0f);
+    mapsaving = 0;
 }
 
 ICOMMAND(0, savemap, "s", (char *mname), if(!(identflags&IDF_MAP)) save_world(*mname ? mname : mapname));

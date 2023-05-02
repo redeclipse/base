@@ -3317,7 +3317,7 @@ namespace entities
                         {
                             vec above = o;
                             above.z += 6;
-                            defformatstring(routename, "<bold>%s", name);
+                            defformatstring(routename, "<%s>%s", textfontbold, name);
                             part_textcopy(above, routename, PART_TEXT, 1, colourwhite, 2, routenameblend);
                             above.z += 2;
                             part_text(above, "Route", PART_TEXT, 1, colourwhite, 2, routenameblend);
@@ -3437,7 +3437,7 @@ namespace entities
                 {
                     if(showentinfo&(hasent ? 4 : 8))
                     {
-                        defformatstring(s, "<bold>%s%s (%d)", hasent ? "\fc" : "\fC", enttype[e.type].name, v.idx >= 0 ? v.idx : 0);
+                        defformatstring(s, "<%s>%s%s (%d)", textfontbold, hasent ? "\fc" : "\fC", enttype[e.type].name, v.idx >= 0 ? v.idx : 0);
                         part_textcopy(pos.addz(entinfospace), s, hasent ? PART_TEXT_ONTOP : PART_TEXT);
                         if(v.idx >= 0) loopv(railways)
                         {

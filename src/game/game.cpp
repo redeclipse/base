@@ -3444,7 +3444,7 @@ namespace game
         if(aboveheadnames && d != player1)
         {
             pos.z += aboveheadnamessize/2;
-            defformatstring(name, "<bold>%s", colourname(d));
+            defformatstring(name, "<%s>%s", textfontbold, colourname(d));
             part_textcopy(pos, name, PART_TEXT, 1, colourwhite, aboveheadnamessize, blend);
         }
 

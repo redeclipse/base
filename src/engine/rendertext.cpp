@@ -15,7 +15,11 @@ FVAR(IDF_PERSIST, textkeyimagescale, 0, 0.8f, FVAR_MAX);
 SVAR(IDF_PERSIST, textkeyprefix, "<invert>textures/keys/");
 VAR(IDF_PERSIST, textkeyseps, 0, 1, 1);
 VAR(IDF_PERSIST|IDF_HEX, textkeycolour, 0, 0x00FFFF, 0xFFFFFF);
-SVAR(IDF_PERSIST, textfont, "default");
+SVAR(IDF_PERSIST, textfontdef, "default");
+SVAR(IDF_PERSIST, textfontbold, "bold");
+SVAR(IDF_PERSIST, textfontlogo, "default");
+SVAR(IDF_PERSIST, textfontclear, "clear");
+SVAR(IDF_PERSIST, textfonttool, "tess");
 
 static hashnameset<font> fonts;
 static font *fontdef = NULL;
@@ -25,6 +29,15 @@ vector<font *> fontstack;
 font *curfont = NULL;
 int curfontpass = 0;
 bool wantfontpass = false;
+
+void fontscale(float *scale)
+{
+    if(!fontdef) return;
+
+    fontdef->scale = *scale > 0 ? *scale : fontdef->defaulth;
+    fontdef->mw = fontdef->maxw*fontdef->scale/float(fontdef->defaultw);
+    fontdef->mh = fontdef->maxh*fontdef->scale/float(fontdef->defaulth);
+}
 
 void newfont(char *name, char *tex, int *defaultw, int *defaulth, float *scale)
 {
@@ -37,7 +50,7 @@ void newfont(char *name, char *tex, int *defaultw, int *defaulth, float *scale)
     f->charoffset = '!';
     f->mw = f->maxw = f->defaultw = *defaultw;
     f->mh = f->maxh = f->defaulth = *defaulth;
-    f->scale = *scale > 0 ? *scale : f->defaulth;
+    fontscale(scale);
     f->bordermin = 0.49f;
     f->bordermax = 0.5f;
     f->outlinemin = -1;
@@ -70,15 +83,6 @@ void fontoffset(char *c)
     fontdef->charoffset = c[0];
 }
 
-void fontscale(float *scale)
-{
-    if(!fontdef) return;
-
-    fontdef->scale = *scale > 0 ? *scale : fontdef->defaulth;
-    fontdef->mw = fontdef->maxw*fontdef->scale/float(fontdef->defaulth);
-    fontdef->mh = fontdef->maxh*fontdef->scale/float(fontdef->defaulth);
-}
-
 void fonttex(char *s)
 {
     if(!fontdef) return;
@@ -100,8 +104,16 @@ void fontchar(float *x, float *y, float *w, float *h, float *offsetx, float *off
     c.h = *h ? *h : fontdef->defaulth;
     c.offsetx = *offsetx;
     c.offsety = *offsety;
-    if(c.offsetx+c.w > fontdef->maxw) fontdef->maxw = fontdef->mw = c.offsetx+c.w;
-    if(c.offsety+c.h > fontdef->maxh) fontdef->maxh = fontdef->mh = c.offsety+c.h;
+    if(c.offsetx+c.w > fontdef->maxw)
+    {
+        fontdef->maxw = c.offsetx+c.w;
+        fontdef->mw = fontdef->maxw*fontdef->scale/float(fontdef->defaultw);
+    }
+    if(c.offsety+c.h > fontdef->maxh)
+    {
+        fontdef->maxh = c.offsety+c.h;
+        fontdef->mh = fontdef->maxh*fontdef->scale/float(fontdef->defaulth);
+    }
     c.advance = *advance ? *advance : c.offsetx + c.w;
     c.tex = fontdeftex;
 }
@@ -116,11 +128,11 @@ void fontskip(int *n)
     }
 }
 
-COMMANDN(0, font, newfont, "ssiif");
+COMMANDN(0, font, newfont, "ssiiff");
 COMMAND(0, fontborder, "ff");
 COMMAND(0, fontoutline, "ff");
 COMMAND(0, fontoffset, "s");
-COMMAND(0, fontscale, "f");
+COMMAND(0, fontscale, "ff");
 COMMAND(0, fonttex, "s");
 COMMAND(0, fontchar, "fffffff");
 COMMAND(0, fontskip, "i");
@@ -179,7 +191,7 @@ bool setfont(font *id)
 
 bool setfont(const char *name)
 {
-    return setfont(loadfont(name ? name : textfont));
+    return setfont(loadfont(name ? name : textfontdef));
 }
 
 bool pushfont(font *id)
@@ -199,7 +211,7 @@ bool pushfont(font *id)
 
 bool pushfont(const char *name)
 {
-    return pushfont(loadfont(name ? name : textfont));
+    return pushfont(loadfont(name ? name : textfontdef));
 }
 
 bool popfont(int num)
@@ -215,7 +227,7 @@ bool popfont(int num)
         curfont = fontstack.last();
         return true;
     }
-    return setfont(textfont);
+    return setfont(textfontdef);
 }
 
 float text_widthf(const char *str, float xpad, float ypad, int flags, float linespace)
@@ -398,7 +410,7 @@ static float draw_icon(Texture *&tex, const char *name, float x, float y, float 
     if(!*file) return 0;
     Texture *t = textureload(file, 3, true, false);
     if(!t) return 0;
-    float h = curfont->maxh*scale, w = (t->w*h)/float(t->h);
+    float h = curfont->mh*scale, w = (t->w*h)/float(t->h);
     if(curfontpass)
     {
         if(tex != t)
@@ -424,7 +436,7 @@ static float icon_width(const char *name, float scale)
     if(!*file) return 0;
     Texture *t = textureload(file, 3, true, false);
     if(!t) return 0;
-    float w = (t->w*curfont->maxh*scale)/float(t->h);
+    float w = (t->w*curfont->mh*scale)/float(t->h);
     return w;
 }
 
@@ -820,7 +832,7 @@ float key_widthf(const char *str)
     if(*str == '=') keyn = gettklp(++str);
     vector<char *> list;
     explodelist(keyn, list);
-    float width = 0, scale = curfont->maxh*curfont->scale/float(curfont->defaulth)*curtextscale*textkeyimagescale;
+    float width = 0, scale = curfont->mh*curtextscale*textkeyimagescale;
     loopv(list)
     {
         if(i && textkeyseps) width += text_widthf(" or ");
@@ -848,7 +860,7 @@ static float draw_key(Texture *&tex, const char *str, float sx, float sy, bvec4 
     if(*str == '=') keyn = gettklp(++str);
     vector<char *> list;
     explodelist(keyn, list);
-    float width = 0, sh = curfont->maxh*curfont->scale/float(curfont->defaulth)*curtextscale, h = sh*textkeyimagescale;
+    float width = 0, sh = curfont->mh*curtextscale, h = sh*textkeyimagescale;
     loopv(list)
     {
         if(i && textkeyseps)

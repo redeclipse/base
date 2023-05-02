@@ -150,8 +150,8 @@ struct font
     char *name;
     vector<Texture *> texs;
     vector<charinfo> chars;
-    int charoffset, defaultw, defaulth, maxw, maxh, mw, mh;
-    float scale, bordermin, bordermax, outlinemin, outlinemax;
+    int charoffset, defaultw, defaulth, maxw, maxh;
+    float scale, mw, mh, bordermin, bordermax, outlinemin, outlinemax;
 
     font() : name(NULL) {}
     ~font() { DELETEA(name); }
@@ -168,6 +168,7 @@ extern font *curfont;
 extern Shader *textshader;
 extern const matrix4x3 *textmatrix;
 extern void reloadfonts();
+extern char *textfontdef, *textfontbold, *textfontlogo, *textfontclear, *textfonttool;
 
 enum
 {
@@ -852,7 +853,7 @@ extern void fixrange(float &yaw, float &pitch, bool full = false);
 
 // worldio
 extern char *maptitle, *mapauthor, *mapname, *maptext, *mapdesc;
-extern int mapcrc, maploading, mapvariant, mapeffects;
+extern int mapcrc, maploading, mapsaving, mapvariant, mapeffects;
 extern const char *mapvariants[MPV_MAX];
 extern bool checkmapvariant(int variant);
 extern void changemapvariant(int variant);

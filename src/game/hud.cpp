@@ -1601,8 +1601,13 @@ namespace hud
                 drawtexture(w-w/4-w/3, h/2-w/6, w/2, w/4);
             }
 
+            float oldtextscale = curtextscale;
+            pushfont(textfontlogo);
+            curtextscale = 0.8f;
             draw_textf("%s", FONTH/2, h-FONTH*5/4, 0, 0, 255, 255, 255, 255, TEXT_LEFT_JUSTIFY, -1, -1, 1, *progresstitle ? progresstitle : "Loading, please wait..");
             if(progressamt > 0) draw_textf("[ %.1f%% ]", w-FONTH/2, h-FONTH*5/4, 0, 0, 255, 255, 255, 255, TEXT_RIGHT_JUSTIFY, -1, -1, 1, progressamt*100);
+            curtextscale = oldtextscale;
+            popfont();
         }
     }
 
