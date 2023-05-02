@@ -3053,10 +3053,11 @@ namespace client
                     ai::itemspawned(ent, value!=0);
                     if(e.spawned())
                     {
-                        int attr = m_attr(e.type, e.attrs[0]), colour = e.type == WEAPON && isweap(attr) ? W(attr, colour) : colourwhite;
-                        emitsoundpos(e.type == WEAPON && attr >= W_OFFSET && attr < W_ALL ? WSND(attr, S_W_SPAWN) : S_ITEMSPAWN, e.pos(), &e.schan);
-                        game::spawneffect(PART_SPARK, e.pos(), enttype[e.type].radius*0.25f, colour, 1);
-                        if(game::dynlighteffects) adddynlight(e.pos(), enttype[e.type].radius, vec::fromcolor(colour).mul(2.f), 250, 250);
+                        static fx::FxHandle fx = fx::getfxhandle("FX_ITEM_SPAWN");
+                        fx::createfx(fx)
+                            .setfrom(e.pos())
+                            .setscale(enttype[e.type].radius*0.125f)
+                            .setparam(0, m_attr(e.type, e.attrs[0]));
                     }
                     break;
                 }
