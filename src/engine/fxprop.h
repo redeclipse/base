@@ -26,31 +26,51 @@ namespace fx
         )
     };
 
+    static propertydef paramdef = propertydef(
+        "param",
+        PROP_INT,
+        0, 0, FX_PARAMS
+    );
+
+    static propertydef propdefparam[FX_MOD_PARAM_PROPS] =
+    {
+        propertydef(
+            "parammode",
+            PROP_INT,
+            FX_MOD_PARAM_ADD, FX_MOD_PARAM_ADD, FX_MOD_PARAM_MODES
+        ),
+        propertydef(
+            "paramscale",
+            PROP_FVEC,
+            vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), vec(1, 1, 1), vec(FLT_MAX, FLT_MAX, FLT_MAX)
+        )
+    };
+
     static fxpropertydef propdefstd[FX_STD_PROPS] =
     {
         fxpropertydef(
             "activelen",
             PROP_INT,
             1, 1, INT_MAX,
-            BIT(FX_MOD_RAND)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "emitlen",
             PROP_INT,
             1, 1, INT_MAX,
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "emitinterval",
             PROP_INT,
             1, 1, INT_MAX,
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "emitdelay",
             PROP_INT,
             0, 0, INT_MAX,
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "emitparent",
@@ -104,13 +124,13 @@ namespace fx
             "blend",
             PROP_FLOAT,
             0.0f, 1.0f, 1.0f,
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "scale",
             PROP_FLOAT,
             0.0f, 1.0f, 1.0f,
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "colorized",
@@ -128,25 +148,25 @@ namespace fx
             "posoffset",
             PROP_FVEC,
             vec(-FLT_MAX), vec(0.0f), vec(FLT_MAX),
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "endoffset",
             PROP_FVEC,
             vec(-FLT_MAX), vec(0.0f), vec(FLT_MAX),
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "endfrompos",
             PROP_FVEC,
             vec(-FLT_MAX), vec(0.0f), vec(FLT_MAX),
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "posfromend",
             PROP_FVEC,
             vec(-FLT_MAX), vec(0.0f), vec(FLT_MAX),
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "posflip",
@@ -164,37 +184,37 @@ namespace fx
             "posfromenttag",
             PROP_INT,
             -1, -1, INT_MAX,
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "endfromenttag",
             PROP_INT,
             -1, -1, INT_MAX,
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "posfroment",
             PROP_INT,
             game::ENT_POS_NONE, game::ENT_POS_NONE, game::ENT_POS_MUZZLE,
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "endfroment",
             PROP_INT,
             game::ENT_POS_NONE, game::ENT_POS_NONE, game::ENT_POS_MUZZLE,
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "iter",
             PROP_INT,
             1, 1, FX_ITER_MAX,
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "iteroffset",
             PROP_FVEC,
             vec(-FLT_MAX), vec(0.0f), vec(FLT_MAX),
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         )
     };
 
@@ -216,7 +236,7 @@ namespace fx
             "num",
             PROP_INT,
             1, 1, 100,
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "shape",
@@ -228,13 +248,13 @@ namespace fx
             "colour",
             PROP_COLOR,
             bvec(0, 0, 0), bvec(255, 255, 255), bvec(255, 255, 255),
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "fade",
             PROP_INT,
             1, 1, INT_MAX,
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "collide",
@@ -246,43 +266,43 @@ namespace fx
             "regdelay",
             PROP_INT,
             0, 0, INT_MAX,
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "shapesize",
             PROP_FLOAT,
             0.0f, 4.0f, FLT_MAX,
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "partsize",
             PROP_FLOAT,
             FLT_MIN, 4.0f, FLT_MAX,
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "partsizechange",
             PROP_FLOAT,
             -FLT_MAX, 0.0f, FLT_MAX,
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "maxpartsize",
             PROP_FLOAT,
             FLT_MIN, 16.0f, FLT_MAX,
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "vel",
             PROP_FLOAT,
             0.0f, 50.0f, FLT_MAX,
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "gravity",
             PROP_FLOAT,
             -FLT_MAX, 0.0f, FLT_MAX,
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "text",
@@ -300,13 +320,13 @@ namespace fx
             "hintcolour",
             PROP_COLOR,
             bvec(0, 0, 0), bvec(0, 0, 255), bvec(255, 255, 255),
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "hintblend",
             PROP_FLOAT,
             0.0f, 0.0f, 1.0f,
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         )
     };
 
@@ -316,13 +336,13 @@ namespace fx
             "radius",
             PROP_FLOAT,
             FLT_MIN, 32.0f, FLT_MAX,
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "colour",
             PROP_COLOR,
             bvec(0, 0, 0), bvec(255, 255, 255), bvec(255, 255, 255),
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "flags",
@@ -344,31 +364,31 @@ namespace fx
             "gain",
             PROP_FLOAT,
             0.0f, 1.0f, 100.0f,
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "pitch",
             PROP_FLOAT,
             0.0f, 1.0f, 100.0f,
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "rolloff",
             PROP_FLOAT,
             -1.0f, -1.0f, FLT_MAX,
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "refdist",
             PROP_FLOAT,
             -1.0f, -1.0f, FLT_MAX,
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "maxdist",
             PROP_FLOAT,
             -1.0f, -1.0f, FLT_MAX,
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "flags",
@@ -396,7 +416,7 @@ namespace fx
             "speed",
             PROP_FLOAT,
             0.0f, 1.0f, 2.0f,
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "interval",
@@ -414,19 +434,19 @@ namespace fx
             "radius",
             PROP_INT,
             0, 0, INT_MAX,
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "atten",
             PROP_FLOAT,
             0.0f, 0.1f, FLT_MAX,
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "yaw",
             PROP_INT,
             0, 0, 360,
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_FLAG_LERP360)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_FLAG_LERP360) | BIT(FX_MOD_PARAM)
         )
     };
 
@@ -442,13 +462,13 @@ namespace fx
             "radius",
             PROP_FLOAT,
             FLT_MIN, 16.0f, 256.0f,
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
             "colour",
             PROP_COLOR,
             bvec(0, 0, 0), bvec(255, 255, 255), bvec(255, 255, 255),
-            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP)
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         )
     };
 }

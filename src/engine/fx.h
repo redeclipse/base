@@ -145,6 +145,7 @@ namespace fx
     {
         FX_MOD_RAND = 0,
         FX_MOD_LERP,
+        FX_MOD_PARAM,
 
         FX_MODS,
 
@@ -181,6 +182,22 @@ namespace fx
         FX_MOD_LERP_SHAPES
     };
 
+    enum
+    {
+        FX_MOD_PARAM_PROP_MODE = 0,
+        FX_MOD_PARAM_PROP_SCALE,
+
+        FX_MOD_PARAM_PROPS
+    };
+
+    enum
+    {
+        FX_MOD_PARAM_ADD = 0,
+        FX_MOD_PARAM_MUL,
+
+        FX_MOD_PARAM_MODES
+    };
+
     #define FX_PARAMS 2
 
     #define FX_EXT_PROPS 18
@@ -191,6 +208,7 @@ namespace fx
     #define FX_ITER_MAX 8
 
     struct propmodlerp;
+    struct propmodparam;
     struct fxdef;
     struct instance;
     struct emitter;
@@ -209,10 +227,11 @@ namespace fx
     {
         fxproperty *rand;
         propmodlerp *lerp;
+        propmodparam *param;
 
         void (*calcmodifiers)(instance &inst, fxproperty &prop, void *value);
 
-        fxproperty() : rand(NULL), lerp(NULL), calcmodifiers(NULL) {}
+        fxproperty() : rand(NULL), lerp(NULL), param(NULL), calcmodifiers(NULL) {}
         virtual ~fxproperty();
 
         const fxpropertydef *getdef() const { return (fxpropertydef *)def; }
@@ -221,13 +240,20 @@ namespace fx
         virtual int unpack(uchar *buf, size_t bufsize);
     };
 
-    struct propmodlerp
+    struct propmodlerp : fxproperty
     {
-        fxproperty lerp;
         property props[FX_MOD_LERP_PROPS];
 
-        void pack(vector<uchar> &buf);
-        int unpack(uchar *buf, size_t bufsize);
+        virtual void pack(vector<uchar> &buf) const;
+        virtual int unpack(uchar *buf, size_t bufsize);
+    };
+
+    struct propmodparam : property
+    {
+        property props[FX_MOD_PARAM_PROPS];
+
+        virtual void pack(vector<uchar> &buf) const;
+        virtual int unpack(uchar *buf, size_t bufsize);
     };
 
     struct fxdef;

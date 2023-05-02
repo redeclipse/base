@@ -19,12 +19,14 @@ namespace fx
 
     static const struct
     {
+        propertydef *moddef;
         propertydef *defs;
         int num;
     } moddefs[FX_MODS] =
     {
-        { NULL, 0 },
-        { propdeflerp, FX_MOD_LERP_PROPS }
+        { NULL, NULL, 0 },
+        { NULL, propdeflerp, FX_MOD_LERP_PROPS },
+        { &paramdef, propdefparam, FX_MOD_PARAM_PROPS }
     };
 
     static Slotmanager<fxdef> fxdefs;
@@ -42,22 +44,26 @@ namespace fx
     {
         static constexpr int EXTRA_RAND = 1;
         static constexpr int EXTRA_LERP = (1 << 1);
+        static constexpr int EXTRA_PARAM = (1 << 2);
 
         property::pack(buf);
 
         uchar extra = 0;
         if(rand) extra |= EXTRA_RAND;
         if(lerp) extra |= EXTRA_LERP;
+        if(param) extra |= EXTRA_PARAM;
         buf.put(extra);
 
         if(rand) rand->pack(buf);
         if(lerp) lerp->pack(buf);
+        if(param) param->pack(buf);
     }
 
     int fxproperty::unpack(uchar *buf, size_t bufsize)
     {
         static constexpr int EXTRA_RAND = 1;
         static constexpr int EXTRA_LERP = (1 << 1);
+        static constexpr int EXTRA_PARAM = (1 << 2);
 
         int bufread = property::unpack(buf, bufsize);
         if(bufread)
@@ -88,7 +94,7 @@ namespace fx
                 if(!lerp)
                 {
                     lerp = new propmodlerp;
-                    lerp->lerp.setdef(getdef());
+                    lerp->setdef(getdef());
                     initprops(lerp->props, moddefs[FX_MOD_LERP].defs, moddefs[FX_MOD_LERP].num);
                 }
 
@@ -96,21 +102,53 @@ namespace fx
                 if(!lerpbufread) return 0;
                 bufread += lerpbufread;
             }
+
+            if(extra & EXTRA_PARAM)
+            {
+                if(!param)
+                {
+                    param = new propmodparam;
+                    param->setdef(moddefs[FX_MOD_PARAM].moddef);
+                    initprops(param->props, moddefs[FX_MOD_PARAM].defs, moddefs[FX_MOD_PARAM].num);
+                }
+
+                int parambufread = param->unpack(buf + bufread, bufsize - bufread);
+                if(!parambufread) return 0;
+                bufread += parambufread;
+            }
         }
 
         return bufread;
     }
 
-    void propmodlerp::pack(vector<uchar> &buf)
+    void propmodlerp::pack(vector<uchar> &buf) const
     {
-        lerp.pack(buf);
+        fxproperty::pack(buf);
         loopi(FX_MOD_LERP_PROPS) props[i].pack(buf);
     }
 
     int propmodlerp::unpack(uchar *buf, size_t bufsize)
     {
-        int bufread = lerp.unpack(buf, bufsize);
+        int bufread = fxproperty::unpack(buf, bufsize);
         if(bufread) loopi(FX_MOD_LERP_PROPS)
+        {
+            int propbufread = props[i].unpack(buf + bufread, bufsize - bufread);
+            if(!propbufread) return 0;
+            bufread += propbufread;
+        }
+
+        return bufread;
+    }
+
+    void propmodparam::pack(vector<uchar> &buf) const
+    {
+        loopi(FX_MOD_PARAM_PROPS) props[i].pack(buf);
+    }
+
+    int propmodparam::unpack(uchar *buf, size_t bufsize)
+    {
+        int bufread = 0;
+        loopi(FX_MOD_PARAM_PROPS)
         {
             int propbufread = props[i].unpack(buf + bufread, bufsize - bufread);
             if(!propbufread) return 0;
@@ -140,7 +178,7 @@ namespace fx
     {
         static const char *strings[FX_MODS + 1] =
         {
-            "random", "lerp",
+            "random", "lerp", "parameter",
             "<invalid>"
         };
 
@@ -197,13 +235,30 @@ namespace fx
         if(prop.lerp)
         {
             float t = calclerptime(inst, prop);
-            T lerptarget = prop.lerp->lerp.get<T>();
+            T lerptarget = prop.lerp->get<T>();
             if(def->modflags & BIT(FX_MOD_FLAG_LERP360)) val = lerp360(val, lerptarget, t);
             else val = lerp(val, lerptarget, t);
         }
 
         if(prop.rand)
             val += inst.e->rand.x * prop.rand->get<T>();
+
+        if(prop.param)
+        {
+            float scale = prop.param->props[FX_MOD_PARAM_PROP_SCALE].get<vec>().x;
+            float param = inst.e->params[prop.param->get<int>()] * scale;
+
+            switch(prop.param->props[FX_MOD_PARAM_PROP_MODE].get<int>())
+            {
+                case FX_MOD_PARAM_ADD:
+                    val += param;
+                    break;
+
+                case FX_MOD_PARAM_MUL:
+                    val *= param;
+                    break;
+            }
+        }
 
         val = clamp(val, def->minval, def->maxval);
     }
@@ -217,7 +272,7 @@ namespace fx
         if(prop.lerp)
         {
             float t = calclerptime(inst, prop);
-            T lerptarget = prop.lerp->lerp.get<T>();
+            T lerptarget = prop.lerp->get<T>();
             if(def->modflags & BIT(FX_MOD_FLAG_LERP360))
             {
                 val.x = lerp360(val.x, lerptarget.x, t);
@@ -236,6 +291,26 @@ namespace fx
         {
             T rand = prop.rand->get<T>();
             val.add(rand.mul(inst.e->rand));
+        }
+
+        if(prop.param)
+        {
+            vec scale = prop.param->props[FX_MOD_PARAM_PROP_SCALE].get<vec>();
+            float param = inst.e->params[prop.param->get<int>()];
+            vec paramv = vec(param, param, param).mul(scale);
+
+            switch(prop.param->props[FX_MOD_PARAM_PROP_MODE].get<int>())
+            {
+                case FX_MOD_PARAM_ADD:
+                    val.add(T(paramv));
+                    break;
+
+                case FX_MOD_PARAM_MUL:
+                    val.x *= paramv.x;
+                    val.y *= paramv.y;
+                    val.z *= paramv.z;
+                    break;
+            }
         }
 
         val = T(val).min(def->maxval.get<T>()).max(def->minval.get<T>());
@@ -337,6 +412,10 @@ namespace fx
             case FX_MOD_LERP:
                 if(lastfxprop->lerp) modprops = lastfxprop->lerp->props;
                 break;
+
+            case FX_MOD_PARAM:
+                if(lastfxprop->param) modprops = lastfxprop->param->props;
+                break;
         }
 
         if(!modprops)
@@ -380,11 +459,22 @@ namespace fx
                 if(!p.lerp)
                 {
                     p.lerp = new propmodlerp;
-                    p.lerp->lerp.setdef(p.getdef());
+                    p.lerp->setdef(p.getdef());
                     initprops(p.lerp->props, moddefs[mod].defs, moddefs[mod].num);
                 }
 
-                p.lerp->lerp.set(value);
+                p.lerp->set(value);
+                break;
+
+            case FX_MOD_PARAM:
+                if(!p.param)
+                {
+                    p.param = new propmodparam;
+                    p.param->setdef(moddefs[mod].moddef);
+                    initprops(p.param->props, moddefs[mod].defs, moddefs[mod].num);
+                }
+
+                p.param->set(value);
                 break;
         }
 
