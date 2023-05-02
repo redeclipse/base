@@ -598,7 +598,7 @@ namespace fx
         e->to        = vec(0, 0, 0);
         e->blend     = 1.0f;
         e->scale     = 1.0f;
-        e->color     = bvec(255, 255, 255);
+        e->color     = bvec(0, 0, 0);
         e->pl        = NULL;
 
         return *e;
