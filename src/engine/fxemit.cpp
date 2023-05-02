@@ -190,7 +190,9 @@ namespace fx
                     inst.getextprop<float>(FX_PART_HINTBLEND),
                     inst.getextprop<int>(FX_PART_GRAVITY),
                     collidestain,
-                    inst.getextprop<float>(FX_PART_PARTSIZECHANGE) * scale
+                    inst.getextprop<float>(FX_PART_PARTSIZECHANGE) * scale,
+                    inst.getextprop<float>(FX_PART_VEL),
+                    inst.getextprop<float>(FX_PART_SHAPESIZE) * (1.0f / scale)
                 );
                 break;
 
