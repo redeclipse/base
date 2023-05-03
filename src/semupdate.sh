@@ -94,6 +94,11 @@ semupdate_appimage() {
 
 semupdate_steam() {
     echo "building Steam depot.."
+
+    sudo ${SEMUPDATE_APT} update || exit 1
+    sudo ${SEMUPDATE_APT} -fy install libc6-i386 || exit 1
+    sudo ${SEMUPDATE_APT} clean || exit 1
+
     mkdir -pv "${SEMUPDATE_DEPOT}" || return 1
     pushd "${SEMUPDATE_PWD}/src/install/steam" || return 1
     for i in *; do
