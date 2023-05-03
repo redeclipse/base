@@ -4879,6 +4879,7 @@ ICOMMAND(0, cond, "ee2V", (tagval *args, int numargs),
         }
     }
 });
+
 #define CASECOMMAND(name, fmt, type, acc, compare) \
     ICOMMAND(0, name, fmt "te2V", (tagval *args, int numargs), \
     { \
