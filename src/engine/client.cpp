@@ -65,7 +65,7 @@ ICOMMAND(0, connectedport, "", (),
     intret(address ? address->port : -1);
 });
 
-VAR(IDF_READONLY, connectstatus, 1, 0, 0);
+VARR(connectstatus, 0);
 
 void abortconnect(bool msg)
 {
@@ -203,8 +203,9 @@ ICOMMAND(0, disconnect, "i", (int *force), trydisconnect(*force!=0));
 ICOMMAND(0, lanconnect, "is", (int *a, char *pwd), connectserv(NULL, *a, pwd));
 ICOMMAND(0, localconnect, "i", (int *n), localconnect(*n ? false : true));
 
-ICOMMAND(0, isonline, "", (), intret(curpeer ? 1 : 0));
-ICOMMAND(0, isconnected, "ii", (int *a, int *b), intret(connected(*a==0, *b==0) ? 1 : 0));
+ICOMMANDV(0, isonline, curpeer ? 1 : 0);
+ICOMMANDV(0, isconnected, connected() ? 1 : 0);
+ICOMMAND(0, getconnected, "bb", (int *a, int *b), intret(connected(*a!=0, *b!=0) ? 1 : 0));
 
 void reconnect(const char *pass)
 {
@@ -251,7 +252,7 @@ void clientkeepalive()
 
 VAR(IDF_PERSIST, connectretry, 0, 5000, VAR_MAX);
 VAR(IDF_PERSIST, connectattempts, 0, 3, VAR_MAX);
-SVAR(IDF_READONLY, disconnectreason, "");
+SVARR(disconnectreason, "");
 
 void gets2c()           // get updates from the server
 {

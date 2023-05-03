@@ -535,14 +535,14 @@ namespace hud
         if(!cur && UI::hasmenu(pass)) cur = 1;
         return cur;
     }
-    ICOMMAND(0, hasinput, "N$", (int *n, ident *id), if(*n) intret(hasinput()); else printvar(id, hasinput()));
+    ICOMMANDV(0, hasinput, hasinput())
 
     bool hastkwarn()
     {
         if(!m_play(game::gamemode)) return false;
         return teamkillwarn && m_team(game::gamemode, game::mutators) && numteamkills() >= teamkillwarn;
     }
-    ICOMMAND(0, hastkwarn, "N$", (int *n, ident *id), if(*n) intret(hastkwarn() ? 1 : 0); else printvar(id, hastkwarn() ? 1 : 0));
+    ICOMMANDV(0, hastkwarn, hastkwarn() ? 1 : 0)
 
     bool textinput(const char *str, int len)
     {
@@ -1237,7 +1237,7 @@ namespace hud
         }
         return numkilled;
     }
-    ICOMMAND(0, numteamkills, "N$", (int *n, ident *id), if(*n) intret(numteamkills()); else printvar(id, numteamkills()));
+    ICOMMANDV(0, numteamkills, numteamkills())
 
     bool showname()
     {
@@ -1248,7 +1248,7 @@ namespace hud
         }
         return false;
     }
-    ICOMMAND(0, specshowname, "N$", (int *n, ident *id), if(*n) intret(showname() ? 1 : 0); else printvar(id, showname() ? 1 : 0));
+    ICOMMANDV(0, specshowname, showname() ? 1 : 0)
 
     const char *specviewname()
     {
@@ -1264,7 +1264,7 @@ namespace hud
         }
         return "Spectating";
     }
-    ICOMMAND(0, specviewname, "N$", (int *n, ident *id), if(*n) result(specviewname()); else printsvar(id, specviewname()));
+    ICOMMANDVS(0, specviewname, specviewname());
 
     void drawevents(float blend)
     {

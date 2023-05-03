@@ -473,8 +473,8 @@ namespace game
     FVAR(IDF_PERSIST, mixerbuffpulsemax, 0, 1, 1);
     VAR(IDF_PERSIST, mixerbufftone, -1, -1, CTONE_MAX-1);
 
-    ICOMMAND(0, gamemode, "", (), intret(gamemode));
-    ICOMMAND(0, mutators, "", (), intret(mutators));
+    ICOMMANDV(0, gamemode, gamemode)
+    ICOMMANDV(0, mutators, mutators)
 
     int mutscheck(int g, int m, int t)
     {
@@ -510,14 +510,16 @@ namespace game
     ICOMMAND(0, mutsallowed, "ii", (int *g, int *h), intret(*g >= 0 && *g < G_MAX ? gametype[*g].mutators[*h >= 0 && *h < G_M_GSP+1 ? *h : 0] : 0));
     ICOMMAND(0, mutsimplied, "ii", (int *g, int *m), intret(*g >= 0 && *g < G_MAX ? gametype[*g].implied : 0));
     ICOMMAND(0, gspmutname, "ii", (int *g, int *n), result(*g >= 0 && *g < G_MAX && *n >= 0 && *n < G_M_GSN ? gametype[*g].gsp[*n] : ""));
-    ICOMMAND(0, getintermission, "", (), intret(gs_intermission(gamestate) ? 1 : 0));
     ICOMMAND(0, getgameisplay, "b", (int *n), intret(m_play(*n >= 0 ? *n : gamemode) ? 1 :0));
-    ICOMMAND(0, getgamestate, "", (), intret(gamestate));
     ICOMMAND(0, getgamestatestr, "ib", (int *n, int *b), result(gamestates[clamp(*n, 0, 3)][clamp(*b >= 0 ? *b : gamestate, 0, int(G_S_MAX))]));
-    ICOMMAND(0, getgametimeremain, "", (), intret(gettimeremain()));
     ICOMMAND(0, getgametimeelapsed, "i", (int *n), intret(gettimeelapsed(*n!=0)));
-    ICOMMAND(0, getgametimesync, "", (), intret(gettimesync()));
     ICOMMAND(0, getgametimelimit, "bb", (int *g, int *m), intret(m_mmvar(*g >= 0 ? *g : gamemode, *m >= 0 ? *m : mutators, timelimit)));
+
+    ICOMMANDV(0, intermission, gs_intermission(gamestate) ? 1 : 0);
+    ICOMMANDV(0, gamestate, gamestate);
+    ICOMMANDV(0, gametimeremain, gettimeremain());
+    ICOMMANDV(0, gametimesync, gettimesync());
+    ICOMMANDV(0, gametimeelapsed, gettimeelapsed());
 
     const char *gametitle() { return connected() ? server::gamename(gamemode, mutators) : "Ready"; }
     const char *gametext() { return connected() ? mapname : "Not connected"; }
@@ -746,7 +748,7 @@ namespace game
             return true;
         return false;
     }
-    ICOMMAND(0, iszooming, "", (), intret(inzoom() ? 1 : 0));
+    ICOMMANDV(0, inzoom, inzoom() ? 1 : 0);
 
     float zoomscale()
     {
@@ -3496,6 +3498,7 @@ namespace game
             float maxdist = hud::radarlimit(halodist);
             if(maxdist > 0) mdl.material[0].mul(1.f-(d->center().dist(camera1->o)/maxdist));
             mdl.material[0].mul(mdl.color.a);
+            mdl.material[1] = mdl.material[2] = mdl.material[0];
             return;
         }
         mdl.material[0] = bvec::fromcolor(getcolour(d, playerovertone, playerovertonelevel));
@@ -3540,6 +3543,7 @@ namespace game
             if(W(d->weapselect, lightpersist)&2) color.max(WPCOL(d, d->weapselect, lightcol, physics::secondaryweap(d)));
             mdl.material[2] = bvec::fromcolor(color);
         }
+        else mdl.material[2] = bvec::fromcolor(colourwhite);
     }
 
     static void calchwepsway(modelstate &mdl)

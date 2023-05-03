@@ -491,6 +491,7 @@ extern char *limitstring(const char *str, size_t len);
 #define _VARF(name, global, min, cur, max, body, flags, level)  void var_##name(ident *id); int global = variable(#name, min, cur, max, &global, var_##name, flags|IDF_COMPLETE, level); void var_##name(ident *id) { body; }
 #define VARFN(flags, name, global, min, cur, max, body) _VARF(name, global, min, cur, max, body, flags, 0)
 #define VARF(flags, name, min, cur, max, body) _VARF(name, name, min, cur, max, body, flags, 0)
+#define VARR(name, cur) VAR(IDF_READONLY, name, 1, cur, -1)
 
 #define _FVAR(name, global, min, cur, max, flags, level) float global = fvariable(#name, min, cur, max, &global, NULL, flags|IDF_COMPLETE, level)
 #define FVARN(flags, name, global, min, cur, max) _FVAR(name, global, min, cur, max, flags, 0)
@@ -498,6 +499,7 @@ extern char *limitstring(const char *str, size_t len);
 #define _FVARF(name, global, min, cur, max, body, flags, level) void var_##name(ident *id); float global = fvariable(#name, min, cur, max, &global, var_##name, flags|IDF_COMPLETE, level); void var_##name(ident *id) { body; }
 #define FVARFN(flags, name, global, min, cur, max, body) _FVARF(name, global, min, cur, max, body, flags, 0)
 #define FVARF(flags, name, min, cur, max, body) _FVARF(name, name, min, cur, max, body, flags, 0)
+#define FVARR(name, cur) FVAR(IDF_READONLY, name, 1, cur, -1)
 
 #define _SVAR(name, global, cur, flags, level) char *global = svariable(#name, cur, &global, NULL, flags|IDF_COMPLETE, level)
 #define SVARN(flags, name, global, cur) _SVAR(name, global, cur, flags, 0)
@@ -505,6 +507,7 @@ extern char *limitstring(const char *str, size_t len);
 #define _SVARF(name, global, cur, body, flags, level) void var_##name(ident *id); char *global = svariable(#name, cur, &global, var_##name, flags|IDF_COMPLETE, level); void var_##name(ident *id) { body; }
 #define SVARFN(flags, name, global, cur, body) _SVARF(name, global, cur, body, flags, 0)
 #define SVARF(flags, name, cur, body) _SVARF(name, name, cur, body, flags, 0)
+#define SVARR(name, cur) SVAR(IDF_READONLY, name, cur)
 
 #define _CVAR(name, cur, init, body, flags, level) bvec name = bvec::fromcolor(cur); _VARF(name, _##name, 0, cur, 0xFFFFFF, { init; name = bvec::fromcolor(_##name); body; }, IDF_HEX|flags, level)
 #define CVARF(flags, name, cur, body) _CVAR(name, cur, , body, flags, 0)
@@ -561,101 +564,101 @@ extern char *limitstring(const char *str, size_t len);
 #endif
 
 #ifdef CPP_ENGINE_COMMAND
-SVAR(IDF_READONLY, validxname, "null int float str any code macro ident cstr cany word pop cond");
-VAR(IDF_READONLY, validxnull, 0, VAL_NULL, -1);
-SVAR(IDF_READONLY, valnamenull, "Null");
-VAR(IDF_READONLY, validxint, 0, VAL_INT, -1);
-SVAR(IDF_READONLY, valnameint, "Integer");
-VAR(IDF_READONLY, validxfloat, 0, VAL_FLOAT, -1);
-SVAR(IDF_READONLY, valnamefloat, "Float");
-VAR(IDF_READONLY, validxstr, 0, VAL_STR, -1);
-SVAR(IDF_READONLY, valnamestr, "String");
-VAR(IDF_READONLY, validxany, 0, VAL_ANY, -1);
-SVAR(IDF_READONLY, valnameany, "Any");
-VAR(IDF_READONLY, validxcode, 0, VAL_CODE, -1);
-SVAR(IDF_READONLY, valnamecode, "Code");
-VAR(IDF_READONLY, validxmacro, 0, VAL_MACRO, -1);
-SVAR(IDF_READONLY, valnamemacro, "Macro");
-VAR(IDF_READONLY, validxident, 0, VAL_IDENT, -1);
-SVAR(IDF_READONLY, valnameident, "Identifier");
-VAR(IDF_READONLY, validxlocal, 0, VAL_LOCAL, -1);
-SVAR(IDF_READONLY, valnamelocal, "Local");
-VAR(IDF_READONLY, validxcstr, 0, VAL_CSTR, -1);
-SVAR(IDF_READONLY, valnamecstr, "Constant-string");
-VAR(IDF_READONLY, validxcany, 0, VAL_CANY, -1);
-SVAR(IDF_READONLY, valnamecany, "Constant-any");
-VAR(IDF_READONLY, validxword, 0, VAL_WORD, -1);
-SVAR(IDF_READONLY, valnameword, "Word");
-VAR(IDF_READONLY, validxpop, 0, VAL_POP, -1);
-SVAR(IDF_READONLY, valnamepop, "Pop");
-VAR(IDF_READONLY, validxcond, 0, VAL_COND, -1);
-SVAR(IDF_READONLY, valnamecond, "Conditional");
-VAR(IDF_READONLY, validxmax, 0, VAL_MAX, -1);
-SVAR(IDF_READONLY, ididxname, "var fvar svar command alias local do doargs if result not and or");
-VAR(IDF_READONLY, ididxvar, 0, ID_VAR, -1);
-SVAR(IDF_READONLY, idnamevar, "Integer-variable");
-VAR(IDF_READONLY, ididxfvar, 0, ID_FVAR, -1);
-SVAR(IDF_READONLY, idnamefvar, "Float-variable");
-VAR(IDF_READONLY, ididxsvar, 0, ID_SVAR, -1);
-SVAR(IDF_READONLY, idnamesvar, "String-variable");
-VAR(IDF_READONLY, ididxcommand, 0, ID_COMMAND, -1);
-SVAR(IDF_READONLY, idnamecommand, "Command");
-VAR(IDF_READONLY, ididxalias, 0, ID_ALIAS, -1);
-SVAR(IDF_READONLY, idnamealias, "Alias");
-VAR(IDF_READONLY, ididxlocal, 0, ID_LOCAL, -1);
-SVAR(IDF_READONLY, idnamelocal, "Local");
-VAR(IDF_READONLY, ididxdo, 0, ID_DO, -1);
-SVAR(IDF_READONLY, idnamedo, "Do");
-VAR(IDF_READONLY, ididxdoargs, 0, ID_DOARGS, -1);
-SVAR(IDF_READONLY, idnamedoargs, "Do-arguments");
-VAR(IDF_READONLY, ididxif, 0, ID_IF, -1);
-SVAR(IDF_READONLY, idnameif, "If-condition");
-VAR(IDF_READONLY, ididxresult, 0, ID_RESULT, -1);
-SVAR(IDF_READONLY, idnameresult, "Result");
-VAR(IDF_READONLY, ididxnot, 0, ID_NOT, -1);
-SVAR(IDF_READONLY, idnamenot, "Not-condition");
-VAR(IDF_READONLY, ididxand, 0, ID_AND, -1);
-SVAR(IDF_READONLY, idnameand, "And-condition");
-VAR(IDF_READONLY, ididxor, 0, ID_OR, -1);
-SVAR(IDF_READONLY, idnameor, "Or-condition");
-VAR(IDF_READONLY, ididxmax, 0, ID_MAX, -1);
-VAR(IDF_READONLY, idbitmax, 0, (1<<ID_VAR)|(1<<ID_FVAR)|(1<<ID_SVAR)|(1<<ID_COMMAND)|(1<<ID_ALIAS)|(1<<ID_LOCAL)|(1<<ID_DO)|(1<<ID_DOARGS)|(1<<ID_IF)|(1<<ID_RESULT)|(1<<ID_NOT)|(1<<ID_AND)|(1<<ID_OR), -1);
-SVAR(IDF_READONLY, idfidxname, "init persist readonly rewrite map complete texture client server hex unknown arg preload gamepreload gamemod namecomplete");
-VAR(IDF_READONLY, idfbitinit, 0, IDF_INIT, -1);
-SVAR(IDF_READONLY, idfnameinit, "Initialiser");
-VAR(IDF_READONLY, idfbitpersist, 0, IDF_PERSIST, -1);
-SVAR(IDF_READONLY, idfnamepersist, "Persistent");
-VAR(IDF_READONLY, idfbitreadonly, 0, IDF_READONLY, -1);
-SVAR(IDF_READONLY, idfnamereadonly, "Read-only");
-VAR(IDF_READONLY, idfbitrewrite, 0, IDF_REWRITE, -1);
-SVAR(IDF_READONLY, idfnamerewrite, "Rewrite");
-VAR(IDF_READONLY, idfbitmap, 0, IDF_MAP, -1);
-SVAR(IDF_READONLY, idfnamemap, "Map");
-VAR(IDF_READONLY, idfbitcomplete, 0, IDF_COMPLETE, -1);
-SVAR(IDF_READONLY, idfnamecomplete, "Complete");
-VAR(IDF_READONLY, idfbittexture, 0, IDF_TEXTURE, -1);
-SVAR(IDF_READONLY, idfnametexture, "Texture");
-VAR(IDF_READONLY, idfbitclient, 0, IDF_CLIENT, -1);
-SVAR(IDF_READONLY, idfnameclient, "Client");
-VAR(IDF_READONLY, idfbitserver, 0, IDF_SERVER, -1);
-SVAR(IDF_READONLY, idfnameserver, "Server");
-VAR(IDF_READONLY, idfbithex, 0, IDF_HEX, -1);
-SVAR(IDF_READONLY, idfnamehex, "Hexadecimal");
-VAR(IDF_READONLY, idfbitunknown, 0, IDF_UNKNOWN, -1);
-SVAR(IDF_READONLY, idfnameunknown, "Unknown");
-VAR(IDF_READONLY, idfbitarg, 0, IDF_ARG, -1);
-SVAR(IDF_READONLY, idfnamearg, "Argument");
-VAR(IDF_READONLY, idfbitpreload, 0, IDF_PRELOAD, -1);
-SVAR(IDF_READONLY, idfnamepreload, "Preload");
-VAR(IDF_READONLY, idfbitgamepreload, 0, IDF_GAMEPRELOAD, -1);
-SVAR(IDF_READONLY, idfnamegamepreload, "Game-preload");
-VAR(IDF_READONLY, idfbitgamemod, 0, IDF_GAMEMOD, -1);
-SVAR(IDF_READONLY, idfnamegamemod, "Game-modifier");
-VAR(IDF_READONLY, idfbitnamecomplete, 0, IDF_NAMECOMPLETE, -1);
-SVAR(IDF_READONLY, idfnamenamecomplete, "Name-complete");
-VAR(IDF_READONLY, varidxmax, 0, VAR_MAX, -1);
-VAR(IDF_READONLY, varidxmin, 0, VAR_MIN, -1);
-FVAR(IDF_READONLY, fvaridxmax, 0, FVAR_MAX, -1);
-FVAR(IDF_READONLY, fvaridxmin, 0, FVAR_MIN, -1);
-FVAR(IDF_READONLY, fvaridxnonzero, 0, FVAR_NONZERO, -1);
+SVARR(validxname, "null int float str any code macro ident cstr cany word pop cond");
+VARR(validxnull, VAL_NULL);
+SVARR(valnamenull, "Null");
+VARR(validxint, VAL_INT);
+SVARR(valnameint, "Integer");
+VARR(validxfloat, VAL_FLOAT);
+SVARR(valnamefloat, "Float");
+VARR(validxstr, VAL_STR);
+SVARR(valnamestr, "String");
+VARR(validxany, VAL_ANY);
+SVARR(valnameany, "Any");
+VARR(validxcode, VAL_CODE);
+SVARR(valnamecode, "Code");
+VARR(validxmacro, VAL_MACRO);
+SVARR(valnamemacro, "Macro");
+VARR(validxident, VAL_IDENT);
+SVARR(valnameident, "Identifier");
+VARR(validxlocal, VAL_LOCAL);
+SVARR(valnamelocal, "Local");
+VARR(validxcstr, VAL_CSTR);
+SVARR(valnamecstr, "Constant-string");
+VARR(validxcany, VAL_CANY);
+SVARR(valnamecany, "Constant-any");
+VARR(validxword, VAL_WORD);
+SVARR(valnameword, "Word");
+VARR(validxpop, VAL_POP);
+SVARR(valnamepop, "Pop");
+VARR(validxcond, VAL_COND);
+SVARR(valnamecond, "Conditional");
+VARR(validxmax, VAL_MAX);
+SVARR(ididxname, "var fvar svar command alias local do doargs if result not and or");
+VARR(ididxvar, ID_VAR);
+SVARR(idnamevar, "Integer-variable");
+VARR(ididxfvar, ID_FVAR);
+SVARR(idnamefvar, "Float-variable");
+VARR(ididxsvar, ID_SVAR);
+SVARR(idnamesvar, "String-variable");
+VARR(ididxcommand, ID_COMMAND);
+SVARR(idnamecommand, "Command");
+VARR(ididxalias, ID_ALIAS);
+SVARR(idnamealias, "Alias");
+VARR(ididxlocal, ID_LOCAL);
+SVARR(idnamelocal, "Local");
+VARR(ididxdo, ID_DO);
+SVARR(idnamedo, "Do");
+VARR(ididxdoargs, ID_DOARGS);
+SVARR(idnamedoargs, "Do-arguments");
+VARR(ididxif, ID_IF);
+SVARR(idnameif, "If-condition");
+VARR(ididxresult, ID_RESULT);
+SVARR(idnameresult, "Result");
+VARR(ididxnot, ID_NOT);
+SVARR(idnamenot, "Not-condition");
+VARR(ididxand, ID_AND);
+SVARR(idnameand, "And-condition");
+VARR(ididxor, ID_OR);
+SVARR(idnameor, "Or-condition");
+VARR(ididxmax, ID_MAX);
+VARR(idbitmax, (1<<ID_VAR)|(1<<ID_FVAR)|(1<<ID_SVAR)|(1<<ID_COMMAND)|(1<<ID_ALIAS)|(1<<ID_LOCAL)|(1<<ID_DO)|(1<<ID_DOARGS)|(1<<ID_IF)|(1<<ID_RESULT)|(1<<ID_NOT)|(1<<ID_AND)|(1<<ID_OR));
+SVARR(idfidxname, "init persist readonly rewrite map complete texture client server hex unknown arg preload gamepreload gamemod namecomplete");
+VARR(idfbitinit, IDF_INIT);
+SVARR(idfnameinit, "Initialiser");
+VARR(idfbitpersist, IDF_PERSIST);
+SVARR(idfnamepersist, "Persistent");
+VARR(idfbitreadonly, IDF_READONLY);
+SVARR(idfnamereadonly, "Read-only");
+VARR(idfbitrewrite, IDF_REWRITE);
+SVARR(idfnamerewrite, "Rewrite");
+VARR(idfbitmap, IDF_MAP);
+SVARR(idfnamemap, "Map");
+VARR(idfbitcomplete, IDF_COMPLETE);
+SVARR(idfnamecomplete, "Complete");
+VARR(idfbittexture, IDF_TEXTURE);
+SVARR(idfnametexture, "Texture");
+VARR(idfbitclient, IDF_CLIENT);
+SVARR(idfnameclient, "Client");
+VARR(idfbitserver, IDF_SERVER);
+SVARR(idfnameserver, "Server");
+VARR(idfbithex, IDF_HEX);
+SVARR(idfnamehex, "Hexadecimal");
+VARR(idfbitunknown, IDF_UNKNOWN);
+SVARR(idfnameunknown, "Unknown");
+VARR(idfbitarg, IDF_ARG);
+SVARR(idfnamearg, "Argument");
+VARR(idfbitpreload, IDF_PRELOAD);
+SVARR(idfnamepreload, "Preload");
+VARR(idfbitgamepreload, IDF_GAMEPRELOAD);
+SVARR(idfnamegamepreload, "Game-preload");
+VARR(idfbitgamemod, IDF_GAMEMOD);
+SVARR(idfnamegamemod, "Game-modifier");
+VARR(idfbitnamecomplete, IDF_NAMECOMPLETE);
+SVARR(idfnamenamecomplete, "Name-complete");
+VARR(varidxmax, VAR_MAX);
+VARR(varidxmin, VAR_MIN);
+FVARR(fvaridxmax, FVAR_MAX);
+FVARR(fvaridxmin, FVAR_MIN);
+FVARR(fvaridxnonzero, FVAR_NONZERO);
 #endif // CPP_ENGINE_COMMAND

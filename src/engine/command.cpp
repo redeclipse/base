@@ -1072,9 +1072,9 @@ ICOMMAND(0, getvardesc, "s", (char *n), result(getvardesc(n)));
 ICOMMAND(0, getvarfields, "sb", (char *n, int *p), getvarfields(n, *p));
 ICOMMAND(0, getvarargs, "s", (char *n), result(getvarargs(n)));
 
-VAR(IDF_READONLY, intmin, 1, INT_MIN, -1);
-VAR(IDF_READONLY, intmax, 1, INT_MAX, -1);
-FVAR(IDF_READONLY, pi, 1, PI, -1);
+VARR(intmin, INT_MIN);
+VARR(intmax, INT_MAX);
+FVARR(pi, PI);
 
 bool identexists(const char *name) { return idents.access(name)!=NULL; }
 ICOMMAND(0, identexists, "s", (char *s), intret(identexists(s) ? 1 : 0));
@@ -2745,7 +2745,7 @@ static int rundepth = 0;
 
 uintptr_t runcodestack_max;
 VAR(0, debugruncodestack, 0, 0, 1);
-VAR(IDF_READONLY, runcodestack, 1, 0, 0);
+VARR(runcodestack, 0);
 
 static const uint *runcode(const uint *code, tagval &result)
 {
@@ -4674,8 +4674,8 @@ void sortlist(char *list, ident *x, ident *y, uint *body, uint *unique)
 COMMAND(0, sortlist, "srree");
 ICOMMAND(0, uniquelist, "srre", (char *list, ident *x, ident *y, uint *body), sortlist(list, x, y, NULL, body));
 
-ICOMMAND(0, true, "", (), intret(1));
-ICOMMAND(0, false, "", (), intret(0));
+ICOMMANDV(0, true, 1);
+ICOMMANDV(0, false, 0);
 
 #define MATHCMD(name, fmt, type, op, initval, unaryop) \
     ICOMMANDS(0, name, #fmt "1V", (tagval *args, int numargs), \
@@ -5261,14 +5261,6 @@ void clearsleep(bool clearmapdefs)
 
 ICOMMAND(0, clearsleep, "i", (int *mapdefs), clearsleep(*mapdefs!=0 || identflags&IDF_MAP));
 ICOMMAND(0, exists, "ss", (char *a, char *b), intret(fileexists(a, *b ? b : "r")));
-ICOMMAND(0, getupdatemillis, "", (), intret(curtime));
-ICOMMAND(0, getmillis, "i", (int *total),
-#ifdef STANDALONE
-    intret(*total > 0 ? totalmillis : (*total < 0 ? (int)enet_time_get() : lastmillis))
-#else
-    intret(*total > 0 ? totalmillis : (*total < 0 ? SDL_GetTicks() : lastmillis))
-#endif
-);
 
 void getvariable(int num)
 {

@@ -181,6 +181,7 @@ struct animmodel : model
                 if(drawtex == DRAWTEX_HALO)
                 {
                     LOCALPARAM(material1, modelmaterial[0].tocolor());
+                    LOCALPARAM(material2, modelmaterial[0].tocolor());
                 }
                 return;
             }

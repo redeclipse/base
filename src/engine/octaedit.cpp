@@ -133,7 +133,7 @@ bool havesel = false;
 bool hmapsel = false;
 int horient = 0;
 
-ICOMMAND(0, hassel, "", (), intret(havesel));
+ICOMMANDV(0, hassel, havesel ? 1 : 0);
 
 extern int entmoving;
 extern int entselsnap;
@@ -219,12 +219,14 @@ int selinview()
     o.add(s);
     return isvisiblesphere(max(s.x, s.y, s.z), o);
 }
-ICOMMAND(0, getselvfc, "", (), intret(selinview()));
-ICOMMAND(0, getselvisible, "", (),
+ICOMMANDV(0, selinview, selinview());
+
+bool selvisible()
 {
     int vfc = selinview();
-    intret(vfc < 0 || vfc != VFC_NOT_VISIBLE ? 0 : 1);
-});
+    return vfc < 0 || vfc != VFC_NOT_VISIBLE ? 0 : 1;
+}
+ICOMMANDV(0, selvisible, selvisible());
 
 bool noedit(bool view, bool msg)
 {
@@ -323,9 +325,8 @@ bool hasselchildmat = false;
 int selchildcount = 0;
 ushort selchildmat[MATF_NUMVOL] = { 0, 0, 0, 0, 0, 0, 0 };
 
-ICOMMAND(0, havesel, "", (), intret(havesel ? selchildcount : 0));
-ICOMMAND(0, selchildcount, "", (), { if(selchildcount < 0) result(tempformatstring("1/%d", -selchildcount)); else intret(selchildcount); });
-ICOMMAND(0, selchildmat, "s", (char *prefix), { result(getmaterialdesc(selchildmat, prefix)); });
+ICOMMANDV(0, havesel, havesel ? selchildcount : 0);
+ICOMMANDVS(0, selchildmat, getmaterialdesc(selchildmat));
 
 // Count material and material variants
 void countselmat(ushort mat)
@@ -541,10 +542,10 @@ void rendereditcursor()
     else if(entmoving)
     {
         vector<int> ents;
-        int entorient = 0;
+        int eo = 0;
 
         if(entselsnap && entselsnapmode == 1)
-            rayent(player->o, cursordir, 1e16f, RAY_ENTS | RAY_SKIPFIRST, gridsize, entorient, ents,
+            rayent(player->o, cursordir, 1e16f, RAY_ENTS | RAY_SKIPFIRST, gridsize, eo, ents,
                    &entgroup);
 
         if(ents.length()) entmovesnapent = ents[0];
@@ -555,14 +556,14 @@ void rendereditcursor()
     {
         ivec w;
         float sdist = 0, wdist = 0, t;
-        int entorient = 0;
+        int eo = 0;
         vector<int> ents;
 
         wdist = rayent(player->o, cursordir, 1e16f,
                        (editmode && showmat ? RAY_EDITMAT : 0)   // select cubes first
                        | (!dragging && entediting && (!passthrough || !passthroughent) ? RAY_ENTS : 0)
                        | RAY_SKIPFIRST
-                       | (passthroughcube || passthrough ? RAY_PASS : 0), gridsize, entorient, ents, NULL);
+                       | (passthroughcube || passthrough ? RAY_PASS : 0), gridsize, eo, ents, NULL);
 
         if((havesel || dragging) && !passthroughsel && !hmapedit)     // now try selecting the selection
             if(rayboxintersect(vec(sel.o), vec(sel.s).mul(sel.grid), player->o, cursordir, sdist, orient))
@@ -854,8 +855,8 @@ void rendereditcursor()
 }
 
 int lasttex = 0, lasttexmillis = -1;
-VAR(IDF_READONLY, texpaneltimer, 1, 0, -1);
-VAR(IDF_READONLY, curtexindex, 1, -1, -1);
+VARR(texpaneltimer, 0);
+VARR(curtexindex, -1);
 
 vector<ushort> texmru;
 
@@ -1069,7 +1070,7 @@ struct undolist
 
 undolist undos, redos;
 VAR(IDF_PERSIST, undomegs, 0, 8, 100);                              // bounded by n megs
-VAR(IDF_READONLY, totalundos, 1, 0, -1);
+VARR(totalundos, 0);
 
 void pruneundos(int maxremain)                          // bound memory
 {
@@ -3285,12 +3286,13 @@ COMMAND(0, gettexname, "ii");
 COMMAND(0, getdecalname, "ii");
 ICOMMAND(0, texmru, "b", (int *idx), { filltexlist(); intret(texmru.inrange(*idx) ? texmru[*idx] : texmru.length()); });
 ICOMMAND(0, texmrufind, "i", (int *idx), { filltexlist(); intret(texmru.find(*idx)); });
-ICOMMAND(0, numvslots, "", (), intret(vslots.length()));
-ICOMMAND(0, numslots, "", (), intret(slots.length()));
-ICOMMAND(0, numdecalslots, "", (), intret(decalslots.length()));
 COMMAND(0, getslottex, "i");
 ICOMMAND(0, texloaded, "i", (int *tex), intret(slots.inrange(*tex) && slots[*tex]->loaded ? 1 : 0));
 COMMAND(0, gettextags, "i");
+
+ICOMMANDV(0, numvslots, vslots.length());
+ICOMMANDV(0, numslots, slots.length());
+ICOMMANDV(0, numdecalslots, decalslots.length());
 
 int getseltexs(int idx)
 {

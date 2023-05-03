@@ -1145,7 +1145,7 @@ bool capslocked()
     #endif
     return false;
 }
-ICOMMAND(0, getcapslock, "", (), intret(capslockon ? 1 : 0));
+ICOMMANDV(0, getcapslock, capslockon ? 1 : 0);
 
 bool numlocked()
 {
@@ -1165,4 +1165,4 @@ bool numlocked()
     #endif
     return false;
 }
-ICOMMAND(0, getnumlock, "", (), intret(numlockon ? 1 : 0));
+ICOMMANDV(0, getnumlock, numlockon ? 1 : 0);

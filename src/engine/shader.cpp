@@ -1146,15 +1146,15 @@ int savemapshaders(stream *h)
     return mapshaders;
 }
 
-VAR(IDF_READONLY, shaderbitdefault, 1, SHADER_DEFAULT, -1);
-VAR(IDF_READONLY, shaderbitworld, 1, SHADER_WORLD, -1);
-VAR(IDF_READONLY, shaderbitenvmap, 1, SHADER_ENVMAP, -1);
-VAR(IDF_READONLY, shaderbitrefract, 1, SHADER_REFRACT, -1);
-VAR(IDF_READONLY, shaderbitoption, 1, SHADER_OPTION, -1);
-VAR(IDF_READONLY, shaderbitdynamic, 1, SHADER_DYNAMIC, -1);
-VAR(IDF_READONLY, shaderbittriplanar, 1, SHADER_TRIPLANAR, -1);
-VAR(IDF_READONLY, shaderbitinvalid, 1, SHADER_INVALID, -1);
-VAR(IDF_READONLY, shaderbitdeferred, 1, SHADER_DEFERRED, -1);
+VARR(shaderbitdefault, SHADER_DEFAULT);
+VARR(shaderbitworld, SHADER_WORLD);
+VARR(shaderbitenvmap, SHADER_ENVMAP);
+VARR(shaderbitrefract, SHADER_REFRACT);
+VARR(shaderbitoption, SHADER_OPTION);
+VARR(shaderbitdynamic, SHADER_DYNAMIC);
+VARR(shaderbittriplanar, SHADER_TRIPLANAR);
+VARR(shaderbitinvalid, SHADER_INVALID);
+VARR(shaderbitdeferred, SHADER_DEFERRED);
 
 Shader *variantshader(int type, char *name, int row, char *vs, char *ps, int maxvariants)
 {

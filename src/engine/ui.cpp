@@ -1293,7 +1293,7 @@ namespace UI
             else printfvar(id, o->vname.z); \
         });
 
-    ICOMMAND(0, uiname, "N$", (int *numargs, ident *id), if(*numargs != 0) result(window ? window->name : ""); else printsvar(id, window ? window->name : ""));
+    ICOMMANDVS(0, uiname, window ? window->name : "")
 
     UIWINARG(allowinput, "b", int, 0, 2);
     UIWINARGB(exclusive);
@@ -1302,17 +1302,17 @@ namespace UI
     UIWINARGV(origin);
     UIWINARG(yaw, "f", float, -1, 360);
     UIWINARG(pitch, "f", float, -181, 181);
-    ICOMMAND(0, uicuryaw, "N$", (int *numargs, ident *id), if(*numargs != 0) floatret(window ? window->curyaw : -1.f); else printfvar(id, window ? window->curyaw : -1.f));
-    ICOMMAND(0, uicurpitch, "N$", (int *numargs, ident *id), if(*numargs != 0) floatret(window ? window->curpitch : -1.f); else printfvar(id, window ? window->curpitch : -1.f));
-    ICOMMAND(0, uioffyaw, "N$", (int *numargs, ident *id), if(*numargs != 0) floatret(window ? window->offyaw : -1.f); else printfvar(id, window ? window->offyaw : -1.f));
-    ICOMMAND(0, uioffpitch, "N$", (int *numargs, ident *id), if(*numargs != 0) floatret(window ? window->offpitch : -1.f); else printfvar(id, window ? window->offpitch : -1.f));
+    ICOMMANDVF(0, uicuryaw, window ? window->curyaw : -1.f)
+    ICOMMANDVF(0, uicurpitch, window ? window->curpitch : -1.f)
+    ICOMMANDVF(0, uioffyaw, window ? window->offyaw : -1.f)
+    ICOMMANDVF(0, uioffpitch, window ? window->offpitch : -1.f)
 
-    ICOMMAND(0, uihitx, "N$", (int *numargs, ident *id), if(*numargs != 0) floatret(window ? window->hitx : -1.f); else printfvar(id, window ? window->hitx : -1.f));
-    ICOMMAND(0, uihity, "N$", (int *numargs, ident *id), if(*numargs != 0) floatret(window ? window->hity : -1.f); else printfvar(id, window ? window->hity : -1.f));
-    ICOMMAND(0, uiworld, "N$", (int *numargs, ident *id), if(*numargs != 0) intret(window && window->inworld ? 1 : 0); else printvar(id, window && window->inworld ? 1 : 0));
-    ICOMMAND(0, uicursorx, "N$", (int *numargs, ident *id), if(*numargs != 0) floatret(cursorx*float(hudw)/hudh); else printfvar(id, cursorx*float(hudw)/hudh));
-    ICOMMAND(0, uicursory, "N$", (int *numargs, ident *id), if(*numargs != 0) floatret(cursory); else printfvar(id, cursory));
-    ICOMMAND(0, uiaspect, "N$", (int *numargs, ident *id), if(*numargs != 0) floatret(float(hudw)/hudh); else printfvar(id, float(hudw)/hudh));
+    ICOMMANDVF(0, uihitx, window ? window->hitx : -1.f)
+    ICOMMANDVF(0, uihity, window ? window->hity : -1.f)
+    ICOMMANDV(0, uiworld, window && window->inworld ? 1 : 0)
+    ICOMMANDVF(0, uicursorx, cursorx*float(hudw)/hudh)
+    ICOMMANDVF(0, uicursory, cursory)
+    ICOMMANDVF(0, uiaspect, float(hudw)/hudh)
 
     #define UIWINCMDC(func, types, argtypes, body) \
         ICOMMAND(0, ui##func##root, types, argtypes, \
@@ -1928,8 +1928,8 @@ namespace UI
     ICOMMAND(0, pressui, "sibggggffffD", (char *name, int *surface, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch, int *down), pressui(name, *down!=0, *surface, *param, vec(*x, *y, *z), *yaw, *pitch, *scale, *detentyaw, *detentpitch));
     ICOMMAND(0, uivisible, "sib", (char *name, int *surface, int *param), intret(uivisible(name, *surface, *param) ? 1 : 0));
 
-    ICOMMAND(0, uitopname, "N$", (int *numargs, ident *id), if(*numargs != 0) result(surface ? surface->topname() : ""); else printsvar(id, surface ? surface->topname() : ""));
-    ICOMMAND(0, uiname, "N$", (int *numargs, ident *id), if(*numargs != 0) result(window ? window->name : ""); else printsvar(id, window ? window->name : ""));
+    ICOMMANDVS(0, uitopname, surface ? surface->topname() : "")
+    ICOMMANDVS(0, uiname, window ? window->name : "")
 
     struct HorizontalList : Object
     {

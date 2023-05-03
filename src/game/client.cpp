@@ -8,8 +8,8 @@ namespace client
     hashtable<int, const char *>demonames;
 
     VAR(0, debugmessages, 0, 0, 1);
-    ICOMMAND(0, getready, "N$", (int *numargs, ident *id), if(*numargs != 0) intret(isready ? 1 : 0); else printvar(id, isready ? 1 : 0));
-    ICOMMAND(0, getmapstate, "N$", (int *numargs, ident *id), if(*numargs != 0) intret(mapsaving ? 2 : (maploading || loadedmap ? 1 : 0)); else printvar(id, mapsaving ? 2 : (maploading || loadedmap ? 1 : 0)));
+    ICOMMANDV(0, getready, isready ? 1 : 0)
+    ICOMMANDV(0, getmapstate, mapsaving ? 2 : (maploading || loadedmap ? 1 : 0))
 
     SVAR(IDF_PERSIST, demolist, "");
     VAR(0, demoendless, 0, 0, 1);

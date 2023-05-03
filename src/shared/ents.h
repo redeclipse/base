@@ -136,25 +136,25 @@ struct extentity : entity                       // part of the entity that doesn
 #define MAXENTATTRS 100
 #define MAXENTKIN 100
 
-extern int efocus, entorient;
+extern int entindex, entorient;
 extern vector<int> enthover;
-#define entfocusv(i, f, v) { int n = efocus = (i); if(n>=0) { extentity &e = *v[n]; f; } }
+#define entfocusv(i, f, v) { int n = entindex = (i); if(n>=0) { extentity &e = *v[n]; f; } }
 #define entfocus(i, f) entfocusv(i, f, entities::getents())
 
 enum { CS_ALIVE = 0, CS_DEAD, CS_EDITING, CS_SPECTATOR, CS_WAITING, CS_MAX }; // beware, some stuff uses >= CS_SPECTATOR
 
 #ifdef CPP_ENGINE_COMMAND
-SVAR(IDF_READONLY, stateidxname, "alive dead editing spectator waiting");
-VAR(IDF_READONLY, stateidxalive, 0, CS_ALIVE, -1);
-SVAR(IDF_READONLY, statenamealive, "Alive");
-VAR(IDF_READONLY, stateidxdead, 0, CS_DEAD, -1);
-SVAR(IDF_READONLY, statenamedead, "Dead");
-VAR(IDF_READONLY, stateidxediting, 0, CS_EDITING, -1);
-SVAR(IDF_READONLY, statenameediting, "Editing");
-VAR(IDF_READONLY, stateidxspectator, 0, CS_SPECTATOR, -1);
-SVAR(IDF_READONLY, statenamespectator, "Spectating");
-VAR(IDF_READONLY, stateidxwaiting, 0, CS_WAITING, -1);
-SVAR(IDF_READONLY, statenamewaiting, "Waiting");
+SVARR(stateidxname, "alive dead editing spectator waiting");
+VARR(stateidxalive, CS_ALIVE);
+SVARR(statenamealive, "Alive");
+VARR(stateidxdead, CS_DEAD);
+SVARR(statenamedead, "Dead");
+VARR(stateidxediting, CS_EDITING);
+SVARR(statenameediting, "Editing");
+VARR(stateidxspectator, CS_SPECTATOR);
+SVARR(statenamespectator, "Spectating");
+VARR(stateidxwaiting, CS_WAITING);
+SVARR(statenamewaiting, "Waiting");
 #endif
 
 enum { PHYS_FLOAT = 0, PHYS_FALL, PHYS_SLIDE, PHYS_SLOPE, PHYS_FLOOR, PHYS_STEP_UP, PHYS_STEP_DOWN, PHYS_MAX };

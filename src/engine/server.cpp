@@ -7,7 +7,21 @@
 #include <shlobj.h>
 #endif
 
-int curtime = 0, totalmillis = 1, lastmillis = 1, elapsedtime = 0, timescale = 100, paused = 0, timeerr = 0, shutdownwait = 0;
+VARR(curtime, 0);
+VARR(totalmillis, 1);
+VARR(lastmillis, 1);
+VARR(elapsedtime, 0);
+VARR(timescale, 100);
+VARR(paused, 0);
+VARR(timeerr, 0);
+VARR(shutdownwait, 0);
+
+#ifdef STANDALONE
+ICOMMANDV(0, tickmillis, int(enet_time_get()));
+#else
+ICOMMANDV(0, tickmillis, int(SDL_GetTicks()));
+#endif
+
 time_t clocktime = 0, currenttime = 0, clockoffset = 0;
 uint totalsecs = 0;
 
@@ -23,38 +37,38 @@ const char *platnames[MAX_PLATFORMS] = {
     "windows", "macos", "linux/bsd"
 };
 
-VAR(0, versioning, 1, 0, -1);
+VARR(versioning, 0);
 
-VAR(IDF_READONLY, version, 1, CUR_VERSION, -1);
-VAR(IDF_READONLY, versionmajor, 1, VERSION_MAJOR, -1);
-VAR(IDF_READONLY, versionminor, 1, VERSION_MINOR, -1);
-VAR(IDF_READONLY, versionpatch, 1, VERSION_PATCH, -1);
-SVAR(IDF_READONLY, versionstring, VERSION_STRING);
-SVAR(IDF_READONLY, versionname, VERSION_NAME);
-SVAR(IDF_READONLY, versionfname, VERSION_FNAME);
-SVAR(IDF_READONLY, versionuname, VERSION_UNAME);
-SVAR(IDF_READONLY, versionvname, VERSION_VNAME);
-SVAR(IDF_READONLY, versionrelease, VERSION_RELEASE);
-SVAR(IDF_READONLY, versionurl, VERSION_URL);
-SVAR(IDF_READONLY, versioncopy, VERSION_COPY);
-SVAR(IDF_READONLY, versiondesc, VERSION_DESC);
-SVAR(IDF_READONLY, versioncomp, VERSION_COMP);
-SVAR(IDF_READONLY, versionplatname, plat_name(CUR_PLATFORM));
-SVAR(IDF_READONLY, versionplatlongname, plat_longname(CUR_PLATFORM));
-VAR(IDF_READONLY, versionbuild, 0, VERSION_BUILD, VAR_MAX);
-VAR(IDF_READONLY, versionplatform, 0, CUR_PLATFORM, VAR_MAX);
-VAR(IDF_READONLY, versionarch, 0, CUR_ARCH, VAR_MAX);
-VAR(IDF_READONLY, versioncrc, 0, 0, VAR_MAX);
+VARR(version, CUR_VERSION);
+VARR(versionmajor, VERSION_MAJOR);
+VARR(versionminor, VERSION_MINOR);
+VARR(versionpatch, VERSION_PATCH);
+SVARR(versionstring, VERSION_STRING);
+SVARR(versionname, VERSION_NAME);
+SVARR(versionfname, VERSION_FNAME);
+SVARR(versionuname, VERSION_UNAME);
+SVARR(versionvname, VERSION_VNAME);
+SVARR(versionrelease, VERSION_RELEASE);
+SVARR(versionurl, VERSION_URL);
+SVARR(versioncopy, VERSION_COPY);
+SVARR(versiondesc, VERSION_DESC);
+SVARR(versioncomp, VERSION_COMP);
+SVARR(versionplatname, plat_name(CUR_PLATFORM));
+SVARR(versionplatlongname, plat_longname(CUR_PLATFORM));
+VARR(versionbuild, VERSION_BUILD);
+VARR(versionplatform, CUR_PLATFORM);
+VARR(versionarch, CUR_ARCH);
+VARR(versioncrc, 0);
 SVARF(IDF_READONLY, versionbranch, VERSION_BRANCH, versionbranch[MAXBRANCHLEN+1] = 0);
 SVARF(IDF_READONLY, versionrevision, VERSION_REVISION, versionrevision[MAXREVISIONLEN+1] = 0);
 #ifdef STANDALONE
-VAR(IDF_READONLY, versionisserver, 0, 1, 1);
+VARR(versionisserver, 1);
 #else
-VAR(IDF_READONLY, versionisserver, 0, 0, 1);
+VARR(versionisserver, 0);
 #endif
-VAR(IDF_READONLY, versionsteamid, 1, VERSION_STEAM_APPID, -1);
-VAR(IDF_READONLY, versionsteamdepot, 1, VERSION_STEAM_DEPOT, -1);
-SVAR(IDF_READONLY, versiondiscordid, VERSION_DISCORD);
+VARR(versionsteamid, VERSION_STEAM_APPID);
+VARR(versionsteamdepot, VERSION_STEAM_DEPOT);
+SVARR(versiondiscordid, VERSION_DISCORD);
 
 static string verstr = "";
 const char *getverstr()
@@ -70,7 +84,7 @@ const char *getverstr()
 
 ICOMMAND(0, platname, "ii", (int *p, int *g), result(*p >= 0 && *p < MAX_PLATFORMS ? (*g!=0 ? plat_longname(*p) : plat_name(*p)) : ""));
 
-VAR(0, rehashing, 1, 0, -1);
+VARR(rehashing, 0);
 
 const char * const disc_reasons[] =
 {
@@ -306,7 +320,7 @@ VAR(0, servertype, 1, 3, 3); // 1: private, 2: public, 3: dedicated
 VAR(0, standalone, 1, 1, -1);
 #else
 VARF(0, servertype, 0, 0, 3, changeservertype()); // 0: local only, 1: private, 2: public, 3: dedicated
-VAR(0, standalone, 1, 0, -1);
+VARR(standalone, 0);
 #endif
 VAR(0, serveruprate, 0, 0, VAR_MAX);
 VAR(0, serverport, 1, SERVER_PORT, VAR_MAX);
@@ -1535,10 +1549,10 @@ bool serveroption(char *opt)
     return false;
 }
 
-SVAR(IDF_READONLY, startingdir, "");
-SVAR(IDF_READONLY, workingdir, "");
-SVAR(IDF_READONLY, datapackage, "");
-SVAR(IDF_READONLY, extrapackages, "");
+SVARR(startingdir, "");
+SVARR(workingdir, "");
+SVARR(datapackage, "");
+SVARR(extrapackages, "");
 
 void loadextras(const char *dirs)
 {

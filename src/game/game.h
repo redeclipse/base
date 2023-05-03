@@ -317,18 +317,18 @@ extern const int pulsecols[PULSE_MAX][PULSECOLOURS] = {
     { 0xFFFFFF, 0x008000, 0x00A000, 0x00FF00, 0x20FF20, 0x40FF40, 0x80FF80, 0xA0FFA0 }, // green regen
     { 0xFFFFFF, 0xC0C0C0, 0xA0A0A0, 0x808080, 0x707070, 0x808080, 0xA0A0A0, 0xC0C0C0 }  // flash
 };
-SVAR(IDF_READONLY, pulsenames, "fire burn disco shock bleed buff warn");
-VAR(IDF_READONLY, pulseidxfire, 1, PULSE_FIRE, -1);
-VAR(IDF_READONLY, pulseidxburn, 1, PULSE_BURN, -1);
-VAR(IDF_READONLY, pulseidxdisco, 1, PULSE_DISCO, -1);
-VAR(IDF_READONLY, pulseidxshock, 1, PULSE_SHOCK, -1);
-VAR(IDF_READONLY, pulseidxbleed, 1, PULSE_BLEED, -1);
-VAR(IDF_READONLY, pulseidxbuff, 1, PULSE_BUFF, -1);
-VAR(IDF_READONLY, pulseidxwarn, 1, PULSE_WARN, -1);
-VAR(IDF_READONLY, pulseidxregen, 1, PULSE_REGEN, -1);
-VAR(IDF_READONLY, pulseidxflash, 1, PULSE_FLASH, -1);
-VAR(IDF_READONLY, pulseidxmax, 1, PULSE_MAX, -1);
-VAR(IDF_READONLY, pulseidxlast, 1, PULSE_LAST, -1);
+SVARR(pulsenames, "fire burn disco shock bleed buff warn");
+VARR(pulseidxfire, PULSE_FIRE);
+VARR(pulseidxburn, PULSE_BURN);
+VARR(pulseidxdisco, PULSE_DISCO);
+VARR(pulseidxshock, PULSE_SHOCK);
+VARR(pulseidxbleed, PULSE_BLEED);
+VARR(pulseidxbuff, PULSE_BUFF);
+VARR(pulseidxwarn, PULSE_WARN);
+VARR(pulseidxregen, PULSE_REGEN);
+VARR(pulseidxflash, PULSE_FLASH);
+VARR(pulseidxmax, PULSE_MAX);
+VARR(pulseidxlast, PULSE_LAST);
 #else
 extern const int pulsecols[PULSE_MAX][PULSECOLOURS];
 #endif

@@ -37,7 +37,7 @@ FVAR(IDF_PERSIST, particlehazerefract3, FVAR_NONZERO, 8, 10);
 FVAR(IDF_PERSIST, particlehazescrollx, FVAR_MIN, 0, FVAR_MAX);
 FVAR(IDF_PERSIST, particlehazescrolly, FVAR_MIN, -0.5f, FVAR_MAX);
 
-VAR(IDF_READONLY, numenvparts, 1, 0, 0);
+VARR(numenvparts, 0);
 
 // Check canemitparticles() to limit the rate that paricles can be emitted for models/sparklies
 // Automatically stops particles being emitted when paused or in reflective drawing

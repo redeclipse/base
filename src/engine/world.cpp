@@ -345,8 +345,11 @@ char *entname(entity &e)
     return fullentname;
 }
 extern bool havesel, selectcorners;
-int entlooplevel = 0;
-int efocus = -1, entorient = -1;
+
+VARR(entlooplevel, 0);
+VARR(entindex, -1);
+VARR(entorient, -1);
+
 vector<int> enthover, oldhover;
 bool undonext = true;
 
@@ -355,7 +358,7 @@ VARF(0, entediting, 0, 1, 1,
     if(!entediting)
     {
         entcancel();
-        efocus = -1;
+        entindex = -1;
         enthover.setsize(0);
     }
 });
@@ -461,8 +464,8 @@ void makeundoent()
 #define entedit(i, f)   enteditv(i, f, entities::getents())
 #define addgroup(exp)   { vector<extentity *> &ents = entities::getents(); loopv(ents) entfocusv(i, if(exp) entadd(n), ents); }
 #define setgroup(exp)   { entcancel(); addgroup(exp); }
-#define groupeditloop(f){ vector<extentity *> &ents = entities::getents(); entlooplevel++; int _ = efocus; loopv(entgroup) enteditv(entgroup[i], f, ents); efocus = _; entlooplevel--; }
-#define groupeditpure(f){ if(entlooplevel>0) { entedit(efocus, f); } else { groupeditloop(f); commitchanges(); } }
+#define groupeditloop(f){ vector<extentity *> &ents = entities::getents(); entlooplevel++; int _ = entindex; loopv(entgroup) enteditv(entgroup[i], f, ents); entindex = _; entlooplevel--; }
+#define groupeditpure(f){ if(entlooplevel>0) { entedit(entindex, f); } else { groupeditloop(f); commitchanges(); } }
 #define groupeditundo(f){ makeundoent(); groupeditpure(f); }
 #define groupedit(f)    { addimplicit(groupeditundo(f)); }
 
@@ -492,7 +495,7 @@ void pasteundoent(int idx, const entbase &ue, int *attrs, int numattrs)
     vector<extentity *> &ents = entities::getents();
     while(ents.length() < idx) ents.add(entities::newent())->type = ET_EMPTY;
     numattrs = min(numattrs, MAXENTATTRS);
-    int efocus = -1, minattrs = entities::numattrs(ue.type);
+    int entindex = -1, minattrs = entities::numattrs(ue.type);
     entedit(idx,
     {
         (entbase &)e = ue;
@@ -601,8 +604,6 @@ VAR(IDF_PERSIST, entselsnap, 0, 1, 1);
 VAR(IDF_PERSIST, entselsnapmode, 0, 0, 1);
 VAR(0, entmovingshadow, 0, 1, 1);
 VAR(IDF_PERSIST, entmoveselect, 0, 0, 1);
-
-ICOMMAND(0, entorient, "", (), intret(entorient));
 
 extern void boxs(int orient, vec o, const vec &s, float size);
 extern void boxs(int orient, vec o, const vec &s);
@@ -795,10 +796,10 @@ bool hoveringonent(vector<int> ents, int orient)
     enthover = ents;
     if(ents.length())
     {
-        efocus = ents[0];
+        entindex = ents[0];
         return true;
     }
-    efocus = entgroup.empty() ? -1 : entgroup.last();
+    entindex = entgroup.empty() ? -1 : entgroup.last();
     return false;
 }
 
@@ -1224,7 +1225,7 @@ void selentlinks(int n, int recurse, uint *cond)
     {
         int r = e.links[i];
         if(e.type == ET_EMPTY || !ents.inrange(r) || entgroup.find(r) >= 0) continue;
-        efocus = r;
+        entindex = r;
         if(cond && !executebool(cond)) continue;
         entadd(r);
         if(recurse < 0 || recurse > 0) selentlinks(r, recurse-1, cond);
@@ -1265,8 +1266,8 @@ ICOMMAND(0, entselect, "e", (uint *body), if(!noentedit()) addgroup(e.type != ET
 ICOMMAND(0, entloop, "e", (uint *body), if(!noentedit()) { addimplicit(groupeditloop(((void)e, execute(body)))); commitchanges(); });
 ICOMMAND(0, entloopread, "e", (uint *body), if(entgroup.length()) loopv(entgroup) entfocus(entgroup[i], (void)e; execute(body);));
 ICOMMAND(0, enthoverloopread, "e", (uint *body), if(enthover.length()) loopv(enthover) entfocus(enthover[i], (void)e; execute(body);));
-ICOMMAND(0, insel, "", (), entfocus(efocus, intret(pointinsel(sel, e.o))));
-ICOMMAND(0, entget, "", (), entfocus(efocus,
+ICOMMAND(0, insel, "", (), entfocus(entindex, intret(pointinsel(sel, e.o))));
+ICOMMAND(0, entget, "", (), entfocus(entindex,
 {
     defformatstring(s, "%s", entities::findname(e.type));
     loopv(e.attrs)
@@ -1276,8 +1277,7 @@ ICOMMAND(0, entget, "", (), entfocus(efocus,
     }
     result(s);
 }));
-ICOMMAND(0, entindex, "", (), intret(efocus));
-ICOMMAND(0, numenthover, "", (), intret(enthover.length()));
+ICOMMANDV(0, numenthover, enthover.length());
 
 void entlast(uint *body)
 {
@@ -1316,7 +1316,7 @@ void enttype(char *type, int *numargs)
         int typeidx = entities::findtype(type);
         if(typeidx != ET_EMPTY) groupedit(e.type = typeidx);
     }
-    else entfocus(efocus,
+    else entfocus(entindex,
     {
         result(entities::findname(e.type));
     })
@@ -1333,7 +1333,7 @@ void entattr(int *attr, int *val, int *numargs)
                 e.attrs[*attr] = *val;
             });
     }
-    else entfocus(efocus,
+    else entfocus(entindex,
         if(e.attrs.inrange(*attr)) intret(e.attrs[*attr]);
     );
 }
@@ -1355,7 +1355,7 @@ void entpos(float *x, float *y, float *z, int *numargs)
     {
         groupedit(e.o = vec(*x, *y, *z));
     }
-    else entfocus(efocus,
+    else entfocus(entindex,
     {
         defformatstring(str, "%f %f %f", e.o.x, e.o.y, e.o.z);
         result(str);

@@ -1406,8 +1406,8 @@ namespace entities
 
     int triggerent = -1;
     gameent *triggerclient = NULL;
-    ICOMMAND(0, triggerentnum, "", (), intret(triggerent));
-    ICOMMAND(0, triggerclientnum, "", (), intret(triggerclient ? triggerclient->clientnum : -1));
+    ICOMMANDV(0, triggerent, triggerent);
+    ICOMMANDV(0, triggerclient, triggerclient ? triggerclient->clientnum : -1);
 
     bool cantrigger(int n, gameent *d = NULL)
     {
@@ -1838,7 +1838,7 @@ namespace entities
 
     void clearents()
     {
-        efocus = -1;
+        entindex = -1;
         while(ents.length()) deleteent(ents.pop());
         memset(firstenttype, 0, sizeof(firstenttype));
         memset(firstusetype, 0, sizeof(firstusetype));

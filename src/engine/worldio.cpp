@@ -2,15 +2,15 @@
 
 #include "engine.h"
 
-VAR(0, maploading, 1, 0, -1);
-VAR(0, mapsaving, 1, 0, -1);
-VAR(0, mapcrc, 1, 0, -1);
+VARR(maploading, 0);
+VARR(mapsaving, 0);
+VARR(mapcrc, 0);
 SVAR(0, mapfile, "");
 SVAR(0, mapname, "");
 SVAR(0, maptext, "");
 
 const char *mapvariants[MPV_MAX] = { "all", "default", "alternate" };
-VAR(0, mapvariant, 1, 0, -1);
+VARR(mapvariant, 0);
 
 bool checkmapvariant(int variant)
 {
@@ -1633,8 +1633,8 @@ void writecollideobj(char *name)
 
 COMMAND(0, writecollideobj, "s");
 
-ICOMMAND(0, mapversion, "", (void), intret(hdr.version));
-ICOMMAND(0, maprevision, "", (void), intret(hdr.revision));
+ICOMMANDV(0, mapversion, hdr.version);
+ICOMMANDV(0, maprevision, hdr.revision);
 
 ICOMMAND(0, getmapfile, "s", (char *s),
 {

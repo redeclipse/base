@@ -117,6 +117,7 @@ void inputgrab(bool on, bool delay = false)
 }
 
 extern void cleargamma();
+bool engineready = false, inbetweenframes = false, renderedframe = false;
 
 void cleanup()
 {
@@ -187,9 +188,11 @@ void fatal(const char *s, ...)    // failure exit
     exit(EXIT_FAILURE);
 }
 
-VAR(IDF_READONLY, desktopw, 1, 0, 0);
-VAR(IDF_READONLY, desktoph, 1, 0, 0);
-int screenw = 0, screenh = 0, refresh = 60;
+int screenw = 0, screenh = 0;
+VARR(desktopw, 0);
+VARR(desktoph, 0);
+VARR(refreshrate, 0);
+
 SDL_Window *screen = NULL;
 SDL_GLContext glcontext = NULL;
 SDL_DisplayMode display;
@@ -241,7 +244,7 @@ int getdisplaymode()
     if(SDL_GetCurrentDisplayMode(index, &display) < 0) fatal("Failed querying monitor %d display mode: %s", index, SDL_GetError());
     desktopw = display.w;
     desktoph = display.h;
-    refresh = display.refresh_rate;
+    refreshrate = display.refresh_rate;
     return index;
 }
 
@@ -365,8 +368,6 @@ ICOMMAND(0, enumresolutions, "", (),
     result(reslist);
 });
 
-ICOMMAND(0, getrefreshrate, "", (), intret(refresh));
-
 static int curgamma = 100;
 VARFN(IDF_PERSIST, gamma, reqgamma, 30, 100, 300,
 {
@@ -387,7 +388,7 @@ void cleargamma()
     if(curgamma != 100 && screen) SDL_SetWindowBrightness(screen, 1.0f);
 }
 
-VAR(IDF_READONLY, hasvsynctear, 1, -1, 0);
+VARR(hasvsynctear, -1);
 
 int curvsync = -1;
 void restorevsync()
@@ -786,13 +787,13 @@ VAR(IDF_PERSIST, maxfps, -1, -1, VAR_MAX);
 FVAR(IDF_PERSIST, maxfpsrefresh, 0.1f, 1, 100);
 VAR(IDF_PERSIST, maxfpsrefreshoffset, 0, 1, VAR_MAX);
 
-#define GETFPS(a) (a >= 0 ? a : int((refresh*a##refresh)+a##refreshoffset))
+#define GETFPS(a) (a >= 0 ? a : int((refreshrate*a##refresh)+a##refreshoffset))
 
 void limitfps(int &millis, int curmillis)
 {
     int curmax = GETFPS(maxfps), curmenu = GETFPS(menufps),
         limit = (hasnoview() || (minimized && !renderunfocused)) && curmenu ? (curmax > 0 ? min(curmax, curmenu) : curmenu) : curmax;
-    if(!limit || (limit >= refresh && vsync)) return;
+    if(!limit || (limit >= refreshrate && vsync)) return;
     static int fpserror = 0;
     int delay = 1000/limit - (millis-curmillis);
     if(delay < 0) fpserror = 0;
@@ -904,11 +905,11 @@ void getfps_(int *raw)
 
 COMMANDN(0, getfps, getfps_, "i");
 
-VAR(0, curfps, 1, 0, -1);
-VAR(0, bestfps, 1, 0, -1);
-VAR(0, bestfpsdiff, 1, 0, -1);
-VAR(0, worstfps, 1, 0, -1);
-VAR(0, worstfpsdiff, 1, 0, -1);
+VARR(curfps, 0);
+VARR(bestfps, 0);
+VARR(bestfpsdiff, 0);
+VARR(worstfps, 0);
+VARR(worstfpsdiff, 0);
 
 void resetfps()
 {
@@ -931,12 +932,9 @@ void updatefps(int frames, int millis)
     worstfpsdiff = worstdiff;
 }
 
-#define ENGINEBOOL(name,val) \
-    bool name = val; \
-    ICOMMAND(0, get##name, "", (), intret(name ? 1 : 0));
-ENGINEBOOL(engineready, false);
-ENGINEBOOL(inbetweenframes, false);
-ENGINEBOOL(renderedframe, true);
+ICOMMANDV(0, engineready, engineready ? 1 : 0);
+ICOMMANDV(0, inbetweenframes, inbetweenframes ? 1 : 0);
+ICOMMANDV(0, renderedframe, renderedframe ? 1 : 0);
 
 static bool findarg(int argc, char **argv, const char *str)
 {
@@ -951,9 +949,11 @@ bool checkconn()
     else return client::waiting() > 0;
     return false;
 }
-ICOMMAND(0, getprogresswait, "", (), intret(client::waiting()));
-ICOMMAND(0, getprogressing, "", (), intret(progressing || checkconn() ? 1 : 0));
-ICOMMAND(0, getprogresstype, "", (), intret(maploading ? 1 : (checkconn() ? 2 : 0)));
+
+ICOMMANDV(0, progresswait, client::waiting());
+ICOMMANDV(0, progressing, progressing || checkconn() ? 1 : 0);
+ICOMMANDV(0, progresstype, maploading ? 1 : (mapsaving ? 2 : (checkconn() ? 3 : 0)));
+
 FVAR(0, loadprogress, 0, 0, 1);
 SVAR(0, progresstitle, "");
 FVAR(0, progressamt, -1, 0, 1);
@@ -966,7 +966,7 @@ void progress(float amt, const char *s, ...)
     if(amt < 0) amt = 0; // signals the start of a long process
     if(progressfps)
     {
-        int curprog = progressfps >= 0 ? progressfps : refresh, ticks = SDL_GetTicks(), diff = ticks - lastprogress;
+        int curprog = progressfps >= 0 ? progressfps : refreshrate, ticks = SDL_GetTicks(), diff = ticks - lastprogress;
         if(curprog > 0 && amt > 0 && diff >= 0 && diff < (1000 + curprog-1)/curprog) return;
         lastprogress = ticks;
     }

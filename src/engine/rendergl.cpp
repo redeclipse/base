@@ -6,9 +6,9 @@ bool hasVAO = false, hasTR = false, hasTSW = false, hasPBO = false, hasFBO = fal
 bool mesa = false, intel = false, amd = false, nvidia = false;
 int hasstencil = 0;
 
-VAR(IDF_READONLY, glversion, 1, 0, 0);
-VAR(IDF_READONLY, glslversion, 1, 0, 0);
-VAR(IDF_READONLY, glcompat, 1, 0, 0);
+VARR(glversion, 0);
+VARR(glslversion, 0);
+VARR(glcompat, 0);
 
 // GL_EXT_timer_query
 PFNGLGETQUERYOBJECTI64VEXTPROC glGetQueryObjecti64v_  = NULL;
@@ -367,9 +367,9 @@ bool checkdepthtexstencilrb()
     return supported;
 }
 
-SVAR(IDF_READONLY, gfxvendor, "");
-SVAR(IDF_READONLY, gfxrenderer, "");
-SVAR(IDF_READONLY, gfxversion, "");
+SVARR(gfxvendor, "");
+SVARR(gfxrenderer, "");
+SVARR(gfxversion, "");
 
 void gl_checkextensions()
 {
@@ -2535,7 +2535,7 @@ bool hasnoview()
 {
     return forcenoview || progressing || client::waiting() > 0;
 }
-ICOMMAND(0, getnoview, "", (), intret(hasnoview() ? 1 : 0));
+ICOMMANDV(0, hasnoview, hasnoview() ? 1 : 0);
 
 void usetexturing(bool on)
 {

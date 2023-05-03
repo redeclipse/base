@@ -72,15 +72,15 @@ int mapbals[T_NUM][T_NUM] = {
     { T_ALPHA, T_OMEGA },
     { T_OMEGA, T_ALPHA },
 };
-SVAR(IDF_READONLY, teamnames, "neutral alpha omega enemy");
-VAR(IDF_READONLY, teamidxneutral, 1, T_NEUTRAL, -1);
-VAR(IDF_READONLY, teamidxalpha, 1, T_ALPHA, -1);
-VAR(IDF_READONLY, teamidxomega, 1, T_OMEGA, -1);
-VAR(IDF_READONLY, teamidxenemy, 1, T_ENEMY, -1);
-VAR(IDF_READONLY, teamidxfirst, 1, T_FIRST, -1);
-VAR(IDF_READONLY, teamidxlast, 1, T_LAST, -1);
-VAR(IDF_READONLY, teamidxcount, 1, T_COUNT, -1);
-VAR(IDF_READONLY, teamidxnum, 1, T_NUM, -1);
+SVARR(teamnames, "neutral alpha omega enemy");
+VARR(teamidxneutral, T_NEUTRAL);
+VARR(teamidxalpha, T_ALPHA);
+VARR(teamidxomega, T_OMEGA);
+VARR(teamidxenemy, T_ENEMY);
+VARR(teamidxfirst, T_FIRST);
+VARR(teamidxlast, T_LAST);
+VARR(teamidxcount, T_COUNT);
+VARR(teamidxnum, T_NUM);
 #else
 extern int mapbals[T_NUM][T_NUM];
 #endif
