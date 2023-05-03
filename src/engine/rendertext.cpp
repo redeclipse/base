@@ -10,8 +10,9 @@ VAR(IDF_PERSIST, textwrapmin, 0, 10, VAR_MAX);
 FVAR(IDF_PERSIST, textwraplimit, 0, 0.3f, 1);
 FVAR(IDF_PERSIST, textspacescale, 0, 0.5f, 10);
 
+FVAR(IDF_PERSIST, textimagescale, 0, 0.9f, FVAR_MAX);
 VAR(IDF_PERSIST, textkeyimages, 0, 1, 1);
-FVAR(IDF_PERSIST, textkeyimagescale, 0, 0.8f, FVAR_MAX);
+FVAR(IDF_PERSIST, textkeyimagescale, 0, 0.9f, FVAR_MAX);
 SVAR(IDF_PERSIST, textkeyprefix, "<invert>textures/keys/");
 VAR(IDF_PERSIST, textkeyseps, 0, 1, 1);
 VAR(IDF_PERSIST|IDF_HEX, textkeycolour, 0, 0x00FFFF, 0xFFFFFF);
@@ -402,7 +403,7 @@ static const char *gettexvar(const char *var)
     else gle::attribf(vx, vy); \
 } while(0)
 
-static float draw_icon(Texture *&tex, const char *name, float x, float y, float scale)
+static float draw_icon(Texture *&tex, const char *name, float x, float y)
 {
     if(!name && !*name) return 0;
     const char *file = name;
@@ -410,7 +411,7 @@ static float draw_icon(Texture *&tex, const char *name, float x, float y, float 
     if(!*file) return 0;
     Texture *t = textureload(file, 3, true, false);
     if(!t) return 0;
-    float h = curfont->mh*scale, w = (t->w*h)/float(t->h);
+    float sh = curfont->mh*curtextscale, h = sh*textimagescale, w = (t->w*sh)/float(t->h);
     if(curfontpass)
     {
         if(tex != t)
@@ -419,16 +420,17 @@ static float draw_icon(Texture *&tex, const char *name, float x, float y, float 
             tex = t;
             settexture(tex);
         }
-        textvert(x,     y    ); gle::attribf(0, 0);
-        textvert(x + w, y    ); gle::attribf(1, 0);
-        textvert(x + w, y + h); gle::attribf(1, 1);
-        textvert(x,     y + h); gle::attribf(0, 1);
+        float oh = h-sh, oy = y-oh*0.5f;
+        textvert(x,     oy    ); gle::attribf(0, 0);
+        textvert(x + w, oy    ); gle::attribf(1, 0);
+        textvert(x + w, oy + h); gle::attribf(1, 1);
+        textvert(x,     oy + h); gle::attribf(0, 1);
     }
     else wantfontpass = true;
     return w;
 }
 
-static float icon_width(const char *name, float scale)
+static float icon_width(const char *name)
 {
     if(!name && !*name) return 0;
     const char *file = name;
@@ -436,7 +438,7 @@ static float icon_width(const char *name, float scale)
     if(!*file) return 0;
     Texture *t = textureload(file, 3, true, false);
     if(!t) return 0;
-    float w = (t->w*curfont->mh*scale)/float(t->h);
+    float w = (t->w*curfont->mh*curtextscale*textimagescale)/float(t->h);
     return w;
 }
 
@@ -678,7 +680,7 @@ int text_visible(const char *str, float hitx, float hity, float maxwidth, int fl
     #define TEXTCOLOR(idx)
     #define TEXTHEXCOLOR(ret)
     #define TEXTFONT(ret) if(!strcmp(ret, "~")) { if(fontstack.length() > oldfontdepth) popfont(); } else pushfont(ret);
-    #define TEXTICON(ret,q,s) q += icon_width(ret, scale);
+    #define TEXTICON(ret,q,s) q += icon_width(ret);
     #define TEXTKEY(ret,q,s) q += key_widthf(ret);
     #define TEXTCHAR(idx) x += cw; TEXTWHITE(idx)
     TEXTSKELETON
@@ -706,7 +708,7 @@ void text_posf(const char *str, int cursor, float &cx, float &cy, float maxwidth
     #define TEXTCOLOR(idx)
     #define TEXTHEXCOLOR(ret)
     #define TEXTFONT(ret) if(!strcmp(ret, "~")) { if(fontstack.length() > oldfontdepth) popfont(); } else pushfont(ret);
-    #define TEXTICON(ret,q,s) q += icon_width(ret, scale); if(i >= cursor) break;
+    #define TEXTICON(ret,q,s) q += icon_width(ret); if(i >= cursor) break;
     #define TEXTKEY(ret,q,s) q += key_widthf(ret); if(i >= cursor) break;
     #define TEXTCHAR(idx) x += cw; if(i >= cursor) break;
     cx = cy = 0;
@@ -735,7 +737,7 @@ void text_boundsf(const char *str, float &width, float &height, float xpad, floa
     #define TEXTCOLOR(idx)
     #define TEXTHEXCOLOR(ret)
     #define TEXTFONT(ret) if(!strcmp(ret, "~")) { if(fontstack.length() > oldfontdepth) popfont(); } else pushfont(ret);
-    #define TEXTICON(ret,q,s) q += icon_width(ret, scale);
+    #define TEXTICON(ret,q,s) q += icon_width(ret);
     #define TEXTKEY(ret,q,s) q += key_widthf(ret);
     #define TEXTCHAR(idx) x += cw;
     width = height = 0;
@@ -956,7 +958,7 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
             gle::color(color); \
         }
     #define TEXTFONT(ret) if(!strcmp(ret, "~")) { if(fontstack.length() > oldfontdepth) popfont(); } pushfont(ret);
-    #define TEXTICON(ret,q,s) q += s ? draw_icon(tex, ret, left+x, top+y, scale) : icon_width(ret, scale);
+    #define TEXTICON(ret,q,s) q += s ? draw_icon(tex, ret, left+x, top+y) : icon_width(ret);
     #define TEXTKEY(ret,q,s) q += s ? draw_key(tex, ret, left+x, top+y, color) : key_widthf(ret);
     #define TEXTCHAR(idx) { draw_char(tex, c, left+x, top+y, scale); x += cw; }
     int fade = a;
