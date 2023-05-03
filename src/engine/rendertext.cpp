@@ -51,7 +51,6 @@ void newfont(char *name, char *tex, int *defaultw, int *defaulth, float *scale)
     f->charoffset = '!';
     f->mw = f->maxw = f->defaultw = *defaultw;
     f->mh = f->maxh = f->defaulth = *defaulth;
-    fontscale(scale);
     f->bordermin = 0.49f;
     f->bordermax = 0.5f;
     f->outlinemin = -1;
@@ -59,6 +58,8 @@ void newfont(char *name, char *tex, int *defaultw, int *defaulth, float *scale)
 
     fontdef = f;
     fontdeftex = 0;
+
+    fontscale(scale);
 }
 
 void fontborder(float *bordermin, float *bordermax)
@@ -129,11 +130,11 @@ void fontskip(int *n)
     }
 }
 
-COMMANDN(0, font, newfont, "ssiiff");
+COMMANDN(0, font, newfont, "ssiif");
 COMMAND(0, fontborder, "ff");
 COMMAND(0, fontoutline, "ff");
 COMMAND(0, fontoffset, "s");
-COMMAND(0, fontscale, "ff");
+COMMAND(0, fontscale, "f");
 COMMAND(0, fonttex, "s");
 COMMAND(0, fontchar, "fffffff");
 COMMAND(0, fontskip, "i");
