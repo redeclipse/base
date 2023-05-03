@@ -1497,7 +1497,7 @@ namespace hud
 
     CVAR(IDF_PERSIST, backgroundcolour, 0x000000);
     TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundwatertex, "<grey><noswizzle>textures/water", 0x300);
-    TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundcausttex, "<comp>caustic 1", 0x300);
+    TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundcausttex, "<comp>caustic", 0x300);
     TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundtex, "<nocompress>textures/menubg", 3);
     TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundmasktex, "<nocompress>textures/menubg_mask", 3);
 
