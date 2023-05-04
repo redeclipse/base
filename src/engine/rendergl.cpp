@@ -1269,15 +1269,6 @@ void gl_init()
 
 VAR(0, wireframe, 0, 0, 1);
 
-ICOMMAND(0, getcamyaw, "", (), floatret(camera1->yaw));
-ICOMMAND(0, getcampitch, "", (), floatret(camera1->pitch));
-ICOMMAND(0, getcamroll, "", (), floatret(camera1->roll));
-ICOMMAND(0, getcampos, "", (),
-{
-    defformatstring(pos, "%s %s %s", floatstr(camera1->o.x), floatstr(camera1->o.y), floatstr(camera1->o.z));
-    result(pos);
-});
-
 physent camera, *camera1 = &camera;
 vec worldpos, camdir, camright, camup;
 

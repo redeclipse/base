@@ -134,8 +134,7 @@ void showcmenu(const char *name)
     conoutft(CON_DEBUG, "\frNo such compass menu: %s", name);
 }
 ICOMMAND(0, showcompass, "s", (char *n), showcmenu(n));
-
-ICOMMAND(0, compassactive, "", (), result(curcompass ? curcompass->name : ""));
+ICOMMANDVS(0, compassactive, curcompass ? curcompass->name : "");
 
 const struct compassdirs
 {

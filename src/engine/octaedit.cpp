@@ -2015,8 +2015,12 @@ namespace hmap
         DELETEA(brushname);
         brushname = newstring(name);
     }
-    ICOMMAND(0, brushname, "s", (char *name), setbrushname(name));
-    ICOMMAND(0, getbrushname, "", (), result(brushname ? brushname : ""));
+    ICOMMAND(0, brushname, "sN$", (char *name, int *numargs, ident *id),
+    {
+        if(*numargs > 0) setbrushname(name);
+        else if(*numargs < 0) result(brushname ? brushname : "");
+        else printsvar(id, brushname ? brushname : "");
+    });
 
     void brushvert(int *x, int *y, int *v)
     {

@@ -23,14 +23,11 @@ namespace client
     VAR(IDF_PERSIST, checkpointannouncefilter, 0, CP_ALL, CP_ALL); // which checkpoint types to announce for
     VARF(0, checkpointspawn, 0, 1, 1, game::player1->checkpointspawn = checkpointspawn; sendplayerinfo = true);
     VAR(IDF_PERSIST, demoautoclientsave, 0, 0, 1);
-    ICOMMAND(0, getdemoplayback, "", (), intret(demoplayback ? 1 : 0));
-
-    int state() { return game::player1->state; }
-    ICOMMAND(0, getplayerstate, "", (), intret(state()));
+    ICOMMANDV(0, demoplayback, demoplayback ? 1 : 0);
 
     int maxmsglen() { return G(messagelength); }
 
-    ICOMMAND(0, numgameplayers, "", (), intret(game::numdynents()));
+    ICOMMANDV(0, numgameplayers, game::numdynents());
     ICOMMAND(0, loopgameplayers, "re", (ident *id, uint *body),
     {
         loopstart(id, stack);
@@ -467,6 +464,7 @@ namespace client
     // collect c2s messages conveniently
     vector<uchar> messages;
     bool messagereliable = false;
+    ICOMMAND(0, mastermode, "i", (int *val), addmsg(N_MASTERMODE, "ri", *val));
 
     VAR(IDF_PERSIST, colourchat, 0, 1, 1);
     SVAR(IDF_PERSIST, filterwords, "");
@@ -518,20 +516,19 @@ namespace client
             default: break;
         }
     }
-    ICOMMAND(0, getplayervanity, "", (), result(game::player1->vanity));
+    ICOMMANDVS(0, playervanity, game::player1->vanity);
     ICOMMAND(0, getplayervitem, "bi", (int *n, int *v), getvitem(game::player1, *n, *v));
 
-    ICOMMAND(0, mastermode, "i", (int *val), addmsg(N_MASTERMODE, "ri", *val));
-    ICOMMAND(0, getplayername, "", (), result(game::player1->name));
-    ICOMMAND(0, getplayercolour, "bg", (int *m, int *f), intret(game::getcolour(game::player1, *m, *f >= 0 && *f <= 10 ? *f : 1.f)));
-    ICOMMAND(0, getplayermodel, "", (), intret(game::player1->model));
-    ICOMMAND(0, getplayerpattern, "", (), intret(game::player1->pattern));
-    ICOMMAND(0, getplayerteam, "i", (int *p), *p ? intret(game::player1->team) : result(TEAM(game::player1->team, name)));
-    ICOMMAND(0, getplayerteamicon, "", (), result(hud::teamtexname(game::player1->team)));
-    ICOMMAND(0, getplayerteamcolour, "", (), intret(TEAM(game::player1->team, colour)));
-    ICOMMAND(0, getplayercn, "", (), intret(game::player1->clientnum));
-
+    int state() { return game::player1->state; }
     const char *getname() { return game::player1->name; }
+
+    ICOMMANDV(0, playerstate, game::player1->state);
+    ICOMMAND(0, getplayercolour, "bg", (int *m, int *f), intret(game::getcolour(game::player1, *m, *f >= 0 && *f <= 10 ? *f : 1.f)));
+    ICOMMANDV(0, playerteam, game::player1->team);
+    ICOMMANDVS(0, playerteamname, TEAM(game::player1->team, name));
+    ICOMMANDVS(0, playerteamicon, hud::teamtexname(game::player1->team));
+    ICOMMANDV(0, playerteamcolour, TEAM(game::player1->team, colour));
+    ICOMMANDV(0, playercn, game::player1->clientnum);
 
     void setplayername(const char *name)
     {
@@ -551,11 +548,9 @@ namespace client
 
     void setplayercolour(int colour)
     {
-        if(colour >= 0 && colour <= 0xFFFFFF && game::player1->colour != colour)
-        {
-            game::player1->colour = colour;
-            sendplayerinfo = true;
-        }
+        if(game::player1->colour == colour) return;
+        game::player1->colour = clamp(colour, 0, 0xFFFFFF);
+        sendplayerinfo = true;
     }
     VARF(IDF_PERSIST|IDF_HEX, playercolour, -1, -1, 0xFFFFFF, setplayercolour(playercolour));
 
@@ -694,7 +689,7 @@ namespace client
         if(m_edit(game::gamemode)) addmsg(N_EDITMODE, "ri", edit ? 1 : 0);
     }
 
-    ICOMMAND(0, getclientfocused, "", (), intret(game::focus ? game::focus->clientnum : game::player1->clientnum));
+    ICOMMANDV(0, focusedplayer, game::focus ? game::focus->clientnum : game::player1->clientnum);
 
     int getcn(physent *d)
     {
@@ -907,13 +902,13 @@ namespace client
         else intret(PLAYERPATTERNS);
     );
 
-    ICOMMAND(0, getcameraposx, "", (), floatret(camera1->o.x));
-    ICOMMAND(0, getcameraposy, "", (), floatret(camera1->o.y));
-    ICOMMAND(0, getcameraposz, "", (), floatret(camera1->o.z));
-    ICOMMAND(0, getcamerayaw, "", (), floatret(camera1->yaw));
-    ICOMMAND(0, getcamerapitch, "", (), floatret(camera1->pitch));
-    ICOMMAND(0, getcameraroll, "", (), floatret(camera1->roll));
-    ICOMMAND(0, getcameraoffyaw, "f", (float *yaw), floatret(*yaw-camera1->yaw));
+    ICOMMANDVF(0, getcameraposx, camera1->o.x);
+    ICOMMANDVF(0, getcameraposy, camera1->o.y);
+    ICOMMANDVF(0, getcameraposz, camera1->o.z);
+    ICOMMANDVF(0, getcamerayaw, camera1->yaw);
+    ICOMMANDVF(0, getcamerapitch, camera1->pitch);
+    ICOMMANDVF(0, getcameraroll, camera1->roll);
+    ICOMMAND(0, cameraoffyaw, "f", (float *yaw), floatret(*yaw-camera1->yaw));
 
     CLCOMMANDK(presence, intret(1), intret(0));
     CLCOMMAND(yaw, floatret(d->yaw));

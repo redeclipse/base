@@ -1386,7 +1386,7 @@ namespace server
     }
 
     const char *gameid() { return VERSION_GAMEID; }
-    ICOMMAND(0, gameid, "", (), result(gameid()));
+    ICOMMANDVS(0, gameid, gameid());
 
     int getver(int n)
     {
