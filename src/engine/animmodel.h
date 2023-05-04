@@ -169,20 +169,18 @@ struct animmodel : model
 
         void setshaderparams(mesh &m, const animstate *as, bool skinned = true)
         {
+            #if 0 // broken for attached models
             if(!Shader::lastshader) return;
             if(key->checkversion() && Shader::lastshader->owner == key) return;
             Shader::lastshader->owner = key;
+            #endif
 
             LOCALPARAMF(texscroll, scrollu*lastmillis/1000.0f, scrollv*lastmillis/1000.0f);
             if(alphatested()) LOCALPARAMF(alphatest, alphatest);
 
             if(!skinned)
             {
-                if(drawtex == DRAWTEX_HALO)
-                {
-                    LOCALPARAM(material1, modelmaterial[0].tocolor());
-                    LOCALPARAM(material2, modelmaterial[0].tocolor());
-                }
+                if(drawtex == DRAWTEX_HALO) LOCALPARAM(material1, modelmaterial[0].tocolor());
                 return;
             }
 

@@ -3188,8 +3188,8 @@ namespace entities
                             colour = W(attr, colour);
                             if(!active || game::focus->isobserver() || !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !showentfull))
                             {
-                                if(drawtex == DRAWTEX_HALO) mdl.flags |= MDL_NORENDER;
-                                else mdl.color.a *= showentunavailable;
+                                if(drawtex == DRAWTEX_HALO) continue;
+                                mdl.color.a *= showentunavailable;
                             }
                             else mdl.color.a *= showentavailable;
                         }
