@@ -316,12 +316,7 @@ namespace hud
     VAR(IDF_PERSIST, minecliprotate, 0, 11, 15);
     VAR(IDF_PERSIST, rocketcliprotate, 0, 12, 15);
 
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, bliptex, "<grey>textures/hud/blip", 3);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, playerbliptex, "<grey>textures/hud/playerblip", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, hurttex, "<grey>textures/hud/hurt", 3);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, hinttex, "<grey>textures/hud/hint", 3);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, glowtex, "<grey>textures/hud/glow", 3);
-
     VAR(IDF_PERSIST, onscreendamage, 0, 1, 2); // 0 = off, 1 = basic damage, 2 = verbose
     FVAR(IDF_PERSIST, onscreendamagescale, 0, 0.5f, 1);
     FVAR(IDF_PERSIST, onscreendamageblipsize, 0, 0.1f, 1);
@@ -1491,7 +1486,7 @@ namespace hud
         Texture *t = textureload(zoomtex, 3);
         if(!t || t == notexture) return;
         settexture(t);
-        gle::colorf(1, 1, 1, pc);
+        gle::colorf(0, 0, 0, pc);
         drawtexture(x, y, c, c);
     }
 
