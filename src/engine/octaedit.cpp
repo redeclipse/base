@@ -576,7 +576,7 @@ void rendereditcursor()
             }
 
         if(hidecursor) ents.setsize(0);
-        if((hovering = hoveringonent(ents, entorient)))
+        if((hovering = hoveringonent(ents, eo)))
         {
             if(!havesel)
             {
