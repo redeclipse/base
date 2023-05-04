@@ -534,7 +534,7 @@ namespace game
         loopvrev(vanities) vanities.remove(i);
         loopv(players) if(players[i]) players[i]->vitems.shrink(0);
         player1->vitems.shrink(0);
-        vanitytypetags.shrink(0);
+        vanitytypetags.deletearrays();
     }
     ICOMMAND(0, resetvanity, "", (), vanityreset());
 
@@ -4026,7 +4026,7 @@ namespace game
         if(drawtex == DRAWTEX_HALO && ((d == focus && inzoom()) || !haloallow(d))) return;
 
         modelstate mdl;
-        modelattach mdlattach[ATTACHMENTMAX];
+        modelattach mdlattach[VANITYMAX + ATTACHMENTMAX];
         dynent *e = third ? (third != 2 ? (dynent *)d : (dynent *)&bodymodel) : (dynent *)&avatarmodel;
         const char *mdlname = getplayerstate(d, mdl, third, size, flags, mdlattach, lastoffset, vanitypoints);
 

@@ -1424,7 +1424,7 @@ namespace physics
     bool hitzonecollide(gameent *e, const vec &o, const vec &ray, float &dist)
     {
         modelstate mdl;
-        modelattach mdlattach[ATTACHMENTMAX];
+        modelattach mdlattach[VANITYMAX + ATTACHMENTMAX];
         const char *mdlname = game::getplayerstate(e, mdl, 1, e->curscale, 0, mdlattach);
         dist = 1e16f;
         int zone = intersectmodel(mdlname, mdl, o, ray, dist, 0, e);

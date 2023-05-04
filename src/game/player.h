@@ -261,8 +261,10 @@ APFVAR(IDF_GAMEMOD, 0, buoyancyextra, FVAR_MIN, FVAR_MAX,
     0,              0,              0,              0,              0,              0
 );
 
+// WARNING: ensure this value is less than or equal to TAG_MAX
 #define VANITYMAX 16
-#define ATTACHMENTMAX VANITYMAX+14
+// WARNING: ensure this value is at least equal to VANITYMAX (currently only needs 14 of them)
+#define ATTACHMENTMAX 16
 
 struct vanity
 {
@@ -294,8 +296,8 @@ struct vanity
 };
 #ifdef CPP_GAME_MAIN
 vector<vanity> vanities;
-vector<const char *> vanitytypetags;
+vector<char *> vanitytypetags;
 #else
 extern vector<vanity> vanities;
-extern vector<const char *> vanitytypetags;
+extern vector<char *> vanitytypetags;
 #endif
