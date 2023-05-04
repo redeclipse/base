@@ -310,10 +310,12 @@ void gets2c()           // get updates from the server
                     const char *msg = disc_reasons[event.data];
                     if(msg) setsvar("disconnectreason", msg);
                     else setsvar("disconnectreason", "Unknown error");
-
-                    triggereventcallbacks(CMD_EVENT_GAME_DISCONNECT);
                 }
+
                 disconnect();
+
+                // Needs to happen after disconnect(), given it triggers a separate event
+                if(!discmillis || event.data) triggereventcallbacks(CMD_EVENT_GAME_DISCONNECT);
             }
             return;
 

@@ -1444,6 +1444,8 @@ namespace client
                 default: break;
             }
         });
+
+        triggereventcallbacks(CMD_EVENT_GAME_LEAVE);
     }
 
     bool addmsg(int type, const char *fmt, ...)

@@ -431,7 +431,8 @@ enum
     CMD_EVENT_GAME_VOTE,
     CMD_EVENT_GAME_LOADOUT,
     CMD_EVENT_GAME_GUIDELINES,
-    CMD_EVENT_GAME_DISCONNECT
+    CMD_EVENT_GAME_DISCONNECT,
+    CMD_EVENT_GAME_LEAVE
 };
 
 extern void triggereventcallbacks(int event);
