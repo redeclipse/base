@@ -902,12 +902,12 @@ namespace client
         else intret(PLAYERPATTERNS);
     );
 
-    ICOMMANDVF(0, getcameraposx, camera1->o.x);
-    ICOMMANDVF(0, getcameraposy, camera1->o.y);
-    ICOMMANDVF(0, getcameraposz, camera1->o.z);
-    ICOMMANDVF(0, getcamerayaw, camera1->yaw);
-    ICOMMANDVF(0, getcamerapitch, camera1->pitch);
-    ICOMMANDVF(0, getcameraroll, camera1->roll);
+    ICOMMANDVF(0, cameraposx, camera1->o.x);
+    ICOMMANDVF(0, cameraposy, camera1->o.y);
+    ICOMMANDVF(0, cameraposz, camera1->o.z);
+    ICOMMANDVF(0, camerayaw, camera1->yaw);
+    ICOMMANDVF(0, camerapitch, camera1->pitch);
+    ICOMMANDVF(0, cameraroll, camera1->roll);
     ICOMMAND(0, cameraoffyaw, "f", (float *yaw), floatret(*yaw-camera1->yaw));
 
     CLCOMMANDK(presence, intret(1), intret(0));
