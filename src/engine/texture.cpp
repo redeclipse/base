@@ -3319,8 +3319,13 @@ static void blitthumbnail(ImageData &d, ImageData &s, int x, int y)
 
 Texture *Slot::loadthumbnail()
 {
-    if(sts.inrange(0) && *sts[0].name == '!') return sts[0].t; // TODO: composite this
     if(thumbnail) return thumbnail;
+    if(sts.inrange(0) && !strncmp(sts[0].name, "<comp>", 6))
+    {
+        if(!sts[0].t) load();
+        thumbnail = sts[0].t;
+        return thumbnail;
+    }
     if(!variants)
     {
         thumbnail = notexture;
