@@ -516,7 +516,6 @@ namespace client
             default: break;
         }
     }
-    ICOMMANDVS(0, playervanity, game::player1->vanity);
     ICOMMAND(0, getplayervitem, "bi", (int *n, int *v), getvitem(game::player1, *n, *v));
 
     int state() { return game::player1->state; }
