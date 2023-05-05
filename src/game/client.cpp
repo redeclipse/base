@@ -531,104 +531,70 @@ namespace client
 
     void setplayername(const char *name)
     {
-        if(name && *name)
-        {
-            string namestr;
-            filterstring(namestr, name, true, true, true, true, MAXNAMELEN);
-            if(*namestr && strcmp(game::player1->name, namestr))
-            {
-                game::player1->setname(namestr);
-                if(initing == NOT_INITING) conoutft(CON_EVENT, "\fm* you are now known as %s", game::player1->name);
-                sendplayerinfo = true;
-            }
-        }
+        if(!name || !*name) return;
+        string namestr;
+        filterstring(namestr, name, true, true, true, true, MAXNAMELEN);
+        if(!*namestr || !strcmp(game::player1->name, namestr)) return;
+        game::player1->setname(namestr);
+        if(initing == NOT_INITING) conoutft(CON_EVENT, "\fm* You are now known as %s", game::player1->name);
+        sendplayerinfo = true;
     }
     SVARF(IDF_PERSIST, playername, "", setplayername(playername));
 
-    void setplayercolour(int colour)
-    {
-        if(game::player1->colour == colour) return;
-        game::player1->colour = clamp(colour, 0, 0xFFFFFF);
-        sendplayerinfo = true;
-    }
-    VARF(IDF_PERSIST|IDF_HEX, playercolour, -1, -1, 0xFFFFFF, setplayercolour(playercolour));
+    #define SETPLAYERINFO(name, flags, minval, maxval) \
+        void setplayer##name(int value) \
+        { \
+            value = clamp(value, minval, maxval); \
+            if(game::player1->name == value) return; \
+            game::player1->name = value; \
+            sendplayerinfo = true; \
+        } \
+        VARF(IDF_PERSIST|flags, player##name, -1, -1, 0xFFFFFF, setplayer##name(player##name));
 
-    void setplayermodel(int model)
-    {
-        if(model >= 0 && game::player1->model != model)
-        {
-            game::player1->model = model;
-            sendplayerinfo = true;
-        }
-    }
-    VARF(IDF_PERSIST, playermodel, 0, 0, PLAYERTYPES-1, setplayermodel(playermodel));
-
-    void setplayerpattern(int pattern)
-    {
-        if(pattern >= 0 && game::player1->pattern != pattern)
-        {
-            game::player1->pattern = pattern;
-            sendplayerinfo = true;
-        }
-    }
-    VARF(IDF_PERSIST, playerpattern, 0, 0, PLAYERPATTERNS-1, setplayerpattern(playerpattern));
+    SETPLAYERINFO(colour, IDF_HEX, -1, 0xFFFFFF);
+    SETPLAYERINFO(model, 0, 0, PLAYERTYPES-1);
+    SETPLAYERINFO(pattern, 0, 0, PLAYERPATTERNS-1);
 
     SVARF(IDF_PERSIST, playervanity, "", if(game::player1->setvanity(playervanity)) sendplayerinfo = true;);
 
-    void setloadweap(const char *list)
-    {
-        vector<int> items;
-        if(list && *list)
-        {
-            vector<char *> chunk;
-            explodelist(list, chunk);
-            loopv(chunk)
-            {
-                if(!chunk[i] || !*chunk[i] || !isnumeric(*chunk[i])) continue;
-                int v = parseint(chunk[i]);
-                items.add(v >= W_OFFSET && v < W_ITEM ? v : 0);
-            }
-            chunk.deletearrays();
-        }
-        game::player1->loadweap.shrink(0);
-        loopv(items) if(game::player1->loadweap.find(items[i]) < 0)
-        {
-            game::player1->loadweap.add(items[i]);
-            if(game::player1->loadweap.length() >= W_LOADOUT) break;
-        }
-        sendplayerinfo = true;
-    }
-    SVARF(IDF_PERSIST, playerloadweap, "", setloadweap(playerloadweap));
+    #define SETPLAYERWEAP(name) \
+        void set##name(const char *list) \
+        { \
+            vector<int> items; \
+            if(list && *list) \
+            { \
+                vector<char *> chunk; \
+                explodelist(list, chunk); \
+                loopv(chunk) \
+                { \
+                    if(!chunk[i] || !*chunk[i] || !isnumeric(*chunk[i])) continue; \
+                    int v = parseint(chunk[i]); \
+                    items.add(v >= W_OFFSET && v < W_ITEM ? v : 0); \
+                } \
+                chunk.deletearrays(); \
+            } \
+            vector<int> oldweaps; \
+            loopv(game::player1->name) oldweaps.add(game::player1->name[i]); \
+            game::player1->name.shrink(0); \
+            loopv(items) if(game::player1->name.find(items[i]) < 0) \
+            { \
+                game::player1->name.add(items[i]); \
+                if(game::player1->name.length() >= W_LOADOUT) break; \
+            } \
+            loopv(oldweaps) if(!game::player1->name.inrange(i) || oldweaps[i] != game::player1->name[i]) \
+            { \
+                sendplayerinfo = true; \
+                break; \
+            } \
+        } \
+        SVARF(IDF_PERSIST, player##name, "", set##name(player##name)); \
+        ICOMMAND(0, get##name, "i", (int *n), intret(game::player1->name.inrange(*n) ? game::player1->name[*n] : -1)); \
+        ICOMMAND(0, has##name, "bb", (int *g, int *m), intret(m_loadout(m_game(*g) ? *g : game::gamemode, *m >= 0 ? *m : game::mutators) ? 1 : 0));
 
-    void setrandweap(const char *list)
-    {
-        vector<int> items;
-        if(list && *list)
-        {
-            vector<char *> chunk;
-            explodelist(list, chunk);
-            loopv(chunk)
-            {
-                if(!chunk[i] || !*chunk[i] || !isnumeric(*chunk[i])) continue;
-                int v = parseint(chunk[i]);
-                items.add(v ? 1 : 0);
-            }
-            chunk.deletearrays();
-        }
-        game::player1->randweap.shrink(0);
-        loopv(items)
-        {
-            game::player1->randweap.add(items[i]);
-            if(game::player1->randweap.length() >= W_LOADOUT) break;
-        }
-        sendplayerinfo = true;
-    }
-    SVARF(IDF_PERSIST, playerrandweap, "", setrandweap(playerrandweap));
+    SETPLAYERWEAP(loadweap);
+    SETPLAYERWEAP(randweap);
 
-    ICOMMAND(0, getrandweap, "i", (int *n), intret(game::player1->randweap.inrange(*n) ? game::player1->randweap[*n] : 1));
-    ICOMMAND(0, getloadweap, "i", (int *n), intret(game::player1->loadweap.inrange(*n) ? game::player1->loadweap[*n] : -1));
     ICOMMAND(0, allowedweap, "i", (int *n), intret(isweap(*n) && m_check(W(*n, modes), W(*n, muts), game::gamemode, game::mutators) && !W(*n, disabled) ? 1 : 0));
-    ICOMMAND(0, hasloadweap, "bb", (int *g, int *m), intret(m_loadout(m_game(*g) ? *g : game::gamemode, *m >= 0 ? *m : game::mutators) ? 1 : 0));
 
     int teamfromname(const char *team)
     {
