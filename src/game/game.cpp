@@ -4023,7 +4023,6 @@ namespace game
     void renderplayer(gameent *d, int third, float size, int flags = 0, const vec4 &color = vec4(1, 1, 1, 1), int *lastoffset = NULL, bool vanitypoints = false)
     {
         if(d->state == CS_SPECTATOR || (d->state != CS_ALIVE && color.a <= 0) || d->obliterated) return;
-        if(drawtex == DRAWTEX_HALO && ((d == focus && inzoom()) || !haloallow(d))) return;
 
         modelstate mdl;
         modelattach mdlattach[VANITYMAX + ATTACHMENTMAX];
@@ -4047,6 +4046,7 @@ namespace game
                 (camera1->o.squaredist(d->o) > playershadowsqdist))
                 mdl.flags |= MDL_NOSHADOW;
         }
+        else if(drawtex == DRAWTEX_HALO && ((d == focus && inzoom()) || !haloallow(d))) flags |= MDL_NORENDER;
 
         rendermodel(mdlname, mdl, e);
 
