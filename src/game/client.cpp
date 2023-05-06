@@ -557,43 +557,60 @@ namespace client
 
     SVARF(IDF_PERSIST, playervanity, "", if(game::player1->setvanity(playervanity)) sendplayerinfo = true;);
 
-    #define SETPLAYERWEAP(name) \
-        void set##name(const char *list) \
-        { \
-            vector<int> items; \
-            if(list && *list) \
-            { \
-                vector<char *> chunk; \
-                explodelist(list, chunk); \
-                loopv(chunk) \
-                { \
-                    if(!chunk[i] || !*chunk[i] || !isnumeric(*chunk[i])) continue; \
-                    int v = parseint(chunk[i]); \
-                    items.add(v >= W_OFFSET && v < W_ITEM ? v : 0); \
-                } \
-                chunk.deletearrays(); \
-            } \
-            vector<int> oldweaps; \
-            loopv(game::player1->name) oldweaps.add(game::player1->name[i]); \
-            game::player1->name.shrink(0); \
-            loopv(items) if(game::player1->name.find(items[i]) < 0) \
-            { \
-                game::player1->name.add(items[i]); \
-                if(game::player1->name.length() >= W_LOADOUT) break; \
-            } \
-            loopv(oldweaps) if(!game::player1->name.inrange(i) || oldweaps[i] != game::player1->name[i]) \
-            { \
-                sendplayerinfo = true; \
-                break; \
-            } \
-        } \
-        SVARF(IDF_PERSIST, player##name, "", set##name(player##name)); \
-        ICOMMAND(0, get##name, "i", (int *n), intret(game::player1->name.inrange(*n) ? game::player1->name[*n] : -1)); \
-        ICOMMAND(0, has##name, "bb", (int *g, int *m), intret(m_loadout(m_game(*g) ? *g : game::gamemode, *m >= 0 ? *m : game::mutators) ? 1 : 0));
+    void setloadweap(const char *list)
+    {
+        vector<int> items;
+        if(list && *list)
+        {
+            vector<char *> chunk;
+            explodelist(list, chunk);
+            loopv(chunk)
+            {
+                if(!chunk[i] || !*chunk[i] || !isnumeric(*chunk[i])) continue;
+                int v = parseint(chunk[i]);
+                items.add(v >= W_OFFSET && v < W_ITEM ? v : 0);
+            }
+            chunk.deletearrays();
+        }
+        game::player1->loadweap.shrink(0);
+        loopv(items) if(game::player1->loadweap.find(items[i]) < 0)
+        {
+            game::player1->loadweap.add(items[i]);
+            if(game::player1->loadweap.length() >= W_LOADOUT) break;
+        }
+        sendplayerinfo = true;
+    }
+    SVARF(IDF_PERSIST, playerloadweap, "", setloadweap(playerloadweap));
 
-    SETPLAYERWEAP(loadweap);
-    SETPLAYERWEAP(randweap);
+    void setrandweap(const char *list)
+    {
+        vector<int> items;
+        if(list && *list)
+        {
+            vector<char *> chunk;
+            explodelist(list, chunk);
+            loopv(chunk)
+            {
+                if(!chunk[i] || !*chunk[i] || !isnumeric(*chunk[i])) continue;
+                int v = parseint(chunk[i]);
+                items.add(v ? 1 : 0);
+            }
+            chunk.deletearrays();
+        }
+        game::player1->randweap.shrink(0);
+        loopv(items)
+        {
+            game::player1->randweap.add(items[i]);
+            if(game::player1->randweap.length() >= W_LOADOUT) break;
+        }
+        sendplayerinfo = true;
+    }
+    SVARF(IDF_PERSIST, playerrandweap, "", setrandweap(playerrandweap));
 
+    ICOMMAND(0, getrandweap, "i", (int *n), intret(game::player1->randweap.inrange(*n) ? game::player1->randweap[*n] : 1));
+    ICOMMAND(0, getloadweap, "i", (int *n), intret(game::player1->loadweap.inrange(*n) ? game::player1->loadweap[*n] : -1));
+    ICOMMAND(0, allowedweap, "i", (int *n), intret(isweap(*n) && m_check(W(*n, modes), W(*n, muts), game::gamemode, game::mutators) && !W(*n, disabled) ? 1 : 0));
+    ICOMMAND(0, hasloadweap, "bb", (int *g, int *m), intret(m_loadout(m_game(*g) ? *g : game::gamemode, *m >= 0 ? *m : game::mutators) ? 1 : 0));
     ICOMMAND(0, allowedweap, "i", (int *n), intret(isweap(*n) && m_check(W(*n, modes), W(*n, muts), game::gamemode, game::mutators) && !W(*n, disabled) ? 1 : 0));
 
     int teamfromname(const char *team)
