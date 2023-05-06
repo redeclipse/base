@@ -27,12 +27,12 @@ namespace entities
     FVAR(IDF_PERSIST, showentavailable, 0, 1, 1);
     FVAR(IDF_PERSIST, showentunavailable, 0, 0.35f, 1);
 
-    VAR(IDF_PERSIST, showentinfoui, 0, 2, 4); // 0 = off, 1 = only first, 2 = only selected, 3 = always when editing, 4 = always in editmode
-    FVAR(IDF_PERSIST, showentinfouiyaw, -1, -1, 360);
-    FVAR(IDF_PERSIST, showentinfouipitch, -181, 0, 181);
-    FVAR(IDF_PERSIST, showentinfouiscale, FVAR_NONZERO, 1, FVAR_MAX);
-    FVAR(IDF_PERSIST, showentinfouidetentyaw, 0, 0, 180);
-    FVAR(IDF_PERSIST, showentinfouidetentpitch, 0, 0, 90);
+    VAR(IDF_PERSIST, entinfoui, 0, 2, 4); // 0 = off, 1 = only first, 2 = only selected, 3 = always when editing, 4 = always in editmode
+    FVAR(IDF_PERSIST, entinfouiyaw, -1, -1, 360);
+    FVAR(IDF_PERSIST, entinfouipitch, -181, 0, 181);
+    FVAR(IDF_PERSIST, entinfouiscale, FVAR_NONZERO, 1, FVAR_MAX);
+    FVAR(IDF_PERSIST, entinfouidetentyaw, 0, 0, 180);
+    FVAR(IDF_PERSIST, entinfouidetentpitch, 0, 0, 90);
 
     FVAR(IDF_PERSIST, entselsize, 0, 0.5f, FVAR_MAX);
     FVAR(IDF_PERSIST, entselsizetop, 0, 1, FVAR_MAX);
@@ -1848,7 +1848,7 @@ namespace entities
 
     bool cansee(int n)
     {
-        if(game::player1->state != CS_EDITING && (showentinfoui || !(showentinfo&64))) return false;
+        if(game::player1->state != CS_EDITING && (entinfoui || !(showentinfo&64))) return false;
         if(!ents.inrange(n)) return false;
         if(ents[n]->type == NOTUSED && (enthover.find(n) < 0 && entgroup.find(n) < 0)) return false;
         return true;
@@ -3420,16 +3420,16 @@ namespace entities
                     hasent = isedit && (enthover.find(v.idx) >= 0 || entgroup.find(v.idx) >= 0);
                 vec pos = vec(e.o).addz(entinfospace);
                 if(enttype[e.type].usetype == EU_ITEM) pos.addz(entinfospace);
-                if(showentinfoui)
+                if(entinfoui)
                 {
-                    if(showentinfoui >= (hasent && !entgroup.empty() && entgroup[0] == v.idx ? 1 : (hasent ? 2 : (isedit ? 3 : 4))))
+                    if(entinfoui >= (hasent && !entgroup.empty() && entgroup[0] == v.idx ? 1 : (hasent ? 2 : (isedit ? 3 : 4))))
                     {
                         gameentity &e = *(gameentity *)ents[v.idx];
                         vec pos = vec(e.o).addz(entinfospace);
                         if(enttype[e.type].usetype == EU_ITEM) pos.addz(entinfospace);
                         if(UI::uivisible("entinfo", UI::SURFACE_MAIN, v.idx))
-                            UI::setui("entinfo", UI::SURFACE_MAIN, v.idx, pos, showentinfouiyaw, showentinfouipitch, showentinfouiscale, showentinfouidetentyaw, showentinfouidetentpitch);
-                        else UI::showui("entinfo", UI::SURFACE_MAIN, v.idx, pos, showentinfouiyaw, showentinfouipitch, showentinfouiscale, showentinfouidetentyaw, showentinfouidetentpitch);
+                            UI::setui("entinfo", UI::SURFACE_MAIN, v.idx, pos, entinfouiyaw, entinfouipitch, entinfouiscale, entinfouidetentyaw, entinfouidetentpitch);
+                        else UI::showui("entinfo", UI::SURFACE_MAIN, v.idx, pos, entinfouiyaw, entinfouipitch, entinfouiscale, entinfouidetentyaw, entinfouidetentpitch);
                         hasdynui = found = true;
                     }
                 }
@@ -3507,7 +3507,7 @@ namespace entities
                     if(++numdrawn >= showentinfomax) break;
                 }
             }
-            if(showentinfoui) loopv(visents)
+            if(entinfoui) loopv(visents)
             {
                 visibleent &v = visents[i];
                 if(UI::uivisible("entinfo", UI::SURFACE_MAIN, v.idx)) UI::hideui("entinfo", UI::SURFACE_MAIN, v.idx);

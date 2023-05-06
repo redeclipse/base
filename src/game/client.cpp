@@ -879,6 +879,7 @@ namespace client
     CLCOMMAND(yaw, floatret(d->yaw));
     CLCOMMAND(pitch, floatret(d->pitch));
     CLCOMMAND(roll, floatret(d->roll));
+    CLCOMMAND(opacity, floatret(game::opacity(d)));
 
     bool radarallow(gameent *d, vec &dir, float &dist)
     {

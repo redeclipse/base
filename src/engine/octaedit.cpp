@@ -4,12 +4,12 @@ VAR(0, showpastegrid, 0, 0, 1);
 VAR(0, showcursorgrid, 0, 0, 1);
 VAR(0, showselboxgrid, 0, 0, 1);
 
-VAR(IDF_PERSIST, showselui, 0, 2, 2);
-FVAR(IDF_PERSIST, showseluiyaw, -1, -1, 360);
-FVAR(IDF_PERSIST, showseluipitch, -181, -181, 181);
-FVAR(IDF_PERSIST, showseluiscale, FVAR_NONZERO, 1, FVAR_MAX);
-FVAR(IDF_PERSIST, showseluidetentyaw, 0, 90, 180);
-FVAR(IDF_PERSIST, showseluidetentpitch, 0, 90, 90);
+VAR(IDF_PERSIST, selectionui, 0, 2, 2);
+FVAR(IDF_PERSIST, selectionuiyaw, -1, -1, 360);
+FVAR(IDF_PERSIST, selectionuipitch, -181, -181, 181);
+FVAR(IDF_PERSIST, selectionuiscale, FVAR_NONZERO, 1, FVAR_MAX);
+FVAR(IDF_PERSIST, selectionuidetentyaw, 0, 90, 180);
+FVAR(IDF_PERSIST, selectionuidetentpitch, 0, 90, 90);
 
 bool boxoutline = false;
 
@@ -806,7 +806,7 @@ void rendereditcursor()
             boxs3D(from, to, sel.grid);
         }
 
-        if(showselui)
+        if(selectionui)
         {
             vec pos(sel.o);
             float mindist = 1e16f;
@@ -833,8 +833,8 @@ void rendereditcursor()
             if(hasselui >= 0)
             {
                 if(UI::uivisible("selection", UI::SURFACE_MAIN, hasselui))
-                    UI::setui("selection", UI::SURFACE_MAIN, hasselui, pos, showseluiyaw, showseluipitch, showseluiscale, showseluidetentyaw, showseluidetentpitch);
-                else UI::showui("selection", UI::SURFACE_MAIN, hasselui, pos, showseluipitch, showseluipitch, showseluiscale, showseluidetentyaw, showseluidetentpitch);
+                    UI::setui("selection", UI::SURFACE_MAIN, hasselui, pos, selectionuiyaw, selectionuipitch, selectionuiscale, selectionuidetentyaw, selectionuidetentpitch);
+                else UI::showui("selection", UI::SURFACE_MAIN, hasselui, pos, selectionuipitch, selectionuipitch, selectionuiscale, selectionuidetentyaw, selectionuidetentpitch);
             }
         }
     }

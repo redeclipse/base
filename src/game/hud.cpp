@@ -550,6 +550,12 @@ namespace hud
         return UI::keypress(code, isdown); // ignore UI if compass is open
     }
 
+    VAR(IDF_PERSIST, aboveheadui, 0, 1, 1);
+    FVAR(IDF_PERSIST, aboveheaduiyaw, -1, -1, 360);
+    FVAR(IDF_PERSIST, aboveheaduipitch, -181, -181, 181);
+    FVAR(IDF_PERSIST, aboveheaduiscale, FVAR_NONZERO, 1, FVAR_MAX);
+    FVAR(IDF_PERSIST, aboveheaduidetentyaw, 0, 0, 180);
+    FVAR(IDF_PERSIST, aboveheaduidetentpitch, 0, 0, 90);
     void checkui()
     {
         hidecrosshair = 0;
@@ -565,6 +571,25 @@ namespace hud
             }
             else UI::openui("main");
         }
+
+        if(aboveheadui)
+        {
+            gameent *d = NULL;
+            int numdyns = game::numdynents();
+            loopi(numdyns) if((d = (gameent *)game::iterdynents(i)))
+            {
+                if(d->actortype >= A_ENEMY || (d == game::focus && (!game::aboveheaddead || (d->state != CS_DEAD && d->state != CS_WAITING))))
+                {
+                    if(UI::uivisible("abovehead", UI::SURFACE_MAIN, d->clientnum)) UI::hideui("abovehead", UI::SURFACE_MAIN, d->clientnum);
+                    continue;
+                }
+                if(UI::uivisible("abovehead", UI::SURFACE_MAIN, d->clientnum))
+                    UI::setui("abovehead", UI::SURFACE_MAIN, d->clientnum, d->abovehead(), aboveheaduiyaw, aboveheaduipitch, aboveheaduiscale, aboveheaduidetentyaw, aboveheaduidetentpitch);
+                else UI::showui("abovehead", UI::SURFACE_MAIN, d->clientnum, d->abovehead(), aboveheaduiyaw, aboveheaduipitch, aboveheaduiscale, aboveheaduidetentyaw, aboveheaduidetentpitch);
+            }
+        }
+        else UI::closedynui("abovehead");
+
         UI::update();
     }
 

@@ -2360,7 +2360,7 @@ namespace hud
         *flagtakentex, *bombdroptex, *bombtakentex, *attacktex, *warningtex, *indicatortex, *crosshairtex, *hithairtex,
         *spree1tex, *spree2tex, *spree3tex, *spree4tex, *multi1tex, *multi2tex, *multi3tex, *headshottex, *dominatetex, *revengetex,
         *firstbloodtex, *breakertex;
-    extern int hudwidth, hudheight, hudsize, lastteam, damageresidue, damageresiduefade, radaraffinitynames, teamhurthud, teamhurttime, teamhurtdist;
+    extern int hudwidth, hudheight, hudsize, lastteam, damageresidue, damageresiduefade, radaraffinitynames, teamhurthud, teamhurttime, teamhurtdist, aboveheadui;
     extern float radaraffinityblend, radarblipblend, radaraffinitysize;
     extern bool scoreson, scoresoff, shownscores;
     extern vector<int> teamkills;
@@ -2388,7 +2388,7 @@ namespace game
     extern int nextmode, nextmuts, lastzoom, lasttvcam, lasttvchg, spectvtime, waittvtime,
             maptime, mapstart, timeremaining, timeelapsed, timelast, timesync, bloodfade, bloodsize, bloodsparks, eventiconfade, eventiconshort, damageinteger,
             announcefilter, dynlighteffects, aboveheadnames, followthirdperson, nogore, forceplayermodel, forceplayerpattern,
-            playerovertone, playerundertone, playerdisplaytone, playereffecttone, playerteamtone, follow, specmode, spectvfollow, clientcrc;
+            playerovertone, playerundertone, playerdisplaytone, playereffecttone, playerteamtone, follow, specmode, spectvfollow, clientcrc, aboveheaddead;
     extern float bloodscale, aboveitemiconsize, playerovertonelevel, playerundertonelevel, playerdisplaytonelevel, playereffecttonelevel, playerteamtonelevel,
             affinityfadeat, affinityfadecut, affinityfollowblend, affinitythirdblend, damagedivisor, damagecritical;
     extern bool zooming, wantsloadoutmenu;
@@ -2423,7 +2423,7 @@ namespace game
     extern void announcef(int idx, int targ, gameent *d, const char *msg, ...);
     extern void announcev(int idx, int targ, int ent, const char *msg, ...);
     extern void specreset(gameent *d = NULL, bool clear = false);
-    extern float opacity(gameent *d);
+    extern float opacity(gameent *d, bool third = true);
     extern void respawn(gameent *d);
     extern void respawned(gameent *d, bool local, int ent = -1);
     extern vec pulsecolour(physent *d, int i = 0, int cycle = 50);
