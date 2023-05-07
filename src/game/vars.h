@@ -447,7 +447,7 @@ GVAR(IDF_GAMEMOD, 0, bomberpenalty, 0, 5, VAR_MAX); // points taken from score
 GVAR(IDF_GAMEMOD, 0, bomberpickuppoints, 0, 3, VAR_MAX); // points added to score
 GVAR(IDF_GAMEMOD, 0, bomberthrowinpoints, 0, 3, VAR_MAX); // team points for throw in
 GVAR(IDF_GAMEMOD, 0, bombertouchdownpoints, 0, 1, VAR_MAX); // team points for touch down
-GVAR(IDF_GAMEMOD, 0, bomberholdtime, 0, 15000, VAR_MAX);
+GVAR(IDF_GAMEMOD, 0, bomberholdtime, 0, 0, VAR_MAX);
 GVAR(IDF_GAMEMOD, 0, bomberholdpoints, 0, 1, VAR_MAX); // points added to score
 GVAR(IDF_GAMEMOD, 0, bomberholdpenalty, 0, 10, VAR_MAX); // penalty for holding too long
 GVAR(IDF_GAMEMOD, 0, bomberholdinterval, 0, 1000, VAR_MAX);
