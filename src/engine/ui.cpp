@@ -859,13 +859,6 @@ namespace UI
     const char *windowaffix[SURFACE_MAX] = { "", "progress", "comp" };
     static Window *window = NULL;
 
-    enum
-    {
-        WINDOW_NONE = 0,
-        WINDOW_MENU = 1<<0, WINDOW_PASS = 1<<1, WINDOW_TIP = 1<<2, WINDOW_POPUP = 1<<3, WINDOW_PERSIST = 1<<4, WINDOW_TOP = 1<<5,
-        WINDOW_ALL = WINDOW_MENU|WINDOW_PASS|WINDOW_TIP|WINDOW_POPUP|WINDOW_PERSIST|WINDOW_TOP
-    };
-
     VAR(IDF_READONLY, uiparam, -1, 0, 1);
     SVAR(0, uiargs, "");
 
@@ -887,8 +880,9 @@ namespace UI
 
         char *name, *dyn;
         Code *contents, *onshow, *onhide;
-        bool exclusive, mapdef, inworld, saved;
-        int allowinput, flags, param, lasthit;
+        bool exclusive, mapdef, inworld, saved,
+             menu, passthrough, tooltip, popup, persist, ontop;
+        int allowinput, param, lasthit;
         float px, py, pw, ph,
               yaw, pitch, curyaw, curpitch,
               offyaw, offpitch, detentyaw, detentpitch,
@@ -896,10 +890,11 @@ namespace UI
         vec2 sscale, soffset;
         vec origin, pos;
 
-        Window(const char *name_, const char *contents_, const char *onshow_, const char *onhide_, int flags_, bool mapdef_, const char *dyn_ = NULL, int param_ = -1) :
+        Window(const char *name_, const char *contents_, const char *onshow_, const char *onhide_, bool mapdef_, const char *dyn_ = NULL, int param_ = -1) :
             name(newstring(name_)), dyn(dyn_ && *dyn_ ? newstring(dyn_) : NULL),
             contents(NULL), onshow(NULL), onhide(NULL),
             exclusive(false), mapdef(mapdef_), inworld(false),
+            menu(true), passthrough(false), tooltip(false), popup(false), persist(false), ontop(false),
             allowinput(1), param(param_), lasthit(0),
             px(0), py(0), pw(0), ph(0),
             yaw(-1), pitch(0), curyaw(0), curpitch(0),
@@ -908,7 +903,6 @@ namespace UI
             sscale(1, 1), soffset(0, 0),
             origin(-1, -1, -1), pos(-1, -1, -1)
         {
-            flags = clamp(flags_, 0, int(WINDOW_ALL));
             if(contents_ && *contents_) contents = new Code(contents_);
             if(onshow_ && *onshow_) onshow = new Code(onshow_);
             if(onhide_ && *onhide_) onhide = new Code(onhide_);
@@ -976,7 +970,8 @@ namespace UI
         {
             Object::setup();
             allowinput = 1;
-            exclusive = false;
+            exclusive = passthrough = tooltip = popup = persist = ontop = false;
+            menu = true;
             px = py = pw = ph = 0;
         }
 
@@ -1004,12 +999,11 @@ namespace UI
             changed = 0;
             drawing = NULL;
 
-            bool hastop = (flags&WINDOW_TOP) != 0;
             if(inworld)
             {
                 glDepthFunc(GL_LESS);
                 glDepthMask(GL_FALSE);
-                if(hastop) glDisable(GL_DEPTH_TEST);
+                if(ontop) glDisable(GL_DEPTH_TEST);
             }
 
             Object::draw(world, sx, sy);
@@ -1018,7 +1012,7 @@ namespace UI
 
             if(inworld)
             {
-                if(hastop) glEnable(GL_DEPTH_TEST);
+                if(ontop) glEnable(GL_DEPTH_TEST);
                 glDepthFunc(GL_LESS);
                 glDepthMask(GL_TRUE);
             }
@@ -1212,8 +1206,8 @@ namespace UI
         {
             Window *aa = (Window *)a, *bb = (Window *)b;
             // top windows last
-            if(aa->flags&WINDOW_TOP && !(bb->flags&WINDOW_TOP)) return false;
-            if(!(aa->flags&WINDOW_TOP) && bb->flags&WINDOW_TOP) return true;
+            if(aa->ontop && !bb->ontop) return false;
+            if(!aa->ontop && bb->ontop) return true;
             // sort world windows first for speed
             if(aa->inworld && !bb->inworld) return true;
             if(!aa->inworld && bb->inworld) return false;
@@ -1297,7 +1291,12 @@ namespace UI
 
     UIWINARG(allowinput, "b", int, 0, 2);
     UIWINARGB(exclusive);
-    UIWINARG(flags, "i", int, 0, int(WINDOW_ALL));
+    UIWINARGB(menu);
+    UIWINARGB(passthrough);
+    UIWINARGB(tooltip);
+    UIWINARGB(popup);
+    UIWINARGB(persist);
+    UIWINARGB(ontop);
 
     UIWINARGV(origin);
     UIWINARG(yaw, "f", float, -1, 360);
@@ -1486,8 +1485,8 @@ namespace UI
         {
             loopwindowsrev(w,
             {
-                if(w->inworld || w->state&STATE_HIDDEN || w->flags&WINDOW_PERSIST) continue;
-                if(w->allowinput || w->flags&WINDOW_PASS) { hide(w, i); return true; }
+                if(w->inworld || w->state&STATE_HIDDEN || w->persist) continue;
+                if(w->allowinput || w->passthrough) { hide(w, i); return true; }
             });
             return false;
         }
@@ -1497,7 +1496,7 @@ namespace UI
             int hidden = 0;
             loopwindowsrev(w,
             {
-                if((world && !w->inworld) || (!force && w->flags&WINDOW_PERSIST)) continue;
+                if((world && !w->inworld) || (!force && w->persist)) continue;
                 hide(w, i);
                 hidden++;
             });
@@ -1525,11 +1524,7 @@ namespace UI
 
         bool hasmenu(bool pass = true) const
         {
-            loopwindows(w,
-            {
-                if(!w->inworld && w->flags&WINDOW_MENU && !(w->state&STATE_HIDDEN))
-                    return !pass || !(w->flags&WINDOW_PASS);
-            });
+            loopwindows(w, if(!w->inworld && w->menu && !(w->state&STATE_HIDDEN)) return !pass || !w->passthrough);
             return false;
         }
 
@@ -1537,7 +1532,7 @@ namespace UI
         {
             loopwindowsrev(w,
             {
-                if(!w->inworld && (w->allowinput || w->flags&WINDOW_PASS) && !(w->state&STATE_HIDDEN)) { return w->name; }
+                if(!w->inworld && (w->allowinput || w->passthrough) && !(w->state&STATE_HIDDEN)) { return w->name; }
             });
             return NULL;
         }
@@ -1551,9 +1546,9 @@ namespace UI
             loopwindows(w,
             {
                 if(!w->inworld && hasexcl && !w->exclusive) continue;
-                if(w->flags&WINDOW_TIP) // follows cursor
+                if(w->tooltip) // follows cursor
                     w->setpos((cursorx*float(hudw)/float(hudh))-(w->w*cursorx), cursory >= 0.5f ? cursory-w->h-uitipoffset : cursory+hud::cursorsize+uitipoffset);
-                else if(w->flags&WINDOW_POPUP && !w->overridepos)
+                else if(w->popup && !w->overridepos)
                     w->setpos((cursorx*float(hudw)/float(hudh))-(w->w*cursorx), cursory-w->h*0.5f);
             });
             loopwindows(w,
@@ -1659,7 +1654,7 @@ namespace UI
         window = NULL;
     }
 
-    bool newui(int stype, const char *name, const char *contents, const char *onshow, const char *onhide, int flags, bool mapdef = false, const char *dyn = NULL, int param = -1)
+    bool newui(int stype, const char *name, const char *contents, const char *onshow, const char *onhide, bool mapdef = false, const char *dyn = NULL, int param = -1)
     {
         if(!name || !*name || !contents || !*contents) return false;
 
@@ -1688,17 +1683,17 @@ namespace UI
                     }
                 }
             }
-            surface->windows[name] = new Window(name, contents, onshow, onhide, flags, mapdef, dyn, param);
+            surface->windows[name] = new Window(name, contents, onshow, onhide, mapdef, dyn, param);
         });
 
         return true;
     }
 
-    ICOMMAND(0, newui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *flags), newui(SURFACE_MAIN, name, contents, onshow, onhide, *flags, (identflags&IDF_MAP) != 0));
-    ICOMMAND(0, mapui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *flags), newui(SURFACE_MAIN, name, contents, onshow, onhide, *flags, true));
-    ICOMMAND(0, progressui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *flags), if(!(identflags&IDF_MAP)) newui(SURFACE_PROGRESS, name, contents, onshow, onhide, *flags));
-    ICOMMAND(0, newcompui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *flags), newui(SURFACE_COMPOSITE, name, contents, onshow, onhide, *flags, (identflags&IDF_MAP) != 0));
-    ICOMMAND(0, mapcompui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *flags), newui(SURFACE_COMPOSITE, name, contents, onshow, onhide, *flags, true));
+    ICOMMAND(0, newui, "ssss", (char *name, char *contents, char *onshow, char *onhide), newui(SURFACE_MAIN, name, contents, onshow, onhide, (identflags&IDF_MAP) != 0));
+    ICOMMAND(0, mapui, "ssss", (char *name, char *contents, char *onshow, char *onhide), newui(SURFACE_MAIN, name, contents, onshow, onhide, true));
+    ICOMMAND(0, progressui, "ssss", (char *name, char *contents, char *onshow, char *onhide), if(!(identflags&IDF_MAP)) newui(SURFACE_PROGRESS, name, contents, onshow, onhide));
+    ICOMMAND(0, newcompui, "ssss", (char *name, char *contents, char *onshow, char *onhide), newui(SURFACE_COMPOSITE, name, contents, onshow, onhide, (identflags&IDF_MAP) != 0));
+    ICOMMAND(0, mapcompui, "ssss", (char *name, char *contents, char *onshow, char *onhide), newui(SURFACE_COMPOSITE, name, contents, onshow, onhide, true));
 
     void closedynui(const char *name, int stype)
     {
@@ -1728,7 +1723,6 @@ namespace UI
     struct DynUI
     {
         char *name, *contents, *onshow, *onhide;
-        int flags;
         bool mapdef;
 
         DynUI() : name(NULL), contents(NULL), onshow(NULL), onhide(NULL), mapdef(false) {}
@@ -1742,7 +1736,7 @@ namespace UI
     };
     vector<DynUI> dynuis;
 
-    void dynui(const char *name, const char *contents, const char *onshow, const char *onhide, int flags, bool mapdef)
+    void dynui(const char *name, const char *contents, const char *onshow, const char *onhide, bool mapdef)
     {
         if(!name || !*name || !contents || !*contents) return;
 
@@ -1779,12 +1773,11 @@ namespace UI
         m->contents = newstring(contents);
         m->onshow = onshow && *onshow ? newstring(onshow) : NULL;
         m->onhide = onhide && *onhide ? newstring(onhide) : NULL;
-        m->flags = flags;
         m->mapdef = mapdef;
     }
 
-    ICOMMAND(0, dynui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *flags), dynui(name, contents, onshow, onhide, *flags, (identflags&IDF_MAP) != 0));
-    ICOMMAND(0, mapdynui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *flags), dynui(name, contents, onshow, onhide, *flags, true));
+    ICOMMAND(0, dynui, "ssssi", (char *name, char *contents, char *onshow, char *onhide), dynui(name, contents, onshow, onhide, (identflags&IDF_MAP) != 0));
+    ICOMMAND(0, mapdynui, "ssssi", (char *name, char *contents, char *onshow, char *onhide), dynui(name, contents, onshow, onhide, true));
 
     const char *dynuiref(const char *name, int param)
     {
@@ -1801,7 +1794,7 @@ namespace UI
         loopv(dynuis) if(!strcmp(dynuis[i].name, name))
         {
             defformatstring(refname, "%s_%d", name, param);
-            if(newui(SURFACE_MAIN, refname, dynuis[i].contents, dynuis[i].onshow, dynuis[i].onhide, dynuis[i].flags, dynuis[i].mapdef, dynuis[i].name, param)) return true;
+            if(newui(SURFACE_MAIN, refname, dynuis[i].contents, dynuis[i].onshow, dynuis[i].onhide, dynuis[i].mapdef, dynuis[i].name, param)) return true;
             return false;
         }
         return false;
@@ -6443,11 +6436,12 @@ namespace UI
             if(surface->type == SURFACE_PROGRESS || !w->mapdef || !w->contents || w->dyn) continue;
 
             h->printf("map%sui %s [%s]", windowaffix[surface->type], w->name, w->contents->body);
+
             if(w->onshow) h->printf(" [%s]", w->onshow->body);
-            else if(w->onhide || w->flags) h->printf(" []");
+            else if(w->onhide) h->printf(" []");
+
             if(w->onhide) h->printf(" [%s]", w->onhide->body);
-            else if(w->flags) h->printf(" []");
-            if(w->flags) h->printf(" %d", w->flags);
+
             h->printf("\n\n");
 
             mapmenus++;
@@ -6459,11 +6453,12 @@ namespace UI
             if(!d->mapdef || !d->contents) continue;
 
             h->printf("mapdynui %s [%s]", d->name, d->contents);
+
             if(d->onshow) h->printf(" [%s]", d->onshow);
-            else if(d->onhide || d->flags) h->printf(" []");
+            else if(d->onhide) h->printf(" []");
+
             if(d->onhide) h->printf(" [%s]", d->onhide);
-            else if(d->flags) h->printf(" []");
-            if(d->flags) h->printf(" %d", d->flags);
+
             h->printf("\n\n");
 
             mapmenus++;
