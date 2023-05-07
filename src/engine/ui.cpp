@@ -1211,14 +1211,17 @@ namespace UI
             // sort world windows first for speed
             if(aa->inworld && !bb->inworld) return true;
             if(!aa->inworld && bb->inworld) return false;
-            // if same x/y origin draw lower first
-            if(aa->origin.x == bb->origin.x && aa->origin.y == bb->origin.y)
+            if(aa->inworld && bb->inworld)
             {
-                if(aa->origin.z > bb->origin.z) return true;
-                if(aa->origin.z <= bb->origin.z) return false;
+                // if same x/y origin draw lower first
+                if(aa->origin.x == bb->origin.x && aa->origin.y == bb->origin.y)
+                {
+                    if(aa->origin.z > bb->origin.z) return true;
+                    if(aa->origin.z <= bb->origin.z) return false;
+                }
+                // reverse order so further gets drawn first
+                if(aa->dist > bb->dist) return true;
             }
-            // reverse order so further gets drawn first
-            if(aa->dist > bb->dist) return true;
             return false;
         }
     };
