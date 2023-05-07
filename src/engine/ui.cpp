@@ -143,7 +143,6 @@ namespace UI
 
     static Object *buildparent = NULL;
     static Object *inputsteal = NULL;
-    static int buildchild = -1;
 
     #define BUILD(type, o, setup, contents) do { \
         if(buildparent) \
@@ -166,6 +165,7 @@ namespace UI
     static int changed = 0;
 
     static Object *drawing = NULL;
+    static bool propogating = false;
 
     enum { BLEND_ALPHA, BLEND_MOD };
     static int blendtype = BLEND_ALPHA;
@@ -209,7 +209,7 @@ namespace UI
                 uitype *o = (uitype *)buildparent; \
                 body; \
             } \
-            else conoutf("Warning: parent %s not a %s for ui%s%s", buildparent ? buildparent->gettype() : "<null>", #uitype, #uiname, #vname); \
+            else if(!propogating) conoutf("Warning: parent %s not a %s for ui%s%s", buildparent ? buildparent->gettype() : "<null>", #uitype, #uiname, #vname); \
         });
 
     #define UIARGB(uitype, uiname, vname) \
@@ -247,7 +247,7 @@ namespace UI
                 uitype *o = (uitype *)buildparent; \
                 body; \
             } \
-            else conoutf("Warning: parent %s not a %s for ui%s%s", buildparent ? buildparent->gettype() : "<null>", #uiname, #uiname, #vname); \
+            else if(!propogating) conoutf("Warning: parent %s not a %s for ui%s%s", buildparent ? buildparent->gettype() : "<null>", #uiname, #uiname, #vname); \
         });
 
     #define UIARGTB(uitype, uiname, vname) \
@@ -312,6 +312,7 @@ namespace UI
     struct Object
     {
         Object *parent;
+        int buildchild;
         float x, y, w, h, ox, oy;
         float lastx, lasty, lastsx, lastsy, lastw, lasth;
         bool overridepos, drawn;
@@ -319,7 +320,7 @@ namespace UI
         ushort state, childstate;
         vector<Object *> children;
 
-        Object() : ox(0), oy(0), lastx(0), lasty(0), lastsx(0), lastsy(0), lastw(0), lasth(0),
+        Object() : buildchild(-1), ox(0), oy(0), lastx(0), lasty(0), lastsx(0), lastsy(0), lastw(0), lasth(0),
             overridepos(false), drawn(false), adjust(0), state(0), childstate(0) {}
 
         virtual ~Object()
@@ -762,14 +763,12 @@ namespace UI
             else
             {
                 Object *oldparent = buildparent;
-                int oldchild = buildchild;
                 buildparent = this;
                 buildchild = 0;
                 DOMAP(mapdef, executeret(contents));
                 while(children.length() > buildchild)
                     delete children.pop();
                 buildparent = oldparent;
-                buildchild = oldchild;
             }
             resetstate();
         }
@@ -787,7 +786,7 @@ namespace UI
                 Object *o = buildparent; \
                 body; \
             } \
-            else conoutf("Warning: No object available for ui%s", #vname); \
+            else if(!propogating) conoutf("Warning: No object available for ui%s", #vname); \
         });
 
     #define UIOBJARGB(vname) \
@@ -821,6 +820,7 @@ namespace UI
     UIOBJARGB(overridepos);
     UIOBJCMD(setpos, "ff", (float *xpos, float *ypos), o->setpos(*xpos, *ypos));
     UIOBJCMD(resetpos, "", (), o->resetpos());
+    ICOMMANDV(0, uidrawn, buildparent && buildparent->drawn ? 1 : 0);
 
     static inline void stopdrawing()
     {
@@ -1230,7 +1230,7 @@ namespace UI
                 Window *o = window; \
                 body; \
             } \
-            else conoutf("Warning: No window available for ui%s", #vname); \
+            else if(!propogating) conoutf("Warning: No window available for ui%s", #vname); \
         });
 
     #define UIWINARGB(vname) \
@@ -1312,18 +1312,6 @@ namespace UI
     ICOMMANDVF(0, uicursorx, cursorx*float(hudw)/hudh)
     ICOMMANDVF(0, uicursory, cursory)
     ICOMMANDVF(0, uiaspect, float(hudw)/hudh)
-
-    #define UIWINCMDC(func, types, argtypes, body) \
-        ICOMMAND(0, ui##func##root, types, argtypes, \
-        { \
-            Object *o = window; \
-            if(o) { body; } \
-        }); \
-        ICOMMAND(0, ui##func, types, argtypes, \
-        { \
-            Object *o = buildparent; \
-            if(o) { body; } \
-        });
 
     static void pushclip(float x, float y, float w, float h)
     {
@@ -1566,7 +1554,7 @@ namespace UI
                 Surface *o = surface; \
                 body; \
             } \
-            else conoutf("Warning: No surface available for ui%s", #vname); \
+            else if(!propogating) conoutf("Warning: No surface available for ui%s", #vname); \
         });
 
     #define UISURFARGB(vname) \
@@ -2137,7 +2125,6 @@ namespace UI
         void buildchildren(uint *columndata, uint *contents)
         {
             Object *oldparent = buildparent;
-            int oldchild = buildchild;
             buildparent = this;
             buildchild = 0;
             executeret(columndata);
@@ -2146,7 +2133,6 @@ namespace UI
             if((*contents&CODE_OP_MASK) != CODE_EXIT) executeret(contents);
             while(children.length() > buildchild) delete children.pop();
             buildparent = oldparent;
-            buildchild = oldchild;
             resetstate();
         }
 
@@ -2484,9 +2470,9 @@ namespace UI
         if(o->colors.empty()) o->colors.add(Color(colourwhite));
     });
     UICMDT(Colored, colour, rotate, "fii", (float *amt, int *start, int *count), o->rotatecolors(*amt, *start, *count));
+    UICMDT(Colored, colour, blend, "f", (float *blend), loopvk(o->colors) o->colors[k].a = clamp(uchar(*blend * o->colors[k].a), 0, 255));
 
     static const float defcoords[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
-
     struct Filler : Colored
     {
         enum { FC_TL = 0, FC_TR, FC_BR, FC_BL, FC_MAX };
@@ -4214,12 +4200,12 @@ namespace UI
 
     struct Scroller : Clipper
     {
-        bool scrolllock;
+        bool disabled;
 
         void setup(float sizew_ = 0, float sizeh_ = 0)
         {
             Clipper::setup(sizew_, sizeh_);
-            scrolllock = false;
+            disabled = false;
         }
 
         static const char *typestr() { return "#Scroller"; }
@@ -4227,22 +4213,12 @@ namespace UI
 
         void scrollup(float cx, float cy, bool inside);
         void scrolldown(float cx, float cy, bool inside);
-        bool canscroll() const { return !scrolllock && !surface->lockscroll; }
-        void setscrolllock(bool scrolllock_) { scrolllock = scrolllock_; }
+        bool canscroll() const { return !disabled && !surface->lockscroll; }
     };
 
     ICOMMAND(0, uiscroll, "ffe", (float *sizew, float *sizeh, uint *children),
         BUILD(Scroller, o, o->setup(*sizew*uiscale, *sizeh*uiscale), children));
-
-    ICOMMANDNS(0, "uicanscroll-", uicanscroll_, "i", (int *canscroll),
-    {
-        if(buildparent && buildchild > 0)
-        {
-            Object *o = buildparent->children[buildchild-1];
-            if(o->istype<Scroller>())
-                ((Scroller*)(buildparent->children[buildchild-1]))->setscrolllock(*canscroll == 0);
-        }
-    });
+    UIARGB(Scroller, scroll, disabled);
 
     struct ScrollButton : Object
     {
@@ -5985,13 +5961,13 @@ namespace UI
         ICOMMANDNS(0, "ui" #func "?", ui##func##__, "tt", (tagval *t, tagval *f), \
             IFSTATEVAL(buildparent && buildparent->haschildstate(chkflags), t, f)); \
         ICOMMANDNS(0, "ui!" #func "+", uinextnot##func##_, "ee", (uint *t, uint *f), \
-            executeret(buildparent && buildparent->children.inrange(buildchild) && buildparent->children[buildchild]->hasstate(chkflags) ? t : f)); \
+            executeret(buildparent && buildparent->children.inrange(buildparent->buildchild) && buildparent->children[buildparent->buildchild]->hasstate(chkflags) ? t : f)); \
         ICOMMANDNS(0, "ui" #func "+", uinext##func##_, "ee", (uint *t, uint *f), \
-            executeret(buildparent && buildparent->children.inrange(buildchild) && buildparent->children[buildchild]->haschildstate(chkflags) ? t : f)); \
+            executeret(buildparent && buildparent->children.inrange(buildparent->buildchild) && buildparent->children[buildparent->buildchild]->haschildstate(chkflags) ? t : f)); \
         ICOMMANDNS(0, "ui!" #func "+?", uinextnot##func##__, "tt", (tagval *t, tagval *f), \
-            IFSTATEVAL(buildparent && buildparent->children.inrange(buildchild) && buildparent->children[buildchild]->hasstate(chkflags), t, f)); \
+            IFSTATEVAL(buildparent && buildparent->children.inrange(buildparent->buildchild) && buildparent->children[buildparent->buildchild]->hasstate(chkflags), t, f)); \
         ICOMMANDNS(0, "ui" #func "+?", uinext##func##__, "tt", (tagval *t, tagval *f), \
-            IFSTATEVAL(buildparent && buildparent->children.inrange(buildchild) && buildparent->children[buildchild]->haschildstate(chkflags), t, f));
+            IFSTATEVAL(buildparent && buildparent->children.inrange(buildparent->buildchild) && buildparent->children[buildparent->buildchild]->haschildstate(chkflags), t, f));
     DOSTATES
     #undef DOSTATE
 
@@ -6002,61 +5978,75 @@ namespace UI
     ICOMMANDNS(0, "uifocus?", uifocus__, "tt", (tagval *t, tagval *f),
         IFSTATEVAL(buildparent && TextEditor::focus == buildparent, t, f));
     ICOMMANDNS(0, "uifocus+", uinextfocus_, "ee", (uint *t, uint *f),
-        executeret(buildparent && buildparent->children.inrange(buildchild) && TextEditor::focus == buildparent->children[buildchild] ? t : f));
+        executeret(buildparent && buildparent->children.inrange(buildparent->buildchild) && TextEditor::focus == buildparent->children[buildparent->buildchild] ? t : f));
     ICOMMANDNS(0, "uifocus+?", uinextfocus__, "tt", (tagval *t, tagval *f),
-        IFSTATEVAL(buildparent && buildparent->children.inrange(buildchild) && TextEditor::focus == buildparent->children[buildchild], t, f));
+        IFSTATEVAL(buildparent && buildparent->children.inrange(buildparent->buildchild) && TextEditor::focus == buildparent->children[buildparent->buildchild], t, f));
     ICOMMANDNS(0, "uifocus-", uinextfocus_, "ee", (uint *t, uint *f),
-        executeret(buildparent && buildchild > 0 && buildparent->children.inrange(buildchild-1) && TextEditor::focus == buildparent->children[buildchild-1] ? t : f));
+        executeret(buildparent && buildparent->buildchild > 0 && buildparent->children.inrange(buildparent->buildchild-1) && TextEditor::focus == buildparent->children[buildparent->buildchild-1] ? t : f));
     ICOMMANDNS(0, "uifocus-?", uinextfocus__, "tt", (tagval *t, tagval *f),
-        IFSTATEVAL(buildparent && buildchild > 0 && buildparent->children.inrange(buildchild-1) && TextEditor::focus == buildparent->children[buildchild-1], t, f));
+        IFSTATEVAL(buildparent && buildparent->buildchild > 0 && buildparent->children.inrange(buildparent->buildchild-1) && TextEditor::focus == buildparent->children[buildparent->buildchild-1], t, f));
 
-    ICOMMAND(0, uidrawn, "", (),
-        intret(buildparent && buildparent->drawn));
-
-    ICOMMAND(0, uialign, "ii", (int *xalign, int *yalign),
+    ICOMMAND(0, uiprev, "e", (uint *code),
     {
-        if(buildparent) buildparent->setalign(*xalign, *yalign);
-    });
-    ICOMMANDNS(0, "uialign-", uialign_, "ii", (int *xalign, int *yalign),
-    {
-        if(buildparent && buildchild > 0) buildparent->children[buildchild-1]->setalign(*xalign, *yalign);
-    });
-    ICOMMANDNS(0, "uialign*", uialign__, "ii", (int *xalign, int *yalign),
-    {
-        if(buildparent) loopi(buildchild) buildparent->children[i]->setalign(*xalign, *yalign);
+        if(!buildparent || buildparent->buildchild <= 0) return;
+        Object *oldparent = buildparent;
+        buildparent = oldparent->children[oldparent->buildchild-1];
+        executeret(code);
+        buildparent = oldparent;
     });
 
-    ICOMMAND(0, uiclamp, "iiii", (int *left, int *right, int *top, int *bottom),
+    ICOMMAND(0, uiall, "e", (uint *code),
     {
-        if(buildparent) buildparent->setclamp(*left, *right, *top, *bottom);
-    });
-    ICOMMANDNS(0, "uiclamp-", uiclamp_, "iiii", (int *left, int *right, int *top, int *bottom),
-    {
-        if(buildparent && buildchild > 0) buildparent->children[buildchild-1]->setclamp(*left, *right, *top, *bottom);
-    });
-    ICOMMANDNS(0, "uiclamp*", uiclamp__, "iiii", (int *left, int *right, int *top, int *bottom),
-    {
-        if(buildparent) loopi(buildchild) buildparent->children[i]->setclamp(*left, *right, *top, *bottom);
-    });
-
-    ICOMMAND(0, uiposition, "ff", (float *x, float *y),
-    {
-        if(buildparent) buildparent->setpos(*x, *y);
+        if(!buildparent) return;
+        bool oldprop = propogating;
+        propogating = true;
+        Object *oldparent = buildparent;
+        loopv(oldparent->children)
+        {
+            buildparent = oldparent->children[i];
+            executeret(code);
+        }
+        propogating = oldprop;
+        buildparent = oldparent;
     });
 
-    ICOMMANDNS(0, "uiposition-", uiposition_, "ff", (float *x, float *y),
+    void uichildren(uint *code)
     {
-        if(buildparent) loopi(buildchild) buildparent->children[i]->setpos(*x, *y);
+        if(!buildparent) return;
+        bool oldprop = propogating;
+        propogating = true;
+        executeret(code);
+        Object *oldparent = buildparent;
+        loopv(oldparent->children)
+        {
+            buildparent = oldparent->children[i];
+            uichildren(code);
+        }
+        propogating = oldprop;
+        buildparent = oldparent;
+    }
+    ICOMMAND(0, uiprop, "e", (uint *code), uichildren(code));
+    ICOMMAND(0, uiroot, "e", (uint *code),
+    {
+        if(!buildparent) return;
+        Object *oldparent = buildparent;
+        buildparent = window;
+        uichildren(code);
+        buildparent = oldparent;
     });
+
+    ICOMMAND(0, uialign, "ii", (int *xalign, int *yalign), if(buildparent) buildparent->setalign(*xalign, *yalign));
+    ICOMMAND(0, uiclamp, "iiii", (int *left, int *right, int *top, int *bottom), if(buildparent) buildparent->setclamp(*left, *right, *top, *bottom));
+    ICOMMAND(0, uiposition, "ff", (float *x, float *y), if(buildparent) buildparent->setpos(*x, *y));
 
     #define UIGETFVAL(vname) \
         ICOMMAND(0, ui##vname, "N$", (int *numargs, ident *id), { \
             if(*numargs != 0) floatret(buildparent ? buildparent->vname : 0.f); \
             else printvar(id, buildparent ? buildparent->vname : 0.f); \
         }); \
-        ICOMMANDNS(0, "ui" STRINGIFY(vname) "-", ui##vname##_, "N$", (int *numargs, ident *id), { \
-            if(*numargs != 0) floatret(buildparent && buildchild > 0 ? buildparent->children[buildchild-1]->vname : 0.f); \
-            else printvar(id, buildparent && buildchild > 0 ? buildparent->children[buildchild-1]->vname : 0.f); \
+        ICOMMAND(0, ui##vname##prev, "N$", (int *numargs, ident *id), { \
+            if(*numargs != 0) floatret(buildparent && buildparent->buildchild > 0 ? buildparent->children[buildparent->buildchild-1]->vname : 0.f); \
+            else printvar(id, buildparent && buildparent->buildchild > 0 ? buildparent->children[buildparent->buildchild-1]->vname : 0.f); \
         });
 
     UIGETFVAL(lastx);
@@ -6065,63 +6055,6 @@ namespace UI
     UIGETFVAL(lastsy);
     UIGETFVAL(lastw);
     UIGETFVAL(lasth);
-
-    void setchildcolours(Object *o, int *c)
-    {
-        if(o->iscolour()) loopvk(((Colored *)o)->colors) ((Colored *)o)->colors[k] = Color(*c);
-        loopv(o->children) setchildcolours(o->children[i], c);
-    }
-    UIWINCMDC(setcolours, "i", (int *c), setchildcolours(o, c));
-
-    #define UIBLENDCMDS(t) \
-        if(o->iscolour()) \
-        { \
-            loopvk(((Colored *)o)->colors) ((Colored *)o)->colors[k].a = clamp(int(*c * ((Colored *)o)->colors[k].a), 0, 255); \
-            t; \
-        } \
-
-    UIREVCMDC(changeblend, "f", (float *c), UIBLENDCMDS(break));
-    void changechildblends(Object *o, float *c)
-    {
-        UIBLENDCMDS();
-        loopv(o->children) changechildblends(o->children[i], c);
-    }
-    UIWINCMDC(changeblends, "f", (float *c), changechildblends(o, c));
-
-    #define UICHGCOLCMDS(t) \
-        if(o->iscolour()) \
-        { \
-            loopvk(((Colored *)o)->colors) \
-            { \
-                ((Colored *)o)->colors[k].r = clamp(int(*c * ((Colored *)o)->colors[k].r), 0, 255); \
-                ((Colored *)o)->colors[k].g = clamp(int(*c * ((Colored *)o)->colors[k].g), 0, 255); \
-                ((Colored *)o)->colors[k].b = clamp(int(*c * ((Colored *)o)->colors[k].b), 0, 255); \
-            } \
-            t; \
-        } \
-
-    UIREVCMDC(changecolour, "f", (float *c), UICHGCOLCMDS(break));
-    void changechildcolours(Object *o, float *c)
-    {
-        UICHGCOLCMDS();
-        loopv(o->children) changechildcolours(o->children[i], c);
-    }
-    UIWINCMDC(changecolours, "f", (float *c), changechildcolours(o, c));
-
-    #define UIROTCOLCMDS(t) \
-        if(o->iscolour()) \
-        { \
-            ((Colored *)o)->rotatecolors(*amt, *start, *count); \
-            t; \
-        } \
-
-    UIREVCMDC(rotatecolour, "fii", (float *amt, int *start, int *count), UIROTCOLCMDS(break));
-    void rotchildcolours(Object *o, float *amt, int *start, int *count)
-    {
-        UIROTCOLCMDS();
-        loopv(o->children) rotchildcolours(o->children[i], amt, start, count);
-    }
-    UIWINCMDC(rotatecolours, "fii", (float *amt, int *start, int *count), rotchildcolours(o, amt, start, count));
 
     int hasinput(bool cursor, int stype)
     {
