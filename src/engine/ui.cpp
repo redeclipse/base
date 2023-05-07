@@ -860,24 +860,24 @@ namespace UI
     static Window *window = NULL;
 
     VAR(IDF_READONLY, uiparam, -1, 0, 1);
-    SVAR(0, uiargs, "");
+    SVAR(IDF_READONLY, uiargs, "");
+
+    struct Code
+    {
+        char *body;
+        uint *code;
+
+        Code() : body(NULL), code(NULL) {}
+        Code(const char *str) : body(newstring(str)), code(compilecode(str)) {}
+        ~Code()
+        {
+            DELETEA(body);
+            freecode(code);
+        }
+    };
 
     struct Window : Object
     {
-        struct Code
-        {
-            char *body;
-            uint *code;
-
-            Code() : body(NULL), code(NULL) {}
-            Code(const char *str) : body(newstring(str)), code(compilecode(str)) {}
-            ~Code()
-            {
-                DELETEA(body);
-                freecode(code);
-            }
-        };
-
         char *name, *dyn;
         Code *contents, *onshow, *onhide;
         bool exclusive, mapdef, inworld, saved,
@@ -1669,7 +1669,11 @@ namespace UI
             Window *w = surface->windows.find(name, NULL);
             if(w && w != window)
             {
-                if(!w->mapdef && mapdef) conoutf("\frCannot override builtin %s UI %s with a one from the map", windowtype[stype], w->name);
+                if(!w->mapdef && mapdef)
+                {
+                    conoutf("\frCannot override builtin %s UI %s with a one from the map", windowtype[stype], w->name);
+                    return false;
+                }
                 else
                 {
                     surface->hide(w);
@@ -6694,6 +6698,7 @@ namespace UI
                 }
 
                 surface->hide(w);
+                setsvar("uiargs", "");
             }
 
             t->last = delay > 1 ? lastmillis - (elapsed % delay) : lastmillis;
