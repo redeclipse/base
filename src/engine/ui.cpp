@@ -165,7 +165,7 @@ namespace UI
     static int changed = 0;
 
     static Object *drawing = NULL;
-    static bool propogating = false;
+    static bool propagating = false;
 
     enum { BLEND_ALPHA, BLEND_MOD };
     static int blendtype = BLEND_ALPHA;
@@ -209,7 +209,7 @@ namespace UI
                 uitype *o = (uitype *)buildparent; \
                 body; \
             } \
-            else if(!propogating) conoutf("Warning: parent %s not a %s for ui%s%s", buildparent ? buildparent->gettype() : "<null>", #uitype, #uiname, #vname); \
+            else if(!propagating) conoutf("Warning: parent %s not a %s for ui%s%s", buildparent ? buildparent->gettype() : "<null>", #uitype, #uiname, #vname); \
         });
 
     #define UIARGB(uitype, uiname, vname) \
@@ -247,7 +247,7 @@ namespace UI
                 uitype *o = (uitype *)buildparent; \
                 body; \
             } \
-            else if(!propogating) conoutf("Warning: parent %s not a %s for ui%s%s", buildparent ? buildparent->gettype() : "<null>", #uiname, #uiname, #vname); \
+            else if(!propagating) conoutf("Warning: parent %s not a %s for ui%s%s", buildparent ? buildparent->gettype() : "<null>", #uiname, #uiname, #vname); \
         });
 
     #define UIARGTB(uitype, uiname, vname) \
@@ -786,7 +786,7 @@ namespace UI
                 Object *o = buildparent; \
                 body; \
             } \
-            else if(!propogating) conoutf("Warning: No object available for ui%s", #vname); \
+            else if(!propagating) conoutf("Warning: No object available for ui%s", #vname); \
         });
 
     #define UIOBJARGB(vname) \
@@ -1230,7 +1230,7 @@ namespace UI
                 Window *o = window; \
                 body; \
             } \
-            else if(!propogating) conoutf("Warning: No window available for ui%s", #vname); \
+            else if(!propagating) conoutf("Warning: No window available for ui%s", #vname); \
         });
 
     #define UIWINARGB(vname) \
@@ -1554,7 +1554,7 @@ namespace UI
                 Surface *o = surface; \
                 body; \
             } \
-            else if(!propogating) conoutf("Warning: No surface available for ui%s", #vname); \
+            else if(!propagating) conoutf("Warning: No surface available for ui%s", #vname); \
         });
 
     #define UISURFARGB(vname) \
@@ -5998,23 +5998,23 @@ namespace UI
     ICOMMAND(0, uiall, "e", (uint *code),
     {
         if(!buildparent) return;
-        bool oldprop = propogating;
-        propogating = true;
+        bool oldprop = propagating;
+        propagating = true;
         Object *oldparent = buildparent;
         loopv(oldparent->children)
         {
             buildparent = oldparent->children[i];
             executeret(code);
         }
-        propogating = oldprop;
+        propagating = oldprop;
         buildparent = oldparent;
     });
 
     void uichildren(uint *code)
     {
         if(!buildparent) return;
-        bool oldprop = propogating;
-        propogating = true;
+        bool oldprop = propagating;
+        propagating = true;
         executeret(code);
         Object *oldparent = buildparent;
         loopv(oldparent->children)
@@ -6022,7 +6022,7 @@ namespace UI
             buildparent = oldparent->children[i];
             uichildren(code);
         }
-        propogating = oldprop;
+        propagating = oldprop;
         buildparent = oldparent;
     }
     ICOMMAND(0, uiprop, "e", (uint *code), uichildren(code));
