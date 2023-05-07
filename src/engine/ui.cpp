@@ -6066,17 +6066,9 @@ namespace UI
     UIGETFVAL(lastw);
     UIGETFVAL(lasth);
 
-    #define UICOLOURCMDS(t) \
-        if(o->iscolour()) \
-        { \
-            loopvk(((Colored *)o)->colors) ((Colored *)o)->colors[k] = Color(*c); \
-            t; \
-        } \
-
-    UIREVCMDC(setcolour, "i", (int *c), UICOLOURCMDS(break));
     void setchildcolours(Object *o, int *c)
     {
-        UICOLOURCMDS();
+        if(o->iscolour()) loopvk(((Colored *)o)->colors) ((Colored *)o)->colors[k] = Color(*c);
         loopv(o->children) setchildcolours(o->children[i], c);
     }
     UIWINCMDC(setcolours, "i", (int *c), setchildcolours(o, c));
