@@ -2387,10 +2387,8 @@ namespace hud
     extern float radaraffinityblend, radarblipblend, radaraffinitysize;
     extern bool scoreson, scoresoff, shownscores;
     extern vector<int> teamkills;
-    extern void eventlog(int type, int subtype, const vector<int> &involve, const vector<int> &target, const char *str = NULL);
-    extern void eventlogf(int type, int subtype, const vector<int> &involve, const vector<int> &target, const char *str, ...);
-    extern void eventlog(int type, int subtype, int involve[], int ilen, int target[], int tlen, const char *str = NULL);
-    extern void eventlogf(int type, int subtype, int involve[], int ilen, int target[], int tlen, const char *str, ...);
+    extern void eventlog(int type, int subtype, const vector<gameent *> &clients, const vector<int> &targets, const char *str = NULL);
+    extern void eventlogf(int type, int subtype, const vector<gameent *> &clients, const vector<int> &targets, const char *str, ...);
     extern const char *geticon(int type, int value);
     extern void drawindicator(int weap, int x, int y, int s);
     extern void drawpointertex(const char *tex, int x, int y, int s, float r = 1, float g = 1, float b = 1, float fade = 1);
@@ -2442,8 +2440,10 @@ namespace game
     extern gameent *getclient(int cn);
     extern gameent *intersectclosest(vec &from, vec &to, gameent *at);
     extern void clientdisconnected(int cn, int reason = DISC_NONE);
+    extern const char *colourname(char *name, int clientnum, int team, int actortype, int col, int privilege, int weapselect, bool icon = true, bool dupname = true, int colour = 3);
     extern const char *colourname(gameent *d, char *name = NULL, bool icon = true, bool dupname = true, int colour = 3);
     extern const char *colourteam(int team, const char *icon = "");
+    extern int findcolour(int team, int colour, int weapselect, bool tone = true, bool mix = false, float level = 1);
     extern int findcolour(gameent *d, bool tone = true, bool mix = false, float level = 1);
     extern int getcolour(gameent *d, int type = 0, float level = 1.f);
     extern void errorsnd(gameent *d);

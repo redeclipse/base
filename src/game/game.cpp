@@ -2009,22 +2009,23 @@ namespace game
                 }
                 if(show) announcef(anc, CON_GAME, d, "\fw%s", d->obit);
                 #endif
-                static vector<int> involve, target;
 
-                involve.shrink(0);
-                involve.add(d->clientnum);
-                involve.add(v->clientnum);
-                loopv(log) if(log[i] && log[i] != d && log[i] != v) involve.add(log[i]->clientnum);
+                static vector<gameent *> clients;
+                clients.shrink(0);
+                clients.add(d);
+                clients.add(v);
+                loopv(log) if(log[i] && log[i] != d && log[i] != v) clients.add(log[i]);
 
-                target.shrink(0);
-                target.add(weap);
-                target.add(flags);
-                target.add(damage);
-                target.add(style);
-                target.add(material);
-                target.add(anc);
-                target.add(dth);
-                hud::eventlog(EV_FRAG, d == v ? EV_F_SUICIDE : EV_F_KILL, involve, target, d->obit);
+                static vector<int> targets;
+                targets.shrink(0);
+                targets.add(weap);
+                targets.add(flags);
+                targets.add(damage);
+                targets.add(style);
+                targets.add(material);
+                targets.add(anc);
+                targets.add(dth);
+                hud::eventlog(EV_FRAG, d == v ? EV_F_SUICIDE : EV_F_KILL, clients, targets, d->obit);
             }
             if(anc >= 0) entities::announce(anc, d);
             if(anc >= 0 && d != v) entities::announce(anc, v);
@@ -2182,6 +2183,7 @@ namespace game
 
     void startmap(bool empty) // called just after a map load
     {
+        hud::cleanup();
         ai::startmap(empty);
         if(!empty)
         {
@@ -2264,12 +2266,17 @@ namespace game
         return focus;
     }
 
+    bool duplicatename(char *name, int clientnum)
+    {
+        if(!client::demoplayback && clientnum != player1->clientnum && !strcmp(name, player1->name)) return true;
+        loopv(players) if(players[i] && clientnum != players[i]->clientnum && !strcmp(name, players[i]->name)) return true;
+        return false;
+    }
+
     bool duplicatename(gameent *d, char *name = NULL)
     {
         if(!name) name = d->name;
-        if(!client::demoplayback && d != player1 && !strcmp(name, player1->name)) return true;
-        loopv(players) if(players[i] && d != players[i] && !strcmp(name, players[i]->name)) return true;
-        return false;
+        return duplicatename(name, d->clientnum);
     }
 
     int levelcolour(int colour, float level)
@@ -2279,14 +2286,15 @@ namespace game
         return colour;
     }
 
-    int findcolour(gameent *d, bool tone, bool mix, float level)
+    int findcolour(int team, int colour, int weapselect, bool tone, bool mix, float level)
     {
         if(tone)
         {
-            int col = d->colour;
-            if(!col && isweap(d->weapselect))
+            int col = colour;
+            if(!col && isweap(weapselect))
             {
-                col = W(d->weapselect, colour);
+                col = W(weapselect, colour);
+                #if 0
                 int lastweap = d->getlastweap(m_weapon(d->actortype, gamemode, mutators));
                 if(isweap(lastweap) && d->weapselect != lastweap && (d->weapstate[d->weapselect] == W_S_USE || d->weapstate[d->weapselect] == W_S_SWITCH))
                 {
@@ -2298,13 +2306,14 @@ namespace game
                         b3 = clamp(int((b1*(1-amt))+(b2*amt)), 0, 255);
                     col = (r3<<16)|(g3<<8)|b3;
                 }
+                #endif
             }
             if(col)
             {
                 if(mix && playertonemix > 0)
                 {
                     int r1 = (col>>16), g1 = ((col>>8)&0xFF), b1 = (col&0xFF),
-                        c = TEAM(d->team, colour), r2 = (c>>16), g2 = ((c>>8)&0xFF), b2 = (c&0xFF),
+                        c = TEAM(team, colour), r2 = (c>>16), g2 = ((c>>8)&0xFF), b2 = (c&0xFF),
                         r3 = clamp(int((r1*(1-playertonemix))+(r2*playertonemix)), 0, 255),
                         g3 = clamp(int((g1*(1-playertonemix))+(g2*playertonemix)), 0, 255),
                         b3 = clamp(int((b1*(1-playertonemix))+(b2*playertonemix)), 0, 255);
@@ -2313,7 +2322,12 @@ namespace game
                 return levelcolour(col, level);
             }
         }
-        return levelcolour(TEAM(d->team, colour), level);
+        return levelcolour(TEAM(team, colour), level);
+    }
+
+    int findcolour(gameent *d, bool tone, bool mix, float level)
+    {
+        return findcolour(d->team, d->colour, d->weapselect, tone, mix, level);
     }
 
     int getcolour(gameent *d, int type, float level)
@@ -2333,9 +2347,8 @@ namespace game
         return 0;
     }
 
-    const char *colourname(gameent *d, char *name, bool icon, bool dupname, int colour)
+    const char *colourname(char *name, int clientnum, int team, int actortype, int col, int privilege, int weapselect, bool icon, bool dupname, int colour)
     {
-        if(!name) name = d->name;
         static string colored;
         string colortmp;
         colored[0] = '\0';
@@ -2344,25 +2357,34 @@ namespace game
         {
             if(colour&1)
             {
-                formatstring(colortmp, "\f[%d]", findcolour(d));
+                formatstring(colortmp, "\f[%d]", findcolour(team, col, weapselect));
                 concatstring(colored, colortmp);
             }
-            formatstring(colortmp, "\f($priv%stex)", server::privnamex(d->privilege, d->actortype, true));
+            formatstring(colortmp, "\f($priv%stex)", server::privnamex(privilege, actortype, true));
             concatstring(colored, colortmp);
         }
         if(colour&2)
         {
-            formatstring(colortmp, "\f[%d]", TEAM(d->team, colour));
+            formatstring(colortmp, "\f[%d]", TEAM(team, colour));
             concatstring(colored, colortmp);
         }
         concatstring(colored, name);
-        if(!name[0] || (d->actortype < A_ENEMY && dupname && duplicatename(d, name)))
+        if(!name[0] || (actortype < A_ENEMY && dupname && duplicatename(name, clientnum)))
         {
-            formatstring(colortmp, "%s[%d]", name[0] ? " " : "", d->clientnum);
+            formatstring(colortmp, "%s[%d]", name[0] ? " " : "", clientnum);
             concatstring(colored, colortmp);
         }
         if(colour) concatstring(colored, "\fS");
         return colored;
+    }
+    ICOMMAND(0, colourname, "siiiiiibbb", (char *name, int *clientnum, int *team, int *actortype, int *col, int *privilege, int *weapselect, int *icon, int *dupname, int *colour),
+        result(colourname(name, *clientnum, *team, *actortype, *col, *privilege, *weapselect, *icon != 0, *dupname != 0, *colour >= 0 ? *colour : 3));
+    );
+
+    const char *colourname(gameent *d, char *name, bool icon, bool dupname, int colour)
+    {
+        if(!name) name = d->name;
+        return colourname(name, d->clientnum, d->team, d->actortype, d->colour, d->privilege, d->weapselect, icon, dupname, colour);
     }
 
     const char *teamtexnamex(int team)

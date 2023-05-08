@@ -21,30 +21,57 @@ namespace hud
 
     struct event
     {
+        struct client
+        {
+            int cn, type, team, colour, model, priv, weap;
+            char *name;
+
+            client() : cn(-1), team(-1), colour(-1), name(NULL) {}
+            ~client()
+            {
+                DELETEA(name);
+            }
+        };
+
         int type, subtype, millis;
-        vector<int> involve, target;
+        vector<client> clients;
+        vector<int> targets;
         char *str;
 
         event() : type(-1), subtype(-1), millis(-1), str(NULL)
         {
-            involve.setsize(0);
-            target.setsize(0);
+            clients.setsize(0);
+            targets.setsize(0);
         }
         ~event() { DELETEA(str); }
     };
     vector<event> events;
-    #define MAXEVENTS 1000
 
-    void eventlog(int type, int subtype, const vector<int> &involve, const vector<int> &target, const char *str)
+    VAR(IDF_PERSIST, eventmaxlines, 1, 50, VAR_MAX);
+
+    void eventlog(int type, int subtype, const vector<gameent *> &clients, const vector<int> &targets, const char *str)
     {
         if(type < 0 || type >= EV_MAX) return;
-        if(events.length() >= MAXEVENTS) events.remove(0);
+        if(events.length() >= eventmaxlines) events.remove(0);
         event &e = events.add();
         e.type = type;
         e.subtype = subtype;
         e.millis = totalmillis;
-        loopv(involve) e.involve.add(involve[i]);
-        loopv(target) e.target.add(target[i]);
+        loopv(clients)
+        {
+            gameent *d = clients[i];
+            event::client &c = e.clients.add();
+            if(!d) continue;
+            c.cn = d->clientnum;
+            c.type = d->actortype;
+            c.team = d->team;
+            c.colour = d->colour;
+            c.model = d->model;
+            c.priv = d->privilege;
+            c.weap = d->weapselect;
+            c.name = newstring(d->name);
+        }
+        loopv(targets) e.targets.add(targets[i]);
         if(str && *str)
         {
             e.str = newstring(str);
@@ -52,30 +79,11 @@ namespace hud
         }
     }
 
-    void eventlogf(int type, int subtype, const vector<int> &involve, const vector<int> &target, const char *str, ...)
+    void eventlogf(int type, int subtype, const vector<gameent *> &clients, const vector<int> &targets, const char *str, ...)
     {
         if(type < 0 || type >= EV_MAX) return;
         defvformatbigstring(sf, str, str);
-        eventlog(type, subtype, involve, target, sf);
-    }
-
-    void eventlog(int type, int subtype, int involve[], int ilen, int target[], int tlen, const char *str)
-    {
-        if(type < 0 || type >= EV_MAX) return;
-        event &e = events.add();
-        e.type = type;
-        e.subtype = subtype;
-        e.millis = totalmillis;
-        loopi(ilen) e.involve.add(involve[i]);
-        loopi(tlen) e.target.add(target[i]);
-        if(str && *str) e.str = newstring(str);
-    }
-
-    void eventlogf(int type, int subtype, int involve[], int ilen, int target[], int tlen, const char *str, ...)
-    {
-        if(type < 0 || type >= EV_MAX) return;
-        defvformatbigstring(sf, str, str);
-        eventlog(type, subtype, involve, ilen, target, tlen, sf);
+        eventlog(type, subtype, clients, targets, sf);
     }
 
     #define LOOPEVENTS(name,op) \
@@ -99,14 +107,48 @@ namespace hud
     ICOMMAND(0, geteventmillis, "i", (int *n), intret(events.inrange(*n) ? events[*n].millis : -1));
     ICOMMAND(0, geteventstr, "i", (int *n), result(events.inrange(*n) ? events[*n].str : ""));
 
-    int listget(const vector<int> &list, int pos)
+    ICOMMAND(0, geteventclient, "ibb", (int *n, int *pos, int *prop),
     {
-        if(pos < 0) return list.length();
-        if(list.inrange(pos)) return list[pos];
-        return -1;
-    }
-    ICOMMAND(0, geteventinvolve, "ib", (int *n, int *pos), intret(events.inrange(*n) ? listget(events[*n].involve, *pos) : -1));
-    ICOMMAND(0, geteventtarget, "ib", (int *n, int *pos), intret(events.inrange(*n) ? listget(events[*n].target, *pos) : -1));
+        if(*n < 0) intret(events.length());
+        else if(events.inrange(*n))
+        {
+            if(*pos < 0) intret(events[*n].clients.length());
+            else if(events[*n].clients.inrange(*pos))
+            {
+                if(*prop < 0) intret(8);
+                else switch(*prop)
+                {
+                    case 0: intret(events[*n].clients[*pos].cn); break;
+                    case 1: intret(events[*n].clients[*pos].type); break;
+                    case 2: intret(events[*n].clients[*pos].team); break;
+                    case 3: intret(events[*n].clients[*pos].colour); break;
+                    case 4: intret(events[*n].clients[*pos].model); break;
+                    case 5: intret(events[*n].clients[*pos].priv); break;
+                    case 6: intret(events[*n].clients[*pos].weap); break;
+                    case 7: result(events[*n].clients[*pos].name); break;
+                    default: break;
+                }
+            }
+        }
+    });
+    ICOMMAND(0, geteventname, "iibbb", (int *n, int *pos, int *colour, int *icon, int *dupname),
+    {
+        if(events.inrange(*n) && events[*n].clients.inrange(*pos))
+        {
+            event::client &c = events[*n].clients[*pos];
+            result(game::colourname(c.name, c.cn, c.team, c.type, c.colour, c.priv, c.weap, *icon != 0, *dupname != 0, *colour >= 0 ? *colour : 3));
+        }
+    });
+
+    ICOMMAND(0, geteventtarget, "ib", (int *n, int *pos),
+    {
+        if(*n < 0) intret(events.length());
+        else if(events.inrange(*n))
+        {
+            if(*pos < 0) intret(events[*n].targets.length());
+            else if(events[*n].targets.inrange(*pos)) intret(events[*n].targets[*pos]);
+        }
+    });
 
     VAR(IDF_PERSIST, showhud, 0, 1, 1);
     VAR(IDF_PERSIST, hudsize, 0, 2048, VAR_MAX);
@@ -1991,9 +2033,10 @@ namespace hud
 
     void cleanup()
     {
-        teamkills.shrink(0);
-        damagelocs.shrink(0);
-        hitlocs.shrink(0);
+        teamkills.setsize(0);
+        damagelocs.setsize(0);
+        hitlocs.setsize(0);
+        events.setsize(0);
         damageresidue = lastteam = 0;
     }
 }
