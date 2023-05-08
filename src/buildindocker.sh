@@ -1,7 +1,7 @@
 #!/bin/bash
 
 IMAGE_NAME="q009/redeclipse_build"
-IMAGE_TAG="v1.0.0"
+IMAGE_TAG="v1.1.0"
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 WORK_DIR=${HOME}/.redeclipse_build
