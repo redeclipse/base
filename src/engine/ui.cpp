@@ -1233,7 +1233,7 @@ namespace UI
             }
 
             // newest last
-            return aa->lastshow > bb->lastshow;
+            return aa->lastshow < bb->lastshow;
         }
     };
 
