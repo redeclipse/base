@@ -882,7 +882,7 @@ namespace UI
         Code *contents, *onshow, *onhide;
         bool exclusive, mapdef, inworld, saved,
              menu, passthrough, tooltip, popup, persist, ontop;
-        int allowinput, param, lasthit;
+        int allowinput, param, lasthit, lastshow, zindex;
         float px, py, pw, ph,
               yaw, pitch, curyaw, curpitch,
               offyaw, offpitch, detentyaw, detentpitch,
@@ -895,7 +895,7 @@ namespace UI
             contents(NULL), onshow(NULL), onhide(NULL),
             exclusive(false), mapdef(mapdef_), inworld(false),
             menu(true), passthrough(false), tooltip(false), popup(false), persist(false), ontop(false),
-            allowinput(1), param(param_), lasthit(0),
+            allowinput(1), param(param_), lasthit(0), lastshow(0), zindex(0),
             px(0), py(0), pw(0), ph(0),
             yaw(-1), pitch(0), curyaw(0), curpitch(0),
             offyaw(0), offpitch(0), detentyaw(0), detentpitch(0),
@@ -964,6 +964,7 @@ namespace UI
                 uiparam = param;
                 DOMAP(mapdef, executeret(onshow->code));
             }
+            lastshow = totalmillis;
         }
 
         void setup()
@@ -972,6 +973,7 @@ namespace UI
             allowinput = 1;
             exclusive = passthrough = tooltip = popup = persist = ontop = false;
             menu = true;
+            zindex = 0;
             px = py = pw = ph = 0;
         }
 
@@ -1205,12 +1207,18 @@ namespace UI
         static bool compare(const Object *a, const Object *b)
         {
             Window *aa = (Window *)a, *bb = (Window *)b;
-            // top windows last
-            if(aa->ontop && !bb->ontop) return false;
-            if(!aa->ontop && bb->ontop) return true;
             // sort world windows first for speed
             if(aa->inworld && !bb->inworld) return true;
             if(!aa->inworld && bb->inworld) return false;
+
+            // ontop windows last
+            if(aa->ontop && !bb->ontop) return false;
+            if(!aa->ontop && bb->ontop) return true;
+
+            // zindex sort higher to last
+            if(aa->zindex > bb->zindex) return false;
+            if(aa->zindex < bb->zindex) return true;
+
             if(aa->inworld && bb->inworld)
             {
                 // if same x/y origin draw lower first
@@ -1222,7 +1230,9 @@ namespace UI
                 // reverse order so further gets drawn first
                 if(aa->dist > bb->dist) return true;
             }
-            return false;
+
+            // newest last
+            return aa->lastshow > bb->lastshow;
         }
     };
 
@@ -1304,6 +1314,7 @@ namespace UI
     UIWINARGV(origin);
     UIWINARG(yaw, "f", float, -1, 360);
     UIWINARG(pitch, "f", float, -181, 181);
+    UIWINARG(zindex, "i", int, VAR_MIN, VAR_MAX);
     ICOMMANDVF(0, uicuryaw, window ? window->curyaw : -1.f)
     ICOMMANDVF(0, uicurpitch, window ? window->curpitch : -1.f)
     ICOMMANDVF(0, uioffyaw, window ? window->offyaw : -1.f)
