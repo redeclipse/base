@@ -1279,6 +1279,14 @@ ICOMMAND(0, entget, "", (), entfocus(entindex,
 }));
 ICOMMANDV(0, numenthover, enthover.length());
 
+int entlistpos(const vector<int> &list, int n)
+{
+    loopv(list) if(list[i] == n) return i;
+    return -1;
+}
+ICOMMAND(0, entgrouppos, "i", (int *n), intret(entlistpos(entgroup, *n)));
+ICOMMAND(0, enthoverpos, "i", (int *n), intret(entlistpos(enthover, *n)));
+
 void entlast(uint *body)
 {
     if(noentedit()) return;

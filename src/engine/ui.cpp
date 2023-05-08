@@ -929,7 +929,7 @@ namespace UI
             yaw = -FLT_MAX;
             pitch = curyaw = curpitch = offyaw = offpitch = 0;
             scale = 1;
-            origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+            origin = pos = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX);
         }
 
         void hide()
@@ -943,16 +943,16 @@ namespace UI
             resetworld();
         }
 
-        void show(const vec &pos = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float y = 0, float p = 0, float s = 1, float dy = 0, float dp = 0)
+        void show(const vec &o = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float y = 0, float p = 0, float s = 1, float dy = 0, float dp = 0)
         {
             overridepos = false;
             state |= STATE_HIDDEN;
             clearstate(STATE_HOLD_MASK);
-            if(pos != vec(-FLT_MAX, -FLT_MAX, -FLT_MAX))
+            if(o != vec(-FLT_MAX, -FLT_MAX, -FLT_MAX))
             {
                 yaw = y;
                 pitch = p;
-                origin = pos;
+                origin = pos = o;
                 scale = s > 0 ? s : 1.f;
                 detentyaw = dy > 0 ? clamp(dy, 0.f, 180.f) : 0.f;
                 detentpitch = dp > 0 ? clamp(dp, 0.f, 90.f) : 0.f;
@@ -987,8 +987,7 @@ namespace UI
 
         void draw(bool world, float sx, float sy)
         {
-            if(state&STATE_HIDDEN) return;
-            if(world != inworld) return;
+            if(state&STATE_HIDDEN || world != inworld) return;
             window = this;
 
             projection();
@@ -1208,8 +1207,8 @@ namespace UI
         {
             Window *aa = (Window *)a, *bb = (Window *)b;
             // sort world windows first for speed
-            if(aa->inworld && !bb->inworld) return true;
             if(!aa->inworld && bb->inworld) return false;
+            if(aa->inworld && !bb->inworld) return true;
 
             // ontop windows last
             if(aa->ontop && !bb->ontop) return false;
@@ -1221,13 +1220,15 @@ namespace UI
 
             if(aa->inworld && bb->inworld)
             {
-                // if same x/y origin draw lower first
-                if(aa->origin.x == bb->origin.x && aa->origin.y == bb->origin.y)
+                if(aa->pos.x == bb->pos.x && aa->pos.y == bb->pos.y)
                 {
-                    if(aa->origin.z > bb->origin.z) return true;
-                    if(aa->origin.z <= bb->origin.z) return false;
+                    // draw bottom-up
+                    if(aa->pos.z > bb->pos.z) return false;
+                    if(aa->pos.z < bb->pos.z) return true;
                 }
+
                 // reverse order so further gets drawn first
+                if(aa->dist < bb->dist) return false;
                 if(aa->dist > bb->dist) return true;
             }
 
@@ -1312,6 +1313,7 @@ namespace UI
     UIWINARGB(ontop);
 
     UIWINARGV(origin);
+    UIWINARGV(pos);
     UIWINARG(yaw, "f", float, -1, 360);
     UIWINARG(pitch, "f", float, -181, 181);
     UIWINARG(zindex, "i", int, VAR_MIN, VAR_MAX);
@@ -1552,10 +1554,6 @@ namespace UI
                     w->setpos((cursorx*float(hudw)/float(hudh))-(w->w*cursorx), cursory >= 0.5f ? cursory-w->h-uitipoffset : cursory+hud::cursorsize+uitipoffset);
                 else if(w->popup && !w->overridepos)
                     w->setpos((cursorx*float(hudw)/float(hudh))-(w->w*cursorx), cursory-w->h*0.5f);
-            });
-            loopwindows(w,
-            {
-                if(!w->inworld && hasexcl && !w->exclusive) continue;
                 w->draw(world);
             });
         }
@@ -1650,7 +1648,7 @@ namespace UI
         reset(surface);
         setup();
         window = this;
-        if(inworld) dist = origin.squaredist(camera1->o);
+        if(inworld) dist = pos.squaredist(camera1->o);
         uiparam = param;
         if(contents) buildchildren(contents->code, mapdef);
         window = NULL;
