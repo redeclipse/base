@@ -758,7 +758,7 @@ namespace client
             loopstart(id, stack); \
             int amt = 1; \
             loopv(game::players) if(game::players[i]) amt++; \
-            op(amt, *count, *skip) \
+            op(amt, *count, *skip, \
             { \
                 int r = -1; \
                 int n = nop ? amt-1 : 0; \
@@ -786,7 +786,7 @@ namespace client
                     loopiter(id, stack, r); \
                     execute(body); \
                 } \
-            } \
+            }); \
             loopend(id, stack); \
         });
     LOOPCLIENTS(,loopcsi,loopvk,false);
@@ -798,7 +798,7 @@ namespace client
             loopstart(id, stack); \
             int amt = 1; \
             loopv(game::players) if(game::players[i]) amt++; \
-            op(amt, *count, *skip) \
+            op(amt, *count, *skip, \
             { \
                 int r = -1; \
                 int n = nop ? amt-1 : 0; \
@@ -826,7 +826,7 @@ namespace client
                     loopiter(id, stack, r); \
                     if(executebool(cond)) execute(body); \
                 } \
-            } \
+            }); \
             loopend(id, stack); \
         });
     LOOPCLIENTSIF(,loopcsi,loopvk,false);
@@ -839,7 +839,7 @@ namespace client
             if(!d) return; \
             loopstart(id, stack); \
             int amt = d->holdweapcount(m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis); \
-            op(amt, *count, *skip) \
+            op(amt, *count, *skip, \
             { \
                 int r = -1; \
                 int n = nop ? amt-1 : 0; \
@@ -858,7 +858,7 @@ namespace client
                     loopiter(id, stack, r); \
                     execute(body); \
                 } \
-            } \
+            }); \
             loopend(id, stack); \
         });
     LOOPINVENTORY(,loopcsi,loopk,false);
@@ -967,6 +967,7 @@ namespace client
     CLCOMMAND(lastspawn, intret(d->lastspawn));
     CLCOMMAND(lastbuff, intret(d->lastbuff));
     CLCOMMAND(lastshoot, intret(d->lastshoot));
+    CLCOMMAND(lastattacker, intret(d->lastattacker));
     CLCOMMAND(airmillis, intret(d->airmillis));
     CLCOMMAND(floormillis, intret(d->floormillis));
     CLCOMMAND(inliquid, intret(isliquid(d->inmaterial&MATF_VOLUME) ? 1 : 0));

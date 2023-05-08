@@ -412,7 +412,7 @@ static float draw_icon(Texture *&tex, const char *name, float x, float y)
     if(!*file) return 0;
     Texture *t = textureload(file, 3, true, false);
     if(!t) return 0;
-    float sh = curfont->mh*curtextscale, h = sh*textimagescale, w = (t->w*sh)/float(t->h);
+    float sh = curfont->mh*curtextscale, h = sh*textimagescale, w = (t->w*h)/float(t->h);
     if(curfontpass)
     {
         if(tex != t)

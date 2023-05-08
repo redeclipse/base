@@ -41,11 +41,11 @@ void conline(int type, const char *sf, int n)
     { \
         if(*type < 0 || *type >= CON_MAX || conlines[*type].empty()) return; \
         loopstart(id, stack); \
-        op(conlines[*type], *count, *skip) \
+        op(conlines[*type], *count, *skip, \
         { \
             loopiter(id, stack, i); \
             execute(body); \
-        } \
+        }); \
         loopend(id, stack); \
     });
 

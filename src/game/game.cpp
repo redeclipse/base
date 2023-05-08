@@ -30,7 +30,7 @@ namespace game
         {
             "S_W_CLAW_", "S_W_PISTOL_",
             "S_W_SWORD_", "S_W_SHOTGUN_", "S_W_SMG_", "S_W_FLAMER_", "S_W_PLASMA_", "S_W_ZAPPER_", "S_W_RIFLE_",
-            "S_W_GRENADE_", "S_W_MINE_", "S_W_ROCKET_"
+            "S_W_GRENADE_", "S_W_MINE_", "S_W_ROCKET_", "S_W_MELEE_"
         };
 
         static const char *names[S_W_MAX] =
@@ -1997,6 +1997,7 @@ namespace game
         {
             if(showobituaries)
             {
+                #if 0
                 bool show = false;
                 switch(showobituaries)
                 {
@@ -2007,8 +2008,25 @@ namespace game
                     case 5: default: show = true; break;
                 }
                 if(show) announcef(anc, CON_GAME, d, "\fw%s", d->obit);
+                #endif
+                static vector<int> involve, target;
+
+                involve.shrink(0);
+                involve.add(d->clientnum);
+                involve.add(v->clientnum);
+                loopv(log) if(log[i] && log[i] != d && log[i] != v) involve.add(log[i]->clientnum);
+
+                target.shrink(0);
+                target.add(weap);
+                target.add(flags);
+                target.add(damage);
+                target.add(style);
+                target.add(material);
+                target.add(anc);
+                target.add(dth);
+                hud::eventlog(EV_FRAG, d == v ? EV_F_SUICIDE : EV_F_KILL, involve, target, d->obit);
             }
-            else if(anc >= 0) entities::announce(anc, d);
+            if(anc >= 0) entities::announce(anc, d);
             if(anc >= 0 && d != v) entities::announce(anc, v);
         }
         vec pos = d->headtag();

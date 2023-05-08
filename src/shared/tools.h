@@ -215,55 +215,61 @@ static inline int bitscan(uint mask)
 #define loopmrev(u) looprev(m,u)
 #define loopnrev(u) looprev(n,u)
 
-#define loopcs(v,m,c,s) \
-    int lcs##v##start = 0; \
-    int lcs##v##end = 0; \
-    if(c > 0) \
+#define loopcs(v,m,c,s,b) \
+    if(m > 0) \
     { \
-        lcs##v##start = clamp(s, 0, m-1); \
-        lcs##v##end = clamp(lcs##v##start+c-1, 0, m-1); \
-    } \
-    else if(c < 0) \
-    { \
-        lcs##v##start = clamp(m-1-max(s, 0)+c+1, 0, m-1); \
-        lcs##v##end = clamp(m-1-max(s, 0), 0, m-1); \
-    } \
-    else \
-    { \
-        lcs##v##start = clamp(s, 0, m-1); \
-        lcs##v##end = max(m-1, 0); \
-    } \
-    for(int v = lcs##v##start; v <= lcs##v##end; v++)
+        int lcs##v##start = 0; \
+        int lcs##v##end = 0; \
+        if(c > 0) \
+        { \
+            lcs##v##start = clamp(s, 0, m-1); \
+            lcs##v##end = clamp(lcs##v##start+c-1, 0, m-1); \
+        } \
+        else if(c < 0) \
+        { \
+            lcs##v##start = clamp(m-1-max(s, 0)+c+1, 0, m-1); \
+            lcs##v##end = clamp(m-1-max(s, 0), 0, m-1); \
+        } \
+        else \
+        { \
+            lcs##v##start = clamp(s, 0, m-1); \
+            lcs##v##end = max(m-1, 0); \
+        } \
+        for(int v = lcs##v##start; v <= lcs##v##end; v++) b; \
+    }
 
-#define loopcsi(m,c,s) loopcs(i,m,c,s)
-#define loopcsj(m,c,s) loopcs(j,m,c,s)
-#define loopcsk(m,c,s) loopcs(k,m,c,s)
-#define loopcsl(m,c,s) loopcs(l,m,c,s)
+#define loopcsi(m,c,s,b) loopcs(i,m,c,s,b)
+#define loopcsj(m,c,s,b) loopcs(j,m,c,s,b)
+#define loopcsk(m,c,s,b) loopcs(k,m,c,s,b)
+#define loopcsl(m,c,s,b) loopcs(l,m,c,s,b)
 
-#define loopcsrev(v,m,c,s) \
-    int lcs##v##start = 0; \
-    int lcs##v##end = 0; \
-    if(c > 0) \
+#define loopcsrev(v,m,c,s,b) \
+    if(m > 0) \
     { \
-        lcs##v##start = m-1-clamp(s, 0, m-1); \
-        lcs##v##end = clamp(lcs##v##start-c+1, 0, m-1); \
-    } \
-    else if(c < 0) \
-    { \
-        lcs##v##start = clamp(max(s, 0)-c-1, 0, m-1); \
-        lcs##v##end = clamp(s, 0, m-1); \
-    } \
-    else \
-    { \
-        lcs##v##start = clamp(m-1-s, 0, m-1); \
-        lcs##v##end = 0; \
-    } \
-    for(int v = lcs##v##start; v >= lcs##v##end; v--)
+        int lcs##v##start = 0; \
+        int lcs##v##end = 0; \
+        if(c > 0) \
+        { \
+            lcs##v##start = m-1-clamp(s, 0, m-1); \
+            lcs##v##end = clamp(lcs##v##start-c+1, 0, m-1); \
+        } \
+        else if(c < 0) \
+        { \
+            lcs##v##start = clamp(max(s, 0)-c-1, 0, m-1); \
+            lcs##v##end = clamp(s, 0, m-1); \
+        } \
+        else \
+        { \
+            lcs##v##start = clamp(m-1-s, 0, m-1); \
+            lcs##v##end = 0; \
+        } \
+        for(int v = lcs##v##start; v >= lcs##v##end; v--) b; \
+    }
 
-#define loopcsirev(m,c,s) loopcsrev(i,m,c,s)
-#define loopcsjrev(m,c,s) loopcsrev(j,m,c,s)
-#define loopcskrev(m,c,s) loopcsrev(k,m,c,s)
-#define loopcslrev(m,c,s) loopcsrev(l,m,c,s)
+#define loopcsirev(m,c,s,b) loopcsrev(i,m,c,s,b)
+#define loopcsjrev(m,c,s,b) loopcsrev(j,m,c,s,b)
+#define loopcskrev(m,c,s,b) loopcsrev(k,m,c,s,b)
+#define loopcslrev(m,c,s,b) loopcsrev(l,m,c,s,b)
 
 #define DELETEP(p) if(p) { delete   p; p = 0; }
 #define DELETEA(p) if(p) { delete[] p; p = 0; }
@@ -425,18 +431,18 @@ inline char *newconcatstring(const char *s, const char *t)
 #define loopvlrev(v) for(int l = (v).length()-1; l>=0; l--)
 #define loopvmrev(v) for(int m = (v).length()-1; m>=0; m--)
 #define loopvnrev(v) for(int n = (v).length()-1; n>=0; n--)
-#define loopcsv(u,c,s) loopcs(i,(u).length(),c,s)
-#define loopcsvj(u,c,s) loopcs(j,(u).length(),c,s)
-#define loopcsvk(u,c,s) loopcs(k,(u).length(),c,s)
-#define loopcsvl(u,c,s) loopcs(l,(u).length(),c,s)
-#define loopcsvm(u,c,s) loopcs(m,(u).length(),c,s)
-#define loopcsvn(u,c,s) loopcs(n,(u).length(),c,s)
-#define loopcsvrev(u,c,s) loopcsrev(i,(u).length(),c,s)
-#define loopcsvjrev(u,c,s) loopcsrev(j,(u).length(),c,s)
-#define loopcsvkrev(u,c,s) loopcsrev(k,(u).length(),c,s)
-#define loopcsvlrev(u,c,s) loopcsrev(l,(u).length(),c,s)
-#define loopcsvmrev(u,c,s) loopcsrev(m,(u).length(),c,s)
-#define loopcsvnrev(u,c,s) loopcsrev(n,(u).length(),c,s)
+#define loopcsv(u,c,s,b) loopcs(i,(u).length(),c,s,b)
+#define loopcsvj(u,c,s,b) loopcs(j,(u).length(),c,s,b)
+#define loopcsvk(u,c,s,b) loopcs(k,(u).length(),c,s,b)
+#define loopcsvl(u,c,s,b) loopcs(l,(u).length(),c,s,b)
+#define loopcsvm(u,c,s,b) loopcs(m,(u).length(),c,s,b)
+#define loopcsvn(u,c,s,b) loopcs(n,(u).length(),c,s,b)
+#define loopcsvrev(u,c,s,b) loopcsrev(i,(u).length(),c,s,b)
+#define loopcsvjrev(u,c,s,b) loopcsrev(j,(u).length(),c,s,b)
+#define loopcsvkrev(u,c,s,b) loopcsrev(k,(u).length(),c,s,b)
+#define loopcsvlrev(u,c,s,b) loopcsrev(l,(u).length(),c,s,b)
+#define loopcsvmrev(u,c,s,b) loopcsrev(m,(u).length(),c,s,b)
+#define loopcsvnrev(u,c,s,b) loopcsrev(n,(u).length(),c,s,b)
 
 template<class T> inline void memclear(T *p, size_t n) { memset((void *)p, 0, n * sizeof(T)); }
 template<class T> inline void memclear(T &p) { memset((void *)&p, 0, sizeof(T)); }

@@ -74,11 +74,11 @@ namespace defend
         { \
             if(!m_defend(game::gamemode) || st.flags.empty()) return; \
             loopstart(id, stack); \
-            op(st.flags, *count, *skip) \
+            op(st.flags, *count, *skip, \
             { \
                 loopiter(id, stack, i); \
                 execute(body); \
-            } \
+            }); \
             loopend(id, stack); \
         });
     LOOPDEFEND(,loopcsv);
@@ -89,11 +89,11 @@ namespace defend
         { \
             if(!m_defend(game::gamemode) || st.flags.empty()) return; \
             loopstart(id, stack); \
-            op(st.flags, *count, *skip) \
+            op(st.flags, *count, *skip, \
             { \
                 loopiter(id, stack, i); \
                 if(executebool(cond)) execute(body); \
-            } \
+            }); \
             loopend(id, stack); \
         });
     LOOPDEFENDIF(,loopcsv);

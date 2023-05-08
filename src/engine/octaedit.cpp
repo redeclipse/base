@@ -3338,11 +3338,11 @@ ICOMMAND(0, texhasvariants, "i", (int *index),
     { \
         filltexlist(); \
         loopstart(id, stack); \
-        op(texmru, *count, *skip) \
+        op(texmru, *count, *skip, \
         { \
             loopiter(id, stack, texmru[i]); \
             execute(body); \
-        } \
+        }); \
         loopend(id, stack); \
     });
 LOOPTEXMRU(,loopcsv);
@@ -3353,11 +3353,11 @@ LOOPTEXMRU(rev,loopcsvrev);
     { \
         filltexlist(); \
         loopstart(id, stack); \
-        op(texmru, *count, *skip) \
+        op(texmru, *count, *skip, \
         { \
             loopiter(id, stack, texmru[i]); \
             if(executebool(cond)) execute(body); \
-        } \
+        }); \
         loopend(id, stack); \
     });
 LOOPTEXMRUIF(,loopcsv);
@@ -3368,12 +3368,12 @@ LOOPTEXMRUIF(rev,loopcsvrev);
     { \
         filltexlist(); \
         loopstart(id, stack); \
-        op(texmru, *count, *skip) \
+        op(texmru, *count, *skip, \
         { \
             if(!executebool(cond)) break; \
             loopiter(id, stack, texmru[i]); \
             execute(body); \
-        } \
+        }); \
         loopend(id, stack); \
     });
 LOOPTEXMRUWHILE(,loopcsv);

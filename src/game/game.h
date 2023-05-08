@@ -353,6 +353,29 @@ enum
     FRAG_MULTI = FRAG_MKILL1|FRAG_MKILL2|FRAG_MKILL3,
 };
 
+enum { EV_FRAG, EV_AFFINITY, EV_MAX };
+#ifdef CPP_GAME_SERVER
+VARR(eventidxfrag, EV_FRAG);
+VARR(eventidxaffinity, EV_AFFINITY);
+VARR(eventidxmax, EV_MAX);
+#endif
+
+enum { EV_F_SUICIDE, EV_F_KILL, EV_F_MAX };
+#ifdef CPP_GAME_SERVER
+VARR(eventfragidxsuicide, EV_F_SUICIDE);
+VARR(eventfragidxkill, EV_F_KILL);
+VARR(eventfragidxmax, EV_F_MAX);
+#endif
+
+enum { EV_A_TAKE, EV_A_DROP, EV_A_SCORE, EV_A_RESET, EV_A_MAX };
+#ifdef CPP_GAME_SERVER
+VARR(eventaffinityidxtake, EV_A_TAKE);
+VARR(eventaffinityidxdrop, EV_A_DROP);
+VARR(eventaffinityidxscore, EV_A_SCORE);
+VARR(eventaffinityidxreset, EV_A_RESET);
+VARR(eventaffinityidxmax, EV_A_MAX);
+#endif
+
 enum
 {
     SENDMAP_MPZ = 0, SENDMAP_CFG, SENDMAP_PNG, SENDMAP_TXT, SENDMAP_GAME, SENDMAP_WPT = SENDMAP_GAME, SENDMAP_MAX,
@@ -2364,6 +2387,10 @@ namespace hud
     extern float radaraffinityblend, radarblipblend, radaraffinitysize;
     extern bool scoreson, scoresoff, shownscores;
     extern vector<int> teamkills;
+    extern void eventlog(int type, int subtype, const vector<int> &involve, const vector<int> &target, const char *str = NULL);
+    extern void eventlogf(int type, int subtype, const vector<int> &involve, const vector<int> &target, const char *str, ...);
+    extern void eventlog(int type, int subtype, int involve[], int ilen, int target[], int tlen, const char *str = NULL);
+    extern void eventlogf(int type, int subtype, int involve[], int ilen, int target[], int tlen, const char *str, ...);
     extern const char *geticon(int type, int value);
     extern void drawindicator(int weap, int x, int y, int s);
     extern void drawpointertex(const char *tex, int x, int y, int s, float r = 1, float g = 1, float b = 1, float fade = 1);

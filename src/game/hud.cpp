@@ -19,6 +19,95 @@ namespace hud
 
     ICOMMAND(0, conout, "is", (int *n, char *s), conoutft(clamp(*n, 0, CON_MAX-1), "%s", s));
 
+    struct event
+    {
+        int type, subtype, millis;
+        vector<int> involve, target;
+        char *str;
+
+        event() : type(-1), subtype(-1), millis(-1), str(NULL)
+        {
+            involve.setsize(0);
+            target.setsize(0);
+        }
+        ~event() { DELETEA(str); }
+    };
+    vector<event> events;
+    #define MAXEVENTS 1000
+
+    void eventlog(int type, int subtype, const vector<int> &involve, const vector<int> &target, const char *str)
+    {
+        if(type < 0 || type >= EVENT_MAX) return;
+        if(events.length() >= MAXEVENTS) events.remove(0);
+        event &e = events.add();
+        e.type = type;
+        e.subtype = subtype;
+        e.millis = totalmillis;
+        loopv(involve) e.involve.add(involve[i]);
+        loopv(target) e.target.add(target[i]);
+        if(str && *str)
+        {
+            e.str = newstring(str);
+            conoutft(CON_GAME, "%s", str);
+        }
+    }
+
+    void eventlogf(int type, int subtype, const vector<int> &involve, const vector<int> &target, const char *str, ...)
+    {
+        if(type < 0 || type >= EVENT_MAX) return;
+        defvformatbigstring(sf, str, str);
+        eventlog(type, subtype, involve, target, sf);
+    }
+
+    void eventlog(int type, int subtype, int involve[], int ilen, int target[], int tlen, const char *str)
+    {
+        if(type < 0 || type >= EVENT_MAX) return;
+        event &e = events.add();
+        e.type = type;
+        e.subtype = subtype;
+        e.millis = totalmillis;
+        loopi(ilen) e.involve.add(involve[i]);
+        loopi(tlen) e.target.add(target[i]);
+        if(str && *str) e.str = newstring(str);
+    }
+
+    void eventlogf(int type, int subtype, int involve[], int ilen, int target[], int tlen, const char *str, ...)
+    {
+        if(type < 0 || type >= EVENT_MAX) return;
+        defvformatbigstring(sf, str, str);
+        eventlog(type, subtype, involve, ilen, target, tlen, sf);
+    }
+
+    #define LOOPEVENTS(name,op) \
+        ICOMMAND(0, loopevents##name, "iire", (int *count, int *skip, ident *id, uint *body), \
+        { \
+            loopstart(id, stack); \
+            op(events, *count, *skip, \
+            { \
+                loopiter(id, stack, i); \
+                execute(body); \
+            }); \
+            loopend(id, stack); \
+        });
+
+    LOOPEVENTS(,loopcsv);
+    LOOPEVENTS(rev,loopcsvrev);
+
+    ICOMMANDV(0, eventcount, events.length());
+    ICOMMAND(0, geteventtype, "i", (int *n), intret(events.inrange(*n) ? events[*n].type : -1));
+    ICOMMAND(0, geteventsubtype, "i", (int *n), intret(events.inrange(*n) ? events[*n].subtype : -1));
+    ICOMMAND(0, geteventmillis, "i", (int *n), intret(events.inrange(*n) ? events[*n].millis : -1));
+    ICOMMAND(0, geteventstr, "i", (int *n), result(events.inrange(*n) ? events[*n].str : ""));
+
+    int listget(const vector<int> &list, int pos)
+    {
+        if(pos < 0) return list.length();
+        if(list.inrange(pos)) return list[pos];
+        return -1;
+    }
+    ICOMMAND(0, geteventinvolve, "ib", (int *n, int *pos), intret(events.inrange(*n) ? listget(events[*n].involve, *pos) : -1));
+    ICOMMAND(0, geteventtarget, "ib", (int *n, int *pos), intret(events.inrange(*n) ? listget(events[*n].target, *pos) : -1));
+
     VAR(IDF_PERSIST, showhud, 0, 1, 1);
     VAR(IDF_PERSIST, hudsize, 0, 2048, VAR_MAX);
     FVAR(IDF_PERSIST, hudblend, 0, 1, 1);
@@ -69,11 +158,11 @@ namespace hud
         ICOMMAND(0, loopenginestat##name, "iire", (int *count, int *skip, ident *id, uint *body), \
         { \
             loopstart(id, stack); \
-            op(NUMSTATS, *count, *skip) \
+            op(NUMSTATS, *count, *skip, \
             { \
                 loopiter(id, stack, i); \
                 execute(body); \
-            } \
+            }); \
             loopend(id, stack); \
         });
     LOOPENGSTATS(,loopcsi)
@@ -83,9 +172,9 @@ namespace hud
     VAR(IDF_PERSIST, tvmodefade, 0, 250, VAR_MAX);
     VAR(IDF_PERSIST, spawnfade, 0, 250, VAR_MAX);
 
-    FVAR(IDF_PERSIST, eventoffset, -1, 0.58f, 1);
-    FVAR(IDF_PERSIST, eventblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, eventscale, 1e-4f, 2.5f, 1000);
+    FVAR(IDF_PERSIST, eventiconoffset, -1, 0.58f, 1);
+    FVAR(IDF_PERSIST, eventiconblend, 0, 1, 1);
+    FVAR(IDF_PERSIST, eventiconscale, 1e-4f, 2.5f, 1000);
 
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, teamneutraltex, "<grey>textures/icons/teamneutral", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, teamalphatex, "<grey>textures/icons/teamalpha", 3);
@@ -209,6 +298,10 @@ namespace hud
     FVAR(IDF_PERSIST, rocketcrosshairblend, 0, 1, 1);
     TVAR(IDF_PERSIST, rocketcrosshairtex, "crosshairs/circle-01", 3);
     TVAR(IDF_PERSIST, rockethithairtex, "crosshairs/circle-01-hit", 3);
+    FVAR(IDF_PERSIST, meleecrosshairsize, 0, 0.045f, 1000);
+    FVAR(IDF_PERSIST, meleecrosshairblend, 0, 1, 1);
+    TVAR(IDF_PERSIST, meleecrosshairtex, "crosshairs/triangle-02", 3);
+    TVAR(IDF_PERSIST, meleehithairtex, "crosshairs/triangle-02-hit", 3);
 
     FVAR(IDF_PERSIST, editcursorsize, 0, 0.05f, 1000);
     FVAR(IDF_PERSIST, editcursorblend, 0, 1, 1);
@@ -248,13 +341,14 @@ namespace hud
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, swordtex, "<grey>textures/weapons/sword", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, shotguntex, "<grey>textures/weapons/shotgun", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, smgtex, "<grey>textures/weapons/smg", 3);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, grenadetex, "<grey>textures/weapons/grenade", 3);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, minetex, "<grey>textures/weapons/mine", 3);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, rockettex, "<grey>textures/weapons/rocket", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, flamertex, "<grey>textures/weapons/flamer", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, plasmatex, "<grey>textures/weapons/plasma", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, zappertex, "<grey>textures/weapons/zapper", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, rifletex, "<grey>textures/weapons/rifle", 3);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, grenadetex, "<grey>textures/weapons/grenade", 3);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, minetex, "<grey>textures/weapons/mine", 3);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, rockettex, "<grey>textures/weapons/rocket", 3);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, meleetex, "<grey>textures/weapons/melee", 3);
 
     VAR(IDF_PERSIST, showclips, 0, 1, 1);
     VAR(IDF_PERSIST, clipanims, 0, 2, 2);
@@ -279,6 +373,7 @@ namespace hud
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, grenadecliptex, "<grey>textures/weapons/clips/grenade", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, minecliptex, "<grey>textures/weapons/clips/mine", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, rocketcliptex, "<grey>textures/weapons/clips/rocket", 3);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, meleecliptex, "<grey>textures/weapons/clips/melee", 3);
     FVAR(IDF_PERSIST, clawclipoffset, 0, 0.25f, 0.5f);
     FVAR(IDF_PERSIST, pistolclipoffset, 0, 0.1f, 0.5f);
     FVAR(IDF_PERSIST, swordclipoffset, 0, 0.25f, 0.5f);
@@ -291,6 +386,7 @@ namespace hud
     FVAR(IDF_PERSIST, grenadeclipoffset, 0, 0, 0.5f);
     FVAR(IDF_PERSIST, mineclipoffset, 0, 0, 0.5f);
     FVAR(IDF_PERSIST, rocketclipoffset, 0, 0, 0.5f);
+    FVAR(IDF_PERSIST, meleeclipoffset, 0, 0.25f, 0.5f);
     FVAR(IDF_PERSIST, clawclipskew, 0, 0.75f, 10);
     FVAR(IDF_PERSIST, pistolclipskew, 0, 0.65f, 10);
     FVAR(IDF_PERSIST, swordclipskew, 0, 1, 10);
@@ -303,6 +399,7 @@ namespace hud
     FVAR(IDF_PERSIST, grenadeclipskew, 0, 1.f, 10);
     FVAR(IDF_PERSIST, mineclipskew, 0, 1.f, 10);
     FVAR(IDF_PERSIST, rocketclipskew, 0, 1.25f, 10);
+    FVAR(IDF_PERSIST, meleeclipskew, 0, 0.75f, 10);
     VAR(IDF_PERSIST, clawcliprotate, 0, 12, 7); // "round-the-clock" rotation of texture, 0 = off, &1 = flip x, &2 = flip y, &4 = angle, &8 = spin
     VAR(IDF_PERSIST, pistolcliprotate, 0, 12, 15);
     VAR(IDF_PERSIST, swordcliprotate, 0, 12, 15);
@@ -315,6 +412,7 @@ namespace hud
     VAR(IDF_PERSIST, grenadecliprotate, 0, 11, 15);
     VAR(IDF_PERSIST, minecliprotate, 0, 11, 15);
     VAR(IDF_PERSIST, rocketcliprotate, 0, 12, 15);
+    VAR(IDF_PERSIST, meleecliprotate, 0, 12, 7);
 
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, hurttex, "<grey>textures/hud/hurt", 3);
     VAR(IDF_PERSIST, onscreendamage, 0, 1, 2); // 0 = off, 1 = basic damage, 2 = verbose
@@ -757,7 +855,7 @@ namespace hud
                     const char *crosshairtexs[W_MAX] = {
                         clawcrosshairtex, pistolcrosshairtex, swordcrosshairtex, shotguncrosshairtex, smgcrosshairtex,
                         flamercrosshairtex, plasmacrosshairtex, zappercrosshairtex, riflecrosshairtex, grenadecrosshairtex, minecrosshairtex,
-                        rocketcrosshairtex, "" // end of regular weapons
+                        rocketcrosshairtex, meleecrosshairtex // end of regular weapons
                     };
                     if(*crosshairtexs[weap]) return crosshairtexs[weap];
                 }
@@ -772,7 +870,7 @@ namespace hud
                     const char *hithairtexs[W_MAX] = {
                         clawhithairtex, pistolhithairtex, swordhithairtex, shotgunhithairtex, smghithairtex,
                         flamerhithairtex, plasmahithairtex, zapperhithairtex, riflehithairtex, grenadehithairtex, minehithairtex,
-                        rockethithairtex, "" // end of regular weapons
+                        rockethithairtex, meleehithairtex // end of regular weapons
                     };
                     if(*hithairtexs[weap]) return hithairtexs[weap];
                 }
@@ -865,22 +963,22 @@ namespace hud
 
     void drawclip(int weap, int x, int y, float s, bool preview)
     {
-        if(!isweap(weap) || weap >= W_ALL || (!W2(weap, ammosub, false) && !W2(weap, ammosub, true))) return;
-        const char *cliptexs[W_ALL] = {
+        if(!isweap(weap) || weap >= W_MAX || (!W2(weap, ammosub, false) && !W2(weap, ammosub, true))) return;
+        const char *cliptexs[W_MAX] = {
             clawcliptex, pistolcliptex, swordcliptex, shotguncliptex, smgcliptex,
-            flamercliptex, plasmacliptex, zappercliptex, riflecliptex, grenadecliptex, minecliptex, rocketcliptex
+            flamercliptex, plasmacliptex, zappercliptex, riflecliptex, grenadecliptex, minecliptex, rocketcliptex, meleecliptex
         };
-        const float clipoffs[W_ALL] = {
+        const float clipoffs[W_MAX] = {
             clawclipoffset, pistolclipoffset, swordclipoffset, shotgunclipoffset, smgclipoffset,
-            flamerclipoffset, plasmaclipoffset, zapperclipoffset, rifleclipoffset, grenadeclipoffset, mineclipoffset, rocketclipoffset
+            flamerclipoffset, plasmaclipoffset, zapperclipoffset, rifleclipoffset, grenadeclipoffset, mineclipoffset, rocketclipoffset, meleeclipoffset
         };
-        const float clipskew[W_ALL] = {
+        const float clipskew[W_MAX] = {
             clawclipskew, pistolclipskew, swordclipskew, shotgunclipskew, smgclipskew,
-            flamerclipskew, plasmaclipskew, zapperclipskew, rifleclipskew, grenadeclipskew, mineclipskew, rocketclipskew
+            flamerclipskew, plasmaclipskew, zapperclipskew, rifleclipskew, grenadeclipskew, mineclipskew, rocketclipskew, meleeclipskew
         };
-        const int cliprots[W_ALL] = {
+        const int cliprots[W_MAX] = {
             clawcliprotate, pistolcliprotate, swordcliprotate, shotguncliprotate, smgcliprotate,
-            flamercliprotate, plasmacliprotate, zappercliprotate, riflecliprotate, grenadecliprotate, minecliprotate, rocketcliprotate
+            flamercliprotate, plasmacliprotate, zappercliprotate, riflecliprotate, grenadecliprotate, minecliprotate, rocketcliprotate, meleecliprotate
         };
         int maxammo = W(weap, ammoclip), ammo = preview ? maxammo : game::focus->weapammo[weap][W_A_CLIP],
             store = game::focus->actortype >= A_ENEMY || W(weap, ammostore) < 0 ? maxammo : game::focus->weapammo[weap][W_A_STORE], interval = lastmillis-game::focus->weaptime[weap];
@@ -1151,12 +1249,12 @@ namespace hud
             {
                 if(crosshairweapons && isweap(game::focus->weapselect))
                 {
-                    const float crosshairsizes[W_ALL] = {
+                    const float crosshairsizes[W_MAX] = {
                         clawcrosshairsize, pistolcrosshairsize, swordcrosshairsize, shotguncrosshairsize, smgcrosshairsize,
-                        flamercrosshairsize, plasmacrosshairsize, zappercrosshairsize, riflecrosshairsize, grenadecrosshairsize, minecrosshairsize, rocketcrosshairsize
-                    }, crosshairblends[W_ALL] = {
+                        flamercrosshairsize, plasmacrosshairsize, zappercrosshairsize, riflecrosshairsize, grenadecrosshairsize, minecrosshairsize, rocketcrosshairsize, meleecrosshairsize
+                    }, crosshairblends[W_MAX] = {
                         clawcrosshairblend, pistolcrosshairblend, swordcrosshairblend, shotguncrosshairblend, smgcrosshairblend,
-                        flamercrosshairblend, plasmacrosshairblend, zappercrosshairblend, riflecrosshairblend, grenadecrosshairblend, minecrosshairblend, rocketcrosshairblend
+                        flamercrosshairblend, plasmacrosshairblend, zappercrosshairblend, riflecrosshairblend, grenadecrosshairblend, minecrosshairblend, rocketcrosshairblend, meleecrosshairblend
                     };
                     csize = crosshairsizes[game::focus->weapselect] * crosshairscale;
                     fade = crosshairblends[game::focus->weapselect];
@@ -1290,8 +1388,8 @@ namespace hud
     {
         if(!showeventicons || game::focus->state == CS_EDITING || game::focus->state == CS_SPECTATOR) return;
 
-        int ty = int(((hudheight/2)-(hudheight/2*eventoffset))/eventscale), tx = int((hudwidth/2)/eventscale);
-        pushhudscale(eventscale);
+        int ty = int(((hudheight/2)-(hudheight/2*eventiconoffset))/eventiconscale), tx = int((hudwidth/2)/eventiconscale);
+        pushhudscale(eventiconscale);
         resethudshader();
 
         loopv(game::focus->icons)
@@ -1307,7 +1405,7 @@ namespace hud
                 {
                     int olen = min(game::focus->icons[i].length/5, 1000), ilen = olen/2, colour = colourwhite;
                     float skew = millis < ilen ? millis/float(ilen) : (millis > game::focus->icons[i].fade-olen ? (game::focus->icons[i].fade-millis)/float(olen) : 1.f),
-                          fade = blend*eventblend*skew;
+                          fade = blend*eventiconblend*skew;
                     int size = int(FONTH*skew), width = int((t->w/float(t->h))*size), rsize = game::focus->icons[i].type < eventicon::SORTED ? int(size*2/3) : int(size);
                     switch(game::focus->icons[i].type)
                     {
@@ -1357,7 +1455,7 @@ namespace hud
             case WEAPON:
             {
                 const char *weaptexs[W_MAX] = {
-                    clawtex, pistoltex, swordtex, shotguntex, smgtex, flamertex, plasmatex, zappertex, rifletex, grenadetex, minetex, rockettex, ""
+                    clawtex, pistoltex, swordtex, shotguntex, smgtex, flamertex, plasmatex, zappertex, rifletex, grenadetex, minetex, rockettex, meleetex
                 };
                 return isweap(stype) && *weaptexs[stype] ? weaptexs[stype] : questiontex;
                 break;

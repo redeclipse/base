@@ -64,11 +64,11 @@ namespace capture
         { \
             if(!m_capture(game::gamemode) || st.flags.empty()) return; \
             loopstart(id, stack); \
-            op(st.flags, *count, *skip) \
+            op(st.flags, *count, *skip, \
             { \
                 loopiter(id, stack, i); \
                 execute(body); \
-            } \
+            }); \
             loopend(id, stack); \
         });
     LOOPCAPTURE(,loopcsv);
@@ -79,11 +79,11 @@ namespace capture
         { \
             if(!m_capture(game::gamemode) || st.flags.empty()) return; \
             loopstart(id, stack); \
-            op(st.flags, *count, *skip) \
+            op(st.flags, *count, *skip, \
             { \
                 loopiter(id, stack, i); \
                 if(executebool(cond)) execute(body); \
-            } \
+            }); \
             loopend(id, stack); \
         });
     LOOPCAPTUREIF(,loopcsv);

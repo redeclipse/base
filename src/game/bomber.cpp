@@ -63,11 +63,11 @@ namespace bomber
         { \
             if(!m_bomber(game::gamemode) || st.flags.empty()) return; \
             loopstart(id, stack); \
-            op(st.flags, *count, *skip) \
+            op(st.flags, *count, *skip, \
             { \
                 loopiter(id, stack, i); \
                 execute(body); \
-            } \
+            }); \
             loopend(id, stack); \
         });
     LOOPBOMBER(,loopcsv);
@@ -78,11 +78,11 @@ namespace bomber
         { \
             if(!m_bomber(game::gamemode) || st.flags.empty()) return; \
             loopstart(id, stack); \
-            op(st.flags, *count, *skip) \
+            op(st.flags, *count, *skip, \
             { \
                 loopiter(id, stack, i); \
                 if(executebool(cond)) execute(body); \
-            } \
+            }); \
             loopend(id, stack); \
         });
     LOOPBOMBERIF(,loopcsv);
