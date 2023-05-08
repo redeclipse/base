@@ -1256,7 +1256,6 @@ int main(int argc, char **argv)
             firstrun = 0;
             triggereventcallbacks(CMD_EVENT_FIRSTRUN);
         }
-        engineready = true;
 
         conoutf("Loading main..");
         progress(0, "Loading main..");
@@ -1339,6 +1338,7 @@ int main(int argc, char **argv)
                 }
                 setcaption(game::gametitle(), game::gametext());
             }
+            else engineready = true;
         }
     }
 
