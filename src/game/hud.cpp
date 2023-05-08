@@ -37,7 +37,7 @@ namespace hud
 
     void eventlog(int type, int subtype, const vector<int> &involve, const vector<int> &target, const char *str)
     {
-        if(type < 0 || type >= EVENT_MAX) return;
+        if(type < 0 || type >= EV_MAX) return;
         if(events.length() >= MAXEVENTS) events.remove(0);
         event &e = events.add();
         e.type = type;
@@ -54,14 +54,14 @@ namespace hud
 
     void eventlogf(int type, int subtype, const vector<int> &involve, const vector<int> &target, const char *str, ...)
     {
-        if(type < 0 || type >= EVENT_MAX) return;
+        if(type < 0 || type >= EV_MAX) return;
         defvformatbigstring(sf, str, str);
         eventlog(type, subtype, involve, target, sf);
     }
 
     void eventlog(int type, int subtype, int involve[], int ilen, int target[], int tlen, const char *str)
     {
-        if(type < 0 || type >= EVENT_MAX) return;
+        if(type < 0 || type >= EV_MAX) return;
         event &e = events.add();
         e.type = type;
         e.subtype = subtype;
@@ -73,7 +73,7 @@ namespace hud
 
     void eventlogf(int type, int subtype, int involve[], int ilen, int target[], int tlen, const char *str, ...)
     {
-        if(type < 0 || type >= EVENT_MAX) return;
+        if(type < 0 || type >= EV_MAX) return;
         defvformatbigstring(sf, str, str);
         eventlog(type, subtype, involve, ilen, target, tlen, sf);
     }
