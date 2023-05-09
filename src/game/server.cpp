@@ -607,7 +607,7 @@ namespace server
     }
 
     string smapname = "";
-    int smapcrc = 0, smapvariant = MPV_DEF, mapsending = -1, mapgameinfo = -1, gamestate = G_S_WAITING, gamemode = G_EDITMODE, mutators = 0, gamemillis = 0, gamelimit = 0, gametick = 0,
+    int smapcrc = 0, smapvariant = MPV_DEF, mapsending = -1, mapgameinfo = -1, gamestate = G_S_WAITING, gamemode = G_EDITING, mutators = 0, gamemillis = 0, gamelimit = 0, gametick = 0,
         mastermode = MM_OPEN, timeremaining = -1, oldtimelimit = -1, gamewaittime = 0, lastteambalance = 0, nextteambalance = 0, lastavgposcalc = 0, lastrotatecycle = 0;
     bool hasgameinfo = false, updatecontrols = false, shouldcheckvotes = false, firstblood = false, sentstats = false;
     enet_uint32 lastsend = 0;
@@ -1414,8 +1414,8 @@ namespace server
             if(muts)
             {
                 int implied = gametype[mode].implied;
-                loopi(G_M_NUM) if(muts&(1<<mutstype[i].type)) implied |= mutstype[i].implied&~(1<<mutstype[i].type);
-                loopi(G_M_NUM) if(muts&(1<<mutstype[i].type) && (!implied || !(implied&(1<<mutstype[i].type))))
+                loopi(G_M_MAX) if(muts&(1<<mutstype[i].type)) implied |= mutstype[i].implied&~(1<<mutstype[i].type);
+                loopi(G_M_MAX) if(muts&(1<<mutstype[i].type) && (!implied || !(implied&(1<<mutstype[i].type))))
                 {
                     const char *mut = i < G_M_GSP ? mutstype[i].name : gametype[mode].gsp[i-G_M_GSP];
                     if(mut && *mut)
@@ -1475,7 +1475,7 @@ namespace server
         if(!m_game(mode)) mode = G_DEATHMATCH;
         static string mtname; mtname[0] = '\0';
         int mutid = -1;
-        loopi(G_M_NUM) if(muts == (1<<mutstype[i].type)) mutid = i;
+        loopi(G_M_MAX) if(muts == (1<<mutstype[i].type)) mutid = i;
         if(mutid < 0) return "";
         if(type == 4 || type == 5)
         {
@@ -1528,10 +1528,10 @@ namespace server
             muts = G(defaultmuts);
             if(G(rotatemuts))
             {
-                int num = rnd(G_M_NUM+1);
+                int num = rnd(G_M_MAX+1);
                 if(num) loopi(num) if(G(rotatemuts) == 1 || !rnd(G(rotatemuts)))
                 {
-                    int rmut = 1<<rnd(G_M_NUM);
+                    int rmut = 1<<rnd(G_M_MAX);
                     if(G(rotatemutsfilter) && !(G(rotatemutsfilter)&rmut)) continue;
                     muts |= rmut;
                     modecheck(mode, muts, rmut);
@@ -2749,7 +2749,7 @@ namespace server
         if(req)
         {
             if(!limit) return false;
-            loopi(G_M_NUM) if(req&(1<<i) && !(limit&(1<<i))) return false;
+            loopi(G_M_MAX) if(req&(1<<i) && !(limit&(1<<i))) return false;
         }
         return true;
     }

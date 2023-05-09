@@ -304,7 +304,7 @@ enum
     en(pr, fire, FIRE) en(pr, burn, BURN) en(pr, disco, DISCO) en(pr, shock, SHOCK) en(pr, bleed, BLEED) \
     en(pr, buff, BUFF) en(pr, warn, WARN) en(pr, regen, REGEN) en(pr, flash, FLASH) en(pr, max, MAX)
 ENUMNV(PULSE, PULSE_ENUM)
-#define PULSE_LAST PULSE_MAX-1
+VARD(PULSE_LAST, PULSE_MAX-1);
 
 #define PULSECOLOURS 8
 #define PULSE(x) (PULSE_##x)
@@ -473,7 +473,7 @@ static inline void modecheck(int &mode, int &muts, int trying = 0)
 {
     if(!m_game(mode)) mode = G_DEATHMATCH;
     if(gametype[mode].implied) muts |= gametype[mode].implied;
-    int retries = G_M_NUM*G_M_NUM;
+    int retries = G_M_MAX*G_M_MAX;
     loop(r, retries)
     {
         if(!muts) break; // nothing to do then
@@ -496,14 +496,14 @@ static inline void modecheck(int &mode, int &muts, int trying = 0)
                 }
             }
             if(changed) break;
-            if(gametype[mode].flags&GF(GSP))
+            if(gametype[mode].flags&(1<<G_F_GSP))
             {
                 //trying |= m; // game specific mutator exclusively provides allowed bits
                 mutsidx = gametype[mode].mutators[j+1];
             }
         }
         if(changed) continue;
-        loop(s, G_M_NUM)
+        loop(s, G_M_MAX)
         {
             if(!(mutsidx&(1<<mutstype[s].type)) && (muts&(1<<mutstype[s].type)))
             {
@@ -512,7 +512,7 @@ static inline void modecheck(int &mode, int &muts, int trying = 0)
                 changed = true;
                 break;
             }
-            if(muts&(1<<mutstype[s].type)) loopj(G_M_NUM)
+            if(muts&(1<<mutstype[s].type)) loopj(G_M_MAX)
             {
                 if(!(mutstype[s].mutators&(1<<mutstype[j].type)) && (muts&(1<<mutstype[j].type)))
                 {
@@ -2365,8 +2365,8 @@ namespace hud
     extern float radaraffinityblend, radarblipblend, radaraffinitysize;
     extern bool scoreson, scoresoff, shownscores;
     extern vector<int> teamkills;
-    extern void eventlog(int type, int subtype, const vector<gameent *> &clients, const vector<int> &targets, const char *str = NULL);
-    extern void eventlogf(int type, int subtype, const vector<gameent *> &clients, const vector<int> &targets, const char *str, ...);
+    extern void eventlog(int type, int subtype, const vector<int> &clients, const vector<int> &targets, const char *str = NULL);
+    extern void eventlogf(int type, int subtype, const vector<int> &clients, const vector<int> &targets, const char *str, ...);
     extern const char *geticon(int type, int value);
     extern void drawindicator(int weap, int x, int y, int s);
     extern void drawpointertex(const char *tex, int x, int y, int s, float r = 1, float g = 1, float b = 1, float fade = 1);

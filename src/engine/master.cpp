@@ -17,7 +17,7 @@
 // redefining some game.h constants
 #define G_MAX 7
 #define G_M_GSP 15
-#define G_M_NUM 18
+#define G_M_MAX 18
 
 #define MASTER_LIMIT 4096
 #define CLIENT_TIME (60*1000)
@@ -387,7 +387,7 @@ void statsdb_load_mappings()
         statsdb_die();
     }
 
-    statsdb_mutators.add(-1, G_M_GSP + (G_M_NUM - G_M_GSP) * G_MAX);
+    statsdb_mutators.add(-1, G_M_GSP + (G_M_MAX - G_M_GSP) * G_MAX);
     statsdb_do_or_die(sqlite3_prepare_v2(statsdb, "SELECT mode, bit, mutator_id FROM proto_mutators WHERE version = ?", -1, &stmt, 0));
     statsdb_do_or_die(sqlite3_bind_int(stmt, 1, STATSDB_VERSION_GAME));
     count = 0;
@@ -401,9 +401,9 @@ void statsdb_load_mappings()
         count++;
     }
     sqlite3_finalize(stmt);
-    if(count < G_M_NUM - G_M_GSP)
+    if(count < G_M_MAX - G_M_GSP)
     {
-        statsdb_warn("not enough mutators %d, should be at least %d", count, G_M_NUM - G_M_GSP);
+        statsdb_warn("not enough mutators %d, should be at least %d", count, G_M_MAX - G_M_GSP);
         statsdb_die();
     }
 }
@@ -543,9 +543,9 @@ void savestats(masterclient &c)
         c.stats.normalweapons));
     c.stats.id = (ulong)sqlite3_last_insert_rowid(statsdb);
 
-    loopi(G_M_NUM) if(c.stats.mutators & (1 << i))
+    loopi(G_M_MAX) if(c.stats.mutators & (1 << i))
     {
-        int idx = i < G_M_GSP ? i : i + c.stats.mode * (G_M_NUM - G_M_GSP);
+        int idx = i < G_M_GSP ? i : i + c.stats.mode * (G_M_MAX - G_M_GSP);
         int mut_id = statsdb_mutators.inrange(idx) ? statsdb_mutators[idx] : -1;
         if(mut_id < 0)
         {

@@ -3,7 +3,7 @@
 
 namespace game
 {
-    int nextmode = G_EDITMODE, nextmuts = 0, gamestate = G_S_WAITING, gamemode = G_EDITMODE, mutators = 0,
+    int nextmode = G_EDITING, nextmuts = 0, gamestate = G_S_WAITING, gamemode = G_EDITING, mutators = 0,
         maptime = 0, mapstart = 0, timeremaining = 0, timeelapsed = 0, timelast = 0, timesync = 0,
         lastcamera = 0, lasttvcam = 0, lasttvchg = 0, lastzoom = 0, lastcamcn = -1;
     bool zooming = false, inputmouse = false, inputview = false, inputmode = false, wantsloadoutmenu = false;
@@ -2009,11 +2009,11 @@ namespace game
                 if(show) announcef(anc, CON_GAME, d, "\fw%s", d->obit);
                 #endif
 
-                static vector<gameent *> clients;
+                static vector<int> clients;
                 clients.shrink(0);
-                clients.add(d);
-                clients.add(v);
-                loopv(log) if(log[i] && log[i] != d && log[i] != v) clients.add(log[i]);
+                clients.add(d ? d->clientnum : -1);
+                clients.add(v ? v->clientnum : -1);
+                loopv(log) if(log[i] && log[i] != d && log[i] != v) clients.add(log[i]->clientnum);
 
                 static vector<int> infos;
                 infos.shrink(0);

@@ -43,23 +43,30 @@ namespace hud
             clients.setsize(0);
             infos.setsize(0);
         }
-        ~event() { DELETEA(str); }
+        ~event()
+        {
+            clients.setsize(0);
+            infos.setsize(0);
+            DELETEA(str);
+        }
     };
-    vector<event> events;
 
-    VAR(IDF_PERSIST, eventmaxlines, 1, 50, VAR_MAX);
+    #define MAXEVENTS 1000
+    reversequeue<event, MAXEVENTS> events;
 
-    void eventlog(int type, int subtype, const vector<gameent *> &clients, const vector<int> &infos, const char *str)
+    VAR(IDF_PERSIST, eventmaxlines, 1, 50, MAXEVENTS);
+
+    void eventlog(int type, int subtype, const vector<int> &clients, const vector<int> &infos, const char *str)
     {
         if(type < 0 || type >= EV_MAX) return;
-        if(events.length() >= eventmaxlines) events.remove(0);
+        if(events.length() >= eventmaxlines) events.remove();
         event &e = events.add();
         e.type = type;
         e.subtype = subtype;
         e.millis = totalmillis;
         loopv(clients)
         {
-            gameent *d = clients[i];
+            gameent *d = game::getclient(clients[i]);
             event::client &c = e.clients.add();
             if(!d) continue;
             c.cn = d->clientnum;
@@ -69,7 +76,7 @@ namespace hud
             c.model = d->model;
             c.priv = d->privilege;
             c.weap = d->weapselect;
-            c.name = newstring(d->name);
+            c.name = newstring(*d->name ? d->name : "");
         }
         loopv(infos) e.infos.add(infos[i]);
         if(str && *str)
@@ -79,7 +86,7 @@ namespace hud
         }
     }
 
-    void eventlogf(int type, int subtype, const vector<gameent *> &clients, const vector<int> &infos, const char *str, ...)
+    void eventlogf(int type, int subtype, const vector<int> &clients, const vector<int> &infos, const char *str, ...)
     {
         if(type < 0 || type >= EV_MAX) return;
         defvformatbigstring(sf, str, str);
@@ -627,19 +634,19 @@ namespace hud
     {
         modecheck(g, m);
         if(before) modetex(g, m, list);
-        if(m_ffa(g, m) && (implied || !(gametype[g].implied&GM(FFA)))) ADDMODE(ffa)
-        if(m_coop(g, m) && (implied || !(gametype[g].implied&GM(COOP)))) ADDMODE(coop)
-        if(m_insta(g, m) && (implied || !(gametype[g].implied&GM(INSTA)))) ADDMODE(insta)
-        if(m_medieval(g, m) && (implied || !(gametype[g].implied&GM(MEDIEVAL)))) ADDMODE(medieval)
-        if(m_kaboom(g, m) && (implied || !(gametype[g].implied&GM(KABOOM)))) ADDMODE(kaboom)
-        if(m_duel(g, m) && (implied || !(gametype[g].implied&GM(DUEL)))) ADDMODE(duel)
-        if(m_survivor(g, m) && (implied || !(gametype[g].implied&GM(SURVIVOR)))) ADDMODE(survivor)
-        if(m_classic(g, m) && (implied || !(gametype[g].implied&GM(CLASSIC)))) ADDMODE(classic)
-        if(m_onslaught(g, m) && (implied || !(gametype[g].implied&GM(ONSLAUGHT)))) ADDMODE(onslaught)
-        if(m_vampire(g, m) && (implied || !(gametype[g].implied&GM(VAMPIRE)))) ADDMODE(vampire)
-        if(m_resize(g, m) && (implied || !(gametype[g].implied&GM(RESIZE)))) ADDMODE(resize)
-        if(m_hard(g, m) && (implied || !(gametype[g].implied&GM(HARD)))) ADDMODE(hard)
-        if(m_arena(g, m) && (implied || !(gametype[g].implied&GM(ARENA)))) ADDMODE(arena)
+        if(m_ffa(g, m) && (implied || !(gametype[g].implied&(1<<G_M_FFA)))) ADDMODE(ffa)
+        if(m_coop(g, m) && (implied || !(gametype[g].implied&(1<<G_M_COOP)))) ADDMODE(coop)
+        if(m_insta(g, m) && (implied || !(gametype[g].implied&(1<<G_M_INSTAGIB)))) ADDMODE(insta)
+        if(m_medieval(g, m) && (implied || !(gametype[g].implied&(1<<G_M_MEDIEVAL)))) ADDMODE(medieval)
+        if(m_kaboom(g, m) && (implied || !(gametype[g].implied&(1<<G_M_KABOOM)))) ADDMODE(kaboom)
+        if(m_duel(g, m) && (implied || !(gametype[g].implied&(1<<G_M_DUEL)))) ADDMODE(duel)
+        if(m_survivor(g, m) && (implied || !(gametype[g].implied&(1<<G_M_SURVIVOR)))) ADDMODE(survivor)
+        if(m_classic(g, m) && (implied || !(gametype[g].implied&(1<<G_M_CLASSIC)))) ADDMODE(classic)
+        if(m_onslaught(g, m) && (implied || !(gametype[g].implied&(1<<G_M_ONSLAUGHT)))) ADDMODE(onslaught)
+        if(m_vampire(g, m) && (implied || !(gametype[g].implied&(1<<G_M_VAMPIRE)))) ADDMODE(vampire)
+        if(m_resize(g, m) && (implied || !(gametype[g].implied&(1<<G_M_RESIZE)))) ADDMODE(resize)
+        if(m_hard(g, m) && (implied || !(gametype[g].implied&(1<<G_M_HARD)))) ADDMODE(hard)
+        if(m_arena(g, m) && (implied || !(gametype[g].implied&(1<<G_M_ARENA)))) ADDMODE(arena)
         if(!before) modetex(g, m, list);
     }
     #undef ADDMODE
@@ -2036,7 +2043,7 @@ namespace hud
         teamkills.setsize(0);
         damagelocs.setsize(0);
         hitlocs.setsize(0);
-        events.setsize(0);
+        //while(!events.empty()) events.remove();
         damageresidue = lastteam = 0;
     }
 }

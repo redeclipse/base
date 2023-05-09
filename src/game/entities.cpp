@@ -1187,7 +1187,7 @@ namespace entities
                 if(b)
                 {
                     int muts = b < 0 ? 0-b : b;
-                    loopi(G_M_NUM) if(muts&(1<<i))
+                    loopi(G_M_MAX) if(muts&(1<<i))
                     {
                         string ds;
                         if(b < 0) formatstring(ds, "not %s", mutstype[i].name);

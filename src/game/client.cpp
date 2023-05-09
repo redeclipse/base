@@ -1177,7 +1177,7 @@ namespace client
         if(req)
         {
             if(!limit) return false;
-            loopi(G_M_NUM) if(req&(1<<i) && !(limit&(1<<i))) return false;
+            loopi(G_M_MAX) if(req&(1<<i) && !(limit&(1<<i))) return false;
         }
         return true;
     }
@@ -1406,7 +1406,7 @@ namespace client
         game::player1->clientnum = -1;
         game::player1->privilege = PRIV_NONE;
         game::player1->handle[0] = game::player1->steamid[0] = '\0';
-        game::gamemode = G_EDITMODE;
+        game::gamemode = G_EDITING;
         game::mutators = game::maptime = game::timesync = game::timelast = 0;
         loopv(game::players) if(game::players[i]) game::clientdisconnected(i);
         game::waiting.setsize(0);
