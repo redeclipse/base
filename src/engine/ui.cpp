@@ -2472,7 +2472,7 @@ namespace UI
 
     UICMDT(Colored, colour, set, "iii", (int *c, int *pos, int *force),
     {
-        if(*pos >= 0 && *pos < o->colors.length()) o->colors[*pos] = Color(*c, *force != 0);
+        if(o->colors.inrange(*pos)) o->colors[*pos] = Color(*c, *force != 0);
     });
     UICMDT(Colored, colour, get, "i", (int *pos), intret(o->colors[clamp(*pos, 0, o->colors.length()-1)].mask));
     UICMDT(Colored, colour, add, "ii", (int *c, int *force), o->colors.add(Color(*c, *force != 0)));
@@ -2480,6 +2480,11 @@ namespace UI
     {
         loopvrev(o->colors) if(o->colors[i] == Color(*c)) o->colors.remove(i);
         if(o->colors.empty()) o->colors.add(Color(colourwhite));
+    });
+    UICMDT(Colored, colour, scale, "ibi", (int *c, int *pos, int *force),
+    {
+        if(*pos < 0) loopv(o->colors) o->colors[i].scale(Color(*c, *force != 0));
+        else if(o->colors.inrange(*pos)) o->colors[*pos].scale(Color(*c, *force != 0));
     });
     UICMDT(Colored, colour, rotate, "fii", (float *amt, int *start, int *count), o->rotatecolors(*amt, *start, *count));
     UICMDT(Colored, colour, blend, "f", (float *blend), loopvk(o->colors) o->colors[k].a = clamp(uchar(*blend * o->colors[k].a), 0, 255));

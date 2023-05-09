@@ -168,7 +168,7 @@ extern font *curfont;
 extern Shader *textshader;
 extern const matrix4x3 *textmatrix;
 extern void reloadfonts();
-extern char *textfontdef, *textfontbold, *textfontlogo, *textfontclear, *textfonttool;
+extern char *textfontdef, *textfontbold, *textfontlogo, *textfontoutline, *textfonttool;
 
 enum
 {

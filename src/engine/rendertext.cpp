@@ -16,10 +16,10 @@ FVAR(IDF_PERSIST, textkeyimagescale, 0, 0.9f, FVAR_MAX);
 SVAR(IDF_PERSIST, textkeyprefix, "<invert>textures/keys/");
 VAR(IDF_PERSIST, textkeyseps, 0, 1, 1);
 VAR(IDF_PERSIST|IDF_HEX, textkeycolour, 0, 0x00FFFF, 0xFFFFFF);
-SVAR(IDF_PERSIST, textfontdef, "default");
+SVAR(IDF_PERSIST, textfontdef, "clear");
 SVAR(IDF_PERSIST, textfontbold, "bold");
-SVAR(IDF_PERSIST, textfontlogo, "default");
-SVAR(IDF_PERSIST, textfontclear, "clear");
+SVAR(IDF_PERSIST, textfontlogo, "clear");
+SVAR(IDF_PERSIST, textfontoutline, "outline");
 SVAR(IDF_PERSIST, textfonttool, "tess");
 
 static hashnameset<font> fonts;
