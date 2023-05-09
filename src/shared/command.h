@@ -335,6 +335,7 @@ inline void ident::getcval(tagval &v) const
         default: v.setnull(); break;
     }
 }
+
 extern int variable(const char *name, int min, int cur, int max, int *storage, identfun fun, int flags, int level = 0);
 extern float fvariable(const char *name, float min, float cur, float max, float *storage, identfun fun, int flags, int level = 0);
 extern char *svariable(const char *name, const char *cur, char **storage, identfun fun, int flags, int level = 0);
@@ -449,6 +450,75 @@ extern bool hasflag(const char *flags, char f);
 extern char *limitstring(const char *str, size_t len);
 
 // nasty macros for registering script functions, abuses globals to avoid excessive infrastructure
+#ifdef CPP_GAME_HEADER
+#ifdef CPP_GAME_SERVER
+#define VARD(name, val) int name = variable(#name, 1, val, -1, &name, NULL, IDF_READONLY, 0);
+#define FVARD(name, val) float name = fvariable(#name, 1, val, -1, &name, NULL, IDF_READONLY, 0);
+#define VARE(name, val) int _enum_##name = variable(#name, 1, int(name), -1, &_enum_##name, NULL, IDF_READONLY, 0);
+#define VARL(name, val) char *name = svariable(#name, &val[1], &name, NULL, IDF_READONLY, 0);
+#define VARS(name, val) const char * const name[] = { val "" };
+#else
+#define VARD(name, val) extern int name;
+#define FVARD(name, val) extern float name;
+#define VARE(name, val)
+#define VARL(name, val) extern char *name;
+#define VARS(name, val) extern const char * const name[];
+#endif
+#else
+#ifdef CPP_ENGINE_COMMAND
+#define VARD(name, val) int name = variable(#name, 1, val, -1, &name, NULL, IDF_READONLY, 0);
+#define FVARD(name, val) float name = fvariable(#name, 1, val, -1, &name, NULL, IDF_READONLY, 0);
+#define VARE(name, val) int _enum_##name = variable(#name, 1, int(name), -1, &_enum_##name, NULL, IDF_READONLY, 0);
+#define VARL(name, val) char *name = svariable(#name, &val[1], &name, NULL, IDF_READONLY, 0);
+#define VARS(name, val) const char * const name[] = { val "" };
+#else
+#define VARD(name, val) extern int name;
+#define FVARD(name, val) extern float name;
+#define VARE(name, val)
+#define VARL(name, val) extern char *name;
+#define VARS(name, val) extern const char * const name[];
+#endif
+#endif
+
+#define ENUMDSX(prefix, name, assign) prefix##_##name = assign,
+#define ENUMDSV(prefix, name, assign) VARD(prefix##_##name, prefix##_##name)
+#define ENUMDSL(prefix, name, assign) " " #prefix "_" #name
+
+// enum with assigned values
+#define ENUMDI(prefix, definition) definition(prefix, ENUMDSV)
+
+// enum with assigned values and list variable
+#define ENUMLI(prefix, definition) definition(prefix, ENUMDSV) VARL(prefix##_LIST, definition(prefix, ENUMDSL))
+
+#define ENUMVSX(prefix, name) prefix##_##name,
+#define ENUMVSV(prefix, name) VARE(prefix##_##name, prefix##_##name)
+#define ENUMVSL(prefix, name) " " #prefix "_" #name
+
+// enum with default values
+#define ENUMDV(prefix, definition) enum { definition(prefix, ENUMVSX) }; definition(prefix, ENUMVSV)
+
+// enum with default values and list variable
+#define ENUMLV(prefix, definition) enum { definition(prefix, ENUMVSX) }; definition(prefix, ENUMVSV) VARL(prefix##_LIST, definition(prefix, ENUMVSL))
+
+#define ENUMNIX(prefix, pretty, name, assign) prefix##_##name = assign,
+#define ENUMNIV(prefix, pretty, name, assign) VARD(prefix##_##name, prefix##_##name)
+#define ENUMNIL(prefix, pretty, name, assign) " " #prefix "_" #name
+#define ENUMNIN(prefix, pretty, name, assign) " " #pretty
+#define ENUMNIS(prefix, pretty, name, assign) #pretty,
+
+// enum with assigned values and list/name vairables
+#define ENUMNI(prefix, definition) definition(prefix, ENUMNIV) VARL(prefix##_LIST, definition(prefix, ENUMNIL)) VARL(prefix##_NAMES, definition(prefix, ENUMNIN)) VARS(prefix##_STR, definition(prefix, ENUMNIS))
+
+#define ENUMNVX(prefix, pretty, name) prefix##_##name,
+#define ENUMNVV(prefix, pretty, name) VARE(prefix##_##name, prefix##_##name)
+#define ENUMNVL(prefix, pretty, name) " " #prefix "_" #name
+#define ENUMNVN(prefix, pretty, name) " " #pretty
+#define ENUMNVS(prefix, pretty, name) #pretty,
+
+// enum with default values and list/name vairables
+#define ENUMNV(prefix, definition) enum { definition(prefix, ENUMNVX) }; definition(prefix, ENUMNVV) VARL(prefix##_LIST, definition(prefix, ENUMNVL)) VARL(prefix##_NAMES, definition(prefix, ENUMNVN)) VARS(prefix##_STR, definition(prefix, ENUMNVS))
+
+// basic commands
 #define KEYWORD(flags, name, type) UNUSED static bool __dummy_##type = addcommand(#name, NULL, NULL, type, flags|IDF_COMPLETE)
 #define COMMANDKN(flags, level, name, type, fun, nargs) UNUSED static bool __dummy_##fun = addcommand(#name, fun, nargs, type, flags|IDF_COMPLETE, level)
 #define COMMANDK(flags, name, type, nargs) COMMANDKN(flags, 0, name, type, name, nargs)

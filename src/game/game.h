@@ -1,5 +1,5 @@
-#ifndef __GAME_H__
-#define __GAME_H__
+#ifndef CPP_GAME_HEADER
+#define CPP_GAME_HEADER
 
 #include "engine.h"
 
@@ -342,39 +342,24 @@ extern const int pulsecols[PULSE_MAX][PULSECOLOURS];
     RESIDUAL(bleed, BLEED, BLEED); \
     RESIDUAL(shock, SHOCK, SHOCK);
 
-enum
-{
-    FRAG_NONE = 0, FRAG_HEADSHOT = 1<<1, FRAG_OBLITERATE = 1<<2,
-    FRAG_SPREE1 = 1<<3, FRAG_SPREE2 = 1<<4, FRAG_SPREE3 = 1<<5, FRAG_SPREE4 = 1<<6,
-    FRAG_MKILL1 = 1<<7, FRAG_MKILL2 = 1<<8, FRAG_MKILL3 = 1<<9,
-    FRAG_REVENGE = 1<<10, FRAG_DOMINATE = 1<<11, FRAG_FIRSTBLOOD = 1<<12, FRAG_BREAKER = 1<<13,
-    FRAG_SPREES = 4, FRAG_SPREE = 3, FRAG_MKILL = 7,
-    FRAG_CHECK = FRAG_SPREE1|FRAG_SPREE2|FRAG_SPREE3|FRAG_SPREE4,
-    FRAG_MULTI = FRAG_MKILL1|FRAG_MKILL2|FRAG_MKILL3,
-};
+#define FRAG_ENUM(pr, en) \
+    en(pr, NONE, 0) en(pr, HEADSHOT, 1<<0) en(pr, OBLITERATE, 1<<1) \
+    en(pr, SPREE1, 1<<2) en(pr, SPREE2, 1<<3) en(pr, SPREE3, 1<<4) en(pr, SPREE4, 1<<5) \
+    en(pr, MKILL1, 1<<6) en(pr, MKILL2, 1<<7) en(pr, MKILL3, 1<<8) \
+    en(pr, REVENGE, 1<<9) en(pr, DOMINATE, 1<<10) en(pr, FIRSTBLOOD, 1<<11) en(pr, BREAKER, 1<<12) \
+    en(pr, SPREES, 4) en(pr, SPREE, 3) en(pr, MKILL, 7) \
+    en(pr, CHECK, FRAG_SPREE1|FRAG_SPREE2|FRAG_SPREE3|FRAG_SPREE4) \
+    en(pr, MULTI, FRAG_MKILL1|FRAG_MKILL2|FRAG_MKILL3)
+ENUMLI(FRAG, FRAG_ENUM)
 
-enum { EV_FRAG, EV_AFFINITY, EV_MAX };
-#ifdef CPP_GAME_SERVER
-VARR(eventidxfrag, EV_FRAG);
-VARR(eventidxaffinity, EV_AFFINITY);
-VARR(eventidxmax, EV_MAX);
-#endif
+#define EV_ENUM(pr, en) en(pr, FRAG) en(pr, AFFINITY) en(pr, MAX)
+ENUMLV(EV, EV_ENUM)
 
-enum { EV_F_SUICIDE, EV_F_KILL, EV_F_MAX };
-#ifdef CPP_GAME_SERVER
-VARR(eventfragidxsuicide, EV_F_SUICIDE);
-VARR(eventfragidxkill, EV_F_KILL);
-VARR(eventfragidxmax, EV_F_MAX);
-#endif
+#define EV_F_ENUM(pr, en) en(pr, SUICIDE) en(pr, KILL) en(pr, MAX)
+ENUMLV(EV_F, EV_F_ENUM)
 
-enum { EV_A_TAKE, EV_A_DROP, EV_A_SCORE, EV_A_RESET, EV_A_MAX };
-#ifdef CPP_GAME_SERVER
-VARR(eventaffinityidxtake, EV_A_TAKE);
-VARR(eventaffinityidxdrop, EV_A_DROP);
-VARR(eventaffinityidxscore, EV_A_SCORE);
-VARR(eventaffinityidxreset, EV_A_RESET);
-VARR(eventaffinityidxmax, EV_A_MAX);
-#endif
+#define EV_A_ENUM(pr, en) en(pr, TAKE) en(pr, DROP) en(pr, SCORE) en(pr, RESET) en(pr, MAX)
+ENUMLV(EV_A, EV_A_ENUM)
 
 enum
 {
