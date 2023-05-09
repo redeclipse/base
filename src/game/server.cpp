@@ -2728,16 +2728,16 @@ namespace server
             endmatch();
             if(best)
             {
-                srvoutf(-3, "vote passed: \fs\fy%s\fS on \fs\fo%s\fS", gamename(best->mode, best->muts), best->map);
-                changemap(best->map, best->mode, best->muts);
+                relayf(3, "Vote passed: \fs\fy%s\fS on \fs\fo%s\fS", gamename(best->mode, best->muts), best->map);
+                changemap(best->map, best->mode, best->muts, -2);
             }
             else
             {
                 int mode = G(rotatemode) ? -1 : gamemode, muts = G(rotatemuts) ? -1 : mutators;
                 changemode(mode, muts);
                 const char *map = choosemap(smapname, mode, muts);
-                srvoutf(-3, "server chooses: \fs\fy%s\fS on \fs\fo%s\fS", gamename(mode, muts), map);
-                changemap(map, mode, muts);
+                relayf(3, "Server chooses: \fs\fy%s\fS on \fs\fo%s\fS", gamename(mode, muts), map);
+                changemap(map, mode, muts, -1);
             }
             return true;
         }
@@ -2842,8 +2842,8 @@ namespace server
             sendpackets(true);
             sendstats();
             endmatch();
-            srvoutf(-3, "%s forced: \fs\fy%s\fS on \fs\fo%s\fS", colourname(ci), gamename(ci->modevote, ci->mutsvote), ci->mapvote);
-            changemap(ci->mapvote, ci->modevote, ci->mutsvote);
+            relayf(3, "%s forced: \fs\fy%s\fS on \fs\fo%s\fS", colourname(ci), gamename(ci->modevote, ci->mutsvote), ci->mapvote);
+            changemap(ci->mapvote, ci->modevote, ci->mutsvote, ci->clientnum);
             return;
         }
         sendf(-1, 1, "ri2si2", N_MAPVOTE, ci->clientnum, ci->mapvote, ci->modevote, ci->mutsvote);
@@ -3483,7 +3483,7 @@ namespace server
     #include "duelmut.h"
     #include "aiman.h"
 
-    void changemap(const char *name, int mode, int muts)
+    void changemap(const char *name, int mode, int muts, int clientnum)
     {
         hasgameinfo = shouldcheckvotes = firstblood = sentstats = false;
         mapgameinfo = -1;
@@ -3522,7 +3522,7 @@ namespace server
             if(!hasmapdata()) resetmapdata();
         }
         copystring(smapname, reqmap);
-        sendf(-1, 1, "risi4", N_MAPCHANGE, smapname, gamemode, mutators, hasmapdata() ? smapcrc : -1, smapvariant);
+        sendf(-1, 1, "risi5", N_MAPCHANGE, smapname, gamemode, mutators, hasmapdata() ? smapcrc : -1, smapvariant, clientnum);
 
         // server modes
         if(m_capture(gamemode)) smode = &capturemode;
@@ -4064,6 +4064,7 @@ namespace server
         }
         else putint(p, smapcrc);
         putint(p, smapvariant);
+        putint(p, -3); // quiet
 
         enumerate(idents, ident, id,
         {

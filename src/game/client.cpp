@@ -1639,7 +1639,7 @@ namespace client
         return false;
     }
 
-    void changemapserv(char *name, int gamemode, int mutators, int crc, int variant)
+    void changemapserv(char *name, int gamemode, int mutators, int crc, int variant, int clientnum)
     {
         game::gamestate = G_S_WAITING;
         game::gamemode = gamemode;
@@ -1664,6 +1664,22 @@ namespace client
         else if(m_bomber(game::gamemode)) bomber::reset();
         needsmap = gettingmap = 0;
         smartmusic(true);
+        switch(clientnum)
+        {
+            case -3: break; // welcome packet or command line
+            case -2:
+                conoutft(CON_EVENT, "Vote passed: \fs\fy%s\fS on \fs\fo%s\fS", server::gamename(game::gamemode, game::mutators), mapctitle(name));
+                break;
+            case -1:
+                conoutft(CON_EVENT, "Server chooses: \fs\fy%s\fS on \fs\fo%s\fS", server::gamename(game::gamemode, game::mutators), mapctitle(name));
+                break;
+            default:
+            {
+                gameent *d = game::getclient(clientnum);
+                if(!d) break;
+                conoutft(CON_EVENT, "%s chooses: \fs\fy%s\fS on \fs\fo%s\fS", game::colourname(d), server::gamename(game::gamemode, game::mutators), mapctitle(name));
+            }
+        }
         if(crc < -1 || !name || !*name || !load_world(name, crc, variant)) switch(crc)
         {
             case -1:
@@ -2618,10 +2634,10 @@ namespace client
                 case N_MAPCHANGE:
                 {
                     getstring(text, p);
-                    int mode = getint(p), muts = getint(p), crc = getint(p), variant = clamp(getint(p), int(MPV_DEF), int(MPV_MAX-1));
+                    int mode = getint(p), muts = getint(p), crc = getint(p), variant = clamp(getint(p), int(MPV_DEF), int(MPV_MAX-1)), tcn = getint(p);
                     if(crc >= 0) conoutf("Map change: %s (%d:%d) [0x%.8x] (%s)", text, mode, muts, crc, mapvariants[variant]);
                     else conoutf("Map change: %s (%d:%d) [%d] (%s)", text, mode, muts, crc, mapvariants[variant]);
-                    changemapserv(text, mode, muts, crc, variant);
+                    changemapserv(text, mode, muts, crc, variant, tcn);
                     break;
                 }
 

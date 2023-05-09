@@ -35,13 +35,13 @@ namespace hud
 
         int type, subtype, millis;
         vector<client> clients;
-        vector<int> targets;
+        vector<int> infos;
         char *str;
 
         event() : type(-1), subtype(-1), millis(-1), str(NULL)
         {
             clients.setsize(0);
-            targets.setsize(0);
+            infos.setsize(0);
         }
         ~event() { DELETEA(str); }
     };
@@ -49,7 +49,7 @@ namespace hud
 
     VAR(IDF_PERSIST, eventmaxlines, 1, 50, VAR_MAX);
 
-    void eventlog(int type, int subtype, const vector<gameent *> &clients, const vector<int> &targets, const char *str)
+    void eventlog(int type, int subtype, const vector<gameent *> &clients, const vector<int> &infos, const char *str)
     {
         if(type < 0 || type >= EV_MAX) return;
         if(events.length() >= eventmaxlines) events.remove(0);
@@ -71,7 +71,7 @@ namespace hud
             c.weap = d->weapselect;
             c.name = newstring(d->name);
         }
-        loopv(targets) e.targets.add(targets[i]);
+        loopv(infos) e.infos.add(infos[i]);
         if(str && *str)
         {
             e.str = newstring(str);
@@ -79,11 +79,11 @@ namespace hud
         }
     }
 
-    void eventlogf(int type, int subtype, const vector<gameent *> &clients, const vector<int> &targets, const char *str, ...)
+    void eventlogf(int type, int subtype, const vector<gameent *> &clients, const vector<int> &infos, const char *str, ...)
     {
         if(type < 0 || type >= EV_MAX) return;
         defvformatbigstring(sf, str, str);
-        eventlog(type, subtype, clients, targets, sf);
+        eventlog(type, subtype, clients, infos, sf);
     }
 
     #define LOOPEVENTS(name,op) \
@@ -140,13 +140,13 @@ namespace hud
         }
     });
 
-    ICOMMAND(0, geteventtarget, "ib", (int *n, int *pos),
+    ICOMMAND(0, geteventinfo, "ib", (int *n, int *pos),
     {
         if(*n < 0) intret(events.length());
         else if(events.inrange(*n))
         {
-            if(*pos < 0) intret(events[*n].targets.length());
-            else if(events[*n].targets.inrange(*pos)) intret(events[*n].targets[*pos]);
+            if(*pos < 0) intret(events[*n].infos.length());
+            else if(events[*n].infos.inrange(*pos)) intret(events[*n].infos[*pos]);
         }
     });
 

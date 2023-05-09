@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 263
+#define VERSION_GAME 264
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256

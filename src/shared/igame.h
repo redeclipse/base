@@ -222,7 +222,7 @@ namespace server
     extern const char *choosemap(const char *suggest = NULL, int mode = -1, int muts = -1, int force = 0, bool notry = false);
     extern const char *getmapname();
     extern const char *getserverdesc();
-    extern void changemap(const char *name = NULL, int mode = -1, int muts = -1);
+    extern void changemap(const char *name = NULL, int mode = -1, int muts = -1, int clientnum = -3);
     extern bool canload(const char *type);
     extern bool rewritecommand(ident *id, tagval *args, int numargs);
     extern void processmasterinput(const char *cmd, int cmdlen, const char *args);

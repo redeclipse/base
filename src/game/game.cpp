@@ -2016,16 +2016,19 @@ namespace game
                 clients.add(v);
                 loopv(log) if(log[i] && log[i] != d && log[i] != v) clients.add(log[i]);
 
-                static vector<int> targets;
-                targets.shrink(0);
-                targets.add(weap);
-                targets.add(flags);
-                targets.add(damage);
-                targets.add(style);
-                targets.add(material);
-                targets.add(anc);
-                targets.add(dth);
-                hud::eventlog(EV_FRAG, d == v ? EV_F_SUICIDE : EV_F_KILL, clients, targets, d->obit);
+                static vector<int> infos;
+                infos.shrink(0);
+                infos.add(weap); // 0
+                infos.add(flags); // 1
+                infos.add(damage); // 2
+                infos.add(style); // 3
+                infos.add(material); // 4
+                infos.add(burning ? 1 : 0); // 5
+                infos.add(bleeding ? 1 : 0); // 6
+                infos.add(shocking ? 1 : 0); // 7
+                infos.add(anc); // 8
+                infos.add(dth); // 9
+                hud::eventlog(EV_FRAG, d == v ? EV_F_SUICIDE : EV_F_KILL, clients, infos, d->obit);
             }
             if(anc >= 0) entities::announce(anc, d);
             if(anc >= 0 && d != v) entities::announce(anc, v);
