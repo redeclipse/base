@@ -392,8 +392,8 @@ namespace cdpi
                     else copystring(details, "Main Menu");
                     discordPresence.details = details;
 
-                    if(curpeer && *connectname) formatstring(state, "%s (%s:[%d])", game::gamestatename(3), connectname, connectport);
-                    else formatstring(state, "%s (offline)", game::gamestatename(3));
+                    if(curpeer && *connectname) formatstring(state, "%s (%s:[%d])", game::gamestatename(), connectname, connectport);
+                    else formatstring(state, "%s (offline)", game::gamestatename());
                     discordPresence.state = state;
 
                     discordPresence.startTimestamp = 0;

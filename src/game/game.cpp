@@ -501,9 +501,9 @@ namespace game
         return timesync;
     }
 
-    const char *gamestatename(int type)
+    const char *gamestatename()
     {
-        return connected() && gamestate >= 0 && gamestate < G_S_MAX ? gamestates[clamp(type, 0, 3)][gamestate] : "Main Menu";
+        return connected() && gamestate >= 0 && gamestate < G_S_MAX ? G_S_STR[gamestate] : "Main Menu";
     }
 
     ICOMMAND(0, mutscheck, "iii", (int *g, int *m, int *t), intret(mutscheck(*g, *m, *t)));
@@ -511,7 +511,6 @@ namespace game
     ICOMMAND(0, mutsimplied, "ii", (int *g, int *m), intret(*g >= 0 && *g < G_MAX ? gametype[*g].implied : 0));
     ICOMMAND(0, gspmutname, "ii", (int *g, int *n), result(*g >= 0 && *g < G_MAX && *n >= 0 && *n < G_M_GSN ? gametype[*g].gsp[*n] : ""));
     ICOMMAND(0, getgameisplay, "b", (int *n), intret(m_play(*n >= 0 ? *n : gamemode) ? 1 :0));
-    ICOMMAND(0, getgamestatestr, "ib", (int *n, int *b), result(gamestates[clamp(*n, 0, 3)][clamp(*b >= 0 ? *b : gamestate, 0, int(G_S_MAX))]));
     ICOMMAND(0, getgametimeelapsed, "i", (int *n), intret(gettimeelapsed(*n!=0)));
     ICOMMAND(0, getgametimelimit, "bb", (int *g, int *m), intret(m_mmvar(*g >= 0 ? *g : gamemode, *m >= 0 ? *m : mutators, timelimit)));
 
@@ -2426,7 +2425,7 @@ namespace game
     vec pulsecolour(physent *d, int i, int cycle)
     {
         size_t seed = size_t(d) + (lastmillis/cycle);
-        int n = detrnd(seed, 2*PULSECOLOURS), n2 = detrnd(seed + 1, 2*PULSECOLOURS), q = clamp(i, 0, int(PULSE_LAST));
+        int n = detrnd(seed, 2*PULSECOLOURS), n2 = detrnd(seed + 1, 2*PULSECOLOURS), q = clamp(i, 0, PULSE_LAST);
         return vec::fromcolor(pulsecols[q][n%PULSECOLOURS]).lerp(vec::fromcolor(pulsecols[q][n2%PULSECOLOURS]), (lastmillis%cycle)/float(cycle));
     }
 

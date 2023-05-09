@@ -25,18 +25,10 @@ enum
 #define GF(x) (1<<(G_F_##x))
 enum { G_F_GSP = 0, G_F_NUM };
 
-enum { G_S_WAITING = 0, G_S_GETMAP, G_S_SENDMAP, G_S_READYING, G_S_GAMEINFO, G_S_PLAYING, G_S_OVERTIME, G_S_INTERMISSION, G_S_VOTING, G_S_MAX };
-
-#ifdef CPP_GAME_SERVER
-const char *gamestates[4][G_S_MAX] = {
-    { "waiting", "getmap", "sendmap", "readying", "syncing", "playing", "overtime", "intermission", "voting" },
-    { "Waiting", "Getmap", "Sendmap", "Readying", "Syncing", "Playing", "Overtime", "Intermission", "Voting" },
-    { "waiting to play", "server getting map", "server sending map", "readying", "syncing info", "playing", "overtime", "intermission", "voting" },
-    { "Waiting to Play", "Getting Map", "Sending Maps", "Readying", "Syncing Info", "Playing", "Overtime", "Intermission", "Voting" }
-};
-#else
-extern const char *gamestates[4][G_S_MAX];
-#endif
+#define G_S_ENUM(pr, en) \
+    en(pr, Waiting, WAITING) en(pr, Getting Map, GETMAP) en(pr, Sending Map, SENDMAP) en(pr, Readying, READYING) en(pr, Syncing Info, GAMEINFO) \
+    en(pr, Playing, PLAYING) en(pr, Overtime, OVERTIME) en(pr, Intermission, INTERMISSION) en(pr, Voting, VOTING) en(pr, Maximum, MAX)
+ENUMNV(G_S, G_S_ENUM)
 
 #define gs_waiting(a) (a >= G_S_WAITING && a <= G_S_GAMEINFO)
 #define gs_playing(a) (a >= G_S_PLAYING && a <= G_S_OVERTIME)
@@ -377,17 +369,6 @@ extern mutstypes mutstype[];
 }
 
 #ifdef CPP_GAME_SERVER
-SVARR(gamestateidxname, "waiting getmap sendmap readying gameinfo playing overtime intermission voting");
-VARR(gamestatewaiting, G_S_WAITING);
-VARR(gamestategetmap, G_S_GETMAP);
-VARR(gamestatesendmap, G_S_SENDMAP);
-VARR(gamestatereadying, G_S_READYING);
-VARR(gamestategameinfo, G_S_GAMEINFO);
-VARR(gamestateplaying, G_S_PLAYING);
-VARR(gamestateovertime, G_S_OVERTIME);
-VARR(gamestateintermission, G_S_INTERMISSION);
-VARR(gamestatevoting, G_S_VOTING);
-VARR(gamestatenum, G_S_MAX);
 SVARR(modename, "Demo Editing Deathmatch [Capture the Flag] [Defend and Control] [Bomber Ball] [Race]");
 SVARR(modeidxname, "demo editing deathmatch capture defend bomber race");
 VARR(modeidxdemo, G_DEMO);

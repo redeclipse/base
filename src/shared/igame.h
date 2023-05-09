@@ -167,7 +167,7 @@ namespace game
     extern int gettimeremain();
     extern int gettimeelapsed(bool force = false);
     extern int gettimesync();
-    extern const char *gamestatename(int type = 0);
+    extern const char *gamestatename();
     extern const char *gametitle();
     extern const char *gametext();
     extern int numanims();

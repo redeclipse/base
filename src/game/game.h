@@ -300,7 +300,12 @@ enum
     ANIM_MAX
 };
 
-enum { PULSE_FIRE = 0, PULSE_BURN, PULSE_DISCO, PULSE_SHOCK, PULSE_BLEED, PULSE_BUFF, PULSE_WARN, PULSE_REGEN, PULSE_FLASH, PULSE_MAX, PULSE_LAST = PULSE_MAX-1 };
+#define PULSE_ENUM(pr, en) \
+    en(pr, fire, FIRE) en(pr, burn, BURN) en(pr, disco, DISCO) en(pr, shock, SHOCK) en(pr, bleed, BLEED) \
+    en(pr, buff, BUFF) en(pr, warn, WARN) en(pr, regen, REGEN) en(pr, flash, FLASH) en(pr, max, MAX)
+ENUMNV(PULSE, PULSE_ENUM)
+#define PULSE_LAST PULSE_MAX-1
+
 #define PULSECOLOURS 8
 #define PULSE(x) (PULSE_##x)
 #define INVPULSE(x) (-1-(x))
@@ -317,18 +322,6 @@ extern const int pulsecols[PULSE_MAX][PULSECOLOURS] = {
     { 0xFFFFFF, 0x008000, 0x00A000, 0x00FF00, 0x20FF20, 0x40FF40, 0x80FF80, 0xA0FFA0 }, // green regen
     { 0xFFFFFF, 0xC0C0C0, 0xA0A0A0, 0x808080, 0x707070, 0x808080, 0xA0A0A0, 0xC0C0C0 }  // flash
 };
-SVARR(pulsenames, "fire burn disco shock bleed buff warn");
-VARR(pulseidxfire, PULSE_FIRE);
-VARR(pulseidxburn, PULSE_BURN);
-VARR(pulseidxdisco, PULSE_DISCO);
-VARR(pulseidxshock, PULSE_SHOCK);
-VARR(pulseidxbleed, PULSE_BLEED);
-VARR(pulseidxbuff, PULSE_BUFF);
-VARR(pulseidxwarn, PULSE_WARN);
-VARR(pulseidxregen, PULSE_REGEN);
-VARR(pulseidxflash, PULSE_FLASH);
-VARR(pulseidxmax, PULSE_MAX);
-VARR(pulseidxlast, PULSE_LAST);
 #else
 extern const int pulsecols[PULSE_MAX][PULSECOLOURS];
 #endif
@@ -348,8 +341,8 @@ extern const int pulsecols[PULSE_MAX][PULSECOLOURS];
     en(pr, MKILL1, 1<<6) en(pr, MKILL2, 1<<7) en(pr, MKILL3, 1<<8) \
     en(pr, REVENGE, 1<<9) en(pr, DOMINATE, 1<<10) en(pr, FIRSTBLOOD, 1<<11) en(pr, BREAKER, 1<<12) \
     en(pr, SPREES, 4) en(pr, SPREE, 3) en(pr, MKILL, 7) \
-    en(pr, CHECK, FRAG_SPREE1|FRAG_SPREE2|FRAG_SPREE3|FRAG_SPREE4) \
-    en(pr, MULTI, FRAG_MKILL1|FRAG_MKILL2|FRAG_MKILL3)
+    en(pr, CHECK, pr##_SPREE1|pr##_SPREE2|pr##_SPREE3|pr##_SPREE4) \
+    en(pr, MULTI, pr##_MKILL1|pr##_MKILL2|pr##_MKILL3)
 ENUMLI(FRAG, FRAG_ENUM)
 
 #define EV_ENUM(pr, en) en(pr, FRAG) en(pr, AFFINITY) en(pr, MAX)
