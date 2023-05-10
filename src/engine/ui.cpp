@@ -127,7 +127,9 @@ namespace UI
         STATE_SCROLL_DOWN = 1<<11,
         STATE_HIDDEN      = 1<<12,
 
-        STATE_HOLD_MASK = STATE_HOLD | STATE_ALT_HOLD | STATE_ESC_HOLD
+        STATE_HOLD_MASK = STATE_HOLD | STATE_ALT_HOLD | STATE_ESC_HOLD,
+
+        STATE_ALL = STATE_HOVER|STATE_PRESS|STATE_HOLD|STATE_RELEASE|STATE_ALT_PRESS|STATE_ALT_HOLD|STATE_ALT_RELEASE|STATE_ESC_PRESS|STATE_ESC_HOLD|STATE_ESC_RELEASE|STATE_SCROLL_UP|STATE_SCROLL_DOWN|STATE_HIDDEN
     };
 
     enum
@@ -317,11 +319,11 @@ namespace UI
         float lastx, lasty, lastsx, lastsy, lastw, lasth;
         bool overridepos, drawn;
         uchar adjust;
-        ushort state, childstate;
+        ushort state, childstate, allowstate;
         vector<Object *> children;
 
         Object() : buildchild(-1), ox(0), oy(0), lastx(0), lasty(0), lastsx(0), lastsy(0), lastw(0), lasth(0),
-            overridepos(false), drawn(false), adjust(0), state(0), childstate(0) {}
+            overridepos(false), drawn(false), adjust(0), state(0), childstate(0), allowstate(STATE_ALL) {}
 
         virtual ~Object()
         {
@@ -594,10 +596,10 @@ namespace UI
             loopchildren(o, o->resetchildstate());
         }
 
-        bool hasstate(int chkflags) const { return ((state & ~childstate) & chkflags) != 0; }
+        bool hasstate(int chkflags) const { return allowstate&chkflags && (state & ~childstate)&chkflags; }
         bool haschildstate(int chkflags) const
         {
-            bool cs = ((state | childstate) & chkflags) != 0;
+            bool cs = allowstate&chkflags && (state | childstate)&chkflags;
             bool steal = (this == inputsteal || !inputsteal) || (state & (STATE_SCROLL_UP|STATE_SCROLL_DOWN));
             return cs && steal;
         }
@@ -620,7 +622,7 @@ namespace UI
         {
             switch(state)
             {
-            #define DOSTATE(chkflags, func) case chkflags: func##children(cx, cy, true, mask, mode, setflags | chkflags); return haschildstate(chkflags);
+            #define DOSTATE(chkflags, func) case chkflags: if(allowstate&chkflags) { func##children(cx, cy, true, mask, mode, setflags | chkflags); return haschildstate(chkflags); } break;
             DOSTATES
             #undef DOSTATE
             }
@@ -663,6 +665,7 @@ namespace UI
         #define DOSTATE(chkflags, func) \
             virtual void func##children(float cx, float cy, bool cinside, int mask, int mode, int setflags) \
             { \
+                if(!(allowstate&chkflags)) return; \
                 propagatestate(o, cx, cy, mask, mode, \
                 { \
                     o->func##children(ox, oy, oinside, mask, mode, setflags); \
@@ -820,6 +823,7 @@ namespace UI
     UIOBJARGB(overridepos);
     UIOBJCMD(setpos, "ff", (float *xpos, float *ypos), o->setpos(*xpos, *ypos));
     UIOBJCMD(resetpos, "", (), o->resetpos());
+    UIOBJARG(allowstate, "b", int, 0, int(STATE_ALL));
     ICOMMANDV(0, uidrawn, buildparent && buildparent->drawn ? 1 : 0);
 
     static inline void stopdrawing()
@@ -1155,7 +1159,7 @@ namespace UI
         #define DOSTATE(chkflags, func) \
             void func##children(float cx, float cy, bool cinside, int mask, int mode, int setflags) \
             { \
-                if(!allowinput || state&STATE_HIDDEN || pw <= 0 || ph <= 0) return; \
+                if(!allowinput || !(allowstate&chkflags) || state&STATE_HIDDEN || pw <= 0 || ph <= 0) return; \
                 getcursor(cx, cy); \
                 bool inside = (cx >= 0 && cy >= 0 && cx < w && cy < h); \
                 if(mode != SETSTATE_INSIDE || inside) \
@@ -1435,6 +1439,7 @@ namespace UI
         #define DOSTATE(chkflags, func) \
             void func##children(float cx, float cy, bool cinside, int mask, int mode, int setflags) \
             { \
+                if(!(allowstate&chkflags)) return; \
                 loopwindowsrev(w, \
                 { \
                     if(((w->state | w->childstate) & mask) != mask) continue; \
@@ -4000,6 +4005,7 @@ namespace UI
         #define DOSTATE(chkflags, func) \
             void func##children(float cx, float cy, bool cinside, int mask, int mode, int setflags) \
             { \
+                if(!(allowstate&chkflags)) return; \
                 pushfont(str); \
                 Object::func##children(cx, cy, cinside, mask, mode, setflags); \
                 popfont(); \
@@ -4070,6 +4076,7 @@ namespace UI
         #define DOSTATE(chkflags, func) \
             void func##children(float cx, float cy, bool cinside, int mask, int mode, int setflags) \
             { \
+                if(!(allowstate&chkflags)) return; \
                 bool oldtexgx = texgc; \
                 texgc = true; \
                 Object::func##children(cx, cy, cinside, mask, mode, setflags); \
@@ -4158,6 +4165,7 @@ namespace UI
         #define DOSTATE(chkflags, func) \
             void func##children(float cx, float cy, bool cinside, int mask, int mode, int setflags) \
             { \
+                if(!(allowstate&chkflags)) return; \
                 cx += offsetx; \
                 cy += offsety; \
                 if(cx < virtw && cy < virth) Object::func##children(cx, cy, true, mask, mode, setflags); \

@@ -233,7 +233,8 @@ struct partrenderer
         formatstring(info, "%d\t%s(", count(), partnames[type&0xFF]);
         if(type&PT_LERP) concatstring(info, "l,");
         if(type&PT_MOD) concatstring(info, "m,");
-        if(type&PT_RND4) concatstring(info, "r,");
+        if(type&PT_RND4) concatstring(info, "r4,");
+        if(type&PT_RND16) concatstring(info, "r16,");
         if(type&PT_FLIP) concatstring(info, "f,");
         int len = strlen(info);
         info[len-1] = info[len-1] == ',' ? ')' : '\0';
@@ -749,7 +750,7 @@ struct varenderer : partrenderer
         if(type & PT_HFLIP) rndmask |= 0x01;
         if(type & PT_VFLIP) rndmask |= 0x02;
         if(type & PT_ROT) rndmask |= 0x1F<<2;
-        if(type & PT_RND4) rndmask |= 0x03<<5;
+        if(type & PT_RND4 || type & PT_RND16) rndmask |= 0x03<<5;
     }
 
     void cleanup()
@@ -907,6 +908,16 @@ struct varenderer : partrenderer
             {
                 float tx = 0.5f*((p->flags>>5)&1), ty = 0.5f*((p->flags>>6)&1);
                 SETTEXCOORDS(tx, tx + 0.5f, ty, ty + 0.5f,
+                {
+                    if(p->flags&0x01) swap(u1, u2);
+                    if(p->flags&0x02) swap(v1, v2);
+                });
+
+            }
+            else if(type&PT_RND16)
+            {
+                float tx = 0.25f*((p->flags>>5)&3), ty = 0.25f*((p->flags>>6)&3);
+                SETTEXCOORDS(tx, tx + 0.25f, ty, ty + 0.25f,
                 {
                     if(p->flags&0x01) swap(u1, u2);
                     if(p->flags&0x02) swap(v1, v2);
@@ -1254,10 +1265,10 @@ static partrenderer *parts[] =
     new quadrenderer("<grey>particles/plasma", PT_SOFT|PT_PART|PT_BRIGHT|PT_FLIP|PT_WIND),
     new taperenderer("<grey>particles/sflare", PT_TAPE|PT_BRIGHT|PT_FEW),
     new taperenderer("<grey>particles/mflare", PT_TAPE|PT_BRIGHT|PT_RND4|PT_VFLIP|PT_FEW),
-    new quadrenderer("<comp>smoke 1", PT_SOFT|PT_PART|PT_LERP|PT_RND4|PT_WIND),
-    new quadrenderer("<comp>smoke 1", PT_PART|PT_LERP|PT_RND4|PT_WIND),
-    new quadrenderer("<comp>smoke 1", PT_SOFT|PT_PART|PT_RND4|PT_WIND),
-    new quadrenderer("<comp>smoke 1", PT_PART|PT_RND4|PT_WIND),
+    new quadrenderer("<comp>smoke 1", PT_SOFT|PT_PART|PT_LERP|PT_RND16|PT_WIND),
+    new quadrenderer("<comp>smoke 1", PT_PART|PT_LERP|PT_RND16|PT_WIND),
+    new quadrenderer("<comp>smoke 1", PT_SOFT|PT_PART|PT_RND16|PT_WIND),
+    new quadrenderer("<comp>smoke 1", PT_PART|PT_RND16|PT_WIND),
     new quadrenderer("<comp>hint", PT_SOFT|PT_PART|PT_BRIGHT),
     new quadrenderer("<comp>hint", PT_PART|PT_BRIGHT),
     new quadrenderer("<comp>hintbold", PT_SOFT|PT_PART|PT_BRIGHT),

@@ -4,7 +4,7 @@ VAR(0, showpastegrid, 0, 0, 1);
 VAR(0, showcursorgrid, 0, 0, 1);
 VAR(0, showselboxgrid, 0, 0, 1);
 
-VAR(IDF_PERSIST, selectionui, 0, 2, 2);
+VAR(IDF_PERSIST, selectionui, 0, 1, 1);
 FVAR(IDF_PERSIST, selectionuiyaw, -1, -1, 360);
 FVAR(IDF_PERSIST, selectionuipitch, -181, -181, 181);
 FVAR(IDF_PERSIST, selectionuiscale, FVAR_NONZERO, 1, FVAR_MAX);

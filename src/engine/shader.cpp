@@ -1127,7 +1127,7 @@ Shader *shader(int type, char *name, char *vs, char *ps, bool mapdef, bool overw
     slotparams.shrink(0);
     return s;
 }
-ICOMMAND(0, shader, "isss", (int *type, char *name, char *vs, char *ps), shader(*type, name, vs, ps));
+ICOMMAND(0, shader, "isssi", (int *type, char *name, char *vs, char *ps, int *overwrite), shader(*type, name, vs, ps, false, *overwrite != 0));
 ICOMMAND(0, mapshader, "isssi", (int *type, char *name, char *vs, char *ps, int *overwrite), shader(*type, name, vs, ps, true, *overwrite != 0));
 
 void resetmapshaders()
