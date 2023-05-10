@@ -1,5 +1,5 @@
-#ifndef __ENGINE_H__
-#define __ENGINE_H__
+#ifndef CPP_ENGINE_HEADER
+#define CPP_ENGINE_HEADER
 
 #include "version.h"
 #include "cube.h"
@@ -114,7 +114,8 @@ extern void reloadsignal(int signum);
 extern int shutdownwait, maxshutdownwait;
 extern void shutdownsignal(int signum);
 
-enum { CON_DEBUG = 0, CON_EVENT, CON_GAME, CON_MESG, CON_MAX };
+#define CON_ENUM(pr, en) en(pr, Debug, DEBUG) en(pr, Event, EVENT) en(pr, Message, MESG) en(pr, Maximum, MAX)
+ENUMNV(CON, CON_ENUM);
 
 #ifndef STANDALONE
 #include "world.h"

@@ -1,5 +1,5 @@
-#ifndef __CUBE_H__
-#define __CUBE_H__
+#ifndef CPP_CUBE_HEADER
+#define CPP_CUBE_HEADER
 
 #define _FILE_OFFSET_BITS 64
 
@@ -62,6 +62,7 @@
 
 #include "tools.h"
 #include "command.h"
+#include "enum.h"
 #include "geom.h"
 #include "prop.h"
 #include "ents.h"

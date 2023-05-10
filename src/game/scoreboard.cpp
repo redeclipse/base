@@ -174,6 +174,7 @@ namespace hud
         }
         scoresoff = !onauto;
         scoreson = on;
+        #if 0
         if(interm)
         {
             int numgroups = groupplayers();
@@ -244,6 +245,7 @@ namespace hud
                 }
             }
         }
+        #endif
     }
 
     ICOMMAND(0, getscoreteam, "i", (int *group), intret(groups.inrange(*group) ? groups[*group]->team : -1));

@@ -313,6 +313,16 @@ namespace defend
         }
     }
 
+    static vector<int> clients;
+    void buildclients(defendstate::flag &b)
+    {
+        gameent *d = NULL;
+        int numdyns = game::numdynents();
+        clients.shrink(0);
+        loopi(numdyns) if((d = (gameent *)game::iterdynents(i)) && d->actortype < A_ENEMY && insideaffinity(b, d))
+            clients.add(d->clientnum);
+    }
+
     void updateaffinity(int i, int owner, int enemy, int converted)
     {
         if(!st.flags.inrange(i)) return;
@@ -323,21 +333,17 @@ namespace defend
             {
                 if(b.owner != owner)
                 {
-                    gameent *d = NULL, *e = NULL;
-                    int numdyns = game::numdynents();
-                    loopi(numdyns) if((e = (gameent *)game::iterdynents(i)) && e->actortype < A_ENEMY && insideaffinity(b, e))
-                        if((d = e) == game::focus) break;
-                    game::announcev(S_V_FLAGSECURED, CON_EVENT, b.ent, "\faTeam %s secured \fw\f($pointtex)%s", game::colourteam(owner), b.name);
+                    buildclients(b);
+                    int infos[] = { i, b.owner, owner, b.enemy, enemy, b.converted, converted };
+                    hud::eventlogf(EV_AFFINITY, EV_A_SECURE, S_V_FLAGSECURED, EV_S_BROADCAST, clients, infos, 7, "\faTeam %s secured \fw\f($pointtex)%s", game::colourteam(owner), b.name);
                     if(game::dynlighteffects) adddynlight(b.o, enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(owner, colour)).mul(2.f), 500, 250);
                 }
             }
             else if(b.owner)
             {
-                gameent *d = NULL, *e = NULL;
-                int numdyns = game::numdynents();
-                loopi(numdyns) if((e = (gameent *)game::iterdynents(i)) && e->actortype < A_ENEMY && insideaffinity(b, e))
-                    if((d = e) == game::focus) break;
-                game::announcev(S_V_FLAGOVERTHROWN, CON_EVENT, b.ent, "\faTeam %s overthrew \fw\f($pointtex)%s", game::colourteam(enemy), b.name);
+                buildclients(b);
+                int infos[] = { i, b.owner, owner, b.enemy, enemy, b.converted, converted };
+                hud::eventlogf(EV_AFFINITY, EV_A_RETURN, S_V_FLAGOVERTHROWN, EV_S_BROADCAST, clients, infos, 7, "\faTeam %s overthrew \fw\f($pointtex)%s", game::colourteam(enemy), b.name);
                 if(game::dynlighteffects) adddynlight(b.o, enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(enemy, colour)).mul(2.f), 500, 250);
             }
             b.converted = converted;

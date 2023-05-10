@@ -33,12 +33,12 @@ namespace hud
             }
         };
 
-        int type, subtype, millis;
+        int type, subtype, sndidx, sndflags, millis;
         vector<client> clients;
         vector<int> infos;
         char *str;
 
-        event() : type(-1), subtype(-1), millis(-1), str(NULL)
+        event() : type(-1), subtype(-1), sndidx(-1), sndflags(0), millis(-1), str(NULL)
         {
             clients.setsize(0);
             infos.setsize(0);
@@ -56,13 +56,15 @@ namespace hud
 
     VAR(IDF_PERSIST, eventmaxlines, 1, 50, MAXEVENTS);
 
-    void eventlog(int type, int subtype, const vector<int> &clients, const vector<int> &infos, const char *str)
+    void eventlog(int type, int subtype, int sndidx, int sndflags, const vector<int> &clients, const vector<int> &infos, const char *str)
     {
         if(type < 0 || type >= EV_MAX) return;
         if(events.length() >= eventmaxlines) events.remove();
         event &e = events.add();
         e.type = type;
         e.subtype = subtype;
+        e.sndidx = sndidx;
+        e.sndflags = sndflags;
         e.millis = totalmillis;
         loopv(clients)
         {
@@ -77,20 +79,56 @@ namespace hud
             c.priv = d->privilege;
             c.weap = d->weapselect;
             c.name = newstring(*d->name ? d->name : "");
+            if(e.sndflags&(i == 0 ? EV_S_CLIENT1 : (i == 1 ? EV_S_CLIENT2 : EV_S_CLIENTN)))
+                entities::announce(e.sndidx, d);
         }
         loopv(infos) e.infos.add(infos[i]);
         if(str && *str)
         {
             e.str = newstring(str);
-            conoutft(CON_GAME, "%s", str);
+            conoutft(CON_EVENT, "%s", str);
         }
+        if(e.sndidx >= 0 && e.sndflags&EV_S_BROADCAST) entities::announce(e.sndidx);
     }
 
-    void eventlogf(int type, int subtype, const vector<int> &clients, const vector<int> &infos, const char *str, ...)
+    void eventlogf(int type, int subtype, int sndidx, int sndflags, const vector<int> &clients, const vector<int> &infos, const char *str, ...)
     {
         if(type < 0 || type >= EV_MAX) return;
         defvformatbigstring(sf, str, str);
-        eventlog(type, subtype, clients, infos, sf);
+        eventlog(type, subtype, sndidx, sndflags, clients, infos, sf);
+    }
+
+    static vector<int> eventclients, eventinfos;
+    void eventlog(int type, int subtype, int sndidx, int sndflags, const vector<int> &clients, int *infos, int ilen, const char *str)
+    {
+        if(type < 0 || type >= EV_MAX) return;
+        eventinfos.shrink(0);
+        if(infos) loopi(ilen) eventinfos.add(infos[i]);
+        eventlog(type, subtype, sndidx, sndflags, clients, eventinfos, str);
+    }
+
+    void eventlogf(int type, int subtype, int sndidx, int sndflags, const vector<int> &clients, int *infos, int ilen, const char *str, ...)
+    {
+        if(type < 0 || type >= EV_MAX) return;
+        defvformatbigstring(sf, str, str);
+        eventlog(type, subtype, sndidx, sndflags, clients, infos, ilen, sf);
+    }
+
+    void eventlog(int type, int subtype, int sndidx, int sndflags, int *clients, int clen, int *infos, int ilen, const char *str)
+    {
+        if(type < 0 || type >= EV_MAX) return;
+        eventclients.shrink(0);
+        if(clients) loopi(clen) eventclients.add(clients[i]);
+        eventinfos.shrink(0);
+        if(infos) loopi(ilen) eventinfos.add(infos[i]);
+        eventlog(type, subtype, sndidx, sndflags, eventclients, eventinfos, str);
+    }
+
+    void eventlogf(int type, int subtype, int sndidx, int sndflags, int *clients, int clen, int *infos, int ilen, const char *str, ...)
+    {
+        if(type < 0 || type >= EV_MAX) return;
+        defvformatbigstring(sf, str, str);
+        eventlog(type, subtype, sndidx, sndflags, clients, clen, infos, ilen, sf);
     }
 
     #define LOOPEVENTS(name,op) \
@@ -111,6 +149,8 @@ namespace hud
     ICOMMANDV(0, eventcount, events.length());
     ICOMMAND(0, geteventtype, "i", (int *n), intret(events.inrange(*n) ? events[*n].type : -1));
     ICOMMAND(0, geteventsubtype, "i", (int *n), intret(events.inrange(*n) ? events[*n].subtype : -1));
+    ICOMMAND(0, geteventsndidx, "i", (int *n), intret(events.inrange(*n) ? events[*n].sndidx : -1));
+    ICOMMAND(0, geteventsndflags, "i", (int *n), intret(events.inrange(*n) ? events[*n].sndflags : -1));
     ICOMMAND(0, geteventmillis, "i", (int *n), intret(events.inrange(*n) ? events[*n].millis : -1));
     ICOMMAND(0, geteventstr, "i", (int *n), result(events.inrange(*n) ? events[*n].str : ""));
 
@@ -2043,7 +2083,7 @@ namespace hud
         teamkills.setsize(0);
         damagelocs.setsize(0);
         hitlocs.setsize(0);
-        //while(!events.empty()) events.remove();
+        while(!events.empty()) events.remove();
         damageresidue = lastteam = 0;
     }
 }

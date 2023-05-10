@@ -355,7 +355,6 @@ namespace game
     VAR(IDF_PERSIST, eventiconfade, 500, 8000, VAR_MAX);
     VAR(IDF_PERSIST, eventiconshort, 500, 3500, VAR_MAX);
 
-    VAR(IDF_PERSIST, showobituaries, 0, 4, 5); // 0 = off, 1 = only me, 2 = 1 + announcements, 3 = 2 + but dying bots, 4 = 3 + but bot vs bot, 5 = all
     VAR(IDF_PERSIST, showobitdists, 0, 2, 2); // 0 = off, 1 = self only, 2 = all
     VAR(IDF_PERSIST, showobithpleft, 0, 2, 2); // 0 = off, 1 = self only, 2 = all
     VAR(IDF_PERSIST, obitannounce, 0, 2, 2); // 0 = off, 1 = only focus, 2 = everyone
@@ -812,30 +811,6 @@ namespace game
         if(d == player1 && !issound(errorchan))
             emitsound(S_ERROR, game::getplayersoundpos(d), d, &errorchan, SND_PRIORITY|SND_NOENV|SND_NOATTEN);
     }
-
-    void announcef(int idx, int targ, gameent *d, const char *msg, ...)
-    {
-        if(targ >= 0 && msg && *msg)
-        {
-            defvformatbigstring(text, msg, msg);
-            conoutft(targ, "%s", text);
-        }
-        entities::announce(idx, d);
-    }
-
-    void announcev(int idx, int targ, int ent, const char *msg, ...)
-    {
-        if(targ >= 0 && msg && *msg)
-        {
-            defvformatbigstring(text, msg, msg);
-            conoutft(targ, "%s", text);
-        }
-        if(idx < 0 || !entities::ents.inrange(ent)) return;
-        gameentity &e = *(gameentity *)entities::ents[ent];
-        emitsound(idx, e.getpos(), NULL, &e.schan, SND_PRIORITY|SND_TRACKED|SND_CLAMPED|SND_VELEST|SND_BUFFER, 0.25f);
-    }
-
-    ICOMMAND(0, announce, "gggs", (int *idx, int *targ, int *cn, char *s), announcef(*idx >= 0 ? *idx : -1, *targ >= 0 ? *targ : CON_EVENT, *cn >= 0 ? getclient(*cn) : NULL, "\fw%s", s));
 
     void resetfollow()
     {
@@ -1994,43 +1969,23 @@ namespace game
         if(dth >= 0) emitsound(dth, game::getplayersoundpos(d), d, &d->vschan);
         if(d->actortype < A_ENEMY)
         {
-            if(showobituaries)
-            {
-                #if 0
-                bool show = false;
-                switch(showobituaries)
-                {
-                    case 1: if(isme || m_duke(gamemode, mutators)) show = true; break;
-                    case 2: if(isme || anc >= 0 || m_duke(gamemode, mutators)) show = true; break;
-                    case 3: if(isme || d->actortype == A_PLAYER || anc >= 0 || m_duke(gamemode, mutators)) show = true; break;
-                    case 4: if(isme || d->actortype == A_PLAYER || v->actortype == A_PLAYER || anc >= 0 || m_duke(gamemode, mutators)) show = true; break;
-                    case 5: default: show = true; break;
-                }
-                if(show) announcef(anc, CON_GAME, d, "\fw%s", d->obit);
-                #endif
+            static vector<int> clients;
+            clients.shrink(0);
+            clients.add(d ? d->clientnum : -1);
+            clients.add(v ? v->clientnum : -1);
+            loopv(log) if(log[i] && log[i] != d && log[i] != v) clients.add(log[i]->clientnum);
 
-                static vector<int> clients;
-                clients.shrink(0);
-                clients.add(d ? d->clientnum : -1);
-                clients.add(v ? v->clientnum : -1);
-                loopv(log) if(log[i] && log[i] != d && log[i] != v) clients.add(log[i]->clientnum);
-
-                static vector<int> infos;
-                infos.shrink(0);
-                infos.add(weap); // 0
-                infos.add(flags); // 1
-                infos.add(damage); // 2
-                infos.add(style); // 3
-                infos.add(material); // 4
-                infos.add(burning ? 1 : 0); // 5
-                infos.add(bleeding ? 1 : 0); // 6
-                infos.add(shocking ? 1 : 0); // 7
-                infos.add(anc); // 8
-                infos.add(dth); // 9
-                hud::eventlog(EV_FRAG, d == v ? EV_F_SUICIDE : EV_F_KILL, clients, infos, d->obit);
-            }
-            if(anc >= 0) entities::announce(anc, d);
-            if(anc >= 0 && d != v) entities::announce(anc, v);
+            static vector<int> infos;
+            infos.shrink(0);
+            infos.add(weap); // 0
+            infos.add(flags); // 1
+            infos.add(damage); // 2
+            infos.add(style); // 3
+            infos.add(material); // 4
+            infos.add(burning ? 1 : 0); // 5
+            infos.add(bleeding ? 1 : 0); // 6
+            infos.add(shocking ? 1 : 0); // 7
+            hud::eventlog(EV_FRAG, d == v ? EV_F_SUICIDE : EV_F_KILL, anc, EV_S_CLIENT1|EV_S_CLIENT2, clients, infos, d->obit);
         }
         vec pos = d->headtag();
         pos.z -= d->zradius*0.125f;

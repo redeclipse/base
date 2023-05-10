@@ -3572,7 +3572,7 @@ namespace client
                     int winner = getint(p); // Round winner (-1 if everyone died, team in team modes, cn otherwise).
                     if(winner == -1)
                     { // If nobody won, just announce draw.
-                        game::announcef(S_V_DRAW, CON_EVENT, NULL, "\fyEveryone died, \fzoyEPIC FAIL!");
+                        //game::announcef(S_V_DRAW, CON_EVENT, NULL, "\fyEveryone died, \fzoyEPIC FAIL!");
                         break;
                     }
                     int playing = getint(p); // Were we playing?
@@ -3580,8 +3580,8 @@ namespace client
                     {
                         defformatstring(msg, "\fyTeam %s are the winners", game::colourteam(winner));
                         // If we were playing, announce with appropriate sound for if we won or lost.
-                        if(playing == 3) game::announcef((winner == game::player1->team) ? S_V_YOUWIN : S_V_YOULOSE, CON_EVENT, NULL, "%s", msg);
-                        else game::announcef(S_V_BOMBSCORE, CON_EVENT, NULL, "%s", msg);
+                        //if(playing == 3) game::announcef((winner == game::player1->team) ? S_V_YOUWIN : S_V_YOULOSE, CON_EVENT, NULL, "%s", msg);
+                        //else game::announcef(S_V_BOMBSCORE, CON_EVENT, NULL, "%s", msg);
                     }
                     else
                     {
@@ -3602,8 +3602,8 @@ namespace client
                         if(wins == 1) formatstring(msg, "\fy%s was the winner%s", game::colourname(t), hp);
                         else formatstring(msg, "\fy%s was the winner%s (\fs\fc%d\fS in a row)", game::colourname(t), hp, wins);
                         // If we were playing, announce with appropriate sound for if we won or lost.
-                        if(playing) game::announcef((winner == game::player1->clientnum) ? S_V_YOUWIN : S_V_YOULOSE, CON_EVENT, NULL, "%s", msg);
-                        else game::announcef(S_V_BOMBSCORE, CON_EVENT, NULL, "%s", msg);
+                        //if(playing) game::announcef((winner == game::player1->clientnum) ? S_V_YOUWIN : S_V_YOULOSE, CON_EVENT, NULL, "%s", msg);
+                        //else game::announcef(S_V_BOMBSCORE, CON_EVENT, NULL, "%s", msg);
                     }
                     break;
                 }

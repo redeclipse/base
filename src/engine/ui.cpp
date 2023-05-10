@@ -3888,6 +3888,7 @@ namespace UI
 
         static const char *typestr() { return "#TextString"; }
         const char *gettype() const { return typestr(); }
+        bool istext() const { return true; }
 
         const char *getstr() const { return str; }
     };
@@ -3908,6 +3909,7 @@ namespace UI
 
         static const char *typestr() { return "#TextInt"; }
         const char *gettype() const { return typestr(); }
+        bool istext() const { return true; }
 
         const char *getstr() const { return str; }
     };
@@ -3928,6 +3930,7 @@ namespace UI
 
         static const char *typestr() { return "#TextFloat"; }
         const char *gettype() const { return typestr(); }
+        bool istext() const { return true; }
 
         const char *getstr() const { return str; }
     };
@@ -3958,9 +3961,6 @@ namespace UI
                 break;
         }
     }
-
-    ICOMMAND(0, uitextfill, "ffe", (float *minw, float *minh, uint *children),
-        BUILD(Filler, o, o->setup(*minw*uiscale * uitextscale*0.5f, *minh*uiscale * uitextscale), children));
 
     ICOMMAND(0, uitext, "tfe", (tagval *text, float *scale, uint *children),
         buildtext(*text, *scale, uitextscale, Color(colourwhite), children));
@@ -4128,7 +4128,7 @@ namespace UI
     struct Clipper : Object
     {
         float sizew, sizeh, virtw, virth, offsetx, offsety;
-        bool inverted;
+        bool inverted, forced;
 
         Clipper() : offsetx(0), offsety(0), inverted(false) {}
 
@@ -4139,6 +4139,7 @@ namespace UI
             sizeh = sizeh_;
             if(offsetx_ >= 0) offsetx = offsetx_;
             if(offsety_ >= 0) offsety = offsety_;
+            forced = false;
             //virtw = virth = 0;
         }
 
@@ -4151,8 +4152,8 @@ namespace UI
             Object::layout();
             virtw = w;
             virth = h;
-            if(sizew) w = min(w, sizew);
-            if(sizeh) h = min(h, sizeh);
+            if(sizew || forced) w = min(w, sizew);
+            if(sizeh || forced) h = min(h, sizeh);
             offsetx = min(offsetx, hlimit());
             offsety = min(offsety, vlimit());
         }
@@ -4175,21 +4176,24 @@ namespace UI
 
         void draw(bool world, float sx, float sy)
         {
-            if((sizew && virtw > sizew) || (sizeh && virth > sizeh))
+            bool isdraw = (sizew && virtw > sizew) || (sizeh && virth > sizeh);
+            if(forced || isdraw)
             {
-                float drawx, drawy;
+                float drawx = 0, drawy = 0;
 
-                if(inverted)
+                if(isdraw)
                 {
-                    drawx = sx - (hlimit() - offsetx);
-                    drawy = sy - (vlimit() - offsety);
+                    if(inverted)
+                    {
+                        drawx = sx - (hlimit() - offsetx);
+                        drawy = sy - (vlimit() - offsety);
+                    }
+                    else
+                    {
+                        drawx = sx - offsetx;
+                        drawy = sy - offsety;
+                    }
                 }
-                else
-                {
-                    drawx = sx - offsetx;
-                    drawy = sy - offsety;
-                }
-
                 stopdrawing();
                 pushclip(sx, sy, w, h);
                 Object::draw(world, drawx, drawy);
@@ -4221,7 +4225,8 @@ namespace UI
     UIARGSCALEDT(Clipper, clip, virth, "f", float, 0.f, FVAR_MAX);
     UIARGSCALEDT(Clipper, clip, offsetx, "f", float, FVAR_MIN, FVAR_MAX);
     UIARGSCALEDT(Clipper, clip, offsety, "f", float, FVAR_MIN, FVAR_MAX);
-    UIARGT(Clipper, clip, inverted, "i", int, 0, 1);
+    UIARGB(Clipper, clip, inverted);
+    UIARGB(Clipper, clip, forced);
 
     struct Scroller : Clipper
     {

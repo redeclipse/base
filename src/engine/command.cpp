@@ -2,6 +2,7 @@
 // is largely backwards compatible with the quake console language.
 
 #define CPP_ENGINE_COMMAND 1
+#define ENUM_DEFINE
 #include "engine.h"
 
 hashnameset<ident> idents; // contains ALL vars/commands/aliases
