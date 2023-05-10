@@ -26,7 +26,7 @@ namespace hud
             int cn, type, team, colour, model, priv, weap, health;
             char *name;
 
-            client() : cn(-1), team(-1), colour(-1), model(0), priv(0), weap(0), health(0), name(NULL) {}
+            client() : cn(-1), type(-1), team(-1), colour(-1), model(0), priv(0), weap(0), health(0), name(NULL) {}
             ~client()
             {
                 DELETEA(name);
@@ -56,7 +56,7 @@ namespace hud
 
     VAR(IDF_PERSIST, eventmaxlines, 1, 50, MAXEVENTS);
 
-    void eventlog(int type, int subtype, int sndidx, int sndflags, const vector<int> &clients, const vector<int> &infos, const char *str)
+    void eventlogv(int type, int subtype, int sndidx, int sndflags, const vector<int> &clients, const vector<int> &infos, const char *str)
     {
         if(type < 0 || type >= EV_MAX) return;
         if(events.length() >= eventmaxlines) events.remove();
@@ -92,44 +92,44 @@ namespace hud
         if(e.sndidx >= 0 && e.sndflags&EV_S_BROADCAST) entities::announce(e.sndidx);
     }
 
-    void eventlogf(int type, int subtype, int sndidx, int sndflags, const vector<int> &clients, const vector<int> &infos, const char *str, ...)
+    void eventlogvf(int type, int subtype, int sndidx, int sndflags, const vector<int> &clients, const vector<int> &infos, const char *str, ...)
     {
         if(type < 0 || type >= EV_MAX) return;
         defvformatbigstring(sf, str, str);
-        eventlog(type, subtype, sndidx, sndflags, clients, infos, sf);
+        eventlogv(type, subtype, sndidx, sndflags, clients, infos, sf);
     }
 
     static vector<int> eventclients, eventinfos;
-    void eventlog(int type, int subtype, int sndidx, int sndflags, const vector<int> &clients, int *infos, int ilen, const char *str)
+    void eventlogvi(int type, int subtype, int sndidx, int sndflags, const vector<int> &clients, int *infos, int ilen, const char *str)
     {
         if(type < 0 || type >= EV_MAX) return;
         eventinfos.shrink(0);
         if(infos) loopi(ilen) eventinfos.add(infos[i]);
-        eventlog(type, subtype, sndidx, sndflags, clients, eventinfos, str);
+        eventlogv(type, subtype, sndidx, sndflags, clients, eventinfos, str);
     }
 
-    void eventlogf(int type, int subtype, int sndidx, int sndflags, const vector<int> &clients, int *infos, int ilen, const char *str, ...)
+    void eventlogvif(int type, int subtype, int sndidx, int sndflags, const vector<int> &clients, int *infos, int ilen, const char *str, ...)
     {
         if(type < 0 || type >= EV_MAX) return;
         defvformatbigstring(sf, str, str);
-        eventlog(type, subtype, sndidx, sndflags, clients, infos, ilen, sf);
+        eventlogvi(type, subtype, sndidx, sndflags, clients, infos, ilen, sf);
     }
 
-    void eventlog(int type, int subtype, int sndidx, int sndflags, int *clients, int clen, int *infos, int ilen, const char *str)
+    void eventlogi(int type, int subtype, int sndidx, int sndflags, int *clients, int clen, int *infos, int ilen, const char *str)
     {
         if(type < 0 || type >= EV_MAX) return;
         eventclients.shrink(0);
         if(clients) loopi(clen) eventclients.add(clients[i]);
         eventinfos.shrink(0);
         if(infos) loopi(ilen) eventinfos.add(infos[i]);
-        eventlog(type, subtype, sndidx, sndflags, eventclients, eventinfos, str);
+        eventlogv(type, subtype, sndidx, sndflags, eventclients, eventinfos, str);
     }
 
-    void eventlogf(int type, int subtype, int sndidx, int sndflags, int *clients, int clen, int *infos, int ilen, const char *str, ...)
+    void eventlogif(int type, int subtype, int sndidx, int sndflags, int *clients, int clen, int *infos, int ilen, const char *str, ...)
     {
         if(type < 0 || type >= EV_MAX) return;
         defvformatbigstring(sf, str, str);
-        eventlog(type, subtype, sndidx, sndflags, clients, clen, infos, ilen, sf);
+        eventlogi(type, subtype, sndidx, sndflags, clients, clen, infos, ilen, sf);
     }
 
     #define LOOPEVENTS(name,op) \

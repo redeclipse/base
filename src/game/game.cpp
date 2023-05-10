@@ -1985,7 +1985,7 @@ namespace game
             infos.add(burning ? 1 : 0); // 5
             infos.add(bleeding ? 1 : 0); // 6
             infos.add(shocking ? 1 : 0); // 7
-            hud::eventlog(EV_FRAG, d == v ? EV_F_SUICIDE : EV_F_KILL, anc, EV_S_CLIENT1|EV_S_CLIENT2, clients, infos, d->obit);
+            hud::eventlogv(EV_FRAG, d == v ? EV_F_SUICIDE : EV_F_KILL, anc, EV_S_CLIENT1|EV_S_CLIENT2, clients, infos, d->obit);
         }
         vec pos = d->headtag();
         pos.z -= d->zradius*0.125f;
@@ -2307,8 +2307,9 @@ namespace game
     const char *colourname(char *name, int clientnum, int team, int actortype, int col, int privilege, int weapselect, bool icon, bool dupname, int colour)
     {
         static string colored;
+        colored[0] = 0;
+        if(!name || !*name) return colored;
         string colortmp;
-        colored[0] = '\0';
         if(colour) concatstring(colored, "\fs");
         if(icon)
         {

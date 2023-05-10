@@ -335,7 +335,7 @@ namespace defend
                 {
                     buildclients(b);
                     int infos[] = { i, b.owner, owner, b.enemy, enemy, b.converted, converted };
-                    hud::eventlogf(EV_AFFINITY, EV_A_SECURE, S_V_FLAGSECURED, EV_S_BROADCAST, clients, infos, 7, "\faTeam %s secured \fw\f($pointtex)%s", game::colourteam(owner), b.name);
+                    hud::eventlogvif(EV_AFFINITY, EV_A_SECURE, S_V_FLAGSECURED, EV_S_BROADCAST, clients, infos, 7, "\faTeam %s secured \fw\f($pointtex)%s", game::colourteam(owner), b.name);
                     if(game::dynlighteffects) adddynlight(b.o, enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(owner, colour)).mul(2.f), 500, 250);
                 }
             }
@@ -343,7 +343,7 @@ namespace defend
             {
                 buildclients(b);
                 int infos[] = { i, b.owner, owner, b.enemy, enemy, b.converted, converted };
-                hud::eventlogf(EV_AFFINITY, EV_A_RETURN, S_V_FLAGOVERTHROWN, EV_S_BROADCAST, clients, infos, 7, "\faTeam %s overthrew \fw\f($pointtex)%s", game::colourteam(enemy), b.name);
+                hud::eventlogvif(EV_AFFINITY, EV_A_RETURN, S_V_FLAGOVERTHROWN, EV_S_BROADCAST, clients, infos, 7, "\faTeam %s overthrew \fw\f($pointtex)%s", game::colourteam(enemy), b.name);
                 if(game::dynlighteffects) adddynlight(b.o, enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(enemy, colour)).mul(2.f), 500, 250);
             }
             b.converted = converted;

@@ -2373,12 +2373,12 @@ namespace hud
     extern float radaraffinityblend, radarblipblend, radaraffinitysize;
     extern bool scoreson, scoresoff, shownscores;
     extern vector<int> teamkills;
-    extern void eventlog(int type, int subtype, int sndidx, int sndflags, const vector<int> &clients, const vector<int> &infos, const char *str = NULL);
-    extern void eventlogf(int type, int subtype, int sndidx, int sndflags, const vector<int> &clients, const vector<int> &infos, const char *str, ...);
-    extern void eventlog(int type, int subtype, int sndidx, int sndflags, const vector<int> &clients, int *infos, int ilen, const char *str = NULL);
-    extern void eventlogf(int type, int subtype, int sndidx, int sndflags, const vector<int> &clients, int *infos, int ilen, const char *str, ...);
-    extern void eventlog(int type, int subtype, int sndidx, int sndflags, int *clients, int clen, int *infos, int ilen, const char *str = NULL);
-    extern void eventlogf(int type, int subtype, int sndidx, int sndflags, int *clients, int clen, int *infos, int ilen, const char *str, ...);
+    extern void eventlogv(int type, int subtype, int sndidx, int sndflags, const vector<int> &clients, const vector<int> &infos, const char *str = NULL);
+    extern void eventlogvf(int type, int subtype, int sndidx, int sndflags, const vector<int> &clients, const vector<int> &infos, const char *str, ...);
+    extern void eventlogvi(int type, int subtype, int sndidx, int sndflags, const vector<int> &clients, int *infos, int ilen, const char *str = NULL);
+    extern void eventlogvif(int type, int subtype, int sndidx, int sndflags, const vector<int> &clients, int *infos, int ilen, const char *str, ...);
+    extern void eventlogi(int type, int subtype, int sndidx, int sndflags, int *clients, int clen, int *infos, int ilen, const char *str = NULL);
+    extern void eventlogif(int type, int subtype, int sndidx, int sndflags, int *clients, int clen, int *infos, int ilen, const char *str, ...);
     extern const char *geticon(int type, int value);
     extern void drawindicator(int weap, int x, int y, int s);
     extern void drawpointertex(const char *tex, int x, int y, int s, float r = 1, float g = 1, float b = 1, float fade = 1);

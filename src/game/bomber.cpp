@@ -434,7 +434,7 @@ namespace bomber
         st.dropaffinity(i, droploc, inertia, lastmillis, target);
         int clients[] = { d->clientnum }, infos[] = { i };
         emitsound(S_DROP, game::getplayersoundpos(d), d);
-        hud::eventlogf(EV_AFFINITY, EV_A_DROP, -1, EV_S_BROADCAST, clients, 1, infos, 1, "\fa%s dropped the \fs\fzwv\f($bombtex)bomb\fS", game::colourname(d));
+        hud::eventlogif(EV_AFFINITY, EV_A_DROP, -1, EV_S_BROADCAST, clients, 1, infos, 1, "\fa%s dropped the \fs\fzwv\f($bombtex)bomb\fS", game::colourname(d));
     }
 
     void removeplayer(gameent *d)
@@ -476,7 +476,7 @@ namespace bomber
             {
                 affinityeffect(i, T_NEUTRAL, f.pos(true, true), f.spawnloc);
                 int vals[] = { i };
-                hud::eventlog(EV_AFFINITY, EV_A_RESET, S_V_BOMBRESET, EV_S_BROADCAST, NULL, 0, vals, 1, "\faThe \fs\fzwvbomb\fS has been reset");
+                hud::eventlogi(EV_AFFINITY, EV_A_RESET, S_V_BOMBRESET, EV_S_BROADCAST, NULL, 0, vals, 1, "\faThe \fs\fzwvbomb\fS has been reset");
             }
         }
         if(value == 2) st.dropaffinity(i, pos, vec(0, 0, 1), lastmillis);
@@ -499,7 +499,7 @@ namespace bomber
         hud::teamscore(d->team).total = score;
         defformatstring(gteam, "%s", game::colourteam(g.team, "pointtex"));
         int millis = lastmillis-f.inittime, clients[] = { d->clientnum }, infos[] = { relay, goal, millis };
-        hud::eventlogf(EV_AFFINITY, EV_A_SCORE, S_V_BOMBSCORE, EV_S_BROADCAST, clients, 1, infos, 3, "\fa%s destroyed the %s base for team %s%s (score: \fs\fc%d\fS, time taken: \fs\fc%s\fS)", game::colourname(d), gteam, game::colourteam(d->team), extra, score, timestr(millis, 1));
+        hud::eventlogif(EV_AFFINITY, EV_A_SCORE, S_V_BOMBSCORE, EV_S_BROADCAST, clients, 1, infos, 3, "\fa%s destroyed the %s base for team %s%s (score: \fs\fc%d\fS, time taken: \fs\fc%s\fS)", game::colourname(d), gteam, game::colourteam(d->team), extra, score, timestr(millis, 1));
         st.returnaffinity(relay, lastmillis, false);
     }
 
@@ -512,7 +512,7 @@ namespace bomber
         {
             affinityeffect(i, d->team, d->feetpos(), f.pos(true, true));
             int clients[] = { d->clientnum, f.lastowner ? f.lastowner->clientnum : -1 }, infos[] = { i };
-            hud::eventlogf(EV_AFFINITY, EV_A_SECURE, S_V_BOMBPICKUP, EV_S_BROADCAST, clients, 2, infos, 1, "\fa%s secured the \fs\fzwv\f($bombtex)bomb\fS", game::colourname(d));
+            hud::eventlogif(EV_AFFINITY, EV_A_SECURE, S_V_BOMBPICKUP, EV_S_BROADCAST, clients, 2, infos, 1, "\fa%s secured the \fs\fzwv\f($bombtex)bomb\fS", game::colourname(d));
         }
         st.takeaffinity(i, d, lastmillis);
         if(d->ai) aihomerun(d, d->ai->state.last());
