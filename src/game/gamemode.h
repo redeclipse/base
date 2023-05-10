@@ -28,7 +28,7 @@ VARD(G_M_DUKE, (1<<G_M_DUEL)|(1<<G_M_SURVIVOR));
 #define G_S_ENUM(pr, en) \
     en(pr, Waiting, WAITING) en(pr, Getting Map, GETMAP) en(pr, Sending Map, SENDMAP) en(pr, Readying, READYING) en(pr, Syncing Info, GAMEINFO) \
     en(pr, Playing, PLAYING) en(pr, Overtime, OVERTIME) en(pr, Intermission, INTERMISSION) en(pr, Voting, VOTING) en(pr, Maximum, MAX)
-ENUMNV(G_S, G_S_ENUM)
+ENUMNV(G_S, G_S_ENUM);
 
 #define gs_waiting(a) (a >= G_S_WAITING && a <= G_S_GAMEINFO)
 #define gs_playing(a) (a >= G_S_PLAYING && a <= G_S_OVERTIME)
@@ -36,7 +36,7 @@ ENUMNV(G_S, G_S_ENUM)
 #define gs_timeupdate(a) (gs_playing(a) || gs_intermission(a))
 
 #define G_F_ENUM(pr, en) en(pr, Game Specific, GSP) en(pr, Maximum, MAX)
-ENUMNV(G_F, G_F_ENUM)
+ENUMNV(G_F, G_F_ENUM);
 
 struct gametypes
 {

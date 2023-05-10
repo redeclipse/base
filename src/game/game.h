@@ -347,20 +347,20 @@ extern const int pulsecols[PULSE_MAX][PULSECOLOURS];
     en(pr, SPREES, 4) en(pr, SPREE, 3) en(pr, MKILL, 7) \
     en(pr, CHECK, pr##_SPREE1|pr##_SPREE2|pr##_SPREE3|pr##_SPREE4) \
     en(pr, MULTI, pr##_MKILL1|pr##_MKILL2|pr##_MKILL3)
-ENUMLI(FRAG, FRAG_ENUM)
+ENUMLI(FRAG, FRAG_ENUM);
 
 #define EV_ENUM(pr, en) en(pr, FRAG) en(pr, AFFINITY) en(pr, MAX)
 ENUMLV(EV, EV_ENUM)
 
 #define EV_S_ENUM(pr, en) en(pr, NONE, 0) en(pr, CLIENT1, 1<<0) en(pr, CLIENT2, 1<<1)  en(pr, CLIENTN, 1<<1)  en(pr, BROADCAST, 1<<1) \
     en(pr, ALL, EV_S_CLIENT1|EV_S_CLIENT2|EV_S_CLIENTN|EV_S_BROADCAST)
-ENUMLI(EV_S, EV_S_ENUM)
+ENUMLI(EV_S, EV_S_ENUM);
 
 #define EV_F_ENUM(pr, en) en(pr, SUICIDE) en(pr, KILL) en(pr, MAX)
-ENUMLV(EV_F, EV_F_ENUM)
+ENUMLV(EV_F, EV_F_ENUM);
 
 #define EV_A_ENUM(pr, en) en(pr, SECURE) en(pr, RETURN) en(pr, DROP) en(pr, SCORE) en(pr, RESET) en(pr, MAX)
-ENUMLV(EV_A, EV_A_ENUM)
+ENUMLV(EV_A, EV_A_ENUM);
 
 enum
 {

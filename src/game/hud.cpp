@@ -23,10 +23,10 @@ namespace hud
     {
         struct client
         {
-            int cn, type, team, colour, model, priv, weap;
+            int cn, type, team, colour, model, priv, weap, health;
             char *name;
 
-            client() : cn(-1), team(-1), colour(-1), name(NULL) {}
+            client() : cn(-1), team(-1), colour(-1), model(0), priv(0), weap(0), health(0), name(NULL) {}
             ~client()
             {
                 DELETEA(name);
@@ -78,6 +78,7 @@ namespace hud
             c.model = d->model;
             c.priv = d->privilege;
             c.weap = d->weapselect;
+            c.health = d->health;
             c.name = newstring(*d->name ? d->name : "");
             if(e.sndflags&(i == 0 ? EV_S_CLIENT1 : (i == 1 ? EV_S_CLIENT2 : EV_S_CLIENTN)))
                 entities::announce(e.sndidx, d);
@@ -154,6 +155,11 @@ namespace hud
     ICOMMAND(0, geteventmillis, "i", (int *n), intret(events.inrange(*n) ? events[*n].millis : -1));
     ICOMMAND(0, geteventstr, "i", (int *n), result(events.inrange(*n) ? events[*n].str : ""));
 
+    #define EV_P_ENUM(pr, en) \
+        en(pr, CN) en(pr, TYPE) en(pr, TEAM) en(pr, COLOUR) en(pr, MODEL) \
+        en(pr, PRIV) en(pr, WEAP) en(pr, HEALTH) en(pr, NAME) en(pr, MAX)
+    ENUMLV(EV_P, EV_P_ENUM);
+
     ICOMMAND(0, geteventclient, "ibb", (int *n, int *pos, int *prop),
     {
         if(*n < 0) intret(events.length());
@@ -162,17 +168,18 @@ namespace hud
             if(*pos < 0) intret(events[*n].clients.length());
             else if(events[*n].clients.inrange(*pos))
             {
-                if(*prop < 0) intret(8);
+                if(*prop < 0) intret(EV_P_MAX);
                 else switch(*prop)
                 {
-                    case 0: intret(events[*n].clients[*pos].cn); break;
-                    case 1: intret(events[*n].clients[*pos].type); break;
-                    case 2: intret(events[*n].clients[*pos].team); break;
-                    case 3: intret(events[*n].clients[*pos].colour); break;
-                    case 4: intret(events[*n].clients[*pos].model); break;
-                    case 5: intret(events[*n].clients[*pos].priv); break;
-                    case 6: intret(events[*n].clients[*pos].weap); break;
-                    case 7: result(events[*n].clients[*pos].name); break;
+                    case EV_P_CN: intret(events[*n].clients[*pos].cn); break;
+                    case EV_P_TYPE: intret(events[*n].clients[*pos].type); break;
+                    case EV_P_TEAM: intret(events[*n].clients[*pos].team); break;
+                    case EV_P_COLOUR: intret(events[*n].clients[*pos].colour); break;
+                    case EV_P_MODEL: intret(events[*n].clients[*pos].model); break;
+                    case EV_P_PRIV: intret(events[*n].clients[*pos].priv); break;
+                    case EV_P_WEAP: intret(events[*n].clients[*pos].weap); break;
+                    case EV_P_HEALTH: intret(events[*n].clients[*pos].health); break;
+                    case EV_P_NAME: result(events[*n].clients[*pos].name); break;
                     default: break;
                 }
             }
