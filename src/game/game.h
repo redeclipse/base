@@ -2502,5 +2502,8 @@ namespace entities
 #include "capture.h"
 #include "defend.h"
 #include "bomber.h"
-
+#ifndef CPP_GAME_SERVER
+#define ENUM_DEFINE
+#endif
+#include "enum.h"
 #endif
