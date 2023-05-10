@@ -433,7 +433,7 @@ namespace bomber
         if(!st.flags.inrange(i)) return;
         st.dropaffinity(i, droploc, inertia, lastmillis, target);
         int clients[] = { d->clientnum }, infos[] = { i };
-        //emitsound(S_DROP, game::getplayersoundpos(d), d);
+        emitsound(S_DROP, game::getplayersoundpos(d), d);
         hud::eventlogf(EV_AFFINITY, EV_A_DROP, -1, EV_S_BROADCAST, clients, 1, infos, 1, "\fa%s dropped the \fs\fzwv\f($bombtex)bomb\fS", game::colourname(d));
     }
 
