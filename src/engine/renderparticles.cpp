@@ -217,7 +217,7 @@ struct partrenderer
                     }
                     if(p->o.z < p->val)
                     {
-                        addstain(p->collide-1, vec(p->o.x, p->o.y, p->val), vec(o).sub(p->o).normalize(), 2*p->size, p->color, type&PT_RND4 ? (p->flags>>5)&3 : 0);
+                        addstain(p->collide-1, vec(p->o.x, p->o.y, p->val), vec(o).sub(p->o).normalize(), 2*p->size, p->color, type&PT_RND4 || type&PT_RND16 ? (p->flags>>5)&3 : 0);
                         blend = 0;
                     }
                 }
@@ -1261,14 +1261,14 @@ static partrenderer *parts[] =
     new portalrenderer("<comp>portal 1", PT_ENVMAP),
     &icons, &lineprimitives, &lineontopprimitives, &trisprimitives, &trisontopprimitives,
     &loopprimitives, &loopontopprimitives, &coneprimitives, &coneontopprimitives,
-    new quadrenderer("<comp>fire 1", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_WIND),
+    new quadrenderer("<comp>fire 1", PT_SOFT|PT_PART|PT_BRIGHT|PT_HFLIP|PT_RND16|PT_WIND),
     new quadrenderer("<grey>particles/plasma", PT_SOFT|PT_PART|PT_BRIGHT|PT_FLIP|PT_WIND),
     new taperenderer("<grey>particles/sflare", PT_TAPE|PT_BRIGHT|PT_FEW),
     new taperenderer("<grey>particles/mflare", PT_TAPE|PT_BRIGHT|PT_RND4|PT_VFLIP|PT_FEW),
-    new quadrenderer("<comp>smoke 1", PT_SOFT|PT_PART|PT_LERP|PT_RND16|PT_WIND),
-    new quadrenderer("<comp>smoke 1", PT_PART|PT_LERP|PT_RND16|PT_WIND),
-    new quadrenderer("<comp>smoke 1", PT_SOFT|PT_PART|PT_RND16|PT_WIND),
-    new quadrenderer("<comp>smoke 1", PT_PART|PT_RND16|PT_WIND),
+    new quadrenderer("<comp>smoke 1", PT_SOFT|PT_PART|PT_LERP|PT_FLIP|PT_RND16|PT_WIND),
+    new quadrenderer("<comp>smoke 1", PT_PART|PT_LERP|PT_FLIP|PT_RND16|PT_WIND),
+    new quadrenderer("<comp>smoke 1", PT_SOFT|PT_PART|PT_FLIP|PT_RND16|PT_WIND),
+    new quadrenderer("<comp>smoke 1", PT_PART|PT_FLIP|PT_RND16|PT_WIND),
     new quadrenderer("<comp>hint", PT_SOFT|PT_PART|PT_BRIGHT),
     new quadrenderer("<comp>hint", PT_PART|PT_BRIGHT),
     new quadrenderer("<comp>hintbold", PT_SOFT|PT_PART|PT_BRIGHT),
@@ -1281,15 +1281,15 @@ static partrenderer *parts[] =
     new quadrenderer("<comp>hintent", PT_PART|PT_BRIGHT),
     new quadrenderer("<comp>hintent", PT_PART|PT_BRIGHT|PT_ONTOP),
     new quadrenderer("<grey>particles/spark", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP),
-    new quadrenderer("<comp>fire 1", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_WIND),
-    new quadrenderer("<comp>fire 1", PT_PART|PT_BRIGHT|PT_RND4|PT_WIND),
+    new quadrenderer("<comp>fire 1", PT_SOFT|PT_PART|PT_BRIGHT|PT_HFLIP|PT_RND16|PT_WIND),
+    new quadrenderer("<comp>fire 1", PT_PART|PT_BRIGHT|PT_HFLIP|PT_RND16|PT_WIND),
     new quadrenderer("<grey>particles/plasma", PT_SOFT|PT_PART|PT_BRIGHT|PT_FLIP|PT_WIND),
     new quadrenderer("<grey>particles/plasma", PT_PART|PT_BRIGHT|PT_FLIP|PT_WIND),
     new quadrenderer("<grey>particles/electric", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
     new quadrenderer("<grey>particles/electric", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
     new quadrenderer("<grey>particles/eleczap", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
     new quadrenderer("<grey>particles/eleczap", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
-    new quadrenderer("<comp>fire 1", PT_PART|PT_BRIGHT|PT_RND4|PT_BRIGHT|PT_WIND),
+    new quadrenderer("<comp>fire 1", PT_PART|PT_BRIGHT|PT_HFLIP|PT_RND16|PT_BRIGHT|PT_WIND),
     new taperenderer("<grey>particles/sflare", PT_TAPE|PT_BRIGHT),
     new taperenderer("<grey>particles/cleanflare", PT_TAPE|PT_BRIGHT),
     new taperenderer("<grey>particles/mflare", PT_TAPE|PT_BRIGHT|PT_RND4|PT_VFLIP|PT_BRIGHT),
