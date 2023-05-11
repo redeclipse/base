@@ -4,13 +4,12 @@
 * Features parkour gameplay, such as impulse boosts, dashing, and other tricks
 * Favourite gamemodes with an array of mutators and variables
 * A built-in editor lets you create your own release-quality maps cooperatively online
-* Completely free; download [here](https://redeclipse.net/)
 
 ## About
 
 Building on over 14 years of gameplay design and the lessons learned from Red Eclipse 1.x, Red Eclipse 2.x+ focuses on agile, easily accessible arena shooter gameplay over adherence to antiquated arena shooter tropes. For creators, the full power of the [Tesseract](http://tesseract.gg/) engine is at your fingertips in the included realtime multiplayer editor.
 
-The project is a free and open source game built using OpenAL and OpenGL which allows it to be ported to many platforms; you can [download a package](https://redeclipse.net/download) for Windows, GNU/Linux, BSD, and macOS; or build a development copy by cloning the [Git repository](https://redeclipse.net/devel) and live on the bleeding edge.
+The project is a free and open-source game built using SDL, OpenAL and OpenGL which allows it to be ported to many platforms; you can [download a package](https://redeclipse.net/download) for Windows, GNU/Linux, BSD, and macOS; or build a development copy by cloning the [Git repository](https://redeclipse.net/devel) and live on the bleeding edge.
 
 In a true open source by the people for the people nature, we try to work closely with the gaming and open source communities to provide a better overall experience, aiming to create a game environment that is fun and easy to play, while still having elements to master.
 
