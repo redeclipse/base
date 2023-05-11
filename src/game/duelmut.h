@@ -335,6 +335,7 @@ struct duelservmode : servmode
                         formatstring(fight, "Duel between %s, round \fs\fc#%d\fS", names, duelround);
                     }
                     else if(m_survivor(gamemode, mutators)) formatstring(fight, "Survivor, round \fs\fc#%d\fS", duelround);
+                    vector<int> eventclients;
                     loopv(playing)
                     {
                         if(playing[i]->state == CS_ALIVE)
@@ -347,8 +348,10 @@ struct duelservmode : servmode
                         }
                         else if(allowed.find(playing[i]) < 0) allowed.add(playing[i]);
                         duelqueue.removeobj(playing[i]);
+                        eventclients.add(playing[i]->clientnum);
                     }
-                    ancmsgft(-1, CON_EVENT, "S_V_FIGHT", "\fy%s%s", gamestate == G_S_OVERTIME && !restricted.empty() ? "\fs\fzcgSudden Death\fS, " : "", fight);
+                    int vals[] = { duelround, duelqueue.length() };
+                    eventlogvif(-1, EV_ANNOUNCE, EV_N_START, "S_V_FIGHT", EV_S_BROADCAST, eventclients, vals, 2, "\fy%s%s", gamestate == G_S_OVERTIME && !restricted.empty() ? "\fs\fzcgSudden Death\fS, " : "", fight);
                     dueltime = dueldeath = -1;
                     duelcheck = gamemillis+5000;
                 }
@@ -386,10 +389,22 @@ struct duelservmode : servmode
                         if(!cleanup)
                         {
                             bool teampoints = true;
+                            if(duelwinner != alive[0]->team)
+                            {
+                                duelwinner = alive[0]->team;
+                                duelwins = 1;
+                            }
+                            else duelwins++;
+                            vector<int> eventclients;
+                            loopv(playing) eventclients.add(playing[i]->clientnum);
+                            vector<int> eventinfos;
+                            eventinfos.add(duelwins);
+                            eventinfos.add(duelwinner);
+                            loopv(alive) eventinfos.add(alive[i]->clientnum);
                             loopv(clients)
                             {
-                                bool wasplay = playing.find(clients[i]) >= 0;
-                                if(wasplay)
+                                const char *sndidx = "S_V_SCORE";
+                                if(playing.find(clients[i]) >= 0)
                                 {
                                     if(clients[i]->team == alive[0]->team)
                                     {
@@ -408,9 +423,11 @@ struct duelservmode : servmode
                                                 teampoints = false;
                                             }
                                         }
+                                        sndidx = "S_V_YOUWIN";
                                     }
+                                    else sndidx = "S_V_YOULOSE";
                                 }
-                                if(allowbroadcast(clients[i]->clientnum)) sendf(clients[i]->clientnum, 1, "ri3", N_DUELEND, alive[0]->team, wasplay ? 3 : 2);
+                                eventlogvf(clients[i]->clientnum, EV_ANNOUNCE, EV_N_FINISH, sndidx, EV_S_BROADCAST, eventclients, eventinfos, "\fyTeam %s are the winners", colourteam(alive[0]->team));
                             }
                         }
                         clear();
@@ -431,9 +448,13 @@ struct duelservmode : servmode
                     if(!cleanup)
                     {
                         endffaround(alive);
-                        sendf(-1, 1, "ri2", N_DUELEND, -1);
                         duelwinner = -1;
                         duelwins = 0;
+                        vector<int> eventclients;
+                        loopv(playing) eventclients.add(playing[i]->clientnum);
+                        vector<int> eventinfos;
+                        loopv(alive) eventinfos.add(alive[i]->clientnum);
+                        eventlogv(-1, EV_ANNOUNCE, EV_N_DRAW, "S_V_DRAW", EV_S_BROADCAST, eventclients, eventinfos, "\fyEveryone died, \fzoyEPIC FAIL!");
                     }
                     clear();
                     break;
@@ -449,29 +470,53 @@ struct duelservmode : servmode
                     if(!cleanup)
                     {
                         endffaround(alive);
+                        stringz(end);
+                        stringz(hp);
+                        if(!m_insta(gamemode, mutators))
+                        {
+                            if(alive[0]->health >= alive[0]->gethealth(gamemode, mutators))
+                                formatstring(hp, " with a \fs\fcflawless victory\fS");
+                            else formatstring(hp, " with \fs\fc%d\fS health left", alive[0]->health/10);
+                        }
                         if(duelwinner != alive[0]->clientnum)
                         {
                             duelwinner = alive[0]->clientnum;
                             duelwins = 1;
+                            formatstring(end, "\fy%s was the winner%s", colourname(alive[0]), hp);
                         }
                         else
                         {
                             duelwins++;
+                            formatstring(end, "\fy%s was the winner%s (\fs\fc%d\fS in a row)", colourname(alive[0]), hp, duelwins);
                         }
+                        vector<int> eventclients;
+                        loopv(playing) eventclients.add(playing[i]->clientnum);
+                        vector<int> eventinfos;
+                        eventinfos.add(duelwins);
+                        eventinfos.add(duelwinner);;
+                        loopv(alive) eventinfos.add(alive[i]->clientnum);
                         loopv(clients)
                         {
-                            bool wasplay = playing.find(clients[i]) >= 0;
-                            if(wasplay && clients[i] == alive[0] && !m_dm_oldschool(gamemode, mutators))
+                            const char *sndidx = "S_V_SCORE";
+                            if(playing.find(clients[i]) >= 0)
                             {
-                                if(!m_affinity(gamemode)) givepoints(clients[i], 1, true, true);
-                                else if(!duelaffin)
+                                if(clients[i] == alive[0])
                                 {
-                                    score &ts = teamscore(clients[i]->team);
-                                    ts.total++;
-                                    sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
+                                    if(!m_dm_oldschool(gamemode, mutators))
+                                    {
+                                        if(!m_affinity(gamemode)) givepoints(clients[i], 1, true, true);
+                                        else if(!duelaffin)
+                                        {
+                                            score &ts = teamscore(clients[i]->team);
+                                            ts.total++;
+                                            sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
+                                        }
+                                    }
+                                    sndidx = "S_V_YOUWIN";
                                 }
+                                else sndidx = "S_V_YOULOSE";
                             }
-                            if(allowbroadcast(clients[i]->clientnum)) sendf(clients[i]->clientnum, 1, "ri4", N_DUELEND, duelwinner, wasplay ? 1 : 0, duelwins);
+                            eventlogv(clients[i]->clientnum, EV_ANNOUNCE, EV_N_FINISH, sndidx, EV_S_BROADCAST, eventclients, eventinfos, end);
                         }
                     }
                     clear();

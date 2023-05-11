@@ -2586,14 +2586,21 @@ namespace client
                     break;
                 }
 
-                case N_ANNOUNCE:
+                case N_EVENTLOG:
                 {
-                    int targ = getint(p);
+                    int evtype = getint(p), subtype = getint(p);
                     getstring(text, p);
-                    int snd = gamesounds[text].getindex();
+                    int snd = gamesounds[text].getindex(), sndflags = getint(p);
+                    static vector<int> eventclients;
+                    eventclients.setsize(0);
+                    int clen = getint(p);
+                    loopi(clen) eventclients.add(getint(p));
+                    static vector<int> eventinfos;
+                    eventinfos.setsize(0);
+                    int ilen = getint(p);
+                    loopi(ilen) eventinfos.add(getint(p));
                     getstring(text, p);
-                    if(targ >= 0 && text[0]) conoutft(targ, "%s", text);
-                    if(snd >= 0) entities::announce(snd, NULL, true);
+                    hud::eventlogv(evtype, subtype, snd, sndflags, eventclients, eventinfos, text);
                     break;
                 }
 
@@ -3562,47 +3569,6 @@ namespace client
                     {
                         score &ts = hud::teamscore(team);
                         ts.total = total;
-                    }
-                    break;
-                }
-
-                case N_DUELEND:
-                {
-                    int winner = getint(p); // Round winner (-1 if everyone died, team in team modes, cn otherwise).
-                    if(winner == -1)
-                    { // If nobody won, just announce draw.
-                        //game::announcef(S_V_DRAW, CON_EVENT, NULL, "\fyEveryone died, \fzoyEPIC FAIL!");
-                        break;
-                    }
-                    int playing = getint(p); // Were we playing?
-                    if(playing >= 2)
-                    {
-                        defformatstring(msg, "\fyTeam %s are the winners", game::colourteam(winner));
-                        // If we were playing, announce with appropriate sound for if we won or lost.
-                        //if(playing == 3) game::announcef((winner == game::player1->team) ? S_V_YOUWIN : S_V_YOULOSE, CON_EVENT, NULL, "%s", msg);
-                        //else game::announcef(S_V_BOMBSCORE, CON_EVENT, NULL, "%s", msg);
-                    }
-                    else
-                    {
-                        int wins = getint(p); // Winner's win streak.
-                        gameent *t = game::getclient(winner);
-                        if(!t) break;
-                        string msg, hp = "";
-                        if(!m_insta(game::gamemode, game::mutators))
-                        { // If applicable, create remaining health or flawless message.
-                            if(t->health >= t->gethealth(game::gamemode, game::mutators)) formatstring(hp, " with a \fs\fcflawless victory\fS");
-                            else
-                            {
-                                if(game::damageinteger) formatstring(hp, " with \fs\fc%d\fS health left", int(ceilf(t->health/game::damagedivisor)));
-                                else formatstring(hp, " with \fs\fc%.1f\fS health left", t->health/game::damagedivisor);
-                            }
-                        }
-                        // Format win message with streak if it has more than one win.
-                        if(wins == 1) formatstring(msg, "\fy%s was the winner%s", game::colourname(t), hp);
-                        else formatstring(msg, "\fy%s was the winner%s (\fs\fc%d\fS in a row)", game::colourname(t), hp, wins);
-                        // If we were playing, announce with appropriate sound for if we won or lost.
-                        //if(playing) game::announcef((winner == game::player1->clientnum) ? S_V_YOUWIN : S_V_YOULOSE, CON_EVENT, NULL, "%s", msg);
-                        //else game::announcef(S_V_BOMBSCORE, CON_EVENT, NULL, "%s", msg);
                     }
                     break;
                 }
