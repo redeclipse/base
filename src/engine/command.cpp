@@ -862,11 +862,7 @@ void setvardesc(const char *s, const char *v, const char *f)
     }
     DELETEA(id->desc);
     if(v && *v) id->desc = newstring(v);
-    loopvrev(id->fields)
-    {
-        DELETEA(id->fields[i]);
-        id->fields.remove(i);
-    }
+    id->fields.deletearrays();
     if(f && *f) explodelist(f, id->fields);
 }
 ICOMMAND(0, setdesc, "sss", (char *s, char *t, char *f), setvardesc(s, t, f));

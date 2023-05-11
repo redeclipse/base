@@ -648,7 +648,7 @@ void stopsound()
     delsoundfxslots();
     stopmusic();
     clearsound();
-    enumerate(soundsamples, soundsample, s, s.cleanup());
+    enumerate(soundsamples, soundsample, s, s.clear());
     soundsamples.clear();
     gamesounds.clear();
     closemumble();
@@ -922,23 +922,23 @@ int soundindex(soundslot *slot, int slotnum, const vec &pos, int flags, int *hoo
 
     loopv(soundsources)
     {
-        if(soundsources[i].valid()) sources.add(&soundsources[i]);
-        else return i; // unused index
+        soundsource &s = soundsources[i];
+        if(s.valid()) sources.add(&s);
+        else return s.index; // unused index
     }
 
     if(soundsources.length() < soundmaxsources)
     { // if we get here, can't re-use an old index, try a new one first
-        int index = soundsources.length();
-        soundsources.add();
-        return index;
+        soundsource &s = soundsources.add();
+        s.index = soundsources.length() - 1;
+        return s.index;
     }
 
     sources.sort(sourcecmp); // sort as a last resort
     if(sources[0]->index >= 0 && sources.length() > soundmaxsources)
     { // as long as the top isn't our dummy we can clear it
-        int index = sources[0]->index;
         sources[0]->clear();
-        return index;
+        return sources[0]->index;
     }
 
     return -1;
@@ -958,7 +958,14 @@ void updatesounds()
     {
         soundsource &s = soundsources[i];
 
-        if((!s.ends || lastmillis < s.ends) && s.playing())
+        if(s.index < 0)
+        {
+            s.clear();
+            s.index = i;
+            continue;
+        }
+
+        if((!s.ends || lastmillis < s.ends) && s.active())
         {
             s.update();
             continue;
@@ -978,13 +985,12 @@ void updatesounds()
             soundsample *sample = slot->samples.inrange(variant) ? slot->samples[variant] : slot->samples[0];
             if(!sample || !sample->valid()) continue;
 
-            int index = s.index;
             s.slot = slot;
             s.slotnum = n;
-            SOUNDCHECK(s.push(sample), break, conoutf("Error playing buffered sample [%d] %s (%d): %s [%s@%s:%d]", n, sample->name, index, alGetString(err), al_errfunc, al_errfile, al_errline));
+            SOUNDCHECK(s.push(sample), break, conoutf("Error playing buffered sample [%d] %s (%d): %s [%s@%s:%d]", n, sample->name, s.index, alGetString(err), al_errfunc, al_errfile, al_errline));
         }
         //conoutf("Clearing sound source %d [%d] %d [%d] %s", s.source, s.index, s.ends, lastmillis, soundsources[i].playing() ? "playing" : "not playing");
-        if(!s.playing()) s.clear();
+        if(!s.active()) s.clear();
     }
 
     SDL_LockMutex(music_mutex);
@@ -1048,8 +1054,6 @@ int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, flo
         s.slot = slot;
         s.slotnum = n;
         s.millis = lastmillis;
-        s.index = index;
-
         s.flags = flags;
         if(d || s.flags&SND_TRACKED)
         {
@@ -1145,7 +1149,7 @@ void resetsound()
     clearchanges(CHANGE_SOUND);
     delsoundfxslots();
     loopv(soundsources) soundsources[i].clear();
-    enumerate(soundsamples, soundsample, s, s.cleanup());
+    enumerate(soundsamples, soundsample, s, s.clear());
     stopmusic();
     nosound = true;
     initsound();
@@ -1338,6 +1342,7 @@ void soundfile::reset()
     format = AL_NONE;
     data_s = NULL;
     sndfile = NULL;
+    viofile = NULL;
     memset(&info, 0, sizeof (info));
 }
 
@@ -1357,8 +1362,13 @@ void soundfile::clear()
 ALenum soundsample::setup(soundfile *s)
 {
     SOUNDERROR();
+    if(alIsBuffer(buffer))
+    {
+        alDeleteBuffers(1, &buffer);
+        SOUNDERRORTRACK(clear(); return err);
+    }
     alGenBuffers(1, &buffer);
-    SOUNDERRORTRACK(cleanup(); return err);
+    SOUNDERRORTRACK(clear(); return err);
 
     time = s->frames / (float)s->info.samplerate;
 
@@ -1368,7 +1378,7 @@ ALenum soundsample::setup(soundfile *s)
         case soundfile::FLOAT: alBufferData(buffer, s->format, s->data_f, s->len, s->info.samplerate); break;
         default: return AL_INVALID_OPERATION;
     }
-    SOUNDERRORTRACK(cleanup(); return err);
+    SOUNDERRORTRACK(clear(); return err);
     return AL_NO_ERROR;
 }
 
@@ -1380,7 +1390,14 @@ void soundsample::reset()
 void soundsample::cleanup()
 {
     if(valid()) alDeleteBuffers(1, &buffer);
-    buffer = 0;
+    buffer = AL_INVALID;
+}
+
+void soundsample::clear()
+{
+    DELETEA(name);
+    cleanup();
+    reset();
 }
 
 bool soundsample::valid()
@@ -1395,13 +1412,28 @@ void soundslot::reset()
     samples.shrink(0);
 }
 
+void printsources()
+{
+    loopv(soundsources)
+    {
+        soundsource &s = soundsources[i];
+        conoutf("SOURCE: %d) %d -> %u [0x%08x %d] (%.6f %.6f) [%s] [%s] %s", i+1, s.index, s.source, s.flags, lastmillis-s.millis, s.gain, s.curgain, s.playing() ? "playing" : "not playing", s.active() ? "active" : "inactive", s.slot ? s.slot->name : "<bad slot>");
+    }
+    fatal("Ran out of sound sources.");
+}
+
 ALenum soundsource::setup(soundsample *s)
 {
     if(!s->valid()) return AL_NO_ERROR;
 
     SOUNDERROR();
+    if(alIsSource(source))
+    {
+        alDeleteSources(1, &source);
+        SOUNDERRORTRACK(clear(); return err);
+    }
     alGenSources(1, &source);
-    SOUNDERRORTRACK(clear(); return err);
+    SOUNDERRORTRACK(clear(); printsources(); return err);
 
     finalrolloff = rolloff >= 0 ? rolloff : (slot->rolloff >= 0 ? slot->rolloff : 1.f);
     finalrefdist = refdist >= 0 ? refdist : (slot->refdist >= 0 ? slot->refdist : soundrefdist);
@@ -1431,6 +1463,11 @@ ALenum soundsource::setup(soundsample *s)
     {
         if(!(flags&SND_NOFILTER) && !(flags&SND_NOATTEN) && sounddistfilter > 0.0f)
         {
+            if(alIsFilter(dirfilter))
+            {
+                alDeleteFilters(1, &dirfilter);
+                SOUNDERRORTRACK(clear(); return err);
+            }
             alGenFilters(1, &dirfilter);
             SOUNDERRORTRACK(clear(); return err);
 
@@ -1443,6 +1480,11 @@ ALenum soundsource::setup(soundsample *s)
 
         if(!(flags&SND_NOENV))
         {
+            if(alIsFilter(efxfilter))
+            {
+                alDeleteFilters(1, &efxfilter);
+                SOUNDERRORTRACK(clear(); return err);
+            }
             alGenFilters(1, &efxfilter);
             SOUNDERRORTRACK(clear(); return err);
 
@@ -1484,16 +1526,23 @@ ALenum soundsource::setup(soundsample *s)
 
 void soundsource::cleanup()
 {
-    if(!valid()) return;
+    if(!valid())
+    {
+        source = AL_INVALID;
+        return;
+    }
 
     if(al_ext_efx)
     {
         if(alIsFilter(dirfilter)) alDeleteFilters(1, &dirfilter);
+        dirfilter = AL_INVALID;
         if(alIsFilter(efxfilter)) alDeleteFilters(1, &efxfilter);
+        efxfilter = AL_INVALID;
     }
 
     alSourceStop(source);
     alDeleteSources(1, &source);
+    source = AL_INVALID;
 }
 
 void soundsource::reset(bool dohook)
@@ -1507,7 +1556,7 @@ void soundsource::reset(bool dohook)
     material = MAT_AIR;
     flags = millis = ends = 0;
     rolloff = refdist = maxdist = -1;
-    index = slotnum = lastupdate = -1;
+    slotnum = lastupdate = -1;
     offset = 0;
     if(dohook)
     {
@@ -1679,6 +1728,24 @@ ALenum soundsource::play()
     return AL_NO_ERROR;
 }
 
+ALenum soundsource::pause()
+{
+    if(playing()) return AL_NO_ERROR;
+    SOUNDERROR();
+    alSourcePause(source);
+    SOUNDERRORTRACK(clear(); return err);
+    return AL_NO_ERROR;
+}
+
+ALenum soundsource::stop()
+{
+    if(playing()) return AL_NO_ERROR;
+    SOUNDERROR();
+    alSourceStop(source);
+    SOUNDERRORTRACK(clear(); return err);
+    return AL_NO_ERROR;
+}
+
 ALenum soundsource::push(soundsample *s)
 {
     SOUNDCHECK(setup(s), , return err);
@@ -1703,9 +1770,19 @@ ALenum musicstream::setup(const char *n, soundfile *s)
     MUSICTAG(album, SF_STR_ALBUM);
 
     SOUNDERROR();
+    loopi(MUSICBUFS) if(alIsBuffer(buffer[i]))
+    {
+        alDeleteBuffers(1, &buffer[i]);
+        SOUNDERRORTRACK(clear(); return err);
+    }
     alGenBuffers(MUSICBUFS, buffer);
     SOUNDERRORTRACK(clear(); return err);
 
+    if(alIsSource(source))
+    {
+        alDeleteSources(1, &source);
+        SOUNDERRORTRACK(clear(); return err);
+    }
     alGenSources(1, &source);
     SOUNDERRORTRACK(clear(); return err);
 
@@ -1757,6 +1834,7 @@ void musicstream::cleanup()
     if(title) delete[] title;
     if(album) delete[] album;
     if(data) delete data;
+    source = AL_INVALID;
 }
 
 void musicstream::reset()
@@ -1851,6 +1929,24 @@ ALenum musicstream::play()
     return AL_NO_ERROR;
 }
 
+ALenum musicstream::pause()
+{
+    if(playing()) return AL_NO_ERROR;
+    SOUNDERROR();
+    alSourcePause(source);
+    SOUNDERRORTRACK(clear(); return err);
+    return AL_NO_ERROR;
+}
+
+ALenum musicstream::stop()
+{
+    if(playing()) return AL_NO_ERROR;
+    SOUNDERROR();
+    alSourceStop(source);
+    SOUNDERRORTRACK(clear(); return err);
+    return AL_NO_ERROR;
+}
+
 ALenum musicstream::push(const char *n, soundfile *s)
 {
     SOUNDCHECK(setup(n, s), , return err);
@@ -1892,7 +1988,7 @@ void getcursounds(int idx, int prop, int buf)
     else if(soundsources.inrange(idx))
     {
         soundsource &s = soundsources[idx];
-        if(prop < 0) intret(20);
+        if(prop < 0) intret(21);
         else switch(prop)
         {
             case 0: intret(s.index); break;
@@ -1922,8 +2018,9 @@ void getcursounds(int idx, int prop, int buf)
             }
             case 16: intret(s.valid() ? 1 : 0); break;
             case 17: intret(s.playing() ? 1 : 0); break;
-            case 18: intret(client::getcn(s.owner)); break;
-            case 19: intret(s.owner == camera1 ? 1 : 0); break;
+            case 18: intret(s.active() ? 1 : 0); break;
+            case 19: intret(client::getcn(s.owner)); break;
+            case 20: intret(s.owner == camera1 ? 1 : 0); break;
             default: break;
         }
     }

@@ -119,11 +119,12 @@ struct soundsample
     float time;
 
     soundsample() : name(NULL) { reset(); }
-    ~soundsample() { DELETEA(name); }
+    ~soundsample() { clear(); }
 
     ALenum setup(soundfile *s);
     void reset();
     void cleanup();
+    void clear();
     bool valid();
 };
 extern hashnameset<soundsample> soundsamples;
@@ -219,7 +220,7 @@ struct soundsource
     bool mute;
     vector<int> buffer;
 
-    soundsource() : vpos(NULL), hook(NULL) { reset(); }
+    soundsource() : vpos(NULL), index(-1), hook(NULL) { reset(); }
     ~soundsource() { clear(); }
 
     ALenum setup(soundsample *s);
@@ -233,6 +234,8 @@ struct soundsource
     bool active();
     bool playing();
     ALenum play();
+    ALenum pause();
+    ALenum stop();
     ALenum push(soundsample *s);
 };
 extern vector<soundsource> soundsources;
@@ -261,6 +264,8 @@ struct musicstream
     bool active();
     bool playing();
     ALenum play();
+    ALenum pause();
+    ALenum stop();
     ALenum push(const char *n, soundfile *s);
 };
 extern musicstream *music;

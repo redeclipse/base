@@ -1743,16 +1743,16 @@ namespace UI
             DELETEA(onhide);
         }
     };
-    vector<DynUI> dynuis;
+    vector<DynUI *> dynuis;
 
     void dynui(const char *name, const char *contents, const char *onshow, const char *onhide, bool mapdef)
     {
         if(!name || !*name || !contents || !*contents) return;
 
         DynUI *m = NULL;
-        loopv(dynuis) if(!strcmp(dynuis[i].name, name))
+        loopv(dynuis) if(!strcmp(dynuis[i]->name, name))
         {
-            m = &dynuis[i];
+            m = dynuis[i];
             break;
         }
 
@@ -1769,7 +1769,8 @@ namespace UI
 
         if(!m)
         {
-            m = &dynuis.add();
+            m = new DynUI;
+            dynuis.add(m);
             m->name = newstring(name);
         }
         else
@@ -1800,10 +1801,10 @@ namespace UI
     {
         if(!name || !*name || param < 0) return false;
 
-        loopv(dynuis) if(!strcmp(dynuis[i].name, name))
+        loopv(dynuis) if(!strcmp(dynuis[i]->name, name))
         {
             defformatstring(refname, "%s_%d", name, param);
-            if(newui(SURFACE_MAIN, refname, dynuis[i].contents, dynuis[i].onshow, dynuis[i].onhide, dynuis[i].mapdef, dynuis[i].name, param)) return true;
+            if(newui(SURFACE_MAIN, refname, dynuis[i]->contents, dynuis[i]->onshow, dynuis[i]->onhide, dynuis[i]->mapdef, dynuis[i]->name, param)) return true;
             return false;
         }
         return false;
@@ -6408,7 +6409,7 @@ namespace UI
 
         loopv(dynuis)
         {
-            DynUI *d = &dynuis[i];
+            DynUI *d = dynuis[i];
             if(!d->mapdef || !d->contents) continue;
 
             h->printf("mapdynui %s [%s]", d->name, d->contents);
@@ -6438,9 +6439,10 @@ namespace UI
 
         loopvrev(dynuis)
         {
-            DynUI *d = &dynuis[i];
+            DynUI *d = dynuis[i];
             if(!d->mapdef) continue;
             dynuis.remove(i);
+            delete d;
         }
     }
 
@@ -6515,7 +6517,12 @@ namespace UI
 
     void cleanup()
     {
-        dynuis.setsize(0);
+        loopvrev(dynuis)
+        {
+            DynUI *d = dynuis[i];
+            dynuis.remove(i);
+            delete d;
+        }
         LOOPSURFACE(
         {
             surface->hideall(true);

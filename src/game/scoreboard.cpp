@@ -19,7 +19,7 @@ namespace hud
 
     void resetscores()
     {
-        scores.shrink(0);
+        scores.setsize(0);
     }
 
     struct scoregroup : score
@@ -32,7 +32,7 @@ namespace hud
 
         void reset()
         {
-            players.shrink(0);
+            players.setsize(0);
             active = false;
         }
     };

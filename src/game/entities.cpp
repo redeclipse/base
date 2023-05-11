@@ -1536,7 +1536,7 @@ namespace entities
                     if(millis && lastmillis-millis < triggertime(e)) break;
                     e.lastemit = lastmillis;
                     static vector<int> teleports;
-                    teleports.shrink(0);
+                    teleports.setsize(0);
                     loopv(e.links)
                         if(e.links[i] != n && ents.inrange(e.links[i]) && ents[e.links[i]]->type == e.type)
                             teleports.add(e.links[i]);
@@ -3374,7 +3374,7 @@ namespace entities
         int fstent = m_edit(game::gamemode) ? 0 : min(firstuse(EU_ITEM), firstent(hasroute ? ROUTE : TELEPORT)),
             lstent = m_edit(game::gamemode) ? ents.length() : max(lastuse(EU_ITEM), lastent(hasroute ? ROUTE : TELEPORT));
 
-        static vector<visibleent> visents; visents.shrink(0);
+        static vector<visibleent> visents; visents.setsize(0);
         for(int i = fstent; i < lstent; ++i)
         {
             gameentity &e = *(gameentity *)ents[i];

@@ -148,7 +148,7 @@ namespace aiman
                     }
                     ci->setvanity(ci->model ? G(botfemalevanities) : G(botmalevanities));
                     static vector<int> weaplist;
-                    weaplist.shrink(0);
+                    weaplist.setsize(0);
                     loopi(W_LOADOUT) weaplist.add(W_OFFSET+i);
                     while(!weaplist.empty())
                     {

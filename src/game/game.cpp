@@ -1970,13 +1970,13 @@ namespace game
         if(d->actortype < A_ENEMY)
         {
             static vector<int> clients;
-            clients.shrink(0);
+            clients.setsize(0);
             clients.add(d ? d->clientnum : -1);
             clients.add(v ? v->clientnum : -1);
             loopv(log) if(log[i] && log[i] != d && log[i] != v) clients.add(log[i]->clientnum);
 
             static vector<int> infos;
-            infos.shrink(0);
+            infos.setsize(0);
             infos.add(weap); // 0
             infos.add(flags); // 1
             infos.add(damage); // 2

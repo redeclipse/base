@@ -2037,17 +2037,13 @@ ICOMMAND(0, materialreset, "", (void), if(editmode || identflags&IDF_MAP) resetm
 bool materialcheck = false;
 void checkmaterials(const char *name)
 {
-    materialcheck = false;
     loopi((MATF_VOLUME|MATF_INDEX)+1)
     {
         if(!materialslots[i].sts.empty()) continue;
         materialcheck = true;
-        break;
-    }
-    if(materialcheck)
-    {
-        execfile("config/map/material.cfg");
+        execfile(name);
         materialcheck = false;
+        return;
     }
 }
 

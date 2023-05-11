@@ -318,7 +318,7 @@ namespace defend
     {
         gameent *d = NULL;
         int numdyns = game::numdynents();
-        clients.shrink(0);
+        clients.setsize(0);
         loopi(numdyns) if((d = (gameent *)game::iterdynents(i)) && d->actortype < A_ENEMY && insideaffinity(b, d))
             clients.add(d->clientnum);
     }
