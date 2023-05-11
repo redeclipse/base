@@ -105,6 +105,14 @@ namespace hud
         eventlogv(type, subtype, sndidx, sndflags, clients, eventinfos, str);
     }
 
+    void eventlogiv(int type, int subtype, int sndidx, int sndflags, int *clients, int clen, const vector<int> &infos, const char *str)
+    {
+        if(type < 0 || type >= EV_MAX) return;
+        eventclients.setsize(0);
+        if(clients) loopi(clen) eventclients.add(clients[i]);
+        eventlogv(type, subtype, sndidx, sndflags, eventclients, infos, str);
+    }
+
     void eventlogvif(int type, int subtype, int sndidx, int sndflags, const vector<int> &clients, int *infos, int ilen, const char *str, ...)
     {
         if(type < 0 || type >= EV_MAX) return;
