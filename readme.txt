@@ -16,7 +16,7 @@ In a true open source by the people for the people nature, we try to work closel
 If you think you might have something to contribute to the game or community, please feel free to drop by our [Discord server](https://redeclipse.net/chat) or [forums](https://redeclipse.net/forums) and talk to us directly. We try to maintain a standard of friendly behaviour in our community, so don't be afraid to speak up and have your say in building this game for us all! :)
 
 ## Distribution
-This game is primarily distributed via Steam. For the most bleeding-edge version of the game, or for those who don't have a Steam account, it is possible to compile the game from source. You may find the guide [here](https://www.redeclipse.net/docs/Install-Guide).
+This game is primarily distributed via Steam. For the most bleeding-edge version of the game, or for those who don't have a Steam account, it is possible to [compile the game from source](https://www.redeclipse.net/docs/Install-Guide).
 
 ## Get Involved
 You're encouraged to help the project by joining in with the rest of the community to make a better project! You can do this by participating in our Community, using the development version and reporting any issues, ideas, suggestions or comments you may have.
