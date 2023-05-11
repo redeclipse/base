@@ -1412,16 +1412,6 @@ void soundslot::reset()
     samples.shrink(0);
 }
 
-void printsources()
-{
-    loopv(soundsources)
-    {
-        soundsource &s = soundsources[i];
-        conoutf("SOURCE: %d) %d -> %u [0x%08x %d] (%.6f %.6f) [%s] [%s] %s", i+1, s.index, s.source, s.flags, lastmillis-s.millis, s.gain, s.curgain, s.playing() ? "playing" : "not playing", s.active() ? "active" : "inactive", s.slot ? s.slot->name : "<bad slot>");
-    }
-    fatal("Ran out of sound sources.");
-}
-
 ALenum soundsource::setup(soundsample *s)
 {
     if(!s->valid()) return AL_NO_ERROR;
@@ -1433,7 +1423,7 @@ ALenum soundsource::setup(soundsample *s)
         SOUNDERRORTRACK(clear(); return err);
     }
     alGenSources(1, &source);
-    SOUNDERRORTRACK(clear(); printsources(); return err);
+    SOUNDERRORTRACK(clear(); return err);
 
     finalrolloff = rolloff >= 0 ? rolloff : (slot->rolloff >= 0 ? slot->rolloff : 1.f);
     finalrefdist = refdist >= 0 ? refdist : (slot->refdist >= 0 ? slot->refdist : soundrefdist);
