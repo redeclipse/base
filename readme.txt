@@ -4,20 +4,20 @@
 * Features parkour gameplay, such as impulse boosts, dashing, and other tricks
 * Favourite gamemodes with an array of mutators and variables
 * A built-in editor lets you create your own release-quality maps cooperatively online
-* Download for free at https://redeclipse.net/
+* Completely free; download [here](https://redeclipse.net/)
 
 ## About
 
 Building on over 14 years of gameplay design and the lessons learned from Red Eclipse 1.x, Red Eclipse 2.x+ focuses on agile, easily accessible arena shooter gameplay over adherence to antiquated arena shooter tropes. For creators, the full power of the [Tesseract](http://tesseract.gg/) engine is at your fingertips in the included realtime multiplayer editor.
 
-The project is a free and open source game built using SDL and OpenGL which allows it to be ported to many platforms; you can [download a package](https://redeclipse.net/download) for Windows, GNU/Linux, BSD, and macOS; or grab a development copy from our [Git repository](https://redeclipse.net/devel) and live on the bleeding edge.
+The project is a free and open source game built using OpenAL and OpenGL which allows it to be ported to many platforms; you can [download a package](https://redeclipse.net/download) for Windows, GNU/Linux, BSD, and macOS; or build a development copy by cloning the [Git repository](https://redeclipse.net/devel) and live on the bleeding edge.
 
 In a true open source by the people for the people nature, we try to work closely with the gaming and open source communities to provide a better overall experience, aiming to create a game environment that is fun and easy to play, while still having elements to master.
 
 If you think you might have something to contribute to the game or community, please feel free to drop by our [Discord server](https://redeclipse.net/chat) or [forums](https://redeclipse.net/forums) and talk to us directly. We try to maintain a standard of friendly behaviour in our community, so don't be afraid to speak up and have your say in building this game for us all! :)
 
 ## Distribution
-This game is primarily distributed via Steam. For the most bleeding-edge version of the game, or for those who are unable to get a Steam account, it is possible to compile the game from source, following the guide at https://www.redeclipse.net/docs/Install-Guide.
+This game is primarily distributed via Steam. For the most bleeding-edge version of the game, or for those who don't have a Steam account, it is possible to compile the game from source. You may find the guide [here](https://www.redeclipse.net/docs/Install-Guide).
 
 ## Get Involved
 You're encouraged to help the project by joining in with the rest of the community to make a better project! You can do this by participating in our Community, using the development version and reporting any issues, ideas, suggestions or comments you may have.
