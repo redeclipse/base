@@ -432,9 +432,13 @@ namespace bomber
     {
         if(!st.flags.inrange(i)) return;
         st.dropaffinity(i, droploc, inertia, lastmillis, target);
-        int clients[] = { d->clientnum }, infos[] = { i };
         emitsound(S_DROP, game::getplayersoundpos(d), d);
-        hud::eventlogif(EV_AFFINITY, EV_A_DROP, -1, EV_S_BROADCAST, clients, 1, infos, 1, "\fa%s dropped the \fs\fzwv\f($bombtex)bomb\fS", game::colourname(d));
+
+        game::event *evt = new game::event(EV_AFFINITY, EV_A_DROP, S_V_BOMBDROP, EV_S_BROADCAST);
+        evt->addclient(d);
+        evt->addinfo("affinity", i);
+        evt->addinfof("console", "\fa%s dropped the \fs\fzwv\f($bombtex)bomb\fS", game::colourname(d));
+        evt->push();
     }
 
     void removeplayer(gameent *d)
@@ -469,37 +473,56 @@ namespace bomber
     {
         if(!st.flags.inrange(i)) return;
         bomberstate::flag &f = st.flags[i];
+
         if(f.enabled && !value)
         {
             destroyaffinity(f.pos(true, true));
             if(isbomberaffinity(f))
             {
                 affinityeffect(i, T_NEUTRAL, f.pos(true, true), f.spawnloc);
-                int vals[] = { i };
-                hud::eventlogi(EV_AFFINITY, EV_A_RESET, S_V_BOMBRESET, EV_S_BROADCAST, NULL, 0, vals, 1, "\faThe \fs\fzwvbomb\fS has been reset");
+                game::event *evt = new game::event(EV_AFFINITY, EV_A_RESET, S_V_BOMBRESET, EV_S_BROADCAST);
+                evt->addinfo("affinity", i);
+                evt->addinfo("droptime", f.droptime);
+                evt->addinfo("inittime", f.inittime);
+                evt->addinfo("console", "\faThe \fs\fzwvbomb\fS has been reset");
+                evt->push();
             }
         }
+
         if(value == 2) st.dropaffinity(i, pos, vec(0, 0, 1), lastmillis);
         else st.returnaffinity(i, lastmillis, value!=0);
     }
 
-    VAR(IDF_PERSIST, showbomberdists, 0, 2, 2); // 0 = off, 1 = self only, 2 = all
     void scoreaffinity(gameent *d, int relay, int goal, int score)
     {
         if(!st.flags.inrange(relay) || !st.flags.inrange(goal)) return;
         bomberstate::flag &f = st.flags[relay], &g = st.flags[goal];
+        float dist = f.droppos.dist(g.spawnloc)/8.f;
+
         stringz(extra);
-        if(m_bb_basket(game::gamemode, game::mutators) && showbomberdists >= (d != game::player1 ? 2 : 1))
+        if(m_bb_basket(game::gamemode, game::mutators))
         {
-            if(f.droptime) formatstring(extra, " from \fs\fy%.2f\fom\fS", f.droppos.dist(g.spawnloc)/8.f);
+            if(f.droptime) formatstring(extra, " from \fs\fy%.2f\fom\fS", dist);
             else copystring(extra, " with a \fs\fytouchdown\fS");
         }
+
+        hud::teamscore(d->team).total = score;
+        int millis = lastmillis-f.inittime;
+
+        game::event *evt = new game::event(EV_AFFINITY, EV_A_SCORE, S_V_BOMBSCORE, EV_S_BROADCAST);
+        evt->addclient(d);
+        evt->addinfo("affinity", relay);
+        evt->addinfo("goal", goal);
+        evt->addinfo("droptime", f.droptime);
+        evt->addinfo("inittime", f.inittime);
+        evt->addinfo("dist", dist);
+        evt->addinfo("score", score);
+        evt->addinfo("millis", millis);
+        evt->addinfof("console", "\fa%s completed a bombing for team %s%s (score: \fs\fc%d\fS, time taken: \fs\fc%s\fS)", game::colourname(d), game::colourteam(d->team), extra, score, timestr(millis, 1));
+        evt->push();
+
         affinityeffect(goal, d->team, g.spawnloc, f.spawnloc);
         destroyaffinity(g.spawnloc);
-        hud::teamscore(d->team).total = score;
-        defformatstring(gteam, "%s", game::colourteam(g.team, "pointtex"));
-        int millis = lastmillis-f.inittime, clients[] = { d->clientnum }, infos[] = { relay, goal, millis };
-        hud::eventlogif(EV_AFFINITY, EV_A_SCORE, S_V_BOMBSCORE, EV_S_BROADCAST, clients, 1, infos, 3, "\fa%s destroyed the %s base for team %s%s (score: \fs\fc%d\fS, time taken: \fs\fc%s\fS)", game::colourname(d), gteam, game::colourteam(d->team), extra, score, timestr(millis, 1));
         st.returnaffinity(relay, lastmillis, false);
     }
 
@@ -508,13 +531,18 @@ namespace bomber
         if(!st.flags.inrange(i)) return;
         bomberstate::flag &f = st.flags[i];
         emitsound(S_CATCH, game::getplayersoundpos(d), d);
-        if(!f.droptime)
-        {
-            affinityeffect(i, d->team, d->feetpos(), f.pos(true, true));
-            int clients[] = { d->clientnum, f.lastowner ? f.lastowner->clientnum : -1 }, infos[] = { i };
-            hud::eventlogif(EV_AFFINITY, EV_A_SECURE, S_V_BOMBPICKUP, EV_S_BROADCAST, clients, 2, infos, 1, "\fa%s secured the \fs\fzwv\f($bombtex)bomb\fS", game::colourname(d));
-        }
+
+        game::event *evt = new game::event(EV_AFFINITY, EV_A_SECURE, S_V_BOMBPICKUP, EV_S_BROADCAST);
+        evt->addclient(d);
+        evt->addclient(f.lastowner);
+        evt->addinfo("affinity", i);
+        evt->addinfo("droptime", f.droptime);
+        evt->addinfof("console", "\fa%s secured the \fs\fzwv\f($bombtex)bomb\fS", game::colourname(d));
+        evt->push();
+
+        if(!f.droptime) affinityeffect(i, d->team, d->feetpos(), f.pos(true, true));
         st.takeaffinity(i, d, lastmillis);
+
         if(d->ai) aihomerun(d, d->ai->state.last());
     }
 

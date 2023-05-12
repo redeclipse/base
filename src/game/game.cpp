@@ -22,6 +22,317 @@ namespace game
             &camera1->o : &d->o;
     }
 
+    vector<event *> events;
+    VAR(IDF_PERSIST, eventmaxlines, 1, 50, VAR_MAX);
+
+    void event::info::cleanup()
+    {
+        if(type == EV_I_STR) DELETEA(s);
+    }
+
+    void event::info::reset()
+    {
+        DELETEA(name);
+        if(type == EV_I_STR) DELETEA(s);
+    }
+
+    void event::info::set(bool v)
+    {
+        cleanup();
+        type = EV_I_BOOL;
+        b = v;
+    }
+
+    void event::info::set(int v)
+    {
+        cleanup();
+        type = EV_I_INT;
+        i = v;
+    }
+
+    void event::info::set(float v)
+    {
+        cleanup();
+        type = EV_I_FLOAT;
+        f = v;
+    }
+
+    void event::info::set(char *v)
+    {
+        cleanup();
+        type = EV_I_STR;
+        s = newstring(v && *v ? v : "");
+    }
+
+    void event::info::set(const char *v)
+    {
+        cleanup();
+        type = EV_I_STR;
+        s = newstring(v && *v ? v : "");
+    }
+
+    void event::reset()
+    {
+        clients.shrink(0);
+        infos.shrink(0);
+    }
+
+    int event::findclient(int cn, bool create)
+    {
+        loopv(clients) if(clients[i].cn == cn) return i;
+        if(create)
+        {
+            int n = clients.length();
+            clients.add().cn = cn;
+            return n;
+        }
+        return -1;
+    }
+
+    int event::findinfov(vector<info> &list, const char *name, bool create)
+    {
+        if(!name || !*name) return -1;
+        loopv(list)
+        {
+            if(strcmp(list[i].name, name)) continue;
+            return i;
+        }
+        if(create)
+        {
+            int n = list.length();
+            info &v = list.add();
+            v.name = newstring(name);
+            return n;
+        }
+        return -1;
+    }
+
+    int event::findclient(int cn, const char *name, bool create)
+    {
+        int n = findclient(cn);
+        if(!clients.inrange(n)) return -1;
+        return findinfov(clients[n].infos, name, create);
+    }
+
+    int event::findinfo(const char *name, bool create) { return findinfov(infos, name, create); }
+
+    event::info *event::getinfov(vector<info> &list, const char *name, bool create)
+    {
+        int n = findinfov(list, name, create);
+        if(!list.inrange(n)) return NULL;
+        return &list[n];
+    }
+
+    event::info *event::getclient(int cn, const char *name, bool create)
+    {
+        int n = findclient(cn);
+        if(!clients.inrange(n)) return NULL;
+        return getinfov(clients[n].infos, name, create);
+    }
+
+    event::info *event::getinfo(const char *name, bool create) { return getinfov(infos, name, create); }
+
+    const char *event::constr()
+    {
+        info *con = getinfov(infos, "console");
+        if(con && con->type == EV_I_STR) return con->s;
+        return NULL;
+    }
+
+    void event::push()
+    {
+        if(events.length() >= eventmaxlines)
+        {
+            event *f = events[0];
+            events.remove(0);
+            delete f;
+        }
+        events.add(this);
+
+        loopv(clients)
+        {
+            gameent *d = game::getclient(clients[i].cn);
+            if(!d) continue;
+            if(sndflags&(i == 0 ? EV_S_CLIENT1 : (i == 1 ? EV_S_CLIENT2 : EV_S_CLIENTN)))
+                entities::announce(sndidx, d);
+        }
+        if(sndidx >= 0 && sndflags&EV_S_BROADCAST) entities::announce(sndidx);
+
+        const char *con = constr();
+        if(con && *con) conoutft(CON_EVENT, "%s", con);
+    }
+
+    void event::addinfov(vector<info> &list, const char *name, int i)
+    {
+        if(!name || !*name) return;
+        getinfov(list, name, true)->set(i);
+    }
+
+    void event::addclient(int cn, const char *name, int i)
+    {
+        int n = findclient(cn, true);
+        addinfov(clients[n].infos, name, i);
+    }
+
+    void event::addinfo(const char *name, int i) { addinfov(infos, name, i); }
+
+    void event::addinfov(vector<info> &list, const char *name, float f)
+    {
+        if(!name || !*name) return;
+        event::getinfov(list, name, true)->set(f);
+    }
+
+    void event::addclient(int cn, const char *name, float f)
+    {
+        int n = findclient(cn, true);
+        addinfov(clients[n].infos, name, f);
+    }
+
+    void event::addinfo(const char *name, float f) { addinfov(infos, name, f); }
+
+    void event::addinfov(vector<info> &list, const char *name, const char *str)
+    {
+        if(!name || !*name) return;
+        getinfov(list, name, true)->set(str);
+    }
+
+    void event::addclient(int cn, const char *name, const char *str)
+    {
+        int n = findclient(cn, true);
+        event::addinfov(clients[n].infos, name, str);
+    }
+
+    void event::addinfo(const char *name, const char *str) { addinfov(infos, name, str); }
+
+    void event::addinfovf(vector<info> &list, const char *name, const char *str, ...)
+    {
+        if(!name || !*name) return;
+        defvformatbigstring(s, str, str);
+        addinfov(list, name, s);
+    }
+
+    void event::addclientf(int cn, const char *name, const char *str, ...)
+    {
+        int n = findclient(cn, true);
+        defvformatbigstring(s, str, str);
+        addinfov(clients[n].infos, name, s);
+    }
+
+    void event::addinfof(const char *name, const char *str, ...)
+    {
+        if(!name || !*name) return;
+        defvformatbigstring(s, str, str);
+        addinfov(infos, name, s);
+    }
+
+    void event::addclient(gameent *d)
+    {
+        if(!d)
+        {
+            cinfo &c = clients.add();
+            c.cn = -1; // dummy client
+            addinfov(c.infos, "clientnum", -1);
+            return;
+        }
+        addclient(d->clientnum, "clientnum", d->clientnum);
+        addclient(d->clientnum, "actortype", d->actortype);
+        addclient(d->clientnum, "team", d->team);
+        addclient(d->clientnum, "colour", d->colour);
+        addclient(d->clientnum, "model", d->model);
+        addclient(d->clientnum, "privilege", d->privilege);
+        addclient(d->clientnum, "weapselect", d->weapselect);
+        addclient(d->clientnum, "health", d->health);
+        addclient(d->clientnum, "name", d->name);
+    }
+
+    void event::addclient(int cn) { addclient(game::getclient(cn)); }
+
+    #define LOOPEVENTS(name,op) \
+        ICOMMAND(0, loopevents##name, "iire", (int *count, int *skip, ident *id, uint *body), \
+        { \
+            loopstart(id, stack); \
+            op(events, *count, *skip, \
+            { \
+                loopiter(id, stack, i); \
+                execute(body); \
+            }); \
+            loopend(id, stack); \
+        });
+
+    LOOPEVENTS(,loopcsv);
+    LOOPEVENTS(rev,loopcsvrev);
+
+    ICOMMANDV(0, eventcount, events.length());
+    ICOMMAND(0, geteventclients, "ib", (int *n, int *pos), intret(events.inrange(*n) ? (*pos >= 0 ? (events[*n]->clients.inrange(*pos) ? events[*n]->clients[*pos].infos.length() : -1) : events[*n]->clients.length()) : -1));
+    ICOMMAND(0, geteventinfos, "i", (int *n), intret(events.inrange(*n) ? events[*n]->infos.length() : -1));
+    ICOMMAND(0, geteventtype, "i", (int *n), intret(events.inrange(*n) ? events[*n]->type : -1));
+    ICOMMAND(0, geteventsubtype, "i", (int *n), intret(events.inrange(*n) ? events[*n]->subtype : -1));
+    ICOMMAND(0, geteventsndidx, "i", (int *n), intret(events.inrange(*n) ? events[*n]->sndidx : -1));
+    ICOMMAND(0, geteventsndflags, "i", (int *n), intret(events.inrange(*n) ? events[*n]->sndflags : -1));
+    ICOMMAND(0, geteventmillis, "i", (int *n), intret(events.inrange(*n) ? events[*n]->millis : -1));
+
+    ICOMMAND(0, geteventclient, "iis", (int *n, int *pos, char *name),
+    {
+        if(!events.inrange(*n)) return;
+        event *e = events[*n];
+
+        if(!e->clients.inrange(*pos)) return;
+        event::cinfo &c = e->clients[*pos];
+
+        event::info *n = e->getinfov(c.infos, name);
+        if(!n) return;
+        switch(n->type)
+        {
+            case EV_I_INT: intret(n->i); break;
+            case EV_I_BOOL: intret(n->b ? 1 : 0); break;
+            case EV_I_FLOAT: floatret(n->f); break;
+            case EV_I_STR: result(n->s); break;
+            default: break;
+        }
+    });
+
+    ICOMMAND(0, geteventname, "iibbb", (int *n, int *pos, int *col, int *icon, int *dupname),
+    {
+        if(!events.inrange(*n)) return;
+        event *e = events[*n];
+
+        if(!e->clients.inrange(*pos)) return;
+        event::cinfo &c = e->clients[*pos];
+
+        event::info *name = e->getinfov(c.infos, "name");
+        if(!name || name->type != EV_I_STR) return;
+        event::info *clientnum = e->getinfov(c.infos, "clientnum");
+        if(!clientnum || clientnum->type != EV_I_INT) return;
+        event::info *team = e->getinfov(c.infos, "team");
+        if(!team || team->type != EV_I_INT) return;
+        event::info *actortype = e->getinfov(c.infos, "actortype");
+        if(!actortype || actortype->type != EV_I_INT) return;
+        event::info *colour = e->getinfov(c.infos, "colour");
+        if(!colour || colour->type != EV_I_INT) return;
+        event::info *privilege = e->getinfov(c.infos, "privilege");
+        if(!privilege || privilege->type != EV_I_INT) return;
+        event::info *weapselect = e->getinfov(c.infos, "weapselect");
+        if(!weapselect || weapselect->type != EV_I_INT) return;
+
+        result(game::colourname(name->s, clientnum->i, team->i, actortype->i, colour->i, privilege->i, weapselect->i, *icon != 0, *dupname != 0, *col >= 0 ? *col : 3));
+    });
+
+    ICOMMAND(0, geteventinfo, "is", (int *n, char *name),
+    {
+        if(!events.inrange(*n)) return;
+        event *e = events[*n];
+        event::info *n = e->getinfo(name);
+        if(!n) return;
+        switch(n->type)
+        {
+            case EV_I_INT: intret(n->i); break;
+            case EV_I_BOOL: intret(n->b ? 1 : 0); break;
+            case EV_I_FLOAT: floatret(n->f); break;
+            case EV_I_STR: result(n->s); break;
+            default: break;
+        }
+    });
+
     VAR(0, showweapfx, 0, 1, 1);
 
     void mapweapsounds()
@@ -72,7 +383,7 @@ namespace game
             "S_REGEN_BEGIN", "S_REGEN", "S_CRITICAL", "S_DAMAGE", "S_DAMAGE2", "S_DAMAGE3", "S_DAMAGE4", "S_DAMAGE5", "S_DAMAGE6", "S_DAMAGE7", "S_DAMAGE8",
             "S_BURNED", "S_BLEED", "S_SHOCK", "S_RESPAWN", "S_CHAT", "S_ERROR", "S_ALARM", "S_CATCH", "S_DROP", "S_BOUNCE",
             "S_V_FLAGSECURED", "S_V_FLAGOVERTHROWN", "S_V_FLAGPICKUP", "S_V_FLAGDROP", "S_V_FLAGRETURN", "S_V_FLAGSCORE", "S_V_FLAGRESET",
-            "S_V_BOMBSTART", "S_V_BOMBDUEL", "S_V_BOMBPICKUP", "S_V_BOMBSCORE", "S_V_BOMBRESET",
+            "S_V_BOMBSTART", "S_V_BOMBDUEL", "S_V_BOMBPICKUP", "S_V_BOMBDROP", "S_V_BOMBSCORE", "S_V_BOMBRESET",
             "S_V_NOTIFY", "S_V_FIGHT", "S_V_SCORE", "S_V_START", "S_V_CHECKPOINT", "S_V_COMPLETE", "S_V_OVERTIME", "S_V_ONEMINUTE", "S_V_HEADSHOT",
             "S_V_SPREE", "S_V_SPREE2", "S_V_SPREE3", "S_V_SPREE4", "S_V_MULTI", "S_V_MULTI2", "S_V_MULTI3",
             "S_V_REVENGE", "S_V_DOMINATE", "S_V_FIRSTBLOOD", "S_V_BREAKER",
@@ -1969,23 +2280,20 @@ namespace game
         if(dth >= 0) emitsound(dth, game::getplayersoundpos(d), d, &d->vschan);
         if(d->actortype < A_ENEMY)
         {
-            static vector<int> clients;
-            clients.setsize(0);
-            clients.add(d ? d->clientnum : -1);
-            clients.add(v ? v->clientnum : -1);
-            loopv(log) if(log[i] && log[i] != d && log[i] != v) clients.add(log[i]->clientnum);
-
-            static vector<int> infos;
-            infos.setsize(0);
-            infos.add(weap); // 0
-            infos.add(flags); // 1
-            infos.add(damage); // 2
-            infos.add(style); // 3
-            infos.add(material); // 4
-            infos.add(burning ? 1 : 0); // 5
-            infos.add(bleeding ? 1 : 0); // 6
-            infos.add(shocking ? 1 : 0); // 7
-            hud::eventlogv(EV_FRAG, d == v ? EV_F_SUICIDE : EV_F_KILL, anc, EV_S_CLIENT1|EV_S_CLIENT2, clients, infos, d->obit);
+            game::event *evt = new game::event(EV_FRAG, d == v ? EV_F_SUICIDE : EV_F_KILL, anc, EV_S_CLIENT1|EV_S_CLIENT2);
+            evt->addclient(d);
+            evt->addclient(v);
+            loopv(log) if(log[i] && log[i] != d && log[i] != v) evt->addclient(log[i]);
+            evt->addinfo("weapon", weap);
+            evt->addinfo("flags", flags);
+            evt->addinfo("damage", damage);
+            evt->addinfo("style", style);
+            evt->addinfo("material", material);
+            evt->addinfo("burning", burning);
+            evt->addinfo("bleeding", bleeding);
+            evt->addinfo("shocking", shocking);
+            evt->addinfo("console", d->obit);
+            evt->push();
         }
         vec pos = d->headtag();
         pos.z -= d->zradius*0.125f;
@@ -2129,6 +2437,7 @@ namespace game
 
     void resetmap(bool empty) // called just before a map load
     {
+        events.shrink(0);
     }
 
     void savemap(bool force, const char *mname)
@@ -2140,7 +2449,6 @@ namespace game
 
     void startmap(bool empty) // called just after a map load
     {
-        hud::cleanup();
         ai::startmap(empty);
         if(!empty)
         {

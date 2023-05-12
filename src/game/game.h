@@ -8,7 +8,7 @@
 #include "enum.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 265
+#define VERSION_GAME 266
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -30,7 +30,7 @@ enum
     S_REGEN_BEGIN, S_REGEN, S_CRITICAL, S_DAMAGE, S_DAMAGE2, S_DAMAGE3, S_DAMAGE4, S_DAMAGE5, S_DAMAGE6, S_DAMAGE7, S_DAMAGE8,
     S_BURNED, S_BLEED, S_SHOCK, S_RESPAWN, S_CHAT, S_ERROR, S_ALARM, S_CATCH, S_DROP, S_BOUNCE,
     S_V_FLAGSECURED, S_V_FLAGOVERTHROWN, S_V_FLAGPICKUP, S_V_FLAGDROP, S_V_FLAGRETURN, S_V_FLAGSCORE, S_V_FLAGRESET,
-    S_V_BOMBSTART, S_V_BOMBDUEL, S_V_BOMBPICKUP, S_V_BOMBSCORE, S_V_BOMBRESET,
+    S_V_BOMBSTART, S_V_BOMBDUEL, S_V_BOMBPICKUP, S_V_BOMBDROP, S_V_BOMBSCORE, S_V_BOMBRESET,
     S_V_NOTIFY, S_V_FIGHT, S_V_SCORE, S_V_START, S_V_CHECKPOINT, S_V_COMPLETE, S_V_OVERTIME, S_V_ONEMINUTE, S_V_HEADSHOT,
     S_V_SPREE, S_V_SPREE2, S_V_SPREE3, S_V_SPREE4, S_V_MULTI, S_V_MULTI2, S_V_MULTI3,
     S_V_REVENGE, S_V_DOMINATE, S_V_FIRSTBLOOD, S_V_BREAKER,
@@ -351,6 +351,9 @@ ENUMLI(FRAG, FRAG_ENUM);
 
 #define EV_ENUM(pr, en) en(pr, ANNOUNCE) en(pr, FRAG) en(pr, AFFINITY) en(pr, MAX)
 ENUMLV(EV, EV_ENUM);
+
+#define EV_I_ENUM(pr, en) en(pr, INT) en(pr, BOOL) en(pr, FLOAT) en(pr, STR) en(pr, MAX)
+ENUMLV(EV_I, EV_I_ENUM);
 
 #define EV_N_ENUM(pr, en) en(pr, EVENT) en(pr, START) en(pr, FINISH) en(pr, DRAW) en(pr, MAX)
 ENUMLV(EV_N, EV_N_ENUM);
@@ -2376,12 +2379,6 @@ namespace hud
     extern float radaraffinityblend, radarblipblend, radaraffinitysize;
     extern bool scoreson, scoresoff, shownscores;
     extern vector<int> teamkills;
-    extern void eventlogv(int type, int subtype, int sndidx, int sndflags, const vector<int> &clients, const vector<int> &infos, const char *str = NULL);
-    extern void eventlogvf(int type, int subtype, int sndidx, int sndflags, const vector<int> &clients, const vector<int> &infos, const char *str, ...);
-    extern void eventlogvi(int type, int subtype, int sndidx, int sndflags, const vector<int> &clients, int *infos, int ilen, const char *str = NULL);
-    extern void eventlogvif(int type, int subtype, int sndidx, int sndflags, const vector<int> &clients, int *infos, int ilen, const char *str, ...);
-    extern void eventlogi(int type, int subtype, int sndidx, int sndflags, int *clients, int clen, int *infos, int ilen, const char *str = NULL);
-    extern void eventlogif(int type, int subtype, int sndidx, int sndflags, int *clients, int clen, int *infos, int ilen, const char *str, ...);
     extern const char *geticon(int type, int value);
     extern void drawindicator(int weap, int x, int y, int s);
     extern void drawpointertex(const char *tex, int x, int y, int s, float r = 1, float g = 1, float b = 1, float fade = 1);
@@ -2423,6 +2420,75 @@ namespace game
         avatarent() { type = ENT_CAMERA; }
     };
     extern avatarent avatarmodel, bodymodel;
+
+    struct event
+    {
+        struct info
+        {
+            char *name;
+            int type;
+            union
+            {
+                int i;
+                bool b;
+                float f;
+                char *s;
+            };
+
+            info() : name(NULL), type(-1) {}
+            ~info() { reset(); }
+
+            void cleanup();
+            void reset();
+            void set(bool v);
+            void set(int v);
+            void set(float v);
+            void set(char *v);
+            void set(const char *v);
+        };
+
+        struct cinfo
+        {
+            int cn;
+            vector<info> infos;
+
+            cinfo() {}
+            ~cinfo() { infos.shrink(0); }
+        };
+
+        int type, subtype, sndidx, sndflags, millis;
+        vector<cinfo> clients;
+        vector<info> infos;
+
+        event(int _type, int _subtype, int _sndidx = -1, int _sndflags = 0, int _millis = -1) :
+            type(_type), subtype(_subtype), sndidx(_sndidx), sndflags(_sndflags), millis(_millis >= 0 ? millis : totalmillis) {}
+        ~event() { reset(); }
+
+        void reset();
+        int findclient(int cn, bool create = false);
+        int findinfov(vector<info> &list, const char *name, bool create = false);
+        int findclient(int cn, const char *name, bool create = false);
+        int findinfo(const char *name, bool create = false);
+        info *getinfov(vector<info> &list, const char *name, bool create = false);
+        info *getclient(int cn, const char *name, bool create = false);
+        info *getinfo(const char *name, bool create = false);
+        const char *constr();
+        void push();
+        void addinfov(vector<info> &list, const char *name, int i);
+        void addclient(int cn, const char *name, int i);
+        void addinfo(const char *name, int i);
+        void addinfov(vector<info> &list, const char *name, float f);
+        void addclient(int cn, const char *name, float f);
+        void addinfo(const char *name, float f);
+        void addinfov(vector<info> &list, const char *name, const char *str);
+        void addclient(int cn, const char *name, const char *str);
+        void addinfo(const char *name, const char *str);
+        void addinfovf(vector<info> &list, const char *name, const char *str, ...);
+        void addclientf(int cn, const char *name, const char *str, ...);
+        void addinfof(const char *name, const char *str, ...);
+        void addclient(gameent *d);
+        void addclient(int cn);
+    };
 
     extern fx::FxHandle getweapfx(int type);
     extern bool needname(gameent *d);
