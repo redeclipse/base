@@ -2854,7 +2854,7 @@ namespace UI
     ICOMMAND(0, uicomp, "sffe", (char *name, float *minw, float *minh, uint *children), \
         BUILD(Composite, o, o->setup(name, *minw*uiscale, *minh*uiscale), children));
 
-    UICMDT(Composite, comp, param, "sffff", (char *name, float *x, float *y, float *z, float *w),
+    UICMD(Composite, comp, param, "sffff", (char *name, float *x, float *y, float *z, float *w),
     {
         if(!name || !*name) return;
         Composite::param *p = NULL;
@@ -2871,7 +2871,7 @@ namespace UI
         p->value = vec4(*x, *y, *z, *w);
     });
 
-    UICMDT(Composite, comp, tex, "s", (char *name),
+    UICMD(Composite, comp, tex, "s", (char *name),
     {
         if(!name || !*name || o->texs.length() >= 10) return;
         o->texs.add(textureload(name, 3, true, false, texgc));
@@ -4226,8 +4226,8 @@ namespace UI
     UIARGSCALEDT(Clipper, clip, virth, "f", float, 0.f, FVAR_MAX);
     UIARGSCALEDT(Clipper, clip, offsetx, "f", float, FVAR_MIN, FVAR_MAX);
     UIARGSCALEDT(Clipper, clip, offsety, "f", float, FVAR_MIN, FVAR_MAX);
-    UIARGB(Clipper, clip, inverted);
-    UIARGB(Clipper, clip, forced);
+    UIARGTB(Clipper, clip, inverted);
+    UIARGTB(Clipper, clip, forced);
 
     struct Scroller : Clipper
     {
