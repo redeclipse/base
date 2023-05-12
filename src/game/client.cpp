@@ -2591,16 +2591,7 @@ namespace client
                     int evtype = getint(p), subtype = getint(p);
                     getstring(text, p);
                     int snd = gamesounds[text].getindex(), sndflags = getint(p);
-                    static vector<int> eventclients;
-                    eventclients.setsize(0);
-                    int clen = getint(p);
-                    loopi(clen) eventclients.add(getint(p));
-                    static vector<int> eventinfos;
-                    eventinfos.setsize(0);
-                    int ilen = getint(p);
-                    loopi(ilen) eventinfos.add(getint(p));
-                    getstring(text, p);
-                    //eventlog *evt = new eventlog(evtype, subtype, snd, sndflags); // (eventclients, eventinfos, text)
+                    eventlog *evt = new eventlog(evtype, subtype, snd, sndflags);
                     break;
                 }
 

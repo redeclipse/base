@@ -108,20 +108,25 @@ struct bomberservmode : bomberstate, servmode
             int numt = numteams(gamemode, mutators);
             if(curbalance == numt-1)
             {
-                int eventclients[] = { ci->clientnum }, eventinfos[] = { -1 , 0 };
+                int teamid = -1, teamsc = 0;
                 loopi(numt)
                 {
                     int t = i+T_FIRST, s = teamscore(t).total;
                     if(t != ci->team && s >= total)
                     {
-                        eventinfos[0] = t;
-                        eventinfos[1] = s;
+                        teamid = t;
+                        teamsc = s;
                         break;
                     }
                 }
-                if(eventinfos[0] >= 0)
+                if(teamid >= 0)
                 {
-                    eventlogi(-1, EV_AFFINITY, EV_A_LIMIT, "S_V_NOTIFY", EV_S_BROADCAST, eventclients, 1, eventinfos, 2, "\fyScore limit has been reached");
+                    eventlog evt(-1, EV_AFFINITY, EV_A_LIMIT, "S_V_NOTIFY", EV_S_BROADCAST);
+                    evt.addclient(ci);
+                    evt.addinfo("team", teamid);
+                    evt.addinfo("score", teamsc);
+                    evt.addinfo("console", "\fyScore limit has been reached");
+                    evt.push();
                     startintermission();
                 }
             }
@@ -199,7 +204,7 @@ struct bomberservmode : bomberstate, servmode
         {
             if(gamemillis < bombertime) return;
             int hasaffinity = 0;
-            vector<int> candidates[T_MAX], vals;
+            vector<int> candidates[T_MAX], resets;
             loopv(flags) candidates[flags[i].team].add(i);
             int wants = m_bb_hold(gamemode, mutators) ? 1 : (m_bb_assault(gamemode, mutators) ? 2 : teamcount(gamemode, mutators));
             loopi(wants) if(!candidates[i].empty())
@@ -208,9 +213,7 @@ struct bomberservmode : bomberstate, servmode
                 candidates[i].remove(r);
                 if(!flags.inrange(candidates[i][r])) continue;
                 if(!isteam(gamemode, mutators, flags[f].team, T_NEUTRAL)) continue;
-                bomberstate::returnaffinity(f, gamemillis, true);
-                sendf(-1, 1, "ri3", N_RESETAFFIN, f, 1);
-                vals.add(f);
+                resets.add(f);
                 hasaffinity++;
             }
             if(hasaffinity < wants)
@@ -230,7 +233,12 @@ struct bomberservmode : bomberstate, servmode
                 srvmsgf(-1, "\fs\fzoyThis map is not playable in:\fS %s", gamename(gamemode, mutators));
                 return;
             }
-            eventlogiv(-1, EV_AFFINITY, EV_A_START, m_duke(gamemode, mutators) ? "S_V_BOMBDUEL" : "S_V_BOMBSTART", EV_S_BROADCAST, NULL, 0, vals, "\faThe \fs\fzwvbomb\fS has been spawned");
+            loopv(resets)
+            {
+                int f = resets[i];
+                bomberstate::returnaffinity(f, gamemillis, true);
+                sendf(-1, 1, "ri3", N_RESETAFFIN, f, 1);
+            }
             hasstarted = true;
             bombertime = 0;
         }

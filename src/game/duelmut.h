@@ -335,7 +335,8 @@ struct duelservmode : servmode
                         formatstring(fight, "Duel between %s, round \fs\fc#%d\fS", names, duelround);
                     }
                     else if(m_survivor(gamemode, mutators)) formatstring(fight, "Survivor, round \fs\fc#%d\fS", duelround);
-                    vector<int> eventclients;
+
+                    eventlog evt(-1, EV_ANNOUNCE, EV_N_START, "S_V_FIGHT", EV_S_BROADCAST);
                     loopv(playing)
                     {
                         if(playing[i]->state == CS_ALIVE)
@@ -348,10 +349,13 @@ struct duelservmode : servmode
                         }
                         else if(allowed.find(playing[i]) < 0) allowed.add(playing[i]);
                         duelqueue.removeobj(playing[i]);
-                        eventclients.add(playing[i]->clientnum);
+                        evt.addclient(playing[i]);
                     }
-                    int vals[] = { duelround, duelqueue.length() };
-                    eventlogvif(-1, EV_ANNOUNCE, EV_N_START, "S_V_FIGHT", EV_S_BROADCAST, eventclients, vals, 2, "\fy%s%s", gamestate == G_S_OVERTIME && !restricted.empty() ? "\fs\fzcgSudden Death\fS, " : "", fight);
+                    evt.addinfo("round", duelround);
+                    evt.addinfo("queue", duelqueue.length());
+                    evt.addinfof("console", "\fy%s%s", gamestate == G_S_OVERTIME && !restricted.empty() ? "\fs\fzcgSudden Death\fS, " : "", fight);
+                    evt.push();
+
                     dueltime = dueldeath = -1;
                     duelcheck = gamemillis+5000;
                 }
@@ -395,12 +399,7 @@ struct duelservmode : servmode
                                 duelwins = 1;
                             }
                             else duelwins++;
-                            vector<int> eventclients;
-                            loopv(playing) eventclients.add(playing[i]->clientnum);
-                            vector<int> eventinfos;
-                            eventinfos.add(duelwins);
-                            eventinfos.add(duelwinner);
-                            loopv(alive) eventinfos.add(alive[i]->clientnum);
+
                             loopv(clients)
                             {
                                 const char *sndidx = "S_V_SCORE";
@@ -427,7 +426,14 @@ struct duelservmode : servmode
                                     }
                                     else sndidx = "S_V_YOULOSE";
                                 }
-                                eventlogvf(clients[i]->clientnum, EV_ANNOUNCE, EV_N_FINISH, sndidx, EV_S_BROADCAST, eventclients, eventinfos, "\fyTeam %s are the winners", colourteam(alive[0]->team));
+
+                                eventlog evt(clients[i]->clientnum, EV_ANNOUNCE, EV_N_FINISH, sndidx, EV_S_BROADCAST);
+                                loopv(playing) evt.addclient(playing[i]);
+                                // TODO: add alive players list
+                                evt.addinfo("winner", duelwinner);
+                                evt.addinfo("wins", duelwins);
+                                evt.addinfof("console", "\fyTeam %s are the winners", colourteam(alive[0]->team));
+                                evt.push();
                             }
                         }
                         clear();
@@ -450,11 +456,12 @@ struct duelservmode : servmode
                         endffaround(alive);
                         duelwinner = -1;
                         duelwins = 0;
-                        vector<int> eventclients;
-                        loopv(playing) eventclients.add(playing[i]->clientnum);
-                        vector<int> eventinfos;
-                        loopv(alive) eventinfos.add(alive[i]->clientnum);
-                        eventlogv(-1, EV_ANNOUNCE, EV_N_DRAW, "S_V_DRAW", EV_S_BROADCAST, eventclients, eventinfos, "\fyEveryone died, \fzoyEPIC FAIL!");
+
+                        eventlog evt(-1, EV_ANNOUNCE, EV_N_DRAW, "S_V_DRAW", EV_S_BROADCAST);
+                        loopv(playing) evt.addclient(playing[i]);
+                        // TODO: add alive players list
+                        evt.addinfof("console", "\fyEveryone died, \fzoyEPIC FAIL!");
+                        evt.push();
                     }
                     clear();
                     break;
@@ -489,12 +496,6 @@ struct duelservmode : servmode
                             duelwins++;
                             formatstring(end, "\fy%s was the winner%s (\fs\fc%d\fS in a row)", colourname(alive[0]), hp, duelwins);
                         }
-                        vector<int> eventclients;
-                        loopv(playing) eventclients.add(playing[i]->clientnum);
-                        vector<int> eventinfos;
-                        eventinfos.add(duelwins);
-                        eventinfos.add(duelwinner);;
-                        loopv(alive) eventinfos.add(alive[i]->clientnum);
                         loopv(clients)
                         {
                             const char *sndidx = "S_V_SCORE";
@@ -516,7 +517,13 @@ struct duelservmode : servmode
                                 }
                                 else sndidx = "S_V_YOULOSE";
                             }
-                            eventlogv(clients[i]->clientnum, EV_ANNOUNCE, EV_N_FINISH, sndidx, EV_S_BROADCAST, eventclients, eventinfos, end);
+                            eventlog evt(clients[i]->clientnum, EV_ANNOUNCE, EV_N_FINISH, sndidx, EV_S_BROADCAST);
+                            loopv(playing) evt.addclient(playing[i]);
+                            // TODO: add alive players list
+                            evt.addinfo("winner", duelwinner);
+                            evt.addinfo("wins", duelwins);
+                            evt.addinfof("console", end);
+                            evt.push();
                         }
                     }
                     clear();

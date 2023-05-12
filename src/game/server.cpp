@@ -502,8 +502,7 @@ namespace server
         }
     };
 
-    //#include "eventlog.h"
-
+    #include "eventlog.h"
     struct savedscore
     {
         uint ip;
@@ -1269,67 +1268,6 @@ namespace server
 #endif
     }
 
-    void eventlogv(int cn, int type, int subtype, const char *sndidx, int sndflags, const vector<int> &clients, const vector<int> &infos, const char *str)
-    {
-        if(type < 0 || type >= EV_MAX || (cn > 0 && !allowbroadcast(cn))) return;
-        sendf(cn, 1, "ri3si2vivs", N_EVENTLOG, type, subtype, sndidx, sndflags, clients.length(), clients.length(), clients.getbuf(), infos.length(), infos.length(), infos.getbuf(), str);
-    }
-
-    void eventlogvf(int cn, int type, int subtype, const char *sndidx, int sndflags, const vector<int> &clients, const vector<int> &infos, const char *str, ...)
-    {
-        if(type < 0 || type >= EV_MAX) return;
-        defvformatbigstring(sf, str, str);
-        eventlogv(cn, type, subtype, sndidx, sndflags, clients, infos, sf);
-    }
-
-    static vector<int> eventclients, eventinfos;
-    void eventlogvi(int cn, int type, int subtype, const char *sndidx, int sndflags, const vector<int> &clients, int *infos, int ilen, const char *str)
-    {
-        if(type < 0 || type >= EV_MAX) return;
-        eventinfos.setsize(0);
-        if(infos) loopi(ilen) eventinfos.add(infos[i]);
-        eventlogv(cn, type, subtype, sndidx, sndflags, clients, eventinfos, str);
-    }
-
-    void eventlogiv(int cn, int type, int subtype, const char *sndidx, int sndflags, int *clients, int clen, const vector<int> &infos, const char *str)
-    {
-        if(type < 0 || type >= EV_MAX) return;
-        eventclients.setsize(0);
-        if(clients) loopi(clen) eventclients.add(clients[i]);
-        eventlogv(cn, type, subtype, sndidx, sndflags, eventclients, infos, str);
-    }
-
-    void eventlogvif(int cn, int type, int subtype, const char *sndidx, int sndflags, const vector<int> &clients, int *infos, int ilen, const char *str, ...)
-    {
-        if(type < 0 || type >= EV_MAX) return;
-        defvformatbigstring(sf, str, str);
-        eventlogvi(cn, type, subtype, sndidx, sndflags, clients, infos, ilen, sf);
-    }
-
-    void eventlogi(int cn, int type, int subtype, const char *sndidx, int sndflags, int *clients, int clen, int *infos, int ilen, const char *str)
-    {
-        if(type < 0 || type >= EV_MAX) return;
-        eventclients.setsize(0);
-        if(clients) loopi(clen) eventclients.add(clients[i]);
-        eventinfos.setsize(0);
-        if(infos) loopi(ilen) eventinfos.add(infos[i]);
-        eventlogv(cn, type, subtype, sndidx, sndflags, eventclients, eventinfos, str);
-    }
-
-    void eventlogif(int cn, int type, int subtype, const char *sndidx, int sndflags, int *clients, int clen, int *infos, int ilen, const char *str, ...)
-    {
-        if(type < 0 || type >= EV_MAX) return;
-        defvformatbigstring(sf, str, str);
-        eventlogi(cn, type, subtype, sndidx, sndflags, clients, clen, infos, ilen, sf);
-    }
-
-    void eventlog(int cn, int type, int subtype, const char *sndidx, int sndflags, const char *str, ...)
-    {
-        if(type < 0 || type >= EV_MAX) return;
-        defvformatbigstring(sf, str, str);
-        eventlogi(cn, type, subtype, sndidx, sndflags, NULL, 0, NULL, 0, sf);
-    }
-
     void srvmsgft(int cn, int type, const char *s, ...)
     {
         defvformatbigstring(str, s, s);
@@ -1810,7 +1748,9 @@ namespace server
                 {
                     int secs = G(teambalancedelay)/1000;
                     nextteambalance = gamemillis+G(teambalancedelay);
-                    eventlog(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_BALWARN", EV_S_BROADCAST, "\fy\fs\fzoyWARNING:\fS \fs\fcteams\fS will be \fs\fcbalanced\fS in \fs\fc%d\fS %s", secs, secs != 1 ? "seconds" : "second");
+                    eventlog evt(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_BALWARN", EV_S_BROADCAST);
+                    evt.addinfof("console", "\fy\fs\fzoyWARNING:\fS \fs\fcteams\fS will be \fs\fcbalanced\fS in \fs\fc%d\fS %s", secs, secs != 1 ? "seconds" : "second");
+                    evt.push();
                 }
                 else if(init)
                 {
@@ -1876,8 +1816,18 @@ namespace server
                     }
                     if(!init)
                     {
-                        if(moved) eventlog(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_BALALERT", EV_S_BROADCAST, "\fy\fs\fzoyALERT:\fS \fs\fcteams\fS have now been \fs\fcbalanced\fS");
-                        else eventlog(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_NOTIFY", EV_S_BROADCAST, "\fy\fs\fzoyALERT:\fS \fs\fcteams\fS failed to be \fs\fcbalanced\fS");
+                        if(moved)
+                        {
+                            eventlog evt(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_BALALERT", EV_S_BROADCAST);
+                            evt.addinfo("console", "\fy\fs\fzoyALERT:\fS \fs\fcTeams\fS have now been \fs\fcbalanced\fS");
+                            evt.push();
+                        }
+                        else
+                        {
+                            eventlog evt(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_NOTIFY", EV_S_BROADCAST);
+                            evt.addinfo("console", "\fy\fs\fzoyALERT:\fS \fs\fcTeams\fS failed to be \fs\fcbalanced\fS");
+                            evt.push();
+                        }
                     }
                     lastteambalance = gamemillis+G(teambalancewait);
                     nextteambalance = 0;
@@ -1885,14 +1835,24 @@ namespace server
             }
             else
             {
-                if(!init && nextteambalance) eventlog(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_NOTIFY", EV_S_BROADCAST, "\fy\fs\fzoyALERT:\fS \fs\fcteams\fS no longer need to be \fs\fcbalanced\fS");
+                if(!init && nextteambalance)
+                {
+                    eventlog evt(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_NOTIFY", EV_S_BROADCAST);
+                    evt.addinfo("console", "\fy\fs\fzoyALERT:\fS \fs\fcTeams\fS no longer need to be \fs\fcbalanced\fS");
+                    evt.push();
+                }
                 lastteambalance = gamemillis+(nextteambalance ? G(teambalancewait) : G(teambalancedelay));
                 nextteambalance = 0;
             }
         }
         else
         {
-            if(!init && nextteambalance) eventlog(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_NOTIFY", EV_S_BROADCAST, "\fy\fs\fzoyALERT:\fS \fs\fcteams\fS are no longer able to be \fs\fcbalanced\fS");
+            if(!init && nextteambalance)
+            {
+                eventlog evt(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_NOTIFY", EV_S_BROADCAST);
+                evt.addinfo("console", "\fy\fs\fzoyALERT:\fS \fs\fcTeams\fS are no longer able to be \fs\fcbalanced\fS");
+                evt.push();
+            }
             lastteambalance = gamemillis+(nextteambalance ? G(teambalancewait) : G(teambalancedelay));
             nextteambalance = 0;
         }
@@ -1931,34 +1891,47 @@ namespace server
                         {
                             timeremaining = limit*60;
                             gamelimit += timeremaining*1000;
-                            eventlog(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_OVERTIME", EV_S_BROADCAST, "\fyOvertime, match extended by \fs\fc%d\fS %s", limit, limit > 1 ? "minutes" : "minute");
+                            eventlog evt(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_OVERTIME", EV_S_BROADCAST);
+                            evt.addinfof("console", "\fyOvertime, match extended by \fs\fc%d\fS %s", limit, limit > 1 ? "minutes" : "minute");
+                            evt.push();
                         }
                         else
                         {
                             timeremaining = -1;
                             gamelimit = 0;
-                            eventlog(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_OVERTIME", EV_S_BROADCAST, "\fyOvertime, match extended until someone wins");
+                            eventlog evt(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_OVERTIME", EV_S_BROADCAST);
+                            evt.addinfo("console", "\fyOvertime, match extended until someone wins");
+                            evt.push();
                         }
                         gamestate = G_S_OVERTIME;
                         wantsoneminute = false;
                     }
                     else
                     {
-                        eventlog(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_NOTIFY", EV_S_BROADCAST, "\fyTime limit has been reached");
+                        eventlog evt(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_NOTIFY", EV_S_BROADCAST);
+                        evt.addinfo("console", "\fyTime limit has been reached");
+                        evt.push();
                         startintermission();
                         return; // bail
                     }
                 }
                 if(gs_playing(gamestate) && timeremaining != 0)
                 {
-                    if(wantsoneminute && timeremaining == 60) eventlog(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_ONEMINUTE", EV_S_BROADCAST, "\fzYgone minute remains");
+                    if(wantsoneminute && timeremaining == 60)
+                    {
+                        eventlog evt(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_ONEMINUTE", EV_S_BROADCAST);
+                        evt.addinfo("console", "\fzYgone minute remains");
+                        evt.push();
+                    }
                     sendtick();
                 }
             }
         }
         if(wasinovertime && !wantsovertime())
         {
-            eventlog(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_NOTIFY", EV_S_BROADCAST, "\fyOvertime has ended, a winner has been chosen");
+            eventlog evt(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_NOTIFY", EV_S_BROADCAST);
+            evt.addinfo("console", "\fyOvertime has ended, a winner has been chosen");
+            evt.push();
             startintermission();
             return; // bail
         }
@@ -1979,7 +1952,9 @@ namespace server
                         best = i+T_FIRST;
                     if(best >= 0 && teamscore(best).total >= plimit)
                     {
-                        eventlog(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_NOTIFY", EV_S_BROADCAST, "\fyScore limit has been reached");
+                        eventlog evt(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_NOTIFY", EV_S_BROADCAST);
+                        evt.addinfo("console", "\fyScore limit has been reached");
+                        evt.push();
                         startintermission();
                         return; // bail
                     }
@@ -1991,7 +1966,9 @@ namespace server
                         best = i;
                     if(best >= 0 && clients[best]->points >= plimit)
                     {
-                        eventlog(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_NOTIFY", EV_S_BROADCAST, "\fyScore limit has been reached");
+                        eventlog evt(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_NOTIFY", EV_S_BROADCAST);
+                        evt.addinfo("console", "\fyScore limit has been reached");
+                        evt.push();
                         startintermission();
                         return; // bail
                     }
@@ -2009,7 +1986,9 @@ namespace server
                     if(delpart >= 1000)
                     {
                         int secs = delpart/1000;
-                        eventlog(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_BALWARN", EV_S_BROADCAST, "\fy\fs\fzoyWARNING:\fS \fs\fcteams\fS will be \fs\fcreassigned\fS in \fs\fc%d\fS %s %s", secs, secs != 1 ? "seconds" : "second", m_forcebal(gamemode, mutators) ? "to switch roles" : "for map symmetry");
+                        eventlog evt(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_BALWARN", EV_S_BROADCAST);
+                        evt.addinfof("console", "\fy\fs\fzoyWARNING:\fS \fs\fcteams\fS will be \fs\fcreassigned\fS in \fs\fc%d\fS %s %s", secs, secs != 1 ? "seconds" : "second", m_forcebal(gamemode, mutators) ? "to switch roles" : "for map symmetry");
+                        evt.push();
                     }
                 }
                 if(gamemillis >= nextbalance && canbalancenow())
@@ -2044,7 +2023,11 @@ namespace server
                         cs.total = scores[tot];
                         sendf(-1, 1, "ri3", N_SCORE, cs.team, cs.total);
                     }
-                    eventlog(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_BALALERT", EV_S_BROADCAST, "\fy\fs\fzoyALERT:\fS \fs\fcteams\fS have %sbeen \fs\fcreassigned\fS %s", delpart > 0 ? "now " : "", m_forcebal(gamemode, mutators) ? "to switch roles" : "for map symmetry");
+
+                    eventlog evt(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_BALALERT", EV_S_BROADCAST);
+                    evt.addinfof("console", "\fy\fs\fzoyALERT:\fS \fs\fcteams\fS have %sbeen \fs\fcreassigned\fS %s", delpart > 0 ? "now " : "", m_forcebal(gamemode, mutators) ? "to switch roles" : "for map symmetry");
+                    evt.push();
+
                     if(smode) smode->balance(oldbalance);
                     mutate(smuts, mut->balance(oldbalance));
                     if(smode) smode->layout();
@@ -3001,7 +2984,11 @@ namespace server
             if(cp->actortype != A_PLAYER || (newteam && cp->team != newteam) || !cp->swapteam || cp->swapteam != oldteam) continue;
             setteam(cp, oldteam, TT_RESET|TT_INFOSM, false);
             cp->lastdeath = 0;
-            eventlog(cp->clientnum, EV_ANNOUNCE, EV_N_EVENT, "S_V_BALALERT", EV_S_BROADCAST, "\fyYou have been moved to %s as previously requested", colourteam(oldteam));
+
+            eventlog evt(cp->clientnum, EV_ANNOUNCE, EV_N_EVENT, "S_V_BALALERT", EV_S_BROADCAST);
+            evt.addinfof("console", "\fyYou have been moved to %s as previously requested", colourteam(oldteam));
+            evt.push();
+
             return;
         }
         if(haspriv(ci, G(teambalancelock)))
@@ -3024,7 +3011,11 @@ namespace server
                 clientinfo *cp = clients[worst];
                 setteam(cp, oldteam, TT_RESET|TT_INFOSM, false);
                 cp->lastdeath = 0;
-                eventlog(cp->clientnum, EV_ANNOUNCE, EV_N_EVENT, "S_V_BALALERT", EV_S_BROADCAST, "\fyYou have been moved to %s by higher skilled %s %s", colourteam(oldteam), privname(G(teambalancelock)), colourname(ci));
+
+                eventlog evt(cp->clientnum, EV_ANNOUNCE, EV_N_EVENT, "S_V_BALALERT", EV_S_BROADCAST);
+                evt.addinfof("console", "\fyYou have been moved to %s by higher skilled %s %s", colourteam(oldteam), privname(G(teambalancelock)), colourname(ci));
+                evt.push();
+
                 return;
             }
         }
@@ -5169,7 +5160,9 @@ namespace server
         {
             if(team && m_swapteam(gamemode, mutators) && ci->team != team && ci->actortype == A_PLAYER && ci->swapteam != team && canplay())
             {
-                eventlog(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_NOTIFY", EV_S_BROADCAST, "\fy%s requests swap to team %s, change teams to accept", colourname(ci), colourteam(team));
+                eventlog evt(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_NOTIFY", EV_S_BROADCAST);
+                evt.addinfof("console", "\fy%s requests swap to team %s, change teams to accept", colourname(ci), colourteam(team));
+                evt.push();
                 ci->swapteam = team;
             }
             team = chooseteam(ci);
@@ -6741,7 +6734,9 @@ namespace server
                                                 }
                                                 if(!found)
                                                 {
-                                                    eventlog(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_NOTIFY", EV_S_BROADCAST, "\fyBest score has been reached");
+                                                    eventlog evt(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_NOTIFY", EV_S_BROADCAST);
+                                                    evt.addinfo("console", "\fyBest score has been reached");
+                                                    evt.push();
                                                     startintermission();
                                                 }
                                             }

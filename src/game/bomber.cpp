@@ -488,6 +488,13 @@ namespace bomber
                 evt->push();
             }
         }
+        else if(value == 1 && isbomberaffinity(f))
+        {
+            eventlog *evt = new eventlog(EV_AFFINITY, EV_A_START, m_duke(game::gamemode, game::mutators) ? S_V_BOMBDUEL : S_V_BOMBSTART, EV_S_BROADCAST);
+            evt->addinfo("affinity", i);
+            evt->addinfo("console", "\faThe \fs\fzwvbomb\fS has been spawned");
+            evt->push();
+        }
 
         if(value == 2) st.dropaffinity(i, pos, vec(0, 0, 1), lastmillis);
         else st.returnaffinity(i, lastmillis, value!=0);
