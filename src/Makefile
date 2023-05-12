@@ -882,7 +882,7 @@ engine/wind.o: shared/glemu.h shared/iengine.h shared/igame.h engine/http.h
 engine/wind.o: engine/irc.h engine/world.h engine/octa.h engine/light.h
 engine/wind.o: engine/texture.h engine/bih.h engine/model.h engine/sound.h
 engine/wind.o: engine/soundenvprop.h
-game/ai.o: game/game.h game/eventlog.h engine/engine.h engine/version.h shared/cube.h
+game/ai.o: game/game.h game/gamelog.h engine/engine.h engine/version.h shared/cube.h
 game/ai.o: shared/tools.h shared/command.h shared/enum.h shared/geom.h
 game/ai.o: shared/prop.h shared/ents.h engine/wind.h engine/fx.h
 game/ai.o: shared/glexts.h shared/glemu.h shared/iengine.h shared/igame.h
@@ -892,7 +892,7 @@ game/ai.o: engine/sound.h engine/soundenvprop.h game/gamemode.h
 game/ai.o: game/weapons.h game/weapdef.h game/player.h game/teamdef.h
 game/ai.o: game/playerdef.h game/vars.h game/ai.h game/capture.h
 game/ai.o: game/defend.h game/bomber.h
-game/client.o: game/game.h game/eventlog.h engine/engine.h engine/version.h shared/cube.h
+game/client.o: game/game.h game/gamelog.h engine/engine.h engine/version.h shared/cube.h
 game/client.o: shared/tools.h shared/command.h shared/enum.h shared/geom.h
 game/client.o: shared/prop.h shared/ents.h engine/wind.h engine/fx.h
 game/client.o: shared/glexts.h shared/glemu.h shared/iengine.h shared/igame.h
@@ -902,7 +902,7 @@ game/client.o: engine/sound.h engine/soundenvprop.h game/gamemode.h
 game/client.o: game/weapons.h game/weapdef.h game/player.h game/teamdef.h
 game/client.o: game/playerdef.h game/vars.h game/ai.h game/capture.h
 game/client.o: game/defend.h game/bomber.h
-game/capture.o: game/game.h game/eventlog.h engine/engine.h engine/version.h shared/cube.h
+game/capture.o: game/game.h game/gamelog.h engine/engine.h engine/version.h shared/cube.h
 game/capture.o: shared/tools.h shared/command.h shared/enum.h shared/geom.h
 game/capture.o: shared/prop.h shared/ents.h engine/wind.h engine/fx.h
 game/capture.o: shared/glexts.h shared/glemu.h shared/iengine.h
@@ -912,7 +912,7 @@ game/capture.o: engine/model.h engine/sound.h engine/soundenvprop.h
 game/capture.o: game/gamemode.h game/weapons.h game/weapdef.h game/player.h
 game/capture.o: game/teamdef.h game/playerdef.h game/vars.h game/ai.h
 game/capture.o: game/capture.h game/defend.h game/bomber.h
-game/defend.o: game/game.h game/eventlog.h engine/engine.h engine/version.h shared/cube.h
+game/defend.o: game/game.h game/gamelog.h engine/engine.h engine/version.h shared/cube.h
 game/defend.o: shared/tools.h shared/command.h shared/enum.h shared/geom.h
 game/defend.o: shared/prop.h shared/ents.h engine/wind.h engine/fx.h
 game/defend.o: shared/glexts.h shared/glemu.h shared/iengine.h shared/igame.h
@@ -922,7 +922,7 @@ game/defend.o: engine/sound.h engine/soundenvprop.h game/gamemode.h
 game/defend.o: game/weapons.h game/weapdef.h game/player.h game/teamdef.h
 game/defend.o: game/playerdef.h game/vars.h game/ai.h game/capture.h
 game/defend.o: game/defend.h game/bomber.h
-game/bomber.o: game/game.h game/eventlog.h engine/engine.h engine/version.h shared/cube.h
+game/bomber.o: game/game.h game/gamelog.h engine/engine.h engine/version.h shared/cube.h
 game/bomber.o: shared/tools.h shared/command.h shared/enum.h shared/geom.h
 game/bomber.o: shared/prop.h shared/ents.h engine/wind.h engine/fx.h
 game/bomber.o: shared/glexts.h shared/glemu.h shared/iengine.h shared/igame.h
@@ -932,7 +932,7 @@ game/bomber.o: engine/sound.h engine/soundenvprop.h game/gamemode.h
 game/bomber.o: game/weapons.h game/weapdef.h game/player.h game/teamdef.h
 game/bomber.o: game/playerdef.h game/vars.h game/ai.h game/capture.h
 game/bomber.o: game/defend.h game/bomber.h
-game/entities.o: game/game.h game/eventlog.h engine/engine.h engine/version.h shared/cube.h
+game/entities.o: game/game.h game/gamelog.h engine/engine.h engine/version.h shared/cube.h
 game/entities.o: shared/tools.h shared/command.h shared/enum.h shared/geom.h
 game/entities.o: shared/prop.h shared/ents.h engine/wind.h engine/fx.h
 game/entities.o: shared/glexts.h shared/glemu.h shared/iengine.h
@@ -942,7 +942,7 @@ game/entities.o: engine/model.h engine/sound.h engine/soundenvprop.h
 game/entities.o: game/gamemode.h game/weapons.h game/weapdef.h game/player.h
 game/entities.o: game/teamdef.h game/playerdef.h game/vars.h game/ai.h
 game/entities.o: game/capture.h game/defend.h game/bomber.h
-game/game.o: game/game.h game/eventlog.h engine/engine.h engine/version.h shared/cube.h
+game/game.o: game/game.h game/gamelog.h engine/engine.h engine/version.h shared/cube.h
 game/game.o: shared/tools.h shared/command.h shared/enum.h shared/geom.h
 game/game.o: shared/prop.h shared/ents.h engine/wind.h engine/fx.h
 game/game.o: shared/glexts.h shared/glemu.h shared/iengine.h shared/igame.h
@@ -952,7 +952,7 @@ game/game.o: engine/sound.h engine/soundenvprop.h game/gamemode.h
 game/game.o: game/weapons.h game/weapdef.h game/player.h game/teamdef.h
 game/game.o: game/playerdef.h game/vars.h game/ai.h game/capture.h
 game/game.o: game/defend.h game/bomber.h
-game/hud.o: game/game.h game/eventlog.h engine/engine.h engine/version.h shared/cube.h
+game/hud.o: game/game.h game/gamelog.h engine/engine.h engine/version.h shared/cube.h
 game/hud.o: shared/tools.h shared/command.h shared/enum.h shared/geom.h
 game/hud.o: shared/prop.h shared/ents.h engine/wind.h engine/fx.h
 game/hud.o: shared/glexts.h shared/glemu.h shared/iengine.h shared/igame.h
@@ -962,7 +962,7 @@ game/hud.o: engine/sound.h engine/soundenvprop.h game/gamemode.h
 game/hud.o: game/weapons.h game/weapdef.h game/player.h game/teamdef.h
 game/hud.o: game/playerdef.h game/vars.h game/ai.h game/capture.h
 game/hud.o: game/defend.h game/bomber.h game/compass.h
-game/physics.o: game/game.h game/eventlog.h engine/engine.h engine/version.h shared/cube.h
+game/physics.o: game/game.h game/gamelog.h engine/engine.h engine/version.h shared/cube.h
 game/physics.o: shared/tools.h shared/command.h shared/enum.h shared/geom.h
 game/physics.o: shared/prop.h shared/ents.h engine/wind.h engine/fx.h
 game/physics.o: shared/glexts.h shared/glemu.h shared/iengine.h
@@ -972,7 +972,7 @@ game/physics.o: engine/model.h engine/sound.h engine/soundenvprop.h
 game/physics.o: game/gamemode.h game/weapons.h game/weapdef.h game/player.h
 game/physics.o: game/teamdef.h game/playerdef.h game/vars.h game/ai.h
 game/physics.o: game/capture.h game/defend.h game/bomber.h
-game/projs.o: game/game.h game/eventlog.h engine/engine.h engine/version.h shared/cube.h
+game/projs.o: game/game.h game/gamelog.h engine/engine.h engine/version.h shared/cube.h
 game/projs.o: shared/tools.h shared/command.h shared/enum.h shared/geom.h
 game/projs.o: shared/prop.h shared/ents.h engine/wind.h engine/fx.h
 game/projs.o: shared/glexts.h shared/glemu.h shared/iengine.h shared/igame.h
@@ -982,7 +982,7 @@ game/projs.o: engine/sound.h engine/soundenvprop.h game/gamemode.h
 game/projs.o: game/weapons.h game/weapdef.h game/player.h game/teamdef.h
 game/projs.o: game/playerdef.h game/vars.h game/ai.h game/capture.h
 game/projs.o: game/defend.h game/bomber.h
-game/scoreboard.o: game/game.h game/eventlog.h engine/engine.h engine/version.h shared/cube.h
+game/scoreboard.o: game/game.h game/gamelog.h engine/engine.h engine/version.h shared/cube.h
 game/scoreboard.o: shared/tools.h shared/command.h shared/enum.h
 game/scoreboard.o: shared/geom.h shared/prop.h shared/ents.h engine/wind.h
 game/scoreboard.o: engine/fx.h shared/glexts.h shared/glemu.h
@@ -993,7 +993,7 @@ game/scoreboard.o: engine/sound.h engine/soundenvprop.h game/gamemode.h
 game/scoreboard.o: game/weapons.h game/weapdef.h game/player.h game/teamdef.h
 game/scoreboard.o: game/playerdef.h game/vars.h game/ai.h game/capture.h
 game/scoreboard.o: game/defend.h game/bomber.h
-game/server.o: game/game.h game/eventlog.h engine/engine.h engine/version.h shared/cube.h
+game/server.o: game/game.h game/gamelog.h engine/engine.h engine/version.h shared/cube.h
 game/server.o: shared/tools.h shared/command.h shared/enum.h shared/geom.h
 game/server.o: shared/prop.h shared/ents.h engine/wind.h engine/fx.h
 game/server.o: shared/glexts.h shared/glemu.h shared/iengine.h shared/igame.h
@@ -1005,7 +1005,7 @@ game/server.o: game/playerdef.h game/vars.h game/ai.h game/capture.h
 game/server.o: game/defend.h game/bomber.h game/auth.h game/capturemode.h
 game/server.o: game/defendmode.h game/bombermode.h game/duelmut.h
 game/server.o: game/aiman.h
-game/waypoint.o: game/game.h game/eventlog.h engine/engine.h engine/version.h shared/cube.h
+game/waypoint.o: game/game.h game/gamelog.h engine/engine.h engine/version.h shared/cube.h
 game/waypoint.o: shared/tools.h shared/command.h shared/enum.h shared/geom.h
 game/waypoint.o: shared/prop.h shared/ents.h engine/wind.h engine/fx.h
 game/waypoint.o: shared/glexts.h shared/glemu.h shared/iengine.h
@@ -1015,7 +1015,7 @@ game/waypoint.o: engine/model.h engine/sound.h engine/soundenvprop.h
 game/waypoint.o: game/gamemode.h game/weapons.h game/weapdef.h game/player.h
 game/waypoint.o: game/teamdef.h game/playerdef.h game/vars.h game/ai.h
 game/waypoint.o: game/capture.h game/defend.h game/bomber.h
-game/weapons.o: game/game.h game/eventlog.h engine/engine.h engine/version.h shared/cube.h
+game/weapons.o: game/game.h game/gamelog.h engine/engine.h engine/version.h shared/cube.h
 game/weapons.o: shared/tools.h shared/command.h shared/enum.h shared/geom.h
 game/weapons.o: shared/prop.h shared/ents.h engine/wind.h engine/fx.h
 game/weapons.o: shared/glexts.h shared/glemu.h shared/iengine.h
@@ -1083,7 +1083,7 @@ engine/server-standalone.o: shared/geom.h shared/prop.h shared/ents.h
 engine/server-standalone.o: engine/wind.h engine/fx.h shared/iengine.h
 engine/server-standalone.o: shared/igame.h engine/http.h engine/irc.h
 engine/server-standalone.o: engine/sound.h engine/soundenvprop.h
-game/server-standalone.o: game/game.h game/eventlog.h engine/engine.h engine/version.h
+game/server-standalone.o: game/game.h game/gamelog.h engine/engine.h engine/version.h
 game/server-standalone.o: shared/cube.h shared/tools.h shared/command.h
 game/server-standalone.o: shared/enum.h shared/geom.h shared/prop.h
 game/server-standalone.o: shared/ents.h engine/wind.h engine/fx.h

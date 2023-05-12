@@ -121,17 +121,17 @@ struct bomberservmode : bomberstate, servmode
                 }
                 if(teamid >= 0)
                 {
-                    eventlog evt;
-                    evt.addlist("this", "target", -1);
-                    evt.addlist("this", "type", "score");
-                    evt.addlist("this", "action", "reached");
-                    evt.addlist("this", "sound", "S_V_NOTIFY");
-                    evt.addlist("this", "flags", EV_F_BROADCAST);
-                    evt.addclient("client", ci);
-                    evt.addlist("args", "team", teamid);
-                    evt.addlist("args", "score", teamsc);
-                    evt.addlist("args", "console", "\fyScore limit has been reached");
-                    evt.push();
+                    gamelog log;
+                    log.addlist("this", "target", -1);
+                    log.addlist("this", "type", "score");
+                    log.addlist("this", "action", "reached");
+                    log.addlist("this", "sound", "S_V_NOTIFY");
+                    log.addlist("this", "flags", EV_F_BROADCAST);
+                    log.addclient("client", ci);
+                    log.addlist("args", "team", teamid);
+                    log.addlist("args", "score", teamsc);
+                    log.addlist("args", "console", "\fyScore limit has been reached");
+                    log.push();
                     startintermission();
                 }
             }

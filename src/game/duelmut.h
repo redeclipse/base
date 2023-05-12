@@ -336,12 +336,12 @@ struct duelservmode : servmode
                     }
                     else if(m_survivor(gamemode, mutators)) formatstring(fight, "Survivor, round \fs\fc#%d\fS", duelround);
 
-                    eventlog evt;
-                    evt.addlist("this", "target", -1);
-                    evt.addlist("this", "type", "duel");
-                    evt.addlist("this", "action", "start");
-                    evt.addlist("this", "sound", "S_V_FIGHT");
-                    evt.addlist("this", "flags", EV_F_BROADCAST);
+                    gamelog log;
+                    log.addlist("this", "target", -1);
+                    log.addlist("this", "type", "duel");
+                    log.addlist("this", "action", "start");
+                    log.addlist("this", "sound", "S_V_FIGHT");
+                    log.addlist("this", "flags", EV_F_BROADCAST);
                     loopv(playing)
                     {
                         if(playing[i]->state == CS_ALIVE)
@@ -354,12 +354,12 @@ struct duelservmode : servmode
                         }
                         else if(allowed.find(playing[i]) < 0) allowed.add(playing[i]);
                         duelqueue.removeobj(playing[i]);
-                        evt.addclient("client", playing[i]);
+                        log.addclient("client", playing[i]);
                     }
-                    evt.addlist("args", "round", duelround);
-                    evt.addlist("args", "queue", duelqueue.length());
-                    evt.addlistf("args","console", "\fy%s%s", gamestate == G_S_OVERTIME && !restricted.empty() ? "\fs\fzcgSudden Death\fS, " : "", fight);
-                    evt.push();
+                    log.addlist("args", "round", duelround);
+                    log.addlist("args", "queue", duelqueue.length());
+                    log.addlistf("args","console", "\fy%s%s", gamestate == G_S_OVERTIME && !restricted.empty() ? "\fs\fzcgSudden Death\fS, " : "", fight);
+                    log.push();
 
                     dueltime = dueldeath = -1;
                     duelcheck = gamemillis+5000;
@@ -433,18 +433,18 @@ struct duelservmode : servmode
                                 }
                                 if(allowbroadcast(clients[i]->clientnum))
                                 {
-                                    eventlog evt;
-                                    evt.addlist("this", "target", clients[i]->clientnum);
-                                    evt.addlist("this", "type", "duel");
-                                    evt.addlist("this", "action", "finish");
-                                    evt.addlist("this", "sound", sndidx);
-                                    evt.addlist("this", "flags", EV_F_BROADCAST);
-                                    loopv(playing) evt.addclient("client", playing[i]);
-                                    loopv(alive) evt.addclient("alive", alive[i]);
-                                    evt.addlist("args", "winner", duelwinner);
-                                    evt.addlist("args", "wins", duelwins);
-                                    evt.addlistf("args","console", "\fyTeam %s are the winners", colourteam(alive[0]->team));
-                                    evt.push();
+                                    gamelog log;
+                                    log.addlist("this", "target", clients[i]->clientnum);
+                                    log.addlist("this", "type", "duel");
+                                    log.addlist("this", "action", "finish");
+                                    log.addlist("this", "sound", sndidx);
+                                    log.addlist("this", "flags", EV_F_BROADCAST);
+                                    loopv(playing) log.addclient("client", playing[i]);
+                                    loopv(alive) log.addclient("alive", alive[i]);
+                                    log.addlist("args", "winner", duelwinner);
+                                    log.addlist("args", "wins", duelwins);
+                                    log.addlistf("args","console", "\fyTeam %s are the winners", colourteam(alive[0]->team));
+                                    log.push();
                                 }
                             }
                         }
@@ -469,16 +469,16 @@ struct duelservmode : servmode
                         duelwinner = -1;
                         duelwins = 0;
 
-                        eventlog evt;
-                        evt.addlist("this", "target", -1);
-                        evt.addlist("this", "type", "duel");
-                        evt.addlist("this", "action", "draw");
-                        evt.addlist("this", "sound", "S_V_DRAW");
-                        evt.addlist("this", "flags", EV_F_BROADCAST);
-                        loopv(playing) evt.addclient("client", playing[i]);
-                        loopv(alive) evt.addclient("alive", alive[i]);
-                        evt.addlistf("args","console", "\fyEveryone died, \fzoyEPIC FAIL!");
-                        evt.push();
+                        gamelog log;
+                        log.addlist("this", "target", -1);
+                        log.addlist("this", "type", "duel");
+                        log.addlist("this", "action", "draw");
+                        log.addlist("this", "sound", "S_V_DRAW");
+                        log.addlist("this", "flags", EV_F_BROADCAST);
+                        loopv(playing) log.addclient("client", playing[i]);
+                        loopv(alive) log.addclient("alive", alive[i]);
+                        log.addlistf("args","console", "\fyEveryone died, \fzoyEPIC FAIL!");
+                        log.push();
                     }
                     clear();
                     break;
@@ -536,18 +536,18 @@ struct duelservmode : servmode
                             }
                             if(allowbroadcast(clients[i]->clientnum))
                             {
-                                eventlog evt;
-                                evt.addlist("this", "target", clients[i]->clientnum);
-                                evt.addlist("this", "type", "duel");
-                                evt.addlist("this", "action", "finish");
-                                evt.addlist("this", "sound", sndidx);
-                                evt.addlist("this", "flags", EV_F_BROADCAST);
-                                loopv(playing) evt.addclient("client", playing[i]);
-                                loopv(alive) evt.addclient("alive", alive[i]);
-                                evt.addlist("args", "winner", duelwinner);
-                                evt.addlist("args", "wins", duelwins);
-                                evt.addlistf("args","console", end);
-                                evt.push();
+                                gamelog log;
+                                log.addlist("this", "target", clients[i]->clientnum);
+                                log.addlist("this", "type", "duel");
+                                log.addlist("this", "action", "finish");
+                                log.addlist("this", "sound", sndidx);
+                                log.addlist("this", "flags", EV_F_BROADCAST);
+                                loopv(playing) log.addclient("client", playing[i]);
+                                loopv(alive) log.addclient("alive", alive[i]);
+                                log.addlist("args", "winner", duelwinner);
+                                log.addlist("args", "wins", duelwins);
+                                log.addlistf("args","console", end);
+                                log.push();
                             }
                         }
                     }

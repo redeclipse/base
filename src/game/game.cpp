@@ -1725,7 +1725,7 @@ namespace game
         hiteffect(weap, flags, damage, d, v, dir, vel, dist, v == player1 || v->ai);
     }
 
-    void killed(int weap, int flags, int damage, gameent *d, gameent *v, vector<gameent *> &log, int style, int material)
+    void killed(int weap, int flags, int damage, gameent *d, gameent *v, vector<gameent *> &assist, int style, int material)
     {
         d->lastregen = d->lastregenamt = 0;
         d->lastpain = lastmillis;
@@ -1738,7 +1738,7 @@ namespace game
         int anc = d == focus && allowanc ? S_V_FRAGGED : -1, dth = d->actortype >= A_ENEMY || d->obliterated ? S_SPLOSH : S_DEATH,
             curmat = material&MATF_VOLUME;
         if(d != player1) d->resetinterp();
-        if(!isme) loopv(log) if(log[i] == player1)
+        if(!isme) loopv(assist) if(assist[i] == player1)
         {
             isme = true;
             break;
@@ -1938,22 +1938,22 @@ namespace game
                 concatstring(d->obit, obitx);
             }
         }
-        if(!log.empty())
+        if(!assist.empty())
         {
             if(obitverbose || obitstyles) concatstring(d->obit, rnd(2) ? ", assisted by" : ", helped by");
             else concatstring(d->obit, " +");
-            loopv(log) if(log[i])
+            loopv(assist) if(assist[i])
             {
                 if(obitverbose || obitstyles)
-                    concatstring(d->obit, log.length() > 1 && i == log.length()-1 ? " and " : (i ? ", " : " "));
-                else concatstring(d->obit, log.length() > 1 && i == log.length()-1 ? " + " : (i ? " + " : " "));
-                if(log[i]->actortype >= A_ENEMY) concatstring(d->obit, "a ");
-                concatstring(d->obit, colourname(log[i]));
+                    concatstring(d->obit, assist.length() > 1 && i == assist.length()-1 ? " and " : (i ? ", " : " "));
+                else concatstring(d->obit, assist.length() > 1 && i == assist.length()-1 ? " + " : (i ? " + " : " "));
+                if(assist[i]->actortype >= A_ENEMY) concatstring(d->obit, "a ");
+                concatstring(d->obit, colourname(assist[i]));
                 if(showobithpleft >= (d != player1 ? 2 : 1))
                 {
                     string obitx;
-                    if(damageinteger) formatstring(obitx, " (\fs\fc%d\fS)", int(ceilf(log[i]->health/damagedivisor)));
-                    else formatstring(obitx, " (\fs\fc%.1f\fS)", log[i]->health/damagedivisor);
+                    if(damageinteger) formatstring(obitx, " (\fs\fc%d\fS)", int(ceilf(assist[i]->health/damagedivisor)));
+                    else formatstring(obitx, " (\fs\fc%.1f\fS)", assist[i]->health/damagedivisor);
                     concatstring(d->obit, obitx);
                 }
             }
@@ -1969,24 +1969,24 @@ namespace game
         if(dth >= 0) emitsound(dth, game::getplayersoundpos(d), d, &d->vschan);
         if(d->actortype < A_ENEMY)
         {
-            eventlog *evt = new eventlog;
-            evt->addlist("this", "type", "frag");
-            evt->addlist("this", "action", d == v ? "suicide" : "kill");
-            evt->addlist("this", "sound", anc);
-            evt->addlist("this", "flags", EV_F_CLIENT1|EV_F_CLIENT2);
-            evt->addclient("client", d);
-            evt->addclient("client", v);
-            loopv(log) if(log[i] && log[i] != d && log[i] != v) evt->addclient("client", log[i]);
-            evt->addlist("args", "weapon", weap);
-            evt->addlist("args", "flags", flags);
-            evt->addlist("args", "damage", damage);
-            evt->addlist("args", "style", style);
-            evt->addlist("args", "material", material);
-            evt->addlist("args", "burning", burning);
-            evt->addlist("args", "bleeding", bleeding);
-            evt->addlist("args", "shocking", shocking);
-            evt->addlist("args", "console", d->obit);
-            evt->push();
+            gamelog *log = new gamelog;
+            log->addlist("this", "type", "frag");
+            log->addlist("this", "action", d == v ? "suicide" : "kill");
+            log->addlist("this", "sound", anc);
+            log->addlist("this", "flags", EV_F_CLIENT1|EV_F_CLIENT2);
+            log->addclient("client", d);
+            log->addclient("client", v);
+            loopv(assist) if(assist[i] && assist[i] != d && assist[i] != v) log->addclient("client", assist[i]);
+            log->addlist("args", "weapon", weap);
+            log->addlist("args", "flags", flags);
+            log->addlist("args", "damage", damage);
+            log->addlist("args", "style", style);
+            log->addlist("args", "material", material);
+            log->addlist("args", "burning", burning);
+            log->addlist("args", "bleeding", bleeding);
+            log->addlist("args", "shocking", shocking);
+            log->addlist("args", "console", d->obit);
+            log->push();
         }
         vec pos = d->headtag();
         pos.z -= d->zradius*0.125f;
@@ -2130,7 +2130,7 @@ namespace game
 
     void resetmap(bool empty) // called just before a map load
     {
-        eventlogs.shrink(0);
+        eventlog.shrink(0);
     }
 
     void savemap(bool force, const char *mname)

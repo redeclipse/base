@@ -315,26 +315,26 @@ namespace defend
 
     void buildevent(defendstate::flag &b, int i, const char *action, int sndidx, int owner, int enemy, int converted)
     {
-        eventlog *evt = new eventlog;
-        evt->addlist("this", "type", "defend");
-        evt->addlist("this", "action", action);
-        evt->addlist("this", "sound", sndidx);
-        evt->addlist("this", "flags", EV_F_BROADCAST);
+        gamelog *log = new gamelog;
+        log->addlist("this", "type", "defend");
+        log->addlist("this", "action", action);
+        log->addlist("this", "sound", sndidx);
+        log->addlist("this", "flags", EV_F_BROADCAST);
 
         gameent *d = NULL;
         int numdyns = game::numdynents();
         loopi(numdyns) if((d = (gameent *)game::iterdynents(i)) && d->actortype < A_ENEMY && insideaffinity(b, d))
-            evt->addclient("client", d);
+            log->addclient("client", d);
 
-        evt->addlist("args", "affinity", i);
-        evt->addlist("args", "oldowner", b.owner);
-        evt->addlist("args", "owner", owner);
-        evt->addlist("args", "oldenemy", b.enemy);
-        evt->addlist("args", "enemy", enemy);
-        evt->addlist("args", "oldconverted", b.converted);
-        evt->addlist("args", "converted", converted);
-        evt->addlistf("args","console", "\faTeam %s secured \fw\f($pointtex)%s", game::colourteam(owner), b.name);
-        evt->push();
+        log->addlist("args", "affinity", i);
+        log->addlist("args", "oldowner", b.owner);
+        log->addlist("args", "owner", owner);
+        log->addlist("args", "oldenemy", b.enemy);
+        log->addlist("args", "enemy", enemy);
+        log->addlist("args", "oldconverted", b.converted);
+        log->addlist("args", "converted", converted);
+        log->addlistf("args","console", "\faTeam %s secured \fw\f($pointtex)%s", game::colourteam(owner), b.name);
+        log->push();
     }
 
     void updateaffinity(int i, int owner, int enemy, int converted)

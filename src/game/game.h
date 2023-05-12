@@ -2492,7 +2492,7 @@ ENUMLV(EV_I, EV_I_ENUM);
 ENUMLI(EV_F, EV_F_ENUM);
 
 #ifndef CPP_GAME_SERVER
-#include "eventlog.h"
+#include "gamelog.h"
 #ifdef CPP_GAME_MAIN
 #define ENUM_DEFINE
 #endif

@@ -2586,7 +2586,7 @@ namespace client
                     break;
                 }
 
-                case N_EVENTLOG: eventlog::parseevent(p); break;
+                case N_EVENTLOG: gamelog::parseevent(p); break;
 
                 case N_TEXT:
                 {
