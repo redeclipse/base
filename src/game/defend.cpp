@@ -315,7 +315,7 @@ namespace defend
 
     void buildevent(defendstate::flag &b, int i, int subtype, int sndidx, int owner, int enemy, int converted)
     {
-        game::event *evt = new game::event(EV_AFFINITY, EV_A_SECURE, S_V_FLAGSECURED, EV_S_BROADCAST);
+        eventlog *evt = new eventlog(EV_AFFINITY, EV_A_SECURE, S_V_FLAGSECURED, EV_S_BROADCAST);
 
         gameent *d = NULL;
         int numdyns = game::numdynents();

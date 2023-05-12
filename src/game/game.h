@@ -349,25 +349,6 @@ extern const int pulsecols[PULSE_MAX][PULSECOLOURS];
     en(pr, MULTI, pr##_MKILL1|pr##_MKILL2|pr##_MKILL3)
 ENUMLI(FRAG, FRAG_ENUM);
 
-#define EV_ENUM(pr, en) en(pr, ANNOUNCE) en(pr, FRAG) en(pr, AFFINITY) en(pr, MAX)
-ENUMLV(EV, EV_ENUM);
-
-#define EV_I_ENUM(pr, en) en(pr, INT) en(pr, BOOL) en(pr, FLOAT) en(pr, STR) en(pr, MAX)
-ENUMLV(EV_I, EV_I_ENUM);
-
-#define EV_N_ENUM(pr, en) en(pr, EVENT) en(pr, START) en(pr, FINISH) en(pr, DRAW) en(pr, MAX)
-ENUMLV(EV_N, EV_N_ENUM);
-
-#define EV_S_ENUM(pr, en) en(pr, NONE, 0) en(pr, CLIENT1, 1<<0) en(pr, CLIENT2, 1<<1)  en(pr, CLIENTN, 1<<1)  en(pr, BROADCAST, 1<<1) \
-    en(pr, CLIENTS, pr##_CLIENT1|pr##_CLIENT2|pr##_CLIENTN) en(pr, ALL, pr##_CLIENT1|pr##_CLIENT2|pr##_CLIENTN|pr##_BROADCAST)
-ENUMLI(EV_S, EV_S_ENUM);
-
-#define EV_F_ENUM(pr, en) en(pr, SUICIDE) en(pr, KILL) en(pr, MAX)
-ENUMLV(EV_F, EV_F_ENUM);
-
-#define EV_A_ENUM(pr, en) en(pr, START) en(pr, SECURE) en(pr, RETURN) en(pr, DROP) en(pr, SCORE) en(pr, RESET) en(pr, LIMIT) en(pr, MAX)
-ENUMLV(EV_A, EV_A_ENUM);
-
 enum
 {
     SENDMAP_MPZ = 0, SENDMAP_CFG, SENDMAP_PNG, SENDMAP_TXT, SENDMAP_GAME, SENDMAP_WPT = SENDMAP_GAME, SENDMAP_MAX,
@@ -1137,11 +1118,10 @@ namespace server
     extern float getwaterextinguish(int mat);
     extern float getwaterextinguishscale(int mat);
 }
+
 #ifdef CPP_GAME_SERVER
 #define WATERPHYS(name,mat) (server::getwater##name(mat)*server::getwater##name##scale(mat))
-#endif
-
-#if !defined(CPP_GAME_SERVER) && !defined(STANDALONE)
+#else
 template<class T> inline void flashcolour(T &r, T &g, T &b, T br, T bg, T bb, float amt)
 {
     r += (br-r)*amt;
@@ -2421,75 +2401,6 @@ namespace game
     };
     extern avatarent avatarmodel, bodymodel;
 
-    struct event
-    {
-        struct info
-        {
-            char *name;
-            int type;
-            union
-            {
-                int i;
-                bool b;
-                float f;
-                char *s;
-            };
-
-            info() : name(NULL), type(-1) {}
-            ~info() { reset(); }
-
-            void cleanup();
-            void reset();
-            void set(bool v);
-            void set(int v);
-            void set(float v);
-            void set(char *v);
-            void set(const char *v);
-        };
-
-        struct cinfo
-        {
-            int cn;
-            vector<info> infos;
-
-            cinfo() {}
-            ~cinfo() { infos.shrink(0); }
-        };
-
-        int type, subtype, sndidx, sndflags, millis;
-        vector<cinfo> clients;
-        vector<info> infos;
-
-        event(int _type, int _subtype, int _sndidx = -1, int _sndflags = 0, int _millis = -1) :
-            type(_type), subtype(_subtype), sndidx(_sndidx), sndflags(_sndflags), millis(_millis >= 0 ? millis : totalmillis) {}
-        ~event() { reset(); }
-
-        void reset();
-        int findclient(int cn, bool create = false);
-        int findinfov(vector<info> &list, const char *name, bool create = false);
-        int findclient(int cn, const char *name, bool create = false);
-        int findinfo(const char *name, bool create = false);
-        info *getinfov(vector<info> &list, const char *name, bool create = false);
-        info *getclient(int cn, const char *name, bool create = false);
-        info *getinfo(const char *name, bool create = false);
-        const char *constr();
-        void push();
-        void addinfov(vector<info> &list, const char *name, int i);
-        void addclient(int cn, const char *name, int i);
-        void addinfo(const char *name, int i);
-        void addinfov(vector<info> &list, const char *name, float f);
-        void addclient(int cn, const char *name, float f);
-        void addinfo(const char *name, float f);
-        void addinfov(vector<info> &list, const char *name, const char *str);
-        void addclient(int cn, const char *name, const char *str);
-        void addinfo(const char *name, const char *str);
-        void addinfovf(vector<info> &list, const char *name, const char *str, ...);
-        void addclientf(int cn, const char *name, const char *str, ...);
-        void addinfof(const char *name, const char *str, ...);
-        void addclient(gameent *d);
-        void addclient(int cn);
-    };
-
     extern fx::FxHandle getweapfx(int type);
     extern bool needname(gameent *d);
     extern const char *vanityfname(gameent *d, int n, int head = -1, bool proj = false);
@@ -2571,7 +2482,30 @@ namespace entities
 #include "capture.h"
 #include "defend.h"
 #include "bomber.h"
+#endif
+
+#define EV_ENUM(pr, en) en(pr, ANNOUNCE) en(pr, FRAG) en(pr, AFFINITY) en(pr, MAX)
+ENUMLV(EV, EV_ENUM);
+
+#define EV_I_ENUM(pr, en) en(pr, INT) en(pr, BOOL) en(pr, FLOAT) en(pr, STR) en(pr, MAX)
+ENUMLV(EV_I, EV_I_ENUM);
+
+#define EV_N_ENUM(pr, en) en(pr, EVENT) en(pr, START) en(pr, FINISH) en(pr, DRAW) en(pr, MAX)
+ENUMLV(EV_N, EV_N_ENUM);
+
+#define EV_S_ENUM(pr, en) en(pr, NONE, 0) en(pr, CLIENT1, 1<<0) en(pr, CLIENT2, 1<<1)  en(pr, CLIENTN, 1<<1)  en(pr, BROADCAST, 1<<1) \
+    en(pr, CLIENTS, pr##_CLIENT1|pr##_CLIENT2|pr##_CLIENTN) en(pr, ALL, pr##_CLIENT1|pr##_CLIENT2|pr##_CLIENTN|pr##_BROADCAST)
+ENUMLI(EV_S, EV_S_ENUM);
+
+#define EV_F_ENUM(pr, en) en(pr, SUICIDE) en(pr, KILL) en(pr, MAX)
+ENUMLV(EV_F, EV_F_ENUM);
+
+#define EV_A_ENUM(pr, en) en(pr, START) en(pr, SECURE) en(pr, RETURN) en(pr, DROP) en(pr, SCORE) en(pr, RESET) en(pr, LIMIT) en(pr, MAX)
+ENUMLV(EV_A, EV_A_ENUM);
+
 #ifndef CPP_GAME_SERVER
+#include "eventlog.h"
+#ifdef CPP_GAME_MAIN
 #define ENUM_DEFINE
 #endif
 #include "enum.h"

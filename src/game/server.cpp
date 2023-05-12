@@ -502,6 +502,8 @@ namespace server
         }
     };
 
+    //#include "eventlog.h"
+
     struct savedscore
     {
         uint ip;
@@ -594,7 +596,8 @@ namespace server
         }
     };
 
-    namespace aiman {
+    namespace aiman
+    {
         extern void setskill(clientinfo *ci, bool init = false);
         extern bool addai(int type, int ent = -1);
         extern void deleteai(clientinfo *ci);

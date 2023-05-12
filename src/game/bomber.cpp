@@ -434,7 +434,7 @@ namespace bomber
         st.dropaffinity(i, droploc, inertia, lastmillis, target);
         emitsound(S_DROP, game::getplayersoundpos(d), d);
 
-        game::event *evt = new game::event(EV_AFFINITY, EV_A_DROP, S_V_BOMBDROP, EV_S_BROADCAST);
+        eventlog *evt = new eventlog(EV_AFFINITY, EV_A_DROP, S_V_BOMBDROP, EV_S_BROADCAST);
         evt->addclient(d);
         evt->addinfo("affinity", i);
         evt->addinfof("console", "\fa%s dropped the \fs\fzwv\f($bombtex)bomb\fS", game::colourname(d));
@@ -480,7 +480,7 @@ namespace bomber
             if(isbomberaffinity(f))
             {
                 affinityeffect(i, T_NEUTRAL, f.pos(true, true), f.spawnloc);
-                game::event *evt = new game::event(EV_AFFINITY, EV_A_RESET, S_V_BOMBRESET, EV_S_BROADCAST);
+                eventlog *evt = new eventlog(EV_AFFINITY, EV_A_RESET, S_V_BOMBRESET, EV_S_BROADCAST);
                 evt->addinfo("affinity", i);
                 evt->addinfo("droptime", f.droptime);
                 evt->addinfo("inittime", f.inittime);
@@ -509,7 +509,7 @@ namespace bomber
         hud::teamscore(d->team).total = score;
         int millis = lastmillis-f.inittime;
 
-        game::event *evt = new game::event(EV_AFFINITY, EV_A_SCORE, S_V_BOMBSCORE, EV_S_BROADCAST);
+        eventlog *evt = new eventlog(EV_AFFINITY, EV_A_SCORE, S_V_BOMBSCORE, EV_S_BROADCAST);
         evt->addclient(d);
         evt->addinfo("affinity", relay);
         evt->addinfo("goal", goal);
@@ -532,7 +532,7 @@ namespace bomber
         bomberstate::flag &f = st.flags[i];
         emitsound(S_CATCH, game::getplayersoundpos(d), d);
 
-        game::event *evt = new game::event(EV_AFFINITY, EV_A_SECURE, S_V_BOMBPICKUP, EV_S_BROADCAST);
+        eventlog *evt = new eventlog(EV_AFFINITY, EV_A_SECURE, S_V_BOMBPICKUP, EV_S_BROADCAST);
         evt->addclient(d);
         evt->addclient(f.lastowner);
         evt->addinfo("affinity", i);

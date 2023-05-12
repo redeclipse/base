@@ -2600,7 +2600,7 @@ namespace client
                     int ilen = getint(p);
                     loopi(ilen) eventinfos.add(getint(p));
                     getstring(text, p);
-                    //game::event *evt = new game::event(evtype, subtype, snd, sndflags); // (eventclients, eventinfos, text)
+                    //eventlog *evt = new eventlog(evtype, subtype, snd, sndflags); // (eventclients, eventinfos, text)
                     break;
                 }
 
