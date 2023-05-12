@@ -2985,9 +2985,12 @@ namespace server
             setteam(cp, oldteam, TT_RESET|TT_INFOSM, false);
             cp->lastdeath = 0;
 
-            eventlog evt(cp->clientnum, EV_ANNOUNCE, EV_N_EVENT, "S_V_BALALERT", EV_S_BROADCAST);
-            evt.addinfof("console", "\fyYou have been moved to %s as previously requested", colourteam(oldteam));
-            evt.push();
+            if(allowbroadcast(cp->clientnum))
+            {
+                eventlog evt(cp->clientnum, EV_ANNOUNCE, EV_N_EVENT, "S_V_BALALERT", EV_S_BROADCAST);
+                evt.addinfof("console", "\fyYou have been moved to %s as previously requested", colourteam(oldteam));
+                evt.push();
+            }
 
             return;
         }
@@ -3012,9 +3015,12 @@ namespace server
                 setteam(cp, oldteam, TT_RESET|TT_INFOSM, false);
                 cp->lastdeath = 0;
 
-                eventlog evt(cp->clientnum, EV_ANNOUNCE, EV_N_EVENT, "S_V_BALALERT", EV_S_BROADCAST);
-                evt.addinfof("console", "\fyYou have been moved to %s by higher skilled %s %s", colourteam(oldteam), privname(G(teambalancelock)), colourname(ci));
-                evt.push();
+                if(allowbroadcast(cp->clientnum))
+                {
+                    eventlog evt(cp->clientnum, EV_ANNOUNCE, EV_N_EVENT, "S_V_BALALERT", EV_S_BROADCAST);
+                    evt.addinfof("console", "\fyYou have been moved to %s by higher skilled %s %s", colourteam(oldteam), privname(G(teambalancelock)), colourname(ci));
+                    evt.push();
+                }
 
                 return;
             }

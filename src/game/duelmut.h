@@ -426,14 +426,16 @@ struct duelservmode : servmode
                                     }
                                     else sndidx = "S_V_YOULOSE";
                                 }
-
-                                eventlog evt(clients[i]->clientnum, EV_ANNOUNCE, EV_N_FINISH, sndidx, EV_S_BROADCAST);
-                                loopv(playing) evt.addclient(playing[i]);
-                                // TODO: add alive players list
-                                evt.addinfo("winner", duelwinner);
-                                evt.addinfo("wins", duelwins);
-                                evt.addinfof("console", "\fyTeam %s are the winners", colourteam(alive[0]->team));
-                                evt.push();
+                                if(allowbroadcast(clients[i]->clientnum))
+                                {
+                                    eventlog evt(clients[i]->clientnum, EV_ANNOUNCE, EV_N_FINISH, sndidx, EV_S_BROADCAST);
+                                    loopv(playing) evt.addclient(playing[i]);
+                                    loopv(alive) evt.addclient(alive[i], "alive");
+                                    evt.addinfo("winner", duelwinner);
+                                    evt.addinfo("wins", duelwins);
+                                    evt.addinfof("console", "\fyTeam %s are the winners", colourteam(alive[0]->team));
+                                    evt.push();
+                                }
                             }
                         }
                         clear();
@@ -459,7 +461,7 @@ struct duelservmode : servmode
 
                         eventlog evt(-1, EV_ANNOUNCE, EV_N_DRAW, "S_V_DRAW", EV_S_BROADCAST);
                         loopv(playing) evt.addclient(playing[i]);
-                        // TODO: add alive players list
+                        loopv(alive) evt.addclient(alive[i], "alive");
                         evt.addinfof("console", "\fyEveryone died, \fzoyEPIC FAIL!");
                         evt.push();
                     }
@@ -517,13 +519,16 @@ struct duelservmode : servmode
                                 }
                                 else sndidx = "S_V_YOULOSE";
                             }
-                            eventlog evt(clients[i]->clientnum, EV_ANNOUNCE, EV_N_FINISH, sndidx, EV_S_BROADCAST);
-                            loopv(playing) evt.addclient(playing[i]);
-                            // TODO: add alive players list
-                            evt.addinfo("winner", duelwinner);
-                            evt.addinfo("wins", duelwins);
-                            evt.addinfof("console", end);
-                            evt.push();
+                            if(allowbroadcast(clients[i]->clientnum))
+                            {
+                                eventlog evt(clients[i]->clientnum, EV_ANNOUNCE, EV_N_FINISH, sndidx, EV_S_BROADCAST);
+                                loopv(playing) evt.addclient(playing[i]);
+                                // TODO: add alive players list
+                                evt.addinfo("winner", duelwinner);
+                                evt.addinfo("wins", duelwins);
+                                evt.addinfof("console", end);
+                                evt.push();
+                            }
                         }
                     }
                     clear();
