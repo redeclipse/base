@@ -174,78 +174,128 @@ namespace hud
         }
         scoresoff = !onauto;
         scoreson = on;
-        #if 0
+
         if(interm)
         {
             int numgroups = groupplayers();
             if(!numgroups) return;
+            eventlog *evt = new eventlog;
+            evt->addlist("this", "type", "score");
+            evt->addlist("this", "action", "finish");
+            evt->addlist("this", "flags", EV_F_BROADCAST);
+
             scoregroup &sg = *groups[0];
             if(m_team(game::gamemode, game::mutators))
             {
-                int anc = sg.players.find(game::player1) >= 0 ? S_V_YOUWIN : (game::player1->state != CS_SPECTATOR ? S_V_YOULOSE : S_V_COMPLETE);
                 if(m_defend(game::gamemode) && sg.total == INT_MAX)
-                    game::announcef(anc, CON_EVENT, NULL, "\fwTeam %s secured all points", game::colourteam(sg.team));
+                {
+                    evt->addlist("this", "sound", sg.players.find(game::player1) >= 0 ? S_V_YOUWIN : (game::player1->state != CS_SPECTATOR ? S_V_YOULOSE : S_V_COMPLETE));
+                    evt->addlist("args", "type", "defended");
+                    evt->addgroup("winner", "team", sg.team);
+                    evt->addlistf("args", "console", "%s secured all points", game::colourteam(sg.team));
+                }
                 else
                 {
                     if(numgroups > 1 && sg.total == groups[1]->total)
                     {
+                        evt->addlist("this", "sound", S_V_DRAW);
+                        evt->addlist("args", "type", "draw");
+                        evt->addlist("args", "score", sg.total);
                         stringz(winner);
-                        loopi(numgroups) if(i)
+                        loopi(numgroups)
                         {
-                            if(sg.total == groups[i]->total)
+                            if(i)
                             {
-                                defformatstring(tw, "%s, ", game::colourteam(groups[i]->team));
-                                concatstring(winner, tw);
+                                if(sg.total == groups[i]->total)
+                                {
+                                    defformatstring(tw, "%s, ", game::colourteam(groups[i]->team));
+                                    concatstring(winner, tw);
+                                }
+                                else break;
                             }
-                            else break;
+                            evt->addgroup("winner", "team", sg.team);
                         }
-                        game::announcef(S_V_DRAW, CON_EVENT, NULL, "\fw%s tied %swith a total score of \fs\fc%s\fS", game::colourteam(sg.team), winner, m_ra_timed(game::gamemode, game::mutators) ? timestr(sg.total, scoreracestyle) : intstr(sg.total));
+                        evt->addlistf("args", "console", "%s tied %swith a total score of \fs\fc%s\fS", game::colourteam(sg.team), winner, m_ra_timed(game::gamemode, game::mutators) ? timestr(sg.total, scoreracestyle) : intstr(sg.total));
                     }
-                    else game::announcef(anc, CON_EVENT, NULL, "\fwTeam %s won the match with a total score of \fs\fc%s\fS", game::colourteam(sg.team), m_ra_timed(game::gamemode, game::mutators) ? timestr(sg.total, scoreracestyle) : intstr(sg.total));
+                    else
+                    {
+                        evt->addlist("this", "sound", sg.players.find(game::player1) >= 0 ? S_V_YOUWIN : (game::player1->state != CS_SPECTATOR ? S_V_YOULOSE : S_V_COMPLETE));
+                        evt->addlist("args", "type", "winner");
+                        evt->addlist("args", "score", sg.total);
+                        evt->addgroup("winner", "team", sg.team);
+                        evt->addlistf("args", "console", "%s won the match with a total score of \fs\fc%s\fS", game::colourteam(sg.team), m_ra_timed(game::gamemode, game::mutators) ? timestr(sg.total, scoreracestyle) : intstr(sg.total));
+                    }
                 }
             }
             else
             {
-                int anc = sg.players[0] == game::player1 ? S_V_YOUWIN : (game::player1->state != CS_SPECTATOR ? S_V_YOULOSE : -1);
                 if(m_ra_timed(game::gamemode, game::mutators))
                 {
                     if(sg.players.length() > 1 && sg.players[0]->cptime == sg.players[1]->cptime)
                     {
+                        evt->addlist("this", "sound", S_V_DRAW);
+                        evt->addlist("args", "type", "draw");
+                        evt->addlist("args", "score", sg.players[0]->cptime);
                         stringz(winner);
-                        loopv(sg.players) if(i)
+                        loopv(sg.players)
                         {
-                            if(sg.players[0]->cptime == sg.players[i]->cptime)
+                            if(i)
                             {
-                                concatstring(winner, game::colourname(sg.players[i]));
-                                concatstring(winner, ", ");
+                                if(sg.players[0]->cptime == sg.players[i]->cptime)
+                                {
+                                    concatstring(winner, game::colourname(sg.players[i]));
+                                    concatstring(winner, ", ");
+                                }
+                                else break;
                             }
-                            else break;
+                            evt->addclient("winner", sg.players[i]);
                         }
-                        game::announcef(S_V_DRAW, CON_EVENT, NULL, "\fw%s tied %swith the fastest lap \fs\fc%s\fS", game::colourname(sg.players[0]), winner, sg.players[0]->cptime ? timestr(sg.players[0]->cptime, scoreracestyle) : "dnf");
+                        evt->addlistf("args", "console", "%s tied %swith the fastest lap \fs\fc%s\fS", game::colourname(sg.players[0]), winner, sg.players[0]->cptime ? timestr(sg.players[0]->cptime, scoreracestyle) : "dnf");
                     }
-                    else game::announcef(anc, CON_EVENT, NULL, "\fw%s won the match with the fastest lap \fs\fc%s\fS", game::colourname(sg.players[0]), sg.players[0]->cptime ? timestr(sg.players[0]->cptime, scoreracestyle) : "dnf");
+                    else
+                    {
+                        evt->addlist("this", "sound", sg.players[0] == game::player1 ? S_V_YOUWIN : (game::player1->state != CS_SPECTATOR ? S_V_YOULOSE : -1));
+                        evt->addlist("args", "type", "winner");
+                        evt->addlist("args", "score", sg.players[0]->cptime);
+                        evt->addclient("winner", sg.players[0]);
+                        evt->addlistf("args", "console", "%s won the match with the fastest lap \fs\fc%s\fS", game::colourname(sg.players[0]), sg.players[0]->cptime ? timestr(sg.players[0]->cptime, scoreracestyle) : "dnf");
+                    }
                 }
                 else
                 {
                     if(sg.players.length() > 1 && sg.players[0]->points == sg.players[1]->points)
                     {
+                        evt->addlist("this", "sound", S_V_DRAW);
+                        evt->addlist("args", "type", "draw");
+                        evt->addlist("args", "score", sg.players[0]->points);
                         stringz(winner);
-                        loopv(sg.players) if(i)
+                        loopv(sg.players)
                         {
-                            if(sg.players[0]->points == sg.players[i]->points)
+                            if(i)
                             {
-                                concatstring(winner, game::colourname(sg.players[i]));
-                                concatstring(winner, ", ");
+                                if(sg.players[0]->points == sg.players[i]->points)
+                                {
+                                    concatstring(winner, game::colourname(sg.players[i]));
+                                    concatstring(winner, ", ");
+                                }
+                                else break;
                             }
-                            else break;
+                            evt->addclient("winner", sg.players[i]);
                         }
-                        game::announcef(S_V_DRAW, CON_EVENT, NULL, "\fw%s tied %swith a total score of \fs\fc%d\fS", game::colourname(sg.players[0]), winner, sg.players[0]->points);
+                        evt->addlistf("args", "console", "%s tied %swith a total score of \fs\fc%d\fS", game::colourname(sg.players[0]), winner, sg.players[0]->points);
                     }
-                    else game::announcef(anc, CON_EVENT, NULL, "\fw%s won the match with a total score of \fs\fc%d\fS", game::colourname(sg.players[0]), sg.players[0]->points);
+                    else
+                    {
+                        evt->addlist("this", "sound", sg.players[0] == game::player1 ? S_V_YOUWIN : (game::player1->state != CS_SPECTATOR ? S_V_YOULOSE : -1));
+                        evt->addlist("args", "type", "winner");
+                        evt->addlist("args", "score", sg.players[0]->points);
+                        evt->addclient("winner", sg.players[0]);
+                        evt->addlistf("args", "console", "%s won the match with a total score of \fs\fc%d\fS", game::colourname(sg.players[0]), sg.players[0]->points);
+                    }
                 }
             }
+            evt->push();
         }
-        #endif
     }
 
     ICOMMAND(0, getscoreteam, "i", (int *group), intret(groups.inrange(*group) ? groups[*group]->team : -1));

@@ -349,10 +349,14 @@ namespace capture
         if(!st.flags.inrange(i)) return;
         capturestate::flag &f = st.flags[i];
 
-        eventlog *evt = new eventlog(EV_AFFINITY, EV_A_DROP, S_V_FLAGDROP, EV_S_BROADCAST);
-        evt->addclient(d);
-        evt->addinfo("affinity", i);
-        evt->addinfof("console", "\fa%s dropped the the %s flag", game::colourname(d), game::colourteam(f.team, "flagtex"));
+        eventlog *evt = new eventlog;
+        evt->addlist("this", "type", "capture");
+        evt->addlist("this", "action", "drop");
+        evt->addlist("this", "sound", S_V_FLAGDROP);
+        evt->addlist("this", "flags", EV_F_BROADCAST);
+        evt->addclient("client", d);
+        evt->addlist("args", "affinity", i);
+        evt->addlistf("args","console", "\fa%s dropped the the %s flag", game::colourname(d), game::colourteam(f.team, "flagtex"));
         evt->push();
 
         st.dropaffinity(i, droploc, inertia, lastmillis, offset);
@@ -386,14 +390,18 @@ namespace capture
         game::spawneffect(PART_SPARK, vec(f.spawnloc).add(vec(0, 0, enttype[AFFINITY].radius*0.45f)), enttype[AFFINITY].radius*0.25f, colourwhite, 1);
         int millis = m_ctf_quick(game::gamemode, game::mutators) ? f.dropleft(lastmillis, capturestore) : lastmillis-f.taketime;
 
-        eventlog *evt = new eventlog(EV_AFFINITY, EV_A_RETURN, S_V_FLAGRETURN, EV_S_BROADCAST);
-        evt->addclient(d);
-        evt->addinfo("affinity", i);
-        evt->addinfo("millis", millis);
-        evt->addinfo("taketime", f.taketime);
-        evt->addinfo("droptime", f.droptime);
-        evt->addinfo("dropoffset", f.dropoffset);
-        evt->addinfof("console", "\fa%s returned the %s flag (time taken: \fs\fc%s\fS)", game::colourname(d), game::colourteam(f.team, "flagtex"), timestr(millis, 1));
+        eventlog *evt = new eventlog;
+        evt->addlist("this", "type", "capture");
+        evt->addlist("this", "action", "return");
+        evt->addlist("this", "sound", S_V_FLAGRETURN);
+        evt->addlist("this", "flags", EV_F_BROADCAST);
+        evt->addclient("client", d);
+        evt->addlist("args", "affinity", i);
+        evt->addlist("args", "millis", millis);
+        evt->addlist("args", "taketime", f.taketime);
+        evt->addlist("args", "droptime", f.droptime);
+        evt->addlist("args", "dropoffset", f.dropoffset);
+        evt->addlistf("args","console", "\fa%s returned the %s flag (time taken: \fs\fc%s\fS)", game::colourname(d), game::colourteam(f.team, "flagtex"), timestr(millis, 1));
         evt->push();
 
         st.returnaffinity(i, lastmillis);
@@ -411,13 +419,17 @@ namespace capture
             game::spawneffect(PART_SPARK, value == 2 ? pos : vec(f.spawnloc).add(vec(0, 0, enttype[AFFINITY].radius*0.45f)), enttype[AFFINITY].radius*0.25f, TEAM(f.team, colour), 1);
             game::spawneffect(PART_SPARK, value == 2 ? pos : vec(f.spawnloc).add(vec(0, 0, enttype[AFFINITY].radius*0.45f)), enttype[AFFINITY].radius*0.25f, colourwhite, 1);
 
-            eventlog *evt = new eventlog(EV_AFFINITY, EV_A_RESET, S_V_FLAGRESET, EV_S_BROADCAST);
-            evt->addinfo("affinity", i);
-            evt->addinfo("value", value);
-            evt->addinfo("taketime", f.taketime);
-            evt->addinfo("droptime", f.droptime);
-            evt->addinfo("dropoffset", f.dropoffset);
-            evt->addinfof("console", "\faThe %s flag has been reset", game::colourteam(f.team, "flagtex"));
+            eventlog *evt = new eventlog;
+            evt->addlist("this", "type", "capture");
+            evt->addlist("this", "action", "reset");
+            evt->addlist("this", "sound", S_V_FLAGRESET);
+            evt->addlist("this", "flags", EV_F_BROADCAST);
+            evt->addlist("args", "affinity", i);
+            evt->addlist("args", "value", value);
+            evt->addlist("args", "taketime", f.taketime);
+            evt->addlist("args", "droptime", f.droptime);
+            evt->addlist("args", "dropoffset", f.dropoffset);
+            evt->addlistf("args","console", "\faThe %s flag has been reset", game::colourteam(f.team, "flagtex"));
             evt->push();
         }
         if(value == 2)
@@ -454,14 +466,18 @@ namespace capture
         hud::teamscore(d->team).total = score;
         int millis = lastmillis-f.taketime;
 
-        eventlog *evt = new eventlog(EV_AFFINITY, EV_A_SCORE, S_V_FLAGSCORE, EV_S_BROADCAST);
-        evt->addclient(d);
-        evt->addinfo("affinity", relay);
-        evt->addinfo("goal", goal);
-        evt->addinfo("score", score);
-        evt->addinfo("millis", millis);
-        evt->addinfo("taketime", f.taketime);
-        evt->addinfof("console", "\fa%s captured the flag for team %s (score: \fs\fc%d\fS, time taken: \fs\fc%s\fS)", game::colourname(d), game::colourteam(d->team), score, timestr(millis, 1));
+        eventlog *evt = new eventlog;
+        evt->addlist("this", "type", "capture");
+        evt->addlist("this", "action", "score");
+        evt->addlist("this", "sound", S_V_FLAGSCORE);
+        evt->addlist("this", "flags", EV_F_BROADCAST);
+        evt->addclient("client", d);
+        evt->addlist("args", "affinity", relay);
+        evt->addlist("args", "goal", goal);
+        evt->addlist("args", "score", score);
+        evt->addlist("args", "millis", millis);
+        evt->addlist("args", "taketime", f.taketime);
+        evt->addlistf("args","console", "\fa%s captured the flag for team %s (score: \fs\fc%d\fS, time taken: \fs\fc%s\fS)", game::colourname(d), game::colourteam(d->team), score, timestr(millis, 1));
         evt->push();
 
         st.returnaffinity(relay, lastmillis);
@@ -475,10 +491,14 @@ namespace capture
         emitsound(S_CATCH, game::getplayersoundpos(d), d);
         affinityeffect(i, d->team, d->feetpos(), f.pos(true));
 
-        eventlog *evt = new eventlog(EV_AFFINITY, EV_A_SECURE, f.team == d->team ? S_V_FLAGSECURED : S_V_FLAGPICKUP, EV_S_BROADCAST);
-        evt->addclient(d);
-        evt->addinfo("affinity", i);
-        evt->addinfof("console", "\fa%s %s the %s flag", game::colourname(d), f.team == d->team ? "secured" : (f.droptime ? "picked up" : "stole"), game::colourteam(f.team, "flagtex"));
+        eventlog *evt = new eventlog;
+        evt->addlist("this", "type", "capture");
+        evt->addlist("this", "action", "secure");
+        evt->addlist("this", "sound", f.team == d->team ? S_V_FLAGSECURED : S_V_FLAGPICKUP);
+        evt->addlist("this", "flags", EV_F_BROADCAST);
+        evt->addclient("client", d);
+        evt->addlist("args", "affinity", i);
+        evt->addlistf("args","console", "\fa%s %s the %s flag", game::colourname(d), f.team == d->team ? "secured" : (f.droptime ? "picked up" : "stole"), game::colourteam(f.team, "flagtex"));
         evt->push();
 
         st.takeaffinity(i, d, lastmillis);

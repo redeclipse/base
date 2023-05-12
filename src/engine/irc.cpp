@@ -730,8 +730,8 @@ void ircprocess(ircnet *n, char *user[3], int g, int numargs, char *w[])
             }
             default: break;
         }
-        if(s[0]) ircprintf(n, 4, targ, "\fw%s %s", w[g], s);
-        else ircprintf(n, 4, targ, "\fw%s", w[g]);
+        if(s[0]) ircprintf(n, 4, targ, "%s %s", w[g], s);
+        else ircprintf(n, 4, targ, "%s", w[g]);
     }
 }
 
@@ -1045,7 +1045,7 @@ void irccmd(ircnet *n, ircchan *c, char *s)
                 if(c)
                 {
                     ircsend(n, "PRIVMSG %s :%s v%s-%s%d-%s (%s); %s (%s v%s)", c->name, versionname, versionstring, versionplatname, versionarch, versionbranch, versionrelease, gfxrenderer, gfxvendor, gfxversion);
-                    ircprintf(n, 1, c->name, "\fw<%s> %s v%s-%s%d-%s (%s); %s (%s v%s)", n->nick, versionname, versionstring, versionplatname, versionarch, versionbranch, versionrelease, gfxrenderer, gfxvendor, gfxversion);
+                    ircprintf(n, 1, c->name, "<%s> %s v%s-%s%d-%s (%s); %s (%s v%s)", n->nick, versionname, versionstring, versionplatname, versionarch, versionbranch, versionrelease, gfxrenderer, gfxvendor, gfxversion);
                 }
                 else ircprintf(n, 4, NULL, "\fyYou are not on a channel");
             }
@@ -1059,7 +1059,7 @@ void irccmd(ircnet *n, ircchan *c, char *s)
     else if(c)
     {
         ircsend(n, "PRIVMSG %s :%s", c->name, p);
-        ircprintf(n, 1, c->name, "\fw<%s> %s", n->nick, p);
+        ircprintf(n, 1, c->name, "<%s> %s", n->nick, p);
     }
     else
     {

@@ -73,62 +73,57 @@ struct eventlog
         }
     };
 
-    struct grpinfo
+    struct listinfo
+    {
+        char *name;
+        vector<info> infos;
+
+        listinfo(const char *_name) : name(_name && *_name ? newstring(_name) : NULL) {}
+        ~listinfo() { infos.shrink(0); }
+    };
+
+    struct groupinfo
     {
         vector<info> infos;
 
-        grpinfo() {}
-        ~grpinfo() { infos.shrink(0); }
+        groupinfo() {}
+        ~groupinfo() { infos.shrink(0); }
     };
 
     struct taginfo
     {
         char *name;
-        vector<grpinfo> infos;
+        vector<groupinfo> groups;
 
         taginfo(const char *_name) : name(_name && *_name ? newstring(_name) : NULL) {}
-        ~taginfo() { infos.shrink(0); }
+        ~taginfo() { groups.shrink(0); }
     };
 
-#ifdef CPP_GAME_SERVER
-    int cn, type, subtype, sndflags;
-    char *sndidx;
-#else
-    int type, subtype, sndidx, sndflags, millis;
-#endif
-    vector<info> infos;
-    vector<taginfo> taginfos;
+    vector<listinfo> lists;
+    vector<taginfo> tags;
 
-#ifdef CPP_GAME_SERVER
-    eventlog(int _cn, int _type, int _subtype, const char *_sndidx = NULL, int _sndflags = 0) :
-        cn(_cn), type(_type), subtype(_subtype), sndflags(_sndflags), sndidx(newstring(_sndidx && *_sndidx ? _sndidx : "")) {}
-#else
-    eventlog(int _type, int _subtype, int _sndidx = -1, int _sndflags = 0, int _millis = -1) :
-        type(_type), subtype(_subtype), sndidx(_sndidx), sndflags(_sndflags), millis(_millis >= 0 ? millis : totalmillis) {}
-#endif
+    int millis;
+    eventlog() : millis(totalmillis) {}
     ~eventlog() { reset(); }
 
     void reset()
     {
-#ifdef CPP_GAME_SERVER
-        DELETEA(sndidx);
-#endif
-        taginfos.shrink(0);
-        infos.shrink(0);
+        tags.shrink(0);
+        lists.shrink(0);
     }
 
-    static int findinfo(vector<info> &list, const char *name, bool create = false)
+    static int findinfo(vector<info> &infos, const char *name, bool create = false)
     {
         if(!name || !*name) return -1;
-        loopv(list)
+        loopv(infos)
         {
-            if(strcmp(list[i].name, name)) continue;
+            if(strcmp(infos[i].name, name)) continue;
             return i;
         }
         if(create)
         {
-            int n = list.length();
-            info &v = list.add();
+            int n = infos.length();
+            info &v = infos.add();
             v.name = newstring(name);
             return n;
         }
@@ -137,11 +132,25 @@ struct eventlog
 
     int findtaginfo(const char *name, bool create = false)
     {
-        loopv(taginfos) if(!strcmp(taginfos[i].name, name)) return i;
+        if(!name || !*name) return -1;
+        loopv(tags) if(!strcmp(tags[i].name, name)) return i;
         if(create)
         {
-            int n = taginfos.length();
-            taginfos.add(taginfo(name));
+            int n = tags.length();
+            tags.add(taginfo(name));
+            return n;
+        }
+        return -1;
+    }
+
+    int findlistinfo(const char *name, bool create = false)
+    {
+        if(!name || !*name) return -1;
+        loopv(lists) if(!strcmp(lists[i].name, name)) return i;
+        if(create)
+        {
+            int n = lists.length();
+            lists.add(listinfo(name));
             return n;
         }
         return -1;
@@ -149,20 +158,23 @@ struct eventlog
 
     const char *constr()
     {
-        int c = findinfo(infos, "console");
-        if(!infos.inrange(c)) return NULL;
-        info &n = infos[c];
+        int a = findlistinfo("args");
+        if(!lists.inrange(a)) return NULL;
+        listinfo &t = lists[a];
+        int c = findinfo(t.infos, "console");
+        if(!t.infos.inrange(c)) return NULL;
+        info &n = t.infos[c];
         if(n.type == EV_I_STR) return n.s;
         return NULL;
     }
 
 #ifdef CPP_GAME_SERVER
-    void sendinfo(packetbuf &p, vector<info> &list)
+    static void sendinfo(packetbuf &p, vector<info> &infos)
     {
-        putint(p, list.length());
-        loopv(list)
+        putint(p, infos.length());
+        loopv(infos)
         {
-            info &n = list[i];
+            info &n = infos[i];
             sendstring(n.name, p);
             putint(p, n.type);
             switch(n.type)
@@ -175,31 +187,92 @@ struct eventlog
             }
         }
     }
+#else
+    static void parseinfo(vector<eventlog::info> &infos, ucharbuf &p)
+    {
+        static string info, str;
+        getstring(info, p);
+        int itype = getint(p);
+        switch(itype)
+        {
+            case EV_I_INT: eventlog::addinfo(infos, info, getint(p)); break;
+            case EV_I_BOOL: eventlog::addinfo(infos, info, getint(p) != 0); break;
+            case EV_I_FLOAT: eventlog::addinfo(infos, info, getfloat(p)); break;
+            case EV_I_STR:
+            {
+                getstring(str, p);
+                eventlog::addinfo(infos, info, str);
+                break;
+            }
+            default: break;
+        }
+    }
+
+    static void parseevent(ucharbuf &p)
+    {
+        string text;
+        eventlog *evt = new eventlog;
+        int ilen = getint(p);
+        loopi(ilen)
+        {
+            getstring(text, p);
+            eventlog::listinfo &t = evt->lists.add(eventlog::listinfo(text));
+            int vlen = getint(p);
+            loopj(vlen) parseinfo(t.infos, p);
+        }
+        int tlen = getint(p);
+        loopi(tlen)
+        {
+            getstring(text, p);
+            eventlog::taginfo &t = evt->tags.add(eventlog::taginfo(text));
+            int vlen = getint(p);
+            loopj(vlen)
+            {
+                eventlog::groupinfo &g = t.groups.add();
+                int glen = getint(p);
+                loopk(glen) parseinfo(g.infos, p);
+            }
+        }
+        evt->push();
+    }
 #endif
 
     void push()
     {
 #ifdef CPP_GAME_SERVER
+        int target = -1, tid = findlistinfo("this");
+        if(lists.inrange(tid))
+        {
+            eventlog::listinfo &t = lists[tid];
+            int sid = findinfo(t.infos, "target");
+            if(t.infos.inrange(sid) && t.infos[sid].type == EV_I_INT)
+                target = t.infos[sid].i;
+        }
+
         packetbuf p(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
         putint(p, N_EVENTLOG);
-        putint(p, type);
-        putint(p, subtype);
-        sendstring(sndidx, p);
-        putint(p, sndflags);
-        sendinfo(p, infos);
-        putint(p, taginfos.length());
-        loopv(taginfos)
+        putint(p, lists.length());
+        loopv(lists)
         {
-            taginfo &t = taginfos[i];
+            listinfo &t = lists[i];
             sendstring(t.name, p);
-            putint(p, t.infos.length());
-            loopvk(t.infos)
+            sendinfo(p, t.infos);
+        }
+
+        putint(p, tags.length());
+        loopv(tags)
+        {
+            taginfo &t = tags[i];
+            sendstring(t.name, p);
+            putint(p, t.groups.length());
+            loopvk(t.groups)
             {
-                grpinfo &g = t.infos[i];
+                groupinfo &g = t.groups[i];
                 sendinfo(p, g.infos);
             }
         }
-        sendpacket(cn, 1, p.finalize());
+
+        sendpacket(target, 1, p.finalize());
 #else
         if(eventlogs.length() >= eventloglines)
         {
@@ -207,98 +280,197 @@ struct eventlog
             eventlogs.remove(0);
             delete f;
         }
-        eventlogs.add(this);
+
+        int sound = -1, flags = 0, tid = findlistinfo("this");
+        if(lists.inrange(tid))
+        {
+            eventlog::listinfo &t = lists[tid];
+            int sid = findinfo(t.infos, "sound");
+            if(t.infos.inrange(sid))
+            {
+                info &n = t.infos[sid];
+                switch(n.type)
+                {
+                    case EV_I_INT: sound = n.i; break;
+                    case EV_I_STR: sound = gamesounds[n.s].getindex(); break;
+                    default: break;
+                }
+            }
+            sid = findinfo(t.infos, "flags");
+            if(t.infos.inrange(sid) && t.infos[sid].type == EV_I_INT)
+                flags = t.infos[sid].i;
+        }
 
         int c = findtaginfo("client");
-        if(taginfos.inrange(c))
+        if(tags.inrange(c))
         {
-            taginfo &t = taginfos[c];
-            loopv(t.infos)
+            taginfo &t = tags[c];
+            loopv(t.groups)
             {
-                grpinfo &g = t.infos[i];
+                groupinfo &g = t.groups[i];
                 int f = findinfo(g.infos, "clientnum");
                 if(!g.infos.inrange(f)) continue;
                 info &n = g.infos[f];
                 if(n.type != EV_I_INT) continue;
                 gameent *d = game::getclient(n.i);
                 if(!d) continue;
-                if(sndflags&(i == 0 ? EV_S_CLIENT1 : (i == 1 ? EV_S_CLIENT2 : EV_S_CLIENTN)))
-                    entities::announce(sndidx, d);
+                if(sound >= 0 && flags&(i == 0 ? EV_F_CLIENT1 : (i == 1 ? EV_F_CLIENT2 : EV_F_CLIENTN)))
+                    entities::announce(sound, d);
             }
         }
-        if(sndidx >= 0 && sndflags&EV_S_BROADCAST) entities::announce(sndidx);
+        if(sound >= 0 && flags&EV_F_BROADCAST) entities::announce(sound);
 
         const char *con = constr();
         if(con && *con) conoutft(CON_EVENT, "%s", con);
+
+        eventlogs.add(this);
 #endif
     }
 
-    static void addinfov(vector<info> &list, const char *name, int i)
+    static int addinfo(vector<info> &infos, const char *name, int i)
     {
-        if(!name || !*name) return;
-        int n = findinfo(list, name, true);
-        list[n].set(i);
+        if(!name || !*name) return -1;
+        int n = findinfo(infos, name, true);
+        infos[n].set(i);
+        return n;
     }
-    void addinfo(const char *name, int i) { addinfov(infos, name, i); }
 
-    static void addinfov(vector<info> &list, const char *name, float f)
+    int addlist(const char *list, const char *name, int i)
     {
-        if(!name || !*name) return;
-        int n = findinfo(list, name, true);
-        list[n].set(f);
+        int n = findlistinfo(list, true);
+        return addinfo(lists[n].infos, name, i);
     }
-    void addinfo(const char *name, float f) { addinfov(infos, name, f); }
 
-    static void addinfov(vector<info> &list, const char *name, const char *str)
+    int addgroup(const char *tag, const char *name, int i)
     {
-        if(!name || !*name) return;
-        int n = findinfo(list, name, true);
-        list[n].set(str);
+        int n = findtaginfo(tag, true), r = tags[n].groups.length();
+        groupinfo &g = tags[n].groups.add();
+        addinfo(g.infos, name, i);
+        return r;
     }
-    void addinfo(const char *name, const char *str) { addinfov(infos, name, str); }
 
-    static void addinfovf(vector<info> &list, const char *name, const char *str, ...)
+    static int addinfo(vector<info> &infos, const char *name, bool b)
     {
-        if(!name || !*name) return;
+        if(!name || !*name) return -1;
+        int n = findinfo(infos, name, true);
+        infos[n].set(b);
+        return n;
+    }
+
+    int addlist(const char *list, const char *name, bool b)
+    {
+        int n = findlistinfo(list, true);
+        return addinfo(lists[n].infos, name, b);
+    }
+
+    int addgroup(const char *tag, const char *name, bool b)
+    {
+        int n = findtaginfo(tag, true), r = tags[n].groups.length();
+        groupinfo &g = tags[n].groups.add();
+        addinfo(g.infos, name, b);
+        return r;
+    }
+
+    static int addinfo(vector<info> &infos, const char *name, float f)
+    {
+        if(!name || !*name) return -1;
+        int n = findinfo(infos, name, true);
+        infos[n].set(f);
+        return n;
+    }
+
+    int addlist(const char *list, const char *name, float f)
+    {
+        int n = findlistinfo(list, true);
+        return addinfo(lists[n].infos, name, f);
+    }
+
+    int addgroup(const char *tag, const char *name, float f)
+    {
+        int n = findtaginfo(tag, true), r = tags[n].groups.length();
+        groupinfo &g = tags[n].groups.add();
+        addinfo(g.infos, name, f);
+        return r;
+    }
+
+    static int addinfo(vector<info> &infos, const char *name, const char *str)
+    {
+        if(!name || !*name) return -1;
+        int n = findinfo(infos, name, true);
+        infos[n].set(str);
+        return n;
+    }
+
+    int addlist(const char *list, const char *name, const char *str)
+    {
+        int n = findlistinfo(list, true);
+        addinfo(lists[n].infos, name, str);
+        return n;
+    }
+
+    int addgroup(const char *tag, const char *name, const char *str)
+    {
+        int n = findtaginfo(tag, true), r = tags[n].groups.length();
+        groupinfo &g = tags[n].groups.add();
+        addinfo(g.infos, name, str);
+        return r;
+    }
+
+    static int addinfof(vector<info> &infos, const char *name, const char *str, ...)
+    {
+        if(!name || !*name) return -1;
         defvformatbigstring(s, str, str);
-        addinfov(list, name, s);
+        return addinfo(infos, name, s);
     }
 
-    void addinfof(const char *name, const char *str, ...)
+    int addlistf(const char *list, const char *name, const char *str, ...)
     {
-        if(!name || !*name) return;
+        int n = findlistinfo(list, true);
         defvformatbigstring(s, str, str);
-        addinfov(infos, name, s);
+        return addinfo(lists[n].infos, name, s);
+    }
+
+    int addgroupf(const char *tag, const char *name, const char *str, ...)
+    {
+        int n = findtaginfo(tag, true), r = tags[n].groups.length();
+        groupinfo &g = tags[n].groups.add();
+        defvformatbigstring(s, str, str);
+        addinfo(g.infos, name, s);
+        return r;
     }
 
 #ifdef CPP_GAME_SERVER
-    void addclient(clientinfo *d, const char *tag = "client")
+    int addclient(const char *tag, clientinfo *d)
 #else
-    void addclient(gameent *d, const char *tag = "client")
+    int addclient(const char *tag, gameent *d)
 #endif
     {
-        int n = findtaginfo(tag, true);
-        grpinfo &g = taginfos[n].infos.add();
+        int n = findtaginfo(tag, true), r = tags[n].groups.length();
+        groupinfo &g = tags[n].groups.add();
+
         if(!d)
         {
-            addinfov(g.infos, "clientnum", -1);
-            return;
+            addinfo(g.infos, "clientnum", -1);
+            return r;
         }
-        addinfov(g.infos, "clientnum", d->clientnum);
-        addinfov(g.infos, "actortype", d->actortype);
-        addinfov(g.infos, "team", d->team);
-        addinfov(g.infos, "colour", d->colour);
-        addinfov(g.infos, "model", d->model);
-        addinfov(g.infos, "privilege", d->privilege);
-        addinfov(g.infos, "weapselect", d->weapselect);
-        addinfov(g.infos, "health", d->health);
-        addinfov(g.infos, "name", d->name);
+
+        addinfo(g.infos, "clientnum", d->clientnum);
+        addinfo(g.infos, "actortype", d->actortype);
+        addinfo(g.infos, "team", d->team);
+        addinfo(g.infos, "colour", d->colour);
+        addinfo(g.infos, "model", d->model);
+        addinfo(g.infos, "privilege", d->privilege);
+        addinfo(g.infos, "weapselect", d->weapselect);
+        addinfo(g.infos, "health", d->health);
+        addinfo(g.infos, "name", d->name);
+
+        return r;
     }
 
 #ifdef CPP_GAME_SERVER
-    void addclient(int cn, const char *tag = "client") { addclient((clientinfo *)::getinfo(cn), tag); }
+    int addclient(const char *tag, int cn) { return addclient(tag, (clientinfo *)::getinfo(cn)); }
 #else
-    void addclient(int cn, const char *tag = "client") { addclient(game::getclient(cn), tag); }
+    int addclient(const char *tag, int cn) { return addclient(tag, game::getclient(cn)); }
 #endif
 };
 
@@ -319,10 +491,6 @@ LOOPEVENTS(,loopcsv);
 LOOPEVENTS(rev,loopcsvrev);
 
 ICOMMANDV(0, eventcount, eventlogs.length());
-ICOMMAND(0, geteventtype, "i", (int *id), intret(eventlogs.inrange(*id) ? eventlogs[*id]->type : -1));
-ICOMMAND(0, geteventsubtype, "i", (int *id), intret(eventlogs.inrange(*id) ? eventlogs[*id]->subtype : -1));
-ICOMMAND(0, geteventsndidx, "i", (int *id), intret(eventlogs.inrange(*id) ? eventlogs[*id]->sndidx : -1));
-ICOMMAND(0, geteventsndflags, "i", (int *id), intret(eventlogs.inrange(*id) ? eventlogs[*id]->sndflags : -1));
 ICOMMAND(0, geteventmillis, "i", (int *id), intret(eventlogs.inrange(*id) ? eventlogs[*id]->millis : -1));
 
 ICOMMAND(0, geteventtag, "isis", (int *id, char *tag, int *grp, char *name),
@@ -331,11 +499,11 @@ ICOMMAND(0, geteventtag, "isis", (int *id, char *tag, int *grp, char *name),
     eventlog *e = eventlogs[*id];
 
     int b = e->findtaginfo(tag);
-    if(!e->taginfos.inrange(b)) return;
-    eventlog::taginfo &t = e->taginfos[b];
+    if(!e->tags.inrange(b)) return;
+    eventlog::taginfo &t = e->tags[b];
 
-    if(!t.infos.inrange(*grp)) return;
-    eventlog::grpinfo &g = t.infos[*grp];
+    if(!t.groups.inrange(*grp)) return;
+    eventlog::groupinfo &g = t.groups[*grp];
 
     int c = eventlog::findinfo(g.infos, name);
     if(!g.infos.inrange(c)) return;
@@ -350,7 +518,7 @@ ICOMMAND(0, geteventtag, "isis", (int *id, char *tag, int *grp, char *name),
     }
 });
 
-ICOMMAND(0, geteventtags, "i", (int *id), intret(eventlogs.inrange(*id) ? eventlogs[*id]->taginfos.length() : -1));
+ICOMMAND(0, geteventtags, "i", (int *id), intret(eventlogs.inrange(*id) ? eventlogs[*id]->tags.length() : -1));
 
 ICOMMAND(0, geteventtaggroups, "is", (int *id, char *tag),
 {
@@ -358,39 +526,38 @@ ICOMMAND(0, geteventtaggroups, "is", (int *id, char *tag),
     eventlog *e = eventlogs[*id];
 
     int c = e->findtaginfo(tag);
-    if(!e->taginfos.inrange(c)) return;
+    if(!e->tags.inrange(c)) return;
 
-    eventlog::taginfo &t = e->taginfos[c];
-    intret(t.infos.length());
+    eventlog::taginfo &t = e->tags[c];
+    intret(t.groups.length());
 });
 
-ICOMMAND(0, geteventtaginfos, "isi", (int *id, char *tag, int *grp),
+ICOMMAND(0, geteventtaggroupinfos, "isi", (int *id, char *tag, int *grp),
 {
     if(!eventlogs.inrange(*id)) return;
     eventlog *e = eventlogs[*id];
 
     int c = e->findtaginfo(tag);
-    if(!e->taginfos.inrange(c)) return;
+    if(!e->tags.inrange(c)) return;
+    eventlog::taginfo &t = e->tags[c];
 
-    eventlog::taginfo &t = e->taginfos[c];
-    if(!t.infos.inrange(*grp)) return;
+    if(!t.groups.inrange(*grp)) return;
+    eventlog::groupinfo &g = t.groups[*grp];
 
-    eventlog::grpinfo &g = t.infos[*grp];
     intret(g.infos.length());
 });
 
-ICOMMAND(0, geteventname, "iibbb", (int *id, int *grp, int *col, int *icon, int *dupname),
+ICOMMAND(0, geteventname, "isibbb", (int *id, char *tag, int *grp, int *col, int *icon, int *dupname),
 {
     if(!eventlogs.inrange(*id)) return;
     eventlog *e = eventlogs[*id];
 
-    int c = e->findtaginfo("client");
-    if(!e->taginfos.inrange(c)) return;
+    int c = e->findtaginfo(tag);
+    if(!e->tags.inrange(c)) return;
+    eventlog::taginfo &t = e->tags[c];
 
-    eventlog::taginfo &t = e->taginfos[c];
-    if(!t.infos.inrange(*grp)) return;
-
-    eventlog::grpinfo &g = t.infos[*grp];
+    if(!t.groups.inrange(*grp)) return;
+    eventlog::groupinfo &g = t.groups[*grp];
 
     int _name = eventlog::findinfo(g.infos, "name");
     if(!g.infos.inrange(_name)) return;
@@ -430,15 +597,18 @@ ICOMMAND(0, geteventname, "iibbb", (int *id, int *grp, int *col, int *icon, int 
     result(game::colourname(name.s, clientnum.i, team.i, actortype.i, colour.i, privilege.i, weapselect.i, *icon != 0, *dupname != 0, *col >= 0 ? *col : 3));
 });
 
-ICOMMAND(0, geteventinfo, "is", (int *id, char *name),
+ICOMMAND(0, geteventlist, "iss", (int *id, char *list, char *name),
 {
     if(!eventlogs.inrange(*id)) return;
     eventlog *e = eventlogs[*id];
 
-    int c = eventlog::findinfo(e->infos, name);
-    if(!e->infos.inrange(c)) return;
+    int b = e->findlistinfo(list);
+    if(!e->lists.inrange(b)) return;
+    eventlog::listinfo &t = e->lists[b];
 
-    eventlog::info &n = e->infos[c];
+    int c = eventlog::findinfo(t.infos, name);
+    if(!t.infos.inrange(c)) return;
+    eventlog::info &n = t.infos[c];
     switch(n.type)
     {
         case EV_I_INT: intret(n.i); break;
@@ -448,5 +618,6 @@ ICOMMAND(0, geteventinfo, "is", (int *id, char *name),
         default: break;
     }
 });
-ICOMMAND(0, geteventinfos, "i", (int *id), intret(eventlogs.inrange(*id) ? eventlogs[*id]->infos.length() : -1));
+
+ICOMMAND(0, geteventlists, "i", (int *id), intret(eventlogs.inrange(*id) ? eventlogs[*id]->lists.length() : -1));
 #endif

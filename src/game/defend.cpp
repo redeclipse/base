@@ -313,23 +313,27 @@ namespace defend
         }
     }
 
-    void buildevent(defendstate::flag &b, int i, int subtype, int sndidx, int owner, int enemy, int converted)
+    void buildevent(defendstate::flag &b, int i, const char *action, int sndidx, int owner, int enemy, int converted)
     {
-        eventlog *evt = new eventlog(EV_AFFINITY, EV_A_SECURE, S_V_FLAGSECURED, EV_S_BROADCAST);
+        eventlog *evt = new eventlog;
+        evt->addlist("this", "type", "defend");
+        evt->addlist("this", "action", action);
+        evt->addlist("this", "sound", sndidx);
+        evt->addlist("this", "flags", EV_F_BROADCAST);
 
         gameent *d = NULL;
         int numdyns = game::numdynents();
         loopi(numdyns) if((d = (gameent *)game::iterdynents(i)) && d->actortype < A_ENEMY && insideaffinity(b, d))
-            evt->addclient(d);
+            evt->addclient("client", d);
 
-        evt->addinfo("affinity", i);
-        evt->addinfo("oldowner", b.owner);
-        evt->addinfo("owner", owner);
-        evt->addinfo("oldenemy", b.enemy);
-        evt->addinfo("enemy", enemy);
-        evt->addinfo("oldconverted", b.converted);
-        evt->addinfo("converted", converted);
-        evt->addinfof("console", "\faTeam %s secured \fw\f($pointtex)%s", game::colourteam(owner), b.name);
+        evt->addlist("args", "affinity", i);
+        evt->addlist("args", "oldowner", b.owner);
+        evt->addlist("args", "owner", owner);
+        evt->addlist("args", "oldenemy", b.enemy);
+        evt->addlist("args", "enemy", enemy);
+        evt->addlist("args", "oldconverted", b.converted);
+        evt->addlist("args", "converted", converted);
+        evt->addlistf("args","console", "\faTeam %s secured \fw\f($pointtex)%s", game::colourteam(owner), b.name);
         evt->push();
     }
 
@@ -344,10 +348,10 @@ namespace defend
                 if(b.owner != owner)
                 {
                     if(game::dynlighteffects) adddynlight(b.o, enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(owner, colour)).mul(2.f), 500, 250);
-                    buildevent(b, i, EV_A_SECURE, S_V_FLAGSECURED, owner, enemy, converted);
+                    buildevent(b, i, "secure", S_V_FLAGSECURED, owner, enemy, converted);
                 }
             }
-            else if(b.owner) buildevent(b, i, EV_A_RETURN, S_V_FLAGOVERTHROWN, owner, enemy, converted);
+            else if(b.owner) buildevent(b, i, "overthrow", S_V_FLAGOVERTHROWN, owner, enemy, converted);
             b.converted = converted;
         }
         b.owner = owner;

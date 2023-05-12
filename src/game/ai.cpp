@@ -1748,7 +1748,7 @@ namespace ai
                         stnames[b.type],
                         timestr(lastmillis-b.millis),
                         sttypes[b.targtype+1], b.target,
-                        top ? "\fc" : "\fw", attypes[b.acttype],
+                        top ? "\fc" : "", attypes[b.acttype],
                         e ? " [" : "", e ? game::colourname(e) : "", e ? "]" : ""
                     );
                     part_textcopy(pos, s);

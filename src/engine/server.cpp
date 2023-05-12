@@ -1723,7 +1723,7 @@ void rehash(bool reload)
     execfile("autoexec.cfg", false);
     initing = NOT_INITING;
 #endif
-    conoutf("\fwConfiguration %s", reload ? "reloaded" : "loaded");
+    conoutf("Configuration %s", reload ? "reloaded" : "loaded");
     rehashing = 0;
 #ifndef STANDALONE
     if(reload) engineready = true;

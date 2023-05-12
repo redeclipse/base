@@ -3494,7 +3494,7 @@ namespace entities
                                     pos.addz(entinfostrut);
                                     strut = true;
                                 }
-                                defformatstring(s, "%s%s", hasent ? "\fw" : "\fW", attrval);
+                                defformatstring(s, "%s%s", hasent ? "" : "\fW", attrval);
                                 part_textcopy(pos.addz(entinfospace), s, hasent ? PART_TEXT_ONTOP : PART_TEXT);
                                 found = true;
                             }

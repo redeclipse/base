@@ -1507,7 +1507,7 @@ namespace client
             concatstring(name, st);
         }
         if(flags&SAY_ACTION) formatstring(line, "\fv* %s %s", name, msg);
-        else formatstring(line, "\fw<%s> %s", name, msg);
+        else formatstring(line, "<%s> %s", name, msg);
 
         int snd = S_CHAT;
         ident *wid = idents.access(flags&SAY_ACTION ? "on_action" : "on_text");
@@ -2497,26 +2497,6 @@ namespace client
         }
     }
 
-    void parseinfo(vector<eventlog::info> &list, ucharbuf &p)
-    {
-        static string info, str;
-        getstring(info, p);
-        int itype = getint(p);
-        switch(itype)
-        {
-            case EV_I_INT: eventlog::addinfov(list, info, getint(p)); break;
-            case EV_I_BOOL: eventlog::addinfov(list, info, getint(p) != 0); break;
-            case EV_I_FLOAT: eventlog::addinfov(list, info, getfloat(p)); break;
-            case EV_I_STR:
-            {
-                getstring(str, p);
-                eventlog::addinfov(list, info, str);
-                break;
-            }
-            default: break;
-        }
-    }
-
     void parsemessages(int cn, gameent *d, ucharbuf &p)
     {
         static char text[MAXTRANS];
@@ -2606,30 +2586,7 @@ namespace client
                     break;
                 }
 
-                case N_EVENTLOG:
-                {
-                    int evtype = getint(p), subtype = getint(p);
-                    getstring(text, p);
-                    int snd = gamesounds[text].getindex(), sndflags = getint(p);
-                    eventlog *evt = new eventlog(evtype, subtype, snd, sndflags);
-                    int ilen = getint(p);
-                    loopk(ilen) parseinfo(evt->infos, p);
-                    ilen = getint(p);
-                    loopi(ilen)
-                    {
-                        getstring(text, p);
-                        eventlog::taginfo &t = evt->taginfos.add(eventlog::taginfo(text));
-                        int tlen = getint(p);
-                        loopj(tlen)
-                        {
-                            eventlog::grpinfo &g = t.infos.add();
-                            int glen = getint(p);
-                            loopk(glen) parseinfo(g.infos, p);
-                        }
-                    }
-                    evt->push();
-                    break;
-                }
+                case N_EVENTLOG: eventlog::parseevent(p); break;
 
                 case N_TEXT:
                 {

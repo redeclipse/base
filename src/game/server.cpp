@@ -1748,8 +1748,14 @@ namespace server
                 {
                     int secs = G(teambalancedelay)/1000;
                     nextteambalance = gamemillis+G(teambalancedelay);
-                    eventlog evt(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_BALWARN", EV_S_BROADCAST);
-                    evt.addinfof("console", "\fy\fs\fzoyWARNING:\fS \fs\fcteams\fS will be \fs\fcbalanced\fS in \fs\fc%d\fS %s", secs, secs != 1 ? "seconds" : "second");
+                    eventlog evt;
+                    evt.addlist("this", "target", -1);
+                    evt.addlist("this", "type", "balance");
+                    evt.addlist("this", "action", "warning");
+                    evt.addlist("this", "sound", "S_V_BALWARN");
+                    evt.addlist("this", "flags", EV_F_BROADCAST);
+                    evt.addlist("args", "millis", G(teambalancedelay));
+                    evt.addlistf("args","console", "\fs\fcTeams\fS will be \fs\fcbalanced\fS in \fs\fc%d\fS %s", secs, secs != 1 ? "seconds" : "second");
                     evt.push();
                 }
                 else if(init)
@@ -1818,14 +1824,24 @@ namespace server
                     {
                         if(moved)
                         {
-                            eventlog evt(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_BALALERT", EV_S_BROADCAST);
-                            evt.addinfo("console", "\fy\fs\fzoyALERT:\fS \fs\fcTeams\fS have now been \fs\fcbalanced\fS");
+                            eventlog evt;
+                            evt.addlist("this", "target", -1);
+                            evt.addlist("this", "type", "balance");
+                            evt.addlist("this", "action", "success");
+                            evt.addlist("this", "sound", "S_V_BALALERT");
+                            evt.addlist("this", "flags", EV_F_BROADCAST);
+                            evt.addlist("args", "console", "\fs\fcTeams\fS have now been \fs\fcbalanced\fS");
                             evt.push();
                         }
                         else
                         {
-                            eventlog evt(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_NOTIFY", EV_S_BROADCAST);
-                            evt.addinfo("console", "\fy\fs\fzoyALERT:\fS \fs\fcTeams\fS failed to be \fs\fcbalanced\fS");
+                            eventlog evt;
+                            evt.addlist("this", "target", -1);
+                            evt.addlist("this", "type", "balance");
+                            evt.addlist("this", "action", "failure");
+                            evt.addlist("this", "sound", "S_V_NOTIFY");
+                            evt.addlist("this", "flags", EV_F_BROADCAST);
+                            evt.addlist("args", "console", "\fs\fcTeams\fS failed to be \fs\fcbalanced\fS");
                             evt.push();
                         }
                     }
@@ -1837,8 +1853,13 @@ namespace server
             {
                 if(!init && nextteambalance)
                 {
-                    eventlog evt(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_NOTIFY", EV_S_BROADCAST);
-                    evt.addinfo("console", "\fy\fs\fzoyALERT:\fS \fs\fcTeams\fS no longer need to be \fs\fcbalanced\fS");
+                    eventlog evt;
+                    evt.addlist("this", "target", -1);
+                    evt.addlist("this", "type", "balance");
+                    evt.addlist("this", "action", "lapse");
+                    evt.addlist("this", "sound", "S_V_NOTIFY");
+                    evt.addlist("this", "flags", EV_F_BROADCAST);
+                    evt.addlist("args", "console", "\fs\fcTeams\fS no longer need to be \fs\fcbalanced\fS");
                     evt.push();
                 }
                 lastteambalance = gamemillis+(nextteambalance ? G(teambalancewait) : G(teambalancedelay));
@@ -1849,8 +1870,13 @@ namespace server
         {
             if(!init && nextteambalance)
             {
-                eventlog evt(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_NOTIFY", EV_S_BROADCAST);
-                evt.addinfo("console", "\fy\fs\fzoyALERT:\fS \fs\fcTeams\fS are no longer able to be \fs\fcbalanced\fS");
+                eventlog evt;
+                evt.addlist("this", "target", -1);
+                evt.addlist("this", "type", "balance");
+                evt.addlist("this", "action", "unable");
+                evt.addlist("this", "sound", "S_V_NOTIFY");
+                evt.addlist("this", "flags", EV_F_BROADCAST);
+                evt.addlist("args", "console", "\fs\fcTeams\fS are no longer able to be \fs\fcbalanced\fS");
                 evt.push();
             }
             lastteambalance = gamemillis+(nextteambalance ? G(teambalancewait) : G(teambalancedelay));
@@ -1890,17 +1916,29 @@ namespace server
                         if(limit)
                         {
                             timeremaining = limit*60;
-                            gamelimit += timeremaining*1000;
-                            eventlog evt(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_OVERTIME", EV_S_BROADCAST);
-                            evt.addinfof("console", "\fyOvertime, match extended by \fs\fc%d\fS %s", limit, limit > 1 ? "minutes" : "minute");
+                            int millis = timeremaining*1000;
+                            gamelimit += millis;
+                            eventlog evt;
+                            evt.addlist("this", "target", -1);
+                            evt.addlist("this", "type", "overtime");
+                            evt.addlist("this", "action", "extend");
+                            evt.addlist("this", "sound", "S_V_OVERTIME");
+                            evt.addlist("this", "flags", EV_F_BROADCAST);
+                            evt.addlist("args", "millis", millis);
+                            evt.addlistf("args","console", "\fyOvertime, match extended by \fs\fc%d\fS %s", limit, limit > 1 ? "minutes" : "minute");
                             evt.push();
                         }
                         else
                         {
                             timeremaining = -1;
                             gamelimit = 0;
-                            eventlog evt(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_OVERTIME", EV_S_BROADCAST);
-                            evt.addinfo("console", "\fyOvertime, match extended until someone wins");
+                            eventlog evt;
+                            evt.addlist("this", "target", -1);
+                            evt.addlist("this", "type", "overtime");
+                            evt.addlist("this", "action", "score");
+                            evt.addlist("this", "sound", "S_V_OVERTIME");
+                            evt.addlist("this", "flags", EV_F_BROADCAST);
+                            evt.addlist("args", "console", "\fyOvertime, match extended until someone wins");
                             evt.push();
                         }
                         gamestate = G_S_OVERTIME;
@@ -1908,8 +1946,13 @@ namespace server
                     }
                     else
                     {
-                        eventlog evt(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_NOTIFY", EV_S_BROADCAST);
-                        evt.addinfo("console", "\fyTime limit has been reached");
+                        eventlog evt;
+                        evt.addlist("this", "target", -1);
+                        evt.addlist("this", "type", "timelimit");
+                        evt.addlist("this", "action", "reached");
+                        evt.addlist("this", "sound", "S_V_NOTIFY");
+                        evt.addlist("this", "flags", EV_F_BROADCAST);
+                        evt.addlist("args", "console", "\fyTime limit has been reached");
                         evt.push();
                         startintermission();
                         return; // bail
@@ -1919,8 +1962,13 @@ namespace server
                 {
                     if(wantsoneminute && timeremaining == 60)
                     {
-                        eventlog evt(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_ONEMINUTE", EV_S_BROADCAST);
-                        evt.addinfo("console", "\fzYgone minute remains");
+                        eventlog evt;
+                        evt.addlist("this", "target", -1);
+                        evt.addlist("this", "type", "timelimit");
+                        evt.addlist("this", "action", "oneminute");
+                        evt.addlist("this", "sound", "S_V_ONEMINUTE");
+                        evt.addlist("this", "flags", EV_F_BROADCAST);
+                        evt.addlist("args", "console", "\fzYgONE MINUTE REMAINS");
                         evt.push();
                     }
                     sendtick();
@@ -1929,8 +1977,13 @@ namespace server
         }
         if(wasinovertime && !wantsovertime())
         {
-            eventlog evt(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_NOTIFY", EV_S_BROADCAST);
-            evt.addinfo("console", "\fyOvertime has ended, a winner has been chosen");
+            eventlog evt;
+            evt.addlist("this", "target", -1);
+            evt.addlist("this", "type", "overtime");
+            evt.addlist("this", "action", "winner");
+            evt.addlist("this", "sound", "S_V_NOTIFY");
+            evt.addlist("this", "flags", EV_F_BROADCAST);
+            evt.addlist("args", "console", "\fyOvertime has ended, a winner has been chosen");
             evt.push();
             startintermission();
             return; // bail
@@ -1952,8 +2005,13 @@ namespace server
                         best = i+T_FIRST;
                     if(best >= 0 && teamscore(best).total >= plimit)
                     {
-                        eventlog evt(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_NOTIFY", EV_S_BROADCAST);
-                        evt.addinfo("console", "\fyScore limit has been reached");
+                        eventlog evt;
+                        evt.addlist("this", "target", -1);
+                        evt.addlist("this", "type", "score");
+                        evt.addlist("this", "action", "reached");
+                        evt.addlist("this", "sound", "S_V_NOTIFY");
+                        evt.addlist("this", "flags", EV_F_BROADCAST);
+                        evt.addlist("args", "console", "\fyScore limit has been reached");
                         evt.push();
                         startintermission();
                         return; // bail
@@ -1966,8 +2024,13 @@ namespace server
                         best = i;
                     if(best >= 0 && clients[best]->points >= plimit)
                     {
-                        eventlog evt(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_NOTIFY", EV_S_BROADCAST);
-                        evt.addinfo("console", "\fyScore limit has been reached");
+                        eventlog evt;
+                        evt.addlist("this", "target", -1);
+                        evt.addlist("this", "type", "score");
+                        evt.addlist("this", "action", "reached");
+                        evt.addlist("this", "sound", "S_V_NOTIFY");
+                        evt.addlist("this", "flags", EV_F_BROADCAST);
+                        evt.addlist("args", "console", "\fyScore limit has been reached");
                         evt.push();
                         startintermission();
                         return; // bail
@@ -1986,8 +2049,14 @@ namespace server
                     if(delpart >= 1000)
                     {
                         int secs = delpart/1000;
-                        eventlog evt(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_BALWARN", EV_S_BROADCAST);
-                        evt.addinfof("console", "\fy\fs\fzoyWARNING:\fS \fs\fcteams\fS will be \fs\fcreassigned\fS in \fs\fc%d\fS %s %s", secs, secs != 1 ? "seconds" : "second", m_forcebal(gamemode, mutators) ? "to switch roles" : "for map symmetry");
+                        eventlog evt;
+                        evt.addlist("this", "target", -1);
+                        evt.addlist("this", "type", "balance");
+                        evt.addlist("this", "action", "swapping");
+                        evt.addlist("this", "sound", "S_V_BALWARN");
+                        evt.addlist("this", "flags", EV_F_BROADCAST);
+                        evt.addlist("args", "millis", delpart);
+                        evt.addlistf("args","console", "\fs\fcTeams\fS will be \fs\fcreassigned\fS in \fs\fc%d\fS %s %s", secs, secs != 1 ? "seconds" : "second", m_forcebal(gamemode, mutators) ? "to switch roles" : "for map symmetry");
                         evt.push();
                     }
                 }
@@ -2024,8 +2093,13 @@ namespace server
                         sendf(-1, 1, "ri3", N_SCORE, cs.team, cs.total);
                     }
 
-                    eventlog evt(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_BALALERT", EV_S_BROADCAST);
-                    evt.addinfof("console", "\fy\fs\fzoyALERT:\fS \fs\fcteams\fS have %sbeen \fs\fcreassigned\fS %s", delpart > 0 ? "now " : "", m_forcebal(gamemode, mutators) ? "to switch roles" : "for map symmetry");
+                    eventlog evt;
+                    evt.addlist("this", "target", -1);
+                    evt.addlist("this", "type", "balance");
+                    evt.addlist("this", "action", "swapped");
+                    evt.addlist("this", "sound", "S_V_BALALERT");
+                    evt.addlist("this", "flags", EV_F_BROADCAST);
+                    evt.addlistf("args","console", "\fs\fcTeams\fS have %sbeen \fs\fcreassigned\fS %s", delpart > 0 ? "now " : "", m_forcebal(gamemode, mutators) ? "to switch roles" : "for map symmetry");
                     evt.push();
 
                     if(smode) smode->balance(oldbalance);
@@ -2987,8 +3061,14 @@ namespace server
 
             if(allowbroadcast(cp->clientnum))
             {
-                eventlog evt(cp->clientnum, EV_ANNOUNCE, EV_N_EVENT, "S_V_BALALERT", EV_S_BROADCAST);
-                evt.addinfof("console", "\fyYou have been moved to %s as previously requested", colourteam(oldteam));
+                eventlog evt;
+                evt.addlist("this", "target", cp->clientnum);
+                evt.addlist("this", "type", "team");
+                evt.addlist("this", "action", "request");
+                evt.addlist("this", "sound", "S_V_BALALERT");
+                evt.addlist("this", "flags", EV_F_BROADCAST);
+                evt.addclient("client", cp);
+                evt.addlistf("args","console", "\fyYou have been moved to %s as previously requested", colourteam(oldteam));
                 evt.push();
             }
 
@@ -3017,8 +3097,16 @@ namespace server
 
                 if(allowbroadcast(cp->clientnum))
                 {
-                    eventlog evt(cp->clientnum, EV_ANNOUNCE, EV_N_EVENT, "S_V_BALALERT", EV_S_BROADCAST);
-                    evt.addinfof("console", "\fyYou have been moved to %s by higher skilled %s %s", colourteam(oldteam), privname(G(teambalancelock)), colourname(ci));
+                    eventlog evt;
+                    evt.addlist("this", "target", cp->clientnum);
+                    evt.addlist("this", "type", "balance");
+                    evt.addlist("this", "action", "moved");
+                    evt.addlist("this", "sound", "S_V_BALALERT");
+                    evt.addlist("this", "flags", EV_F_BROADCAST);
+                    evt.addclient("client", cp);
+                    evt.addclient("client", ci);
+                    evt.addlist("args", "type", "moved");
+                    evt.addlistf("args","console", "\fyMoved to %s by higher skilled %s %s", colourteam(oldteam), privname(G(teambalancelock)), colourname(ci));
                     evt.push();
                 }
 
@@ -5166,8 +5254,13 @@ namespace server
         {
             if(team && m_swapteam(gamemode, mutators) && ci->team != team && ci->actortype == A_PLAYER && ci->swapteam != team && canplay())
             {
-                eventlog evt(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_NOTIFY", EV_S_BROADCAST);
-                evt.addinfof("console", "\fy%s requests swap to team %s, change teams to accept", colourname(ci), colourteam(team));
+                eventlog evt;
+                evt.addlist("this", "target", -1);
+                evt.addlist("this", "type", "team");
+                evt.addlist("this", "action", "swap");
+                evt.addlist("this", "sound", "S_V_NOTIFY");
+                evt.addlist("this", "flags", EV_F_BROADCAST);
+                evt.addlistf("args","console", "\fy%s requests swap to team %s, change teams to accept", colourname(ci), colourteam(team));
                 evt.push();
                 ci->swapteam = team;
             }
@@ -5608,7 +5701,16 @@ namespace server
                     gamewaittime = 0;
                     if(m_team(gamemode, mutators)) doteambalance(true);
                     if(m_play(gamemode) && !m_bomber(gamemode) && !m_duke(gamemode, mutators)) // they do their own "fight"
-                        sendf(-1, 1, "ri2ss", N_EVENTLOG, EV_N_EVENT, "S_V_FIGHT", "\fyMatch start, fight!");
+                    {
+                        eventlog evt;
+                        evt.addlist("this", "target", -1);
+                        evt.addlist("this", "type", "timelimit");
+                        evt.addlist("this", "action", "start");
+                        evt.addlist("this", "sound", "S_V_FIGHT");
+                        evt.addlist("this", "flags", EV_F_BROADCAST);
+                        evt.addlist("args", "console", "\fyMatch start, FIGHT!");
+                        evt.push();
+                    }
                     sendtick();
                 }
             }
@@ -6740,8 +6842,13 @@ namespace server
                                                 }
                                                 if(!found)
                                                 {
-                                                    eventlog evt(-1, EV_ANNOUNCE, EV_N_EVENT, "S_V_NOTIFY", EV_S_BROADCAST);
-                                                    evt.addinfo("console", "\fyBest score has been reached");
+                                                    eventlog evt;
+                                                    evt.addlist("this", "target", -1);
+                                                    evt.addlist("this", "type", "score");
+                                                    evt.addlist("this", "action", "reached");
+                                                    evt.addlist("this", "sound", "S_V_NOTIFY");
+                                                    evt.addlist("this", "flags", EV_F_BROADCAST);
+                                                    evt.addlist("args", "console", "\fyBest score has been reached");
                                                     evt.push();
                                                     startintermission();
                                                 }
@@ -6908,7 +7015,7 @@ namespace server
                             concatstring(m, t);
                         }
                         if(flags&SAY_ACTION) relayf(0, "\fv* %s %s", m, output);
-                        else relayf(0, "\fw<%s> %s", m, output);
+                        else relayf(0, "<%s> %s", m, output);
                     }
                     break;
                 }

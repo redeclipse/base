@@ -434,10 +434,14 @@ namespace bomber
         st.dropaffinity(i, droploc, inertia, lastmillis, target);
         emitsound(S_DROP, game::getplayersoundpos(d), d);
 
-        eventlog *evt = new eventlog(EV_AFFINITY, EV_A_DROP, S_V_BOMBDROP, EV_S_BROADCAST);
-        evt->addclient(d);
-        evt->addinfo("affinity", i);
-        evt->addinfof("console", "\fa%s dropped the \fs\fzwv\f($bombtex)bomb\fS", game::colourname(d));
+        eventlog *evt = new eventlog;
+        evt->addlist("this", "type", "bomber");
+        evt->addlist("this", "action", "drop");
+        evt->addlist("this", "sound", S_V_BOMBDROP);
+        evt->addlist("this", "flags", EV_F_BROADCAST);
+        evt->addclient("client", d);
+        evt->addlist("args", "affinity", i);
+        evt->addlistf("args","console", "\fa%s dropped the \fs\fzwv\f($bombtex)bomb\fS", game::colourname(d));
         evt->push();
     }
 
@@ -480,19 +484,27 @@ namespace bomber
             if(isbomberaffinity(f))
             {
                 affinityeffect(i, T_NEUTRAL, f.pos(true, true), f.spawnloc);
-                eventlog *evt = new eventlog(EV_AFFINITY, EV_A_RESET, S_V_BOMBRESET, EV_S_BROADCAST);
-                evt->addinfo("affinity", i);
-                evt->addinfo("droptime", f.droptime);
-                evt->addinfo("inittime", f.inittime);
-                evt->addinfo("console", "\faThe \fs\fzwvbomb\fS has been reset");
+                eventlog *evt = new eventlog;
+                evt->addlist("this", "type", "bomber");
+                evt->addlist("this", "action", "reset");
+                evt->addlist("this", "sound", S_V_BOMBRESET);
+                evt->addlist("this", "flags", EV_F_BROADCAST);
+                evt->addlist("args", "affinity", i);
+                evt->addlist("args", "droptime", f.droptime);
+                evt->addlist("args", "inittime", f.inittime);
+                evt->addlist("args", "console", "\faThe \fs\fzwvbomb\fS has been reset");
                 evt->push();
             }
         }
         else if(value == 1 && isbomberaffinity(f))
         {
-            eventlog *evt = new eventlog(EV_AFFINITY, EV_A_START, m_duke(game::gamemode, game::mutators) ? S_V_BOMBDUEL : S_V_BOMBSTART, EV_S_BROADCAST);
-            evt->addinfo("affinity", i);
-            evt->addinfo("console", "\faThe \fs\fzwvbomb\fS has been spawned");
+            eventlog *evt = new eventlog;
+            evt->addlist("this", "type", "bomber");
+            evt->addlist("this", "action", "start");
+            evt->addlist("this", "sound", m_duke(game::gamemode, game::mutators) ? S_V_BOMBDUEL : S_V_BOMBSTART);
+            evt->addlist("this", "flags", EV_F_BROADCAST);
+            evt->addlist("args", "affinity", i);
+            evt->addlist("args", "console", "\faThe \fs\fzwvbomb\fS has been spawned");
             evt->push();
         }
 
@@ -516,16 +528,20 @@ namespace bomber
         hud::teamscore(d->team).total = score;
         int millis = lastmillis-f.inittime;
 
-        eventlog *evt = new eventlog(EV_AFFINITY, EV_A_SCORE, S_V_BOMBSCORE, EV_S_BROADCAST);
-        evt->addclient(d);
-        evt->addinfo("affinity", relay);
-        evt->addinfo("goal", goal);
-        evt->addinfo("droptime", f.droptime);
-        evt->addinfo("inittime", f.inittime);
-        evt->addinfo("dist", dist);
-        evt->addinfo("score", score);
-        evt->addinfo("millis", millis);
-        evt->addinfof("console", "\fa%s completed a bombing for team %s%s (score: \fs\fc%d\fS, time taken: \fs\fc%s\fS)", game::colourname(d), game::colourteam(d->team), extra, score, timestr(millis, 1));
+        eventlog *evt = new eventlog;
+        evt->addlist("this", "type", "bomber");
+        evt->addlist("this", "action", "score");
+        evt->addlist("this", "sound", S_V_BOMBSCORE);
+        evt->addlist("this", "flags", EV_F_BROADCAST);
+        evt->addclient("client", d);
+        evt->addlist("args", "affinity", relay);
+        evt->addlist("args", "goal", goal);
+        evt->addlist("args", "droptime", f.droptime);
+        evt->addlist("args", "inittime", f.inittime);
+        evt->addlist("args", "dist", dist);
+        evt->addlist("args", "score", score);
+        evt->addlist("args", "millis", millis);
+        evt->addlistf("args","console", "\fa%s completed a bombing for team %s%s (score: \fs\fc%d\fS, time taken: \fs\fc%s\fS)", game::colourname(d), game::colourteam(d->team), extra, score, timestr(millis, 1));
         evt->push();
 
         affinityeffect(goal, d->team, g.spawnloc, f.spawnloc);
@@ -539,12 +555,16 @@ namespace bomber
         bomberstate::flag &f = st.flags[i];
         emitsound(S_CATCH, game::getplayersoundpos(d), d);
 
-        eventlog *evt = new eventlog(EV_AFFINITY, EV_A_SECURE, S_V_BOMBPICKUP, EV_S_BROADCAST);
-        evt->addclient(d);
-        evt->addclient(f.lastowner);
-        evt->addinfo("affinity", i);
-        evt->addinfo("droptime", f.droptime);
-        evt->addinfof("console", "\fa%s secured the \fs\fzwv\f($bombtex)bomb\fS", game::colourname(d));
+        eventlog *evt = new eventlog;
+        evt->addlist("this", "type", "bomber");
+        evt->addlist("this", "action", "secure");
+        evt->addlist("this", "sound", S_V_BOMBPICKUP);
+        evt->addlist("this", "flags", EV_F_BROADCAST);
+        evt->addclient("client", d);
+        evt->addclient("client", f.lastowner);
+        evt->addlist("args", "affinity", i);
+        evt->addlist("args", "droptime", f.droptime);
+        evt->addlistf("args","console", "\fa%s secured the \fs\fzwv\f($bombtex)bomb\fS", game::colourname(d));
         evt->push();
 
         if(!f.droptime) affinityeffect(i, d->team, d->feetpos(), f.pos(true, true));

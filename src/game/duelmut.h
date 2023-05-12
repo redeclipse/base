@@ -336,7 +336,12 @@ struct duelservmode : servmode
                     }
                     else if(m_survivor(gamemode, mutators)) formatstring(fight, "Survivor, round \fs\fc#%d\fS", duelround);
 
-                    eventlog evt(-1, EV_ANNOUNCE, EV_N_START, "S_V_FIGHT", EV_S_BROADCAST);
+                    eventlog evt;
+                    evt.addlist("this", "target", -1);
+                    evt.addlist("this", "type", "duel");
+                    evt.addlist("this", "action", "start");
+                    evt.addlist("this", "sound", "S_V_FIGHT");
+                    evt.addlist("this", "flags", EV_F_BROADCAST);
                     loopv(playing)
                     {
                         if(playing[i]->state == CS_ALIVE)
@@ -349,11 +354,11 @@ struct duelservmode : servmode
                         }
                         else if(allowed.find(playing[i]) < 0) allowed.add(playing[i]);
                         duelqueue.removeobj(playing[i]);
-                        evt.addclient(playing[i]);
+                        evt.addclient("client", playing[i]);
                     }
-                    evt.addinfo("round", duelround);
-                    evt.addinfo("queue", duelqueue.length());
-                    evt.addinfof("console", "\fy%s%s", gamestate == G_S_OVERTIME && !restricted.empty() ? "\fs\fzcgSudden Death\fS, " : "", fight);
+                    evt.addlist("args", "round", duelround);
+                    evt.addlist("args", "queue", duelqueue.length());
+                    evt.addlistf("args","console", "\fy%s%s", gamestate == G_S_OVERTIME && !restricted.empty() ? "\fs\fzcgSudden Death\fS, " : "", fight);
                     evt.push();
 
                     dueltime = dueldeath = -1;
@@ -428,12 +433,17 @@ struct duelservmode : servmode
                                 }
                                 if(allowbroadcast(clients[i]->clientnum))
                                 {
-                                    eventlog evt(clients[i]->clientnum, EV_ANNOUNCE, EV_N_FINISH, sndidx, EV_S_BROADCAST);
-                                    loopv(playing) evt.addclient(playing[i]);
-                                    loopv(alive) evt.addclient(alive[i], "alive");
-                                    evt.addinfo("winner", duelwinner);
-                                    evt.addinfo("wins", duelwins);
-                                    evt.addinfof("console", "\fyTeam %s are the winners", colourteam(alive[0]->team));
+                                    eventlog evt;
+                                    evt.addlist("this", "target", clients[i]->clientnum);
+                                    evt.addlist("this", "type", "duel");
+                                    evt.addlist("this", "action", "finish");
+                                    evt.addlist("this", "sound", sndidx);
+                                    evt.addlist("this", "flags", EV_F_BROADCAST);
+                                    loopv(playing) evt.addclient("client", playing[i]);
+                                    loopv(alive) evt.addclient("alive", alive[i]);
+                                    evt.addlist("args", "winner", duelwinner);
+                                    evt.addlist("args", "wins", duelwins);
+                                    evt.addlistf("args","console", "\fyTeam %s are the winners", colourteam(alive[0]->team));
                                     evt.push();
                                 }
                             }
@@ -459,10 +469,15 @@ struct duelservmode : servmode
                         duelwinner = -1;
                         duelwins = 0;
 
-                        eventlog evt(-1, EV_ANNOUNCE, EV_N_DRAW, "S_V_DRAW", EV_S_BROADCAST);
-                        loopv(playing) evt.addclient(playing[i]);
-                        loopv(alive) evt.addclient(alive[i], "alive");
-                        evt.addinfof("console", "\fyEveryone died, \fzoyEPIC FAIL!");
+                        eventlog evt;
+                        evt.addlist("this", "target", -1);
+                        evt.addlist("this", "type", "duel");
+                        evt.addlist("this", "action", "draw");
+                        evt.addlist("this", "sound", "S_V_DRAW");
+                        evt.addlist("this", "flags", EV_F_BROADCAST);
+                        loopv(playing) evt.addclient("client", playing[i]);
+                        loopv(alive) evt.addclient("alive", alive[i]);
+                        evt.addlistf("args","console", "\fyEveryone died, \fzoyEPIC FAIL!");
                         evt.push();
                     }
                     clear();
@@ -521,12 +536,17 @@ struct duelservmode : servmode
                             }
                             if(allowbroadcast(clients[i]->clientnum))
                             {
-                                eventlog evt(clients[i]->clientnum, EV_ANNOUNCE, EV_N_FINISH, sndidx, EV_S_BROADCAST);
-                                loopv(playing) evt.addclient(playing[i]);
-                                // TODO: add alive players list
-                                evt.addinfo("winner", duelwinner);
-                                evt.addinfo("wins", duelwins);
-                                evt.addinfof("console", end);
+                                eventlog evt;
+                                evt.addlist("this", "target", clients[i]->clientnum);
+                                evt.addlist("this", "type", "duel");
+                                evt.addlist("this", "action", "finish");
+                                evt.addlist("this", "sound", sndidx);
+                                evt.addlist("this", "flags", EV_F_BROADCAST);
+                                loopv(playing) evt.addclient("client", playing[i]);
+                                loopv(alive) evt.addclient("alive", alive[i]);
+                                evt.addlist("args", "winner", duelwinner);
+                                evt.addlist("args", "wins", duelwins);
+                                evt.addlistf("args","console", end);
                                 evt.push();
                             }
                         }

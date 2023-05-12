@@ -1969,19 +1969,23 @@ namespace game
         if(dth >= 0) emitsound(dth, game::getplayersoundpos(d), d, &d->vschan);
         if(d->actortype < A_ENEMY)
         {
-            eventlog *evt = new eventlog(EV_FRAG, d == v ? EV_F_SUICIDE : EV_F_KILL, anc, EV_S_CLIENT1|EV_S_CLIENT2);
-            evt->addclient(d);
-            evt->addclient(v);
-            loopv(log) if(log[i] && log[i] != d && log[i] != v) evt->addclient(log[i]);
-            evt->addinfo("weapon", weap);
-            evt->addinfo("flags", flags);
-            evt->addinfo("damage", damage);
-            evt->addinfo("style", style);
-            evt->addinfo("material", material);
-            evt->addinfo("burning", burning);
-            evt->addinfo("bleeding", bleeding);
-            evt->addinfo("shocking", shocking);
-            evt->addinfo("console", d->obit);
+            eventlog *evt = new eventlog;
+            evt->addlist("this", "type", "frag");
+            evt->addlist("this", "action", d == v ? "suicide" : "kill");
+            evt->addlist("this", "sound", anc);
+            evt->addlist("this", "flags", EV_F_CLIENT1|EV_F_CLIENT2);
+            evt->addclient("client", d);
+            evt->addclient("client", v);
+            loopv(log) if(log[i] && log[i] != d && log[i] != v) evt->addclient("client", log[i]);
+            evt->addlist("args", "weapon", weap);
+            evt->addlist("args", "flags", flags);
+            evt->addlist("args", "damage", damage);
+            evt->addlist("args", "style", style);
+            evt->addlist("args", "material", material);
+            evt->addlist("args", "burning", burning);
+            evt->addlist("args", "bleeding", bleeding);
+            evt->addlist("args", "shocking", shocking);
+            evt->addlist("args", "console", d->obit);
             evt->push();
         }
         vec pos = d->headtag();

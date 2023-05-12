@@ -2484,24 +2484,12 @@ namespace entities
 #include "bomber.h"
 #endif
 
-#define EV_ENUM(pr, en) en(pr, ANNOUNCE) en(pr, FRAG) en(pr, AFFINITY) en(pr, MAX)
-ENUMLV(EV, EV_ENUM);
-
 #define EV_I_ENUM(pr, en) en(pr, INT) en(pr, BOOL) en(pr, FLOAT) en(pr, STR) en(pr, MAX)
 ENUMLV(EV_I, EV_I_ENUM);
 
-#define EV_N_ENUM(pr, en) en(pr, EVENT) en(pr, START) en(pr, FINISH) en(pr, DRAW) en(pr, MAX)
-ENUMLV(EV_N, EV_N_ENUM);
-
-#define EV_S_ENUM(pr, en) en(pr, NONE, 0) en(pr, CLIENT1, 1<<0) en(pr, CLIENT2, 1<<1)  en(pr, CLIENTN, 1<<1)  en(pr, BROADCAST, 1<<1) \
+#define EV_F_ENUM(pr, en) en(pr, NONE, 0) en(pr, CLIENT1, 1<<0) en(pr, CLIENT2, 1<<1)  en(pr, CLIENTN, 1<<1)  en(pr, BROADCAST, 1<<1) \
     en(pr, CLIENTS, pr##_CLIENT1|pr##_CLIENT2|pr##_CLIENTN) en(pr, ALL, pr##_CLIENT1|pr##_CLIENT2|pr##_CLIENTN|pr##_BROADCAST)
-ENUMLI(EV_S, EV_S_ENUM);
-
-#define EV_F_ENUM(pr, en) en(pr, SUICIDE) en(pr, KILL) en(pr, MAX)
-ENUMLV(EV_F, EV_F_ENUM);
-
-#define EV_A_ENUM(pr, en) en(pr, START) en(pr, SECURE) en(pr, RETURN) en(pr, DROP) en(pr, SCORE) en(pr, RESET) en(pr, LIMIT) en(pr, MAX)
-ENUMLV(EV_A, EV_A_ENUM);
+ENUMLI(EV_F, EV_F_ENUM);
 
 #ifndef CPP_GAME_SERVER
 #include "eventlog.h"
