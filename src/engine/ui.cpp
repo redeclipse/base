@@ -211,7 +211,7 @@ namespace UI
                 uitype *o = (uitype *)buildparent; \
                 body; \
             } \
-            else if(!propagating) conoutf("Warning: parent %s not a %s for ui%s%s", buildparent ? buildparent->gettype() : "<null>", #uitype, #uiname, #vname); \
+            else if(!propagating) conoutf("Warning: parent %s not a %s class for ui%s%s", buildparent ? buildparent->gettype() : "<null>", #uitype, #uiname, #vname); \
         });
 
     #define UIARGB(uitype, uiname, vname) \
@@ -249,7 +249,7 @@ namespace UI
                 uitype *o = (uitype *)buildparent; \
                 body; \
             } \
-            else if(!propagating) conoutf("Warning: parent %s not a %s for ui%s%s", buildparent ? buildparent->gettype() : "<null>", #uiname, #uiname, #vname); \
+            else if(!propagating) conoutf("Warning: parent %s not a %s type for ui%s%s", buildparent ? buildparent->gettype() : "<null>", #uiname, #uiname, #vname); \
         });
 
     #define UIARGTB(uitype, uiname, vname) \
