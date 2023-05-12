@@ -1,7 +1,7 @@
 #include "game.h"
 namespace projs
 {
-    #define FWCOL(n,c,p) ((p).flags&HIT(FLAK) ? W##n##COL(&p, (p).weap, flak##c, WS((p).flags)) : W##n##COL(&p, (p).weap, c, WS((p).flags)))
+    #define FWCOL(n,c,p) ((p).flags&HIT_FLAK ? W##n##COL(&p, (p).weap, flak##c, WS((p).flags)) : W##n##COL(&p, (p).weap, c, WS((p).flags)))
 
     vector<hitmsg> hits;
     vector<projent *> projs, collideprojs;
@@ -194,15 +194,15 @@ namespace projs
         if(nodamage || !hitdealt(flags))
         {
             flags &= ~HIT_CLEAR;
-            flags |= HIT(WAVE);
+            flags |= HIT_WAVE;
         }
 
         float skew = clamp(scale, 0.f, 1.f)*damagescale;
 
-        if(flags&HIT(WHIPLASH)) skew *= WF(WK(flags), weap, damagewhiplash, WS(flags));
-        else if(flags&HIT(HEAD) || flags&HIT(FULL)) skew *= WF(WK(flags), weap, damagehead, WS(flags));
-        else if(flags&HIT(TORSO)) skew *= WF(WK(flags), weap, damagetorso, WS(flags));
-        else if(flags&HIT(LIMB)) skew *= WF(WK(flags), weap, damagelimb, WS(flags));
+        if(flags&HIT_WHIPLASH) skew *= WF(WK(flags), weap, damagewhiplash, WS(flags));
+        else if(flags&HIT_HEAD || flags&HIT_FULL) skew *= WF(WK(flags), weap, damagehead, WS(flags));
+        else if(flags&HIT_TORSO) skew *= WF(WK(flags), weap, damagetorso, WS(flags));
+        else if(flags&HIT_LIMB) skew *= WF(WK(flags), weap, damagelimb, WS(flags));
         else return 0;
 
         if(radial > 0) skew *= clamp(1.f-dist/size, 1e-6f, 1.f);
@@ -235,7 +235,7 @@ namespace projs
             else
             {
                 flags &= ~HIT_CLEAR;
-                flags |= HIT(WAVE);
+                flags |= HIT_WAVE;
             }
         }
         else if(m_team(game::gamemode, game::mutators) && v->team == target->team)
@@ -245,7 +245,7 @@ namespace projs
             else
             {
                 flags &= ~HIT_CLEAR;
-                flags |= HIT(WAVE);
+                flags |= HIT_WAVE;
             }
         }
 
@@ -260,12 +260,12 @@ namespace projs
         float dmag = dir.magnitude();
         if(dmag > 1e-3f) dir.div(dmag);
         else dir = vec(0, 0, 1);
-        if(isweap(proj.weap) && !(WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_LENGTH) && flags&HIT(PROJ) && proj.weight != 0 && d->weight != 0)
+        if(isweap(proj.weap) && !(WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_LENGTH) && flags&HIT_PROJ && proj.weight != 0 && d->weight != 0)
             vel = vec(proj.vel).add(proj.falling).mul(proj.weight).div(d->weight);
         if(proj.owner && proj.local)
         {
             int hflags = proj.flags|flags;
-            float size = hflags&HIT(WAVE) ? radial*WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags)) : radial;
+            float size = hflags&HIT_WAVE ? radial*WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags)) : radial;
             int damage = calcdamage(proj.owner, d, proj.weap, hflags, radial, size, dist, scale);
             if(damage) game::hiteffect(proj.weap, hflags, damage, d, proj.owner, dir, vel, dist, false);
             else return;
@@ -286,7 +286,7 @@ namespace projs
         else
         {
             hitmsg &h = hits.add();
-            h.flags = HIT(PROJ)|HIT(FULL);
+            h.flags = HIT_PROJ|HIT_FULL;
             h.proj = p->id;
             h.target = p->owner->clientnum;
             h.dist = int(dist*DNF);
@@ -325,9 +325,9 @@ namespace projs
                     int flag = 0;
                     switch(i)
                     {
-                        case 2: flag = closest != i || rdist[i] > WF(WK(proj.flags), proj.weap, headmin, WS(proj.flags)) ? HIT(WHIPLASH) : HIT(HEAD); break;
-                        case 1: flag = HIT(TORSO); break;
-                        case 0: default: flag = HIT(LIMB); break;
+                        case 2: flag = closest != i || rdist[i] > WF(WK(proj.flags), proj.weap, headmin, WS(proj.flags)) ? HIT_WHIPLASH : HIT_HEAD; break;
+                        case 1: flag = HIT_TORSO; break;
+                        case 0: default: flag = HIT_LIMB; break;
                     }
                     if(rdist[i] <= radius)
                     {
@@ -336,7 +336,7 @@ namespace projs
                     }
                     else if(push && rdist[i] <= maxdist)
                     {
-                        hitpush(e, proj, flag|HIT(WAVE), maxdist, rdist[i], proj.curscale);
+                        hitpush(e, proj, flag|HIT_WAVE, maxdist, rdist[i], proj.curscale);
                         radiated = true;
                     }
                 }
@@ -349,18 +349,18 @@ namespace projs
                 {
                     if(dist <= radius)
                     {
-                        hitpush(e, proj, HIT(FULL)|flags, radius, dist, proj.curscale);
+                        hitpush(e, proj, HIT_FULL|flags, radius, dist, proj.curscale);
                         radiated = true;
                     }
                     else if(push && dist <= maxdist)
                     {
-                        hitpush(e, proj, HIT(FULL)|HIT(WAVE), maxdist, dist, proj.curscale);
+                        hitpush(e, proj, HIT_FULL|HIT_WAVE, maxdist, dist, proj.curscale);
                         radiated = true;
                     }
                 }
             }
         }
-        else if(d->type == ENT_PROJ && flags&HIT(EXPLODE))
+        else if(d->type == ENT_PROJ && flags&HIT_EXPLODE)
         {
             projent *e = (projent *)d;
             float dist = -1;
@@ -387,18 +387,18 @@ namespace projs
                     if(drill)
                     {
                         gameent *oldstick = proj.stick;
-                        radialeffect((dynent *)d, proj, HIT(EXPLODE), expl); // only if we're drilling
+                        radialeffect((dynent *)d, proj, HIT_EXPLODE, expl); // only if we're drilling
                         proj.stick = oldstick;
                     }
                 }
                 else if(gameent::is(d))
                 {
                     int flags = 0;
-                    if(proj.collidezones&CLZ_LIMBS) flags |= HIT(LIMB);
-                    if(proj.collidezones&CLZ_TORSO) flags |= HIT(TORSO);
-                    if(proj.collidezones&CLZ_HEAD) flags |= HIT(HEAD);
-                    if(proj.collidezones&CLZ_FULL) flags |= HIT(FULL);
-                    if(flags) hitpush((gameent *)d, proj, flags|HIT(PROJ), 0, proj.lifesize, proj.curscale);
+                    if(proj.collidezones&CLZ_LIMBS) flags |= HIT_LIMB;
+                    if(proj.collidezones&CLZ_TORSO) flags |= HIT_TORSO;
+                    if(proj.collidezones&CLZ_HEAD) flags |= HIT_HEAD;
+                    if(proj.collidezones&CLZ_FULL) flags |= HIT_FULL;
+                    if(flags) hitpush((gameent *)d, proj, flags|HIT_PROJ, 0, proj.lifesize, proj.curscale);
                 }
                 else if(d->type == ENT_PROJ) projpush((projent *)d);
             }
@@ -1493,7 +1493,7 @@ namespace projs
                                 mag = rnd(W2(proj.weap, fragspeed, WS(proj.flags)))*0.5f+W2(proj.weap, fragspeed, WS(proj.flags))*0.5f;
                             if(skew > 0) to.add(vec(rnd(2001)-1000, rnd(2001)-1000, rnd(2001)-1000).normalize().mul(skew*mag));
                             if(W2(proj.weap, fragrel, WS(proj.flags)) != 0) to.add(vec(dir).mul(W2(proj.weap, fragrel, WS(proj.flags))*mag));
-                            create(pos, to, proj.local, proj.owner, PRJ_SHOT, proj.weap, proj.flags, max(life, 1), W2(proj.weap, fragtime, WS(proj.flags)), delay, W2(proj.weap, fragspeed, WS(proj.flags)), proj.id, w, -1, (f >= W_MAX ? HIT(ALT) : 0)|HIT(FLAK), scale, true, proj.target);
+                            create(pos, to, proj.local, proj.owner, PRJ_SHOT, proj.weap, proj.flags, max(life, 1), W2(proj.weap, fragtime, WS(proj.flags)), delay, W2(proj.weap, fragspeed, WS(proj.flags)), proj.id, w, -1, (f >= W_MAX ? HIT_ALT : 0)|HIT_FLAK, scale, true, proj.target);
                             delay += W2(proj.weap, fragtimeiter, WS(proj.flags));
                         }
                     }
@@ -2172,7 +2172,7 @@ namespace projs
                         {
                             dynent *f = game::iterdynents(j);
                             if(!f || f->state != CS_ALIVE || !physics::issolid(f, &proj, true, false)) continue;
-                            if(radial && radialeffect(f, proj, HIT(BURN), expl)) proj.lastradial = lastmillis;
+                            if(radial && radialeffect(f, proj, HIT_BURN, expl)) proj.lastradial = lastmillis;
                             if(proxim == 1 && !proj.beenused && f != oldstick && f->center().dist(proj.o) <= dist)
                             {
                                 proj.beenused = 1;
@@ -2203,7 +2203,7 @@ namespace projs
                         {
                             dynent *f = game::iterdynents(j, 1);
                             if(!f || f->state != CS_ALIVE || !physics::issolid(f, &proj, false, false)) continue;
-                            radialeffect(f, proj, HIT(EXPLODE), expl);
+                            radialeffect(f, proj, HIT_EXPLODE, expl);
                         }
                         proj.stick = oldstick;
                     }

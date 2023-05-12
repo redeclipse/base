@@ -795,7 +795,7 @@ namespace hud
     void damage(int n, const vec &loc, gameent *v, int weap, int flags)
     {
         if(!n || !v) return;
-        int m = flags&HIT(BURN) || flags&HIT(BLEED) || flags&HIT(SHOCK) ? damageresiduemulresidual : damageresiduemul;
+        int m = flags&HIT_BURN || flags&HIT_BLEED || flags&HIT_SHOCK ? damageresiduemulresidual : damageresiduemul;
         damageresidue = clamp(damageresidue+(n*m), 0, damageresiduemax);
         int colour = onscreendamagecolour;
         if(game::nogore || game::bloodscale <= 0) colour = 0xFF00FF;

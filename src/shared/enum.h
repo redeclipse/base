@@ -3,6 +3,7 @@
 #ifdef ENUM_INIT
 #undef VARD
 #undef FVARD
+#undef SVARD
 #undef VARE
 #undef VARL
 #undef VARS
@@ -11,12 +12,14 @@
 #ifdef ENUM_DEFINE
 #define VARD(name, val) int name = variable(#name, 1, val, -1, &name, NULL, IDF_READONLY, 0);
 #define FVARD(name, val) float name = fvariable(#name, 1, val, -1, &name, NULL, IDF_READONLY, 0);
+#define SVARD(name, val) char *name = svariable(#name, val, &name, NULL, IDF_READONLY, 0);
 #define VARE(name, val) int _enum_##name = variable(#name, 1, int(name), -1, &_enum_##name, NULL, IDF_READONLY, 0);
 #define VARL(name, val) char *name = svariable(#name, &val[1], &name, NULL, IDF_READONLY, 0);
 #define VARS(name, val) const char *name[] = { val "" };
 #else
 #define VARD(name, val) extern int name;
 #define FVARD(name, val) extern float name;
+#define SVARD(name, val) extern char *name;
 #define VARE(name, val)
 #define VARL(name, val) extern char *name;
 #define VARS(name, val) extern const char *name[];

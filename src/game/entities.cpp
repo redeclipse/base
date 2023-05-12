@@ -468,7 +468,7 @@ namespace entities
                                 bool crush = false;
                                 if(collide(m, vec(0, 0, 0), 0, true, true, 0, false) && collideplayer == d)
                                 {
-                                    if(m->coltype&(1<<INANIMATE_C_KILL)) game::suicide(d, HIT(TOUCH));
+                                    if(m->coltype&(1<<INANIMATE_C_KILL)) game::suicide(d, HIT_TOUCH);
                                     else
                                     {
                                         if(curdir.iszero()) crush = true;
@@ -495,7 +495,7 @@ namespace entities
                                 {
                                     d->o = oldpos;
                                     d->newpos = oldnew;
-                                    game::suicide(d, HIT(CRUSH));
+                                    game::suicide(d, HIT_CRUSH);
                                     break;
                                 }
                                 m->coltarget = NULL;
@@ -519,7 +519,7 @@ namespace entities
                                 {
                                     d->o = oldpos;
                                     d->newpos = oldnew;
-                                    if(gameent::is(d) && collidewall.z < 0) game::suicide((gameent *)d, HIT(CRUSH));
+                                    if(gameent::is(d) && collidewall.z < 0) game::suicide((gameent *)d, HIT_CRUSH);
                                     m->passengers.remove(j);
                                     continue;
                                 }
@@ -559,7 +559,7 @@ namespace entities
                         gameent *d = (gameent *)game::iterdynents(j);
                         if(!d || d->state != CS_ALIVE || (d != game::player1 && !d->ai) || m->findpassenger(d) >= 0) continue;
                         m->coltarget = d; // restricts inanimate collisions to this entity, and filters out the reverse collision
-                        if(collide(m, vec(0, 0, 0), 0, true, true, 0, false) && collideplayer == d && collideinside) game::suicide(d, HIT(CRUSH));
+                        if(collide(m, vec(0, 0, 0), 0, true, true, 0, false) && collideplayer == d && collideinside) game::suicide(d, HIT_CRUSH);
                         m->coltarget = NULL;
                     }
                 }
@@ -1615,7 +1615,7 @@ namespace entities
                     }
                     if(d->state == CS_ALIVE)
                     { // if we got here, the teleport failed for some reason
-                        if(gameent::is(d)) game::suicide((gameent *)d, HIT(SPAWN));
+                        if(gameent::is(d)) game::suicide((gameent *)d, HIT_SPAWN);
                         else if(projent::is(d))
                         {
                             projent *g = (projent *)d;
@@ -2361,7 +2361,7 @@ namespace entities
             d->o.x *= 0.5f; d->o.y *= 0.5f;
             if(physics::entinmap(d, true)) return;
         }
-        if(!m_edit(game::gamemode) && suicide) game::suicide(d, HIT(SPAWN));
+        if(!m_edit(game::gamemode) && suicide) game::suicide(d, HIT_SPAWN);
     }
 
     void editent(int i, bool local)

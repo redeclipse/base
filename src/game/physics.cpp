@@ -1295,7 +1295,7 @@ namespace physics
                 {
                     if(e->o.z < getdeathplane()*worldsize)
                     {
-                        game::suicide(e, HIT(LOST));
+                        game::suicide(e, HIT_LOST);
                         return false;
                     }
                     if(e->turnmillis > 0)
@@ -1519,7 +1519,7 @@ namespace physics
 
         if(!e || !m) return;
 
-        if(m->coltype&(1<<INANIMATE_C_KILL)) game::suicide(e, HIT(TOUCH));
+        if(m->coltype&(1<<INANIMATE_C_KILL)) game::suicide(e, HIT_TOUCH);
         if(m == o && !(m->coltype&(1<<INANIMATE_C_NOPASS)) && !inside && collidewall.z > 0) entities::localpassenger(m, e);
     }
 

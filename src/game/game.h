@@ -2021,7 +2021,7 @@ struct gameent : dynent, clientstate
     bool canmelee(int sweap, int millis, bool alt = false)
     {
         if(!hasmelee(millis, false)) return false;
-        if(!canshoot(W_MELEE, alt ? HIT(ALT) : 0, sweap, millis, (1<<W_S_RELOAD))) return false;
+        if(!canshoot(W_MELEE, alt ? HIT_ALT : 0, sweap, millis, (1<<W_S_RELOAD))) return false;
         return true;
     }
 

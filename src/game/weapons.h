@@ -148,33 +148,34 @@ enum
     COLLIDE_ALL = COLLIDE_TRACE|COLLIDE_SCAN|COLLIDE_LENGTH|COLLIDE_PROJ|COLLIDE_OWNER|IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|BOUNCE_GEOM|BOUNCE_PLAYER|BOUNCE_SHOTS|DRILL_GEOM|DRILL_PLAYER|DRILL_SHOTS|STICK_GEOM|STICK_PLAYER
 };
 
-#define HIT(x) (1<<(HIT_##x))
-enum
-{
-    HIT_HEAD = 0, HIT_TORSO, HIT_LIMB, HIT_FULL, HIT_WHIPLASH, HIT_ALT,
-    HIT_WAVE, HIT_PROJ, HIT_EXPLODE, HIT_BURN, HIT_BLEED, HIT_SHOCK,
-    HIT_MATERIAL, HIT_SPAWN, HIT_LOST, HIT_KILL, HIT_FLAK, HIT_SPEC,
-    HIT_TOUCH, HIT_CRUSH,
-    HIT_CLEAR = HIT(PROJ)|HIT(EXPLODE)|HIT(BURN)|HIT(BLEED)|HIT(MATERIAL)|HIT(SPAWN)|HIT(LOST)|HIT(TOUCH)|HIT(CRUSH),
-    HIT_SFLAGS = HIT(KILL)
-};
 
-#define WR(x) (1<<(W_R_##x))
-enum { W_R_BURN = 0, W_R_BLEED, W_R_SHOCK, W_R_MAX, W_R_ALL = WR(BURN)|WR(BLEED)|WR(SHOCK) };
+#define HIT_ENUM(pr, en) \
+    en(pr, HEAD, 1<<0) en(pr, TORSO, 1<<1) en(pr, LIMB, 1<<2) en(pr, FULL, 1<<3) en(pr, WHIPLASH, 1<<4) en(pr, ALT, 1<<5) \
+    en(pr, WAVE, 1<<6) en(pr, PROJ, 1<<7) en(pr, EXPLODE, 1<<8) en(pr, BURN, 1<<9) en(pr, BLEED, 1<<10) en(pr, SHOCK, 1<<11) \
+    en(pr, MATERIAL, 1<<12) en(pr, SPAWN, 1<<13) en(pr, LOST, 1<<14) en(pr, KILL, 1<<15) en(pr, FLAK, 1<<16) \
+    en(pr, SPEC, 1<<17) en(pr, TOUCH, 1<<18) en(pr, CRUSH, 1<<19) \
+    en(pr, CLEAR, pr##_PROJ|pr##_EXPLODE|pr##_BURN|pr##_BLEED|pr##_MATERIAL|pr##_SPAWN|pr##_LOST|pr##_TOUCH|pr##_CRUSH) \
+    en(pr, SFLAGS, pr##_KILL)
+ENUMLI(HIT, HIT_ENUM);
+
+#define W_R_ENUM(pr, en) \
+    en(pr, BURN, 0) en(pr, BLEED, 1) en(pr, SHOCK, 2) en(pr, MAX, 3) \
+    en(pr, ALL, (1<<pr##_BURN)|(1<<pr##_BLEED)|(1<<pr##_SHOCK))
+ENUMLI(W_R, W_R_ENUM);
 
 struct shotmsg { int id; ivec pos; };
 struct hitmsg { int flags, proj, target, dist; ivec dir, vel; };
 
-#define hitdealt(x)      (x&HIT(BURN) || x&HIT(BLEED) || x&HIT(SHOCK) || x&HIT(EXPLODE) || x&HIT(PROJ) || x&HIT(MATERIAL))
-#define wr_burn(x,y)     (isweap(x) && (WF(WK(y), x, residual, WS(y))&WR(BURN)))
-#define wr_burns(x,y)    (G(noweapburn) && hitdealt(y) && ((x == -1 && y&HIT(BURN)) || wr_burn(x, y)))
-#define wr_burning(x,y)  (G(noweapburn) && hitdealt(y) && ((x == -1 && y&HIT(MATERIAL) && y&HIT(BURN)) || wr_burn(x, y)))
-#define wr_bleed(x,y)    (isweap(x) && (WF(WK(y), x, residual, WS(y))&WR(BLEED)))
-#define wr_bleeds(x,y)   (G(noweapbleed) && hitdealt(y) && ((x == -1 && y&HIT(BLEED)) || wr_bleed(x, y)))
-#define wr_bleeding(x,y) (G(noweapbleed) && hitdealt(y) && ((x == -1 && y&HIT(MATERIAL) && y&HIT(BLEED)) || wr_bleed(x, y)))
-#define wr_shock(x,y)    (isweap(x) && (WF(WK(y), x, residual, WS(y))&WR(SHOCK)))
-#define wr_shocks(x,y)   (G(noweapshock) && hitdealt(y) && ((x == -1 && y&HIT(SHOCK)) || wr_shock(x, y)))
-#define wr_shocking(x,y) (G(noweapshock) && hitdealt(y) && ((x == -1 && y&HIT(MATERIAL) && y&HIT(SHOCK)) || wr_shock(x, y)))
+#define hitdealt(x)      (x&HIT_BURN || x&HIT_BLEED || x&HIT_SHOCK || x&HIT_EXPLODE || x&HIT_PROJ || x&HIT_MATERIAL)
+#define wr_burn(x,y)     (isweap(x) && (WF(WK(y), x, residual, WS(y))&(1<<W_R_BURN)))
+#define wr_burns(x,y)    (G(noweapburn) && hitdealt(y) && ((x == -1 && y&HIT_BURN) || wr_burn(x, y)))
+#define wr_burning(x,y)  (G(noweapburn) && hitdealt(y) && ((x == -1 && y&HIT_MATERIAL && y&HIT_BURN) || wr_burn(x, y)))
+#define wr_bleed(x,y)    (isweap(x) && (WF(WK(y), x, residual, WS(y))&(1<<W_R_BLEED)))
+#define wr_bleeds(x,y)   (G(noweapbleed) && hitdealt(y) && ((x == -1 && y&HIT_BLEED) || wr_bleed(x, y)))
+#define wr_bleeding(x,y) (G(noweapbleed) && hitdealt(y) && ((x == -1 && y&HIT_MATERIAL && y&HIT_BLEED) || wr_bleed(x, y)))
+#define wr_shock(x,y)    (isweap(x) && (WF(WK(y), x, residual, WS(y))&(1<<W_R_SHOCK)))
+#define wr_shocks(x,y)   (G(noweapshock) && hitdealt(y) && ((x == -1 && y&HIT_SHOCK) || wr_shock(x, y)))
+#define wr_shocking(x,y) (G(noweapshock) && hitdealt(y) && ((x == -1 && y&HIT_MATERIAL && y&HIT_SHOCK) || wr_shock(x, y)))
 
 #include "weapdef.h"
 
@@ -1008,16 +1009,16 @@ WPFVARM(IDF_GAMEMOD, 0, relativity, 0, FVAR_MAX,
     0.0f,       0.05f,      0.0f,       0.35f,      0.25f,      0.15f,      0.15f,      0.0f,       0.1f,       0.75f,      0.5f,       0.0f,       0.0f
 );
 WPVARK(IDF_GAMEMOD, 0, residual, 0, W_R_ALL,
-    0,          0,          WR(BLEED),  0,          0,          WR(BURN),   0,          0,          0,          WR(BURN),   WR(SHOCK),  WR(BURN),   0,
-    0,          0,          WR(BLEED),  WR(BLEED),  0,          0,          0,          WR(SHOCK),  0,          WR(BURN),   WR(SHOCK),  WR(BURN),   0,
-    0,          0,          WR(BLEED),  0,          0,          WR(BURN),   0,          WR(SHOCK),  0,          WR(BURN),   WR(SHOCK),  WR(BURN),   0,
-    0,          0,          WR(BLEED),  WR(BLEED),  0,          0,          0,          WR(SHOCK),  0,          WR(BURN),   WR(SHOCK),  WR(BURN),   0
+    0,          0,          (1<<W_R_BLEED),  0,          0,          (1<<W_R_BURN),   0,          0,          0,          (1<<W_R_BURN),   (1<<W_R_SHOCK),  (1<<W_R_BURN),   0,
+    0,          0,          (1<<W_R_BLEED),  (1<<W_R_BLEED),  0,          0,          0,          (1<<W_R_SHOCK),  0,          (1<<W_R_BURN),   (1<<W_R_SHOCK),  (1<<W_R_BURN),   0,
+    0,          0,          (1<<W_R_BLEED),  0,          0,          (1<<W_R_BURN),   0,          (1<<W_R_SHOCK),  0,          (1<<W_R_BURN),   (1<<W_R_SHOCK),  (1<<W_R_BURN),   0,
+    0,          0,          (1<<W_R_BLEED),  (1<<W_R_BLEED),  0,          0,          0,          (1<<W_R_SHOCK),  0,          (1<<W_R_BURN),   (1<<W_R_SHOCK),  (1<<W_R_BURN),   0
 );
 WPVARK(IDF_GAMEMOD, 0, residualundo, 0, W_R_ALL,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,
-    0,          0,          0,          0,          0,          WR(BURN),   0,          0,          0,          0,          0,          0,          0,
+    0,          0,          0,          0,          0,          (1<<W_R_BURN),   0,          0,          0,          0,          0,          0,          0,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,
-    0,          0,          0,          0,          0,          WR(BURN),   0,          0,          0,          0,          0,          0,          0
+    0,          0,          0,          0,          0,          (1<<W_R_BURN),   0,          0,          0,          0,          0,          0,          0
 );
 //  Claw        Pistol      Sword       Shotgun     SMG         Flamer      Plasma      Zapper      Rifle       Grenade     Mine        Rocket      Melee
 WPVARK(IDF_GAMEMOD, 0, shocktime, 0, VAR_MAX,
