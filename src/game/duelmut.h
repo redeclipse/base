@@ -401,7 +401,15 @@ struct duelservmode : servmode
                     {
                         if(!cleanup)
                         {
-                            bool teampoints = true;
+                            bool teampoints = true, flawless = true;
+                            if(!m_insta(gamemode, mutators)) loopv(alive)
+                            {
+                                if(alive[0]->health < alive[0]->gethealth(gamemode, mutators))
+                                {
+                                    flawless = false;
+                                    break;
+                                }
+                            }
                             if(duelwinner != alive[0]->team)
                             {
                                 duelwinner = alive[0]->team;
@@ -439,7 +447,7 @@ struct duelservmode : servmode
                                 {
                                     gamelog log;
                                     log.addlist("this", "target", clients[i]->clientnum);
-                                    log.addlist("this", "type", m_survivor(gamemode, mutators) ? "survivor" : "duel");
+                                    log.addlist("this", "type", "survivor");
                                     log.addlist("this", "action", "score");
                                     log.addlist("this", "sound", sndidx);
                                     log.addlist("this", "flags", EV_F_BROADCAST);
@@ -448,6 +456,7 @@ struct duelservmode : servmode
                                     loopv(playing) if(alive.find(playing[i]) < 0) log.addclient("dead", playing[i]);
                                     log.addlist("args", "winner", duelwinner);
                                     log.addlist("args", "wins", duelwins);
+                                    log.addlist("args", "flawless", flawless);
                                     log.addlistf("args","console", "\fyTeam %s are the winners", colourteam(alive[0]->team));
                                     log.push();
                                 }
@@ -499,10 +508,14 @@ struct duelservmode : servmode
                         endffaround(alive);
                         stringz(end);
                         stringz(hp);
+                        bool flawless = false;
                         if(!m_insta(gamemode, mutators))
                         {
                             if(alive[0]->health >= alive[0]->gethealth(gamemode, mutators))
+                            {
                                 formatstring(hp, " with a \fs\fcflawless victory\fS");
+                                flawless = true;
+                            }
                             else formatstring(hp, " with \fs\fc%d\fS health left", alive[0]->health/10);
                         }
                         if(duelwinner != alive[0]->clientnum)
@@ -545,11 +558,11 @@ struct duelservmode : servmode
                                 log.addlist("this", "action", "score");
                                 log.addlist("this", "sound", sndidx);
                                 log.addlist("this", "flags", EV_F_BROADCAST);
-                                loopv(playing) log.addclient("client", playing[i]);
-                                loopv(alive) log.addclient("alive", alive[i]);
-                                loopv(playing) if(alive.find(playing[i]) < 0) log.addclient("dead", playing[i]);
+                                log.addclient("client", alive[0]);
+                                loopv(playing) if(alive.find(playing[i]) < 0) log.addclient("client", playing[i]);
                                 log.addlist("args", "winner", duelwinner);
                                 log.addlist("args", "wins", duelwins);
+                                log.addlist("args", "flawless", flawless);
                                 log.addlistf("args","console", end);
                                 log.push();
                             }

@@ -71,6 +71,18 @@ struct gamelog
             type = EV_I_STR;
             s = newstring(v && *v ? v : "");
         }
+
+        void comret()
+        {
+            switch(type)
+            {
+                case EV_I_INT: intret(i); break;
+                case EV_I_BOOL: intret(b ? 1 : 0); break;
+                case EV_I_FLOAT: floatret(f); break;
+                case EV_I_STR: result(s); break;
+                default: break;
+            }
+        }
     };
 
     struct listinfo
@@ -188,20 +200,20 @@ struct gamelog
         }
     }
 #else
-    static void parseinfo(vector<gamelog::info> &infos, ucharbuf &p)
+    static void parseinfo(vector<info> &infos, ucharbuf &p)
     {
         static string text, str;
         getstring(text, p);
         int itype = getint(p);
         switch(itype)
         {
-            case EV_I_INT: gamelog::addinfo(infos, text, getint(p)); break;
-            case EV_I_BOOL: gamelog::addinfo(infos, text, getint(p) != 0); break;
-            case EV_I_FLOAT: gamelog::addinfo(infos, text, getfloat(p)); break;
+            case EV_I_INT: addinfo(infos, text, getint(p)); break;
+            case EV_I_BOOL: addinfo(infos, text, getint(p) != 0); break;
+            case EV_I_FLOAT: addinfo(infos, text, getfloat(p)); break;
             case EV_I_STR:
             {
                 getstring(str, p);
-                gamelog::addinfo(infos, text, str);
+                addinfo(infos, text, str);
                 break;
             }
             default: break;
@@ -216,7 +228,7 @@ struct gamelog
         loopi(ilen)
         {
             getstring(text, p);
-            gamelog::listinfo &t = log->lists.add(gamelog::listinfo(text));
+            listinfo &t = log->lists.add(listinfo(text));
             int vlen = getint(p);
             loopj(vlen) parseinfo(t.infos, p);
         }
@@ -224,11 +236,11 @@ struct gamelog
         loopi(tlen)
         {
             getstring(text, p);
-            gamelog::taginfo &t = log->tags.add(gamelog::taginfo(text));
+            taginfo &t = log->tags.add(taginfo(text));
             int vlen = getint(p);
             loopj(vlen)
             {
-                gamelog::groupinfo &g = t.groups.add();
+                groupinfo &g = t.groups.add();
                 int glen = getint(p);
                 loopk(glen) parseinfo(g.infos, p);
             }
@@ -243,7 +255,7 @@ struct gamelog
         int target = -1, tid = findlistinfo("this");
         if(lists.inrange(tid))
         {
-            gamelog::listinfo &t = lists[tid];
+            listinfo &t = lists[tid];
             int sid = findinfo(t.infos, "target");
             if(t.infos.inrange(sid) && t.infos[sid].type == EV_I_INT)
                 target = t.infos[sid].i;
@@ -284,7 +296,7 @@ struct gamelog
         int sound = -1, flags = 0, tid = findlistinfo("this");
         if(lists.inrange(tid))
         {
-            gamelog::listinfo &t = lists[tid];
+            listinfo &t = lists[tid];
             int sid = findinfo(t.infos, "sound");
             if(t.infos.inrange(sid))
             {
@@ -439,6 +451,113 @@ struct gamelog
         return r;
     }
 
+    listinfo *getlist(const char *list)
+    {
+        int b = findlistinfo(list);
+        if(!lists.inrange(b)) return NULL;
+        return &lists[b];
+    }
+
+    info *getlistinfo(const char *list, const char *name)
+    {
+        gamelog::listinfo *g = getlist(list);
+        int c = gamelog::findinfo(g->infos, name);
+        if(!g->infos.inrange(c)) return NULL;
+        return &g->infos[c];
+    }
+
+    info *getlistinfo(const char *list, int idx)
+    {
+        gamelog::listinfo *g = getlist(list);
+        if(!g->infos.inrange(idx)) return NULL;
+        return &g->infos[idx];
+    }
+
+    taginfo *gettag(const char *tag)
+    {
+        int b = findtaginfo(tag);
+        if(!tags.inrange(b)) return NULL;
+        return &tags[b];
+    }
+
+    groupinfo *getgroup(const char *tag, int grp)
+    {
+        taginfo *t = gettag(tag);
+        if(!t) return NULL;
+        if(!t->groups.inrange(grp)) return NULL;
+        return &t->groups[grp];
+    }
+
+    info *gettaginfo(const char *tag, int grp, const char *name)
+    {
+        gamelog::groupinfo *g = getgroup(tag, grp);
+        int c = gamelog::findinfo(g->infos, name);
+        if(!g->infos.inrange(c)) return NULL;
+        return &g->infos[c];
+    }
+
+    info *gettaginfo(const char *tag, int grp, int idx)
+    {
+        gamelog::groupinfo *g = getgroup(tag, grp);
+        if(!g->infos.inrange(idx)) return NULL;
+        return &g->infos[idx];
+    }
+#ifndef CPP_GAME_SERVER
+    static gamelog *getevent(int entry)
+    {
+        if(!eventlog.inrange(entry)) return NULL;
+        return eventlog[entry];
+    }
+
+    static listinfo *getlist(int entry, const char *list)
+    {
+        gamelog *e = getevent(entry);
+        if(!e) return NULL;
+        return e->getlist(list);
+    }
+
+    static info *getlistinfo(int entry, const char *list, const char *name)
+    {
+        gamelog *e = getevent(entry);
+        if(!e) return NULL;
+        return e->getlistinfo(list, name);
+    }
+
+    static info *getlistinfo(int entry, const char *list, int idx)
+    {
+        gamelog *e = getevent(entry);
+        if(!e) return NULL;
+        return e->getlistinfo(list, idx);
+    }
+
+    static taginfo *gettag(int entry, const char *tag)
+    {
+        gamelog *e = getevent(entry);
+        if(!e) return NULL;
+        return e->gettag(tag);
+    }
+
+    static groupinfo *getgroup(int entry, const char *tag, int grp)
+    {
+        gamelog *e = getevent(entry);
+        if(!e) return NULL;
+        return e->getgroup(tag, grp);
+    }
+
+    static info *gettaginfo(int entry, const char *tag, int grp, const char *name)
+    {
+        gamelog *e = getevent(entry);
+        if(!e) return NULL;
+        return e->gettaginfo(tag, grp, name);
+    }
+
+    static info *gettaginfo(int entry, const char *tag, int grp, int idx)
+    {
+        gamelog *e = getevent(entry);
+        if(!e) return NULL;
+        return e->gettaginfo(tag, grp, idx);
+    }
+#endif
 #ifdef CPP_GAME_SERVER
     int addclient(const char *tag, clientinfo *d)
 #else
@@ -491,133 +610,141 @@ LOOPEVENTS(,loopcsv);
 LOOPEVENTS(rev,loopcsvrev);
 
 ICOMMANDV(0, eventcount, eventlog.length());
-ICOMMAND(0, geteventmillis, "i", (int *id), intret(eventlog.inrange(*id) ? eventlog[*id]->millis : -1));
+ICOMMAND(0, geteventmillis, "i", (int *val), intret(eventlog.inrange(*val) ? eventlog[*val]->millis : -1));
 
-ICOMMAND(0, geteventtag, "isis", (int *id, char *tag, int *grp, char *name),
+ICOMMAND(0, geteventtags, "i", (int *val), intret(eventlog.inrange(*val) ? eventlog[*val]->tags.length() : -1));
+
+ICOMMAND(0, geteventtag, "isis", (int *val, char *tag, int *grp, char *name),
 {
-    if(!eventlog.inrange(*id)) return;
-    gamelog *e = eventlog[*id];
-
-    int b = e->findtaginfo(tag);
-    if(!e->tags.inrange(b)) return;
-    gamelog::taginfo &t = e->tags[b];
-
-    if(!t.groups.inrange(*grp)) return;
-    gamelog::groupinfo &g = t.groups[*grp];
-
-    int c = gamelog::findinfo(g.infos, name);
-    if(!g.infos.inrange(c)) return;
-    gamelog::info &n = g.infos[c];
-    switch(n.type)
-    {
-        case EV_I_INT: intret(n.i); break;
-        case EV_I_BOOL: intret(n.b ? 1 : 0); break;
-        case EV_I_FLOAT: floatret(n.f); break;
-        case EV_I_STR: result(n.s); break;
-        default: break;
-    }
+    gamelog::info *n = gamelog::gettaginfo(*val, tag, *grp, name);
+    if(n) n->comret();
 });
 
-ICOMMAND(0, geteventtags, "i", (int *id), intret(eventlog.inrange(*id) ? eventlog[*id]->tags.length() : -1));
-
-ICOMMAND(0, geteventtaggroups, "is", (int *id, char *tag),
+ICOMMAND(0, geteventtagid, "isii", (int *val, char *tag, int *grp, int *idx),
 {
-    if(!eventlog.inrange(*id)) return;
-    gamelog *e = eventlog[*id];
-
-    int c = e->findtaginfo(tag);
-    if(!e->tags.inrange(c)) return;
-
-    gamelog::taginfo &t = e->tags[c];
-    intret(t.groups.length());
+    gamelog::info *n = gamelog::gettaginfo(*val, tag, *grp, *idx);
+    if(n) n->comret();
 });
 
-ICOMMAND(0, geteventtaggroupinfos, "isi", (int *id, char *tag, int *grp),
+#define LOOPEVENTTAGS(name,op) \
+    ICOMMAND(0, loopeventtags##name, "iiire", (int *val, int *count, int *skip, ident *id, uint *body), \
+    { \
+        gamelog *e = gamelog::getevent(*val); \
+        if(!e) return; \
+        loopstart(id, stack); \
+        op(e->tags, *count, *skip, \
+        { \
+            loopiter(id, stack, i); \
+            execute(body); \
+        }); \
+        loopend(id, stack); \
+    });
+LOOPEVENTTAGS(,loopcsv);
+LOOPEVENTTAGS(rev,loopcsvrev);
+
+ICOMMAND(0, geteventtaggroups, "is", (int *val, char *tag),
 {
-    if(!eventlog.inrange(*id)) return;
-    gamelog *e = eventlog[*id];
-
-    int c = e->findtaginfo(tag);
-    if(!e->tags.inrange(c)) return;
-    gamelog::taginfo &t = e->tags[c];
-
-    if(!t.groups.inrange(*grp)) return;
-    gamelog::groupinfo &g = t.groups[*grp];
-
-    intret(g.infos.length());
+    gamelog::taginfo *t = gamelog::gettag(*val, tag);
+    if(!t) return;
+    intret(t->groups.length());
 });
 
-ICOMMAND(0, geteventname, "isibbb", (int *id, char *tag, int *grp, int *col, int *icon, int *dupname),
+#define LOOPEVENTGROUPS(name,op) \
+    ICOMMAND(0, loopeventgroups##name, "isiire", (int *val, char *tag, int *count, int *skip, ident *id, uint *body), \
+    { \
+        gamelog::taginfo *t = gamelog::gettag(*val, tag); \
+        if(!t) return; \
+        intret(t->groups.length()); \
+        loopstart(id, stack); \
+        op(t->groups, *count, *skip, \
+        { \
+            loopiter(id, stack, i); \
+            execute(body); \
+        }); \
+        loopend(id, stack); \
+    });
+LOOPEVENTGROUPS(,loopcsv);
+LOOPEVENTGROUPS(rev,loopcsvrev);
+
+ICOMMAND(0, geteventtaggroupinfos, "isi", (int *val, char *tag, int *grp),
 {
-    if(!eventlog.inrange(*id)) return;
-    gamelog *e = eventlog[*id];
-
-    int c = e->findtaginfo(tag);
-    if(!e->tags.inrange(c)) return;
-    gamelog::taginfo &t = e->tags[c];
-
-    if(!t.groups.inrange(*grp)) return;
-    gamelog::groupinfo &g = t.groups[*grp];
-
-    int _name = gamelog::findinfo(g.infos, "name");
-    if(!g.infos.inrange(_name)) return;
-    gamelog::info &name = g.infos[_name];
-    if(name.type != EV_I_STR) return;
-
-    int _clientnum = gamelog::findinfo(g.infos, "clientnum");
-    if(!g.infos.inrange(_clientnum)) return;
-    gamelog::info &clientnum = g.infos[_clientnum];
-    if(clientnum.type != EV_I_INT) return;
-
-    int _team = gamelog::findinfo(g.infos, "team");
-    if(!g.infos.inrange(_team)) return;
-    gamelog::info &team = g.infos[_team];
-    if(team.type != EV_I_INT) return;
-
-    int _actortype = gamelog::findinfo(g.infos, "actortype");
-    if(!g.infos.inrange(_actortype)) return;
-    gamelog::info &actortype = g.infos[_actortype];
-    if(actortype.type != EV_I_INT) return;
-
-    int _colour = gamelog::findinfo(g.infos, "colour");
-    if(!g.infos.inrange(_colour)) return;
-    gamelog::info &colour = g.infos[_colour];
-    if(colour.type != EV_I_INT) return;
-
-    int _privilege = gamelog::findinfo(g.infos, "privilege");
-    if(!g.infos.inrange(_privilege)) return;
-    gamelog::info &privilege = g.infos[_privilege];
-    if(privilege.type != EV_I_INT) return;
-
-    int _weapselect = gamelog::findinfo(g.infos, "weapselect");
-    if(!g.infos.inrange(_weapselect)) return;
-    gamelog::info &weapselect = g.infos[_weapselect];
-    if(weapselect.type != EV_I_INT) return;
-
-    result(game::colourname(name.s, clientnum.i, team.i, actortype.i, colour.i, privilege.i, weapselect.i, *icon != 0, *dupname != 0, *col >= 0 ? *col : 3));
+    gamelog::groupinfo *g = gamelog::getgroup(*val, tag, *grp);
+    if(!g) return;
+    intret(g->infos.length());
 });
 
-ICOMMAND(0, geteventlist, "iss", (int *id, char *list, char *name),
+#define LOOPEVENTGROUPINFOS(name,op) \
+    ICOMMAND(0, loopeventgroupinfos##name, "isiiire", (int *val, char *tag, int *grp, int *count, int *skip, ident *id, uint *body), \
+    { \
+        gamelog::groupinfo *g = gamelog::getgroup(*val, tag, *grp); \
+        if(!g) return; \
+        loopstart(id, stack); \
+        op(g->infos, *count, *skip, \
+        { \
+            loopiter(id, stack, i); \
+            execute(body); \
+        }); \
+        loopend(id, stack); \
+    });
+LOOPEVENTGROUPINFOS(,loopcsv);
+LOOPEVENTGROUPINFOS(rev,loopcsvrev);
+
+ICOMMAND(0, geteventname, "isibbb", (int *val, char *tag, int *grp, int *col, int *icon, int *dupname),
 {
-    if(!eventlog.inrange(*id)) return;
-    gamelog *e = eventlog[*id];
-
-    int b = e->findlistinfo(list);
-    if(!e->lists.inrange(b)) return;
-    gamelog::listinfo &t = e->lists[b];
-
-    int c = gamelog::findinfo(t.infos, name);
-    if(!t.infos.inrange(c)) return;
-    gamelog::info &n = t.infos[c];
-    switch(n.type)
-    {
-        case EV_I_INT: intret(n.i); break;
-        case EV_I_BOOL: intret(n.b ? 1 : 0); break;
-        case EV_I_FLOAT: floatret(n.f); break;
-        case EV_I_STR: result(n.s); break;
-        default: break;
-    }
+    gamelog::info *name = gamelog::gettaginfo(*val, tag, *grp, "name");
+    if(!name || name->type != EV_I_STR) return;
+    gamelog::info *clientnum = gamelog::gettaginfo(*val, tag, *grp, "clientnum");
+    if(!clientnum || clientnum->type != EV_I_INT) return;
+    gamelog::info *team = gamelog::gettaginfo(*val, tag, *grp, "team");
+    if(!team || team->type != EV_I_INT) return;
+    gamelog::info *actortype = gamelog::gettaginfo(*val, tag, *grp, "actortype");
+    if(!actortype || actortype->type != EV_I_INT) return;
+    gamelog::info *colour = gamelog::gettaginfo(*val, tag, *grp, "colour");
+    if(!colour || colour->type != EV_I_INT) return;
+    gamelog::info *privilege = gamelog::gettaginfo(*val, tag, *grp, "privilege");
+    if(!privilege || privilege->type != EV_I_INT) return;
+    gamelog::info *weapselect = gamelog::gettaginfo(*val, tag, *grp, "weapselect");
+    if(!weapselect || weapselect->type != EV_I_INT) return;
+    result(game::colourname(name->s, clientnum->i, team->i, actortype->i, colour->i, privilege->i, weapselect->i, *icon != 0, *dupname != 0, *col >= 0 ? *col : 3));
 });
 
-ICOMMAND(0, geteventlists, "i", (int *id), intret(eventlog.inrange(*id) ? eventlog[*id]->lists.length() : -1));
+ICOMMAND(0, geteventlists, "i", (int *val), intret(eventlog.inrange(*val) ? eventlog[*val]->lists.length() : -1));
+
+ICOMMAND(0, geteventlist, "iss", (int *val, char *list, char *name),
+{
+    gamelog::info *n = gamelog::getlistinfo(*val, list, name);
+    if(n) n->comret();
+});
+
+#define LOOPEVENTLISTS(name,op) \
+    ICOMMAND(0, loopeventlists##name, "isiiire", (int *val, int *count, int *skip, ident *id, uint *body), \
+    { \
+        gamelog *e = gamelog::getevent(*val); \
+        if(!e) return; \
+        loopstart(id, stack); \
+        op(e->lists, *count, *skip, \
+        { \
+            loopiter(id, stack, i); \
+            execute(body); \
+        }); \
+        loopend(id, stack); \
+    });
+LOOPEVENTLISTS(,loopcsv);
+LOOPEVENTLISTS(rev,loopcsvrev);
+
+#define LOOPEVENTLISTINFOS(name,op) \
+    ICOMMAND(0, loopeventlistinfos##name, "isiiire", (int *val, char *list, int *count, int *skip, ident *id, uint *body), \
+    { \
+        gamelog::listinfo *g = gamelog::getlist(*val, list); \
+        if(!g) return; \
+        loopstart(id, stack); \
+        op(g->infos, *count, *skip, \
+        { \
+            loopiter(id, stack, i); \
+            execute(body); \
+        }); \
+        loopend(id, stack); \
+    });
+LOOPEVENTLISTINFOS(,loopcsv);
+LOOPEVENTLISTINFOS(rev,loopcsvrev);
 #endif
