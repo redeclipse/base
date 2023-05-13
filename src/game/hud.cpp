@@ -479,7 +479,9 @@ namespace hud
         } \
         else \
         { \
-            if(m_dm_gladiator(g, m)) ADDMODE(gladiator) \
+            if(m_duel(g, m)) ADDMODE(duel) \
+            else if(m_survivor(g, m)) ADDMODE(survivor) \
+            else if(m_dm_gladiator(g, m)) ADDMODE(gladiator) \
             else if(m_dm_oldschool(g, m)) ADDMODE(oldschool) \
             else ADDMODE(deathmatch) \
         } \
@@ -501,8 +503,16 @@ namespace hud
         if(m_insta(g, m) && (implied || !(gametype[g].implied&(1<<G_M_INSTAGIB)))) ADDMODE(insta)
         if(m_medieval(g, m) && (implied || !(gametype[g].implied&(1<<G_M_MEDIEVAL)))) ADDMODE(medieval)
         if(m_kaboom(g, m) && (implied || !(gametype[g].implied&(1<<G_M_KABOOM)))) ADDMODE(kaboom)
-        if(m_duel(g, m) && (implied || !(gametype[g].implied&(1<<G_M_DUEL)))) ADDMODE(duel)
-        if(m_survivor(g, m) && (implied || !(gametype[g].implied&(1<<G_M_SURVIVOR)))) ADDMODE(survivor)
+        if(!m_dm(g))
+        {
+            if(m_duel(g, m) && (implied || !(gametype[g].implied&(1<<G_M_DUEL)))) ADDMODE(duel)
+            if(m_survivor(g, m) && (implied || !(gametype[g].implied&(1<<G_M_SURVIVOR)))) ADDMODE(survivor)
+        }
+        else if(m_duel(g, m) || m_survivor(g, m))
+        {
+            if(m_dm_gladiator(g, m) && (implied || !(gametype[g].implied&(1<<G_M_GSP1)))) ADDMODE(gladiator)
+            if(m_dm_oldschool(g, m) && (implied || !(gametype[g].implied&(1<<G_M_GSP2)))) ADDMODE(oldschool)
+        }
         if(m_classic(g, m) && (implied || !(gametype[g].implied&(1<<G_M_CLASSIC)))) ADDMODE(classic)
         if(m_onslaught(g, m) && (implied || !(gametype[g].implied&(1<<G_M_ONSLAUGHT)))) ADDMODE(onslaught)
         if(m_vampire(g, m) && (implied || !(gametype[g].implied&(1<<G_M_VAMPIRE)))) ADDMODE(vampire)
@@ -513,11 +523,19 @@ namespace hud
     }
     #undef ADDMODE
 
-    ICOMMAND(0, modetexlist, "iibi", (int *g, int *m, int *b, int *p),
+    ICOMMAND(0, modetex, "bb", (int *g, int *m),
     {
         vector<char> list;
-        if(*b >= 0) modetexs(*g, *m, *b!=0, *p!=0, list);
-        else modetex(*g, *m, list);
+        modetex(*g >= 0 ? *g : game::gamemode, *m >= 0 ? *m : game::mutators, list);
+        list.add('\0');
+        result(list.getbuf());
+    });
+
+    ICOMMAND(0, modetexlist, "bbbi", (int *g, int *m, int *b, int *p),
+    {
+        vector<char> list;
+        if(*b >= 0) modetexs(*g >= 0 ? *g : game::gamemode, *m >= 0 ? *m : game::mutators, *b!=0, *p!=0, list);
+        else modetex(*g >= 0 ? *g : game::gamemode, *m >= 0 ? *m : game::mutators, list);
         list.add('\0');
         result(list.getbuf());
     });
