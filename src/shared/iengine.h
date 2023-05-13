@@ -253,37 +253,37 @@ enum
     PT_FLIP     = PT_HFLIP | PT_VFLIP | PT_ROT
 };
 
-enum
-{
-    PART_PORTAL = 0, PART_PORTAL_ENV, PART_ICON,
-    PART_LINE, PART_LINE_ONTOP, PART_TRIANGLE, PART_TRIANGLE_ONTOP,
-    PART_ELLIPSE, PART_ELLIPSE_ONTOP, PART_CONE, PART_CONE_ONTOP,
-    PART_FIREBALL_LERP, PART_PLASMA_LERP,
-    PART_FLARE_LERP, PART_MUZZLE_FLARE_LERP,
-    PART_SMOKE_LERP_SOFT, PART_SMOKE_LERP,
-    PART_SMOKE_SOFT, PART_SMOKE,
-    PART_HINT_SOFT, PART_HINT,
-    PART_HINT_BOLD_SOFT, PART_HINT_BOLD,
-    PART_HINT_VERT_SOFT, PART_VERT_BOLD,
-    PART_HINT_HORZ_SOFT, PART_HORZ_BOLD,
-    PART_BLOOD,
-    PART_ENTITY, PART_ENTITY_ONTOP,
-    PART_SPARK,
-    PART_FIREBALL_SOFT, PART_FIREBALL,
-    PART_PLASMA_SOFT, PART_PLASMA,
-    PART_ELECTRIC_SOFT, PART_ELECTRIC,
-    PART_ELECZAP_SOFT, PART_ELECZAP,
-    PART_FLAME,
-    PART_FLARE, PART_CLEAN_FLARE, PART_MUZZLE_FLARE, PART_LIGHTNING_FLARE, PART_LIGHTZAP_FLARE,
-    PART_MUZZLE_FLASH, PART_SNOW,
-    PART_HAZE, PART_HAZE_FLAME, PART_HAZE_TAPE,
-    PART_RAIN,
-    PART_TEXT, PART_TEXT_ONTOP,
-    PART_EXPLOSION, PART_SHOCKWAVE, PART_SHOCKBALL, PART_GLIMMERY,
-    PART_LIGHTNING, PART_LIGHTZAP,
-    PART_LENS_FLARE,
-    PART_MAX
-};
+#define PART_ENUM(pr, en) \
+    en(pr, Portal, PORTAL) en(pr, Portal Env, PORTAL_ENV) en(pr, Icon, ICON) \
+    en(pr, Line, LINE) en(pr, Line Ontop, LINE_ONTOP) en(pr, Triangle, TRIANGLE) en(pr, Triangle Ontop, TRIANGLE_ONTOP) \
+    en(pr, Ellipse, ELLIPSE) en(pr, Ellipse Ontop, ELLIPSE_ONTOP) en(pr, Cone, CONE) en(pr, Cone Ontop, CONE_ONTOP) \
+    en(pr, Fireball Lerp, FIREBALL_LERP) en(pr, Plasma Lerp, PLASMA_LERP) \
+    en(pr, Flare Lerp, FLARE_LERP) en(pr, Muzzle Flare Lerp, MUZZLE_FLARE_LERP) \
+    en(pr, Smoke Lerp Soft, SMOKE_LERP_SOFT) en(pr, Smoke Lerp, SMOKE_LERP) \
+    en(pr, Smoke Soft, SMOKE_SOFT) en(pr, Smoke, SMOKE) \
+    en(pr, Hint Soft, HINT_SOFT) en(pr, Hint, HINT) \
+    en(pr, Hint Bold Soft, HINT_BOLD_SOFT) en(pr, Hint Bold, HINT_BOLD) \
+    en(pr, Hint Vert Soft, HINT_VERT_SOFT) en(pr, Vert Bold, VERT_BOLD) \
+    en(pr, Hint Horz Soft, HINT_HORZ_SOFT) en(pr, Horz Bold, HORZ_BOLD) \
+    en(pr, Blood, BLOOD) \
+    en(pr, Entity, ENTITY) en(pr, Entity Ontop, ENTITY_ONTOP) \
+    en(pr, Spark, SPARK) \
+    en(pr, Fireball Soft, FIREBALL_SOFT) en(pr, Fireball, FIREBALL) \
+    en(pr, Plasma Soft, PLASMA_SOFT) en(pr, Plasma, PLASMA) \
+    en(pr, Electric Soft, ELECTRIC_SOFT) en(pr, Electric, ELECTRIC) \
+    en(pr, Eleczap Soft, ELECZAP_SOFT) en(pr, Eleczap, ELECZAP) \
+    en(pr, Flame, FLAME) \
+    en(pr, Flare, FLARE) en(pr, Clean Flare, CLEAN_FLARE) en(pr, Muzzle Flare, MUZZLE_FLARE) \
+    en(pr, Lightning Flare, LIGHTNING_FLARE) en(pr, Lightzap Flare, LIGHTZAP_FLARE) \
+    en(pr, Muzzle Flash, MUZZLE_FLASH) en(pr, Snow, SNOW) \
+    en(pr, Haze, HAZE) en(pr, Haze Flame, HAZE_FLAME) en(pr, Haze Tape, HAZE_TAPE) \
+    en(pr, Rain, RAIN) \
+    en(pr, Text, TEXT) en(pr, Text Ontop, TEXT_ONTOP) \
+    en(pr, Explosion, EXPLOSION) en(pr, Shockwave, SHOCKWAVE) en(pr, Shockball, SHOCKBALL) en(pr, Glimmery, GLIMMERY) \
+    en(pr, Lightning, LIGHTNING) en(pr, Lightzap, LIGHTZAP) \
+    en(pr, Lens Flare, LENS_FLARE) \
+    en(pr, Max, MAX)
+ENUMNV(PART, PART_ENUM);
 
 struct particle
 {
