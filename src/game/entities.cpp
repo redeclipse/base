@@ -3331,10 +3331,10 @@ namespace entities
         if(idx < 0 || !m_edit(game::gamemode) || !cansee(idx)) return false;
 
         bool hastop = game::player1->state == CS_EDITING && (enthover.find(idx) >= 0 || entgroup.find(idx) >= 0) && dist <= showentdist*showentdist, dotop = hastop && e.dynamic(),
-             visible = getvisible(camera1->o, camera1->yaw, camera1->pitch, o, curfov, fovy, 2, VFC_PART_VISIBLE), visiblepos = dotop && getvisible(camera1->o, camera1->yaw, camera1->pitch, e.pos(), curfov, fovy, 2, VFC_PART_VISIBLE);
+             visible = getvisible(camera1->o, camera1->yaw, camera1->pitch, o, curfov, fovy, 2, hastop ? -1 : VFC_PART_VISIBLE), visiblepos = dotop && getvisible(camera1->o, camera1->yaw, camera1->pitch, e.pos(), curfov, fovy, 2, hastop ? -1 : VFC_PART_VISIBLE);
         loopj(dotop ? 2 : 1)
         {
-            if(j ? visiblepos : visible) part_create(hastop && !j ? PART_ENTITY_ONTOP : PART_ENTITY, 1, j ? e.pos() : o, j ? entselcolourdyn : (hastop ? entselcolourtop : entselcolour), hastop && !j ? entselsizetop : entselsize);
+            if(j ? visiblepos : visible) part_create(hastop ? PART_ENTITY_ONTOP : PART_ENTITY, 1, j ? e.pos() : o, j ? entselcolourdyn : (hastop ? entselcolourtop : entselcolour), hastop && !j ? entselsizetop : entselsize);
             if(j && (visible || visiblepos)) part_line(o, e.pos(), entselsize, 1, 1, entselcolourdyn);
         }
         return visible;
