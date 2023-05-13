@@ -935,7 +935,7 @@ int soundindex(soundslot *slot, int slotnum, const vec &pos, int flags, int *hoo
     }
 
     sources.sort(sourcecmp); // sort as a last resort
-    if(sources[0]->index >= 0 && sources.length() >= soundmaxsources)
+    if(sources[0]->index >= 0)
     { // as long as the top isn't our dummy we can clear it
         sources[0]->clear();
         return sources[0]->index;
