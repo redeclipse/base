@@ -1448,7 +1448,7 @@ struct gameent : dynent, clientstate
             loopi(W_MAX) if(hasweap(i, sweap))
             {
                 int numammo = getammo(i, 0, true);
-                #define MODCARRY(a) (m_arena(gamemode, mutators) ? (a)*WEAPCARRY/W_LOADOUT : a)
+                #define MODCARRY(a) (m_arena(gamemode, mutators) ? (a)*A(actortype, maxcarry)/W_LOADOUT : a)
                 #define MODPHYS(a,b,c) a += MODCARRY(W(i, mod##a)+(numammo*W(i, mod##a##ammo)));
                 MODPHYSL;
                 #undef MODPHYS

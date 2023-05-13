@@ -169,11 +169,11 @@ APVAR(IDF_GAMEMOD, 0, hurtstop, 1, VAR_MAX,
 APFVAR(IDF_GAMEMOD, 0, liquidboost, 0, FVAR_MAX,
     0,              1,              1,              1,              1,              1
 );
-APVAR(IDF_GAMEMOD, 0, magboots, 0, WEAPCARRY,
+APVAR(IDF_GAMEMOD, 0, magboots, 0, 1,
     1,              1,              1,              1,              1,              1
 );
-APVAR(IDF_GAMEMOD, 0, maxcarry, 0, WEAPCARRY,
-    WEAPCARRY,      WEAPCARRY,      0,              0,              0,              0
+APVAR(IDF_GAMEMOD, 0, maxcarry, 0, W_LOADOUT,
+    2,              2,              0,              0,              0,              0
 );
 APFVAR(IDF_GAMEMOD, 0, scale, FVAR_NONZERO, FVAR_MAX,
     1,              1,              0.5f,           1,              0.85f,          1.f

@@ -1,16 +1,13 @@
 // weapons.h configuration file
 // default weapon variables baked into the game
-enum
-{
-    W_CLAW = 0, W_PISTOL, W_OFFSET, // end of unselectable weapon set
-    W_SWORD = W_OFFSET, W_SHOTGUN, W_SMG, W_FLAMER, W_PLASMA, W_ZAPPER, W_RIFLE, W_ITEM,
-    W_GRENADE = W_ITEM, W_MINE, W_ROCKET, W_ALL, // end of item weapon set
-    W_MELEE = W_ALL, W_MAX, // if you add to this at all, check all arrays with W_MAX
-    W_LOADOUT = W_ITEM-W_OFFSET,
-    W_ITEMS = W_MINE-W_GRENADE+1,
-    W_REPLACE = W_GRENADE
-};
-#define WEAPCARRY 2
+#define W_ENUM(pr, en) \
+    en(pr, claw, CLAW, 0) en(pr, pistol, PISTOL, 1) en(pr, sword, SWORD, 2) en(pr, shotgun, SHOTGUN, 3) en(pr, smg, SMG, 4) \
+    en(pr, flamer, FLAMER, 5) en(pr, plasma, PLASMA, 6) en(pr, zapper, ZAPPER, 7) en(pr, rifle, RIFLE, 8) \
+    en(pr, grenade, GRENADE, 9) en(pr, mine, MINE, 10) en(pr, rocket, ROCKET, 11) en(pr, melee, MELEE, 12) \
+    en(pr, maximum, MAX, 13) en(pr, offset, OFFSET, pr##_SWORD) en(pr, item, ITEM, pr##_GRENADE) en(pr, all, ALL, pr##_MELEE) \
+    en(pr, loadout, LOADOUT, pr##_ITEM - pr##_OFFSET) en(pr, items, ITEMS, pr##_MINE - pr##_GRENADE + 1) en(pr, replace, REPLACE, pr##_GRENADE)
+ENUMNI(W, W_ENUM);
+
 #define WZ(x) (W_MAX+(W_##x))
 
 #define isweap(a)       (a >= 0 && a < W_MAX)
@@ -36,12 +33,12 @@ enum
     W_N_ALL = W_N_STADD|W_N_GRADD|W_N_STIMM|W_N_GRIMM|W_N_SLIDE
 };
 
-enum
-{
-    W_S_IDLE = 0, W_S_PRIMARY, W_S_SECONDARY, W_S_RELOAD, W_S_POWER, W_S_ZOOM, W_S_SWITCH, W_S_USE, W_S_WAIT, W_S_MAX,
-    W_S_ALL = (1<<W_S_IDLE)|(1<<W_S_PRIMARY)|(1<<W_S_SECONDARY)|(1<<W_S_RELOAD)|(1<<W_S_SWITCH)|(1<<W_S_USE)|(1<<W_S_POWER)|(1<<W_S_ZOOM)|(1<<W_S_WAIT),
-    W_S_INTERRUPT = (1<<W_S_POWER)|(1<<W_S_ZOOM)
-};
+#define W_S_ENUM(pr, en) \
+    en(pr, idle, IDLE, 0) en(pr, primary, PRIMARY, 1) en(pr, secondary, SECONDARY, 2) en(pr, reload, RELOAD, 3) \
+    en(pr, power, POWER, 4) en(pr, zoom, ZOOM, 5) en(pr, switch, SWITCH, 6) en(pr, use, USE, 7) en(pr, wait, WAIT, 8) en(pr, max, MAX, 9) \
+    en(pr, all, ALL, (1<<pr##_IDLE)|(1<<pr##_PRIMARY)|(1<<pr##_SECONDARY)|(1<<pr##_RELOAD)|(1<<pr##_SWITCH)|(1<<pr##_USE)|(1<<pr##_POWER)|(1<<pr##_ZOOM)|(1<<pr##_WAIT)) \
+    en(pr, interrupt, INTERRUPT, (1<<pr##_POWER)|(1<<pr##_ZOOM))
+ENUMNI(W_S, W_S_ENUM);
 
 enum { W_A_CLIP = 0, W_A_STORE, W_A_MAX };
 
@@ -147,7 +144,6 @@ enum
     COLLIDE_FROMTO = COLLIDE_TRACE|COLLIDE_SCAN, COLLIDE_SCLEN = COLLIDE_SCAN|COLLIDE_LENGTH,
     COLLIDE_ALL = COLLIDE_TRACE|COLLIDE_SCAN|COLLIDE_LENGTH|COLLIDE_PROJ|COLLIDE_OWNER|IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|BOUNCE_GEOM|BOUNCE_PLAYER|BOUNCE_SHOTS|DRILL_GEOM|DRILL_PLAYER|DRILL_SHOTS|STICK_GEOM|STICK_PLAYER
 };
-
 
 #define HIT_ENUM(pr, en) \
     en(pr, HEAD, 1<<0) en(pr, TORSO, 1<<1) en(pr, LIMB, 1<<2) en(pr, FULL, 1<<3) en(pr, WHIPLASH, 1<<4) en(pr, ALT, 1<<5) \
@@ -1502,42 +1498,6 @@ weaptypes weaptype[] =
             "melee",    "", "", "", "", { "", "" }, { "", "" }
     }
 };
-SVARR(weapname, "claw pistol sword shotgun smg flamer plasma zapper rifle grenade mine rocket melee");
-VARR(weapidxclaw, W_CLAW);
-VARR(weapidxpistol, W_PISTOL);
-VARR(weapidxsword, W_SWORD);
-VARR(weapidxshotgun, W_SHOTGUN);
-VARR(weapidxsmg, W_SMG);
-VARR(weapidxflamer, W_FLAMER);
-VARR(weapidxplasma, W_PLASMA);
-VARR(weapidxzapper, W_ZAPPER);
-VARR(weapidxrifle, W_RIFLE);
-VARR(weapidxgrenade, W_GRENADE);
-VARR(weapidxmine, W_MINE);
-VARR(weapidxrocket, W_ROCKET);
-VARR(weapidxmelee, W_MELEE);
-VARR(weapidxoffset, W_OFFSET);
-VARR(weapidxitem, W_ITEM);
-VARR(weapidxhidden, W_ALL);
-VARR(weapidxloadout, W_LOADOUT);
-VARR(weapidxnum, W_MAX);
-VARR(weapstateidle, W_S_IDLE);
-VARR(weapstateprimary, W_S_PRIMARY);
-VARR(weapstatesecondary, W_S_SECONDARY);
-VARR(weapstatereload, W_S_RELOAD);
-VARR(weapstateswitch, W_S_SWITCH);
-VARR(weapstateuse, W_S_USE);
-VARR(weapstatepower, W_S_POWER);
-VARR(weapstatezoom, W_S_ZOOM);
-VARR(weapstatewait, W_S_WAIT);
-VARR(weapstatemax, W_S_MAX);
-VARR(weapstateinterrupt, W_S_INTERRUPT);
-VARR(weapresidualburn, W_R_BURN);
-VARR(weapresidualbleed, W_R_BLEED);
-VARR(weapresidualshock, W_R_SHOCK);
-VARR(weapresidualmax, W_R_MAX);
-VARR(weapcarrydefault, WEAPCARRY);
-VARR(weapcarrylimit, W_LOADOUT);
 #else
 extern weaptypes weaptype[];
 #endif
