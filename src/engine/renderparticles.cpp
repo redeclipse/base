@@ -24,7 +24,6 @@ VAR(IDF_PERSIST, softparticleblend, 1, 8, 64);
 
 Texture *particlehazetexture = NULL;
 VAR(IDF_PERSIST, particlehaze, 0, 1, 1);
-FVAR(IDF_PERSIST, particlehazeflame, 0, 3, FVAR_MAX);
 FVAR(IDF_PERSIST, particlehazeblend, 0, 1, 1);
 SVARF(IDF_PERSIST, particlehazetex, "textures/watern", particlehazetexture = textureload(particlehazetex, 0, true, false));
 FVAR(IDF_PERSIST, particlehazedist, 0, 64, FVAR_MAX);
@@ -1298,7 +1297,7 @@ static partrenderer *parts[] =
     new quadrenderer("<grey>particles/muzzle", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP),
     new quadrenderer("<grey>particles/snow", PT_PART|PT_BRIGHT|PT_FLIP|PT_WIND),
     new quadrenderer("<comp>hint", PT_HAZE|PT_PART),
-    new quadrenderer("<comp>hint", PT_HAZE|PT_PART|PT_WIND),
+    new quadrenderer("<comp>fire 1", PT_HAZE|PT_PART|PT_WIND),
     new taperenderer("<grey>particles/sflare", PT_HAZE|PT_TAPE),
     new trailrenderer("<comp>hint", PT_TRAIL|PT_LERP|PT_WIND),
     &texts, &textontop,
@@ -1538,7 +1537,6 @@ particle *newparticle(const vec &o, const vec &d, int fade, int type, int color,
     }
     if(fade + emitoffset < 0) return &dummy;
     addedparticles++;
-    if(particlehazeflame > 0 && type == PART_FLAME) newparticle(o, d, fade, PART_HAZE_FLAME, 0xFFFFFF, size*particlehazeflame, 1, hintcolor, hintblend, gravity, collide ? -1 : 0, val, pl, sizechange);
 
     particle *newpart = parts[type]->addpart(o, d, fade, color, size, blend, hintcolor, hintblend, gravity, collide, val, pl);
     newpart->sizechange = sizechange;
