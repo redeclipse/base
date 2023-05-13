@@ -190,18 +190,18 @@ struct gamelog
 #else
     static void parseinfo(vector<gamelog::info> &infos, ucharbuf &p)
     {
-        static string info, str;
-        getstring(info, p);
+        static string text, str;
+        getstring(text, p);
         int itype = getint(p);
         switch(itype)
         {
-            case EV_I_INT: gamelog::addinfo(infos, info, getint(p)); break;
-            case EV_I_BOOL: gamelog::addinfo(infos, info, getint(p) != 0); break;
-            case EV_I_FLOAT: gamelog::addinfo(infos, info, getfloat(p)); break;
+            case EV_I_INT: gamelog::addinfo(infos, text, getint(p)); break;
+            case EV_I_BOOL: gamelog::addinfo(infos, text, getint(p) != 0); break;
+            case EV_I_FLOAT: gamelog::addinfo(infos, text, getfloat(p)); break;
             case EV_I_STR:
             {
                 getstring(str, p);
-                gamelog::addinfo(infos, info, str);
+                gamelog::addinfo(infos, text, str);
                 break;
             }
             default: break;
@@ -210,7 +210,7 @@ struct gamelog
 
     static void parseevent(ucharbuf &p)
     {
-        string text;
+        static string text;
         gamelog *log = new gamelog;
         int ilen = getint(p);
         loopi(ilen)
@@ -265,9 +265,9 @@ struct gamelog
             taginfo &t = tags[i];
             sendstring(t.name, p);
             putint(p, t.groups.length());
-            loopvk(t.groups)
+            loopvj(t.groups)
             {
-                groupinfo &g = t.groups[i];
+                groupinfo &g = t.groups[j];
                 sendinfo(p, g.infos);
             }
         }

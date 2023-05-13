@@ -1749,7 +1749,6 @@ namespace server
                     int secs = G(teambalancedelay)/1000;
                     nextteambalance = gamemillis+G(teambalancedelay);
                     gamelog log;
-                    log.addlist("this", "target", -1);
                     log.addlist("this", "type", "balance");
                     log.addlist("this", "action", "warning");
                     log.addlist("this", "sound", "S_V_BALWARN");
@@ -1825,7 +1824,6 @@ namespace server
                         if(moved)
                         {
                             gamelog log;
-                            log.addlist("this", "target", -1);
                             log.addlist("this", "type", "balance");
                             log.addlist("this", "action", "success");
                             log.addlist("this", "sound", "S_V_BALALERT");
@@ -1836,7 +1834,6 @@ namespace server
                         else
                         {
                             gamelog log;
-                            log.addlist("this", "target", -1);
                             log.addlist("this", "type", "balance");
                             log.addlist("this", "action", "failure");
                             log.addlist("this", "sound", "S_V_NOTIFY");
@@ -1854,7 +1851,6 @@ namespace server
                 if(!init && nextteambalance)
                 {
                     gamelog log;
-                    log.addlist("this", "target", -1);
                     log.addlist("this", "type", "balance");
                     log.addlist("this", "action", "lapse");
                     log.addlist("this", "sound", "S_V_NOTIFY");
@@ -1871,7 +1867,6 @@ namespace server
             if(!init && nextteambalance)
             {
                 gamelog log;
-                log.addlist("this", "target", -1);
                 log.addlist("this", "type", "balance");
                 log.addlist("this", "action", "unable");
                 log.addlist("this", "sound", "S_V_NOTIFY");
@@ -1919,7 +1914,6 @@ namespace server
                             int millis = timeremaining*1000;
                             gamelimit += millis;
                             gamelog log;
-                            log.addlist("this", "target", -1);
                             log.addlist("this", "type", "overtime");
                             log.addlist("this", "action", "extend");
                             log.addlist("this", "sound", "S_V_OVERTIME");
@@ -1933,7 +1927,6 @@ namespace server
                             timeremaining = -1;
                             gamelimit = 0;
                             gamelog log;
-                            log.addlist("this", "target", -1);
                             log.addlist("this", "type", "overtime");
                             log.addlist("this", "action", "score");
                             log.addlist("this", "sound", "S_V_OVERTIME");
@@ -1947,7 +1940,6 @@ namespace server
                     else
                     {
                         gamelog log;
-                        log.addlist("this", "target", -1);
                         log.addlist("this", "type", "timelimit");
                         log.addlist("this", "action", "reached");
                         log.addlist("this", "sound", "S_V_NOTIFY");
@@ -1963,7 +1955,6 @@ namespace server
                     if(wantsoneminute && timeremaining == 60)
                     {
                         gamelog log;
-                        log.addlist("this", "target", -1);
                         log.addlist("this", "type", "timelimit");
                         log.addlist("this", "action", "oneminute");
                         log.addlist("this", "sound", "S_V_ONEMINUTE");
@@ -1978,7 +1969,6 @@ namespace server
         if(wasinovertime && !wantsovertime())
         {
             gamelog log;
-            log.addlist("this", "target", -1);
             log.addlist("this", "type", "overtime");
             log.addlist("this", "action", "winner");
             log.addlist("this", "sound", "S_V_NOTIFY");
@@ -2006,7 +1996,6 @@ namespace server
                     if(best >= 0 && teamscore(best).total >= plimit)
                     {
                         gamelog log;
-                        log.addlist("this", "target", -1);
                         log.addlist("this", "type", "score");
                         log.addlist("this", "action", "reached");
                         log.addlist("this", "sound", "S_V_NOTIFY");
@@ -2025,7 +2014,6 @@ namespace server
                     if(best >= 0 && clients[best]->points >= plimit)
                     {
                         gamelog log;
-                        log.addlist("this", "target", -1);
                         log.addlist("this", "type", "score");
                         log.addlist("this", "action", "reached");
                         log.addlist("this", "sound", "S_V_NOTIFY");
@@ -2050,7 +2038,6 @@ namespace server
                     {
                         int secs = delpart/1000;
                         gamelog log;
-                        log.addlist("this", "target", -1);
                         log.addlist("this", "type", "balance");
                         log.addlist("this", "action", "swapping");
                         log.addlist("this", "sound", "S_V_BALWARN");
@@ -2094,7 +2081,6 @@ namespace server
                     }
 
                     gamelog log;
-                    log.addlist("this", "target", -1);
                     log.addlist("this", "type", "balance");
                     log.addlist("this", "action", "swapped");
                     log.addlist("this", "sound", "S_V_BALALERT");
@@ -5255,7 +5241,6 @@ namespace server
             if(team && m_swapteam(gamemode, mutators) && ci->team != team && ci->actortype == A_PLAYER && ci->swapteam != team && canplay())
             {
                 gamelog log;
-                log.addlist("this", "target", -1);
                 log.addlist("this", "type", "team");
                 log.addlist("this", "action", "swap");
                 log.addlist("this", "sound", "S_V_NOTIFY");
@@ -5703,7 +5688,6 @@ namespace server
                     if(m_play(gamemode) && !m_bomber(gamemode) && !m_duke(gamemode, mutators)) // they do their own "fight"
                     {
                         gamelog log;
-                        log.addlist("this", "target", -1);
                         log.addlist("this", "type", "timelimit");
                         log.addlist("this", "action", "start");
                         log.addlist("this", "sound", "S_V_FIGHT");
@@ -6843,7 +6827,6 @@ namespace server
                                                 if(!found)
                                                 {
                                                     gamelog log;
-                                                    log.addlist("this", "target", -1);
                                                     log.addlist("this", "type", "score");
                                                     log.addlist("this", "action", "reached");
                                                     log.addlist("this", "sound", "S_V_NOTIFY");

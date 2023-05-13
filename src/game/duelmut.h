@@ -321,6 +321,7 @@ struct duelservmode : servmode
                     if(smode) smode->layout();
                     mutate(smuts, mut->layout());
                     duelround++;
+
                     stringz(fight);
                     if(m_duel(gamemode, mutators))
                     {
@@ -337,11 +338,11 @@ struct duelservmode : servmode
                     else if(m_survivor(gamemode, mutators)) formatstring(fight, "Survivor, round \fs\fc#%d\fS", duelround);
 
                     gamelog log;
-                    log.addlist("this", "target", -1);
-                    log.addlist("this", "type", "duel");
+                    log.addlist("this", "type", m_survivor(gamemode, mutators) ? "survivor" : "duel");
                     log.addlist("this", "action", "start");
                     log.addlist("this", "sound", "S_V_FIGHT");
                     log.addlist("this", "flags", EV_F_BROADCAST);
+
                     loopv(playing)
                     {
                         if(playing[i]->state == CS_ALIVE)
@@ -356,9 +357,12 @@ struct duelservmode : servmode
                         duelqueue.removeobj(playing[i]);
                         log.addclient("client", playing[i]);
                     }
+
+                    bool sudden = gamestate == G_S_OVERTIME && !restricted.empty();
                     log.addlist("args", "round", duelround);
                     log.addlist("args", "queue", duelqueue.length());
-                    log.addlistf("args","console", "\fy%s%s", gamestate == G_S_OVERTIME && !restricted.empty() ? "\fs\fzcgSudden Death\fS, " : "", fight);
+                    log.addlist("args", "sudden", sudden);
+                    log.addlistf("args","console", "\fy%s%s", sudden ? "\fs\fzcgSudden Death\fS, " : "", fight);
                     log.push();
 
                     dueltime = dueldeath = -1;
@@ -435,12 +439,13 @@ struct duelservmode : servmode
                                 {
                                     gamelog log;
                                     log.addlist("this", "target", clients[i]->clientnum);
-                                    log.addlist("this", "type", "duel");
-                                    log.addlist("this", "action", "finish");
+                                    log.addlist("this", "type", m_survivor(gamemode, mutators) ? "survivor" : "duel");
+                                    log.addlist("this", "action", "score");
                                     log.addlist("this", "sound", sndidx);
                                     log.addlist("this", "flags", EV_F_BROADCAST);
                                     loopv(playing) log.addclient("client", playing[i]);
                                     loopv(alive) log.addclient("alive", alive[i]);
+                                    loopv(playing) if(alive.find(playing[i]) < 0) log.addclient("dead", playing[i]);
                                     log.addlist("args", "winner", duelwinner);
                                     log.addlist("args", "wins", duelwins);
                                     log.addlistf("args","console", "\fyTeam %s are the winners", colourteam(alive[0]->team));
@@ -470,13 +475,11 @@ struct duelservmode : servmode
                         duelwins = 0;
 
                         gamelog log;
-                        log.addlist("this", "target", -1);
-                        log.addlist("this", "type", "duel");
+                        log.addlist("this", "type", m_survivor(gamemode, mutators) ? "survivor" : "duel");
                         log.addlist("this", "action", "draw");
                         log.addlist("this", "sound", "S_V_DRAW");
                         log.addlist("this", "flags", EV_F_BROADCAST);
                         loopv(playing) log.addclient("client", playing[i]);
-                        loopv(alive) log.addclient("alive", alive[i]);
                         log.addlistf("args","console", "\fyEveryone died, \fzoyEPIC FAIL!");
                         log.push();
                     }
@@ -538,12 +541,13 @@ struct duelservmode : servmode
                             {
                                 gamelog log;
                                 log.addlist("this", "target", clients[i]->clientnum);
-                                log.addlist("this", "type", "duel");
-                                log.addlist("this", "action", "finish");
+                                log.addlist("this", "type", m_survivor(gamemode, mutators) ? "survivor" : "duel");
+                                log.addlist("this", "action", "score");
                                 log.addlist("this", "sound", sndidx);
                                 log.addlist("this", "flags", EV_F_BROADCAST);
                                 loopv(playing) log.addclient("client", playing[i]);
                                 loopv(alive) log.addclient("alive", alive[i]);
+                                loopv(playing) if(alive.find(playing[i]) < 0) log.addclient("dead", playing[i]);
                                 log.addlist("args", "winner", duelwinner);
                                 log.addlist("args", "wins", duelwins);
                                 log.addlistf("args","console", end);

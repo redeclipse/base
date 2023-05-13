@@ -122,7 +122,6 @@ struct bomberservmode : bomberstate, servmode
                 if(teamid >= 0)
                 {
                     gamelog log;
-                    log.addlist("this", "target", -1);
                     log.addlist("this", "type", "score");
                     log.addlist("this", "action", "reached");
                     log.addlist("this", "sound", "S_V_NOTIFY");
