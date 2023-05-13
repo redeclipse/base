@@ -890,11 +890,11 @@ static inline bool sourcecmp(const soundsource *x, const soundsource *y) // sort
     if(!xmap && ymap) return true;
     if(xmap && !ymap) return false;
 
-    bool xnoatt = x->flags&SND_NOATTEN || x->flags&SND_NODIST, ynoatt = y->flags&SND_NOATTEN || y->flags&SND_NODIST;
+    bool xnoatt = (x->flags&(SND_NOATTEN|SND_NODIST)) != 0, ynoatt = (y->flags&(SND_NOATTEN|SND_NODIST)) != 0;
     if(!xnoatt && ynoatt) return true;
     if(xnoatt && !ynoatt) return false;
 
-    float xdist = x->vpos->dist(camera1->o), ydist = y->vpos->dist(camera1->o);
+    float xdist = x->pos.dist(camera1->o), ydist = y->pos.dist(camera1->o);
     if(xdist > ydist) return true;
     if(xdist < ydist) return false;
 
@@ -916,7 +916,6 @@ int soundindex(soundslot *slot, int slotnum, const vec &pos, int flags, int *hoo
     indexsource.clear();
     indexsource.index = -1;
     indexsource.pos = pos;
-    indexsource.vpos = &indexsource.pos;
     indexsource.flags = flags;
     sources.add(&indexsource);
 
@@ -1064,8 +1063,8 @@ int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, flo
         }
         else
         {
-            s.vpos = &s.pos;
-            *s.vpos = *pos;
+            s.vpos = NULL;
+            s.pos = *pos;
         }
 
         s.gain = gain > 0 ? clamp(gain, 0.f, 100.f) : 1.f;
@@ -1539,7 +1538,7 @@ void soundsource::reset(bool dohook)
 {
     source = dirfilter = efxfilter = AL_INVALID;
     pos = curpos = vel = vec(0, 0, 0);
-    vpos = &pos;
+    vpos = NULL;
     slot = NULL;
     owner = NULL;
     gain = curgain = pitch = curpitch = 1;
@@ -1571,7 +1570,7 @@ void soundsource::unhook()
     if(owner || flags&SND_TRACKED)
     {
         pos = *vpos;
-        vpos = &pos;
+        vpos = NULL;
         vel = vec(0, 0, 0);
         owner = NULL;
         flags &= ~(SND_TRACKED|SND_LOOP);
@@ -1582,7 +1581,7 @@ ALenum soundsource::updatefilter()
 {
     if(!al_ext_efx || !alIsFilter(dirfilter)) return AL_NO_ERROR;
 
-    float dist = camera1->o.dist(*vpos);
+    float dist = camera1->o.dist(pos);
     float gain = 1.0f - (((dist * log10f(finalrolloff + 1.0f)) / finalrefdist) * sounddistfilter);
     gain = clamp(gain, 1.0f - sounddistfilter, 1.0f);
 
@@ -1596,7 +1595,8 @@ ALenum soundsource::updatefilter()
 
 ALenum soundsource::update()
 {
-    material = lookupmaterial(*vpos);
+    if(vpos) pos = *vpos;
+    material = lookupmaterial(pos);
     curgain = clamp(soundeffectvol*slot->gain*(flags&SND_MAP ? soundeffectenv : soundeffectevent), 0.f, 100.f);
 
     if(mute) curgain = 0.0f;
@@ -1628,7 +1628,7 @@ ALenum soundsource::update()
     alSourcef(source, AL_PITCH, pitch);
     SOUNDERRORTRACK(clear(); return err);
 
-    vec rpos = *vpos;
+    vec rpos = pos;
     if(flags&SND_NOATTEN) rpos = vel = vec(0, 0, 0);
     else if(flags&SND_NOPAN)
     {
@@ -1636,9 +1636,6 @@ ALenum soundsource::update()
         rpos = vec(camera1->yaw*RAD, camera1->pitch*RAD).mul(mag).add(camera1->o);
     }
     else if(flags&SND_NODIST) rpos.sub(camera1->o).safenormalize().mul(2).add(camera1->o);
-
-    //if(owner) conoutf("[%d / %d] %.6f %.6f %.6f [%.6f %.6f %.6f] (%d)", index, slotnum, rpos.x, rpos.y, rpos.z, vpos->x, vpos->y, vpos->z, owner->state);
-    //else conoutf("[%d / %d] %.6f %.6f %.6f [%.6f %.6f %.6f]", index, slotnum, rpos.x, rpos.y, rpos.z, vpos->x, vpos->y, vpos->z);
 
     alSourcefv(source, AL_POSITION, (ALfloat *) &rpos);
     SOUNDERRORTRACK(clear(); return err);
@@ -1650,10 +1647,10 @@ ALenum soundsource::update()
         {
             int n = physics::physframetime;
             while(lastupdate+n < totalmillis) n += physics::physframetime;
-            vel = vec(*vpos).sub(curpos).mul(1000).div(n);
+            vel = vec(pos).sub(curpos).mul(1000).div(n);
         }
         lastupdate = totalmillis;
-        curpos = *vpos;
+        curpos = pos;
     }
 
     alSourcefv(source, AL_VELOCITY, (ALfloat *) &vel);
@@ -1663,7 +1660,7 @@ ALenum soundsource::update()
 
     if(!(flags&SND_NOENV))
     {
-        soundenvzone *zone = getactiveenvzone(*vpos);
+        soundenvzone *zone = getactiveenvzone(pos);
 
         ALuint zoneslot = zone && zone->isvalid() ?
             zone->getefxslot() : AL_EFFECTSLOT_NULL;
@@ -1994,7 +1991,7 @@ void getcursounds(int idx, int prop, int buf)
             case 10: floatret(s.rolloff); break;
             case 11: floatret(s.refdist); break;
             case 12: floatret(s.maxdist); break;
-            case 13: defformatstring(pos, "%.f %.f %.f", s.vpos->x, s.vpos->y, s.vpos->z); result(pos); break;
+            case 13: defformatstring(pos, "%.f %.f %.f", s.pos.x, s.pos.y, s.pos.z); result(pos); break;
             case 14: defformatstring(vel, "%.f %.f %.f", s.vel.x, s.vel.y, s.vel.z); result(vel); break;
             case 15:
             {
