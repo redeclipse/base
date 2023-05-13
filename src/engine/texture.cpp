@@ -1223,6 +1223,7 @@ void preloadtextures(uint flags)
         if(id.type == ID_SVAR && (id.flags&IDF_TEXTURE) && (id.flags&(IDF_PRELOAD|IDF_GAMEPRELOAD)) == flags)
             id.changed();
     });
+    if(!blanktexture) blanktexture = textureload(blanktex);
 }
 
 static GLenum texformat(int bpp, bool swizzle = false)
