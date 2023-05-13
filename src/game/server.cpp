@@ -262,7 +262,7 @@ namespace server
         }
     };
 
-    extern int gamemode, mutators;
+    extern int gamemode, mutators, gamemillis;
 
     enum { WARN_CHAT = 0, WARN_TEAMKILL, WARN_MAX };
 
@@ -336,7 +336,6 @@ namespace server
 
         void updateweaptime()
         {
-            extern int gamemillis;
             if(lasttimewielded && isalive(gamemillis))
             {
                 int millis = totalmillis-lasttimewielded, secs = millis/1000;
@@ -363,7 +362,6 @@ namespace server
         void updatetimeplayed()
         {
             clientstate::updatetimeplayed();
-            extern int gamemillis;
             if(lasttimealive && isalive(gamemillis))
             {
                 int millis = totalmillis-lasttimealive, secs = millis/1000;

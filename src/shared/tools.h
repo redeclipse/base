@@ -1997,16 +1997,6 @@ public:
     }
 };
 
-#if defined(WIN32) && !defined(__GNUC__) && !defined(__clang__)
-#ifdef _DEBUG
-//#define _CRTDBG_MAP_ALLOC
-#include <crtdbg.h>
-inline void *__cdecl operator new(size_t n, const char *fn, int l) { return ::operator new(n, 1, fn, l); }
-inline void __cdecl operator delete(void *p, const char *fn, int l) { ::operator delete(p, 1, fn, l); }
-#define new new(__FILE__,__LINE__)
-#endif
-#endif
-
 static inline bool islittleendian() { union { int i; uchar b[sizeof(int)]; } conv; conv.i = 1; return conv.b[0] != 0; }
 #ifdef SDL_BYTEORDER
 #define endianswap16 SDL_Swap16

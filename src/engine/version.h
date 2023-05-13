@@ -6,6 +6,8 @@
     STR_MACRO(__clang_major__) "." \
     STR_MACRO(__clang_minor__) "." \
     STR_MACRO(__clang_patchlevel__)
+#elif defined(_MSC_VER)
+  #define VERSION_COMP "msvc-" STR_MACRO(_MSC_VER)
 #else
   #define VERSION_COMP "gnuc-" \
     STR_MACRO(__GNUC__) "." \

@@ -182,7 +182,7 @@ ifeq (1,$(BUILD_WINDOWS))
 
     ifneq (,$(findstring msvc,$(PLATFORM)))
         STD_LIBS = -static -Xlinker /NODEFAULTLIB:oldnames.lib -Xlinker /SAFESEH:no
-        SUP_LIBS = -Lvcpp/$(PLATFORM_BIN) -Llib/$(PLATFORM_BIN)
+        SUP_LIBS = -Lvcpp/lib/$(PLATFORM_BIN) -Llib/$(PLATFORM_BIN)
         WINDRES = llvm-rc
         WINRES_FLAGS = $(APPNAME).rc $(WINRES_INC)
     else
