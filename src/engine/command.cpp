@@ -1352,7 +1352,7 @@ static char *conc(vector<char> &buf, tagval *v, int n, bool space, const char *p
 
 char *conc(tagval *v, int n, bool space, const char *prefix, int prefixlen)
 {
-    static int vlen[MAXARGS];
+    static int vlen[MAXARGS*2];
     static char numbuf[3*MAXSTRLEN];
     int len = prefixlen, numlen = 0, i = 0;
     for(; i < n; i++) switch(v[i].type)
