@@ -866,15 +866,18 @@ static inline int clipfacevec(const ivec2 &o, const ivec2 &dir, int cx, int cy, 
 static inline bool insideface(const ivec2 *p, int nump, const ivec2 *o, int numo)
 {
     int bounds = 0;
-    ivec2 prev = o[numo-1];
-    loopi(numo)
+    if(numo)
     {
-        const ivec2 &cur = o[i];
-        ivec2 dir = ivec2(cur).sub(prev);
-        int offset = dir.cross(prev);
-        loopj(nump) if(dir.cross(p[j]) > offset) return false;
-        bounds++;
-        prev = cur;
+        ivec2 prev = o[numo-1];
+        loopi(numo)
+        {
+            const ivec2 &cur = o[i];
+            ivec2 dir = ivec2(cur).sub(prev);
+            int offset = dir.cross(prev);
+            loopj(nump) if(dir.cross(p[j]) > offset) return false;
+            bounds++;
+            prev = cur;
+        }
     }
     return bounds>=3;
 }
@@ -886,12 +889,15 @@ static inline int clipfacevecs(const ivec2 *o, int numo, int cx, int cy, int siz
     size <<= 3;
 
     int r = 0;
-    ivec2 prev = o[numo-1];
-    loopi(numo)
+    if(numo)
     {
-        const ivec2 &cur = o[i];
-        r += clipfacevec(prev, ivec2(cur).sub(prev), cx, cy, size, &rvecs[r]);
-        prev = cur;
+        ivec2 prev = o[numo-1];
+        loopi(numo)
+        {
+            const ivec2 &cur = o[i];
+            r += clipfacevec(prev, ivec2(cur).sub(prev), cx, cy, size, &rvecs[r]);
+            prev = cur;
+        }
     }
     ivec2 corner[4] = {ivec2(cx, cy), ivec2(cx+size, cy), ivec2(cx+size, cy+size), ivec2(cx, cy+size)};
     loopi(4) if(insideface(&corner[i], 1, o, numo)) rvecs[r++] = corner[i];
