@@ -216,8 +216,8 @@ namespace server
     extern void serverupdate();
     extern const char *gameid();
     extern int getver(int n = 0);
-    extern const char *gamename(int mode, int muts, int compact = 0, int limit = 0, char separator = ' ');
-    extern const char *getgamename(int compact = 0, int limit = 0, char separator = ' ');
+    extern const char *gamename(int mode, int muts, int compact = 0, int limit = 0, int type = 3);
+    extern const char *getgamename(int compact = 0, int limit = 0, int type = 3);
     extern const char *pickmap(const char *suggest = NULL, int mode = -1, int muts = -1, bool notry = false);
     extern const char *choosemap(const char *suggest = NULL, int mode = -1, int muts = -1, int force = 0, bool notry = false);
     extern const char *getmapname();

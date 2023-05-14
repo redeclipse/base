@@ -1448,16 +1448,17 @@ namespace server
     }
     ICOMMAND(0, getversion, "i", (int *a), intret(getver(*a)));
 
-    const char *gamename(int mode, int muts, int compact, int limit, char separator)
+    const char *gamename(int mode, int muts, int compact, int limit, int type)
     {
         if(!m_game(mode)) mode = G_DEATHMATCH;
         if(gametype[mode].implied) muts |= gametype[mode].implied;
-        static string gname; gname[0] = '\0';
+        static string gname;
+        gname[0] = 0;
         int start = clamp(compact, 0, 3), lps = clamp(4-start, 1, 4);
         loopk(lps)
         {
             int iter = start+k;
-            if(muts)
+            if(muts && type&2)
             {
                 int implied = gametype[mode].implied;
                 loopi(G_M_MAX) if(muts&(1<<mutstype[i].type)) implied |= mutstype[i].implied&~(1<<mutstype[i].type);
@@ -1477,21 +1478,25 @@ namespace server
                     }
                 }
             }
-            defformatstring(mname, "%s%s%s", *gname ? gname : "", *gname ? "-" : "", k < 3 ? gametype[mode].name : gametype[mode].sname);
-            if(k < 3 && limit > 0 && int(strlen(mname)) >= limit)
+            if(type&1)
             {
-                gname[0] = '\0';
+                defformatstring(name, "%s%s%s", *gname ? gname : "", *gname ? "-" : "", k < 3 ? gametype[mode].name : gametype[mode].sname);
+                copystring(gname, name);
+            }
+            if(k < 3 && limit > 0 && int(strlen(gname)) >= limit)
+            {
+                gname[0] = 0;
                 continue; // let's try again
             }
-            copystring(gname, mname);
-            if(separator != ' ') for(int n = strlen(mname); mname[n]; n++) if(mname[n] == ' ') mname[n] = separator;
             break;
         }
         return gname;
     }
-    ICOMMAND(0, gamename, "iiiis", (int *g, int *m, int *c, int *t, char *s), result(gamename(*g, *m, *c, *t, *s)));
+    ICOMMAND(0, gamename, "iiiib", (int *g, int *m, int *c, int *t, int *y), result(gamename(*g, *m, *c, *t, *y >= 0 ? *y : 3)));
+    ICOMMAND(0, modename, "iiii", (int *g, int *m, int *c, int *t), result(gamename(*g, *m, *c, *t, 1)));
+    ICOMMAND(0, mutsname, "iiii", (int *g, int *m, int *c, int *t), result(gamename(*g, *m, *c, *t, 2)));
 
-    const char *getgamename(int compact, int limit, char separator) { return gamename(gamemode, mutators, compact, limit, separator); }
+    const char *getgamename(int compact, int limit, int type) { return gamename(gamemode, mutators, compact, limit, type); }
     const char *getmapname() { return smapname; }
     const char *getserverdesc() { return G(serverdesc); }
 
@@ -1923,11 +1928,12 @@ namespace server
                             int millis = timeremaining;
                             gamelimit += millis;
                             gamelog log;
-                            log.addlist("this", "type", "overtime");
-                            log.addlist("this", "action", "extend");
+                            log.addlist("this", "type", "match");
+                            log.addlist("this", "action", "overtime");
                             log.addlist("this", "sound", "S_V_OVERTIME");
                             log.addlist("this", "flags", EV_F_BROADCAST);
                             log.addlist("args", "millis", millis);
+                            log.addlist("args", "limit", limit);
                             log.addlistf("args","console", "\fyOvertime, match extended by \fs\fc%d\fS %s", limit, limit > 1 ? "minutes" : "minute");
                             log.push();
                         }
@@ -1936,10 +1942,11 @@ namespace server
                             timeremaining = -1;
                             gamelimit = 0;
                             gamelog log;
-                            log.addlist("this", "type", "overtime");
-                            log.addlist("this", "action", "score");
+                            log.addlist("this", "type", "match");
+                            log.addlist("this", "action", "overtime");
                             log.addlist("this", "sound", "S_V_OVERTIME");
                             log.addlist("this", "flags", EV_F_BROADCAST);
+                            log.addlist("args", "limit", limit);
                             log.addlist("args", "console", "\fyOvertime, match extended until someone wins");
                             log.push();
                         }
@@ -1949,8 +1956,8 @@ namespace server
                     else
                     {
                         gamelog log;
-                        log.addlist("this", "type", "timelimit");
-                        log.addlist("this", "action", "reached");
+                        log.addlist("this", "type", "match");
+                        log.addlist("this", "action", "timelimit");
                         log.addlist("this", "sound", "S_V_NOTIFY");
                         log.addlist("this", "flags", EV_F_BROADCAST);
                         log.addlist("args", "console", "\fyTime limit has been reached");
@@ -1962,7 +1969,7 @@ namespace server
                 if(gs_playing(gamestate) && timeremaining != 0 && wantsoneminute && timeremaining == 60000)
                 {
                     gamelog log;
-                    log.addlist("this", "type", "timelimit");
+                    log.addlist("this", "type", "match");
                     log.addlist("this", "action", "oneminute");
                     log.addlist("this", "sound", "S_V_ONEMINUTE");
                     log.addlist("this", "flags", EV_F_BROADCAST);
@@ -1974,10 +1981,11 @@ namespace server
         if(wasinovertime && !wantsovertime())
         {
             gamelog log;
-            log.addlist("this", "type", "overtime");
-            log.addlist("this", "action", "winner");
+            log.addlist("this", "type", "match");
+            log.addlist("this", "action", "overtime");
             log.addlist("this", "sound", "S_V_NOTIFY");
             log.addlist("this", "flags", EV_F_BROADCAST);
+            log.addlist("args", "limit", -1);
             log.addlist("args", "console", "\fyOvertime has ended, a winner has been chosen");
             log.push();
             startintermission();
@@ -5702,13 +5710,15 @@ namespace server
                 {
                     gamewaittime = gamewaitdelay = 0;
                     if(m_team(gamemode, mutators)) doteambalance(true);
-                    if(m_play(gamemode) && !m_bomber(gamemode) && !m_duke(gamemode, mutators)) // they do their own "fight"
+                    if(m_play(gamemode))
                     {
                         gamelog log;
-                        log.addlist("this", "type", "timelimit");
+                        log.addlist("this", "type", "match");
                         log.addlist("this", "action", "start");
-                        log.addlist("this", "sound", "S_V_FIGHT");
+                        if(!m_bomber(gamemode) && !m_duke(gamemode, mutators)) // they do their own "fight"
+                            log.addlist("this", "sound", "S_V_FIGHT");
                         log.addlist("this", "flags", EV_F_BROADCAST);
+                        log.addlist("args", "millis", timeremaining);
                         log.addlist("args", "console", "\fyMatch start, FIGHT!");
                         log.push();
                     }
