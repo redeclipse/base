@@ -1884,6 +1884,7 @@ struct gameent : dynent, clientstate
     void resetjump(bool wait = false)
     {
         airmillis = turnside = impulse[IM_FLING] = 0;
+        if(!impulsecostcount) impulse[IM_COUNT] = 0;
         impulsetime[IM_T_JUMP] = impulsetime[IM_T_BOOST] = impulsetime[IM_T_POUND] = 0;
         if(!wait)
         {
@@ -1950,17 +1951,17 @@ struct gameent : dynent, clientstate
         return (!type || A(actortype, abilities)&(1<<type)) && (impulsestyle || PHYS(gravity) == 0);
     }
 
-    bool delayimpulse()
+    bool delayimpulse(bool regen)
     {
-        loopi(IM_T_MAX) if(impulsetime[i] && lastmillis - impulsetime[i] < impulsedelay[i]) return false;
+        loopi(IM_T_MAX) if((!regen || i != IM_T_JUMP) && impulsetime[i] && lastmillis - impulsetime[i] < impulsedelay[i]) return false;
         return true;
     }
 
     bool regenimpulse()
     {
-        if(!isalive() || hasparkour() || delayimpulse()) return false;
+        if(!isalive() || !delayimpulse(true)) return false;
         if(impulseregendelay && lastmillis - impulse[IM_REGEN] < impulseregendelay) return false;
-        return (impulsecountregen && impulse[IM_COUNT] > 0) || (impulsemeter && impulse[IM_METER] > 0);
+        return (impulsecostcount && impulse[IM_COUNT] > 0) || (impulsemeter && impulse[IM_METER] > 0);
     }
 
     bool canimpulse(int type = 0, bool touch = false)
@@ -1969,7 +1970,7 @@ struct gameent : dynent, clientstate
         if(impulse[IM_TYPE] == IM_T_PUSHER && impulsetime[IM_T_PUSHER] > lastmillis) return false;
         if(!touch && impulsestyle == 1 && impulse[IM_TYPE] > IM_T_JUMP && impulse[IM_TYPE] < IM_T_TOUCH) return false;
         if(impulsestyle <= 2 && type != A_A_VAULT && impulse[IM_COUNT] >= impulsecount) return false;
-        return delayimpulse();
+        return delayimpulse(false);
     }
 
     void addicon(int type, int millis, int fade, int value = 0)

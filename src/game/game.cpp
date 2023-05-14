@@ -1311,52 +1311,57 @@ namespace game
         if(d->regenimpulse())
         {
             bool onfloor = d->physstate >= PHYS_SLOPE || isladder(d->inmaterial) || physics::liquidcheck(d); // collect time until we are able to act upon it
-            float skew = impulseregen;
-            #define impulsemod(x,y) if(x > 0 && (y)) skew *= y;
-            impulsemod(impulseregenrun, d->running());
-            impulsemod(impulseregenmove, d->move || d->strafe);
-            impulsemod(impulseregeninair, (!onfloor && PHYS(gravity) > 0) || d->sliding());
-            impulsemod(impulseregencrouch, onfloor && d->crouching() && !d->sliding());
-            impulsemod(impulseregenslide, d->sliding(true));
-            bool hasmeter = false;
-            if(skew > 0)
+
+            #define impulsemod(name) \
+                float skew = 1; \
+                if(d->running()) skew *= impulseregen##name##run; \
+                if(d->move || d->strafe) skew *= impulseregen##name##move; \
+                if((!onfloor && PHYS(gravity) > 0) || d->sliding()) skew *= impulseregen##name##inair; \
+                if(onfloor && d->crouching() && !d->sliding()) skew *= impulseregen##name##crouch; \
+                if(d->hasparkour()) skew *= impulseregen##name##parkour; \
+                if(d->sliding()) skew *= impulseregen##name##slide;
+
+            bool hascount = false, hasmeter = false;
+            int timeslice = curtime + d->impulse[IM_COLLECT];
+            if(impulsecostcount && d->impulse[IM_COUNT] > 0)
             {
-                bool inhibit = false;
-                int timeslice = int((curtime + d->impulse[IM_COLLECT]) * skew);
-                if(impulsecountregen && d->impulse[IM_COUNT] > 0)
+                impulsemod(count);
+                if(skew > 0)
                 {
-                    if(impulsecostcountinair || onfloor)
+                    int cost = int(impulsecostcount / skew);
+                    while(timeslice >= cost && d->impulse[IM_COUNT] > 0)
                     {
-                        int cost = int(impulsecost * impulsecostcount);
-                        if(timeslice >= cost)
-                        {
-                            timeslice -= cost;
-                            d->impulse[IM_COUNT]--;
-                            hasmeter = true;
-                        }
+                        timeslice -= cost;
+                        d->impulse[IM_COUNT]--;
                     }
-                    else inhibit = true;
+                    hascount = true;
                 }
-                if(!hasmeter && impulsemeter && d->impulse[IM_METER] > 0)
+            }
+
+            if(!hascount && impulsemeter && d->impulse[IM_METER] > 0)
+            {
+                impulsemod(meter);
+                if(skew > 0)
                 {
-                    timeslice -= d->impulse[IM_METER];
-                    d->impulse[IM_METER] = max(-timeslice, 0);
+                    timeslice = int(timeslice * skew);
+                    d->impulse[IM_METER] -= timeslice;
+                    if(d->impulse[IM_METER] < 0)
+                    {
+                        timeslice = int((0 - d->impulse[IM_METER]) / skew);
+                        d->impulse[IM_METER] = 0;
+                    }
                     hasmeter = true;
                 }
-                else if(inhibit) hasmeter = true; // don't collect if there's nothing
             }
-            if(!hasmeter)
+
+            if(hascount || hasmeter)
             {
-                d->impulse[IM_COLLECT] += curtime;
+                d->impulse[IM_COLLECT] = timeslice;
                 if(!d->impulsecollect) d->impulsecollect = lastmillis;
                 collected = true;
             }
         }
-        if(!collected)
-        {
-            d->impulse[IM_COLLECT] = 0;
-            d->impulsecollect = 0;
-        }
+        if(!collected) d->impulse[IM_COLLECT] = d->impulsecollect = 0;
 
         if(isweap(d->weapselect) && gs_playing(gamestate) && d->state == CS_ALIVE)
         {
