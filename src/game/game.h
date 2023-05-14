@@ -1258,8 +1258,8 @@ struct gameent : dynent, clientstate
     editinfo *edit;
     ai::aiinfo *ai;
     int team, clientnum, privilege, projid, lastnode, checkpoint, cplast, respawned, suicided, lastupdate, lastpredict, plag, ping, lastflag, totaldamage,
-        actiontime[AC_MAX], impulse[IM_MAX], impulsetime[IM_T_MAX], smoothmillis, turnside, turnmillis, aschan, cschan, vschan, wschan[WS_CHANS], sschan[2],
-        lasthit, lastteamhit, lastkill, lastattacker, lastpoints, quake, wasfiring, lastfoot, lastimpulsecollect;
+        actiontime[AC_MAX], impulse[IM_MAX], impulsetime[IM_T_MAX], impulsedelay[IM_T_MAX], smoothmillis, turnside, turnmillis, aschan, cschan, vschan, wschan[WS_CHANS], sschan[2],
+        lasthit, lastteamhit, lastkill, lastattacker, lastpoints, quake, wasfiring, lastfoot, impulsecollect;
     float deltayaw, deltapitch, newyaw, newpitch, stunscale, stungravity, turnyaw, turnroll;
     bool action[AC_MAX], conopen, k_up, k_down, k_left, k_right, obliterated, headless;
     vec tag[TAG_MAX];
@@ -1561,7 +1561,7 @@ struct gameent : dynent, clientstate
     {
         loopi(IM_MAX) impulse[i] = 0;
         loopi(IM_T_MAX) impulsetime[i] = 0;
-        lasthit = lastkill = quake = turnside = turnmillis = lastimpulsecollect = 0;
+        lasthit = lastkill = quake = turnside = turnmillis = impulsecollect = 0;
         lastteamhit = lastflag = respawned = suicided = lastnode = lastfoot = wasfiring = -1;
         turnyaw = turnroll = 0;
         obit[0] = '\0';
@@ -1903,6 +1903,22 @@ struct gameent : dynent, clientstate
         if(type < 0 || type >= IM_T_MAX) return;
         if(cost) impulse[IM_METER] += cost;
         impulse[IM_SLIP] = impulsetime[type] = millis;
+        switch(type)
+        {
+            case IM_T_BOOST: impulsedelay[type] = impulseboostdelay; break;
+            case IM_T_DASH: impulsedelay[type] = impulsedashdelay; break;
+            case IM_T_SLIDE: impulsedelay[type] = impulseslidedelay; break;
+            case IM_T_LAUNCH: impulsedelay[type] = impulselaunchdelay; break;
+            case IM_T_MELEE: impulsedelay[type] = impulsemeleedelay; break;
+            case IM_T_KICK: impulsedelay[type] = impulsekickdelay; break;
+            case IM_T_GRAB: impulsedelay[type] = impulsegrabdelay; break;
+            case IM_T_PARKOUR: impulsedelay[type] = impulseparkourdelay; break;
+            case IM_T_VAULT: impulsedelay[type] = impulsevaultdelay; break;
+            case IM_T_POUND: impulsedelay[type] = impulsepounddelay; break;
+            case IM_T_AFTER: impulsedelay[type] = impulseafterdelay; break;
+            case IM_T_PUSHER: impulsedelay[type] = impulsepusherdelay; break;
+            case IM_T_JUMP: default: impulsedelay[type] = impulsejumpdelay; break;
+        }
         impulse[IM_TYPE] = type;
         if(type != IM_T_JUMP && type != IM_T_VAULT)
         {
@@ -1927,6 +1943,33 @@ struct gameent : dynent, clientstate
     bool hasparkour()
     {
         return impulse[IM_TYPE] == IM_T_PARKOUR || impulse[IM_TYPE] == IM_T_VAULT;
+    }
+
+    bool allowimpulse(int type = 0)
+    {
+        return (!type || A(actortype, abilities)&(1<<type)) && (impulsestyle || PHYS(gravity) == 0);
+    }
+
+    bool delayimpulse()
+    {
+        loopi(IM_T_MAX) if(impulsetime[i] && lastmillis - impulsetime[i] < impulsedelay[i]) return false;
+        return true;
+    }
+
+    bool regenimpulse()
+    {
+        if(!isalive() || hasparkour() || delayimpulse()) return false;
+        if(impulseregendelay && lastmillis - impulse[IM_REGEN] < impulseregendelay) return false;
+        return (impulsecountregen && impulse[IM_COUNT] > 0) || (impulsemeter && impulse[IM_METER] > 0);
+    }
+
+    bool canimpulse(int type = 0, bool touch = false)
+    {
+        if(!allowimpulse(type)) return false;
+        if(impulse[IM_TYPE] == IM_T_PUSHER && impulsetime[IM_T_PUSHER] > lastmillis) return false;
+        if(!touch && impulsestyle == 1 && impulse[IM_TYPE] > IM_T_JUMP && impulse[IM_TYPE] < IM_T_TOUCH) return false;
+        if(impulsestyle <= 2 && type != A_A_VAULT && impulse[IM_COUNT] >= impulsecount) return false;
+        return delayimpulse();
     }
 
     void addicon(int type, int millis, int fade, int value = 0)
@@ -2279,8 +2322,6 @@ namespace physics
     extern float liquidmerge(physent *d, float from, float to);
     extern int carryaffinity(gameent *d);
     extern bool secondaryweap(gameent *d);
-    extern bool allowimpulse(physent *d, int level = 0);
-    extern bool canimpulse(physent *d, int level = 0, bool touch = false);
     extern float impulsevelocity(physent *d, float amt, int &cost, int type, float redir, vec &keep);
     extern bool movecamera(physent *d, const vec &dir, float dist, float stepdist);
     extern void smoothplayer(gameent *d, int res, bool local);
@@ -2438,7 +2479,6 @@ namespace game
     extern void killed(int weap, int flags, int damage, gameent *d, gameent *v, vector<gameent*> &log, int style, int material);
     extern void timeupdate(int state, int remain, int elapsed);
     extern void footstep(gameent *d, int curfoot = -1);
-    extern bool canregenimpulse(gameent *d);
     #define RESIDUAL(name, type, pulse) extern void get##name##effect(physent *d, modelstate &mdl, int length, int millis, int delay);
     RESIDUALS
     #undef RESIDUAL

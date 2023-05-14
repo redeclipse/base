@@ -70,48 +70,6 @@ namespace physics
 
     int physsteps = 0, lastphysframe = 0, lastmove = 0, lastdirmove = 0, laststrafe = 0, lastdirstrafe = 0, lastcrouch = 0, lastwalk = 0;
 
-    bool allowimpulse(physent *d, int type)
-    {
-        if(d && gameent::is(d))
-            return (!type || A(((gameent *)d)->actortype, abilities)&(1<<type)) && (impulsestyle || PHYS(gravity) == 0);
-        return false;
-    }
-
-    bool canimpulse(physent *d, int type, bool touch)
-    {
-        if(!gameent::is(d) || !allowimpulse(d, type)) return false;
-        gameent *e = (gameent *)d;
-        if(e->impulse[IM_TYPE] == IM_T_PUSHER && e->impulsetime[IM_T_PUSHER] > lastmillis) return false;
-        if(!touch && impulsestyle == 1 && e->impulse[IM_TYPE] > IM_T_JUMP && e->impulse[IM_TYPE] < IM_T_TOUCH) return false;
-        if(impulsestyle <= 2 && type != A_A_VAULT && e->impulse[IM_COUNT] >= impulsecount) return false;
-        int time = 0, delay = 0;
-        switch(type)
-        {
-            case A_A_PARKOUR:
-                time = max(max(max(e->impulsetime[IM_T_PARKOUR], e->impulsetime[IM_T_VAULT]), e->impulsetime[IM_T_MELEE]), e->impulsetime[IM_T_GRAB]);
-                delay = impulseparkourdelay;
-                break;
-            case A_A_SLIDE: case A_A_DASH:
-                time = max(e->impulsetime[IM_T_DASH], e->impulsetime[IM_T_SLIDE]);
-                delay = impulsedashdelay;
-                break;
-            case A_A_POUND:
-                time = e->impulsetime[IM_T_POUND];
-                delay = impulsepounddelay;
-                break;
-            case A_A_BOOST: case A_A_LAUNCH: default:
-                time = max(e->impulsetime[IM_T_JUMP], max(e->impulsetime[IM_T_LAUNCH], max(e->impulsetime[IM_T_BOOST], e->impulsetime[IM_T_KICK])));
-                delay = e->impulse[IM_TYPE] == IM_T_JUMP ? impulsejumpdelay : impulseboostdelay;
-                break;
-            case A_A_VAULT:
-                time = e->impulsetime[IM_T_VAULT];
-                delay = impulsevaultdelay;
-                break;
-        }
-        if(time && delay && lastmillis-time <= delay) return false;
-        return true;
-    }
-
     #define imov(name,v,u,d,s,os) \
         void do##name(bool down) \
         { \
@@ -120,7 +78,7 @@ namespace physics
             game::player1->v = dir; \
             if(down) \
             { \
-                if(allowimpulse(game::player1, A_A_DASH) && impulsedash && last##v && lastdir##v && dir == lastdir##v && lastmillis-last##v < PHYSMILLIS) \
+                if(game::player1->allowimpulse(A_A_DASH) && impulsedash && last##v && lastdir##v && dir == lastdir##v && lastmillis-last##v < PHYSMILLIS) \
                 { \
                     game::player1->action[AC_DASH] = true; \
                     game::player1->actiontime[AC_DASH] = lastmillis; \
@@ -829,9 +787,9 @@ namespace physics
         int move = action ? d->move : 0, strafe = action ? d->strafe : 0;
         bool moving = mchk && (move || strafe), pound = !melee && !launch && !sliding && !onfloor && (impulsepoundstyle || !moving) && d->action[AC_CROUCH];
         if(d->actortype < A_BOT && !launch && !melee && !sliding && !impulseaction && !d->action[AC_DASH]) return false;
-        int type = melee ? A_A_PARKOUR : (sliding ? A_A_SLIDE : (launch ? A_A_LAUNCH : (pound ? A_A_POUND : (dash ? A_A_DASH : A_A_BOOST))));
         bool pulse = melee ? !onfloor : d->action[AC_DASH] || (!launch && !onfloor && (d->actortype >= A_BOT || impulseaction&1) && d->action[AC_JUMP]);
-        if((!launch && !melee && !sliding && !pulse) || !canimpulse(d, type, melee || sliding || launch || dash)) return false;
+        int type = melee ? A_A_PARKOUR : (sliding ? A_A_SLIDE : (launch ? A_A_LAUNCH : (pound ? A_A_POUND : (dash ? A_A_DASH : A_A_BOOST))));
+        if((!launch && !melee && !sliding && !pulse) || !d->canimpulse(type, melee || sliding || launch || dash)) return false;
         vec keepvel = inertia;
         int cost = int(impulsecost*(melee ? impulsecostmelee : (sliding ? impulsecostslide : (launch ? impulsecostlaunch : (pound ? impulsecostpound : (dash ? impulsecostdash : impulsecostboost))))));
         float skew = melee ? impulsemelee : (sliding ? impulseslide : (launch ? impulselaunch : (pound ? impulsepound : (dash ? (move < 0 ? impulsedashback : impulsedash) : (moving ? impulseboost : impulsejump))))),
@@ -871,7 +829,7 @@ namespace physics
                 case IM_T_PARKOUR: length = impulseparkourlen; ms = d->impulsetime[IM_T_PARKOUR];break;
                 case IM_T_VAULT: length = impulsevaultlen; ms = d->impulsetime[IM_T_VAULT]; type = A_A_VAULT; break;
             }
-            if((length && lastmillis-ms > length) || !allowimpulse(d, type) || d->vel.iszero())
+            if((length && lastmillis-ms > length) || !d->allowimpulse(type) || d->vel.iszero())
             {
                 d->doimpulse(IM_T_AFTER, lastmillis);
                 client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_AFTER);
@@ -880,7 +838,7 @@ namespace physics
         }
         if(d->impulse[IM_TYPE] == IM_T_PARKOUR)
         {
-            if(d->action[AC_JUMP] && canimpulse(d, A_A_BOOST, true))
+            if(d->action[AC_JUMP] && d->canimpulse(A_A_PARKOUR, true))
             {
                 int cost = int(impulsecost*impulsecostkick);
                 vec keepvel = vec(d->vel).add(d->falling);
@@ -972,7 +930,7 @@ namespace physics
                         }
                         d->o = oldpos;
                     }
-                    if(d->hasparkour() || ((!onfloor || vault) && d->action[AC_SPECIAL] && canimpulse(d, vault ? A_A_VAULT : A_A_PARKOUR, true)))
+                    if(d->hasparkour() || ((!onfloor || vault) && d->action[AC_SPECIAL] && d->canimpulse(vault ? A_A_VAULT : A_A_PARKOUR, true)))
                     {
                         int side = isclimb ? 0 : (off < 0 ? -1 : 1);
 
@@ -1268,7 +1226,7 @@ namespace physics
                 gameent *e = (gameent *)d;
                 if(!e->airmillis && !sticktospecial(e))
                 {
-                    if(local && impulsemethod&2 && timeinair >= impulseslideinair && (e->move == 1 || e->strafe) && e->action[AC_CROUCH] && allowimpulse(e, A_A_SLIDE))
+                    if(local && impulsemethod&2 && timeinair >= impulseslideinair && (e->move == 1 || e->strafe) && e->action[AC_CROUCH] && e->allowimpulse(A_A_SLIDE))
                         impulseplayer(e, true, prevel, false, true);
                     if(timeinair >= PHYSMILLIS)
                     {

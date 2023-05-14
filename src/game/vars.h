@@ -575,13 +575,20 @@ GVAR(IDF_GAMEMOD, 0, impulseslidelen, 0, 750, VAR_MAX); // time before slides en
 GVAR(IDF_GAMEMOD, 0, impulseparkourlen, 0, 1250, VAR_MAX); // length of time a run along a wall can last
 GVAR(IDF_GAMEMOD, 0, impulsevaultlen, 0, 500, VAR_MAX); // length of time a vault can last
 
-GVAR(IDF_GAMEMOD, 0, impulsejumpdelay, 0, 200, VAR_MAX); // minimum time after jump for boost/dash
-GVAR(IDF_GAMEMOD, 0, impulseboostdelay, 0, 300, VAR_MAX); // minimum time between boosts/dashes
-GVAR(IDF_GAMEMOD, 0, impulsedashdelay, 0, 1000, VAR_MAX); // minimum time between dashes/slides
-GVAR(IDF_GAMEMOD, 0, impulsepounddelay, 0, 500, VAR_MAX); // minimum time between pounds
-GVAR(IDF_GAMEMOD, 0, impulseslideinair, 0, 100, VAR_MAX); // minimum time in air for slide
-GVAR(IDF_GAMEMOD, 0, impulseparkourdelay, 0, 500, VAR_MAX); // minimum time between parkour moves
-GVAR(IDF_GAMEMOD, 0, impulsevaultdelay, 0, 1000, VAR_MAX); // minimum time between vault moves
+GVAR(IDF_GAMEMOD, 0, impulsejumpdelay, 0, 200, VAR_MAX); // minimum time after jump
+GVAR(IDF_GAMEMOD, 0, impulseboostdelay, 0, 300, VAR_MAX); // minimum time after boosts
+GVAR(IDF_GAMEMOD, 0, impulsedashdelay, 0, 1000, VAR_MAX); // minimum time after dashes
+GVAR(IDF_GAMEMOD, 0, impulseslidedelay, 0, 1000, VAR_MAX); // minimum time after slides
+GVAR(IDF_GAMEMOD, 0, impulselaunchdelay, 0, 1000, VAR_MAX); // minimum time after launches
+GVAR(IDF_GAMEMOD, 0, impulsemeleedelay, 0, 200, VAR_MAX); // minimum time after melee
+GVAR(IDF_GAMEMOD, 0, impulsekickdelay, 0, 500, VAR_MAX); // minimum time after kicks
+GVAR(IDF_GAMEMOD, 0, impulsegrabdelay, 0, 500, VAR_MAX); // minimum time after grabs
+GVAR(IDF_GAMEMOD, 0, impulseparkourdelay, 0, 500, VAR_MAX); // minimum time after parkour moves
+GVAR(IDF_GAMEMOD, 0, impulsevaultdelay, 0, 1000, VAR_MAX); // minimum time after vault moves
+GVAR(IDF_GAMEMOD, 0, impulsepounddelay, 0, 500, VAR_MAX); // minimum time after pounds
+GVAR(IDF_GAMEMOD, 0, impulseafterdelay, 0, 100, VAR_MAX); // minimum time after iteration
+GVAR(IDF_GAMEMOD, 0, impulsepusherdelay, 0, 200, VAR_MAX); // minimum time after pusher
+GVAR(IDF_GAMEMOD, 0, impulseslideinair, 0, 200, VAR_MAX); // minimum time in air for slide
 
 GVAR(IDF_GAMEMOD, 0, impulsemeter, 0, 0, VAR_MAX); // impulse limiter
 GVAR(IDF_GAMEMOD, 0, impulsecost, 1, 5000, VAR_MAX); // cost of impulse move

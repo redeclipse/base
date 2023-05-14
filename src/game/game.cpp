@@ -1247,13 +1247,6 @@ namespace game
         }
     }
 
-    bool canregenimpulse(gameent *d)
-    {
-        if(d->state == CS_ALIVE && ((impulsecountregen && d->impulse[IM_COUNT] > 0) || (impulsemeter && d->impulse[IM_METER] > 0)) && (!impulseregendelay || lastmillis-d->impulse[IM_REGEN] >= impulseregendelay))
-            return true;
-        return false;
-    }
-
     void checkoften(gameent *d, bool local)
     {
         adjustscaled(d->quake, quakefade);
@@ -1315,7 +1308,7 @@ namespace game
         if(feetz < minz) d->o.z += minz-feetz; // ensure player doesn't end up lower than they were
 
         bool collected = false;
-        if(canregenimpulse(d))
+        if(d->regenimpulse())
         {
             bool onfloor = d->physstate >= PHYS_SLOPE || isladder(d->inmaterial) || physics::liquidcheck(d); // collect time until we are able to act upon it
             float skew = impulseregen;
@@ -1329,12 +1322,12 @@ namespace game
             if(skew > 0)
             {
                 bool inhibit = false;
-                int timeslice = int((curtime+d->impulse[IM_COLLECT])*skew);
+                int timeslice = int((curtime + d->impulse[IM_COLLECT]) * skew);
                 if(impulsecountregen && d->impulse[IM_COUNT] > 0)
                 {
                     if(impulsecostcountinair || onfloor)
                     {
-                        int cost = int(impulsecost*impulsecostcount);
+                        int cost = int(impulsecost * impulsecostcount);
                         if(timeslice >= cost)
                         {
                             timeslice -= cost;
@@ -1355,14 +1348,14 @@ namespace game
             if(!hasmeter)
             {
                 d->impulse[IM_COLLECT] += curtime;
-                if(!d->lastimpulsecollect) d->lastimpulsecollect = lastmillis;
+                if(!d->impulsecollect) d->impulsecollect = lastmillis;
                 collected = true;
             }
         }
         if(!collected)
         {
             d->impulse[IM_COLLECT] = 0;
-            d->lastimpulsecollect = 0;
+            d->impulsecollect = 0;
         }
 
         if(isweap(d->weapselect) && gs_playing(gamestate) && d->state == CS_ALIVE)

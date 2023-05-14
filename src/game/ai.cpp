@@ -1061,7 +1061,7 @@ namespace ai
         vec off = vec(pos).sub(d->feetpos());
         int airtime = d->airtime(lastmillis);
         bool sequenced = d->ai->blockseq > 1 || d->ai->targseq > 1, offground = airtime && !physics::liquidcheck(d) && !isladder(d->inmaterial),
-             impulse = physics::canimpulse(d, A_A_BOOST, false) && airtime > (b.acttype >= AI_A_LOCKON ? 100 : 250) && d->hasparkour() && (b.acttype >= AI_A_LOCKON || off.z >= JUMPMIN) && (!impulsemeter || impulsemeter-d->impulse[IM_METER] >= impulsecost),
+             impulse = d->canimpulse(A_A_BOOST, false) && airtime > (b.acttype >= AI_A_LOCKON ? 100 : 250) && d->hasparkour() && (b.acttype >= AI_A_LOCKON || off.z >= JUMPMIN) && (!impulsemeter || impulsemeter-d->impulse[IM_METER] >= impulsecost),
              jumper = A(d->actortype, abilities)&AA(JUMP) && !offground && (b.acttype == AI_A_LOCKON || sequenced || off.z >= JUMPMIN),
              jump = (impulse || jumper) && lastmillis >= d->ai->jumpseed, allowspecial = !sequenced && !isladder(d->inmaterial) && airtime;
         if(jump)
@@ -1107,7 +1107,7 @@ namespace ai
         }
         if(allowspecial)
         {
-            if(airtime > impulsejumpdelay && !d->hasparkour() && (d->skill >= 100 || !rnd(101-d->skill)) && physics::canimpulse(d, A_A_PARKOUR, true))
+            if(airtime > impulsejumpdelay && !d->hasparkour() && (d->skill >= 100 || !rnd(101-d->skill)) && d->canimpulse(A_A_PARKOUR, true))
                 d->action[AC_SPECIAL] = true;
             else if(lastmillis-d->ai->lastmelee >= (201-d->skill)*35 && d->canmelee(m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis))
             {

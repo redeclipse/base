@@ -1010,7 +1010,7 @@ namespace client
     CLCOMMAND(scoretime, floatret(d->scoretime()));
     CLCOMMANDM(kdratio, "si", (char *who, int *n), intret(d->kdratio(*n!=0)));
 
-    CLCOMMAND(allowimpulse, intret(physics::allowimpulse(d) ? 1 : 0));
+    CLCOMMAND(allowimpulse, intret(d->allowimpulse() ? 1 : 0));
     CLCOMMAND(impulsemeter, intret(d->impulse[IM_METER]));
     CLCOMMAND(impulsetype, intret(d->impulse[IM_TYPE]));
     CLCOMMANDM(impulsetimer, "b", (char *who, int *n), intret(d->impulsetime[*n >= 0 && *n < IM_T_MAX ? *n : d->impulse[IM_TYPE]]));
@@ -1026,7 +1026,7 @@ namespace client
     CLCOMMAND(bleeding, intret(d->bleedtime ? d->bleeding(lastmillis, d->bleedtime) : 0));
     CLCOMMAND(shocking, intret(d->shocktime ? d->shocking(lastmillis, d->shocktime) : 0));
     CLCOMMAND(regen, intret(regentime ? d->lastregen : 0));
-    CLCOMMAND(impulselast, intret(game::canregenimpulse(d) && d->lastimpulsecollect ? (lastmillis-d->lastimpulsecollect)%1000 : 0));
+    CLCOMMAND(impulselast, intret(d->regenimpulse() && d->impulsecollect ? (lastmillis-d->impulsecollect)%1000 : 0));
 
     CLCOMMAND(spawnweap, intret(m_weapon(d->actortype, game::gamemode, game::mutators)));
     CLCOMMAND(spawndelay, intret(m_delay(d->actortype, game::gamemode, game::mutators, d->team)));
