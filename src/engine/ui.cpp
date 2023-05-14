@@ -6116,12 +6116,18 @@ namespace UI
         return ret;
     }
 
+    ICOMMANDV(0, uihasinput, hasinput());
+    ICOMMAND(0, uigetinput, "ib", (int *cursor, int *stype), intret(hasinput(*cursor != 0, *stype >= 0 ? *stype : SURFACE_MAIN)));
+
     bool hasmenu(bool pass, int stype)
     {
         bool ret = false;
         SWSURFACE(stype, if(surface->hasmenu(pass)) ret = true);
         return ret;
     }
+
+    ICOMMANDV(0, uihasmenu, hasmenu());
+    ICOMMAND(0, uigetmenu, "ib", (int *pass, int *stype), intret(hasmenu(*pass != 0, *stype >= 0 ? *stype : SURFACE_MAIN)));
 
     bool keypress(int code, bool isdown)
     {
