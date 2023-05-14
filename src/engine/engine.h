@@ -805,7 +805,7 @@ enum
     INIT_QUIT
 };
 
-#define ENUM_PROGRESS(pr, en) en(pr, None, NONE) en(pr, Loading, MAPLOAD) en(pr, Saving, MAPSAVE) en(pr, Connecting, CONNECT) en(pr, Game State, GAMESTATE) en(pr, Game Wait, GAMEWAIT) en(pr, Maximum, MAX)
+#define ENUM_PROGRESS(pr, en) en(pr, None, NONE) en(pr, Connecting, CONNECT) en(pr, Loading, MAPLOAD) en(pr, Saving, MAPSAVE) en(pr, Downloading, MAPDL) en(pr, Starting, GAMESTATE) en(pr, Waiting, GAMEWAIT) en(pr, Maximum, MAX)
 ENUMNV(PROGRESS, ENUM_PROGRESS);
 
 extern int initing, fullscreen, fullscreendesktop, numcpus, noconfigfile, firstrun;

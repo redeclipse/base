@@ -947,7 +947,7 @@ enum
     IFMT_MAX,
 };
 extern const char *ifmtexts[IFMT_MAX];
-extern char *notexturetex, *blanktex, *logotex, *emblemtex, *icontex, *nothumbtex;
+extern char *notexturetex, *blanktex, *logotex, *logocrop, *emblemtex, *icontex, *nothumbtex;
 extern int imageformat;
 
 extern void savepng(const char *filename, ImageData &image, int compress = 9, bool flip = false);

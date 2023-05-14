@@ -79,10 +79,6 @@ namespace hud
     LOOPENGSTATS(,loopcsi)
     LOOPENGSTATS(rev,loopcsirev)
 
-    VAR(IDF_PERSIST, titlefade, 0, 1000, 10000);
-    VAR(IDF_PERSIST, tvmodefade, 0, 250, VAR_MAX);
-    VAR(IDF_PERSIST, spawnfade, 0, 250, VAR_MAX);
-
     FVAR(IDF_PERSIST, eventiconoffset, -1, 0.58f, 1);
     FVAR(IDF_PERSIST, eventiconblend, 0, 1, 1);
     FVAR(IDF_PERSIST, eventiconscale, 1e-4f, 2.5f, 1000);
@@ -1790,55 +1786,13 @@ namespace hud
     void render(bool noview)
     {
         int wait = client::waiting();
-        float fade = hudblend;
+
         hudmatrix.ortho(0, hudwidth, hudheight, 0, -1, 1);
         flushhudmatrix();
-        if(!progressing && !wait && engineready)
-        {
-            vec colour = vec(1, 1, 1);
-            if(compassfade && (compassmillis > 0 || totalmillis-abs(compassmillis) <= compassfade))
-            {
-                float a = min(float(totalmillis-abs(compassmillis))/float(compassfade), 1.f)*compassfadeamt;
-                if(compassmillis > 0) a = 1.f-a;
-                else a += (1.f-compassfadeamt);
-                loopi(3) if(a < colour[i]) colour[i] *= a;
-            }
-            if(!noview)
-            {
-                if(titlefade && (!game::mapstart || totalmillis-game::mapstart <= titlefade))
-                {
-                    float a = game::mapstart ? float(totalmillis-game::mapstart)/float(titlefade) : 0.f;
-                    loopi(3) if(a < colour[i]) colour[i] *= a;
-                }
-                if(tvmodefade && game::tvmode())
-                {
-                    float a = game::lasttvchg ? (totalmillis-game::lasttvchg <= tvmodefade ? float(totalmillis-game::lasttvchg)/float(tvmodefade) : 1.f) : 0.f;
-                    loopi(3) if(a < colour[i]) colour[i] *= a;
-                }
-                if((game::focus == game::player1 || !game::thirdpersonview(true)) && (spawnfade && game::focus->state == CS_ALIVE && game::focus->lastspawn && lastmillis-game::focus->lastspawn <= spawnfade))
-                {
-                    float a = (lastmillis-game::focus->lastspawn)/float(spawnfade/3);
-                    if(a < 3.f)
-                    {
-                        vec col = vec(1, 1, 1);
-                        skewcolour(col.x, col.y, col.z, game::getcolour(game::focus, game::playereffecttone, game::playereffecttonelevel));
-                        if(a < 1.f) { loopi(3) col[i] *= a; }
-                        else { a = (a-1.f)*0.5f; loopi(3) col[i] += (1.f-col[i])*a; }
-                        loopi(3) if(col[i] < colour[i]) colour[i] *= col[i];
-                    }
-                }
-            }
-            if(colour.x < 1 || colour.y < 1 || colour.z < 1)
-            {
-                usetexturing(false);
-                drawblend(0, 0, hudwidth, hudheight, colour.x, colour.y, colour.z);
-                usetexturing(true);
-                fade *= (colour.x+colour.y+colour.z)/3.f;
-            }
-        }
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         resethudshader();
+
         if(noview || wait) drawbackground(hudwidth, hudheight);
         else if(engineready)
         {
@@ -1847,7 +1801,7 @@ namespace hud
             {
                 if(gs_playing(game::gamestate))
                 {
-                    drawdamages(fade);
+                    drawdamages(hudblend);
                     if(teamhurthud&2 && teamhurttime && m_team(game::gamemode, game::mutators) && game::focus == game::player1 && game::player1->lastteamhit >= 0 && totalmillis-game::player1->lastteamhit <= teamhurttime)
                     {
                         vec targ;
@@ -1875,14 +1829,14 @@ namespace hud
                     }
                     if(!hasinput(true))
                     {
-                        if(onscreenhits) drawonscreenhits(hudwidth, hudheight, fade);
-                        if(onscreendamage) drawonscreendamage(hudwidth, hudheight, fade);
-                        if(m_capture(game::gamemode)) capture::drawonscreen(hudwidth, hudheight, fade);
-                        else if(m_defend(game::gamemode)) defend::drawonscreen(hudwidth, hudheight, fade);
-                        else if(m_bomber(game::gamemode)) bomber::drawonscreen(hudwidth, hudheight, fade);
+                        if(onscreenhits) drawonscreenhits(hudwidth, hudheight, hudblend);
+                        if(onscreendamage) drawonscreendamage(hudwidth, hudheight, hudblend);
+                        if(m_capture(game::gamemode)) capture::drawonscreen(hudwidth, hudheight, hudblend);
+                        else if(m_defend(game::gamemode)) defend::drawonscreen(hudwidth, hudheight, hudblend);
+                        else if(m_bomber(game::gamemode)) bomber::drawonscreen(hudwidth, hudheight, hudblend);
                     }
                 }
-                if(!game::tvmode() && !client::waiting() && !hasinput(false)) drawevents(fade);
+                if(!game::tvmode() && !client::waiting() && !hasinput(false)) drawevents(hudblend);
             }
         }
         if(engineready)

@@ -2886,11 +2886,11 @@ namespace UI
         enum { CO_TL = 0, CO_TR, CO_TC, CO_BL, CO_BR, CO_BC, CO_ML, CO_MR, CO_MC, CO_MAX };
 
         Texture *tex;
-        bool alphatarget, outline;
+        bool alphatarget, outline, aspect;
         float shadowsize;
         Color shadowcolor;
 
-        void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0, bool outline_ = false, float shadowsize_ = 0.f)
+        void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0, bool outline_ = false, float shadowsize_ = 0.f, bool aspect_ = false)
         {
             Target::setup(minw_, minh_, color_, SOLID, VERTICAL);
             tex = tex_;
@@ -2898,9 +2898,10 @@ namespace UI
             outline = outline_;
             shadowsize = shadowsize_;
             shadowcolor = Color(color_).scale(Color(0, 0, 0, 255));
+            aspect = aspect_;
         }
 
-        void setup(Texture *tex_, const Color &color_, const Color &color2_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0, int dir_ = VERTICAL, bool outline_ = false, float shadowsize_ = 0.f)
+        void setup(Texture *tex_, const Color &color_, const Color &color2_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0, int dir_ = VERTICAL, bool outline_ = false, float shadowsize_ = 0.f, bool aspect_ = false)
         {
             Target::setup(minw_, minh_, color_, SOLID, dir_);
             colors.add(color2_); // gradient version
@@ -2909,11 +2910,27 @@ namespace UI
             outline = outline_;
             shadowsize = shadowsize_;
             shadowcolor = Color(color_).scale(Color(0, 0, 0, 255));
+            aspect = aspect_;
         }
 
         static const char *typestr() { return "#Image"; }
         const char *gettype() const { return typestr(); }
         bool isimage() const { return true; }
+
+        void layout()
+        {
+            Object::layout();
+
+            float mw = minw, mh = minh;
+            if(aspect && tex && (mw > 0 || mh > 0))
+            {
+                if(mw <= 0) mw = mh * (tex->w / float(tex->h));
+                else if(mh <= 0) mh = mw * (tex->h / float(tex->w));
+            }
+
+            w = max(w, mw);
+            h = max(h, mh);
+        }
 
         bool target(float cx, float cy)
         {
@@ -3095,6 +3112,7 @@ namespace UI
     UIIMGCMDS(clamped, 0x7000);
     UIARGTB(Image, image, alphatarget);
     UIARGTB(Image, image, outline);
+    UIARGTB(Image, image, aspect);
     UICMDT(Image, image, shadow, "fi", (float *s, int *c),
     {
         o->shadowsize = clamp(*s, FVAR_MIN, FVAR_MAX);

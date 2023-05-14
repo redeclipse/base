@@ -1,7 +1,5 @@
 FVAR(IDF_PERSIST, compasssize, 0, 0.15f, 1000);
 FVAR(IDF_PERSIST, compassblend, 0, 0.75f, 1);
-VAR(IDF_PERSIST, compassfade, 0, 250, VAR_MAX);
-FVAR(IDF_PERSIST, compassfadeamt, 0, 0.75f, 1);
 TVAR(IDF_PERSIST, compasstex, "<grey>textures/hud/compass", 3);
 TVAR(IDF_PERSIST, compassringtex, "<grey>textures/hud/progress", 3);
 
@@ -43,7 +41,9 @@ struct cmenu : cstate
     }
 };
 
-int compassmillis = 0, compasspos = 0;
+
+VARR(compassmillis, 0);
+VARR(compasspos, 0);
 cmenu *curcompass = NULL;
 vector<cmenu> cmenus;
 
