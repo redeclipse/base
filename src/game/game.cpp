@@ -522,7 +522,7 @@ namespace game
         if(maploading) return PROGRESS_MAPLOAD;
         if(mapsaving) return PROGRESS_MAPSAVE;
         if(client::needsmap || client::gettingmap) return PROGRESS_MAPDL;
-        if(gamestate != G_S_PLAYING) return PROGRESS_GAMESTATE;
+        if(gamestate < G_S_PLAYING) return PROGRESS_GAMESTATE;
         if(player1->isspectator()) return PROGRESS_GAMEWAIT;
         return PROGRESS_NONE;
     }
@@ -2390,13 +2390,13 @@ namespace game
         teamed[0] = '\0';
         concatstring(teamed, "\fs");
         concformatstring(teamed, "\f[%d]", TEAM(team, colour));
-        if(icon != NULL) concformatstring(teamed, "\f($%s)", *icon ? icon : teamtexnamex(team));
+        if(icon != NULL) concformatstring(teamed, "\f($%s)", icon && *icon ? icon : teamtexnamex(team));
         concatstring(teamed, TEAM(team, name));
         concatstring(teamed, "\fS");
         return teamed;
     }
 
-    ICOMMAND(0, getteamname, "ibb", (int *team, int *fmt, int *icon), result(*team >= 0 && *team < T_MAX ? (*fmt ? colourteam(*team, *icon ? "" : NULL) : TEAM(*team, name)) : ""));
+    ICOMMAND(0, getteamname, "ibs", (int *team, int *fmt, char *icon), result(*team >= 0 && *team < T_MAX ? (*fmt ? colourteam(*team, icon) : TEAM(*team, name)) : ""));
     ICOMMAND(0, getteamcolour, "i", (int *team), intret(*team >= 0 && *team < T_MAX ? TEAM(*team, colour) : 0));
 
     void suicide(gameent *d, int flags)
