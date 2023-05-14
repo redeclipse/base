@@ -804,11 +804,15 @@ enum
     INIT_DEFAULTS,
     INIT_QUIT
 };
+
+#define ENUM_PROGRESS(pr, en) en(pr, None, NONE) en(pr, Loading, MAPLOAD) en(pr, Saving, MAPSAVE) en(pr, Connecting, CONNECT) en(pr, Game State, GAMESTATE) en(pr, Game Wait, GAMEWAIT) en(pr, Maximum, MAX)
+ENUMNV(PROGRESS, ENUM_PROGRESS);
+
 extern int initing, fullscreen, fullscreendesktop, numcpus, noconfigfile, firstrun;
-void setfullscreen(bool enable);
 extern bool progressing, pixeling;
 extern float loadprogress, progressamt;
 extern char *progresstitle;
+extern void setfullscreen(bool enable);
 extern void progress(float amt, const char *s, ...) PRINTFARGS(2, 3);
 extern void limitfps(int &millis, int curmillis);
 
@@ -1069,4 +1073,9 @@ extern void viewhaze();
 
 #endif // STANDALONE
 #include "sound.h"
+#endif
+
+#if !defined(CPP_GAME_HEADER) || defined(CPP_GAME_SERVER)
+#define ENUM_DEFINE
+#include "enum.h"
 #endif

@@ -608,7 +608,7 @@ namespace server
 
     string smapname = "";
     int smapcrc = 0, smapvariant = MPV_DEF, mapsending = -1, mapgameinfo = -1, gamestate = G_S_WAITING, gamemode = G_EDITING, mutators = 0, gamemillis = 0, gamelimit = 0, gametick = 0,
-        mastermode = MM_OPEN, timeremaining = -1, oldtimelimit = -1, gamewaittime = 0, lastteambalance = 0, nextteambalance = 0, lastavgposcalc = 0, lastrotatecycle = 0;
+        mastermode = MM_OPEN, timeremaining = -1, oldtimelimit = -1, gamewaittime = 0, gamewaitdelay = 0, lastteambalance = 0, nextteambalance = 0, lastavgposcalc = 0, lastrotatecycle = 0;
     bool hasgameinfo = false, updatecontrols = false, shouldcheckvotes = false, firstblood = false, sentstats = false;
     enet_uint32 lastsend = 0;
     stream *mapdata[SENDMAP_MAX] = { NULL };
@@ -1629,20 +1629,29 @@ namespace server
         return false;
     }
 
+    int timewait()
+    {
+        return gamewaittime ? gamewaittime + gamewaitdelay : 0;
+    }
+
     int timeleft()
     {
         switch(gamestate)
         {
             case G_S_PLAYING: case G_S_OVERTIME: return timeremaining;
-            default: return gamewaittime ? max(gamewaittime-totalmillis, 0)/1000 : 0;
+            default: return max(timewait() - totalmillis, 0);
         }
         return 0;
     }
 
-    void sendtick()
+    int timeelapsed()
     {
-        sendf(-1, 1, "ri4", N_TICK, gamestate, timeleft(), gamemillis);
-        gametick = totalmillis;
+        switch(gamestate)
+        {
+            case G_S_PLAYING: case G_S_OVERTIME: return gamemillis;
+            default: return totalmillis - gamewaittime;
+        }
+        return 0;
     }
 
     bool checkvotes(bool force = false);
@@ -1664,16 +1673,18 @@ namespace server
             if(gamestate != G_S_VOTING && G(votelimit))
             {
                 gamestate = G_S_VOTING;
-                gamewaittime = totalmillis+G(votelimit);
-                sendtick();
+                gamewaittime = totalmillis;
+                gamewaitdelay = G(votelimit);
+                gametick = 0;
             }
             else checkvotes(true);
         }
         else
         {
             gamestate = G_S_INTERMISSION;
-            gamewaittime = totalmillis+G(intermlimit);
-            sendtick();
+            gamewaittime = totalmillis;
+            gamewaitdelay = G(intermlimit);
+            gametick = 0;
         }
     }
 
@@ -1897,7 +1908,7 @@ namespace server
                 if(limit)
                 {
                     if(gamemillis >= gamelimit) timeremaining = 0;
-                    else timeremaining = (gamelimit-gamemillis+999)/1000;
+                    else timeremaining = gamelimit - gamemillis;
                 }
                 else timeremaining = -1;
                 bool wantsoneminute = true;
@@ -1908,8 +1919,8 @@ namespace server
                         limit = oldtimelimit = m_mmvar(gamemode, mutators, overtimelimit);
                         if(limit)
                         {
-                            timeremaining = limit*60;
-                            int millis = timeremaining*1000;
+                            timeremaining = limit*60*1000;
+                            int millis = timeremaining;
                             gamelimit += millis;
                             gamelog log;
                             log.addlist("this", "type", "overtime");
@@ -1948,19 +1959,15 @@ namespace server
                         return; // bail
                     }
                 }
-                if(gs_playing(gamestate) && timeremaining != 0)
+                if(gs_playing(gamestate) && timeremaining != 0 && wantsoneminute && timeremaining == 60000)
                 {
-                    if(wantsoneminute && timeremaining == 60)
-                    {
-                        gamelog log;
-                        log.addlist("this", "type", "timelimit");
-                        log.addlist("this", "action", "oneminute");
-                        log.addlist("this", "sound", "S_V_ONEMINUTE");
-                        log.addlist("this", "flags", EV_F_BROADCAST);
-                        log.addlist("args", "console", "\fzYgONE MINUTE REMAINS");
-                        log.push();
-                    }
-                    sendtick();
+                    gamelog log;
+                    log.addlist("this", "type", "timelimit");
+                    log.addlist("this", "action", "oneminute");
+                    log.addlist("this", "sound", "S_V_ONEMINUTE");
+                    log.addlist("this", "flags", EV_F_BROADCAST);
+                    log.addlist("args", "console", "\fzYgONE MINUTE REMAINS");
+                    log.push();
                 }
             }
         }
@@ -3620,11 +3627,11 @@ namespace server
         changemode(gamemode = mode, mutators = muts);
         curbalance = nextbalance = lastteambalance = nextteambalance = lastavgposcalc = gamemillis = 0;
         gamestate = G_S_WAITING;
-        gamewaittime = 0;
+        gamewaittime = gamewaitdelay = gametick = 0;
         bool hastime = m_play(gamemode) && m_mmvar(gamemode, mutators, timelimit);
         oldtimelimit = hastime ? m_mmvar(gamemode, mutators, timelimit) : -1;
-        timeremaining = hastime ? m_mmvar(gamemode, mutators, timelimit)*60 : -1;
-        gamelimit = hastime ? timeremaining*1000 : 0;
+        timeremaining = hastime ? m_mmvar(gamemode, mutators, timelimit)*60*1000 : -1;
+        gamelimit = hastime ? timeremaining : 0;
         loopv(savedscores) savedscores[i].mapchange();
         loopv(savedstatsscores) savedstatsscores[i].mapchange();
         setuptriggers(false);
@@ -3704,7 +3711,6 @@ namespace server
         setupattrmap();
         if(numclients())
         {
-            sendtick();
             if(m_demo(gamemode)) setupdemoplayback();
             else if(demonextmatch) setupdemorecord();
         }
@@ -5547,31 +5553,35 @@ namespace server
                     {
                         if(!G(waitforplayermaps))
                         {
-                            gamewaittime = totalmillis+G(waitforplayertime);
+                            gamewaittime = totalmillis;
+                            gamewaitdelay = G(waitforplayertime);
                             gamestate = G_S_READYING;
-                            sendtick();
+                            gametick = 0;
                             break;
                         }
                         if(!gamewaittime)
                         {
-                            gamewaittime = totalmillis+max(G(waitforplayerload), 1);
-                            sendtick();
+                            gamewaittime = totalmillis;
+                            gamewaitdelay = max(G(waitforplayerload), 1);
+                            gametick = 0;
                         }
-                        if(numnotready && gamewaittime > totalmillis) break;
+                        if(numnotready && timewait() >= totalmillis) break;
                         if(!hasmapdata())
                         {
                             if(mapsending < 0) getmap(NULL, true);
                             if(mapsending >= 0)
                             {
                                 srvoutf(4, "\fyPlease wait while the server downloads the map..");
-                                gamewaittime = totalmillis+G(waitforplayermaps);
+                                gamewaittime = totalmillis;
+                                gamewaitdelay = G(waitforplayermaps);
                                 gamestate = G_S_GETMAP;
-                                sendtick();
+                                gametick = 0;
                                 break;
                             }
-                            gamewaittime = totalmillis+G(waitforplayertime);
+                            gamewaittime = totalmillis;
+                            gamewaitdelay = G(waitforplayertime);
                             gamestate = G_S_READYING;
-                            sendtick();
+                            gametick = 0;
                             break;
                         }
                         // fall through
@@ -5580,44 +5590,50 @@ namespace server
                     {
                         if(!gamewaittime)
                         {
-                            gamewaittime = totalmillis+G(waitforplayermaps);
-                            sendtick();
+                            gamewaittime = totalmillis;
+                            gamewaitdelay = G(waitforplayermaps);
+                            gametick = 0;
                         }
-                        if(!hasmapdata() && mapsending >= 0 && gamewaittime > totalmillis) break;
+                        if(!hasmapdata() && mapsending >= 0 && timewait() >= totalmillis) break;
                         if(numgetmap && hasmapdata())
                         {
                             srvoutf(4, "\fyPlease wait for \fs\fc%d\fS %s to download the map..", numgetmap, numgetmap != 1 ? "players" : "player");
-                            gamewaittime = totalmillis+G(waitforplayermaps);
+                            gamewaittime = totalmillis;
+                            gamewaitdelay = G(waitforplayermaps);
                             gamestate = G_S_SENDMAP;
-                            sendtick();
+                            gametick = 0;
                             break;
                         }
-                        gamewaittime = totalmillis+G(waitforplayertime);
+                        gamewaittime = totalmillis;
+                        gamewaitdelay = G(waitforplayertime);
                         gamestate = G_S_READYING;
-                        sendtick();
+                        gametick = 0;
                         break;
                     }
                     case G_S_SENDMAP: // waiting for players
                     {
                         if(!gamewaittime)
                         {
-                            gamewaittime = totalmillis+G(waitforplayermaps);
-                            sendtick();
+                            gamewaittime = totalmillis;
+                            gamewaitdelay = G(waitforplayermaps);
+                            gametick = 0;
                         }
-                        if(numgetmap && gamewaittime > totalmillis && hasmapdata()) break;
-                        gamewaittime = totalmillis+G(waitforplayertime);
+                        if(numgetmap && timewait() >= totalmillis && hasmapdata()) break;
+                        gamewaittime = totalmillis;
+                        gamewaitdelay = G(waitforplayertime);
                         gamestate = G_S_READYING;
-                        sendtick();
+                        gametick = 0;
                         // fall through
                     }
                     case G_S_READYING: // waiting for ready
                     {
                         if(!gamewaittime)
                         {
-                            gamewaittime = totalmillis+G(waitforplayertime);
-                            sendtick();
+                            gamewaittime = totalmillis;
+                            gamewaitdelay = G(waitforplayertime);
+                            gametick = 0;
                         }
-                        if(numwait && gamewaittime > totalmillis) break;
+                        if(numwait && timewait() >= totalmillis) break;
                         if(!hasgameinfo)
                         {
                             clientinfo *best = NULL;
@@ -5633,9 +5649,10 @@ namespace server
                                 mapgameinfo = best->clientnum;
                                 srvoutf(4, "\fyRequesting game information from %s..", colourname(best));
                                 sendf(best->clientnum, 1, "ri", N_GETGAMEINFO);
-                                gamewaittime = totalmillis+G(waitforplayerinfo);
+                                gamewaittime = totalmillis;
+                                gamewaitdelay = G(waitforplayerinfo);
                                 gamestate = G_S_GAMEINFO;
-                                sendtick();
+                                gametick = 0;
                                 break;
                             }
                         }
@@ -5646,10 +5663,11 @@ namespace server
                     {
                         if(!gamewaittime)
                         {
-                            gamewaittime = totalmillis+G(waitforplayerinfo);
-                            sendtick();
+                            gamewaittime = totalmillis;
+                            gamewaitdelay = G(waitforplayerinfo);
+                            gametick = 0;
                         }
-                        if(!hasgameinfo && gamewaittime > totalmillis) break;
+                        if(!hasgameinfo && timewait() >= totalmillis) break;
                         if(hasgameinfo) srvoutf(4, "\fyGame information received, starting..");
                         else
                         {
@@ -5668,8 +5686,9 @@ namespace server
                                 else
                                 {
                                     srvoutf(4, "\fyNo game information response, broadcasting..");
-                                    gamewaittime = totalmillis+G(waitforplayerinfo);
-                                    sendtick();
+                                    gamewaittime = totalmillis;
+                                    gamewaitdelay = G(waitforplayerinfo);
+                                    gametick = 0;
                                     break;
                                 }
                             }
@@ -5681,7 +5700,7 @@ namespace server
                 }
                 if(gamestate == G_S_PLAYING)
                 {
-                    gamewaittime = 0;
+                    gamewaittime = gamewaitdelay = 0;
                     if(m_team(gamemode, mutators)) doteambalance(true);
                     if(m_play(gamemode) && !m_bomber(gamemode) && !m_duke(gamemode, mutators)) // they do their own "fight"
                     {
@@ -5693,14 +5712,10 @@ namespace server
                         log.addlist("args", "console", "\fyMatch start, FIGHT!");
                         log.push();
                     }
-                    sendtick();
+                    gametick = 0;
                 }
             }
-            if(canplay() && !paused)
-            {
-                gamemillis += curtime;
-                if(totalmillis-gametick >= 1000) sendtick();
-            }
+            if(canplay() && !paused) gamemillis += curtime;
             if(m_demo(gamemode)) readdemo();
             else if(canplay() && !paused)
             {
@@ -5711,8 +5726,13 @@ namespace server
                 if(smode) smode->update();
                 mutate(smuts, mut->update());
             }
-            if(gs_intermission(gamestate) && gamewaittime <= totalmillis) startintermission(true); // wait then call for next map
+            if(gs_intermission(gamestate) && timewait() < totalmillis) startintermission(true); // wait then call for next map
             if(shouldcheckvotes) checkvotes();
+            if(!gametick || totalmillis - gametick >= 1000)
+            {
+                sendf(-1, 1, "ri4", N_TICK, gamestate, timeleft(), timeelapsed());
+                gametick = totalmillis - ((totalmillis - gametick) % 1000);
+            }
         }
         else
         {

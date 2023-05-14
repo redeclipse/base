@@ -1223,7 +1223,7 @@ void preloadtextures(uint flags)
         if(id.type == ID_SVAR && (id.flags&IDF_TEXTURE) && (id.flags&(IDF_PRELOAD|IDF_GAMEPRELOAD)) == flags)
             id.changed();
     });
-    if(!blanktexture) blanktexture = textureload(blanktex);
+    if(!blanktexture) blanktexture = textureload(blanktex, 3);
 }
 
 static GLenum texformat(int bpp, bool swizzle = false)
@@ -4625,24 +4625,24 @@ COMMAND(0, mergenormalmaps, "ss");
 COMMAND(0, normalizenormalmap, "ss");
 COMMAND(0, removealphachannel, "ss");
 
-ICOMMAND(0, gettexaspect, "si", (char *tex, int *load),
+ICOMMAND(0, gettexaspect, "sii", (char *tex, int *load, int *tclamp),
 {
-    Texture *t = *load ? textureload(tex) : textureloaded(tex);
+    Texture *t = *load ? textureload(tex, *tclamp, true, false) : textureloaded(tex);
     if(!t) return;
     floatret((float)t->w / (float)t->h);
 });
 
-ICOMMAND(0, gettexsize, "si", (char *tex, int *load),
+ICOMMAND(0, gettexsize, "sii", (char *tex, int *load, int *tclamp),
 {
-    Texture *t = *load ? textureload(tex) : textureloaded(tex);
+    Texture *t = *load ? textureload(tex, *tclamp, true, false) : textureloaded(tex);
     if(!t) return;
     defformatstring(str, "%d %d", t->w, t->h);
     result(str);
 });
 
-ICOMMAND(0, gettexbpp, "si", (char *tex, int *load),
+ICOMMAND(0, gettexbpp, "sii", (char *tex, int *load, int *tclamp),
 {
-    Texture *t = *load ? textureload(tex) : textureloaded(tex);
+    Texture *t = *load ? textureload(tex, *tclamp, true, false) : textureloaded(tex);
     if(!t) return;
     intret(t->bpp);
 });

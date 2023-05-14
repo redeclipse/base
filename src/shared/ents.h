@@ -184,6 +184,8 @@ struct baseent
     }
 
     bool isobserver() const { return state == CS_SPECTATOR || state == CS_EDITING || state == CS_WAITING; }
+    bool iswatching() const { return state == CS_SPECTATOR || state == CS_WAITING; }
+    bool isspectator() const { return state == CS_SPECTATOR; }
     bool isactive() const { return state == CS_ALIVE || state == CS_DEAD || state == CS_WAITING; }
     bool isalive() const { return state == CS_ALIVE; }
     bool isdead() const { return state == CS_DEAD || state == CS_WAITING; }

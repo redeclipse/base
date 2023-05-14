@@ -76,7 +76,7 @@ void addcmenu(const char *name, const char *a, const char *b)
     c.name = newstring(name);
     if(b && *b)
     {
-        c.icon = textureload(a, 3);
+        c.icon = textureload(a, 3, true, false);
         c.contents = newstring(b);
     }
     else c.contents = newstring(a);
@@ -186,9 +186,9 @@ void rendercmenu()
     int size = int(compasssize*hudsize), hit = cmenuhit();
     Texture *t = NULL;
     if(curcompass->icon && curcompass->icon != notexture) t = curcompass->icon;
-    else if(*compassringtex) t = textureload(compassringtex, 3);
+    else if(*compassringtex) t = textureload(compassringtex, 3, true, false);
     renderaction(0, size, t, 0, curcompass->name, hit < 0);
-    t = *compasstex ? textureload(compasstex, 3) : NULL;
+    t = *compasstex ? textureload(compasstex, 3, true, false) : NULL;
     loopi(min(curcompass->actions.length(), 8))
         renderaction(i+1, size, t, curcompass->actions[i].code, curcompass->actions[i].name, hit == i);
     if(curcompass->actions.length() > 8)

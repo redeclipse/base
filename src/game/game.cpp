@@ -482,22 +482,45 @@ namespace game
         return muts;
     }
 
+    int gettimeoffset()
+    {
+        return (gs_timeupdate(gamestate) ? lastmillis : totalmillis) - timelast;
+    }
+
     int gettimeremain()
     {
-        return connected() ? max(timeremaining*1000-((gs_timeupdate(gamestate) ? lastmillis : totalmillis)-timelast), 0) : 0;
+        return connected() ? max(timeremaining - gettimeoffset(), 0) : 0;
     }
 
     int gettimeelapsed(bool force)
     {
-        if(!timeelapsed || !timelast) return 0;
-        return connected() && gs_timeupdate(gamestate) ? max(timeelapsed+(lastmillis-timelast), 0) : (force && maptime > 0 ? lastmillis-maptime : 0);
+        if(!timeelapsed || !timelast || !connected()) return 0;
+        return timeelapsed + gettimeoffset();
+    }
+
+    int gettimetotal()
+    {
+        return connected() ? (gettimeremain() + gettimeelapsed()) : 0;
+    }
+
+    float gettimeprogress()
+    {
+        int total = gettimetotal();
+        return total > 0 ? gettimeelapsed()/float(gettimetotal()) : 0.0f;
     }
 
     int gettimesync()
     {
         if(!timeelapsed || !timelast) return 0;
-        timesync = connected() && gs_timeupdate(gamestate) ? max(timeelapsed+(lastmillis-timelast), timesync) : 0;
+        timesync = connected() && gs_timeupdate(gamestate) ? max(gettimeelapsed(), timesync) : 0;
         return timesync;
+    }
+
+    int getprogresswait()
+    {
+        if(gamestate != G_S_PLAYING) return PROGRESS_GAMESTATE;
+        if(player1->isspectator()) return PROGRESS_GAMEWAIT;
+        return PROGRESS_NONE;
     }
 
     const char *gamestatename()
@@ -515,9 +538,13 @@ namespace game
 
     ICOMMANDV(0, intermission, gs_intermission(gamestate) ? 1 : 0);
     ICOMMANDV(0, gamestate, gamestate);
+    ICOMMANDV(0, gamemaptime, maptime);
+    ICOMMANDV(0, gamemapelapsed, (lastmillis - maptime));
     ICOMMANDV(0, gametimeremain, gettimeremain());
-    ICOMMANDV(0, gametimesync, gettimesync());
     ICOMMANDV(0, gametimeelapsed, gettimeelapsed());
+    ICOMMANDV(0, gametimetotal, gettimetotal());
+    ICOMMANDVF(0, gametimeprogress, gettimeprogress());
+    ICOMMANDV(0, gametimesync, gettimesync());
 
     const char *gametitle() { return connected() ? server::gamename(gamemode, mutators) : "Ready"; }
     const char *gametext() { return connected() ? mapname : "Not connected"; }
@@ -2025,7 +2052,7 @@ namespace game
         gamestate = state;
         timeremaining = remain;
         timeelapsed = elapsed;
-        timelast = lastmillis;
+        timelast = gs_timeupdate(gamestate) ? lastmillis : totalmillis;
         if(gs_timeupdate(gamestate) != gs_timeupdate(oldstate)) entities::updaterails();
         if(gs_intermission(gamestate) && gs_playing(oldstate))
         {
@@ -3456,20 +3483,20 @@ namespace game
         {
             Texture *t = NULL;
             int colour = getcolour(d, playerteamtone, playerteamtonelevel);
-            if(d->state == CS_DEAD || d->state == CS_WAITING) t = textureload(hud::deadtex, 3);
+            if(d->state == CS_DEAD || d->state == CS_WAITING) t = textureload(hud::deadtex, 3, true, false);
             else if(d->state == CS_ALIVE)
             {
-                if(d->conopen) t = textureload(hud::chattex, 3);
+                if(d->conopen) t = textureload(hud::chattex, 3, true, false);
                 if(!m_team(gamemode, mutators) || d->team != focus->team)
                 {
                     if(d->dominating.find(focus) >= 0)
                     {
-                        t = textureload(hud::dominatingtex, 3);
+                        t = textureload(hud::dominatingtex, 3, true, false);
                         colour = pulsehexcol(d, PULSE_DISCO);
                     }
                     else if(d->dominated.find(focus) >= 0)
                     {
-                        t = textureload(hud::dominatedtex, 3);
+                        t = textureload(hud::dominatedtex, 3, true, false);
                         colour = pulsehexcol(d, PULSE_DISCO);
                     }
                 }
@@ -3966,7 +3993,7 @@ namespace game
             } \
             else \
             { \
-                mdl.mixer = textureload(mixer##name##tex, 0, true); \
+                mdl.mixer = textureload(mixer##name##tex, 0, true, false); \
                 mdl.mixercolor = mixercolor; \
                 mdl.mixerglow = mixerglow; \
             } \
@@ -3992,7 +4019,7 @@ namespace game
             }
             vec4 mixercolor = vec4(vec(mixerbufftone >= 0 ? vec::fromcolor(getcolour(d, mixerbufftone)) : pulsecolour(d, PULSE_BUFF)).mul(mixerbuffintensity), pc*mixerbuffblend);
             vec2 mixerglow = vec2((mdl.mixercolor.r+mdl.mixercolor.g+mdl.mixercolor.b)/3.f*mixerbuffglowintensity, pc*mixerbuffglowblend);
-            mdl.mixer = textureload(mixerbufftex, 0, true);
+            mdl.mixer = textureload(mixerbufftex, 0, true, false);
             mdl.mixercolor = mixercolor;
             mdl.mixerglow = mixerglow;
             mdl.mixerscroll = vec2(mixerbuffscroll1, mixerbuffscroll2);
@@ -4001,7 +4028,7 @@ namespace game
         if(pattern >= 0)
         {
             const playerpattern &p = playerpatterns[pattern%PLAYERPATTERNS];
-            mdl.pattern = textureload(p.filename, p.clamp, true);
+            mdl.pattern = textureload(p.filename, p.clamp, true, false);
             mdl.patternscale = p.scale;
             if(pattern < 2) mdl.flags |= MDL_NOPATTERN; // first two shouldn't recurse
         }

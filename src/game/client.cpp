@@ -1389,6 +1389,7 @@ namespace client
     {
         remote = _remote;
         if(editmode) toggleedit();
+        if(UI::uivisible("main")) UI::closeui("main");
     }
 
     void gamedisconnect(int clean)
@@ -1648,14 +1649,14 @@ namespace client
         game::nextmode = game::gamemode;
         game::nextmuts = game::mutators;
         game::timeremaining = -1;
-        game::maptime = game::timesync = game::timelast = 0;
+        game::maptime = game::timesync = game::timelast = game::timeelapsed = 0;
         hud::resetscores();
         mapvotes.shrink(0);
         if(editmode) toggleedit();
         if(m_demo(game::gamemode))
         {
             game::maptime = 1;
-            game::timeremaining = 0;
+            game::timeremaining = game::timeelapsed = 0;
             return;
         }
         else if(demoendless) demoendless = 0;

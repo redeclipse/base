@@ -2,10 +2,6 @@
 #define CPP_GAME_HEADER
 
 #include "engine.h"
-#ifdef CPP_GAME_SERVER
-#define ENUM_DEFINE
-#endif
-#include "enum.h"
 
 #define VERSION_GAMEID "fps"
 #define VERSION_GAME 266

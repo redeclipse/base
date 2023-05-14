@@ -952,7 +952,7 @@ bool checkconn()
 
 ICOMMANDV(0, progresswait, client::waiting());
 ICOMMANDV(0, progressing, progressing || checkconn() ? 1 : 0);
-ICOMMANDV(0, progresstype, maploading ? 1 : (mapsaving ? 2 : (checkconn() ? 3 : 0)));
+ICOMMANDV(0, progresstype, maploading ? PROGRESS_MAPLOAD : (mapsaving ? PROGRESS_MAPSAVE : (checkconn() ? PROGRESS_CONNECT : game::getprogresswait())));
 
 FVAR(0, loadprogress, 0, 0, 1);
 SVAR(0, progresstitle, "");

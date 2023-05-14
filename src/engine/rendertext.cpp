@@ -45,7 +45,7 @@ void newfont(char *name, char *tex, int *defaultw, int *defaulth, float *scale)
     font *f = &fonts[name];
     if(!f->name) f->name = newstring(name);
     f->texs.shrink(0);
-    f->texs.add(textureload(tex));
+    f->texs.add(textureload(tex, 3));
     f->chars.shrink(0);
 
     f->charoffset = '!';
@@ -89,7 +89,7 @@ void fonttex(char *s)
 {
     if(!fontdef) return;
 
-    Texture *t = textureload(s);
+    Texture *t = textureload(s, 3);
     loopv(fontdef->texs) if(fontdef->texs[i] == t) { fontdeftex = i; return; }
     fontdeftex = fontdef->texs.length();
     fontdef->texs.add(t);
@@ -784,7 +784,7 @@ textkey *findtextkey(const char *str)
     textkey *t = new textkey;
     t->name = newstring(str);
     t->file = newstring(key);
-    t->tex = textureload(t->file, 0, true, false);
+    t->tex = textureload(t->file, 3, true, false);
     if(t->tex == notexture) t->tex = NULL;
     textkeys.add(t);
     return t;

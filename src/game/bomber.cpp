@@ -203,14 +203,14 @@ namespace bomber
                       sq = max(sp, 0.5f), size = bomberreticlesize*min(w, h);
                 hud::colourskew(rp, gp, bp, sp);
                 int sx = int(cx*w-size*sq), sy = int(cy*h-size*sq), ss = int(size*2*sq);
-                Texture *t = textureload(hud::indicatortex, 3);
+                Texture *t = textureload(hud::indicatortex, 3, true, false);
                 if(t && t != notexture)
                 {
                     settexture(t);
                     gle::colorf(rp, gp, bp, sq);
                     hud::drawsized(sx, sy, ss);
                 }
-                t = textureload(hud::crosshairtex, 3);
+                t = textureload(hud::crosshairtex, 3, true, false);
                 if(t && t != notexture)
                 {
                     settexture(t);

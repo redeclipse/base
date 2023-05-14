@@ -840,7 +840,7 @@ namespace hud
             }
             default: return;
         }
-        Texture *t = textureload(indicatortex, 3);
+        Texture *t = textureload(indicatortex, 3, true, false);
         if(t->type&Texture::ALPHA) glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         else glBlendFunc(GL_ONE, GL_ONE);
         settexture(t);
@@ -853,7 +853,7 @@ namespace hud
 
     void drawclipitem(const char *tex, float x, float y, float offset, float size, float blend, float angle, float spin, int rotate, const vec &colour)
     {
-        Texture *t = textureload(tex, 3);
+        Texture *t = textureload(tex, 3, true, false);
         if(!t || t == notexture) return;
         while(angle < 0.0f) angle += 360.0f;
         while(angle >= 360.0f) angle -= 360.0f;
@@ -1022,7 +1022,7 @@ namespace hud
             num++;
         }
         if(!num) return;
-        Texture *t = circlebartex && *circlebartex ? textureload(circlebartex, 3) : NULL;
+        Texture *t = circlebartex && *circlebartex ? textureload(circlebartex, 3, true, false) : NULL;
         if(!t || t == notexture) return;
         float slice = 1.f/num, pos = num%2 ? slice*0.5f : 0.f;
         if(t->type&Texture::ALPHA) glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1150,7 +1150,7 @@ namespace hud
     void drawpointertex(const char *tex, int x, int y, int s, float r, float g, float b, float fade)
     {
         if(!tex || !*tex) return;
-        Texture *t = textureload(tex, 3);
+        Texture *t = textureload(tex, 3, true, false);
         if(!t || t == notexture) return;
         if(t->type&Texture::ALPHA) glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         else glBlendFunc(GL_ONE, GL_ONE);
@@ -1329,7 +1329,7 @@ namespace hud
             int millis = totalmillis-game::focus->icons[i].millis;
             if(millis <= game::focus->icons[i].fade)
             {
-                Texture *t = textureload(geticon(game::focus->icons[i].type, game::focus->icons[i].value));
+                Texture *t = textureload(geticon(game::focus->icons[i].type, game::focus->icons[i].value), 3, true, false);
                 if(t && t != notexture)
                 {
                     int olen = min(game::focus->icons[i].length/5, 1000), ilen = olen/2, colour = colourwhite;
@@ -1535,7 +1535,7 @@ namespace hud
             usetexturing(true);
         }
         else c = h;
-        Texture *t = textureload(zoomtex, 3);
+        Texture *t = textureload(zoomtex, 3, true, false);
         if(!t || t == notexture) return;
         settexture(t);
         gle::colorf(0, 0, 0, pc);
@@ -1564,7 +1564,7 @@ namespace hud
             hudmatrix.ortho(0, 1, 1, 0, -1, 1);
             flushhudmatrix();
 
-            t = textureload(backgroundtex, 3);
+            t = textureload(backgroundtex, 3, true, false);
 
             if(t)
             {
@@ -1643,7 +1643,7 @@ namespace hud
             {
                 gle::colorf(1, 1, 1, 1);
 
-                t = textureload(logotex, 3);
+                t = textureload(logotex, 3, true, false);
                 settexture(t);
                 drawtexture(w-w/4-w/3, h/2-w/6, w/2, w/4);
             }
@@ -1760,7 +1760,7 @@ namespace hud
             float yaw = -atan2(dir.x, dir.y)/RAD, x = sinf(RAD*yaw), y = -cosf(RAD*yaw), sz = max(w, h)/2,
                   ts = sz*onscreendamagescale, tp = ts*size, tq = tp*onscreendamageblipsize, tr = ts*onscreendamageoffset, lx = (tr*x)+w/2, ly = (tr*y)+h/2;
             gle::color(colour, fade);
-            Texture *t = textureload(hurttex, 3);
+            Texture *t = textureload(hurttex, 3, true, false);
             if(t != notexture)
             {
                 settexture(t);
@@ -1859,7 +1859,7 @@ namespace hud
                             if(!getsight(camera1->o, camera1->yaw, camera1->pitch, game::players[i]->o, targ, dist, curfov, fovy)) continue;
                             if(!hasbound)
                             {
-                                Texture *t = textureload(warningtex, 3);
+                                Texture *t = textureload(warningtex, 3, true, false);
                                 settexture(t);
                                 float amt = float(totalmillis%250)/250.f, value = (amt > 0.5f ? 1.f-amt : amt)*2.f;
                                 gle::colorf(value, value*0.125f, value*0.125f, value);

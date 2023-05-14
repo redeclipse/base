@@ -32,7 +32,7 @@ namespace UI
 
         if(!t)
         {
-            if(totalmillis - lastthumbnail < uislotviewtime) t = textureload(uiloadtex);
+            if(totalmillis - lastthumbnail < uislotviewtime) t = textureload(uiloadtex, 0, true, false);
             else
             {
                 t = textureload(name, tclamp, true, false, texgc);
