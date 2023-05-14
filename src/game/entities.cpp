@@ -3141,7 +3141,7 @@ namespace entities
         {
             gameentity &e = *(gameentity *)ents[i];
             if(e.type <= NOTUSED || e.type >= MAXENTTYPES || !haloallow(i)) continue;
-            bool active = enttype[e.type].usetype == EU_ITEM && (e.spawned() || (e.lastemit && lastmillis-e.lastemit < 500));
+            bool active = enttype[e.type].usetype == EU_ITEM && (e.spawned() || (e.lastemit && lastmillis - e.lastemit < 500));
             if(m_edit(game::gamemode) || active)
             {
                 const char *mdlname = entmdlname(e.type, e.attrs);
@@ -3172,13 +3172,17 @@ namespace entities
                     }
                     else if(e.spawned())
                     {
-                        int millis = lastmillis-e.lastspawn;
-                        if(millis < 500) mdl.size = mdl.color.a = float(millis)/500.f;
+                        int millis = lastmillis - e.lastspawn;
+                        if(millis < 250)
+                        {
+                            mdl.size = mdl.color.a = millis / 250.f;
+                            mdl.o.z += 32 * (1.f - mdl.size);
+                        }
                     }
                     else if(e.lastemit)
                     {
-                        int millis = lastmillis-e.lastemit;
-                        if(millis < 500) mdl.size = mdl.color.a = 1.f-(float(millis)/500.f);
+                        int millis = lastmillis - e.lastemit;
+                        if(millis < 500) mdl.size = mdl.color.a = 1.f - (millis / 500.f);
                     }
                     if(e.type == WEAPON)
                     {
