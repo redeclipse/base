@@ -943,13 +943,6 @@ static bool findarg(int argc, char **argv, const char *str)
 }
 
 bool progressing = false;
-bool checkconn()
-{
-    if(!curpeer) return connpeer != NULL;
-    else return client::waiting() > 0;
-    return false;
-}
-
 ICOMMANDV(0, progresswait, client::waiting());
 ICOMMANDV(0, progressing, progressing ? 1 : 0);
 ICOMMANDV(0, progresstype, game::getprogresswait());

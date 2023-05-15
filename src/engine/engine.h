@@ -758,7 +758,7 @@ extern void writeservercfg();
 
 // client
 extern char *connectname;
-extern int connectport;
+extern int connectport, discmillis;
 extern void localservertoclient(int chan, ENetPacket *packet);
 extern bool connected(bool attempt = true, bool local = true);
 extern void connectserv(const char *name = NULL, int port = MASTER_PORT, const char *password = NULL);
@@ -805,7 +805,10 @@ enum
     INIT_QUIT
 };
 
-#define ENUM_PROGRESS(pr, en) en(pr, None, NONE) en(pr, Connecting, CONNECT) en(pr, Loading, MAPLOAD) en(pr, Saving, MAPSAVE) en(pr, Downloading, MAPDL) en(pr, Starting, GAMESTATE) en(pr, Waiting, GAMEWAIT) en(pr, Maximum, MAX)
+#define ENUM_PROGRESS(pr, en) \
+    en(pr, None, NONE) en(pr, Disconnecting, DISCONNECT) en(pr, Connecting, CONNECT) \
+    en(pr, Loading, MAPLOAD) en(pr, Saving, MAPSAVE) en(pr, Downloading, MAPDL) \
+    en(pr, Starting, GAMESTATE) en(pr, Waiting, GAMEWAIT) en(pr, Maximum, MAX)
 ENUMNV(PROGRESS, ENUM_PROGRESS);
 
 extern int initing, fullscreen, fullscreendesktop, numcpus, noconfigfile, firstrun;
@@ -996,7 +999,6 @@ extern void loadsky(char *basename);
 
 // main
 extern void setcaption(const char *text = "", const char *text2 = "");
-extern bool checkconn();
 extern int colorpos, curfps, bestfps, worstfps, bestfpsdiff, worstfpsdiff, maxfps;
 
 // editing

@@ -489,7 +489,8 @@ namespace game
 
     int gettimeremain()
     {
-        return connected() ? max(timeremaining - gettimeoffset(), 0) : 0;
+        if(!connected() || !timeremaining) return 0;
+        return max(timeremaining - gettimeoffset(), 0);
     }
 
     int gettimeelapsed(bool force)
@@ -505,20 +506,22 @@ namespace game
 
     float gettimeprogress()
     {
+        if(!gettimeremain()) return 0.0f;
         int total = gettimetotal();
         return total > 0 ? gettimeelapsed()/float(gettimetotal()) : 0.0f;
     }
 
     int gettimesync()
     {
-        if(!timeelapsed || !timelast) return 0;
-        timesync = connected() && gs_timeupdate(gamestate) ? max(gettimeelapsed(), timesync) : 0;
+        if(!timeelapsed || !timelast || !gs_timeupdate(gamestate) || !connected()) timesync = 0;
+        else timesync = max(gettimeelapsed(), timesync);
         return timesync;
     }
 
     int getprogresswait()
     {
-        if(checkconn()) return PROGRESS_CONNECT;
+        if(discmillis) return PROGRESS_DISCONNECT;
+        if(curpeer ? client::waiting() != 0 : connpeer != NULL) return PROGRESS_CONNECT;
         if(maploading) return PROGRESS_MAPLOAD;
         if(mapsaving) return PROGRESS_MAPSAVE;
         if(client::needsmap || client::gettingmap) return PROGRESS_MAPDL;
