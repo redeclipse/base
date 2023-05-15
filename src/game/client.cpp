@@ -1010,7 +1010,7 @@ namespace client
     CLCOMMAND(scoretime, floatret(d->scoretime()));
     CLCOMMANDM(kdratio, "si", (char *who, int *n), intret(d->kdratio(*n!=0)));
 
-    CLCOMMAND(allowimpulse, intret(d->allowimpulse() ? 1 : 0));
+    CLCOMMAND(allowimpulse, intret(A(d->actortype, impulse)&IM_T_CHECK ? 1 : 0));
     CLCOMMAND(impulsemeter, intret(d->impulse[IM_METER]));
     CLCOMMAND(impulsetype, intret(d->impulse[IM_TYPE]));
     CLCOMMANDM(impulsetimer, "b", (char *who, int *n), intret(d->impulsetime[*n >= 0 && *n < IM_T_MAX ? *n : d->impulse[IM_TYPE]]));

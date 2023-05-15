@@ -78,7 +78,7 @@ namespace physics
             game::player1->v = dir; \
             if(down) \
             { \
-                if(game::player1->allowimpulse(A_A_DASH) && impulsedash && last##v && lastdir##v && dir == lastdir##v && lastmillis-last##v < PHYSMILLIS) \
+                if(game::player1->canimpulse(IM_T_DASH) && impulsedash && last##v && lastdir##v && dir == lastdir##v && lastmillis-last##v < PHYSMILLIS) \
                 { \
                     game::player1->action[AC_DASH] = true; \
                     game::player1->actiontime[AC_DASH] = lastmillis; \
@@ -389,10 +389,10 @@ namespace physics
             if(impulsemeter && cost)
             {
                 if(impulsecostscale > 0) cost = int(cost*scale);
-                int diff = impulsemeter-e->impulse[IM_METER];
+                int diff = impulsemeter - e->impulse[IM_METER];
                 if(cost > diff)
                 {
-                    if(type >= A_A_IMFIRST && impulsecostrelax&(1<<(type-A_A_IMFIRST)))
+                    if(impulsecostrelax&(1<<type))
                     {
                         scale *= float(diff)/float(cost);
                         cost = diff;
@@ -402,8 +402,8 @@ namespace physics
             }
             else cost = 0;
         }
-        float speed = (d->impulsespeed*amt*scale)+(keep.magnitude()*redir);
-        keep.mul(1-min(redir, 1.f));
+        float speed = (d->impulsespeed * amt * scale) + (keep.magnitude() * redir);
+        keep.mul(1.f - min(redir, 1.f));
         return speed;
     }
 
@@ -788,10 +788,10 @@ namespace physics
         bool moving = mchk && (move || strafe), pound = !melee && !launch && !sliding && !onfloor && (impulsepoundstyle || !moving) && d->action[AC_CROUCH];
         if(d->actortype < A_BOT && !launch && !melee && !sliding && !impulseaction && !d->action[AC_DASH]) return false;
         bool pulse = melee ? !onfloor : d->action[AC_DASH] || (!launch && !onfloor && (d->actortype >= A_BOT || impulseaction&1) && d->action[AC_JUMP]);
-        int type = melee ? A_A_PARKOUR : (sliding ? A_A_SLIDE : (launch ? A_A_LAUNCH : (pound ? A_A_POUND : (dash ? A_A_DASH : A_A_BOOST))));
-        if((!launch && !melee && !sliding && !pulse) || !d->canimpulse(type, melee || sliding || launch || dash)) return false;
+        int type = melee ? IM_T_MELEE : (sliding ? IM_T_SLIDE : (launch ? IM_T_LAUNCH : (pound ? IM_T_POUND : (dash ? IM_T_DASH : IM_T_BOOST))));
+        if((!launch && !melee && !sliding && !pulse) || !d->canimpulse(type)) return false;
         vec keepvel = inertia;
-        int cost = int(impulsecost*(melee ? impulsecostmelee : (sliding ? impulsecostslide : (launch ? impulsecostlaunch : (pound ? impulsecostpound : (dash ? impulsecostdash : impulsecostboost))))));
+        int cost = melee ? impulsecostmelee : (sliding ? impulsecostslide : (launch ? impulsecostlaunch : (pound ? impulsecostpound : (dash ? impulsecostdash : impulsecostboost))));
         float skew = melee ? impulsemelee : (sliding ? impulseslide : (launch ? impulselaunch : (pound ? impulsepound : (dash ? (move < 0 ? impulsedashback : impulsedash) : (moving ? impulseboost : impulsejump))))),
               redir = melee ? impulsemeleeredir : (sliding ? impulseslideredir : (launch ? impulselaunchredir : (pound ? impulsepoundredir : (dash ? impulsedashredir : (moving ? impulseboostredir : impulsejumpredir))))),
               force = impulsevelocity(d, skew, cost, type, redir, keepvel);
@@ -823,13 +823,13 @@ namespace physics
         bool onfloor = d->physstate >= PHYS_SLOPE || isladder(d->inmaterial) || liquidcheck(d);
         if(d->hasparkour())
         {
-            int length = 0, ms = 0, type = A_A_PARKOUR;
+            int length = 0, millis = 0;
             switch(d->impulse[IM_TYPE])
             {
-                case IM_T_PARKOUR: length = impulseparkourlen; ms = d->impulsetime[IM_T_PARKOUR];break;
-                case IM_T_VAULT: length = impulsevaultlen; ms = d->impulsetime[IM_T_VAULT]; type = A_A_VAULT; break;
+                case IM_T_PARKOUR: length = impulseparkourlen; millis = d->impulsetime[IM_T_PARKOUR]; break;
+                case IM_T_VAULT: length = impulsevaultlen; millis = d->impulsetime[IM_T_VAULT]; break;
             }
-            if((length && lastmillis-ms > length) || !d->allowimpulse(type) || d->vel.iszero())
+            if((length && lastmillis - millis > length) || d->vel.iszero())
             {
                 d->doimpulse(IM_T_AFTER, lastmillis);
                 client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_AFTER);
@@ -838,11 +838,11 @@ namespace physics
         }
         if(d->impulse[IM_TYPE] == IM_T_PARKOUR)
         {
-            if(d->action[AC_JUMP] && d->canimpulse(A_A_PARKOUR, true))
+            if(d->action[AC_JUMP] && d->canimpulse(IM_T_KICK))
             {
-                int cost = int(impulsecost*impulsecostkick);
+                int cost = impulsecostkick;
                 vec keepvel = vec(d->vel).add(d->falling);
-                float mag = impulsevelocity(d, impulsekick, cost, A_A_BOOST, impulsekickredir, keepvel);
+                float mag = impulsevelocity(d, impulsekick, cost, IM_T_KICK, impulsekickredir, keepvel);
                 if(mag > 0)
                 {
                     vec rft;
@@ -857,7 +857,7 @@ namespace physics
                 }
             }
         }
-        else if(!impulseplayer(d, onfloor, vec(d->vel).add(d->falling)) && onfloor && d->action[AC_JUMP] && A(d->actortype, abilities)&AA(JUMP))
+        else if(!impulseplayer(d, onfloor, vec(d->vel).add(d->falling)) && onfloor && d->action[AC_JUMP] && d->canimpulse(IM_T_JUMP))
         {
             float force = jumpvel(d);
             if(force > 0)
@@ -930,7 +930,7 @@ namespace physics
                         }
                         d->o = oldpos;
                     }
-                    if(d->hasparkour() || ((!onfloor || vault) && d->action[AC_SPECIAL] && d->canimpulse(vault ? A_A_VAULT : A_A_PARKOUR, true)))
+                    if(d->hasparkour() || ((!onfloor || vault) && d->action[AC_SPECIAL] && d->canimpulse(vault ? IM_T_VAULT : IM_T_PARKOUR)))
                     {
                         int side = isclimb ? 0 : (off < 0 ? -1 : 1);
 
@@ -969,15 +969,16 @@ namespace physics
                         if(d->impulse[IM_TYPE] == IM_T_PARKOUR && vault)
                         { // vault is free if we're already parkouring, but it nets no speed boost
                             d->vel = vec(rft).mul(d->vel.magnitude());
-                            d->doimpulse(IM_T_VAULT, lastmillis);
-                            client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_VAULT);
-                            game::impulseeffect(d);
+                            d->impulse[IM_TYPE] = IM_T_VAULT;
+                            d->impulsetime[IM_T_VAULT] = d->impulsetime[IM_T_PARKOUR];
+                            d->turnside = d->turnmillis = 0;
+                            d->turnyaw = d->turnroll = 0.f;
                         }
                         else if(d->impulse[IM_TYPE] != (vault ? IM_T_VAULT : IM_T_PARKOUR))
                         {
-                            int cost = int(impulsecost*(isclimb ? (vault ? impulsecostvault : impulsecostclimb) : impulsecostparkour));
+                            int cost = isclimb ? (vault ? impulsecostvault : impulsecostclimb) : impulsecostparkour;
                             vec keepvel = vec(d->vel).add(d->falling);
-                            float mag = impulsevelocity(d, isclimb ? (vault ? impulsevault : impulseclimb) : impulseparkour, cost, vault ? A_A_VAULT : A_A_PARKOUR, isclimb ? (vault ? impulsevaultredir : impulseclimbredir) : impulseparkourredir, keepvel);
+                            float mag = impulsevelocity(d, isclimb ? (vault ? impulsevault : impulseclimb) : impulseparkour, cost, vault ? IM_T_VAULT : IM_T_PARKOUR, isclimb ? (vault ? impulsevaultredir : impulseclimbredir) : impulseparkourredir, keepvel);
                             if(mag > 0)
                             {
                                 d->vel = vec(rft).mul(mag).add(keepvel);
@@ -1226,7 +1227,7 @@ namespace physics
                 gameent *e = (gameent *)d;
                 if(!e->airmillis && !sticktospecial(e))
                 {
-                    if(local && impulsemethod&2 && timeinair >= impulseslideinair && (e->move == 1 || e->strafe) && e->action[AC_CROUCH] && e->allowimpulse(A_A_SLIDE))
+                    if(local && impulsemethod&2 && timeinair >= impulseslideinair && (e->move == 1 || e->strafe) && e->action[AC_CROUCH] && e->canimpulse(IM_T_SLIDE))
                         impulseplayer(e, true, prevel, false, true);
                     if(timeinair >= PHYSMILLIS)
                     {

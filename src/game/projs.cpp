@@ -1608,11 +1608,11 @@ namespace projs
                 && (proj.owner == game::player1 || proj.owner->ai) && proj.owner->state == CS_ALIVE && (d || fabs(proj.norm.z) <= impulseparkournorm))
             {
                 gameent *e = (gameent *)proj.owner;
-                if(e->canimpulse(A_A_PARKOUR, true))
+                if(e->canimpulse(IM_T_GRAB))
                 {
                     vec keepvel = vec(e->vel).add(e->falling);
-                    int cost = int(impulsecost*(d ? impulsecostgrabplayer : impulsecostgrab));
-                    float mag = physics::impulsevelocity(e, d ? impulsegrabplayer : impulsegrab, cost, A_A_PARKOUR, d ? impulsegrabplayerredir : impulsegrabredir, keepvel);
+                    int cost = d ? impulsecostgrabplayer : impulsecostgrab;
+                    float mag = physics::impulsevelocity(e, d ? impulsegrabplayer : impulsegrab, cost, IM_T_GRAB, d ? impulsegrabplayerredir : impulsegrabredir, keepvel);
                     if(mag > 0)
                     {
                         float yaw = e->yaw, pitch = 89.9f;

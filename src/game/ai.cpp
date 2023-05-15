@@ -930,8 +930,8 @@ namespace ai
             {
                 vec feet = d->feetpos();
                 float zoff = epos.z-d->feetpos().z;
-                if(!(A(d->actortype, abilities)&AA(JUMP)) && zoff >= JUMPMIN) epos.z = feet.z;
-                else if(A(d->actortype, abilities)&AA(JUMP) && d->airtime(lastmillis) >= 25 && zoff <= -JUMPMIN) epos.z = feet.z;
+                if(!d->canimpulse(IM_T_JUMP) && zoff >= JUMPMIN) epos.z = feet.z;
+                else if(d->canimpulse(IM_T_JUMP) && d->airtime(lastmillis) >= 25 && zoff <= -JUMPMIN) epos.z = feet.z;
                 d->ai->spot = epos;
                 d->ai->targnode = entid;
                 return !check || feet.squaredist(epos) > MINWPDIST*MINWPDIST ? 1 : 2;
@@ -1061,8 +1061,8 @@ namespace ai
         vec off = vec(pos).sub(d->feetpos());
         int airtime = d->airtime(lastmillis);
         bool sequenced = d->ai->blockseq > 1 || d->ai->targseq > 1, offground = airtime && !physics::liquidcheck(d) && !isladder(d->inmaterial),
-             impulse = d->canimpulse(A_A_BOOST, false) && airtime > (b.acttype >= AI_A_LOCKON ? 100 : 250) && d->hasparkour() && (b.acttype >= AI_A_LOCKON || off.z >= JUMPMIN) && (!impulsemeter || impulsemeter-d->impulse[IM_METER] >= impulsecost),
-             jumper = A(d->actortype, abilities)&AA(JUMP) && !offground && (b.acttype == AI_A_LOCKON || sequenced || off.z >= JUMPMIN),
+             impulse = d->canimpulse(IM_T_BOOST) && airtime > (b.acttype >= AI_A_LOCKON ? 100 : 250) && d->hasparkour() && (b.acttype >= AI_A_LOCKON || off.z >= JUMPMIN),
+             jumper = d->canimpulse(IM_T_JUMP) && !offground && (b.acttype == AI_A_LOCKON || sequenced || off.z >= JUMPMIN),
              jump = (impulse || jumper) && lastmillis >= d->ai->jumpseed, allowspecial = !sequenced && !isladder(d->inmaterial) && airtime;
         if(jump)
         {
@@ -1107,7 +1107,7 @@ namespace ai
         }
         if(allowspecial)
         {
-            if(airtime > impulsejumpdelay && !d->hasparkour() && (d->skill >= 100 || !rnd(101-d->skill)) && d->canimpulse(A_A_PARKOUR, true))
+            if(airtime > impulsejumpdelay && !d->hasparkour() && (d->skill >= 100 || !rnd(101-d->skill)) && d->canimpulse(IM_T_PARKOUR))
                 d->action[AC_SPECIAL] = true;
             else if(lastmillis-d->ai->lastmelee >= (201-d->skill)*35 && d->canmelee(m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis))
             {
@@ -1283,7 +1283,7 @@ namespace ai
             game::scaleyawpitch(d->yaw, d->pitch, d->ai->targyaw, d->ai->targpitch, frame, frame*0.5f);
         }
 
-        if(A(d->actortype, abilities)&AA(JUMP)) jumpto(d, b, d->ai->spot);
+        if(d->canimpulse(IM_T_JUMP)) jumpto(d, b, d->ai->spot);
         bool crouch = d->actortype == A_TURRET || (d->ai->dontmove && (b.type != AI_S_OVERRIDE || b.overridetype == AI_O_CROUCH));
         if(d->action[AC_CROUCH] != crouch)
         {

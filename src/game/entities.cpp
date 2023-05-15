@@ -1690,7 +1690,7 @@ namespace entities
                         {
                             gameent *g = (gameent *)d;
                             if(e.attrs[5] != 3 || !millis || lastmillis-millis >= triggertime(e)) execlink(g, n, true);
-                            if(e.attrs[10] > 0) g->doimpulse(IM_T_PUSHER, lastmillis+e.attrs[10]);
+                            if(e.attrs[10] > 0) g->doimpulse(IM_T_PUSHER, lastmillis, e.attrs[10]);
                             else g->resetair();
                         }
                         else if(projent::is(d))
