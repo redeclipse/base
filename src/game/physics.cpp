@@ -811,7 +811,7 @@ namespace physics
         }
         d->vel = vec(dir).mul(force).add(keepvel);
         if(launch) d->vel.z += jumpvel(d);
-        d->doimpulse(melee ? IM_T_MELEE : (sliding ? IM_T_SLIDE : (launch ? IM_T_LAUNCH : (pound ? IM_T_POUND : (dash ? IM_T_DASH : IM_T_BOOST)))), lastmillis, cost);
+        d->doimpulse(type, lastmillis, cost);
         d->action[AC_JUMP] = d->action[AC_DASH] = false;
         client::addmsg(N_SPHY, "ri2", d->clientnum, melee ? SPHY_MELEE : (sliding ? SPHY_SLIDE : (launch ? SPHY_LAUNCH : (pound ? SPHY_POUND: (dash ? SPHY_DASH : SPHY_BOOST)))));
         game::impulseeffect(d);

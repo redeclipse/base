@@ -1898,7 +1898,7 @@ struct gameent : dynent, clientstate
     {
         airmillis = turnside = impulse[IM_FLING] = 0;
         if(!impulsecostcount) impulse[IM_COUNT] = 0;
-        impulsetime[IM_T_JUMP] = impulsetime[IM_T_BOOST] = impulsetime[IM_T_POUND] = 0;
+        impulsetime[IM_T_JUMP] = 0;
         if(!wait)
         {
             impulse[IM_TYPE] = IM_T_JUMP;
@@ -1922,8 +1922,7 @@ struct gameent : dynent, clientstate
         }
         impulse[IM_SLIP] = impulsetime[type] = millis;
         impulse[IM_TYPE] = type;
-        if(type != IM_T_JUMP && type != IM_T_VAULT && type != IM_T_SLIDE && !impulsetime[IM_T_JUMP])
-            impulsetime[IM_T_JUMP] = millis;
+        if(type != IM_T_JUMP && !impulsetime[IM_T_JUMP]) impulsetime[IM_T_JUMP] = millis;
         if(impulsecounttypes&(1<<type)) impulse[IM_COUNT]++;
         if(type != IM_T_AFTER)
         {
