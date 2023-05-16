@@ -176,7 +176,7 @@ namespace client
         m->players.add(d);
         mapvotes.sort(mapvote::compare);
         if(showmapvotes >= (!gs_playing(game::gamestate) ? 2 : 1) && !isignored(d->clientnum))
-            conoutft(CON_EVENT, "%s suggests: \fs\fy%s\fS on \fs\fo%s\fS, press \f{=%s votes} to vote", game::colourname(d), server::gamename(mode, muts), mapctitle(m->map), UI::uiopencmd);
+            conoutft(CON_MESG, "%s suggests: \fs\fy%s\fS on \fs\fo%s\fS", game::colourname(d), server::gamename(mode, muts), mapctitle(m->map));
     }
     ICOMMAND(0, fakevote, "", (), loopi(20) vote(game::player1, "maps/bloodlust", G_DEATHMATCH, 0, true); loopi(20) vote(game::player1, "maps/dutility", G_CAPTURE, 1<<G_M_GSP1, true));
 
@@ -536,7 +536,7 @@ namespace client
         filterstring(namestr, name, true, true, true, true, MAXNAMELEN);
         if(!*namestr || !strcmp(game::player1->name, namestr)) return;
         game::player1->setname(namestr);
-        if(initing == NOT_INITING) conoutft(CON_EVENT, "\fm* You are now known as %s", game::player1->name);
+        if(initing == NOT_INITING) conoutft(CON_MESG, "\fm* You are now known as %s", game::player1->name);
         sendplayerinfo = true;
     }
     SVARF(IDF_PERSIST, playername, "", setplayername(playername));
@@ -1614,13 +1614,13 @@ namespace client
             {
                 if(oldval)
                 {
-                    conoutft(CON_EVENT, "\fy%s set \fs\fc%s\fS to \fs\fc%s\fS (was: \fs\fc%s\fS)", d ? game::colourname(d) : (connected(false) ? "the server" : "you"), cmd, val, oldval);
+                    conoutft(CON_EVENT, "\fy%s set \fs\fc%s\fS to \fs\fc%s\fS (was: \fs\fc%s\fS)", d ? game::colourname(d) : (connected(false) ? "Server" : "You"), cmd, val, oldval);
                     if(needfreeoldval) delete[] oldval;
                 }
-                else conoutft(CON_EVENT, "\fy%s set \fs\fc%s\fS to \fs\fc%s\fS", d ? game::colourname(d) : (connected(false) ? "the server" : "you"), cmd, val);
+                else conoutft(CON_EVENT, "\fy%s set \fs\fc%s\fS to \fs\fc%s\fS", d ? game::colourname(d) : (connected(false) ? "Server" : "You"), cmd, val);
             }
         }
-        else if(verbose) conoutft(CON_EVENT, "\fr%s sent unknown command: \fc%s", d ? game::colourname(d) : "the server", cmd);
+        else if(verbose) conoutft(CON_EVENT, "\fr%s sent unknown command: \fc%s", d ? game::colourname(d) : "Server", cmd);
     }
 
     bool sendcmd(int nargs, const char *cmd, const char *arg)
@@ -1671,16 +1671,16 @@ namespace client
         {
             case -3: break; // welcome packet or command line
             case -2:
-                conoutft(CON_EVENT, "Vote passed: \fs\fy%s\fS on \fs\fo%s\fS", server::gamename(game::gamemode, game::mutators), mapctitle(name));
+                conoutft(CON_MESG, "Vote passed: \fs\fy%s\fS on \fs\fo%s\fS", server::gamename(game::gamemode, game::mutators), mapctitle(name));
                 break;
             case -1:
-                conoutft(CON_EVENT, "Server chooses: \fs\fy%s\fS on \fs\fo%s\fS", server::gamename(game::gamemode, game::mutators), mapctitle(name));
+                conoutft(CON_MESG, "Server chooses: \fs\fy%s\fS on \fs\fo%s\fS", server::gamename(game::gamemode, game::mutators), mapctitle(name));
                 break;
             default:
             {
                 gameent *d = game::getclient(clientnum);
                 if(!d) break;
-                conoutft(CON_EVENT, "%s chooses: \fs\fy%s\fS on \fs\fo%s\fS", game::colourname(d), server::gamename(game::gamemode, game::mutators), mapctitle(name));
+                conoutft(CON_MESG, "%s chooses: \fs\fy%s\fS on \fs\fo%s\fS", game::colourname(d), server::gamename(game::gamemode, game::mutators), mapctitle(name));
             }
         }
         if(crc < -1 || !name || !*name || !load_world(name, crc, variant)) switch(crc)
@@ -2679,7 +2679,7 @@ namespace client
                         d->setinfo(namestr, colour, model, pattern, vanity, lweaps, rweaps);
                         copystring(newname, game::colourname(d));
                         if(showpresence >= (waiting(false) ? 2 : 1) && !isignored(d->clientnum))
-                            conoutft(CON_EVENT, "\fm%s is now known as %s", oldname, newname);
+                            conoutft(CON_MESG, "\fm%s is now known as %s", oldname, newname);
                     }
                     else d->setinfo(namestr, colour, model, pattern, vanity, lweaps, rweaps);
                     d->checkpointspawn = cps;
@@ -2737,10 +2737,10 @@ namespace client
                             if(showpresencehostinfo && client::haspriv(game::player1, G(iphostlock))) formatstring(ipaddr, " (%s)", d->hostip);
                             if(priv > PRIV_NONE)
                             {
-                                if(d->handle[0]) conoutft(CON_EVENT, "\fg%s%s joined the game (\fs\fy%s\fS: \fs\fc%s\fS) [%d.%d.%d-%s%d-%s] (%d %s)", game::colourname(d), ipaddr, server::privname(d->privilege), d->handle, d->version.major, d->version.minor, d->version.patch, plat_name(d->version.platform), d->version.arch, d->version.branch, amt, amt != 1 ? "players" : "player");
-                                else conoutft(CON_EVENT, "\fg%s%s joined the game (\fs\fy%s\fS) [%d.%d.%d-%s%d-%s] (%d %s)", game::colourname(d), ipaddr, server::privname(d->privilege), d->version.major, d->version.minor, d->version.patch, plat_name(d->version.platform), d->version.arch, d->version.branch, amt, amt != 1 ? "players" : "player");
+                                if(d->handle[0]) conoutft(CON_MESG, "\fg%s%s joined the game (\fs\fy%s\fS: \fs\fc%s\fS) [%d.%d.%d-%s%d-%s] (%d %s)", game::colourname(d), ipaddr, server::privname(d->privilege), d->handle, d->version.major, d->version.minor, d->version.patch, plat_name(d->version.platform), d->version.arch, d->version.branch, amt, amt != 1 ? "players" : "player");
+                                else conoutft(CON_MESG, "\fg%s%s joined the game (\fs\fy%s\fS) [%d.%d.%d-%s%d-%s] (%d %s)", game::colourname(d), ipaddr, server::privname(d->privilege), d->version.major, d->version.minor, d->version.patch, plat_name(d->version.platform), d->version.arch, d->version.branch, amt, amt != 1 ? "players" : "player");
                             }
-                            else conoutft(CON_EVENT, "\fg%s%s joined the game [%d.%d.%d-%s%d-%s] (%d %s)", game::colourname(d), ipaddr, d->version.major, d->version.minor, d->version.patch, plat_name(d->version.platform), d->version.arch, d->version.branch, amt, amt != 1 ? "players" : "player");
+                            else conoutft(CON_MESG, "\fg%s%s joined the game [%d.%d.%d-%s%d-%s] (%d %s)", game::colourname(d), ipaddr, d->version.major, d->version.minor, d->version.patch, plat_name(d->version.platform), d->version.arch, d->version.branch, amt, amt != 1 ? "players" : "player");
                         }
                         if(needclipboard >= 0) needclipboard++;
                         game::specreset(d);
@@ -3460,7 +3460,7 @@ namespace client
                     if(w->team != tn)
                     {
                         if(m_team(game::gamemode, game::mutators) && w->actortype == A_PLAYER && showteamchange >= (w->team != T_NEUTRAL && tn != T_NEUTRAL ? 1 : 2))
-                            conoutft(CON_EVENT, "\fa%s is now on team %s", game::colourname(w), game::colourteam(tn));
+                            conoutft(CON_MESG, "\fa%s is now on team %s", game::colourname(w), game::colourteam(tn));
                         w->team = tn;
                         if(w == game::focus) hud::lastteam = 0;
                     }

@@ -525,7 +525,7 @@ namespace game
         if(maploading) return PROGRESS_MAPLOAD;
         if(mapsaving) return PROGRESS_MAPSAVE;
         if(client::needsmap || client::gettingmap) return PROGRESS_MAPDL;
-        if(gamestate < G_S_PLAYING) return PROGRESS_GAMESTATE;
+        if(!gs_playing(gamestate)) return PROGRESS_GAMESTATE;
         if(player1->isspectator()) return PROGRESS_GAMEWAIT;
         return PROGRESS_NONE;
     }
@@ -2103,7 +2103,7 @@ namespace game
             if(d->actortype == A_PLAYER)
             {
                 int amt = client::otherclients(); // not including self to disclude this player
-                conoutft(CON_EVENT, "\fo%s%s left the game%s (%d %s)", colourname(d), ipaddr, formattedreason, amt, amt != 1 ? "players" : "player");
+                conoutft(CON_MESG, "\fo%s%s left the game%s (%d %s)", colourname(d), ipaddr, formattedreason, amt, amt != 1 ? "players" : "player");
             }
             else if(d->actortype == A_BOT && ai::showaiinfo)
                 conoutft(CON_EVENT, "\fo%s was removed from the game%s", colourname(d), formattedreason);
