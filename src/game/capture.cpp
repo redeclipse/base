@@ -107,7 +107,7 @@ namespace capture
 
     bool canpickup(gameent *d, int n, bool check = false)
     {
-        if(!st.flags.inrange(n) || !(A(d->actortype, abilities)&AA(AFFINITY))) return false;
+        if(!st.flags.inrange(n) || !(A(d->actortype, abilities)&(1<<A_A_AFFINITY))) return false;
         capturestate::flag &f = st.flags[n];
         if(f.owner) return false;
         if(f.team == d->team)

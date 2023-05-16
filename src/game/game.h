@@ -877,7 +877,7 @@ struct clientstate
 
     bool canshoot(int weap, int flags, int sweap, int millis, int skip = 0)
     {
-        if(!(A(actortype, abilities)&(WS(flags) ? AA(SECONDARY) : AA(PRIMARY)))) return false;
+        if(!(A(actortype, abilities)&(WS(flags) ? (1<<A_A_SECONDARY) : (1<<A_A_PRIMARY)))) return false;
         if(weap == weapselect || weap == W_MELEE)
             if(hasweap(weap, sweap) && getammo(weap, millis) >= (W2(weap, cooktime, WS(flags)) ? 1 : W2(weap, ammosub, WS(flags))) && weapwaited(weap, millis, W_S_INTERRUPT|skip))
                 return true;
@@ -1028,7 +1028,7 @@ struct clientstate
             weapselect = s;
         }
         if(s != W_CLAW && m_edit(gamemode) && !W(W_CLAW, disabled)) weapammo[W_CLAW][W_A_CLIP] = W(W_CLAW, ammospawn); // give SniperGoth his claw in edit mode
-        if(s != W_MELEE && A(actortype, abilities)&AA(MELEE) && !W(W_MELEE, disabled)) weapammo[W_MELEE][W_A_CLIP] = W(W_MELEE, ammospawn);
+        if(s != W_MELEE && A(actortype, abilities)&(1<<A_A_MELEE) && !W(W_MELEE, disabled)) weapammo[W_MELEE][W_A_CLIP] = W(W_MELEE, ammospawn);
         if(actortype < A_ENEMY)
         {
             if(m_kaboom(gamemode, mutators) && !W(W_MINE, disabled)) weapammo[W_MINE][W_A_CLIP] = W(W_MINE, ammospawn);
@@ -2052,7 +2052,7 @@ struct gameent : dynent, clientstate
 
     bool hasmelee(int millis, bool check = true)
     {
-        if(!(A(actortype, abilities)&AA(MELEE))) return false;
+        if(!(A(actortype, abilities)&(1<<A_A_MELEE))) return false;
         if(check && ((weapstate[W_MELEE] != W_S_PRIMARY && weapstate[W_MELEE] != W_S_SECONDARY) || millis-weaptime[W_MELEE] >= weapwait[W_MELEE])) return false;
         return true;
     }
@@ -2080,7 +2080,7 @@ struct gameent : dynent, clientstate
 
     bool crouching(bool check = false)
     {
-        if(!(A(actortype, abilities)&AA(CROUCH))) return false;
+        if(!(A(actortype, abilities)&(1<<A_A_CROUCH))) return false;
         return action[AC_CROUCH] || (check && zradius > height);
     }
 

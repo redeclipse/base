@@ -154,6 +154,7 @@ enum
     en(pr, SFLAGS, pr##_KILL)
 ENUMLI(HIT, HIT_ENUM);
 
+#define WR(x) (1<<W_R_##x)
 #define W_R_ENUM(pr, en) \
     en(pr, BURN, 0) en(pr, BLEED, 1) en(pr, SHOCK, 2) en(pr, MAX, 3) \
     en(pr, ALL, (1<<pr##_BURN)|(1<<pr##_BLEED)|(1<<pr##_SHOCK))
@@ -1005,16 +1006,16 @@ WPFVARM(IDF_GAMEMOD, 0, relativity, 0, FVAR_MAX,
     0.0f,       0.05f,      0.0f,       0.35f,      0.25f,      0.15f,      0.15f,      0.0f,       0.1f,       0.75f,      0.5f,       0.0f,       0.0f
 );
 WPVARK(IDF_GAMEMOD, 0, residual, 0, W_R_ALL,
-    0,          0,          (1<<W_R_BLEED),  0,          0,          (1<<W_R_BURN),   0,          0,          0,          (1<<W_R_BURN),   (1<<W_R_SHOCK),  (1<<W_R_BURN),   0,
-    0,          0,          (1<<W_R_BLEED),  (1<<W_R_BLEED),  0,          0,          0,          (1<<W_R_SHOCK),  0,          (1<<W_R_BURN),   (1<<W_R_SHOCK),  (1<<W_R_BURN),   0,
-    0,          0,          (1<<W_R_BLEED),  0,          0,          (1<<W_R_BURN),   0,          (1<<W_R_SHOCK),  0,          (1<<W_R_BURN),   (1<<W_R_SHOCK),  (1<<W_R_BURN),   0,
-    0,          0,          (1<<W_R_BLEED),  (1<<W_R_BLEED),  0,          0,          0,          (1<<W_R_SHOCK),  0,          (1<<W_R_BURN),   (1<<W_R_SHOCK),  (1<<W_R_BURN),   0
+    0,          0,          WR(BLEED),  0,          0,          WR(BURN),   0,          0,          0,          WR(BURN),   WR(SHOCK),  WR(BURN),   0,
+    0,          0,          WR(BLEED),  WR(BLEED),  0,          0,          0,          WR(SHOCK),  0,          WR(BURN),   WR(SHOCK),  WR(BURN),   0,
+    0,          0,          WR(BLEED),  0,          0,          WR(BURN),   0,          WR(SHOCK),  0,          WR(BURN),   WR(SHOCK),  WR(BURN),   0,
+    0,          0,          WR(BLEED),  WR(BLEED),  0,          0,          0,          WR(SHOCK),  0,          WR(BURN),   WR(SHOCK),  WR(BURN),   0
 );
 WPVARK(IDF_GAMEMOD, 0, residualundo, 0, W_R_ALL,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,
-    0,          0,          0,          0,          0,          (1<<W_R_BURN),   0,          0,          0,          0,          0,          0,          0,
+    0,          0,          0,          0,          0,          WR(BURN),   0,          0,          0,          0,          0,          0,          0,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,
-    0,          0,          0,          0,          0,          (1<<W_R_BURN),   0,          0,          0,          0,          0,          0,          0
+    0,          0,          0,          0,          0,          WR(BURN),   0,          0,          0,          0,          0,          0,          0
 );
 //  Claw        Pistol      Sword       Shotgun     SMG         Flamer      Plasma      Zapper      Rifle       Grenade     Mine        Rocket      Melee
 WPVARK(IDF_GAMEMOD, 0, shocktime, 0, VAR_MAX,

@@ -1033,7 +1033,7 @@ namespace game
     float spawnfade(gameent *d)
     {
         int len = m_delay(d->actortype, gamemode, mutators, d->team);
-        if(A(d->actortype, abilities)&AA(KAMIKAZE)) len = deathfadekamikaze;
+        if(A(d->actortype, abilities)&(1<<A_A_KAMIKAZE)) len = deathfadekamikaze;
         else
         {
             if(m_edit(gamemode) && !len && deathfadeedit) len = deathfadeedit;
@@ -1261,11 +1261,11 @@ namespace game
 
         if(d->state == CS_ALIVE)
         {
-            bool sliding = d->sliding(true), crouching = sliding || (d->crouching() && A(d->actortype, abilities)&AA(CROUCH)),
+            bool sliding = d->sliding(true), crouching = sliding || (d->crouching() && A(d->actortype, abilities)&(1<<A_A_CROUCH)),
                  moving = d->move || d->strafe || (d->physstate < PHYS_SLOPE && !isladder(d->inmaterial));
             float zrad = d->zradius*(moving && !sliding ? CROUCHHIGH : CROUCHLOW), zoff = d->zradius-zrad;
             vec old = d->o;
-            if(!crouching && A(d->actortype, abilities)&AA(CROUCH))
+            if(!crouching && A(d->actortype, abilities)&(1<<A_A_CROUCH))
             {
                 d->o.z += d->zradius;
                 d->height = d->zradius;
@@ -1322,7 +1322,7 @@ namespace game
                     if(d->running()) skew *= impulseregen##name##run; \
                     if(skew > 0 && (d->move || d->strafe)) skew *= impulseregen##name##move; \
                     if(skew > 0 && ((!onfloor && PHYS(gravity) > 0) || d->sliding())) skew *= impulseregen##name##inair; \
-                    if(skew > 0 && onfloor && !d->move && !d->strafe && d->crouching() && !d->sliding()) skew *= impulseregen##name##crouch; \
+                    if(skew > 0 && onfloor && d->crouching() && !d->sliding()) skew *= impulseregen##name##crouch; \
                     if(skew > 0 && d->hasparkour()) skew *= impulseregen##name##parkour; \
                     if(skew > 0 && d->sliding()) skew *= impulseregen##name##slide; \
                     if(skew > 0) \
@@ -1642,7 +1642,7 @@ namespace game
                 d->lastpain = lastmillis;
                 if(isweap(weap) && !WK(flags)) emitsoundpos(WSND2(weap, WS(flags), S_W_IMPACT), vec(d->center()).add(vec(dir).mul(dist)), NULL, 0, clamp(scale, 0.2f, 1.f));
             }
-            if(A(d->actortype, abilities)&AA(PUSHABLE))
+            if(A(d->actortype, abilities)&(1<<A_A_PUSHABLE))
             {
                 if(weap == -1 && shocking && d->shockstun)
                 {
@@ -2027,7 +2027,7 @@ namespace game
         if(nogore != 2 && gibscale > 0 && !(flags&HIT_LOST))
         {
             int hp = max(d->gethealth(gamemode, mutators)/10, 1), gib = clamp(max(damage, hp)/(d->obliterated ? 5 : 20), 2, 10), amt = int((rnd(gib)+gib)*(1+gibscale));
-            loopi(amt) projs::create(pos, pos, true, d, nogore || !(A(d->actortype, abilities)&AA(GIBS)) ? PRJ_DEBRIS : PRJ_GIBS, -1, 0, rnd(gibfade)+gibfade, 0, rnd(250)+1, rnd(d->obliterated ? 80 : 40)+10);
+            loopi(amt) projs::create(pos, pos, true, d, nogore || !(A(d->actortype, abilities)&(1<<A_A_GIBS)) ? PRJ_DEBRIS : PRJ_GIBS, -1, 0, rnd(gibfade)+gibfade, 0, rnd(250)+1, rnd(d->obliterated ? 80 : 40)+10);
         }
         if(m_team(gamemode, mutators) && d->team == v->team && d != v && v == player1 && isweap(weap) && WF(WK(flags), weap, damagepenalty, WS(flags)) != 0)
         {
