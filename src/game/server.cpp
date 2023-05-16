@@ -2009,8 +2009,8 @@ namespace server
                     if(best >= 0 && teamscore(best).total >= plimit)
                     {
                         gamelog log;
-                        log.addlist("this", "type", "score");
-                        log.addlist("this", "action", "reached");
+                        log.addlist("this", "type", "match");
+                        log.addlist("this", "action", "scorelimit");
                         log.addlist("this", "sound", "S_V_NOTIFY");
                         log.addlist("this", "flags", EV_F_BROADCAST);
                         log.addlist("args", "console", "\fyScore limit has been reached");
@@ -2027,8 +2027,8 @@ namespace server
                     if(best >= 0 && clients[best]->points >= plimit)
                     {
                         gamelog log;
-                        log.addlist("this", "type", "score");
-                        log.addlist("this", "action", "reached");
+                        log.addlist("this", "type", "match");
+                        log.addlist("this", "action", "scorelimit");
                         log.addlist("this", "sound", "S_V_NOTIFY");
                         log.addlist("this", "flags", EV_F_BROADCAST);
                         log.addlist("args", "console", "\fyScore limit has been reached");
@@ -2052,10 +2052,11 @@ namespace server
                         int secs = delpart/1000;
                         gamelog log;
                         log.addlist("this", "type", "balance");
-                        log.addlist("this", "action", "swapping");
+                        log.addlist("this", "action", "swap");
                         log.addlist("this", "sound", "S_V_BALWARN");
                         log.addlist("this", "flags", EV_F_BROADCAST);
                         log.addlist("args", "millis", delpart);
+                        log.addlist("args", "forcebal", m_forcebal(gamemode, mutators));
                         log.addlistf("args","console", "\fs\fcTeams\fS will be \fs\fcreassigned\fS in \fs\fc%d\fS %s %s", secs, secs != 1 ? "seconds" : "second", m_forcebal(gamemode, mutators) ? "to switch roles" : "for map symmetry");
                         log.push();
                     }
@@ -2098,6 +2099,8 @@ namespace server
                     log.addlist("this", "action", "swapped");
                     log.addlist("this", "sound", "S_V_BALALERT");
                     log.addlist("this", "flags", EV_F_BROADCAST);
+                    log.addlist("args", "millis", delpart);
+                    log.addlist("args", "forcebal", m_forcebal(gamemode, mutators));
                     log.addlistf("args","console", "\fs\fcTeams\fS have %sbeen \fs\fcreassigned\fS %s", delpart > 0 ? "now " : "", m_forcebal(gamemode, mutators) ? "to switch roles" : "for map symmetry");
                     log.push();
 
@@ -3055,6 +3058,7 @@ namespace server
         {
             clientinfo *cp = clients[i];
             if(cp->actortype != A_PLAYER || (newteam && cp->team != newteam) || !cp->swapteam || cp->swapteam != oldteam) continue;
+            int prevteam = cp->team;
             setteam(cp, oldteam, TT_RESET|TT_INFOSM, false);
             cp->lastdeath = 0;
 
@@ -3067,7 +3071,9 @@ namespace server
                 log.addlist("this", "sound", "S_V_BALALERT");
                 log.addlist("this", "flags", EV_F_BROADCAST);
                 log.addclient("client", cp);
-                log.addlistf("args","console", "\fyYou have been moved to %s as previously requested", colourteam(oldteam));
+                log.addlist("args", "team", cp->team);
+                log.addlist("args", "prev", prevteam);
+                log.addlistf("args", "console", "\fyYou have been moved to %s as previously requested", colourteam(cp->team));
                 log.push();
             }
 
@@ -3091,6 +3097,7 @@ namespace server
             if(worst >= 0)
             {
                 clientinfo *cp = clients[worst];
+                int prevteam = cp->team;
                 setteam(cp, oldteam, TT_RESET|TT_INFOSM, false);
                 cp->lastdeath = 0;
 
@@ -3098,17 +3105,17 @@ namespace server
                 {
                     gamelog log;
                     log.addlist("this", "target", cp->clientnum);
-                    log.addlist("this", "type", "balance");
+                    log.addlist("this", "type", "team");
                     log.addlist("this", "action", "moved");
                     log.addlist("this", "sound", "S_V_BALALERT");
                     log.addlist("this", "flags", EV_F_BROADCAST);
                     log.addclient("client", cp);
                     log.addclient("client", ci);
-                    log.addlist("args", "type", "moved");
-                    log.addlistf("args","console", "\fyMoved to %s by higher skilled %s %s", colourteam(oldteam), privname(G(teambalancelock)), colourname(ci));
+                    log.addlist("args", "team", cp->team);
+                    log.addlist("args", "prev", prevteam);
+                    log.addlistf("args","console", "\fyMoved to %s by %s %s", colourteam(oldteam), privname(ci->privilege), colourname(ci));
                     log.push();
                 }
-
                 return;
             }
         }
@@ -5257,6 +5264,9 @@ namespace server
                 log.addlist("this", "action", "swap");
                 log.addlist("this", "sound", "S_V_NOTIFY");
                 log.addlist("this", "flags", EV_F_BROADCAST);
+                log.addclient("client", ci);
+                log.addlist("args", "team", team);
+                log.addlist("args", "prev", ci->team);
                 log.addlistf("args","console", "\fy%s requests swap to team %s, change teams to accept", colourname(ci), colourteam(team));
                 log.push();
                 ci->swapteam = team;
@@ -5534,7 +5544,7 @@ namespace server
                 int waituntil = maxshutdownwait*(gs_playing(gamestate) ? 2000 : 1000);
                 if(totalmillis >= shutdownwait+waituntil)
                 {
-                    srvoutf(3, "Waited \fs\fc%s\fS to shutdown, overriding and exiting..", timestr(totalmillis-shutdownwait, 4));
+                    srvoutf(3, "Waited \fs\fc%s\fS to shutdown, overriding and exiting..", timestr(totalmillis - shutdownwait, 4));
 #ifdef STANDALONE
                     cleanupserver();
                     exit(EXIT_SUCCESS);
@@ -6855,8 +6865,8 @@ namespace server
                                                 if(!found)
                                                 {
                                                     gamelog log;
-                                                    log.addlist("this", "type", "score");
-                                                    log.addlist("this", "action", "reached");
+                                                    log.addlist("this", "type", "match");
+                                                    log.addlist("this", "action", "scorereach");
                                                     log.addlist("this", "sound", "S_V_NOTIFY");
                                                     log.addlist("this", "flags", EV_F_BROADCAST);
                                                     log.addlist("args", "console", "\fyBest score has been reached");
