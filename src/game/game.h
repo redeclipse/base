@@ -259,7 +259,7 @@ enum
     AC_ALL = (1<<AC_PRIMARY)|(1<<AC_SECONDARY)|(1<<AC_RELOAD)|(1<<AC_USE)|(1<<AC_JUMP)|(1<<AC_WALK)|(1<<AC_CROUCH)|(1<<AC_SPECIAL)|(1<<AC_DROP)|(1<<AC_AFFINITY)
 };
 
-enum { IM_METER = 0, IM_TYPE, IM_REGEN, IM_COUNT, IM_COLLECT, IM_SLIP, IM_FLING, IM_PUSHER, IM_MAX };
+enum { IM_METER = 0, IM_COUNT, IM_TYPE, IM_REGEN, IM_SLIP, IM_FLING, IM_PUSHER, IM_COLLECT_METER, IM_LASTCOL_METER, IM_COLLECT_COUNT, IM_LASTCOL_COUNT, IM_MAX };
 
 enum
 {
@@ -1272,7 +1272,7 @@ struct gameent : dynent, clientstate
     ai::aiinfo *ai;
     int team, clientnum, privilege, projid, lastnode, checkpoint, cplast, respawned, suicided, lastupdate, lastpredict, plag, ping, lastflag, totaldamage,
         actiontime[AC_MAX], impulse[IM_MAX], impulsetime[IM_T_MAX], smoothmillis, turnside, turnmillis, aschan, cschan, vschan, wschan[WS_CHANS], sschan[2],
-        lasthit, lastteamhit, lastkill, lastattacker, lastpoints, quake, wasfiring, lastfoot, impulsecollect;
+        lasthit, lastteamhit, lastkill, lastattacker, lastpoints, quake, wasfiring, lastfoot;
     float deltayaw, deltapitch, newyaw, newpitch, stunscale, stungravity, turnyaw, turnroll;
     bool action[AC_MAX], conopen, k_up, k_down, k_left, k_right, obliterated, headless;
     vec tag[TAG_MAX];
@@ -1574,7 +1574,7 @@ struct gameent : dynent, clientstate
     {
         loopi(IM_MAX) impulse[i] = 0;
         loopi(IM_T_MAX) impulsetime[i] = 0;
-        lasthit = lastkill = quake = turnside = turnmillis = impulsecollect = 0;
+        lasthit = lastkill = quake = turnside = turnmillis = 0;
         lastteamhit = lastflag = respawned = suicided = lastnode = lastfoot = wasfiring = -1;
         turnyaw = turnroll = 0;
         obit[0] = '\0';
@@ -1978,7 +1978,7 @@ struct gameent : dynent, clientstate
     {
         if(!isalive() || !delayimpulse(true)) return false;
         if(impulseregendelay && lastmillis - impulse[IM_REGEN] < impulseregendelay) return false;
-        return (impulsecostcount && impulse[IM_COUNT] > 0) || (impulsemeter && impulse[IM_METER] > 0);
+        return (impulsecostcount && impulse[IM_COUNT] > 0) || (impulsecostmeter && impulse[IM_METER] > 0);
     }
 
     bool canimpulse(int type)

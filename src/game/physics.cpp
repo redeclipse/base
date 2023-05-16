@@ -386,10 +386,10 @@ namespace physics
         {
             gameent *e = (gameent *)d;
             scale *= e->stunscale;
-            if(impulsemeter && cost)
+            if(impulsecostmeter && cost)
             {
                 if(impulsecostscale > 0) cost = int(cost*scale);
-                int diff = impulsemeter - e->impulse[IM_METER];
+                int diff = impulsecostmeter - e->impulse[IM_METER];
                 if(cost > diff)
                 {
                     if(impulsecostrelax&(1<<type))

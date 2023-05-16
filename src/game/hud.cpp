@@ -1014,7 +1014,7 @@ namespace hud
         int num = 0;
         loopi(3) if(circlebartype&(1<<i))
         {
-            if(i == 1 && !impulsemeter) continue;
+            if(i == 1 && !impulsecostmeter) continue;
             num++;
         }
         if(!num) return;
@@ -1035,8 +1035,8 @@ namespace hud
                     if(circlebarhealthtone) skewcolour(c.r, c.g, c.b, circlebarhealthtone);
                     break;
                 case 1:
-                    if(!impulsemeter) continue;
-                    val = 1-clamp(float(game::focus->impulse[IM_METER])/float(impulsemeter), 0.f, 1.f);
+                    if(!impulsecostmeter) continue;
+                    val = 1-clamp(float(game::focus->impulse[IM_METER])/float(impulsecostmeter), 0.f, 1.f);
                     if(circlebarimpulsetone) skewcolour(c.r, c.g, c.b, circlebarimpulsetone);
                     break;
                 case 2:

@@ -1310,61 +1310,48 @@ namespace game
         float feetz = d->feetpos().z;
         if(feetz < minz) d->o.z += minz-feetz; // ensure player doesn't end up lower than they were
 
-        bool collected = false;
+        bool collectcount = false, collectmeter = false;
         if(d->regenimpulse())
         {
             bool onfloor = d->physstate >= PHYS_SLOPE || isladder(d->inmaterial) || physics::liquidcheck(d); // collect time until we are able to act upon it
 
-            #define impulsemod(name) \
-                float skew = 1; \
-                if(d->running()) skew *= impulseregen##name##run; \
-                if(d->move || d->strafe) skew *= impulseregen##name##move; \
-                if((!onfloor && PHYS(gravity) > 0) || d->sliding()) skew *= impulseregen##name##inair; \
-                if(onfloor && d->crouching() && !d->sliding()) skew *= impulseregen##name##crouch; \
-                if(d->hasparkour()) skew *= impulseregen##name##parkour; \
-                if(d->sliding()) skew *= impulseregen##name##slide;
-
-            bool hascount = false, hasmeter = false;
-            int timeslice = curtime + d->impulse[IM_COLLECT];
-            if(impulsecostcount && d->impulse[IM_COUNT] > 0)
-            {
-                impulsemod(count);
-                if(skew > 0)
-                {
-                    int cost = int(impulsecostcount / skew);
-                    while(timeslice >= cost && d->impulse[IM_COUNT] > 0)
-                    {
-                        timeslice -= cost;
-                        d->impulse[IM_COUNT]--;
-                    }
-                    hascount = true;
+            #define IMPULSEMOD(name, type, check, body) \
+                if(impulsecost##name && d->impulse[IM_##type] > 0) \
+                { \
+                    float skew = 1; \
+                    if(d->running()) skew *= impulseregen##name##run; \
+                    if(skew > 0 && (d->move || d->strafe)) skew *= impulseregen##name##move; \
+                    if(skew > 0 && ((!onfloor && PHYS(gravity) > 0) || d->sliding())) skew *= impulseregen##name##inair; \
+                    if(skew > 0 && onfloor && !d->move && !d->strafe && d->crouching() && !d->sliding()) skew *= impulseregen##name##crouch; \
+                    if(skew > 0 && d->hasparkour()) skew *= impulseregen##name##parkour; \
+                    if(skew > 0 && d->sliding()) skew *= impulseregen##name##slide; \
+                    if(skew > 0) \
+                    { \
+                        int timeslice = int((curtime + d->impulse[IM_COLLECT_##type]) * skew); \
+                        if(check) { body; } \
+                        else d->impulse[IM_COLLECT_##type] += curtime; \
+                        if(!d->impulse[IM_LASTCOL_##type]) d->impulse[IM_LASTCOL_##type] = lastmillis; \
+                        collect##name = true; \
+                    } \
                 }
-            }
 
-            if(!hascount && impulsemeter && d->impulse[IM_METER] > 0)
-            {
-                impulsemod(meter);
-                if(skew > 0)
+            IMPULSEMOD(count, COUNT, timeslice >= impulsecostcount,
+                while(timeslice >= impulsecostcount && d->impulse[IM_COUNT] > 0)
                 {
-                    timeslice = int(timeslice * skew);
-                    d->impulse[IM_METER] -= timeslice;
-                    if(d->impulse[IM_METER] < 0)
-                    {
-                        timeslice = int((0 - d->impulse[IM_METER]) / skew);
-                        d->impulse[IM_METER] = 0;
-                    }
-                    hasmeter = true;
+                    timeslice -= impulsecostcount;
+                    d->impulse[IM_COUNT]--;
                 }
-            }
-
-            if(hascount || hasmeter)
-            {
-                d->impulse[IM_COLLECT] = timeslice;
-                if(!d->impulsecollect) d->impulsecollect = lastmillis;
-                collected = true;
-            }
+                d->impulse[IM_COLLECT_COUNT] = int(timeslice / skew);
+            );
+            IMPULSEMOD(meter, METER, timeslice > 0,
+                d->impulse[IM_METER] = max(d->impulse[IM_METER] - timeslice, 0);
+                d->impulse[IM_COLLECT_METER] = 0;
+            );
         }
-        if(!collected) d->impulse[IM_COLLECT] = d->impulsecollect = 0;
+        #define IMPULSECOLLECT(name, type) \
+            if(!collect##name) d->impulse[IM_COLLECT_##type] = d->impulse[IM_LASTCOL_##type] = 0;
+        IMPULSECOLLECT(count, COUNT);
+        IMPULSECOLLECT(meter, METER);
 
         if(isweap(d->weapselect) && gs_playing(gamestate) && d->state == CS_ALIVE)
         {

@@ -591,7 +591,7 @@ GVAR(IDF_GAMEMOD, 0, impulsepoundcheck, 0, IM_T_ACTION, IM_T_ACTION); // check a
 
 GVAR(IDF_GAMEMOD, 0, impulsejumpdelay, 0, 150, VAR_MAX); // minimum time after jump
 GVAR(IDF_GAMEMOD, 0, impulseboostdelay, 0, 250, VAR_MAX); // minimum time after boosts
-GVAR(IDF_GAMEMOD, 0, impulsedashdelay, 0, 250, VAR_MAX); // minimum time after dashes
+GVAR(IDF_GAMEMOD, 0, impulsedashdelay, 0, 500, VAR_MAX); // minimum time after dashes
 GVAR(IDF_GAMEMOD, 0, impulseslidedelay, 0, 250, VAR_MAX); // minimum time after slides
 GVAR(IDF_GAMEMOD, 0, impulselaunchdelay, 0, 250, VAR_MAX); // minimum time after launches
 GVAR(IDF_GAMEMOD, 0, impulsemeleedelay, 0, 250, VAR_MAX); // minimum time after melee
@@ -602,32 +602,32 @@ GVAR(IDF_GAMEMOD, 0, impulsevaultdelay, 0, 250, VAR_MAX); // minimum time after 
 GVAR(IDF_GAMEMOD, 0, impulsepounddelay, 0, 250, VAR_MAX); // minimum time after pounds
 GVAR(IDF_GAMEMOD, 0, impulseslideinair, 0, 250, VAR_MAX); // minimum time in air for slide
 
-GVAR(IDF_GAMEMOD, 0, impulsemeter, 0, 30000, VAR_MAX); // impulse limiter
+GVAR(IDF_GAMEMOD, 0, impulsecostmeter, 0, 30000, VAR_MAX); // impulse cost meter
+GVAR(IDF_GAMEMOD, 0, impulsecostcount, 0, 125, VAR_MAX); // cost of count regeneration
 GVAR(IDF_GAMEMOD, 0, impulsecostparkour, 0, 1000, VAR_MAX); // cost of parkour move
-GVAR(IDF_GAMEMOD, 0, impulsecostvault, 0, 1000, VAR_MAX); // cost of vault move
+GVAR(IDF_GAMEMOD, 0, impulsecostvault, 0, 750, VAR_MAX); // cost of vault move
 GVAR(IDF_GAMEMOD, 0, impulsecostboost, 0, 1000, VAR_MAX); // cost of boost move
-GVAR(IDF_GAMEMOD, 0, impulsecostdash, 0, 1000, VAR_MAX); // cost of dash move
+GVAR(IDF_GAMEMOD, 0, impulsecostdash, 0, 1500, VAR_MAX); // cost of dash move
 GVAR(IDF_GAMEMOD, 0, impulsecostslide, 0, 1000, VAR_MAX); // cost of slide move
 GVAR(IDF_GAMEMOD, 0, impulsecostlaunch, 0, 1000, VAR_MAX); // cost of launch move
 GVAR(IDF_GAMEMOD, 0, impulsecostpound, 0, 1000, VAR_MAX); // cost of pound move
-GVAR(IDF_GAMEMOD, 0, impulsecostkick, 0, 1000, VAR_MAX); // cost of kick move
-GVAR(IDF_GAMEMOD, 0, impulsecostmelee, 0, 1000, VAR_MAX); // cost of melee move
+GVAR(IDF_GAMEMOD, 0, impulsecostkick, 0, 750, VAR_MAX); // cost of kick move
+GVAR(IDF_GAMEMOD, 0, impulsecostmelee, 0, 500, VAR_MAX); // cost of melee move
 GVAR(IDF_GAMEMOD, 0, impulsecostclimb, 0, 1000, VAR_MAX); // cost of climb move
 GVAR(IDF_GAMEMOD, 0, impulsecostgrab, 0, 500, VAR_MAX); // cost of of grab move
 GVAR(IDF_GAMEMOD, 0, impulsecostgrabplayer, 0, 250, VAR_MAX); // cost of of grab move
-GVAR(IDF_GAMEMOD, 0, impulsecostcount, 0, 175, VAR_MAX); // cost of count regeneration
 GVAR(IDF_GAMEMOD, 0, impulsecostrelax, 0, IM_T_RELAX, IM_T_ACTION); // whether the cost of an impulse move is unimportant
 GVAR(IDF_GAMEMOD, 0, impulsecostscale, 0, 0, 1); // whether the cost scales depending on the amount the impulse scales
 
 GVAR(IDF_GAMEMOD, 0, impulseregendelay, 0, 250, VAR_MAX); // delay before impulse regens
-GFVAR(IDF_GAMEMOD, 0, impulseregenmetercrouch, 0, 2.f, FVAR_MAX); // impulse regen crouch modifier
-GFVAR(IDF_GAMEMOD, 0, impulseregenmeterrun, 0, 0.5f, FVAR_MAX); // impulse regen running modifier
+GFVAR(IDF_GAMEMOD, 0, impulseregenmetercrouch, 0, 2.5f, FVAR_MAX); // impulse regen crouch modifier
+GFVAR(IDF_GAMEMOD, 0, impulseregenmeterrun, 0, 0.875f, FVAR_MAX); // impulse regen running modifier
 GFVAR(IDF_GAMEMOD, 0, impulseregenmetermove, 0, 1, FVAR_MAX); // impulse regen moving modifier
-GFVAR(IDF_GAMEMOD, 0, impulseregenmeterinair, 0, 0.5f, FVAR_MAX); // impulse regen in-air modifier
+GFVAR(IDF_GAMEMOD, 0, impulseregenmeterinair, 0, 0.75f, FVAR_MAX); // impulse regen in-air modifier
 GFVAR(IDF_GAMEMOD, 0, impulseregenmeterparkour, 0, 0, FVAR_MAX); // impulse regen parkour modifier
 GFVAR(IDF_GAMEMOD, 0, impulseregenmeterslide, 0, 0, FVAR_MAX); // impulse regen sliding modifier
-GFVAR(IDF_GAMEMOD, 0, impulseregencountcrouch, 0, 2.f, FVAR_MAX); // impulse regen crouch modifier
-GFVAR(IDF_GAMEMOD, 0, impulseregencountrun, 0, 0.5f, FVAR_MAX); // impulse regen running modifier
+GFVAR(IDF_GAMEMOD, 0, impulseregencountcrouch, 0, 1.5f, FVAR_MAX); // impulse regen crouch modifier
+GFVAR(IDF_GAMEMOD, 0, impulseregencountrun, 0, 0.875f, FVAR_MAX); // impulse regen running modifier
 GFVAR(IDF_GAMEMOD, 0, impulseregencountmove, 0, 1, FVAR_MAX); // impulse regen moving modifier
 GFVAR(IDF_GAMEMOD, 0, impulseregencountinair, 0, 0, FVAR_MAX); // impulse regen in-air modifier
 GFVAR(IDF_GAMEMOD, 0, impulseregencountparkour, 0, 0, FVAR_MAX); // impulse regen parkour modifier
