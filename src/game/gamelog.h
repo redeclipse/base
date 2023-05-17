@@ -184,10 +184,10 @@ struct gamelog
     int concolor()
     {
         int a = findlistinfo("args");
-        if(!lists.inrange(a)) return NULL;
+        if(!lists.inrange(a)) return colourwhite;
         listinfo &t = lists[a];
         int c = findinfo(t.infos, "colour");
-        if(!t.infos.inrange(c)) return NULL;
+        if(!t.infos.inrange(c)) return colourwhite;
         info &n = t.infos[c];
         if(n.type == GAMELOG_I_INT) return n.i;
         return colourwhite;

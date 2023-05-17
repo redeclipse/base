@@ -562,13 +562,13 @@ namespace hud
 
     bool textinput(const char *str, int len)
     {
-        return UI::textinput(str, len);
+        return false;
     }
 
     bool keypress(int code, bool isdown)
     {
         if(curcompass) return keycmenu(code, isdown);
-        return UI::keypress(code, isdown); // ignore UI if compass is open
+        return false;
     }
 
     VAR(IDF_PERSIST, aboveheadui, 0, 1, 1);

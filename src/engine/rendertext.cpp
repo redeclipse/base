@@ -10,9 +10,9 @@ VAR(IDF_PERSIST, textwrapmin, 0, 10, VAR_MAX);
 FVAR(IDF_PERSIST, textwraplimit, 0, 0.3f, 1);
 FVAR(IDF_PERSIST, textspacescale, 0, 0.5f, 10);
 
-FVAR(IDF_PERSIST, textimagescale, 0, 0.9f, FVAR_MAX);
+FVAR(IDF_PERSIST, textimagescale, 0, 0.8f, FVAR_MAX);
 VAR(IDF_PERSIST, textkeyimages, 0, 1, 1);
-FVAR(IDF_PERSIST, textkeyimagescale, 0, 0.9f, FVAR_MAX);
+FVAR(IDF_PERSIST, textkeyimagescale, 0, 0.8f, FVAR_MAX);
 SVAR(IDF_PERSIST, textkeyprefix, "<invert>textures/keys/");
 VAR(IDF_PERSIST, textkeyseps, 0, 1, 1);
 VAR(IDF_PERSIST|IDF_HEX, textkeycolour, 0, 0x00FFFF, 0xFFFFFF);

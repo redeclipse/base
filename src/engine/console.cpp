@@ -642,7 +642,7 @@ static char *skipwordrev(char *s, int n = -1)
 
 bool consolekey(int code, bool isdown)
 {
-    if(commandmillis < 0) return false;
+    if(commandmillis < 0 || code < 0) return false;
 
     if(isdown)
     {
@@ -774,7 +774,7 @@ bool consolekey(int code, bool isdown)
 
 void processtextinput(const char *str, int len)
 {
-    if(!hud::textinput(str, len))
+    if(!hud::textinput(str, len) && !UI::textinput(str, len))
         consoleinput(str, len);
 }
 
@@ -825,7 +825,7 @@ void processkey(int code, bool isdown)
     }
     keym *haskey = keyms.access(code);
     if(haskey && haskey->pressed) execbind(*haskey, isdown); // allow pressed keys to release
-    else if(!consolekey(code, isdown) && !hud::keypress(code, isdown) && haskey) execbind(*haskey, isdown);
+    else if(!consolekey(code, isdown) && !hud::keypress(code, isdown) && !UI::keypress(code, isdown) && haskey) execbind(*haskey, isdown);
 }
 
 void clear_binds()

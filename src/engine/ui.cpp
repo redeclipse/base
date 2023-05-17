@@ -1402,14 +1402,14 @@ namespace UI
 
     struct Surface : Object
     {
-        int type, cursortype;
-        bool lockcursor, mousetracking, lockscroll, standalone, interactive;
+        int type, cursortype, exclcheck;
+        bool lockcursor, mousetracking, lockscroll, standalone, interactive, hasexclusive;
         vec2 mousetrackvec;
 
         hashnameset<Window *> windows;
         vector<Texture *> texs;
 
-        Surface() : type(SURFACE_MAIN), cursortype(CURSOR_DEFAULT), lockcursor(false), mousetracking(false), lockscroll(false), standalone(false), interactive(true), mousetrackvec(0, 0) {}
+        Surface() : type(SURFACE_MAIN), cursortype(CURSOR_DEFAULT), exclcheck(0), lockcursor(false), mousetracking(false), lockscroll(false), standalone(false), interactive(true), hasexclusive(false), mousetrackvec(0, 0) {}
         ~Surface() {}
 
         static const char *typestr() { return "#Surface"; }
@@ -1431,6 +1431,24 @@ namespace UI
             } \
         } while(0)
 
+        bool checkexclusive(Window *w)
+        {
+            if(exclcheck != totalmillis)
+            {
+                hasexclusive = false;
+                exclcheck = totalmillis;
+                loopwindows(w,
+                {
+                    if(!w->inworld && w->exclusive)
+                    {
+                        hasexclusive = true;
+                        break;
+                    }
+                });
+            }
+            return !hasexclusive || (!w->inworld && w->exclusive);
+        }
+
         void adjustchildren()
         {
             loopwindows(w, w->adjustlayout());
@@ -1442,7 +1460,7 @@ namespace UI
                 if(!(allowstate&chkflags)) return; \
                 loopwindowsrev(w, \
                 { \
-                    if(((w->state | w->childstate) & mask) != mask) continue; \
+                    if(((w->state | w->childstate) & mask) != mask || !checkexclusive(w)) continue; \
                     w->func##children(cx, cy, cinside, mask, mode, setflags); \
                     int wflags = (w->state | w->childstate) & (setflags); \
                     if(wflags) { childstate |= wflags; break; } \
@@ -1494,6 +1512,7 @@ namespace UI
         {
             loopwindowsrev(w,
             {
+                if(!checkexclusive(w)) continue;
                 if(w->inworld || w->state&STATE_HIDDEN || w->persist) continue;
                 if(w->allowinput || w->passthrough) { hide(w, i); return true; }
             });
@@ -1512,28 +1531,25 @@ namespace UI
             return hidden;
         }
 
-        bool hasexclusive() const
+        int allowinput(bool cursor)
         {
-            loopwindows(w, if(!w->inworld && w->exclusive) return true);
-            return false;
-        }
-
-        int allowinput(bool cursor) const
-        {
-            bool hasexcl = hasexclusive();
             int ret = 0;
             loopwindows(w,
             {
-                if(hasexcl && !w->exclusive) continue;
+                if(!checkexclusive(w)) continue;
                 if(w->inworld && (!cursor || w->hitx < 0 || w->hitx > 1 || w->hity < 0 || w->hity > 1)) continue;
                 if(w->allowinput && !(w->state&STATE_HIDDEN) && ret != 1) ret = max(w->allowinput, ret);
             });
             return ret;
         }
 
-        bool hasmenu(bool pass = true) const
+        bool hasmenu(bool pass = true)
         {
-            loopwindows(w, if(!w->inworld && w->menu && !(w->state&STATE_HIDDEN)) return !pass || !w->passthrough);
+            loopwindows(w,
+            {
+                if(!checkexclusive(w)) continue;
+                if(!w->inworld && w->menu && !(w->state&STATE_HIDDEN)) return !pass || !w->passthrough;
+            });
             return false;
         }
 
@@ -1541,6 +1557,7 @@ namespace UI
         {
             loopwindowsrev(w,
             {
+                if(!checkexclusive(w)) continue;
                 if(!w->inworld && (w->allowinput || w->passthrough) && !(w->state&STATE_HIDDEN)) { return w->name; }
             });
             return NULL;
@@ -1551,10 +1568,9 @@ namespace UI
         void draw(bool world)
         {
             if(children.empty()) return;
-            bool hasexcl = hasexclusive();
             loopwindows(w,
             {
-                if(!w->inworld && hasexcl && !w->exclusive) continue;
+                if(!checkexclusive(w)) continue;
                 if(w->tooltip) // follows cursor
                     w->setpos((cursorx*float(hudw)/float(hudh))-(w->w*cursorx), cursory >= 0.5f ? cursory-w->h-uitipoffset : cursory+hud::cursorsize+uitipoffset);
                 else if(w->popup && !w->overridepos)
