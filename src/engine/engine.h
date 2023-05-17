@@ -114,9 +114,6 @@ extern void reloadsignal(int signum);
 extern int shutdownwait, maxshutdownwait;
 extern void shutdownsignal(int signum);
 
-#define CON_ENUM(pr, en) en(pr, Debug, DEBUG) en(pr, Event, EVENT) en(pr, Message, MESG) en(pr, Maximum, MAX)
-ENUMNV(CON, CON_ENUM);
-
 #ifndef STANDALONE
 #include "world.h"
 #include "octa.h"
@@ -791,7 +788,7 @@ extern int findkeycode(char *key);
 
 extern int commandmillis, commandpos, commandcolour, completeoffset, completesize;
 extern bigstring commandbuf;
-extern char *commandaction, *commandprompt, *commandicon;
+extern char *commandaction, *commandprompt;
 
 // main
 extern void quit();
@@ -846,9 +843,9 @@ enum { TI_CONSOLE = 1<<0, TI_UI = 1<<1 };
 extern void textinput(bool on, int mask = ~0);
 
 #define MAXCONLINES 1000
-struct cline { char *cref; int reftime, outtime, realtime; };
-extern reversequeue<cline, MAXCONLINES> conlines[CON_MAX];
-extern void conline(int type, const char *sf, int n);
+struct cline { char *cref; int color, reftime, outtime, realtime; };
+extern reversequeue<cline, MAXCONLINES> conlines;
+extern void conline(int color, const char *sf);
 
 // physics
 extern int dynentsize;

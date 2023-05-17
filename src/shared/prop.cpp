@@ -30,7 +30,7 @@ bool property::checktype(int comptype)
     if(type != comptype)
     {
         ASSERT(type >= 0 && comptype >= 0);
-        conoutf("\frError: %s, incorrect property assignment type: got %s, expected %s", def->name,
+        conoutf(colourred, "Error: %s, incorrect property assignment type: got %s, expected %s", def->name,
                 typenames[comptype], typenames[type]);
 
         return false;
@@ -233,7 +233,7 @@ int property::unpack(uchar *buf, size_t bufsize)
 
     if(bufsize <= sizeof(*datasize_packed))
     {
-        conoutf("Error unpacking prop '%s': not enough data to get the size!", def->name);
+        conoutf(colourred, "Error unpacking prop '%s': not enough data to get the size!", def->name);
         return 0;
     }
 
@@ -249,7 +249,7 @@ int property::unpack(uchar *buf, size_t bufsize)
         case PROP_FLOAT:
             if(*datasize_packed != size())
             {
-                conoutf("Error unpacking prop '%s': unexpected data size! Wanted: %u, got: %u",
+                conoutf(colourred, "Error unpacking prop '%s': unexpected data size! Wanted: %u, got: %u",
                     def->name, uint(size()), *datasize_packed);
 
                 return 0;
@@ -263,7 +263,7 @@ int property::unpack(uchar *buf, size_t bufsize)
         case PROP_COLOR:
             if(bufsize - bufread < size())
             {
-                conoutf("Error unpacking prop '%s': not enough data!", def->name);
+                conoutf(colourred, "Error unpacking prop '%s': not enough data!", def->name);
                 return 0;
             }
 
@@ -275,7 +275,7 @@ int property::unpack(uchar *buf, size_t bufsize)
         case PROP_FLOAT:
             if(bufsize - bufread < size())
             {
-                conoutf("Error unpacking prop '%s': not enough data!", def->name);
+                conoutf(colourred, "Error unpacking prop '%s': not enough data!", def->name);
                 return 0;
             }
 
@@ -289,7 +289,7 @@ int property::unpack(uchar *buf, size_t bufsize)
         case PROP_STRING:
             if(bufsize - bufread < *datasize_packed)
             {
-                conoutf("Error unpacking prop '%s': not enough data!", def->name);
+                conoutf(colourred, "Error unpacking prop '%s': not enough data!", def->name);
                 return 0;
             }
 

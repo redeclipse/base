@@ -69,8 +69,8 @@ namespace cdpi
 
         void steamcb::overlayactivated(GameOverlayActivated_t *p)
         {
-            if(p->m_bActive) conoutf("Steam overlay opened.");
-            else conoutf("Steam overlay closed.");
+            if(p->m_bActive) conoutf(colourwhite, "Steam overlay opened.");
+            else conoutf(colourwhite, "Steam overlay closed.");
             curoverlay = p->m_bActive != 0 ? totalmillis : -totalmillis;
         }
 
@@ -84,32 +84,32 @@ namespace cdpi
         {
             if(b || !p->m_bSuccess) return;
             curplayers = p->m_cPlayers;
-            conoutf("Number of Steam users currently playing: %d", curplayers);
+            conoutf(colourwhite, "Number of Steam users currently playing: %d", curplayers);
         }
 
         void steamcb::serversconnected(SteamServersConnected_t *p)
         {
-            conoutf("Server connected to Steam successfully.");
+            conoutf(colourwhite, "Server connected to Steam successfully.");
             servconnected = true;
         }
 
         void steamcb::serversconnfail(SteamServerConnectFailure_t *p)
         {
             servconnected = false;
-            conoutf("Server failed to connect to Steam.");
+            conoutf(colourred, "Server failed to connect to Steam.");
         }
 
         void steamcb::serversdisconnected(SteamServersDisconnected_t *p)
         {
             servconnected = false;
-            conoutf("Server got logged out of Steam.");
+            conoutf(colourred, "Server got logged out of Steam.");
         }
 
         void steamcb::policyresponse(GSPolicyResponse_t *p)
         {
             defformatstring(id, SI64, SteamAPI_ISteamGameServer_GetSteamID(serv));
             setsvar("steamserverid", id);
-            conoutf("Game server SteamID: %s (%s)", id, SteamAPI_ISteamGameServer_BSecure(serv) ? "VAC" : "Non-VAC");
+            conoutf(colourwhite, "Game server SteamID: %s (%s)", id, SteamAPI_ISteamGameServer_BSecure(serv) ? "VAC" : "Non-VAC");
         }
 
         void steamcb::authticketresponse(ValidateAuthTicketResponse_t *p)
@@ -132,7 +132,7 @@ namespace cdpi
             {
                 clientcancelticket();
                 SteamAPI_Shutdown();
-                conoutf("Steam API has been shutdown.");
+                conoutf(colourwhite, "Steam API has been shutdown.");
                 curoverlay = 0;
                 client = NULL;
                 user = NULL;
@@ -149,7 +149,7 @@ namespace cdpi
                 sclient = NULL;
                 serv = NULL;
                 servconnected = false;
-                conoutf("Steam GameServer has been shutdown.");
+                conoutf(colourwhite, "Steam GameServer has been shutdown.");
                 curapis &= ~SWSERVER;
             }
         }
@@ -160,42 +160,42 @@ namespace cdpi
             if(versionsteamid && !strncmp(versionbranch, "steam", 5) && SteamAPI_RestartAppIfNecessary(versionsteamid)) return false;
             if(!SteamAPI_Init())
             {
-                conoutf("Steam API failed to start.");
+                conoutf(colourred, "Steam API failed to start.");
                 return true;
             }
             curapis |= SWCLIENT;
 
             client = (ISteamClient *)SteamClient(); //SteamInternal_CreateInterface(STEAMCLIENT_INTERFACE_VERSION);
-            if(!client) { conoutf("Failed to get Steam client interface."); cleanup(SWCLIENT); return true; }
+            if(!client) { conoutf(colourred, "Failed to get Steam client interface."); cleanup(SWCLIENT); return true; }
             umpipe = SteamAPI_GetHSteamPipe();
-            if(!umpipe) { conoutf("Failed to get Steam main pipe."); cleanup(SWCLIENT); return true; }
+            if(!umpipe) { conoutf(colourred, "Failed to get Steam main pipe."); cleanup(SWCLIENT); return true; }
             uupipe = SteamAPI_GetHSteamUser();
             if(!uupipe)
             {
-                conoutf("Current Steam user pipe is invalid, trying to connect to global user.");
+                conoutf(colourred, "Current Steam user pipe is invalid, trying to connect to global user.");
                 uupipe = SteamAPI_ISteamClient_ConnectToGlobalUser(client, umpipe);
-                if(!uupipe) { conoutf("Failed to get Steam user pipe."); cleanup(SWCLIENT); return true; }
+                if(!uupipe) { conoutf(colourred, "Failed to get Steam user pipe."); cleanup(SWCLIENT); return true; }
             }
             user = (ISteamUser *)SteamAPI_ISteamClient_GetISteamUser(client, uupipe, umpipe, STEAMUSER_INTERFACE_VERSION);
-            if(!user) { conoutf("Failed to get Steam user interface."); cleanup(SWCLIENT); return true; }
+            if(!user) { conoutf(colourred, "Failed to get Steam user interface."); cleanup(SWCLIENT); return true; }
             friends = (ISteamFriends *)SteamAPI_ISteamClient_GetISteamFriends(client, uupipe, umpipe, STEAMFRIENDS_INTERFACE_VERSION);
-            if(!friends) { conoutf("Failed to get Steam friends interface."); cleanup(SWCLIENT); return true; }
+            if(!friends) { conoutf(colourred, "Failed to get Steam friends interface."); cleanup(SWCLIENT); return true; }
             stats = (ISteamUserStats *)SteamAPI_ISteamClient_GetISteamUserStats(client, uupipe, umpipe, STEAMUSERSTATS_INTERFACE_VERSION);
-            if(!stats) { conoutf("Failed to get Steam stats interface."); cleanup(SWCLIENT); return true; }
+            if(!stats) { conoutf(colourred, "Failed to get Steam stats interface."); cleanup(SWCLIENT); return true; }
 
             const char *name = SteamAPI_ISteamFriends_GetPersonaName(friends);
             if(name && *name)
             {
                 setsvar("steamusername", name);
-                conoutf("Current Steam Handle: %s", name);
+                conoutf(colourwhite, "Current Steam Handle: %s", name);
             }
             if(SteamAPI_ISteamUser_BLoggedOn(user))
             {
                 defformatstring(id, SI64, SteamAPI_ISteamUser_GetSteamID(user));
                 setsvar("steamuserid", id);
-                conoutf("Current Steam UserID: %s", id);
+                conoutf(colourwhite, "Current Steam UserID: %s", id);
             }
-            conoutf("Steam API initialised successfully.");
+            conoutf(colourwhite, "Steam API initialised successfully.");
             cbs.getnumplayers();
             return true;
         }
@@ -205,20 +205,20 @@ namespace cdpi
             if(!steamserver) return;
             if(!SteamGameServer_Init(INADDR_ANY, serverport, serverport+2, EServerMode(steamserver), versionstring))
             {
-                conoutf("Steam GameServer API failed to start.");
+                conoutf(colourred, "Steam GameServer API failed to start.");
                 return;
             }
 
             curapis |= SWSERVER;
 
             sclient = (ISteamClient *)SteamGameServerClient(); //SteamInternal_CreateInterface(STEAMCLIENT_INTERFACE_VERSION);
-            if(!sclient) { conoutf("Failed to get Steam client interface."); cleanup(SWSERVER); return; }
+            if(!sclient) { conoutf(colourred, "Failed to get Steam client interface."); cleanup(SWSERVER); return; }
             smpipe = SteamGameServer_GetHSteamPipe();
-            if(!smpipe) { conoutf("Failed to get Steam main pipe."); cleanup(SWSERVER); return; }
+            if(!smpipe) { conoutf(colourred, "Failed to get Steam main pipe."); cleanup(SWSERVER); return; }
             supipe = SteamGameServer_GetHSteamUser();
-            if(!supipe) { conoutf("Failed to get Steam user pipe."); cleanup(SWSERVER); return; }
+            if(!supipe) { conoutf(colourred, "Failed to get Steam user pipe."); cleanup(SWSERVER); return; }
             serv = (ISteamGameServer *)SteamAPI_ISteamClient_GetISteamGameServer(sclient, supipe, smpipe, STEAMGAMESERVER_INTERFACE_VERSION);
-            if(!serv) { conoutf("Failed to get Steam server interface."); cleanup(SWSERVER); return; }
+            if(!serv) { conoutf(colourred, "Failed to get Steam server interface."); cleanup(SWSERVER); return; }
 
             defformatstring(steamappid, "%d", versionsteamid);
             SteamAPI_ISteamGameServer_SetModDir(serv, versionfname);
@@ -227,7 +227,7 @@ namespace cdpi
             SteamAPI_ISteamGameServer_SetDedicatedServer(serv, servertype >= 3);
             SteamAPI_ISteamGameServer_LogOnAnonymous(serv);
             SteamAPI_ISteamGameServer_SetAdvertiseServerActive(serv, true);
-            conoutf("Steam GameServer API initialised successfully.");
+            conoutf(colourwhite, "Steam GameServer API initialised successfully.");
         }
 
         void servupdate()
@@ -271,7 +271,7 @@ namespace cdpi
             if(!(curapis&SWCLIENT)) return false;
             clientcancelticket();
             authticket = SteamAPI_ISteamUser_GetAuthSessionTicket(user, token, 1024, tokenlen);
-            conoutf("Generating Auth Ticket: %u (%u)", authticket, *tokenlen);
+            conoutf(colourwhite, "Generating Auth Ticket: %u (%u)", authticket, *tokenlen);
             return authticket != k_HAuthTicketInvalid;
         }
 
@@ -321,32 +321,32 @@ namespace cdpi
 
         void ready(const DiscordUser *u)
         {
-            conoutf("Discord: connected to user %s#%s - %s", u->username, u->discriminator, u->userId);
+            conoutf(colourwhite, "Discord: connected to user %s#%s - %s", u->username, u->discriminator, u->userId);
         }
 
         void disconnected(int errcode, const char *message)
         {
-            conoutf("Discord: disconnected (%d: %s)", errcode, message);
+            conoutf(colourwhite, "Discord: disconnected (%d: %s)", errcode, message);
         }
 
         void error(int errcode, const char  *message)
         {
-            conoutf("Discord: error (%d: %s)", errcode, message);
+            conoutf(colourred, "Discord: error (%d: %s)", errcode, message);
         }
 
         void joingame(const char *secret)
         {
-            conoutf("Discord: join (%s)", secret);
+            conoutf(colourwhite, "Discord: join (%s)", secret);
         }
 
         void spectategame(const char *secret)
         {
-            conoutf("Discord: spectate (%s)", secret);
+            conoutf(colourwhite, "Discord: spectate (%s)", secret);
         }
 
         void joinrequest(const DiscordUser *u)
         {
-            conoutf("Discord: join request from %s#%s - %s", u->username, u->discriminator, u->userId);
+            conoutf(colourwhite, "Discord: join request from %s#%s - %s", u->username, u->discriminator, u->userId);
             //response = DISCORD_REPLY_YES;
             //response = DISCORD_REPLY_NO;
             //Discord_Respond(u->userId, response);
@@ -356,7 +356,7 @@ namespace cdpi
         {
             if(!(curapis&DISCORD)) return;;
             Discord_Shutdown();
-            conoutf("Discord API has been shutdown.");
+            conoutf(colourwhite, "Discord API has been shutdown.");
         }
 
         void init()
@@ -372,7 +372,7 @@ namespace cdpi
             handlers.joinRequest = joinrequest;
             defformatstring(str, "%d", versionsteamid);
             Discord_Initialize(versiondiscordid, &handlers, 0, str); // todo: update for autoregister
-            conoutf("Discord API initialised successfully.");
+            conoutf(colourwhite, "Discord API initialised successfully.");
             curapis |= DISCORD;
         }
 

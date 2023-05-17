@@ -456,7 +456,7 @@ struct stainrenderer
             {
                 int nverts = buf.nextverts();
                 static const char * const sbufname[NUMSTAINBUFS] = { "opaque", "transparent", "mapmodel" };
-                conoutf("tris = %d, verts = %d, total tris = %d, %s", nverts/3, nverts, buf.totaltris(), sbufname[i]);
+                conoutf(colourwhite, "tris = %d, verts = %d, total tris = %d, %s", nverts/3, nverts, buf.totaltris(), sbufname[i]);
             }
 
             staininfo &d = newstain();

@@ -1881,7 +1881,7 @@ namespace entities
                 if(((enttype[e.type].reclink&(1<<f.type)) || (enttype[f.type].reclink&(1<<e.type))) && f.links.find(n) < 0)
                 {
                     f.links.add(n);
-                    if(verbose) conoutf("\frWARNING: automatic reciprocal link between %d and %d added", n, ent);
+                    if(verbose) conoutf(colourred, "WARNING: automatic reciprocal link between %d and %d added", n, ent);
                 }
                 else continue;
                 if(recurse || ent < n) fixentity(ent, false);
@@ -2195,12 +2195,11 @@ namespace entities
 
     // these functions are called when the client touches the item
     int announcerchan = -1;
-    void announce(int idx, gameent *d, bool unmapped)
+    void announce(int idx, gameent *d, int chan, int flags)
     {
-        int flags = (unmapped ? SND_UNMAPPED : 0)|SND_PRIORITY|SND_BUFFER;
         if(d)
         {
-            emitsound(idx, game::getplayersoundpos(d), d, &d->aschan, flags, 0.25f);
+            emitsound(idx, game::getplayersoundpos(d), d, chan >= 0 && chan < PLCHAN_MAX ? &d->plchan[chan] : NULL, flags|SND_PRIORITY|SND_CLAMPED|SND_BUFFER|SND_TRACKED, 0.25f);
             return;
         }
         bool found = false;
@@ -2210,12 +2209,11 @@ namespace entities
             if(e.attrs[0] >= 0) continue;
             int eflags = flags|SND_TRACKED;
             loopk(SND_LAST) if(e.attrs[6]&(1<<k)) flags |= 1<<k;
-            eflags &= ~SND_LOOP;
             float gain = e.attrs[1] > 0 ? e.attrs[1]/100.f : 1.f, pitch = e.attrs[2] > 0 ? e.attrs[2]/100.f : 1.f,
                   rolloff = e.attrs[3] > 0 ? e.attrs[3]/100.f : -1.f, refdist = e.attrs[4] > 0 ? e.attrs[4]/100.f : -1.f, maxdist = e.attrs[5] > 0 ? e.attrs[5]/100.f : -1.f;
             if(emitsound(idx, e.getpos(), NULL, &e.schan, eflags, gain, pitch, rolloff, refdist, maxdist) >= 0) found = true;
         }
-        if(!found) emitsoundpos(idx, vec(worldsize/2, worldsize/2, worldsize), &announcerchan, flags|SND_CLAMPED, 0.5f);
+        if(!found) emitsoundpos(idx, vec(worldsize/2, worldsize/2, worldsize), &announcerchan, flags|SND_PRIORITY|SND_CLAMPED|SND_BUFFER, 0.5f);
     }
 
     int emitmapsound(gameentity &e, bool looping)
@@ -2401,11 +2399,11 @@ namespace entities
                     (enttype[ents[index]->type].canlink&(1<<ents[node]->type)))
                         return true;
             if(msg)
-                conoutf("\frEntity %s (%d) and %s (%d) are not linkable", enttype[ents[index]->type].name, index, enttype[ents[node]->type].name, node);
+                conoutf(colourred, "Entity %s (%d) and %s (%d) are not linkable", enttype[ents[index]->type].name, index, enttype[ents[node]->type].name, node);
 
             return false;
         }
-        if(msg) conoutf("\frEntity %d and %d are unable to be linked as one does not seem to exist", index, node);
+        if(msg) conoutf(colourred, "Entity %d and %d are unable to be linked as one does not seem to exist", index, node);
         return false;
     }
 
@@ -2425,7 +2423,7 @@ namespace entities
                     if(recip && h >= 0) f.links.remove(h);
                     fixentity(index, true);
                     if(local && m_edit(game::gamemode)) client::addmsg(N_EDITLINK, "ri3", 0, index, node);
-                    if(verbose > 2) conoutf("\faEntity %s (%d) and %s (%d) delinked", enttype[ents[index]->type].name, index, enttype[ents[node]->type].name, node);
+                    if(verbose > 2) conoutf(colourgrey, "Entity %s (%d) and %s (%d) delinked", enttype[ents[index]->type].name, index, enttype[ents[node]->type].name, node);
                     return true;
                 }
                 else if(toggle && canlink(node, index))
@@ -2434,7 +2432,7 @@ namespace entities
                     if(recip && e.links.find(node) < 0) e.links.add(node);
                     fixentity(node, true);
                     if(local && m_edit(game::gamemode)) client::addmsg(N_EDITLINK, "ri3", 1, node, index);
-                    if(verbose > 2) conoutf("\faEntity %s (%d) and %s (%d) linked", enttype[ents[node]->type].name, node, enttype[ents[index]->type].name, index);
+                    if(verbose > 2) conoutf(colourgrey, "Entity %s (%d) and %s (%d) linked", enttype[ents[node]->type].name, node, enttype[ents[index]->type].name, index);
                     return true;
                 }
             }
@@ -2444,7 +2442,7 @@ namespace entities
                 if(recip && (h = e.links.find(node)) >= 0) e.links.remove(h);
                 fixentity(node, true);
                 if(local && m_edit(game::gamemode)) client::addmsg(N_EDITLINK, "ri3", 0, node, index);
-                if(verbose > 2) conoutf("\faEntity %s (%d) and %s (%d) delinked", enttype[ents[node]->type].name, node, enttype[ents[index]->type].name, index);
+                if(verbose > 2) conoutf(colourgrey, "Entity %s (%d) and %s (%d) delinked", enttype[ents[node]->type].name, node, enttype[ents[index]->type].name, index);
                 return true;
             }
             else if(toggle || add)
@@ -2453,12 +2451,12 @@ namespace entities
                 if(recip && f.links.find(index) < 0) f.links.add(index);
                 fixentity(index, true);
                 if(local && m_edit(game::gamemode)) client::addmsg(N_EDITLINK, "ri3", 1, index, node);
-                if(verbose > 2) conoutf("\faEntity %s (%d) and %s (%d) linked", enttype[ents[index]->type].name, index, enttype[ents[node]->type].name, node);
+                if(verbose > 2) conoutf(colourgrey, "Entity %s (%d) and %s (%d) linked", enttype[ents[index]->type].name, index, enttype[ents[node]->type].name, node);
                 return true;
             }
         }
         if(verbose > 2)
-            conoutf("\frEntity %s (%d) and %s (%d) failed linking", enttype[ents[index]->type].name, index, enttype[ents[node]->type].name, node);
+            conoutf(colourred, "Entity %s (%d) and %s (%d) failed linking", enttype[ents[index]->type].name, index, enttype[ents[node]->type].name, node);
         return false;
     }
 
@@ -2632,7 +2630,7 @@ namespace entities
             gameentity &f = *(gameentity *)ents[link];
             f.links.add(id);
             e.links.remove(i--);
-            conoutf("switched rail link between %d and %d", id, link);
+            conoutf(colourwhite, "switched rail link between %d and %d", id, link);
         }
 
         if(gver <= 259 && e.type == TELEPORT && e.attrs[4]) e.attrs[4] = (((e.attrs[4]&0xF)<<4)|((e.attrs[4]&0xF0)<<8)|((e.attrs[4]&0xF00)<<12))+0x0F0F0F;

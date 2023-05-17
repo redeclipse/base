@@ -175,10 +175,10 @@ void optiface(uchar *p, cube &c)
 void printcube()
 {
     cube &c = lookupcube(lu); // assume this is cube being pointed at
-    conoutf("\fa= %p = (%d, %d, %d) @ %d", (void *)&c, lu.x, lu.y, lu.z, lusize);
-    conoutf("\fa x  %.8x", c.faces[0]);
-    conoutf("\fa y  %.8x", c.faces[1]);
-    conoutf("\fa z  %.8x", c.faces[2]);
+    conoutf(colourgrey, "= %p = (%d, %d, %d) @ %d", (void *)&c, lu.x, lu.y, lu.z, lusize);
+    conoutf(colourgrey, " x  %.8x", c.faces[0]);
+    conoutf(colourgrey, " y  %.8x", c.faces[1]);
+    conoutf(colourgrey, " z  %.8x", c.faces[2]);
 }
 
 COMMAND(0, printcube, "");

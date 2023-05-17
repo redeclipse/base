@@ -614,8 +614,8 @@ void calclight()
     if(timer) SDL_RemoveTimer(timer);
     progress(0, "Lighting done..");
     allchanged();
-    if(calclight_canceled) conoutf("Calclight aborted");
-    else conoutf("Computed lighting (%.1f seconds)", (end - start) / 1000.0f);
+    if(calclight_canceled) conoutf(colourwhite, "Calclight aborted");
+    else conoutf(colourwhite, "Computed lighting (%.1f seconds)", (end - start) / 1000.0f);
 }
 
 void mpcalclight(bool local)

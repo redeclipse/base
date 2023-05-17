@@ -434,14 +434,15 @@ namespace bomber
         st.dropaffinity(i, droploc, inertia, lastmillis, target);
         emitsound(S_DROP, game::getplayersoundpos(d), d);
 
-        gamelog *log = new gamelog;
-        log->addlist("this", "type", "bomber");
-        log->addlist("this", "action", "drop");
-        log->addlist("this", "sound", S_V_BOMBDROP);
-        log->addlist("this", "flags", EV_F_BROADCAST);
-        log->addclient("client", d);
+        gamelog *log = new gamelog(GAMELOG_EVENT);
+        log->addlist("args", "type", "bomber");
+        log->addlist("args", "action", "drop");
+        log->addlist("args", "sound", S_V_BOMBDROP);
+        log->addlist("args", "flags", GAMELOG_F_BROADCAST);
         log->addlist("args", "affinity", i);
-        log->addlistf("args","console", "\fa%s dropped the \fs\fzwv\f($bombtex)bomb\fS", game::colourname(d));
+        log->addlist("args", "colour", colourgrey);
+        log->addlistf("args", "console", "%s dropped the \fs\fzwv\f($bombtex)bomb\fS", game::colourname(d));
+        log->addclient("client", d);
         log->push();
     }
 
@@ -484,27 +485,29 @@ namespace bomber
             if(isbomberaffinity(f))
             {
                 affinityeffect(i, T_NEUTRAL, f.pos(true, true), f.spawnloc);
-                gamelog *log = new gamelog;
-                log->addlist("this", "type", "bomber");
-                log->addlist("this", "action", "reset");
-                log->addlist("this", "sound", S_V_BOMBRESET);
-                log->addlist("this", "flags", EV_F_BROADCAST);
+                gamelog *log = new gamelog(GAMELOG_EVENT);
+                log->addlist("args", "type", "bomber");
+                log->addlist("args", "action", "reset");
+                log->addlist("args", "sound", S_V_BOMBRESET);
+                log->addlist("args", "flags", GAMELOG_F_BROADCAST);
                 log->addlist("args", "affinity", i);
                 log->addlist("args", "droptime", f.droptime);
                 log->addlist("args", "inittime", f.inittime);
-                log->addlist("args", "console", "\faThe \fs\fzwvbomb\fS has been reset");
+                log->addlist("args", "concol", colourgrey);
+                log->addlistf("args", "console", "The \fs\fzwvbomb\fS has been reset");
                 log->push();
             }
         }
         else if(value == 1 && isbomberaffinity(f))
         {
-            gamelog *log = new gamelog;
-            log->addlist("this", "type", "bomber");
-            log->addlist("this", "action", "start");
-            log->addlist("this", "sound", m_duke(game::gamemode, game::mutators) ? S_V_BOMBDUEL : S_V_BOMBSTART);
-            log->addlist("this", "flags", EV_F_BROADCAST);
+            gamelog *log = new gamelog(GAMELOG_EVENT);
+            log->addlist("args", "type", "bomber");
+            log->addlist("args", "action", "start");
+            log->addlist("args", "sound", m_duke(game::gamemode, game::mutators) ? S_V_BOMBDUEL : S_V_BOMBSTART);
+            log->addlist("args", "flags", GAMELOG_F_BROADCAST);
             log->addlist("args", "affinity", i);
-            log->addlist("args", "console", "\faThe \fs\fzwvbomb\fS has been spawned");
+            log->addlist("args", "concol", colourgrey);
+            log->addlistf("args", "console", "The \fs\fzwvbomb\fS has been spawned");
             log->push();
         }
 
@@ -528,12 +531,11 @@ namespace bomber
         hud::teamscore(d->team).total = score;
         int millis = lastmillis-f.inittime;
 
-        gamelog *log = new gamelog;
-        log->addlist("this", "type", "bomber");
-        log->addlist("this", "action", "score");
-        log->addlist("this", "sound", S_V_BOMBSCORE);
-        log->addlist("this", "flags", EV_F_BROADCAST);
-        log->addclient("client", d);
+        gamelog *log = new gamelog(GAMELOG_EVENT);
+        log->addlist("args", "type", "bomber");
+        log->addlist("args", "action", "score");
+        log->addlist("args", "sound", S_V_BOMBSCORE);
+        log->addlist("args", "flags", GAMELOG_F_BROADCAST);
         log->addlist("args", "affinity", relay);
         log->addlist("args", "goal", goal);
         log->addlist("args", "droptime", f.droptime);
@@ -541,7 +543,9 @@ namespace bomber
         log->addlist("args", "dist", dist);
         log->addlist("args", "score", score);
         log->addlist("args", "millis", millis);
-        log->addlistf("args","console", "\fa%s completed a bombing for team %s%s (score: \fs\fc%d\fS, time taken: \fs\fc%s\fS)", game::colourname(d), game::colourteam(d->team), extra, score, timestr(millis, 1));
+        log->addlist("args", "colour", colourgrey);
+        log->addlistf("args", "console", "%s completed a bombing for team %s%s (score: \fs\fc%d\fS, time taken: \fs\fc%s\fS)", game::colourname(d), game::colourteam(d->team), extra, score, timestr(millis, 1));
+        log->addclient("client", d);
         log->push();
 
         affinityeffect(goal, d->team, g.spawnloc, f.spawnloc);
@@ -555,16 +559,17 @@ namespace bomber
         bomberstate::flag &f = st.flags[i];
         emitsound(S_CATCH, game::getplayersoundpos(d), d);
 
-        gamelog *log = new gamelog;
-        log->addlist("this", "type", "bomber");
-        log->addlist("this", "action", "secure");
-        log->addlist("this", "sound", S_V_BOMBPICKUP);
-        log->addlist("this", "flags", EV_F_BROADCAST);
-        log->addclient("client", d);
-        log->addclient("client", f.lastowner);
+        gamelog *log = new gamelog(GAMELOG_EVENT);
+        log->addlist("args", "type", "bomber");
+        log->addlist("args", "action", "secure");
+        log->addlist("args", "sound", S_V_BOMBPICKUP);
+        log->addlist("args", "flags", GAMELOG_F_BROADCAST);
         log->addlist("args", "affinity", i);
         log->addlist("args", "droptime", f.droptime);
-        log->addlistf("args","console", "\fa%s secured the \fs\fzwv\f($bombtex)bomb\fS", game::colourname(d));
+        log->addlist("args", "colour", colourgrey);
+        log->addlistf("args", "console", "%s secured the \fs\fzwv\f($bombtex)bomb\fS", game::colourname(d));
+        log->addclient("client", d);
+        log->addclient("client", f.lastowner);
         log->push();
 
         if(!f.droptime) affinityeffect(i, d->team, d->feetpos(), f.pos(true, true));

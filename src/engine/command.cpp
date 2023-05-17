@@ -273,8 +273,8 @@ static void debugalias()
     {
         ident *id = l->id;
         ++depth;
-        if(depth < dbgalias) conoutft(CON_DEBUG, "  %d) %s", total-depth+1, id->name);
-        else if(l->next == &noalias) conoutft(CON_DEBUG, depth == dbgalias ? "  %d) %s" : "  ..%d) %s", total-depth+1, id->name);
+        if(depth < dbgalias) conoutf(colourred, "  %d) %s", total-depth+1, id->name);
+        else if(l->next == &noalias) conoutf(colourred, depth == dbgalias ? "  %d) %s" : "  ..%d) %s", total-depth+1, id->name);
     }
 }
 
@@ -287,7 +287,7 @@ static void debugcode(const char *fmt, ...)
     if(nodebug) return;
 
     defvformatbigstring(msg, fmt, fmt);
-    conoutft(CON_DEBUG, "%s", msg);
+    conoutf(colourred, "%s", msg);
 
     debugalias();
 }
@@ -299,7 +299,7 @@ static void debugcodeline(const char *p, const char *fmt, ...)
     if(nodebug) return;
 
     defvformatbigstring(msg, fmt, debugline(p, fmt));
-    conoutft(CON_DEBUG, "%s", msg);
+    conoutf(colourred, "%s", msg);
 
     debugalias();
 }
@@ -430,7 +430,7 @@ template<class T> static inline ident *newident(const T &name, int flags, int le
     {
         if(checknumber(name))
         {
-            debugcode("\frNumber %.*s is not a valid identifier name", stringlen(name), stringptr(name));
+            debugcode("Number %.*s is not a valid identifier name", stringlen(name), stringptr(name));
             return dummyident;
         }
         id = addident(ident(ID_ALIAS, newstring(name), flags, level));
@@ -488,12 +488,12 @@ ident *readident(const char *name)
 
 void printreadonly(ident *id)
 {
-    debugcode("\frVariable %s is read-only (%d [%d])", id->name, id->type, id->flags);
+    debugcode("Variable %s is read-only (%d [%d])", id->name, id->type, id->flags);
 }
 
 void printeditonly(ident *id)
 {
-    debugcode("\frVariable %s is only directly modifiable in editmode (%d [%d])", id->name, id->type, id->flags);
+    debugcode("Variable %s is only directly modifiable in editmode (%d [%d])", id->name, id->type, id->flags);
 }
 
 void resetvar(char *name)
@@ -501,7 +501,7 @@ void resetvar(char *name)
     ident *id = idents.access(name);
     if(!id) return;
     if(id->flags&IDF_READONLY) printreadonly(id);
-    else if(id->flags&IDF_MAP || id->flags&IDF_CLIENT || id->flags&IDF_SERVER) debugcode("\frVariable %s cannot be reset (%d [%d])", id->name, id->type, id->flags);
+    else if(id->flags&IDF_MAP || id->flags&IDF_CLIENT || id->flags&IDF_SERVER) debugcode("Variable %s cannot be reset (%d [%d])", id->name, id->type, id->flags);
     else clearoverride(*id);
 }
 
@@ -526,7 +526,7 @@ static inline void setalias(ident &id, tagval &v, bool mapdef, bool quiet = fals
 {
     if(mapdef && !(id.flags&IDF_LOCAL) && !(id.flags&IDF_MAP) && !(id.flags&IDF_UNKNOWN))
     {
-        debugcode("\frCannot redefine %s as a map alias (%d [%d])", id.name, id.type, id.flags);
+        debugcode("Cannot redefine %s as a map alias (%d [%d])", id.name, id.type, id.flags);
         return;
     }
 #ifndef STANDALONE
@@ -584,14 +584,14 @@ static void setalias(const char *name, tagval &v, bool mapdef, bool quiet = fals
                 }
                 // fall through
             default:
-                debugcode("\frCannot redefine builtin %s with an alias (%d [%d])", id->name, id->type, id->flags);
+                debugcode("Cannot redefine builtin %s with an alias (%d [%d])", id->name, id->type, id->flags);
                 break;
         }
         freearg(v);
     }
     else if(checknumber(name))
     {
-        debugcode("\frCannot alias number %s", name);
+        debugcode("Cannot alias number %s", name);
         freearg(v);
     }
     else
@@ -599,7 +599,7 @@ static void setalias(const char *name, tagval &v, bool mapdef, bool quiet = fals
 #ifndef STANDALONE
         if(!(identflags&IDF_MAP) && !editmode && mapdef && !quiet)
         {
-            debugcode("\frCannot create %s as a map alias outside editmode", name);
+            debugcode("Cannot create %s as a map alias outside editmode", name);
             return;
         }
 #endif
@@ -661,7 +661,7 @@ void loadalias(const char *name, const char *fname, int *mapdef)
     char *buf = loadfile(s, NULL);
     if(!buf)
     {
-        conoutf("\frCould not read %s", fname);
+        conoutf(colourred, "Could not read %s", fname);
         return;
     }
     tagval v;
@@ -758,13 +758,13 @@ int clampvar(ident *id, int val, int minval, int maxval, bool msg)
     {
         if(uint(val) < uint(minval)) val = uint(minval);
         else if(uint(val) > uint(maxval)) val = uint(maxval);
-        if(msg && val != oldval) debugcode("\frValid range for %s is 0x%X..0x%X", id->name, uint(minval), uint(maxval));
+        if(msg && val != oldval) debugcode("Valid range for %s is 0x%X..0x%X", id->name, uint(minval), uint(maxval));
         return val;
     }
     else if(val < minval) val = minval;
     else if(val > maxval) val = maxval;
     if(msg && val != oldval) debugcode(id->flags&IDF_HEX ?
-            (minval <= 255 ? "\frValid range for %s is %d..0x%X" : "\frValid range for %s is 0x%X..0x%X") : "\frValid range for %s is %d..%d",
+            (minval <= 255 ? "Valid range for %s is %d..0x%X" : "Valid range for %s is 0x%X..0x%X") : "Valid range for %s is %d..%d",
                 id->name, minval, maxval);
     return val;
 }
@@ -774,7 +774,7 @@ float clampfvar(ident *id, float val, float minval, float maxval, bool msg)
     float oldval = val;
     if(val < minval) val = minval;
     else if(val > maxval) val = maxval;
-    if(msg && val != oldval) debugcode("\frValid range for %s is %s..%s", id->name, floatstr(minval), floatstr(maxval));
+    if(msg && val != oldval) debugcode("Valid range for %s is %s..%s", id->name, floatstr(minval), floatstr(maxval));
     return val;
 }
 
@@ -836,7 +836,7 @@ void setvarflag(const char *s, const char *v, int flag, const char *msg, bool al
     ident *id = idents.access(s);
     if(!id || (alias && id->type != ID_ALIAS))
     {
-        if(verbose) conoutf("\frAdding %s of %s failed as it is not available", msg, s);
+        if(verbose) conoutf(colourred, "Adding %s of %s failed as it is not available", msg, s);
         return;
     }
     bool on = false;
@@ -857,7 +857,7 @@ void setvardesc(const char *s, const char *v, const char *f)
     ident *id = idents.access(s);
     if(!id)
     {
-        if(verbose) conoutf("\frAdding description of %s failed as it is not available", s);
+        if(verbose) conoutf(colourred, "Adding description of %s failed as it is not available", s);
         return;
     }
     DELETEA(id->desc);
@@ -875,12 +875,12 @@ void setvarlevel(const char *s, int level)
     ident *id = idents.access(varname);
     if(!id)
     {
-        if(verbose) conoutf("\frSetting level of %s failed as it is not available", s);
+        if(verbose) conoutf(colourred, "Setting level of %s failed as it is not available", s);
         return;
     }
     if(!(id->flags&IDF_SERVER))
     {
-        if(verbose) conoutf("\frSetting level of %s failed as it is not a server side variable", s);
+        if(verbose) conoutf(colourred, "Setting level of %s failed as it is not a server side variable", s);
         return;
     }
     id->level = level;
@@ -1140,7 +1140,7 @@ ICOMMAND(0, get, "s", (char *name),
         { \
             if((identflags&IDF_MAP) && !(id->flags&IDF_MAP)) \
             { \
-                debugcode("\frCannot set variable %s from map config (%d [%d])", id->name, id->type, id->flags); \
+                debugcode("Cannot set variable %s from map config (%d [%d])", id->name, id->type, id->flags); \
                 return; \
             } \
             if(client::sendcmd(2, id->name, argstr)) return; \
@@ -1259,7 +1259,7 @@ ICOMMAND(0, set, "rT", (ident *id, tagval *v),
             }
             // fall through
         default:
-            debugcode("\frCannot redefine builtin %s with an alias (%d [%d])", id->name, id->type, id->flags);
+            debugcode("Cannot redefine builtin %s with an alias (%d [%d])", id->name, id->type, id->flags);
             break;
     }
 });
@@ -1917,7 +1917,7 @@ static void compileblockmain(vector<uint> &code, const char *&p, int wordtype, i
         switch(c)
         {
             case '\0':
-                debugcodeline(line, "\frMissing \"]\"");
+                debugcodeline(line, "Missing \"]\"");
                 p--;
                 goto done;
             case '\"':
@@ -1935,7 +1935,7 @@ static void compileblockmain(vector<uint> &code, const char *&p, int wordtype, i
                 while(*p == '@') p++;
                 int level = p - (esc - 1);
                 if(brak > level) continue;
-                else if(brak < level) debugcodeline(line, "\frToo many @s");
+                else if(brak < level) debugcodeline(line, "Too many @s");
                 if(!concs && prevargs >= MAXRESULTS) code.add(CODE_ENTER);
                 if(concs + 2 > MAXARGS)
                 {
@@ -2404,14 +2404,14 @@ static void compilestatements(vector<uint> &code, const char *&p, int rettype, i
         switch(c)
         {
             case '\0':
-                if(c != brak) debugcodeline(line, "\frMissing \"%c\"", brak);
+                if(c != brak) debugcodeline(line, "Missing \"%c\"", brak);
                 p--;
                 return;
 
             case ')':
             case ']':
                 if(c == brak) return;
-                debugcodeline(line, "\frUnexpected \"%c\"", c);
+                debugcodeline(line, "Unexpected \"%c\"", c);
                 break;
 
             case '/':
@@ -2517,7 +2517,7 @@ void printvar(ident *id, int n, const char *str)
         formatstring(output, "%s = 0x%.8X (%d, %d, %d, %d)", id->name, n, n>>24, (n>>16)&0xFF, (n>>8)&0xFF, n&0xFF);
     else formatstring(output, id->flags&IDF_HEX ? "%s = 0x%X" : "%s = %d", id->name, n);
     if(str && *str) concformatstring(output, " (%s)", str);
-    conoutft(CON_DEBUG, "%s", output);
+    conoutf(colourwhite, "%s", output);
 }
 void printintvar(ident *id, int n, const char *str) { printvar(id, n, str); }
 
@@ -2525,7 +2525,7 @@ void printfvar(ident *id, float f, const char *str)
 {
     defformatstring(output, "%s = %s", id->name, floatstr(f));
     if(str && *str) concformatstring(output, " (%s)", str);
-    conoutft(CON_DEBUG, "%s", output);
+    conoutf(colourwhite, "%s", output);
 }
 void printfloatvar(ident *id, float f, const char *str) { printfvar(id, f, str); }
 
@@ -2533,7 +2533,7 @@ void printsvar(ident *id, const char *s, const char *str)
 {
     defformatstring(output, strchr(s, '"') ? "%s = [%s]" : "%s = \"%s\"", id->name, s);
     if(str && *str) concformatstring(output, " (%s)", str);
-    conoutft(CON_DEBUG, "%s", output);
+    conoutf(colourwhite, "%s", output);
 }
 
 template <class V>
@@ -3039,7 +3039,7 @@ static const uint *runcode(const uint *code, tagval &result)
                         } \
                         default: freearg(arg); nval; continue; \
                     } \
-                    debugcode("\frUnknown alias lookup: %s", arg.s); \
+                    debugcode("Unknown alias lookup: %s", arg.s); \
                     freearg(arg); \
                     nval; \
                     continue; \
@@ -3052,7 +3052,7 @@ static const uint *runcode(const uint *code, tagval &result)
             case CODE_LOOKUP|RET_STR:
                 #define LOOKUP(aval) { \
                     ident *id = identmap[op>>8]; \
-                    if(id->flags&IDF_UNKNOWN) debugcode("\frUnknown alias lookup: %s", id->name); \
+                    if(id->flags&IDF_UNKNOWN) debugcode("Unknown alias lookup: %s", id->name); \
                     aval; \
                     continue; \
                 }
@@ -3256,7 +3256,7 @@ static const uint *runcode(const uint *code, tagval &result)
                 int callargs = (op>>8)&0x1F, offset = numargs-callargs;
                 if(id->flags&IDF_UNKNOWN)
                 {
-                    debugcode("\frUnknown command: %s", id->name);
+                    debugcode("Unknown command: %s", id->name);
                     FORCERESULT;
                 }
                 CALLALIAS;
@@ -3294,7 +3294,7 @@ static const uint *runcode(const uint *code, tagval &result)
                 noid:
                     if(checknumber(idarg.s)) goto litval;
                     if(offset == 1 && idrewrite && server::rewritecommand(id, args, numargs)) FORCERESULT;
-                    debugcode("\frUnknown command: %s", idarg.s);
+                    debugcode("Unknown command: %s", idarg.s);
                     forcenull(result);
                     FORCERESULT;
                 }
@@ -3586,7 +3586,7 @@ bool execfile(const char *cfgfile, bool msg, int flags)
     char *buf = loadfile(s, NULL);
     if(!buf)
     {
-        if(msg || verbose >= 2) conoutf("\frCould not read %s", cfgfile);
+        if(msg || verbose >= 2) conoutf(colourred, "Could not read %s", cfgfile);
         return false;
     }
     int oldflags = identflags, oldversion = versioning;
@@ -3601,7 +3601,7 @@ bool execfile(const char *cfgfile, bool msg, int flags)
     if(flags&EXEC_NOMAP) identflags = oldflags;
     if(flags&EXEC_VERSION) versioning = oldversion;
     delete[] buf;
-    if(verbose >= 2) conoutf("\faLoaded script %s", cfgfile);
+    if(verbose >= 2) conoutf(colourgrey, "Loaded script %s", cfgfile);
     return true;
 }
 ICOMMAND(0, exec, "sib", (char *file, int *flags, int *msg), intret(execfile(file, *msg != 0, *flags) ? 1 : 0));
@@ -4960,8 +4960,9 @@ ICOMMAND(0, tohex, "ii", (int *n, int *p),
     stringret(buf);
 });
 
-ICOMMAND(0, echo, "C", (char *s), conoutf("%s", s));
-ICOMMAND(0, error, "C", (char *s), conoutf("\fr%s", s));
+ICOMMAND(0, echo, "C", (char *s), conoutf(colourwhite, "%s", s));
+ICOMMAND(0, echocolour, "iC", (int *c, char *s), conoutf(*c, "%s", s));
+ICOMMAND(0, error, "C", (char *s), conoutf(colourred, "%s", s));
 
 #define CMPSCMD(func, name, op) \
     ICOMMAND(0, name, "s1V", (tagval *args, int numargs), \
@@ -5440,3 +5441,25 @@ void clear_command()
     });
     mrandoms.setsize(0);
 }
+
+#define COLOURDARK 0.45f
+#define COLOURVAR(a,b) \
+    VAR(IDF_PERSIST|IDF_HEX, colour##a, 0, b, 0xFFFFFF); \
+    VAR(IDF_PERSIST|IDF_HEX, colourdark##a, 0, ((int(COLOURDARK*((b>>16)&0xFF)))<<16)|((int(COLOURDARK*((b>>8)&0xFF)))<<8)|(int(COLOURDARK*(b&0xFF))), 0xFFFFFF);
+
+VAR(IDF_PERSIST|IDF_HEX, colourblack, 0, 0x000000, 0xFFFFFF);
+VAR(IDF_PERSIST|IDF_HEX, colourwhite, 0, 0xFFFFFF, 0xFFFFFF);
+
+COLOURVAR(green, 0x00FF00);
+COLOURVAR(blue, 0x0000FF);
+COLOURVAR(yellow, 0xFFFF00);
+COLOURVAR(red, 0xFF0000);
+COLOURVAR(grey, 0xB0B0B0);
+COLOURVAR(magenta, 0xFF80FF);
+COLOURVAR(orange, 0xFF4000);
+COLOURVAR(cyan, 0x00FFFF);
+COLOURVAR(pink, 0xFF8080);
+COLOURVAR(violet, 0xB060FF);
+COLOURVAR(purple, 0xFF00FF);
+COLOURVAR(brown, 0xA05030);
+COLOURVAR(chartreuse, 0xB0FF00);

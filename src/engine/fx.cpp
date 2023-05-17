@@ -40,7 +40,7 @@ namespace fx
 
         if(!shouldprint) return;
 
-        conoutf("T %d EI %d EP %d EF %d NI %d NE %d PI %d",
+        conoutf(colourwhite, "T %d EI %d EP %d EF %d NI %d NE %d PI %d",
             lastmillis,
             fxstats[FX_STAT_EMITTER_INIT],
             fxstats[FX_STAT_EMITTER_PROLONG],
@@ -57,7 +57,7 @@ namespace fx
         listpopfront(result, freeinstances, prev, next);
         if(result) numinstances++;
 
-        if(fxdebug == 2) conoutf("fx instance get: %p (num %d)", result, numinstances);
+        if(fxdebug == 2) conoutf(colourwhite, "fx instance get: %p (num %d)", result, numinstances);
         maxstat(FX_STAT_INSTANCE_PEAK, numinstances);
 
         return result;
@@ -71,7 +71,7 @@ namespace fx
         listpushfront(inst, freeinstances, prev, next);
         numinstances--;
 
-        if(fxdebug == 2) conoutf("fx instance put: %p (num %d)", inst, numinstances);
+        if(fxdebug == 2) conoutf(colourwhite, "fx instance put: %p (num %d)", inst, numinstances);
     }
 
     static emitter *getemitter()
@@ -86,7 +86,7 @@ namespace fx
             numemitters++;
         }
 
-        if(fxdebug == 2) conoutf("fx emitter get: %p (num %d)", result, numemitters);
+        if(fxdebug == 2) conoutf(colourwhite, "fx emitter get: %p (num %d)", result, numemitters);
 
         return result;
     }
@@ -100,7 +100,7 @@ namespace fx
         listpushfront(e, freeemitters, prev, next);
 
         numemitters--;
-        if(fxdebug == 2) conoutf("fx emitter put: %p (num %d)", e, numemitters);
+        if(fxdebug == 2) conoutf(colourwhite, "fx emitter put: %p (num %d)", e, numemitters);
         bumpstat(FX_STAT_EMITTER_FREE);
     }
 
@@ -420,7 +420,7 @@ namespace fx
     {
         if(!handle.isvalid())
         {
-            conoutf("\frError: cannot instantiate fx, invalid handle");
+            conoutf(colourred, "Error: cannot instantiate fx, invalid handle");
             return false;
         }
 
@@ -428,7 +428,7 @@ namespace fx
 
         if(!inst)
         {
-            if(fxdebug == 2) conoutf("\fyWarning: cannot instantiate fx, no free instances");
+            if(fxdebug == 2) conoutf(colouryellow, "Warning: cannot instantiate fx, no free instances");
             return false;
         }
 
@@ -573,7 +573,7 @@ namespace fx
 
         if(!e)
         {
-            if(fxdebug == 2) conoutf("\fyWarning: cannot create fx, no free emitters");
+            if(fxdebug == 2) conoutf(colouryellow, "Warning: cannot create fx, no free emitters");
             return dummyemitter;
         }
 

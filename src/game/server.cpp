@@ -1180,7 +1180,7 @@ namespace server
     void setdemorecord(bool value, bool msg = false)
     {
         demonextmatch = value;
-        if(msg) srvoutf(-3, "\fyDemo recording is \fs\fc%s\fS for next match", demonextmatch ? "enabled" : "disabled");
+        if(msg) srvoutf(3, colouryellow, "Demo recording is \fs\fc%s\fS for next match", demonextmatch ? "enabled" : "disabled");
     }
 
     void enddemorecord(bool full);
@@ -1222,7 +1222,7 @@ namespace server
 
     void shutdown()
     {
-        srvoutf(-3, "\fyServer shutdown in progress..");
+        srvoutf(3, colouryellow, "Server shutdown in progress..");
         aiman::clearai();
         loopv(clients) if(getinfo(i)) disconnect_client(i, DISC_SHUTDOWN);
     }
@@ -1255,10 +1255,10 @@ namespace server
         return ci && ci->connected && ci->actortype == A_PLAYER;
     }
 
-    void relayf(int r, const char *s, ...)
+    void relayf(int r, int color, const char *s, ...)
     {
         defvformatbigstring(str, s, s);
-        ircoutf(r, "%s", str);
+        ircoutf(r, "\f[%d]%s", color, str);
 #ifdef STANDALONE
         bigstring ft;
         filterstring(ft, str);
@@ -1266,39 +1266,17 @@ namespace server
 #endif
     }
 
-    void srvmsgft(int cn, int type, const char *s, ...)
+    void srvmsgf(int cn, int color, const char *s, ...)
     {
         defvformatbigstring(str, s, s);
-        if(cn < 0 || allowbroadcast(cn)) sendf(cn, 1, "ri2s", N_SERVMSG, type, str);
+        if(cn < 0 || allowbroadcast(cn)) sendf(cn, 1, "ri2s", N_SERVMSG, color, str);
     }
 
-    void srvmsgftforce(int cn, int type, const char *s, ...)
+    void srvoutf(int r, int color, const char *s, ...)
     {
         defvformatbigstring(str, s, s);
-        sendf(cn, 1, "ri2s", N_SERVMSG, type, str);
-    }
-
-    void srvmsgf(int cn, const char *s, ...)
-    {
-        defvformatbigstring(str, s, s);
-        if(cn < 0 || allowbroadcast(cn))
-        {
-            int type = CON_EVENT;
-            switch(cn)
-            {
-                case -3: type = CON_DEBUG; cn = -1; break;
-                case -2: type = CON_MESG; cn = -1; break;
-                default: break;
-            }
-            sendf(cn, 1, "ri2s", N_SERVMSG, type, str);
-        }
-    }
-
-    void srvoutf(int r, const char *s, ...)
-    {
-        defvformatbigstring(str, s, s);
-        srvmsgf(r >= 0 ? -1 : -2, "%s", str);
-        relayf(abs(r), "%s", str);
+        srvmsgf(-1, color,  "%s", str);
+        relayf(r, color, "%s", str);
     }
 
     int numclients(int exclude, bool nospec, int actortype)
@@ -1361,7 +1339,7 @@ namespace server
         return privnames[local && priv&PRIV_LOCAL ? 1 : 0][clamp(priv&PRIV_TYPE, 0, int(priv&PRIV_LOCAL ? PRIV_ADMINISTRATOR : PRIV_LAST))];
     }
 
-    const char *colourname(clientinfo *ci, char *name = NULL, bool icon = true, bool dupname = true, int colour = 3)
+    const char *colourname(clientinfo *ci, char *name = NULL, bool icon = false, bool dupname = true, int colour = 3)
     {
         if(!name) name = ci->name;
         static string colored; colored[0] = '\0'; string colortmp;
@@ -1419,7 +1397,7 @@ namespace server
         if((ci->local && flag <= PRIV_MAX) || (ci->privilege&PRIV_TYPE) >= flag) return true;
         else if(mastermask()&MM_AUTOAPPROVE && flag <= PRIV_ELEVATED && !numclients(ci->clientnum)) return true;
         else if(msg && *msg)
-            srvmsgft(ci->clientnum, CON_MESG, "\frAccess denied, you need to be \fs\fc%s\fS to \fs\fc%s\fS", privnamex(flag), msg);
+            srvmsgf(ci->clientnum, colourred, "Access denied, you need to be \fs\fc%s\fS to \fs\fc%s\fS", privnamex(flag), msg);
         return false;
     }
 
@@ -1762,13 +1740,14 @@ namespace server
                 {
                     int secs = G(teambalancedelay)/1000;
                     nextteambalance = gamemillis+G(teambalancedelay);
-                    gamelog log;
-                    log.addlist("this", "type", "balance");
-                    log.addlist("this", "action", "warning");
-                    log.addlist("this", "sound", "S_V_BALWARN");
-                    log.addlist("this", "flags", EV_F_BROADCAST);
+                    gamelog log(GAMELOG_EVENT);
+                    log.addlist("args", "type", "balance");
+                    log.addlist("args", "action", "warning");
+                    log.addlist("args", "sound", "S_V_BALWARN");
+                    log.addlist("args", "flags", GAMELOG_F_BROADCAST);
                     log.addlist("args", "millis", G(teambalancedelay));
-                    log.addlistf("args","console", "\fs\fcTeams\fS will be \fs\fcbalanced\fS in \fs\fc%d\fS %s", secs, secs != 1 ? "seconds" : "second");
+                    log.addlist("args", "colour", colourcyan);
+                    log.addlistf("args", "console", "Teams will be \fs\fcbalanced\fS in \fs\fc%d\fS %s", secs, secs != 1 ? "seconds" : "second");
                     log.push();
                 }
                 else if(init)
@@ -1837,22 +1816,24 @@ namespace server
                     {
                         if(moved)
                         {
-                            gamelog log;
-                            log.addlist("this", "type", "balance");
-                            log.addlist("this", "action", "success");
-                            log.addlist("this", "sound", "S_V_BALALERT");
-                            log.addlist("this", "flags", EV_F_BROADCAST);
-                            log.addlist("args", "console", "\fs\fcTeams\fS have now been \fs\fcbalanced\fS");
+                            gamelog log(GAMELOG_EVENT);
+                            log.addlist("args", "type", "balance");
+                            log.addlist("args", "action", "success");
+                            log.addlist("args", "sound", "S_V_BALALERT");
+                            log.addlist("args", "flags", GAMELOG_F_BROADCAST);
+                            log.addlist("args", "concol", colourcyan);
+                            log.addlistf("args", "console", "Teams have now been \fs\fcbalanced\fS");
                             log.push();
                         }
                         else
                         {
-                            gamelog log;
-                            log.addlist("this", "type", "balance");
-                            log.addlist("this", "action", "failure");
-                            log.addlist("this", "sound", "S_V_NOTIFY");
-                            log.addlist("this", "flags", EV_F_BROADCAST);
-                            log.addlist("args", "console", "\fs\fcTeams\fS failed to be \fs\fcbalanced\fS");
+                            gamelog log(GAMELOG_EVENT);
+                            log.addlist("args", "type", "balance");
+                            log.addlist("args", "action", "failure");
+                            log.addlist("args", "sound", "S_V_NOTIFY");
+                            log.addlist("args", "flags", GAMELOG_F_BROADCAST);
+                            log.addlist("args", "concol", colourcyan);
+                            log.addlistf("args", "console", "Teams failed to be \fs\fcbalanced\fS");
                             log.push();
                         }
                     }
@@ -1864,12 +1845,13 @@ namespace server
             {
                 if(!init && nextteambalance)
                 {
-                    gamelog log;
-                    log.addlist("this", "type", "balance");
-                    log.addlist("this", "action", "lapse");
-                    log.addlist("this", "sound", "S_V_NOTIFY");
-                    log.addlist("this", "flags", EV_F_BROADCAST);
-                    log.addlist("args", "console", "\fs\fcTeams\fS no longer need to be \fs\fcbalanced\fS");
+                    gamelog log(GAMELOG_EVENT);
+                    log.addlist("args", "type", "balance");
+                    log.addlist("args", "action", "lapse");
+                    log.addlist("args", "sound", "S_V_NOTIFY");
+                    log.addlist("args", "flags", GAMELOG_F_BROADCAST);
+                    log.addlist("args", "concol", colourcyan);
+                    log.addlistf("args", "console", "Teams no longer need to be \fs\fcbalanced\fS");
                     log.push();
                 }
                 lastteambalance = gamemillis+(nextteambalance ? G(teambalancewait) : G(teambalancedelay));
@@ -1880,12 +1862,13 @@ namespace server
         {
             if(!init && nextteambalance)
             {
-                gamelog log;
-                log.addlist("this", "type", "balance");
-                log.addlist("this", "action", "unable");
-                log.addlist("this", "sound", "S_V_NOTIFY");
-                log.addlist("this", "flags", EV_F_BROADCAST);
-                log.addlist("args", "console", "\fs\fcTeams\fS are no longer able to be \fs\fcbalanced\fS");
+                gamelog log(GAMELOG_EVENT);
+                log.addlist("args", "type", "balance");
+                log.addlist("args", "action", "unable");
+                log.addlist("args", "sound", "S_V_NOTIFY");
+                log.addlist("args", "flags", GAMELOG_F_BROADCAST);
+                log.addlist("args", "concol", colourcyan);
+                log.addlistf("args", "console", "Teams are no longer able to be \fs\fcbalanced\fS");
                 log.push();
             }
             lastteambalance = gamemillis+(nextteambalance ? G(teambalancewait) : G(teambalancedelay));
@@ -1927,27 +1910,29 @@ namespace server
                             timeremaining = limit*60*1000;
                             int millis = timeremaining;
                             gamelimit += millis;
-                            gamelog log;
-                            log.addlist("this", "type", "match");
-                            log.addlist("this", "action", "overtime");
-                            log.addlist("this", "sound", "S_V_OVERTIME");
-                            log.addlist("this", "flags", EV_F_BROADCAST);
+                            gamelog log(GAMELOG_EVENT);
+                            log.addlist("args", "type", "match");
+                            log.addlist("args", "action", "overtime");
+                            log.addlist("args", "sound", "S_V_OVERTIME");
+                            log.addlist("args", "flags", GAMELOG_F_BROADCAST);
                             log.addlist("args", "millis", millis);
                             log.addlist("args", "limit", limit);
-                            log.addlistf("args","console", "\fyOvertime, match extended by \fs\fc%d\fS %s", limit, limit > 1 ? "minutes" : "minute");
+                            log.addlist("args", "colour", colouryellow);
+                            log.addlistf("args", "console", "Overtime, match extended by \fs\fc%d\fS %s", limit, limit > 1 ? "minutes" : "minute");
                             log.push();
                         }
                         else
                         {
                             timeremaining = -1;
                             gamelimit = 0;
-                            gamelog log;
-                            log.addlist("this", "type", "match");
-                            log.addlist("this", "action", "overtime");
-                            log.addlist("this", "sound", "S_V_OVERTIME");
-                            log.addlist("this", "flags", EV_F_BROADCAST);
+                            gamelog log(GAMELOG_EVENT);
+                            log.addlist("args", "type", "match");
+                            log.addlist("args", "action", "overtime");
+                            log.addlist("args", "sound", "S_V_OVERTIME");
+                            log.addlist("args", "flags", GAMELOG_F_BROADCAST);
                             log.addlist("args", "limit", limit);
-                            log.addlist("args", "console", "\fyOvertime, match extended until someone wins");
+                            log.addlist("args", "concol", colouryellow);
+                            log.addlistf("args", "console", "Overtime, match extended until someone wins");
                             log.push();
                         }
                         gamestate = G_S_OVERTIME;
@@ -1955,12 +1940,13 @@ namespace server
                     }
                     else
                     {
-                        gamelog log;
-                        log.addlist("this", "type", "match");
-                        log.addlist("this", "action", "timelimit");
-                        log.addlist("this", "sound", "S_V_NOTIFY");
-                        log.addlist("this", "flags", EV_F_BROADCAST);
-                        log.addlist("args", "console", "\fyTime limit has been reached");
+                        gamelog log(GAMELOG_EVENT);
+                        log.addlist("args", "type", "match");
+                        log.addlist("args", "action", "timelimit");
+                        log.addlist("args", "sound", "S_V_NOTIFY");
+                        log.addlist("args", "flags", GAMELOG_F_BROADCAST);
+                        log.addlist("args", "concol", colouryellow);
+                        log.addlistf("args", "console", "Time limit has been reached");
                         log.push();
                         startintermission();
                         return; // bail
@@ -1968,25 +1954,27 @@ namespace server
                 }
                 if(gs_playing(gamestate) && timeremaining != 0 && wantsoneminute && timeremaining == 60000)
                 {
-                    gamelog log;
-                    log.addlist("this", "type", "match");
-                    log.addlist("this", "action", "oneminute");
-                    log.addlist("this", "sound", "S_V_ONEMINUTE");
-                    log.addlist("this", "flags", EV_F_BROADCAST);
-                    log.addlist("args", "console", "\fzYgONE MINUTE REMAINS");
+                    gamelog log(GAMELOG_EVENT);
+                    log.addlist("args", "type", "match");
+                    log.addlist("args", "action", "oneminute");
+                    log.addlist("args", "sound", "S_V_ONEMINUTE");
+                    log.addlist("args", "flags", GAMELOG_F_BROADCAST);
+                    log.addlist("args", "colour", colouryellow);
+                    log.addlist("args", "console", "One minute remains");
                     log.push();
                 }
             }
         }
         if(wasinovertime && !wantsovertime())
         {
-            gamelog log;
-            log.addlist("this", "type", "match");
-            log.addlist("this", "action", "overtime");
-            log.addlist("this", "sound", "S_V_NOTIFY");
-            log.addlist("this", "flags", EV_F_BROADCAST);
+            gamelog log(GAMELOG_EVENT);
+            log.addlist("args", "type", "match");
+            log.addlist("args", "action", "overtime");
+            log.addlist("args", "sound", "S_V_NOTIFY");
+            log.addlist("args", "flags", GAMELOG_F_BROADCAST);
             log.addlist("args", "limit", -1);
-            log.addlist("args", "console", "\fyOvertime has ended, a winner has been chosen");
+            log.addlist("args", "concol", colouryellow);
+            log.addlistf("args", "console", "Overtime has ended, a winner has been chosen");
             log.push();
             startintermission();
             return; // bail
@@ -2008,12 +1996,13 @@ namespace server
                         best = i+T_FIRST;
                     if(best >= 0 && teamscore(best).total >= plimit)
                     {
-                        gamelog log;
-                        log.addlist("this", "type", "match");
-                        log.addlist("this", "action", "scorelimit");
-                        log.addlist("this", "sound", "S_V_NOTIFY");
-                        log.addlist("this", "flags", EV_F_BROADCAST);
-                        log.addlist("args", "console", "\fyScore limit has been reached");
+                        gamelog log(GAMELOG_EVENT);
+                        log.addlist("args", "type", "match");
+                        log.addlist("args", "action", "scorelimit");
+                        log.addlist("args", "sound", "S_V_NOTIFY");
+                        log.addlist("args", "flags", GAMELOG_F_BROADCAST);
+                        log.addlist("args", "concol", colouryellow);
+                        log.addlistf("args", "console", "Score limit has been reached");
                         log.push();
                         startintermission();
                         return; // bail
@@ -2026,12 +2015,13 @@ namespace server
                         best = i;
                     if(best >= 0 && clients[best]->points >= plimit)
                     {
-                        gamelog log;
-                        log.addlist("this", "type", "match");
-                        log.addlist("this", "action", "scorelimit");
-                        log.addlist("this", "sound", "S_V_NOTIFY");
-                        log.addlist("this", "flags", EV_F_BROADCAST);
-                        log.addlist("args", "console", "\fyScore limit has been reached");
+                        gamelog log(GAMELOG_EVENT);
+                        log.addlist("args", "type", "match");
+                        log.addlist("args", "action", "scorelimit");
+                        log.addlist("args", "sound", "S_V_NOTIFY");
+                        log.addlist("args", "flags", GAMELOG_F_BROADCAST);
+                        log.addlist("args", "concol", colouryellow);
+                        log.addlistf("args", "console", "Score limit has been reached");
                         log.push();
                         startintermission();
                         return; // bail
@@ -2050,14 +2040,15 @@ namespace server
                     if(delpart >= 1000)
                     {
                         int secs = delpart/1000;
-                        gamelog log;
-                        log.addlist("this", "type", "balance");
-                        log.addlist("this", "action", "swap");
-                        log.addlist("this", "sound", "S_V_BALWARN");
-                        log.addlist("this", "flags", EV_F_BROADCAST);
+                        gamelog log(GAMELOG_EVENT);
+                        log.addlist("args", "type", "balance");
+                        log.addlist("args", "action", "swap");
+                        log.addlist("args", "sound", "S_V_BALWARN");
+                        log.addlist("args", "flags", GAMELOG_F_BROADCAST);
                         log.addlist("args", "millis", delpart);
                         log.addlist("args", "forcebal", m_forcebal(gamemode, mutators));
-                        log.addlistf("args","console", "\fs\fcTeams\fS will be \fs\fcreassigned\fS in \fs\fc%d\fS %s %s", secs, secs != 1 ? "seconds" : "second", m_forcebal(gamemode, mutators) ? "to switch roles" : "for map symmetry");
+                        log.addlist("args", "colour", colourcyan);
+                        log.addlistf("args", "console", "Teams will be \fs\fcreassigned\fS in \fs\fc%d\fS %s %s", secs, secs != 1 ? "seconds" : "second", m_forcebal(gamemode, mutators) ? "to switch roles" : "for map symmetry");
                         log.push();
                     }
                 }
@@ -2094,14 +2085,15 @@ namespace server
                         sendf(-1, 1, "ri3", N_SCORE, cs.team, cs.total);
                     }
 
-                    gamelog log;
-                    log.addlist("this", "type", "balance");
-                    log.addlist("this", "action", "swapped");
-                    log.addlist("this", "sound", "S_V_BALALERT");
-                    log.addlist("this", "flags", EV_F_BROADCAST);
+                    gamelog log(GAMELOG_EVENT);
+                    log.addlist("args", "type", "balance");
+                    log.addlist("args", "action", "swapped");
+                    log.addlist("args", "sound", "S_V_BALALERT");
+                    log.addlist("args", "flags", GAMELOG_F_BROADCAST);
                     log.addlist("args", "millis", delpart);
                     log.addlist("args", "forcebal", m_forcebal(gamemode, mutators));
-                    log.addlistf("args","console", "\fs\fcTeams\fS have %sbeen \fs\fcreassigned\fS %s", delpart > 0 ? "now " : "", m_forcebal(gamemode, mutators) ? "to switch roles" : "for map symmetry");
+                    log.addlist("args", "colour", colourcyan);
+                    log.addlistf("args", "console", "Teams have %sbeen \fs\fcreassigned\fS %s", delpart > 0 ? "now " : "", m_forcebal(gamemode, mutators) ? "to switch roles" : "for map symmetry");
                     log.push();
 
                     if(smode) smode->balance(oldbalance);
@@ -2522,13 +2514,13 @@ namespace server
         {
             loopv(demos) delete[] demos[i].data;
             demos.shrink(0);
-            srvoutf(4, "\fyCleared all demos");
+            srvoutf(4, colouryellow, "Cleared all demos");
         }
         else if(demos.inrange(n-1))
         {
             delete[] demos[n-1].data;
             demos.remove(n-1);
-            srvoutf(4, "\fyCleared demo \fs\fc%d\fS", n);
+            srvoutf(4, colouryellow, "Cleared demo \fs\fc%d\fS", n);
         }
     }
 
@@ -2548,7 +2540,7 @@ namespace server
         if(!demoplayback) return;
         DELETEP(demoplayback);
         loopv(clients) sendf(clients[i]->clientnum, 1, "ri3", N_DEMOPLAYBACK, 0, clients[i]->clientnum);
-        srvoutf(4, "\fyDemo playback finished");
+        srvoutf(4, colouryellow, "Demo playback finished");
         loopv(clients) sendwelcome(clients[i]);
         startintermission(true);
         resetgamevars(true);
@@ -2560,23 +2552,23 @@ namespace server
         stringz(msg);
         defformatstring(file, strstr(smapname, "maps/") == smapname || strstr(smapname, "maps\\") == smapname ? "%s.dmo" : "demos/%s.dmo", smapname);
         demoplayback = opengzfile(file, "rb");
-        if(!demoplayback) formatstring(msg, "\frCould not read demo \fs\fc%s\fS", file);
+        if(!demoplayback) formatstring(msg, "Could not read demo \fs\fc%s\fS", file);
         else if(demoplayback->read(&hdr, sizeof(demoheader)) != sizeof(demoheader) || memcmp(hdr.magic, VERSION_DEMOMAGIC, sizeof(hdr.magic)))
-            formatstring(msg, "\frSorry, \fs\fc%s\fS is not a demo file", file);
+            formatstring(msg, "Sorry, \fs\fc%s\fS is not a demo file", file);
         else
         {
             lilswap(&hdr.gamever, 4);
             if(hdr.gamever != VERSION_GAME)
-                formatstring(msg, "\frDemo \fs\fc%s\fS requires %s version of %s (with protocol version %d)", file, hdr.gamever < VERSION_GAME ? "an older" : "a newer", versionname, hdr.gamever);
+                formatstring(msg, "Demo \fs\fc%s\fS requires %s version of %s (with protocol version %d)", file, hdr.gamever < VERSION_GAME ? "an older" : "a newer", versionname, hdr.gamever);
         }
         if(msg[0])
         {
             DELETEP(demoplayback);
-            srvoutf(4, "%s", msg);
+            srvoutf(4, colourred, "%s", msg);
             return;
         }
 
-        srvoutf(4, "\fyPlaying demo \fs\fc%s\fS", file);
+        srvoutf(4, colouryellow, "Playing demo \fs\fc%s\fS", file);
         sendf(-1, 1, "ri3", N_DEMOPLAYBACK, 1, -1);
 
         if(demoplayback->read(&nextplayback, sizeof(nextplayback)) != sizeof(nextplayback))
@@ -2660,7 +2652,7 @@ namespace server
         delete f;
         if(msg[0])
         {
-            conoutf("%s", msg);
+            conoutf(colourred, "%s", msg);
             demoinfos.pop();
             faildemos.add(newstring(name));
             return -1;
@@ -2677,7 +2669,7 @@ namespace server
         d.data = new uchar[len];
         d.len = len;
         formatstring(d.info, "%s on %s", gamename(gamemode, mutators, 0, 32), smapname);
-        relayf(4, "\fyDemo \fs\fc%s\fS recorded \fs\fc%s UTC\fS [\fs\fw%.2f%s\fS]", d.info, gettime(d.ctime, "%Y-%m-%d %H:%M.%S"), d.len > 1024*1024 ? d.len/(1024*1024.f) : d.len/1024.0f, d.len > 1024*1024 ? "MB" : "kB");
+        relayf(4, colouryellow, "Demo \fs\fc%s\fS recorded \fs\fc%s UTC\fS [\fs\fw%.2f%s\fS]", d.info, gettime(d.ctime, "%Y-%m-%d %H:%M.%S"), d.len > 1024*1024 ? d.len/(1024*1024.f) : d.len/1024.0f, d.len > 1024*1024 ? "MB" : "kB");
         sendf(-1, 1, "ri4s", N_DEMOREADY, demos.length(), d.ctime, d.len, d.info);
         demotmp->seek(0, SEEK_SET);
         demotmp->read(d.data, len);
@@ -2705,7 +2697,7 @@ namespace server
                     const char *fullfile = findfile(dirfile, "r");
                     if(fullfile && *fullfile && !unlink(fullfile))
                     {
-                        conoutf("Deleted old demo: %s", files[i]);
+                        conoutf(colourwhite, "Deleted old demo: %s", files[i]);
                         demoinfos.remove(q);
                     }
                 }
@@ -2845,7 +2837,7 @@ namespace server
             endmatch();
             if(best)
             {
-                relayf(3, "Vote passed: \fs\fy%s\fS on \fs\fo%s\fS", gamename(best->mode, best->muts), best->map);
+                relayf(3, colouryellow, "Vote passed: \fs\fy%s\fS on \fs\fo%s\fS", gamename(best->mode, best->muts), best->map);
                 changemap(best->map, best->mode, best->muts, -2);
             }
             else
@@ -2853,7 +2845,7 @@ namespace server
                 int mode = G(rotatemode) ? -1 : gamemode, muts = G(rotatemuts) ? -1 : mutators;
                 changemode(mode, muts);
                 const char *map = choosemap(smapname, mode, muts);
-                relayf(3, "Server chooses: \fs\fy%s\fS on \fs\fo%s\fS", gamename(mode, muts), map);
+                relayf(3, colouryellow, "Server chooses: \fs\fy%s\fS on \fs\fo%s\fS", gamename(mode, muts), map);
                 changemap(map, mode, muts, -1);
             }
             return true;
@@ -2882,7 +2874,7 @@ namespace server
         bool israndom = !strcmp(reqmap, "<random>");
         if(m_local(reqmode) && !ci->local)
         {
-            srvmsgft(ci->clientnum, CON_EVENT, "\frAccess denied, you must be a local client to start a %s game", gametype[reqmode].name);
+            srvmsgf(ci->clientnum, colourred, "Access denied, you must be a local client to start a %s game", gametype[reqmode].name);
             return;
         }
         bool hasvote = false, hasveto = (mastermode == MM_VETO && haspriv(ci, G(vetolock))) || !numclients(ci->clientnum);
@@ -2959,12 +2951,12 @@ namespace server
             sendpackets(true);
             sendstats();
             endmatch();
-            relayf(3, "%s forced: \fs\fy%s\fS on \fs\fo%s\fS", colourname(ci), gamename(ci->modevote, ci->mutsvote), ci->mapvote);
+            relayf(3, colouryellow, "%s forced: \fs\fy%s\fS on \fs\fo%s\fS", colourname(ci), gamename(ci->modevote, ci->mutsvote), ci->mapvote);
             changemap(ci->mapvote, ci->modevote, ci->mutsvote, ci->clientnum);
             return;
         }
         sendf(-1, 1, "ri2si2", N_MAPVOTE, ci->clientnum, ci->mapvote, ci->modevote, ci->mutsvote);
-        relayf(3, "%s suggests: \fs\fy%s\fS on \fs\fo%s\fS", colourname(ci), gamename(ci->modevote, ci->mutsvote), ci->mapvote);
+        relayf(3, colouryellow, "%s suggests: \fs\fy%s\fS on \fs\fo%s\fS", colourname(ci), gamename(ci->modevote, ci->mutsvote), ci->mapvote);
         checkvotes();
     }
 
@@ -3064,16 +3056,17 @@ namespace server
 
             if(allowbroadcast(cp->clientnum))
             {
-                gamelog log;
-                log.addlist("this", "target", cp->clientnum);
-                log.addlist("this", "type", "team");
-                log.addlist("this", "action", "request");
-                log.addlist("this", "sound", "S_V_BALALERT");
-                log.addlist("this", "flags", EV_F_BROADCAST);
-                log.addclient("client", cp);
+                gamelog log(GAMELOG_EVENT);
+                log.addlist("args", "target", cp->clientnum);
+                log.addlist("args", "type", "team");
+                log.addlist("args", "action", "request");
+                log.addlist("args", "sound", "S_V_BALALERT");
+                log.addlist("args", "flags", GAMELOG_F_BROADCAST);
                 log.addlist("args", "team", cp->team);
                 log.addlist("args", "prev", prevteam);
-                log.addlistf("args", "console", "\fyYou have been moved to %s as previously requested", colourteam(cp->team));
+                log.addlist("args", "colour", colouryellow);
+                log.addlistf("args", "console", "yYou have been moved to %s as previously requested", colourteam(cp->team));
+                log.addclient("client", cp);
                 log.push();
             }
 
@@ -3103,17 +3096,18 @@ namespace server
 
                 if(allowbroadcast(cp->clientnum))
                 {
-                    gamelog log;
-                    log.addlist("this", "target", cp->clientnum);
-                    log.addlist("this", "type", "team");
-                    log.addlist("this", "action", "moved");
-                    log.addlist("this", "sound", "S_V_BALALERT");
-                    log.addlist("this", "flags", EV_F_BROADCAST);
-                    log.addclient("client", cp);
-                    log.addclient("client", ci);
+                    gamelog log(GAMELOG_EVENT);
+                    log.addlist("args", "target", cp->clientnum);
+                    log.addlist("args", "type", "team");
+                    log.addlist("args", "action", "moved");
+                    log.addlist("args", "sound", "S_V_BALALERT");
+                    log.addlist("args", "flags", GAMELOG_F_BROADCAST);
                     log.addlist("args", "team", cp->team);
                     log.addlist("args", "prev", prevteam);
-                    log.addlistf("args","console", "\fyMoved to %s by %s %s", colourteam(oldteam), privname(ci->privilege), colourname(ci));
+                    log.addlist("args", "colour", colouryellow);
+                    log.addlistf("args", "console", "Moved to %s by %s %s", colourteam(oldteam), privname(ci->privilege), colourname(ci));
+                    log.addclient("client", cp);
+                    log.addclient("client", ci);
                     log.push();
                 }
                 return;
@@ -3281,7 +3275,7 @@ namespace server
     {
         if(m_play(gamemode) && G(crclock) && ci->actortype == A_PLAYER && (smapcrc ? ci->clientcrc != smapcrc : !ci->clientcrc) && !haspriv(ci, G(crclock)))
         {
-            if(msg) srvmsgft(ci->clientnum, CON_EVENT, "\fyYou are \fs\fccrc locked\fS, please wait for the correct map version..");
+            if(msg) srvmsgf(ci->clientnum, colouryellow, "You are \fs\fccrc locked\fS, please wait for the correct map version..");
             return true;
         }
         return false;
@@ -3395,20 +3389,20 @@ namespace server
             }
             if(mapsending >= 0)
             {
-                srvmsgft(ci->clientnum, CON_EVENT, "\fyThe map is being uploaded, please wait..");
+                srvmsgf(ci->clientnum, colouryellow, "The map is being uploaded, please wait..");
                 return true;
             }
             if(hasmapdata())
             {
                 if(ci->gettingmap) return true;
                 ci->gettingmap = true;
-                srvmsgft(ci->clientnum, CON_EVENT, "\fySending you the map, please wait..");
+                srvmsgf(ci->clientnum, colouryellow, "Sending you the map, please wait..");
                 loopi(SENDMAP_MAX) if(mapdata[i]) sendfile(ci->clientnum, 2, mapdata[i], "ri3s", N_SENDMAPFILE, i, smapcrc, smapname);
                 sendwelcome(ci);
                 ci->needclipboard = 0;
                 return true;
             }
-            else srvmsgft(ci->clientnum, CON_EVENT, "\fyAttempting to download the map, please wait..");
+            else srvmsgf(ci->clientnum, colouryellow, "Attempting to download the map, please wait..");
         }
         if((!force && gs_waiting(gamestate)) || mapsending >= 0 || hasmapdata()) return false;
         clientinfo *best = NULL;
@@ -3450,12 +3444,12 @@ namespace server
             if(m_edit(gamemode))
             {
                 smapcrc = 0;
-                srvoutf(4, "\fyThe map is being requested from %s..", colourname(best));
+                srvoutf(4, colouryellow, "The map is being requested from %s..", colourname(best));
             }
             else
             {
                 smapcrc = best->clientcrc;
-                srvoutf(4, "\fyThe map crc \fs\fc0x%.8x\fS is being requested from %s..", smapcrc, colourname(best));
+                srvoutf(4, colouryellow, "The map crc \fs\fc0x%.8x\fS is being requested from %s..", smapcrc, colourname(best));
             }
             sendf(best->clientnum, 1, "ri", N_GETMAP);
             loopv(clients)
@@ -3471,7 +3465,7 @@ namespace server
             }
             return true;
         }
-        if(ci) srvmsgft(ci->clientnum, CON_EVENT, "\fySorry, unable to get a map..");
+        if(ci) srvmsgf(ci->clientnum, colouryellow, "Sorry, unable to get a map..");
         sendf(-1, 1, "ri", N_FAILMAP);
         return false;
     }
@@ -3778,7 +3772,7 @@ namespace server
                     if(nargs <= 1 || !arg) nformatstring(s, slen+1, "%s", id->name);
                     else nformatstring(s, slen+1, "%s %s", id->name, arg);
                     char *ret = executestr(s);
-                    conoutft(CON_DEBUG, "\fy\fs\fc%s\fS returned \fs\fc%s\fS", id->name, ret && *ret ? ret : "failed");
+                    conoutf(colouryellow, "\fs\fc%s\fS returned \fs\fc%s\fS", id->name, ret && *ret ? ret : "failed");
                     DELETEA(s);
                     DELETEA(ret);
                     return true;
@@ -3787,12 +3781,12 @@ namespace server
                 {
                     if(nargs <= 1 || !arg)
                     {
-                        conoutft(CON_DEBUG, id->flags&IDF_HEX && *id->storage.i >= 0 ? (id->maxval == 0xFFFFFF ? "\fy%s = 0x%.6X" : (uint(id->maxval) == 0xFFFFFFFFU ? "\fy%s = 0x%.8X" : "\fy%s = 0x%X")) : "\fy%s = %d", id->name, id->flags&IDF_HEX && uint(id->maxval) == 0xFFFFFFFFU ? uint(*id->storage.i) : *id->storage.i);
+                        conoutf(colouryellow, id->flags&IDF_HEX && *id->storage.i >= 0 ? (id->maxval == 0xFFFFFF ? "%s = 0x%.6X" : (uint(id->maxval) == 0xFFFFFFFFU ? "%s = 0x%.8X" : "%s = 0x%X")) : "%s = %d", id->name, id->flags&IDF_HEX && uint(id->maxval) == 0xFFFFFFFFU ? uint(*id->storage.i) : *id->storage.i);
                         return true;
                     }
                     if(id->flags&IDF_READONLY)
                     {
-                        conoutft(CON_DEBUG, "\frCannot override variable: %s", id->name);
+                        conoutf(colourred, "Cannot override variable: %s", id->name);
                         return true;
                     }
                     int ret = parseint(arg);
@@ -3800,16 +3794,16 @@ namespace server
                     {
                         if(uint(ret) < uint(id->minval) || uint(ret) > uint(id->maxval))
                         {
-                            conoutft(CON_DEBUG, "\frValid range for %s is 0x%X..0x%X", id->name, uint(id->minval), uint(id->maxval));
+                            conoutf(colourred, "Valid range for %s is 0x%X..0x%X", id->name, uint(id->minval), uint(id->maxval));
                             return true;
                         }
                     }
                     else if(ret < id->minval || ret > id->maxval)
                     {
-                        conoutft(CON_DEBUG,
+                        conoutf(colourred,
                             id->flags&IDF_HEX ?
-                                    (id->minval <= 255 ? "\frValid range for %s is %d..0x%X" : "\frValid range for %s is 0x%X..0x%X") :
-                                    "\frValid range for %s is %d..%d", id->name, id->minval, id->maxval);
+                                    (id->minval <= 255 ? "Valid range for %s is %d..0x%X" : "Valid range for %s is 0x%X..0x%X") :
+                                    "Valid range for %s is %d..%d", id->name, id->minval, id->maxval);
                         return true;
                     }
                     if(versioning)
@@ -3830,18 +3824,18 @@ namespace server
                 {
                     if(nargs <= 1 || !arg)
                     {
-                        conoutft(CON_DEBUG, "\fy%s = %s", id->name, floatstr(*id->storage.f));
+                        conoutf(colouryellow, "%s = %s", id->name, floatstr(*id->storage.f));
                         return true;
                     }
                     if(id->maxvalf < id->minvalf || id->flags&IDF_READONLY)
                     {
-                        conoutft(CON_DEBUG, "\frCannot override variable: %s", id->name);
+                        conoutf(colourred, "Cannot override variable: %s", id->name);
                         return true;
                     }
                     float ret = parsefloat(arg);
                     if(ret < id->minvalf || ret > id->maxvalf)
                     {
-                        conoutft(CON_DEBUG, "\frValid range for %s is %s..%s", id->name, floatstr(id->minvalf), floatstr(id->maxvalf));
+                        conoutf(colourred, "Valid range for %s is %s..%s", id->name, floatstr(id->minvalf), floatstr(id->maxvalf));
                         return true;
                     }
                     if(versioning)
@@ -3862,12 +3856,12 @@ namespace server
                 {
                     if(nargs <= 1 || !arg)
                     {
-                        conoutft(CON_DEBUG, strchr(*id->storage.s, '"') ? "\fy%s = [%s]" : "\fy%s = \"%s\"", id->name, *id->storage.s);
+                        conoutf(colouryellow, strchr(*id->storage.s, '"') ? "%s = [%s]" : "%s = \"%s\"", id->name, *id->storage.s);
                         return true;
                     }
                     if(id->flags&IDF_READONLY)
                     {
-                        conoutft(CON_DEBUG, "\frCannot override variable: %s", id->name);
+                        conoutf(colourred, "Cannot override variable: %s", id->name);
                         return true;
                     }
                     if(versioning)
@@ -3927,7 +3921,7 @@ namespace server
                     if(nargs <= 1 || !arg) nformatstring(s, slen+1, "%s", id->name);
                     else nformatstring(s, slen+1, "%s %s", id->name, arg);
                     char *ret = executestr(s);
-                    srvoutf(3, "\fy%s executed \fs\fc%s\fS (returned: \fs\fc%s\fS)", colourname(ci), name, ret && * ret ? ret : "failed");
+                    srvoutf(3, colouryellow, "%s executed \fs\fc%s\fS (returned: \fs\fc%s\fS)", colourname(ci), name, ret && * ret ? ret : "failed");
                     DELETEA(s);
                     DELETEA(ret);
                     return;
@@ -3936,7 +3930,7 @@ namespace server
                 {
                     if(nargs <= 1 || !arg)
                     {
-                        srvmsgft(ci->clientnum, CON_DEBUG, id->flags&IDF_HEX && *id->storage.i >= 0 ? (id->maxval == 0xFFFFFF ? "\fy%s = 0x%.6X" : (uint(id->maxval) == 0xFFFFFFFFU ? "\fy%s = 0x%.8X" : "\fy%s = 0x%X")) : "\fy%s = %d", name, id->flags&IDF_HEX && uint(id->maxval) == 0xFFFFFFFFU ? uint(*id->storage.i) : *id->storage.i);
+                        srvmsgf(ci->clientnum, colouryellow, id->flags&IDF_HEX && *id->storage.i >= 0 ? (id->maxval == 0xFFFFFF ? "%s = 0x%.6X" : (uint(id->maxval) == 0xFFFFFFFFU ? "%s = 0x%.8X" : "%s = 0x%X")) : "%s = %d", name, id->flags&IDF_HEX && uint(id->maxval) == 0xFFFFFFFFU ? uint(*id->storage.i) : *id->storage.i);
                         return;
                     }
                     else if(locked && !haspriv(ci, locked, "change that variable"))
@@ -3947,7 +3941,7 @@ namespace server
                     }
                     if(id->flags&IDF_READONLY)
                     {
-                        srvmsgft(ci->clientnum, CON_DEBUG, "\frCannot override variable: %s", name);
+                        srvmsgf(ci->clientnum, colourred, "Cannot override variable: %s", name);
                         return;
                     }
                     int ret = parseint(arg);
@@ -3955,16 +3949,16 @@ namespace server
                     {
                         if(uint(ret) < uint(id->minval) || uint(ret) > uint(id->maxval))
                         {
-                            srvmsgf(ci->clientnum, "\frValid range for %s is 0x%X..0x%X", id->name, uint(id->minval), uint(id->maxval));
+                            srvmsgf(ci->clientnum, colourred, "Valid range for %s is 0x%X..0x%X", id->name, uint(id->minval), uint(id->maxval));
                             return;
                         }
                     }
                     else if(ret < id->minval || ret > id->maxval)
                     {
-                        srvmsgf(ci->clientnum,
+                        srvmsgf(ci->clientnum, colourred,
                             id->flags&IDF_HEX ?
-                                (id->minval <= 255 ? "\frValid range for %s is %d..0x%X" : "\frValid range for %s is 0x%X..0x%X") :
-                                "\frValid range for %s is %d..%d", name, id->minval, id->maxval);
+                                (id->minval <= 255 ? "Valid range for %s is %d..0x%X" : "Valid range for %s is 0x%X..0x%X") :
+                                "Valid range for %s is %d..%d", name, id->minval, id->maxval);
                         return;
                     }
                     checkvar(id, arg);
@@ -3978,7 +3972,7 @@ namespace server
                 {
                     if(nargs <= 1 || !arg)
                     {
-                        srvmsgft(ci->clientnum, CON_DEBUG, "\fy%s = %s", name, floatstr(*id->storage.f));
+                        srvmsgf(ci->clientnum, colouryellow, "%s = %s", name, floatstr(*id->storage.f));
                         return;
                     }
                     else if(locked && !haspriv(ci, locked, "change that variable"))
@@ -3989,13 +3983,13 @@ namespace server
                     }
                     if(id->maxvalf < id->minvalf || id->flags&IDF_READONLY)
                     {
-                        srvmsgft(ci->clientnum, CON_DEBUG, "\frCannot override variable: %s", name);
+                        srvmsgf(ci->clientnum, colourred, "Cannot override variable: %s", name);
                         return;
                     }
                     float ret = parsefloat(arg);
                     if(ret < id->minvalf || ret > id->maxvalf)
                     {
-                        srvmsgft(ci->clientnum, CON_DEBUG, "\frValid range for %s is %s..%s", name, floatstr(id->minvalf), floatstr(id->maxvalf));
+                        srvmsgf(ci->clientnum, colourred, "Valid range for %s is %s..%s", name, floatstr(id->minvalf), floatstr(id->maxvalf));
                         return;
                     }
                     checkvar(id, arg);
@@ -4009,7 +4003,7 @@ namespace server
                 {
                     if(nargs <= 1 || !arg)
                     {
-                        srvmsgft(ci->clientnum, CON_DEBUG, strchr(*id->storage.s, '"') ? "\fy%s = [%s]" : "\fy%s = \"%s\"", name, *id->storage.s);
+                        srvmsgf(ci->clientnum, colouryellow, strchr(*id->storage.s, '"') ? "%s = [%s]" : "%s = \"%s\"", name, *id->storage.s);
                         return;
                     }
                     else if(locked && !haspriv(ci, locked, "change that variable"))
@@ -4020,7 +4014,7 @@ namespace server
                     }
                     if(id->flags&IDF_READONLY)
                     {
-                        srvmsgft(ci->clientnum, CON_DEBUG, "\frCannot override variable: %s", name);
+                        srvmsgf(ci->clientnum, colourred, "Cannot override variable: %s", name);
                         return;
                     }
                     checkvar(id, arg);
@@ -4039,13 +4033,13 @@ namespace server
                 sendf(-1, 1, "ri2sis", N_COMMAND, ci->clientnum, name, strlen(val), val);
                 if(oldval)
                 {
-                    relayf(3, "\fy%s set %s to %s (was: %s)", colourname(ci), name, val, oldval);
+                    relayf(3, colouryellow, "%s set %s to %s (was: %s)", colourname(ci), name, val, oldval);
                     if(needfreeoldval) delete[] oldval;
                 }
-                else relayf(3, "\fy%s set %s to %s", colourname(ci), name, val);
+                else relayf(3, colouryellow, "%s set %s to %s", colourname(ci), name, val);
             }
         }
-        else srvmsgft(ci->clientnum, CON_DEBUG, "\frUnknown command: %s", cmd);
+        else srvmsgf(ci->clientnum, colourred, "Unknown command: %s", cmd);
     }
 
     bool rewritecommand(ident *id, tagval *args, int numargs)
@@ -4324,7 +4318,7 @@ namespace server
         if(ci && !ci->online && *G(servermotd))
         {
             putint(p, N_SERVMSG);
-            putint(p, CON_MESG);
+            putint(p, colourwhite);
             sendstring(G(servermotd), p);
         }
 
@@ -4736,15 +4730,15 @@ namespace server
                             c.flag = ipinfo::INTERNAL;
                             c.time = totalmillis ? totalmillis : 1;
                             c.reason = newstring("team killing is not permitted");
-                            srvoutf(3, "\fs\fcbanned\fS %s: %s", colourname(v), c.reason);
+                            srvoutf(3, colourcyan, "banned %s: %s", colourname(v), c.reason);
                             updatecontrols = true;
                         }
                         else if(G(teamkillkick) && v->warnings[WARN_TEAMKILL][0] >= G(teamkillkick))
                         {
-                            srvoutf(3, "\fs\fckicked\fS %s: team killing is not permitted", colourname(v));
+                            srvoutf(3, colourcyan, "kicked %s: team killing is not permitted", colourname(v));
                             v->kicked = updatecontrols = true;
                         }
-                        else srvmsgft(v->clientnum, CON_MESG, "\fy\fs\fzoyWARNING:\fS team killing is not permitted, action will be taken if you continue");
+                        else srvmsgf(v->clientnum, colouryellow, "\fs\fzoyWARNING:\fS team killing is not permitted, action will be taken if you continue");
                     }
                 }
             }
@@ -4883,7 +4877,7 @@ namespace server
         {
             if(!ci->weapshots[weap][WS(flags) ? 1 : 0].find(id))
             {
-                srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s sticky [%d (%d)] failed - not found", colourname(ci), weap, id);
+                srvmsgf(ci->clientnum, colourorange, "Sync error: %s sticky [%d (%d)] failed - not found", colourname(ci), weap, id);
                 return;
             }
             clientinfo *m = target >= 0 ? (clientinfo *)getinfo(target) : NULL;
@@ -4907,7 +4901,7 @@ namespace server
                 if(!isweap(weap)) break;
                 if(!ci->weapshots[weap][WS(flags) ? 1 : 0].find(id))
                 {
-                    srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s destroy [%d:%d (%d)] failed - not found", colourname(ci), weap, WS(flags) ? 1 : 0, id);
+                    srvmsgf(ci->clientnum, colourorange, "Sync error: %s destroy [%d:%d (%d)] failed - not found", colourname(ci), weap, WS(flags) ? 1 : 0, id);
                     return;
                 }
                 vector<clientinfo *> hitclients;
@@ -4974,7 +4968,7 @@ namespace server
     {
         if(!ci->isalive(gamemillis) || !isweap(weap))
         {
-            srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s shoot [%d] failed - unexpected message", colourname(ci), weap);
+            srvmsgf(ci->clientnum, colourorange, "Sync error: %s shoot [%d] failed - unexpected message", colourname(ci), weap);
             return;
         }
         int sweap = m_weapon(ci->actortype, gamemode, mutators), sub = W2(weap, ammosub, WS(flags));
@@ -4992,7 +4986,7 @@ namespace server
             if(!ci->canshoot(weap, flags, sweap, millis, (1<<W_S_RELOAD)))
             {
                 if(sub && W(weap, ammoclip)) ci->weapammo[weap][W_A_CLIP] = max(ci->weapammo[weap][W_A_CLIP]-sub, 0);
-                srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s shoot [%d] failed - current state disallows it", colourname(ci), weap);
+                srvmsgf(ci->clientnum, colourorange, "Sync error: %s shoot [%d] failed - current state disallows it", colourname(ci), weap);
                 sendresume(ci, 2);
                 return;
             }
@@ -5030,14 +5024,14 @@ namespace server
     {
         if(!ci->isalive(gamemillis) || !isweap(weap))
         {
-            srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s switch [%d] failed - unexpected message", colourname(ci), weap);
+            srvmsgf(ci->clientnum, colourorange, "Sync error: %s switch [%d] failed - unexpected message", colourname(ci), weap);
             return;
         }
         if(!ci->canswitch(weap, m_weapon(ci->actortype, gamemode, mutators), millis, (1<<W_S_SWITCH)))
         {
             if(!ci->canswitch(weap, m_weapon(ci->actortype, gamemode, mutators), millis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
             {
-                srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s switch [%d] failed - current state disallows it", colourname(ci), weap);
+                srvmsgf(ci->clientnum, colourorange, "Sync error: %s switch [%d] failed - current state disallows it", colourname(ci), weap);
                 sendresume(ci, 2);
                 return;
             }
@@ -5052,14 +5046,14 @@ namespace server
     {
         if(!ci->isalive(gamemillis) || !isweap(weap) || etype < -1 || etype > 2)
         {
-            srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s cook [%d] failed - unexpected message", colourname(ci), weap);
+            srvmsgf(ci->clientnum, colourorange, "Sync error: %s cook [%d] failed - unexpected message", colourname(ci), weap);
             return;
         }
         if(ci->weapstate[weap] == W_S_RELOAD && !ci->weapwaited(weap, gamemillis))
         {
             if(!ci->weapwaited(weap, gamemillis, (1<<W_S_RELOAD)))
             {
-                srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s cook [%d] failed - current state disallows it", colourname(ci), weap);
+                srvmsgf(ci->clientnum, colourorange, "Sync error: %s cook [%d] failed - current state disallows it", colourname(ci), weap);
                 sendresume(ci, 2);
                 return;
             }
@@ -5081,7 +5075,7 @@ namespace server
     {
         if(!ci->isalive(gamemillis) || !isweap(weap))
         {
-            srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s drop [%d] failed - unexpected message", colourname(ci), weap);
+            srvmsgf(ci->clientnum, colourorange, "Sync error: %s drop [%d] failed - unexpected message", colourname(ci), weap);
             return;
         }
         int sweap = m_weapon(ci->actortype, gamemode, mutators);
@@ -5089,7 +5083,7 @@ namespace server
         {
             if(!ci->candrop(weap, sweap, millis, m_classic(gamemode, mutators), (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
             {
-                srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s drop [%d] failed - current state disallows it", colourname(ci), weap);
+                srvmsgf(ci->clientnum, colourorange, "Sync error: %s drop [%d] failed - current state disallows it", colourname(ci), weap);
                 sendresume(ci, 2);
                 return;
             }
@@ -5112,12 +5106,12 @@ namespace server
     {
         if(!ci->isalive(gamemillis) || !isweap(weap))
         {
-            srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s reload [%d] failed - unexpected message", colourname(ci), weap);
+            srvmsgf(ci->clientnum, colourorange, "Sync error: %s reload [%d] failed - unexpected message", colourname(ci), weap);
             return;
         }
         if(!ci->canreload(weap, m_weapon(ci->actortype, gamemode, mutators), true, millis))
         {
-            srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s reload [%d] failed - current state disallows it", colourname(ci), weap);
+            srvmsgf(ci->clientnum, colourorange, "Sync error: %s reload [%d] failed - current state disallows it", colourname(ci), weap);
             sendresume(ci, 2);
             return;
         }
@@ -5125,7 +5119,7 @@ namespace server
         if(ci->actortype < A_ENEMY && W(weap, ammostore) > 0) ammoadd = min(ci->weapammo[weap][W_A_STORE], ammoadd);
         if(!ammoadd)
         {
-            srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s reload [%d] failed - no ammo available", colourname(ci), weap);
+            srvmsgf(ci->clientnum, colourorange, "Sync error: %s reload [%d] failed - no ammo available", colourname(ci), weap);
             sendresume(ci, 2);
             return;
         }
@@ -5141,7 +5135,7 @@ namespace server
     {
         if(ci->state != CS_ALIVE || !sents.inrange(ent) || sents[ent].type != WEAPON)
         {
-            srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s use [%d] failed - unexpected message", colourname(ci), ent);
+            srvmsgf(ci->clientnum, colourorange, "Sync error: %s use [%d] failed - unexpected message", colourname(ci), ent);
             return;
         }
         clientinfo *cp = NULL;
@@ -5150,13 +5144,13 @@ namespace server
             cp = (clientinfo *)getinfo(cn);
             if(!cp || !cp->dropped.find(ent))
             {
-                srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s use [%d:%d] failed - doesn't seem to be dropped anywhere", colourname(ci), ent, cn);
+                srvmsgf(ci->clientnum, colourorange, "Sync error: %s use [%d:%d] failed - doesn't seem to be dropped anywhere", colourname(ci), ent, cn);
                 return;
             }
         }
         else if(!finditem(ent))
         {
-            srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s use [%d] failed - doesn't seem to be spawned anywhere", colourname(ci), ent);
+            srvmsgf(ci->clientnum, colourorange, "Sync error: %s use [%d] failed - doesn't seem to be spawned anywhere", colourname(ci), ent);
             return;
         }
         int sweap = m_weapon(ci->actortype, gamemode, mutators), attr = m_attr(sents[ent].type, sents[ent].attrs[0]);
@@ -5166,7 +5160,7 @@ namespace server
         {
             if(!ci->canuse(gamemode, mutators, sents[ent].type, attr, sents[ent].attrs, sweap, millis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
             {
-                srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s use [%d] failed - current state disallows it", colourname(ci), ent);
+                srvmsgf(ci->clientnum, colourorange, "Sync error: %s use [%d] failed - current state disallows it", colourname(ci), ent);
                 sendresume(ci, 2);
                 return;
             }
@@ -5259,15 +5253,16 @@ namespace server
         {
             if(team && m_swapteam(gamemode, mutators) && ci->team != team && ci->actortype == A_PLAYER && ci->swapteam != team && canplay())
             {
-                gamelog log;
-                log.addlist("this", "type", "team");
-                log.addlist("this", "action", "swap");
-                log.addlist("this", "sound", "S_V_NOTIFY");
-                log.addlist("this", "flags", EV_F_BROADCAST);
-                log.addclient("client", ci);
+                gamelog log(GAMELOG_EVENT);
+                log.addlist("args", "type", "team");
+                log.addlist("args", "action", "swap");
+                log.addlist("args", "sound", "S_V_NOTIFY");
+                log.addlist("args", "flags", GAMELOG_F_BROADCAST);
                 log.addlist("args", "team", team);
                 log.addlist("args", "prev", ci->team);
-                log.addlistf("args","console", "\fy%s requests swap to team %s, change teams to accept", colourname(ci), colourteam(team));
+                log.addlist("args", "colour", colouryellow);
+                log.addlistf("args", "console", "%s requests swap to team %s, change teams to accept", colourname(ci), colourteam(team));
+                log.addclient("client", ci);
                 log.push();
                 ci->swapteam = team;
             }
@@ -5494,7 +5489,7 @@ namespace server
             { // auth might have stalled
                 ci->connectauth = false;
                 ci->authreq = ci->authname[0] = ci->handle[0] = '\0';
-                srvmsgftforce(ci->clientnum, CON_EVENT, "\foUnable to verify, authority request timed out");
+                srvmsgf(ci->clientnum, colourorange, "Unable to verify, authority request timed out");
                 int disc = auth::allowconnect(ci);
                 if(disc) disconnect_client(ci->clientnum, disc);
                 else
@@ -5544,7 +5539,7 @@ namespace server
                 int waituntil = maxshutdownwait*(gs_playing(gamestate) ? 2000 : 1000);
                 if(totalmillis >= shutdownwait+waituntil)
                 {
-                    srvoutf(3, "Waited \fs\fc%s\fS to shutdown, overriding and exiting..", timestr(totalmillis - shutdownwait, 4));
+                    srvoutf(3, colourred, "Waited \fs\fc%s\fS to shutdown, overriding and exiting..", timestr(totalmillis - shutdownwait, 4));
 #ifdef STANDALONE
                     cleanupserver();
                     exit(EXIT_SUCCESS);
@@ -5589,7 +5584,7 @@ namespace server
                             if(mapsending < 0) getmap(NULL, true);
                             if(mapsending >= 0)
                             {
-                                srvoutf(4, "\fyPlease wait while the server downloads the map..");
+                                srvoutf(4, colouryellow, "Please wait while the server downloads the map..");
                                 gamewaittime = totalmillis;
                                 gamewaitdelay = G(waitforplayermaps);
                                 gamestate = G_S_GETMAP;
@@ -5615,7 +5610,7 @@ namespace server
                         if(!hasmapdata() && mapsending >= 0 && timewait() >= totalmillis) break;
                         if(numgetmap && hasmapdata())
                         {
-                            srvoutf(4, "\fyPlease wait for \fs\fc%d\fS %s to download the map..", numgetmap, numgetmap != 1 ? "players" : "player");
+                            srvoutf(4, colouryellow, "Please wait for \fs\fc%d\fS %s to download the map..", numgetmap, numgetmap != 1 ? "players" : "player");
                             gamewaittime = totalmillis;
                             gamewaitdelay = G(waitforplayermaps);
                             gamestate = G_S_SENDMAP;
@@ -5665,7 +5660,7 @@ namespace server
                             if(best)
                             {
                                 mapgameinfo = best->clientnum;
-                                srvoutf(4, "\fyRequesting game information from %s..", colourname(best));
+                                srvoutf(4, colouryellow, "Requesting game information from %s..", colourname(best));
                                 sendf(best->clientnum, 1, "ri", N_GETGAMEINFO);
                                 gamewaittime = totalmillis;
                                 gamewaitdelay = G(waitforplayerinfo);
@@ -5686,7 +5681,7 @@ namespace server
                             gametick = 0;
                         }
                         if(!hasgameinfo && timewait() >= totalmillis) break;
-                        if(hasgameinfo) srvoutf(4, "\fyGame information received, starting..");
+                        if(hasgameinfo) srvoutf(4, colouryellow, "Game information received, starting..");
                         else
                         {
                             if(mapgameinfo != -2)
@@ -5700,17 +5695,17 @@ namespace server
                                     sendf(cs->clientnum, 1, "ri", N_GETGAMEINFO);
                                     asked++;
                                 }
-                                if(!asked) srvoutf(4, "\fyNo game information response, and nobody to ask, giving up..");
+                                if(!asked) srvoutf(4, colouryellow, "No game information response, and nobody to ask, giving up..");
                                 else
                                 {
-                                    srvoutf(4, "\fyNo game information response, broadcasting..");
+                                    srvoutf(4, colouryellow, "No game information response, broadcasting..");
                                     gamewaittime = totalmillis;
                                     gamewaitdelay = G(waitforplayerinfo);
                                     gametick = 0;
                                     break;
                                 }
                             }
-                            else srvoutf(4, "\fyNo broadcast game information response, giving up..");
+                            else srvoutf(4, colouryellow, "No broadcast game information response, giving up..");
                         }
                         mapgameinfo = -1;
                     }
@@ -5722,14 +5717,15 @@ namespace server
                     if(m_team(gamemode, mutators)) doteambalance(true);
                     if(m_play(gamemode))
                     {
-                        gamelog log;
-                        log.addlist("this", "type", "match");
-                        log.addlist("this", "action", "start");
+                        gamelog log(GAMELOG_EVENT);
+                        log.addlist("args", "type", "match");
+                        log.addlist("args", "action", "start");
                         if(!m_bomber(gamemode) && !m_duke(gamemode, mutators)) // they do their own "fight"
-                            log.addlist("this", "sound", "S_V_FIGHT");
-                        log.addlist("this", "flags", EV_F_BROADCAST);
+                            log.addlist("args", "sound", "S_V_FIGHT");
+                        log.addlist("args", "flags", GAMELOG_F_BROADCAST);
                         log.addlist("args", "millis", timeremaining);
-                        log.addlist("args", "console", "\fyMatch start, FIGHT!");
+                        log.addlist("args", "concol", colouryellow);
+                        log.addlistf("args", "console", "Match start, FIGHT!");
                         log.push();
                     }
                     gametick = 0;
@@ -5758,7 +5754,7 @@ namespace server
         {
             if(servercheck(shutdownwait))
             {
-                srvoutf(4, "Server empty, shutting down as scheduled");
+                srvoutf(4, colouryellow, "Server empty, shutting down as scheduled");
                 #ifdef STANDALONE
                 cleanupserver();
                 exit(EXIT_SUCCESS);
@@ -5790,7 +5786,7 @@ namespace server
         ci->sessionid = (rnd(0x1000000)*((totalmillis%10000)+1))&0xFFFFFF;
         ci->local = local;
         connects.add(ci);
-        conoutf("%s peer connection attempt from %s [%d]", ci->local ? "Local" : "Remote", gethostip(ci->clientnum), ci->clientnum);
+        conoutf(colourwhite, "%s peer connection attempt from %s [%d]", ci->local ? "Local" : "Remote", gethostip(ci->clientnum), ci->clientnum);
         if(!local && (m_local(gamemode) || servertype <= 0)) return DISC_PRIVATE;
         sendservinit(ci);
         return DISC_NONE;
@@ -5832,7 +5828,7 @@ namespace server
             if(ci->name[0])
             {
                 int amt = numclients(ci->clientnum);
-                relayf(2, "\fo%s has left the game (%s, %d %s)", colourname(ci), reason >= 0 ? disc_reasons[reason] : "normal", amt, amt != 1 ? "players" : "player");
+                relayf(2, colourorange, "%s has left the game (%s, %d %s)", colourname(ci), reason >= 0 ? disc_reasons[reason] : "normal", amt, amt != 1 ? "players" : "player");
             }
             clients.removeobj(ci);
             queryplayers.removeobj(ci);
@@ -5858,13 +5854,13 @@ namespace server
             if(result)
             {
                 copystring(ci->steamid, id);
-                srvmsgftforce(ci->clientnum, CON_EVENT, "\fgSteam identity confirmed (%s)", ci->steamid);
+                srvmsgf(ci->clientnum, colourgreen, "Steam identity confirmed (%s)", ci->steamid);
                 int disc = auth::allowconnect(ci);
                 if(disc) { disconnect_client(ci->clientnum, disc); return; }
                 if(!ci->connectauth) connected(ci);
                 break;
             }
-            srvmsgftforce(ci->clientnum, CON_EVENT, "\frSteam identity could not be confirmed (%s)", id);
+            srvmsgf(ci->clientnum, colourred, "Steam identity could not be confirmed (%s)", id);
             if(cdpi::steam::serverauthmode() >= 2) disconnect_client(ci->clientnum, DISC_AUTH);
             else copystring(ci->steamid, "0");
             break;
@@ -5935,7 +5931,7 @@ namespace server
         mapdata[n] = opentempfile(fname, "w+b");
         if(!mapdata[n])
         {
-            srvmsgf(-1, "Failed to open temporary file for map");
+            srvmsgf(-1, colourred, "Failed to open temporary file for map");
             return n;
         }
         mapdata[n]->write(data, len);
@@ -5945,7 +5941,7 @@ namespace server
             if(crc != smapcrc)
             {
                 if(m_edit(gamemode)) ci->clientcrc = smapcrc;
-                else srvmsgf(-1, "Warning: new crc 0x%.8x doesn't match client 0x%.8x [0x%.8x]", smapcrc, crc, ci->clientcrc);
+                else srvmsgf(-1, colourred, "Warning: new crc 0x%.8x doesn't match client 0x%.8x [0x%.8x]", smapcrc, crc, ci->clientcrc);
             }
         }
         return n;
@@ -5969,7 +5965,7 @@ namespace server
         }
 
         uchar operator[](int msg) const { return msg >= 0 && msg < NUMMSG ? msgmask[msg] : 0; }
-    } msgfilter(-1, N_CONNECT, N_SERVERINIT, N_CLIENTINIT, N_WELCOME, N_MAPCHANGE, N_SERVMSG, N_DAMAGE, N_SHOTFX, N_LOADOUT, N_DIED, N_POINTS, N_SPAWNSTATE, N_ITEMACC, N_ITEMSPAWN, N_TICK, N_DISCONNECT, N_CURRENTPRIV, N_PONG, N_SCOREAFFIN, N_SCORE, N_EVENTLOG, N_SENDDEMOLIST, N_SENDDEMO, N_DEMOPLAYBACK, N_SENDMAP, N_REGEN, N_CLIENT, N_AUTHCHAL, N_QUEUEPOS, N_STEAMCHAL, -2, N_REMIP, N_NEWMAP, N_CLIPBOARD, -3, N_EDITENT, N_EDITLINK, N_EDITVAR, N_EDITF, N_EDITT, N_EDITM, N_FLIP, N_COPY, N_PASTE, N_ROTATE, N_REPLACE, N_DELCUBE, N_EDITVSLOT, N_UNDO, N_REDO, -4, N_POS, N_SPAWN, N_DESTROY, NUMMSG),
+    } msgfilter(-1, N_CONNECT, N_SERVERINIT, N_CLIENTINIT, N_WELCOME, N_MAPCHANGE, N_SERVMSG, N_DAMAGE, N_SHOTFX, N_LOADOUT, N_DIED, N_POINTS, N_SPAWNSTATE, N_ITEMACC, N_ITEMSPAWN, N_TICK, N_DISCONNECT, N_CURRENTPRIV, N_PONG, N_SCOREAFFIN, N_SCORE, N_GAMELOG, N_SENDDEMOLIST, N_SENDDEMO, N_DEMOPLAYBACK, N_SENDMAP, N_REGEN, N_CLIENT, N_AUTHCHAL, N_QUEUEPOS, N_STEAMCHAL, -2, N_REMIP, N_NEWMAP, N_CLIPBOARD, -3, N_EDITENT, N_EDITLINK, N_EDITVAR, N_EDITF, N_EDITT, N_EDITM, N_FLIP, N_COPY, N_PASTE, N_ROTATE, N_REPLACE, N_DELCUBE, N_EDITVSLOT, N_UNDO, N_REDO, -4, N_POS, N_SPAWN, N_DESTROY, NUMMSG),
       connectfilter(-1, N_CONNECT, -2, N_AUTHANS, N_STEAMANS, N_STEAMFAIL, -3, N_PING, NUMMSG);
 
     int checktype(int type, clientinfo *ci)
@@ -6206,10 +6202,10 @@ namespace server
         int amt = numclients();
         if((ci->privilege&PRIV_TYPE) > PRIV_NONE)
         {
-            if(ci->handle[0]) relayf(2, "\fg%s has joined the game (\fs\fy%s\fS: \fs\fc%s\fS) [%d.%d.%d-%s%d-%s] (%d %s)", colourname(ci), privname(ci->privilege), ci->handle, ci->version.major, ci->version.minor, ci->version.patch, plat_name(ci->version.platform), ci->version.arch, ci->version.branch, amt, amt != 1 ? "players" : "player");
-            else relayf(2, "\fg%s has joined the game (\fs\fy%s\fS) [%d.%d.%d-%s%d-%s] (%d %s)", colourname(ci), privname(ci->privilege), ci->version.major, ci->version.minor, ci->version.patch, plat_name(ci->version.platform), ci->version.arch, ci->version.branch, amt, amt != 1 ? "players" : "player");
+            if(ci->handle[0]) relayf(2, colourgreen, "%s has joined the game (\fs\fy%s\fS: \fs\fc%s\fS) [%d.%d.%d-%s%d-%s] (%d %s)", colourname(ci), privname(ci->privilege), ci->handle, ci->version.major, ci->version.minor, ci->version.patch, plat_name(ci->version.platform), ci->version.arch, ci->version.branch, amt, amt != 1 ? "players" : "player");
+            else relayf(2, colourgreen, "%s has joined the game (\fs\fy%s\fS) [%d.%d.%d-%s%d-%s] (%d %s)", colourname(ci), privname(ci->privilege), ci->version.major, ci->version.minor, ci->version.patch, plat_name(ci->version.platform), ci->version.arch, ci->version.branch, amt, amt != 1 ? "players" : "player");
         }
-        else relayf(2, "\fg%s has joined the game [%d.%d.%d-%s%d-%s] (%d %s)", colourname(ci), ci->version.major, ci->version.minor, ci->version.patch, plat_name(ci->version.platform), ci->version.arch, ci->version.branch, amt, amt != 1 ? "players" : "player");
+        else relayf(2, colourgreen, "%s has joined the game [%d.%d.%d-%s%d-%s] (%d %s)", colourname(ci), ci->version.major, ci->version.minor, ci->version.patch, plat_name(ci->version.platform), ci->version.arch, ci->version.branch, amt, amt != 1 ? "players" : "player");
 
         if(m_demo(gamemode)) setupdemoplayback();
         else if(m_edit(gamemode))
@@ -6230,7 +6226,7 @@ namespace server
             if(chan == 0) return;
             else if(chan != 1)
             {
-                conoutf("\fy[msg error] from: %d, chan: %d while connecting", sender, chan);
+                conoutf(colouryellow, "[msg error] from: %d, chan: %d while connecting", sender, chan);
                 disconnect_client(sender, DISC_MSGERR);
                 return;
             }
@@ -6308,10 +6304,10 @@ namespace server
                         const uchar *token = p.subbuf(tokenlen).buf;
                         if(cdpi::steam::serverparseticket(text, token, tokenlen))
                         {
-                            srvmsgftforce(ci->clientnum, CON_EVENT, "\fySteam identity in progress (%s [%u])", text, tokenlen);
+                            srvmsgf(ci->clientnum, colouryellow, "Steam identity in progress (%s [%u])", text, tokenlen);
                             copystring(ci->authsteam, text);
                         }
-                        else srvmsgftforce(ci->clientnum, CON_EVENT, "\foSteam identity could not be verified! (%s [%u])", text, tokenlen);
+                        else srvmsgf(ci->clientnum, colourorange, "Steam identity could not be verified! (%s [%u])", text, tokenlen);
                         break;
                     }
 
@@ -6319,7 +6315,7 @@ namespace server
                     {
                         if(!ci->connectsteam) break;
                         copystring(ci->steamid, "0");
-                        srvmsgftforce(ci->clientnum, CON_EVENT, "\foSteam identity could not be verified!");
+                        srvmsgf(ci->clientnum, colourorange, "Steam identity could not be verified!");
                         ci->connectsteam = false;
                         int disc = auth::allowconnect(ci);
                         if(disc) { disconnect_client(ci->clientnum, disc); return; }
@@ -6332,7 +6328,7 @@ namespace server
                         break;
 
                     default:
-                        conoutf("\fy[msg error] from: %d, cur: %d, msg: %d, prev: %d", sender, curtype, type, prevtype);
+                        conoutf(colouryellow, "[msg error] from: %d, cur: %d, msg: %d, prev: %d", sender, curtype, type, prevtype);
                         disconnect_client(sender, DISC_MSGERR);
                         return;
                 }
@@ -6533,7 +6529,7 @@ namespace server
                     if(!ci || ci->actortype > A_PLAYER) break;
                     if(!allowstate(ci, val ? ALST_EDIT : ALST_WALK, G(editlock)))
                     {
-                        srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s unable to switch state - %d [%d, %d]", colourname(ci), ci->state, ci->lastdeath, gamemillis);
+                        srvmsgf(ci->clientnum, colourorange, "Sync error: %s unable to switch state - %d [%d, %d]", colourname(ci), ci->state, ci->lastdeath, gamemillis);
                         spectator(ci);
                         break;
                     }
@@ -6567,8 +6563,8 @@ namespace server
                     ci->wantsmap = ci->gettingmap = false;
                     if(!m_edit(gamemode))
                     {
-                        if(hasmapdata() && ci->clientcrc != smapcrc) srvoutf(4, "\fy%s has a modified map (CRC \fs\fc0x%.8x\fS, server has \fs\fc0x%.8x\fS)", colourname(ci), ci->clientcrc, smapcrc);
-                        else srvoutf(4, "\fy%s has map CRC: \fs\fc0x%.8x\fS", colourname(ci), ci->clientcrc);
+                        if(hasmapdata() && ci->clientcrc != smapcrc) srvoutf(4, colouryellow, "%s has a modified map (CRC \fs\fc0x%.8x\fS, server has \fs\fc0x%.8x\fS)", colourname(ci), ci->clientcrc, smapcrc);
+                        else srvoutf(4, colouryellow, "%s has map CRC: \fs\fc0x%.8x\fS", colourname(ci), ci->clientcrc);
                     }
                     if(crclocked(ci, true)) getmap(ci);
                     if(ci->isready()) aiman::poke();
@@ -6582,7 +6578,7 @@ namespace server
                     if(!hasclient(cp, ci)) break;
                     if(!allowstate(cp, ALST_TRY, m_edit(gamemode) ? G(spawneditlock) : G(spawnlock)))
                     {
-                        srvmsgftforce(cp->clientnum, CON_DEBUG, "Sync error: %s unable to spawn - %d [%d, %d]", colourname(cp), cp->state, cp->lastdeath, gamemillis);
+                        srvmsgf(cp->clientnum, colourorange, "Sync error: %s unable to spawn - %d [%d, %d]", colourname(cp), cp->state, cp->lastdeath, gamemillis);
                         break;
                     }
                     int nospawn = 0;
@@ -6631,7 +6627,7 @@ namespace server
                     if(!hasclient(cp, ci)) break;
                     if(!allowstate(cp, ALST_SPAWN))
                     {
-                        srvmsgftforce(cp->clientnum, CON_DEBUG, "Sync error: %s unable to spawn - %d [%d, %d]", colourname(cp), cp->state, cp->lastdeath, gamemillis);
+                        srvmsgf(cp->clientnum, colourorange, "Sync error: %s unable to spawn - %d [%d, %d]", colourname(cp), cp->state, cp->lastdeath, gamemillis);
                         break;
                     }
                     cp->updatetimeplayed();
@@ -6810,7 +6806,7 @@ namespace server
                     if(!hasclient(cp, ci) || cp->state != CS_ALIVE) break;
                     if(!sents.inrange(ent))
                     {
-                        srvmsgftforce(cp->clientnum, CON_DEBUG, "Sync error: %s cannot trigger %d - entity does not exist (max: %d)", colourname(cp), ent, sents.length());
+                        srvmsgf(cp->clientnum, colourorange, "Sync error: %s cannot trigger %d - entity does not exist (max: %d)", colourname(cp), ent, sents.length());
                         break;
                     }
                     if(sents[ent].type == CHECKPOINT)
@@ -6864,12 +6860,13 @@ namespace server
                                                 }
                                                 if(!found)
                                                 {
-                                                    gamelog log;
-                                                    log.addlist("this", "type", "match");
-                                                    log.addlist("this", "action", "scorereach");
-                                                    log.addlist("this", "sound", "S_V_NOTIFY");
-                                                    log.addlist("this", "flags", EV_F_BROADCAST);
-                                                    log.addlist("args", "console", "\fyBest score has been reached");
+                                                    gamelog log(GAMELOG_EVENT);
+                                                    log.addlist("args", "type", "match");
+                                                    log.addlist("args", "action", "scorereach");
+                                                    log.addlist("args", "sound", "S_V_NOTIFY");
+                                                    log.addlist("args", "flags", GAMELOG_F_BROADCAST);
+                                                    log.addlist("args", "concol", colouryellow);
+                                                    log.addlistf("args", "console", "Best score has been reached");
                                                     log.push();
                                                     startintermission();
                                                 }
@@ -6980,7 +6977,7 @@ namespace server
                                     c.flag = ipinfo::INTERNAL;
                                     c.time = totalmillis ? totalmillis : 1;
                                     c.reason = newstring("exceeded the number of allowed flood warnings");
-                                    srvoutf(3, "\fs\fcmute\fS added on %s: %s", colourname(fcp), c.reason);
+                                    srvoutf(3, colourcyan, "mute added on %s: %s", colourname(fcp), c.reason);
                                 }
                             }
                             break;
@@ -7035,8 +7032,8 @@ namespace server
                             defformatstring(t, " (to team %s)", colourteam(fcp->team));
                             concatstring(m, t);
                         }
-                        if(flags&SAY_ACTION) relayf(0, "\fv* %s %s", m, output);
-                        else relayf(0, "<%s> %s", m, output);
+                        if(flags&SAY_ACTION) relayf(0, colourmagenta, "* %s %s", m, output);
+                        else relayf(0, colourwhite, "<%s> %s", m, output);
                     }
                     break;
                 }
@@ -7084,7 +7081,7 @@ namespace server
                     if(strcmp(ci->name, namestr))
                     {
                         copystring(ci->name, namestr, MAXNAMELEN+1);
-                        relayf(2, "\fm* %s is now known as %s", oldname, colourname(ci));
+                        relayf(2, colourmagenta, "* %s is now known as %s", oldname, colourname(ci));
                     }
                     ci->colour = max(getint(p), 0);
                     ci->model = max(getint(p), 0);
@@ -7131,7 +7128,7 @@ namespace server
                         if(ci->swapteam)
                         {
                             if(m_swapteam(gamemode, mutators))
-                                srvoutf(4, "\fy%s no longer wishes to swap to team %s", colourname(ci), colourteam(ci->swapteam));
+                                srvoutf(4, colouryellow, "%s no longer wishes to swap to team %s", colourname(ci), colourteam(ci->swapteam));
                             ci->swapteam = T_NEUTRAL;
                         }
                         break;
@@ -7145,7 +7142,7 @@ namespace server
                     {
                         if(!allowstate(ci, ALST_TRY, m_edit(gamemode) ? G(spawneditlock) : G(spawnlock)))
                         {
-                            srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s unable to spawn - %d [%d, %d]", colourname(ci), ci->state, ci->lastdeath, gamemillis);
+                            srvmsgf(ci->clientnum, colourorange, "Sync error: %s unable to spawn - %d [%d, %d]", colourname(ci), ci->state, ci->lastdeath, gamemillis);
                             spectator(ci);
                             break;
                         }
@@ -7388,7 +7385,7 @@ namespace server
                             }
                             sendf(-1, 1, "ri3", N_MASTERMODE, ci->clientnum, mastermode);
                         }
-                        else srvmsgft(ci->clientnum, CON_EVENT, "\foThe \fs\fcmastermode\fS of \fs\fc%d\fS (\fs\fc%s\fS) is disabled on this server", mm, mastermodename(mm));
+                        else srvmsgf(ci->clientnum, colourorange, "The \fs\fcmastermode\fS of \fs\fc%d\fS (\fs\fc%s\fS) is disabled on this server", mm, mastermodename(mm));
                     }
                     break;
                 }
@@ -7402,7 +7399,7 @@ namespace server
                             if(haspriv(ci, G(y##lock), "clear " #y "s")) \
                             { \
                                 resetcontrols(x); \
-                                srvoutf(3, "%s cleared existing \fs\fc" #y "s\fS", colourname(ci)); \
+                                srvoutf(3, colouryellow, "%s cleared existing \fs\fc" #y "s\fS", colourname(ci)); \
                             } \
                             break; \
                         }
@@ -7450,15 +7447,15 @@ namespace server
                                     c.type = value; \
                                     c.time = totalmillis ? totalmillis : 1; \
                                     c.reason = newstring(text); \
-                                    if(text[0]) srvoutf(3, "%s added \fs\fc" #y "\fS on %s: %s", name, colourname(cp), text); \
-                                    else srvoutf(3, "%s added \fs\fc" #y "\fS on %s", name, colourname(cp)); \
+                                    if(text[0]) srvoutf(3, colouryellow, "%s added \fs\fc" #y "\fS on %s: %s", name, colourname(cp), text); \
+                                    else srvoutf(3, colouryellow, "%s added \fs\fc" #y "\fS on %s", name, colourname(cp)); \
                                     if(value == ipinfo::BAN) updatecontrols = true; \
                                     else if(value == ipinfo::LIMIT) cp->swapteam = 0; \
                                 } \
                                 else \
                                 { \
-                                    if(text[0]) srvoutf(3, "%s \fs\fckicked\fS %s: %s", name, colourname(cp), text); \
-                                    else srvoutf(3, "%s \fs\fckicked\fS %s", name, colourname(cp)); \
+                                    if(text[0]) srvoutf(3, colouryellow, "%s \fs\fckicked\fS %s: %s", name, colourname(cp), text); \
+                                    else srvoutf(3, colouryellow, "%s \fs\fckicked\fS %s", name, colourname(cp)); \
                                     cp->kicked = updatecontrols = true; \
                                 } \
                             } \
@@ -7484,34 +7481,34 @@ namespace server
                     clientinfo *cp = (clientinfo *)getinfo(sn);
                     if(!cp || (val ? cp->state == CS_SPECTATOR && cp->actortype > A_PLAYER : cp->state != CS_SPECTATOR))
                     {
-                        srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s unable to modify spectator - %d [%d, %d] - invalid", colourname(cp), cp->state, cp->lastdeath, gamemillis);
+                        srvmsgf(ci->clientnum, colourorange, "Sync error: %s unable to modify spectator - %d [%d, %d] - invalid", colourname(cp), cp->state, cp->lastdeath, gamemillis);
                         break;
                     }
                     if(sn != sender ? !haspriv(ci, max(m_edit(gamemode) ? G(spawneditlock) : G(spawnlock), G(speclock)), "control other players") : (!haspriv(ci, max(m_edit(gamemode) ? G(spawneditlock) : G(spawnlock), G(speclock))) && !allowstate(cp, val ? ALST_SPEC : ALST_TRY, m_edit(gamemode) ? G(spawneditlock) : G(spawnlock))))
                     {
-                        srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s unable to modify spectator - %d [%d, %d] - restricted", colourname(cp), cp->state, cp->lastdeath, gamemillis);
+                        srvmsgf(ci->clientnum, colourorange, "Sync error: %s unable to modify spectator - %d [%d, %d] - restricted", colourname(cp), cp->state, cp->lastdeath, gamemillis);
                         break;
                     }
                     bool spec = val != 0, quarantine = cp != ci && val == 2, wasq = cp->quarantine;
                     if(quarantine && (ci->privilege&PRIV_TYPE) <= (cp->privilege&PRIV_TYPE))
                     {
-                        srvmsgft(ci->clientnum, CON_EVENT, "\frAccess denied, you may not quarantine higher or equally privileged player %s", colourname(cp));
+                        srvmsgf(ci->clientnum, colourred, "Access denied, you may not quarantine higher or equally privileged player %s", colourname(cp));
                         break;
                     }
                     if(!spectate(cp, spec, quarantine))
                     {
-                        srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s unable to modify spectator - %d [%d, %d] - failed", colourname(cp), cp->state, cp->lastdeath, gamemillis);
+                        srvmsgf(ci->clientnum, colourorange, "Sync error: %s unable to modify spectator - %d [%d, %d] - failed", colourname(cp), cp->state, cp->lastdeath, gamemillis);
                         break;
                     }
                     if(quarantine && cp->quarantine)
                     {
                         defformatstring(name, "%s", colourname(ci));
-                        srvoutf(3, "%s \fs\fcquarantined\fS %s", name, colourname(cp));
+                        srvoutf(3, colouryellow, "%s \fs\fcquarantined\fS %s", name, colourname(cp));
                     }
                     else if(wasq && !cp->quarantine)
                     {
                         defformatstring(name, "%s", colourname(ci));
-                        srvoutf(3, "%s \fs\fcreleased\fS %s from \fs\fcquarantine\fS", name, colourname(cp));
+                        srvoutf(3, colouryellow, "%s \fs\fcreleased\fS %s from \fs\fcquarantine\fS", name, colourname(cp));
                     }
                     break;
                 }
@@ -7647,7 +7644,7 @@ namespace server
                             int val = getint(p);
 
                             if(!(flags&IDF_META))
-                                relayf(3, "\fy%s set map variable %s to %d", colourname(ci), text, val);
+                                relayf(3, colouryellow, "%s set map variable %s to %d", colourname(ci), text, val);
 
                             QUEUE_INT(val);
                             break;
@@ -7657,7 +7654,7 @@ namespace server
                             float val = getfloat(p);
 
                             if(!(flags&IDF_META))
-                                relayf(3, "\fy%s set map variable %s to %s", colourname(ci), text, floatstr(val));
+                                relayf(3, colouryellow, "%s set map variable %s to %s", colourname(ci), text, floatstr(val));
 
                             QUEUE_FLT(val);
                             break;
@@ -7671,7 +7668,7 @@ namespace server
                             getstring(val, p, vlen+1);
 
                             if(!(flags&IDF_META))
-                                relayf(3, "\fy%s set map %s %s to %s", colourname(ci), t == ID_ALIAS ? "alias" : "variable", text, val);
+                                relayf(3, colouryellow, "%s set map %s %s to %s", colourname(ci), t == ID_ALIAS ? "alias" : "variable", text, val);
 
                             QUEUE_INT(vlen);
                             QUEUE_STR(val);
@@ -7720,8 +7717,8 @@ namespace server
                     {
                         if(text[0])
                         {
-                            if(!adminpass[0]) srvmsgft(ci->clientnum, CON_EVENT, "\frAccess denied, no administrator password set");
-                            else if(!checkpassword(ci, adminpass, text)) srvmsgft(ci->clientnum, CON_EVENT, "\frAccess denied, invalid administrator password");
+                            if(!adminpass[0]) srvmsgf(ci->clientnum, colourred, "Access denied, no administrator password set");
+                            else if(!checkpassword(ci, adminpass, text)) srvmsgf(ci->clientnum, colourred, "Access denied, invalid administrator password");
                             else auth::setprivilege(ci, 1, PRIV_ADMINISTRATOR|PRIV_LOCAL);
                         }
                         else if((ci->privilege&PRIV_TYPE) < PRIV_ELEVATED)
@@ -7729,12 +7726,12 @@ namespace server
                             bool fail = false;
                             if(!(mastermask()&MM_AUTOAPPROVE))
                             {
-                                srvmsgft(ci->clientnum, CON_EVENT, "\frAccess denied, you need a \fs\fcpassword/account\fS to \fs\fcelevate privileges\fS");
+                                srvmsgf(ci->clientnum, colourred, "Access denied, you need a \fs\fcpassword/account\fS to \fs\fcelevate privileges\fS");
                                 fail = true;
                             }
                             else loopv(clients) if(ci != clients[i] && (clients[i]->privilege&PRIV_TYPE) >= PRIV_ELEVATED)
                             {
-                                srvmsgft(ci->clientnum, CON_EVENT, "\frAccess denied, there is already another player with elevated privileges");
+                                srvmsgf(ci->clientnum, colourred, "Access denied, there is already another player with elevated privileges");
                                 fail = true;
                                 break;
                             }
@@ -7839,17 +7836,17 @@ namespace server
                     clientinfo *cp = (clientinfo *)getinfo(sn);
                     if(!cp)
                     {
-                        srvmsgft(ci->clientnum, CON_EVENT, "\frThat client does not exist");
+                        srvmsgf(ci->clientnum, colourred, "That client does not exist");
                         break;
                     }
                     if(priv != -1 && (priv < PRIV_SUPPORTER || priv > PRIV_ADMINISTRATOR || cp->actortype != A_PLAYER))
                     {
-                        srvmsgft(ci->clientnum, CON_EVENT, "\frYou may not add that privilege");
+                        srvmsgf(ci->clientnum, colourred, "You may not add that privilege");
                         break;
                     }
                     if(priv == -1 && ((ci->privilege&PRIV_TYPE) <= (cp->privilege&PRIV_TYPE)) && ((ci->privilege&PRIV_TYPE) < PRIV_ADMINISTRATOR))
                     {
-                        srvmsgft(ci->clientnum, CON_EVENT, "\frYou must be a \fs\fc%s\fS to reset that client's privileges", privname((cp->privilege & PRIV_TYPE) + 1));
+                        srvmsgf(ci->clientnum, colourred, "You must be a \fs\fc%s\fS to reset that client's privileges", privname((cp->privilege & PRIV_TYPE) + 1));
                         break;
                     }
                     if(!((ci->privilege&PRIV_TYPE) >= PRIV_ADMINISTRATOR) && !haspriv(ci, priv, "add that privilege")) break;
@@ -7857,7 +7854,7 @@ namespace server
                     {
                         if(cp->oldprivilege == -1)
                         {
-                            srvmsgft(ci->clientnum, CON_EVENT, "\fr%s does not have any added privilege", colourname(cp));
+                            srvmsgf(ci->clientnum, colourred, "%s does not have any added privilege", colourname(cp));
                             break;
                         }
                         else
@@ -7869,7 +7866,7 @@ namespace server
                     }
                     if(priv <= (cp->privilege&PRIV_TYPE))
                     {
-                        srvmsgft(ci->clientnum, CON_EVENT, "\fr%s is already elevated to \fs\fc%s\fS", colourname(cp), privname(cp->privilege));
+                        srvmsgf(ci->clientnum, colourred, "%s is already elevated to \fs\fc%s\fS", colourname(cp), privname(cp->privilege));
                         break;
                     }
                     if(cp->oldprivilege == -1) cp->oldprivilege = cp->privilege;
@@ -7878,7 +7875,7 @@ namespace server
                 }
 
                 case -1:
-                    conoutf("\fy[msg error] from: %d, cur: %d, msg: %d, prev: %d", sender, curtype, type, prevtype);
+                    conoutf(colouryellow, "[msg error] from: %d, cur: %d, msg: %d, prev: %d", sender, curtype, type, prevtype);
                     disconnect_client(sender, DISC_MSGERR);
                     return;
 
@@ -7891,7 +7888,7 @@ namespace server
                     int size = msgsizelookup(type);
                     if(size <= 0)
                     {
-                        conoutf("\fy[msg error] from: %d, cur: %d, msg: %d, prev: %d", sender, curtype, type, prevtype);
+                        conoutf(colouryellow, "[msg error] from: %d, cur: %d, msg: %d, prev: %d", sender, curtype, type, prevtype);
                         disconnect_client(sender, DISC_MSGERR);
                         return;
                     }
@@ -7900,7 +7897,7 @@ namespace server
                     break;
                 }
             }
-            if(verbose > 5) conoutf("\fy[server] from: %d, cur: %d, msg: %d, prev: %d", sender, curtype, type, prevtype);
+            if(verbose > 5) conoutf(colouryellow, "[server] from: %d, cur: %d, msg: %d, prev: %d", sender, curtype, type, prevtype);
         }
     }
 

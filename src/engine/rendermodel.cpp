@@ -40,7 +40,7 @@ MODELTYPE(MDL_OBJ, obj);
 MODELTYPE(MDL_SMD, smd);
 MODELTYPE(MDL_IQM, iqm);
 
-#define checkmdl if(!loadingmodel) { conoutf("\frNot loading a model"); return; }
+#define checkmdl if(!loadingmodel) { conoutf(colourred, "Not loading a model"); return; }
 
 void mdlwind(float *wind)
 {
@@ -305,7 +305,7 @@ COMMAND(0, mdlname, "");
 
 #define checkragdoll \
     checkmdl; \
-    if(!loadingmodel->skeletal()) { conoutf("\frNot loading a skeletal model"); return; } \
+    if(!loadingmodel->skeletal()) { conoutf(colourred, "Not loading a skeletal model"); return; } \
     skelmodel *m = (skelmodel *)loadingmodel; \
     if(m->parts.empty()) return; \
     skelmodel::skelmeshgroup *meshes = (skelmodel::skelmeshgroup *)m->parts.last()->meshes; \
@@ -434,7 +434,7 @@ void flushpreloadedmodels(bool msg)
     {
         loadprogress = float(i+1)/preloadmodels.length();
         model *m = loadmodel(preloadmodels[i], -1, msg);
-        if(!m) { if(msg) conoutf("\frCould not load model: %s", preloadmodels[i]); }
+        if(!m) { if(msg) conoutf(colourred, "Could not load model: %s", preloadmodels[i]); }
         else
         {
             m->preloadmeshes();
@@ -461,11 +461,11 @@ void preloadusedmapmodels(bool msg, bool bih)
     {
         loadprogress = float(i+1)/used.length();
         int mmindex = used[i];
-        if(!mapmodels.inrange(mmindex)) { if(msg) conoutf("\frCould not find map model: %d", mmindex); continue; }
+        if(!mapmodels.inrange(mmindex)) { if(msg) conoutf(colourred, "Could not find map model: %d", mmindex); continue; }
         mapmodelinfo &mmi = mapmodels[mmindex];
         if(!mmi.name[0]) continue;
         model *m = loadmodel(NULL, mmindex, msg);
-        if(!m) { if(msg) conoutf("\frCould not load map model: %s", mmi.name); }
+        if(!m) { if(msg) conoutf(colourred, "Could not load map model: %s", mmi.name); }
         else
         {
             if(bih) m->preloadBIH();
@@ -480,7 +480,7 @@ void preloadusedmapmodels(bool msg, bool bih)
     {
         loadprogress = float(i+1)/col.length();
         model *m = loadmodel(col[i], -1, msg);
-        if(!m) { if(msg) conoutf("\frCould not load collide model: %s", col[i]); }
+        if(!m) { if(msg) conoutf(colourred, "Could not load collide model: %s", col[i]); }
         else if(!m->bih) m->setBIH();
     }
     loadprogress = 0;
@@ -535,7 +535,7 @@ void cleanupmodels()
 void clearmodel(char *name)
 {
     model *m = models.find(name, NULL);
-    if(!m) { conoutf("\frModel %s is not loaded", name); return; }
+    if(!m) { conoutf(colourred, "Model %s is not loaded", name); return; }
     loopv(mapmodels)
     {
         mapmodelinfo &mmi = mapmodels[i];
@@ -545,7 +545,7 @@ void clearmodel(char *name)
     models.remove(name);
     m->cleanup();
     delete m;
-    conoutf("\fyCleared model %s", name);
+    conoutf(colouryellow, "Cleared model %s", name);
 }
 
 COMMAND(0, clearmodel, "s");

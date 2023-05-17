@@ -85,7 +85,7 @@ static windemitter *getemitter(extentity *e = NULL)
 
     numwindemitters++;
 
-    if(winddebug) conoutf("windemitter get (ent %d), total %d, allocated %d", we->entindex,
+    if(winddebug) conoutf(colourwhite, "windemitter get (ent %d), total %d, allocated %d", we->entindex,
         numwindemitters, windmaxemitters);
 
     return we;
@@ -103,7 +103,7 @@ static void putemitter(windemitter *we)
 
     numwindemitters--;
 
-    if(winddebug) conoutf("windemitter put (ent %d), total %d, allocated %d, hook %p",
+    if(winddebug) conoutf(colourwhite, "windemitter put (ent %d), total %d, allocated %d, hook %p",
         we->entindex, numwindemitters, windmaxemitters, we->hook);
 }
 

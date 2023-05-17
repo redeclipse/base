@@ -12,9 +12,7 @@ extern char *servermaster, *serverip;
 #endif
 extern ENetAddress masteraddress;
 extern void fatal(const char *s, ...) PRINTFARGS(1, 2);
-extern void console(int type, const char *s, ...) PRINTFARGS(2, 3);
-extern void conoutft(int type, const char *s, ...) PRINTFARGS(2, 3);
-extern void conoutf(const char *s, ...) PRINTFARGS(1, 2);
+extern void conoutf(int color, const char *s, ...) PRINTFARGS(2, 3);
 
 extern FILE *logfile;
 extern FILE *getlogfile();
@@ -165,11 +163,6 @@ struct bindlist
         return names.getbuf();
     }
 };
-
-// rendertext
-extern int colourblack, colourwhite,
-    colourgreen, colourblue, colouryellow, colourred, colourgrey, colourmagenta, colourorange, colourcyan, colourpink, colourviolet, colourpurple, colourbrown,
-    colourdarkgreen, colourdarkblue, colourdarkyellow, colourdarkred, colourdarkgrey, colourdarkmagenta, colourdarkorange, colourdarkcyan, colourdarkpink, colourdarkviolet, colourdarkpurple, colourdarkbrown;
 
 // texture
 

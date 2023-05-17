@@ -267,7 +267,7 @@ void logoutf(const char *fmt, ...)
     va_end(args);
 }
 
-void console(int type, const char *s, ...)
+void conoutf(int color, const char *s, ...)
 {
     defvformatbigstring(sf, s, s);
     bigstring osf;
@@ -275,21 +275,8 @@ void console(int type, const char *s, ...)
     if(*logtimeformat) logoutf("%s %s", gettime(logtimelocal ? currenttime : clocktime, logtimeformat), osf);
     else logoutf("%s", osf);
 #ifndef STANDALONE
-    conline(type, sf, 0);
+    conline(color, sf);
 #endif
-}
-
-void conoutft(int type, const char *s, ...)
-{
-    defvformatbigstring(sf, s, s);
-    console(type, "%s", sf);
-    ircoutf(5, "%s", sf);
-}
-
-void conoutf(const char *s, ...)
-{
-    defvformatbigstring(sf, s, s);
-    conoutft(0, "%s", sf);
 }
 
 VAR(IDF_INIT, verbose, 0, 0, 6);
@@ -688,7 +675,7 @@ void localconnect(bool force)
         clientdata &c = *clients[cn];
         c.peer = NULL;
         copystring(c.hostip, "127.0.0.1");
-        conoutf("\fgLocal client %d connected", c.num);
+        conoutf(colourgreen, "Local client %d connected", c.num);
         client::gameconnect(false);
         cdpi::clientconnect();
         server::clientconnect(c.num, 0, true);
@@ -732,7 +719,7 @@ void disconnectmaster()
         server::masterdisconnected();
         enet_socket_destroy(mastersock);
         mastersock = ENET_SOCKET_NULL;
-        if(servertype >= 2 && masterconnected) conoutf("Disconnected from master server");
+        if(servertype >= 2 && masterconnected) conoutf(colourred, "Disconnected from master server");
     }
 
     masterout.setsize(0);
@@ -753,18 +740,18 @@ ENetSocket connectmaster(bool reuse)
     if(!servermaster[0]) return ENET_SOCKET_NULL;
     if(masteraddress.host == ENET_HOST_ANY)
     {
-        if(servertype >= 2) conoutf("\faLooking up %s:[%d]..", servermaster, servermasterport);
+        if(servertype >= 2) conoutf(colourgrey, "Looking up %s:[%d]..", servermaster, servermasterport);
         masteraddress.port = servermasterport;
         if(!resolverwait(servermaster, &masteraddress))
         {
-            conoutf("\frFailed resolving %s:[%d]", servermaster, servermasterport);
+            conoutf(colourred, "Failed resolving %s:[%d]", servermaster, servermasterport);
             return ENET_SOCKET_NULL;
         }
     }
     ENetSocket sock = enet_socket_create(ENET_SOCKET_TYPE_STREAM);
     if(sock == ENET_SOCKET_NULL)
     {
-        conoutf("\frCould not open master server socket");
+        conoutf(colourred, "Could not open master server socket");
         return ENET_SOCKET_NULL;
     }
     if(!reuse || serveraddress.host == ENET_HOST_ANY || !enet_socket_bind(sock, &serveraddress))
@@ -782,7 +769,7 @@ ENetSocket connectmaster(bool reuse)
         }
     }
     enet_socket_destroy(sock);
-    conoutf("\frCould not connect to master server");
+    conoutf(colourred, "Could not connect to master server");
     return ENET_SOCKET_NULL;
 }
 
@@ -835,7 +822,7 @@ void flushmasteroutput()
 {
     if(masterconnecting && totalmillis - masterconnecting >= 60000)
     {
-        conoutf("\frCould not connect to master server");
+        conoutf(colourred, "Could not connect to master server");
         disconnectmaster();
     }
     if(masterout.empty() || !masterconnected) return;
@@ -963,7 +950,7 @@ void serverslice(uint timeout)  // main server update, called from main loop in 
     {
         laststatus = totalmillis;
         if(serverhost->totalSentData || serverhost->totalReceivedData || server::numclients())
-            conoutf("Status: %d clients, %.1f send, %.1f rec (K/sec)\n", server::numclients(), serverhost->totalSentData/60.0f/1024, serverhost->totalReceivedData/60.0f/1024);
+            conoutf(colourwhite, "Status: %d clients, %.1f send, %.1f rec (K/sec)\n", server::numclients(), serverhost->totalSentData/60.0f/1024, serverhost->totalReceivedData/60.0f/1024);
         serverhost->totalSentData = serverhost->totalReceivedData = 0;
     }
 
@@ -1074,7 +1061,7 @@ int updatetimer(bool limit)
         lastsec += cursecs*1000;
         if(servercheck(maxruntime && !shutdownwait && int(totalsecs) >= maxruntime))
         {
-            server::srvoutf(-3, "\fyMax run time reached (\fs\fc%s\fS), waiting for server to empty", timestr(maxruntime*1000, 4));
+            server::srvoutf(3, colouryellow, "Max run time reached (\fs\fc%s\fS), waiting for server to empty", timestr(maxruntime*1000, 4));
             shutdownwait = totalmillis;
         }
     }
@@ -1288,7 +1275,7 @@ static void setupwindow(const char *title)
     atexit(cleanupwindow);
 
     if(!setupsystemtray(WM_APP)) fatal("Failed adding to system tray");
-    conoutf("Version: %s", getverstr());
+    conoutf(colourwhite, "Version: %s", getverstr());
 }
 
 static char *parsecommandline(const char *src, vector<char *> &args)
@@ -1362,7 +1349,7 @@ void serverloop()
     setupwindow(cap);
     SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
 #endif
-    conoutf("\fgDedicated server started, waiting for clients..");
+    conoutf(colourgreen, "Dedicated server started, waiting for clients..");
     for(;;)
     {
         //int _lastmillis = lastmillis;
@@ -1403,7 +1390,7 @@ int setupserversockets()
         if(enet_address_set_host(&address, serverip) < 0)
         {
             setsvar("serverip", "");
-            conoutf("\frWARNING: server address not resolved");
+            conoutf(colourred, "WARNING: server address not resolved");
         }
         else serveraddress.host = address.host;
     }
@@ -1416,7 +1403,7 @@ int setupserversockets()
 #ifdef STANDALONE
             fatal("Could not create server socket on port %d", serverport);
 #else
-            conoutf("\frCould not create server socket on port %d", serverport);
+            conoutf(colourred, "Could not create server socket on port %d", serverport);
             setvar("servertype", 0);
 #endif
             return servertype;
@@ -1438,7 +1425,7 @@ int setupserversockets()
 #ifdef STANDALONE
             fatal("Could not create server info socket on port %d", serverport+1);
 #else
-            conoutf("\frCould not create server info socket on port %d, publicity disabled", serverport+1);
+            conoutf(colourred, "Could not create server info socket on port %d, publicity disabled", serverport+1);
             setvar("servertype", 1);
 #endif
             return servertype;
@@ -1453,7 +1440,7 @@ int setupserversockets()
                 enet_socket_destroy(lansock);
                 lansock = ENET_SOCKET_NULL;
             }
-            if(lansock == ENET_SOCKET_NULL) conoutf("\frCould not create LAN server info socket");
+            if(lansock == ENET_SOCKET_NULL) conoutf(colourred, "Could not create LAN server info socket");
             else enet_socket_set_option(lansock, ENET_SOCKOPT_NONBLOCK, 1);
         }
     }
@@ -1477,13 +1464,13 @@ bool setupserver()
     if(servertype)
     {
         setupmaster();
-        conoutf("Loading server (%s:%d)..", *serverip ? serverip : "*", serverport);
-        if(setupserversockets() && verbose) conoutf("Game server started");
+        conoutf(colourwhite, "Loading server (%s:%d)..", *serverip ? serverip : "*", serverport);
+        if(setupserversockets() && verbose) conoutf(colourwhite, "Game server started");
     }
     if(!cdpi::init()) return false;
     http::init();
 #if !defined(STANDALONE) || !defined(WIN32)
-    conoutf("Version: %s", getverstr());
+    conoutf(colourwhite, "Version: %s", getverstr());
 #endif
 
 #ifndef STANDALONE
@@ -1501,7 +1488,7 @@ bool initgame()
         if(game::clientoption(gameargs[i])) continue;
 #endif
         if(server::serveroption(gameargs[i])) continue;
-        conoutf("\frUnknown command-line option: %s", gameargs[i]);
+        conoutf(colourred, "Unknown command-line option: %s", gameargs[i]);
     }
 #ifdef STANDALONE
     rehash(false);
@@ -1561,7 +1548,7 @@ void loadextras(const char *dirs)
     loopv(list) if(list[i] && *list[i])
     {
         defformatstring(fname, "data/%s", list[i]);
-        conoutf("Adding extra content: %s (%s/%s)", list[i], workingdir, fname);
+        conoutf(colourwhite, "Adding extra content: %s (%s/%s)", list[i], workingdir, fname);
         addpackagedir(fname);
     }
     list.deletearrays();
@@ -1576,7 +1563,7 @@ void setlocations(const char *bin)
     loopi(4)
     {
         if(!getcwd(cwd, sizeof(cwd))) fatal("Could not query current working directory");
-        conoutf("Checking working directory: %s", path(cwd));
+        conoutf(colourwhite, "Checking working directory: %s", path(cwd));
         if(!i) setsvar("startingdir", cwd);
 #ifdef __APPLE__
         if(fileexists(findfile("Resources/config/version.cfg", "r"), "r"))
@@ -1723,7 +1710,7 @@ void rehash(bool reload)
     execfile("autoexec.cfg", false);
     initing = NOT_INITING;
 #endif
-    conoutf("Configuration %s", reload ? "reloaded" : "loaded");
+    conoutf(colourwhite, "Configuration %s", reload ? "reloaded" : "loaded");
     rehashing = 0;
 #ifndef STANDALONE
     if(reload) engineready = true;
@@ -1798,7 +1785,7 @@ void shutdownsignal(int signum)
 #ifndef STANDALONE
     if(servertype < 3) fatalsignal(signum);
 #endif
-    server::srvoutf(-3, "\fyShutdown signal received, waiting for server to empty");
+    server::srvoutf(3, colouryellow, "Shutdown signal received, waiting for server to empty");
     shutdownwait = totalmillis;
 }
 

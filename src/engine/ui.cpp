@@ -211,7 +211,7 @@ namespace UI
                 uitype *o = (uitype *)buildparent; \
                 body; \
             } \
-            else if(!propagating) conoutf("Warning: parent %s not a %s class for ui%s%s", buildparent ? buildparent->gettype() : "<null>", #uitype, #uiname, #vname); \
+            else if(!propagating) conoutf(colourorange, "Warning: parent %s not a %s class for ui%s%s", buildparent ? buildparent->gettype() : "<null>", #uitype, #uiname, #vname); \
         });
 
     #define UIARGB(uitype, uiname, vname) \
@@ -249,7 +249,7 @@ namespace UI
                 uitype *o = (uitype *)buildparent; \
                 body; \
             } \
-            else if(!propagating) conoutf("Warning: parent %s not a %s type for ui%s%s", buildparent ? buildparent->gettype() : "<null>", #uiname, #uiname, #vname); \
+            else if(!propagating) conoutf(colourorange, "Warning: parent %s not a %s type for ui%s%s", buildparent ? buildparent->gettype() : "<null>", #uiname, #uiname, #vname); \
         });
 
     #define UIARGTB(uitype, uiname, vname) \
@@ -789,7 +789,7 @@ namespace UI
                 Object *o = buildparent; \
                 body; \
             } \
-            else if(!propagating) conoutf("Warning: No object available for ui%s", #vname); \
+            else if(!propagating) conoutf(colourorange, "Warning: No object available for ui%s", #vname); \
         });
 
     #define UIOBJARGB(vname) \
@@ -1248,7 +1248,7 @@ namespace UI
                 Window *o = window; \
                 body; \
             } \
-            else if(!propagating) conoutf("Warning: No window available for ui%s", #vname); \
+            else if(!propagating) conoutf(colourorange, "Warning: No window available for ui%s", #vname); \
         });
 
     #define UIWINARGB(vname) \
@@ -1571,7 +1571,7 @@ namespace UI
                 Surface *o = surface; \
                 body; \
             } \
-            else if(!propagating) conoutf("Warning: No surface available for ui%s", #vname); \
+            else if(!propagating) conoutf(colourorange, "Warning: No surface available for ui%s", #vname); \
         });
 
     #define UISURFARGB(vname) \
@@ -1665,7 +1665,7 @@ namespace UI
 
         if(mapdef && !(identflags&IDF_MAP) && !editmode)
         {
-            conoutf("\frMap %s UI %s is only directly modifiable in editmode", windowtype[stype], name);
+            conoutf(colourred, "Map %s UI %s is only directly modifiable in editmode", windowtype[stype], name);
             return false;
         }
 
@@ -1676,7 +1676,7 @@ namespace UI
             {
                 if(!w->mapdef && mapdef)
                 {
-                    conoutf("\frCannot override builtin %s UI %s with a one from the map", windowtype[stype], w->name);
+                    conoutf(colourred, "Cannot override builtin %s UI %s with a one from the map", windowtype[stype], w->name);
                     return false;
                 }
                 else
@@ -1758,12 +1758,12 @@ namespace UI
 
         if(m && !m->mapdef && mapdef)
         {
-            conoutf("\frCannot override builtin DynUI %s with one from the map", name);
+            conoutf(colourred, "Cannot override builtin DynUI %s with one from the map", name);
             return;
         }
         if(mapdef && !(identflags&IDF_MAP) && !editmode)
         {
-            conoutf("\frMap DynUI %s is only directly modifiable in editmode", name);
+            conoutf(colourred, "Map DynUI %s is only directly modifiable in editmode", name);
             return;
         }
 
@@ -3757,8 +3757,9 @@ namespace UI
     {
         float scale, wrap, tw, th, wlen, limit, rescale, growth;
         int align, pos, rotate;
+        bool modcol;
 
-        void setup(float scale_ = 1, const Color &color_ = Color(colourwhite), float wrap_ = 0, float limit_ = 0, int align_ = 0, int pos_ = -1, float growth_ = 1, int rotate_ = 0)
+        void setup(float scale_ = 1, const Color &color_ = Color(colourwhite), float wrap_ = 0, float limit_ = 0, int align_ = 0, int pos_ = -1, float growth_ = 1, int rotate_ = 0, bool modcol_ = false)
         {
             Colored::setup(color_);
             tw = th = wlen = 0;
@@ -3770,6 +3771,7 @@ namespace UI
             pos = pos_;
             growth = growth_;
             rotate = rotate_;
+            modcol = modcol_;
         }
 
         static const char *typestr() { return "#Text"; }
@@ -3785,7 +3787,7 @@ namespace UI
             changedraw(CHANGE_COLOR|CHANGE_SHADER);
 
             float k = drawscale(rescale), left = sx/k, top = sy/k;
-            int a = TEXT_MODCOL;
+            int a = modcol ? TEXT_MODCOL : 0;
             switch(align)
             {
                 case -2:    a |= TEXT_NO_INDENT|TEXT_LEFT_JUSTIFY; break;
@@ -3839,7 +3841,7 @@ namespace UI
                 }
             }
             else wlen = 0;
-            int a = TEXT_NO_INDENT|TEXT_MODCOL;
+            int a = modcol ? TEXT_MODCOL : 0;
             switch(align)
             {
                 case -2:    a |= TEXT_NO_INDENT|TEXT_LEFT_JUSTIFY; break;
@@ -3890,6 +3892,7 @@ namespace UI
     UIARGT(Text, text, align, "i", int, -2, 2);
     UIARGT(Text, text, pos, "i", int, -1, VAR_MAX);
     UIARGT(Text, text, rotate, "i", int, 0, 3);
+    UIARGTB(Text, text, modcol);
 
     struct TextString : Text
     {
@@ -6267,7 +6270,7 @@ namespace UI
     {
         if(!name || !*name)
         {
-            if(msg) conoutf("\frCannot create null composite texture: %s", name);
+            if(msg) conoutf(colourred, "Cannot create null composite texture: %s", name);
             return notexture; // need a name
         }
 
@@ -6288,7 +6291,7 @@ namespace UI
             if(list.empty()) // need at least the name
             {
                 list.deletearrays();
-                if(msg) conoutf("\frCould not composite texture: %s", name);
+                if(msg) conoutf(colourred, "Could not composite texture: %s", name);
                 return notexture;
             }
 
@@ -6296,7 +6299,7 @@ namespace UI
             Window *w = surface->windows.find(n, NULL);
             if(!w)
             {
-                if(msg) conoutf("\frFailed to locate Composite UI: %s", name);
+                if(msg) conoutf(colourred, "Failed to locate Composite UI: %s", name);
                 list.deletearrays();
                 return notexture;
             }
@@ -6329,7 +6332,7 @@ namespace UI
             GLERROR;
             if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
             {
-                if(msg) conoutf("\frFailed allocating composite texture framebuffer: %s [%u / %u]", name, id, fbo);
+                if(msg) conoutf(colourred, "Failed allocating composite texture framebuffer: %s [%u / %u]", name, id, fbo);
                 if(id) glDeleteTextures(1, &id);
                 if(fbo) glDeleteFramebuffers_(1, &fbo);
                 glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
@@ -6647,7 +6650,7 @@ namespace UI
             GLERROR;
             if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
             {
-                conoutf("\frFailed rendering composite texture framebuffer: %s [%u / %u]", t->name, t->id, t->fbo);
+                conoutf(colourred, "Failed rendering composite texture framebuffer: %s [%u / %u]", t->name, t->id, t->fbo);
                 t->rendering = false;
                 continue;
             }

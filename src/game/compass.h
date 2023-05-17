@@ -131,7 +131,7 @@ void showcmenu(const char *name)
         emitsound(S_PRESS, &camera1->o, camera1, NULL, SND_PRIORITY|SND_NOENV|SND_NOATTEN);
         return;
     }
-    conoutft(CON_DEBUG, "\frNo such compass menu: %s", name);
+    conoutf(colourred, "No such compass menu: %s", name);
 }
 ICOMMAND(0, showcompass, "s", (char *n), showcmenu(n));
 ICOMMANDVS(0, compassactive, curcompass ? curcompass->name : "");

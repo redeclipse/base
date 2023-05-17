@@ -230,11 +230,11 @@ ICOMMANDV(0, selvisible, selvisible());
 
 bool noedit(bool view, bool msg)
 {
-    if(!editmode) { conoutf("\frOperation only allowed in edit mode"); return true; }
+    if(!editmode) { conoutf(colourred, "Operation only allowed in edit mode"); return true; }
     if(view || haveselent()) return false;
     int vfc = selinview();
     bool viewable = (vfc >= 0 && vfc != VFC_NOT_VISIBLE);
-    if(!viewable && msg) conoutf("\frSelection not in view");
+    if(!viewable && msg) conoutf(colourred, "Selection not in view");
     return !viewable;
 }
 
@@ -1080,7 +1080,7 @@ void pruneundos(int maxremain)                          // bound memory
         totalundos -= u->size;
         freeundo(u);
     }
-    //conoutf("\faUndo: %d of %d(%%%d)", totalundos, undomegs<<20, totalundos*100/(undomegs<<20));
+    //conoutf(colourgrey, "Undo: %d of %d(%%%d)", totalundos, undomegs<<20, totalundos*100/(undomegs<<20));
     while(!redos.empty())
     {
         undoblock *u = redos.popfirst();
@@ -1154,7 +1154,7 @@ int swapundo(undolist &a, undolist &b, int op)
     int undotype = UNDO_NONE;
 
     if(noedit()) return UNDO_NONE;
-    if(a.empty()) { conoutf("\frNothing more to %s", op == EDIT_REDO ? "redo" : "undo"); return UNDO_NONE; }
+    if(a.empty()) { conoutf(colourred, "Nothing more to %s", op == EDIT_REDO ? "redo" : "undo"); return UNDO_NONE; }
     int ts = a.last->timestamp;
     if(multiplayer(false))
     {
@@ -1165,7 +1165,7 @@ int swapundo(undolist &a, undolist &b, int op)
             n += u->numents ? u->numents : countblock(u->block());
             if(ops > 10 || n > 2500)
             {
-                conoutf("\frUndo too big for multiplayer");
+                conoutf(colourred, "Undo too big for multiplayer");
                 if(nompedit) { multiplayer(); return UNDO_NONE; }
                 op = -1;
                 break;
@@ -1591,7 +1591,7 @@ void delprefab(char *name)
     {
         p->cleanup();
         prefabs.remove(name);
-        conoutf("Deleted prefab %s", name);
+        conoutf(colourwhite, "Deleted prefab %s", name);
     }
 }
 COMMAND(0, delprefab, "s");
@@ -1611,16 +1611,16 @@ void saveprefab(char *name)
     defformatstring(filename, strpbrk(name, "/\\") ? "%s.obr" : "prefab/%s.obr", name);
     path(filename);
     stream *f = opengzfile(filename, "wb");
-    if(!f) { conoutf("\frCould not write prefab to %s", filename); return; }
+    if(!f) { conoutf(colourred, "Could not write prefab to %s", filename); return; }
     prefabheader hdr;
     memcpy(hdr.magic, "OEBR", 4);
     hdr.version = 0;
     lilswap(&hdr.version, 1);
     f->write(&hdr, sizeof(hdr));
     streambuf<uchar> s(f);
-    if(!packblock(*b->copy, s)) { delete f; conoutf("\frCould not pack prefab %s", filename); return; }
+    if(!packblock(*b->copy, s)) { delete f; conoutf(colourred, "Could not pack prefab %s", filename); return; }
     delete f;
-    conoutf("Wrote prefab file %s", filename);
+    conoutf(colourwhite, "Wrote prefab file %s", filename);
 }
 ICOMMAND(0, saveprefab, "s", (char *s), if(!(identflags&IDF_MAP)) saveprefab(s));
 
@@ -1642,14 +1642,14 @@ prefab *loadprefab(const char *name, bool msg = true)
    defformatstring(filename, strpbrk(name, "/\\") ? "%s.obr" : "prefab/%s.obr", name);
    path(filename);
    stream *f = opengzfile(filename, "rb");
-   if(!f) { if(msg) conoutf("\frCould not read prefab %s", filename); return NULL; }
+   if(!f) { if(msg) conoutf(colourred, "Could not read prefab %s", filename); return NULL; }
    prefabheader hdr;
-   if(f->read(&hdr, sizeof(hdr)) != sizeof(prefabheader) || memcmp(hdr.magic, "OEBR", 4)) { delete f; if(msg) conoutf("\frPrefab %s has malformatted header", filename); return NULL; }
+   if(f->read(&hdr, sizeof(hdr)) != sizeof(prefabheader) || memcmp(hdr.magic, "OEBR", 4)) { delete f; if(msg) conoutf(colourred, "Prefab %s has malformatted header", filename); return NULL; }
    lilswap(&hdr.version, 1);
-   if(hdr.version != 0) { delete f; if(msg) conoutf("\frPrefab %s uses unsupported version", filename); return NULL; }
+   if(hdr.version != 0) { delete f; if(msg) conoutf(colourred, "Prefab %s uses unsupported version", filename); return NULL; }
    streambuf<uchar> s(f);
    block3 *copy = NULL;
-   if(!unpackblock(copy, s)) { delete f; if(msg) conoutf("\frCould not unpack prefab %s", filename); return NULL; }
+   if(!unpackblock(copy, s)) { delete f; if(msg) conoutf(colourred, "Could not unpack prefab %s", filename); return NULL; }
    delete f;
 
    b = &prefabs[name];
@@ -2070,7 +2070,7 @@ namespace hmap
                 }
             }
         }
-        else conoutf("\frCould not load: %s", name);
+        else conoutf(colourred, "Could not load: %s", name);
     }
 
     COMMAND(0, brushimport, "s");
@@ -3416,24 +3416,24 @@ void replacetex(bool insel, int oldtex = -1, int newtex = -1)
 
 ICOMMAND(0, replace, "", (),
 {
-    if(!vslots.inrange(reptex)) { conoutf("\frCan only replace after a valid texture edit"); return; }
+    if(!vslots.inrange(reptex)) { conoutf(colourred, "Can only replace after a valid texture edit"); return; }
     replacetex(false, reptex);
 });
 ICOMMAND(0, replacesel, "", (),
 {
-    if(!vslots.inrange(reptex)) { conoutf("\frCan only replace after a valid texture edit"); return; }
+    if(!vslots.inrange(reptex)) { conoutf(colourred, "Can only replace after a valid texture edit"); return; }
     replacetex(true, reptex);
 });
 ICOMMAND(0, replacetex, "bb", (int *n, int *o),
 {
-    if(!vslots.inrange(*n)) { conoutf("\frCan't replace texture with %d as it does not exist", *n); return; }
-    if(!vslots.inrange(*o)) { conoutf("\frCan't replace texture %d as it does not exist", *o); return; }
+    if(!vslots.inrange(*n)) { conoutf(colourred, "Can't replace texture with %d as it does not exist", *n); return; }
+    if(!vslots.inrange(*o)) { conoutf(colourred, "Can't replace texture %d as it does not exist", *o); return; }
     replacetex(false, *o, *n);
 });
 ICOMMAND(0, replacetexsel, "bb", (int *n, int *o),
 {
-    if(!vslots.inrange(*n)) { conoutf("\frCan't replace texture with %d as it does not exist", *n); return; }
-    if(!vslots.inrange(*o)) { conoutf("\frCan't replace texture %d as it does not exist", *o); return; }
+    if(!vslots.inrange(*n)) { conoutf(colourred, "Can't replace texture with %d as it does not exist", *n); return; }
+    if(!vslots.inrange(*o)) { conoutf(colourred, "Can't replace texture %d as it does not exist", *o); return; }
     replacetex(true, *o, *n);
 });
 ICOMMAND(0, replaceall, "b", (int *n), replacetex(false, -1, *n));
@@ -3630,13 +3630,13 @@ void editmat(char *name, char *filtername, int *style)
     {
         loopi(sizeof(editmatfilters)/sizeof(editmatfilters[0])) if(!strcmp(editmatfilters[i].name, filtername)) { filter = editmatfilters[i].filter; break; }
         if(filter < 0) filter = findmaterial(filtername, true);
-        if(filter < 0) { conoutf("\frUnknown material \"%s\"", filtername); return; }
+        if(filter < 0) { conoutf(colourred, "Unknown material \"%s\"", filtername); return; }
     }
     int id = -1;
     if(name[0] || filter < 0)
     {
         id = findmaterial(name, true);
-        if(id<0) { conoutf("\frUnknown material \"%s\"", name); return; }
+        if(id<0) { conoutf(colourred, "Unknown material \"%s\"", name); return; }
     }
     mpeditmat(id, filter, *style, sel, true);
 }

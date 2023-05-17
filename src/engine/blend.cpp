@@ -910,10 +910,10 @@ void addblendbrush(const char *name, const char *imgname)
     delblendbrush(name);
 
     ImageData s;
-    if(!loadimage(imgname, s)) { conoutf("\frCould not load blend brush image %s", imgname); return; }
+    if(!loadimage(imgname, s)) { conoutf(colourred, "Could not load blend brush image %s", imgname); return; }
     if(max(s.w, s.h) > (1<<12))
     {
-        conoutf("\frBlend brush image size exceeded %dx%d pixels: %s", 1<<12, 1<<12, imgname);
+        conoutf(colourred, "Blend brush image size exceeded %dx%d pixels: %s", 1<<12, 1<<12, imgname);
         return;
     }
 
@@ -968,12 +968,12 @@ bool canpaintblendmap(bool brush = true, bool sel = false, bool msg = true)
     if(noedit(!sel, msg) || (nompedit && multiplayer())) return false;
     if(!blendpaintmode)
     {
-        conoutft(CON_DEBUG, "\frOperation only allowed in blend paint mode");
+        conoutf(colourred, "Operation only allowed in blend paint mode");
         return false;
     }
     if(brush && !brushes.inrange(curbrush))
     {
-        if(msg) conoutft(CON_DEBUG, "\frNo blend brush selected");
+        if(msg) conoutf(colourred, "No blend brush selected");
         return false;
     }
     return true;
@@ -1097,7 +1097,7 @@ ICOMMAND(0, moveblendmap, "ii", (int *dx, int *dy),
     if(noedit(true) || (nompedit && multiplayer())) return;
     if(*dx%(BM_IMAGE_SIZE<<BM_SCALE) || *dy%(BM_IMAGE_SIZE<<BM_SCALE))
     {
-        conoutf("^frBlendmap movement must be in multiples of %d", BM_IMAGE_SIZE<<BM_SCALE);
+        conoutf(colourred, "Blendmap movement must be in multiples of %d", BM_IMAGE_SIZE<<BM_SCALE);
         return;
     }
     if(*dx <= -worldsize || *dx >= worldsize || *dy <= -worldsize || *dy >= worldsize)

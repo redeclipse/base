@@ -57,7 +57,7 @@ void genvbo(int type, void *buf, int len, vtxarray **vas, int numva)
     vbi.data = new uchar[len];
     memcpy(vbi.data, buf, len);
 
-    if(printvbo) conoutf("VBO %d: type %d, size %d, %d uses", vbo, type, len, numva);
+    if(printvbo) conoutf(colourwhite, "VBO %d: type %d, size %d, %d uses", vbo, type, len, numva);
 
     loopi(numva)
     {

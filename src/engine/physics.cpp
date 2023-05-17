@@ -1180,7 +1180,7 @@ void phystest()
 {
     static const char * const states[] = {"float", "fall", "slide", "slope", "floor", "step up", "step down", "bounce"};
     physent *player = (physent *)game::focusedent();
-    conoutf("PHYS(pl): %d %s, air %d, mat: %d, floor: (%f, %f, %f), pos: (%f, %f, %f), vel: (%f, %f, %f), g: (%f, %f, %f)",
+    conoutf(colourwhite, "PHYS(pl): %d %s, air %d, mat: %d, floor: (%f, %f, %f), pos: (%f, %f, %f), vel: (%f, %f, %f), g: (%f, %f, %f)",
         player->state, states[player->physstate], lastmillis-player->airmillis, player->inmaterial,
         player->floor.x, player->floor.y, player->floor.z, player->o.x, player->o.y, player->o.z,
         player->vel.x, player->vel.y, player->vel.z, player->falling.x, player->falling.y, player->falling.z);

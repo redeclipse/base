@@ -161,7 +161,7 @@ static bool readzipdirectory(const char *archname, FILE *f, int entries, int off
         f.size = hdr.uncompressedsize;
         f.compressedsize = hdr.compression ? hdr.compressedsize : 0;
 #ifndef STANDALONE
-        if(dbgzip) conoutf("%s: file %s, size %d, compress %d, flags %x", archname, name, hdr.uncompressedsize, hdr.compression, hdr.flags);
+        if(dbgzip) conoutf(colourwhite, "%s: file %s, size %d, compress %d, flags %x", archname, name, hdr.uncompressedsize, hdr.compression, hdr.flags);
 #endif
 
         src += hdr.namelength + hdr.extralength + hdr.commentlength;
@@ -276,21 +276,21 @@ bool addzip(const char *name, const char *mount = NULL, const char *strip = NULL
     ziparchive *exists = findzip(pname);
     if(exists)
     {
-        conoutf("Already added zip %s", pname);
+        conoutf(colourred, "Already added zip %s", pname);
         return true;
     }
 
     FILE *f = fopen(findfile(pname, "rb"), "rb");
     if(!f)
     {
-        conoutf("Could not open file %s", pname);
+        conoutf(colourred, "Could not open file %s", pname);
         return false;
     }
     zipdirectoryheader h;
     vector<zipfile> files;
     if(!findzipdirectory(f, h) || !readzipdirectory(pname, f, h.entries, h.offset, h.size, files))
     {
-        conoutf("Could not read directory in zip %s", pname);
+        conoutf(colourred, "Could not read directory in zip %s", pname);
         fclose(f);
         return false;
     }
@@ -301,7 +301,7 @@ bool addzip(const char *name, const char *mount = NULL, const char *strip = NULL
     mountzip(*arch, files, mount, strip);
     archives.add(arch);
 
-    conoutf("Added zip %s", pname);
+    conoutf(colourwhite, "Added zip %s", pname);
     return true;
 }
 
@@ -315,15 +315,15 @@ bool removezip(const char *name)
     ziparchive *exists = findzip(pname);
     if(!exists)
     {
-        conoutf("Zip %s is not loaded", pname);
+        conoutf(colourred, "Zip %s is not loaded", pname);
         return false;
     }
     if(exists->openfiles)
     {
-        conoutf("Zip %s has open files", pname);
+        conoutf(colourred, "Zip %s has open files", pname);
         return false;
     }
-    conoutf("Removed zip %s", exists->name);
+    conoutf(colourwhite, "Removed zip %s", exists->name);
     archives.removeobj(exists);
     delete exists;
     return true;
@@ -398,7 +398,7 @@ struct zipstream : stream
     {
         if(reading == ~0U) return;
 #ifndef STANDALONE
-        if(dbgzip) conoutf(info->compressedsize ? "%s: zfile.total_out %u, info->size %u" : "%s: reading %u, info->size %u", info->name, info->compressedsize ? uint(zfile.total_out) : reading - info->offset, info->size);
+        if(dbgzip) conoutf(colourwhite, info->compressedsize ? "%s: zfile.total_out %u, info->size %u" : "%s: reading %u, info->size %u", info->name, info->compressedsize ? uint(zfile.total_out) : reading - info->offset, info->size);
 #endif
         if(info->compressedsize) inflateEnd(&zfile);
         reading = ~0U;
@@ -517,7 +517,7 @@ struct zipstream : stream
                 else
                 {
 #ifndef STANDALONE
-                    if(dbgzip) conoutf("Inflate error: %s", zError(err));
+                    if(dbgzip) conoutf(colourred, "Inflate error: %s", zError(err));
 #endif
                     stopreading();
                 }

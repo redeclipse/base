@@ -268,7 +268,7 @@ void setupdisplay(bool dogl = true, bool msg = true)
     hudh = renderh;
     if(dogl) gl_resize();
 
-    if(msg) conoutf("Display [%d]: %dx%d [%d Hz] %s: %dx%d [%dx%d]", index, display.w, display.h, display.refresh_rate, SDL_GetWindowFlags(screen)&SDL_WINDOW_FULLSCREEN ? (fullscreendesktop ? "Fullscreen" : "Exclusive") : "Windowed", screenw, screenh, renderw, renderh);
+    if(msg) conoutf(colourwhite, "Display [%d]: %dx%d [%d Hz] %s: %dx%d [%dx%d]", index, display.w, display.h, display.refresh_rate, SDL_GetWindowFlags(screen)&SDL_WINDOW_FULLSCREEN ? (fullscreendesktop ? "Fullscreen" : "Exclusive") : "Windowed", screenw, screenh, renderw, renderh);
 
     wantdisplaysetup = false;
 
@@ -324,7 +324,7 @@ ICOMMAND(0, screenres, "ii", (int *w, int *h), screenres(*w, *h));
 
 static void setgamma(int val)
 {
-    if(screen && SDL_SetWindowBrightness(screen, val/100.0f) < 0) conoutf("\frCould not set gamma: %s", SDL_GetError());
+    if(screen && SDL_SetWindowBrightness(screen, val/100.0f) < 0) conoutf(colourred, "Could not set gamma: %s", SDL_GetError());
 }
 
 ICOMMAND(0, enumresolutions, "", (),
@@ -978,7 +978,7 @@ void progress(float amt, const char *s, ...)
     else copystring(sf, "Loading..");
     setsvar("progresstitle", sf);
     setfvar("progressamt", amt);
-    if(verbose >= 4) conoutf("%s [%.2f%%]", sf, amt*100.f);
+    if(verbose >= 4) conoutf(colourwhite, "%s [%.2f%%]", sf, amt*100.f);
 
     int oldflags = identflags;
     identflags &= ~IDF_MAP;
@@ -997,7 +997,7 @@ int pixelingx, pixelingy;
 bvec pixel(0, 0, 0);
 char *pixelact = NULL;
 
-ICOMMAND(0, printpixel, "", (void), conoutft(CON_MESG, "Pixel = 0x%.6X (%d, %d, %d)", pixel.tohexcolor(), pixel.r, pixel.g, pixel.b));
+ICOMMAND(0, printpixel, "", (void), conoutf(colourwhite, "Pixel = 0x%.6X (%d, %d, %d)", pixel.tohexcolor(), pixel.r, pixel.g, pixel.b));
 ICOMMAND(0, getpixel, "i", (int *n),
 {
     switch(*n)
@@ -1012,7 +1012,7 @@ ICOMMAND(0, getpixel, "i", (int *n),
 void readpixel(char *act, int x, int y, int numargs)
 {
     if(pixeling) return;
-    if(!editmode) { conoutf("\frOperation only allowed in edit mode"); return; }
+    if(!editmode) { conoutf(colourred, "Operation only allowed in edit mode"); return; }
     if(pixelact) delete[] pixelact;
     pixelact = act && *act ? newstring(act) : NULL;
     pixeling = true;
@@ -1106,7 +1106,7 @@ int main(int argc, char **argv)
                     case 'F': fullscreendesktop = atoi(&argv[i][3]); break;
                     case 's': /* compat, ignore */ break;
                     case 'u': /* compat, ignore */ break;
-                    default: conoutf("\frUnknown display option: '%c'", argv[i][2]); break;
+                    default: conoutf(colourred, "Unknown display option: '%c'", argv[i][2]); break;
                 }
                 break;
             }
@@ -1144,7 +1144,7 @@ int main(int argc, char **argv)
 
     numcpus = clamp(SDL_GetCPUCount(), 1, 16);
 
-    conoutf("Loading SDL..");
+    conoutf(colourwhite, "Loading SDL..");
     int sdlflags = SDL_INIT_TIMER|SDL_INIT_VIDEO;
     if(SDL_Init(sdlflags) < 0)
         fatal("Unable to initialize SDL: %s", SDL_GetError());
@@ -1158,19 +1158,19 @@ int main(int argc, char **argv)
 
     setcaption("Loading, please wait..");
 
-    conoutf("Loading eNet..");
+    conoutf(colourwhite, "Loading eNet..");
     if(enet_initialize()<0) fatal("Unable to initialise network module");
     atexit(enet_deinitialize);
     enet_time_set(0);
 
-    conoutf("Loading game..");
+    conoutf(colourwhite, "Loading game..");
     bool shouldload = initgame();
 
     //#ifdef WIN32
     //SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
     //#endif
 
-    conoutf("Loading video..");
+    conoutf(colourwhite, "Loading video..");
     SDL_SetHint(SDL_HINT_GRAB_KEYBOARD, "0");
     SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, "0");
     #if !defined(WIN32) && !defined(__APPLE__)
@@ -1197,16 +1197,16 @@ int main(int argc, char **argv)
 #endif
 #endif
 
-    conoutf("Loading GL..");
+    conoutf(colourwhite, "Loading GL..");
     gl_checkextensions();
     gl_init();
 
-    conoutf("Loading sound..");
+    conoutf(colourwhite, "Loading sound..");
     initsound();
 
     game::start();
 
-    conoutf("Loading defaults..");
+    conoutf(colourwhite, "Loading defaults..");
     if(!execfile("config/stdlib.cfg", false)) fatal("Cannot find data files");
     if(!setfont()) fatal("No default font specified");
     UI::setup();
@@ -1217,13 +1217,13 @@ int main(int argc, char **argv)
     inbetweenframes = true;
     progress(0, "Please wait..");
 
-    conoutf("Loading world..");
+    conoutf(colourwhite, "Loading world..");
     progress(0, "Loading world..");
     setupwind();
     fx::setup();
     emptymap(0, true, NULL, false);
 
-    conoutf("Loading config..");
+    conoutf(colourwhite, "Loading config..");
     progress(0, "Loading config..");
     initing = INIT_LOAD;
     rehash(false);
@@ -1234,7 +1234,7 @@ int main(int argc, char **argv)
 
     if(shouldload)
     {
-        conoutf("Loading required data..");
+        conoutf(colourwhite, "Loading required data..");
         progress(0, "Loading required data..");
         restoregamma();
         restorevsync();
@@ -1245,12 +1245,12 @@ int main(int argc, char **argv)
         initstains();
         if(firstrun || noconfigfile)
         {
-            conoutf("First run!");
+            conoutf(colourwhite, "First run!");
             firstrun = 0;
             triggereventcallbacks(CMD_EVENT_FIRSTRUN);
         }
 
-        conoutf("Loading main..");
+        conoutf(colourwhite, "Loading main..");
         progress(0, "Loading main..");
 
         capslockon = capslocked();
@@ -1263,7 +1263,7 @@ int main(int argc, char **argv)
         if(reprotoarg)
         {
             if(connecthost && *connecthost) connectserv(connecthost, connectport, connectpassword);
-            else conoutf("\frMalformed commandline argument: %s", reprotoarg);
+            else conoutf(colourred, "Malformed commandline argument: %s", reprotoarg);
         }
 
         // housekeeping

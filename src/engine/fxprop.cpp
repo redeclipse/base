@@ -70,7 +70,7 @@ namespace fx
         {
             if(bufsize - bufread < 1)
             {
-                conoutf("Error unpacking fxprop '%s': not enough data!", def->name);
+                conoutf(colourred, "Error unpacking fxprop '%s': not enough data!", def->name);
                 return 0;
             }
 
@@ -335,7 +335,7 @@ namespace fx
     {
         if(newfx)
         {
-            conoutf("FX registration error: already registering %s, tried to register %s", newfx->name, name);
+            conoutf(colourred, "FX registration error: already registering %s, tried to register %s", newfx->name, name);
             return;
         }
 
@@ -346,7 +346,7 @@ namespace fx
         newfx->sound = SoundHandle();
         newfx->children.shrink(0);
 
-        if(fxdebug) conoutf("New FX registered: %s, index %d, type %s", name,
+        if(fxdebug) conoutf(colourwhite, "New FX registered: %s, index %d, type %s", name,
             newfxhandle.getindex(), fxtypestring(newfx->type));
 
         resetdef();
@@ -377,7 +377,7 @@ namespace fx
     {
         if(!(p.getdef()->modflags & BIT(mod)))
         {
-            conoutf("\frError: %s, FX property %s modifier %d not supported",
+            conoutf(colourred, "Error: %s, FX property %s modifier %d not supported",
                 newfx->getname(), p.getdef()->name, mod);
 
             return false;
@@ -391,14 +391,14 @@ namespace fx
     {
         if(curmodifier < 0)
         {
-            conoutf("\frError: %s, cannot set modifier property %s, not currently setting a modifier",
+            conoutf(colourred, "Error: %s, cannot set modifier property %s, not currently setting a modifier",
                 newfx->getname(), name);
             return;
         }
 
         if(!lastfxprop)
         {
-            conoutf("\frError: %s, no last property when setting modifier %s",
+            conoutf(colourred, "Error: %s, no last property when setting modifier %s",
                 newfx->getname(), name);
             return;
         }
@@ -420,7 +420,7 @@ namespace fx
 
         if(!modprops)
         {
-            conoutf("\frError: %s, no FX %s modifier properties available", newfx->getname(), name);
+            conoutf(colourred, "Error: %s, no FX %s modifier properties available", newfx->getname(), name);
             return;
         }
 
@@ -428,7 +428,7 @@ namespace fx
 
         if(!modp)
         {
-            conoutf("\frError: %s, FX %s modifier property %s not found",
+            conoutf(colourred, "Error: %s, FX %s modifier property %s not found",
                 newfx->getname(), fxmodstring(curmodifier), name);
             return;
         }
@@ -488,7 +488,7 @@ namespace fx
     {
         if(!newfx)
         {
-            conoutf("\frError: cannot assign property %s, not loading FX", name);
+            conoutf(colourred, "Error: cannot assign property %s, not loading FX", name);
             return;
         }
 
@@ -501,7 +501,7 @@ namespace fx
                 p = findprop(name, newfx->getextprops(), extdefs[newfx->type].num);
                 if(!p)
                 {
-                    conoutf("\frError: %s, FX property %s not found", newfx->getname(), name);
+                    conoutf(colourred, "Error: %s, FX property %s not found", newfx->getname(), name);
                     return;
                 }
             }
@@ -536,7 +536,7 @@ namespace fx
     {
         if(!newfx)
         {
-            conoutf("\frError: cannot assign parent to %s, not loading FX",
+            conoutf(colourred, "Error: cannot assign parent to %s, not loading FX",
                 newfx->name);
             return;
         }
@@ -545,14 +545,14 @@ namespace fx
 
         if(!parenthandle.isvalid())
         {
-            conoutf("\frError: cannot assign parent to %s, FX %s does not exist",
+            conoutf(colourred, "Error: cannot assign parent to %s, FX %s does not exist",
                 newfx->name, name);
             return;
         }
 
         if(parenthandle == newfxhandle)
         {
-            conoutf("\frError: cannot assign parent %s to itself",
+            conoutf(colourred, "Error: cannot assign parent %s to itself",
                 newfx->name);
             return;
         }
@@ -562,7 +562,7 @@ namespace fx
         if(parent.children.find(newfxhandle) < 0) parent.children.add(newfxhandle);
         else
         {
-            conoutf("\fyWarning: %s already assigned to parent %s", newfx->name, name);
+            conoutf(colouryellow, "Warning: %s already assigned to parent %s", newfx->name, name);
             return;
         }
     }
@@ -571,7 +571,7 @@ namespace fx
     {
         if(!newfx)
         {
-            conoutf("\frError: cannot assign end FX to %s, not loading FX",
+            conoutf(colourred, "Error: cannot assign end FX to %s, not loading FX",
                 newfx->name);
             return;
         }

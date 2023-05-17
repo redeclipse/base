@@ -35,7 +35,7 @@ void ircprintf(ircnet *n, int relay, const char *target, const char *msg, ...)
             c->updated |= IRCUP_MSG;
             #endif
             if(n->type == IRCT_RELAY && c->relay >= relay)
-                server::srvmsgft(relay > 1 ? -2 : -3, CON_MESG, "\fs\fa[%s]\fS %s", c->friendly, str);
+                server::srvmsgf(-1, colourwhite, "\fs\fa[%s]\fS %s", c->friendly, str);
         }
         else
         {
@@ -54,7 +54,7 @@ void ircprintf(ircnet *n, int relay, const char *target, const char *msg, ...)
         n->updated |= IRCUP_MSG;
         #endif
     }
-    if(ircverbose) console(0, "%s %s", s, str); // console is not used to relay
+    if(ircverbose) conoutf(colourwhite, "%s %s", s, str);
 }
 
 void ircestablish(ircnet *n)
@@ -102,7 +102,7 @@ void ircsend(ircnet *n, const char *msg, ...)
     if(!n) return;
     defvformatstring(str, msg, msg);
     if(n->sock == ENET_SOCKET_NULL || !*msg) return; // don't spew \n
-    if(ircverbose >= 2) console(0, "[%s] >>> %s", n->name, str);
+    if(ircverbose >= 2) conoutf(colourwhite, "[%s] >>> %s", n->name, str);
     concatstring(str, "\n");
     ENetBuffer buf;
     uchar ubuf[512];
@@ -297,7 +297,7 @@ void ircnewnet(int type, const char *name, const char *serv, int port, const cha
     ircnet *m = ircfind(name);
     if(m)
     {
-        conoutf("Ircnet %s already exists", m->name);
+        conoutf(colourred, "Ircnet %s already exists", m->name);
         return;
     }
     ircnet &n = *ircnets.add(new ircnet);
@@ -329,35 +329,35 @@ ICOMMAND(0, ircaddrelay, "ssisss", (const char *n, const char *s, int *p, const 
 ICOMMAND(0, ircserv, "ss", (const char *name, const char *s),
 {
     ircnet *n = ircfind(name);
-    if(!n) { conoutf("No such ircnet: %s", name); return; }
+    if(!n) { conoutf(colourred, "No such ircnet: %s", name); return; }
     if(!s || !*s) { ircprintf(n, 4, NULL, "current server is: %s", n->serv); return; }
     copystring(n->serv, s);
 });
 ICOMMAND(0, ircport, "ss", (const char *name, const char *s),
 {
     ircnet *n = ircfind(name);
-    if(!n) { conoutf("No such ircnet: %s", name); return; }
+    if(!n) { conoutf(colourred, "No such ircnet: %s", name); return; }
     if(!s || !*s || !parseint(s)) { ircprintf(n, 4, NULL, "current port is: %d", n->port); return; }
     n->port = parseint(s);
 });
 ICOMMAND(0, ircnick, "ss", (const char *name, const char *s),
 {
     ircnet *n = ircfind(name);
-    if(!n) { conoutf("No such ircnet: %s", name); return; }
+    if(!n) { conoutf(colourred, "No such ircnet: %s", name); return; }
     if(!s || !*s) { ircprintf(n, 4, NULL, "current main nickname is: %s", n->mnick); return; }
     copystring(n->mnick, s);
 });
 ICOMMAND(0, ircident, "ss", (const char *name, const char *s),
 {
     ircnet *n = ircfind(name);
-    if(!n) { conoutf("No such ircnet: %s", name); return; }
+    if(!n) { conoutf(colourred, "No such ircnet: %s", name); return; }
     if(!s || !*s) { ircprintf(n, 4, NULL, "current ident is: %s", n->ident); return; }
     copystring(n->ident, s);
 });
 ICOMMAND(0, ircbind, "ss", (const char *name, const char *s),
 {
     ircnet *n = ircfind(name);
-    if(!n) { conoutf("No such ircnet: %s", name); return; }
+    if(!n) { conoutf(colourred, "No such ircnet: %s", name); return; }
     if(!s || !*s) { ircprintf(n, 4, NULL, "currently bound to: %s", n->ip); return; }
     copystring(n->ip, s);
 });
@@ -365,21 +365,21 @@ static inline const char *setdesc(const char *str) { return str && *str ? "<set>
 ICOMMAND(0, ircpass, "ss", (const char *name, const char *s),
 {
     ircnet *n = ircfind(name);
-    if(!n) { conoutf("No such ircnet: %s", name); return; }
+    if(!n) { conoutf(colourred, "No such ircnet: %s", name); return; }
     if(!s || !*s) { ircprintf(n, 4, NULL, "current password is: %s", setdesc(n->passkey)); return; }
     copystring(n->passkey, s);
 });
 ICOMMAND(0, ircauthcommand, "ss", (const char *name, const char *s),
 {
     ircnet *n = ircfind(name);
-    if(!n) { conoutf("No such ircnet: %s", name); return; }
+    if(!n) { conoutf(colourred, "No such ircnet: %s", name); return; }
     if(!s || !*s) { ircprintf(n, 4, NULL, "current auth command is: %s", setdesc(n->authcommand)); return; }
     copystring(n->authcommand, s);
 });
 ICOMMAND(0, ircauth, "sss", (const char *name, const char *s, const char *t),
 {
     ircnet *n = ircfind(name);
-    if(!n) { conoutf("No such ircnet: %s", name); return; }
+    if(!n) { conoutf(colourred, "No such ircnet: %s", name); return; }
     if(!s || !*s || !t || !*t) { ircprintf(n, 4, NULL, "current auth details are: %s (%s)", n->authname, setdesc(n->authpass)); return; }
     copystring(n->authname, s);
     copystring(n->authpass, t);
@@ -387,7 +387,7 @@ ICOMMAND(0, ircauth, "sss", (const char *name, const char *s, const char *t),
 ICOMMAND(0, ircconnect, "s", (const char *name),
 {
     ircnet *n = ircfind(name);
-    if(!n) { conoutf("No such ircnet: %s", name); return; }
+    if(!n) { conoutf(colourred, "No such ircnet: %s", name); return; }
     if(n->state > IRC_DISC) { ircprintf(n, 4, NULL, "network already already active"); return; }
     ircestablish(n);
 });
@@ -442,7 +442,7 @@ bool ircnewchan(int type, const char *name, const char *channel, const char *fri
     ircnet *n = ircfind(name);
     if(!n)
     {
-        conoutf("No such ircnet: %s", name);
+        conoutf(colourred, "No such ircnet: %s", name);
         return false;
     }
     ircchan *c = ircfindchan(n, channel);
@@ -475,7 +475,7 @@ ICOMMAND(0, ircjoinchan, "ssssi", (const char *n, const char *c, const char *f, 
 ICOMMAND(0, ircpasschan, "sss", (const char *name, const char *chan, const char *s),
 {
     ircnet *n = ircfind(name);
-    if(!n) { conoutf("No such ircnet: %s", name); return; }
+    if(!n) { conoutf(colourred, "No such ircnet: %s", name); return; }
     ircchan *c = ircfindchan(n, chan);
     if(!c) { ircprintf(n, 4, NULL, "no such channel: %s", chan); return; }
     if(!s || !*s) { ircprintf(n, 4, NULL, "channel %s current password is: %s", c->name, setdesc(c->passkey)); return; }
@@ -484,7 +484,7 @@ ICOMMAND(0, ircpasschan, "sss", (const char *name, const char *chan, const char 
 ICOMMAND(0, ircrelaychan, "sss", (const char *name, const char *chan, const char *s),
 {
     ircnet *n = ircfind(name);
-    if(!n) { conoutf("No such ircnet: %s", name); return; }
+    if(!n) { conoutf(colourred, "No such ircnet: %s", name); return; }
     ircchan *c = ircfindchan(n, chan);
     if(!c) { ircprintf(n, 4, NULL, "no such channel: %s", chan); return; }
     if(!s || !*s) { ircprintf(n, 4, NULL, "channel %s current relay level is: %d", c->name, c->relay); return; }
@@ -493,7 +493,7 @@ ICOMMAND(0, ircrelaychan, "sss", (const char *name, const char *chan, const char
 ICOMMAND(0, ircfriendlychan, "sss", (const char *name, const char *chan, const char *s),
 {
     ircnet *n = ircfind(name);
-    if(!n) { conoutf("No such ircnet: %s", name); return; }
+    if(!n) { conoutf(colourred, "No such ircnet: %s", name); return; }
     ircchan *c = ircfindchan(n, chan);
     if(!c) { ircprintf(n, 4, NULL, "no such channel: %s", chan); return; }
     if(!s || !*s) { ircprintf(n, 4, NULL, "channel %s current friendly name is: %s", c->name, c->friendly); return; }
@@ -570,9 +570,9 @@ void ircprocess(ircnet *n, char *user[3], int g, int numargs, char *w[])
                     if(g)
                     {
                         if(!strcasecmp(w[g+1], n->nick))
-                            console(CON_MESG, "\fa[%s] <\fw%s\fa (to you)>\fw %s", n->name, user[0], str);
+                            conoutf(colourgrey, "[%s] <\fw%s\fa (to you)>\fw %s", n->name, user[0], str);
                         else if(ircnickhighlight && ircmatchnick(n, w[g+2]))
-                            console(CON_MESG, "\fa[%s] <\fw%s\fa (to %s)>\fw %s", n->name, user[0], w[g+1], str);
+                            conoutf(colourgrey, "[%s] <\fw%s\fa (to %s)>\fw %s", n->name, user[0], w[g+1], str);
                     }
                 }
             }

@@ -244,7 +244,7 @@ void addserver(const char *name, int port, int priority, const char *desc, const
 {
     loopv(servers) if(!strcmp(servers[i]->name, name) && servers[i]->port == port) return;
     if(newserver(name, port, priority, desc, handle, flags, branch) && verbose >= 2)
-        conoutf("Added server %s (%d) [%s]", name, port, desc);
+        conoutf(colourwhite, "Added server %s (%d) [%s]", name, port, desc);
 }
 ICOMMAND(0, addserver, "siissss", (char *n, int *p, int *r, char *d, char *h, char *f, char *b), addserver(n, *p > 0 ? *p : SERVER_PORT, *r >= 0 ? *r : 0, d, h, f, b));
 
@@ -495,10 +495,10 @@ void updatefrommaster()
     {
         //clearservers();
         execute(data.getbuf());
-        if(verbose) conoutf("\faRetrieved %d server(s) from master", servers.length());
-        else conoutf("\faRetrieved list from master successfully");//, servers.length());
+        if(verbose) conoutf(colourgrey, "Retrieved %d server(s) from master", servers.length());
+        else conoutf(colourgrey, "Retrieved list from master successfully");//, servers.length());
     }
-    else conoutf("Master server not replying");
+    else conoutf(colourred, "Master server not replying");
     refreshservers();
 }
 COMMAND(0, updatefrommaster, "");

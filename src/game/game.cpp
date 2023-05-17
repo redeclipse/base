@@ -590,7 +590,7 @@ namespace game
         v.cond = cond;
         v.style = style;
 
-        if(!vanitytypetags.inrange(type)) conoutf("WARNING: Vanity type %d is not declared", type);
+        if(!vanitytypetags.inrange(type)) conoutf(colourorange, "WARNING: Vanity type %d is not declared", type);
 
         return num;
     }
@@ -1638,7 +1638,7 @@ namespace game
                     }
                     if(!burning && !bleeding && !shocking && !material && !sameteam) v->lasthit = totalmillis ? totalmillis : 1;
                 }
-                if(d->actortype < A_ENEMY && !issound(d->vschan)) emitsound(S_PAIN, game::getplayersoundpos(d), d, &d->vschan);
+                if(d->actortype < A_ENEMY && !issound(d->plchan[PLCHAN_VOICE])) emitsound(S_PAIN, game::getplayersoundpos(d), d, &d->plchan[PLCHAN_VOICE]);
                 d->lastpain = lastmillis;
                 if(isweap(weap) && !WK(flags)) emitsoundpos(WSND2(weap, WS(flags), S_W_IMPACT), vec(d->center()).add(vec(dir).mul(dist)), NULL, 0, clamp(scale, 0.2f, 1.f));
             }
@@ -1985,17 +1985,14 @@ namespace game
                 v->lastkill = totalmillis ? totalmillis : 1;
             }
         }
-        if(dth >= 0) emitsound(dth, game::getplayersoundpos(d), d, &d->vschan);
+        if(dth >= 0) emitsound(dth, game::getplayersoundpos(d), d, &d->plchan[PLCHAN_VOICE]);
         if(d->actortype < A_ENEMY)
         {
-            gamelog *log = new gamelog;
-            log->addlist("this", "type", "frag");
-            log->addlist("this", "action", d == v ? "suicide" : "kill");
-            log->addlist("this", "sound", anc);
-            log->addlist("this", "flags", EV_F_CLIENT1|EV_F_CLIENT2);
-            log->addclient("client", d);
-            log->addclient("client", v);
-            loopv(assist) if(assist[i] && assist[i] != d && assist[i] != v) log->addclient("client", assist[i]);
+            gamelog *log = new gamelog(GAMELOG_EVENT);
+            log->addlist("args", "type", "frag");
+            log->addlist("args", "action", d == v ? "suicide" : "kill");
+            log->addlist("args", "sound", anc);
+            log->addlist("args", "flags", GAMELOG_F_CLIENT1|GAMELOG_F_CLIENT2);
             log->addlist("args", "weapon", weap);
             log->addlist("args", "flags", flags);
             log->addlist("args", "damage", damage);
@@ -2005,6 +2002,9 @@ namespace game
             log->addlist("args", "bleeding", bleeding);
             log->addlist("args", "shocking", shocking);
             log->addlist("args", "console", d->obit);
+            log->addclient("client", d);
+            log->addclient("client", v);
+            loopv(assist) if(assist[i] && assist[i] != d && assist[i] != v) log->addclient("client", assist[i]);
             log->push();
         }
         vec pos = d->headtag();
@@ -2103,10 +2103,10 @@ namespace game
             if(d->actortype == A_PLAYER)
             {
                 int amt = client::otherclients(); // not including self to disclude this player
-                conoutft(CON_MESG, "\fo%s%s left the game%s (%d %s)", colourname(d), ipaddr, formattedreason, amt, amt != 1 ? "players" : "player");
+                conoutf(colourorange, "%s%s left the game%s (%d %s)", colourname(d), ipaddr, formattedreason, amt, amt != 1 ? "players" : "player");
             }
             else if(d->actortype == A_BOT && ai::showaiinfo)
-                conoutft(CON_EVENT, "\fo%s was removed from the game%s", colourname(d), formattedreason);
+                conoutf(colourorange, "%s was removed from the game%s", colourname(d), formattedreason);
         }
         gameent *e = NULL;
         int numdyns = numdynents();
@@ -2355,7 +2355,7 @@ namespace game
         if(colour) concatstring(colored, "\fS");
         return colored;
     }
-    ICOMMAND(0, colourname, "siiiiiibbb", (char *name, int *clientnum, int *team, int *actortype, int *col, int *privilege, int *weapselect, int *icon, int *dupname, int *colour),
+    ICOMMAND(0, colourname, "siiiiiiibb", (char *name, int *clientnum, int *team, int *actortype, int *col, int *privilege, int *weapselect, int *icon, int *dupname, int *colour),
         result(colourname(name, *clientnum, *team, *actortype, *col, *privilege, *weapselect, *icon != 0, *dupname != 0, *colour >= 0 ? *colour : 3));
     );
 

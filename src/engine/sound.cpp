@@ -107,7 +107,7 @@ static void getsoundefxslot(soundefxslot **hook, bool priority = false)
         soundefxslots[i].hook = hook;
         *hook = &soundefxslots[i];
 
-        if(soundefxslotdebug) conoutf("getsoundefxslot: free slot found: %u", soundefxslots[i].id);
+        if(soundefxslotdebug) conoutf(colourwhite, "getsoundefxslot: free slot found: %u", soundefxslots[i].id);
 
         return;
     }
@@ -123,7 +123,7 @@ static void getsoundefxslot(soundefxslot **hook, bool priority = false)
     oldest->hook = hook;
     *hook = oldest;
 
-    if(soundefxslotdebug) conoutf("getsoundefxslot: oldest slot found: %u, last used %u ms ago",
+    if(soundefxslotdebug) conoutf(colourwhite, "getsoundefxslot: oldest slot found: %u, last used %u ms ago",
         oldest->id, lastmillis - oldest->lastused);
 }
 
@@ -184,7 +184,7 @@ void soundenvzone::attachparams()
 
     if(err != AL_NO_ERROR)
     {
-        conoutf("ERROR %d", err);
+        conoutf(colourred, "ERROR %d", err);
         ASSERT(err == AL_NO_ERROR);
     }
 
@@ -454,7 +454,7 @@ void soundsetdoppler(float v)
     alGetError();
     alDopplerFactor(v);
     const char *err = sounderror(false);
-    if(err) conoutf("\frFailed to set doppler factor: %s", err);
+    if(err) conoutf(colourred, "Failed to set doppler factor: %s", err);
 }
 FVARF(IDF_PERSIST, sounddoppler, 0, 0.1f, FVAR_MAX, soundsetdoppler(sounddoppler));
 
@@ -464,7 +464,7 @@ void soundsetspeed(float v)
     alGetError();
     alSpeedOfSound(v * 8.f);
     const char *err = sounderror(false);
-    if(err) conoutf("\frFailed to set speed of sound: %s", err);
+    if(err) conoutf(colourred, "Failed to set speed of sound: %s", err);
 }
 FVARF(IDF_PERSIST, soundspeed, FVAR_NONZERO, 343.3f, FVAR_MAX, soundsetspeed(sounddoppler));
 
@@ -565,7 +565,7 @@ void initsound()
         {
             alGetError();
             snddev = alcOpenDevice(sounddevice);
-            if(!snddev) conoutf("\frSound device initialisation failed: %s (with '%s', retrying default device)", sounderror(), sounddevice);
+            if(!snddev) conoutf(colourred, "Sound device initialisation failed: %s (with '%s', retrying default device)", sounderror(), sounddevice);
         }
 
         if(!snddev)
@@ -576,7 +576,7 @@ void initsound()
 
         if(!snddev)
         {
-            conoutf("\frSound device initialisation failed: %s", sounderror());
+            conoutf(colourred, "Sound device initialisation failed: %s", sounderror());
             return;
         }
 
@@ -584,14 +584,14 @@ void initsound()
         sndctx = alcCreateContext(snddev, NULL);
         if(!sndctx)
         {
-            conoutf("\frSound context initialisation failed: %s", sounderror());
+            conoutf(colourred, "Sound context initialisation failed: %s", sounderror());
             alcCloseDevice(snddev);
             snddev = NULL;
             return;
         }
 
         alcMakeContextCurrent(sndctx);
-        conoutf("Sound: %s (%s) %s", alGetString(AL_RENDERER), alGetString(AL_VENDOR), alGetString(AL_VERSION));
+        conoutf(colourwhite, "Sound: %s (%s) %s", alGetString(AL_RENDERER), alGetString(AL_VENDOR), alGetString(AL_VERSION));
         al_ext_efx = alcIsExtensionPresent(snddev, "ALC_EXT_EFX") ? true : false;
         al_ext_float32 = alIsExtensionPresent("AL_EXT_FLOAT32") ? true : false;
         al_soft_spatialize = alIsExtensionPresent("AL_SOFT_source_spatialize") ? true : false;
@@ -603,13 +603,13 @@ void initsound()
                           *s = alcGetString(NULL, ALC_ALL_DEVICES_SPECIFIER);
             if(s)
             {
-                conoutf("Audio device list:");
+                conoutf(colourwhite, "Audio device list:");
                 for(const ALchar *c = s; *c; c += strlen(c)+1)
-                    conoutf("- %s%s", c, !strcmp(c, d) ? " [default]" : "");
+                    conoutf(colourwhite, "- %s%s", c, !strcmp(c, d) ? " [default]" : "");
             }
-            conoutf("Audio device: %s [%d]", alcGetString(snddev, ALC_ALL_DEVICES_SPECIFIER), al_sample_rate);
+            conoutf(colourwhite, "Audio device: %s [%d]", alcGetString(snddev, ALC_ALL_DEVICES_SPECIFIER), al_sample_rate);
         }
-        else conoutf("Audio device: %s [%d]", alcGetString(snddev, ALC_DEVICE_SPECIFIER), al_sample_rate);
+        else conoutf(colourwhite, "Audio device: %s [%d]", alcGetString(snddev, ALC_DEVICE_SPECIFIER), al_sample_rate);
 
         getextsoundprocs();
         allocsoundefxslots();
@@ -702,10 +702,10 @@ bool playmusic(const char *name, bool looping)
             SDL_UnlockMutex(music_mutex);
             musicloopinit();
             return true;
-        }, conoutf("Error loading %s: %s [%s@%s:%d]", buf, alGetString(err), al_errfunc, al_errfile, al_errline));
+        }, conoutf(colourred, "Error loading %s: %s [%s@%s:%d]", buf, alGetString(err), al_errfunc, al_errfile, al_errline));
     }
 
-    conoutf("\frCould not play music: %s", name);
+    conoutf(colourred, "Could not play music: %s", name);
     delete music;
     music = NULL;
 
@@ -770,7 +770,7 @@ static soundsample *loadsoundsample(const char *name)
             return sample;
         }, {
             delete w;
-            conoutf("Error loading %s: %s [%s@%s:%d]", buf, alGetString(err), al_errfunc, al_errfile, al_errline);
+            conoutf(colourred, "Error loading %s: %s [%s@%s:%d]", buf, alGetString(err), al_errfunc, al_errfile, al_errline);
         });
     }
     return NULL;
@@ -789,7 +789,7 @@ static void loadsamples(soundslot &slot)
         sample = loadsoundsample(sam);
         slot.samples.add(sample);
 
-        if(!sample || !sample->valid()) conoutf("\frFailed to load sample: %s", sam);
+        if(!sample || !sample->valid()) conoutf(colourred, "Failed to load sample: %s", sam);
     }
 }
 
@@ -986,9 +986,9 @@ void updatesounds()
 
             s.slot = slot;
             s.slotnum = n;
-            SOUNDCHECK(s.push(sample), break, conoutf("Error playing buffered sample [%d] %s (%d): %s [%s@%s:%d]", n, sample->name, s.index, alGetString(err), al_errfunc, al_errfile, al_errline));
+            SOUNDCHECK(s.push(sample), break, conoutf(colourred, "Error playing buffered sample [%d] %s (%d): %s [%s@%s:%d]", n, sample->name, s.index, alGetString(err), al_errfunc, al_errfile, al_errline));
         }
-        //conoutf("Clearing sound source %d [%d] %d [%d] %s", s.source, s.index, s.ends, lastmillis, soundsources[i].playing() ? "playing" : "not playing");
+        //conoutf(colourgrey, "Clearing sound source %d [%d] %d [%d] %s", s.source, s.index, s.ends, lastmillis, soundsources[i].playing() ? "playing" : "not playing");
         if(!s.active()) s.clear();
     }
 
@@ -1027,7 +1027,7 @@ int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, flo
         vector<soundslot> &soundset = flags&SND_MAP ? mapsounds : gamesounds.vec();
         if(!(flags&SND_UNMAPPED) && !(flags&SND_MAP)) n = getsoundslot(n);
 
-        if(!soundset.inrange(n) && n > 0) conoutf("\frUnregistered sound: %d", n);
+        if(!soundset.inrange(n) && n > 0) conoutf(colourred, "Unregistered sound: %d", n);
         else if(soundset.inrange(n)) slot = &soundset[n];
     }
 
@@ -1080,7 +1080,7 @@ int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, flo
         if(hook) *hook = s.index;
         s.hook = hook;
 
-        SOUNDCHECK(s.push(sample), return index, conoutf("Error playing sample [%d] %s (%d): %s [%s@%s:%d]", n, sample->name, index, alGetString(err), al_errfunc, al_errfile, al_errline));
+        SOUNDCHECK(s.push(sample), return index, conoutf(colourred, "Error playing sample [%d] %s (%d): %s [%s@%s:%d]", n, sample->name, index, alGetString(err), al_errfunc, al_errfile, al_errline));
     }
 
     return -1;
@@ -1223,7 +1223,7 @@ bool soundfile::setup(const char *name, int t, int m)
 
     if(!format)
     {
-        conoutf("\frUnsupported channel count in %s: %d", name, info.channels);
+        conoutf(colourred, "Unsupported channel count in %s: %d", name, info.channels);
         clear();
         return false;
     }
@@ -2121,7 +2121,7 @@ static void setsoundenvprop(const char *name, const T &val)
 {
     if(!newsoundenv)
     {
-        conoutf("\frError: cannot assign property %s, not loading soundenvs", name);
+        conoutf(colourred, "Error: cannot assign property %s, not loading soundenvs", name);
         return;
     }
 
@@ -2129,7 +2129,7 @@ static void setsoundenvprop(const char *name, const T &val)
 
     if(!p)
     {
-        conoutf("\frError: %s, soundenv property %s not found", newsoundenv->getname(), name);
+        conoutf(colourred, "Error: %s, soundenv property %s not found", newsoundenv->getname(), name);
         return;
     }
 
@@ -2277,7 +2277,7 @@ void initmumble()
     #endif
     if(!VALID_MUMBLELINK) closemumble();
 #else
-    conoutft(CON_DEBUG, "Mumble positional audio is not available on this platform.");
+    conoutf(colourred, "Mumble positional audio is not available on this platform.");
 #endif
 }
 

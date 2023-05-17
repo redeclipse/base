@@ -256,7 +256,7 @@ namespace http
         if(n < 0 || n >= reqs.length()) return;
         httpreq *r = reqs[n];
         enet_socket_destroy(r->socket);
-        conoutf("HTTP request %s disconnected", r->name);
+        conoutf(colourwhite, "HTTP request %s disconnected", r->name);
         delete reqs[n];
         reqs.remove(n);
     }
@@ -300,7 +300,7 @@ namespace http
                     string retcode = "";
                     copystring(retcode, start, p-start+1);
                     int retnum = atoi(retcode);
-                    conoutf("HTTP retcode %s [%d]: %d", c->name, c->uid, retnum);
+                    conoutf(colourwhite, "HTTP retcode %s [%d]: %d", c->name, c->uid, retnum);
                     if(retnum != HTTP_R_OK) return false;
                     c->state = HTTP_S_HEADERS;
                     break;
@@ -357,7 +357,7 @@ namespace http
         c->input[c->inputpos] = '\0';
         if(c->callback) c->callback(c);
         enet_socket_destroy(c->socket);
-        conoutf("HTTP peer %s [%d] disconnected (%d)", c->name, c->uid, c->state);
+        conoutf(colourwhite, "HTTP peer %s [%d] disconnected (%d)", c->name, c->uid, c->state);
         delete clients[n];
         clients.remove(n);
     }
@@ -380,10 +380,10 @@ namespace http
         copystring(c->path, path);
         if(data) copystring(c->data, data);
         c->callback = callback;
-        conoutf("HTTP looking up %s:[%d] [%d]..", c->name, c->port, c->uid);
+        conoutf(colourwhite, "HTTP looking up %s:[%d] [%d]..", c->name, c->port, c->uid);
         if(!resolverwait(c->name, &c->address)) // TODO: don't block here
         {
-            conoutf("HTTP unable to resolve %s:[%d] [%d]..", c->name, c->port, c->uid);
+            conoutf(colourred, "HTTP unable to resolve %s:[%d] [%d]..", c->name, c->port, c->uid);
             delete c;
             return NULL;
         }
@@ -391,7 +391,7 @@ namespace http
         if(c->socket != ENET_SOCKET_NULL) enet_socket_set_option(c->socket, ENET_SOCKOPT_NONBLOCK, 1);
         if(c->socket == ENET_SOCKET_NULL || enet_socket_connect(c->socket, &c->address) < 0)
         {
-            conoutf(c->socket == ENET_SOCKET_NULL ? "HTTP could not open socket to %s:[%d] [%d]" : "HTTP could not connect to %s:[%d] [%d]", c->name, c->port, c->uid);
+            conoutf(colourred, c->socket == ENET_SOCKET_NULL ? "HTTP could not open socket to %s:[%d] [%d]" : "HTTP could not connect to %s:[%d] [%d]", c->name, c->port, c->uid);
             if(c->socket != ENET_SOCKET_NULL) enet_socket_destroy(c->socket);
             delete c;
             return NULL;
@@ -399,7 +399,7 @@ namespace http
         c->state = HTTP_S_CONNECTING;
         c->outhdrs.add("User-Agent", getverstr());
         clients.add(c);
-        conoutf("HTTP connecting to %s:[%d] [%d]..", c->name, c->port, c->uid);
+        conoutf(colourwhite, "HTTP connecting to %s:[%d] [%d]..", c->name, c->port, c->uid);
         return c;
     }
 
@@ -420,16 +420,16 @@ namespace http
     void init()
     {
         if(!httpserver || socket != ENET_SOCKET_NULL) return;
-        conoutf("Loading HTTP (%s:%d)..", *httpserverip ? httpserverip : "*", httpserverport);
+        conoutf(colourwhite, "Loading HTTP (%s:%d)..", *httpserverip ? httpserverip : "*", httpserverport);
         ENetAddress address = { ENET_HOST_ANY, enet_uint16(httpserverport) };
-        if(*httpserverip && enet_address_set_host(&address, httpserverip) < 0) { conoutf("Failed to resolve HTTP address: %s", httpserverip); cleanup(); return; }
-        if((socket = enet_socket_create(ENET_SOCKET_TYPE_STREAM)) == ENET_SOCKET_NULL) { conoutf("Failed to create HTTP server socket"); cleanup(); return; }
-        if(enet_socket_set_option(socket, ENET_SOCKOPT_REUSEADDR, 1) < 0) { conoutf("Failed to set HTTP server socket option"); cleanup(); return; }
-        if(enet_socket_bind(socket, &address) < 0) { conoutf("Failed to bind HTTP server socket"); cleanup(); return; }
-        if(enet_socket_listen(socket, -1) < 0) { conoutf("Failed to listen on HTTP server socket"); cleanup(); return; }
-        if(enet_socket_set_option(socket, ENET_SOCKOPT_NONBLOCK, 1) < 0) { conoutf("Failed to make HTTP server socket non-blocking"); cleanup(); return; }
+        if(*httpserverip && enet_address_set_host(&address, httpserverip) < 0) { conoutf(colourred, "Failed to resolve HTTP address: %s", httpserverip); cleanup(); return; }
+        if((socket = enet_socket_create(ENET_SOCKET_TYPE_STREAM)) == ENET_SOCKET_NULL) { conoutf(colourred, "Failed to create HTTP server socket"); cleanup(); return; }
+        if(enet_socket_set_option(socket, ENET_SOCKOPT_REUSEADDR, 1) < 0) { conoutf(colourred, "Failed to set HTTP server socket option"); cleanup(); return; }
+        if(enet_socket_bind(socket, &address) < 0) { conoutf(colourred, "Failed to bind HTTP server socket"); cleanup(); return; }
+        if(enet_socket_listen(socket, -1) < 0) { conoutf(colourred, "Failed to listen on HTTP server socket"); cleanup(); return; }
+        if(enet_socket_set_option(socket, ENET_SOCKOPT_NONBLOCK, 1) < 0) { conoutf(colourred, "Failed to make HTTP server socket non-blocking"); cleanup(); return; }
         starttime = totalmillis ? totalmillis : 1;
-        conoutf("HTTP server started on %s:[%d]", *httpserverip ? httpserverip : "localhost", httpserverport);
+        conoutf(colourwhite, "HTTP server started on %s:[%d]", *httpserverip ? httpserverip : "localhost", httpserverport);
     }
 
     void checkserver(ENetSocket &maxsock, ENetSocketSet &readset, ENetSocketSet &writeset)
@@ -465,7 +465,7 @@ namespace http
                 c->lastactivity = totalmillis ? totalmillis : 1;
                 reqs.add(c);
                 if(enet_address_get_host_ip(&c->address, c->name, sizeof(c->name)) < 0) copystring(c->name, "unknown");
-                conoutf("HTTP request %s connected", c->name);
+                conoutf(colourwhite, "HTTP request %s connected", c->name);
             }
             break;
         }
@@ -540,7 +540,7 @@ namespace http
                     loopvj(c->outhdrs.values) c->sendf("%s: %s", c->outhdrs.values[j].name, c->outhdrs.values[j].value);
                     c->send("");
                     if(c->data[0]) c->send(c->data);
-                    conoutf("HTTP %s %s [%d]: %s", httpreqs[c->reqtype], c->name, c->uid, c->path);
+                    conoutf(colourwhite, "HTTP %s %s [%d]: %s", httpreqs[c->reqtype], c->name, c->uid, c->path);
                 }
             }
             if(c->outputpos < c->output.length() && ENET_SOCKETSET_CHECK(writeset, c->socket))
@@ -696,12 +696,12 @@ namespace json
         int r = jsmn_parse(&p, str, strlen(str), t, sizeof(t)/sizeof(t[0]));
         if(r < 0)
         {
-            conoutf("JSON: Failed to parse (%d)", r);
+            conoutf(colourred, "JSON: Failed to parse (%d)", r);
             return NULL;
         }
         if(r < 1 || t[0].type != JSMN_OBJECT)
         {
-            conoutf("JSON: Object expected");
+            conoutf(colourred, "JSON: Object expected");
             return NULL;
         }
         jsobj *j = new jsobj;
@@ -751,21 +751,21 @@ HTTP("/", httpindex);
 
 void testcb(httpclient *c)
 {
-    conoutf("HTTP callback %s [%d]: %d", c->name, c->uid, c->state);
+    conoutf(colourwhite, "HTTP callback %s [%d]: %d", c->name, c->uid, c->state);
     switch(c->state)
     {
         case HTTP_S_DONE:
         {
             bigstring data = "";
             filterstring(data, c->input, true, false);
-            conoutf("[%d:%d] %s", c->inputpos, c->conlength, data);
+            conoutf(colourwhite, "[%d:%d] %s", c->inputpos, c->conlength, data);
             if(c->contype == HTTP_C_JSON)
             {
                 jsobj *j = json::load(c->input);
                 if(!j) return;
                 bigstring data = "";
                 int count = json::print(j, data, 0, sizeof(data));
-                conoutf("[%d] %s", count, data);
+                conoutf(colourwhite, "[%d] %s", count, data);
             }
             break;
         }

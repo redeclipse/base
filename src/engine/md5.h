@@ -226,7 +226,7 @@ struct md5 : skelloader<md5>
                     m->load(f, buf, sizeof(buf));
                     if(!m->numtris || !m->numverts)
                     {
-                        conoutf("Empty mesh in %s", filename);
+                        conoutf(colourred, "Empty mesh in %s", filename);
                         meshes.removeobj(m);
                         delete m;
                     }

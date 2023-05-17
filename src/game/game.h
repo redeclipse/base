@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 266
+#define VERSION_GAME 267
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -234,7 +234,8 @@ namespace entities
 #define isent(a) (a >= NOTUSED && a < MAXENTTYPES)
 
 #define MAXNAMELEN 24
-enum { SAY_NONE = 0, SAY_ACTION = 1<<0, SAY_TEAM = 1<<1, SAY_WHISPER = 1<<2, SAY_NUM = 3 };
+#define SAY_ENUM(pr, en) en(pr, Message, MESSAGE, 1<<0) en(pr, Action, ACTION, 1<<1) en(pr, Team, TEAM, 1<<2) en(pr, Whisper, WHISPER, 1<<3)
+ENUMNI(SAY, SAY_ENUM);
 
 enum
 {
@@ -391,7 +392,7 @@ extern const char * const sendmaptypes[SENDMAP_MAX];
 // network messages codes, c2s, c2c, s2c
 enum
 {
-    N_CONNECT = 0, N_SERVERINIT, N_WELCOME, N_CLIENTINIT, N_POS, N_SPHY, N_TEXT, N_COMMAND, N_EVENTLOG, N_DISCONNECT,
+    N_CONNECT = 0, N_SERVERINIT, N_WELCOME, N_CLIENTINIT, N_POS, N_SPHY, N_TEXT, N_COMMAND, N_GAMELOG, N_DISCONNECT,
     N_SHOOT, N_DESTROY, N_STICKY, N_SUICIDE, N_DIED, N_POINTS, N_TOTALS, N_AVGPOS, N_DAMAGE, N_BURNRES, N_BLEEDRES, N_SHOCKRES, N_SHOTFX,
     N_LOADOUT, N_TRYSPAWN, N_SPAWNSTATE, N_SPAWN, N_WEAPDROP, N_WEAPSELECT, N_WEAPCOOK,
     N_MAPCHANGE, N_MAPVOTE, N_CLEARVOTE, N_CHECKPOINT, N_ITEMSPAWN, N_ITEMUSE, N_TRIGGER, N_EXECLINK,
@@ -422,7 +423,7 @@ char msgsizelookup(int msg)
 {
     static const int msgsizes[] =               // size inclusive message token, 0 for variable or not-checked sizes
     {
-        N_CONNECT, 0, N_SERVERINIT, 5, N_WELCOME, 2, N_CLIENTINIT, 0, N_POS, 0, N_SPHY, 0, N_TEXT, 0, N_COMMAND, 0, N_EVENTLOG, 0, N_DISCONNECT, 3,
+        N_CONNECT, 0, N_SERVERINIT, 5, N_WELCOME, 2, N_CLIENTINIT, 0, N_POS, 0, N_SPHY, 0, N_TEXT, 0, N_COMMAND, 0, N_GAMELOG, 0, N_DISCONNECT, 3,
         N_SHOOT, 0, N_DESTROY, 0, N_STICKY, 0, N_SUICIDE, 4, N_DIED, 0, N_POINTS, 5, N_TOTALS, 0, N_AVGPOS, 0, N_DAMAGE, 14, N_SHOTFX, 0,
         N_LOADOUT, 0, N_TRYSPAWN, 2, N_SPAWNSTATE, 0, N_SPAWN, 0, N_WEAPDROP, 0, N_WEAPSELECT, 0, N_WEAPCOOK, 0,
         N_MAPCHANGE, 0, N_MAPVOTE, 0, N_CLEARVOTE, 0, N_CHECKPOINT, 0, N_ITEMSPAWN, 3, N_ITEMUSE, 0, N_TRIGGER, 0, N_EXECLINK, 3,
@@ -1128,6 +1129,9 @@ namespace server
     extern float getwaterextinguishscale(int mat);
 }
 
+#define PLCHAN_ENUM(pr, en) en(pr, Announce, ANNOUNCE) en(pr, Message, MESSAGE) en(pr, Voice, VOICE) en(pr, Maximum, MAX)
+ENUMNV(PLCHAN, PLCHAN_ENUM);
+
 #ifdef CPP_GAME_SERVER
 #define WATERPHYS(name,mat) (server::getwater##name(mat)*server::getwater##name##scale(mat))
 #else
@@ -1271,7 +1275,7 @@ struct gameent : dynent, clientstate
     editinfo *edit;
     ai::aiinfo *ai;
     int team, clientnum, privilege, projid, lastnode, checkpoint, cplast, respawned, suicided, lastupdate, lastpredict, plag, ping, lastflag, totaldamage,
-        actiontime[AC_MAX], impulse[IM_MAX], impulsetime[IM_T_MAX], smoothmillis, turnside, turnmillis, aschan, cschan, vschan, wschan[WS_CHANS], sschan[2],
+        actiontime[AC_MAX], impulse[IM_MAX], impulsetime[IM_T_MAX], smoothmillis, turnside, turnmillis, plchan[PLCHAN_MAX], wschan[WS_CHANS], sschan[2],
         lasthit, lastteamhit, lastkill, lastattacker, lastpoints, quake, wasfiring, lastfoot;
     float deltayaw, deltapitch, newyaw, newpitch, stunscale, stungravity, turnyaw, turnroll;
     bool action[AC_MAX], conopen, k_up, k_down, k_left, k_right, obliterated, headless;
@@ -1542,11 +1546,10 @@ struct gameent : dynent, clientstate
 
     void removesounds(bool init = false)
     {
-        int *chan[] = { &aschan, &cschan, &vschan, NULL };
-        for(int i = 0; chan[i] != NULL; i++)
+        loopi(PLCHAN_MAX)
         {
-            if(!init && issound(*chan[i])) soundsources[*chan[i]].clear();
-            *chan[i] = -1;
+            if(!init && issound(plchan[i])) soundsources[plchan[i]].clear();
+            plchan[i] = -1;
         }
         loopi(WS_CHANS)
         {
@@ -2463,8 +2466,8 @@ namespace game
     extern gameent *getclient(int cn);
     extern gameent *intersectclosest(vec &from, vec &to, gameent *at);
     extern void clientdisconnected(int cn, int reason = DISC_NONE);
-    extern const char *colourname(char *name, int clientnum, int team, int actortype, int col, int privilege, int weapselect, bool icon = true, bool dupname = true, int colour = 3);
-    extern const char *colourname(gameent *d, char *name = NULL, bool icon = true, bool dupname = true, int colour = 3);
+    extern const char *colourname(char *name, int clientnum, int team, int actortype, int col, int privilege, int weapselect, bool icon = false, bool dupname = true, int colour = 3);
+    extern const char *colourname(gameent *d, char *name = NULL, bool icon = false, bool dupname = true, int colour = 3);
     extern const char *colourteam(int team, const char *icon = "");
     extern int findcolour(int team, int colour, int weapselect, bool tone = true, bool mix = false, float level = 1);
     extern int findcolour(gameent *d, bool tone = true, bool mix = false, float level = 1);
@@ -2515,7 +2518,7 @@ namespace entities
     extern inanimate *remotepassenger(int ent, physent *d, const vec &offset);
     extern void updatepassengers();
     extern inanimate *currentpassenger(physent *d);
-    extern void announce(int idx, gameent *d = NULL, bool unmapped = false);
+    extern void announce(int idx, gameent *d = NULL, int chan = -1, int flags = 0);
     extern bool execitem(int n, int cn, dynent *d, float dist);
     extern bool collateitems(dynent *d, vec &pos, float radius, vector<actitem> &actitems);
     extern void checkitems(dynent *d);
@@ -2536,12 +2539,15 @@ namespace entities
 #include "bomber.h"
 #endif
 
-#define EV_I_ENUM(pr, en) en(pr, INT) en(pr, BOOL) en(pr, FLOAT) en(pr, STR) en(pr, MAX)
-ENUMLV(EV_I, EV_I_ENUM);
+#define GAMELOG_ENUM(pr, en) en(pr, Event, EVENT) en(pr, Message, MESSAGE) en(pr, Maximum, MAX)
+ENUMNV(GAMELOG, GAMELOG_ENUM);
 
-#define EV_F_ENUM(pr, en) en(pr, NONE, 0) en(pr, CLIENT1, 1<<0) en(pr, CLIENT2, 1<<1)  en(pr, CLIENTN, 1<<1)  en(pr, BROADCAST, 1<<1) \
+#define GAMELOG_I_ENUM(pr, en) en(pr, INT) en(pr, BOOL) en(pr, FLOAT) en(pr, STR) en(pr, MAX)
+ENUMLV(GAMELOG_I, GAMELOG_I_ENUM);
+
+#define GAMELOG_F_ENUM(pr, en) en(pr, NONE, 0) en(pr, CLIENT1, 1<<0) en(pr, CLIENT2, 1<<1) en(pr, CLIENTN, 1<<2) en(pr, BROADCAST, 1<<3) en(pr, UNMAPPED, 1<<4) \
     en(pr, CLIENTS, pr##_CLIENT1|pr##_CLIENT2|pr##_CLIENTN) en(pr, ALL, pr##_CLIENT1|pr##_CLIENT2|pr##_CLIENTN|pr##_BROADCAST)
-ENUMLI(EV_F, EV_F_ENUM);
+ENUMLI(GAMELOG_F, GAMELOG_F_ENUM);
 
 #ifndef CPP_GAME_SERVER
 #include "gamelog.h"

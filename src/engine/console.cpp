@@ -2,46 +2,31 @@
 
 #include "engine.h"
 
-reversequeue<cline, MAXCONLINES> conlines[CON_MAX];
+reversequeue<cline, MAXCONLINES> conlines;
 
 int commandmillis = -1;
 bigstring commandbuf;
-char *commandaction = NULL, *commandprompt = NULL, *commandicon = NULL;
+char *commandaction = NULL, *commandprompt = NULL;
 enum { CF_COMPLETE = 1<<0, CF_EXECUTE = 1<<1, CF_MESSAGE = 1<<2 };
-int commandflags = 0, commandpos = -1, commandcolour = 0;
+int commandflags = 0, commandpos = -1;
 
-void conline(int type, const char *sf, int n)
+void conline(int color, const char *sf)
 {
-    if(type < 0 || type >= CON_MAX) type = CON_DEBUG;
-    char *buf = conlines[type].length() >= MAXCONLINES ? conlines[type].remove().cref : newstring("", BIGSTRLEN-1);
-    cline &cl = conlines[type].add();
+    char *buf = conlines.length() >= MAXCONLINES ? conlines.remove().cref : newstring("", BIGSTRLEN-1);
+    cline &cl = conlines.add();
     cl.cref = buf;
+    cl.color = color;
     cl.reftime = cl.outtime = totalmillis;
     cl.realtime = clocktime;
-
-    if(n)
-    {
-        copystring(cl.cref, "  ", BIGSTRLEN);
-        concatstring(cl.cref, sf, BIGSTRLEN);
-        loopj(2)
-        {
-            int off = n+j;
-            if(conlines[type].inrange(off))
-            {
-                if(j) concatstring(conlines[type][off].cref, "\fs", BIGSTRLEN);
-                else prependstring(conlines[type][off].cref, "\fS", BIGSTRLEN);
-            }
-        }
-    }
-    else copystring(cl.cref, sf, BIGSTRLEN);
+    copystring(cl.cref, sf, BIGSTRLEN);
 }
 
 #define LOOPCONLINES(name,op) \
-    ICOMMAND(0, loopconlines##name, "iiire", (int *type, int *count, int *skip, ident *id, uint *body), \
+    ICOMMAND(0, loopconlines##name, "iire", (int *count, int *skip, ident *id, uint *body), \
     { \
-        if(*type < 0 || *type >= CON_MAX || conlines[*type].empty()) return; \
+        if(conlines.empty()) return; \
         loopstart(id, stack); \
-        op(conlines[*type], *count, *skip, \
+        op(conlines, *count, *skip, \
         { \
             loopiter(id, stack, i); \
             execute(body); \
@@ -52,11 +37,12 @@ void conline(int type, const char *sf, int n)
 LOOPCONLINES(,loopcsv);
 LOOPCONLINES(rev,loopcsvrev);
 
-ICOMMAND(0, getconlines, "i", (int *type), intret(*type >= 0 && *type < CON_MAX ? conlines[*type].length() : 0));
-ICOMMAND(0, getconlinecref, "ib", (int *type, int *n), result(*type >= 0 && *type < CON_MAX && conlines[*type].inrange(*n) ? conlines[*type][*n].cref : ""));
-ICOMMAND(0, getconlinereftime, "ib", (int *type, int *n), intret(*type >= 0 && *type < CON_MAX && conlines[*type].inrange(*n) ? conlines[*type][*n].reftime : 0));
-ICOMMAND(0, getconlineouttime, "ib", (int *type, int *n), intret(*type >= 0 && *type < CON_MAX && conlines[*type].inrange(*n) ? conlines[*type][*n].outtime : 0));
-ICOMMAND(0, getconlinerealtime, "ib", (int *type, int *n), intret(*type >= 0 && *type < CON_MAX && conlines[*type].inrange(*n) ? conlines[*type][*n].realtime : 0));
+ICOMMANDV(0, conlines, conlines.length());
+ICOMMAND(0, getconlinecref, "b", (int *n), result(conlines.inrange(*n) ? conlines[*n].cref : ""));
+ICOMMAND(0, getconlinecolour, "b", (int *n), intret(conlines.inrange(*n) ? conlines[*n].color : colourwhite));
+ICOMMAND(0, getconlinereftime, "b", (int *n), intret(conlines.inrange(*n) ? conlines[*n].reftime : 0));
+ICOMMAND(0, getconlineouttime, "b", (int *n), intret(conlines.inrange(*n) ? conlines[*n].outtime : 0));
+ICOMMAND(0, getconlinerealtime, "b", (int *n), intret(conlines.inrange(*n) ? conlines[*n].realtime : 0));
 
 // keymap is defined externally in keymap.cfg
 struct keym
@@ -152,7 +138,7 @@ hashtable<int, keym> keyms(128);
 
 void keymap(int *code, char *key)
 {
-    if(identflags&IDF_MAP) { conoutf("\frCannot override keymap"); return; }
+    if(identflags&IDF_MAP) { conoutf(colourred, "Cannot override keymap"); return; }
     keym &km = keyms[*code];
     km.code = *code;
     DELETEA(km.name);
@@ -336,9 +322,9 @@ int changedkeys = 0;
 
 void bindkey(char *key, char *action, int state, const char *cmd, int modifiers = 0)
 {
-    if(identflags&IDF_MAP) { conoutf("\frCannot override %s \"%s\"", cmd, key); return; }
+    if(identflags&IDF_MAP) { conoutf(colourred, "Cannot override %s \"%s\"", cmd, key); return; }
     keym *km = findbind(key);
-    if(!km) { conoutf("\frUnknown key \"%s\"", key); return; }
+    if(!km) { conoutf(colourred, "Unknown key \"%s\"", key); return; }
     char *&binding = km->getbinding(state, modifiers);
     bool &persist = km->getpersist(state, modifiers);
     if(!keypressed || keyaction!=binding) delete[] binding;
@@ -382,7 +368,7 @@ ICOMMAND(0, clearallbinds, "", (), enumerate(keyms, keym, km, km.clear()));
 
 ICOMMAND(0, keyspressed, "issss", (int *limit, char *s1, char *s2, char *sep1, char *sep2), { vector<char> list; getkeypressed(max(*limit, 0), s1, s2, sep1, sep2, list); result(list.getbuf()); });
 
-void inputcommand(char *init, char *action = NULL, char *prompt = NULL, char *icon = NULL, int colour = colourwhite, char *flags = NULL) // turns input to the command line on or off
+void inputcommand(char *init, char *action = NULL, char *prompt = NULL, char *flags = NULL) // turns input to the command line on or off
 {
     commandmillis = init ? totalmillis : -totalmillis;
     textinput(commandmillis >= 0, TI_CONSOLE);
@@ -390,12 +376,9 @@ void inputcommand(char *init, char *action = NULL, char *prompt = NULL, char *ic
     copystring(commandbuf, init ? init : "", BIGSTRLEN);
     DELETEA(commandaction);
     DELETEA(commandprompt);
-    DELETEA(commandicon);
     commandpos = -1;
     if(action && action[0]) commandaction = newstring(action);
     if(prompt && prompt[0]) commandprompt = newstring(prompt);
-    if(icon && icon[0]) commandicon = newstring(icon);
-    commandcolour = colour;
     commandflags = 0;
     if(flags) while(*flags) switch(*flags++)
     {
@@ -408,16 +391,14 @@ void inputcommand(char *init, char *action = NULL, char *prompt = NULL, char *ic
 }
 
 ICOMMAND(0, saycommand, "C", (char *init), inputcommand(init));
-ICOMMAND(0, inputcommand, "ssssis", (char *init, char *action, char *prompt, char *icon, int *colour, char *flags), inputcommand(init, action, prompt, icon, *colour > 0 ? *colour : colourwhite, flags));
+ICOMMAND(0, inputcommand, "ssss", (char *init, char *action, char *prompt, char *flags), inputcommand(init, action, prompt, flags));
 
 ICOMMAND(0, getcommandmillis, "", (), intret(commandmillis));
 ICOMMAND(0, getcommandbuf, "", (), result(commandmillis > 0 ? commandbuf : ""));
 ICOMMAND(0, getcommandaction, "", (), result(commandmillis > 0 && commandaction ? commandaction : ""));
 ICOMMAND(0, getcommandprompt, "", (), result(commandmillis > 0 && commandprompt ? commandprompt : ""));
-ICOMMAND(0, getcommandicon, "", (), result(commandmillis > 0 && commandicon ? commandicon : ""));
 ICOMMAND(0, getcommandpos, "", (), intret(commandmillis > 0 ? (commandpos >= 0 ? commandpos : strlen(commandbuf)) : -1));
 ICOMMAND(0, getcommandflags, "", (), intret(commandmillis > 0 ? commandflags : 0));
-ICOMMAND(0, getcommandcolour, "", (), intret(commandmillis > 0 && commandcolour > 0 ? commandcolour : colourwhite));
 
 char *pastetext(char *buf, size_t len)
 {
@@ -459,11 +440,8 @@ struct hline
         if(commandpos >= (int)strlen(commandbuf)) commandpos = -1;
         DELETEA(commandaction);
         DELETEA(commandprompt);
-        DELETEA(commandicon);
         if(action) commandaction = newstring(action);
         if(prompt) commandprompt = newstring(prompt);
-        if(icon) commandicon = newstring(icon);
-        commandcolour = colour;
         commandflags = flags;
     }
 
@@ -472,8 +450,6 @@ struct hline
         return strcmp(commandbuf, buf) ||
                (commandaction ? !action || strcmp(commandaction, action) : action!=NULL) ||
                (commandprompt ? !prompt || strcmp(commandprompt, prompt) : prompt!=NULL) ||
-               (commandicon ? !icon || strcmp(commandicon, icon) : icon!=NULL) ||
-               commandcolour != colour ||
                commandflags != flags;
     }
 
@@ -482,8 +458,6 @@ struct hline
         buf = newstring(commandbuf);
         if(commandaction) action = newstring(commandaction);
         if(commandprompt) prompt = newstring(commandprompt);
-        if(commandicon) icon = newstring(commandicon);
-        colour = commandcolour;
         flags = commandflags;
     }
 
@@ -859,13 +833,7 @@ void clear_binds()
     keyms.clear();
 }
 
-void clear_console(int type)
-{
-   if (type >= 0) conlines[type].clear();
-   else loopi(CON_MAX-1) conlines[i].clear();
-}
-ICOMMAND(0, clearconsole, "i", (int *type), clear_console(clamp(*type, -1, CON_MAX-1)));
-ICOMMAND(0, clearchat, "", (), clear_console(CON_MESG));
+ICOMMAND(0, clearconsole, "", (), conlines.clear(););
 
 static void writebind(stream *f, keym &km, int type, int modifiers = 0)
 {
@@ -974,7 +942,7 @@ void addcomplete(char *command, int type, char *dir, char *ext)
 {
     if(identflags&IDF_MAP)
     {
-        conoutf("\frCannot override complete %s", command);
+        conoutf(colourred, "Cannot override complete %s", command);
         return;
     }
     if(!dir[0])

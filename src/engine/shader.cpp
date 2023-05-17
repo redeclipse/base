@@ -76,7 +76,7 @@ static void showglslinfo(GLenum type, GLuint obj, const char *name, const char *
     else glGetProgramiv_(obj, GL_INFO_LOG_LENGTH, &length);
     if(length > 1)
     {
-        conoutf("\frGLSL ERROR (%s:%s)", type == GL_VERTEX_SHADER ? "VS" : (type == GL_FRAGMENT_SHADER ? "FS" : "PROG"), name);
+        conoutf(colourred, "GLSL ERROR (%s:%s)", type == GL_VERTEX_SHADER ? "VS" : (type == GL_FRAGMENT_SHADER ? "FS" : "PROG"), name);
         FILE *l = getlogfile();
         if(l)
         {
@@ -320,7 +320,7 @@ static void bindglsluniform(Shader &s, UniformLoc &u)
         u.offset = offsetval;
         u.size = sizeval;
         glUniformBlockBinding_(s.program, bidx, u.binding);
-        if(dbgubo) conoutf("UBO: %s:%s:%d, offset: %d, size: %d, stride: %d", u.name, u.blockname, u.binding, offsetval, sizeval, strideval);
+        if(dbgubo) conoutf(colourwhite, "UBO: %s:%s:%d, offset: %d, size: %d, stride: %d", u.name, u.blockname, u.binding, offsetval, sizeval, strideval);
     }
 }
 
@@ -1094,13 +1094,13 @@ Shader *shader(int type, char *name, char *vs, char *ps, bool mapdef, bool overw
         {
             if(!(identflags&IDF_MAP) && !editmode)
             {
-                conoutf("\frMap shader %s is only directly modifiable in editmode", o->name);
+                conoutf(colourred, "Map shader %s is only directly modifiable in editmode", o->name);
                 return o;
             }
         }
         else if(mapdef)
         {
-            conoutf("\frCannot override builtin shader %s with a one from the map", o->name);
+            conoutf(colourred, "Cannot override builtin shader %s with a one from the map", o->name);
             return o;
         }
         o->cleanup(true);
@@ -1189,7 +1189,7 @@ void setshader(char *name)
     Shader *s = shaders.access(name);
     if(!s)
     {
-        conoutf("\frNo such shader: %s", name);
+        conoutf(colourred, "No such shader: %s", name);
     }
     else slotshader = s;
 }
@@ -1222,7 +1222,7 @@ void changeslotshader(const char *name)
     Shader *shader = shaders.access(name);
     if(!shader)
     {
-        conoutf("\frNo such shader: %s", name);
+        conoutf(colourred, "No such shader: %s", name);
         return;
     }
 
@@ -1493,7 +1493,7 @@ static bool addpostfx(const char *name, int outputbind, int outputscale, uint in
     Shader *s = useshaderbyname(name);
     if(!s)
     {
-        conoutf("No such postfx shader: %s", name);
+        conoutf(colourred, "No such postfx shader: %s", name);
         return false;
     }
     postfxpass &p = postfxpasses.add();

@@ -320,28 +320,6 @@ static float draw_char(Texture *&tex, int c, float x, float y, float scale)
 #define TVECA(ci, ca) (flags&TEXT_MODCOL ? (TVECR(ci, ca).muld(r, g, b, 255.f)) : (TVECR(ci, ca)))
 #define TVECX(cr, cg, cb, ca) (bvec4(cr, cg, cb, 255).lighten(textminintensity).alpha(ca))
 
-#define COLOURDARK 0.45f
-#define COLOURVAR(a,b) \
-    VAR(IDF_PERSIST|IDF_HEX, colour##a, 0, b, 0xFFFFFF); \
-    VAR(IDF_PERSIST|IDF_HEX, colourdark##a, 0, ((int(COLOURDARK*((b>>16)&0xFF)))<<16)|((int(COLOURDARK*((b>>8)&0xFF)))<<8)|(int(COLOURDARK*(b&0xFF))), 0xFFFFFF);
-
-VAR(IDF_PERSIST|IDF_HEX, colourblack, 0, 0x000000, 0xFFFFFF);
-VAR(IDF_PERSIST|IDF_HEX, colourwhite, 0, 0xFFFFFF, 0xFFFFFF);
-
-COLOURVAR(green, 0x00FF00);
-COLOURVAR(blue, 0x0000FF);
-COLOURVAR(yellow, 0xFFFF00);
-COLOURVAR(red, 0xFF0000);
-COLOURVAR(grey, 0xB0B0B0);
-COLOURVAR(magenta, 0xFF80FF);
-COLOURVAR(orange, 0xFF4000);
-COLOURVAR(cyan, 0x00FFFF);
-COLOURVAR(pink, 0xFF8080);
-COLOURVAR(violet, 0xB060FF);
-COLOURVAR(purple, 0xFF00FF);
-COLOURVAR(brown, 0xA05030);
-COLOURVAR(chartreuse, 0xB0FF00);
-
 static void text_color(char c, bvec4 *stack, int size, int &sp, bvec4 &color, int r, int g, int b, int a, int flags)
 {
     bvec4 oldcolor = color;

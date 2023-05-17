@@ -17,8 +17,6 @@ namespace hud
     VAR(IDF_PERSIST, damageresiduemul, 1, 3, VAR_MAX);
     VAR(IDF_PERSIST, damageresiduemulresidual, 1, 5, VAR_MAX);
 
-    ICOMMAND(0, conout, "is", (int *n, char *s), conoutft(clamp(*n, 0, CON_MAX-1), "%s", s));
-
     VAR(IDF_PERSIST, showhud, 0, 1, 1);
     VAR(IDF_PERSIST, hudsize, 0, 2048, VAR_MAX);
     FVAR(IDF_PERSIST, hudblend, 0, 1, 1);

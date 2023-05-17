@@ -365,7 +365,7 @@ VARF(0, entediting, 0, 1, 1,
 
 bool noentedit()
 {
-    if(!editmode) { conoutft(CON_DEBUG, "\frOperation only allowed in edit mode"); return true; }
+    if(!editmode) { conoutf(colourred, "Operation only allowed in edit mode"); return true; }
     return !entediting;
 }
 
@@ -1024,7 +1024,7 @@ extentity *newentity(bool local, const vec &o, int type, const attrvector &attrs
     {
         idx = -1;
         for(int i = keepents; i < ents.length(); i++) if(ents[i]->type == ET_EMPTY) { idx = i; break; }
-        if(idx < 0 && ents.length() >= MAXENTS) { conoutft(CON_DEBUG, "\frToo many entities"); return NULL; }
+        if(idx < 0 && ents.length() >= MAXENTS) { conoutf(colourred, "Too many entities"); return NULL; }
     }
     else while(ents.length() < idx) ents.add(entities::newent())->type = ET_EMPTY;
     extentity &e = *entities::newent();
@@ -1141,7 +1141,7 @@ void entset(char *what, char *attr)
     int type = entities::findtype(what);
     if(type == ET_EMPTY)
     {
-        conoutft(CON_DEBUG, "\frUnknown entity type \"%s\"", what);
+        conoutf(colourred, "Unknown entity type \"%s\"", what);
         return;
     }
     attrvector attrs;
@@ -1166,19 +1166,19 @@ void entlink(int *parent)
             {
                 int node = entgroup[i+1];
 
-                if(verbose >= 2) conoutf("\faAttempting to link %d and %d (%d)", index, node, i+1);
+                if(verbose >= 2) conoutf(colourgrey, "Attempting to link %d and %d (%d)", index, node, i+1);
                 if(ents.inrange(node))
                 {
                     if(!entities::linkents(index, node) && !entities::linkents(node, index))
-                        conoutf("\frFailed linking %d and %d (%d)", index, node, i+1);
+                        conoutf(colourred, "Failed linking %d and %d (%d)", index, node, i+1);
                 }
-                else conoutf("\fr%d (%d) is not in range", node, i+1);
+                else conoutf(colourred, "%d (%d) is not in range", node, i+1);
                 if(!*parent) index = node;
             }
         }
-        else conoutf("\fr%d (%d) is not in range", index, 0);
+        else conoutf(colourred, "%d (%d) is not in range", index, 0);
     }
-    else conoutft(CON_DEBUG, "\frMore than one entity must be selected to link");
+    else conoutf(colourred, "More than one entity must be selected to link");
 }
 COMMAND(0, entlink, "i");
 
@@ -1198,7 +1198,7 @@ void entlinkidx(int *ent1, int *ent2, int *mode, int *numargs)
         case 2: linked = entities::linkents(*ent1, *ent2) && entities::linkents(*ent1, *ent2); break;
     }
 
-    if(!linked) conoutf("\frFailed linking %d and %d", *ent1, *ent2);
+    if(!linked) conoutf(colourred, "Failed linking %d and %d", *ent1, *ent2);
 }
 COMMAND(0, entlinkidx, "iiiN");
 
@@ -1435,7 +1435,7 @@ void clearmapvars(bool msg)
             }
         }
     });
-    if(msg) conoutf("Map variables reset");
+    if(msg) conoutf(colourwhite, "Map variables reset");
     identflags &= ~IDF_MAP;
 }
 
@@ -1481,7 +1481,7 @@ bool emptymap(int scale, bool force, const char *mname, bool usecfg)    // main 
 {
     if(!force && !editmode)
     {
-        conoutft(CON_DEBUG, "\frNewmap only allowed in edit mode");
+        conoutf(colourred, "Newmap only allowed in edit mode");
         return false;
     }
 
@@ -1527,7 +1527,7 @@ bool enlargemap(bool split, bool force)
 {
     if(!force && !editmode)
     {
-        conoutft(CON_DEBUG, "\frMapenlarge only allowed in edit mode");
+        conoutf(colourred, "Mapenlarge only allowed in edit mode");
         return false;
     }
     if(worldsize >= 1<<16) return false;
@@ -1596,7 +1596,7 @@ void shrinkmap()
 
     allchanged();
 
-    conoutf("Shrunk map to size %d", worldscale);
+    conoutf(colourwhite, "Shrunk map to size %d", worldscale);
 }
 
 ICOMMAND(0, newmap, "is", (int *i, char *n), if(emptymap(*i, false, n)) game::newmap(::max(*i, 0), n));

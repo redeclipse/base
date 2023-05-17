@@ -121,15 +121,16 @@ struct bomberservmode : bomberstate, servmode
                 }
                 if(teamid >= 0)
                 {
-                    gamelog log;
-                    log.addlist("this", "type", "score");
-                    log.addlist("this", "action", "reached");
-                    log.addlist("this", "sound", "S_V_NOTIFY");
-                    log.addlist("this", "flags", EV_F_BROADCAST);
-                    log.addclient("client", ci);
+                    gamelog log(GAMELOG_EVENT);
+                    log.addlist("args", "type", "score");
+                    log.addlist("args", "action", "reached");
+                    log.addlist("args", "sound", "S_V_NOTIFY");
+                    log.addlist("args", "flags", GAMELOG_F_BROADCAST);
                     log.addlist("args", "team", teamid);
                     log.addlist("args", "score", teamsc);
-                    log.addlist("args", "console", "\fyScore limit has been reached");
+                    log.addlist("args", "concol", colouryellow);
+                    log.addlistf("args", "console", "Score limit has been reached");
+                    log.addclient("client", ci);
                     log.push();
                     startintermission();
                 }
@@ -228,13 +229,13 @@ struct bomberservmode : bomberstate, servmode
                     if(muts&(1<<G_M_GSP2)) muts &= ~(1<<G_M_GSP2);
                     if(muts&(1<<G_M_GSP3)) muts &= ~(1<<G_M_GSP3);
                     muts |= (1<<G_M_GSP1);
-                    srvmsgf(-1, "\fzoyThis map does have enough goals, switching to hold mutator");
+                    srvmsgf(-1, colourred, "This map does have enough goals, switching to hold mutator");
                     changemap(smapname, gamemode, muts);
                     return;
                 }
                 hasflaginfo = false;
                 loopv(flags) sendf(-1, 1, "ri3", N_RESETAFFIN, i, 0);
-                srvmsgf(-1, "\fs\fzoyThis map is not playable in:\fS %s", gamename(gamemode, mutators));
+                srvmsgf(-1, colourred, "This map is not playable in %s", gamename(gamemode, mutators));
                 return;
             }
             loopv(resets)

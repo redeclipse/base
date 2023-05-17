@@ -315,17 +315,11 @@ namespace defend
 
     void buildevent(defendstate::flag &b, int i, const char *action, int sndidx, int owner, int enemy, int converted)
     {
-        gamelog *log = new gamelog;
-        log->addlist("this", "type", "defend");
-        log->addlist("this", "action", action);
-        log->addlist("this", "sound", sndidx);
-        log->addlist("this", "flags", EV_F_BROADCAST);
-
-        gameent *d = NULL;
-        int numdyns = game::numdynents();
-        loopi(numdyns) if((d = (gameent *)game::iterdynents(i)) && d->actortype < A_ENEMY && insideaffinity(b, d))
-            log->addclient("client", d);
-
+        gamelog *log = new gamelog(GAMELOG_EVENT);
+        log->addlist("args", "type", "defend");
+        log->addlist("args", "action", action);
+        log->addlist("args", "sound", sndidx);
+        log->addlist("args", "flags", GAMELOG_F_BROADCAST);
         log->addlist("args", "affinity", i);
         log->addlist("args", "oldowner", b.owner);
         log->addlist("args", "owner", owner);
@@ -333,7 +327,14 @@ namespace defend
         log->addlist("args", "enemy", enemy);
         log->addlist("args", "oldconverted", b.converted);
         log->addlist("args", "converted", converted);
-        log->addlistf("args","console", "\faTeam %s secured \fw\f($pointtex)%s", game::colourteam(owner), b.name);
+        log->addlist("args", "colour", colourgrey);
+        log->addlistf("args", "console", "Team %s secured \fw\f($pointtex)%s", game::colourteam(owner), b.name);
+
+        gameent *d = NULL;
+        int numdyns = game::numdynents();
+        loopi(numdyns) if((d = (gameent *)game::iterdynents(i)) && d->actortype < A_ENEMY && insideaffinity(b, d))
+            log->addclient("client", d);
+
         log->push();
     }
 

@@ -216,8 +216,8 @@ namespace ai
         {
             if(at == A_BOT && showaiinfo && client::showpresence >= (client::waiting(false) ? 2 : 1))
             {
-                if(showaiinfo > 1) conoutft(CON_EVENT, "\fg%s assigned to %s at skill %d", game::colourname(d, name), m, sk);
-                else conoutft(CON_EVENT, "\fg%s was added to the game", game::colourname(d, name));
+                if(showaiinfo > 1) conoutf(colourgreen, "%s assigned to %s at skill %d", game::colourname(d, name), m, sk);
+                else conoutf(colourgreen, "%s was added to the game", game::colourname(d, name));
             }
             game::specreset(d);
             resetthisguy = true;
@@ -227,11 +227,11 @@ namespace ai
             if(d->ownernum != on)
             {
                 if(at == A_BOT && showaiinfo && client::showpresence >= (client::waiting(false) ? 2 : 1))
-                    conoutft(CON_EVENT, "\fg%s reassigned to %s", game::colourname(d, name), m);
+                    conoutf(colourgreen, "%s reassigned to %s", game::colourname(d, name), m);
                 resetthisguy = true;
             }
             if(at == A_BOT && d->skill != sk && showaiinfo > 1 && client::showpresence >= (client::waiting(false) ? 2 : 1))
-                conoutft(CON_EVENT, "\fg%s changed skill to %d", game::colourname(d, name), sk);
+                conoutf(colourgreen, "%s changed skill to %d", game::colourname(d, name), sk);
         }
 
         if((d->actortype = at) >= A_ENEMY) d->type = ENT_AI;
@@ -1523,7 +1523,7 @@ namespace ai
                         break;
                 }
                 if(aidebug >= 7 && dbgfocus(d))
-                    conoutf("%s blocked %dms sequence %d", game::colourname(d), d->ai->blocktime, d->ai->blockseq);
+                    conoutf(colourwhite, "%s blocked %dms sequence %d", game::colourname(d), d->ai->blocktime, d->ai->blockseq);
             }
         }
         else d->ai->blocktime = d->ai->blockseq = 0;
@@ -1549,7 +1549,7 @@ namespace ai
                         break;
                 }
                 if(aidebug >= 7 && dbgfocus(d))
-                    conoutf("%s targeted %d too long %dms sequence %d", game::colourname(d), d->ai->targnode, d->ai->targtime, d->ai->targseq);
+                    conoutf(colourwhite, "%s targeted %d too long %dms sequence %d", game::colourname(d), d->ai->targnode, d->ai->targtime, d->ai->targseq);
             }
         }
         else
@@ -1843,6 +1843,7 @@ namespace ai
         if(flags&SAY_ACTION || d->actortype != A_PLAYER) return;
         bigstring msg;
         filterstring(msg, text, true, true, true, true);
+
         const int MAXWORDS = 8;
         int numargs = MAXWORDS;
         char *w[MAXWORDS];
@@ -1855,6 +1856,7 @@ namespace ai
             if(s) w[i] = s;
             else numargs = i;
         }
+
         if(*w[0]) loopvj(game::players) if(game::players[j] && game::players[j]->actortype == A_BOT && game::players[j]->ai)
         {
             gameent *e = game::players[j];
@@ -1885,6 +1887,7 @@ namespace ai
                 if(aimed) botsay(e, d, "Sorry, I can't obey you due to commands being locked on this server");
                 continue;
             }
+
             if(!strcasecmp(w[pos], "defend"))
             {
                 pos++;

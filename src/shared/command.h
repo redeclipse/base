@@ -449,6 +449,12 @@ extern const char *gettime(time_t ctime = 0, const char *format = NULL);
 extern bool hasflag(const char *flags, char f);
 extern char *limitstring(const char *str, size_t len);
 
+extern int colourblack, colourwhite,
+    colourgreen, colourblue, colouryellow, colourred, colourgrey, colourmagenta, colourorange,
+    colourcyan, colourpink, colourviolet, colourpurple, colourbrown, colourchartreuse,
+    colourdarkgreen, colourdarkblue, colourdarkyellow, colourdarkred, colourdarkgrey, colourdarkmagenta, colourdarkorange,
+    colourdarkcyan, colourdarkpink, colourdarkviolet, colourdarkpurple, colourdarkbrown, colourdarkchartreuse;
+
 // nasty macros for registering script functions, abuses globals to avoid excessive infrastructure
 #define KEYWORD(flags, name, type) UNUSED static bool __dummy_##type = addcommand(#name, NULL, NULL, type, flags|IDF_COMPLETE)
 #define COMMANDKN(flags, level, name, type, fun, nargs) UNUSED static bool __dummy_##fun = addcommand(#name, fun, nargs, type, flags|IDF_COMPLETE, level)

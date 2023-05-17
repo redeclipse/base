@@ -503,7 +503,7 @@ void sethomedir(const char *dir)
 
 void printhomedir()
 {
-    conoutf("Home directory: %s", homedir);
+    conoutf(colourwhite, "Home directory: %s", homedir);
 }
 
 void appendhomedir(const char *dir)
@@ -524,7 +524,7 @@ void addpackagedir(const char *dir, int flags)
     packagedir &pdir = packagedirs.add();
     fixdir(copystring(pdir.name, dir));
     pdir.flags = flags;
-    conoutf("Added package: %s", pdir.name);
+    conoutf(colourwhite, "Added package: %s", pdir.name);
 }
 
 const char *findfile(const char *filename, const char *mode)
@@ -975,9 +975,9 @@ struct gzstream : stream
             loopi(4) checkcrc |= uint(readbyte()) << (i*8);
             loopi(4) checksize |= uint(readbyte()) << (i*8);
             if(checkcrc != crc)
-                conoutf("Gzip crc check failed: read %X, calculated %X", checkcrc, crc);
+                conoutf(colourred, "Gzip crc check failed: read %X, calculated %X", checkcrc, crc);
             if(checksize != zfile.total_out)
-                conoutf("Gzip size check failed: read %u, calculated %u", checksize, uint(zfile.total_out));
+                conoutf(colourred, "Gzip size check failed: read %u, calculated %u", checksize, uint(zfile.total_out));
         }
 #endif
     }

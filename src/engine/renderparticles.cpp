@@ -76,7 +76,7 @@ struct particleemitter
         radius = bbmin.dist(bbmax)/2;
         cullmin = ivec::floor(bbmin);
         cullmax = ivec::ceil(bbmax);
-        if(dbgpseed) conoutf("radius: %f, maxfade: %d", radius, maxfade);
+        if(dbgpseed) conoutf(colourwhite, "radius: %f, maxfade: %d", radius, maxfade);
     }
 
     void extendbb(const vec &o, float size = 0)
@@ -2213,6 +2213,6 @@ void updateparticles()
             }
             pe.lastemit = lastmillis;
         }
-        if(dbgpcull && (canemit || replayed) && addedparticles) conoutf("\fr%d emitters, %d particles", emitted, addedparticles);
+        if(dbgpcull && (canemit || replayed) && addedparticles) conoutf(colourred, "%d emitters, %d particles", emitted, addedparticles);
     }
 }
