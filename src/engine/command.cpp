@@ -543,11 +543,10 @@ static inline void setalias(ident &id, tagval &v, bool mapdef, bool quiet = fals
     int oldflags = id.flags;
     id.flags = 0;
 
-    if(oldflags&IDF_LOCAL) id.flags |= IDF_LOCAL;
+    if(oldflags&IDF_LOCAL) id.flags |= IDF_LOCAL; // must preserve local flag
     else
     {
-        // In order to stop abuse, do not add the quiet flag if it was absent before
-        if(quiet) id.flags |= oldflags&IDF_META;
+        if(quiet) id.flags |= oldflags&IDF_META; // do not add the quiet flag if it was absent before
         if(mapdef || oldflags&IDF_MAP) id.flags |= IDF_MAP;
         id.flags |= oldflags&IDF_PERSIST;
 #ifndef STANDALONE
@@ -1592,7 +1591,7 @@ static inline void compileident(vector<uint> &code, ident *id = dummyident)
 
 static inline void compileident(vector<uint> &code, const stringslice &word, bool local = false)
 {
-    compileident(code, newident(word, (local ? IDF_LOCAL : 0)|IDF_UNKNOWN));
+    compileident(code, newident(word, (local ? IDF_LOCAL : 0)|IDF_UNKNOWN)); // keep track of locals
 }
 
 static inline void compileint(vector<uint> &code, const stringslice &word)

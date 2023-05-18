@@ -368,7 +368,7 @@ ICOMMAND(0, clearallbinds, "", (), enumerate(keyms, keym, km, km.clear()));
 
 ICOMMAND(0, keyspressed, "issss", (int *limit, char *s1, char *s2, char *sep1, char *sep2), { vector<char> list; getkeypressed(max(*limit, 0), s1, s2, sep1, sep2, list); result(list.getbuf()); });
 
-void inputcommand(char *init, char *action = NULL, char *prompt = NULL, char *flags = NULL) // turns input to the command line on or off
+void inputcommand(char *init, char *prompt = NULL, char *flags = NULL, char *action = NULL) // turns input to the command line on or off
 {
     commandmillis = init ? totalmillis : -totalmillis;
     textinput(commandmillis >= 0, TI_CONSOLE);
@@ -380,7 +380,7 @@ void inputcommand(char *init, char *action = NULL, char *prompt = NULL, char *fl
     if(action && action[0]) commandaction = newstring(action);
     if(prompt && prompt[0]) commandprompt = newstring(prompt);
     commandflags = 0;
-    if(flags) while(*flags) switch(*flags++)
+    if(flags && *flags) while(*flags) switch(*flags++)
     {
         case 'c': commandflags |= CF_COMPLETE; break;
         case 'x': commandflags |= CF_EXECUTE; break;
@@ -390,15 +390,14 @@ void inputcommand(char *init, char *action = NULL, char *prompt = NULL, char *fl
     else if(init) commandflags |= CF_COMPLETE|CF_EXECUTE;
 }
 
-ICOMMAND(0, saycommand, "C", (char *init), inputcommand(init));
-ICOMMAND(0, inputcommand, "ssss", (char *init, char *action, char *prompt, char *flags), inputcommand(init, action, prompt, flags));
+ICOMMAND(0, inputcommand, "ssss", (char *init, char *prompt, char *flags, char *action), inputcommand(init, prompt, flags, action));
 
-ICOMMAND(0, getcommandmillis, "", (), intret(commandmillis));
-ICOMMAND(0, getcommandbuf, "", (), result(commandmillis > 0 ? commandbuf : ""));
-ICOMMAND(0, getcommandaction, "", (), result(commandmillis > 0 && commandaction ? commandaction : ""));
-ICOMMAND(0, getcommandprompt, "", (), result(commandmillis > 0 && commandprompt ? commandprompt : ""));
-ICOMMAND(0, getcommandpos, "", (), intret(commandmillis > 0 ? (commandpos >= 0 ? commandpos : strlen(commandbuf)) : -1));
-ICOMMAND(0, getcommandflags, "", (), intret(commandmillis > 0 ? commandflags : 0));
+ICOMMANDV(0, commandmillis, commandmillis);
+ICOMMANDVS(0, commandbuf, commandmillis > 0 ? commandbuf : "");
+ICOMMANDVS(0, commandaction, commandmillis > 0 && commandaction ? commandaction : "");
+ICOMMANDVS(0, commandprompt, commandmillis > 0 && commandprompt ? commandprompt : "");
+ICOMMANDV(0, commandpos, commandmillis > 0 ? (commandpos >= 0 ? commandpos : strlen(commandbuf)) : -1);
+ICOMMANDV(0, commandflags, commandmillis > 0 ? commandflags : 0);
 
 char *pastetext(char *buf, size_t len)
 {

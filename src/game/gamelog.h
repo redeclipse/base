@@ -2,10 +2,12 @@
 struct gamelog;
 #ifdef CPP_GAME_MAIN
 VAR(IDF_PERSIST, gameloglines, 1, 50, VAR_MAX);
+VAR(IDF_PERSIST, gamelogecho, 0, 0, 1);
 VAR(IDF_PERSIST, messageloglines, 1, 1000, VAR_MAX);
+VAR(IDF_PERSIST, messagelogecho, 0, 0, 1);
 vector<gamelog *> eventlog, messagelog;
 #else
-extern int gameloglines, messageloglines;
+extern int gameloglines, gamelogecho, messageloglines, messagelogecho;
 extern vector<gamelog *> eventlog, messagelog;
 #endif
 #endif
@@ -351,9 +353,11 @@ struct gamelog
         }
         if(sound >= 0 && flags&GAMELOG_F_BROADCAST) entities::announce(sound, NULL, -1, flags&GAMELOG_F_UNMAPPED ? SND_UNMAPPED : 0);
 
-        const char *con = constr();
-        if(con && *con) conoutf(concolor(), "%s", con);
-
+        if(type == GAMELOG_MESSAGE ? messagelogecho : gamelogecho)
+        {
+            const char *con = constr();
+            if(con && *con) conoutf(concolor(), "%s", con);
+        }
         log.add(this);
     }
 #endif

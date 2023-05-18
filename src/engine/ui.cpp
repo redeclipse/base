@@ -204,77 +204,77 @@ namespace UI
             } \
         });
 
-    #define UICMD(uitype, uiname, vname, valtype, args, body) \
-        ICOMMAND(0, ui##uiname##vname, valtype, args, { \
-            if(buildparent && buildparent->istype<uitype>()) \
+    #define UICMD(utype, uname, vname, valtype, args, body) \
+        ICOMMAND(0, ui##uname##vname, valtype, args, { \
+            if(buildparent && buildparent->istype<utype>()) \
             { \
-                uitype *o = (uitype *)buildparent; \
+                utype *o = (utype *)buildparent; \
                 body; \
             } \
-            else if(!propagating) conoutf(colourorange, "Warning: parent %s not a %s class for ui%s%s", buildparent ? buildparent->gettype() : "<null>", #uitype, #uiname, #vname); \
+            else if(!propagating) conoutf(colourorange, "Warning: parent %s not a %s class for ui%s%s", buildparent ? buildparent->gettype() : "<null>", #utype, #uname, #vname); \
         });
 
-    #define UIARGB(uitype, uiname, vname) \
-        UICMD(uitype, uiname, vname, "iN$", (int *val, int *numargs, ident *id), { \
+    #define UIARGB(utype, uname, vname) \
+        UICMD(utype, uname, vname, "iN$", (int *val, int *numargs, ident *id), { \
             if(*numargs > 0) o->vname = *val!=0; \
             else if(*numargs < 0) intret(o->vname ? 1 : 0); \
             else printvar(id, o->vname ? 1 : 0); \
         });
 
-    #define UIARGK(uitype, uiname, vname, valtype, type, cmin, cmax, valdef) \
-        UICMD(uitype, uiname, vname, valtype "N$", (type *val, int *numargs, ident *id), { \
+    #define UIARGK(utype, uname, vname, valtype, type, cmin, cmax, valdef) \
+        UICMD(utype, uname, vname, valtype "N$", (type *val, int *numargs, ident *id), { \
             if(*numargs > 0) o->vname = type(clamp((valdef), cmin, cmax)); \
             else if(*numargs < 0) type##ret(o->vname); \
             else print##type##var(id, o->vname); \
         });
 
-    #define UIARGSCALED(uitype, uiname, vname, valtype, type, cmin, cmax) \
-        UICMD(uitype, uiname, vname, valtype "N$", (type *val, int *numargs, ident *id), { \
+    #define UIARGSCALED(utype, uname, vname, valtype, type, cmin, cmax) \
+        UICMD(utype, uname, vname, valtype "N$", (type *val, int *numargs, ident *id), { \
             if(*numargs > 0) o->vname = type(clamp(*val, cmin, cmax) * uiscale); \
             else if(*numargs < 0) type##ret(o->vname * uiscale); \
             else print##type##var(id, o->vname * uiscale); \
         });
 
-    #define UIARG(uitype, uiname, vname, valtype, type, cmin, cmax) \
-        UICMD(uitype, uiname, vname, valtype "N$", (type *val, int *numargs, ident *id), { \
+    #define UIARG(utype, uname, vname, valtype, type, cmin, cmax) \
+        UICMD(utype, uname, vname, valtype "N$", (type *val, int *numargs, ident *id), { \
             if(*numargs > 0) o->vname = type(clamp(*val, cmin, cmax)); \
             else if(*numargs < 0) type##ret(o->vname); \
             else print##type##var(id, o->vname); \
         });
 
-    #define UICMDT(uitype, uiname, vname, valtype, args, body) \
-        ICOMMAND(0, ui##uiname##vname, valtype, args, { \
-            if(buildparent && buildparent->is##uiname()) \
+    #define UICMDT(utype, uname, vname, valtype, args, body) \
+        ICOMMAND(0, ui##uname##vname, valtype, args, { \
+            if(buildparent && buildparent->is##uname()) \
             { \
-                uitype *o = (uitype *)buildparent; \
+                utype *o = (utype *)buildparent; \
                 body; \
             } \
-            else if(!propagating) conoutf(colourorange, "Warning: parent %s not a %s type for ui%s%s", buildparent ? buildparent->gettype() : "<null>", #uiname, #uiname, #vname); \
+            else if(!propagating) conoutf(colourorange, "Warning: parent %s not a %s type for ui%s%s", buildparent ? buildparent->gettype() : "<null>", #uname, #uname, #vname); \
         });
 
-    #define UIARGTB(uitype, uiname, vname) \
-        UICMDT(uitype, uiname, vname, "iN$", (int *val, int *numargs, ident *id), { \
+    #define UIARGTB(utype, uname, vname) \
+        UICMDT(utype, uname, vname, "iN$", (int *val, int *numargs, ident *id), { \
             if(*numargs > 0) o->vname = *val!=0; \
             else if(*numargs < 0) intret(o->vname ? 1 : 0); \
             else printvar(id, o->vname ? 1 : 0); \
         });
 
-    #define UIARGTK(uitype, uiname, vname, valtype, type, cmin, cmax, valdef) \
-        UICMDT(uitype, uiname, vname, valtype "N$", (type *val, int *numargs, ident *id), { \
+    #define UIARGTK(utype, uname, vname, valtype, type, cmin, cmax, valdef) \
+        UICMDT(utype, uname, vname, valtype "N$", (type *val, int *numargs, ident *id), { \
             if(*numargs > 0) o->vname = type(clamp((valdef), cmin, cmax)); \
             else if(*numargs < 0) type##ret(o->vname); \
             else print##type##var(id, o->vname); \
         });
 
-    #define UIARGSCALEDT(uitype, uiname, vname, valtype, type, cmin, cmax) \
-        UICMDT(uitype, uiname, vname, valtype "N$", (type *val, int *numargs, ident *id), { \
+    #define UIARGSCALEDT(utype, uname, vname, valtype, type, cmin, cmax) \
+        UICMDT(utype, uname, vname, valtype "N$", (type *val, int *numargs, ident *id), { \
             if(*numargs > 0) o->vname = type(clamp(*val, cmin, cmax) * uiscale); \
             else if(*numargs < 0) type##ret(o->vname * uiscale); \
             else print##type##var(id, o->vname * uiscale); \
         });
 
-    #define UIARGT(uitype, uiname, vname, valtype, type, cmin, cmax) \
-        UICMDT(uitype, uiname, vname, valtype "N$", (type *val, int *numargs, ident *id), { \
+    #define UIARGT(utype, uname, vname, valtype, type, cmin, cmax) \
+        UICMDT(utype, uname, vname, valtype "N$", (type *val, int *numargs, ident *id), { \
             if(*numargs > 0) o->vname = type(clamp(*val, cmin, cmax)); \
             else if(*numargs < 0) type##ret(o->vname); \
             else print##type##var(id, o->vname); \
@@ -824,6 +824,8 @@ namespace UI
     UIOBJCMD(setpos, "ff", (float *xpos, float *ypos), o->setpos(*xpos, *ypos));
     UIOBJCMD(resetpos, "", (), o->resetpos());
     UIOBJARG(allowstate, "b", int, 0, int(STATE_ALL));
+
+    ICOMMANDVS(0, uitype, buildparent ? buildparent->gettype() : "");
     ICOMMANDV(0, uidrawn, buildparent && buildparent->drawn ? 1 : 0);
 
     static inline void stopdrawing()
@@ -2489,6 +2491,7 @@ namespace UI
             loopv(colorstack) colors.add(colorstack[i]);
         }
     };
+
     UIARGT(Colored, colour, type, "i", int, int(Colored::SOLID), int(Colored::OUTLINED));
     UIARGT(Colored, colour, dir, "i", int, int(Colored::VERTICAL), int(Colored::HORIZONTAL));
 
@@ -6063,7 +6066,7 @@ namespace UI
         buildparent = oldparent;
     });
 
-    ICOMMAND(0, uiall, "e", (uint *code),
+    ICOMMAND(0, uipropchild, "e", (uint *code),
     {
         if(!buildparent) return;
         bool oldprop = propagating;
@@ -6093,8 +6096,9 @@ namespace UI
         propagating = oldprop;
         buildparent = oldparent;
     }
-    ICOMMAND(0, uiprop, "e", (uint *code), uichildren(code));
-    ICOMMAND(0, uiroot, "e", (uint *code),
+    ICOMMAND(0, uipropagate, "e", (uint *code), uichildren(code));
+
+    ICOMMAND(0, uiproproot, "e", (uint *code),
     {
         if(!buildparent) return;
         Object *oldparent = buildparent;
