@@ -7,8 +7,7 @@ reversequeue<cline, MAXCONLINES> conlines;
 int commandmillis = -1;
 bigstring commandbuf;
 char *commandaction = NULL, *commandprompt = NULL;
-enum { CF_COMPLETE = 1<<0, CF_EXECUTE = 1<<1, CF_MESSAGE = 1<<2 };
-int commandflags = 0, commandpos = -1;
+int commandpos = -1;
 
 void conline(int color, const char *sf)
 {
@@ -368,7 +367,7 @@ ICOMMAND(0, clearallbinds, "", (), enumerate(keyms, keym, km, km.clear()));
 
 ICOMMAND(0, keyspressed, "issss", (int *limit, char *s1, char *s2, char *sep1, char *sep2), { vector<char> list; getkeypressed(max(*limit, 0), s1, s2, sep1, sep2, list); result(list.getbuf()); });
 
-void inputcommand(char *init, char *prompt = NULL, char *flags = NULL, char *action = NULL) // turns input to the command line on or off
+void inputcommand(char *init, char *prompt = NULL, char *action = NULL) // turns input to the command line on or off
 {
     commandmillis = init ? totalmillis : -totalmillis;
     textinput(commandmillis >= 0, TI_CONSOLE);
@@ -379,25 +378,16 @@ void inputcommand(char *init, char *prompt = NULL, char *flags = NULL, char *act
     commandpos = -1;
     if(action && action[0]) commandaction = newstring(action);
     if(prompt && prompt[0]) commandprompt = newstring(prompt);
-    commandflags = 0;
-    if(flags && *flags) while(*flags) switch(*flags++)
-    {
-        case 'c': commandflags |= CF_COMPLETE; break;
-        case 'x': commandflags |= CF_EXECUTE; break;
-        case 'm': commandflags |= CF_MESSAGE; break;
-        case 's': commandflags |= CF_COMPLETE|CF_EXECUTE|CF_MESSAGE; break;
-    }
-    else if(init) commandflags |= CF_COMPLETE|CF_EXECUTE;
+    if(commandmillis > 0) UI::openui("command");
 }
 
-ICOMMAND(0, inputcommand, "ssss", (char *init, char *prompt, char *flags, char *action), inputcommand(init, prompt, flags, action));
+ICOMMAND(0, inputcommand, "sss", (char *init, char *prompt, char *action), inputcommand(init, prompt, action));
 
 ICOMMANDV(0, commandmillis, commandmillis);
 ICOMMANDVS(0, commandbuf, commandmillis > 0 ? commandbuf : "");
 ICOMMANDVS(0, commandaction, commandmillis > 0 && commandaction ? commandaction : "");
 ICOMMANDVS(0, commandprompt, commandmillis > 0 && commandprompt ? commandprompt : "");
 ICOMMANDV(0, commandpos, commandmillis > 0 ? (commandpos >= 0 ? commandpos : strlen(commandbuf)) : -1);
-ICOMMANDV(0, commandflags, commandmillis > 0 ? commandflags : 0);
 
 char *pastetext(char *buf, size_t len)
 {
@@ -417,14 +407,13 @@ char *pastetext(char *buf, size_t len)
     return buf;
 }
 
-SVAR(0, commandbuffer, "");
-
+SVAR(0, commandstr, "");
 struct hline
 {
     char *buf, *action, *prompt, *icon;
-    int colour, flags;
+    int colour;
 
-    hline() : buf(NULL), action(NULL), prompt(NULL), icon(NULL), colour(0), flags(0) {}
+    hline() : buf(NULL), action(NULL), prompt(NULL), icon(NULL), colour(0) {}
     ~hline()
     {
         DELETEA(buf);
@@ -441,15 +430,11 @@ struct hline
         DELETEA(commandprompt);
         if(action) commandaction = newstring(action);
         if(prompt) commandprompt = newstring(prompt);
-        commandflags = flags;
     }
 
     bool shouldsave()
     {
-        return strcmp(commandbuf, buf) ||
-               (commandaction ? !action || strcmp(commandaction, action) : action!=NULL) ||
-               (commandprompt ? !prompt || strcmp(commandprompt, prompt) : prompt!=NULL) ||
-               commandflags != flags;
+        return strcmp(commandbuf, buf) || (commandaction ? !action || strcmp(commandaction, action) : action!=NULL) || (commandprompt ? !prompt || strcmp(commandprompt, prompt) : prompt!=NULL);
     }
 
     void save()
@@ -457,18 +442,12 @@ struct hline
         buf = newstring(commandbuf);
         if(commandaction) action = newstring(commandaction);
         if(commandprompt) prompt = newstring(commandprompt);
-        flags = commandflags;
     }
 
     void run()
     {
-        if(flags&CF_EXECUTE && buf[0]=='/') execute(buf+1); // above all else
-        else if(action)
-        {
-            setsvar("commandbuffer", buf, true);
-            execute(action);
-        }
-        else client::toserver(0, buf);
+        setsvar("commandstr", buf);
+        execute(action && *action ? action : buf);
     }
 };
 vector<hline *> history;
@@ -596,9 +575,7 @@ bool consoleinput(const char *str, int len)
     if(commandmillis < 0) return false;
 
     resetcomplete();
-    int maxlen = int(sizeof(commandbuf));
-    if(commandflags&CF_MESSAGE || commandbuf[0] != '/') maxlen = min(client::maxmsglen(), maxlen);
-    int cmdlen = (int)strlen(commandbuf), cmdspace = maxlen - (cmdlen+1);
+    int maxlen = int(sizeof(commandbuf)), cmdlen = (int)strlen(commandbuf), cmdspace = maxlen - (cmdlen+1);
     len = min(len, cmdspace);
     if(len <= 0) return true;
 
@@ -719,11 +696,8 @@ bool consolekey(int code, bool isdown)
                 break;
 
             case SDLK_TAB:
-                if(commandflags&CF_COMPLETE)
-                {
-                    complete(commandbuf, commandflags&CF_EXECUTE ? "/" : NULL, SDL_GetModState()&KMOD_SHIFT);
-                    if(commandpos>=0 && commandpos>=(int)strlen(commandbuf)) commandpos = -1;
-                }
+                complete(commandbuf, SDL_GetModState()&KMOD_SHIFT);
+                if(commandpos>=0 && commandpos>=(int)strlen(commandbuf)) commandpos = -1;
                 break;
 
             case SDLK_v:
@@ -996,16 +970,10 @@ COMMANDN(0, complete, addfilecomplete, "sss");
 COMMANDN(0, listcomplete, addlistcomplete, "ss");
 COMMANDN(0, playercomplete, addplayercomplete, "si");
 
-void complete(char *s, const char *cmdprefix, bool reverse)
+void complete(char *s, bool reverse)
 {
     if(completeescaped[0]) copystring(s, completeescaped, BIGSTRLEN);
     char *start = s;
-    if(cmdprefix)
-    {
-        int cmdlen = strlen(cmdprefix);
-        if(strncmp(s, cmdprefix, cmdlen)) prependstring(s, cmdprefix, BIGSTRLEN);
-        start = &s[cmdlen];
-    }
     const char chrlist[7] = { ';', '(', ')', '[', ']', '\"', '$', };
     bool variable = false;
     loopi(7)

@@ -3806,14 +3806,14 @@ namespace UI
             changedraw(CHANGE_COLOR|CHANGE_SHADER);
 
             float k = drawscale(rescale), left = sx/k, top = sy/k;
-            int a = modcol ? TEXT_MODCOL : 0;
+            int flags = modcol ? TEXT_MODCOL : 0;
             switch(align)
             {
-                case -2:    a |= TEXT_NO_INDENT|TEXT_LEFT_JUSTIFY; break;
-                case -1:    a |= TEXT_LEFT_JUSTIFY; break;
-                case 0:     a |= TEXT_CENTERED; left += tw*k*0.5f; break;
-                case 1:     a |= TEXT_RIGHT_JUSTIFY; left += tw*k; break;
-                case 2:     a |= TEXT_NO_INDENT|TEXT_RIGHT_JUSTIFY; left += tw*k; break;
+                case -2:    flags |= TEXT_NO_INDENT|TEXT_LEFT_JUSTIFY; break;
+                case -1:    flags |= TEXT_LEFT_JUSTIFY; break;
+                case 0:     flags |= TEXT_CENTERED; left += tw*k*0.5f; break;
+                case 1:     flags |= TEXT_RIGHT_JUSTIFY; left += tw*k; break;
+                case 2:     flags |= TEXT_NO_INDENT|TEXT_RIGHT_JUSTIFY; left += tw*k; break;
             }
             if(rescale != 1) top += (((th*drawscale())-(th*k))*0.5f)/k;
             //if(rescale != 1) top += (th-(th*rescale))*0.5f;
@@ -3826,7 +3826,7 @@ namespace UI
             hudmatrix.translate(left, top, 0);
             if(rotate) hudmatrix.rotate_around_z(rotate*90*RAD);
             flushhudmatrix();
-            draw_text(getstr(), 0, 0, colors[0].r, colors[0].g, colors[0].b, colors[0].a, a, pos, wlen, 1);
+            draw_text(getstr(), 0, 0, colors[0].r, colors[0].g, colors[0].b, colors[0].a, flags, pos, wlen, 1);
             pophudmatrix();
 
             Object::draw(world, sx, sy);
@@ -3841,35 +3841,45 @@ namespace UI
             else if(wrap < 0)
             {
                 float wp = 0.f;
-                wlen = 0-wrap;
+                wlen = 0 - wrap;
                 for(Object *o = this->parent; o != NULL; o = o->parent)
                 {
                     if(o->istype<Padder>())
                     {
-                        wp += ((Padder *)o)->left+((Padder *)o)->right;
+                        wp += ((Padder *)o)->left + ((Padder *)o)->right;
                         continue;
                     }
                     float ww = o->w;
                     if(o->isfill()) ww = max(ww, ((Filler *)o)->minw);
+                    else if(o->istype<HorizontalList>())
+                    {
+                        HorizontalList *h = (HorizontalList *)o;
+                        loopv(o->children)
+                        {
+                            Object *p = o->children[i];
+                            if(p == this) break;
+                            ww -= p->w + h->space;
+                        }
+                    }
                     if(ww > 0)
                     {
-                        wlen *= (ww-wp)/k;
+                        wlen *= (ww - wp)/k;
                         break;
                     }
                     if(o->istype<Window>()) break;
                 }
             }
             else wlen = 0;
-            int a = modcol ? TEXT_MODCOL : 0;
+            int flags = modcol ? TEXT_MODCOL : 0;
             switch(align)
             {
-                case -2:    a |= TEXT_NO_INDENT|TEXT_LEFT_JUSTIFY; break;
-                case -1:    a |= TEXT_LEFT_JUSTIFY; break;
-                case 0:     a |= TEXT_CENTERED; break;
-                case 1:     a |= TEXT_RIGHT_JUSTIFY; break;
-                case 2:     a |= TEXT_NO_INDENT|TEXT_RIGHT_JUSTIFY; break;
+                case -2:    flags |= TEXT_NO_INDENT|TEXT_LEFT_JUSTIFY; break;
+                case -1:    flags |= TEXT_LEFT_JUSTIFY; break;
+                case 0:     flags |= TEXT_CENTERED; break;
+                case 1:     flags |= TEXT_RIGHT_JUSTIFY; break;
+                case 2:     flags |= TEXT_NO_INDENT|TEXT_RIGHT_JUSTIFY; break;
             }
-            text_boundsf(getstr(), tw, th, 0, 0, wlen, a);
+            text_boundsf(getstr(), tw, th, 0, 0, wlen, flags);
             if(rotate%2) { int rw = tw; tw = th; th = rw; }
             rescale = 1;
             if(limit < 0)
