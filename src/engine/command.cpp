@@ -142,7 +142,7 @@ inline lockstr::~lockstr()
     if(deleted) freeidentstr(s);
 }
 
-inline void ident::forcenull()
+void ident::forcenull()
 {
     if(valtype==VAL_STR) freeidentstr(val.s);
     valtype = VAL_NULL;

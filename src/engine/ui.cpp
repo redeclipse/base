@@ -144,8 +144,7 @@ namespace UI
     struct Window;
     struct Surface;
 
-    static Object *buildparent = NULL;
-    static Object *inputsteal = NULL;
+    static Object *buildparent = NULL, *inputsteal = NULL;
 
     #define BUILD(type, o, setup, contents) do { \
         if(buildparent) \
@@ -4820,8 +4819,6 @@ namespace UI
 
     struct TextEditor : Colored
     {
-        static TextEditor *focus;
-
         float scale, offsetx, offsety;
         editor *edit;
         char *keyfilter;
@@ -4832,48 +4829,45 @@ namespace UI
         bool isallowed() const { return surfacetype == SURFACE_MAIN; }
         bool iseditor() const { return true; }
 
-        void setup(const char *name, int length, int height, float scale_ = 1, const char *initval = NULL, int mode = EDITORUSED, const char *keyfilter_ = NULL, bool _allowlines = true, int limit = 0)
+        void setup(const char *name, int length, int height, float scale_ = 1, const char *initval = NULL, int mode = EDITORUSED, const char *keyfilter_ = NULL, bool allowlines_ = true, int limit_ = 0)
         {
             Colored::setup(Color(colourwhite));
-            editor *edit_ = useeditor(name, mode, false, initval);
-            if(edit_ != edit)
-            {
-                if(edit) clearfocus();
-                edit = edit_;
-            }
+            edit = useeditor(name, mode, false, initval);
             if(initval && edit->mode == EDITORFOCUSED && !isfocus()) edit->clear(initval);
             edit->active = true;
             edit->linewrap = length < 0;
             edit->maxx = edit->linewrap ? -1 : length;
             edit->maxy = height <= 0 ? 1 : -1;
             edit->pixelwidth = abs(length)*FONTW;
-            edit->limit = limit;
+            edit->limit = limit_;
             if(edit->linewrap && edit->maxy == 1) edit->updateheight();
             else edit->pixelheight = FONTH*max(height, 1);
             scale = scale_;
             if(keyfilter_ && *keyfilter_) SETSTR(keyfilter, keyfilter_);
             else DELETEA(keyfilter);
-            allowlines = _allowlines;
+            allowlines = allowlines_;
         }
         ~TextEditor()
         {
-            clearfocus();
             DELETEA(keyfilter);
         }
 
-        static void setfocus(TextEditor *e)
+        void setfocus()
         {
-            if(focus == e) return;
-            focus = e;
-            if(e) inputsteal = e;
-            bool allowtextinput = focus!=NULL && focus->allowtextinput();
-            ::textinput(allowtextinput, TI_UI);
-            ::keyrepeat(allowtextinput, KR_UI);
+            if(isfocus()) return;
+            textfocus = edit;
+            ::textinput(true, TI_UI);
+            ::keyrepeat(true, KR_UI);
         }
-        void setfocus() { setfocus(this); }
         void setfocusable(bool focusable) { canfocus = focusable; }
-        void clearfocus() { if(focus == this) setfocus(NULL); }
-        bool isfocus() const { return focus == this; }
+        void clearfocus()
+        {
+            if(!isfocus()) return;
+            textfocus = NULL;
+            ::textinput(false, TI_UI);
+            ::keyrepeat(false, KR_UI);
+        }
+        bool isfocus() const { return edit && textfocus == edit; }
 
         static const char *typestr() { return "#TextEditor"; }
         const char *gettype() const { return typestr(); }
@@ -4908,6 +4902,8 @@ namespace UI
             float k = drawscale();
             w = max(w, (edit->pixelwidth + FONTW)*k);
             h = max(h, edit->pixelheight*k);
+
+            if(isfocus()) inputsteal = this;
         }
 
         virtual void resetmark(float cx, float cy)
@@ -5009,7 +5005,6 @@ namespace UI
         int count() const { return isfocus() && edit ? edit->len : -1; }
     };
 
-    TextEditor *TextEditor::focus = NULL;
     ICOMMAND(0, uitexteditor, "siifsies", (char *name, int *length, int *height, float *scale, char *initval, int *mode, uint *children, char *keyfilter),
         BUILD(TextEditor, o, o->setup(name, *length, *height, (*scale <= 0 ? 1 : *scale)*uiscale * uitextscale, initval, *mode <= 0 ? EDITORFOREVER : *mode, keyfilter), children));
 
@@ -5151,6 +5146,16 @@ namespace UI
         void press(float cx, float cy, bool inside)
         {
             setfocus();
+        }
+
+        void layout()
+        {
+            Object::layout();
+
+            w = max(w, minw);
+            h = max(h, minh);
+
+            if(isfocus()) inputsteal = this;
         }
 
         bool key(int code, bool isdown)
@@ -6128,20 +6133,41 @@ namespace UI
     DOSTATES
     #undef DOSTATE
 
-    ICOMMANDNS(0, "uianyfocus", uifocus_, "", (),
-        intret(buildparent && TextEditor::focus != NULL));
+    ICOMMANDNS(0, "uianyfocus", uifocus_, "", (), intret(textfocus != NULL));
+
+    #define TEXTEDITOR(chk, obj) TextEditor *e = chk && obj->iseditor() ? (TextEditor *)obj : NULL
+    #define TEXTEDITTF e && e->edit && e->edit == textfocus
+
     ICOMMANDNS(0, "uifocus", uifocus_, "ee", (uint *t, uint *f),
-        executeret(buildparent && TextEditor::focus == buildparent ? t : f));
+    {
+        TEXTEDITOR(buildparent, buildparent);
+        executeret(TEXTEDITTF ? t : f);
+    });
     ICOMMANDNS(0, "uifocus?", uifocus__, "tt", (tagval *t, tagval *f),
-        IFSTATEVAL(buildparent && TextEditor::focus == buildparent, t, f));
+    {
+        TEXTEDITOR(buildparent, buildparent);
+        IFSTATEVAL(TEXTEDITTF, t, f)
+    });
     ICOMMANDNS(0, "uifocus+", uinextfocus_, "ee", (uint *t, uint *f),
-        executeret(buildparent && buildparent->children.inrange(buildparent->buildchild) && TextEditor::focus == buildparent->children[buildparent->buildchild] ? t : f));
+    {
+        TEXTEDITOR(buildparent && buildparent->children.inrange(buildparent->buildchild), buildparent->children[buildparent->buildchild]);
+        executeret(TEXTEDITTF ? t : f);
+    });
     ICOMMANDNS(0, "uifocus+?", uinextfocus__, "tt", (tagval *t, tagval *f),
-        IFSTATEVAL(buildparent && buildparent->children.inrange(buildparent->buildchild) && TextEditor::focus == buildparent->children[buildparent->buildchild], t, f));
+    {
+        TEXTEDITOR(buildparent && buildparent->children.inrange(buildparent->buildchild), buildparent->children[buildparent->buildchild]);
+        IFSTATEVAL(TEXTEDITTF, t, f)
+    });
     ICOMMANDNS(0, "uifocus-", uinextfocus_, "ee", (uint *t, uint *f),
-        executeret(buildparent && buildparent->buildchild > 0 && buildparent->children.inrange(buildparent->buildchild-1) && TextEditor::focus == buildparent->children[buildparent->buildchild-1] ? t : f));
+    {
+        TEXTEDITOR(buildparent && buildparent->buildchild > 0 && buildparent->children.inrange(buildparent->buildchild-1), buildparent->children[buildparent->buildchild-1]);
+        executeret(TEXTEDITTF ? t : f);
+    });
     ICOMMANDNS(0, "uifocus-?", uinextfocus__, "tt", (tagval *t, tagval *f),
-        IFSTATEVAL(buildparent && buildparent->buildchild > 0 && buildparent->children.inrange(buildparent->buildchild-1) && TextEditor::focus == buildparent->children[buildparent->buildchild-1], t, f));
+    {
+        TEXTEDITOR(buildparent && buildparent->buildchild > 0 && buildparent->children.inrange(buildparent->buildchild-1), buildparent->children[buildparent->buildchild-1]);
+        IFSTATEVAL(TEXTEDITTF, t, f);
+    });
 
     ICOMMAND(0, uiprev, "e", (uint *code),
     {
@@ -6284,7 +6310,9 @@ namespace UI
 
     bool textinput(const char *str, int len)
     {
-        return surface && surface->textinput(str, len);
+        bool ret = false;
+        DOSURFACE(SURFACE_MAIN, ret = surface && surface->textinput(str, len));
+        return ret;
     }
 
     void checkmapuis()
@@ -6616,16 +6644,19 @@ namespace UI
             calctextscale();
 
             if(surface->type == SURFACE_MAIN && *uiprecmd) execute(uiprecmd);
-            surface->build();
-            if(surface->type == SURFACE_MAIN && *uipostcmd) execute(uipostcmd);
 
-            if(inputsteal && !inputsteal->isfocus())
-                inputsteal = NULL;
+            surface->build();
+
+            if(surface->type == SURFACE_MAIN)
+            {
+                if(*uipostcmd) execute(uipostcmd);
+                if(inputsteal && !inputsteal->isfocus()) inputsteal = NULL;
+            }
 
             if(!surface->mousetracking) surface->mousetrackvec = vec2(0, 0);
-
             if(surface->type == SURFACE_MAIN) flusheditors();
             popfont();
+
             curtextscale = oldtextscale;
         });
     }
@@ -6636,7 +6667,7 @@ namespace UI
         {
             defformatstring(argname, "uiarg%d", i+1);
             ident *id = newident(argname, IDF_ARG);
-            id->reset();
+            id->forcenull();
             uiargs.add(id);
         }
         loopi(SURFACE_MAX)
