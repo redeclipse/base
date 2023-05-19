@@ -789,7 +789,7 @@ static void loadsamples(soundslot &slot)
         sample = loadsoundsample(sam);
         slot.samples.add(sample);
 
-        if(!sample || !sample->valid()) conoutf(colourred, "Failed to load sample: %s", sam);
+        if(!sample || !sample->valid()) conoutf(colourred, "Failed to load sample: %s (%s)", sam, sample ? "NULL sample" : (!sample->valid() ? "Invalid Sample" : "Unknown error"));
     }
 }
 
@@ -1197,11 +1197,19 @@ bool soundfile::setup(const char *name, int t, int m)
     if(!viofile)
     {
         clear();
+        conoutf(colourred, "Failed to open virtual IO file: %s", name);
         return false;
     }
     sndfile = sf_open_virtual(&soundvfio, SFM_READ, &info, viofile);
-    if(!sndfile || info.frames <= 0 || info.frames >= SF_COUNT_MAX)
+    if(!sndfile)
     {
+        conoutf(colourred, "Failed to create libsndfile context: %s", name);
+        clear();
+        return false;
+    }
+    if(info.frames <= 0 || info.frames >= SF_COUNT_MAX)
+    {
+        conoutf(colourred, "Invalid sound file frame count: %s (%lli)", name, info.frames);
         clear();
         return false;
     }
@@ -1223,7 +1231,7 @@ bool soundfile::setup(const char *name, int t, int m)
 
     if(!format)
     {
-        conoutf(colourred, "Unsupported channel count in %s: %d", name, info.channels);
+        conoutf(colourred, "Unsupported channel count in: %s (%d)", name, info.channels);
         clear();
         return false;
     }
