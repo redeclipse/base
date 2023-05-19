@@ -1,5 +1,13 @@
 // script binding functionality
 
+enum
+{
+    MAXARGS = 25,
+    MAXRESULTS = 7,
+    MAXCOMARGS = 16,
+    MAXRET = 8
+};
+
 enum { VAL_NULL = 0, VAL_INT, VAL_FLOAT, VAL_STR, VAL_ANY, VAL_CODE, VAL_MACRO, VAL_IDENT, VAL_LOCAL, VAL_CSTR, VAL_CANY, VAL_WORD, VAL_POP, VAL_COND, VAL_MAX };
 
 enum
@@ -98,6 +106,7 @@ struct tagval : identval
     void getval(tagval &r) const;
 
     void cleanup();
+    void reset();
 };
 
 struct identstack
@@ -193,6 +202,20 @@ struct ident
 
     void changed() { if(fun) fun(this); }
 
+    void copyval(const tagval &v)
+    {
+        reset();
+        valtype = v.type;
+        switch(valtype)
+        {
+            case VAL_INT: val.i = v.i; break;
+            case VAL_FLOAT: val.f = v.f; break;
+            case VAL_STR: val.s = newstring(v.s); break;
+            case VAL_CSTR: val.cstr = v.cstr; break;
+            default: valtype = VAL_NULL; break;
+        }
+    }
+
     void setval(const tagval &v)
     {
         valtype = v.type;
@@ -206,6 +229,7 @@ struct ident
     }
 
     void forcenull();
+    void reset();
 
     float getfloat() const;
     int getint() const;

@@ -5,6 +5,7 @@ namespace UI
 {
     static bool texgc = false;
     static int lastthumbnail = 0;
+    vector<ident *> uiargs;
 
     FVAR(0, uitextscale, 1, 0, 0);
 
@@ -865,9 +866,6 @@ namespace UI
     const char *windowaffix[SURFACE_MAX] = { "", "progress", "comp" };
     static Window *window = NULL;
 
-    VAR(IDF_READONLY, uiparam, -1, 0, 1);
-    SVAR(IDF_READONLY, uiargs, "");
-
     struct Code
     {
         char *body;
@@ -888,20 +886,21 @@ namespace UI
         Code *contents, *onshow, *onhide;
         bool exclusive, mapdef, inworld, saved,
              menu, passthrough, tooltip, popup, persist, ontop;
-        int allowinput, param, lasthit, lastshow, zindex;
+        int allowinput, lasthit, lastshow, zindex, numargs, initargs;
         float px, py, pw, ph,
               yaw, pitch, curyaw, curpitch,
               offyaw, offpitch, detentyaw, detentpitch,
               scale, dist, hitx, hity;
         vec2 sscale, soffset;
         vec origin, pos;
+        tagval args[MAXARGS];
 
-        Window(const char *name_, const char *contents_, const char *onshow_, const char *onhide_, bool mapdef_, const char *dyn_ = NULL, int param_ = -1) :
+        Window(const char *name_, const char *contents_, const char *onshow_, const char *onhide_, bool mapdef_, const char *dyn_ = NULL, tagval *args_ = NULL, int numargs_ = 0) :
             name(newstring(name_)), dyn(dyn_ && *dyn_ ? newstring(dyn_) : NULL),
             contents(NULL), onshow(NULL), onhide(NULL),
             exclusive(false), mapdef(mapdef_), inworld(false),
             menu(true), passthrough(false), tooltip(false), popup(false), persist(false), ontop(false),
-            allowinput(1), param(param_), lasthit(0), lastshow(0), zindex(0),
+            allowinput(1), lasthit(0), lastshow(0), zindex(0), numargs(0), initargs(0),
             px(0), py(0), pw(0), ph(0),
             yaw(-1), pitch(0), curyaw(0), curpitch(0),
             offyaw(0), offpitch(0), detentyaw(0), detentpitch(0),
@@ -912,6 +911,12 @@ namespace UI
             if(contents_ && *contents_) contents = new Code(contents_);
             if(onshow_ && *onshow_) onshow = new Code(onshow_);
             if(onhide_ && *onhide_) onhide = new Code(onhide_);
+            resetargs(true);
+            if(args_ && numargs_ > 0)
+            {
+                numargs = initargs = min(numargs_, int(MAXARGS));
+                memcpy(args, args_, numargs*sizeof(tagval));
+            }
         }
         ~Window()
         {
@@ -919,6 +924,7 @@ namespace UI
             if(contents) delete contents;
             if(onshow) delete onshow;
             if(onhide) delete onhide;
+            resetargs(true);
         }
 
         static const char *typestr() { return "#Window"; }
@@ -928,6 +934,72 @@ namespace UI
         bool iswindow() const { return true; }
 
         void build();
+
+        void resetargs(bool full = false)
+        {
+            if(full) initargs = 0;
+            numargs = initargs;
+            int n = MAXARGS - initargs;
+            loopi(n) args[i + initargs].reset();
+        }
+
+        int allocarg(int n)
+        {
+            if(n > 0) // > 0 is uiarg1, uiarg2, ... uiargN
+            {
+                if(n > MAXARGS) return -1; // not zero-indexed!
+                while(n > numargs) args[++numargs].reset(); // n at least equal numargs
+                return n - 1; // return zero indexed
+            }
+            else if(n < 0) resetargs(n < -1); // < 0 is reset
+            else if(numargs >= MAXARGS) return -1; // 0 is next arg
+            numargs++;
+            return numargs - 1;
+        }
+
+        void setarg(int val, int n = 0)
+        {
+            int arg = allocarg(n);
+            if(arg < 0) return;
+            args[arg].setint(val);
+        }
+
+        void setarg(bool val, int n = 0)
+        {
+            int arg = allocarg(n);
+            if(arg < 0) return;
+            args[arg].setint(val ? 1 : 0);
+        }
+
+        void setarg(float val, int n = 0)
+        {
+            int arg = allocarg(n);
+            if(arg < 0) return;
+            args[arg].setfloat(val);
+        }
+
+        void setarg(const char *val, int n = 0)
+        {
+            int arg = allocarg(n);
+            if(arg < 0) return;
+            args[arg].setstr(newstring(val));
+        }
+
+        void setarg(char *val, int n = 0)
+        {
+            int arg = allocarg(n);
+            if(arg < 0) return;
+            args[arg].setstr(newstring(val));
+        }
+
+        void setargs()
+        {
+            loopi(MAXARGS)
+            {
+                if(i >= numargs) uiargs[i]->reset();
+                else uiargs[i]->copyval(args[i]);
+            }
+        }
 
         void resetworld()
         {
@@ -943,7 +1015,7 @@ namespace UI
             overridepos = false;
             if(onhide)
             {
-                uiparam = param;
+                setargs();
                 DOMAP(mapdef, executeret(onhide->code));
             }
             resetworld();
@@ -965,9 +1037,10 @@ namespace UI
                 inworld = true;
             }
             else resetworld();
+
             if(onshow)
             {
-                uiparam = param;
+                setargs();
                 DOMAP(mapdef, executeret(onshow->code));
             }
             lastshow = totalmillis;
@@ -1672,12 +1745,12 @@ namespace UI
         setup();
         window = this;
         if(inworld) dist = pos.squaredist(camera1->o);
-        uiparam = param;
+        setargs();
         if(contents) buildchildren(contents->code, mapdef);
         window = NULL;
     }
 
-    bool newui(int stype, const char *name, const char *contents, const char *onshow, const char *onhide, bool mapdef = false, const char *dyn = NULL, int param = -1)
+    bool newui(int stype, const char *name, const char *contents, const char *onshow, const char *onhide, bool mapdef = false, const char *dyn = NULL, tagval *args = NULL, int numargs = 0)
     {
         if(!name || !*name || !contents || !*contents) return false;
 
@@ -1710,7 +1783,7 @@ namespace UI
                     }
                 }
             }
-            surface->windows[name] = new Window(name, contents, onshow, onhide, mapdef, dyn, param);
+            surface->windows[name] = new Window(name, contents, onshow, onhide, mapdef, dyn, args, numargs);
         });
 
         return true;
@@ -1822,7 +1895,9 @@ namespace UI
         loopv(dynuis) if(!strcmp(dynuis[i]->name, name))
         {
             defformatstring(refname, "%s_%d", name, param);
-            if(newui(SURFACE_MAIN, refname, dynuis[i]->contents, dynuis[i]->onshow, dynuis[i]->onhide, dynuis[i]->mapdef, dynuis[i]->name, param)) return true;
+            tagval t;
+            t.setint(param);
+            if(newui(SURFACE_MAIN, refname, dynuis[i]->contents, dynuis[i]->onshow, dynuis[i]->onhide, dynuis[i]->mapdef, dynuis[i]->name, &t, 1)) return true;
             return false;
         }
         return false;
@@ -6281,7 +6356,7 @@ namespace UI
         if(!ents.inrange(n)) return;
         DOSURFACE(SURFACE_MAIN, enumerate(surface->windows, Window *, w,
         {
-            if(w->param != n || strncmp(w->name, "entity_", 7)) continue;
+            if(w->args[0].getint() != n || strncmp(w->name, "entity_", 7)) continue;
             surface->hide(w);
         }));
     }
@@ -6556,6 +6631,13 @@ namespace UI
 
     void setup()
     {
+        loopi(MAXARGS)
+        {
+            defformatstring(argname, "uiarg%d", i+1);
+            ident *id = newident(argname, IDF_ARG);
+            id->reset();
+            uiargs.add(id);
+        }
         loopi(SURFACE_MAX)
         {
             surfaces[i] = new Surface;
@@ -6693,7 +6775,7 @@ namespace UI
             Window *w = surface->windows.find(t->comp, NULL);
             if(w)
             {
-                setsvar("uiargs", t->args ? t->args : "");
+                w->setarg(t->args ? t->args : "", -1);
                 surface->show(w);
 
                 curtextscale = 1;
@@ -6717,7 +6799,6 @@ namespace UI
                 }
 
                 surface->hide(w);
-                setsvar("uiargs", "");
             }
 
             t->last = delay > 1 ? lastmillis - (elapsed % delay) : lastmillis;

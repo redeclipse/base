@@ -493,6 +493,7 @@ struct gamelog
     info *getlistinfo(const char *list, const char *name)
     {
         gamelog::listinfo *g = getlist(list);
+        if(!g) return NULL;
         int c = gamelog::findinfo(g->infos, name);
         if(!g->infos.inrange(c)) return NULL;
         return &g->infos[c];
@@ -501,7 +502,7 @@ struct gamelog
     info *getlistinfo(const char *list, int idx)
     {
         gamelog::listinfo *g = getlist(list);
-        if(!g->infos.inrange(idx)) return NULL;
+        if(!g || !g->infos.inrange(idx)) return NULL;
         return &g->infos[idx];
     }
 
@@ -523,6 +524,7 @@ struct gamelog
     info *gettaginfo(const char *tag, int grp, const char *name)
     {
         gamelog::groupinfo *g = getgroup(tag, grp);
+        if(!g) return NULL;
         int c = gamelog::findinfo(g->infos, name);
         if(!g->infos.inrange(c)) return NULL;
         return &g->infos[c];
@@ -531,7 +533,7 @@ struct gamelog
     info *gettaginfo(const char *tag, int grp, int idx)
     {
         gamelog::groupinfo *g = getgroup(tag, grp);
-        if(!g->infos.inrange(idx)) return NULL;
+        if(!g || !g->infos.inrange(idx)) return NULL;
         return &g->infos[idx];
     }
 #ifndef CPP_GAME_SERVER

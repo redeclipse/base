@@ -8,16 +8,7 @@
 hashnameset<ident> idents; // contains ALL vars/commands/aliases
 vector<ident *> identmap;
 ident *dummyident = NULL;
-
 int identflags = 0;
-
-enum
-{
-    MAXARGS = 25,
-    MAXRESULTS = 7,
-    MAXCOMARGS = 16,
-    MAXRET = 8
-};
 
 VARN(0, numargs, _numargs, MAXARGS, 0, 0);
 
@@ -98,6 +89,11 @@ void tagval::cleanup()
     freearg(*this);
 }
 
+void tagval::reset()
+{
+    forcenull(*this);
+}
+
 static inline void freeargs(tagval *args, int &oldnum, int newnum)
 {
     for(int i = newnum; i < oldnum; i++) freearg(args[i]);
@@ -150,6 +146,12 @@ inline void ident::forcenull()
 {
     if(valtype==VAL_STR) freeidentstr(val.s);
     valtype = VAL_NULL;
+}
+
+void ident::reset()
+{
+    forcenull();
+    cleancode(*this);
 }
 
 struct nullval : tagval
@@ -3442,13 +3444,13 @@ char *executestr(const char *p)
 }
 
 ICOMMAND(0, execute, "s", (char *s), commandret->setstr(executestr(s)));
-ICOMMAND(0, execid, "s", (char *s), {
-    ident *id = idents.access(s);
-    if(id) switch(id->type)
-    {
-        case ID_ALIAS: case ID_SVAR: if(*id->storage.s) commandret->setstr(executestr(*id->storage.s)); break;
-        default: break;
-    }
+
+ICOMMAND(0, execid, "V", (tagval *args, int numargs),
+{
+    if(numargs <= 0) return;
+    ident *id = idents.access(args[0].getstr());
+    if(!id) return;
+    executeret(id, numargs > 1 ? &args[1] : NULL, numargs > 1 ? numargs - 1 : 0);
 });
 
 char *executestr(ident *id, tagval *args, int numargs, bool lookup)
