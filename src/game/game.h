@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 267
+#define VERSION_GAME 268
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -2466,8 +2466,8 @@ namespace game
     extern gameent *getclient(int cn);
     extern gameent *intersectclosest(vec &from, vec &to, gameent *at);
     extern void clientdisconnected(int cn, int reason = DISC_NONE);
-    extern const char *colourname(char *name, int clientnum, int team, int actortype, int col, int privilege, int weapselect, bool icon = false, bool dupname = true, int colour = 3);
-    extern const char *colourname(gameent *d, char *name = NULL, bool icon = false, bool dupname = true, int colour = 3);
+    extern const char *colourname(const char *name, int clientnum, int team, int actortype, int col, int privilege, int weapselect, bool icon = false, bool dupname = true, int colour = 3);
+    extern const char *colourname(gameent *d, const char *name = NULL, bool icon = false, bool dupname = true, int colour = 3);
     extern const char *colourteam(int team, const char *icon = "");
     extern int findcolour(int team, int colour, int weapselect, bool tone = true, bool mix = false, float level = 1);
     extern int findcolour(gameent *d, bool tone = true, bool mix = false, float level = 1);
@@ -2541,9 +2541,6 @@ namespace entities
 
 #define GAMELOG_ENUM(pr, en) en(pr, Event, EVENT) en(pr, Message, MESSAGE) en(pr, Maximum, MAX)
 ENUMNV(GAMELOG, GAMELOG_ENUM);
-
-#define GAMELOG_I_ENUM(pr, en) en(pr, INT) en(pr, BOOL) en(pr, FLOAT) en(pr, STR) en(pr, MAX)
-ENUMLV(GAMELOG_I, GAMELOG_I_ENUM);
 
 #define GAMELOG_F_ENUM(pr, en) en(pr, NONE, 0) en(pr, CLIENT1, 1<<0) en(pr, CLIENT2, 1<<1) en(pr, CLIENTN, 1<<2) en(pr, BROADCAST, 1<<3) en(pr, UNMAPPED, 1<<4) \
     en(pr, CLIENTS, pr##_CLIENT1|pr##_CLIENT2|pr##_CLIENTN) en(pr, ALL, pr##_CLIENT1|pr##_CLIENT2|pr##_CLIENTN|pr##_BROADCAST)

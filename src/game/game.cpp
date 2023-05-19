@@ -2243,14 +2243,14 @@ namespace game
         return focus;
     }
 
-    bool duplicatename(char *name, int clientnum)
+    bool duplicatename(const char *name, int clientnum)
     {
         if(!client::demoplayback && clientnum != player1->clientnum && !strcmp(name, player1->name)) return true;
         loopv(players) if(players[i] && clientnum != players[i]->clientnum && !strcmp(name, players[i]->name)) return true;
         return false;
     }
 
-    bool duplicatename(gameent *d, char *name = NULL)
+    bool duplicatename(gameent *d, const char *name = NULL)
     {
         if(!name) name = d->name;
         return duplicatename(name, d->clientnum);
@@ -2324,7 +2324,7 @@ namespace game
         return 0;
     }
 
-    const char *colourname(char *name, int clientnum, int team, int actortype, int col, int privilege, int weapselect, bool icon, bool dupname, int colour)
+    const char *colourname(const char *name, int clientnum, int team, int actortype, int col, int privilege, int weapselect, bool icon, bool dupname, int colour)
     {
         static string colored;
         colored[0] = 0;
@@ -2359,7 +2359,7 @@ namespace game
         result(colourname(name, *clientnum, *team, *actortype, *col, *privilege, *weapselect, *icon != 0, *dupname != 0, *colour >= 0 ? *colour : 3));
     );
 
-    const char *colourname(gameent *d, char *name, bool icon, bool dupname, int colour)
+    const char *colourname(gameent *d, const char *name, bool icon, bool dupname, int colour)
     {
         if(!name) name = d->name;
         return colourname(name, d->clientnum, d->team, d->actortype, d->colour, d->privilege, d->weapselect, icon, dupname, colour);

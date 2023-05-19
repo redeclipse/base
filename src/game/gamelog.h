@@ -14,75 +14,56 @@ extern vector<gamelog *> eventlog, messagelog;
 
 struct gamelog
 {
-    struct info
+    struct info : tagval
     {
         char *name;
-        int type;
-        union
-        {
-            int i;
-            bool b;
-            float f;
-            char *s;
-        };
 
-        info() : name(NULL), type(-1) {}
+        info() : name(NULL) { tagval::setnull(); }
         ~info() { reset(); }
-
-        void cleanup()
-        {
-            if(type == GAMELOG_I_STR) DELETEA(s);
-        }
 
         void reset()
         {
             DELETEA(name);
-            if(type == GAMELOG_I_STR) DELETEA(s);
+            tagval::reset();
         }
 
         void set(bool v)
         {
-            cleanup();
-            type = GAMELOG_I_BOOL;
-            b = v;
+            tagval::reset();
+            setint(v ? 1 : 0);
         }
 
         void set(int v)
         {
-            cleanup();
-            type = GAMELOG_I_INT;
-            i = v;
+            tagval::reset();
+            setint(v);
         }
 
         void set(float v)
         {
-            cleanup();
-            type = GAMELOG_I_FLOAT;
-            f = v;
+            tagval::reset();
+            setfloat(v);
         }
 
         void set(char *v)
         {
-            cleanup();
-            type = GAMELOG_I_STR;
-            s = newstring(v && *v ? v : "");
+            tagval::reset();
+            setstr(newstring(v && *v ? v : ""));
         }
 
         void set(const char *v)
         {
-            cleanup();
-            type = GAMELOG_I_STR;
-            s = newstring(v && *v ? v : "");
+            tagval::reset();
+            setstr(newstring(v && *v ? v : ""));
         }
 
         void comret()
         {
             switch(type)
             {
-                case GAMELOG_I_INT: intret(i); break;
-                case GAMELOG_I_BOOL: intret(b ? 1 : 0); break;
-                case GAMELOG_I_FLOAT: floatret(f); break;
-                case GAMELOG_I_STR: result(s); break;
+                case VAL_INT: intret(i); break;
+                case VAL_FLOAT: floatret(f); break;
+                case VAL_STR: case VAL_CSTR: result(s); break;
                 default: break;
             }
         }
@@ -178,9 +159,7 @@ struct gamelog
         listinfo &t = lists[a];
         int c = findinfo(t.infos, "console");
         if(!t.infos.inrange(c)) return NULL;
-        info &n = t.infos[c];
-        if(n.type == GAMELOG_I_STR) return n.s;
-        return NULL;
+        return t.infos[c].getstr();
     }
 
     int concolor()
@@ -190,9 +169,7 @@ struct gamelog
         listinfo &t = lists[a];
         int c = findinfo(t.infos, "colour");
         if(!t.infos.inrange(c)) return colourwhite;
-        info &n = t.infos[c];
-        if(n.type == GAMELOG_I_INT) return n.i;
-        return colourwhite;
+        return t.infos[c].getint();
     }
 
 #ifdef CPP_GAME_SERVER
@@ -206,10 +183,9 @@ struct gamelog
             putint(p, n.type);
             switch(n.type)
             {
-                case GAMELOG_I_INT: putint(p, n.i); break;
-                case GAMELOG_I_BOOL: putint(p, n.b ? 1 : 0); break;
-                case GAMELOG_I_FLOAT: putfloat(p, n.f); break;
-                case GAMELOG_I_STR: sendstring(n.s, p); break;
+                case VAL_INT: putint(p, n.i); break;
+                case VAL_FLOAT: putfloat(p, n.f); break;
+                case VAL_STR: case VAL_CSTR: sendstring(n.s, p); break;
                 default: break;
             }
         }
@@ -222,8 +198,7 @@ struct gamelog
         {
             listinfo &t = lists[tid];
             int sid = findinfo(t.infos, "target");
-            if(t.infos.inrange(sid) && t.infos[sid].type == GAMELOG_I_INT)
-                target = t.infos[sid].i;
+            if(t.infos.inrange(sid)) target = t.infos[sid].getint();
         }
 
         packetbuf p(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
@@ -260,10 +235,9 @@ struct gamelog
         int itype = getint(p);
         switch(itype)
         {
-            case GAMELOG_I_INT: addinfo(infos, text, getint(p)); break;
-            case GAMELOG_I_BOOL: addinfo(infos, text, getint(p) != 0); break;
-            case GAMELOG_I_FLOAT: addinfo(infos, text, getfloat(p)); break;
-            case GAMELOG_I_STR:
+            case VAL_INT: addinfo(infos, text, getint(p)); break;
+            case VAL_FLOAT: addinfo(infos, text, getfloat(p)); break;
+            case VAL_STR: case VAL_CSTR:
             {
                 getstring(str, p);
                 addinfo(infos, text, str);
@@ -315,23 +289,15 @@ struct gamelog
         if(lists.inrange(tid))
         {
             listinfo &t = lists[tid];
+
             int sid = findinfo(t.infos, "sound");
-            if(t.infos.inrange(sid))
-            {
-                info &n = t.infos[sid];
-                switch(n.type)
-                {
-                    case GAMELOG_I_INT: sound = n.i; break;
-                    case GAMELOG_I_STR: sound = gamesounds[n.s].getindex(); break;
-                    default: break;
-                }
-            }
+            if(t.infos.inrange(sid)) sound = t.infos[sid].getint();
+
             sid = findinfo(t.infos, "flags");
-            if(t.infos.inrange(sid) && t.infos[sid].type == GAMELOG_I_INT)
-                flags = t.infos[sid].i;
+            if(t.infos.inrange(sid)) flags = t.infos[sid].getint();
+
             sid = findinfo(t.infos, "chan");
-            if(t.infos.inrange(sid) && t.infos[sid].type == GAMELOG_I_INT)
-                chan = t.infos[sid].i;
+            if(t.infos.inrange(sid)) chan = t.infos[sid].getint();
         }
 
         int c = findtaginfo("client");
@@ -343,9 +309,7 @@ struct gamelog
                 groupinfo &g = t.groups[i];
                 int f = findinfo(g.infos, "clientnum");
                 if(!g.infos.inrange(f)) continue;
-                info &n = g.infos[f];
-                if(n.type != GAMELOG_I_INT) continue;
-                gameent *d = game::getclient(n.i);
+                gameent *d = game::getclient(g.infos[f].getint());
                 if(!d) continue;
                 if(sound >= 0 && flags&(i == 0 ? GAMELOG_F_CLIENT1 : (i == 1 ? GAMELOG_F_CLIENT2 : GAMELOG_F_CLIENTN)))
                     entities::announce(sound, d, chan, flags&GAMELOG_F_UNMAPPED ? SND_UNMAPPED : 0);
@@ -657,20 +621,20 @@ struct gamelog
     ICOMMAND(0, get##logt##name, "isibib", (int *val, char *tag, int *grp, int *col, int *icon, int *dupname), \
     { \
         gamelog::info *name = gamelog::gettaginfo(logt##log, *val, tag, *grp, "name"); \
-        if(!name || name->type != GAMELOG_I_STR) return; \
+        if(!name) return; \
         gamelog::info *clientnum = gamelog::gettaginfo(logt##log, *val, tag, *grp, "clientnum"); \
-        if(!clientnum || clientnum->type != GAMELOG_I_INT) return; \
+        if(!clientnum) return; \
         gamelog::info *team = gamelog::gettaginfo(logt##log, *val, tag, *grp, "team"); \
-        if(!team || team->type != GAMELOG_I_INT) return; \
+        if(!team) return; \
         gamelog::info *actortype = gamelog::gettaginfo(logt##log, *val, tag, *grp, "actortype"); \
-        if(!actortype || actortype->type != GAMELOG_I_INT) return; \
+        if(!actortype) return; \
         gamelog::info *colour = gamelog::gettaginfo(logt##log, *val, tag, *grp, "colour"); \
-        if(!colour || colour->type != GAMELOG_I_INT) return; \
+        if(!colour) return; \
         gamelog::info *privilege = gamelog::gettaginfo(logt##log, *val, tag, *grp, "privilege"); \
-        if(!privilege || privilege->type != GAMELOG_I_INT) return; \
+        if(!privilege) return; \
         gamelog::info *weapselect = gamelog::gettaginfo(logt##log, *val, tag, *grp, "weapselect"); \
-        if(!weapselect || weapselect->type != GAMELOG_I_INT) return; \
-        result(game::colourname(name->s, clientnum->i, team->i, actortype->i, colour->i, privilege->i, weapselect->i, *icon != 0, *dupname != 0, *col >= 0 ? *col : 3)); \
+        if(!weapselect) return; \
+        result(game::colourname(name->getstr(), clientnum->getint(), team->getint(), actortype->getint(), colour->getint(), privilege->getint(), weapselect->getint(), *icon != 0, *dupname != 0, *col >= 0 ? *col : 3)); \
     }); \
     ICOMMAND(0, get##logt##lists, "i", (int *val), intret(logt##log.inrange(*val) ? logt##log[*val]->lists.length() : -1)); \
     ICOMMAND(0, get##logt##list, "iss", (int *val, char *list, char *name), \

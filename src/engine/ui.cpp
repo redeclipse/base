@@ -911,7 +911,8 @@ namespace UI
             if(contents_ && *contents_) contents = new Code(contents_);
             if(onshow_ && *onshow_) onshow = new Code(onshow_);
             if(onhide_ && *onhide_) onhide = new Code(onhide_);
-            resetargs(true);
+            numargs = initargs = 0;
+            loopi(MAXARGS) args[i].setnull();
             if(args_ && numargs_ > 0)
             {
                 numargs = initargs = min(numargs_, int(MAXARGS));
