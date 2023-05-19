@@ -281,8 +281,8 @@ enum
     SPHY_MAX
 };
 
-#define CROUCHLOW 0.65f
-#define CROUCHHIGH 0.85f
+#define CROUCHLOW 0.7f
+#define CROUCHHIGH 0.9f
 #define GUARDRADIUS 3.f
 #define PHYSMILLIS 250
 #define DEATHMILLIS 300
