@@ -789,7 +789,7 @@ static void loadsamples(soundslot &slot)
         sample = loadsoundsample(sam);
         slot.samples.add(sample);
 
-        if(!sample || !sample->valid()) conoutf(colourred, "Failed to load sample: %s (%s)", sam, sample ? (!sample->valid() ? "Invalid Sample" : "Unknown error") : "NULL sample");
+        if(!sample || !sample->valid()) conoutf(colourred, "Failed to load sample: %s (%s)", sam, sample ? "Invalid sample" : "Not found");
     }
 }
 
