@@ -291,7 +291,12 @@ struct gamelog
             listinfo &t = lists[tid];
 
             int sid = findinfo(t.infos, "sound");
-            if(t.infos.inrange(sid)) sound = t.infos[sid].getint();
+            if(t.infos.inrange(sid))
+            {
+                if(t.infos[sid].type == VAL_STR) // server sends strings so client can get index itself
+                    sound = gamesounds[t.infos[sid].getstr()].getindex();
+                else sound = t.infos[sid].getint();
+            }
 
             sid = findinfo(t.infos, "flags");
             if(t.infos.inrange(sid)) flags = t.infos[sid].getint();
