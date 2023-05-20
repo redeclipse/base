@@ -1791,7 +1791,7 @@ static inline vec offsetvec(vec o, int dir, int dist)
     return v;
 }
 
-VAR(IDF_PERSIST, weatherdropdist, 0, 256, VAR_MAX);
+VAR(IDF_PERSIST, weatherdropdist, 0, 200, VAR_MAX);
 FVAR(IDF_PERSIST, weatherdropnumscale, 0, 1.0f, FVAR_MAX);
 
 #define MPVVARS(name) \
@@ -1853,7 +1853,7 @@ void part_weather()
     float variance = getweatherdropvariance(), size = getweatherdropsize(), blend = getweatherdropblend(), hintblend = getweatherdrophintblend();
 
     // Scale the number of drops if the distance changes
-    if(dist != 256) drops = round(drops * float(dist) / 256.f);
+    if(dist != 200) drops = round(drops * float(dist) / 200.f);
 
     loopi(drops)
     {
@@ -1872,6 +1872,8 @@ void part_weather()
             // Raycast from outside map to find obstructions
             float hitz = raycube(skypos, dir);
             zoff = vec(dir).mul(hitz).add(skypos).z;
+            if(gravity >= 0) zoff = max(zoff, camera1->o.z - (dist * 0.5f));
+            else zoff = max(zoff, camera1->o.z + (dist * 0.5f));
 
             // If collided before the start position, discard
             if(gravity >= 0 ? zoff >= o.z : zoff <= o.z) continue;
