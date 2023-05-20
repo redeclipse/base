@@ -1169,6 +1169,28 @@ COMMAND(0, resetsound, "");
 
 bool soundfile::setup(const char *name, int t, int m)
 {
+    viofile = openfile(name, "rb");
+    if(!viofile)
+    {
+        clear(); // don't print as we scan directories
+        //conoutf(colourred, "Failed to open sound file: %s", name);
+        return false;
+    }
+
+    sndfile = sf_open_virtual(&soundvfio, SFM_READ, &info, viofile);
+    if(!sndfile)
+    {
+        conoutf(colourred, "Failed to create libsndfile context: %s", name);
+        clear();
+        return false;
+    }
+    if(info.frames <= 0 || info.frames >= SF_COUNT_MAX)
+    {
+        conoutf(colourred, "Invalid sound file frame count: %s (%lli)", name, info.frames);
+        clear();
+        return false;
+    }
+
     switch(t)
     {
         case FLOAT:
@@ -1192,27 +1214,6 @@ bool soundfile::setup(const char *name, int t, int m)
         }
     }
     mixtype = clamp(m, 0, int(MAXMIX-1));
-
-    viofile = openfile(name, "rb");
-    if(!viofile)
-    {
-        clear();
-        conoutf(colourred, "Failed to open virtual IO file: %s", name);
-        return false;
-    }
-    sndfile = sf_open_virtual(&soundvfio, SFM_READ, &info, viofile);
-    if(!sndfile)
-    {
-        conoutf(colourred, "Failed to create libsndfile context: %s", name);
-        clear();
-        return false;
-    }
-    if(info.frames <= 0 || info.frames >= SF_COUNT_MAX)
-    {
-        conoutf(colourred, "Invalid sound file frame count: %s (%lli)", name, info.frames);
-        clear();
-        return false;
-    }
 
     if(info.channels == 1) format = type == soundfile::FLOAT ? AL_FORMAT_MONO_FLOAT32 : AL_FORMAT_MONO16;
     else if(info.channels == 2) format = type == soundfile::FLOAT ? AL_FORMAT_STEREO_FLOAT32 : AL_FORMAT_STEREO16;
