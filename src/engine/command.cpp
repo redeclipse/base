@@ -503,8 +503,15 @@ void resetvar(char *name)
     ident *id = idents.access(name);
     if(!id) return;
     if(id->flags&IDF_READONLY) printreadonly(id);
-    else if(id->flags&IDF_MAP || id->flags&IDF_CLIENT || id->flags&IDF_SERVER) debugcode("Variable %s cannot be reset (%d [%d])", id->name, id->type, id->flags);
-    else clearoverride(*id);
+    else if(id->flags&IDF_MAP || id->flags&IDF_CLIENT || id->flags&IDF_SERVER)
+        debugcode("Variable %s cannot be reset (%d [%d])", id->name, id->type, id->flags);
+    else
+    {
+        clearoverride(*id);
+#ifndef STANDALONE
+        if(consolevars && consolerun) printvar(id);
+#endif
+    }
 }
 
 COMMAND(0, resetvar, "s");
@@ -553,6 +560,7 @@ static inline void setalias(ident &id, tagval &v, bool mapdef, bool quiet = fals
         id.flags |= oldflags&IDF_PERSIST;
 #ifndef STANDALONE
         client::editvar(&id, !(identflags&IDF_MAP));
+        if(consolevars && consolerun) printvar(&id);
 #endif
     }
 }
@@ -581,6 +589,9 @@ static void setalias(const char *name, tagval &v, bool mapdef, bool quiet = fals
                 if(id->flags&IDF_EMUVAR)
                 {
                     execute(id, &v, 1);
+#ifndef STANDALONE
+                    if(consolevars && consolerun) printvar(id);
+#endif
                     break;
                 }
                 // fall through
@@ -1168,6 +1179,7 @@ void setvarchecked(ident *id, int val)
 #ifndef STANDALONE
         client::editvar(id, !(identflags&IDF_MAP));
         if(versioning && id->flags&IDF_SERVER) setvar(&id->name[3], val);
+        if(consolevars && consolerun) printvar(id);
 #endif
     }
 }
@@ -1202,6 +1214,7 @@ void setfvarchecked(ident *id, float val)
 #ifndef STANDALONE
         client::editvar(id, !(identflags&IDF_MAP));
         if(versioning && id->flags&IDF_SERVER) setfvar(&id->name[3], val, true);
+        if(consolevars && consolerun) printvar(id);
 #endif
     }
 }
@@ -1230,6 +1243,7 @@ void setsvarchecked(ident *id, const char *val)
 #ifndef STANDALONE
         client::editvar(id, !(identflags&IDF_MAP));
         if(versioning && id->flags&IDF_SERVER) setsvar(&id->name[3], val, true);
+        if(consolevars && consolerun) printvar(id);
 #endif
     }
 }
@@ -1256,6 +1270,9 @@ ICOMMAND(0, set, "rT", (ident *id, tagval *v),
             {
                 execute(id, v, 1);
                 v->type = VAL_NULL;
+#ifndef STANDALONE
+                if(consolevars && consolerun) printvar(id);
+#endif
                 break;
             }
             // fall through

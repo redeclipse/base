@@ -4,10 +4,15 @@
 
 reversequeue<cline, MAXCONLINES> conlines;
 
-int consolemillis = 0;
 bigstring consolebuf;
+int consolemillis = 0, consolepos = -1;
 char *consoleaction = NULL, *consoleprompt = NULL;
-int consolepos = -1;
+bool consolerun = false;
+SVAR(0, consolestr, "");
+
+VAR(IDF_PERSIST, consolestay, 0, 1, 1);
+VAR(IDF_PERSIST, consoleecho, 0, 1, 1);
+VAR(IDF_PERSIST, consolevars, 0, 1, 1);
 
 void conline(int color, const char *sf)
 {
@@ -367,8 +372,6 @@ ICOMMAND(0, clearallbinds, "", (), enumerate(keyms, keym, km, km.clear()));
 
 ICOMMAND(0, keyspressed, "issss", (int *limit, char *s1, char *s2, char *sep1, char *sep2), { vector<char> list; getkeypressed(max(*limit, 0), s1, s2, sep1, sep2, list); result(list.getbuf()); });
 
-VAR(IDF_PERSIST, consolestay, 0, 1, 1);
-
 void closeconsole()
 {
     if(consolemillis <= 0) return;
@@ -425,7 +428,6 @@ char *pastetext(char *buf, size_t len)
     return buf;
 }
 
-SVAR(0, consolestr, "");
 struct hline
 {
     char *buf, *action, *prompt, *icon;
@@ -464,8 +466,14 @@ struct hline
 
     void run()
     {
+        if(consoleecho) conoutf(colourwhite, "\fs\fa>\fS %s", buf);
+
+        bool oldconsolerun = consolerun;
+        consolerun = true;
         setsvar("consolestr", buf);
         execute(action && *action ? action : buf);
+        setsvar("consolestr", "");
+        consolerun = oldconsolerun;
     }
 };
 vector<hline *> history;
@@ -750,8 +758,10 @@ bool consolekey(int code, bool isdown)
                 else h = history.last();
             }
             histpos = history.length();
+
             if(consolestay) inputconsole(NULL);
             else closeconsole();
+
             if(h) h->run();
         }
         else if(code==SDLK_ESCAPE || code < 0)

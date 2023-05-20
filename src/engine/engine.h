@@ -786,9 +786,10 @@ extern tagval *addreleaseaction(ident *id, int numargs);
 extern const char *getkeyname(int code);
 extern int findkeycode(char *key);
 
-extern int consolemillis, consolepos, completeoffset, completesize;
 extern bigstring consolebuf;
+extern int consolemillis, consolepos, consolestay, consoleecho, consolevars, completeoffset, completesize;
 extern char *consoleaction, *consoleprompt;
+extern bool consolerun;
 
 // main
 extern void quit();
