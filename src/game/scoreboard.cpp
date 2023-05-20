@@ -213,8 +213,8 @@ namespace hud
                                 }
                                 else break;
                             }
-                            log->addgroup("winner", "team", sg.team);
-                            loopvj(groups[i]->players) log->addclient("client", sg.players[j]);
+                            log->addgroup("winner", "team", groups[i]->team);
+                            loopvj(groups[i]->players) log->addclient("client", groups[i]->players[j]);
                         }
                         log->addlistf("args", "console", "%s tied %swith a total score of \fs\fc%s\fS", game::colourteam(sg.team), winner, m_ra_timed(game::gamemode, game::mutators) ? timestr(sg.total, scoreracestyle) : intstr(sg.total));
                     }
