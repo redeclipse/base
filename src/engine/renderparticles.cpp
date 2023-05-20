@@ -181,13 +181,13 @@ struct partrenderer
         {
             ts = lastmillis-p->millis;
             blend = max(255-((ts<<8)/p->fade), 0);
-            float weight = p->gravity;
             size = p->size + (p->sizechange * ts);
 
             float secs = curtime/1000.f;
             int part = type&0xFF;
             vec v = (part == PT_PART || part == PT_TRAIL) ? vec(p->d).mul(secs) : vec(0, 0, 0);
-            if(weight != 0)
+
+            if(p->gravity != 0)
             {
                 if(ts > p->fade) ts = p->fade;
                 static struct particleent : physent
@@ -198,29 +198,25 @@ struct partrenderer
                         type = ENT_DUMMY;
                     }
                 } d;
-                d.weight = weight;
+                d.weight = p->gravity;
                 v.add(physics::gravityvel(&d, p->o, secs));
             }
+
             p->o.add(v);
             if(particlewind && type&PT_WIND) p->o.add(p->wind.probe(o).mul(secs * 10.0f));
-            if(step && p->collide && p->o.z < p->val)
+
+            if(step && p->collide && !p->precollide)
             {
-                if(p->collide > 0)
-                {
-                    if(!p->precollide)
-                    {
-                        vec surface;
-                        float floorz = rayfloor(vec(p->o.x, p->o.y, p->val), surface, RAY_CLIPMAT, COLLIDERADIUS);
-                        float collidez = floorz<0 ? o.z-COLLIDERADIUS : p->val - floorz;
-                        if(p->o.z >= collidez+COLLIDEERROR) p->val = collidez+COLLIDEERROR;
-                    }
-                    if(p->o.z < p->val)
-                    {
-                        addstain(p->collide-1, vec(p->o.x, p->o.y, p->val), vec(o).sub(p->o).normalize(), 2*p->size, p->color, type&PT_RND4 || type&PT_RND16 ? (p->flags>>5)&3 : 0);
-                        blend = 0;
-                    }
-                }
-                else blend = 0;
+                vec dir = vec(v).normalize();
+                float dist = raycube(o, dir, worldsize * 2, RAY_CLIPMAT);
+                p->val = vec(o).add(vec(dir).mul(dist)).z;
+                p->precollide = true;
+            }
+
+            if(step && p->collide && (v.z <= 0 ? p->o.z < p->val : p->o.z > p->val))
+            {
+                if(p->collide > 0) addstain(p->collide - 1, vec(p->o.x, p->o.y, p->val), vec(o).sub(p->o).normalize(), 2*p->size, p->color, type&PT_RND4 || type&PT_RND16 ? (p->flags>>5)&3 : 0);
+                blend = 0;
             }
             else p->m.add(vec(p->o).sub(o));
         }
@@ -1784,6 +1780,7 @@ static inline vec offsetvec(vec o, int dir, int dist)
     return v;
 }
 
+VAR(IDF_PERSIST, weatherdropdist, 0, 256, VAR_MAX);
 FVAR(IDF_PERSIST, weatherdropnumscale, 0, 1.0f, 1.0f);
 
 FVAR(IDF_MAP, weatherdrops,    0, 0, 10.0f);
@@ -1792,16 +1789,17 @@ FVAR(IDF_MAP, weatherdropsalt, 0, 0, 10.0f);
 VAR(IDF_MAP, weatherdroppart,    PART_FIREBALL_LERP, PART_RAIN, PART_RAIN);
 VAR(IDF_MAP, weatherdroppartalt, PART_FIREBALL_LERP, PART_RAIN, PART_RAIN);
 
+VAR(IDF_MAP, weatherdropcollide,    -1, -1, STAIN_MAX);
+VAR(IDF_MAP, weatherdropcollidealt, -1, -1, STAIN_MAX);
+
 VAR(IDF_MAP, weatherdropfade,    1, 750, 10000);
 VAR(IDF_MAP, weatherdropfadealt, 1, 750, 10000);
 
-VAR(IDF_MAP, weatherdropgravity,    1, 300, 2000);
-VAR(IDF_MAP, weatherdropgravityalt, 1, 300, 2000);
+VAR(IDF_MAP, weatherdropgravity,    -2000, 300, 2000);
+VAR(IDF_MAP, weatherdropgravityalt, -2000, 300, 2000);
 
 CVAR(IDF_MAP, weatherdropcolour,    0xFFFFFF);
 CVAR(IDF_MAP, weatherdropcolouralt, 0xFFFFFF);
-CVARF(IDF_MAP, weatherdropcolor,    0xFFFFFF, weatherdropcolour = weatherdropcolor);
-CVARF(IDF_MAP, weatherdropcoloralt, 0xFFFFFF, weatherdropcolouralt = weatherdropcolouralt);
 CVAR(IDF_MAP, weatherdrophintcolour,    0x000000);
 CVAR(IDF_MAP, weatherdrophintcolouralt, 0x000000);
 FVAR(IDF_MAP, weatherdrophintblend,    0.0f, 0.0f, 1.0f);
@@ -1820,16 +1818,13 @@ void part_weather()
 {
     if(!canaddparticles()) return;
 
-    // Spawn drops within a 200^3 cube around the camera
-    constexpr int dist = 200;
-
     enviroparts = true;
 
     // Calculate the number of drops to spawn
-    int drops = round(curtime * (checkmapvariant(MPV_ALT) ? weatherdropsalt : weatherdrops) *
-        weatherdropnumscale);
+    int drops = round(curtime * (checkmapvariant(MPV_ALT) ? weatherdropsalt : weatherdrops) * weatherdropnumscale);
 
     int   part      = checkmapvariant(MPV_ALT) ? weatherdroppartalt       : weatherdroppart;
+    int   collide   = checkmapvariant(MPV_ALT) ? weatherdropcollidealt    : weatherdropcollide;
     int   fade      = checkmapvariant(MPV_ALT) ? weatherdropfadealt       : weatherdropfade;
     float variance  = checkmapvariant(MPV_ALT) ? weatherdropvariancealt   : weatherdropvariance;
     int   gravity   = checkmapvariant(MPV_ALT) ? weatherdropgravityalt    : weatherdropgravity;
@@ -1837,42 +1832,33 @@ void part_weather()
     float blend     = checkmapvariant(MPV_ALT) ? weatherdropblendalt      : weatherdropblend;
     bvec  color     = checkmapvariant(MPV_ALT) ? weatherdropcolouralt     : weatherdropcolour;
     bvec  hintcolor = checkmapvariant(MPV_ALT) ? weatherdrophintcolouralt : weatherdrophintcolour;
-    float hintblend  = checkmapvariant(MPV_ALT) ? weatherdrophintblendalt   : weatherdrophintblend;
+    float hintblend = checkmapvariant(MPV_ALT) ? weatherdrophintblendalt  : weatherdrophintblend;
 
     loopi(drops)
     {
         // Pick a random position within the cube
-        vec o = camera1->o;
-        o.x += rnd(dist * 2) - dist;
-        o.y += rnd(dist * 2) - dist;
-        o.z += rnd(dist * 2) - dist;
-
-        vec dir = vec(0, 0, -1);
+        vec o = vec(camera1->o).add(vec(rnd(weatherdropdist * 2) - weatherdropdist, rnd(weatherdropdist * 2) - weatherdropdist, rnd(weatherdropdist * 2) - weatherdropdist));
 
         // Add random jitter to the drop direction
-        dir.x = rndscale(variance * 2) - variance;
-        dir.y = rndscale(variance * 2) - variance;
-        dir.normalize();
+        vec dir = vec(rndscale(variance * 2) - variance, rndscale(variance * 2) - variance, gravity >= 0 ? -1 : 1).normalize();
 
-        // Follow the inverse direction to find the sky position
-        vec skypos = o;
-        skypos.sub(vec(dir).mul(worldsize - o.z));
+        // Follow the inverse direction to find the outside position
+        vec skypos = vec(o).sub(vec(dir).mul(worldsize));
 
-        // Raycast downwards from the sky to find obstructions
-        vec surface;
-        float floorz = raycube(skypos, dir, worldsize, RAY_CLIPMAT);
-        float collidez = max(worldsize - floorz, camera1->o.z - (dist*0.5f));
+        float zoff = 0;
+        if(collide)
+        {
+            // Raycast from outside map to find obstructions
+            float dist = raycube(skypos, dir, worldsize * 2, RAY_CLIPMAT);
+            zoff = vec(skypos).add(vec(dir).mul(dist)).z;
 
-        // If the hit is above the picked position, skip this drop
-        if(collidez >= o.z)
-            continue;
+            // if collided before the start position, discard
+            if(gravity >= 0 ? o.z <= zoff : o.z >= zoff) continue;
+        }
 
-        dir.mul(gravity);
+        particle *newpart = newparticle(o, dir, fade, part, color.tohexcolor(), size, blend, hintcolor.tohexcolor(), hintblend, gravity, collide, zoff);
 
-        particle *newpart = newparticle(o, dir, fade, part, color.tohexcolor(), size, blend, hintcolor.tohexcolor(), hintblend, 0, 1,
-            collidez);
-
-         if(newpart) newpart->precollide = true;
+        if(newpart) newpart->precollide = true;
     }
 
     enviroparts = false;

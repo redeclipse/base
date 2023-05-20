@@ -1121,23 +1121,33 @@ bool load_world(const char *mname, int crc, int variant)
                     string name;
                     f->read(name, len+1);
                     ident *id = idents.access(name);
-                    if(!id && hdr.version <= 45)
+                    if(!id)
                     {
                         string temp = "";
-                        if(!strncmp(name, "moon", 4)) formatstring(temp, "sun%salt", &name[4]);
-                        else
+                        if(hdr.version <= 45)
                         {
-                            int len = strlen(name), end = len-5;
-                            if(end > 0 && !strncmp(&name[end], "night", 5))
+                            if(!strncmp(name, "moon", 4)) formatstring(temp, "sun%salt", &name[4]);
+                            else
                             {
-                                copystring(temp, name);
-                                temp[end++] = 'a';
-                                temp[end++] = 'l';
-                                temp[end++] = 't';
-                                temp[end] = 0;
+                                int len = strlen(name), end = len-5;
+                                if(end > 0 && !strncmp(&name[end], "night", 5))
+                                {
+                                    copystring(temp, name);
+                                    temp[end++] = 'a';
+                                    temp[end++] = 'l';
+                                    temp[end++] = 't';
+                                    temp[end] = 0;
+                                }
                             }
                         }
-                        if(temp[0] != 0 && (id = idents.access(temp)) != NULL) copystring(name, temp);
+                        else if(!strcmp(name, "weatherdropcolor")) copystring(temp, "weatherdropcolour");
+                        else if(!strcmp(name, "weatherdropcoloralt")) copystring(temp, "weatherdropcolouralt");
+
+                        if(*temp && (id = idents.access(temp)) != NULL)
+                        {
+                            conoutf(colourorange, "WARNING: transferring variable %s to %s", name, temp);
+                            copystring(name, temp);
+                        }
                     }
                     bool proceed = true;
                     int type = f->getlil<int>();

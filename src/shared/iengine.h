@@ -314,16 +314,11 @@ extern void regularflame(int type, const vec &p, float radius, float height, int
 extern void lensflare(const vec &o, const vec &color, bool sun, int sparkle, float scale = 1);
 
 // stain
-enum
-{
-    STAIN_SMOKE,
-    STAIN_SCORCH, STAIN_SCORCH_SHORT,
-    STAIN_BLOOD,
-    STAIN_BULLET,
-    STAIN_ENERGY,
-    STAIN_STAIN,
-    STAIN_MAX
-};
+#define STAIN_ENUM(pr, en) \
+    en(pr, Smoke, SMOKE) en(pr, Scorch, SCORCH) en(pr, Short Scorch, SCORCH_SHORT) \
+    en(pr, Blood, BLOOD) en(pr, Bullet, BULLET) en(pr, Energy, ENERGY) en(pr, Stain, STAIN) \
+    en(pr, Maximum, MAX)
+ENUMNV(STAIN, STAIN_ENUM);
 
 extern void addstain(int type, const vec &center, const vec &surface, float radius, const bvec &color = bvec(0xFF, 0xFF, 0xFF), int info = 0);
 
