@@ -2149,6 +2149,7 @@ namespace game
 
     void resetmap(bool empty) // called just before a map load
     {
+        UI::hideui(NULL, UI::SURFACE_MAIN);
         eventlog.shrink(0);
     }
 

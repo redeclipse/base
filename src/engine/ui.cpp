@@ -19,7 +19,9 @@ namespace UI
     VAR(0, uihidden, 0, 0, 1);
     FVAR(IDF_PERSIST, uiscale, FVAR_NONZERO, 1, 100);
     FVAR(IDF_PERSIST, uiworldscale, FVAR_NONZERO, 50, FVAR_MAX);
+
     VAR(IDF_PERSIST, uitextrows, 1, 48, VAR_MAX);
+    void calctextscale() { uitextscale = 1.0f/uitextrows; }
 
     VAR(IDF_PERSIST, uiscrollsteptime, 0, 50, VAR_MAX);
     VAR(IDF_PERSIST, uislidersteptime, 0, 50, VAR_MAX);
@@ -413,6 +415,11 @@ namespace UI
                 } \
                 outbody; \
             })
+
+        virtual void prepare()
+        {
+            loopchildren(o, o->prepare());
+        }
 
         virtual void layout()
         {
@@ -1478,13 +1485,13 @@ namespace UI
     struct Surface : Object
     {
         int type, cursortype, exclcheck;
-        bool lockcursor, mousetracking, lockscroll, standalone, interactive, hasexclusive;
+        bool lockcursor, mousetracking, lockscroll, interactive, hasexclusive;
         vec2 mousetrackvec;
 
         hashnameset<Window *> windows;
         vector<Texture *> texs;
 
-        Surface() : type(SURFACE_MAIN), cursortype(CURSOR_DEFAULT), exclcheck(0), lockcursor(false), mousetracking(false), lockscroll(false), standalone(false), interactive(true), hasexclusive(false), mousetrackvec(0, 0) {}
+        Surface() : type(SURFACE_MAIN), cursortype(CURSOR_DEFAULT), exclcheck(0), lockcursor(false), mousetracking(false), lockscroll(false), interactive(true), hasexclusive(false), mousetrackvec(0, 0) {}
         ~Surface() {}
 
         static const char *typestr() { return "#Surface"; }
@@ -1546,6 +1553,32 @@ namespace UI
 
         void build()
         {
+            float oldtextscale = curtextscale;
+            curtextscale = 1;
+            pushfont();
+
+            cursortype = CURSOR_DEFAULT;
+            lockcursor = false;
+            mousetracking = false;
+            lockscroll = false;
+
+            inputsteal = NULL;
+            prepare();
+
+            if(interactive)
+            {
+                if(surfacetype == SURFACE_MAIN) readyeditors();
+
+                setstate(STATE_HOVER, cursorx, cursory, childstate&STATE_HOLD_MASK);
+                if(childstate&STATE_HOLD) setstate(STATE_HOLD, cursorx, cursory, STATE_HOLD, SETSTATE_ANY);
+                if(childstate&STATE_ALT_HOLD) setstate(STATE_ALT_HOLD, cursorx, cursory, STATE_ALT_HOLD, SETSTATE_ANY);
+                if(childstate&STATE_ESC_HOLD) setstate(STATE_ESC_HOLD, cursorx, cursory, STATE_ESC_HOLD, SETSTATE_ANY);
+            }
+
+            calctextscale();
+
+            if(surfacetype == SURFACE_MAIN && *uiprecmd) execute(uiprecmd);
+
             reset();
             setup();
             loopwindows(w,
@@ -1556,6 +1589,29 @@ namespace UI
             });
             children.sort(Window::compare);
             resetstate(); // IMPORTED
+
+            if(surfacetype == SURFACE_MAIN && *uipostcmd) execute(uipostcmd);
+            if(interactive)
+            {
+                if(inputsteal && !inputsteal->isfocus()) inputsteal = NULL;
+                if(!mousetracking) mousetrackvec = vec2(0, 0);
+                if(surfacetype == SURFACE_MAIN) flusheditors();
+            }
+
+            popfont();
+            curtextscale = oldtextscale;
+        }
+
+        void render(bool world = false)
+        {
+            float oldtextscale = curtextscale;
+            curtextscale = 1;
+            pushfont();
+            layout();
+            adjustchildren();
+            draw(world);
+            popfont();
+            curtextscale = oldtextscale;
         }
 
         bool show(Window *w, const vec &pos = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float y = 0, float p = 0, float s = 1, float dy = 0, float dp = 0)
@@ -1943,7 +1999,7 @@ namespace UI
         const char *ref = dynuiref(name, param);
         DOSURFACE(stype,
         {
-            if(!ref || !*ref) ret = surface->hideall(false, true) > 0;
+            if(!ref || !*ref) ret = surface->hideall(false, world) > 0;
             else
             {
                 Window *w = surface->windows.find(ref, NULL);
@@ -4822,7 +4878,7 @@ namespace UI
         float scale, offsetx, offsety;
         editor *edit;
         char *keyfilter;
-        bool canfocus, allowlines;
+        bool canfocus, allowlines, wasfocus;
 
         TextEditor() : edit(NULL), keyfilter(NULL), canfocus(true), allowlines(true) {}
 
@@ -4846,27 +4902,51 @@ namespace UI
             if(keyfilter_ && *keyfilter_) SETSTR(keyfilter, keyfilter_);
             else DELETEA(keyfilter);
             allowlines = allowlines_;
+            wasfocus = false;
         }
+
         ~TextEditor()
         {
+            if(inputsteal == this) inputsteal = NULL;
             DELETEA(keyfilter);
+        }
+
+        void prepare()
+        {
+            if(!inputsteal && isfocus()) inputsteal = this;
+            else if(wasfocus)
+            {
+                wasfocus = false;
+                if(!textfocus)
+                {
+                    ::textinput(false, TI_UI);
+                    ::keyrepeat(false, KR_UI);
+                }
+            }
+
+            Object::prepare();
         }
 
         void setfocus()
         {
             if(isfocus()) return;
             textfocus = edit;
+            wasfocus = true;
             ::textinput(true, TI_UI);
             ::keyrepeat(true, KR_UI);
         }
+
         void setfocusable(bool focusable) { canfocus = focusable; }
-        void clearfocus()
+
+        void clearfocus(bool force = false)
         {
             if(!isfocus()) return;
             textfocus = NULL;
+            wasfocus = false;
             ::textinput(false, TI_UI);
             ::keyrepeat(false, KR_UI);
         }
+
         bool isfocus() const { return edit && textfocus == edit; }
 
         static const char *typestr() { return "#TextEditor"; }
@@ -4902,8 +4982,6 @@ namespace UI
             float k = drawscale();
             w = max(w, (edit->pixelwidth + FONTW)*k);
             h = max(h, edit->pixelheight*k);
-
-            if(isfocus()) inputsteal = this;
         }
 
         virtual void resetmark(float cx, float cy)
@@ -5129,6 +5207,17 @@ namespace UI
             }
         }
 
+        void prepare()
+        {
+            if(isfocus())
+            {
+                if(!inputsteal) inputsteal = this;
+                else clearfocus();
+            }
+
+            Object::prepare();
+        }
+
         static void setfocus(KeyCatcher *kc)
         {
             if(focus == kc) return;
@@ -5146,16 +5235,6 @@ namespace UI
         void press(float cx, float cy, bool inside)
         {
             setfocus();
-        }
-
-        void layout()
-        {
-            Object::layout();
-
-            w = max(w, minw);
-            h = max(h, minh);
-
-            if(isfocus()) inputsteal = this;
         }
 
         bool key(int code, bool isdown)
@@ -6390,11 +6469,6 @@ namespace UI
         }));
     }
 
-    void calctextscale()
-    {
-        uitextscale = 1.0f/uitextrows;
-    }
-
     #define COMPOSITESIZE (1<<9)
     extern void reloadcomp();
     VARF(IDF_PERSIST, compositesize, 1<<1, COMPOSITESIZE, 1<<12, reloadcomp());
@@ -6554,9 +6628,9 @@ namespace UI
         int mapmenus = 0;
         LOOPSURFACE(enumerate(surface->windows, Window *, w,
         {
-            if(surface->type == SURFACE_PROGRESS || !w->mapdef || !w->contents || w->dyn) continue;
+            if(surfacetype == SURFACE_PROGRESS || !w->mapdef || !w->contents || w->dyn) continue;
 
-            h->printf("map%sui %s [%s]", windowaffix[surface->type], w->name, w->contents->body);
+            h->printf("map%sui %s [%s]", windowaffix[surfacetype], w->name, w->contents->body);
 
             if(w->onshow) h->printf(" [%s]", w->onshow->body);
             else if(w->onhide) h->printf(" []");
@@ -6592,7 +6666,7 @@ namespace UI
     {
         LOOPSURFACE(enumerate(surface->windows, Window *, w,
         {
-            if(surface->type == SURFACE_PROGRESS || !w->mapdef) continue;
+            if(surfacetype == SURFACE_PROGRESS || !w->mapdef) continue;
             surface->hide(w);
             surface->windows.remove(w->name);
             delete w;
@@ -6609,7 +6683,7 @@ namespace UI
 
     void build(int stype)
     {
-        if(stype < 0 || stype >= SURFACE_MAX || !surfaces[stype] || surfaces[stype]->standalone) return;
+        if(stype < 0 || stype >= SURFACE_MAX) return;
         switch(stype)
         {
             case SURFACE_MAIN:
@@ -6619,45 +6693,14 @@ namespace UI
                 if(!progressing) return;
                 showui("default", SURFACE_PROGRESS);
                 break;
+            case SURFACE_COMPOSITE: return;
             default: break;
         }
 
-        float oldtextscale = curtextscale;
         DOSURFACE(stype,
         {
-            if(surface->type == SURFACE_MAIN) checkmapuis();
-
-            curtextscale = 1;
-            surface->cursortype = CURSOR_DEFAULT;
-            surface->lockcursor = false;
-            surface->mousetracking = false;
-            surface->lockscroll = false;
-
-            pushfont();
-            if(surface->type == SURFACE_MAIN) readyeditors();
-
-            surface->setstate(STATE_HOVER, cursorx, cursory, surface->childstate&STATE_HOLD_MASK);
-            if(surface->childstate&STATE_HOLD) surface->setstate(STATE_HOLD, cursorx, cursory, STATE_HOLD, SETSTATE_ANY);
-            if(surface->childstate&STATE_ALT_HOLD) surface->setstate(STATE_ALT_HOLD, cursorx, cursory, STATE_ALT_HOLD, SETSTATE_ANY);
-            if(surface->childstate&STATE_ESC_HOLD) surface->setstate(STATE_ESC_HOLD, cursorx, cursory, STATE_ESC_HOLD, SETSTATE_ANY);
-
-            calctextscale();
-
-            if(surface->type == SURFACE_MAIN && *uiprecmd) execute(uiprecmd);
-
+            if(surfacetype == SURFACE_MAIN) checkmapuis();
             surface->build();
-
-            if(surface->type == SURFACE_MAIN)
-            {
-                if(*uipostcmd) execute(uipostcmd);
-                if(inputsteal && !inputsteal->isfocus()) inputsteal = NULL;
-            }
-
-            if(!surface->mousetracking) surface->mousetrackvec = vec2(0, 0);
-            if(surface->type == SURFACE_MAIN) flusheditors();
-            popfont();
-
-            curtextscale = oldtextscale;
         });
     }
 
@@ -6676,9 +6719,7 @@ namespace UI
             surfaces[i]->type = i;
             switch(i)
             {
-                case SURFACE_COMPOSITE:
-                    surfaces[i]->standalone = true;   // fall-through
-                case SURFACE_PROGRESS:
+                case SURFACE_COMPOSITE: case SURFACE_PROGRESS:
                     surfaces[i]->interactive = false; // fall-through
                 default: break;
             }
@@ -6716,52 +6757,21 @@ namespace UI
         else build(SURFACE_MAIN);
     }
 
-    void draw(int stype, bool world)
-    {
-        if(stype < 0 || stype >= SURFACE_MAX || !surfaces[stype] || surfaces[stype]->standalone) return;
-        switch(stype)
-        {
-            case SURFACE_MAIN:
-                if(uihidden) return;
-                break;
-            case SURFACE_PROGRESS:
-                if(!progressing) return;
-                showui("default", SURFACE_PROGRESS);
-                // fall-through
-            default:
-                if(world) return; // only main surface can render in-world
-                break;
-        }
-
-        float oldtextscale = curtextscale;
-        DOSURFACE(stype,
-        {
-            curtextscale = 1;
-            pushfont();
-            surface->layout();
-            surface->adjustchildren();
-            surface->draw(world);
-            popfont();
-            curtextscale = oldtextscale;
-        });
-    }
-
     void render(bool prog, bool world)
     {
         if(prog)
         {
-            if(world) return; // nope
-            draw(SURFACE_PROGRESS, false);
+            if(world || !progressing) return; // nope
+            DOSURFACE(SURFACE_PROGRESS, surface->render(false));
             return;
         }
 
-        draw(SURFACE_MAIN, world);
+        if(!uihidden) DOSURFACE(SURFACE_MAIN, surface->render(world));
         if(world) return;
 
         GLint oldfbo = 0;
         bool found = false;
         int olddrawtex = drawtex, oldhudw = hudw, oldhudh = hudh;
-        float oldtextscale = curtextscale;
 
         LOOPSURFACE(loopv(surface->texs)
         {
@@ -6808,20 +6818,10 @@ namespace UI
             if(w)
             {
                 w->setarg(t->args ? t->args : "", -1);
+
                 surface->show(w);
-
-                curtextscale = 1;
-                pushfont();
-                calctextscale();
                 surface->build();
-                popfont();
-
-                curtextscale = 1;
-                pushfont();
-                surface->layout();
-                surface->adjustchildren();
-                surface->draw(false);
-                popfont();
+                surface->render();
 
                 if(t->mipmap)
                 {
@@ -6840,7 +6840,6 @@ namespace UI
 
         if(found)
         {
-            curtextscale = oldtextscale;
             drawtex = olddrawtex;
             hudw = oldhudw;
             hudh = oldhudh;

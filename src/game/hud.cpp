@@ -546,7 +546,7 @@ namespace hud
 
     int hasinput(bool pass, bool cursor)
     {
-        if(cdpi::getoverlay() > 0 || commandmillis > 0 || curcompass) return true;
+        if(cdpi::getoverlay() > 0 || consolemillis > 0 || curcompass) return true;
         int cur = UI::hasinput(cursor);
         if(!cur && UI::hasmenu(pass)) cur = 1;
         return cur;
@@ -577,6 +577,7 @@ namespace hud
     FVAR(IDF_PERSIST, aboveheaduiscale, FVAR_NONZERO, 1, FVAR_MAX);
     FVAR(IDF_PERSIST, aboveheaduidetentyaw, 0, 0, 180);
     FVAR(IDF_PERSIST, aboveheaduidetentpitch, 0, 0, 90);
+
     void checkui()
     {
         hidecrosshair = 0;
@@ -1841,7 +1842,7 @@ namespace hud
         {
             if(!progressing)
             {
-                if(showhud && commandmillis <= 0 && curcompass) rendercmenu();
+                if(showhud && consolemillis <= 0 && curcompass) rendercmenu();
                 else UI::render();
                 hudmatrix.ortho(0, hudwidth, hudheight, 0, -1, 1);
                 flushhudmatrix();

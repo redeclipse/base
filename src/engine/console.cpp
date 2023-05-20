@@ -1,13 +1,13 @@
-// console.cpp: the console buffer, its display, and command line control
+// console.cpp: the console buffer, its display, and control
 
 #include "engine.h"
 
 reversequeue<cline, MAXCONLINES> conlines;
 
-int commandmillis = -1;
-bigstring commandbuf;
-char *commandaction = NULL, *commandprompt = NULL;
-int commandpos = -1;
+int consolemillis = 0;
+bigstring consolebuf;
+char *consoleaction = NULL, *consoleprompt = NULL;
+int consolepos = -1;
 
 void conline(int color, const char *sf)
 {
@@ -367,27 +367,45 @@ ICOMMAND(0, clearallbinds, "", (), enumerate(keyms, keym, km, km.clear()));
 
 ICOMMAND(0, keyspressed, "issss", (int *limit, char *s1, char *s2, char *sep1, char *sep2), { vector<char> list; getkeypressed(max(*limit, 0), s1, s2, sep1, sep2, list); result(list.getbuf()); });
 
-void inputcommand(char *init, char *prompt = NULL, char *action = NULL) // turns input to the command line on or off
+VAR(IDF_PERSIST, consolestay, 0, 1, 1);
+
+void closeconsole()
 {
-    commandmillis = init ? totalmillis : -totalmillis;
-    textinput(commandmillis >= 0, TI_CONSOLE);
-    keyrepeat(commandmillis >= 0, KR_CONSOLE);
-    copystring(commandbuf, init ? init : "", BIGSTRLEN);
-    DELETEA(commandaction);
-    DELETEA(commandprompt);
-    commandpos = -1;
-    if(action && action[0]) commandaction = newstring(action);
-    if(prompt && prompt[0]) commandprompt = newstring(prompt);
-    if(commandmillis > 0) UI::openui("command");
+    if(consolemillis <= 0) return;
+    consolemillis = -totalmillis;
+    textinput(false, TI_CONSOLE);
+    keyrepeat(false, KR_CONSOLE);
+    copystring(consolebuf, "", BIGSTRLEN);
+    DELETEA(consoleaction);
+    DELETEA(consoleprompt);
+    consolepos = -1;
 }
 
-ICOMMAND(0, inputcommand, "sss", (char *init, char *prompt, char *action), inputcommand(init, prompt, action));
+void inputconsole(const char *init, const char *prompt = NULL, const char *action = NULL) // turns input to the console on or off
+{
+    if(consolemillis <= 0)
+    {
+        consolemillis = totalmillis ? totalmillis : 1;
+        textinput(true, TI_CONSOLE);
+        keyrepeat(true, KR_CONSOLE);
+    }
+    copystring(consolebuf, init ? init : "", BIGSTRLEN);
+    DELETEA(consoleaction);
+    DELETEA(consoleprompt);
+    consolepos = -1;
+    if(action && action[0]) consoleaction = newstring(action);
+    if(prompt && prompt[0]) consoleprompt = newstring(prompt);
+    UI::openui("console");
+}
 
-ICOMMANDV(0, commandmillis, commandmillis);
-ICOMMANDVS(0, commandbuf, commandmillis > 0 ? commandbuf : "");
-ICOMMANDVS(0, commandaction, commandmillis > 0 && commandaction ? commandaction : "");
-ICOMMANDVS(0, commandprompt, commandmillis > 0 && commandprompt ? commandprompt : "");
-ICOMMANDV(0, commandpos, commandmillis > 0 ? (commandpos >= 0 ? commandpos : strlen(commandbuf)) : -1);
+ICOMMAND(0, inputconsole, "sss", (char *init, char *prompt, char *action), inputconsole(init, prompt, action));
+ICOMMAND(0, closeconsole, "", (), closeconsole());
+
+ICOMMANDV(0, consolemillis, consolemillis);
+ICOMMANDVS(0, consolebuf, consolemillis > 0 ? consolebuf : "");
+ICOMMANDVS(0, consoleaction, consolemillis > 0 && consoleaction ? consoleaction : "");
+ICOMMANDVS(0, consoleprompt, consolemillis > 0 && consoleprompt ? consoleprompt : "");
+ICOMMANDV(0, consolepos, consolemillis > 0 ? (consolepos >= 0 ? consolepos : strlen(consolebuf)) : -1);
 
 char *pastetext(char *buf, size_t len)
 {
@@ -407,7 +425,7 @@ char *pastetext(char *buf, size_t len)
     return buf;
 }
 
-SVAR(0, commandstr, "");
+SVAR(0, consolestr, "");
 struct hline
 {
     char *buf, *action, *prompt, *icon;
@@ -424,29 +442,29 @@ struct hline
 
     void restore()
     {
-        copystring(commandbuf, buf);
-        if(commandpos >= (int)strlen(commandbuf)) commandpos = -1;
-        DELETEA(commandaction);
-        DELETEA(commandprompt);
-        if(action) commandaction = newstring(action);
-        if(prompt) commandprompt = newstring(prompt);
+        copystring(consolebuf, buf);
+        if(consolepos >= (int)strlen(consolebuf)) consolepos = -1;
+        DELETEA(consoleaction);
+        DELETEA(consoleprompt);
+        if(action) consoleaction = newstring(action);
+        if(prompt) consoleprompt = newstring(prompt);
     }
 
     bool shouldsave()
     {
-        return strcmp(commandbuf, buf) || (commandaction ? !action || strcmp(commandaction, action) : action!=NULL) || (commandprompt ? !prompt || strcmp(commandprompt, prompt) : prompt!=NULL);
+        return strcmp(consolebuf, buf) || (consoleaction ? !action || strcmp(consoleaction, action) : action!=NULL) || (consoleprompt ? !prompt || strcmp(consoleprompt, prompt) : prompt!=NULL);
     }
 
     void save()
     {
-        buf = newstring(commandbuf);
-        if(commandaction) action = newstring(commandaction);
-        if(commandprompt) prompt = newstring(commandprompt);
+        buf = newstring(consolebuf);
+        if(consoleaction) action = newstring(consoleaction);
+        if(consoleprompt) prompt = newstring(consoleprompt);
     }
 
     void run()
     {
-        setsvar("commandstr", buf);
+        setsvar("consolestr", buf);
         execute(action && *action ? action : buf);
     }
 };
@@ -572,24 +590,24 @@ void execbind(keym &k, bool isdown)
 
 bool consoleinput(const char *str, int len)
 {
-    if(commandmillis < 0) return false;
+    if(consolemillis <= 0) return false;
 
     resetcomplete();
-    int maxlen = int(sizeof(commandbuf)), cmdlen = (int)strlen(commandbuf), cmdspace = maxlen - (cmdlen+1);
+    int maxlen = int(sizeof(consolebuf)), cmdlen = (int)strlen(consolebuf), cmdspace = maxlen - (cmdlen+1);
     len = min(len, cmdspace);
     if(len <= 0) return true;
 
-    if(commandpos<0)
+    if(consolepos<0)
     {
-        memcpy(&commandbuf[cmdlen], str, len);
+        memcpy(&consolebuf[cmdlen], str, len);
     }
     else
     {
-        memmove(&commandbuf[commandpos+len], &commandbuf[commandpos], cmdlen - commandpos);
-        memcpy(&commandbuf[commandpos], str, len);
-        commandpos += len;
+        memmove(&consolebuf[consolepos+len], &consolebuf[consolepos], cmdlen - consolepos);
+        memcpy(&consolebuf[consolepos], str, len);
+        consolepos += len;
     }
-    commandbuf[cmdlen + len] = '\0';
+    consolebuf[cmdlen + len] = '\0';
 
     return true;
 }
@@ -618,7 +636,7 @@ static char *skipwordrev(char *s, int n = -1)
 
 bool consolekey(int code, bool isdown)
 {
-    if(commandmillis < 0 || code < 0) return false;
+    if(consolemillis <= 0 || code < 0) return false;
 
     if(isdown)
     {
@@ -629,50 +647,50 @@ bool consolekey(int code, bool isdown)
                 break;
 
             case SDLK_HOME:
-                if(commandbuf[0]) commandpos = 0;
+                if(consolebuf[0]) consolepos = 0;
                 break;
 
             case SDLK_END:
-                commandpos = -1;
+                consolepos = -1;
                 break;
 
             case SDLK_DELETE:
             {
-                int len = (int)strlen(commandbuf);
-                if(commandpos<0) break;
-                int end = commandpos+1;
-                if(SDL_GetModState()&SKIP_KEYS) end = skipword(&commandbuf[commandpos]) - commandbuf;
-                memmove(&commandbuf[commandpos], &commandbuf[end], len + 1 - end);
+                int len = (int)strlen(consolebuf);
+                if(consolepos<0) break;
+                int end = consolepos+1;
+                if(SDL_GetModState()&SKIP_KEYS) end = skipword(&consolebuf[consolepos]) - consolebuf;
+                memmove(&consolebuf[consolepos], &consolebuf[end], len + 1 - end);
                 resetcomplete();
-                if(commandpos>=len-1) commandpos = -1;
+                if(consolepos>=len-1) consolepos = -1;
                 break;
             }
 
             case SDLK_BACKSPACE:
             {
-                int len = (int)strlen(commandbuf), i = commandpos>=0 ? commandpos : len;
+                int len = (int)strlen(consolebuf), i = consolepos>=0 ? consolepos : len;
                 if(i<1) break;
                 int start = i-1;
-                if(SDL_GetModState()&SKIP_KEYS) start = skipwordrev(commandbuf, i) - commandbuf;
-                memmove(&commandbuf[start], &commandbuf[i], len - i + 1);
+                if(SDL_GetModState()&SKIP_KEYS) start = skipwordrev(consolebuf, i) - consolebuf;
+                memmove(&consolebuf[start], &consolebuf[i], len - i + 1);
                 resetcomplete();
-                if(commandpos>0) commandpos = start;
-                else if(!commandpos && len<=1) commandpos = -1;
+                if(consolepos>0) consolepos = start;
+                else if(!consolepos && len<=1) consolepos = -1;
                 break;
             }
 
             case SDLK_LEFT:
-                if(SDL_GetModState()&SKIP_KEYS) commandpos = skipwordrev(commandbuf, commandpos) - commandbuf;
-                else if(commandpos>0) commandpos--;
-                else if(commandpos<0) commandpos = (int)strlen(commandbuf)-1;
+                if(SDL_GetModState()&SKIP_KEYS) consolepos = skipwordrev(consolebuf, consolepos) - consolebuf;
+                else if(consolepos>0) consolepos--;
+                else if(consolepos<0) consolepos = (int)strlen(consolebuf)-1;
                 break;
 
             case SDLK_RIGHT:
-                if(commandpos>=0)
+                if(consolepos>=0)
                 {
-                    if(SDL_GetModState()&SKIP_KEYS) commandpos = skipword(&commandbuf[commandpos]) - commandbuf;
-                    else ++commandpos;
-                    if(commandpos>=(int)strlen(commandbuf)) commandpos = -1;
+                    if(SDL_GetModState()&SKIP_KEYS) consolepos = skipword(&consolebuf[consolepos]) - consolebuf;
+                    else ++consolepos;
+                    if(consolepos>=(int)strlen(consolebuf)) consolepos = -1;
                 }
                 break;
 
@@ -696,8 +714,8 @@ bool consolekey(int code, bool isdown)
                 break;
 
             case SDLK_TAB:
-                complete(commandbuf, SDL_GetModState()&KMOD_SHIFT);
-                if(commandpos>=0 && commandpos>=(int)strlen(commandbuf)) commandpos = -1;
+                complete(consolebuf, SDL_GetModState()&KMOD_SHIFT);
+                if(consolepos>=0 && consolepos>=(int)strlen(consolebuf)) consolepos = -1;
                 break;
 
             case SDLK_v:
@@ -718,7 +736,7 @@ bool consolekey(int code, bool isdown)
         if(code==SDLK_RETURN || code==SDLK_KP_ENTER)
         {
             hline *h = NULL;
-            if(commandbuf[0])
+            if(consolebuf[0])
             {
                 if(history.empty() || history.last()->shouldsave())
                 {
@@ -732,13 +750,14 @@ bool consolekey(int code, bool isdown)
                 else h = history.last();
             }
             histpos = history.length();
-            inputcommand(NULL);
+            if(consolestay) inputconsole(NULL);
+            else closeconsole();
             if(h) h->run();
         }
         else if(code==SDLK_ESCAPE || code < 0)
         {
             histpos = history.length();
-            inputcommand(NULL);
+            closeconsole();
         }
     }
 
@@ -878,7 +897,7 @@ struct filesval
 
     void update()
     {
-        if(type!=FILES_DIR || millis >= commandmillis) return;
+        if(type!=FILES_DIR || millis >= consolemillis) return;
         files.deletearrays();
         listfiles(dir, ext, files);
         files.sort();
