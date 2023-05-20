@@ -1180,7 +1180,7 @@ bool soundfile::setup(const char *name, int t, int m)
     sndfile = sf_open_virtual(&soundvfio, SFM_READ, &info, viofile);
     if(!sndfile)
     {
-        conoutf(colourred, "Failed to create libsndfile context: %s", name);
+        conoutf(colourred, "Failed to create libsndfile context: %s (%s)", name, sf_strerror(NULL));
         clear();
         return false;
     }
