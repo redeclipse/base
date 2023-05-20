@@ -207,23 +207,24 @@ struct partrenderer
             vec move = vec(p->o).sub(p->prev);
             if(step && p->collide)
             {
-                vec dir = move, hitpos = p->prev;
+                vec dir = move, hitpos;
                 float mag = dir.magnitude();
-                dir.normalize();
+                dir.mul(1/mag);
                 bool hit = false;
                 if(!p->precollide)
                 {
-                    float dist = raycube(p->prev, dir, mag, RAY_CLIPMAT);
+                    float dist = raycube(p->prev, dir, mag);
                     hit = dist < mag;
-                    if(hit) hitpos.add(vec(dir).mul(dist));
+                    if(hit) hitpos = vec(dir).mul(dist).add(p->prev);
                 }
                 else
                 {
-                    hit = v.z <= 0 ? p->o.z < p->val : p->o.z > p->val;
+                    hit = dir.z <= 0 ? p->o.z < p->val : p->o.z > p->val;
                     if(hit) hitpos = vec(p->o.x, p->o.y, p->val);
                 }
                 if(hit)
                 {
+                    p->o = hitpos;
                     if(p->collide > 0) addstain(p->collide - 1, hitpos, vec(dir).neg(), 2*p->size, p->color, type&PT_RND4 || type&PT_RND16 ? (p->flags>>5)&3 : 0);
                     blend = 0;
                 }
@@ -1530,7 +1531,7 @@ static int addedparticles = 0;
 
 float partcollide(const vec &p, int collide)
 {
-    return collide ? p.z - raycube(p, vec(0, 0, -1), collide > 0 ? COLLIDERADIUS : max(p.z, 0.0f), RAY_CLIPMAT) + (collide > 0 ? COLLIDEERROR : 0) : 0;
+    return collide ? p.z - raycube(p, vec(0, 0, -1), collide > 0 ? COLLIDERADIUS : max(p.z, 0.0f)) + (collide > 0 ? COLLIDEERROR : 0) : 0;
 }
 
 particle *newparticle(const vec &o, const vec &d, int fade, int type, int color, float size, float blend, int hintcolor, float hintblend, float gravity, int collide, float val, physent *pl, float sizechange)
@@ -1791,38 +1792,47 @@ static inline vec offsetvec(vec o, int dir, int dist)
 }
 
 VAR(IDF_PERSIST, weatherdropdist, 0, 256, VAR_MAX);
-FVAR(IDF_PERSIST, weatherdropnumscale, 0, 1.0f, 1.0f);
+FVAR(IDF_PERSIST, weatherdropnumscale, 0, 1.0f, FVAR_MAX);
 
-FVAR(IDF_MAP, weatherdrops,    0, 0, 10.0f);
-FVAR(IDF_MAP, weatherdropsalt, 0, 0, 10.0f);
+#define MPVVARS(name) \
+    FVAR(IDF_MAP, weatherdrops##name, 0, 0, FVAR_MAX); \
+    VAR(IDF_MAP, weatherdroppart##name, PART_FIREBALL_LERP, PART_RAIN, PART_RAIN); \
+    VAR(IDF_MAP, weatherdropcollide##name, -1, -1, STAIN_MAX); \
+    VAR(IDF_MAP, weatherdropfade##name, 1, 750, VAR_MAX); \
+    VAR(IDF_MAP, weatherdropgravity##name, VAR_MIN, 300, VAR_MAX); \
+    VAR(IDF_MAP|IDF_HEX, weatherdropcolour##name, PC(LAST), 0xFFFFFF, 0xFFFFFF); \
+    VAR(IDF_MAP|IDF_HEX, weatherdrophintcolour##name, PC(LAST), 0xFFFFFF, 0xFFFFFF); \
+    FVAR(IDF_MAP, weatherdrophintblend##name, 0, 0, 1); \
+    FVAR(IDF_MAP, weatherdropblend##name, 0, 0.4f, 1); \
+    FVAR(IDF_MAP, weatherdropsize##name, FVAR_NONZERO, 0.15f, FVAR_MAX); \
+    FVAR(IDF_MAP, weatherdroplen##name, FVAR_NONZERO, 1, FVAR_MAX); \
+    FVAR(IDF_MAP, weatherdropvariance##name, 0, 0.05f, 1); \
+    VAR(IDF_MAP, weatherdropmindist##name, 0, 0, VAR_MAX); \
+    VAR(IDF_MAP, weatherdropmaxdist##name, 0, 0, VAR_MAX);
+MPVVARS();
+MPVVARS(alt);
 
-VAR(IDF_MAP, weatherdroppart,    PART_FIREBALL_LERP, PART_RAIN, PART_RAIN);
-VAR(IDF_MAP, weatherdroppartalt, PART_FIREBALL_LERP, PART_RAIN, PART_RAIN);
+#define GETMPV(name, type) \
+    type get##name() \
+    { \
+        if(checkmapvariant(MPV_ALT)) return name##alt; \
+        return name; \
+    }
 
-VAR(IDF_MAP, weatherdropcollide,    -1, -1, STAIN_MAX);
-VAR(IDF_MAP, weatherdropcollidealt, -1, -1, STAIN_MAX);
-
-VAR(IDF_MAP, weatherdropfade,    1, 750, 10000);
-VAR(IDF_MAP, weatherdropfadealt, 1, 750, 10000);
-
-VAR(IDF_MAP, weatherdropgravity,    -2000, 300, 2000);
-VAR(IDF_MAP, weatherdropgravityalt, -2000, 300, 2000);
-
-CVAR(IDF_MAP, weatherdropcolour,    0xFFFFFF);
-CVAR(IDF_MAP, weatherdropcolouralt, 0xFFFFFF);
-CVAR(IDF_MAP, weatherdrophintcolour,    0x000000);
-CVAR(IDF_MAP, weatherdrophintcolouralt, 0x000000);
-FVAR(IDF_MAP, weatherdrophintblend,    0.0f, 0.0f, 1.0f);
-FVAR(IDF_MAP, weatherdrophintblendalt, 0.0f, 0.0f, 1.0f);
-
-FVAR(IDF_MAP, weatherdropblend,    0.0f, 0.4f, 1.0f);
-FVAR(IDF_MAP, weatherdropblendalt, 0.0f, 0.4f, 1.0f);
-
-FVAR(IDF_MAP, weatherdropsize,    0.01f, 0.15f, 100.0f);
-FVAR(IDF_MAP, weatherdropsizealt, 0.01f, 0.15f, 100.0f);
-
-FVAR(IDF_MAP, weatherdropvariance,    0.0f, 0.05f, 1.0f);
-FVAR(IDF_MAP, weatherdropvariancealt, 0.0f, 0.05f, 1.0f);
+GETMPV(weatherdrops, float);
+GETMPV(weatherdroppart, int);
+GETMPV(weatherdropcollide, int);
+GETMPV(weatherdropfade, int);
+GETMPV(weatherdropgravity, int);
+GETMPV(weatherdropcolour, int);
+GETMPV(weatherdrophintcolour, int);
+GETMPV(weatherdrophintblend, float);
+GETMPV(weatherdropblend, float);
+GETMPV(weatherdropsize, float);
+GETMPV(weatherdroplen, float);
+GETMPV(weatherdropvariance, float);
+GETMPV(weatherdropmindist, int);
+GETMPV(weatherdropmaxdist, int);
 
 void part_weather()
 {
@@ -1831,23 +1841,24 @@ void part_weather()
     enviroparts = true;
 
     // Calculate the number of drops to spawn
-    int drops = round(curtime * (checkmapvariant(MPV_ALT) ? weatherdropsalt : weatherdrops) * weatherdropnumscale);
+    int drops = round(curtime * getweatherdrops() * weatherdropnumscale);
+    if(!drops) return;
 
-    int   part      = checkmapvariant(MPV_ALT) ? weatherdroppartalt       : weatherdroppart;
-    int   collide   = checkmapvariant(MPV_ALT) ? weatherdropcollidealt    : weatherdropcollide;
-    int   fade      = checkmapvariant(MPV_ALT) ? weatherdropfadealt       : weatherdropfade;
-    float variance  = checkmapvariant(MPV_ALT) ? weatherdropvariancealt   : weatherdropvariance;
-    int   gravity   = checkmapvariant(MPV_ALT) ? weatherdropgravityalt    : weatherdropgravity;
-    float size      = checkmapvariant(MPV_ALT) ? weatherdropsizealt       : weatherdropsize;
-    float blend     = checkmapvariant(MPV_ALT) ? weatherdropblendalt      : weatherdropblend;
-    bvec  color     = checkmapvariant(MPV_ALT) ? weatherdropcolouralt     : weatherdropcolour;
-    bvec  hintcolor = checkmapvariant(MPV_ALT) ? weatherdrophintcolouralt : weatherdrophintcolour;
-    float hintblend = checkmapvariant(MPV_ALT) ? weatherdrophintblendalt  : weatherdrophintblend;
+    int part = getweatherdroppart();
+    if(part < PART_FIREBALL_LERP || part > PART_RAIN) return;
+    bool istape = (parts[part]->type&PT_TAPE) != 0;
+
+    int collide = getweatherdropcollide(), fade = getweatherdropfade(), gravity = getweatherdropgravity(), color = getweatherdropcolour(), hintcolor = getweatherdrophintcolour(),
+        mindist = getweatherdropmindist(), maxdist = getweatherdropmaxdist(), dist = clamp(weatherdropdist, mindist > 0 ? mindist : 1, maxdist > 0 ? maxdist : VAR_MAX);
+    float variance = getweatherdropvariance(), size = getweatherdropsize(), blend = getweatherdropblend(), hintblend = getweatherdrophintblend();
+
+    // Scale the number of drops if the distance changes
+    if(dist != 256) drops = round(drops * float(dist) / 256.f);
 
     loopi(drops)
     {
         // Pick a random position within the cube
-        vec o = vec(camera1->o).add(vec(rnd(weatherdropdist * 2) - weatherdropdist, rnd(weatherdropdist * 2) - weatherdropdist, rnd(weatherdropdist * 2) - weatherdropdist));
+        vec o = vec(camera1->o).add(vec(rnd(dist * 2) - dist, rnd(dist * 2) - dist, rnd(dist * 2) - dist));
 
         // Add random jitter to the drop direction
         vec dir = vec(rndscale(variance * 2) - variance, rndscale(variance * 2) - variance, gravity >= 0 ? -1 : 1).normalize();
@@ -1859,15 +1870,18 @@ void part_weather()
         if(collide)
         {
             // Raycast from outside map to find obstructions
-            float dist = raycube(skypos, dir, worldsize * 2, RAY_CLIPMAT);
-            zoff = vec(skypos).add(vec(dir).mul(dist)).z;
+            float hitz = raycube(skypos, dir);
+            zoff = vec(dir).mul(hitz).add(skypos).z;
 
-            // if collided before the start position, discard
-            if(gravity >= 0 ? o.z <= zoff : o.z >= zoff) continue;
+            // If collided before the start position, discard
+            if(gravity >= 0 ? zoff >= o.z : zoff <= o.z) continue;
         }
 
-        particle *newpart = newparticle(o, dir, fade, part, color.tohexcolor(), size, blend, hintcolor.tohexcolor(), hintblend, gravity, collide, zoff);
+        dir.mul(abs(gravity));
+        if(istape) o.sub(dir); // Tape particles use d = dest
 
+        int col = color >= 0 ? color : pulsecols[0 - color][rnd(PULSECOLOURS)], hintcol = hintcolor >= 0 ? hintcolor : pulsecols[0 - hintcolor][rnd(PULSECOLOURS)];
+        particle *newpart = newparticle(o, dir, fade, part, col, size, blend, hintcol, hintblend, 0, collide, zoff);
         if(newpart) newpart->precollide = true;
     }
 
