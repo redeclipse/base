@@ -170,7 +170,6 @@ struct partrenderer
     {
         if(p->enviro) numenvparts++;
         p->prev = p->o;
-        vec o = p->o;
         if(p->fade <= 5)
         {
             ts = 1;
@@ -203,22 +202,33 @@ struct partrenderer
             }
 
             p->o.add(v);
-            if(particlewind && type&PT_WIND) p->o.add(p->wind.probe(o).mul(secs * 10.0f));
+            if(particlewind && type&PT_WIND) p->o.add(p->wind.probe(p->prev).mul(secs * 10.0f));
 
-            if(step && p->collide && !p->precollide)
+            vec move = vec(p->o).sub(p->prev);
+            if(step && p->collide)
             {
-                vec dir = vec(v).normalize();
-                float dist = raycube(o, dir, worldsize * 2, RAY_CLIPMAT);
-                p->val = vec(o).add(vec(dir).mul(dist)).z;
-                p->precollide = true;
+                vec dir = move, hitpos = p->prev;
+                float mag = dir.magnitude();
+                dir.normalize();
+                bool hit = false;
+                if(!p->precollide)
+                {
+                    float dist = raycube(p->prev, dir, mag, RAY_CLIPMAT);
+                    hit = dist < mag;
+                    if(hit) hitpos.add(vec(dir).mul(dist));
+                }
+                else
+                {
+                    hit = v.z <= 0 ? p->o.z < p->val : p->o.z > p->val;
+                    if(hit) hitpos = vec(p->o.x, p->o.y, p->val);
+                }
+                if(hit)
+                {
+                    if(p->collide > 0) addstain(p->collide - 1, hitpos, vec(dir).neg(), 2*p->size, p->color, type&PT_RND4 || type&PT_RND16 ? (p->flags>>5)&3 : 0);
+                    blend = 0;
+                }
             }
-
-            if(step && p->collide && (v.z <= 0 ? p->o.z < p->val : p->o.z > p->val))
-            {
-                if(p->collide > 0) addstain(p->collide - 1, vec(p->o.x, p->o.y, p->val), vec(o).sub(p->o).normalize(), 2*p->size, p->color, type&PT_RND4 || type&PT_RND16 ? (p->flags>>5)&3 : 0);
-                blend = 0;
-            }
-            else p->m.add(vec(p->o).sub(o));
+            if(blend > 0) p->m.add(move);
         }
         game::particletrack(p, type, ts, step);
     }
