@@ -1927,8 +1927,8 @@ void part_weather()
         }
 
         int col = color >= 0 ? color : pulsecols[0 - color][rnd(PULSECOLOURS)], hintcol = hintcolor >= 0 ? hintcolor : pulsecols[0 - hintcolor][rnd(PULSECOLOURS)];
-        particle *newpart = newparticle(o, dest, fade, part, col, size, blend, hintcol, hintblend, istape ? gravity : 0, istape || wantcollide ? collide : 0, zoff);
-        if(!istape && wantcollide && newpart) newpart->precollide = true;
+        particle *newpart = newparticle(o, dest, fade, part, col, size, blend, hintcol, hintblend, istape ? gravity : 0, wantcollide ? collide : 0, zoff);
+        if(wantcollide && newpart) newpart->precollide = true;
     }
 
     enviroparts = false;
