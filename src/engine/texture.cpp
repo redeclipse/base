@@ -5,7 +5,7 @@
 #include "tools.h"
 
 TVAR(IDF_PERSIST|IDF_PRELOAD, notexturetex, "textures/notexture", 3);
-TVAR(IDF_PERSIST|IDF_PRELOAD, blanktex, "<comp:0,2>blank", 3);
+TVAR(IDF_PERSIST|IDF_PRELOAD, blanktex, "<comp:0,-2>blank", 3);
 TVAR(IDF_PERSIST|IDF_PRELOAD, logotex, "textures/logo", 3);
 TVAR(IDF_PERSIST|IDF_PRELOAD, logocroptex, "textures/logocrop", 3);
 TVAR(IDF_PERSIST|IDF_PRELOAD, emblemtex, "textures/emblem", 3);

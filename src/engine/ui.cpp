@@ -6494,36 +6494,39 @@ namespace UI
         if(name && name[0] == '<')
         {
             cmds = name;
-            file = strrchr(name, '>');
-            if(!file) file = tex ? tex->name : NULL;
-            else file++;
+            file = strchr(name, '>');
+            if(file) file++;
+            if(!file || !*file)
+            {
+                if(msg) conoutf(colourred, "Cannot create null composite texture: %s", name);
+                return notexture; // need a name
+            }
         }
 
         bool iscomposite = false;
         float ssize = 0;
         int delay = 0, sclamp = tclamp;
-        for(const char *pcmds = cmds; pcmds;)
+        if(cmds && *cmds == '<')
         {
-            #define PARSETEXCOMMANDS(cmds) \
-                const char *cmd = NULL, *end = NULL, *arg[3] = { NULL, NULL }; \
-                cmd = &cmds[1]; \
-                end = strchr(cmd, '>'); \
-                if(!end) break; \
-                cmds = strchr(cmd, '<'); \
-                size_t len = strcspn(cmd, ":,><"); \
-                loopi(3) \
-                { \
-                    arg[i] = strchr(i ? arg[i-1] : cmd, i ? ',' : ':'); \
-                    if(!arg[i] || arg[i] >= end) arg[i] = ""; \
-                    else arg[i]++; \
-                }
-            PARSETEXCOMMANDS(pcmds);
-            if(matchstring(cmd, len, "comp"))
+            const char *cmd = NULL, *end = NULL, *arg[3] = { NULL, NULL };
+            cmd = &cmds[1];
+            end = strchr(cmd, '>');
+            if(end)
             {
-                if(*arg[0]) delay = max(atoi(arg[0]), 0);
-                if(*arg[1]) ssize = atof(arg[1]);
-                if(*arg[2]) sclamp = atoi(arg[2]);
-                iscomposite = true;
+                size_t len = strcspn(cmd, ":,><");
+                loopi(3)
+                {
+                    arg[i] = strchr(i ? arg[i-1] : cmd, i ? ',' : ':');
+                    if(!arg[i] || arg[i] >= end) arg[i] = "";
+                    else arg[i]++;
+                }
+                if(matchstring(cmd, len, "comp"))
+                {
+                    if(*arg[0]) delay = max(atoi(arg[0]), 0);
+                    if(*arg[1]) ssize = atof(arg[1]);
+                    if(*arg[2]) sclamp = atoi(arg[2]);
+                    iscomposite = true;
+                }
             }
         }
         if(!iscomposite)
@@ -6548,6 +6551,7 @@ namespace UI
             argidx = 2;
             delay = atoi(list[1]);
             if(list.length() >= 4) ssize = atof(list[3]);
+            conoutf(colourwhite, "Composite import from: %s", file);
         }
 
         char *cname = list[0], *args = list.length() >= (argidx + 1) ? list[argidx] : NULL;
@@ -6555,7 +6559,8 @@ namespace UI
         if(tsize <= 0) tsize = compositesize;
         else if(tsize < 1<<1) tsize = 1<<1;
 
-        if(msg) progress(loadprogress, "Compositing texture: %s (%s)", cname, args);
+        if(msg) progress(loadprogress, "Compositing texture: %s (%s)", cname, args && *args ? args : "-");
+        conoutf(colourwhite, "Composite %s: %s [%d / %d] (%s)", cname, args, argidx, list.length(), file);
 
         DOSURFACE(SURFACE_COMPOSITE,
         {
