@@ -549,9 +549,9 @@ namespace client
             game::player1->name = value; \
             sendplayerinfo = true; \
         } \
-        VARF(IDF_PERSIST|flags, player##name, -1, -1, 0xFFFFFF, setplayer##name(player##name));
+        VARF(IDF_PERSIST|flags, player##name, minval, minval, maxval, setplayer##name(player##name));
 
-    SETPLAYERINFO(colour, IDF_HEX, -1, 0xFFFFFF);
+    SETPLAYERINFO(colour, IDF_HEX, 0, 0xFFFFFF);
     SETPLAYERINFO(model, 0, 0, PLAYERTYPES-1);
     SETPLAYERINFO(pattern, 0, 0, PLAYERPATTERNS-1);
 
@@ -1036,7 +1036,7 @@ namespace client
     CLCOMMAND(spawnhealth, intret(d->gethealth(game::gamemode, game::mutators)));
     CLCOMMAND(maxhealth, intret(d->gethealth(game::gamemode, game::mutators, true)));
 
-    CLCOMMANDM(rescolour, "sib", (char *who, int *n, int *c), intret(pulsehexcol(d, *n, *c > 0 ? *c : 50)));
+    CLCOMMANDM(rescolour, "sib", (char *who, int *n, int *c), intret(pulsehexcol(d, *n, *c >= -1 ? *c : 50)));
     CLCOMMANDM(velocity, "si", (char *who, int *n), floatret(vec(d->vel).add(d->falling).magnitude()*(*n!=0 ? (*n > 0 ? 3.6f/8.f : 0.125f) : 1.f)));
 
     int getresidualfx(gameent *d, int n, int c)
@@ -1064,7 +1064,7 @@ namespace client
                 }
             RESIDUALS
             #undef RESIDUAL
-            if(ptype >= 0) return pulsehexcol(d, ptype, c > 0 ? c : 50);
+            if(ptype >= 0) return pulsehexcol(d, ptype, c >= -1 ? c : 50);
         }
         return -1;
     }

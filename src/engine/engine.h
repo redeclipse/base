@@ -1112,6 +1112,7 @@ extern int pulsehexcol(physent *d, int n = 0, int cycle = 50);
 extern vec getpulsecolour(physent *d, int n = 0, int cycle = 50);
 extern int getpulsehexcol(physent *d, int n = 0, int cycle = 50);
 #endif // STANDALONE
+#define PCVAR(flags, name, cur) VAR(flags|IDF_HEX, name, PC(LAST), cur, 0xFFFFFF)
 #endif // CPP_ENGINE_HEADER
 
 #if !defined(CPP_GAME_HEADER) || defined(CPP_GAME_SERVER)

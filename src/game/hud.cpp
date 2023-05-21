@@ -332,10 +332,10 @@ namespace hud
     FVAR(IDF_PERSIST, onscreendamageblend, 0, 0.75f, 1);
     VAR(IDF_PERSIST, onscreendamagemin, 1, 10, VAR_MAX);
     VAR(IDF_PERSIST, onscreendamagemax, 1, 1000, VAR_MAX);
-    VAR(IDF_PERSIST|IDF_HEX, onscreendamagecolour, PC(LAST), 0xFF4444, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, onscreendamageburncolour, PC(LAST), PC(BURN), 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, onscreendamagebleedcolour, PC(LAST), PC(BLEED), 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, onscreendamageshockcolour, PC(LAST), PC(SHOCK), 0xFFFFFF);
+    PCVAR(IDF_PERSIST, onscreendamagecolour, 0xFF4444);
+    PCVAR(IDF_PERSIST, onscreendamageburncolour, PC(BURN));
+    PCVAR(IDF_PERSIST, onscreendamagebleedcolour, PC(BLEED));
+    PCVAR(IDF_PERSIST, onscreendamageshockcolour, PC(SHOCK));
 
     VAR(IDF_PERSIST, onscreenhits, 0, 1, 2);
     VAR(IDF_PERSIST, onscreenhitsheal, 0, 1, 1);
@@ -354,10 +354,10 @@ namespace hud
     FVAR(IDF_PERSIST, onscreenhitsglowscale, 0, 1.5f, 1000);
     FVAR(IDF_PERSIST, onscreenhitsglowcolour, 0, 0.75f, 5);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, onscreenhitsglowtex, "<grey>textures/hud/glow", 3);
-    VAR(IDF_PERSIST|IDF_HEX, onscreenhitscolour, PC(LAST), 0xFF4444, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, onscreenhitsburncolour, PC(LAST), PC(BURN), 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, onscreenhitsbleedcolour, PC(LAST), PC(BLEED), 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, onscreenhitsshockcolour, PC(LAST), PC(SHOCK), 0xFFFFFF);
+    PCVAR(IDF_PERSIST|IDF_HEX, onscreenhitscolour, 0xFF4444);
+    PCVAR(IDF_PERSIST|IDF_HEX, onscreenhitsburncolour, PC(BURN));
+    PCVAR(IDF_PERSIST|IDF_HEX, onscreenhitsbleedcolour, PC(BLEED));
+    PCVAR(IDF_PERSIST|IDF_HEX, onscreenhitsshockcolour, PC(SHOCK));
 
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, spree1tex, "textures/rewards/carnage", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, spree2tex, "textures/rewards/slaughter", 3);
@@ -1114,9 +1114,17 @@ namespace hud
                     {
                         dhloc &l = damagelocs[i];
                         gameent *e = game::getclient(l.clientnum);
-                        if(!e || l.dir.iszero()) { damagelocs.remove(i--); continue; }
+                        if(!e || l.dir.iszero())
+                        {
+                            damagelocs.remove(i--);
+                            continue;
+                        }
                         int millis = totalmillis-l.outtime, delay = min(20, l.damage)*50;
-                        if(millis >= delay) { if(millis >= onscreendamagetime+onscreendamagefade) damagelocs.remove(i--); continue; }
+                        if(millis >= delay)
+                        {
+                            if(millis >= onscreendamagetime+onscreendamagefade) damagelocs.remove(i--);
+                            continue;
+                        }
                         if(!onscreendamageself && e == game::focus) continue;
                         float dam = l.damage/float(max(game::focus->gethealth(game::gamemode, game::mutators), 1)),
                               amt = millis/float(delay);
@@ -1692,13 +1700,20 @@ namespace hud
             dhloc &l = hitlocs[i];
             int millis = totalmillis-l.outtime;
             gameent *a = game::getclient(l.clientnum);
-            if(!a || millis >= onscreenhitstime+onscreenhitsfade || l.dir.iszero()) { hitlocs.remove(i--); continue; }
+            if(!a || millis >= onscreenhitstime+onscreenhitsfade || l.dir.iszero())
+            {
+                hitlocs.remove(i--);
+                continue;
+            }
+
             if(game::focus->state == CS_SPECTATOR || game::focus->state == CS_EDITING) continue;
             if((!onscreenhitsheal && l.damage < 0) || (!onscreenhitsself && a == game::focus)) continue;
+
             vec o = onscreenhitsfollow ? a->center() : l.dir;
             o.z += actors[a->actortype].height*onscreenhitsheight;
             float cx = 0, cy = 0, cz = 0;
             if(!vectocursor(o, cx, cy, cz)) continue;
+
             float hx = cx*w/onscreenhitsscale, hy = cy*h/onscreenhitsscale, fade = blend*onscreenhitsblend;
             if(onscreenhitsoffset != 0) hx += FONTW*onscreenhitsoffset;
             if(millis <= onscreenhitstime)
@@ -1714,12 +1729,14 @@ namespace hud
                 hy -= FONTH*offset/float(onscreenhitstime);
                 fade *= 1-(offset/float(onscreenhitsfade));
             }
+
             string text;
             if(game::damageinteger)
                 formatstring(text, "%c%d", l.damage > 0 ? '-' : (l.damage < 0 ? '+' : '~'), int(ceilf((l.damage < 0 ? 0-l.damage : l.damage)/game::damagedivisor)));
             else formatstring(text, "%c%.1f", l.damage > 0 ? '-' : (l.damage < 0 ? '+' : '~'), (l.damage < 0 ? 0-l.damage : l.damage)/game::damagedivisor);
-            vec colour = l.colour < 0 ? pulsecolour(a, INVPULSE(l.colour)) : vec::fromcolor(l.colour);
+            vec colour = getpulsecolour(a, l.colour);
             if(maxy >= 0 && hy < maxy) hy = maxy;
+
             if(onscreenhitsglow && settexture(onscreenhitsglowtex))
             {
                 float width = 0, height = 0;
@@ -1727,6 +1744,7 @@ namespace hud
                 gle::colorf(colour.r*onscreenhitsglowcolour, colour.g*onscreenhitsglowcolour, colour.b*onscreenhitsglowcolour, fade*onscreenhitsglowblend);
                 drawtexture(hx-(width*onscreenhitsglowscale*0.5f), hy-(height*onscreenhitsglowscale*0.25f), width*onscreenhitsglowscale, height*onscreenhitsglowscale);
             }
+
             hy += draw_textf("%s", hx, hy, 0, 0, int(colour.r*255), int(colour.g*255), int(colour.b*255), int(fade*255), TEXT_CENTERED, -1, -1, 1, text)/onscreenhitsscale;
             resethudshader();
             if(maxy < 0 || hy > maxy) maxy = hy;
@@ -1740,20 +1758,33 @@ namespace hud
         {
             dhloc &l = damagelocs[i];
             gameent *e = game::getclient(l.clientnum);
-            if(!e || l.dir.iszero()) { damagelocs.remove(i--); continue; }
+            if(!e || l.dir.iszero())
+            {
+                damagelocs.remove(i--);
+                continue;
+            }
+
             int millis = totalmillis-l.outtime;
-            if(millis >= onscreendamagetime+onscreendamagefade) { if(millis >= min(20, l.damage)*50) damagelocs.remove(i--); continue; }
+            if(millis >= onscreendamagetime+onscreendamagefade)
+            {
+                if(millis >= min(20, l.damage)*50) damagelocs.remove(i--);
+                continue;
+            }
+
             if(game::focus->state == CS_SPECTATOR || game::focus->state == CS_EDITING) continue;
             if(!onscreendamageself && e == game::focus) continue;
+
             float amt = millis >= onscreendamagetime ? 1.f-(float(millis-onscreendamagetime)/float(onscreendamagefade)) : float(millis)/float(onscreendamagetime),
                 range = clamp(max(l.damage, onscreendamagemin)/float(max(onscreendamagemax-onscreendamagemin, 1)), onscreendamagemin/100.f, 1.f),
                 fade = clamp(onscreendamageblend*blend, min(onscreendamageblend*onscreendamagemin/100.f, 1.f), onscreendamageblend)*amt,
                 size = clamp(range*onscreendamagesize, min(onscreendamagesize*onscreendamagemin/100.f, 1.f), onscreendamagesize)*amt;
-            vec dir = l.dir, colour = l.colour < 0 ? pulsecolour(game::focus, INVPULSE(l.colour)) : vec::fromcolor(l.colour);
+
+            vec dir = l.dir, colour = getpulsecolour(game::focus, l.colour);
             if(e == game::focus) l.dir = vec(e->yaw*RAD, 0.f).neg();
             dir.rotate_around_z(-camera1->yaw*RAD).normalize();
             float yaw = -atan2(dir.x, dir.y)/RAD, x = sinf(RAD*yaw), y = -cosf(RAD*yaw), sz = max(w, h)/2,
                   ts = sz*onscreendamagescale, tp = ts*size, tq = tp*onscreendamageblipsize, tr = ts*onscreendamageoffset, lx = (tr*x)+w/2, ly = (tr*y)+h/2;
+
             gle::color(colour, fade);
             Texture *t = textureload(hurttex, 3, true, false);
             if(t != notexture)

@@ -85,7 +85,7 @@ static void animategrass()
 }
 
 VAR(IDF_MAP, grassscale, 1, 2, 64);
-CVAR(IDF_MAP, grasscolour, 0xFFFFFF);
+PCVAR(IDF_MAP, grasscolour, 0xFFFFFF);
 FVAR(IDF_MAP, grassblend, 0, 1, 1);
 FVAR(IDF_MAP, grasstest, 0, 0.6f, 1);
 
@@ -199,7 +199,7 @@ static void gengrassquads(grassgroup *&group, const grasswedge &w, const grasstr
               tc1 = tc.dot(p1) + tcoffset, tc2 = tc.dot(p2) + tcoffset,
               fade = dist - t > taperdist ? (grassdist - (dist - t))*taperscale : 1,
               height = gh * fade;
-        bvec gcol = col.iszero() ? grasscolour : bvec(uchar(col.x*255), uchar(col.y*255), uchar(col.z*255));
+        bvec gcol = col.iszero() ? bvec::fromcolor(getpulsehexcol(grasscolour)) : bvec(uchar(col.x*255), uchar(col.y*255), uchar(col.z*255));
         if(blend <= 0) blend = grassblend;
         bvec4 color(gcol, uchar(fade*blend*255));
 

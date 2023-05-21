@@ -1816,8 +1816,8 @@ FVAR(IDF_PERSIST, weatherdropnumscale, 0, 1.0f, FVAR_MAX);
     VAR(IDF_MAP, weatherdropcollide##name, -2, -1, STAIN_MAX); \
     VAR(IDF_MAP, weatherdropfade##name, 1, 750, VAR_MAX); \
     VAR(IDF_MAP, weatherdropgravity##name, VAR_MIN, 300, VAR_MAX); \
-    VAR(IDF_MAP|IDF_HEX, weatherdropcolour##name, PC(LAST), 0xFFFFFF, 0xFFFFFF); \
-    VAR(IDF_MAP|IDF_HEX, weatherdrophintcolour##name, PC(LAST), 0xFFFFFF, 0xFFFFFF); \
+    PCVAR(IDF_MAP, weatherdropcolour##name, 0xFFFFFF); \
+    PCVAR(IDF_MAP, weatherdrophintcolour##name, 0xFFFFFF); \
     FVAR(IDF_MAP, weatherdrophintblend##name, 0, 0, 1); \
     FVAR(IDF_MAP, weatherdropblend##name, 0, 0.4f, 1); \
     FVAR(IDF_MAP, weatherdropsize##name, FVAR_NONZERO, 0.15f, FVAR_MAX); \

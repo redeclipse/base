@@ -967,6 +967,9 @@ void progress(float amt, const char *s, ...)
 
     SDL_PumpEvents(); // keep the event queue awake to avoid appearing unresponsive
 
+    bool oldconvars = consolevars;
+    if(consolevars == 1 && consolerun) consolevars = 0;
+
     string sf;
     if(s != NULL)
     {
@@ -989,6 +992,7 @@ void progress(float amt, const char *s, ...)
     updatesounds();
     progressing = false;
     identflags = oldflags;
+    consolevars = oldconvars;
 }
 
 
