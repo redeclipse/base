@@ -349,7 +349,7 @@ void backup(const char *fname, const char *ext, int revision, int start, bool st
 char *makerelpath(const char *dir, const char *file, const char *prefix, const char *cmd)
 {
     static string tmp;
-    if(file && !strncmp(file, "<comp>", 6))
+    if(file && !strncmp(file, "<comp", 5))
     {
         copystring(tmp, file);
         return tmp;

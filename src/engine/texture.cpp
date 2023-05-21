@@ -5,7 +5,7 @@
 #include "tools.h"
 
 TVAR(IDF_PERSIST|IDF_PRELOAD, notexturetex, "textures/notexture", 3);
-TVAR(IDF_PERSIST|IDF_PRELOAD, blanktex, "<comp>blank", 3);
+TVAR(IDF_PERSIST|IDF_PRELOAD, blanktex, "<comp:0,2>blank", 3);
 TVAR(IDF_PERSIST|IDF_PRELOAD, logotex, "textures/logo", 3);
 TVAR(IDF_PERSIST|IDF_PRELOAD, logocroptex, "textures/logocrop", 3);
 TVAR(IDF_PERSIST|IDF_PRELOAD, emblemtex, "textures/emblem", 3);
@@ -1881,7 +1881,7 @@ Texture *textureloaded(const char *name)
 
 Texture *textureload(const char *name, int tclamp, bool mipit, bool msg, bool gc)
 {
-    if(name && !strncmp(name, "<comp>", 6)) return UI::composite(name, tclamp, mipit, msg, gc);
+    if(name && !strncmp(name, "<comp", 5)) return UI::composite(name, tclamp, mipit, msg, gc);
 
     string tname;
     copystring(tname, name);
@@ -3138,7 +3138,7 @@ static void addname(vector<char> &key, Slot &slot, Slot::Tex &t, bool combined =
 
 void Slot::load(int index, Slot::Tex &t)
 {
-    if(!strncmp(t.name, "<comp>", 6))
+    if(!strncmp(t.name, "<comp", 5))
     {
         t.t = UI::composite(t.name, 0, true, true, false);
         return;
@@ -3318,7 +3318,7 @@ static void blitthumbnail(ImageData &d, ImageData &s, int x, int y)
 Texture *Slot::loadthumbnail()
 {
     if(thumbnail) return thumbnail;
-    if(sts.inrange(0) && !strncmp(sts[0].name, "<comp>", 6))
+    if(sts.inrange(0) && !strncmp(sts[0].name, "<comp", 5))
     {
         if(!sts[0].t) load();
         thumbnail = sts[0].t;

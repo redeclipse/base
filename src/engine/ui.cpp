@@ -6490,34 +6490,81 @@ namespace UI
             return t;
         }
 
+        const char *cmds = NULL, *file = name;
+        if(name && name[0] == '<')
+        {
+            cmds = name;
+            file = strrchr(name, '>');
+            if(!file) file = tex ? tex->name : NULL;
+            else file++;
+        }
+
+        bool iscomposite = false;
+        float ssize = 0;
+        int delay = 0;
+        for(const char *pcmds = cmds; pcmds;)
+        {
+            #define PARSETEXCOMMANDS(cmds) \
+                const char *cmd = NULL, *end = NULL, *arg[2] = { NULL, NULL }; \
+                cmd = &cmds[1]; \
+                end = strchr(cmd, '>'); \
+                if(!end) break; \
+                cmds = strchr(cmd, '<'); \
+                size_t len = strcspn(cmd, ":,><"); \
+                loopi(2) \
+                { \
+                    arg[i] = strchr(i ? arg[i-1] : cmd, i ? ',' : ':'); \
+                    if(!arg[i] || arg[i] >= end) arg[i] = ""; \
+                    else arg[i]++; \
+                }
+            PARSETEXCOMMANDS(pcmds);
+            if(matchstring(cmd, len, "comp"))
+            {
+                if(*arg[0]) delay = max(atoi(arg[0]), 0);
+                if(*arg[1]) ssize = atof(arg[1]);
+                iscomposite = true;
+            }
+        }
+        if(!iscomposite)
+        {
+            if(msg) conoutf(colourred, "Not a composite texture: %s", name);
+            return notexture;
+        }
+
+        vector<char *> list;
+        explodelist(file, list, 4); // name [delay] args [size]
+
+        if(list.empty()) // need at least the name
+        {
+            list.deletearrays();
+            if(msg) conoutf(colourred, "Could not composite texture: %s", name);
+            return notexture;
+        }
+
+        int argidx = 1;
+        if(list.length() >= 2 && isdigit(list[1][0]))
+        { // Import from old style
+            argidx = 2;
+            delay = atoi(list[1]);
+            if(list.length() >= 4) ssize = atof(list[3]);
+        }
+
+        char *cname = list[0], *args = list.length() >= (argidx + 1) ? list[argidx] : NULL;
+        int tsize = ssize >= 0 ? int(ssize * compositesize) : abs(round(ssize));
+        if(tsize <= 0) tsize = compositesize;
+        else if(tsize < 1<<1) tsize = 1<<1;
+
         if(msg) progress(loadprogress, "Compositing texture: %s", name);
 
         DOSURFACE(SURFACE_COMPOSITE,
         {
-            vector<char *> list;
-            explodelist(&name[6], list, 4); // name delay args size
-            if(list.empty()) // need at least the name
-            {
-                list.deletearrays();
-                if(msg) conoutf(colourred, "Could not composite texture: %s", name);
-                return notexture;
-            }
-
-            char *n = list[0];
-            Window *w = surface->windows.find(n, NULL);
+            Window *w = surface->windows.find(cname, NULL);
             if(!w)
             {
-                if(msg) conoutf(colourred, "Failed to locate Composite UI: %s", name);
+                if(msg) conoutf(colourred, "Failed to locate composite UI: %s", name);
                 list.deletearrays();
                 return notexture;
             }
-
-            char *a = list.length() >= 3 ? list[2] : NULL;
-            float sw = list.length() >= 4 ? parsefloat(list[3]) : 1.f;
-            int tw = sw >= 0 ? int(sw * compositesize) : int(0 - sw);
-            int delay = list.length() >= 2 ? max(atoi(list[1]), 0) : 0;
-            if(tw <= 0) tw = compositesize;
-            else if(tw < 1<<1) tw = 1<<1;
 
             GLint oldfbo = 0;
             glGetIntegerv(GL_FRAMEBUFFER_BINDING, &oldfbo);
@@ -6534,7 +6581,7 @@ namespace UI
                 tex->id = 0;
             }
             glGenTextures(1, &id);
-            createtexture(id, tw, tw, NULL, tclamp, mipit ? 3 : 0, GL_RGBA, GL_TEXTURE_2D);
+            createtexture(id, tsize, tsize, NULL, tclamp, mipit ? 3 : 0, GL_RGBA, GL_TEXTURE_2D);
             glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, id, 0);
 
             GLERROR;
@@ -6548,7 +6595,7 @@ namespace UI
                 return notexture;
             }
 
-            glViewport(0, 0, tw, tw);
+            glViewport(0, 0, tsize, tsize);
             glClearColor(0, 0, 0, 0);
             glClear(GL_COLOR_BUFFER_BIT);
 
@@ -6557,16 +6604,16 @@ namespace UI
                 char *key = newstring(name);
                 t = &textures[key];
                 t->name = key;
-                t->comp = newstring(n);
-                t->args = a ? newstring(a) : NULL;
+                t->comp = newstring(cname);
+                t->args = args ? newstring(args) : NULL;
             }
             t->type = Texture::IMAGE | Texture::COMPOSITE | Texture::ALPHA;
             t->tclamp = tclamp;
             t->mipmap = mipit;
             if(gc) t->type |= Texture::GC;
             if(t->tclamp&0x300) t->type |= Texture::MIRROR;
-            t->w = t->h = tw;
-            t->xs = t->ys = sw >= 0 ? int(t->w * (COMPOSITESIZE / float(t->w))) : t->w;
+            t->w = t->h = tsize;
+            t->xs = t->ys = ssize >= 0 ? int(t->w * (COMPOSITESIZE / float(t->w))) : t->w;
             t->bpp = 4;
             t->delay = delay;
             t->id = id;
@@ -6581,7 +6628,6 @@ namespace UI
                 break;
             }
             if(!hastex) surface->texs.add(t);
-            list.deletearrays();
 
             if(t->mipmap)
             {
@@ -6593,6 +6639,8 @@ namespace UI
             glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
             glViewport(0, 0, hudw, hudh);
         });
+
+        list.deletearrays();
 
         return t;
     }
