@@ -1813,7 +1813,7 @@ FVAR(IDF_PERSIST, weatherdropnumscale, 0, 1.0f, FVAR_MAX);
 #define MPVVARS(name) \
     FVAR(IDF_MAP, weatherdrops##name, 0, 0, FVAR_MAX); \
     VAR(IDF_MAP, weatherdroppart##name, PART_FIREBALL_LERP, PART_RAIN, PART_RAIN); \
-    VAR(IDF_MAP, weatherdropcollide##name, -1, -1, STAIN_MAX); \
+    VAR(IDF_MAP, weatherdropcollide##name, -2, -1, STAIN_MAX); \
     VAR(IDF_MAP, weatherdropfade##name, 1, 750, VAR_MAX); \
     VAR(IDF_MAP, weatherdropgravity##name, VAR_MIN, 300, VAR_MAX); \
     VAR(IDF_MAP|IDF_HEX, weatherdropcolour##name, PC(LAST), 0xFFFFFF, 0xFFFFFF); \
@@ -1916,6 +1916,9 @@ void part_weather()
             // Only run the cull if the projection is inside the world
             if(insideworld(project))
             {
+                // Check if we only want drops that progress through the entire world
+                if(collide == -2) continue;
+
                 zoff = hitpos.z;
                 if(gravity >= 0) zoff = max(zoff, camera1->o.z - (weatherdropdist * 0.5f));
                 else zoff = min(zoff, camera1->o.z + (weatherdropdist * 0.5f));
