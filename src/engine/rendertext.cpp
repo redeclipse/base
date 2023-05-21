@@ -931,7 +931,7 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
         if(usecolor) \
         { \
             int alpha = colorstack[colorpos].a; \
-            color = TVECA(ret, alpha); \
+            color = TVECA(getpulsehexcol(ret), alpha); \
             colorstack[colorpos] = color; \
             xtraverts += gle::end(); \
             gle::color(color); \

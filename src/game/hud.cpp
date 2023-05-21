@@ -1334,7 +1334,7 @@ namespace hud
                     switch(game::focus->icons[i].type)
                     {
                         case eventicon::WEAPON: colour = W(game::focus->icons[i].value, colour); break;
-                        case eventicon::AFFINITY: colour = m_bomber(game::gamemode) ? game::pulsehexcol(game::focus, PULSE_DISCO) : TEAM(game::focus->icons[i].value, colour); break;
+                        case eventicon::AFFINITY: colour = m_bomber(game::gamemode) ? pulsehexcol(game::focus, PULSE_DISCO) : TEAM(game::focus->icons[i].value, colour); break;
                         default: break;
                     }
                     settexture(t);
@@ -1496,7 +1496,7 @@ namespace hud
                 float pc = interval >= game::focus->name##time-500 ? 1.f+(interval-(game::focus->name##time-500))/500.f : (interval%delay)/float(delay/2); \
                 if(pc > 1.f) pc = 2.f-pc; \
                 if(interval < game::focus->name##time-(delay/2)) pc = min(pc+0.5f, 1.f); \
-                if(pc > 0) drawdamage(damage##name##tex, game::pulsecolour(game::focus, PULSE_##pulse), pc*blend*damage##name##blend, damage##name##speed1, damage##name##speed2, 0.f, damage##name##bright); \
+                if(pc > 0) drawdamage(damage##name##tex, pulsecolour(game::focus, PULSE_##pulse), pc*blend*damage##name##blend, damage##name##speed1, damage##name##speed2, 0.f, damage##name##bright); \
             }
         RESIDUALSF
         #undef RESIDUAL
@@ -1718,7 +1718,7 @@ namespace hud
             if(game::damageinteger)
                 formatstring(text, "%c%d", l.damage > 0 ? '-' : (l.damage < 0 ? '+' : '~'), int(ceilf((l.damage < 0 ? 0-l.damage : l.damage)/game::damagedivisor)));
             else formatstring(text, "%c%.1f", l.damage > 0 ? '-' : (l.damage < 0 ? '+' : '~'), (l.damage < 0 ? 0-l.damage : l.damage)/game::damagedivisor);
-            vec colour = l.colour < 0 ? game::pulsecolour(a, INVPULSE(l.colour)) : vec::fromcolor(l.colour);
+            vec colour = l.colour < 0 ? pulsecolour(a, INVPULSE(l.colour)) : vec::fromcolor(l.colour);
             if(maxy >= 0 && hy < maxy) hy = maxy;
             if(onscreenhitsglow && settexture(onscreenhitsglowtex))
             {
@@ -1749,7 +1749,7 @@ namespace hud
                 range = clamp(max(l.damage, onscreendamagemin)/float(max(onscreendamagemax-onscreendamagemin, 1)), onscreendamagemin/100.f, 1.f),
                 fade = clamp(onscreendamageblend*blend, min(onscreendamageblend*onscreendamagemin/100.f, 1.f), onscreendamageblend)*amt,
                 size = clamp(range*onscreendamagesize, min(onscreendamagesize*onscreendamagemin/100.f, 1.f), onscreendamagesize)*amt;
-            vec dir = l.dir, colour = l.colour < 0 ? game::pulsecolour(game::focus, INVPULSE(l.colour)) : vec::fromcolor(l.colour);
+            vec dir = l.dir, colour = l.colour < 0 ? pulsecolour(game::focus, INVPULSE(l.colour)) : vec::fromcolor(l.colour);
             if(e == game::focus) l.dir = vec(e->yaw*RAD, 0.f).neg();
             dir.rotate_around_z(-camera1->yaw*RAD).normalize();
             float yaw = -atan2(dir.x, dir.y)/RAD, x = sinf(RAD*yaw), y = -cosf(RAD*yaw), sz = max(w, h)/2,

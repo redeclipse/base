@@ -2451,8 +2451,6 @@ namespace game
     extern float opacity(gameent *d, bool third = true);
     extern void respawn(gameent *d);
     extern void respawned(gameent *d, bool local, int ent = -1);
-    extern vec pulsecolour(physent *d, int i = 0, int cycle = 50);
-    extern int pulsehexcol(physent *d, int i = 0, int cycle = 50);
     extern void spawneffect(int type, const vec &pos, float radius, int colour, float size);
     extern void impulseeffect(gameent *d, int effect = 0);
     extern void suicide(gameent *d, int flags = 0);

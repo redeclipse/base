@@ -1074,6 +1074,7 @@ extern void viewhaze();
 #endif // STANDALONE
 #include "sound.h"
 
+// command extras
 #define PULSE_ENUM(pr, en) \
     en(pr, fire, FIRE) en(pr, burn, BURN) en(pr, disco, DISCO) en(pr, shock, SHOCK) en(pr, bleed, BLEED) \
     en(pr, buff, BUFF) en(pr, warn, WARN) en(pr, regen, REGEN) en(pr, flash, FLASH) en(pr, rainbow, RAINBOW) en(pr, max, MAX)
@@ -1097,11 +1098,21 @@ extern const int pulsecols[PULSE_MAX][PULSECOLOURS] = {
     { 0xFFFFFF, 0xC0C0C0, 0xA0A0A0, 0x808080, 0x707070, 0x808080, 0xA0A0A0, 0xC0C0C0 }, // flash
     { 0xFF0000, 0xFF8800, 0xFFFF00, 0x00FF00, 0x00FFFF, 0x0000FF, 0xFF00FF, 0xFFFFFF }  // rainbow
 };
-#else
+#else // CPP_ENGINE_COMMAND
 extern const int pulsecols[PULSE_MAX][PULSECOLOURS];
-#endif
+#endif // CPP_ENGINE_COMMAND
 
-#endif
+extern vec pulsecolour(int n = 0, int cycle = 50);
+extern int pulsehexcol(int n = 0, int cycle = 50);
+extern vec getpulsecolour(int n = 0, int cycle = 50);
+extern int getpulsehexcol(int n = 0, int cycle = 50);
+#ifndef STANDALONE
+extern vec pulsecolour(physent *d, int n = 0, int cycle = 50);
+extern int pulsehexcol(physent *d, int n = 0, int cycle = 50);
+extern vec getpulsecolour(physent *d, int n = 0, int cycle = 50);
+extern int getpulsehexcol(physent *d, int n = 0, int cycle = 50);
+#endif // STANDALONE
+#endif // CPP_ENGINE_HEADER
 
 #if !defined(CPP_GAME_HEADER) || defined(CPP_GAME_SERVER)
 #define ENUM_DEFINE

@@ -178,12 +178,6 @@ namespace bomber
         preloadmodel("props/ball");
     }
 
-    vec pulsecolour()
-    {
-        uint n = lastmillis/100;
-        return vec::fromcolor(pulsecols[PULSE_DISCO][n%PULSECOLOURS]).lerp(vec::fromcolor(pulsecols[PULSE_DISCO][(n+1)%PULSECOLOURS]), (lastmillis%100)/100.0f);
-    }
-
     FVAR(IDF_PERSIST, bomberreticlesize, 0, 0.1f, 1.f);
     void drawonscreen(int w, int h, float blend)
     {
@@ -272,7 +266,7 @@ namespace bomber
                 mdl.pitch = !f.owner && f.proj ? f.proj->pitch : 0;
                 mdl.roll = !f.owner && f.proj ? f.proj->roll : 0;
                 float wait = f.droptime ? clamp((lastmillis-f.droptime)/float(bomberresetdelay), 0.f, 1.f) : ((f.owner && carrytime) ? clamp((lastmillis-f.taketime)/float(carrytime), 0.f, 1.f) : 0.f);
-                vec effect = pulsecolour();
+                vec effect = pulsecolour(PULSE_DISCO, 100);
                 if(wait > 0.5f)
                 {
                     int delay = wait > 0.7f ? (wait > 0.85f ? 150 : 300) : 600, millis = lastmillis%(delay*2);
@@ -331,7 +325,7 @@ namespace bomber
             float trans = 1.f;
             int millis = lastmillis-f.displaytime;
             if(millis <= 1000) trans = float(millis)/1000.f;
-            vec colour = isbomberaffinity(f) ? pulsecolour() : vec::fromcolor(TEAM(f.team, colour));
+            vec colour = isbomberaffinity(f) ? pulsecolour(PULSE_DISCO, 100) : vec::fromcolor(TEAM(f.team, colour));
             adddynlight(f.pos(true, true), enttype[AFFINITY].radius*trans, colour, 0, 0);
         }
     }

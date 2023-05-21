@@ -2529,11 +2529,11 @@ void freecode(uint *code)
 void printvar(ident *id, int n, const char *str)
 {
     string output;
-    if(id->flags&IDF_HEX && id->maxval == 0xFFFFFF)
+    if(n >= 0 && id->flags&IDF_HEX && id->maxval == 0xFFFFFF)
         formatstring(output, "%s = 0x%.6X (%d, %d, %d)", id->name, n, (n>>16)&0xFF, (n>>8)&0xFF, n&0xFF);
     else if(id->flags&IDF_HEX && uint(id->maxval) == 0xFFFFFFFFU)
         formatstring(output, "%s = 0x%.8X (%d, %d, %d, %d)", id->name, n, n>>24, (n>>16)&0xFF, (n>>8)&0xFF, n&0xFF);
-    else formatstring(output, id->flags&IDF_HEX ? "%s = 0x%X" : "%s = %d", id->name, n);
+    else formatstring(output, n >= 0 && id->flags&IDF_HEX ? "%s = 0x%X" : "%s = %d", id->name, n);
     if(str && *str) concformatstring(output, " (%s)", str);
     conoutf(colourwhite, "%s", output);
 }
@@ -5481,3 +5481,65 @@ COLOURVAR(violet, 0xB060FF);
 COLOURVAR(purple, 0xFF00FF);
 COLOURVAR(brown, 0xA05030);
 COLOURVAR(chartreuse, 0xB0FF00);
+
+vec pulsecolour(int n, int cycle)
+{
+    int q = clamp(n, 0, PULSE_LAST);
+    if(cycle < 0) return vec::fromcolor(pulsecols[q][rnd(PULSECOLOURS)]);
+    size_t seed = lastmillis/cycle;
+    int n1 = detrnd(seed, 2*PULSECOLOURS), n2 = detrnd(seed + 1, 2*PULSECOLOURS);
+    return vec::fromcolor(pulsecols[q][n1%PULSECOLOURS]).lerp(vec::fromcolor(pulsecols[q][n2%PULSECOLOURS]), (lastmillis%cycle)/float(cycle));
+}
+
+int pulsehexcol(int n, int cycle)
+{
+    if(cycle < 0) return pulsecols[clamp(n, 0, PULSE_LAST)][rnd(PULSECOLOURS)];
+    bvec h = bvec::fromcolor(pulsecolour(n, cycle));
+    return (h.r<<16)|(h.g<<8)|h.b;
+}
+
+vec getpulsecolour(int n, int cycle)
+{
+    if(n >= 0) return vec::fromcolor(n);
+    return pulsecolour(INVPULSE(n), cycle);
+}
+
+int getpulsehexcol(int n, int cycle)
+{
+    if(n >= 0) return n;
+    return pulsehexcol(INVPULSE(n), cycle);
+}
+ICOMMAND(0, pulsecolour, "ib", (int *n, int *cycle), intret(pulsehexcol(*n, *cycle >= -1 ? *cycle : 50)));
+ICOMMAND(0, getpulsecolour, "ib", (int *n, int *cycle), intret(getpulsehexcol(*n, *cycle >= -1 ? *cycle : 50)));
+
+#ifndef STANDALONE
+vec pulsecolour(physent *d, int n, int cycle)
+{
+    int q = clamp(n, 0, PULSE_LAST);
+    if(cycle < 0) return vec::fromcolor(pulsecols[q][rnd(PULSECOLOURS)]);
+    if(!d) d = camera1;
+    size_t seed = size_t(d) + (lastmillis/cycle);
+    int n1 = detrnd(seed, 2*PULSECOLOURS), n2 = detrnd(seed + 1, 2*PULSECOLOURS);
+    return vec::fromcolor(pulsecols[q][n1%PULSECOLOURS]).lerp(vec::fromcolor(pulsecols[q][n2%PULSECOLOURS]), (lastmillis%cycle)/float(cycle));
+}
+
+int pulsehexcol(physent *d, int n, int cycle)
+{
+    if(cycle < 0) return pulsecols[clamp(n, 0, PULSE_LAST)][rnd(PULSECOLOURS)];
+    if(!d) d = camera1;
+    bvec h = bvec::fromcolor(pulsecolour(d, n, cycle));
+    return (h.r<<16)|(h.g<<8)|h.b;
+}
+
+vec getpulsecolour(physent *d, int n, int cycle)
+{
+    if(n >= 0) return vec::fromcolor(n);
+    return pulsecolour(d, INVPULSE(n), cycle);
+}
+
+int getpulsehexcol(physent *d, int n, int cycle)
+{
+    if(n >= 0) return n;
+    return pulsehexcol(d, INVPULSE(n), cycle);
+}
+#endif

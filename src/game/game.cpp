@@ -1180,7 +1180,7 @@ namespace game
                     if(fluc >= 0.25f) fluc = (0.25f+0.03f-fluc)*(0.25f/0.03f);
                     pc *= 0.75f+fluc;
                 }
-                adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d).mul(pc), 0, 0);
+                adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d, PULSE_BURN).mul(pc), 0, 0);
             }
             if(d->shocktime && d->shocking(lastmillis, d->shocktime))
             {
@@ -2398,19 +2398,6 @@ namespace game
         d->suicided = lastmillis;
     }
     ICOMMAND(0, suicide, "",  (), { suicide(player1); });
-
-    vec pulsecolour(physent *d, int i, int cycle)
-    {
-        size_t seed = size_t(d) + (lastmillis/cycle);
-        int n = detrnd(seed, 2*PULSECOLOURS), n2 = detrnd(seed + 1, 2*PULSECOLOURS), q = clamp(i, 0, PULSE_LAST);
-        return vec::fromcolor(pulsecols[q][n%PULSECOLOURS]).lerp(vec::fromcolor(pulsecols[q][n2%PULSECOLOURS]), (lastmillis%cycle)/float(cycle));
-    }
-
-    int pulsehexcol(physent *d, int i, int cycle)
-    {
-        bvec h = bvec::fromcolor(pulsecolour(d, i, cycle));
-        return (h.r<<16)|(h.g<<8)|h.b;
-    }
 
     void particletrack(particle *p, uint type, int &ts, bool step)
     {

@@ -1407,8 +1407,8 @@ WPFVAR(IDF_GAMEMOD, 0, modbuoyancyzoom, FVAR_MIN, FVAR_MAX,
 #define WSNDFB(a,b)          (weaptype[a].sound+((b) ? S_W_SECONDARY_BEGIN : S_W_PRIMARY_BEGIN))
 #define WSNDFE(a,b)          (weaptype[a].sound+((b) ? S_W_SECONDARY_END : S_W_PRIMARY_END))
 #define WSND2(a,b,c)         (weaptype[a].sound+((b) ? (c)+1 : (c)))
-#define WHCOL(d,a,b,c)       (W2(a, b, c) >= 0 ? W2(a, b, c) : game::pulsehexcol(d, clamp(INVPULSE(W2(a, b, c)), 0, PULSE_LAST), 50))
-#define WPCOL(d,a,b,c)       (W2(a, b, c) >= 0 ? vec::fromcolor(W2(a, b, c)) : game::pulsecolour(d, clamp(INVPULSE(W2(a, b, c)), 0, PULSE_LAST), 50))
+#define WHCOL(d,a,b,c)       (getpulsehexcol(d, W2(a, b, c)))
+#define WPCOL(d,a,b,c)       (getpulsecolour(d, W2(a, b, c)))
 
 struct weaptypes
 {
