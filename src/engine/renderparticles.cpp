@@ -185,6 +185,7 @@ struct partrenderer
             float secs = curtime/1000.f;
             int part = type&0xFF;
             vec v = (part == PT_PART || part == PT_TRAIL) ? vec(p->d).mul(secs) : vec(0, 0, 0);
+            bool istape = (type&PT_TAPE) != 0;
 
             if(p->gravity != 0)
             {
@@ -198,10 +199,17 @@ struct partrenderer
                     }
                 } d;
                 d.weight = p->gravity;
-                v.add(physics::gravityvel(&d, p->o, secs));
+                vec gravity = physics::gravityvel(&d, p->o, secs);
+                if(istape)
+                { // Cheat a bit and use the gravity magnitude to travel along the tape direction
+                    float mag = gravity.magnitude();
+                    gravity = vec(p->o).sub(p->d).normalize().mul(mag);
+                }
+                v.add(gravity);
             }
 
             p->o.add(v);
+            if(istape) p->d.add(v); // Also add to the destination so the tape follows along
             if(particlewind && type&PT_WIND) p->o.add(p->wind.probe(p->prev).mul(secs * 10.0f));
 
             vec move = vec(p->o).sub(p->prev);
@@ -213,14 +221,20 @@ struct partrenderer
                 bool hit = false;
                 if(!p->precollide)
                 {
-                    float dist = raycube(p->prev, dir, mag);
-                    hit = dist < mag;
-                    if(hit) hitpos = vec(dir).mul(dist).add(p->prev);
+                    float dist = raycube(p->prev, dir);
+                    if(dist <= mag)
+                    {
+                        hit = true;
+                        hitpos = vec(dir).mul(dist).add(p->prev);
+                    }
                 }
                 else
                 {
-                    hit = dir.z <= 0 ? p->o.z < p->val : p->o.z > p->val;
-                    if(hit) hitpos = vec(p->o.x, p->o.y, p->val);
+                    if(dir.z <= 0 ? p->o.z < p->val : p->o.z > p->val)
+                    {
+                        hit = true;
+                        hitpos = vec(p->o.x, p->o.y, p->val);
+                    }
                 }
                 if(hit)
                 {
@@ -1850,7 +1864,7 @@ void part_weather()
 
     int collide = getweatherdropcollide(), fade = getweatherdropfade(), gravity = getweatherdropgravity(), color = getweatherdropcolour(), hintcolor = getweatherdrophintcolour(),
         mindist = getweatherdropmindist(), maxdist = getweatherdropmaxdist(), dist = clamp(weatherdropdist, mindist > 0 ? mindist : 1, maxdist > 0 ? maxdist : VAR_MAX);
-    float variance = getweatherdropvariance(), size = getweatherdropsize(), blend = getweatherdropblend(), hintblend = getweatherdrophintblend();
+    float variance = getweatherdropvariance(), size = getweatherdropsize(), length = istape ? getweatherdroplen() : abs(gravity), blend = getweatherdropblend(), hintblend = getweatherdrophintblend();
 
     // Scale the number of drops if the distance changes
     if(dist != 200) drops = round(drops * float(dist) / 200.f);
@@ -1863,28 +1877,38 @@ void part_weather()
         // Add random jitter to the drop direction
         vec dir = vec(rndscale(variance * 2) - variance, rndscale(variance * 2) - variance, gravity >= 0 ? -1 : 1).normalize();
 
-        // Follow the inverse direction to find the outside position
+        // Follow the inverse direction to find the boundary position
         vec skypos = vec(o).sub(vec(dir).mul(worldsize));
 
+        vec dest = vec(dir).mul(length);
+        if(istape) dest = vec(o).sub(dest); // Tape particles use d = dest
+
         float zoff = 0;
+        bool wantcollide = false;
         if(collide)
         {
-            // Raycast from outside map to find obstructions
+            // Raycast from outside map to find obstructions, raycube is limited to world bounds
             float hitz = raycube(skypos, dir);
-            zoff = vec(dir).mul(hitz).add(skypos).z;
-            if(gravity >= 0) zoff = max(zoff, camera1->o.z - (dist * 0.5f));
-            else zoff = max(zoff, camera1->o.z + (dist * 0.5f));
 
-            // If collided before the start position, discard
-            if(gravity >= 0 ? zoff >= o.z : zoff <= o.z) continue;
+            // Project a bit further to see if the drop is just exiting the world bounds
+            vec hitpos = vec(dir).mul(hitz).add(skypos), project = vec(hitpos).add(dir);
+
+            // Only run the cull if the projection is inside the world
+            if(insideworld(project))
+            {
+                zoff = hitpos.z;
+                if(gravity >= 0) zoff = max(zoff, camera1->o.z - (dist * 0.5f));
+                else zoff = min(zoff, camera1->o.z + (dist * 0.5f));
+
+                // If collided before the destination, discard
+                if(gravity >= 0 ? zoff >= o.z : zoff <= o.z) continue;
+                wantcollide = true;
+            }
         }
 
-        dir.mul(abs(gravity));
-        if(istape) o.sub(dir); // Tape particles use d = dest
-
         int col = color >= 0 ? color : pulsecols[0 - color][rnd(PULSECOLOURS)], hintcol = hintcolor >= 0 ? hintcolor : pulsecols[0 - hintcolor][rnd(PULSECOLOURS)];
-        particle *newpart = newparticle(o, dir, fade, part, col, size, blend, hintcol, hintblend, 0, collide, zoff);
-        if(newpart) newpart->precollide = true;
+        particle *newpart = newparticle(o, dest, fade, part, col, size, blend, hintcol, hintblend, istape ? gravity : 0, istape || wantcollide ? collide : 0, zoff);
+        if(!istape && wantcollide && newpart) newpart->precollide = true;
     }
 
     enviroparts = false;
