@@ -1806,6 +1806,8 @@ static inline vec offsetvec(vec o, int dir, int dist)
 }
 
 VAR(IDF_PERSIST, weatherdropdist, 0, 200, VAR_MAX);
+VAR(IDF_PERSIST, weatherdropheight, 0, 200, VAR_MAX);
+FVAR(IDF_PERSIST, weatherviewangle, 1, 160, 360);
 FVAR(IDF_PERSIST, weatherdropnumscale, 0, 1.0f, FVAR_MAX);
 
 #define MPVVARS(name) \
@@ -1845,8 +1847,22 @@ GETMPV(weatherdropblend, float);
 GETMPV(weatherdropsize, float);
 GETMPV(weatherdroplen, float);
 GETMPV(weatherdropvariance, float);
-GETMPV(weatherdropmindist, int);
-GETMPV(weatherdropmaxdist, int);
+
+vec part_weather_pos()
+{
+    // Camera position
+    vec o = vec(camera1->o);
+    vec pos;
+
+    float angle = rndscale(weatherviewangle) - weatherviewangle/2;
+
+    vecfromyawpitch(camera1->yaw + angle, 0, 1, 0, pos);
+    pos.mul(rndscale(weatherdropdist)).add(o);
+
+    pos.z += (rnd(weatherdropheight * 2) - weatherdropheight);
+
+    return pos;
+}
 
 void part_weather()
 {
@@ -1862,17 +1878,21 @@ void part_weather()
     if(part < PART_FIREBALL_LERP || part > PART_RAIN) return;
     bool istape = (parts[part]->type&PT_TAPE) != 0;
 
-    int collide = getweatherdropcollide(), fade = getweatherdropfade(), gravity = getweatherdropgravity(), color = getweatherdropcolour(), hintcolor = getweatherdrophintcolour(),
-        mindist = getweatherdropmindist(), maxdist = getweatherdropmaxdist(), dist = clamp(weatherdropdist, mindist > 0 ? mindist : 1, maxdist > 0 ? maxdist : VAR_MAX);
-    float variance = getweatherdropvariance(), size = getweatherdropsize(), length = istape ? getweatherdroplen() : abs(gravity), blend = getweatherdropblend(), hintblend = getweatherdrophintblend();
+    int collide = getweatherdropcollide(), fade = getweatherdropfade(),
+        gravity = getweatherdropgravity(), color = getweatherdropcolour(),
+        hintcolor = getweatherdrophintcolour();
+
+    float variance = getweatherdropvariance(), size = getweatherdropsize(),
+          length = istape ? getweatherdroplen() : abs(gravity), blend = getweatherdropblend(),
+          hintblend = getweatherdrophintblend();
 
     // Scale the number of drops if the distance changes
-    if(dist != 200) drops = round(drops * float(dist) / 200.f);
+    if(weatherdropdist != 200) drops = round(drops * float(weatherdropdist) / 200.f);
 
     loopi(drops)
     {
         // Pick a random position within the cube
-        vec o = vec(camera1->o).add(vec(rnd(dist * 2) - dist, rnd(dist * 2) - dist, rnd(dist * 2) - dist));
+        vec o = part_weather_pos();
 
         // Add random jitter to the drop direction
         vec dir = vec(rndscale(variance * 2) - variance, rndscale(variance * 2) - variance, gravity >= 0 ? -1 : 1).normalize();
@@ -1897,8 +1917,8 @@ void part_weather()
             if(insideworld(project))
             {
                 zoff = hitpos.z;
-                if(gravity >= 0) zoff = max(zoff, camera1->o.z - (dist * 0.5f));
-                else zoff = min(zoff, camera1->o.z + (dist * 0.5f));
+                if(gravity >= 0) zoff = max(zoff, camera1->o.z - (weatherdropdist * 0.5f));
+                else zoff = min(zoff, camera1->o.z + (weatherdropdist * 0.5f));
 
                 // If collided before the destination, discard
                 if(gravity >= 0 ? zoff >= o.z : zoff <= o.z) continue;
