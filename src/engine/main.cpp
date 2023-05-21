@@ -223,7 +223,7 @@ void screenshot(char *sname)
 }
 
 ICOMMAND(0, screenshot, "s", (char *s), if(!(identflags&IDF_MAP)) screenshot(s));
-ICOMMAND(0, quit, "", (void), if(!(identflags&IDF_MAP)) quit());
+ICOMMAND(IDF_NOECHO, quit, "", (void), if(!(identflags&IDF_MAP)) quit());
 
 #define SCR_MINW 320
 #define SCR_MINH 200

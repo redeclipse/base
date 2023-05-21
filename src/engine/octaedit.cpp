@@ -2704,7 +2704,7 @@ void vdelta(uint *body)
     execute(body);
     usevdelta--;
 }
-COMMAND(0, vdelta, "e");
+COMMAND(IDF_NOECHO, vdelta, "e");
 
 void vrotate(int *n)
 {

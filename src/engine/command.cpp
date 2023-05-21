@@ -10,6 +10,11 @@ vector<ident *> identmap;
 ident *dummyident = NULL;
 int identflags = 0;
 
+#ifdef STANDALONE // macro workaround
+bool consolerun = false;
+int consolevars = 0;
+#endif
+
 VARN(0, numargs, _numargs, MAXARGS, 0, 0);
 
 static inline void freearg(tagval &v)
@@ -508,9 +513,7 @@ void resetvar(char *name)
     else
     {
         clearoverride(*id);
-#ifndef STANDALONE
-        if(consolevars && consolerun) printvar(id);
-#endif
+        if(consolevars >= (consolerun ? 1 : 2)) printvar(id);
     }
 }
 
@@ -560,8 +563,8 @@ static inline void setalias(ident &id, tagval &v, bool mapdef, bool quiet = fals
         id.flags |= oldflags&IDF_PERSIST;
 #ifndef STANDALONE
         client::editvar(&id, !(identflags&IDF_MAP));
-        if(consolevars && consolerun) printvar(&id);
 #endif
+        if(consolevars >= (consolerun ? 1 : 2)) printvar(&id);
     }
 }
 
@@ -589,9 +592,7 @@ static void setalias(const char *name, tagval &v, bool mapdef, bool quiet = fals
                 if(id->flags&IDF_EMUVAR)
                 {
                     execute(id, &v, 1);
-#ifndef STANDALONE
-                    if(consolevars && consolerun) printvar(id);
-#endif
+                    if(consolevars >= (consolerun ? 1 : 2)) printvar(id);
                     break;
                 }
                 // fall through
@@ -1179,8 +1180,8 @@ void setvarchecked(ident *id, int val)
 #ifndef STANDALONE
         client::editvar(id, !(identflags&IDF_MAP));
         if(versioning && id->flags&IDF_SERVER) setvar(&id->name[3], val);
-        if(consolevars && consolerun) printvar(id);
 #endif
+        if(consolevars >= (consolerun ? 1 : 2)) printvar(id);
     }
 }
 
@@ -1214,8 +1215,8 @@ void setfvarchecked(ident *id, float val)
 #ifndef STANDALONE
         client::editvar(id, !(identflags&IDF_MAP));
         if(versioning && id->flags&IDF_SERVER) setfvar(&id->name[3], val, true);
-        if(consolevars && consolerun) printvar(id);
 #endif
+        if(consolevars >= (consolerun ? 1 : 2)) printvar(id);
     }
 }
 
@@ -1243,8 +1244,8 @@ void setsvarchecked(ident *id, const char *val)
 #ifndef STANDALONE
         client::editvar(id, !(identflags&IDF_MAP));
         if(versioning && id->flags&IDF_SERVER) setsvar(&id->name[3], val, true);
-        if(consolevars && consolerun) printvar(id);
 #endif
+        if(consolevars >= (consolerun ? 1 : 2)) printvar(id);
     }
 }
 
@@ -1270,9 +1271,7 @@ ICOMMAND(0, set, "rT", (ident *id, tagval *v),
             {
                 execute(id, v, 1);
                 v->type = VAL_NULL;
-#ifndef STANDALONE
-                if(consolevars && consolerun) printvar(id);
-#endif
+                if(consolevars >= (consolerun ? 1 : 2)) printvar(id);
                 break;
             }
             // fall through
@@ -3033,29 +3032,36 @@ static const uint *runcode(const uint *code, tagval &result)
                     tagval &arg = args[numargs-1]; \
                     if(arg.type != VAL_STR && arg.type != VAL_MACRO && arg.type != VAL_CSTR) continue; \
                     ident *id = idents.access(arg.s); \
-                    if(id) switch(id->type) \
+                    if(id) \
                     { \
-                        case ID_ALIAS: \
-                            if(id->flags&IDF_UNKNOWN) break; \
-                            freearg(arg); \
-                            if(id->index < MAXARGS && !(aliasstack->usedargs&(1<<id->index))) { nval; continue; } \
-                            aval; \
-                            continue; \
-                        case ID_SVAR: freearg(arg); sval; continue; \
-                        case ID_VAR: freearg(arg); ival; continue; \
-                        case ID_FVAR: freearg(arg); fval; continue; \
-                        case ID_COMMAND: \
+                        int oldconvars = consolevars; \
+                        if(consolevars == 1 && consolerun && id->flags&IDF_NOECHO) consolevars = 0; \
+                        switch(id->type) \
                         { \
-                            freearg(arg); \
-                            arg.setnull(); \
-                            commandret = &arg; \
-                            tagval buf[MAXARGS]; \
-                            callcommand(id, buf, 0, true); \
-                            forcearg(arg, op&CODE_RET_MASK); \
-                            commandret = &result; \
-                            continue; \
+                            case ID_ALIAS: \
+                                if(id->flags&IDF_UNKNOWN) break; \
+                                freearg(arg); \
+                                if(id->index < MAXARGS && !(aliasstack->usedargs&(1<<id->index))) { nval; consolevars = oldconvars; continue; } \
+                                aval; \
+                                continue; \
+                            case ID_SVAR: freearg(arg); sval; consolevars = oldconvars; continue; \
+                            case ID_VAR: freearg(arg); ival; consolevars = oldconvars; continue; \
+                            case ID_FVAR: freearg(arg); fval; consolevars = oldconvars; continue; \
+                            case ID_COMMAND: \
+                            { \
+                                freearg(arg); \
+                                arg.setnull(); \
+                                commandret = &arg; \
+                                tagval buf[MAXARGS]; \
+                                callcommand(id, buf, 0, true); \
+                                forcearg(arg, op&CODE_RET_MASK); \
+                                commandret = &result; \
+                                consolevars = oldconvars; \
+                                continue; \
+                            } \
+                            default: freearg(arg); nval; consolevars = oldconvars; continue; \
                         } \
-                        default: freearg(arg); nval; continue; \
+                        consolevars = oldconvars; \
                     } \
                     debugcode("Unknown alias lookup: %s", arg.s); \
                     freearg(arg); \
@@ -3159,7 +3165,10 @@ static const uint *runcode(const uint *code, tagval &result)
                 ident *id = identmap[op>>8];
                 int offset = numargs-id->numargs;
                 forcenull(result);
+                int oldconvars = consolevars;
+                if(consolevars == 1 && consolerun && id->flags&IDF_NOECHO) consolevars = 0;
                 CALLCOM(id->numargs)
+                consolevars = oldconvars;
                 forcearg(result, op&CODE_RET_MASK);
                 freeargs(args, numargs, offset);
                 continue;
@@ -3170,7 +3179,10 @@ static const uint *runcode(const uint *code, tagval &result)
                 ident *id = identmap[op>>8];
                 int offset = numargs-(id->numargs-1);
                 addreleaseaction(id, &args[offset], id->numargs-1);
+                int oldconvars = consolevars;
+                if(consolevars == 1 && consolerun && id->flags&IDF_NOECHO) consolevars = 0;
                 CALLCOM(id->numargs)
+                consolevars = oldconvars;
                 forcearg(result, op&CODE_RET_MASK);
                 freeargs(args, numargs, offset);
                 continue;
@@ -3317,6 +3329,8 @@ static const uint *runcode(const uint *code, tagval &result)
                     FORCERESULT;
                 }
                 forcenull(result);
+                int oldconvars = consolevars;
+                if(consolevars == 1 && consolerun && id->flags&IDF_NOECHO) consolevars = 0;
                 switch(id->type)
                 {
                     default:
@@ -3327,6 +3341,7 @@ static const uint *runcode(const uint *code, tagval &result)
                         callcommand(id, &args[offset], callargs);
                         forcearg(result, op&CODE_RET_MASK);
                         numargs = offset - 1;
+                        consolevars = oldconvars;
                         continue;
                     case ID_LOCAL:
                     {
@@ -3335,24 +3350,30 @@ static const uint *runcode(const uint *code, tagval &result)
                         loopj(callargs) pushalias(*forceident(args[offset+j]), locals[j]);
                         code = runcode(code, result);
                         loopj(callargs) popalias(*args[offset+j].id);
+                        consolevars = oldconvars;
                         goto exit;
                     }
                     case ID_VAR:
                         if(callargs <= 0) printvar(id); else setvarchecked(id, &args[offset], callargs);
+                        consolevars = oldconvars;
                         FORCERESULT;
                     case ID_FVAR:
                         if(callargs <= 0) printvar(id); else setfvarchecked(id, forcefloat(args[offset]));
+                        consolevars = oldconvars;
                         FORCERESULT;
                     case ID_SVAR:
                         if(callargs <= 0) printvar(id); else setsvarchecked(id, forcestr(args[offset]));
+                        consolevars = oldconvars;
                         FORCERESULT;
                     case ID_ALIAS:
                         if(id->index < MAXARGS && !(aliasstack->usedargs&(1<<id->index))) FORCERESULT;
                         if(id->valtype==VAL_NULL) goto noid;
                         freearg(idarg);
                         CALLALIAS;
+                        consolevars = oldconvars;
                         continue;
                 }
+                consolevars = oldconvars;
             }
             #undef SKIPARGS
         }
@@ -3399,43 +3420,49 @@ void executeret(ident *id, tagval *args, int numargs, bool lookup, tagval &resul
     tagval *prevret = commandret;
     commandret = &result;
     if(rundepth > MAXRUNDEPTH) debugcode("Exceeded recursion limit");
-    else if(id) switch(id->type)
+    else if(id)
     {
-        default:
-            if(!id->fun) break;
-            // fall-through
-        case ID_COMMAND:
-            if(numargs < id->numargs)
-            {
-                tagval buf[MAXARGS];
-                memcpy(buf, args, numargs*sizeof(tagval));
-                callcommand(id, buf, numargs, lookup);
-            }
-            else callcommand(id, args, numargs, lookup);
-            numargs = 0;
-            break;
-        case ID_VAR:
-            if(numargs <= 0) printvar(id); else setvarchecked(id, args, numargs);
-            break;
-        case ID_FVAR:
-            if(numargs <= 0) printvar(id); else setfvarchecked(id, forcefloat(args[0]));
-            break;
-        case ID_SVAR:
-            if(numargs <= 0) printvar(id); else setsvarchecked(id, forcestr(args[0]));
-            break;
-        case ID_ALIAS:
-            if(id->index < MAXARGS && !(aliasstack->usedargs&(1<<id->index))) break;
-            if(id->valtype==VAL_NULL) break;
-            #define callargs numargs
-            #define offset 0
-            #define op RET_NULL
-            #define SKIPARGS(offset) offset
-            CALLALIAS;
-            #undef callargs
-            #undef offset
-            #undef op
-            #undef SKIPARGS
-            break;
+        int oldconvars = consolevars;
+        if(consolevars == 1 && consolerun && id->flags&IDF_NOECHO) consolevars = 0;
+        switch(id->type)
+        {
+            default:
+                if(!id->fun) break;
+                // fall-through
+            case ID_COMMAND:
+                if(numargs < id->numargs)
+                {
+                    tagval buf[MAXARGS];
+                    memcpy(buf, args, numargs*sizeof(tagval));
+                    callcommand(id, buf, numargs, lookup);
+                }
+                else callcommand(id, args, numargs, lookup);
+                numargs = 0;
+                break;
+            case ID_VAR:
+                if(numargs <= 0) printvar(id); else setvarchecked(id, args, numargs);
+                break;
+            case ID_FVAR:
+                if(numargs <= 0) printvar(id); else setfvarchecked(id, forcefloat(args[0]));
+                break;
+            case ID_SVAR:
+                if(numargs <= 0) printvar(id); else setsvarchecked(id, forcestr(args[0]));
+                break;
+            case ID_ALIAS:
+                if(id->index < MAXARGS && !(aliasstack->usedargs&(1<<id->index))) break;
+                if(id->valtype==VAL_NULL) break;
+                #define callargs numargs
+                #define offset 0
+                #define op RET_NULL
+                #define SKIPARGS(offset) offset
+                CALLALIAS;
+                #undef callargs
+                #undef offset
+                #undef op
+                #undef SKIPARGS
+                break;
+        }
+        consolevars = oldconvars;
     }
     freeargs(args, numargs, 0);
     commandret = prevret;
@@ -3460,9 +3487,9 @@ char *executestr(const char *p)
     return result.s;
 }
 
-ICOMMAND(0, execute, "s", (char *s), commandret->setstr(executestr(s)));
+ICOMMAND(IDF_NOECHO, execute, "s", (char *s), commandret->setstr(executestr(s)));
 
-ICOMMAND(0, execid, "V", (tagval *args, int numargs),
+ICOMMAND(IDF_NOECHO, execid, "V", (tagval *args, int numargs),
 {
     if(numargs <= 0) return;
     ident *id = idents.access(args[0].getstr());
@@ -3622,7 +3649,7 @@ bool execfile(const char *cfgfile, bool msg, int flags)
     if(verbose >= 2) conoutf(colourgrey, "Loaded script %s", cfgfile);
     return true;
 }
-ICOMMAND(0, exec, "sib", (char *file, int *flags, int *msg), intret(execfile(file, *msg != 0, *flags) ? 1 : 0));
+ICOMMAND(IDF_NOECHO, exec, "sib", (char *file, int *flags, int *msg), intret(execfile(file, *msg != 0, *flags) ? 1 : 0));
 
 const char *escapestring(const char *s)
 {

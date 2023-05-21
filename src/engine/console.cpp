@@ -12,7 +12,7 @@ SVAR(0, consolestr, "");
 
 VAR(IDF_PERSIST, consolestay, 0, 1, 1);
 VAR(IDF_PERSIST, consoleecho, 0, 1, 1);
-VAR(IDF_PERSIST, consolevars, 0, 1, 1);
+VAR(IDF_PERSIST, consolevars, 0, 1, 2);
 
 void conline(int color, const char *sf)
 {

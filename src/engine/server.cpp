@@ -1716,7 +1716,7 @@ void rehash(bool reload)
     if(reload) engineready = true;
 #endif
 }
-ICOMMAND(0, rehash, "i", (int *nosave), if(!(identflags&IDF_MAP)) rehash(*nosave ? false : true));
+ICOMMAND(IDF_NOECHO, rehash, "i", (int *nosave), if(!(identflags&IDF_MAP)) rehash(*nosave ? false : true));
 
 #ifndef WIN32
 #include <pwd.h>

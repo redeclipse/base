@@ -782,7 +782,7 @@ static editor *useeditor(const char *name, int mode, bool focus, const char *ini
     return e;
 }
 
-#define TEXTCOMMAND(f, s, d, body) ICOMMAND(0, f, s, d,\
+#define TEXTCOMMAND(f, s, d, body) ICOMMAND(IDF_NOECHO, f, s, d,\
     if(!textfocus || identflags&IDF_MAP) return;\
     body\
 )

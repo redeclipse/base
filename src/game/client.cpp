@@ -1834,7 +1834,7 @@ namespace client
             addmsg(N_MAPVOTE, "rsi2", reqfile, nextmode, nextmuts);
         }
     }
-    ICOMMAND(0, map, "s", (char *s), changemap(s));
+    ICOMMAND(IDF_NOECHO, map, "s", (char *s), changemap(s));
     ICOMMAND(0, clearvote, "", (), addmsg(N_CLEARVOTE, "r"));
 
     void sendmap()

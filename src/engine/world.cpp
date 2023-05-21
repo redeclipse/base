@@ -1231,7 +1231,7 @@ void selentlinks(int n, int recurse, uint *cond)
         if(recurse < 0 || recurse > 0) selentlinks(r, recurse-1, cond);
     }
 }
-ICOMMAND(0, selentlinks, "bbs", (int *n, int *recurse, char *s),
+ICOMMAND(IDF_NOECHO, selentlinks, "bbs", (int *n, int *recurse, char *s),
 {
     uint *cond = s && *s ? compilecode(s) : NULL;
     selentlinks(*n, *recurse, cond);
@@ -1262,10 +1262,10 @@ void nearestent()
 COMMAND(0, nearestent, "");
 
 ICOMMAND(0, enthavesel,"", (), addimplicit(intret(entgroup.length())));
-ICOMMAND(0, entselect, "e", (uint *body), if(!noentedit()) addgroup(e.type != ET_EMPTY && entgroup.find(n)<0 && executebool(body)));
-ICOMMAND(0, entloop, "e", (uint *body), if(!noentedit()) { addimplicit(groupeditloop(((void)e, execute(body)))); commitchanges(); });
-ICOMMAND(0, entloopread, "e", (uint *body), if(entgroup.length()) loopv(entgroup) entfocus(entgroup[i], (void)e; execute(body);));
-ICOMMAND(0, enthoverloopread, "e", (uint *body), if(enthover.length()) loopv(enthover) entfocus(enthover[i], (void)e; execute(body);));
+ICOMMAND(IDF_NOECHO, entselect, "e", (uint *body), if(!noentedit()) addgroup(e.type != ET_EMPTY && entgroup.find(n)<0 && executebool(body)));
+ICOMMAND(IDF_NOECHO, entloop, "e", (uint *body), if(!noentedit()) { addimplicit(groupeditloop(((void)e, execute(body)))); commitchanges(); });
+ICOMMAND(IDF_NOECHO, entloopread, "e", (uint *body), if(entgroup.length()) loopv(entgroup) entfocus(entgroup[i], (void)e; execute(body);));
+ICOMMAND(IDF_NOECHO, enthoverloopread, "e", (uint *body), if(enthover.length()) loopv(enthover) entfocus(enthover[i], (void)e; execute(body);));
 ICOMMAND(0, insel, "", (), entfocus(entindex, intret(pointinsel(sel, e.o))));
 ICOMMAND(0, entget, "", (), entfocus(entindex,
 {
@@ -1300,7 +1300,7 @@ void entlast(uint *body)
     }
     else execute(body);
 }
-COMMAND(0, entlast, "e");
+COMMAND(IDF_NOECHO, entlast, "e");
 
 void entnth(int *idx, uint *body)
 {
@@ -1315,7 +1315,7 @@ void entnth(int *idx, uint *body)
     }
     else execute(body);
 }
-COMMAND(0, entnth, "ie");
+COMMAND(IDF_NOECHO, entnth, "ie");
 
 void enttype(char *type, int *numargs)
 {

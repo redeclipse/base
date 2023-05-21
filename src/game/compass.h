@@ -133,7 +133,7 @@ void showcmenu(const char *name)
     }
     conoutf(colourred, "No such compass menu: %s", name);
 }
-ICOMMAND(0, showcompass, "s", (char *n), showcmenu(n));
+ICOMMAND(IDF_NOECHO, showcompass, "s", (char *n), showcmenu(n));
 ICOMMANDVS(0, compassactive, curcompass ? curcompass->name : "");
 
 const struct compassdirs

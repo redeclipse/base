@@ -501,7 +501,7 @@ void updatefrommaster()
     else conoutf(colourred, "Master server not replying");
     refreshservers();
 }
-COMMAND(0, updatefrommaster, "");
+COMMAND(IDF_NOECHO, updatefrommaster, "");
 
 void updateservers()
 {
@@ -510,7 +510,7 @@ void updateservers()
     if(autosortservers && !pausesortservers) sortservers();
     intret(servers.length());
 }
-COMMAND(0, updateservers, "");
+COMMAND(IDF_NOECHO, updateservers, "");
 
 void writeservercfg()
 {
