@@ -6501,17 +6501,17 @@ namespace UI
 
         bool iscomposite = false;
         float ssize = 0;
-        int delay = 0;
+        int delay = 0, sclamp = tclamp;
         for(const char *pcmds = cmds; pcmds;)
         {
             #define PARSETEXCOMMANDS(cmds) \
-                const char *cmd = NULL, *end = NULL, *arg[2] = { NULL, NULL }; \
+                const char *cmd = NULL, *end = NULL, *arg[3] = { NULL, NULL }; \
                 cmd = &cmds[1]; \
                 end = strchr(cmd, '>'); \
                 if(!end) break; \
                 cmds = strchr(cmd, '<'); \
                 size_t len = strcspn(cmd, ":,><"); \
-                loopi(2) \
+                loopi(3) \
                 { \
                     arg[i] = strchr(i ? arg[i-1] : cmd, i ? ',' : ':'); \
                     if(!arg[i] || arg[i] >= end) arg[i] = ""; \
@@ -6522,6 +6522,7 @@ namespace UI
             {
                 if(*arg[0]) delay = max(atoi(arg[0]), 0);
                 if(*arg[1]) ssize = atof(arg[1]);
+                if(*arg[2]) sclamp = atoi(arg[2]);
                 iscomposite = true;
             }
         }
@@ -6554,7 +6555,7 @@ namespace UI
         if(tsize <= 0) tsize = compositesize;
         else if(tsize < 1<<1) tsize = 1<<1;
 
-        if(msg) progress(loadprogress, "Compositing texture: %s", name);
+        if(msg) progress(loadprogress, "Compositing texture: %s (%s)", cname, args);
 
         DOSURFACE(SURFACE_COMPOSITE,
         {
@@ -6581,7 +6582,7 @@ namespace UI
                 tex->id = 0;
             }
             glGenTextures(1, &id);
-            createtexture(id, tsize, tsize, NULL, tclamp, mipit ? 3 : 0, GL_RGBA, GL_TEXTURE_2D);
+            createtexture(id, tsize, tsize, NULL, sclamp, mipit ? 3 : 0, GL_RGBA, GL_TEXTURE_2D);
             glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, id, 0);
 
             GLERROR;
@@ -6608,7 +6609,7 @@ namespace UI
                 t->args = args ? newstring(args) : NULL;
             }
             t->type = Texture::IMAGE | Texture::COMPOSITE | Texture::ALPHA;
-            t->tclamp = tclamp;
+            t->tclamp = sclamp;
             t->mipmap = mipit;
             if(gc) t->type |= Texture::GC;
             if(t->tclamp&0x300) t->type |= Texture::MIRROR;
@@ -6632,7 +6633,7 @@ namespace UI
             if(t->mipmap)
             {
                 glActiveTexture_(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, id);
+                glBindTexture(GL_TEXTURE_2D, t->id);
                 glGenerateMipmap_(GL_TEXTURE_2D);
             }
 
