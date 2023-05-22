@@ -6554,7 +6554,7 @@ namespace UI
         }
 
         char *cname = list[0], *args = list.length() >= (argidx + 1) ? list[argidx] : NULL;
-        int tsize = ssize >= 0 ? int(ssize * compositesize) : abs(round(ssize));
+        int tsize = ssize >= 0 ? int(ssize * compositesize) : abs(int(ssize));
         if(tsize <= 0) tsize = compositesize;
         else if(tsize < 1<<1) tsize = 1<<1;
 
