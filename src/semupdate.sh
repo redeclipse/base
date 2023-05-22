@@ -22,7 +22,7 @@ SEMUPDATE_BRANCH="${BRANCH_NAME}"
 if [ "${SEMUPDATE_BRANCH}" = "master" ]; then SEMUPDATE_BRANCH="devel"; fi
 
 semupdate_setup() {
-    echo "setting up ${BRANCH_NAME}.."
+    echo "########## SETTING UP ${BRANCH_NAME} ##########"
     git config --global user.email "noreply@redeclipse.net" || return 1
     git config --global user.name "Red Eclipse" || return 1
     git config --global credential.helper store || return 1
@@ -38,6 +38,7 @@ semupdate_setup() {
             git submodule update --init --depth 5 "data/${i}" || return 1
         fi
     done
+    echo "--------------------------------------------------------------------------------"
     return 0
 }
 
@@ -64,12 +65,19 @@ semupdate_wait() {
 }
 
 semupdate_appimage() {
+    echo "########## BUILDING APPIMAGE ##########"
     sudo ${SEMUPDATE_APT} update || return 1
     sudo ${SEMUPDATE_APT} -fy install build-essential multiarch-support gcc-multilib g++-multilib zlib1g-dev libsdl2-dev libsndfile1-dev libalut-dev libopenal-dev libsdl2-image-dev jq zsync || return 1
     sudo ${SEMUPDATE_APT} clean || return 1
+    echo "--------------------------------------------------------------------------------"
+
+    echo "########## CLONING REPOSITORY ##########"
     pushd "${HOME}" || return 1
     git clone --depth 1 "${SEMUPDATE_APPIMAGE}" appimage || return 1
     pushd appimage || return 1
+    echo "--------------------------------------------------------------------------------"
+
+    echo "########## BUILDING APPIMAGE ##########"
     export BRANCH="${BRANCH_NAME}"
     export ARCH=x86_64
     export COMMIT=${REVISION}
@@ -81,32 +89,62 @@ semupdate_appimage() {
     export NO_UPDATE=true
     export BUILD="${SEMUPDATE_PWD}"
     bash build-appimages.sh || return 1
+    echo "--------------------------------------------------------------------------------"
+
+    echo "########## DEPLOYING GITHUB RELEASE ##########"
     export GITHUB_TOKEN="${GITHUB_TOKEN}"
     export REPO_SLUG="${SEMUPDATE_APPIMAGE_GH_DEST}"
     export COMMIT=$(git rev-parse ${REVISION})
     bash github-release.sh || return 1
+    echo "--------------------------------------------------------------------------------"
+
     popd || return 1
-    # Clear the appimage building directory to save space.
-    rm -rf appimage
+    # Clear the appimage building directory to save space. (not needed with separated deploy servers)
+    # rm -rf appimage
     popd || return 1
     return 0
 }
 
+semupdate_steamdbg() {
+    echo "########## HOME DIRECTORY LISTING ##########"
+    find "${HOME}" -printf "%c %p\n" || return 1
+    echo "--------------------------------------------------------------------------------"
+
+    echo "########## CACHE DIRECTORY LISTING ##########"
+    find "${SEMAPHORE_CACHE_DIR}" -printf "%c %p\n" || return 1
+    echo "--------------------------------------------------------------------------------"
+
+    echo "########## FREE DISK SPACE CHECK ##########"
+    df -h || return 1
+    echo "--------------------------------------------------------------------------------"
+
+    if [ $1 != 0 ]; then
+        echo "########## PRINTING LOGS ##########"
+        cat "${HOME}/Steam/logs/stderr.txt"
+        echo "--------------------------------------------------------------------------------"
+    fi
+    return 0
+}
+
 semupdate_steam() {
-    echo "building Steam depot.."
+    echo "########## BUILDING STEAM DEPOT ##########"
 
     sudo ${SEMUPDATE_APT} update || exit 1
     sudo ${SEMUPDATE_APT} -fy install libc6-i386 || exit 1
-    sudo ${SEMUPDATE_APT} clean || exit 1
+    #sudo ${SEMUPDATE_APT} clean || exit 1
 
     mkdir -pv "${SEMUPDATE_DEPOT}" || return 1
     pushd "${SEMUPDATE_PWD}/src/install/steam" || return 1
+
     for i in *; do
         if [ ! -d "${i}" ] && [ -e "${i}" ]; then
             sed -e "s/~REPAPPID~/${SEMUPDATE_STEAM_APPID}/g;s/~REPDESC~/${SEMUPDATE_DESCRIPTION}/g;s/~REPBRANCH~/${SEMUPDATE_BRANCH}/g;s/~REPDEPOT~/${SEMUPDATE_STEAM_DEPOT}/g" "${i}" > "${SEMUPDATE_DEPOT}/${i}" || return 1
         fi
     done
     popd || return 1
+    echo "--------------------------------------------------------------------------------"
+
+    echo "########## SYMLINKING CACHE ##########"
     mkdir -pv "${SEMAPHORE_CACHE_DIR}/Steam-dot" || return 1
     ln -sv "${SEMAPHORE_CACHE_DIR}/Steam-dot" "${HOME}/.steam" || return 1
     mkdir -pv "${SEMAPHORE_CACHE_DIR}/Steam" || return 1
@@ -115,6 +153,9 @@ semupdate_steam() {
         mkdir -pv "${SEMAPHORE_CACHE_DIR}/Steam-${i}" || return 1
         ln -sv "${SEMAPHORE_CACHE_DIR}/Steam-${i}" "${SEMUPDATE_DEPOT}/${i}" || return 1
     done
+    echo "--------------------------------------------------------------------------------"
+
+    echo "########## ARCHIVING REPOSITORIES ##########"
     for i in ${SEMUPDATE_ALLMODS}; do
         if [ "${i}" = "base" ]; then
             SEMUPDATE_MODDIR="${SEMUPDATE_DEPOT}/content"
@@ -139,33 +180,41 @@ semupdate_steam() {
         fi
         popd || return 1
     done
+    echo "--------------------------------------------------------------------------------"
+
+    echo "########## GRABBING DEPLOYMENT BINARIES ##########"
     echo "steam" > "${SEMUPDATE_DEPOT}/content/branch.txt" || return 1
     unzip -o "${SEMUPDATE_DIR}/windows.zip" -d "${SEMUPDATE_DEPOT}/content" || return 1
     tar --gzip --extract --verbose --overwrite --file="${SEMUPDATE_DIR}/linux.tar.gz" --directory="${SEMUPDATE_DEPOT}/content"
     tar --gzip --extract --verbose --overwrite --file="${SEMUPDATE_DIR}/macos.tar.gz" --directory="${SEMUPDATE_DEPOT}/content"
+    echo "--------------------------------------------------------------------------------"
+
+    echo "########## SETTING UP STEAMCMD ##########"
     pushd "${SEMUPDATE_DEPOT}" || return 1
     curl -sqL "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" | tar zxvf -
     chmod --verbose +x "linux32/steamcmd" || return 1
     export LD_LIBRARY_PATH="${SEMUPDATE_DEPOT}/linux32:${LD_LIBRARY_PATH}"
     STEAM_ARGS="+login redeclipsenet ${STEAM_TOKEN} +run_app_build_http app_build.vdf +quit"
     if [ "${STEAM_GUARD}" != "0" ]; then STEAM_ARGS="+set_steam_guard_code ${STEAM_GUARD} ${STEAM_ARGS}"; fi
-    pushd "${HOME}" || return 1
-    for i in *; do du -sh "${i}"; done
-    popd || return 1
-    pushd "${SEMAPHORE_CACHE_DIR}" || return 1
-    for i in *; do du -sh "${i}"; done
-    popd || return 1
-    df -h || return 1
-    ls -la . linux32
+    echo "--------------------------------------------------------------------------------"
+
+    semaupdate_steamdbg 0 || return 1
+
+    echo "########## RUNNING STEAMCMD ##########"
     STEAM_EXECS=0
     ./linux32/steamcmd ${STEAM_ARGS}
     while [ $? -eq 42 ] && [ ${STEAM_EXECS} -lt 2 ]; do
-        cat "${HOME}/Steam/logs/stderr.txt"
-        ls -la . linux32
+        echo "--------------------------------------------------------------------------------"
+        semaupdate_steamdbg 1 || return 1
+
         STEAM_EXECS=$(( STEAM_EXECS + 1 ))
+        echo "########## RUNNING STEAMCMD [RETRY: ${STEAM_EXECS}] ##########"
         ./linux32/steamcmd ${STEAM_ARGS}
     done
-    cat "${HOME}/Steam/logs/stderr.txt"
+    echo "--------------------------------------------------------------------------------"
+
+    semaupdate_steamdbg 0 || return 1
+
     popd || return 1
     return 0
 }
