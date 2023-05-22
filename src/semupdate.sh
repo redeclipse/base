@@ -198,14 +198,14 @@ semupdate_steam() {
     if [ "${STEAM_GUARD}" != "0" ]; then STEAM_ARGS="+set_steam_guard_code ${STEAM_GUARD} ${STEAM_ARGS}"; fi
     echo "--------------------------------------------------------------------------------"
 
-    semaupdate_steamdbg 0 || return 1
+    semupdate_steamdbg 0 || return 1
 
     echo "########## RUNNING STEAMCMD ##########"
     STEAM_EXECS=0
     ./linux32/steamcmd ${STEAM_ARGS}
     while [ $? -eq 42 ] && [ ${STEAM_EXECS} -lt 2 ]; do
         echo "--------------------------------------------------------------------------------"
-        semaupdate_steamdbg 1 || return 1
+        semupdate_steamdbg 1 || return 1
 
         STEAM_EXECS=$(( STEAM_EXECS + 1 ))
         echo "########## RUNNING STEAMCMD [RETRY: ${STEAM_EXECS}] ##########"
@@ -213,7 +213,7 @@ semupdate_steam() {
     done
     echo "--------------------------------------------------------------------------------"
 
-    semaupdate_steamdbg 0 || return 1
+    semupdate_steamdbg 1 || return 1
 
     popd || return 1
     return 0
