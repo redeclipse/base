@@ -315,6 +315,8 @@ namespace UI
 
     struct Object
     {
+        static const char *curtag;
+
         Object *parent;
         int buildchild;
         float x, y, w, h, ox, oy;
@@ -322,15 +324,17 @@ namespace UI
         bool overridepos, drawn;
         uchar adjust;
         ushort state, childstate, allowstate;
-        vector<Object *> children;
+        vector<Object *> children, orphans;
+        char *tag;
 
         Object() : buildchild(-1), ox(0), oy(0), lastx(0), lasty(0), lastsx(0), lastsy(0), lastw(0), lasth(0),
-            overridepos(false), drawn(false), adjust(0), state(0), childstate(0), allowstate(STATE_ALL) {}
+            overridepos(false), drawn(false), adjust(0), state(0), childstate(0), allowstate(STATE_ALL), tag(NULL) {}
 
         virtual ~Object()
         {
             if(inputsteal == this) inputsteal = NULL;
             clearchildren();
+            DELETEA(tag);
         }
 
         void resetlayout()
@@ -366,6 +370,7 @@ namespace UI
         void clearchildren()
         {
             children.deletecontents();
+            orphans.deletecontents();
         }
 
         #define loopchildren(o, body) do { \
@@ -739,37 +744,86 @@ namespace UI
 
         template<class T> T *buildtype()
         {
-            T *t;
-            if(children.inrange(buildchild))
-            {
-                Object *o = children[buildchild];
-                if(o->istype<T>()) t = (T *)o;
-                else
-                {
-                    delete o;
-                    t = new T;
-                    children[buildchild] = t;
+            T *t = NULL;
+
+            if(curtag)
+            { // tag items so we can move through the list in case something was removed
+                for(int i = buildchild; i < children.length(); i++)
+                { // search the siblings in case an item before it has moved
+                    Object *o = children[i];
+                    if(!o->istype<T>() || strcmp(o->tag, curtag)) continue;
+                    t = (T *)o;
+                    if(i > buildchild)
+                    { // orphan siblings up to this point so we can bring the object forward
+                        for(int j = buildchild; j < i; j++)
+                        {
+                            Object *o = children[j];
+                            children.remove(j);
+                            orphans.add(o);
+                            i--;
+                            j--;
+                        }
+                    }
+                    break;
+                }
+                if(!t)
+                { // search the orphans in case it moved
+                    loopv(orphans)
+                    {
+                        Object *o = orphans[i];
+                        if(!o->istype<T>() || strcmp(o->tag, curtag)) continue;
+                        children.insert(buildchild, o);
+                        orphans.remove(i);
+                        t = (T *)o;
+                        i--;
+                    }
                 }
             }
-            else
+
+            if(!t)
             {
-                t = new T;
-                children.add(t);
+                if(children.inrange(buildchild))
+                {
+                    Object *o = children[buildchild];
+                    if(o->istype<T>() && !o->tag) t = (T *)o;
+                    else
+                    {
+                        if(o->tag) orphans.add(o);
+                        else delete o;
+                        t = new T;
+                        children[buildchild] = t;
+                    }
+                }
+                else
+                {
+                    t = new T;
+                    children.add(t);
+                }
             }
+
             if(!t->isallowed())
             {
                 delete t;
                 children.remove(buildchild);
                 return NULL;
             }
+
             t->reset(this);
+
+            if(t->tag && (!curtag || strcmp(t->tag, curtag)))
+            {
+                delete[] t->tag;
+                t->tag = NULL;
+            }
+            if(!t->tag && curtag) t->tag = newstring(curtag);
+
             buildchild++;
             return t;
         }
 
         void buildchildren(uint *contents, bool mapdef = false)
         {
-            if((*contents&CODE_OP_MASK) == CODE_EXIT) children.deletecontents();
+            if((*contents&CODE_OP_MASK) == CODE_EXIT) clearchildren();
             else
             {
                 Object *oldparent = buildparent;
@@ -778,6 +832,7 @@ namespace UI
                 DOMAP(mapdef, executeret(contents));
                 while(children.length() > buildchild)
                     delete children.pop();
+                orphans.deletecontents();
                 buildparent = oldparent;
             }
             resetstate();
@@ -785,6 +840,8 @@ namespace UI
 
         virtual int childcolumns() const { return children.length(); }
     };
+
+    const char *Object::curtag = NULL;
 
     ICOMMAND(0, uigroup, "e", (uint *children),
         BUILD(Object, o, o->setup(), children));
@@ -834,6 +891,8 @@ namespace UI
 
     ICOMMANDVS(0, uitype, buildparent ? buildparent->gettype() : "");
     ICOMMANDV(0, uidrawn, buildparent && buildparent->drawn ? 1 : 0);
+    ICOMMANDVS(0, uitagid, buildparent ? buildparent->tag : "");
+    ICOMMANDVS(0, uicurtag, Object::curtag ? Object::curtag : "");
 
     static inline void stopdrawing()
     {
@@ -849,15 +908,17 @@ namespace UI
 
     #define DOSURFACE(surf, body) \
     { \
-        if(surf >= 0 && surf < SURFACE_MAX && surfaces[surf])\
-        { \
-            Surface *oldsurface = surface; \
-            surface = surfaces[surf]; \
-            surfacetype = surface->type; \
-            body; \
-            surface = oldsurface; \
-            surfacetype = surface ? surface->type : -1; \
-        } \
+        do { \
+            if(surf >= 0 && surf < SURFACE_MAX && surfaces[surf])\
+            { \
+                Surface *oldsurface = surface; \
+                surface = surfaces[surf]; \
+                surfacetype = surface->type; \
+                body; \
+                surface = oldsurface; \
+                surfacetype = surface ? surface->type : -1; \
+            } \
+        } while(0); \
     }
 
     #define SWSURFACE(surf, body) \
@@ -870,7 +931,7 @@ namespace UI
 
     const char *windowtype[SURFACE_MAX] = { "Main", "Progress", "Composite" };
     const char *windowaffix[SURFACE_MAX] = { "", "progress", "comp" };
-    static Window *window = NULL;
+    Window *window = NULL;
 
     struct Code
     {
@@ -1066,14 +1127,16 @@ namespace UI
         void layout()
         {
             if(state&STATE_HIDDEN) { w = h = 0; return; }
+            Window *oldwindow = window;
             window = this;
             Object::layout();
-            window = NULL;
+            window = oldwindow;
         }
 
         void draw(bool world, float sx, float sy)
         {
             if(state&STATE_HIDDEN || world != inworld) return;
+            Window *oldwindow = window;
             window = this;
 
             projection();
@@ -1105,7 +1168,7 @@ namespace UI
             }
             glDisable(GL_BLEND);
 
-            window = NULL;
+            window = oldwindow;
         }
 
         void draw(bool world)
@@ -1116,9 +1179,10 @@ namespace UI
         void adjustchildren()
         {
             if(state&STATE_HIDDEN) return;
+            Window *oldwindow = window;
             window = this;
             Object::adjustchildren();
-            window = NULL;
+            window = oldwindow;
         }
 
         void adjustlayout()
@@ -1322,6 +1386,25 @@ namespace UI
             return aa->lastshow < bb->lastshow;
         }
     };
+
+    void uitag(const char *tag, uint *contents)
+    {
+        if(!window) return;
+        const char *oldtag = Object::curtag;
+        Object::curtag = tag;
+        DOMAP(window->mapdef, executeret(contents));
+        Object::curtag = oldtag;
+    }
+    ICOMMAND(0, uitag, "se", (const char *tag, uint *contents), uitag(tag, contents));
+
+    void uifont(const char *name, uint *contents)
+    {
+        if(!window) return;
+        pushfont(name);
+        DOMAP(window->mapdef, executeret(contents));
+        popfont();
+    }
+    ICOMMAND(0, uifont, "se", (const char *name, uint *contents), uifont(name, contents));
 
     #define UIWINCMD(vname, valtype, args, body) \
         ICOMMAND(0, ui##vname, valtype, args, { \
@@ -1799,11 +1882,12 @@ namespace UI
         if(!surface) return;
         reset(surface);
         setup();
+        Window *oldwindow = window;
         window = this;
         if(inworld) dist = pos.squaredist(camera1->o);
         setargs();
         if(contents) buildchildren(contents->code, mapdef);
-        window = NULL;
+        window = oldwindow;
     }
 
     bool newui(int stype, const char *name, const char *contents, const char *onshow, const char *onhide, bool mapdef = false, const char *dyn = NULL, tagval *args = NULL, int numargs = 0)
@@ -1816,6 +1900,7 @@ namespace UI
             return false;
         }
 
+        bool ret = false;
         DOSURFACE(stype,
         {
             Window *w = surface->windows.find(name, NULL);
@@ -1824,7 +1909,7 @@ namespace UI
                 if(!w->mapdef && mapdef)
                 {
                     conoutf(colourred, "Cannot override builtin %s UI %s with a one from the map", windowtype[stype], w->name);
-                    return false;
+                    break;
                 }
                 else
                 {
@@ -1840,9 +1925,10 @@ namespace UI
                 }
             }
             surface->windows[name] = new Window(name, contents, onshow, onhide, mapdef, dyn, args, numargs);
+            ret = true;
         });
 
-        return true;
+        return ret;
     }
 
     ICOMMAND(0, newui, "ssss", (char *name, char *contents, char *onshow, char *onhide), newui(SURFACE_MAIN, name, contents, onshow, onhide, (identflags&IDF_MAP) != 0));
@@ -1979,16 +2065,14 @@ namespace UI
         DOSURFACE(stype,
         {
             Window *w = surface->windows.find(ref, NULL);
-            if(w)
-            {
-                w->origin = origin;
-                w->yaw = yaw;
-                w->pitch = pitch;
-                w->scale = scale;
-                w->detentyaw = detentyaw;
-                w->detentpitch = detentpitch;
-                ret = true;
-            }
+            if(!w) break;
+            w->origin = origin;
+            w->yaw = yaw;
+            w->pitch = pitch;
+            w->scale = scale;
+            w->detentyaw = detentyaw;
+            w->detentpitch = detentpitch;
+            ret = true;
         });
         return ret;
     }
@@ -4150,79 +4234,6 @@ namespace UI
     ICOMMAND(0, uicolourtext, "tife", (tagval *text, int *c, float *scale, uint *children),
         buildtext(*text, *scale, uitextscale, Color(*c), children));
 
-    struct Font : Object
-    {
-        char *str;
-
-        Font() : str(NULL) {}
-        ~Font() { delete[] str; }
-
-        void setup(const char *str_)
-        {
-            Object::setup();
-            SETSTR(str, str_);
-        }
-
-        void layout()
-        {
-            pushfont(str);
-            Object::layout();
-            popfont();
-        }
-
-        void draw(bool world, float sx, float sy)
-        {
-            pushfont(str);
-            Object::draw(world, sx, sy);
-            popfont();
-        }
-
-        void buildchildren(uint *contents)
-        {
-            pushfont(str);
-            Object::buildchildren(contents);
-            popfont();
-        }
-
-        #define DOSTATE(chkflags, func) \
-            void func##children(float cx, float cy, bool cinside, int mask, int mode, int setflags) \
-            { \
-                if(!(allowstate&chkflags)) return; \
-                pushfont(str); \
-                Object::func##children(cx, cy, cinside, mask, mode, setflags); \
-                popfont(); \
-            }
-        DOSTATES
-        #undef DOSTATE
-
-        bool rawkey(int code, bool isdown)
-        {
-            pushfont(str);
-            bool result = Object::rawkey(code, isdown);
-            popfont();
-            return result;
-        }
-
-        bool key(int code, bool isdown)
-        {
-            pushfont(str);
-            bool result = Object::key(code, isdown);
-            popfont();
-            return result;
-        }
-
-        bool textinput(const char *str, int len)
-        {
-            pushfont(str);
-            bool result = Object::textinput(str, len);
-            popfont();
-            return result;
-        }
-    };
-
-    ICOMMAND(0, uifont, "se", (char *name, uint *children),
-        BUILD(Font, o, o->setup(name), children));
-
     struct TexGC : Object
     {
         void layout()
@@ -4314,13 +4325,18 @@ namespace UI
 
         Clipper() : offsetx(0), offsety(0), inverted(false) {}
 
-        void setup(float sizew_ = 0, float sizeh_ = 0, float offsetx_ = -1, float offsety_ = -1)
+        void setup(float sizew_ = 0, float sizeh_ = 0, float offsetx_ = 0, float offsety_ = 0, bool offset_ = false)
         {
             Object::setup();
             sizew = sizew_;
             sizeh = sizeh_;
-            if(offsetx_ >= 0) offsetx = offsetx_;
-            if(offsety_ >= 0) offsety = offsety_;
+            //if(offsetx_ >= 0) offsetx = offsetx_;
+            //if(offsety_ >= 0) offsety = offsety_;
+            if(offset_)
+            {
+                offsetx = offsetx_;
+                offsety = offsety_;
+            }
             forced = false;
             //virtw = virth = 0;
         }
@@ -4336,8 +4352,8 @@ namespace UI
             virth = h;
             if(sizew || forced) w = min(w, sizew);
             if(sizeh || forced) h = min(h, sizeh);
-            offsetx = min(offsetx, hlimit());
-            offsety = min(offsety, vlimit());
+            //offsetx = min(offsetx, hlimit());
+            //offsety = min(offsety, vlimit());
         }
 
         void adjustchildren()
@@ -4361,7 +4377,7 @@ namespace UI
             bool isdraw = (sizew && virtw > sizew) || (sizeh && virth > sizeh);
             if(forced || isdraw)
             {
-                float drawx = 0, drawy = 0;
+                float drawx = sx, drawy = sy;
 
                 if(isdraw)
                 {
@@ -4398,8 +4414,8 @@ namespace UI
         void setvscroll(float vscroll) { offsety = clamp(vscroll, 0.0f, vlimit()); }
     };
 
-    ICOMMAND(0, uiclip, "ffgge", (float *sizew, float *sizeh, float *offsetx, float *offsety, uint *children),
-        BUILD(Clipper, o, o->setup(*sizew*uiscale, *sizeh*uiscale, *offsetx*uiscale, *offsety*uiscale), children));
+    ICOMMAND(0, uiclip, "ffffe", (float *sizew, float *sizeh, float *offsetx, float *offsety, uint *children),
+        BUILD(Clipper, o, o->setup(*sizew*uiscale, *sizeh*uiscale, *offsetx*uiscale, *offsety*uiscale, true), children));
 
     UIARGSCALEDT(Clipper, clip, sizew, "f", float, 0.f, FVAR_MAX);
     UIARGSCALEDT(Clipper, clip, sizeh, "f", float, 0.f, FVAR_MAX);
@@ -5046,6 +5062,7 @@ namespace UI
             switch(code)
             {
                 case SDLK_ESCAPE:
+                    if(isdown) cancel();
                     return true;
                 case SDLK_RETURN:
                 case SDLK_TAB:
@@ -6566,8 +6583,8 @@ namespace UI
             if(!w)
             {
                 if(msg) conoutf(colourred, "Failed to locate composite UI: %s", name);
-                list.deletearrays();
-                return notexture;
+                t = notexture;
+                break;
             }
 
             GLint oldfbo = 0;
@@ -6595,8 +6612,8 @@ namespace UI
                 if(id) glDeleteTextures(1, &id);
                 if(fbo) glDeleteFramebuffers_(1, &fbo);
                 glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
-                list.deletearrays();
-                return notexture;
+                t = notexture;
+                break;
             }
 
             glViewport(0, 0, tsize, tsize);

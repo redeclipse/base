@@ -1076,8 +1076,8 @@ extern void viewhaze();
 
 // command extras
 #define PULSE_ENUM(pr, en) \
-    en(pr, fire, FIRE) en(pr, burn, BURN) en(pr, disco, DISCO) en(pr, shock, SHOCK) en(pr, bleed, BLEED) \
-    en(pr, buff, BUFF) en(pr, warn, WARN) en(pr, regen, REGEN) en(pr, flash, FLASH) en(pr, rainbow, RAINBOW) en(pr, max, MAX)
+    en(pr, Fire, FIRE) en(pr, Burn, BURN) en(pr, Disco, DISCO) en(pr, Shock, SHOCK) en(pr, Bleed, BLEED) \
+    en(pr, Buff, BUFF) en(pr, Warn, WARN) en(pr, Regen, REGEN) en(pr, Flash, FLASH) en(pr, Rainbow, RAINBOW) en(pr, Maximum, MAX)
 ENUMNV(PULSE, PULSE_ENUM)
 #define PULSE_LAST (PULSE_MAX - 1)
 #define PULSECOLOURS 8

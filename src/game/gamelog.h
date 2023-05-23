@@ -1,13 +1,14 @@
 #ifndef CPP_GAME_SERVER
 struct gamelog;
 #ifdef CPP_GAME_MAIN
-VAR(IDF_PERSIST, gameloglines, 1, 50, VAR_MAX);
-VAR(IDF_PERSIST, gamelogecho, 0, 0, 1);
+VAR(IDF_PERSIST, eventloglines, 1, 50, VAR_MAX);
+VAR(IDF_PERSIST, eventlogecho, 0, 0, 1);
 VAR(IDF_PERSIST, messageloglines, 1, 1000, VAR_MAX);
 VAR(IDF_PERSIST, messagelogecho, 0, 0, 1);
 vector<gamelog *> eventlog, messagelog;
+int eventlogseqid = 0, messagelogseqid = 0;
 #else
-extern int gameloglines, gamelogecho, messageloglines, messagelogecho;
+extern int eventloglines, eventlogecho, eventlogseqid, messageloglines, messagelogecho, messagelogseqid;
 extern vector<gamelog *> eventlog, messagelog;
 #endif
 #endif
@@ -98,8 +99,8 @@ struct gamelog
     vector<listinfo> lists;
     vector<taginfo> tags;
 
-    int type, millis;
-    gamelog(int _type = GAMELOG_EVENT) : type(_type >= 0 && _type < GAMELOG_MAX ? _type : GAMELOG_EVENT), millis(totalmillis) {}
+    int type, millis, seqid;
+    gamelog(int _type = GAMELOG_EVENT) : type(_type >= 0 && _type < GAMELOG_MAX ? _type : GAMELOG_EVENT), millis(totalmillis), seqid(-1) {}
     ~gamelog() { reset(); }
 
     void reset()
@@ -278,14 +279,36 @@ struct gamelog
 
     void clientpush(vector<gamelog *> &log)
     {
-        if(log.length() >= (type == GAMELOG_MESSAGE ? messageloglines : gameloglines))
+        int lines = 0, chan = 0;
+        switch(type)
+        {
+            case GAMELOG_EVENT:
+            {
+                lines = eventloglines;
+                chan = PLCHAN_ANNOUNCE;
+                seqid = eventlogseqid++;
+                if(eventlogseqid < 0) eventlogseqid = 0;
+                break;
+            }
+            case GAMELOG_MESSAGE:
+            {
+                lines = messageloglines;
+                chan = PLCHAN_MESSAGE;
+                seqid = messagelogseqid++;
+                if(messagelogseqid < 0) messagelogseqid = 0;
+                break;
+            }
+            default: return;
+        }
+
+        if(log.length() >= lines)
         {
             gamelog *f = log[0];
             log.remove(0);
             delete f;
         }
 
-        int sound = -1, flags = 0, chan = type == GAMELOG_MESSAGE ? PLCHAN_MESSAGE : PLCHAN_ANNOUNCE, tid = findlistinfo("args");
+        int sound = -1, flags = 0, tid = findlistinfo("args");
         if(lists.inrange(tid))
         {
             listinfo &t = lists[tid];
@@ -322,7 +345,7 @@ struct gamelog
         }
         if(sound >= 0 && flags&GAMELOG_F_BROADCAST) entities::announce(sound, NULL, -1, flags&GAMELOG_F_UNMAPPED ? SND_UNMAPPED : 0);
 
-        if(type == GAMELOG_MESSAGE ? messagelogecho : gamelogecho)
+        if(type == GAMELOG_MESSAGE ? messagelogecho : eventlogecho)
         {
             const char *con = constr();
             if(con && *con) conoutf(concolor(), "%s", con);
@@ -600,6 +623,7 @@ struct gamelog
 #define GETLOGVALS(logt) \
     ICOMMANDV(0, logt##count, logt##log.length()); \
     ICOMMAND(0, get##logt##millis, "i", (int *val), intret(logt##log.inrange(*val) ? logt##log[*val]->millis : -1)); \
+    ICOMMAND(0, get##logt##seqid, "i", (int *val), intret(logt##log.inrange(*val) ? logt##log[*val]->seqid : -1)); \
     ICOMMAND(0, get##logt##tags, "i", (int *val), intret(logt##log.inrange(*val) ? logt##log[*val]->tags.length() : -1)); \
     ICOMMAND(0, get##logt##tag, "isis", (int *val, char *tag, int *grp, char *name), \
     { \
