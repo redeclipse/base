@@ -753,30 +753,22 @@ namespace UI
                     Object *o = children[i];
                     if(!o->istype<T>() || strcmp(o->tag, curtag)) continue;
                     t = (T *)o;
-                    if(i > buildchild)
+                    if(i > buildchild) for(int j = i - 1; j >= buildchild; j--)
                     { // orphan siblings up to this point so we can bring the object forward
-                        for(int j = buildchild; j < i; j++)
-                        {
-                            Object *o = children[j];
-                            children.remove(j);
-                            orphans.add(o);
-                            i--;
-                            j--;
-                        }
+                        Object *o = children[j];
+                        children.remove(j);
+                        orphans.add(o);
                     }
                     break;
                 }
-                if(!t)
+                if(!t) loopv(orphans)
                 { // search the orphans in case it moved
-                    loopv(orphans)
-                    {
-                        Object *o = orphans[i];
-                        if(!o->istype<T>() || strcmp(o->tag, curtag)) continue;
-                        children.insert(buildchild, o);
-                        orphans.remove(i);
-                        t = (T *)o;
-                        i--;
-                    }
+                    Object *o = orphans[i];
+                    if(!o->istype<T>() || strcmp(o->tag, curtag)) continue;
+                    children.insert(buildchild, o);
+                    orphans.remove(i);
+                    t = (T *)o;
+                    i--;
                 }
             }
 
