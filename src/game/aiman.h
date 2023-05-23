@@ -129,23 +129,27 @@ namespace aiman
                 ci->loadweap.shrink(0);
                 if(ci->actortype == A_BOT)
                 {
-                    const char *list = ci->model ? G(botfemalenames) : G(botmalenames);
-                    int len = listlen(list);
-                    if(len > 0)
+                    vector<char *> list;
+                    explodelist(ci->model ? G(botfemalenames) : G(botmalenames), list);
+                    while(!list.empty())
                     {
-                        int r = botrnd(ci, 1, len);
-                        char *name = indexlist(list, r);
+                        int r = botrnd(ci, 1, list.length());
+                        char *name = list[r];
+                        loopv(clients) if(clients[i] != ci && !strcasecmp(name, clients[i]->name))
+                        {
+                            list.remove(r);
+                            DELETEA(name);
+                            break;
+                        }
                         if(name)
                         {
-                            if(*name)
-                            {
-                                copystring(ci->name, name, MAXNAMELEN);
-                                if(G(botrandomcase) && rnd(G(botrandomcase)))
-                                    ci->name[0] = iscubeupper(ci->name[0]) ? cubelower(ci->name[0]) : cubeupper(ci->name[0]);
-                            }
-                            delete[] name;
+                            copystring(ci->name, name, MAXNAMELEN);
+                            if(G(botrandomcase) && rnd(G(botrandomcase)))
+                                ci->name[0] = iscubeupper(ci->name[0]) ? cubelower(ci->name[0]) : cubeupper(ci->name[0]);
+                            break;
                         }
                     }
+                    list.deletearrays();
                     ci->setvanity(ci->model ? G(botfemalevanities) : G(botmalevanities));
                     static vector<int> weaplist;
                     weaplist.setsize(0);
