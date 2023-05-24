@@ -6612,13 +6612,13 @@ namespace UI
         int delay = 0;
         if(cmds && *cmds == '<')
         {
-            const char *cmd = NULL, *end = NULL, *arg[3] = { NULL, NULL };
+            const char *cmd = NULL, *end = NULL, *arg[2] = { NULL, NULL };
             cmd = &cmds[1];
             end = strchr(cmd, '>');
             if(end)
             {
                 size_t len = strcspn(cmd, ":,><");
-                loopi(3)
+                loopi(2)
                 {
                     arg[i] = strchr(i ? arg[i-1] : cmd, i ? ',' : ':');
                     if(!arg[i] || arg[i] >= end) arg[i] = "";
