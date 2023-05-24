@@ -316,6 +316,7 @@ namespace UI
     struct Object
     {
         static const char *curtag;
+        static int buildlevel, taglevel;
 
         Object *parent;
         int buildchild;
@@ -751,20 +752,19 @@ namespace UI
                 for(int i = buildchild; i < children.length(); i++)
                 { // search the siblings in case an item before it has moved
                     Object *o = children[i];
-                    if(!o->istype<T>() || strcmp(o->tag, curtag)) continue;
+                    if(!o->istype<T>() || !o->tag || strcmp(o->tag, curtag)) continue;
                     t = (T *)o;
                     if(i > buildchild) for(int j = i - 1; j >= buildchild; j--)
                     { // orphan siblings up to this point so we can bring the object forward
-                        Object *o = children[j];
+                        orphans.add(children[j]);
                         children.remove(j);
-                        orphans.add(o);
                     }
                     break;
                 }
                 if(!t) loopv(orphans)
                 { // search the orphans in case it moved
                     Object *o = orphans[i];
-                    if(!o->istype<T>() || strcmp(o->tag, curtag)) continue;
+                    if(!o->istype<T>() || !o->tag || strcmp(o->tag, curtag)) continue;
                     children.insert(buildchild, o);
                     orphans.remove(i);
                     t = (T *)o;
@@ -821,10 +821,19 @@ namespace UI
                 Object *oldparent = buildparent;
                 buildparent = this;
                 buildchild = 0;
+
+                const char *oldttag = curtag;
+                if(buildlevel != taglevel) curtag = NULL;
+                buildlevel++;
+
                 DOMAP(mapdef, executeret(contents));
                 while(children.length() > buildchild)
                     delete children.pop();
                 orphans.deletecontents();
+
+                curtag = oldttag;
+                buildlevel--;
+
                 buildparent = oldparent;
             }
             resetstate();
@@ -834,6 +843,7 @@ namespace UI
     };
 
     const char *Object::curtag = NULL;
+    int Object::buildlevel = -1, Object::taglevel = -1;
 
     ICOMMAND(0, uigroup, "e", (uint *children),
         BUILD(Object, o, o->setup(), children));
@@ -885,6 +895,8 @@ namespace UI
     ICOMMANDV(0, uidrawn, buildparent && buildparent->drawn ? 1 : 0);
     ICOMMANDVS(0, uitagid, buildparent ? buildparent->tag : "");
     ICOMMANDVS(0, uicurtag, Object::curtag ? Object::curtag : "");
+    ICOMMANDV(0, uibuildlevel, Object::buildlevel);
+    ICOMMANDV(0, uitaglevel, Object::taglevel);
 
     static inline void stopdrawing()
     {
@@ -1382,21 +1394,94 @@ namespace UI
     void uitag(const char *tag, uint *contents)
     {
         if(!window) return;
+
         const char *oldtag = Object::curtag;
+        int oldlevel = Object::taglevel;
+
         Object::curtag = tag;
+        Object::taglevel = Object::buildlevel;
+
         DOMAP(window->mapdef, executeret(contents));
+
+        Object::taglevel = oldlevel;
         Object::curtag = oldtag;
     }
     ICOMMAND(0, uitag, "se", (const char *tag, uint *contents), uitag(tag, contents));
 
-    void uifont(const char *name, uint *contents)
+    struct Font : Object
     {
-        if(!window) return;
-        pushfont(name);
-        DOMAP(window->mapdef, executeret(contents));
-        popfont();
-    }
-    ICOMMAND(0, uifont, "se", (const char *name, uint *contents), uifont(name, contents));
+        char *name;
+
+        Font() : name(NULL) {}
+        ~Font() { delete[] name; }
+
+        void setup(const char *name_)
+        {
+            Object::setup();
+            SETSTR(name, name_);
+        }
+
+        static const char *typestr() { return "#Font"; }
+        const char *gettype() const { return typestr(); }
+
+        void layout()
+        {
+            pushfont(name);
+            Object::layout();
+            popfont();
+        }
+
+        void draw(bool world, float sx, float sy)
+        {
+            pushfont(name);
+            Object::draw(world, sx, sy);
+            popfont();
+        }
+
+        void buildchildren(uint *contents)
+        {
+            pushfont(name);
+            Object::buildchildren(contents);
+            popfont();
+        }
+
+        #define DOSTATE(chkflags, func) \
+            void func##children(float cx, float cy, bool cinside, int mask, int mode, int setflags) \
+            { \
+                if(!(allowstate&chkflags)) return; \
+                pushfont(name); \
+                Object::func##children(cx, cy, cinside, mask, mode, setflags); \
+                popfont(); \
+            }
+        DOSTATES
+        #undef DOSTATE
+
+        bool rawkey(int code, bool isdown)
+        {
+            pushfont(name);
+            bool result = Object::rawkey(code, isdown);
+            popfont();
+            return result;
+        }
+
+        bool key(int code, bool isdown)
+        {
+            pushfont(name);
+            bool result = Object::key(code, isdown);
+            popfont();
+            return result;
+        }
+
+        bool textinput(const char *str, int len)
+        {
+            pushfont(name);
+            bool result = Object::textinput(str, len);
+            popfont();
+            return result;
+        }
+    };
+
+    ICOMMAND(0, uifont, "se", (char *name, uint *children), BUILD(Font, o, o->setup(name), children));
 
     #define UIWINCMD(vname, valtype, args, body) \
         ICOMMAND(0, ui##vname, valtype, args, { \
@@ -1878,6 +1963,7 @@ namespace UI
         window = this;
         if(inworld) dist = pos.squaredist(camera1->o);
         setargs();
+        buildlevel = taglevel = -1;
         if(contents) buildchildren(contents->code, mapdef);
         window = oldwindow;
     }
@@ -2370,11 +2456,20 @@ namespace UI
             Object *oldparent = buildparent;
             buildparent = this;
             buildchild = 0;
+
+            const char *oldttag = curtag;
+            if(buildlevel != taglevel) curtag = NULL;
+            buildlevel++;
+
             executeret(columndata);
             if(columns != buildchild) while(children.length() > buildchild) delete children.pop();
             columns = buildchild;
             if((*contents&CODE_OP_MASK) != CODE_EXIT) executeret(contents);
             while(children.length() > buildchild) delete children.pop();
+
+            curtag = oldttag;
+            buildlevel--;
+
             buildparent = oldparent;
             resetstate();
         }
@@ -6514,7 +6609,7 @@ namespace UI
 
         bool iscomposite = false;
         float ssize = 0;
-        int delay = 0, sclamp = tclamp;
+        int delay = 0;
         if(cmds && *cmds == '<')
         {
             const char *cmd = NULL, *end = NULL, *arg[3] = { NULL, NULL };
@@ -6533,7 +6628,6 @@ namespace UI
                 {
                     if(*arg[0]) delay = max(atoi(arg[0]), 0);
                     if(*arg[1]) ssize = atof(arg[1]);
-                    if(*arg[2]) sclamp = atoi(arg[2]);
                     iscomposite = true;
                 }
             }
@@ -6594,7 +6688,7 @@ namespace UI
                 tex->id = 0;
             }
             glGenTextures(1, &id);
-            createtexture(id, tsize, tsize, NULL, sclamp, mipit ? 3 : 0, GL_RGBA, GL_TEXTURE_2D);
+            createtexture(id, tsize, tsize, NULL, tclamp, mipit ? 3 : 0, GL_RGBA, GL_TEXTURE_2D);
             glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, id, 0);
 
             GLERROR;
@@ -6621,7 +6715,7 @@ namespace UI
                 t->args = args ? newstring(args) : NULL;
             }
             t->type = Texture::IMAGE | Texture::COMPOSITE | Texture::ALPHA;
-            t->tclamp = sclamp;
+            t->tclamp = tclamp;
             t->mipmap = mipit;
             if(gc) t->type |= Texture::GC;
             if(t->tclamp&0x300) t->type |= Texture::MIRROR;
