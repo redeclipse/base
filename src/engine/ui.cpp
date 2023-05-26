@@ -6926,7 +6926,7 @@ namespace UI
 
         GLint oldfbo = 0;
         bool found = false;
-        int olddrawtex = drawtex, oldhudw = hudw, oldhudh = hudh;
+        int oldhudw = hudw, oldhudh = hudh;
 
         LOOPSURFACE(loopv(surface->texs)
         {
@@ -6940,7 +6940,6 @@ namespace UI
             {
                 GLERROR;
                 glGetIntegerv(GL_FRAMEBUFFER_BINDING, &oldfbo);
-                drawtex = DRAWTEX_COMPOSITE;
                 found = true;
             }
 
@@ -6995,7 +6994,6 @@ namespace UI
 
         if(found)
         {
-            drawtex = olddrawtex;
             hudw = oldhudw;
             hudh = oldhudh;
             glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
