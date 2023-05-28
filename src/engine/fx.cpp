@@ -342,11 +342,15 @@ namespace fx
 
         if(endmillis) // set to 0 when skipping emission
         {
-            // guarantee emit in case of frame slip ups
-            if(beginmillis != endmillis && !emitted && lastmillis >= beginmillis) slip = true;
+            bool prevemitted = emitted;
+            int slipmillis = lastmillis - beginmillis;
 
             if(needsync && parent->sync) schedule(true);
             else if(!needsync && lastmillis >= endmillis) schedule(false);
+
+            // guarantee emit in case of frame slip ups
+            slipmillis = max(slipmillis, lastmillis - beginmillis);
+            if(beginmillis != endmillis && !prevemitted && slipmillis >= 0) slip = true;
         }
 
         if(slip || (lastmillis >= beginmillis && lastmillis < endmillis))
