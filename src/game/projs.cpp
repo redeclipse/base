@@ -102,6 +102,18 @@ namespace projs
     static void doprojfx(projent &proj, int subtype)
     {
         fx::FxHandle fxhandle = getprojfx(proj.fxtype, subtype);
+
+        // Update the hook
+        if(proj.effect)
+        {
+            switch(subtype)
+            {
+                case PRJ_FX_DESTROY:
+                    proj.effect->setparam(P_FX_LIFETIME_PARAM, 1.0f);
+                    break;
+            }
+        }
+
         if(!fxhandle.isvalid()) return;
 
         bvec color(255, 255, 255);
