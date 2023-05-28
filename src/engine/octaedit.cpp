@@ -439,6 +439,7 @@ VAR(IDF_PERSIST, selectionpulse, 0, 500, VAR_MAX);
 FVAR(IDF_PERSIST, selectionwidth, 0, 4, 10);
 
 VAR(IDF_PERSIST, selectionoffset, 0, 1, 1);
+VARF(IDF_PERSIST, selectiondynui, 0, 1, 1, if(!selectiondynui) UI::closedynui("selection"));
 
 int geteditorient(int curorient, int axis)
 {
@@ -830,7 +831,7 @@ void rendereditcursor()
                 }
                 if(hasselui >= 0) break;
             }
-            if(hasselui >= 0)
+            if(hasselui >= 0 && selectiondynui)
             {
                 if(UI::uivisible("selection", UI::SURFACE_MAIN, hasselui))
                     UI::setui("selection", UI::SURFACE_MAIN, hasselui, pos, selectionuiyaw, selectionuipitch, selectionuiscale, selectionuidetentyaw, selectionuidetentpitch);
@@ -838,7 +839,9 @@ void rendereditcursor()
             }
         }
     }
-    loopk(8) if(k != hasselui && UI::uivisible("selection", UI::SURFACE_MAIN, k)) UI::hideui("selection", UI::SURFACE_MAIN, k);
+
+    if(selectiondynui)
+        loopk(8) if(k != hasselui && UI::uivisible("selection", UI::SURFACE_MAIN, k)) UI::hideui("selection", UI::SURFACE_MAIN, k);
 
     if(showpastegrid && localedit && localedit->copy)
     {

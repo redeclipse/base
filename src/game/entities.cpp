@@ -50,6 +50,8 @@ namespace entities
     VAR(IDF_PERSIST|IDF_HEX, entdircolour, 0, 0x88FF88, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, entradiuscolour, 0, 0x88FF88, 0xFFFFFF);
 
+    VARF(IDF_PERSIST, entseldynui, 0, 1, 1, if(!entseldynui) UI::closedynui("entinfo"))
+
     VAR(IDF_PERSIST, entityhalos, 0, 1, 1);
 
     VAR(0, mapsoundautomute, 0, 0, 1);
@@ -3429,10 +3431,15 @@ namespace entities
                         gameentity &e = *(gameentity *)ents[v.idx];
                         vec pos = vec(e.o).addz(entinfospace);
                         if(enttype[e.type].usetype == EU_ITEM) pos.addz(entinfospace);
-                        if(UI::uivisible("entinfo", UI::SURFACE_MAIN, v.idx))
-                            UI::setui("entinfo", UI::SURFACE_MAIN, v.idx, pos, entinfouiyaw, entinfouipitch, entinfouiscale, entinfouidetentyaw, entinfouidetentpitch);
-                        else UI::showui("entinfo", UI::SURFACE_MAIN, v.idx, pos, entinfouiyaw, entinfouipitch, entinfouiscale, entinfouidetentyaw, entinfouidetentpitch);
-                        hasdynui = found = true;
+
+                        if(entseldynui)
+                        {
+                            if(UI::uivisible("entinfo", UI::SURFACE_MAIN, v.idx))
+                                UI::setui("entinfo", UI::SURFACE_MAIN, v.idx, pos, entinfouiyaw, entinfouipitch, entinfouiscale, entinfouidetentyaw, entinfouidetentpitch);
+                            else UI::showui("entinfo", UI::SURFACE_MAIN, v.idx, pos, entinfouiyaw, entinfouipitch, entinfouiscale, entinfouidetentyaw, entinfouidetentpitch);
+                            hasdynui = true;
+                        }
+                        found = true;
                     }
                 }
                 else
