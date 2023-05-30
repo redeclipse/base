@@ -333,7 +333,8 @@ namespace UI
 
         virtual ~Object()
         {
-            if(inputsteal == this) inputsteal = NULL;
+            if(inputsteal == this)
+                inputsteal = NULL;
             clearchildren();
             DELETEA(tag);
         }
@@ -908,30 +909,8 @@ namespace UI
     }
 
     Surface *surface = NULL, *surfaces[SURFACE_MAX] = { NULL, NULL, NULL };
+    vector<Surface *> surfacestack;
     int surfacetype = -1;
-
-    #define DOSURFACE(surf, body) \
-    { \
-        do { \
-            if(surf >= 0 && surf < SURFACE_MAX && surfaces[surf])\
-            { \
-                Surface *oldsurface = surface; \
-                surface = surfaces[surf]; \
-                surfacetype = surface->type; \
-                body; \
-                surface = oldsurface; \
-                surfacetype = surface ? surface->type : -1; \
-            } \
-        } while(0); \
-    }
-
-    #define SWSURFACE(surf, body) \
-    { \
-        if(surf >= 0) DOSURFACE(surf, body) \
-        else loopk(SURFACE_MAX) if(surfaces[k]) DOSURFACE(k, body) \
-    }
-
-    #define LOOPSURFACE(body) { loopk(SURFACE_MAX) if(surfaces[k]) DOSURFACE(k, body) }
 
     const char *windowtype[SURFACE_MAX] = { "Main", "Progress", "Composite" };
     const char *windowaffix[SURFACE_MAX] = { "", "progress", "comp" };
@@ -1651,7 +1630,7 @@ namespace UI
         hashnameset<Window *> windows;
         vector<Texture *> texs;
 
-        Surface() : type(SURFACE_MAIN), cursortype(CURSOR_DEFAULT), exclcheck(0), lockcursor(false), mousetracking(false), lockscroll(false), interactive(true), hasexclusive(false), mousetrackvec(0, 0) {}
+        Surface() : type(-1), cursortype(CURSOR_DEFAULT), exclcheck(0), lockcursor(false), mousetracking(false), lockscroll(false), interactive(true), hasexclusive(false), mousetrackvec(0, 0) {}
         ~Surface() {}
 
         static const char *typestr() { return "#Surface"; }
@@ -1711,6 +1690,14 @@ namespace UI
         DOSTATES
         #undef DOSTATE
 
+        void checkinputsteal()
+        {
+            if(type != SURFACE_MAIN) return;
+
+            if(inputsteal && !inputsteal->isfocus())
+                inputsteal = NULL;
+        }
+
         void build()
         {
             float oldtextscale = curtextscale;
@@ -1722,12 +1709,12 @@ namespace UI
             mousetracking = false;
             lockscroll = false;
 
-            inputsteal = NULL;
+            checkinputsteal();
             prepare();
 
             if(interactive)
             {
-                if(surfacetype == SURFACE_MAIN) readyeditors();
+                if(type == SURFACE_MAIN) readyeditors();
 
                 setstate(STATE_HOVER, cursorx, cursory, childstate&STATE_HOLD_MASK);
                 if(childstate&STATE_HOLD) setstate(STATE_HOLD, cursorx, cursory, STATE_HOLD, SETSTATE_ANY);
@@ -1737,7 +1724,7 @@ namespace UI
 
             calctextscale();
 
-            if(surfacetype == SURFACE_MAIN && *uiprecmd) execute(uiprecmd);
+            if(type == SURFACE_MAIN && *uiprecmd) execute(uiprecmd);
 
             reset();
             setup();
@@ -1750,12 +1737,12 @@ namespace UI
             children.sort(Window::compare);
             resetstate(); // IMPORTED
 
-            if(surfacetype == SURFACE_MAIN && *uipostcmd) execute(uipostcmd);
+            if(type == SURFACE_MAIN && *uipostcmd) execute(uipostcmd);
             if(interactive)
             {
-                if(inputsteal && !inputsteal->isfocus()) inputsteal = NULL;
+                checkinputsteal();
                 if(!mousetracking) mousetrackvec = vec2(0, 0);
-                if(surfacetype == SURFACE_MAIN) flusheditors();
+                if(type == SURFACE_MAIN) flusheditors();
             }
 
             popfont();
@@ -1954,6 +1941,49 @@ namespace UI
         }
     });
 
+    bool pushsurface(int surf)
+    {
+        if(surf < 0 || surf >= SURFACE_MAX || !surfaces[surf]) return false;
+        surfacestack.add(surface);
+        surface = surfaces[surf];
+        surfacetype = surface->type;
+        return true;
+    }
+
+    void popsurface()
+    {
+        if(surfacestack.empty())
+        {
+            surface = NULL;
+            surfacetype = -1;
+        }
+        else
+        {
+            surface = surfacestack.last();
+            surfacetype = surface ? surface->type : -1;
+            surfacestack.pop();
+        }
+    }
+
+    #define DOSURFACE(surf, body) \
+    { \
+        do { \
+            if(pushsurface(surf))\
+            { \
+                body; \
+                popsurface(); \
+            } \
+        } while(0); \
+    }
+
+    #define SWSURFACE(surf, body) \
+    { \
+        if(surf >= 0) DOSURFACE(surf, body) \
+        else loopk(SURFACE_MAX) if(surfaces[k]) DOSURFACE(k, body) \
+    }
+
+    #define LOOPSURFACE(body) { loopk(SURFACE_MAX) if(surfaces[k]) DOSURFACE(k, body) }
+
     void Window::build()
     {
         if(!surface) return;
@@ -1978,35 +2008,44 @@ namespace UI
             return false;
         }
 
-        bool ret = false;
-        DOSURFACE(stype,
+        if(!pushsurface(stype))
         {
-            Window *w = surface->windows.find(name, NULL);
-            if(w && w != window)
-            {
-                if(!w->mapdef && mapdef)
-                {
-                    conoutf(colourred, "Cannot override builtin %s UI %s with a one from the map", windowtype[stype], w->name);
-                    break;
-                }
-                else
-                {
-                    surface->hide(w);
-                    surface->windows.remove(name);
-                    delete w;
-                    loopv(surface->texs)
-                    {
-                        Texture *t = surface->texs[i];
-                        if(strcmp(name, t->comp)) continue;
-                        t->rendered = false; // redraw
-                    }
-                }
-            }
-            surface->windows[name] = new Window(name, contents, onshow, onhide, mapdef, dyn, args, numargs);
-            ret = true;
-        });
+            conoutf(colourred, "Cannot create %s on Surface %s", name, windowtype[stype]);
+            return false;
+        }
 
-        return ret;
+        Window *w = surface->windows.find(name, NULL);
+        if(w)
+        {
+            if(w == window)
+            {
+                conoutf(colourred, "Cannot redefine %s UI %s while it is currently active", windowtype[stype], w->name);
+                popsurface();
+                return false;
+            }
+
+            if(!w->mapdef && mapdef)
+            {
+                conoutf(colourred, "Cannot override builtin %s UI %s with a one from the map", windowtype[stype], w->name);
+                popsurface();
+                return false;
+            }
+
+            surface->hide(w);
+            surface->windows.remove(name);
+            delete w;
+            loopv(surface->texs)
+            {
+                Texture *t = surface->texs[i];
+                if(strcmp(name, t->comp)) continue;
+                t->rendered = false; // redraw
+            }
+        }
+
+        surface->windows[name] = new Window(name, contents, onshow, onhide, mapdef, dyn, args, numargs);
+        popsurface();
+
+        return true;
     }
 
     ICOMMAND(0, newui, "ssss", (char *name, char *contents, char *onshow, char *onhide), newui(SURFACE_MAIN, name, contents, onshow, onhide, (identflags&IDF_MAP) != 0));
@@ -2125,49 +2164,59 @@ namespace UI
 
     bool showui(const char *name, int stype, int param, const vec &origin, float yaw, float pitch, float scale, float detentyaw, float detentpitch)
     {
-        bool ret = false;
         const char *ref = dynuiref(name, param);
-        DOSURFACE(stype,
-        {
-            Window *w = surface->windows.find(ref, NULL);
-            if(!w && param >= 0 && dynuiexec(name, param)) w = surface->windows.find(ref, NULL);
-            ret = w && surface->show(w, origin, yaw, pitch, scale, detentyaw, detentpitch);
-        });
+
+        if(!pushsurface(stype)) return false;
+
+        Window *w = surface->windows.find(ref, NULL);
+
+        if(!w && param >= 0 && dynuiexec(name, param)) w = surface->windows.find(ref, NULL);
+        bool ret = w && surface->show(w, origin, yaw, pitch, scale, detentyaw, detentpitch);
+
+        popsurface();
+
         return ret;
     }
 
     bool setui(const char *name, int stype, int param, const vec &origin, float yaw, float pitch, float scale, float detentyaw, float detentpitch)
     {
-        bool ret = false;
         const char *ref = dynuiref(name, param);
-        DOSURFACE(stype,
+
+        if(!pushsurface(stype)) return false;
+
+        Window *w = surface->windows.find(ref, NULL);
+        if(!w)
         {
-            Window *w = surface->windows.find(ref, NULL);
-            if(!w) break;
-            w->origin = origin;
-            w->yaw = yaw;
-            w->pitch = pitch;
-            w->scale = scale;
-            w->detentyaw = detentyaw;
-            w->detentpitch = detentpitch;
-            ret = true;
-        });
-        return ret;
+            popsurface();
+            return false;
+        }
+
+        w->origin = origin;
+        w->yaw = yaw;
+        w->pitch = pitch;
+        w->scale = scale;
+        w->detentyaw = detentyaw;
+        w->detentpitch = detentpitch;
+
+        return true;
     }
 
     bool hideui(const char *name, int stype, int param, bool world)
     {
         bool ret = false;
         const char *ref = dynuiref(name, param);
-        DOSURFACE(stype,
+
+        if(!pushsurface(stype)) return false;
+
+        if(!ref || !*ref) ret = surface->hideall(false, world) > 0;
+        else
         {
-            if(!ref || !*ref) ret = surface->hideall(false, world) > 0;
-            else
-            {
-                Window *w = surface->windows.find(ref, NULL);
-                if(w && (!world || w->inworld)) ret = surface->hide(w);
-            }
-        });
+            Window *w = surface->windows.find(ref, NULL);
+            if(w && (!world || w->inworld)) ret = surface->hide(w);
+        }
+
+        popsurface();
+
         return ret;
     }
 
@@ -2180,23 +2229,25 @@ namespace UI
 
     int openui(const char *name, int stype)
     {
-        int ret = 0;
-        DOSURFACE(stype,
-        {
-            defformatstring(cmd, "%s \"%s\" %d", uiopencmd, name ? name : "",  stype);
-            ret = execute(cmd);
-        });
+        if(!pushsurface(stype)) return 0;
+
+        defformatstring(cmd, "%s \"%s\" %d", uiopencmd, name ? name : "",  stype);
+        int ret = execute(cmd);
+
+        popsurface();
+
         return ret;
     }
 
     int closeui(const char *name, int stype)
     {
-        int ret = 0;
-        DOSURFACE(stype,
-        {
-            defformatstring(cmd, "%s \"%s\" %d", uiclosecmd, name ? name : "", stype);
-            ret = execute(cmd);
-        });
+        if(!pushsurface(stype)) return 0;
+
+        defformatstring(cmd, "%s \"%s\" %d", uiclosecmd, name ? name : "", stype);
+        int ret = execute(cmd);
+
+        popsurface();
+
         return ret;
     }
 
@@ -2219,17 +2270,19 @@ namespace UI
 
     bool uivisible(const char *name, int stype, int param)
     {
-        bool ret = false;
         const char *ref = dynuiref(name, param);
-        DOSURFACE(stype,
+
+        if(!pushsurface(stype)) return false;
+
+        bool ret = false;
+        if(!ref || !*ref) ret = surface->children.length() > 0;
+        else
         {
-            if(!ref || !*ref) ret = surface->children.length() > 0;
-            else
-            {
-                Window *w = surface->windows.find(ref, NULL);
-                ret = w && surface->children.find(w) >= 0;
-            }
-        });
+            Window *w = surface->windows.find(ref, NULL);
+            ret = w && surface->children.find(w) >= 0;
+        }
+        popsurface();
+
         return ret;
     }
 
@@ -5016,7 +5069,8 @@ namespace UI
 
         void prepare()
         {
-            if(!inputsteal && isfocus()) inputsteal = this;
+            if(!inputsteal && isfocus())
+                inputsteal = this;
             else if(wasfocus)
             {
                 wasfocus = false;
@@ -6449,52 +6503,60 @@ namespace UI
 
     bool keypress(int code, bool isdown)
     {
-        bool ret = false;
-        DOSURFACE(SURFACE_MAIN,
-        {
-            if(surface->rawkey(code, isdown)) ret = true;
-            else
-            {
-                int action = 0;
-                int hold = 0;
-                switch(code)
-                {
-                    case SDLK_ESCAPE: action = isdown ? STATE_ESC_PRESS : STATE_ESC_RELEASE; hold = STATE_ESC_HOLD; break;
-                    case -1: action = isdown ? STATE_PRESS : STATE_RELEASE; hold = STATE_HOLD; break;
-                    case -2: action = isdown ? STATE_ESC_PRESS : STATE_ESC_RELEASE; hold = STATE_ESC_HOLD; break;
-                    case -3: action = isdown ? STATE_ALT_PRESS : STATE_ALT_RELEASE; hold = STATE_ALT_HOLD; break;
-                    case -4: action = STATE_SCROLL_UP; break;
-                    case -5: action = STATE_SCROLL_DOWN; break;
-                }
-                int setmode = inputsteal && action != STATE_SCROLL_UP && action != STATE_SCROLL_DOWN ? SETSTATE_FOCUSED : SETSTATE_INSIDE;
+        if(!pushsurface(SURFACE_MAIN)) return false;
 
-                if(action)
-                {
-                    if(isdown)
-                    {
-                        if(hold) surface->clearstate(hold);
-                        if(surface->setstate(action, cursorx, cursory, 0, setmode, action|hold)) return true;
-                    }
-                    else if(hold)
-                    {
-                        if(surface->setstate(action, cursorx, cursory, hold, setmode, action))
-                        {
-                            surface->clearstate(hold);
-                            ret = true;
-                        }
-                        else surface->clearstate(hold);
-                    }
-                }
-                if(!ret) ret = surface->key(code, isdown);
+        if(surface->rawkey(code, isdown))
+        {
+            popsurface();
+            return true;
+        }
+
+        int action = 0, hold = 0;
+        switch(code)
+        {
+            case SDLK_ESCAPE: action = isdown ? STATE_ESC_PRESS : STATE_ESC_RELEASE; hold = STATE_ESC_HOLD; break;
+            case -1: action = isdown ? STATE_PRESS : STATE_RELEASE; hold = STATE_HOLD; break;
+            case -2: action = isdown ? STATE_ESC_PRESS : STATE_ESC_RELEASE; hold = STATE_ESC_HOLD; break;
+            case -3: action = isdown ? STATE_ALT_PRESS : STATE_ALT_RELEASE; hold = STATE_ALT_HOLD; break;
+            case -4: action = STATE_SCROLL_UP; break;
+            case -5: action = STATE_SCROLL_DOWN; break;
+        }
+
+        int setmode = inputsteal && action != STATE_SCROLL_UP && action != STATE_SCROLL_DOWN ? SETSTATE_FOCUSED : SETSTATE_INSIDE;
+
+        if(action)
+        {
+            if(isdown)
+            {
+                if(hold) surface->clearstate(hold);
+                if(surface->setstate(action, cursorx, cursory, 0, setmode, action|hold)) return true;
             }
-        });
+            else if(hold)
+            {
+                if(surface->setstate(action, cursorx, cursory, hold, setmode, action))
+                {
+                    surface->clearstate(hold);
+                    popsurface();
+                    return true;
+                }
+                else surface->clearstate(hold);
+            }
+        }
+
+        bool ret = surface->key(code, isdown);
+        popsurface();
+
         return ret;
     }
 
     bool textinput(const char *str, int len)
     {
-        bool ret = false;
-        DOSURFACE(SURFACE_MAIN, ret = surface && surface->textinput(str, len));
+        if(!pushsurface(SURFACE_MAIN)) return false;
+
+        bool ret = surface->textinput(str, len);
+
+        popsurface();
+
         return ret;
     }
 
@@ -6563,14 +6625,22 @@ namespace UI
 
     void closemapuis(int n)
     {
-        if(n < 0 || !surfaces[SURFACE_MAIN]) return;
+        if(n < 0 || !pushsurface(SURFACE_MAIN)) return;
+
         vector<extentity *> &ents = entities::getents();
-        if(!ents.inrange(n)) return;
-        DOSURFACE(SURFACE_MAIN, enumerate(surface->windows, Window *, w,
+        if(!ents.inrange(n))
+        {
+            popsurface();
+            return;
+        }
+
+        enumerate(surface->windows, Window *, w,
         {
             if(w->args[0].getint() != n || strncmp(w->name, "entity_", 7)) continue;
             surface->hide(w);
-        }));
+        });
+
+        popsurface();
     }
 
     #define COMPOSITESIZE (1<<9)
@@ -6661,93 +6731,102 @@ namespace UI
         if(tsize <= 0) tsize = compositesize;
         else if(tsize < 1<<1) tsize = 1<<1;
 
+        if(!pushsurface(SURFACE_COMPOSITE))
+        {
+            if(msg) conoutf(colourred, "Could not composite texture: %s", name);
+            list.deletearrays();
+            return notexture;
+        }
+
         if(msg) progress(loadprogress, "Compositing texture: %s (%s)", cname, args && *args ? args : "-");
 
-        DOSURFACE(SURFACE_COMPOSITE,
+        Window *w = surface->windows.find(cname, NULL);
+        if(!w)
         {
-            Window *w = surface->windows.find(cname, NULL);
-            if(!w)
-            {
-                if(msg) conoutf(colourred, "Failed to locate composite UI: %s", name);
-                t = notexture;
-                break;
-            }
+            if(msg) conoutf(colourred, "Failed to locate composite UI: %s", name);
+            list.deletearrays();
+            popsurface();
+            return notexture;
+        }
 
-            GLint oldfbo = 0;
-            glGetIntegerv(GL_FRAMEBUFFER_BINDING, &oldfbo);
+        GLint oldfbo = 0;
+        glGetIntegerv(GL_FRAMEBUFFER_BINDING, &oldfbo);
 
-            GLERROR;
-            GLuint fbo = t ? t->fbo : 0;
-            if(!fbo) glGenFramebuffers_(1, &fbo);
-            glBindFramebuffer_(GL_FRAMEBUFFER, fbo);
+        GLERROR;
+        GLuint fbo = t ? t->fbo : 0;
+        if(!fbo) glGenFramebuffers_(1, &fbo);
+        glBindFramebuffer_(GL_FRAMEBUFFER, fbo);
 
-            GLuint id = 0;
-            if(tex && tex->id)
-            {
-                glDeleteTextures(1, &tex->id);
-                tex->id = 0;
-            }
-            glGenTextures(1, &id);
-            createtexture(id, tsize, tsize, NULL, tclamp, mipit ? 3 : 0, GL_RGBA, GL_TEXTURE_2D);
-            glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, id, 0);
+        GLuint id = 0;
+        if(tex && tex->id)
+        {
+            glDeleteTextures(1, &tex->id);
+            tex->id = 0;
+        }
+        glGenTextures(1, &id);
+        createtexture(id, tsize, tsize, NULL, tclamp, mipit ? 3 : 0, GL_RGBA, GL_TEXTURE_2D);
+        glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, id, 0);
 
-            GLERROR;
-            if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-            {
-                if(msg) conoutf(colourred, "Failed allocating composite texture framebuffer: %s [%u / %u]", name, id, fbo);
-                if(id) glDeleteTextures(1, &id);
-                if(fbo) glDeleteFramebuffers_(1, &fbo);
-                glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
-                t = notexture;
-                break;
-            }
-
-            glViewport(0, 0, tsize, tsize);
-            glClearColor(0, 0, 0, 0);
-            glClear(GL_COLOR_BUFFER_BIT);
-
-            if(!t)
-            {
-                char *key = newstring(name);
-                t = &textures[key];
-                t->name = key;
-                t->comp = newstring(cname);
-                t->args = args ? newstring(args) : NULL;
-            }
-            t->type = Texture::IMAGE | Texture::COMPOSITE | Texture::ALPHA;
-            t->tclamp = tclamp;
-            t->mipmap = mipit;
-            if(gc) t->type |= Texture::GC;
-            if(t->tclamp&0x300) t->type |= Texture::MIRROR;
-            t->w = t->h = tsize;
-            t->xs = t->ys = ssize >= 0 ? int(t->w * (COMPOSITESIZE / float(t->w))) : t->w;
-            t->bpp = 4;
-            t->delay = delay;
-            t->id = id;
-            t->fbo = fbo;
-            t->used = t->last = lastmillis;
-
-            bool hastex = false;
-            loopv(surface->texs)
-            {
-                if(surface->texs[i] != t) continue;
-                hastex = true;
-                break;
-            }
-            if(!hastex) surface->texs.add(t);
-
-            if(t->mipmap)
-            {
-                glActiveTexture_(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, t->id);
-                glGenerateMipmap_(GL_TEXTURE_2D);
-            }
-
+        GLERROR;
+        if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        {
+            if(msg) conoutf(colourred, "Failed allocating composite texture framebuffer: %s [%u / %u]", name, id, fbo);
+            if(id) glDeleteTextures(1, &id);
+            if(fbo) glDeleteFramebuffers_(1, &fbo);
             glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
-            glViewport(0, 0, hudw, hudh);
-        });
+
+            list.deletearrays();
+            popsurface();
+
+            return notexture;
+        }
+
+        glViewport(0, 0, tsize, tsize);
+        glClearColor(0, 0, 0, 0);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        if(!t)
+        {
+            char *key = newstring(name);
+            t = &textures[key];
+            t->name = key;
+            t->comp = newstring(cname);
+            t->args = args ? newstring(args) : NULL;
+        }
+        t->type = Texture::IMAGE | Texture::COMPOSITE | Texture::ALPHA;
+        t->tclamp = tclamp;
+        t->mipmap = mipit;
+        if(gc) t->type |= Texture::GC;
+        if(t->tclamp&0x300) t->type |= Texture::MIRROR;
+        t->w = t->h = tsize;
+        t->xs = t->ys = ssize >= 0 ? int(t->w * (COMPOSITESIZE / float(t->w))) : t->w;
+        t->bpp = 4;
+        t->delay = delay;
+        t->id = id;
+        t->fbo = fbo;
+        t->used = t->last = lastmillis;
+
+        bool hastex = false;
+        loopv(surface->texs)
+        {
+            if(surface->texs[i] != t) continue;
+            hastex = true;
+            break;
+        }
+        if(!hastex) surface->texs.add(t);
+
+        if(t->mipmap)
+        {
+            glActiveTexture_(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, t->id);
+            glGenerateMipmap_(GL_TEXTURE_2D);
+        }
+
+        glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
+        glViewport(0, 0, hudw, hudh);
 
         list.deletearrays();
+        popsurface();
 
         return t;
     }
@@ -6852,11 +6931,12 @@ namespace UI
             default: break;
         }
 
-        DOSURFACE(stype,
-        {
-            if(surfacetype == SURFACE_MAIN) checkmapuis();
-            surface->build();
-        });
+        if(!pushsurface(stype)) return;
+
+        if(surfacetype == SURFACE_MAIN) checkmapuis();
+        surface->build();
+
+        popsurface();
     }
 
     void setup()
@@ -6868,6 +6948,8 @@ namespace UI
             id->forcenull();
             uiargs.add(id);
         }
+
+        surfacestack.setsize(0);
         loopi(SURFACE_MAX)
         {
             surfaces[i] = new Surface;
@@ -6879,6 +6961,8 @@ namespace UI
                 default: break;
             }
         }
+
+        surface = NULL;
         inputsteal = NULL;
     }
 
@@ -6890,6 +6974,7 @@ namespace UI
             dynuis.remove(i);
             delete d;
         }
+
         LOOPSURFACE(
         {
             surface->hideall(true);
@@ -6897,9 +6982,11 @@ namespace UI
             enumerate(surface->windows, Window *, w, delete w);
             surface->windows.clear();
         });
+
         surface = NULL;
-        loopi(SURFACE_MAX) DELETEP(surfaces[i]);
         inputsteal = NULL;
+        surfacestack.setsize(0);
+        loopi(SURFACE_MAX) DELETEP(surfaces[i]);
     }
 
     void cleangl()
@@ -6916,12 +7003,17 @@ namespace UI
     {
         if(prog)
         {
-            if(world || !progressing) return; // nope
-            DOSURFACE(SURFACE_PROGRESS, surface->render(false));
+            if(world || !progressing || !pushsurface(SURFACE_PROGRESS)) return; // nope
+            surface->render(false);
+            popsurface();
             return;
         }
 
-        if(!uihidden) DOSURFACE(SURFACE_MAIN, surface->render(world));
+        if(!uihidden && pushsurface(SURFACE_MAIN))
+        {
+            surface->render(world);
+            popsurface();
+        }
         if(world) return;
 
         GLint oldfbo = 0;

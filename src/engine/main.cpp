@@ -538,7 +538,7 @@ void resetgl()
     engineready = oldengineready;
 }
 
-ICOMMAND(0, resetgl, "", (void), if(!(identflags&IDF_MAP)) resetgl());
+ICOMMAND(IDF_NOECHO, resetgl, "", (void), if(!(identflags&IDF_MAP)) resetgl());
 
 bool warping = false, minimized = false;
 VAR(IDF_PERSIST, renderunfocused, 0, 0, 1);
