@@ -608,9 +608,34 @@ struct Texture
 
     ~Texture()
     {
-        if(fbo) { glDeleteFramebuffers_(1, &fbo); fbo = 0; }
         DELETEA(comp);
         DELETEA(args);
+        cleanup();
+    }
+
+    void cleanup()
+    {
+        DELETEA(alphamask);
+
+        if(frames.empty() && id) glDeleteTextures(1, &id);
+        else loopvk(frames) if(frames[k])
+        {
+            if(frames[k])
+            {
+                if(frames[k] == id) id = 0; // using a frame directly
+                glDeleteTextures(1, &frames[k]);
+                frames[k] = 0;
+            }
+        }
+        if(fbo)
+        {
+            glDeleteFramebuffers_(1, &fbo);
+            fbo = 0;
+        }
+        frames.shrink(0);
+        id = 0;
+        delay = last = 0;
+        rendering = rendered = false;
     }
 
     GLuint idframe(int idx)

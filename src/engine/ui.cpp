@@ -6656,7 +6656,7 @@ namespace UI
             return notexture; // need a name
         }
 
-        Texture *t = tex ? NULL : textures.access(name);
+        Texture *t = tex ? tex : textures.access(name);
         if(t && !reload)
         {
             // Strip GC flag with gc=false
@@ -6754,17 +6754,23 @@ namespace UI
 
         GLERROR;
         GLuint fbo = t ? t->fbo : 0;
-        if(!fbo) glGenFramebuffers_(1, &fbo);
+        if(fbo)
+        {
+            glDeleteFramebuffers_(1, &fbo);
+            fbo = 0;
+        }
+        glGenFramebuffers_(1, &fbo);
         glBindFramebuffer_(GL_FRAMEBUFFER, fbo);
 
-        GLuint id = 0;
-        if(tex && tex->id)
+        GLuint id = t ? t->id : 0;
+        if(id)
         {
-            glDeleteTextures(1, &tex->id);
-            tex->id = 0;
+            glDeleteTextures(1, &id);
+            id = 0;
         }
         glGenTextures(1, &id);
         createtexture(id, tsize, tsize, NULL, tclamp, mipit ? 3 : 0, GL_RGBA, GL_TEXTURE_2D);
+
         glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, id, 0);
 
         GLERROR;
@@ -6836,7 +6842,8 @@ namespace UI
         enumerate(textures, Texture, t,
         {
             if(!(t.type&Texture::COMPOSITE)) continue;
-            composite(t.name, t.tclamp, t.mipmap, true, t.type&Texture::GC, &t);
+            composite(t.name, t.tclamp, t.mipmap, true, t.type&Texture::GC, &t, true);
+            t.rendering = t.rendered = false;
         });
     }
 

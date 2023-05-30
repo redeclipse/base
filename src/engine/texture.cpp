@@ -3802,24 +3802,11 @@ void genenvtexs()
 
 void cleanuptexture(Texture *t)
 {
-    DELETEA(t->alphamask);
-
-    if(t->frames.empty() && t->id) glDeleteTextures(1, &t->id);
-    else loopvk(t->frames) if(t->frames[k])
-    {
-        if(t->frames[k])
-        {
-            if(t->frames[k] == t->id) t->id = 0; // using a frame directly
-            glDeleteTextures(1, &t->frames[k]);
-            t->frames[k] = 0;
-        }
-    }
-    t->frames.shrink(0);
-    t->id = 0;
+    t->cleanup();
 
     if(t->type&Texture::TRANSIENT || t->type&Texture::GC)
     {
-        conoutf(colourwhite, "Removing texture: %s", t->name);
+        if(verbose) conoutf(colourwhite, "Removing texture: %s", t->name);
         textures.remove(t->name);
     }
 }
