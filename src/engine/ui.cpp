@@ -1967,13 +1967,11 @@ namespace UI
 
     #define DOSURFACE(surf, body) \
     { \
-        do { \
-            if(pushsurface(surf))\
-            { \
-                body; \
-                popsurface(); \
-            } \
-        } while(0); \
+        if(pushsurface(surf))\
+        { \
+            body; \
+            popsurface(); \
+        } \
     }
 
     #define SWSURFACE(surf, body) \
@@ -1981,8 +1979,6 @@ namespace UI
         if(surf >= 0) DOSURFACE(surf, body) \
         else loopk(SURFACE_MAX) if(surfaces[k]) DOSURFACE(k, body) \
     }
-
-    #define LOOPSURFACE(body) { loopk(SURFACE_MAX) if(surfaces[k]) DOSURFACE(k, body) }
 
     void Window::build()
     {
@@ -6867,21 +6863,28 @@ namespace UI
     int savemapmenus(stream *h)
     {
         int mapmenus = 0;
-        LOOPSURFACE(enumerate(surface->windows, Window *, w,
+        loopj(SURFACE_MAX)
         {
-            if(surfacetype == SURFACE_PROGRESS || !w->mapdef || !w->contents || w->dyn) continue;
+            if(j == SURFACE_PROGRESS || !pushsurface(j)) continue;
 
-            h->printf("map%sui %s [%s]", windowaffix[surfacetype], w->name, w->contents->body);
+            enumerate(surface->windows, Window *, w,
+            {
+                if(!w->mapdef || !w->contents || w->dyn) continue;
 
-            if(w->onshow) h->printf(" [%s]", w->onshow->body);
-            else if(w->onhide) h->printf(" []");
+                h->printf("map%sui %s [%s]", windowaffix[surfacetype], w->name, w->contents->body);
 
-            if(w->onhide) h->printf(" [%s]", w->onhide->body);
+                if(w->onshow) h->printf(" [%s]", w->onshow->body);
+                else if(w->onhide) h->printf(" []");
 
-            h->printf("\n\n");
+                if(w->onhide) h->printf(" [%s]", w->onhide->body);
 
-            mapmenus++;
-        }));
+                h->printf("\n\n");
+
+                mapmenus++;
+            });
+
+            popsurface();
+        }
 
         loopv(dynuis)
         {
@@ -6905,13 +6908,18 @@ namespace UI
 
     void resetmapmenus()
     {
-        LOOPSURFACE(enumerate(surface->windows, Window *, w,
+        loopj(SURFACE_MAX)
         {
-            if(surfacetype == SURFACE_PROGRESS || !w->mapdef) continue;
-            surface->hide(w);
-            surface->windows.remove(w->name);
-            delete w;
-        }));
+            if(j == SURFACE_PROGRESS || !pushsurface(j)) continue;
+            enumerate(surface->windows, Window *, w,
+            {
+                if(!w->mapdef) continue;
+                surface->hide(w);
+                surface->windows.remove(w->name);
+                delete w;
+            });
+            popsurface();
+        }
 
         loopvrev(dynuis)
         {
@@ -6982,13 +6990,15 @@ namespace UI
             delete d;
         }
 
-        LOOPSURFACE(
+        loopj(SURFACE_MAX)
         {
+            if(!pushsurface(j)) continue;
             surface->hideall(true);
             surface->children.setsize(0);
             enumerate(surface->windows, Window *, w, delete w);
             surface->windows.clear();
-        });
+            popsurface();
+        }
 
         surface = NULL;
         inputsteal = NULL;
@@ -7021,13 +7031,14 @@ namespace UI
             surface->render(world);
             popsurface();
         }
-        if(world) return;
+
+        if(world || !pushsurface(SURFACE_COMPOSITE)) return;
 
         GLint oldfbo = 0;
         bool found = false;
         int oldhudw = hudw, oldhudh = hudh;
 
-        LOOPSURFACE(loopv(surface->texs)
+        loopv(surface->texs)
         {
             Texture *t = surface->texs[i];
             if(t->rendering) continue; // avoid infinite stack
@@ -7089,7 +7100,9 @@ namespace UI
             t->last = delay > 1 ? lastmillis - (elapsed % delay) : lastmillis;
             t->rendering = false;
             t->rendered = true;
-        });
+        }
+
+        popsurface();
 
         if(found)
         {

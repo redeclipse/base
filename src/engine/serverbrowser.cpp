@@ -496,7 +496,7 @@ void updatefrommaster()
         //clearservers();
         execute(data.getbuf());
         if(verbose) conoutf(colourgrey, "Retrieved %d server(s) from master", servers.length());
-        else conoutf(colourgrey, "Retrieved list from master successfully");//, servers.length());
+        else conoutf(colourgrey, "Retrieved list from master successfully");
     }
     else conoutf(colourred, "Master server not replying");
     refreshservers();

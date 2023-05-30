@@ -197,11 +197,11 @@ void disconnect(bool onlyclean, bool async)
     if(!onlyclean) localconnect(false);
 }
 
-ICOMMAND(0, connect, "sis", (char *n, int *a, char *pwd), connectserv(*n ? n : servermaster, *n || *a ? *a : SERVER_PORT, pwd));
-ICOMMAND(0, disconnect, "i", (int *force), trydisconnect(*force!=0));
+ICOMMAND(IDF_NOECHO, connect, "sis", (char *n, int *a, char *pwd), connectserv(*n ? n : servermaster, *n || *a ? *a : SERVER_PORT, pwd));
+ICOMMAND(IDF_NOECHO, disconnect, "i", (int *force), trydisconnect(*force!=0));
 
-ICOMMAND(0, lanconnect, "is", (int *a, char *pwd), connectserv(NULL, *a, pwd));
-ICOMMAND(0, localconnect, "i", (int *n), localconnect(*n ? false : true));
+ICOMMAND(IDF_NOECHO, lanconnect, "is", (int *a, char *pwd), connectserv(NULL, *a, pwd));
+ICOMMAND(IDF_NOECHO, localconnect, "i", (int *n), localconnect(*n ? false : true));
 
 ICOMMANDV(0, isonline, curpeer ? 1 : 0);
 ICOMMANDV(0, isconnected, connected() ? 1 : 0);
