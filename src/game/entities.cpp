@@ -2150,7 +2150,6 @@ namespace entities
                 while(e.attrs[3] < -181) e.attrs[3] += 362; // pitch
                 while(e.attrs[3] > 181) e.attrs[3] -= 362; // has -181/181 for rotating effect
                 if(e.attrs[4] < 0) e.attrs[4] = 0; // radius, limit
-                if(e.attrs[5] < 0) e.attrs[5] = 0; // scale, limit
                 while(e.attrs[6] < 0) e.attrs[6] += 181; // yaw detent, clamp
                 while(e.attrs[6] > 180) e.attrs[6] -= 181; // yaw detent, clamp
                 while(e.attrs[7] < 0) e.attrs[7] += 181; // pitch detent, clamp

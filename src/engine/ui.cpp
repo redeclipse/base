@@ -940,7 +940,7 @@ namespace UI
         float px, py, pw, ph,
               yaw, pitch, curyaw, curpitch,
               offyaw, offpitch, detentyaw, detentpitch,
-              scale, dist, hitx, hity;
+              scale, curscale, dist, hitx, hity;
         vec2 sscale, soffset;
         vec origin, pos;
         tagval args[MAXARGS];
@@ -954,7 +954,7 @@ namespace UI
             px(0), py(0), pw(0), ph(0),
             yaw(-1), pitch(0), curyaw(0), curpitch(0),
             offyaw(0), offpitch(0), detentyaw(0), detentpitch(0),
-            scale(1), dist(0), hitx(-1), hity(-1),
+            scale(1), curscale(1), dist(0), hitx(-1), hity(-1),
             sscale(1, 1), soffset(0, 0),
             origin(-1, -1, -1), pos(-1, -1, -1)
         {
@@ -1058,6 +1058,7 @@ namespace UI
             yaw = -FLT_MAX;
             pitch = curyaw = curpitch = offyaw = offpitch = 0;
             scale = 1;
+            curscale = uiworldscale;
             origin = pos = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX);
         }
 
@@ -1082,7 +1083,8 @@ namespace UI
                 yaw = y;
                 pitch = p;
                 origin = pos = o;
-                scale = s > 0 ? s : 1.f;
+                scale = s;
+                curscale = scale >= 0 ? scale * uiworldscale : -scale;
                 detentyaw = dy > 0 ? clamp(dy, 0.f, 180.f) : 0.f;
                 detentpitch = dp > 0 ? clamp(dp, 0.f, 90.f) : 0.f;
                 inworld = true;
@@ -1199,6 +1201,7 @@ namespace UI
             if(detentpitch > 0) curpitch = round(curpitch / detentpitch) * detentpitch;
 
             pos = origin;
+            curscale = scale >= 0 ? scale * uiworldscale : -scale;
 
             vec n = vec(curyaw * RAD, curpitch * RAD).normalize(), up(0, 0, 1), right;
             if(fabsf(n.z) < 1.f) right.cross(up, n).normalize();
@@ -1207,15 +1210,15 @@ namespace UI
 
             switch(adjust&ALIGN_HMASK)
             {
-                case ALIGN_LEFT:    pos.add(vec(right).mul(pw * scale * uiworldscale)); break;
+                case ALIGN_LEFT:    pos.add(vec(right).mul(pw * curscale)); break;
                 case ALIGN_RIGHT:   break;
-                default:            pos.add(vec(right).mul(pw * scale * uiworldscale * 0.5f)); break;
+                default:            pos.add(vec(right).mul(pw * curscale * 0.5f)); break;
             }
             switch(adjust&ALIGN_VMASK)
             {
-                case ALIGN_TOP:     pos.add(vec(up).mul(ph * scale * uiworldscale)); break;
+                case ALIGN_TOP:     pos.add(vec(up).mul(ph * curscale)); break;
                 case ALIGN_BOTTOM:  break;
-                default:            pos.add(vec(up).mul(ph * scale * uiworldscale * 0.5f)); break;
+                default:            pos.add(vec(up).mul(ph * curscale * 0.5f)); break;
             }
 
             return ray.magnitude();
@@ -1275,8 +1278,8 @@ namespace UI
                     {
                         float qx = 0, qy = 0;
                         hitintersect(v, pos, n, curyaw, qx, qy);
-                        hitx = qx / (pw * scale * uiworldscale);
-                        hity = qy / (ph * scale * uiworldscale);
+                        hitx = qx / (pw * curscale);
+                        hity = qy / (ph * curscale);
                     }
                 }
             }
@@ -1309,7 +1312,7 @@ namespace UI
                 hudmatrix.translate(pos);
                 hudmatrix.rotate_around_z(curyaw*RAD);
                 hudmatrix.rotate_around_x(curpitch*RAD - 90*RAD);
-                hudmatrix.scale(scale * uiworldscale);
+                hudmatrix.scale(curscale);
             }
             else hudmatrix.ortho(px, px + pw, py + ph, py, -1, 1);
 
@@ -2191,6 +2194,7 @@ namespace UI
         w->yaw = yaw;
         w->pitch = pitch;
         w->scale = scale;
+        w->curscale = w->scale >= 0 ? w->scale * uiworldscale : -w->scale;
         w->detentyaw = detentyaw;
         w->detentpitch = detentpitch;
 
@@ -6595,7 +6599,7 @@ namespace UI
 
             if(!haswindow)
             {
-                surface->show(w, e.o, e.attrs[2], e.attrs[3], e.attrs[5] > 0 ? e.attrs[5]/100.f : 1.f, e.attrs[6] > 0 ? e.attrs[6] : 0.f, e.attrs[7] > 0 ? e.attrs[7] : 0.f);
+                surface->show(w, e.o, e.attrs[2], e.attrs[3], e.attrs[5] != 0 ? e.attrs[5]/100.f : 1.f, e.attrs[6] > 0 ? e.attrs[6] : 0.f, e.attrs[7] > 0 ? e.attrs[7] : 0.f);
                 continue;
             }
             float yaw = 0, pitch = 0;
