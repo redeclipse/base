@@ -578,6 +578,10 @@ namespace hud
     FVAR(IDF_PERSIST, aboveheaduidetentyaw, 0, 0, 180);
     FVAR(IDF_PERSIST, aboveheaduidetentpitch, 0, 0, 90);
 
+    VAR(IDF_PERSIST, hud3d, 0, 3, 3);
+    FVAR(IDF_PERSIST, hud3dscale, FVAR_NONZERO, 16, FVAR_MAX);
+    FVAR(IDF_PERSIST, hud3ddist, FVAR_NONZERO, 16, FVAR_MAX);
+
     void checkui()
     {
         hidecrosshair = 0;

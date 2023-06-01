@@ -1055,7 +1055,7 @@ namespace UI
         void resetworld()
         {
             inworld = false;
-            yaw = -FLT_MAX;
+            yaw = -1;
             pitch = curyaw = curpitch = offyaw = offpitch = 0;
             scale = 1;
             curscale = uiworldscale;
@@ -1189,19 +1189,20 @@ namespace UI
 
         float worldcalc()
         {
-            vec ray = vec(origin).sub(camera1->o);
+            pos = origin;
+            curscale = scale >= 0 ? scale * uiworldscale : -scale;
+
+            vec ray = vec(origin).sub(camera1->o), dir = vec(ray).normalize();
+
             curyaw = yaw;
             curpitch = pitch;
-            vectoyawpitch(vec(ray).normalize(), offyaw, offpitch);
+            vectoyawpitch(dir, offyaw, offpitch);
             offyaw += 180;
             offpitch = -offpitch;
             if(curyaw < 0) curyaw = offyaw;
             if(curpitch < -180 || curpitch > 180) curpitch = offpitch;
             if(detentyaw > 0) curyaw = round(curyaw / detentyaw) * detentyaw;
             if(detentpitch > 0) curpitch = round(curpitch / detentpitch) * detentpitch;
-
-            pos = origin;
-            curscale = scale >= 0 ? scale * uiworldscale : -scale;
 
             vec n = vec(curyaw * RAD, curpitch * RAD).normalize(), up(0, 0, 1), right;
             if(fabsf(n.z) < 1.f) right.cross(up, n).normalize();
@@ -1210,14 +1211,14 @@ namespace UI
 
             switch(adjust&ALIGN_HMASK)
             {
-                case ALIGN_LEFT:    pos.add(vec(right).mul(pw * curscale)); break;
-                case ALIGN_RIGHT:   break;
+                case ALIGN_LEFT:    break;
+                case ALIGN_RIGHT:   pos.add(vec(right).mul(pw * curscale)); break;
                 default:            pos.add(vec(right).mul(pw * curscale * 0.5f)); break;
             }
             switch(adjust&ALIGN_VMASK)
             {
-                case ALIGN_TOP:     pos.add(vec(up).mul(ph * curscale)); break;
                 case ALIGN_BOTTOM:  break;
+                case ALIGN_TOP:     pos.add(vec(up).mul(ph * curscale)); break;
                 default:            pos.add(vec(up).mul(ph * curscale * 0.5f)); break;
             }
 

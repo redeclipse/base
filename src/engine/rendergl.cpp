@@ -2613,6 +2613,7 @@ void gl_drawframe()
     vieww = hudw;
     viewh = hudh;
     hud::update(hudw, hudh);
+    hud::checkui();
 
     if(!noview) gl_drawview();
     gl_drawhud(noview);

@@ -1284,7 +1284,7 @@ int main(int argc, char **argv)
             updatefps(frameloops, elapsed);
             cdpi::runframe();
             checkinput();
-            hud::checkui();
+            //hud::checkui();
             tryedit();
 
             if(frameloops)
