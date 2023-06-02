@@ -3824,13 +3824,8 @@ void cleanuptextures()
 
 void gctextures()
 {
-    vector<Texture*> gctexs;
-
-    enumerate(textures, Texture, tex,
-    {
-        if(tex.type&Texture::GC) gctexs.add(&tex);
-    });
-
+    vector<Texture *> gctexs;
+    enumerate(textures, Texture, tex, if(tex.type&Texture::GC) gctexs.add(&tex));
     loopv(gctexs) cleanuptexture(gctexs[i]);
 }
 COMMAND(0, gctextures, "");

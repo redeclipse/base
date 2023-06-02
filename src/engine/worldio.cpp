@@ -652,8 +652,8 @@ void save_config(char *mname, bool forcesave = false, int backuprev = -1)
     int mapshaders = savemapshaders(h);
     if(verbose) conoutf(colourwhite, "Saved %d map shaders", mapshaders);
 
-    int mapmenus = UI::savemapmenus(h);
-    if(verbose) conoutf(colourwhite, "Saved %d map menus", mapmenus);
+    int mapuis = UI::savemap(h);
+    if(verbose) conoutf(colourwhite, "Saved %d map UIs", mapuis);
 
     // texture slots
     int nummats = sizeof(materialslots)/sizeof(materialslots[0]);

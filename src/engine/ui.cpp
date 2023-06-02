@@ -6865,7 +6865,7 @@ namespace UI
         return CURSOR_DEFAULT;
     }
 
-    int savemapmenus(stream *h)
+    int savemap(stream *h)
     {
         int mapmenus = 0;
         loopj(SURFACE_MAX)
@@ -6911,11 +6911,22 @@ namespace UI
         return mapmenus;
     }
 
-    void resetmapmenus()
+    void resetmap()
     {
         loopj(SURFACE_MAX)
         {
             if(j == SURFACE_PROGRESS || !pushsurface(j)) continue;
+            if(j == SURFACE_COMPOSITE) loopvrev(surface->texs)
+            {
+                Texture *t = surface->texs[i];
+                if(!t->rendered) continue;
+                Window *w = surface->windows.find(t->comp, NULL);
+                if(!w || !w->mapdef) continue;
+
+                surface->texs.remove(i);
+                t->type |= Texture::GC;
+                cleanuptexture(t);
+            }
             enumerate(surface->windows, Window *, w,
             {
                 if(!w->mapdef) continue;
