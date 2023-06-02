@@ -6844,7 +6844,7 @@ namespace UI
         {
             if(!(t.type&Texture::COMPOSITE)) continue;
             composite(t.name, t.tclamp, t.mipmap, true, t.type&Texture::GC, &t, true);
-            t.rendering = t.rendered = false;
+            t.rendered = false;
         });
     }
 
@@ -7046,9 +7046,7 @@ namespace UI
         loopv(surface->texs)
         {
             Texture *t = surface->texs[i];
-            if(t->rendering) continue; // avoid infinite stack
-            int delay = 0;
-            int elapsed = t->update(delay, compositeuprate);
+            int delay = 0, elapsed = t->update(delay, compositeuprate);
             if(t->rendered && elapsed < 0) continue;
 
             if(!found)
@@ -7057,8 +7055,6 @@ namespace UI
                 glGetIntegerv(GL_FRAMEBUFFER_BINDING, &oldfbo);
                 found = true;
             }
-
-            t->rendering = true;
 
             GLERROR;
             if(!t->fbo) glGenFramebuffers_(1, &t->fbo);
@@ -7074,7 +7070,6 @@ namespace UI
             if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
             {
                 conoutf(colourred, "Failed rendering composite texture framebuffer: %s [%u / %u]", t->name, t->id, t->fbo);
-                t->rendering = false;
                 continue;
             }
 
@@ -7103,7 +7098,6 @@ namespace UI
             }
 
             t->last = delay > 1 ? lastmillis - (elapsed % delay) : lastmillis;
-            t->rendering = false;
             t->rendered = true;
         }
 
