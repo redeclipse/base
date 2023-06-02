@@ -7015,29 +7015,9 @@ namespace UI
     {
     }
 
-    void update(bool prog)
+    void updatetextures()
     {
-        if(prog) build(SURFACE_PROGRESS);
-        else build(SURFACE_MAIN);
-    }
-
-    void render(bool prog, bool world)
-    {
-        if(prog)
-        {
-            if(world || !progressing || !pushsurface(SURFACE_PROGRESS)) return; // nope
-            surface->render(false);
-            popsurface();
-            return;
-        }
-
-        if(!uihidden && pushsurface(SURFACE_MAIN))
-        {
-            surface->render(world);
-            popsurface();
-        }
-
-        if(world || !pushsurface(SURFACE_COMPOSITE)) return;
+        if(!pushsurface(SURFACE_COMPOSITE)) return;
 
         GLint oldfbo = 0;
         bool found = false;
@@ -7109,6 +7089,33 @@ namespace UI
             hudh = oldhudh;
             glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
             glViewport(0, 0, hudw, hudh);
+        }
+    }
+
+    void update(bool prog)
+    {
+        if(prog) build(SURFACE_PROGRESS);
+        else
+        {
+            build(SURFACE_MAIN);
+            updatetextures();
+        }
+    }
+
+    void render(bool prog, bool world)
+    {
+        if(prog)
+        {
+            if(world || !progressing || !pushsurface(SURFACE_PROGRESS)) return; // nope
+            surface->render(false);
+            popsurface();
+            return;
+        }
+
+        if(!uihidden && pushsurface(SURFACE_MAIN))
+        {
+            surface->render(world);
+            popsurface();
         }
     }
 }
