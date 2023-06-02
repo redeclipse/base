@@ -7094,28 +7094,21 @@ namespace UI
 
     void update(bool prog)
     {
-        if(prog) build(SURFACE_PROGRESS);
-        else
-        {
-            build(SURFACE_MAIN);
-            updatetextures();
-        }
+        build(prog ? SURFACE_PROGRESS : SURFACE_MAIN);
+        if(!prog) updatetextures();
     }
 
-    void render(bool prog, bool world)
+    void render(bool world)
     {
-        if(prog)
-        {
-            if(world || !progressing || !pushsurface(SURFACE_PROGRESS)) return; // nope
-            surface->render(false);
-            popsurface();
-            return;
-        }
+        if((!world && uihidden) || !pushsurface(SURFACE_MAIN)) return;
+        surface->render(world);
+        popsurface();
+    }
 
-        if(!uihidden && pushsurface(SURFACE_MAIN))
-        {
-            surface->render(world);
-            popsurface();
-        }
+    void renderprogress()
+    {
+        if(!pushsurface(SURFACE_PROGRESS)) return; // nope
+        surface->render(false);
+        popsurface();
     }
 }

@@ -543,7 +543,8 @@ namespace UI
     extern void cleanup();
     extern void cleangl();
     extern void update(bool prog = false);
-    extern void render(bool prog = false, bool world = false);
+    extern void render(bool world = false);
+    extern void renderprogress();
 }
 
 // menus

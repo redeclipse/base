@@ -1884,7 +1884,7 @@ namespace hud
                 resethudshader();
                 drawpointers(hudwidth, hudheight);
             }
-            else UI::render(true);
+            else UI::renderprogress();
         }
         glDisable(GL_BLEND);
     }

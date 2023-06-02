@@ -2496,7 +2496,7 @@ void gl_drawview()
 
     glDisable(GL_CULL_FACE);
 
-    UI::render(false, true);
+    UI::render(true);
 
     glDisable(GL_DEPTH_TEST);
 
