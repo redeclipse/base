@@ -49,14 +49,15 @@ Texture *loadskyoverlay(const char *basename)
     VAR(IDF_MAP, yaw##prefix##layer##name, 0, 0, 360); \
     FVAR(IDF_MAP, prefix##height##name, -2, 0.2f, 2); \
     FVAR(IDF_MAP, prefix##fade##name, 0, 0.2f, 1); \
-    VAR(IDF_MAP, prefix##subdiv##name, 4, 32, 64); \
+    VAR(IDF_MAP, prefix##subdiv##name, 4, 16, 64); \
     VAR(IDF_MAP, prefix##farplane##name, 0, 1, 1); \
     VAR(IDF_MAP, prefix##shadow##name, 0, 0, 1); \
     FVAR(IDF_MAP, prefix##shadowblend##name, 0, 0.66f, 1); \
 
 #define MPVCYLINDER(prefix, name, type) \
     MPVLAYER(prefix, name, type); \
-    VAR(IDF_MAP, prefix##repeat##name, 1, 1, 64);
+    FVAR(IDF_MAP, prefix##dist##name, FVAR_NONZERO, 1, 1); \
+    VAR(IDF_MAP, prefix##repeat##name, 1, 2, 64);
 
 #define MPVVARS(name, type) \
     CVAR(IDF_MAP, ambient##name, 0x191919); \
@@ -202,6 +203,7 @@ GETMPV(skyshadow, int);
 
 #define GETCYLINDER(prefix) \
     GETLAYER(prefix) \
+    GETMPV(prefix##dist, float); \
     GETMPV(prefix##repeat, int);
 
 GETLAYER(cloud);
@@ -337,11 +339,10 @@ void drawenvoverlay(Texture *overlay, float height, int subdiv, float fade, floa
     xtraverts += gle::end();
 }
 
-void drawenvcylinder(Texture *overlay, float height, int subdiv, int repeat, float fade, float scale, const bvec &colour, float blend, float tx = 0, float ty = 0)
+void drawenvcylinder(Texture *overlay, float height, int subdiv, int repeat, float fade, float scale, float dist, const bvec &colour, float blend, float tx = 0, float ty = 0)
 {
-    int w = farplane / 2, divisor = subdiv, off = divisor % repeat;
-    if(off) divisor += repeat - off;
-    float section = repeat / float(divisor), z = w * height,
+    int w = farplane / 2, divisor = subdiv * repeat;
+    float section = 1.0f / divisor * repeat, z = w * height, xy = w * dist,
           tsy1 = 0.5f * (1 - fade) / scale, tsy2 = 0.5f * fade / scale,
           psz1 = z * (1 - fade), psz2 = z * fade;
     settexture(overlay);
@@ -378,7 +379,7 @@ void drawenvcylinder(Texture *overlay, float height, int subdiv, int repeat, flo
         loopi(divisor+1)
         {
             vec p(1, 1, 0);
-            p.rotate_around_z((-2.0f * M_PI * i) / divisor).mul(w);
+            p.rotate_around_z((-2.0f * M_PI * i) / divisor).mul(xy);
             float zpos1 = zpos + zsize, zpos2 = zpos - zsize,
                   txpos = tx + section * i, typos1 = typos + tysize, typos2 = typos - tysize;
             loopj(2)
@@ -704,7 +705,7 @@ bool hasenvshadow()
     return getcloudshadow() || getenvshadow();
 }
 
-void drawenvlayer(Texture *tex, float height, const bvec &colour, float blend, float subdiv, float fade, float scale, float offsetx, float offsety, float shadowblend, float zrot, bool skyplane, bool shadowpass, int cylinder)
+void drawenvlayer(Texture *tex, float height, const bvec &colour, float blend, float subdiv, float fade, float scale, float offsetx, float offsety, float shadowblend, float zrot, bool skyplane, bool shadowpass, int cylinder, float dist)
 {
     if(shadowpass) SETSHADER(skyboxshadow);
     else SETSHADER(skybox);
@@ -730,7 +731,7 @@ void drawenvlayer(Texture *tex, float height, const bvec &colour, float blend, f
         skyprojmatrix.mul(projmatrix, skymatrix);
         LOCALPARAM(skymatrix, skyprojmatrix);
     }
-    if(cylinder) drawenvcylinder(tex, height, subdiv, cylinder, fade, scale, colour, blend, offsetx, offsety);
+    if(cylinder) drawenvcylinder(tex, height, subdiv, cylinder, fade, scale, dist, colour, blend, offsetx, offsety);
     else drawenvoverlay(tex, height, subdiv, fade, scale, colour, blend, offsetx, offsety);
     if(shadowpass)
     {
@@ -749,14 +750,14 @@ void drawenvlayer(Texture *tex, float height, const bvec &colour, float blend, f
     if(cur##name##layer[0] && get##name##height() && (!shadowpass || get##name##shadow()) && get##name##farplane() == (skyplane ? 1 : 0)) \
         drawenvlayer(name##overlay, get##name##height(), get##name##layercolour(), get##name##layerblend(), get##name##subdiv(), get##name##fade(), get##name##scale(), \
             get##name##offsetx() + get##name##scrollx() * lastmillis/1000.0f, get##name##offsety() + get##name##scrolly() * lastmillis/1000.0f, \
-            get##name##shadowblend(), (getspin##name##layer()*lastmillis/1000.0f+getyaw##name##layer())*-RAD, skyplane, shadowpass, 0);
+            get##name##shadowblend(), (getspin##name##layer()*lastmillis/1000.0f+getyaw##name##layer())*-RAD, skyplane, shadowpass);
 
 #define ENVCYLINDER(name) \
     const char *cur##name##layer = get##name##layer(); \
     if(cur##name##layer[0] && get##name##height() && (!shadowpass || get##name##shadow()) && get##name##farplane() == (skyplane ? 1 : 0)) \
         drawenvlayer(name##overlay, get##name##height(), get##name##layercolour(), get##name##layerblend(), get##name##subdiv(), get##name##fade(), get##name##scale(), \
             get##name##offsetx() + get##name##scrollx() * lastmillis/1000.0f, get##name##offsety() + get##name##scrolly() * lastmillis/1000.0f, \
-            get##name##shadowblend(), (getspin##name##layer()*lastmillis/1000.0f+getyaw##name##layer())*-RAD, skyplane, shadowpass, get##name##repeat());
+            get##name##shadowblend(), (getspin##name##layer()*lastmillis/1000.0f+getyaw##name##layer())*-RAD, skyplane, shadowpass, get##name##repeat(), get##name##dist());
 
 void drawenvlayers(bool skyplane, bool shadowpass)
 {
@@ -904,10 +905,10 @@ void initskybox()
     const char *curcloudlayer = getcloudlayer();
     if(curcloudlayer[0]) cloudoverlay = loadskyoverlay(curcloudlayer);
     const char *curcloudcylinderlayer = getcloudcylinderlayer();
-    if(curcloudcylinderlayer[0]) cloudoverlay = loadskyoverlay(curcloudcylinderlayer);
+    if(curcloudcylinderlayer[0]) cloudcylinderoverlay = loadskyoverlay(curcloudcylinderlayer);
 
     const char *curenvlayer = getenvlayer();
     if(curenvlayer[0]) envoverlay = loadskyoverlay(curenvlayer);
     const char *curenvcylinderlayer = getenvcylinderlayer();
-    if(curenvcylinderlayer[0]) envoverlay = loadskyoverlay(curenvcylinderlayer);
+    if(curenvcylinderlayer[0]) envcylinderoverlay = loadskyoverlay(curenvcylinderlayer);
 }
