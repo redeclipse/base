@@ -27,7 +27,7 @@ void loadsky(const char *basename, Texture *texs[6])
     }
 }
 
-Texture *cloudoverlay = NULL, *envoverlay = NULL;
+Texture *cloudoverlay = NULL, *envoverlay = NULL, *cloudcylinderoverlay = NULL, *envcylinderoverlay = NULL;
 
 Texture *loadskyoverlay(const char *basename)
 {
@@ -35,6 +35,24 @@ Texture *loadskyoverlay(const char *basename)
     if(t == notexture) conoutf(colourred, "Could not load sky overlay texture %s", basename);
     return t;
 }
+
+#define MPVLAYER(prefix, name, type) \
+    SVARF(IDF_MAP, prefix##layer##name, "", { if(prefix##layer##name[0] && checkmapvariant(type)) prefix##overlay = loadskyoverlay(prefix##layer##name); }); \
+    CVAR(IDF_MAP, prefix##layercolour##name, 0xFFFFFF); \
+    FVAR(IDF_MAP, prefix##layerblend##name, 0, 1.0f, 1); \
+    FVAR(IDF_MAP, prefix##offsetx##name, 0, 0, 1); \
+    FVAR(IDF_MAP, prefix##offsety##name, 0, 0, 1); \
+    FVAR(IDF_MAP, prefix##scrollx##name, -16, 0, 16); \
+    FVAR(IDF_MAP, prefix##scrolly##name, -16, 0, 16); \
+    FVAR(IDF_MAP, prefix##scale##name, FVAR_NONZERO, 1, 64); \
+    FVAR(IDF_MAP, spin##prefix##layer##name, -720, 0, 720); \
+    VAR(IDF_MAP, yaw##prefix##layer##name, 0, 0, 360); \
+    FVAR(IDF_MAP, prefix##height##name, -2, 0.2f, 2); \
+    FVAR(IDF_MAP, prefix##fade##name, 0, 0.2f, 1); \
+    VAR(IDF_MAP, prefix##subdiv##name, 4, 32, 64); \
+    VAR(IDF_MAP, prefix##farplane##name, 0, 1, 1); \
+    VAR(IDF_MAP, prefix##shadow##name, 0, 0, 1); \
+    FVAR(IDF_MAP, prefix##shadowblend##name, 0, 0.66f, 1); \
 
 #define MPVVARS(name, type) \
     CVAR(IDF_MAP, ambient##name, 0x191919); \
@@ -66,38 +84,6 @@ Texture *loadskyoverlay(const char *basename)
     VAR(IDF_MAP, pitchclouds##name, 0, 0, 360); \
     VAR(IDF_MAP, rollclouds##name, 0, 0, 360); \
     FVAR(IDF_MAP, cloudclip##name, 0, 0.5f, 1); \
-    SVARF(IDF_MAP, cloudlayer##name, "", { if(cloudlayer##name[0] && checkmapvariant(type)) cloudoverlay = loadskyoverlay(cloudlayer##name); }); \
-    CVAR(IDF_MAP, cloudlayercolour##name, 0xFFFFFF); \
-    FVAR(IDF_MAP, cloudlayerblend##name, 0, 1.0f, 1); \
-    FVAR(IDF_MAP, cloudoffsetx##name, 0, 0, 1); \
-    FVAR(IDF_MAP, cloudoffsety##name, 0, 0, 1); \
-    FVAR(IDF_MAP, cloudscrollx##name, -16, 0, 16); \
-    FVAR(IDF_MAP, cloudscrolly##name, -16, 0, 16); \
-    FVAR(IDF_MAP, cloudscale##name, FVAR_NONZERO, 1, 64); \
-    FVAR(IDF_MAP, spincloudlayer##name, -720, 0, 720); \
-    VAR(IDF_MAP, yawcloudlayer##name, 0, 0, 360); \
-    FVAR(IDF_MAP, cloudheight##name, -1, 0.2f, 1); \
-    FVAR(IDF_MAP, cloudfade##name, 0, 0.2f, 1); \
-    VAR(IDF_MAP, cloudsubdiv##name, 4, 16, 64); \
-    VAR(IDF_MAP, cloudfarplane##name, 0, 1, 1); \
-    VAR(IDF_MAP, cloudshadow##name, 0, 0, 1); \
-    FVAR(IDF_MAP, cloudshadowblend##name, 0, 0.66f, 1); \
-    SVARF(IDF_MAP, envlayer##name, "", { if(envlayer##name[0] && checkmapvariant(type)) envoverlay = loadskyoverlay(envlayer##name); }); \
-    CVAR(IDF_MAP, envlayercolour##name, 0xFFFFFF); \
-    FVAR(IDF_MAP, envlayerblend##name, 0, 1.0f, 1); \
-    FVAR(IDF_MAP, envoffsetx##name, 0, 0, 1); \
-    FVAR(IDF_MAP, envoffsety##name, 0, 0, 1); \
-    FVAR(IDF_MAP, envscrollx##name, -16, 0, 16); \
-    FVAR(IDF_MAP, envscrolly##name, -16, 0, 16); \
-    FVAR(IDF_MAP, envscale##name, FVAR_NONZERO, 1, 64); \
-    FVAR(IDF_MAP, spinenvlayer##name, -720, 0, 720); \
-    VAR(IDF_MAP, yawenvlayer##name, 0, 0, 360); \
-    FVAR(IDF_MAP, envheight##name, -1, 0.2f, 1); \
-    FVAR(IDF_MAP, envfade##name, 0, 0.2f, 1); \
-    VAR(IDF_MAP, envsubdiv##name, 4, 16, 64); \
-    VAR(IDF_MAP, envfarplane##name, 0, 1, 1); \
-    VAR(IDF_MAP, envshadow##name, 0, 0, 1); \
-    FVAR(IDF_MAP, envshadowblend##name, 0, 0.66f, 1); \
     VAR(IDF_MAP, atmo##name, 0, 0, 2); \
     VAR(IDF_MAP, atmostyle##name, 0, 0, 1); \
     FVAR(IDF_MAP, atmoplanetsize##name, FVAR_NONZERO, 1, FVAR_MAX); \
@@ -123,7 +109,9 @@ Texture *loadskyoverlay(const char *basename)
     VAR(IDF_MAP, fogdomeclouds##name, 0, 1, 1); \
     VAR(IDF_MAP, fogdomesquare##name, 0, 0, 1); \
     VAR(IDF_MAP, skytexture##name, 0, 0, 1); \
-    VARF(IDF_MAP, skyshadow##name, 0, 0, 1, if(checkmapvariant(type)) clearshadowcache());
+    VARF(IDF_MAP, skyshadow##name, 0, 0, 1, if(checkmapvariant(type)) clearshadowcache()); \
+    MPVLAYER(cloud, name, type) MPVLAYER(cloudcylinder, name, type) \
+    MPVLAYER(env, name, type) MPVLAYER(envcylinder, name, type)
 
 MPVVARS(, MPV_DEF);
 MPVVARS(alt, MPV_ALT);
@@ -164,38 +152,6 @@ GETMPV(yawclouds, int);
 GETMPV(pitchclouds, int);
 GETMPV(rollclouds, int);
 GETMPV(cloudclip, float);
-GETMPV(cloudlayer, const char *);
-GETMPV(cloudlayercolour, const bvec &);
-GETMPV(cloudlayerblend, float);
-GETMPV(cloudoffsetx, float);
-GETMPV(cloudoffsety, float);
-GETMPV(cloudscrollx, float);
-GETMPV(cloudscrolly, float);
-GETMPV(cloudscale, float);
-GETMPV(spincloudlayer, float);
-GETMPV(yawcloudlayer, int);
-GETMPV(cloudheight, float);
-GETMPV(cloudfade, float);
-GETMPV(cloudsubdiv, int);
-GETMPV(cloudfarplane, int);
-GETMPV(cloudshadow, int);
-GETMPV(cloudshadowblend, float);
-GETMPV(envlayer, const char *);
-GETMPV(envlayercolour, const bvec &);
-GETMPV(envlayerblend, float);
-GETMPV(envoffsetx, float);
-GETMPV(envoffsety, float);
-GETMPV(envscrollx, float);
-GETMPV(envscrolly, float);
-GETMPV(envscale, float);
-GETMPV(spinenvlayer, float);
-GETMPV(yawenvlayer, int);
-GETMPV(envheight, float);
-GETMPV(envfade, float);
-GETMPV(envsubdiv, int);
-GETMPV(envfarplane, int);
-GETMPV(envshadow, int);
-GETMPV(envshadowblend, float);
 GETMPV(atmo, int);
 GETMPV(atmostyle, int);
 GETMPV(atmoplanetsize, float);
@@ -221,6 +177,29 @@ GETMPV(fogdomecolour, const bvec &);
 GETMPV(fogdomeclouds, int);
 GETMPV(skytexture, int);
 GETMPV(skyshadow, int);
+
+#define GETLAYER(prefix) \
+    GETMPV(prefix##layer, const char *); \
+    GETMPV(prefix##layercolour, const bvec &); \
+    GETMPV(prefix##layerblend, float); \
+    GETMPV(prefix##offsetx, float); \
+    GETMPV(prefix##offsety, float); \
+    GETMPV(prefix##scrollx, float); \
+    GETMPV(prefix##scrolly, float); \
+    GETMPV(prefix##scale, float); \
+    GETMPV(spin##prefix##layer, float); \
+    GETMPV(yaw##prefix##layer, int); \
+    GETMPV(prefix##height, float); \
+    GETMPV(prefix##fade, float); \
+    GETMPV(prefix##subdiv, int); \
+    GETMPV(prefix##farplane, int); \
+    GETMPV(prefix##shadow, int); \
+    GETMPV(prefix##shadowblend, float); \
+
+GETLAYER(cloud);
+GETLAYER(cloudcylinder);
+GETLAYER(env);
+GETLAYER(envcylinder);
 
 void drawenvboxface(float s0, float t0, int x0, int y0, int z0,
                     float s1, float t1, int x1, int y1, int z1,
@@ -350,6 +329,62 @@ void drawenvoverlay(Texture *overlay, float height, int subdiv, float fade, floa
     xtraverts += gle::end();
 }
 
+void drawenvcylinder(Texture *overlay, float height, int subdiv, float fade, float scale, const bvec &colour, float blend, float tx = 0, float ty = 0)
+{
+    int w = farplane / 2;
+    float section = 1.0f / subdiv, z = w * height,
+          tsy1 = 0.5f * (1 - fade) / scale, tsy2 = 0.5f * fade / scale,
+          psz1 = z * (1 - fade), psz2 = z * fade;
+    settexture(overlay);
+    gle::defvertex();
+    gle::deftexcoord0();
+    gle::defcolor(4);
+    loopk(3)
+    {
+        vec color = colour.tocolor();
+        gle::begin(GL_TRIANGLE_STRIP);
+        float zpos = 0, zsize = 0, typos = 0, tysize = 0;
+        switch(k)
+        {
+            case 0: default:
+                zpos = 0;
+                typos = ty;
+                zsize = psz1 * 0.5f;
+                tysize = tsy1 * 0.5f;
+                break;
+            case 1:
+                zpos = psz1 * 0.5f + psz2 * 0.5f;
+                typos = ty + tsy1 * 0.5f + tsy2 * 0.5f;
+                zsize = psz2 * 0.5f;
+                tysize = tsy2 * 0.5f;
+                break;
+            case 2:
+                zpos = 0 - psz1 * 0.5f - psz2 * 0.5f;
+                typos = ty - tsy1 * 0.5f - tsy2 * 0.5f;
+                zsize = psz2 * 0.5f;
+                tysize = tsy2 * 0.5f;
+                break;
+        }
+        if(zsize <= 0 || tysize <= 0) continue;
+        loopi(subdiv+1)
+        {
+            vec p(1, 1, 0);
+            p.rotate_around_z((-2.0f * M_PI * i) / subdiv).mul(w);
+            float zpos1 = zpos + zsize, zpos2 = zpos - zsize,
+                  txpos = tx + section * i, typos1 = typos + tysize, typos2 = typos - tysize;
+            loopj(2)
+            {
+                gle::attribf(p.x, p.y, zpos1);
+                    gle::attribf(txpos, typos1);
+                    gle::attrib(color, k == 1 ? 0.0f : blend);
+                gle::attribf(p.x, p.y, zpos2);
+                    gle::attribf(txpos, typos2);
+                    gle::attrib(color, k == 2 ? 0.0f : blend);
+            }
+        }
+        xtraverts += gle::end();
+    }
+}
 namespace fogdome
 {
     struct vert
@@ -660,7 +695,7 @@ bool hasenvshadow()
     return getcloudshadow() || getenvshadow();
 }
 
-void drawenvlayer(Texture *tex, float height, const bvec &colour, float blend, float subdiv, float fade, float scale, float offsetx, float offsety, float shadowblend, float zrot, bool skyplane, bool shadowpass)
+void drawenvlayer(Texture *tex, float height, const bvec &colour, float blend, float subdiv, float fade, float scale, float offsetx, float offsety, float shadowblend, float zrot, bool skyplane, bool shadowpass, bool cylinder)
 {
     if(shadowpass) SETSHADER(skyboxshadow);
     else SETSHADER(skybox);
@@ -686,7 +721,8 @@ void drawenvlayer(Texture *tex, float height, const bvec &colour, float blend, f
         skyprojmatrix.mul(projmatrix, skymatrix);
         LOCALPARAM(skymatrix, skyprojmatrix);
     }
-    drawenvoverlay(tex, height, subdiv, fade, scale, colour, blend, offsetx, offsety);
+    if(cylinder) drawenvcylinder(tex, height, subdiv, fade, scale, colour, blend, offsetx, offsety);
+    else drawenvoverlay(tex, height, subdiv, fade, scale, colour, blend, offsetx, offsety);
     if(shadowpass)
     {
         if(hasDC && cloudshadowclamp) glDisable(GL_DEPTH_CLAMP);
@@ -699,17 +735,19 @@ void drawenvlayer(Texture *tex, float height, const bvec &colour, float blend, f
     glEnable(GL_CULL_FACE);
 }
 
-#define ENVLAYER(name) \
+#define ENVLAYER(name, cyl) \
     const char *cur##name##layer = get##name##layer(); \
     if(cur##name##layer[0] && get##name##height() && (!shadowpass || get##name##shadow()) && get##name##farplane() == (skyplane ? 1 : 0)) \
         drawenvlayer(name##overlay, get##name##height(), get##name##layercolour(), get##name##layerblend(), get##name##subdiv(), get##name##fade(), get##name##scale(), \
             get##name##offsetx() + get##name##scrollx() * lastmillis/1000.0f, get##name##offsety() + get##name##scrolly() * lastmillis/1000.0f, \
-            get##name##shadowblend(), (getspin##name##layer()*lastmillis/1000.0f+getyaw##name##layer())*-RAD, skyplane, shadowpass);
+            get##name##shadowblend(), (getspin##name##layer()*lastmillis/1000.0f+getyaw##name##layer())*-RAD, skyplane, shadowpass, cyl);
 
 void drawenvlayers(bool skyplane, bool shadowpass)
 {
-    ENVLAYER(cloud)
-    ENVLAYER(env)
+    ENVLAYER(cloud, false);
+    ENVLAYER(cloudcylinder, true);
+    ENVLAYER(env, false);
+    ENVLAYER(envcylinder, true);
     physics::drawenvlayers(skyplane, shadowpass);
 }
 
@@ -846,8 +884,14 @@ void initskybox()
     if(curskybox[0]) loadsky(curskybox, sky);
     const char *curcloudbox = getcloudbox();
     if(curcloudbox[0]) loadsky(curcloudbox, clouds);
+
     const char *curcloudlayer = getcloudlayer();
     if(curcloudlayer[0]) cloudoverlay = loadskyoverlay(curcloudlayer);
+    const char *curcloudcylinderlayer = getcloudcylinderlayer();
+    if(curcloudcylinderlayer[0]) cloudoverlay = loadskyoverlay(curcloudcylinderlayer);
+
     const char *curenvlayer = getenvlayer();
     if(curenvlayer[0]) envoverlay = loadskyoverlay(curenvlayer);
+    const char *curenvcylinderlayer = getenvcylinderlayer();
+    if(curenvcylinderlayer[0]) envoverlay = loadskyoverlay(curenvcylinderlayer);
 }
