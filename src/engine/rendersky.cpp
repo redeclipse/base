@@ -54,6 +54,10 @@ Texture *loadskyoverlay(const char *basename)
     VAR(IDF_MAP, prefix##shadow##name, 0, 0, 1); \
     FVAR(IDF_MAP, prefix##shadowblend##name, 0, 0.66f, 1); \
 
+#define MPVCYLINDER(prefix, name, type) \
+    MPVLAYER(prefix, name, type); \
+    VAR(IDF_MAP, prefix##repeat##name, 1, 1, 64);
+
 #define MPVVARS(name, type) \
     CVAR(IDF_MAP, ambient##name, 0x191919); \
     FVAR(IDF_MAP, ambientscale##name, 0, 1, 16); \
@@ -110,8 +114,8 @@ Texture *loadskyoverlay(const char *basename)
     VAR(IDF_MAP, fogdomesquare##name, 0, 0, 1); \
     VAR(IDF_MAP, skytexture##name, 0, 0, 1); \
     VARF(IDF_MAP, skyshadow##name, 0, 0, 1, if(checkmapvariant(type)) clearshadowcache()); \
-    MPVLAYER(cloud, name, type) MPVLAYER(cloudcylinder, name, type) \
-    MPVLAYER(env, name, type) MPVLAYER(envcylinder, name, type)
+    MPVLAYER(cloud, name, type) MPVCYLINDER(cloudcylinder, name, type) \
+    MPVLAYER(env, name, type) MPVCYLINDER(envcylinder, name, type)
 
 MPVVARS(, MPV_DEF);
 MPVVARS(alt, MPV_ALT);
@@ -196,10 +200,14 @@ GETMPV(skyshadow, int);
     GETMPV(prefix##shadow, int); \
     GETMPV(prefix##shadowblend, float); \
 
+#define GETCYLINDER(prefix) \
+    GETLAYER(prefix) \
+    GETMPV(prefix##repeat, int);
+
 GETLAYER(cloud);
-GETLAYER(cloudcylinder);
+GETCYLINDER(cloudcylinder);
 GETLAYER(env);
-GETLAYER(envcylinder);
+GETCYLINDER(envcylinder);
 
 void drawenvboxface(float s0, float t0, int x0, int y0, int z0,
                     float s1, float t1, int x1, int y1, int z1,
@@ -329,10 +337,11 @@ void drawenvoverlay(Texture *overlay, float height, int subdiv, float fade, floa
     xtraverts += gle::end();
 }
 
-void drawenvcylinder(Texture *overlay, float height, int subdiv, float fade, float scale, const bvec &colour, float blend, float tx = 0, float ty = 0)
+void drawenvcylinder(Texture *overlay, float height, int subdiv, int repeat, float fade, float scale, const bvec &colour, float blend, float tx = 0, float ty = 0)
 {
-    int w = farplane / 2;
-    float section = 1.0f / subdiv, z = w * height,
+    int w = farplane / 2, divisor = subdiv, off = divisor % repeat;
+    if(off) divisor += repeat - off;
+    float section = repeat / float(divisor), z = w * height,
           tsy1 = 0.5f * (1 - fade) / scale, tsy2 = 0.5f * fade / scale,
           psz1 = z * (1 - fade), psz2 = z * fade;
     settexture(overlay);
@@ -366,10 +375,10 @@ void drawenvcylinder(Texture *overlay, float height, int subdiv, float fade, flo
                 break;
         }
         if(zsize <= 0 || tysize <= 0) continue;
-        loopi(subdiv+1)
+        loopi(divisor+1)
         {
             vec p(1, 1, 0);
-            p.rotate_around_z((-2.0f * M_PI * i) / subdiv).mul(w);
+            p.rotate_around_z((-2.0f * M_PI * i) / divisor).mul(w);
             float zpos1 = zpos + zsize, zpos2 = zpos - zsize,
                   txpos = tx + section * i, typos1 = typos + tysize, typos2 = typos - tysize;
             loopj(2)
@@ -695,7 +704,7 @@ bool hasenvshadow()
     return getcloudshadow() || getenvshadow();
 }
 
-void drawenvlayer(Texture *tex, float height, const bvec &colour, float blend, float subdiv, float fade, float scale, float offsetx, float offsety, float shadowblend, float zrot, bool skyplane, bool shadowpass, bool cylinder)
+void drawenvlayer(Texture *tex, float height, const bvec &colour, float blend, float subdiv, float fade, float scale, float offsetx, float offsety, float shadowblend, float zrot, bool skyplane, bool shadowpass, int cylinder)
 {
     if(shadowpass) SETSHADER(skyboxshadow);
     else SETSHADER(skybox);
@@ -721,7 +730,7 @@ void drawenvlayer(Texture *tex, float height, const bvec &colour, float blend, f
         skyprojmatrix.mul(projmatrix, skymatrix);
         LOCALPARAM(skymatrix, skyprojmatrix);
     }
-    if(cylinder) drawenvcylinder(tex, height, subdiv, fade, scale, colour, blend, offsetx, offsety);
+    if(cylinder) drawenvcylinder(tex, height, subdiv, cylinder, fade, scale, colour, blend, offsetx, offsety);
     else drawenvoverlay(tex, height, subdiv, fade, scale, colour, blend, offsetx, offsety);
     if(shadowpass)
     {
@@ -735,19 +744,26 @@ void drawenvlayer(Texture *tex, float height, const bvec &colour, float blend, f
     glEnable(GL_CULL_FACE);
 }
 
-#define ENVLAYER(name, cyl) \
+#define ENVLAYER(name) \
     const char *cur##name##layer = get##name##layer(); \
     if(cur##name##layer[0] && get##name##height() && (!shadowpass || get##name##shadow()) && get##name##farplane() == (skyplane ? 1 : 0)) \
         drawenvlayer(name##overlay, get##name##height(), get##name##layercolour(), get##name##layerblend(), get##name##subdiv(), get##name##fade(), get##name##scale(), \
             get##name##offsetx() + get##name##scrollx() * lastmillis/1000.0f, get##name##offsety() + get##name##scrolly() * lastmillis/1000.0f, \
-            get##name##shadowblend(), (getspin##name##layer()*lastmillis/1000.0f+getyaw##name##layer())*-RAD, skyplane, shadowpass, cyl);
+            get##name##shadowblend(), (getspin##name##layer()*lastmillis/1000.0f+getyaw##name##layer())*-RAD, skyplane, shadowpass, 0);
+
+#define ENVCYLINDER(name) \
+    const char *cur##name##layer = get##name##layer(); \
+    if(cur##name##layer[0] && get##name##height() && (!shadowpass || get##name##shadow()) && get##name##farplane() == (skyplane ? 1 : 0)) \
+        drawenvlayer(name##overlay, get##name##height(), get##name##layercolour(), get##name##layerblend(), get##name##subdiv(), get##name##fade(), get##name##scale(), \
+            get##name##offsetx() + get##name##scrollx() * lastmillis/1000.0f, get##name##offsety() + get##name##scrolly() * lastmillis/1000.0f, \
+            get##name##shadowblend(), (getspin##name##layer()*lastmillis/1000.0f+getyaw##name##layer())*-RAD, skyplane, shadowpass, get##name##repeat());
 
 void drawenvlayers(bool skyplane, bool shadowpass)
 {
-    ENVLAYER(cloud, false);
-    ENVLAYER(cloudcylinder, true);
-    ENVLAYER(env, false);
-    ENVLAYER(envcylinder, true);
+    ENVLAYER(cloud);
+    ENVCYLINDER(cloudcylinder);
+    ENVLAYER(env);
+    ENVCYLINDER(envcylinder);
     physics::drawenvlayers(skyplane, shadowpass);
 }
 
