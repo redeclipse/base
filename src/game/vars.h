@@ -568,6 +568,7 @@ GFVAR(IDF_GAMEMOD, 0, impulsegrabplayerredir, 0, 1.f, FVAR_MAX); // how much of 
 GVAR(IDF_GAMEMOD, 0, impulsecount, 0, 6, VAR_MAX); // number of impulse actions per air transit
 GVAR(IDF_GAMEMOD, 0, impulsecounttypes, 0, IM_T_COUNT, IM_T_ACTION); // what actions get counted
 GVAR(IDF_GAMEMOD, 0, impulsepoundstyle, 0, 0, 1); // pound style: 0 = stop moving first, 1 = allow moving
+GVAR(IDF_GAMEMOD, 0, impulsecheckpoint, 0, IM_CHECKPOINT, IM_ALL); // reset these at checkpoints
 
 GVAR(IDF_GAMEMOD, 0, impulsetouchtypes, 0, IM_T_TOUCH, IM_T_ACTION); // what actions count as touch
 GVAR(IDF_GAMEMOD, 0, impulsetouchchecks, 0, IM_T_NOTOUCH, IM_T_ACTION); // what actions need a touch

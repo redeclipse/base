@@ -3547,13 +3547,15 @@ namespace client
                             t->cplast = laptime;
                             t->cptime = getint(p);
                             t->points = getint(p);
-                            t->cpmillis = t->impulse[IM_METER] = 0;
+                            t->cpmillis = 0;
+                            t->clearimpulse();
                             if(showlaptimes >= (t != game::focus ? (t->actortype > A_PLAYER ? 3 : 2) : 1))
                             {
                                 defformatstring(best, "%s", timestr(t->cptime, 1));
                                 conoutf(colourwhite, "%s completed in \fs\fg%s\fS (best: \fs\fy%s\fS, laps: \fs\fc%d\fS)", game::colourname(t), timestr(t->cplast, 1), best, t->points);
                             }
                         }
+                        else loopk(IM_MAX) if(impulsecheckpoint&(1<<k)) t->impulse[k] = 0; // checkpoint reset
                     }
                     else
                     {

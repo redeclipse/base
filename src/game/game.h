@@ -260,7 +260,12 @@ enum
     AC_ALL = (1<<AC_PRIMARY)|(1<<AC_SECONDARY)|(1<<AC_RELOAD)|(1<<AC_USE)|(1<<AC_JUMP)|(1<<AC_WALK)|(1<<AC_CROUCH)|(1<<AC_SPECIAL)|(1<<AC_DROP)|(1<<AC_AFFINITY)
 };
 
-enum { IM_METER = 0, IM_COUNT, IM_TYPE, IM_REGEN, IM_SLIP, IM_FLING, IM_PUSHER, IM_COLLECT_METER, IM_LASTCOL_METER, IM_COLLECT_COUNT, IM_LASTCOL_COUNT, IM_MAX };
+enum
+{
+    IM_METER = 0, IM_COUNT, IM_TYPE, IM_REGEN, IM_SLIP, IM_FLING, IM_PUSHER, IM_COLLECT_METER, IM_LASTCOL_METER, IM_COLLECT_COUNT, IM_LASTCOL_COUNT, IM_MAX,
+    IM_ALL          = (1<<IM_METER)|(1<<IM_COUNT)|(1<<IM_TYPE)|(1<<IM_REGEN)|(1<<IM_SLIP)|(1<<IM_FLING)|(1<<IM_PUSHER)|(1<<IM_COLLECT_METER)|(1<<IM_LASTCOL_METER)|(1<<IM_COLLECT_COUNT)|(1<<IM_LASTCOL_COUNT),
+    IM_CHECKPOINT   = (1<<IM_COUNT)|(1<<IM_COLLECT_COUNT)|(1<<IM_LASTCOL_COUNT)
+};
 
 enum
 {
@@ -1547,10 +1552,14 @@ struct gameent : dynent, clientstate
         }
     }
 
-    void clearstate(int millis, int gamemode, int mutators)
+    void clearimpulse()
     {
         loopi(IM_MAX) impulse[i] = 0;
         loopi(IM_T_MAX) impulsetime[i] = 0;
+    }
+
+    void clearstate(int millis, int gamemode, int mutators)
+    {
         lasthit = lastkill = quake = turnside = turnmillis = 0;
         lastteamhit = lastflag = respawned = suicided = lastnode = lastfoot = wasfiring = -1;
         turnyaw = turnroll = 0;
@@ -1560,6 +1569,7 @@ struct gameent : dynent, clientstate
         stuns.shrink(0);
         jitters.shrink(0);
         used.shrink(0);
+        clearimpulse();
         cleartags();
     }
 
