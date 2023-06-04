@@ -857,24 +857,28 @@ namespace physics
                 }
             }
         }
-        else if(!impulseplayer(d, onfloor, vec(d->vel).add(d->falling)) && onfloor && d->action[AC_JUMP] && d->canimpulse(IM_T_JUMP))
+        else
         {
-            float force = jumpvel(d);
-            if(force > 0)
+            bool floortolerance = onfloor || d->airtime(lastmillis) < A(d->actortype, jumptolerance);
+            if(!impulseplayer(d, floortolerance, vec(d->vel).add(d->falling)) && floortolerance && d->action[AC_JUMP] && d->canimpulse(IM_T_JUMP))
             {
-                d->vel.z += force;
-                if(isliquid(d->inmaterial&MATF_VOLUME))
+                float force = jumpvel(d);
+                if(force > 0)
                 {
-                    float scale = liquidmerge(d, 1.f, LIQUIDPHYS(speed, d->inmaterial));
-                    d->vel.x *= scale;
-                    d->vel.y *= scale;
-                }
-                d->doimpulse(IM_T_JUMP, lastmillis);
-                d->action[AC_JUMP] = d->action[AC_DASH] = onfloor = false;
-                client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_JUMP);
+                    d->vel.z += force;
+                    if(isliquid(d->inmaterial&MATF_VOLUME))
+                    {
+                        float scale = liquidmerge(d, 1.f, LIQUIDPHYS(speed, d->inmaterial));
+                        d->vel.x *= scale;
+                        d->vel.y *= scale;
+                    }
+                    d->doimpulse(IM_T_JUMP, lastmillis);
+                    d->action[AC_JUMP] = d->action[AC_DASH] = onfloor = false;
+                    client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_JUMP);
 
-                static fx::FxHandle fx = fx::getfxhandle("FX_PLAYER_JUMP");
-                fx::createfx(fx).setentity(d).setcolor(bvec(game::getcolour(d)));
+                    static fx::FxHandle fx = fx::getfxhandle("FX_PLAYER_JUMP");
+                    fx::createfx(fx).setentity(d).setcolor(bvec(game::getcolour(d)));
+                }
             }
         }
         if(d->hasparkour() || d->action[AC_SPECIAL])
