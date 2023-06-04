@@ -328,7 +328,7 @@ enum
     en(pr, SPREE1, 1<<2) en(pr, SPREE2, 1<<3) en(pr, SPREE3, 1<<4) en(pr, SPREE4, 1<<5) \
     en(pr, MKILL1, 1<<6) en(pr, MKILL2, 1<<7) en(pr, MKILL3, 1<<8) \
     en(pr, REVENGE, 1<<9) en(pr, DOMINATE, 1<<10) en(pr, FIRSTBLOOD, 1<<11) en(pr, BREAKER, 1<<12) \
-    en(pr, SPREES, 4) en(pr, SPREE, 3) en(pr, MKILL, 7) \
+    en(pr, SPREES, 4) en(pr, SPREE, 2) en(pr, MKILL, 6) \
     en(pr, CHECK, pr##_SPREE1|pr##_SPREE2|pr##_SPREE3|pr##_SPREE4) \
     en(pr, MULTI, pr##_MKILL1|pr##_MKILL2|pr##_MKILL3)
 ENUMLI(FRAG, FRAG_ENUM);
