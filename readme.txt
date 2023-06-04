@@ -22,7 +22,7 @@ This game is primarily distributed via Steam. For the most bleeding-edge version
 ## Get Involved
 You're encouraged to help the project by joining in with the rest of the community to make a better project! You can do this by participating in our Community, using the development version and reporting any issues, ideas, suggestions or comments you may have.
 
-The main chat access is via Discord in on our [server](https://redeclipse.net/chat); if you don't have a Discord account you can use the IRC relay on Freenode: channel `#redeclipse` on `irc.freenode.net`. You can use these services to talk directly to the Red Eclipse developers, contributors, and supporters; whether you just want to have a chat, report a problem, or make a suggestion, this is the best place to do it.
+Our main method of community interaction is via the [Discord server](https://redeclipse.net/chat). Here, you can talk directly to the Red Eclipse developers, contributors, and supporters; whether you just want to have a chat, report a problem, or make a suggestion, this is the best place to do it.
 
 ## Open Source
 The project is Free and Open Source, meaning that you can both use it for free and be a part of it by contributing in whatever way you can. These are the people who have helped shape Red Eclipse into what you see today. They are regular people just like you who volunteer their time or donate in the spirit of making a really cool game. Your name could be down here, too!
