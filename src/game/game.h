@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 268
+#define VERSION_GAME 269
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -198,10 +198,10 @@ extern const enttypes enttype[] = {
     },
     {
         CHECKPOINT,     1,          48,     16,     EU_AUTO,    8,          -1,         3,          5,      7,      -1,
-            (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
+            (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX)|(1<<CHECKPOINT),
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<ENT_PLAYER)|(1<<ENT_AI),
-            false,  true,   false,      true,       false,
+            false,  true,   false,      true,       true,
                 "checkpoint",   "Check Point",      { "radius", "yaw", "pitch", "modes", "muts", "id", "type", "variant" }
     },
     {
@@ -643,7 +643,7 @@ struct clientstate
     float totalavgpos;
     bool quarantine;
     string vanity;
-    vector<int> loadweap, lastweap, randweap;
+    vector<int> loadweap, lastweap, randweap, cpnodes;
     verinfo version;
 
     clientstate() : colour(0), model(0), pattern(0), checkpointspawn(1), weapselect(W_CLAW), lastdeath(0), lastspawn(0), lastpain(0), lastregen(0), lastregenamt(0), lastbuff(0), lastshoot(0), lastcook(0), lastaffinity(0),
@@ -654,6 +654,7 @@ struct clientstate
         loadweap.shrink(0);
         lastweap.shrink(0);
         randweap.shrink(0);
+        cpnodes.shrink(0);
         resetresidual();
     }
     ~clientstate() {}
@@ -925,6 +926,26 @@ struct clientstate
         }
     }
 
+    void resetcheckpoint()
+    {
+        cpmillis = 0;
+        cpnodes.shrink(0);
+    }
+
+    int setcheckpoint(int ent, int millis, int type)
+    {
+        if(type == CP_START)
+        {
+            if(cpmillis) return 1;
+            cpmillis = millis;
+        }
+        else if(!cpmillis) return -1;
+
+        if(cpnodes.find(ent) < 0) cpnodes.add(ent);
+
+        return 0;
+    }
+
     void clearstate()
     {
         spree = lastdeath = lastpain = lastregen = lastregenamt = lastbuff = lastshoot = lastcook = lastaffinity = 0;
@@ -934,7 +955,8 @@ struct clientstate
 
     void mapchange(bool change = false)
     {
-        points = frags = deaths = cpmillis = cptime = spree = 0;
+        points = frags = deaths = cptime = spree = 0;
+        resetcheckpoint();
     }
 
     void respawn(int millis)
@@ -1253,7 +1275,7 @@ struct gameent : dynent, clientstate
 {
     editinfo *edit;
     ai::aiinfo *ai;
-    int team, clientnum, privilege, projid, lastnode, checkpoint, cplast, respawned, suicided, lastupdate, lastpredict, plag, ping, lastflag, totaldamage,
+    int team, clientnum, privilege, projid, lastnode, cplast, respawned, suicided, lastupdate, lastpredict, plag, ping, lastflag, totaldamage,
         actiontime[AC_MAX], impulse[IM_MAX], impulsetime[IM_T_MAX], smoothmillis, turnside, turnmillis, plchan[PLCHAN_MAX], wschan[WS_CHANS], sschan[2],
         lasthit, lastteamhit, lastkill, lastattacker, lastpoints, quake, wasfiring, lastfoot;
     float deltayaw, deltapitch, newyaw, newpitch, stunscale, stungravity, turnyaw, turnroll;
@@ -1268,7 +1290,7 @@ struct gameent : dynent, clientstate
     fx::emitter *weaponfx, *impulsefx;
     projent *projchain;
 
-    gameent() : edit(NULL), ai(NULL), team(T_NEUTRAL), clientnum(-1), privilege(PRIV_NONE), projid(0), checkpoint(-1), cplast(0), lastupdate(0), lastpredict(0), plag(0), ping(0),
+    gameent() : edit(NULL), ai(NULL), team(T_NEUTRAL), clientnum(-1), privilege(PRIV_NONE), projid(0), cplast(0), lastupdate(0), lastpredict(0), plag(0), ping(0),
         totaldamage(0), smoothmillis(-1), lastattacker(-1), lastpoints(0), quake(0), wasfiring(-1), conopen(false), k_up(false), k_down(false), k_left(false), k_right(false), obliterated(false),
         weaponfx(NULL), impulsefx(NULL), projchain(NULL)
     {
@@ -1600,7 +1622,6 @@ struct gameent : dynent, clientstate
     void resetstate(int millis, int gamemode, int mutators)
     {
         respawn(millis, gamemode, mutators);
-        checkpoint = -1;
         frags = deaths = totaldamage = cplast = 0;
     }
 

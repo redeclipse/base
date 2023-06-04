@@ -1529,35 +1529,43 @@ namespace entities
                 if(e.type == TELEPORT)
                 {
                     if(!isallowed(e)) break;
+
                     if(e.attrs[8]&(1<<TELE_NOAFFIN))
                     {
                         if(gameent::is(d) && physics::carryaffinity((gameent *)d)) break;
                         if(projent::is(d) && ((projent *)d)->type == PRJ_AFFINITY) break;
                     }
+
                     int millis = d->lastused(n);
                     if(millis && lastmillis-millis < triggertime(e)) break;
                     e.lastemit = lastmillis;
+
                     static vector<int> teleports;
                     teleports.setsize(0);
                     loopv(e.links)
                         if(e.links[i] != n && ents.inrange(e.links[i]) && ents[e.links[i]]->type == e.type)
                             teleports.add(e.links[i]);
                     if(teleports.empty()) break;
+
                     vec orig = d->o, ovel = d->vel;
                     float oyaw = d->yaw, opitch = d->pitch;
                     while(!teleports.empty())
                     {
                         int r = rnd(teleports.length()), q = teleports[r];
                         gameentity &f = *(gameentity *)ents[q];
+
                         d->o = vec(f.pos()).add(f.attrs[5] >= 3 ? vec(orig).sub(e.pos()) : vec(0, 0, d->height*0.5f));
+
                         float mag = vec(d->vel).add(d->falling).magnitude(), yaw = f.attrs[0] < 0 ? (lastmillis/5)%360 : f.attrs[0], pitch = f.attrs[1];
                         if(!projent::shot(d))
                         {
                             if(f.attrs[2] > 0) mag = max(mag, float(f.attrs[2]));
                             else if(f.attrs[2] < 0) mag = min(mag, float(-f.attrs[2]));
                         }
+
                         fixrange(yaw, pitch);
                         if(mag != 0 && f.attrs[5] < 6) d->vel = vec(yaw*RAD, pitch*RAD).mul(mag);
+
                         switch(f.attrs[5]%3)
                         {
                             case 2: break; // keep
@@ -1576,9 +1584,12 @@ namespace entities
                                 break;
                             }
                         }
+
                         fixrange(d->yaw, d->pitch);
+
                         if(mag == 0) d->vel = vec(0, 0, 0);
                         else if(f.attrs[5] >= 6) d->vel = vec(d->yaw*RAD, d->pitch*RAD).mul(mag);
+
                         if(physics::entinmap(d, gameent::is(d))) // entinmap first for getting position
                         {
                             f.lastemit = lastmillis;
@@ -1641,8 +1652,10 @@ namespace entities
                 else if(e.type == PUSHER)
                 {
                     if(!isallowed(e)) break;
+
                     int millis = d->lastused(n);
                     if(e.attrs[5] != 3 && millis && lastmillis-millis < triggertime(e)) break;
+
                     bool inhibit = false;
                     loopenti(PUSHER) if(ents[i]->type == PUSHER)
                     { // check for a previous pusher in a chain
@@ -1664,11 +1677,14 @@ namespace entities
                         if(inhibit) break;
                     }
                     if(inhibit) break;
+
                     e.lastemit = lastmillis;
                     d->setused(n, lastmillis);
+
                     float mag = e.attrs[2] != 0 ? e.attrs[2] : 1, maxrad = e.attrs[3] ? e.attrs[3] : enttype[PUSHER].radius, minrad = e.attrs[4];
                     if(dist > 0 && minrad > 0 && maxrad > minrad && dist > minrad && maxrad >= dist) mag *= 1.f-clamp((dist-minrad)/float(maxrad-minrad), 0.f, 1.f);
                     if(!gameent::is(d)) mag *= d->weight/300.f;
+
                     vec dir(e.attrs[0]*RAD, e.attrs[1]*RAD), rel = vec(dir).mul(mag);
                     switch(e.attrs[5])
                     {
@@ -1710,22 +1726,19 @@ namespace entities
                 else if(e.type == TRIGGER)
                 {
                     if(d->state != CS_ALIVE || !gameent::is(d) || !isallowed(e)) break;
+
                     gameent *g = (gameent *)d;
                     if((e.attrs[2] == TA_ACTION && g->action[AC_USE] && g == game::player1) || e.attrs[2] == TA_AUTO) runtrigger(n, g);
                 }
                 else if(e.type == CHECKPOINT)
                 {
                     if(d->state != CS_ALIVE || !gameent::is(d) || !m_race(game::gamemode) || !isallowed(e)) break;
+
                     gameent *g = (gameent *)d;
-                    if(g->checkpoint == n || (m_ra_gauntlet(game::gamemode, game::mutators) && g->team != T_ALPHA)) break;
-                    if(e.attrs[6] == CP_START)
-                    {
-                        if(g->cpmillis || (d->vel.iszero() && !d->move && !d->strafe)) break;
-                        g->cpmillis = lastmillis;
-                    }
-                    else if(!g->cpmillis) break;
+                    if(m_ra_gauntlet(game::gamemode, game::mutators) && g->team != T_ALPHA) break;
+                    if(!g->cpnodes.empty() && g->cpnodes.find(n) >= 0) break;
+                    g->setcheckpoint(n, lastmillis, e.attrs[6]);
                     client::addmsg(N_TRIGGER, "ri2", g->clientnum, n);
-                    g->checkpoint = n;
                 }
                 break;
             }
@@ -2698,6 +2711,7 @@ namespace entities
         loopv(ents)
         {
             gameentity &e = *(gameentity *)ents[i];
+
             if(e.type >= 0 && e.type < MAXENTTYPES)
             {
                 firstenttype[e.type] = min(firstenttype[e.type], i);
@@ -2705,19 +2719,16 @@ namespace entities
                 lastenttype[e.type] = max(lastenttype[e.type], i+1);
                 lastusetype[enttype[e.type].usetype] = max(lastusetype[enttype[e.type].usetype], i+1);
             }
+
             if(enttype[e.type].usetype == EU_ITEM || e.type == TRIGGER) setspawn(i, 0);
-            if(enttype[e.type].syncs && enttype[e.type].synckin) // find shared kin
+
+            if(enttype[e.type].syncs && enttype[e.type].synckin) loopvj(e.links)
             {
-                loopvj(e.links) if(ents.inrange(e.links[j]))
-                {
-                    loopvk(ents) if(ents[k]->type == e.type && ents[k]->links.find(e.links[j]) >= 0)
-                    {
-                        gameentity &f = *(gameentity *)ents[k];
-                        if(e.kin.find(k) < 0) e.kin.add(k);
-                        if(f.kin.find(i) < 0) f.kin.add(i);
-                    }
-                }
+                int n = e.links[j];
+                if(!ents.inrange(n) || ents[n]->type != e.type) continue;
+                if(e.kin.find(n) < 0) e.kin.add(n);
             }
+
             progress((i+1)/float(ents.length()), "Preparing entities..");
         }
         initrails();

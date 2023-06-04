@@ -149,7 +149,7 @@ enum
     en(pr, HEAD, 1<<0) en(pr, TORSO, 1<<1) en(pr, LIMB, 1<<2) en(pr, FULL, 1<<3) en(pr, WHIPLASH, 1<<4) en(pr, ALT, 1<<5) \
     en(pr, WAVE, 1<<6) en(pr, PROJ, 1<<7) en(pr, EXPLODE, 1<<8) en(pr, BURN, 1<<9) en(pr, BLEED, 1<<10) en(pr, SHOCK, 1<<11) \
     en(pr, MATERIAL, 1<<12) en(pr, SPAWN, 1<<13) en(pr, LOST, 1<<14) en(pr, KILL, 1<<15) en(pr, FLAK, 1<<16) \
-    en(pr, SPEC, 1<<17) en(pr, TOUCH, 1<<18) en(pr, CRUSH, 1<<19) \
+    en(pr, SPEC, 1<<17) en(pr, TOUCH, 1<<18) en(pr, CRUSH, 1<<19) en(pr, CHECKPOINT, 1<<20) \
     en(pr, CLEAR, pr##_PROJ|pr##_EXPLODE|pr##_BURN|pr##_BLEED|pr##_MATERIAL|pr##_SPAWN|pr##_LOST|pr##_TOUCH|pr##_CRUSH) \
     en(pr, SFLAGS, pr##_KILL)
 ENUMLI(HIT, HIT_ENUM);

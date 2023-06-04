@@ -175,6 +175,7 @@ namespace game
     SVAR(IDF_MAP, obitdeath, "");
     SVAR(IDF_MAP, obithurt, "");
     SVAR(IDF_MAP, obitfall, "");
+    SVAR(IDF_MAP, obitcheckpoint, "");
     SVAR(IDF_MAP, obittouch, "");
     SVAR(IDF_MAP, obitcrush, "");
 
@@ -1779,6 +1780,7 @@ namespace game
             else if(flags&HIT_MATERIAL && material&MAT_HURT) concatstring(d->obit, *obithurt ? obithurt : obithurtmat);
             else if(flags&HIT_MATERIAL) concatstring(d->obit, *obitdeath ? obitdeath : obitdeathmat);
             else if(flags&HIT_LOST) concatstring(d->obit, *obitfall ? obitfall : obitlost);
+            else if(flags&HIT_CHECKPOINT) concatstring(d->obit, *obitcheckpoint ? obitcheckpoint : obitwrongcp);
             else if(flags && isweap(weap) && !burning && !bleeding && !shocking) concatstring(d->obit, WF(WK(flags), weap, obitsuicide, WS(flags)));
             else if(flags&HIT_BURN || burning) concatstring(d->obit, obitburnself);
             else if(flags&HIT_BLEED || bleeding) concatstring(d->obit, obitbleedself);

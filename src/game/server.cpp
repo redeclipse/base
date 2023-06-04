@@ -274,7 +274,7 @@ namespace server
         float localtotalavgpossum, totalavgpos, globaltotalavgpos;
         bool lastresalt[W_MAX];
         projectilestate dropped, weapshots[W_MAX][2];
-        vector<int> fraglog, fragmillis, cpnodes, chatmillis;
+        vector<int> fraglog, fragmillis, chatmillis;
         vector<dmghist> damagelog;
         vector<teamkill> teamkills;
 
@@ -306,7 +306,6 @@ namespace server
             rewards[0] = rewards[1] = shotdamage = damage = timealive = timeactive = lasthurt = 0;
             fraglog.shrink(0);
             fragmillis.shrink(0);
-            cpnodes.shrink(0);
             damagelog.shrink(0);
             teamkills.shrink(0);
             loopi(W_MAX) weapstats[i].reset();
@@ -3130,8 +3129,7 @@ namespace server
             }
             if(m_race(gamemode))
             {
-                ci->cpmillis = 0;
-                ci->cpnodes.shrink(0);
+                ci->resetcheckpoint();
                 sendf(-1, 1, "ri3", N_CHECKPOINT, ci->clientnum, -1);
             }
             ci->lastteam = ci->team;
@@ -4677,8 +4675,7 @@ namespace server
             }
             if(m->actortype < A_ENEMY && m_race(gamemode) && (!m_ra_gauntlet(gamemode, mutators) || m->team == T_ALPHA) && m->cpnodes.length() == 1)
             {  // reset if hasn't reached another checkpoint yet
-                m->cpmillis = 0;
-                m->cpnodes.shrink(0);
+                m->resetcheckpoint();
                 sendf(-1, 1, "ri3", N_CHECKPOINT, m->clientnum, -1);
             }
             if(pointvalue)
@@ -4764,10 +4761,9 @@ namespace server
         ci->deaths++;
         ci->totaldeaths++;
         bool kamikaze = dropitems(ci, DROP_DEATH);
-        if(ci->actortype < A_ENEMY && m_race(gamemode) && (!m_ra_gauntlet(gamemode, mutators) || ci->team == T_ALPHA) && !(flags&HIT_SPEC) && (!flags || ci->cpnodes.length() == 1 || !ci->checkpointspawn))
+        if(ci->actortype < A_ENEMY && m_race(gamemode) && (!m_ra_gauntlet(gamemode, mutators) || ci->team == T_ALPHA) && !(flags&HIT_SPEC) && !(flags&HIT_CHECKPOINT) && (!flags || ci->cpnodes.length() == 1 || !ci->checkpointspawn))
         { // reset if suicided, hasn't reached another checkpoint yet
-            ci->cpmillis = 0;
-            ci->cpnodes.shrink(0);
+            ci->resetcheckpoint();
             sendf(-1, 1, "ri3", N_CHECKPOINT, ci->clientnum, -1);
         }
         else if(!(flags&HIT_LOST) && !(flags&HIT_SPEC))
@@ -6809,6 +6805,7 @@ namespace server
                         srvmsgf(cp->clientnum, colourorange, "Sync error: %s cannot trigger %d - entity does not exist (max: %d)", colourname(cp), ent, sents.length());
                         break;
                     }
+
                     if(sents[ent].type == CHECKPOINT)
                     {
                         if(sents[ent].attrs[5] && sents[ent].attrs[5] != triggerid) break;
@@ -6816,6 +6813,28 @@ namespace server
                         if(!m_check(sents[ent].attrs[3], sents[ent].attrs[4], gamemode, mutators)) break;
                         if(!m_race(gamemode) || (m_ra_gauntlet(gamemode, mutators) && cp->team != T_ALPHA)) break;
                         if(cp->cpnodes.find(ent) >= 0) break;
+
+                        if(G(racecheckpointstrict))
+                        {
+                            bool suicide = false;
+                            if(cp->cpnodes.empty())
+                            {
+                                if(sents[ent].attrs[6] != CP_START) suicide = true;
+                            }
+                            else
+                            {
+                                int last = cp->cpnodes.last();
+                                if(sents.inrange(last) && !sents[last].kin.empty() && sents[last].kin.find(ent) < 0) suicide = true;
+                            }
+                            if(suicide)
+                            {
+                                suicideevent ev;
+                                ev.flags = HIT_CHECKPOINT;
+                                ev.process(cp); // process death immediately
+                                break;
+                            }
+                        }
+
                         switch(sents[ent].attrs[6])
                         {
                             case CP_LAST: case CP_FINISH:
@@ -6875,26 +6894,19 @@ namespace server
                                     }
                                 }
                                 else waiting(cp);
-                                cp->cpmillis = 0;
-                                cp->cpnodes.shrink(0);
+                                cp->resetcheckpoint();
                                 if(sents[ent].attrs[6] == CP_FINISH) waiting(cp);
                                 break;
                             }
                             case CP_START: case CP_RESPAWN:
                             {
-                                if(cp->cpnodes.find(ent) >= 0) break;
-                                if(sents[ent].attrs[6] == CP_START)
+                                switch(cp->setcheckpoint(ent, gamemillis, sents[ent].attrs[6]))
                                 {
-                                    if(cp->cpmillis) break;
-                                    cp->cpmillis = gamemillis;
+                                    case -1: waiting(cp); break;
+                                    case 0: sendf(-1, 1, "ri4", N_CHECKPOINT, cp->clientnum, ent, -1); break;
+                                    case 1: break;
                                 }
-                                else if(!cp->cpmillis)
-                                {
-                                    waiting(cp);
-                                    break;
-                                }
-                                sendf(-1, 1, "ri4", N_CHECKPOINT, cp->clientnum, ent, -1);
-                                cp->cpnodes.add(ent);
+                                break;
                             }
                             default: break;
                         }

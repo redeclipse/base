@@ -371,6 +371,7 @@ GFVAR(IDF_GAMEMOD, 0, teambalanceavgposlocalweight, 0, 0.33, 1.0); // weight of 
 GVAR(IDF_GAMEMOD, 0, teambalanceavgposdelay, 0, 5000, VAR_MAX); // delay betweel calculation of avgpos statistics
 
 GVAR(IDF_GAMEMOD, 0, racegauntletwinner, 0, 1, 1); // declare the winner when the final team exceeds best score
+GVAR(IDF_GAMEMOD, 0, racecheckpointstrict, 0, 1, 1); // if checkpoints are linked, only allow next link
 
 GVAR(IDF_GAMEMOD, 0, capturelimit, 0, 0, VAR_MAX); // finish when score is this or more
 GVAR(IDF_GAMEMOD, 0, captureresetfloor, 0, 1, 2); // if tossed, reset to last floor pos. 1 = team tosses own flag, 2 = any flag
@@ -726,6 +727,7 @@ GSVAR(0, 0, obitchoked, "choked to death");
 GSVAR(0, 0, obitdeathmat, "met their end");
 GSVAR(0, 0, obithurtmat, "stayed under too long");
 GSVAR(0, 0, obitlost, "fell to their death");
+GSVAR(0, 0, obitwrongcp, "hit the wrong checkpoint");
 GSVAR(0, 0, obitburn, "set ablaze");
 GSVAR(0, 0, obitburnself, "burned up");
 GSVAR(0, 0, obitbleed, "fatally wounded");

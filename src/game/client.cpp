@@ -3518,50 +3518,46 @@ namespace client
                 {
                     int tn = getint(p), ent = getint(p);
                     gameent *t = game::getclient(tn);
-                    if(!t || !m_race(game::gamemode))
+                    if(!t || !m_race(game::gamemode) || !entities::ents.inrange(ent) || entities::ents[ent]->type != CHECKPOINT)
                     {
-                        if(ent < 0) break;
+                        if(ent < 0)
+                        {
+                            t->resetcheckpoint();
+                            t->cpmillis = ent == -2 ? lastmillis : 0;
+                            break;
+                        }
                         if(getint(p) < 0) break;
                         loopi(2) getint(p);
                         break;
                     }
-                    if(ent >= 0)
+
+                    int laptime = getint(p);
+                    if(laptime >= 0)
                     {
-                        if(entities::ents.inrange(ent) && entities::ents[ent]->type == CHECKPOINT)
+                        t->cplast = laptime;
+                        t->cptime = getint(p);
+                        t->points = getint(p);
+                        t->clearimpulse();
+                        t->resetcheckpoint();
+                        if(showlaptimes >= (t != game::focus ? (t->actortype > A_PLAYER ? 3 : 2) : 1))
                         {
-                            if(t != game::player1 && !t->ai && (!t->cpmillis || entities::ents[ent]->attrs[6] == CP_START)) t->cpmillis = lastmillis;
-                            if((checkpointannounce&(t != game::focus ? 2 : 1) || (m_ra_gauntlet(game::gamemode, game::mutators) && checkpointannounce&4)) && checkpointannouncefilter&(1<<entities::ents[ent]->attrs[6]))
-                            {
-                                switch(entities::ents[ent]->attrs[6])
-                                {
-                                    case CP_START: entities::announce(S_V_START, t, PLCHAN_ANNOUNCE); break;
-                                    case CP_FINISH: case CP_LAST: entities::announce(S_V_COMPLETE, t, PLCHAN_ANNOUNCE); break;
-                                    default: entities::announce(S_V_CHECKPOINT, t, PLCHAN_ANNOUNCE); break;
-                                }
-                            }
-                            entities::execlink(t, ent, false);
+                            defformatstring(best, "%s", timestr(t->cptime, 1));
+                            conoutf(colourwhite, "%s completed in \fs\fg%s\fS (best: \fs\fy%s\fS, laps: \fs\fc%d\fS)", game::colourname(t), timestr(t->cplast, 1), best, t->points);
                         }
-                        int laptime = getint(p);
-                        if(laptime >= 0)
-                        {
-                            t->cplast = laptime;
-                            t->cptime = getint(p);
-                            t->points = getint(p);
-                            t->cpmillis = 0;
-                            t->clearimpulse();
-                            if(showlaptimes >= (t != game::focus ? (t->actortype > A_PLAYER ? 3 : 2) : 1))
-                            {
-                                defformatstring(best, "%s", timestr(t->cptime, 1));
-                                conoutf(colourwhite, "%s completed in \fs\fg%s\fS (best: \fs\fy%s\fS, laps: \fs\fc%d\fS)", game::colourname(t), timestr(t->cplast, 1), best, t->points);
-                            }
-                        }
-                        else loopk(IM_MAX) if(impulsecheckpoint&(1<<k)) t->impulse[k] = 0; // checkpoint reset
                     }
                     else
                     {
-                        t->checkpoint = -1;
-                        t->cpmillis = ent == -2 ? lastmillis : 0;
+                        if(t != game::player1 && !t->ai) t->setcheckpoint(ent, lastmillis, entities::ents[ent]->attrs[6]);
+                        loopk(IM_MAX) if(impulsecheckpoint&(1<<k)) t->impulse[k] = 0; // checkpoint reset
                     }
+
+                    if((checkpointannounce&(t != game::focus ? 2 : 1) || (m_ra_gauntlet(game::gamemode, game::mutators) && checkpointannounce&4)) && checkpointannouncefilter&(1<<entities::ents[ent]->attrs[6])) switch(entities::ents[ent]->attrs[6])
+                    {
+                        case CP_START: entities::announce(S_V_START, t, PLCHAN_ANNOUNCE); break;
+                        case CP_FINISH: case CP_LAST: entities::announce(S_V_COMPLETE, t, PLCHAN_ANNOUNCE); break;
+                        default: entities::announce(S_V_CHECKPOINT, t, PLCHAN_ANNOUNCE); break;
+                    }
+                    entities::execlink(t, ent, false);
                 }
 
                 case N_SCORE:
