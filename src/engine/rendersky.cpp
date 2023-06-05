@@ -57,7 +57,7 @@ Texture *loadskyoverlay(const char *basename)
 #define MPVCYLINDER(prefix, name, type) \
     MPVLAYER(prefix, name, type); \
     FVAR(IDF_MAP, prefix##dist##name, FVAR_NONZERO, 1, 1); \
-    VAR(IDF_MAP, prefix##repeat##name, 1, 2, 64);
+    VAR(IDF_MAP, prefix##repeat##name, -64, 2, 64);
 
 #define MPVVARS(name, type) \
     CVAR(IDF_MAP, ambient##name, 0x191919); \
@@ -341,8 +341,9 @@ void drawenvoverlay(Texture *overlay, float height, int subdiv, float fade, floa
 
 void drawenvcylinder(Texture *overlay, float height, int subdiv, int repeat, float fade, float scale, float dist, const bvec &colour, float blend, float tx = 0, float ty = 0)
 {
-    int w = farplane / 2, divisor = subdiv * repeat;
-    float section = 1.0f / divisor * repeat, z = w * height, xy = w * dist,
+    bool invertx = repeat < 0, inverty = height < 0.f;
+    int reps = clamp(abs(repeat), 1, 64), divisor = subdiv * reps, w = farplane / 2;
+    float section = 1.0f / subdiv, z = w * fabs(height), xy = w * dist,
           tsy1 = 0.5f * (1 - fade) / scale, tsy2 = 0.5f * fade / scale,
           psz1 = z * (1 - fade), psz2 = z * fade;
     settexture(overlay);
@@ -353,25 +354,26 @@ void drawenvcylinder(Texture *overlay, float height, int subdiv, int repeat, flo
     {
         vec color = colour.tocolor();
         gle::begin(GL_TRIANGLE_STRIP);
-        float zpos = 0, zsize = 0, typos = 0, tysize = 0;
+        float zpos = 0, zsize = 0, typos = ty, tysize = 0;
         switch(k)
         {
             case 0: default:
                 zpos = 0;
-                typos = ty;
                 zsize = psz1 * 0.5f;
                 tysize = tsy1 * 0.5f;
                 break;
             case 1:
                 zpos = psz1 * 0.5f + psz2 * 0.5f;
-                typos = ty + tsy1 * 0.5f + tsy2 * 0.5f;
                 zsize = psz2 * 0.5f;
+                if(inverty) typos -= tsy1 * 0.5f - tsy2 * 0.5f;
+                else typos += tsy1 * 0.5f + tsy2 * 0.5f;
                 tysize = tsy2 * 0.5f;
                 break;
             case 2:
                 zpos = 0 - psz1 * 0.5f - psz2 * 0.5f;
-                typos = ty - tsy1 * 0.5f - tsy2 * 0.5f;
                 zsize = psz2 * 0.5f;
+                if(inverty) typos += tsy1 * 0.5f + tsy2 * 0.5f;
+                else typos -= tsy1 * 0.5f - tsy2 * 0.5f;
                 tysize = tsy2 * 0.5f;
                 break;
         }
@@ -379,9 +381,9 @@ void drawenvcylinder(Texture *overlay, float height, int subdiv, int repeat, flo
         loopi(divisor+1)
         {
             vec p(1, 1, 0);
-            p.rotate_around_z((-2.0f * M_PI * i) / divisor).mul(xy);
+            p.rotate_around_z(((invertx ? -2.0f : 2.0f) * M_PI * i) / divisor).mul(xy);
             float zpos1 = zpos + zsize, zpos2 = zpos - zsize,
-                  txpos = tx + section * i, typos1 = typos + tysize, typos2 = typos - tysize;
+                  txpos = tx + section * i, typos1 = inverty ? typos + tysize : typos - tysize, typos2 = inverty ? typos - tysize : typos + tysize;
             loopj(2)
             {
                 gle::attribf(p.x, p.y, zpos1);
