@@ -1804,7 +1804,7 @@ namespace ai
             {
                 int idx = showwaypointsradius ? close[i] : i;
                 waypoint &w = waypoints[idx];
-                if(!w.haslinks()) part_create(PART_ENTITY, 0.25f, w.o, showwaypointscolour, 1.f);
+                if(!w.haslinks()) part_create(PART_ENTITY, 1, w.o, showwaypointscolour, 1.f);
                 else loopj(MAXWAYPOINTLINKS)
                 {
                      int link = w.links[j];
