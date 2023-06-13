@@ -5756,8 +5756,9 @@ namespace UI
             changedraw(CHANGE_SHADER);
 
             int sx1, sy1, sx2, sy2;
+            bool hasclipstack = clipstack.length() > 0;
             window->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
-            modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch+offsetpitch, roll, fov, false, clipstack.length() > 0, translate);
+            modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch+offsetpitch, roll, fov, false, hasclipstack, translate);
             model *m = loadmodel(name);
             if(m)
             {
@@ -5769,7 +5770,7 @@ namespace UI
                 mdl.yaw += offsetyaw;
                 rendermodel(name, mdl);
             }
-            if(clipstack.length()) clipstack.last().scissor();
+            if(hasclipstack) clipstack.last().scissor();
             modelpreview::end(skycol, suncol, sundir, excol, exdir);
 
             Object::draw(world, sx, sy);
@@ -5831,13 +5832,14 @@ namespace UI
             changedraw(CHANGE_SHADER);
 
             int sx1, sy1, sx2, sy2;
+            bool hasclipstack = clipstack.length() > 0;
             window->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
 
-            modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch+offsetpitch, roll, fov, false, clipstack.length() > 0, translate);
+            modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch+offsetpitch, roll, fov, false, hasclipstack, translate);
 
             colors[0].a = uchar(colors[0].a*blend);
             game::renderplayerpreview(scale, colors[0].tocolor4(), actions, yaw, offsetyaw);
-            if(clipstack.length()) clipstack.last().scissor();
+            if(hasclipstack) clipstack.last().scissor();
             // Steal the matrix for calculating positions on the model
             lastmatrix = camprojmatrix;
 
@@ -5913,10 +5915,11 @@ namespace UI
             changedraw(CHANGE_SHADER);
 
             int sx1, sy1, sx2, sy2;
+            bool hasclipstack = clipstack.length() > 0;
             window->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
-            modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch, roll, fov, false, clipstack.length() > 0);
+            modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch, roll, fov, false, hasclipstack);
             previewprefab(name, colors[0].tocolor(), blend*(colors[0].a/255.f), yaw, offsetyaw);
-            if(clipstack.length()) clipstack.last().scissor();
+            if(hasclipstack) clipstack.last().scissor();
             modelpreview::end(skycol, suncol, sundir, excol, exdir);
         }
     };
