@@ -53,7 +53,7 @@ namespace cdpi
         extern char *steamusername, *steamuserid, *steamserverid;
 
         extern bool clientready();
-        extern bool clientauthticket(char *token, uint *tokenlen);
+        extern bool clientauthticket(char *token, uint *tokenlen, ENetAddress *addr = NULL);
 
         extern int serverauthmode();
         extern bool serverparseticket(const char *steamid, const uchar *token, uint tokenlen);

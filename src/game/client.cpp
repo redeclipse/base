@@ -3707,7 +3707,7 @@ namespace client
                 {
                     char token[1024];
                     uint tokenlen;
-                    if(cdpi::steam::clientauthticket(token, &tokenlen))
+                    if(cdpi::steam::clientauthticket(token, &tokenlen, connpeer ? &connpeer->address: NULL))
                     {
                         packetbuf sc(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
                         putint(sc, N_STEAMANS);

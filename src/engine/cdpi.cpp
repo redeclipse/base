@@ -266,11 +266,15 @@ namespace cdpi
             clientcancelticket();
         }
 
-        bool clientauthticket(char *token, uint *tokenlen)
+        bool clientauthticket(char *token, uint *tokenlen, ENetAddress *addr)
         {
             if(!(curapis&SWCLIENT)) return false;
             clientcancelticket();
-            authticket = SteamAPI_ISteamUser_GetAuthSessionTicket(user, token, 1024, tokenlen);
+            if(!addr) return false;
+
+            SteamNetworkingIdentity snid;
+            SteamAPI_SteamNetworkingIdentity_SetIPv4Addr(&snid, addr->host, addr->port);
+            authticket = SteamAPI_ISteamUser_GetAuthSessionTicket(user, token, 1024, tokenlen, &snid);
             conoutf(colourwhite, "Generating Auth Ticket: %u (%u)", authticket, *tokenlen);
             return authticket != k_HAuthTicketInvalid;
         }
@@ -307,7 +311,7 @@ namespace cdpi
             SteamAPI_ISteamGameServer_EndAuthSession(serv, sid);
         }
 #else
-        bool clientauthticket(char *token, uint *tokenlen) { return false; }
+        bool clientauthticket(char *token, uint *tokenlen, ENetAddress *addr) { return false; }
         int serverauthmode() { return 0; }
         bool serverparseticket(const char *steamid, const uchar *token, uint tokenlen) { return false; }
         void servercancelticket(const char *steamid) {}
