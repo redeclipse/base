@@ -194,7 +194,7 @@ semupdate_steam() {
     chmod --verbose +x "linux32/steamcmd" || return 1
     export LD_LIBRARY_PATH="${SEMUPDATE_DEPOT}/linux32:${LD_LIBRARY_PATH}"
     STEAM_ARGS="+login redeclipsenet ${STEAM_TOKEN} +run_app_build_http app_build.vdf +quit"
-    if [ "${STEAM_GUARD}" != "0" ]; then STEAM_ARGS="+set_steam_guard_code ${STEAM_GUARD} ${STEAM_ARGS}"; fi
+    if [ -n "${STEAM_GUARD}" ] && [ "${STEAM_GUARD}" != "0" ]; then STEAM_ARGS="+set_steam_guard_code ${STEAM_GUARD} ${STEAM_ARGS}"; fi
     echo "--------------------------------------------------------------------------------"
 
     semupdate_steamdbg 0 || return 1
