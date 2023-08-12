@@ -5,7 +5,7 @@ SEMABUILD_BUILD="${HOME}/deploy"
 SEMABUILD_SCP='scp -BC -o StrictHostKeyChecking=no'
 SEMABUILD_TARGET='qreeves@icculus.org:/webspace/redeclipse.net/files'
 SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get'
-SEMABUILD_MODULES=`curl --connect-timeout 30 -L -k -f https://raw.githubusercontent.com/redeclipse/deploy/master/${BRANCH_NAME}/mods.txt` || exit 1
+SEMABUILD_MODULES=`curl --connect-timeout 30 -L -k -f https://raw.githubusercontent.com/redeclipse/deploy/master/${SEMAPHORE_GIT_BRANCH}/mods.txt` || exit 1
 SEMABUILD_ALLMODS="base ${SEMABUILD_MODULES}"
 SEMABUILD_DIST="bz2 combined win zip mac"
 
@@ -51,7 +51,7 @@ SEMABUILD_VERSION="${SEMABUILD_VERSION_MAJOR}.${SEMABUILD_VERSION_MINOR}.${SEMAB
 
 for i in ${SEMABUILD_DIST}; do
     pushd "${SEMABUILD_BUILD}/src" || exit 1
-    make APPBRANCH="${BRANCH_NAME}" dist-${i} dist-torrent-${i} || exit 1
+    make APPBRANCH="${SEMAPHORE_GIT_BRANCH}" dist-${i} dist-torrent-${i} || exit 1
     popd || exit 1
     pushd "${SEMABUILD_BUILD}" || exit 1
     mkdir -p releases || exit 1

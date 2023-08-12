@@ -3,7 +3,7 @@
 SEMUPDATE_PWD=`pwd`
 SEMUPDATE_BUILD="${HOME}/deploy"
 SEMUPDATE_DEPOT="${HOME}/depot"
-SEMUPDATE_DIR="${SEMUPDATE_BUILD}/${BRANCH_NAME}"
+SEMUPDATE_DIR="${SEMUPDATE_BUILD}/${SEMAPHORE_GIT_BRANCH}"
 SEMUPDATE_APT='DEBIAN_FRONTEND=noninteractive apt-get'
 SEMUPDATE_DEST="https://${GITHUB_TOKEN}:x-oauth-basic@github.com/redeclipse/deploy.git"
 SEMUPDATE_APPIMAGE="https://github.com/redeclipse/appimage-builder.git"
@@ -17,12 +17,12 @@ SEMUPDATE_VERSION_PATCH=`sed -n 's/.define VERSION_PATCH \([0-9]*\)/\1/p' src/en
 SEMUPDATE_VERSION="${SEMUPDATE_VERSION_MAJOR}.${SEMUPDATE_VERSION_MINOR}.${SEMUPDATE_VERSION_PATCH}"
 SEMUPDATE_STEAM_APPID=`sed -n 's/.define VERSION_STEAM_APPID \([0-9]*\)/\1/p' src/engine/version.h`
 SEMUPDATE_STEAM_DEPOT=`sed -n 's/.define VERSION_STEAM_DEPOT \([0-9]*\)/\1/p' src/engine/version.h`
-SEMUPDATE_DESCRIPTION="${BRANCH_NAME}:${SEMAPHORE_BUILD_NUMBER} from ${REVISION} for v${SEMUPDATE_VERSION}"
-SEMUPDATE_BRANCH="${BRANCH_NAME}"
+SEMUPDATE_DESCRIPTION="${SEMAPHORE_GIT_BRANCH}:${SEMAPHORE_WORKFLOW_NUMBER} from ${SEMAPHORE_GIT_SHA} for v${SEMUPDATE_VERSION}"
+SEMUPDATE_BRANCH="${SEMAPHORE_GIT_BRANCH}"
 if [ "${SEMUPDATE_BRANCH}" = "master" ]; then SEMUPDATE_BRANCH="devel"; fi
 
 semupdate_setup() {
-    echo "########## SETTING UP ${BRANCH_NAME} ##########"
+    echo "########## SETTING UP ${SEMAPHORE_GIT_BRANCH} ##########"
     git config --global user.email "noreply@redeclipse.net" || return 1
     git config --global user.name "Red Eclipse" || return 1
     git config --global credential.helper store || return 1
@@ -78,14 +78,14 @@ semupdate_appimage() {
     echo "--------------------------------------------------------------------------------"
 
     echo "########## BUILDING APPIMAGE ##########"
-    export BRANCH="${BRANCH_NAME}"
+    export BRANCH="${SEMAPHORE_GIT_BRANCH}"
     export ARCH=x86_64
-    export COMMIT=${REVISION}
+    export COMMIT=${SEMAPHORE_GIT_SHA}
     export BUILD_SERVER=1
     export BUILD_CLIENT=1
-    export PLATFORM_BUILD=${SEMAPHORE_BUILD_NUMBER}
-    export PLATFORM_BRANCH="${BRANCH_NAME}"
-    export PLATFORM_REVISION="${REVISION}"
+    export PLATFORM_BUILD=${SEMAPHORE_WORKFLOW_NUMBER}
+    export PLATFORM_BRANCH="${SEMAPHORE_GIT_BRANCH}"
+    export PLATFORM_REVISION="${SEMAPHORE_GIT_SHA}"
     export NO_UPDATE=true
     export BUILD="${SEMUPDATE_PWD}"
     bash build-appimages.sh || return 1
@@ -94,7 +94,7 @@ semupdate_appimage() {
     echo "########## DEPLOYING GITHUB RELEASE ##########"
     export GITHUB_TOKEN="${GITHUB_TOKEN}"
     export REPO_SLUG="${SEMUPDATE_APPIMAGE_GH_DEST}"
-    export COMMIT=$(git rev-parse ${REVISION})
+    export COMMIT=$(git rev-parse ${SEMAPHORE_GIT_SHA})
     bash github-release.sh || return 1
     echo "--------------------------------------------------------------------------------"
 
@@ -136,8 +136,16 @@ semupdate_steam() {
     #sudo ${SEMUPDATE_APT} clean || exit 1
 
     mkdir -pv "${SEMUPDATE_DEPOT}" || return 1
-    pushd "${SEMUPDATE_PWD}/src/install/steam" || return 1
+    echo "########## RESTORING CACHE ##########"
+    cache list
+    cache restore .steam || mkdir -pv "${HOME}/.steam" || return 1
+    cache restore Steam || mkdir -pv "${HOME}/Steam" || return 1
+    for i in output package public; do
+        cache restore "${i}" || mkdir -pv "${SEMUPDATE_DEPOT}/${i}" || return 1
+    done
+    echo "--------------------------------------------------------------------------------"
 
+    pushd "${SEMUPDATE_PWD}/src/install/steam" || return 1
     for i in *; do
         if [ ! -d "${i}" ] && [ -e "${i}" ]; then
             sed -e "s/~REPAPPID~/${SEMUPDATE_STEAM_APPID}/g;s/~REPDESC~/${SEMUPDATE_DESCRIPTION}/g;s/~REPBRANCH~/${SEMUPDATE_BRANCH}/g;s/~REPDEPOT~/${SEMUPDATE_STEAM_DEPOT}/g" "${i}" > "${SEMUPDATE_DEPOT}/${i}" || return 1
@@ -146,23 +154,12 @@ semupdate_steam() {
     popd || return 1
     echo "--------------------------------------------------------------------------------"
 
-    echo "########## SYMLINKING CACHE ##########"
-    mkdir -pv "${SEMAPHORE_CACHE_DIR}/Steam-dot" || return 1
-    ln -sv "${SEMAPHORE_CACHE_DIR}/Steam-dot" "${HOME}/.steam" || return 1
-    mkdir -pv "${SEMAPHORE_CACHE_DIR}/Steam" || return 1
-    ln -sv "${SEMAPHORE_CACHE_DIR}/Steam" "${HOME}/Steam" || return 1
-    for i in output package public; do
-        mkdir -pv "${SEMAPHORE_CACHE_DIR}/Steam-${i}" || return 1
-        ln -sv "${SEMAPHORE_CACHE_DIR}/Steam-${i}" "${SEMUPDATE_DEPOT}/${i}" || return 1
-    done
-    echo "--------------------------------------------------------------------------------"
-
     echo "########## ARCHIVING REPOSITORIES ##########"
     for i in ${SEMUPDATE_ALLMODS}; do
         if [ "${i}" = "base" ]; then
             SEMUPDATE_MODDIR="${SEMUPDATE_DEPOT}/content"
             SEMUPDATE_GITDIR="${SEMUPDATE_PWD}"
-            SEMUPDATE_ARCHBR="${BRANCH_NAME}"
+            SEMUPDATE_ARCHBR="${SEMAPHORE_GIT_BRANCH}"
         else
             SEMUPDATE_MODDIR="${SEMUPDATE_DEPOT}/content/data/${i}"
             SEMUPDATE_GITDIR="${SEMUPDATE_PWD}/data/${i}"
@@ -216,6 +213,14 @@ semupdate_steam() {
     echo "--------------------------------------------------------------------------------"
 
     semupdate_steamdbg 1 || return 1
+
+    echo "########## SAVING CACHE ##########"
+    cache store .steam "${HOME}/.steam" || return 1
+    cache store Steam "${HOME}/Steam" || return 1
+    for i in output package public; do
+        cache store "${i}" "${SEMUPDATE_DEPOT}/${i}" || return 1
+    done
+    echo "--------------------------------------------------------------------------------"
 
     popd || return 1
     return 0
