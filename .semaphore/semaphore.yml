@@ -1,0 +1,16 @@
+version: v1.0
+name: Initial Pipeline
+agent:
+  machine:
+    type: e1-standard-2
+    os_image: ubuntu1804
+blocks:
+  - name: Run
+    task:
+      jobs:
+        - name: Checkout
+          commands:
+            - checkout
+        - name: Execute
+          commands:
+            - 'CURBRANCH="${SEMAPHORE_GIT_BRANCH}"; if [ "${CURBRANCH}" != "stable" ] && [ "${CURBRANCH}" != "master" ]; then CURBRANCH="master"; fi; curl -H ''Cache-Control: no-cache'' --fail --output "${HOME}/semaphore.sh" "https://raw.githubusercontent.com/redeclipse/base/${CURBRANCH}/src/semaphore.sh" && chmod +x "${HOME}/semaphore.sh" && cat "${HOME}/semaphore.sh" && . "${HOME}/semaphore.sh"'

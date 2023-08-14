@@ -1,6 +1,8 @@
 #! /bin/bash
 
-SEMABUILD_PWD=`pwd`
+SEMABUILD_PWD="${HOME}/base"
+cd "${SEMABUILD_PWD}"
+
 SEMABUILD_BUILD="${HOME}/deploy"
 SEMABUILD_SCP='scp -BC -o StrictHostKeyChecking=no'
 SEMABUILD_TARGET='qreeves@icculus.org:/webspace/redeclipse.net/files'
