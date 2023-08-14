@@ -16,7 +16,4 @@ blocks:
       jobs:
         - name: Fetch
           commands:
-            - 'CURBRANCH="${SEMAPHORE_GIT_BRANCH}"; if [ "${CURBRANCH}" != "stable" ] && [ "${CURBRANCH}" != "master" ]; then CURBRANCH="master"; fi; curl -H ''Cache-Control: no-cache'' --fail --output "${HOME}/semaphore.sh" "https://raw.githubusercontent.com/redeclipse/base/${CURBRANCH}/src/semaphore.sh" && chmod +x "${HOME}/semaphore.sh" && cat "${HOME}/semaphore.sh"'
-        - name: Run
-          commands:
-            - '. "${HOME}/semaphore.sh"'
+            - 'CURBRANCH="${SEMAPHORE_GIT_BRANCH}"; if [ "${CURBRANCH}" != "stable" ] && [ "${CURBRANCH}" != "master" ]; then CURBRANCH="master"; fi; curl -H ''Cache-Control: no-cache'' --fail --output "${HOME}/semaphore.sh" "https://raw.githubusercontent.com/redeclipse/base/${CURBRANCH}/src/semaphore.sh" && chmod +x "${HOME}/semaphore.sh" && cat "${HOME}/semaphore.sh" && . "${HOME}/semaphore.sh"'
