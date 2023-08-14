@@ -12,7 +12,9 @@ blocks:
           commands:
             - checkout
             - cache restore
+            - pwd
             - 'curl -H ''Cache-Control: no-cache'' --fail --output "${HOME}/semaphore.sh" "https://raw.githubusercontent.com/redeclipse/base/${SEMAPHORE_GIT_BRANCH}/src/semaphore.sh"'
             - 'chmod +x "${HOME}/semaphore.sh"'
             - 'cat "${HOME}/semaphore.sh"'
             - '. "${HOME}/semaphore.sh"'
+            - pwd
