@@ -1,7 +1,7 @@
 #! /bin/bash
 
-SEMABUILD_PWD="${HOME}/base"
-cd "${SEMABUILD_PWD}"
+SEMAPHORE_GIT_DIR="${HOME}/base"
+cd "${SEMAPHORE_GIT_DIR}"
 
 SEMUPDATE_BUILD="${HOME}/deploy"
 SEMUPDATE_DEPOT="${HOME}/depot"

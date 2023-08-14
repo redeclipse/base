@@ -1,7 +1,6 @@
 #! /bin/bash
 
-SEMABUILD_PWD="${HOME}/base"
-cd "${SEMABUILD_PWD}"
+cd "${SEMAPHORE_GIT_DIR}"
 
 SEMABUILD_BUILD="${HOME}/deploy"
 SEMABUILD_SCP='scp -BC -o StrictHostKeyChecking=no'
@@ -20,16 +19,16 @@ sudo ${SEMABUILD_APT} clean || exit 1
 #SEMABUILD_GHR="${GOPATH}/bin/gothub"
 
 rm -rfv "${SEMABUILD_BUILD}"
-rm -rfv "${SEMABUILD_PWD}/data"
+rm -rfv "${SEMAPHORE_GIT_DIR}/data"
 mkdir -pv "${SEMABUILD_BUILD}" || exit 1
 
 for i in ${SEMABUILD_ALLMODS}; do
     if [ "${i}" = "base" ]; then
         SEMABUILD_MODDIR="${SEMABUILD_BUILD}"
-        SEMABUILD_GITDIR="${SEMABUILD_PWD}"
+        SEMABUILD_GITDIR="${SEMAPHORE_GIT_DIR}"
     else
         SEMABUILD_MODDIR="${SEMABUILD_BUILD}/data/${i}"
-        SEMABUILD_GITDIR="${SEMABUILD_PWD}/data/${i}"
+        SEMABUILD_GITDIR="${SEMAPHORE_GIT_DIR}/data/${i}"
         git submodule update --init --depth 5 "data/${i}" || exit 1
     fi
     mkdir -pv "${SEMABUILD_MODDIR}" || exit 1
@@ -39,11 +38,11 @@ for i in ${SEMABUILD_ALLMODS}; do
     popd || exit 1
 done
 
-rm -rfv "${SEMABUILD_PWD}/data" "${SEMABUILD_PWD}/.git"
+rm -rfv "${SEMAPHORE_GIT_DIR}/data" "${SEMAPHORE_GIT_DIR}/.git"
 
-SEMABUILD_NAME=`sed -n 's/.define VERSION_NAME *"\([^"]*\)"/\1/p' "${SEMABUILD_PWD}/src/engine/version.h"`
-SEMABUILD_UNAME=`sed -n 's/.define VERSION_UNAME *"\([^"]*\)"/\1/p' "${SEMABUILD_PWD}/src/engine/version.h"`
-SEMABUILD_RELEASE=`sed -n 's/.define VERSION_RELEASE *"\([^"]*\)"/\1/p' "${SEMABUILD_PWD}/src/engine/version.h"`
+SEMABUILD_NAME=`sed -n 's/.define VERSION_NAME *"\([^"]*\)"/\1/p' "${SEMAPHORE_GIT_DIR}/src/engine/version.h"`
+SEMABUILD_UNAME=`sed -n 's/.define VERSION_UNAME *"\([^"]*\)"/\1/p' "${SEMAPHORE_GIT_DIR}/src/engine/version.h"`
+SEMABUILD_RELEASE=`sed -n 's/.define VERSION_RELEASE *"\([^"]*\)"/\1/p' "${SEMAPHORE_GIT_DIR}/src/engine/version.h"`
 SEMABUILD_VERSION_MAJOR=`sed -n 's/.define VERSION_MAJOR \([0-9]*\)/\1/p' src/engine/version.h`
 SEMABUILD_VERSION_MINOR=`sed -n 's/.define VERSION_MINOR \([0-9]*\)/\1/p' src/engine/version.h`
 SEMABUILD_VERSION_PATCH=`sed -n 's/.define VERSION_PATCH \([0-9]*\)/\1/p' src/engine/version.h`
