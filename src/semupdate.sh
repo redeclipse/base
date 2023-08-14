@@ -1,6 +1,6 @@
 #! /bin/bash
 
-cd "${SEMAPHORE_GIT_DIR}"
+pwd
 
 SEMUPDATE_BUILD="${HOME}/deploy"
 SEMUPDATE_DEPOT="${HOME}/depot"

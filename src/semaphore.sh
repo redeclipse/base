@@ -1,6 +1,6 @@
 #! /bin/bash
 
-cd "${SEMAPHORE_GIT_DIR}"
+pwd
 
 SEMABUILD_BUILD="${HOME}/deploy"
 SEMABUILD_STEAM="${HOME}/depot"
