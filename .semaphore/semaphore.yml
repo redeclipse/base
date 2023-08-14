@@ -15,3 +15,5 @@ blocks:
         commands:
           - checkout
           - cache restore
+          - 'echo "${SEMAPHORE_GIT_DIR}"'
+          - pwd
