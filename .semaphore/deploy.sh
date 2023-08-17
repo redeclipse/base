@@ -7,7 +7,7 @@ SEMUPDATE_DIR="${SEMUPDATE_BUILD}/${SEMAPHORE_GIT_BRANCH}"
 SEMUPDATE_APT='DEBIAN_FRONTEND=noninteractive apt-get'
 SEMUPDATE_APPIMAGE="https://github.com/redeclipse/appimage-builder.git"
 SEMUPDATE_APPIMAGE_GH_DEST="redeclipse/deploy"
-SEMUPDATE_MODULES=`cat "${SEMUPDATE_PWD}/.gitmodules" | grep '\[submodule "[^.]' | sed -e 's/^.submodule..//;s/..$//' | tr "\n" " " | sed -e 's/ $//'`
+SEMUPDATE_MODULES=`cat "${SEMUPDATE_GIT}/.gitmodules" | grep '\[submodule "[^.]' | sed -e 's/^.submodule..//;s/..$//' | tr "\n" " " | sed -e 's/ $//'`
 SEMUPDATE_ALLMODS="base ${SEMUPDATE_MODULES}"
 
 SEMUPDATE_VERSION_MAJOR=`sed -n 's/.define VERSION_MAJOR \([0-9]*\)/\1/p' src/engine/version.h`
@@ -23,7 +23,7 @@ if [ "${SEMUPDATE_BRANCH}" = "master" ]; then SEMUPDATE_BRANCH="devel"; fi
 semupdate_setup() {
     echo "########## SETTING UP ${SEMAPHORE_GIT_BRANCH} ##########"
     rm -rfv "${SEMUPDATE_DIR}" || return 1
-    rm -rfv "${SEMUPDATE_PWD}/data" || return 1
+    rm -rfv "${SEMUPDATE_GIT}/data" || return 1
     mkdir -pv "${SEMUPDATE_DIR}" || return 1
     pushd "${SEMUPDATE_DIR}" || return 1
     artifact pull workflow "windows.zip" || return 1
@@ -61,7 +61,7 @@ semupdate_appimage() {
     export PLATFORM_BRANCH="${SEMAPHORE_GIT_BRANCH}"
     export PLATFORM_REVISION="${SEMAPHORE_GIT_SHA}"
     export NO_UPDATE=true
-    export BUILD="${SEMUPDATE_PWD}"
+    export BUILD="${SEMUPDATE_GIT}"
     bash build-appimages.sh || return 1
     echo "--------------------------------------------------------------------------------"
 
@@ -118,7 +118,7 @@ semupdate_steam() {
     done
     echo "--------------------------------------------------------------------------------"
 
-    pushd "${SEMUPDATE_PWD}/src/install/steam" || return 1
+    pushd "${SEMUPDATE_GIT}/src/install/steam" || return 1
     for i in *; do
         if [ ! -d "${i}" ] && [ -e "${i}" ]; then
             sed -e "s/~REPAPPID~/${SEMUPDATE_STEAM_APPID}/g;s/~REPDESC~/${SEMUPDATE_DESCRIPTION}/g;s/~REPBRANCH~/${SEMUPDATE_BRANCH}/g;s/~REPDEPOT~/${SEMUPDATE_STEAM_DEPOT}/g" "${i}" > "${SEMUPDATE_DEPOT}/${i}" || return 1
@@ -131,11 +131,11 @@ semupdate_steam() {
     for i in ${SEMUPDATE_ALLMODS}; do
         if [ "${i}" = "base" ]; then
             SEMUPDATE_MODDIR="${SEMUPDATE_DEPOT}/content"
-            SEMUPDATE_GITDIR="${SEMUPDATE_PWD}"
+            SEMUPDATE_GITDIR="${SEMUPDATE_GIT}"
             SEMUPDATE_ARCHBR="${SEMAPHORE_GIT_BRANCH}"
         else
             SEMUPDATE_MODDIR="${SEMUPDATE_DEPOT}/content/data/${i}"
-            SEMUPDATE_GITDIR="${SEMUPDATE_PWD}/data/${i}"
+            SEMUPDATE_GITDIR="${SEMUPDATE_GIT}/data/${i}"
             git submodule update --init --depth 5 "data/${i}" || return 1
             pushd "${SEMUPDATE_GITDIR}" || return 1
             SEMUPDATE_ARCHBR=`git rev-parse HEAD`
