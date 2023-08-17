@@ -15,8 +15,8 @@ blocks:
           commands:
             - checkout
             - ls -la "${HOME}"
+            - ls -la "${SEMAPHORE_GIT_DIR}"
             - 'curl -H "Cache-Control: no-cache" --fail --output "${HOME}/build.sh" "https://raw.githubusercontent.com/redeclipse/base/${SEMAPHORE_GIT_BRANCH}/.semaphore/build.sh"'
             - 'chmod +x "${HOME}/build.sh"'
             - 'cat "${HOME}/build.sh"'
             - '. "${HOME}/build.sh"'
-            - ls -la "${HOME}"
