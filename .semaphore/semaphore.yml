@@ -7,14 +7,14 @@ agent:
 blocks:
   - name: Execute
     task:
+    prologue:
+      commands:
+        - cache restore
       jobs:
         - name: Script
           commands:
             - checkout
-            - cache restore
-            - pwd
-            - 'curl -H ''Cache-Control: no-cache'' --fail --output "${HOME}/semaphore.sh" "https://raw.githubusercontent.com/redeclipse/base/${SEMAPHORE_GIT_BRANCH}/src/semaphore.sh"'
-            - 'chmod +x "${HOME}/semaphore.sh"'
-            - 'cat "${HOME}/semaphore.sh"'
-            - '. "${HOME}/semaphore.sh"'
-            - pwd
+            - 'curl -H "Cache-Control: no-cache" --fail --output "${HOME}/build.sh" "https://raw.githubusercontent.com/redeclipse/base/${SEMAPHORE_GIT_BRANCH}/.semaphore/build.sh"'
+            - 'chmod +x "${HOME}/build.sh"'
+            - 'cat "${HOME}/build.sh"'
+            - '. "${HOME}/build.sh"'
