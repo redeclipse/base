@@ -137,7 +137,6 @@ semupdate_steam() {
 
     mkdir -pv "${SEMUPDATE_DEPOT}" || return 1
     echo "########## RESTORING CACHE ##########"
-    cache list
     cache restore .steam || mkdir -pv "${HOME}/.steam" || return 1
     cache restore Steam || mkdir -pv "${HOME}/Steam" || return 1
     for i in output package public; do
