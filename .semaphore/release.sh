@@ -47,7 +47,7 @@ SEMABUILD_VERSION_MINOR=`sed -n 's/.define VERSION_MINOR \([0-9]*\)/\1/p' src/en
 SEMABUILD_VERSION_PATCH=`sed -n 's/.define VERSION_PATCH \([0-9]*\)/\1/p' src/engine/version.h`
 SEMABUILD_VERSION="${SEMABUILD_VERSION_MAJOR}.${SEMABUILD_VERSION_MINOR}.${SEMABUILD_VERSION_PATCH}"
 
-#${SEMABUILD_GHR} release --user "redeclipse" --repo "base" --tag "v${SEMABUILD_VERSION}" --name "v${SEMABUILD_VERSION} (${SEMABUILD_RELEASE})" --description "${SEMABUILD_NAME} v${SEMABUILD_VERSION} (${SEMABUILD_RELEASE}) has been released!" --target "${BRANCH_NAME}" --draft
+#${SEMABUILD_GHR} release --user "redeclipse" --repo "base" --tag "v${SEMABUILD_VERSION}" --name "v${SEMABUILD_VERSION} (${SEMABUILD_RELEASE})" --description "${SEMABUILD_NAME} v${SEMABUILD_VERSION} (${SEMABUILD_RELEASE}) has been released!" --target "${SEMAPHORE_GIT_BRANCH}" --draft
 
 for i in ${SEMABUILD_DIST}; do
     pushd "${SEMABUILD_BUILD}/src" || exit 1

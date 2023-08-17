@@ -226,7 +226,7 @@ semupdate_steam() {
     return 0
 }
 
-if [ "${BRANCH_NAME}" = master ]; then
+if [ "${SEMAPHORE_GIT_BRANCH}" = master ]; then
     semupdate_setup || exit 1
     case $1 in
         appimage)

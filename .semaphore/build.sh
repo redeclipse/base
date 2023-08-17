@@ -99,14 +99,14 @@ semabuild_integrate() {
             echo "${SEMABUILD_HASH}" > "${SEMABUILD_DIR}/${i}.txt"
             if [ "${SEMABUILD_LAST}" = "0" ]; then
                 pushd "${SEMABUILD_BUILD}" || return 1
-                git add "${BRANCH_NAME}/${i}.txt" || return 1
+                git add "${SEMAPHORE_GIT_BRANCH}/${i}.txt" || return 1
                 popd || return 1
             fi
             SEMABUILD_DEPLOY="true"
             if [ "${i}" = "base" ]; then
                 echo "module ${i} checking for source modifications.."
                 SEMABUILD_CHANGES=""
-                SEMABUILD_BINS=`cat "${SEMABUILD_DIR}/bins.txt"` || return 1
+                SEMABUILD_BINS=`cat "${SEMABUILD_DIR}/bins.txt"`
                 if [ "${SEMAPHORE_WORKFLOW_TRIGGERED_BY_HOOK}" = "true" ]; then
                     SEMABUILD_CHANGES="<manual rebuild forced>"
                 else
