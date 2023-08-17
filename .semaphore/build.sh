@@ -19,7 +19,8 @@ semabuild_setup() {
     rm -rfv "${SEMABUILD_BUILD}" || return 1
     rm -rfv "${SEMABUILD_GIT}/data" || return 1
     pushd "${HOME}" || return 1
-    git clone --depth 1 "${SEMABUILD_DEST}" || return 1
+    git clone --verbose --depth 1 "${SEMABUILD_DEST}" "${SEMABUILD_BUILD}" || return 1
+    ls -la "${SEMABUILD_BUILD}"
     popd || return 1
     mkdir -pv "${SEMABUILD_DIR}" || return 1
     return 0
