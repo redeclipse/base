@@ -85,7 +85,7 @@ semabuild_integrate() {
         fi
         pushd "${SEMABUILD_MODDIR}" || return 1
         echo "module ${i} processing.."
-        SEMABUILD_HASH=`git rev-parse HEAD` || return 1
+        SEMABUILD_HASH=`git rev-parse HEAD`
         if [ ! -e "${SEMABUILD_DIR}/${i}.txt" ]; then
             echo "0" > "${SEMABUILD_DIR}/${i}.txt"
         fi
