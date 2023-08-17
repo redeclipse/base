@@ -32,7 +32,7 @@ semabuild_archive() {
     pushd "${SEMABUILD_DIR}" || return 1
     artifact push workflow "windows.zip"
     artifact push workflow "linux.tar.gz"
-    ppopd || return 1
+    popd || return 1
 
     return 0
 }
