@@ -1,11 +1,12 @@
 #! /bin/bash
 
+SEMABUILD_GIT="${HOME}/${SEMAPHORE_GIT_DIR}"
 SEMABUILD_BUILD="${HOME}/deploy"
 SEMABUILD_STEAM="${HOME}/depot"
 SEMABUILD_DIR="${SEMABUILD_BUILD}/${SEMAPHORE_GIT_BRANCH}"
 SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get'
 #SEMABUILD_DEST="https://${GITHUB_TOKEN}:x-oauth-basic@github.com/redeclipse/deploy.git"
-SEMABUILD_MODULES=`cat "${SEMAPHORE_GIT_DIR}/.gitmodules" | grep '\[submodule "[^.]' | sed -e 's/^.submodule..//;s/..$//' | tr "\n" " " | sed -e 's/ $//'`
+SEMABUILD_MODULES=`cat "${SEMABUILD_GIT}/.gitmodules" | grep '\[submodule "[^.]' | sed -e 's/^.submodule..//;s/..$//' | tr "\n" " " | sed -e 's/ $//'`
 SEMABUILD_ALLMODS="base ${SEMABUILD_MODULES}"
 SEMABUILD_DEPLOY="false"
 
@@ -16,7 +17,7 @@ semabuild_setup() {
     #git config --global credential.helper store || return 1
     #echo "https://${GITHUB_TOKEN}:x-oauth-basic@github.com" > "${HOME}/.git-credentials"
     rm -rf "${SEMABUILD_BUILD}" || return 1
-    rm -rf "${SEMAPHORE_GIT_DIR}/data" || return 1
+    rm -rf "${SEMABUILD_GIT}/data" || return 1
     pushd "${HOME}" || return 1
     git clone --depth 1 "${SEMABUILD_DEST}" || return 1
     popd || return 1
@@ -75,9 +76,9 @@ semabuild_build() {
 semabuild_integrate() {
     for i in ${SEMABUILD_ALLMODS}; do
         if [ "${i}" = "base" ]; then
-            SEMABUILD_MODDIR="${SEMAPHORE_GIT_DIR}"
+            SEMABUILD_MODDIR="${SEMABUILD_GIT}"
         else
-            SEMABUILD_MODDIR="${SEMAPHORE_GIT_DIR}/data/${i}"
+            SEMABUILD_MODDIR="${SEMABUILD_GIT}/data/${i}"
             echo "module ${i} updating.."
             git submodule update --init "data/${i}" || return 1
         fi

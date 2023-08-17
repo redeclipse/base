@@ -1,7 +1,6 @@
 #! /bin/bash
 
-pwd
-
+SEMUPDATE_GIT="${HOME}/${SEMAPHORE_GIT_DIR}"
 SEMABUILD_BUILD="${HOME}/deploy"
 SEMABUILD_SCP='scp -BC -o StrictHostKeyChecking=no'
 SEMABUILD_TARGET='qreeves@icculus.org:/webspace/redeclipse.net/files'
@@ -19,30 +18,30 @@ sudo ${SEMABUILD_APT} clean || exit 1
 #SEMABUILD_GHR="${GOPATH}/bin/gothub"
 
 rm -rfv "${SEMABUILD_BUILD}"
-rm -rfv "${SEMAPHORE_GIT_DIR}/data"
+rm -rfv "${SEMUPDATE_GIT}/data"
 mkdir -pv "${SEMABUILD_BUILD}" || exit 1
 
 for i in ${SEMABUILD_ALLMODS}; do
     if [ "${i}" = "base" ]; then
         SEMABUILD_MODDIR="${SEMABUILD_BUILD}"
-        SEMABUILD_GITDIR="${SEMAPHORE_GIT_DIR}"
+        SEMUPDATE_GITDIR="${SEMUPDATE_GIT}"
     else
         SEMABUILD_MODDIR="${SEMABUILD_BUILD}/data/${i}"
-        SEMABUILD_GITDIR="${SEMAPHORE_GIT_DIR}/data/${i}"
+        SEMUPDATE_GITDIR="${SEMUPDATE_GIT}/data/${i}"
         git submodule update --init --depth 5 "data/${i}" || exit 1
     fi
     mkdir -pv "${SEMABUILD_MODDIR}" || exit 1
-    pushd "${SEMABUILD_GITDIR}" || exit 1
+    pushd "${SEMUPDATE_GITDIR}" || exit 1
     SEMABUILD_ARCHBR=`git rev-parse HEAD`
     (git archive --verbose ${SEMABUILD_ARCHBR} | tar -x -C "${SEMABUILD_MODDIR}") || exit 1
     popd || exit 1
 done
 
-rm -rfv "${SEMAPHORE_GIT_DIR}/data" "${SEMAPHORE_GIT_DIR}/.git"
+rm -rfv "${SEMUPDATE_GIT}/data" "${SEMUPDATE_GIT}/.git"
 
-SEMABUILD_NAME=`sed -n 's/.define VERSION_NAME *"\([^"]*\)"/\1/p' "${SEMAPHORE_GIT_DIR}/src/engine/version.h"`
-SEMABUILD_UNAME=`sed -n 's/.define VERSION_UNAME *"\([^"]*\)"/\1/p' "${SEMAPHORE_GIT_DIR}/src/engine/version.h"`
-SEMABUILD_RELEASE=`sed -n 's/.define VERSION_RELEASE *"\([^"]*\)"/\1/p' "${SEMAPHORE_GIT_DIR}/src/engine/version.h"`
+SEMABUILD_NAME=`sed -n 's/.define VERSION_NAME *"\([^"]*\)"/\1/p' "${SEMUPDATE_GIT}/src/engine/version.h"`
+SEMABUILD_UNAME=`sed -n 's/.define VERSION_UNAME *"\([^"]*\)"/\1/p' "${SEMUPDATE_GIT}/src/engine/version.h"`
+SEMABUILD_RELEASE=`sed -n 's/.define VERSION_RELEASE *"\([^"]*\)"/\1/p' "${SEMUPDATE_GIT}/src/engine/version.h"`
 SEMABUILD_VERSION_MAJOR=`sed -n 's/.define VERSION_MAJOR \([0-9]*\)/\1/p' src/engine/version.h`
 SEMABUILD_VERSION_MINOR=`sed -n 's/.define VERSION_MINOR \([0-9]*\)/\1/p' src/engine/version.h`
 SEMABUILD_VERSION_PATCH=`sed -n 's/.define VERSION_PATCH \([0-9]*\)/\1/p' src/engine/version.h`
