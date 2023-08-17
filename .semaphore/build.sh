@@ -7,6 +7,8 @@ SEMABUILD_MODULES=`cat "${SEMABUILD_GIT}/.gitmodules" | grep '\[submodule "[^.]'
 SEMABUILD_ALLMODS="base ${SEMABUILD_MODULES}"
 
 SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get'
+SEMABUILD_FILEWIN="windows_${SEMAPHORE_WORKFLOW_NUMBER}.zip"
+SEMABUILD_FILENIX="linux_${SEMAPHORE_WORKFLOW_NUMBER}.tar.gz"
 
 semabuild_setup() {
     echo "setting up ${SEMAPHORE_GIT_BRANCH}.."
@@ -20,12 +22,19 @@ semabuild_archive() {
     echo "archiving ${SEMAPHORE_GIT_BRANCH}.."
 
     pushd "${SEMABUILD_DIR}/windows" || return 1
-    zip -r "${SEMABUILD_DIR}/windows.zip" . || return 1
+    zip -r "${SEMABUILD_DIR}/${SEMABUILD_FILEWIN}" . || return 1
     popd || return 1
+
     pushd "${SEMABUILD_DIR}/linux" || return 1
-    tar -zcvf "${SEMABUILD_DIR}/linux.tar.gz" . || return 1
+    tar -zcvf "${SEMABUILD_DIR}/${SEMABUILD_FILENIX}" . || return 1
     popd || return 1
+
     rm -rfv "${SEMABUILD_DIR}/windows" "${SEMABUILD_DIR}/linux" || return 1
+
+    pushd "${SEMABUILD_DIR}" || return 1
+    artifact push project "${SEMABUILD_FILEWIN}"
+    artifact push project "${SEMABUILD_FILENIX}"
+    ppopd || return 1
 
     return 0
 }
