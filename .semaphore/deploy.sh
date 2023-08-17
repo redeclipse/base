@@ -158,7 +158,6 @@ semupdate_steam() {
     echo "steam" > "${SEMUPDATE_DEPOT}/content/branch.txt" || return 1
     unzip -o "${SEMUPDATE_DIR}/windows.zip" -d "${SEMUPDATE_DEPOT}/content" || return 1
     tar --gzip --extract --verbose --overwrite --file="${SEMUPDATE_DIR}/linux.tar.gz" --directory="${SEMUPDATE_DEPOT}/content"
-    tar --gzip --extract --verbose --overwrite --file="${SEMUPDATE_DIR}/macos.tar.gz" --directory="${SEMUPDATE_DEPOT}/content"
     echo "--------------------------------------------------------------------------------"
 
     echo "########## SETTING UP STEAMCMD ##########"
