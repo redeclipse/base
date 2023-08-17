@@ -1,11 +1,10 @@
 #! /bin/bash
 
 SEMUPDATE_GIT="${HOME}/${SEMAPHORE_GIT_DIR}"
-SEMUPDATE_BUILD="${HOME}/deploy"
+SEMUPDATE_DIR="${HOME}/deploy"
 SEMUPDATE_DEPOT="${HOME}/depot"
 SEMUPDATE_DIR="${SEMUPDATE_BUILD}/${SEMAPHORE_GIT_BRANCH}"
 SEMUPDATE_APT='DEBIAN_FRONTEND=noninteractive apt-get'
-SEMUPDATE_DEST="https://${GITHUB_TOKEN}:x-oauth-basic@github.com/redeclipse/deploy.git"
 SEMUPDATE_APPIMAGE="https://github.com/redeclipse/appimage-builder.git"
 SEMUPDATE_APPIMAGE_GH_DEST="redeclipse/deploy"
 SEMUPDATE_MODULES=`cat "${SEMUPDATE_PWD}/.gitmodules" | grep '\[submodule "[^.]' | sed -e 's/^.submodule..//;s/..$//' | tr "\n" " " | sed -e 's/ $//'`
@@ -23,16 +22,13 @@ if [ "${SEMUPDATE_BRANCH}" = "master" ]; then SEMUPDATE_BRANCH="devel"; fi
 
 semupdate_setup() {
     echo "########## SETTING UP ${SEMAPHORE_GIT_BRANCH} ##########"
-    git config --global user.email "noreply@redeclipse.net" || return 1
-    git config --global user.name "Red Eclipse" || return 1
-    git config --global credential.helper store || return 1
-    echo "https://${GITHUB_TOKEN}:x-oauth-basic@github.com" > "${HOME}/.git-credentials"
-    rm -rf "${SEMUPDATE_BUILD}" || return 1
-    rm -rf "${SEMUPDATE_PWD}/data" || return 1
-    pushd "${HOME}" || return 1
-    git clone --depth 1 "${SEMUPDATE_DEST}" || return 1
-    popd || return 1
+    rm -rfv "${SEMUPDATE_DIR}" || return 1
+    rm -rfv "${SEMUPDATE_PWD}/data" || return 1
     mkdir -pv "${SEMUPDATE_DIR}" || return 1
+    pushd "${SEMUPDATE_DIR}" || return 1
+    artifact pull workflow "windows.zip" || return 1
+    artifact pull workflow "linux.tar.gz" || return 1
+    popd || return 1
     for i in ${SEMUPDATE_ALLMODS}; do
         if [ "${i}" != "base" ]; then
             git submodule update --init --depth 5 "data/${i}" || return 1
@@ -40,28 +36,6 @@ semupdate_setup() {
     done
     echo "--------------------------------------------------------------------------------"
     return 0
-}
-
-semupdate_wait() {
-    pushd "${SEMUPDATE_BUILD}" || return 1
-    SEMUPDATE_CURPRC=1
-    echo "Waiting for macOS build to complete.." # Will wait up to 15 minutes before failing
-    for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do
-        SEMUPDATE_CURBIN=`cat "${SEMUPDATE_DIR}/bins.txt"`
-        SEMUPDATE_CURMAC=`cat "${SEMUPDATE_DIR}/macos.txt"`
-        echo ""
-        echo "Binaries: ${SEMUPDATE_CURBIN} macOS: ${SEMUPDATE_CURMAC}"
-        if [ "${SEMUPDATE_CURBIN}" != "${SEMUPDATE_CURMAC}" ]; then
-            echo "[${i}] Sleep for 30 seconds.."
-            sleep 30s || return 1
-            git pull || return 1
-        else
-            SEMUPDATE_CURPRC=0
-            break
-        fi
-    done
-    popd || return 1
-    return ${SEMUPDATE_CURPRC}
 }
 
 semupdate_appimage() {

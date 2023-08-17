@@ -30,8 +30,8 @@ semabuild_archive() {
     rm -rfv "${SEMABUILD_DIR}/windows" "${SEMABUILD_DIR}/linux" || return 1
 
     pushd "${SEMABUILD_DIR}" || return 1
-    artifact push workflow "windows.zip"
-    artifact push workflow "linux.tar.gz"
+    artifact push workflow "windows.zip" || return 1
+    artifact push workflow "linux.tar.gz" || return 1
     popd || return 1
 
     return 0

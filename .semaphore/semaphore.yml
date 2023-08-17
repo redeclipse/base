@@ -7,9 +7,6 @@ agent:
 blocks:
   - name: Execute
     task:
-      prologue:
-        commands:
-          - cache restore
       jobs:
         - name: Script
           commands:
