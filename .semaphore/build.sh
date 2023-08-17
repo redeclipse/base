@@ -10,6 +10,7 @@ SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get'
 
 semabuild_setup() {
     echo "setting up ${SEMAPHORE_GIT_BRANCH}.."
+    rm -rfv "${SEMABUILD_PWD}/data" || return 1
     mkdir -pv "${SEMABUILD_DIR}" || return 1
 
     return 0
@@ -94,7 +95,6 @@ semabuild_deploy() {
 
 semabuild_setup || exit 1
 semabuild_process || exit 1
-if [ "${SEMABUILD_DEPLOY}" = "true" ]; then
-    semabuild_deploy || exit 1
-fi
+semabuild_deploy || exit 1
+
 echo "done."
