@@ -3,7 +3,6 @@
 SEMUPDATE_GIT="${HOME}/${SEMAPHORE_GIT_DIR}"
 SEMUPDATE_DIR="${HOME}/deploy"
 SEMUPDATE_DEPOT="${HOME}/depot"
-SEMUPDATE_DIR="${SEMUPDATE_BUILD}/${SEMAPHORE_GIT_BRANCH}"
 SEMUPDATE_APT='DEBIAN_FRONTEND=noninteractive apt-get'
 SEMUPDATE_APPIMAGE="https://github.com/redeclipse/appimage-builder.git"
 SEMUPDATE_APPIMAGE_GH_DEST="redeclipse/deploy"
@@ -22,18 +21,23 @@ if [ "${SEMUPDATE_BRANCH}" = "master" ]; then SEMUPDATE_BRANCH="devel"; fi
 
 semupdate_setup() {
     echo "########## SETTING UP ${SEMAPHORE_GIT_BRANCH} ##########"
+
     rm -rfv "${SEMUPDATE_DIR}" || return 1
     rm -rfv "${SEMUPDATE_GIT}/data" || return 1
     mkdir -pv "${SEMUPDATE_DIR}" || return 1
+
+    echo "Getting artifacts..."
     pushd "${SEMUPDATE_DIR}" || return 1
     artifact pull workflow "windows.zip" || return 1
     artifact pull workflow "linux.tar.gz" || return 1
     popd || return 1
+
     for i in ${SEMUPDATE_ALLMODS}; do
         if [ "${i}" != "base" ]; then
             git submodule update --init --depth 5 "data/${i}" || return 1
         fi
     done
+
     echo "--------------------------------------------------------------------------------"
     return 0
 }
