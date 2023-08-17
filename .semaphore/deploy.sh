@@ -89,11 +89,6 @@ semupdate_steamdbg() {
     find "${HOME}" -maxdepth 1 -printf "%c | %M | %u:%g | %Y | %p | %l\n" || return 1
     echo "--------------------------------------------------------------------------------"
 
-    echo "########## CACHE DIRECTORY LISTING ##########"
-    date || return 1
-    find "${SEMAPHORE_CACHE_DIR}" -printf "%c | %M | %u:%g | %Y | %p | %l\n" || return 1
-    echo "--------------------------------------------------------------------------------"
-
     echo "########## FREE DISK SPACE CHECK ##########"
     df -h || return 1
     echo "--------------------------------------------------------------------------------"
