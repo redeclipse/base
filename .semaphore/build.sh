@@ -16,8 +16,8 @@ semabuild_setup() {
     #git config --global user.name "Red Eclipse" || return 1
     #git config --global credential.helper store || return 1
     #echo "https://${GITHUB_TOKEN}:x-oauth-basic@github.com" > "${HOME}/.git-credentials"
-    rm -rf "${SEMABUILD_BUILD}" || return 1
-    rm -rf "${SEMABUILD_GIT}/data" || return 1
+    rm -rfv "${SEMABUILD_BUILD}" || return 1
+    rm -rfv "${SEMABUILD_GIT}/data" || return 1
     pushd "${HOME}" || return 1
     git clone --depth 1 "${SEMABUILD_DEST}" || return 1
     popd || return 1
@@ -58,7 +58,7 @@ semabuild_build() {
     echo "building ${SEMAPHORE_GIT_BRANCH}.."
 
     # remove now irrelevant cache
-    rm -rf "${SEMAPHORE_CACHE_DIR}/sys_archives" 2> /dev/null
+    rm -rfv "${SEMAPHORE_CACHE_DIR}/sys_archives" 2> /dev/null
 
     src/buildindocker.sh \
         -c "${SEMAPHORE_CACHE_DIR}" \
