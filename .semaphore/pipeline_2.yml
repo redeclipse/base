@@ -15,3 +15,5 @@ blocks:
             - 'chmod +x "${HOME}/deploy.sh"'
             - 'cat "${HOME}/deploy.sh"'
             - '. "${HOME}/deploy.sh" steam'
+      secrets:
+        - name: Steam Token
