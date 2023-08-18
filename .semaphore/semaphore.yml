@@ -8,10 +8,10 @@ auto_cancel:
   running:
     when: "true"
 blocks:
-  - name: Execute
+  - name: Construction
     task:
       jobs:
-        - name: Script
+        - name: Build
           commands:
             - checkout
             - ls -la
@@ -22,6 +22,6 @@ blocks:
             - '. "${HOME}/build.sh"'
 promotions:
   - name: Deploy
-    pipeline_file: pipeline_2.yml
+    pipeline_file: deploy.yml
     auto_promote:
       when: branch = 'master' AND result = 'passed'

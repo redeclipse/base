@@ -1,14 +1,14 @@
 version: v1.0
-name: Pipeline 2
+name: Deploy Pipeline
 agent:
   machine:
     type: e1-standard-2
-    os_image: ubuntu2004
+    os_image: ubuntu1804
 blocks:
-  - name: Execute
+  - name: Deployment
     task:
       jobs:
-        - name: Script
+        - name: Steam Depot
           commands:
             - checkout
             - 'curl -H "Cache-Control: no-cache" --fail --output "${HOME}/deploy.sh" "https://raw.githubusercontent.com/redeclipse/base/${SEMAPHORE_GIT_BRANCH}/.semaphore/deploy.sh"'
