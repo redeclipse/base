@@ -3,9 +3,12 @@
 SEMUPDATE_GIT="${HOME}/${SEMAPHORE_GIT_DIR}"
 SEMUPDATE_DIR="${HOME}/deploy"
 SEMUPDATE_DEPOT="${HOME}/depot"
+
 SEMUPDATE_APT='DEBIAN_FRONTEND=noninteractive apt-get'
+
 SEMUPDATE_APPIMAGE="https://github.com/redeclipse/appimage-builder.git"
 SEMUPDATE_APPIMAGE_GH_DEST="redeclipse/deploy"
+
 SEMUPDATE_MODULES=`cat "${SEMUPDATE_GIT}/.gitmodules" | grep '\[submodule "[^.]' | sed -e 's/^.submodule..//;s/..$//' | tr "\n" " " | sed -e 's/ $//'`
 SEMUPDATE_ALLMODS="base ${SEMUPDATE_MODULES}"
 
@@ -16,6 +19,7 @@ SEMUPDATE_VERSION="${SEMUPDATE_VERSION_MAJOR}.${SEMUPDATE_VERSION_MINOR}.${SEMUP
 SEMUPDATE_STEAM_APPID=`sed -n 's/.define VERSION_STEAM_APPID \([0-9]*\)/\1/p' src/engine/version.h`
 SEMUPDATE_STEAM_DEPOT=`sed -n 's/.define VERSION_STEAM_DEPOT \([0-9]*\)/\1/p' src/engine/version.h`
 SEMUPDATE_DESCRIPTION="${SEMAPHORE_GIT_BRANCH}:${SEMAPHORE_WORKFLOW_NUMBER} from ${SEMAPHORE_GIT_SHA} for v${SEMUPDATE_VERSION}"
+
 SEMUPDATE_BRANCH="${SEMAPHORE_GIT_BRANCH}"
 if [ "${SEMUPDATE_BRANCH}" = "master" ]; then SEMUPDATE_BRANCH="devel"; fi
 
