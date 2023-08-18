@@ -6,7 +6,7 @@ agent:
     os_image: ubuntu1804
 auto_cancel:
   running:
-    when: "true"
+    when: 'true'
 blocks:
   - name: Construction
     task:
