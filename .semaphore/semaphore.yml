@@ -20,6 +20,8 @@ blocks:
             - 'chmod +x "${HOME}/build.sh"'
             - 'cat "${HOME}/build.sh"'
             - '. "${HOME}/build.sh"'
+      secrets:
+        - name: GitHub Token
 promotions:
   - name: Deploy
     pipeline_file: deploy.yml
