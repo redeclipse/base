@@ -19,7 +19,6 @@ semabuild_setup() {
 
     pushd "${HOME}" || return 1
     git clone --depth 1 "${SEMABUILD_DEST}" "${SEMABUILD_BUILD}" || return 1
-    git pull || return 1
     popd || return 1
 
     mkdir -pv "${SEMABUILD_DIR}" || return 1
