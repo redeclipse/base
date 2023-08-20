@@ -16,5 +16,4 @@ blocks:
             - 'cat "${HOME}/deploy.sh"'
             - '. "${HOME}/deploy.sh" steam'
       secrets:
-        - name: Steam Guard
         - name: Steam Token
