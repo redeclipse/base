@@ -2158,7 +2158,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>enet.lib;zlib1.lib;opengl32.lib;SDL2.lib;SDL2_image.lib;ws2_32.lib;OpenAL32.lib;sndfile-1.lib;winmm.lib;dbghelp.lib;kernel32.lib;user32.lib;discord-rpc.lib;steam_api64.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>F:\Red Eclipse\src\lib\x86;F:\Red Eclipse\src\vcpp\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\lib\x86;lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -2194,7 +2194,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>enet.lib;zlib1.lib;opengl32.lib;SDL2.lib;SDL2_image.lib;ws2_32.lib;OpenAL32.lib;sndfile-1.lib;winmm.lib;dbghelp.lib;kernel32.lib;user32.lib;discord-rpc.lib;steam_api64.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>F:\Red Eclipse\src\lib\x86;F:\Red Eclipse\src\vcpp\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\lib\x86;lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LinkTimeCodeGeneration>UseFastLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
   </ItemDefinitionGroup>
@@ -2231,7 +2231,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>enet.lib;zlib1.lib;opengl32.lib;SDL2.lib;SDL2_image.lib;ws2_32.lib;OpenAL32.lib;sndfile-1.lib;winmm.lib;dbghelp.lib;kernel32.lib;user32.lib;discord-rpc.lib;steam_api64.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>F:\Red Eclipse\src\lib\x86;F:\Red Eclipse\src\vcpp\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\lib\x86;lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
   </ItemDefinitionGroup>
@@ -2259,7 +2259,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>enet.lib;zlib1.lib;opengl32.lib;SDL2.lib;SDL2_image.lib;ws2_32.lib;OpenAL32.lib;sndfile-1.lib;winmm.lib;dbghelp.lib;kernel32.lib;user32.lib;discord-rpc.lib;steam_api64.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>F:\Red Eclipse\src\lib\amd64;F:\Red Eclipse\src\vcpp\lib\amd64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\lib\amd64;lib\amd64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -2295,7 +2295,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>enet.lib;zlib1.lib;opengl32.lib;SDL2.lib;SDL2_image.lib;ws2_32.lib;OpenAL32.lib;sndfile-1.lib;winmm.lib;dbghelp.lib;kernel32.lib;user32.lib;discord-rpc.lib;steam_api64.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>F:\Red Eclipse\src\lib\amd64;F:\Red Eclipse\src\vcpp\lib\amd64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\lib\amd64;lib\amd64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LinkTimeCodeGeneration>UseFastLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
   </ItemDefinitionGroup>
@@ -2332,7 +2332,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>enet.lib;zlib1.lib;opengl32.lib;SDL2.lib;SDL2_image.lib;ws2_32.lib;OpenAL32.lib;sndfile-1.lib;winmm.lib;dbghelp.lib;kernel32.lib;user32.lib;discord-rpc.lib;steam_api64.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>F:\Red Eclipse\src\lib\amd64;F:\Red Eclipse\src\vcpp\lib\amd64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\lib\amd64;lib\amd64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
   </ItemDefinitionGroup>
