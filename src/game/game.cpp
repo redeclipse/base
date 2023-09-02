@@ -1281,15 +1281,19 @@ namespace game
             }
             if(crouching || d->crouching(true))
             {
-                float zamt = zoff*curtime/float(PHYSMILLIS);
+                float crouchanimspeedscale = 0.35f;
+
                 if(crouching)
                 {
+                    // asymptoptic smoothing of crouch view height (smoother than linear interpolation)
+                    float zamt = abs(d->height - zrad) * crouchanimspeedscale * zoff*curtime/float(PHYSMILLIS);
                     if(d->actiontime[AC_CROUCH] <= 0) d->actiontime[AC_CROUCH] = lastmillis;
                     if(d->height > zrad && ((d->height -= zamt) < zrad)) d->height = zrad;
                     else if(d->height < zrad && ((d->height += zamt) > zrad)) d->height = zrad;
                 }
                 else
                 {
+                    float zamt = abs(d->height - d->zradius) * crouchanimspeedscale * zoff*curtime/float(PHYSMILLIS);
                     if(d->actiontime[AC_CROUCH] >= 0) d->actiontime[AC_CROUCH] = -lastmillis;
                     if(d->height < d->zradius && ((d->height += zamt) > d->zradius)) d->height = d->zradius;
                     else if(d->height > d->zradius && ((d->height -= zamt) < d->zradius)) d->height = d->zradius;
