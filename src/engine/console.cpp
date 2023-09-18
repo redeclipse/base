@@ -466,12 +466,14 @@ struct hline
 
     void run()
     {
-        if(consoleecho) conoutf(colourwhite, "\fs\fa>\fS %s", buf);
+        const char *str = action && *action ? action : buf;
+        if(str && *str == '/') str++; // workaround for old style
+        if(consoleecho) conoutf(colourwhite, "\fs\fa>\fS %s", str);
 
         bool oldconsolerun = consolerun;
         consolerun = true;
         setsvar("consolestr", buf);
-        execute(action && *action ? action : buf);
+        execute(str);
         setsvar("consolestr", "");
         consolerun = oldconsolerun;
     }
@@ -999,10 +1001,14 @@ COMMANDN(0, complete, addfilecomplete, "sss");
 COMMANDN(0, listcomplete, addlistcomplete, "ss");
 COMMANDN(0, playercomplete, addplayercomplete, "si");
 
-void complete(char *s, bool reverse)
+void complete(char *str, bool reverse)
 {
+    char *start = str;
+    if(start && *start == '/') start++; // workaround for old style
+    char *s = start;
+
     if(completeescaped[0]) copystring(s, completeescaped, BIGSTRLEN);
-    char *start = s;
+
     const char chrlist[7] = { ';', '(', ')', '[', ']', '\"', '$', };
     bool variable = false;
     loopi(7)

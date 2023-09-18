@@ -137,7 +137,7 @@ extern int changedkeys;
 extern void processtextinput(const char *str, int len);
 extern void processkey(int code, bool isdown);
 extern void resetcomplete();
-extern void complete(char *s, bool reverse);
+extern void complete(char *str, bool reverse);
 extern const char *searchbind(const char *action, int type, int modifiers = 0);
 extern void searchbindlist(const char *action, int type, int modifiers, int limit, const char *s1, const char *s2, const char *sep1, const char *sep2, vector<char> &names, bool force = true);
 
