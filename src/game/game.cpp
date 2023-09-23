@@ -1625,7 +1625,7 @@ namespace game
                 vec p = d->headpos(-d->height/4);
                 int hp = max(d->gethealth(gamemode, mutators)/5, 1);
                 if(!nogore && bloodscale > 0)
-                    part_splash(PART_BLOOD, int(clamp(damage/hp, 1, 5)*bloodscale)*(bleeding || material ? 2 : 1), bloodfade, p, 0x229999, (rnd(bloodsize/2)+(bloodsize/2))/10.f, 1, 0, 0, 100, 1+STAIN_BLOOD, int(d->radius), 10);
+                    part_splash(PART_BLOOD, int(clamp(damage/hp, 1, 5)*bloodscale)*(bleeding || material ? 2 : 1), bloodfade, p, 0x229999, (rnd((bloodsize+1)/2)+((bloodsize+1)/2))/10.f, 1, 0, 0, 100, 1+STAIN_BLOOD, int(d->radius), 10);
                 if(nogore != 2 && (bloodscale <= 0 || bloodsparks))
                     part_splash(PART_PLASMA, int(clamp(damage/hp, 1, 5))*(bleeding || material ? 2: 1), bloodfade, p, 0x882222, 1, 0.5f, 0, 0, 50, 1+STAIN_STAIN, int(d->radius));
                 if(d != v)
