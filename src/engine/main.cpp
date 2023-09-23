@@ -149,6 +149,7 @@ void quit()                  // normal exit
     writecfg("init.cfg", IDF_INIT);
     writeservercfg();
     if(!noconfigfile) writecfg("config.cfg", IDF_PERSIST);
+    writehistory();
     client::writecfg();
     abortconnect();
     disconnect(true);

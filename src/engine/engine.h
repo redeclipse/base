@@ -778,6 +778,7 @@ extern ENetPeer *curpeer, *connpeer;
 
 #define MOD_SHIFTS (KMOD_LSHIFT|KMOD_RSHIFT)
 
+extern void writehistory();
 extern char *pastetext(char *buf = NULL, size_t len = 0);
 extern void writebinds(stream *f);
 extern const char *addreleaseaction(char *s);

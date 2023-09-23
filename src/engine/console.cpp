@@ -430,16 +430,14 @@ char *pastetext(char *buf, size_t len)
 
 struct hline
 {
-    char *buf, *action, *prompt, *icon;
-    int colour;
+    char *buf, *action, *prompt;
 
-    hline() : buf(NULL), action(NULL), prompt(NULL), icon(NULL), colour(0) {}
+    hline() : buf(NULL), action(NULL), prompt(NULL) {}
     ~hline()
     {
         DELETEA(buf);
         DELETEA(action);
         DELETEA(prompt);
-        DELETEA(icon);
     }
 
     void restore()
@@ -457,11 +455,16 @@ struct hline
         return strcmp(consolebuf, buf) || (consoleaction ? !action || strcmp(consoleaction, action) : action!=NULL) || (consoleprompt ? !prompt || strcmp(consoleprompt, prompt) : prompt!=NULL);
     }
 
+    void create(const char *b, const char *a, const char *p)
+    {
+        buf = newstring(b);
+        if(a && *a) action = newstring(a);
+        if(p && *p) prompt = newstring(p);
+    }
+
     void save()
     {
-        buf = newstring(consolebuf);
-        if(consoleaction) action = newstring(consoleaction);
-        if(consoleprompt) prompt = newstring(consoleprompt);
+        create(consolebuf, consoleaction, consoleprompt);
     }
 
     void run()
@@ -481,7 +484,7 @@ struct hline
 vector<hline *> history;
 int histpos = 0;
 
-VAR(IDF_PERSIST, maxhistory, 0, 1000, 10000);
+VAR(IDF_PERSIST, maxhistory, 1, 1000, 10000);
 
 void history_(int *n)
 {
@@ -495,6 +498,37 @@ void history_(int *n)
 }
 
 COMMANDN(0, history, history_, "i");
+
+void addhistory(char *buf, char *action, char *prompt)
+{
+    if(!buf || !*buf) return;
+    if(maxhistory && history.length() >= maxhistory)
+    {
+        loopi(history.length()-maxhistory+1) delete history[i];
+        history.remove(0, history.length()-maxhistory+1);
+    }
+    history.add(new hline)->create(buf, action, prompt);
+    histpos = history.length();
+}
+
+COMMAND(0, addhistory, "sss");
+
+void writehistory()
+{
+    stream *f = openfile("history.cfg", "w");
+    if(!f) return;
+    f->printf("// console history written automatically by Red Eclipse\n\n");
+    loopv(history)
+    {
+        hline *h = history[i];
+        if(!h->buf) continue;
+        f->printf("addhistory %s", escapestring(h->buf));
+        if(h->action || h->prompt) f->printf("%s", h->action ? escapestring(h->action) : "[]");
+        if(h->prompt) f->printf("%s", escapestring(h->prompt));
+        f->printf("\n");
+    }
+    delete f;
+}
 
 struct releaseaction
 {

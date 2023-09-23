@@ -1689,6 +1689,7 @@ void rehash(bool reload)
         rehashing = 1;
 #ifndef STANDALONE
         if(!noconfigfile) writecfg("config.cfg", IDF_PERSIST);
+        writehistory();
         client::writecfg();
         writeservercfg();
         engineready = false;
@@ -1706,6 +1707,7 @@ void rehash(bool reload)
     initing = INIT_LOAD;
     execfile("servers.cfg", false);
     if(!noconfigfile) execfile("config.cfg", false);
+    execfile("history.cfg", false);
     client::rehash();
     execfile("autoexec.cfg", false);
     initing = NOT_INITING;
