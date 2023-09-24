@@ -145,7 +145,7 @@ extern const enttypes enttype[] = {
             0, 0,
             0,
             false,  false,  false,      false,      false,
-                "mapui",       "Map UI",            { "type", "flags", "yaw", "pitch", "radius", "scale", "yawdet", "pitchdet", "colour" "blend", "modes", "muts", "variant", "fxlevel" }
+                "mapui",       "Map UI",            { "type", "flags", "yaw", "pitch", "radius", "scale", "yawdet", "pitchdet", "param", "blend", "modes", "muts", "variant", "fxlevel" }
     },
     {
         SOUNDENV,        1,          0,     0,      EU_NONE,    8,           -1,          -1,        -1,     -1,      -1,
