@@ -5402,6 +5402,15 @@ bool hasflag(const char *flags, char f)
 }
 ICOMMAND(0, hasflag, "ss", (char *s, char *f), intret(*s && *f && hasflag(s, *f) ? 1 : 0));
 
+const char *veccolour(int c)
+{
+    retidx = (retidx + 1)%MAXRET;
+    vec col = vec::fromcolor(c);
+    formatstring(retbuf[retidx], "%.6g %.6g %.6g", col.x, col.y, col.z);
+    return retbuf[retidx];
+}
+ICOMMAND(0, veccolour, "i", (int *c), result(veccolour(*c)));
+
 int scalecolour(int c, int m) { return vec::fromcolor(c).mul(vec::fromcolor(m)).tohexcolor(); }
 ICOMMAND(0, scalecolour, "ii", (int *c, int *m), intret(scalecolour(*c, *m)));
 
