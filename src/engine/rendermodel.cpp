@@ -52,7 +52,7 @@ COMMAND(0, mdlwind, "f");
 void mdlmaterial(int *material1, int *material2)
 {
     checkmdl;
-    loadingmodel->setmaterial(clamp(*material1, -1, int(MAXMDLMATERIALS)), clamp(*material2, -1, int(MAXMDLMATERIALS)));
+    loadingmodel->setmaterial(clamp(*material1, 0, int(MAXMDLMATERIALS)), clamp(*material2, 0, int(MAXMDLMATERIALS)));
 }
 COMMAND(0, mdlmaterial, "ii");
 
