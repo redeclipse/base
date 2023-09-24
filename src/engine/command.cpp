@@ -2134,7 +2134,6 @@ static bool compilearg(vector<uint> &code, const char *&p, int wordtype, int pre
                     compileval(code, wordtype, s);
                     return true;
                 }
-
             }
     }
 }
@@ -2153,9 +2152,9 @@ static void compilestatements(vector<uint> &code, const char *&p, int rettype, i
         skipcomments(p);
         if(p[0] == '=') switch(p[1])
         {
-            case '/':
-                if(p[2] != '/') break;
+            case '/': if(p[2] != '/') break;
             case ';': case ' ': case '\t': case '\r': case '\n': case '\0':
+            {
                 p++;
                 if(idname.str)
                 {
@@ -2187,6 +2186,7 @@ static void compilestatements(vector<uint> &code, const char *&p, int rettype, i
                 if(!(more = compilearg(code, p, VAL_ANY))) compilestr(code);
                 code.add(CODE_ALIASU);
                 goto endstatement;
+            }
         }
     compilecommand:
         numargs = 0;

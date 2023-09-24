@@ -3532,17 +3532,16 @@ namespace game
             mdl.material[1] = mdl.material[2] = mdl.material[0];
             return;
         }
-        mdl.material[0] = bvec::fromcolor(getcolour(d, playerovertone, playerovertonelevel));
-        mdl.material[1] = bvec::fromcolor(getcolour(d, playerundertone, playerundertonelevel));
-        #define TONEINTERP(name, mat, var) \
+        #define TONEINTERP(name, var) \
+            mdl.material[var] = bvec::fromcolor(getcolour(d, player##name##tone, player##name##tonelevel)); \
             mdl.matbright[var] = player##name##tonebright; \
             if(player##name##toneinterp > 0) \
             { \
-                float intensity = 1.f-((uint(mdl.material[mat].r)+uint(mdl.material[mat].g)+uint(mdl.material[mat].b))/765.f); \
+                float intensity = 1.f-((uint(mdl.material[var].r)+uint(mdl.material[var].g)+uint(mdl.material[var].b))/765.f); \
                 mdl.matbright[var] += intensity*player##name##toneinterp; \
             }
-        TONEINTERP(over, 1, 0);
-        TONEINTERP(under, 0, 1);
+        TONEINTERP(over, 0);
+        TONEINTERP(under, 1);
         #undef TONEINTERP
         if(isweap(d->weapselect))
         {
