@@ -1489,12 +1489,16 @@ namespace projs
                     if(!WK(proj.flags) && !m_insta(game::gamemode, game::mutators) && W2(proj.weap, fragweap, WS(proj.flags)) >= 0)
                     {
                         vec vel = vec(proj.vel).add(proj.falling);
+                        bool cond = (W2(proj.weap, fragcond, WS(proj.flags))&1) != 0;
+                        if(!cond && W2(proj.weap, fragcond, WS(proj.flags))&2 && proj.hit) cond = true;
+                        if(!cond && W2(proj.weap, fragcond, WS(proj.flags))&4 && proj.stick) cond = true;
+                        if(!cond && W2(proj.weap, fragcond, WS(proj.flags))&8 && proj.stuck) cond = true;
                         int f = W2(proj.weap, fragweap, WS(proj.flags)), w = f%W_MAX,
                             life = W2(proj.weap, fragtime, WS(proj.flags)), delay = W2(proj.weap, fragtimedelay, WS(proj.flags));
                         float mag = max(vel.magnitude(), W2(proj.weap, fragspeedmin, WS(proj.flags))),
                               scale = W2(proj.weap, fragscale, WS(proj.flags))*proj.curscale,
-                              offset = proj.hit || proj.stick ? W2(proj.weap, fragoffset, WS(proj.flags)) : 1e-6f,
-                              skew = proj.hit || proj.stuck ? W2(proj.weap, fragskew, WS(proj.flags)) : W2(proj.weap, fragspread, WS(proj.flags));
+                              offset = cond ? W2(proj.weap, fragoffset, WS(proj.flags)) : 1e-6f,
+                              skew = cond ? W2(proj.weap, fragskew, WS(proj.flags)) : W2(proj.weap, fragspread, WS(proj.flags));
                         vec dir = vec(proj.stuck ? proj.norm : vel).normalize(), pos = vec(proj.o).sub(vec(dir).mul(offset));
                         if(W2(proj.weap, fragspeedmax, WS(proj.flags)) > 0) mag = min(mag, W2(proj.weap, fragspeedmax, WS(proj.flags)));
                         if(W2(proj.weap, fragjump, WS(proj.flags)) > 0) life -= int(ceilf(life*W2(proj.weap, fragjump, WS(proj.flags))));
