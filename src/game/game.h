@@ -2088,7 +2088,7 @@ struct gameent : dynent, clientstate
     bool crouching(bool check = false)
     {
         if(!(A(actortype, abilities)&(1<<A_A_CROUCH))) return false;
-        return action[AC_CROUCH] || (check && zradius > height);
+        return action[AC_CROUCH] || actiontime[AC_CROUCH] > 0 || (check && zradius > height);
     }
 
     bool running(float minspeed = 0)

@@ -1262,26 +1262,49 @@ namespace game
 
         if(d->state == CS_ALIVE)
         {
-            bool sliding = d->sliding(true), crouching = sliding || (d->crouching() && A(d->actortype, abilities)&(1<<A_A_CROUCH)),
-                 moving = d->move || d->strafe || (d->physstate < PHYS_SLOPE && !isladder(d->inmaterial));
-            float zrad = d->zradius*(moving && !sliding ? CROUCHHIGH : CROUCHLOW), zoff = d->zradius-zrad;
+            bool sliding = d->sliding(true), crouching = sliding || (d->action[AC_CROUCH] && A(d->actortype, abilities)&(1<<A_A_CROUCH)),
+                 moving = d->move || d->strafe || (d->physstate < PHYS_SLOPE && !isladder(d->inmaterial)), ishi = moving && !sliding;
+            float zradlo = d->zradius*CROUCHLOW, zradhi = d->zradius*CROUCHHIGH, zrad = ishi ? zradhi : zradlo;
             vec old = d->o;
-            if(!crouching && A(d->actortype, abilities)&(1<<A_A_CROUCH))
+            if(A(d->actortype, abilities)&(1<<A_A_CROUCH) && (!crouching || ishi))
             {
-                d->o.z += d->zradius;
-                d->height = d->zradius;
-                if(collide(d, vec(0, 0, 1), 0, false) || collideinside)
+                short wantcrouch[2] = { 0, 0 };
+                loopj(2)
                 {
-                    d->o.z -= zoff;
-                    d->height = zrad;
-                    if(!collide(d, vec(0, 0, 1), 0, false) && !collideinside) crouching = true;
+                    if(j)
+                    {
+                        vec dir;
+                        vecfromyawpitch(d->yaw, 0.f, d->move, d->strafe, dir);
+                        d->o.add(dir);
+                    }
+                    d->o.z += d->zradius;
+                    d->height = d->zradius;
+                    if(collide(d, vec(0, 0, 1), 0, false) || collideinside) loopk(2)
+                    {
+                        zrad = k ? zradlo : zradhi;
+                        float zoff = d->zradius - zrad;
+                        d->o.z -= zoff;
+                        d->height = zrad;
+                        if(!collide(d, vec(0, 0, 1), 0, false) && !collideinside)
+                        {
+                            wantcrouch[j] = k + 1;
+                            break;
+                        }
+                        d->o.z += zoff;
+                    }
+                    d->o = old;
+                    d->height = offset;
                 }
-                d->o = old;
-                d->height = offset;
+                loopj(2) if(wantcrouch[j])
+                {
+                    if(ishi && wantcrouch[j] == 2) ishi = false;
+                    crouching = true;
+                }
+                zrad = ishi ? zradhi : zradlo;
             }
             if(crouching || d->crouching(true))
             {
-                float zamt = zoff*curtime/float(PHYSMILLIS);
+                float zamt = (d->zradius - zrad)*curtime/float(PHYSMILLIS);
                 if(crouching)
                 {
                     if(d->actiontime[AC_CROUCH] <= 0) d->actiontime[AC_CROUCH] = lastmillis;
