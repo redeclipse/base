@@ -8,7 +8,7 @@ auto_cancel:
   running:
     when: 'true'
 blocks:
-  - name: Construction
+  - name: Start
     task:
       jobs:
         - name: Build
