@@ -11,7 +11,7 @@ blocks:
         - name: Steam Depot
           commands:
             - checkout
-            - 'curl -H "Cache-Control: no-cache" --fail --output "${HOME}/deploy.sh" "https://raw.githubusercontent.com/redeclipse/base/${SEMAPHORE_GIT_BRANCH}/.semaphore/deploy.sh"'
+            - 'curl -H "Cache-Control: no-cache" --fail --output "${HOME}/deploy.sh" "https://raw.githubusercontent.com/redeclipse/base/${SEMAPHORE_GIT_BRANCH}/src/semaphore/deploy.sh"'
             - 'chmod +x "${HOME}/deploy.sh"'
             - 'cat "${HOME}/deploy.sh"'
             - '. "${HOME}/deploy.sh" steam'
