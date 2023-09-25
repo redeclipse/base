@@ -272,9 +272,10 @@ namespace physics
 
     vec gravityvel(physent *d, const vec &center, float secs, float radius, float height, int matid, float submerged)
     {
-        float vel = PHYS(gravity)*(d->weight/100.f), buoy = 0.f;
+        float vel = PHYS(gravity) * (d->weight / 100.f), buoy = 0.f;
         bool liquid = isliquid(matid&MATF_VOLUME), inliquid = liquid && submerged >= LIQUIDPHYS(submerge, matid);
-        if(inliquid) buoy = LIQUIDPHYS(buoyancy, matid)*(d->buoyancy/100.f)*d->submerged;
+
+        if(inliquid) buoy = LIQUIDPHYS(buoyancy, matid) * (d->buoyancy / 100.f) * d->submerged;
         if(gameent::is(d))
         {
             gameent *e = (gameent *)d;
@@ -282,7 +283,12 @@ namespace physics
             {
                 if(d->state == CS_ALIVE && !inliquid)
                 {
-                    if(e->actiontime[AC_JUMP] >= 0) vel *= e->crouching() ? gravityjumpcrouch : gravityjump;
+                    if(e->hasparkour())
+                    {
+                        if(e->impulse[IM_TYPE] == IM_T_VAULT) vel *= gravityvault;
+                        else vel *= e->turnside ? gravityparkour : gravityclimb;
+                    }
+                    else if(e->actiontime[AC_JUMP] >= 0) vel *= e->crouching() ? gravityjumpcrouch : gravityjump;
                     else if(e->crouching()) vel *= gravitycrouch;
                 }
                 vel *= e->stungravity;
@@ -297,6 +303,7 @@ namespace physics
                 buoy *= e->stungravity;
             }
         }
+
         vec g = vec(0, 0, -1).mul(vel).add(vec(0, 0, 1).mul(buoy));
         if(liquid)
         {
@@ -304,7 +311,7 @@ namespace physics
             int fall = 0;
             bool lava = (matid&MATF_VOLUME) == MAT_LAVA;
             float dist = LIQUIDVAR(falldist, matid);
-            ivec bbrad = ivec(radius+dist, radius+dist, height+(dist*0.5f)), bbmin = ivec(center).sub(bbrad), bbmax = ivec(center).add(bbrad);
+            ivec bbrad = ivec(radius + dist, radius + dist, height + (dist * 0.5f)), bbmin = ivec(center).sub(bbrad), bbmax = ivec(center).add(bbrad);
             loopk(4)
             {
                 vector<materialsurface> &surfs = lava ? lavafallsurfs[k] : waterfallsurfs[k];
@@ -322,6 +329,7 @@ namespace physics
             }
             if(fall) g.add(f.div(fall).mul(LIQUIDVAR(fallpush, matid)).subz(1).mul(LIQUIDVAR(fallspeed, matid)));
         }
+
         g.mul(secs);
         return g;
     }
@@ -339,13 +347,13 @@ namespace physics
         return true;
     }
 
-    bool sticktospecial(physent *d)
+    bool sticktospecial(physent *d, bool parkour = true)
     {
         if(gameent::is(d) && d->state == CS_ALIVE)
         {
             gameent *e = (gameent *)d;
             if(isladder(e->inmaterial)) return true;
-            if(e->hasparkour()) return true;
+            if(parkour && e->hasparkour()) return true;
         }
         return false;
     }
@@ -364,10 +372,21 @@ namespace physics
         {
             gameent *e = (gameent *)p;
             vel *= e->stunscale;
+
             if((d->physstate >= PHYS_SLOPE || isladder(d->inmaterial)) && !e->sliding(true) && e->crouching()) vel *= movecrawl;
             else if(isweap(e->weapselect) && e->weapstate[e->weapselect] == W_S_ZOOM) vel *= movecrawl;
-            if(e->move >= 0) vel *= e->strafe ? movestrafe : movestraight;
-            if(e->running()) vel *= moverun;
+
+            if(e->hasparkour())
+            {
+                if(e->impulse[IM_TYPE] == IM_T_VAULT) vel *= movevault;
+                else vel *= e->turnside ? moveparkour : moveclimb;
+            }
+            else
+            {
+                if(e->move >= 0) vel *= e->strafe ? movestrafe : movestraight;
+                if(e->running()) vel *= moverun;
+            }
+
             switch(e->physstate)
             {
                 case PHYS_FALL: if(PHYS(gravity) > 0) vel *= moveinair; break;
@@ -639,6 +658,16 @@ namespace physics
     {
         if(sticktospecial(d))
         {
+            if(gameent::is(d))
+            {
+                gameent *e = (gameent *)d;
+                if(e->hasparkour())
+                {
+                    d->physstate = PHYS_FALL;
+                    d->floor = vec(0, 0, 1);
+                    return;
+                }
+            }
             d->airmillis = 0;
             d->physstate = PHYS_FLOOR;
             d->floor = vec(0, 0, 1);
@@ -669,7 +698,7 @@ namespace physics
         bool found = false;
         vec moved(d->o);
         d->o.z -= 0.1f;
-        if(sticktospecial(d))
+        if(sticktospecial(d, false))
         {
             floor = vec(0, 0, 1);
             found = true;
@@ -894,6 +923,7 @@ namespace physics
                 if(!move && !strafe) continue;
                 vecfromyawpitch(d->yaw, 0, move, strafe, dir);
                 bool foundwall = false;
+
                 loopk(d->hasparkour() ? 8 : 1)
                 {
                     d->o.add(dir);
@@ -903,9 +933,11 @@ namespace physics
                     foundwall = true;
                     break;
                 }
+
                 d->o = oldpos;
                 if(!foundwall) continue;
                 vec face = vec(collidewall).normalize();
+
                 if(fabs(face.z) <= impulseparkournorm)
                 {
                     float yaw = 0, pitch = 0;
@@ -913,6 +945,7 @@ namespace physics
                     float off = yaw-d->yaw;
                     if(off > 180) off -= 360;
                     else if(off < -180) off += 360;
+
                     bool isclimb = fabs(off) >= impulseparkouryaw, vault = d->impulse[IM_TYPE] == IM_T_VAULT;
                     if(isclimb && !vault)
                     {
@@ -934,6 +967,7 @@ namespace physics
                         }
                         d->o = oldpos;
                     }
+
                     if(d->hasparkour() || ((!onfloor || vault) && d->action[AC_SPECIAL] && d->canimpulse(vault ? IM_T_VAULT : IM_T_PARKOUR)))
                     {
                         int side = isclimb ? 0 : (off < 0 ? -1 : 1);
@@ -971,10 +1005,14 @@ namespace physics
                         if(collided || (collideplayer && !inanimate::is(collideplayer))) continue; // we might find a better vector
 
                         if(d->impulse[IM_TYPE] == IM_T_PARKOUR && vault)
-                        { // vault is free if we're already parkouring, but it nets no speed boost
-                            d->vel = vec(rft).mul(d->vel.magnitude());
+                        { // vault is free if we're already parkouring, but it nets no speed boost other than momentum transfer
+                            int cost = 0;
+                            vec keepvel = vec(d->vel).add(d->falling);
+                            float mag = impulsevelocity(d, 0, cost, IM_T_VAULT, impulsevaultredir, keepvel);
+                            d->vel = vec(rft).mul(mag).add(keepvel);
                             d->impulse[IM_TYPE] = IM_T_VAULT;
                             d->impulsetime[IM_T_VAULT] = d->impulsetime[IM_T_PARKOUR];
+                            d->falling = vec(0, 0, 0);
                             d->turnside = d->turnmillis = 0;
                             d->turnyaw = d->turnroll = 0.f;
                         }
@@ -987,7 +1025,7 @@ namespace physics
                             {
                                 d->vel = vec(rft).mul(mag).add(keepvel);
                                 if(vault) d->doimpulse(IM_T_VAULT, lastmillis, cost);
-                                else d->doimpulse(IM_T_PARKOUR, lastmillis, cost, side, impulseturntime, side ? off*impulseturnscale : 0.f, side ? (impulseturnroll*side)-d->roll : 0.f);
+                                else d->doimpulse(IM_T_PARKOUR, lastmillis, cost, side, impulseturntime, side ? off * impulseturnscale : 0.f, side ? (impulseturnroll * side) - d->roll : 0.f);
                                 client::addmsg(N_SPHY, "ri2", d->clientnum, vault ? SPHY_VAULT : SPHY_PARKOUR);
                                 game::impulseeffect(d);
                             }
@@ -997,7 +1035,7 @@ namespace physics
                         {
                             d->turnside = side;
                             d->turnmillis = impulseturntime;
-                            d->turnroll = side ? (impulseturnroll*side)-d->roll : 0.f;
+                            d->turnroll = side ? (impulseturnroll * side) - d->roll : 0.f;
                         }
                         m = rft; // re-project and override
                         found = true;
@@ -1005,6 +1043,7 @@ namespace physics
                     }
                 }
             }
+
             if(!found && d->hasparkour())
             {
                 if(d->impulse[IM_TYPE] == IM_T_VAULT)
@@ -1025,6 +1064,7 @@ namespace physics
                 }
             }
         }
+
         bool sliding = d->sliding(true), pounding = !sliding && !onfloor && d->impulse[IM_TYPE] == IM_T_POUND && d->impulsetime[IM_T_POUND] != 0, kicking = !sliding && !pounding && !onfloor && d->action[AC_SPECIAL];
         if((sliding || pounding || kicking) && d->canmelee(m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis, sliding))
         {
@@ -1057,7 +1097,7 @@ namespace physics
     {
         vec m(0, 0, 0);
         bool wantsmove = game::allowmove(d) && (d->move || d->strafe), floating = isfloating(d), inliquid = liquidcheck(d),
-             onfloor = !floating && (sticktospecial(d) || d->physstate != PHYS_FALL), slide = false;
+             onfloor = !floating && (sticktospecial(d, false) || d->physstate != PHYS_FALL), slide = false;
         if(wantsmove) vecfromyawpitch(d->yaw, movepitch(d) ? d->pitch : 0, d->move, d->strafe, m);
 
         if(!floating && gameent::is(d))
@@ -1101,7 +1141,7 @@ namespace physics
         d->vel.lerp(m, d->vel, pow(max(1.0f - 1.0f/coast, 0.0f), millis/20.0f));
 
         bool floorchk = d->floor.z > 0 && d->floor.z < floorz;
-        if(floating || sticktospecial(d) || (d->physstate != PHYS_FALL && !floorchk)) d->resetphys(false);
+        if(floating || sticktospecial(d, false) || (d->physstate != PHYS_FALL && !floorchk)) d->resetphys(false);
         else
         {
             vec g = gravityvel(d, d->center(), millis/1000.f, d->getradius(), d->getheight(), d->inmaterial, d->submerged);

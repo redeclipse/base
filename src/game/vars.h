@@ -26,6 +26,9 @@ GFVAR(IDF_GAMEMOD, 0, gravityscale, 0, 1, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, gravitycrouch, 0, 1.25f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, gravityjump, 0, 0.85f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, gravityjumpcrouch, 0, 1, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, gravityparkour, 0, 0.25f, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, gravityclimb, 0, 0.5f, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, gravityvault, 0, 0.125f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, buoyancycrouch, 0, 0, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, buoyancyjump, 0, 1.5f, FVAR_MAX);
 
@@ -526,6 +529,9 @@ GFVAR(IDF_GAMEMOD, 0, movestrafe, FVAR_NONZERO, 1, FVAR_MAX); // strafe modifier
 GFVAR(IDF_GAMEMOD, 0, moveinair, FVAR_NONZERO, 0.75f, FVAR_MAX); // in-air modifier
 GFVAR(IDF_GAMEMOD, 0, movestepup, FVAR_NONZERO, 0.95f, FVAR_MAX); // step-up modifier
 GFVAR(IDF_GAMEMOD, 0, movestepdown, FVAR_NONZERO, 1.15f, FVAR_MAX); // step-down modifier
+GFVAR(IDF_GAMEMOD, 0, moveparkour, FVAR_NONZERO, 1.75f, FVAR_MAX); // parkour modifier
+GFVAR(IDF_GAMEMOD, 0, moveclimb, FVAR_NONZERO, 1.75f, FVAR_MAX); // climb modifier
+GFVAR(IDF_GAMEMOD, 0, movevault, FVAR_NONZERO, 1.75f, FVAR_MAX); // vault modifier
 
 GFVAR(IDF_GAMEMOD, 0, impulseboost, 0, 1.f, FVAR_MAX); // boost modifier
 GFVAR(IDF_GAMEMOD, 0, impulseboostredir, 0, 1.f, FVAR_MAX); // how much of the old velocity is redirected into the new one
@@ -554,7 +560,7 @@ GFVAR(IDF_GAMEMOD, 0, impulsekickredir, 0, 1.f, FVAR_MAX); // how much of the ol
 GFVAR(IDF_GAMEMOD, 0, impulsekickpitchmin, -89.9f, -89.9f, 89.9f); // kick pitch minimum
 GFVAR(IDF_GAMEMOD, 0, impulsekickpitchmax, -89.9f, 89.9f, 89.9f); // kick pitch maximum
 GFVAR(IDF_GAMEMOD, 0, impulseclimb, 0, 1.f, FVAR_MAX); // parkour climb modifier
-GFVAR(IDF_GAMEMOD, 0, impulseclimbredir, 0, 1.f, FVAR_MAX); // how much of the old velocity is redirected into the new one
+GFVAR(IDF_GAMEMOD, 0, impulseclimbredir, 0, 0.5f, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, 0, impulsevault, 0, 0.5f, FVAR_MAX); // vault modifier
 GFVAR(IDF_GAMEMOD, 0, impulsevaultredir, 0, 1.f, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, 0, impulsevaultpitch, -89.9f, 0, 89.9f); // z direction to funnel in when vaulting

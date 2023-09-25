@@ -1920,6 +1920,13 @@ struct gameent : dynent, clientstate
         resetjump(wait);
     }
 
+
+    bool hasparkour(int type = -1, bool check = false)
+    {
+        if(type < 0) type = impulse[IM_TYPE];
+        return type == IM_T_PARKOUR || type == IM_T_VAULT || (check && type == IM_T_AFTER);
+    }
+
     void doimpulse(int type, int millis, int cost = 0, int side = 0, int turn = 0, float yaw = 0, float roll = 0)
     {
         if(type < 0 || type >= IM_T_MAX) return;
@@ -1936,18 +1943,13 @@ struct gameent : dynent, clientstate
         {
             impulse[IM_REGEN] = millis;
             if(type == IM_T_PUSHER) resetair(true);
-            else resetphys((IM_T_TOUCH&(1<<type)) != 0);
+            else resetphys(true);
         }
         else impulse[IM_FLING] = 0;
         turnside = side;
         turnmillis = turn;
         turnyaw = yaw;
         turnroll = roll;
-    }
-
-    bool hasparkour()
-    {
-        return impulse[IM_TYPE] == IM_T_PARKOUR || impulse[IM_TYPE] == IM_T_VAULT;
     }
 
     bool delayimpulse(bool regen)
