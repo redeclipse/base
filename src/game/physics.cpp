@@ -347,7 +347,7 @@ namespace physics
         return true;
     }
 
-    bool sticktospecial(physent *d, bool parkour = true)
+    bool sticktospecial(physent *d, bool parkour)
     {
         if(gameent::is(d) && d->state == CS_ALIVE)
         {
@@ -373,7 +373,7 @@ namespace physics
             gameent *e = (gameent *)p;
             vel *= e->stunscale;
 
-            if((d->physstate >= PHYS_SLOPE || isladder(d->inmaterial)) && !e->sliding(true) && e->crouching()) vel *= movecrawl;
+            if((d->physstate >= PHYS_SLOPE || sticktospecial(d, false)) && !e->sliding(true) && e->crouching()) vel *= movecrawl;
             else if(isweap(e->weapselect) && e->weapstate[e->weapselect] == W_S_ZOOM) vel *= movecrawl;
 
             if(e->hasparkour())
@@ -849,7 +849,7 @@ namespace physics
 
     void modifyinput(gameent *d, vec &m, bool wantsmove)
     {
-        bool onfloor = d->physstate >= PHYS_SLOPE || isladder(d->inmaterial) || liquidcheck(d);
+        bool onfloor = d->physstate >= PHYS_SLOPE || sticktospecial(d, false) || liquidcheck(d);
         if(d->hasparkour())
         {
             int length = 0, millis = 0;
@@ -1147,7 +1147,7 @@ namespace physics
             vec g = gravityvel(d, d->center(), millis/1000.f, d->getradius(), d->getheight(), d->inmaterial, d->submerged);
             if(d->physstate != PHYS_FALL && floorchk) g.project(d->floor);
             d->falling.add(g);
-            if(inliquid || d->physstate >= PHYS_SLOPE)
+            if(inliquid || d->physstate >= PHYS_SLOPE || sticktospecial(d))
             {
                 float coast = inliquid ? liquidmerge(d, PHYS(aircoast), LIQUIDPHYS(coast, d->inmaterial)) : PHYS(floorcoast)*coastscale(d->feetpos(-1)),
                         floordiff = floorz-slopez, c = inliquid || floordiff == 0 ? 1.0f : clamp((d->floor.z-slopez)/floordiff, 0.0f, 1.0f);

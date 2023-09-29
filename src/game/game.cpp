@@ -804,7 +804,7 @@ namespace game
     {
         float speed = physics::movevelocity(d), step = firstpersonbob ? firstpersonbobstep : firstpersonswaystep;
         bool bobbed = false, sliding = d->sliding(true);
-        if(d->state == CS_ALIVE && (d->physstate >= PHYS_SLOPE || isladder(d->inmaterial) || d->hasparkour() || sliding))
+        if(d->state == CS_ALIVE && (d->physstate >= PHYS_SLOPE || physics::sticktospecial(d) || sliding))
         {
             float mag = d->vel.magnitude();
             if(sliding) mag *= firstpersonswayslide;
@@ -1230,7 +1230,7 @@ namespace game
     void footstep(gameent *d, int curfoot)
     {
         if(!actors[d->actortype].steps || footstepsoundmaxgain <= 0) return;
-        bool moving = d->move || d->strafe, liquid = physics::liquidcheck(d), onfloor = d->physstate >= PHYS_SLOPE || isladder(d->inmaterial) || d->hasparkour();
+        bool moving = d->move || d->strafe, liquid = physics::liquidcheck(d), onfloor = d->physstate >= PHYS_SLOPE || physics::sticktospecial(d);
         if(curfoot < 0 || (moving && (liquid || onfloor)))
         {
             float mag = d->vel.magnitude(), m = min(footstepsoundmax, footstepsoundmin), n = max(footstepsoundmax, footstepsoundmin);
@@ -1337,7 +1337,7 @@ namespace game
         bool collectcount = false, collectmeter = false;
         if(d->regenimpulse())
         {
-            bool onfloor = d->physstate >= PHYS_SLOPE || isladder(d->inmaterial) || physics::liquidcheck(d); // collect time until we are able to act upon it
+            bool onfloor = d->physstate >= PHYS_SLOPE || physics::sticktospecial(d, false) || physics::liquidcheck(d); // collect time until we are able to act upon it
 
             #define IMPULSEMOD(name, type, check, body) \
                 if(impulsecost##name && d->impulse[IM_##type] > 0) \
@@ -1501,7 +1501,7 @@ namespace game
     {
         if(d->state != CS_ALIVE) return;
         vec pos = d->feetpos();
-        if(d->impulse[IM_TYPE] != IM_T_PARKOUR && (d->physstate >= PHYS_SLOPE || isladder(d->inmaterial) || physics::liquidcheck(d)) && pos.z > 0 && d->floortime(lastmillis))
+        if(d->impulse[IM_TYPE] != IM_T_PARKOUR && (d->physstate >= PHYS_SLOPE || physics::sticktospecial(d, false) || physics::liquidcheck(d)) && pos.z > 0 && d->floortime(lastmillis))
         {
             int mat = lookupmaterial(pos);
             if(!isclipped(mat&MATF_VOLUME) && !(mat&MAT_DEATH)) d->floorpos = pos;
@@ -3642,7 +3642,7 @@ namespace game
         const char *mdlname = playertypes[mdltype][third];
         if(d->actortype > A_PLAYER && d->actortype < A_MAX && actors[d->actortype].mdl && *actors[d->actortype].mdl)
             mdlname = actors[d->actortype].mdl;
-        bool hasweapon = false, onfloor = d->physstate >= PHYS_SLOPE || isladder(d->inmaterial) || physics::liquidcheck(d);
+        bool hasweapon = false, onfloor = d->physstate >= PHYS_SLOPE || physics::sticktospecial(d, false) || physics::liquidcheck(d);
 
         mdl.anim = ANIM_IDLE|ANIM_LOOP;
         mdl.flags = flags;
@@ -4182,7 +4182,7 @@ namespace game
             if(focus->state == CS_ALIVE && firstpersonmodel&1) renderplayer(focus, 0, focus->curscale, MDL_NOBATCH, color);
             if(focus->state == CS_ALIVE && firstpersonmodel&2)
             {
-                bool onfloor = focus->physstate >= PHYS_SLOPE || isladder(focus->inmaterial) || physics::liquidcheck(focus);
+                bool onfloor = focus->physstate >= PHYS_SLOPE || physics::sticktospecial(focus, false) || physics::liquidcheck(focus);
                 float depth = (!onfloor && focus->action[AC_SPECIAL]) || focus->impulse[IM_TYPE] == IM_T_KICK || focus->hasparkour() ? firstpersonbodydepthkick : firstpersonbodydepth;
                 setavatarscale(firstpersonbodydepthfov != 0 ? firstpersonbodydepthfov : curfov, depth);
                 renderplayer(focus, 2, focus->curscale, MDL_NOBATCH, color, &lastoffset);

@@ -2345,6 +2345,7 @@ namespace physics
     extern int smoothmove, smoothdist, physframetime, grabstyle, grabplayerstyle;
     extern float getdeathplane();
     extern bool isghost(gameent *d, gameent *e, bool proj = false);
+    extern bool sticktospecial(physent *d, bool parkour = true);
     extern float liquidmerge(physent *d, float from, float to);
     extern int carryaffinity(gameent *d);
     extern bool secondaryweap(gameent *d);
