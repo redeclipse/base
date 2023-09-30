@@ -1941,7 +1941,7 @@ namespace projs
             if(!targ.iszero())
             {
                 vec dir = vec(proj.vel).normalize();
-                float amt = clamp(bomberspeeddelta*secs, 1e-8f, 1.f), mag = max(proj.vel.magnitude(), bomberspeedmin);
+                float amt = clamp(bomberspeeddelta*secs, 1e-6f, 1.f), mag = max(proj.vel.magnitude(), bomberspeedmin);
                 if(bomberspeedmax > 0) mag = min(mag, bomberspeedmax);
                 dir.mul(1.f-amt).add(targ.mul(amt)).normalize();
                 if(!dir.iszero()) (proj.vel = dir).mul(mag);
@@ -1997,7 +1997,7 @@ namespace projs
             }
             if(!proj.dest.iszero())
             {
-                float amt = clamp(WF(WK(proj.flags), proj.weap, speeddelta, WS(proj.flags))*secs, 1e-8f, 1.f),
+                float amt = clamp(WF(WK(proj.flags), proj.weap, speeddelta, WS(proj.flags))*secs, 1e-6f, 1.f),
                       mag = max(proj.vel.magnitude(), physics::movevelocity(&proj));
                 dir.mul(1.f-amt).add(vec(proj.dest).sub(proj.o).safenormalize().mul(amt)).normalize();
                 if(!dir.iszero()) (proj.vel = dir).mul(mag);
