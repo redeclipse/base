@@ -3445,8 +3445,8 @@ namespace entities
                         if(entseldynui)
                         {
                             if(UI::uivisible("entinfo", UI::SURFACE_MAIN, v.idx))
-                                UI::setui("entinfo", UI::SURFACE_MAIN, v.idx, pos, entinfouiyaw, entinfouipitch, entinfouiscale, vec2(-1, -1), entinfouidetentyaw, entinfouidetentpitch);
-                            else UI::showui("entinfo", UI::SURFACE_MAIN, v.idx, pos, entinfouiyaw, entinfouipitch, entinfouiscale, vec2(-1, -1), entinfouidetentyaw, entinfouidetentpitch);
+                                UI::setui("entinfo", UI::SURFACE_MAIN, v.idx, pos, entinfouiyaw, entinfouipitch, entinfouiscale, vec(-1, -1, -1), entinfouidetentyaw, entinfouidetentpitch);
+                            else UI::showui("entinfo", UI::SURFACE_MAIN, v.idx, pos, entinfouiyaw, entinfouipitch, entinfouiscale, vec(-1, -1, -1), entinfouidetentyaw, entinfouidetentpitch);
                             hasdynui = true;
                         }
                         found = true;

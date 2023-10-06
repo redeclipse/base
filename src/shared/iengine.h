@@ -510,16 +510,16 @@ namespace UI
     extern int uihidden;
     extern char *uiopencmd, *uiclosecmd;
 
-    extern bool showui(const char *name, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float yaw = -1, float pitch = 0, float scale = 1, const vec2 &t = vec2(-1, -1), float detentyaw = 0, float detentpitch = 0);
-    extern bool setui(const char *name, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float yaw = -1, float pitch = 0, float scale = 1, const vec2 &t = vec2(-1, -1), float detentyaw = 0, float detentpitch = 0);
+    extern bool showui(const char *name, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float yaw = -1, float pitch = 0, float scale = 1, const vec &t = vec(-1, -1, -1), float detentyaw = 0, float detentpitch = 0);
+    extern bool setui(const char *name, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float yaw = -1, float pitch = 0, float scale = 1, const vec &t = vec(-1, -1, -1), float detentyaw = 0, float detentpitch = 0);
     extern bool hideui(const char *name = NULL, int stype = SURFACE_MAIN, int param = -1, bool world = false);
-    extern bool toggleui(const char *name, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float yaw = -1, float pitch = 0, float scale = 1, const vec2 &t = vec2(-1, -1), float detentyaw = 0, float detentpitch = 0);
+    extern bool toggleui(const char *name, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float yaw = -1, float pitch = 0, float scale = 1, const vec &t = vec(-1, -1, -1), float detentyaw = 0, float detentpitch = 0);
     extern int openui(const char *name, int stype = SURFACE_MAIN);
     extern int closeui(const char *name, int stype = SURFACE_MAIN);
     extern void hideall(bool world = false);
 
-    extern void holdui(const char *name, bool on, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float yaw = -1, float pitch = 0, float scale = 1, const vec2 &t = vec2(-1, -1), float detentyaw = 0, float detentpitch = 0);
-    extern void pressui(const char *name, bool on, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float yaw = -1, float pitch = 0, float scale = 1, const vec2 &t = vec2(-1, -1), float detentyaw = 0, float detentpitch = 0);
+    extern void holdui(const char *name, bool on, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float yaw = -1, float pitch = 0, float scale = 1, const vec &t = vec(-1, -1, -1), float detentyaw = 0, float detentpitch = 0);
+    extern void pressui(const char *name, bool on, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float yaw = -1, float pitch = 0, float scale = 1, const vec &t = vec(-1, -1, -1), float detentyaw = 0, float detentpitch = 0);
     extern bool uivisible(const char *name, int stype = SURFACE_MAIN, int param = -1);
     extern int hasinput(bool cursor = false, int stype = SURFACE_MAIN);
     extern bool hasmenu(bool pass = true, int stype = SURFACE_MAIN);

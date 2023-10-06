@@ -834,8 +834,8 @@ void rendereditcursor()
             if(hasselui >= 0 && selectiondynui)
             {
                 if(UI::uivisible("selection", UI::SURFACE_MAIN, hasselui))
-                    UI::setui("selection", UI::SURFACE_MAIN, hasselui, pos, selectionuiyaw, selectionuipitch, selectionuiscale, vec2(-1, -1), selectionuidetentyaw, selectionuidetentpitch);
-                else UI::showui("selection", UI::SURFACE_MAIN, hasselui, pos, selectionuipitch, selectionuipitch, selectionuiscale, vec2(-1, -1), selectionuidetentyaw, selectionuidetentpitch);
+                    UI::setui("selection", UI::SURFACE_MAIN, hasselui, pos, selectionuiyaw, selectionuipitch, selectionuiscale, vec(-1, -1, -1), selectionuidetentyaw, selectionuidetentpitch);
+                else UI::showui("selection", UI::SURFACE_MAIN, hasselui, pos, selectionuipitch, selectionuipitch, selectionuiscale, vec(-1, -1, -1), selectionuidetentyaw, selectionuidetentpitch);
             }
         }
     }
