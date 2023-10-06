@@ -166,26 +166,38 @@ namespace UI
         CHANGE_COLOR  = 1<<1,
         CHANGE_BLEND  = 1<<2
     };
-    static int changed = 0, surfacetype = -1;
-
     static Object *drawing = NULL;
     static bool propagating = false;
 
     enum { BLEND_ALPHA, BLEND_MOD, BLEND_SRC };
-    static int blendtype = BLEND_ALPHA;
+    static int changed = 0, surfacetype = -1, blendtype = BLEND_ALPHA, blenddef = BLEND_ALPHA;
 
-    static inline void changeblend(int type, GLenum src, GLenum dst)
+    static inline void changeblend(int type, GLenum src, GLenum dst, bool force = false)
     {
-        if(blendtype != type)
+        if(force || blendtype != type)
         {
             blendtype = type;
             glBlendFunc(src, dst);
         }
     }
 
-    void resetblend() { changeblend(BLEND_ALPHA, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); }
-    void modblend() { changeblend(BLEND_MOD, GL_ZERO, GL_SRC_COLOR); }
-    void srcblend() { changeblend(BLEND_SRC, GL_ONE, GL_ZERO); }
+    void resetblend(bool force = false);
+    void setblend(int type, bool force = false)
+    {
+        switch(type)
+        {
+            case BLEND_ALPHA: changeblend(BLEND_ALPHA, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, force); break;
+            case BLEND_MOD: changeblend(BLEND_MOD, GL_ZERO, GL_SRC_COLOR, force); break;
+            case BLEND_SRC: changeblend(BLEND_SRC, GL_ONE, GL_ZERO, force); break;
+            default: resetblend(force); break;
+        }
+    }
+
+    void resetblend(bool force)
+    {
+        if(force) blenddef = surfacetype == SURFACE_COMPOSITE ? BLEND_SRC : BLEND_ALPHA;
+        setblend(blenddef, force);
+    }
 
     #define UIREVCMDC(func, types, argtypes, body) \
         ICOMMAND(0, ui##func, types, argtypes, \
@@ -1127,16 +1139,7 @@ namespace UI
             projection();
 
             glEnable(GL_BLEND);
-            if(surfacetype == SURFACE_COMPOSITE)
-            {
-                blendtype = BLEND_SRC;
-                glBlendFunc(GL_ONE, GL_ZERO);
-            }
-            else
-            {
-                blendtype = BLEND_ALPHA;
-                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-            }
+            resetblend(true);
             resethudshader();
 
             changed = 0;
@@ -1398,6 +1401,30 @@ namespace UI
         Object::curtag = oldtag;
     }
     ICOMMAND(0, uitag, "se", (const char *tag, uint *contents), uitag(tag, contents));
+
+    struct Blend : Object
+    {
+        int type;
+
+        void setup(int type_)
+        {
+            Object::setup();
+            type = type_;
+        }
+
+        static const char *typestr() { return "#Blend"; }
+        const char *gettype() const { return typestr(); }
+
+        void draw(bool world, float sx, float sy)
+        {
+            int oldblend = blenddef;
+            blenddef = type;
+            Object::draw(world, sx, sy);
+            blenddef = oldblend;
+        }
+    };
+
+    ICOMMAND(0, uiblend, "ie", (int *type, uint *children), BUILD(Blend, o, o->setup(*type), children));
 
     struct Font : Object
     {
@@ -2815,23 +2842,26 @@ namespace UI
 
         void setupdraw(int drawflags)
         {
-            if(type != blendtype) drawflags |= CHANGE_BLEND;
-            changedraw(drawflags);
+            int outtype = -1;
             switch(type)
             {
-                case MODULATE: modblend(); break;
-                case OVERWRITE: srcblend(); break;
-                default: resetblend(); break;
+                case MODULATE: outtype = BLEND_MOD; break;
+                case OVERWRITE: outtype = BLEND_SRC; break;
+                case SOLID: outtype = BLEND_ALPHA; break;
+                default: outtype = blenddef; break;
             }
+            if(outtype != blendtype) drawflags |= CHANGE_BLEND;
+            changedraw(drawflags);
+            setblend(outtype);
         }
 
-        void setup(const Color &color_, int type_ = SOLID, int dir_ = VERTICAL)
+        void setup(const Color &color_, int type_ = -1, int dir_ = -1)
         {
             Object::setup();
             colors.setsize(0);
             colors.add(color_);
-            type = type_;
-            dir = dir_;
+            type = type_ >= 0 ? type_ : -1;
+            dir = dir_ >= 0 ? dir_ : VERTICAL;
         }
 
         void rotatecolors(float amt, int colstart = 0, int colcount = 0)
@@ -2902,7 +2932,7 @@ namespace UI
         float minw, minh;
         vec2 coords[FC_MAX];
 
-        void setup(float minw_, float minh_, const Color &color_ = Color(colourwhite), int type_ = SOLID, int dir_ = VERTICAL)
+        void setup(float minw_, float minh_, const Color &color_ = Color(colourwhite), int type_ = -1, int dir_ = -1)
         {
             Colored::setup(color_, type_, dir_);
             minw = minw_;
@@ -2910,7 +2940,7 @@ namespace UI
             loopi(FC_MAX) loopj(2) coords[i][j] = defcoords[i][j];
         }
 
-        void setup(const Color &color_, int type_ = SOLID, int dir_ = VERTICAL)
+        void setup(const Color &color_, int type_ = -1, int dir_ = -1)
         {
             Colored::setup(color_, type_, dir_);
             minw = minh = 0;
@@ -2958,7 +2988,7 @@ namespace UI
 
     struct Target : Filler
     {
-        void setup(float minw_, float minh_, const Color &color_ = Color(colourwhite), int type_ = SOLID, int dir_ = VERTICAL)
+        void setup(float minw_, float minh_, const Color &color_ = Color(colourwhite), int type_ = -1, int dir_ = -1)
         {
             Filler::setup(minw_, minh_, color_, type_, dir_);
         }
@@ -2977,7 +3007,7 @@ namespace UI
 
     struct FillColor : Target
     {
-        void setup(const Color &color_, float minw_ = 0, float minh_ = 0, int type_ = SOLID, int dir_ = VERTICAL)
+        void setup(const Color &color_, float minw_ = 0, float minh_ = 0, int type_ = -1, int dir_ = -1)
         {
             Target::setup(minw_, minh_, color_, type_, dir_);
         }
@@ -3052,14 +3082,14 @@ namespace UI
     };
 
     ICOMMAND(0, uicolour, "iffe", (int *c, float *minw, float *minh, uint *children),
-        BUILD(FillColor, o, o->setup(Color(*c), *minw*uiscale, *minh*uiscale, Colored::SOLID), children));
+        BUILD(FillColor, o, o->setup(Color(*c), *minw*uiscale, *minh*uiscale), children));
 
     ICOMMAND(0, uimodcolour, "iffe", (int *c, float *minw, float *minh, uint *children),
         BUILD(FillColor, o, o->setup(Color(*c), *minw*uiscale, *minh*uiscale, Colored::MODULATE), children));
 
     struct Gradient : FillColor
     {
-        void setup(const Color &color_, const Color &color2_, float minw_ = 0, float minh_ = 0, int type_ = SOLID, int dir_ = VERTICAL)
+        void setup(const Color &color_, const Color &color2_, float minw_ = 0, float minh_ = 0, int type_ = -1, int dir_ = -1)
         {
             FillColor::setup(color_, minw_, minh_, type_, dir_);
             colors.add(color2_);
@@ -3070,13 +3100,13 @@ namespace UI
     };
 
     ICOMMAND(0, uivgradient, "iiffe", (int *c, int *c2, float *minw, float *minh, uint *children),
-        BUILD(Gradient, o, o->setup(Color(*c), Color(*c2), *minw*uiscale, *minh*uiscale, Gradient::SOLID, Gradient::VERTICAL), children));
+        BUILD(Gradient, o, o->setup(Color(*c), Color(*c2), *minw*uiscale, *minh*uiscale), children));
 
     ICOMMAND(0, uimodvgradient, "iiffe", (int *c, int *c2, float *minw, float *minh, uint *children),
-        BUILD(Gradient, o, o->setup(Color(*c), Color(*c2), *minw*uiscale, *minh*uiscale, Gradient::MODULATE, Gradient::VERTICAL), children));
+        BUILD(Gradient, o, o->setup(Color(*c), Color(*c2), *minw*uiscale, *minh*uiscale, Gradient::MODULATE), children));
 
     ICOMMAND(0, uihgradient, "iiffe", (int *c, int *c2, float *minw, float *minh, uint *children),
-        BUILD(Gradient, o, o->setup(Color(*c), Color(*c2), *minw*uiscale, *minh*uiscale, Gradient::SOLID, Gradient::HORIZONTAL), children));
+        BUILD(Gradient, o, o->setup(Color(*c), Color(*c2), *minw*uiscale, *minh*uiscale, -1, Gradient::HORIZONTAL), children));
 
     ICOMMAND(0, uimodhgradient, "iiffe", (int *c, int *c2, float *minw, float *minh, uint *children),
         BUILD(Gradient, o, o->setup(Color(*c), Color(*c2), *minw*uiscale, *minh*uiscale, Gradient::MODULATE, Gradient::HORIZONTAL), children));
@@ -3287,7 +3317,7 @@ namespace UI
 
         void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0, bool outline_ = false, float shadowsize_ = 0.f, bool aspect_ = false)
         {
-            Target::setup(minw_, minh_, color_, SOLID, VERTICAL);
+            Target::setup(minw_, minh_, color_);
             tex = tex_;
             alphatarget = alphatarget_;
             outline = outline_;
@@ -3296,9 +3326,9 @@ namespace UI
             aspect = aspect_;
         }
 
-        void setup(Texture *tex_, const Color &color_, const Color &color2_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0, int dir_ = VERTICAL, bool outline_ = false, float shadowsize_ = 0.f, bool aspect_ = false)
+        void setup(Texture *tex_, const Color &color_, const Color &color2_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0, int dir_ = -1, bool outline_ = false, float shadowsize_ = 0.f, bool aspect_ = false)
         {
-            Target::setup(minw_, minh_, color_, SOLID, dir_);
+            Target::setup(minw_, minh_, color_, -1, dir_);
             colors.add(color2_); // gradient version
             tex = tex_;
             alphatarget = alphatarget_;
@@ -3497,7 +3527,7 @@ namespace UI
         ICOMMAND(0, uiimage##name, "siiffe", (char *texname, int *c, int *a, float *minw, float *minh, uint *children), \
             BUILD(Image, o, o->setup(textureload(texname, value, true, false, texgc), Color(*c), *a!=0, *minw*uiscale, *minh*uiscale), children)); \
         ICOMMAND(0, uiimagevgradient##name, "siiiffe", (char *texname, int *c, int *c2, int *a, float *minw, float *minh, uint *children), \
-            BUILD(Image, o, o->setup(textureload(texname, value, true, false, texgc), Color(*c), Color(*c2), *a!=0, *minw*uiscale, *minh*uiscale, Image::VERTICAL), children)); \
+            BUILD(Image, o, o->setup(textureload(texname, value, true, false, texgc), Color(*c), Color(*c2), *a!=0, *minw*uiscale, *minh*uiscale), children)); \
         ICOMMAND(0, uiimagehgradient##name, "siiiffe", (char *texname, int *c, int *c2, int *a, float *minw, float *minh, uint *children), \
             BUILD(Image, o, o->setup(textureload(texname, value, true, false, texgc), Color(*c), Color(*c2), *a!=0, *minw*uiscale, *minh*uiscale, Image::HORIZONTAL), children)); \
         UICMDT(Image, image, tex##name, "s", (char *texname), if(texname && *texname) o->tex = textureload(texname, value, true, false, texgc)); \
@@ -4009,7 +4039,7 @@ namespace UI
 
     struct Shape : Target
     {
-        void setup(const Color &color_, int type_ = SOLID, float minw_ = 0, float minh_ = 0)
+        void setup(const Color &color_, int type_ = -1, float minw_ = 0, float minh_ = 0)
         {
             Target::setup(minw_, minh_, color_, type_);
         }
@@ -4025,7 +4055,7 @@ namespace UI
     {
         vec2 a, b, c;
 
-        void setup(const Color &color_, float w = 0, float h = 0, int angle = 0, int type_ = SOLID)
+        void setup(const Color &color_, float w = 0, float h = 0, int angle = 0, int type_ = -1)
         {
             a = vec2(0, -h*2.0f/3);
             b = vec2(-w/2, h/3);
@@ -4073,7 +4103,7 @@ namespace UI
     };
 
     ICOMMAND(0, uitriangle, "iffie", (int *c, float *minw, float *minh, int *angle, uint *children),
-        BUILD(Triangle, o, o->setup(Color(*c), *minw*uiscale, *minh*uiscale, *angle, Triangle::SOLID), children));
+        BUILD(Triangle, o, o->setup(Color(*c), *minw*uiscale, *minh*uiscale, *angle), children));
 
     ICOMMAND(0, uitriangleoutline, "iffie", (int *c, float *minw, float *minh, int *angle, uint *children),
         BUILD(Triangle, o, o->setup(Color(*c), *minw*uiscale, *minh*uiscale, *angle, Triangle::OUTLINED), children));
@@ -4085,7 +4115,7 @@ namespace UI
     {
         float radius;
 
-        void setup(const Color &color_, float size, int type_ = SOLID)
+        void setup(const Color &color_, float size, int type_ = -1)
         {
             Shape::setup(color_, type_, size, size);
 
@@ -4136,7 +4166,7 @@ namespace UI
     };
 
     ICOMMAND(0, uicircle, "ife", (int *c, float *size, uint *children),
-        BUILD(Circle, o, o->setup(Color(*c), *size*uiscale, Circle::SOLID), children));
+        BUILD(Circle, o, o->setup(Color(*c), *size*uiscale), children));
 
     ICOMMAND(0, uicircleoutline, "ife", (int *c, float *size, uint *children),
         BUILD(Circle, o, o->setup(Color(*c), *size*uiscale, Circle::OUTLINED), children));
@@ -6157,7 +6187,7 @@ namespace UI
 
         void setup(Texture *tex_, const Color &color_, float dist_ = 0, float border_ = 0.05f, float minw_ = 0, float minh_ = 0)
         {
-            Target::setup(minw_, minh_, color_, SOLID, VERTICAL);
+            Target::setup(minw_, minh_, color_);
             colors.add(Color(colourwhite));
             tex = tex_;
             dist = dist_;
@@ -6166,7 +6196,7 @@ namespace UI
 
         void setup(Texture *tex_, const Color &color_, const Color &color2_, float dist_ = 0, float border_ = 0.05f, float minw_ = 0, float minh_ = 0)
         {
-            Target::setup(minw_, minh_, color_, SOLID, VERTICAL);
+            Target::setup(minw_, minh_, color_);
             colors.add(color2_); // minimap version
             tex = tex_;
             dist = dist_;
