@@ -1133,6 +1133,12 @@ namespace server
 #define PLCHAN_ENUM(pr, en) en(pr, Announce, ANNOUNCE) en(pr, Message, MESSAGE) en(pr, Voice, VOICE) en(pr, Maximum, MAX)
 ENUMNV(PLCHAN, PLCHAN_ENUM);
 
+#define HUDPOS_ENUM(pr, en) \
+    en(pr, lefttop, LEFTTOP) en(pr, centertop, CENTERTOP) en(pr, righttop, RIGHTTOP) \
+    en(pr, leftbottom, LEFTBOTTOM) en(pr, centerbottom, CENTERBOTTOM) en(pr, rightbottom, RIGHTBOTTOM) \
+    en(pr, centermiddle, CENTERMIDDLE) en(pr, Maximum, MAX)
+ENUMNV(HUDPOS, HUDPOS_ENUM)
+
 #ifdef CPP_GAME_SERVER
 #define WATERPHYS(name,mat) (server::getwater##name(mat)*server::getwater##name##scale(mat))
 #else

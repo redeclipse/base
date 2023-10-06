@@ -578,15 +578,46 @@ namespace hud
     FVAR(IDF_PERSIST, aboveheaduidetentyaw, 0, 0, 180);
     FVAR(IDF_PERSIST, aboveheaduidetentpitch, 0, 0, 90);
 
-    VAR(IDF_PERSIST, hud3d, 0, 3, 3);
-    FVAR(IDF_PERSIST, hud3dscale, FVAR_NONZERO, 16, FVAR_MAX);
-    FVAR(IDF_PERSIST, hud3ddist, FVAR_NONZERO, 16, FVAR_MAX);
+    VAR(IDF_PERSIST, hud3d, 0, 0, 1);
+    FVAR(IDF_PERSIST, hud3dscale, FVAR_NONZERO, 1, FVAR_MAX);
+    FVAR(IDF_PERSIST, hud3ddist, FVAR_NONZERO, 64, FVAR_MAX);
+    FVAR(IDF_PERSIST, hud3doffsetx, -1, 1, FVAR_MAX);
+    FVAR(IDF_PERSIST, hud3doffsety, -1, 0.33f, FVAR_MAX);
+    FVAR(IDF_PERSIST, hud3dyaw, -360.f, 22.5f, 360.f);
+    FVAR(IDF_PERSIST, hud3dpitch, -89.9f, 0.f, 89.9f);
 
     void checkui()
     {
         hidecrosshair = 0;
-
         UI::showui("hud");
+
+        loopi(HUDPOS_MAX)
+        {
+            float yaw = 0, pitch = 0;
+            if(i/3 < 2)
+            {
+                switch(i%3)
+                {
+                    case 0: yaw = -hud3dyaw; break;
+                    case 2: yaw = hud3dyaw; break;
+                }
+                switch(i/3)
+                {
+                    case 0: pitch = -hud3dpitch; break;
+                    case 1: pitch = hud3dpitch; break;
+                }
+            }
+            defformatstring(name, "hud_%s", HUDPOS_STR[i]);
+            if(hud3d)
+            {
+                vec pos = vec(camera1->o).add(vec(camera1->yaw*RAD, camera1->pitch*RAD).mul(hud3ddist));
+                if(UI::uivisible(name))
+                    UI::setui(name, UI::SURFACE_MAIN, -1, pos, yaw, pitch, hud3dscale, vec2(hud3doffsetx, hud3doffsety));
+                else UI::showui(name, UI::SURFACE_MAIN, -1, pos, yaw, pitch, hud3dscale, vec2(hud3doffsetx, hud3doffsety));
+            }
+            else UI::closeui(name);
+        }
+
         if(!UI::hasmenu(true))
         {
             if(connected())
@@ -610,8 +641,8 @@ namespace hud
                     continue;
                 }
                 if(UI::uivisible("abovehead", UI::SURFACE_MAIN, d->clientnum))
-                    UI::setui("abovehead", UI::SURFACE_MAIN, d->clientnum, d->abovehead(), aboveheaduiyaw, aboveheaduipitch, aboveheaduiscale, aboveheaduidetentyaw, aboveheaduidetentpitch);
-                else UI::showui("abovehead", UI::SURFACE_MAIN, d->clientnum, d->abovehead(), aboveheaduiyaw, aboveheaduipitch, aboveheaduiscale, aboveheaduidetentyaw, aboveheaduidetentpitch);
+                    UI::setui("abovehead", UI::SURFACE_MAIN, d->clientnum, d->abovehead(), aboveheaduiyaw, aboveheaduipitch, aboveheaduiscale, vec2(-1, -1), aboveheaduidetentyaw, aboveheaduidetentpitch);
+                else UI::showui("abovehead", UI::SURFACE_MAIN, d->clientnum, d->abovehead(), aboveheaduiyaw, aboveheaduipitch, aboveheaduiscale, vec2(-1, -1), aboveheaduidetentyaw, aboveheaduidetentpitch);
             }
         }
         else UI::closedynui("abovehead");

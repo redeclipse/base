@@ -953,7 +953,7 @@ namespace UI
               yaw, pitch, curyaw, curpitch,
               offyaw, offpitch, detentyaw, detentpitch,
               scale, curscale, dist, hitx, hity;
-        vec2 sscale, soffset;
+        vec2 sscale, soffset, woffset;
         vec origin, pos;
         tagval args[MAXARGS];
 
@@ -967,7 +967,7 @@ namespace UI
             yaw(-1), pitch(0), curyaw(0), curpitch(0),
             offyaw(0), offpitch(0), detentyaw(0), detentpitch(0),
             scale(1), curscale(1), dist(0), hitx(-1), hity(-1),
-            sscale(1, 1), soffset(0, 0),
+            sscale(1, 1), soffset(0, 0), woffset(-1, -1),
             origin(-1, -1, -1), pos(-1, -1, -1)
         {
             if(contents_ && *contents_) contents = new Code(contents_);
@@ -1071,6 +1071,7 @@ namespace UI
             pitch = curyaw = curpitch = offyaw = offpitch = 0;
             scale = 1;
             curscale = uiworldscale;
+            woffset = vec2(-1, -1);
             origin = pos = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX);
         }
 
@@ -1085,7 +1086,7 @@ namespace UI
             resetworld();
         }
 
-        void show(const vec &o = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float y = 0, float p = 0, float s = 1, float dy = 0, float dp = 0)
+        void show(const vec &o = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float y = 0, float p = 0, float s = 1, const vec2 &t = vec2(-1, -1), float dy = 0, float dp = 0)
         {
             overridepos = false;
             state |= STATE_HIDDEN;
@@ -1096,6 +1097,7 @@ namespace UI
                 pitch = p;
                 origin = pos = o;
                 scale = s;
+                woffset = t;
                 curscale = scale >= 0 ? scale * uiworldscale : -scale;
                 detentyaw = dy > 0 ? clamp(dy, 0.f, 180.f) : 0.f;
                 detentpitch = dp > 0 ? clamp(dp, 0.f, 90.f) : 0.f;
@@ -1202,35 +1204,58 @@ namespace UI
         {
             pos = origin;
             curscale = scale >= 0 ? scale * uiworldscale : -scale;
-
-            vec ray = vec(origin).sub(camera1->o), dir = vec(ray).normalize();
-
             curyaw = yaw;
             curpitch = pitch;
+
+            vec ray = vec(pos).sub(camera1->o), dir = vec(ray).normalize();
+            bool hasoffset = woffset != vec2(-1, -1);
+
             vectoyawpitch(dir, offyaw, offpitch);
             offyaw += 180;
             offpitch = -offpitch;
-            if(curyaw < 0) curyaw = offyaw;
-            if(curpitch < -180 || curpitch > 180) curpitch = offpitch;
-            if(detentyaw > 0) curyaw = round(curyaw / detentyaw) * detentyaw;
-            if(detentpitch > 0) curpitch = round(curpitch / detentpitch) * detentpitch;
+            if(hasoffset || curyaw < 0) curyaw = offyaw;
+            if(hasoffset || curpitch < -180 || curpitch > 180) curpitch = offpitch;
+            if(!hasoffset)
+            {
+                if(detentyaw > 0) curyaw = round(curyaw / detentyaw) * detentyaw;
+                if(detentpitch > 0) curpitch = round(curpitch / detentpitch) * detentpitch;
+            }
 
             vec n = vec(curyaw * RAD, curpitch * RAD).normalize(), up(0, 0, 1), right;
             if(fabsf(n.z) < 1.f) right.cross(up, n).normalize();
             else right.cross(n, up).normalize();
             up.cross(n, right).normalize();
 
-            switch(adjust&ALIGN_HMASK)
+            if(hasoffset)
             {
-                case ALIGN_LEFT:    break;
-                case ALIGN_RIGHT:   pos.add(vec(right).mul(pw * curscale)); break;
-                default:            pos.add(vec(right).mul(pw * curscale * 0.5f)); break;
+                pos.add(vec(right).mul(pw * curscale * 0.5f)).add(vec(up).mul(ph * curscale * 0.5f));
+                switch(adjust&ALIGN_HMASK)
+                {
+                    case ALIGN_LEFT:    pos.add(vec(right).mul(woffset.x * curscale)); break;
+                    case ALIGN_RIGHT:   pos.sub(vec(right).mul(woffset.x * curscale)); break;
+                    default:            break;
+                }
+                switch(adjust&ALIGN_VMASK)
+                {
+                    case ALIGN_BOTTOM:  pos.sub(vec(up).mul(woffset.y * curscale)); break;
+                    case ALIGN_TOP:     pos.add(vec(up).mul(woffset.y * curscale)); break;
+                    default: break;
+                }
             }
-            switch(adjust&ALIGN_VMASK)
+            else
             {
-                case ALIGN_BOTTOM:  break;
-                case ALIGN_TOP:     pos.add(vec(up).mul(ph * curscale)); break;
-                default:            pos.add(vec(up).mul(ph * curscale * 0.5f)); break;
+                switch(adjust&ALIGN_HMASK)
+                {
+                    case ALIGN_LEFT:    break;
+                    case ALIGN_RIGHT:   pos.add(vec(right).mul(pw * curscale)); break;
+                    default:            pos.add(vec(right).mul(pw * curscale * 0.5f)); break;
+                }
+                switch(adjust&ALIGN_VMASK)
+                {
+                    case ALIGN_BOTTOM:  break;
+                    case ALIGN_TOP:     pos.add(vec(up).mul(ph * curscale)); break;
+                    default:            pos.add(vec(up).mul(ph * curscale * 0.5f)); break;
+                }
             }
 
             return ray.magnitude();
@@ -1323,7 +1348,7 @@ namespace UI
                 hudmatrix = camprojmatrix;
                 hudmatrix.translate(pos);
                 hudmatrix.rotate_around_z(curyaw*RAD);
-                hudmatrix.rotate_around_x(curpitch*RAD - 90*RAD);
+                hudmatrix.rotate_around_x((curpitch - 90)*RAD);
                 hudmatrix.scale(curscale);
             }
             else hudmatrix.ortho(px, px + pw, py + ph, py, -1, 1);
@@ -1804,12 +1829,12 @@ namespace UI
             uiscale = olduiscale;
         }
 
-        bool show(Window *w, const vec &pos = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float y = 0, float p = 0, float s = 1, float dy = 0, float dp = 0)
+        bool show(Window *w, const vec &pos = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float y = 0, float p = 0, float s = 1, const vec2 &t = vec2(-1, -1), float dy = 0, float dp = 0)
         {
             if(children.find(w) >= 0) return false;
             w->resetchildstate();
             children.add(w);
-            w->show(pos, y, p, s, dy, dp);
+            w->show(pos, y, p, s, t, dy, dp);
             return true;
         }
 
@@ -2201,7 +2226,7 @@ namespace UI
         return false;
     }
 
-    bool showui(const char *name, int stype, int param, const vec &origin, float yaw, float pitch, float scale, float detentyaw, float detentpitch)
+    bool showui(const char *name, int stype, int param, const vec &origin, float yaw, float pitch, float scale, const vec2 &offset, float detentyaw, float detentpitch)
     {
         const char *ref = dynuiref(name, param);
 
@@ -2210,14 +2235,14 @@ namespace UI
         Window *w = surface->windows.find(ref, NULL);
 
         if(!w && param >= 0 && dynuiexec(name, param)) w = surface->windows.find(ref, NULL);
-        bool ret = w && surface->show(w, origin, yaw, pitch, scale, detentyaw, detentpitch);
+        bool ret = w && surface->show(w, origin, yaw, pitch, scale, offset, detentyaw, detentpitch);
 
         popsurface();
 
         return ret;
     }
 
-    bool setui(const char *name, int stype, int param, const vec &origin, float yaw, float pitch, float scale, float detentyaw, float detentpitch)
+    bool setui(const char *name, int stype, int param, const vec &origin, float yaw, float pitch, float scale, const vec2 &offset, float detentyaw, float detentpitch)
     {
         const char *ref = dynuiref(name, param);
 
@@ -2234,6 +2259,7 @@ namespace UI
         w->yaw = yaw;
         w->pitch = pitch;
         w->scale = scale;
+        w->woffset = offset;
         w->curscale = w->scale >= 0 ? w->scale * uiworldscale : -w->scale;
         w->detentyaw = detentyaw;
         w->detentpitch = detentpitch;
@@ -2260,9 +2286,9 @@ namespace UI
         return ret;
     }
 
-    bool toggleui(const char *name, int stype, int param, const vec &origin, float yaw, float pitch, float scale, float detentyaw, float detentpitch)
+    bool toggleui(const char *name, int stype, int param, const vec &origin, float yaw, float pitch, float scale, const vec2 &offset, float detentyaw, float detentpitch)
     {
-        if(showui(name, stype, param, origin, yaw, pitch, scale, detentyaw, detentpitch)) return true;
+        if(showui(name, stype, param, origin, yaw, pitch, scale, offset, detentyaw, detentpitch)) return true;
         hideui(name, stype, param);
         return false;
     }
@@ -2296,15 +2322,15 @@ namespace UI
         loopi(SURFACE_MAX) if(surfaces[i] && surfaces[i]->interactive) hideui(NULL, i, world);
     }
 
-    void holdui(const char *name, bool on, int stype, int param, const vec &origin, float yaw, float pitch, float scale, float detentyaw, float detentpitch)
+    void holdui(const char *name, bool on, int stype, int param, const vec &origin, float yaw, float pitch, float scale, const vec2 &offset, float detentyaw, float detentpitch)
     {
-        if(on) showui(name, stype, param, origin, yaw, pitch, scale, detentyaw, detentpitch);
+        if(on) showui(name, stype, param, origin, yaw, pitch, scale, offset, detentyaw, detentpitch);
         else hideui(name, stype, param);
     }
 
-    void pressui(const char *name, bool on, int stype, int param, const vec &origin, float yaw, float pitch, float scale, float detentyaw, float detentpitch)
+    void pressui(const char *name, bool on, int stype, int param, const vec &origin, float yaw, float pitch, float scale, const vec2 &offset, float detentyaw, float detentpitch)
     {
-        if(on) { if(!uivisible(name, stype, param)) showui(name, stype, param, origin, yaw, pitch, scale, detentyaw, detentpitch); }
+        if(on) { if(!uivisible(name, stype, param)) showui(name, stype, param, origin, yaw, pitch, scale, offset, detentyaw, detentpitch); }
         else if(uivisible(name, stype, param)) hideui(name, stype, param);
     }
 
@@ -2326,13 +2352,13 @@ namespace UI
         return ret;
     }
 
-    ICOMMAND(IDF_NOECHO, showui, "sibggggffff", (char *name, int *surface, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch), intret(showui(name, *surface, *param, vec(*x, *y, *z), *yaw, *pitch, *scale, *detentyaw, *detentpitch) ? 1 : 0));
+    ICOMMAND(IDF_NOECHO, showui, "sibggggffggff", (char *name, int *surface, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *scale, float *offsetx, float *offsety, float *detentyaw, float *detentpitch), intret(showui(name, *surface, *param, vec(*x, *y, *z), *yaw, *pitch, *scale, vec2(*offsetx, *offsety), *detentyaw, *detentpitch) ? 1 : 0));
     ICOMMAND(IDF_NOECHO, hideui, "sib", (char *name, int *surface, int *param), intret(hideui(name, *surface, *param) ? 1 : 0));
     ICOMMAND(IDF_NOECHO, hidetopui, "", (), intret(surface && surface->hidetop() ? 1 : 0));
     ICOMMAND(IDF_NOECHO, hideallui, "ii", (int *n, int *w), intret(surface ? surface->hideall(*n != 0, *w != 0) : 0));
-    ICOMMAND(IDF_NOECHO, toggleui, "sibggggffff", (char *name, int *surface, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch), intret(toggleui(name, *surface, *param, vec(*x, *y, *z), *yaw, *pitch, *scale, *detentyaw, *detentpitch) ? 1 : 0));
-    ICOMMAND(IDF_NOECHO, holdui, "sibggggffffD", (char *name, int *surface, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch, int *down), holdui(name, *down!=0, *surface, *param, vec(*x, *y, *z), *yaw, *pitch, *scale, *detentyaw, *detentpitch));
-    ICOMMAND(IDF_NOECHO, pressui, "sibggggffffD", (char *name, int *surface, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch, int *down), pressui(name, *down!=0, *surface, *param, vec(*x, *y, *z), *yaw, *pitch, *scale, *detentyaw, *detentpitch));
+    ICOMMAND(IDF_NOECHO, toggleui, "sibggggffggff", (char *name, int *surface, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *scale, float *offsetx, float *offsety, float *detentyaw, float *detentpitch), intret(toggleui(name, *surface, *param, vec(*x, *y, *z), *yaw, *pitch, *scale, vec2(*offsetx, *offsety), *detentyaw, *detentpitch) ? 1 : 0));
+    ICOMMAND(IDF_NOECHO, holdui, "sibggggffggffD", (char *name, int *surface, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *scale, float *offsetx, float *offsety, float *detentyaw, float *detentpitch, int *down), holdui(name, *down!=0, *surface, *param, vec(*x, *y, *z), *yaw, *pitch, *scale, vec2(*offsetx, *offsety), *detentyaw, *detentpitch));
+    ICOMMAND(IDF_NOECHO, pressui, "sibggggffggffD", (char *name, int *surface, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *scale, float *offsetx, float *offsety, float *detentyaw, float *detentpitch, int *down), pressui(name, *down!=0, *surface, *param, vec(*x, *y, *z), *yaw, *pitch, *scale, vec2(*offsetx, *offsety), *detentyaw, *detentpitch));
     ICOMMAND(IDF_NOECHO, uivisible, "sib", (char *name, int *surface, int *param), intret(uivisible(name, *surface, *param) ? 1 : 0));
 
     ICOMMANDVS(0, uitopname, surface ? surface->topname() : "")
@@ -6649,7 +6675,7 @@ namespace UI
 
             if(!haswindow)
             {
-                surface->show(w, e.o, e.attrs[2], e.attrs[3], e.attrs[5] != 0 ? e.attrs[5]/100.f : 1.f, e.attrs[6] > 0 ? e.attrs[6] : 0.f, e.attrs[7] > 0 ? e.attrs[7] : 0.f);
+                surface->show(w, e.o, e.attrs[2], e.attrs[3], e.attrs[5] != 0 ? e.attrs[5]/100.f : 1.f, vec2(-1, -1), e.attrs[6] > 0 ? e.attrs[6] : 0.f, e.attrs[7] > 0 ? e.attrs[7] : 0.f);
                 continue;
             }
             float yaw = 0, pitch = 0;
