@@ -2553,7 +2553,10 @@ void gettextres(int &w, int &h)
     }
 }
 
-int renderw = 0, renderh = 0, hudw = 0, hudh = 0;
+VARR(renderw, 0);
+VARR(renderh, 0);
+VARR(hudw, 0);
+VARR(hudh, 0);
 
 void gl_setupframe(bool force)
 {

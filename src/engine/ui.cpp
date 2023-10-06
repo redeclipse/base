@@ -708,7 +708,7 @@ namespace UI
         virtual bool isfill() const { return false; }
         virtual bool iscolour() const { return false; }
         virtual bool istext() const { return false; }
-        virtual bool iscomp() const { return false; }
+        virtual bool isrender() const { return false; }
         virtual bool isimage() const { return false; }
         virtual bool iseditor() const { return false; }
         virtual bool isclip() const { return false; }
@@ -1704,8 +1704,9 @@ namespace UI
 
         void build()
         {
-            float oldtextscale = curtextscale;
+            float oldtextscale = curtextscale, olduiscale = uiscale;
             curtextscale = 1;
+            uiscale = 1;
             pushfont();
 
             cursortype = CURSOR_DEFAULT;
@@ -1751,18 +1752,21 @@ namespace UI
 
             popfont();
             curtextscale = oldtextscale;
+            uiscale = olduiscale;
         }
 
         void render(bool world = false)
         {
-            float oldtextscale = curtextscale;
+            float oldtextscale = curtextscale, olduiscale = uiscale;
             curtextscale = 1;
+            uiscale = 1;
             pushfont();
             layout();
             adjustchildren();
             draw(world);
             popfont();
             curtextscale = oldtextscale;
+            uiscale = olduiscale;
         }
 
         bool show(Window *w, const vec &pos = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float y = 0, float p = 0, float s = 1, float dy = 0, float dp = 0)
@@ -3154,7 +3158,7 @@ namespace UI
         return false;
     }
 
-    struct Composite : Target
+    struct Render : Target
     {
         Shader *shdr;
         struct param
@@ -3178,9 +3182,9 @@ namespace UI
             texs.setsize(0);
         }
 
-        static const char *typestr() { return "#Composite"; }
+        static const char *typestr() { return "#Render"; }
         const char *gettype() const { return typestr(); }
-        bool iscomp() const { return true; }
+        bool isrender() const { return true; }
 
         void startdraw()
         {
@@ -3196,7 +3200,7 @@ namespace UI
 
             LOCALPARAMF(millis, lastmillis/1000.0f);
             LOCALPARAMF(viewsize, hudw*w, hudh*h, 1.0f/(hudw*w), 1.0f/(hudh*h));
-            LOCALPARAMF(composite, sx, sy, w, h);
+            LOCALPARAMF(rendersize, sx, sy, w, h);
 
             vector<LocalShaderParam> list;
             loopv(params)
@@ -3226,13 +3230,13 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uicomp, "sffe", (char *name, float *minw, float *minh, uint *children), \
-        BUILD(Composite, o, o->setup(name, *minw*uiscale, *minh*uiscale), children));
+    ICOMMAND(0, uirender, "sffe", (char *name, float *minw, float *minh, uint *children), \
+        BUILD(Render, o, o->setup(name, *minw*uiscale, *minh*uiscale), children));
 
-    UICMD(Composite, comp, param, "sffff", (char *name, float *x, float *y, float *z, float *w),
+    UICMD(Render, render, param, "sffff", (char *name, float *x, float *y, float *z, float *w),
     {
         if(!name || !*name) return;
-        Composite::param *p = NULL;
+        Render::param *p = NULL;
         loopv(o->params) if(!strcmp(o->params[i].name, name))
         {
             p = &o->params[i];
@@ -3246,7 +3250,7 @@ namespace UI
         p->value = vec4(*x, *y, *z, *w);
     });
 
-    UICMD(Composite, comp, tex, "s", (char *name),
+    UICMD(Render, render, tex, "s", (char *name),
     {
         if(!name || !*name || o->texs.length() >= 10) return;
         o->texs.add(textureload(name, 3, true, false, texgc));
