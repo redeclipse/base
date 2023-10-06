@@ -166,12 +166,12 @@ namespace UI
         CHANGE_COLOR  = 1<<1,
         CHANGE_BLEND  = 1<<2
     };
-    static int changed = 0;
+    static int changed = 0, surfacetype = -1;
 
     static Object *drawing = NULL;
     static bool propagating = false;
 
-    enum { BLEND_ALPHA, BLEND_MOD };
+    enum { BLEND_ALPHA, BLEND_MOD, BLEND_SRC };
     static int blendtype = BLEND_ALPHA;
 
     static inline void changeblend(int type, GLenum src, GLenum dst)
@@ -185,6 +185,7 @@ namespace UI
 
     void resetblend() { changeblend(BLEND_ALPHA, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); }
     void modblend() { changeblend(BLEND_MOD, GL_ZERO, GL_SRC_COLOR); }
+    void srcblend() { changeblend(BLEND_SRC, GL_ONE, GL_ZERO); }
 
     #define UIREVCMDC(func, types, argtypes, body) \
         ICOMMAND(0, ui##func, types, argtypes, \
@@ -910,7 +911,6 @@ namespace UI
 
     Surface *surface = NULL, *surfaces[SURFACE_MAX] = { NULL, NULL, NULL };
     vector<Surface *> surfacestack;
-    int surfacetype = -1;
 
     const char *windowtype[SURFACE_MAX] = { "Main", "Progress", "Composite" };
     const char *windowaffix[SURFACE_MAX] = { "", "progress", "comp" };
@@ -1127,8 +1127,16 @@ namespace UI
             projection();
 
             glEnable(GL_BLEND);
-            blendtype = BLEND_ALPHA;
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            if(surfacetype == SURFACE_COMPOSITE)
+            {
+                blendtype = BLEND_SRC;
+                glBlendFunc(GL_ONE, GL_ZERO);
+            }
+            else
+            {
+                blendtype = BLEND_ALPHA;
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            }
             resethudshader();
 
             changed = 0;
@@ -2795,7 +2803,7 @@ namespace UI
 
     struct Colored : Object
     {
-        enum { SOLID = 0, MODULATE, OUTLINED };
+        enum { SOLID = 0, MODULATE, OUTLINED, OVERWRITE };
         enum { VERTICAL, HORIZONTAL };
 
         int type, dir;
@@ -2804,6 +2812,18 @@ namespace UI
         static const char *typestr() { return "#Colored"; }
         const char *gettype() const { return typestr(); }
         bool iscolour() const { return true; }
+
+        void setupdraw(int drawflags)
+        {
+            if(type != blendtype) drawflags |= CHANGE_BLEND;
+            changedraw(drawflags);
+            switch(type)
+            {
+                case MODULATE: modblend(); break;
+                case OVERWRITE: srcblend(); break;
+                default: resetblend(); break;
+            }
+        }
 
         void setup(const Color &color_, int type_ = SOLID, int dir_ = VERTICAL)
         {
@@ -2852,7 +2872,7 @@ namespace UI
         }
     };
 
-    UIARGT(Colored, colour, type, "i", int, int(Colored::SOLID), int(Colored::OUTLINED));
+    UIARGT(Colored, colour, type, "i", int, int(Colored::SOLID), int(Colored::OVERWRITE));
     UIARGT(Colored, colour, dir, "i", int, int(Colored::VERTICAL), int(Colored::HORIZONTAL));
 
     UICMDT(Colored, colour, set, "iii", (int *c, int *pos, int *force),
@@ -2974,8 +2994,7 @@ namespace UI
 
         void draw(bool world, float sx, float sy)
         {
-            changedraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
-            if(type==MODULATE) modblend(); else resetblend();
+            setupdraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
 
             int cols = colors.length();
             gle::begin(GL_TRIANGLE_STRIP);
@@ -3083,8 +3102,7 @@ namespace UI
 
         void draw(bool world, float sx, float sy)
         {
-            changedraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
-            if(type==MODULATE) modblend(); else resetblend();
+            setupdraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
 
             if(width != 1) glLineWidth(width);
             colors[0].init();
@@ -3124,8 +3142,7 @@ namespace UI
 
         void draw(bool world, float sx, float sy)
         {
-            changedraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
-            if(type==MODULATE) modblend(); else resetblend();
+            setupdraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
 
             if(width != 1) glLineWidth(width);
             colors[0].init();
@@ -3195,8 +3212,7 @@ namespace UI
 
         void draw(bool world, float sx, float sy)
         {
-            changedraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
-            resetblend();
+            setupdraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
 
             LOCALPARAMF(millis, lastmillis/1000.0f);
             LOCALPARAMF(viewsize, hudw*w, hudh*h, 1.0f/(hudw*w), 1.0f/(hudh*h));
@@ -3330,8 +3346,8 @@ namespace UI
 
         void bindtex(GLenum mode = GL_QUADS, int colstart = 0, bool forced = false)
         {
-            changedraw(CHANGE_COLOR | CHANGE_BLEND);
-            if(type==MODULATE) modblend(); else resetblend();
+            setupdraw(CHANGE_COLOR | CHANGE_BLEND);
+
             int col = clamp(colstart, -1, colors.length()-1);
             Color c = col >= 0 ? (colors.inrange(col) ? colors[col] : colors[0]) : Color(colors[0]).scale(shadowcolor);
             if(forced || lastmode != mode)
@@ -3373,7 +3389,7 @@ namespace UI
             int cols = clamp(colcount ? colcount : colors.length()-colstart, 0, colors.length());
             if(!shading && outline)
             {
-                changedraw(CHANGE_SHADER);
+                setupdraw(CHANGE_SHADER);
                 hudoutlineshader->set();
                 LOCALPARAMF(textparams, 0.15f, 0.35f, 0.35f, 0.55f);
             }
@@ -3620,7 +3636,7 @@ namespace UI
                 }
                 if(!shading && outline)
                 {
-                    changedraw(CHANGE_SHADER);
+                    setupdraw(CHANGE_SHADER);
                     hudoutlineshader->set();
                     LOCALPARAMF(textparams, 0.15f, 0.35f, 0.35f, 0.55f);
                 }
@@ -3888,7 +3904,7 @@ namespace UI
                 }
                 if(!shading && outline)
                 {
-                    changedraw(CHANGE_SHADER);
+                    setupdraw(CHANGE_SHADER);
                     hudoutlineshader->set();
                     LOCALPARAMF(textparams, 0.15f, 0.35f, 0.35f, 0.55f);
                 }
@@ -3950,11 +3966,9 @@ namespace UI
                 return;
             }
 
-            changedraw(CHANGE_COLOR | CHANGE_BLEND);
-            if(type==MODULATE) modblend(); else resetblend();
+            setupdraw(CHANGE_COLOR | CHANGE_BLEND);
 
             Color c = colors[0];
-
             if(lastcolor != c)
             {
                 lastcolor = c;
@@ -4047,8 +4061,7 @@ namespace UI
         {
             Object::draw(world, sx, sy);
 
-            changedraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
-            if(type==MODULATE) modblend(); else resetblend();
+            setupdraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
 
             colors[0].init();
             gle::begin(type == OUTLINED ? GL_LINE_LOOP : GL_TRIANGLES);
@@ -4093,8 +4106,7 @@ namespace UI
         {
             Object::draw(world, sx, sy);
 
-            changedraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
-            if(type==MODULATE) modblend(); else resetblend();
+            setupdraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
 
             float r = radius <= 0 ? min(w, h)/2 : radius;
             colors[0].init();
@@ -4163,7 +4175,7 @@ namespace UI
 
         void draw(bool world, float sx, float sy)
         {
-            changedraw(CHANGE_COLOR|CHANGE_SHADER);
+            setupdraw(CHANGE_COLOR|CHANGE_SHADER);
 
             float k = drawscale(rescale), left = sx/k, top = sy/k;
             int flags = modcol ? TEXT_MODCOL : 0;
@@ -5123,7 +5135,7 @@ namespace UI
 
         void draw(bool world, float sx, float sy)
         {
-            changedraw(CHANGE_COLOR | CHANGE_SHADER);
+            setupdraw(CHANGE_COLOR | CHANGE_SHADER);
 
             edit->rendered = true;
 
@@ -5529,7 +5541,7 @@ namespace UI
 
         void draw(bool world, float sx, float sy)
         {
-            changedraw(CHANGE_SHADER | CHANGE_COLOR);
+            setupdraw(CHANGE_SHADER | CHANGE_COLOR);
 
             pushhudmatrix();
             matrix4 axismatrix, axisprojmatrix;
@@ -5610,7 +5622,7 @@ namespace UI
 
         void draw(bool world, float sx, float sy)
         {
-            changedraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
+            setupdraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
 
             pushhudmatrix();
             hudmatrix.ortho(0, hud::hudwidth, hud::hudheight, 0, -1, 1);
@@ -5757,7 +5769,7 @@ namespace UI
         {
             if(!loadedshaders) { Object::draw(world, sx, sy); return; }
 
-            changedraw(CHANGE_SHADER);
+            setupdraw(CHANGE_SHADER);
 
             int sx1, sy1, sx2, sy2;
             bool hasclipstack = clipstack.length() > 0;
@@ -5833,7 +5845,7 @@ namespace UI
         {
             if(!loadedshaders) { Object::draw(world, sx, sy); return; }
 
-            changedraw(CHANGE_SHADER);
+            setupdraw(CHANGE_SHADER);
 
             int sx1, sy1, sx2, sy2;
             bool hasclipstack = clipstack.length() > 0;
@@ -5916,7 +5928,7 @@ namespace UI
 
             if(!loadedshaders) return;
 
-            changedraw(CHANGE_SHADER);
+            setupdraw(CHANGE_SHADER);
 
             int sx1, sy1, sx2, sy2;
             bool hasclipstack = clipstack.length() > 0;
@@ -5977,7 +5989,7 @@ namespace UI
 
             if(!t || t == notexture) return;
 
-            changedraw(CHANGE_SHADER | CHANGE_COLOR);
+            setupdraw(CHANGE_SHADER | CHANGE_COLOR);
 
             SETSHADER(hudrgb);
             vec2 tc[4] = { vec2(0, 0), vec2(1, 0), vec2(1, 1), vec2(0, 1) };
@@ -6086,7 +6098,7 @@ namespace UI
 
             if(!t || t == notexture) return;
 
-            changedraw(CHANGE_SHADER | CHANGE_COLOR);
+            setupdraw(CHANGE_SHADER | CHANGE_COLOR);
 
             SETSHADER(hudrgb);
             vec2 tc[4] = { vec2(0, 0), vec2(1, 0), vec2(1, 1), vec2(0, 1) };
@@ -6171,7 +6183,7 @@ namespace UI
 
         void draw(bool world, float sx, float sy)
         {
-            changedraw(CHANGE_COLOR);
+            setupdraw(CHANGE_COLOR);
             while(colors.length() < 2) colors.add(Color(colourwhite));
             if(hud::needminimap())
             {
