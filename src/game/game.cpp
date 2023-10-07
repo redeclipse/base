@@ -390,7 +390,7 @@ namespace game
     VAR(IDF_PERSIST, gibfade, 1, 15000, VAR_MAX);
     VAR(IDF_PERSIST, ragdolleffect, 2, 500, VAR_MAX);
 
-    VAR(IDF_PERSIST, playerhalos, 0, 2, 2);
+    VAR(IDF_PERSIST, playerhalos, 0, 2, 3); // 0 = off, 1 = self, 2 = teammates
     FVAR(IDF_PERSIST, playerblend, 0, 1, 1);
     FVAR(IDF_PERSIST, playereditblend, 0, 1, 1);
     FVAR(IDF_PERSIST, playerghostblend, 0, 0.35f, 1);
@@ -4041,8 +4041,9 @@ namespace game
     bool haloallow(gameent *d)
     {
         if(drawtex != DRAWTEX_HALO) return true;
-        if(!playerhalos || d == focus) return false;
-        if((!focus->isobserver() || playerhalos < 2) && (m_ffa(gamemode, mutators) || d->team != focus->team)) return false;
+        if(d == focus && inzoom()) return false;
+        if(!playerhalos || (!(playerhalos&1) && d == focus) || !(playerhalos&2)) return false;
+        if(!focus->isobserver() && (m_ffa(gamemode, mutators) || d->team != focus->team)) return false;
         vec dir(0, 0, 0);
         float dist = -1;
         if(!client::radarallow(d, dir, dist)) return false;
@@ -4076,7 +4077,7 @@ namespace game
                 (camera1->o.squaredist(d->o) > playershadowsqdist))
                 mdl.flags |= MDL_NOSHADOW;
         }
-        else if(drawtex == DRAWTEX_HALO && ((d == focus && inzoom()) || !haloallow(d))) flags |= MDL_NORENDER;
+        else if(!haloallow(d)) mdl.flags |= MDL_NORENDER;
 
         rendermodel(mdlname, mdl, e);
 
