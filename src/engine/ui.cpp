@@ -1293,7 +1293,7 @@ namespace UI
                             offyaw = -detentyaw;
                             break;
                         }
-                        default:            pos.add(vec(right).mul(pw * curscale * 0.5f)); break;
+                        default:            pos.add(vec(right).mul(pw * curscale * 0.5f)).sub(vec(n).mul(pw * curscale * detentyaw / 45.f)); break;
                     }
                 }
                 if(adjust&ALIGN_VMASK)
@@ -1471,12 +1471,12 @@ namespace UI
 
     struct Blend : Object
     {
-        int type;
+        int setting;
 
         void setup(int type_)
         {
             Object::setup();
-            type = type_;
+            setting = type_;
         }
 
         static const char *typestr() { return "#Blend"; }
@@ -1485,13 +1485,15 @@ namespace UI
         void draw(bool world, float sx, float sy)
         {
             int oldblend = blenddef;
-            blenddef = type;
+            blenddef = setting;
+            resetblend();
             Object::draw(world, sx, sy);
             blenddef = oldblend;
+            resetblend();
         }
     };
 
-    ICOMMAND(0, uiblend, "ie", (int *type, uint *children), BUILD(Blend, o, o->setup(*type), children));
+    ICOMMAND(0, uiblend, "ie", (int *type, uint *children), BUILD(Blend, o, o->setup(clamp(*type, 0, int(BLEND_SRC))), children));
 
     struct Font : Object
     {
