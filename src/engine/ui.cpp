@@ -1837,6 +1837,7 @@ namespace UI
             setup();
             loopwindows(w,
             {
+                uiscale = 1;
                 w->build();
                 if(!children.inrange(i)) break;
                 if(children[i] != w) i--;
@@ -1958,6 +1959,7 @@ namespace UI
             if(children.empty()) return;
             loopwindows(w,
             {
+                uiscale = 1;
                 if(!checkexclusive(w)) continue;
                 if(w->tooltip) // follows cursor
                     w->setpos((cursorx*float(hudw)/float(hudh))-(w->w*cursorx), cursory >= 0.5f ? cursory-w->h-uitipoffset : cursory+hud::cursorsize+uitipoffset);

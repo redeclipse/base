@@ -527,7 +527,7 @@ namespace game
         if(mapsaving) return PROGRESS_MAPSAVE;
         if(client::needsmap || client::gettingmap) return PROGRESS_MAPDL;
         if(!gs_playing(gamestate)) return PROGRESS_GAMESTATE;
-        if(player1->isspectator()) return PROGRESS_GAMEWAIT;
+        //if(player1->isspectator()) return PROGRESS_GAMEWAIT;
         return PROGRESS_NONE;
     }
 
