@@ -1281,29 +1281,52 @@ namespace UI
             {
                 curscale *= curfov / 100.f;
                 offyaw = offpitch = 0;
-                if(adjust&ALIGN_HMASK)
+
+                float hdist = woffset.x * tanf(curfov * 0.5f * M_PI / 180.f);
+                switch(adjust&ALIGN_HMASK)
                 {
-                    float hdist = woffset.x * tanf(curfov * 0.5f * M_PI / 180.f);
-                    switch(adjust&ALIGN_HMASK)
+                    case ALIGN_LEFT:
                     {
-                        case ALIGN_LEFT:    pos.add(vec(right).mul(hdist)); offyaw = detentyaw; break;
-                        case ALIGN_RIGHT:
-                        { // as the coordinate is for the top left of the UI, we need to rotate stuff to the right
-                            pos.sub(vec(right).mul(hdist)).add(vec(rotatedir(right, n, detentyaw * RAD)).mul(pw * curscale));
-                            offyaw = -detentyaw;
-                            break;
-                        }
-                        default:            pos.add(vec(right).mul(pw * curscale * 0.5f)).sub(vec(n).mul(pw * curscale * detentyaw / 45.f)); break;
+                        pos.add(vec(right).mul(hdist));
+                        offyaw = detentyaw;
+                        break;
+                    }
+                    case ALIGN_RIGHT:
+                    { // as the coordinate is for the top left of the UI, we need to rotate stuff to the target
+                        pos.sub(vec(right).mul(hdist)).add(vec(rotatedir(right, n, detentyaw * RAD)).mul(pw * curscale));
+                        offyaw = -detentyaw;
+                        break;
+                    }
+                    default:
+                    {
+                        pos.add(vec(right).mul(pw * curscale * 0.5f));
+                        if((adjust&ALIGN_VMASK) == ALIGN_TOP || (adjust&ALIGN_VMASK) == ALIGN_BOTTOM)
+                            pos.sub(vec(n).mul(pw * curscale * detentyaw / 45.f));
+                        break;
                     }
                 }
-                if(adjust&ALIGN_VMASK)
+
+                float vdist = woffset.y * tanf(fovy * 0.5f * M_PI / 180.f);
+                switch(adjust&ALIGN_VMASK)
                 {
-                    float vdist = woffset.y * tanf(fovy * 0.5f * M_PI / 180.f);
-                    switch(adjust&ALIGN_VMASK)
+                    case ALIGN_TOP:
                     {
-                        case ALIGN_BOTTOM:  pos.sub(vec(up).mul(vdist - ph * curscale)); break;
-                        case ALIGN_TOP:     pos.add(vec(up).mul(vdist)); break;
-                        default:            pos.add(vec(up).mul(ph * curscale * 0.5f)); break;
+                        pos.add(vec(up).mul(vdist));
+                        offpitch = -detentpitch;
+                        break;
+                    }
+                    case ALIGN_BOTTOM:
+                    { // as the coordinate is for the top left of the UI, we need to rotate stuff to the target
+                        pos.sub(vec(up).mul(vdist)).add(vec(rotatedir(up, n, detentpitch * RAD)).mul(ph * curscale));
+                        offpitch = detentpitch;
+                        break;
+                    }
+                    default:
+                    {
+                        pos.add(vec(up).mul(ph * curscale * 0.5f));
+                        if((adjust&ALIGN_HMASK) == ALIGN_LEFT || (adjust&ALIGN_VMASK) == ALIGN_RIGHT)
+                            pos.sub(vec(n).mul(ph * curscale * detentpitch / 45.f));
+                        break;
                     }
                 }
             }
@@ -1391,6 +1414,7 @@ namespace UI
                 {
                     pushhudmatrix();
                     hudmatrix.rotate_around_y(offyaw*RAD);
+                    hudmatrix.rotate_around_x(offpitch*RAD);
                 }
             }
             else hudmatrix.ortho(px, px + pw, py + ph, py, -1, 1);
