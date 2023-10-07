@@ -1200,67 +1200,6 @@ namespace UI
             Object::adjustlayout(0, 0, pw, ph);
         }
 
-        float worldcalc()
-        {
-            pos = origin;
-            curscale = scale >= 0 ? scale * uiworldscale : -scale;
-            curyaw = yaw;
-            curpitch = pitch;
-
-            vec ray = vec(pos).sub(camera1->o), dir = vec(ray).normalize();
-            bool hasoffset = woffset != vec(-1, -1, -1);
-
-            vectoyawpitch(dir, offyaw, offpitch);
-            offyaw += 180;
-            offpitch = -offpitch;
-            if(hasoffset || curyaw < 0) curyaw = offyaw;
-            if(hasoffset || curpitch < -180 || curpitch > 180) curpitch = offpitch;
-            if(!hasoffset)
-            {
-                if(detentyaw > 0) curyaw = round(curyaw / detentyaw) * detentyaw;
-                if(detentpitch > 0) curpitch = round(curpitch / detentpitch) * detentpitch;
-            }
-
-            vec n = vec(curyaw * RAD, curpitch * RAD).normalize(), up(0, 0, 1), right;
-            if(fabsf(n.z) < 1.f) right.cross(up, n).normalize();
-            else right.cross(n, up).normalize();
-            up.cross(n, right).normalize();
-
-            if(hasoffset)
-            {
-                pos.add(vec(right).mul(pw * curscale * 0.5f)).add(vec(up).mul(ph * curscale * 0.5f));
-                switch(adjust&ALIGN_HMASK)
-                {
-                    case ALIGN_LEFT:    pos.add(vec(right).mul(woffset.x * curscale)).add(vec(n).mul(woffset.z * curscale)); break;
-                    case ALIGN_RIGHT:   pos.sub(vec(right).mul(woffset.x * curscale)); break;
-                    default:            break;
-                }
-                switch(adjust&ALIGN_VMASK)
-                {
-                    case ALIGN_BOTTOM:  pos.sub(vec(up).mul(woffset.y * curscale)); break;
-                    case ALIGN_TOP:     pos.add(vec(up).mul(woffset.y * curscale)); break;
-                    default: break;
-                }
-            }
-            else
-            {
-                switch(adjust&ALIGN_HMASK)
-                {
-                    case ALIGN_LEFT:    break;
-                    case ALIGN_RIGHT:   pos.add(vec(right).mul(pw * curscale)); break;
-                    default:            pos.add(vec(right).mul(pw * curscale * 0.5f)); break;
-                }
-                switch(adjust&ALIGN_VMASK)
-                {
-                    case ALIGN_BOTTOM:  break;
-                    case ALIGN_TOP:     pos.add(vec(up).mul(ph * curscale)); break;
-                    default:            pos.add(vec(up).mul(ph * curscale * 0.5f)); break;
-                }
-            }
-
-            return ray.magnitude();
-        }
-
         bool planeintersect(const vec &o, const vec &d, const vec &p, const vec &n, vec &v)
         {
             float denom = d.dot(n);
@@ -1289,6 +1228,104 @@ namespace UI
             }
         }
 
+        vec rotatedir(const vec &from, const vec &to, float angle)
+        {
+            // Calculate the axis of rotation
+            vec axis, faxis;
+            axis.cross(from, to);
+            axis.normalize();
+            faxis.cross(from, axis);
+            faxis.normalize();
+
+            return vec(from).mul(cosf(angle)).add(vec(axis).mul(axis.dot(from)).mul(1 - cosf(angle))).add(vec(faxis).mul(sinf(angle)));
+        }
+
+        float worldcalc()
+        {
+            bool hasoffset = woffset != vec(-1, -1, -1);
+
+            if(hasoffset)
+            {
+                pos = vec(origin).add(vec(yaw * RAD, pitch * RAD).mul(woffset.z));
+            }
+            else
+            {
+                pos = origin;
+                curyaw = yaw;
+                curpitch = pitch;
+            }
+
+            vec ray = vec(camera1->o).sub(pos), dir = vec(ray).normalize();
+            vectoyawpitch(dir, offyaw, offpitch);
+
+            if(hasoffset)
+            {
+                curyaw = offyaw;
+                curpitch = offpitch;
+            }
+            else
+            {
+                if(curyaw < 0) curyaw = offyaw;
+                if(curpitch < -180 || curpitch > 180) curpitch = offpitch;
+                if(detentyaw > 0) curyaw = round(curyaw / detentyaw) * detentyaw;
+                if(detentpitch > 0) curpitch = round(curpitch / detentpitch) * detentpitch;
+            }
+            curscale = max(scale >= 0 ? scale * uiworldscale : -scale, FVAR_NONZERO);
+
+            vec q = vec(curyaw * RAD, curpitch * RAD), n = vec(q).normalize(), up(0, 0, 1), right;
+            if(fabsf(n.z) < 1.f) right.cross(up, n).normalize();
+            else right.cross(n, up).normalize();
+            up.cross(n, right).normalize();
+
+            if(hasoffset)
+            {
+                curscale *= curfov / 100.f;
+                offyaw = offpitch = 0;
+                if(adjust&ALIGN_HMASK)
+                {
+                    float hdist = woffset.x * tanf(curfov * 0.5f * M_PI / 180.f);
+                    switch(adjust&ALIGN_HMASK)
+                    {
+                        case ALIGN_LEFT:    pos.add(vec(right).mul(hdist)); offyaw = detentyaw; break;
+                        case ALIGN_RIGHT:
+                        { // as the coordinate is for the top left of the UI, we need to rotate stuff to the right
+                            pos.sub(vec(right).mul(hdist)).add(vec(rotatedir(right, n, detentyaw * RAD)).mul(pw * curscale));
+                            offyaw = -detentyaw;
+                            break;
+                        }
+                        default:            pos.add(vec(right).mul(pw * curscale * 0.5f)); break;
+                    }
+                }
+                if(adjust&ALIGN_VMASK)
+                {
+                    float vdist = woffset.y * tanf(fovy * 0.5f * M_PI / 180.f);
+                    switch(adjust&ALIGN_VMASK)
+                    {
+                        case ALIGN_BOTTOM:  pos.sub(vec(up).mul(vdist - ph * curscale)); break;
+                        case ALIGN_TOP:     pos.add(vec(up).mul(vdist)); break;
+                        default:            pos.add(vec(up).mul(ph * curscale * 0.5f)); break;
+                    }
+                }
+            }
+            else
+            {
+                switch(adjust&ALIGN_HMASK)
+                {
+                    case ALIGN_LEFT:    break;
+                    case ALIGN_RIGHT:   pos.add(vec(right).mul(pw * curscale)); break;
+                    default:            pos.add(vec(right).mul(pw * curscale * 0.5f)); break;
+                }
+                switch(adjust&ALIGN_VMASK)
+                {
+                    case ALIGN_BOTTOM:  break;
+                    case ALIGN_TOP:     pos.add(vec(up).mul(ph * curscale)); break;
+                    default:            pos.add(vec(up).mul(ph * curscale * 0.5f)); break;
+                }
+            }
+
+            return ray.magnitude();
+        }
+
         void getcursor(float &cx, float &cy)
         {
             if(totalmillis == lasthit)
@@ -1310,7 +1347,7 @@ namespace UI
 
                 if(mag >= 1e-6f)
                 {
-                    vec n = vec(curyaw  *RAD, curpitch * RAD), v;
+                    vec n = vec(curyaw * RAD, curpitch * RAD), v;
                     if(planeintersect(camera1->o, cursordir, pos, n, v))
                     {
                         float qx = 0, qy = 0;
@@ -1353,7 +1390,7 @@ namespace UI
                 if(woffset != vec(-1, -1, -1))
                 {
                     pushhudmatrix();
-                    hudmatrix.rotate_around_y(yaw*RAD);
+                    hudmatrix.rotate_around_y(offyaw*RAD);
                 }
             }
             else hudmatrix.ortho(px, px + pw, py + ph, py, -1, 1);
@@ -2249,6 +2286,9 @@ namespace UI
 
     bool setui(const char *name, int stype, int param, const vec &origin, float yaw, float pitch, float scale, const vec &offset, float detentyaw, float detentpitch)
     {
+        if(!uivisible(name, stype, param))
+            return showui(name, stype, param, origin, yaw, pitch, scale, offset, detentyaw, detentpitch);
+
         const char *ref = dynuiref(name, param);
 
         if(!pushsurface(stype)) return false;
