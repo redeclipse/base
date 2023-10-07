@@ -690,6 +690,7 @@ struct editor
                     pey = pixelheight-FONTH;
                     pex = pixelwidth;
                 }
+                Shader *oldshader = Shader::lastshader;
                 hudnotextureshader->set();
                 gle::colorf(0.25f, 0.25f, 0.75f, alpha/255.f);
                 gle::defvertex(2);
@@ -719,7 +720,7 @@ struct editor
                     gle::attribf(x+pex, y+pey);
                 }
                 gle::end();
-                hudshader->set(); //?
+                (oldshader ? oldshader : hudshader)->set(); //?
             }
         }
 
@@ -731,6 +732,7 @@ struct editor
             draw_text(lines[i].text, x, y+h, color>>16, (color>>8)&0xFF, color&0xFF, alpha, TEXT_NO_INDENT, hit && (cy == i) ? cx : -1, maxwidth);
             if(linewrap && linewrapmark && height > FONTH) // line wrap indicator
             {
+                Shader *oldshader = Shader::lastshader;
                 hudnotextureshader->set();
                 gle::colorf(1, 1, 1, alpha/255.f);
                 gle::defvertex(2);
@@ -740,7 +742,7 @@ struct editor
                 gle::attribf(x-FONTW/4, y+h+FONTH);
                 gle::attribf(x-FONTW/4, y+h+height);
                 gle::end();
-                hudshader->set();
+                (oldshader ? oldshader : hudshader)->set();
             }
             h += height;
         }

@@ -566,33 +566,33 @@ namespace UI
             return false;
         }
 
-        virtual void startdraw() {}
+        virtual void startdraw(bool world) {}
         virtual void enddraw() {}
 
-        void enddraw(int change)
+        void enddraw(int change, bool world = false)
         {
             enddraw();
 
             changed &= ~change;
             if(changed)
             {
-                if(changed&CHANGE_SHADER) hudshader->set();
+                if(changed&CHANGE_SHADER) (world ? hudworldshader : hudshader)->set();
                 if(changed&CHANGE_COLOR) gle::colorf(1, 1, 1);
                 if(changed&CHANGE_BLEND) resetblend();
             }
         }
 
-        void changedraw(int change = 0)
+        void changedraw(int change = 0, bool world = false)
         {
             if(!drawing)
             {
-                startdraw();
+                startdraw(world);
                 changed = change;
             }
             else if(drawing->gettype() != gettype())
             {
-                drawing->enddraw(change);
-                startdraw();
+                drawing->enddraw(change, world);
+                startdraw(world);
                 changed = change;
             }
             drawing = this;
@@ -912,11 +912,11 @@ namespace UI
     ICOMMANDV(0, uibuildlevel, Object::buildlevel);
     ICOMMANDV(0, uitaglevel, Object::taglevel);
 
-    static inline void stopdrawing()
+    static inline void stopdrawing(bool world = false)
     {
         if(drawing)
         {
-            drawing->enddraw(0);
+            drawing->enddraw(0, world);
             drawing = NULL;
         }
     }
@@ -1142,7 +1142,9 @@ namespace UI
 
             glEnable(GL_BLEND);
             resetblend(true);
-            resethudshader();
+
+            (world ? hudworldshader : hudshader)->set();
+            gle::colorf(1, 1, 1);
 
             changed = 0;
             drawing = NULL;
@@ -1156,7 +1158,7 @@ namespace UI
 
             Object::draw(world, sx, sy);
 
-            stopdrawing();
+            stopdrawing(world);
 
             if(inworld)
             {
@@ -2939,7 +2941,7 @@ namespace UI
         const char *gettype() const { return typestr(); }
         bool iscolour() const { return true; }
 
-        void setupdraw(int drawflags)
+        void setupdraw(bool world, int drawflags)
         {
             int outtype = -1;
             switch(type)
@@ -2950,7 +2952,7 @@ namespace UI
                 default: outtype = blenddef; break;
             }
             if(outtype != blendtype) drawflags |= CHANGE_BLEND;
-            changedraw(drawflags);
+            changedraw(drawflags, world);
             setblend(outtype);
         }
 
@@ -3114,7 +3116,7 @@ namespace UI
         static const char *typestr() { return "#FillColor"; }
         const char *gettype() const { return typestr(); }
 
-        void startdraw()
+        void startdraw(bool world)
         {
             hudnotextureshader->set();
             gle::defvertex(2);
@@ -3123,7 +3125,7 @@ namespace UI
 
         void draw(bool world, float sx, float sy)
         {
-            setupdraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
+            setupdraw(world, CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
 
             int cols = colors.length();
             gle::begin(GL_TRIANGLE_STRIP);
@@ -3223,7 +3225,7 @@ namespace UI
         static const char *typestr() { return "#Line"; }
         const char *gettype() const { return typestr(); }
 
-        void startdraw()
+        void startdraw(bool world)
         {
             hudnotextureshader->set();
             gle::defvertex(2);
@@ -3231,7 +3233,7 @@ namespace UI
 
         void draw(bool world, float sx, float sy)
         {
-            setupdraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
+            setupdraw(world, CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
 
             if(width != 1) glLineWidth(width);
             colors[0].init();
@@ -3263,7 +3265,7 @@ namespace UI
         static const char *typestr() { return "#Outline"; }
         const char *gettype() const { return typestr(); }
 
-        void startdraw()
+        void startdraw(bool world)
         {
             hudnotextureshader->set();
             gle::defvertex(2);
@@ -3271,7 +3273,7 @@ namespace UI
 
         void draw(bool world, float sx, float sy)
         {
-            setupdraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
+            setupdraw(world, CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
 
             if(width != 1) glLineWidth(width);
             colors[0].init();
@@ -3332,7 +3334,7 @@ namespace UI
         const char *gettype() const { return typestr(); }
         bool isrender() const { return true; }
 
-        void startdraw()
+        void startdraw(bool world)
         {
             shdr->set();
             gle::defvertex(2);
@@ -3341,7 +3343,7 @@ namespace UI
 
         void draw(bool world, float sx, float sy)
         {
-            setupdraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
+            setupdraw(world, CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
 
             LOCALPARAMF(millis, lastmillis/1000.0f);
             LOCALPARAMF(viewsize, hudw*w, hudh*h, 1.0f/(hudw*w), 1.0f/(hudh*h));
@@ -3461,7 +3463,7 @@ namespace UI
             return !alphatarget || !(tex->type&Texture::ALPHA) || checkalphamask(tex, cx/w, cy/h);
         }
 
-        void startdraw()
+        void startdraw(bool world)
         {
             lasttex = NULL;
             lastcolor = Color(0, 0, 0, 0);
@@ -3473,9 +3475,9 @@ namespace UI
             gle::end();
         }
 
-        void bindtex(GLenum mode = GL_QUADS, int colstart = 0, bool forced = false)
+        void bindtex(bool world, GLenum mode = GL_QUADS, int colstart = 0, bool forced = false)
         {
-            setupdraw(CHANGE_COLOR | CHANGE_BLEND);
+            setupdraw(world, CHANGE_COLOR | CHANGE_BLEND);
 
             int col = clamp(colstart, -1, colors.length()-1);
             Color c = col >= 0 ? (colors.inrange(col) ? colors[col] : colors[0]) : Color(colors[0]).scale(shadowcolor);
@@ -3513,18 +3515,18 @@ namespace UI
             }
         }
 
-        bool drawmapped(float sx, float sy, vec2 coordmap[FC_MAX], vec2 tcoordmap[FC_MAX], int colstart = 0, int colcount = 0, bool forced = false, bool shading = false)
+        bool drawmapped(bool world, float sx, float sy, vec2 coordmap[FC_MAX], vec2 tcoordmap[FC_MAX], int colstart = 0, int colcount = 0, bool forced = false, bool shading = false)
         {
             int cols = clamp(colcount ? colcount : colors.length()-colstart, 0, colors.length());
             if(!shading && outline)
             {
-                setupdraw(CHANGE_SHADER);
+                setupdraw(world, CHANGE_SHADER);
                 hudoutlineshader->set();
                 LOCALPARAMF(textparams, 0.15f, 0.35f, 0.35f, 0.55f);
             }
             if(!shading && cols >= 2)
             {
-                bindtex(GL_TRIANGLE_STRIP, colstart, forced);
+                bindtex(world, GL_TRIANGLE_STRIP, colstart, forced);
                 float vr = 1/float(cols-1), vcx1 = 0, vcx2 = 0, vcy1 = 0, vcy2 = 0,
                     vw1 = coordmap[FC_TR][0]-coordmap[FC_TL][0], vx1 = coordmap[FC_TL][0],
                     vw2 = coordmap[FC_BR][0]-coordmap[FC_BL][0], vx2 = coordmap[FC_BL][0],
@@ -3582,7 +3584,7 @@ namespace UI
             }
             else
             {
-                bindtex(GL_QUADS, colstart, forced);
+                bindtex(world, GL_QUADS, colstart, forced);
                 gle::attribf(sx+coordmap[FC_TL][0], sy+coordmap[FC_TL][1]); gle::attribf(tcoordmap[FC_TL][0], tcoordmap[FC_TL][1]); // 0
                 gle::attribf(sx+coordmap[FC_TR][0], sy+coordmap[FC_TR][1]); gle::attribf(tcoordmap[FC_TR][0], tcoordmap[FC_TR][1]); // 1
                 gle::attribf(sx+coordmap[FC_BR][0], sy+coordmap[FC_BR][1]); gle::attribf(tcoordmap[FC_BR][0], tcoordmap[FC_BR][1]); // 2
@@ -3611,7 +3613,7 @@ namespace UI
                     coordmap[i][j] = getcoord(i, j)*(j ? gh : gw);
                     tcoordmap[i][j] = defcoords[i][j];
                 }
-                drawmapped(gx, gy, coordmap, tcoordmap, shading ? -1 : 0, 0, false, shading);
+                drawmapped(world, gx, gy, coordmap, tcoordmap, shading ? -1 : 0, 0, false, shading);
             }
 
             Object::draw(world, sx, sy);
@@ -3687,7 +3689,7 @@ namespace UI
                     coordmap[i][j] = getcoord(i, j)*(j ? gh : gw);
                     tcoordmap[i][j] = texmap[i][j];
                 }
-                drawmapped(gx, gy, coordmap, tcoordmap, shading ? -1 : 0, 0, false, shading);
+                drawmapped(world, gx, gy, coordmap, tcoordmap, shading ? -1 : 0, 0, false, shading);
             }
 
             Object::draw(world, sx, sy);
@@ -3765,11 +3767,11 @@ namespace UI
                 }
                 if(!shading && outline)
                 {
-                    setupdraw(CHANGE_SHADER);
+                    setupdraw(world, CHANGE_SHADER);
                     hudoutlineshader->set();
                     LOCALPARAMF(textparams, 0.15f, 0.35f, 0.35f, 0.55f);
                 }
-                bindtex(GL_QUADS, shading ? -1 : 0);
+                bindtex(world, GL_QUADS, shading ? -1 : 0);
 
                 float splitw = (minw ? min(minw, gw) : gw) / 2,
                     splith = (minh ? min(minh, gh) : gh) / 2,
@@ -3974,10 +3976,10 @@ namespace UI
                             case 1: colstart = 0; colcount = colors.length(); break;
                             case 2: colstart = colors.length()-1; colcount = 1; break;
                         }
-                        drawmapped(gx, gy, coordmap[target], tcoordmap[target], colstart, colcount, j == 0);
+                        drawmapped(world, gx, gy, coordmap[target], tcoordmap[target], colstart, colcount, j == 0);
                     }
                 }
-                else loopi(CO_MAX) drawmapped(gx, gy, coordmap[i], tcoordmap[i], shading ? -1 : 0, 0, false, shading);
+                else loopi(CO_MAX) drawmapped(world, gx, gy, coordmap[i], tcoordmap[i], shading ? -1 : 0, 0, false, shading);
             }
             Object::draw(world, sx, sy);
         }
@@ -4033,11 +4035,11 @@ namespace UI
                 }
                 if(!shading && outline)
                 {
-                    setupdraw(CHANGE_SHADER);
+                    setupdraw(world, CHANGE_SHADER);
                     hudoutlineshader->set();
                     LOCALPARAMF(textparams, 0.15f, 0.35f, 0.35f, 0.55f);
                 }
-                bindtex(GL_QUADS, shading ? -1 : 0);
+                bindtex(world, GL_QUADS, shading ? -1 : 0);
                 if(tex->tclamp)
                 {
                     for(float dy = 0; dy < gh; dy += tileh)
@@ -4082,7 +4084,7 @@ namespace UI
         static const char *typestr() { return "#Thumbnail"; }
         const char *gettype() const { return typestr(); }
 
-        void startdraw()
+        void startdraw(bool world)
         {
             lastcolor = Color(0, 0, 0, 0);
         }
@@ -4095,7 +4097,7 @@ namespace UI
                 return;
             }
 
-            setupdraw(CHANGE_COLOR | CHANGE_BLEND);
+            setupdraw(world, CHANGE_COLOR | CHANGE_BLEND);
 
             Color c = colors[0];
             if(lastcolor != c)
@@ -4143,7 +4145,7 @@ namespace UI
             Target::setup(minw_, minh_, color_, type_);
         }
 
-        void startdraw()
+        void startdraw(bool world)
         {
             hudnotextureshader->set();
             gle::defvertex(2);
@@ -4190,7 +4192,7 @@ namespace UI
         {
             Object::draw(world, sx, sy);
 
-            setupdraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
+            setupdraw(world, CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
 
             colors[0].init();
             gle::begin(type == OUTLINED ? GL_LINE_LOOP : GL_TRIANGLES);
@@ -4235,7 +4237,7 @@ namespace UI
         {
             Object::draw(world, sx, sy);
 
-            setupdraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
+            setupdraw(world, CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
 
             float r = radius <= 0 ? min(w, h)/2 : radius;
             colors[0].init();
@@ -4304,7 +4306,7 @@ namespace UI
 
         void draw(bool world, float sx, float sy)
         {
-            setupdraw(CHANGE_COLOR|CHANGE_SHADER);
+            setupdraw(world, CHANGE_COLOR|CHANGE_SHADER);
 
             float k = drawscale(rescale), left = sx/k, top = sy/k;
             int flags = modcol ? TEXT_MODCOL : 0;
@@ -4327,7 +4329,9 @@ namespace UI
             hudmatrix.translate(left, top, 0);
             if(rotate) hudmatrix.rotate_around_z(rotate*90*RAD);
             flushhudmatrix();
+            textshader = world ? hudtextworldshader : hudtextshader;
             draw_text(getstr(), 0, 0, colors[0].r, colors[0].g, colors[0].b, colors[0].a, flags, pos, wlen, 1);
+            textshader = NULL;
             pophudmatrix();
 
             Object::draw(world, sx, sy);
@@ -4678,10 +4682,10 @@ namespace UI
                         drawy = sy - offsety;
                     }
                 }
-                stopdrawing();
+                stopdrawing(world);
                 pushclip(sx, sy, w, h);
                 Object::draw(world, drawx, drawy);
-                stopdrawing();
+                stopdrawing(world);
                 popclip();
             }
             else Object::draw(world, sx, sy);
@@ -5264,14 +5268,16 @@ namespace UI
 
         void draw(bool world, float sx, float sy)
         {
-            setupdraw(CHANGE_COLOR | CHANGE_SHADER);
+            setupdraw(world, CHANGE_COLOR | CHANGE_SHADER);
 
             edit->rendered = true;
 
             float k = drawscale();
             pushhudtranslate(sx, sy, k);
 
+            textshader = world ? hudtextworldshader : hudtextshader;
             edit->draw(FONTW/2, 0, colors[0].tohexcolor(), colors[0].a, isfocus());
+            textshader = NULL;
 
             pophudmatrix();
 
@@ -5660,7 +5666,7 @@ namespace UI
 
     struct AxisView : Filler
     {
-        void startdraw()
+        void startdraw(bool world)
         {
             hudnotextureshader->set();
 
@@ -5670,7 +5676,7 @@ namespace UI
 
         void draw(bool world, float sx, float sy)
         {
-            setupdraw(CHANGE_SHADER | CHANGE_COLOR);
+            setupdraw(world, CHANGE_SHADER | CHANGE_COLOR);
 
             pushhudmatrix();
             matrix4 axismatrix, axisprojmatrix;
@@ -5739,9 +5745,9 @@ namespace UI
             weap = int(weap_);
         }
 
-        void startdraw()
+        void startdraw(bool world)
         {
-            hudshader->set();
+            (world ? hudworldshader : hudshader)->set();
 
             gle::defvertex();
             gle::defcolor();
@@ -5751,7 +5757,7 @@ namespace UI
 
         void draw(bool world, float sx, float sy)
         {
-            setupdraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
+            setupdraw(world, CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
 
             pushhudmatrix();
             hudmatrix.ortho(0, hud::hudwidth, hud::hudheight, 0, -1, 1);
@@ -5797,7 +5803,7 @@ namespace UI
 
         bool ispreview() const { return true; }
 
-        void startdraw()
+        void startdraw(bool world)
         {
             glDisable(GL_BLEND);
             disableclip();
@@ -5898,7 +5904,7 @@ namespace UI
         {
             if(!loadedshaders) { Object::draw(world, sx, sy); return; }
 
-            setupdraw(CHANGE_SHADER);
+            setupdraw(world, CHANGE_SHADER);
 
             int sx1, sy1, sx2, sy2;
             bool hasclipstack = clipstack.length() > 0;
@@ -5974,7 +5980,7 @@ namespace UI
         {
             if(!loadedshaders) { Object::draw(world, sx, sy); return; }
 
-            setupdraw(CHANGE_SHADER);
+            setupdraw(world, CHANGE_SHADER);
 
             int sx1, sy1, sx2, sy2;
             bool hasclipstack = clipstack.length() > 0;
@@ -6057,7 +6063,7 @@ namespace UI
 
             if(!loadedshaders) return;
 
-            setupdraw(CHANGE_SHADER);
+            setupdraw(world, CHANGE_SHADER);
 
             int sx1, sy1, sx2, sy2;
             bool hasclipstack = clipstack.length() > 0;
@@ -6085,7 +6091,7 @@ namespace UI
         static const char *typestr() { return "#SlotViewer"; }
         const char *gettype() const { return typestr(); }
 
-        void previewslot(Slot &slot, VSlot &vslot, float x, float y)
+        void previewslot(bool world, Slot &slot, VSlot &vslot, float x, float y)
         {
             if(!loadedshaders || slot.sts.empty()) return;
             VSlot *layer = NULL;
@@ -6118,7 +6124,7 @@ namespace UI
 
             if(!t || t == notexture) return;
 
-            setupdraw(CHANGE_SHADER | CHANGE_COLOR);
+            setupdraw(world, CHANGE_SHADER | CHANGE_COLOR);
 
             SETSHADER(hudrgb);
             vec2 tc[4] = { vec2(0, 0), vec2(1, 0), vec2(1, 1), vec2(0, 1) };
@@ -6165,7 +6171,7 @@ namespace UI
             if(slots.inrange(index))
             {
                 Slot &slot = lookupslot(index, false);
-                previewslot(slot, *slot.variants, sx, sy);
+                previewslot(world, slot, *slot.variants, sx, sy);
             }
 
             Object::draw(world, sx, sy);
@@ -6185,7 +6191,7 @@ namespace UI
             if(vslots.inrange(index))
             {
                 VSlot &vslot = lookupvslot(index, false);
-                previewslot(*vslot.slot, vslot, sx, sy);
+                previewslot(world, *vslot.slot, vslot, sx, sy);
             }
 
             Object::draw(world, sx, sy);
@@ -6200,7 +6206,7 @@ namespace UI
         static const char *typestr() { return "#DecalSlotViewer"; }
         const char *gettype() const { return typestr(); }
 
-        void previewslot(Slot &slot, VSlot &vslot, float x, float y)
+        void previewslot(bool world, Slot &slot, VSlot &vslot, float x, float y)
         {
             if(!loadedshaders || slot.sts.empty()) return;
             Texture *t = NULL, *glowtex = NULL;
@@ -6227,7 +6233,7 @@ namespace UI
 
             if(!t || t == notexture) return;
 
-            setupdraw(CHANGE_SHADER | CHANGE_COLOR);
+            setupdraw(world, CHANGE_SHADER | CHANGE_COLOR);
 
             SETSHADER(hudrgb);
             vec2 tc[4] = { vec2(0, 0), vec2(1, 0), vec2(1, 1), vec2(0, 1) };
@@ -6269,7 +6275,7 @@ namespace UI
             if(decalslots.inrange(index))
             {
                 DecalSlot &slot = lookupdecalslot(index, false);
-                previewslot(slot, *slot.variants, sx, sy);
+                previewslot(world, slot, *slot.variants, sx, sy);
             }
 
             Object::draw(world, sx, sy);
@@ -6312,7 +6318,7 @@ namespace UI
 
         void draw(bool world, float sx, float sy)
         {
-            setupdraw(CHANGE_COLOR);
+            setupdraw(world, CHANGE_COLOR);
             while(colors.length() < 2) colors.add(Color(colourwhite));
             if(hud::needminimap())
             {
@@ -6472,7 +6478,7 @@ namespace UI
                 float bbx = blipx, bby = blipy;
                 if(tex != notexture)
                 {
-                    bindtex();
+                    bindtex(world);
                     bbx = texx;
                     bby = texy;
                     loopk(4)
