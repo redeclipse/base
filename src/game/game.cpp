@@ -3527,8 +3527,7 @@ namespace game
                 flashcolour(mdl.material[0].r, mdl.material[0].g, mdl.material[0].b, pc.r, pc.g, pc.b, amt);
             }
             float maxdist = hud::radarlimit(halodist);
-            if(maxdist > 0) mdl.material[0].mul(1.f-(d->center().dist(camera1->o)/maxdist));
-            mdl.material[0].mul(mdl.color.a);
+            if(maxdist > 0) mdl.color.a *= 1.f-(d->center().dist(camera1->o)/maxdist);
             mdl.material[1] = mdl.material[2] = mdl.material[0];
             return;
         }
@@ -4077,7 +4076,7 @@ namespace game
                 (camera1->o.squaredist(d->o) > playershadowsqdist))
                 mdl.flags |= MDL_NOSHADOW;
         }
-        else if(!haloallow(d)) mdl.flags |= MDL_NORENDER;
+        else if(!haloallow(d)) mdl.color.a = 0;
 
         rendermodel(mdlname, mdl, e);
 

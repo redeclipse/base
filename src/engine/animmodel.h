@@ -178,14 +178,14 @@ struct animmodel : model
             LOCALPARAMF(texscroll, scrollu*lastmillis/1000.0f, scrollv*lastmillis/1000.0f);
             if(alphatested()) LOCALPARAMF(alphatest, alphatest);
 
+            if(color.r < 0) LOCALPARAMF(colorscale, colorscale.r, colorscale.g, colorscale.b, colorscale.a*blend);
+            else LOCALPARAMF(colorscale, color.r, color.g, color.b, colorscale.a*blend);
+
             if(!skinned)
             {
                 if(drawtex == DRAWTEX_HALO) LOCALPARAM(material1, modelmaterial[0].tocolor());
                 return;
             }
-
-            if(color.r < 0) LOCALPARAMF(colorscale, colorscale.r, colorscale.g, colorscale.b, colorscale.a*blend);
-            else LOCALPARAMF(colorscale, color.r, color.g, color.b, colorscale.a*blend);
 
             if(mixed())
             {
@@ -1574,6 +1574,11 @@ struct animmodel : model
         else if(drawtex == DRAWTEX_HALO)
         {
             bool invalidate = false;
+            if(colorscale != state->color)
+            {
+                colorscale = state->color;
+                invalidate = true;
+            }
             if(modelmaterial[0] != state->material[0])
             {
                 modelmaterial[0] = state->material[0];

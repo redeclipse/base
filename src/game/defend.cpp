@@ -161,8 +161,7 @@ namespace defend
             if(drawtex == DRAWTEX_HALO)
             {
                 float maxdist = hud::radarlimit(halodist);
-                if(maxdist > 0) loopj(3) mdl.material[j].mul(1.f-(mdl.o.dist(camera1->o)/maxdist));
-                loopj(3) mdl.material[j].mul(mdl.color.a);
+                if(maxdist > 0) mdl.color.a *= 1.f-(mdl.o.dist(camera1->o)/maxdist);
             }
             rendermodel("props/point", mdl);
             if(drawtex != DRAWTEX_HALO)

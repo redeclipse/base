@@ -2338,10 +2338,7 @@ namespace projs
                         {
                             mdl.material[0] = mdl.material[2] = bvec::fromcolor(W(attr, colour));
                             if(game::focus->isobserver() || !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !entities::showentfull))
-                            {
-                                if(drawtex == DRAWTEX_HALO) continue;
                                 mdl.color.a *= entities::showentunavailable;
-                            }
                             else mdl.color.a *= entities::showentavailable;
                         }
                         else continue;
@@ -2350,8 +2347,7 @@ namespace projs
                     if(drawtex == DRAWTEX_HALO)
                     {
                         float maxdist = hud::radarlimit(halodist);
-                        if(maxdist > 0) loopj(3) mdl.material[j].mul(1.f-(mdl.o.dist(camera1->o)/maxdist));
-                        loopj(3) mdl.material[j].mul(mdl.color.a);
+                        if(maxdist > 0) mdl.color.a *= 1.f-(mdl.o.dist(camera1->o)/maxdist);
                     }
                     break;
                 }
