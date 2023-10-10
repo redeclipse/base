@@ -3440,7 +3440,7 @@ namespace entities
 
                         if(entseldynui)
                         {
-                            UI::setui("entinfo", UI::SURFACE_MAIN, v.idx, pos, entinfouiyaw, entinfouipitch, entinfouiscale, vec(-1, -1, -1), entinfouidetentyaw, entinfouidetentpitch);
+                            UI::setui("entinfo", UI::SURFACE_MAIN, v.idx, pos, entinfouiyaw, entinfouipitch, entinfouiscale, vec(0, 0, 0), entinfouidetentyaw, entinfouidetentpitch);
                             hasdynui = true;
                         }
                         found = true;

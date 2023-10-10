@@ -578,13 +578,19 @@ namespace hud
     FVAR(IDF_PERSIST, aboveheaduidetentyaw, 0, 0, 180);
     FVAR(IDF_PERSIST, aboveheaduidetentpitch, 0, 0, 90);
 
-    VAR(IDF_PERSIST, hud3d, 0, 2, 2);
-    FVAR(IDF_PERSIST, hud3dscale, FVAR_NONZERO, 1, FVAR_MAX);
-    FVAR(IDF_PERSIST, hud3doffsetx, FVAR_MIN, 95, FVAR_MAX);
-    FVAR(IDF_PERSIST, hud3doffsety, FVAR_MIN, 95, FVAR_MAX);
-    FVAR(IDF_PERSIST, hud3doffsetz, FVAR_MIN, 100, FVAR_MAX);
+    VAR(IDF_PERSIST, hud3d, 0, 1, 1);
+    FVAR(IDF_PERSIST, hud3dscale, FVAR_NONZERO, 0.1f, FVAR_MAX);
+    FVAR(IDF_PERSIST, hud3doffsetx, FVAR_MIN, 9.5f, FVAR_MAX);
+    FVAR(IDF_PERSIST, hud3doffsety, FVAR_MIN, 9.5f, FVAR_MAX);
+    FVAR(IDF_PERSIST, hud3doffsetz, FVAR_MIN, 10.f, FVAR_MAX);
     FVAR(IDF_PERSIST, hud3dyaw, 0, 22.5f, 360.f);
     FVAR(IDF_PERSIST, hud3dpitch, 0, 0.f, 89.9f);
+
+    bool hashud3d()
+    {
+        return hud3d && game::player1->state != CS_EDITING && connected();
+    }
+    ICOMMANDV(0, hashud3d, hashud3d() ? 1 : 0);
 
     void checkui()
     {
@@ -594,7 +600,7 @@ namespace hud
         loopi(HUDPOS_MAX)
         {
             defformatstring(name, "hud_%s", HUDPOS_STR[i]);
-            if(hud3d && game::player1->state != CS_EDITING && connected())
+            if(hashud3d())
                 UI::setui(name, UI::SURFACE_MAIN, -1, camera1->o, camera1->yaw, camera1->pitch, hud3dscale, vec(hud3doffsetx, hud3doffsety, hud3doffsetz), hud3dyaw, hud3dpitch);
             else UI::closeui(name);
         }
@@ -621,7 +627,7 @@ namespace hud
                     if(UI::uivisible("abovehead", UI::SURFACE_MAIN, d->clientnum)) UI::hideui("abovehead", UI::SURFACE_MAIN, d->clientnum);
                     continue;
                 }
-                UI::setui("abovehead", UI::SURFACE_MAIN, d->clientnum, d->abovehead(), aboveheaduiyaw, aboveheaduipitch, aboveheaduiscale, vec(-1, -1, -1), aboveheaduidetentyaw, aboveheaduidetentpitch);
+                UI::setui("abovehead", UI::SURFACE_MAIN, d->clientnum, d->abovehead(), aboveheaduiyaw, aboveheaduipitch, aboveheaduiscale, vec(0, 0, 0), aboveheaduidetentyaw, aboveheaduidetentpitch);
             }
         }
         else UI::closedynui("abovehead");
