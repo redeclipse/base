@@ -394,7 +394,7 @@ static float draw_icon(Texture *&tex, const char *name, float x, float y)
     if(!*file) return 0;
     Texture *t = textureload(file, 3, true, false);
     if(!t) return 0;
-    float sh = curfont->mh*curtextscale, h = sh*textimagescale, w = (t->w*h)/float(t->h);
+    float sh = curfont->scale*curtextscale, h = sh*textimagescale, w = (t->w*h)/float(t->h);
     if(curfontpass)
     {
         if(tex != t)
@@ -421,7 +421,7 @@ static float icon_width(const char *name)
     if(!*file) return 0;
     Texture *t = textureload(file, 3, true, false);
     if(!t) return 0;
-    float w = (t->w*curfont->mh*curtextscale*textimagescale)/float(t->h);
+    float w = (t->w*curfont->scale*curtextscale*textimagescale)/float(t->h);
     return w;
 }
 
@@ -815,7 +815,7 @@ float key_widthf(const char *str)
     if(*str == '=') keyn = gettklp(++str);
     vector<char *> list;
     explodelist(keyn, list);
-    float width = 0, scale = curfont->mh*curtextscale*textkeyimagescale;
+    float width = 0, scale = curfont->scale*curtextscale*textkeyimagescale;
     loopv(list)
     {
         if(i && textkeyseps) width += text_widthf(" or ");
@@ -843,7 +843,7 @@ static float draw_key(Texture *&tex, const char *str, float sx, float sy, bvec4 
     if(*str == '=') keyn = gettklp(++str);
     vector<char *> list;
     explodelist(keyn, list);
-    float width = 0, sh = curfont->mh*curtextscale, h = sh*textkeyimagescale;
+    float width = 0;
     loopv(list)
     {
         if(i && textkeyseps)
@@ -865,7 +865,7 @@ static float draw_key(Texture *&tex, const char *str, float sx, float sy, bvec4 
             textkey *t = findtextkey(list[i]);
             if(t && t->tex)
             {
-                float w = (t->tex->w*h)/float(t->tex->h);
+                float sh = curfont->scale*curtextscale, h = sh*textkeyimagescale, w = (t->tex->w*h)/float(t->tex->h);
                 if(curfontpass)
                 {
                     if(tex != t->tex)
