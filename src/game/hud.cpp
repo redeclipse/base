@@ -579,11 +579,11 @@ namespace hud
     FVAR(IDF_PERSIST, aboveheaduidetentpitch, 0, 0, 90);
 
     VAR(IDF_PERSIST, hud3d, 0, 1, 1);
-    FVAR(IDF_PERSIST, hud3dscale, FVAR_NONZERO, 0.1f, FVAR_MAX);
+    FVAR(IDF_PERSIST, hud3dscale, FVAR_NONZERO, 0.15f, FVAR_MAX);
     FVAR(IDF_PERSIST, hud3doffsetx, FVAR_MIN, 9.5f, FVAR_MAX);
     FVAR(IDF_PERSIST, hud3doffsety, FVAR_MIN, 9.5f, FVAR_MAX);
     FVAR(IDF_PERSIST, hud3doffsetz, FVAR_MIN, 10.f, FVAR_MAX);
-    FVAR(IDF_PERSIST, hud3dyaw, 0, 22.5f, 360.f);
+    FVAR(IDF_PERSIST, hud3dyaw, 0, 20.f, 360.f);
     FVAR(IDF_PERSIST, hud3dpitch, 0, 0.f, 89.9f);
 
     bool hashud3d()

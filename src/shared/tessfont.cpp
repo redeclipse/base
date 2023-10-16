@@ -250,17 +250,18 @@ struct fontchar { int code, uni, tex, x, y, sdfradius, sdfpitch, sdfx, sdfy, sdf
 
 const char *texdir = "";
 
-const char *texfilename(const char *name, int texnum)
+const char *texfilename(int texnum)
 {
     static char file[256];
-    snprintf(file, sizeof(file), "%s%d.png", name, texnum);
+    snprintf(file, sizeof(file), "image%d.png", texnum);
     return file;
 }
 
 const char *texname(const char *name, int texnum)
 {
     static char file[512];
-    snprintf(file, sizeof(file), "<grey>%s%s", texdir, texfilename(name, texnum));
+    if(texdir && *texdir) snprintf(file, sizeof(file), "<grey>%s%s", texdir, texfilename(texnum));
+    else snprintf(file, sizeof(file), "<grey>fonts/%s/%s", name, texfilename(texnum));
     return file;
 }
 
@@ -478,7 +479,7 @@ void writetexs(const char *name, struct fontchar *chars, int numchars, int numte
     if(!pixels) fatal("tessfont: failed allocating textures");
     for(tex = 0; tex < numtexs; tex++)
     {
-        const char *file = texfilename(name, tex);
+        const char *file = texfilename(tex);
         int texchars = 0, i;
         uchar *dst, *src;
         memset(pixels, 0, tw*th);
@@ -509,12 +510,10 @@ static int scale = 0;
 void writecfg(const char *name, struct fontchar *chars, int numchars, float x1, float y1, float x2, float y2, int sw, int sh, int argc, char **argv)
 {
     FILE *f;
-    char file[256];
     int i, lastcode = 0, lasttex = 0;
-    snprintf(file, sizeof(file), "%s.cfg", name);
-    f = fopen(file, "w");
-    if(!f) fatal("tessfont: failed writing %s", file);
-    printf("tessfont: writing %d chars to %s\n", numchars, file);
+    f = fopen("package.cfg", "w");
+    if(!f) fatal("tessfont: failed writing package,cfg");
+    printf("tessfont: writing %d chars to package.cfg\n", numchars);
     fprintf(f, "//");
     for(i = 1; i < argc; i++)
         fprintf(f, " %s", argv[i]);

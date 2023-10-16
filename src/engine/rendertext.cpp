@@ -16,12 +16,13 @@ FVAR(IDF_PERSIST, textkeyimagescale, 0, 0.8f, FVAR_MAX);
 SVAR(IDF_PERSIST, textkeyprefix, "<invert>textures/keys/");
 VAR(IDF_PERSIST, textkeyseps, 0, 1, 1);
 VAR(IDF_PERSIST|IDF_HEX, textkeycolour, 0, 0x00FFFF, 0xFFFFFF);
-SVAR(IDF_PERSIST, textfontdef, "clear");
-SVAR(IDF_PERSIST, textfontbold, "bold");
-SVAR(IDF_PERSIST, textfontlogo, "clear");
-SVAR(IDF_PERSIST, textfontoutline, "outline");
+SVAR(IDF_PERSIST, textfontdef, "pixelify/clear");
+SVAR(IDF_PERSIST, textfontbold, "pixelify/clear/bold");
+SVAR(IDF_PERSIST, textfontlogo, "pixelify/clear");
+SVAR(IDF_PERSIST, textfontoutline, "pixelify/outline");
 SVAR(IDF_PERSIST, textfonttool, "tess");
 
+SVAR(0, fontloading, "");
 static hashnameset<font> fonts;
 static font *fontdef = NULL;
 static int fontdeftex = 0;
@@ -42,7 +43,8 @@ void fontscale(float *scale)
 
 void newfont(char *name, char *tex, int *defaultw, int *defaulth, float *scale)
 {
-    font *f = &fonts[name];
+    const char *loading = fontloading && *fontloading ? fontloading : name;
+    font *f = &fonts[loading];
     if(!f->name) f->name = newstring(name);
     f->texs.shrink(0);
     f->texs.add(textureload(tex, 3));
@@ -145,8 +147,10 @@ font *loadfont(const char *name)
     font *f = fonts.access(name);
     if(!f)
     {
-        defformatstring(n, "fonts/%s.cfg", name);
+        setsvar("fontloading", name);
+        defformatstring(n, "fonts/%s/package.cfg", name);
         if(execfile(n, false)) f = fonts.access(name);
+        setsvar("fontloading", "");
     }
     return f;
 }
