@@ -545,7 +545,7 @@ void writecfg(const char *name, struct fontchar *chars, int numchars, float x1, 
             fprintf(f, "\nfonttex \"%s\"\n", texname(name, c->tex));
             lasttex = c->tex;
         }
-        float offx = c->sdfx-c->sdfradius + c->left + offsetx, offy = c->sdfy-c->sdfradius + y2-c->top + offsety;
+        float offx = c->sdfx - c->sdfradius + c->left + offsetx, offy = c->sdfy - c->sdfradius + y2-c->top + offsety;
         if(c->code != c->uni)
             fprintf(f, "fontchar %d %d %d %d %g %g %g // %s (%d -> 0x%X)\n", c->x, c->y, c->sdfw, c->sdfh, offx, offy, c->advance, encodeutf8(c->uni), c->code, c->uni);
         else

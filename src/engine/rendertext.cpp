@@ -16,10 +16,10 @@ FVAR(IDF_PERSIST, textkeyimagescale, 0, 0.8f, FVAR_MAX);
 SVAR(IDF_PERSIST, textkeyprefix, "<invert>textures/keys/");
 VAR(IDF_PERSIST, textkeyseps, 0, 1, 1);
 VAR(IDF_PERSIST|IDF_HEX, textkeycolour, 0, 0x00FFFF, 0xFFFFFF);
-SVAR(IDF_PERSIST, textfontdef, "pixelify/clear");
-SVAR(IDF_PERSIST, textfontbold, "pixelify/clear/bold");
-SVAR(IDF_PERSIST, textfontlogo, "pixelify/clear");
-SVAR(IDF_PERSIST, textfontoutline, "pixelify/outline");
+SVAR(IDF_PERSIST, textfontdef, "titillium/clear");
+SVAR(IDF_PERSIST, textfontbold, "titillium/clear/bold");
+SVAR(IDF_PERSIST, textfontlogo, "titillium/clear");
+SVAR(IDF_PERSIST, textfontoutline, "titillium/outline");
 SVAR(IDF_PERSIST, textfonttool, "tess");
 
 SVAR(0, fontloading, "");
@@ -644,8 +644,6 @@ static float icon_width(const char *name)
         } \
         else if(curfont->chars.inrange(c-curfont->charoffset)) \
         { \
-            float cw = scale*curfont->chars[c-curfont->charoffset].advance; \
-            if(cw <= 0) continue; \
             TEXTCHAR(i); \
             TEXTWIDTH; \
         } \
@@ -665,7 +663,7 @@ int text_visible(const char *str, float hitx, float hity, float maxwidth, int fl
     #define TEXTFONT(ret) if(!strcmp(ret, "~")) { if(fontstack.length() > oldfontdepth) popfont(); } else pushfont(ret);
     #define TEXTICON(ret,q,s) q += icon_width(ret);
     #define TEXTKEY(ret,q,s) q += key_widthf(ret);
-    #define TEXTCHAR(idx) x += cw; TEXTWHITE(idx)
+    #define TEXTCHAR(idx) x += scale*curfont->chars[c-curfont->charoffset].advance; TEXTWHITE(idx)
     TEXTSKELETON
     #undef TEXTINDEX
     #undef TEXTWHITE
@@ -693,7 +691,7 @@ void text_posf(const char *str, int cursor, float &cx, float &cy, float maxwidth
     #define TEXTFONT(ret) if(!strcmp(ret, "~")) { if(fontstack.length() > oldfontdepth) popfont(); } else pushfont(ret);
     #define TEXTICON(ret,q,s) q += icon_width(ret); if(i >= cursor) break;
     #define TEXTKEY(ret,q,s) q += key_widthf(ret); if(i >= cursor) break;
-    #define TEXTCHAR(idx) x += cw; if(i >= cursor) break;
+    #define TEXTCHAR(idx) x += scale*curfont->chars[c-curfont->charoffset].advance; if(i >= cursor) break;
     cx = cy = 0;
     TEXTSKELETON
     TEXTEND(cursor)
@@ -722,7 +720,7 @@ void text_boundsf(const char *str, float &width, float &height, float xpad, floa
     #define TEXTFONT(ret) if(!strcmp(ret, "~")) { if(fontstack.length() > oldfontdepth) popfont(); } else pushfont(ret);
     #define TEXTICON(ret,q,s) q += icon_width(ret);
     #define TEXTKEY(ret,q,s) q += key_widthf(ret);
-    #define TEXTCHAR(idx) x += cw;
+    #define TEXTCHAR(idx) x += scale*curfont->chars[c-curfont->charoffset].advance;
     width = height = 0;
     TEXTSKELETON
     if(fontstack.length() > oldfontdepth) popfont(fontstack.length()-oldfontdepth);
@@ -943,7 +941,7 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
     #define TEXTFONT(ret) if(!strcmp(ret, "~")) { if(fontstack.length() > oldfontdepth) popfont(); } pushfont(ret);
     #define TEXTICON(ret,q,s) q += s ? draw_icon(tex, ret, left+x, top+y) : icon_width(ret);
     #define TEXTKEY(ret,q,s) q += s ? draw_key(tex, ret, left+x, top+y, color) : key_widthf(ret);
-    #define TEXTCHAR(idx) { draw_char(tex, c, left+x, top+y, scale); x += cw; }
+    #define TEXTCHAR(idx) { x += draw_char(tex, c, left+x, top+y, scale); }
     int fade = a;
     bool usecolor = true, hasfade = false;
     if(fade < 0) { usecolor = false; fade = -a; }
