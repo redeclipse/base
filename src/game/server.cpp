@@ -4555,7 +4555,7 @@ namespace server
             if(collect)
             {
                 int heal = min(v->health + collect, v->gethealth(gamemode, mutators, true)), eff = heal - v->health;
-                if(eff > 0)
+                if(eff)
                 {
                     v->health = heal;
                     v->lastregen = gamemillis;
