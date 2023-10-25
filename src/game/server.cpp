@@ -806,25 +806,6 @@ namespace server
         return kamikaze;
     }
 
-    struct vampireservmode : servmode
-    {
-        vampireservmode() {}
-        void dodamage(clientinfo *m, clientinfo *v, int &damage, int &hurt, int &weap, int &flags, int &material, const ivec &hitpush, const ivec &hitvel, float dist)
-        {
-            if(v != m && (!m_team(gamemode, mutators) || v->team != m->team) && v->state == CS_ALIVE && hurt > 0)
-            {
-                int real = int(ceilf(hurt*G(vampirescale))), heal = min(v->health+real, v->gethealth(gamemode, mutators, true)), eff = heal-v->health;
-                if(eff > 0)
-                {
-                    v->health = heal;
-                    v->lastregen = gamemillis;
-                    v->lastregenamt = eff;
-                    sendf(-1, 1, "ri4", N_REGEN, v->clientnum, v->health, v->lastregenamt);
-                }
-            }
-        }
-    } vampiremutator;
-
     extern bool canbalancenow();
 
     struct spawnservmode : servmode // pseudo-mutator to regulate spawning clients
@@ -3671,7 +3652,6 @@ namespace server
         else if(m_bomber(gamemode)) smode = &bombermode;
         smuts.add(&spawnmutator);
         if(m_duke(gamemode, mutators)) smuts.add(&duelmutator);
-        if(m_vampire(gamemode, mutators)) smuts.add(&vampiremutator);
         if(smode) smode->reset();
         mutate(smuts, mut->reset());
 
@@ -4566,9 +4546,29 @@ namespace server
         }
         if(smode) smode->dodamage(m, v, realdamage, hurt, weap, realflags, material, hitpush, hitvel, dist);
         mutate(smuts, mut->dodamage(m, v, realdamage, hurt, weap, realflags, material, hitpush, hitvel, dist));
+
+        if(v != m && v->state == CS_ALIVE && hurt)
+        {
+            int collect = int(ceilf(hurt*WF(WK(flags), weap, damagecollect, WS(flags))));
+            if(m_vampire(gamemode, mutators) && (!m_team(gamemode, mutators) || v->team != m->team))
+                collect += int(ceilf(hurt*G(vampirescale)));
+            if(collect)
+            {
+                int heal = min(v->health + collect, v->gethealth(gamemode, mutators, true)), eff = heal - v->health;
+                if(eff > 0)
+                {
+                    v->health = heal;
+                    v->lastregen = gamemillis;
+                    v->lastregenamt = eff;
+                    sendf(-1, 1, "ri4", N_REGEN, v->clientnum, v->health, v->lastregenamt);
+                }
+            }
+        }
+
         if(realdamage >= 0 && m != v && (!m_team(gamemode, mutators) || m->team != v->team))
             addhistory(m, v, gamemillis);
         sendf(-1, 1, "ri9i5", N_DAMAGE, m->clientnum, v->clientnum, weap, realflags, realdamage, m->health, hitpush.x, hitpush.y, hitpush.z, hitvel.x, hitvel.y, hitvel.z, int(dist*DNF));
+
         if(realflags&HIT_KILL)
         {
             int fragvalue = 1;
