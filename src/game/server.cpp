@@ -4549,7 +4549,7 @@ namespace server
 
         if(v != m && v->state == CS_ALIVE && hurt)
         {
-            int collect = int(ceilf(hurt*WF(WK(flags), weap, damagecollect, WS(flags))));
+            int collect = isweap(weap) ? int(ceilf(hurt*WF(WK(flags), weap, damagecollect, WS(flags)))) : 0;
             if(m_vampire(gamemode, mutators) && (!m_team(gamemode, mutators) || v->team != m->team))
                 collect += int(ceilf(hurt*G(vampirescale)));
             if(collect)
