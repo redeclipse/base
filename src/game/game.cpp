@@ -16,6 +16,8 @@ namespace game
     vector<gameent *> players, waiting;
     vector<cament *> cameras;
 
+    vec2 fpcamvel = vec2(0, 0);
+
     vec *getplayersoundpos(physent *d)
     {
         return d == focus && !thirdpersonview(true) ?
@@ -3606,7 +3608,6 @@ namespace game
         // "Look-around" animation
         static int lastsway = 0;
         static vec2 lastcam = vec2(camera1->yaw, camera1->pitch);
-        static vec2 camavel = vec2(0, 0);
 
         // Prevent running the inertia math multiple times in the same frame
         if(lastmillis != lastsway)
@@ -3617,18 +3618,18 @@ namespace game
             if(camrot.x > 180.0f) camrot.x -= 360.0f;
             else if(camrot.x < -180.0f) camrot.x += 360.0f;
 
-            camavel.mul(powf(firstpersonswaydecay, curtime));
-            camavel.add(vec2(camrot).mul(firstpersonswayinertia));
-            camavel.clamp(-firstpersonswaymaxinertia, firstpersonswaymaxinertia);
+            fpcamvel.mul(powf(firstpersonswaydecay, curtime));
+            fpcamvel.add(vec2(camrot).mul(firstpersonswayinertia));
+            fpcamvel.clamp(-firstpersonswaymaxinertia, firstpersonswaymaxinertia);
 
             lastcam = curcam;
             lastsway = lastmillis;
         }
 
-        trans.add(dirside.mul(camavel.x * 0.06f));
-        trans.z += camavel.y * 0.045f;
-        rotyaw += camavel.x * -0.3f;
-        rotpitch += camavel.y * -0.3f;
+        trans.add(dirside.mul(fpcamvel.x * 0.06f));
+        trans.z += fpcamvel.y * 0.045f;
+        rotyaw += fpcamvel.x * -0.3f;
+        rotpitch += fpcamvel.y * -0.3f;
 
         mdl.o.add(trans);
         mdl.yaw += rotyaw;

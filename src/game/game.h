@@ -2470,6 +2470,7 @@ namespace game
         avatarent() { type = ENT_CAMERA; }
     };
     extern avatarent avatarmodel, bodymodel;
+    extern vec2 fpcamvel;
 
     extern fx::FxHandle getweapfx(int type);
     extern bool needname(gameent *d);

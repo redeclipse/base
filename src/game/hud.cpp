@@ -597,11 +597,17 @@ namespace hud
         hidecrosshair = 0;
         UI::showui("hud");
 
+        float camvel_rotyaw = game::fpcamvel.x * -0.02f;
+        float camvel_pitch  = game::fpcamvel.y * -0.02f;
+
+        float hudyaw = camera1->yaw + camvel_rotyaw;
+        float hudpitch = camera1->pitch + camvel_pitch;
+
         loopi(HUDPOS_MAX)
         {
             defformatstring(name, "hud_%s", HUDPOS_STR[i]);
             if(hashud3d())
-                UI::setui(name, UI::SURFACE_MAIN, -1, camera1->o, camera1->yaw, camera1->pitch, hud3dscale, vec(hud3doffsetx, hud3doffsety, hud3doffsetz), hud3dyaw, hud3dpitch);
+                UI::setui(name, UI::SURFACE_MAIN, -1, camera1->o, hudyaw, hudpitch, hud3dscale, vec(hud3doffsetx, hud3doffsety, hud3doffsetz), hud3dyaw, hud3dpitch);
             else UI::closeui(name);
         }
 
