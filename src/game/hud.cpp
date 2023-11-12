@@ -601,7 +601,7 @@ namespace hud
         float camvel_pitch  = game::fpcamvel.y * -0.02f;
 
         float hudyaw = camera1->yaw + camvel_rotyaw;
-        float hudpitch = camera1->pitch + camvel_pitch;
+        float hudpitch = clamp(camera1->pitch + camvel_pitch, -89.9f, 89.9f);
 
         loopi(HUDPOS_MAX)
         {
