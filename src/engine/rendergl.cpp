@@ -2496,7 +2496,6 @@ void gl_drawview()
 
     glDisable(GL_CULL_FACE);
 
-    //hud::checkui();
     UI::render(true);
 
     glDisable(GL_DEPTH_TEST);
@@ -2581,9 +2580,7 @@ void gl_drawhud(bool noview = false)
 void gl_drawnoview()
 {
     gl_setupframe();
-    vieww = hudw;
-    viewh = hudh;
-    hud::update(vieww, viewh);
+    hud::update(hudw, hudh);
     gl_drawhud(true);
 }
 
@@ -2614,10 +2611,7 @@ void gl_drawframe()
     flipqueries();
 
     gl_setupframe(!noview);
-    vieww = hudw;
-    viewh = hudh;
     hud::update(hudw, hudh);
-    hud::checkui();
 
     if(!noview) gl_drawview();
     gl_drawhud(noview);
