@@ -641,6 +641,7 @@ GFVAR(IDF_GAMEMOD, 0, impulseregencountinair, 0, 0, FVAR_MAX); // impulse regen 
 GFVAR(IDF_GAMEMOD, 0, impulseregencountparkour, 0, 0, FVAR_MAX); // impulse regen parkour modifier
 GFVAR(IDF_GAMEMOD, 0, impulseregencountslide, 0, 0, FVAR_MAX); // impulse regen sliding modifier
 
+GVAR(IDF_GAMEMOD, 0, quakedelta, 0, 100, VAR_MAX);
 GVAR(IDF_GAMEMOD, 0, quakefade, 0, 300, VAR_MAX);
 GVAR(IDF_GAMEMOD, 0, quakewobble, 1, 20, VAR_MAX);
 GVAR(IDF_GAMEMOD, 0, quakelimit, 0, 200, VAR_MAX);

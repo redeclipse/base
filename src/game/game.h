@@ -446,11 +446,19 @@ struct demoheader
 #endif
 
 template<class T>
-static inline void adjustscaled(T &n, int s)
+static inline void adjustscaled(T &n, T &d, int s)
 {
-    T o = n;
-    n = (T)(n/(1.f+sqrtf((float)curtime)/float(s)));
-    if((o > 0 && n < 0) || (o < 0 && n > 0)) n = (T)0;
+    if(n == (T)0) return;
+    else if(n > 0)
+    {
+        n -= (T)(d*(curtime/float(s)));
+        if(n < (T)0) n = (T)0;
+    }
+    else if(n < 0)
+    {
+        n += (T)(d*(curtime/float(s)));
+        if(n > (T)0) n = (T)0;
+    }
 }
 
 static inline void modecheck(int &mode, int &muts, int trying = 0)
@@ -2425,7 +2433,7 @@ namespace hud
         *flagtakentex, *bombdroptex, *bombtakentex, *attacktex, *warningtex, *indicatortex, *crosshairtex, *hithairtex,
         *spree1tex, *spree2tex, *spree3tex, *spree4tex, *multi1tex, *multi2tex, *multi3tex, *headshottex, *dominatetex, *revengetex,
         *firstbloodtex, *breakertex;
-    extern int hudwidth, hudheight, hudsize, lastteam, damageresidue, damageresiduefade, radaraffinitynames, teamhurthud, teamhurttime, teamhurtdist, aboveheadui;
+    extern int hudwidth, hudheight, hudsize, lastteam, damageresidue, damageresiduedelta, damageresiduefade, radaraffinitynames, teamhurthud, teamhurttime, teamhurtdist, aboveheadui;
     extern float radaraffinityblend, radarblipblend, radaraffinitysize;
     extern bool scoreson, scoresoff, shownscores;
     extern vector<int> teamkills;

@@ -1255,7 +1255,7 @@ namespace game
 
     void checkoften(gameent *d, bool local)
     {
-        adjustscaled(d->quake, quakefade);
+        adjustscaled(d->quake, quakedelta, quakefade);
         int prevstate = isweap(d->weapselect) ? d->weapstate[d->weapselect] : W_S_IDLE;
         float offset = d->height, minz = d->feetpos().z;
         d->o.z -= d->height;
@@ -3368,7 +3368,7 @@ namespace game
             flushdamagemerges();
         }
         gets2c();
-        adjustscaled(hud::damageresidue, hud::damageresiduefade);
+        adjustscaled(hud::damageresidue, hud::damageresiduedelta, hud::damageresiduefade);
         if(connected())
         {
             checkcamera();

@@ -12,6 +12,7 @@ namespace hud
         dhloc(int a, int t, int d, const vec &p, int c) : clientnum(a), outtime(t), damage(d), colour(c), dir(p) {}
     };
     vector<dhloc> damagelocs, hitlocs;
+    VAR(IDF_PERSIST, damageresiduedelta, 0, 100, VAR_MAX);
     VAR(IDF_PERSIST, damageresiduefade, 0, 250, VAR_MAX);
     VAR(IDF_PERSIST, damageresiduemax, 1, 2000, VAR_MAX);
     VAR(IDF_PERSIST, damageresiduemul, 1, 3, VAR_MAX);
