@@ -2566,13 +2566,133 @@ void gl_setupframe(bool force)
     setuplights();
 }
 
+static GLuint visorfbo = 0, visortex = 0;
+static int visorw = -1, visorh = -1;
+
+VAR(IDF_PERSIST, visorhud, 0, 13, 15); // bit: 1 = normal, 2 = edit, 4 = progress, 8 = noview
+FVAR(IDF_PERSIST, visordistort, -2, 0.75f, 2);
+FVAR(IDF_PERSIST, visornormal, -2, 1.175f, 2);
+FVAR(IDF_PERSIST, visorscalex, FVAR_NONZERO, 1, 2);
+FVAR(IDF_PERSIST, visorscaley, FVAR_NONZERO, 1.14f, 2);
+
+void cleanupvisor();
+void setupvisor(int w, int h)
+{
+    w = max(w, 2);
+    h = max(h, 2);
+    if(w != visorw || h != visorh)
+    {
+        cleanupvisor();
+        visorw = w;
+        visorh = h;
+    }
+
+    GLERROR;
+    if(!visortex)
+    {
+        glGenTextures(1, &visortex);
+        createtexture(visortex, visorw, visorh, NULL, 3, 1, GL_RGBA, GL_TEXTURE_RECTANGLE);
+    }
+
+    if(!visorfbo)
+    {
+        glGenFramebuffers_(1, &visorfbo);
+        glBindFramebuffer_(GL_FRAMEBUFFER, visorfbo);
+        glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, visortex, 0);
+    }
+    GLERROR;
+}
+
+void cleanupvisor()
+{
+    if(visorfbo)
+    {
+        glDeleteFramebuffers_(1, &visorfbo);
+        visorfbo = 0;
+    }
+
+    if(visortex)
+    {
+        glDeleteTextures(1, &visortex);
+        visortex = 0;
+    }
+}
+
 void gl_drawhud(bool noview = false)
 {
     hudmatrix.ortho(0, hudw, hudh, 0, -1, 1);
     resethudmatrix();
     resethudshader();
     if(!noview) blendhalos();
-    hud::render(noview);
+
+    bool wantvisor = false, wantui = hud::render(noview);
+    int curw = hudw, curh = hudh;
+
+    if(engineready)
+    {
+        if(noview) wantvisor = (visorhud&8)!=0;
+        else if(progressing) wantvisor = (visorhud&4)!=0;
+        else if(editmode) wantvisor = (visorhud&2)!=0;
+        else wantvisor = (visorhud&1)!=0;
+    }
+
+    if(wantvisor)
+    {
+        setupvisor(hudw, hudh);
+        curw = visorw;
+        curh = visorh;
+
+        glBindFramebuffer_(GL_FRAMEBUFFER, visorfbo);
+        glViewport(0, 0, curw, curh);
+
+        glClearColor(0, 0, 0, 0);
+        glClear(GL_COLOR_BUFFER_BIT);
+    }
+
+    if(wantui)
+    {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        if(!progressing)
+        {
+            UI::render();
+
+            hudmatrix.ortho(0, curw, curh, 0, -1, 1);
+            flushhudmatrix();
+            resethudshader();
+            hud::drawpointers(curw, curh);
+        }
+        else
+        {
+            UI::renderprogress();
+            hudmatrix.ortho(0, curw, curh, 0, -1, 1);
+            flushhudmatrix();
+            resethudshader();
+        }
+
+        glDisable(GL_BLEND);
+    }
+
+    if(wantvisor)
+    {
+        glBindFramebuffer_(GL_FRAMEBUFFER, 0);
+        glViewport(0, 0, hudw, hudh);
+
+        SETSHADER(hudvisor);
+        LOCALPARAMF(visorparams, visordistort, visornormal, visorscalex, visorscaley);
+        LOCALPARAMF(visorsize, visorw, visorh, 1.f/visorw, 1.f/visorh);
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        gle::colorf(1, 1, 1, 1);
+        glBindTexture(GL_TEXTURE_RECTANGLE, visortex);
+        debugquad(0, 0, hudw, hudh, 0, 0, visorw, visorh);
+
+        glDisable(GL_BLEND);
+    }
+
     debugparticles();
     debuglights();
 }
@@ -2628,6 +2748,7 @@ void cleanupgl()
     clearminimap();
     cleanuptimers();
     cleanupscreenquad();
+    cleanupvisor();
     gle::cleanup();
 }
 

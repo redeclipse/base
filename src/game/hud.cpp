@@ -579,38 +579,10 @@ namespace hud
     FVAR(IDF_PERSIST, aboveheaduidetentyaw, 0, 0, 180);
     FVAR(IDF_PERSIST, aboveheaduidetentpitch, 0, 0, 90);
 
-    VAR(IDF_PERSIST, hud3d, 0, 1, 1);
-    FVAR(IDF_PERSIST, hud3dscale, FVAR_NONZERO, 0.15f, FVAR_MAX);
-    FVAR(IDF_PERSIST, hud3doffsetx, FVAR_MIN, 9.5f, FVAR_MAX);
-    FVAR(IDF_PERSIST, hud3doffsety, FVAR_MIN, 9.5f, FVAR_MAX);
-    FVAR(IDF_PERSIST, hud3doffsetz, FVAR_MIN, 10.f, FVAR_MAX);
-    FVAR(IDF_PERSIST, hud3dyaw, 0, 20.f, 360.f);
-    FVAR(IDF_PERSIST, hud3dpitch, 0, 0.f, 89.9f);
-
-    bool hashud3d()
-    {
-        return hud3d && game::player1->state != CS_EDITING && connected();
-    }
-    ICOMMANDV(0, hashud3d, hashud3d() ? 1 : 0);
-
     void checkui()
     {
         hidecrosshair = 0;
         UI::showui("hud");
-
-        float camvel_rotyaw = game::fpcamvel.x * -0.02f;
-        float camvel_pitch  = game::fpcamvel.y * -0.02f;
-
-        float hudyaw = camera1->yaw + camvel_rotyaw;
-        float hudpitch = clamp(camera1->pitch + camvel_pitch, -89.9f, 89.9f);
-
-        loopi(HUDPOS_MAX)
-        {
-            defformatstring(name, "hud_%s", HUDPOS_STR[i]);
-            if(hashud3d())
-                UI::setui(name, UI::SURFACE_MAIN, -1, camera1->o, hudyaw, hudpitch, hud3dscale, vec(hud3doffsetx, hud3doffsety, hud3doffsetz), hud3dyaw, hud3dpitch);
-            else UI::closeui(name);
-        }
 
         if(!UI::hasmenu(true))
         {
@@ -1189,7 +1161,7 @@ namespace hud
         drawsized(x, y, s);
     }
 
-    void drawpointer(int w, int h, int index)
+    void drawpointer(int w, int h, int s, int index)
     {
         float csize = crosshairsize * crosshairscale, fade = crosshairblend;
         switch(index)
@@ -1223,7 +1195,7 @@ namespace hud
             default: csize = cursorsize; fade = cursorblend; break;
         }
         vec c(1, 1, 1);
-        int cs = int(csize*hudsize);
+        int cs = int(csize*s);
         if(game::focus->state == CS_ALIVE && index >= POINTER_HAIR)
         {
             if(index == POINTER_TEAM) c = vec::fromcolor(teamcrosshaircolour);
@@ -1248,17 +1220,17 @@ namespace hud
                 if(accskew > 0) fade /= accskew;
             }
         }
-        int cx = int(hudwidth*cursorx), cy = int(hudheight*cursory);
+        int cx = int(w*cursorx), cy = int(h*cursory);
         if(index != POINTER_UI)
         {
             drawpointertex(getpointer(index, game::focus->weapselect), cx-cs/2, cy-cs/2, cs, c.r, c.g, c.b, fade*hudblend);
             if(index > POINTER_UI)
             {
-                if(showcirclebar) drawcirclebar(cx, cy, hudsize);
+                if(showcirclebar) drawcirclebar(cx, cy, s);
                 if(game::focus->state == CS_ALIVE && game::focus->hasweap(game::focus->weapselect, m_weapon(game::focus->actortype, game::gamemode, game::mutators)))
                 {
-                    if(showclips) drawclip(game::focus->weapselect, cx, cy, hudsize);
-                    if(showindicator) drawindicator(game::focus->weapselect, cx, cy, int(indicatorsize*hudsize), physics::secondaryweap(game::focus));
+                    if(showclips) drawclip(game::focus->weapselect, cx, cy, s);
+                    if(showindicator) drawindicator(game::focus->weapselect, cx, cy, int(indicatorsize*s), physics::secondaryweap(game::focus));
                 }
                 if(crosshairhitspeed && totalmillis-game::focus->lasthit <= crosshairhitspeed)
                 {
@@ -1299,7 +1271,7 @@ namespace hud
             resethudshader();
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-            drawpointer(w, h, index);
+            drawpointer(w, h, min(w, h), index);
             glDisable(GL_BLEND);
         }
     }
@@ -1840,7 +1812,7 @@ namespace hud
         }
     }
 
-    void render(bool noview)
+    bool render(bool noview)
     {
         int wait = client::waiting();
 
@@ -1896,20 +1868,14 @@ namespace hud
                 if(!game::tvmode() && !client::waiting() && !hasinput(false)) drawevents(hudblend);
             }
         }
-        if(engineready)
+        bool wantui = true;
+        if(engineready && !progressing && showhud && consolemillis <= 0 && curcompass)
         {
-            if(!progressing)
-            {
-                if(showhud && consolemillis <= 0 && curcompass) rendercmenu();
-                else UI::render();
-                hudmatrix.ortho(0, hudwidth, hudheight, 0, -1, 1);
-                flushhudmatrix();
-                resethudshader();
-                drawpointers(hudwidth, hudheight);
-            }
-            else UI::renderprogress();
+            rendercmenu();
+            wantui = false;
         }
         glDisable(GL_BLEND);
+        return wantui;
     }
 
     void update(int w, int h)

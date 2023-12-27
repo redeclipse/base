@@ -3337,7 +3337,6 @@ namespace UI
         {
             Target::setup(minw_, minh_, color_);
             shdr = lookupshaderbyname(name_);
-            if(!shdr) shdr = hudshader;
             params.setsize(0);
             texs.setsize(0);
         }
@@ -3348,7 +3347,9 @@ namespace UI
 
         void startdraw(bool world)
         {
-            shdr->set();
+            Shader *curshader = shdr;
+            if(!curshader) curshader = world ? hudworldshader : hudshader;
+            curshader->set();
             gle::defvertex(2);
             gle::deftexcoord0();
         }
