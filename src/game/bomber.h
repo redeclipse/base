@@ -250,7 +250,7 @@ namespace bomber
     extern void setscore(int team, int total);
     extern void update();
     extern void killed(gameent *d, gameent *v);
-    extern void drawonscreen(int w, int h, float blend);
+    extern void drawonscreen(int w, int h);
     extern void preload();
     extern void render();
     extern void adddynlights();

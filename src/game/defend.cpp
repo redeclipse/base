@@ -190,7 +190,7 @@ namespace defend
         }
     }
 
-    void drawonscreen(int w, int h, float blend)
+    void drawonscreen(int w, int h)
     {
     }
 

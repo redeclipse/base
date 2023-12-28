@@ -2569,7 +2569,7 @@ void gl_setupframe(bool force)
 static GLuint visorfbo = 0, visortex = 0;
 static int visorw = -1, visorh = -1;
 
-VAR(IDF_PERSIST, visorhud, 0, 13, 15); // bit: 1 = normal, 2 = edit, 4 = progress, 8 = noview
+VAR(IDF_PERSIST, visorhud, 0, 1, 15); // bit: 1 = normal, 2 = edit, 4 = progress, 8 = noview
 FVAR(IDF_PERSIST, visordistort, -2, 0.75f, 2);
 FVAR(IDF_PERSIST, visornormal, -2, 1.175f, 2);
 FVAR(IDF_PERSIST, visorscalex, FVAR_NONZERO, 1, 2);
@@ -2620,39 +2620,40 @@ void cleanupvisor()
 
 void gl_drawhud(bool noview = false)
 {
-    int curw = hudw, curh = hudh;
-
     hudmatrix.ortho(0, hudw, hudh, 0, -1, 1);
     resethudmatrix();
     resethudshader();
     if(!noview) blendhalos();
     hud::startrender(hudw, hudh, noview);
 
+    bool wantvisor = false;
+    int curw = hudw, curh = hudh;
+
     if(engineready)
     {
         setupvisor(hudw, hudh);
-        curw = visorw;
-        curh = visorh;
 
         glBindFramebuffer_(GL_FRAMEBUFFER, visorfbo);
-        glViewport(0, 0, curw, curh);
+        glViewport(0, 0, visorw, visorh);
 
         glClearColor(0, 0, 0, 0);
         glClear(GL_COLOR_BUFFER_BIT);
-    }
 
-    hud::visorrender(curw, curh, noview);
-
-    if(engineready)
-    {
-        glBindFramebuffer_(GL_FRAMEBUFFER, 0);
-        glViewport(0, 0, hudw, hudh);
-
-        bool wantvisor = false;
         if(noview) wantvisor = (visorhud&8)!=0;
         else if(progressing) wantvisor = (visorhud&4)!=0;
         else if(editmode) wantvisor = (visorhud&2)!=0;
         else wantvisor = (visorhud&1)!=0;
+
+        curw = visorw;
+        curh = visorh;
+    }
+
+    hud::visorrender(curw, curh, wantvisor, noview);
+
+    if(engineready)
+    {
+        glBindFramebuffer_(GL_FRAMEBUFFER, 0);
+        glViewport(0, 0, visorw, visorh);
 
         if(wantvisor)
         {

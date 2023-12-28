@@ -2438,9 +2438,6 @@ namespace hud
     extern bool scoreson, scoresoff, shownscores;
     extern vector<int> teamkills;
     extern const char *geticon(int type, int value);
-    extern void drawindicator(int weap, int x, int y, int s);
-    extern void drawpointertex(const char *tex, int x, int y, int s, float r = 1, float g = 1, float b = 1, float fade = 1);
-    extern void drawpointer(int w, int h, int s, int index);
     extern int numteamkills();
     extern void damage(int n, const vec &loc, gameent *v, int weap, int flags);
     extern void hit(int n, const vec &loc, gameent *v, int weap, int flags);

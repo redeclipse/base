@@ -130,7 +130,7 @@ namespace capture
         preloadmodel("props/flag");
     }
 
-    void drawonscreen(int w, int h, float blend)
+    void drawonscreen(int w, int h)
     {
     }
 

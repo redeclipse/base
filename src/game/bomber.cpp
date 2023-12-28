@@ -179,7 +179,7 @@ namespace bomber
     }
 
     FVAR(IDF_PERSIST, bomberreticlesize, 0, 0.1f, 1.f);
-    void drawonscreen(int w, int h, float blend)
+    void drawonscreen(int w, int h)
     {
         if(!gs_playing(game::gamestate) || !m_team(game::gamemode, game::mutators) || !bomberlockondelay || game::focus->state != CS_ALIVE || !game::focus->action[AC_AFFINITY] || lastmillis-game::focus->actiontime[AC_AFFINITY] < bomberlockondelay)
             return;

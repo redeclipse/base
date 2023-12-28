@@ -221,7 +221,7 @@ namespace defend
     extern void setscore(int team, int total);
     extern void reset();
     extern void setup();
-    extern void drawonscreen(int w, int h, float blend);
+    extern void drawonscreen(int w, int h);
     extern void preload();
     extern void render();
     extern void adddynlights();
