@@ -832,7 +832,7 @@ void rendereditcursor()
                 if(hasselui >= 0) break;
             }
             if(hasselui >= 0 && selectiondynui)
-                UI::setui("selection", UI::SURFACE_MAIN, hasselui, pos, selectionuiyaw, selectionuipitch, selectionuiscale, vec(0, 0, 0), selectionuidetentyaw, selectionuidetentpitch);
+                UI::setui("selection", UI::SURFACE_MAIN, hasselui, pos, selectionuiyaw, selectionuipitch, selectionuiscale, selectionuidetentyaw, selectionuidetentpitch);
         }
     }
 

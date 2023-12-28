@@ -2625,18 +2625,10 @@ void gl_drawhud(bool noview = false)
     resethudshader();
     if(!noview) blendhalos();
 
-    bool wantvisor = false, wantui = hud::render(noview);
+    bool wantui = hud::render(noview);
     int curw = hudw, curh = hudh;
 
     if(engineready)
-    {
-        if(noview) wantvisor = (visorhud&8)!=0;
-        else if(progressing) wantvisor = (visorhud&4)!=0;
-        else if(editmode) wantvisor = (visorhud&2)!=0;
-        else wantvisor = (visorhud&1)!=0;
-    }
-
-    if(wantvisor)
     {
         setupvisor(hudw, hudh);
         curw = visorw;
@@ -2674,13 +2666,23 @@ void gl_drawhud(bool noview = false)
         glDisable(GL_BLEND);
     }
 
-    if(wantvisor)
+    if(engineready)
     {
         glBindFramebuffer_(GL_FRAMEBUFFER, 0);
         glViewport(0, 0, hudw, hudh);
 
-        SETSHADER(hudvisor);
-        LOCALPARAMF(visorparams, visordistort, visornormal, visorscalex, visorscaley);
+        bool wantvisor = false;
+        if(noview) wantvisor = (visorhud&8)!=0;
+        else if(progressing) wantvisor = (visorhud&4)!=0;
+        else if(editmode) wantvisor = (visorhud&2)!=0;
+        else wantvisor = (visorhud&1)!=0;
+
+        if(wantvisor)
+        {
+            SETSHADER(hudvisorview);
+            LOCALPARAMF(visorparams, visordistort, visornormal, visorscalex, visorscaley);
+        }
+        else SETSHADER(hudvisor);
         LOCALPARAMF(visorsize, visorw, visorh, 1.f/visorw, 1.f/visorh);
 
         glEnable(GL_BLEND);

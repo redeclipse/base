@@ -606,7 +606,7 @@ namespace hud
                     if(UI::uivisible("abovehead", UI::SURFACE_MAIN, d->clientnum)) UI::hideui("abovehead", UI::SURFACE_MAIN, d->clientnum);
                     continue;
                 }
-                UI::setui("abovehead", UI::SURFACE_MAIN, d->clientnum, d->abovehead(), aboveheaduiyaw, aboveheaduipitch, aboveheaduiscale, vec(0, 0, 0), aboveheaduidetentyaw, aboveheaduidetentpitch);
+                UI::setui("abovehead", UI::SURFACE_MAIN, d->clientnum, d->abovehead(), aboveheaduiyaw, aboveheaduipitch, aboveheaduiscale,  aboveheaduidetentyaw, aboveheaduidetentpitch);
             }
         }
         else UI::closedynui("abovehead");
