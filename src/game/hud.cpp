@@ -1812,7 +1812,7 @@ namespace hud
         }
     }
 
-    bool render(bool noview)
+    void startrender(int w, int h, bool noview)
     {
         int wait = client::waiting();
 
@@ -1868,14 +1868,35 @@ namespace hud
                 if(!game::tvmode() && !client::waiting() && !hasinput(false)) drawevents(hudblend);
             }
         }
-        bool wantui = true;
-        if(engineready && !progressing && showhud && consolemillis <= 0 && curcompass)
-        {
-            rendercmenu();
-            wantui = false;
-        }
         glDisable(GL_BLEND);
-        return wantui;
+    }
+
+    void endrender(int w, int h, bool noview)
+    {
+    }
+
+    void visorrender(int w, int h, bool noview)
+    {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        if(!progressing)
+        {
+            if(engineready && showhud && consolemillis <= 0 && curcompass)
+                rendercmenu();
+            else UI::render();
+        }
+        else UI::renderprogress();
+
+        if(!progressing)
+        {
+            hudmatrix.ortho(0, w, h, 0, -1, 1);
+            flushhudmatrix();
+            resethudshader();
+            drawpointers(w, h);
+        }
+
+        glDisable(GL_BLEND);
     }
 
     void update(int w, int h)

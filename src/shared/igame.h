@@ -79,7 +79,9 @@ namespace hud
     extern int hasinput(bool pass = false, bool cursor = false);
     extern bool textinput(const char *str, int len);
     extern bool keypress(int code, bool isdown);
-    extern bool render(bool noview = false);
+    extern void startrender(int w, int h, bool noview = false);
+    extern void visorrender(int w, int h, bool noview = false);
+    extern void endrender(int w, int h, bool noview = false);
     extern bool getcolour(vec &colour);
     extern void update(int w, int h);
     extern bool needminimap();
@@ -90,7 +92,6 @@ namespace hud
     extern void drawblend(int x, int y, int w, int h, float r, float g, float b, bool blend = false);
     extern void colourskew(float &r, float &g, float &b, float skew = 1);
     extern void drawclip(int weap, int x, int y, float s, bool preview = false);
-    extern void drawpointers(int w, int h);
 }
 
 namespace physics

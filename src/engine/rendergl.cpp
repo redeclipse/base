@@ -2620,13 +2620,13 @@ void cleanupvisor()
 
 void gl_drawhud(bool noview = false)
 {
+    int curw = hudw, curh = hudh;
+
     hudmatrix.ortho(0, hudw, hudh, 0, -1, 1);
     resethudmatrix();
     resethudshader();
     if(!noview) blendhalos();
-
-    bool wantui = hud::render(noview);
-    int curw = hudw, curh = hudh;
+    hud::startrender(hudw, hudh, noview);
 
     if(engineready)
     {
@@ -2641,30 +2641,7 @@ void gl_drawhud(bool noview = false)
         glClear(GL_COLOR_BUFFER_BIT);
     }
 
-    if(wantui)
-    {
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-        if(!progressing)
-        {
-            UI::render();
-
-            hudmatrix.ortho(0, curw, curh, 0, -1, 1);
-            flushhudmatrix();
-            resethudshader();
-            hud::drawpointers(curw, curh);
-        }
-        else
-        {
-            UI::renderprogress();
-            hudmatrix.ortho(0, curw, curh, 0, -1, 1);
-            flushhudmatrix();
-            resethudshader();
-        }
-
-        glDisable(GL_BLEND);
-    }
+    hud::visorrender(curw, curh, noview);
 
     if(engineready)
     {
@@ -2695,6 +2672,7 @@ void gl_drawhud(bool noview = false)
         glDisable(GL_BLEND);
     }
 
+    hud::endrender(hudw, hudh, noview);
     debugparticles();
     debuglights();
 }
