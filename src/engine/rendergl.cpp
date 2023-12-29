@@ -2570,11 +2570,13 @@ static GLuint visorfbo = 0, visortex = 0;
 static int visorw = -1, visorh = -1; // render target dimensions
 float visorx = 0.5f, visory = 0.5f; // cursor projection coordinates
 
-VAR(IDF_PERSIST, visorhud, 0, 15, 15); // bit: 1 = normal, 2 = edit, 4 = progress, 8 = noview
+VAR(IDF_PERSIST, visorhud, 0, 1, 15); // bit: 1 = normal, 2 = edit, 4 = progress, 8 = noview
 FVAR(IDF_PERSIST, visordistort, -2, 0.75f, 2);
 FVAR(IDF_PERSIST, visornormal, -2, 1.175f, 2);
 FVAR(IDF_PERSIST, visorscalex, FVAR_NONZERO, 1, 2);
 FVAR(IDF_PERSIST, visorscaley, FVAR_NONZERO, 1.14f, 2);
+FVAR(IDF_PERSIST, visorglitchdistort, 0, 1.5f, 16);
+FVAR(IDF_PERSIST, visorglitchscale, 0, 0.5f, 16);
 
 void cleanupvisor();
 void setupvisor(int w, int h)
@@ -2679,7 +2681,8 @@ void gl_drawhud(bool noview = false)
         curh = visorh;
     }
 
-    hud::visorrender(curw, curh, wantvisor, noview);
+    float glitch = 0;
+    hud::visorrender(curw, curh, glitch, wantvisor, noview);
 
     if(engineready)
     {
@@ -2693,6 +2696,8 @@ void gl_drawhud(bool noview = false)
         }
         else SETSHADER(hudvisor);
         LOCALPARAMF(visorsize, visorw, visorh, 1.f/visorw, 1.f/visorh);
+        LOCALPARAMF(visorglitch, glitch, visorglitchdistort, visorglitchscale);
+        LOCALPARAMF(time, lastmillis/1000.f);
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

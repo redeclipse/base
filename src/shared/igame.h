@@ -80,7 +80,7 @@ namespace hud
     extern bool textinput(const char *str, int len);
     extern bool keypress(int code, bool isdown);
     extern void startrender(int w, int h, bool wantvisor, bool noview = false);
-    extern void visorrender(int w, int h, bool wantvisor, bool noview = false);
+    extern void visorrender(int w, int h, float &glitch, bool wantvisor, bool noview = false);
     extern void endrender(int w, int h, bool wantvisor, bool noview = false);
     extern bool getcolour(vec &colour);
     extern void update(int w, int h);

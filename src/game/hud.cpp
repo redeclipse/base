@@ -1361,7 +1361,7 @@ namespace hud
 
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damagemasktex, "<grey>textures/damage/mask", 0);
 
-    VAR(IDF_PERSIST, showdamage, 0, 1, 1);
+    VAR(IDF_PERSIST, showdamage, 0, 3, 7); // bit: 1 = normal, 2 = visor alive, 4 = visor dead
     CVAR(IDF_PERSIST, damagecolour, 0x600000);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damagetex, "<grey>textures/damage/hurt", 0x300);
     FVAR(IDF_PERSIST, damagedistort, 0, 1.85f, 16);
@@ -1412,7 +1412,7 @@ namespace hud
         hudmatrix.ortho(0, 1, 1, 0, -1, 1);
         flushhudmatrix();
         SETSHADER(huddamage);
-        if(showdamage)
+        if(showdamage&1)
         {
             int hp = max(1, game::focus->gethealth(game::gamemode, game::mutators));
             float pc = game::focus->state == CS_DEAD ? damageblenddead : (game::focus->state == CS_ALIVE ? min(damageresidue, hp)/float(hp)*damageblend : 0.f);
@@ -1994,7 +1994,7 @@ namespace hud
         glDisable(GL_BLEND);
     }
 
-    void visorrender(int w, int h, bool wantvisor, bool noview)
+    void visorrender(int w, int h, float &glitch, bool wantvisor, bool noview)
     {
         if(!engineready) return;
 
@@ -2028,6 +2028,12 @@ namespace hud
             hudmatrix.ortho(0, w, h, 0, -1, 1);
             flushhudmatrix();
             resethudshader();
+
+            if(gs_playing(game::gamestate) && ((game::focus->state == CS_ALIVE && showdamage&2) || (game::focus->state == CS_DEAD && showdamage&4)))
+            {
+                int hp = max(1, game::focus->gethealth(game::gamemode, game::mutators));
+                glitch = clamp(game::focus->state == CS_DEAD ? damageblenddead : (game::focus->state == CS_ALIVE ? min(damageresidue, hp)/float(hp)*damageblend : 0.f), 0.f, 1.f);
+            }
         }
 
         glDisable(GL_BLEND);
