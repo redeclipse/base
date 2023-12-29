@@ -131,6 +131,13 @@ namespace hud
     VAR(IDF_PERSIST, teamhurtdist, 0, 0, VAR_MAX);
     FVAR(IDF_PERSIST, teamhurtsize, 0, 0.0175f, 1000);
 
+    VAR(IDF_PERSIST, visorcursor, 0, 12, 15); // bit: 1 = normal, 2 = editmode, 4 = UI, 8 = editmode UI
+    VAR(IDF_PERSIST, visorcursorproject, 0, 8, 15);
+    VAR(IDF_PERSIST, visorcursorlevels, 0, 4, 16);
+    FVAR(IDF_PERSIST, visorcursormin, 0, 0.01f, 1);
+    FVAR(IDF_PERSIST, visorcursorblend, 0, 0.35f, 1);
+    VAR(IDF_PERSIST, visorcursorcolour, 0, 0xFF6666, 0xFFFFFF);
+
     VAR(IDF_PERSIST, showindicator, 0, 4, 4);
     FVAR(IDF_PERSIST, indicatorsize, 0, 0.03f, 1000);
     FVAR(IDF_PERSIST, indicatorblend, 0, 1, 1);
@@ -227,7 +234,7 @@ namespace hud
 
     FVAR(IDF_PERSIST, editcursorsize, 0, 0.05f, 1000);
     FVAR(IDF_PERSIST, editcursorblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, editcursorvisor, 0, 0.75f, 1);
+    FVAR(IDF_PERSIST, editcursorvisor, 0, 1, 1);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, editcursortex, "crosshairs/cross-01", 3);
     FVAR(IDF_PERSIST, speccursorsize, 0, 0.05f, 1000);
     FVAR(IDF_PERSIST, speccursorblend, 0, 1, 1);
@@ -246,7 +253,7 @@ namespace hud
     VAR(IDF_PERSIST, cursorstyle, 0, 0, 1); // 0 = top left tracking, 1 = center
     FVAR(IDF_PERSIST, cursorsize, 0, 0.03f, 1000);
     FVAR(IDF_PERSIST, cursorblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, cursorvisor, 0, 0.75f, 1);
+    FVAR(IDF_PERSIST, cursorvisor, 0, 1, 1);
 
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, zoomtex, "textures/hud/zoom", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, zoomcrosshairtex, "crosshairs/simple-01", 3);
@@ -606,7 +613,7 @@ namespace hud
     void checkui()
     {
         hidecrosshair = 0;
-        UI::showui("hud");
+        loopi(UI::SURFACE_LOOPED) UI::showui("hud", i);
 
         if(!UI::hasmenu(true))
         {
@@ -635,7 +642,7 @@ namespace hud
         }
         else UI::closedynui("abovehead");
 
-        UI::update();
+        loopi(UI::SURFACE_LOOPED) UI::update(i);
     }
 
     void damage(int n, const vec &loc, gameent *v, int weap, int flags)
@@ -829,9 +836,9 @@ namespace hud
     }
     ICOMMAND(0, getpointer, "ii", (int *i, int *j), result(getpointer(*i, *j)));
 
-    void drawindicator(int weap, int x, int y, float s, bool secondary, bool wantvisor)
+    void drawindicator(int weap, int x, int y, float s, bool secondary, bool wantvisor, float blend)
     {
-        float fade = wantvisor ? indicatorvisor : indicatorblend;
+        float fade = (wantvisor ? indicatorvisor : indicatorblend) * blend;
         if(fade <= 0) return;
 
         int millis = lastmillis-game::focus->weaptime[weap];
@@ -914,11 +921,11 @@ namespace hud
         gle::end();
     }
 
-    void drawclip(int weap, int x, int y, float s, bool preview, bool wantvisor)
+    void drawclip(int weap, int x, int y, float s, bool preview, bool wantvisor, float blend)
     {
         if(!isweap(weap) || weap >= W_MAX || (!W2(weap, ammosub, false) && !W2(weap, ammosub, true))) return;
 
-        float fade = wantvisor ? clipvisor : clipblend;
+        float orig = (wantvisor ? clipvisor : clipblend) * blend, fade = orig;
         if(fade <= 0) return;
 
         const char *cliptexs[W_MAX] = {
@@ -965,7 +972,7 @@ namespace hud
                 int shot = game::focus->weapshot[weap] ? game::focus->weapshot[weap] : 1;
                 float rewind = angle;
                 loopi(shot) drawclipitem(cliptexs[weap], x, y, offset, size*scale, fade, rewind += slice, spin, cliprots[weap], c);
-                fade = wantvisor ? clipvisor : clipblend;
+                fade = orig;
                 size = s*skew;
                 offset = s*clipoffset;
                 spin = 0;
@@ -997,7 +1004,7 @@ namespace hud
                     start -= ss;
                     store += game::focus->weapload[weap][W_A_CLIP];
                     ammo -= game::focus->weapload[weap][W_A_CLIP];
-                    fade = wantvisor ? clipvisor : clipblend;
+                    fade = orig;
                     size = s*skew;
                     offset = s*clipoffset;
                     spin = 0;
@@ -1043,9 +1050,13 @@ namespace hud
         }
     }
 
-    void drawcirclebar(int x, int y, float s, bool wantvisor)
+    void drawcirclebar(int x, int y, float s, bool wantvisor, float blend)
     {
         if(game::focus->state != CS_ALIVE) return;
+
+        float orig = wantvisor ? circlebarvisor : circlebarblend, fade = orig;
+        if(fade <= 0) return;
+
         int num = 0;
         loopi(3) if(circlebartype&(1<<i))
         {
@@ -1053,6 +1064,7 @@ namespace hud
             num++;
         }
         if(!num) return;
+
         Texture *t = circlebartex && *circlebartex ? textureload(circlebartex, 3, true, false) : NULL;
         if(!t || t == notexture) return;
         float slice = 1.f/num, pos = num%2 ? slice*0.5f : 0.f;
@@ -1061,7 +1073,7 @@ namespace hud
         settexture(t);
         loopi(3) if(circlebartype&(1<<i))
         {
-            float val = 0, fade = wantvisor ? circlebarvisor : circlebarblend;
+            float val = 0;
             vec c(1, 1, 1);
             switch(i)
             {
@@ -1110,7 +1122,7 @@ namespace hud
             }
             float nps = pos+val*slice;
             val = 0;
-            fade = wantvisor ? circlebarvisor : circlebarblend;
+            fade = orig;
             switch(i)
             {
                 case 2:
@@ -1183,140 +1195,6 @@ namespace hud
                 drawslice(nps, val*slice, x, y, s*circlebarsize);
             }
             pos += slice;
-        }
-    }
-
-    void drawpointertex(const char *tex, int x, int y, int s, float r, float g, float b, float fade)
-    {
-        if(!tex || !*tex) return;
-        Texture *t = textureload(tex, 3, true, false);
-        if(!t || t == notexture) return;
-        if(t->type&Texture::ALPHA) glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        else glBlendFunc(GL_ONE, GL_ONE);
-        gle::colorf(r, g, b, fade);
-        settexture(t);
-        drawsized(x, y, s);
-    }
-
-    void drawpointer(int w, int h, int s, int index, bool wantvisor)
-    {
-        float csize = crosshairsize * crosshairscale, fade = wantvisor ? crosshairvisor : crosshairblend;
-        switch(index)
-        {
-            case POINTER_EDIT: csize = editcursorsize; fade = wantvisor ? editcursorvisor : editcursorblend; break;
-            case POINTER_SPEC: csize = speccursorsize; fade = wantvisor ? speccursorvisor : speccursorblend; break;
-            case POINTER_TEAM: csize = teamcrosshairsize; fade = wantvisor ? teamcrosshairvisor : teamcrosshairblend; break;
-            case POINTER_ZOOM:
-                if(game::inzoom())
-                {
-                    csize = zoomcrosshairsize * crosshairscale;
-                    fade = wantvisor ? zoomcrosshairvisor : zoomcrosshairblend;
-                    break;
-                } // fall through
-            case POINTER_HIT: case POINTER_HAIR:
-            {
-                if(crosshairweapons && isweap(game::focus->weapselect))
-                {
-                    const float crosshairsizes[W_MAX] = {
-                        clawcrosshairsize, pistolcrosshairsize, swordcrosshairsize, shotguncrosshairsize, smgcrosshairsize,
-                        flamercrosshairsize, plasmacrosshairsize, zappercrosshairsize, riflecrosshairsize, grenadecrosshairsize, minecrosshairsize, rocketcrosshairsize, meleecrosshairsize
-                    }, crosshairblends[W_MAX] = {
-                        clawcrosshairblend, pistolcrosshairblend, swordcrosshairblend, shotguncrosshairblend, smgcrosshairblend,
-                        flamercrosshairblend, plasmacrosshairblend, zappercrosshairblend, riflecrosshairblend, grenadecrosshairblend, minecrosshairblend, rocketcrosshairblend, meleecrosshairblend
-                    }, crosshairvisors[W_MAX] = {
-                        clawcrosshairvisor, pistolcrosshairvisor, swordcrosshairvisor, shotguncrosshairvisor, smgcrosshairvisor,
-                        flamercrosshairvisor, plasmacrosshairvisor, zappercrosshairvisor, riflecrosshairvisor, grenadecrosshairvisor, minecrosshairvisor, rocketcrosshairvisor, meleecrosshairvisor
-                    };
-                    csize = crosshairsizes[game::focus->weapselect] * crosshairscale;
-                    fade = crosshairblends[game::focus->weapselect] * (wantvisor ? crosshairvisors[game::focus->weapselect] : 1.f);
-                }
-                break;
-            }
-            default: csize = cursorsize; fade = wantvisor ? cursorvisor : cursorblend; break;
-        }
-        vec c(1, 1, 1);
-        int cs = int(csize*s);
-        if(game::focus->state == CS_ALIVE && index >= POINTER_HAIR)
-        {
-            if(index == POINTER_TEAM) c = vec::fromcolor(teamcrosshaircolour);
-            else if(crosshairweapons&2) c = vec::fromcolor(W(game::focus->weapselect, colour));
-            else if(crosshairtone) skewcolour(c.r, c.g, c.b, crosshairtone);
-            int heal = game::focus->gethealth(game::gamemode, game::mutators);
-            if(crosshairflash && game::focus->state == CS_ALIVE && game::focus->health < heal)
-            {
-                int millis = lastmillis%1000;
-                float amt = (millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f))*clamp(float(heal-game::focus->health)/float(heal), 0.f, 1.f);
-                flashcolour(c.r, c.g, c.b, 1.f, 0.f, 0.f, amt);
-            }
-            if(crosshairthrob > 0 && regentime && game::focus->lastregen && lastmillis-game::focus->lastregen <= regentime)
-            {
-                float skew = clamp((lastmillis-game::focus->lastregen)/float(regentime/2), 0.f, 2.f);
-                cs += int(cs*(skew > 1.f ? 1.f-skew : skew)*(crosshairthrob*(game::focus->lastregenamt >= 0 ? 1 : -1)));
-            }
-            if(showcrosshair >= 2)
-            {
-                bool secondary = physics::secondaryweap(game::focus);
-                float accskew = weapons::accmodspread(game::focus, game::focus->weapselect, secondary,  W2(game::focus->weapselect, cooked, true)&W_C_ZOOM && secondary)*crosshairaccamt;
-                if(fade > 0 && accskew > 0) fade /= accskew;
-            }
-        }
-        int cx = int(w*cursorx), cy = int(h*cursory);
-        if(index != POINTER_UI)
-        {
-            if(fade > 0) drawpointertex(getpointer(index, game::focus->weapselect), cx-cs/2, cy-cs/2, cs, c.r, c.g, c.b, fade);
-            if(index > POINTER_UI)
-            {
-                if(showcirclebar) drawcirclebar(cx, cy, s, wantvisor);
-                if(game::focus->state == CS_ALIVE && game::focus->hasweap(game::focus->weapselect, m_weapon(game::focus->actortype, game::gamemode, game::mutators)))
-                {
-                    if(showclips) drawclip(game::focus->weapselect, cx, cy, s, false, wantvisor);
-                    if(showindicator) drawindicator(game::focus->weapselect, cx, cy, int(indicatorsize*s), physics::secondaryweap(game::focus), wantvisor);
-                }
-                if(fade > 0 && crosshairhitspeed && totalmillis-game::focus->lasthit <= crosshairhitspeed)
-                {
-                    vec c2(1, 1, 1);
-                    if(hitcrosshairtone) skewcolour(c2.r, c2.g, c2.b, hitcrosshairtone);
-                    else c2 = c;
-                    drawpointertex(getpointer(POINTER_HIT, game::focus->weapselect), cx-cs/2, cy-cs/2, cs, c2.r, c2.g, c2.b, fade);
-                }
-                if(crosshairdistance && game::focus->state == CS_EDITING)
-                {
-                    float distfade = wantvisor ? crosshairdistvisor : crosshairdistblend;
-                    if(distfade > 0)
-                    {
-                        draw_textf("\fa%.1f\fwm", cx+crosshairdistancex, cy+crosshairdistancey, 0, 0, -1, -1, -1, int(255*distfade), TEXT_RIGHT_JUSTIFY, -1, -1, 1, game::focus->o.dist(worldpos)/8.f);
-                        resethudshader();
-                    }
-                }
-            }
-        }
-        else drawpointertex(getpointer(index, game::focus->weapselect), cx, cy, cs, c.r, c.g, c.b, fade);
-    }
-
-    void drawpointers(int w, int h, bool wantvisor)
-    {
-        int index = POINTER_NONE;
-        if(hasinput(false, true)) index = hasinput(true, true) ? POINTER_UI : POINTER_NONE;
-        else if(hidecrosshair || !showhud || !showcrosshair || game::focus->state == CS_DEAD || !gs_playing(game::gamestate) || client::waiting() || (game::thirdpersonview(true) && game::focus != game::player1))
-            index = POINTER_NONE;
-        else if(game::focus->state == CS_EDITING) index = POINTER_EDIT;
-        else if(game::focus->state >= CS_SPECTATOR) index = POINTER_SPEC;
-        else if(game::inzoom()) index = POINTER_ZOOM;
-        else if(m_team(game::gamemode, game::mutators))
-        {
-            vec pos = game::focus->headpos();
-            gameent *d = game::intersectclosest(pos, worldpos, game::focus);
-            if(d && d->actortype < A_ENEMY && d->team == game::focus->team) index = POINTER_TEAM;
-            else index = POINTER_HAIR;
-        }
-        else index = POINTER_HAIR;
-        if(index > POINTER_NONE)
-        {
-            resethudshader();
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-            drawpointer(w, h, min(w, h), index, wantvisor);
-            glDisable(GL_BLEND);
         }
     }
 
@@ -1588,122 +1466,6 @@ namespace hud
         drawtexture(x, y, c, c);
     }
 
-    CVAR(IDF_PERSIST, backgroundcolour, 0x000000);
-    TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundwatertex, "<grey><noswizzle>textures/water", 0x300);
-    TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundcausttex, "<comp>caustic", 0x300);
-    TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundtex, "<nocompress>textures/menubg", 3);
-    TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundmasktex, "<nocompress>textures/menubg_mask", 3);
-
-    void drawbackground(int w, int h)
-    {
-        gle::colorf(1, 1, 1, 1);
-
-        Texture *t = NULL;
-        if(engineready && showloadingmapbg && *mapname && strcmp(mapname, "maps/untitled"))
-        {
-            defformatstring(tex, "<blur:2>%s", mapname);
-            t = textureload(tex, 3, true, false);
-        }
-        if(!engineready || !t || t == notexture)
-        {
-            pushhudmatrix();
-            hudmatrix.ortho(0, 1, 1, 0, -1, 1);
-            flushhudmatrix();
-
-            t = textureload(backgroundtex, 3, true, false);
-
-            if(t)
-            {
-                if(engineready && hudbackgroundshader)
-                {
-                    hudbackgroundshader->set();
-                    LOCALPARAMF(time, lastmillis/1000.0f);
-                    LOCALPARAMF(aspect, hudh/(float)hudw);
-
-                    glActiveTexture_(GL_TEXTURE0);
-                    settexture(t);
-                    glActiveTexture_(GL_TEXTURE1);
-                    settexture(backgroundwatertex, 0x300);
-                    glActiveTexture_(GL_TEXTURE2);
-                    settexture(backgroundcausttex, 0x300);
-                    glActiveTexture_(GL_TEXTURE3);
-                    settexture(backgroundmasktex, 3);
-
-                    glActiveTexture_(GL_TEXTURE0);
-                }
-                else
-                {
-                    hudshader->set();
-                    glActiveTexture_(GL_TEXTURE0);
-                    settexture(t);
-                }
-            }
-            else if(hudnotextureshader)
-            {
-                hudnotextureshader->set();
-                gle::color(backgroundcolour.tocolor(), 1.f);
-            }
-            else nullshader->set();
-
-            float offsetx = 0, offsety = 0;
-            if(t)
-            {
-                // Calculate cropping of the background
-                float hudratio = hudh / (float)hudw, bgratio = t->h / (float)t->w;
-
-                if(hudratio < bgratio)
-                {
-                    float scalex = hudw / (float)t->w;
-                    float scaledh = t->h * scalex;
-                    float ratioy = hudh / scaledh;
-                    offsety = (1.0f - ratioy) * 0.5f;
-                }
-                else
-                {
-                    float scaley = hudh / (float)t->h;
-                    float scaledw = t->w * scaley;
-                    float ratiox = hudw / scaledw;
-                    offsetx = (1.0f - ratiox) * 0.5f;
-                }
-            }
-
-            drawquad(0, 0, 1, 1, offsetx, offsety, 1-offsetx, 1-offsety);
-            pophudmatrix();
-            resethudshader();
-        }
-        else
-        {
-            settexture(t);
-            float offsetx = 0, offsety = 0;
-            if(showloadingaspect)
-            {
-                if(w > h) offsety = ((w-h)/float(w))*0.5f;
-                else if(h > w) offsetx = ((h-w)/float(h))*0.5f;
-            }
-            drawquad(0, 0, w, h, offsetx, offsety, 1-offsetx, 1-offsety);
-        }
-
-        if(progressing && !engineready)
-        {
-            if(showloadinglogos)
-            {
-                gle::colorf(1, 1, 1, 1);
-
-                t = textureload(logotex, 3, true, false);
-                settexture(t);
-                drawtexture(w-w/4-w/3, h/2-w/6, w/2, w/4);
-            }
-
-            float oldtextscale = curtextscale;
-            pushfont(textfontlogo);
-            curtextscale = 0.8f;
-            draw_textf("%s", FONTH/2, h-FONTH*5/4, 0, 0, 255, 255, 255, 255, TEXT_LEFT_JUSTIFY, -1, -1, 1, *progresstitle ? progresstitle : "Loading, please wait..");
-            if(progressamt > 0) draw_textf("[ %.1f%% ]", w-FONTH/2, h-FONTH*5/4, 0, 0, 255, 255, 255, 255, TEXT_RIGHT_JUSTIFY, -1, -1, 1, progressamt*100);
-            curtextscale = oldtextscale;
-            popfont();
-        }
-    }
-
     ICOMMAND(0, getprogresstitle, "", (),
     {
         if(progressing) result(progresstitle);
@@ -1856,7 +1618,318 @@ namespace hud
         }
     }
 
-    void startrender(int w, int h, bool noview)
+    bool drawpointertex(const char *tex, int x, int y, int s, float r, float g, float b, float fade)
+    {
+        if(fade <= 0 || !tex || !*tex) return false;
+        Texture *t = textureload(tex, 3, true, false);
+        if(!t || t == notexture) return false;
+        if(t->type&Texture::ALPHA) glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        else glBlendFunc(GL_ONE, GL_ONE);
+        gle::colorf(r, g, b, fade);
+        settexture(t);
+        drawsized(x, y, s);
+        return true;
+    }
+
+    void drawpointer(int w, int h, int s, int index, bool wantvisor, float x, float y, float blend = 1, float delta = 0)
+    {
+        float csize = crosshairsize * crosshairscale, fade = wantvisor ? crosshairvisor : crosshairblend;
+        switch(index)
+        {
+            case POINTER_EDIT: csize = editcursorsize; fade = wantvisor ? editcursorvisor : editcursorblend; break;
+            case POINTER_SPEC: csize = speccursorsize; fade = wantvisor ? speccursorvisor : speccursorblend; break;
+            case POINTER_TEAM: csize = teamcrosshairsize; fade = wantvisor ? teamcrosshairvisor : teamcrosshairblend; break;
+            case POINTER_ZOOM:
+                if(game::inzoom())
+                {
+                    csize = zoomcrosshairsize * crosshairscale;
+                    fade = wantvisor ? zoomcrosshairvisor : zoomcrosshairblend;
+                    break;
+                } // fall through
+            case POINTER_HIT: case POINTER_HAIR:
+            {
+                if(crosshairweapons && isweap(game::focus->weapselect))
+                {
+                    const float crosshairsizes[W_MAX] = {
+                        clawcrosshairsize, pistolcrosshairsize, swordcrosshairsize, shotguncrosshairsize, smgcrosshairsize,
+                        flamercrosshairsize, plasmacrosshairsize, zappercrosshairsize, riflecrosshairsize, grenadecrosshairsize, minecrosshairsize, rocketcrosshairsize, meleecrosshairsize
+                    }, crosshairblends[W_MAX] = {
+                        clawcrosshairblend, pistolcrosshairblend, swordcrosshairblend, shotguncrosshairblend, smgcrosshairblend,
+                        flamercrosshairblend, plasmacrosshairblend, zappercrosshairblend, riflecrosshairblend, grenadecrosshairblend, minecrosshairblend, rocketcrosshairblend, meleecrosshairblend
+                    }, crosshairvisors[W_MAX] = {
+                        clawcrosshairvisor, pistolcrosshairvisor, swordcrosshairvisor, shotguncrosshairvisor, smgcrosshairvisor,
+                        flamercrosshairvisor, plasmacrosshairvisor, zappercrosshairvisor, riflecrosshairvisor, grenadecrosshairvisor, minecrosshairvisor, rocketcrosshairvisor, meleecrosshairvisor
+                    };
+                    csize = crosshairsizes[game::focus->weapselect] * crosshairscale;
+                    fade = crosshairblends[game::focus->weapselect] * (wantvisor ? crosshairvisors[game::focus->weapselect] : 1.f);
+                }
+                break;
+            }
+            default: csize = cursorsize; fade = wantvisor ? cursorvisor : cursorblend; break;
+        }
+        fade *= blend;
+
+        vec c(1, 1, 1);
+        int cs = int(csize*s);
+        if(game::focus->state == CS_ALIVE && index >= POINTER_HAIR)
+        {
+            if(index == POINTER_TEAM) c = vec::fromcolor(teamcrosshaircolour);
+            else if(crosshairweapons&2) c = vec::fromcolor(W(game::focus->weapselect, colour));
+            else if(crosshairtone) skewcolour(c.r, c.g, c.b, crosshairtone);
+            int heal = game::focus->gethealth(game::gamemode, game::mutators);
+            if(crosshairflash && game::focus->state == CS_ALIVE && game::focus->health < heal)
+            {
+                int millis = lastmillis%1000;
+                float amt = (millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f))*clamp(float(heal-game::focus->health)/float(heal), 0.f, 1.f);
+                flashcolour(c.r, c.g, c.b, 1.f, 0.f, 0.f, amt);
+            }
+            if(crosshairthrob > 0 && regentime && game::focus->lastregen && lastmillis-game::focus->lastregen <= regentime)
+            {
+                float skew = clamp((lastmillis-game::focus->lastregen)/float(regentime/2), 0.f, 2.f);
+                cs += int(cs*(skew > 1.f ? 1.f-skew : skew)*(crosshairthrob*(game::focus->lastregenamt >= 0 ? 1 : -1)));
+            }
+            if(showcrosshair >= 2)
+            {
+                bool secondary = physics::secondaryweap(game::focus);
+                float accskew = weapons::accmodspread(game::focus, game::focus->weapselect, secondary,  W2(game::focus->weapselect, cooked, true)&W_C_ZOOM && secondary)*crosshairaccamt;
+                if(fade > 0 && accskew > 0) fade /= accskew;
+            }
+        }
+        vec n = c;
+        if(wantvisor) n.add(vec(vec::fromcolor(visorcursorcolour)).sub(c).mul(1 - delta));
+
+        int cx = int(x * w), cy = int(y * h);
+        if(index != POINTER_UI)
+        {
+            drawpointertex(getpointer(index, game::focus->weapselect), cx-cs/2, cy-cs/2, cs, n.r, n.g, n.b, fade);
+            if(index > POINTER_UI)
+            {
+                if(showcirclebar) drawcirclebar(cx, cy, s, wantvisor, blend);
+                if(game::focus->state == CS_ALIVE && game::focus->hasweap(game::focus->weapselect, m_weapon(game::focus->actortype, game::gamemode, game::mutators)))
+                {
+                    if(showclips) drawclip(game::focus->weapselect, cx, cy, s, false, wantvisor, blend);
+                    if(showindicator) drawindicator(game::focus->weapselect, cx, cy, int(indicatorsize*s), physics::secondaryweap(game::focus), wantvisor, blend);
+                }
+                if(fade > 0 && crosshairhitspeed && totalmillis-game::focus->lasthit <= crosshairhitspeed)
+                {
+                    vec c2(1, 1, 1);
+                    if(hitcrosshairtone) skewcolour(c2.r, c2.g, c2.b, hitcrosshairtone);
+                    else c2 = c;
+                    drawpointertex(getpointer(POINTER_HIT, game::focus->weapselect), cx-cs/2, cy-cs/2, cs, c2.r, c2.g, c2.b, fade);
+                }
+                if(!wantvisor && crosshairdistance && game::focus->state == CS_EDITING)
+                {
+                    draw_textf("\fa%.1f\fwm", cx+crosshairdistancex, cy+crosshairdistancey, 0, 0, -1, -1, -1, int(255*crosshairdistblend), TEXT_RIGHT_JUSTIFY, -1, -1, 1, game::focus->o.dist(worldpos)/8.f);
+                    resethudshader();
+                }
+            }
+        }
+        else drawpointertex(getpointer(index, game::focus->weapselect), cx, cy, cs, n.r, n.g, n.b, fade);
+    }
+
+    void drawpointers(int w, int h, int seq, bool wantvisor)
+    {
+        int index = POINTER_NONE;
+        if(hasinput(false, true)) index = hasinput(true, true) ? POINTER_UI : POINTER_NONE;
+        else if(hidecrosshair || !showhud || !showcrosshair || game::focus->state == CS_DEAD || !gs_playing(game::gamestate) || client::waiting() || (game::thirdpersonview(true) && game::focus != game::player1))
+            index = POINTER_NONE;
+        else if(game::focus->state == CS_EDITING) index = POINTER_EDIT;
+        else if(game::focus->state >= CS_SPECTATOR) index = POINTER_SPEC;
+        else if(game::inzoom()) index = POINTER_ZOOM;
+        else if(m_team(game::gamemode, game::mutators))
+        {
+            vec pos = game::focus->headpos();
+            gameent *d = game::intersectclosest(pos, worldpos, game::focus);
+            if(d && d->actortype < A_ENEMY && d->team == game::focus->team) index = POINTER_TEAM;
+            else index = POINTER_HAIR;
+        }
+        else index = POINTER_HAIR;
+
+        if(index <= POINTER_NONE) return;
+
+        int s = min(w, h);
+
+        hudmatrix.ortho(0, w, h, 0, -1, 1);
+        flushhudmatrix();
+        resethudshader();
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        if(wantvisor)
+        {
+            bool wantcursor = false;
+            if(index == POINTER_UI) wantcursor = (visorcursor&(editmode ? 8 : 4))!=0;
+            else wantcursor = (visorcursor&(editmode ? 2 : 1))!=0;
+
+            if(wantcursor)
+            {
+                switch(seq)
+                {
+                    case -1:
+                    {
+                        if(!visorcursorlevels) break;
+                        bool wantproj = false;
+                        if(index == POINTER_UI) wantproj = (visorcursorproject&(editmode ? 8 : 4))!=0;
+                        else wantproj = (visorcursorproject&(editmode ? 2 : 1))!=0;
+
+                        if(wantproj)
+                        {
+                            vec2 cursor(cursorx, cursory), visor(visorx, visory);
+                            float dist = cursor.dist(visor);
+                            if(dist > 1e-6f)
+                            {
+                                int loops = visorcursorlevels;
+                                float amt = dist / float(loops);
+                                while(amt < visorcursormin && loops > 1)
+                                {
+                                    loops--;
+                                    amt = dist / float(loops);
+                                }
+
+                                float blend = visorcursorblend, iter = (1 - visorcursorblend) / float(loops + 1);
+                                vec2 mdir = vec2(cursor).sub(visor).normalize().mul(amt);
+
+                                loopi(loops)
+                                {
+                                    float delta = i / float(loops);
+                                    drawpointer(w, h, s, index, true, cursor.x, cursor.y, blend, delta);
+                                    cursor.sub(mdir);
+                                    blend += iter;
+                                }
+                            }
+                        }
+                        break;
+                    }
+                    case 1: drawpointer(w, h, s, index, false, visorx, visory); break;
+                    default: break;
+                }
+            }
+            else if(seq == 1) drawpointer(w, h, s, index, false, cursorx, cursory);
+        }
+        else if(seq == 1) drawpointer(w, h, s, index, false, cursorx, cursory);
+
+        glDisable(GL_BLEND);
+    }
+
+    CVAR(IDF_PERSIST, backgroundcolour, 0x000000);
+    TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundwatertex, "<grey><noswizzle>textures/water", 0x300);
+    TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundcausttex, "<comp>caustic", 0x300);
+    TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundtex, "<nocompress>textures/menubg", 3);
+    TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundmasktex, "<nocompress>textures/menubg_mask", 3);
+
+    void drawbackground(int w, int h)
+    {
+        gle::colorf(1, 1, 1, 1);
+
+        Texture *t = NULL;
+        if(engineready && showloadingmapbg && *mapname && strcmp(mapname, "maps/untitled"))
+        {
+            defformatstring(tex, "<blur:2>%s", mapname);
+            t = textureload(tex, 3, true, false);
+        }
+        if(!engineready || !t || t == notexture)
+        {
+            pushhudmatrix();
+            hudmatrix.ortho(0, 1, 1, 0, -1, 1);
+            flushhudmatrix();
+
+            t = textureload(backgroundtex, 3, true, false);
+
+            if(t)
+            {
+                if(engineready && hudbackgroundshader)
+                {
+                    hudbackgroundshader->set();
+                    LOCALPARAMF(time, lastmillis/1000.0f);
+                    LOCALPARAMF(aspect, hudh/(float)hudw);
+
+                    glActiveTexture_(GL_TEXTURE0);
+                    settexture(t);
+                    glActiveTexture_(GL_TEXTURE1);
+                    settexture(backgroundwatertex, 0x300);
+                    glActiveTexture_(GL_TEXTURE2);
+                    settexture(backgroundcausttex, 0x300);
+                    glActiveTexture_(GL_TEXTURE3);
+                    settexture(backgroundmasktex, 3);
+
+                    glActiveTexture_(GL_TEXTURE0);
+                }
+                else
+                {
+                    hudshader->set();
+                    glActiveTexture_(GL_TEXTURE0);
+                    settexture(t);
+                }
+            }
+            else if(hudnotextureshader)
+            {
+                hudnotextureshader->set();
+                gle::color(backgroundcolour.tocolor(), 1.f);
+            }
+            else nullshader->set();
+
+            float offsetx = 0, offsety = 0;
+            if(t)
+            {
+                // Calculate cropping of the background
+                float hudratio = hudh / (float)hudw, bgratio = t->h / (float)t->w;
+
+                if(hudratio < bgratio)
+                {
+                    float scalex = hudw / (float)t->w;
+                    float scaledh = t->h * scalex;
+                    float ratioy = hudh / scaledh;
+                    offsety = (1.0f - ratioy) * 0.5f;
+                }
+                else
+                {
+                    float scaley = hudh / (float)t->h;
+                    float scaledw = t->w * scaley;
+                    float ratiox = hudw / scaledw;
+                    offsetx = (1.0f - ratiox) * 0.5f;
+                }
+            }
+
+            drawquad(0, 0, 1, 1, offsetx, offsety, 1-offsetx, 1-offsety);
+            pophudmatrix();
+            resethudshader();
+        }
+        else
+        {
+            settexture(t);
+            float offsetx = 0, offsety = 0;
+            if(showloadingaspect)
+            {
+                if(w > h) offsety = ((w-h)/float(w))*0.5f;
+                else if(h > w) offsetx = ((h-w)/float(h))*0.5f;
+            }
+            drawquad(0, 0, w, h, offsetx, offsety, 1-offsetx, 1-offsety);
+        }
+
+        if(progressing && (!engineready || !UI::hasprogress))
+        {
+            if(showloadinglogos)
+            {
+                gle::colorf(1, 1, 1, 1);
+
+                t = textureload(logotex, 3, true, false);
+                settexture(t);
+                drawtexture(w-w/4-w/3, h/2-w/6, w/2, w/4);
+            }
+
+            float oldtextscale = curtextscale;
+            pushfont(textfontlogo);
+            curtextscale = 0.8f;
+            draw_textf("%s", FONTH/2, h-FONTH*5/4, 0, 0, 255, 255, 255, 255, TEXT_LEFT_JUSTIFY, -1, -1, 1, *progresstitle ? progresstitle : "Loading, please wait..");
+            if(progressamt > 0) draw_textf("[ %.1f%% ]", w-FONTH/2, h-FONTH*5/4, 0, 0, 255, 255, 255, 255, TEXT_RIGHT_JUSTIFY, -1, -1, 1, progressamt*100);
+            curtextscale = oldtextscale;
+            popfont();
+            resethudshader();
+        }
+    }
+
+    void startrender(int w, int h, bool wantvisor, bool noview)
     {
         int wait = client::waiting();
 
@@ -1866,8 +1939,8 @@ namespace hud
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         resethudshader();
 
-        if(noview || wait) drawbackground(hudwidth, hudheight);
-        else if(engineready)
+        if(noview || wait || !engineready) drawbackground(hudwidth, hudheight);
+        else
         {
             drawzoom(hudwidth, hudheight);
             if(showhud)
@@ -1911,35 +1984,34 @@ namespace hud
                 }
                 if(!game::tvmode() && !client::waiting() && !hasinput(false)) drawevents();
             }
-        }
-        glDisable(GL_BLEND);
-    }
 
-    void endrender(int w, int h, bool noview)
-    {
-        if(!progressing)
-        {
-            hudmatrix.ortho(0, w, h, 0, -1, 1);
-            flushhudmatrix();
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            UI::render(UI::SURFACE_BACKGROUND);
+
+            drawpointers(w, h, -1, wantvisor);
             resethudshader();
-
-            drawpointers(w, h, false);
-
-            glDisable(GL_BLEND);
         }
+
+        glDisable(GL_BLEND);
     }
 
     void visorrender(int w, int h, bool wantvisor, bool noview)
     {
+        if(!engineready) return;
+
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        if(progressing) UI::renderprogress();
+        if(progressing)
+        {
+            UI::render(UI::SURFACE_PROGRESS);
+
+            hudmatrix.ortho(0, w, h, 0, -1, 1);
+            flushhudmatrix();
+            resethudshader();
+        }
         else
         {
-            if(engineready && showhud && consolemillis <= 0 && curcompass)
+            if(showhud && consolemillis <= 0 && curcompass)
             {
                 hudmatrix.ortho(0, w, h, 0, -1, 1);
                 flushhudmatrix();
@@ -1947,14 +2019,42 @@ namespace hud
 
                 rendercmenu();
             }
-            else UI::render();
+            else UI::render(UI::SURFACE_MAIN);
+            hudmatrix.ortho(0, w, h, 0, -1, 1);
+            flushhudmatrix();
+            resethudshader();
+
+            drawpointers(w, h, 0, wantvisor);
+            hudmatrix.ortho(0, w, h, 0, -1, 1);
+            flushhudmatrix();
+            resethudshader();
         }
+
+        glDisable(GL_BLEND);
+    }
+
+    void endrender(int w, int h, bool wantvisor, bool noview)
+    {
+        if(!engineready) return;
 
         hudmatrix.ortho(0, w, h, 0, -1, 1);
         flushhudmatrix();
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         resethudshader();
 
-        if(wantvisor) drawpointers(w, h, true);
+        if(!progressing)
+        {
+            UI::render(UI::SURFACE_FOREGROUND);
+            hudmatrix.ortho(0, w, h, 0, -1, 1);
+            flushhudmatrix();
+            resethudshader();
+
+            drawpointers(w, h, 1, wantvisor);
+            hudmatrix.ortho(0, w, h, 0, -1, 1);
+            flushhudmatrix();
+            resethudshader();
+        }
 
         glDisable(GL_BLEND);
     }

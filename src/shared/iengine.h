@@ -504,9 +504,10 @@ enum { CURSOR_DEFAULT = 0, CURSOR_HOVER, CURSOR_HIDDEN, CURSOR_MAX };
 
 namespace UI
 {
-    enum { SURFACE_MAIN = 0, SURFACE_PROGRESS, SURFACE_COMPOSITE, SURFACE_MAX };
-    enum { MAPUI_NONE = 0, MAPUI_SHOWPROX = 1<<0, MAPUI_INPUTPROX = 1<<1, MAPUI_ALL = MAPUI_SHOWPROX|MAPUI_INPUTPROX, MAPUI_PROXIMITY = MAPUI_SHOWPROX|MAPUI_INPUTPROX };
+    enum { SURFACE_BACKGROUND, SURFACE_MAIN, SURFACE_FOREGROUND, SURFACE_PROGRESS, SURFACE_COMPOSITE, SURFACE_MAX, SURFACE_LOOPED = SURFACE_FOREGROUND+1 };
+    enum { MAPUI_NONE = 0, MAPUI_SHOWPROX = 1<<0, MAPUI_INPUTPROX = 1<<1, MAPUI_BACKGROUND = 1<<2, MAPUI_FOREGROUND = 1<<3, MAPUI_ALL = MAPUI_SHOWPROX|MAPUI_INPUTPROX|MAPUI_BACKGROUND|MAPUI_FOREGROUND, MAPUI_PROXIMITY = MAPUI_SHOWPROX|MAPUI_INPUTPROX };
 
+    extern bool hasprogress;
     extern int uihidden;
     extern char *uiopencmd, *uiclosecmd;
 
@@ -542,8 +543,8 @@ namespace UI
     extern void setup();
     extern void cleanup();
     extern void cleangl();
-    extern void update(bool prog = false);
-    extern void render(bool world = false);
+    extern void update(int stype = SURFACE_MAIN);
+    extern void render(int stype = SURFACE_MAIN, bool world = false);
     extern void renderprogress();
 }
 

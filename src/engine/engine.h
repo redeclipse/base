@@ -301,7 +301,7 @@ extern matrix4 cammatrix, projmatrix, camprojmatrix, invcammatrix, invcamprojmat
 extern vec curfogcolor;
 extern int wireframe;
 
-extern float cursorx, cursory;
+extern float cursorx, cursory, visorx, visory;
 extern vec cursordir;
 
 extern int glerr;
@@ -357,6 +357,7 @@ namespace modelpreview
 struct timer;
 extern timer *begintimer(const char *name, bool gpu = true);
 extern void endtimer(timer *t);
+
 
 // octa
 extern cube *newcubes(uint face = F_EMPTY, int mat = MAT_AIR);

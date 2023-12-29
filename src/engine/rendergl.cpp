@@ -2496,7 +2496,7 @@ void gl_drawview()
 
     glDisable(GL_CULL_FACE);
 
-    UI::render(true);
+    loopi(UI::SURFACE_LOOPED) UI::render(i, true);
 
     glDisable(GL_DEPTH_TEST);
 
@@ -2567,9 +2567,10 @@ void gl_setupframe(bool force)
 }
 
 static GLuint visorfbo = 0, visortex = 0;
-static int visorw = -1, visorh = -1;
+static int visorw = -1, visorh = -1; // render target dimensions
+float visorx = 0.5f, visory = 0.5f; // cursor projection coordinates
 
-VAR(IDF_PERSIST, visorhud, 0, 1, 15); // bit: 1 = normal, 2 = edit, 4 = progress, 8 = noview
+VAR(IDF_PERSIST, visorhud, 0, 15, 15); // bit: 1 = normal, 2 = edit, 4 = progress, 8 = noview
 FVAR(IDF_PERSIST, visordistort, -2, 0.75f, 2);
 FVAR(IDF_PERSIST, visornormal, -2, 1.175f, 2);
 FVAR(IDF_PERSIST, visorscalex, FVAR_NONZERO, 1, 2);
@@ -2624,25 +2625,55 @@ void gl_drawhud(bool noview = false)
     resethudmatrix();
     resethudshader();
     if(!noview) blendhalos();
-    hud::startrender(hudw, hudh, noview);
 
     bool wantvisor = false;
-    int curw = hudw, curh = hudh;
-
     if(engineready)
     {
         setupvisor(hudw, hudh);
-
-        glBindFramebuffer_(GL_FRAMEBUFFER, visorfbo);
-        glViewport(0, 0, visorw, visorh);
-
-        glClearColor(0, 0, 0, 0);
-        glClear(GL_COLOR_BUFFER_BIT);
 
         if(noview) wantvisor = (visorhud&8)!=0;
         else if(progressing) wantvisor = (visorhud&4)!=0;
         else if(editmode) wantvisor = (visorhud&2)!=0;
         else wantvisor = (visorhud&1)!=0;
+
+        if(wantvisor)
+        {
+            // WARNING: This function MUST produce the same
+            // results as the 'hudvisorview' shader for cursor projection.
+
+            vec2 cursorxy(cursorx, cursory), coords = cursorxy;
+
+            coords.sub(vec2(0.5f));
+            coords.mul(vec2(visorscalex, visorscaley));
+
+            float mag = coords.magnitude();
+
+            coords.y *= (1.0 + visordistort * visornormal * visornormal);
+            coords.y /= (1.0 + visordistort + mag * mag);
+
+            coords.add(vec2(0.5f));
+            coords.sub(cursorxy);
+
+            visorx = cursorx - coords.x; // what we get is an offset from cursor
+            visory = cursory - coords.y; // that is then subtracted from it
+        }
+        else
+        {
+            visorx = cursorx;
+            visory = cursory;
+        }
+    }
+
+    hud::startrender(hudw, hudh, wantvisor, noview);
+
+    int curw = hudw, curh = hudh;
+    if(engineready)
+    {
+        glBindFramebuffer_(GL_FRAMEBUFFER, visorfbo);
+        glViewport(0, 0, visorw, visorh);
+
+        glClearColor(0, 0, 0, 0);
+        glClear(GL_COLOR_BUFFER_BIT);
 
         curw = visorw;
         curh = visorh;
@@ -2653,7 +2684,7 @@ void gl_drawhud(bool noview = false)
     if(engineready)
     {
         glBindFramebuffer_(GL_FRAMEBUFFER, 0);
-        glViewport(0, 0, visorw, visorh);
+        glViewport(0, 0, hudw, hudh);
 
         if(wantvisor)
         {
@@ -2673,7 +2704,8 @@ void gl_drawhud(bool noview = false)
         glDisable(GL_BLEND);
     }
 
-    hud::endrender(hudw, hudh, noview);
+    hud::endrender(hudw, hudh, wantvisor, noview);
+
     debugparticles();
     debuglights();
 }

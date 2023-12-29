@@ -10,6 +10,7 @@ struct vec2
     };
 
     vec2() {}
+    explicit vec2(float a) : x(a), y(a) {}
     vec2(float x, float y) : x(x), y(y) {}
     explicit vec2(const vec &v);
     explicit vec2(const vec4 &v);
