@@ -533,6 +533,17 @@ namespace game
         return PROGRESS_NONE;
     }
 
+    const char *getprogresstitle(bool force)
+    {
+        if(progressing) return progresstitle;
+
+        int wait = clamp(getprogresswait(), 0, int(PROGRESS_MAX-1));
+        if(!force || wait > 0) return PROGRESS_STR[wait];
+
+        return "Loading, please wait";
+    }
+    ICOMMAND(0, getprogresstitle, "", (), result(getprogresstitle()));
+
     const char *gamestatename()
     {
         return connected() && gamestate >= 0 && gamestate < G_S_MAX ? G_S_STR[gamestate] : "Main Menu";

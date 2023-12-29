@@ -1466,36 +1466,6 @@ namespace hud
         drawtexture(x, y, c, c);
     }
 
-    ICOMMAND(0, getprogresstitle, "", (),
-    {
-        if(progressing) result(progresstitle);
-        else
-        {
-            int wait = client::waiting();
-            switch(wait)
-            {
-                case 0: break;
-                case 1:
-                    if(curpeer || haslocalclients())
-                    {
-                        if(!client::isready) result("Negotiating with server..");
-                        else if(!client::loadedmap) result("Getting game information..");
-                        else result("Loading game state..");
-                    }
-                    else if(connpeer != NULL) result("Connecting to server..");
-                    else result("Loading game state..");
-                    break;
-                case 2:
-                    result("Requesting map..");
-                    break;
-                case 3:
-                    result("Downloading map..");
-                    break;
-                default: break;
-            }
-        }
-    });
-
     void drawonscreenhits(int w, int h)
     {
         pushhudscale(onscreenhitsscale);
@@ -1921,7 +1891,7 @@ namespace hud
             float oldtextscale = curtextscale;
             pushfont(textfontlogo);
             curtextscale = 0.8f;
-            draw_textf("%s", FONTH/2, h-FONTH*5/4, 0, 0, 255, 255, 255, 255, TEXT_LEFT_JUSTIFY, -1, -1, 1, *progresstitle ? progresstitle : "Loading, please wait..");
+            draw_textf("%s", FONTH/2, h-FONTH*5/4, 0, 0, 255, 255, 255, 255, TEXT_LEFT_JUSTIFY, -1, -1, 1, game::getprogresstitle());
             if(progressamt > 0) draw_textf("[ %.1f%% ]", w-FONTH/2, h-FONTH*5/4, 0, 0, 255, 255, 255, 255, TEXT_RIGHT_JUSTIFY, -1, -1, 1, progressamt*100);
             curtextscale = oldtextscale;
             popfont();

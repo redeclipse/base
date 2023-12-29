@@ -169,6 +169,7 @@ namespace game
     extern int gettimeelapsed(bool force = false);
     extern int gettimesync();
     extern int getprogresswait();
+    extern const char *getprogresstitle(bool force = false);
     extern const char *gamestatename();
     extern const char *gametitle();
     extern const char *gametext();
