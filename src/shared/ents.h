@@ -54,7 +54,8 @@ enum
     MDL_FORCETRANSPARENT = 1<<11,
     MDL_NOMIXER          = 1<<12,
     MDL_NOPATTERN        = 1<<13,
-    MDL_FORCEDYNAMIC     = 1<<14
+    MDL_FORCEDYNAMIC     = 1<<14,
+    MDL_HALOBACK         = 1<<15
 };
 
 struct model;

@@ -1052,10 +1052,12 @@ extern int halodist;
 extern float haloblend;
 extern bvec halocolour;
 
+enum { HALO_FRONT, HALO_BACK, HALO_MAX };
 extern void renderhalo();
 extern void viewhalo();
 extern void blendhalos();
 extern void cleanuphalo();
+extern void swaphalo(int type);
 
 extern int debughaze;
 

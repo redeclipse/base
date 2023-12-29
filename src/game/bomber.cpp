@@ -253,13 +253,14 @@ namespace bomber
             float trans = 1;
             int millis = lastmillis-f.displaytime;
             if(millis <= 1000) trans *= float(millis)/1000.f;
+
             if(!f.enabled) basemdl.material[0] = mdl.material[0] = bvec(0, 0, 0);
             else if(isbomberaffinity(f))
             {
                 vec above(f.pos(true, true));
                 if(!f.owner && !f.droptime) above.z += enttype[AFFINITY].radius/4*trans;
                 mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
-                mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED;
+                mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_HALOBACK;
                 mdl.o = above;
                 mdl.size = trans;
                 mdl.yaw = !f.owner && f.proj ? f.proj->yaw : (lastmillis/4)%360;
@@ -278,12 +279,8 @@ namespace bomber
                 {
                     if(f.owner == game::focus)
                         trans *= game::focus != game::player1 ? game::affinityfollowblend : game::affinitythirdblend;
-                    mdl.color.a *= trans;
-                    if(drawtex == DRAWTEX_HALO)
-                    {
-                        float maxdist = hud::radarlimit(halodist);
-                        if(maxdist > 0) mdl.color.a *= 1.f-(mdl.o.dist(camera1->o)/maxdist);
-                    }
+                    if(drawtex == DRAWTEX_HALO) mdl.color.a = 1.f-((mdl.o.dist(camera1->o)-8)/hud::radarlimit(halodist));
+                    else mdl.color.a *= trans;
                     rendermodel("props/ball", mdl);
                 }
             }
@@ -302,14 +299,10 @@ namespace bomber
             if(!m_bb_hold(game::gamemode, game::mutators))
             {
                 basemdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
-                basemdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED;
+                basemdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_HALOBACK;
                 basemdl.o = f.render;
                 basemdl.yaw = f.yaw;
-                if(drawtex == DRAWTEX_HALO)
-                {
-                    float maxdist = hud::radarlimit(halodist);
-                    if(maxdist > 0) basemdl.color.a *= 1.f-(basemdl.o.dist(camera1->o)/maxdist);
-                }
+                if(drawtex == DRAWTEX_HALO) basemdl.color.a = 1.f-((basemdl.o.dist(camera1->o)-8)/hud::radarlimit(halodist));
                 rendermodel("props/point", basemdl);
             }
         }

@@ -616,15 +616,10 @@ static inline void renderbatchedmodel(model *m, batchedmodel &b)
     if(b.attached>=0) b.state.attached = &modelattached[b.attached];
 
     int anim = b.state.anim;
-    if(shadowmapping > SM_REFLECT || drawtex == DRAWTEX_HALO)
-    {
-        anim |= ANIM_NOSKIN;
-    }
-    else
-    {
-        if(b.state.flags&MDL_FULLBRIGHT) anim |= ANIM_FULLBRIGHT;
-    }
+    if(shadowmapping > SM_REFLECT || drawtex == DRAWTEX_HALO) anim |= ANIM_NOSKIN;
+    else if(b.state.flags&MDL_FULLBRIGHT) anim |= ANIM_FULLBRIGHT;
 
+    if(drawtex == DRAWTEX_HALO) swaphalo(b.state.flags&MDL_HALOBACK ? HALO_BACK : HALO_FRONT);
     m->render(anim, &b.state, b.d);
 }
 
@@ -1127,6 +1122,7 @@ hasboundbox:
         m->startrender();
         setaamask(true);
         if(state.flags&MDL_FULLBRIGHT) state.anim |= ANIM_FULLBRIGHT;
+        if(drawtex == DRAWTEX_HALO) swaphalo(state.flags&MDL_HALOBACK ? HALO_BACK : HALO_FRONT);
         m->render(state.anim, &state, d);
         m->endrender();
         if(state.flags&MDL_CULL_QUERY && d->query) endquery(d->query);

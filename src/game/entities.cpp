@@ -3201,8 +3201,14 @@ namespace entities
                         {
                             colour = W(attr, colour);
                             if(!active || game::focus->isobserver() || !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !showentfull))
-                                mdl.color.a *= showentunavailable;
-                            else mdl.color.a *= showentavailable;
+                            {
+                                if(drawtex != DRAWTEX_HALO) mdl.color.a *= showentunavailable;
+                            }
+                            else
+                            {
+                                if(drawtex == DRAWTEX_HALO) mdl.flags |= MDL_HALOBACK;
+                                else mdl.color.a *= showentavailable;
+                            }
                         }
                         else continue;
                     }
@@ -3211,11 +3217,7 @@ namespace entities
                         mdl.material[0] = bvec::fromcolor(game::getcolour(game::focus, game::playerovertone, game::playerovertonelevel));
                         mdl.material[1] = bvec::fromcolor(game::getcolour(game::focus, game::playerundertone, game::playerundertonelevel));
                         if(colour >= 0) mdl.material[0] = mdl.material[2] = bvec::fromcolor(colour);
-                        if(drawtex == DRAWTEX_HALO)
-                        {
-                            float maxdist = hud::radarlimit(halodist);
-                            if(maxdist > 0) mdl.color.a *= 1.f-(mdl.o.dist(camera1->o)/maxdist);
-                        }
+                        if(drawtex == DRAWTEX_HALO) mdl.color.a = 1.f-((mdl.o.dist(camera1->o)-8)/hud::radarlimit(halodist));
                         rendermodel(mdlname, mdl);
                     }
                 }

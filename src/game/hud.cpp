@@ -1277,7 +1277,7 @@ namespace hud
         pophudmatrix();
     }
 
-    float radarlimit(float dist) { return dist >= 0 && radardistlimit > 0 ? clamp(dist, 0.f, radardistlimit) : max(dist, 0.f); }
+    float radarlimit(float dist) { return min(dist >= 0 && radardistlimit > 0 ? clamp(dist, 0.f, radardistlimit) : max(dist, 0.f), float(worldsize)); }
     ICOMMAND(0, getradarlimit, "f", (float *n), floatret(radarlimit(*n)));
 
     bool radarlimited(float dist) { return radardistlimit > 0 && dist > radardistlimit; }

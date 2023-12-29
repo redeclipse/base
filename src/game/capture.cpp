@@ -196,18 +196,14 @@ namespace capture
             }
             basemdl.material[0] = mdl.material[0] = bvec::fromcolor(effect);
             mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
-            mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED;
+            mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|(game::focus->isobserver() || f.team == game::focus->team || f.team == T_NEUTRAL || f.owner->team == game::focus->team ? MDL_HALOBACK : 0);
 
             if(!f.owner && !f.droptime)
             {
                 vec flagpos = pos;
                 mdl.o = flagpos;
                 mdl.color = vec4(1, 1, 1, blend);
-                if(drawtex == DRAWTEX_HALO)
-                {
-                    float maxdist = hud::radarlimit(halodist);
-                    if(maxdist > 0) mdl.color.a *= 1.f-(mdl.o.dist(camera1->o)/maxdist);
-                }
+                if(drawtex == DRAWTEX_HALO) mdl.color.a = 1.f-((mdl.o.dist(camera1->o)-8)/hud::radarlimit(halodist));
                 rendermodel("props/flag", mdl);
             }
             else if(!f.owner || f.owner != game::focus || game::thirdpersonview(true))
@@ -227,22 +223,14 @@ namespace capture
                 while(mdl.yaw >= 360.f) mdl.yaw -= 360.f;
                 mdl.o = flagpos;
                 mdl.color = vec4(1, 1, 1, blend);
-                if(drawtex == DRAWTEX_HALO)
-                {
-                    float maxdist = hud::radarlimit(halodist);
-                    if(maxdist > 0) mdl.color.a *= 1.f-(mdl.o.dist(camera1->o)/maxdist);
-                }
+                if(drawtex == DRAWTEX_HALO) mdl.color.a = 1.f-((mdl.o.dist(camera1->o)-8)/hud::radarlimit(halodist));
                 rendermodel("props/flag", mdl);
                 if(f.owner) iterflags[f.owner->clientnum]++;
             }
             basemdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
             basemdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED;
             basemdl.o = f.render;
-            if(drawtex == DRAWTEX_HALO)
-            {
-                float maxdist = hud::radarlimit(halodist);
-                if(maxdist > 0) basemdl.color.a *= 1.f-(basemdl.o.dist(camera1->o)/maxdist);
-            }
+            if(drawtex == DRAWTEX_HALO) basemdl.color.a = 1.f-((basemdl.o.dist(camera1->o)-8)/hud::radarlimit(halodist));
             rendermodel("props/point", basemdl);
         }
     }

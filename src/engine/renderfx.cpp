@@ -1,17 +1,17 @@
 #include "engine.h"
 
-static GLuint halofbo = 0, halotex = 0;
-static int halow = -1, haloh = -1;
+static GLuint halofbo[HALO_MAX] = { 0, 0 }, halotex[HALO_MAX] = { 0, 0 };
+static int halow = -1, haloh = -1, halotype = -1;
 
 VAR(0, debughalo, 0, 0, 2);
 VAR(IDF_PERSIST, halos, 0, 1, 1);
 FVAR(IDF_PERSIST, halowireframe, 0, 0, FVAR_MAX);
 VAR(IDF_PERSIST, halodist, 32, 1024, VAR_MAX);
-FVARF(IDF_PERSIST, haloscale, FVAR_NONZERO, 1, 1, cleanuphalo());
+FVARF(IDF_PERSIST, haloscale, FVAR_NONZERO, 1, 0.5f, cleanuphalo());
 FVAR(IDF_PERSIST, haloblend, 0, 1, 1);
 CVAR(IDF_PERSIST, halocolour, 0xFFFFFF);
 VARF(IDF_PERSIST, halooffset, 1, 2, 4, initwarning("halo setup", INIT_LOAD, CHANGE_SHADERS));
-FVAR(IDF_PERSIST, halofade, FVAR_NONZERO, 0.25f, FVAR_MAX);
+FVAR(IDF_PERSIST, halofade, FVAR_NONZERO, 2, FVAR_MAX);
 
 void setuphalo(int w, int h)
 {
@@ -25,47 +25,66 @@ void setuphalo(int w, int h)
     }
 
     GLERROR;
-    if(!halotex)
+    loopi(HALO_MAX)
     {
-        glGenTextures(1, &halotex);
-        createtexture(halotex, halow, haloh, NULL, 3, 1, GL_RGB5_A1, GL_TEXTURE_RECTANGLE);
-    }
+        if(!halotex[i])
+        {
+            glGenTextures(1, &halotex[i]);
+            createtexture(halotex[i], halow, haloh, NULL, 3, 1, GL_RGBA, GL_TEXTURE_RECTANGLE);
+        }
 
-    if(!halofbo)
-    {
-        glGenFramebuffers_(1, &halofbo);
-        glBindFramebuffer_(GL_FRAMEBUFFER, halofbo);
-        glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, halotex, 0);
+        if(!halofbo[i])
+        {
+            glGenFramebuffers_(1, &halofbo[i]);
+            glBindFramebuffer_(GL_FRAMEBUFFER, halofbo[i]);
+            glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, halotex[i], 0);
+        }
+        GLERROR;
     }
-    GLERROR;
+    halotype = -1;
 }
 
 void cleanuphalo()
 {
-    if(halofbo)
+    loopi(HALO_MAX)
     {
-        glDeleteFramebuffers_(1, &halofbo);
-        halofbo = 0;
-    }
+        if(halofbo[i])
+        {
+            glDeleteFramebuffers_(1, &halofbo[i]);
+            halofbo[i] = 0;
+        }
 
-    if(halotex)
-    {
-        glDeleteTextures(1, &halotex);
-        halotex = 0;
+        if(halotex[i])
+        {
+            glDeleteTextures(1, &halotex[i]);
+            halotex[i] = 0;
+        }
     }
+    halotype = -1;
+}
+
+void swaphalo(int type)
+{
+    if(type < 0 || type >= HALO_MAX || halotype == type) return;
+
+    glBindFramebuffer_(GL_FRAMEBUFFER, halofbo[type]);
+    glViewport(0, 0, halow, haloh);
 }
 
 void renderhalo()
 {
     setuphalo(vieww, viewh);
 
-    glBindFramebuffer_(GL_FRAMEBUFFER, halofbo);
-    glViewport(0, 0, halow, haloh);
+    loopirev(HALO_MAX)
+    {
+        swaphalo(i);
+
+        glClearColor(0, 0, 0, 0);
+        glClear(GL_COLOR_BUFFER_BIT);
+    }
+
 
     resetmodelbatches();
-
-    glClearColor(0, 0, 0, 0);
-    glClear(GL_COLOR_BUFFER_BIT);
     glEnable(GL_CULL_FACE);
 
     if(halowireframe > 0)
@@ -91,12 +110,25 @@ void renderhalo()
 
 void viewhalo()
 {
-    if(!halotex) return;
-    int w = min(hudw, hudh)/(debughalo == 2 ? 2 : 3), h = (w*hudh)/hudw;
-    SETSHADER(hudrect);
-    gle::colorf(1, 1, 1);
-    glBindTexture(GL_TEXTURE_RECTANGLE, halotex);
-    debugquad(0, 0, w, h, 0, 0, halow, haloh);
+    int s = min(hudw, hudh)/(debughalo == 2 ? 2 : 3), x = 0, w = s, h = (w*hudh)/hudw;
+    loopi(HALO_MAX)
+    {
+        if(halotex[i])
+        {
+            SETSHADER(hudrect);
+            gle::colorf(1, 1, 1);
+            glBindTexture(GL_TEXTURE_RECTANGLE, halotex[i]);
+            debugquad(x, 0, w, h, 0, 0, halow, haloh);
+        }
+        else
+        {
+            SETSHADER(hud);
+            gle::colorf(1, 1, 1);
+            glBindTexture(GL_TEXTURE_2D, notexture->id);
+            debugquad(x, 0, w, h, 0, 0, halow, haloh);
+        }
+        x += s;
+    }
 }
 
 void blendhalos()
@@ -110,12 +142,29 @@ void blendhalos()
     gle::color(halocolour.tocolor(), haloblend);
     glEnable(GL_BLEND);
 
-    glBindTexture(GL_TEXTURE_RECTANGLE, halotex);
+    float maxdist = hud::radarlimit(halodist);
+    loopirev(HALO_MAX)
+    {
+        switch(i)
+        {
+            case HALO_FRONT: SETSHADER(hudhalofront); break;
+            case HALO_BACK: SETSHADER(hudhaloback); break;
+            default: continue;
+        }
+        glBindTexture(GL_TEXTURE_RECTANGLE, halotex[i]);
 
-    SETSHADER(hudhalo);
-    LOCALPARAMF(halofade, 1.0f / halofade);
+        if(i == HALO_FRONT)
+        {
+            glActiveTexture_(GL_TEXTURE1);
+            if(msaasamples) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
+            else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
+            glActiveTexture_(GL_TEXTURE0);
+        }
 
-    hudquad(0, 0, hudw, hudh, 0, haloh, halow, -haloh);
+        LOCALPARAMF(haloparams, halofade, 1.0f / halofade, maxdist, 1.0f / maxdist);
+
+        hudquad(0, 0, hudw, hudh, 0, haloh, halow, -haloh);
+    }
 
     glDisable(GL_BLEND);
 }

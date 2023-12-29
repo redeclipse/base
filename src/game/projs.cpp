@@ -2338,17 +2338,18 @@ namespace projs
                         {
                             mdl.material[0] = mdl.material[2] = bvec::fromcolor(W(attr, colour));
                             if(game::focus->isobserver() || !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !entities::showentfull))
-                                mdl.color.a *= entities::showentunavailable;
-                            else mdl.color.a *= entities::showentavailable;
+                            {
+                                if(drawtex != DRAWTEX_HALO) mdl.color.a *= entities::showentunavailable;
+                            }
+                            else
+                            {
+                                if(drawtex == DRAWTEX_HALO) mdl.flags |= MDL_HALOBACK;
+                                else mdl.color.a *= entities::showentavailable;
+                            }
                         }
                         else continue;
                     }
-                    if(mdl.color.a <= 0) continue;
-                    if(drawtex == DRAWTEX_HALO)
-                    {
-                        float maxdist = hud::radarlimit(halodist);
-                        if(maxdist > 0) mdl.color.a *= 1.f-(mdl.o.dist(camera1->o)/maxdist);
-                    }
+                    if(drawtex == DRAWTEX_HALO) mdl.color.a = 1.f-((mdl.o.dist(camera1->o)-(proj.radius+1))/hud::radarlimit(halodist));
                     break;
                 }
                 default: break;
