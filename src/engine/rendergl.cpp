@@ -2496,7 +2496,7 @@ void gl_drawview()
 
     glDisable(GL_CULL_FACE);
 
-    loopi(UI::SURFACE_LOOPED) UI::render(i, true);
+    loopi(SURFACE_LOOPED) UI::render(i, true);
 
     glDisable(GL_DEPTH_TEST);
 

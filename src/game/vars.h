@@ -323,7 +323,7 @@ MMVAR(IDF_GAMEMOD, 0, overtimelimit, 0, VAR_MAX,
     5,          2,          3,          2,          5,          5,          5,          5,          5,          5,          5,          5
 );
 #ifdef CPP_GAME_SERVER
-SVARR(limitidxname, "duel survivor gladiator capture defend defendking bomber bomberhold race racetimed racegauntlet");
+SVARR(limitidxname, "duel survivor gladiator capture defend defendking bomber bomberhold race racelapped racegauntlet");
 #endif
 
 GVAR(IDF_GAMEMOD, 0, intermlimit, 0, 10000, VAR_MAX); // .. before vote menu comes up

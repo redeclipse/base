@@ -3440,7 +3440,7 @@ namespace entities
 
                         if(entseldynui)
                         {
-                            UI::setui("entinfo", UI::SURFACE_MAIN, v.idx, pos, entinfouiyaw, entinfouipitch, entinfouiscale, entinfouidetentyaw, entinfouidetentpitch);
+                            UI::setui("entinfo", SURFACE_MAIN, v.idx, pos, entinfouiyaw, entinfouipitch, entinfouiscale, entinfouidetentyaw, entinfouidetentpitch);
                             hasdynui = true;
                         }
                         found = true;
@@ -3523,7 +3523,7 @@ namespace entities
             if(entinfoui) loopv(visents)
             {
                 visibleent &v = visents[i];
-                if(UI::uivisible("entinfo", UI::SURFACE_MAIN, v.idx)) UI::hideui("entinfo", UI::SURFACE_MAIN, v.idx);
+                if(UI::uivisible("entinfo", SURFACE_MAIN, v.idx)) UI::hideui("entinfo", SURFACE_MAIN, v.idx);
             }
         }
         else if(hasdynui)

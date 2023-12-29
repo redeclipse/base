@@ -923,9 +923,6 @@ namespace UI
 
     Surface *surface = NULL, *surfaces[SURFACE_MAX] = { NULL, NULL, NULL, NULL, NULL };
     vector<Surface *> surfacestack;
-
-    const char *windowtype[SURFACE_MAX] = { "Background", "Main", "Foreground", "Progress", "Composite" };
-    const char *windowaffix[SURFACE_MAX] = { "bg", "fg", "", "progress", "comp" };
     Window *window = NULL;
 
     struct Code
@@ -2053,19 +2050,19 @@ namespace UI
         window = oldwindow;
     }
 
-    bool newui(int stype, const char *name, const char *contents, const char *onshow, const char *onhide, bool mapdef = false, const char *dyn = NULL, tagval *args = NULL, int numargs = 0)
+    bool newui(const char *name, int stype, const char *contents, const char *onshow, const char *onhide, bool mapdef = false, const char *dyn = NULL, tagval *args = NULL, int numargs = 0)
     {
-        if(!name || !*name || !contents || !*contents) return false;
+        if(!name || !*name || !contents || !*contents || stype < 0 || stype >= SURFACE_MAX) return false;
 
         if(mapdef && !(identflags&IDF_MAP) && !editmode)
         {
-            conoutf(colourred, "Map %s UI %s is only directly modifiable in editmode", windowtype[stype], name);
+            conoutf(colourred, "Map %s UI %s is only directly modifiable in editmode", SURFACE_STR[stype], name);
             return false;
         }
 
         if(!pushsurface(stype))
         {
-            conoutf(colourred, "Cannot create %s on Surface %s", name, windowtype[stype]);
+            conoutf(colourred, "Cannot create %s on Surface %s", name, SURFACE_STR[stype]);
             return false;
         }
 
@@ -2074,14 +2071,14 @@ namespace UI
         {
             if(w == window)
             {
-                conoutf(colourred, "Cannot redefine %s UI %s while it is currently active", windowtype[stype], w->name);
+                conoutf(colourred, "Cannot redefine %s UI %s while it is currently active", SURFACE_STR[stype], w->name);
                 popsurface();
                 return false;
             }
 
             if(!w->mapdef && mapdef)
             {
-                conoutf(colourred, "Cannot override builtin %s UI %s with a one from the map", windowtype[stype], w->name);
+                conoutf(colourred, "Cannot override builtin %s UI %s with a one from the map", SURFACE_STR[stype], w->name);
                 popsurface();
                 return false;
             }
@@ -2103,17 +2100,8 @@ namespace UI
         return true;
     }
 
-    #define NEWUIDEFS(type, affix) \
-        ICOMMAND(0, new##affix##ui, "ssss", (char *name, char *contents, char *onshow, char *onhide), if(!(identflags&IDF_MAP)) newui(type, name, contents, onshow, onhide, false)); \
-        ICOMMAND(0, map##affix##ui, "ssss", (char *name, char *contents, char *onshow, char *onhide), newui(type, name, contents, onshow, onhide, true));
-
-    NEWUIDEFS(SURFACE_FOREGROUND, fg);
-    NEWUIDEFS(SURFACE_MAIN,);
-    NEWUIDEFS(SURFACE_BACKGROUND, bg);
-
-    ICOMMAND(0, progressui, "ssss", (char *name, char *contents, char *onshow, char *onhide), if(!(identflags&IDF_MAP)) newui(SURFACE_PROGRESS, name, contents, onshow, onhide));
-    ICOMMAND(0, newcompui, "ssss", (char *name, char *contents, char *onshow, char *onhide), if(!(identflags&IDF_MAP)) newui(SURFACE_COMPOSITE, name, contents, onshow, onhide, false));
-    ICOMMAND(0, mapcompui, "ssss", (char *name, char *contents, char *onshow, char *onhide), newui(SURFACE_COMPOSITE, name, contents, onshow, onhide, true));
+    ICOMMAND(0, newui, "sisss", (char *name, int *stype, char *contents, char *onshow, char *onhide), if(!(identflags&IDF_MAP)) newui(name, *stype, contents, onshow, onhide, false));
+    ICOMMAND(0, mapui, "sisss", (char *name, int *stype, char *contents, char *onshow, char *onhide), newui(name, *stype, contents, onshow, onhide, true));
 
     void closedynui(const char *name, int stype)
     {
@@ -2137,7 +2125,7 @@ namespace UI
         }));
     }
 
-    ICOMMAND(0, cleardynui, "si", (char *name, int *stype), cleardynui(name, clamp(*stype, 0, int(SURFACE_MAX)-1), (identflags&IDF_MAP) != 0));
+    ICOMMAND(0, cleardynui, "si", (char *name, int *stype), cleardynui(name, clamp(*stype, 0, int(SURFACE_MAX)-1), false));
     ICOMMAND(0, clearmapdynui, "si", (char *name, int *stype), cleardynui(name, clamp(*stype, 0, int(SURFACE_MAX)-1), true));
 
     struct DynUI
@@ -2217,7 +2205,7 @@ namespace UI
             defformatstring(refname, "%s_%d", name, param);
             tagval t;
             t.setint(param);
-            if(newui(stype, refname, dynuis[i]->contents, dynuis[i]->onshow, dynuis[i]->onhide, dynuis[i]->mapdef, dynuis[i]->name, &t, 1)) return true;
+            if(newui(refname, stype, dynuis[i]->contents, dynuis[i]->onshow, dynuis[i]->onhide, dynuis[i]->mapdef, dynuis[i]->name, &t, 1)) return true;
             return false;
         }
         return false;
@@ -6967,7 +6955,7 @@ namespace UI
             {
                 if(!w->mapdef || !w->contents || w->dyn) continue;
 
-                h->printf("map%sui %s [%s]", windowaffix[surfacetype], w->name, w->contents->body);
+                h->printf("mapui %s %d [%s]", w->name, surfacetype, w->contents->body);
 
                 if(w->onshow) h->printf(" [%s]", w->onshow->body);
                 else if(w->onhide) h->printf(" []");

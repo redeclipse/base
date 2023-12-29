@@ -613,7 +613,7 @@ namespace hud
     void checkui()
     {
         hidecrosshair = 0;
-        loopi(UI::SURFACE_LOOPED) UI::showui("hud", i);
+        loopi(SURFACE_LOOPED) UI::showui("hud", i);
 
         if(!UI::hasmenu(true))
         {
@@ -634,15 +634,15 @@ namespace hud
             {
                 if(d->actortype >= A_ENEMY || (d == game::focus && (!game::aboveheaddead || (d->state != CS_DEAD && d->state != CS_WAITING))))
                 {
-                    if(UI::uivisible("abovehead", UI::SURFACE_MAIN, d->clientnum)) UI::hideui("abovehead", UI::SURFACE_MAIN, d->clientnum);
+                    if(UI::uivisible("abovehead", SURFACE_MAIN, d->clientnum)) UI::hideui("abovehead", SURFACE_MAIN, d->clientnum);
                     continue;
                 }
-                UI::setui("abovehead", UI::SURFACE_MAIN, d->clientnum, d->abovehead(), aboveheaduiyaw, aboveheaduipitch, aboveheaduiscale,  aboveheaduidetentyaw, aboveheaduidetentpitch);
+                UI::setui("abovehead", SURFACE_MAIN, d->clientnum, d->abovehead(), aboveheaduiyaw, aboveheaduipitch, aboveheaduiscale,  aboveheaduidetentyaw, aboveheaduidetentpitch);
             }
         }
         else UI::closedynui("abovehead");
 
-        loopi(UI::SURFACE_LOOPED) UI::update(i);
+        loopi(SURFACE_LOOPED) UI::update(i);
     }
 
     void damage(int n, const vec &loc, gameent *v, int weap, int flags)
@@ -1955,7 +1955,7 @@ namespace hud
                 if(!game::tvmode() && !client::waiting() && !hasinput(false)) drawevents();
             }
 
-            UI::render(UI::SURFACE_BACKGROUND);
+            UI::render(SURFACE_BACKGROUND);
 
             drawpointers(w, h, -1, wantvisor);
             resethudshader();
@@ -1973,7 +1973,7 @@ namespace hud
 
         if(progressing)
         {
-            UI::render(UI::SURFACE_PROGRESS);
+            UI::render(SURFACE_PROGRESS);
 
             hudmatrix.ortho(0, w, h, 0, -1, 1);
             flushhudmatrix();
@@ -1989,7 +1989,7 @@ namespace hud
 
                 rendercmenu();
             }
-            else UI::render(UI::SURFACE_MAIN);
+            else UI::render(SURFACE_MAIN);
             hudmatrix.ortho(0, w, h, 0, -1, 1);
             flushhudmatrix();
             resethudshader();
@@ -2021,7 +2021,7 @@ namespace hud
 
         if(!progressing)
         {
-            UI::render(UI::SURFACE_FOREGROUND);
+            UI::render(SURFACE_FOREGROUND);
             hudmatrix.ortho(0, w, h, 0, -1, 1);
             flushhudmatrix();
             resethudshader();

@@ -1391,7 +1391,7 @@ namespace client
     {
         remote = _remote;
         if(editmode) toggleedit();
-        UI::hideui(NULL, UI::SURFACE_MAIN);
+        UI::hideui(NULL, SURFACE_MAIN);
     }
 
     void gamedisconnect(int clean)
