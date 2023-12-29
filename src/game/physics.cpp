@@ -38,7 +38,7 @@ namespace physics
     FVAR(IDF_PERSIST, impulseparkouryaw, 0, 150, 180); // determines the minimum yaw angle to switch between parkour climb and run
     VAR(IDF_PERSIST, impulsemethod, 0, 3, 3); // determines which impulse method to use, 0 = none, 1 = launch, 2 = slide, 3 = both
     VAR(IDF_PERSIST, impulseaction, 0, 3, 3); // determines how impulse action works, 0 = off, 1 = impulse jump, 2 = impulse boost, 3 = both
-    VAR(IDF_PERSIST, impulsedash, 0, 1, 1); // double tap to impulse dash
+    VAR(IDF_PERSIST, impulsedashtap, 0, 1, 1); // double tap to impulse dash
     VAR(IDF_PERSIST, impulseturntime, 0, 250, VAR_MAX);
     FVAR(IDF_PERSIST, impulseturnroll, 0, 15, 89);
     FVAR(IDF_PERSIST, impulseturnscale, 0, 1, 1);
@@ -78,7 +78,7 @@ namespace physics
             game::player1->v = dir; \
             if(down) \
             { \
-                if(game::player1->canimpulse(IM_T_DASH) && impulsedash && last##v && lastdir##v && dir == lastdir##v && lastmillis-last##v < PHYSMILLIS) \
+                if(game::player1->canimpulse(IM_T_DASH) && impulsedashtap && last##v && lastdir##v && dir == lastdir##v && lastmillis-last##v < PHYSMILLIS) \
                 { \
                     game::player1->action[AC_DASH] = true; \
                     game::player1->actiontime[AC_DASH] = lastmillis; \
