@@ -392,7 +392,7 @@ namespace game
     VAR(IDF_PERSIST, gibfade, 1, 15000, VAR_MAX);
     VAR(IDF_PERSIST, ragdolleffect, 2, 500, VAR_MAX);
 
-    VAR(IDF_PERSIST, playerhalos, 0, 2, 3); // 0 = off, 1 = self, 2 = teammates
+    VAR(IDF_PERSIST, playerhalos, 0, 3, 3); // 0 = off, 1 = self, 2 = others
     FVAR(IDF_PERSIST, playerblend, 0, 1, 1);
     FVAR(IDF_PERSIST, playereditblend, 0, 1, 1);
     FVAR(IDF_PERSIST, playerghostblend, 0, 0.35f, 1);
@@ -1031,22 +1031,21 @@ namespace game
 
     float opacity(gameent *d, bool third)
     {
-        bool dead = d->state == CS_DEAD || d->state == CS_WAITING;
-        if(dead && !deathanim) return 0;
+        if(d->isdead() && !deathanim) return 0;
 
         float total = d == focus ? (third ? (d != player1 ? followblend : thirdpersonblend) : 1.f) : playerblend;
-        if(dead)
+        if(d->isdead())
         {
             if(!deathanim) return 0;
             if(deathfade) total *= spawnfade(d);
         }
-        else if(d->state == CS_ALIVE)
+        else if(d->isalive())
         {
             if(d == focus && third) total *= min(camera1->o.dist(d->o)/(d != player1 ? followdist : thirdpersondist), 1.0f);
             int prot = m_protect(gamemode, mutators), millis = d->protect(lastmillis, prot); // protect returns time left
             if(millis > 0) total *= 1.f-min(float(millis)/float(prot), 1.0f);
         }
-        else if(d->state == CS_EDITING) total *= playereditblend;
+        else if(d->isediting()) total *= playereditblend;
 
         if(physics::isghost(d, focus)) total *= playerghostblend;
 
@@ -3979,7 +3978,7 @@ namespace game
         if(!playerhalos || (!(playerhalos&1) && d == focus) || !(playerhalos&2)) return false;
         vec dir(0, 0, 0);
         float dist = -1;
-        if(!client::radarallow(d, dir, dist)) return false;
+        if(!client::radarallow(d, dir, dist, true)) return false;
         if(dist > halodist) return false;
         return true;
     }
@@ -3995,11 +3994,11 @@ namespace game
 
         mdl.color = color;
         getplayermaterials(d, mdl);
+
         if(drawtex != DRAWTEX_HALO)
         {
             defformatstring(actortex, "<comp:1>actor [cn = %d]", d->clientnum);
             mdl.mixer = textureload(actortex, 0, true, false);
-
             getplayereffects(d, mdl);
         }
 
@@ -4021,8 +4020,27 @@ namespace game
             if(haloallow(d))
             {
                 if(game::focus->isobserver() || game::focus->team == d->team || d->team == T_NEUTRAL) mdl.flags |= MDL_HALO_TOP;
+                if(d->isdead())
+                {
+                    float fade = spawnfade(d);
+                    loopi(MAXMDLMATERIALS) mdl.material[i].mul(fade);
+                    mdl.color.a *= fade;
+                }
+                else if(d->isalive())
+                {
+                    int prot = m_protect(gamemode, mutators), millis = d->protect(lastmillis, prot); // protect returns time left
+                    if(millis > 0)
+                    {
+                        float fade = 1 - min(float(millis)/float(prot), 1.f);
+                        loopi(MAXMDLMATERIALS) mdl.material[i].mul(fade);
+                    }
+                }
             }
-            else mdl.color.a = 0;
+            else
+            {
+                loopi(MAXMDLMATERIALS) mdl.material[i] = bvec(0, 0, 0);
+                mdl.color.a = 0;
+            }
         }
 
         rendermodel(mdlname, mdl, e);

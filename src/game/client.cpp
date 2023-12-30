@@ -898,25 +898,26 @@ namespace client
     CLCOMMAND(roll, floatret(d->roll));
     CLCOMMAND(opacity, floatret(game::opacity(d)));
 
-    bool radarallow(gameent *d, vec &dir, float &dist)
+    bool radarallow(gameent *d, vec &dir, float &dist, bool self)
     {
-        if(m_hard(game::gamemode, game::mutators) || d == game::focus || d->actortype >= A_ENEMY) return false;
+        if(m_hard(game::gamemode, game::mutators) || (!self && d == game::focus)) return false;
         if(d->state != CS_ALIVE && d->state != CS_EDITING && d->state != CS_DEAD && (!d->lastdeath || d->state != CS_WAITING)) return false;
         if(m_duke(game::gamemode, game::mutators) && (!d->lastdeath || lastmillis-d->lastdeath >= 1000)) return false;
-        bool dominated = game::focus->dominated.find(d) >= 0;
-        if(!dominated && d->state == CS_ALIVE && vec(d->vel).add(d->falling).magnitude() <= 0) return false;
+        //bool dominated = game::focus->dominated.find(d) >= 0;
+        //if(!dominated && d->state == CS_ALIVE && vec(d->vel).add(d->falling).magnitude() <= 0) return false;
         dir = vec(d->center()).sub(camera1->o);
         dist = dir.magnitude();
-        if(!dominated && hud::radarlimited(dist)) return false;
-        return true;
+        //if(!dominated && hud::radarlimited(dist)) return false;
+        return !hud::radarlimited(dist);
     }
 
-    CLCOMMAND(radarallow,
+    CLCOMMANDM(radarallow, "sb", (char *who, int *self),
     {
         vec dir(0, 0, 0);
         float dist = -1;
-        intret(radarallow(d, dir, dist) ? 1 : 0);
+        intret(radarallow(d, dir, dist, *self >= 0 ? *self != 0 : false) ? 1 : 0);
     });
+
     CLCOMMAND(radardist,
     {
         vec dir(0, 0, 0);
@@ -924,6 +925,7 @@ namespace client
         if(!radarallow(d, dir, dist)) return;
         floatret(dist);
     });
+
     CLCOMMAND(radardir,
     {
         vec dir(0, 0, 0);
@@ -932,6 +934,7 @@ namespace client
         dir.rotate_around_z(-camera1->yaw*RAD).normalize();
         floatret(-atan2(dir.x, dir.y)/RAD);
     });
+
     CLCOMMAND(radaryaw,
     {
         vec dir(0, 0, 0);

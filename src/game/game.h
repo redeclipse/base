@@ -2343,7 +2343,7 @@ namespace client
     extern int showpresence, showpresencehostinfo, showteamchange, needsmap, gettingmap;
     extern bool demoplayback, isready, loadedmap;
     extern vector<uchar> messages;
-    extern bool radarallow(gameent *d, vec &dir, float &dist);
+    extern bool radarallow(gameent *d, vec &dir, float &dist, bool self = false);
     extern void clearvotes(gameent *d, bool msg = false);
     extern void ignore(int cn);
     extern void unignore(int cn);

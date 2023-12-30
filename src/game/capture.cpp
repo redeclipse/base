@@ -183,10 +183,10 @@ namespace capture
             capturestate::flag &f = st.flags[i];
             modelstate mdl, basemdl;
             vec pos = f.pos(true);
-            float wait = f.droptime ? clamp(f.dropleft(lastmillis, capturestore)/float(capturedelay), 0.f, 1.f) : ((m_ctf_protect(game::gamemode, game::mutators) && f.taketime && f.owner && f.owner->team != f.team) ? clamp((lastmillis-f.taketime)/float(captureprotectdelay), 0.f, 1.f) : 0.f),
-                  blend = 1.f;
+            float blend = 1.f, wait = f.droptime ? clamp(f.dropleft(lastmillis, capturestore)/float(capturedelay), 0.f, 1.f) :
+                  ((m_ctf_protect(game::gamemode, game::mutators) && f.taketime && f.owner && f.owner->team != f.team) ? clamp((lastmillis-f.taketime)/float(captureprotectdelay), 0.f, 1.f) : 0.f);
             vec effect = vec::fromcolor(TEAM(f.team, colour));
-            if(!f.owner && (!f.droptime || m_ctf_defend(game::gamemode, game::mutators)) && f.team == game::focus->team)
+            if(drawtex != DRAWTEX_HALO && !f.owner && (!f.droptime || m_ctf_defend(game::gamemode, game::mutators)) && f.team == game::focus->team)
                 blend *= camera1->o.distrange(pos, enttype[AFFINITY].radius, enttype[AFFINITY].radius/8);
             if(wait > 0.5f)
             {
@@ -203,7 +203,9 @@ namespace capture
                 vec flagpos = pos;
                 mdl.o = flagpos;
                 mdl.color = vec4(1, 1, 1, blend);
+
                 if(drawtex == DRAWTEX_HALO) mdl.color.a = hud::radardepth(mdl.o, halodist);
+
                 rendermodel("props/flag", mdl);
             }
             else if(!f.owner || f.owner != game::focus || game::thirdpersonview(true))
@@ -221,16 +223,23 @@ namespace capture
                     if(f.proj) flagpos.z -= f.proj->height;
                 }
                 while(mdl.yaw >= 360.f) mdl.yaw -= 360.f;
+
                 mdl.o = flagpos;
                 mdl.color = vec4(1, 1, 1, blend);
+
                 if(drawtex == DRAWTEX_HALO) mdl.color.a = hud::radardepth(mdl.o, halodist);
+
                 rendermodel("props/flag", mdl);
+
                 if(f.owner) iterflags[f.owner->clientnum]++;
             }
+
             basemdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
             basemdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_HALO_TOP;
             basemdl.o = f.render;
+
             if(drawtex == DRAWTEX_HALO) basemdl.color.a = hud::radardepth(basemdl.o, halodist);
+
             rendermodel("props/point", basemdl);
         }
     }

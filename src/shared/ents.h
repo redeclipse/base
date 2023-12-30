@@ -189,6 +189,7 @@ struct baseent
     bool isactive() const { return state == CS_ALIVE || state == CS_DEAD || state == CS_WAITING; }
     bool isalive() const { return state == CS_ALIVE; }
     bool isdead() const { return state == CS_DEAD || state == CS_WAITING; }
+    bool isediting() const { return state == CS_EDITING; }
 };
 
 struct physent : baseent                        // can be affected by physics

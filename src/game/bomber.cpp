@@ -277,10 +277,14 @@ namespace bomber
                 basemdl.material[0] = mdl.material[0] = bvec::fromcolor(effect);
                 if(f.owner != game::focus || game::thirdpersonview(true))
                 {
-                    if(f.owner == game::focus)
-                        trans *= game::focus != game::player1 ? game::affinityfollowblend : game::affinitythirdblend;
-                    if(drawtex == DRAWTEX_HALO) mdl.color.a = hud::radardepth(mdl.o, halodist);
-                    else mdl.color.a *= trans;
+                    if(drawtex == DRAWTEX_HALO) mdl.color.a = hud::radardepth(mdl.o, halodist) * trans;
+                    else
+                    {
+                        if(f.owner == game::focus)
+                            trans *= game::focus != game::player1 ? game::affinityfollowblend : game::affinitythirdblend;
+                        mdl.color.a *= trans;
+                    }
+
                     rendermodel("props/ball", mdl);
                 }
             }
