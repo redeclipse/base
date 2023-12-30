@@ -204,7 +204,7 @@ namespace capture
                 mdl.o = flagpos;
                 mdl.color = vec4(1, 1, 1, blend);
 
-                if(drawtex == DRAWTEX_HALO) mdl.color.a = hud::radardepth(mdl.o, halodist, halotolerance);
+                if(drawtex == DRAWTEX_HALO) mdl.color.a = hud::radardepth(mdl.o, halodist, halotolerance, haloaddz);
 
                 rendermodel("props/flag", mdl);
             }
@@ -227,7 +227,7 @@ namespace capture
                 mdl.o = flagpos;
                 mdl.color = vec4(1, 1, 1, blend);
 
-                if(drawtex == DRAWTEX_HALO) mdl.color.a = hud::radardepth(mdl.o, halodist, halotolerance);
+                if(drawtex == DRAWTEX_HALO) mdl.color.a = hud::radardepth(mdl.o, halodist, halotolerance, haloaddz);
 
                 rendermodel("props/flag", mdl);
 
@@ -238,7 +238,7 @@ namespace capture
             basemdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_HALO_TOP;
             basemdl.o = f.render;
 
-            if(drawtex == DRAWTEX_HALO) basemdl.color.a = hud::radardepth(basemdl.o, halodist, halotolerance);
+            if(drawtex == DRAWTEX_HALO) basemdl.color.a = hud::radardepth(basemdl.o, halodist, halotolerance, haloaddz);
 
             rendermodel("props/point", basemdl);
         }

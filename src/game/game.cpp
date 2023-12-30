@@ -3505,7 +3505,7 @@ namespace game
                 bvec pc = bvec::fromcolor(pulsecolour(d, PULSE_BUFF));
                 flashcolour(mdl.material[0].r, mdl.material[0].g, mdl.material[0].b, pc.r, pc.g, pc.b, amt);
             }
-            mdl.color.a = hud::radardepth(d->center(), halodist, halotolerance);
+            mdl.color.a = hud::radardepth(d->center(), halodist, halotolerance, haloaddz);
             mdl.material[1] = mdl.material[2] = mdl.material[0];
             return;
         }

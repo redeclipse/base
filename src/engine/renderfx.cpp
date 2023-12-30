@@ -14,6 +14,7 @@ VARF(IDF_PERSIST, halooffset, 1, 1, 8, initwarning("halo setup", INIT_LOAD, CHAN
 FVAR(IDF_PERSIST, halofade, FVAR_NONZERO, 1, FVAR_MAX);
 FVAR(IDF_PERSIST, haloinfill, 0, 0.25f, 1);
 FVAR(IDF_PERSIST, halotolerance, FVAR_MIN, -16, FVAR_MAX);
+FVAR(IDF_PERSIST, haloaddz, FVAR_MIN, 2, FVAR_MAX);
 
 void setuphalo(int w, int h)
 {

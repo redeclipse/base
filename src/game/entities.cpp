@@ -3151,6 +3151,7 @@ namespace entities
         {
             gameentity &e = *(gameentity *)ents[i];
             if(e.type <= NOTUSED || e.type >= MAXENTTYPES || !haloallow(i)) continue;
+
             bool active = enttype[e.type].usetype == EU_ITEM && (e.spawned() || (e.lastemit && lastmillis - e.lastemit < 500));
             if(m_edit(game::gamemode) || active)
             {
@@ -3161,6 +3162,7 @@ namespace entities
                     mdl.o = e.pos();
                     mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
                     mdl.flags = MDL_CULL_VFC|MDL_CULL_DIST|MDL_CULL_OCCLUDED;
+
                     int colour = -1;
                     if(!active || (e.type != WEAPON && drawtex == DRAWTEX_HALO))
                     {
@@ -3194,31 +3196,30 @@ namespace entities
                         int millis = lastmillis - e.lastemit;
                         if(millis < 500) mdl.size = mdl.color.a = 1.f - (millis / 500.f);
                     }
+
                     if(e.type == WEAPON)
                     {
                         int attr = m_attr(e.type, e.attrs[0]);
                         if(isweap(attr))
                         {
                             colour = W(attr, colour);
-                            if(!active || game::focus->isobserver() || !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !showentfull))
-                            {
-                                if(drawtex != DRAWTEX_HALO) mdl.color.a *= showentunavailable;
-                            }
-                            else
+                            if(active || game::focus->isobserver() || game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !showentfull))
                             {
                                 if(drawtex == DRAWTEX_HALO) mdl.flags |= MDL_HALO_TOP;
                                 else mdl.color.a *= showentavailable;
                             }
+                            else if(drawtex != DRAWTEX_HALO) mdl.color.a *= showentunavailable;
                         }
                         else continue;
                     }
+
                     if(mdl.color.a > 0)
                     {
                         mdl.material[0] = bvec::fromcolor(game::getcolour(game::focus, game::playerovertone, game::playerovertonelevel));
                         mdl.material[1] = bvec::fromcolor(game::getcolour(game::focus, game::playerundertone, game::playerundertonelevel));
                         if(colour >= 0) mdl.material[0] = mdl.material[2] = bvec::fromcolor(colour);
 
-                        if(drawtex == DRAWTEX_HALO) mdl.color.a = hud::radardepth(mdl.o, halodist, halotolerance);
+                        if(drawtex == DRAWTEX_HALO) mdl.color.a = hud::radardepth(mdl.o, halodist, halotolerance, haloaddz);
 
                         rendermodel(mdlname, mdl);
                     }

@@ -2336,19 +2336,16 @@ namespace projs
                         if(isweap(attr))
                         {
                             mdl.material[0] = mdl.material[2] = bvec::fromcolor(W(attr, colour));
-                            if(game::focus->isobserver() || !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !entities::showentfull))
-                            {
-                                if(drawtex != DRAWTEX_HALO) mdl.color.a *= entities::showentunavailable;
-                            }
-                            else
+                            if(game::focus->isobserver() || game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !entities::showentfull))
                             {
                                 if(drawtex == DRAWTEX_HALO) mdl.flags |= MDL_HALO_TOP;
                                 else mdl.color.a *= entities::showentavailable;
                             }
+                            else if(drawtex != DRAWTEX_HALO) mdl.color.a *= entities::showentunavailable;
                         }
                         else continue;
                     }
-                    if(drawtex == DRAWTEX_HALO) mdl.color.a = hud::radardepth(mdl.o, halodist, halotolerance);
+                    if(drawtex == DRAWTEX_HALO) mdl.color.a = hud::radardepth(mdl.o, halodist, halotolerance, haloaddz);
                     break;
                 }
                 default: break;

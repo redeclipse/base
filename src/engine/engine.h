@@ -1049,7 +1049,7 @@ extern void cleanupblendmap();
 // renderfx
 extern int debughalo;
 extern int halodist;
-extern float haloblend, halotolerance;
+extern float haloblend, halotolerance, haloaddz;
 extern bvec halocolour;
 
 enum { HALO_DEPTH, HALO_ONTOP, HALO_MAX };
