@@ -1132,8 +1132,6 @@ namespace UI
             window = this;
 
             projection();
-
-            glEnable(GL_BLEND);
             resetblend(true);
 
             (world ? hudworldshader : hudshader)->set();
@@ -1142,24 +1140,12 @@ namespace UI
             changed = 0;
             drawing = NULL;
 
-            if(inworld)
-            {
-                glDepthFunc(GL_LESS);
-                glDepthMask(GL_FALSE);
-                if(ontop) glDisable(GL_DEPTH_TEST);
-            }
+            if(inworld && ontop) glDisable(GL_DEPTH_TEST);
 
             Object::draw(world, sx, sy);
-
             stopdrawing(world);
 
-            if(inworld)
-            {
-                if(ontop) glEnable(GL_DEPTH_TEST);
-                glDepthFunc(GL_LESS);
-                glDepthMask(GL_TRUE);
-            }
-            glDisable(GL_BLEND);
+            if(inworld && ontop) glEnable(GL_DEPTH_TEST);
 
             window = oldwindow;
         }
@@ -2196,16 +2182,16 @@ namespace UI
         return refname;
     }
 
-    bool dynuiexec(const char *name, int param, int stype)
+    bool dynuiexec(const char *name, int param)
     {
-        if(!name || !*name || param < 0 || stype < 0 || stype >= SURFACE_MAX) return false;
+        if(!name || !*name || param < 0) return false;
 
         loopv(dynuis) if(!strcmp(dynuis[i]->name, name))
         {
             defformatstring(refname, "%s_%d", name, param);
             tagval t;
             t.setint(param);
-            if(newui(refname, stype, dynuis[i]->contents, dynuis[i]->onshow, dynuis[i]->onhide, dynuis[i]->mapdef, dynuis[i]->name, &t, 1)) return true;
+            if(newui(refname, surfacetype, dynuis[i]->contents, dynuis[i]->onshow, dynuis[i]->onhide, dynuis[i]->mapdef, dynuis[i]->name, &t, 1)) return true;
             return false;
         }
         return false;
@@ -2219,7 +2205,7 @@ namespace UI
 
         Window *w = surface->windows.find(ref, NULL);
 
-        if(!w && param >= 0 && dynuiexec(name, param, stype)) w = surface->windows.find(ref, NULL);
+        if(!w && param >= 0 && dynuiexec(name, param)) w = surface->windows.find(ref, NULL);
         bool ret = w && surface->show(w, origin, yaw, pitch, scale, detentyaw, detentpitch);
 
         popsurface();
@@ -6639,30 +6625,44 @@ namespace UI
     {
         int oldflags = identflags;
         identflags |= IDF_MAP;
+
         vector<extentity *> &ents = entities::getents();
         loopv(ents)
         {
             extentity &e = *ents[i];
             if(e.type != ET_MAPUI) continue;
 
+            int stype = SURFACE_MAIN;
+            if(e.attrs[1]&MAPUI_BACKGROUND) stype = SURFACE_BACKGROUND;
+            else if(e.attrs[1]&MAPUI_FOREGROUND) stype = SURFACE_FOREGROUND;
+
+            if(!pushsurface(stype)) continue;
+            #define CONTSURF { popsurface(); continue; }
+
             defformatstring(name, "entity_%s%d", e.attrs[0] < 0 ? "builtin_" : "", abs(e.attrs[0]));
             const char *ref = dynuiref(name, i);
+
             Window *w = surface->windows.find(ref, NULL);
             if(!w)
             {
-                int stype = SURFACE_MAIN;
-                if(e.attrs[1]&MAPUI_BACKGROUND) stype = SURFACE_BACKGROUND;
-                else if(e.attrs[1]&MAPUI_FOREGROUND) stype = SURFACE_FOREGROUND;
-                if(!dynuiexec(name, i, stype)) continue;
+                if(!dynuiexec(name, i)) CONTSURF;
                 w = surface->windows.find(ref, NULL);
-                if(!w) continue;
+                if(!w) CONTSURF;
+            }
+
+            loopj(SURFACE_LOOPED)
+            {
+                if(j == stype) continue;
+                Surface *s = surfaces[j];
+                Window *o = s->windows.find(ref, NULL);
+                if(o) s->hide(o);
             }
 
             bool haswindow = surface->children.find(w) >= 0;
             if(!entities::isallowed(e))
             {
                 if(haswindow) surface->hide(w);
-                continue;
+                CONTSURF;
             }
 
             physent *player = (physent *)game::focusedent(true);
@@ -6672,14 +6672,15 @@ namespace UI
             if(haswindow && !inside && e.attrs[1]&MAPUI_SHOWPROX)
             {
                 surface->hide(w);
-                continue;
+                CONTSURF;
             }
 
             if(!haswindow)
             {
                 surface->show(w, e.o, e.attrs[2], e.attrs[3], e.attrs[5] != 0 ? e.attrs[5]/100.f : 1.f, e.attrs[6] > 0 ? e.attrs[6] : 0.f, e.attrs[7] > 0 ? e.attrs[7] : 0.f);
-                continue;
+                CONTSURF;
             }
+
             float yaw = 0, pitch = 0;
             if(entities::getdynamic(e, w->origin, yaw, pitch))
             {
@@ -6696,8 +6697,10 @@ namespace UI
                     else if(w->pitch >= 180.0f) w->pitch = fmodf(w->pitch + 180.0f, 360.0f) - 180.0f;
                 }
             }
+
             w->allowinput = inside && (e.attrs[1]&MAPUI_INPUTPROX) != 0;
         }
+
         identflags = oldflags;
     }
 
@@ -7193,7 +7196,23 @@ namespace UI
     void render(int stype, bool world)
     {
         if((stype == SURFACE_MAIN && !world && uihidden) || !pushsurface(stype)) return;
+
+        if(world)
+        {
+            glEnable(GL_BLEND);
+            if(surfacetype == SURFACE_MAIN || surfacetype == SURFACE_BACKGROUND) glDisable(GL_CULL_FACE);
+            glDepthMask(GL_FALSE);
+        }
+
         surface->render(world);
+
+        if(world)
+        {
+            glDepthMask(GL_TRUE);
+            if(surfacetype == SURFACE_MAIN || surfacetype == SURFACE_BACKGROUND) glEnable(GL_CULL_FACE);
+            glDisable(GL_BLEND);
+        }
+
         popsurface();
     }
 }

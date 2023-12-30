@@ -2437,6 +2437,8 @@ void gl_drawview()
     shadegbuffer();
     GLERROR;
 
+    UI::render(SURFACE_BACKGROUND, true);
+
     if(fogmat)
     {
         setfog(fogmat, fogbelow, 1, abovemat);
@@ -2470,6 +2472,8 @@ void gl_drawview()
         GLERROR;
     }
 
+    UI::render(SURFACE_MAIN, true);
+
     if(!drawtex)
     {
         if(editmode)
@@ -2495,12 +2499,11 @@ void gl_drawview()
     }
 
     glDisable(GL_CULL_FACE);
-
-    loopi(SURFACE_LOOPED) UI::render(i, true);
-
     glDisable(GL_DEPTH_TEST);
 
     if(fogoverlay && fogmat != MAT_AIR && (fogoverlay == 2 || (fogmat&MATF_VOLUME) != MAT_VOLFOG)) drawfogoverlay(fogmat, fogbelow, clamp(fogbelow, 0.0f, 1.0f), abovemat);
+
+    UI::render(SURFACE_FOREGROUND, true);
 
     if(!drawtex)
     {
