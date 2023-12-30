@@ -3206,7 +3206,7 @@ namespace entities
                             }
                             else
                             {
-                                if(drawtex == DRAWTEX_HALO) mdl.flags |= MDL_HALOBACK;
+                                if(drawtex == DRAWTEX_HALO) mdl.flags |= MDL_HALO_TOP;
                                 else mdl.color.a *= showentavailable;
                             }
                         }
@@ -3217,7 +3217,7 @@ namespace entities
                         mdl.material[0] = bvec::fromcolor(game::getcolour(game::focus, game::playerovertone, game::playerovertonelevel));
                         mdl.material[1] = bvec::fromcolor(game::getcolour(game::focus, game::playerundertone, game::playerundertonelevel));
                         if(colour >= 0) mdl.material[0] = mdl.material[2] = bvec::fromcolor(colour);
-                        if(drawtex == DRAWTEX_HALO) mdl.color.a = 1.f-((mdl.o.dist(camera1->o)-8)/hud::radarlimit(halodist));
+                        if(drawtex == DRAWTEX_HALO) mdl.color.a = hud::radardepth(mdl.o, halodist);
                         rendermodel(mdlname, mdl);
                     }
                 }

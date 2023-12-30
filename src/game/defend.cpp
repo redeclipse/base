@@ -155,11 +155,11 @@ namespace defend
             int colour = effect.tohexcolor();
             mdl.material[0] = bvec::fromcolor(effect);
             mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
-            mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_HALOBACK;
+            mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_HALO_TOP;
             mdl.yaw = b.yaw;
             mdl.o = b.render;
 
-            if(drawtex == DRAWTEX_HALO) mdl.color.a = 1.f-((mdl.o.dist(camera1->o)-8)/hud::radarlimit(halodist));
+            if(drawtex == DRAWTEX_HALO) mdl.color.a = hud::radardepth(mdl.o, halodist);
             rendermodel("props/point", mdl);
             if(drawtex != DRAWTEX_HALO)
             {

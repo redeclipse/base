@@ -1261,6 +1261,7 @@ int main(int argc, char **argv)
         capslockon = capslocked();
         numlockon = numlocked();
         ignoremousemotion();
+        engineready = true;
 
         localconnect(false);
         resetfps();
@@ -1335,7 +1336,6 @@ int main(int argc, char **argv)
                 }
                 setcaption(game::gametitle(), game::gametext());
             }
-            else engineready = true;
         }
     }
 

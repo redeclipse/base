@@ -2516,9 +2516,6 @@ namespace game
     extern void killed(int weap, int flags, int damage, gameent *d, gameent *v, vector<gameent*> &log, int style, int material);
     extern void timeupdate(int state, int remain, int elapsed);
     extern void footstep(gameent *d, int curfoot = -1);
-    #define RESIDUAL(name, type, pulse) extern void get##name##effect(physent *d, modelstate &mdl, int length, int millis, int delay);
-    RESIDUALS
-    #undef RESIDUAL
     extern void getplayermaterials(gameent *d, modelstate &mdl);
     extern void getplayereffects(gameent *d, modelstate &mdl);
     extern const char *getplayerstate(gameent *d, modelstate &mdl, int third = 1, float size = 1, int flags = 0, modelattach *mdlattach = NULL, int *lastoffset = NULL, bool vanitypoints = false);

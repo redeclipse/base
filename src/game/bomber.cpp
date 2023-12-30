@@ -260,7 +260,7 @@ namespace bomber
                 vec above(f.pos(true, true));
                 if(!f.owner && !f.droptime) above.z += enttype[AFFINITY].radius/4*trans;
                 mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
-                mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_HALOBACK;
+                mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_HALO_TOP;
                 mdl.o = above;
                 mdl.size = trans;
                 mdl.yaw = !f.owner && f.proj ? f.proj->yaw : (lastmillis/4)%360;
@@ -279,7 +279,7 @@ namespace bomber
                 {
                     if(f.owner == game::focus)
                         trans *= game::focus != game::player1 ? game::affinityfollowblend : game::affinitythirdblend;
-                    if(drawtex == DRAWTEX_HALO) mdl.color.a = 1.f-((mdl.o.dist(camera1->o)-8)/hud::radarlimit(halodist));
+                    if(drawtex == DRAWTEX_HALO) mdl.color.a = hud::radardepth(mdl.o, halodist);
                     else mdl.color.a *= trans;
                     rendermodel("props/ball", mdl);
                 }
@@ -299,10 +299,10 @@ namespace bomber
             if(!m_bb_hold(game::gamemode, game::mutators))
             {
                 basemdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
-                basemdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_HALOBACK;
+                basemdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_HALO_TOP;
                 basemdl.o = f.render;
                 basemdl.yaw = f.yaw;
-                if(drawtex == DRAWTEX_HALO) basemdl.color.a = 1.f-((basemdl.o.dist(camera1->o)-8)/hud::radarlimit(halodist));
+                if(drawtex == DRAWTEX_HALO) basemdl.color.a = hud::radardepth(basemdl.o, halodist);
                 rendermodel("props/point", basemdl);
             }
         }

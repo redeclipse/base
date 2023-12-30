@@ -75,6 +75,7 @@ namespace hud
     extern float cursorsize;
     extern const char *modeimage();
     extern float radarlimit(float dist = -1);
+    extern float radardepth(const vec &o, float dist = -1);
     extern bool radarlimited(float dist);
     extern int hasinput(bool pass = false, bool cursor = false);
     extern bool textinput(const char *str, int len);

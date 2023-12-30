@@ -147,13 +147,13 @@ void blendhalos()
     {
         switch(i)
         {
-            case HALO_FRONT: SETSHADER(hudhalofront); break;
-            case HALO_BACK: SETSHADER(hudhaloback); break;
+            case HALO_DEPTH: SETSHADER(hudhalodepth); break;
+            case HALO_ONTOP: SETSHADER(hudhalotop); break;
             default: continue;
         }
         glBindTexture(GL_TEXTURE_RECTANGLE, halotex[i]);
 
-        if(i == HALO_FRONT)
+        if(i == HALO_DEPTH)
         {
             glActiveTexture_(GL_TEXTURE1);
             if(msaasamples) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);

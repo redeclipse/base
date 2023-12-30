@@ -2575,7 +2575,7 @@ FVAR(IDF_PERSIST, visordistort, -2, 0.75f, 2);
 FVAR(IDF_PERSIST, visornormal, -2, 1.175f, 2);
 FVAR(IDF_PERSIST, visorscalex, FVAR_NONZERO, 1, 2);
 FVAR(IDF_PERSIST, visorscaley, FVAR_NONZERO, 1.14f, 2);
-FVAR(IDF_PERSIST, visorglitchdistort, 0, 1.5f, 16);
+FVAR(IDF_PERSIST, visorglitchdistort, 0, 1, 16);
 FVAR(IDF_PERSIST, visorglitchscale, 0, 0.5f, 16);
 
 void cleanupvisor();

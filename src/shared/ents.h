@@ -55,7 +55,7 @@ enum
     MDL_NOMIXER          = 1<<12,
     MDL_NOPATTERN        = 1<<13,
     MDL_FORCEDYNAMIC     = 1<<14,
-    MDL_HALOBACK         = 1<<15
+    MDL_HALO_TOP         = 1<<15
 };
 
 struct model;
@@ -97,8 +97,8 @@ struct entmodelstate
 
 struct modelstate : entmodelstate
 {
-    vec4 mixercolor;
-    vec2 matbright, mixerglow, mixerscroll;
+    vec4 mixerparams;
+    vec2 matbright;
     float patternscale;
     Texture *mixer, *pattern;
     modelattach *attached;
@@ -107,9 +107,8 @@ struct modelstate : entmodelstate
 
     void reset()
     {
-        mixercolor = vec4(1, 1, 1, 1);
+        mixerparams = vec4(1, 1, 1, 1);
         matbright = vec2(1, 1);
-        mixerglow = mixerscroll = vec2(0, 0);
         patternscale = 1;
         mixer = pattern = NULL;
         attached = NULL;

@@ -2290,7 +2290,6 @@ namespace projs
                     mdl.size *= proj.lifesize;
                     fadeproj(proj, mdl.color.a, mdl.size);
                     if(mdl.color.a <= 0) continue;
-                    if(!proj.limited) game::getburneffect(&proj, mdl, projburntime, lastmillis-proj.spawntime, projburndelay);
                     break;
                 }
                 case PRJ_VANITY:
@@ -2343,13 +2342,13 @@ namespace projs
                             }
                             else
                             {
-                                if(drawtex == DRAWTEX_HALO) mdl.flags |= MDL_HALOBACK;
+                                if(drawtex == DRAWTEX_HALO) mdl.flags |= MDL_HALO_TOP;
                                 else mdl.color.a *= entities::showentavailable;
                             }
                         }
                         else continue;
                     }
-                    if(drawtex == DRAWTEX_HALO) mdl.color.a = 1.f-((mdl.o.dist(camera1->o)-(proj.radius+1))/hud::radarlimit(halodist));
+                    if(drawtex == DRAWTEX_HALO) mdl.color.a = hud::radardepth(mdl.o, halodist);
                     break;
                 }
                 default: break;

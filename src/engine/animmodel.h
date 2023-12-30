@@ -187,16 +187,8 @@ struct animmodel : model
                 return;
             }
 
-            if(mixed())
-            {
-                LOCALPARAM(mixercolor, mixercolor);
-                LOCALPARAM(mixerglow, mixerglow);
-                LOCALPARAMF(mixerscroll, mixerscroll.x*lastmillis/1000.0f, mixerscroll.y*lastmillis/1000.0f);
-            }
-            if(patterned())
-            {
-                LOCALPARAMF(patternscale, patternscale);
-            }
+            if(mixed()) LOCALPARAM(mixerparams, mixerparams);
+            if(patterned()) LOCALPARAMF(patternscale, patternscale);
 
             LOCALPARAM(material1, material1 > 0 ? modelmaterial[min(material1, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.x) : vec(matbright.x));
             LOCALPARAM(material2, material2 > 0 ? modelmaterial[min(material2, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.y) : vec(matbright.y));
@@ -1537,19 +1529,9 @@ struct animmodel : model
             }
             if(state->mixer && state->mixer != notexture)
             {
-                if(mixercolor != state->mixercolor)
+                if(mixerparams != state->mixerparams)
                 {
-                    mixercolor = state->mixercolor;
-                    invalidate = true;
-                }
-                if(mixerglow != state->mixerglow)
-                {
-                    mixerglow = state->mixerglow;
-                    invalidate = true;
-                }
-                if(mixerscroll != state->mixerscroll)
-                {
-                    mixerscroll = state->mixerscroll;
+                    mixerparams = state->mixerparams;
                     invalidate = true;
                 }
             }
@@ -1943,8 +1925,8 @@ struct animmodel : model
 
     static bool enabletc, enablecullface, enabletangents, enablebones, enabledepthoffset, enablecolor;
     static float sizescale;
-    static vec4 colorscale, mixercolor;
-    static vec2 matbright, mixerglow, mixerscroll;
+    static vec4 colorscale, mixerparams;
+    static vec2 matbright;
     static float patternscale;
     static bvec modelmaterial[MAXMDLMATERIALS];
     static GLuint lastvbuf, lasttcbuf, lastxbuf, lastbbuf, lastebuf, lastcolbuf, lastenvmaptex, closestenvmaptex;
@@ -2053,8 +2035,8 @@ float animmodel::intersectdist = 0, animmodel::intersectscale = 1;
 bool animmodel::enabletc = false, animmodel::enabletangents = false, animmodel::enablebones = false,
      animmodel::enablecullface = true, animmodel::enabledepthoffset = false, animmodel::enablecolor = false;
 float animmodel::sizescale = 1;
-vec4 animmodel::colorscale(1, 1, 1, 1), animmodel::mixercolor(1, 1, 1, 1);
-vec2 animmodel::matbright(1, 1), animmodel::mixerglow(0, 0), animmodel::mixerscroll(0, 0);
+vec4 animmodel::colorscale(1, 1, 1, 1), animmodel::mixerparams(1, 1, 1, 1);
+vec2 animmodel::matbright(1, 1);
 float animmodel::patternscale = 1;
 bvec animmodel::modelmaterial[MAXMDLMATERIALS] = { bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255) };
 GLuint animmodel::lastvbuf = 0, animmodel::lasttcbuf = 0, animmodel::lastxbuf = 0, animmodel::lastbbuf = 0, animmodel::lastebuf = 0,
