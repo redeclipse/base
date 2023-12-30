@@ -277,7 +277,7 @@ namespace bomber
                 basemdl.material[0] = mdl.material[0] = bvec::fromcolor(effect);
                 if(f.owner != game::focus || game::thirdpersonview(true))
                 {
-                    if(drawtex == DRAWTEX_HALO) mdl.color.a = hud::radardepth(mdl.o, halodist) * trans;
+                    if(drawtex == DRAWTEX_HALO) mdl.color.a = hud::radardepth(mdl.o, halodist, halotolerance) * trans;
                     else
                     {
                         if(f.owner == game::focus)
@@ -306,7 +306,7 @@ namespace bomber
                 basemdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_HALO_TOP;
                 basemdl.o = f.render;
                 basemdl.yaw = f.yaw;
-                if(drawtex == DRAWTEX_HALO) basemdl.color.a = hud::radardepth(basemdl.o, halodist);
+                if(drawtex == DRAWTEX_HALO) basemdl.color.a = hud::radardepth(basemdl.o, halodist, halotolerance);
                 rendermodel("props/point", basemdl);
             }
         }
