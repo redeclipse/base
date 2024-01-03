@@ -173,12 +173,14 @@ namespace UI
     enum { BLEND_ALPHA, BLEND_MOD, BLEND_SRC, BLEND_COMP };
     static int changed = 0, surfacetype = -1, blendtype = BLEND_ALPHA, blenddef = BLEND_ALPHA;
 
-    static inline void changeblend(int type, GLenum src, GLenum dst, bool force = false)
+    static inline void changeblend(int type, GLenum src, GLenum dst, GLenum srcalpha, GLenum dstalpha, bool force = false)
     {
         if(force || blendtype != type)
         {
             blendtype = type;
-            glBlendFunc(src, dst);
+            if(surfacetype == SURFACE_MAIN || surfacetype == SURFACE_COMPOSITE)
+                glBlendFuncSeparate_(src, dst, srcalpha, dstalpha);
+            else glBlendFunc(src, dst);
         }
     }
 
@@ -186,10 +188,10 @@ namespace UI
     {
         switch(type)
         {
-            case BLEND_MOD: changeblend(BLEND_MOD, GL_ZERO, GL_SRC_COLOR, force); break;
-            case BLEND_SRC: changeblend(BLEND_SRC, GL_ONE, GL_ZERO, force); break;
-            case BLEND_COMP: changeblend(BLEND_COMP, GL_ONE, GL_ONE_MINUS_SRC_ALPHA); break;
-            case BLEND_ALPHA: default: changeblend(BLEND_ALPHA, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, force); break;
+            case BLEND_MOD: changeblend(BLEND_MOD, GL_ZERO, GL_SRC_COLOR, GL_ONE_MINUS_DST_ALPHA, GL_ONE, force); break;
+            case BLEND_SRC: changeblend(BLEND_SRC, GL_ONE, GL_ZERO, GL_ONE_MINUS_DST_ALPHA, GL_ONE, force); break;
+            case BLEND_COMP: changeblend(BLEND_COMP, GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE, force); break;
+            case BLEND_ALPHA: default: changeblend(BLEND_ALPHA, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE, force); break;
         }
     }
 

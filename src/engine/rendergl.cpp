@@ -2606,6 +2606,7 @@ void setupvisor(int w, int h)
         glBindFramebuffer_(GL_FRAMEBUFFER, visorfbo);
         glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, visortex, 0);
     }
+
     GLERROR;
 }
 
@@ -2703,7 +2704,8 @@ void gl_drawhud(bool noview = false)
         LOCALPARAMF(time, lastmillis/1000.f);
 
         glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
         gle::colorf(1, 1, 1, 1);
         glBindTexture(GL_TEXTURE_RECTANGLE, visortex);
