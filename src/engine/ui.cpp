@@ -178,8 +178,7 @@ namespace UI
         if(force || blendtype != type)
         {
             blendtype = type;
-            if(surfacetype == SURFACE_MAIN || surfacetype == SURFACE_COMPOSITE)
-                glBlendFuncSeparate_(src, dst, srcalpha, dstalpha);
+            if(drawtex) glBlendFuncSeparate_(src, dst, srcalpha, dstalpha); // only for FBO's
             else glBlendFunc(src, dst);
         }
     }
@@ -1969,6 +1968,7 @@ namespace UI
     UISURFARGB(lockcursor);
     UISURFARGB(lockscroll);
     UISURFARG(cursortype, "i", int, 0, int(CURSOR_MAX)-1);
+    ICOMMANDV(0, uisurfacetype, surfacetype);
 
     ICOMMAND(0, uimousetrackx, "", (), {
         if(surface)
