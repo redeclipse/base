@@ -282,7 +282,7 @@ extern void initsound();
 extern void stopsound();
 extern bool playmusic(const char *name, bool looping = true);
 extern bool playingmusic();
-extern void smartmusic(bool cond, bool init = false);
+extern void smartmusic(bool cond, bool init = false, bool interm = false);
 extern void stopmusic();
 extern void updatemusic();
 extern void updatesounds();

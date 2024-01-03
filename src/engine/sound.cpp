@@ -388,7 +388,7 @@ VARF(IDF_INIT, soundmaxsources, 16, 256, 1024, initwarning("sound configuration"
 
 SOUNDVOL(master, master, 1.f, );
 SOUNDVOL(sound, effect, 1.f, );
-SOUNDVOL(music, music, 0.25f, updatemusic());
+SOUNDVOL(music, music, 0.75f, updatemusic());
 FVAR(IDF_PERSIST, soundeffectevent, 0, 1, 100);
 FVAR(IDF_PERSIST, soundeffectenv, 0, 1, 100);
 FVAR(IDF_PERSIST, sounddistfilter, 0.0f, 0.5f, 1.0f);
@@ -483,7 +483,6 @@ void updatemusic()
     if(music) music->gain = soundmusicvol;
     SDL_UnlockMutex(music_mutex);
 }
-SVAR(0, titlemusic, "sounds/theme");
 
 void mapsoundslot(int index, const char *name)
 {
@@ -729,20 +728,26 @@ bool playingmusic()
     return result;
 }
 
-void smartmusic(bool cond, bool init)
+SVAR(0, musictheme, "sounds/theme");
+SVAR(0, musicinterm, "sounds/theme");
+
+void smartmusic(bool cond, bool init, bool interm)
 {
     SDL_LockMutex(music_mutex);
 
-    bool isplayingmusic = music && music->playing();
-    bool isplayingtitlemusic = music && !strcmp(music->name, titlemusic);
+    const char *name = interm ? musicinterm : musictheme;
+    if(!name || !*name) name = musictheme;
+
+    bool isplaying = music && music->playing();
+    bool hasmusic = music && !strcmp(music->name, name);
 
     SDL_UnlockMutex(music_mutex);
 
     if(init) canmusic = true;
-    if(!canmusic || nosound || !soundmastervol || !soundmusicvol || (!cond && isplayingmusic) || !*titlemusic)
+    if(!canmusic || nosound || !soundmastervol || !soundmusicvol || (!cond && isplaying) || !*name)
         return;
 
-    if(!playingmusic() || (cond && !isplayingtitlemusic)) playmusic(titlemusic);
+    if(!playingmusic() || (cond && !hasmusic)) playmusic(name);
 }
 ICOMMAND(0, smartmusic, "i", (int *a), smartmusic(*a));
 

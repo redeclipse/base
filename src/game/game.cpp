@@ -2054,7 +2054,7 @@ namespace game
         {
             player1->stopmoving(true);
             if(gamestate == G_S_INTERMISSION) hud::showscores(true, true);
-            smartmusic(true);
+            smartmusic(true, false, true);
         }
         if(gamestate == G_S_VOTING && oldstate != G_S_VOTING)
         {
