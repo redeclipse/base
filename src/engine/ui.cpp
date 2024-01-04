@@ -187,10 +187,10 @@ namespace UI
     {
         switch(type)
         {
-            case BLEND_MOD: changeblend(BLEND_MOD, GL_ZERO, GL_SRC_COLOR, GL_ONE_MINUS_DST_ALPHA, GL_ONE, force); break;
-            case BLEND_SRC: changeblend(BLEND_SRC, GL_ONE, GL_ZERO, GL_ONE_MINUS_DST_ALPHA, GL_ONE, force); break;
-            case BLEND_COMP: changeblend(BLEND_COMP, GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE, force); break;
-            case BLEND_ALPHA: default: changeblend(BLEND_ALPHA, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE, force); break;
+            case BLEND_MOD: changeblend(BLEND_MOD, GL_ZERO, GL_SRC_COLOR, GL_ONE, GL_ZERO, force); break;
+            case BLEND_SRC: changeblend(BLEND_SRC, GL_ONE, GL_ZERO, GL_ONE, GL_ZERO, force); break;
+            case BLEND_COMP: changeblend(BLEND_COMP, GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO, force); break;
+            case BLEND_ALPHA: default: changeblend(BLEND_ALPHA, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO, force); break;
         }
     }
 
