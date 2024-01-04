@@ -2329,16 +2329,20 @@ namespace UI
         return ret;
     }
 
-    ICOMMAND(IDF_NOECHO, showui, "sbbggggffff", (char *name, int *surface, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch), intret(showui(name, *surface >= 0 && *surface < SURFACE_MAX ? *surface : int(SURFACE_MAIN), *param, vec(*x, *y, *z), *yaw, *pitch, *scale, *detentyaw, *detentpitch) ? 1 : 0));
-    ICOMMAND(IDF_NOECHO, hideui, "sbb", (char *name, int *surface, int *param), intret(hideui(name, *surface >= 0 && *surface < SURFACE_MAX ? *surface : int(SURFACE_MAIN), *param) ? 1 : 0));
-    ICOMMAND(IDF_NOECHO, hidetopui, "", (), intret(surface && surface->hidetop() ? 1 : 0));
-    ICOMMAND(IDF_NOECHO, hideallui, "ii", (int *n, int *w), intret(surface ? surface->hideall(*n != 0, *w != 0) : 0));
-    ICOMMAND(IDF_NOECHO, toggleui, "sbbggggffff", (char *name, int *surface, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch), intret(toggleui(name, *surface >= 0 && *surface < SURFACE_MAX ? *surface : int(SURFACE_MAIN), *param, vec(*x, *y, *z), *yaw, *pitch, *scale, *detentyaw, *detentpitch) ? 1 : 0));
-    ICOMMAND(IDF_NOECHO, holdui, "sbbggggffffD", (char *name, int *surface, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch, int *down), holdui(name, *down!=0, *surface >= 0 && *surface < SURFACE_MAX ? *surface : int(SURFACE_MAIN), *param, vec(*x, *y, *z), *yaw, *pitch, *scale, *detentyaw, *detentpitch));
-    ICOMMAND(IDF_NOECHO, pressui, "sbbggggffffD", (char *name, int *surface, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch, int *down), pressui(name, *down!=0, *surface >= 0 && *surface < SURFACE_MAX ? *surface : int(SURFACE_MAIN), *param, vec(*x, *y, *z), *yaw, *pitch, *scale, *detentyaw, *detentpitch));
-    ICOMMAND(IDF_NOECHO, uivisible, "sbb", (char *name, int *surface, int *param), intret(uivisible(name, *surface >= 0 && *surface < SURFACE_MAX ? *surface : int(SURFACE_MAIN), *param) ? 1 : 0));
+    ICOMMAND(IDF_NOECHO, showui, "sbbggggffff", (char *name, int *sf, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch), intret(showui(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_MAIN), *param, vec(*x, *y, *z), *yaw, *pitch, *scale, *detentyaw, *detentpitch) ? 1 : 0));
+    ICOMMAND(IDF_NOECHO, hideui, "sbb", (char *name, int *sf, int *param), intret(hideui(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_MAIN), *param) ? 1 : 0));
+    ICOMMAND(IDF_NOECHO, toggleui, "sbbggggffff", (char *name, int *sf, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch), intret(toggleui(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_MAIN), *param, vec(*x, *y, *z), *yaw, *pitch, *scale, *detentyaw, *detentpitch) ? 1 : 0));
+    ICOMMAND(IDF_NOECHO, holdui, "sbbggggffffD", (char *name, int *sf, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch, int *down), holdui(name, *down!=0, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_MAIN), *param, vec(*x, *y, *z), *yaw, *pitch, *scale, *detentyaw, *detentpitch));
+    ICOMMAND(IDF_NOECHO, pressui, "sbbggggffffD", (char *name, int *sf, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch, int *down), pressui(name, *down!=0, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_MAIN), *param, vec(*x, *y, *z), *yaw, *pitch, *scale, *detentyaw, *detentpitch));
+    ICOMMAND(IDF_NOECHO, uivisible, "sbb", (char *name, int *sf, int *param), intret(uivisible(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_MAIN), *param) ? 1 : 0));
 
-    ICOMMANDVS(0, uitopname, surface ? surface->topname() : "")
+    #define SURFACEOP(idx)  Surface *s = (idx) >= 0 && (idx) < SURFACE_MAX ? surfaces[(idx)] : (surface ? surface : surfaces[SURFACE_MAIN]);
+
+    ICOMMAND(IDF_NOECHO, hidetopui, "b", (int *sf), SURFACEOP(*sf); intret(s && s->hidetop() ? 1 : 0));
+    ICOMMAND(IDF_NOECHO, hideallui, "bii", (int *sf, int *n, int *w), SURFACEOP(*sf); intret(s ? s->hideall(*n != 0, *w != 0) : 0));
+    ICOMMAND(IDF_NOECHO, uitopwindow, "b", (int *sf), SURFACEOP(*sf); result(s ? s->topname() : ""));
+    ICOMMANDVS(0, uitopname, surface ? surface->topname() : (surfaces[SURFACE_MAIN] ? surfaces[SURFACE_MAIN]->topname() : ""));
+
     ICOMMANDVS(0, uiname, window ? window->name : "")
 
     struct HorizontalList : Object
