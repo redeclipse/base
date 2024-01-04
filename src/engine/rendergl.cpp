@@ -2179,6 +2179,7 @@ void drawminimap()
 
     glViewport(0, 0, hudw, hudh);
 }
+COMMAND(0, drawminimap, "");
 
 void drawcubemap(int size, const vec &o, float yaw, float pitch, bool onlysky)
 {

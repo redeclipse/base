@@ -7180,6 +7180,12 @@ namespace UI
 
             t->last = delay > 1 ? lastmillis - (elapsed % delay) : lastmillis;
             t->rendered = true;
+
+            if(delay < 0 && t->fbo)
+            { // don't need to keep the FBO if we're not going to continue using it
+                glDeleteFramebuffers_(1, &t->fbo);
+                t->fbo = 0;
+            }
         }
 
         popsurface();
