@@ -388,7 +388,7 @@ VARF(IDF_INIT, soundmaxsources, 16, 256, 1024, initwarning("sound configuration"
 
 SOUNDVOL(master, master, 1.f, );
 SOUNDVOL(sound, effect, 1.f, );
-SOUNDVOL(music, music, 0.75f, updatemusic());
+SOUNDVOL(music, music, 0.5f, updatemusic());
 FVAR(IDF_PERSIST, soundeffectevent, 0, 1, 100);
 FVAR(IDF_PERSIST, soundeffectenv, 0, 1, 100);
 FVAR(IDF_PERSIST, sounddistfilter, 0.0f, 0.5f, 1.0f);
