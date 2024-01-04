@@ -137,6 +137,8 @@ namespace hud
     FVAR(IDF_PERSIST, visorcursormin, 0, 0.01f, 1);
     FVAR(IDF_PERSIST, visorcursorblend, 0, 0.35f, 1);
     VAR(IDF_PERSIST, visorcursorcolour, 0, 0xFF6666, 0xFFFFFF);
+    FVAR(IDF_PERSIST, visorcamvelx, FVAR_MIN, 0.25f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorcamvely, FVAR_MIN, 0.125f, FVAR_MAX);
 
     VAR(IDF_PERSIST, showindicator, 0, 4, 4);
     FVAR(IDF_PERSIST, indicatorsize, 0, 0.03f, 1000);
@@ -1897,6 +1899,21 @@ namespace hud
         }
     }
 
+    void visorinfo(float &x, float &y, float &glitch)
+    {
+        if(!progressing)
+        {
+            if(visorcamvelx) x = game::fpcamvel.x * visorcamvelx;
+            if(visorcamvely) y = game::fpcamvel.y * visorcamvely;
+
+            if(gs_playing(game::gamestate) && ((game::focus->state == CS_ALIVE && showdamage&2) || (game::focus->state == CS_DEAD && showdamage&4)))
+            {
+                int hp = max(1, game::focus->gethealth(game::gamemode, game::mutators));
+                glitch = clamp(game::focus->state == CS_DEAD ? damageblenddead : (game::focus->state == CS_ALIVE ? min(damageresidue, hp)/float(hp)*damageblend : 0.f), 0.f, 1.f);
+            }
+        }
+    }
+
     void startrender(int w, int h, bool wantvisor, bool noview)
     {
         int wait = client::waiting();
@@ -1911,6 +1928,7 @@ namespace hud
         else
         {
             drawzoom(hudwidth, hudheight);
+
             if(showhud)
             {
                 if(gs_playing(game::gamestate))
@@ -1962,7 +1980,7 @@ namespace hud
         glDisable(GL_BLEND);
     }
 
-    void visorrender(int w, int h, float &glitch, bool wantvisor, bool noview)
+    void visorrender(int w, int h, bool wantvisor, bool noview)
     {
         if(!engineready) return;
 
@@ -1996,12 +2014,6 @@ namespace hud
             hudmatrix.ortho(0, w, h, 0, -1, 1);
             flushhudmatrix();
             resethudshader();
-
-            if(gs_playing(game::gamestate) && ((game::focus->state == CS_ALIVE && showdamage&2) || (game::focus->state == CS_DEAD && showdamage&4)))
-            {
-                int hp = max(1, game::focus->gethealth(game::gamemode, game::mutators));
-                glitch = clamp(game::focus->state == CS_DEAD ? damageblenddead : (game::focus->state == CS_ALIVE ? min(damageresidue, hp)/float(hp)*damageblend : 0.f), 0.f, 1.f);
-            }
         }
 
         glDisable(GL_BLEND);

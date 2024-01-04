@@ -2572,7 +2572,7 @@ void gl_setupframe(bool force)
 
 static GLuint visorfbo = 0, visortex = 0;
 static int visorw = -1, visorh = -1; // render target dimensions
-float visorx = 0.5f, visory = 0.5f; // cursor projection coordinates
+float visorx = 0.5f, visory = 0.5f, visoroffx = 0.f, visoroffy = 0.f; // cursor projection coordinates
 
 VAR(IDF_PERSIST, visorhud, 0, 1, 15); // bit: 1 = normal, 2 = edit, 4 = progress, 8 = noview
 FVAR(IDF_PERSIST, visordistort, -2, 2.0f, 2);
@@ -2634,6 +2634,7 @@ void gl_drawhud(bool noview = false)
     if(!noview) blendhalos();
 
     bool wantvisor = false;
+    float glitch = 0.f;
     if(engineready)
     {
         setupvisor(hudw, hudh);
@@ -2669,6 +2670,11 @@ void gl_drawhud(bool noview = false)
             visorx = cursorx;
             visory = cursory;
         }
+
+        hud::visorinfo(visoroffx, visoroffy, glitch);
+
+        visorx += visoroffx;
+        visory += visoroffy;
     }
 
     hud::startrender(hudw, hudh, wantvisor, noview);
@@ -2686,8 +2692,7 @@ void gl_drawhud(bool noview = false)
         curh = visorh;
     }
 
-    float glitch = 0;
-    hud::visorrender(curw, curh, glitch, wantvisor, noview);
+    hud::visorrender(curw, curh, wantvisor, noview);
 
     if(engineready)
     {
@@ -2709,7 +2714,7 @@ void gl_drawhud(bool noview = false)
 
         gle::colorf(1, 1, 1, 1);
         glBindTexture(GL_TEXTURE_RECTANGLE, visortex);
-        debugquad(0, 0, hudw, hudh, 0, 0, visorw, visorh);
+        debugquad(visoroffx, visoroffy, hudw, hudh, 0, 0, visorw, visorh);
 
         glDisable(GL_BLEND);
     }
