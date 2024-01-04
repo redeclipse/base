@@ -2575,10 +2575,10 @@ static int visorw = -1, visorh = -1; // render target dimensions
 float visorx = 0.5f, visory = 0.5f; // cursor projection coordinates
 
 VAR(IDF_PERSIST, visorhud, 0, 1, 15); // bit: 1 = normal, 2 = edit, 4 = progress, 8 = noview
-FVAR(IDF_PERSIST, visordistort, -2, 0.75f, 2);
+FVAR(IDF_PERSIST, visordistort, -2, 2.0f, 2);
 FVAR(IDF_PERSIST, visornormal, -2, 1.175f, 2);
-FVAR(IDF_PERSIST, visorscalex, FVAR_NONZERO, 1, 2);
-FVAR(IDF_PERSIST, visorscaley, FVAR_NONZERO, 1.14f, 2);
+FVAR(IDF_PERSIST, visorscalex, FVAR_NONZERO, 0.9075f, 2);
+FVAR(IDF_PERSIST, visorscaley, FVAR_NONZERO, 0.9075f, 2);
 FVAR(IDF_PERSIST, visorglitchdistort, 0, 1, 16);
 FVAR(IDF_PERSIST, visorglitchscale, 0, 0.5f, 16);
 
@@ -2655,8 +2655,8 @@ void gl_drawhud(bool noview = false)
 
             float mag = coords.magnitude();
 
-            coords.y *= (1.0 + visordistort * visornormal * visornormal);
-            coords.y /= (1.0 + visordistort + mag * mag);
+            coords.mul(1.0 + visordistort * visornormal * visornormal);
+            coords.div(1.0 + visordistort + mag * mag);
 
             coords.add(vec2(0.5f));
             coords.sub(cursorxy);
