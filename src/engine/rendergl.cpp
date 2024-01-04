@@ -2706,6 +2706,7 @@ void gl_drawhud(bool noview = false)
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+        glBlendEquation_(GL_FUNC_ADD);
 
         gle::colorf(1, 1, 1, 1);
         glBindTexture(GL_TEXTURE_RECTANGLE, visortex);

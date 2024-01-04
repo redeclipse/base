@@ -1958,11 +1958,11 @@ namespace hud
                 if(!game::tvmode() && !client::waiting() && !hasinput(false)) drawevents();
             }
 
-            UI::render(SURFACE_BACKGROUND);
-
             drawpointers(w, h, -1, wantvisor);
             resethudshader();
         }
+
+        UI::render(SURFACE_BACKGROUND);
 
         glDisable(GL_BLEND);
     }
