@@ -871,8 +871,6 @@ namespace hud
         }
 
         Texture *t = textureload(indicatortex, 3, true, false);
-        if(t->type&Texture::ALPHA) glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        else glBlendFunc(GL_ONE, GL_ONE);
         settexture(t);
 
         float val = amt < 0.25f ? amt : (amt > 0.75f ? 1.f-amt : 0.25f);
@@ -1068,8 +1066,6 @@ namespace hud
         Texture *t = circlebartex && *circlebartex ? textureload(circlebartex, 3, true, false) : NULL;
         if(!t || t == notexture) return;
         float slice = 1.f/num, pos = num%2 ? slice*0.5f : 0.f;
-        if(t->type&Texture::ALPHA) glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        else glBlendFunc(GL_ONE, GL_ONE);
         settexture(t);
         loopi(3) if(circlebartype&(1<<i))
         {
@@ -1596,8 +1592,6 @@ namespace hud
         if(fade <= 0 || !tex || !*tex) return false;
         Texture *t = textureload(tex, 3, true, false);
         if(!t || t == notexture) return false;
-        if(t->type&Texture::ALPHA) glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        else glBlendFunc(GL_ONE, GL_ONE);
         gle::colorf(r, g, b, fade);
         settexture(t);
         drawsized(x, y, s);
@@ -1727,7 +1721,8 @@ namespace hud
         resethudshader();
 
         glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        if(seq == 0) glBlendFuncSeparate_(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE);
+        else glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         if(wantvisor)
         {
@@ -1972,7 +1967,7 @@ namespace hud
         if(!engineready) return;
 
         glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glBlendFuncSeparate_(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE);
 
         if(progressing)
         {

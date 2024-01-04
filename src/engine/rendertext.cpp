@@ -957,7 +957,7 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
     LOCALPARAMF(textparams, curfont->bordermin, curfont->bordermax, curfont->outlinemin, curfont->outlinemax);
     wantfontpass = false;
     curfontpass = 0;
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     settexture(tex);
     gle::color(color);
     gle::defvertex(textmatrix ? 3 : 2);
@@ -988,7 +988,7 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
         color = TVECX(r, g, b, fade);
         loopi(16) colorstack[i] = color;
         hudshader->set();
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         gle::color(color);
         gle::defvertex(textmatrix ? 3 : 2);
         gle::deftexcoord0();

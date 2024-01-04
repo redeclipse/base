@@ -179,10 +179,7 @@ namespace UI
         {
             blendtype = type;
             if(surfacetype == SURFACE_MAIN || surfacetype == SURFACE_COMPOSITE)
-            {
                 glBlendFuncSeparate_(src, dst, srcalpha, dstalpha); // only for FBO's
-                glBlendEquation_(GL_FUNC_ADD);
-            }
             else glBlendFunc(src, dst);
         }
     }
@@ -6071,7 +6068,7 @@ namespace UI
                 vec glowcolor = vslot.getglowcolor();
                 gle::colorf(glowcolor.x*colors[0].r/255.f, glowcolor.y*colors[0].g/255.f, glowcolor.z*colors[0].b/255.f, colors[0].a/255.f);
                 quad(x, y, w, h, tc);
-                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                setblend(blendtype, true);
             }
             if(layertex)
             {
@@ -6182,7 +6179,7 @@ namespace UI
                 vec glowcolor = vslot.getglowcolor();
                 gle::colorf(glowcolor.x*colors[0].r/255.f, glowcolor.y*colors[0].g/255.f, glowcolor.z*colors[0].b/255.f, colors[0].a/255.f);
                 quad(x, y, w, h, tc);
-                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                setblend(blendtype, true);
             }
         }
 
