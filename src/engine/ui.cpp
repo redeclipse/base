@@ -170,35 +170,38 @@ namespace UI
     static Object *drawing = NULL;
     static bool propagating = false;
 
-    enum { BLEND_ALPHA, BLEND_MOD, BLEND_SRC, BLEND_COMP };
-    static int changed = 0, surfacetype = -1, blendtype = BLEND_ALPHA, blenddef = BLEND_ALPHA;
+    enum { BLEND_ALPHA, BLEND_MOD, BLEND_SRC, BLEND_COMP, BLEND_MAX };
+    static int changed = 0, surfacetype = -1, blendtype = BLEND_ALPHA, blendtypedef = BLEND_ALPHA;
+    static bool blendsep = false, blendsepdef = false;
 
-    static inline void changeblend(int type, GLenum src, GLenum dst, GLenum srcalpha, GLenum dstalpha, bool force = false)
+    void setblend(int type, bool sep, bool force = false)
     {
-        if(force || blendtype != type)
+        if(type < 0 || type >= BLEND_MAX) type = BLEND_ALPHA;
+
+        const GLenum mappings[BLEND_MAX][4] {
+            { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE },
+            { GL_ZERO, GL_SRC_COLOR, GL_ONE_MINUS_DST_ALPHA, GL_ONE },
+            { GL_ONE, GL_ZERO, GL_ONE_MINUS_DST_ALPHA, GL_ONE },
+            { GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE }
+        };
+
+        if(force || blendtype != type || blendsep != sep)
         {
             blendtype = type;
-            if(surfacetype == SURFACE_MAIN || surfacetype == SURFACE_COMPOSITE)
-                glBlendFuncSeparate_(src, dst, srcalpha, dstalpha); // only for FBO's
-            else glBlendFunc(src, dst);
-        }
-    }
-
-    void setblend(int type, bool force = false)
-    {
-        switch(type)
-        {
-            case BLEND_MOD: changeblend(BLEND_MOD, GL_ZERO, GL_SRC_COLOR, GL_ONE_MINUS_DST_ALPHA, GL_ONE, force); break;
-            case BLEND_SRC: changeblend(BLEND_SRC, GL_ONE, GL_ZERO, GL_ONE_MINUS_DST_ALPHA, GL_ONE, force); break;
-            case BLEND_COMP: changeblend(BLEND_COMP, GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE, force); break;
-            case BLEND_ALPHA: default: changeblend(BLEND_ALPHA, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE, force); break;
+            blendsep = sep;
+            if(sep) glBlendFuncSeparate_(mappings[type][0], mappings[type][1], mappings[type][2], mappings[type][3]);
+            else glBlendFunc(mappings[type][0], mappings[type][1]);
         }
     }
 
     void resetblend(bool force = false)
     {
-        if(force) blenddef = BLEND_ALPHA;
-        setblend(blenddef, force);
+        if(force)
+        {
+            blendtypedef = BLEND_ALPHA;
+            blendsepdef = surfacetype == SURFACE_MAIN || surfacetype == SURFACE_COMPOSITE;
+        }
+        setblend(blendtypedef, blendsepdef, force);
     }
 
     #define UIREVCMDC(func, types, argtypes, body) \
@@ -1402,12 +1405,13 @@ namespace UI
 
     struct Blend : Object
     {
-        int setting;
+        int setting, sep;
 
-        void setup(int type_)
+        void setup(int type_, int sep_)
         {
             Object::setup();
             setting = type_;
+            sep = sep_;
         }
 
         static const char *typestr() { return "#Blend"; }
@@ -1415,16 +1419,19 @@ namespace UI
 
         void draw(bool world, float sx, float sy)
         {
-            int oldblend = blenddef;
-            blenddef = setting;
+            int oldblend = blendtypedef;
+            bool oldsep = blendsepdef;
+            if(setting >= 0) blendtypedef = setting;
+            if(sep >= 0) blendsepdef = sep != 0;
             resetblend();
             Object::draw(world, sx, sy);
-            blenddef = oldblend;
+            blendtypedef = oldblend;
+            blendsepdef = oldsep;
             resetblend();
         }
     };
 
-    ICOMMAND(0, uiblend, "ie", (int *type, uint *children), BUILD(Blend, o, o->setup(clamp(*type, 0, int(BLEND_SRC))), children));
+    ICOMMAND(0, uiblend, "iie", (int *type, int *sep, uint *children), BUILD(Blend, o, o->setup(clamp(*type, -1, BLEND_MAX-1), *sep), children));
 
     struct Font : Object
     {
@@ -2841,36 +2848,40 @@ namespace UI
         enum { SOLID = 0, MODULATE, OUTLINED, OVERWRITE, COMPOSITE };
         enum { VERTICAL, HORIZONTAL };
 
-        int type, dir;
+        int type, dir, sep;
         vector<Color> colors;
 
         static const char *typestr() { return "#Colored"; }
         const char *gettype() const { return typestr(); }
         bool iscolour() const { return true; }
 
-        void setupdraw(bool world, int drawflags)
+        void setupdraw(bool world, int drawflags = 0)
         {
-            int outtype = -1;
+            int outtype = -1, outsep = sep >= 0 ? sep != 0 : blendsepdef;
             switch(type)
             {
                 case MODULATE: outtype = BLEND_MOD; break;
                 case OVERWRITE: outtype = BLEND_SRC; break;
                 case COMPOSITE: outtype = BLEND_COMP; break;
                 case SOLID: outtype = BLEND_ALPHA; break;
-                default: outtype = blenddef; break;
+                default: outtype = blendtypedef; break;
             }
-            if(outtype != blendtype) drawflags |= CHANGE_BLEND;
+
+            if(outtype != blendtype || outsep != blendsep) drawflags |= CHANGE_BLEND;
+            drawflags |= CHANGE_COLOR;
+
             changedraw(drawflags, world);
-            setblend(outtype);
+            setblend(outtype, outsep);
         }
 
-        void setup(const Color &color_, int type_ = -1, int dir_ = -1)
+        void setup(const Color &color_, int type_ = -1, int dir_ = -1, int sep_ = -1)
         {
             Object::setup();
             colors.setsize(0);
             colors.add(color_);
             type = type_ >= 0 ? type_ : -1;
             dir = dir_ >= 0 ? dir_ : VERTICAL;
+            sep = sep_;
         }
 
         void rotatecolors(float amt, int colstart = 0, int colcount = 0)
@@ -2913,6 +2924,7 @@ namespace UI
 
     UIARGT(Colored, colour, type, "i", int, int(Colored::SOLID), int(Colored::OVERWRITE));
     UIARGT(Colored, colour, dir, "i", int, int(Colored::VERTICAL), int(Colored::HORIZONTAL));
+    UIARGT(Colored, colour, sep, "i", int, -1, 1);
 
     UICMDT(Colored, colour, set, "iii", (int *c, int *pos, int *force),
     {
@@ -3033,7 +3045,7 @@ namespace UI
 
         void draw(bool world, float sx, float sy)
         {
-            setupdraw(world, CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
+            setupdraw(world, CHANGE_SHADER);
 
             int cols = colors.length();
             gle::begin(GL_TRIANGLE_STRIP);
@@ -3141,7 +3153,7 @@ namespace UI
 
         void draw(bool world, float sx, float sy)
         {
-            setupdraw(world, CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
+            setupdraw(world, CHANGE_SHADER);
 
             if(width != 1) glLineWidth(width);
             colors[0].init();
@@ -3181,7 +3193,7 @@ namespace UI
 
         void draw(bool world, float sx, float sy)
         {
-            setupdraw(world, CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
+            setupdraw(world, CHANGE_SHADER);
 
             if(width != 1) glLineWidth(width);
             colors[0].init();
@@ -3258,7 +3270,7 @@ namespace UI
 
         void draw(bool world, float sx, float sy)
         {
-            setupdraw(world, CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
+            setupdraw(world, CHANGE_SHADER);
 
             LOCALPARAMF(millis, lastmillis/1000.0f);
             LOCALPARAMF(viewsize, hudw*w, hudh*h, 1.0f/(hudw*w), 1.0f/(hudh*h));
@@ -3392,7 +3404,7 @@ namespace UI
 
         void bindtex(bool world, GLenum mode = GL_QUADS, int colstart = 0, bool forced = false)
         {
-            setupdraw(world, CHANGE_COLOR | CHANGE_BLEND);
+            setupdraw(world);
 
             int col = clamp(colstart, -1, colors.length()-1);
             Color c = col >= 0 ? (colors.inrange(col) ? colors[col] : colors[0]) : Color(colors[0]).scale(shadowcolor);
@@ -4012,7 +4024,7 @@ namespace UI
                 return;
             }
 
-            setupdraw(world, CHANGE_COLOR | CHANGE_BLEND);
+            setupdraw(world);
 
             Color c = colors[0];
             if(lastcolor != c)
@@ -4107,7 +4119,7 @@ namespace UI
         {
             Object::draw(world, sx, sy);
 
-            setupdraw(world, CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
+            setupdraw(world, CHANGE_SHADER);
 
             colors[0].init();
             gle::begin(type == OUTLINED ? GL_LINE_LOOP : GL_TRIANGLES);
@@ -4152,7 +4164,7 @@ namespace UI
         {
             Object::draw(world, sx, sy);
 
-            setupdraw(world, CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
+            setupdraw(world, CHANGE_SHADER);
 
             float r = radius <= 0 ? min(w, h)/2 : radius;
             colors[0].init();
@@ -4221,7 +4233,7 @@ namespace UI
 
         void draw(bool world, float sx, float sy)
         {
-            setupdraw(world, CHANGE_COLOR|CHANGE_SHADER);
+            setupdraw(world, CHANGE_SHADER);
 
             float k = drawscale(rescale), left = sx/k, top = sy/k;
             int flags = modcol ? TEXT_MODCOL : 0;
@@ -5183,7 +5195,7 @@ namespace UI
 
         void draw(bool world, float sx, float sy)
         {
-            setupdraw(world, CHANGE_COLOR | CHANGE_SHADER);
+            setupdraw(world, CHANGE_SHADER);
 
             edit->rendered = true;
 
@@ -5591,7 +5603,7 @@ namespace UI
 
         void draw(bool world, float sx, float sy)
         {
-            setupdraw(world, CHANGE_SHADER | CHANGE_COLOR);
+            setupdraw(world, CHANGE_SHADER);
 
             pushhudmatrix();
             matrix4 axismatrix, axisprojmatrix;
@@ -5672,7 +5684,7 @@ namespace UI
 
         void draw(bool world, float sx, float sy)
         {
-            setupdraw(world, CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
+            setupdraw(world, CHANGE_SHADER);
 
             pushhudmatrix();
             hudmatrix.ortho(0, hud::hudwidth, hud::hudheight, 0, -1, 1);
@@ -6037,7 +6049,7 @@ namespace UI
 
             if(!t || t == notexture) return;
 
-            setupdraw(world, CHANGE_SHADER | CHANGE_COLOR);
+            setupdraw(world, CHANGE_SHADER);
 
             SETSHADER(hudrgb);
             vec2 tc[4] = { vec2(0, 0), vec2(1, 0), vec2(1, 1), vec2(0, 1) };
@@ -6146,7 +6158,7 @@ namespace UI
 
             if(!t || t == notexture) return;
 
-            setupdraw(world, CHANGE_SHADER | CHANGE_COLOR);
+            setupdraw(world, CHANGE_SHADER);
 
             SETSHADER(hudrgb);
             vec2 tc[4] = { vec2(0, 0), vec2(1, 0), vec2(1, 1), vec2(0, 1) };
@@ -6231,7 +6243,7 @@ namespace UI
 
         void draw(bool world, float sx, float sy)
         {
-            setupdraw(world, CHANGE_COLOR);
+            setupdraw(world);
             while(colors.length() < 2) colors.add(Color(colourwhite));
             if(hud::needminimap())
             {
@@ -7117,7 +7129,7 @@ namespace UI
         }
     }
 
-    void buildcomposites()
+    void updatetextures()
     {
         if(!pushsurface(SURFACE_COMPOSITE)) return;
 
@@ -7202,19 +7214,13 @@ namespace UI
 
     void update(int stype)
     {
-        switch(stype)
-        {
-            case SURFACE_COMPOSITE:
-                buildcomposites(); // does its own update/render
-                break;
-            default: build(stype); break;
-        }
+        build(stype);
+        if(stype == SURFACE_MAIN) updatetextures();
     }
 
     void render(int stype, bool world)
     {
-        if(stype == SURFACE_COMPOSITE || (stype == SURFACE_MAIN && !world && uihidden) || !pushsurface(stype))
-            return;
+        if((stype == SURFACE_MAIN && !world && uihidden) || !pushsurface(stype)) return;
 
         if(world)
         {
