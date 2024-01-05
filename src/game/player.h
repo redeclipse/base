@@ -245,7 +245,7 @@ APFVAR(IDF_GAMEMOD, 0, jumptolerance, 0, FVAR_MAX,
     100,            100,            1000,           100,            100,            100
 );
 APFVAR(IDF_GAMEMOD, 0, impulsespeed, 0, FVAR_MAX,
-    150,            150,            0,              150,            150,            75
+    100,            100,            0,              100,            100,            50
 );
 APFVAR(IDF_GAMEMOD, 0, impulsespeedextra, FVAR_MIN, FVAR_MAX,
     0,              0,              0,              0,              0,              0

@@ -533,44 +533,44 @@ GFVAR(IDF_GAMEMOD, 0, moveparkour, FVAR_NONZERO, 1.75f, FVAR_MAX); // parkour mo
 GFVAR(IDF_GAMEMOD, 0, moveclimb, FVAR_NONZERO, 1.75f, FVAR_MAX); // climb modifier
 GFVAR(IDF_GAMEMOD, 0, movevault, FVAR_NONZERO, 1.75f, FVAR_MAX); // vault modifier
 
-GFVAR(IDF_GAMEMOD, 0, impulseboost, 0, 1.f, FVAR_MAX); // boost modifier
+GFVAR(IDF_GAMEMOD, 0, impulseboost, 0, 1.5f, FVAR_MAX); // boost modifier
 GFVAR(IDF_GAMEMOD, 0, impulseboostredir, 0, 0.5f, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, 0, impulseboostpitchmin, -89.9f, -89.9f, 89.9f); // boost pitch minimum
 GFVAR(IDF_GAMEMOD, 0, impulseboostpitchmax, -89.9f, 89.9f, 89.9f); // boost pitch maximum
-GFVAR(IDF_GAMEMOD, 0, impulsedash, 0, 1.2f, FVAR_MAX); // dash modifier
+GFVAR(IDF_GAMEMOD, 0, impulsedash, 0, 1.25f, FVAR_MAX); // dash modifier
 GFVAR(IDF_GAMEMOD, 0, impulsedashback, 0, 1.1f, FVAR_MAX); // dash modifier
 GFVAR(IDF_GAMEMOD, 0, impulsedashredir, 0, 0.5f, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, 0, impulsepound, 0, 1.3f, FVAR_MAX); // pound modifier
 GFVAR(IDF_GAMEMOD, 0, impulsepoundredir, 0, 0.5f, FVAR_MAX); // how much of the old velocity is redirected into the new one
-GFVAR(IDF_GAMEMOD, 0, impulselaunch, 0, 0.5f, FVAR_MAX); // launch modifier
-GFVAR(IDF_GAMEMOD, 0, impulselaunchredir, 0, 0.5f, FVAR_MAX); // how much of the old velocity is redirected into the new one
+GFVAR(IDF_GAMEMOD, 0, impulselaunch, 0, 0.75f, FVAR_MAX); // launch modifier
+GFVAR(IDF_GAMEMOD, 0, impulselaunchredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, 0, impulselaunchpitchmin, -89.9f, 30.f, 89.9f); // launch pitch minimum
 GFVAR(IDF_GAMEMOD, 0, impulselaunchpitchmax, -89.9f, 89.9f, 89.9f); // launch pitch maximum
-GFVAR(IDF_GAMEMOD, 0, impulseslide, 0, 0.1f, FVAR_MAX); // slide modifier
-GFVAR(IDF_GAMEMOD, 0, impulseslideredir, 0, 0.5f, FVAR_MAX); // how much of the old velocity is redirected into the new one
+GFVAR(IDF_GAMEMOD, 0, impulseslide, 0, 0.15f, FVAR_MAX); // slide modifier
+GFVAR(IDF_GAMEMOD, 0, impulseslideredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, 0, impulsejump, 0, 1.2f, FVAR_MAX); // jump upward modifier
-GFVAR(IDF_GAMEMOD, 0, impulsejumpredir, 0, 0.5f, FVAR_MAX); // how much of the old velocity is redirected into the new one
+GFVAR(IDF_GAMEMOD, 0, impulsejumpredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, 0, impulsemelee, 0, 0.8f, FVAR_MAX); // melee modifier
-GFVAR(IDF_GAMEMOD, 0, impulsemeleeredir, 0, 0.5f, FVAR_MAX); // how much of the old velocity is redirected into the new one
+GFVAR(IDF_GAMEMOD, 0, impulsemeleeredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, 0, impulseparkour, 0, 1.1f, FVAR_MAX); // parkour modifier
-GFVAR(IDF_GAMEMOD, 0, impulseparkourredir, 0, 0.5f, FVAR_MAX); // how much of the old velocity is redirected into the new one
+GFVAR(IDF_GAMEMOD, 0, impulseparkourredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, 0, impulseparkournorm, 0, 0.5f, FVAR_MAX); // minimum parkour surface z normal
 GFVAR(IDF_GAMEMOD, 0, impulsekick, 0, 1.6f, FVAR_MAX); // parkour kick modifier
-GFVAR(IDF_GAMEMOD, 0, impulsekickredir, 0, 0.5f, FVAR_MAX); // how much of the old velocity is redirected into the new one
+GFVAR(IDF_GAMEMOD, 0, impulsekickredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, 0, impulsekickpitchmin, -89.9f, -89.9f, 89.9f); // kick pitch minimum
 GFVAR(IDF_GAMEMOD, 0, impulsekickpitchmax, -89.9f, 89.9f, 89.9f); // kick pitch maximum
 GFVAR(IDF_GAMEMOD, 0, impulseclimb, 0, 1.f, FVAR_MAX); // parkour climb modifier
-GFVAR(IDF_GAMEMOD, 0, impulseclimbredir, 0, 0.5f, FVAR_MAX); // how much of the old velocity is redirected into the new one
+GFVAR(IDF_GAMEMOD, 0, impulseclimbredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, 0, impulsevault, 0, 0.5f, FVAR_MAX); // vault modifier
-GFVAR(IDF_GAMEMOD, 0, impulsevaultredir, 0, 0.5f, FVAR_MAX); // how much of the old velocity is redirected into the new one
+GFVAR(IDF_GAMEMOD, 0, impulsevaultredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, 0, impulsevaultpitch, -89.9f, 0, 89.9f); // z direction to funnel in when vaulting
 GVAR(IDF_GAMEMOD, 0, impulsevaultpitchclamp, 0, 1, 1); // clamp vault pitch to player pitch
 GFVAR(IDF_GAMEMOD, 0, impulsevaultmin, FVAR_NONZERO, 0.3f, FVAR_MAX); // minimum percentage of height for vault
 GFVAR(IDF_GAMEMOD, 0, impulsevaultmax, FVAR_NONZERO, 1.5f, FVAR_MAX); // maximum percentage of height for vault
 GFVAR(IDF_GAMEMOD, 0, impulsegrab, 0, 2.f, FVAR_MAX); // parkour grab modifier
-GFVAR(IDF_GAMEMOD, 0, impulsegrabredir, 0, 0.5f, FVAR_MAX); // how much of the old velocity is redirected into the new one
+GFVAR(IDF_GAMEMOD, 0, impulsegrabredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, 0, impulsegrabplayer, 0, 2, FVAR_MAX); // parkour grab player modifier
-GFVAR(IDF_GAMEMOD, 0, impulsegrabplayerredir, 0, 0.5f, FVAR_MAX); // how much of the old velocity is redirected into the new one
+GFVAR(IDF_GAMEMOD, 0, impulsegrabplayerredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
 
 GVAR(IDF_GAMEMOD, 0, impulsecount, 0, 6, VAR_MAX); // number of impulse actions per air transit
 GVAR(IDF_GAMEMOD, 0, impulsecounttypes, 0, IM_T_COUNT, IM_T_ACTION); // what actions get counted
