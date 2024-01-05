@@ -3281,6 +3281,7 @@ namespace game
                 if(player1->clientnum >= 0) client::c2sinfo();
                 return;
             }
+
             int type = client::needsmap ? 6 : (m_edit(gamemode) && musicedit >= 0 ? musicedit : musictype);
             if(!maptime)
             {
@@ -3292,7 +3293,7 @@ namespace game
             {
                 maptime = lastmillis ? lastmillis : 1;
                 mapstart = totalmillis ? totalmillis : 1;
-                if(type != 6) stopmusic();
+                if(type != 6) musicfade = totalmillis;
                 RUNMAP("on_start");
                 resetcamera();
                 resetsway();
@@ -3301,22 +3302,18 @@ namespace game
             else if(!nosound && soundmastervol && soundmusicvol && type && !playingmusic())
             {
                 if(type == 6) smartmusic(true);
-                else
+                else if((type == 2 || type == 5 || (!playmusic(mapmusic, type < 4) && (type == 1 || type == 4))) && *musicdir)
                 {
-                    defformatstring(musicfile, "%s", mapmusic);
-                    if(musicdir[0] && (type == 2 || type == 5 || ((type == 1 || type == 4) && (!musicfile[0] || !fileexists(findfile(musicfile, "r"), "r")))))
+                    vector<char *> files;
+                    listfiles(musicdir, NULL, files);
+                    while(!files.empty())
                     {
-                        vector<char *> files;
-                        listfiles(musicdir, NULL, files);
-                        while(!files.empty())
-                        {
-                            int r = rnd(files.length());
-                            formatstring(musicfile, "%s/%s", musicdir, files[r]);
-                            if(files[r][0] != '.' && strcmp(files[r], "readme.txt") && playmusic(musicfile, type < 4)) break;
-                            else files.remove(r);
-                        }
+                        int r = rnd(files.length());
+                        defformatstring(musicfile, "%s/%s", musicdir, files[r]);
+                        if(*files[r] != '.' && playmusic(musicfile, type < 4)) break;
+                        else files.remove(r);
                     }
-                    else if(musicfile[0]) playmusic(musicfile, type < 4);
+                    files.deletearrays();
                 }
 
                 string title, artist, album;
@@ -3338,6 +3335,7 @@ namespace game
                     log->push();
                 }
             }
+
             player1->conopen = hud::hasinput(true);
             checkoften(player1, true);
             loopv(players) if(players[i]) checkoften(players[i], players[i]->ai != NULL);
@@ -3363,8 +3361,10 @@ namespace game
             checkplayers();
             flushdamagemerges();
         }
+
         gets2c();
         adjustscaled(hud::damageresidue, hud::damageresiduedelta, hud::damageresiduefade);
+
         if(connected())
         {
             checkcamera();

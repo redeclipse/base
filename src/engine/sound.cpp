@@ -389,6 +389,11 @@ VARF(IDF_INIT, soundmaxsources, 16, 256, 1024, initwarning("sound configuration"
 SOUNDVOL(master, master, 1.f, );
 SOUNDVOL(sound, effect, 1.f, );
 SOUNDVOL(music, music, 0.5f, updatemusic());
+
+int musicfade = 0;
+bool musicstopping = false;
+FVAR(IDF_PERSIST, soundmusicfade, 0, 1000, VAR_MAX);
+
 FVAR(IDF_PERSIST, soundeffectevent, 0, 1, 100);
 FVAR(IDF_PERSIST, soundeffectenv, 0, 1, 100);
 FVAR(IDF_PERSIST, sounddistfilter, 0.0f, 0.5f, 1.0f);
@@ -476,12 +481,7 @@ void updatemusic()
     SDL_LockMutex(music_mutex);
     bool hasmusic = music != NULL;
     SDL_UnlockMutex(music_mutex);
-
     if(!connected() && !hasmusic && soundmusicvol && soundmastervol) smartmusic(true);
-
-    SDL_LockMutex(music_mutex);
-    if(music) music->gain = soundmusicvol;
-    SDL_UnlockMutex(music_mutex);
 }
 
 void mapsoundslot(int index, const char *name)
@@ -525,7 +525,11 @@ int musicloop(void *data)
             break;
         }
 
-        if(music) music->update();
+        if(music && music->update() != AL_NO_ERROR)
+        {
+            musicfade = 0;
+            musicstopping = true;
+        }
 
         SDL_UnlockMutex(music_mutex);
         SDL_Delay(10);
@@ -628,6 +632,9 @@ void stopmusic()
 {
     SDL_LockMutex(music_mutex);
 
+    musicfade = 0;
+    musicstopping = false;
+
     if(!music)
     {
         SDL_UnlockMutex(music_mutex);
@@ -676,7 +683,9 @@ soundfile *loadsoundfile(const char *name, int mixtype)
     return w;
 }
 
-const char *sounddirs[] = { "", "sounds/" }, *soundexts[] = { "", ".ogg", ".flac", ".wav" };
+const char *sounddirs[] = { "", "sounds/" },
+           *musicdirs[] = { "", "sounds/", "sounds/music/", "sounds/egmusic/" },
+           *soundexts[] = { "", ".ogg", ".flac", ".wav" };
 
 bool playmusic(const char *name, bool looping)
 {
@@ -689,15 +698,13 @@ bool playmusic(const char *name, bool looping)
     string buf;
     music = new musicstream;
 
-    loopi(sizeof(sounddirs)/sizeof(sounddirs[0])) loopk(sizeof(soundexts)/sizeof(soundexts[0]))
+    loopi(sizeof(musicdirs)/sizeof(musicdirs[0])) loopk(sizeof(soundexts)/sizeof(soundexts[0]))
     {
         formatstring(buf, "%s%s%s", sounddirs[i], name, soundexts[k]);
         soundfile *w = loadsoundfile(buf, soundfile::MUSIC);
         if(!w) continue;
-        SOUNDCHECK(music->setup(name, w),
+        SOUNDCHECK(music->setup(name, w, looping),
         {
-            music->gain = soundmusicvol;
-            music->looping = looping;
             SDL_UnlockMutex(music_mutex);
             musicloopinit();
             return true;
@@ -715,13 +722,13 @@ bool playmusic(const char *name, bool looping)
 
 ICOMMAND(0, music, "sb", (char *s, int *n), playmusic(s, *n != 0));
 
-bool playingmusic()
+bool playingmusic(bool active)
 {
     bool result = false;
 
     SDL_LockMutex(music_mutex);
 
-    if(music && music->playing()) result = true;
+    if(music && (active ? music->active() : music->playing())) result = true;
 
     SDL_UnlockMutex(music_mutex);
 
@@ -790,10 +797,10 @@ void smartmusic(bool cond, bool init, bool interm)
     SDL_UnlockMutex(music_mutex);
 
     if(init) canmusic = true;
-    if(!canmusic || nosound || !soundmastervol || !soundmusicvol || (!cond && isplaying) || !*name)
-        return;
-
-    if(!playingmusic() || (cond && !hasmusic)) playmusic(name);
+    if(canmusic && !nosound && soundmastervol && soundmusicvol && (cond || !isplaying) && *name)
+    {
+        if(!playingmusic() || (cond && !hasmusic)) playmusic(name);
+    }
 
     if(delstr) delete[] name;
 }
@@ -1050,7 +1057,7 @@ void updatesounds()
     bool musicvalid = music && music->valid();
     SDL_UnlockMutex(music_mutex);
 
-    if(!musicvalid || (hasmusic && (nosound || !soundmastervol || !soundmusicvol || !playingmusic())))
+    if(!musicvalid || (hasmusic && (musicstopping || nosound || !soundmastervol || !soundmusicvol || !playingmusic())))
         stopmusic();
 
     vec o[2];
@@ -1809,7 +1816,7 @@ ALenum soundsource::push(soundsample *s)
         if(tag##x != NULL) x = newstring(tag##x); \
     } while(false);
 
-ALenum musicstream::setup(const char *n, soundfile *s)
+ALenum musicstream::setup(const char *n, soundfile *s, bool looped, bool fade)
 {
     if(!s) return AL_NO_ERROR;
 
@@ -1855,6 +1862,9 @@ ALenum musicstream::setup(const char *n, soundfile *s)
 
     alSourceQueueBuffers(source, r, buffer);
     SOUNDERRORTRACK(clear(); return err);
+
+    looping = looped;
+    updategain(fade);
 
     return AL_NO_ERROR;
 }
@@ -1902,9 +1912,42 @@ void musicstream::clear()
     reset();
 }
 
-ALenum musicstream::update()
+bool musicstream::updategain(bool fade)
+{
+    if(musicstopping)
+    {
+        gain = 0;
+        return false;
+    }
+
+    gain = soundmusicvol;
+
+    if(fade && musicfade)
+    {
+        if(soundmusicfade)
+        {
+            int ms = totalmillis - musicfade;
+            if(ms >= 0 && ms <= soundmusicfade)
+                gain *= 1.f - (ms / float(soundmusicfade));
+            else musicfade = 0;
+        }
+        else musicfade = 0;
+
+        if(!musicfade)
+        {
+            gain = 0;
+            return false;
+        }
+    }
+
+    return true;
+}
+
+ALenum musicstream::update(bool fade)
 {
     if(!valid()) return AL_INVALID_OPERATION;
+
+    if(!updategain(fade)) return -1; // not an error code, but an error
 
     SOUNDERROR();
     ALint processed;

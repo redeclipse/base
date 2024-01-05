@@ -33,9 +33,11 @@ enum
 #define SOUNDMAXDIST        10000.f
 
 extern bool nosound;
-extern float soundmastervol, soundeffectvol, soundmusicvol, soundrefdist, soundrolloff;
+extern float soundmastervol, soundeffectvol, soundmusicvol, soundmusicfade, soundrefdist, soundrolloff;
 
 extern bool al_ext_efx, al_soft_spatialize, al_ext_float32;
+
+extern int musicfade;
 
 #include "AL/al.h"
 #include "AL/alc.h"
@@ -254,12 +256,13 @@ struct musicstream
     musicstream() { reset(); }
     ~musicstream() { clear(); }
 
-    ALenum setup(const char *n, soundfile *s);
+    ALenum setup(const char *n, soundfile *s, bool looped = true, bool fade = true);
     ALenum fill(ALint bufid);
     void cleanup();
     void reset();
     void clear();
-    ALenum update();
+    bool updategain(bool fade = true);
+    ALenum update(bool fade = true);
     bool valid();
     bool active();
     bool playing();
@@ -281,7 +284,7 @@ extern int getsoundslot(int index);
 extern void initsound();
 extern void stopsound();
 extern bool playmusic(const char *name, bool looping = true);
-extern bool playingmusic();
+extern bool playingmusic(bool active = true);
 extern void smartmusic(bool cond, bool init = false, bool interm = false);
 extern void stopmusic();
 extern void updatemusic();

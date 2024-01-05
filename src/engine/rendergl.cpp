@@ -2673,8 +2673,8 @@ void gl_drawhud(bool noview = false)
 
         hud::visorinfo(visoroffx, visoroffy, glitch);
 
-        visorx += visoroffx;
-        visory += visoroffy;
+        visorx += visoroffx / hudw;
+        visory += visoroffy / hudh;
     }
 
     hud::startrender(hudw, hudh, wantvisor, noview);
