@@ -737,10 +737,17 @@ bool musicinfo(char *title, char *artist, char *album, size_t len)
     if(music)
     {
         if(music->title) copystring(title, music->title, len);
+        else *title = 0;
+
         if(music->artist) copystring(artist, music->artist, len);
+        else *artist = 0;
+
         if(music->album) copystring(album, music->album, len);
+        else *album = 0;
+
         result = true;
     }
+    else *title = *artist = *album = 0;
 
     SDL_UnlockMutex(music_mutex);
 
