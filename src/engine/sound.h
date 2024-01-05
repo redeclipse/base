@@ -294,6 +294,8 @@ extern void removetrackedsounds(physent *d);
 extern void removemapsounds();
 extern void dumpsoundenvs(stream *s);
 
+extern bool musicinfo(char *title, char *artist, char *album, size_t len);
+
 extern void initmumble();
 extern void closemumble();
 extern void updatemumble();

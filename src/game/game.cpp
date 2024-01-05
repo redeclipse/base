@@ -3318,6 +3318,25 @@ namespace game
                     }
                     else if(musicfile[0]) playmusic(musicfile, type < 4);
                 }
+
+                string title, artist, album;
+                if(musicinfo(title, artist, album, sizeof(string)) && *title)
+                {
+                    gamelog *log = new gamelog(GAMELOG_EVENT);
+                    log->addlist("args", "type", "game");
+                    log->addlist("args", "action", "music");
+                    log->addlist("args", "title", title);
+                    defformatstring(constr, "Now playing: \fs\fM%s\fS", title);
+                    if(*artist)
+                    {
+                        log->addlist("args", "artist", artist);
+                        concformatstring(constr, " by \fs\fM%s\fS", artist);
+                    }
+                    if(*album) log->addlist("args", "album", album);
+                    log->addlist("args", "colour", colourwhite);
+                    log->addlist("args", "console", constr);
+                    log->push();
+                }
             }
             player1->conopen = hud::hasinput(true);
             checkoften(player1, true);

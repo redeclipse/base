@@ -728,6 +728,25 @@ bool playingmusic()
     return result;
 }
 
+bool musicinfo(char *title, char *artist, char *album, size_t len)
+{
+    bool result = false;
+
+    SDL_LockMutex(music_mutex);
+
+    if(music)
+    {
+        if(music->title) copystring(title, music->title, len);
+        if(music->artist) copystring(artist, music->artist, len);
+        if(music->album) copystring(album, music->album, len);
+        result = true;
+    }
+
+    SDL_UnlockMutex(music_mutex);
+
+    return result;
+}
+
 SVAR(0, musictheme, "sounds/theme");
 SVAR(0, musicinterm, "sounds/theme");
 
