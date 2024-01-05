@@ -1689,7 +1689,7 @@ namespace client
         else if(m_defend(game::gamemode)) defend::reset();
         else if(m_bomber(game::gamemode)) bomber::reset();
         needsmap = gettingmap = 0;
-        smartmusic(true);
+        smartmusic(true, false, true);
         switch(clientnum)
         {
             case -3: break; // welcome packet or command line

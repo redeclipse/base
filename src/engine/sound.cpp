@@ -755,14 +755,34 @@ bool musicinfo(char *title, char *artist, char *album, size_t len)
 }
 
 SVAR(0, musictheme, "sounds/theme");
-SVAR(0, musicinterm, "sounds/theme");
+SVAR(0, musicinterm, "sounds/interm");
 
 void smartmusic(bool cond, bool init, bool interm)
 {
     SDL_LockMutex(music_mutex);
 
-    const char *name = interm ? musicinterm : musictheme;
+    bool delstr = false;
+    char *name = interm ? musicinterm : musictheme;
     if(!name || !*name) name = musictheme;
+    if(*name == '[')
+    {
+        vector<char *> list;
+        explodelist(name, list);
+        while(!list.empty())
+        {
+            int r = rnd(list.length());
+            char *v = list[r];
+            if(!v || !*v)
+            {
+                list.remove(r);
+                continue;
+            }
+            name = newstring(v);
+            delstr = true;
+            break;
+        }
+        list.deletearrays();
+    }
 
     bool isplaying = music && music->playing();
     bool hasmusic = music && !strcmp(music->name, name);
@@ -774,6 +794,8 @@ void smartmusic(bool cond, bool init, bool interm)
         return;
 
     if(!playingmusic() || (cond && !hasmusic)) playmusic(name);
+
+    if(delstr) delete[] name;
 }
 ICOMMAND(0, smartmusic, "i", (int *a), smartmusic(*a));
 
