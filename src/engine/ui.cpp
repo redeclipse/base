@@ -7117,7 +7117,7 @@ namespace UI
         }
     }
 
-    void updatetextures()
+    void buildcomposites()
     {
         if(!pushsurface(SURFACE_COMPOSITE)) return;
 
@@ -7202,13 +7202,19 @@ namespace UI
 
     void update(int stype)
     {
-        build(stype);
-        if(stype == SURFACE_MAIN) updatetextures();
+        switch(stype)
+        {
+            case SURFACE_COMPOSITE:
+                buildcomposites(); // does its own update/render
+                break;
+            default: build(stype); break;
+        }
     }
 
     void render(int stype, bool world)
     {
-        if((stype == SURFACE_MAIN && !world && uihidden) || !pushsurface(stype)) return;
+        if(stype == SURFACE_COMPOSITE || (stype == SURFACE_MAIN && !world && uihidden) || !pushsurface(stype))
+            return;
 
         if(world)
         {
