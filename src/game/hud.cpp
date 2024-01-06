@@ -1982,7 +1982,7 @@ namespace hud
         glDisable(GL_BLEND);
     }
 
-    void visorrender(int w, int h, bool wantvisor, bool noview)
+    void visorrender(int w, int h, bool wantvisor, bool noview, int outfbo)
     {
         if(!engineready) return;
 
@@ -2010,7 +2010,7 @@ namespace hud
 
                 rendercmenu();
             }
-            else UI::render(SURFACE_MAIN);
+            else UI::render(SURFACE_MAIN, false, outfbo);
             hudmatrix.ortho(0, w, h, 0, -1, 1);
             flushhudmatrix();
             resethudshader();

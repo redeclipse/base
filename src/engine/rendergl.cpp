@@ -2341,14 +2341,14 @@ namespace modelpreview
         preparegbuffer();
     }
 
-    void end(const vec &skycol, const vec &suncol, const vec &sundir, const vec &excol, const vec &exdir)
+    void end(int outfbo, const vec &skycol, const vec &suncol, const vec &sundir, const vec &excol, const vec &exdir)
     {
         rendermodelbatches();
 
         glDisable(GL_DEPTH_TEST);
         glDisable(GL_CULL_FACE);
 
-        shademodelpreview(x, y, w, h, background, scissor, skycol, suncol, sundir, excol, exdir);
+        shademodelpreview(outfbo, x, y, w, h, background, scissor, skycol, suncol, sundir, excol, exdir);
 
         aspect = oldaspect;
         fovy = oldfovy;
@@ -2609,6 +2609,7 @@ void setupvisor(int w, int h)
     }
 
     GLERROR;
+    glBindFramebuffer_(GL_FRAMEBUFFER, 0);
 }
 
 void cleanupvisor()
@@ -2692,7 +2693,7 @@ void gl_drawhud(bool noview = false)
         curh = visorh;
     }
 
-    hud::visorrender(curw, curh, wantvisor, noview);
+    hud::visorrender(curw, curh, wantvisor, noview, visorfbo);
 
     if(engineready)
     {

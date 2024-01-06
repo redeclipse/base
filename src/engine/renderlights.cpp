@@ -5335,11 +5335,11 @@ void shademinimap(const vec &color)
     GLERROR;
 }
 
-void shademodelpreview(int x, int y, int w, int h, bool background, bool scissor, const vec &skycol, const vec &suncol, const vec &sundir, const vec &excol, const vec &exdir)
+void shademodelpreview(int outfbo, int x, int y, int w, int h, bool background, bool scissor, const vec &skycol, const vec &suncol, const vec &sundir, const vec &excol, const vec &exdir)
 {
     GLERROR;
 
-    glBindFramebuffer_(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer_(GL_FRAMEBUFFER, outfbo);
     glViewport(0, 0, hudw, hudh);
 
     if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, mscolortex);

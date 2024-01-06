@@ -138,7 +138,7 @@ void blendhalos()
 {
     if(!halos) return;
 
-    glBindFramebuffer_(GL_FRAMEBUFFER, 0);
+    //glBindFramebuffer_(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, hudw, hudh);
 
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);

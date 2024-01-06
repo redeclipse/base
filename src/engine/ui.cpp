@@ -6,6 +6,7 @@ namespace UI
     bool hasprogress = false;
     static bool texgc = false;
     static int lastthumbnail = 0;
+    static int uicurfbo = 0;
     vector<ident *> uiargs;
 
     FVAR(0, uitextscale, 1, 0, 0);
@@ -5849,7 +5850,7 @@ namespace UI
                 rendermodel(name, mdl);
             }
             if(hasclipstack) clipstack.last().scissor();
-            modelpreview::end(skycol, suncol, sundir, excol, exdir);
+            modelpreview::end(uicurfbo, skycol, suncol, sundir, excol, exdir);
 
             Object::draw(world, sx, sy);
         }
@@ -5919,7 +5920,7 @@ namespace UI
             // Steal the matrix for calculating positions on the model
             lastmatrix = camprojmatrix;
 
-            modelpreview::end(skycol, suncol, sundir, excol, exdir);
+            modelpreview::end(uicurfbo, skycol, suncol, sundir, excol, exdir);
 
             Object::draw(world, sx, sy);
         }
@@ -5996,7 +5997,7 @@ namespace UI
             modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch, roll, fov, false, hasclipstack);
             previewprefab(name, colors[0].tocolor(), blend*(colors[0].a/255.f), yaw, offsetyaw);
             if(hasclipstack) clipstack.last().scissor();
-            modelpreview::end(skycol, suncol, sundir, excol, exdir);
+            modelpreview::end(uicurfbo, skycol, suncol, sundir, excol, exdir);
         }
     };
 
@@ -6849,7 +6850,7 @@ namespace UI
             return notexture;
         }
 
-        GLint oldfbo = 0;
+        GLint oldfbo = 0; // necessary as a texture can load at pretty much any point in the frame
         glGetIntegerv(GL_FRAMEBUFFER_BINDING, &oldfbo);
 
         GLERROR;
@@ -6861,6 +6862,7 @@ namespace UI
         }
         glGenFramebuffers_(1, &fbo);
         glBindFramebuffer_(GL_FRAMEBUFFER, fbo);
+        uicurfbo = fbo;
 
         GLuint id = t ? t->id : 0;
         if(id)
@@ -6880,6 +6882,7 @@ namespace UI
             if(id) glDeleteTextures(1, &id);
             if(fbo) glDeleteFramebuffers_(1, &fbo);
             glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
+            uicurfbo = 0;
 
             list.deletearrays();
             popsurface();
@@ -6929,6 +6932,7 @@ namespace UI
         }
 
         glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
+        uicurfbo = 0;
         glViewport(0, 0, hudw, hudh);
 
         list.deletearrays();
@@ -7133,7 +7137,6 @@ namespace UI
     {
         if(!pushsurface(SURFACE_COMPOSITE)) return;
 
-        GLint oldfbo = 0;
         bool found = false;
         int oldhudw = hudw, oldhudh = hudh;
 
@@ -7143,16 +7146,11 @@ namespace UI
             int delay = 0, elapsed = t->update(delay, compositeuprate);
             if(t->rendered && elapsed < 0) continue;
 
-            if(!found)
-            {
-                GLERROR;
-                glGetIntegerv(GL_FRAMEBUFFER_BINDING, &oldfbo);
-                found = true;
-            }
-
             GLERROR;
             if(!t->fbo) glGenFramebuffers_(1, &t->fbo);
             glBindFramebuffer_(GL_FRAMEBUFFER, t->fbo);
+            uicurfbo = t->fbo;
+            found = true;
             if(!t->id)
             {
                 glGenTextures(1, &t->id);
@@ -7207,7 +7205,8 @@ namespace UI
         {
             hudw = oldhudw;
             hudh = oldhudh;
-            glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
+            glBindFramebuffer_(GL_FRAMEBUFFER, 0);
+            uicurfbo = 0;
             glViewport(0, 0, hudw, hudh);
         }
     }
@@ -7218,9 +7217,11 @@ namespace UI
         if(stype == SURFACE_MAIN) updatetextures();
     }
 
-    void render(int stype, bool world)
+    void render(int stype, bool world, int outfbo)
     {
         if((stype == SURFACE_MAIN && !world && uihidden) || !pushsurface(stype)) return;
+
+        uicurfbo = outfbo;
 
         if(world)
         {
@@ -7237,6 +7238,8 @@ namespace UI
             if(surfacetype == SURFACE_MAIN || surfacetype == SURFACE_BACKGROUND) glEnable(GL_CULL_FACE);
             glDisable(GL_BLEND);
         }
+
+        uicurfbo = 0;
 
         popsurface();
     }

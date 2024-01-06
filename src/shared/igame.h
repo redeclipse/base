@@ -82,7 +82,7 @@ namespace hud
     extern bool keypress(int code, bool isdown);
     extern void visorinfo(float &x, float &y, float &glitch);
     extern void startrender(int w, int h, bool wantvisor, bool noview = false);
-    extern void visorrender(int w, int h, bool wantvisor, bool noview = false);
+    extern void visorrender(int w, int h, bool wantvisor, bool noview = false, int outfbo = 0);
     extern void endrender(int w, int h, bool wantvisor, bool noview = false);
     extern bool getcolour(vec &colour);
     extern void update(int w, int h);

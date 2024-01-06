@@ -548,7 +548,7 @@ namespace UI
     extern void cleanup();
     extern void cleangl();
     extern void update(int stype = SURFACE_MAIN);
-    extern void render(int stype = SURFACE_MAIN, bool world = false);
+    extern void render(int stype = SURFACE_MAIN, bool world = false, int outfbo = 0);
     extern void renderprogress();
 }
 
