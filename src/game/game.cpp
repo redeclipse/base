@@ -6,7 +6,7 @@ namespace game
     int nextmode = G_EDITING, nextmuts = 0, gamestate = G_S_WAITING, gamemode = G_EDITING, mutators = 0,
         maptime = 0, mapstart = 0, timeremaining = 0, timeelapsed = 0, timelast = 0, timesync = 0,
         lastcamera = 0, lasttvcam = 0, lasttvchg = 0, lastzoom = 0, lastcamcn = -1;
-    bool zooming = false, inputmouse = false, inputview = false, inputmode = false, wantsloadoutmenu = false;
+    bool zooming = false, inputmouse = false, inputview = false, inputmode = false, wantsloadoutmenu = false, hasspotlights = false;
     float swayfade = 0, swayspeed = 0, swaydist = 0, bobfade = 0, bobdist = 0;
     vec swaydir(0, 0, 0), swaypush(0, 0, 0);
     int attrmap[W_MAX] = {0};
@@ -138,12 +138,14 @@ namespace game
         player1->version.gpuversion = newstring(gfxversion);
     }
 
-    #define ILLUMVARS(name) \
-        FVAR(IDF_MAP, illumlevel##name, 0, 0, 2); \
-        VAR(IDF_MAP, illumradius##name, 0, 0, VAR_MAX);
+    #define FLASHLIGHTVARS(name) \
+        VAR(IDF_MAP|IDF_HEX, flashlightcolour##name, 0, 0, 0xFFFFFF); \
+        FVAR(IDF_MAP, flashlightlevel##name, 0, 2, 10); \
+        FVAR(IDF_MAP, flashlightradius##name, 0, 512, FVAR_MAX); \
+        VAR(IDF_MAP, flashlightspot##name, 0, 15, 89);
 
-    ILLUMVARS();
-    ILLUMVARS(alt);
+    FLASHLIGHTVARS();
+    FLASHLIGHTVARS(alt);
 
     #define GETMPV(name, type) \
     type get##name() \
@@ -152,8 +154,10 @@ namespace game
         return name; \
     }
 
-    GETMPV(illumlevel, float);
-    GETMPV(illumradius, int);
+    GETMPV(flashlightcolour, int);
+    GETMPV(flashlightlevel, float);
+    GETMPV(flashlightradius, float);
+    GETMPV(flashlightspot, int);
 
     #define OBITVARS(name) \
         SVAR(IDF_MAP, obit##name, ""); \
@@ -1134,6 +1138,11 @@ namespace game
         if(gver <= 244 && palette == 1 && index%(T_COUNT+2) > T_LAST) index = T_NEUTRAL; // remove kappa and sigma
     }
 
+    bool wantflashlights()
+    {
+        return getflashlightcolour() > 0 && getflashlightlevel() > 0 && getflashlightradius() > 0;
+    }
+
     void adddynlights()
     {
         entities::adddynlights();
@@ -1144,6 +1153,7 @@ namespace game
             else if(m_defend(gamemode)) defend::adddynlights();
             else if(m_bomber(gamemode)) bomber::adddynlights();
         }
+
         gameent *d = NULL;
         int numdyns = numdynents();
         loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL)
@@ -1162,6 +1172,7 @@ namespace game
                 }
                 adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d, PULSE_BURN).mul(pc), 0, 0);
             }
+
             if(d->shocktime && d->shocking(lastmillis, d->shocktime))
             {
                 int millis = lastmillis-d->lastres[W_R_SHOCK], delay = max(d->shockdelay, 1);
@@ -1176,9 +1187,27 @@ namespace game
                 }
                 adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d, PULSE_SHOCK).mul(pc), 0, 0);
             }
-            if(d->actortype < A_ENEMY && d->state != CS_SPECTATOR && getillumlevel() > 0 && getillumradius() > 0)
-                adddynlight(d->center(), getillumradius(), vec::fromcolor(getcolour(d, playereffecttone, getillumlevel())), 0, 0);
+
+            if(hasspotlights && d->actortype < A_ENEMY && d->isalive() && wantflashlights())
+            {
+                vec from = camerapos(d, false, true, d->yaw, d->pitch), dir;
+                if(d == game::focus) dir = worldpos;
+                else safefindorientation(d->o, d->yaw, d->pitch, dir);
+                dir.sub(d->o).safenormalize();
+                from.add(vec(dir).mul(d->radius + 1));
+                adddynlight(from, getflashlightradius(), vec::fromcolor(getflashlightcolour()).mul(getflashlightlevel()), 0, 0, 0, 0, vec(0, 0, 0), NULL, dir, getflashlightspot());
+            }
         }
+    }
+
+    bool spotlights()
+    {
+        return hasspotlights;
+    }
+
+    bool volumetrics()
+    {
+        return false;
     }
 
     void impulseeffect(gameent *d, int effect)
@@ -2166,6 +2195,7 @@ namespace game
 
     void startmap(bool empty) // called just after a map load
     {
+        hasspotlights = false;
         ai::startmap(empty);
         if(!empty)
         {
@@ -3352,6 +3382,13 @@ namespace game
                     log->push();
                 }
             }
+
+            if(wantflashlights())
+            {
+                if(!hasspotlights) cleardeferredlightshaders();
+                hasspotlights = true;
+            }
+            else hasspotlights = false;
 
             player1->conopen = hud::hasinput(true);
             checkoften(player1, true);

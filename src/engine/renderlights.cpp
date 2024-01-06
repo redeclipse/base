@@ -2585,6 +2585,8 @@ VAR(0, forcespotlights, 1, 0, 0);
 
 extern int spotlights, volumetricsmalphalights;
 
+bool wantspotlights() { return spotlights || forcespotlights || game::spotlights(); }
+
 static Shader *volumetricshader = NULL, *volumetricbilateralshader[2] = { NULL, NULL };
 
 void clearvolumetricshaders()
@@ -2604,7 +2606,7 @@ Shader *loadvolumetricshader()
     if(usegatherforsm()) common[commonlen++] = smfilter > 2 ? 'G' : 'g';
     else if(smfilter) common[commonlen++] = smfilter > 2 ? 'E' : (smfilter > 1 ? 'F' : 'f');
     else common[commonlen++] = 'N';
-    if(spotlights || forcespotlights) common[commonlen++] = 's';
+    if(wantspotlights()) common[commonlen++] = 's';
     common[commonlen] = '\0';
 
     shadow[shadowlen++] = 'p';
@@ -2733,7 +2735,7 @@ Shader *loaddeferredlightshader(const char *type = NULL)
     if(usegatherforsm()) common[commonlen++] = smfilter > 2 ? 'G' : 'g';
     else if(smfilter) common[commonlen++] = smfilter > 2 ? 'E' : (smfilter > 1 ? 'F' : 'f');
     else common[commonlen++] = 'N';
-    if(spotlights || forcespotlights) common[commonlen++] = 's';
+    if(wantspotlights()) common[commonlen++] = 's';
     if(nospeclights) common[commonlen++] = 'z';
     common[commonlen] = '\0';
 
@@ -3428,7 +3430,7 @@ extern int volumetriclights;
 
 void rendervolumetric()
 {
-    if(!volumetric || !volumetriclights || !getvolscale()) return;
+    if(!volumetric || (!volumetriclights && !game::volumetrics()) || !getvolscale()) return;
 
     float bsx1 = 1, bsy1 = 1, bsx2 = -1, bsy2 = -1;
     loopv(lightorder)
@@ -5417,7 +5419,7 @@ void setuplights()
     setupgbuffer();
     if(bloomw < 0 || bloomh < 0) setupbloom(gw, gh);
     if(ao && (aow < 0 || aoh < 0)) setupao(gw, gh);
-    if(volumetriclights && volumetric && (volw < 0 || volh < 0)) setupvolumetric(gw, gh);
+    if((volumetriclights || game::volumetrics()) && volumetric && (volw < 0 || volh < 0)) setupvolumetric(gw, gh);
     if(!shadowatlasfbo) setupshadowatlas();
     if(useradiancehints() && !rhfbo) setupradiancehints();
     if(!deferredlightshader) loaddeferredlightshaders();

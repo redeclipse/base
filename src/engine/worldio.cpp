@@ -993,7 +993,7 @@ const char *variantvars[] = {
     "volfog3colour", "volfog3deepcolour", "volfog3deepfade", "volfog3dist", "volfog3deep", "volfog3texture", "volfog3texcolour", "volfog3texblend", "volfog3scrollx", "volfog3scrolly",
     "volfog4colour", "volfog4deepcolour", "volfog4deepfade", "volfog4dist", "volfog4deep", "volfog4texture", "volfog4texcolour", "volfog4texblend", "volfog4scrollx", "volfog4scrolly",
     "haze", "hazecolour", "hazecolourmix", "hazeblend", "hazetex", "hazemindist", "hazemaxdist", "hazemargin", "hazescalex", "hazescaley", "hazerefract", "hazerefract2", "hazerefract3", "hazescroll",
-    "illumlevel", "illumradius",
+    "flashlightcolour", "flashlightlevel", "flashlightradius", "flashlightspot",
     NULL
 };
 
@@ -1142,6 +1142,7 @@ bool load_world(const char *mname, int crc, int variant)
                         }
                         else if(!strcmp(name, "weatherdropcolor")) copystring(temp, "weatherdropcolour");
                         else if(!strcmp(name, "weatherdropcoloralt")) copystring(temp, "weatherdropcolouralt");
+                        else if(!strncmp(name, "illum", 5)) formatstring(temp, "flashlight%s", &name[5]); // illum -> flashlight
 
                         if(*temp && (id = idents.access(temp)) != NULL)
                         {
@@ -1151,14 +1152,15 @@ bool load_world(const char *mname, int crc, int variant)
                     }
                     bool proceed = true;
                     int type = f->getlil<int>();
-                    if(!id || type != id->type || !(id->flags&IDF_MAP) || id->flags&IDF_SERVER)
-                        proceed = false;
+                    if(!id || !(id->flags&IDF_MAP) || id->flags&IDF_SERVER) proceed = false;
+                    else if(type != id->type && ((type != ID_VAR && type != ID_FVAR) || (id->type != ID_VAR && id->type != ID_FVAR)))
+                        proceed = false; // support for conversion if the type changes (typically int -> float)
 
-                    switch(type)
+                    switch(proceed ? id->type : type)
                     {
                         case ID_VAR:
                         {
-                            int val = f->getlil<int>();
+                            int val = type == ID_FVAR ? int(ceilf(f->getlil<float>())) : f->getlil<int>();
                             if(proceed)
                             {
                                 if(hdr.gamever <= 234 &&
@@ -1177,7 +1179,7 @@ bool load_world(const char *mname, int crc, int variant)
                         }
                         case ID_FVAR:
                         {
-                            float val = f->getlil<float>();
+                            float val = type == ID_VAR ? float(f->getlil<int>()) : f->getlil<float>();
                             if(proceed)
                             {
                                 if(val > id->maxvalf) val = id->maxvalf;

@@ -1044,7 +1044,7 @@ namespace client
 
     int getresidualfx(gameent *d, int n, int c)
     {
-        int rescount = 0, len = n > 0 ? n : 1000;
+        int rescount = 0, len = n > 0 ? n : 3000;
         bool buff = d->state == CS_ALIVE && d->lastbuff;
         if(buff) rescount++;
         bool critical = d->health <= d->gethealth(game::gamemode, game::mutators)*game::damagecritical;

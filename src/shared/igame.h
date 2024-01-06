@@ -145,6 +145,8 @@ namespace game
     extern vec getpalette(int palette, int index);
     extern void fixpalette(int &palette, int &index, int gver);
     extern void adddynlights();
+    extern bool spotlights();
+    extern bool volumetrics();
 
     enum
     {
