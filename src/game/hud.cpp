@@ -137,8 +137,8 @@ namespace hud
     FVAR(IDF_PERSIST, visorcursormin, 0, 0.01f, 1);
     FVAR(IDF_PERSIST, visorcursorblend, 0, 0.35f, 1);
     VAR(IDF_PERSIST, visorcursorcolour, 0, 0xFF6666, 0xFFFFFF);
-    FVAR(IDF_PERSIST, visorcamvelx, FVAR_MIN, 0.25f, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorcamvely, FVAR_MIN, 0.125f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorcamvelx, FVAR_MIN, 1, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorcamvely, FVAR_MIN, 1, FVAR_MAX);
 
     VAR(IDF_PERSIST, showindicator, 0, 4, 4);
     FVAR(IDF_PERSIST, indicatorsize, 0, 0.03f, 1000);
