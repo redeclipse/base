@@ -533,7 +533,7 @@ GFVAR(IDF_GAMEMOD, 0, moveparkour, FVAR_NONZERO, 1.75f, FVAR_MAX); // parkour mo
 GFVAR(IDF_GAMEMOD, 0, moveclimb, FVAR_NONZERO, 1.75f, FVAR_MAX); // climb modifier
 GFVAR(IDF_GAMEMOD, 0, movevault, FVAR_NONZERO, 1.75f, FVAR_MAX); // vault modifier
 
-GFVAR(IDF_GAMEMOD, 0, impulseboost, 0, 1.5f, FVAR_MAX); // boost modifier
+GFVAR(IDF_GAMEMOD, 0, impulseboost, 0, 1.3f, FVAR_MAX); // boost modifier
 GFVAR(IDF_GAMEMOD, 0, impulseboostredir, 0, 0.5f, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, 0, impulseboostpitchmin, -89.9f, -89.9f, 89.9f); // boost pitch minimum
 GFVAR(IDF_GAMEMOD, 0, impulseboostpitchmax, -89.9f, 89.9f, 89.9f); // boost pitch maximum
