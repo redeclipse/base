@@ -1991,11 +1991,14 @@ namespace hud
 
         if(progressing)
         {
-            UI::render(SURFACE_PROGRESS);
+            if(wantvisor)
+            {
+                UI::render(SURFACE_PROGRESS);
 
-            hudmatrix.ortho(0, w, h, 0, -1, 1);
-            flushhudmatrix();
-            resethudshader();
+                hudmatrix.ortho(0, w, h, 0, -1, 1);
+                flushhudmatrix();
+                resethudshader();
+            }
         }
         else
         {
@@ -2039,6 +2042,14 @@ namespace hud
             resethudshader();
 
             drawpointers(w, h, 1, wantvisor);
+            hudmatrix.ortho(0, w, h, 0, -1, 1);
+            flushhudmatrix();
+            resethudshader();
+        }
+        else if(!wantvisor)
+        {
+            UI::render(SURFACE_PROGRESS);
+
             hudmatrix.ortho(0, w, h, 0, -1, 1);
             flushhudmatrix();
             resethudshader();
