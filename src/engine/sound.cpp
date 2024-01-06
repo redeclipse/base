@@ -389,7 +389,7 @@ VARF(IDF_INIT, soundmaxsources, 16, 256, 1024, initwarning("sound configuration"
 
 SOUNDVOL(master, master, 1.f, );
 SOUNDVOL(sound, effect, 1.f, );
-SOUNDVOL(music, music, 0.5f, updatemusic());
+SOUNDVOL(music, music, 0.3f, updatemusic());
 
 int musicfade = 0;
 bool musicstopping = false;
