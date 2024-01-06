@@ -3080,8 +3080,8 @@ namespace entities
     bool haloallow(int id, bool justtest)
     {
         if(!ents.inrange(id)) return false;
-        if(drawtex != DRAWTEX_HALO) return true;
-        if(!entityhalos || (ents[id]->type != WEAPON && (game::player1->state != CS_EDITING || (enthover.find(id) < 0 && entgroup.find(id) < 0)))) return false;
+        if(drawtex != DRAWTEX_HALO || !entityhalos) return true;
+        if(enttype[ents[id]->type].usetype != EU_ITEM && !game::player1->isediting()) return false;
         vec dir(0, 0, 0);
         float dist = -1;
         if(!radarallow(id, dir, dist, justtest)) return false;
@@ -3141,90 +3141,99 @@ namespace entities
 
         if(drawtex && drawtex != DRAWTEX_HALO) return;
 
-        if(shouldshowents(game::player1->state == CS_EDITING ? 1 : (!entgroup.empty() || !enthover.empty() ? 2 : 3)))
+        if(drawtex != DRAWTEX_HALO && shouldshowents(game::player1->isediting() ? 1 : (!entgroup.empty() || !enthover.empty() ? 2 : 3)))
             loopv(ents) renderfocus(i, renderentshow(e, i, showlevel(i), j!=0));
 
+        bool cansee = m_edit(game::gamemode) && game::player1->isediting();
+
         int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators),
-            fstent = m_edit(game::gamemode) ? 0 : firstuse(EU_ITEM),
-            lstent = m_edit(game::gamemode) ? ents.length() : lastuse(EU_ITEM);
+            fstent = cansee ? 0 : firstuse(EU_ITEM),
+            lstent = cansee ? ents.length() : lastuse(EU_ITEM);
+
         for(int i = fstent; i < lstent; i++)
         {
             gameentity &e = *(gameentity *)ents[i];
             if(e.type <= NOTUSED || e.type >= MAXENTTYPES || !haloallow(i)) continue;
 
-            bool active = enttype[e.type].usetype == EU_ITEM && (e.spawned() || (e.lastemit && lastmillis - e.lastemit < 500));
-            if(m_edit(game::gamemode) || active)
+            if(!cansee && (enttype[e.type].usetype != EU_ITEM || (!e.spawned() && (e.lastemit && lastmillis-e.lastemit > 500)))) continue;
+
+            const char *mdlname = entmdlname(e.type, e.attrs);
+            if(!mdlname || !*mdlname) continue;
+
+            modelstate mdl;
+            mdl.o = e.pos();
+            mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
+            mdl.flags = MDL_CULL_VFC|MDL_CULL_DIST|MDL_CULL_OCCLUDED;
+
+            int colour = -1;
+            if(cansee)
             {
-                const char *mdlname = entmdlname(e.type, e.attrs);
-                if(mdlname && *mdlname)
+                if(enttype[e.type].usetype != EU_ITEM)
                 {
-                    modelstate mdl;
-                    mdl.o = e.pos();
-                    mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
-                    mdl.flags = MDL_CULL_VFC|MDL_CULL_DIST|MDL_CULL_OCCLUDED;
+                    if(showentmodels <= (e.type == PLAYERSTART || e.type == ACTOR ? 1 : 0))
+                        continue;
 
-                    int colour = -1;
-                    if(!active || (e.type != WEAPON && drawtex == DRAWTEX_HALO))
+                    if(e.type == AFFINITY || e.type == PLAYERSTART)
                     {
-                        if(showentmodels <= (e.type == PLAYERSTART || e.type == ACTOR ? 1 : 0)) continue;
-                        if(e.type == AFFINITY || e.type == PLAYERSTART)
-                        {
-                            mdl.yaw = e.attrs[1]+(e.type == PLAYERSTART ? 90 : 0);
-                            mdl.pitch = e.attrs[2];
-                            colour = TEAM(e.attrs[0], colour);
-                        }
-                        else if(e.type == ACTOR)
-                        {
-                            mdl.yaw = e.attrs[1]+90;
-                            mdl.pitch = e.attrs[2];
-                            int weap = e.attrs[6] > 0 ? e.attrs[6]-1 : A(e.attrs[0], weaponspawn);
-                            mdl.size = e.attrs[9] > 0 ? e.attrs[9]/100.f : A(e.attrs[0], scale);
-                            if(isweap(weap)) colour = W(weap, colour);
-                        }
+                        mdl.yaw = e.attrs[1]+(e.type == PLAYERSTART ? 90 : 0);
+                        mdl.pitch = e.attrs[2];
+                        colour = TEAM(e.attrs[0], colour);
                     }
-                    else if(e.spawned())
+                    else if(e.type == ACTOR)
                     {
-                        int millis = lastmillis - e.lastspawn;
-                        if(millis < 250)
-                        {
-                            mdl.size = mdl.color.a = millis / 250.f;
-                            mdl.o.z += 32 * (1.f - mdl.size);
-                        }
-                    }
-                    else if(e.lastemit)
-                    {
-                        int millis = lastmillis - e.lastemit;
-                        if(millis < 500) mdl.size = mdl.color.a = 1.f - (millis / 500.f);
-                    }
-
-                    if(e.type == WEAPON)
-                    {
-                        int attr = m_attr(e.type, e.attrs[0]);
-                        if(isweap(attr))
-                        {
-                            colour = W(attr, colour);
-                            if(active || game::focus->isobserver() || game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !showentfull))
-                            {
-                                if(drawtex == DRAWTEX_HALO) mdl.flags |= MDL_HALO_TOP;
-                                else mdl.color.a *= showentavailable;
-                            }
-                            else if(drawtex != DRAWTEX_HALO) mdl.color.a *= showentunavailable;
-                        }
-                        else continue;
-                    }
-
-                    if(mdl.color.a > 0)
-                    {
-                        mdl.material[0] = bvec::fromcolor(game::getcolour(game::focus, game::playerovertone, game::playerovertonelevel));
-                        mdl.material[1] = bvec::fromcolor(game::getcolour(game::focus, game::playerundertone, game::playerundertonelevel));
-                        if(colour >= 0) mdl.material[0] = mdl.material[2] = bvec::fromcolor(colour);
-
-                        if(drawtex == DRAWTEX_HALO) mdl.color.a = hud::radardepth(mdl.o, halodist, halotolerance, haloaddz);
-
-                        rendermodel(mdlname, mdl);
+                        mdl.yaw = e.attrs[1]+90;
+                        mdl.pitch = e.attrs[2];
+                        int weap = e.attrs[6] > 0 ? e.attrs[6]-1 : A(e.attrs[0], weaponspawn);
+                        mdl.size = e.attrs[9] > 0 ? e.attrs[9]/100.f : A(e.attrs[0], scale);
+                        if(isweap(weap)) colour = W(weap, colour);
                     }
                 }
+
+                if(drawtex == DRAWTEX_HALO && (enthover.find(i) >= 0 || entgroup.find(i) >= 0))
+                    mdl.flags |= MDL_HALO_TOP;
             }
+            else if(e.spawned())
+            {
+                int millis = lastmillis - e.lastspawn;
+                if(millis < 250)
+                {
+                    mdl.size = mdl.color.a = millis / 250.f;
+                    mdl.o.z += 32 * (1.f - mdl.size);
+                }
+            }
+            else if(e.lastemit)
+            {
+                int millis = lastmillis - e.lastemit;
+                if(millis < 500) mdl.size = mdl.color.a = 1.f - (millis / 500.f);
+            }
+
+            if(e.type == WEAPON)
+            {
+                int attr = m_attr(e.type, e.attrs[0]);
+                if(isweap(attr))
+                {
+                    colour = W(attr, colour);
+                    if(!cansee)
+                    {
+                        if(game::focus->isobserver() || game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !showentfull))
+                        {
+                            if(drawtex == DRAWTEX_HALO) mdl.flags |= MDL_HALO_TOP;
+                            else mdl.color.a *= showentavailable;
+                        }
+                        else if(drawtex != DRAWTEX_HALO) mdl.color.a *= showentunavailable;
+                    }
+                }
+                else continue;
+            }
+
+            if(mdl.color.a <= 0) continue;
+
+            mdl.material[0] = bvec::fromcolor(game::getcolour(game::focus, game::playerovertone, game::playerovertonelevel));
+            mdl.material[1] = bvec::fromcolor(game::getcolour(game::focus, game::playerundertone, game::playerundertonelevel));
+            if(colour >= 0) mdl.material[0] = mdl.material[2] = bvec::fromcolor(colour);
+            if(drawtex == DRAWTEX_HALO) mdl.color.a = hud::radardepth(mdl.o, halodist, halotolerance, haloaddz);
+
+            rendermodel(mdlname, mdl);
         }
     }
 
