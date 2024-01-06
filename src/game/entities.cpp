@@ -12,7 +12,7 @@ namespace entities
     VAR(IDF_PERSIST, showentattrinfo, 0, 7, 7);
     VAR(IDF_PERSIST, showentinfomax, 1, 32, VAR_MAX);
     FVAR(IDF_PERSIST, showentinfodist, 0, 256, FVAR_MAX);
-    VAR(IDF_PERSIST, showentmodels, 0, 1, 2);
+    VAR(IDF_PERSIST, showentmodels, 0, 2, 2);
     VAR(IDF_PERSIST, showentweapons, 0, 0, 2);
 
     VAR(IDF_PERSIST, showentdir, 0, 1, 3); // 0 = off, 1 = only selected, 2 = always when editing, 3 = always in editmode
@@ -3175,13 +3175,13 @@ namespace entities
 
                     if(e.type == AFFINITY || e.type == PLAYERSTART)
                     {
-                        mdl.yaw = e.attrs[1]+(e.type == PLAYERSTART ? 90 : 0);
+                        mdl.yaw = e.attrs[1];
                         mdl.pitch = e.attrs[2];
                         colour = TEAM(e.attrs[0], colour);
                     }
                     else if(e.type == ACTOR)
                     {
-                        mdl.yaw = e.attrs[1]+90;
+                        mdl.yaw = e.attrs[1];
                         mdl.pitch = e.attrs[2];
                         int weap = e.attrs[6] > 0 ? e.attrs[6]-1 : A(e.attrs[0], weaponspawn);
                         mdl.size = e.attrs[9] > 0 ? e.attrs[9]/100.f : A(e.attrs[0], scale);
@@ -3189,8 +3189,12 @@ namespace entities
                     }
                 }
 
-                if(drawtex == DRAWTEX_HALO && (enthover.find(i) >= 0 || entgroup.find(i) >= 0))
-                    mdl.flags |= MDL_HALO_TOP;
+                if(enthover.find(i) >= 0 || entgroup.find(i) >= 0)
+                {
+                    if(drawtex == DRAWTEX_HALO) mdl.flags |= MDL_HALO_TOP;
+                    mdl.color.a *= showentavailable;
+                }
+                else mdl.color.a *= showentunavailable;
             }
             else if(e.spawned())
             {
