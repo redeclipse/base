@@ -259,7 +259,7 @@ namespace defend
             }
             if(st.flags.inrange(smallest))
             {
-                copystring(st.flags[smallest].name, "Center");
+                copystring(st.flags[smallest].name, "Top of the Hill");
                 st.flags[smallest].kinship = T_NEUTRAL;
                 loopi(smallest) st.flags.remove(0);
                 while(st.flags.length() > 1) st.flags.remove(1);
