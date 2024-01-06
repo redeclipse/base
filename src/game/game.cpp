@@ -3309,9 +3309,26 @@ namespace game
                     while(!files.empty())
                     {
                         int r = rnd(files.length());
-                        defformatstring(musicfile, "%s/%s", musicdir, files[r]);
-                        if(*files[r] != '.' && playmusic(musicfile, type < 4)) break;
-                        else files.remove(r);
+                        if(files[r] && files[r][0])
+                        {
+                            bool goodext = false;
+                            int flen = strlen(files[r]);
+                            loopk(SOUND_EXTS)
+                            {
+                                if(!soundexts[k] || !*soundexts[k]) continue;
+                                int slen = strlen(soundexts[k]), offset = flen - slen;
+                                if(offset > 0 && !strcasecmp(&files[r][offset], soundexts[k]))
+                                {
+                                    goodext = true;
+                                    break;
+                                }
+                            }
+                            if(!goodext) continue;
+
+                            defformatstring(musicfile, "%s/%s", musicdir, files[r]);
+                            if(playmusic(musicfile, type < 4)) break;
+                        }
+                        files.remove(r);
                     }
                     files.deletearrays();
                 }

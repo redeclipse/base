@@ -1,3 +1,4 @@
+#define CPP_ENGINE_SOUND 1
 #include "engine.h"
 
 ALCdevice *snddev = NULL;
@@ -683,10 +684,6 @@ soundfile *loadsoundfile(const char *name, int mixtype)
     return w;
 }
 
-const char *sounddirs[] = { "", "sounds/" },
-           *musicdirs[] = { "", "sounds/", "sounds/music/", "sounds/egmusic/" },
-           *soundexts[] = { "", ".ogg", ".flac", ".wav" };
-
 bool playmusic(const char *name, bool looping)
 {
     if(nosound) return false;
@@ -694,27 +691,27 @@ bool playmusic(const char *name, bool looping)
     if(!name || !*name) return false;
 
     SDL_LockMutex(music_mutex);
-
     string buf;
-    music = new musicstream;
-
-    loopi(sizeof(musicdirs)/sizeof(musicdirs[0])) loopk(sizeof(soundexts)/sizeof(soundexts[0]))
+    loopi(SOUND_MDRS) loopk(SOUND_EXTS)
     {
-        formatstring(buf, "%s%s%s", sounddirs[i], name, soundexts[k]);
+        formatstring(buf, "%s%s%s", musicdirs[i], name, soundexts[k]);
         soundfile *w = loadsoundfile(buf, soundfile::MUSIC);
         if(!w) continue;
+
+        music = new musicstream;
         SOUNDCHECK(music->setup(name, w, looping),
         {
             SDL_UnlockMutex(music_mutex);
             musicloopinit();
             return true;
-        }, conoutf(colourred, "Error loading %s: %s [%s@%s:%d]", buf, alGetString(err), al_errfunc, al_errfile, al_errline));
+        },{
+            delete music;
+            music = NULL;
+            conoutf(colourred, "Error loading %s: %s [%s@%s:%d]", buf, alGetString(err), al_errfunc, al_errfile, al_errline);
+        });
     }
 
     conoutf(colourred, "Could not play music: %s", name);
-    delete music;
-    music = NULL;
-
     SDL_UnlockMutex(music_mutex);
 
     return false;
@@ -820,7 +817,7 @@ static soundsample *loadsoundsample(const char *name)
     if(sample->valid()) return sample;
 
     string buf;
-    loopi(sizeof(sounddirs)/sizeof(sounddirs[0])) loopk(sizeof(soundexts)/sizeof(soundexts[0]))
+    loopi(SOUND_FDRS) loopk(SOUND_EXTS)
     {
         formatstring(buf, "%s%s%s", sounddirs[i], sample->name, soundexts[k]);
         soundfile *w = loadsoundfile(buf, al_soft_spatialize ? soundfile::SPATIAL : soundfile::MONO);

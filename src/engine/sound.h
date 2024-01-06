@@ -39,6 +39,18 @@ extern bool al_ext_efx, al_soft_spatialize, al_ext_float32;
 
 extern int musicfade;
 
+#define SOUND_FDRS 2
+#define SOUND_MDRS 4
+#define SOUND_EXTS 4
+
+#ifdef CPP_ENGINE_SOUND
+const char *sounddirs[SOUND_FDRS] = { "", "sounds/" },
+           *musicdirs[SOUND_MDRS] = { "", "sounds/", "sounds/music/", "sounds/egmusic/" },
+           *soundexts[SOUND_EXTS] = { "", ".ogg", ".flac", ".wav" };
+#else
+extern const char *sounddirs[SOUND_FDRS], *musicdirs[SOUND_MDRS], *soundexts[SOUND_EXTS];
+#endif
+
 #include "AL/al.h"
 #include "AL/alc.h"
 #include "AL/alext.h"
