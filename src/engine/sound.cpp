@@ -128,12 +128,16 @@ static void getsoundefxslot(soundefxslot **hook, bool priority = false)
         oldest->id, lastmillis - oldest->lastused);
 }
 
+FVAR(IDF_PERSIST, soundefxgain, 0.0f, 2.0f, 10.0f);
+
 void soundenv::setparams(ALuint effect)
 {
+    float gain = props[SOUNDENV_PROP_GAIN];
+
     alEffecti (effect, AL_EFFECT_TYPE,                     AL_EFFECT_EAXREVERB);
     alEffectf (effect, AL_EAXREVERB_DENSITY,               props[SOUNDENV_PROP_DENSITY]);
     alEffectf (effect, AL_EAXREVERB_DIFFUSION,             props[SOUNDENV_PROP_DIFFUSION]);
-    alEffectf (effect, AL_EAXREVERB_GAIN,                  props[SOUNDENV_PROP_GAIN]);
+    alEffectf (effect, AL_EAXREVERB_GAIN,                  gain * soundefxgain);
     alEffectf (effect, AL_EAXREVERB_GAINHF,                props[SOUNDENV_PROP_GAINHF]);
     alEffectf (effect, AL_EAXREVERB_GAINLF,                props[SOUNDENV_PROP_GAINLF]);
     alEffectf (effect, AL_EAXREVERB_DECAY_TIME,            props[SOUNDENV_PROP_DECAY_TIME]);
@@ -1543,7 +1547,9 @@ ALenum soundsource::setup(soundsample *s)
             alGenFilters(1, &efxfilter);
             SOUNDERRORTRACK(clear(); return err);
 
+            // Reduce effect gain for sounds with high attenuation
             float effectgain = 1.0f - clamp(finalrolloff / finalrefdist, 0.0f, 1.0f);
+            effectgain = powf(effectgain, 4.0f);
 
             alFilteri(efxfilter, AL_FILTER_TYPE, AL_FILTER_HIGHPASS);
             alFilterf(efxfilter, AL_HIGHPASS_GAIN, effectgain);
