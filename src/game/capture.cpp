@@ -250,8 +250,8 @@ namespace capture
         {
             capturestate::flag &f = st.flags[i];
             if(f.owner || f.droptime)
-                adddynlight(vec(f.spawnloc).add(vec(0, 0, enttype[AFFINITY].radius/2)), enttype[AFFINITY].radius, vec::fromcolor(TEAM(f.team, colour)), 0, 0);
-            adddynlight(vec(f.pos(true)).add(vec(0, 0, enttype[AFFINITY].radius/2)), enttype[AFFINITY].radius, vec::fromcolor(TEAM(f.team, colour)), 0, 0);
+                adddynlight(vec(f.spawnloc).add(vec(0, 0, enttype[AFFINITY].radius/2)), enttype[AFFINITY].radius, vec::fromcolor(TEAM(f.team, colour)), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
+            adddynlight(vec(f.pos(true)).add(vec(0, 0, enttype[AFFINITY].radius/2)), enttype[AFFINITY].radius, vec::fromcolor(TEAM(f.team, colour)), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
         }
     }
 
@@ -371,8 +371,8 @@ namespace capture
     {
         if(game::dynlighteffects)
         {
-            if(from.x >= 0) adddynlight(vec(from).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(team, colour)).mul(2.f), 500, 250);
-            if(to.x >= 0) adddynlight(vec(to).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(team, colour)).mul(2.f), 500, 250);
+            if(from.x >= 0) adddynlight(vec(from).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(team, colour)).mul(2.f), 500, 250, L_NOSHADOW|L_NODYNSHADOW);
+            if(to.x >= 0) adddynlight(vec(to).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(team, colour)).mul(2.f), 500, 250, L_NOSHADOW|L_NODYNSHADOW);
         }
         if(from.x >= 0 && to.x >= 0 && from != to) part_trail(PART_SPARK, 500, from, to, TEAM(team, colour), 1, 1, colourwhite, 0.25f, -10);
     }

@@ -1634,7 +1634,9 @@ extern int smminradius;
 
 struct lightinfo
 {
-    int ent, shadowmap;
+    enum { ENTITY = 0, DYNAMIC, MAX };
+
+    int type, ent, shadowmap;
     ushort flags, batched;
     vec o, color;
     float radius, dist;
@@ -1645,7 +1647,7 @@ struct lightinfo
 
     lightinfo() {}
     lightinfo(const vec &o, const vec &color, float radius, ushort flags = 0, const vec &dir = vec(0, 0, 0), int spot = 0)
-      : ent(-1), shadowmap(-1), flags(flags), batched(~0),
+      : type(DYNAMIC), ent(-1), shadowmap(-1), flags(flags), batched(~0),
         o(o), color(color), radius(radius), dist(camera1->o.dist(o)),
         dir(dir), spot(spot), query(NULL)
     {
@@ -1653,7 +1655,7 @@ struct lightinfo
         calcscissor();
     }
     lightinfo(int i, const vec &o, const vec &color, float radius, ushort flags = 0, const vec &dir = vec(0, 0, 0), int spot = 0)
-      : ent(i), shadowmap(-1), flags(flags), batched(~0),
+      : type(ENTITY), ent(i), shadowmap(-1), flags(flags), batched(~0),
         o(o), color(color), radius(radius), dist(camera1->o.dist(o)),
         dir(dir), spot(spot), query(NULL)
     {
@@ -4674,6 +4676,8 @@ void rendershadowmaps(int offset = 0)
 
     glEnable(GL_SCISSOR_TEST);
 
+    physent *player = (physent *)game::focusedent(true);
+    if(!player) player = camera1;
     const vector<extentity *> &ents = entities::getents();
     for(int i = offset; i < shadowmaps.length(); i++)
     {
@@ -4715,7 +4719,7 @@ void rendershadowmaps(int offset = 0)
         }
         findshadowmms();
 
-        shadowmaskbatchedmodels(!(l.flags&L_NODYNSHADOW) && smdynshadow);
+        shadowmaskbatchedmodels(!(l.flags&L_NODYNSHADOW) && smdynshadow, l.type == lightinfo::DYNAMIC && l.o.dist(player->o) < player->radius*4);
         batchshadowmapmodels(mesh != NULL);
 
         shadowcacheval *cached = NULL;

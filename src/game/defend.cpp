@@ -183,7 +183,7 @@ namespace defend
         {
             defendstate::flag &f = st.flags[i];
             float occupy = f.occupied(m_dac_quick(game::gamemode, game::mutators), defendcount);
-            adddynlight(vec(f.o).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, skewcolour(f.owner, f.enemy, occupy), 0, 0);
+            adddynlight(vec(f.o).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, skewcolour(f.owner, f.enemy, occupy), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
         }
     }
 
@@ -344,7 +344,7 @@ namespace defend
             {
                 if(b.owner != owner)
                 {
-                    if(game::dynlighteffects) adddynlight(b.o, enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(owner, colour)).mul(2.f), 500, 250);
+                    if(game::dynlighteffects) adddynlight(b.o, enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(owner, colour)).mul(2.f), 500, 250, L_NOSHADOW|L_NODYNSHADOW);
                     buildevent(b, i, "secure", S_V_FLAGSECURED, owner, enemy, converted);
                 }
             }

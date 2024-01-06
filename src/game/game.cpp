@@ -6,7 +6,7 @@ namespace game
     int nextmode = G_EDITING, nextmuts = 0, gamestate = G_S_WAITING, gamemode = G_EDITING, mutators = 0,
         maptime = 0, mapstart = 0, timeremaining = 0, timeelapsed = 0, timelast = 0, timesync = 0,
         lastcamera = 0, lasttvcam = 0, lasttvchg = 0, lastzoom = 0, lastcamcn = -1;
-    bool zooming = false, inputmouse = false, inputview = false, inputmode = false, wantsloadoutmenu = false, hasspotlights = false;
+    bool zooming = false, inputmouse = false, inputview = false, inputmode = false, wantsloadoutmenu = false, hasspotlights = false, hasvolumetric = false;
     float swayfade = 0, swayspeed = 0, swaydist = 0, bobfade = 0, bobdist = 0;
     vec swaydir(0, 0, 0), swaypush(0, 0, 0);
     int attrmap[W_MAX] = {0};
@@ -137,6 +137,8 @@ namespace game
         if(player1->version.gpuversion) delete[] player1->version.gpuversion;
         player1->version.gpuversion = newstring(gfxversion);
     }
+
+    VAR(IDF_PERSIST, flashlightvolumetric, 0, 0, 1);
 
     #define FLASHLIGHTVARS(name) \
         VAR(IDF_MAP|IDF_HEX, flashlightcolour##name, 0, 0, 0xFFFFFF); \
@@ -1076,7 +1078,7 @@ namespace game
             emitsound(S_RESPAWN, getplayersoundpos(d), d);
             spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playerovertone, playerovertonelevel), 1);
             spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playerundertone, playerundertonelevel), 1);
-            if(dynlighteffects) adddynlight(center, d->height*2, vec::fromcolor(getcolour(d, playereffecttone, playereffecttonelevel)).mul(2.f), 250, 250);
+            if(dynlighteffects) adddynlight(center, d->height*2, vec::fromcolor(getcolour(d, playereffecttone, playereffecttonelevel)).mul(2.f), 250, 250, L_NOSHADOW|L_NODYNSHADOW);
             if(entities::ents.inrange(ent) && entities::ents[ent]->type == PLAYERSTART) entities::execlink(d, ent, false);
         }
         ai::respawned(d, local, ent);
@@ -1170,7 +1172,7 @@ namespace game
                     if(fluc >= 0.25f) fluc = (0.25f+0.03f-fluc)*(0.25f/0.03f);
                     pc *= 0.75f+fluc;
                 }
-                adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d, PULSE_BURN).mul(pc), 0, 0);
+                adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d, PULSE_BURN).mul(pc), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
             }
 
             if(d->shocktime && d->shocking(lastmillis, d->shocktime))
@@ -1185,19 +1187,28 @@ namespace game
                     if(fluc >= 0.25f) fluc = (0.25f+0.03f-fluc)*(0.25f/0.03f);
                     pc *= 0.75f+fluc;
                 }
-                adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d, PULSE_SHOCK).mul(pc), 0, 0);
-            }
-
-            if(hasspotlights && d->actortype < A_ENEMY && d->isalive() && wantflashlights())
-            {
-                vec from = camerapos(d, false, true, d->yaw, d->pitch), dir;
-                if(d == game::focus) dir = worldpos;
-                else safefindorientation(d->o, d->yaw, d->pitch, dir);
-                dir.sub(d->o).safenormalize();
-                from.add(vec(dir).mul(d->radius + 1));
-                adddynlight(from, getflashlightradius(), vec::fromcolor(getflashlightcolour()).mul(getflashlightlevel()), 0, 0, 0, 0, vec(0, 0, 0), NULL, dir, getflashlightspot());
+                adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d, PULSE_SHOCK).mul(pc), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
             }
         }
+        if(hasspotlights && focus->isalive() && wantflashlights())
+        {
+            adddynlight(camera1->o, getflashlightradius(), vec::fromcolor(getflashlightcolour()).mul(getflashlightlevel()), 0, 0, hasvolumetric && flashlightvolumetric ? L_VOLUMETRIC : 0, 0, vec(0, 0, 0), NULL, cursordir, getflashlightspot());
+        }
+    }
+
+    void checklights(bool reset = false)
+    {
+        if(wantflashlights())
+        {
+            if(!hasspotlights || reset) cleardeferredlightshaders();
+            if(flashlightvolumetric)
+            {
+                if(!hasvolumetric || reset) cleanupvolumetric();
+                hasvolumetric = true;
+            }
+            hasspotlights = true;
+        }
+        else hasspotlights = hasvolumetric = false;
     }
 
     bool spotlights()
@@ -1207,7 +1218,7 @@ namespace game
 
     bool volumetrics()
     {
-        return false;
+        return hasvolumetric;
     }
 
     void impulseeffect(gameent *d, int effect)
@@ -2195,7 +2206,7 @@ namespace game
 
     void startmap(bool empty) // called just after a map load
     {
-        hasspotlights = false;
+        checklights(true);
         ai::startmap(empty);
         if(!empty)
         {
@@ -3383,13 +3394,7 @@ namespace game
                 }
             }
 
-            if(wantflashlights())
-            {
-                if(!hasspotlights) cleardeferredlightshaders();
-                hasspotlights = true;
-            }
-            else hasspotlights = false;
-
+            checklights();
             player1->conopen = hud::hasinput(true);
             checkoften(player1, true);
             loopv(players) if(players[i]) checkoften(players[i], players[i]->ai != NULL);

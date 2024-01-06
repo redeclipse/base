@@ -687,13 +687,14 @@ static inline int shadowmaskmodel(const vec &center, float radius)
     return 0;
 }
 
-void shadowmaskbatchedmodels(bool dynshadow)
+void shadowmaskbatchedmodels(bool dynshadow, bool noavatar)
 {
     loopv(batchedmodels)
     {
         batchedmodel &b = batchedmodels[i];
         if(b.state.flags&(MDL_MAPMODEL|MDL_NOSHADOW)) break;
-        b.visible = dynshadow && (b.state.color.a >= 1 || b.state.flags&(MDL_ONLYSHADOW|MDL_FORCESHADOW)) ? shadowmaskmodel(b.state.center, b.state.radius) : 0;
+        bool isavatar = (b.state.flags&(MDL_ONLYSHADOW|MDL_FORCESHADOW)) != 0;
+        b.visible = dynshadow && (!noavatar || !isavatar) && (b.state.color.a >= 1 || isavatar) ? shadowmaskmodel(b.state.center, b.state.radius) : 0;
     }
 }
 

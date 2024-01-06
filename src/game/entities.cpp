@@ -1268,7 +1268,7 @@ namespace entities
         }
         d->useitem(ent, e.type, attr, ammoamt, sweap, lastmillis, W(attr, delayitem));
         emitsound(e.type == WEAPON && attr >= W_OFFSET && attr < W_ALL ? WSND(attr, S_W_USE) : S_ITEMUSE, weapons::getweapsoundpos(d, TAG_ORIGIN), d, &d->wschan[WS_MAIN_CHAN]);
-        if(game::dynlighteffects) adddynlight(d->center(), enttype[e.type].radius*2, vec::fromcolor(colour).mul(2.f), 250, 250);
+        if(game::dynlighteffects) adddynlight(d->center(), enttype[e.type].radius*2, vec::fromcolor(colour).mul(2.f), 250, 250, L_NOSHADOW|L_NODYNSHADOW);
         if(ents.inrange(drop) && ents[drop]->type == WEAPON)
         {
             gameentity &f = *(gameentity *)ents[drop];
