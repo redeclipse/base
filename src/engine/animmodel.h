@@ -196,8 +196,7 @@ struct animmodel : model
             if(fullbright) LOCALPARAMF(fullbright, 0.0f, fullbright);
             else LOCALPARAMF(fullbright, 1.0f, as->cur.anim&ANIM_FULLBRIGHT ? 0.5f*fullbrightmodels/100.0f : 0.0f);
 
-            float curglow = glow * game::darkness(1);
-
+            float curglow = glow;
             if(glowpulse > 0)
             {
                 float curpulse = lastmillis*glowpulse;
