@@ -238,14 +238,6 @@ void cleanupao()
         return name##var; \
     }
 
-#define GETVARMPVDARK(name, var, type) \
-    type get##name##var() \
-    { \
-        static bvec res; \
-        res = bvec(checkmapvariant(MPV_ALT) ? name##var##alt : name##var).mul(game::darkness()); \
-        return res; \
-    }
-
 #define AOVARS(name) \
     FVAR(IDF_MAP, aoradius##name, 0, 5, 256); \
     FVAR(IDF_MAP, aodark##name, 1e-3f, 11.0f, 1e3f); \
@@ -2693,7 +2685,7 @@ VAR(0, volderiv, -1, 1, 1);
 VOLVARS();
 VOLVARS(alt);
 
-GETVARMPVDARK(vol, colour, const bvec &);
+GETVARMPV(vol, colour, const bvec &);
 GETVARMPV(vol, scale, float);
 
 VAR(0, debugvol, 0, 0, 2);
