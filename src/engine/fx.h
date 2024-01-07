@@ -356,6 +356,7 @@ namespace fx
         emitter &setparam(int index, float param);
     };
 
+    extern void startframe();
     extern void update();
     extern void stopfx(emitter *e);
     extern emitter &createfx(FxHandle fxhandle, emitter **hook = NULL);

@@ -22,6 +22,7 @@ namespace fx
         FX_STATS
     };
 
+    static bool cancreatefx = false;
     static int statmillis;
     static int fxstats[FX_STATS];
 
@@ -538,8 +539,13 @@ namespace fx
     static emitter *testemitter = NULL;
     static int testmillis;
 
+    void startframe() { cancreatefx = true; }
+
     void update()
     {
+        // Prevent creation of new emitters past this point, timing gets wonky otherwise
+        cancreatefx = false;
+
         if(testemitter && lastmillis - testmillis < 10000) testemitter->prolong();
 
         emitter *e = activeemitters;
@@ -567,6 +573,8 @@ namespace fx
 
     emitter &createfx(FxHandle fxhandle, emitter **hook)
     {
+        ASSERT(cancreatefx);
+
         if(!fxhandle.isvalid()) return dummyemitter;
 
         // stop hooked FX if we want to make a different one under the same hook,

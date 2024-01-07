@@ -1387,6 +1387,8 @@ namespace game
                 d->height = d->zradius;
                 d->actiontime[AC_CROUCH] = 0;
             }
+
+            if(d->hasparkour() || d->impulsetime[IM_T_JUMP] || d->sliding(true)) impulseeffect(d, 1);
         }
         else
         {
@@ -4176,7 +4178,6 @@ namespace game
     {
         if(d->obliterated) return;
         float blend = opacity(d, third);
-        if(d->state == CS_ALIVE && (d->hasparkour() || d->impulsetime[IM_T_JUMP] || d->sliding(true))) impulseeffect(d, 1);
         if(d->burntime && d->burning(lastmillis, d->burntime))
         {
             int millis = lastmillis-d->lastres[W_R_BURN], delay = max(d->burndelay, 1);
