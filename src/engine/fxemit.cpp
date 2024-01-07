@@ -238,8 +238,12 @@ namespace fx
         float radius = inst.getextprop<float>(FX_LIGHT_RADIUS) * scale;
         vec color = getcolor(inst, FX_LIGHT_COLOR).mul(getblend(inst)).tocolor();
         int flags = inst.getextprop<int>(FX_LIGHT_FLAGS);
+        int spot = inst.getextprop<int>(FX_LIGHT_SPOT);
 
-        adddynlight(inst.from, radius, vec(color), 0, 0, flags);
+        vec dir = vec(inst.to).sub(inst.from).normalize();
+
+        adddynlight(inst.from, radius, vec(color), 0, 0, flags, 0.0f, vec(0, 0, 0), NULL,
+            spot > 0 ? dir : vec(0, 0, 0), spot);
     }
 
     static void soundfx(instance &inst)

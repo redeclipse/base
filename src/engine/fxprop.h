@@ -355,6 +355,12 @@ namespace fx
             PROP_INT,
             0, 0, INT_MAX,
             0
+        ),
+        fxpropertydef(
+            "spot",
+            PROP_INT,
+            0, 0, 180,
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         )
     };
 
