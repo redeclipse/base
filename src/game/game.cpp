@@ -143,8 +143,8 @@ namespace game
     FVAR(IDF_PERSIST, flashlightlevelvol, 0, 0.5f, 1);
 
     #define FLASHLIGHTVARS(name) \
-        VAR(IDF_MAP|IDF_HEX, flashlightcolour##name, 0, 0xFFFFFF, 0xFFFFFF); \
-        FVAR(IDF_MAP, flashlightlevel##name, 0, 0, FVAR_MAX); \
+        VAR(IDF_MAP|IDF_HEX, flashlightcolour##name, 0, 0, 0xFFFFFF); \
+        FVAR(IDF_MAP, flashlightlevel##name, 0, 1, FVAR_MAX); \
         FVAR(IDF_MAP, flashlightradius##name, 0, 512, FVAR_MAX); \
         VAR(IDF_MAP, flashlightspot##name, 0, 15, 89);
 
@@ -1157,7 +1157,7 @@ namespace game
     bool wantflashlight()
     {
         if(m_dark(gamemode, mutators)) return true;
-        if(getflashlightlevel() > 0) return true;
+        if(getflashlightcolour() > 0 && getflashlightlevel() > 0) return true;
         return false;
     }
 
@@ -4240,14 +4240,6 @@ namespace game
     {
         if(drawtex && drawtex != DRAWTEX_HALO) return;
 
-        ai::render();
-        entities::render();
-        projs::render();
-
-        if(m_capture(gamemode)) capture::render();
-        else if(m_defend(gamemode)) defend::render();
-        else if(m_bomber(gamemode)) bomber::render();
-
         gameent *d;
         int numdyns = numdynents();
         bool third = thirdpersonview();
@@ -4256,6 +4248,16 @@ namespace game
             if(drawtex == DRAWTEX_HALO && (d != focus || third)) d->cleartags();
             renderplayer(d, 1, d->curscale, d == focus ? (third ? MDL_FORCESHADOW : MDL_ONLYSHADOW) : 0, vec4(1, 1, 1, opacity(d, true)));
         }
+
+        // some stuff here needs the player tags first
+
+        ai::render();
+        entities::render();
+        projs::render();
+
+        if(m_capture(gamemode)) capture::render();
+        else if(m_defend(gamemode)) defend::render();
+        else if(m_bomber(gamemode)) bomber::render();
     }
 
     void renderpost()
@@ -4299,8 +4301,8 @@ namespace game
                 setavatarscale(firstpersonbodydepthfov != 0 ? firstpersonbodydepthfov : curfov, depth);
                 renderplayer(focus, 2, focus->curscale, MDL_NOBATCH, color, &lastoffset);
             }
-            calcfirstpersontags(focus);
         }
+        calcfirstpersontags(focus);
         if(drawtex != DRAWTEX_HALO) rendercheck(focus, false);
     }
 
