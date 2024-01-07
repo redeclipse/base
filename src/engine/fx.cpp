@@ -543,9 +543,6 @@ namespace fx
 
     void update()
     {
-        // Prevent creation of new emitters past this point, timing gets wonky otherwise
-        cancreatefx = false;
-
         if(testemitter && lastmillis - testmillis < 10000) testemitter->prolong();
 
         emitter *e = activeemitters;
@@ -563,6 +560,9 @@ namespace fx
             clearstats();
             statmillis = lastmillis;
         }
+
+        // Prevent creation of new emitters past this point, timing gets wonky otherwise
+        cancreatefx = false;
     }
 
     void stopfx(emitter *e)
