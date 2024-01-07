@@ -144,7 +144,7 @@ namespace game
 
     #define FLASHLIGHTVARS(name) \
         VAR(IDF_MAP|IDF_HEX, flashlightcolour##name, 0, 0xFFFFFF, 0xFFFFFF); \
-        FVAR(IDF_MAP, flashlightlevel##name, 0, 0, 10); \
+        FVAR(IDF_MAP, flashlightlevel##name, 0, 0, FVAR_MAX); \
         FVAR(IDF_MAP, flashlightradius##name, 0, 512, FVAR_MAX); \
         VAR(IDF_MAP, flashlightspot##name, 0, 15, 89);
 
@@ -1165,10 +1165,8 @@ namespace game
     {
         if(!hasspotlights || !d->isalive() || !wantflashlight()) return;
 
-        int fcol = getflashlightcolour();
-        vec color = vec::fromcolor(fcol ? fcol : 0xFFFFFF),
-            from = d == focus ? camera1->o : d->muzzletag(d->weapselect),
-            dir = d == focus ? cursordir : vec(d->yaw*RAD, d->pitch*RAD);
+        int fcol = getflashlightcolour(), spot = m_dark(gamemode, mutators) ? darknessflashspot : getflashlightspot();
+        vec color = vec::fromcolor(fcol ? fcol : 0xFFFFFF);
         bool wantvol = hasvolumetric && flashlightvolumetric&(d == focus ? 1 : 2);
 
         float radius = getflashlightradius();
@@ -1188,7 +1186,7 @@ namespace game
         }
         color.mul(level);
 
-        adddynlight(from, radius, color, 0, 0, wantvol ? L_VOLUMETRIC : 0, 0, vec(0, 0, 0), NULL, dir, getflashlightspot());
+        adddynlight(d->muzzletag(d->weapselect), radius, color, 0, 0, wantvol ? L_VOLUMETRIC : 0, 0, vec(0, 0, 0), NULL, vec(d->yaw*RAD, d->pitch*RAD), spot);
     }
 
     void adddynlights()
