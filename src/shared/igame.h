@@ -180,7 +180,7 @@ namespace game
     extern const char *gametext();
     extern int numanims();
     extern void findanims(const char *pattern, vector<int> &anims);
-    extern void render();
+    extern void render(int n = 0);
     extern void renderpost();
     extern void renderavatar();
     extern void renderplayerpreview(float scale = 1, const vec4 &mcolor = vec4(1, 1, 1, 1), const char *actions = NULL, float yaw = -1, float offsetyaw = 0);

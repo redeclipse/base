@@ -4236,28 +4236,32 @@ namespace game
         }
     }
 
-    void render()
+    void render(int n)
     {
-        if(drawtex && drawtex != DRAWTEX_HALO) return;
+        if(!n && drawtex) return;
 
-        gameent *d;
-        int numdyns = numdynents();
-        bool third = thirdpersonview();
-        loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL)
+        if(n == 0 || n == 1)
         {
-            if(drawtex == DRAWTEX_HALO && (d != focus || third)) d->cleartags();
-            renderplayer(d, 1, d->curscale, d == focus ? (third ? MDL_FORCESHADOW : MDL_ONLYSHADOW) : 0, vec4(1, 1, 1, opacity(d, true)));
+            gameent *d;
+            int numdyns = numdynents();
+            bool third = thirdpersonview();
+            loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL)
+            {
+                if(drawtex == DRAWTEX_HALO && (d != focus || third)) d->cleartags();
+                renderplayer(d, 1, d->curscale, d == focus ? (third ? MDL_FORCESHADOW : MDL_ONLYSHADOW) : 0, vec4(1, 1, 1, opacity(d, true)));
+            }
         }
 
-        // some stuff here needs the player tags first
+        if(n == 0 || n == 2)
+        {
+            ai::render();
+            entities::render();
+            projs::render();
 
-        ai::render();
-        entities::render();
-        projs::render();
-
-        if(m_capture(gamemode)) capture::render();
-        else if(m_defend(gamemode)) defend::render();
-        else if(m_bomber(gamemode)) bomber::render();
+            if(m_capture(gamemode)) capture::render();
+            else if(m_defend(gamemode)) defend::render();
+            else if(m_bomber(gamemode)) bomber::render();
+        }
     }
 
     void renderpost()

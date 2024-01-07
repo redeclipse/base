@@ -87,7 +87,6 @@ void renderhalo()
     }
 
 
-    resetmodelbatches();
     glEnable(GL_CULL_FACE);
 
     if(halowireframe > 0)
@@ -96,8 +95,12 @@ void renderhalo()
         glLineWidth(halowireframe);
     }
 
-    game::render();
-    renderhalomodelbatches();
+    loopi(2)
+    {
+        resetmodelbatches();
+        game::render(i + 1);
+        renderhalomodelbatches();
+    }
     renderavatar();
 
     if(halowireframe > 0)
