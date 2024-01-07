@@ -1839,7 +1839,7 @@ MPVVARS(alt);
     type get##name() \
     { \
         static int res; \
-        res = int((checkmapvariant(MPV_ALT) ? name##alt : name)*game::darkness()); \
+        res = int((checkmapvariant(MPV_ALT) ? name##alt : name)*game::darkness(4)); \
         return res; \
     }
 
@@ -2085,14 +2085,12 @@ void lensflare(const vec &o, const vec &color, bool sun, int sparkle, float scal
 static int partcolour(int c, int p, int x)
 {
     if(c <= 0) c = 0xFFFFFF;
-    if(p || x)
-    {
-        vec r(1, 1, 1);
-        if(c > 0) r = vec::fromcolor(c);
-        r.mul(game::getpalette(p, x));
-        return (int(r.x*255)<<16)|(int(r.y*255)<<8)|(int(r.z*255));
-    }
-    return c;
+
+    vec r = c > 0 ? vec::fromcolor(c) : vec(1, 1, 1);
+    if(p || x) r.mul(game::getpalette(p, x));
+    r.mul(game::darkness(4));
+
+    return (int(r.x*255)<<16)|(int(r.y*255)<<8)|(int(r.z*255));
 }
 
 void makeparticle(const vec &o, attrvector &attr)
@@ -2200,8 +2198,11 @@ void makeparticle(const vec &o, attrvector &attr)
         case 33:
         case 34:
         case 35:
-            flares.addflare(o, attr[1], attr[2], attr[3], (attr[0]&2)!=0, (attr[0]&1)!=0 ? ((attr[0]&2)!=0 ? 1 : 2) : 0);
+        {
+            float level = game::darkness(4);
+            flares.addflare(o, int(attr[1]*level), int(attr[2]*level), int(attr[3]*level), (attr[0]&2)!=0, (attr[0]&1)!=0 ? ((attr[0]&2)!=0 ? 1 : 2) : 0);
             break;
+        }
         default:
             defformatstring(ds, "%d?", attr[0]);
             part_textcopy(o, ds);

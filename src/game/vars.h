@@ -698,6 +698,7 @@ GFVAR(IDF_GAMEMOD, 0, darknesslevel, 0, 0.1f, 1);
 GFVAR(IDF_GAMEMOD, 0, darknessglow, 0, 0.1f, 1);
 GFVAR(IDF_GAMEMOD, 0, darknesshalo, 0, 0.25f, 1);
 GFVAR(IDF_GAMEMOD, 0, darknesssun, 0, 0, 1);
+GFVAR(IDF_GAMEMOD, 0, darknesspart, 0, 0.25f, 1);
 GFVAR(IDF_GAMEMOD, 0, darknessflashcolourmin, 0, 0.5f, 1);
 GFVAR(IDF_GAMEMOD, 0, darknessflashcolourmax, 0, 1, 1);
 GFVAR(IDF_GAMEMOD, 0, darknessflashradiusmin, 0, 300, FVAR_MAX);

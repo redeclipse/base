@@ -1149,6 +1149,7 @@ namespace game
             case 1: return darknessglow;
             case 2: return darknesshalo;
             case 3: return darknesssun;
+            case 4: return darknesspart;
             default: return darknesslevel;
         }
         return 1;
