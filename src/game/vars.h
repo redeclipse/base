@@ -284,9 +284,9 @@ GFVAR(IDF_GAMEMOD, 0, minresizescale, FVAR_NONZERO, 0.5f, 1);
 GFVAR(IDF_GAMEMOD, 0, instaresizeamt, FVAR_NONZERO, 0.1f, 1); // each kill adds this much size in insta-resize
 
 GVAR(IDF_GAMEMOD, 0, regendelay, 0, 5000, VAR_MAX); // regen after no damage for this long
-GVAR(IDF_GAMEMOD, 0, regentime, 0, 2000, VAR_MAX); // regen this often when regenerating normally
+GVAR(IDF_GAMEMOD, 0, regentime, 0, 1000, VAR_MAX); // regen this often when regenerating normally
 GVAR(IDF_GAMEMOD, 0, regenhealth, 0, 100, VAR_MAX); // regen this amount each regen
-GVAR(IDF_GAMEMOD, 0, regendecay, 0, 50, VAR_MAX); // if over maxhealth, decay this amount each regen
+GVAR(IDF_GAMEMOD, 0, regendecay, 0, 25, VAR_MAX); // if over maxhealth, decay this amount each regen
 
 GVAR(IDF_GAMEMOD, 0, noweapburn, 0, 1, 1);
 GVAR(IDF_GAMEMOD, 0, noweapbleed, 0, 1, 1);
