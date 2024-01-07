@@ -138,9 +138,9 @@ namespace game
         player1->version.gpuversion = newstring(gfxversion);
     }
 
-    VAR(IDF_PERSIST, flashlightvolumetric, 0, 1, 3);
-    FVAR(IDF_PERSIST, flashlightlevelthird, 0, 0.75f, 1);
-    FVAR(IDF_PERSIST, flashlightlevelvol, 0, 0.5f, 1);
+    VAR(IDF_PERSIST, flashlightvolumetric, 0, 0, 1);
+    FVAR(IDF_PERSIST, flashlightlevelthird, 0, 0.5f, 1);
+    FVAR(IDF_PERSIST, flashlightlevelvol, 0, 1, 1);
 
     #define FLASHLIGHTVARS(name) \
         VAR(IDF_MAP|IDF_HEX, flashlightcolour##name, 0, 0, 0xFFFFFF); \
@@ -1168,7 +1168,7 @@ namespace game
 
         int fcol = getflashlightcolour(), spot = m_dark(gamemode, mutators) ? darknessflashspot : getflashlightspot();
         vec color = vec::fromcolor(fcol ? fcol : 0xFFFFFF);
-        bool wantvol = hasvolumetric && flashlightvolumetric&(d == focus ? 1 : 2);
+        bool wantvol = hasvolumetric && flashlightvolumetric;
 
         float radius = getflashlightradius();
         if(m_dark(gamemode, mutators))
@@ -1179,11 +1179,8 @@ namespace game
             if(darknessflashradiusmax) radius = min(radius, darknessflashradiusmax);
         }
         float level = m_dark(gamemode, mutators) ? darknessflashlevel : getflashlightlevel();
-        if(d != focus)
-        {
-            level *= flashlightlevelthird;
-            if(wantvol) level *= flashlightlevelvol;
-        }
+        if(d != focus) level *= flashlightlevelthird;
+        if(wantvol) level *= flashlightlevelvol;
         color.mul(level);
 
         bvec bcolor = bvec(color);
@@ -1192,10 +1189,10 @@ namespace game
         static fx::FxHandle flashlight_novol = fx::getfxhandle("FX_PLAYER_FLASHLIGHT_NOVOL");
         static fx::FxHandle flashlight_beam = fx::getfxhandle("FX_PLAYER_FLASHLIGHT_BEAM");
 
-        if(d != focus) fx::createfx(flashlight_beam, &d->flashlightfx).setentity(d).setcolor(bcolor);
-        else
+        if(wantvol)
         {
-            if(wantvol)
+            if(d != focus) fx::createfx(flashlight_beam, &d->flashlightfx).setentity(d).setcolor(bcolor);
+            else
             {
                 fx::createfx(flashlight_vol, &d->flashlightfx)
                     .setentity(d)
@@ -1203,14 +1200,14 @@ namespace game
                     .setparam(0, radius)
                     .setparam(1, spot);
             }
-            else
-            {
-                fx::createfx(flashlight_novol, &d->flashlightfx)
-                    .setentity(d)
-                    .setcolor(bcolor)
-                    .setparam(0, radius)
-                    .setparam(1, spot);
-            }
+        }
+        else
+        {
+            fx::createfx(flashlight_novol, &d->flashlightfx)
+                .setentity(d)
+                .setcolor(bcolor)
+                .setparam(0, radius)
+                .setparam(1, spot);
         }
 
     }
