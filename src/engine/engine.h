@@ -693,6 +693,25 @@ extern float watersx1, watersy1, watersx2, watersy2;
         } \
     }
 
+#define GETMATIDXVARDARK(name, var, type) \
+    type get##name##var(int mat) \
+    { \
+        static bvec res; \
+        switch(mat&MATF_INDEX) \
+        { \
+            default: case 0: \
+                res = checkmapvariant(MPV_ALT) ? name##var##alt : name##var; break; \
+            case 1: \
+                res = checkmapvariant(MPV_ALT) ? name##2##var##alt : name##2##var; break; \
+            case 2: \
+                res = checkmapvariant(MPV_ALT) ? name##3##var##alt : name##3##var; break; \
+            case 3: \
+                res = checkmapvariant(MPV_ALT) ? name##4##var##alt : name##4##var; break; \
+        } \
+        res.mul(game::darkness()); \
+        return res; \
+    }
+
 extern const bvec &getwatercolour(int mat);
 extern const bvec &getwaterdeepcolour(int mat);
 extern const bvec &getwaterdeepfade(int mat);

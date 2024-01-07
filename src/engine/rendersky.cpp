@@ -128,15 +128,23 @@ MPVVARS(alt, MPV_ALT);
         return name; \
     }
 
-GETMPV(ambient, const bvec &);
+#define GETMPVDARK(name, type) \
+    type get##name() \
+    { \
+        static bvec res; \
+        res = bvec(checkmapvariant(MPV_ALT) ? name##alt : name).mul(game::darkness()); \
+        return res; \
+    }
+
+GETMPVDARK(ambient, const bvec &);
 GETMPV(ambientscale, float);
-GETMPV(skylight, const bvec &);
+GETMPVDARK(skylight, const bvec &);
 GETMPV(skylightscale, float);
 GETMPV(fog, int);
-GETMPV(fogcolour, const bvec &);
-GETMPV(skybgcolour, const bvec &);
+GETMPVDARK(fogcolour, const bvec &);
+GETMPVDARK(skybgcolour, const bvec &);
 GETMPV(skybox, const char *);
-GETMPV(skycolour, const bvec &);
+GETMPVDARK(skycolour, const bvec &);
 GETMPV(skyblend, float);
 GETMPV(skyoverbright, float);
 GETMPV(skyoverbrightmin, float);
@@ -148,7 +156,7 @@ GETMPV(yawsky, int);
 GETMPV(pitchsky, int);
 GETMPV(rollsky, int);
 GETMPV(cloudbox, const char *);
-GETMPV(cloudcolour, const bvec &);
+GETMPVDARK(cloudcolour, const bvec &);
 GETMPV(cloudblend, float);
 GETMPV(spinclouds, float);
 GETMPV(spincloudspitch, float);
@@ -162,14 +170,14 @@ GETMPV(atmostyle, int);
 GETMPV(atmoplanetsize, float);
 GETMPV(atmoheight, float);
 GETMPV(atmobright, float);
-GETMPV(atmolight, const bvec &);
+GETMPVDARK(atmolight, const bvec &);
 GETMPV(atmolightscale, float);
 GETMPV(atmohaze, float);
 GETMPV(atmoclarity, float);
 GETMPV(atmodensity, float);
 GETMPV(atmoozone, float);
 GETMPV(atmoblend, float);
-GETMPV(atmodisk, const bvec &);
+GETMPVDARK(atmodisk, const bvec &);
 GETMPV(atmodisksize, float);
 GETMPV(atmodiskcorona, float);
 GETMPV(atmodiskbright, float);
@@ -178,14 +186,14 @@ GETMPV(fogdomemin, float);
 GETMPV(fogdomemax, float);
 GETMPV(fogdomecap, int);
 GETMPV(fogdomeclip, float);
-GETMPV(fogdomecolour, const bvec &);
+GETMPVDARK(fogdomecolour, const bvec &);
 GETMPV(fogdomeclouds, int);
 GETMPV(skytexture, int);
 GETMPV(skyshadow, int);
 
 #define GETLAYER(prefix) \
     GETMPV(prefix##layer, const char *); \
-    GETMPV(prefix##layercolour, const bvec &); \
+    GETMPVDARK(prefix##layercolour, const bvec &); \
     GETMPV(prefix##layerblend, float); \
     GETMPV(prefix##offsetx, float); \
     GETMPV(prefix##offsety, float); \

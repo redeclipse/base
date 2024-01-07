@@ -1329,6 +1329,7 @@ void setcamprojmatrix(bool init = true, bool flush = false)
 
     GLOBALPARAM(camprojmatrix, camprojmatrix);
     GLOBALPARAM(lineardepthscale, projmatrix.lineardepthscale()); //(invprojmatrix.c.z, invprojmatrix.d.z));
+    GLOBALPARAMF(darknesslevel, game::darkness(), game::darkness(1), game::darkness(2), game::darkness(3));
 
     if(flush && Shader::lastshader) Shader::lastshader->flushparams();
 }
@@ -2341,7 +2342,7 @@ namespace modelpreview
         preparegbuffer();
     }
 
-    void end(int outfbo, const vec &skycol, const vec &suncol, const vec &sundir, const vec &excol, const vec &exdir)
+    void end(GLint outfbo, const vec &skycol, const vec &suncol, const vec &sundir, const vec &excol, const vec &exdir)
     {
         rendermodelbatches();
 

@@ -456,6 +456,7 @@ namespace hud
     TVAR(IDF_PERSIST, moderesizetex, "<grey>textures/modes/resize", 3);
     TVAR(IDF_PERSIST, modehardtex, "<grey>textures/modes/hard", 3);
     TVAR(IDF_PERSIST, modearenatex, "<grey>textures/modes/arena", 3);
+    TVAR(IDF_PERSIST, modedarktex, "<grey>textures/modes/dark", 3);
 
     #define ADDMODEICON(g,m) \
     { \
@@ -547,6 +548,7 @@ namespace hud
         if(m_resize(g, m) && (implied || !(gametype[g].implied&(1<<G_M_RESIZE)))) ADDMODE(resize)
         if(m_hard(g, m) && (implied || !(gametype[g].implied&(1<<G_M_HARD)))) ADDMODE(hard)
         if(m_arena(g, m) && (implied || !(gametype[g].implied&(1<<G_M_ARENA)))) ADDMODE(arena)
+        if(m_dark(g, m) && (implied || !(gametype[g].implied&(1<<G_M_DARK)))) ADDMODE(dark)
         if(!before) modetex(g, m, list);
     }
     #undef ADDMODE
@@ -1792,7 +1794,8 @@ namespace hud
 
     void drawbackground(int w, int h)
     {
-        gle::colorf(1, 1, 1, 1);
+        float level = game::darkness(true);
+        gle::colorf(level, level, level, 1);
 
         Texture *t = NULL;
         if(engineready && showloadingmapbg && *mapname && strcmp(mapname, "maps/untitled"))
@@ -1837,7 +1840,7 @@ namespace hud
             else if(hudnotextureshader)
             {
                 hudnotextureshader->set();
-                gle::color(backgroundcolour.tocolor(), 1.f);
+                gle::color(backgroundcolour.tocolor().mul(level), 1.f);
             }
             else nullshader->set();
 

@@ -138,11 +138,13 @@ namespace game
         player1->version.gpuversion = newstring(gfxversion);
     }
 
-    VAR(IDF_PERSIST, flashlightvolumetric, 0, 0, 1);
+    VAR(IDF_PERSIST, flashlightvolumetric, 0, 0, 3);
+    FVAR(IDF_PERSIST, flashlightlevelthird, 0, 0.5f, 1);
+    FVAR(IDF_PERSIST, flashlightlevelvol, 0, 0.5f, 1);
 
     #define FLASHLIGHTVARS(name) \
-        VAR(IDF_MAP|IDF_HEX, flashlightcolour##name, 0, 0, 0xFFFFFF); \
-        FVAR(IDF_MAP, flashlightlevel##name, 0, 2, 10); \
+        VAR(IDF_MAP|IDF_HEX, flashlightcolour##name, 0, 0xFFFFFF, 0xFFFFFF); \
+        FVAR(IDF_MAP, flashlightlevel##name, 0, 0, 10); \
         FVAR(IDF_MAP, flashlightradius##name, 0, 512, FVAR_MAX); \
         VAR(IDF_MAP, flashlightspot##name, 0, 15, 89);
 
@@ -1140,9 +1142,53 @@ namespace game
         if(gver <= 244 && palette == 1 && index%(T_COUNT+2) > T_LAST) index = T_NEUTRAL; // remove kappa and sigma
     }
 
-    bool wantflashlights()
+    float darkness(int type)
     {
-        return getflashlightcolour() > 0 && getflashlightlevel() > 0 && getflashlightradius() > 0;
+        if(m_dark(gamemode, mutators)) switch(type)
+        {
+            case 1: return darknessglow;
+            case 2: return darknesshalo;
+            case 3: return darknesssun;
+            default: return darknesslevel;
+        }
+        return 1;
+    }
+
+    bool wantflashlight()
+    {
+        if(m_dark(gamemode, mutators)) return true;
+        if(getflashlightlevel() > 0) return true;
+        return false;
+    }
+
+    void flashlighteffect(gameent *d)
+    {
+        if(!hasspotlights || !d->isalive() || !wantflashlight()) return;
+
+        int fcol = getflashlightcolour();
+        vec color = vec::fromcolor(fcol ? fcol : 0xFFFFFF),
+            from = d == focus ? camera1->o : d->muzzletag(d->weapselect),
+            dir = d == focus ? cursordir : vec(d->yaw*RAD, d->pitch*RAD);
+        bool wantvol = hasvolumetric && flashlightvolumetric&(d == focus ? 1 : 2);
+
+        float radius = getflashlightradius();
+        if(m_dark(gamemode, mutators))
+        {
+            if(darknessflashcolourmin) color.max(darknessflashcolourmin);
+            if(darknessflashcolourmax) color.min(darknessflashcolourmax);
+            if(darknessflashradiusmin) radius = max(radius, darknessflashradiusmin);
+            if(darknessflashradiusmax) radius = min(radius, darknessflashradiusmax);
+        }
+
+        float level = m_dark(gamemode, mutators) ? darknessflashlevel : getflashlightlevel();
+        if(d != focus)
+        {
+            level *= flashlightlevelthird;
+            if(wantvol) level *= flashlightlevelvol;
+        }
+        color.mul(level);
+
+        adddynlight(from, radius, color, 0, 0, wantvol ? L_VOLUMETRIC : 0, 0, vec(0, 0, 0), NULL, dir, getflashlightspot());
     }
 
     void adddynlights()
@@ -1189,19 +1235,18 @@ namespace game
                 }
                 adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d, PULSE_SHOCK).mul(pc), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
             }
-        }
-        if(hasspotlights && focus->isalive() && wantflashlights())
-        {
-            adddynlight(camera1->o, getflashlightradius(), vec::fromcolor(getflashlightcolour()).mul(getflashlightlevel()), 0, 0, hasvolumetric && flashlightvolumetric ? L_VOLUMETRIC : 0, 0, vec(0, 0, 0), NULL, cursordir, getflashlightspot());
+
+            flashlighteffect(d);
         }
     }
 
     void checklights(bool reset = false)
     {
-        if(wantflashlights())
+        if(wantflashlight())
         {
             if(!hasspotlights || reset) cleardeferredlightshaders();
-            if(flashlightvolumetric)
+            if(!flashlightvolumetric) hasvolumetric = false;
+            else
             {
                 if(!hasvolumetric || reset) cleanupvolumetric();
                 hasvolumetric = true;

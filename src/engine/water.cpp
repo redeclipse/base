@@ -387,12 +387,12 @@ WATERVARS(alt, water2)
 WATERVARS(alt, water3)
 WATERVARS(alt, water4)
 
-GETMATIDXVAR(water, colour, const bvec &)
-GETMATIDXVAR(water, deepcolour, const bvec &)
-GETMATIDXVAR(water, deepfade, const bvec &)
-GETMATIDXVAR(water, refractcolour, const bvec &)
-GETMATIDXVAR(water, fallcolour, const bvec &)
-GETMATIDXVAR(water, fallrefractcolour, const bvec &)
+GETMATIDXVARDARK(water, colour, const bvec &)
+GETMATIDXVARDARK(water, deepcolour, const bvec &)
+GETMATIDXVARDARK(water, deepfade, const bvec &)
+GETMATIDXVARDARK(water, refractcolour, const bvec &)
+GETMATIDXVARDARK(water, fallcolour, const bvec &)
+GETMATIDXVARDARK(water, fallrefractcolour, const bvec &)
 GETMATIDXVAR(water, fog, int)
 GETMATIDXVAR(water, deep, int)
 GETMATIDXVAR(water, spec, int)
@@ -427,7 +427,7 @@ LAVAVARS(alt, lava2)
 LAVAVARS(alt, lava3)
 LAVAVARS(alt, lava4)
 
-GETMATIDXVAR(lava, colour, const bvec &)
+GETMATIDXVARDARK(lava, colour, const bvec &)
 GETMATIDXVAR(lava, fog, int)
 GETMATIDXVAR(lava, glowmin, float)
 GETMATIDXVAR(lava, glowmax, float)
@@ -461,21 +461,20 @@ VOLFOGVARS(alt, volfog4)
 #define GETVFIDXVAR(name, var, type) \
     type get##name##var(int mat) \
     { \
+        static bvec res; \
         switch(mat&MATF_INDEX) \
         { \
             default: case 0: \
-                if(checkmapvariant(MPV_ALT)) return name##var##alt.iszero() ? getfogcolour() : name##var##alt; \
-                return name##var.iszero() ? getfogcolour() : name##var; \
+                res = checkmapvariant(MPV_ALT) ? (name##var##alt.iszero() ? getfogcolour() : name##var##alt) : (name##var.iszero() ? getfogcolour() : name##var); \
             case 1: \
-                if(checkmapvariant(MPV_ALT)) return name##2##var##alt.iszero() ? getfogcolour() : name##2##var##alt; \
-                return name##2##var.iszero() ? getfogcolour() : name##2##var; \
+                res = checkmapvariant(MPV_ALT) ? (name##2##var##alt.iszero() ? getfogcolour() : name##2##var##alt) : (name##2##var.iszero() ? getfogcolour() : name##2##var); \
             case 2: \
-                if(checkmapvariant(MPV_ALT)) return name##3##var##alt.iszero() ? getfogcolour() : name##3##var##alt; \
-                return name##3##var.iszero() ? getfogcolour() : name##3##var; \
+                res = checkmapvariant(MPV_ALT) ? (name##3##var##alt.iszero() ? getfogcolour() : name##3##var##alt) : (name##3##var.iszero() ? getfogcolour() : name##3##var); \
             case 3: \
-                if(checkmapvariant(MPV_ALT)) return  name##4##var##alt.iszero() ? getfogcolour() : name##4##var##alt; \
-                return  name##4##var.iszero() ? getfogcolour() : name##4##var; \
+                res = checkmapvariant(MPV_ALT) ? (name##4##var##alt.iszero() ? getfogcolour() : name##4##var##alt) : (name##4##var.iszero() ? getfogcolour() : name##4##var); \
         } \
+        res.mul(game::darkness()); \
+        return res; \
     }
 
 GETVFIDXVAR(volfog, colour, const bvec &);

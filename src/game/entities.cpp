@@ -739,6 +739,7 @@ namespace entities
 
     bool isallowed(const extentity &e)
     {
+        if(game::darkness() && e.type == LIGHT) return false;
         if(enttype[e.type].modesattr >= 0 && !m_check(e.attrs[enttype[e.type].modesattr], e.attrs[enttype[e.type].modesattr+1], game::gamemode, game::mutators)) return false;
         if(enttype[e.type].mvattr >= 0 && !checkmapvariant(e.attrs[enttype[e.type].mvattr])) return false;
         if(enttype[e.type].fxattr >= 0 && !checkmapeffects(e.attrs[enttype[e.type].fxattr])) return false;
@@ -2581,7 +2582,7 @@ namespace entities
             if(e.attrs[0] >= 7) e.attrs[0]++;
         }
 
-        if(gver <= 223 && e.type == ROUTE) e.type = NOTUSED;
+        if(gver <= 223 && e.type == ROUTE) e.type = NOTUSED; // removing old route entity
 
         if(gver <= 244)
         {
@@ -2606,7 +2607,7 @@ namespace entities
             }
             if(enttype[e.type].palattr >= 0) game::fixpalette(e.attrs[enttype[e.type].palattr], e.attrs[enttype[e.type].palattr+1], gver);
             if(enttype[e.type].modesattr >= 0)
-            {
+            { // removing freestyle and multi
                 int mattr = enttype[e.type].modesattr+1;
                 if(e.attrs[mattr] != 0)
                 {
@@ -2648,6 +2649,26 @@ namespace entities
         }
 
         if(gver <= 259 && e.type == TELEPORT && e.attrs[4]) e.attrs[4] = (((e.attrs[4]&0xF)<<4)|((e.attrs[4]&0xF0)<<8)|((e.attrs[4]&0xF00)<<12))+0x0F0F0F;
+
+        if(gver <= 269)
+        { // adding murder in the dark
+            if(enttype[e.type].modesattr >= 0)
+            {
+                int mattr = enttype[e.type].modesattr+1;
+                if(e.attrs[mattr] != 0)
+                {
+                    static const int G_M_OLDNUM = 16, G_M_START = 13; // move game all game specific
+                    int oldmuts = e.attrs[mattr] > 0 ? e.attrs[mattr] : 0-e.attrs[mattr], newmuts = 0;
+                    loopi(G_M_OLDNUM)
+                    {
+                        if(!(oldmuts&(1<<i))) continue;
+                        if(i >= G_M_START) newmuts |= (1<<(i+1)); // move forward
+                        else newmuts = (1<<i); // retain as-is
+                    }
+                    e.attrs[mattr] = e.attrs[mattr] > 0 ? newmuts : 0-newmuts;
+                }
+            }
+        }
     }
 
     int getfirstroute()

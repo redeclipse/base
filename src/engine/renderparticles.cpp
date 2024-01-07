@@ -1835,13 +1835,21 @@ MPVVARS(alt);
         return name; \
     }
 
+#define GETMPVDARK(name, type) \
+    type get##name() \
+    { \
+        static int res; \
+        res = int((checkmapvariant(MPV_ALT) ? name##alt : name)*game::darkness()); \
+        return res; \
+    }
+
 GETMPV(weatherdrops, float);
 GETMPV(weatherdroppart, int);
 GETMPV(weatherdropcollide, int);
 GETMPV(weatherdropfade, int);
 GETMPV(weatherdropgravity, int);
-GETMPV(weatherdropcolour, int);
-GETMPV(weatherdrophintcolour, int);
+GETMPVDARK(weatherdropcolour, int);
+GETMPVDARK(weatherdrophintcolour, int);
 GETMPV(weatherdrophintblend, float);
 GETMPV(weatherdropblend, float);
 GETMPV(weatherdropsize, float);

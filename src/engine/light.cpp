@@ -32,7 +32,16 @@ PIESKYVARS(alt, MPV_ALT);
         return sun##name; \
     }
 
-GETSKYPIE(light, const bvec &);
+#define GETSKYPIEDARK(name, type) \
+    type getpie##name() \
+    { \
+        static bvec res; \
+        res = checkmapvariant(MPV_ALT) ? sun##name##alt : sun##name; \
+        res.mul(game::darkness(3)); \
+        return res; \
+    }
+
+GETSKYPIEDARK(light, const bvec &);
 GETSKYPIE(lightscale, float);
 GETSKYPIE(lightdir, const vec &);
 GETSKYPIE(lightyaw, float);

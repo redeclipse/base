@@ -144,6 +144,7 @@ namespace game
     extern int hexpalette(int palette, int index);
     extern vec getpalette(int palette, int index);
     extern void fixpalette(int &palette, int &index, int gver);
+    extern float darkness(int type = 0);
     extern void adddynlights();
     extern bool spotlights();
     extern bool volumetrics();
