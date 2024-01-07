@@ -1177,7 +1177,6 @@ namespace game
             if(darknessflashradiusmin) radius = max(radius, darknessflashradiusmin);
             if(darknessflashradiusmax) radius = min(radius, darknessflashradiusmax);
         }
-
         float level = m_dark(gamemode, mutators) ? darknessflashlevel : getflashlightlevel();
         if(d != focus)
         {
@@ -1186,7 +1185,33 @@ namespace game
         }
         color.mul(level);
 
-        adddynlight(d->muzzletag(d->weapselect), radius, color, 0, 0, wantvol ? L_VOLUMETRIC : 0, 0, vec(0, 0, 0), NULL, vec(d->yaw*RAD, d->pitch*RAD), spot);
+        bvec bcolor = bvec(color);
+
+        static fx::FxHandle flashlight_vol = fx::getfxhandle("FX_PLAYER_FLASHLIGHT_VOL");
+        static fx::FxHandle flashlight_novol = fx::getfxhandle("FX_PLAYER_FLASHLIGHT_NOVOL");
+        static fx::FxHandle flashlight_beam = fx::getfxhandle("FX_PLAYER_FLASHLIGHT_BEAM");
+
+        if(d != focus) fx::createfx(flashlight_beam, &d->flashlightfx).setentity(d).setcolor(bcolor);
+        else
+        {
+            if(wantvol)
+            {
+                fx::createfx(flashlight_vol, &d->flashlightfx)
+                    .setentity(d)
+                    .setcolor(bcolor)
+                    .setparam(0, radius)
+                    .setparam(1, spot);
+            }
+            else
+            {
+                fx::createfx(flashlight_novol, &d->flashlightfx)
+                    .setentity(d)
+                    .setcolor(bcolor)
+                    .setparam(0, radius)
+                    .setparam(1, spot);
+            }
+        }
+
     }
 
     void adddynlights()
@@ -1233,8 +1258,6 @@ namespace game
                 }
                 adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d, PULSE_SHOCK).mul(pc), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
             }
-
-            flashlighteffect(d);
         }
     }
 
@@ -1321,6 +1344,8 @@ namespace game
         d->o.z -= d->height;
 
         d->configure(lastmillis, gamemode, mutators, physics::carryaffinity(d), curtime);
+
+        flashlighteffect(d);
 
         if(d->state == CS_ALIVE)
         {
