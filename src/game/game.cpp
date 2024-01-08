@@ -1167,7 +1167,7 @@ namespace game
 
         int fcol = getflashlightcolour(), spot = m_dark(gamemode, mutators) ? darknessflashspot : getflashlightspot();
         vec color = vec::fromcolor(fcol ? fcol : 0xFFFFFF);
-        bool wantvol = hasvolumetric && flashlightvolumetric;
+        bool wantvol = hasvolumetric && flashlightvolumetric && d == focus;
 
         float radius = getflashlightradius();
         if(m_dark(gamemode, mutators))
@@ -1189,26 +1189,20 @@ namespace game
         static fx::FxHandle flashlight_beam = fx::getfxhandle("FX_PLAYER_FLASHLIGHT_BEAM");
 
         if(wantvol)
-        {
-            if(d != focus) fx::createfx(flashlight_beam, &d->flashlightfx).setentity(d).setcolor(bcolor);
-            else
-            {
-                fx::createfx(flashlight_vol, &d->flashlightfx)
-                    .setentity(d)
-                    .setcolor(bcolor)
-                    .setparam(0, radius)
-                    .setparam(1, spot);
-            }
-        }
-        else
-        {
+            fx::createfx(flashlight_vol, &d->flashlightfx)
+                .setentity(d)
+                .setcolor(bcolor)
+                .setparam(0, radius)
+                .setparam(1, spot);
+        else if(m_dark(gamemode, mutators) || d == focus)
             fx::createfx(flashlight_novol, &d->flashlightfx)
                 .setentity(d)
                 .setcolor(bcolor)
                 .setparam(0, radius)
                 .setparam(1, spot);
-        }
-
+        else
+            fx::createfx(flashlight_beam, &d->flashlightfx)
+                .setentity(d).setcolor(bcolor);
     }
 
     void adddynlights()
