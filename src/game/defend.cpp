@@ -183,7 +183,7 @@ namespace defend
         {
             defendstate::flag &f = st.flags[i];
             float occupy = f.occupied(m_dac_quick(game::gamemode, game::mutators), defendcount);
-            adddynlight(vec(f.o).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, skewcolour(f.owner, f.enemy, occupy), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
+            adddynlight(vec(f.o).addz(2), enttype[AFFINITY].radius, skewcolour(f.owner, f.enemy, occupy), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
         }
     }
 

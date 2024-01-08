@@ -247,12 +247,7 @@ namespace capture
     void adddynlights()
     {
         loopv(st.flags)
-        {
-            capturestate::flag &f = st.flags[i];
-            if(f.owner || f.droptime)
-                adddynlight(vec(f.spawnloc).add(vec(0, 0, enttype[AFFINITY].radius/2)), enttype[AFFINITY].radius, vec::fromcolor(TEAM(f.team, colour)), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
-            adddynlight(vec(f.pos(true)).add(vec(0, 0, enttype[AFFINITY].radius/2)), enttype[AFFINITY].radius, vec::fromcolor(TEAM(f.team, colour)), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
-        }
+            adddynlight(st.flags[i].pos(true), enttype[AFFINITY].radius, vec::fromcolor(TEAM(st.flags[i].team, colour)), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
     }
 
     void reset()

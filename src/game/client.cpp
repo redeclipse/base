@@ -1045,9 +1045,9 @@ namespace client
     int getresidualfx(gameent *d, int n, int c)
     {
         int rescount = 0, len = n > 0 ? n : 3000;
-        bool buff = d->state == CS_ALIVE && d->lastbuff;
+        bool buff = d->isalive() && d->lastbuff;
         if(buff) rescount++;
-        bool critical = d->health <= d->gethealth(game::gamemode, game::mutators)*game::damagecritical;
+        bool critical = d->isalive() && d->health <= d->gethealth(game::gamemode, game::mutators) * game::damagecritical;
         if(critical) rescount++;
         #define RESIDUAL(name, type, pulse) if(d->name##time && d->name##ing(lastmillis, d->name##time)) rescount++;
         RESIDUALS
