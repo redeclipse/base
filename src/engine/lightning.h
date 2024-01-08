@@ -147,5 +147,5 @@ struct lightningrenderer : sharedlistrenderer
     }
 };
 
-static lightningrenderer lightnings("<grey>particles/lightning", 1, 1),
-                         lightzaps("<grey>particles/lightzap", 0.5, 0.1);
+static lightningrenderer lightnings("<comp:1>distortflare [tex = particles/lightning]", 1, 1),
+                         lightzaps("<comp:1>distortflare [tex = particles/lightzap]", 0.5, 0.1);

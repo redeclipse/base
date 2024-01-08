@@ -190,6 +190,6 @@ struct explosionrenderer : sharedlistrenderer
         }
     }
 };
-static explosionrenderer explosions("<grey>particles/explosion"),
-    shockwaves("<grey>particles/solid"), shockballs("<grey>particles/shockball"), glimmerballs("<grey>particles/glimmer");
+static explosionrenderer explosions("<comp:1>distortlight [tex = particles/explosion]"),
+    shockwaves("particles/solid"), shockballs("<comp:1>distortlight [tex = particles/shockball]"), glimmerballs("<comp:1>distort [tex = particles/glimmer]");
 
