@@ -141,6 +141,7 @@ namespace game
     VAR(IDF_PERSIST, flashlightvolumetric, 0, 0, 1);
     FVAR(IDF_PERSIST, flashlightlevelthird, 0, 0.5f, 1);
     FVAR(IDF_PERSIST, flashlightlevelvol, 0, 1, 1);
+    VAR(IDF_PERSIST, flashlightmaximum, 1, 8, VAR_MAX);
 
     #define FLASHLIGHTVARS(name) \
         VAR(IDF_MAP|IDF_HEX, flashlightcolour##name, 0, 0, 0xFFFFFF); \
@@ -1161,10 +1162,8 @@ namespace game
         return false;
     }
 
-    void flashlighteffect(gameent *d)
+    void flashlighteffect(gameent *d, bool exhausted)
     {
-        if(!hasspotlights || !d->isalive() || !wantflashlight()) return;
-
         int fcol = getflashlightcolour(), spot = m_dark(gamemode, mutators) ? darknessflashspot : getflashlightspot();
         vec color = vec::fromcolor(fcol ? fcol : 0xFFFFFF);
         bool wantvol = hasvolumetric && flashlightvolumetric && d == focus;
@@ -1194,7 +1193,7 @@ namespace game
                 .setcolor(bcolor)
                 .setparam(0, radius)
                 .setparam(1, spot);
-        else if(m_dark(gamemode, mutators) || d == focus)
+        else if(d == focus || (!exhausted && m_dark(gamemode, mutators)))
             fx::createfx(flashlight_novol, &d->flashlightfx)
                 .setentity(d)
                 .setcolor(bcolor)
@@ -1252,6 +1251,21 @@ namespace game
         }
     }
 
+    struct flashent
+    {
+        gameent *owner;
+        float dist;
+
+        flashent(gameent *d) : owner(d), dist(0) { dist = owner->o.dist(camera1->o); }
+        ~flashent() {}
+
+        static inline bool sort(const flashent *x, const flashent *y)
+        {
+            if(x->owner != focus && x->dist > y->dist) return true;
+            return false;
+        }
+    };
+
     void checklights(bool reset = false)
     {
         if(wantflashlight())
@@ -1264,6 +1278,15 @@ namespace game
                 hasvolumetric = true;
             }
             hasspotlights = true;
+
+            gameent *d = NULL;
+            int numdyns = numdynents();
+            vector<flashent *> list;
+            loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL && d->isalive()) list.add(new flashent(d));
+            list.sort(flashent::sort);
+
+            loopv(list) flashlighteffect(list[i]->owner, i >= flashlightmaximum);
+            list.deletecontents();
         }
         else hasspotlights = hasvolumetric = false;
     }
@@ -1335,8 +1358,6 @@ namespace game
         d->o.z -= d->height;
 
         d->configure(lastmillis, gamemode, mutators, physics::carryaffinity(d), curtime);
-
-        flashlighteffect(d);
 
         if(d->state == CS_ALIVE)
         {

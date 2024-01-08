@@ -1736,7 +1736,7 @@ namespace server
                 }
                 else if(init)
                 {
-                    vector <clientinfo *> pool;
+                    vector<clientinfo *> pool;
                     loopvj(clients)
                     {
                         clientinfo *cp = clients[j];
