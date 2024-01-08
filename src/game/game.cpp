@@ -277,24 +277,24 @@ namespace game
     FVAR(IDF_PERSIST, followside, FVAR_MIN, 8, FVAR_MAX);
     FVAR(IDF_PERSIST, followblend, 0, 1, 1);
 
-    VAR(IDF_PERSIST, followtvspeed, 1, 500, VAR_MAX);
-    VAR(IDF_PERSIST, followtvyawspeed, 1, 500, VAR_MAX);
-    VAR(IDF_PERSIST, followtvpitchspeed, 1, 500, VAR_MAX);
-    FVAR(IDF_PERSIST, followtvrotate, FVAR_MIN, 45, FVAR_MAX); // rotate style, < 0 = absolute angle, 0 = scaled, > 0 = scaled with max angle
-    FVAR(IDF_PERSIST, followtvyawscale, FVAR_MIN, 1, 1000);
-    FVAR(IDF_PERSIST, followtvpitchscale, FVAR_MIN, 1, 1000);
+    VAR(IDF_PERSIST, followtvspeed, 1, 250, VAR_MAX);
+    VAR(IDF_PERSIST, followtvyawspeed, 1, 250, VAR_MAX);
+    VAR(IDF_PERSIST, followtvpitchspeed, 1, 250, VAR_MAX);
+    FVAR(IDF_PERSIST, followtvrotate, FVAR_MIN, 22.5f, FVAR_MAX); // rotate style, < 0 = absolute angle, 0 = scaled, > 0 = scaled with max angle
+    FVAR(IDF_PERSIST, followtvyawscale, FVAR_MIN, 0.5f, 1000);
+    FVAR(IDF_PERSIST, followtvpitchscale, FVAR_MIN, 0.25f, 1000);
     FVAR(IDF_PERSIST, followtvyawthresh, 0, 0, 360);
     FVAR(IDF_PERSIST, followtvpitchthresh, 0, 0, 180);
 
     VAR(0, spectvcamera, -1, -1, VAR_MAX); // use this specific camera id
     VAR(0, spectvcameraaim, 0, 1, 1); // use this specific camera aiming
-    VAR(IDF_PERSIST, spectvmintime, 1000, 3000, VAR_MAX);
-    VAR(IDF_PERSIST, spectvtime, 1000, 7500, VAR_MAX);
-    VAR(IDF_PERSIST, spectvmaxtime, 0, 15000, VAR_MAX);
-    VAR(IDF_PERSIST, spectvspeed, 1, 350, VAR_MAX);
-    VAR(IDF_PERSIST, spectvyawspeed, 1, 500, VAR_MAX);
-    VAR(IDF_PERSIST, spectvpitchspeed, 1, 500, VAR_MAX);
-    FVAR(IDF_PERSIST, spectvrotate, FVAR_MIN, 45, FVAR_MAX); // rotate style, < 0 = absolute angle, 0 = scaled, > 0 = scaled with max angle
+    VAR(IDF_PERSIST, spectvmintime, 1, 1000, VAR_MAX);
+    VAR(IDF_PERSIST, spectvtime, 1000, 5000, VAR_MAX);
+    VAR(IDF_PERSIST, spectvmaxtime, 0, 10000, VAR_MAX);
+    VAR(IDF_PERSIST, spectvspeed, 1, 250, VAR_MAX);
+    VAR(IDF_PERSIST, spectvyawspeed, 1, 250, VAR_MAX);
+    VAR(IDF_PERSIST, spectvpitchspeed, 1, 250, VAR_MAX);
+    FVAR(IDF_PERSIST, spectvrotate, FVAR_MIN, 22.5f, FVAR_MAX); // rotate style, < 0 = absolute angle, 0 = scaled, > 0 = scaled with max angle
     FVAR(IDF_PERSIST, spectvyawscale, FVAR_MIN, 1, 1000);
     FVAR(IDF_PERSIST, spectvpitchscale, FVAR_MIN, 1, 1000);
     FVAR(IDF_PERSIST, spectvyawthresh, 0, 0, 360);
@@ -303,37 +303,36 @@ namespace game
     VAR(IDF_PERSIST, spectvfirstperson, 0, 0, 2); // 0 = aim in direction followed player is facing, 1 = aim in direction determined by spectv when dead, 2 = always aim in direction
     VAR(IDF_PERSIST, spectvthirdperson, 0, 2, 2); // 0 = aim in direction followed player is facing, 1 = aim in direction determined by spectv when dead, 2 = always aim in direction
 
-    VAR(IDF_PERSIST, spectvintermmintime, 1000, 10000, VAR_MAX);
-    VAR(IDF_PERSIST, spectvintermtime, 1000, 7500, VAR_MAX);
+    VAR(IDF_PERSIST, spectvintermmintime, 1000, 5000, VAR_MAX);
+    VAR(IDF_PERSIST, spectvintermtime, 1000, 10000, VAR_MAX);
     VAR(IDF_PERSIST, spectvintermmaxtime, 0, 20000, VAR_MAX);
-    VAR(IDF_PERSIST, spectvintermspeed, 1, 500, VAR_MAX);
-    VAR(IDF_PERSIST, spectvintermyawspeed, 1, 500, VAR_MAX);
-    VAR(IDF_PERSIST, spectvintermpitchspeed, 1, 500, VAR_MAX);
-    FVAR(IDF_PERSIST, spectvintermrotate, FVAR_MIN, 45, FVAR_MAX); // rotate style, < 0 = absolute angle, 0 = scaled, > 0 = scaled with max angle
-    FVAR(IDF_PERSIST, spectvintermyawscale, FVAR_MIN, 1, 1000);
-    FVAR(IDF_PERSIST, spectvintermpitchscale, FVAR_MIN, 1, 1000);
+    VAR(IDF_PERSIST, spectvintermspeed, 1, 250, VAR_MAX);
+    VAR(IDF_PERSIST, spectvintermyawspeed, 1, 250, VAR_MAX);
+    VAR(IDF_PERSIST, spectvintermpitchspeed, 1, 250, VAR_MAX);
+    FVAR(IDF_PERSIST, spectvintermrotate, FVAR_MIN, 22.5f, FVAR_MAX); // rotate style, < 0 = absolute angle, 0 = scaled, > 0 = scaled with max angle
+    FVAR(IDF_PERSIST, spectvintermyawscale, FVAR_MIN, 0.5f, 1000);
+    FVAR(IDF_PERSIST, spectvintermpitchscale, FVAR_MIN, 0.25f, 1000);
     FVAR(IDF_PERSIST, spectvintermyawthresh, 0, 0, 360);
     FVAR(IDF_PERSIST, spectvintermpitchthresh, 0, 0, 180);
 
     VAR(0, spectvfollow, -1, -1, VAR_MAX); // attempts to always keep this client in view
     VAR(IDF_PERSIST, spectvfollowself, 0, 1, 2); // if we are not spectating, spectv should show us; 0 = off, 1 = not duel/survivor, 2 = always
-    VAR(IDF_PERSIST, spectvfollowmintime, 1000, 3000, VAR_MAX);
-    VAR(IDF_PERSIST, spectvfollowtime, 1000, 7500, VAR_MAX);
-    VAR(IDF_PERSIST, spectvfollowmaxtime, 0, 15000, VAR_MAX);
-    VAR(IDF_PERSIST, spectvfollowspeed, 1, 350, VAR_MAX);
-    VAR(IDF_PERSIST, spectvfollowyawspeed, 1, 350, VAR_MAX);
-    VAR(IDF_PERSIST, spectvfollowpitchspeed, 1, 350, VAR_MAX);
-    FVAR(IDF_PERSIST, spectvfollowrotate, FVAR_MIN, 45, FVAR_MAX); // rotate style, < 0 = absolute angle, 0 = scaled, > 0 = scaled with max angle
-    FVAR(IDF_PERSIST, spectvfollowyawscale, FVAR_MIN, 1, 1000);
-    FVAR(IDF_PERSIST, spectvfollowpitchscale, FVAR_MIN, 1, 1000);
+    VAR(IDF_PERSIST, spectvfollowmintime, 1000, 1000, VAR_MAX);
+    VAR(IDF_PERSIST, spectvfollowtime, 1000, 5000, VAR_MAX);
+    VAR(IDF_PERSIST, spectvfollowmaxtime, 0, 10000, VAR_MAX);
+    VAR(IDF_PERSIST, spectvfollowspeed, 1, 250, VAR_MAX);
+    VAR(IDF_PERSIST, spectvfollowyawspeed, 1, 250, VAR_MAX);
+    VAR(IDF_PERSIST, spectvfollowpitchspeed, 1, 250, VAR_MAX);
+    FVAR(IDF_PERSIST, spectvfollowrotate, FVAR_MIN, 22.5f, FVAR_MAX); // rotate style, < 0 = absolute angle, 0 = scaled, > 0 = scaled with max angle
+    FVAR(IDF_PERSIST, spectvfollowyawscale, FVAR_MIN, 0.5f, 1000);
+    FVAR(IDF_PERSIST, spectvfollowpitchscale, FVAR_MIN, 0.25f, 1000);
     FVAR(IDF_PERSIST, spectvfollowyawthresh, 0, 0, 360);
     FVAR(IDF_PERSIST, spectvfollowpitchthresh, 0, 0, 180);
 
-    FVAR(IDF_PERSIST, spectvmindist, 0, 32, FVAR_MAX);
-    FVAR(IDF_PERSIST, spectvmaxdist, 0, 512, FVAR_MAX);
-    FVAR(IDF_PERSIST, spectvmovedist, 0, 64, FVAR_MAX);
-    FVAR(IDF_PERSIST, spectvfollowmindist, 0, 16, FVAR_MAX);
-    FVAR(IDF_PERSIST, spectvfollowmaxdist, 0, 256, FVAR_MAX);
+    FVAR(IDF_PERSIST, spectvmindist, 0, 16, FVAR_MAX);
+    FVAR(IDF_PERSIST, spectvmaxdist, 0, 2048, FVAR_MAX);
+    FVAR(IDF_PERSIST, spectvfollowmindist, 0, 8, FVAR_MAX);
+    FVAR(IDF_PERSIST, spectvfollowmaxdist, 0, 1024, FVAR_MAX);
 
     VAR(IDF_PERSIST, deathcamstyle, 0, 2, 2); // 0 = no follow, 1 = follow attacker, 2 = follow self
     VAR(IDF_PERSIST, deathcamspeed, 0, 500, VAR_MAX);
