@@ -361,6 +361,12 @@ namespace fx
             PROP_INT,
             0, 0, 180,
             BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
+        ),
+        fxpropertydef(
+            "gain",
+            PROP_FLOAT,
+            0.0f, 1.0f, FVAR_MAX,
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         )
     };
 

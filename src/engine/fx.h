@@ -103,6 +103,7 @@ namespace fx
         FX_LIGHT_COLOR,
         FX_LIGHT_FLAGS,
         FX_LIGHT_SPOT,
+        FX_LIGHT_GAIN,
 
         FX_LIGHT_PROPS
     };

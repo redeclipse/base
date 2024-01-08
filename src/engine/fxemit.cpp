@@ -235,8 +235,9 @@ namespace fx
     {
         float scale = inst.getscale();
 
+        float gain = inst.getextprop<float>(FX_LIGHT_GAIN) * getblend(inst);
         float radius = inst.getextprop<float>(FX_LIGHT_RADIUS) * scale;
-        vec color = getcolor(inst, FX_LIGHT_COLOR).mul(getblend(inst)).tocolor();
+        vec color = getcolor(inst, FX_LIGHT_COLOR).tocolor().mul(gain);
         int flags = inst.getextprop<int>(FX_LIGHT_FLAGS);
         int spot = inst.getextprop<int>(FX_LIGHT_SPOT);
 
