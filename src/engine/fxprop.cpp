@@ -520,10 +520,10 @@ namespace fx
                 }
             }
 
+            lastfxprop = p;
+
             if(mod) setfxmod(*p, mod-1, value, modcode);
             else p->set(value);
-
-            lastfxprop = p;
         }
 
     }
