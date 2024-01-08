@@ -172,6 +172,7 @@ namespace fx
         FX_MOD_LERP_EMIT,       // lerp since emit begin
         FX_MOD_LERP_PARAM,      // param based lerp
         FX_MOD_LERP_ITER,       // iteration based lerp
+        FX_MOD_LERP_CAMFACING,  // lerp based on inverse dir dot product with camera
 
         FX_MOD_LERP_MODES
     };

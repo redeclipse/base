@@ -190,20 +190,34 @@ namespace fx
         float t = 1.0f;
         int lerpmode = prop.lerp->props[FX_MOD_LERP_PROP_MODE].get<int>();
 
-        if(lerpmode == FX_MOD_LERP_ITER && inst.iters > 1)
-            t = float(inst.curiter) / float(inst.iters - 1);
-        else if(lerpmode == FX_MOD_LERP_PARAM)
+        switch(lerpmode)
         {
-            int lerpparam = prop.lerp->props[FX_MOD_LERP_PROP_PARAM].get<int>();
-            t = inst.e->params[lerpparam];
-        }
-        else
-        {
-            int begin = prop.lerp->props[FX_MOD_LERP_PROP_MODE].get<int>() == FX_MOD_LERP_ACTIVE ?
-                inst.e->beginmillis : inst.beginmillis;
-            int end = begin + prop.lerp->props[FX_MOD_LERP_PROP_TIME].get<int>();
+            case FX_MOD_LERP_CAMFACING:
+            {
+                vec dir = vec(inst.from).sub(inst.to).normalize();
+                t = clamp(dir.dot(camdir), 0.0f, 1.0f);
+                break;
+            }
+            case FX_MOD_LERP_ITER:
+            {
+                if(inst.iters > 1) t = float(inst.curiter) / float(inst.iters - 1);
+                break;
+            }
+            case FX_MOD_LERP_PARAM:
+            {
+                int lerpparam = prop.lerp->props[FX_MOD_LERP_PROP_PARAM].get<int>();
+                t = inst.e->params[lerpparam];
+                break;
+            }
+            default:
+            {
+                int begin = prop.lerp->props[FX_MOD_LERP_PROP_MODE].get<int>() == FX_MOD_LERP_ACTIVE ?
+                    inst.e->beginmillis : inst.beginmillis;
+                int end = begin + prop.lerp->props[FX_MOD_LERP_PROP_TIME].get<int>();
 
-            t = float(lastmillis-begin) / float(end-begin);
+                t = float(lastmillis-begin) / float(end-begin);
+                break;
+            }
         }
 
         t = clamp(t, 0.0f, 1.0f);
