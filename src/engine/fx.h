@@ -202,7 +202,7 @@ namespace fx
         FX_MOD_PARAM_MODES
     };
 
-    #define FX_PARAMS 2
+    #define FX_PARAMS 4
 
     #define FX_EXT_PROPS 18
     #define FX_EXT_PROP(idx) (idx + FX_STD_PROPS)
