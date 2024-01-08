@@ -330,7 +330,7 @@ namespace fx
         float movethreshold = getprop<float>(FX_PROP_EMIT_MOVE);
         if(movethreshold > 0 && e->from.dist(e->prevfrom) < movethreshold) canemit = false;
 
-        int paramtrigger = getprop<float>(FX_PROP_EMIT_PARAM);
+        int paramtrigger = getprop<int>(FX_PROP_EMIT_PARAM);
         if(paramtrigger >= 0 && e->params[paramtrigger] == 0.0f) canemit = false;
 
         return canemit;
