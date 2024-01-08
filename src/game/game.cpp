@@ -1197,10 +1197,11 @@ namespace game
                 .setcolor(color)
                 .setparam(0, radius)
                 .setparam(1, spot)
-                .setparam(2, level);
+                .setparam(2, level)
+                .setparam(3, d != focus ? 1 : 0);
         else
             fx::createfx(flashlight_beam, &d->flashlightfx)
-                .setentity(d).setcolor(color);
+                .setentity(d).setcolor(color).setparam(3, 1);
     }
 
     void adddynlights()
