@@ -119,7 +119,7 @@ int finddynlights()
             continue;
         e.o = d.o;
         e.radius = e.xradius = e.yradius = e.height = e.aboveeye = d.curradius;
-        if(!collide(&e, vec(0, 0, 0), 0, false)) continue;
+        if(d.flags&L_DYNWORLDCHECK && !collide(&e, vec(0, 0, 0), 0, false)) continue;
 
         int insert = 0;
         loopvrev(closedynlights) if(d.dist >= closedynlights[i]->dist) { insert = i+1; break; }
