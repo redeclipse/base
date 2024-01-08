@@ -1165,23 +1165,20 @@ namespace game
     void flashlighteffect(gameent *d, bool exhausted)
     {
         int fcol = getflashlightcolour(), spot = m_dark(gamemode, mutators) ? darknessflashspot : getflashlightspot();
-        vec color = vec::fromcolor(fcol ? fcol : 0xFFFFFF);
+        bvec color = bvec(fcol ? fcol : 0xFFFFFF);
         bool wantvol = hasvolumetric && flashlightvolumetric && d == focus;
 
         float radius = getflashlightradius();
         if(m_dark(gamemode, mutators))
         {
-            if(darknessflashcolourmin) color.max(darknessflashcolourmin);
-            if(darknessflashcolourmax) color.min(darknessflashcolourmax);
+            if(darknessflashcolourmin) color.max(darknessflashcolourmin*255);
+            if(darknessflashcolourmax) color.min(darknessflashcolourmax*255);
             if(darknessflashradiusmin) radius = max(radius, darknessflashradiusmin);
             if(darknessflashradiusmax) radius = min(radius, darknessflashradiusmax);
         }
         float level = m_dark(gamemode, mutators) ? darknessflashlevel : getflashlightlevel();
         if(d != focus) level *= flashlightlevelthird;
         if(wantvol) level *= flashlightlevelvol;
-        color.mul(level);
-
-        bvec bcolor = bvec(color);
 
         static fx::FxHandle flashlight_vol = fx::getfxhandle("FX_PLAYER_FLASHLIGHT_VOL");
         static fx::FxHandle flashlight_novol = fx::getfxhandle("FX_PLAYER_FLASHLIGHT_NOVOL");
@@ -1190,18 +1187,20 @@ namespace game
         if(wantvol)
             fx::createfx(flashlight_vol, &d->flashlightfx)
                 .setentity(d)
-                .setcolor(bcolor)
+                .setcolor(color)
                 .setparam(0, radius)
-                .setparam(1, spot);
+                .setparam(1, spot)
+                .setparam(2, level);
         else if(d == focus || (!exhausted && m_dark(gamemode, mutators)))
             fx::createfx(flashlight_novol, &d->flashlightfx)
                 .setentity(d)
-                .setcolor(bcolor)
+                .setcolor(color)
                 .setparam(0, radius)
-                .setparam(1, spot);
+                .setparam(1, spot)
+                .setparam(2, level);
         else
             fx::createfx(flashlight_beam, &d->flashlightfx)
-                .setentity(d).setcolor(bcolor);
+                .setentity(d).setcolor(color);
     }
 
     void adddynlights()
