@@ -417,6 +417,7 @@ namespace fx
         pl = NULL;
         hook = newhook;
         if(hook) *hook = this;
+        loopi(FX_PARAMS) params[i] = 0.0f;
         calcrandom();
         bumpstat(FX_STAT_EMITTER_INIT);
     }
