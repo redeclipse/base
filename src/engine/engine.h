@@ -358,6 +358,8 @@ struct timer;
 extern timer *begintimer(const char *name, bool gpu = true);
 extern void endtimer(timer *t);
 
+extern int visorhud, rendervisor;
+extern bool visorenabled(bool noview = false);
 
 // octa
 extern cube *newcubes(uint face = F_EMPTY, int mat = MAT_AIR);

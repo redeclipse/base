@@ -2628,6 +2628,19 @@ void cleanupvisor()
     }
 }
 
+bool visorenabled(bool noview)
+{
+    if(!engineready) return false;
+
+    if(noview) return (visorhud&8)!=0;
+    else if(progressing) return (visorhud&4)!=0;
+    else if(editmode) return (visorhud&2)!=0;
+    else return (visorhud&1)!=0;
+    return false;
+}
+ICOMMANDV(0, visorenabled, visorenabled());
+VARR(rendervisor, 0);
+
 void gl_drawhud(bool noview = false)
 {
     hudmatrix.ortho(0, hudw, hudh, 0, -1, 1);
@@ -2635,16 +2648,12 @@ void gl_drawhud(bool noview = false)
     resethudshader();
     if(!noview) blendhalos();
 
-    bool wantvisor = false;
+    bool wantvisor = visorenabled(noview);
     float glitch = 0.f;
+
     if(engineready)
     {
         setupvisor(hudw, hudh);
-
-        if(noview) wantvisor = (visorhud&8)!=0;
-        else if(progressing) wantvisor = (visorhud&4)!=0;
-        else if(editmode) wantvisor = (visorhud&2)!=0;
-        else wantvisor = (visorhud&1)!=0;
 
         if(wantvisor)
         {
@@ -2696,7 +2705,9 @@ void gl_drawhud(bool noview = false)
         curh = visorh;
     }
 
+    rendervisor = wantvisor ? 1 : 0;
     hud::visorrender(curw, curh, wantvisor, noview, visorfbo);
+    rendervisor = 0;
 
     if(engineready)
     {

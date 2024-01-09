@@ -7231,9 +7231,30 @@ namespace UI
         }
     }
 
+    bool isvisor(int stype)
+    {
+        if(!engineready || (stype != SURFACE_PROGRESS && stype != SURFACE_MAIN)) return false;
+
+        if(stype == SURFACE_PROGRESS) return (visorhud&8)!=0;
+        else if(progressing) return (visorhud&4)!=0;
+        else if(editmode) return (visorhud&2)!=0;
+        else return (visorhud&1)!=0;
+
+        return false;
+    }
+
+    #define VISOR(type, body) \
+    { \
+        bool visor = isvisor(type); \
+        int oldvisor = rendervisor; \
+        if(visor) rendervisor = 1; \
+        body; \
+        if(visor) rendervisor = oldvisor; \
+    }
+
     void update(int stype)
     {
-        build(stype);
+        VISOR(stype, build(stype));
         if(stype == SURFACE_MAIN) updatetextures();
     }
 
@@ -7250,7 +7271,7 @@ namespace UI
             glDepthMask(GL_FALSE);
         }
 
-        surface->render(world);
+        VISOR(surfacetype, surface->render(world));
 
         if(world)
         {
