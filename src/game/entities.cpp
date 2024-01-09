@@ -78,10 +78,9 @@ namespace entities
 
         if(d->isnophys()) return;
 
-        loopenti(PHYSICS)
+        loopenti(PHYSICS) if(ents[i]->type == PHYSICS && isallowed(i))
         {
             gameentity &e = *(gameentity *)ents[i];
-
             if(e.attrs[0] < 0 || e.attrs[0] >= PHYSICS_MAX || (!e.attrs[1] && e.attrs[0] != PHYSICS_GRAVITY)) continue;
 
             if(e.flags&EF_BBZONE)
