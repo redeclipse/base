@@ -141,7 +141,8 @@ namespace game
     VAR(IDF_PERSIST, flashlightvolumetric, 0, 0, 1);
     FVAR(IDF_PERSIST, flashlightlevelthird, 0, 0.5f, 1);
     FVAR(IDF_PERSIST, flashlightlevelvol, 0, 1, 1);
-    VAR(IDF_PERSIST, flashlightmaximum, 1, 8, VAR_MAX);
+    VAR(IDF_PERSIST, flashlightmax, 1, 4, VAR_MAX);
+    VAR(IDF_PERSIST, flashlightmaxdark, 1, 16, VAR_MAX);
 
     #define FLASHLIGHTVARS(name) \
         VAR(IDF_MAP|IDF_HEX, flashlightcolour##name, 0, 0, 0xFFFFFF); \
@@ -1285,7 +1286,8 @@ namespace game
             loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL && d->isalive()) list.add(new flashent(d));
             list.sort(flashent::sort);
 
-            loopv(list) flashlighteffect(list[i]->owner, i >= flashlightmaximum);
+            int count = m_dark(gamemode, mutators) ? flashlightmaxdark : flashlightmax;
+            loopv(list) flashlighteffect(list[i]->owner, i >= count);
             list.deletecontents();
         }
         else hasspotlights = hasvolumetric = false;
