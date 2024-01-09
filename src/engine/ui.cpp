@@ -200,7 +200,7 @@ namespace UI
         if(force)
         {
             blendtypedef = BLEND_ALPHA;
-            blendsepdef = surfacetype == SURFACE_MAIN || surfacetype == SURFACE_COMPOSITE;
+            blendsepdef = surfacetype == SURFACE_VISOR || surfacetype == SURFACE_COMPOSITE;
         }
         setblend(blendtypedef, blendsepdef, force);
     }
@@ -572,39 +572,39 @@ namespace UI
             return false;
         }
 
-        virtual void startdraw(bool world) {}
+        virtual void startdraw() {}
         virtual void enddraw() {}
 
-        void enddraw(int change, bool world = false)
+        void enddraw(int change)
         {
             enddraw();
 
             changed &= ~change;
             if(changed)
             {
-                if(changed&CHANGE_SHADER) (world ? hudworldshader : hudshader)->set();
+                if(changed&CHANGE_SHADER) (surfacetype == SURFACE_WORLD ? hudworldshader : hudshader)->set();
                 if(changed&CHANGE_COLOR) gle::colorf(1, 1, 1);
                 if(changed&CHANGE_BLEND) resetblend();
             }
         }
 
-        void changedraw(int change = 0, bool world = false)
+        void changedraw(int change = 0)
         {
             if(!drawing)
             {
-                startdraw(world);
+                startdraw();
                 changed = change;
             }
             else if(drawing->gettype() != gettype())
             {
-                drawing->enddraw(change, world);
-                startdraw(world);
+                drawing->enddraw(change);
+                startdraw();
                 changed = change;
             }
             drawing = this;
         }
 
-        virtual void draw(bool world, float sx, float sy)
+        virtual void draw(float sx, float sy)
         {
             lastsx = sx;
             lastsy = sy;
@@ -613,7 +613,7 @@ namespace UI
             loopchildren(o,
             {
                 if(!isfullyclipped(sx + o->x, sy + o->y, o->w, o->h))
-                    o->draw(world, sx + o->x, sy + o->y);
+                    o->draw(sx + o->x, sy + o->y);
             });
         }
 
@@ -918,11 +918,11 @@ namespace UI
     ICOMMANDV(0, uibuildlevel, Object::buildlevel);
     ICOMMANDV(0, uitaglevel, Object::taglevel);
 
-    static inline void stopdrawing(bool world = false)
+    static inline void stopdrawing()
     {
         if(drawing)
         {
-            drawing->enddraw(0, world);
+            drawing->enddraw(0);
             drawing = NULL;
         }
     }
@@ -931,9 +931,9 @@ namespace UI
     vector<Surface *> surfacestack;
     Window *window = NULL;
 
-    static void resetclip(bool world)
+    static void resetclip()
     {
-        if(!world) glDisable(GL_SCISSOR_TEST);
+        if(surfacetype != SURFACE_WORLD) glDisable(GL_SCISSOR_TEST);
         else glDisable(GL_STENCIL_TEST);
 
         clipstack.setsize(0);
@@ -957,7 +957,7 @@ namespace UI
     {
         char *name, *dyn;
         Code *contents, *onshow, *onhide;
-        bool exclusive, mapdef, inworld, saved,
+        bool exclusive, mapdef, saved,
              menu, passthrough, tooltip, popup, persist, ontop, attached;
         int allowinput, lasthit, lastshow, zindex, numargs, initargs;
         float px, py, pw, ph,
@@ -970,14 +970,14 @@ namespace UI
         Window(const char *name_, const char *contents_, const char *onshow_, const char *onhide_, bool mapdef_, const char *dyn_ = NULL, tagval *args_ = NULL, int numargs_ = 0) :
             name(newstring(name_)), dyn(dyn_ && *dyn_ ? newstring(dyn_) : NULL),
             contents(NULL), onshow(NULL), onhide(NULL),
-            exclusive(false), mapdef(mapdef_), inworld(false),
+            exclusive(false), mapdef(mapdef_),
             menu(true), passthrough(false), tooltip(false), popup(false), persist(false), ontop(false), attached(false),
             allowinput(1), lasthit(0), lastshow(0), zindex(0), numargs(0), initargs(0),
             px(0), py(0), pw(0), ph(0),
             yaw(-1), pitch(0), curyaw(0), curpitch(0), detentyaw(0), detentpitch(0),
             scale(1), curscale(1), dist(0), hitx(-1), hity(-1),
             sscale(1, 1), soffset(0, 0),
-            origin(-1, -1, -1), pos(-1, -1, -1)
+            origin(0, 0, 0), pos(0, 0, 0)
         {
             if(contents_ && *contents_) contents = new Code(contents_);
             if(onshow_ && *onshow_) onshow = new Code(onshow_);
@@ -1075,12 +1075,11 @@ namespace UI
 
         void resetworld()
         {
-            inworld = false;
             yaw = -1;
             pitch = curyaw = curpitch = 0;
             scale = 1;
             curscale = uiworldscale;
-            origin = pos = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+            origin = pos = vec(-FLT_MAX);
         }
 
         void hide()
@@ -1094,23 +1093,24 @@ namespace UI
             resetworld();
         }
 
-        void show(const vec &o = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float y = 0, float p = 0, float s = 1, float dy = 0, float dp = 0)
+        void show(const vec &o = vec(-FLT_MAX), float y = 0, float p = 0, float s = 1, float dy = 0, float dp = 0)
         {
             overridepos = false;
             state |= STATE_HIDDEN;
             clearstate(STATE_HOLD_MASK);
-            if(o != vec(-FLT_MAX, -FLT_MAX, -FLT_MAX))
+
+            if(surfacetype == SURFACE_WORLD)
             {
                 yaw = y;
                 pitch = p;
-                origin = pos = o;
                 scale = s;
                 curscale = scale >= 0 ? scale * uiworldscale : -scale;
                 detentyaw = dy > 0 ? clamp(dy, 0.f, 180.f) : 0.f;
                 detentpitch = dp > 0 ? clamp(dp, 0.f, 90.f) : 0.f;
-                inworld = true;
             }
             else resetworld();
+
+            origin = pos = o;
 
             if(onshow)
             {
@@ -1123,11 +1123,18 @@ namespace UI
         void setup()
         {
             Object::setup();
+
             allowinput = 1;
             exclusive = passthrough = tooltip = popup = persist = ontop = attached = false;
             menu = true;
             zindex = 0;
             px = py = pw = ph = 0;
+
+            if(surfacetype != SURFACE_WORLD && origin != vec(-FLT_MAX))
+            {
+                float cx = 0.5f, cy = 0.5f, cz = 1;
+                if(vectocursor(origin, cx, cy, cz)) setpos(cx, cy);
+            }
         }
 
         void layout()
@@ -1139,36 +1146,36 @@ namespace UI
             window = oldwindow;
         }
 
-        void draw(bool world, float sx, float sy)
+        void draw(float sx, float sy)
         {
-            if(state&STATE_HIDDEN || world != inworld) return;
+            if(state&STATE_HIDDEN) return;
             Window *oldwindow = window;
             window = this;
 
             projection();
             resetblend(true);
 
-            (world ? hudworldshader : hudshader)->set();
+            (surfacetype == SURFACE_WORLD ? hudworldshader : hudshader)->set();
             gle::colorf(1, 1, 1);
 
             changed = 0;
             drawing = NULL;
 
-            if(inworld && ontop) glDisable(GL_DEPTH_TEST);
+            if(surfacetype == SURFACE_WORLD && ontop) glDisable(GL_DEPTH_TEST);
 
-            resetclip(inworld);
-            Object::draw(world, sx, sy);
-            stopdrawing(world);
-            resetclip(inworld);
+            resetclip();
+            Object::draw(sx, sy);
+            stopdrawing();
+            resetclip();
 
-            if(inworld && ontop) glEnable(GL_DEPTH_TEST);
+            if(surfacetype == SURFACE_WORLD && ontop) glEnable(GL_DEPTH_TEST);
 
             window = oldwindow;
         }
 
-        void draw(bool world)
+        void draw()
         {
-            draw(world, x, y);
+            draw(x, y);
         }
 
         void adjustchildren()
@@ -1183,7 +1190,7 @@ namespace UI
         void adjustlayout()
         {
             if(surfacetype == SURFACE_COMPOSITE) pw = ph = 1;
-            else if(inworld)
+            else if(surfacetype == SURFACE_WORLD)
             {
                 pw = w;
                 ph = h;
@@ -1283,7 +1290,7 @@ namespace UI
                 return;
             }
 
-            if(!inworld)
+            if(surfacetype != SURFACE_WORLD)
             {
                 hitx = cx;
                 hity = cy;
@@ -1327,7 +1334,7 @@ namespace UI
         {
             if(surfacetype == SURFACE_COMPOSITE) // composites have flipped Y axis
                 hudmatrix.ortho(px, px + pw, py, py + ph, -1, 1);
-            else if(inworld)
+            else if(surfacetype == SURFACE_WORLD)
             {
                 worldcalc();
 
@@ -1366,9 +1373,6 @@ namespace UI
         static bool compare(const Object *a, const Object *b)
         {
             Window *aa = (Window *)a, *bb = (Window *)b;
-            // sort world windows first for speed
-            if(!aa->inworld && bb->inworld) return false;
-            if(aa->inworld && !bb->inworld) return true;
 
             // ontop windows last
             if(aa->ontop && !bb->ontop) return false;
@@ -1378,7 +1382,7 @@ namespace UI
             if(aa->zindex > bb->zindex) return false;
             if(aa->zindex < bb->zindex) return true;
 
-            if(aa->inworld && bb->inworld)
+            if(surfacetype == SURFACE_WORLD)
             {
                 if(aa->pos.x == bb->pos.x && aa->pos.y == bb->pos.y)
                 {
@@ -1428,14 +1432,14 @@ namespace UI
         static const char *typestr() { return "#Blend"; }
         const char *gettype() const { return typestr(); }
 
-        void draw(bool world, float sx, float sy)
+        void draw(float sx, float sy)
         {
             int oldblend = blendtypedef;
             bool oldsep = blendsepdef;
             if(setting >= 0) blendtypedef = setting;
             if(sep >= 0) blendsepdef = sep != 0;
             resetblend();
-            Object::draw(world, sx, sy);
+            Object::draw(sx, sy);
             blendtypedef = oldblend;
             blendsepdef = oldsep;
             resetblend();
@@ -1467,10 +1471,10 @@ namespace UI
             popfont();
         }
 
-        void draw(bool world, float sx, float sy)
+        void draw(float sx, float sy)
         {
             pushfont(name);
-            Object::draw(world, sx, sy);
+            Object::draw(sx, sy);
             popfont();
         }
 
@@ -1605,7 +1609,7 @@ namespace UI
 
     ICOMMANDVF(0, uihitx, window ? window->hitx : -1.f)
     ICOMMANDVF(0, uihity, window ? window->hity : -1.f)
-    ICOMMANDV(0, uiworld, window && window->inworld ? 1 : 0)
+    ICOMMANDV(0, uiworld, surfacetype == SURFACE_WORLD ? 1 : 0)
     ICOMMANDVF(0, uicursorx, cursorx*float(hudw)/hudh)
     ICOMMANDVF(0, uicursory, cursory)
     ICOMMANDVF(0, uiaspect, float(hudw)/hudh)
@@ -1614,7 +1618,7 @@ namespace UI
     {
         if(clipstack.empty())
         {
-            if(!window->inworld) glEnable(GL_SCISSOR_TEST);
+            if(surfacetype != SURFACE_WORLD) glEnable(GL_SCISSOR_TEST);
             else glEnable(GL_STENCIL_TEST);
         }
 
@@ -1628,7 +1632,7 @@ namespace UI
         clipstack.pop();
         if(clipstack.empty())
         {
-            if(!window->inworld) glDisable(GL_SCISSOR_TEST);
+            if(surfacetype != SURFACE_WORLD) glDisable(GL_SCISSOR_TEST);
             else glDisable(GL_STENCIL_TEST);
         }
         else clipstack.last().scissor();
@@ -1638,7 +1642,7 @@ namespace UI
     {
         if(clipstack.empty()) return;
 
-        if(!window->inworld) glEnable(GL_SCISSOR_TEST);
+        if(surfacetype != SURFACE_WORLD) glEnable(GL_SCISSOR_TEST);
         else glEnable(GL_STENCIL_TEST);
     }
 
@@ -1646,7 +1650,7 @@ namespace UI
     {
         if(clipstack.empty()) return;
 
-        if(!window->inworld) glDisable(GL_SCISSOR_TEST);
+        if(surfacetype != SURFACE_WORLD) glDisable(GL_SCISSOR_TEST);
         else glDisable(GL_STENCIL_TEST);
     }
 
@@ -1654,7 +1658,7 @@ namespace UI
     {
         int sx1, sy1, sx2, sy2;
         window->calcscissor(x1, y1, x2, y2, sx1, sy1, sx2, sy2);
-        if(!window->inworld) glScissor(sx1, sy1, sx2-sx1, sy2-sy1);
+        if(surfacetype != SURFACE_WORLD) glScissor(sx1, sy1, sx2-sx1, sy2-sy1);
         else
         {
             glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
@@ -1718,14 +1722,14 @@ namespace UI
                 exclcheck = totalmillis;
                 loopwindows(w,
                 {
-                    if(!w->inworld && w->exclusive)
+                    if(surfacetype != SURFACE_WORLD && w->exclusive)
                     {
                         hasexclusive = true;
                         break;
                     }
                 });
             }
-            return !hasexclusive || (!w->inworld && w->exclusive);
+            return !hasexclusive || (surfacetype != SURFACE_WORLD && w->exclusive);
         }
 
         void adjustchildren()
@@ -1750,7 +1754,7 @@ namespace UI
 
         void checkinputsteal()
         {
-            if(type != SURFACE_MAIN) return;
+            if(type != SURFACE_VISOR) return;
 
             if(inputsteal && !inputsteal->isfocus())
                 inputsteal = NULL;
@@ -1773,7 +1777,7 @@ namespace UI
 
             if(interactive)
             {
-                if(type == SURFACE_MAIN) readyeditors();
+                if(type == SURFACE_VISOR) readyeditors();
 
                 setstate(STATE_HOVER, cursorx, cursory, childstate&STATE_HOLD_MASK);
                 if(childstate&STATE_HOLD) setstate(STATE_HOLD, cursorx, cursory, STATE_HOLD, SETSTATE_ANY);
@@ -1783,7 +1787,7 @@ namespace UI
 
             calctextscale();
 
-            if(type == SURFACE_MAIN && *uiprecmd) execute(uiprecmd);
+            if(type == SURFACE_VISOR && *uiprecmd) execute(uiprecmd);
 
             reset();
             setup();
@@ -1797,12 +1801,12 @@ namespace UI
             children.sort(Window::compare);
             resetstate(); // IMPORTED
 
-            if(type == SURFACE_MAIN && *uipostcmd) execute(uipostcmd);
+            if(type == SURFACE_VISOR && *uipostcmd) execute(uipostcmd);
             if(interactive)
             {
                 checkinputsteal();
                 if(!mousetracking) mousetrackvec = vec2(0, 0);
-                if(type == SURFACE_MAIN) flusheditors();
+                if(type == SURFACE_VISOR) flusheditors();
             }
 
             popfont();
@@ -1810,21 +1814,23 @@ namespace UI
             uiscale = olduiscale;
         }
 
-        void render(bool world = false)
+        void render()
         {
             float oldtextscale = curtextscale, olduiscale = uiscale;
             curtextscale = 1;
             uiscale = 1;
+
             pushfont();
             layout();
             adjustchildren();
-            draw(world);
+            draw();
             popfont();
+
             curtextscale = oldtextscale;
             uiscale = olduiscale;
         }
 
-        bool show(Window *w, const vec &pos = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float y = 0, float p = 0, float s = 1, float dy = 0, float dp = 0)
+        bool show(Window *w, const vec &pos = vec(-FLT_MAX), float y = 0, float p = 0, float s = 1, float dy = 0, float dp = 0)
         {
             if(children.find(w) >= 0) return false;
             w->resetchildstate();
@@ -1854,18 +1860,18 @@ namespace UI
             loopwindowsrev(w,
             {
                 if(!checkexclusive(w)) continue;
-                if(w->inworld || w->state&STATE_HIDDEN || w->persist) continue;
+                if(surfacetype == SURFACE_WORLD || w->state&STATE_HIDDEN || w->persist) continue;
                 if(w->allowinput || w->passthrough) { hide(w, i); return true; }
             });
             return false;
         }
 
-        int hideall(bool force = false, bool world = false)
+        int hideall(bool force = false)
         {
             int hidden = 0;
             loopwindowsrev(w,
             {
-                if((world && !w->inworld) || (!force && w->persist)) continue;
+                if(!force && w->persist) continue;
                 hide(w, i);
                 hidden++;
             });
@@ -1878,7 +1884,7 @@ namespace UI
             loopwindows(w,
             {
                 if(!checkexclusive(w)) continue;
-                if(w->inworld && !w->attached && (!cursor || w->hitx < 0 || w->hitx > 1 || w->hity < 0 || w->hity > 1)) continue;
+                if(surfacetype == SURFACE_WORLD && !w->attached && (!cursor || w->hitx < 0 || w->hitx > 1 || w->hity < 0 || w->hity > 1)) continue;
                 if(w->allowinput && !(w->state&STATE_HIDDEN) && ret != 1) ret = max(w->allowinput, ret);
             });
             return ret;
@@ -1889,7 +1895,7 @@ namespace UI
             loopwindows(w,
             {
                 if(!checkexclusive(w)) continue;
-                if(!w->inworld && w->menu && !(w->state&STATE_HIDDEN)) return !pass || !w->passthrough;
+                if(surfacetype != SURFACE_WORLD && w->menu && !(w->state&STATE_HIDDEN)) return !pass || !w->passthrough;
             });
             return false;
         }
@@ -1899,14 +1905,14 @@ namespace UI
             loopwindowsrev(w,
             {
                 if(!checkexclusive(w)) continue;
-                if(!w->inworld && (w->allowinput || w->passthrough) && !(w->state&STATE_HIDDEN)) { return w->name; }
+                if(surfacetype != SURFACE_WORLD && (w->allowinput || w->passthrough) && !(w->state&STATE_HIDDEN)) { return w->name; }
             });
             return NULL;
         }
 
-        void draw(bool world, float sx, float sy) {}
+        void draw(float sx, float sy) {}
 
-        void draw(bool world)
+        void draw()
         {
             if(children.empty()) return;
             loopwindows(w,
@@ -1917,7 +1923,7 @@ namespace UI
                     w->setpos((cursorx*float(hudw)/float(hudh))-(w->w*cursorx), cursory >= 0.5f ? cursory-w->h-uitipoffset : cursory+hud::cursorsize+uitipoffset);
                 else if(w->popup && !w->overridepos)
                     w->setpos((cursorx*float(hudw)/float(hudh))-(w->w*cursorx), cursory-w->h*0.5f);
-                w->draw(world);
+                w->draw();
             });
         }
     };
@@ -2052,7 +2058,7 @@ namespace UI
         setup();
         Window *oldwindow = window;
         window = this;
-        if(inworld) dist = pos.squaredist(camera1->o);
+        if(surfacetype == SURFACE_WORLD) dist = pos.squaredist(camera1->o);
         setargs();
         buildlevel = taglevel = -1;
         if(contents) buildchildren(contents->code, mapdef);
@@ -2263,7 +2269,7 @@ namespace UI
         return true;
     }
 
-    bool hideui(const char *name, int stype, int param, bool world)
+    bool hideui(const char *name, int stype, int param)
     {
         if(!uivisible(name, stype, param)) return false;
 
@@ -2272,11 +2278,11 @@ namespace UI
 
         if(!pushsurface(stype)) return false;
 
-        if(!ref || !*ref) ret = surface->hideall(false, world) > 0;
+        if(!ref || !*ref) ret = surface->hideall(false) > 0;
         else
         {
             Window *w = surface->windows.find(ref, NULL);
-            if(w && (!world || w->inworld)) ret = surface->hide(w);
+            if(w) ret = surface->hide(w);
         }
 
         popsurface();
@@ -2315,9 +2321,9 @@ namespace UI
         return ret;
     }
 
-    void hideall(bool world)
+    void hideall()
     {
-        loopi(SURFACE_MAX) if(surfaces[i] && surfaces[i]->interactive) hideui(NULL, i, world);
+        loopi(SURFACE_MAX) if(surfaces[i] && surfaces[i]->interactive) hideui(NULL, i);
     }
 
     void holdui(const char *name, bool on, int stype, int param, const vec &origin, float yaw, float pitch, float scale, float detentyaw, float detentpitch)
@@ -2350,19 +2356,19 @@ namespace UI
         return ret;
     }
 
-    ICOMMAND(IDF_NOECHO, showui, "sbbggggffff", (char *name, int *sf, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch), intret(showui(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_MAIN), *param, vec(*x, *y, *z), *yaw, *pitch, *scale, *detentyaw, *detentpitch) ? 1 : 0));
-    ICOMMAND(IDF_NOECHO, hideui, "sbb", (char *name, int *sf, int *param), intret(hideui(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_MAIN), *param) ? 1 : 0));
-    ICOMMAND(IDF_NOECHO, toggleui, "sbbggggffff", (char *name, int *sf, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch), intret(toggleui(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_MAIN), *param, vec(*x, *y, *z), *yaw, *pitch, *scale, *detentyaw, *detentpitch) ? 1 : 0));
-    ICOMMAND(IDF_NOECHO, holdui, "sbbggggffffD", (char *name, int *sf, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch, int *down), holdui(name, *down!=0, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_MAIN), *param, vec(*x, *y, *z), *yaw, *pitch, *scale, *detentyaw, *detentpitch));
-    ICOMMAND(IDF_NOECHO, pressui, "sbbggggffffD", (char *name, int *sf, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch, int *down), pressui(name, *down!=0, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_MAIN), *param, vec(*x, *y, *z), *yaw, *pitch, *scale, *detentyaw, *detentpitch));
-    ICOMMAND(IDF_NOECHO, uivisible, "sbb", (char *name, int *sf, int *param), intret(uivisible(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_MAIN), *param) ? 1 : 0));
+    ICOMMAND(IDF_NOECHO, showui, "sbbggggffff", (char *name, int *sf, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch), intret(showui(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_VISOR), *param, vec(*x, *y, *z), *yaw, *pitch, *scale, *detentyaw, *detentpitch) ? 1 : 0));
+    ICOMMAND(IDF_NOECHO, hideui, "sbb", (char *name, int *sf, int *param), intret(hideui(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_VISOR), *param) ? 1 : 0));
+    ICOMMAND(IDF_NOECHO, toggleui, "sbbggggffff", (char *name, int *sf, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch), intret(toggleui(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_VISOR), *param, vec(*x, *y, *z), *yaw, *pitch, *scale, *detentyaw, *detentpitch) ? 1 : 0));
+    ICOMMAND(IDF_NOECHO, holdui, "sbbggggffffD", (char *name, int *sf, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch, int *down), holdui(name, *down!=0, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_VISOR), *param, vec(*x, *y, *z), *yaw, *pitch, *scale, *detentyaw, *detentpitch));
+    ICOMMAND(IDF_NOECHO, pressui, "sbbggggffffD", (char *name, int *sf, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch, int *down), pressui(name, *down!=0, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_VISOR), *param, vec(*x, *y, *z), *yaw, *pitch, *scale, *detentyaw, *detentpitch));
+    ICOMMAND(IDF_NOECHO, uivisible, "sbb", (char *name, int *sf, int *param), intret(uivisible(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_VISOR), *param) ? 1 : 0));
 
-    #define SURFACEOP(idx)  Surface *s = (idx) >= 0 && (idx) < SURFACE_MAX ? surfaces[(idx)] : (surface ? surface : surfaces[SURFACE_MAIN]);
+    #define SURFACEOP(idx)  Surface *s = (idx) >= 0 && (idx) < SURFACE_MAX ? surfaces[(idx)] : (surface ? surface : surfaces[SURFACE_VISOR]);
 
     ICOMMAND(IDF_NOECHO, hidetopui, "b", (int *sf), SURFACEOP(*sf); intret(s && s->hidetop() ? 1 : 0));
-    ICOMMAND(IDF_NOECHO, hideallui, "bii", (int *sf, int *n, int *w), SURFACEOP(*sf); intret(s ? s->hideall(*n != 0, *w != 0) : 0));
+    ICOMMAND(IDF_NOECHO, hideallui, "bii", (int *sf, int *n), SURFACEOP(*sf); intret(s ? s->hideall(*n != 0) : 0));
     ICOMMAND(IDF_NOECHO, uitopwindow, "b", (int *sf), SURFACEOP(*sf); result(s ? s->topname() : ""));
-    ICOMMANDVS(0, uitopname, surface ? surface->topname() : (surfaces[SURFACE_MAIN] ? surfaces[SURFACE_MAIN]->topname() : ""));
+    ICOMMANDVS(0, uitopname, surface ? surface->topname() : (surfaces[SURFACE_VISOR] ? surfaces[SURFACE_VISOR]->topname() : ""));
 
     ICOMMANDVS(0, uiname, window ? window->name : "")
 
@@ -2600,19 +2606,19 @@ namespace UI
             loopchildrange(columns, children.length(), o, o->adjustlayout(0, 0, w, h));
         }
 
-        void draw(bool world, float sx, float sy)
+        void draw(float sx, float sy)
         {
             drawn = true;
 
             loopchildrange(columns, children.length(), o,
             {
                 if(!isfullyclipped(sx + o->x, sy + o->y, o->w, o->h))
-                    o->draw(world, sx + o->x, sy + o->y);
+                    o->draw(sx + o->x, sy + o->y);
             });
             loopchildrange(0, columns, o,
             {
                 if(!isfullyclipped(sx + o->x, sy + o->y, o->w, o->h))
-                    o->draw(world, sx + o->x, sy + o->y);
+                    o->draw(sx + o->x, sy + o->y);
             });
         }
     };
@@ -2868,7 +2874,7 @@ namespace UI
         const char *gettype() const { return typestr(); }
         bool iscolour() const { return true; }
 
-        void setupdraw(bool world, int drawflags = 0)
+        void setupdraw(int drawflags = 0)
         {
             int outtype = -1;
             bool outsep = sep >= 0 ? sep != 0 : blendsepdef;
@@ -2884,7 +2890,7 @@ namespace UI
             if(outtype != blendtype || outsep != blendsep) drawflags |= CHANGE_BLEND;
             drawflags |= CHANGE_COLOR;
 
-            changedraw(drawflags, world);
+            changedraw(drawflags);
             setblend(outtype, outsep);
         }
 
@@ -3050,16 +3056,16 @@ namespace UI
         static const char *typestr() { return "#FillColor"; }
         const char *gettype() const { return typestr(); }
 
-        void startdraw(bool world)
+        void startdraw()
         {
             hudnotextureshader->set();
             gle::defvertex(2);
             Color::def();
         }
 
-        void draw(bool world, float sx, float sy)
+        void draw(float sx, float sy)
         {
-            setupdraw(world, CHANGE_SHADER);
+            setupdraw(CHANGE_SHADER);
 
             int cols = colors.length();
             gle::begin(GL_TRIANGLE_STRIP);
@@ -3112,7 +3118,7 @@ namespace UI
             }
             gle::end();
 
-            Object::draw(world, sx, sy);
+            Object::draw(sx, sy);
         }
     };
 
@@ -3159,15 +3165,15 @@ namespace UI
         static const char *typestr() { return "#Line"; }
         const char *gettype() const { return typestr(); }
 
-        void startdraw(bool world)
+        void startdraw()
         {
             hudnotextureshader->set();
             gle::defvertex(2);
         }
 
-        void draw(bool world, float sx, float sy)
+        void draw(float sx, float sy)
         {
-            setupdraw(world, CHANGE_SHADER);
+            setupdraw(CHANGE_SHADER);
 
             if(width != 1) glLineWidth(width);
             colors[0].init();
@@ -3177,7 +3183,7 @@ namespace UI
             gle::end();
             if(width != 1) glLineWidth(1);
 
-            Object::draw(world, sx, sy);
+            Object::draw(sx, sy);
         }
     };
 
@@ -3199,15 +3205,15 @@ namespace UI
         static const char *typestr() { return "#Outline"; }
         const char *gettype() const { return typestr(); }
 
-        void startdraw(bool world)
+        void startdraw()
         {
             hudnotextureshader->set();
             gle::defvertex(2);
         }
 
-        void draw(bool world, float sx, float sy)
+        void draw(float sx, float sy)
         {
-            setupdraw(world, CHANGE_SHADER);
+            setupdraw(CHANGE_SHADER);
 
             if(width != 1) glLineWidth(width);
             colors[0].init();
@@ -3219,7 +3225,7 @@ namespace UI
             gle::end();
             if(width != 1) glLineWidth(1);
 
-            Object::draw(world, sx, sy);
+            Object::draw(sx, sy);
         }
     };
     UIARG(Outline, outline, width, "f", float, FVAR_NONZERO, FVAR_MAX);
@@ -3268,12 +3274,12 @@ namespace UI
         const char *gettype() const { return typestr(); }
         bool isrender() const { return true; }
 
-        void startdraw(bool world)
+        void startdraw()
         {
             if(shdr) shdr->set();
             else
             {
-                (world ? hudworldshader : hudshader)->set();
+                (surfacetype == SURFACE_WORLD ? hudworldshader : hudshader)->set();
                 params.setsize(0);
                 texs.setsize(0);
                 texs.add(notexture);
@@ -3282,9 +3288,9 @@ namespace UI
             gle::deftexcoord0();
         }
 
-        void draw(bool world, float sx, float sy)
+        void draw(float sx, float sy)
         {
-            setupdraw(world, CHANGE_SHADER);
+            setupdraw(CHANGE_SHADER);
 
             LOCALPARAMF(millis, lastmillis/1000.0f);
             LOCALPARAMF(viewsize, hudw*w, hudh*h, 1.0f/(hudw*w), 1.0f/(hudh*h));
@@ -3321,7 +3327,7 @@ namespace UI
             gle::attribf(sx+(w*getcoord(FC_BR, 0)), sy+(h*getcoord(FC_BR, 1))); gle::attribf(1, 1);
             gle::end();
 
-            Object::draw(world, sx, sy);
+            Object::draw(sx, sy);
         }
     };
 
@@ -3411,7 +3417,7 @@ namespace UI
             return !alphatarget || !(tex->type&Texture::ALPHA) || checkalphamask(tex, cx/w, cy/h);
         }
 
-        void startdraw(bool world)
+        void startdraw()
         {
             lasttex = NULL;
             lastcolor = Color(0, 0, 0, 0);
@@ -3423,9 +3429,9 @@ namespace UI
             gle::end();
         }
 
-        void bindtex(bool world, GLenum mode = GL_QUADS, int colstart = 0, bool forced = false)
+        void bindtex(GLenum mode = GL_QUADS, int colstart = 0, bool forced = false)
         {
-            setupdraw(world);
+            setupdraw();
 
             int col = clamp(colstart, -1, colors.length()-1);
             Color c = col >= 0 ? (colors.inrange(col) ? colors[col] : colors[0]) : Color(colors[0]).scale(shadowcolor);
@@ -3463,18 +3469,18 @@ namespace UI
             }
         }
 
-        bool drawmapped(bool world, float sx, float sy, vec2 coordmap[FC_MAX], vec2 tcoordmap[FC_MAX], int colstart = 0, int colcount = 0, bool forced = false, bool shading = false)
+        bool drawmapped(float sx, float sy, vec2 coordmap[FC_MAX], vec2 tcoordmap[FC_MAX], int colstart = 0, int colcount = 0, bool forced = false, bool shading = false)
         {
             int cols = clamp(colcount ? colcount : colors.length()-colstart, 0, colors.length());
             if(!shading && outline)
             {
-                setupdraw(world, CHANGE_SHADER);
+                setupdraw(CHANGE_SHADER);
                 hudoutlineshader->set();
                 LOCALPARAMF(textparams, 0.15f, 0.35f, 0.35f, 0.55f);
             }
             if(!shading && cols >= 2)
             {
-                bindtex(world, GL_TRIANGLE_STRIP, colstart, forced);
+                bindtex(GL_TRIANGLE_STRIP, colstart, forced);
                 float vr = 1/float(cols-1), vcx1 = 0, vcx2 = 0, vcy1 = 0, vcy2 = 0,
                     vw1 = coordmap[FC_TR][0]-coordmap[FC_TL][0], vx1 = coordmap[FC_TL][0],
                     vw2 = coordmap[FC_BR][0]-coordmap[FC_BL][0], vx2 = coordmap[FC_BL][0],
@@ -3532,7 +3538,7 @@ namespace UI
             }
             else
             {
-                bindtex(world, GL_QUADS, colstart, forced);
+                bindtex(GL_QUADS, colstart, forced);
                 gle::attribf(sx+coordmap[FC_TL][0], sy+coordmap[FC_TL][1]); gle::attribf(tcoordmap[FC_TL][0], tcoordmap[FC_TL][1]); // 0
                 gle::attribf(sx+coordmap[FC_TR][0], sy+coordmap[FC_TR][1]); gle::attribf(tcoordmap[FC_TR][0], tcoordmap[FC_TR][1]); // 1
                 gle::attribf(sx+coordmap[FC_BR][0], sy+coordmap[FC_BR][1]); gle::attribf(tcoordmap[FC_BR][0], tcoordmap[FC_BR][1]); // 2
@@ -3541,9 +3547,9 @@ namespace UI
             return false;
         }
 
-        void draw(bool world, float sx, float sy)
+        void draw(float sx, float sy)
         {
-            if(tex == notexture) { Object::draw(world, sx, sy); return; }
+            if(tex == notexture) { Object::draw(sx, sy); return; }
 
             float gs = fabs(shadowsize), gw = max(w-(shadowsize != 0 ? float(gs) : 0.f), 0.f), gh = max(h-(shadowsize != 0 ? float(gs) : 0.f), 0.f);
             loopk(shadowsize != 0 ? 2 : 1)
@@ -3561,10 +3567,10 @@ namespace UI
                     coordmap[i][j] = getcoord(i, j)*(j ? gh : gw);
                     tcoordmap[i][j] = defcoords[i][j];
                 }
-                drawmapped(world, gx, gy, coordmap, tcoordmap, shading ? -1 : 0, 0, false, shading);
+                drawmapped(gx, gy, coordmap, tcoordmap, shading ? -1 : 0, 0, false, shading);
             }
 
-            Object::draw(world, sx, sy);
+            Object::draw(sx, sy);
         }
     };
 
@@ -3616,9 +3622,9 @@ namespace UI
             return !alphatarget || !(tex->type&Texture::ALPHA) || checkalphamask(tex, cropx + cx/w*cropw, cropy + cy/h*croph);
         }
 
-        void draw(bool world, float sx, float sy)
+        void draw(float sx, float sy)
         {
-            if(tex == notexture) { Object::draw(world, sx, sy); return; }
+            if(tex == notexture) { Object::draw(sx, sy); return; }
 
             float gs = fabs(shadowsize), gw = max(w-(shadowsize != 0 ? float(gs) : 0.f), 0.f), gh = max(h-(shadowsize != 0 ? float(gs) : 0.f), 0.f);
             loopk(shadowsize != 0 ? 2 : 1)
@@ -3637,10 +3643,10 @@ namespace UI
                     coordmap[i][j] = getcoord(i, j)*(j ? gh : gw);
                     tcoordmap[i][j] = texmap[i][j];
                 }
-                drawmapped(world, gx, gy, coordmap, tcoordmap, shading ? -1 : 0, 0, false, shading);
+                drawmapped(gx, gy, coordmap, tcoordmap, shading ? -1 : 0, 0, false, shading);
             }
 
-            Object::draw(world, sx, sy);
+            Object::draw(sx, sy);
         }
     };
 
@@ -3699,9 +3705,9 @@ namespace UI
             return checkalphamask(tex, mx, my);
         }
 
-        void draw(bool world, float sx, float sy)
+        void draw(float sx, float sy)
         {
-            if(tex == notexture) { Object::draw(world, sx, sy); return; }
+            if(tex == notexture) { Object::draw(sx, sy); return; }
 
             float gs = fabs(shadowsize), gw = max(w-(shadowsize != 0 ? float(gs) : 0.f), 0.f), gh = max(h-(shadowsize != 0 ? float(gs) : 0.f), 0.f);
             loopk(shadowsize != 0 ? 2 : 1)
@@ -3715,11 +3721,11 @@ namespace UI
                 }
                 if(!shading && outline)
                 {
-                    setupdraw(world, CHANGE_SHADER);
+                    setupdraw(CHANGE_SHADER);
                     hudoutlineshader->set();
                     LOCALPARAMF(textparams, 0.15f, 0.35f, 0.35f, 0.55f);
                 }
-                bindtex(world, GL_QUADS, shading ? -1 : 0);
+                bindtex(GL_QUADS, shading ? -1 : 0);
 
                 float splitw = (minw ? min(minw, gw) : gw) / 2,
                     splith = (minh ? min(minh, gh) : gh) / 2,
@@ -3754,7 +3760,7 @@ namespace UI
                 }
             }
 
-            Object::draw(world, sx, sy);
+            Object::draw(sx, sy);
         }
     };
 
@@ -3794,9 +3800,9 @@ namespace UI
             return checkalphamask(tex, mx, my);
         }
 
-        void draw(bool world, float sx, float sy)
+        void draw(float sx, float sy)
         {
-            if(tex == notexture) { Object::draw(world, sx, sy); return; }
+            if(tex == notexture) { Object::draw(sx, sy); return; }
 
             float gs = fabs(shadowsize), gw = max(w-(shadowsize != 0 ? float(gs) : 0.f), 0.f), gh = max(h-(shadowsize != 0 ? float(gs) : 0.f), 0.f);
             loopk(shadowsize != 0 ? 2 : 1)
@@ -3924,12 +3930,12 @@ namespace UI
                             case 1: colstart = 0; colcount = colors.length(); break;
                             case 2: colstart = colors.length()-1; colcount = 1; break;
                         }
-                        drawmapped(world, gx, gy, coordmap[target], tcoordmap[target], colstart, colcount, j == 0);
+                        drawmapped(gx, gy, coordmap[target], tcoordmap[target], colstart, colcount, j == 0);
                     }
                 }
-                else loopi(CO_MAX) drawmapped(world, gx, gy, coordmap[i], tcoordmap[i], shading ? -1 : 0, 0, false, shading);
+                else loopi(CO_MAX) drawmapped(gx, gy, coordmap[i], tcoordmap[i], shading ? -1 : 0, 0, false, shading);
             }
-            Object::draw(world, sx, sy);
+            Object::draw(sx, sy);
         }
     };
 
@@ -3967,9 +3973,9 @@ namespace UI
             return checkalphamask(tex, fmod(cx/tilew, 1), fmod(cy/tileh, 1));
         }
 
-        void draw(bool world, float sx, float sy)
+        void draw(float sx, float sy)
         {
-            if(tex == notexture) { Object::draw(world, sx, sy); return; }
+            if(tex == notexture) { Object::draw(sx, sy); return; }
 
             float gs = fabs(shadowsize), gw = max(w-(shadowsize != 0 ? float(gs) : 0.f), 0.f), gh = max(h-(shadowsize != 0 ? float(gs) : 0.f), 0.f);
             loopk(shadowsize != 0 ? 2 : 1)
@@ -3983,11 +3989,11 @@ namespace UI
                 }
                 if(!shading && outline)
                 {
-                    setupdraw(world, CHANGE_SHADER);
+                    setupdraw(CHANGE_SHADER);
                     hudoutlineshader->set();
                     LOCALPARAMF(textparams, 0.15f, 0.35f, 0.35f, 0.55f);
                 }
-                bindtex(world, GL_QUADS, shading ? -1 : 0);
+                bindtex(GL_QUADS, shading ? -1 : 0);
                 if(tex->tclamp)
                 {
                     for(float dy = 0; dy < gh; dy += tileh)
@@ -4003,7 +4009,7 @@ namespace UI
                 else quads(gx, gy, gw, gh, 0, 0, w/tilew, h/tileh);
             }
 
-            Object::draw(world, sx, sy);
+            Object::draw(sx, sy);
         }
     };
 
@@ -4032,20 +4038,20 @@ namespace UI
         static const char *typestr() { return "#Thumbnail"; }
         const char *gettype() const { return typestr(); }
 
-        void startdraw(bool world)
+        void startdraw()
         {
             lastcolor = Color(0, 0, 0, 0);
         }
 
-        void draw(bool world, float sx, float sy)
+        void draw(float sx, float sy)
         {
             if(!t || t == notexture)
             {
-                Object::draw(world, sx, sy);
+                Object::draw(sx, sy);
                 return;
             }
 
-            setupdraw(world);
+            setupdraw();
 
             Color c = colors[0];
             if(lastcolor != c)
@@ -4062,7 +4068,7 @@ namespace UI
             settexture(t);
             quad(sx, sy, w, h, tc);
 
-            Object::draw(world, sx, sy);
+            Object::draw(sx, sy);
         }
     };
 
@@ -4093,7 +4099,7 @@ namespace UI
             Target::setup(minw_, minh_, color_, type_);
         }
 
-        void startdraw(bool world)
+        void startdraw()
         {
             hudnotextureshader->set();
             gle::defvertex(2);
@@ -4136,11 +4142,11 @@ namespace UI
                    (vec2(cx, cy).sub(a).cross(vec2(c).sub(a)) < 0) == side;
         }
 
-        void draw(bool world, float sx, float sy)
+        void draw(float sx, float sy)
         {
-            Object::draw(world, sx, sy);
+            Object::draw(sx, sy);
 
-            setupdraw(world, CHANGE_SHADER);
+            setupdraw(CHANGE_SHADER);
 
             colors[0].init();
             gle::begin(type == OUTLINED ? GL_LINE_LOOP : GL_TRIANGLES);
@@ -4181,11 +4187,11 @@ namespace UI
             return vec2(cx, cy).sub(r).squaredlen() <= r*r;
         }
 
-        void draw(bool world, float sx, float sy)
+        void draw(float sx, float sy)
         {
-            Object::draw(world, sx, sy);
+            Object::draw(sx, sy);
 
-            setupdraw(world, CHANGE_SHADER);
+            setupdraw(CHANGE_SHADER);
 
             float r = radius <= 0 ? min(w, h)/2 : radius;
             colors[0].init();
@@ -4252,9 +4258,9 @@ namespace UI
 
         virtual const char *getstr() const { return ""; }
 
-        void draw(bool world, float sx, float sy)
+        void draw(float sx, float sy)
         {
-            setupdraw(world, CHANGE_SHADER);
+            setupdraw(CHANGE_SHADER);
 
             float k = drawscale(rescale), left = sx/k, top = sy/k;
             int flags = modcol ? TEXT_MODCOL : 0;
@@ -4277,12 +4283,12 @@ namespace UI
             hudmatrix.translate(left, top, 0);
             if(rotate) hudmatrix.rotate_around_z(rotate*90*RAD);
             flushhudmatrix();
-            textshader = world ? hudtextworldshader : hudtextshader;
+            textshader = surfacetype == SURFACE_WORLD ? hudtextworldshader : hudtextshader;
             draw_text(getstr(), 0, 0, colors[0].r, colors[0].g, colors[0].b, colors[0].a, flags, pos, wlen, 1);
             textshader = NULL;
             pophudmatrix();
 
-            Object::draw(world, sx, sy);
+            Object::draw(sx, sy);
         }
 
         void layout()
@@ -4484,12 +4490,12 @@ namespace UI
             texgc = oldtexgx;
         }
 
-        void draw(bool world, float sx, float sy)
+        void draw(float sx, float sy)
         {
             bool oldtexgx = texgc;
             texgc = true;
 
-            Object::draw(world, sx, sy);
+            Object::draw(sx, sy);
 
             texgc = oldtexgx;
         }
@@ -4610,7 +4616,7 @@ namespace UI
         DOSTATES
         #undef DOSTATE
 
-        void draw(bool world, float sx, float sy)
+        void draw(float sx, float sy)
         {
             bool isdraw = (sizew && virtw > sizew) || (sizeh && virth > sizeh);
             if(forced || isdraw)
@@ -4630,13 +4636,13 @@ namespace UI
                         drawy = sy - offsety;
                     }
                 }
-                stopdrawing(world);
+                stopdrawing();
                 pushclip(sx, sy, w, h);
-                Object::draw(world, drawx, drawy);
-                stopdrawing(world);
+                Object::draw(drawx, drawy);
+                stopdrawing();
                 popclip();
             }
-            else Object::draw(world, sx, sy);
+            else Object::draw(sx, sy);
         }
 
         float hlimit() const { return max(virtw - w, 0.0f); }
@@ -5136,7 +5142,7 @@ namespace UI
 
         TextEditor() : edit(NULL), keyfilter(NULL), canfocus(true), allowlines(true) {}
 
-        bool isallowed() const { return surfacetype == SURFACE_MAIN; }
+        bool isallowed() const { return surfacetype == SURFACE_VISOR; }
         bool iseditor() const { return true; }
 
         void setup(const char *name, int length, int height, float scale_ = 1, const char *initval = NULL, int mode = EDITORUSED, const char *keyfilter_ = NULL, bool allowlines_ = true, int limit_ = 0)
@@ -5214,22 +5220,22 @@ namespace UI
 
         float drawscale() const { return scale / FONTH; }
 
-        void draw(bool world, float sx, float sy)
+        void draw(float sx, float sy)
         {
-            setupdraw(world, CHANGE_SHADER);
+            setupdraw(CHANGE_SHADER);
 
             edit->rendered = true;
 
             float k = drawscale();
             pushhudtranslate(sx, sy, k);
 
-            textshader = world ? hudtextworldshader : hudtextshader;
+            textshader = surfacetype == SURFACE_WORLD ? hudtextworldshader : hudtextshader;
             edit->draw(FONTW/2, 0, colors[0].tohexcolor(), colors[0].a, isfocus());
             textshader = NULL;
 
             pophudmatrix();
 
-            Object::draw(world, sx, sy);
+            Object::draw(sx, sy);
         }
 
         void layout()
@@ -5444,7 +5450,7 @@ namespace UI
 
         KeyCatcher() : id(NULL), pressedkey(0) {}
 
-        bool isallowed() const { return surfacetype == SURFACE_MAIN; }
+        bool isallowed() const { return surfacetype == SURFACE_VISOR; }
         bool iskeycatcher() const { return true; }
 
         static const char *typestr() { return "#KeyCatcher"; }
@@ -5614,7 +5620,7 @@ namespace UI
 
     struct AxisView : Filler
     {
-        void startdraw(bool world)
+        void startdraw()
         {
             hudnotextureshader->set();
 
@@ -5622,9 +5628,9 @@ namespace UI
             gle::defcolor();
         }
 
-        void draw(bool world, float sx, float sy)
+        void draw(float sx, float sy)
         {
-            setupdraw(world, CHANGE_SHADER);
+            setupdraw(CHANGE_SHADER);
 
             pushhudmatrix();
             matrix4 axismatrix, axisprojmatrix;
@@ -5676,7 +5682,7 @@ namespace UI
 
             pophudmatrix();
 
-            Object::draw(world, sx, sy);
+            Object::draw(sx, sy);
         }
     };
 
@@ -5693,9 +5699,9 @@ namespace UI
             weap = int(weap_);
         }
 
-        void startdraw(bool world)
+        void startdraw()
         {
-            (world ? hudworldshader : hudshader)->set();
+            (surfacetype == SURFACE_WORLD ? hudworldshader : hudshader)->set();
 
             gle::defvertex();
             gle::defcolor();
@@ -5703,9 +5709,9 @@ namespace UI
             gle::colorf(1, 1, 1);
         }
 
-        void draw(bool world, float sx, float sy)
+        void draw(float sx, float sy)
         {
-            setupdraw(world, CHANGE_SHADER);
+            setupdraw(CHANGE_SHADER);
 
             pushhudmatrix();
             hudmatrix.ortho(0, hud::hudwidth, hud::hudheight, 0, -1, 1);
@@ -5715,7 +5721,7 @@ namespace UI
 
             pophudmatrix();
 
-            Object::draw(world, sx, sy);
+            Object::draw(sx, sy);
         }
     };
 
@@ -5751,7 +5757,7 @@ namespace UI
 
         bool ispreview() const { return true; }
 
-        void startdraw(bool world)
+        void startdraw()
         {
             glDisable(GL_BLEND);
             disableclip();
@@ -5848,11 +5854,11 @@ namespace UI
             mdl.anim |= ANIM_LOOP;
         }
 
-        void draw(bool world, float sx, float sy)
+        void draw(float sx, float sy)
         {
-            if(!loadedshaders) { Object::draw(world, sx, sy); return; }
+            if(!loadedshaders) { Object::draw(sx, sy); return; }
 
-            setupdraw(world, CHANGE_SHADER);
+            setupdraw(CHANGE_SHADER);
 
             int sx1, sy1, sx2, sy2;
             bool hasclipstack = clipstack.length() > 0;
@@ -5872,7 +5878,7 @@ namespace UI
             if(hasclipstack) clipstack.last().scissor();
             modelpreview::end(uicurfbo, skycol, suncol, sundir, excol, exdir);
 
-            Object::draw(world, sx, sy);
+            Object::draw(sx, sy);
         }
     };
 
@@ -5922,11 +5928,11 @@ namespace UI
         static const char *typestr() { return "#PlayerPreview"; }
         const char *gettype() const { return typestr(); }
 
-        void draw(bool world, float sx, float sy)
+        void draw(float sx, float sy)
         {
-            if(!loadedshaders) { Object::draw(world, sx, sy); return; }
+            if(!loadedshaders) { Object::draw(sx, sy); return; }
 
-            setupdraw(world, CHANGE_SHADER);
+            setupdraw(CHANGE_SHADER);
 
             int sx1, sy1, sx2, sy2;
             bool hasclipstack = clipstack.length() > 0;
@@ -5942,7 +5948,7 @@ namespace UI
 
             modelpreview::end(uicurfbo, skycol, suncol, sundir, excol, exdir);
 
-            Object::draw(world, sx, sy);
+            Object::draw(sx, sy);
         }
 
         vec2 vanityscreenpos(int vanity)
@@ -6003,13 +6009,13 @@ namespace UI
         static const char *typestr() { return "#PrefabPreview"; }
         const char *gettype() const { return typestr(); }
 
-        void draw(bool world, float sx, float sy)
+        void draw(float sx, float sy)
         {
-            Object::draw(world, sx, sy);
+            Object::draw(sx, sy);
 
             if(!loadedshaders) return;
 
-            setupdraw(world, CHANGE_SHADER);
+            setupdraw(CHANGE_SHADER);
 
             int sx1, sy1, sx2, sy2;
             bool hasclipstack = clipstack.length() > 0;
@@ -6037,7 +6043,7 @@ namespace UI
         static const char *typestr() { return "#SlotViewer"; }
         const char *gettype() const { return typestr(); }
 
-        void previewslot(bool world, Slot &slot, VSlot &vslot, float x, float y)
+        void previewslot(Slot &slot, VSlot &vslot, float x, float y)
         {
             if(!loadedshaders || slot.sts.empty()) return;
             VSlot *layer = NULL;
@@ -6070,7 +6076,7 @@ namespace UI
 
             if(!t || t == notexture) return;
 
-            setupdraw(world, CHANGE_SHADER);
+            setupdraw(CHANGE_SHADER);
 
             SETSHADER(hudrgb);
             vec2 tc[4] = { vec2(0, 0), vec2(1, 0), vec2(1, 1), vec2(0, 1) };
@@ -6112,15 +6118,15 @@ namespace UI
             }
         }
 
-        void draw(bool world, float sx, float sy)
+        void draw(float sx, float sy)
         {
             if(slots.inrange(index))
             {
                 Slot &slot = lookupslot(index, false);
-                previewslot(world, slot, *slot.variants, sx, sy);
+                previewslot(slot, *slot.variants, sx, sy);
             }
 
-            Object::draw(world, sx, sy);
+            Object::draw(sx, sy);
         }
     };
 
@@ -6132,15 +6138,15 @@ namespace UI
         static const char *typestr() { return "#VSlotViewer"; }
         const char *gettype() const { return typestr(); }
 
-        void draw(bool world, float sx, float sy)
+        void draw(float sx, float sy)
         {
             if(vslots.inrange(index))
             {
                 VSlot &vslot = lookupvslot(index, false);
-                previewslot(world, *vslot.slot, vslot, sx, sy);
+                previewslot(*vslot.slot, vslot, sx, sy);
             }
 
-            Object::draw(world, sx, sy);
+            Object::draw(sx, sy);
         }
     };
 
@@ -6152,7 +6158,7 @@ namespace UI
         static const char *typestr() { return "#DecalSlotViewer"; }
         const char *gettype() const { return typestr(); }
 
-        void previewslot(bool world, Slot &slot, VSlot &vslot, float x, float y)
+        void previewslot(Slot &slot, VSlot &vslot, float x, float y)
         {
             if(!loadedshaders || slot.sts.empty()) return;
             Texture *t = NULL, *glowtex = NULL;
@@ -6179,7 +6185,7 @@ namespace UI
 
             if(!t || t == notexture) return;
 
-            setupdraw(world, CHANGE_SHADER);
+            setupdraw(CHANGE_SHADER);
 
             SETSHADER(hudrgb);
             vec2 tc[4] = { vec2(0, 0), vec2(1, 0), vec2(1, 1), vec2(0, 1) };
@@ -6216,15 +6222,15 @@ namespace UI
             }
         }
 
-        void draw(bool world, float sx, float sy)
+        void draw(float sx, float sy)
         {
             if(decalslots.inrange(index))
             {
                 DecalSlot &slot = lookupdecalslot(index, false);
-                previewslot(world, slot, *slot.variants, sx, sy);
+                previewslot(slot, *slot.variants, sx, sy);
             }
 
-            Object::draw(world, sx, sy);
+            Object::draw(sx, sy);
         }
     };
 
@@ -6262,9 +6268,9 @@ namespace UI
             return true;
         }
 
-        void draw(bool world, float sx, float sy)
+        void draw(float sx, float sy)
         {
-            setupdraw(world);
+            setupdraw();
             while(colors.length() < 2) colors.add(Color(colourwhite));
             if(hud::needminimap())
             {
@@ -6297,7 +6303,7 @@ namespace UI
                 gle::end();
             }
 
-            Object::draw(world, sx, sy);
+            Object::draw(sx, sy);
         }
     };
 
@@ -6327,9 +6333,9 @@ namespace UI
             return true;
         }
 
-        void draw(bool world, float sx, float sy)
+        void draw(float sx, float sy)
         {
-            Object::draw(world, sx, sy);
+            Object::draw(sx, sy);
         }
     };
 
@@ -6394,7 +6400,7 @@ namespace UI
             return true;
         }
 
-        void draw(bool world, float sx, float sy)
+        void draw(float sx, float sy)
         {
             Radar *r = getradar();
             if(r)
@@ -6424,7 +6430,7 @@ namespace UI
                 float bbx = blipx, bby = blipy;
                 if(tex != notexture)
                 {
-                    bindtex(world);
+                    bindtex();
                     bbx = texx;
                     bby = texy;
                     loopk(4)
@@ -6442,7 +6448,7 @@ namespace UI
                         gle::attrib(norm); gle::attribf(tx, ty);
                     }
                 }
-                Object::draw(world, rx+bbx*w*RAD, ry+bby*h*RAD); // don't descend unless we process the blip
+                Object::draw(rx+bbx*w*RAD, ry+bby*h*RAD); // don't descend unless we process the blip
             }
         }
     };
@@ -6590,7 +6596,7 @@ namespace UI
     }
 
     ICOMMANDV(0, uihasinput, hasinput());
-    ICOMMAND(0, uigetinput, "ib", (int *cursor, int *stype), intret(hasinput(*cursor != 0, *stype >= 0 ? *stype : SURFACE_MAIN)));
+    ICOMMAND(0, uigetinput, "ib", (int *cursor, int *stype), intret(hasinput(*cursor != 0, *stype >= 0 ? *stype : SURFACE_VISOR)));
 
     bool hasmenu(bool pass, int stype)
     {
@@ -6600,11 +6606,11 @@ namespace UI
     }
 
     ICOMMANDV(0, uihasmenu, hasmenu());
-    ICOMMAND(0, uigetmenu, "ib", (int *pass, int *stype), intret(hasmenu(*pass != 0, *stype >= 0 ? *stype : SURFACE_MAIN)));
+    ICOMMAND(0, uigetmenu, "ib", (int *pass, int *stype), intret(hasmenu(*pass != 0, *stype >= 0 ? *stype : SURFACE_VISOR)));
 
     bool keypress(int code, bool isdown)
     {
-        if(!pushsurface(SURFACE_MAIN)) return false;
+        if(!pushsurface(SURFACE_VISOR)) return false;
 
         if(surface->rawkey(code, isdown))
         {
@@ -6652,7 +6658,7 @@ namespace UI
 
     bool textinput(const char *str, int len)
     {
-        if(!pushsurface(SURFACE_MAIN)) return false;
+        if(!pushsurface(SURFACE_VISOR)) return false;
 
         bool ret = surface->textinput(str, len);
 
@@ -6672,8 +6678,9 @@ namespace UI
             extentity &e = *ents[i];
             if(e.type != ET_MAPUI) continue;
 
-            int stype = SURFACE_MAIN;
-            if(e.attrs[1]&MAPUI_BACKGROUND) stype = SURFACE_BACKGROUND;
+            int stype = SURFACE_WORLD;
+            if(e.attrs[1]&MAPUI_VISOR) stype = SURFACE_VISOR;
+            else if(e.attrs[1]&MAPUI_BACKGROUND) stype = SURFACE_BACKGROUND;
             else if(e.attrs[1]&MAPUI_FOREGROUND) stype = SURFACE_FOREGROUND;
 
             if(!pushsurface(stype)) continue;
@@ -6746,7 +6753,7 @@ namespace UI
 
     void closemapuis(int n)
     {
-        if(n < 0 || !pushsurface(SURFACE_MAIN)) return;
+        if(n < 0 || !pushsurface(SURFACE_VISOR)) return;
 
         vector<extentity *> &ents = entities::getents();
         if(!ents.inrange(n))
@@ -6978,13 +6985,13 @@ namespace UI
 
     bool cursorlock()
     {
-        if(surfaces[SURFACE_MAIN]) return surfaces[SURFACE_MAIN]->lockcursor;
+        if(surfaces[SURFACE_VISOR]) return surfaces[SURFACE_VISOR]->lockcursor;
         return false;
     }
 
     int cursortype()
     {
-        if(surfaces[SURFACE_MAIN]) return surfaces[SURFACE_MAIN]->cursortype;
+        if(surfaces[SURFACE_VISOR]) return surfaces[SURFACE_VISOR]->cursortype;
         return CURSOR_DEFAULT;
     }
 
@@ -7067,26 +7074,6 @@ namespace UI
             dynuis.remove(i);
             delete d;
         }
-    }
-
-    void build(int stype)
-    {
-        if(stype < 0 || stype >= SURFACE_MAX) return;
-        switch(stype)
-        {
-            case SURFACE_PROGRESS:
-                hasprogress = setui("default", SURFACE_PROGRESS);
-                break;
-            case SURFACE_COMPOSITE: return;
-            default: break;
-        }
-
-        if(!pushsurface(stype)) return;
-
-        if(surfacetype == SURFACE_MAIN) checkmapuis();
-        surface->build();
-
-        popsurface();
     }
 
     void setup()
@@ -7233,7 +7220,7 @@ namespace UI
 
     bool isvisor(int stype)
     {
-        if(!engineready || (stype != SURFACE_PROGRESS && stype != SURFACE_MAIN)) return false;
+        if(!engineready || (stype != SURFACE_PROGRESS && stype != SURFACE_VISOR)) return false;
 
         if(stype == SURFACE_PROGRESS) return (visorhud&8)!=0;
         else if(progressing) return (visorhud&4)!=0;
@@ -7252,31 +7239,37 @@ namespace UI
         if(visor) rendervisor = oldvisor; \
     }
 
-    void update(int stype)
+    void update()
     {
-        VISOR(stype, build(stype));
-        if(stype == SURFACE_MAIN) updatetextures();
+        updatetextures();
+        checkmapuis();
     }
 
-    void render(int stype, bool world, int outfbo)
+    void render(int stype, int outfbo)
     {
-        if((stype == SURFACE_MAIN && !world && uihidden) || !pushsurface(stype)) return;
+        if((stype == SURFACE_VISOR && uihidden) || !pushsurface(stype)) return;
 
         uicurfbo = outfbo;
 
-        if(world)
+        if(surfacetype == SURFACE_WORLD)
         {
             glEnable(GL_BLEND);
-            if(surfacetype == SURFACE_MAIN || surfacetype == SURFACE_BACKGROUND) glDisable(GL_CULL_FACE);
+            glDisable(GL_CULL_FACE);
             glDepthMask(GL_FALSE);
         }
+        else if(surfacetype == SURFACE_PROGRESS)
+            hasprogress = setui("default", SURFACE_PROGRESS);
 
-        VISOR(surfacetype, surface->render(world));
+        VISOR(surfacetype,
+        {
+            surface->build();
+            surface->render();
+        });
 
-        if(world)
+        if(surfacetype == SURFACE_WORLD)
         {
             glDepthMask(GL_TRUE);
-            if(surfacetype == SURFACE_MAIN || surfacetype == SURFACE_BACKGROUND) glEnable(GL_CULL_FACE);
+            glEnable(GL_CULL_FACE);
             glDisable(GL_BLEND);
         }
 

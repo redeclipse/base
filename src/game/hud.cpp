@@ -638,15 +638,13 @@ namespace hud
             {
                 if(d->actortype >= A_ENEMY || (d == game::focus && (!game::aboveheaddead || (d->state != CS_DEAD && d->state != CS_WAITING))))
                 {
-                    if(UI::uivisible("abovehead", SURFACE_MAIN, d->clientnum)) UI::hideui("abovehead", SURFACE_MAIN, d->clientnum);
+                    if(UI::uivisible("abovehead", SURFACE_WORLD, d->clientnum)) UI::hideui("abovehead", SURFACE_WORLD, d->clientnum);
                     continue;
                 }
-                UI::setui("abovehead", SURFACE_MAIN, d->clientnum, d->abovehead(), aboveheaduiyaw, aboveheaduipitch, aboveheaduiscale,  aboveheaduidetentyaw, aboveheaduidetentpitch);
+                UI::setui("abovehead", SURFACE_WORLD, d->clientnum, d->abovehead(), aboveheaduiyaw, aboveheaduipitch, aboveheaduiscale,  aboveheaduidetentyaw, aboveheaduidetentpitch);
             }
         }
         else UI::closedynui("abovehead");
-
-        loopi(SURFACE_LOOPED) UI::update(i);
     }
 
     void damage(int n, const vec &loc, gameent *v, int weap, int flags)
@@ -2015,7 +2013,7 @@ namespace hud
 
                 rendercmenu();
             }
-            else UI::render(SURFACE_MAIN, false, outfbo);
+            else UI::render(SURFACE_VISOR, outfbo);
             hudmatrix.ortho(0, w, h, 0, -1, 1);
             flushhudmatrix();
             resethudshader();

@@ -987,7 +987,6 @@ void progress(float amt, const char *s, ...)
     int oldflags = identflags;
     identflags &= ~IDF_MAP;
     progressing = true;
-    if(engineready) UI::update(SURFACE_PROGRESS);
     gl_drawnoview();
     swapbuffers(false);
     updatesounds();
@@ -1308,6 +1307,7 @@ int main(int argc, char **argv)
                 cleardynlights();
                 fx::update();
                 updatewind();
+                UI::update();
                 updatetextures();
                 updateparticles();
                 updatesounds();

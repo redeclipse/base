@@ -1203,8 +1203,6 @@ VAR(IDF_PERSIST, texturepause, 0, 30000, VAR_MAX);
 
 void updatetextures()
 {
-    UI::update(SURFACE_COMPOSITE);
-
     enumerate(textures, Texture, t,
     {
         if(t.type&Texture::COMPOSITE || t.frames.length() <= 1) continue;

@@ -832,12 +832,12 @@ void rendereditcursor()
                 if(hasselui >= 0) break;
             }
             if(hasselui >= 0 && selectiondynui)
-                UI::setui("selection", SURFACE_MAIN, hasselui, pos, selectionuiyaw, selectionuipitch, selectionuiscale, selectionuidetentyaw, selectionuidetentpitch);
+                UI::setui("selection", SURFACE_WORLD, hasselui, pos, selectionuiyaw, selectionuipitch, selectionuiscale, selectionuidetentyaw, selectionuidetentpitch);
         }
     }
 
     if(selectiondynui)
-        loopk(8) if(k != hasselui && UI::uivisible("selection", SURFACE_MAIN, k)) UI::hideui("selection", SURFACE_MAIN, k);
+        loopk(8) if(k != hasselui && UI::uivisible("selection", SURFACE_WORLD, k)) UI::hideui("selection", SURFACE_WORLD, k);
 
     if(showpastegrid && localedit && localedit->copy)
     {

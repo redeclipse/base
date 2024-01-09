@@ -503,36 +503,42 @@ enum { EDITORFOCUSED = 1, EDITORUSED, EDITORFOREVER, EDITORREADONLY };
 enum { CURSOR_DEFAULT = 0, CURSOR_HOVER, CURSOR_HIDDEN, CURSOR_MAX };
 
 #define SURFACE_ENUM(pr, en) \
-    en(pr, Main, MAIN) en(pr, Background, BACKGROUND) en(pr, Foreground, FOREGROUND) en(pr, Progress, PROGRESS) en(pr, Composite, COMPOSITE) en(pr, Maximum, MAX)
+    en(pr, Visor, VISOR) en(pr, Background, BACKGROUND) en(pr, Foreground, FOREGROUND) en(pr, World, WORLD) \
+    en(pr, Progress, PROGRESS) en(pr, Composite, COMPOSITE) en(pr, Maximum, MAX)
 ENUMNV(SURFACE);
 VARD(SURFACE_LOOPED, SURFACE_FOREGROUND+1);
+VARD(SURFACE_ALL, SURFACE_WORLD+1);
 
 namespace UI
 {
-    enum { MAPUI_NONE = 0, MAPUI_SHOWPROX = 1<<0, MAPUI_INPUTPROX = 1<<1, MAPUI_BACKGROUND = 1<<2, MAPUI_FOREGROUND = 1<<3, MAPUI_ALL = MAPUI_SHOWPROX|MAPUI_INPUTPROX|MAPUI_BACKGROUND|MAPUI_FOREGROUND, MAPUI_PROXIMITY = MAPUI_SHOWPROX|MAPUI_INPUTPROX };
+    enum
+    {
+        MAPUI_NONE = 0, MAPUI_SHOWPROX = 1<<0, MAPUI_INPUTPROX = 1<<1, MAPUI_VISOR = 1<<2, MAPUI_BACKGROUND = 1<<3, MAPUI_FOREGROUND = 1<<4,
+        MAPUI_ALL = MAPUI_SHOWPROX|MAPUI_INPUTPROX|MAPUI_VISOR|MAPUI_BACKGROUND|MAPUI_FOREGROUND, MAPUI_PROXIMITY = MAPUI_SHOWPROX|MAPUI_INPUTPROX
+    };
 
     extern bool hasprogress;
     extern int uihidden;
     extern char *uiopencmd, *uiclosecmd;
 
-    extern bool showui(const char *name, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float yaw = -1, float pitch = 0, float scale = 1, float detentyaw = 0, float detentpitch = 0);
-    extern bool setui(const char *name, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float yaw = -1, float pitch = 0, float scale = 1, float detentyaw = 0, float detentpitch = 0);
-    extern bool hideui(const char *name = NULL, int stype = SURFACE_MAIN, int param = -1, bool world = false);
-    extern bool toggleui(const char *name, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float yaw = -1, float pitch = 0, float scale = 1, float detentyaw = 0, float detentpitch = 0);
-    extern int openui(const char *name, int stype = SURFACE_MAIN);
-    extern int closeui(const char *name, int stype = SURFACE_MAIN);
-    extern void hideall(bool world = false);
+    extern bool showui(const char *name, int stype = SURFACE_VISOR, int param = -1, const vec &origin = vec(-FLT_MAX), float yaw = -1, float pitch = 0, float scale = 1, float detentyaw = 0, float detentpitch = 0);
+    extern bool setui(const char *name, int stype = SURFACE_VISOR, int param = -1, const vec &origin = vec(-FLT_MAX), float yaw = -1, float pitch = 0, float scale = 1, float detentyaw = 0, float detentpitch = 0);
+    extern bool hideui(const char *name = NULL, int stype = SURFACE_VISOR, int param = -1);
+    extern bool toggleui(const char *name, int stype = SURFACE_VISOR, int param = -1, const vec &origin = vec(-FLT_MAX), float yaw = -1, float pitch = 0, float scale = 1, float detentyaw = 0, float detentpitch = 0);
+    extern int openui(const char *name, int stype = SURFACE_VISOR);
+    extern int closeui(const char *name, int stype = SURFACE_VISOR);
+    extern void hideall();
 
-    extern void holdui(const char *name, bool on, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float yaw = -1, float pitch = 0, float scale = 1, float detentyaw = 0, float detentpitch = 0);
-    extern void pressui(const char *name, bool on, int stype = SURFACE_MAIN, int param = -1, const vec &origin = vec(-FLT_MAX, -FLT_MAX, -FLT_MAX), float yaw = -1, float pitch = 0, float scale = 1, float detentyaw = 0, float detentpitch = 0);
-    extern bool uivisible(const char *name, int stype = SURFACE_MAIN, int param = -1);
-    extern int hasinput(bool cursor = false, int stype = SURFACE_MAIN);
-    extern bool hasmenu(bool pass = true, int stype = SURFACE_MAIN);
+    extern void holdui(const char *name, bool on, int stype = SURFACE_VISOR, int param = -1, const vec &origin = vec(-FLT_MAX), float yaw = -1, float pitch = 0, float scale = 1, float detentyaw = 0, float detentpitch = 0);
+    extern void pressui(const char *name, bool on, int stype = SURFACE_VISOR, int param = -1, const vec &origin = vec(-FLT_MAX), float yaw = -1, float pitch = 0, float scale = 1, float detentyaw = 0, float detentpitch = 0);
+    extern bool uivisible(const char *name, int stype = SURFACE_VISOR, int param = -1);
+    extern int hasinput(bool cursor = false, int stype = SURFACE_VISOR);
+    extern bool hasmenu(bool pass = true, int stype = SURFACE_VISOR);
     extern bool keypress(int code, bool isdown);
     extern bool textinput(const char *str, int len);
 
-    extern void closedynui(const char *name, int stype = SURFACE_MAIN);
-    extern void cleardynui(const char *name, int stype = SURFACE_MAIN, bool mapdef = false);
+    extern void closedynui(const char *name, int stype = SURFACE_VISOR);
+    extern void cleardynui(const char *name, int stype = SURFACE_VISOR, bool mapdef = false);
     extern void closemapuis(int n);
 
     extern Texture *composite(const char *name, int tclamp = 0, bool mipit = true, bool msg = true, bool gc = false, Texture *tex = NULL, bool reload = false);
@@ -547,9 +553,8 @@ namespace UI
     extern void setup();
     extern void cleanup();
     extern void cleangl();
-    extern void update(int stype = SURFACE_MAIN);
-    extern void render(int stype = SURFACE_MAIN, bool world = false, int outfbo = 0);
-    extern void renderprogress();
+    extern void update();
+    extern void render(int stype = SURFACE_VISOR, int outfbo = 0);
 }
 
 // menus
