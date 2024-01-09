@@ -2575,7 +2575,7 @@ static GLuint visorfbo = 0, visortex = 0;
 static int visorw = -1, visorh = -1; // render target dimensions
 float visorx = 0.5f, visory = 0.5f, visoroffx = 0.f, visoroffy = 0.f; // cursor projection coordinates
 
-VAR(IDF_PERSIST, visorhud, 0, 1, 15); // bit: 1 = normal, 2 = edit, 4 = progress, 8 = noview
+VAR(IDF_PERSIST, visorhud, 0, 13, 15); // bit: 1 = normal, 2 = edit, 4 = progress, 8 = noview
 FVAR(IDF_PERSIST, visordistort, -2, 2.0f, 2);
 FVAR(IDF_PERSIST, visornormal, -2, 1.175f, 2);
 FVAR(IDF_PERSIST, visorscalex, FVAR_NONZERO, 0.9075f, 2);
