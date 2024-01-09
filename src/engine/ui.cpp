@@ -4590,8 +4590,8 @@ namespace UI
             virth = h;
             if(sizew || forced) w = min(w, sizew);
             if(sizeh || forced) h = min(h, sizeh);
-            //offsetx = min(offsetx, hlimit());
-            //offsety = min(offsety, vlimit());
+            offsetx = min(offsetx, hlimit());
+            offsety = min(offsety, vlimit());
         }
 
         void adjustchildren()
