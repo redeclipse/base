@@ -693,7 +693,7 @@ namespace game
 
     bool vanitycheck(gameent *d)
     {
-        return vanitymodels && (d == focus || d->o.dist(camera1->o) <= vanitymaxdist);
+        return vanitymodels && (d == focus || d->o.squaredist(camera1->o) <= vanitymaxdist*vanitymaxdist);
     }
 
     bool allowspec(gameent *d, int level, int cn = -1)
@@ -1257,7 +1257,7 @@ namespace game
         gameent *owner;
         float dist;
 
-        flashent(gameent *d) : owner(d), dist(0) { dist = owner->o.dist(camera1->o); }
+        flashent(gameent *d) : owner(d), dist(0) { dist = owner->o.squaredist(camera1->o); }
         ~flashent() {}
 
         static inline bool sort(const flashent *x, const flashent *y)

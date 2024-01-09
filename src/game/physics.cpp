@@ -34,6 +34,7 @@ namespace physics
 
     VAR(IDF_PERSIST, ragdollaccuracy, 0, 1, 1);
     FVAR(IDF_PERSIST, ragdollaccuracydist, 0, 512, FVAR_MAX);
+    FVAR(IDF_PERSIST, ragdollgravity, FVAR_MIN, 1.5f, FVAR_MAX);
 
     FVAR(IDF_PERSIST, impulseparkouryaw, 0, 150, 180); // determines the minimum yaw angle to switch between parkour climb and run
     VAR(IDF_PERSIST, impulsemethod, 0, 3, 3); // determines which impulse method to use, 0 = none, 1 = launch, 2 = slide, 3 = both
@@ -1220,6 +1221,7 @@ namespace physics
         int matid = d->inmaterial;
         float submerged = d->submerged, secs = millis/1000.f;
         vec g(0, 0, 0);
+
         if(ragdollaccuracy && camera1->o.squaredist(d->center()) <= ragdollaccuracydist*ragdollaccuracydist)
         {
             float secs = millis/1000.f;
@@ -1231,12 +1233,16 @@ namespace physics
             if(!index) d->falling = gravityvel(d, d->center(), secs*secs, d->getradius(), d->getheight(), matid, submerged);
             g = d->falling;
         }
+        if(ragdollgravity) g.mul(ragdollgravity);
+
         dpos = vec(pos).sub(oldpos).add(g);
+
         if(gameent::is(d))
         {
             gameent *e = (gameent *)d;
             if(e->shocktime && e->shocking(lastmillis, e->shocktime)) dpos.add(vec(rnd(201)-100, rnd(201)-100, rnd(201)-100).normalize().mul(shocktwitchvel*secs));
         }
+
         float coast = collided ? (isliquid(matid&MATF_VOLUME) ? PHYS(aircoast)-((PHYS(aircoast)-LIQUIDPHYS(coast, matid))*submerged) : PHYS(floorcoast)*coastscale(vec(pos).subz(radius+1))) : PHYS(aircoast);
         dpos.mul(pow(max(1.0f - 1.0f/coast, 0.0f), millis/20.0f));
     }
