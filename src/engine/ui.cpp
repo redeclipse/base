@@ -3296,6 +3296,13 @@ namespace UI
                 LocalShaderParam param = list.add(LocalShaderParam(params[i].name));
                 param.set(params[i].value); // automatically converts to correct type
             }
+            loopv(colors)
+            {
+                if(!i) continue; // becomes vcolor
+                defformatstring(texparam, "objcolor%d", i);
+                LocalShaderParam param = list.add(LocalShaderParam(texparam));
+                param.set(colors[i].tocolor4()); // automatically converts to correct type
+            }
             loopv(texs)
             {
                 glActiveTexture_(GL_TEXTURE0+i);
