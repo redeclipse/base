@@ -2093,6 +2093,7 @@ namespace projs
         vector<canrem *> canremove;
         loopvrev(projs) if(projs[i]->projtype == PRJ_DEBRIS || projs[i]->projtype == PRJ_GIBS || projs[i]->projtype == PRJ_EJECT)
             canremove.add(new canrem(projs[i], camera1->o.dist(projs[i]->o)));
+
         int count = canremove.length()-maxprojectiles;
         if(count > 0)
         {
@@ -2108,12 +2109,16 @@ namespace projs
         loopv(projs)
         {
             projent &proj = *projs[i];
+
+            entities::physents(&proj);
+
             if(proj.projtype == PRJ_SHOT && WF(WK(proj.flags), proj.weap, radialdelay, WS(proj.flags)))
             {
                 proj.hit = NULL;
                 proj.collidezones = CLZ_NONE;
             }
             hits.setsize(0);
+
             if((proj.projtype != PRJ_SHOT || proj.owner) && proj.state != CS_DEAD)
             {
                 if(proj.projtype == PRJ_ENT && entities::ents.inrange(proj.id)) // in case spawnweapon changes
@@ -2169,23 +2174,31 @@ namespace projs
                 proj.state = CS_DEAD;
                 proj.escaped = true;
             }
+
             if(proj.local && proj.owner && proj.projtype == PRJ_SHOT)
             {
                 float expl = WX(WK(proj.flags), proj.weap, radial, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
+
                 if(WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_LENGTH) proj.o = proj.dest;
+
                 if(!proj.limited && proj.state != CS_DEAD)
                 {
                     if(!(proj.projcollide&DRILL_PLAYER)) proj.hit = NULL;
+
                     bool radial = WF(WK(proj.flags), proj.weap, radialdelay, WS(proj.flags)) && expl > 0 && (!proj.lastradial || lastmillis-proj.lastradial >= WF(WK(proj.flags), proj.weap, radialdelay, WS(proj.flags)));
                     int proxim = proj.stuck && !proj.beenused ? WF(WK(proj.flags), proj.weap, proxtype, WS(proj.flags)) : 0;
+
                     if(radial || proxim)
                     {
                         float dist = WX(WK(proj.flags), proj.weap, proxdist, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
                         int stucktime = lastmillis-proj.stuck, stuckdelay = WF(WK(proj.flags), proj.weap, proxdelay, WS(proj.flags));
+
                         if(stuckdelay && stuckdelay > stucktime) dist *= stucktime/float(stuckdelay);
+
                         int numdyns = game::numdynents();
                         gameent *oldstick = proj.stick;
                         proj.stick = NULL;
+
                         loopj(numdyns)
                         {
                             dynent *f = game::iterdynents(j);
@@ -2197,7 +2210,9 @@ namespace projs
                                 proj.lifetime = min(proj.lifetime, WF(WK(proj.flags), proj.weap, proxtime, WS(proj.flags)));
                             }
                         }
+
                         proj.stick = oldstick;
+
                         if(proxim == 2 && !proj.beenused)
                         {
                             float blocked = tracecollide(&proj, proj.o, proj.norm, dist, RAY_CLIPMAT|RAY_ALPHAPOLY, true, GUARDRADIUS);
@@ -2209,27 +2224,33 @@ namespace projs
                         }
                     }
                 }
+
                 if(proj.state == CS_DEAD)
                 {
                     if(!(proj.projcollide&DRILL_PLAYER)) proj.hit = NULL;
+
                     if(!proj.limited && expl > 0)
                     {
                         int numdyns = game::numdynents(1);
                         gameent *oldstick = proj.stick;
                         proj.stick = NULL;
+
                         loopj(numdyns)
                         {
                             dynent *f = game::iterdynents(j, 1);
                             if(!f || f->state != CS_ALIVE || !physics::issolid(f, &proj, false, false)) continue;
                             radialeffect(f, proj, HIT_EXPLODE, expl);
                         }
+
                         proj.stick = oldstick;
                     }
                 }
+
                 if(!hits.empty())
                     client::addmsg(N_DESTROY, "ri9i2v", proj.owner->clientnum, lastmillis-game::maptime, proj.projtype, proj.weap, proj.fromweap, proj.fromflags, proj.flags, WK(proj.flags) ? -proj.id : proj.id,
                             int(expl*DNF), int(proj.curscale*DNF), hits.length(), hits.length()*sizeof(hitmsg)/sizeof(int), hits.getbuf());
             }
+
             if(proj.state == CS_DEAD)
             {
                 destroy(proj);

@@ -465,13 +465,13 @@ VOLFOGVARS(alt, volfog4)
         switch(mat&MATF_INDEX) \
         { \
             default: case 0: \
-                res = checkmapvariant(MPV_ALT) ? (name##var##alt.iszero() ? getfogcolour() : name##var##alt) : (name##var.iszero() ? getfogcolour() : name##var); \
+                res = checkmapvariant(MPV_ALTERNATE) ? (name##var##alt.iszero() ? getfogcolour() : name##var##alt) : (name##var.iszero() ? getfogcolour() : name##var); \
             case 1: \
-                res = checkmapvariant(MPV_ALT) ? (name##2##var##alt.iszero() ? getfogcolour() : name##2##var##alt) : (name##2##var.iszero() ? getfogcolour() : name##2##var); \
+                res = checkmapvariant(MPV_ALTERNATE) ? (name##2##var##alt.iszero() ? getfogcolour() : name##2##var##alt) : (name##2##var.iszero() ? getfogcolour() : name##2##var); \
             case 2: \
-                res = checkmapvariant(MPV_ALT) ? (name##3##var##alt.iszero() ? getfogcolour() : name##3##var##alt) : (name##3##var.iszero() ? getfogcolour() : name##3##var); \
+                res = checkmapvariant(MPV_ALTERNATE) ? (name##3##var##alt.iszero() ? getfogcolour() : name##3##var##alt) : (name##3##var.iszero() ? getfogcolour() : name##3##var); \
             case 3: \
-                res = checkmapvariant(MPV_ALT) ? (name##4##var##alt.iszero() ? getfogcolour() : name##4##var##alt) : (name##4##var.iszero() ? getfogcolour() : name##4##var); \
+                res = checkmapvariant(MPV_ALTERNATE) ? (name##4##var##alt.iszero() ? getfogcolour() : name##4##var##alt) : (name##4##var.iszero() ? getfogcolour() : name##4##var); \
         } \
         res.mul(game::darkness()); \
         return res; \

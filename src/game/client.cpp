@@ -1010,6 +1010,10 @@ namespace client
     CLCOMMAND(weight, floatret(d->weight));
     CLCOMMAND(buoyancy, floatret(d->buoyancy));
 
+    CLCOMMAND(movescale, floatret(d->movescale));
+    CLCOMMAND(gravityscale, floatret(d->gravityscale));
+    CLCOMMAND(coastscale, floatret(d->coastscale));
+
     CLCOMMAND(scoretime, floatret(d->scoretime()));
     CLCOMMANDM(kdratio, "si", (char *who, int *n), intret(d->kdratio(*n!=0)));
 
@@ -2651,7 +2655,7 @@ namespace client
                 case N_MAPCHANGE:
                 {
                     getstring(text, p);
-                    int mode = getint(p), muts = getint(p), crc = getint(p), variant = clamp(getint(p), int(MPV_DEF), int(MPV_MAX-1)), tcn = getint(p);
+                    int mode = getint(p), muts = getint(p), crc = getint(p), variant = clamp(getint(p), int(MPV_DEFAULT), int(MPV_MAX-1)), tcn = getint(p);
                     if(crc >= 0) conoutf(colourwhite, "Map change: %s (%d:%d) [0x%.8x] (%s)", text, mode, muts, crc, mapvariants[variant]);
                     else conoutf(colourwhite, "Map change: %s (%d:%d) [%d] (%s)", text, mode, muts, crc, mapvariants[variant]);
                     changemapserv(text, mode, muts, crc, variant, tcn);

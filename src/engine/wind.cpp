@@ -159,14 +159,14 @@ void updatewind()
     loopv(windemitters) windemitters[i].update();
 
     // map settings
-    float speed = checkmapvariant(MPV_ALT) ? windspeedalt : windspeed;
-    float interval = checkmapvariant(MPV_ALT) ? windintervalalt : windinterval;
+    float speed = checkmapvariant(MPV_ALTERNATE) ? windspeedalt : windspeed;
+    float interval = checkmapvariant(MPV_ALTERNATE) ? windintervalalt : windinterval;
 
     // interpolate global wind speed
     speed *= interpwindspeed(interval);
 
     // apply the direction
-    vecfromyaw(checkmapvariant(MPV_ALT) ? windyawalt : windyaw, 1, 0, globalwind);
+    vecfromyaw(checkmapvariant(MPV_ALTERNATE) ? windyawalt : windyaw, 1, 0, globalwind);
     globalwind.mul(speed);
 
     windcost = 0;

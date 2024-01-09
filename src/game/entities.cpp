@@ -72,6 +72,42 @@ namespace entities
     SVARF(IDF_MAP, routenames, "Easy Medium Hard", { string s; if(filterstring(s, routenames)) { delete[] routenames; routenames = newstring(s); } });
     SVARF(IDF_MAP, routecolours, "0x00FF00 0xFF7700 0xFF0000", { string s; if(filterstring(s, routecolours)) { delete[] routecolours; routecolours = newstring(s); } });
 
+    void physents(physent *d)
+    {
+        d->movescale = d->gravityscale = d->coastscale = 1;
+
+        if(d->isnophys()) return;
+
+        loopenti(PHYSICS)
+        {
+            gameentity &e = *(gameentity *)ents[i];
+
+            if(e.attrs[0] < 0 || e.attrs[0] >= PHYSICS_MAX || (!e.attrs[1] && e.attrs[0] != PHYSICS_GRAVITY)) continue;
+
+            if(e.flags&EF_BBZONE)
+            {
+                vec bbmin = vec(e.pos()).sub(vec(e.attrs[2], e.attrs[3], e.attrs[4])),
+                    bbmax = vec(e.pos()).add(vec(e.attrs[2], e.attrs[3], e.attrs[4]));
+                if(!d->center().insidebb(bbmin, bbmax)) continue;
+            }
+            else
+            {
+                float maxdist = max(e.attrs[2], e.attrs[3], e.attrs[4]);
+                if(!maxdist) maxdist = enttype[e.type].radius;
+                maxdist *= maxdist;
+                if(d->center().squaredist(e.pos()) > maxdist) continue;
+            }
+
+            switch(e.attrs[0])
+            {
+                case PHYSICS_MOVEMENT: d->movescale *= e.attrs[1] / 100.f; break;
+                case PHYSICS_GRAVITY: d->gravityscale *= e.attrs[1] / 100.f; break;
+                case PHYSICS_COASTING: d->coastscale *= e.attrs[1] / 100.f; break;
+                default: break;
+            }
+        }
+    }
+
     struct rail
     {
         int ent, length, rotstart, rotend, rotlen, flags, animtype;
@@ -1013,9 +1049,8 @@ namespace entities
             {
                 if(full)
                 {
-                    const char *lfxnames[LFX_MAX+1] = { "spotlight", "flicker", "pulse", "glow", "inv-pulse", "inv-glow", "normal" };
-                    addentinfo(lfxnames[attr[0] < 0 || attr[0] >= LFX_MAX ? LFX_MAX : attr[0]]);
-                    loopi(LFX_MAX-1) if(attr[4]&(1<<(LFX_S_MAX+i))) { defformatstring(ds, "+%s", lfxnames[i+1]); addentinfo(ds); break; }
+                    addentinfo(attr[0] < 0 || attr[0] >= LFX_MAX ? "normal" : LFX_STR[attr[0]]);
+                    loopi(LFX_MAX-1) if(attr[4]&(1<<(LFX_S_MAX+i))) { defformatstring(ds, "+%s", LFX_STR[i+1]); addentinfo(ds); break; }
                     if(attr[4]&LFX_S_RAND1) addentinfo("rnd-min");
                     if(attr[4]&LFX_S_RAND2) addentinfo("rnd-max");
                 }
@@ -1044,6 +1079,11 @@ namespace entities
                 if(sattr < 0 || !soundenvs.inrange(sattr)) break;
                 addentinfo(soundenvs[sattr]->name);
                 break;
+            }
+            case PHYSICS:
+            {
+                if(attr[0] < 0 || attr[0] >= PHYSICS_MAX) break;
+                addentinfo(PHYSICS_STR[attr[0]]);
             }
             case ACTOR:
             {
@@ -2026,7 +2066,17 @@ namespace entities
             {
                 while(e.attrs[0] < 0) e.attrs[0] += LFX_MAX; // type
                 while(e.attrs[0] >= LFX_MAX) e.attrs[0] -= LFX_MAX; // wrap both ways
-                if(e.attrs[1] < 0) e.attrs[1] = 0; // mod, clamp
+                if(e.attrs[1] < 0) e.attrs[1] = 0; // width, clamp
+                if(e.attrs[2] < 0) e.attrs[2] = 0; // length, clamp
+                if(e.attrs[3] < 0) e.attrs[3] = 0; // height, clamp
+                if(e.attrs[4] < 0) e.attrs[4] = 0; // flags, clamp
+                FIXEMIT;
+                break;
+            }
+            case PHYSICS:
+            {
+                while(e.attrs[0] < 0) e.attrs[0] += PHYSICS_MAX; // type
+                while(e.attrs[0] >= PHYSICS_MAX) e.attrs[0] -= PHYSICS_MAX; // wrap both ways
                 if(e.attrs[2] < 0) e.attrs[2] = 0; // min, clamp
                 if(e.attrs[3] < 0) e.attrs[3] = 0; // max, clamp
                 if(e.attrs[4] < 0) e.attrs[4] = 0; // flags, clamp
@@ -2190,6 +2240,7 @@ namespace entities
         #undef FIXDIRYP
         #undef FIXDIRR
         #undef FIXDIRY
+
         if(enttype[e.type].mvattr >= 0)
         {
             while(e.attrs[enttype[e.type].mvattr] < 0) e.attrs[enttype[e.type].mvattr] += MPV_MAX;
@@ -2200,7 +2251,20 @@ namespace entities
             while(e.attrs[enttype[e.type].fxattr] < -7) e.attrs[enttype[e.type].fxattr] += 11;
             while(e.attrs[enttype[e.type].fxattr] >= 4) e.attrs[enttype[e.type].fxattr] -= 11;
         }
+
         fixrails(n);
+
+        if(e.type == ET_PHYSICS)
+        {
+            int proceed = 0;
+            loopj(3) if(e.attrs[2+j])
+            {
+                proceed++;
+                if(proceed >= 2) break;
+            }
+            if(proceed >= 2) e.flags |= EF_BBZONE;
+            else e.flags &= ~EF_BBZONE;
+        }
     }
 
     const char *findname(int type)
@@ -2855,6 +2919,13 @@ namespace entities
                         part_cone(pos, vec(dynamic ? f.pos() : f.o).sub(pos).safenormalize(), radius, clamp(int(f.attrs[1]), 1, 89), showentsize, 1, 1, color.tohexcolor());
                     }
                     break;
+                }
+                case PHYSICS:
+                {
+                    if(e.flags&EF_BBZONE) break;
+                    float radius = max(e.attrs[2], e.attrs[3], e.attrs[4]);
+                    if(!radius) radius = enttype[e.type].radius;
+                    part_radius(pos, vec(radius), showentsize, 1, 1, entradiuscolour);
                 }
                 case AFFINITY:
                 {

@@ -610,7 +610,7 @@ namespace server
     }
 
     string smapname = "";
-    int smapcrc = 0, smapvariant = MPV_DEF, mapsending = -1, mapgameinfo = -1, gamestate = G_S_WAITING, gamemode = G_EDITING, mutators = 0, gamemillis = 0, gamelimit = 0, gametick = 0,
+    int smapcrc = 0, smapvariant = MPV_DEFAULT, mapsending = -1, mapgameinfo = -1, gamestate = G_S_WAITING, gamemode = G_EDITING, mutators = 0, gamemillis = 0, gamelimit = 0, gametick = 0,
         mastermode = MM_OPEN, timeremaining = -1, oldtimelimit = -1, gamewaittime = 0, gamewaitdelay = 0, lastteambalance = 0, nextteambalance = 0, lastavgposcalc = 0, lastrotatecycle = 0;
     bool hasgameinfo = false, updatecontrols = false, shouldcheckvotes = false, firstblood = false, sentstats = false;
     enet_uint32 lastsend = 0;
@@ -3644,7 +3644,7 @@ namespace server
     {
         hasgameinfo = shouldcheckvotes = firstblood = sentstats = false;
         mapgameinfo = -1;
-        smapvariant = G(forcemapvariant) ? G(forcemapvariant) : (m_edit(mode) ? MPV_DEF : 1+rnd(MPV_MAX-1));
+        smapvariant = G(forcemapvariant) ? G(forcemapvariant) : (m_edit(mode) ? MPV_DEFAULT : 1+rnd(MPV_MAX-1));
         stopdemo();
         resetmapdata();
         changemode(gamemode = mode, mutators = muts);
@@ -4416,16 +4416,16 @@ namespace server
         switch(mat&MATF_INDEX) \
         { \
             default: case 0: \
-                if(servermapvariant(MPV_ALT)) return sv_##name##var##alt; \
+                if(servermapvariant(MPV_ALTERNATE)) return sv_##name##var##alt; \
                 return sv_##name##var; \
             case 1: \
-                if(servermapvariant(MPV_ALT)) return sv_##name##2##var##alt; \
+                if(servermapvariant(MPV_ALTERNATE)) return sv_##name##2##var##alt; \
                 return sv_##name##2##var; \
             case 2: \
-                if(servermapvariant(MPV_ALT)) return sv_##name##3##var##alt; \
+                if(servermapvariant(MPV_ALTERNATE)) return sv_##name##3##var##alt; \
                 return sv_##name##3##var; \
             case 3: \
-                if(servermapvariant(MPV_ALT)) return sv_##name##4##var##alt; \
+                if(servermapvariant(MPV_ALTERNATE)) return sv_##name##4##var##alt; \
                 return sv_##name##4##var; \
         } \
     }

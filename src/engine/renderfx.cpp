@@ -189,13 +189,13 @@ void blendhalos()
     FVAR(IDF_MAP, hazescrollx##name, FVAR_MIN, 0, FVAR_MAX); \
     FVAR(IDF_MAP, hazescrolly##name, FVAR_MIN, -0.5f, FVAR_MAX);
 
-MPVVARS(, MPV_DEF);
-MPVVARS(alt, MPV_ALT);
+MPVVARS(, MPV_DEFAULT);
+MPVVARS(alt, MPV_ALTERNATE);
 
 #define GETMPV(name, type) \
     type get##name() \
     { \
-        if(checkmapvariant(MPV_ALT)) return name##alt; \
+        if(checkmapvariant(MPV_ALTERNATE)) return name##alt; \
         return name; \
     }
 

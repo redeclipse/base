@@ -679,16 +679,16 @@ extern float watersx1, watersy1, watersx2, watersy2;
         switch(mat&MATF_INDEX) \
         { \
             default: case 0: \
-                if(checkmapvariant(MPV_ALT)) return name##var##alt; \
+                if(checkmapvariant(MPV_ALTERNATE)) return name##var##alt; \
                 return name##var; \
             case 1: \
-                if(checkmapvariant(MPV_ALT)) return name##2##var##alt; \
+                if(checkmapvariant(MPV_ALTERNATE)) return name##2##var##alt; \
                 return name##2##var; \
             case 2: \
-                if(checkmapvariant(MPV_ALT)) return name##3##var##alt; \
+                if(checkmapvariant(MPV_ALTERNATE)) return name##3##var##alt; \
                 return name##3##var; \
             case 3: \
-                if(checkmapvariant(MPV_ALT)) return name##4##var##alt; \
+                if(checkmapvariant(MPV_ALTERNATE)) return name##4##var##alt; \
                 return name##4##var; \
         } \
     }
@@ -700,13 +700,13 @@ extern float watersx1, watersy1, watersx2, watersy2;
         switch(mat&MATF_INDEX) \
         { \
             default: case 0: \
-                res = checkmapvariant(MPV_ALT) ? name##var##alt : name##var; break; \
+                res = checkmapvariant(MPV_ALTERNATE) ? name##var##alt : name##var; break; \
             case 1: \
-                res = checkmapvariant(MPV_ALT) ? name##2##var##alt : name##2##var; break; \
+                res = checkmapvariant(MPV_ALTERNATE) ? name##2##var##alt : name##2##var; break; \
             case 2: \
-                res = checkmapvariant(MPV_ALT) ? name##3##var##alt : name##3##var; break; \
+                res = checkmapvariant(MPV_ALTERNATE) ? name##3##var##alt : name##3##var; break; \
             case 3: \
-                res = checkmapvariant(MPV_ALT) ? name##4##var##alt : name##4##var; break; \
+                res = checkmapvariant(MPV_ALTERNATE) ? name##4##var##alt : name##4##var; break; \
         } \
         res.mul(game::darkness()); \
         return res; \
@@ -823,11 +823,11 @@ enum
     INIT_QUIT
 };
 
-#define ENUM_PROGRESS(pr, en) \
+#define PROGRESS_ENUM(pr, en) \
     en(pr, None, NONE) en(pr, Disconnecting from server, DISCONNECT) en(pr, Connecting to server, CONNECT) \
     en(pr, Loading map, MAPLOAD) en(pr, Saving map, MAPSAVE) en(pr, Downloading map, MAPDL) \
     en(pr, Starting match, GAMESTATE) en(pr, Waiting, GAMEWAIT) en(pr, Maximum, MAX)
-ENUMNV(PROGRESS, ENUM_PROGRESS);
+ENUMNV(PROGRESS);
 
 extern int initing, fullscreen, fullscreendesktop, numcpus, noconfigfile, firstrun;
 extern bool progressing, pixeling;
@@ -894,7 +894,7 @@ extern void entitiesinoctanodes();
 extern void freeoctaentities(cube &c);
 extern bool pointinsel(const selinfo &sel, const vec &o);
 extern void clearmapvars(bool msg = false);
-extern void resetmap(bool empty, int variant = MPV_DEF);
+extern void resetmap(bool empty, int variant = MPV_DEFAULT);
 extern bool entselectionbox(extentity &e, vec &eo, vec &es, bool full = false);
 
 // rendermodel
@@ -1101,7 +1101,7 @@ extern void viewhaze();
 #define PULSE_ENUM(pr, en) \
     en(pr, Fire, FIRE) en(pr, Burn, BURN) en(pr, Disco, DISCO) en(pr, Shock, SHOCK) en(pr, Bleed, BLEED) \
     en(pr, Buff, BUFF) en(pr, Warn, WARN) en(pr, Regen, REGEN) en(pr, Flash, FLASH) en(pr, Rainbow, RAINBOW) en(pr, Maximum, MAX)
-ENUMNV(PULSE, PULSE_ENUM)
+ENUMNV(PULSE)
 #define PULSE_LAST (PULSE_MAX - 1)
 #define PULSECOLOURS 8
 #define PULSE(x) (PULSE_##x)

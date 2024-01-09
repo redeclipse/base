@@ -5,7 +5,7 @@ enum                            // hardcoded texture numbers
     NUMDEFAULTSLOTS
 };
 
-#define MAPVERSION 54 // bump if map format changes, see worldio.cpp
+#define MAPVERSION 55 // bump if map format changes, see worldio.cpp
 
 struct binary
 {

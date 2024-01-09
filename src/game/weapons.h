@@ -6,7 +6,7 @@
     en(pr, grenade, GRENADE, 9) en(pr, mine, MINE, 10) en(pr, rocket, ROCKET, 11) en(pr, melee, MELEE, 12) \
     en(pr, maximum, MAX, 13) en(pr, offset, OFFSET, pr##_SWORD) en(pr, item, ITEM, pr##_GRENADE) en(pr, all, ALL, pr##_MELEE) \
     en(pr, loadout, LOADOUT, pr##_ITEM - pr##_OFFSET) en(pr, items, ITEMS, pr##_MINE - pr##_GRENADE + 1) en(pr, replace, REPLACE, pr##_GRENADE)
-ENUMNI(W, W_ENUM);
+ENUMNI(W);
 
 #define WZ(x) (W_MAX+(W_##x))
 
@@ -38,7 +38,7 @@ enum
     en(pr, power, POWER, 4) en(pr, zoom, ZOOM, 5) en(pr, switch, SWITCH, 6) en(pr, use, USE, 7) en(pr, wait, WAIT, 8) en(pr, max, MAX, 9) \
     en(pr, all, ALL, (1<<pr##_IDLE)|(1<<pr##_PRIMARY)|(1<<pr##_SECONDARY)|(1<<pr##_RELOAD)|(1<<pr##_SWITCH)|(1<<pr##_USE)|(1<<pr##_POWER)|(1<<pr##_ZOOM)|(1<<pr##_WAIT)) \
     en(pr, interrupt, INTERRUPT, (1<<pr##_POWER)|(1<<pr##_ZOOM))
-ENUMNI(W_S, W_S_ENUM);
+ENUMNI(W_S);
 
 enum { W_A_CLIP = 0, W_A_STORE, W_A_MAX };
 
@@ -152,13 +152,13 @@ enum
     en(pr, SPEC, 1<<17) en(pr, TOUCH, 1<<18) en(pr, CRUSH, 1<<19) en(pr, CHECKPOINT, 1<<20) \
     en(pr, CLEAR, pr##_PROJ|pr##_EXPLODE|pr##_BURN|pr##_BLEED|pr##_MATERIAL|pr##_SPAWN|pr##_LOST|pr##_TOUCH|pr##_CRUSH) \
     en(pr, SFLAGS, pr##_KILL)
-ENUMLI(HIT, HIT_ENUM);
+ENUMLI(HIT);
 
 #define WR(x) (1<<W_R_##x)
 #define W_R_ENUM(pr, en) \
     en(pr, BURN, 0) en(pr, BLEED, 1) en(pr, SHOCK, 2) en(pr, MAX, 3) \
     en(pr, ALL, (1<<pr##_BURN)|(1<<pr##_BLEED)|(1<<pr##_SHOCK))
-ENUMLI(W_R, W_R_ENUM);
+ENUMLI(W_R);
 
 struct shotmsg { int id; ivec pos; };
 struct hitmsg { int flags, proj, target, dist; ivec dir, vel; };

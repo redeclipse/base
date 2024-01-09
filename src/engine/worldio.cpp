@@ -1264,6 +1264,7 @@ bool load_world(const char *mname, int crc, int variant)
             if(hdr.version < 47 && e.type >= ET_WIND) e.type++;
             if(hdr.version < 48 && e.type >= ET_MAPUI) e.type++;
             if(hdr.version < 52 && e.type >= ET_SOUNDENV) e.type++;
+            if(hdr.version < 55 && e.type >= ET_PHYSICS) e.type++;
             bool oldsun = hdr.version <= 43 && e.type == ET_DECAL;
             if(!samegame && e.type >= ET_GAMESPECIFIC)
             {

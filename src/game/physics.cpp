@@ -15,7 +15,7 @@ namespace physics
     #define GETMPV(name, type) \
         type get##name() \
         { \
-            if(checkmapvariant(MPV_ALT)) return name##alt; \
+            if(checkmapvariant(MPV_ALTERNATE)) return name##alt; \
             return name; \
         }
     GETMPV(deathplane, float);
@@ -273,7 +273,7 @@ namespace physics
 
     vec gravityvel(physent *d, const vec &center, float secs, float radius, float height, int matid, float submerged)
     {
-        float vel = PHYS(gravity) * (d->weight / 100.f), buoy = 0.f;
+        float vel = PHYS(gravity) * (d->weight / 100.f) * d->gravityscale, buoy = 0.f;
         bool liquid = isliquid(matid&MATF_VOLUME), inliquid = liquid && submerged >= LIQUIDPHYS(submerge, matid);
 
         if(inliquid) buoy = LIQUIDPHYS(buoyancy, matid) * (d->buoyancy / 100.f) * d->submerged;
@@ -367,7 +367,7 @@ namespace physics
     float movevelocity(physent *d, bool floating)
     {
         physent *p = d->type == ENT_CAMERA ? game::player1 : d;
-        float vel = p->speed*movespeed;
+        float vel = p->speed * p->movescale * movespeed;
         if(floating) vel *= floatspeed/100.0f;
         else if(gameent::is(p))
         {
@@ -1139,6 +1139,7 @@ namespace physics
             float c = onfloor ? (slide ? PHYS(slidecoast) : PHYS(floorcoast))*coastscale(d->feetpos(-1)) : PHYS(aircoast);
             coast = inliquid ? liquidmerge(d, c, LIQUIDPHYS(coast, d->inmaterial)) : c;
         }
+        coast *= d->coastscale;
         d->vel.lerp(m, d->vel, pow(max(1.0f - 1.0f/coast, 0.0f), millis/20.0f));
 
         bool floorchk = d->floor.z > 0 && d->floor.z < floorz;
@@ -1150,9 +1151,9 @@ namespace physics
             d->falling.add(g);
             if(inliquid || d->physstate >= PHYS_SLOPE || sticktospecial(d))
             {
-                float coast = inliquid ? liquidmerge(d, PHYS(aircoast), LIQUIDPHYS(coast, d->inmaterial)) : PHYS(floorcoast)*coastscale(d->feetpos(-1)),
+                float scoast = (inliquid ? liquidmerge(d, PHYS(aircoast), LIQUIDPHYS(coast, d->inmaterial)) : PHYS(floorcoast)*coastscale(d->feetpos(-1)))*d->coastscale,
                         floordiff = floorz-slopez, c = inliquid || floordiff == 0 ? 1.0f : clamp((d->floor.z-slopez)/floordiff, 0.0f, 1.0f);
-                d->falling.mul(pow(max(1.0f - c/coast, 0.0f), millis/20.0f));
+                d->falling.mul(pow(max(1.0f - c/scoast, 0.0f), millis/20.0f));
             }
         }
     }
@@ -1243,7 +1244,7 @@ namespace physics
             if(e->shocktime && e->shocking(lastmillis, e->shocktime)) dpos.add(vec(rnd(201)-100, rnd(201)-100, rnd(201)-100).normalize().mul(shocktwitchvel*secs));
         }
 
-        float coast = collided ? (isliquid(matid&MATF_VOLUME) ? PHYS(aircoast)-((PHYS(aircoast)-LIQUIDPHYS(coast, matid))*submerged) : PHYS(floorcoast)*coastscale(vec(pos).subz(radius+1))) : PHYS(aircoast);
+        float coast = (collided ? (isliquid(matid&MATF_VOLUME) ? PHYS(aircoast)-((PHYS(aircoast)-LIQUIDPHYS(coast, matid))*submerged) : PHYS(floorcoast)*coastscale(vec(pos).subz(radius+1))) : PHYS(aircoast))*d->coastscale;
         dpos.mul(pow(max(1.0f - 1.0f/coast, 0.0f), millis/20.0f));
     }
 

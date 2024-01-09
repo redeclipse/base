@@ -37,9 +37,8 @@ enum
 enum                                // entity types
 {
     NOTUSED = ET_EMPTY, LIGHT = ET_LIGHT, MAPMODEL = ET_MAPMODEL, PLAYERSTART = ET_PLAYERSTART, ENVMAP = ET_ENVMAP, PARTICLES = ET_PARTICLES,
-    MAPSOUND = ET_SOUND, LIGHTFX = ET_LIGHTFX, DECAL = ET_DECAL, WIND = ET_WIND, MAPUI = ET_MAPUI, SOUNDENV = ET_SOUNDENV, WEAPON = ET_GAMESPECIFIC,
-    TELEPORT, ACTOR, TRIGGER, PUSHER, AFFINITY, CHECKPOINT,
-    ROUTE, RAIL, CAMERA,
+    MAPSOUND = ET_SOUND, LIGHTFX = ET_LIGHTFX, DECAL = ET_DECAL, WIND = ET_WIND, MAPUI = ET_MAPUI, SOUNDENV = ET_SOUNDENV, PHYSICS = ET_PHYSICS,
+    WEAPON = ET_GAMESPECIFIC, TELEPORT, ACTOR, TRIGGER, PUSHER, AFFINITY, CHECKPOINT, ROUTE, RAIL, CAMERA,
     MAXENTTYPES
 };
 
@@ -63,7 +62,7 @@ enum { MDLF_HIDE = 0, MDLF_NOCLIP, MDLF_NOSHADOW, MDLF_MAX };
 
 struct enttypes
 {
-    int type,           priority, links,    radius, usetype,    numattrs,   palattr,    modesattr,  idattr, mvattr, fxattr,
+    int type,           priority, links,    radius, usetype,    numattrs,       palattr,    modesattr,  idattr, mvattr, fxattr,
             canlink, reclink, canuse;
     bool    noisy,  syncs,  resyncs,    syncpos,    synckin;
     const char *name,           *displayname,       *attrs[MAXENTATTRS];
@@ -71,25 +70,25 @@ struct enttypes
 #ifdef CPP_GAME_SERVER
 extern const enttypes enttype[] = {
     {
-        NOTUSED,        -1,         0,      0,      EU_NONE,    0,          -1,         -1,         -1,     -1,     -1,
+        NOTUSED,        -1,         0,      0,      EU_NONE,    0,              -1,         -1,         -1,     -1,     -1,
             0, 0, 0,
             true,   false,  false,      false,      false,
                 "none",         "NONE",             { "" }
     },
     {
-        LIGHT,          1,          59,     0,      EU_NONE,    13,         7,          9,          -1,     11,      12,
+        LIGHT,          1,          59,     0,      EU_NONE,    13,             7,          9,          -1,     11,      12,
             (1<<LIGHTFX), (1<<LIGHTFX), 0,
             false,  false,  false,      false,      false,
                 "light",        "Light",            { "radius", "red", "green", "blue", "flare", "fscale", "flags", "palette", "palindex", "modes", "muts", "variant", "fxlevel"  }
     },
     {
-        MAPMODEL,       1,          58,     0,      EU_NONE,    22,         8,          13,         -1,     15,     16,
+        MAPMODEL,       1,          58,     0,      EU_NONE,    22,             8,          13,         -1,     15,     16,
             (1<<TRIGGER)|(1<<RAIL), (1<<TRIGGER), 0,
             false,  false,  false,      false,      false,
                 "mapmodel",     "Map Model",        { "type", "yaw", "pitch", "roll", "blend", "scale", "flags", "colour", "palette", "palindex", "spinyaw", "spinpitch", "spinroll", "modes", "muts", "variant", "fxlevel", "lodoff", "anim", "aspeed", "aoffset", "shadowdist" }
     },
     {
-        PLAYERSTART,    1,          59,     0,      EU_NONE,    7,          -1,         3,          5,      6,      -1,
+        PLAYERSTART,    1,          59,     0,      EU_NONE,    7,              -1,         3,          5,      6,      -1,
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             0,
@@ -97,13 +96,13 @@ extern const enttypes enttype[] = {
                 "playerstart",  "Player Start",     { "team", "yaw", "pitch", "modes", "muts", "id", "variant" }
     },
     {
-        ENVMAP,         1,          260,    0,      EU_NONE,    3,          -1,         -1,         -1,     -1,     -1,
+        ENVMAP,         1,          260,    0,      EU_NONE,    3,              -1,         -1,         -1,     -1,     -1,
             (1<<TELEPORT), (1<<TELEPORT), 0,
             false,  false,  false,      false,      false,
                 "envmap",       "Envrionment Map",  { "radius", "size", "blur" }
     },
     {
-        PARTICLES,      1,          59,     0,      EU_NONE,    19,         -1,         13,         -1,     15,     16,
+        PARTICLES,      1,          59,     0,      EU_NONE,    19,             -1,         13,         -1,     15,     16,
             (1<<TELEPORT)|(1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT)|(1<<RAIL),
             (1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT),
             0,
@@ -111,7 +110,7 @@ extern const enttypes enttype[] = {
                 "particles",    "Particles",        { "type", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "millis", "modes", "muts", "variant", "fxlevel", "hintcolour", "hintblend" }
     },
     {
-        MAPSOUND,       1,          58,     0,      EU_NONE,    12,         -1,         7,          -1,     9,      -1,
+        MAPSOUND,       1,          58,     0,      EU_NONE,    12,             -1,         7,          -1,     9,      -1,
             (1<<TELEPORT)|(1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT)|(1<<WIND)|(1<<RAIL),
             (1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT)|(1<<WIND),
             0,
@@ -119,7 +118,7 @@ extern const enttypes enttype[] = {
                 "sound",        "Sound",            { "type", "gain", "pitch", "rolloff", "refdist", "maxdist", "flags", "modes", "muts", "variant", "offset", "groupid" }
     },
     {
-        LIGHTFX,        1,          1,      0,      EU_NONE,    9,          -1,         5,          -1,     7,      8,
+        LIGHTFX,        1,          1,      0,      EU_NONE,    9,              -1,         5,          -1,     7,      8,
             (1<<LIGHT)|(1<<TELEPORT)|(1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT)|(1<<RAIL),
             (1<<LIGHT)|(1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT),
             0,
@@ -127,13 +126,13 @@ extern const enttypes enttype[] = {
                 "lightfx",      "Light FX",         { "type", "mod", "min", "max", "flags", "modes", "muts", "variant", "fxlevel" }
     },
     {
-        DECAL,          1,          0,      0,      EU_NONE,    13,         7,          9,          -1,     11,      12,
+        DECAL,          1,          0,      0,      EU_NONE,    13,             7,          9,          -1,     11,      12,
             0, 0, 0,
             false,  false,  false,      false,      false,
                 "decal",        "Decal",            { "type", "yaw", "pitch", "roll", "scale", "blend", "colour", "palette", "palindex", "modes", "muts", "variant", "fxlevel" }
     },
     {
-        WIND,           1,          239,    0,      EU_NONE,    11,          -1,         7,         -1,     9,      10,
+        WIND,           1,          239,    0,      EU_NONE,    11,             -1,         7,         -1,     9,      10,
             (1<<MAPSOUND),
             (1<<MAPSOUND),
             0,
@@ -141,27 +140,33 @@ extern const enttypes enttype[] = {
                 "wind",        "Wind",              { "mode", "yaw", "speed", "radius", "atten", "interval", "implen", "modes", "muts", "variant", "fxlevel" }
     },
     {
-        MAPUI,          1,          241,    0,      EU_NONE,    14,          -1,         10,          -1,     12,      13,
+        MAPUI,          1,          241,    0,      EU_NONE,    14,             -1,         10,         -1,     12,     13,
             0, 0,
             0,
             false,  false,  false,      false,      false,
                 "mapui",       "Map UI",            { "type", "flags", "yaw", "pitch", "radius", "scale", "yawdet", "pitchdet", "param", "blend", "modes", "muts", "variant", "fxlevel" }
     },
     {
-        SOUNDENV,        1,          0,     0,      EU_NONE,    8,           -1,          -1,        -1,     -1,      -1,
+        SOUNDENV,        1,          0,     0,      EU_NONE,    8,              -1,         -1,        -1,     -1,      -1,
             0, 0, 0,
             false,  false,  false,      false,      false,
                 "soundenv",     "Sound Env",        { "type", "width", "length", "height", "fadevals1", "fadevals2", "fadevals3", "fadevals4" }
     },
     {
-        WEAPON,         2,          59,     16,     EU_ITEM,    6,          -1,         2,          4,      5,      -1,
+        PHYSICS,         1,          0,     16,      EU_NONE,    8,             -1,          5,         -1,     7,      -1,
+            0, 0, 0,
+            false,  false,  false,      false,      false,
+                "physics",      "Physics",          { "type", "value", "width", "length", "height", "modes", "muts", "variant" }
+    },
+    {
+        WEAPON,         2,          59,     16,     EU_ITEM,    6,              -1,         2,          4,      5,      -1,
             0, 0,
             (1<<ENT_PLAYER)|(1<<ENT_AI),
             false,  true,   true,      false,      false,
                 "weapon",       "Weapon",           { "type", "flags", "modes", "muts", "id", "variant" }
     },
     {
-        TELEPORT,       1,          50,     16,     EU_AUTO,    17,         6,          9,          -1,     11,      -1,
+        TELEPORT,       1,          50,     16,     EU_AUTO,    17,             6,          9,          -1,     11,      -1,
             (1<<ENVMAP)|(1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX)|(1<<TELEPORT),
             (1<<ENVMAP)|(1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<ENT_PLAYER)|(1<<ENT_AI)|(1<<ENT_PROJ),
@@ -169,13 +174,13 @@ extern const enttypes enttype[] = {
                 "teleport",     "Teleport",         { "yaw", "pitch", "push", "radius", "colour", "type", "palette", "palindex", "flags", "modes", "muts", "variant", "blend", "size", "envblend", "hintcolour", "hintblend" }
     },
     {
-        ACTOR,          1,          59,     0,      EU_NONE,    11,         -1,         3,          5,      10,     -1,
+        ACTOR,          1,          59,     0,      EU_NONE,    11,             -1,         3,          5,      10,     -1,
             0, 0, 0,
             false,  true,   false,      true,       false,
                 "actor",        "Actor",            { "type", "yaw", "pitch", "modes", "muts", "id", "weap", "health", "speed", "scale", "variant" }
     },
     {
-        TRIGGER,        1,          58,     16,     EU_AUTO,    8,          -1,         5,          -1,     7,      -1,
+        TRIGGER,        1,          58,     16,     EU_AUTO,    8,              -1,         5,          -1,     7,      -1,
             (1<<MAPMODEL)|(1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<MAPMODEL)|(1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<ENT_PLAYER)|(1<<ENT_AI),
@@ -183,7 +188,7 @@ extern const enttypes enttype[] = {
                 "trigger",      "Trigger",          { "id", "type", "action", "radius", "state", "modes", "muts", "variant" }
     },
     {
-        PUSHER,         1,          58,     16,     EU_AUTO,    11,         -1,         6,          -1,     9,      -1,
+        PUSHER,         1,          58,     16,     EU_AUTO,    11,             -1,         6,          -1,     9,      -1,
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX)|(1<<PUSHER),
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<ENT_PLAYER)|(1<<ENT_AI)|(1<<ENT_PROJ),
@@ -191,13 +196,13 @@ extern const enttypes enttype[] = {
                 "pusher",       "Pusher",           { "yaw", "pitch", "force", "maxrad", "minrad", "type", "modes", "muts", "id", "variant", "sdelay" }
     },
     {
-        AFFINITY,       1,          48,     32,     EU_NONE,    7,          -1,         3,          5,      6,      -1,
+        AFFINITY,       1,          48,     32,     EU_NONE,    7,              -1,         3,          5,      6,      -1,
             0, 0, 0,
             false,  false,  false,      false,      false,
                 "affinity",     "Affinity",         { "team", "yaw", "pitch", "modes", "muts", "id", "variant" }
     },
     {
-        CHECKPOINT,     1,          48,     16,     EU_AUTO,    8,          -1,         3,          5,      7,      -1,
+        CHECKPOINT,     1,          48,     16,     EU_AUTO,    8,              -1,         3,          5,      7,      -1,
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX)|(1<<CHECKPOINT),
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<ENT_PLAYER)|(1<<ENT_AI),
@@ -205,19 +210,19 @@ extern const enttypes enttype[] = {
                 "checkpoint",   "Check Point",      { "radius", "yaw", "pitch", "modes", "muts", "id", "type", "variant" }
     },
     {
-        ROUTE,          1,          224,    16,     EU_NONE,    6,          -1,         -1,         -1,     -1,     -1,
+        ROUTE,          1,          224,    16,     EU_NONE,    6,              -1,         -1,         -1,     -1,     -1,
             (1<<ROUTE), 0, 0,
             false,   false,  false,      false,      false,
                 "route",         "Route",           { "num", "yaw", "pitch", "move", "strafe", "action" }
     },
     {
-        RAIL,           -1,         228,    0,      EU_NONE,    13,         -1,         10,         -1,     12,     -1,
-            (1<<LIGHT)|(1<<MAPMODEL)|(1<<PLAYERSTART)|(1<<PARTICLES)|(1<<MAPSOUND)|(1<<MAPUI)|(1<<LIGHTFX)|(1<<WEAPON)|(1<<TELEPORT)|(1<<ACTOR)|(1<<TRIGGER)|(1<<PUSHER)|(1<<RAIL)|(1<<CAMERA), 0, 0,
+        RAIL,           -1,         228,    0,      EU_NONE,    13,             -1,         10,         -1,     12,     -1,
+            (1<<LIGHT)|(1<<MAPMODEL)|(1<<PLAYERSTART)|(1<<PARTICLES)|(1<<MAPSOUND)|(1<<PHYSICS)|(1<<MAPUI)|(1<<LIGHTFX)|(1<<WEAPON)|(1<<TELEPORT)|(1<<ACTOR)|(1<<TRIGGER)|(1<<PUSHER)|(1<<RAIL)|(1<<CAMERA), 0, 0,
             false,   false,  false,      false,      false,
                 "rail",         "Rail",             { "time", "flags", "yaw", "pitch", "rotlen", "rotwait", "collide", "anim", "aspeed", "aoffset", "modes", "muts", "variant" }
     },
     {
-        CAMERA,         -1,         252,    0,      EU_NONE,    12,         -1,         7,          9,      10,      -1,
+        CAMERA,         -1,         252,    0,      EU_NONE,    12,             -1,         7,          9,      10,      -1,
             0, 0, 0,
             false,   false,  false,      false,      false,
                 "camera",       "Camera",           { "type", "flags", "yaw", "pitch", "maxdist", "mindist", "delay", "modes", "muts", "id", "variant", "fov" }
@@ -235,7 +240,7 @@ namespace entities
 
 #define MAXNAMELEN 24
 #define SAY_ENUM(pr, en) en(pr, Message, MESSAGE, 1<<0) en(pr, Action, ACTION, 1<<1) en(pr, Team, TEAM, 1<<2) en(pr, Whisper, WHISPER, 1<<3)
-ENUMNI(SAY, SAY_ENUM);
+ENUMNI(SAY);
 
 enum
 {
@@ -336,7 +341,7 @@ enum
     en(pr, SPREES, 4) en(pr, SPREE, 2) en(pr, MKILL, 6) \
     en(pr, CHECK, pr##_SPREE1|pr##_SPREE2|pr##_SPREE3|pr##_SPREE4) \
     en(pr, MULTI, pr##_MKILL1|pr##_MKILL2|pr##_MKILL3)
-ENUMLI(FRAG, FRAG_ENUM);
+ENUMLI(FRAG);
 
 enum
 {
@@ -1139,13 +1144,13 @@ namespace server
 }
 
 #define PLCHAN_ENUM(pr, en) en(pr, Announce, ANNOUNCE) en(pr, Message, MESSAGE) en(pr, Voice, VOICE) en(pr, Maximum, MAX)
-ENUMNV(PLCHAN, PLCHAN_ENUM);
+ENUMNV(PLCHAN);
 
 #define HUDPOS_ENUM(pr, en) \
     en(pr, lefttop, LEFTTOP) en(pr, centertop, CENTERTOP) en(pr, righttop, RIGHTTOP) \
     en(pr, leftbottom, LEFTBOTTOM) en(pr, centerbottom, CENTERBOTTOM) en(pr, rightbottom, RIGHTBOTTOM) \
     en(pr, centermiddle, CENTERMIDDLE) en(pr, Maximum, MAX)
-ENUMNV(HUDPOS, HUDPOS_ENUM)
+ENUMNV(HUDPOS)
 
 #ifdef CPP_GAME_SERVER
 #define WATERPHYS(name,mat) (server::getwater##name(mat)*server::getwater##name##scale(mat))
@@ -2528,6 +2533,7 @@ namespace entities
     extern vector<inanimate *> inanimates;
     extern int showentfull, showentweapons;
     extern float showentavailable, showentunavailable;
+    extern void physents(physent *d);
     extern void runrails();
     extern void updaterails();
     extern void localpassenger(inanimate *m, physent *d);
@@ -2556,11 +2562,11 @@ namespace entities
 #endif
 
 #define GAMELOG_ENUM(pr, en) en(pr, Event, EVENT) en(pr, Message, MESSAGE) en(pr, Maximum, MAX)
-ENUMNV(GAMELOG, GAMELOG_ENUM);
+ENUMNV(GAMELOG);
 
 #define GAMELOG_F_ENUM(pr, en) en(pr, NONE, 0) en(pr, CLIENT1, 1<<0) en(pr, CLIENT2, 1<<1) en(pr, CLIENTN, 1<<2) en(pr, BROADCAST, 1<<3) en(pr, UNMAPPED, 1<<4) \
     en(pr, CLIENTS, pr##_CLIENT1|pr##_CLIENT2|pr##_CLIENTN) en(pr, ALL, pr##_CLIENT1|pr##_CLIENT2|pr##_CLIENTN|pr##_BROADCAST)
-ENUMLI(GAMELOG_F, GAMELOG_F_ENUM);
+ENUMLI(GAMELOG_F);
 
 #ifndef CPP_GAME_SERVER
 #include "gamelog.h"

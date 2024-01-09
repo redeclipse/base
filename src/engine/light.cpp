@@ -22,13 +22,13 @@ void setlightdir(vec &dir, float yaw, float pitch)
     FVARF(IDF_MAP, sunlightyaw##name, 0, 0, 360, setlightdir(sunlightdir##name, sunlightyaw##name, sunlightpitch##name)); \
     FVARF(IDF_MAP, sunlightpitch##name, -90, 90, 90, setlightdir(sunlightdir##name, sunlightyaw##name, sunlightpitch##name)); \
 
-PIESKYVARS(, MPV_DEF);
-PIESKYVARS(alt, MPV_ALT);
+PIESKYVARS(, MPV_DEFAULT);
+PIESKYVARS(alt, MPV_ALTERNATE);
 
 #define GETSKYPIE(name, type) \
     type getpie##name() \
     { \
-        if(checkmapvariant(MPV_ALT)) return sun##name##alt; \
+        if(checkmapvariant(MPV_ALTERNATE)) return sun##name##alt; \
         return sun##name; \
     }
 
@@ -36,7 +36,7 @@ PIESKYVARS(alt, MPV_ALT);
     type getpie##name() \
     { \
         static bvec res; \
-        res = checkmapvariant(MPV_ALT) ? sun##name##alt : sun##name; \
+        res = checkmapvariant(MPV_ALTERNATE) ? sun##name##alt : sun##name; \
         res.mul(game::darkness(3)); \
         return res; \
     }

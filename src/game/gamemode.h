@@ -1,7 +1,7 @@
 #define G_ENUM(pr, en) \
     en(pr, Demo, DEMO) en(pr, Editing, EDITING) en(pr, Deathmatch, DEATHMATCH) en(pr, Capture the Flag, CAPTURE) \
     en(pr, Defend and Control, DEFEND) en(pr, Bomber, BOMBER) en(pr, Race, RACE) en(pr, Maximum, MAX)
-ENUMNV(G, G_ENUM)
+ENUMNV(G)
 
 VARD(G_START, G_EDITING);
 VARD(G_PLAY, G_DEATHMATCH);
@@ -16,7 +16,7 @@ VARD(G_SW, (1<<G_RACE));
     en(pr, Free for All, FFA) en(pr, Coop, COOP) en(pr, Instagib, INSTAGIB) en(pr, Medieval, MEDIEVAL) en(pr, Kaboom, KABOOM) en(pr, Duel, DUEL) en(pr, Survivor, SURVIVOR) \
     en(pr, Classic, CLASSIC) en(pr, Onslaught, ONSLAUGHT) en(pr, Vampire, VAMPIRE) en(pr, Resize, RESIZE) en(pr, HARD, HARD) en(pr, Arena, ARENA) en(pr, Dark, DARK) \
     en(pr, Game Specific 1, GSP1) en(pr, Game Specific 2, GSP2) en(pr, Game Specific 3, GSP3) en(pr, Maximum, MAX)
-ENUMNV(G_M, G_M_ENUM)
+ENUMNV(G_M)
 
 #define G_M_GSN (G_M_MAX-G_M_GSP1)
 VARD(G_M_GSP, G_M_GSP1);
@@ -28,7 +28,7 @@ VARD(G_M_DUKE, (1<<G_M_DUEL)|(1<<G_M_SURVIVOR));
 #define G_S_ENUM(pr, en) \
     en(pr, Waiting, WAITING) en(pr, Getting Map, GETMAP) en(pr, Sending Map, SENDMAP) en(pr, Readying, READYING) en(pr, Syncing Info, GAMEINFO) \
     en(pr, Playing, PLAYING) en(pr, Overtime, OVERTIME) en(pr, Intermission, INTERMISSION) en(pr, Voting, VOTING) en(pr, Maximum, MAX)
-ENUMNV(G_S, G_S_ENUM);
+ENUMNV(G_S);
 
 #define gs_waiting(a) (a >= G_S_WAITING && a <= G_S_GAMEINFO)
 #define gs_playing(a) (a >= G_S_PLAYING && a <= G_S_OVERTIME)
@@ -36,7 +36,7 @@ ENUMNV(G_S, G_S_ENUM);
 #define gs_timeupdate(a) (gs_playing(a) || gs_intermission(a))
 
 #define G_F_ENUM(pr, en) en(pr, Game Specific, GSP) en(pr, Maximum, MAX)
-ENUMNV(G_F, G_F_ENUM);
+ENUMNV(G_F);
 
 struct gametypes
 {

@@ -276,7 +276,7 @@ enum
     en(pr, Lightning, LIGHTNING) en(pr, Lightzap, LIGHTZAP) \
     en(pr, Lens Flare, LENS_FLARE) \
     en(pr, Max, MAX)
-ENUMNV(PART, PART_ENUM);
+ENUMNV(PART);
 
 struct particle
 {
@@ -318,7 +318,7 @@ extern void lensflare(const vec &o, const vec &color, bool sun, int sparkle, flo
     en(pr, Smoke, SMOKE) en(pr, Scorch, SCORCH) en(pr, Short Scorch, SCORCH_SHORT) \
     en(pr, Blood, BLOOD) en(pr, Bullet, BULLET) en(pr, Energy, ENERGY) en(pr, Stain, STAIN) \
     en(pr, Maximum, MAX)
-ENUMNV(STAIN, STAIN_ENUM);
+ENUMNV(STAIN);
 
 extern void addstain(int type, const vec &center, const vec &surface, float radius, const bvec &color = bvec(0xFF, 0xFF, 0xFF), int info = 0);
 
@@ -329,7 +329,7 @@ static inline void addstain(int type, const vec &center, const vec &surface, flo
 
 // worldio
 extern void setnames(const char *fname, int crc = 0);
-extern bool load_world(const char *mname, int crc = 0, int variant = MPV_DEF);
+extern bool load_world(const char *mname, int crc = 0, int variant = MPV_DEFAULT);
 extern void save_world(const char *mname, bool nodata = false, bool forcesave = false);
 extern char *mapctitle(const char *s);
 extern char *mapcauthor(const char *s);
@@ -502,9 +502,9 @@ struct editor;
 enum { EDITORFOCUSED = 1, EDITORUSED, EDITORFOREVER, EDITORREADONLY };
 enum { CURSOR_DEFAULT = 0, CURSOR_HOVER, CURSOR_HIDDEN, CURSOR_MAX };
 
-#define ENUM_SURFACE(pr, en) \
+#define SURFACE_ENUM(pr, en) \
     en(pr, Main, MAIN) en(pr, Background, BACKGROUND) en(pr, Foreground, FOREGROUND) en(pr, Progress, PROGRESS) en(pr, Composite, COMPOSITE) en(pr, Maximum, MAX)
-ENUMNV(SURFACE, ENUM_SURFACE);
+ENUMNV(SURFACE);
 VARD(SURFACE_LOOPED, SURFACE_FOREGROUND+1);
 
 namespace UI

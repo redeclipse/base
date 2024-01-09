@@ -1836,7 +1836,7 @@ MPVVARS(alt);
 #define GETMPV(name, type) \
     type get##name() \
     { \
-        if(checkmapvariant(MPV_ALT)) return name##alt; \
+        if(checkmapvariant(MPV_ALTERNATE)) return name##alt; \
         return name; \
     }
 
@@ -1844,7 +1844,7 @@ MPVVARS(alt);
     type get##name() \
     { \
         static int res; \
-        res = int((checkmapvariant(MPV_ALT) ? name##alt : name)*game::darkness(4)); \
+        res = int((checkmapvariant(MPV_ALTERNATE) ? name##alt : name)*game::darkness(4)); \
         return res; \
     }
 

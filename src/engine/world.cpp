@@ -580,13 +580,14 @@ bool entselectionbox(extentity &e, vec &eo, vec &es, bool full)
             found = true;
         }
     }
-    else if(e.type == ET_SOUNDENV)
+    else if(e.type == ET_SOUNDENV || (e.type == ET_PHYSICS && e.flags&EF_BBZONE))
     {
+        int start = e.type == ET_PHYSICS ? 2 : 1;
         if(!full) faked = true;
         else
         {
             eo = e.o;
-            es = vec(e.attrs[1], e.attrs[2], e.attrs[3]);
+            es = vec(e.attrs[start], e.attrs[start+1], e.attrs[start+2]);
             found = true;
         }
     }

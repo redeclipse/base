@@ -118,13 +118,13 @@ Texture *loadskyoverlay(const char *basename)
     MPVLAYER(cloud, name, type) MPVCYLINDER(cloudcylinder, name, type) \
     MPVLAYER(env, name, type) MPVCYLINDER(envcylinder, name, type)
 
-MPVVARS(, MPV_DEF);
-MPVVARS(alt, MPV_ALT);
+MPVVARS(, MPV_DEFAULT);
+MPVVARS(alt, MPV_ALTERNATE);
 
 #define GETMPV(name, type) \
     type get##name() \
     { \
-        if(checkmapvariant(MPV_ALT)) return name##alt; \
+        if(checkmapvariant(MPV_ALTERNATE)) return name##alt; \
         return name; \
     }
 
@@ -132,7 +132,7 @@ MPVVARS(alt, MPV_ALT);
     type get##name() \
     { \
         static bvec res; \
-        res = bvec(checkmapvariant(MPV_ALT) ? name##alt : name).mul(game::darkness()); \
+        res = bvec(checkmapvariant(MPV_ALTERNATE) ? name##alt : name).mul(game::darkness()); \
         return res; \
     }
 

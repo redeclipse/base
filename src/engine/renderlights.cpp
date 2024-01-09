@@ -234,7 +234,7 @@ void cleanupao()
 #define GETVARMPV(name, var, type) \
     type get##name##var() \
     { \
-        if(checkmapvariant(MPV_ALT)) return name##var##alt; \
+        if(checkmapvariant(MPV_ALTERNATE)) return name##var##alt; \
         return name##var; \
     }
 

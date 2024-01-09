@@ -3,10 +3,25 @@
 
 // ET_*: the only static entity types dictated by the engine... rest are gamecode dependent
 
-enum { ET_EMPTY=0, ET_LIGHT, ET_MAPMODEL, ET_PLAYERSTART, ET_ENVMAP, ET_PARTICLES, ET_SOUND, ET_LIGHTFX, ET_DECAL, ET_WIND, ET_MAPUI, ET_SOUNDENV, ET_GAMESPECIFIC };
-enum { LFX_SPOTLIGHT = 0, LFX_FLICKER, LFX_PULSE, LFX_GLOW, LFX_INVPULSE, LFX_INVGLOW, LFX_MAX };
+enum { ET_EMPTY=0, ET_LIGHT, ET_MAPMODEL, ET_PLAYERSTART, ET_ENVMAP, ET_PARTICLES, ET_SOUND, ET_LIGHTFX, ET_DECAL, ET_WIND, ET_MAPUI, ET_SOUNDENV, ET_PHYSICS, ET_GAMESPECIFIC };
 enum { LFX_S_NONE = 0, LFX_S_RAND1 = 1<<0, LFX_S_RAND2 = 1<<1, LFX_S_MAX = 2 };
-enum { MPV_ALL = 0, MPV_DEF, MPV_ALT, MPV_MAX };
+
+#define MPV_ENUM(pr, en) \
+    en(pr, Any, ANY) en(pr, Default, DEFAULT) en(pr, Alternate, ALTERNATE) \
+    en(pr, Max, MAX)
+ENUMNV(MPV);
+
+#define LFX_ENUM(pr, en) \
+    en(pr, Spotlight, SPOTLIGHT) en(pr, Flicker, FLICKER) \
+    en(pr, Pulse, PULSE) en(pr, Glow, GLOW) \
+    en(pr, Inverted Pulse, INVPULSE) en(pr, Inverted Glow, INVGLOW) \
+    en(pr, Max, MAX)
+ENUMNV(LFX);
+
+#define PHYSICS_ENUM(pr, en) \
+    en(pr, Movement, MOVEMENT) en(pr, Gravity, GRAVITY) en(pr, Coasting, COASTING) \
+    en(pr, Max, MAX)
+ENUMNV(PHYSICS);
 
 struct entbase          // persistent map entity
 {
@@ -25,7 +40,8 @@ enum
     EF_OCTA       = 1<<5,
     EF_RENDER     = 1<<6,
     EF_SPAWNED    = 1<<7,
-    EF_DYNAMIC    = 1<<8
+    EF_DYNAMIC    = 1<<8,
+    EF_BBZONE     = 1<<9
 };
 
 typedef smallvector<int> attrvector;
@@ -130,6 +146,7 @@ struct extentity : entity                       // part of the entity that doesn
     void setspawned() { flags |= EF_SPAWNED; }
     void clearspawned() { flags &= ~EF_SPAWNED; }
     bool dynamic() const { return (flags&EF_DYNAMIC) != 0; }
+    bool bbzone() const { return (flags&EF_BBZONE) != 0; }
 };
 
 #define MAXENTS 30000
@@ -190,6 +207,7 @@ struct baseent
     bool isalive() const { return state == CS_ALIVE; }
     bool isdead() const { return state == CS_DEAD || state == CS_WAITING; }
     bool isediting() const { return state == CS_EDITING; }
+    bool isnophys() const { return state == CS_EDITING || state == CS_SPECTATOR; }
 };
 
 struct physent : baseent                        // can be affected by physics
@@ -202,7 +220,7 @@ struct physent : baseent                        // can be affected by physics
     vec floor;                                  // the normal of floor the dynent is on
 
     bool blocked, forcepos;
-    float curscale;
+    float curscale, movescale, gravityscale, coastscale;
     schar move, strafe;
 
     uchar physstate;                            // one of PHYS_* above
@@ -213,7 +231,7 @@ struct physent : baseent                        // can be affected by physics
         speed(100), jumpspeed(100), impulsespeed(100), weight(100), buoyancy(100),
         radius(3.75f), height(17.5f), aboveeye(1.25f),
         xradius(3.75f), yradius(3.75f), zradius(17.5f), zmargin(0),
-        curscale(1),
+        curscale(1), movescale(1), gravityscale(1), coastscale(1),
         type(ENT_INANIMATE),
         collidetype(COLLIDE_ELLIPSE)
     {

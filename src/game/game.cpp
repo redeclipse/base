@@ -156,7 +156,7 @@ namespace game
     #define GETMPV(name, type) \
     type get##name() \
     { \
-        if(checkmapvariant(MPV_ALT)) return name##alt; \
+        if(checkmapvariant(MPV_ALTERNATE)) return name##alt; \
         return name; \
     }
 
@@ -1359,6 +1359,7 @@ namespace game
         float offset = d->height, minz = d->feetpos().z;
         d->o.z -= d->height;
 
+        entities::physents(d);
         d->configure(lastmillis, gamemode, mutators, physics::carryaffinity(d), curtime);
 
         if(d->state == CS_ALIVE)
