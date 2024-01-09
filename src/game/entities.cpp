@@ -2284,12 +2284,8 @@ namespace entities
         if(e.type == ET_PHYSICS)
         {
             int proceed = 0;
-            loopj(3) if(e.attrs[2+j])
-            {
-                proceed++;
-                if(proceed >= 2) break;
-            }
-            if(proceed >= 2) e.flags |= EF_BBZONE;
+            loopj(3) if(e.attrs[2 + j]) proceed++;
+            if(proceed >= 3) e.flags |= EF_BBZONE;
             else e.flags &= ~EF_BBZONE;
         }
     }
