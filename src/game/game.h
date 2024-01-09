@@ -153,10 +153,10 @@ extern const enttypes enttype[] = {
                 "soundenv",     "Sound Env",        { "type", "width", "length", "height", "fadevals1", "fadevals2", "fadevals3", "fadevals4" }
     },
     {
-        PHYSICS,         1,          0,     16,      EU_NONE,    8,             -1,          5,         -1,     7,      -1,
+        PHYSICS,         1,          0,     16,      EU_NONE,   9,              -1,          6,         -1,     8,      -1,
             0, 0, 0,
             false,  false,  false,      false,      false,
-                "physics",      "Physics",          { "type", "value", "width", "length", "height", "modes", "muts", "variant" }
+                "physics",      "Physics",          { "type", "value", "width", "length", "height", "falloff", "modes", "muts", "variant" }
     },
     {
         WEAPON,         2,          59,     16,     EU_ITEM,    6,              -1,         2,          4,      5,      -1,

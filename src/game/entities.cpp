@@ -78,30 +78,57 @@ namespace entities
 
         if(d->isnophys()) return;
 
+        vec from = d->center();
         loopenti(PHYSICS) if(ents[i]->type == PHYSICS && isallowed(i))
         {
             gameentity &e = *(gameentity *)ents[i];
             if(e.attrs[0] < 0 || e.attrs[0] >= PHYSICS_MAX || (!e.attrs[1] && e.attrs[0] != PHYSICS_GRAVITY)) continue;
 
+            float value = e.attrs[1] / 100.f, dist = 0, maxdist = 0;
+            vec to = e.pos();
+
             if(e.flags&EF_BBZONE)
             {
-                vec bbmin = vec(e.pos()).sub(vec(e.attrs[2], e.attrs[3], e.attrs[4])),
-                    bbmax = vec(e.pos()).add(vec(e.attrs[2], e.attrs[3], e.attrs[4]));
-                if(!d->center().insidebb(bbmin, bbmax)) continue;
+                int axis = -1;
+                loopj(3)
+                {
+                    // we need to process the bb anyway, so don't use insidebb
+                    float offset = fabs(to[j] - from[j]);
+                    if(offset > e.attrs[2 + j])
+                    {
+                        axis = -1;
+                        break; // bb rejected
+                    }
+
+                    // falloff is calculated based on distance to nearest edge
+                    float left = e.attrs[2 + j] - offset;
+                    if(axis >= 0 && left > maxdist) continue;
+
+                    axis = j;
+                    dist = offset;
+                    maxdist = left;
+                }
+
+                if(axis < 0) continue; // rejected
+                maxdist = e.attrs[2 + axis];
             }
             else
             {
-                float maxdist = max(e.attrs[2], e.attrs[3], e.attrs[4]);
-                if(!maxdist) maxdist = enttype[e.type].radius;
-                maxdist *= maxdist;
-                if(d->center().squaredist(e.pos()) > maxdist) continue;
+                maxdist = max(e.attrs[2], e.attrs[3], e.attrs[4]);
+                if(maxdist <= 0) maxdist = enttype[e.type].radius;
+
+                dist = from.dist(e.pos());
+                if(dist > maxdist) continue;
             }
+
+            if(e.attrs[5] && dist > 0 && maxdist > 0) // falloff
+                value += (1 - value) * dist / maxdist;
 
             switch(e.attrs[0])
             {
-                case PHYSICS_MOVEMENT: d->movescale *= e.attrs[1] / 100.f; break;
-                case PHYSICS_GRAVITY: d->gravityscale *= e.attrs[1] / 100.f; break;
-                case PHYSICS_COASTING: d->coastscale *= e.attrs[1] / 100.f; break;
+                case PHYSICS_MOVEMENT: d->movescale *= value; break;
+                case PHYSICS_GRAVITY: d->gravityscale *= value; break;
+                case PHYSICS_COASTING: d->coastscale *= value; break;
                 default: break;
             }
         }
@@ -2065,9 +2092,8 @@ namespace entities
             {
                 while(e.attrs[0] < 0) e.attrs[0] += LFX_MAX; // type
                 while(e.attrs[0] >= LFX_MAX) e.attrs[0] -= LFX_MAX; // wrap both ways
-                if(e.attrs[1] < 0) e.attrs[1] = 0; // width, clamp
-                if(e.attrs[2] < 0) e.attrs[2] = 0; // length, clamp
-                if(e.attrs[3] < 0) e.attrs[3] = 0; // height, clamp
+                if(e.attrs[2] < 0) e.attrs[2] = 0; // min, clamp
+                if(e.attrs[3] < 0) e.attrs[3] = 0; // max, clamp
                 if(e.attrs[4] < 0) e.attrs[4] = 0; // flags, clamp
                 FIXEMIT;
                 break;
@@ -2076,9 +2102,11 @@ namespace entities
             {
                 while(e.attrs[0] < 0) e.attrs[0] += PHYSICS_MAX; // type
                 while(e.attrs[0] >= PHYSICS_MAX) e.attrs[0] -= PHYSICS_MAX; // wrap both ways
-                if(e.attrs[2] < 0) e.attrs[2] = 0; // min, clamp
-                if(e.attrs[3] < 0) e.attrs[3] = 0; // max, clamp
-                if(e.attrs[4] < 0) e.attrs[4] = 0; // flags, clamp
+                if(e.attrs[2] < 0) e.attrs[1] = 0; // width, clamp
+                if(e.attrs[3] < 0) e.attrs[2] = 0; // length, clamp
+                if(e.attrs[4] < 0) e.attrs[3] = 0; // height, clamp
+                while(e.attrs[5] < 0) e.attrs[4] += 101; // falloff, wrap
+                while(e.attrs[5] > 100) e.attrs[4] -= 101; // falloff, wrap
                 FIXEMIT;
                 break;
             }
