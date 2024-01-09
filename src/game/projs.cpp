@@ -925,12 +925,7 @@ namespace projs
                     proj.lifesize = 1.5f-(rnd(100)/100.f);
                     if(proj.owner)
                     {
-                        if(proj.owner->state == CS_DEAD || proj.owner->state == CS_WAITING)
-                        {
-                            proj.o = proj.owner->headtag();
-                            proj.o.z -= proj.owner->zradius*0.125f;
-                        }
-                        else
+                        if(!proj.owner->isdead())
                         {
                             proj.lifemillis = proj.lifetime = 1;
                             proj.lifespan = 1.f;
@@ -938,6 +933,9 @@ namespace projs
                             proj.escaped = true;
                             return;
                         }
+                        proj.o = proj.owner->headtag();
+                        proj.o.z -= proj.owner->zradius*0.125f;
+                        proj.lifesize *= proj.owner->curscale;
                     }
                     switch(rnd(3))
                     {
@@ -982,6 +980,7 @@ namespace projs
                 proj.liquidcoast = debrisliquidcoast;
                 proj.weight = debrisweight*proj.lifesize;
                 proj.buoyancy = debrisbuoyancy*proj.lifesize;
+                if(proj.owner) proj.lifesize *= proj.owner->curscale;
                 proj.vel.add(vec(rnd(101)-50, rnd(101)-50, rnd(151)-50)).mul(2);
                 proj.projcollide = BOUNCE_GEOM|BOUNCE_PLAYER|COLLIDE_OWNER;
                 proj.escaped = !proj.owner || proj.owner->state != CS_ALIVE;
@@ -1009,6 +1008,7 @@ namespace projs
                     proj.mdlname = "projectiles/catridge";
                     proj.lifesize = 1;
                 }
+                if(proj.owner) proj.lifesize *= proj.owner->curscale;
                 proj.elasticity = ejectelasticity;
                 proj.relativity = ejectrelativity;
                 proj.liquidcoast = ejectliquidcoast;
@@ -1097,12 +1097,7 @@ namespace projs
                 proj.height = proj.aboveeye = proj.radius = proj.xradius = proj.yradius = 1;
                 if(proj.owner)
                 {
-                    if(proj.owner->state == CS_DEAD || proj.owner->state == CS_WAITING)
-                    {
-                        proj.o = proj.owner->headpos();
-                        proj.lifesize = proj.owner->curscale;
-                    }
-                    else
+                    if(!proj.owner->isdead())
                     {
                         proj.lifemillis = proj.lifetime = 1;
                         proj.lifespan = 1.f;
@@ -1110,6 +1105,8 @@ namespace projs
                         proj.escaped = true;
                         return;
                     }
+                    proj.o = proj.owner->headpos();
+                    proj.lifesize = proj.owner->curscale;
                 }
                 proj.mdlname = game::vanityfname(proj.owner, proj.weap, proj.value, true);
                 proj.elasticity = vanityelasticity;
