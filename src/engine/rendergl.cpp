@@ -2673,11 +2673,13 @@ void gl_drawhud(bool noview = false)
             visory = cursory;
         }
 
+        visoroffx = visoroffy = 0;
         hud::visorinfo(visoroffx, visoroffy, glitch);
 
-        visorx += visoroffx / hudw;
-        visory += visoroffy / hudh;
+        if(visoroffx) visorx += visoroffx / hudw;
+        if(visoroffy) visory += visoroffy / hudh;
     }
+    else visorx = visory = visoroffx = visoroffy = 0;
 
     hud::startrender(hudw, hudh, wantvisor, noview);
 

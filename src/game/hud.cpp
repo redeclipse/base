@@ -1906,16 +1906,18 @@ namespace hud
 
     void visorinfo(float &x, float &y, float &glitch)
     {
-        if(!progressing)
+        if(progressing) return;
+
+        if(game::focus->isalive())
         {
             if(visorcamvelx) x = game::fpcamvel.x * visorcamvelx;
             if(visorcamvely) y = game::fpcamvel.y * visorcamvely;
+        }
 
-            if(gs_playing(game::gamestate) && ((game::focus->state == CS_ALIVE && showdamage&2) || (game::focus->state == CS_DEAD && showdamage&4)))
-            {
-                int hp = max(1, game::focus->gethealth(game::gamemode, game::mutators));
-                glitch = clamp(game::focus->state == CS_DEAD ? damageblenddead : (game::focus->state == CS_ALIVE ? min(damageresidue, hp)/float(hp)*damageblend : 0.f), 0.f, 1.f);
-            }
+        if(gs_playing(game::gamestate) && ((game::focus->isalive() && showdamage&2) || (game::focus->isdead() && showdamage&4)))
+        {
+            int hp = max(1, game::focus->gethealth(game::gamemode, game::mutators));
+            glitch = clamp(game::focus->state == CS_DEAD ? damageblenddead : (game::focus->state == CS_ALIVE ? min(damageresidue, hp)/float(hp)*damageblend : 0.f), 0.f, 1.f);
         }
     }
 
