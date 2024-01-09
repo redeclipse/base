@@ -247,7 +247,7 @@ enum
 };
 
 #define PART_ENUM(pr, en) \
-    en(pr, Portal, PORTAL) en(pr, Portal Env, PORTAL_ENV) en(pr, Icon, ICON) \
+    en(pr, Portal, PORTAL) en(pr, Portal Env, PORTAL_ENV) en(pr, Icon, ICON) en(pr, Icon Ontop, ICON_ONTOP) \
     en(pr, Line, LINE) en(pr, Line Ontop, LINE_ONTOP) en(pr, Triangle, TRIANGLE) en(pr, Triangle Ontop, TRIANGLE_ONTOP) \
     en(pr, Ellipse, ELLIPSE) en(pr, Ellipse Ontop, ELLIPSE_ONTOP) en(pr, Cone, CONE) en(pr, Cone Ontop, CONE_ONTOP) \
     en(pr, Fireball Lerp, FIREBALL_LERP) en(pr, Plasma Lerp, PLASMA_LERP) \

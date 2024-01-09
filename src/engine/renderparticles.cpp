@@ -652,7 +652,7 @@ struct iconrenderer : listrenderer<icon>
     // use addicon() instead
     particle *addpart(const vec &o, const vec &d, int fade, int color, float size, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, float val = 0, physent *pl = NULL) { return NULL; }
 };
-static iconrenderer icons;
+static iconrenderer icons, iconsontop(PT_ONTOP);
 
 template<int T>
 static inline void modifyblend(const vec &o, int &blend)
@@ -1279,7 +1279,7 @@ static partrenderer *parts[] =
 {
     new portalrenderer("<comp:1>portal"),
     new portalrenderer("<comp:1>portal", PT_ENVMAP),
-    &icons, &lineprimitives, &lineontopprimitives, &trisprimitives, &trisontopprimitives,
+    &icons, &iconsontop, &lineprimitives, &lineontopprimitives, &trisprimitives, &trisontopprimitives,
     &loopprimitives, &loopontopprimitives, &coneprimitives, &coneontopprimitives,
     new quadrenderer("<comp:1>fire", PT_SOFT|PT_PART|PT_BRIGHT|PT_HFLIP|PT_RND4|PT_WIND),
     new quadrenderer("<comp:1>distortlight [tex = particles/plasma]", PT_SOFT|PT_PART|PT_BRIGHT|PT_FLIP|PT_WIND),
@@ -1714,12 +1714,17 @@ void part_portal(const vec &o, float size, float blend, float yaw, float pitch, 
     p->addportal(o, fade, color, size, blend, yaw, pitch, envmap, envblend, destyaw, destpitch, hintcolor, hintblend);
 }
 
+void part_icons(const vec &o, Texture *tex, int type, float size, float blend, float gravity, int collide, int fade, int color, int hintcolor, float hintblend, float start, float length, physent *pl)
+{
+    if(!canaddparticles() || (parts[type]->type&PT_TYPE) != PT_ICON) return;
+    if(!particleicon || camera1->o.dist(o) > maxparticleicondistance) return;
+    iconrenderer *p = (iconrenderer *)parts[type];
+    p->addicon(o, tex, fade, color, size, blend, hintcolor, hintblend, gravity, collide, start, length, pl);
+}
+
 void part_icon(const vec &o, Texture *tex, float size, float blend, float gravity, int collide, int fade, int color, int hintcolor, float hintblend, float start, float length, physent *pl)
 {
-    if(!canaddparticles() || (parts[PART_ICON]->type&PT_TYPE) != PT_ICON) return;
-    if(!particleicon || camera1->o.dist(o) > maxparticleicondistance) return;
-    iconrenderer *p = (iconrenderer *)parts[PART_ICON];
-    p->addicon(o, tex, fade, color, size, blend, hintcolor, hintblend, gravity, collide, start, length, pl);
+    part_icons(o, tex, PART_ICON, size, blend, gravity, collide, fade, color, hintcolor, hintblend, start, length, pl);
 }
 
 void part_line(const vec &o, const vec &v, float size, float blend, int fade, int color, int type)

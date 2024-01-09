@@ -11,7 +11,7 @@ namespace entities
     VAR(IDF_PERSIST, showentinfo, 0, 21, 127);
     VAR(IDF_PERSIST, showentattrinfo, 0, 7, 7);
     VAR(IDF_PERSIST, showentinfomax, 1, 32, VAR_MAX);
-    FVAR(IDF_PERSIST, showentinfodist, 0, 256, FVAR_MAX);
+    FVAR(IDF_PERSIST, showentinfodist, 0, 512, FVAR_MAX);
     VAR(IDF_PERSIST, showentmodels, 0, 2, 2);
     VAR(IDF_PERSIST, showentweapons, 0, 0, 2);
 
@@ -21,7 +21,7 @@ namespace entities
     VAR(IDF_PERSIST, showentdynamic, 0, 1, 3);
     VAR(IDF_PERSIST, showentrails, 0, 1, 3);
     VAR(IDF_PERSIST, showentinterval, 0, 32, VAR_MAX);
-    VAR(IDF_PERSIST, showentdist, 0, 256, VAR_MAX);
+    VAR(IDF_PERSIST, showentdist, 0, 512, VAR_MAX);
     VAR(IDF_PERSIST, showentfull, 0, 0, 1);
     FVAR(IDF_PERSIST, showentsize, 0, 3, 10);
     FVAR(IDF_PERSIST, showentavailable, 0, 1, 1);
@@ -36,6 +36,10 @@ namespace entities
 
     FVAR(IDF_PERSIST, entselsize, 0, 0.5f, FVAR_MAX);
     FVAR(IDF_PERSIST, entselsizetop, 0, 1, FVAR_MAX);
+    FVAR(IDF_PERSIST, enticonsize, 0, 1, FVAR_MAX);
+    FVAR(IDF_PERSIST, enticonsizetop, 0, 2, FVAR_MAX);
+    FVAR(IDF_PERSIST, enticonblend, 0, 0.25f, FVAR_MAX);
+    FVAR(IDF_PERSIST, enticonblendtop, 0, 1, FVAR_MAX);
     FVAR(IDF_PERSIST, entdirsize, 0, 10, FVAR_MAX);
     FVAR(IDF_PERSIST, entrailoffset, 0, 0.1f, FVAR_MAX);
     FVAR(IDF_PERSIST, entinfospace, 0, 2, FVAR_MAX);
@@ -43,15 +47,18 @@ namespace entities
 
     VAR(IDF_PERSIST|IDF_HEX, entselcolour, 0, 0xFF00FF, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, entselcolourtop, 0, 0xFF88FF, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, entselcolourdyn, 0, 0x00FFFF, 0xFFFF00);
-    VAR(IDF_PERSIST|IDF_HEX, entselcolourrail, 0, 0xFFFF00, 0xFFFF00);
+    VAR(IDF_PERSIST|IDF_HEX, entselcolourdyn, 0, 0x00FFFF, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, entselcolourrail, 0, 0xFFFF00, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, enticoncolour, 0, 0xFFFFFF, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, enticoncolourtop, 0, 0xFFFFFF, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, enticoncolourdyn, 0, 0x80FFFF, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, entlinkcolour, 0, 0xFF00FF, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, entlinkcolourboth, 0, 0xFF88FF, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, entdircolour, 0, 0x88FF88, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, entradiuscolour, 0, 0x88FF88, 0xFFFFFF);
 
+    VAR(IDF_PERSIST, entselicons, 0, 1, 1);
     VARF(IDF_PERSIST, entseldynui, 0, 1, 1, if(!entseldynui) UI::closedynui("entinfo"))
-
     VAR(IDF_PERSIST, entityhalos, 0, 1, 1);
 
     VAR(0, mapsoundautomute, 0, 0, 1);
@@ -3381,11 +3388,28 @@ namespace entities
 
         bool hastop = game::player1->state == CS_EDITING && (enthover.find(idx) >= 0 || entgroup.find(idx) >= 0) && dist <= showentdist*showentdist, dotop = hastop && e.dynamic(),
              visible = getvisible(camera1->o, camera1->yaw, camera1->pitch, o, curfov, fovy, 2, hastop ? -1 : VFC_PART_VISIBLE), visiblepos = dotop && getvisible(camera1->o, camera1->yaw, camera1->pitch, e.pos(), curfov, fovy, 2, hastop ? -1 : VFC_PART_VISIBLE);
-        loopj(dotop ? 2 : 1)
+        loopj(dotop ? 2 : 1) if(j ? visiblepos : visible)
         {
-            if(j ? visiblepos : visible) part_create(hastop ? PART_ENTITY_ONTOP : PART_ENTITY, 1, j ? e.pos() : o, j ? entselcolourdyn : (hastop ? entselcolourtop : entselcolour), hastop && !j ? entselsizetop : entselsize);
             if(j && (visible || visiblepos)) part_line(o, e.pos(), entselsize, 1, 1, entselcolourdyn);
+
+            if(entselicons)
+            {
+                int attr = m_attr(e.type, e.attrs[0]);
+                defformatstring(icon, "textures/%s/%s", e.type == WEAPON ? "weapons" : "icons/edit", e.type == WEAPON ? W_STR[isweap(attr) ? attr : W_PISTOL] : enttype[e.type].name);
+                if(*icon)
+                {
+                    Texture *t = textureload(icon, 0, true, false);
+                    if(t && t != notexture)
+                    {
+                        part_icons(j ? e.pos() : o, t, hastop ? PART_ICON_ONTOP : PART_ICON, hastop && !j ? enticonsizetop : enticonsize, hastop && !j ? enticonblendtop : enticonblend, 0, 0, 1, j ? enticoncolourdyn : (hastop ? enticoncolourtop : enticoncolour));
+                        continue;
+                    }
+                }
+            }
+
+            part_create(hastop ? PART_ENTITY_ONTOP : PART_ENTITY, 1, j ? e.pos() : o, j ? entselcolourdyn : (hastop ? entselcolourtop : entselcolour), hastop && !j ? entselsizetop : entselsize);
         }
+
         return visible;
     }
 
