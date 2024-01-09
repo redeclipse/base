@@ -182,7 +182,7 @@ namespace UI
         const GLenum mappings[BLEND_MAX][4] {
             { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE },
             { GL_ZERO, GL_SRC_COLOR, GL_ONE_MINUS_DST_ALPHA, GL_ONE },
-            { GL_ONE, GL_ZERO, GL_ONE_MINUS_DST_ALPHA, GL_ONE },
+            { GL_ONE, GL_ZERO, GL_ONE, GL_ZERO },
             { GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE }
         };
 
@@ -2858,7 +2858,8 @@ namespace UI
 
         void setupdraw(bool world, int drawflags = 0)
         {
-            int outtype = -1, outsep = sep >= 0 ? sep != 0 : blendsepdef;
+            int outtype = -1;
+            bool outsep = sep >= 0 ? sep != 0 : blendsepdef;
             switch(type)
             {
                 case MODULATE: outtype = BLEND_MOD; break;
