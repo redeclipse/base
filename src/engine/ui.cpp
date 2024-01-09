@@ -171,7 +171,7 @@ namespace UI
     static Object *drawing = NULL;
     static bool propagating = false;
 
-    enum { BLEND_ALPHA, BLEND_MOD, BLEND_SRC, BLEND_COMP, BLEND_MAX };
+    enum { BLEND_ALPHA, BLEND_MOD, BLEND_SRC, BLEND_SRCALPHA, BLEND_MAX };
     static int changed = 0, surfacetype = -1, blendtype = BLEND_ALPHA, blendtypedef = BLEND_ALPHA;
     static bool blendsep = false, blendsepdef = false;
 
@@ -183,7 +183,7 @@ namespace UI
             { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE },
             { GL_ZERO, GL_SRC_COLOR, GL_ONE_MINUS_DST_ALPHA, GL_ONE },
             { GL_ONE, GL_ZERO, GL_ONE, GL_ZERO },
-            { GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE }
+            { GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA }
         };
 
         if(force || blendtype != type || blendsep != sep)
@@ -931,6 +931,14 @@ namespace UI
     vector<Surface *> surfacestack;
     Window *window = NULL;
 
+    static void resetclip(bool world)
+    {
+        if(!world) glDisable(GL_SCISSOR_TEST);
+        else glDisable(GL_STENCIL_TEST);
+
+        clipstack.setsize(0);
+    }
+
     struct Code
     {
         char *body;
@@ -1148,8 +1156,10 @@ namespace UI
 
             if(inworld && ontop) glDisable(GL_DEPTH_TEST);
 
+            resetclip(inworld);
             Object::draw(world, sx, sy);
             stopdrawing(world);
+            resetclip(inworld);
 
             if(inworld && ontop) glEnable(GL_DEPTH_TEST);
 
@@ -1607,6 +1617,7 @@ namespace UI
             if(!window->inworld) glEnable(GL_SCISSOR_TEST);
             else glEnable(GL_STENCIL_TEST);
         }
+
         ClipArea &c = clipstack.add(ClipArea(x, y, w, h));
         if(clipstack.length() >= 2) c.intersect(clipstack[clipstack.length()-2]);
         c.scissor();
@@ -1634,6 +1645,7 @@ namespace UI
     static void disableclip()
     {
         if(clipstack.empty()) return;
+
         if(!window->inworld) glDisable(GL_SCISSOR_TEST);
         else glDisable(GL_STENCIL_TEST);
     }
@@ -2846,7 +2858,7 @@ namespace UI
 
     struct Colored : Object
     {
-        enum { SOLID = 0, MODULATE, OUTLINED, OVERWRITE, COMPOSITE };
+        enum { SOLID = 0, MODULATE, OUTLINED, OVERWRITE, SRCALPHA };
         enum { VERTICAL, HORIZONTAL };
 
         int type, dir, sep;
@@ -2864,7 +2876,7 @@ namespace UI
             {
                 case MODULATE: outtype = BLEND_MOD; break;
                 case OVERWRITE: outtype = BLEND_SRC; break;
-                case COMPOSITE: outtype = BLEND_COMP; break;
+                case SRCALPHA: outtype = BLEND_SRCALPHA; break;
                 case SOLID: outtype = BLEND_ALPHA; break;
                 default: outtype = blendtypedef; break;
             }
