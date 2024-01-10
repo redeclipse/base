@@ -28,7 +28,6 @@ namespace entities
     FVAR(IDF_PERSIST, showentunavailable, 0, 0.35f, 1);
 
     VAR(IDF_PERSIST, entinfoui, -1, SURFACE_VISOR, SURFACE_ALL-1);
-    VAR(IDF_PERSIST, entinfouitype, 0, 3, 4); // 0 = off, 1 = only first, 2 = only selected, 3 = always when editing, 4 = always in editmode
     FVAR(IDF_PERSIST, entinfouiyaw, -1, -1, 360);
     FVAR(IDF_PERSIST, entinfouipitch, -181, 0, 181);
     FVAR(IDF_PERSIST, entinfouiscale, FVAR_NONZERO, 1, FVAR_MAX);
@@ -3580,23 +3579,21 @@ namespace entities
                 if(!v.visible) continue;
                 if(showentinfodist > 0 && v.dist >= infodist) break;
                 if(!ents.inrange(v.idx)) continue;
+
                 gameentity &e = *(gameentity *)ents[v.idx];
                 bool found = false, isedit = game::player1->state == CS_EDITING,
                     hasent = isedit && (enthover.find(v.idx) >= 0 || entgroup.find(v.idx) >= 0);
                 vec pos = vec(e.o).addz(entinfospace);
+
                 if(enttype[e.type].usetype == EU_ITEM) pos.addz(entinfospace);
+
                 if(entinfoui >= 0)
                 {
-                    int outtype = -1;
-                    if(entinfouitype >= (hasent && !entgroup.empty() && entgroup[0] == v.idx ? 1 : (hasent ? 2 : (isedit ? 3 : 4))))
-                    {
-                        gameentity &e = *(gameentity *)ents[v.idx];
-                        outtype = hasent ? entinfoui : SURFACE_WORLD;
-                        UI::setui("entinfo", outtype, v.idx, e.o, entinfouiyaw, entinfouipitch, outtype == SURFACE_WORLD ? entinfouiworld : entinfouiscale, entinfouidetentyaw, entinfouidetentpitch);
-                        hasdynui = true;
-                        found = true;
-                    }
+                    int outtype = hasent ? entinfoui : SURFACE_WORLD;
+                    UI::setui("entinfo", outtype, v.idx, e.o, entinfouiyaw, entinfouipitch, outtype == SURFACE_WORLD ? entinfouiworld : entinfouiscale, entinfouidetentyaw, entinfouidetentpitch);
                     loopj(SURFACE_ALL) if(outtype != j) UI::hideui("entinfo", j, v.idx);
+                    hasdynui = true;
+                    found = true;
                 }
                 else
                 {
@@ -3672,6 +3669,7 @@ namespace entities
                     if(++numdrawn >= showentinfomax) break;
                 }
             }
+
             if(entinfoui >= 0) loopv(visents)
             {
                 visibleent &v = visents[i];
@@ -3688,8 +3686,10 @@ namespace entities
         {
             projent &proj = *projs::projs[i];
             if(proj.projtype != PRJ_ENT || !ents.inrange(proj.id) || !proj.ready()) continue;
+
             gameentity &e = *(gameentity *)ents[proj.id];
             if(e.type == NOTUSED || e.attrs.empty()) continue;
+
             float skew = 1, dist = proj.o.squaredist(camera1->o);
             if(proj.fadetime && proj.lifemillis)
             {
@@ -3701,6 +3701,7 @@ namespace entities
                     if(proj.lifemillis-proj.lifetime < interval) skew = float(proj.lifemillis-proj.lifetime)/float(interval);
                 }
             }
+
             drawparticle(e, proj.o, -1, true, true, skew, dist, maxdist);
         }
     }
