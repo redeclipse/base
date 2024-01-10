@@ -3213,10 +3213,10 @@ namespace entities
         return true;
     }
 
-    bool haloallow(int id, bool justtest)
+    bool haloallow(int id, bool justtest, bool check)
     {
         if(!ents.inrange(id)) return false;
-        if(drawtex != DRAWTEX_HALO || !entityhalos) return true;
+        if((check && drawtex != DRAWTEX_HALO) || !entityhalos) return true;
         if(enttype[ents[id]->type].usetype != EU_ITEM && !game::player1->isediting()) return false;
         vec dir(0, 0, 0);
         float dist = -1;

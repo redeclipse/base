@@ -25,9 +25,9 @@ namespace bomber
         return true;
     }
 
-    bool haloallow(int id, int render = 0, bool justtest = false)
+    bool haloallow(int id, int render, bool justtest, bool check)
     {
-        if(drawtex != DRAWTEX_HALO) return true;
+        if(check && drawtex != DRAWTEX_HALO) return true;
         if(!bomberhalos) return false;
         vec dir(0, 0, 0);
         float dist = -1;

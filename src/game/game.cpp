@@ -290,9 +290,9 @@ namespace game
 
     VAR(0, spectvcamera, -1, -1, VAR_MAX); // use this specific camera id
     VAR(0, spectvcameraaim, 0, 1, 1); // use this specific camera aiming
-    VAR(IDF_PERSIST, spectvmintime, 1, 1000, VAR_MAX);
-    VAR(IDF_PERSIST, spectvtime, 1000, 5000, VAR_MAX);
-    VAR(IDF_PERSIST, spectvmaxtime, 0, 10000, VAR_MAX);
+    VAR(IDF_PERSIST, spectvmintime, 1, 5000, VAR_MAX);
+    VAR(IDF_PERSIST, spectvtime, 1000, 10000, VAR_MAX);
+    VAR(IDF_PERSIST, spectvmaxtime, 0, 20000, VAR_MAX);
     VAR(IDF_PERSIST, spectvspeed, 1, 250, VAR_MAX);
     VAR(IDF_PERSIST, spectvyawspeed, 1, 250, VAR_MAX);
     VAR(IDF_PERSIST, spectvpitchspeed, 1, 250, VAR_MAX);
@@ -319,9 +319,9 @@ namespace game
 
     VAR(0, spectvfollow, -1, -1, VAR_MAX); // attempts to always keep this client in view
     VAR(IDF_PERSIST, spectvfollowself, 0, 1, 2); // if we are not spectating, spectv should show us; 0 = off, 1 = not duel/survivor, 2 = always
-    VAR(IDF_PERSIST, spectvfollowmintime, 1000, 1000, VAR_MAX);
-    VAR(IDF_PERSIST, spectvfollowtime, 1000, 5000, VAR_MAX);
-    VAR(IDF_PERSIST, spectvfollowmaxtime, 0, 10000, VAR_MAX);
+    VAR(IDF_PERSIST, spectvfollowmintime, 1000, 5000, VAR_MAX);
+    VAR(IDF_PERSIST, spectvfollowtime, 1000, 10000, VAR_MAX);
+    VAR(IDF_PERSIST, spectvfollowmaxtime, 0, 20000, VAR_MAX);
     VAR(IDF_PERSIST, spectvfollowspeed, 1, 250, VAR_MAX);
     VAR(IDF_PERSIST, spectvfollowyawspeed, 1, 250, VAR_MAX);
     VAR(IDF_PERSIST, spectvfollowpitchspeed, 1, 250, VAR_MAX);
@@ -2971,6 +2971,14 @@ namespace game
             case cament::AFFINITY:
             {
                 if(v->player && (v->player == c->player || !allowspec(v->player, spectvdead, spectvfollow))) return false;
+
+                if(iter)
+                {
+                    if(m_capture(gamemode)) { if(capture::haloallow(v->id, 0, iter != 1, false)) return true; }
+                    else if(m_defend(gamemode)) { if(defend::haloallow(v->id, 0, iter != 1, false)) return true; }
+                    else if(m_bomber(gamemode)) { if(bomber::haloallow(v->id, 0, iter != 1, false)) return true; }
+                }
+
                 break;
             }
             case cament::PLAYER:
@@ -2981,16 +2989,17 @@ namespace game
             default: return false;
         }
 
-        #if 0
-        if(iter == (v->player ? 2 : 1) && !count)
+        if(iter && v->player && haloallow(v->player, iter != 1, false)) return true; // override and switch to x-ray
+
+        if(iter == 2)
         {
             vectoyawpitch(vec(v->o).sub(from).safenormalize(), yaw, pitch);
             fixrange(yaw, pitch);
         }
-        #endif
 
         float dist = from.dist(v->o);
         if(dist < mindist || dist > maxdist) return false;
+
         vec trg;
         switch(iter)
         {
@@ -4110,11 +4119,12 @@ namespace game
         }
     }
 
-    bool haloallow(gameent *d, bool check)
+    bool haloallow(gameent *d, bool justtest, bool check)
     {
         if(check && drawtex != DRAWTEX_HALO) return true;
         if(d == focus && inzoom()) return false;
         if(!playerhalos || (!(playerhalos&1) && d == focus) || !(playerhalos&2)) return false;
+        if(justtest) return true;
         vec dir(0, 0, 0);
         float dist = -1;
         if(!client::radarallow(d, dir, dist, true)) return false;
