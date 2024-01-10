@@ -1145,10 +1145,12 @@ namespace game
             case 2: return darknesshalo;
             case 3: return darknesssun;
             case 4: return darknesspart;
+            case 5: return darknessui;
             default: return darknesslevel;
         }
         return 1;
     }
+    ICOMMAND(0, getdarkness, "i", (int *n), floatret(darkness(*n)));
 
     bool wantflashlight()
     {

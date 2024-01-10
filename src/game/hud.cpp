@@ -542,7 +542,7 @@ namespace hud
         return false;
     }
 
-    VAR(IDF_PERSIST, aboveheadui, -1, SURFACE_VISOR, SURFACE_ALL);
+    VAR(IDF_PERSIST, aboveheadui, -1, SURFACE_VISOR, SURFACE_ALL-1);
     FVAR(IDF_PERSIST, aboveheaduiyaw, -1, -1, 360);
     FVAR(IDF_PERSIST, aboveheaduipitch, -181, -181, 181);
     FVAR(IDF_PERSIST, aboveheaduiscale, FVAR_NONZERO, 1, FVAR_MAX);
@@ -576,7 +576,7 @@ namespace hud
                 int type = -1;
                 if(d != game::focus && !d->isspectator())
                 {
-                    type = game::haloallow(d, false) ? aboveheadui : SURFACE_WORLD; // force in-world if not allowed to x-ray
+                    type = game::focus->isobserver() || game::focus->team == d->team || d->team == T_NEUTRAL ? aboveheadui : SURFACE_WORLD; // force in-world if not allowed to x-ray
                     UI::setui("abovehead", type, d->clientnum, d->abovehead(aboveheaduioffset), aboveheaduiyaw, aboveheaduipitch, type == SURFACE_WORLD ? aboveheaduiworld : aboveheaduiscale, aboveheaduidetentyaw, aboveheaduidetentpitch);
                 }
                 loopj(SURFACE_ALL) if(j != type) UI::hideui("abovehead", j, d->clientnum);
