@@ -11,7 +11,7 @@ namespace entities
     VAR(IDF_PERSIST, showentinfo, 0, 21, 127);
     VAR(IDF_PERSIST, showentattrinfo, 0, 7, 7);
     VAR(IDF_PERSIST, showentinfomax, 1, 32, VAR_MAX);
-    FVAR(IDF_PERSIST, showentinfodist, 0, 512, FVAR_MAX);
+    FVAR(IDF_PERSIST, showentinfodist, 0, 1024, FVAR_MAX);
     VAR(IDF_PERSIST, showentmodels, 0, 2, 2);
     VAR(IDF_PERSIST, showentweapons, 0, 0, 2);
 
@@ -21,13 +21,13 @@ namespace entities
     VAR(IDF_PERSIST, showentdynamic, 0, 1, 3);
     VAR(IDF_PERSIST, showentrails, 0, 1, 3);
     VAR(IDF_PERSIST, showentinterval, 0, 32, VAR_MAX);
-    VAR(IDF_PERSIST, showentdist, 0, 512, VAR_MAX);
+    VAR(IDF_PERSIST, showentdist, 0, 1024, VAR_MAX);
     VAR(IDF_PERSIST, showentfull, 0, 0, 1);
     FVAR(IDF_PERSIST, showentsize, 0, 3, 10);
     FVAR(IDF_PERSIST, showentavailable, 0, 1, 1);
     FVAR(IDF_PERSIST, showentunavailable, 0, 0.35f, 1);
 
-    VAR(IDF_PERSIST, entinfoui, -1, SURFACE_VISOR, SURFACE_ALL-1);
+    VAR(IDF_PERSIST, entinfoui, -1, SURFACE_BACKGROUND, SURFACE_ALL-1);
     FVAR(IDF_PERSIST, entinfouiyaw, -1, -1, 360);
     FVAR(IDF_PERSIST, entinfouipitch, -181, 0, 181);
     FVAR(IDF_PERSIST, entinfouiscale, FVAR_NONZERO, 1, FVAR_MAX);

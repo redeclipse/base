@@ -1713,7 +1713,7 @@ namespace UI
         hashnameset<Window *> windows;
         vector<Texture *> texs;
 
-        Surface() : type(-1), cursortype(CURSOR_DEFAULT), exclcheck(0), lockcursor(false), mousetracking(false), lockscroll(false), interactive(true), hasexclusive(false), mousetrackvec(0, 0) {}
+        Surface() : type(-1), cursortype(CURSOR_DEFAULT), exclcheck(0), lockcursor(false), mousetracking(false), lockscroll(false), interactive(false), hasexclusive(false), mousetrackvec(0, 0) {}
         ~Surface() {}
 
         static const char *typestr() { return "#Surface"; }
@@ -5755,7 +5755,7 @@ namespace UI
         float yaw, pitch, roll, fov;
         vec skycol, suncol, sundir, excol, exdir, translate;
         float offsetx, offsety, offsetyaw, offsetpitch;
-        bool dragging, interactive;
+        bool dragging, interact;
 
         Preview() { resetoffset(); }
 
@@ -5773,7 +5773,7 @@ namespace UI
             sundir = sundir_;
             excol = excol_;
             exdir = exdir_;
-            interactive = false;
+            interact = false;
             translate = vec(0, 0, 0);
         }
 
@@ -5793,7 +5793,7 @@ namespace UI
 
         void hold(float cx, float cy, bool inside)
         {
-            if(!interactive) return;
+            if(!interact) return;
             float rx = (cx - x) / w, ry = (cy - y) / h;
             if(rx < 0 || rx > 1 || ry < 0 || ry > 1) return;
             if(!dragging || rx != offsetx || ry != offsety)
@@ -5827,7 +5827,7 @@ namespace UI
     UICMDT(Preview, preview, pitch, "f", (float *n), o->pitch = *n);
     UICMDT(Preview, preview, roll, "f", (float *n), o->roll = *n);
     UICMDT(Preview, preview, fov, "f", (float *n), o->fov = *n);
-    UICMDT(Preview, preview, interactive, "i", (int *c), o->interactive = *c != 0);
+    UICMDT(Preview, preview, interact, "i", (int *c), o->interact = *c != 0);
     UICMDT(Preview, preview, resetoffset, "", (void), o->resetoffset());
     UICMDT(Preview, preview, translate, "fff", (float *x, float *y, float *z), o->translate = vec(*x, *y, *z));
 
@@ -5919,7 +5919,7 @@ namespace UI
     UICMDT(ModelPreview, modelpreview, pitch, "f", (float *n), o->pitch = *n);
     UICMDT(ModelPreview, modelpreview, roll, "f", (float *n), o->roll = *n);
     UICMDT(ModelPreview, modelpreview, fov, "f", (float *n), o->fov = *n);
-    UICMDT(ModelPreview, modelpreview, interactive, "i", (int *c), o->interactive = *c != 0);
+    UICMDT(ModelPreview, modelpreview, interact, "i", (int *c), o->interact = *c != 0);
     UICMDT(ModelPreview, modelpreview, resetoffset, "", (void), o->resetoffset());
     UICMDT(ModelPreview, modelpreview, colour, "fffg", (float *r, float *g, float *b, float *a), o->mdl.color = vec4(*r, *g, *b, *a >= 0 ? *a : 1.f));
     UICMDT(ModelPreview, modelpreview, basetime, "bb", (int *b, int *c), o->mdl.basetime = *b >= 0 ? *b : lastmillis; o->mdl.basetime2 = *c >= 0 ? *c : 0);
@@ -7115,8 +7115,9 @@ namespace UI
             surfaces[i]->type = i;
             switch(i)
             {
-                case SURFACE_COMPOSITE: case SURFACE_PROGRESS:
-                    surfaces[i]->interactive = false; // fall-through
+                case SURFACE_VISOR: case SURFACE_WORLD:
+                    surfaces[i]->interactive = true;
+                    break;
                 default: break;
             }
         }
