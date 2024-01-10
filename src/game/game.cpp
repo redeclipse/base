@@ -285,22 +285,18 @@ namespace game
     FVAR(IDF_PERSIST, followtvrotate, FVAR_MIN, 22.5f, FVAR_MAX); // rotate style, < 0 = absolute angle, 0 = scaled, > 0 = scaled with max angle
     FVAR(IDF_PERSIST, followtvyawscale, FVAR_MIN, 0.5f, 1000);
     FVAR(IDF_PERSIST, followtvpitchscale, FVAR_MIN, 0.25f, 1000);
-    FVAR(IDF_PERSIST, followtvyawthresh, 0, 0, 360);
-    FVAR(IDF_PERSIST, followtvpitchthresh, 0, 0, 180);
 
     VAR(0, spectvcamera, -1, -1, VAR_MAX); // use this specific camera id
     VAR(0, spectvcameraaim, 0, 1, 1); // use this specific camera aiming
     VAR(IDF_PERSIST, spectvmintime, 1, 5000, VAR_MAX);
     VAR(IDF_PERSIST, spectvtime, 1000, 10000, VAR_MAX);
     VAR(IDF_PERSIST, spectvmaxtime, 0, 20000, VAR_MAX);
-    VAR(IDF_PERSIST, spectvspeed, 1, 250, VAR_MAX);
-    VAR(IDF_PERSIST, spectvyawspeed, 1, 250, VAR_MAX);
-    VAR(IDF_PERSIST, spectvpitchspeed, 1, 250, VAR_MAX);
+    VAR(IDF_PERSIST, spectvspeed, 1, 500, VAR_MAX);
+    VAR(IDF_PERSIST, spectvyawspeed, 1, 500, VAR_MAX);
+    VAR(IDF_PERSIST, spectvpitchspeed, 1, 500, VAR_MAX);
     FVAR(IDF_PERSIST, spectvrotate, FVAR_MIN, 22.5f, FVAR_MAX); // rotate style, < 0 = absolute angle, 0 = scaled, > 0 = scaled with max angle
     FVAR(IDF_PERSIST, spectvyawscale, FVAR_MIN, 1, 1000);
     FVAR(IDF_PERSIST, spectvpitchscale, FVAR_MIN, 1, 1000);
-    FVAR(IDF_PERSIST, spectvyawthresh, 0, 0, 360);
-    FVAR(IDF_PERSIST, spectvpitchthresh, 0, 0, 180);
     VAR(IDF_PERSIST, spectvdead, 0, 1, 2); // 0 = never, 1 = in all but duel/survivor, 2 = always
     VAR(IDF_PERSIST, spectvfirstperson, 0, 0, 2); // 0 = aim in direction followed player is facing, 1 = aim in direction determined by spectv when dead, 2 = always aim in direction
     VAR(IDF_PERSIST, spectvthirdperson, 0, 2, 2); // 0 = aim in direction followed player is facing, 1 = aim in direction determined by spectv when dead, 2 = always aim in direction
@@ -308,14 +304,12 @@ namespace game
     VAR(IDF_PERSIST, spectvintermmintime, 1000, 5000, VAR_MAX);
     VAR(IDF_PERSIST, spectvintermtime, 1000, 10000, VAR_MAX);
     VAR(IDF_PERSIST, spectvintermmaxtime, 0, 20000, VAR_MAX);
-    VAR(IDF_PERSIST, spectvintermspeed, 1, 250, VAR_MAX);
-    VAR(IDF_PERSIST, spectvintermyawspeed, 1, 250, VAR_MAX);
-    VAR(IDF_PERSIST, spectvintermpitchspeed, 1, 250, VAR_MAX);
+    VAR(IDF_PERSIST, spectvintermspeed, 1, 500, VAR_MAX);
+    VAR(IDF_PERSIST, spectvintermyawspeed, 1, 500, VAR_MAX);
+    VAR(IDF_PERSIST, spectvintermpitchspeed, 1, 500, VAR_MAX);
     FVAR(IDF_PERSIST, spectvintermrotate, FVAR_MIN, 22.5f, FVAR_MAX); // rotate style, < 0 = absolute angle, 0 = scaled, > 0 = scaled with max angle
     FVAR(IDF_PERSIST, spectvintermyawscale, FVAR_MIN, 0.5f, 1000);
     FVAR(IDF_PERSIST, spectvintermpitchscale, FVAR_MIN, 0.25f, 1000);
-    FVAR(IDF_PERSIST, spectvintermyawthresh, 0, 0, 360);
-    FVAR(IDF_PERSIST, spectvintermpitchthresh, 0, 0, 180);
 
     VAR(0, spectvfollow, -1, -1, VAR_MAX); // attempts to always keep this client in view
     VAR(IDF_PERSIST, spectvfollowself, 0, 1, 2); // if we are not spectating, spectv should show us; 0 = off, 1 = not duel/survivor, 2 = always
@@ -328,8 +322,6 @@ namespace game
     FVAR(IDF_PERSIST, spectvfollowrotate, FVAR_MIN, 22.5f, FVAR_MAX); // rotate style, < 0 = absolute angle, 0 = scaled, > 0 = scaled with max angle
     FVAR(IDF_PERSIST, spectvfollowyawscale, FVAR_MIN, 0.5f, 1000);
     FVAR(IDF_PERSIST, spectvfollowpitchscale, FVAR_MIN, 0.25f, 1000);
-    FVAR(IDF_PERSIST, spectvfollowyawthresh, 0, 0, 360);
-    FVAR(IDF_PERSIST, spectvfollowpitchthresh, 0, 0, 180);
 
     FVAR(IDF_PERSIST, spectvmindist, 0, 16, FVAR_MAX);
     FVAR(IDF_PERSIST, spectvmaxdist, 0, 2048, FVAR_MAX);
@@ -337,7 +329,7 @@ namespace game
     FVAR(IDF_PERSIST, spectvfollowmaxdist, 0, 1024, FVAR_MAX);
 
     VAR(IDF_PERSIST, deathcamstyle, 0, 2, 2); // 0 = no follow, 1 = follow attacker, 2 = follow self
-    VAR(IDF_PERSIST, deathcamspeed, 0, 500, VAR_MAX);
+    VAR(IDF_PERSIST, deathcamspeed, 0, 250, VAR_MAX);
 
     VAR(IDF_PERSIST, mouseinvert, 0, 0, 1);
     FVAR(IDF_PERSIST, sensitivity, 1e-4f, 10, 10000);
@@ -3290,24 +3282,24 @@ namespace game
         {
             if(cam->chase && !reset && spectvcameraaim)
             {
-                float speed = curtime/float(cam->player ? followtvspeed : stvf(speed));
+                float speed = curtime / float(cam->player ? followtvspeed : stvf(speed));
                 #define SCALEAXIS(x) \
-                    float x##scale = 1, adj##x = camera1->x, off##x = x, x##thresh = cam->player ? followtv##x##thresh : stvf(x##thresh); \
+                    float x##scale = 1, adj##x = camera1->x, off##x = x; \
                     if(adj##x < x - 180.0f) adj##x += 360.0f; \
                     if(adj##x > x + 180.0f) adj##x -= 360.0f; \
                     off##x -= adj##x; \
-                    if(cam->last##x == 0 || (off##x > 0 && cam->last##x < 0) || (off##x < 0 && cam->last##x > 0) || (x##thresh > 0 && (fabs(cam->last##x - off##x) >= x##thresh))) \
+                    if(cam->last##x == 0 || (off##x > 0 && cam->last##x < 0) || (off##x < 0 && cam->last##x > 0)) \
                     { \
                         cam->last##x##time = totalmillis; \
                         x##scale = 0; \
                     } \
                     else if(cam->last##x##time) \
                     { \
-                        int offtime = totalmillis-cam->last##x##time, x##speed = cam->player ? followtv##x##speed : stvf(x##speed); \
-                        if(offtime <= x##speed) x##scale = offtime/float(x##speed); \
+                        int offtime = totalmillis - cam->last##x##time, x##speed = cam->player ? followtv##x##speed : stvf(x##speed); \
+                        if(offtime <= x##speed) x##scale = smoothinterp(offtime / float(x##speed)); \
                     } \
                     cam->last##x = off##x; \
-                    float x##speed = speed*(cam->player ? followtv##x##scale : stvf(x##scale))*x##scale;
+                    float x##speed = speed * (cam->player ? followtv##x##scale : stvf(x##scale)) * x##scale;
                 SCALEAXIS(yaw);
                 SCALEAXIS(pitch);
                 scaleyawpitch(camera1->yaw, camera1->pitch, yaw, pitch, yawspeed, pitchspeed, (cam->player ? followtvrotate : stvf(rotate)));
