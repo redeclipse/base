@@ -2998,12 +2998,6 @@ namespace game
 
         if(iter && v->player && haloallow(c->o, v->player, iter != 1, false)) return true; // override and switch to x-ray
 
-        if(iter == 2)
-        {
-            vectoyawpitch(vec(v->o).sub(from).safenormalize(), yaw, pitch);
-            fixrange(yaw, pitch);
-        }
-
         float dist = from.dist(v->o);
         if(dist < mindist || dist > maxdist) return false;
 
@@ -3245,7 +3239,7 @@ namespace game
             camrefresh(cam);
 
             int millis = lasttvchg ? totalmillis-lasttvchg : 0;
-            bool updated = camupdate(cam, 3, restart || !count || !spectvcameraaim), override = !lasttvchg || millis >= stvf(mintime),
+            bool updated = camupdate(cam, 2, restart || !count || !spectvcameraaim), override = !lasttvchg || millis >= stvf(mintime),
                 timeup = !lasttvcam || totalmillis-lasttvcam >= stvf(time), overtime = stvf(maxtime) && millis >= stvf(maxtime);
 
             if(restart || overtime || timeup || (!updated && override))
