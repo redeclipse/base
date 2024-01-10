@@ -27,19 +27,20 @@ namespace entities
     FVAR(IDF_PERSIST, showentavailable, 0, 1, 1);
     FVAR(IDF_PERSIST, showentunavailable, 0, 0.35f, 1);
 
-    VAR(IDF_PERSIST, entinfoui, 0, 3, 4); // 0 = off, 1 = only first, 2 = only selected, 3 = always when editing, 4 = always in editmode
+    VAR(IDF_PERSIST, entinfoui, -1, SURFACE_BACKGROUND, SURFACE_ALL);
+    VAR(IDF_PERSIST, entinfouitype, 0, 3, 4); // 0 = off, 1 = only first, 2 = only selected, 3 = always when editing, 4 = always in editmode
     FVAR(IDF_PERSIST, entinfouiyaw, -1, -1, 360);
     FVAR(IDF_PERSIST, entinfouipitch, -181, 0, 181);
     FVAR(IDF_PERSIST, entinfouiscale, FVAR_NONZERO, 1, FVAR_MAX);
+    FVAR(IDF_PERSIST, entinfouiworld, FVAR_NONZERO, 3, FVAR_MAX);
     FVAR(IDF_PERSIST, entinfouidetentyaw, 0, 0, 180);
     FVAR(IDF_PERSIST, entinfouidetentpitch, 0, 0, 90);
 
+    VAR(IDF_PERSIST, entityhalos, 0, 1, 1);
+    FVAR(IDF_PERSIST, entselblend, 0, 0.25f, 1);
+    FVAR(IDF_PERSIST, entselblendtop, 0, 0.5f, 1);
     FVAR(IDF_PERSIST, entselsize, 0, 0.5f, FVAR_MAX);
     FVAR(IDF_PERSIST, entselsizetop, 0, 1, FVAR_MAX);
-    FVAR(IDF_PERSIST, enticonsize, 0, 1, FVAR_MAX);
-    FVAR(IDF_PERSIST, enticonsizetop, 0, 2, FVAR_MAX);
-    FVAR(IDF_PERSIST, enticonblend, 0, 0.25f, FVAR_MAX);
-    FVAR(IDF_PERSIST, enticonblendtop, 0, 1, FVAR_MAX);
     FVAR(IDF_PERSIST, entdirsize, 0, 10, FVAR_MAX);
     FVAR(IDF_PERSIST, entrailoffset, 0, 0.1f, FVAR_MAX);
     FVAR(IDF_PERSIST, entinfospace, 0, 2, FVAR_MAX);
@@ -49,17 +50,10 @@ namespace entities
     VAR(IDF_PERSIST|IDF_HEX, entselcolourtop, 0, 0xFF88FF, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, entselcolourdyn, 0, 0x00FFFF, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, entselcolourrail, 0, 0xFFFF00, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, enticoncolour, 0, 0xFFFFFF, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, enticoncolourtop, 0, 0xFFFFFF, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, enticoncolourdyn, 0, 0x80FFFF, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, entlinkcolour, 0, 0xFF00FF, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, entlinkcolourboth, 0, 0xFF88FF, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, entdircolour, 0, 0x88FF88, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, entradiuscolour, 0, 0x88FF88, 0xFFFFFF);
-
-    VAR(IDF_PERSIST, entselicons, 0, 1, 1);
-    VARF(IDF_PERSIST, entseldynui, 0, 1, 1, if(!entseldynui) UI::closedynui("entinfo"))
-    VAR(IDF_PERSIST, entityhalos, 0, 1, 1);
 
     VAR(0, mapsoundautomute, 0, 0, 1);
 
@@ -953,6 +947,26 @@ namespace entities
         }
     }
     ICOMMAND(0, getentity, "bbb", (int *id, int *val, int *ex), getentity(*id, *val, *ex));
+
+    const char *getenttex(int id)
+    {
+        static string enttex = "";
+
+        if(ents.inrange(id))
+        {
+            gameentity &e = *(gameentity *)ents[id];
+
+            int attr = m_attr(e.type, e.attrs[0]);
+            formatstring(enttex, "textures/%s/%s", e.type == WEAPON ? "weapons" : "icons/edit", e.type == WEAPON ? W_STR[isweap(attr) ? attr : W_PISTOL] : enttype[e.type].name);
+
+            Texture *t = textureload(enttex, 0, true, false);
+            if(t && t != notexture) return enttex;
+        }
+
+        return "textures/icons/question";
+
+    }
+    ICOMMAND(0, getenttex, "b", (int *id), result(getenttex(*id)));
 
     const char *entinfo(int type, attrvector &attr, bool full, bool icon)
     {
@@ -1937,7 +1951,7 @@ namespace entities
 
     bool cansee(int n)
     {
-        if(game::player1->state != CS_EDITING && (entinfoui || !(showentinfo&64))) return false;
+        if(game::player1->state != CS_EDITING && (entinfoui >= 0 || !(showentinfo&64))) return false;
         if(!ents.inrange(n)) return false;
         if(ents[n]->type == NOTUSED && (enthover.find(n) < 0 && entgroup.find(n) < 0)) return false;
         return true;
@@ -3485,23 +3499,7 @@ namespace entities
         loopj(dotop ? 2 : 1) if(j ? visiblepos : visible)
         {
             if(j && (visible || visiblepos)) part_line(o, e.pos(), entselsize, 1, 1, entselcolourdyn);
-
-            if(entselicons)
-            {
-                int attr = m_attr(e.type, e.attrs[0]);
-                defformatstring(icon, "textures/%s/%s", e.type == WEAPON ? "weapons" : "icons/edit", e.type == WEAPON ? W_STR[isweap(attr) ? attr : W_PISTOL] : enttype[e.type].name);
-                if(*icon)
-                {
-                    Texture *t = textureload(icon, 0, true, false);
-                    if(t && t != notexture)
-                    {
-                        part_icons(j ? e.pos() : o, t, hastop ? PART_ICON_ONTOP : PART_ICON, hastop && !j ? enticonsizetop : enticonsize, hastop && !j ? enticonblendtop : enticonblend, 0, 0, 1, j ? enticoncolourdyn : (hastop ? enticoncolourtop : enticoncolour));
-                        continue;
-                    }
-                }
-            }
-
-            part_create(hastop ? PART_ENTITY_ONTOP : PART_ENTITY, 1, j ? e.pos() : o, j ? entselcolourdyn : (hastop ? entselcolourtop : entselcolour), hastop && !j ? entselsizetop : entselsize);
+            part_create(hastop ? PART_ENTITY_ONTOP : PART_ENTITY, 1, j ? e.pos() : o, j ? entselcolourdyn : (hastop ? entselcolourtop : entselcolour), hastop && !j ? entselsizetop : entselsize, hastop && !j ? entselblendtop : entselblend);
         }
 
         return visible;
@@ -3587,21 +3585,18 @@ namespace entities
                     hasent = isedit && (enthover.find(v.idx) >= 0 || entgroup.find(v.idx) >= 0);
                 vec pos = vec(e.o).addz(entinfospace);
                 if(enttype[e.type].usetype == EU_ITEM) pos.addz(entinfospace);
-                if(entinfoui)
+                if(entinfoui >= 0)
                 {
-                    if(entinfoui >= (hasent && !entgroup.empty() && entgroup[0] == v.idx ? 1 : (hasent ? 2 : (isedit ? 3 : 4))))
+                    int outtype = -1;
+                    if(entinfouitype >= (hasent && !entgroup.empty() && entgroup[0] == v.idx ? 1 : (hasent ? 2 : (isedit ? 3 : 4))))
                     {
                         gameentity &e = *(gameentity *)ents[v.idx];
-                        vec pos = vec(e.o).addz(entinfospace);
-                        if(enttype[e.type].usetype == EU_ITEM) pos.addz(entinfospace);
-
-                        if(entseldynui)
-                        {
-                            UI::setui("entinfo", SURFACE_WORLD, v.idx, pos, entinfouiyaw, entinfouipitch, entinfouiscale, entinfouidetentyaw, entinfouidetentpitch);
-                            hasdynui = true;
-                        }
+                        outtype = hasent ? entinfoui : SURFACE_WORLD;
+                        UI::setui("entinfo", outtype, v.idx, e.o, entinfouiyaw, entinfouipitch, outtype == SURFACE_WORLD ? entinfouiworld : entinfouiscale, entinfouidetentyaw, entinfouidetentpitch);
+                        hasdynui = true;
                         found = true;
                     }
+                    loopj(SURFACE_ALL) if(outtype != j) UI::hideui("entinfo", j, v.idx);
                 }
                 else
                 {
@@ -3677,10 +3672,10 @@ namespace entities
                     if(++numdrawn >= showentinfomax) break;
                 }
             }
-            if(entinfoui) loopv(visents)
+            if(entinfoui >= 0) loopv(visents)
             {
                 visibleent &v = visents[i];
-                if(UI::uivisible("entinfo", SURFACE_WORLD, v.idx)) UI::hideui("entinfo", SURFACE_WORLD, v.idx);
+                loopj(SURFACE_ALL) UI::hideui("entinfo", j, v.idx);
             }
         }
         else if(hasdynui)

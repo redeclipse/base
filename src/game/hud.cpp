@@ -549,6 +549,7 @@ namespace hud
     FVAR(IDF_PERSIST, aboveheaduiworld, FVAR_NONZERO, 3, FVAR_MAX);
     FVAR(IDF_PERSIST, aboveheaduidetentyaw, 0, 0, 180);
     FVAR(IDF_PERSIST, aboveheaduidetentpitch, 0, 0, 90);
+    FVAR(IDF_PERSIST, aboveheaduioffset, 0, 2.5f, FVAR_MAX);
 
     void checkui()
     {
@@ -573,15 +574,15 @@ namespace hud
             loopi(numdyns) if((d = (gameent *)game::iterdynents(i)))
             {
                 int type = -1;
-                if(d != game::focus)
+                if(d != game::focus && !d->isspectator())
                 {
-                    type = game::haloallow(d, false) ? aboveheadui : SURFACE_WORLD;
-                    UI::setui("abovehead", type, d->clientnum, d->abovehead(2), aboveheaduiyaw, aboveheaduipitch, type == SURFACE_WORLD ? aboveheaduiworld : aboveheaduiscale, aboveheaduidetentyaw, aboveheaduidetentpitch);
+                    type = game::haloallow(d, false) ? aboveheadui : SURFACE_WORLD; // force in-world if not allowed to x-ray
+                    UI::setui("abovehead", type, d->clientnum, d->abovehead(aboveheaduioffset), aboveheaduiyaw, aboveheaduipitch, type == SURFACE_WORLD ? aboveheaduiworld : aboveheaduiscale, aboveheaduidetentyaw, aboveheaduidetentpitch);
                 }
                 loopj(SURFACE_ALL) if(j != type) UI::hideui("abovehead", j, d->clientnum);
             }
         }
-        else UI::closedynui("abovehead");
+        else loopj(SURFACE_ALL) UI::closedynui("abovehead", j);
     }
 
     void drawquad(float x, float y, float w, float h, float tx1, float ty1, float tx2, float ty2, bool flipx, bool flipy)
@@ -1584,6 +1585,12 @@ namespace hud
 
             drawpointers(w, h, -1, wantvisor);
         }
+
+        hudmatrix.ortho(0, w, h, 0, -1, 1);
+        flushhudmatrix();
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        resethudshader();
 
         UI::render(SURFACE_BACKGROUND);
 
