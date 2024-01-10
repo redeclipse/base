@@ -6767,7 +6767,9 @@ namespace UI
                 }
             }
 
-            w->allowinput = inside && (e.attrs[1]&MAPUI_INPUTPROX) != 0;
+            w->allowinput = inside && surface->interactive && (e.attrs[1]&MAPUI_INPUTPROX) != 0;
+
+            popsurface();
         }
 
         identflags = oldflags;
