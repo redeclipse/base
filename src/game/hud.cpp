@@ -576,7 +576,7 @@ namespace hud
                 int type = -1;
                 if(d != game::focus && !d->isspectator())
                 {
-                    type = game::focus->isobserver() || game::focus->team == d->team || d->team == T_NEUTRAL ? aboveheadui : SURFACE_WORLD; // force in-world if not allowed to x-ray
+                    type = game::haloallow(camera1->o, d, false, false) && (game::focus->isobserver() || game::focus->team == d->team || d->team == T_NEUTRAL) ? aboveheadui : SURFACE_WORLD; // force in-world if not allowed to x-ray
                     UI::setui("abovehead", type, d->clientnum, d->abovehead(aboveheaduioffset), aboveheaduiyaw, aboveheaduipitch, type == SURFACE_WORLD ? aboveheaduiworld : aboveheaduiscale, aboveheaduidetentyaw, aboveheaduidetentpitch);
                 }
                 loopj(SURFACE_ALL) if(j != type) UI::hideui("abovehead", j, d->clientnum);
