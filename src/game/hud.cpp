@@ -115,9 +115,9 @@ namespace hud
 
     VAR(IDF_PERSIST, visorcursor, 0, 12, 15); // bit: 1 = normal, 2 = editmode, 4 = UI, 8 = editmode UI
     VAR(IDF_PERSIST, visorcursorproject, 0, 8, 15);
-    VAR(IDF_PERSIST, visorcursorlevels, 0, 4, 16);
-    FVAR(IDF_PERSIST, visorcursormin, 0, 0.01f, 1);
-    FVAR(IDF_PERSIST, visorcursorblend, 0, 0.35f, 1);
+    VAR(IDF_PERSIST, visorcursorlevels, 0, 5, 16);
+    FVAR(IDF_PERSIST, visorcursormin, 0, 0.005f, 1);
+    FVAR(IDF_PERSIST, visorcursorblend, 0, 0.75f, 1);
     VAR(IDF_PERSIST, visorcursorcolour, 0, 0xFF6666, 0xFFFFFF);
     FVAR(IDF_PERSIST, visorcamvelx, FVAR_MIN, 1, FVAR_MAX);
     FVAR(IDF_PERSIST, visorcamvely, FVAR_MIN, 1, FVAR_MAX);
@@ -542,7 +542,7 @@ namespace hud
         return false;
     }
 
-    VAR(IDF_PERSIST, aboveheadui, -1, SURFACE_BACKGROUND, SURFACE_ALL);
+    VAR(IDF_PERSIST, aboveheadui, -1, SURFACE_VISOR, SURFACE_ALL);
     FVAR(IDF_PERSIST, aboveheaduiyaw, -1, -1, 360);
     FVAR(IDF_PERSIST, aboveheaduipitch, -181, -181, 181);
     FVAR(IDF_PERSIST, aboveheaduiscale, FVAR_NONZERO, 1, FVAR_MAX);

@@ -360,7 +360,7 @@ extern void endtimer(timer *t);
 
 extern int visorhud, rendervisor;
 extern bool visorenabled(bool noview = false);
-extern void visorcoords(float cx, float cy, float &vx, float &vy);
+extern void visorcoords(float cx, float cy, float &vx, float &vy, bool back = false);
 
 // octa
 extern cube *newcubes(uint face = F_EMPTY, int mat = MAT_AIR);

@@ -1140,11 +1140,12 @@ namespace UI
             float cx = 0.5f, cy = 0.5f, cz = 1;
             if(vectocursor(pos, cx, cy, cz))
             {
-                if(surfacetype == SURFACE_VISOR && visorenabled())
-                    visorcoords(cx, cy, cx, cy);
+                if(surfacetype == SURFACE_VISOR && rendervisor)
+                    visorcoords(cx, cy, cx, cy, true);
 
                 setpos(cx*hudw/float(hudh) - w * 0.5f, cy - h);
             }
+            else setpos(hudw/float(hudh), 1);
         }
 
         void layout()

@@ -1424,6 +1424,7 @@ bool vectocursor(const vec &v, float &x, float &y, float &z, float clampxy)
     }
     if(z <= 0) { z = 0; inside = false; }
     else if(z >= 1) { z = 1; inside = false; }
+    else if(x < 0 || y < 0 || x > 1 || y > 1) { inside = false; }
     return inside;
 }
 
@@ -2635,7 +2636,7 @@ bool visorenabled(bool noview)
 ICOMMANDV(0, visorenabled, visorenabled());
 VARR(rendervisor, 0);
 
-void visorcoords(float cx, float cy, float &vx, float &vy)
+void visorcoords(float cx, float cy, float &vx, float &vy, bool back)
 {
     // WARNING: This function MUST produce the same
     // results as the 'hudvisorview' shader for cursor projection.
@@ -2651,10 +2652,10 @@ void visorcoords(float cx, float cy, float &vx, float &vy)
     to.div(1.0 + visordistort + mag * mag);
 
     to.add(vec2(0.5f));
-    to.sub(from);
+    if(!back) to.sub(from);
 
-    vx = from.x - to.x; // what we get is an offset from cursor
-    vy = from.y - to.y; // that is then subtracted from it
+    vx = back ? to.x : from.x - to.x; // what we get is an offset from requested position
+    vy = back ? to.y : from.y - to.y; // that is then returned or subtracted from it
 }
 
 void gl_drawhud(bool noview = false)
