@@ -2576,8 +2576,6 @@ FVAR(IDF_PERSIST, visordistort, -2, 2.0f, 2);
 FVAR(IDF_PERSIST, visornormal, -2, 1.175f, 2);
 FVAR(IDF_PERSIST, visorscalex, FVAR_NONZERO, 0.9075f, 2);
 FVAR(IDF_PERSIST, visorscaley, FVAR_NONZERO, 0.9075f, 2);
-FVAR(IDF_PERSIST, visorglitchdistort, 0, 1, 16);
-FVAR(IDF_PERSIST, visorglitchscale, 0, 0.5f, 16);
 
 void cleanupvisor();
 void setupvisor(int w, int h)
@@ -2637,6 +2635,28 @@ bool visorenabled(bool noview)
 ICOMMANDV(0, visorenabled, visorenabled());
 VARR(rendervisor, 0);
 
+void visorcoords(float cx, float cy, float &vx, float &vy)
+{
+    // WARNING: This function MUST produce the same
+    // results as the 'hudvisorview' shader for cursor projection.
+
+    vec2 from(cx, cy), to = from;
+
+    to.sub(vec2(0.5f));
+    to.mul(vec2(visorscalex, visorscaley));
+
+    float mag = to.magnitude();
+
+    to.mul(1.0 + visordistort * visornormal * visornormal);
+    to.div(1.0 + visordistort + mag * mag);
+
+    to.add(vec2(0.5f));
+    to.sub(from);
+
+    vx = from.x - to.x; // what we get is an offset from cursor
+    vy = from.y - to.y; // that is then subtracted from it
+}
+
 void gl_drawhud(bool noview = false)
 {
     hudmatrix.ortho(0, hudw, hudh, 0, -1, 1);
@@ -2645,33 +2665,12 @@ void gl_drawhud(bool noview = false)
     if(!noview) blendhalos();
 
     bool wantvisor = visorenabled(noview);
-    float glitch = 0.f;
 
     if(engineready)
     {
         setupvisor(hudw, hudh);
 
-        if(wantvisor)
-        {
-            // WARNING: This function MUST produce the same
-            // results as the 'hudvisorview' shader for cursor projection.
-
-            vec2 cursorxy(cursorx, cursory), coords = cursorxy;
-
-            coords.sub(vec2(0.5f));
-            coords.mul(vec2(visorscalex, visorscaley));
-
-            float mag = coords.magnitude();
-
-            coords.mul(1.0 + visordistort * visornormal * visornormal);
-            coords.div(1.0 + visordistort + mag * mag);
-
-            coords.add(vec2(0.5f));
-            coords.sub(cursorxy);
-
-            visorx = cursorx - coords.x; // what we get is an offset from cursor
-            visory = cursory - coords.y; // that is then subtracted from it
-        }
+        if(wantvisor) visorcoords(cursorx, cursory, visorx, visory);
         else
         {
             visorx = cursorx;
@@ -2679,7 +2678,7 @@ void gl_drawhud(bool noview = false)
         }
 
         visoroffx = visoroffy = 0;
-        hud::visorinfo(visoroffx, visoroffy, glitch);
+        hud::visorinfo(visoroffx, visoroffy);
 
         if(visoroffx) visorx += visoroffx / hudw;
         if(visoroffy) visory += visoroffy / hudh;
@@ -2717,7 +2716,6 @@ void gl_drawhud(bool noview = false)
         }
         else SETSHADER(hudvisor);
         LOCALPARAMF(visorsize, visorw, visorh, 1.f/visorw, 1.f/visorh);
-        LOCALPARAMF(visorglitch, glitch, visorglitchdistort, visorglitchscale);
         LOCALPARAMF(time, lastmillis/1000.f);
 
         glEnable(GL_BLEND);

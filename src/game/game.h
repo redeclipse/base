@@ -2439,15 +2439,10 @@ namespace hud
         *flagtakentex, *bombdroptex, *bombtakentex, *attacktex, *warningtex, *indicatortex, *crosshairtex, *hithairtex,
         *spree1tex, *spree2tex, *spree3tex, *spree4tex, *multi1tex, *multi2tex, *multi3tex, *headshottex, *dominatetex, *revengetex,
         *firstbloodtex, *breakertex;
-    extern int hudwidth, hudheight, hudsize, lastteam, damageresidue, damageresiduedelta, damageresiduefade, radaraffinitynames, teamhurthud, teamhurttime, teamhurtdist, aboveheadui;
+    extern int hudwidth, hudheight, hudsize;
     extern float radaraffinityblend, radarblipblend, radaraffinitysize;
     extern bool scoreson, scoresoff, shownscores;
-    extern vector<int> teamkills;
     extern const char *geticon(int type, int value);
-    extern int numteamkills();
-    extern void damage(int n, const vec &loc, gameent *v, int weap, int flags);
-    extern void hit(int n, const vec &loc, gameent *v, int weap, int flags);
-    extern void removeplayer(gameent *d);
     extern const char *teamtexname(int team = T_NEUTRAL);
     extern const char *itemtex(int type, int stype);
     extern const char *privtex(int priv = PRIV_NONE, int actortype = A_PLAYER);
@@ -2455,7 +2450,6 @@ namespace hud
     extern void showscores(bool on, bool interm = false, bool onauto = true, bool ispress = false);
     extern score &teamscore(int team);
     extern void resetscores();
-    extern void cleanup();
 }
 
 enum { CTONE_TEAM = 0, CTONE_TONE, CTONE_TEAMED, CTONE_ALONE, CTONE_MIXED, CTONE_TMIX, CTONE_AMIX, CTONE_MAX };
@@ -2463,8 +2457,8 @@ namespace game
 {
     extern int nextmode, nextmuts, lastzoom, lasttvcam, lasttvchg, spectvtime, waittvtime,
             maptime, mapstart, timeremaining, timeelapsed, timelast, timesync, bloodfade, bloodsize, bloodsparks, eventiconfade, eventiconshort, damageinteger,
-            announcefilter, dynlighteffects, aboveheadnames, followthirdperson, nogore, forceplayermodel, forceplayerpattern,
-            playerovertone, playerundertone, playerdisplaytone, playereffecttone, playerteamtone, follow, specmode, spectvfollow, clientcrc, aboveheaddead;
+            announcefilter, dynlighteffects, followthirdperson, nogore, forceplayermodel, forceplayerpattern,
+            playerovertone, playerundertone, playerdisplaytone, playereffecttone, playerteamtone, follow, specmode, spectvfollow, clientcrc;
     extern float bloodscale, aboveitemiconsize, playerovertonelevel, playerundertonelevel, playerdisplaytonelevel, playereffecttonelevel, playerteamtonelevel,
             affinityfadeat, affinityfadecut, affinityfollowblend, affinitythirdblend, damagedivisor, damagecritical;
     extern bool zooming, wantsloadoutmenu;
@@ -2525,7 +2519,7 @@ namespace game
     extern void getplayermaterials(gameent *d, modelstate &mdl);
     extern void getplayereffects(gameent *d, modelstate &mdl);
     extern const char *getplayerstate(gameent *d, modelstate &mdl, int third = 1, float size = 1, int flags = 0, modelattach *mdlattach = NULL, int *lastoffset = NULL, bool vanitypoints = false);
-    extern bool haloallow(gameent *d);
+    extern bool haloallow(gameent *d, bool check = true);
 }
 
 namespace entities

@@ -1,22 +1,9 @@
 #include "game.h"
 namespace hud
 {
-    int damageresidue = 0, hudwidth = 0, hudheight = 0, lastteam = 0, laststats = 0;
+    int hudwidth = 0, hudheight = 0, laststats = 0;
 
     #include "compass.h"
-    vector<int> teamkills;
-
-    struct dhloc
-    {
-        int clientnum, outtime, damage, colour; vec dir;
-        dhloc(int a, int t, int d, const vec &p, int c) : clientnum(a), outtime(t), damage(d), colour(c), dir(p) {}
-    };
-    vector<dhloc> damagelocs, hitlocs;
-    VAR(IDF_PERSIST, damageresiduedelta, 0, 100, VAR_MAX);
-    VAR(IDF_PERSIST, damageresiduefade, 0, 250, VAR_MAX);
-    VAR(IDF_PERSIST, damageresiduemax, 1, 2000, VAR_MAX);
-    VAR(IDF_PERSIST, damageresiduemul, 1, 3, VAR_MAX);
-    VAR(IDF_PERSIST, damageresiduemulresidual, 1, 5, VAR_MAX);
 
     VAR(IDF_PERSIST, showhud, 0, 1, 1);
     VAR(IDF_PERSIST, hudsize, 0, 2048, VAR_MAX);
@@ -125,11 +112,6 @@ namespace hud
     VAR(IDF_PERSIST|IDF_HEX, crosshairtone, -CTONE_MAX, 0, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, hitcrosshairtone, -CTONE_MAX, 0, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, clipstone, -CTONE_MAX, 0, 0xFFFFFF);
-
-    VAR(IDF_PERSIST, teamhurthud, 0, 1, 3); // 0 = off, 1 = full body particle, 2 = fixed position and size
-    VAR(IDF_PERSIST, teamhurttime, 0, 2500, VAR_MAX);
-    VAR(IDF_PERSIST, teamhurtdist, 0, 0, VAR_MAX);
-    FVAR(IDF_PERSIST, teamhurtsize, 0, 0.0175f, 1000);
 
     VAR(IDF_PERSIST, visorcursor, 0, 12, 15); // bit: 1 = normal, 2 = editmode, 4 = UI, 8 = editmode UI
     VAR(IDF_PERSIST, visorcursorproject, 0, 8, 15);
@@ -353,46 +335,6 @@ namespace hud
     VAR(IDF_PERSIST, rocketcliprotate, 0, 12, 15);
     VAR(IDF_PERSIST, meleecliprotate, 0, 12, 7);
 
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, hurttex, "<grey>textures/hud/hurt", 3);
-    VAR(IDF_PERSIST, onscreendamage, 0, 1, 2); // 0 = off, 1 = basic damage, 2 = verbose
-    FVAR(IDF_PERSIST, onscreendamagescale, 0, 0.5f, 1);
-    FVAR(IDF_PERSIST, onscreendamageblipsize, 0, 0.1f, 1);
-    FVAR(IDF_PERSIST, onscreendamageoffset, 0, 0.4f, 1);
-    VAR(IDF_PERSIST, onscreendamageself, 0, 1, 1);
-    VAR(IDF_PERSIST, onscreendamagemerge, 0, 250, VAR_MAX);
-    VAR(IDF_PERSIST, onscreendamagetime, 1, 250, VAR_MAX);
-    VAR(IDF_PERSIST, onscreendamagefade, 1, 3500, VAR_MAX);
-    FVAR(IDF_PERSIST, onscreendamagesize, 0, 20, 1000);
-    FVAR(IDF_PERSIST, onscreendamageblend, 0, 0.75f, 1);
-    VAR(IDF_PERSIST, onscreendamagemin, 1, 10, VAR_MAX);
-    VAR(IDF_PERSIST, onscreendamagemax, 1, 1000, VAR_MAX);
-    PCVAR(IDF_PERSIST, onscreendamagecolour, 0xFF4444);
-    PCVAR(IDF_PERSIST, onscreendamageburncolour, PC(BURN));
-    PCVAR(IDF_PERSIST, onscreendamagebleedcolour, PC(BLEED));
-    PCVAR(IDF_PERSIST, onscreendamageshockcolour, PC(SHOCK));
-
-    VAR(IDF_PERSIST, onscreenhits, 0, 1, 2);
-    VAR(IDF_PERSIST, onscreenhitsheal, 0, 1, 1);
-    VAR(IDF_PERSIST, onscreenhitsself, 0, 0, 1);
-    VAR(IDF_PERSIST, onscreenhitsfollow, 0, 0, 1);
-    VAR(IDF_PERSIST, onscreenhitsmerge, 0, 250, VAR_MAX);
-    VAR(IDF_PERSIST, onscreenhitstime, 1, 250, VAR_MAX);
-    VAR(IDF_PERSIST, onscreenhitsfade, 1, 3000, VAR_MAX);
-    FVAR(IDF_PERSIST, onscreenhitsswipe, 0, 6, 1000);
-    FVAR(IDF_PERSIST, onscreenhitsscale, 0, 0.75f, 1000);
-    FVAR(IDF_PERSIST, onscreenhitsblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, onscreenhitsheight, -1000, 0.25f, 1000);
-    FVAR(IDF_PERSIST, onscreenhitsoffset, -1000, 3, 1000);
-    VAR(IDF_PERSIST, onscreenhitsglow, 0, 1, 1);
-    FVAR(IDF_PERSIST, onscreenhitsglowblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, onscreenhitsglowscale, 0, 1.5f, 1000);
-    FVAR(IDF_PERSIST, onscreenhitsglowcolour, 0, 0.75f, 5);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, onscreenhitsglowtex, "<grey>textures/hud/glow", 3);
-    PCVAR(IDF_PERSIST|IDF_HEX, onscreenhitscolour, 0xFF4444);
-    PCVAR(IDF_PERSIST|IDF_HEX, onscreenhitsburncolour, PC(BURN));
-    PCVAR(IDF_PERSIST|IDF_HEX, onscreenhitsbleedcolour, PC(BLEED));
-    PCVAR(IDF_PERSIST|IDF_HEX, onscreenhitsshockcolour, PC(SHOCK));
-
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, spree1tex, "textures/rewards/carnage", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, spree2tex, "textures/rewards/slaughter", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, spree3tex, "textures/rewards/massacre", 3);
@@ -589,13 +531,6 @@ namespace hud
     }
     ICOMMANDV(0, hasinput, hasinput())
 
-    bool hastkwarn()
-    {
-        if(!m_play(game::gamemode)) return false;
-        return teamkillwarn && m_team(game::gamemode, game::mutators) && numteamkills() >= teamkillwarn;
-    }
-    ICOMMANDV(0, hastkwarn, hastkwarn() ? 1 : 0)
-
     bool textinput(const char *str, int len)
     {
         return false;
@@ -607,10 +542,11 @@ namespace hud
         return false;
     }
 
-    VAR(IDF_PERSIST, aboveheadui, 0, 1, 1);
+    VAR(IDF_PERSIST, aboveheadui, -1, SURFACE_BACKGROUND, SURFACE_ALL);
     FVAR(IDF_PERSIST, aboveheaduiyaw, -1, -1, 360);
     FVAR(IDF_PERSIST, aboveheaduipitch, -181, -181, 181);
     FVAR(IDF_PERSIST, aboveheaduiscale, FVAR_NONZERO, 1, FVAR_MAX);
+    FVAR(IDF_PERSIST, aboveheaduiworld, FVAR_NONZERO, 3, FVAR_MAX);
     FVAR(IDF_PERSIST, aboveheaduidetentyaw, 0, 0, 180);
     FVAR(IDF_PERSIST, aboveheaduidetentpitch, 0, 0, 90);
 
@@ -630,82 +566,22 @@ namespace hud
             else UI::openui("main");
         }
 
-        if(aboveheadui)
+        if(aboveheadui >= 0)
         {
             gameent *d = NULL;
             int numdyns = game::numdynents();
             loopi(numdyns) if((d = (gameent *)game::iterdynents(i)))
             {
-                if(d->actortype >= A_ENEMY || (d == game::focus && (!game::aboveheaddead || (d->state != CS_DEAD && d->state != CS_WAITING))))
+                int type = -1;
+                if(d != game::focus)
                 {
-                    if(UI::uivisible("abovehead", SURFACE_WORLD, d->clientnum)) UI::hideui("abovehead", SURFACE_WORLD, d->clientnum);
-                    continue;
+                    type = game::haloallow(d, false) ? aboveheadui : SURFACE_WORLD;
+                    UI::setui("abovehead", type, d->clientnum, d->abovehead(2), aboveheaduiyaw, aboveheaduipitch, type == SURFACE_WORLD ? aboveheaduiworld : aboveheaduiscale, aboveheaduidetentyaw, aboveheaduidetentpitch);
                 }
-                UI::setui("abovehead", SURFACE_WORLD, d->clientnum, d->abovehead(), aboveheaduiyaw, aboveheaduipitch, aboveheaduiscale,  aboveheaduidetentyaw, aboveheaduidetentpitch);
+                loopj(SURFACE_ALL) if(j != type) UI::hideui("abovehead", j, d->clientnum);
             }
         }
         else UI::closedynui("abovehead");
-    }
-
-    void damage(int n, const vec &loc, gameent *v, int weap, int flags)
-    {
-        if(!n || !v) return;
-        int m = flags&HIT_BURN || flags&HIT_BLEED || flags&HIT_SHOCK ? damageresiduemulresidual : damageresiduemul;
-        damageresidue = clamp(damageresidue+(n*m), 0, damageresiduemax);
-        int colour = onscreendamagecolour;
-        if(game::nogore || game::bloodscale <= 0) colour = 0xFF00FF;
-        else if(wr_burns(weap, flags)) colour = onscreendamageburncolour;
-        else if(wr_bleeds(weap, flags)) colour = onscreendamagebleedcolour;
-        else if(wr_shocks(weap, flags)) colour = onscreendamageshockcolour;
-        vec dir = vec(loc).sub(camera1->o).normalize();
-        loopv(damagelocs)
-        {
-            dhloc &l = damagelocs[i];
-            if(v->clientnum != l.clientnum) continue;
-            if(totalmillis-l.outtime > onscreendamagemerge) continue;
-            if(l.colour != colour) continue;
-            l.damage += n;
-            l.dir = dir;
-            return; // accumulate
-        }
-        damagelocs.add(dhloc(v->clientnum, totalmillis, n, loc, colour));
-    }
-
-    void hit(int n, const vec &loc, gameent *v, int weap, int flags)
-    {
-        if(!n || !v) return;
-        int colour = onscreenhitscolour;
-        if(game::nogore || game::bloodscale <= 0) colour = 0xFF00FF;
-        else if(wr_burns(weap, flags)) colour = onscreenhitsburncolour;
-        else if(wr_bleeds(weap, flags)) colour = onscreenhitsbleedcolour;
-        else if(wr_shocks(weap, flags)) colour = onscreenhitsshockcolour;
-        loopv(hitlocs)
-        {
-            dhloc &l = hitlocs[i];
-            if(v->clientnum != l.clientnum) continue;
-            if(totalmillis-l.outtime > onscreenhitsmerge) continue;
-            if(l.colour != colour) continue;
-            l.damage += n;
-            l.dir = v->center();
-            return; // accumulate
-        }
-        hitlocs.add(dhloc(v->clientnum, totalmillis, n, v->center(), colour));
-    }
-
-    void removeplayer(gameent *d)
-    {
-        loopvrev(damagelocs)
-        {
-            dhloc &l = damagelocs[i];
-            gameent *e = game::getclient(l.clientnum);
-            if(!e || e == d) damagelocs.remove(i);
-        }
-        loopvrev(hitlocs)
-        {
-            dhloc &l = hitlocs[i];
-            gameent *e = game::getclient(l.clientnum);
-            if(!e || e == d) hitlocs.remove(i);
-        }
     }
 
     void drawquad(float x, float y, float w, float h, float tx1, float ty1, float tx2, float ty2, bool flipx, bool flipy)
@@ -1155,6 +1031,7 @@ namespace hud
                 }
                 case 0:
                 {
+                    /*
                     float total = 0;
                     loopv(damagelocs)
                     {
@@ -1184,6 +1061,7 @@ namespace hud
                         flashcolour(c.r, c.g, c.b, 0.3f, 0.6f, 0.1f, amt);
                     }
                     else val = 0;
+                    */
                 }
                 default: case 1: break;
             }
@@ -1195,45 +1073,6 @@ namespace hud
             pos += slice;
         }
     }
-
-    int numteamkills()
-    {
-        int numkilled = 0;
-        loopvrev(teamkills)
-        {
-            if(totalmillis-teamkills[i] <= teamkilltime*60000) numkilled++;
-            else teamkills.remove(i);
-        }
-        return numkilled;
-    }
-    ICOMMANDV(0, numteamkills, numteamkills())
-
-    bool showname()
-    {
-        if(game::focus != game::player1)
-        {
-            if(game::thirdpersonview(true) && game::aboveheadnames >= 2) return false;
-            return true;
-        }
-        return false;
-    }
-    ICOMMANDV(0, specshowname, showname() ? 1 : 0)
-
-    const char *specviewname()
-    {
-        if(showname()) return game::colourname(game::focus);
-        if(game::tvmode())
-        {
-            if(game::spectvfollow >= 0)
-            {
-                gameent *d = game::getclient(game::spectvfollow);
-                if(d) return game::colourname(d);
-            }
-            return "SpecTV";
-        }
-        return "Spectating";
-    }
-    ICOMMANDVS(0, specviewname, specviewname());
 
     void drawevents()
     {
@@ -1362,80 +1201,6 @@ namespace hud
         return "";
     }
 
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damagemasktex, "<grey>textures/damage/mask", 0);
-
-    VAR(IDF_PERSIST, showdamage, 0, 3, 7); // bit: 1 = normal, 2 = visor alive, 4 = visor dead
-    CVAR(IDF_PERSIST, damagecolour, 0x600000);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damagetex, "<grey>textures/damage/hurt", 0x300);
-    FVAR(IDF_PERSIST, damagedistort, 0, 1.85f, 16);
-    FVAR(IDF_PERSIST, damageblend, 0, 0.5f, 1);
-    FVAR(IDF_PERSIST, damageblenddead, 0, 0.5f, 1);
-    FVAR(IDF_PERSIST, damagespeed1, FVAR_MIN, -0.05f, FVAR_MAX);
-    FVAR(IDF_PERSIST, damagespeed2, FVAR_MIN, 0.1f, FVAR_MAX);
-
-    VAR(IDF_PERSIST, showdamageburn, 0, 1, 1);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damageburntex, "<grey>textures/damage/burn", 0x300);
-    FVAR(IDF_PERSIST, damageburnbright, 0, 0.9f, 10);
-    FVAR(IDF_PERSIST, damageburnblend, 0, 0.6f, 1);
-    FVAR(IDF_PERSIST, damageburnspeed1, FVAR_MIN, -0.3f, FVAR_MAX);
-    FVAR(IDF_PERSIST, damageburnspeed2, FVAR_MIN, 0.4f, FVAR_MAX);
-
-    VAR(IDF_PERSIST, showdamagebleed, 0, 1, 1);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damagebleedtex, "<grey>textures/damage/bleed", 0x300);
-    FVAR(IDF_PERSIST, damagebleedbright, 0, 0.6f, 10);
-    FVAR(IDF_PERSIST, damagebleedblend, 0, 0.6f, 1);
-    FVAR(IDF_PERSIST, damagebleedspeed1, FVAR_MIN, -0.025f, FVAR_MAX);
-    FVAR(IDF_PERSIST, damagebleedspeed2, FVAR_MIN, 0.05f, FVAR_MAX);
-
-    VAR(IDF_PERSIST, showdamageshock, 0, 1, 1);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damageshocktex, "<grey>textures/damage/shock", 0x300);
-    FVAR(IDF_PERSIST, damageshockbright, 0, 0.9f, 10);
-    FVAR(IDF_PERSIST, damageshockblend, 0, 0.5f, 1);
-    FVAR(IDF_PERSIST, damageshockspeed1, FVAR_MIN, -0.4f, FVAR_MAX);
-    FVAR(IDF_PERSIST, damageshockspeed2, FVAR_MIN, 0.3f, FVAR_MAX);
-
-    void drawdamage(const char *tex, const vec &color, float fade, float speed1, float speed2, float distort = 0.f, float bright = 1.f)
-    {
-        if(!*damagemasktex || !*tex || !fade) return;
-        LOCALPARAMF(time, lastmillis/1000.f);
-        LOCALPARAM(speed, vec(speed1, speed2, distort));
-        LOCALPARAM(colour, vec(color).mul(bright));
-        glActiveTexture_(GL_TEXTURE0);
-        settexture(damagemasktex, 0);
-        glActiveTexture_(GL_TEXTURE1);
-        settexture(tex, 0x300);
-        glActiveTexture_(GL_TEXTURE0);
-        gle::colorf(1, 1, 1, fade);
-        drawquad(0, 0, 1, 1);
-    }
-
-    void drawdamages()
-    {
-        pushhudmatrix();
-        hudmatrix.ortho(0, 1, 1, 0, -1, 1);
-        flushhudmatrix();
-        SETSHADER(huddamage);
-        if(showdamage&1)
-        {
-            int hp = max(1, game::focus->gethealth(game::gamemode, game::mutators));
-            float pc = game::focus->state == CS_DEAD ? damageblenddead : (game::focus->state == CS_ALIVE ? min(damageresidue, hp)/float(hp)*damageblend : 0.f);
-            if(pc > 0) drawdamage(damagetex, damagecolour.tocolor(), pc, damagespeed1, damagespeed2, damagedistort);
-        }
-        #define RESIDUAL(name, type, pulse) \
-            if(showdamage##name && game::focus->name##ing(lastmillis, game::focus->name##time)) \
-            { \
-                int interval = lastmillis-game::focus->lastres[W_R_##type], delay = max(game::focus->name##delay, 1); \
-                float pc = interval >= game::focus->name##time-500 ? 1.f+(interval-(game::focus->name##time-500))/500.f : (interval%delay)/float(delay/2); \
-                if(pc > 1.f) pc = 2.f-pc; \
-                if(interval < game::focus->name##time-(delay/2)) pc = min(pc+0.5f, 1.f); \
-                if(pc > 0) drawdamage(damage##name##tex, pulsecolour(game::focus, PULSE_##pulse), pc*damage##name##blend, damage##name##speed1, damage##name##speed2, 0.f, damage##name##bright); \
-            }
-        RESIDUALSF
-        #undef RESIDUAL
-        pophudmatrix();
-        resethudshader();
-    }
-
     void drawzoom(int w, int h)
     {
         if(!gs_playing(game::gamestate) || game::focus->state != CS_ALIVE || !game::inzoom()) return;
@@ -1467,128 +1232,6 @@ namespace hud
         settexture(t);
         gle::colorf(0, 0, 0, pc);
         drawtexture(x, y, c, c);
-    }
-
-    void drawonscreenhits(int w, int h)
-    {
-        pushhudscale(onscreenhitsscale);
-        float maxy = -1.f;
-        loopv(hitlocs)
-        {
-            dhloc &l = hitlocs[i];
-            int millis = totalmillis-l.outtime;
-            gameent *a = game::getclient(l.clientnum);
-            if(!a || millis >= onscreenhitstime+onscreenhitsfade || l.dir.iszero())
-            {
-                hitlocs.remove(i--);
-                continue;
-            }
-
-            if(game::focus->state == CS_SPECTATOR || game::focus->state == CS_EDITING) continue;
-            if((!onscreenhitsheal && l.damage < 0) || (!onscreenhitsself && a == game::focus)) continue;
-
-            vec o = onscreenhitsfollow ? a->center() : l.dir;
-            o.z += actors[a->actortype].height*onscreenhitsheight;
-            float cx = 0, cy = 0, cz = 0;
-            if(!vectocursor(o, cx, cy, cz)) continue;
-
-            float hx = cx*w/onscreenhitsscale, hy = cy*h/onscreenhitsscale, fade = onscreenhitsblend;
-            if(onscreenhitsoffset != 0) hx += FONTW*onscreenhitsoffset;
-            if(millis <= onscreenhitstime)
-            {
-                float amt = millis/float(onscreenhitstime), total = FONTW*onscreenhitsswipe*(1-amt);
-                if(onscreenhitsoffset < 0) hx -= total;
-                else hx += total;
-                fade *= amt;
-            }
-            else
-            {
-                int offset = millis-onscreenhitstime;
-                hy -= FONTH*offset/float(onscreenhitstime);
-                fade *= 1-(offset/float(onscreenhitsfade));
-            }
-
-            string text;
-            if(game::damageinteger)
-                formatstring(text, "%c%d", l.damage > 0 ? '-' : (l.damage < 0 ? '+' : '~'), int(ceilf((l.damage < 0 ? 0-l.damage : l.damage)/game::damagedivisor)));
-            else formatstring(text, "%c%.1f", l.damage > 0 ? '-' : (l.damage < 0 ? '+' : '~'), (l.damage < 0 ? 0-l.damage : l.damage)/game::damagedivisor);
-            vec colour = getpulsecolour(a, l.colour);
-            if(maxy >= 0 && hy < maxy) hy = maxy;
-
-            if(onscreenhitsglow && settexture(onscreenhitsglowtex))
-            {
-                float width = 0, height = 0;
-                text_boundsf(text, width, height, 0, 0, -1, TEXT_CENTERED, 1);
-                gle::colorf(colour.r*onscreenhitsglowcolour, colour.g*onscreenhitsglowcolour, colour.b*onscreenhitsglowcolour, fade*onscreenhitsglowblend);
-                drawtexture(hx-(width*onscreenhitsglowscale*0.5f), hy-(height*onscreenhitsglowscale*0.25f), width*onscreenhitsglowscale, height*onscreenhitsglowscale);
-            }
-
-            hy += draw_textf("%s", hx, hy, 0, 0, int(colour.r*255), int(colour.g*255), int(colour.b*255), int(fade*255), TEXT_CENTERED, -1, -1, 1, text)/onscreenhitsscale;
-            resethudshader();
-            if(maxy < 0 || hy > maxy) maxy = hy;
-        }
-        pophudmatrix();
-    }
-
-    void drawonscreendamage(int w, int h)
-    {
-        loopv(damagelocs)
-        {
-            dhloc &l = damagelocs[i];
-            gameent *e = game::getclient(l.clientnum);
-            if(!e || l.dir.iszero())
-            {
-                damagelocs.remove(i--);
-                continue;
-            }
-
-            int millis = totalmillis-l.outtime;
-            if(millis >= onscreendamagetime+onscreendamagefade)
-            {
-                if(millis >= min(20, l.damage)*50) damagelocs.remove(i--);
-                continue;
-            }
-
-            if(game::focus->state == CS_SPECTATOR || game::focus->state == CS_EDITING) continue;
-            if(!onscreendamageself && e == game::focus) continue;
-
-            float amt = millis >= onscreendamagetime ? 1.f-(float(millis-onscreendamagetime)/float(onscreendamagefade)) : float(millis)/float(onscreendamagetime),
-                range = clamp(max(l.damage, onscreendamagemin)/float(max(onscreendamagemax-onscreendamagemin, 1)), onscreendamagemin/100.f, 1.f),
-                fade = clamp(onscreendamageblend, min(onscreendamageblend*onscreendamagemin/100.f, 1.f), onscreendamageblend)*amt,
-                size = clamp(range*onscreendamagesize, min(onscreendamagesize*onscreendamagemin/100.f, 1.f), onscreendamagesize)*amt;
-
-            vec dir = l.dir, colour = getpulsecolour(game::focus, l.colour);
-            if(e == game::focus) l.dir = vec(e->yaw*RAD, 0.f).neg();
-            dir.rotate_around_z(-camera1->yaw*RAD).normalize();
-            float yaw = -atan2(dir.x, dir.y)/RAD, x = sinf(RAD*yaw), y = -cosf(RAD*yaw), sz = max(w, h)/2,
-                  ts = sz*onscreendamagescale, tp = ts*size, tq = tp*onscreendamageblipsize, tr = ts*onscreendamageoffset, lx = (tr*x)+w/2, ly = (tr*y)+h/2;
-
-            gle::color(colour, fade);
-            Texture *t = textureload(hurttex, 3, true, false);
-            if(t != notexture)
-            {
-                settexture(t);
-                gle::defvertex(2);
-                gle::deftexcoord0();
-                gle::begin(GL_TRIANGLE_STRIP);
-                vec2 o(lx, ly);
-                loopk(4)
-                {
-                    vec2 norm, tc;
-                    switch(k)
-                    {
-                        case 0: vecfromyaw(yaw, 1, -1, norm);   tc = vec2(0, 1); break;
-                        case 1: vecfromyaw(yaw, 1, 1, norm);    tc = vec2(1, 1); break;
-                        case 2: vecfromyaw(yaw, -1, -1, norm);  tc = vec2(0, 0); break;
-                        case 3: vecfromyaw(yaw, -1, 1, norm);   tc = vec2(1, 0); break;
-                    }
-                    norm.mul(tq).add(o);
-                    gle::attrib(norm);
-                    gle::attrib(tc);
-                }
-                gle::end();
-            }
-        }
     }
 
     bool drawpointertex(const char *tex, int x, int y, int s, float r, float g, float b, float fade)
@@ -1902,7 +1545,7 @@ namespace hud
         }
     }
 
-    void visorinfo(float &x, float &y, float &glitch)
+    void visorinfo(float &x, float &y)
     {
         if(progressing) return;
 
@@ -1910,12 +1553,6 @@ namespace hud
         {
             if(visorcamvelx) x = game::fpcamvel.x * visorcamvelx;
             if(visorcamvely) y = game::fpcamvel.y * visorcamvely;
-        }
-
-        if(gs_playing(game::gamestate) && ((game::focus->isalive() && showdamage&2) || (game::focus->isdead() && showdamage&4)))
-        {
-            int hp = max(1, game::focus->gethealth(game::gamemode, game::mutators));
-            glitch = clamp(game::focus->state == CS_DEAD ? damageblenddead : (game::focus->state == CS_ALIVE ? min(damageresidue, hp)/float(hp)*damageblend : 0.f), 0.f, 1.f);
         }
     }
 
@@ -1936,51 +1573,23 @@ namespace hud
 
             if(showhud)
             {
-                if(gs_playing(game::gamestate))
+                if(gs_playing(game::gamestate) && !hasinput(true))
                 {
-                    drawdamages();
-                    if(teamhurthud&2 && teamhurttime && m_team(game::gamemode, game::mutators) && game::focus == game::player1 && game::player1->lastteamhit >= 0 && totalmillis-game::player1->lastteamhit <= teamhurttime)
-                    {
-                        vec targ;
-                        bool hasbound = false;
-                        int dist = teamhurtdist ? teamhurtdist : worldsize;
-                        loopv(game::players) if(game::players[i] && game::players[i]->team == game::player1->team)
-                        {
-                            if(game::players[i]->lastteamhit < 0 || lastmillis-game::players[i]->lastteamhit > teamhurttime) continue;
-                            if(!getsight(camera1->o, camera1->yaw, camera1->pitch, game::players[i]->o, targ, dist, curfov, fovy)) continue;
-                            if(!hasbound)
-                            {
-                                Texture *t = textureload(warningtex, 3, true, false);
-                                settexture(t);
-                                float amt = float(totalmillis%250)/250.f, value = (amt > 0.5f ? 1.f-amt : amt)*2.f;
-                                gle::colorf(value, value*0.125f, value*0.125f, value);
-                                hasbound = true;
-                            }
-                            float cx = 0.5f, cy = 0.5f, cz = 1;
-                            if(vectocursor(game::players[i]->o, cx, cy, cz))
-                            {
-                                int s = int(teamhurtsize*hudwidth), sx = int(cx*hudwidth-s), sy = int(cy*hudheight-s);
-                                drawsized(sx, sy, s*2);
-                            }
-                        }
-                    }
-                    if(!hasinput(true))
-                    {
-                        if(onscreenhits) drawonscreenhits(hudwidth, hudheight);
-                        if(onscreendamage) drawonscreendamage(hudwidth, hudheight);
-                        if(m_capture(game::gamemode)) capture::drawonscreen(hudwidth, hudheight);
-                        else if(m_defend(game::gamemode)) defend::drawonscreen(hudwidth, hudheight);
-                        else if(m_bomber(game::gamemode)) bomber::drawonscreen(hudwidth, hudheight);
-                    }
+                    if(m_capture(game::gamemode)) capture::drawonscreen(hudwidth, hudheight);
+                    else if(m_defend(game::gamemode)) defend::drawonscreen(hudwidth, hudheight);
+                    else if(m_bomber(game::gamemode)) bomber::drawonscreen(hudwidth, hudheight);
                 }
                 if(!game::tvmode() && !client::waiting() && !hasinput(false)) drawevents();
             }
 
             drawpointers(w, h, -1, wantvisor);
-            resethudshader();
         }
 
         UI::render(SURFACE_BACKGROUND);
+
+        hudmatrix.ortho(0, w, h, 0, -1, 1);
+        flushhudmatrix();
+        resethudshader();
 
         glDisable(GL_BLEND);
     }
@@ -2014,11 +1623,13 @@ namespace hud
                 rendercmenu();
             }
             else UI::render(SURFACE_VISOR, outfbo);
+
             hudmatrix.ortho(0, w, h, 0, -1, 1);
             flushhudmatrix();
             resethudshader();
 
             drawpointers(w, h, 0, wantvisor);
+
             hudmatrix.ortho(0, w, h, 0, -1, 1);
             flushhudmatrix();
             resethudshader();
@@ -2040,11 +1651,13 @@ namespace hud
         if(!progressing)
         {
             UI::render(SURFACE_FOREGROUND);
+
             hudmatrix.ortho(0, w, h, 0, -1, 1);
             flushhudmatrix();
             resethudshader();
 
             drawpointers(w, h, 1, wantvisor);
+
             hudmatrix.ortho(0, w, h, 0, -1, 1);
             flushhudmatrix();
             resethudshader();
@@ -2079,13 +1692,5 @@ namespace hud
         else hudwidth = hudheight = hudsize;
 
         checkui();
-    }
-
-    void cleanup()
-    {
-        teamkills.shrink(0);
-        damagelocs.shrink(0);
-        hitlocs.shrink(0);
-        damageresidue = lastteam = 0;
     }
 }

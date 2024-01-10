@@ -1427,7 +1427,6 @@ namespace client
         game::mutators = game::maptime = game::timesync = game::timelast = 0;
         loopv(game::players) if(game::players[i]) game::clientdisconnected(i);
         game::waiting.setsize(0);
-        hud::cleanup();
         emptymap(0, true, NULL, false);
         smartmusic(true);
         enumerate(idents, ident, id,
@@ -2750,7 +2749,6 @@ namespace client
                     if(d != game::player1) d->version.get(p);
                     else dummy.get(p);
                     d->checkpointspawn = cps;
-                    if(d == game::focus && d->team != team) hud::lastteam = 0;
                     d->team = team;
                     d->privilege = priv;
                     if(d->name[0]) d->setinfo(namestr, colour, model, pattern, vanity, lweaps, rweaps); // already connected
@@ -3489,7 +3487,6 @@ namespace client
                         if(m_team(game::gamemode, game::mutators) && w->actortype == A_PLAYER && showteamchange >= (w->team != T_NEUTRAL && tn != T_NEUTRAL ? 1 : 2))
                             conoutf(colourgrey, "%s is now on team %s", game::colourname(w), game::colourteam(tn));
                         w->team = tn;
-                        if(w == game::focus) hud::lastteam = 0;
                     }
                     break;
                 }

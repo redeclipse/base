@@ -353,14 +353,8 @@ namespace game
     VAR(IDF_PERSIST, zoomoffset, 0, 2, 10); // if zoomdefault = -1, then offset from zoomlevels this much for initial default
     VAR(IDF_PERSIST, zoomscroll, 0, 0, 1); // 0 = stop at min/max, 1 = go to opposite end
 
-    VAR(IDF_PERSIST, aboveheaddead, 0, 1, 1);
-    VAR(IDF_PERSIST, aboveheadnames, 0, 1, 1);
-    FVAR(IDF_PERSIST, aboveheadnamessize, 0, 4, 10);
     VAR(IDF_PERSIST, aboveheaddamage, 0, 0, 1);
     VAR(IDF_PERSIST, aboveheaddamagefade, 0, 500, VAR_MAX);
-    FVAR(IDF_PERSIST, aboveheadblend, 0.f, 1, 1.f);
-    VAR(IDF_PERSIST, aboveheadstatus, 0, 1, 1);
-    FVAR(IDF_PERSIST, aboveheadstatussize, 0, 3.f, 10);
     FVAR(IDF_PERSIST, aboveheadsmooth, 0, 0.25f, 1);
     VAR(IDF_PERSIST, aboveheadsmoothmillis, 1, 100, 10000);
 
@@ -1667,40 +1661,47 @@ namespace game
 
     struct damagemerge
     {
-        enum { BURN = 1<<0, BLEED = 1<<1, SHOCK = 1<<2 };
+        enum { HURT = 0, BURN, BLEED, SHOCK, MAX };
 
-        gameent *d, *v;
-        int weap, damage, flags, millis;
+        gameent *to, *from;
+        int type, weap, damage, millis;
+        bool ready;
 
-        damagemerge() { millis = totalmillis ? totalmillis : 1; }
-        damagemerge(gameent *d, gameent *v, int weap, int damage, int flags) : d(d), v(v), weap(weap), damage(damage), flags(flags) { millis = totalmillis ? totalmillis : 1; }
+        damagemerge() : to(NULL), from(NULL), type(HURT), weap(-1), damage(0), millis(totalmillis ? totalmillis : 1), ready(false) {}
+        damagemerge(gameent *d, gameent *v, int t, int w, int m) :
+            to(d), from(v), type(t), weap(w), damage(m), millis(totalmillis ? totalmillis : 1) {}
 
         bool merge(const damagemerge &m)
         {
-            if(d != m.d || v != m.v || flags != m.flags) return false;
+            if(to != m.to || from != m.from || type != m.type) return false;
             damage += m.damage;
             return true;
         }
 
         void play()
         {
-            if(playdamagetones >= (v == focus ? 1 : (d == focus ? 2 : 3)) && damagetonegain > 0)
+            if(ready) return;
+
+            if(playdamagetones >= (from == focus ? 1 : (to == focus ? 2 : 3)) && damagetonegain > 0)
             {
                 const float dmgsnd[8] = { 0, 0.1f, 0.25f, 0.5f, 0.75f, 1.f, 1.5f, 2.f };
-                int hp = d->gethealth(gamemode, mutators), snd = -1;
-                if(flags&BURN) snd = S_BURNED;
-                else if(flags&BLEED) snd = S_BLEED;
-                else if(flags&SHOCK) snd = S_SHOCK;
+                int hp = to->gethealth(gamemode, mutators), snd = -1;
+                if(type == BURN) snd = S_BURNED;
+                else if(type == BLEED) snd = S_BLEED;
+                else if(type == SHOCK) snd = S_SHOCK;
                 else loopirev(8) if(damage >= hp*dmgsnd[i]) { snd = S_DAMAGE+i; break; }
-                if(snd >= 0) emitsound(snd, getplayersoundpos(d), d, NULL, SND_CLAMPED, damagetonegain);
+                if(snd >= 0) emitsound(snd, getplayersoundpos(to), to, NULL, SND_CLAMPED, damagetonegain);
             }
+
             if(aboveheaddamage)
             {
                 string text;
                 if(damageinteger) formatstring(text, "\fo%c%d", damage > 0 ? '-' : (damage < 0 ? '+' : '~'), int(ceilf((damage < 0 ? 0-damage : damage)/damagedivisor)));
                 else formatstring(text, "\fo%c%.1f", damage > 0 ? '-' : (damage < 0 ? '+' : '~'), (damage < 0 ? 0-damage : damage)/damagedivisor);
-                part_textcopy(d->abovehead(), text, d != focus ? PART_TEXT : PART_TEXT_ONTOP, aboveheaddamagefade, colourwhite, 4, 1, -10, 0, d);
+                part_textcopy(to->abovehead(), text, to != focus ? PART_TEXT : PART_TEXT_ONTOP, aboveheaddamagefade, colourwhite, 4, 1, -10, 0, to);
             }
+
+            ready = true;
         }
     };
     vector<damagemerge> damagemerges;
@@ -1712,12 +1713,12 @@ namespace game
 
     void removedamagemerges(gameent *d)
     {
-        loopvrev(damagemerges) if(damagemerges[i].d == d || damagemerges[i].v == d) damagemerges.remove(i);
+        loopvrev(damagemerges) if(damagemerges[i].to == d || damagemerges[i].from == d) damagemerges.remove(i);
     }
 
-    void pushdamagemerge(gameent *d, gameent *v, int weap, int damage, int flags)
+    void pushdamagemerge(gameent *d, gameent *v, int type, int weap, int damage)
     {
-        damagemerge dt(d, v, weap, damage, flags);
+        damagemerge dt(d, v, type, weap, damage);
         loopv(damagemerges) if(damagemerges[i].merge(dt)) return;
         damagemerges.add(dt);
     }
@@ -1727,9 +1728,10 @@ namespace game
         loopv(damagemerges)
         {
             int delay = damagemergedelay;
-            if(damagemerges[i].flags&damagemerge::BURN) delay = damagemergeburn;
-            else if(damagemerges[i].flags&damagemerge::BLEED) delay = damagemergebleed;
-            else if(damagemerges[i].flags&damagemerge::SHOCK) delay = damagemergeshock;
+            if(damagemerges[i].type == damagemerge::BURN) delay = damagemergeburn;
+            else if(damagemerges[i].type == damagemerge::BLEED) delay = damagemergebleed;
+            else if(damagemerges[i].type == damagemerge::SHOCK) delay = damagemergeshock;
+
             if(totalmillis-damagemerges[i].millis >= delay)
             {
                 damagemerges[i].play();
@@ -1742,34 +1744,45 @@ namespace game
     void hiteffect(int weap, int flags, int damage, gameent *d, gameent *v, vec &dir, vec &vel, float dist, bool local)
     {
         bool burning = burn(d, weap, flags), bleeding = bleed(d, weap, flags), shocking = shock(d, weap, flags), material = flags&HIT_MATERIAL;
+
         if(!local || burning || bleeding || shocking || material)
         {
             float scale = isweap(weap) && WF(WK(flags), weap, damage, WS(flags)) != 0 ? abs(damage)/float(WF(WK(flags), weap, damage, WS(flags))) : 1.f;
-            if(hitdealt(flags) && damage != 0 && v == focus) hud::hit(damage, d->o, d, weap, flags);
             if(hitdealt(flags) && damage > 0)
             {
-                if(d == focus) hud::damage(damage, v->o, v, weap, flags);
                 vec p = d->headpos(-d->height/4);
                 int hp = max(d->gethealth(gamemode, mutators)/5, 1);
+
                 if(!nogore && bloodscale > 0)
                     part_splash(PART_BLOOD, int(clamp(damage/hp, 1, 5)*bloodscale)*(bleeding || material ? 2 : 1), bloodfade, p, 0x229999, (rnd((bloodsize+1)/2)+((bloodsize+1)/2))/10.f, 1, 0, 0, 100, 1+STAIN_BLOOD, int(d->radius), 10);
                 if(nogore != 2 && (bloodscale <= 0 || bloodsparks))
                     part_splash(PART_PLASMA, int(clamp(damage/hp, 1, 5))*(bleeding || material ? 2: 1), bloodfade, p, 0x882222, 1, 0.5f, 0, 0, 50, 1+STAIN_STAIN, int(d->radius));
+
                 if(d != v)
                 {
                     bool sameteam = m_team(gamemode, mutators) && d->team == v->team;
-                    if(!sameteam) pushdamagemerge(d, v, weap, damage, (burning ? damagemerge::BURN : 0)|(bleeding ? damagemerge::BLEED : 0)|(shocking ? damagemerge::SHOCK : 0));
+                    int damagetype = damagemerge::HURT;
+                    if(burning) damagetype = damagemerge::BURN;
+                    else if(bleeding) damagetype = damagemerge::BLEED;
+                    else if(shocking) damagetype = damagemerge::SHOCK;
+                    if(!sameteam) pushdamagemerge(d, v, damagetype, weap, damage);
+
                     else if(v == player1 && !burning && !bleeding && !shocking && !material)
                     {
                         player1->lastteamhit = d->lastteamhit = totalmillis;
                         if(!issound(alarmchan)) emitsound(S_ALARM, getplayersoundpos(v), v, &alarmchan);
                     }
+
                     if(!burning && !bleeding && !shocking && !material && !sameteam) v->lasthit = totalmillis ? totalmillis : 1;
                 }
+
                 if(d->actortype < A_ENEMY && !issound(d->plchan[PLCHAN_VOICE])) emitsound(S_PAIN, getplayersoundpos(d), d, &d->plchan[PLCHAN_VOICE]);
+
                 d->lastpain = lastmillis;
+
                 if(isweap(weap) && !WK(flags)) emitsoundpos(WSND2(weap, WS(flags), S_W_IMPACT), vec(d->center()).add(vec(dir).mul(dist)), NULL, 0, clamp(scale, 0.2f, 1.f));
             }
+
             if(A(d->actortype, abilities)&(1<<A_A_PUSHABLE))
             {
                 if(weap == -1 && shocking && d->shockstun)
@@ -1780,8 +1793,10 @@ namespace game
                         float extra = flags&HIT_WAVE || !hitdealt(flags) ? gladiatorextrawavestunscale : (d->health <= 0 ? gladiatorextradeadstunscale : gladiatorextrahitstunscale);
                         amt *= d->gethealth(gamemode, mutators)/max(d->health, 1)*extra;
                     }
+
                     float s = d->shockstunscale*amt, g = d->shockstunfall*amt;
                     d->addstun(weap, lastmillis, d->shockstuntime, d->shockstun&W_N_STADD ? s : 0.f, d->shockstun&W_N_GRADD ? g : 0.f);
+
                     if(d->shockstun&W_N_STIMM && s > 0) d->vel.mul(1.f-clamp(s, 0.f, 1.f));
                     if(d->shockstun&W_N_GRIMM && g > 0) d->falling.mul(1.f-clamp(g, 0.f, 1.f));
                     if(d->shockstun&W_N_SLIDE) d->impulse[IM_SLIP] = lastmillis;
@@ -1797,12 +1812,15 @@ namespace game
                             float extra = flags&HIT_WAVE || !hitdealt(flags) ? gladiatorextrawavestunscale : (d->health <= 0 ? gladiatorextradeadstunscale : gladiatorextrahitstunscale);
                             amt *= d->gethealth(gamemode, mutators)/max(d->health, 1)*extra;
                         }
+
                         float s = WF(WK(flags), weap, stunscale, WS(flags))*amt, g = WF(WK(flags), weap, stunfall, WS(flags))*amt;
                         d->addstun(weap, lastmillis, int(scale*WF(WK(flags), weap, stuntime, WS(flags))), stun&W_N_STADD ? s : 0.f, stun&W_N_GRADD ? g : 0.f);
+
                         if(stun&W_N_STIMM && s > 0) d->vel.mul(1.f-clamp(s, 0.f, 1.f));
                         if(stun&W_N_GRIMM && g > 0) d->falling.mul(1.f-clamp(g, 0.f, 1.f));
                         if(stun&W_N_SLIDE) d->impulse[IM_SLIP] = lastmillis;
                     }
+
                     if(WF(WK(flags), weap, hitpush, WS(flags)) != 0 || WF(WK(flags), weap, hitvel, WS(flags)) != 0)
                     {
                         float amt = scale;
@@ -1819,8 +1837,10 @@ namespace game
                             if(modify != 0) amt *= 1/modify;
                             else doquake = false;
                         }
+
                         float hit = WF(WK(flags), weap, hitpush, WS(flags));
                         if(d == v) hit *= WF(WK(flags), weap, hitpushself, WS(flags));
+
                         if(hit != 0)
                         {
                             float modify = WRS(flags&HIT_WAVE || !hitdealt(flags) ? wavepushscale : (d->health <= 0 ? deadpushscale : hitpushscale), push, gamemode, mutators);
@@ -1832,7 +1852,9 @@ namespace game
                             d->vel.add(vec(dir).mul(hit*modify));
                             if(doquake) d->quake = min(d->quake+max(int(hit), 1), quakelimit);
                         }
+
                         hit = WF(WK(flags), weap, hitvel, WS(flags))*amt;
+
                         if(hit != 0)
                         {
                             float modify = WRS(flags&HIT_WAVE || !hitdealt(flags) ? wavevelscale : (d->health <= 0 ? deadvelscale : hitvelscale), vel, gamemode, mutators);
@@ -2158,11 +2180,6 @@ namespace game
             int hp = max(d->gethealth(gamemode, mutators)/10, 1), gib = clamp(max(damage, hp)/(d->obliterated ? 5 : 20), 2, 10), amt = int((rnd(gib)+gib)*(1+gibscale));
             loopi(amt) projs::create(pos, pos, true, d, nogore || !(A(d->actortype, abilities)&(1<<A_A_GIBS)) ? PRJ_DEBRIS : PRJ_GIBS, -1, 0, rnd(gibfade)+gibfade, 0, rnd(250)+1, rnd(d->obliterated ? 80 : 40)+10);
         }
-        if(m_team(gamemode, mutators) && d->team == v->team && d != v && v == player1 && isweap(weap) && WF(WK(flags), weap, damagepenalty, WS(flags)) != 0)
-        {
-            hud::teamkills.add(totalmillis);
-            if(hud::numteamkills() >= teamkillwarn) hud::lastteam = totalmillis ? totalmillis : 1;
-        }
         if(m_bomber(gamemode)) bomber::killed(d, v);
         ai::killed(d, v);
     }
@@ -2253,7 +2270,6 @@ namespace game
         waiting.removeobj(d);
         client::clearvotes(d);
         projs::removeplayer(d);
-        hud::removeplayer(d);
         removedamagemerges(d);
         if(m_capture(gamemode)) capture::removeplayer(d);
         else if(m_defend(gamemode)) defend::removeplayer(d);
@@ -3507,7 +3523,6 @@ namespace game
         }
 
         gets2c();
-        adjustscaled(hud::damageresidue, hud::damageresiduedelta, hud::damageresiduefade);
 
         if(connected())
         {
@@ -3613,47 +3628,6 @@ namespace game
         loopi(sizeof(animnames)/sizeof(animnames[0]))
             if(*animnames[i] && cubepattern(animnames[i], pattern) >= 0)
                 anims.add(i);
-    }
-
-    void renderabovehead(gameent *d)
-    {
-        vec pos = d->abovehead(d->state != CS_DEAD && d->state != CS_WAITING ? 1 : 0);
-        float blend = aboveheadblend*opacity(d, true);
-        if(aboveheadnames && d != player1)
-        {
-            pos.z += aboveheadnamessize/2;
-            defformatstring(name, "<%s>%s", textfontbold, colourname(d));
-            part_textcopy(pos, name, PART_TEXT, 1, colourwhite, aboveheadnamessize, blend);
-        }
-
-        if(aboveheadstatus)
-        {
-            Texture *t = NULL;
-            int colour = getcolour(d, playerteamtone, playerteamtonelevel);
-            if(d->state == CS_DEAD || d->state == CS_WAITING) t = textureload(hud::deadtex, 3, true, false);
-            else if(d->state == CS_ALIVE)
-            {
-                if(d->conopen) t = textureload(hud::chattex, 3, true, false);
-                if(!m_team(gamemode, mutators) || d->team != focus->team)
-                {
-                    if(d->dominating.find(focus) >= 0)
-                    {
-                        t = textureload(hud::dominatingtex, 3, true, false);
-                        colour = pulsehexcol(d, PULSE_DISCO);
-                    }
-                    else if(d->dominated.find(focus) >= 0)
-                    {
-                        t = textureload(hud::dominatedtex, 3, true, false);
-                        colour = pulsehexcol(d, PULSE_DISCO);
-                    }
-                }
-            }
-            if(t && t != notexture)
-            {
-                pos.z += aboveheadstatussize;
-                part_icon(pos, t, aboveheadstatussize, blend, 0, 0, 1, colour);
-            }
-        }
     }
 
     void getplayermaterials(gameent *d, modelstate &mdl)
@@ -4134,9 +4108,9 @@ namespace game
         }
     }
 
-    bool haloallow(gameent *d)
+    bool haloallow(gameent *d, bool check)
     {
-        if(drawtex != DRAWTEX_HALO) return true;
+        if(check && drawtex != DRAWTEX_HALO) return true;
         if(d == focus && inzoom()) return false;
         if(!playerhalos || (!(playerhalos&1) && d == focus) || !(playerhalos&2)) return false;
         vec dir(0, 0, 0);
@@ -4207,9 +4181,6 @@ namespace game
         }
 
         rendermodel(mdlname, mdl, e);
-
-        if(!hud::aboveheadui && (d != focus || d->state == CS_DEAD || d->state == CS_WAITING) && !(mdl.flags&MDL_ONLYSHADOW) && third == 1 && d->actortype < A_ENEMY && !shadowmapping && !drawtex && (aboveheaddead || d->state == CS_ALIVE))
-            renderabovehead(d);
     }
 
     void rendercheck(gameent *d, bool third)

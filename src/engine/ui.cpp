@@ -962,7 +962,7 @@ namespace UI
         int allowinput, lasthit, lastshow, zindex, numargs, initargs;
         float px, py, pw, ph,
               yaw, pitch, curyaw, curpitch, detentyaw, detentpitch,
-              scale, curscale, dist, hitx, hity;
+              scale, dist, hitx, hity;
         vec2 sscale, soffset;
         vec origin, pos;
         tagval args[MAXARGS];
@@ -975,7 +975,7 @@ namespace UI
             allowinput(1), lasthit(0), lastshow(0), zindex(0), numargs(0), initargs(0),
             px(0), py(0), pw(0), ph(0),
             yaw(-1), pitch(0), curyaw(0), curpitch(0), detentyaw(0), detentpitch(0),
-            scale(1), curscale(1), dist(0), hitx(-1), hity(-1),
+            scale(1), dist(0), hitx(-1), hity(-1),
             sscale(1, 1), soffset(0, 0),
             origin(0, 0, 0), pos(0, 0, 0)
         {
@@ -1073,13 +1073,12 @@ namespace UI
             }
         }
 
-        void resetworld()
+        void resetworld(const vec &o = vec(-FLT_MAX), float s = 1)
         {
             yaw = -1;
             pitch = curyaw = curpitch = 0;
-            scale = 1;
-            curscale = uiworldscale;
-            origin = pos = vec(-FLT_MAX);
+            scale = s;
+            origin = pos = o;
         }
 
         void hide()
@@ -1093,24 +1092,27 @@ namespace UI
             resetworld();
         }
 
+        float getscale()
+        {
+            if(surfacetype == SURFACE_WORLD) return scale >= 0 ? scale * uiworldscale : -scale;
+            return scale >= 0 ? scale : (0 - scale) / uiworldscale;
+        }
+
         void show(const vec &o = vec(-FLT_MAX), float y = 0, float p = 0, float s = 1, float dy = 0, float dp = 0)
         {
             overridepos = false;
             state |= STATE_HIDDEN;
             clearstate(STATE_HOLD_MASK);
 
+            resetworld(o, s);
+
             if(surfacetype == SURFACE_WORLD)
             {
                 yaw = y;
                 pitch = p;
-                scale = s;
-                curscale = scale >= 0 ? scale * uiworldscale : -scale;
                 detentyaw = dy > 0 ? clamp(dy, 0.f, 180.f) : 0.f;
                 detentpitch = dp > 0 ? clamp(dp, 0.f, 90.f) : 0.f;
             }
-            else resetworld();
-
-            origin = pos = o;
 
             if(onshow)
             {
@@ -1130,19 +1132,31 @@ namespace UI
             zindex = 0;
             px = py = pw = ph = 0;
 
-            if(surfacetype != SURFACE_WORLD && origin != vec(-FLT_MAX))
+            if(surfacetype != SURFACE_WORLD) pos = origin;
+        }
+
+        void vposition()
+        {
+            float cx = 0.5f, cy = 0.5f, cz = 1;
+            if(vectocursor(pos, cx, cy, cz))
             {
-                float cx = 0.5f, cy = 0.5f, cz = 1;
-                if(vectocursor(origin, cx, cy, cz)) setpos(cx, cy);
+                if(surfacetype == SURFACE_VISOR && visorenabled())
+                    visorcoords(cx, cy, cx, cy);
+
+                setpos(cx*hudw/float(hudh) - w * 0.5f, cy - h);
             }
         }
 
         void layout()
         {
             if(state&STATE_HIDDEN) { w = h = 0; return; }
+
             Window *oldwindow = window;
             window = this;
+
             Object::layout();
+            if(surfacetype != SURFACE_WORLD && pos != vec(-FLT_MAX)) vposition();
+
             window = oldwindow;
         }
 
@@ -1258,7 +1272,7 @@ namespace UI
             if(curpitch < -180 || curpitch > 180) curpitch = offpitch;
             if(detentyaw > 0) curyaw = round(curyaw / detentyaw) * detentyaw;
             if(detentpitch > 0) curpitch = round(curpitch / detentpitch) * detentpitch;
-            curscale = max(scale >= 0 ? scale * uiworldscale : -scale, FVAR_NONZERO);
+            float curscale = getscale();
 
             vec q = vec(curyaw * RAD, curpitch * RAD), n = vec(q).normalize(), up(0, 0, 1), right;
             if(fabsf(n.z) < 1.f) right.cross(up, n).normalize();
@@ -1305,7 +1319,7 @@ namespace UI
                     vec n = vec(curyaw * RAD, curpitch * RAD), v;
                     if(planeintersect(camera1->o, cursordir, pos, n, v))
                     {
-                        float qx = 0, qy = 0, pyaw = 0, ppitch = 0;
+                        float qx = 0, qy = 0, pyaw = 0, ppitch = 0, curscale = getscale();
                         vectoyawpitch(n, pyaw, ppitch);
                         hitintersect(v, pos, n, pyaw, qx, qy);
                         hitx = qx / (pw * curscale);
@@ -1334,7 +1348,7 @@ namespace UI
         {
             if(surfacetype == SURFACE_COMPOSITE) // composites have flipped Y axis
                 hudmatrix.ortho(px, px + pw, py, py + ph, -1, 1);
-            else if(surfacetype == SURFACE_WORLD)
+            if(surfacetype == SURFACE_WORLD)
             {
                 worldcalc();
 
@@ -1343,7 +1357,7 @@ namespace UI
                 hudmatrix.rotate_around_z(curyaw*RAD);
                 hudmatrix.rotate_around_x((curpitch - 90)*RAD);
 
-                hudmatrix.scale(curscale);
+                hudmatrix.scale(getscale());
             }
             else hudmatrix.ortho(px, px + pw, py + ph, py, -1, 1);
 
@@ -1382,7 +1396,8 @@ namespace UI
             if(aa->zindex > bb->zindex) return false;
             if(aa->zindex < bb->zindex) return true;
 
-            if(surfacetype == SURFACE_WORLD)
+            bool apos = aa->pos != vec(-FLT_MAX), bpos = bb->pos != vec(-FLT_MAX);
+            if(apos && bpos)
             {
                 if(aa->pos.x == bb->pos.x && aa->pos.y == bb->pos.y)
                 {
@@ -1394,6 +1409,11 @@ namespace UI
                 // reverse order so further gets drawn first
                 if(aa->dist < bb->dist) return false;
                 if(aa->dist > bb->dist) return true;
+            }
+            else
+            {
+                if(!apos && bpos) return false;
+                if(apos && !bpos) return true;
             }
 
             // newest last
@@ -2262,9 +2282,10 @@ namespace UI
         w->yaw = yaw;
         w->pitch = pitch;
         w->scale = scale;
-        w->curscale = w->scale >= 0 ? w->scale * uiworldscale : -w->scale;
         w->detentyaw = detentyaw;
         w->detentpitch = detentpitch;
+
+        popsurface();
 
         return true;
     }

@@ -1,6 +1,7 @@
 // nasty macros to create cubescript accessible enumeratives
 
 #ifdef ENUM_INIT
+#undef VARQ
 #undef VARD
 #undef FVARD
 #undef SVARD
@@ -10,6 +11,7 @@
 #endif
 
 #ifdef ENUM_DEFINE
+#define VARQ(name, val) enum { name = val }; int _enum_##name = variable(#name, 1, val, -1, &_enum_##name, NULL, IDF_READONLY, 0);
 #define VARD(name, val) int name = variable(#name, 1, val, -1, &name, NULL, IDF_READONLY, 0);
 #define FVARD(name, val) float name = fvariable(#name, 1, val, -1, &name, NULL, IDF_READONLY, 0);
 #define SVARD(name, val) char *name = svariable(#name, val, &name, NULL, IDF_READONLY, 0);
@@ -17,6 +19,7 @@
 #define VARL(name, val) char *name = svariable(#name, &val[1], &name, NULL, IDF_READONLY, 0);
 #define VARS(name, val) const char *name[] = { val "" };
 #else
+#define VARQ(name, val) enum { name = val };
 #define VARD(name, val) extern int name;
 #define FVARD(name, val) extern float name;
 #define SVARD(name, val) extern char *name;
