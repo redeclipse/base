@@ -3203,24 +3203,24 @@ namespace entities
         return game::player1->state == CS_EDITING ? ((entgroup.find(n) >= 0 || enthover.find(n) >= 0) ? 1 : 2) : 3;
     }
 
-    bool radarallow(int id, vec &dir, float &dist, bool justtest = false)
+    bool radarallow(const vec &o, int id, vec &dir, float &dist, bool justtest = false)
     {
         if(!ents.inrange(id) || m_hard(game::gamemode, game::mutators)) return false;
         if(justtest) return true;
-        dir = vec(((gameentity *)ents[id])->pos()).sub(camera1->o);
+        dir = vec(((gameentity *)ents[id])->pos()).sub(o);
         dist = dir.magnitude();
         if(hud::radarlimited(dist)) return false;
         return true;
     }
 
-    bool haloallow(int id, bool justtest, bool check)
+    bool haloallow(const vec &o, int id, bool justtest, bool check)
     {
         if(!ents.inrange(id)) return false;
         if((check && drawtex != DRAWTEX_HALO) || !entityhalos) return true;
         if(enttype[ents[id]->type].usetype != EU_ITEM && !game::player1->isediting()) return false;
         vec dir(0, 0, 0);
         float dist = -1;
-        if(!radarallow(id, dir, dist, justtest)) return false;
+        if(!radarallow(o, id, dir, dist, justtest)) return false;
         if(dist > halodist) return false;
         return true;
     }
@@ -3289,7 +3289,7 @@ namespace entities
         for(int i = fstent; i < lstent; i++)
         {
             gameentity &e = *(gameentity *)ents[i];
-            if(e.type <= NOTUSED || e.type >= MAXENTTYPES || !haloallow(i)) continue;
+            if(e.type <= NOTUSED || e.type >= MAXENTTYPES || !haloallow(camera1->o, i)) continue;
 
             if(!cansee && (enttype[e.type].usetype != EU_ITEM || (!e.spawned() && (e.lastemit && lastmillis-e.lastemit > 500)))) continue;
 

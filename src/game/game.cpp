@@ -2974,9 +2974,9 @@ namespace game
 
                 if(iter)
                 {
-                    if(m_capture(gamemode)) { if(capture::haloallow(v->id, 0, iter != 1, false)) return true; }
-                    else if(m_defend(gamemode)) { if(defend::haloallow(v->id, 0, iter != 1, false)) return true; }
-                    else if(m_bomber(gamemode)) { if(bomber::haloallow(v->id, 0, iter != 1, false)) return true; }
+                    if(m_capture(gamemode)) { if(capture::haloallow(c->o, v->id, 0, iter != 1, false)) return true; }
+                    else if(m_defend(gamemode)) { if(defend::haloallow(c->o, v->id, 0, iter != 1, false)) return true; }
+                    else if(m_bomber(gamemode)) { if(bomber::haloallow(c->o, v->id, 0, iter != 1, false)) return true; }
                 }
 
                 break;
@@ -2989,7 +2989,7 @@ namespace game
             default: return false;
         }
 
-        if(iter && v->player && haloallow(v->player, iter != 1, false)) return true; // override and switch to x-ray
+        if(iter && v->player && haloallow(c->o, v->player, iter != 1, false)) return true; // override and switch to x-ray
 
         if(iter == 2)
         {
@@ -3015,7 +3015,7 @@ namespace game
         return true;
     }
 
-    bool camupdate(cament *c, bool renew = false)
+    bool camupdate(cament *c, int iters, bool renew = false)
     {
         if(c->player && !allowspec(c->player, spectvdead, spectvfollow)) return false;
 
@@ -3024,7 +3024,7 @@ namespace game
         getcamdist(c, maxdist, mindist);
         vec from = camvec(c, yaw, pitch);
 
-        loopj(c->chase && spectvcameraaim ? 3 : 1)
+        loopj(iters)
         {
             int count = 0;
             vec dir(0, 0, 0);
@@ -3054,7 +3054,7 @@ namespace game
                 loopv(cameras)
                 {
                     cament *v = cameras[i];
-                    if(v == c || !camvisible(c, v, from, yaw, pitch, maxdist, mindist)) continue;
+                    if(v == c || !camvisible(c, v, from, yaw, pitch, maxdist, mindist, j + 1)) continue;
                     c->inview[v->type]++;
                     dir.add(v->o);
                     count++;
@@ -3231,14 +3231,14 @@ namespace game
             if(spectvcamera != lastcamcn) reset = true;
             cam = cameras[spectvcamera];
             lastcamcn = cam->cn;
-            camupdate(cam, restart || !count || !spectvcameraaim);
+            camupdate(cam, 3, restart || !count || !spectvcameraaim);
         }
         else
         {
             camrefresh(cam);
 
             int millis = lasttvchg ? totalmillis-lasttvchg : 0;
-            bool updated = camupdate(cam, restart || !count || !spectvcameraaim), override = !lasttvchg || millis >= stvf(mintime),
+            bool updated = camupdate(cam, 3, restart || !count || !spectvcameraaim), override = !lasttvchg || millis >= stvf(mintime),
                 timeup = !lasttvcam || totalmillis-lasttvcam >= stvf(time), overtime = stvf(maxtime) && millis >= stvf(maxtime);
 
             if(restart || overtime || timeup || (!updated && override))
@@ -3249,7 +3249,7 @@ namespace game
                 loopv(cameras)
                 {
                     cament *c = cameras[i];
-                    if(!camupdate(c, true)) continue;
+                    if(!camupdate(c, 1, true)) continue;
                     loopj(cament::MAX) c->lastinview[j] = c->inview[j];
                     if(!c->ignore) goodcams++;
                 }
@@ -4119,7 +4119,7 @@ namespace game
         }
     }
 
-    bool haloallow(gameent *d, bool justtest, bool check)
+    bool haloallow(const vec &o, gameent *d, bool justtest, bool check)
     {
         if(check && drawtex != DRAWTEX_HALO) return true;
         if(d == focus && inzoom()) return false;
@@ -4127,7 +4127,7 @@ namespace game
         if(justtest) return true;
         vec dir(0, 0, 0);
         float dist = -1;
-        if(!client::radarallow(d, dir, dist, true)) return false;
+        if(!client::radarallow(o, d, dir, dist, true)) return false;
         if(dist > halodist) return false;
         return true;
     }
@@ -4166,7 +4166,7 @@ namespace game
         }
         else if(drawtex == DRAWTEX_HALO)
         {
-            if(haloallow(d))
+            if(haloallow(camera1->o, d))
             {
                 if(game::focus->isobserver() || game::focus->team == d->team || d->team == T_NEUTRAL) mdl.flags |= MDL_HALO_TOP;
                 if(d->isdead())

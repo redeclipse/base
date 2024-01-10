@@ -26,23 +26,23 @@ namespace defend
     ICOMMAND(0, getdefendinfo, "i", (int *n), result(st.flags.inrange(*n) ? st.flags[*n].info : ""));
     ICOMMAND(0, getdefendinside, "isi", (int *n, const char *who, int *h), gameent *d = game::getclient(client::parseplayer(who)); intret(d && st.flags.inrange(*n) && insideaffinity(st.flags[*n], d, *h!=0) ? 1 : 0));
 
-    bool radarallow(int id, int render, vec &dir, float &dist, bool justtest = false)
+    bool radarallow(const vec &o, int id, int render, vec &dir, float &dist, bool justtest = false)
     {
         if(!st.flags.inrange(id) || (m_hard(game::gamemode, game::mutators) && !G(radarhardaffinity))) return false;
         if(justtest) return true;
-        dir = vec(render > 0 ? st.flags[id].render : st.flags[id].o).sub(camera1->o);
+        dir = vec(render > 0 ? st.flags[id].render : st.flags[id].o).sub(o);
         dist = dir.magnitude();
         if(hud::radarlimited(dist)) return false;
         return true;
     }
 
-    bool haloallow(int id, int render, bool justtest, bool check)
+    bool haloallow(const vec &o, int id, int render, bool justtest, bool check)
     {
         if(check && drawtex != DRAWTEX_HALO) return true;
         if(!defendhalos) return false;
         vec dir(0, 0, 0);
         float dist = -1;
-        if(!radarallow(id, render, dir, dist, justtest)) return false;
+        if(!radarallow(o, id, render, dir, dist, justtest)) return false;
         if(dist > halodist) return false;
         return true;
     }
@@ -51,20 +51,20 @@ namespace defend
     {
         vec dir(0, 0, 0);
         float dist = -1;
-        intret(radarallow(*n, *v, dir, dist, *q != 0) ? 1 : 0);
+        intret(radarallow(camera1->o, *n, *v, dir, dist, *q != 0) ? 1 : 0);
     });
     ICOMMAND(0, getdefendradardist, "ib", (int *n, int *v),
     {
         vec dir(0, 0, 0);
         float dist = -1;
-        if(!radarallow(*n, *v, dir, dist)) return;
+        if(!radarallow(camera1->o, *n, *v, dir, dist)) return;
         floatret(dist);
     });
     ICOMMAND(0, getdefendradardir, "ib", (int *n, int *v),
     {
         vec dir(0, 0, 0);
         float dist = -1;
-        if(!radarallow(*n, *v, dir, dist)) return;
+        if(!radarallow(camera1->o, *n, *v, dir, dist)) return;
         dir.rotate_around_z(-camera1->yaw*RAD).normalize();
         floatret(-atan2(dir.x, dir.y)/RAD);
     });
@@ -146,7 +146,7 @@ namespace defend
 
     void render()
     {
-        loopv(st.flags) if(haloallow(i))
+        loopv(st.flags) if(haloallow(camera1->o, i))
         {
             defendstate::flag &b = st.flags[i];
             modelstate mdl;

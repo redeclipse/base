@@ -15,23 +15,23 @@ namespace bomber
     ICOMMAND(0, getbomberowner, "i", (int *n), intret(st.flags.inrange(*n) && st.flags[*n].owner ? st.flags[*n].owner->clientnum : -1));
     ICOMMAND(0, getbomberlastowner, "i", (int *n), intret(st.flags.inrange(*n) && st.flags[*n].lastowner ? st.flags[*n].lastowner->clientnum : -1));
 
-    bool radarallow(int id, int render, vec &dir, float &dist, bool justtest = false)
+    bool radarallow(const vec &o, int id, int render, vec &dir, float &dist, bool justtest = false)
     {
         if(!st.flags.inrange(id) || (m_hard(game::gamemode, game::mutators) && !G(radarhardaffinity)) || !st.flags[id].enabled) return false;
         if(justtest) return true;
-        dir = vec(render > 0 ? st.flags[id].spawnloc : st.flags[id].pos(render < 0)).sub(camera1->o);
+        dir = vec(render > 0 ? st.flags[id].spawnloc : st.flags[id].pos(render < 0)).sub(o);
         dist = dir.magnitude();
         if(st.flags[id].owner != game::focus && hud::radarlimited(dist)) return false;
         return true;
     }
 
-    bool haloallow(int id, int render, bool justtest, bool check)
+    bool haloallow(const vec &o, int id, int render, bool justtest, bool check)
     {
         if(check && drawtex != DRAWTEX_HALO) return true;
         if(!bomberhalos) return false;
         vec dir(0, 0, 0);
         float dist = -1;
-        if(!radarallow(id, render, dir, dist, justtest)) return false;
+        if(!radarallow(o, id, render, dir, dist, justtest)) return false;
         if(dist > halodist) return false;
         return true;
     }
@@ -40,20 +40,20 @@ namespace bomber
     {
         vec dir(0, 0, 0);
         float dist = -1;
-        intret(radarallow(*n, *v, dir, dist, *q != 0) ? 1 : 0);
+        intret(radarallow(camera1->o, *n, *v, dir, dist, *q != 0) ? 1 : 0);
     });
     ICOMMAND(0, getbomberradardist, "ib", (int *n, int *v),
     {
         vec dir(0, 0, 0);
         float dist = -1;
-        if(!radarallow(*n, *v, dir, dist)) return;
+        if(!radarallow(camera1->o, *n, *v, dir, dist)) return;
         floatret(dist);
     });
     ICOMMAND(0, getbomberradardir, "ib", (int *n, int *v),
     {
         vec dir(0, 0, 0);
         float dist = -1;
-        if(!radarallow(*n, *v, dir, dist)) return;
+        if(!radarallow(camera1->o, *n, *v, dir, dist)) return;
         dir.rotate_around_z(-camera1->yaw*RAD).normalize();
         floatret(-atan2(dir.x, dir.y)/RAD);
     });
@@ -246,7 +246,7 @@ namespace bomber
 
     void render()
     {
-        loopv(st.flags) if(haloallow(i)) // flags/bases
+        loopv(st.flags) if(haloallow(camera1->o, i)) // flags/bases
         {
             bomberstate::flag &f = st.flags[i];
             modelstate mdl, basemdl;

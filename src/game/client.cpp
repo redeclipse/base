@@ -898,14 +898,14 @@ namespace client
     CLCOMMAND(roll, floatret(d->roll));
     CLCOMMAND(opacity, floatret(game::opacity(d)));
 
-    bool radarallow(gameent *d, vec &dir, float &dist, bool self)
+    bool radarallow(const vec &o, gameent *d, vec &dir, float &dist, bool self)
     {
         if(m_hard(game::gamemode, game::mutators) || (!self && d == game::focus)) return false;
         if(d->state != CS_ALIVE && d->state != CS_EDITING && d->state != CS_DEAD && (!d->lastdeath || d->state != CS_WAITING)) return false;
         if(m_duke(game::gamemode, game::mutators) && (!d->lastdeath || lastmillis-d->lastdeath >= 1000)) return false;
         //bool dominated = game::focus->dominated.find(d) >= 0;
         //if(!dominated && d->state == CS_ALIVE && vec(d->vel).add(d->falling).magnitude() <= 0) return false;
-        dir = vec(d->center()).sub(camera1->o);
+        dir = vec(d->center()).sub(o);
         dist = dir.magnitude();
         //if(!dominated && hud::radarlimited(dist)) return false;
         return !hud::radarlimited(dist);
@@ -915,14 +915,14 @@ namespace client
     {
         vec dir(0, 0, 0);
         float dist = -1;
-        intret(radarallow(d, dir, dist, *self >= 0 ? *self != 0 : false) ? 1 : 0);
+        intret(radarallow(camera1->o, d, dir, dist, *self >= 0 ? *self != 0 : false) ? 1 : 0);
     });
 
     CLCOMMAND(radardist,
     {
         vec dir(0, 0, 0);
         float dist = -1;
-        if(!radarallow(d, dir, dist)) return;
+        if(!radarallow(camera1->o, d, dir, dist)) return;
         floatret(dist);
     });
 
@@ -930,7 +930,7 @@ namespace client
     {
         vec dir(0, 0, 0);
         float dist = -1;
-        if(!radarallow(d, dir, dist)) return;
+        if(!radarallow(camera1->o, d, dir, dist)) return;
         dir.rotate_around_z(-camera1->yaw*RAD).normalize();
         floatret(-atan2(dir.x, dir.y)/RAD);
     });
@@ -939,7 +939,7 @@ namespace client
     {
         vec dir(0, 0, 0);
         float dist = -1;
-        if(!radarallow(d, dir, dist)) return;
+        if(!radarallow(camera1->o, d, dir, dist)) return;
         floatret(d->yaw-camera1->yaw);
     });
 

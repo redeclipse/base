@@ -2349,7 +2349,7 @@ namespace client
     extern int showpresence, showpresencehostinfo, showteamchange, needsmap, gettingmap;
     extern bool demoplayback, isready, loadedmap;
     extern vector<uchar> messages;
-    extern bool radarallow(gameent *d, vec &dir, float &dist, bool self = false);
+    extern bool radarallow(const vec &o, gameent *d, vec &dir, float &dist, bool self = false);
     extern void clearvotes(gameent *d, bool msg = false);
     extern void ignore(int cn);
     extern void unignore(int cn);
@@ -2519,7 +2519,7 @@ namespace game
     extern void getplayermaterials(gameent *d, modelstate &mdl);
     extern void getplayereffects(gameent *d, modelstate &mdl);
     extern const char *getplayerstate(gameent *d, modelstate &mdl, int third = 1, float size = 1, int flags = 0, modelattach *mdlattach = NULL, int *lastoffset = NULL, bool vanitypoints = false);
-    extern bool haloallow(gameent *d, bool justtest = false, bool check = true);
+    extern bool haloallow(const vec &o, gameent *d, bool justtest = false, bool check = true);
 }
 
 namespace entities
@@ -2544,7 +2544,7 @@ namespace entities
     extern void spawnplayer(gameent *d, int ent = -1, bool suicide = false);
     extern void useeffects(gameent *d, int cn, int ent, int ammoamt, bool spawn, int weap, int drop, int ammo = -1);
     extern void adddynlights();
-    extern bool haloallow(int id, bool justtest = false, bool check = true);
+    extern bool haloallow(const vec &o, int id, bool justtest = false, bool check = true);
     extern void render();
     extern void update();
     extern void reset();

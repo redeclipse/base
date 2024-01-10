@@ -2305,7 +2305,7 @@ namespace projs
                 case PRJ_VANITY:
                     if(proj.owner)
                     {
-                        if(!game::haloallow(proj.owner)) continue;
+                        if(!game::haloallow(camera1->o, proj.owner)) continue;
                         game::getplayermaterials(proj.owner, mdl);
                     }
                 case PRJ_GIBS: case PRJ_EJECT:
@@ -2333,7 +2333,7 @@ namespace projs
                 }
                 case PRJ_ENT:
                 {
-                    if(!entities::haloallow(proj.id)) continue;
+                    if(!entities::haloallow(camera1->o, proj.id)) continue;
                     fadeproj(proj, mdl.color.a, mdl.size);
                     if(!entities::ents.inrange(proj.id)) continue;
                     gameentity &e = *(gameentity *)entities::ents[proj.id];
