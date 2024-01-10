@@ -1145,7 +1145,7 @@ namespace UI
 
                 setpos(cx*hudw/float(hudh) - w * 0.5f, cy - h);
             }
-            else setpos(hudw/float(hudh), 1);
+            else state = STATE_HIDDEN;
         }
 
         void layout()
