@@ -526,11 +526,12 @@ namespace fx
 
         pl = newpl;
 
+        physent *player = (physent *)game::focusedent(), *posent = pl == player && pl->isnophys() ? camera1 : pl;
         // If "from" is not set, use entity position
-        if(from.iszero()) from = pl->o;
+        if(from.iszero()) from = posent->o;
 
         // If "to" is not set, use entity direction
-        if(to.iszero()) to = vec(from).add(vec(pl->yaw*RAD, pl->pitch*RAD));
+        if(to.iszero()) to = vec(from).add(vec(posent->yaw*RAD, posent->pitch*RAD));
 
         return *this;
     }

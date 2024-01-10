@@ -1258,7 +1258,9 @@ namespace game
 
         static inline bool sort(const flashent *x, const flashent *y)
         {
-            if(x->owner != focus && x->dist > y->dist) return true;
+            if(y->owner == focus) return true;
+            if(x->owner == focus) return false;
+            if(x->dist > y->dist) return true;
             return false;
         }
     };
@@ -1279,7 +1281,7 @@ namespace game
             gameent *d = NULL;
             int numdyns = numdynents();
             vector<flashent *> list;
-            loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL && d->isalive()) list.add(new flashent(d));
+            loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL && (d->isalive() || (d == focus && d->isnophys()))) list.add(new flashent(d));
             list.sort(flashent::sort);
 
             int count = m_dark(gamemode, mutators) ? flashlightmaxdark : flashlightmax;
@@ -2550,6 +2552,7 @@ namespace game
     void particletrack(particle *p, uint type, int &ts, bool step)
     {
         if(!p || !p->owner || !gameent::is(p->owner)) return;
+
         gameent *d = (gameent *)p->owner;
         switch(type&0xFF)
         {
@@ -2579,21 +2582,24 @@ namespace game
     void fxtrack(vec &pos, physent *owner, int mode, int tag)
     {
         if(!owner) return;
+        physent *posent = owner == focus && focus->isnophys() ? camera1 : owner;
 
         switch(mode)
         {
-            case ENT_POS_ORIGIN: pos = owner->o; break;
-            case ENT_POS_BOTTOM: pos = owner->feetpos(); break;
-            case ENT_POS_MIDDLE: pos = owner->feetpos(owner->height * 0.5f); break;
-            case ENT_POS_TOP:    pos = owner->feetpos(owner->height); break;
-            case ENT_POS_DIR:    pos.add(vec(owner->yaw*RAD, owner->pitch*RAD)); break;
+            case ENT_POS_ORIGIN: pos = posent->o; break;
+            case ENT_POS_BOTTOM: pos = posent->feetpos(); break;
+            case ENT_POS_MIDDLE: pos = posent->feetpos(posent->height * 0.5f); break;
+            case ENT_POS_TOP:    pos = posent->feetpos(posent->height); break;
+            case ENT_POS_DIR:    pos.add(vec(posent->yaw*RAD, posent->pitch*RAD)); break;
             case ENT_POS_MUZZLE:
-                if(gameent::is(owner))
-                    pos = ((gameent *)owner)->muzzletag(tag);
+                if(gameent::is(posent))
+                    pos = ((gameent *)posent)->muzzletag(tag);
+                else pos = posent->o;
                 break;
             case ENT_POS_TAG:
-                if(gameent::is(owner) && tag >= 0 && tag < TAG_MAX)
-                    pos = *((gameent *)owner)->gettag(tag);
+                if(gameent::is(posent) && tag >= 0 && tag < TAG_MAX)
+                    pos = *((gameent *)posent)->gettag(tag);
+                else pos = posent->o;
                 break;
         }
     }
@@ -2601,8 +2607,9 @@ namespace game
     void dynlighttrack(physent *owner, vec &o, vec &hud)
     {
         if(owner->type != ENT_PLAYER) return;
-        o = owner->o;
-        hud = owner == focus ? vec(owner->o).add(vec(0, 0, 2)) : owner->o;
+        physent *posent = owner == focus && focus->isnophys() ? camera1 : owner;
+        o = posent->o;
+        hud = owner == focus ? vec(posent->o).add(vec(0, 0, 2)) : posent->o;
     }
 
     void newmap(int size, const char *mname) { client::addmsg(N_NEWMAP, "ris", size, mname); }
