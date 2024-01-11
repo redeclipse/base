@@ -2294,25 +2294,25 @@ struct cament
     vec o, dir;
     float dist, lastyaw, lastpitch;
     gameent *player;
-    bool ignore, chase;
+    bool ignore, chase, flagged, checked, visible;
 
-    cament(int p, int t) : cn(p), type(t), id(-1), o(0, 0, 0), dir(0, 0, 0), player(NULL), ignore(false), chase(true)
+    cament(int p, int t) : cn(p), type(t), id(-1), o(0, 0, 0), dir(0, 0, 0), player(NULL), ignore(false), chase(true), flagged(false), checked(false), visible(false)
     {
         reset();
         resetlast();
     }
-    cament(int p, int t, int n) : cn(p), type(t), id(n), o(0, 0, 0), dir(0, 0, 0), player(NULL), ignore(false), chase(true)
+    cament(int p, int t, int n) : cn(p), type(t), id(n), o(0, 0, 0), dir(0, 0, 0), player(NULL), ignore(false), chase(true), flagged(false), checked(false), visible(false)
     {
         reset();
         resetlast();
     }
-    cament(int p, int t, int n, const vec &d) : cn(p), type(t), id(n), o(0, 0, 0), dir(0, 0, 0), player(NULL), ignore(false), chase(true)
+    cament(int p, int t, int n, const vec &d) : cn(p), type(t), id(n), o(0, 0, 0), dir(0, 0, 0), player(NULL), ignore(false), chase(true), flagged(false), checked(false), visible(false)
     {
         reset();
         resetlast();
         o = d;
     }
-    cament(int p, int t, int n, const vec &c, gameent *d) : cn(p), type(t), id(n), o(0, 0, 0), dir(0, 0, 0), player(d), ignore(false), chase(true)
+    cament(int p, int t, int n, const vec &c, gameent *d) : cn(p), type(t), id(n), o(0, 0, 0), dir(0, 0, 0), player(d), ignore(false), chase(true), flagged(false), checked(false), visible(false)
     {
         reset();
         resetlast();
@@ -2336,6 +2336,8 @@ struct cament
     {
         if(!a->ignore && b->ignore) return true;
         if(a->ignore && !b->ignore) return false;
+        if(!a->flagged && b->flagged) return true;
+        if(a->flagged && !b->flagged) return false;
         if(a->inview[cament::PLAYER] > b->inview[cament::PLAYER]) return true;
         if(a->inview[cament::PLAYER] < b->inview[cament::PLAYER]) return false;
         if(a->inview[cament::AFFINITY] > b->inview[cament::AFFINITY]) return true;

@@ -279,57 +279,60 @@ namespace game
     FVAR(IDF_PERSIST, followside, FVAR_MIN, 8, FVAR_MAX);
     FVAR(IDF_PERSIST, followblend, 0, 1, 1);
 
-    VAR(IDF_PERSIST, followtvspeed, 1, 250, VAR_MAX);
-    VAR(IDF_PERSIST, followtvyawspeed, 1, 250, VAR_MAX);
-    VAR(IDF_PERSIST, followtvpitchspeed, 1, 250, VAR_MAX);
-    FVAR(IDF_PERSIST, followtvrotate, FVAR_MIN, 22.5f, FVAR_MAX); // rotate style, < 0 = absolute angle, 0 = scaled, > 0 = scaled with max angle
+    VAR(IDF_PERSIST, followtvspeed, 1, 500, VAR_MAX);
+    VAR(IDF_PERSIST, followtvyawspeed, 1, 500, VAR_MAX);
+    VAR(IDF_PERSIST, followtvpitchspeed, 1, 500, VAR_MAX);
+    FVAR(IDF_PERSIST, followtvrotate, FVAR_MIN, 0, FVAR_MAX); // rotate style, < 0 = absolute angle, 0 = scaled, > 0 = scaled with max angle
     FVAR(IDF_PERSIST, followtvyawscale, FVAR_MIN, 0.5f, 1000);
     FVAR(IDF_PERSIST, followtvpitchscale, FVAR_MIN, 0.25f, 1000);
 
     VAR(0, spectvcamera, -1, -1, VAR_MAX); // use this specific camera id
     VAR(0, spectvcameraaim, 0, 1, 1); // use this specific camera aiming
+    VAR(IDF_PERSIST, spectviters, 1, 5, 5);
     VAR(IDF_PERSIST, spectvmintime, 1, 5000, VAR_MAX);
     VAR(IDF_PERSIST, spectvtime, 1000, 10000, VAR_MAX);
     VAR(IDF_PERSIST, spectvmaxtime, 0, 20000, VAR_MAX);
     VAR(IDF_PERSIST, spectvspeed, 1, 500, VAR_MAX);
     VAR(IDF_PERSIST, spectvyawspeed, 1, 500, VAR_MAX);
     VAR(IDF_PERSIST, spectvpitchspeed, 1, 500, VAR_MAX);
-    FVAR(IDF_PERSIST, spectvrotate, FVAR_MIN, 22.5f, FVAR_MAX); // rotate style, < 0 = absolute angle, 0 = scaled, > 0 = scaled with max angle
+    FVAR(IDF_PERSIST, spectvrotate, FVAR_MIN, 0, FVAR_MAX); // rotate style, < 0 = absolute angle, 0 = scaled, > 0 = scaled with max angle
     FVAR(IDF_PERSIST, spectvyawscale, FVAR_MIN, 1, 1000);
     FVAR(IDF_PERSIST, spectvpitchscale, FVAR_MIN, 1, 1000);
     VAR(IDF_PERSIST, spectvdead, 0, 1, 2); // 0 = never, 1 = in all but duel/survivor, 2 = always
     VAR(IDF_PERSIST, spectvfirstperson, 0, 0, 2); // 0 = aim in direction followed player is facing, 1 = aim in direction determined by spectv when dead, 2 = always aim in direction
     VAR(IDF_PERSIST, spectvthirdperson, 0, 2, 2); // 0 = aim in direction followed player is facing, 1 = aim in direction determined by spectv when dead, 2 = always aim in direction
 
+    VAR(IDF_PERSIST, spectvintermiters, 1, 5, 5);
     VAR(IDF_PERSIST, spectvintermmintime, 1000, 5000, VAR_MAX);
     VAR(IDF_PERSIST, spectvintermtime, 1000, 10000, VAR_MAX);
     VAR(IDF_PERSIST, spectvintermmaxtime, 0, 20000, VAR_MAX);
     VAR(IDF_PERSIST, spectvintermspeed, 1, 500, VAR_MAX);
     VAR(IDF_PERSIST, spectvintermyawspeed, 1, 500, VAR_MAX);
     VAR(IDF_PERSIST, spectvintermpitchspeed, 1, 500, VAR_MAX);
-    FVAR(IDF_PERSIST, spectvintermrotate, FVAR_MIN, 22.5f, FVAR_MAX); // rotate style, < 0 = absolute angle, 0 = scaled, > 0 = scaled with max angle
+    FVAR(IDF_PERSIST, spectvintermrotate, FVAR_MIN, 0, FVAR_MAX); // rotate style, < 0 = absolute angle, 0 = scaled, > 0 = scaled with max angle
     FVAR(IDF_PERSIST, spectvintermyawscale, FVAR_MIN, 0.5f, 1000);
     FVAR(IDF_PERSIST, spectvintermpitchscale, FVAR_MIN, 0.25f, 1000);
 
     VAR(0, spectvfollow, -1, -1, VAR_MAX); // attempts to always keep this client in view
     VAR(IDF_PERSIST, spectvfollowself, 0, 1, 2); // if we are not spectating, spectv should show us; 0 = off, 1 = not duel/survivor, 2 = always
+    VAR(IDF_PERSIST, spectvfollowiters, 1, 5, 5);
     VAR(IDF_PERSIST, spectvfollowmintime, 1000, 5000, VAR_MAX);
     VAR(IDF_PERSIST, spectvfollowtime, 1000, 10000, VAR_MAX);
     VAR(IDF_PERSIST, spectvfollowmaxtime, 0, 20000, VAR_MAX);
-    VAR(IDF_PERSIST, spectvfollowspeed, 1, 250, VAR_MAX);
-    VAR(IDF_PERSIST, spectvfollowyawspeed, 1, 250, VAR_MAX);
-    VAR(IDF_PERSIST, spectvfollowpitchspeed, 1, 250, VAR_MAX);
-    FVAR(IDF_PERSIST, spectvfollowrotate, FVAR_MIN, 22.5f, FVAR_MAX); // rotate style, < 0 = absolute angle, 0 = scaled, > 0 = scaled with max angle
-    FVAR(IDF_PERSIST, spectvfollowyawscale, FVAR_MIN, 0.5f, 1000);
-    FVAR(IDF_PERSIST, spectvfollowpitchscale, FVAR_MIN, 0.25f, 1000);
+    VAR(IDF_PERSIST, spectvfollowspeed, 1, 500, VAR_MAX);
+    VAR(IDF_PERSIST, spectvfollowyawspeed, 1, 500, VAR_MAX);
+    VAR(IDF_PERSIST, spectvfollowpitchspeed, 1, 500, VAR_MAX);
+    FVAR(IDF_PERSIST, spectvfollowrotate, FVAR_MIN, 0, FVAR_MAX); // rotate style, < 0 = absolute angle, 0 = scaled, > 0 = scaled with max angle
+    FVAR(IDF_PERSIST, spectvfollowyawscale, FVAR_MIN, 0.75f, 1000);
+    FVAR(IDF_PERSIST, spectvfollowpitchscale, FVAR_MIN, 0.5f, 1000);
 
-    FVAR(IDF_PERSIST, spectvmindist, 0, 16, FVAR_MAX);
+    FVAR(IDF_PERSIST, spectvmindist, 0, 8, FVAR_MAX);
     FVAR(IDF_PERSIST, spectvmaxdist, 0, 2048, FVAR_MAX);
-    FVAR(IDF_PERSIST, spectvfollowmindist, 0, 8, FVAR_MAX);
+    FVAR(IDF_PERSIST, spectvfollowmindist, 0, 4, FVAR_MAX);
     FVAR(IDF_PERSIST, spectvfollowmaxdist, 0, 1024, FVAR_MAX);
 
-    VAR(IDF_PERSIST, deathcamstyle, 0, 2, 2); // 0 = no follow, 1 = follow attacker, 2 = follow self
-    VAR(IDF_PERSIST, deathcamspeed, 0, 250, VAR_MAX);
+    VAR(IDF_PERSIST, deathcamstyle, 0, 1, 2); // 0 = no follow, 1 = follow attacker, 2 = follow self
+    VAR(IDF_PERSIST, deathcamspeed, 0, 500, VAR_MAX);
 
     VAR(IDF_PERSIST, mouseinvert, 0, 0, 1);
     FVAR(IDF_PERSIST, sensitivity, 1e-4f, 10, 10000);
@@ -2890,11 +2893,14 @@ namespace game
         }
         else if(c->type == cament::AFFINITY) return thirdpos(c->o, yaw, pitch, followdist);
         else if(c->player) return camerapos(c->player, true, true, yaw, pitch);
+
         return c->o;
     }
 
     void getcamyawpitch(cament *c, float &yaw, float &pitch, bool renew = false)
     {
+        if(!c) return;
+
         c->chase = true;
         if(c->type == cament::ENTITY && entities::ents.inrange(c->id))
         {
@@ -2945,9 +2951,9 @@ namespace game
 
     void getcamdist(cament *c, float &maxdist, float &mindist)
     {
-        maxdist = c->player ? spectvfollowmaxdist : spectvmaxdist;
-        mindist = c->player ? spectvfollowmindist : spectvmindist;
-        if(c->type == cament::ENTITY && entities::ents.inrange(c->id))
+        maxdist = c && c->player ? spectvfollowmaxdist : spectvmaxdist;
+        mindist = c && c->player ? spectvfollowmindist : spectvmindist;
+        if(c && c->type == cament::ENTITY && entities::ents.inrange(c->id))
         {
             gameentity &e = *(gameentity *)entities::ents[c->id];
             switch(e.type)
@@ -2963,46 +2969,93 @@ namespace game
         mindist = min(mindist, maxdist);
     }
 
-    bool camvisible(cament *c, cament *v, vec &from, float &yaw, float &pitch, float maxdist, float mindist, int iter = 0)
+    bool camhalo(cament *c, cament *v)
     {
-        switch(v->type)
+        if(c && v) switch(v->type)
         {
             case cament::AFFINITY:
             {
-                if(v->player && (v->player == c->player || !allowspec(v->player, spectvdead, spectvfollow))) return false;
-
-                if(iter)
-                {
-                    if(m_capture(gamemode)) { if(capture::haloallow(c->o, v->id, 0, iter != 1, false)) return true; }
-                    else if(m_defend(gamemode)) { if(defend::haloallow(c->o, v->id, 0, iter != 1, false)) return true; }
-                    else if(m_bomber(gamemode)) { if(bomber::haloallow(c->o, v->id, 0, iter != 1, false)) return true; }
-                }
-
-                break;
+                if(m_capture(gamemode) && capture::haloallow(c->o, v->id, 0, true, false)) return true;
+                if(m_defend(gamemode) && defend::haloallow(c->o, v->id, 0, true, false)) return true;
+                if(m_bomber(gamemode) && bomber::haloallow(c->o, v->id, 0, true, false)) return true;
+                // fall-through as affinities can be carried by players
             }
             case cament::PLAYER:
             {
-                if(!v->player || v->player == c->player || !allowspec(v->player, spectvdead, spectvfollow)) return false;
+                if(v->player && game::haloallow(c->o, v->player, true, false)) return true; // override and switch to x-ray
                 break;
             }
-            default: return false;
+            default: break;
         }
 
-        if(iter && v->player && haloallow(c->o, v->player, iter != 1, false)) return true; // override and switch to x-ray
+        return false;
+    }
 
-        float dist = from.dist(v->o);
-        if(dist < mindist || dist > maxdist) return false;
+    bool camcansee(cament *c, cament *v, vec &from, float &yaw, float &pitch, float maxdist, float mindist, int iter = 0)
+    {
+        if(!c || !v || v->flagged) return false;
+
+        if(!v->checked)
+        {
+            if(!v->player || v->player == c->player || !allowspec(v->player, spectvdead, spectvfollow))
+            {
+                v->flagged = true;
+                return false;
+            }
+
+            float dist = from.dist(v->o);
+            if(dist < mindist || dist > maxdist)
+            {
+                v->flagged = true;
+                return false;
+            }
+
+            v->checked = true;
+        }
+
+        if(v->visible) return true; // an earlier round already passed
 
         vec trg;
         switch(iter)
         {
-            case 0: default:
-                if(getsight(from, yaw, pitch, v->o, trg, maxdist, curfov, fovy)) break; // check if the current view can see this
-                return false;
+            case 0:
+                if(!getsight(from, yaw, pitch, v->o, trg, maxdist, curfov, fovy)) return false; // check if the current view can see this
+               break;
             case 1:
-                if(getsight(from, yaw, pitch, v->o, trg, maxdist, curfov + 45.f, fovy + 45.f)) break; // gives a bit more fov wiggle room in case someone went out of shot
+                if(!getsight(from, yaw, pitch, v->o, trg, maxdist, curfov + 45.f, fovy + 45.f)) return false; // gives a bit more fov wiggle room in case someone went out of shot
+                break;
+            case 2:
+                if(!getvisible(from, yaw, pitch, v->o, curfov, fovy) || !camhalo(c, v)) return false;
+                break;
+            case 3:
+                if(!getvisible(from, yaw, pitch, v->o, curfov + 45.f, fovy + 45.f) || !camhalo(c, v)) return false;
+                break;
+            case 4:
+                if(!camhalo(c, v)) return false;
+                break;
+            default:
                 return false;
-            case 2: break; // always true
+                break;
+        }
+
+        v->visible = true;
+
+        return true;
+    }
+
+    bool camsetup(cament *c, bool full = false)
+    {
+        if(!c) return false;
+
+        c->reset();
+
+        loopv(cameras)
+        {
+            cament *v = cameras[i];
+            if(!v) continue;
+
+            if(full) v->checked = v->flagged = (c == v);
+            v->visible = false;
         }
 
         return true;
@@ -3010,7 +3063,7 @@ namespace game
 
     bool camupdate(cament *c, int iters, bool renew = false)
     {
-        if(c->player && !allowspec(c->player, spectvdead, spectvfollow)) return false;
+        if(!c || (c->player && !allowspec(c->player, spectvdead, spectvfollow))) return false;
 
         float yaw = 0, pitch = 0, mindist = 0, maxdist = 0;
         getcamyawpitch(c, yaw, pitch, renew);
@@ -3019,41 +3072,23 @@ namespace game
 
         loopj(iters)
         {
+            if((!c->chase || !spectvcameraaim) && j%4 != 0) continue;
+
             int count = 0;
             vec dir(0, 0, 0);
 
-            c->reset();
+            if(!camsetup(c, j == 0)) break;
 
             loopv(cameras)
             {
                 cament *v = cameras[i];
-                if(v == c || !camvisible(c, v, from, yaw, pitch, maxdist, mindist, j)) continue;
+                if(!camcansee(c, v, from, yaw, pitch, maxdist, mindist, j)) continue;
                 c->inview[v->type]++;
                 dir.add(v->o);
                 count++;
             }
 
             if(!count) continue; // can't fix it without a free camera or something visible
-
-            if(j && !dir.iszero()) // extra passes may give a better direction, but may not contain visible players..
-            {
-                dir.div(count).sub(from).safenormalize();
-                vectoyawpitch(dir, yaw, pitch);
-
-                dir = vec(0, 0, 0);
-                count = 0;
-                c->reset();
-
-                loopv(cameras)
-                {
-                    cament *v = cameras[i];
-                    if(v == c || !camvisible(c, v, from, yaw, pitch, maxdist, mindist, j + 1)) continue;
-                    c->inview[v->type]++;
-                    dir.add(v->o);
-                    count++;
-                }
-                if(!count) continue; // nope, that didn't work..
-            }
 
             if(!c->chase || !spectvcameraaim)
             {
@@ -3062,13 +3097,12 @@ namespace game
             }
             else if(!dir.iszero()) c->dir = vec(dir).div(count).sub(from).safenormalize();
             else continue;
+
             return true;
         }
-        if(renew || !spectvcameraaim)
-        {
-            getcamyawpitch(c, yaw, pitch, true);
-            c->dir = vec(yaw*RAD, pitch*RAD);
-        }
+
+        getcamyawpitch(c, yaw, pitch, true);
+        c->dir = vec(yaw*RAD, pitch*RAD);
 
         return false;
     }
@@ -3124,8 +3158,8 @@ namespace game
             {
                 gameentity &e = *(gameentity *)entities::ents[i];
                 if(k ? (e.type != PLAYERSTART && e.type != WEAPON && e.type != CAMERA) : (e.type != CAMERA || e.attrs[0] != CAMERA_NORMAL) || !entities::isallowed(e)) continue;
-                vec pos = e.o;
-                float radius = e.type == PLAYERSTART ? actors[A_PLAYER].height+2 : enttype[e.type].radius;
+                vec pos = e.pos();
+                float radius = e.type == PLAYERSTART ? actors[A_PLAYER].height + 2 : enttype[e.type].radius;
                 if(!camcheck(pos, radius)) continue;
                 cameras.add(new cament(cameras.length(), cament::ENTITY, i, pos));
                 found++;
@@ -3224,14 +3258,14 @@ namespace game
             if(spectvcamera != lastcamcn) reset = true;
             cam = cameras[spectvcamera];
             lastcamcn = cam->cn;
-            camupdate(cam, 3, restart || !count || !spectvcameraaim);
+            camupdate(cam, stvf(iters), restart || !count || !spectvcameraaim);
         }
         else
         {
             camrefresh(cam);
 
             int millis = lasttvchg ? totalmillis-lasttvchg : 0;
-            bool updated = camupdate(cam, 2, restart || !count || !spectvcameraaim), override = !lasttvchg || millis >= stvf(mintime),
+            bool updated = camupdate(cam, stvf(iters), restart || !count || !spectvcameraaim), override = !lasttvchg || millis >= stvf(mintime),
                 timeup = !lasttvcam || totalmillis-lasttvcam >= stvf(time), overtime = stvf(maxtime) && millis >= stvf(maxtime);
 
             if(restart || overtime || timeup || (!updated && override))
@@ -3242,7 +3276,7 @@ namespace game
                 loopv(cameras)
                 {
                     cament *c = cameras[i];
-                    if(!camupdate(c, 1, true)) continue;
+                    if(!camupdate(c, stvf(iters), true)) continue;
                     loopj(cament::MAX) c->lastinview[j] = c->inview[j];
                     if(!c->ignore) goodcams++;
                 }
