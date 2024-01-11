@@ -542,14 +542,26 @@ namespace hud
         return false;
     }
 
-    VAR(IDF_PERSIST, aboveheadui, -1, SURFACE_VISOR, SURFACE_ALL-1);
-    FVAR(IDF_PERSIST, aboveheaduiyaw, -1, -1, 360);
-    FVAR(IDF_PERSIST, aboveheaduipitch, -181, -181, 181);
-    FVAR(IDF_PERSIST, aboveheaduiscale, FVAR_NONZERO, 1, FVAR_MAX);
-    FVAR(IDF_PERSIST, aboveheaduiworld, FVAR_NONZERO, 3, FVAR_MAX);
-    FVAR(IDF_PERSIST, aboveheaduidetentyaw, 0, 0, 180);
-    FVAR(IDF_PERSIST, aboveheaduidetentpitch, 0, 0, 90);
-    FVAR(IDF_PERSIST, aboveheaduioffset, 0, 2.5f, FVAR_MAX);
+    VAR(IDF_PERSIST, playerui, -1, SURFACE_VISOR, SURFACE_ALL-1);
+
+    FVAR(IDF_PERSIST, playeraboveyaw, -1, -1, 360);
+    FVAR(IDF_PERSIST, playerabovepitch, -181, -181, 181);
+    FVAR(IDF_PERSIST, playerabovescale, FVAR_NONZERO, 1, FVAR_MAX);
+    FVAR(IDF_PERSIST, playeraboveworld, FVAR_NONZERO, 3, FVAR_MAX);
+    FVAR(IDF_PERSIST, playerabovedetentyaw, 0, 0, 180);
+    FVAR(IDF_PERSIST, playerabovedetentpitch, 0, 0, 90);
+    FVAR(IDF_PERSIST, playeraboveoffset, 0, 2.5f, FVAR_MAX);
+
+    VAR(IDF_PERSIST, playeroverlay, -1, SURFACE_VISOR, SURFACE_ALL-1);
+    FVAR(IDF_PERSIST, playeroverlayyaw, -1, -1, 360);
+    FVAR(IDF_PERSIST, playeroverlaypitch, -181, -181, 181);
+    FVAR(IDF_PERSIST, playeroverlayscale, FVAR_NONZERO, 1, FVAR_MAX);
+    FVAR(IDF_PERSIST, playeroverlayworld, FVAR_NONZERO, 3, FVAR_MAX);
+    FVAR(IDF_PERSIST, playeroverlaydetentyaw, 0, 0, 180);
+    FVAR(IDF_PERSIST, playeroverlaydetentpitch, 0, 0, 90);
+    FVAR(IDF_PERSIST, playeroverlayoffset, 0, 2, FVAR_MAX);
+
+    static const char *playeruis[2] = { "playerabove", "playeroverlay" };
 
     void checkui()
     {
@@ -567,7 +579,7 @@ namespace hud
             else UI::openui("main");
         }
 
-        if(aboveheadui >= 0)
+        if(playerui >= 0)
         {
             gameent *d = NULL;
             int numdyns = game::numdynents();
@@ -576,13 +588,42 @@ namespace hud
                 int type = -1;
                 if(d != game::focus && !d->isspectator())
                 {
-                    type = game::haloallow(camera1->o, d, false, false) && (game::focus->isobserver() || game::focus->team == d->team || d->team == T_NEUTRAL) ? aboveheadui : SURFACE_WORLD; // force in-world if not allowed to x-ray
-                    UI::setui("abovehead", type, d->clientnum, d->abovehead(aboveheaduioffset), aboveheaduiyaw, aboveheaduipitch, type == SURFACE_WORLD ? aboveheaduiworld : aboveheaduiscale, aboveheaduidetentyaw, aboveheaduidetentpitch);
+                    type = game::haloallow(camera1->o, d, false, false) && (game::focus->isobserver() || (m_team(game::gamemode, game::mutators) && game::focus->team == d->team)) ? playerui : SURFACE_WORLD; // force in-world if not allowed to x-ray
+                    loopk(2)
+                    {
+                        vec pos;
+                        float yaw, pitch, scale, dyaw, dpitch;
+                        switch(k)
+                        {
+                            case 1: // overlay
+                            {
+                                pos = d->center(); // center pulled back a bit
+                                pos.sub(vec(pos).sub(camera1->o).normalize().mul(d->radius * playeroverlayoffset));
+                                yaw = playeroverlayyaw;
+                                pitch = playeroverlaypitch;
+                                scale = type == SURFACE_WORLD ? playeroverlayworld : playeroverlayscale;
+                                dyaw = playeroverlaydetentyaw;
+                                dpitch = playeroverlaydetentpitch;
+                                break;
+                            }
+                            case 0: default: // above
+                            {
+                                pos = d->abovehead(playeraboveoffset);
+                                yaw = playeraboveyaw;
+                                pitch = playerabovepitch;
+                                scale = type == SURFACE_WORLD ? playeraboveworld : playerabovescale;
+                                dyaw = playerabovedetentyaw;
+                                dpitch = playerabovedetentpitch;
+                                break;
+                            }
+                        }
+                        UI::setui(playeruis[k], type, d->clientnum, pos, yaw, pitch, scale, dyaw, dpitch);
+                    }
                 }
-                loopj(SURFACE_ALL) if(j != type) UI::hideui("abovehead", j, d->clientnum);
+                loopj(SURFACE_ALL) if(j != type) loopk(2) UI::hideui(playeruis[k], j, d->clientnum);
             }
         }
-        else loopj(SURFACE_ALL) UI::closedynui("abovehead", j);
+        else loopj(SURFACE_ALL) loopk(2) UI::closedynui(playeruis[k], j);
     }
 
     void drawquad(float x, float y, float w, float h, float tx1, float ty1, float tx2, float ty2, bool flipx, bool flipy)

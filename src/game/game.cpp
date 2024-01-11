@@ -4161,7 +4161,7 @@ namespace game
         {
             if(haloallow(camera1->o, d))
             {
-                if(game::focus->isobserver() || game::focus->team == d->team || d->team == T_NEUTRAL) mdl.flags |= MDL_HALO_TOP;
+                if(focus->isobserver() || (m_team(gamemode, mutators) && focus->team == d->team)) mdl.flags |= MDL_HALO_TOP;
                 if(d->isdead())
                 {
                     float fade = spawnfade(d);
