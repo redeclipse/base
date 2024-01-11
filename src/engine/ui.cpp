@@ -1156,6 +1156,8 @@ namespace UI
         void draw(float sx, float sy)
         {
             if(state&STATE_HIDDEN) return;
+            if(drawtex && surfacetype == SURFACE_WORLD && strncmp(name, "entity_", 7)) return;
+
             Window *oldwindow = window;
             window = this;
 
