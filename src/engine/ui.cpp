@@ -931,14 +931,6 @@ namespace UI
     vector<Surface *> surfacestack;
     Window *window = NULL;
 
-    static void resetclip()
-    {
-        if(surfacetype != SURFACE_WORLD) glDisable(GL_SCISSOR_TEST);
-        else glDisable(GL_STENCIL_TEST);
-
-        clipstack.setsize(0);
-    }
-
     struct Code
     {
         char *body;
@@ -1178,10 +1170,8 @@ namespace UI
 
             if(surfacetype == SURFACE_WORLD && ontop) glDisable(GL_DEPTH_TEST);
 
-            resetclip();
             Object::draw(sx, sy);
             stopdrawing();
-            resetclip();
 
             if(surfacetype == SURFACE_WORLD && ontop) glEnable(GL_DEPTH_TEST);
 
@@ -1349,7 +1339,7 @@ namespace UI
         {
             if(surfacetype == SURFACE_COMPOSITE) // composites have flipped Y axis
                 hudmatrix.ortho(px, px + pw, py, py + ph, -1, 1);
-            if(surfacetype == SURFACE_WORLD)
+            else if(surfacetype == SURFACE_WORLD)
             {
                 worldcalc();
 
@@ -1625,15 +1615,15 @@ namespace UI
     UIWINARG(yaw, "f", float, -1, 360);
     UIWINARG(pitch, "f", float, -181, 181);
     UIWINARG(zindex, "i", int, VAR_MIN, VAR_MAX);
-    ICOMMANDVF(0, uicuryaw, window ? window->curyaw : -1.f)
-    ICOMMANDVF(0, uicurpitch, window ? window->curpitch : -1.f)
+    ICOMMANDVF(0, uicuryaw, window ? window->curyaw : -1.f);
+    ICOMMANDVF(0, uicurpitch, window ? window->curpitch : -1.f);
 
-    ICOMMANDVF(0, uihitx, window ? window->hitx : -1.f)
-    ICOMMANDVF(0, uihity, window ? window->hity : -1.f)
-    ICOMMANDV(0, uiworld, surfacetype == SURFACE_WORLD ? 1 : 0)
-    ICOMMANDVF(0, uicursorx, cursorx*float(hudw)/hudh)
-    ICOMMANDVF(0, uicursory, cursory)
-    ICOMMANDVF(0, uiaspect, float(hudw)/hudh)
+    ICOMMANDVF(0, uihitx, window ? window->hitx : -1.f);
+    ICOMMANDVF(0, uihity, window ? window->hity : -1.f);
+    ICOMMANDV(0, uiworld, surfacetype == SURFACE_WORLD ? 1 : 0);
+    ICOMMANDVF(0, uicursorx, cursorx*float(hudw)/hudh);
+    ICOMMANDVF(0, uicursory, cursory);
+    ICOMMANDVF(0, uiaspect, float(hudw)/hudh);
 
     static void pushclip(float x, float y, float w, float h)
     {
@@ -6658,7 +6648,11 @@ namespace UI
             if(isdown)
             {
                 if(hold) surface->clearstate(hold);
-                if(surface->setstate(action, cursorx, cursory, 0, setmode, action|hold)) return true;
+                if(surface->setstate(action, cursorx, cursory, 0, setmode, action|hold))
+                {
+                    popsurface();
+                    return true;
+                }
             }
             else if(hold)
             {
