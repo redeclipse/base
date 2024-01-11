@@ -6689,24 +6689,61 @@ namespace UI
         return ret;
     }
 
+    void closemapuis(int n, int stype)
+    {
+        if(n < 0) return;
+
+        loopi(SURFACE_LOOPED)
+        {
+            if(i == stype || !pushsurface(i)) continue;
+
+            enumerate(surface->windows, Window *, w,
+            {
+                if(w->args[0].getint() != n || strncmp(w->name, "entity_", 7)) continue;
+                surface->hide(w);
+            });
+
+            popsurface();
+        }
+    }
+
     void checkmapuis()
     {
         int oldflags = identflags;
         identflags |= IDF_MAP;
 
         vector<extentity *> &ents = entities::getents();
-        loopv(ents)
+        loopenti(ET_MAPUI)
         {
             extentity &e = *ents[i];
             if(e.type != ET_MAPUI) continue;
+
+            if(!entities::isallowed(e))
+            {
+                closemapuis(i);
+                continue;
+            }
+
+            physent *player = (physent *)game::focusedent(true);
+            if(!player) player = camera1;
+            bool inside = e.attrs[4] > 0 && e.attrs[1]&MAPUI_PROXIMITY ? player->o.dist(e.o) <= e.attrs[4] : true;
+
+            if(!inside && e.attrs[1]&MAPUI_SHOWPROX)
+            {
+                closemapuis(i);
+                continue;
+            }
 
             int stype = SURFACE_WORLD;
             if(e.attrs[1]&MAPUI_VISOR) stype = SURFACE_VISOR;
             else if(e.attrs[1]&MAPUI_BACKGROUND) stype = SURFACE_BACKGROUND;
             else if(e.attrs[1]&MAPUI_FOREGROUND) stype = SURFACE_FOREGROUND;
 
-            if(!pushsurface(stype)) continue;
-            #define CONTSURF { popsurface(); continue; }
+            if(!pushsurface(stype))
+            {
+                closemapuis(i);
+                continue;
+            }
 
             defformatstring(name, "entity_%s%d", e.attrs[0] < 0 ? "builtin_" : "", abs(e.attrs[0]));
             const char *ref = dynuiref(name, i);
@@ -6714,41 +6751,18 @@ namespace UI
             Window *w = surface->windows.find(ref, NULL);
             if(!w)
             {
-                if(!dynuiexec(name, i)) CONTSURF;
-                w = surface->windows.find(ref, NULL);
-                if(!w) CONTSURF;
+                if((!dynuiexec(name, i) || (w = surface->windows.find(ref, NULL)) == NULL))
+                {
+                    closemapuis(i);
+                    popsurface();
+                    continue;
+                }
             }
 
-            loopj(SURFACE_LOOPED)
-            {
-                if(j == stype) continue;
-                Surface *s = surfaces[j];
-                Window *o = s->windows.find(ref, NULL);
-                if(o) s->hide(o);
-            }
+            closemapuis(i, surfacetype); // close this UI on other surfaces first
 
-            bool haswindow = surface->children.find(w) >= 0;
-            if(!entities::isallowed(e))
-            {
-                if(haswindow) surface->hide(w);
-                CONTSURF;
-            }
-
-            physent *player = (physent *)game::focusedent(true);
-            if(!player) player = camera1;
-            bool inside = e.attrs[4] > 0 && e.attrs[1]&MAPUI_PROXIMITY ? player->o.dist(e.o) <= e.attrs[4] : true;
-
-            if(haswindow && !inside && e.attrs[1]&MAPUI_SHOWPROX)
-            {
-                surface->hide(w);
-                CONTSURF;
-            }
-
-            if(!haswindow)
-            {
+            if(surface->children.find(w) < 0)
                 surface->show(w, e.o, e.attrs[2], e.attrs[3], e.attrs[5] != 0 ? e.attrs[5]/100.f : 1.f, e.attrs[6] > 0 ? e.attrs[6] : 0.f, e.attrs[7] > 0 ? e.attrs[7] : 0.f);
-                CONTSURF;
-            }
 
             float yaw = 0, pitch = 0;
             if(entities::getdynamic(e, w->origin, yaw, pitch))
@@ -6773,26 +6787,6 @@ namespace UI
         }
 
         identflags = oldflags;
-    }
-
-    void closemapuis(int n)
-    {
-        if(n < 0 || !pushsurface(SURFACE_VISOR)) return;
-
-        vector<extentity *> &ents = entities::getents();
-        if(!ents.inrange(n))
-        {
-            popsurface();
-            return;
-        }
-
-        enumerate(surface->windows, Window *, w,
-        {
-            if(w->args[0].getint() != n || strncmp(w->name, "entity_", 7)) continue;
-            surface->hide(w);
-        });
-
-        popsurface();
     }
 
     #define COMPOSITESIZE (1<<9)

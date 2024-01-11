@@ -539,7 +539,7 @@ namespace UI
 
     extern void closedynui(const char *name, int stype = SURFACE_VISOR);
     extern void cleardynui(const char *name, int stype = SURFACE_VISOR, bool mapdef = false);
-    extern void closemapuis(int n);
+    extern void closemapuis(int n, int stype = -1);
 
     extern Texture *composite(const char *name, int tclamp = 0, bool mipit = true, bool msg = true, bool gc = false, Texture *tex = NULL, bool reload = false);
 
