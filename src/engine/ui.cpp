@@ -1135,7 +1135,23 @@ namespace UI
                 if(surfacetype == SURFACE_VISOR && rendervisor)
                     visorcoords(cx, cy, cx, cy, true);
 
-                setpos(cx*hudw/float(hudh) - w * 0.5f, cy - h);
+                cx *= hudw/float(hudh);
+
+                switch(adjust&ALIGN_HMASK)
+                {
+                    case ALIGN_LEFT:    cx -= w; break;
+                    case ALIGN_HCENTER: cx -= w * 0.5f; break;
+                    case ALIGN_RIGHT:   break;
+                }
+
+                switch(adjust&ALIGN_VMASK)
+                {
+                    case ALIGN_TOP:     cy -= h; break;
+                    case ALIGN_VCENTER: cy -= h * 0.5f; break;
+                    case ALIGN_BOTTOM:  break;
+                }
+
+                setpos(cx, cy);
             }
             else state = STATE_HIDDEN;
         }

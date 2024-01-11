@@ -130,10 +130,6 @@ namespace capture
         preloadmodel("props/flag");
     }
 
-    void drawonscreen(int w, int h)
-    {
-    }
-
     void checkcams(vector<cament *> &cameras)
     {
         loopv(st.flags) // flags/bases

@@ -187,10 +187,6 @@ namespace defend
         }
     }
 
-    void drawonscreen(int w, int h)
-    {
-    }
-
     void reset()
     {
         st.reset();

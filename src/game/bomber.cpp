@@ -163,7 +163,7 @@ namespace bomber
 
     bool dropaffinity(gameent *d)
     {
-        if(!carryaffinity(d) || (!d->action[AC_AFFINITY] && d->actiontime[AC_AFFINITY] <= 0)) return false;
+        if(!carryaffinity(d) || (!d->action[AC_AFFINITY] && !d->actiontime[AC_AFFINITY])) return false;
         if(d->action[AC_AFFINITY]) return true;
         vec o = d->headpos(), inertia = vec(d->yaw*RAD, d->pitch*RAD).mul(bomberspeed).add(vec(d->vel).add(d->falling).mul(bomberrelativity));
         bool guided = m_team(game::gamemode, game::mutators) && bomberlockondelay && lastmillis-d->actiontime[AC_AFFINITY] >= bomberlockondelay;
@@ -178,42 +178,24 @@ namespace bomber
         preloadmodel("props/ball");
     }
 
-    FVAR(IDF_PERSIST, bomberreticlesize, 0, 0.1f, 1.f);
-    void drawonscreen(int w, int h)
+    int curtarget()
     {
-        if(!gs_playing(game::gamestate) || !m_team(game::gamemode, game::mutators) || !bomberlockondelay || game::focus->state != CS_ALIVE || !game::focus->action[AC_AFFINITY] || lastmillis-game::focus->actiontime[AC_AFFINITY] < bomberlockondelay)
-            return;
+        if(!gs_playing(game::gamestate) || !m_bomber(game::gamemode) || !m_team(game::gamemode, game::mutators) || !game::focus->isalive())
+            return -1;
+        if(!bomberlockondelay || !game::focus->action[AC_AFFINITY] || lastmillis-game::focus->actiontime[AC_AFFINITY] < bomberlockondelay)
+            return -1;
+
         loopv(st.flags)
         {
             bomberstate::flag &f = st.flags[i];
             if(!f.enabled || !isbomberaffinity(f) || f.owner != game::focus) continue;
             gameent *e = game::getclient(findtarget(f.owner));
-            float cx = 0.5f, cy = 0.5f, cz = 1;
-            if(e && vectocursor(e->headpos(), cx, cy, cz))
-            {
-                int interval = lastmillis%500;
-                float rp = 1, gp = 1, bp = 1,
-                      sp = interval >= 250 ? (500-interval)/250.f : interval/250.f,
-                      sq = max(sp, 0.5f), size = bomberreticlesize*min(w, h);
-                hud::colourskew(rp, gp, bp, sp);
-                int sx = int(cx*w-size*sq), sy = int(cy*h-size*sq), ss = int(size*2*sq);
-                Texture *t = textureload(hud::indicatortex, 3, true, false);
-                if(t && t != notexture)
-                {
-                    settexture(t);
-                    gle::colorf(rp, gp, bp, sq);
-                    hud::drawsized(sx, sy, ss);
-                }
-                t = textureload(hud::crosshairtex, 3, true, false);
-                if(t && t != notexture)
-                {
-                    settexture(t);
-                    gle::colorf(rp, gp, bp, sq*0.5f);
-                    hud::drawsized(sx+ss/4, sy+ss/4, ss/2);
-                }
-            }
+            if(!e || !e->isalive()) continue;
+            return e->clientnum;
         }
+        return -1;
     }
+    ICOMMAND(0, bombercurtarget, "", (), intret(curtarget()));
 
     void checkcams(vector<cament *> &cameras)
     {
@@ -421,6 +403,7 @@ namespace bomber
     void dropaffinity(gameent *d, int i, const vec &droploc, const vec &inertia, int target)
     {
         if(!st.flags.inrange(i)) return;
+
         st.dropaffinity(i, droploc, inertia, lastmillis, target);
         emitsound(S_DROP, game::getplayersoundpos(d), d);
 

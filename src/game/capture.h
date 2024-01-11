@@ -230,7 +230,6 @@ namespace capture
     extern void setup();
     extern void setscore(int team, int total);
     extern void update();
-    extern void drawonscreen(int w, int h);
     extern void preload();
     extern void render();
     extern void adddynlights();

@@ -559,7 +559,7 @@ namespace hud
     FVAR(IDF_PERSIST, playeroverlayworld, FVAR_NONZERO, 3, FVAR_MAX);
     FVAR(IDF_PERSIST, playeroverlaydetentyaw, 0, 0, 180);
     FVAR(IDF_PERSIST, playeroverlaydetentpitch, 0, 0, 90);
-    FVAR(IDF_PERSIST, playeroverlayoffset, 0, 2, FVAR_MAX);
+    FVAR(IDF_PERSIST, playeroverlayoffset, 0, 1, FVAR_MAX);
 
     static const char *playeruis[2] = { "playerabove", "playeroverlay" };
 
@@ -1613,16 +1613,7 @@ namespace hud
         {
             drawzoom(hudwidth, hudheight);
 
-            if(showhud)
-            {
-                if(gs_playing(game::gamestate) && !hasinput(true))
-                {
-                    if(m_capture(game::gamemode)) capture::drawonscreen(hudwidth, hudheight);
-                    else if(m_defend(game::gamemode)) defend::drawonscreen(hudwidth, hudheight);
-                    else if(m_bomber(game::gamemode)) bomber::drawonscreen(hudwidth, hudheight);
-                }
-                if(!game::tvmode() && !client::waiting() && !hasinput(false)) drawevents();
-            }
+            if(showhud && !game::tvmode() && !client::waiting() && !hasinput(false)) drawevents();
 
             drawpointers(w, h, -1, wantvisor);
         }

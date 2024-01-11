@@ -103,6 +103,7 @@ namespace physics
         if(!game::allowmove(game::player1))
         {
             game::player1->action[type] = false;
+            game::player1->actiontime[type] = 0;
             if((type == AC_PRIMARY || type == AC_JUMP) && down) game::respawn(game::player1);
             return;
         }
@@ -141,7 +142,8 @@ namespace physics
             default: break;
         }
         if(down) game::player1->actiontime[type] = lastmillis;
-        else if(type == AC_CROUCH || type == AC_JUMP) game::player1->actiontime[type] = -lastmillis;
+        else if(type == AC_CROUCH || type == AC_JUMP || type == AC_AFFINITY)
+            game::player1->actiontime[type] = -lastmillis;
         game::player1->action[type] = down;
     }
 
