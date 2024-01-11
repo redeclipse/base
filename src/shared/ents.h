@@ -158,21 +158,13 @@ extern vector<int> enthover;
 #define entfocusv(i, f, v) { int n = entindex = (i); if(n>=0) { extentity &e = *v[n]; f; } }
 #define entfocus(i, f) entfocusv(i, f, entities::getents())
 
-enum { CS_ALIVE = 0, CS_DEAD, CS_EDITING, CS_SPECTATOR, CS_WAITING, CS_MAX }; // beware, some stuff uses >= CS_SPECTATOR
 
-#ifdef CPP_ENGINE_COMMAND
-SVARR(stateidxname, "alive dead editing spectator waiting");
-VARR(stateidxalive, CS_ALIVE);
-SVARR(statenamealive, "Alive");
-VARR(stateidxdead, CS_DEAD);
-SVARR(statenamedead, "Dead");
-VARR(stateidxediting, CS_EDITING);
-SVARR(statenameediting, "Editing");
-VARR(stateidxspectator, CS_SPECTATOR);
-SVARR(statenamespectator, "Spectating");
-VARR(stateidxwaiting, CS_WAITING);
-SVARR(statenamewaiting, "Waiting");
-#endif
+#define CS_ENUM(pr, en) \
+    en(pr, Alive, ALIVE) en(pr, Dead, DEAD) \
+    en(pr, Editing, EDITING) en(pr, Spectator, SPECTATOR) \
+    en(pr, Waiting, WAITING) \
+    en(pr, Maximum, MAX)
+ENUMNV(CS); // beware, some stuff uses >= CS_SPECTATOR
 
 enum { PHYS_FLOAT = 0, PHYS_FALL, PHYS_SLIDE, PHYS_SLOPE, PHYS_FLOOR, PHYS_STEP_UP, PHYS_STEP_DOWN, PHYS_MAX };
 enum { ENT_PLAYER = 0, ENT_AI, ENT_INANIMATE, ENT_CAMERA, ENT_PROJ, ENT_RAGDOLL, ENT_DUMMY, ENT_MAX };

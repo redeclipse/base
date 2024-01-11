@@ -550,7 +550,7 @@ namespace hud
     FVAR(IDF_PERSIST, playeraboveworld, FVAR_NONZERO, 3, FVAR_MAX);
     FVAR(IDF_PERSIST, playerabovedetentyaw, 0, 0, 180);
     FVAR(IDF_PERSIST, playerabovedetentpitch, 0, 0, 90);
-    FVAR(IDF_PERSIST, playeraboveoffset, 0, 2.5f, FVAR_MAX);
+    FVAR(IDF_PERSIST, playeraboveoffset, 0, 2, 4);
 
     VAR(IDF_PERSIST, playeroverlay, -1, SURFACE_VISOR, SURFACE_ALL-1);
     FVAR(IDF_PERSIST, playeroverlayyaw, -1, -1, 360);
@@ -559,7 +559,7 @@ namespace hud
     FVAR(IDF_PERSIST, playeroverlayworld, FVAR_NONZERO, 3, FVAR_MAX);
     FVAR(IDF_PERSIST, playeroverlaydetentyaw, 0, 0, 180);
     FVAR(IDF_PERSIST, playeroverlaydetentpitch, 0, 0, 90);
-    FVAR(IDF_PERSIST, playeroverlayoffset, 0, 1, FVAR_MAX);
+    FVAR(IDF_PERSIST, playeroverlayoffset, 0, 1, 2);
 
     static const char *playeruis[2] = { "playerabove", "playeroverlay" };
 
@@ -588,7 +588,8 @@ namespace hud
                 int type = -1;
                 if(d != game::focus && !d->isspectator())
                 {
-                    type = game::haloallow(camera1->o, d, false, false) && (game::focus->isobserver() || (m_team(game::gamemode, game::mutators) && game::focus->team == d->team)) ? playerui : SURFACE_WORLD; // force in-world if not allowed to x-ray
+                    bool cansee = game::haloallow(camera1->o, d, false, false) && (game::focus->isobserver() || (m_team(game::gamemode, game::mutators) && game::focus->team == d->team));
+                    type = cansee ? playerui : SURFACE_WORLD; // force in-world if not allowed to x-ray
                     loopk(2)
                     {
                         vec pos;
