@@ -1218,10 +1218,10 @@ namespace ai
                     if(d->o.dist(e->o) < CLOSEDIST)
                     {
                         frame *= 2.f;
+                        d->ai->dontmove = false;
                         if((kamikaze || W2(d->weapselect, aidist, alt) < CLOSEDIST) && lockon(d, e, CLOSEDIST))
                         {
                             b.acttype = AI_A_LOCKON;
-                            d->ai->dontmove = false;
                             d->ai->targyaw = yaw;
                             d->ai->targpitch = pitch;
                             d->ai->spot = e->feetpos();

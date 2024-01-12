@@ -139,6 +139,7 @@ namespace game
     }
 
     VAR(IDF_PERSIST, flashlightvolumetric, 0, 0, 1);
+    VAR(IDF_PERSIST, flashlightspectator, 0, 0, 1);
     FVAR(IDF_PERSIST, flashlightlevelthird, 0, 0.5f, 1);
     FVAR(IDF_PERSIST, flashlightlevelvol, 0, 1, 1);
     VAR(IDF_PERSIST, flashlightmax, 1, 4, VAR_MAX);
@@ -327,9 +328,9 @@ namespace game
     FVAR(IDF_PERSIST, spectvfollowpitchscale, FVAR_MIN, 0.5f, 1000);
 
     FVAR(IDF_PERSIST, spectvmindist, 0, 16, FVAR_MAX);
-    FVAR(IDF_PERSIST, spectvmaxdist, 0, 2048, FVAR_MAX);
+    FVAR(IDF_PERSIST, spectvmaxdist, 0, 1024, FVAR_MAX);
     FVAR(IDF_PERSIST, spectvfollowmindist, 0, 8, FVAR_MAX);
-    FVAR(IDF_PERSIST, spectvfollowmaxdist, 0, 1024, FVAR_MAX);
+    FVAR(IDF_PERSIST, spectvfollowmaxdist, 0, 512, FVAR_MAX);
 
     VAR(IDF_PERSIST, deathcamstyle, 0, 1, 2); // 0 = no follow, 1 = follow attacker, 2 = follow self
     VAR(IDF_PERSIST, deathcamspeed, 0, 500, VAR_MAX);
@@ -1277,7 +1278,9 @@ namespace game
             gameent *d = NULL;
             int numdyns = numdynents();
             vector<flashent *> list;
-            loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL && (d->isalive() || (d == focus && d->isnophys()))) list.add(new flashent(d));
+            loopi(numdyns)
+                if((d = (gameent *)iterdynents(i)) != NULL && (d->isalive() || (flashlightspectator && d == focus && d->isnophys())))
+                    list.add(new flashent(d));
             list.sort(flashent::sort);
 
             int count = m_dark(gamemode, mutators) ? flashlightmaxdark : flashlightmax;

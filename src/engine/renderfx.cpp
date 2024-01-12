@@ -13,15 +13,15 @@ CVAR(IDF_PERSIST, halocolour, 0xFFFFFF);
 FVAR(IDF_PERSIST, halotolerance, FVAR_MIN, -16, FVAR_MAX);
 FVAR(IDF_PERSIST, haloaddz, FVAR_MIN, 2, FVAR_MAX);
 
-FVAR(IDF_PERSIST, halooffset, 1, 1, 16);
+VAR(IDF_PERSIST, halooffset, 0, 1, 16);
 FVAR(IDF_PERSIST, halooutlinemix, 0, 1, 1); // mix between first/closest pixel and accumulation of all 5 pixels
-FVAR(IDF_PERSIST, halooutlinecol, FVAR_NONZERO, 1, FVAR_MAX); // multiply resulting rgb by this
-FVAR(IDF_PERSIST, halooutlineblend, FVAR_NONZERO, 1, FVAR_MAX); // multiply resulting a by this
+FVAR(IDF_PERSIST, halooutlinecol, 0, 1, FVAR_MAX); // multiply resulting rgb by this
+FVAR(IDF_PERSIST, halooutlineblend, 0, 1, FVAR_MAX); // multiply resulting a by this
 FVAR(IDF_PERSIST, halooutlineshadow, 0, 0.5f, 1); // apply highlight/shadowing with an extra sample
 FVAR(IDF_PERSIST, haloinfillmix, 0, 0, 1);
-FVAR(IDF_PERSIST, haloinfillcol, FVAR_NONZERO, 0.75f, FVAR_MAX);
-FVAR(IDF_PERSIST, haloinfillblend, FVAR_NONZERO, 0.25f, FVAR_MAX);
-FVAR(IDF_PERSIST, halonoisesample, 0, 4, 16);
+FVAR(IDF_PERSIST, haloinfillcol, 0, 0.75f, FVAR_MAX);
+FVAR(IDF_PERSIST, haloinfillblend, 0, 0.25f, FVAR_MAX);
+VAR(IDF_PERSIST, halonoisesample, 0, 4, 16);
 FVAR(IDF_PERSIST, halonoisemixcol, 0, 0, 1);
 FVAR(IDF_PERSIST, halonoisemixblend, 0, 0.5f, 1);
 

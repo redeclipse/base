@@ -34,7 +34,7 @@ namespace physics
 
     VAR(IDF_PERSIST, ragdollaccuracy, 0, 1, 1);
     FVAR(IDF_PERSIST, ragdollaccuracydist, 0, 512, FVAR_MAX);
-    FVAR(IDF_PERSIST, ragdollgravity, FVAR_MIN, 1.25f, FVAR_MAX);
+    FVAR(IDF_PERSIST, ragdollgravity, FVAR_MIN, 1.5f, FVAR_MAX);
 
     FVAR(IDF_PERSIST, impulseparkouryaw, 0, 150, 180); // determines the minimum yaw angle to switch between parkour climb and run
     VAR(IDF_PERSIST, impulsemethod, 0, 3, 3); // determines which impulse method to use, 0 = none, 1 = launch, 2 = slide, 3 = both

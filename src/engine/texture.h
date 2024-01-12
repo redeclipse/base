@@ -617,6 +617,12 @@ struct Texture
     {
         DELETEA(alphamask);
 
+        if(fbo)
+        {
+            glDeleteFramebuffers_(1, &fbo);
+            fbo = 0;
+        }
+
         if(frames.empty() && id) glDeleteTextures(1, &id);
         else loopvk(frames) if(frames[k])
         {
@@ -627,12 +633,8 @@ struct Texture
                 frames[k] = 0;
             }
         }
-        if(fbo)
-        {
-            glDeleteFramebuffers_(1, &fbo);
-            fbo = 0;
-        }
         frames.shrink(0);
+
         id = 0;
         delay = last = 0;
         rendered = false;
