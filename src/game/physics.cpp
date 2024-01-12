@@ -352,6 +352,7 @@ namespace physics
 
     bool sticktospecial(physent *d, bool parkour)
     {
+        if(entities::currentpassenger(d))
         if(gameent::is(d) && d->state == CS_ALIVE)
         {
             gameent *e = (gameent *)d;
@@ -659,7 +660,7 @@ namespace physics
 
     void falling(physent *d, vec &dir, const vec &floor)
     {
-        if(sticktospecial(d))
+        if(sticktospecial(d) || entities::currentpassenger(d))
         {
             if(gameent::is(d))
             {

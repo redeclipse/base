@@ -742,6 +742,7 @@ namespace entities
             else return;
         }
         m->localpassenger(d);
+        d->physstate = PHYS_FLOOR;
     }
 
     inanimate *remotepassenger(int ent, physent *d, const vec &offset)
