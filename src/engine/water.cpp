@@ -473,7 +473,7 @@ VOLFOGVARS(alt, volfog4)
             case 3: \
                 res = checkmapvariant(MPV_ALTERNATE) ? (name##4##var##alt.iszero() ? getfogcolour() : name##4##var##alt) : (name##4##var.iszero() ? getfogcolour() : name##4##var); \
         } \
-        res.mul(game::darkness()); \
+        res.mul(game::darkness(DARK_ENV)); \
         return res; \
     }
 

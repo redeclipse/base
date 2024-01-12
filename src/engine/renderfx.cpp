@@ -157,7 +157,7 @@ void blendhalos()
     glViewport(0, 0, hudw, hudh);
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    gle::color(halocolour.tocolor().mul(game::darkness(2)), haloblend);
+    gle::color(halocolour.tocolor().mul(game::darkness(DARK_HALO)), haloblend);
     glEnable(GL_BLEND);
 
     float maxdist = hud::radarlimit(halodist);

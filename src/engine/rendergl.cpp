@@ -1329,7 +1329,7 @@ void setcamprojmatrix(bool init = true, bool flush = false)
 
     GLOBALPARAM(camprojmatrix, camprojmatrix);
     GLOBALPARAM(lineardepthscale, projmatrix.lineardepthscale()); //(invprojmatrix.c.z, invprojmatrix.d.z));
-    GLOBALPARAMF(darknesslevel, game::darkness(), game::darkness(1), game::darkness(2), game::darkness(3));
+    GLOBALPARAMF(darknessenv, game::darkness(DARK_ENV), game::darkness(DARK_GLOW), game::darkness(DARK_SUN), game::darkness(DARK_PART));
 
     if(flush && Shader::lastshader) Shader::lastshader->flushparams();
 }

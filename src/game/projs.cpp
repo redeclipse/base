@@ -2355,7 +2355,11 @@ namespace projs
                         }
                         else continue;
                     }
-                    if(drawtex == DRAWTEX_HALO) mdl.color.a = hud::radardepth(mdl.o, halodist, halotolerance, haloaddz);
+                    if(drawtex == DRAWTEX_HALO)
+                    {
+                        mdl.material[0].mul(mdl.color.a);
+                        mdl.color.a = hud::radardepth(mdl.o, halodist, halotolerance, haloaddz);
+                    }
                     break;
                 }
                 default: break;

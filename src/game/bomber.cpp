@@ -259,12 +259,14 @@ namespace bomber
                 basemdl.material[0] = mdl.material[0] = bvec::fromcolor(effect);
                 if(f.owner != game::focus || game::thirdpersonview(true))
                 {
-                    if(drawtex == DRAWTEX_HALO) mdl.color.a = hud::radardepth(mdl.o, halodist, halotolerance, haloaddz) * trans;
-                    else
+                    if(f.owner == game::focus)
+                        trans *= game::focus != game::player1 ? game::affinityfollowblend : game::affinitythirdblend;
+                    mdl.color.a *= trans;
+
+                    if(drawtex == DRAWTEX_HALO)
                     {
-                        if(f.owner == game::focus)
-                            trans *= game::focus != game::player1 ? game::affinityfollowblend : game::affinitythirdblend;
-                        mdl.color.a *= trans;
+                        mdl.material[0].mul(mdl.color.a);
+                        mdl.color.a = hud::radardepth(mdl.o, halodist, halotolerance, haloaddz) * trans;
                     }
 
                     rendermodel("props/ball", mdl);
@@ -288,7 +290,11 @@ namespace bomber
                 basemdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_HALO_TOP;
                 basemdl.o = f.render;
                 basemdl.yaw = f.yaw;
-                if(drawtex == DRAWTEX_HALO) basemdl.color.a = hud::radardepth(basemdl.o, halodist, halotolerance, haloaddz);
+                if(drawtex == DRAWTEX_HALO)
+                {
+                    basemdl.material[0].mul(basemdl.color.a);
+                    basemdl.color.a = hud::radardepth(basemdl.o, halodist, halotolerance, haloaddz);
+                }
                 rendermodel("props/point", basemdl);
             }
         }

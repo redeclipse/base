@@ -1844,7 +1844,7 @@ MPVVARS(alt);
     type get##name() \
     { \
         static int res; \
-        res = int((checkmapvariant(MPV_ALTERNATE) ? name##alt : name)*game::darkness(4)); \
+        res = int((checkmapvariant(MPV_ALTERNATE) ? name##alt : name)*game::darkness(DARK_PART)); \
         return res; \
     }
 
@@ -2093,7 +2093,7 @@ static int partcolour(int c, int p, int x)
 
     vec r = c > 0 ? vec::fromcolor(c) : vec(1, 1, 1);
     if(p || x) r.mul(game::getpalette(p, x));
-    r.mul(game::darkness(4));
+    r.mul(game::darkness(DARK_PART));
 
     return (int(r.x*255)<<16)|(int(r.y*255)<<8)|(int(r.z*255));
 }
@@ -2204,7 +2204,7 @@ void makeparticle(const vec &o, attrvector &attr)
         case 34:
         case 35:
         {
-            float level = game::darkness(4);
+            float level = game::darkness(DARK_PART);
             flares.addflare(o, int(attr[1]*level), int(attr[2]*level), int(attr[3]*level), (attr[0]&2)!=0, (attr[0]&1)!=0 ? ((attr[0]&2)!=0 ? 1 : 2) : 0);
             break;
         }

@@ -159,7 +159,11 @@ namespace defend
             mdl.yaw = b.yaw;
             mdl.o = b.render;
 
-            if(drawtex == DRAWTEX_HALO) mdl.color.a = hud::radardepth(mdl.o, halodist, halotolerance, haloaddz);
+            if(drawtex == DRAWTEX_HALO)
+            {
+                mdl.material[0].mul(mdl.color.a);
+                mdl.color.a = hud::radardepth(mdl.o, halodist, halotolerance, haloaddz);
+            }
             rendermodel("props/point", mdl);
             if(drawtex != DRAWTEX_HALO)
             {

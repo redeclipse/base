@@ -131,24 +131,49 @@ MPVVARS(alt, MPV_ALTERNATE);
 #define GETMPVDARK(name, type) \
     type get##name() \
     { \
+        if(checkmapvariant(MPV_ALTERNATE)) return name##alt * game::darkness(DARK_ENV); \
+        return name * game::darkness(DARK_ENV); \
+    }
+
+#define GETMPVDARKSUN(name, type) \
+    type get##name() \
+    { \
+        if(checkmapvariant(MPV_ALTERNATE)) return name##alt * game::darkness(DARK_SUN); \
+        return name * game::darkness(DARK_SUN); \
+    }
+
+#define GETMPVDARKCOL(name, type) \
+    type get##name() \
+    { \
         static bvec res; \
-        res = bvec(checkmapvariant(MPV_ALTERNATE) ? name##alt : name).mul(game::darkness()); \
+        res = bvec(checkmapvariant(MPV_ALTERNATE) ? name##alt : name).mul(game::darkness(DARK_ENV)); \
         return res; \
     }
 
-GETMPVDARK(ambient, const bvec &);
-GETMPV(ambientscale, float);
-GETMPVDARK(skylight, const bvec &);
-GETMPV(skylightscale, float);
+#define GETMPVDARKSUNCOL(name, type) \
+    type get##name() \
+    { \
+        static bvec res; \
+        res = bvec(checkmapvariant(MPV_ALTERNATE) ? name##alt : name).mul(game::darkness(DARK_SUN)); \
+        return res; \
+    }
+
+GETMPV(ambient, const bvec &);
+GETMPVDARK(ambientscale, float);
+GETMPV(skylight, const bvec &);
+GETMPVDARK(skylightscale, float);
+
 GETMPV(fog, int);
-GETMPVDARK(fogcolour, const bvec &);
-GETMPVDARK(skybgcolour, const bvec &);
+GETMPVDARKCOL(fogcolour, const bvec &);
+
+GETMPVDARKCOL(skybgcolour, const bvec &);
 GETMPV(skybox, const char *);
-GETMPVDARK(skycolour, const bvec &);
+GETMPVDARKCOL(skycolour, const bvec &);
 GETMPV(skyblend, float);
 GETMPV(skyoverbright, float);
 GETMPV(skyoverbrightmin, float);
 GETMPV(skyoverbrightthreshold, float);
+
 GETMPV(spinsky, float);
 GETMPV(spinskypitch, float);
 GETMPV(spinskyroll, float);
@@ -156,7 +181,7 @@ GETMPV(yawsky, int);
 GETMPV(pitchsky, int);
 GETMPV(rollsky, int);
 GETMPV(cloudbox, const char *);
-GETMPVDARK(cloudcolour, const bvec &);
+GETMPVDARKCOL(cloudcolour, const bvec &);
 GETMPV(cloudblend, float);
 GETMPV(spinclouds, float);
 GETMPV(spincloudspitch, float);
@@ -170,14 +195,14 @@ GETMPV(atmostyle, int);
 GETMPV(atmoplanetsize, float);
 GETMPV(atmoheight, float);
 GETMPV(atmobright, float);
-GETMPVDARK(atmolight, const bvec &);
-GETMPV(atmolightscale, float);
+GETMPV(atmolight, const bvec &);
+GETMPVDARKSUN(atmolightscale, float);
 GETMPV(atmohaze, float);
 GETMPV(atmoclarity, float);
 GETMPV(atmodensity, float);
 GETMPV(atmoozone, float);
 GETMPV(atmoblend, float);
-GETMPVDARK(atmodisk, const bvec &);
+GETMPVDARKSUNCOL(atmodisk, const bvec &);
 GETMPV(atmodisksize, float);
 GETMPV(atmodiskcorona, float);
 GETMPV(atmodiskbright, float);
@@ -186,14 +211,14 @@ GETMPV(fogdomemin, float);
 GETMPV(fogdomemax, float);
 GETMPV(fogdomecap, int);
 GETMPV(fogdomeclip, float);
-GETMPVDARK(fogdomecolour, const bvec &);
+GETMPVDARKCOL(fogdomecolour, const bvec &);
 GETMPV(fogdomeclouds, int);
 GETMPV(skytexture, int);
 GETMPV(skyshadow, int);
 
 #define GETLAYER(prefix) \
     GETMPV(prefix##layer, const char *); \
-    GETMPVDARK(prefix##layercolour, const bvec &); \
+    GETMPVDARKCOL(prefix##layercolour, const bvec &); \
     GETMPV(prefix##layerblend, float); \
     GETMPV(prefix##offsetx, float); \
     GETMPV(prefix##offsety, float); \
@@ -533,7 +558,7 @@ namespace fogdome
     void draw()
     {
         float capsize = getfogdomecap() && getfogdomeheight() < 1 ? (1 + getfogdomeheight()) / (1 - getfogdomeheight()) : -1;
-        bvec color = !getfogdomecolour().iszero() ? getfogdomecolour() : fogcolour;
+        bvec color = !getfogdomecolour().iszero() ? getfogdomecolour() : getfogcolour();
         if(!numverts || lastcolor != color || lastminalpha != getfogdomemin() || lastmaxalpha != getfogdomemax() || lastcapsize != capsize || lastclipz != getfogdomeclip())
         {
             init(color, min(getfogdomemin(), getfogdomemax()), getfogdomemax(), capsize, getfogdomeclip());

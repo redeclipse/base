@@ -8,8 +8,6 @@ VARR(mapcrc, 0);
 SVAR(0, mapfile, "");
 SVAR(0, mapname, "");
 SVAR(0, maptext, "");
-
-const char *mapvariants[MPV_MAX] = { "all", "default", "alternate" };
 VARR(mapvariant, 0);
 
 bool checkmapvariant(int variant)

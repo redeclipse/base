@@ -3347,7 +3347,7 @@ namespace entities
                 if(millis < 500) mdl.size = mdl.color.a = 1.f - (millis / 500.f);
             }
 
-            if(e.type == WEAPON)
+            if(!cansee && e.type == WEAPON)
             {
                 int attr = m_attr(e.type, e.attrs[0]);
                 if(isweap(attr))
@@ -3358,9 +3358,9 @@ namespace entities
                         if(game::focus->isobserver() || game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !showentfull))
                         {
                             if(drawtex == DRAWTEX_HALO) mdl.flags |= MDL_HALO_TOP;
-                            else mdl.color.a *= showentavailable;
+                            mdl.color.a *= showentavailable;
                         }
-                        else if(drawtex != DRAWTEX_HALO) mdl.color.a *= showentunavailable;
+                        else mdl.color.a *= showentunavailable;
                     }
                 }
                 else continue;
@@ -3371,7 +3371,11 @@ namespace entities
             mdl.material[0] = bvec::fromcolor(game::getcolour(game::focus, game::playerovertone, game::playerovertonelevel));
             mdl.material[1] = bvec::fromcolor(game::getcolour(game::focus, game::playerundertone, game::playerundertonelevel));
             if(colour >= 0) mdl.material[0] = mdl.material[2] = bvec::fromcolor(colour);
-            if(drawtex == DRAWTEX_HALO) mdl.color.a = hud::radardepth(mdl.o, halodist, halotolerance, haloaddz);
+            if(drawtex == DRAWTEX_HALO)
+            {
+                mdl.material[0].mul(mdl.color.a);
+                mdl.color.a = hud::radardepth(mdl.o, halodist, halotolerance, haloaddz);
+            }
 
             rendermodel(mdlname, mdl);
         }
@@ -3648,7 +3652,7 @@ namespace entities
                                     concatstring(attrval, s);
                                     if(enttype[e.type].mvattr == k)
                                     {
-                                        formatstring(s, " (%s)", mapvariants[clamp(e.attrs[enttype[e.type].mvattr], 0, MPV_MAX-1)]);
+                                        formatstring(s, " (%s)", MPV_STR[clamp(e.attrs[enttype[e.type].mvattr], 0, MPV_MAX-1)]);
                                         concatstring(attrval, s);
                                     }
                                 }

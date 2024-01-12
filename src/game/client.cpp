@@ -2655,8 +2655,8 @@ namespace client
                 {
                     getstring(text, p);
                     int mode = getint(p), muts = getint(p), crc = getint(p), variant = clamp(getint(p), int(MPV_DEFAULT), int(MPV_MAX-1)), tcn = getint(p);
-                    if(crc >= 0) conoutf(colourwhite, "Map change: %s (%d:%d) [0x%.8x] (%s)", text, mode, muts, crc, mapvariants[variant]);
-                    else conoutf(colourwhite, "Map change: %s (%d:%d) [%d] (%s)", text, mode, muts, crc, mapvariants[variant]);
+                    if(crc >= 0) conoutf(colourwhite, "Map change: %s (%d:%d) [0x%.8x] (%s)", text, mode, muts, crc, MPV_STR[variant]);
+                    else conoutf(colourwhite, "Map change: %s (%d:%d) [%d] (%s)", text, mode, muts, crc, MPV_STR[variant]);
                     changemapserv(text, mode, muts, crc, variant, tcn);
                     break;
                 }

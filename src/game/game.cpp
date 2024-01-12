@@ -1136,12 +1136,13 @@ namespace game
     {
         if(m_dark(gamemode, mutators)) switch(type)
         {
-            case 1: return darknessglow;
-            case 2: return darknesshalo;
-            case 3: return darknesssun;
-            case 4: return darknesspart;
-            case 5: return darknessui;
-            default: return darknesslevel;
+            case DARK_ENV: return darknessenv;
+            case DARK_GLOW: return darknessglow;
+            case DARK_SUN: return darknesssun;
+            case DARK_PART: return darknesspart;
+            case DARK_HALO: return darknesshalo;
+            case DARK_UI: return darknessui;
+            default: break;
         }
         return 1;
     }
@@ -3680,8 +3681,8 @@ namespace game
                 bvec pc = bvec::fromcolor(pulsecolour(d, PULSE_BUFF));
                 flashcolour(mdl.material[0].r, mdl.material[0].g, mdl.material[0].b, pc.r, pc.g, pc.b, amt);
             }
+            mdl.material[1] = mdl.material[2] = mdl.material[0].mul(mdl.color.a);
             mdl.color.a = hud::radardepth(d->center(), halodist, halotolerance, haloaddz);
-            mdl.material[1] = mdl.material[2] = mdl.material[0];
             return;
         }
         #define TONEINTERP(name, var) \

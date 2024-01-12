@@ -37,7 +37,7 @@ PIESKYVARS(alt, MPV_ALTERNATE);
     { \
         static bvec res; \
         res = checkmapvariant(MPV_ALTERNATE) ? sun##name##alt : sun##name; \
-        res.mul(game::darkness(3)); \
+        res.mul(game::darkness(DARK_SUN)); \
         return res; \
     }
 

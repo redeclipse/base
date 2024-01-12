@@ -419,6 +419,11 @@ static inline cubeext &ext(cube &c)
 
 // renderlights
 
+#define DARK_ENUM(pr, en) \
+    en(pr, Environment, ENV) en(pr, Glow, GLOW) en(pr, Sunlight, SUN) en(pr, Particles, PART) \
+    en(pr, Halo, HALO) en(pr, UI, UI) en(pr, Maximum, MAX)
+ENUMNV(DARK);
+
 #define LIGHTTILE_MAXW 16
 #define LIGHTTILE_MAXH 16
 
@@ -711,7 +716,7 @@ extern float watersx1, watersy1, watersx2, watersy2;
             case 3: \
                 res = checkmapvariant(MPV_ALTERNATE) ? name##4##var##alt : name##4##var; break; \
         } \
-        res.mul(game::darkness()); \
+        res.mul(game::darkness(DARK_ENV)); \
         return res; \
     }
 
@@ -883,7 +888,6 @@ extern void fixrange(float &yaw, float &pitch, bool full = false);
 // worldio
 extern char *maptitle, *mapauthor, *mapname, *maptext, *mapdesc;
 extern int mapcrc, maploading, mapsaving, mapvariant, mapeffects;
-extern const char *mapvariants[MPV_MAX];
 extern bool checkmapvariant(int variant);
 extern void changemapvariant(int variant);
 extern bool checkmapeffects(int fxlevel);

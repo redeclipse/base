@@ -1478,7 +1478,7 @@ namespace hud
 
     void drawbackground(int w, int h)
     {
-        float level = game::darkness();
+        float level = game::darkness(DARK_UI);
         gle::colorf(level, level, level, 1);
 
         Texture *t = NULL;
