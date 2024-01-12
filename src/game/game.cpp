@@ -206,7 +206,7 @@ namespace game
     VAR(IDF_PERSIST, fullbrightfocus, 0, 0, 3); // bitwise: 0 = don't fullbright focus, 1 = fullbright non-player1, 2 = fullbright player1
 
     VAR(IDF_PERSIST, thirdpersonmodel, 0, 1, 1);
-    VAR(IDF_PERSIST, thirdpersonfov, 90, 120, 150);
+    VAR(IDF_PERSIST, thirdpersonfov, 90, 90, 150);
     FVAR(IDF_PERSIST, thirdpersonblend, 0, 1, 1);
     VAR(IDF_PERSIST, thirdpersoninterp, 0, 100, VAR_MAX);
     FVAR(IDF_PERSIST, thirdpersondist, FVAR_NONZERO, 14, 20);
@@ -221,7 +221,7 @@ namespace game
 
     VAR(IDF_PERSIST, firstpersonmodel, 0, 3, 3);
     VAR(IDF_PERSIST, firstpersoncamera, 0, 0, 1);
-    VAR(IDF_PERSIST, firstpersonfov, 90, 100, 150);
+    VAR(IDF_PERSIST, firstpersonfov, 90, 90, 150);
     FVAR(IDF_PERSIST, firstpersondepth, 0, 0.25f, 1);
     FVAR(IDF_PERSIST, firstpersonbodydepth, 0, 1, 1);
     FVAR(IDF_PERSIST, firstpersonbodydepthkick, 0, 0.75f, 1);
@@ -264,8 +264,8 @@ namespace game
     VAR(IDF_PERSIST, firstpersonslidetime, 0, 200, VAR_MAX);
     FVAR(IDF_PERSIST, firstpersonslideroll, -89.9f, -5.f, 89.9f);
 
-    VAR(IDF_PERSIST, editfov, 10, 100, 150);
-    VAR(IDF_PERSIST, specfov, 10, 100, 150);
+    VAR(IDF_PERSIST, editfov, 10, 90, 150);
+    VAR(IDF_PERSIST, specfov, 10, 90, 150);
 
     VAR(IDF_PERSIST, specresetstyle, 0, 1, 1); // 0 = back to player1, 1 = stay at camera
 
@@ -718,12 +718,17 @@ namespace game
     ICOMMAND(0, isthirdperson, "i", (int *viewonly), intret(thirdpersonview(*viewonly ? true : false) ? 1 : 0));
     ICOMMAND(0, thirdpersonswitch, "", (), int *n = (focus != player1 ? &followthirdperson : &thirdperson); *n = !*n);
 
-    int fov()
+    float fov()
     {
-        if(player1->state == CS_EDITING) return editfov;
-        if(focus == player1 && player1->state == CS_SPECTATOR) return specfov;
-        if(thirdpersonview(true)) return thirdpersonfov;
-        return firstpersonfov;
+        float resultfov = 90.0f;
+        if(player1->state == CS_EDITING) resultfov = editfov;
+        if(focus == player1 && player1->state == CS_SPECTATOR) resultfov = specfov;
+        if(thirdpersonview(true)) resultfov = thirdpersonfov;
+        else resultfov = firstpersonfov;
+
+        // automatic FOV adjustment for wide screens
+        // (horizontal FOV value is always specified for 4:3, but scaled for different aspect ratios)
+        return atan(tan(resultfov * M_PI / 360.0f) * 0.75f * aspect) * 360.0f / M_PI;
     }
 
     void checkzoom()
