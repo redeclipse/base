@@ -289,7 +289,7 @@ namespace game
 
     VAR(0, spectvcamera, -1, -1, VAR_MAX); // use this specific camera id
     VAR(0, spectvcameraaim, 0, 1, 1); // use this specific camera aiming
-    VAR(IDF_PERSIST, spectviters, 1, 5, 5);
+    VAR(IDF_PERSIST, spectviters, 1, 6, 6);
     VAR(IDF_PERSIST, spectvmintime, 1, 5000, VAR_MAX);
     VAR(IDF_PERSIST, spectvtime, 1000, 10000, VAR_MAX);
     VAR(IDF_PERSIST, spectvmaxtime, 0, 20000, VAR_MAX);
@@ -303,7 +303,7 @@ namespace game
     VAR(IDF_PERSIST, spectvfirstperson, 0, 0, 2); // 0 = aim in direction followed player is facing, 1 = aim in direction determined by spectv when dead, 2 = always aim in direction
     VAR(IDF_PERSIST, spectvthirdperson, 0, 2, 2); // 0 = aim in direction followed player is facing, 1 = aim in direction determined by spectv when dead, 2 = always aim in direction
 
-    VAR(IDF_PERSIST, spectvintermiters, 1, 5, 5);
+    VAR(IDF_PERSIST, spectvintermiters, 1, 6, 6);
     VAR(IDF_PERSIST, spectvintermmintime, 1000, 5000, VAR_MAX);
     VAR(IDF_PERSIST, spectvintermtime, 1000, 10000, VAR_MAX);
     VAR(IDF_PERSIST, spectvintermmaxtime, 0, 20000, VAR_MAX);
@@ -316,7 +316,7 @@ namespace game
 
     VAR(0, spectvfollow, -1, -1, VAR_MAX); // attempts to always keep this client in view
     VAR(IDF_PERSIST, spectvfollowself, 0, 1, 2); // if we are not spectating, spectv should show us; 0 = off, 1 = not duel/survivor, 2 = always
-    VAR(IDF_PERSIST, spectvfollowiters, 1, 5, 5);
+    VAR(IDF_PERSIST, spectvfollowiters, 1, 6, 6);
     VAR(IDF_PERSIST, spectvfollowmintime, 1000, 5000, VAR_MAX);
     VAR(IDF_PERSIST, spectvfollowtime, 1000, 10000, VAR_MAX);
     VAR(IDF_PERSIST, spectvfollowmaxtime, 0, 20000, VAR_MAX);
@@ -1028,6 +1028,13 @@ namespace game
         return 1;
     }
 
+    float protectfade(gameent *d)
+    {
+        int prot = m_protect(gamemode, mutators), millis = d->protect(lastmillis, prot); // protect returns time left
+        if(millis > 0) return 1.f - min(float(millis) / float(prot), 1.0f);
+        return 1;
+    }
+
     float opacity(gameent *d, bool third)
     {
         if(d->isdead() && !deathanim) return 0;
@@ -1041,8 +1048,7 @@ namespace game
         else if(d->isalive())
         {
             if(d == focus && third) total *= min(camera1->o.dist(d->o)/(d != player1 ? followdist : thirdpersondist), 1.0f);
-            int prot = m_protect(gamemode, mutators), millis = d->protect(lastmillis, prot); // protect returns time left
-            if(millis > 0) total *= 1.f-min(float(millis)/float(prot), 1.0f);
+            total *= protectfade(d);
         }
         else if(d->isediting()) total *= playereditblend;
 
@@ -1160,7 +1166,6 @@ namespace game
     {
         int fcol = getflashlightcolour(), spot = m_dark(gamemode, mutators) ? darknessflashspot : getflashlightspot();
         bvec color = bvec(fcol ? fcol : 0xFFFFFF);
-        bool wantvol = hasvolumetric && flashlightvolumetric && d == focus;
 
         float radius = getflashlightradius();
         if(m_dark(gamemode, mutators))
@@ -1172,19 +1177,20 @@ namespace game
         }
         float level = m_dark(gamemode, mutators) ? darknessflashlevel : getflashlightlevel();
         if(d != focus) level *= flashlightlevelthird;
-        if(wantvol) level *= flashlightlevelvol;
 
         static fx::FxHandle flashlight_vol = fx::getfxhandle("FX_PLAYER_FLASHLIGHT_VOL");
         static fx::FxHandle flashlight_novol = fx::getfxhandle("FX_PLAYER_FLASHLIGHT_NOVOL");
         static fx::FxHandle flashlight_beam = fx::getfxhandle("FX_PLAYER_FLASHLIGHT_BEAM");
 
-        if(wantvol)
+        if(d->isalive()) color.mul(protectfade(d));
+
+        if(hasvolumetric && flashlightvolumetric && d == focus)
             fx::createfx(flashlight_vol, &d->flashlightfx)
                 .setentity(d)
                 .setcolor(color)
                 .setparam(0, radius)
                 .setparam(1, spot)
-                .setparam(2, level);
+                .setparam(2, level * flashlightlevelvol);
         else if(d == focus || (!exhausted && m_dark(gamemode, mutators)))
             fx::createfx(flashlight_novol, &d->flashlightfx)
                 .setentity(d)
@@ -3001,7 +3007,7 @@ namespace game
 
     bool camcansee(cament *c, cament *v, vec &from, float &yaw, float &pitch, float maxdist, float mindist, int iter = 0)
     {
-        if(!c || !v || v->flagged) return false;
+        if(!c || !v || v->flagged || (iter != 5 && v->type == cament::ENTITY)) return false;
 
         if(!v->checked)
         {
@@ -3024,7 +3030,7 @@ namespace game
         if(v->visible) return true; // an earlier round already passed
 
         vec trg;
-        switch(iter)
+        switch(v->type != cament::ENTITY ? iter : 1)
         {
             case 0:
                 if(!getsight(from, yaw, pitch, v->o, trg, maxdist, curfov, fovy)) return false; // check if the current view can see this
@@ -3033,14 +3039,20 @@ namespace game
                 if(!getsight(from, yaw, pitch, v->o, trg, maxdist, curfov + 45.f, fovy + 45.f)) return false; // gives a bit more fov wiggle room in case someone went out of shot
                 break;
             case 2:
-                if(!getvisible(from, yaw, pitch, v->o, curfov, fovy) || !camhalo(c, v)) return false;
+                if(!camhalo(c, v) || !getvisible(from, yaw, pitch, v->o, curfov, fovy)) return false;
                 break;
             case 3:
-                if(!getvisible(from, yaw, pitch, v->o, curfov + 45.f, fovy + 45.f) || !camhalo(c, v)) return false;
+                if(!camhalo(c, v) || !getvisible(from, yaw, pitch, v->o, curfov + 45.f, fovy + 45.f)) return false;
                 break;
             case 4:
                 if(!camhalo(c, v)) return false;
                 break;
+            case 5:
+                if(v->type == cament::ENTITY)
+                {
+                    if(!getvisible(from, yaw, pitch, v->o, curfov, fovy) || !camhalo(c, v)) return false;
+                    return true;
+                }
             default:
                 return false;
                 break;
@@ -4204,21 +4216,6 @@ namespace game
             if(haloallow(camera1->o, d))
             {
                 if(focus->isobserver() || (m_team(gamemode, mutators) && focus->team == d->team)) mdl.flags |= MDL_HALO_TOP;
-                if(d->isdead())
-                {
-                    float fade = spawnfade(d);
-                    loopi(MAXMDLMATERIALS) mdl.material[i].mul(fade);
-                    mdl.color.a *= fade;
-                }
-                else if(d->isalive())
-                {
-                    int prot = m_protect(gamemode, mutators), millis = d->protect(lastmillis, prot); // protect returns time left
-                    if(millis > 0)
-                    {
-                        float fade = 1 - min(float(millis)/float(prot), 1.f);
-                        loopi(MAXMDLMATERIALS) mdl.material[i].mul(fade);
-                    }
-                }
             }
             else
             {
