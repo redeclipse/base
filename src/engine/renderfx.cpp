@@ -7,19 +7,29 @@ VAR(0, debughalo, 0, 0, 2);
 VAR(IDF_PERSIST, halos, 0, 1, 1);
 FVAR(IDF_PERSIST, halowireframe, 0, 0, FVAR_MAX);
 VAR(IDF_PERSIST, halodist, 32, 2048, VAR_MAX);
-FVARF(IDF_PERSIST, haloscale, FVAR_NONZERO, 1, 1, cleanuphalo());
+FVARF(IDF_PERSIST, haloscale, FVAR_NONZERO, 0.5f, 1, cleanuphalo());
 FVAR(IDF_PERSIST, haloblend, 0, 1, 1);
 CVAR(IDF_PERSIST, halocolour, 0xFFFFFF);
-VARF(IDF_PERSIST, halooffset, 1, 1, 8, initwarning("halo setup", INIT_LOAD, CHANGE_SHADERS));
-FVAR(IDF_PERSIST, halofade, FVAR_NONZERO, 1, FVAR_MAX);
-FVAR(IDF_PERSIST, haloinfill, 0, 0.125f, 1);
 FVAR(IDF_PERSIST, halotolerance, FVAR_MIN, -16, FVAR_MAX);
 FVAR(IDF_PERSIST, haloaddz, FVAR_MIN, 2, FVAR_MAX);
+
+FVAR(IDF_PERSIST, halooffset, 1, 1, 16);
+FVAR(IDF_PERSIST, halooutlinemix, 0, 1, 1); // mix between first/closest pixel and accumulation of all 5 pixels
+FVAR(IDF_PERSIST, halooutlinecol, FVAR_NONZERO, 1, FVAR_MAX); // multiply resulting rgb by this
+FVAR(IDF_PERSIST, halooutlineblend, FVAR_NONZERO, 1, FVAR_MAX); // multiply resulting a by this
+FVAR(IDF_PERSIST, halooutlineshadow, 0, 0.5f, 1); // apply highlight/shadowing with an extra sample
+FVAR(IDF_PERSIST, haloinfillmix, 0, 0, 1);
+FVAR(IDF_PERSIST, haloinfillcol, FVAR_NONZERO, 0.75f, FVAR_MAX);
+FVAR(IDF_PERSIST, haloinfillblend, FVAR_NONZERO, 0.25f, FVAR_MAX);
+FVAR(IDF_PERSIST, halonoisesample, 0, 4, 16);
+FVAR(IDF_PERSIST, halonoisemixcol, 0, 0, 1);
+FVAR(IDF_PERSIST, halonoisemixblend, 0, 0.5f, 1);
 
 void setuphalo(int w, int h)
 {
     w = max(int(w*haloscale), 2);
     h = max(int(h*haloscale), 2);
+
     if(w != halow || h != haloh)
     {
         cleanuphalo();
@@ -44,6 +54,7 @@ void setuphalo(int w, int h)
         }
         GLERROR;
     }
+
     halotype = -1;
 }
 
@@ -63,6 +74,7 @@ void cleanuphalo()
             halotex[i] = 0;
         }
     }
+
     halotype = -1;
 }
 
@@ -144,7 +156,7 @@ void blendhalos()
     //glBindFramebuffer_(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, hudw, hudh);
 
-    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     gle::color(halocolour.tocolor().mul(game::darkness(2)), haloblend);
     glEnable(GL_BLEND);
 
@@ -164,7 +176,11 @@ void blendhalos()
         else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
         glActiveTexture_(GL_TEXTURE0);
 
-        LOCALPARAMF(haloparams, halofade, haloinfill, maxdist, 1 / maxdist);
+        LOCALPARAMF(millis, lastmillis / 1000.0f);
+        LOCALPARAMF(halooutline, halooutlinemix, halooutlinecol, halooutlineblend, halooutlineshadow);
+        LOCALPARAMF(haloinfill, haloinfillmix, haloinfillcol, haloinfillblend);
+        LOCALPARAMF(halonoise, halonoisesample, halonoisemixcol, halonoisemixblend);
+        LOCALPARAMF(haloparams, maxdist, 1 / maxdist, halooffset);
 
         hudquad(0, 0, hudw, hudh, 0, haloh, halow, -haloh);
     }
