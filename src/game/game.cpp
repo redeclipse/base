@@ -326,9 +326,9 @@ namespace game
     FVAR(IDF_PERSIST, spectvfollowyawscale, FVAR_MIN, 0.75f, 1000);
     FVAR(IDF_PERSIST, spectvfollowpitchscale, FVAR_MIN, 0.5f, 1000);
 
-    FVAR(IDF_PERSIST, spectvmindist, 0, 8, FVAR_MAX);
+    FVAR(IDF_PERSIST, spectvmindist, 0, 16, FVAR_MAX);
     FVAR(IDF_PERSIST, spectvmaxdist, 0, 2048, FVAR_MAX);
-    FVAR(IDF_PERSIST, spectvfollowmindist, 0, 4, FVAR_MAX);
+    FVAR(IDF_PERSIST, spectvfollowmindist, 0, 8, FVAR_MAX);
     FVAR(IDF_PERSIST, spectvfollowmaxdist, 0, 1024, FVAR_MAX);
 
     VAR(IDF_PERSIST, deathcamstyle, 0, 1, 2); // 0 = no follow, 1 = follow attacker, 2 = follow self
@@ -2938,8 +2938,12 @@ namespace game
         }
         else if(c->player)
         {
-            yaw = c->player->yaw;
-            pitch = c->player->pitch;
+            if(!c->player->isalive()) deathcamyawpitch(c->player, yaw, pitch);
+            else
+            {
+                yaw = c->player->yaw;
+                pitch = c->player->pitch;
+            }
             if(!spectvaiming(c->player)) c->chase = false;
         }
         else
@@ -3265,7 +3269,7 @@ namespace game
         {
             camrefresh(cam);
 
-            int millis = lasttvchg ? totalmillis-lasttvchg : 0;
+            int millis = lasttvchg ? totalmillis - lasttvchg : 0;
             bool updated = camupdate(cam, stvf(iters), restart || !count || !spectvcameraaim), override = !lasttvchg || millis >= stvf(mintime),
                 timeup = !lasttvcam || totalmillis-lasttvcam >= stvf(time), overtime = stvf(maxtime) && millis >= stvf(maxtime);
 
@@ -3277,7 +3281,7 @@ namespace game
                 loopv(cameras)
                 {
                     cament *c = cameras[i];
-                    if(!camupdate(c, stvf(iters), true)) continue;
+                    if(!camupdate(c, 1, true)) continue;
                     loopj(cament::MAX) c->lastinview[j] = c->inview[j];
                     if(!c->ignore) goodcams++;
                 }
@@ -4246,8 +4250,8 @@ namespace game
             float radius = d->getradius() * 1.2f, height = d->getheight() * 0.45f;
             if(d->ragdoll)
             {
-                radius *= 0.35f;
-                height *= 2.f;
+                radius *= 0.5f;
+                height *= 2.2f;
             }
 
             vec origin = d->center(), col = pulsecolour(d, PULSE_SHOCK), rad = vec(radius, radius, height).mul(blend);

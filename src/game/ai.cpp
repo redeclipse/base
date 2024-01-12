@@ -132,11 +132,11 @@ namespace ai
         o = e->o;
         if(lastmillis >= d->ai->lastaimrnd)
         {
-            int radius = ceilf(e->radius*W2(d->weapselect, aiskew, alt));
-            float scale = (101-d->skill)/100.f;
-            loopk(3) d->ai->aimrnd[k] = (rnd((radius*2)+1)-radius)*scale;
-            int dur = max(d->skill*2, 30)*5;
-            d->ai->lastaimrnd = lastmillis+dur+rnd(dur);
+            int radius = ceilf(e->radius * W2(d->weapselect, aiskew, alt));
+            float scale = (101 - d->skill) / 100.f;
+            loopk(3) d->ai->aimrnd[k] = (rnd((radius * 2) + 1) - radius) * scale;
+            int dur = max(d->skill * 2, 30) * 5;
+            d->ai->lastaimrnd = lastmillis + dur + rnd(dur);
         }
         return o.add(d->ai->aimrnd);
     }
@@ -1128,15 +1128,14 @@ namespace ai
 
     void process(gameent *d, aistate &b, bool &occupied, bool &firing, vector<actitem> &items)
     {
-        int skmod = max(101-d->skill, 1);
-        float frame = d->skill <= 100 ? ((lastmillis-d->ai->lastrun)*(100.f/gamespeed))/float(skmod*10) : 1;
-        if(d->dominating.length()) frame *= 1+d->dominating.length(); // berserker mode
+        int skmod = max(101 - d->skill, 1);
+        float frame = d->skill <= 100 ? ((lastmillis - d->ai->lastrun) * (100.f / gamespeed)) / float(skmod * 20) : 1;
+        if(d->dominating.length()) frame *= 1 + d->dominating.length(); // berserker mode
         bool dancing = b.type == AI_S_OVERRIDE && b.overridetype == AI_O_DANCE,
              allowrnd = dancing || b.type == AI_S_WAIT || b.type == AI_S_PURSUE || b.type == AI_S_INTEREST;
         d->action[AC_SPECIAL] = d->ai->dontmove = false;
         if(b.acttype == AI_A_IDLE || !(A(d->actortype, abilities)&(1<<A_A_MOVE)))
         {
-            frame *= 10;
             d->ai->dontmove = true;
             d->ai->spot = d->feetpos();
         }
@@ -1210,7 +1209,7 @@ namespace ai
                 bool alt = altfire(d, e);
                 float yaw, pitch;
                 game::getyawpitch(d->o, getaimpos(d, e, alt), yaw, pitch);
-                bool insight = cansee(d, d->o, e->o), hasseen = d->ai->enemyseen && lastmillis-d->ai->enemyseen <= (d->skill*10)+1000;
+                bool insight = cansee(d, d->o, e->o), hasseen = d->ai->enemyseen && lastmillis - d->ai->enemyseen <= (d->skill * 10) + 1000;
                 if(insight) d->ai->enemyseen = lastmillis;
                 if(d->ai->dontmove || insight || hasseen)
                 {
@@ -1228,7 +1227,7 @@ namespace ai
                             d->ai->spot = e->feetpos();
                         }
                     }
-                    game::scaleyawpitch(d->yaw, d->pitch, yaw, pitch, frame, frame*0.75f);
+                    game::scaleyawpitch(d->yaw, d->pitch, yaw, pitch, frame, frame*0.5f);
                     if(shootable)
                     {
                         if(kamikaze)
@@ -1271,7 +1270,7 @@ namespace ai
         fixrange(d->ai->targyaw, d->ai->targpitch);
         if(dancing || !occupied)
         {
-            if(dancing || actors[d->actortype].onlyfwd) frame *= 10;
+            if(dancing || actors[d->actortype].onlyfwd) frame *= 2;
             else if(!m_insta(game::gamemode, game::mutators))
             {
                 int hp = max(d->gethealth(game::gamemode, game::mutators)/3, 1);
@@ -1279,7 +1278,7 @@ namespace ai
                     b.acttype = AI_A_HASTE;
                 if(b.acttype == AI_A_HASTE) frame *= 1+(hp/float(max(d->health, 1)));
             }
-            else frame *= 2;
+
             game::scaleyawpitch(d->yaw, d->pitch, d->ai->targyaw, d->ai->targpitch, frame, frame*0.5f);
         }
 

@@ -2336,8 +2336,6 @@ struct cament
     {
         if(!a->ignore && b->ignore) return true;
         if(a->ignore && !b->ignore) return false;
-        if(!a->flagged && b->flagged) return true;
-        if(a->flagged && !b->flagged) return false;
         if(a->inview[cament::PLAYER] > b->inview[cament::PLAYER]) return true;
         if(a->inview[cament::PLAYER] < b->inview[cament::PLAYER]) return false;
         if(a->inview[cament::AFFINITY] > b->inview[cament::AFFINITY]) return true;
