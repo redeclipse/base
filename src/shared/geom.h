@@ -1500,10 +1500,16 @@ struct bvec4
     bvec4 &div(int n) { x /= n; y /= n; z /= n; w /= n; return *this; }
     bvec4 &add(int n) { x += n; y += n; z += n; w += n; return *this; }
     bvec4 &sub(int n) { x -= n; y -= n; z -= n; w -= n; return *this; }
+    bvec4 &mul(float n) { x = uchar(x*n); y = uchar(y*n); z = uchar(z*n); w = uchar(w*n); return *this; }
+    bvec4 &muld(float n, float ss = 1) { x = uchar(x*n/ss); y = uchar(y*n/ss); z = uchar(z*n/ss); w = uchar(w*n/ss); return *this; }
+    bvec4 &div(float n) { x = uchar(x/n); y = uchar(y/n); z = uchar(z/n); w = uchar(w/n); return *this; }
+    bvec4 &add(float n) { x = uchar(x+n); y = uchar(y+n); z = uchar(z+n); w = uchar(w+n); return *this; }
+    bvec4 &sub(float n) { x = uchar(x-n); y = uchar(y-n); z = uchar(z-n); w = uchar(w-n); return *this; }
     bvec4 &mul(const bvec4 &v) { x *= v.x; y *= v.y; z *= v.z; w *= v.w; return *this; }
     bvec4 &div(const bvec4 &v) { x /= v.x; y /= v.y; z /= v.z; w /= v.w; return *this; }
     bvec4 &add(const bvec4 &v) { x += v.x; y += v.y; z += v.z; w += v.w; return *this; }
     bvec4 &sub(const bvec4 &v) { x -= v.x; y -= v.y; z -= v.z; w -= v.w; return *this; }
+    bvec4 &muld(const bvec4 &v, float ss = 1) { x = uchar(x*v.x/ss); y = uchar(y*v.y/ss); z = uchar(z*v.z/ss); w = uchar(w*v.w/ss); return *this; }
     bvec4 &mul(float xx, float yy, float zz, float ww = 1) { x = uchar(x*xx); y = uchar(y*yy); z = uchar(z*zz); w = uchar(w*ww); return *this; }
     bvec4 &div(float xx, float yy, float zz, float ww = 1) { x = uchar(x/xx); y = uchar(y/yy); z = uchar(z/zz); w = uchar(w/ww); return *this; }
     bvec4 &muld(float xx, float yy, float zz, float ss = 1) { x = uchar(x*xx/ss); y = uchar(y*yy/ss); z = uchar(z*zz/ss); return *this; }
@@ -1554,6 +1560,12 @@ struct bvec4
     bvec4 &alpha(uchar n) { a = n; return *this; }
     static bvec4 fromcolor(const vec &v, float trans = 1) { return bvec4(uchar(v.x*255.0f), uchar(v.y*255.0f), uchar(v.z*255.0f), uchar(trans*255.0f)); }
     static bvec4 fromcolor(int color, float trans = 1) { return bvec4(uchar((color>>16)&0xFF), uchar((color>>8)&0xFF), uchar(color&0xFF), uchar(trans*255.0f)); }
+
+    vec tocolor() const { return vec(r*(1.0f/255.0f), g*(1.0f/255.0f), b*(1.0f/255.0f)); }
+    int tohexcolor() const { return (int(r)<<16)|(int(g)<<8)|int(b); }
+
+    vec4 tocolor4() const { return vec4(r*(1.0f/255.0f), g*(1.0f/255.0f), b*(1.0f/255.0f), a*(1.0f/255.0f)); }
+    uint tohexcolor4() const { return uint((int(a)<<24)|(int(r)<<16)|(int(g)<<8)|int(b)); }
 };
 
 inline bvec::bvec(const bvec4 &v) : x(v.x), y(v.y), z(v.z) {}

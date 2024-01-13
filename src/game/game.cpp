@@ -1141,16 +1141,18 @@ namespace game
 
     float darkness(int type)
     {
-        if(m_dark(gamemode, mutators)) switch(type)
-        {
-            case DARK_ENV: return darknessenv;
-            case DARK_GLOW: return darknessglow;
-            case DARK_SUN: return darknesssun;
-            case DARK_PART: return darknesspart;
-            case DARK_HALO: return darknesshalo;
-            case DARK_UI: return darknessui;
-            default: break;
-        }
+        if(DRAWTEX_DARK&(1<<drawtex) && m_dark(gamemode, mutators))
+            switch(type)
+            {
+                case DARK_ENV: return darknessenv;
+                case DARK_GLOW: return darknessglow;
+                case DARK_SUN: return darknesssun;
+                case DARK_PART: return darknesspart;
+                case DARK_HALO: return darknesshalo;
+                case DARK_UI: return darknessui;
+                default: break;
+            }
+
         return 1;
     }
     ICOMMAND(0, getdarkness, "i", (int *n), floatret(darkness(*n)));

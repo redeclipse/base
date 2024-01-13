@@ -2856,41 +2856,58 @@ namespace UI
 
     struct Color
     {
-        union
+        bvec4 val;
+
+        Color() { val.mask = 0xFFFFFFFFU; }
+        Color(int c, bool force = false) { fillvalue(c, force); }
+        Color(uint c, bool force = false) { fillvalue(c, force); }
+        Color(uint c, uchar a) { fillvalue(c, a); }
+        Color(uchar r, uchar g, uchar b, uchar a = 255) : val(r, g, b, a) {}
+        Color(const Color &c) : val(c.val) {}
+
+        void fillvalue(int c, bool force = false)
         {
-            struct { uchar r, g, b, a; };
-            uint mask;
-        };
+            val.r = (uint(c)>>16)&0xFF;
+            val.g = (uint(c)>>8)&0xFF;
+            val.b = uint(c)&0xFF;
+            val.a = uint(c)>>24 || force ? uint(c)>>24 : 0xFF;
+        }
 
-        Color() : mask(0xFFFFFFFFU) {}
-        Color(int c, bool force = false) : r((uint(c)>>16)&0xFF), g((uint(c)>>8)&0xFF), b(uint(c)&0xFF), a(uint(c)>>24 || force ? uint(c)>>24 : 0xFF) {}
-        Color(uint c, bool force = false) : r((c>>16)&0xFF), g((c>>8)&0xFF), b(c&0xFF), a(c>>24 || force ? c>>24 : 0xFF) {}
-        Color(uint c, uchar a) : r((c>>16)&0xFF), g((c>>8)&0xFF), b(c&0xFF), a(a) {}
-        Color(uchar r, uchar g, uchar b, uchar a = 255) : r(r), g(g), b(b), a(a) {}
-        Color(const Color &c) : r(c.r), g(c.g), b(c.b), a(c.a) {}
+        void fillvalue(uint c, bool force = false)
+        {
+            val.r = (c>>16)&0xFF;
+            val.g = (c>>8)&0xFF;
+            val.b = c&0xFF;
+            val.a = c>>24 || force ? uint(c)>>24 : 0xFF;
+        }
 
-        void init() { gle::colorub(r, g, b, a); }
-        void attrib() { gle::attribub(r, g, b, a); }
+        void fillvalue(uint c, uchar a)
+        {
+            val.r = (c>>16)&0xFF;
+            val.g = (c>>8)&0xFF;
+            val.b = c&0xFF;
+            val.a = a;
+        }
+
+        void init(float scale = 1, float alpha = 1) { gle::colorub(val.r*scale, val.g*scale, val.b*scale, val.a*alpha); }
+        void attrib(float scale = 1, float alpha = 1) { gle::attribub(val.r*scale, val.g*scale, val.b*scale, val.a*alpha); }
+        void init(const Color &c) { gle::colorub(val.r*c.val.r, val.g*c.val.g, val.b*c.val.b, val.a*c.val.a); }
+        void attrib(const Color &c) { gle::attribub(val.r*c.val.r, val.g*c.val.g, val.b*c.val.b, val.a*c.val.a); }
 
         static void def() { gle::defcolor(4, GL_UNSIGNED_BYTE); }
 
         Color &scale(const Color &c)
         {
-            r = int(r*c.r/255.f);
-            g = int(g*c.g/255.f);
-            b = int(b*c.b/255.f);
-            a = int(a*c.a/255.f);
+            val.muld(c.val, 255.f);
+            val.r = int(val.r*c.val.r/255.f);
+            val.g = int(val.g*c.val.g/255.f);
+            val.b = int(val.b*c.val.b/255.f);
+            val.a = int(val.a*c.val.a/255.f);
             return *this;
         }
 
-        vec tocolor() const { return vec(r*(1.0f/255.0f), g*(1.0f/255.0f), b*(1.0f/255.0f)); }
-        int tohexcolor() const { return (int(r)<<16)|(int(g)<<8)|int(b); }
-
-        vec4 tocolor4() const { return vec4(r*(1.0f/255.0f), g*(1.0f/255.0f), b*(1.0f/255.0f), a*(1.0f/255.0f)); }
-        uint tohexcolor4() const { return uint((int(a)<<24)|(int(r)<<16)|(int(g)<<8)|int(b)); }
-
-        bool operator==(const Color &o) const { return mask == o.mask; }
-        bool operator!=(const Color &o) const { return mask != o.mask; }
+        bool operator==(const Color &o) const { return val.mask == o.val.mask; }
+        bool operator!=(const Color &o) const { return val.mask != o.val.mask; }
     };
 
     struct Colored : Object
@@ -2960,10 +2977,10 @@ namespace UI
             {
                 int p = rev ? i-pieces : (i+pieces)%cols, m = p >= 0 ? p : cols+p, q = rev ? m-1 : (m+1)%cols, n = q >= 0 ? q : cols+q;
                 colorstack.insert(index,
-                    Color(colors[m].r-int((colors[m].r-colors[n].r)*iter),
-                          colors[m].g-int((colors[m].g-colors[n].g)*iter),
-                          colors[m].b-int((colors[m].b-colors[n].b)*iter),
-                          colors[m].a-int((colors[m].a-colors[n].a)*iter)
+                    Color(colors[m].val.r-int((colors[m].val.r-colors[n].val.r)*iter),
+                          colors[m].val.g-int((colors[m].val.g-colors[n].val.g)*iter),
+                          colors[m].val.b-int((colors[m].val.b-colors[n].val.b)*iter),
+                          colors[m].val.a-int((colors[m].val.a-colors[n].val.a)*iter)
                          )
                     );
                 if(!rev) index++;
@@ -2981,7 +2998,7 @@ namespace UI
     {
         if(o->colors.inrange(*pos)) o->colors[*pos] = Color(*c, *force != 0);
     });
-    UICMDT(Colored, colour, get, "i", (int *pos), intret(o->colors[clamp(*pos, 0, o->colors.length()-1)].mask));
+    UICMDT(Colored, colour, get, "i", (int *pos), intret(o->colors[clamp(*pos, 0, o->colors.length()-1)].val.mask));
     UICMDT(Colored, colour, add, "ii", (int *c, int *force), o->colors.add(Color(*c, *force != 0)));
     UICMDT(Colored, colour, del, "i", (int *c),
     {
@@ -2994,7 +3011,7 @@ namespace UI
         else if(o->colors.inrange(*pos)) o->colors[*pos].scale(Color(*c, *force != 0));
     });
     UICMDT(Colored, colour, rotate, "fii", (float *amt, int *start, int *count), o->rotatecolors(*amt, *start, *count));
-    UICMDT(Colored, colour, blend, "f", (float *blend), loopvk(o->colors) o->colors[k].a = clamp(uchar(*blend * o->colors[k].a), 0, 255));
+    UICMDT(Colored, colour, blend, "f", (float *blend), loopvk(o->colors) o->colors[k].val.a = clamp(uchar(*blend * o->colors[k].val.a), 0, 255));
 
     static const float defcoords[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
     struct Filler : Colored
@@ -3338,7 +3355,7 @@ namespace UI
                 if(!i) continue; // becomes vcolor
                 defformatstring(texparam, "objcolor%d", i);
                 LocalShaderParam param = list.add(LocalShaderParam(texparam));
-                param.set(colors[i].tocolor4()); // automatically converts to correct type
+                param.set(colors[i].val.tocolor4()); // automatically converts to correct type
             }
             loopv(texs)
             {
@@ -4315,7 +4332,7 @@ namespace UI
             if(rotate) hudmatrix.rotate_around_z(rotate*90*RAD);
             flushhudmatrix();
             textshader = surfacetype == SURFACE_WORLD ? hudtextworldshader : hudtextshader;
-            draw_text(getstr(), 0, 0, colors[0].r, colors[0].g, colors[0].b, colors[0].a, flags, pos, wlen, 1);
+            draw_text(getstr(), 0, 0, colors[0].val.r, colors[0].val.g, colors[0].val.b, colors[0].val.a, flags, pos, wlen, 1);
             textshader = NULL;
             pophudmatrix();
 
@@ -5261,7 +5278,7 @@ namespace UI
             pushhudtranslate(sx, sy, k);
 
             textshader = surfacetype == SURFACE_WORLD ? hudtextworldshader : hudtextshader;
-            edit->draw(FONTW/2, 0, colors[0].tohexcolor(), colors[0].a, isfocus());
+            edit->draw(FONTW/2, 0, colors[0].val.tohexcolor(), colors[0].val.a, isfocus());
             textshader = NULL;
 
             pophudmatrix();
@@ -5898,7 +5915,7 @@ namespace UI
             model *m = loadmodel(name);
             if(m)
             {
-                //loopi(min(colors.length(), int(MAXMDLMATERIALS))) mdl.material[i] = bvec(colors[i].r, colors[i].g, colors[i].b);
+                //loopi(min(colors.length(), int(MAXMDLMATERIALS))) mdl.material[i] = bvec(colors[i].val.r, colors[i].val.g, colors[i].val.b);
                 vec center, radius;
                 m->boundbox(center, radius);
                 if(yaw >= 0) mdl.yaw = yaw;
@@ -5971,8 +5988,8 @@ namespace UI
 
             modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch+offsetpitch, roll, fov, false, hasclipstack, translate);
 
-            colors[0].a = uchar(colors[0].a*blend);
-            game::renderplayerpreview(scale, colors[0].tocolor4(), actions, yaw, offsetyaw);
+            colors[0].val.a = uchar(colors[0].val.a*blend);
+            game::renderplayerpreview(scale, colors[0].val.tocolor4(), actions, yaw, offsetyaw);
             if(hasclipstack) clipstack.last().scissor();
             // Steal the matrix for calculating positions on the model
             lastmatrix = camprojmatrix;
@@ -6052,7 +6069,7 @@ namespace UI
             bool hasclipstack = clipstack.length() > 0;
             window->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
             modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch, roll, fov, false, hasclipstack);
-            previewprefab(name, colors[0].tocolor(), blend*(colors[0].a/255.f), yaw, offsetyaw);
+            previewprefab(name, colors[0].val.tocolor(), blend*(colors[0].val.a/255.f), yaw, offsetyaw);
             if(hasclipstack) clipstack.last().scissor();
             modelpreview::end(uicurfbo, skycol, suncol, sundir, excol, exdir);
         }
@@ -6123,7 +6140,7 @@ namespace UI
             loopk(4) { tc[k].x = tc[k].x/xt - float(xoff)/t->xs; tc[k].y = tc[k].y/yt - float(yoff)/t->ys; }
             settexture(t);
             vec colorscale = vslot.getcolorscale();
-            if(slot.loaded) gle::colorf(colorscale.x*colors[0].r/255.f, colorscale.y*colors[0].g/255.f, colorscale.z*colors[0].b/255.f, colors[0].a/255.f);
+            if(slot.loaded) gle::colorf(colorscale.x*colors[0].val.r/255.f, colorscale.y*colors[0].val.g/255.f, colorscale.z*colors[0].val.b/255.f, colors[0].val.a/255.f);
             else gle::colorf(1, 1, 1);
             quad(x, y, w, h, tc);
             if(detailtex)
@@ -6136,7 +6153,7 @@ namespace UI
                 glBlendFunc(GL_SRC_ALPHA, GL_ONE);
                 settexture(glowtex);
                 vec glowcolor = vslot.getglowcolor();
-                gle::colorf(glowcolor.x*colors[0].r/255.f, glowcolor.y*colors[0].g/255.f, glowcolor.z*colors[0].b/255.f, colors[0].a/255.f);
+                gle::colorf(glowcolor.x*colors[0].val.r/255.f, glowcolor.y*colors[0].val.g/255.f, glowcolor.z*colors[0].val.b/255.f, colors[0].val.a/255.f);
                 quad(x, y, w, h, tc);
                 setblend(blendtype, true);
             }
@@ -6144,7 +6161,7 @@ namespace UI
             {
                 vec layerscale = layer->getcolorscale();
                 settexture(layertex);
-                gle::colorf(layerscale.x*colors[0].r/255.f, layerscale.y*colors[0].g/255.f, layerscale.z*colors[0].g/255.f, colors[0].a/255.f);
+                gle::colorf(layerscale.x*colors[0].val.r/255.f, layerscale.y*colors[0].val.g/255.f, layerscale.z*colors[0].val.g/255.f, colors[0].val.a/255.f);
                 quad(x, y, w/2, h/2, tc);
             }
         }
@@ -6237,7 +6254,7 @@ namespace UI
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
             vec colorscale = vslot.getcolorscale();
-            if(slot.loaded) gle::colorf(colorscale.x*colors[0].r/255.f, colorscale.y*colors[0].g/255.f, colorscale.z*colors[0].b/255.f, colors[0].a/255.f);
+            if(slot.loaded) gle::colorf(colorscale.x*colors[0].val.r/255.f, colorscale.y*colors[0].val.g/255.f, colorscale.z*colors[0].val.b/255.f, colors[0].val.a/255.f);
             else gle::colorf(1, 1, 1, 1);
             quad(x, y, w, h, tc);
             if(glowtex)
@@ -6247,7 +6264,7 @@ namespace UI
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
                 vec glowcolor = vslot.getglowcolor();
-                gle::colorf(glowcolor.x*colors[0].r/255.f, glowcolor.y*colors[0].g/255.f, glowcolor.z*colors[0].b/255.f, colors[0].a/255.f);
+                gle::colorf(glowcolor.x*colors[0].val.r/255.f, glowcolor.y*colors[0].val.g/255.f, glowcolor.z*colors[0].val.b/255.f, colors[0].val.a/255.f);
                 quad(x, y, w, h, tc);
                 setblend(blendtype, true);
             }
@@ -6309,7 +6326,7 @@ namespace UI
                 int limit = hud::radarlimit();
                 float scale = min(dist > 0 ? dist : float(worldsize), limit > 0 ? limit : float(worldsize)),
                       qw = w*0.5f*border, qh = h*0.5f*border, rw = w*0.5f-qw, rh = h*0.5f-qh;
-                colors[1].init();
+                colors[1].init(game::darkness(DARK_UI));
                 gle::defvertex(2);
                 gle::deftexcoord0();
                 gle::begin(GL_TRIANGLE_FAN);
