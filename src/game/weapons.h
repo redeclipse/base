@@ -231,7 +231,7 @@ WPFVARM(IDF_GAMEMOD, 0, aidist, 0, FVAR_MAX,
     16.0f,      512.0f,     48.0f,      128.0f,     320.0f,     64.0f,      512.0f,     512.0f,     512.0f,     384.0f,     128.0f,     1024.0f,    16.0f,
     16.0f,      40.0f,      48.0f,      256.0f,     320.0f,     32.0f,      128.0f,     128.0f,     2048.0f,    128.0f,     128.0f,     512.0f,     16.0f
 );
-WPVARM(IDF_GAMEMOD, 0, aiskew, 0, VAR_MAX,
+WPFVARM(IDF_GAMEMOD, 0, aiskew, 0, FVAR_MAX,
     0.1f,       0.5f,       0.1f,       0.3f,       0.5f,       0.3f,       0.5f,       0.5f,       0.5f,       0.1f,       0.1f,       0.5f,       0.1f,
     0.1f,       0.1f,       0.1f,       0.3f,       0.5f,       0.3f,       0.5f,       0.5f,       0.5f,       0.1f,       0.1f,       0.5f,       0.1f
 );
