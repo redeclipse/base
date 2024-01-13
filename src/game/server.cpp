@@ -1292,11 +1292,11 @@ namespace server
         return false;
     }
 
-    int findcolour(clientinfo *ci, bool tone = true)
+    int findcolour(clientinfo *ci, bool sec = false, bool tone = true)
     {
         if(tone)
         {
-            int col = ci->actortype < A_ENEMY ? ci->colour : TEAM(T_ENEMY, colour);
+            int col = ci->actortype < A_ENEMY ? ci->colours[sec ? 1 : 0] : TEAM(T_ENEMY, colour);
             if(!col && isweap(ci->weapselect)) col = W(ci->weapselect, colour);
             if(col) return col;
         }
@@ -4131,7 +4131,7 @@ namespace server
                 putint(p, ci->skill);
                 sendstring(ci->name, p);
                 putint(p, ci->team);
-                putint(p, ci->colour);
+                loopk(2) putint(p, ci->colours[k]);
                 putint(p, ci->model);
                 putint(p, ci->pattern);
                 sendstring(ci->vanity, p);
@@ -4143,7 +4143,7 @@ namespace server
         {
             putint(p, N_CLIENTINIT);
             putint(p, ci->clientnum);
-            putint(p, ci->colour);
+            loopk(2) putint(p, ci->colours[k]);
             putint(p, ci->model);
             putint(p, ci->pattern);
             putint(p, ci->checkpointspawn);
@@ -6407,7 +6407,7 @@ namespace server
                         filterstring(namestr, text, true, true, true, true, MAXNAMELEN);
                         if(!*namestr) copystring(namestr, "unnamed");
                         copystring(ci->name, namestr, MAXNAMELEN+1);
-                        ci->colour = max(getint(p), 0);
+                        loopk(2) ci->colours[k] = max(getint(p), 0);
                         ci->model = max(getint(p), 0);
                         ci->pattern = max(getint(p), 0);
                         getstring(text, p);
@@ -7263,7 +7263,7 @@ namespace server
                         copystring(ci->name, namestr, MAXNAMELEN+1);
                         relayf(2, colourmagenta, "* %s is now known as %s", oldname, colourname(ci));
                     }
-                    ci->colour = max(getint(p), 0);
+                    loopk(2) ci->colours[k] = max(getint(p), 0);
                     ci->model = max(getint(p), 0);
                     ci->pattern = max(getint(p), 0);
                     ci->checkpointspawn = max(getint(p), 0);
@@ -7287,7 +7287,7 @@ namespace server
                     ci->lastplayerinfo = totalmillis ? totalmillis : 1;
                     QUEUE_INT(N_SETPLAYERINFO);
                     QUEUE_STR(ci->name);
-                    QUEUE_INT(ci->colour);
+                    loopk(2) QUEUE_INT(ci->colours[k]);
                     QUEUE_INT(ci->model);
                     QUEUE_INT(ci->pattern);
                     QUEUE_INT(ci->checkpointspawn);

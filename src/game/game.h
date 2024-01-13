@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 270
+#define VERSION_GAME 271
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -647,7 +647,7 @@ struct verinfo
 // inherited by gameent and server clients
 struct clientstate
 {
-    int health, colour, model, pattern, checkpointspawn;
+    int health, colours[2], model, pattern, checkpointspawn;
     int weapselect, weapammo[W_MAX][W_A_MAX], weapload[W_MAX][W_A_MAX], weapent[W_MAX], weapshot[W_MAX], weapstate[W_MAX], weapwait[W_MAX], weaptime[W_MAX], prevstate[W_MAX], prevtime[W_MAX];
     int lastdeath, lastspawn, lastpain, lastregen, lastregenamt, lastbuff, lastshoot, lastcook, lastaffinity, lastres[W_R_MAX], lastrestime[W_R_MAX];
     int burntime, burndelay, burndamage, bleedtime, bleeddelay, bleeddamage, shocktime, shockdelay, shockdamage, shockstun, shockstuntime;
@@ -659,10 +659,11 @@ struct clientstate
     vector<int> loadweap, lastweap, randweap, cpnodes;
     verinfo version;
 
-    clientstate() : colour(0), model(0), pattern(0), checkpointspawn(1), weapselect(W_CLAW), lastdeath(0), lastspawn(0), lastpain(0), lastregen(0), lastregenamt(0), lastbuff(0), lastshoot(0), lastcook(0), lastaffinity(0),
+    clientstate() : model(0), pattern(0), checkpointspawn(1), weapselect(W_CLAW), lastdeath(0), lastspawn(0), lastpain(0), lastregen(0), lastregenamt(0), lastbuff(0), lastshoot(0), lastcook(0), lastaffinity(0),
         actortype(A_PLAYER), spawnpoint(-1), ownernum(-1), skill(0), points(0), frags(0), deaths(0), totalpoints(0), totalfrags(0), totaldeaths(0), spree(0), lasttimeplayed(0), timeplayed(0),
         cpmillis(0), cptime(0), queuepos(-1), totalavgpos(0), quarantine(false)
     {
+        loopi(2) colours[i] = 0;
         vanity[0] = '\0';
         loadweap.shrink(0);
         lastweap.shrink(0);
@@ -2066,10 +2067,11 @@ struct gameent : dynent, clientstate
         return false;
     }
 
-    void setinfo(const char *n, int c, int m, int p, const char *v, vector<int> &w, vector<int> &r)
+    void setinfo(const char *n, int c1, int c2, int m, int p, const char *v, vector<int> &w, vector<int> &r)
     {
         setname(n);
-        colour = c;
+        colours[0] = c1;
+        colours[1] = c2;
         model = m;
         pattern = p;
         setvanity(v);
@@ -2452,15 +2454,23 @@ namespace hud
     extern void resetscores();
 }
 
-enum { CTONE_TEAM = 0, CTONE_TONE, CTONE_TEAMED, CTONE_ALONE, CTONE_MIXED, CTONE_TMIX, CTONE_AMIX, CTONE_MAX };
+#define CTONE_ENUM(pr, en) \
+    en(pr, Team, TEAM) en(pr, Primary, PRIMARY) en(pr, Secondary, SECONDARY) en(pr, Combined, COMBINED) \
+    en(pr, Primary Team, PRIMARY_TEAM) en(pr, Primary Alone, PRIMARY_ALONE) en(pr, Primary Mix, PRIMARY_MIX) en(pr, Primary Team Mix, PRIMARY_TEAM_MIX) en(pr, Primary Alone Mix, PRIMARY_ALONE_MIX) \
+    en(pr, Secondary Team, SECONDARY_TEAM) en(pr, Secondary Alone, SECONDARY_ALONE) en(pr, Secondary Mix, SECONDARY_MIX) en(pr, Secondary Team Mix, SECONDARY_TEAM_MIX) en(pr, Secondary Alone Mix, SECONDARY_ALONE_MIX) \
+    en(pr, Combined Team, COMBINED_TEAM) en(pr, Combined Alone, COMBINED_ALONE) en(pr, Combined Mix, COMBINED_MIX) en(pr, Combined Team Mix, COMBINED_TEAM_MIX) en(pr, Combined Alone Mix, COMBINED_ALONE_MIX) \
+    en(pr, Maximum, MAX)
+ENUMNV(CTONE);
+//enum { CTONE_TEAM = 0, CTONE_PRIMARY, CTONE_PRIMARY_TEAM, CTONE_PRIMARY_ALONE, CTONE_PRIMARY_MIX, CTONE_PRIMARY_TEAM_MIX, CTONE_PRIMARY_ALONE_MIX, CTONE_MAX };
+
 namespace game
 {
     extern int nextmode, nextmuts, lastzoom, lasttvcam, lasttvchg, spectvtime, waittvtime,
             maptime, mapstart, timeremaining, timeelapsed, timelast, timesync, bloodfade, bloodsize, bloodsparks, eventiconfade, eventiconshort, damageinteger,
             announcefilter, dynlighteffects, followthirdperson, nogore, forceplayermodel, forceplayerpattern,
-            playerovertone, playerundertone, playerdisplaytone, playereffecttone, playerteamtone, follow, specmode, spectvfollow, clientcrc;
-    extern float bloodscale, aboveitemiconsize, playerovertonelevel, playerundertonelevel, playerdisplaytonelevel, playereffecttonelevel, playerteamtonelevel,
-            affinityfadeat, affinityfadecut, affinityfollowblend, affinitythirdblend, damagedivisor, damagecritical;
+            playerovertone, playerundertone, playerdisplaytone, playerhalotone, playereffecttone, follow, specmode, spectvfollow, clientcrc;
+    extern float bloodscale, aboveitemiconsize, playerovertonelevel, playerundertonelevel, playerdisplaytonelevel, playerhalotonelevel, playereffecttonelevel,
+            playerovertonemix, playerundertonemix, playerdisplaytonemix, playerhalotonemix, playereffecttonemix, affinityfadeat, affinityfadecut, affinityfollowblend, affinitythirdblend, damagedivisor, damagecritical;
     extern bool zooming, wantsloadoutmenu;
     extern vec swaypush, swaydir;
     extern string clientmap;
@@ -2489,9 +2499,9 @@ namespace game
     extern const char *colourname(const char *name, int clientnum, int team, int actortype, int col, int privilege, int weapselect, bool icon = false, bool dupname = true, int colour = 3);
     extern const char *colourname(gameent *d, const char *name = NULL, bool icon = false, bool dupname = true, int colour = 3);
     extern const char *colourteam(int team, const char *icon = "");
-    extern int findcolour(int team, int colour, int weapselect, bool tone = true, bool mix = false, float level = 1);
-    extern int findcolour(gameent *d, bool tone = true, bool mix = false, float level = 1);
-    extern int getcolour(gameent *d, int type = 0, float level = 1.f);
+    extern int findcolour(int team, int colour, int weapselect, bool tone = true, float mix = 0.f, float level = 1);
+    extern int findcolour(gameent *d, bool sec = false, bool tone = true, float mix = 0.f, float level = 1);
+    extern int getcolour(gameent *d, int type = 0, float mix = 0.f, float level = 1.f);
     extern void errorsnd(gameent *d);
     extern void specreset(gameent *d = NULL, bool clear = false);
     extern float opacity(gameent *d, bool third = true);

@@ -396,23 +396,25 @@ namespace game
     FVAR(IDF_PERSIST, playereditblend, 0, 1, 1);
     FVAR(IDF_PERSIST, playerghostblend, 0, 0.35f, 1);
 
-    VAR(IDF_PERSIST, playerovertone, -1, CTONE_TEAM, CTONE_MAX-1);
-    VAR(IDF_PERSIST, playerundertone, -1, CTONE_TONE, CTONE_MAX-1);
-    VAR(IDF_PERSIST, playerdisplaytone, -1, CTONE_TONE, CTONE_MAX-1);
-    VAR(IDF_PERSIST, playereffecttone, -1, CTONE_TEAMED, CTONE_MAX-1);
-    VAR(IDF_PERSIST, playerhalotone, -1, CTONE_TEAM, CTONE_MAX-1);
-    VAR(IDF_PERSIST, playerteamtone, -1, CTONE_TEAM, CTONE_MAX-1);
-
     VAR(IDF_PERSIST, playershadow, 0, 2, 2);
     VAR(IDF_PERSIST, playershadowsqdist, 32, 512, VAR_MAX);
 
+    FVAR(IDF_PERSIST, playercombinemix, 0, 0.5f, 1); // when primary and secondary colours are combined
+    VAR(IDF_PERSIST, playerovertone, -1, CTONE_SECONDARY_TEAM_MIX, CTONE_MAX-1);
     FVAR(IDF_PERSIST, playerovertonelevel, 0.f, 1.f, 10.f);
+    FVAR(IDF_PERSIST, playerovertonemix, 0, 0.25f, 1); // when colour and team are combined
+    VAR(IDF_PERSIST, playerundertone, -1, CTONE_PRIMARY, CTONE_MAX-1);
     FVAR(IDF_PERSIST, playerundertonelevel, 0.f, 1.f, 10.f);
+    FVAR(IDF_PERSIST, playerundertonemix, 0, 0.25f, 1); // when colour and team are combined
+    VAR(IDF_PERSIST, playerdisplaytone, -1, CTONE_TEAM, CTONE_MAX-1);
     FVAR(IDF_PERSIST, playerdisplaytonelevel, 0.f, 1.f, 10.f);
+    FVAR(IDF_PERSIST, playerdisplaytonemix, 0, 0.5f, 1); // when colour and team are combined
+    VAR(IDF_PERSIST, playereffecttone, -1, CTONE_TEAM, CTONE_MAX-1);
     FVAR(IDF_PERSIST, playereffecttonelevel, 0.f, 1.f, 10.f);
+    FVAR(IDF_PERSIST, playereffecttonemix, 0, 0.25f, 1); // when colour and team are combined
+    VAR(IDF_PERSIST, playerhalotone, -1, CTONE_TEAM, CTONE_MAX-1);
     FVAR(IDF_PERSIST, playerhalotonelevel, 0.f, 1.f, 10.f);
-    FVAR(IDF_PERSIST, playerteamtonelevel, 0.f, 1.f, 10.f);
-    FVAR(IDF_PERSIST, playertonemix, 0, 0.5f, 1);
+    FVAR(IDF_PERSIST, playerhalotonemix, 0, 0.75f, 1); // when colour and team are combined
 
     FVAR(IDF_PERSIST, playerovertoneinterp, 0, 0, 1); // interpolate this much brightness from the opposing tone
     FVAR(IDF_PERSIST, playerovertonebright, 0.f, 1.f, 10.f);
@@ -1075,9 +1077,10 @@ namespace game
         {
             vec center = d->center();
             emitsound(S_RESPAWN, getplayersoundpos(d), d);
-            spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playerovertone, playerovertonelevel), 1);
-            spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playerundertone, playerundertonelevel), 1);
-            if(dynlighteffects) adddynlight(center, d->height*2, vec::fromcolor(getcolour(d, playereffecttone, playereffecttonelevel)).mul(2.f), 250, 250, L_NOSHADOW|L_NODYNSHADOW);
+            spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playerovertone, playerovertonelevel, playerovertonemix), 0.5f);
+            spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playerundertone, playerundertonelevel, playerundertonemix), 0.5f);
+            spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playereffecttone, playereffecttonelevel, playereffecttonemix), 1);
+            if(dynlighteffects) adddynlight(center, d->height*2, vec::fromcolor(getcolour(d, playereffecttone, playereffecttonelevel, playereffecttonemix)).mul(2.f), 250, 250, L_NOSHADOW|L_NODYNSHADOW);
             if(entities::ents.inrange(ent) && entities::ents[ent]->type == PLAYERSTART) entities::execlink(d, ent, false);
         }
         ai::respawned(d, local, ent);
@@ -2421,7 +2424,7 @@ namespace game
         return colour;
     }
 
-    int findcolour(int team, int colour, int weapselect, bool tone, bool mix, float level)
+    int findcolour(int team, int colour, int weapselect, bool tone, float mix, float level)
     {
         if(tone)
         {
@@ -2445,13 +2448,13 @@ namespace game
             }
             if(col)
             {
-                if(mix && playertonemix > 0)
+                if(mix > 0)
                 {
                     int r1 = (col>>16), g1 = ((col>>8)&0xFF), b1 = (col&0xFF),
                         c = TEAM(team, colour), r2 = (c>>16), g2 = ((c>>8)&0xFF), b2 = (c&0xFF),
-                        r3 = clamp(int((r1*(1-playertonemix))+(r2*playertonemix)), 0, 255),
-                        g3 = clamp(int((g1*(1-playertonemix))+(g2*playertonemix)), 0, 255),
-                        b3 = clamp(int((b1*(1-playertonemix))+(b2*playertonemix)), 0, 255);
+                        r3 = clamp(int((r1*(1-mix))+(r2*mix)), 0, 255),
+                        g3 = clamp(int((g1*(1-mix))+(g2*mix)), 0, 255),
+                        b3 = clamp(int((b1*(1-mix))+(b2*mix)), 0, 255);
                     col = (r3<<16)|(g3<<8)|b3;
                 }
                 return levelcolour(col, level);
@@ -2460,24 +2463,57 @@ namespace game
         return levelcolour(TEAM(team, colour), level);
     }
 
-    int findcolour(gameent *d, bool tone, bool mix, float level)
+    int findcolour(gameent *d, int comb, bool tone, float mix, float level)
     {
-        return findcolour(d->team, d->colour, d->weapselect, tone, mix, level);
+        int col = d->colours[comb ? 1 : 0];
+        switch(comb)
+        {
+            case 2:
+            {
+                if(playercombinemix > 0)
+                {
+                    int r1 = (col>>16), g1 = ((col>>8)&0xFF), b1 = (col&0xFF),
+                        r2 = (d->colours[0]>>16), g2 = ((d->colours[1]>>8)&0xFF), b2 = (d->colours[1]&0xFF),
+                        r3 = clamp(int((r1*(1-playercombinemix))+(r2*playercombinemix)), 0, 255),
+                        g3 = clamp(int((g1*(1-playercombinemix))+(g2*playercombinemix)), 0, 255),
+                        b3 = clamp(int((b1*(1-playercombinemix))+(b2*playercombinemix)), 0, 255);
+                    col = (r3<<16)|(g3<<8)|b3;
+                    break;
+                }
+                col = d->colours[0];
+                break;
+            }
+            case 1: col = d->colours[1]; break;
+            case 0: default: break;
+        }
+        return findcolour(d->team, col, d->weapselect, tone, mix, level);
     }
 
-    int getcolour(gameent *d, int type, float level)
+    int getcolour(gameent *d, int type, float mix, float level)
     {
         switch(type)
         {
-            case -1: return findcolour(d, true, false, level); break;
-            case CTONE_TMIX: return findcolour(d, true, d->team != T_NEUTRAL, level); break;
-            case CTONE_AMIX: return findcolour(d, true, d->team == T_NEUTRAL, level); break;
-            case CTONE_MIXED: return findcolour(d, true, true, level); break;
-            case CTONE_ALONE: return findcolour(d, d->team != T_NEUTRAL, false, level); break;
-            case CTONE_TEAMED: return findcolour(d, d->team == T_NEUTRAL, false, level); break;
-            case CTONE_TONE: return findcolour(d, true, false, level); break;
-            case CTONE_TEAM: return findcolour(d, false, false, level); break;
-            case -2: default: return levelcolour(d->colour, level); break;
+            case CTONE_TEAM: return findcolour(d, 0, false, 0, level); break;
+            case CTONE_PRIMARY: return findcolour(d, 0, true, 0, level); break;
+            case CTONE_SECONDARY: return findcolour(d, 1, true, 0, level); break;
+            case CTONE_COMBINED: return findcolour(d, 2, true, 0, level); break;
+            case CTONE_PRIMARY_TEAM: return findcolour(d, 0, d->team == T_NEUTRAL, 0, level); break;
+            case CTONE_PRIMARY_ALONE: return findcolour(d, 0, d->team != T_NEUTRAL, 0, level); break;
+            case CTONE_PRIMARY_MIX: return findcolour(d, 0, true, mix, level); break;
+            case CTONE_PRIMARY_TEAM_MIX: return findcolour(d, 0, true, d->team != T_NEUTRAL ? mix : 0.f, level); break;
+            case CTONE_PRIMARY_ALONE_MIX: return findcolour(d, 0, true, d->team == T_NEUTRAL ? mix : 0.f, level); break;
+            case CTONE_SECONDARY_TEAM: return findcolour(d, 1, d->team == T_NEUTRAL, 0, level); break;
+            case CTONE_SECONDARY_ALONE: return findcolour(d, 1, d->team != T_NEUTRAL, 0, level); break;
+            case CTONE_SECONDARY_MIX: return findcolour(d, 1, true, mix, level); break;
+            case CTONE_SECONDARY_TEAM_MIX: return findcolour(d, 1, true, d->team != T_NEUTRAL ? mix : 0.f, level); break;
+            case CTONE_SECONDARY_ALONE_MIX: return findcolour(d, 1, true, d->team == T_NEUTRAL ? mix : 0.f, level); break;
+            case CTONE_COMBINED_TEAM: return findcolour(d, 2, d->team == T_NEUTRAL, 0, level); break;
+            case CTONE_COMBINED_ALONE: return findcolour(d, 2, d->team != T_NEUTRAL, 0, level); break;
+            case CTONE_COMBINED_MIX: return findcolour(d, 2, true, mix, level); break;
+            case CTONE_COMBINED_TEAM_MIX: return findcolour(d, 2, true, d->team != T_NEUTRAL ? mix : 0.f, level); break;
+            case CTONE_COMBINED_ALONE_MIX: return findcolour(d, 2, true, d->team == T_NEUTRAL ? mix : 0.f, level); break;
+            case -1: return findcolour(d, 0, true, 0, level); break;
+            case -2: default: return levelcolour(d->colours[0], level); break;
         }
         return 0;
     }
@@ -2520,7 +2556,7 @@ namespace game
     const char *colourname(gameent *d, const char *name, bool icon, bool dupname, int colour)
     {
         if(!name) name = d->name;
-        return colourname(name, d->clientnum, d->team, d->actortype, d->colour, d->privilege, d->weapselect, icon, dupname, colour);
+        return colourname(name, d->clientnum, d->team, d->actortype, d->colours[0], d->privilege, d->weapselect, icon, dupname, colour);
     }
 
     const char *teamtexnamex(int team)
@@ -3694,7 +3730,7 @@ namespace game
     {
         if(drawtex == DRAWTEX_HALO)
         {
-            mdl.material[0] = bvec::fromcolor(getcolour(d, playerhalotone, playerhalotonelevel));
+            mdl.material[0] = bvec::fromcolor(getcolour(d, playerhalotone, playerhalotonelevel, playerhalotonemix));
             if(d->state == CS_ALIVE && d->lastbuff)
             {
                 int millis = lastmillis%1000;
@@ -3707,7 +3743,7 @@ namespace game
             return;
         }
         #define TONEINTERP(name, var) \
-            mdl.material[var] = bvec::fromcolor(getcolour(d, player##name##tone, player##name##tonelevel)); \
+            mdl.material[var] = bvec::fromcolor(getcolour(d, player##name##tone, player##name##tonelevel, player##name##tonemix)); \
             mdl.matbright[var] = player##name##tonebright; \
             if(player##name##toneinterp > 0) \
             { \
@@ -4401,7 +4437,7 @@ namespace game
     PLAYERPREV(actortype, "b", (int *n), previewent->actortype = *n >= 0 ? clamp(*n, 0, int(A_MAX-1)) : int(A_PLAYER));
     PLAYERPREV(health, "bbb", (int *n, int *m, int *o), previewent->health = *n >= 0 ? *n : previewent->gethealth(*m >= 0 ? *m : G_DEATHMATCH, *o >= 0 ? *o : 0));
     PLAYERPREV(model, "i", (int *n), previewent->model = clamp(*n, 0, PLAYERTYPES-1));
-    PLAYERPREV(colour, "i", (int *n), previewent->colour = clamp(*n, 0, 0xFFFFFF));
+    PLAYERPREV(colour, "ii", (int *n, int *v), previewent->colours[*v%2] = clamp(*n, 0, 0xFFFFFF));
     PLAYERPREV(pattern, "i", (int *n), previewent->pattern = clamp(*n, 0, PLAYERPATTERNS-1));
     PLAYERPREV(team, "i", (int *n), previewent->team = clamp(*n, 0, int(T_LAST)));
     PLAYERPREV(privilege, "i", (int *n), previewent->privilege = clamp(*n, 0, int(PRIV_MAX-1)));

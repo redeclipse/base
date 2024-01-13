@@ -3368,8 +3368,8 @@ namespace entities
 
             if(mdl.color.a <= 0) continue;
 
-            mdl.material[0] = bvec::fromcolor(game::getcolour(game::focus, game::playerovertone, game::playerovertonelevel));
-            mdl.material[1] = bvec::fromcolor(game::getcolour(game::focus, game::playerundertone, game::playerundertonelevel));
+            mdl.material[0] = bvec::fromcolor(game::getcolour(game::focus, game::playerovertone, game::playerovertonelevel, game::playerovertonemix));
+            mdl.material[1] = bvec::fromcolor(game::getcolour(game::focus, game::playerundertone, game::playerundertonelevel, game::playerundertonemix));
             if(colour >= 0) mdl.material[0] = mdl.material[2] = bvec::fromcolor(colour);
             if(drawtex == DRAWTEX_HALO)
             {

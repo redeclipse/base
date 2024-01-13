@@ -203,7 +203,7 @@ namespace ai
         }
     }
 
-    void init(gameent *d, int at, int et, int on, int sk, int bn, char *name, int tm, int cl, int md, int pt, const char *vn, vector<int> &lweaps)
+    void init(gameent *d, int at, int et, int on, int sk, int bn, char *name, int tm, int c1, int c2, int md, int pt, const char *vn, vector<int> &lweaps)
     {
         getwaypoints();
 
@@ -245,7 +245,8 @@ namespace ai
         d->ownernum = on;
         d->skill = sk;
         d->team = tm;
-        d->colour = cl;
+        d->colours[0] = c1;
+        d->colours[1] = c2;
         d->model = md;
         d->pattern = pt;
         d->setvanity(vn);
@@ -1676,7 +1677,7 @@ namespace ai
 
     void drawroute(gameent *d, float amt)
     {
-        int colour = game::getcolour(d, game::playerdisplaytone, game::playerdisplaytonelevel), last = -1;
+        int colour = game::getcolour(d, game::playerdisplaytone, game::playerdisplaytonelevel, game::playerdisplaytonemix), last = -1;
         loopvrev(d->ai->route)
         {
             if(d->ai->route.inrange(last))

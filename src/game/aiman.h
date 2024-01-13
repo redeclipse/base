@@ -5,9 +5,10 @@ namespace aiman
         oldbotbalance = -2, oldnumplayers = -1, oldbotlimit = -1, oldbotoffset = 0, oldenemylimit = -1;
     float oldbotbalancescale = -1;
 
-    int botrnd(clientinfo *ci, int t, int m)
+    int botrnd(clientinfo *ci, int t, int m, bool r = false)
     {
-        if(G(botcolourseed)&t) return ci->colour%m;
+        if(G(botcolourseed)&t) // r makes colour random instead of consistent
+            return ci->colours[r ? rnd(2) : 0]%m;
         return rnd(m);
     }
 
@@ -121,9 +122,9 @@ namespace aiman
                 ci->spawnpoint = ent;
                 clients.add(ci);
                 ci->lasttimeplayed = totalmillis;
-                ci->colour = rnd(0xFFFFFF);
-                ci->model = botrnd(ci, 4, PLAYERTYPES);
-                ci->pattern = botrnd(ci, 4, PLAYERPATTERNS);
+                loopk(2) ci->colours[k] = rnd(0xFFFFFF);
+                ci->model = botrnd(ci, 4, PLAYERTYPES, true);
+                ci->pattern = botrnd(ci, 4, PLAYERPATTERNS, true);
                 setskill(ci, true);
                 copystring(ci->name, A(ci->actortype, vname), MAXNAMELEN);
                 ci->loadweap.shrink(0);
@@ -133,7 +134,7 @@ namespace aiman
                     explodelist(ci->model ? G(botfemalenames) : G(botmalenames), list);
                     while(!list.empty())
                     {
-                        int r = botrnd(ci, 1, list.length());
+                        int r = botrnd(ci, 1, list.length(), true);
                         char *name = list[r];
                         loopv(clients) if(clients[i] != ci && !strcasecmp(name, clients[i]->name))
                         {
@@ -156,7 +157,7 @@ namespace aiman
                     loopi(W_LOADOUT) weaplist.add(W_OFFSET+i);
                     while(!weaplist.empty())
                     {
-                        int iter = botrnd(ci, 8, weaplist.length());
+                        int iter = botrnd(ci, 8, weaplist.length(), true);
                         ci->loadweap.add(weaplist[iter]);
                         weaplist.remove(iter);
                     }
@@ -214,7 +215,7 @@ namespace aiman
         else if(ci->aireinit >= 1)
         {
             if(ci->aireinit == 2) loopk(W_MAX) loopj(2) ci->weapshots[k][j].reset();
-            sendf(-1, 1, "ri6si4siv", N_INITAI, ci->clientnum, ci->ownernum, ci->actortype, ci->spawnpoint, ci->skill, ci->name, ci->team, ci->colour, ci->model, ci->pattern, ci->vanity, ci->loadweap.length(), ci->loadweap.length(), ci->loadweap.getbuf());
+            sendf(-1, 1, "ri6si5siv", N_INITAI, ci->clientnum, ci->ownernum, ci->actortype, ci->spawnpoint, ci->skill, ci->name, ci->team, ci->colours[0], ci->colours[1], ci->model, ci->pattern, ci->vanity, ci->loadweap.length(), ci->loadweap.length(), ci->loadweap.getbuf());
             if(ci->aireinit == 2)
             {
                 waiting(ci, DROP_RESET);
