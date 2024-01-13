@@ -8,8 +8,7 @@ namespace entities
     vector<int> airnodes;
     vector<inanimate *> inanimates;
 
-    VAR(IDF_PERSIST, showentattrinfo, 0, 7, 7);
-    VAR(IDF_PERSIST, showentmax, 1, 64, VAR_MAX);
+    VAR(IDF_PERSIST, showentmax, 1, 256, VAR_MAX);
     FVAR(IDF_PERSIST, showentdist, 0, 2048, FVAR_MAX);
     VAR(IDF_PERSIST, showentmodels, 0, 2, 2);
     VAR(IDF_PERSIST, showentweapons, 0, 0, 2);
@@ -3513,7 +3512,7 @@ namespace entities
         loopj(dotop ? 2 : 1) if(j ? visiblepos : visible)
         {
             if(j && (visible || visiblepos)) part_line(o, e.pos(), entselsize, 1, 1, entselcolourdyn);
-            part_create(hastop ? PART_ENTITY_ONTOP : PART_ENTITY, 1, j ? e.pos() : o, j ? entselcolourdyn : (hastop ? entselcolourtop : entselcolour), hastop && !j ? entselsizetop : entselsize, hastop && !j ? entselblendtop : entselblend);
+            if(j || entityui < 0) part_create(hastop ? PART_ENTITY_ONTOP : PART_ENTITY, 1, j ? e.pos() : o, j ? entselcolourdyn : (hastop ? entselcolourtop : entselcolour), hastop && !j ? entselsizetop : entselsize, hastop && !j ? entselblendtop : entselblend);
         }
 
         return visible;
@@ -3615,7 +3614,7 @@ namespace entities
                         case 1: // overlay
                         {
                             pos = e.o; // center pulled back a bit
-                            pos.sub(vec(pos).sub(camera1->o).normalize().mul(max(enttype[e.type].radius, 1) * entityoverlayoffset));
+                            pos.sub(vec(pos).sub(camera1->o).normalize().mul(entityoverlayoffset));
                             yaw = entityoverlayyaw;
                             pitch = entityoverlaypitch;
                             scale = type == SURFACE_WORLD ? entityoverlayworld : entityoverlayscale;
