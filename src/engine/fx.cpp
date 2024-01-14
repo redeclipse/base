@@ -465,6 +465,7 @@ namespace fx
     {
         calcrandom();
         firstfx->update();
+        prevfrom = from;
         if(done()) putemitter(this);
     }
 
