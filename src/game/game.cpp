@@ -2429,10 +2429,12 @@ namespace game
         if(tone)
         {
             int col = colour;
+
             if(!col && isweap(weapselect))
             {
                 col = W(weapselect, colour);
-                #if 0
+
+                #if 0 // was cool, but can result in weird colours being extracted at specific moments elsewhere
                 int lastweap = d->getlastweap(m_weapon(d->actortype, gamemode, mutators));
                 if(isweap(lastweap) && d->weapselect != lastweap && (d->weapstate[d->weapselect] == W_S_USE || d->weapstate[d->weapselect] == W_S_SWITCH))
                 {
@@ -2442,10 +2444,12 @@ namespace game
                         r3 = clamp(int((r1*(1-amt))+(r2*amt)), 0, 255),
                         g3 = clamp(int((g1*(1-amt))+(g2*amt)), 0, 255),
                         b3 = clamp(int((b1*(1-amt))+(b2*amt)), 0, 255);
+
                     col = (r3<<16)|(g3<<8)|b3;
                 }
                 #endif
             }
+
             if(col)
             {
                 if(mix > 0)
@@ -2455,8 +2459,10 @@ namespace game
                         r3 = clamp(int((r1*(1-mix))+(r2*mix)), 0, 255),
                         g3 = clamp(int((g1*(1-mix))+(g2*mix)), 0, 255),
                         b3 = clamp(int((b1*(1-mix))+(b2*mix)), 0, 255);
+
                     col = (r3<<16)|(g3<<8)|b3;
                 }
+
                 return levelcolour(col, level);
             }
         }

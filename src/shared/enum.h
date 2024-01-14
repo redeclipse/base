@@ -56,7 +56,7 @@
 #define ENUMALNN(prefix, pretty, name, assign) " [" #pretty "]"
 #define ENUMALNS(prefix, pretty, name, assign) #pretty,
 
-// enum with assigned values and list/name variables
+// enum with assigned values and list/name/str variables
 #define ENUMALN(prefix) enum { prefix##_ENUM(ENUMALNX, prefix) }; prefix##_ENUM(ENUMALNV, prefix) VARL(prefix##_LIST, prefix##_ENUM(ENUMALNL, prefix)) VARL(prefix##_NAMES, prefix##_ENUM(ENUMALNN, prefix)) VARS(prefix##_STR, prefix##_ENUM(ENUMALNS, prefix))
 
 #define ENUMDLNX(prefix, pretty, name) prefix##_##name,
@@ -65,6 +65,6 @@
 #define ENUMDLNN(prefix, pretty, name) " [" #pretty "]"
 #define ENUMDLNS(prefix, pretty, name) #pretty,
 
-// enum with default values and list/name variables
+// enum with default values and list/name/str variables
 #define ENUMDLN(prefix) enum { prefix##_ENUM(ENUMDLNX, prefix) }; prefix##_ENUM(ENUMDLNV, prefix) VARL(prefix##_LIST, prefix##_ENUM(ENUMDLNL, prefix)) VARL(prefix##_NAMES, prefix##_ENUM(ENUMDLNN, prefix)) VARS(prefix##_STR, prefix##_ENUM(ENUMDLNS, prefix))
 #endif
