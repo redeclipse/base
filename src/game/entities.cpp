@@ -80,7 +80,7 @@ namespace entities
 
         if(d->isnophys()) return;
 
-        vec from = d->center();
+        vec from = dynent::is(d) ? ((dynent *)d)->center() : d->center();
         loopenti(PHYSICS) if(ents[i]->type == PHYSICS && isallowed(i))
         {
             gameentity &e = *(gameentity *)ents[i];

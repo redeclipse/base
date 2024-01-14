@@ -976,16 +976,7 @@ namespace physics
                     {
                         int side = isclimb ? 0 : (off < 0 ? -1 : 1);
 
-                        if(isclimb)
-                        {
-                            if(vault) pitch = 90;
-                            else if(pitch > 0)
-                            {
-                                yaw += 180;
-                                pitch = 90-pitch;
-                            }
-                            else pitch += 90;
-                        }
+                        if(isclimb || vault) pitch = 90;
                         else
                         {
                             if(off < 0) yaw += 90;
@@ -1050,12 +1041,18 @@ namespace physics
 
             if(!found && d->hasparkour())
             {
-                if(d->impulse[IM_TYPE] == IM_T_VAULT)
+                if(d->impulse[IM_TYPE] == IM_T_VAULT || !d->turnside)
                 {
                     if(!d->impulse[IM_FLING])
                     {
-                        vec rft(d->yaw*RAD, (impulsevaultpitchclamp && d->pitch > impulsevaultpitch ? d->pitch : impulsevaultpitch)*RAD);
-                        d->vel = vec(rft).mul(d->vel.magnitude());
+                        vec dir(d->yaw * RAD, (impulsevaultpitchclamp && d->pitch > impulsevaultpitch ? d->pitch : impulsevaultpitch) * RAD),
+                            oldpos = d->o;
+
+                        d->o.add(dir);
+                        if(collide(d)) dir = vec(d->yaw * RAD, 90 * RAD);
+                        d->o = oldpos;
+
+                        d->vel = vec(dir).mul(d->vel.magnitude());
                         d->impulse[IM_FLING] = lastmillis ? lastmillis : 1;
                         client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_FLING);
                         game::impulseeffect(d);
