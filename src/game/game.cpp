@@ -365,13 +365,15 @@ namespace game
     FVAR(IDF_PERSIST, damagedivisor, FVAR_NONZERO, 10, FVAR_MAX);
     FVAR(IDF_PERSIST, damagecritical, 0, 0.25f, 1);
     VAR(IDF_PERSIST, damagecriticalsound, 0, 1, 3);
-    VAR(IDF_PERSIST, damagemergedelay, 0, 75, VAR_MAX);
-    VAR(IDF_PERSIST, damagemergeburn, 0, 250, VAR_MAX);
-    VAR(IDF_PERSIST, damagemergebleed, 0, 250, VAR_MAX);
-    VAR(IDF_PERSIST, damagemergeshock, 0, 250, VAR_MAX);
-    VAR(IDF_PERSIST, damagemergetime, 0, 5000, VAR_MAX);
+
+    VAR(IDF_PERSIST, damagemergedelay, 0, 0, VAR_MAX); // time before being marked as ready
+    VAR(IDF_PERSIST, damagemergecombine, 0, 100, VAR_MAX); // time after being ready in which can still merge
+    VAR(IDF_PERSIST, damagemergetime, 0, 5000, VAR_MAX); // time that merges last
+
     VAR(IDF_PERSIST, playdamagetones, 0, 1, 3);
+    FVAR(IDF_PERSIST, damagetonealarm, 0, 1.f, FVAR_MAX);
     FVAR(IDF_PERSIST, damagetonegain, 0, 0.25f, FVAR_MAX);
+
     VAR(IDF_PERSIST, playreloadnotify, 0, 3, 15);
     FVAR(IDF_PERSIST, reloadnotifygain, 0, 1, FVAR_MAX);
 
@@ -1677,32 +1679,52 @@ namespace game
         enum { HURT = 0, BURN, BLEED, SHOCK, MAX };
 
         gameent *to, *from;
-        int type, weap, amt, millis, ready;
+        int type, weap, amt, millis, ready, delay, length, combine;
 
-        damagemerge() : to(NULL), from(NULL), type(HURT), weap(-1), amt(0), millis(totalmillis ? totalmillis : 1), ready(0) {}
-        damagemerge(gameent *d, gameent *v, int t, int w, int m) :
-            to(d), from(v), type(t), weap(w), amt(m), millis(totalmillis ? totalmillis : 1) {}
+        damagemerge() : to(NULL), from(NULL), type(HURT), weap(-1), amt(0), millis(totalmillis ? totalmillis : 1), ready(0), delay(0), length(0), combine(0) {}
+        damagemerge(gameent *d, gameent *v, int t, int w, int m, int md = 0, int ml = 0, int mc = 0) :
+            to(d), from(v), type(t), weap(w), amt(m), millis(totalmillis ? totalmillis : 1), ready(0), delay(md), length(ml), combine(mc) {}
 
         bool merge(const damagemerge &m)
         {
-            if(to != m.to || from != m.from || type != m.type) return false;
+            if(to != m.to || from != m.from || type != m.type || delay != m.delay || length != m.length || combine != m.combine)
+                return false;
+
+            if(ready && (!combine || totalmillis - ready > combine))
+                return false;
+
             amt += m.amt;
             return true;
         }
 
         void play()
         {
-            if(ready) return;
-
-            if(playdamagetones >= (from == focus ? 1 : (to == focus ? 2 : 3)) && damagetonegain > 0)
+            if(playdamagetones >= (from == focus ? 1 : (to == focus ? 2 : 3)))
             {
-                const float dmgsnd[8] = { 0, 0.1f, 0.25f, 0.5f, 0.75f, 1.f, 1.5f, 2.f };
-                int hp = to->gethealth(gamemode, mutators), snd = -1;
-                if(type == BURN) snd = S_BURNED;
+                int snd = -1;
+                float gain = damagetonegain;
+
+                if(m_team(gamemode, mutators) && from == focus && to->team == from->team)
+                {
+                    snd = S_ALARM;
+                    gain = damagetonealarm;
+                }
+                else if(type == BURN) snd = S_BURNED;
                 else if(type == BLEED) snd = S_BLEED;
                 else if(type == SHOCK) snd = S_SHOCK;
-                else loopirev(8) if(amt >= hp*dmgsnd[i]) { snd = S_DAMAGE+i; break; }
-                if(snd >= 0) emitsound(snd, getplayersoundpos(to), to, NULL, SND_CLAMPED, damagetonegain);
+                else
+                {
+                    const float dmgsnd[8] = { 0, 0.1f, 0.25f, 0.5f, 0.75f, 1.f, 1.5f, 2.f };
+                    int hp = to->gethealth(gamemode, mutators);
+
+                    loopirev(8) if(amt >= hp * dmgsnd[i])
+                    {
+                        snd = S_DAMAGE + i;
+                        break;
+                    }
+                }
+
+                if(gain > 0 && snd >= 0) emitsound(snd, getplayersoundpos(to), to, NULL, SND_CLAMPED, gain);
             }
 
             ready = totalmillis;
@@ -1722,16 +1744,8 @@ namespace game
         {
             damagemerge &m = damagemerges[i];
             if(m.to != d && m.from != d) continue;
-
             damagemerges.remove(i);
         }
-    }
-
-    void pushdamagemerge(gameent *d, gameent *v, int type, int weap, int damage)
-    {
-        damagemerge dt(d, v, type, weap, damage);
-        loopv(damagemerges) if(damagemerges[i].merge(dt)) return;
-        damagemerges.add(dt);
     }
 
     void flushdamagemerges()
@@ -1746,13 +1760,19 @@ namespace game
                 continue;
             }
 
-            int delay = damagemergedelay;
-            if(m.type == damagemerge::BURN) delay = damagemergeburn;
-            else if(m.type == damagemerge::BLEED) delay = damagemergebleed;
-            else if(m.type == damagemerge::SHOCK) delay = damagemergeshock;
-
-            if(totalmillis - m.millis >= delay) m.play();
+            if(totalmillis - m.millis >= m.delay) m.play();
         }
+    }
+
+    void pushdamagemerge(gameent *d, gameent *v, int type, int weap, int damage, int delay, int length, int combine)
+    {
+        static int lastflush = 0; // ensure state is updated
+        if(totalmillis != lastflush) flushdamagemerges();
+
+        damagemerge dt(d, v, type, weap, damage, delay, length, combine);
+        loopv(damagemerges) if(damagemerges[i].merge(dt)) return;
+
+        damagemerges.add(dt);
     }
 
     ICOMMAND(0, getdamages, "", (), intret(damagemerges.length()));
@@ -1761,8 +1781,11 @@ namespace game
     ICOMMAND(0, getdamagetype, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].type : -1));
     ICOMMAND(0, getdamageweap, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].weap : -1));
     ICOMMAND(0, getdamageamt, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].amt : 0));
-    ICOMMAND(0, getdamagemillis, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].millis : -1));
-    ICOMMAND(0, getdamageready, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].ready : -1));
+    ICOMMAND(0, getdamagemillis, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].millis : 0));
+    ICOMMAND(0, getdamageready, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].ready : 0));
+    ICOMMAND(0, getdamagedelay, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].delay : 0));
+    ICOMMAND(0, getdamagecombine, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].combine : 0));
+    ICOMMAND(0, getdamagelength, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].length : 0));
 
     #define LOOPDAMAGE(name,op) \
         ICOMMAND(0, loopdamage##name, "iire", (int *count, int *skip, ident *id, uint *body), \
@@ -1794,7 +1817,6 @@ namespace game
     LOOPDAMAGEIF(,loopcsv);
     LOOPDAMAGEIF(rev,loopcsvrev);
 
-    static int alarmchan = -1;
     void hiteffect(int weap, int flags, int damage, gameent *d, gameent *v, vec &dir, vec &vel, float dist, bool local)
     {
         bool burning = burn(d, weap, flags), bleeding = bleed(d, weap, flags), shocking = shock(d, weap, flags), material = flags&HIT_MATERIAL;
@@ -1815,19 +1837,18 @@ namespace game
                 if(d != v)
                 {
                     bool sameteam = m_team(gamemode, mutators) && d->team == v->team;
+
                     int damagetype = damagemerge::HURT;
                     if(burning) damagetype = damagemerge::BURN;
                     else if(bleeding) damagetype = damagemerge::BLEED;
                     else if(shocking) damagetype = damagemerge::SHOCK;
-                    if(!sameteam) pushdamagemerge(d, v, damagetype, weap, damage);
+                    pushdamagemerge(d, v, damagetype, weap, damage, damagemergedelay, damagemergetime, damagemergecombine);
 
-                    else if(v == player1 && !burning && !bleeding && !shocking && !material)
+                    if(!burning && !bleeding && !shocking && !material)
                     {
-                        player1->lastteamhit = d->lastteamhit = totalmillis;
-                        if(!issound(alarmchan)) emitsound(S_ALARM, getplayersoundpos(v), v, &alarmchan);
+                        if(sameteam) v->lastteamhit = totalmillis ? totalmillis : 1;
+                        else v->lasthit = totalmillis ? totalmillis : 1;
                     }
-
-                    if(!burning && !bleeding && !shocking && !material && !sameteam) v->lasthit = totalmillis ? totalmillis : 1;
                 }
 
                 if(d->actortype < A_ENEMY && !issound(d->plchan[PLCHAN_VOICE])) emitsound(S_PAIN, getplayersoundpos(d), d, &d->plchan[PLCHAN_VOICE]);
@@ -4277,7 +4298,7 @@ namespace game
 
         if(drawtex != DRAWTEX_HALO)
         {
-            defformatstring(actortex, "<comp:1>actor [cn = %d]", d->clientnum);
+            defformatstring(actortex, "<comp:1>playermixer [cn = %d]", d->clientnum);
             mdl.mixer = textureload(actortex, 0, true, false);
             getplayereffects(d, mdl);
         }

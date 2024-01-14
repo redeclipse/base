@@ -1330,9 +1330,18 @@ namespace hud
         int cs = int(csize*s);
         if(game::focus->state == CS_ALIVE && index >= POINTER_HAIR)
         {
-            if(index == POINTER_TEAM) c = vec::fromcolor(teamcrosshaircolour);
+            if(index == POINTER_TEAM)
+            {
+                c = vec::fromcolor(teamcrosshaircolour);
+                if(crosshairhitspeed && game::focus->lastteamhit && totalmillis - game::focus->lastteamhit <= crosshairhitspeed)
+                {
+                    vec c2 = vec::fromcolor(game::getcolour(game::focus, game::playerdisplaytone, game::playerdisplaytonelevel, game::playerdisplaytonemix));
+                    flashcolour(c.r, c.g, c.b, c2.r, c2.b, c2.g, 1.f - ((totalmillis - game::focus->lastteamhit) / float(crosshairhitspeed)));
+                }
+            }
             else if(crosshairweapons&2) c = vec::fromcolor(W(game::focus->weapselect, colour));
             else if(crosshairtone) skewcolour(c.r, c.g, c.b, crosshairtone);
+
             int heal = game::focus->gethealth(game::gamemode, game::mutators);
             if(crosshairflash && game::focus->state == CS_ALIVE && game::focus->health < heal)
             {
@@ -1340,11 +1349,13 @@ namespace hud
                 float amt = (millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f))*clamp(float(heal-game::focus->health)/float(heal), 0.f, 1.f);
                 flashcolour(c.r, c.g, c.b, 1.f, 0.f, 0.f, amt);
             }
+
             if(crosshairthrob > 0 && regentime && game::focus->lastregen && lastmillis-game::focus->lastregen <= regentime)
             {
                 float skew = clamp((lastmillis-game::focus->lastregen)/float(regentime/2), 0.f, 2.f);
                 cs += int(cs*(skew > 1.f ? 1.f-skew : skew)*(crosshairthrob*(game::focus->lastregenamt >= 0 ? 1 : -1)));
             }
+
             if(showcrosshair >= 2)
             {
                 bool secondary = physics::secondaryweap(game::focus);
@@ -1395,10 +1406,14 @@ namespace hud
         else if(game::inzoom()) index = POINTER_ZOOM;
         else if(m_team(game::gamemode, game::mutators))
         {
-            vec pos = game::focus->headpos();
-            gameent *d = game::intersectclosest(pos, worldpos, game::focus);
-            if(d && d->actortype < A_ENEMY && d->team == game::focus->team) index = POINTER_TEAM;
-            else index = POINTER_HAIR;
+            if(crosshairhitspeed && totalmillis-game::focus->lastteamhit <= crosshairhitspeed) index = POINTER_TEAM;
+            else
+            {
+                vec pos = game::focus->headpos();
+                gameent *d = game::intersectclosest(pos, worldpos, game::focus);
+                if(d && d->actortype < A_ENEMY && d->team == game::focus->team) index = POINTER_TEAM;
+                else index = POINTER_HAIR;
+            }
         }
         else index = POINTER_HAIR;
 
