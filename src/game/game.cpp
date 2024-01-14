@@ -366,8 +366,8 @@ namespace game
     FVAR(IDF_PERSIST, damagecritical, 0, 0.25f, 1);
     VAR(IDF_PERSIST, damagecriticalsound, 0, 1, 3);
 
-    VAR(IDF_PERSIST, damagemergedelay, 0, 0, VAR_MAX); // time before being marked as ready
-    VAR(IDF_PERSIST, damagemergecombine, 0, 100, VAR_MAX); // time after being ready in which can still merge
+    VAR(IDF_PERSIST, damagemergedelay, 0, 100, VAR_MAX); // time before being marked as ready
+    VAR(IDF_PERSIST, damagemergecombine, 0, 0, VAR_MAX); // time after being ready in which can still merge
     VAR(IDF_PERSIST, damagemergetime, 0, 5000, VAR_MAX); // time that merges last
 
     VAR(IDF_PERSIST, playdamagetones, 0, 1, 3);
@@ -4295,7 +4295,7 @@ namespace game
 
         if(drawtex != DRAWTEX_HALO)
         {
-            defformatstring(actortex, "<comp:1>playermixer [cn = %d]", d->clientnum);
+            defformatstring(actortex, "<comp:1,-128>playermixer [cn = %d]", d->clientnum);
             mdl.mixer = textureload(actortex, 0, true, false);
             getplayereffects(d, mdl);
         }
