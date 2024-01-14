@@ -349,8 +349,6 @@ namespace game
     VAR(IDF_PERSIST, zoomoffset, 0, 2, 10); // if zoomdefault = -1, then offset from zoomlevels this much for initial default
     VAR(IDF_PERSIST, zoomscroll, 0, 0, 1); // 0 = stop at min/max, 1 = go to opposite end
 
-    VAR(IDF_PERSIST, aboveheaddamage, 0, 0, 1);
-    VAR(IDF_PERSIST, aboveheaddamagefade, 0, 500, VAR_MAX);
     FVAR(IDF_PERSIST, aboveheadsmooth, 0, 0.25f, 1);
     VAR(IDF_PERSIST, aboveheadsmoothmillis, 1, 100, 10000);
 
@@ -371,6 +369,7 @@ namespace game
     VAR(IDF_PERSIST, damagemergeburn, 0, 250, VAR_MAX);
     VAR(IDF_PERSIST, damagemergebleed, 0, 250, VAR_MAX);
     VAR(IDF_PERSIST, damagemergeshock, 0, 250, VAR_MAX);
+    VAR(IDF_PERSIST, damagemergetime, 0, 5000, VAR_MAX);
     VAR(IDF_PERSIST, playdamagetones, 0, 1, 3);
     FVAR(IDF_PERSIST, damagetonegain, 0, 0.25f, FVAR_MAX);
     VAR(IDF_PERSIST, playreloadnotify, 0, 3, 15);
@@ -1678,17 +1677,16 @@ namespace game
         enum { HURT = 0, BURN, BLEED, SHOCK, MAX };
 
         gameent *to, *from;
-        int type, weap, damage, millis;
-        bool ready;
+        int type, weap, amt, millis, ready;
 
-        damagemerge() : to(NULL), from(NULL), type(HURT), weap(-1), damage(0), millis(totalmillis ? totalmillis : 1), ready(false) {}
+        damagemerge() : to(NULL), from(NULL), type(HURT), weap(-1), amt(0), millis(totalmillis ? totalmillis : 1), ready(0) {}
         damagemerge(gameent *d, gameent *v, int t, int w, int m) :
-            to(d), from(v), type(t), weap(w), damage(m), millis(totalmillis ? totalmillis : 1) {}
+            to(d), from(v), type(t), weap(w), amt(m), millis(totalmillis ? totalmillis : 1) {}
 
         bool merge(const damagemerge &m)
         {
             if(to != m.to || from != m.from || type != m.type) return false;
-            damage += m.damage;
+            amt += m.amt;
             return true;
         }
 
@@ -1703,21 +1701,14 @@ namespace game
                 if(type == BURN) snd = S_BURNED;
                 else if(type == BLEED) snd = S_BLEED;
                 else if(type == SHOCK) snd = S_SHOCK;
-                else loopirev(8) if(damage >= hp*dmgsnd[i]) { snd = S_DAMAGE+i; break; }
+                else loopirev(8) if(amt >= hp*dmgsnd[i]) { snd = S_DAMAGE+i; break; }
                 if(snd >= 0) emitsound(snd, getplayersoundpos(to), to, NULL, SND_CLAMPED, damagetonegain);
             }
 
-            if(aboveheaddamage)
-            {
-                string text;
-                if(damageinteger) formatstring(text, "\fo%c%d", damage > 0 ? '-' : (damage < 0 ? '+' : '~'), int(ceilf((damage < 0 ? 0-damage : damage)/damagedivisor)));
-                else formatstring(text, "\fo%c%.1f", damage > 0 ? '-' : (damage < 0 ? '+' : '~'), (damage < 0 ? 0-damage : damage)/damagedivisor);
-                part_textcopy(to->abovehead(), text, to != focus ? PART_TEXT : PART_TEXT_ONTOP, aboveheaddamagefade, colourwhite, 4, 1, -10, 0, to);
-            }
-
-            ready = true;
+            ready = totalmillis;
         }
     };
+
     vector<damagemerge> damagemerges;
 
     void removedamagemergeall()
@@ -1727,7 +1718,13 @@ namespace game
 
     void removedamagemerges(gameent *d)
     {
-        loopvrev(damagemerges) if(damagemerges[i].to == d || damagemerges[i].from == d) damagemerges.remove(i);
+        loopvrev(damagemerges)
+        {
+            damagemerge &m = damagemerges[i];
+            if(m.to != d && m.from != d) continue;
+
+            damagemerges.remove(i);
+        }
     }
 
     void pushdamagemerge(gameent *d, gameent *v, int type, int weap, int damage)
@@ -1741,18 +1738,61 @@ namespace game
     {
         loopv(damagemerges)
         {
-            int delay = damagemergedelay;
-            if(damagemerges[i].type == damagemerge::BURN) delay = damagemergeburn;
-            else if(damagemerges[i].type == damagemerge::BLEED) delay = damagemergebleed;
-            else if(damagemerges[i].type == damagemerge::SHOCK) delay = damagemergeshock;
-
-            if(totalmillis-damagemerges[i].millis >= delay)
+            damagemerge &m = damagemerges[i];
+            if(m.ready)
             {
-                damagemerges[i].play();
-                damagemerges.remove(i--);
+                if(totalmillis - m.ready >= damagemergetime)
+                    damagemerges.remove(i--);
+                continue;
             }
+
+            int delay = damagemergedelay;
+            if(m.type == damagemerge::BURN) delay = damagemergeburn;
+            else if(m.type == damagemerge::BLEED) delay = damagemergebleed;
+            else if(m.type == damagemerge::SHOCK) delay = damagemergeshock;
+
+            if(totalmillis - m.millis >= delay) m.play();
         }
     }
+
+    ICOMMAND(0, getdamages, "", (), intret(damagemerges.length()));
+    ICOMMAND(0, getdamagefrom, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].from->clientnum : -1));
+    ICOMMAND(0, getdamageclient, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].to->clientnum : -1));
+    ICOMMAND(0, getdamagetype, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].type : -1));
+    ICOMMAND(0, getdamageweap, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].weap : -1));
+    ICOMMAND(0, getdamageamt, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].amt : 0));
+    ICOMMAND(0, getdamagemillis, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].millis : -1));
+    ICOMMAND(0, getdamageready, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].ready : -1));
+
+    #define LOOPDAMAGE(name,op) \
+        ICOMMAND(0, loopdamage##name, "iire", (int *count, int *skip, ident *id, uint *body), \
+        { \
+            if(damagemerges.empty()) return; \
+            loopstart(id, stack); \
+            op(damagemerges, *count, *skip, \
+            { \
+                loopiter(id, stack, i); \
+                execute(body); \
+            }); \
+            loopend(id, stack); \
+        });
+    LOOPDAMAGE(,loopcsv);
+    LOOPDAMAGE(rev,loopcsvrev);
+
+    #define LOOPDAMAGEIF(name,op) \
+        ICOMMAND(0, loopdamage##name##if, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
+        { \
+            if(damagemerges.empty()) return; \
+            loopstart(id, stack); \
+            op(damagemerges, *count, *skip, \
+            { \
+                loopiter(id, stack, i); \
+                if(executebool(cond)) execute(body); \
+            }); \
+            loopend(id, stack); \
+        });
+    LOOPDAMAGEIF(,loopcsv);
+    LOOPDAMAGEIF(rev,loopcsvrev);
 
     static int alarmchan = -1;
     void hiteffect(int weap, int flags, int damage, gameent *d, gameent *v, vec &dir, vec &vel, float dist, bool local)
