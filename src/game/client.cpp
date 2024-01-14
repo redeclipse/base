@@ -944,6 +944,16 @@ namespace client
         floatret(d->yaw-camera1->yaw);
     });
 
+    CLCOMMAND(radardirxy,
+    {
+        vec dir(0, 0, 0);
+        float dist = -1;
+        if(!radarallow(camera1->o, d, dir, dist)) return;
+        dir.rotate_around_z(-camera1->yaw*RAD).normalize();
+        defformatstring(output, "%s %s", floatstr(dir.x), floatstr(dir.y));
+        result(output);
+    });
+
     CLCOMMANDM(name, "sbbb", (char *who, int *colour, int *icon, int *dupname), result(game::colourname(d, NULL, *icon!=0, *dupname!=0, *colour >= 0 ? *colour : 3)));
     CLCOMMANDM(colour, "sbgf", (char *who, int *m, float *f, float *x), intret(game::getcolour(d, *m, *f >= 0 && *f <= 10 ? *f : 1.f, *x)));
     CLCOMMANDM(vitem, "sbi", (char *who, int *n, int *v), getvitem(d, *n, *v));
