@@ -686,7 +686,7 @@ namespace hud
     template<class T>
     void skewcolour(T &r, T &g, T &b, int colour = 0, bool faded = false)
     {
-        if(colour < 0) colour = game::getcolour(game::focus, INVPULSE(colour));
+        if(colour < 0) colour = game::getcolour(game::focus);
         vec c = vec::fromcolor(colour);
         r = T(r*c.r);
         g = T(g*c.g);

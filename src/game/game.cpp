@@ -2424,7 +2424,7 @@ namespace game
         return colour;
     }
 
-    int findcolour(int team, int colour, int weapselect, bool tone, float mix, float level)
+    int findcolour(int team, int colour, int weapselect, bool tone, float level, float mix)
     {
         if(tone)
         {
@@ -2463,7 +2463,7 @@ namespace game
         return levelcolour(TEAM(team, colour), level);
     }
 
-    int findcolour(gameent *d, int comb, bool tone, float mix, float level)
+    int findcolour(gameent *d, int comb, bool tone, float level, float mix)
     {
         int col = d->colours[comb ? 1 : 0];
         switch(comb)
@@ -2486,33 +2486,33 @@ namespace game
             case 1: col = d->colours[1]; break;
             case 0: default: break;
         }
-        return findcolour(d->team, col, d->weapselect, tone, mix, level);
+        return findcolour(d->team, col, d->weapselect, tone, level, mix);
     }
 
-    int getcolour(gameent *d, int type, float mix, float level)
+    int getcolour(gameent *d, int type, float level, float mix)
     {
         switch(type)
         {
-            case CTONE_TEAM: return findcolour(d, 0, false, 0, level); break;
-            case CTONE_PRIMARY: return findcolour(d, 0, true, 0, level); break;
-            case CTONE_SECONDARY: return findcolour(d, 1, true, 0, level); break;
-            case CTONE_COMBINED: return findcolour(d, 2, true, 0, level); break;
-            case CTONE_PRIMARY_TEAM: return findcolour(d, 0, d->team == T_NEUTRAL, 0, level); break;
-            case CTONE_PRIMARY_ALONE: return findcolour(d, 0, d->team != T_NEUTRAL, 0, level); break;
-            case CTONE_PRIMARY_MIX: return findcolour(d, 0, true, mix, level); break;
-            case CTONE_PRIMARY_TEAM_MIX: return findcolour(d, 0, true, d->team != T_NEUTRAL ? mix : 0.f, level); break;
-            case CTONE_PRIMARY_ALONE_MIX: return findcolour(d, 0, true, d->team == T_NEUTRAL ? mix : 0.f, level); break;
-            case CTONE_SECONDARY_TEAM: return findcolour(d, 1, d->team == T_NEUTRAL, 0, level); break;
-            case CTONE_SECONDARY_ALONE: return findcolour(d, 1, d->team != T_NEUTRAL, 0, level); break;
-            case CTONE_SECONDARY_MIX: return findcolour(d, 1, true, mix, level); break;
-            case CTONE_SECONDARY_TEAM_MIX: return findcolour(d, 1, true, d->team != T_NEUTRAL ? mix : 0.f, level); break;
-            case CTONE_SECONDARY_ALONE_MIX: return findcolour(d, 1, true, d->team == T_NEUTRAL ? mix : 0.f, level); break;
-            case CTONE_COMBINED_TEAM: return findcolour(d, 2, d->team == T_NEUTRAL, 0, level); break;
-            case CTONE_COMBINED_ALONE: return findcolour(d, 2, d->team != T_NEUTRAL, 0, level); break;
-            case CTONE_COMBINED_MIX: return findcolour(d, 2, true, mix, level); break;
-            case CTONE_COMBINED_TEAM_MIX: return findcolour(d, 2, true, d->team != T_NEUTRAL ? mix : 0.f, level); break;
-            case CTONE_COMBINED_ALONE_MIX: return findcolour(d, 2, true, d->team == T_NEUTRAL ? mix : 0.f, level); break;
-            case -1: return findcolour(d, 0, true, 0, level); break;
+            case CTONE_TEAM: return findcolour(d, 0, false, level, 0); break;
+            case CTONE_PRIMARY: return findcolour(d, 0, true, level, 0); break;
+            case CTONE_SECONDARY: return findcolour(d, 1, true, level, 0); break;
+            case CTONE_COMBINED: return findcolour(d, 2, true, level, 0); break;
+            case CTONE_PRIMARY_TEAM: return findcolour(d, 0, d->team == T_NEUTRAL, level, 0); break;
+            case CTONE_PRIMARY_ALONE: return findcolour(d, 0, d->team != T_NEUTRAL, level, 0); break;
+            case CTONE_PRIMARY_MIX: return findcolour(d, 0, true, level, mix); break;
+            case CTONE_PRIMARY_TEAM_MIX: return findcolour(d, 0, true, level, d->team != T_NEUTRAL ? mix : 0.f); break;
+            case CTONE_PRIMARY_ALONE_MIX: return findcolour(d, 0, true, level, d->team == T_NEUTRAL ? mix : 0.f); break;
+            case CTONE_SECONDARY_TEAM: return findcolour(d, 1, d->team == T_NEUTRAL, level, 0); break;
+            case CTONE_SECONDARY_ALONE: return findcolour(d, 1, d->team != T_NEUTRAL, level, 0); break;
+            case CTONE_SECONDARY_MIX: return findcolour(d, 1, true, level, mix); break;
+            case CTONE_SECONDARY_TEAM_MIX: return findcolour(d, 1, true, level, d->team != T_NEUTRAL ? mix : 0.f); break;
+            case CTONE_SECONDARY_ALONE_MIX: return findcolour(d, 1, true, level, d->team == T_NEUTRAL ? mix : 0.f); break;
+            case CTONE_COMBINED_TEAM: return findcolour(d, 2, d->team == T_NEUTRAL, level, 0); break;
+            case CTONE_COMBINED_ALONE: return findcolour(d, 2, d->team != T_NEUTRAL, level, 0); break;
+            case CTONE_COMBINED_MIX: return findcolour(d, 2, true, level, mix); break;
+            case CTONE_COMBINED_TEAM_MIX: return findcolour(d, 2, true, level, d->team != T_NEUTRAL ? mix : 0.f); break;
+            case CTONE_COMBINED_ALONE_MIX: return findcolour(d, 2, true, level, d->team == T_NEUTRAL ? mix : 0.f); break;
+            case -1: return findcolour(d, 0, true, level, 0); break;
             case -2: default: return levelcolour(d->colours[0], level); break;
         }
         return 0;

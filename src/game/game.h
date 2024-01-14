@@ -2499,9 +2499,9 @@ namespace game
     extern const char *colourname(const char *name, int clientnum, int team, int actortype, int col, int privilege, int weapselect, bool icon = false, bool dupname = true, int colour = 3);
     extern const char *colourname(gameent *d, const char *name = NULL, bool icon = false, bool dupname = true, int colour = 3);
     extern const char *colourteam(int team, const char *icon = "");
-    extern int findcolour(int team, int colour, int weapselect, bool tone = true, float mix = 0.f, float level = 1);
-    extern int findcolour(gameent *d, bool sec = false, bool tone = true, float mix = 0.f, float level = 1);
-    extern int getcolour(gameent *d, int type = 0, float mix = 0.f, float level = 1.f);
+    extern int findcolour(int team, int colour, int weapselect, bool tone = true, float level = 1, float mix = 0);
+    extern int findcolour(gameent *d, bool sec = false, bool tone = true, float level = 1, float mix = 0);
+    extern int getcolour(gameent *d, int type = 0, float level = 1, float mix = 0);
     extern void errorsnd(gameent *d);
     extern void specreset(gameent *d = NULL, bool clear = false);
     extern float opacity(gameent *d, bool third = true);
