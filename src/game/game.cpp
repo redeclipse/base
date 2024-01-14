@@ -1679,11 +1679,11 @@ namespace game
         enum { HURT = 0, BURN, BLEED, SHOCK, MAX };
 
         gameent *to, *from;
-        int type, weap, amt, millis, ready, delay, length, combine;
+        int type, weap, flags, amt, millis, ready, delay, length, combine;
 
-        damagemerge() : to(NULL), from(NULL), type(HURT), weap(-1), amt(0), millis(totalmillis ? totalmillis : 1), ready(0), delay(0), length(0), combine(0) {}
-        damagemerge(gameent *d, gameent *v, int t, int w, int m, int md = 0, int ml = 0, int mc = 0) :
-            to(d), from(v), type(t), weap(w), amt(m), millis(totalmillis ? totalmillis : 1), ready(0), delay(md), length(ml), combine(mc) {}
+        damagemerge() : to(NULL), from(NULL), type(HURT), weap(-1), flags(0), amt(0), millis(totalmillis ? totalmillis : 1), ready(0), delay(0), length(0), combine(0) {}
+        damagemerge(gameent *d, gameent *v, int t, int w, int f, int m, int md = 0, int ml = 0, int mc = 0) :
+            to(d), from(v), type(t), weap(w), flags(f), amt(m), millis(totalmillis ? totalmillis : 1), ready(0), delay(md), length(ml), combine(mc) {}
 
         bool merge(const damagemerge &m)
         {
@@ -1694,6 +1694,7 @@ namespace game
                 return false;
 
             amt += m.amt;
+            flags |= m.flags;
             return true;
         }
 
@@ -1764,12 +1765,12 @@ namespace game
         }
     }
 
-    void pushdamagemerge(gameent *d, gameent *v, int type, int weap, int damage, int delay, int length, int combine)
+    void pushdamagemerge(gameent *d, gameent *v, int type, int weap, int flags, int damage, int delay, int length, int combine)
     {
         static int lastflush = 0; // ensure state is updated
         if(totalmillis != lastflush) flushdamagemerges();
 
-        damagemerge dt(d, v, type, weap, damage, delay, length, combine);
+        damagemerge dt(d, v, type, weap, flags, damage, delay, length, combine);
         loopv(damagemerges) if(damagemerges[i].merge(dt)) return;
 
         damagemerges.add(dt);
@@ -1780,6 +1781,7 @@ namespace game
     ICOMMAND(0, getdamageclient, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].to->clientnum : -1));
     ICOMMAND(0, getdamagetype, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].type : -1));
     ICOMMAND(0, getdamageweap, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].weap : -1));
+    ICOMMAND(0, getdamageflags, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].flags : 0));
     ICOMMAND(0, getdamageamt, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].amt : 0));
     ICOMMAND(0, getdamagemillis, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].millis : 0));
     ICOMMAND(0, getdamageready, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].ready : 0));
@@ -1840,7 +1842,7 @@ namespace game
                 if(burning) damagetype = damagemerge::BURN;
                 else if(bleeding) damagetype = damagemerge::BLEED;
                 else if(shocking) damagetype = damagemerge::SHOCK;
-                pushdamagemerge(d, v, damagetype, weap, damage, damagemergedelay, damagemergetime, damagemergecombine);
+                pushdamagemerge(d, v, damagetype, weap, flags, damage, damagemergedelay, damagemergetime, damagemergecombine);
 
                 if(d != v && !burning && !bleeding && !shocking && !material)
                 {
