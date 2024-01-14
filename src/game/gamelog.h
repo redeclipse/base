@@ -1,10 +1,10 @@
 #ifndef CPP_GAME_SERVER
 struct gamelog;
 #ifdef CPP_GAME_MAIN
-VAR(IDF_PERSIST, eventloglines, 1, 50, VAR_MAX);
-VAR(IDF_PERSIST, eventlogecho, 0, 0, 1);
+VAR(IDF_PERSIST, eventloglines, 1, 100, VAR_MAX);
+VAR(IDF_PERSIST, eventlogecho, 0, 1, 1);
 VAR(IDF_PERSIST, messageloglines, 1, 1000, VAR_MAX);
-VAR(IDF_PERSIST, messagelogecho, 0, 0, 1);
+VAR(IDF_PERSIST, messagelogecho, 0, 1, 1);
 vector<gamelog *> eventlog, messagelog;
 int eventlogseqid = 0, messagelogseqid = 0;
 #else

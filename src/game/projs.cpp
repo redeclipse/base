@@ -1866,8 +1866,8 @@ namespace projs
                     game::scaleyawpitch(proj.yaw, proj.pitch, yaw, pitch, speed, speed);
                     proj.roll -= diff; // and the roll subtracts
                     if(proj.roll < -180) proj.roll = 180 - fmod(180 - proj.roll, 360);
+                    break;
                 }
-                if(proj.projtype != PRJ_VANITY) break;
             }
             case PRJ_EJECT:
                 if(!proj.lastbounce || proj.movement > 0)
