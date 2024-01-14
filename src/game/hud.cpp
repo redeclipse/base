@@ -547,7 +547,7 @@ namespace hud
     FVAR(IDF_PERSIST, playeraboveyaw, -1, -1, 360);
     FVAR(IDF_PERSIST, playerabovepitch, -181, -181, 181);
     FVAR(IDF_PERSIST, playerabovescale, FVAR_NONZERO, 1, FVAR_MAX);
-    FVAR(IDF_PERSIST, playeraboveworld, FVAR_NONZERO, 3, FVAR_MAX);
+    FVAR(IDF_PERSIST, playeraboveworld, FVAR_NONZERO, 4, FVAR_MAX);
     FVAR(IDF_PERSIST, playerabovedetentyaw, 0, 0, 180);
     FVAR(IDF_PERSIST, playerabovedetentpitch, 0, 0, 90);
     FVAR(IDF_PERSIST, playeraboveoffset, 0, 1, 4);
@@ -556,7 +556,7 @@ namespace hud
     FVAR(IDF_PERSIST, playeroverlayyaw, -1, -1, 360);
     FVAR(IDF_PERSIST, playeroverlaypitch, -181, -181, 181);
     FVAR(IDF_PERSIST, playeroverlayscale, FVAR_NONZERO, 1, FVAR_MAX);
-    FVAR(IDF_PERSIST, playeroverlayworld, FVAR_NONZERO, 3, FVAR_MAX);
+    FVAR(IDF_PERSIST, playeroverlayworld, FVAR_NONZERO, 4, FVAR_MAX);
     FVAR(IDF_PERSIST, playeroverlaydetentyaw, 0, 0, 180);
     FVAR(IDF_PERSIST, playeroverlaydetentpitch, 0, 0, 90);
     FVAR(IDF_PERSIST, playeroverlayoffset, 0, 0.5f, 2);

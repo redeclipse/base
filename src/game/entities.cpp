@@ -29,7 +29,7 @@ namespace entities
     FVAR(IDF_PERSIST, entityaboveyaw, -1, -1, 360);
     FVAR(IDF_PERSIST, entityabovepitch, -181, 0, 181);
     FVAR(IDF_PERSIST, entityabovescale, FVAR_NONZERO, 1, FVAR_MAX);
-    FVAR(IDF_PERSIST, entityaboveworld, FVAR_NONZERO, 3, FVAR_MAX);
+    FVAR(IDF_PERSIST, entityaboveworld, FVAR_NONZERO, 4, FVAR_MAX);
     FVAR(IDF_PERSIST, entityabovedetentyaw, 0, 0, 180);
     FVAR(IDF_PERSIST, entityabovedetentpitch, 0, 0, 90);
     FVAR(IDF_PERSIST, entityaboveoffset, 0, 4, FVAR_MAX);
@@ -37,7 +37,7 @@ namespace entities
     FVAR(IDF_PERSIST, entityoverlayyaw, -1, -1, 360);
     FVAR(IDF_PERSIST, entityoverlaypitch, -181, 0, 181);
     FVAR(IDF_PERSIST, entityoverlayscale, FVAR_NONZERO, 1, FVAR_MAX);
-    FVAR(IDF_PERSIST, entityoverlayworld, FVAR_NONZERO, 3, FVAR_MAX);
+    FVAR(IDF_PERSIST, entityoverlayworld, FVAR_NONZERO, 4, FVAR_MAX);
     FVAR(IDF_PERSIST, entityoverlaydetentyaw, 0, 0, 180);
     FVAR(IDF_PERSIST, entityoverlaydetentpitch, 0, 0, 90);
     FVAR(IDF_PERSIST, entityoverlayoffset, 0, 1, FVAR_MAX);
