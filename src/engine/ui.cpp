@@ -2898,11 +2898,13 @@ namespace UI
 
         Color &scale(const Color &c)
         {
-            val.muld(c.val, 255.f);
-            val.r = int(val.r*c.val.r/255.f);
-            val.g = int(val.g*c.val.g/255.f);
-            val.b = int(val.b*c.val.b/255.f);
-            val.a = int(val.a*c.val.a/255.f);
+            val.scale(c.val);
+            return *this;
+        }
+
+        Color &combine(const Color &c)
+        {
+            val.combine(c.val);
             return *this;
         }
 
@@ -3009,6 +3011,11 @@ namespace UI
     {
         if(*pos < 0) loopv(o->colors) o->colors[i].scale(Color(*c, *force != 0));
         else if(o->colors.inrange(*pos)) o->colors[*pos].scale(Color(*c, *force != 0));
+    });
+    UICMDT(Colored, colour, combine, "ibi", (int *c, int *pos, int *force),
+    {
+        if(*pos < 0) loopv(o->colors) o->colors[i].combine(Color(*c, *force != 0));
+        else if(o->colors.inrange(*pos)) o->colors[*pos].combine(Color(*c, *force != 0));
     });
     UICMDT(Colored, colour, rotate, "fii", (float *amt, int *start, int *count), o->rotatecolors(*amt, *start, *count));
     UICMDT(Colored, colour, blend, "f", (float *blend), loopvk(o->colors) o->colors[k].val.a = clamp(uchar(*blend * o->colors[k].val.a), 0, 255));
@@ -3415,6 +3422,7 @@ namespace UI
 
         Texture *tex;
         bool alphatarget, outline, aspect;
+        int shadowtype;
         float shadowsize;
         Color shadowcolor;
 
@@ -3425,7 +3433,8 @@ namespace UI
             alphatarget = alphatarget_;
             outline = outline_;
             shadowsize = shadowsize_;
-            shadowcolor = Color(color_).scale(Color(0, 0, 0, 255));
+            shadowcolor = Color(0, 0, 0, 255);
+            shadowtype = 0;
             aspect = aspect_;
         }
 
@@ -3437,7 +3446,8 @@ namespace UI
             alphatarget = alphatarget_;
             outline = outline_;
             shadowsize = shadowsize_;
-            shadowcolor = Color(color_).scale(Color(0, 0, 0, 255));
+            shadowcolor = Color(0, 0, 0, 255);
+            shadowtype = 0;
             aspect = aspect_;
         }
 
@@ -3482,7 +3492,13 @@ namespace UI
             setupdraw();
 
             int col = clamp(colstart, -1, colors.length()-1);
-            Color c = col >= 0 ? (colors.inrange(col) ? colors[col] : colors[0]) : Color(colors[0]).scale(shadowcolor);
+            Color c = colors.inrange(col) ? colors[col] : colors[0];
+            if(col < 0) switch(shadowtype)
+            {
+                case 1: c.combine(shadowcolor); break;
+                case 2: c.scale(shadowcolor); break;
+                case 0: default: c = shadowcolor; break;
+            }
             if(forced || lastmode != mode)
             {
                 if(lastmode != GL_POINTS) gle::end();
@@ -3641,13 +3657,15 @@ namespace UI
     UIARGTB(Image, image, alphatarget);
     UIARGTB(Image, image, outline);
     UIARGTB(Image, image, aspect);
-    UICMDT(Image, image, shadow, "fi", (float *s, int *c),
+    UICMDT(Image, image, shadow, "fii", (float *s, int *c, int *t),
     {
         o->shadowsize = clamp(*s, FVAR_MIN, FVAR_MAX);
         o->shadowcolor = Color(*c);
+        o->shadowtype = *t;
     });
     UIARGT(Image, image, shadowsize, "f", float, FVAR_MIN, FVAR_MAX);
     UICMDT(Image, image, shadowcolour, "i", (int *c), o->shadowcolor = Color(*c));
+    UICMDT(Image, image, shadowtype, "i", (int *t), o->shadowtype = *t);
 
     struct CroppedImage : Image
     {
