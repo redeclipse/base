@@ -2452,6 +2452,7 @@ namespace hud
     extern void showscores(bool on, bool interm = false, bool onauto = true, bool ispress = false);
     extern score &teamscore(int team);
     extern void resetscores();
+    extern void removeplayer(gameent *d);
 }
 
 #define CTONE_ENUM(en, um) \

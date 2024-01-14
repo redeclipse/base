@@ -537,8 +537,8 @@ namespace UI
     extern bool keypress(int code, bool isdown);
     extern bool textinput(const char *str, int len);
 
-    extern void closedynui(const char *name, int stype = SURFACE_VISOR);
-    extern void cleardynui(const char *name, int stype = SURFACE_VISOR, bool mapdef = false);
+    extern void closedynui(const char *name, int stype = -1, bool mapdef = false);
+    extern void cleardynui(const char *name, int stype = -1, bool mapdef = false);
     extern void closemapuis(int n, int stype = -1);
 
     extern Texture *composite(const char *name, int tclamp = 0, bool mipit = true, bool msg = true, bool gc = false, Texture *tex = NULL, bool reload = false);

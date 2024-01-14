@@ -2343,6 +2343,7 @@ namespace game
         specreset(d, true);
         waiting.removeobj(d);
         client::clearvotes(d);
+        hud::removeplayer(d);
         projs::removeplayer(d);
         removedamagemerges(d);
         if(m_capture(gamemode)) capture::removeplayer(d);

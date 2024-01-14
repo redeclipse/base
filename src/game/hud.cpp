@@ -624,7 +624,13 @@ namespace hud
                 loopj(SURFACE_ALL) if(j != type) loopk(2) UI::hideui(playeruis[k], j, d->clientnum);
             }
         }
-        else loopj(SURFACE_ALL) loopk(2) UI::closedynui(playeruis[k], j);
+        else loopk(2) UI::cleardynui(playeruis[k]);
+    }
+
+    void removeplayer(gameent *d)
+    {
+        if(!d) return;
+        loopj(SURFACE_ALL) loopk(2) UI::hideui(playeruis[k], j, d->clientnum);
     }
 
     void drawquad(float x, float y, float w, float h, float tx1, float ty1, float tx2, float ty2, bool flipx, bool flipy)

@@ -3648,7 +3648,7 @@ namespace entities
                 loopj(SURFACE_ALL) loopk(2) UI::hideui(entityuis[k], j, v.idx);
             }
         }
-        else loopj(SURFACE_ALL) loopk(2) UI::closedynui(entityuis[k], j);
+        else loopk(2) UI::cleardynui(entityuis[k]);
 
         loopv(projs::projs)
         {

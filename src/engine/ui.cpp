@@ -2148,30 +2148,30 @@ namespace UI
     ICOMMAND(0, newui, "sisss", (char *name, int *stype, char *contents, char *onshow, char *onhide), if(!(identflags&IDF_MAP)) newui(name, *stype, contents, onshow, onhide, false));
     ICOMMAND(0, mapui, "sisss", (char *name, int *stype, char *contents, char *onshow, char *onhide), newui(name, *stype, contents, onshow, onhide, true));
 
-    void closedynui(const char *name, int stype)
+    void closedynui(const char *name, int stype, bool mapdef)
     {
         SWSURFACE(stype, enumerate(surface->windows, Window *, w,
         {
-            if(!w->dyn || !*w->dyn || (name && *name && strcmp(w->dyn, name))) continue;
+            if(!w->dyn || !*w->dyn || w->mapdef != mapdef || (name && *name && strcmp(w->dyn, name))) continue;
             surface->hide(w);
         }));
     }
 
-    ICOMMAND(0, closedynui, "si", (char *name, int *stype), closedynui(name, *stype));
+    ICOMMAND(0, closedynui, "si", (char *name, int *stype), closedynui(name, *stype, false));
 
     void cleardynui(const char *name, int stype, bool mapdef)
     {
         SWSURFACE(stype, enumerate(surface->windows, Window *, w,
         {
-            if(!w->dyn || !*w->dyn || (name && *name && strcmp(w->dyn, name)) || w->mapdef != mapdef) continue;
+            if(!w->dyn || !*w->dyn || w->mapdef != mapdef || (name && *name && strcmp(w->dyn, name))) continue;
             surface->hide(w);
             surface->windows.remove(w->name);
             delete w;
         }));
     }
 
-    ICOMMAND(0, cleardynui, "si", (char *name, int *stype), cleardynui(name, clamp(*stype, 0, int(SURFACE_MAX)-1), false));
-    ICOMMAND(0, clearmapdynui, "si", (char *name, int *stype), cleardynui(name, clamp(*stype, 0, int(SURFACE_MAX)-1), true));
+    ICOMMAND(0, cleardynui, "sb", (char *name, int *stype), cleardynui(name, *stype, false));
+    ICOMMAND(0, clearmapdynui, "sb", (char *name, int *stype), cleardynui(name, *stype, true));
 
     struct DynUI
     {
@@ -2258,10 +2258,9 @@ namespace UI
 
     bool showui(const char *name, int stype, int param, const vec &origin, float yaw, float pitch, float scale, float detentyaw, float detentpitch)
     {
-        const char *ref = dynuiref(name, param);
-
         if(!pushsurface(stype)) return false;
 
+        const char *ref = dynuiref(name, param);
         Window *w = surface->windows.find(ref, NULL);
 
         if(!w && param >= 0 && dynuiexec(name, param)) w = surface->windows.find(ref, NULL);
@@ -2277,10 +2276,9 @@ namespace UI
         if(!uivisible(name, stype, param))
             return showui(name, stype, param, origin, yaw, pitch, scale, detentyaw, detentpitch);
 
-        const char *ref = dynuiref(name, param);
-
         if(!pushsurface(stype)) return false;
 
+        const char *ref = dynuiref(name, param);
         Window *w = surface->windows.find(ref, NULL);
         if(!w)
         {
@@ -2304,11 +2302,10 @@ namespace UI
     {
         if(!uivisible(name, stype, param)) return false;
 
-        bool ret = false;
-        const char *ref = dynuiref(name, param);
-
         if(!pushsurface(stype)) return false;
 
+        bool ret = false;
+        const char *ref = dynuiref(name, param);
         if(!ref || !*ref) ret = surface->hideall(false) > 0;
         else
         {
@@ -2371,11 +2368,10 @@ namespace UI
 
     bool uivisible(const char *name, int stype, int param)
     {
-        const char *ref = dynuiref(name, param);
-
         if(!pushsurface(stype)) return false;
 
         bool ret = false;
+        const char *ref = dynuiref(name, param);
         if(!ref || !*ref) ret = surface->children.length() > 0;
         else
         {
@@ -6795,8 +6791,8 @@ namespace UI
 
             defformatstring(name, "entity_%s%d", e.attrs[0] < 0 ? "builtin_" : "", abs(e.attrs[0]));
             const char *ref = dynuiref(name, i);
-
             Window *w = surface->windows.find(ref, NULL);
+
             if(!w)
             {
                 if((!dynuiexec(name, i) || (w = surface->windows.find(ref, NULL)) == NULL))

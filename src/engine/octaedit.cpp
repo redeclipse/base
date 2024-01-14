@@ -439,7 +439,7 @@ VAR(IDF_PERSIST, selectionpulse, 0, 500, VAR_MAX);
 FVAR(IDF_PERSIST, selectionwidth, 0, 4, 10);
 
 VAR(IDF_PERSIST, selectionoffset, 0, 1, 1);
-VARF(IDF_PERSIST, selectiondynui, 0, 1, 1, if(!selectiondynui) UI::closedynui("selection"));
+VARF(IDF_PERSIST, selectiondynui, 0, 1, 1, if(!selectiondynui) UI::cleardynui("selection"));
 
 int geteditorient(int curorient, int axis)
 {
