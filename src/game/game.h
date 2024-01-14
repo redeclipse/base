@@ -239,8 +239,8 @@ namespace entities
 #define isent(a) (a >= NOTUSED && a < MAXENTTYPES)
 
 #define MAXNAMELEN 24
-#define SAY_ENUM(pr, en) en(pr, Message, MESSAGE, 1<<0) en(pr, Action, ACTION, 1<<1) en(pr, Team, TEAM, 1<<2) en(pr, Whisper, WHISPER, 1<<3)
-ENUMNI(SAY);
+#define SAY_ENUM(en, um) en(um, Message, MESSAGE, 1<<0) en(um, Action, ACTION, 1<<1) en(um, Team, TEAM, 1<<2) en(um, Whisper, WHISPER, 1<<3)
+ENUMALN(SAY);
 
 enum
 {
@@ -333,15 +333,15 @@ enum
     RESIDUAL(bleed, BLEED, BLEED); \
     RESIDUAL(shock, SHOCK, SHOCK);
 
-#define FRAG_ENUM(pr, en) \
-    en(pr, NONE, 0) en(pr, HEADSHOT, 1<<0) en(pr, OBLITERATE, 1<<1) \
-    en(pr, SPREE1, 1<<2) en(pr, SPREE2, 1<<3) en(pr, SPREE3, 1<<4) en(pr, SPREE4, 1<<5) \
-    en(pr, MKILL1, 1<<6) en(pr, MKILL2, 1<<7) en(pr, MKILL3, 1<<8) \
-    en(pr, REVENGE, 1<<9) en(pr, DOMINATE, 1<<10) en(pr, FIRSTBLOOD, 1<<11) en(pr, BREAKER, 1<<12) \
-    en(pr, SPREES, 4) en(pr, SPREE, 2) en(pr, MKILL, 6) \
-    en(pr, CHECK, pr##_SPREE1|pr##_SPREE2|pr##_SPREE3|pr##_SPREE4) \
-    en(pr, MULTI, pr##_MKILL1|pr##_MKILL2|pr##_MKILL3)
-ENUMLI(FRAG);
+#define FRAG_ENUM(en, um) \
+    en(um, NONE, 0) en(um, HEADSHOT, 1<<0) en(um, OBLITERATE, 1<<1) \
+    en(um, SPREE1, 1<<2) en(um, SPREE2, 1<<3) en(um, SPREE3, 1<<4) en(um, SPREE4, 1<<5) \
+    en(um, MKILL1, 1<<6) en(um, MKILL2, 1<<7) en(um, MKILL3, 1<<8) \
+    en(um, REVENGE, 1<<9) en(um, DOMINATE, 1<<10) en(um, FIRSTBLOOD, 1<<11) en(um, BREAKER, 1<<12) \
+    en(um, SPREES, 4) en(um, SPREE, 2) en(um, MKILL, 6) \
+    en(um, CHECK, um##_SPREE1|um##_SPREE2|um##_SPREE3|um##_SPREE4) \
+    en(um, MULTI, um##_MKILL1|um##_MKILL2|um##_MKILL3)
+ENUMAL(FRAG);
 
 enum
 {
@@ -1144,14 +1144,14 @@ namespace server
     extern float getwaterextinguishscale(int mat);
 }
 
-#define PLCHAN_ENUM(pr, en) en(pr, Announce, ANNOUNCE) en(pr, Message, MESSAGE) en(pr, Voice, VOICE) en(pr, Maximum, MAX)
-ENUMNV(PLCHAN);
+#define PLCHAN_ENUM(en, um) en(um, Announce, ANNOUNCE) en(um, Message, MESSAGE) en(um, Voice, VOICE) en(um, Maximum, MAX)
+ENUMDLN(PLCHAN);
 
-#define HUDPOS_ENUM(pr, en) \
-    en(pr, lefttop, LEFTTOP) en(pr, centertop, CENTERTOP) en(pr, righttop, RIGHTTOP) \
-    en(pr, leftbottom, LEFTBOTTOM) en(pr, centerbottom, CENTERBOTTOM) en(pr, rightbottom, RIGHTBOTTOM) \
-    en(pr, centermiddle, CENTERMIDDLE) en(pr, Maximum, MAX)
-ENUMNV(HUDPOS)
+#define HUDPOS_ENUM(en, um) \
+    en(um, lefttop, LEFTTOP) en(um, centertop, CENTERTOP) en(um, righttop, RIGHTTOP) \
+    en(um, leftbottom, LEFTBOTTOM) en(um, centerbottom, CENTERBOTTOM) en(um, rightbottom, RIGHTBOTTOM) \
+    en(um, centermiddle, CENTERMIDDLE) en(um, Maximum, MAX)
+ENUMDLN(HUDPOS)
 
 #ifdef CPP_GAME_SERVER
 #define WATERPHYS(name,mat) (server::getwater##name(mat)*server::getwater##name##scale(mat))
@@ -2454,13 +2454,13 @@ namespace hud
     extern void resetscores();
 }
 
-#define CTONE_ENUM(pr, en) \
-    en(pr, Team, TEAM) en(pr, Primary, PRIMARY) en(pr, Secondary, SECONDARY) en(pr, Combined, COMBINED) \
-    en(pr, Primary Team, PRIMARY_TEAM) en(pr, Primary Alone, PRIMARY_ALONE) en(pr, Primary Mix, PRIMARY_MIX) en(pr, Primary Team Mix, PRIMARY_TEAM_MIX) en(pr, Primary Alone Mix, PRIMARY_ALONE_MIX) \
-    en(pr, Secondary Team, SECONDARY_TEAM) en(pr, Secondary Alone, SECONDARY_ALONE) en(pr, Secondary Mix, SECONDARY_MIX) en(pr, Secondary Team Mix, SECONDARY_TEAM_MIX) en(pr, Secondary Alone Mix, SECONDARY_ALONE_MIX) \
-    en(pr, Combined Team, COMBINED_TEAM) en(pr, Combined Alone, COMBINED_ALONE) en(pr, Combined Mix, COMBINED_MIX) en(pr, Combined Team Mix, COMBINED_TEAM_MIX) en(pr, Combined Alone Mix, COMBINED_ALONE_MIX) \
-    en(pr, Maximum, MAX)
-ENUMNV(CTONE);
+#define CTONE_ENUM(en, um) \
+    en(um, Team, TEAM) en(um, Primary, PRIMARY) en(um, Secondary, SECONDARY) en(um, Combined, COMBINED) \
+    en(um, Primary Team, PRIMARY_TEAM) en(um, Primary Alone, PRIMARY_ALONE) en(um, Primary Mix, PRIMARY_MIX) en(um, Primary Team Mix, PRIMARY_TEAM_MIX) en(um, Primary Alone Mix, PRIMARY_ALONE_MIX) \
+    en(um, Secondary Team, SECONDARY_TEAM) en(um, Secondary Alone, SECONDARY_ALONE) en(um, Secondary Mix, SECONDARY_MIX) en(um, Secondary Team Mix, SECONDARY_TEAM_MIX) en(um, Secondary Alone Mix, SECONDARY_ALONE_MIX) \
+    en(um, Combined Team, COMBINED_TEAM) en(um, Combined Alone, COMBINED_ALONE) en(um, Combined Mix, COMBINED_MIX) en(um, Combined Team Mix, COMBINED_TEAM_MIX) en(um, Combined Alone Mix, COMBINED_ALONE_MIX) \
+    en(um, Maximum, MAX)
+ENUMDLN(CTONE);
 //enum { CTONE_TEAM = 0, CTONE_PRIMARY, CTONE_PRIMARY_TEAM, CTONE_PRIMARY_ALONE, CTONE_PRIMARY_MIX, CTONE_PRIMARY_TEAM_MIX, CTONE_PRIMARY_ALONE_MIX, CTONE_MAX };
 
 namespace game
@@ -2565,12 +2565,12 @@ namespace entities
 #include "bomber.h"
 #endif
 
-#define GAMELOG_ENUM(pr, en) en(pr, Event, EVENT) en(pr, Message, MESSAGE) en(pr, Maximum, MAX)
-ENUMNV(GAMELOG);
+#define GAMELOG_ENUM(en, um) en(um, Event, EVENT) en(um, Message, MESSAGE) en(um, Maximum, MAX)
+ENUMDLN(GAMELOG);
 
-#define GAMELOG_F_ENUM(pr, en) en(pr, NONE, 0) en(pr, CLIENT1, 1<<0) en(pr, CLIENT2, 1<<1) en(pr, CLIENTN, 1<<2) en(pr, BROADCAST, 1<<3) en(pr, UNMAPPED, 1<<4) \
-    en(pr, CLIENTS, pr##_CLIENT1|pr##_CLIENT2|pr##_CLIENTN) en(pr, ALL, pr##_CLIENT1|pr##_CLIENT2|pr##_CLIENTN|pr##_BROADCAST)
-ENUMLI(GAMELOG_F);
+#define GAMELOG_F_ENUM(en, um) en(um, NONE, 0) en(um, CLIENT1, 1<<0) en(um, CLIENT2, 1<<1) en(um, CLIENTN, 1<<2) en(um, BROADCAST, 1<<3) en(um, UNMAPPED, 1<<4) \
+    en(um, CLIENTS, um##_CLIENT1|um##_CLIENT2|um##_CLIENTN) en(um, ALL, um##_CLIENT1|um##_CLIENT2|um##_CLIENTN|um##_BROADCAST)
+ENUMAL(GAMELOG_F);
 
 #ifndef CPP_GAME_SERVER
 #include "gamelog.h"

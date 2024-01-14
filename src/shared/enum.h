@@ -34,37 +34,37 @@
 #define ENUMDSV(prefix, name, assign) VARE(prefix##_##name, prefix##_##name)
 #define ENUMDSL(prefix, name, assign) " " #prefix "_" #name
 
-// enum with assigned values
-#define ENUMDI(prefix) enum { prefix##_ENUM(prefix, ENUMDSX) }; prefix##_ENUM(prefix, ENUMDSV)
-
-// enum with assigned values and list variable
-#define ENUMLI(prefix) enum { prefix##_ENUM(prefix, ENUMDSX) }; prefix##_ENUM(prefix, ENUMDSV) VARL(prefix##_LIST, prefix##_ENUM(prefix, ENUMDSL))
-
 #define ENUMVSX(prefix, name) prefix##_##name,
 #define ENUMVSV(prefix, name) VARE(prefix##_##name, prefix##_##name)
 #define ENUMVSL(prefix, name) " " #prefix "_" #name
 
+// enum with assigned values
+#define ENUMA(prefix) enum { prefix##_ENUM(ENUMDSX, prefix) }; prefix##_ENUM(ENUMDSV, prefix)
+
 // enum with default values
-#define ENUMDV(prefix) enum { prefix##_ENUM(prefix, ENUMVSX) }; prefix##_ENUM(prefix, ENUMVSV)
+#define ENUMD(prefix) enum { prefix##_ENUM(ENUMVSX, prefix) }; prefix##_ENUM(ENUMVSV, prefix)
+
+// enum with assigned values and list variable
+#define ENUMAL(prefix) enum { prefix##_ENUM(ENUMDSX, prefix) }; prefix##_ENUM(ENUMDSV, prefix) VARL(prefix##_LIST, prefix##_ENUM(ENUMDSL, prefix))
 
 // enum with default values and list variable
-#define ENUMLV(prefix) enum { prefix##_ENUM(prefix, ENUMVSX) }; prefix##_ENUM(prefix, ENUMVSV) VARL(prefix##_LIST, prefix##_ENUM(prefix, ENUMVSL))
+#define ENUMDL(prefix) enum { prefix##_ENUM(ENUMVSX, prefix) }; prefix##_ENUM(ENUMVSV, prefix) VARL(prefix##_LIST, prefix##_ENUM(ENUMVSL, prefix))
 
-#define ENUMNIX(prefix, pretty, name, assign) prefix##_##name = assign,
-#define ENUMNIV(prefix, pretty, name, assign) VARE(prefix##_##name, prefix##_##name)
-#define ENUMNIL(prefix, pretty, name, assign) " " #prefix "_" #name
-#define ENUMNIN(prefix, pretty, name, assign) " [" #pretty "]"
-#define ENUMNIS(prefix, pretty, name, assign) #pretty,
+#define ENUMALNX(prefix, pretty, name, assign) prefix##_##name = assign,
+#define ENUMALNV(prefix, pretty, name, assign) VARE(prefix##_##name, prefix##_##name)
+#define ENUMALNL(prefix, pretty, name, assign) " " #prefix "_" #name
+#define ENUMALNN(prefix, pretty, name, assign) " [" #pretty "]"
+#define ENUMALNS(prefix, pretty, name, assign) #pretty,
 
 // enum with assigned values and list/name variables
-#define ENUMNI(prefix) enum { prefix##_ENUM(prefix, ENUMNIX) }; prefix##_ENUM(prefix, ENUMNIV) VARL(prefix##_LIST, prefix##_ENUM(prefix, ENUMNIL)) VARL(prefix##_NAMES, prefix##_ENUM(prefix, ENUMNIN)) VARS(prefix##_STR, prefix##_ENUM(prefix, ENUMNIS))
+#define ENUMALN(prefix) enum { prefix##_ENUM(ENUMALNX, prefix) }; prefix##_ENUM(ENUMALNV, prefix) VARL(prefix##_LIST, prefix##_ENUM(ENUMALNL, prefix)) VARL(prefix##_NAMES, prefix##_ENUM(ENUMALNN, prefix)) VARS(prefix##_STR, prefix##_ENUM(ENUMALNS, prefix))
 
-#define ENUMNVX(prefix, pretty, name) prefix##_##name,
-#define ENUMNVV(prefix, pretty, name) VARE(prefix##_##name, prefix##_##name)
-#define ENUMNVL(prefix, pretty, name) " " #prefix "_" #name
-#define ENUMNVN(prefix, pretty, name) " [" #pretty "]"
-#define ENUMNVS(prefix, pretty, name) #pretty,
+#define ENUMDLNX(prefix, pretty, name) prefix##_##name,
+#define ENUMDLNV(prefix, pretty, name) VARE(prefix##_##name, prefix##_##name)
+#define ENUMDLNL(prefix, pretty, name) " " #prefix "_" #name
+#define ENUMDLNN(prefix, pretty, name) " [" #pretty "]"
+#define ENUMDLNS(prefix, pretty, name) #pretty,
 
 // enum with default values and list/name variables
-#define ENUMNV(prefix) enum { prefix##_ENUM(prefix, ENUMNVX) }; prefix##_ENUM(prefix, ENUMNVV) VARL(prefix##_LIST, prefix##_ENUM(prefix, ENUMNVL)) VARL(prefix##_NAMES, prefix##_ENUM(prefix, ENUMNVN)) VARS(prefix##_STR, prefix##_ENUM(prefix, ENUMNVS))
+#define ENUMDLN(prefix) enum { prefix##_ENUM(ENUMDLNX, prefix) }; prefix##_ENUM(ENUMDLNV, prefix) VARL(prefix##_LIST, prefix##_ENUM(ENUMDLNL, prefix)) VARL(prefix##_NAMES, prefix##_ENUM(ENUMDLNN, prefix)) VARS(prefix##_STR, prefix##_ENUM(ENUMDLNS, prefix))
 #endif

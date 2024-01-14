@@ -246,37 +246,37 @@ enum
     PT_FLIP     = PT_HFLIP | PT_VFLIP | PT_ROT
 };
 
-#define PART_ENUM(pr, en) \
-    en(pr, Portal, PORTAL) en(pr, Portal Env, PORTAL_ENV) en(pr, Icon, ICON) en(pr, Icon Ontop, ICON_ONTOP) \
-    en(pr, Line, LINE) en(pr, Line Ontop, LINE_ONTOP) en(pr, Triangle, TRIANGLE) en(pr, Triangle Ontop, TRIANGLE_ONTOP) \
-    en(pr, Ellipse, ELLIPSE) en(pr, Ellipse Ontop, ELLIPSE_ONTOP) en(pr, Cone, CONE) en(pr, Cone Ontop, CONE_ONTOP) \
-    en(pr, Fireball Lerp, FIREBALL_LERP) en(pr, Plasma Lerp, PLASMA_LERP) \
-    en(pr, Flare Lerp, FLARE_LERP) en(pr, Muzzle Flare Lerp, MUZZLE_FLARE_LERP) \
-    en(pr, Smoke Lerp Soft, SMOKE_LERP_SOFT) en(pr, Smoke Lerp, SMOKE_LERP) \
-    en(pr, Smoke Soft, SMOKE_SOFT) en(pr, Smoke, SMOKE) \
-    en(pr, Hint Soft, HINT_SOFT) en(pr, Hint, HINT) \
-    en(pr, Hint Bold Soft, HINT_BOLD_SOFT) en(pr, Hint Bold, HINT_BOLD) \
-    en(pr, Hint Vert Soft, HINT_VERT_SOFT) en(pr, Vert Bold, VERT_BOLD) \
-    en(pr, Hint Horz Soft, HINT_HORZ_SOFT) en(pr, Horz Bold, HORZ_BOLD) \
-    en(pr, Blood, BLOOD) \
-    en(pr, Entity, ENTITY) en(pr, Entity Ontop, ENTITY_ONTOP) \
-    en(pr, Spark, SPARK) \
-    en(pr, Fireball Soft, FIREBALL_SOFT) en(pr, Fireball, FIREBALL) \
-    en(pr, Plasma Soft, PLASMA_SOFT) en(pr, Plasma, PLASMA) \
-    en(pr, Electric Soft, ELECTRIC_SOFT) en(pr, Electric, ELECTRIC) \
-    en(pr, Eleczap Soft, ELECZAP_SOFT) en(pr, Eleczap, ELECZAP) \
-    en(pr, Flame, FLAME) \
-    en(pr, Flare, FLARE) en(pr, Clean Flare, CLEAN_FLARE) en(pr, Muzzle Flare, MUZZLE_FLARE) \
-    en(pr, Lightning Flare, LIGHTNING_FLARE) en(pr, Lightzap Flare, LIGHTZAP_FLARE) \
-    en(pr, Muzzle Flash, MUZZLE_FLASH) en(pr, Snow, SNOW) \
-    en(pr, Haze, HAZE) en(pr, Haze Flame, HAZE_FLAME) en(pr, Haze Tape, HAZE_TAPE) \
-    en(pr, Rain, RAIN) \
-    en(pr, Text, TEXT) en(pr, Text Ontop, TEXT_ONTOP) \
-    en(pr, Explosion, EXPLOSION) en(pr, Shockwave, SHOCKWAVE) en(pr, Shockball, SHOCKBALL) en(pr, Glimmery, GLIMMERY) \
-    en(pr, Lightning, LIGHTNING) en(pr, Lightzap, LIGHTZAP) \
-    en(pr, Lens Flare, LENS_FLARE) \
-    en(pr, Max, MAX)
-ENUMNV(PART);
+#define PART_ENUM(en, um) \
+    en(um, Portal, PORTAL) en(um, Portal Env, PORTAL_ENV) en(um, Icon, ICON) en(um, Icon Ontop, ICON_ONTOP) \
+    en(um, Line, LINE) en(um, Line Ontop, LINE_ONTOP) en(um, Triangle, TRIANGLE) en(um, Triangle Ontop, TRIANGLE_ONTOP) \
+    en(um, Ellipse, ELLIPSE) en(um, Ellipse Ontop, ELLIPSE_ONTOP) en(um, Cone, CONE) en(um, Cone Ontop, CONE_ONTOP) \
+    en(um, Fireball Lerp, FIREBALL_LERP) en(um, Plasma Lerp, PLASMA_LERP) \
+    en(um, Flare Lerp, FLARE_LERP) en(um, Muzzle Flare Lerp, MUZZLE_FLARE_LERP) \
+    en(um, Smoke Lerp Soft, SMOKE_LERP_SOFT) en(um, Smoke Lerp, SMOKE_LERP) \
+    en(um, Smoke Soft, SMOKE_SOFT) en(um, Smoke, SMOKE) \
+    en(um, Hint Soft, HINT_SOFT) en(um, Hint, HINT) \
+    en(um, Hint Bold Soft, HINT_BOLD_SOFT) en(um, Hint Bold, HINT_BOLD) \
+    en(um, Hint Vert Soft, HINT_VERT_SOFT) en(um, Vert Bold, VERT_BOLD) \
+    en(um, Hint Horz Soft, HINT_HORZ_SOFT) en(um, Horz Bold, HORZ_BOLD) \
+    en(um, Blood, BLOOD) \
+    en(um, Entity, ENTITY) en(um, Entity Ontop, ENTITY_ONTOP) \
+    en(um, Spark, SPARK) \
+    en(um, Fireball Soft, FIREBALL_SOFT) en(um, Fireball, FIREBALL) \
+    en(um, Plasma Soft, PLASMA_SOFT) en(um, Plasma, PLASMA) \
+    en(um, Electric Soft, ELECTRIC_SOFT) en(um, Electric, ELECTRIC) \
+    en(um, Eleczap Soft, ELECZAP_SOFT) en(um, Eleczap, ELECZAP) \
+    en(um, Flame, FLAME) \
+    en(um, Flare, FLARE) en(um, Clean Flare, CLEAN_FLARE) en(um, Muzzle Flare, MUZZLE_FLARE) \
+    en(um, Lightning Flare, LIGHTNING_FLARE) en(um, Lightzap Flare, LIGHTZAP_FLARE) \
+    en(um, Muzzle Flash, MUZZLE_FLASH) en(um, Snow, SNOW) \
+    en(um, Haze, HAZE) en(um, Haze Flame, HAZE_FLAME) en(um, Haze Tape, HAZE_TAPE) \
+    en(um, Rain, RAIN) \
+    en(um, Text, TEXT) en(um, Text Ontop, TEXT_ONTOP) \
+    en(um, Explosion, EXPLOSION) en(um, Shockwave, SHOCKWAVE) en(um, Shockball, SHOCKBALL) en(um, Glimmery, GLIMMERY) \
+    en(um, Lightning, LIGHTNING) en(um, Lightzap, LIGHTZAP) \
+    en(um, Lens Flare, LENS_FLARE) \
+    en(um, Max, MAX)
+ENUMDLN(PART);
 
 struct particle
 {
@@ -314,11 +314,11 @@ extern void regularflame(int type, const vec &p, float radius, float height, int
 extern void lensflare(const vec &o, const vec &color, bool sun, int sparkle, float scale = 1);
 
 // stain
-#define STAIN_ENUM(pr, en) \
-    en(pr, Smoke, SMOKE) en(pr, Scorch, SCORCH) en(pr, Short Scorch, SCORCH_SHORT) \
-    en(pr, Blood, BLOOD) en(pr, Bullet, BULLET) en(pr, Energy, ENERGY) en(pr, Stain, STAIN) \
-    en(pr, Maximum, MAX)
-ENUMNV(STAIN);
+#define STAIN_ENUM(en, um) \
+    en(um, Smoke, SMOKE) en(um, Scorch, SCORCH) en(um, Short Scorch, SCORCH_SHORT) \
+    en(um, Blood, BLOOD) en(um, Bullet, BULLET) en(um, Energy, ENERGY) en(um, Stain, STAIN) \
+    en(um, Maximum, MAX)
+ENUMDLN(STAIN);
 
 extern void addstain(int type, const vec &center, const vec &surface, float radius, const bvec &color = bvec(0xFF, 0xFF, 0xFF), int info = 0);
 
@@ -502,10 +502,10 @@ struct editor;
 enum { EDITORFOCUSED = 1, EDITORUSED, EDITORFOREVER, EDITORREADONLY };
 enum { CURSOR_DEFAULT = 0, CURSOR_HOVER, CURSOR_HIDDEN, CURSOR_MAX };
 
-#define SURFACE_ENUM(pr, en) \
-    en(pr, Visor, VISOR) en(pr, Background, BACKGROUND) en(pr, Foreground, FOREGROUND) en(pr, World, WORLD) \
-    en(pr, Progress, PROGRESS) en(pr, Composite, COMPOSITE) en(pr, Maximum, MAX)
-ENUMNV(SURFACE);
+#define SURFACE_ENUM(en, um) \
+    en(um, Visor, VISOR) en(um, Background, BACKGROUND) en(um, Foreground, FOREGROUND) en(um, World, WORLD) \
+    en(um, Progress, PROGRESS) en(um, Composite, COMPOSITE) en(um, Maximum, MAX)
+ENUMDLN(SURFACE);
 VARQ(SURFACE_LOOPED, SURFACE_FOREGROUND+1);
 VARQ(SURFACE_ALL, SURFACE_WORLD+1);
 

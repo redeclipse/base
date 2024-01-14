@@ -6,22 +6,22 @@
 enum { ET_EMPTY = 0, ET_LIGHT, ET_MAPMODEL, ET_PLAYERSTART, ET_ENVMAP, ET_PARTICLES, ET_SOUND, ET_LIGHTFX, ET_DECAL, ET_WIND, ET_MAPUI, ET_SOUNDENV, ET_PHYSICS, ET_GAMESPECIFIC };
 enum { LFX_S_NONE = 0, LFX_S_RAND1 = 1<<0, LFX_S_RAND2 = 1<<1, LFX_S_MAX = 2 };
 
-#define MPV_ENUM(pr, en) \
-    en(pr, Any, ANY) en(pr, Default, DEFAULT) en(pr, Alternate, ALTERNATE) \
-    en(pr, Max, MAX)
-ENUMNV(MPV);
+#define MPV_ENUM(en, um) \
+    en(um, Any, ANY) en(um, Default, DEFAULT) en(um, Alternate, ALTERNATE) \
+    en(um, Max, MAX)
+ENUMDLN(MPV);
 
-#define LFX_ENUM(pr, en) \
-    en(pr, Spotlight, SPOTLIGHT) en(pr, Flicker, FLICKER) \
-    en(pr, Pulse, PULSE) en(pr, Glow, GLOW) \
-    en(pr, Inverted Pulse, INVPULSE) en(pr, Inverted Glow, INVGLOW) \
-    en(pr, Max, MAX)
-ENUMNV(LFX);
+#define LFX_ENUM(en, um) \
+    en(um, Spotlight, SPOTLIGHT) en(um, Flicker, FLICKER) \
+    en(um, Pulse, PULSE) en(um, Glow, GLOW) \
+    en(um, Inverted Pulse, INVPULSE) en(um, Inverted Glow, INVGLOW) \
+    en(um, Max, MAX)
+ENUMDLN(LFX);
 
-#define PHYSICS_ENUM(pr, en) \
-    en(pr, Movement, MOVEMENT) en(pr, Gravity, GRAVITY) en(pr, Coasting, COASTING) \
-    en(pr, Max, MAX)
-ENUMNV(PHYSICS);
+#define PHYSICS_ENUM(en, um) \
+    en(um, Movement, MOVEMENT) en(um, Gravity, GRAVITY) en(um, Coasting, COASTING) \
+    en(um, Max, MAX)
+ENUMDLN(PHYSICS);
 
 struct entbase          // persistent map entity
 {
@@ -159,12 +159,12 @@ extern vector<int> enthover;
 #define entfocus(i, f) entfocusv(i, f, entities::getents())
 
 
-#define CS_ENUM(pr, en) \
-    en(pr, Alive, ALIVE) en(pr, Dead, DEAD) \
-    en(pr, Editing, EDITING) en(pr, Spectator, SPECTATOR) \
-    en(pr, Waiting, WAITING) \
-    en(pr, Maximum, MAX)
-ENUMNV(CS); // beware, some stuff uses >= CS_SPECTATOR
+#define CS_ENUM(en, um) \
+    en(um, Alive, ALIVE) en(um, Dead, DEAD) \
+    en(um, Editing, EDITING) en(um, Spectator, SPECTATOR) \
+    en(um, Waiting, WAITING) \
+    en(um, Maximum, MAX)
+ENUMDLN(CS); // beware, some stuff uses >= CS_SPECTATOR
 
 enum { PHYS_FLOAT = 0, PHYS_FALL, PHYS_SLIDE, PHYS_SLOPE, PHYS_FLOOR, PHYS_STEP_UP, PHYS_STEP_DOWN, PHYS_MAX };
 enum { ENT_PLAYER = 0, ENT_AI, ENT_INANIMATE, ENT_CAMERA, ENT_PROJ, ENT_RAGDOLL, ENT_DUMMY, ENT_MAX };

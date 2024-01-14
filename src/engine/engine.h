@@ -423,10 +423,10 @@ static inline cubeext &ext(cube &c)
 
 // renderlights
 
-#define DARK_ENUM(pr, en) \
-    en(pr, Environment, ENV) en(pr, Glow, GLOW) en(pr, Sunlight, SUN) en(pr, Particles, PART) \
-    en(pr, Halo, HALO) en(pr, UI, UI) en(pr, Maximum, MAX)
-ENUMNV(DARK);
+#define DARK_ENUM(en, um) \
+    en(um, Environment, ENV) en(um, Glow, GLOW) en(um, Sunlight, SUN) en(um, Particles, PART) \
+    en(um, Halo, HALO) en(um, UI, UI) en(um, Maximum, MAX)
+ENUMDLN(DARK);
 
 #define LIGHTTILE_MAXW 16
 #define LIGHTTILE_MAXH 16
@@ -835,11 +835,11 @@ enum
     INIT_QUIT
 };
 
-#define PROGRESS_ENUM(pr, en) \
-    en(pr, None, NONE) en(pr, Disconnecting from server, DISCONNECT) en(pr, Connecting to server, CONNECT) \
-    en(pr, Loading map, MAPLOAD) en(pr, Saving map, MAPSAVE) en(pr, Downloading map, MAPDL) \
-    en(pr, Starting match, GAMESTATE) en(pr, Waiting, GAMEWAIT) en(pr, Maximum, MAX)
-ENUMNV(PROGRESS);
+#define PROGRESS_ENUM(en, um) \
+    en(um, None, NONE) en(um, Disconnecting from server, DISCONNECT) en(um, Connecting to server, CONNECT) \
+    en(um, Loading map, MAPLOAD) en(um, Saving map, MAPSAVE) en(um, Downloading map, MAPDL) \
+    en(um, Starting match, GAMESTATE) en(um, Waiting, GAMEWAIT) en(um, Maximum, MAX)
+ENUMDLN(PROGRESS);
 
 extern int initing, fullscreen, fullscreendesktop, numcpus, noconfigfile, firstrun;
 extern bool progressing, pixeling;
@@ -1109,10 +1109,10 @@ extern void viewhaze();
 #include "sound.h"
 
 // command extras
-#define PULSE_ENUM(pr, en) \
-    en(pr, Fire, FIRE) en(pr, Burn, BURN) en(pr, Disco, DISCO) en(pr, Shock, SHOCK) en(pr, Bleed, BLEED) \
-    en(pr, Buff, BUFF) en(pr, Warn, WARN) en(pr, Regen, REGEN) en(pr, Flash, FLASH) en(pr, Rainbow, RAINBOW) en(pr, Maximum, MAX)
-ENUMNV(PULSE)
+#define PULSE_ENUM(en, um) \
+    en(um, Fire, FIRE) en(um, Burn, BURN) en(um, Disco, DISCO) en(um, Shock, SHOCK) en(um, Bleed, BLEED) \
+    en(um, Buff, BUFF) en(um, Warn, WARN) en(um, Regen, REGEN) en(um, Flash, FLASH) en(um, Rainbow, RAINBOW) en(um, Maximum, MAX)
+ENUMDLN(PULSE)
 #define PULSE_LAST (PULSE_MAX - 1)
 #define PULSECOLOURS 8
 #define PULSE(x) (PULSE_##x)
