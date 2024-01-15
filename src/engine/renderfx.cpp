@@ -14,13 +14,13 @@ FVAR(IDF_PERSIST, halotolerance, FVAR_MIN, -16, FVAR_MAX);
 FVAR(IDF_PERSIST, haloaddz, FVAR_MIN, 2, FVAR_MAX);
 
 VARF(IDF_PERSIST, halosamples, 1, 3, 5, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // number of samples
-FVARF(IDF_PERSIST, halooffset, FVAR_NONZERO, 2, 4, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // the offset multiplier of each sample
+FVARF(IDF_PERSIST, halooffset, FVAR_NONZERO, 1, 4, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // the offset multiplier of each sample
 FVARF(IDF_PERSIST, halooutlinemix, 0, 1, 1, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // mix between first/closest sample and accumulation of all samples
 FVARF(IDF_PERSIST, halooutlinecol, 0, 2, FVAR_MAX, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // multiply resulting rgb by this
 FVARF(IDF_PERSIST, halooutlineblend, 0, 1, FVAR_MAX, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // multiply resulting a by this
 FVARF(IDF_PERSIST, halooutlineshadow, 0, 0, 1, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // apply highlight/shadowing with an extra sample
 FVARF(IDF_PERSIST, haloinfillmix, 0, 0, 1, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
-FVARF(IDF_PERSIST, haloinfillcol, 0, 0.75f, FVAR_MAX, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
+FVARF(IDF_PERSIST, haloinfillcol, 0, 0.85f, FVAR_MAX, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
 FVARF(IDF_PERSIST, haloinfillblend, 0, 0.25f, FVAR_MAX, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
 FVARF(IDF_PERSIST, halonoisesample, 0, 2, 8, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // apply random noise to sampling by this multiplier
 FVARF(IDF_PERSIST, halonoisemixcol, 0, 0, 1, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // mix noise with the output colour
