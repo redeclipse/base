@@ -696,7 +696,7 @@ GFVAR(IDF_GAMEMOD, 0, gladiatorextrawavevelscale, 0, 1, FVAR_MAX);
 
 GFVAR(IDF_GAMEMOD, 0, darknessenv, 0, 0, 1);
 GFVAR(IDF_GAMEMOD, 0, darknessglow, 0, 0.05f, 1);
-GFVAR(IDF_GAMEMOD, 0, darknesshalo, 0, 0.8f, 1);
+GFVAR(IDF_GAMEMOD, 0, darknesshalo, 0, 0.35f, 1);
 GFVAR(IDF_GAMEMOD, 0, darknessui, 0, 0.1f, 1);
 GFVAR(IDF_GAMEMOD, 0, darknesssun, 0, 0, 1);
 GFVAR(IDF_GAMEMOD, 0, darknesspart, 0, 0.1f, 1);

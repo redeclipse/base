@@ -6838,7 +6838,8 @@ namespace UI
     extern void reloadcomp();
     VARF(IDF_PERSIST, compositesize, 1<<1, COMPOSITESIZE, 1<<12, reloadcomp());
     VAR(IDF_PERSIST, compositeuprate, 0, 16, VAR_MAX); // limit updates to this ms
-    VAR(IDF_PERSIST, compositelimit, 0, 10, VAR_MAX); // limit updates to this count per cycle
+    VAR(IDF_PERSIST, compositelimit, 0, 20, VAR_MAX); // limit updates to this count per cycle
+    VAR(IDF_PERSIST, compositerewind, 0, 1, 1);
 
     GLenum compformat(int format = -1)
     {
@@ -7308,7 +7309,8 @@ namespace UI
                 surface->hide(w);
             }
 
-            t->last = delay > 1 ? totalmillis - (elapsed % delay) : totalmillis;
+            t->last = totalmillis;
+            if(compositerewind && delay > 1) t->last -= elapsed % delay; // rewind to when it should have occurred
             t->rendered = true;
 
             if(delay < 0)
@@ -7336,6 +7338,7 @@ namespace UI
             glViewport(0, 0, hudw, hudh);
         }
     }
+    ICOMMANDV(0, compositecount, surfaces[SURFACE_COMPOSITE] ? surfaces[SURFACE_COMPOSITE]->texs.length() : 0);
 
     bool isvisor(int stype)
     {
