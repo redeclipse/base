@@ -13,17 +13,18 @@ CVAR(IDF_PERSIST, halocolour, 0xFFFFFF);
 FVAR(IDF_PERSIST, halotolerance, FVAR_MIN, -16, FVAR_MAX);
 FVAR(IDF_PERSIST, haloaddz, FVAR_MIN, 2, FVAR_MAX);
 
-VAR(IDF_PERSIST, halooffset, 0, 1, 16);
-FVAR(IDF_PERSIST, halooutlinemix, 0, 1, 1); // mix between first/closest pixel and accumulation of all 5 pixels
-FVAR(IDF_PERSIST, halooutlinecol, 0, 1, FVAR_MAX); // multiply resulting rgb by this
-FVAR(IDF_PERSIST, halooutlineblend, 0, 1, FVAR_MAX); // multiply resulting a by this
-FVAR(IDF_PERSIST, halooutlineshadow, 0, 0.5f, 1); // apply highlight/shadowing with an extra sample
-FVAR(IDF_PERSIST, haloinfillmix, 0, 0, 1);
-FVAR(IDF_PERSIST, haloinfillcol, 0, 0.75f, FVAR_MAX);
-FVAR(IDF_PERSIST, haloinfillblend, 0, 0.25f, FVAR_MAX);
-VAR(IDF_PERSIST, halonoisesample, 0, 4, 16);
-FVAR(IDF_PERSIST, halonoisemixcol, 0, 0, 1);
-FVAR(IDF_PERSIST, halonoisemixblend, 0, 0.5f, 1);
+VARF(IDF_PERSIST, halosamples, 1, 3, 5, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
+FVARF(IDF_PERSIST, halooffset, FVAR_NONZERO, 2, 4, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
+FVARF(IDF_PERSIST, halooutlinemix, 0, 1, 1, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // mix between first/closest sample and accumulation of all samples
+FVARF(IDF_PERSIST, halooutlinecol, 0, 2, FVAR_MAX, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // multiply resulting rgb by this
+FVARF(IDF_PERSIST, halooutlineblend, 0, 1, FVAR_MAX, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // multiply resulting a by this
+FVARF(IDF_PERSIST, halooutlineshadow, 0, 0, 1, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // apply highlight/shadowing with an extra sample
+FVARF(IDF_PERSIST, haloinfillmix, 0, 0, 1, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
+FVARF(IDF_PERSIST, haloinfillcol, 0, 0.75f, FVAR_MAX, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
+FVARF(IDF_PERSIST, haloinfillblend, 0, 0.25f, FVAR_MAX, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
+FVARF(IDF_PERSIST, halonoisesample, 0, 2, 8, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
+FVARF(IDF_PERSIST, halonoisemixcol, 0, 0, 1, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
+FVARF(IDF_PERSIST, halonoisemixblend, 0, 0.5f, 1, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
 
 void setuphalo(int w, int h)
 {
@@ -183,10 +184,7 @@ void blendhalos()
         glActiveTexture_(GL_TEXTURE0);
 
         LOCALPARAMF(millis, lastmillis / 1000.0f);
-        LOCALPARAMF(halooutline, halooutlinemix, halooutlinecol, halooutlineblend, halooutlineshadow);
-        LOCALPARAMF(haloinfill, haloinfillmix, haloinfillcol, haloinfillblend);
-        LOCALPARAMF(halonoise, halonoisesample, halonoisemixcol, halonoisemixblend);
-        LOCALPARAMF(haloparams, maxdist, 1 / maxdist, halooffset);
+        LOCALPARAMF(haloparams, maxdist, 1 / maxdist);
 
         hudquad(0, 0, hudw, hudh, 0, haloh, halow, -haloh);
     }
