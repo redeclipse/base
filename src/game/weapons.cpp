@@ -247,7 +247,7 @@ namespace weapons
         else if(zooming) r += W2(weap, spreadzoom, true);
         else if(d->crouching()) r += W2(weap, spreadcrouch, secondary);
         else r += W2(weap, spreadstill, secondary);
-        if(W2(weap, spreadinair, secondary) > 0 && d->airmillis && !isladder(d->inmaterial)) r += W2(weap, spreadinair, secondary);
+        if(W2(weap, spreadinair, secondary) > 0 && d->airmillis && !physics::laddercheck(d)) r += W2(weap, spreadinair, secondary);
         return r;
     }
 
@@ -259,7 +259,7 @@ namespace weapons
             else if(zooming) name##value = name##value*(W2(weap, name##zoom, true)); \
             else if(d->crouching()) name##value = name##value*(W2(weap, name##crouch, secondary)); \
             else name##value = name##value*(W2(weap, name##still, secondary)); \
-            if(W2(weap, name##inair, secondary) > 0 && d->airmillis && !isladder(d->inmaterial)) name##value += name##value*(W2(weap, name##inair, secondary));
+            if(W2(weap, name##inair, secondary) > 0 && d->airmillis && !physics::laddercheck(d)) name##value += name##value*(W2(weap, name##inair, secondary));
         MODSPREAD(jittertime, );
         MODSPREAD(jitteryaw, min);
         MODSPREAD(jitteryaw, max);

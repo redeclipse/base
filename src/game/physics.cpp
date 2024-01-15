@@ -245,9 +245,17 @@ namespace physics
         return false;
     }
 
-    bool liquidcheck(physent *d)
+    bool laddercheck(physent *d)
     {
-        return isliquid(d->inmaterial&MATF_VOLUME) && !isladder(d->inmaterial) && d->submerged >= LIQUIDPHYS(submerge, d->inmaterial);
+        if(!gameent::is(d)) return false;
+        if(!isladder(d->inmaterial)) return false;
+        if(d->pitch <= 0) return false;
+        return true;
+    }
+
+    bool liquidcheck(physent *d, float minval, float maxval)
+    {
+        return !laddercheck(d) && isliquid(d->inmaterial&MATF_VOLUME) && d->submerged >= clamp(LIQUIDPHYS(submerge, d->inmaterial), minval, maxval);
     }
 
     float liquidmerge(physent *d, float from, float to)
@@ -255,21 +263,20 @@ namespace physics
         if(isliquid(d->inmaterial&MATF_VOLUME))
         {
             if(d->physstate >= PHYS_SLIDE && d->submerged < 1.f)
-                return from-((from-to)*d->submerged);
+                return from - ((from - to) * d->submerged);
             else return to;
         }
+
         return from;
     }
 
     float jumpvel(physent *d, bool liquid = true)
     {
         float vel = d->jumpspeed;
-        if(liquid && isliquid(d->inmaterial&MATF_VOLUME)) vel *= liquidmerge(d, 1.f, LIQUIDPHYS(speed, d->inmaterial));
-        if(gameent::is(d))
-        {
-            gameent *e = (gameent *)d;
-            vel *= e->stunscale;
-        }
+
+        if(liquid) vel *= liquidmerge(d, 1.f, LIQUIDPHYS(speed, d->inmaterial));
+        if(gameent::is(d)) vel *= ((gameent *)d)->stunscale;
+
         return vel;
     }
 
@@ -279,6 +286,7 @@ namespace physics
         bool liquid = isliquid(matid&MATF_VOLUME), inliquid = liquid && submerged >= LIQUIDPHYS(submerge, matid);
 
         if(inliquid) buoy = LIQUIDPHYS(buoyancy, matid) * (d->buoyancy / 100.f) * d->submerged;
+
         if(gameent::is(d))
         {
             gameent *e = (gameent *)d;
@@ -296,6 +304,7 @@ namespace physics
                 }
                 vel *= e->stungravity;
             }
+
             if(buoy != 0)
             {
                 if(d->state == CS_ALIVE)
@@ -339,26 +348,23 @@ namespace physics
 
     bool sticktofloor(physent *d)
     {
-        if(isladder(d->inmaterial)) return true;
         if(liquidcheck(d)) return false;
         if(gameent::is(d))
         {
             gameent *e = (gameent *)d;
-            if(!A(e->actortype, magboots)) return false;
+            if(!A(e->actortype, magboots) && !entities::currentpassenger(d)) return false;
             if(e->sliding()) return false;
         }
+
         return true;
     }
 
     bool sticktospecial(physent *d, bool parkour)
     {
-        if(entities::currentpassenger(d))
-        if(gameent::is(d) && d->state == CS_ALIVE)
-        {
-            gameent *e = (gameent *)d;
-            if(isladder(e->inmaterial)) return true;
-            if(parkour && e->hasparkour()) return true;
-        }
+        if(laddercheck(d) || (!liquidcheck(d) && entities::currentpassenger(d))) return true;
+
+        if(parkour && gameent::is(d) && d->isalive() && ((gameent *)d)->hasparkour()) return true;
+
         return false;
     }
 
@@ -433,7 +439,7 @@ namespace physics
     bool movepitch(physent *d)
     {
         if(d->type == ENT_CAMERA || d->state == CS_EDITING || d->state == CS_SPECTATOR) return true;
-        if(isladder(d->inmaterial) || (isliquid(d->inmaterial&MATF_VOLUME) && (liquidcheck(d) || d->pitch < 0.f)) || PHYS(gravity) == 0) return true;
+        if(laddercheck(d) || liquidcheck(d) || PHYS(gravity) == 0) return true;
         return false;
     }
 
@@ -633,7 +639,8 @@ namespace physics
 
     bool trystepdown(physent *d, vec &dir, bool init = false)
     {
-        if(!sticktofloor(d)) return false;
+        if(laddercheck(d) || !sticktofloor(d)) return false;
+
         vec old(d->o);
         d->o.z -= 0.1f;
         if(collide(d, vec(0, 0, -1)) || collideinside)
@@ -643,6 +650,7 @@ namespace physics
         }
         d->o.z -= stairheight;
         d->zmargin = -stairheight;
+
         if(!collide(d, vec(0, 0, -1), slopez))
         {
             d->o = old;
@@ -651,10 +659,12 @@ namespace physics
         }
         d->o = old;
         d->zmargin = 0;
+
         float step = dir.magnitude();
         if(trystepdown(d, dir, step, 2, 1, init)) return true;
         if(trystepdown(d, dir, step, 1, 1, init)) return true;
         if(trystepdown(d, dir, step, 1, 2, init)) return true;
+
         return false;
     }
 
@@ -662,21 +672,19 @@ namespace physics
     {
         if(sticktospecial(d) || entities::currentpassenger(d))
         {
-            if(gameent::is(d))
+            d->floor = vec(0, 0, 1);
+
+            if(gameent::is(d) && ((gameent *)d)->hasparkour())
             {
-                gameent *e = (gameent *)d;
-                if(e->hasparkour())
-                {
-                    d->physstate = PHYS_FALL;
-                    d->floor = vec(0, 0, 1);
-                    return;
-                }
+                d->physstate = PHYS_FALL;
+                return;
             }
+
             d->airmillis = 0;
             d->physstate = PHYS_FLOOR;
-            d->floor = vec(0, 0, 1);
             return;
         }
+
         if(floor.z > 0.0f && floor.z < slopez)
         {
             if(floor.z >= wallz) switchfloor(d, dir, floor);
@@ -692,8 +700,10 @@ namespace physics
     {
         switchfloor(d, dir, floor);
         d->airmillis = 0;
+
         if((d->physstate != PHYS_STEP_UP && d->physstate != PHYS_STEP_DOWN) || !collided)
             d->physstate = floor.z >= floorz ? PHYS_FLOOR : PHYS_SLOPE;
+
         d->floor = floor;
     }
 
@@ -702,6 +712,7 @@ namespace physics
         bool found = false;
         vec moved(d->o);
         d->o.z -= 0.1f;
+
         if(sticktospecial(d, false))
         {
             floor = vec(0, 0, 1);
@@ -734,12 +745,15 @@ namespace physics
                 if(floor.z >= slopez && floor.z < 1.0f) found = true;
             }
         }
+
         if(collided && (!found || obstacle.z > floor.z))
         {
             floor = obstacle;
             slide = !found && (floor.z < wallz || floor.z >= slopez);
         }
+
         d->o = moved;
+
         return found;
     }
 
@@ -747,6 +761,7 @@ namespace physics
     {
         vec old(d->o), obstacle(0, 0, 0);
         d->o.add(dir);
+
         bool collided = false, slidecollide = false;
         if(gameent::is(d))
         {
@@ -786,7 +801,7 @@ namespace physics
                     d->o.add(dir);
                 }
             }
-            else if(!sticktospecial(d) && d->physstate == PHYS_STEP_DOWN && dir.dot(d->floor) <= 1e-6f)
+            else if(d->physstate == PHYS_STEP_DOWN && dir.dot(d->floor) <= 1e-6f)
             {
                 vec moved(d->o);
                 d->o = old;
@@ -800,6 +815,7 @@ namespace physics
             d->o = old;
             collided = true;
         }
+
         vec floor(0, 0, 0);
         bool slide = collided, found = findfloor(d, collided, obstacle, slide, floor);
         if(slide || (!collided && floor.z > 0 && floor.z < wallz))
@@ -807,8 +823,10 @@ namespace physics
             slideagainst(d, dir, slide ? obstacle : floor, found, slidecollide);
             d->blocked = true;
         }
+
         if(found) landing(d, dir, floor, collided);
         else falling(d, dir, floor);
+
         return !collided;
     }
 
@@ -820,15 +838,18 @@ namespace physics
         int move = action ? d->move : 0, strafe = action ? d->strafe : 0;
         bool moving = mchk && (move || strafe), pound = !melee && !launch && !sliding && !onfloor && (impulsepoundstyle || !moving) && d->action[AC_CROUCH];
         if(d->actortype < A_BOT && !launch && !melee && !sliding && !impulseaction && !d->action[AC_DASH]) return false;
+
         bool pulse = melee ? !onfloor : d->action[AC_DASH] || (!launch && !onfloor && (d->actortype >= A_BOT || impulseaction&1) && d->action[AC_JUMP]);
         int type = melee ? IM_T_MELEE : (sliding ? IM_T_SLIDE : (launch ? IM_T_LAUNCH : (pound ? IM_T_POUND : (dash ? IM_T_DASH : IM_T_BOOST))));
         if((!launch && !melee && !sliding && !pulse) || !d->canimpulse(type)) return false;
+
         vec keepvel = inertia;
         int cost = melee ? impulsecostmelee : (sliding ? impulsecostslide : (launch ? impulsecostlaunch : (pound ? impulsecostpound : (dash ? impulsecostdash : impulsecostboost))));
         float skew = melee ? impulsemelee : (sliding ? impulseslide : (launch ? impulselaunch : (pound ? impulsepound : (dash ? (move < 0 ? impulsedashback : impulsedash) : (moving ? impulseboost : impulsejump))))),
               redir = melee ? impulsemeleeredir : (sliding ? impulseslideredir : (launch ? impulselaunchredir : (pound ? impulsepoundredir : (dash ? impulsedashredir : (moving ? impulseboostredir : impulsejumpredir))))),
               force = impulsevelocity(d, skew, cost, type, redir, keepvel);
         if(force <= 0) return false;
+
         vec dir(0, 0, pound ? -1 : 1);
         if(!pound && (launch || sliding || moving || onfloor))
         {
@@ -842,18 +863,21 @@ namespace physics
                 if(dir.z < 0) force += -dir.z*force;
             }
         }
-        d->vel = vec(dir).mul(force).add(keepvel);
+        d
+        ->vel = vec(dir).mul(force).add(keepvel);
         if(launch) d->vel.z += jumpvel(d);
         d->doimpulse(type, lastmillis, cost);
         d->action[AC_JUMP] = d->action[AC_DASH] = false;
         client::addmsg(N_SPHY, "ri2", d->clientnum, melee ? SPHY_MELEE : (sliding ? SPHY_SLIDE : (launch ? SPHY_LAUNCH : (pound ? SPHY_POUND: (dash ? SPHY_DASH : SPHY_BOOST)))));
         game::impulseeffect(d);
+
         return true;
     }
 
     void modifyinput(gameent *d, vec &m, bool wantsmove)
     {
         bool onfloor = d->physstate >= PHYS_SLOPE || sticktospecial(d, false) || liquidcheck(d);
+
         if(d->hasparkour())
         {
             int length = 0, millis = 0;
@@ -869,6 +893,7 @@ namespace physics
                 onfloor = false;
             }
         }
+
         if(d->impulse[IM_TYPE] == IM_T_PARKOUR)
         {
             if(d->action[AC_JUMP] && d->canimpulse(IM_T_KICK))
@@ -914,6 +939,7 @@ namespace physics
                 }
             }
         }
+
         if(d->hasparkour() || d->action[AC_SPECIAL])
         {
             bool found = false;
@@ -1045,11 +1071,16 @@ namespace physics
                 {
                     if(!d->impulse[IM_FLING])
                     {
-                        vec dir(d->yaw * RAD, (impulsevaultpitchclamp && d->pitch > impulsevaultpitch ? d->pitch : impulsevaultpitch) * RAD),
+                        vec dir(d->yaw * RAD, (impulsevaultpitchclamp && d->pitch >= impulsevaultpitch ? d->pitch : impulsevaultpitch) * RAD),
                             oldpos = d->o;
 
-                        d->o.add(dir);
-                        if(collide(d)) dir = vec(d->yaw * RAD, 90 * RAD);
+                        loopj(9)
+                        {
+                            d->o.add(dir);
+                            if(!collide(d)) break;
+                            dir = vec(d->yaw * RAD, j * 11.25f * RAD);
+                            d->o = oldpos;
+                        }
                         d->o = oldpos;
 
                         d->vel = vec(dir).mul(d->vel.magnitude());
@@ -1086,6 +1117,7 @@ namespace physics
                 dir = vec(0, 0, -1); // try straight down
             }
         }
+
         d->action[AC_DASH] = false;
     }
 
@@ -1098,20 +1130,29 @@ namespace physics
     {
         vec m(0, 0, 0);
         bool wantsmove = game::allowmove(d) && (d->move || d->strafe), floating = isfloating(d), inliquid = liquidcheck(d),
-             onfloor = !floating && (sticktospecial(d, false) || d->physstate != PHYS_FALL), slide = false;
-        if(wantsmove) vecfromyawpitch(d->yaw, movepitch(d) ? d->pitch : 0, d->move, d->strafe, m);
+             onfloor = !floating && (sticktospecial(d, false) || d->physstate != PHYS_FALL), slide = false, dopitch = movepitch(d);
+        if(wantsmove) vecfromyawpitch(d->yaw, dopitch ? d->pitch : 0, d->move, d->strafe, m);
 
         if(!floating && gameent::is(d))
         {
             gameent *e = (gameent *)d;
             if(local && game::allowmove(e)) modifyinput(e, m, wantsmove);
-            if(wantsmove && !sticktospecial(e) && e->physstate >= PHYS_SLOPE)
-            { // move up or down slopes in air but only move up slopes in liquid
-                float dz = -(m.x*e->floor.x + m.y*e->floor.y)/e->floor.z;
-                m.z = inliquid ? max(m.z, dz) : dz;
-                if(!m.iszero()) m.normalize();
+
+            if(wantsmove && !e->hasparkour())
+            {
+                if(laddercheck(d))
+                {
+                    m.z = m.iszero() ? 1 : m.z + 1;
+                    m.normalize();
+                }
+                else if(!sticktospecial(e) && e->physstate >= PHYS_SLOPE)
+                { // move up or down slopes in air but only move up slopes in liquid
+                    float dz = -(m.x*e->floor.x + m.y*e->floor.y)/e->floor.z;
+                    m.z = inliquid ? max(m.z, dz) : dz;
+                    if(!m.iszero()) m.normalize();
+                }
             }
-            if(!e->hasparkour() && isladder(d->inmaterial) && !m.iszero()) m.addz(m.z >= 0 ? 1 : -1).normalize();
+
             slide = e->sliding();
         }
 
@@ -1132,6 +1173,7 @@ namespace physics
         }
 
         m.mul(movevelocity(d, floating));
+
         float coast = PHYS(floorcoast);
         if(floating) coast = floatcoast;
         else
@@ -1148,7 +1190,9 @@ namespace physics
         {
             vec g = gravityvel(d, d->center(), millis/1000.f, d->getradius(), d->getheight(), d->inmaterial, d->submerged);
             if(d->physstate != PHYS_FALL && floorchk) g.project(d->floor);
+
             d->falling.add(g);
+
             if(inliquid || d->physstate >= PHYS_SLOPE || sticktospecial(d))
             {
                 float scoast = (inliquid ? liquidmerge(d, PHYS(aircoast), LIQUIDPHYS(coast, d->inmaterial)) : PHYS(floorcoast)*coastscale(d->feetpos(-1)))*d->coastscale,
@@ -1244,7 +1288,10 @@ namespace physics
             if(e->shocktime && e->shocking(lastmillis, e->shocktime)) dpos.add(vec(rnd(201)-100, rnd(201)-100, rnd(201)-100).normalize().mul(shocktwitchvel*secs));
         }
 
-        float coast = (collided ? (isliquid(matid&MATF_VOLUME) ? PHYS(aircoast)-((PHYS(aircoast)-LIQUIDPHYS(coast, matid))*submerged) : PHYS(floorcoast)*coastscale(vec(pos).subz(radius+1))) : PHYS(aircoast))*d->coastscale;
+        float coast = (collided ? (
+                isliquid(matid&MATF_VOLUME) ? PHYS(aircoast) - ((PHYS(aircoast) - LIQUIDPHYS(coast, matid)) * submerged) : PHYS(floorcoast) * coastscale(vec(pos).subz(radius + 1))
+              ) : PHYS(aircoast)) * d->coastscale;
+
         dpos.mul(pow(max(1.0f - 1.0f/coast, 0.0f), millis/20.0f));
     }
 
@@ -1388,7 +1435,8 @@ namespace physics
 
     void updatephysstate(physent *d)
     {
-        if(d->physstate == PHYS_FALL && !isladder(d->inmaterial)) return;
+        if(d->physstate == PHYS_FALL && !laddercheck(d)) return;
+
         vec old(d->o);
         /* Attempt to reconstruct the floor state.
          * May be inaccurate since movement collisions are not considered.
@@ -1427,7 +1475,9 @@ namespace physics
                 break;
             default: break;
         }
-        if((d->physstate > PHYS_FALL && d->floor.z <= 0) || (isladder(d->inmaterial) && !foundfloor)) d->floor = vec(0, 0, 1);
+
+        if((d->physstate > PHYS_FALL && d->floor.z <= 0) || (laddercheck(d) && !foundfloor)) d->floor = vec(0, 0, 1);
+
         d->o = old;
     }
 

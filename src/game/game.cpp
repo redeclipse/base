@@ -1374,7 +1374,7 @@ namespace game
         if(d->state == CS_ALIVE)
         {
             bool sliding = d->sliding(true), crouching = sliding || (d->action[AC_CROUCH] && A(d->actortype, abilities)&(1<<A_A_CROUCH)),
-                 moving = d->move || d->strafe || (d->physstate < PHYS_SLOPE && !isladder(d->inmaterial)), ishi = moving && !sliding;
+                 moving = d->move || d->strafe || (d->physstate < PHYS_SLOPE && !physics::laddercheck(d)), ishi = moving && !sliding;
             float zradlo = d->zradius*CROUCHLOW, zradhi = d->zradius*CROUCHHIGH, zrad = ishi ? zradhi : zradlo;
             vec old = d->o;
             if(A(d->actortype, abilities)&(1<<A_A_CROUCH) && (!crouching || ishi))
@@ -1614,6 +1614,7 @@ namespace game
     {
         if(d->state != CS_ALIVE) return;
         vec pos = d->feetpos();
+
         if(d->impulse[IM_TYPE] != IM_T_PARKOUR && (d->physstate >= PHYS_SLOPE || physics::sticktospecial(d, false) || physics::liquidcheck(d)) && pos.z > 0 && d->floortime(lastmillis))
         {
             int mat = lookupmaterial(pos);
@@ -1624,6 +1625,7 @@ namespace game
     void checkplayers()
     {
         checkfloor(player1);
+
         loopv(players) if(players[i])
         {
             gameent *d = players[i];
@@ -1632,11 +1634,15 @@ namespace game
                 checkfloor(d);
                 continue;
             }
+
             if(!gs_playing(gamestate)) continue;
+
             if(d->state == CS_DEAD || d->state == CS_WAITING) entities::checkitems(d);
+
             const int lagtime = totalmillis-d->lastupdate;
             if(!lagtime) continue;
             //else if(lagtime > 1000) continue;
+
             physics::smoothplayer(d, 1, false);
         }
     }
@@ -4153,7 +4159,8 @@ namespace game
             {
                 // Test if the player is actually moving at a meaningful speed. This may not be the case if the player is running against a wall or another obstacle.
                 const bool moving = fabsf(d->vel.x) > 5.0f || fabsf(d->vel.y) > 5.0f;
-                if(isliquid(d->inmaterial&MATF_VOLUME) && !isladder(d->inmaterial) && d->submerged >= min(LIQUIDPHYS(submerge, d->inmaterial), 0.1f) && d->physstate <= PHYS_FALL)
+
+                if(physics::liquidcheck(d, 0.1f) && d->physstate <= PHYS_FALL)
                 {
                     if(d->crouching())
                     {
@@ -4174,7 +4181,7 @@ namespace game
                     mdl.basetime2 = d->impulsetime[IM_T_PARKOUR];
                     mdl.anim |= ((d->turnside > 0 ? ANIM_PARKOUR_LEFT : (d->turnside < 0 ? ANIM_PARKOUR_RIGHT : ANIM_PARKOUR_UP))|ANIM_LOOP)<<ANIM_SECONDARY;
                 }
-                else if(d->physstate == PHYS_FALL && !isladder(d->inmaterial) && d->impulsetime[d->impulse[IM_TYPE]] && lastmillis-d->impulsetime[d->impulse[IM_TYPE]] <= 1000)
+                else if(d->physstate == PHYS_FALL && !physics::laddercheck(d) && d->impulsetime[d->impulse[IM_TYPE]] && lastmillis-d->impulsetime[d->impulse[IM_TYPE]] <= 1000)
                 {
                     mdl.basetime2 = d->impulsetime[d->impulse[IM_TYPE]];
                     if(d->impulse[IM_TYPE] == IM_T_KICK || d->impulse[IM_TYPE] == IM_T_GRAB) mdl.anim |= ANIM_PARKOUR_JUMP<<ANIM_SECONDARY;
@@ -4188,7 +4195,7 @@ namespace game
                     else if(moving && d->move < 0) mdl.anim |= ANIM_BOOST_BACKWARD<<ANIM_SECONDARY;
                     else mdl.anim |= ANIM_BOOST_UP<<ANIM_SECONDARY;
                 }
-                else if(d->physstate == PHYS_FALL && !isladder(d->inmaterial) && d->airtime(lastmillis) >= 50)
+                else if(d->physstate == PHYS_FALL && !physics::laddercheck(d) && d->airtime(lastmillis) >= 50)
                 {
                     mdl.basetime2 = max(d->airmillis, d->impulsetime[IM_T_JUMP]);
                     if(d->action[AC_SPECIAL] || d->impulse[IM_TYPE] == IM_T_POUND)
@@ -4433,16 +4440,22 @@ namespace game
     void renderavatar()
     {
         if(thirdpersonview() || focus->obliterated) return;
+
         static int lastoffset = 0;
         vec4 color = vec4(1, 1, 1, opacity(focus, false));
+
         if(drawtex == DRAWTEX_HALO) focus->cleartags();
-        if(firstpersoncamera) renderplayer(focus, 2, focus->curscale, MDL_NOBATCH, color, &lastoffset);
+
+        f(firstpersoncamera) renderplayer(focus, 2, focus->curscale, MDL_NOBATCH, color, &lastoffset);
         else if(firstpersonmodel)
         {
             float depthfov = firstpersondepthfov != 0 ? firstpersondepthfov : curfov;
             if(inzoom()) depthfov *= 1-zoomscale();
+
             setavatarscale(depthfov, firstpersondepth);
+
             if(focus->state == CS_ALIVE && firstpersonmodel&1) renderplayer(focus, 0, focus->curscale, MDL_NOBATCH, color);
+
             if(focus->state == CS_ALIVE && firstpersonmodel&2)
             {
                 bool onfloor = focus->physstate >= PHYS_SLOPE || physics::sticktospecial(focus, false) || physics::liquidcheck(focus);
@@ -4451,7 +4464,9 @@ namespace game
                 renderplayer(focus, 2, focus->curscale, MDL_NOBATCH, color, &lastoffset);
             }
         }
+
         calcfirstpersontags(focus);
+
         if(drawtex != DRAWTEX_HALO) rendercheck(focus, false);
     }
 
