@@ -1851,22 +1851,20 @@ namespace game
                 if(nogore != 2 && (bloodscale <= 0 || bloodsparks))
                     part_splash(PART_PLASMA, int(clamp(damage/hp, 1, 5))*(bleeding || material ? 2: 1), bloodfade, p, 0x882222, 1, 0.5f, 0, 0, 50, 1+STAIN_STAIN, int(d->radius));
 
-                bool sameteam = m_team(gamemode, mutators) && d->team == v->team;
-
                 int damagetype = damagemerge::HURT;
                 if(burning) damagetype = damagemerge::BURN;
                 else if(bleeding) damagetype = damagemerge::BLEED;
                 else if(shocking) damagetype = damagemerge::SHOCK;
                 pushdamagemerge(d, v, damagetype, weap, flags, damage, damagemergedelay, damagemergetime, damagemergecombine);
 
-                if(d != v && !burning && !bleeding && !shocking && !material)
+                if(!material)
                 {
-                    if(sameteam) v->lastteamhit = totalmillis ? totalmillis : 1;
+                    if(d == v || (m_team(gamemode, mutators) && d->team == v->team))
+                        v->lastteamhit = totalmillis ? totalmillis : 1;
                     else v->lasthit = totalmillis ? totalmillis : 1;
                 }
 
-                if(d->actortype < A_ENEMY && !issound(d->plchan[PLCHAN_VOICE])) emitsound(S_PAIN, getplayersoundpos(d), d, &d->plchan[PLCHAN_VOICE]);
-
+                if(!issound(d->plchan[PLCHAN_VOICE])) emitsound(S_PAIN, getplayersoundpos(d), d, &d->plchan[PLCHAN_VOICE]);
                 d->lastpain = lastmillis;
 
                 if(isweap(weap) && !WK(flags)) emitsoundpos(WSND2(weap, WS(flags), S_W_IMPACT), vec(d->center()).add(vec(dir).mul(dist)), NULL, 0, clamp(scale, 0.2f, 1.f));
@@ -2660,7 +2658,7 @@ namespace game
         return teamed;
     }
 
-    ICOMMAND(0, getteamname, "ibs", (int *team, int *fmt, char *icon), result(*team >= 0 && *team < T_MAX ? (*fmt ? colourteam(*team, icon) : TEAM(*team, name)) : ""));
+    ICOMMAND(0, getteamname, "ibs", (int *team, int *fmt, char *icon), result(*team >= 0 && *team < T_MAX ? (*fmt ? colourteam(*team, icon && *icon ? icon : NULL) : TEAM(*team, name)) : ""));
     ICOMMAND(0, getteamcolour, "i", (int *team), intret(*team >= 0 && *team < T_MAX ? TEAM(*team, colour) : 0));
 
     void suicide(gameent *d, int flags)

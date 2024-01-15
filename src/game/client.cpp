@@ -954,7 +954,7 @@ namespace client
         result(output);
     });
 
-    CLCOMMANDM(name, "sbbb", (char *who, int *colour, int *icon, int *dupname), result(game::colourname(d, NULL, *icon!=0, *dupname!=0, *colour >= 0 ? *colour : 3)));
+    CLCOMMANDM(name, "sbib", (char *who, int *colour, int *icon, int *dupname), result(game::colourname(d, NULL, *icon!=0, *dupname!=0, *colour >= 0 ? *colour : 3)));
     CLCOMMANDM(colour, "sbgf", (char *who, int *m, float *f, float *x), intret(game::getcolour(d, *m, *f >= 0 && *f <= 10 ? *f : 1.f, *x)));
     CLCOMMANDM(vitem, "sbi", (char *who, int *n, int *v), getvitem(d, *n, *v));
 

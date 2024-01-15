@@ -22,7 +22,7 @@ namespace entities
     VAR(IDF_PERSIST, showentfull, 0, 0, 1);
     FVAR(IDF_PERSIST, showentsize, 0, 3, 10);
     FVAR(IDF_PERSIST, showentavailable, 0, 1, 1);
-    FVAR(IDF_PERSIST, showentunavailable, 0, 0.35f, 1);
+    FVAR(IDF_PERSIST, showentunavailable, 0, 0.125f, 1);
 
     VAR(IDF_PERSIST, entityui, -1, SURFACE_WORLD, SURFACE_ALL-1);
 
@@ -3362,15 +3362,12 @@ namespace entities
                 if(isweap(attr))
                 {
                     colour = W(attr, colour);
-                    if(!cansee)
+                    if(e.spawned() && (game::focus->isobserver() || game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !showentfull)))
                     {
-                        if(game::focus->isobserver() || game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !showentfull))
-                        {
-                            if(drawtex == DRAWTEX_HALO) mdl.flags |= MDL_HALO_TOP;
-                            mdl.color.a *= showentavailable;
-                        }
-                        else mdl.color.a *= showentunavailable;
+                        if(drawtex == DRAWTEX_HALO) mdl.flags |= MDL_HALO_TOP;
+                        mdl.color.a *= showentavailable;
                     }
+                    else mdl.color.a *= showentunavailable;
                 }
                 else continue;
             }
@@ -3379,6 +3376,7 @@ namespace entities
 
             mdl.material[0] = bvec::fromcolor(game::getcolour(game::focus, game::playerovertone, game::playerovertonelevel, game::playerovertonemix));
             mdl.material[1] = bvec::fromcolor(game::getcolour(game::focus, game::playerundertone, game::playerundertonelevel, game::playerundertonemix));
+
             if(colour >= 0) mdl.material[0] = mdl.material[2] = bvec::fromcolor(colour);
             if(drawtex == DRAWTEX_HALO)
             {

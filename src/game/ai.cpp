@@ -127,18 +127,20 @@ namespace ai
 
     vec &getaimpos(gameent *d, gameent *e, bool alt)
     {
-        if(A(d->actortype, abilities)&(1<<A_A_KAMIKAZE) || d->skill >= 100) return e->o;
-        static vec o;
-        o = e->o;
-        if(lastmillis >= d->ai->lastaimrnd)
+        d->ai->aimpos = e->o;
+
+        if(!(A(d->actortype, abilities)&(1<<A_A_KAMIKAZE)) && d->skill < 100 && lastmillis >= d->ai->lastaimpos)
         {
             int radius = ceilf(e->radius * W2(d->weapselect, aiskew, alt));
             float scale = (101 - d->skill) / 100.f;
-            loopk(3) d->ai->aimrnd[k] = (rnd((radius * 2) + 1) - radius) * scale;
+            loopk(3) d->ai->aimpos[k] += (rnd((radius * 2) + 1) - radius) * scale;
             int dur = max(d->skill * 2, 30) * 5;
-            d->ai->lastaimrnd = lastmillis + dur + rnd(dur);
+            d->ai->lastaimpos = lastmillis + dur + rnd(dur);
         }
-        return o.add(d->ai->aimrnd);
+
+        d->ai->aimpos.add(vec(e->vel).mul(W2(d->weapselect, aileadvel, alt)).mul(clamp(d->o.dist(e->o) / W2(d->weapselect, aileaddist, alt), 0.f, 1.f)));
+
+        return d->ai->aimpos;
     }
 
     int weappref(gameent *d)

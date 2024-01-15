@@ -223,9 +223,9 @@ namespace ai
     {
         vector<aistate> state;
         vector<int> route;
-        vec target, spot, views, aimrnd;
+        vec target, spot, views, aimpos;
         int enemy, enemyseen, enemymillis, prevnodes[NUMPREVNODES], targnode, targlast, targtime, targseq,
-            lastrun, lastaction, lastcheck, jumpseed, blocktime, blockseq, lastaimrnd, lastmelee, lastturn;
+            lastrun, lastaction, lastcheck, jumpseed, blocktime, blockseq, lastaimpos, lastmelee, lastturn;
         float targyaw, targpitch;
         bool dontmove, tryreset;
 
@@ -233,14 +233,14 @@ namespace ai
         {
             clean();
             reset();
-            loopk(3) views[k] = aimrnd[k] = 0.f;
+            loopk(3) views[k] = aimpos[k] = 0.f;
         }
         ~aiinfo() {}
 
         void clean()
         {
             spot = target = vec(0, 0, 0);
-            lastaction = lastcheck = enemyseen = enemymillis = blocktime = blockseq = targtime = targseq = lastaimrnd = lastmelee = lastturn = 0;
+            lastaction = lastcheck = enemyseen = enemymillis = blocktime = blockseq = targtime = targseq = lastaimpos = lastmelee = lastturn = 0;
             lastrun = jumpseed = lastmillis;
             targnode = targlast = enemy = -1;
             targyaw = targpitch = 0;
