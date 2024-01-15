@@ -466,12 +466,16 @@ VOLFOGVARS(alt, volfog4)
         { \
             default: case 0: \
                 res = checkmapvariant(MPV_ALTERNATE) ? (name##var##alt.iszero() ? getfogcolour() : name##var##alt) : (name##var.iszero() ? getfogcolour() : name##var); \
+                break; \
             case 1: \
                 res = checkmapvariant(MPV_ALTERNATE) ? (name##2##var##alt.iszero() ? getfogcolour() : name##2##var##alt) : (name##2##var.iszero() ? getfogcolour() : name##2##var); \
+                break; \
             case 2: \
                 res = checkmapvariant(MPV_ALTERNATE) ? (name##3##var##alt.iszero() ? getfogcolour() : name##3##var##alt) : (name##3##var.iszero() ? getfogcolour() : name##3##var); \
+                break; \
             case 3: \
                 res = checkmapvariant(MPV_ALTERNATE) ? (name##4##var##alt.iszero() ? getfogcolour() : name##4##var##alt) : (name##4##var.iszero() ? getfogcolour() : name##4##var); \
+                break; \
         } \
         res.mul(game::darkness(DARK_ENV)); \
         return res; \
@@ -691,11 +695,11 @@ void renderwater()
         const bvec &color = getwatercolour(k);
         const bvec &deepcolor = getwaterdeepcolour(k);
         const bvec &refractcolor = getwaterrefractcolour(k);
-        int fog = getwaterfog(k), deep = getwaterdeep(k), spec = getwaterspec(k);
+        int curfogdist = getwaterfog(k), deep = getwaterdeep(k), spec = getwaterspec(k);
         float refract = getwaterrefract(k);
         GLOBALPARAMF(watercolor, color.x*colorscale, color.y*colorscale, color.z*colorscale);
         GLOBALPARAMF(waterdeepcolor, deepcolor.x*colorscale, deepcolor.y*colorscale, deepcolor.z*colorscale);
-        float fogdensity = fog ? calcfogdensity(fog) : -1e4f;
+        float fogdensity = curfogdist ? calcfogdensity(curfogdist) : -1e4f;
         GLOBALPARAMF(waterfog, fogdensity);
         vec deepfade = getwaterdeepfade(k).tocolor().mul(deep);
         GLOBALPARAMF(waterdeepfade,
@@ -779,7 +783,7 @@ void rendervolfog()
         float colorscale = 0.5f/255;
         const bvec &color = getvolfogcolour(k);
         const bvec &deepcolor = getvolfogdeepcolour(k);
-        int fog = getvolfogdist(k), deep = getvolfogdeep(k);
+        int curfogdist = getvolfogdist(k), deep = getvolfogdeep(k);
         GLOBALPARAMF(volfogcolor, color.x*colorscale, color.y*colorscale, color.z*colorscale);
         GLOBALPARAMF(volfogdeepcolor, deepcolor.x*colorscale, deepcolor.y*colorscale, deepcolor.z*colorscale);
         if(textured)
@@ -789,7 +793,7 @@ void rendervolfog()
             GLOBALPARAMF(volfogtexcolor, texcolor.x*colorscale, texcolor.y*colorscale, texcolor.z*colorscale, texblend);
         }
 
-        float fogdensity = fog ? calcfogdensity(fog) : -1e4f;
+        float fogdensity = curfogdist ? calcfogdensity(curfogdist) : -1e4f;
         GLOBALPARAMF(volfogdist, fogdensity);
         vec deepfade = getvolfogdeepfade(k).tocolor().mul(deep);
         GLOBALPARAMF(volfogdeepfade,
