@@ -355,7 +355,7 @@ namespace capture
         log->addlist("args", "colour", colourgrey);
         log->addlistf("args", "console", "%s dropped the the %s flag", game::colourname(d), game::colourteam(f.team, "flagtex"));
         log->addclient("client", d);
-        log->push();
+        if(!log->push()) DELETEP(log);
 
         st.dropaffinity(i, droploc, inertia, lastmillis, offset);
     }
@@ -401,7 +401,7 @@ namespace capture
         log->addlist("args", "colour", colourgrey);
         log->addlistf("args", "console", "%s returned the %s flag (time taken: \fs\fc%s\fS)", game::colourname(d), game::colourteam(f.team, "flagtex"), timestr(millis, 1));
         log->addclient("client", d);
-        log->push();
+        if(!log->push()) DELETEP(log);
 
         st.returnaffinity(i, lastmillis);
     }
@@ -430,7 +430,7 @@ namespace capture
             log->addlist("args", "dropoffset", f.dropoffset);
             log->addlist("args", "colour", colourgrey);
             log->addlistf("args", "console", "The %s flag has been reset", game::colourteam(f.team, "flagtex"));
-            log->push();
+            if(!log->push()) DELETEP(log);
         }
         if(value == 2)
         {
@@ -479,7 +479,7 @@ namespace capture
         log->addlist("args", "colour", colourgrey);
         log->addlistf("args", "console", "%s captured the flag for team %s (score: \fs\fc%d\fS, time taken: \fs\fc%s\fS)", game::colourname(d), game::colourteam(d->team), score, timestr(millis, 1));
         log->addclient("client", d);
-        log->push();
+        if(!log->push()) DELETEP(log);
 
         st.returnaffinity(relay, lastmillis);
     }
@@ -501,7 +501,7 @@ namespace capture
         log->addlist("args", "colour", colourgrey);
         log->addlistf("args", "console", "%s %s the %s flag", game::colourname(d), f.team == d->team ? "secured" : (f.droptime ? "picked up" : "stole"), game::colourteam(f.team, "flagtex"));
         log->addclient("client", d);
-        log->push();
+        if(!log->push()) DELETEP(log);
 
         st.takeaffinity(i, d, lastmillis);
         if(d->ai) aihomerun(d, d->ai->state.last());

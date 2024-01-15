@@ -421,7 +421,7 @@ namespace bomber
         log->addlist("args", "colour", colourgrey);
         log->addlistf("args", "console", "%s dropped the \fs\fzwv\f($bombtex)bomb\fS", game::colourname(d));
         log->addclient("client", d);
-        log->push();
+        if(!log->push()) DELETEP(log);
     }
 
     void removeplayer(gameent *d)
@@ -473,7 +473,7 @@ namespace bomber
                 log->addlist("args", "inittime", f.inittime);
                 log->addlist("args", "concol", colourgrey);
                 log->addlistf("args", "console", "The \fs\fzwvbomb\fS has been reset");
-                log->push();
+                if(!log->push()) DELETEP(log);
             }
         }
         else if(value == 1 && isbomberaffinity(f))
@@ -486,7 +486,7 @@ namespace bomber
             log->addlist("args", "affinity", i);
             log->addlist("args", "concol", colourgrey);
             log->addlistf("args", "console", "The \fs\fzwvbomb\fS has been spawned");
-            log->push();
+            if(!log->push()) DELETEP(log);
         }
 
         if(value == 2) st.dropaffinity(i, pos, vec(0, 0, 1), lastmillis);
@@ -524,7 +524,7 @@ namespace bomber
         log->addlist("args", "colour", colourgrey);
         log->addlistf("args", "console", "%s completed a bombing for team %s%s (score: \fs\fc%d\fS, time taken: \fs\fc%s\fS)", game::colourname(d), game::colourteam(d->team), extra, score, timestr(millis, 1));
         log->addclient("client", d);
-        log->push();
+        if(!log->push()) DELETEP(log);
 
         affinityeffect(goal, d->team, g.spawnloc, f.spawnloc);
         destroyaffinity(g.spawnloc);
@@ -548,7 +548,7 @@ namespace bomber
         log->addlistf("args", "console", "%s secured the \fs\fzwv\f($bombtex)bomb\fS", game::colourname(d));
         log->addclient("client", d);
         log->addclient("client", f.lastowner);
-        log->push();
+        if(!log->push()) DELETEP(log);
 
         if(!f.droptime) affinityeffect(i, d->team, d->feetpos(), f.pos(true, true));
         st.takeaffinity(i, d, lastmillis);

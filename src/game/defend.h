@@ -17,7 +17,6 @@ struct defendstate
         bool hasflag;
         int lasthad;
         vec render;
-        modelstate mdl;
 #endif
         int owners, enemies, converted, points;
 

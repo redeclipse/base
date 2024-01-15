@@ -7,6 +7,7 @@ namespace ai
 
     VAR(0, aidebug, 0, 0, 7);
     VAR(0, aidebugfocus, 0, 1, 2);
+    VAR(0, aitimeout, 500, 1000, VAR_MAX);
 
     VARF(0, showwaypoints, 0, 0, 1, if(showwaypoints) getwaypoints());
 
@@ -1504,7 +1505,7 @@ namespace ai
         if(d->blocked)
         {
             d->ai->blocktime += lastmillis-d->ai->lastrun;
-            if(d->ai->blocktime > (d->ai->blockseq+1)*500)
+            if(d->ai->blocktime > (d->ai->blockseq+1)*aitimeout)
             {
                 d->ai->blockseq++;
                 switch(d->ai->blockseq)
@@ -1533,7 +1534,7 @@ namespace ai
         if(iswaypoint(d->ai->targnode) && (d->ai->targnode == d->ai->targlast || d->ai->hasprevnode(d->ai->targnode)))
         {
             d->ai->targtime += lastmillis-d->ai->lastrun;
-            if(d->ai->targtime > (d->ai->targseq+1)*500)
+            if(d->ai->targtime > (d->ai->targseq+1)*aitimeout)
             {
                 d->ai->targseq++;
                 switch(d->ai->targseq)

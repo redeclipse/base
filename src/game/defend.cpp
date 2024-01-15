@@ -330,7 +330,7 @@ namespace defend
         loopi(numdyns) if((d = (gameent *)game::iterdynents(i)) && d->actortype < A_ENEMY && insideaffinity(b, d))
             log->addclient("client", d);
 
-        log->push();
+        if(!log->push()) DELETEP(log);
     }
 
     void updateaffinity(int i, int owner, int enemy, int converted)

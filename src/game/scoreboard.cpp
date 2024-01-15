@@ -296,7 +296,7 @@ namespace hud
                     }
                 }
             }
-            log->push();
+            if(!log->push()) DELETEP(log);
         }
     }
 

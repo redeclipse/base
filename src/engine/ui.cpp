@@ -5552,7 +5552,7 @@ namespace UI
             if(kc)
             {
                 inputsteal = kc;
-                kc->focusmillis = lastmillis;
+                kc->focusmillis = totalmillis;
             }
         }
         void setfocus() { setfocus(this); }
@@ -5584,7 +5584,7 @@ namespace UI
             else
             {
                 pressedkey = code;
-                keymillis = lastmillis;
+                keymillis = totalmillis;
             }
             return true;
         }
@@ -6837,7 +6837,8 @@ namespace UI
     #define COMPOSITESIZE (1<<9)
     extern void reloadcomp();
     VARF(IDF_PERSIST, compositesize, 1<<1, COMPOSITESIZE, 1<<12, reloadcomp());
-    VAR(IDF_PERSIST, compositeuprate, 0, 10, VAR_MAX);
+    VAR(IDF_PERSIST, compositeuprate, 0, 16, VAR_MAX); // limit updates to this ms
+    VAR(IDF_PERSIST, compositelimit, 0, 10, VAR_MAX); // limit updates to this count per cycle
 
     GLenum compformat(int format = -1)
     {
@@ -7035,7 +7036,7 @@ namespace UI
         t->delay = delay;
         t->id = id;
         t->fbo = fbo;
-        t->used = t->last = lastmillis;
+        t->used = t->last = totalmillis;
 
         bool hastex = false;
         loopv(surface->texs)
@@ -7236,12 +7237,24 @@ namespace UI
         }
     }
 
+    static inline bool texsort(Texture *a, Texture *b)
+    {
+        if(!a->paused() && b->paused()) return true;
+        if(a->paused() && !b->paused()) return false;
+        if(a->last < b->last) return true;
+        if(a->last > b->last) return false;
+        return false;
+    }
+
     void updatetextures()
     {
         if(!pushsurface(SURFACE_COMPOSITE)) return;
 
         bool found = false;
         int oldhudw = hudw, oldhudh = hudh, oldsf = surfaceformat;
+
+        int processed = 0;
+        surface->texs.sort(texsort);
 
         loopv(surface->texs)
         {
@@ -7254,6 +7267,7 @@ namespace UI
             glBindFramebuffer_(GL_FRAMEBUFFER, t->fbo);
             uicurfbo = t->fbo;
             found = true;
+
             if(!t->id)
             {
                 if(!t->format) t->format = compformat();
@@ -7294,14 +7308,20 @@ namespace UI
                 surface->hide(w);
             }
 
-            t->last = delay > 1 ? lastmillis - (elapsed % delay) : lastmillis;
+            t->last = delay > 1 ? totalmillis - (elapsed % delay) : totalmillis;
             t->rendered = true;
 
-            if(delay < 0 && t->fbo)
-            { // don't need to keep the FBO if we're not going to continue using it
-                glDeleteFramebuffers_(1, &t->fbo);
-                t->fbo = 0;
+            if(delay < 0)
+            { // don't need to keep stuff we're not going to continue using it
+                if(t->fbo)
+                {
+                    glDeleteFramebuffers_(1, &t->fbo);
+                    t->fbo = 0;
+                }
+                surface->texs.remove(i--);
             }
+
+            if(++processed >= compositelimit) break;
         }
 
         popsurface();

@@ -192,7 +192,7 @@ struct gamelog
         }
     }
 
-    void serverpush()
+    bool serverpush()
     {
         int target = -1, tid = findlistinfo("args");
         if(lists.inrange(tid))
@@ -227,6 +227,8 @@ struct gamelog
         }
 
         sendpacket(target, 1, p.finalize());
+
+        return true;
     }
 #else
     static void parseinfo(vector<info> &infos, ucharbuf &p)
@@ -277,7 +279,7 @@ struct gamelog
         e->push();
     }
 
-    void clientpush(vector<gamelog *> &log)
+    bool clientpush(vector<gamelog *> &log)
     {
         int lines = 0, chan = 0;
         switch(type)
@@ -298,7 +300,7 @@ struct gamelog
                 if(messagelogseqid < 0) messagelogseqid = 0;
                 break;
             }
-            default: return;
+            default: return false;
         }
 
         if(log.length() >= lines)
@@ -350,16 +352,19 @@ struct gamelog
             const char *con = constr();
             if(con && *con) conoutf(concolor(), "%s", con);
         }
+
         log.add(this);
+
+        return true;
     }
 #endif
 
-    void push()
+    bool push()
     {
 #ifdef CPP_GAME_SERVER
-        serverpush();
+        return serverpush();
 #else
-        clientpush(type == GAMELOG_MESSAGE ? messagelog : eventlog);
+        return clientpush(type == GAMELOG_MESSAGE ? messagelog : eventlog);
 #endif
     }
 

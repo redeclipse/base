@@ -1199,7 +1199,7 @@ void create3dtexture(int tnum, int w, int h, int d, const void *pixels, int tcla
 hashnameset<Texture> textures;
 Texture *notexture = NULL, *blanktexture = NULL; // used as default, ensured to be loaded
 
-VAR(IDF_PERSIST, texturepause, 0, 30000, VAR_MAX);
+VAR(IDF_PERSIST, texturepause, 0, 10000, VAR_MAX);
 
 void updatetextures()
 {
@@ -1214,7 +1214,7 @@ void updatetextures()
         t.frame %= animlen;
         int frame = t.throb && t.frame >= t.frames.length() ? animlen-t.frame : t.frame;
         t.id = t.frames.inrange(frame) ? t.frames[frame] : 0;
-        t.last = delay > 1 ? lastmillis - (elapsed % delay) : lastmillis;
+        t.last = delay > 1 ? totalmillis - (elapsed % delay) : totalmillis;
     });
 }
 
@@ -1382,7 +1382,7 @@ static Texture *newtexture(Texture *t, const char *rname, ImageData &s, int tcla
         }
     }
     t->id = t->frames.length() ? t->frames[0] : 0;
-    t->used = t->last = lastmillis;
+    t->used = t->last = totalmillis;
     t->rendered = true;
     return t;
 }
@@ -1906,7 +1906,8 @@ Texture *textureload(const char *name, int tclamp, bool mipit, bool msg, bool gc
 bool settexture(Texture *t)
 {
     if(!t) t = notexture;
-    if(t->used != lastmillis) t->used = lastmillis;
+    if(t->used && totalmillis)
+    if(t->used != totalmillis) t->used = totalmillis;
     glBindTexture(GL_TEXTURE_2D, t->id);
     return t != notexture;
 }

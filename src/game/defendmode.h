@@ -52,7 +52,8 @@ struct defendservmode : defendstate, servmode
     {
         if(!points) return;
         flag &b = flags[i];
-        loopvk(clients) if(A(clients[k]->actortype, abilities)&(1<<A_A_AFFINITY) && team == clients[k]->team && insideaffinity(b, clients[k]->o)) givepoints(clients[k], points, m_points(gamemode, mutators), false);
+        loopvk(clients) if(A(clients[k]->actortype, abilities)&(1<<A_A_AFFINITY) && team == clients[k]->team && insideaffinity(b, clients[k]->o))
+            givepoints(clients[k], points, m_points(gamemode, mutators), false);
         score &cs = teamscore(team);
         cs.total += points;
         sendf(-1, 1, "ri3", N_SCORE, team, cs.total);
@@ -71,7 +72,8 @@ struct defendservmode : defendstate, servmode
                 if(!b.owners || !b.enemies)
                 {
                     int pts = b.occupy(b.enemy, G(defendpoints)*(b.enemies ? b.enemies : -(1+b.owners))*t, defendcount, m_dac_quick(gamemode, mutators));
-                    if(pts > 0) loopvk(clients) if(A(clients[k]->actortype, abilities)&(1<<A_A_AFFINITY) && b.owner == clients[k]->team && insideaffinity(b, clients[k]->o)) givepoints(clients[k], G(defendpoints), m_points(gamemode, mutators), false);
+                    if(pts > 0) loopvk(clients) if(A(clients[k]->actortype, abilities)&(1<<A_A_AFFINITY) && b.owner == clients[k]->team && insideaffinity(b, clients[k]->o))
+                        givepoints(clients[k], G(defendpoints), m_points(gamemode, mutators), false);
                 }
                 sendaffinity(i);
             }
@@ -238,9 +240,9 @@ struct defendservmode : defendstate, servmode
         loopv(flags)
         {
             if(isteam(gamemode, mutators, flags[i].owner, T_FIRST))
-                owners[flags[i].owner-T_FIRST].add(i);
+                owners[clamp(flags[i].owner-T_FIRST, 0, 1)].add(i);
             if(isteam(gamemode, mutators, flags[i].enemy, T_FIRST))
-                enemies[flags[i].enemy-T_FIRST].add(i);
+                enemies[clamp(flags[i].enemy-T_FIRST, 0, 1)].add(i);
         }
         loopk(numteams(gamemode, mutators))
         {

@@ -421,7 +421,7 @@ GFVAR(IDF_GAMEMOD, 0, capturecarrybuoyancyeach, FVAR_MIN, 0, FVAR_MAX);
 
 GVAR(IDF_GAMEMOD, 0, defendlimit, 0, 0, VAR_MAX); // finish when score is this or more
 GVAR(IDF_GAMEMOD, 0, defendpoints, 0, 1, VAR_MAX); // points added to score
-GVAR(IDF_GAMEMOD, 0, defendinterval, 0, 50, VAR_MAX);
+GVAR(IDF_GAMEMOD, 0, defendinterval, 1, 50, VAR_MAX);
 GVAR(IDF_GAMEMOD, 0, defendhold, 1, 100, VAR_MAX); // points needed to gain a score point
 GVAR(IDF_GAMEMOD, 0, defendoccupy, 1, 100, VAR_MAX); // points needed to occupy in regular games
 GVAR(IDF_GAMEMOD, 0, defendking, 1, 100, VAR_MAX); // points needed to occupy in king of the hill

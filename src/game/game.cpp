@@ -2243,7 +2243,7 @@ namespace game
             log->addclient("client", d);
             log->addclient("client", v);
             loopv(assist) if(assist[i] && assist[i] != d && assist[i] != v) log->addclient("client", assist[i]);
-            log->push();
+            if(!log->push()) DELETEP(log);
         }
         vec pos = d->headtag();
         pos.z -= d->zradius*0.125f;
@@ -3667,7 +3667,7 @@ namespace game
                     if(*album) log->addlist("args", "album", album);
                     log->addlist("args", "colour", colourwhite);
                     log->addlist("args", "console", constr);
-                    log->push();
+                    if(!log->push()) DELETEP(log);
                 }
             }
 

@@ -663,10 +663,15 @@ struct Texture
         return id;
     }
 
+    bool paused()
+    {
+        return used < last && texturepause && totalmillis - used >= texturepause;
+    }
+
     int update(int &d, int mindelay = -1)
     {
-        if(delay <= 0 || (used < last && texturepause && lastmillis - used >= texturepause)) return -1;
-        int elapsed = lastmillis - last, wait = delay;
+        if(delay <= 0 || paused()) return -1;
+        int elapsed = totalmillis - last, wait = delay;
         if(mindelay >= 0 && wait < mindelay) wait = mindelay;
         if(elapsed < wait) return -1;
         d = wait;

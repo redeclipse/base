@@ -1566,7 +1566,7 @@ namespace client
             log->addlist("args", "console", line);
             log->addclient("client", f);
             if(t) log->addclient("client", t);
-            log->push();
+            if(!log->push()) DELETEP(log);
         }
         ai::scanchat(f, t, flags, text);
     }
