@@ -598,10 +598,11 @@ struct Texture
     bool mipmap, canreduce, throb, rendered;
     vector<GLuint> frames;
     GLuint id, fbo;
+    GLenum format;
     uchar *alphamask;
 
 
-    Texture() : comp(NULL), args(NULL), used(0), frame(0), delay(0), last(0), throb(false), rendered(false), id(0), fbo(0), alphamask(NULL)
+    Texture() : comp(NULL), args(NULL), used(0), frame(0), delay(0), last(0), throb(false), rendered(false), id(0), fbo(0), format(0), alphamask(NULL)
     {
         frames.shrink(0);
     }
@@ -637,6 +638,7 @@ struct Texture
 
         id = 0;
         delay = last = 0;
+        format = 0;
         rendered = false;
     }
 
@@ -925,6 +927,7 @@ extern void texcrop(ImageData &s, ImageData &d, int x, int y, int w, int h);
 extern void texmad(ImageData &s, const vec &mul, const vec &add = vec(0 , 0, 0));
 extern void preloadtextures(uint flags = IDF_PRELOAD);
 extern void updatetextures();
+extern int formatsize(GLenum format);
 
 struct texrotation
 {

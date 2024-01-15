@@ -1305,25 +1305,24 @@ static Texture *newtexture(Texture *t, const char *rname, ImageData &s, int tcla
     }
 
     bool swizzle = !(tclamp&0x10000);
-    GLenum format;
     if(s.compressed)
     {
-        format = uncompressedformat(s.compressed);
-        t->bpp = formatsize(format);
+        t->format = uncompressedformat(s.compressed);
+        t->bpp = formatsize(t->format);
         t->type |= Texture::COMPRESSED;
     }
     else
     {
-        format = texformat(s.bpp, swizzle);
+        t->format = texformat(s.bpp, swizzle);
         t->bpp = s.bpp;
-        if(swizzle && hasTRG && !hasTSW && swizzlemask(format))
+        if(swizzle && hasTRG && !hasTSW && swizzlemask(t->format))
         {
             swizzleimage(s);
-            format = texformat(s.bpp, swizzle);
+            t->format = texformat(s.bpp, swizzle);
             t->bpp = s.bpp;
         }
     }
-    if(alphaformat(format)) t->type |= Texture::ALPHA;
+    if(alphaformat(t->format)) t->type |= Texture::ALPHA;
 
     bool hasanim = anim && anim->count;
     t->delay = hasanim ? anim->delay : 0;
@@ -1360,7 +1359,7 @@ static Texture *newtexture(Texture *t, const char *rname, ImageData &s, int tcla
     {
         resizetexture(t->w, t->h, mipit, canreduce, GL_TEXTURE_2D, compress, t->w, t->h);
 
-        GLenum component = compressedformat(format, t->w, t->h, compress);
+        GLenum component = compressedformat(t->format, t->w, t->h, compress);
 
         loopi(hasanim ? anim->count : 1)
         {
@@ -1377,7 +1376,7 @@ static Texture *newtexture(Texture *t, const char *rname, ImageData &s, int tcla
                 data = cropped.data;
                 pitch = cropped.pitch;
             }
-            createtexture(t->frames[i], t->w, t->h, data, tclamp, filter, component, GL_TEXTURE_2D, t->xs, t->ys, pitch, false, format, swizzle);
+            createtexture(t->frames[i], t->w, t->h, data, tclamp, filter, component, GL_TEXTURE_2D, t->xs, t->ys, pitch, false, t->format, swizzle);
             if(verbose >= 3)
                 conoutf(colourgrey, "Adding frame: %s (%d) [%d,%d:%d,%d]", t->name, i+1, t->w, t->h, t->xs, t->ys);
         }
@@ -3474,34 +3473,33 @@ Texture *cubemaploadwildcard(Texture *t, const char *name, bool mipit, bool msg,
     }
     t->type = Texture::CUBEMAP;
     if(transient) t->type |= Texture::TRANSIENT;
-    GLenum format;
     if(surface[0].compressed)
     {
-        format = uncompressedformat(surface[0].compressed);
-        t->bpp = formatsize(format);
+        t->format = uncompressedformat(surface[0].compressed);
+        t->bpp = formatsize(t->format);
         t->type |= Texture::COMPRESSED;
     }
     else
     {
-        format = texformat(surface[0].bpp, true);
+        t->format = texformat(surface[0].bpp, true);
         t->bpp = surface[0].bpp;
-        if(hasTRG && !hasTSW && swizzlemask(format))
+        if(hasTRG && !hasTSW && swizzlemask(t->format))
         {
             loopi(6) swizzleimage(surface[i]);
-            format = texformat(surface[0].bpp, true);
+            t->format = texformat(surface[0].bpp, true);
             t->bpp = surface[0].bpp;
         }
     }
-    if(alphaformat(format)) t->type |= Texture::ALPHA;
+    if(alphaformat(t->format)) t->type |= Texture::ALPHA;
     t->mipmap = mipit;
     t->tclamp = 3;
     t->xs = t->ys = tsize;
     t->w = t->h = min(1<<envmapsize, tsize);
     resizetexture(t->w, t->h, mipit, false, GL_TEXTURE_CUBE_MAP, compress, t->w, t->h);
-    GLenum component = format;
+    GLenum component = t->format;
     if(!surface[0].compressed)
     {
-        component = compressedformat(format, t->w, t->h, compress);
+        component = compressedformat(t->format, t->w, t->h, compress);
         switch(component)
         {
             case GL_RGB: component = hasES2 ? GL_RGB565 : GL_RGB5; break;
@@ -3527,7 +3525,7 @@ Texture *cubemaploadwildcard(Texture *t, const char *name, bool mipit, bool msg,
             }
             createcompressedtexture(t->frames[0], w, h, data, s.align, s.bpp, levels, i ? -1 : 3, mipit ? 2 : 1, s.compressed, side.target, true);
         }
-        else createtexture(t->frames[0], t->w, t->h, s.data, i ? -1 : 3, mipit ? 2 : 1, component, side.target, s.w, s.h, s.pitch, false, format, true);
+        else createtexture(t->frames[0], t->w, t->h, s.data, i ? -1 : 3, mipit ? 2 : 1, component, side.target, s.w, s.h, s.pitch, false, t->format, true);
     }
     t->id = t->frames.length() ? t->frames[0] : 0;
     t->rendered = true;

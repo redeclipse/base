@@ -9,7 +9,7 @@ void loadcaustics(bool force)
     if(!caustics || !needcaustics) return;
     useshaderbyname("caustics");
     if(caustictex) return;
-    caustictex = textureload("<comp:1>caustic");
+    caustictex = textureload("<comp:1,0,2>caustic");
 }
 
 void cleanupcaustics()
