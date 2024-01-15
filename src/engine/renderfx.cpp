@@ -58,6 +58,12 @@ void setuphalo(int w, int h)
     halotype = -1;
 }
 
+bool wanthalos(bool check, bool val)
+{
+    if(check && drawtex != DRAWTEX_HALO) return true;
+    return halos && val;
+}
+
 void cleanuphalo()
 {
     loopi(HALO_MAX)

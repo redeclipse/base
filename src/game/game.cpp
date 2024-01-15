@@ -1771,10 +1771,17 @@ namespace game
         }
     }
 
+    void checkdamagemerges()
+    {
+        static int lastcheck = 0; // ensure state is updated
+        if(totalmillis == lastcheck) return;
+        flushdamagemerges();
+        lastcheck = totalmillis;
+    }
+
     void pushdamagemerge(gameent *d, gameent *v, int type, int weap, int flags, int damage, int delay, int length, int combine)
     {
-        static int lastflush = 0; // ensure state is updated
-        if(totalmillis != lastflush) flushdamagemerges();
+        checkdamagemerges();
 
         damagemerge dt(d, v, type, weap, flags, damage, delay, length, combine);
         loopv(damagemerges) if(damagemerges[i].merge(dt)) return;
@@ -1782,22 +1789,23 @@ namespace game
         damagemerges.add(dt);
     }
 
-    ICOMMAND(0, getdamages, "", (), intret(damagemerges.length()));
-    ICOMMAND(0, getdamagefrom, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].from->clientnum : -1));
-    ICOMMAND(0, getdamageclient, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].to->clientnum : -1));
-    ICOMMAND(0, getdamagetype, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].type : -1));
-    ICOMMAND(0, getdamageweap, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].weap : -1));
-    ICOMMAND(0, getdamageflags, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].flags : 0));
-    ICOMMAND(0, getdamageamt, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].amt : 0));
-    ICOMMAND(0, getdamagemillis, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].millis : 0));
-    ICOMMAND(0, getdamageready, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].ready : 0));
-    ICOMMAND(0, getdamagedelay, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].delay : 0));
-    ICOMMAND(0, getdamagecombine, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].combine : 0));
-    ICOMMAND(0, getdamagelength, "b", (int *n), intret(damagemerges.inrange(*n) ? damagemerges[*n].length : 0));
+    ICOMMAND(0, getdamages, "", (), checkdamagemerges(); intret(damagemerges.length()));
+    ICOMMAND(0, getdamagefrom, "b", (int *n), checkdamagemerges(); intret(damagemerges.inrange(*n) ? damagemerges[*n].from->clientnum : -1));
+    ICOMMAND(0, getdamageclient, "b", (int *n), checkdamagemerges(); intret(damagemerges.inrange(*n) ? damagemerges[*n].to->clientnum : -1));
+    ICOMMAND(0, getdamagetype, "b", (int *n), checkdamagemerges(); intret(damagemerges.inrange(*n) ? damagemerges[*n].type : -1));
+    ICOMMAND(0, getdamageweap, "b", (int *n), checkdamagemerges(); intret(damagemerges.inrange(*n) ? damagemerges[*n].weap : -1));
+    ICOMMAND(0, getdamageflags, "b", (int *n), checkdamagemerges(); intret(damagemerges.inrange(*n) ? damagemerges[*n].flags : 0));
+    ICOMMAND(0, getdamageamt, "b", (int *n), checkdamagemerges(); intret(damagemerges.inrange(*n) ? damagemerges[*n].amt : 0));
+    ICOMMAND(0, getdamagemillis, "b", (int *n), checkdamagemerges(); intret(damagemerges.inrange(*n) ? damagemerges[*n].millis : 0));
+    ICOMMAND(0, getdamageready, "b", (int *n), checkdamagemerges(); intret(damagemerges.inrange(*n) ? damagemerges[*n].ready : 0));
+    ICOMMAND(0, getdamagedelay, "b", (int *n), checkdamagemerges(); intret(damagemerges.inrange(*n) ? damagemerges[*n].delay : 0));
+    ICOMMAND(0, getdamagecombine, "b", (int *n), checkdamagemerges(); intret(damagemerges.inrange(*n) ? damagemerges[*n].combine : 0));
+    ICOMMAND(0, getdamagelength, "b", (int *n), checkdamagemerges(); intret(damagemerges.inrange(*n) ? damagemerges[*n].length : 0));
 
     #define LOOPDAMAGE(name,op) \
         ICOMMAND(0, loopdamage##name, "iire", (int *count, int *skip, ident *id, uint *body), \
         { \
+            checkdamagemerges(); \
             if(damagemerges.empty()) return; \
             loopstart(id, stack); \
             op(damagemerges, *count, *skip, \
@@ -1813,6 +1821,7 @@ namespace game
     #define LOOPDAMAGEIF(name,op) \
         ICOMMAND(0, loopdamage##name##if, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
         { \
+            checkdamagemerges(); \
             if(damagemerges.empty()) return; \
             loopstart(id, stack); \
             op(damagemerges, *count, *skip, \
@@ -4280,9 +4289,7 @@ namespace game
 
     bool haloallow(const vec &o, gameent *d, bool justtest, bool check)
     {
-        if(check && drawtex != DRAWTEX_HALO) return true;
-        if(d == focus && inzoom()) return false;
-        if(!playerhalos || (!(playerhalos&1) && d == focus) || !(playerhalos&2)) return false;
+        if(!wanthalos(check, (d == focus ? playerhalos&1 : playerhalos&2) != 0) || (d == focus && inzoom())) return false;
         if(justtest) return true;
         vec dir(0, 0, 0);
         float dist = -1;
@@ -4446,7 +4453,7 @@ namespace game
 
         if(drawtex == DRAWTEX_HALO) focus->cleartags();
 
-        f(firstpersoncamera) renderplayer(focus, 2, focus->curscale, MDL_NOBATCH, color, &lastoffset);
+        if(firstpersoncamera) renderplayer(focus, 2, focus->curscale, MDL_NOBATCH, color, &lastoffset);
         else if(firstpersonmodel)
         {
             float depthfov = firstpersondepthfov != 0 ? firstpersondepthfov : curfov;

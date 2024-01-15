@@ -1084,6 +1084,8 @@ extern float haloblend, halotolerance, haloaddz;
 extern bvec halocolour;
 
 enum { HALO_DEPTH, HALO_ONTOP, HALO_MAX };
+
+extern bool wanthalos(bool check, bool val);
 extern void renderhalo();
 extern void viewhalo();
 extern void blendhalos();

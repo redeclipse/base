@@ -3225,7 +3225,7 @@ namespace entities
     bool haloallow(const vec &o, int id, bool justtest, bool check)
     {
         if(!ents.inrange(id)) return false;
-        if((check && drawtex != DRAWTEX_HALO) || !entityhalos) return true;
+        if(!wanthalos(check, entityhalos != 0)) return false;
         if(enttype[ents[id]->type].usetype != EU_ITEM && !game::player1->isediting()) return false;
         vec dir(0, 0, 0);
         float dist = -1;
