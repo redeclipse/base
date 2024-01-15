@@ -1866,3 +1866,5 @@ int main(int argc, char **argv)
     return EXIT_SUCCESS;
 }
 #endif
+
+ICOMMAND(0, fatal, "s", (char *s), if(!(identflags&IDF_MAP)) fatal("%s", s));

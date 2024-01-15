@@ -183,7 +183,11 @@ void fatal(const char *s, ...)    // failure exit
             }
             SDL_Quit();
             defformatstring(cap, "%s: Fatal error", versionfname);
-            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, cap, msg, NULL);
+#ifdef WIN32 // bug: https://github.com/libsdl-org/SDL/issues/1380
+            MessageBox(NULL, msg, cap, MB_OK|MB_SYSTEMMODAL);
+#else
+            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, cap, msg, screen);
+#endif
         }
     }
     exit(EXIT_FAILURE);
