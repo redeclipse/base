@@ -1130,12 +1130,14 @@ namespace UI
         void vposition()
         {
             float cx = 0.5f, cy = 0.5f, cz = 1;
+
             if(vectocursor(pos, cx, cy, cz))
             {
                 if(surfacetype == SURFACE_VISOR && rendervisor)
                     visorcoords(cx, cy, cx, cy, true);
 
-                cx *= hudw/float(hudh);
+                float aspect = hudw/float(hudh);
+                cx *= aspect; // convert to UI coordinate system
 
                 switch(adjust&ALIGN_HMASK)
                 {
@@ -1151,9 +1153,14 @@ namespace UI
                     case ALIGN_BOTTOM:  break;
                 }
 
-                setpos(cx, cy);
+                if(surfacetype != SURFACE_VISOR || (cx > 0 && cx + w < aspect && cy > 0 && cy + h < 1))
+                { // keep away from the edges of the visor to avoid smearing
+                    setpos(cx, cy);
+                    return;
+                }
             }
-            else state = STATE_HIDDEN;
+
+            state = STATE_HIDDEN;
         }
 
         void layout()
