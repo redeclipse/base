@@ -2434,6 +2434,45 @@ namespace weapons
     extern bool canuse(int weap);
 }
 
+#define MAKEUI(name, id, test, cansee, pos, above, over) \
+    do { \
+        int type = -1; \
+        if(test) \
+        { \
+            type = cansee ? name##ui : SURFACE_WORLD; \
+            for(int ucount = 0; ucount < 2; ++ucount) \
+            { \
+                vec o; \
+                float yaw, pitch, scale, dyaw, dpitch; \
+                switch(ucount) \
+                { \
+                    case 1: \
+                    { \
+                        o = vec(pos).sub(vec(pos).sub(camera1->o).normalize().mul(over)); \
+                        yaw = name##overlayyaw; \
+                        pitch = name##overlaypitch; \
+                        scale = type == SURFACE_WORLD ? name##overlayworld : name##overlayscale; \
+                        dyaw = name##overlaydetentyaw; \
+                        dpitch = name##overlaydetentpitch; \
+                        break; \
+                    } \
+                    case 0: default: \
+                    { \
+                        o = vec(pos).addz(above); \
+                        yaw = name##aboveyaw; \
+                        pitch = name##abovepitch; \
+                        scale = type == SURFACE_WORLD ? name##aboveworld : name##abovescale; \
+                        dyaw = name##abovedetentyaw; \
+                        dpitch = name##abovedetentpitch; \
+                        break; \
+                    } \
+                } \
+                UI::setui(name##uis[ucount], type, id, o, yaw, pitch, scale, dyaw, dpitch); \
+            } \
+        } \
+        for(int scount = 0; scount < SURFACE_ALL; ++scount) if(scount != type) for(int ucount = 0; ucount < 2; ++ucount) UI::hideui(name##uis[ucount], scount, id); \
+    } while(0);
+
 namespace hud
 {
     extern char *chattex, *playertex, *deadtex, *waitingtex, *spectatortex, *editingtex, *dominatingtex, *dominatedtex, *inputtex,

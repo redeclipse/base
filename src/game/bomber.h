@@ -51,13 +51,13 @@ struct bomberstate
         }
 
 #ifndef CPP_GAME_SERVER
-        vec &position(bool render = false)
+        vec &position(bool rend = false)
         {
             if(team == T_NEUTRAL)
             {
                 if(owner)
                 {
-                    if(render)
+                    if(rend)
                     {
                         if(totalmillis != rendertime)
                         {
@@ -75,7 +75,7 @@ struct bomberstate
             return spawnloc;
         }
 
-        vec &pos(bool view = false, bool render = false)
+        vec &pos(bool view = false, bool rend = false)
         {
             if(team == T_NEUTRAL && view)
             {
@@ -84,13 +84,13 @@ struct bomberstate
                     if(totalmillis != viewtime)
                     {
                         float amt = (lastmillis-interptime)/500.f;
-                        viewpos = vec(interppos).add(vec(position(render)).sub(interppos).mul(amt));
+                        viewpos = vec(interppos).add(vec(position(rend)).sub(interppos).mul(amt));
                         viewtime = totalmillis;
                     }
                     return viewpos;
                 }
             }
-            return position(render);
+            return position(rend);
         }
 
         void setposition(const vec &pos)
@@ -263,5 +263,6 @@ namespace bomber
     extern void removeplayer(gameent *d);
     extern void checkcams(vector<cament *> &cameras);
     extern void updatecam(cament *c);
+    extern void checkui();
 }
 #endif

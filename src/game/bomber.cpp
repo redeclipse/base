@@ -5,7 +5,7 @@ namespace bomber
 
     VAR(IDF_PERSIST, bomberhalos, 0, 1, 1);
 
-    ICOMMAND(0, getbombernum, "", (), intret(st.flags.length()));
+    ICOMMAND(0, getbombernum, "b", (int *n), intret(*n >= 0 ? (st.flags.inrange(*n) ? 1 : 0) : st.flags.length()));
     ICOMMAND(0, getbomberenabled, "i", (int *n), intret(st.flags.inrange(*n) && st.flags[*n].enabled ? 1 : 0));
     ICOMMAND(0, getbomberteam, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].team : -1));
     ICOMMAND(0, getbomberdroptime, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].droptime : -1));
@@ -225,6 +225,52 @@ namespace bomber
         }
     }
 
+    VAR(IDF_PERSIST, bomberui, -1, SURFACE_VISOR, SURFACE_ALL-1);
+
+    FVAR(IDF_PERSIST, bomberaboveyaw, -1, -1, 360);
+    FVAR(IDF_PERSIST, bomberabovepitch, -181, -181, 181);
+    FVAR(IDF_PERSIST, bomberabovescale, FVAR_NONZERO, 1, FVAR_MAX);
+    FVAR(IDF_PERSIST, bomberaboveworld, FVAR_NONZERO, 4, FVAR_MAX);
+    FVAR(IDF_PERSIST, bomberabovedetentyaw, 0, 0, 180);
+    FVAR(IDF_PERSIST, bomberabovedetentpitch, 0, 0, 90);
+
+    VAR(IDF_PERSIST, bomberoverlay, -1, SURFACE_VISOR, SURFACE_ALL-1);
+    FVAR(IDF_PERSIST, bomberoverlayyaw, -1, -1, 360);
+    FVAR(IDF_PERSIST, bomberoverlaypitch, -181, -181, 181);
+    FVAR(IDF_PERSIST, bomberoverlayscale, FVAR_NONZERO, 1, FVAR_MAX);
+    FVAR(IDF_PERSIST, bomberoverlayworld, FVAR_NONZERO, 4, FVAR_MAX);
+    FVAR(IDF_PERSIST, bomberoverlaydetentyaw, 0, 0, 180);
+    FVAR(IDF_PERSIST, bomberoverlaydetentpitch, 0, 0, 90);
+
+    static const char *bomberuis[2] = { "bomberabove", "bomberoverlay" };
+
+    void checkui()
+    {
+        if(bomberui >= 0)
+        {
+            loopv(st.flags)
+            {
+                bomberstate::flag &f = st.flags[i];
+
+                vec curpos = f.render;
+                if(isbomberaffinity(f))
+                {
+                    curpos = f.pos(true, true);
+                    if(!f.owner && !f.droptime) curpos.z += enttype[AFFINITY].radius * 0.25f;
+                }
+                else curpos.z += enttype[AFFINITY].radius * 0.125f;
+
+                MAKEUI(bomber, i,
+                    f.enabled, haloallow(camera1->o, i),
+                        curpos,
+                        enttype[AFFINITY].radius * (isbomberaffinity(f) ? 0.125f : 0.25f),
+                        enttype[AFFINITY].radius * (isbomberaffinity(f) ? 0.125f : 0.25f)
+                );
+            }
+        }
+        else loopk(2) UI::cleardynui(bomberuis[k]);
+    }
+
     void render()
     {
         loopv(st.flags) if(haloallow(camera1->o, i)) // flags/bases
@@ -239,7 +285,7 @@ namespace bomber
             else if(isbomberaffinity(f))
             {
                 vec above(f.pos(true, true));
-                if(!f.owner && !f.droptime) above.z += enttype[AFFINITY].radius/4*trans;
+                if(!f.owner && !f.droptime) above.z += enttype[AFFINITY].radius * 0.25f * trans;
                 mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
                 mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_HALO_TOP;
                 mdl.o = above;

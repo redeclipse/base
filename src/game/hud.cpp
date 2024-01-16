@@ -584,47 +584,16 @@ namespace hud
             gameent *d = NULL;
             int numdyns = game::numdynents();
             loopi(numdyns) if((d = (gameent *)game::iterdynents(i)))
-            {
-                int type = -1;
-                if(d != game::focus && !d->isspectator())
-                {
-                    bool cansee = game::haloallow(camera1->o, d, false, false) && (game::focus->isobserver() || (m_team(game::gamemode, game::mutators) && game::focus->team == d->team));
-                    type = cansee ? playerui : SURFACE_WORLD; // force in-world if not allowed to x-ray
-                    loopk(2)
-                    {
-                        vec pos;
-                        float yaw, pitch, scale, dyaw, dpitch;
-                        switch(k)
-                        {
-                            case 1: // overlay
-                            {
-                                pos = d->center(); // center pulled back a bit
-                                pos.sub(vec(pos).sub(camera1->o).normalize().mul(d->radius * playeroverlayoffset));
-                                yaw = playeroverlayyaw;
-                                pitch = playeroverlaypitch;
-                                scale = type == SURFACE_WORLD ? playeroverlayworld : playeroverlayscale;
-                                dyaw = playeroverlaydetentyaw;
-                                dpitch = playeroverlaydetentpitch;
-                                break;
-                            }
-                            case 0: default: // above
-                            {
-                                pos = d->abovehead(playeraboveoffset);
-                                yaw = playeraboveyaw;
-                                pitch = playerabovepitch;
-                                scale = type == SURFACE_WORLD ? playeraboveworld : playerabovescale;
-                                dyaw = playerabovedetentyaw;
-                                dpitch = playerabovedetentpitch;
-                                break;
-                            }
-                        }
-                        UI::setui(playeruis[k], type, d->clientnum, pos, yaw, pitch, scale, dyaw, dpitch);
-                    }
-                }
-                loopj(SURFACE_ALL) if(j != type) loopk(2) UI::hideui(playeruis[k], j, d->clientnum);
-            }
+                MAKEUI(player, d->clientnum,
+                    d != game::focus && !d->isspectator(), game::haloallow(camera1->o, d, false, false) && (game::focus->isobserver() || (m_team(game::gamemode, game::mutators) && game::focus->team == d->team)),
+                        d->center(), (d->height * 0.5f) + d->aboveeye + 1, d->radius * 0.5f
+                );
         }
         else loopk(2) UI::cleardynui(playeruis[k]);
+
+        if(m_capture(game::gamemode)) capture::checkui();
+        if(m_defend(game::gamemode)) defend::checkui();
+        if(m_bomber(game::gamemode)) bomber::checkui();
     }
 
     void removeplayer(gameent *d)

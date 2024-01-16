@@ -242,5 +242,6 @@ namespace capture
     extern void removeplayer(gameent *d);
     extern void checkcams(vector<cament *> &cameras);
     extern void updatecam(cament *c);
+    extern void checkui();
 }
 #endif
