@@ -6344,6 +6344,11 @@ namespace UI
             while(colors.length() < 2) colors.add(Color(colourwhite));
             if(hud::needminimap())
             {
+                Shader *oldshader = Shader::lastshader;
+                SETSHADER(hudminimap);
+
+                LOCALPARAMF(minimapparams, 2<<(minimapsize-1));
+
                 vec pos = vec(camera1->o).sub(minimapcenter).mul(minimapscale).add(0.5f), dir(camera1->yaw*RAD, 0.f);
                 int limit = hud::radarlimit();
                 float scale = min(dist > 0 ? dist : float(worldsize), limit > 0 ? limit : float(worldsize)),
@@ -6361,6 +6366,8 @@ namespace UI
                     gle::attribf(1.0f - (pos.x + tc.x*scale*minimapscale.x), pos.y + tc.y*scale*minimapscale.y);
                 }
                 gle::end();
+
+                if(oldshader) oldshader->set();
             }
             if(tex != notexture)
             {

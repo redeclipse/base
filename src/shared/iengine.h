@@ -194,6 +194,7 @@ extern void gettextres(int &w, int &h);
 extern vec calcavatarpos(const vec &pos, float fov);
 extern vec calcmodelpreviewpos(const vec &radius, float &yaw);
 
+extern int minimapsize;
 extern vec minimapcenter, minimapradius, minimapscale;
 extern void bindminimap();
 
