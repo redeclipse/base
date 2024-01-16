@@ -19,7 +19,7 @@ server.
 
 If you have questions or comments regarding these guidelines please contact the
 Red Eclipse Team. Any person seeking to modify their game or server for use on
-the master server should first seek permission from the Red Eclipse Team, each
+the master server should first seek permission from Red Eclipse Team, each
 modification must be approved and will be done on a case-by-case basis. It is
 advised you create a topic in the "General Discussion" section of the official
 Red Eclipse discussions located at https://redeclipse.net/discuss
@@ -49,11 +49,11 @@ configuration, and Operating system details.
     damage output to 0) is not allowed.
 
 * If the source code of the server is modified substantially you must contact
-  the Red Eclipse Team to check that the changes are permitted by creating a
+  Red Eclipse Team to check that the changes are permitted by creating a
   a topic in the official Red Eclipse discussion area at https://redeclipse.net/discuss
 
 * The server must honour the master server system, allowing global bans and
-  granting the correct access by the Red Eclipse Team, or moderators assigned by
+  granting the correct access by Red Eclipse Team, or moderators assigned by
   them.
   - Red Eclipse has a global authority system in place which is enforced for all
     servers that wish to be listed on the official master server to ensure the
@@ -158,7 +158,7 @@ configuration, and Operating system details.
   - Further action includes undoing any disciplinary actions that have been
     carried out already. Moderator in-fighting is unprofessional behaviour.
   - If a resolution can not be found then efforts should be made to find a more
-    senior member of the Red Eclipse Team to mediate the dispute.
+    senior member of Red Eclipse Team to mediate the dispute.
   - Mediation methods may include an open topic in the "General Discussion"
     section of the official Red Eclipse discussions located at
     https://redeclipse.net/discuss for the community to weigh in on and generate
@@ -181,6 +181,6 @@ configuration, and Operating system details.
 
 ### Attribution
 
-This text is Copyright (C) 2011-2019, the Red Eclipse Team
+This text is Copyright (C) 2011-2019, Red Eclipse Team
 and is available under a Creative Commons Attribution-ShareAlike 4.0
 License <http://creativecommons.org/licenses/by-sa/4.0/>

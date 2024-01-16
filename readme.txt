@@ -1,5 +1,5 @@
 # Red Eclipse
-* A modern first-person arena shooter; released as free and open source software
+* An arena shooter for the modern era; released as free and open source software
 * Available for Windows, GNU/Linux, BSD, and macOS
 * Features parkour gameplay, such as impulse boosts, dashing, and other tricks
 * Favourite gamemodes with an array of mutators and variables
@@ -27,14 +27,14 @@ Our main method of community interaction is via the [Discord server](https://red
 ## Open Source
 The project is Free and Open Source, meaning that you can both use it for free and be a part of it by contributing in whatever way you can. These are the people who have helped shape Red Eclipse into what you see today. They are regular people just like you who volunteer their time or donate in the spirit of making a really cool game. Your name could be down here, too!
 
-### Founders
-* Quinton "Quin" Reeves - Lead Developer - YouTube channel @ https://youtube.com/qreeves
-    - Gameplay and AI Design, Community Management
+### Developers
 
-* Lee "Eihrul" Salzman - Lead Programmer - Check out Tesseract @ http://tesseract.gg/
-    - Engine Designer, Programming Support (there'd be no game without this guy!)
+* Quinton "Quin" Reeves
+* Lee "eihrul" Salzman
+* Sławomir "Q009" Błauciak
 
-### Contributors, Developers and Supporters
+### Contributors and Supporters
+
 * "Lycanfox"
 * Alex "molexted" Foster - Maps/Balance Lead and CubeScript
 * Alex "ZeroKnight" George - Design/Testing, Support
@@ -80,6 +80,7 @@ The project is Free and Open Source, meaning that you can both use it for free a
 * Ryan "icculus" Gordon / icculus.org - SDL, which we all love, as well as hosting!
 * Ryan Rigby
 * Rémi "LuckystrikeRx" Clouet d'Orval - Maps, Textures, Models, Weapons, Design/Testing, Website
+* Sam "comet_11" - Originally inspired Quin to work on a game with the Cube Engine
 * Scott Baker
 * Sergey "swooboo" Altshuller
 * Slawek "VibrantWave" Blauciak - Ambient Sounds
@@ -98,7 +99,7 @@ The project is Free and Open Source, meaning that you can both use it for free a
 * "Boognish" - Maps
 * "CD Xbow" - Supporter and dreamer, he saw the potential in everything.
 * "D.a.M.i.E.n" - Maps and Textures
-* "FaTony" - Maps
+* "Lyberta", formerly known as "FaTony" - Maps
 * "fbt"
 * "FearFighter"
 * "Fleeky" - Models

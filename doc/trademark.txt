@@ -153,7 +153,7 @@ as described above.
 
 == Attribution ==
 
-This text is Copyright (C) 2011-2019, the Red Eclipse Team
+This text is Copyright (C) 2011-2019, Red Eclipse Team
 and is available under a Creative Commons Attribution-ShareAlike 4.0
 License <http://creativecommons.org/licenses/by-sa/4.0/>
 

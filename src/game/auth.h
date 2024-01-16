@@ -18,7 +18,7 @@
 // which are not connected to the Red Eclipse master.
 
 // If you have questions or comments regarding these guidelines please contact
-// the Red Eclipse Team. Any person seeking to modify their game or server for
+// Red Eclipse Team. Any person seeking to modify their game or server for
 // use on the master server should first seek permission from the Red Eclipse
 // Team, each modification must be approved and will be done on a case-by-case
 // basis.

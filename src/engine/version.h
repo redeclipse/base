@@ -17,7 +17,7 @@
 
 #define VERSION_MAJOR 2
 #define VERSION_MINOR 0
-#define VERSION_PATCH 1
+#define VERSION_PATCH 9
 #define VERSION_HLP(x,y,z,r) #x#r#y#r#z
 #define VERSION_STR(x,y,z,r) VERSION_HLP(x,y,z,r)
 #define VERSION_STRING VERSION_STR(VERSION_MAJOR,VERSION_MINOR,VERSION_PATCH,.)
@@ -25,10 +25,10 @@
 #define VERSION_FNAME "Red Eclipse"
 #define VERSION_UNAME "redeclipse"
 #define VERSION_VNAME "REDECLIPSE"
-#define VERSION_RELEASE "Jupiter Edition"
+#define VERSION_RELEASE "Big Bang Edition Preview"
 #define VERSION_URL "www.redeclipse.net"
-#define VERSION_COPY "2010-2020"
-#define VERSION_DESC "A fun-filled new take on the first-person arena shooter."
+#define VERSION_COPY "2009-2024"
+#define VERSION_DESC "An arena shooter for the modern era"
 #define VERSION_STEAM_APPID 967460
 #define VERSION_STEAM_DEPOT 967461
 #define VERSION_DISCORD "506825464946360321"
