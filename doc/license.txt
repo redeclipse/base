@@ -1,7 +1,7 @@
 ## THE RED ECLIPSE LICENSE
 
 Red Eclipse is based on Tesseract and Cube Engine 2, both of which are covered under the ZLIB license, you may use the source code so long as you obey this license.
-> Red Eclipse, Copyright (C) 2009-2024 Quinton Reeves, Lee Salzman
+> Red Eclipse, Copyright (C) 2009-2024 Quinton Reeves, Lee Salzman, Sławomir Błauciak
 > Tesseract, http://tesseract.gg/ Copyright (C) 2014-2019 Wouter van Oortmerssen, Lee Salzman, Mike Dysart, Robert Pointon, Quinton Reeves, and Benjamin Segovia
 > Cube Engine 2, http://cubeengine.com/ Copyright (C) 2001-2019 Wouter van Oortmerssen, Lee Salzman, Mike Dysart, Robert Pointon, and Quinton Reeves
 > http://www.opensource.org/licenses/zlib-license.php
