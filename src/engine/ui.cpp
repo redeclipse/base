@@ -171,7 +171,7 @@ namespace UI
     static Object *drawing = NULL;
     static bool propagating = false;
 
-    enum { BLEND_ALPHA, BLEND_MOD, BLEND_SRC, BLEND_SRCALPHA, BLEND_MAX };
+    enum { BLEND_ALPHA, BLEND_MOD, BLEND_SRC, BLEND_BUFFER, BLEND_GLOW, BLEND_MAX };
     static int changed = 0, surfacetype = -1, surfaceformat = 0, blendtype = BLEND_ALPHA, blendtypedef = BLEND_ALPHA;
     static bool blendsep = false, blendsepdef = false;
 
@@ -183,7 +183,8 @@ namespace UI
             { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE },
             { GL_ZERO, GL_SRC_COLOR, GL_ONE_MINUS_DST_ALPHA, GL_ONE },
             { GL_ONE, GL_ZERO, GL_ONE, GL_ZERO },
-            { GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA }
+            { GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA },
+            { GL_SRC_ALPHA, GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA }
         };
 
         if(force || blendtype != type || blendsep != sep)
@@ -2918,7 +2919,7 @@ namespace UI
 
     struct Colored : Object
     {
-        enum { SOLID = 0, MODULATE, OUTLINED, OVERWRITE, SRCALPHA };
+        enum { SOLID = 0, MODULATE, OUTLINED, OVERWRITE, BUFFER, GLOW };
         enum { VERTICAL, HORIZONTAL };
 
         int type, dir, sep;
@@ -2934,18 +2935,20 @@ namespace UI
             bool outsep = sep >= 0 ? sep != 0 : blendsepdef;
             switch(type)
             {
+                case SOLID: outtype = BLEND_ALPHA; break;
                 case MODULATE: outtype = BLEND_MOD; break;
                 case OVERWRITE: outtype = BLEND_SRC; break;
-                case SRCALPHA: outtype = BLEND_SRCALPHA; break;
-                case SOLID: outtype = BLEND_ALPHA; break;
+                case BUFFER: outtype = BLEND_BUFFER; break;
+                case GLOW: outtype = BLEND_GLOW; break;
                 default: outtype = blendtypedef; break;
             }
 
-            if(outtype != blendtype || outsep != blendsep) drawflags |= CHANGE_BLEND;
+            bool wantblend = outtype != blendtype || outsep != blendsep;
+            if(wantblend) drawflags |= CHANGE_BLEND;
             drawflags |= CHANGE_COLOR;
 
             changedraw(drawflags);
-            setblend(outtype, outsep);
+            if(wantblend) setblend(outtype, outsep);
         }
 
         void setup(const Color &color_, int type_ = -1, int dir_ = -1, int sep_ = -1)
@@ -3491,9 +3494,17 @@ namespace UI
             gle::end();
         }
 
-        void bindtex(GLenum mode = GL_QUADS, int colstart = 0, bool forced = false)
+        void bindtex(GLenum mode = GL_QUADS, int colstart = 0, bool forced = false, bool oline = false)
         {
-            setupdraw();
+            int flags = 0;
+            if(oline)
+            {
+                flags = CHANGE_SHADER;
+                hudoutlineshader->set();
+                LOCALPARAMF(textparams, 0.15f, 0.35f, 0.35f, 0.55f);
+            }
+
+            setupdraw(flags);
 
             int col = clamp(colstart, -1, colors.length()-1);
             Color c = colors.inrange(col) ? colors[col] : colors[0];
@@ -3540,15 +3551,9 @@ namespace UI
         bool drawmapped(float sx, float sy, vec2 coordmap[FC_MAX], vec2 tcoordmap[FC_MAX], int colstart = 0, int colcount = 0, bool forced = false, bool shading = false)
         {
             int cols = clamp(colcount ? colcount : colors.length()-colstart, 0, colors.length());
-            if(!shading && outline)
-            {
-                setupdraw(CHANGE_SHADER);
-                hudoutlineshader->set();
-                LOCALPARAMF(textparams, 0.15f, 0.35f, 0.35f, 0.55f);
-            }
             if(!shading && cols >= 2)
             {
-                bindtex(GL_TRIANGLE_STRIP, colstart, forced);
+                bindtex(GL_TRIANGLE_STRIP, colstart, forced, !shading && outline);
                 float vr = 1/float(cols-1), vcx1 = 0, vcx2 = 0, vcy1 = 0, vcy2 = 0,
                     vw1 = coordmap[FC_TR][0]-coordmap[FC_TL][0], vx1 = coordmap[FC_TL][0],
                     vw2 = coordmap[FC_BR][0]-coordmap[FC_BL][0], vx2 = coordmap[FC_BL][0],
@@ -3606,7 +3611,7 @@ namespace UI
             }
             else
             {
-                bindtex(GL_QUADS, colstart, forced);
+                bindtex(GL_QUADS, colstart, forced, !shading && outline);
                 gle::attribf(sx+coordmap[FC_TL][0], sy+coordmap[FC_TL][1]); gle::attribf(tcoordmap[FC_TL][0], tcoordmap[FC_TL][1]); // 0
                 gle::attribf(sx+coordmap[FC_TR][0], sy+coordmap[FC_TR][1]); gle::attribf(tcoordmap[FC_TR][0], tcoordmap[FC_TR][1]); // 1
                 gle::attribf(sx+coordmap[FC_BR][0], sy+coordmap[FC_BR][1]); gle::attribf(tcoordmap[FC_BR][0], tcoordmap[FC_BR][1]); // 2
@@ -3789,13 +3794,7 @@ namespace UI
                     gx += gs;
                     gy += gs;
                 }
-                if(!shading && outline)
-                {
-                    setupdraw(CHANGE_SHADER);
-                    hudoutlineshader->set();
-                    LOCALPARAMF(textparams, 0.15f, 0.35f, 0.35f, 0.55f);
-                }
-                bindtex(GL_QUADS, shading ? -1 : 0);
+                bindtex(GL_QUADS, shading ? -1 : 0, false, !shading && outline);
 
                 float splitw = (minw ? min(minw, gw) : gw) / 2,
                     splith = (minh ? min(minh, gh) : gh) / 2,
@@ -4057,13 +4056,7 @@ namespace UI
                     gx += gs;
                     gy += gs;
                 }
-                if(!shading && outline)
-                {
-                    setupdraw(CHANGE_SHADER);
-                    hudoutlineshader->set();
-                    LOCALPARAMF(textparams, 0.15f, 0.35f, 0.35f, 0.55f);
-                }
-                bindtex(GL_QUADS, shading ? -1 : 0);
+                bindtex(GL_QUADS, shading ? -1 : 0, false, !shading && outline);
                 if(tex->tclamp)
                 {
                     for(float dy = 0; dy < gh; dy += tileh)
@@ -6146,7 +6139,7 @@ namespace UI
 
             if(!t || t == notexture) return;
 
-            setupdraw(CHANGE_SHADER);
+            setupdraw(CHANGE_SHADER|(glowtex ? CHANGE_BLEND : 0));
 
             SETSHADER(hudrgb);
             vec2 tc[4] = { vec2(0, 0), vec2(1, 0), vec2(1, 1), vec2(0, 1) };
@@ -6172,12 +6165,13 @@ namespace UI
             }
             if(glowtex)
             {
-                glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+                int oldblendtype = blendtype;
+                setblend(BLEND_GLOW, blendsep);
                 settexture(glowtex);
                 vec glowcolor = vslot.getglowcolor();
                 gle::colorf(glowcolor.x*colors[0].val.r/255.f, glowcolor.y*colors[0].val.g/255.f, glowcolor.z*colors[0].val.b/255.f, colors[0].val.a/255.f);
                 quad(x, y, w, h, tc);
-                setblend(blendtype, true);
+                setblend(oldblendtype, blendsep);
             }
             if(layertex)
             {
@@ -6255,7 +6249,7 @@ namespace UI
 
             if(!t || t == notexture) return;
 
-            setupdraw(CHANGE_SHADER);
+            setupdraw(CHANGE_SHADER|(glowtex ? CHANGE_BLEND : 0));
 
             SETSHADER(hudrgb);
             vec2 tc[4] = { vec2(0, 0), vec2(1, 0), vec2(1, 1), vec2(0, 1) };
@@ -6281,14 +6275,13 @@ namespace UI
             quad(x, y, w, h, tc);
             if(glowtex)
             {
-                glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+                setblend(BLEND_GLOW, blendsep);
                 settexture(glowtex);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
                 vec glowcolor = vslot.getglowcolor();
                 gle::colorf(glowcolor.x*colors[0].val.r/255.f, glowcolor.y*colors[0].val.g/255.f, glowcolor.z*colors[0].val.b/255.f, colors[0].val.a/255.f);
                 quad(x, y, w, h, tc);
-                setblend(blendtype, true);
             }
         }
 
