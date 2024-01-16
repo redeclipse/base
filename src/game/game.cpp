@@ -232,7 +232,6 @@ namespace game
     FVAR(IDF_PERSIST, firstpersonbodyside, -10, 0, 10);
     FVAR(IDF_PERSIST, firstpersonbodyoffset, -10, 1, 10);
     FVAR(IDF_PERSIST, firstpersonbodypitch, -1, 1, 1);
-    FVAR(IDF_PERSIST, firstpersonbodyzoffset, 0, 1, 10);
     FVAR(IDF_PERSIST, firstpersonbodypitchadjust, -10, 0.75f, 10);
 
     FVAR(IDF_PERSIST, firstpersonspine, 0, 0.45f, 1);
@@ -3925,13 +3924,13 @@ namespace game
         mdl.pitch += rotpitch;
     }
 
-    const char *getplayerstate(gameent *d, modelstate &mdl, int third, float size, int flags, modelattach *mdlattach, int *lastoffset, bool vanitypoints)
+    const char *getplayerstate(gameent *d, modelstate &mdl, int third, float size, int flags, modelattach *mdlattach, bool vanitypoints)
     {
         int weap = d->weapselect, ai = 0, mdltype = forceplayermodel >= 0 ? forceplayermodel : d->model%PLAYERTYPES;
         const char *mdlname = playertypes[mdltype][third];
         if(d->actortype > A_PLAYER && d->actortype < A_MAX && actors[d->actortype].mdl && *actors[d->actortype].mdl)
             mdlname = actors[d->actortype].mdl;
-        bool hasweapon = false, onfloor = d->physstate >= PHYS_SLOPE || physics::sticktospecial(d, false) || physics::liquidcheck(d);
+        bool hasweapon = false;
 
         mdl.anim = ANIM_IDLE|ANIM_LOOP;
         mdl.flags = flags;
@@ -4134,24 +4133,10 @@ namespace game
                 if(firstpersonbodydist) mdl.o.sub(vec(mdl.yaw*RAD, 0.f).mul(firstpersonbodydist));
                 if(firstpersonbodyoffset) mdl.o.sub(vec(mdl.yaw*RAD, 0.f).mul(firstpersonspineoffset*firstpersonbodyoffset));
                 if(firstpersonbodyside) mdl.o.sub(vec(mdl.yaw*RAD, 0.f).rotate_around_z(90*RAD).mul(firstpersonbodyside));
-                if(firstpersonbodyzoffset && lastoffset)
-                {
-                    float zoffset = (max(d->zradius-d->height, 0.f)+(d->radius*0.5f))*firstpersonbodyzoffset;
-                    if(!onfloor && (d->action[AC_SPECIAL] || d->impulse[IM_TYPE] == IM_T_POUND || d->sliding(true) || d->impulse[IM_TYPE] == IM_T_KICK || d->impulse[IM_TYPE] == IM_T_GRAB))
-                    {
-                        int lmillis = d->airtime(lastmillis);
-                        if(lmillis < 100) zoffset *= lmillis/100.f;
-                        mdl.o.z -= zoffset;
-                        *lastoffset = lastmillis;
-                    }
-                    else if(*lastoffset)
-                    {
-                        int lmillis = lastmillis-(*lastoffset);
-                        if(lmillis < 100) mdl.o.z -= zoffset*((100-lmillis)/100.f);
-                    }
-                }
                 if(firstpersonbodypitchadjust && mdl.pitch < 0) mdl.o.sub(vec(mdl.yaw*RAD, 0.f).mul(d->radius*(0-mdl.pitch)/90.f*firstpersonbodypitchadjust));
                 if(firstpersonbodypitch) mdl.pitch = mdl.pitch*firstpersonbodypitch;
+                if(d->zradius != d->height && d->physstate < PHYS_SLOPE && !physics::laddercheck(d) && !physics::liquidcheck(d) && !physics::sticktospecial(d))
+                    mdl.o.z -= d->zradius - d->height;
                 break;
             }
         }
@@ -4296,14 +4281,14 @@ namespace game
         return true;
     }
 
-    void renderplayer(gameent *d, int third, float size, int flags = 0, const vec4 &color = vec4(1, 1, 1, 1), int *lastoffset = NULL, bool vanitypoints = false)
+    void renderplayer(gameent *d, int third, float size, int flags = 0, const vec4 &color = vec4(1, 1, 1, 1), bool vanitypoints = false)
     {
         if(d->state == CS_SPECTATOR || (d->state != CS_ALIVE && color.a <= 0) || d->obliterated) return;
 
         modelstate mdl;
         modelattach mdlattach[VANITYMAX + ATTACHMENTMAX];
         dynent *e = third ? (third != 2 ? (dynent *)d : (dynent *)&bodymodel) : (dynent *)&avatarmodel;
-        const char *mdlname = getplayerstate(d, mdl, third, size, flags, mdlattach, lastoffset, vanitypoints);
+        const char *mdlname = getplayerstate(d, mdl, third, size, flags, mdlattach, vanitypoints);
 
         mdl.color = color;
         getplayermaterials(d, mdl);
@@ -4446,12 +4431,10 @@ namespace game
     {
         if(thirdpersonview() || focus->obliterated) return;
 
-        static int lastoffset = 0;
         vec4 color = vec4(1, 1, 1, opacity(focus, false));
-
         if(drawtex == DRAWTEX_HALO) focus->cleartags();
 
-        if(firstpersoncamera) renderplayer(focus, 2, focus->curscale, MDL_NOBATCH, color, &lastoffset);
+        if(firstpersoncamera) renderplayer(focus, 2, focus->curscale, MDL_NOBATCH, color);
         else if(firstpersonmodel)
         {
             float depthfov = firstpersondepthfov != 0 ? firstpersondepthfov : curfov;
@@ -4466,7 +4449,7 @@ namespace game
                 bool onfloor = focus->physstate >= PHYS_SLOPE || physics::sticktospecial(focus, false) || physics::liquidcheck(focus);
                 float depth = (!onfloor && focus->action[AC_SPECIAL]) || focus->impulse[IM_TYPE] == IM_T_KICK || focus->hasparkour() ? firstpersonbodydepthkick : firstpersonbodydepth;
                 setavatarscale(firstpersonbodydepthfov != 0 ? firstpersonbodydepthfov : curfov, depth);
-                renderplayer(focus, 2, focus->curscale, MDL_NOBATCH, color, &lastoffset);
+                renderplayer(focus, 2, focus->curscale, MDL_NOBATCH, color);
             }
         }
 
@@ -4502,7 +4485,7 @@ namespace game
         previewent->o = calcmodelpreviewpos(vec(xyrad, zrad), previewent->yaw).addz(previewent->height - zrad);
         previewent->yaw += offsetyaw;
         previewent->cleartags();
-        renderplayer(previewent, 1, scale, 0, mcolor, NULL, true);
+        renderplayer(previewent, 1, scale, 0, mcolor, true);
     }
 
     vec playerpreviewvanitypos(int vanity, bool relative)
