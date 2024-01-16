@@ -256,14 +256,17 @@ namespace capture
             float blend = 1.f, wait = f.droptime ? clamp(f.dropleft(lastmillis, capturestore)/float(capturedelay), 0.f, 1.f) :
                   ((m_ctf_protect(game::gamemode, game::mutators) && f.taketime && f.owner && f.owner->team != f.team) ? clamp((lastmillis-f.taketime)/float(captureprotectdelay), 0.f, 1.f) : 0.f);
             vec effect = vec::fromcolor(TEAM(f.team, colour));
+
             if(drawtex != DRAWTEX_HALO && !f.owner && (!f.droptime || m_ctf_defend(game::gamemode, game::mutators)) && f.team == game::focus->team)
                 blend *= camera1->o.distrange(pos, enttype[AFFINITY].radius, enttype[AFFINITY].radius/8);
+
             if(wait > 0.5f)
             {
                 int delay = wait > 0.7f ? (wait > 0.85f ? 150 : 300) : 600, millis = lastmillis%(delay*2);
                 float amt = (millis <= delay ? millis/float(delay) : 1.f-((millis-delay)/float(delay)));
                 flashcolour(effect.r, effect.g, effect.b, 0.65f, 0.65f, 0.65f, amt);
             }
+
             basemdl.material[0] = mdl.material[0] = bvec::fromcolor(effect);
             mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
             mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_HALO_TOP;

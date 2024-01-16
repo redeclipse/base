@@ -191,6 +191,7 @@ namespace defend
             float occupy = b.occupied(m_dac_quick(game::gamemode, game::mutators), defendcount);
             vec effect = skewcolour(b.owner, b.enemy, occupy);
             int colour = effect.tohexcolor();
+
             mdl.material[0] = bvec::fromcolor(effect);
             mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
             mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_HALO_TOP;
@@ -202,7 +203,9 @@ namespace defend
                 mdl.material[0].mul(mdl.color.a);
                 mdl.color.a = hud::radardepth(mdl.o, halodist, halotolerance, haloaddz);
             }
+
             rendermodel("props/point", mdl);
+
             if(drawtex != DRAWTEX_HALO)
             {
                 if(b.enemy && b.owner)
@@ -211,6 +214,7 @@ namespace defend
                     formatstring(b.info, "%s v %s", bowner, game::colourteam(b.enemy, NULL));
                 }
                 else formatstring(b.info, "%s", TEAM(b.owner ? b.owner : b.enemy, name));
+
                 float blend = camera1->o.distrange(b.o, game::affinityfadeat, game::affinityfadecut);
                 part_explosion(b.o, 3, PART_GLIMMERY, 1, colour, 1, blend);
                 part_create(PART_HINT_SOFT, 1, b.o, colour, 6, blend);
