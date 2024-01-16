@@ -3927,6 +3927,8 @@ namespace game
         mdl.pitch += rotpitch;
     }
 
+    VAR(IDF_PERSIST, weapswitchanimtime, 1, 300, INT_MAX);
+
     const char *getplayerstate(gameent *d, modelstate &mdl, int third, float size, int flags, modelattach *mdlattach, bool vanitypoints)
     {
         int weap = d->weapselect, ai = 0, mdltype = forceplayermodel >= 0 ? forceplayermodel : d->model%PLAYERTYPES;
@@ -3993,7 +3995,11 @@ namespace game
                             else if(!d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators))) showweap = false;
                             else if(millis <= off*2) weapscale = (millis-off)/float(off);
                         }
-                        mdl.anim = d->weapstate[weap] == W_S_SWITCH ? ANIM_SWITCH : ANIM_USE;
+
+                        // Switch to idle animation after switch/use animation is done
+                        if(millis <= weapswitchanimtime)
+                            mdl.anim = d->weapstate[weap] == W_S_SWITCH ? ANIM_SWITCH : ANIM_USE;
+                        else mdl.anim = weaptype[weap].anim|ANIM_LOOP;
                         break;
                     }
                     case W_S_POWER: case W_S_ZOOM:
