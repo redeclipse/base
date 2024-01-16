@@ -56,6 +56,9 @@ void setuphalo(int w, int h)
         GLERROR;
     }
 
+    useshaderbyname("hudhalodepth");
+    useshaderbyname("hudhalotop");
+
     halotype = -1;
 }
 
