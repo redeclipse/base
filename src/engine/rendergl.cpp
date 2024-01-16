@@ -2394,7 +2394,6 @@ void gl_drawview()
 
     projmatrix.perspective(fovy, aspect, nearplane, farplane);
     setcamprojmatrix();
-    if(!drawtex) game::project();
 
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
@@ -2754,7 +2753,6 @@ void gl_drawhalos()
 
     projmatrix.perspective(fovy, aspect, nearplane, farplane);
     setcamprojmatrix();
-    game::project();
 
     renderhalo();
 

@@ -710,9 +710,9 @@ namespace game
     {
         if(!gs_playing(gamestate)) return true;
         if(!d) d = focus;
-        if(!viewonly && (d->state == CS_DEAD || d->state == CS_WAITING)) return true;
-        if(player1->state == CS_EDITING) return false;
-        if(player1->state >= CS_SPECTATOR && d == player1) return false;
+        if(!viewonly && d->isdead()) return true;
+        if(player1->isediting()) return false;
+        if(player1->iswatching() && d == player1) return false;
         if(d == focus && inzoom()) return false;
         if(!(d != player1 ? followthirdperson : thirdperson)) return false;
         return true;
@@ -722,8 +722,8 @@ namespace game
 
     int fov()
     {
-        if(player1->state == CS_EDITING) return editfov;
-        if(focus == player1 && player1->state == CS_SPECTATOR) return specfov;
+        if(player1->isediting()) return editfov;
+        if(focus == player1 && player1->isspectator()) return specfov;
         if(thirdpersonview(true)) return thirdpersonfov;
         return firstpersonfov;
     }
@@ -3559,7 +3559,7 @@ namespace game
     void resetcamera(bool cam, bool input)
     {
         lastcamera = 0;
-        zoomset(false, 0);
+        //zoomset(false, 0);
         if(input && !hud::hasinput(true)) resetcursor();
         checkcamera();
         if(cam || !focus)
@@ -3675,7 +3675,8 @@ namespace game
             checkoften(player1, true);
             loopv(players) if(players[i]) checkoften(players[i], players[i]->ai != NULL);
             if(!allowmove(player1)) player1->stopmoving(player1->state < CS_SPECTATOR);
-            if(focus->state == CS_ALIVE && gs_playing(gamestate) && isweap(focus->weapselect))
+
+            if(focus->isalive() && gs_playing(gamestate) && isweap(focus->weapselect))
             {
                 int zoomtime = focus->zooming();
                 zoomset(zoomtime ? true : false, zoomtime ? zoomtime : lastmillis);
@@ -3693,6 +3694,7 @@ namespace game
                 else if(m_bomber(gamemode)) bomber::update();
                 if(player1->state == CS_ALIVE) weapons::shoot(player1, worldpos);
             }
+
             checkplayers();
             flushdamagemerges();
         }
@@ -3790,6 +3792,7 @@ namespace game
         adjustorientation(worldpos);
         camera1->inmaterial = lookupmaterial(camera1->o);
         lastcamera = totalmillis;
+        project();
     }
 
     VAR(0, animoverride, -1, 0, ANIM_MAX-1);

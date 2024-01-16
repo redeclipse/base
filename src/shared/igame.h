@@ -169,7 +169,6 @@ namespace game
     extern void particletrack(particle *p, uint type, int &ts, bool step);
     extern void dynlighttrack(physent *owner, vec &o, vec &hud);
     extern bool mousemove(int dx, int dy, int x, int y, int w, int h);
-    extern void project();
     extern void recomputecamera();
     extern int gettimeremain();
     extern int gettimeelapsed(bool force = false);
