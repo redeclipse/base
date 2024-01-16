@@ -972,7 +972,7 @@ namespace entities
             if(t && t != notexture) return enttex;
         }
 
-        return "textures/icons/question";
+        return "<grey>textures/icons/question";
 
     }
     ICOMMAND(0, getenttex, "b", (int *id), result(getenttex(*id)));

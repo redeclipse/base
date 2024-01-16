@@ -16,7 +16,7 @@ namespace UI
     SVAR(0, uiopencmd, "showui");
     SVAR(0, uiclosecmd, "hideui");
 
-    TVAR(IDF_PERSIST|IDF_PRELOAD, uiloadtex, "<anim:100,4,3>textures/loading", 3);
+    TVAR(IDF_PERSIST|IDF_PRELOAD, uiloadtex, "<grey><anim:100,4,3>textures/loading", 3);
 
     VAR(0, uihidden, 0, 0, 1);
     FVAR(IDF_PERSIST, uiscale, FVAR_NONZERO, 1, 100);

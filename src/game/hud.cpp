@@ -231,7 +231,7 @@ namespace hud
     FVAR(IDF_PERSIST, teamcrosshairsize, 0, 0.05f, 1000);
     FVAR(IDF_PERSIST, teamcrosshairblend, 0, 1, 1);
     FVAR(IDF_PERSIST, teamcrosshairvisor, 0, 0, 1);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, teamcrosshairtex, "textures/icons/warning", 3);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, teamcrosshairtex, "<grey>textures/icons/warning", 3);
     VAR(IDF_PERSIST, teamcrosshaircolour, 0, 0xFF0000, 0xFFFFFF);
 
     VAR(IDF_PERSIST, cursorstyle, 0, 0, 1); // 0 = top left tracking, 1 = center
@@ -254,7 +254,7 @@ namespace hud
     VAR(IDF_PERSIST|IDF_HEX, circlebarimpulsetone, -CTONE_MAX, 0xFF88FF, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, circlebarammocolour, 0, 1, 1);
     VAR(IDF_PERSIST|IDF_HEX, circlebarammotone, -CTONE_MAX-1, 0xFFAA66, 0xFFFFFF);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, circlebartex, "textures/hud/circlebar", 3);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, circlebartex, "<grey>textures/hud/circlebar", 3);
 
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, clawtex, "<grey>textures/weapons/claw", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, pistoltex, "<grey>textures/weapons/pistol", 3);
