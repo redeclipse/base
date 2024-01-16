@@ -300,7 +300,7 @@ namespace game
     FVAR(IDF_PERSIST, spectvpitchscale, FVAR_MIN, 1, 1000);
     VAR(IDF_PERSIST, spectvdead, 0, 1, 2); // 0 = never, 1 = in all but duel/survivor, 2 = always
     VAR(IDF_PERSIST, spectvfirstperson, 0, 0, 2); // 0 = aim in direction followed player is facing, 1 = aim in direction determined by spectv when dead, 2 = always aim in direction
-    VAR(IDF_PERSIST, spectvthirdperson, 0, 2, 2); // 0 = aim in direction followed player is facing, 1 = aim in direction determined by spectv when dead, 2 = always aim in direction
+    VAR(IDF_PERSIST, spectvthirdperson, 0, 0, 2); // 0 = aim in direction followed player is facing, 1 = aim in direction determined by spectv when dead, 2 = always aim in direction
 
     VAR(IDF_PERSIST, spectvintermiters, 1, 6, 6);
     VAR(IDF_PERSIST, spectvintermmintime, 1000, 5000, VAR_MAX);

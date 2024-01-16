@@ -2349,9 +2349,9 @@ namespace projs
                             if(game::focus->isobserver() || game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !entities::showentfull))
                             {
                                 if(drawtex == DRAWTEX_HALO) mdl.flags |= MDL_HALO_TOP;
-                                else mdl.color.a *= entities::showentavailable;
+                                mdl.color.a *= entities::showentavailable;
                             }
-                            else if(drawtex != DRAWTEX_HALO) mdl.color.a *= entities::showentunavailable;
+                            else mdl.color.a *= entities::showentunavailable;
                         }
                         else continue;
                     }
