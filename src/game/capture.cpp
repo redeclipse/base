@@ -8,7 +8,7 @@ namespace capture
     ICOMMAND(0, getcapturedelay, "i", (int *n), intret(capturedelay));
     ICOMMAND(0, getcapturestore, "i", (int *n), intret(capturestore));
 
-    ICOMMAND(0, getcapturenum, "", (), intret(st.flags.length()));
+    ICOMMAND(0, getcapturenum, "b", (int *n), intret(*n >= 0 ? (st.flags.inrange(*n) ? 1 : 0) : st.flags.length()));
     ICOMMAND(0, getcaptureteam, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].team : -1));
     ICOMMAND(0, getcapturedroptime, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].droptime : -1));
     ICOMMAND(0, getcapturetaketime, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].taketime : -1));
@@ -205,11 +205,11 @@ namespace capture
                 capturestate::flag &f = st.flags[i];
 
                 vec curpos = f.render;
-                curpos.z += enttype[AFFINITY].radius * 0.5f;
+                curpos.z += enttype[AFFINITY].radius * (f.owner || f.droptime ? 0.125f : 0.375f);
 
                 MAKEUI(capture, i,
                     true, haloallow(camera1->o, i),
-                        curpos, enttype[AFFINITY].radius * 0.5f, enttype[AFFINITY].radius * 0.25f
+                        curpos, enttype[AFFINITY].radius * (f.owner || f.droptime ? 0.125f : 0.5f), enttype[AFFINITY].radius * 0.25f
                 );
             }
         }
@@ -222,11 +222,11 @@ namespace capture
                 capturestate::flag &f = st.flags[i];
 
                 vec curpos = f.pos(true);
-                curpos.z += enttype[AFFINITY].radius * 0.5f;
+                curpos.z += enttype[AFFINITY].radius * (f.droptime ? 0.25f : 0.375f);
 
                 MAKEUI(captureflag, i,
                     f.owner || f.droptime, haloallow(camera1->o, i),
-                        curpos, enttype[AFFINITY].radius * 0.5f, enttype[AFFINITY].radius * 0.25f
+                        curpos, enttype[AFFINITY].radius * (f.droptime ? 0.25f : 0.5f), enttype[AFFINITY].radius * 0.25f
                 );
             }
         }
