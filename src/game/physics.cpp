@@ -945,7 +945,7 @@ namespace physics
             bool found = false;
             vec oldpos = d->o, dir;
             const int movements[8][2] = { { 2, 2 }, { 1, 2 }, { 1, 0 }, { 1, -1 }, { 1, 1 }, { 0, 1 }, { 0, -1 }, { -1, 0 } };
-            loopi(d->hasparkour() ? 8 : 2) // we do these insane checks so that running along walls works at all times
+            loopi(d->hasparkour() ? 8 : 3) // we do these insane checks so that running along walls works at all times
             {
                 int move = movements[i][0], strafe = movements[i][1];
                 if(move == 2) move = d->move > 0 ? d->move : 0;

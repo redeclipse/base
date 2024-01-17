@@ -492,6 +492,7 @@ struct vacollect : verthash
                 gendecal(e, s, k);
             }
         }
+
         loopv(extdecals)
         {
             octaentities *oe = extdecals[i];
@@ -501,6 +502,7 @@ struct vacollect : verthash
                 if(e.flags&EF_RENDER) e.flags &= ~EF_RENDER;
             }
         }
+
         enumeratekt(decalindices, decalkey, k, sortval, t,
         {
             if(t.tris.length()) decaltexs.add(k);

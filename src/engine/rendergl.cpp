@@ -2255,6 +2255,7 @@ void drawcubemap(int size, const vec &o, float yaw, float pitch, bool onlysky)
             setfog(fogmat, fogbelow, clamp(fogbelow, 0.0f, 1.0f), abovemat);
         }
 
+
         rendertransparent();
         GLERROR;
     }

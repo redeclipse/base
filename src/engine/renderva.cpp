@@ -2418,14 +2418,18 @@ static void mergedecals(decalrenderer &cur, vtxarray *va)
     {
         decalbatch &b = decalbatches.add(decalbatch(texs[curtex], offset, va));
         offset += texs[curtex].length;
+
         int dir = -1;
         while(curbatch >= 0)
         {
             dir = b.compare(decalbatches[curbatch]);
+
             if(dir <= 0) break;
+
             prevbatch = curbatch;
             curbatch = decalbatches[curbatch].next;
         }
+
         if(!dir)
         {
             int last = curbatch, next;
@@ -2435,6 +2439,7 @@ static void mergedecals(decalrenderer &cur, vtxarray *va)
                 if(next < 0) break;
                 last = next;
             }
+
             if(last==curbatch)
             {
                 b.batch = curbatch;
@@ -2453,8 +2458,10 @@ static void mergedecals(decalrenderer &cur, vtxarray *va)
         {
             numbatches++;
             b.next = curbatch;
+
             if(prevbatch < 0) firstbatch = decalbatches.length()-1;
             else decalbatches[prevbatch].next = decalbatches.length()-1;
+
             prevbatch = decalbatches.length()-1;
         }
     }
