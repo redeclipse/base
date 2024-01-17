@@ -98,19 +98,11 @@ struct SlotShaderParamState : LocalShaderParamState
     }
 };
 
-enum
-{
-    SHADER_DEFAULT    = 0,
-    SHADER_WORLD      = 1<<0,
-    SHADER_ENVMAP     = 1<<1,
-    SHADER_REFRACT    = 1<<2,
-    SHADER_OPTION     = 1<<3,
-    SHADER_DYNAMIC    = 1<<4,
-    SHADER_TRIPLANAR  = 1<<5,
-
-    SHADER_INVALID    = 1<<8,
-    SHADER_DEFERRED   = 1<<9
-};
+#define SHADER_ENUM(en, um) \
+    en(um, Default, DEFAULT, 0) en(um, World, WORLD, 1<<0) en(um, Environment Map, ENVMAP, 1<<1) en(um, Refract, REFRACT, 1<<2) \
+    en(um, Option, OPTION, 1<<3) en(um, Dynamic, DYNAMIC, 1<<4) en(um, Triplanar, TRIPLANAR, 1<<5) \
+    en(um, Invlaid, INVALID, 1<<6) en(um, Deferred, DEFERRED, 1<<9)
+ENUMALN(SHADER);
 
 #define MAXVARIANTROWS 32
 

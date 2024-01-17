@@ -1148,16 +1148,6 @@ int savemapshaders(stream *h)
     return mapshaders;
 }
 
-VARR(shaderbitdefault, SHADER_DEFAULT);
-VARR(shaderbitworld, SHADER_WORLD);
-VARR(shaderbitenvmap, SHADER_ENVMAP);
-VARR(shaderbitrefract, SHADER_REFRACT);
-VARR(shaderbitoption, SHADER_OPTION);
-VARR(shaderbitdynamic, SHADER_DYNAMIC);
-VARR(shaderbittriplanar, SHADER_TRIPLANAR);
-VARR(shaderbitinvalid, SHADER_INVALID);
-VARR(shaderbitdeferred, SHADER_DEFERRED);
-
 Shader *variantshader(int type, char *name, int row, char *vs, char *ps, int maxvariants)
 {
     if(row < 0)
