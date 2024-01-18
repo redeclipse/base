@@ -2466,7 +2466,7 @@ namespace weapons
             mui_type = cansee ? MUIVAL(name, mui_count, ui) : SURFACE_WORLD; \
             if(mui_type >= 0) \
             { \
-                vec mui_o = mui_type ? vec(pos).sub(vec(pos).sub(camera1->o).normalize().mul(over)) : vec(pos).addz(above); \
+                vec mui_o = mui_count ? vec(pos).sub(vec(pos).sub(camera1->o).normalize().mul(over)) : vec(pos).addz(above); \
                 UI::setui(MUINAME(name, mui_count), \
                     mui_type, id, mui_o, MUIVAL(name, mui_type, yaw), MUIVAL(name, mui_type, pitch), \
                     (mui_type == SURFACE_WORLD ? MUIVAL(name, mui_type, world) : MUIVAL(name, mui_type, scale)), \
