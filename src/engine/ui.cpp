@@ -2683,16 +2683,18 @@ namespace UI
     struct Table : Object
     {
         float spacew, spaceh, subw, subh;
+        int column;
         vector<float> widths;
 
         static const char *typestr() { return "#Table"; }
         const char *gettype() const { return typestr(); }
 
-        void setup(float spacew_ = 0, float spaceh_ = 0)
+        void setup(float spacew_ = 0, float spaceh_ = 0, int column_ = 0)
         {
             Object::setup();
             spacew = spacew_;
             spaceh = spaceh_;
+            column = column_;
         }
 
         uchar childalign() const { return 0; }
@@ -2717,9 +2719,33 @@ namespace UI
             });
 
             subw = 0;
-            loopv(widths) subw += widths[i];
-            w = max(w, subw + spacew*max(widths.length() - 1, 0));
-            h = subh + spaceh*max(children.length() - 1, 0);
+            if(column > 0)
+            {
+                float wadjust = spacew * max(widths.length() - 1, 0) / max(widths.length(), 1);
+                loopv(widths)
+                {
+                    widths[i] += wadjust;
+                    subw += widths[i];
+                }
+                w = max(w, subw);
+            }
+            else
+            {
+                loopv(widths) subw += widths[i];
+                w = max(w, subw + spacew * max(widths.length() - 1, 0));
+            }
+            h = subh + spaceh * max(children.length() - 1, 0);
+        }
+
+        void adjustrow(Object *o, float &offsety, float &sy, float rspace, float rstep)
+        {
+            o->x = 0;
+            o->y = offsety;
+            o->w = w;
+            offsety += o->h + rspace;
+            float sh = o->h + rstep;
+            o->adjustlayout(0, sy, w, sh);
+            sy += sh;
         }
 
         void adjustchildren()
@@ -2727,10 +2753,12 @@ namespace UI
             if(children.empty()) return;
 
             float offsety = 0, sy = 0,
-                  cspace = (w - subw) / max(widths.length() - 1, 1),
-                  cstep = (w - subw) / widths.length(),
                   rspace = (h - subh) / max(children.length() - 1, 1),
-                  rstep = (h - subh) / children.length();
+                  rstep = (h - subh) / children.length(),
+                  cspace = column > 0 ? 0.f : (w - subw) / max(widths.length() - 1, 1),
+                  cstep = column > 0 ? 0.f : (w - subw) / widths.length(),
+                  cwidth = w - subw;
+
             loopchildren(o,
             {
                 o->x = 0;
@@ -2747,10 +2775,18 @@ namespace UI
                 loopj(cols)
                 {
                     Object *c = o->children[j];
+
                     c->x = offsetx;
-                    offsetx += widths[j] + cspace;
-                    float sw = widths[j] + cstep;
+                    offsetx += widths[j];
+                    if(column <= 0) offsetx += cspace;
+
+                    float sw = widths[j];
+                    if(column > 0)
+                        sw += j + 1 == column ? cwidth : 0.f;
+                    else sw += cstep;
+
                     c->adjustlayout(sx, 0, sw, o->h);
+
                     sx += sw;
                 }
             });
@@ -2762,6 +2798,7 @@ namespace UI
 
     UIARGSCALED(Table, table, spacew, "f", float, 0.f, FVAR_MAX);
     UIARGSCALED(Table, table, spaceh, "f", float, 0.f, FVAR_MAX);
+    UIARG(Table, table, column, "i", int, 0, VAR_MAX);
 
     struct Padder : Object
     {
