@@ -5204,31 +5204,8 @@ void rendertransparent()
 VAR(0, gdepthclear, 0, 1, 1);
 VAR(0, gcolorclear, 0, 1, 1);
 
-void preparegbuffer(bool depthclear)
+void setupscreenparams()
 {
-    glBindFramebuffer_(GL_FRAMEBUFFER, msaasamples && (msaalight || !drawtex) ? msfbo : gfbo);
-    glViewport(0, 0, vieww, viewh);
-
-    if(drawtex && gdepthinit)
-    {
-        glEnable(GL_SCISSOR_TEST);
-        glScissor(0, 0, vieww, viewh);
-    }
-    if(gdepthformat && gdepthclear)
-    {
-        maskgbuffer("d");
-        if(gdepthformat == 1) glClearColor(1, 1, 1, 1);
-        else glClearColor(-farplane, 0, 0, 0);
-        glClear(GL_COLOR_BUFFER_BIT);
-        maskgbuffer("cn");
-    }
-    else maskgbuffer("cnd");
-    if(gcolorclear) glClearColor(0, 0, 0, 0);
-    glClear((depthclear ? GL_DEPTH_BUFFER_BIT : 0)|(gcolorclear ? GL_COLOR_BUFFER_BIT : 0)|(depthclear && ghasstencil && (!msaasamples || msaalight || ghasstencil > 1) ? GL_STENCIL_BUFFER_BIT : 0));
-    if(gdepthformat && gdepthclear) maskgbuffer("cnd");
-    if(drawtex && gdepthinit) glDisable(GL_SCISSOR_TEST);
-    gdepthinit = true;
-
     matrix4 invscreenmatrix;
     invscreenmatrix.identity();
     invscreenmatrix.settranslation(-1.0f, -1.0f, -1.0f);
@@ -5273,6 +5250,34 @@ void preparegbuffer(bool depthclear)
     GLOBALPARAMF(hdrgamma, hdrgamma, 1.0f/hdrgamma);
     GLOBALPARAM(camera, camera1->o);
     GLOBALPARAMF(millis, lastmillis/1000.0f);
+}
+
+void preparegbuffer(bool depthclear)
+{
+    glBindFramebuffer_(GL_FRAMEBUFFER, msaasamples && (msaalight || !drawtex) ? msfbo : gfbo);
+    glViewport(0, 0, vieww, viewh);
+
+    if(drawtex && gdepthinit)
+    {
+        glEnable(GL_SCISSOR_TEST);
+        glScissor(0, 0, vieww, viewh);
+    }
+    if(gdepthformat && gdepthclear)
+    {
+        maskgbuffer("d");
+        if(gdepthformat == 1) glClearColor(1, 1, 1, 1);
+        else glClearColor(-farplane, 0, 0, 0);
+        glClear(GL_COLOR_BUFFER_BIT);
+        maskgbuffer("cn");
+    }
+    else maskgbuffer("cnd");
+    if(gcolorclear) glClearColor(0, 0, 0, 0);
+    glClear((depthclear ? GL_DEPTH_BUFFER_BIT : 0)|(gcolorclear ? GL_COLOR_BUFFER_BIT : 0)|(depthclear && ghasstencil && (!msaasamples || msaalight || ghasstencil > 1) ? GL_STENCIL_BUFFER_BIT : 0));
+    if(gdepthformat && gdepthclear) maskgbuffer("cnd");
+    if(drawtex && gdepthinit) glDisable(GL_SCISSOR_TEST);
+    gdepthinit = true;
+
+    setupscreenparams();
 
     GLERROR;
 

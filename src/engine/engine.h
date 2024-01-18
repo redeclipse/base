@@ -505,7 +505,7 @@ static inline bool bbinsidespot(const vec &origin, const vec &dir, int spot, con
     return sphereinsidespot(dir, spot, center.sub(origin), radius.magnitude());
 }
 
-extern matrix4 eyematrix, worldmatrix, screenmatrix;
+extern matrix4 eyematrix, worldmatrix, linearworldmatrix, screenmatrix;
 
 extern int transparentlayer;
 
@@ -524,6 +524,7 @@ extern void initgbuffer();
 extern bool usepacknorm();
 extern void maskgbuffer(const char *mask);
 extern void bindgdepth();
+extern void setupscreenparams();
 extern void preparegbuffer(bool depthclear = true);
 extern void rendergbuffer(bool depthclear = true);
 extern void shadesky();
