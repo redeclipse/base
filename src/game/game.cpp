@@ -16,8 +16,6 @@ namespace game
     vector<gameent *> players, waiting;
     vector<cament *> cameras;
 
-    vec2 fpcamvel = vec2(0, 0);
-
     vec *getplayersoundpos(physent *d)
     {
         return d == focus && !thirdpersonview(true) ?
@@ -245,9 +243,6 @@ namespace game
     FVAR(IDF_PERSIST, firstpersonswaystep, 1, 40.f, 1000);
     FVAR(IDF_PERSIST, firstpersonswayside, 0, 0.05f, 10);
     FVAR(IDF_PERSIST, firstpersonswayup, 0, 0.05f, 10);
-    FVAR(IDF_PERSIST, firstpersonswaydecay, 0.1f, 0.994f, 0.9999f);
-    FVAR(IDF_PERSIST, firstpersonswayinertia, 0.0f, 0.2f, 1.0f);
-    FVAR(IDF_PERSIST, firstpersonswaymaxinertia, 0.0f, 32.0f, 1000.0f);
 
     VAR(IDF_PERSIST, firstpersonbob, 0, 0, 1);
     FVAR(IDF_PERSIST, firstpersonbobmin, 0, 0.2f, 1);
@@ -420,6 +415,11 @@ namespace game
     FVAR(IDF_PERSIST, playerovertonebright, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playerundertoneinterp, 0, 0, 1); // interpolate this much brightness from the opposing tone
     FVAR(IDF_PERSIST, playerundertonebright, 0.f, 1.f, 10.f);
+
+    FVAR(IDF_PERSIST, playerrotdecay, 0, 0.994f, 0.9999f);
+    FVAR(IDF_PERSIST, playerrotinertia, 0, 0.2f, 1);
+    FVAR(IDF_PERSIST, playerrotmaxinertia, 0, 32.0f, FVAR_MAX);
+    FVAR(IDF_PERSIST, playerrotthresh, FVAR_NONZERO, 5, FVAR_MAX);
 
     FVAR(IDF_PERSIST, affinityfadeat, 0, 32, FVAR_MAX);
     FVAR(IDF_PERSIST, affinityfadecut, 0, 4, FVAR_MAX);
@@ -1061,7 +1061,8 @@ namespace game
 
     void respawned(gameent *d, bool local, int ent)
     { // remote clients wait until first position update to process this
-        d->configure(lastmillis, gamemode, mutators, physics::carryaffinity(d));
+        d->configure(lastmillis, gamemode, mutators, physics::carryaffinity(d), 0, playerrotdecay, playerrotinertia, playerrotmaxinertia);
+
         if(local)
         {
             d->state = CS_ALIVE;
@@ -1370,7 +1371,7 @@ namespace game
         d->o.z -= d->height;
 
         entities::physents(d);
-        d->configure(lastmillis, gamemode, mutators, physics::carryaffinity(d), curtime);
+        d->configure(lastmillis, gamemode, mutators, physics::carryaffinity(d), curtime, playerrotdecay, playerrotinertia, playerrotmaxinertia);
 
         if(d->state == CS_ALIVE)
         {
@@ -3870,7 +3871,7 @@ namespace game
         else mdl.material[2] = bvec::fromcolor(colourwhite);
     }
 
-    static void calchwepsway(modelstate &mdl)
+    static void calchwepsway(gameent *d, modelstate &mdl)
     {
         float steplen = firstpersonbob ? firstpersonbobstep : firstpersonswaystep;
         float steps = swaydist/steplen*M_PI;
@@ -3898,31 +3899,10 @@ namespace game
         rotyaw += firstpersonswayside*f3 * 24.0f;
         rotpitch += firstpersonswayup*f2 * -10.0f;
 
-        // "Look-around" animation
-        static int lastsway = 0;
-        static vec2 lastcam = vec2(camera1->yaw, camera1->pitch);
-
-        // Prevent running the inertia math multiple times in the same frame
-        if(lastmillis != lastsway)
-        {
-            vec2 curcam = vec2(camera1->yaw, camera1->pitch);
-            vec2 camrot = vec2(lastcam).sub(curcam);
-
-            if(camrot.x > 180.0f) camrot.x -= 360.0f;
-            else if(camrot.x < -180.0f) camrot.x += 360.0f;
-
-            fpcamvel.mul(powf(firstpersonswaydecay, curtime));
-            fpcamvel.add(vec2(camrot).mul(firstpersonswayinertia));
-            fpcamvel.clamp(-firstpersonswaymaxinertia, firstpersonswaymaxinertia);
-
-            lastcam = curcam;
-            lastsway = lastmillis;
-        }
-
-        trans.add(dirside.mul(fpcamvel.x * 0.06f));
-        trans.z += fpcamvel.y * 0.045f;
-        rotyaw += fpcamvel.x * -0.3f;
-        rotpitch += fpcamvel.y * -0.3f;
+        trans.add(dirside.mul(d->rotvel.x * 0.06f));
+        trans.z += d->rotvel.y * 0.045f;
+        rotyaw += d->rotvel.x * -0.3f;
+        rotpitch += d->rotvel.y * -0.3f;
 
         mdl.o.add(trans);
         mdl.yaw += rotyaw;
@@ -4116,7 +4096,7 @@ namespace game
             case 0:
             {
                 if(!firstpersoncamera && gs_playing(gamestate) && firstpersonsway)
-                    calchwepsway(mdl);
+                    calchwepsway(d, mdl);
 
                 if(d->sliding(true) && firstpersonslidetime && firstpersonslideroll != 0)
                 {
@@ -4161,13 +4141,14 @@ namespace game
             if(allowmove(d))
             {
                 // Test if the player is actually moving at a meaningful speed. This may not be the case if the player is running against a wall or another obstacle.
-                const bool moving = fabsf(d->vel.x) > 5.0f || fabsf(d->vel.y) > 5.0f;
+                bool moving = fabsf(d->vel.x) > 5.0f || fabsf(d->vel.y) > 5.0f, turning = fabsf(d->rotvel.x) >= playerrotthresh;
 
                 if(physics::liquidcheck(d, 0.1f) && d->physstate <= PHYS_FALL)
                 {
                     if(d->crouching())
                     {
-                        if(moving && d->strafe) mdl.anim |= ((d->strafe > 0 ? ANIM_CRAWL_LEFT : ANIM_CRAWL_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
+                        if((moving && d->strafe) || turning)
+                            mdl.anim |= ((d->strafe > 0 || (turning && d->rotvel.x > 0) ? ANIM_CRAWL_LEFT : ANIM_CRAWL_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
                         else if(moving && d->move > 0) mdl.anim |= (ANIM_CRAWL_FORWARD|ANIM_LOOP)<<ANIM_SECONDARY;
                         else if(moving && d->move < 0) mdl.anim |= (ANIM_CRAWL_BACKWARD|ANIM_LOOP)<<ANIM_SECONDARY;
                         else mdl.anim |= (ANIM_CROUCH|ANIM_LOOP)<<ANIM_SECONDARY;
@@ -4208,7 +4189,8 @@ namespace game
                     }
                     else if(d->crouching())
                     {
-                        if(moving && d->strafe) mdl.anim |= (d->strafe > 0 ? ANIM_CROUCH_JUMP_LEFT : ANIM_CROUCH_JUMP_RIGHT)<<ANIM_SECONDARY;
+                        if((moving && d->strafe) || turning)
+                            mdl.anim |= (d->strafe > 0 || (turning && d->rotvel.x > 0) ? ANIM_CROUCH_JUMP_LEFT : ANIM_CROUCH_JUMP_RIGHT)<<ANIM_SECONDARY;
                         else if(moving && d->move > 0) mdl.anim |= ANIM_CROUCH_JUMP_FORWARD<<ANIM_SECONDARY;
                         else if(moving && d->move < 0) mdl.anim |= ANIM_CROUCH_JUMP_BACKWARD<<ANIM_SECONDARY;
                         else mdl.anim |= ANIM_CROUCH_JUMP<<ANIM_SECONDARY;
@@ -4234,18 +4216,21 @@ namespace game
                 }
                 else if(d->crouching())
                 {
-                    if(moving && d->strafe) mdl.anim |= ((d->strafe > 0 ? ANIM_CRAWL_LEFT : ANIM_CRAWL_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
+                    if((moving && d->strafe) || turning)
+                        mdl.anim |= ((d->strafe > 0 || (turning && d->rotvel.x > 0) ? ANIM_CRAWL_LEFT : ANIM_CRAWL_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
                     else if(moving && d->move > 0) mdl.anim |= (ANIM_CRAWL_FORWARD|ANIM_LOOP)<<ANIM_SECONDARY;
                     else if(moving && d->move < 0) mdl.anim |= (ANIM_CRAWL_BACKWARD|ANIM_LOOP)<<ANIM_SECONDARY;
                     else mdl.anim |= (ANIM_CROUCH|ANIM_LOOP)<<ANIM_SECONDARY;
                 }
                 else if(d->running(moveslow))
                 {
-                    if(moving && d->strafe) mdl.anim |= ((d->strafe > 0 ? ANIM_RUN_LEFT : ANIM_RUN_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
+                    if((moving && d->strafe) || turning)
+                        mdl.anim |= ((d->strafe > 0 || (turning && d->rotvel.x > 0) ? ANIM_RUN_LEFT : ANIM_RUN_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
                     else if(moving && d->move > 0) mdl.anim |= (ANIM_RUN_FORWARD|ANIM_LOOP)<<ANIM_SECONDARY;
                     else if(moving && d->move < 0) mdl.anim |= (ANIM_RUN_BACKWARD|ANIM_LOOP)<<ANIM_SECONDARY;
                 }
-                else if(moving && d->strafe) mdl.anim |= ((d->strafe > 0 ? ANIM_WALK_LEFT : ANIM_WALK_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
+                else if((moving && d->strafe) || turning)
+                    mdl.anim |= ((d->strafe > 0 || (turning && d->rotvel.x > 0) ? ANIM_WALK_LEFT : ANIM_WALK_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
                 else if(moving && d->move > 0) mdl.anim |= (ANIM_WALK_FORWARD|ANIM_LOOP)<<ANIM_SECONDARY;
                 else if(moving && d->move < 0) mdl.anim |= (ANIM_WALK_BACKWARD|ANIM_LOOP)<<ANIM_SECONDARY;
             }

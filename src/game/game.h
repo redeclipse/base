@@ -1297,10 +1297,11 @@ struct gameent : dynent, clientstate
     ai::aiinfo *ai;
     int team, clientnum, privilege, projid, lastnode, cplast, respawned, suicided, lastupdate, lastpredict, plag, ping, lastflag, totaldamage,
         actiontime[AC_MAX], impulse[IM_MAX], impulsetime[IM_T_MAX], smoothmillis, turnside, turnmillis, plchan[PLCHAN_MAX], wschan[WS_CHANS], sschan[2],
-        lasthit, lastteamhit, lastkill, lastattacker, lastpoints, quake, wasfiring, lastfoot;
-    float deltayaw, deltapitch, newyaw, newpitch, stunscale, stungravity, turnyaw, turnroll;
+        lasthit, lastteamhit, lastkill, lastattacker, lastpoints, quake, wasfiring, lastfoot, lastdir;
+    float deltayaw, deltapitch, newyaw, newpitch, stunscale, stungravity, turnyaw, turnroll, lastyaw, lastpitch;
     bool action[AC_MAX], conopen, k_up, k_down, k_left, k_right, obliterated, headless;
     vec tag[TAG_MAX];
+    vec2 rotvel;
     string hostip, name, handle, steamid, info, obit;
     vector<gameent *> dominating, dominated;
     vector<eventicon> icons;
@@ -1412,7 +1413,7 @@ struct gameent : dynent, clientstate
         }
     }
 
-    void configure(int millis, int gamemode, int mutators, int affinities = 0, int cur = 0)
+    void configure(int millis, int gamemode, int mutators, int affinities = 0, int cur = 0, float decay = 0, float inertia = 0, float maxinertia = 0)
     {
         #define MODPHYSL \
             MODPHYS(speed, float, speedscale); \
@@ -1550,6 +1551,23 @@ struct gameent : dynent, clientstate
         MODPHYSL;
         #undef MODPHYS
         #undef MODPHYSL
+
+        if(cur && lastdir != millis && lastdir >= 0 && decay > 0 && inertia > 0 && maxinertia > 0)
+        {
+            vec2 curdir = vec2(yaw, pitch), prevdir = vec2(lastyaw, lastpitch), currot = vec2(prevdir).sub(curdir);
+
+            if(currot.x > 180.0f) currot.x -= 360.0f;
+            else if(currot.x < -180.0f) currot.x += 360.0f;
+
+            rotvel.mul(powf(decay, curtime));
+            rotvel.add(vec2(currot).mul(inertia));
+            rotvel.clamp(-maxinertia, maxinertia);
+        }
+        else rotvel = vec2(0);
+
+        lastyaw = yaw;
+        lastpitch = pitch;
+        lastdir = millis;
     }
 
     int getprojid()
@@ -1604,8 +1622,9 @@ struct gameent : dynent, clientstate
     void clearstate(int millis, int gamemode, int mutators)
     {
         lasthit = lastkill = quake = turnside = turnmillis = 0;
-        lastteamhit = lastflag = respawned = suicided = lastnode = lastfoot = wasfiring = -1;
-        turnyaw = turnroll = 0;
+        lastteamhit = lastflag = respawned = suicided = lastnode = lastfoot = wasfiring = lastdir = -1;
+        turnyaw = turnroll = lastyaw = lastpitch = 0;
+        rotvel = vec2(0);
         obit[0] = '\0';
         obliterated = headless = false;
         icons.shrink(0);
@@ -2515,7 +2534,8 @@ namespace game
             announcefilter, dynlighteffects, followthirdperson, nogore, forceplayermodel, forceplayerpattern,
             playerovertone, playerundertone, playerdisplaytone, playerhalotone, playereffecttone, follow, specmode, spectvfollow, clientcrc;
     extern float bloodscale, aboveitemiconsize, playerovertonelevel, playerundertonelevel, playerdisplaytonelevel, playerhalotonelevel, playereffecttonelevel,
-            playerovertonemix, playerundertonemix, playerdisplaytonemix, playerhalotonemix, playereffecttonemix, affinityfadeat, affinityfadecut, affinityfollowblend, affinitythirdblend, damagedivisor, damagecritical;
+            playerovertonemix, playerundertonemix, playerdisplaytonemix, playerhalotonemix, playereffecttonemix, affinityfadeat, affinityfadecut, affinityfollowblend, affinitythirdblend, damagedivisor, damagecritical,
+            playerrotdecay, playerrotinertia, playerrotmaxinertia;
     extern bool zooming, wantsloadoutmenu;
     extern vec swaypush, swaydir;
     extern string clientmap;
@@ -2530,7 +2550,6 @@ namespace game
         avatarent() { type = ENT_CAMERA; }
     };
     extern avatarent avatarmodel, bodymodel;
-    extern vec2 fpcamvel;
 
     extern fx::FxHandle getweapfx(int type);
     extern bool needname(gameent *d);

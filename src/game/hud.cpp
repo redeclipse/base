@@ -1565,8 +1565,8 @@ namespace hud
 
         if(game::focus->isalive())
         {
-            if(visorcamvelx) x = game::fpcamvel.x * visorcamvelx;
-            if(visorcamvely) y = game::fpcamvel.y * visorcamvely;
+            if(visorcamvelx) x = game::focus->rotvel.x * visorcamvelx;
+            if(visorcamvely) y = game::focus->rotvel.y * visorcamvely;
         }
     }
 
