@@ -1268,6 +1268,7 @@ void gl_init()
 }
 
 VAR(0, wireframe, 0, 0, 1);
+VAR(0, editinhibit, 0, 0, 1);
 
 physent camera, *camera1 = &camera;
 vec worldpos, camdir, camright, camup;
@@ -2404,14 +2405,14 @@ void gl_drawview()
 
     visiblecubes();
 
-    if(!drawtex && wireframe && editmode) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    if(!drawtex && wireframe && editmode && !editinhibit) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     rendergbuffer();
 
     if(!drawtex)
     {
         extern int showsky;
-        if(wireframe && editmode) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        if(wireframe && editmode && !editinhibit) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         else if(limitsky() && editmode && showsky) renderexplicitsky(true);
     }
 
@@ -2479,19 +2480,21 @@ void gl_drawview()
     {
         if(editmode)
         {
-            if(!wireframe && outline) renderoutline();
+            if(!wireframe && outline && !editinhibit) renderoutline();
             GLERROR;
             rendereditmaterials();
             GLERROR;
-
-            glDepthMask(GL_FALSE);
-            renderblendbrush();
-            rendereditcursor();
-            glDepthMask(GL_TRUE);
+            if(!editinhibit)
+            {
+                glDepthMask(GL_FALSE);
+                renderblendbrush();
+                rendereditcursor();
+                glDepthMask(GL_TRUE);
+            }
         }
         else UI::closedynui("selection");
 
-        if(showboundingboxes)
+        if(showboundingboxes && (!editmode || !editinhibit))
         {
             glDepthMask(GL_FALSE);
             renderboundboxes();

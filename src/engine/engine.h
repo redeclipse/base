@@ -303,7 +303,7 @@ extern int drawtex;
 extern const matrix4 viewmatrix, invviewmatrix;
 extern matrix4 cammatrix, projmatrix, camprojmatrix, invcammatrix, invcamprojmatrix, invprojmatrix;
 extern vec curfogcolor;
-extern int wireframe;
+extern int wireframe, editinhibit;
 
 extern float cursorx, cursory, visorx, visory;
 extern vec cursordir;

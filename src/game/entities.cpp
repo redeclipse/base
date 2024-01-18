@@ -3470,7 +3470,7 @@ namespace entities
                 break;
             case ROUTE:
             {
-                if(e.attrs[0] != routeid || (!m_edit(game::gamemode) && !m_race(game::gamemode))) break;
+                if(e.attrs[0] != routeid || (!m_edit(game::gamemode) && !m_race(game::gamemode)) || (game::player1->isediting() && editinhibit)) break;
                 loopv(e.links) if(ents.inrange(e.links[i]) && ents[e.links[i]]->type == ROUTE && (!routemaxdist || o.dist(ents[e.links[i]]->o) <= routemaxdist))
                 {
                     int col = 0xFF22FF;
@@ -3506,11 +3506,15 @@ namespace entities
         if(idx < 0 || !m_edit(game::gamemode) || !cansee(idx)) return false;
 
         bool hastop = game::player1->state == CS_EDITING && (enthover.find(idx) >= 0 || entgroup.find(idx) >= 0) && dist <= showentdist*showentdist, dotop = hastop && e.dynamic(),
-             visible = getvisible(camera1->o, camera1->yaw, camera1->pitch, o, curfov, fovy, 2, hastop ? -1 : VFC_PART_VISIBLE), visiblepos = dotop && getvisible(camera1->o, camera1->yaw, camera1->pitch, e.pos(), curfov, fovy, 2, hastop ? -1 : VFC_PART_VISIBLE);
-        loopj(dotop ? 2 : 1) if(j ? visiblepos : visible)
+             visible = getvisible(camera1->o, camera1->yaw, camera1->pitch, o, curfov, fovy, 2, hastop ? -1 : VFC_PART_VISIBLE);
+        if(!game::player1->isediting() || !editinhibit)
         {
-            if(j && (visible || visiblepos)) part_line(o, e.pos(), entselsize, 1, 1, entselcolourdyn);
-            if(j || entityui < 0) part_create(hastop ? PART_ENTITY_ONTOP : PART_ENTITY, 1, j ? e.pos() : o, j ? entselcolourdyn : (hastop ? entselcolourtop : entselcolour), hastop && !j ? entselsizetop : entselsize, hastop && !j ? entselblendtop : entselblend);
+            bool visiblepos = dotop && getvisible(camera1->o, camera1->yaw, camera1->pitch, e.pos(), curfov, fovy, 2, hastop ? -1 : VFC_PART_VISIBLE);
+            loopj(dotop ? 2 : 1) if(j ? visiblepos : visible)
+            {
+                if(j && (visible || visiblepos)) part_line(o, e.pos(), entselsize, 1, 1, entselcolourdyn);
+                if(j || entityui < 0) part_create(hastop ? PART_ENTITY_ONTOP : PART_ENTITY, 1, j ? e.pos() : o, j ? entselcolourdyn : (hastop ? entselcolourtop : entselcolour), hastop && !j ? entselsizetop : entselsize, hastop && !j ? entselblendtop : entselblend);
+            }
         }
 
         return visible;
@@ -3600,7 +3604,7 @@ namespace entities
                 if(!ents.inrange(v.idx)) continue;
 
                 gameentity &e = *(gameentity *)ents[v.idx];
-                bool hasent = game::player1->isediting() && (enthover.find(v.idx) >= 0 || entgroup.find(v.idx) >= 0);
+                bool hasent = game::player1->isediting() && (enthover.find(v.idx) >= 0 || entgroup.find(v.idx) >= 0) && !editinhibit;
 
                 int type = hasent ? entityui : SURFACE_WORLD;
                 loopk(2)
