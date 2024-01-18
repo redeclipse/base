@@ -1407,35 +1407,27 @@ namespace UI
             Window *aa = (Window *)a, *bb = (Window *)b;
 
             // ontop windows last
-            if(aa->ontop && !bb->ontop) return false;
             if(!aa->ontop && bb->ontop) return true;
+            if(aa->ontop && !bb->ontop) return false;
 
             // zindex sort higher to last
-            if(aa->zindex > bb->zindex) return false;
             if(aa->zindex < bb->zindex) return true;
+            if(aa->zindex > bb->zindex) return false;
 
             bool apos = aa->pos != vec(-FLT_MAX), bpos = bb->pos != vec(-FLT_MAX);
             if(apos && bpos)
             {
-                if(aa->pos.x == bb->pos.x && aa->pos.y == bb->pos.y)
-                {
-                    // draw bottom-up
-                    if(aa->pos.z > bb->pos.z) return false;
-                    if(aa->pos.z < bb->pos.z) return true;
-                }
-
                 // reverse order so further gets drawn first
-                if(aa->dist < bb->dist) return false;
                 if(aa->dist > bb->dist) return true;
-            }
-            else
-            {
-                if(!apos && bpos) return false;
-                if(apos && !bpos) return true;
+                if(aa->dist < bb->dist) return false;
+
+                // draw bottom-up
+                if(aa->pos.z < bb->pos.z) return true;
+                if(aa->pos.z > bb->pos.z) return false;
             }
 
             // newest last
-            return aa->lastshow < bb->lastshow;
+            return aa->lastshow > bb->lastshow;
         }
     };
 
@@ -2097,7 +2089,8 @@ namespace UI
         setup();
         Window *oldwindow = window;
         window = this;
-        if(surfacetype == SURFACE_WORLD) dist = pos.squaredist(camera1->o);
+        if(window->pos != vec(-FLT_MAX))
+            window->dist = window->pos.squaredist(camera1->o);
         setargs();
         buildlevel = taglevel = -1;
         if(contents) buildchildren(contents->code, mapdef);

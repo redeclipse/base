@@ -13,7 +13,6 @@ struct defendstate
         int ent, kinship, yaw, pitch, owner, enemy;
         string name;
 #ifndef CPP_GAME_SERVER
-        string info;
         bool hasflag;
         int lasthad;
         vec render;

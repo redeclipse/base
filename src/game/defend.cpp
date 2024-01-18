@@ -12,7 +12,7 @@ namespace defend
         return hasflag;
     }
 
-    ICOMMAND(0, getdefendnum, "", (), intret(st.flags.length()));
+    ICOMMAND(0, getdefendnum, "b", (int *n), intret(*n >= 0 ? (st.flags.inrange(*n) ? 1 : 0) : st.flags.length()));
     ICOMMAND(0, getdefendowner, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].owner : -1));
     ICOMMAND(0, getdefendowners, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].owners : 0));
     ICOMMAND(0, getdefendenemy, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].enemy : -1));
@@ -23,7 +23,6 @@ namespace defend
 
     ICOMMAND(0, getdefendkinship, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].kinship : -1));
     ICOMMAND(0, getdefendname, "i", (int *n), result(st.flags.inrange(*n) ? st.flags[*n].name : ""));
-    ICOMMAND(0, getdefendinfo, "i", (int *n), result(st.flags.inrange(*n) ? st.flags[*n].info : ""));
     ICOMMAND(0, getdefendinside, "isi", (int *n, const char *who, int *h), gameent *d = game::getclient(client::parseplayer(who)); intret(d && st.flags.inrange(*n) && insideaffinity(st.flags[*n], d, *h!=0) ? 1 : 0));
 
     bool radarallow(const vec &o, int id, int render, vec &dir, float &dist, bool justtest = false)
@@ -187,13 +186,6 @@ namespace defend
 
             if(drawtex != DRAWTEX_HALO)
             {
-                if(b.enemy && b.owner)
-                {
-                    defformatstring(bowner, "%s", game::colourteam(b.owner, NULL));
-                    formatstring(b.info, "%s v %s", bowner, game::colourteam(b.enemy, NULL));
-                }
-                else formatstring(b.info, "%s", TEAM(b.owner ? b.owner : b.enemy, name));
-
                 float blend = camera1->o.distrange(b.o, game::affinityfadeat, game::affinityfadecut);
                 part_explosion(b.o, 3, PART_GLIMMERY, 1, colour, 1, blend);
                 part_create(PART_HINT_SOFT, 1, b.o, colour, 6, blend);
