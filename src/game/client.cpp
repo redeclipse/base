@@ -898,7 +898,6 @@ namespace client
     CLCOMMAND(pitch, floatret(d->pitch));
     CLCOMMAND(roll, floatret(d->roll));
     CLCOMMAND(opacity, floatret(game::opacity(d)));
-    CLCOMMAND(conopen, intret(d->conopen ? 1 : 0));
 
     bool radarallow(const vec &o, gameent *d, vec &dir, float &dist, bool self)
     {
@@ -998,6 +997,7 @@ namespace client
     CLCOMMAND(model, intret(d->model%PLAYERTYPES));
     CLCOMMAND(pattern, intret(d->pattern%PLAYERPATTERNS));
     CLCOMMAND(vanity, result(d->vanity));
+    CLCOMMAND(obit, result(d->obit));
     CLCOMMAND(handle, result(d->handle));
     CLCOMMAND(steamid, result(d->steamid));
     CLCOMMAND(host, result(d->hostip));
@@ -1013,11 +1013,16 @@ namespace client
     CLCOMMAND(cpmillis, intret(d->cpmillis ? lastmillis-d->cpmillis : 0));
     CLCOMMAND(frags, intret(d->frags));
     CLCOMMAND(deaths, intret(d->deaths));
+
+    CLCOMMAND(conopen, intret(d->conopen ? 1 : 0));
+    CLCOMMAND(queuepos, intret(d->queuepos));
+
     CLCOMMAND(totalpoints, intret(d->totalpoints));
     CLCOMMAND(totalfrags, intret(d->totalfrags));
     CLCOMMAND(totaldeaths, intret(d->totaldeaths));
     CLCOMMAND(totalavgpos, floatret(d->totalavgpos));
     CLCOMMAND(balancescore, floatret(d->balancescore()));
+    CLCOMMAND(timeplayed, intret(d->updatetimeplayed()));
     CLCOMMAND(timeplayed, intret(d->updatetimeplayed()));
 
     CLCOMMAND(speed, floatret(d->speed));
@@ -1058,6 +1063,10 @@ namespace client
     CLCOMMAND(spawnprotect, intret(m_protect(game::gamemode, game::mutators)));
     CLCOMMAND(spawnhealth, intret(d->gethealth(game::gamemode, game::mutators)));
     CLCOMMAND(maxhealth, intret(d->gethealth(game::gamemode, game::mutators, true)));
+
+    CLCOMMAND(respawnwait, intret(d->isdead() ? d->respawnwait(lastmillis, m_delay(d->actortype, game::gamemode, game::mutators, d->team)): -1));
+    CLCOMMANDM(canshoot, "bi", (char *who, int *weap, int *alt), intret(d->canshoot(*weap >= 0 ? *weap : d->weapselect, *alt > 0 ? HIT_ALT : 0, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis, (1<<W_S_RELOAD)) ? 1 : 0));
+    CLCOMMANDM(canreload, "b", (char *who, int *weap), intret(d->canreload(*weap >= 0 ? *weap : d->weapselect, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis, (1<<W_S_RELOAD)) ? 1 : 0));
 
     CLCOMMANDM(rescolour, "sib", (char *who, int *n, int *c), intret(pulsehexcol(d, *n, *c >= -1 ? *c : 50)));
     CLCOMMANDM(velocity, "si", (char *who, int *n), floatret(vec(d->vel).add(d->falling).magnitude()*(*n!=0 ? (*n > 0 ? 3.6f/8.f : 0.125f) : 1.f)));
