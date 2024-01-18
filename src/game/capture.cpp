@@ -158,79 +158,31 @@ namespace capture
         }
     }
 
-    VAR(IDF_PERSIST, captureui, -1, SURFACE_VISOR, SURFACE_ALL-1);
-
-    FVAR(IDF_PERSIST, captureaboveyaw, -1, -1, 360);
-    FVAR(IDF_PERSIST, captureabovepitch, -181, -181, 181);
-    FVAR(IDF_PERSIST, captureabovescale, FVAR_NONZERO, 1, FVAR_MAX);
-    FVAR(IDF_PERSIST, captureaboveworld, FVAR_NONZERO, 4, FVAR_MAX);
-    FVAR(IDF_PERSIST, captureabovedetentyaw, 0, 0, 180);
-    FVAR(IDF_PERSIST, captureabovedetentpitch, 0, 0, 90);
-
-    VAR(IDF_PERSIST, captureoverlay, -1, SURFACE_VISOR, SURFACE_ALL-1);
-    FVAR(IDF_PERSIST, captureoverlayyaw, -1, -1, 360);
-    FVAR(IDF_PERSIST, captureoverlaypitch, -181, -181, 181);
-    FVAR(IDF_PERSIST, captureoverlayscale, FVAR_NONZERO, 1, FVAR_MAX);
-    FVAR(IDF_PERSIST, captureoverlayworld, FVAR_NONZERO, 4, FVAR_MAX);
-    FVAR(IDF_PERSIST, captureoverlaydetentyaw, 0, 0, 180);
-    FVAR(IDF_PERSIST, captureoverlaydetentpitch, 0, 0, 90);
-
-    static const char *captureuis[2] = { "captureabove", "captureoverlay" };
-
-    VAR(IDF_PERSIST, captureflagui, -1, SURFACE_VISOR, SURFACE_ALL-1);
-
-    FVAR(IDF_PERSIST, captureflagaboveyaw, -1, -1, 360);
-    FVAR(IDF_PERSIST, captureflagabovepitch, -181, -181, 181);
-    FVAR(IDF_PERSIST, captureflagabovescale, FVAR_NONZERO, 1, FVAR_MAX);
-    FVAR(IDF_PERSIST, captureflagaboveworld, FVAR_NONZERO, 4, FVAR_MAX);
-    FVAR(IDF_PERSIST, captureflagabovedetentyaw, 0, 0, 180);
-    FVAR(IDF_PERSIST, captureflagabovedetentpitch, 0, 0, 90);
-
-    VAR(IDF_PERSIST, captureflagoverlay, -1, SURFACE_VISOR, SURFACE_ALL-1);
-    FVAR(IDF_PERSIST, captureflagoverlayyaw, -1, -1, 360);
-    FVAR(IDF_PERSIST, captureflagoverlaypitch, -181, -181, 181);
-    FVAR(IDF_PERSIST, captureflagoverlayscale, FVAR_NONZERO, 1, FVAR_MAX);
-    FVAR(IDF_PERSIST, captureflagoverlayworld, FVAR_NONZERO, 4, FVAR_MAX);
-    FVAR(IDF_PERSIST, captureflagoverlaydetentyaw, 0, 0, 180);
-    FVAR(IDF_PERSIST, captureflagoverlaydetentpitch, 0, 0, 90);
-
-    static const char *captureflaguis[2] = { "captureflagabove", "captureflagoverlay" };
+    DEFUIVARS(capture, SURFACE_VISOR, SURFACE_VISOR);
+    DEFUIVARS(captureflag, SURFACE_VISOR, SURFACE_VISOR);
 
     void checkui()
     {
-        if(captureui >= 0)
+        loopv(st.flags)
         {
-            loopv(st.flags)
-            {
-                capturestate::flag &f = st.flags[i];
+            capturestate::flag &f = st.flags[i];
 
-                vec curpos = f.render;
-                curpos.z += enttype[AFFINITY].radius * (f.owner || f.droptime ? 0.125f : 0.375f);
+            vec curpos = f.render;
+            curpos.z += enttype[AFFINITY].radius * (f.owner || f.droptime ? 0.125f : 0.375f);
 
-                MAKEUI(capture, i,
-                    true, haloallow(camera1->o, i),
-                        curpos, enttype[AFFINITY].radius * (f.owner || f.droptime ? 0.125f : 0.5f), enttype[AFFINITY].radius * 0.25f
-                );
-            }
+            MAKEUI(capture, i,
+                true, haloallow(camera1->o, i),
+                    curpos, enttype[AFFINITY].radius * (f.owner || f.droptime ? 0.125f : 0.5f), enttype[AFFINITY].radius * 0.25f
+            );
+
+            curpos = f.pos(true);
+            curpos.z += enttype[AFFINITY].radius * (f.droptime ? 0.25f : 0.375f);
+
+            MAKEUI(captureflag, i,
+                f.owner || f.droptime, haloallow(camera1->o, i),
+                    curpos, enttype[AFFINITY].radius * (f.droptime ? 0.25f : 0.5f), enttype[AFFINITY].radius * 0.25f
+            );
         }
-        else loopk(2) UI::cleardynui(captureuis[k]);
-
-        if(captureflagui >= 0)
-        {
-            loopv(st.flags)
-            {
-                capturestate::flag &f = st.flags[i];
-
-                vec curpos = f.pos(true);
-                curpos.z += enttype[AFFINITY].radius * (f.droptime ? 0.25f : 0.375f);
-
-                MAKEUI(captureflag, i,
-                    f.owner || f.droptime, haloallow(camera1->o, i),
-                        curpos, enttype[AFFINITY].radius * (f.droptime ? 0.25f : 0.5f), enttype[AFFINITY].radius * 0.25f
-                );
-            }
-        }
-        else loopk(2) UI::cleardynui(captureflaguis[k]);
     }
 
     void render()

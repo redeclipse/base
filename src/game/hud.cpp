@@ -542,31 +542,12 @@ namespace hud
         return false;
     }
 
-    VAR(IDF_PERSIST, playerui, -1, SURFACE_VISOR, SURFACE_ALL-1);
-
-    FVAR(IDF_PERSIST, playeraboveyaw, -1, -1, 360);
-    FVAR(IDF_PERSIST, playerabovepitch, -181, -181, 181);
-    FVAR(IDF_PERSIST, playerabovescale, FVAR_NONZERO, 1, FVAR_MAX);
-    FVAR(IDF_PERSIST, playeraboveworld, FVAR_NONZERO, 4, FVAR_MAX);
-    FVAR(IDF_PERSIST, playerabovedetentyaw, 0, 0, 180);
-    FVAR(IDF_PERSIST, playerabovedetentpitch, 0, 0, 90);
-    FVAR(IDF_PERSIST, playeraboveoffset, 0, 1, 4);
-
-    VAR(IDF_PERSIST, playeroverlay, -1, SURFACE_VISOR, SURFACE_ALL-1);
-    FVAR(IDF_PERSIST, playeroverlayyaw, -1, -1, 360);
-    FVAR(IDF_PERSIST, playeroverlaypitch, -181, -181, 181);
-    FVAR(IDF_PERSIST, playeroverlayscale, FVAR_NONZERO, 1, FVAR_MAX);
-    FVAR(IDF_PERSIST, playeroverlayworld, FVAR_NONZERO, 4, FVAR_MAX);
-    FVAR(IDF_PERSIST, playeroverlaydetentyaw, 0, 0, 180);
-    FVAR(IDF_PERSIST, playeroverlaydetentpitch, 0, 0, 90);
-    FVAR(IDF_PERSIST, playeroverlayoffset, 0, 0.5f, 2);
-
-    static const char *playeruis[2] = { "playerabove", "playeroverlay" };
+    DEFUIVARS(player, SURFACE_VISOR, SURFACE_VISOR);
 
     void checkui()
     {
         hidecrosshair = 0;
-        loopi(SURFACE_LOOPED) UI::showui("hud", i);
+        loopi(SURFACE_LOOP) UI::showui("hud", i);
 
         if(!UI::hasmenu(true))
         {
@@ -579,17 +560,14 @@ namespace hud
             else UI::openui("main");
         }
 
-        if(playerui >= 0)
-        {
-            gameent *d = NULL;
-            int numdyns = game::numdynents();
-            loopi(numdyns) if((d = (gameent *)game::iterdynents(i)))
-                MAKEUI(player, d->clientnum,
-                    d != game::focus && !d->isspectator(), game::haloallow(camera1->o, d, false, false) && (game::focus->isobserver() || (m_team(game::gamemode, game::mutators) && game::focus->team == d->team)),
+        gameent *d = NULL;
+        int numdyns = game::numdynents();
+        loopi(numdyns) if((d = (gameent *)game::iterdynents(i)) && d->actortype < A_ENEMY) // do the actor test here so it doesn't close UIs that don't exist
+            MAKEUI(player, d->clientnum,
+                d != game::focus && !d->isspectator(),
+                    game::haloallow(camera1->o, d, false, false) && (game::focus->isobserver() || (m_team(game::gamemode, game::mutators) && game::focus->team == d->team)),
                         d->center(), (d->height * 0.5f) + d->aboveeye + 1, d->radius * 0.5f
-                );
-        }
-        else loopk(2) UI::cleardynui(playeruis[k]);
+            );
 
         if(m_capture(game::gamemode)) capture::checkui();
         if(m_defend(game::gamemode)) defend::checkui();
@@ -599,7 +577,7 @@ namespace hud
     void removeplayer(gameent *d)
     {
         if(!d) return;
-        loopj(SURFACE_ALL) loopk(2) UI::hideui(playeruis[k], j, d->clientnum);
+        CLEARUI(player, d->clientnum, -1); // close all
     }
 
     void drawquad(float x, float y, float w, float h, float tx1, float ty1, float tx2, float ty2, bool flipx, bool flipy)

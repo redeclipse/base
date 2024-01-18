@@ -2434,44 +2434,49 @@ namespace weapons
     extern bool canuse(int weap);
 }
 
+#define MUIVAL(name, type, value) (type ? name##overlay##value : name##above##value)
+#define MUINAME(name, type) (type ? STR_MACRO(name) "overlay" : STR_MACRO(name) "above")
+
+#define DEFUIVARS(name, above, over) \
+    VAR(IDF_PERSIST, name##aboveui, -1, above, SURFACE_LAST); \
+    FVAR(IDF_PERSIST, name##aboveyaw, -1, -1, 360); \
+    FVAR(IDF_PERSIST, name##abovepitch, -181, -181, 181); \
+    FVAR(IDF_PERSIST, name##abovescale, FVAR_NONZERO, 1, FVAR_MAX); \
+    FVAR(IDF_PERSIST, name##aboveworld, FVAR_NONZERO, 4, FVAR_MAX); \
+    FVAR(IDF_PERSIST, name##abovedetentyaw, 0, 0, 180); \
+    FVAR(IDF_PERSIST, name##abovedetentpitch, 0, 0, 90); \
+    VAR(IDF_PERSIST, name##overlayui, -1, over, SURFACE_LAST); \
+    FVAR(IDF_PERSIST, name##overlayyaw, -1, -1, 360); \
+    FVAR(IDF_PERSIST, name##overlaypitch, -181, -181, 181); \
+    FVAR(IDF_PERSIST, name##overlayscale, FVAR_NONZERO, 1, FVAR_MAX); \
+    FVAR(IDF_PERSIST, name##overlayworld, FVAR_NONZERO, 4, FVAR_MAX); \
+    FVAR(IDF_PERSIST, name##overlaydetentyaw, 0, 0, 180); \
+    FVAR(IDF_PERSIST, name##overlaydetentpitch, 0, 0, 90);
+
+#define CLEARUI(name, id, nottype) \
+    { for(int mui_scount = 0; mui_scount < SURFACE_ALL; ++mui_scount) if(mui_scount != nottype) for(int mui_ucount = 0; mui_ucount < 2; ++mui_ucount) UI::hideui(MUINAME(name, mui_ucount), mui_scount, id); }
+
 #define MAKEUI(name, id, test, cansee, pos, above, over) \
-    do { \
-        int type = -1; \
+{ \
+    for(int mui_count = 0; mui_count < 2; ++mui_count) \
+    { \
+        int mui_type = -1; \
         if(test) \
         { \
-            type = cansee ? name##ui : SURFACE_WORLD; \
-            for(int ucount = 0; ucount < 2; ++ucount) \
+            mui_type = cansee ? MUIVAL(name, mui_count, ui) : SURFACE_WORLD; \
+            if(mui_type >= 0) \
             { \
-                vec o; \
-                float yaw, pitch, scale, dyaw, dpitch; \
-                switch(ucount) \
-                { \
-                    case 1: \
-                    { \
-                        o = vec(pos).sub(vec(pos).sub(camera1->o).normalize().mul(over)); \
-                        yaw = name##overlayyaw; \
-                        pitch = name##overlaypitch; \
-                        scale = type == SURFACE_WORLD ? name##overlayworld : name##overlayscale; \
-                        dyaw = name##overlaydetentyaw; \
-                        dpitch = name##overlaydetentpitch; \
-                        break; \
-                    } \
-                    case 0: default: \
-                    { \
-                        o = vec(pos).addz(above); \
-                        yaw = name##aboveyaw; \
-                        pitch = name##abovepitch; \
-                        scale = type == SURFACE_WORLD ? name##aboveworld : name##abovescale; \
-                        dyaw = name##abovedetentyaw; \
-                        dpitch = name##abovedetentpitch; \
-                        break; \
-                    } \
-                } \
-                UI::setui(name##uis[ucount], type, id, o, yaw, pitch, scale, dyaw, dpitch); \
+                vec mui_o = mui_type ? vec(pos).sub(vec(pos).sub(camera1->o).normalize().mul(over)) : vec(pos).addz(above); \
+                UI::setui(MUINAME(name, mui_count), \
+                    mui_type, id, mui_o, MUIVAL(name, mui_type, yaw), MUIVAL(name, mui_type, pitch), \
+                    (mui_type == SURFACE_WORLD ? MUIVAL(name, mui_type, world) : MUIVAL(name, mui_type, scale)), \
+                    MUIVAL(name, mui_type, detentyaw), MUIVAL(name, mui_type, detentpitch) \
+                ); \
             } \
         } \
-        for(int scount = 0; scount < SURFACE_ALL; ++scount) if(scount != type) for(int ucount = 0; ucount < 2; ++ucount) UI::hideui(name##uis[ucount], scount, id); \
-    } while(0);
+        CLEARUI(name, id, mui_type); \
+    } \
+}
 
 namespace hud
 {

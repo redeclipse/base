@@ -143,43 +143,22 @@ namespace defend
         }
     }
 
-    VAR(IDF_PERSIST, defendui, -1, SURFACE_VISOR, SURFACE_ALL-1);
-
-    FVAR(IDF_PERSIST, defendaboveyaw, -1, -1, 360);
-    FVAR(IDF_PERSIST, defendabovepitch, -181, -181, 181);
-    FVAR(IDF_PERSIST, defendabovescale, FVAR_NONZERO, 1, FVAR_MAX);
-    FVAR(IDF_PERSIST, defendaboveworld, FVAR_NONZERO, 4, FVAR_MAX);
-    FVAR(IDF_PERSIST, defendabovedetentyaw, 0, 0, 180);
-    FVAR(IDF_PERSIST, defendabovedetentpitch, 0, 0, 90);
-
-    VAR(IDF_PERSIST, defendoverlay, -1, SURFACE_VISOR, SURFACE_ALL-1);
-    FVAR(IDF_PERSIST, defendoverlayyaw, -1, -1, 360);
-    FVAR(IDF_PERSIST, defendoverlaypitch, -181, -181, 181);
-    FVAR(IDF_PERSIST, defendoverlayscale, FVAR_NONZERO, 1, FVAR_MAX);
-    FVAR(IDF_PERSIST, defendoverlayworld, FVAR_NONZERO, 4, FVAR_MAX);
-    FVAR(IDF_PERSIST, defendoverlaydetentyaw, 0, 0, 180);
-    FVAR(IDF_PERSIST, defendoverlaydetentpitch, 0, 0, 90);
-
-    static const char *defenduis[2] = { "defendabove", "defendoverlay" };
+    DEFUIVARS(defend, SURFACE_VISOR, SURFACE_VISOR);
 
     void checkui()
     {
-        if(defendui >= 0)
+        loopv(st.flags)
         {
-            loopv(st.flags)
-            {
-                defendstate::flag &f = st.flags[i];
+            defendstate::flag &f = st.flags[i];
 
-                vec curpos = f.render;
-                curpos.z += enttype[AFFINITY].radius * 0.125f;
+            vec curpos = f.render;
+            curpos.z += enttype[AFFINITY].radius * 0.125f;
 
-                MAKEUI(defend, i,
-                    true, haloallow(camera1->o, i),
-                        curpos, enttype[AFFINITY].radius * 0.25f, enttype[AFFINITY].radius * 0.25f
-                );
-            }
+            MAKEUI(defend, i,
+                true, haloallow(camera1->o, i),
+                    curpos, enttype[AFFINITY].radius * 0.25f, enttype[AFFINITY].radius * 0.25f
+            );
         }
-        else loopk(2) UI::cleardynui(defenduis[k]);
     }
 
     void render()

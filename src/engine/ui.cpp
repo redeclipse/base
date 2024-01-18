@@ -6745,7 +6745,7 @@ namespace UI
     {
         if(n < 0) return;
 
-        loopi(SURFACE_LOOPED)
+        loopi(SURFACE_LOOP)
         {
             if(i == stype || !pushsurface(i)) continue;
 

@@ -225,50 +225,29 @@ namespace bomber
         }
     }
 
-    VAR(IDF_PERSIST, bomberui, -1, SURFACE_VISOR, SURFACE_ALL-1);
-
-    FVAR(IDF_PERSIST, bomberaboveyaw, -1, -1, 360);
-    FVAR(IDF_PERSIST, bomberabovepitch, -181, -181, 181);
-    FVAR(IDF_PERSIST, bomberabovescale, FVAR_NONZERO, 1, FVAR_MAX);
-    FVAR(IDF_PERSIST, bomberaboveworld, FVAR_NONZERO, 4, FVAR_MAX);
-    FVAR(IDF_PERSIST, bomberabovedetentyaw, 0, 0, 180);
-    FVAR(IDF_PERSIST, bomberabovedetentpitch, 0, 0, 90);
-
-    VAR(IDF_PERSIST, bomberoverlay, -1, SURFACE_VISOR, SURFACE_ALL-1);
-    FVAR(IDF_PERSIST, bomberoverlayyaw, -1, -1, 360);
-    FVAR(IDF_PERSIST, bomberoverlaypitch, -181, -181, 181);
-    FVAR(IDF_PERSIST, bomberoverlayscale, FVAR_NONZERO, 1, FVAR_MAX);
-    FVAR(IDF_PERSIST, bomberoverlayworld, FVAR_NONZERO, 4, FVAR_MAX);
-    FVAR(IDF_PERSIST, bomberoverlaydetentyaw, 0, 0, 180);
-    FVAR(IDF_PERSIST, bomberoverlaydetentpitch, 0, 0, 90);
-
-    static const char *bomberuis[2] = { "bomberabove", "bomberoverlay" };
+    DEFUIVARS(bomber, SURFACE_VISOR, SURFACE_VISOR);
 
     void checkui()
     {
-        if(bomberui >= 0)
+        loopv(st.flags)
         {
-            loopv(st.flags)
+            bomberstate::flag &f = st.flags[i];
+
+            vec curpos = f.render;
+            if(isbomberaffinity(f))
             {
-                bomberstate::flag &f = st.flags[i];
-
-                vec curpos = f.render;
-                if(isbomberaffinity(f))
-                {
-                    curpos = f.pos(true, true);
-                    if(!f.owner && !f.droptime) curpos.z += enttype[AFFINITY].radius * 0.25f;
-                }
-                else curpos.z += enttype[AFFINITY].radius * 0.125f;
-
-                MAKEUI(bomber, i,
-                    f.enabled, haloallow(camera1->o, i),
-                        curpos,
-                        enttype[AFFINITY].radius * (isbomberaffinity(f) ? 0.125f : 0.25f),
-                        enttype[AFFINITY].radius * (isbomberaffinity(f) ? 0.125f : 0.25f)
-                );
+                curpos = f.pos(true, true);
+                if(!f.owner && !f.droptime) curpos.z += enttype[AFFINITY].radius * 0.25f;
             }
+            else curpos.z += enttype[AFFINITY].radius * 0.125f;
+
+            MAKEUI(bomber, i,
+                f.enabled, haloallow(camera1->o, i),
+                    curpos,
+                    enttype[AFFINITY].radius * (isbomberaffinity(f) ? 0.125f : 0.25f),
+                    enttype[AFFINITY].radius * (isbomberaffinity(f) ? 0.125f : 0.25f)
+            );
         }
-        else loopk(2) UI::cleardynui(bomberuis[k]);
     }
 
     void render()

@@ -24,7 +24,7 @@ namespace entities
     FVAR(IDF_PERSIST, showentavailable, 0, 1, 1);
     FVAR(IDF_PERSIST, showentunavailable, 0, 0.125f, 1);
 
-    VAR(IDF_PERSIST, entityui, -1, SURFACE_WORLD, SURFACE_ALL-1);
+    VAR(IDF_PERSIST, entityui, -1, SURFACE_WORLD, SURFACE_LAST);
 
     FVAR(IDF_PERSIST, entityaboveyaw, -1, -1, 360);
     FVAR(IDF_PERSIST, entityabovepitch, -181, 0, 181);
