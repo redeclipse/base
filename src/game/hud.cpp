@@ -547,6 +547,8 @@ namespace hud
     void checkui()
     {
         hidecrosshair = 0;
+        if(game::maptime <= 0) return; // wait until map started
+
         loopi(SURFACE_LOOP) UI::showui("hud", i);
 
         if(!UI::hasmenu(true))
