@@ -1268,6 +1268,8 @@ namespace game
         {
             if(y->owner == focus) return true;
             if(x->owner == focus) return false;
+            if(x->owner->actortype > y->owner->actortype) return true;
+            if(x->owner->actortype < y->owner->actortype) return false;
             if(x->dist > y->dist) return true;
             return false;
         }
