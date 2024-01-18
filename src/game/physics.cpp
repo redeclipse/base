@@ -8,7 +8,7 @@ namespace physics
     FVAR(IDF_MAP, stepspeed, 1e-4f, 1.f, 1000);
 
     #define MPVVARS(type) \
-        FVAR(IDF_MAP, deathplane##type, -1, 0, 1);
+        FVAR(IDF_MAP, deathplane##type, 0, 0, 1);
     MPVVARS();
     MPVVARS(alt);
 
@@ -20,7 +20,7 @@ namespace physics
         }
     GETMPV(deathplane, float);
 
-    VAR(IDF_PERSIST, showphyslayers, 0, 0, 1);
+    VAR(IDF_PERSIST, showphyslayers, 0, 1, 1);
     FVAR(IDF_PERSIST, physlayerscale, 0, 0.125f, 1);
     FVAR(IDF_PERSIST, physlayerblend, 0, 0.75f, 1);
     VAR(IDF_PERSIST, physlayersubdiv, 4, 4, 64);
@@ -33,7 +33,7 @@ namespace physics
     VAR(IDF_PERSIST, physinterp, 0, 1, 1);
 
     VAR(IDF_PERSIST, ragdollaccuracy, 0, 1, 1);
-    FVAR(IDF_PERSIST, ragdollaccuracydist, 0, 512, FVAR_MAX);
+    FVAR(IDF_PERSIST, ragdollaccuracydist, 0, 1024, FVAR_MAX);
     FVAR(IDF_PERSIST, ragdollgravity, FVAR_MIN, 1.5f, FVAR_MAX);
 
     FVAR(IDF_PERSIST, impulseparkouryaw, 0, 150, 180); // determines the minimum yaw angle to switch between parkour climb and run
@@ -1350,7 +1350,7 @@ namespace physics
                 gameent *e = (gameent *)d;
                 if(e->state == CS_ALIVE && !floating)
                 {
-                    if(e->o.z < getdeathplane()*worldsize)
+                    if(e->o.z <= getdeathplane()*worldsize)
                     {
                         game::suicide(e, HIT_LOST);
                         return false;

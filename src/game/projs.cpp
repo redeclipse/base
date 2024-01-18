@@ -1536,7 +1536,7 @@ namespace projs
 
     int check(projent &proj, const vec &dir)
     {
-        if(proj.projtype == PRJ_SHOT ? proj.o.z < physics::getdeathplane()*worldsize : !insideworld(proj.o)) return 0; // remove, always..
+        if(proj.projtype == PRJ_SHOT ? proj.o.z <= physics::getdeathplane()*worldsize : !insideworld(proj.o)) return 0; // remove, always..
         int chk = 0;
         if(proj.extinguish&1 || proj.extinguish&2)
         {

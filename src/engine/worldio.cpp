@@ -9,6 +9,7 @@ SVAR(0, mapfile, "");
 SVAR(0, mapname, "");
 SVAR(0, maptext, "");
 VARR(mapvariant, 0);
+FVAR(IDF_MAP, mapnorth, 0, 0, 359);
 
 bool checkmapvariant(int variant)
 {
