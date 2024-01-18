@@ -4621,9 +4621,9 @@ namespace UI
     struct Clipper : Object
     {
         float sizew, sizeh, virtw, virth, offsetx, offsety;
-        bool inverted, forced;
+        bool inverted, invscroll, forced;
 
-        Clipper() : offsetx(0), offsety(0), inverted(false) {}
+        Clipper() : offsetx(0), offsety(0), inverted(false), invscroll(false) {}
 
         void setup(float sizew_ = 0, float sizeh_ = 0, float offsetx_ = 0, float offsety_ = 0, bool offset_ = false)
         {
@@ -4708,8 +4708,8 @@ namespace UI
         float hscale() const { return w / max(virtw, w); }
         float vscale() const { return h / max(virth, h); }
 
-        void addhscroll(float hscroll) { sethscroll(offsetx + (hscroll * (inverted ? -1 : 1))); }
-        void addvscroll(float vscroll) { setvscroll(offsety + (vscroll * (inverted ? -1 : 1))); }
+        void addhscroll(float hscroll) { sethscroll(offsetx + (hscroll * (invscroll ? 1 : -1))); }
+        void addvscroll(float vscroll) { setvscroll(offsety + (vscroll * (invscroll ? -1 : 1))); }
         void sethscroll(float hscroll) { offsetx = clamp(hscroll, 0.0f, hlimit()); }
         void setvscroll(float vscroll) { offsety = clamp(vscroll, 0.0f, vlimit()); }
     };
@@ -4724,6 +4724,7 @@ namespace UI
     UIARGSCALEDT(Clipper, clip, offsetx, "f", float, FVAR_MIN, FVAR_MAX);
     UIARGSCALEDT(Clipper, clip, offsety, "f", float, FVAR_MIN, FVAR_MAX);
     UIARGTB(Clipper, clip, inverted);
+    UIARGTB(Clipper, clip, invscroll);
     UIARGTB(Clipper, clip, forced);
 
     struct Scroller : Clipper
