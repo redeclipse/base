@@ -568,7 +568,7 @@ namespace hud
             MAKEUI(player, d->clientnum,
                 d != game::focus && !d->isspectator(),
                     game::haloallow(camera1->o, d, false, false) && (game::focus->isobserver() || (m_team(game::gamemode, game::mutators) && game::focus->team == d->team)),
-                        d->center(), (d->height * 0.5f) + d->aboveeye + 1, d->radius * 0.5f
+                        d->center(), (d->getheight() * 0.5f) + d->aboveeye + 1, d->getradius() * 0.5f
             );
 
         if(m_capture(game::gamemode)) capture::checkui();
