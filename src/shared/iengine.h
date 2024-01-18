@@ -267,7 +267,7 @@ enum
     en(um, Electric Soft, ELECTRIC_SOFT) en(um, Electric, ELECTRIC) \
     en(um, Eleczap Soft, ELECZAP_SOFT) en(um, Eleczap, ELECZAP) \
     en(um, Flame, FLAME) \
-    en(um, Flare, FLARE) en(um, Clean Flare, CLEAN_FLARE) en(um, Muzzle Flare, MUZZLE_FLARE) \
+    en(um, Flare, FLARE) en(um, Clean Flare, CLEAN_FLARE) en(um, Noisy Flare, NOISY_FLARE) en(um, Muzzle Flare, MUZZLE_FLARE) \
     en(um, Lightning Flare, LIGHTNING_FLARE) en(um, Lightzap Flare, LIGHTZAP_FLARE) \
     en(um, Muzzle Flash, MUZZLE_FLASH) en(um, Snow, SNOW) \
     en(um, Haze, HAZE) en(um, Haze Flame, HAZE_FLAME) en(um, Haze Tape, HAZE_TAPE) \
