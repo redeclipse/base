@@ -211,7 +211,7 @@ namespace defend
 
     void setup()
     {
-        int df = m_dac_king(game::gamemode, game::mutators) ? 0 : defendflags;
+        int df = m_dac_king(game::gamemode, game::mutators) ? 0 : defendflags, count = 0;
         loopv(entities::ents) if(entities::ents[i]->type == AFFINITY)
         {
             gameentity &e = *(gameentity *)entities::ents[i];
@@ -234,7 +234,8 @@ namespace defend
             const char *name = getalias(alias);
             if(!name || !*name)
             {
-                formatstring(alias, "Point #%d", st.flags.length()+1);
+                if(team) formatstring(alias, "%s Base", TEAM(team, name));
+                else formatstring(alias, "Point %d", ++count);
                 name = alias;
             }
             st.addaffinity(i, e.o, team, e.attrs[1], e.attrs[2], name);
@@ -272,7 +273,7 @@ namespace defend
             }
             if(st.flags.inrange(smallest))
             {
-                copystring(st.flags[smallest].name, "Top of the Hill");
+                copystring(st.flags[smallest].name, "Hilltop");
                 st.flags[smallest].kinship = T_NEUTRAL;
                 loopi(smallest) st.flags.remove(0);
                 while(st.flags.length() > 1) st.flags.remove(1);
@@ -347,7 +348,7 @@ namespace defend
         if(!log->push()) DELETEP(log);
     }
 
-    void updateaffinity(int i, int owner, int enemy, int converted)
+    void updateaffinity(int i, int owner, int owners, int enemy, int enemies, int converted, int points)
     {
         if(!st.flags.inrange(i)) return;
         defendstate::flag &b = st.flags[i];
@@ -365,7 +366,10 @@ namespace defend
             b.converted = converted;
         }
         b.owner = owner;
+        b.owners = owners;
         b.enemy = enemy;
+        b.enemies = enemies;
+        b.points = points;
     }
 
     void setscore(int team, int total)

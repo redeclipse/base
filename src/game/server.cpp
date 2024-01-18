@@ -7469,6 +7469,9 @@ namespace server
                     getint(p);
                     getint(p);
                     getint(p);
+                    getint(p);
+                    getint(p);
+                    getint(p);
                     QUEUE_MSG;
                     break;
 

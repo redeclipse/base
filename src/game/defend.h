@@ -216,7 +216,7 @@ namespace defend
     extern bool haloallow(const vec &o, int id, int render = 0, bool justtest = false, bool check = true);
     extern void sendaffinity(packetbuf &p);
     extern void parseaffinity(ucharbuf &p);
-    extern void updateaffinity(int i, int owner, int enemy, int converted);
+    extern void updateaffinity(int i, int owner, int owners, int enemy, int enemies, int converted, int points);
     extern void setscore(int team, int total);
     extern void reset();
     extern void setup();

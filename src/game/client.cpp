@@ -3508,8 +3508,8 @@ namespace client
 
                 case N_INFOAFFIN:
                 {
-                    int flag = getint(p), converted = getint(p), owner = getint(p), enemy = getint(p);
-                    if(m_defend(game::gamemode)) defend::updateaffinity(flag, owner, enemy, converted);
+                    int flag = getint(p), converted = getint(p), owner = getint(p), owners = getint(p), enemy = getint(p), enemies = getint(p), points = getint(p);
+                    if(m_defend(game::gamemode)) defend::updateaffinity(flag, owner, owners, enemy, enemies, converted, points);
                     break;
                 }
 

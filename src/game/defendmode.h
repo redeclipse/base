@@ -98,7 +98,7 @@ struct defendservmode : defendstate, servmode
     void sendaffinity(int i, bool interim = false)
     {
         flag &b = flags[i];
-        sendf(-1, 1, "ri5", N_INFOAFFIN, i, interim ? -1 : (b.enemy ? b.converted : 0), b.owner, b.enemy);
+        sendf(-1, 1, "ri8", N_INFOAFFIN, i, interim ? -1 : (b.enemy ? b.converted : 0), b.owner, b.owners, b.enemy, b.enemies, b.points);
     }
 
     void sendaffinity()
