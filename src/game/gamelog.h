@@ -601,6 +601,7 @@ struct gamelog
         if(!d)
         {
             addinfo(g.infos, "clientnum", -1);
+            addinfo(g.infos, "active", false);
             return r;
         }
 
@@ -614,6 +615,7 @@ struct gamelog
         addinfo(g.infos, "weapselect", d->weapselect);
         addinfo(g.infos, "health", d->health);
         addinfo(g.infos, "name", d->name);
+        addinfo(g.infos, "active", true);
 
         return r;
     }
@@ -622,6 +624,47 @@ struct gamelog
     int addclient(const char *tag, int cn) { return addclient(tag, (clientinfo *)::getinfo(cn)); }
 #else
     int addclient(const char *tag, int cn) { return addclient(tag, game::getclient(cn)); }
+
+    static void removeclient(vector<gamelog *> &log, gameent *d)
+    {
+        if(!d) return;
+
+        loopvk(log)
+        {
+            gamelog *e = log[k];
+            loopvj(e->tags)
+            {
+                taginfo &t = e->tags[j];
+                loopv(t.groups)
+                {
+                    groupinfo &g = t.groups[i];
+                    int f = findinfo(g.infos, "clientnum");
+                    if(!g.infos.inrange(f) || g.infos[f].getint() != d->clientnum) continue;
+
+                    int q = findinfo(g.infos, "active");
+                    if(g.infos.inrange(q))
+                    {
+                        g.infos[q].set(false); // set as inactive
+                        continue;
+                    }
+
+                    addinfo(g.infos, "active", false); // add if not present
+                }
+            }
+        }
+    }
+
+    static void removeclient(gameent *d)
+    {
+        if(!d) return;
+
+        loopk(GAMELOG_MAX) switch(k)
+        {
+            case GAMELOG_EVENT: gamelog::removeclient(eventlog, d); break;
+            case GAMELOG_MESSAGE: gamelog::removeclient(messagelog, d); break;
+            default: break;
+        }
+    }
 #endif
 };
 

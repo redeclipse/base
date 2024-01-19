@@ -2357,6 +2357,7 @@ namespace game
         }
         specreset(d, true);
         waiting.removeobj(d);
+        gamelog::removeclient(d);
         client::clearvotes(d);
         hud::removeplayer(d);
         projs::removeplayer(d);
@@ -2385,7 +2386,6 @@ namespace game
     void resetmap(bool empty) // called just before a map load
     {
         loopi(SURFACE_ALL) UI::hideui(NULL, i);
-        eventlog.shrink(0);
     }
 
     void savemap(bool force, const char *mname)
