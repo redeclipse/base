@@ -349,12 +349,6 @@ namespace game
     VAR(IDF_PERSIST, eventiconfade, 500, 8000, VAR_MAX);
     VAR(IDF_PERSIST, eventiconshort, 500, 3500, VAR_MAX);
 
-    VAR(IDF_PERSIST, showobitdists, 0, 2, 2); // 0 = off, 1 = self only, 2 = all
-    VAR(IDF_PERSIST, showobithpleft, 0, 2, 2); // 0 = off, 1 = self only, 2 = all
-    VAR(IDF_PERSIST, obitannounce, 0, 2, 2); // 0 = off, 1 = only focus, 2 = everyone
-    VAR(IDF_PERSIST, obitverbose, 0, 1, 1); // 0 = extremely simple, 1 = regular messages
-    VAR(IDF_PERSIST, obitstyles, 0, 1, 1); // 0 = no obituary styles, 1 = show sprees/dominations/etc
-
     VAR(IDF_PERSIST, damageinteger, 0, 1, 1);
     FVAR(IDF_PERSIST, damagedivisor, FVAR_NONZERO, 10, FVAR_MAX);
     FVAR(IDF_PERSIST, damagecritical, 0, 0.25f, 1);
@@ -1990,65 +1984,62 @@ namespace game
         d->state = CS_DEAD;
         d->obliterated = (style&FRAG_OBLITERATE)!=0;
         d->headless = (style&FRAG_HEADSHOT)!=0;
-        bool burning = burn(d, weap, flags), bleeding = bleed(d, weap, flags), shocking = shock(d, weap, flags),
-             isfocus = d == focus || v == focus, isme = d == player1 || v == player1,
-             allowanc = obitannounce && (obitannounce >= 2 || isfocus) && isme && v->actortype < A_ENEMY;
-        int anc = d == focus && allowanc ? S_V_FRAGGED : -1, dth = d->actortype >= A_ENEMY || d->obliterated ? S_SPLOSH : S_DEATH,
-            curmat = material&MATF_VOLUME;
+
+        bool burning = burn(d, weap, flags), bleeding = bleed(d, weap, flags), shocking = shock(d, weap, flags);
+        int anc = d == focus ? S_V_FRAGGED : -1, dth = d->actortype >= A_ENEMY || d->obliterated ? S_SPLOSH : S_DEATH, curmat = material&MATF_VOLUME;
+
         if(d != player1) d->resetinterp();
-        if(!isme) loopv(assist) if(assist[i] == player1)
-        {
-            isme = true;
-            break;
-        }
         formatstring(d->obit, "%s ", colourname(d));
+
         if(d != v && v->lastattacker == d->clientnum) v->lastattacker = -1;
         d->lastattacker = v->clientnum;
+
+        const char *obitctx = "";
         if(d == v)
         {
-            concatstring(d->obit, "\fs");
-            if(!obitverbose) concatstring(d->obit, obitdied);
-            else if(flags&HIT_SPAWN) concatstring(d->obit, obitspawn);
-            else if(flags&HIT_TOUCH) concatstring(d->obit, *obittouch ? obittouch : obitsplat);
-            else if(flags&HIT_CRUSH) concatstring(d->obit, *obitcrush ? obitcrush : obitsquish);
-            else if(flags&HIT_SPEC) concatstring(d->obit, obitspectator);
-            else if(flags&HIT_MATERIAL && curmat&MAT_WATER) concatstring(d->obit, getobitwater(material, obitdrowned));
-            else if(flags&HIT_MATERIAL && curmat&MAT_LAVA) concatstring(d->obit, getobitlava(material, obitmelted));
-            else if(flags&HIT_MATERIAL && curmat&MAT_VOLFOG) concatstring(d->obit, getobitvolfog(material, obitchoked));
-            else if(flags&HIT_MATERIAL && material&MAT_HURT) concatstring(d->obit, *obithurt ? obithurt : obithurtmat);
-            else if(flags&HIT_MATERIAL) concatstring(d->obit, *obitdeath ? obitdeath : obitdeathmat);
-            else if(flags&HIT_LOST) concatstring(d->obit, *obitfall ? obitfall : obitlost);
-            else if(flags&HIT_CHECKPOINT) concatstring(d->obit, *obitcheckpoint ? obitcheckpoint : obitwrongcp);
-            else if(flags && isweap(weap) && !burning && !bleeding && !shocking) concatstring(d->obit, WF(WK(flags), weap, obitsuicide, WS(flags)));
-            else if(flags&HIT_BURN || burning) concatstring(d->obit, obitburnself);
-            else if(flags&HIT_BLEED || bleeding) concatstring(d->obit, obitbleedself);
-            else if(flags&HIT_SHOCK || shocking) concatstring(d->obit, obitshockself);
-            else if(d->obliterated) concatstring(d->obit, obitobliterated);
-            else if(d->headless) concatstring(d->obit, obitheadless);
-            else concatstring(d->obit, obitsuicide);
-            concatstring(d->obit, "\fS");
+            if(flags&HIT_SPAWN) obitctx = obitspawn;
+            else if(flags&HIT_TOUCH) obitctx = *obittouch ? obittouch : obitsplat;
+            else if(flags&HIT_CRUSH) obitctx = *obitcrush ? obitcrush : obitsquish;
+            else if(flags&HIT_SPEC) obitctx = obitspectator;
+            else if(flags&HIT_MATERIAL && curmat&MAT_WATER) obitctx = getobitwater(material, obitdrowned);
+            else if(flags&HIT_MATERIAL && curmat&MAT_LAVA) obitctx = getobitlava(material, obitmelted);
+            else if(flags&HIT_MATERIAL && curmat&MAT_VOLFOG) obitctx = getobitvolfog(material, obitchoked);
+            else if(flags&HIT_MATERIAL && material&MAT_HURT) obitctx = *obithurt ? obithurt : obithurtmat;
+            else if(flags&HIT_MATERIAL) obitctx = *obitdeath ? obitdeath : obitdeathmat;
+            else if(flags&HIT_LOST) obitctx = *obitfall ? obitfall : obitlost;
+            else if(flags&HIT_CHECKPOINT) obitctx = *obitcheckpoint ? obitcheckpoint : obitwrongcp;
+            else if(flags && isweap(weap) && !burning && !bleeding && !shocking) obitctx = WF(WK(flags), weap, obitsuicide, WS(flags));
+            else if(flags&HIT_BURN || burning) obitctx = obitburnself;
+            else if(flags&HIT_BLEED || bleeding) obitctx = obitbleedself;
+            else if(flags&HIT_SHOCK || shocking) obitctx = obitshockself;
+            else if(d->obliterated) obitctx = obitobliterated;
+            else if(d->headless) obitctx = obitheadless;
+            else obitctx = obitsuicide;
+
+            concformatstring(d->obit, "[\fs%s\fS]", obitctx);
         }
         else
         {
-            concatstring(d->obit, "was \fs");
-            if(!obitverbose) concatstring(d->obit, obitfragged);
-            else if(burning) concatstring(d->obit, obitburn);
-            else if(bleeding) concatstring(d->obit, obitbleed);
-            else if(shocking) concatstring(d->obit, obitshock);
+            if(burning) obitctx = obitburn;
+            else if(bleeding) obitctx = obitbleed;
+            else if(shocking) obitctx = obitshock;
             else if(isweap(weap))
             {
-                if(d->obliterated) concatstring(d->obit, WF(WK(flags), weap, obitobliterated, WS(flags)));
-                else if(d->headless) concatstring(d->obit, WF(WK(flags), weap, obitheadless, WS(flags)));
-                else concatstring(d->obit, WF(WK(flags), weap, obituary, WS(flags)));
+                if(d->obliterated) obitctx = WF(WK(flags), weap, obitobliterated, WS(flags));
+                else if(d->headless) obitctx = WF(WK(flags), weap, obitheadless, WS(flags));
+                else obitctx = WF(WK(flags), weap, obituary, WS(flags));
             }
-            else concatstring(d->obit, obitkilled);
-            concatstring(d->obit, "\fS by");
-            bool override = false;
+            else obitctx = obitkilled;
+
+            concformatstring(d->obit, "[\fs%s\fS] by", obitctx);
+
+            bool hasanc = false;
             if(d->headless)
             {
                 v->addicon(eventicon::HEADSHOT, totalmillis, eventiconfade, 0);
-                if(!override && allowanc) anc = S_V_HEADSHOT;
+                if(!hasanc) anc = S_V_HEADSHOT;
             }
+
             if(v->actortype >= A_ENEMY)
             {
                 concatstring(d->obit, " a ");
@@ -2058,165 +2049,135 @@ namespace game
             {
                 concatstring(d->obit, " \fs\fzawteam-mate\fS ");
                 concatstring(d->obit, colourname(v));
-                if(v == focus)
+            }
+
+            if(style&FRAG_REVENGE)
+            {
+                concatstring(d->obit, " \fs\fzoyvengeful\fS");
+                v->addicon(eventicon::REVENGE, totalmillis, eventiconfade); // revenge
+                v->dominating.removeobj(d);
+                d->dominated.removeobj(v);
+                anc = S_V_REVENGE;
+                hasanc = true;
+            }
+
+            if(style&FRAG_DOMINATE)
+            {
+                concatstring(d->obit, " \fs\fzoydominating\fS");
+                v->addicon(eventicon::DOMINATE, totalmillis, eventiconfade); // dominating
+                if(v->dominated.find(d) < 0) v->dominated.add(d);
+                if(d->dominating.find(v) < 0) d->dominating.add(v);
+                anc = S_V_DOMINATE;
+                hasanc = true;
+            }
+
+            concatstring(d->obit, " ");
+            concatstring(d->obit, colourname(v));
+
+            if(style&FRAG_BREAKER)
+            {
+                concatstring(d->obit, " \fs\fzpwspree-breaking\fS");
+                v->addicon(eventicon::BREAKER, totalmillis, eventiconfade);
+                if(!hasanc) anc = S_V_BREAKER;
+            }
+
+            if(style&FRAG_MKILL1)
+            {
+                if(style&FRAG_BREAKER) concatstring(d->obit, " and");
+                concatstring(d->obit, " \fs\fzcwdouble-killing\fS");
+                v->addicon(eventicon::MULTIKILL, totalmillis, eventiconfade, 0);
+                if(!hasanc) anc = S_V_MULTI;
+            }
+
+            if(style&FRAG_MKILL2)
+            {
+                if(style&FRAG_BREAKER) concatstring(d->obit, " and");
+                concatstring(d->obit, " \fs\fzcwtriple-killing\fS");
+                v->addicon(eventicon::MULTIKILL, totalmillis, eventiconfade, 1);
+                if(!hasanc) anc = S_V_MULTI2;
+            }
+
+            if(style&FRAG_MKILL3)
+            {
+                if(style&FRAG_BREAKER) concatstring(d->obit, " and");
+                concatstring(d->obit, " \fs\fzcwmulti-killing\fS");
+                v->addicon(eventicon::MULTIKILL, totalmillis, eventiconfade, 2);
+                if(!hasanc) anc = S_V_MULTI3;
+            }
+
+            if(style&FRAG_FIRSTBLOOD)
+            {
+                concatstring(d->obit, " for \fs\fzrwfirst blood\fS");
+                v->addicon(eventicon::FIRSTBLOOD, totalmillis, eventiconfade, 0);
+                anc = S_V_FIRSTBLOOD;
+                hasanc = true;
+            }
+
+            if(style&FRAG_SPREE1)
+            {
+                concatstring(d->obit, " in total \fs\fzywcarnage\fS");
+                v->addicon(eventicon::SPREE, totalmillis, eventiconfade, 0);
+                if(!hasanc)
                 {
-                    anc = S_ALARM;
-                    override = true;
+                    anc = S_V_SPREE;
+                    hasanc = true;
                 }
             }
-            else if(obitstyles)
+
+            if(style&FRAG_SPREE2)
             {
-                if(style&FRAG_REVENGE)
+                concatstring(d->obit, " on a \fs\fzywslaughter\fS");
+                v->addicon(eventicon::SPREE, totalmillis, eventiconfade, 1);
+                if(!hasanc)
                 {
-                    concatstring(d->obit, " \fs\fzoyvengeful\fS");
-                    v->addicon(eventicon::REVENGE, totalmillis, eventiconfade); // revenge
-                    v->dominating.removeobj(d);
-                    d->dominated.removeobj(v);
-                    if(allowanc)
-                    {
-                        anc = S_V_REVENGE;
-                        override = true;
-                    }
-                }
-                else if(style&FRAG_DOMINATE)
-                {
-                    concatstring(d->obit, " \fs\fzoydominating\fS");
-                    v->addicon(eventicon::DOMINATE, totalmillis, eventiconfade); // dominating
-                    if(v->dominated.find(d) < 0) v->dominated.add(d);
-                    if(d->dominating.find(v) < 0) d->dominating.add(v);
-                    if(allowanc)
-                    {
-                        anc = S_V_DOMINATE;
-                        override = true;
-                    }
-                }
-                concatstring(d->obit, " ");
-                concatstring(d->obit, colourname(v));
-
-                if(style&FRAG_BREAKER)
-                {
-                    concatstring(d->obit, " \fs\fzpwspree-breaking\fS");
-                    v->addicon(eventicon::BREAKER, totalmillis, eventiconfade);
-                    if(!override && allowanc) anc = S_V_BREAKER;
-                }
-
-                if(style&FRAG_MKILL1)
-                {
-                    if(style&FRAG_BREAKER) concatstring(d->obit, " and");
-                    concatstring(d->obit, " \fs\fzcwdouble-killing\fS");
-                    v->addicon(eventicon::MULTIKILL, totalmillis, eventiconfade, 0);
-                    if(!override && allowanc) anc = S_V_MULTI;
-                }
-                else if(style&FRAG_MKILL2)
-                {
-                    if(style&FRAG_BREAKER) concatstring(d->obit, " and");
-                    concatstring(d->obit, " \fs\fzcwtriple-killing\fS");
-                    v->addicon(eventicon::MULTIKILL, totalmillis, eventiconfade, 1);
-                    if(!override && allowanc) anc = S_V_MULTI2;
-                }
-                else if(style&FRAG_MKILL3)
-                {
-                    if(style&FRAG_BREAKER) concatstring(d->obit, " and");
-                    concatstring(d->obit, " \fs\fzcwmulti-killing\fS");
-                    v->addicon(eventicon::MULTIKILL, totalmillis, eventiconfade, 2);
-                    if(!override && allowanc) anc = S_V_MULTI3;
+                    anc = S_V_SPREE2;
+                    hasanc = true;
                 }
             }
-            else
-            {
-                concatstring(d->obit, " ");
-                concatstring(d->obit, colourname(v));
-            }
-            if(obitstyles)
-            {
-                if(style&FRAG_FIRSTBLOOD)
-                {
-                    concatstring(d->obit, " for \fs\fzrwfirst blood\fS");
-                    v->addicon(eventicon::FIRSTBLOOD, totalmillis, eventiconfade, 0);
-                    if(allowanc)
-                    {
-                        anc = S_V_FIRSTBLOOD;
-                        override = true;
-                    }
-                }
 
-                if(style&FRAG_SPREE1)
+            if(style&FRAG_SPREE3)
+            {
+                concatstring(d->obit, " on a \fs\fzywmassacre\fS");
+                v->addicon(eventicon::SPREE, totalmillis, eventiconfade, 2);
+                if(!hasanc)
                 {
-                    concatstring(d->obit, " in total \fs\fzywcarnage\fS");
-                    v->addicon(eventicon::SPREE, totalmillis, eventiconfade, 0);
-                    if(!override && allowanc)
-                    {
-                        anc = S_V_SPREE;
-                        override = true;
-                    }
+                    anc = S_V_SPREE3;
+                    hasanc = true;
                 }
-                else if(style&FRAG_SPREE2)
+            }
+
+            if(style&FRAG_SPREE4)
+            {
+                concatstring(d->obit, " in a \fs\fzyibloodbath\fS");
+                v->addicon(eventicon::SPREE, totalmillis, eventiconfade, 3);
+                if(!hasanc)
                 {
-                    concatstring(d->obit, " on a \fs\fzywslaughter\fS");
-                    v->addicon(eventicon::SPREE, totalmillis, eventiconfade, 1);
-                    if(!override && allowanc)
-                    {
-                        anc = S_V_SPREE2;
-                        override = true;
-                    }
-                }
-                else if(style&FRAG_SPREE3)
-                {
-                    concatstring(d->obit, " on a \fs\fzywmassacre\fS");
-                    v->addicon(eventicon::SPREE, totalmillis, eventiconfade, 2);
-                    if(!override && allowanc)
-                    {
-                        anc = S_V_SPREE3;
-                        override = true;
-                    }
-                }
-                else if(style&FRAG_SPREE4)
-                {
-                    concatstring(d->obit, " in a \fs\fzyibloodbath\fS");
-                    v->addicon(eventicon::SPREE, totalmillis, eventiconfade, 3);
-                    if(!override && allowanc)
-                    {
-                        anc = S_V_SPREE4;
-                        override = true;
-                    }
+                    anc = S_V_SPREE4;
+                    hasanc = true;
                 }
             }
         }
+
         if(d != v)
         {
-            if(showobitdists >= (d != player1 ? 2 : 1))
-            {
-                defformatstring(obitx, " \fs\fo@\fy%.2f\fom\fS", v->o.dist(d->o)/8.f);
-                concatstring(d->obit, obitx);
-            }
-            if(showobithpleft >= (d != player1 ? 2 : 1))
-            {
-                string obitx;
-                if(damageinteger) formatstring(obitx, " (\fs\fc%d\fS)", int(ceilf(v->health/damagedivisor)));
-                else formatstring(obitx, " (\fs\fc%.1f\fS)", v->health/damagedivisor);
-                concatstring(d->obit, obitx);
-            }
+            concformatstring(d->obit, " \fs\fo@\fy%.2f\fom\fS", v->o.dist(d->o)/8.f);
+            if(damageinteger) concformatstring(d->obit, " (\fs\fc%d\fS)", int(ceilf(v->health/damagedivisor)));
+            else concformatstring(d->obit, " (\fs\fc%.1f\fS)", v->health/damagedivisor);
         }
+
         if(!assist.empty())
         {
-            if(obitverbose || obitstyles) concatstring(d->obit, rnd(2) ? ", assisted by" : ", helped by");
-            else concatstring(d->obit, " +");
+            concatstring(d->obit, " +");
             loopv(assist) if(assist[i])
             {
-                if(obitverbose || obitstyles)
-                    concatstring(d->obit, assist.length() > 1 && i == assist.length()-1 ? " and " : (i ? ", " : " "));
-                else concatstring(d->obit, assist.length() > 1 && i == assist.length()-1 ? " + " : (i ? " + " : " "));
+                concatstring(d->obit, assist.length() > 1 && i == assist.length()-1 ? " + " : (i ? " + " : " "));
                 if(assist[i]->actortype >= A_ENEMY) concatstring(d->obit, "a ");
                 concatstring(d->obit, colourname(assist[i]));
-                if(showobithpleft >= (d != player1 ? 2 : 1))
-                {
-                    string obitx;
-                    if(damageinteger) formatstring(obitx, " (\fs\fc%d\fS)", int(ceilf(assist[i]->health/damagedivisor)));
-                    else formatstring(obitx, " (\fs\fc%.1f\fS)", assist[i]->health/damagedivisor);
-                    concatstring(d->obit, obitx);
-                }
+                if(damageinteger) concformatstring(d->obit, " (\fs\fc%d\fS)", int(ceilf(assist[i]->health/damagedivisor)));
+                else concformatstring(d->obit, " (\fs\fc%.1f\fS)", assist[i]->health/damagedivisor);
             }
         }
+
         if(d != v)
         {
             if(v->state == CS_ALIVE && d->actortype < A_ENEMY)
@@ -2225,7 +2186,9 @@ namespace game
                 v->lastkill = totalmillis ? totalmillis : 1;
             }
         }
+
         if(dth >= 0) emitsound(dth, getplayersoundpos(d), d, &d->plchan[PLCHAN_VOICE]);
+
         if(d->actortype < A_ENEMY)
         {
             gamelog *log = new gamelog(GAMELOG_EVENT);
@@ -2234,19 +2197,22 @@ namespace game
             log->addlist("args", "sound", anc);
             log->addlist("args", "flags", GAMELOG_F_CLIENT1|GAMELOG_F_CLIENT2);
             log->addlist("args", "weapon", weap);
-            log->addlist("args", "flags", flags);
+            log->addlist("args", "actflags", flags);
             log->addlist("args", "damage", damage);
             log->addlist("args", "style", style);
             log->addlist("args", "material", material);
             log->addlist("args", "burning", burning);
             log->addlist("args", "bleeding", bleeding);
             log->addlist("args", "shocking", shocking);
+            log->addlist("args", "distance", v->o.dist(d->o)/8.f);
+            log->addlist("args", "context", obitctx);
             log->addlist("args", "console", d->obit);
             log->addclient("client", d);
             log->addclient("client", v);
             loopv(assist) if(assist[i] && assist[i] != d && assist[i] != v) log->addclient("client", assist[i]);
             if(!log->push()) DELETEP(log);
         }
+
         vec pos = d->headtag();
         pos.z -= d->zradius*0.125f;
 
@@ -2269,6 +2235,7 @@ namespace game
             int hp = max(d->gethealth(gamemode, mutators)/10, 1), gib = clamp(max(damage, hp)/(d->obliterated ? 5 : 20), 2, 10), amt = int((rnd(gib)+gib)*(1+gibscale));
             loopi(amt) projs::create(pos, pos, true, d, nogore || !(A(d->actortype, abilities)&(1<<A_A_GIBS)) ? PRJ_DEBRIS : PRJ_GIBS, -1, 0, rnd(gibfade)+gibfade, 0, rnd(250)+1, rnd(d->obliterated ? 80 : 40)+10);
         }
+
         if(m_bomber(gamemode)) bomber::killed(d, v);
         ai::killed(d, v);
     }
