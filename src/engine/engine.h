@@ -836,9 +836,9 @@ enum
 };
 
 #define PROGRESS_ENUM(en, um) \
-    en(um, None, NONE) en(um, Disconnecting from server, DISCONNECT) en(um, Connecting to server, CONNECT) \
-    en(um, Loading map, MAPLOAD) en(um, Saving map, MAPSAVE) en(um, Downloading map, MAPDL) \
-    en(um, Starting match, GAMESTATE) en(um, Waiting, GAMEWAIT) en(um, Maximum, MAX)
+    en(um, None, NONE) en(um, Disconnecting, DISCONNECT) en(um, Connecting, CONNECT) \
+    en(um, Loading, MAPLOAD) en(um, Saving, MAPSAVE) en(um, Downloading, MAPDL) \
+    en(um, Starting, GAMESTATE) en(um, Waiting, GAMEWAIT) en(um, Maximum, MAX)
 ENUMDLN(PROGRESS);
 
 extern int initing, fullscreen, fullscreendesktop, numcpus, noconfigfile, firstrun;
