@@ -160,7 +160,6 @@ struct capturestate
         f.lastownerteam = ownerteam;
 #else
         f.movetime = 0;
-        (f.lastowner = owner)->addicon(eventicon::AFFINITY, t, game::eventiconfade, f.team);
         if(f.proj)
         {
             f.proj->beenused = 2;

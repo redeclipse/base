@@ -183,7 +183,6 @@ struct bomberstate
 #else
         f.movetime = 0;
         if(!f.inittime) f.inittime = t;
-        owner->addicon(eventicon::AFFINITY, t, game::eventiconfade, f.team);
         f.lastowner = owner;
         destroy(i);
 #endif

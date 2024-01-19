@@ -1252,12 +1252,6 @@ static const char * const animnames[] =
     ""
 };
 
-struct eventicon
-{
-    enum { SPREE = 0, MULTIKILL, HEADSHOT, DOMINATE, REVENGE, FIRSTBLOOD, BREAKER, WEAPON, AFFINITY, TOTAL, SORTED = WEAPON, VERBOSE = WEAPON };
-    int type, millis, fade, length, value;
-};
-
 struct stunevent
 {
     int weap, millis, delay;
@@ -1304,7 +1298,6 @@ struct gameent : dynent, clientstate
     vec2 rotvel;
     string hostip, name, handle, steamid, info, obit;
     vector<gameent *> dominating, dominated;
-    vector<eventicon> icons;
     vector<stunevent> stuns;
     vector<jitterevent> jitters;
     vector<int> vitems;
@@ -1627,7 +1620,6 @@ struct gameent : dynent, clientstate
         rotvel = vec2(0);
         obit[0] = '\0';
         obliterated = headless = false;
-        icons.shrink(0);
         stuns.shrink(0);
         jitters.shrink(0);
         used.shrink(0);
@@ -1669,7 +1661,6 @@ struct gameent : dynent, clientstate
     {
         dominating.shrink(0);
         dominated.shrink(0);
-        icons.shrink(0);
         resetstate(millis, gamemode, mutators);
         clientstate::mapchange();
     }
@@ -2036,38 +2027,6 @@ struct gameent : dynent, clientstate
         if(PHYS(gravity) != 0 && impulsetouchchecks&(1<<type) && impulsetouchtypes&(1<<impulse[IM_TYPE])) return false;
         if(impulsecounttypes&(1<<type) && impulse[IM_COUNT] >= impulsecount) return false;
         return delayimpulse(false);
-    }
-
-    void addicon(int type, int millis, int fade, int value = 0)
-    {
-        int pos = -1;
-        loopv(icons)
-        {
-            if(icons[i].type == type)
-            {
-                switch(icons[i].type)
-                {
-                    case eventicon::WEAPON:
-                    {
-                        if(icons[i].value != value) continue;
-                        break;
-                    }
-                    default: break;
-                }
-                icons[i].length = max(icons[i].fade, fade);
-                icons[i].fade = millis-icons[i].millis+fade;
-                icons[i].value = value;
-                return;
-            }
-            if(pos < 0 && type >= eventicon::SORTED && icons[i].type > type) pos = i;
-        }
-        eventicon e;
-        e.type = type;
-        e.millis = millis;
-        e.fade = e.length = fade;
-        e.value = value;
-        if(pos < 0) icons.add(e);
-        else icons.insert(pos, e);
     }
 
     void setname(const char *n)
@@ -2509,7 +2468,6 @@ namespace hud
     extern int hudwidth, hudheight, hudsize;
     extern float radaraffinityblend, radarblipblend, radaraffinitysize;
     extern bool scoreson, scoresoff, shownscores;
-    extern const char *geticon(int type, int value);
     extern const char *teamtexname(int team = T_NEUTRAL);
     extern const char *itemtex(int type, int stype);
     extern const char *privtex(int priv = PRIV_NONE, int actortype = A_PLAYER);
@@ -2532,7 +2490,7 @@ ENUMDLN(CTONE);
 namespace game
 {
     extern int nextmode, nextmuts, lastzoom, lasttvcam, lasttvchg, spectvtime, waittvtime,
-            maptime, mapstart, timeremaining, timeelapsed, timelast, timesync, bloodfade, bloodsize, bloodsparks, eventiconfade, eventiconshort, damageinteger,
+            maptime, mapstart, timeremaining, timeelapsed, timelast, timesync, bloodfade, bloodsize, bloodsparks, damageinteger,
             announcefilter, dynlighteffects, followthirdperson, nogore, forceplayermodel, forceplayerpattern,
             playerovertone, playerundertone, playerdisplaytone, playerhalotone, playereffecttone, follow, specmode, spectvfollow, clientcrc;
     extern float bloodscale, aboveitemiconsize, playerovertonelevel, playerundertonelevel, playerdisplaytonelevel, playerhalotonelevel, playereffecttonelevel,

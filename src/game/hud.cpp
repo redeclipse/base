@@ -11,7 +11,6 @@ namespace hud
     VAR(IDF_PERSIST, showdemoplayback, 0, 1, 1);
     FVAR(IDF_PERSIST, edgesize, 0, 0.005f, 1000);
 
-    VAR(IDF_PERSIST, showeventicons, 0, 1, 7);
     VAR(IDF_PERSIST, showloadingaspect, 0, 1, 1);
     VAR(IDF_PERSIST, showloadingmapbg, 0, 1, 1);
     VAR(IDF_PERSIST, showloadinglogos, 0, 1, 1);
@@ -63,10 +62,6 @@ namespace hud
         });
     LOOPENGSTATS(,loopcsi)
     LOOPENGSTATS(rev,loopcsirev)
-
-    FVAR(IDF_PERSIST, eventiconoffset, -1, 0.58f, 1);
-    FVAR(IDF_PERSIST, eventiconblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, eventiconscale, 1e-4f, 2.5f, 1000);
 
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, teamneutraltex, "<grey>textures/icons/teamneutral", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, teamalphatex, "<grey>textures/icons/teamalpha", 3);
@@ -1073,46 +1068,6 @@ namespace hud
         }
     }
 
-    void drawevents()
-    {
-        if(!showeventicons || game::focus->state == CS_EDITING || game::focus->state == CS_SPECTATOR) return;
-
-        int ty = int(((hudheight/2)-(hudheight/2*eventiconoffset))/eventiconscale), tx = int((hudwidth/2)/eventiconscale);
-        pushhudscale(eventiconscale);
-        resethudshader();
-
-        loopv(game::focus->icons)
-        {
-            if(game::focus->icons[i].type == eventicon::AFFINITY && !(showeventicons&2)) continue;
-            if(game::focus->icons[i].type == eventicon::WEAPON && !(showeventicons&4)) continue;
-
-            int millis = totalmillis-game::focus->icons[i].millis;
-            if(millis <= game::focus->icons[i].fade)
-            {
-                Texture *t = textureload(geticon(game::focus->icons[i].type, game::focus->icons[i].value), 3, true, false);
-                if(t && t != notexture)
-                {
-                    int olen = min(game::focus->icons[i].length/5, 1000), ilen = olen/2, colour = colourwhite;
-                    float skew = millis < ilen ? millis/float(ilen) : (millis > game::focus->icons[i].fade-olen ? (game::focus->icons[i].fade-millis)/float(olen) : 1.f),
-                          fade = eventiconblend*skew;
-                    int size = int(FONTH*skew), width = int((t->w/float(t->h))*size), rsize = game::focus->icons[i].type < eventicon::SORTED ? int(size*2/3) : int(size);
-                    switch(game::focus->icons[i].type)
-                    {
-                        case eventicon::WEAPON: colour = W(game::focus->icons[i].value, colour); break;
-                        case eventicon::AFFINITY: colour = m_bomber(game::gamemode) ? pulsehexcol(game::focus, PULSE_DISCO) : TEAM(game::focus->icons[i].value, colour); break;
-                        default: break;
-                    }
-                    settexture(t);
-                    gle::color(vec::fromcolor(colour), fade);
-                    drawtexture(tx-width/2, ty-rsize/2, width, size);
-                    ty -= rsize;
-                }
-            }
-        }
-
-        pophudmatrix();
-    }
-
     #define RADARLIMIT (m_edit(game::gamemode) && game::player1->isediting() ? 0.f : radardistlimit)
 
     float radarlimit(float dist) { return min(dist >= 0 && RADARLIMIT > 0 ? clamp(dist, 0.f, RADARLIMIT) : max(dist, 0.f), float(worldsize)); }
@@ -1155,47 +1110,6 @@ namespace hud
                 break;
             }
             default: break;
-        }
-        return "";
-    }
-
-    const char *geticon(int type, int value)
-    {
-        switch(type)
-        {
-            case eventicon::SPREE:
-            {
-                switch(value)
-                {
-                    case 0: return spree1tex; break;
-                    case 1: return spree2tex; break;
-                    case 2: return spree3tex; break;
-                    case 3: default: return spree4tex; break;
-                }
-                break;
-            }
-            case eventicon::MULTIKILL:
-            {
-                switch(value)
-                {
-                    case 0: return multi1tex; break;
-                    case 1: return multi2tex; break;
-                    case 2: default: return multi3tex; break;
-                }
-                break;
-            }
-            case eventicon::HEADSHOT: return headshottex; break;
-            case eventicon::DOMINATE: return dominatetex; break;
-            case eventicon::REVENGE: return revengetex; break;
-            case eventicon::FIRSTBLOOD: return firstbloodtex; break;
-            case eventicon::BREAKER: return breakertex; break;
-            case eventicon::WEAPON: return itemtex(WEAPON, value);
-            case eventicon::AFFINITY:
-            {
-                if(m_bomber(game::gamemode)) return bombtex;
-                if(m_defend(game::gamemode)) return pointtex;
-                return flagtex;
-            }
         }
         return "";
     }
@@ -1584,9 +1498,6 @@ namespace hud
         else
         {
             drawzoom(hudwidth, hudheight);
-
-            if(showhud && !game::tvmode() && !client::waiting() && !hasinput(false)) drawevents();
-
             drawpointers(w, h, -1, wantvisor);
         }
 

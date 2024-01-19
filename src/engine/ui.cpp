@@ -3600,7 +3600,7 @@ namespace UI
                     tdh1 = tcoordmap[FC_TR][1]-tcoordmap[FC_TL][1], tdh2 = tcoordmap[FC_BR][1]-tcoordmap[FC_BL][1];
                 loopi(cols-1)
                 {
-                    int color1 = i+colstart, color2 = cols>1 ? color1+1 : color1;
+                    int color1 = i + colstart, color2 = (color1 + 1) % cols; // wrap around
                     switch(dir)
                     {
                         case HORIZONTAL:
@@ -5961,7 +5961,6 @@ namespace UI
             model *m = loadmodel(name);
             if(m)
             {
-                //loopi(min(colors.length(), int(MAXMDLMATERIALS))) mdl.material[i] = bvec(colors[i].val.r, colors[i].val.g, colors[i].val.b);
                 vec center, radius;
                 m->boundbox(center, radius);
                 if(yaw >= 0) mdl.yaw = yaw;

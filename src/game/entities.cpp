@@ -1356,7 +1356,7 @@ namespace entities
         gameentity &e = *(gameentity *)ents[ent];
         int sweap = m_weapon(d->actortype, game::gamemode, game::mutators), attr = m_attr(e.type, e.attrs[0]),
             colour = e.type == WEAPON && isweap(attr) ? W(attr, colour) : colourwhite;
-        if(e.type == WEAPON && isweap(attr)) d->addicon(eventicon::WEAPON, lastmillis, game::eventiconshort, attr);
+
         if(isweap(weap))
         {
             d->setweapstate(weap, W_S_SWITCH, W(weap, delayswitch), lastmillis);

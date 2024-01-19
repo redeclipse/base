@@ -346,9 +346,6 @@ namespace game
     FVAR(IDF_PERSIST, aboveheadsmooth, 0, 0.25f, 1);
     VAR(IDF_PERSIST, aboveheadsmoothmillis, 1, 100, 10000);
 
-    VAR(IDF_PERSIST, eventiconfade, 500, 8000, VAR_MAX);
-    VAR(IDF_PERSIST, eventiconshort, 500, 3500, VAR_MAX);
-
     VAR(IDF_PERSIST, damageinteger, 0, 1, 1);
     FVAR(IDF_PERSIST, damagedivisor, FVAR_NONZERO, 10, FVAR_MAX);
     FVAR(IDF_PERSIST, damagecritical, 0, 0.25f, 1);
@@ -1574,7 +1571,7 @@ namespace game
                 else if(hassound) loopi(2) if(issound(d->sschan[i])) soundsources[d->sschan[i]].pos = d->toetag(i);
             }
         }
-        loopv(d->icons) if(totalmillis-d->icons[i].millis > d->icons[i].fade) d->icons.remove(i--);
+
         if(actors[d->actortype].weapfx)
         {
             int millis = lastmillis-d->weaptime[d->weapselect];
@@ -2034,11 +2031,7 @@ namespace game
             concformatstring(d->obit, "[\fs%s\fS] by", obitctx);
 
             bool hasanc = false;
-            if(d->headless)
-            {
-                v->addicon(eventicon::HEADSHOT, totalmillis, eventiconfade, 0);
-                if(!hasanc) anc = S_V_HEADSHOT;
-            }
+            if(d->headless && !hasanc) anc = S_V_HEADSHOT;
 
             if(v->actortype >= A_ENEMY)
             {
@@ -2054,7 +2047,6 @@ namespace game
             if(style&FRAG_REVENGE)
             {
                 concatstring(d->obit, " \fs\fzoyvengeful\fS");
-                v->addicon(eventicon::REVENGE, totalmillis, eventiconfade); // revenge
                 v->dominating.removeobj(d);
                 d->dominated.removeobj(v);
                 anc = S_V_REVENGE;
@@ -2064,7 +2056,6 @@ namespace game
             if(style&FRAG_DOMINATE)
             {
                 concatstring(d->obit, " \fs\fzoydominating\fS");
-                v->addicon(eventicon::DOMINATE, totalmillis, eventiconfade); // dominating
                 if(v->dominated.find(d) < 0) v->dominated.add(d);
                 if(d->dominating.find(v) < 0) d->dominating.add(v);
                 anc = S_V_DOMINATE;
@@ -2077,7 +2068,6 @@ namespace game
             if(style&FRAG_BREAKER)
             {
                 concatstring(d->obit, " \fs\fzpwspree-breaking\fS");
-                v->addicon(eventicon::BREAKER, totalmillis, eventiconfade);
                 if(!hasanc) anc = S_V_BREAKER;
             }
 
@@ -2085,7 +2075,6 @@ namespace game
             {
                 if(style&FRAG_BREAKER) concatstring(d->obit, " and");
                 concatstring(d->obit, " \fs\fzcwdouble-killing\fS");
-                v->addicon(eventicon::MULTIKILL, totalmillis, eventiconfade, 0);
                 if(!hasanc) anc = S_V_MULTI;
             }
 
@@ -2093,7 +2082,6 @@ namespace game
             {
                 if(style&FRAG_BREAKER) concatstring(d->obit, " and");
                 concatstring(d->obit, " \fs\fzcwtriple-killing\fS");
-                v->addicon(eventicon::MULTIKILL, totalmillis, eventiconfade, 1);
                 if(!hasanc) anc = S_V_MULTI2;
             }
 
@@ -2101,14 +2089,12 @@ namespace game
             {
                 if(style&FRAG_BREAKER) concatstring(d->obit, " and");
                 concatstring(d->obit, " \fs\fzcwmulti-killing\fS");
-                v->addicon(eventicon::MULTIKILL, totalmillis, eventiconfade, 2);
                 if(!hasanc) anc = S_V_MULTI3;
             }
 
             if(style&FRAG_FIRSTBLOOD)
             {
                 concatstring(d->obit, " for \fs\fzrwfirst blood\fS");
-                v->addicon(eventicon::FIRSTBLOOD, totalmillis, eventiconfade, 0);
                 anc = S_V_FIRSTBLOOD;
                 hasanc = true;
             }
@@ -2116,7 +2102,6 @@ namespace game
             if(style&FRAG_SPREE1)
             {
                 concatstring(d->obit, " in total \fs\fzywcarnage\fS");
-                v->addicon(eventicon::SPREE, totalmillis, eventiconfade, 0);
                 if(!hasanc)
                 {
                     anc = S_V_SPREE;
@@ -2127,7 +2112,6 @@ namespace game
             if(style&FRAG_SPREE2)
             {
                 concatstring(d->obit, " on a \fs\fzywslaughter\fS");
-                v->addicon(eventicon::SPREE, totalmillis, eventiconfade, 1);
                 if(!hasanc)
                 {
                     anc = S_V_SPREE2;
@@ -2138,7 +2122,6 @@ namespace game
             if(style&FRAG_SPREE3)
             {
                 concatstring(d->obit, " on a \fs\fzywmassacre\fS");
-                v->addicon(eventicon::SPREE, totalmillis, eventiconfade, 2);
                 if(!hasanc)
                 {
                     anc = S_V_SPREE3;
@@ -2149,7 +2132,6 @@ namespace game
             if(style&FRAG_SPREE4)
             {
                 concatstring(d->obit, " in a \fs\fzyibloodbath\fS");
-                v->addicon(eventicon::SPREE, totalmillis, eventiconfade, 3);
                 if(!hasanc)
                 {
                     anc = S_V_SPREE4;
