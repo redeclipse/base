@@ -7266,6 +7266,8 @@ namespace UI
 
     void cleangl()
     {
+        Image::lasttex = NULL;
+
         loopj(SURFACE_MAX)
         {
             if(!pushsurface(j)) continue;
