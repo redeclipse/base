@@ -132,12 +132,13 @@ FVAR(IDF_PERSIST, soundefxgain, 0.0f, 2.0f, 10.0f);
 
 void soundenv::setparams(ALuint effect)
 {
-    float gain = props[SOUNDENV_PROP_GAIN];
+    float gain = props[SOUNDENV_PROP_GAIN].get<float>() * soundefxgain;
+    gain = clamp(gain, AL_EAXREVERB_MIN_GAIN, AL_EAXREVERB_MAX_GAIN);
 
     alEffecti (effect, AL_EFFECT_TYPE,                     AL_EFFECT_EAXREVERB);
     alEffectf (effect, AL_EAXREVERB_DENSITY,               props[SOUNDENV_PROP_DENSITY]);
     alEffectf (effect, AL_EAXREVERB_DIFFUSION,             props[SOUNDENV_PROP_DIFFUSION]);
-    alEffectf (effect, AL_EAXREVERB_GAIN,                  gain * soundefxgain);
+    alEffectf (effect, AL_EAXREVERB_GAIN,                  gain);
     alEffectf (effect, AL_EAXREVERB_GAINHF,                props[SOUNDENV_PROP_GAINHF]);
     alEffectf (effect, AL_EAXREVERB_GAINLF,                props[SOUNDENV_PROP_GAINLF]);
     alEffectf (effect, AL_EAXREVERB_DECAY_TIME,            props[SOUNDENV_PROP_DECAY_TIME]);
