@@ -235,7 +235,8 @@ namespace defend
             if(!name || !*name)
             {
                 if(team) formatstring(alias, "%s Base", TEAM(team, name));
-                else formatstring(alias, "Point %d", ++count);
+                else formatstring(alias, "Point %c", char('A' + count));
+                count++;
                 name = alias;
             }
             st.addaffinity(i, e.o, team, e.attrs[1], e.attrs[2], name);
