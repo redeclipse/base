@@ -1442,7 +1442,7 @@ namespace server
             }
             if(type&1)
             {
-                defformatstring(name, "%s%s%s", *gname ? gname : "", *gname ? "-" : "", k < 3 ? gametype[mode].name : gametype[mode].sname);
+                defformatstring(name, "%s%s%s", *gname ? gname : "", *gname ? " " : "", k < 3 ? gametype[mode].name : gametype[mode].sname);
                 copystring(gname, name);
             }
             if(k < 3 && limit > 0 && int(strlen(gname)) >= limit)
