@@ -158,8 +158,8 @@ namespace capture
         }
     }
 
-    DEFUIVARS(capture, SURFACE_VISOR, SURFACE_VISOR);
-    DEFUIVARS(captureflag, SURFACE_VISOR, SURFACE_VISOR);
+    DEFUIVARS(capture, SURFACE_VISOR, SURFACE_VISOR, 1024);
+    DEFUIVARS(captureflag, SURFACE_VISOR, SURFACE_VISOR, 1024);
 
     void checkui()
     {

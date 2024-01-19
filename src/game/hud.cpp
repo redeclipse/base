@@ -542,7 +542,7 @@ namespace hud
         return false;
     }
 
-    DEFUIVARS(player, SURFACE_VISOR, SURFACE_VISOR);
+    DEFUIVARS(player, SURFACE_VISOR, SURFACE_VISOR, 1024);
 
     void checkui()
     {

@@ -142,7 +142,7 @@ namespace defend
         }
     }
 
-    DEFUIVARS(defend, SURFACE_VISOR, SURFACE_VISOR);
+    DEFUIVARS(defend, SURFACE_VISOR, SURFACE_VISOR, 1024);
 
     void checkui()
     {

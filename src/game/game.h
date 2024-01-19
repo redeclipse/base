@@ -2456,12 +2456,13 @@ namespace weapons
 #define MUIVAL(name, type, value) (type ? name##overlay##value : name##above##value)
 #define MUINAME(name, type) (type ? STR_MACRO(name) "overlay" : STR_MACRO(name) "above")
 
-#define DEFUIVARS(name, above, over) \
+#define DEFUIVARS(name, above, over, dist) \
     VAR(IDF_PERSIST, name##aboveui, -1, above, SURFACE_LAST); \
     FVAR(IDF_PERSIST, name##aboveyaw, -1, -1, 360); \
     FVAR(IDF_PERSIST, name##abovepitch, -181, -181, 181); \
     FVAR(IDF_PERSIST, name##abovescale, FVAR_NONZERO, 1, FVAR_MAX); \
     FVAR(IDF_PERSIST, name##aboveworld, FVAR_NONZERO, 4, FVAR_MAX); \
+    FVAR(IDF_PERSIST, name##abovemaxdist, 0, dist, FVAR_MAX); \
     FVAR(IDF_PERSIST, name##abovedetentyaw, 0, 0, 180); \
     FVAR(IDF_PERSIST, name##abovedetentpitch, 0, 0, 90); \
     VAR(IDF_PERSIST, name##overlayui, -1, over, SURFACE_LAST); \
@@ -2469,6 +2470,7 @@ namespace weapons
     FVAR(IDF_PERSIST, name##overlaypitch, -181, -181, 181); \
     FVAR(IDF_PERSIST, name##overlayscale, FVAR_NONZERO, 1, FVAR_MAX); \
     FVAR(IDF_PERSIST, name##overlayworld, FVAR_NONZERO, 4, FVAR_MAX); \
+    FVAR(IDF_PERSIST, name##overlaymaxdist, 0, dist, FVAR_MAX); \
     FVAR(IDF_PERSIST, name##overlaydetentyaw, 0, 0, 180); \
     FVAR(IDF_PERSIST, name##overlaydetentpitch, 0, 0, 90);
 
@@ -2480,7 +2482,7 @@ namespace weapons
     for(int mui_count = 0; mui_count < 2; ++mui_count) \
     { \
         int mui_type = -1; \
-        if(test) \
+        if((test) && (!MUIVAL(name, mui_count, maxdist) || camera1->o.dist(pos) <= MUIVAL(name, mui_count, maxdist))) \
         { \
             mui_type = cansee ? MUIVAL(name, mui_count, ui) : SURFACE_WORLD; \
             if(mui_type >= 0) \
