@@ -3206,29 +3206,23 @@ namespace game
                 physent::reset();
                 type = ENT_CAMERA;
                 state = CS_ALIVE;
-                height = zradius = radius = xradius = yradius = 4;
+                height = zradius = radius = xradius = yradius = actors[A_PLAYER].height;
             }
         } c;
+
         c.o = pos;
+
         if(csize) c.o.z += csize;
         if(!collide(&c, vec(0, 0, 0), 0, false) && !collideinside)
         {
             pos = c.o;
             return true;
         }
-        if(csize) loopi(csize)
-        {
-            c.o.z -= 1;
-            if(!collide(&c, vec(0, 0, 0), 0, false) && !collideinside)
-            {
-                pos = c.o;
-                return true;
-            }
-        }
+
         static const int sphereyawchecks[8] = { 180, 135, 225, 90, 270, 45, 315 }, spherepitchchecks[5] = { 0, 45, -45, 89, -89 };
-        loopi(8) loopj(5) loopk(8)
+        loopi(10) loopj(5) loopk(8)
         {
-            c.o = vec(pos).add(vec(sphereyawchecks[k]*RAD, spherepitchchecks[j]*RAD).mul((i+1)*2));
+            c.o = vec(pos).add(vec(sphereyawchecks[k]*RAD, spherepitchchecks[j]*RAD).mul((i + 1) * 2));
             if(!collide(&c, vec(0, 0, 0), 0, false) && !collideinside)
             {
                 pos = c.o;
@@ -3246,9 +3240,9 @@ namespace game
             loopv(entities::ents)
             {
                 gameentity &e = *(gameentity *)entities::ents[i];
-                if(k ? (e.type != PLAYERSTART && e.type != WEAPON && e.type != CAMERA) : (e.type != CAMERA || e.attrs[0] != CAMERA_NORMAL) || !entities::isallowed(e)) continue;
+                if(k ? (e.type != LIGHT && e.type != ENVMAP && e.type != PLAYERSTART && e.type != WEAPON && e.type != CAMERA) : (e.type != CAMERA || e.attrs[0] != CAMERA_NORMAL || !entities::isallowed(e))) continue;
                 vec pos = e.pos();
-                float radius = e.type == PLAYERSTART ? actors[A_PLAYER].height + 2 : enttype[e.type].radius;
+                float radius = (e.type == PLAYERSTART || !enttype[e.type].radius ? actors[A_PLAYER].height : enttype[e.type].radius) + 2;
                 if(!camcheck(pos, radius)) continue;
                 cameras.add(new cament(cameras.length(), cament::ENTITY, i, pos));
                 found++;
@@ -4097,7 +4091,7 @@ namespace game
             if(allowmove(d))
             {
                 // Test if the player is actually moving at a meaningful speed. This may not be the case if the player is running against a wall or another obstacle.
-                bool moving = fabsf(d->vel.x) > 5.0f || fabsf(d->vel.y) > 5.0f, turning = fabsf(d->rotvel.x) >= playerrotthresh;
+                bool moving = fabsf(d->vel.x) > 5.0f || fabsf(d->vel.y) > 5.0f, turning = fabsf(d->rotvel.x) >= playerrotthresh * (d->crouching() ? 0.5f : 1.f);
 
                 if(physics::liquidcheck(d, 0.1f) && d->physstate <= PHYS_FALL)
                 {

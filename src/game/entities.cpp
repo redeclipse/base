@@ -3687,7 +3687,7 @@ namespace entities
             loopv(ents)
             {
                 gameentity &e = *(gameentity *)ents[i];
-                if(k >= 2 ? e.type != PLAYERSTART : (e.type != CAMERA || (!k && e.attrs[0] != CAMERA_MAPSHOT))) continue;
+                if(k >= 2 ? e.type != PLAYERSTART : (e.type != CAMERA || (!k && (e.attrs[0] != CAMERA_MAPSHOT || !entities::isallowed(e))))) continue;
                 cameras.add(i);
             }
             if(!cameras.empty()) break;
