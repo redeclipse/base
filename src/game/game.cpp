@@ -3224,7 +3224,7 @@ namespace game
                 physent::reset();
                 type = ENT_CAMERA;
                 state = CS_ALIVE;
-                height = zradius = radius = xradius = yradius = 2;
+                height = zradius = radius = xradius = yradius = 4;
             }
         } c;
         c.o = pos;
@@ -3244,7 +3244,7 @@ namespace game
             }
         }
         static const int sphereyawchecks[8] = { 180, 135, 225, 90, 270, 45, 315 }, spherepitchchecks[5] = { 0, 45, -45, 89, -89 };
-        loopi(5) loopj(5) loopk(8)
+        loopi(8) loopj(5) loopk(8)
         {
             c.o = vec(pos).add(vec(sphereyawchecks[k]*RAD, spherepitchchecks[j]*RAD).mul((i+1)*2));
             if(!collide(&c, vec(0, 0, 0), 0, false) && !collideinside)
@@ -3342,6 +3342,7 @@ namespace game
 
     bool cameratv()
     {
+        if(gs_waiting(gamestate)) return true; // override
         if(!tvmode(false) || (cameras.empty() && !buildcams())) return false;
 
         if(!gs_playing(gamestate)) spectvfollow = -1;
@@ -3529,9 +3530,15 @@ namespace game
     void resetcamera(bool cam, bool input)
     {
         lastcamera = 0;
-        //zoomset(false, 0);
         if(input && !hud::hasinput(true)) resetcursor();
         checkcamera();
+
+        if(gs_waiting(gamestate) && cameratv())
+        {
+            entities::mapshot(camera1->o, camera1->yaw, camera1->pitch, curfov);
+            return;
+        }
+
         if(cam || !focus)
         {
             if(!focus) focus = player1;
