@@ -375,8 +375,8 @@ namespace weapons
             int jittertime = W2(weap, jittertime, secondary);
             if(jittertime < 0)
             {
-                int value = -jittertime;
-                jittertime = W2(weap, delayattack, secondary)/value;
+                int value = 0 - jittertime;
+                jittertime = int(ceilf(W2(weap, delayattack, secondary) / float(value)));
             }
             float jitteryawmin = W2(weap, jitteryawmin, secondary), jitteryawmax = W2(weap, jitteryawmax, secondary),
                   jitterpitchmin = W2(weap, jitterpitchmin, secondary), jitterpitchmax = W2(weap, jitterpitchmax, secondary);
