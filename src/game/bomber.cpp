@@ -504,6 +504,7 @@ namespace bomber
                 log->addlist("args", "sound", S_V_BOMBRESET);
                 log->addlist("args", "flags", GAMELOG_F_BROADCAST);
                 log->addlist("args", "affinity", i);
+                log->addlist("args", "value", value);
                 log->addlist("args", "droptime", f.droptime);
                 log->addlist("args", "inittime", f.inittime);
                 log->addlist("args", "concol", colourgrey);
@@ -519,6 +520,7 @@ namespace bomber
             log->addlist("args", "sound", m_duke(game::gamemode, game::mutators) ? S_V_BOMBDUEL : S_V_BOMBSTART);
             log->addlist("args", "flags", GAMELOG_F_BROADCAST);
             log->addlist("args", "affinity", i);
+            log->addlist("args", "value", value);
             log->addlist("args", "concol", colourgrey);
             log->addlistf("args", "console", "The \fs\fzwvbomb\fS has been spawned");
             if(!log->push()) DELETEP(log);

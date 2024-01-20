@@ -455,6 +455,7 @@ namespace capture
             log->addlist("args", "flags", GAMELOG_F_BROADCAST);
             log->addlist("args", "affinity", i);
             log->addlist("args", "value", value);
+            log->addlist("args", "value", value);
             log->addlist("args", "taketime", f.taketime);
             log->addlist("args", "droptime", f.droptime);
             log->addlist("args", "dropoffset", f.dropoffset);
@@ -462,6 +463,7 @@ namespace capture
             log->addlistf("args", "console", "The %s flag has been reset", game::colourteam(f.team, "flagtex"));
             if(!log->push()) DELETEP(log);
         }
+
         if(value == 2)
         {
             st.dropaffinity(i, pos, vec(0, 0, 1), lastmillis);
