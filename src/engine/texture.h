@@ -207,7 +207,7 @@ struct Shader
 
     void addvariant(int row, Shader *s)
     {
-        if(row < 0 || row >= MAXVARIANTROWS || variants.length() >= USHRT_MAX) return;
+        if(row < 0 || row >= MAXVARIANTROWS || variants.length() >= int(USHRT_MAX)) return;
         if(!variantrows) { variantrows = new ushort[MAXVARIANTROWS+1]; memset(variantrows, 0, (MAXVARIANTROWS+1)*sizeof(ushort)); }
         variants.insert(variantrows[row+1], s);
         for(int i = row+1; i <= MAXVARIANTROWS; ++i) ++variantrows[i];

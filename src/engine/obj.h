@@ -59,34 +59,65 @@ struct obj : vertloader<obj>
                 vcolors.setsize(0); \
             } while(0)
 
-            #define FLUSHMESH do { \
-                curmesh->numverts = verts.length(); \
-                if(verts.length()) \
-                { \
-                    curmesh->verts = new vert[verts.length()]; \
-                    memcpy(curmesh->verts, verts.getbuf(), verts.length()*sizeof(vert)); \
-                    curmesh->tcverts = new tcvert[verts.length()]; \
-                    memcpy(curmesh->tcverts, tcverts.getbuf(), tcverts.length()*sizeof(tcvert)); \
-                } \
-                curmesh->numtris = tris.length(); \
-                if(tris.length()) \
-                { \
-                    curmesh->tris = new tri[tris.length()]; \
-                    memcpy(curmesh->tris, tris.getbuf(), tris.length()*sizeof(tri)); \
-                } \
-                if(vcolors.length()) \
-                { \
-                    curmesh->vcolors = new bvec4[vcolors.length()]; \
-                    memcpy(curmesh->vcolors, vcolors.getbuf(), vcolors.length()*sizeof(bvec4)); \
-                } \
-                if(attrib[2].empty()) \
-                { \
-                    if(smooth <= 1) curmesh->smoothnorms(smooth); \
-                    else curmesh->buildnorms(); \
-                } \
-                curmesh->calctangents(); \
-            } while(0)
-
+            #if 0
+                // writing between 18446743987810205696 and 18446744073709551576 bytes into a region of size 9223372036854775807 [-Wstringop-overflow=]
+                // as this only loads the file, memcpy performance is not of particular concern
+                #define FLUSHMESH do { \
+                    curmesh->numverts = verts.length(); \
+                    if(verts.length()) \
+                    { \
+                        curmesh->verts = new vert[verts.length()]; \
+                        memcpy(curmesh->verts, verts.getbuf(), verts.length()*sizeof(vert)); \
+                        curmesh->tcverts = new tcvert[verts.length()]; \
+                        memcpy(curmesh->tcverts, tcverts.getbuf(), tcverts.length()*sizeof(tcvert)); \
+                    } \
+                    curmesh->numtris = tris.length(); \
+                    if(tris.length()) \
+                    { \
+                        curmesh->tris = new tri[tris.length()]; \
+                        memcpy(curmesh->tris, tris.getbuf(), tris.length()*sizeof(tri)); \
+                    } \
+                    if(vcolors.length()) \
+                    { \
+                        curmesh->vcolors = new bvec4[vcolors.length()]; \
+                        memcpy(curmesh->vcolors, vcolors.getbuf(), vcolors.length()*sizeof(bvec4)); \
+                    } \
+                    if(attrib[2].empty()) \
+                    { \
+                        if(smooth <= 1) curmesh->smoothnorms(smooth); \
+                        else curmesh->buildnorms(); \
+                    } \
+                    curmesh->calctangents(); \
+                } while(0)
+            #else
+                #define FLUSHMESH do { \
+                    curmesh->numverts = verts.length(); \
+                    if(!verts.empty()) \
+                    { \
+                        curmesh->verts = new vert[verts.length()]; \
+                        loopv(verts) curmesh->verts[i] = verts[i]; \
+                        curmesh->tcverts = new tcvert[verts.length()]; \
+                        loopv(tcverts) curmesh->tcverts[i] = tcverts[i]; \
+                    } \
+                    curmesh->numtris = tris.length(); \
+                    if(!tris.empty()) \
+                    { \
+                        curmesh->tris = new tri[tris.length()]; \
+                        loopv(tris) curmesh->tris[i] = tris[i]; \
+                    } \
+                    if(!vcolors.empty()) \
+                    { \
+                        curmesh->vcolors = new bvec4[vcolors.length()]; \
+                        loopv(vcolors) curmesh->vcolors[i] = vcolors[i]; \
+                    } \
+                    if(attrib[2].empty()) \
+                    { \
+                        if(smooth <= 1) curmesh->smoothnorms(smooth); \
+                        else curmesh->buildnorms(); \
+                    } \
+                    curmesh->calctangents(); \
+                } while(0)
+            #endif
             string meshname = "";
             vertmesh *curmesh = NULL;
             while(file->getline(buf, sizeof(buf)))

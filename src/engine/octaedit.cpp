@@ -1702,7 +1702,7 @@ struct prefabmesh
             const vertex &c = verts[i];
             if(c.pos==v.pos && c.norm==v.norm) return i;
         }
-        if(verts.length() >= USHRT_MAX) return -1;
+        if(verts.length() >= int(USHRT_MAX)) return -1;
         verts.add(v);
         chain.add(table[h]);
         return table[h] = verts.length()-1;

@@ -2757,7 +2757,7 @@ struct shadowverts
     {
         uint h = hthash(v)&(SIZE-1);
         for(int i = table[h]; i>=0; i = chain[i]) if(verts[i] == v) return i;
-        if(verts.length() >= USHRT_MAX) return -1;
+        if(verts.length() >= int(USHRT_MAX)) return -1;
         verts.add(v);
         chain.add(table[h]);
         return table[h] = verts.length()-1;
@@ -2841,7 +2841,7 @@ static inline void addshadowmeshtri(shadowmesh &m, int sides, shadowdrawinfo dra
         case SM_CUBEMAP: sidemask = calctrisidemask(l0.div(shadowradius), l1.div(shadowradius), l2.div(shadowradius), shadowbias); break;
     }
     if(!sidemask) return;
-    if(shadowverts.verts.length() + 3 >= USHRT_MAX) flushshadowmeshdraws(m, sides, draws);
+    if(shadowverts.verts.length() + 3 >= int(USHRT_MAX)) flushshadowmeshdraws(m, sides, draws);
     int i0 = shadowverts.add(v0), i1 = shadowverts.add(v1), i2 = shadowverts.add(v2);
     ushort minvert = min(i0, min(i1, i2)), maxvert = max(i0, max(i1, i2));
     loopk(sides) if(sidemask&(1<<k))

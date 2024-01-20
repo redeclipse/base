@@ -149,7 +149,7 @@ struct verthash
             if(c.pos==v.pos && c.tc==v.tc && c.norm==v.norm && c.tangent==v.tangent)
                  return i;
         }
-        if(verts.length() >= USHRT_MAX) return -1;
+        if(verts.length() >= int(USHRT_MAX)) return -1;
         verts.add(v);
         chain.add(table[h]);
         return table[h] = verts.length()-1;
@@ -525,9 +525,9 @@ struct vacollect : verthash
         if(va->verts)
         {
             if(vbosize[VBO_VBUF] + verts.length() > maxvbosize ||
-               vbosize[VBO_EBUF] + worldtris > USHRT_MAX ||
-               vbosize[VBO_SKYBUF] + skytris > USHRT_MAX ||
-               vbosize[VBO_DECALBUF] + decaltris > USHRT_MAX)
+               vbosize[VBO_EBUF] + worldtris > int(USHRT_MAX) ||
+               vbosize[VBO_SKYBUF] + skytris > int(USHRT_MAX) ||
+               vbosize[VBO_DECALBUF] + decaltris > int(USHRT_MAX))
                 flushvbo();
 
             uchar *vdata = addvbo(va, VBO_VBUF, va->verts, sizeof(vertex));
@@ -758,7 +758,7 @@ void addtris(VSlot &vslot, int orient, const sortkey &key, vertex *verts, int *i
             }
             if(i1 != i2)
             {
-                if(total + 3 > USHRT_MAX) return;
+                if(total + 3 > int(USHRT_MAX)) return;
                 total += 3;
                 idxs.add(i0);
                 idxs.add(i1);
@@ -811,7 +811,7 @@ void addtris(VSlot &vslot, int orient, const sortkey &key, vertex *verts, int *i
                     if(i2 < 0) return;
                     if(i1 >= 0)
                     {
-                        if(total + 3 > USHRT_MAX) return;
+                        if(total + 3 > int(USHRT_MAX)) return;
                         total += 3;
                         idxs.add(i0);
                         idxs.add(i1);
