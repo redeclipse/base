@@ -2199,7 +2199,7 @@ namespace server
         {
             if(sents[triggers[i+1].ents[k]].type != TRIGGER) continue;
 
-            bool spawn = sents[triggers[i+1].ents[k]].attrs[4]%2;
+            bool spawn = (sents[triggers[i+1].ents[k]].attrs[4]%TRIG_S_INVERTED) != 0;
             if(spawn != sents[triggers[i+1].ents[k]].spawned)
             {
                 sents[triggers[i+1].ents[k]].spawned = spawn;
@@ -5415,13 +5415,14 @@ namespace server
         {
             case TRIGGER:
             {
-                if(sents[i].attrs[1] != TR_LINK || !servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr])) continue;
+                if(sents[i].attrs[4]&TRIG_S_PERSIST || (sents[i].attrs[1] != TRIG_TOGGLE && sents[i].attrs[1] != TRIG_LINKED)) continue;
+                if(!servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr])) continue;
 
-                bool spawn = sents[i].attrs[4]%2;
+                bool spawn = (sents[i].attrs[4]&TRIG_S_INVERTED) != 0;
                 if(spawn != sents[i].spawned && gamemillis >= sents[i].millis && (sents[i].attrs[0] == triggerid || !sents[i].attrs[0]) && m_check(sents[i].attrs[5], sents[i].attrs[6], gamemode, mutators))
                 {
                     sents[i].spawned = spawn;
-                    sents[i].millis = gamemillis+(triggertime()*2);
+                    sents[i].millis = gamemillis + triggertime();
 
                     sendf(-1, 1, "ri3", N_TRIGGER, i, 0);
 
@@ -7084,20 +7085,22 @@ namespace server
                         if(!servermapvariant(sents[ent].attrs[enttype[sents[ent].type].mvattr])) break;
                         if(sents[ent].attrs[0] && sents[ent].attrs[0] != triggerid) break;
                         if(!m_check(sents[ent].attrs[5], sents[ent].attrs[6], gamemode, mutators)) break;
-                        bool commit = false, kin = false, spawn = sents[ent].attrs[4]%2;
+
+                        bool commit = false, kin = false, spawn = (sents[ent].attrs[4]&TRIG_S_INVERTED) != 0;
                         switch(sents[ent].attrs[1])
                         {
-                            case TR_TOGGLE:
+                            case TRIG_TOGGLE:
                             {
-                                sents[ent].millis = gamemillis+(triggertime()*2);
+                                if(sents[ent].attrs[4]&TRIG_S_ONEWAY && sents[ent].spawned != spawn) break;
+                                sents[ent].millis = gamemillis + (triggertime() * TRIGGERMULTI);
                                 sents[ent].spawned = !sents[ent].spawned;
                                 commit = kin = true;
                                 break;
                             }
-                            case TR_ONCE: if(sents[ent].spawned != spawn) break;
-                            case TR_LINK:
+                            case TRIG_ONCE: if(sents[ent].spawned != spawn) break;
+                            case TRIG_LINKED:
                             {
-                                sents[ent].millis = gamemillis+(triggertime()*2);
+                                sents[ent].millis = gamemillis + (triggertime() * TRIGGERMULTI);
                                 kin = true;
                                 if(sents[ent].spawned == spawn)
                                 {
@@ -7106,13 +7109,15 @@ namespace server
                                 }
                                 break;
                             }
-                            case TR_EXIT:
+                            case TRIG_EXIT:
                             {
                                 if(sents[ent].spawned) break;
                                 sents[ent].spawned = true;
                             }
                         }
+
                         if(commit) sendf(-1, 1, "ri3x", N_TRIGGER, ent, sents[ent].spawned ? 1 : 0, cp->clientnum);
+
                         if(kin) loopvj(sents[ent].kin) if(sents.inrange(sents[ent].kin[j]))
                         {
                             if(sents[sents[ent].kin[j]].type == TRIGGER && !servermapvariant(sents[sents[ent].kin[j]].attrs[enttype[sents[sents[ent].kin[j]].type].mvattr]) && !m_check(sents[sents[ent].kin[j]].attrs[5], sents[sents[ent].kin[j]].attrs[6], gamemode, mutators))

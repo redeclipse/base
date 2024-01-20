@@ -1195,11 +1195,13 @@ namespace entities
             {
                 if(full)
                 {
-                    const char *trgnames[TR_MAX+1] = { "toggle", "link", "script", "once", "exit", "" }, *actnames[TA_MAX+1] = { "manual", "proximity", "action", "" };
-                    addentinfo(trgnames[attr[1] < 0 || attr[1] >= TR_MAX ? TR_MAX : attr[1]]);
-                    addentinfo(actnames[attr[2] < 0 || attr[2] >= TA_MAX ? TA_MAX : attr[2]]);
-                    if(attr[4] >= 2) addentinfo(attr[4] ? "routed" : "inert");
-                    addentinfo(attr[4]%2 ? "on" : "off");
+                    const char *trgnames[TRIG_MAX+1] = { "toggle", "link", "script", "once", "exit", "" }, *actnames[TRIG_A_MAX+1] = { "manual", "proximity", "action", "" };
+                    addentinfo(trgnames[attr[1] < 0 || attr[1] >= TRIG_MAX ? TRIG_MAX : attr[1]]);
+                    addentinfo(actnames[attr[2] < 0 || attr[2] >= TRIG_A_MAX ? TRIG_A_MAX : attr[2]]);
+                    addentinfo(attr[4]&TRIG_S_INVERTED ? "on" : "off");
+                    addentinfo(attr[4]&TRIG_S_ROUTED ? "routed" : "unrouted");
+                    addentinfo(attr[4]&TRIG_S_ONEWAY ? "one-way" : "both-ways");
+                    addentinfo(attr[4]&TRIG_S_PERSIST ? "persist" : "reset");
                 }
                 break;
             }
@@ -1516,13 +1518,27 @@ namespace entities
             case TRIGGER:
             {
                 if(!isallowed(e)) return false;
+
                 if(d)
                 {
+                    bool spawn = (e.attrs[4]&TRIG_S_INVERTED) != 0;
+                    switch(e.attrs[1])
+                    {
+                        case TRIG_TOGGLE:
+                            if(e.attrs[4]&TRIG_S_ONEWAY && e.spawned() != spawn) return false;
+                            break;
+                        case TRIG_ONCE:
+                            if(e.spawned() != spawn) return false;
+                            break;
+                        case TRIG_EXIT:
+                            if(e.spawned()) return false;
+                            break;
+                    }
+
                     int millis = d->lastused(n);
-                    if(millis && lastmillis-millis < triggertime(e, true)) return false;
+                    if(millis && lastmillis - millis < triggertime(e, true)) return false;
                 }
                 return true;
-                break;
             }
             default: if(isallowed(e)) return true; break;
         }
@@ -1551,14 +1567,14 @@ namespace entities
             d->setused(n, lastmillis);
             switch(e.attrs[1])
             {
-                case TR_EXIT: if(d->actortype >= A_BOT) break;
-                case TR_TOGGLE: case TR_LINK: case TR_ONCE:
+                case TRIG_EXIT: if(d->actortype >= A_BOT) break;
+                case TRIG_TOGGLE: case TRIG_LINKED: case TRIG_ONCE:
                 {
                     client::addmsg(N_TRIGGER, "ri2", d->clientnum, n);
-                    if(!e.spawned() || e.attrs[1] == TR_TOGGLE) setspawn(n, e.spawned() ? 0 : 1);
+                    if(!e.spawned() || e.attrs[1] == TRIG_TOGGLE) setspawn(n, e.spawned() ? 0 : 1);
                     break;
                 }
-                case TR_SCRIPT:
+                case TRIG_SCRIPT:
                 {
                     if(d->actortype >= A_BOT) break;
                     defformatstring(s, "on_trigger_%d", e.attrs[0]);
@@ -1571,13 +1587,13 @@ namespace entities
                 }
                 default: break;
             }
-            if(act && e.attrs[2] == TA_ACTION) d->action[AC_USE] = false;
+            if(act && e.attrs[2] == TRIG_A_ACTION) d->action[AC_USE] = false;
         }
     }
 
     void runtriggers(int n, gameent *d)
     {
-        loopenti(TRIGGER) if(ents[i]->type == TRIGGER && ents[i]->attrs[0] == n && ents[i]->attrs[2] == TA_MANUAL) runtrigger(i, d, false);
+        loopenti(TRIGGER) if(ents[i]->type == TRIGGER && ents[i]->attrs[0] == n && ents[i]->attrs[2] == TRIG_A_MANUAL) runtrigger(i, d, false);
     }
     ICOMMAND(0, exectrigger, "i", (int *n), if(identflags&IDF_MAP) runtriggers(*n, triggerclient ? triggerclient : game::player1));
 
@@ -1825,7 +1841,8 @@ namespace entities
                     if(d->state != CS_ALIVE || !gameent::is(d) || !isallowed(e)) break;
 
                     gameent *g = (gameent *)d;
-                    if((e.attrs[2] == TA_ACTION && g->action[AC_USE] && g == game::player1) || e.attrs[2] == TA_AUTO) runtrigger(n, g);
+                    if((e.attrs[2] == TRIG_A_ACTION && g->action[AC_USE] && g == game::player1) || e.attrs[2] == TRIG_A_AUTO)
+                        runtrigger(n, g);
                 }
                 else if(e.type == CHECKPOINT)
                 {
@@ -1930,7 +1947,7 @@ namespace entities
         bool on = m%2, spawned = e.spawned();
         e.setspawned(on);
         if(on) e.lastspawn = lastmillis;
-        if(e.type == TRIGGER && cantrigger(n) && (e.attrs[1] == TR_TOGGLE || e.attrs[1] == TR_LINK || e.attrs[1] == TR_ONCE) && (m >= 2 || e.lastemit <= 0 || e.spawned() != spawned))
+        if(e.type == TRIGGER && cantrigger(n) && (e.attrs[1] == TRIG_TOGGLE || e.attrs[1] == TRIG_LINKED || e.attrs[1] == TRIG_ONCE) && (m >= 2 || e.lastemit <= 0 || e.spawned() != spawned))
         {
             if(m >= 2) e.lastemit = -1;
             else if(e.lastemit > 0)
@@ -2177,13 +2194,13 @@ namespace entities
             }
             case TRIGGER:
             {
-                while(e.attrs[1] < 0) e.attrs[1] += TR_MAX; // type
-                while(e.attrs[1] >= TR_MAX) e.attrs[1] -= TR_MAX; // wrap both ways
-                while(e.attrs[2] < 0) e.attrs[2] += TA_MAX; // action
-                while(e.attrs[2] >= TA_MAX) e.attrs[2] -= TA_MAX; // wrap both ways
+                while(e.attrs[1] < 0) e.attrs[1] += TRIG_MAX; // type
+                while(e.attrs[1] >= TRIG_MAX) e.attrs[1] -= TRIG_MAX; // wrap both ways
+                while(e.attrs[2] < 0) e.attrs[2] += TRIG_A_MAX; // action
+                while(e.attrs[2] >= TRIG_A_MAX) e.attrs[2] -= TRIG_A_MAX; // wrap both ways
                 if(e.attrs[3] < 0) e.attrs[3] = 1; // radius, clamp
-                while(e.attrs[4] < 0) e.attrs[4] += 4; // state
-                while(e.attrs[4] >= 4) e.attrs[4] -= 4; // wrap both ways
+                while(e.attrs[4] < 0) e.attrs[4] += TRIG_S_ALL+1; // state
+                while(e.attrs[4] >= TRIG_S_ALL+1) e.attrs[4] -= TRIG_S_ALL+1; // wrap both ways
                 if(cantrigger(n)) loopv(e.links) if(ents.inrange(e.links[i]) && (ents[e.links[i]]->type == MAPMODEL || ents[e.links[i]]->type == PARTICLES || (ents[e.links[i]]->type == MAPSOUND && ents[e.links[i]]->attrs[0] >= 0) || ents[e.links[i]]->type == LIGHTFX))
                 {
                     ents[e.links[i]]->lastemit = e.lastemit;
