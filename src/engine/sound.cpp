@@ -398,7 +398,7 @@ SOUNDVOL(music, music, 0.3f, updatemusic());
 
 int musicfade = 0;
 bool musicstopping = false;
-FVAR(IDF_PERSIST, soundmusicfade, 0, 1000, VAR_MAX);
+FVAR(IDF_PERSIST, soundmusicfade, 0, 1000, FVAR_MAX);
 
 FVAR(IDF_PERSIST, soundeffectevent, 0, 1, 100);
 FVAR(IDF_PERSIST, soundeffectenv, 0, 1, 100);
