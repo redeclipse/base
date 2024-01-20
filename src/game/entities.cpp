@@ -1645,7 +1645,7 @@ namespace entities
 
                     if(e.attrs[8]&(1<<TELE_NOAFFIN))
                     {
-                        if(gameent::is(d) && physics::carryaffinity((gameent *)d)) break;
+                        if(gameent::is(d) && physics::hasaffinity((gameent *)d)) break;
                         if(projent::is(d) && ((projent *)d)->type == PRJ_AFFINITY) break;
                     }
 

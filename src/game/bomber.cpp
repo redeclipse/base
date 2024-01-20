@@ -96,7 +96,7 @@ namespace bomber
         }
     }
 
-    int carryaffinity(gameent *d)
+    int hasaffinity(gameent *d)
     {
         int n = 0;
         loopv(st.flags) if(st.flags[i].owner == d) n++;
@@ -162,7 +162,7 @@ namespace bomber
 
     bool dropaffinity(gameent *d)
     {
-        if(!carryaffinity(d) || (!d->action[AC_AFFINITY] && !d->actiontime[AC_AFFINITY])) return false;
+        if(!hasaffinity(d) || (!d->action[AC_AFFINITY] && !d->actiontime[AC_AFFINITY])) return false;
         if(d->action[AC_AFFINITY]) return true;
         vec o = d->headpos(), inertia = vec(d->yaw*RAD, d->pitch*RAD).mul(bomberspeed).add(vec(d->vel).add(d->falling).mul(bomberrelativity));
         bool guided = m_team(game::gamemode, game::mutators) && bomberlockondelay && lastmillis-d->actiontime[AC_AFFINITY] >= bomberlockondelay;
@@ -242,7 +242,7 @@ namespace bomber
             else curpos.z += enttype[AFFINITY].radius * 0.125f;
 
             MAKEUI(bomber, i,
-                f.enabled, haloallow(camera1->o, i),
+                f.enabled && f.owner != game::focus, haloallow(camera1->o, i),
                     curpos,
                     enttype[AFFINITY].radius * (isbomberaffinity(f) ? 0.125f : 0.25f),
                     enttype[AFFINITY].radius * (isbomberaffinity(f) ? 0.125f : 0.25f)

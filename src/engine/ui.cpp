@@ -31,6 +31,11 @@ namespace UI
 
     FVAR(IDF_PERSIST, uitipoffset, -1, 0.001f, 1);
 
+    VAR(IDF_PERSIST, uihintintime, 0, 100, VAR_MAX);
+    VAR(IDF_PERSIST, uihintholdtime, 0, 1000, VAR_MAX);
+    VAR(IDF_PERSIST, uihintouttime, 0, 3000, VAR_MAX);
+    FVAR(IDF_PERSIST, uihintoffset, -0.5f, 0.125f, 0.5f);
+
     static Texture *loadthumbnail(const char *name, int tclamp)
     {
         Texture *t = textureloaded(name);
@@ -952,7 +957,7 @@ namespace UI
         Code *contents, *onshow, *onhide;
         bool exclusive, mapdef, saved,
              menu, passthrough, tooltip, popup, persist, ontop, attached;
-        int allowinput, lasthit, lastshow, zindex, numargs, initargs;
+        int allowinput, lasthit, lastshow, zindex, numargs, initargs, hint;
         float px, py, pw, ph,
               yaw, pitch, curyaw, curpitch, detentyaw, detentpitch,
               scale, dist, hitx, hity;
@@ -965,7 +970,7 @@ namespace UI
             contents(NULL), onshow(NULL), onhide(NULL),
             exclusive(false), mapdef(mapdef_),
             menu(true), passthrough(false), tooltip(false), popup(false), persist(false), ontop(false), attached(false),
-            allowinput(1), lasthit(0), lastshow(0), zindex(0), numargs(0), initargs(0),
+            allowinput(1), lasthit(0), lastshow(0), zindex(0), numargs(0), initargs(0), hint(0),
             px(0), py(0), pw(0), ph(0),
             yaw(-1), pitch(0), curyaw(0), curpitch(0), detentyaw(0), detentpitch(0),
             scale(1), dist(0), hitx(-1), hity(-1),
@@ -1122,7 +1127,7 @@ namespace UI
             allowinput = 1;
             exclusive = passthrough = tooltip = popup = persist = ontop = attached = false;
             menu = true;
-            zindex = 0;
+            zindex = hint = 0;
             px = py = pw = ph = 0;
 
             if(surfacetype != SURFACE_WORLD) pos = origin;
@@ -1172,7 +1177,47 @@ namespace UI
             window = this;
 
             Object::layout();
-            if(surfacetype != SURFACE_WORLD && pos != vec(-FLT_MAX)) vposition();
+
+            bool haspos = pos != vec(-FLT_MAX);
+            if(hint > 0)
+            {
+                int offset = lastmillis - hint;
+                if(offset <= uihintintime + uihintholdtime + uihintouttime)
+                {
+                    float amt = smoothinterp(offset > (uihintholdtime + uihintintime) ?
+                                    1.f - ((offset - uihintintime - uihintholdtime) / float(uihintouttime))
+                                : (offset < uihintintime ? offset / float(uihintintime) : 1.f));
+
+                    if(haspos)
+                    {
+                        vec campos = vec(camera1->o).add(vec(camera1->yaw * RAD, (camera1->pitch + fovy * uihintoffset) * RAD).mul(16));
+                        pos = vec(pos).add(vec(campos).sub(pos).mul(amt));
+                    }
+                    else
+                    {
+                        vec2 campos(aspect * 0.5f, 0.5f - uihintoffset), curpos(x, y);
+
+                        switch(adjust&ALIGN_HMASK)
+                        {
+                            case ALIGN_LEFT:    campos.x -= w; break;
+                            case ALIGN_HCENTER: campos.x -= w * 0.5f; break;
+                            case ALIGN_RIGHT:   break;
+                        }
+
+                        switch(adjust&ALIGN_VMASK)
+                        {
+                            case ALIGN_TOP:     campos.y -= h; break;
+                            case ALIGN_VCENTER: campos.y -= h * 0.5f; break;
+                            case ALIGN_BOTTOM:  break;
+                        }
+
+                        campos = vec2(curpos).add(vec2(campos).sub(curpos).mul(amt));
+                        setpos(campos.x, campos.y);
+                    }
+                }
+            }
+
+            if(surfacetype != SURFACE_WORLD && haspos) vposition();
 
             window = oldwindow;
         }
@@ -1406,6 +1451,10 @@ namespace UI
         {
             Window *aa = (Window *)a, *bb = (Window *)b;
 
+            // newest hint windows last
+            if(aa->hint < bb->hint) return true;
+            if(aa->hint > bb->hint) return false;
+
             // ontop windows last
             if(!aa->ontop && bb->ontop) return true;
             if(aa->ontop && !bb->ontop) return false;
@@ -1634,9 +1683,10 @@ namespace UI
     UIWINARG(yaw, "f", float, -1, 360);
     UIWINARG(pitch, "f", float, -181, 181);
     UIWINARG(zindex, "i", int, VAR_MIN, VAR_MAX);
+    UIWINARG(hint, "i", int, 0, VAR_MAX);
+
     ICOMMANDVF(0, uicuryaw, window ? window->curyaw : -1.f);
     ICOMMANDVF(0, uicurpitch, window ? window->curpitch : -1.f);
-
     ICOMMANDVF(0, uihitx, window ? window->hitx : -1.f);
     ICOMMANDVF(0, uihity, window ? window->hity : -1.f);
     ICOMMANDV(0, uiworld, surfacetype == SURFACE_WORLD ? 1 : 0);

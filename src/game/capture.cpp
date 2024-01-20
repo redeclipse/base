@@ -88,7 +88,7 @@ namespace capture
     LOOPCAPTUREIF(,loopcsv);
     LOOPCAPTUREIF(rev,loopcsvrev);
 
-    int carryaffinity(gameent *d)
+    int hasaffinity(gameent *d)
     {
         int n = 0;
         loopv(st.flags) if(st.flags[i].owner == d) n++;
@@ -97,7 +97,7 @@ namespace capture
 
     bool dropaffinity(gameent *d)
     {
-        if(!carryaffinity(d) || !d->action[AC_AFFINITY]) return false;
+        if(!hasaffinity(d) || !d->action[AC_AFFINITY]) return false;
         vec o = d->feetpos(capturedropheight), inertia = vec(d->vel).add(d->falling);
         client::addmsg(N_DROPAFFIN, "ri8", d->clientnum, -1, int(o.x*DMF), int(o.y*DMF), int(o.z*DMF), int(inertia.x*DMF), int(inertia.y*DMF), int(inertia.z*DMF));
         d->action[AC_AFFINITY] = false;
@@ -171,7 +171,7 @@ namespace capture
             curpos.z += enttype[AFFINITY].radius * (f.owner || f.droptime ? 0.125f : 0.375f);
 
             MAKEUI(capture, i,
-                true, haloallow(camera1->o, i),
+                f.owner != game::focus, haloallow(camera1->o, i),
                     curpos, enttype[AFFINITY].radius * (f.owner || f.droptime ? 0.125f : 0.5f), enttype[AFFINITY].radius * 0.25f
             );
 
@@ -179,7 +179,7 @@ namespace capture
             curpos.z += enttype[AFFINITY].radius * (f.droptime ? 0.25f : 0.375f);
 
             MAKEUI(captureflag, i,
-                f.owner || f.droptime, haloallow(camera1->o, i),
+                f.owner != game::focus && (f.owner || f.droptime), haloallow(camera1->o, i),
                     curpos, enttype[AFFINITY].radius * (f.droptime ? 0.25f : 0.5f), enttype[AFFINITY].radius * 0.25f
             );
         }

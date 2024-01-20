@@ -1052,7 +1052,7 @@ namespace game
 
     void respawned(gameent *d, bool local, int ent)
     { // remote clients wait until first position update to process this
-        d->configure(lastmillis, gamemode, mutators, physics::carryaffinity(d), 0, playerrotdecay, playerrotinertia, playerrotmaxinertia);
+        d->configure(lastmillis, gamemode, mutators, physics::hasaffinity(d), 0, playerrotdecay, playerrotinertia, playerrotmaxinertia);
 
         if(local)
         {
@@ -1362,7 +1362,7 @@ namespace game
         d->o.z -= d->height;
 
         entities::physents(d);
-        d->configure(lastmillis, gamemode, mutators, physics::carryaffinity(d), curtime, playerrotdecay, playerrotinertia, playerrotmaxinertia);
+        d->configure(lastmillis, gamemode, mutators, physics::hasaffinity(d), curtime, playerrotdecay, playerrotinertia, playerrotmaxinertia);
 
         if(d->state == CS_ALIVE)
         {

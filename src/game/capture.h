@@ -216,7 +216,7 @@ namespace capture
 {
     extern capturestate st;
     extern bool haloallow(const vec &o, int id, int render = 0, bool justtest = false, bool check = true);
-    extern int carryaffinity(gameent *d);
+    extern int hasaffinity(gameent *d);
     extern bool dropaffinity(gameent *d);
     extern void sendaffinity(packetbuf &p);
     extern void parseaffinity(ucharbuf &p);

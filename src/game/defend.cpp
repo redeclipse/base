@@ -97,6 +97,13 @@ namespace defend
     LOOPDEFENDIF(,loopcsv);
     LOOPDEFENDIF(rev,loopcsvrev);
 
+    int hasaffinity(gameent *d)
+    {
+        int n = 0;
+        loopv(st.flags) if(insideaffinity(st.flags[i], d)) n++;
+        return n;
+    }
+
     void preload()
     {
         preloadmodel("props/point");

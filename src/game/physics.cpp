@@ -159,13 +159,14 @@ namespace physics
     ICOMMAND(0, affinity, "D", (int *n), doaction(AC_AFFINITY, *n!=0));
     ICOMMAND(0, dash, "D", (int *n), doaction(AC_DASH, *n!=0));
 
-    int carryaffinity(gameent *d)
+    int hasaffinity(gameent *d)
     {
-        if(m_capture(game::gamemode)) return capture::carryaffinity(d);
-        if(m_bomber(game::gamemode)) return bomber::carryaffinity(d);
+        if(m_capture(game::gamemode)) return capture::hasaffinity(d);
+        if(m_bomber(game::gamemode)) return bomber::hasaffinity(d);
+        if(m_defend(game::gamemode)) return defend::hasaffinity(d);
         return 0;
     }
-    CLCOMMAND(carryaffinity, intret(carryaffinity(d)));
+    CLCOMMAND(hasaffinity, intret(hasaffinity(d)));
 
     bool secondaryweap(gameent *d)
     {
