@@ -243,7 +243,7 @@ namespace bomber
             bool force = hasaffinity(game::focus) && f.team != game::focus->team;
 
             MAKEUI(bomber, i,
-                f.enabled && f.owner != game::focus, haloallow(camera1->o, i), force,
+                f.enabled && (!isbomberaffinity(f) || f.owner != game::focus), haloallow(camera1->o, i), force,
                     curpos, enttype[AFFINITY].radius * (isbomberaffinity(f) ? 0.125f : 0.25f), enttype[AFFINITY].radius * (isbomberaffinity(f) ? 0.125f : 0.25f)
             );
         }
