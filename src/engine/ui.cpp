@@ -6383,25 +6383,30 @@ namespace UI
 
     struct MiniMap : Target
     {
+        enum { ELLIPSE = 0, SQUARE };
+
         Texture *tex;
         float dist, border;
+        int shape;
 
-        void setup(Texture *tex_, const Color &color_, float dist_ = 0, float border_ = 0.05f, float minw_ = 0, float minh_ = 0)
+        void setup(Texture *tex_, const Color &color_, float dist_ = 0, float border_ = 0.05f, float minw_ = 0, float minh_ = 0, int shape_ = ELLIPSE)
         {
             Target::setup(minw_, minh_, color_);
             colors.add(Color(colourwhite));
             tex = tex_;
             dist = dist_;
             border = border_;
+            shape = shape_;
         }
 
-        void setup(Texture *tex_, const Color &color_, const Color &color2_, float dist_ = 0, float border_ = 0.05f, float minw_ = 0, float minh_ = 0)
+        void setup(Texture *tex_, const Color &color_, const Color &color2_, float dist_ = 0, float border_ = 0.05f, float minw_ = 0, float minh_ = 0, int shape_ = ELLIPSE)
         {
             Target::setup(minw_, minh_, color_);
             colors.add(color2_); // minimap version
             tex = tex_;
             dist = dist_;
             border = border_;
+            shape = shape_;
         }
 
         static const char *typestr() { return "#MiniMap"; }
@@ -6416,6 +6421,7 @@ namespace UI
         {
             setupdraw();
             while(colors.length() < 2) colors.add(Color(colourwhite));
+
             if(hud::needminimap())
             {
                 Shader *oldshader = Shader::lastshader;
@@ -6423,26 +6429,52 @@ namespace UI
 
                 LOCALPARAMF(minimapparams, 2<<(minimapsize-1));
 
-                vec pos = vec(camera1->o).sub(minimapcenter).mul(minimapscale).add(0.5f), dir(camera1->yaw*RAD, 0.f);
+                vec pos = vec(camera1->o).sub(minimapcenter).mul(minimapscale).add(0.5f), dir(camera1->yaw * RAD, 0.f);
                 int limit = hud::radarlimit();
                 float scale = min(dist > 0 ? dist : float(worldsize), limit > 0 ? limit : float(worldsize)),
-                      qw = w*0.5f*border, qh = h*0.5f*border, rw = w*0.5f-qw, rh = h*0.5f-qh;
+                      qw = w * 0.25f * border, qh = h * 0.25f * border, rw = w * 0.5f - qw, rh = h * 0.5f - qh;
+
                 colors[1].init(game::darkness(DARK_UI));
                 gle::defvertex(2);
                 gle::deftexcoord0();
-                gle::begin(GL_TRIANGLE_FAN);
-                bindminimap();
-                loopi(32)
+
+                if(shape == SQUARE)
                 {
-                    vec v = vec(0, -1, 0).rotate_around_z(i/32.0f*2*M_PI);
-                    gle::attribf(sx + qw + rw*(1.0f + v.x), sy + qh + rh*(1.0f + v.y));
-                    vec tc = vec(dir).rotate_around_z(i/32.0f*2*M_PI);
-                    gle::attribf(1.0f - (pos.x + tc.x*scale*minimapscale.x), pos.y + tc.y*scale*minimapscale.y);
+                    gle::begin(GL_QUADS);
+                    bindminimap();
+
+                    const int corners[4][2] = {{-1, -1}, {1, -1}, {1, 1}, {-1, 1}};
+                    loopi(4)
+                    {
+                        float angle = fmod(camera1->yaw + 180, 360) * RAD,
+                              rx = corners[i][0] * cos(angle) - corners[i][1] * sin(angle),
+                              ry = corners[i][0] * sin(angle) + corners[i][1] * cos(angle);
+
+                        gle::attribf(sx + qw + rw * (1.0f + corners[i][0]), sy + qh + rh * (1.0f + corners[i][1]));
+                        gle::attribf(1.0f - (pos.x + rx * scale * minimapscale.x), pos.y + ry * scale * minimapscale.y);
+                    }
+
+                    gle::end();
                 }
-                gle::end();
+                else
+                {
+                    gle::begin(GL_TRIANGLE_FAN);
+                    bindminimap();
+
+                    loopi(32)
+                    {
+                        vec v = vec(0, -1, 0).rotate_around_z(i / 32.0f * 2 * M_PI);
+                        gle::attribf(sx + qw + rw * (1.0f + v.x), sy + qh + rh * (1.0f + v.y));
+                        vec tc = vec(dir).rotate_around_z(i / 32.0f * 2 * M_PI);
+                        gle::attribf(1.0f - (pos.x + tc.x * scale * minimapscale.x), pos.y + tc.y * scale * minimapscale.y);
+                    }
+
+                    gle::end();
+                }
 
                 if(oldshader) oldshader->set();
             }
+
             if(tex != notexture)
             {
                 colors[0].init();
@@ -6463,16 +6495,22 @@ namespace UI
     ICOMMAND(0, uiminimapcolour, "siiffffe", (char *texname, int *c, int *c2, float *dist, float *border, float *minw, float *minh, uint *children),
         BUILD(MiniMap, o, o->setup(textureload(texname, 0x7000, true, false, texgc), Color(*c), Color(*c2), *dist, *border, *minw*uiscale, *minh*uiscale), children));
 
+    UIARG(MiniMap, minimap, shape, "i", int, MiniMap::ELLIPSE, MiniMap::SQUARE);
+
     struct Radar : Target
     {
-        float dist, offset, border;
+        enum { ELLIPSE = 0, SQUARE };
 
-        void setup(float dist_ = 1, float offset_ = 0, float border_ = 0, float minw_ = 0, float minh_ = 0)
+        float dist, offset, border;
+        int shape;
+
+        void setup(float dist_ = 1, float offset_ = 0, float border_ = 0, float minw_ = 0, float minh_ = 0, int shape_ = ELLIPSE)
         {
             Target::setup(minw_, minh_);
             dist = dist_;
             offset = clamp(offset_, 0.f, 1.f);
             border = clamp(border_, 0.f, 1.f);
+            shape = shape_;
         }
         bool isradar() const { return true; }
 
@@ -6492,6 +6530,8 @@ namespace UI
 
     ICOMMAND(0, uiradar, "fffffe", (float *dist, float *offset, float *border, float *minw, float *minh, uint *children),
         BUILD(Radar, o, o->setup(*dist, *offset, *border, *minw*uiscale, *minh*uiscale), children));
+
+    UIARG(Radar, radar, shape, "i", int, Radar::ELLIPSE, Radar::SQUARE);
 
     struct RadarBlip : Image
     {
@@ -6525,9 +6565,12 @@ namespace UI
         {
             blipx = sinf(RAD*yaw);
             blipy = -cosf(RAD*yaw);
+
             texx = sinf(RAD*blipyaw);
             texy = -cosf(RAD*blipyaw);
+
             Image::layout();
+
             // children don't increase the dimensions of a blip if specified
             if(minw > 0 && w > minw) w = minw;
             if(minh > 0 && h > minh) h = minh;
@@ -6536,6 +6579,7 @@ namespace UI
         void setalign(int xalign, int yalign)
         {
             adjust = ALIGN_DEFAULT; // always align center and use our own adjustment
+
             blipadjust &= ~ALIGN_MASK;
             blipadjust |= (clamp(xalign, -2, 1)+2)<<ALIGN_HSHIFT;
             blipadjust |= (clamp(yalign, -2, 1)+2)<<ALIGN_VSHIFT;
@@ -6556,9 +6600,39 @@ namespace UI
             Radar *r = getradar();
             if(r)
             {
-                float bw = w*0.5f, bh = h*0.5f, rw = r->w*0.5f, rh = r->h*0.5f,
-                      rx = sx+(blipx*(rw-(rw*r->border))*clamp(dist/max(r->dist, 1.f), r->offset, 1.f)),
-                      ry = sy+(blipy*(rh-(rh*r->border))*clamp(dist/max(r->dist, 1.f), r->offset, 1.f));
+                float bw = w * 0.5f, bh = h * 0.5f, rw = r->w * 0.5f, rh = r->h * 0.5f, rd = max(r->dist, 1.f),
+                      rx = 0, ry = 0, fw = rw * r->border, fh = rh * r->border, gw = rw - fw, gh = rh - fh;
+
+                if(r->shape == Radar::SQUARE)
+                {
+                    float qx = blipx * gw * dist / rd,
+                          qy = blipy * gh * dist / rd;
+
+                    rx = clamp(qx, -rw + fw, rw - fw);
+                    ry = clamp(qy, -rh + fh, rh - fh);
+                }
+                else
+                {
+                    rx = blipx * gw * clamp(dist / rd, 0.f, 1.f);
+                    ry = blipy * gh * clamp(dist / rd, 0.f, 1.f);
+                }
+
+                float mx = rx, my = ry;
+                if(mx != 0 || my != 0)
+                {
+                    float ds = sqrtf(mx*mx + my*my);
+                    if(ds > 0)
+                    {
+                        mx /= ds;
+                        my /= ds;
+                    }
+                }
+
+                mx *= r->offset * gw;
+                my *= r->offset * gh;
+
+                rx += sx + mx;
+                ry += sy + my;
 
                 vec2 anrm(0, 0);
                 switch(blipadjust&ALIGN_HMASK)
@@ -6582,8 +6656,10 @@ namespace UI
                 if(tex != notexture)
                 {
                     bindtex();
+
                     bbx = texx;
                     bby = texy;
+
                     loopk(4)
                     {
                         vec2 norm;
@@ -6595,11 +6671,13 @@ namespace UI
                             case 2: vecfromyaw(blipyaw, 1, 1, norm);    tx = 1; ty = 1; break;
                             case 3: vecfromyaw(blipyaw, 1, -1, norm);   tx = 0; ty = 1; break;
                         }
-                        norm.mul(vec2(bw, bh)).add(vec2(rx+bw, ry+bh));
-                        gle::attrib(norm); gle::attribf(tx, ty);
+                        norm.mul(vec2(bw, bh)).add(vec2(rx + bw, ry + bh));
+
+                        gle::attrib(norm);
+                        gle::attribf(tx, ty);
                     }
                 }
-                Object::draw(rx+bbx*w*RAD, ry+bby*h*RAD); // don't descend unless we process the blip
+                Object::draw(rx + bbx * w * RAD, ry + bby * h * RAD); // don't descend unless we process the blip
             }
         }
     };
