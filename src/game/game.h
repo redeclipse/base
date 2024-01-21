@@ -2438,14 +2438,14 @@ namespace weapons
 #define CLEARUI(name, id, nottype) \
     { for(int mui_scount = 0; mui_scount < SURFACE_ALL; ++mui_scount) if(mui_scount != nottype) for(int mui_ucount = 0; mui_ucount < 2; ++mui_ucount) UI::hideui(MUINAME(name, mui_ucount), mui_scount, id); }
 
-#define MAKEUI(name, id, test, cansee, pos, above, over) \
+#define MAKEUI(name, id, test, cansee, forced, pos, above, over) \
 { \
     for(int mui_count = 0; mui_count < 2; ++mui_count) \
     { \
         int mui_type = -1; \
-        if((test) && (!MUIVAL(name, mui_count, maxdist) || camera1->o.dist(pos) <= MUIVAL(name, mui_count, maxdist))) \
+        if((test) && ((forced) || !MUIVAL(name, mui_count, maxdist) || camera1->o.dist(pos) <= MUIVAL(name, mui_count, maxdist))) \
         { \
-            mui_type = cansee ? MUIVAL(name, mui_count, ui) : SURFACE_WORLD; \
+            mui_type = (cansee) ? MUIVAL(name, mui_count, ui) : SURFACE_WORLD; \
             if(mui_type >= 0) \
             { \
                 vec mui_o = mui_count ? vec(pos).sub(vec(pos).sub(camera1->o).normalize().mul(over)) : vec(pos).addz(above); \

@@ -562,7 +562,7 @@ namespace hud
         int numdyns = game::numdynents();
         loopi(numdyns) if((d = (gameent *)game::iterdynents(i)) && d->actortype < A_ENEMY) // do the actor test here so it doesn't close UIs that don't exist
             MAKEUI(player, d->clientnum,
-                d != game::focus && !d->isspectator(),
+                d != game::focus && !d->isspectator(), false,
                     game::haloallow(camera1->o, d, false, false) && (game::focus->isobserver() || (m_team(game::gamemode, game::mutators) && game::focus->team == d->team)),
                         d->center(), (d->getheight() * 0.5f) + d->aboveeye + 1, d->getradius() * 0.5f
             );

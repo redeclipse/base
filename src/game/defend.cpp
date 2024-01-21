@@ -161,7 +161,7 @@ namespace defend
             curpos.z += enttype[AFFINITY].radius * 0.125f;
 
             MAKEUI(defend, i,
-                true, haloallow(camera1->o, i),
+                true, haloallow(camera1->o, i), false,
                     curpos, enttype[AFFINITY].radius * 0.25f, enttype[AFFINITY].radius * 0.25f
             );
         }

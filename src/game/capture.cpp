@@ -169,9 +169,10 @@ namespace capture
 
             vec curpos = f.render;
             curpos.z += enttype[AFFINITY].radius * (f.owner || f.droptime ? 0.125f : 0.375f);
+            bool force = hasaffinity(game::focus) && f.team == game::focus->team;
 
             MAKEUI(capture, i,
-                f.owner != game::focus, haloallow(camera1->o, i),
+                f.owner != game::focus, haloallow(camera1->o, i), force,
                     curpos, enttype[AFFINITY].radius * (f.owner || f.droptime ? 0.125f : 0.5f), enttype[AFFINITY].radius * 0.25f
             );
 
@@ -179,7 +180,7 @@ namespace capture
             curpos.z += enttype[AFFINITY].radius * (f.droptime ? 0.25f : 0.375f);
 
             MAKEUI(captureflag, i,
-                f.owner != game::focus && (f.owner || f.droptime), haloallow(camera1->o, i),
+                f.owner != game::focus && (f.owner || f.droptime), haloallow(camera1->o, i), force,
                     curpos, enttype[AFFINITY].radius * (f.droptime ? 0.25f : 0.5f), enttype[AFFINITY].radius * 0.25f
             );
         }
