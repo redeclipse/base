@@ -3013,12 +3013,16 @@ namespace server
 
     void givepoints(clientinfo *ci, int points, bool give, bool team = true)
     {
+        if(!ci) return;
+
         ci->totalpoints += points;
         ci->localtotalpoints += points;
+
         if(give)
         {
             ci->points += points;
             sendf(-1, 1, "ri5", N_POINTS, ci->clientnum, points, ci->points, ci->totalpoints);
+
             if(team && m_team(gamemode, mutators) && m_dm(gamemode))
             {
                 score &ts = teamscore(ci->team);
@@ -3031,7 +3035,10 @@ namespace server
 
     void savescore(clientinfo *ci)
     {
+        if(!ci) return;
+
         ci->updatetimeplayed();
+
         savedscore *sc = findscore(savedscores, ci, true);
         if(sc)
         {
@@ -3046,13 +3053,17 @@ namespace server
                     sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
                 }
             }
+
             sc->save(ci);
         }
     }
 
     void savestatsscore(clientinfo *ci)
     {
+        if(!ci) return;
+
         ci->updatetimeplayed();
+
         savedscore *sc = findscore(savedstatsscores, ci, true);
         if(sc) sc->save(ci);
     }
