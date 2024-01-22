@@ -1300,10 +1300,12 @@ namespace client
     }
     ICOMMAND(IDF_NAMECOMPLETE, kick, "ss", (char *s, char *m), addcontrol(s, -1, m));
     ICOMMAND(IDF_NAMECOMPLETE, allow, "ss", (char *s, char *m), addcontrol(s, ipinfo::ALLOW, m));
-    ICOMMAND(IDF_NAMECOMPLETE, ban, "ss", (char *s, char *m), addcontrol(s, ipinfo::BAN, m));
+    ICOMMAND(IDF_NAMECOMPLETE, ban, "ss", (char *s, char *m), addcontrol(s, ipinfo::BAN, tempformatstring("%s [%s]", m, getname())));
     ICOMMAND(IDF_NAMECOMPLETE, mute, "ss", (char *s, char *m), addcontrol(s, ipinfo::MUTE, m));
     ICOMMAND(IDF_NAMECOMPLETE, limit, "ss", (char *s, char *m), addcontrol(s, ipinfo::LIMIT, m));
     ICOMMAND(IDF_NAMECOMPLETE, except, "ss", (char *s, char *m), addcontrol(s, ipinfo::EXCEPT, m));
+
+    ICOMMAND(0, listbans, "", (), addmsg(N_LISTBANS, "r"));
 
     ICOMMAND(0, clearallows, "", (), addmsg(N_CLRCONTROL, "ri", ipinfo::ALLOW));
     ICOMMAND(0, clearbans, "", (), addmsg(N_CLRCONTROL, "ri", ipinfo::BAN));
@@ -3370,6 +3372,21 @@ namespace client
                         int len = getint(p), ctime = getint(p);
                         if(p.overread()) break;
                         conoutf(colouryellow, "Demo: %2d. \fs\fc%s\fS recorded \fs\fc%s UTC\fS [\fs\fw%.2f%s\fS]", i+1, text, gettime(ctime, "%Y-%m-%d %H:%M.%S"), len > 1024*1024 ? len/(1024*1024.f) : len/1024.0f, len > 1024*1024 ? "MB" : "kB");
+                    }
+                    break;
+                }
+
+                case N_SENDBANLIST:
+                {
+                    string ip = "";
+                    int bans = getint(p);
+                    if(bans <= 0) conoutft(CON_EVENT, "\fyBan list is empty");
+                    else loopi(bans)
+                    {
+                        getstring(ip, p);
+                        getstring(text, p);
+                        if(p.overread()) break;
+                        conoutft(CON_EVENT, "\fr%i: %s (reason: %s)", i+1, ip, text);
                     }
                     break;
                 }
