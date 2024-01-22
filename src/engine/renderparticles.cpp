@@ -1494,11 +1494,12 @@ void renderhazeparticles(GLuint hazertex, bool hazemix)
 
     if(hasrefractmask)
     {
-        glActiveTexture_(GL_TEXTURE2);
+        glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_MASK);
         if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msrefracttex);
         else glBindTexture(GL_TEXTURE_RECTANGLE, refracttex);
     }
-    glActiveTexture_(GL_TEXTURE3);
+
+    glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_DEPTH);
     if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
     else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
 

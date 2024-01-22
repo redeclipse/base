@@ -326,25 +326,34 @@ static void bindglsluniform(Shader &s, UniformLoc &u)
     }
 }
 
-static void bindworldtexlocs(Shader &s)
+static void bindtexlocs(Shader &s, bool world)
 {
 #define UNIFORMTEX(name, tmu) \
     do { \
         int loc = glGetUniformLocation_(s.program, name); \
         if(loc != -1) { glUniform1i_(loc, tmu); } \
     } while(0)
-    UNIFORMTEX("diffusemap", TEX_DIFFUSE);
-    UNIFORMTEX("normalmap", TEX_NORMAL);
-    UNIFORMTEX("glowmap", TEX_GLOW);
-    UNIFORMTEX("envmap", TEX_ENVMAP);
-    UNIFORMTEX("dispmap", TEX_DISPMAP);
-    UNIFORMTEX("diffusedetail", TEX_DETAIL_DIFFUSE);
-    UNIFORMTEX("normaldetail", TEX_DETAIL_NORMAL);
-    UNIFORMTEX("dispdetail", TEX_DETAIL_DISPMAP);
-    UNIFORMTEX("blendmap", TEX_BLENDMAP);
+
+    static const char * const texnames[16] = { "tex0", "tex1", "tex2", "tex3", "tex4", "tex5", "tex6", "tex7", "tex8", "tex9", "tex10", "tex11", "tex12", "tex13", "tex14", "tex15" };
+
+    loopi(16) UNIFORMTEX(texnames[i], i);
+
+    if(world)
+    {
+        UNIFORMTEX("diffusemap", TEX_DIFFUSE);
+        UNIFORMTEX("normalmap", TEX_NORMAL);
+        UNIFORMTEX("glowmap", TEX_GLOW);
+        UNIFORMTEX("envmap", TEX_ENVMAP);
+        UNIFORMTEX("dispmap", TEX_DISPMAP);
+        UNIFORMTEX("diffusedetail", TEX_DETAIL_DIFFUSE);
+        UNIFORMTEX("normaldetail", TEX_DETAIL_NORMAL);
+        UNIFORMTEX("dispdetail", TEX_DETAIL_DISPMAP);
+        UNIFORMTEX("blendmap", TEX_BLENDMAP);
+    }
+
     UNIFORMTEX("refractmask", TEX_REFRACT_MASK);
     UNIFORMTEX("refractlight", TEX_REFRACT_LIGHT);
-    UNIFORMTEX("refractdepthscale", TEX_REFRACT_DEPTH);
+    UNIFORMTEX("refractdepth", TEX_REFRACT_DEPTH);
 }
 
 static void linkglslprogram(Shader &s, bool msg = true)
@@ -378,13 +387,7 @@ static void linkglslprogram(Shader &s, bool msg = true)
     if(success)
     {
         glUseProgram_(s.program);
-        loopi(16)
-        {
-            static const char * const texnames[16] = { "tex0", "tex1", "tex2", "tex3", "tex4", "tex5", "tex6", "tex7", "tex8", "tex9", "tex10", "tex11", "tex12", "tex13", "tex14", "tex15" };
-            GLint loc = glGetUniformLocation_(s.program, texnames[i]);
-            if(loc != -1) glUniform1i_(loc, i);
-        }
-        if(s.type & SHADER_WORLD) bindworldtexlocs(s);
+        bindtexlocs(s, (s.type&SHADER_WORLD) != 0);
         loopv(s.defaultparams)
         {
             SlotShaderParamState &param = s.defaultparams[i];

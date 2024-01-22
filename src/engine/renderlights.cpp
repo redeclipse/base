@@ -5023,29 +5023,41 @@ void rendertransparent()
     {
         glBindFramebuffer_(GL_FRAMEBUFFER, msaalight ? msrefractfbo : refractfbo);
         glDepthMask(GL_FALSE);
+
+        glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_DEPTH);
         if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
         else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
+
+        glActiveTexture_(GL_TEXTURE0);
+
         bool scissor = false;
         if(!hashaze)
         {
             float sx1 = min(alpharefractsx1, matrefractsx1), sy1 = min(alpharefractsy1, matrefractsy1),
                   sx2 = max(alpharefractsx2, matrefractsx2), sy2 = max(alpharefractsy2, matrefractsy2);
+
             scissor = sx1 > -1 || sy1 > -1 || sx2 < 1 || sy2 < 1;
+
             if(scissor)
             {
                 int x1 = int(floor(max(sx1*0.5f+0.5f-refractmargin*viewh/vieww, 0.0f)*vieww)),
                     y1 = int(floor(max(sy1*0.5f+0.5f-refractmargin, 0.0f)*viewh)),
                     x2 = int(ceil(min(sx2*0.5f+0.5f+refractmargin*viewh/vieww, 1.0f)*vieww)),
                     y2 = int(ceil(min(sy2*0.5f+0.5f+refractmargin, 1.0f)*viewh));
+
                 glEnable(GL_SCISSOR_TEST);
                 glScissor(x1, y1, x2 - x1, y2 - y1);
             }
         }
+
         glClearColor(0, 0, 0, 0);
         glClear(GL_COLOR_BUFFER_BIT);
+
         if(scissor) glDisable(GL_SCISSOR_TEST);
+
         GLOBALPARAMF(refractdepthscale, 1.0f/refractdepthscale);
         SETSHADER(refractmask);
+
         if(hashaze ? hasalphavas : hasalphavas&4) renderrefractmask(hashaze);
         if(hasmats&4) rendermaterialmask();
 

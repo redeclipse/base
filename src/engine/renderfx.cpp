@@ -181,9 +181,10 @@ void blendhalos()
         }
         glBindTexture(GL_TEXTURE_RECTANGLE, halotex[i]);
 
-        glActiveTexture_(GL_TEXTURE1);
+        glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_DEPTH);
         if(msaasamples) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
         else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
+
         glActiveTexture_(GL_TEXTURE0);
 
         LOCALPARAMF(millis, lastmillis / 1000.0f);
