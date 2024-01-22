@@ -519,7 +519,7 @@ namespace game
     ICOMMANDV(0, intermission, gs_intermission(gamestate) ? 1 : 0);
     ICOMMANDV(0, gamestate, gamestate);
     ICOMMANDV(0, gamemaptime, maptime);
-    ICOMMANDV(0, gamemapelapsed, (lastmillis - maptime));
+    ICOMMANDV(0, gamemapelapsed, maptime > 0 ? (lastmillis - maptime) : 0);
     ICOMMANDV(0, gametimeremain, gettimeremain());
     ICOMMANDV(0, gametimeelapsed, gettimeelapsed());
     ICOMMANDV(0, gametimetotal, gettimetotal());
