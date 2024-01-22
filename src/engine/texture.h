@@ -672,20 +672,14 @@ struct Texture
 };
 extern hashnameset<Texture> textures;
 
-enum
-{
-    TEX_DIFFUSE = 0,
-    TEX_NORMAL,
-    TEX_GLOW,
-    TEX_ENVMAP,
-    TEX_SPEC,
-    TEX_DEPTH,
-    TEX_ALPHA,
-    TEX_DISPMAP,
-    TEX_UNKNOWN,
-    TEX_MAX,
-    TEX_DETAIL = TEX_SPEC
-};
+#define TEX_ENUM(en, um) \
+    en(um, Diffuse, DIFFUSE) en(um, Normalp, NORMAL) en(um, Glow, GLOW) en(um, Environment, ENVMAP) \
+    en(um, Specular, SPEC) en(um, Depth, DEPTH) en(um, Alpha, ALPHA) en(um, Displacement, DISPMAP) \
+    en(um, Unknown, UNKNOWN)  en(um, Maximum, MAX)
+ENUMDLN(TEX);
+
+VARQ(TEX_DETAIL, TEX_SPEC);
+VARQ(TEX_TYPES, TEX_UNKNOWN);
 
 enum
 {
