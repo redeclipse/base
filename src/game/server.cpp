@@ -5730,7 +5730,7 @@ namespace server
                     }
                 }
 
-                while(gamestate != G_S_PLAYING)
+                while(gamestate < G_S_PLAYING)
                 {
                     bool retry = false;
 
