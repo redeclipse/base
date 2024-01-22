@@ -1203,8 +1203,8 @@ namespace game
 
     void adddynlights()
     {
-        entities::adddynlights();
         if(!dynlighteffects || drawtex) return;
+
         if(dynlighteffects >= 2)
         {
             if(m_capture(gamemode)) capture::adddynlights();

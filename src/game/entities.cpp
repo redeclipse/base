@@ -827,17 +827,21 @@ namespace entities
 
     bool getdynamic(const extentity &e, vec &pos, float *yaw, float *pitch)
     {
-        gameentity &f = *(gameentity *)&e;
         if(!e.dynamic())
         {
             pos = e.o;
             if(yaw) *yaw = 0;
             if(pitch) *pitch = 0;
+
             return false;
         }
+
+        gameentity &f = *(gameentity *)&e;
+
         pos = f.pos();
         if(yaw) *yaw = f.yaw;
         if(pitch) *pitch = f.pitch;
+
         return true;
     }
 
@@ -3077,40 +3081,6 @@ namespace entities
             }
         }
         if(enttype[e.type].links && showentlinks >= level) renderlinked(e, idx);
-    }
-
-    void adddynlights()
-    {
-        loopv(railways)
-        {
-            railway &w = railways[i];
-            loopvj(w.parents) if(ents.inrange(w.parents[j]))
-            {
-                int n = w.parents[j];
-                gameentity &e = *(gameentity *)ents[n];
-                if(e.type != LIGHT) continue;
-                int radius = e.attrs[0], spotlight = -1;
-                vec color(255, 255, 255);
-                if(!getlightfx(e, &radius, &spotlight, &color, true, false)) continue;
-                int spot = 0;
-                vec dir(0, 0, 0);
-                if(ents.inrange(spotlight))
-                {
-                    gameentity &f = *(gameentity *)ents[spotlight];
-                    dir = vec(f.pos()).sub(e.pos()).safenormalize();
-                    spot = clamp(int(f.attrs[1]), 1, 89);
-                }
-                adddynlight(e.pos(), radius, color, 0, 0, e.attrs[6]|DL_ENVIRO, radius, color, NULL, dir, spot);
-                if(!(flarelights&2) && !(flarelights&1 && e.attrs[4])) continue;
-                bool sun = false;
-                int sparkle = 0;
-                float scale = 1.f;
-                if(!e.attrs[0] || e.attrs[4]&1) sun = true;
-                if(!e.attrs[0] || e.attrs[4]&2 || flarelights&4) sparkle = sun ? 1 : 2;
-                if(e.attrs[5] > 0) scale = e.attrs[5]/100.f;
-                lensflare(e.pos(), color, sun, sparkle, scale);
-            }
-        }
     }
 
     void reset()

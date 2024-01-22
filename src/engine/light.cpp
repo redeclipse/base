@@ -47,10 +47,10 @@ GETSKYPIE(lightdir, const vec &);
 GETSKYPIE(lightyaw, float);
 GETSKYPIE(lightpitch, float);
 
-bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, bool normalize, bool dyncheck)
+bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, bool normalize)
 {
     if(!entities::isallowed(e)) return false;
-    if(dyncheck && e.dynamic()) return false;
+
     if(color)
     {
         *color = vec(e.attrs[1], e.attrs[2], e.attrs[3]);
@@ -58,6 +58,7 @@ bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, boo
         if(normalize) color->div(255.f);
         color->max(0);
     }
+
     static int tempradius;
     if(!radius) radius = &tempradius;
     *radius = e.attrs[0] ? e.attrs[0] : worldsize; // after this, "0" becomes "off"
@@ -66,18 +67,22 @@ bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, boo
     loopv(e.links) if(ents.inrange(e.links[i]))
     {
         extentity &f = *ents[e.links[i]];
+
         if(f.type != ET_LIGHTFX || f.attrs[0] < 0 || f.attrs[0] >= LFX_MAX || !entities::isallowed(f)) continue;
+
         bool hastrigger = false;
         loopvk(f.links) if(ents.inrange(f.links[k]) && ents[f.links[k]]->type != ET_LIGHT)
         {
             hastrigger = true;
             break;
         }
+
         if(hastrigger && !f.spawned())
         {
             *radius = 0;
             break;
         }
+
         int effect = f.attrs[0], millis = lastmillis-f.emit[2], interval = f.emit[0]+f.emit[1];
         bool hasemit = f.emit[0] && f.emit[1] && f.emit[2], expired = millis >= interval;
         if(!hasemit || expired)
@@ -93,19 +98,25 @@ bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, boo
                 }
                 else f.emit[k] = val;
             }
+
             int oldinterval = interval;
             interval = f.emit[0]+f.emit[1];
             if(israndom && interval == oldinterval) israndom = false;
+
             f.emit[2] = lastmillis;
+
             if(israndom) f.emit[2] -= millis-oldinterval;
             else f.emit[2] -= f.emit[2]%interval;
+
             millis = lastmillis-f.emit[2];
         }
+
         if(millis >= f.emit[0]) loopi(LFX_MAX-1) if(f.attrs[4]&(1<<(LFX_S_MAX+i)))
         {
             effect = i+1;
             break;
         }
+
         float skew = clamp(millis < f.emit[0] ? 1.f-(float(millis)/float(f.emit[0])) : float(millis-f.emit[0])/float(f.emit[1]), 0.f, 1.f);
         switch(effect)
         {
@@ -136,6 +147,7 @@ bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, boo
             default: break;
         }
     }
+
     return *radius > 0;
 }
 

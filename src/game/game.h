@@ -2579,7 +2579,6 @@ namespace entities
     extern bool tryspawn(dynent *d, const vec &o, float yaw = 0, float pitch = 0);
     extern void spawnplayer(gameent *d, int ent = -1, bool suicide = false);
     extern void useeffects(gameent *d, int cn, int ent, int ammoamt, bool spawn, int weap, int drop, int ammo = -1);
-    extern void adddynlights();
     extern bool haloallow(const vec &o, int id, bool justtest = false, bool check = true);
     extern void render();
     extern void update();

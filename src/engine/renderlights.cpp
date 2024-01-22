@@ -3666,10 +3666,12 @@ void viewlightscissor()
         if(ents.inrange(idx) && ents[idx]->type == ET_LIGHT)
         {
             extentity &e = *ents[idx];
-            loopvj(lights) if(lights[j].o == e.o)
+            loopvj(lights)
             {
                 lightinfo &l = lights[j];
-                if(!l.validscissor()) break;
+                vec pos = e.o;
+                entities::getdynamic(e, pos);
+                if(lights[j].o != pos || !l.validscissor()) break;
                 gle::colorf(l.color.x/255, l.color.y/255, l.color.z/255);
                 float x1 = (l.sx1+1)/2*hudw, x2 = (l.sx2+1)/2*hudw,
                       y1 = (1-l.sy1)/2*hudh, y2 = (1-l.sy2)/2*hudh;
@@ -3698,40 +3700,46 @@ void collectlights()
         int radius = e.attrs[0], spotlight = -1;
         vec color(255, 255, 255);
         if(!getlightfx(e, &radius, &spotlight, &color, false)) continue;
+
+        vec epos = e.o;
+        entities::getdynamic(e, epos);
+
         vec dir(0, 0, 0);
         int spot = 0;
         if(ents.inrange(spotlight))
         {
             const extentity &f = *ents[spotlight];
-            dir = vec(f.o).sub(e.o).normalize();
+            vec fpos = f.o;
+            entities::getdynamic(f, fpos);
+            dir = vec(fpos).sub(epos).normalize();
             spot = clamp(int(f.attrs[1]), 1, 89);
         }
 
         if(smviscull)
         {
-            if(isfoggedsphere(radius, e.o)) continue;
-            if(pvsoccludedsphere(e.o, radius)) continue;
+            if(isfoggedsphere(radius, epos)) continue;
+            if(pvsoccludedsphere(epos, radius)) continue;
         }
 
-        lightinfo &l = lights.add(lightinfo(i, e.o, color, float(radius), e.attrs[6], dir, spot));
+        lightinfo &l = lights.add(lightinfo(i, epos, color, float(radius), e.attrs[6], dir, spot));
         if(l.validscissor()) lightorder.add(lights.length()-1);
     }
 
-    int numdynlights = 0;
-    if(!drawtex || drawtex == DRAWTEX_MAPSHOT)
+    if(!drawtex)
     {
         updatedynlights();
-        numdynlights = finddynlights();
-    }
-    loopi(numdynlights)
-    {
-        vec o, color, dir;
-        float radius;
-        int spot, flags;
-        if(!getdynlight(i, o, radius, color, dir, spot, flags)) continue;
+        int numdynlights = finddynlights();
 
-        lightinfo &l = lights.add(lightinfo(o, vec(color).mul(255).max(0), radius, flags, dir, spot));
-        if(l.validscissor()) lightorder.add(lights.length()-1);
+        loopi(numdynlights)
+        {
+            vec o, color, dir;
+            float radius;
+            int spot, flags;
+            if(!getdynlight(i, o, radius, color, dir, spot, flags)) continue;
+
+            lightinfo &l = lights.add(lightinfo(o, vec(color).mul(255).max(0), radius, flags, dir, spot));
+            if(l.validscissor()) lightorder.add(lights.length()-1);
+        }
     }
 
     lightorder.sort(sortlights);
@@ -3742,6 +3750,7 @@ void collectlights()
         int idx = lightorder[i];
         lightinfo &l = lights[idx];
         if((l.noshadow() && (!oqvol || !l.volumetric())) || l.radius >= worldsize) continue;
+
         vec bbmin, bbmax;
         l.calcbb(bbmin, bbmax);
         if(!camera1->o.insidebb(bbmin, bbmax, 2))
@@ -3754,6 +3763,7 @@ void collectlights()
                     startbb(false);
                     queried = true;
                 }
+
                 startquery(l.query);
                 ivec bo(bbmin), br = ivec(bbmax).sub(bo).add(1);
                 drawbb(bo, br);
@@ -3761,6 +3771,7 @@ void collectlights()
             }
         }
     }
+
     if(queried)
     {
         endbb(false);
@@ -4618,10 +4629,14 @@ void rendercsmshadowmaps()
 int calcshadowinfo(const extentity &e, vec &origin, float &radius, vec &spotloc, int &spotangle, float &bias)
 {
     if(e.attrs[6]&L_NOSHADOW) return SM_NONE;
+
     int rad = e.attrs[0], slight = -1;
     if(!getlightfx(e, &rad, &slight) || rad <= smminradius) return SM_NONE;
+
     origin = e.o;
+    entities::getdynamic(e, origin);
     radius = float(rad);
+
     int type, w, border;
     float lod;
     const vector<extentity *> &ents = entities::getents();
@@ -4632,6 +4647,7 @@ int calcshadowinfo(const extentity &e, vec &origin, float &radius, vec &spotloc,
         border = 0;
         lod = smspotprec;
         spotloc = ents[slight]->o;
+        entities::getdynamic(slight, spotloc);
         spotangle = clamp(int(ents[slight]->attrs[1]), 1, 89);
     }
     else
@@ -4640,7 +4656,7 @@ int calcshadowinfo(const extentity &e, vec &origin, float &radius, vec &spotloc,
         w = 3;
         lod = smcubeprec;
         border = smfilter > 2 ? smborder2 : smborder;
-        spotloc = e.o;
+        spotloc = origin;
         spotangle = 0;
     }
 

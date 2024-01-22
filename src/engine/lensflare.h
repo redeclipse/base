@@ -114,18 +114,26 @@ struct flarerenderer : partrenderer
         loopenti(ET_LIGHT)
         {
             extentity &e = *ents[i];
-            if(e.type != ET_LIGHT || e.dynamic() || (!(flarelights&2) && !(flarelights&1 && e.attrs[4])) || !entities::isallowed(e)) continue;
+            if(e.type != ET_LIGHT || (!(flarelights&2) && !(flarelights&1 && e.attrs[4])) || !entities::isallowed(e)) continue;
+
+            int radius = e.attrs[0];
+            vec color(255, 255, 255);
+            if(!getlightfx(e, &radius, NULL, &color, true)) continue;
+
+            vec epos = e.o;
+            entities::getdynamic(e, epos);
+
             bool sun = false;
             int sparkle = 0;
-            uchar r = e.attrs[1], g = e.attrs[2], b = e.attrs[3];
             float scale = 1.f;
-            if(!e.attrs[0] || e.attrs[4]&1) sun = true;
-            if(!e.attrs[0] || e.attrs[4]&2 || flarelights&4) sparkle = sun ? 1 : 2;
+            if(radius >= worldsize || e.attrs[4]&1) sun = true;
+            if(radius >= worldsize || e.attrs[4]&2 || flarelights&4) sparkle = sun ? 1 : 2;
             if(e.attrs[5] > 0) scale = e.attrs[5]/100.f;
+
             vec flaredir, center;
             float mod = 0, size = 0;
-            if(generate(e.o, center, flaredir, mod, size, sun, sun ? 0.f : e.attrs[0]*flaresize/100.f))
-                newflare(e.o, center, r, g, b, mod, size*scale, sun, sparkle);
+            if(generate(e.o, center, flaredir, mod, size, sun, sun ? 0.f : radius*flaresize/100.f))
+                newflare(e.o, center, uchar(color.r), uchar(color.g), uchar(color.b), mod, size*scale, sun, sparkle);
         }
     }
 
