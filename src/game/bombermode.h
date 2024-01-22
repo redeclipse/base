@@ -208,48 +208,59 @@ struct bomberservmode : bomberstate, servmode
         if(bombertime)
         {
             if(gamemillis < bombertime) return;
-            int hasaffinity = 0;
-            vector<int> candidates[T_MAX], resets;
-            loopv(flags) candidates[flags[i].team].add(i);
+
+            int hasaffinity = 0, selected[T_MAX] = {-1};
+            vector<int> candidates[T_MAX];
+            loopv(flags)
+            {
+                if(!isteam(gamemode, mutators, flags[i].team, T_NEUTRAL)) continue;
+                candidates[flags[i].team].add(i);
+            }
+
             int wants = m_bb_hold(gamemode, mutators) ? 1 : (m_bb_assault(gamemode, mutators) ? 2 : teamcount(gamemode, mutators));
             loopi(wants) if(!candidates[i].empty())
             {
-                int r = rnd(candidates[i].length()), f = candidates[i][r];
-                candidates[i].remove(r);
-                if(!flags.inrange(candidates[i][r])) continue;
-                if(!isteam(gamemode, mutators, flags[f].team, T_NEUTRAL)) continue;
-                resets.add(f);
+                int r = rnd(candidates[i].length());
+                selected[i] = candidates[i].removeunordered(r);
                 hasaffinity++;
             }
+
             if(hasaffinity < wants)
             {
-                if(!candidates[T_NEUTRAL].empty() && !m_bb_hold(gamemode, mutators))
+                if(selected[T_NEUTRAL] < 0 && !m_bb_hold(gamemode, mutators))
                 {
                     int muts = mutators;
                     if(muts&(1<<G_M_GSP2)) muts &= ~(1<<G_M_GSP2);
                     if(muts&(1<<G_M_GSP3)) muts &= ~(1<<G_M_GSP3);
                     muts |= (1<<G_M_GSP1);
+
                     srvmsgf(-1, colourred, "This map does have enough goals, switching to hold mutator");
                     changemap(smapname, gamemode, muts);
+
                     return;
                 }
+
                 hasflaginfo = false;
                 loopv(flags) sendf(-1, 1, "ri3", N_RESETAFFIN, i, 0);
                 srvmsgf(-1, colourred, "This map is not playable in %s", gamename(gamemode, mutators));
+
                 return;
             }
-            loopv(resets)
+
+            loopi(wants)
             {
-                int f = resets[i];
-                bomberstate::returnaffinity(f, gamemillis, true);
-                sendf(-1, 1, "ri3", N_RESETAFFIN, f, 1);
+                bomberstate::returnaffinity(selected[i], gamemillis, true);
+                sendf(-1, 1, "ri3", N_RESETAFFIN, selected[i], 1);
             }
+
             hasstarted = true;
             bombertime = 0;
         }
-        int t = (gamemillis/G(bomberholdinterval))-((gamemillis-(curtime+scoresec))/G(bomberholdinterval));
+
+        int t = (gamemillis / G(bomberholdinterval)) - ((gamemillis - (curtime + scoresec)) / G(bomberholdinterval));
         if(t < 1) scoresec += curtime;
         else scoresec = 0;
+
         loopv(flags) if(isbomberaffinity(flags[i]))
         {
             flag &f = flags[i];
@@ -269,6 +280,7 @@ struct bomberservmode : bomberstate, servmode
                         }
                     }
                 }
+
                 if(ci && carrytime && gamemillis-f.taketime >= carrytime)
                 {
                     ci->weapshots[W_GRENADE][0].add(1);
@@ -284,9 +296,11 @@ struct bomberservmode : bomberstate, servmode
                         }
                     }
                 }
+
                 continue;
             }
-            if(f.droptime && gamemillis-f.droptime >= G(bomberresetdelay)) returnaffinity(i, false);
+
+            if(f.droptime && gamemillis - f.droptime >= G(bomberresetdelay)) returnaffinity(i, false);
         }
     }
 
