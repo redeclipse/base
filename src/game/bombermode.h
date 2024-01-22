@@ -253,7 +253,7 @@ struct bomberservmode : bomberstate, servmode
 
             if(hasaffinity < wants)
             {
-                if(selected[T_NEUTRAL] < 0 && !m_bb_hold(gamemode, mutators))
+                if(selected[T_NEUTRAL] >= 0 && !m_bb_hold(gamemode, mutators))
                 {
                     int muts = mutators;
                     if(muts&(1<<G_M_GSP2)) muts &= ~(1<<G_M_GSP2);
