@@ -3539,10 +3539,12 @@ Texture *cubemapload(const char *name, bool mipit, bool msg, bool transient)
     if(!strchr(name, '*'))
     {
         defformatstring(pname, "%s_*", name);
-        t = cubemaploadwildcard(NULL, pname, mipit, false, transient);
-        if(!t && msg) conoutf(colourred, "Could not load envmap %s", name);
+        t = cubemaploadwildcard(NULL, pname, mipit, msg, transient);
     }
     else t = cubemaploadwildcard(NULL, name, mipit, msg, transient);
+
+    if(!t && msg) conoutf(colourred, "Could not load envmap %s", name);
+
     return t;
 }
 

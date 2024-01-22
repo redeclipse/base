@@ -326,7 +326,7 @@ static void bindglsluniform(Shader &s, UniformLoc &u)
     }
 }
 
-static void bindtexlocs(Shader &s, bool world)
+static void bindtexlocs(Shader &s)
 {
 #define UNIFORMTEX(name, tmu) \
     do { \
@@ -338,7 +338,7 @@ static void bindtexlocs(Shader &s, bool world)
 
     loopi(16) UNIFORMTEX(texnames[i], i);
 
-    if(world)
+    if(s.type&SHADER_WORLD)
     {
         UNIFORMTEX("diffusemap", TEX_DIFFUSE);
         UNIFORMTEX("normalmap", TEX_NORMAL);
@@ -387,7 +387,7 @@ static void linkglslprogram(Shader &s, bool msg = true)
     if(success)
     {
         glUseProgram_(s.program);
-        bindtexlocs(s, (s.type&SHADER_WORLD) != 0);
+        bindtexlocs(s);
         loopv(s.defaultparams)
         {
             SlotShaderParamState &param = s.defaultparams[i];
