@@ -5,8 +5,8 @@ namespace entities
     extern int numattrs(int type, bool unused = true);
     extern bool isallowed(const extentity &e);
     extern bool isallowed(int n);
-    extern bool getdynamic(const extentity &e, vec &pos, float &yaw, float &pitch);
-    extern bool getdynamic(int n, vec &pos, float &yaw, float &pitch);
+    extern bool getdynamic(const extentity &e, vec &pos, float *yaw = NULL, float *pitch = NULL);
+    extern bool getdynamic(int n, vec &pos, float *yaw = NULL, float *pitch = NULL);
     extern int triggertime(extentity &e, bool delay = false);
     extern void editent(int i, bool local);
     extern void readent(stream *g, int mver, char *gid, int gver, int id);

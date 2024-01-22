@@ -6976,7 +6976,7 @@ namespace UI
                 surface->show(w, e.o, e.attrs[2], e.attrs[3], e.attrs[5] != 0 ? e.attrs[5]/100.f : 1.f, e.attrs[6] > 0 ? e.attrs[6] : 0.f, e.attrs[7] > 0 ? e.attrs[7] : 0.f);
 
             float yaw = 0, pitch = 0;
-            if(entities::getdynamic(e, w->origin, yaw, pitch))
+            if(entities::getdynamic(e, w->origin, &yaw, &pitch))
             {
                 if(e.attrs[2] >= 0)
                 {

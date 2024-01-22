@@ -825,23 +825,23 @@ namespace entities
         return isallowed(e);
     }
 
-    bool getdynamic(const extentity &e, vec &pos, float &yaw, float &pitch)
+    bool getdynamic(const extentity &e, vec &pos, float *yaw, float *pitch)
     {
         gameentity &f = *(gameentity *)&e;
         if(!e.dynamic())
         {
             pos = e.o;
-            yaw = 0;
-            pitch = 0;
+            if(yaw) *yaw = 0;
+            if(pitch) *pitch = 0;
             return false;
         }
         pos = f.pos();
-        yaw = f.yaw;
-        pitch = f.pitch;
+        if(yaw) *yaw = f.yaw;
+        if(pitch) *pitch = f.pitch;
         return true;
     }
 
-    bool getdynamic(int n, vec &pos, float &yaw, float &pitch)
+    bool getdynamic(int n, vec &pos, float *yaw, float *pitch)
     {
         if(!ents.inrange(n)) return false;
         extentity &e = *(extentity *)ents[n];
