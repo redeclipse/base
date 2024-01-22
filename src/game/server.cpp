@@ -1621,6 +1621,16 @@ namespace server
         return 0;
     }
 
+    int timewaitdelay()
+    {
+        switch(gamestate)
+        {
+            case G_S_PLAYING: case G_S_OVERTIME: return 0;
+            default: return gamewaittime ? gamewaitdelay : 0;
+        }
+        return 0;
+    }
+
     bool checkvotes(bool force = false);
     void sendstats(bool fromintermission = false);
     void startintermission(bool req = false)
@@ -1634,9 +1644,11 @@ namespace server
             if(smode) smode->intermission();
             mutate(smuts, mut->intermission());
         }
+
         if(req || !G(intermlimit))
         {
             checkdemorecord(true);
+
             if(gamestate != G_S_VOTING && G(votelimit))
             {
                 gamestate = G_S_VOTING;
@@ -1920,6 +1932,7 @@ namespace server
                             log.push();
                         }
                         gamestate = G_S_OVERTIME;
+                        gamewaittime = gamewaitdelay = 0;
                         wantsoneminute = false;
                     }
                     else
@@ -4275,6 +4288,7 @@ namespace server
             putint(p, gamestate);
             putint(p, timeleft());
             putint(p, gamemillis);
+            putint(p, timewaitdelay());
         }
 
         if(hasgameinfo)
@@ -5708,166 +5722,227 @@ namespace server
                 {
                     clientinfo *cs = clients[i];
                     if(cs->actortype > A_PLAYER) continue;
-                    if(m_play(gamemode) && (!cs->ready || (G(waitforplayers) == 2 && cs->state == CS_SPECTATOR))) numwait++;
                     if(cs->wantsmap || cs->gettingmap) numgetmap++;
-                    if(!cs->ready) numnotready++;
-                }
-                switch(gamestate)
-                {
-                    case G_S_WAITING: // start check
+                    if(m_play(gamemode) && G(waitforplayers))
                     {
-                        if(!G(waitforplayermaps))
+                        if(G(waitforplayers) == 2 && cs->state == CS_SPECTATOR) numwait++;
+                        if(!cs->ready) numnotready++;
+                    }
+                }
+
+                while(gamestate != G_S_PLAYING)
+                {
+                    bool retry = false;
+
+                    switch(gamestate)
+                    {
+                        case G_S_WAITING: // start check
                         {
-                            gamewaittime = totalmillis;
-                            gamewaitdelay = G(waitforplayertime);
-                            gamestate = G_S_READYING;
-                            gametick = 0;
-                            break;
-                        }
-                        if(!gamewaittime)
-                        {
-                            gamewaittime = totalmillis;
-                            gamewaitdelay = max(G(waitforplayerload), 1);
-                            gametick = 0;
-                        }
-                        if(numnotready && timewait() >= totalmillis) break;
-                        if(!hasmapdata())
-                        {
-                            if(mapsending < 0) getmap(NULL, true);
-                            if(mapsending >= 0)
+                            if(!G(waitforplayermaps))
                             {
-                                srvoutf(4, colouryellow, "Please wait while the server downloads the map..");
+                                gamewaittime = totalmillis;
+                                gamewaitdelay = G(waitforplayertime);
+                                gamestate = G_S_READYING;
+                                gametick = 0;
+                                retry = true;
+
+                                break;
+                            }
+
+                            if(!gamewaittime)
+                            {
+                                gamewaittime = totalmillis;
+                                gamewaitdelay = max(G(waitforplayerload), 1);
+                                gametick = 0;
+                            }
+
+                            if(numnotready && timewait() >= totalmillis) break;
+
+                            if(!hasmapdata())
+                            {
+                                if(mapsending < 0) getmap(NULL, true);
+
+                                if(mapsending >= 0)
+                                {
+                                    srvoutf(4, colouryellow, "Please wait while the server downloads the map..");
+
+                                    gamewaittime = totalmillis;
+                                    gamewaitdelay = G(waitforplayermaps);
+                                    gamestate = G_S_GETMAP;
+                                    gametick = 0;
+                                    retry = true;
+                                    break;
+                                }
+
+                                gamewaittime = totalmillis;
+                                gamewaitdelay = G(waitforplayertime);
+                                gamestate = G_S_READYING;
+                                gametick = 0;
+                                retry = true;
+
+                                break;
+                            }
+
+                            gamewaittime = totalmillis;
+                            gamewaitdelay = G(waitforplayermaps);
+                            gametick = 0;
+
+                            // fall through
+                        }
+
+                        case G_S_GETMAP: // waiting for server
+                        {
+                            if(!gamewaittime)
+                            {
                                 gamewaittime = totalmillis;
                                 gamewaitdelay = G(waitforplayermaps);
-                                gamestate = G_S_GETMAP;
                                 gametick = 0;
+                            }
+
+                            if(!hasmapdata() && mapsending >= 0 && timewait() >= totalmillis) break;
+
+                            if(numgetmap && hasmapdata())
+                            {
+                                srvoutf(4, colouryellow, "Please wait for \fs\fc%d\fS %s to download the map..", numgetmap, numgetmap != 1 ? "players" : "player");
+
+                                gamewaittime = totalmillis;
+                                gamewaitdelay = G(waitforplayermaps);
+                                gamestate = G_S_SENDMAP;
+                                gametick = 0;
+                                retry = true;
+
                                 break;
                             }
+
                             gamewaittime = totalmillis;
                             gamewaitdelay = G(waitforplayertime);
                             gamestate = G_S_READYING;
                             gametick = 0;
+                            retry = true;
+
                             break;
                         }
-                        // fall through
-                    }
-                    case G_S_GETMAP: // waiting for server
-                    {
-                        if(!gamewaittime)
+
+                        case G_S_SENDMAP: // waiting for players
                         {
-                            gamewaittime = totalmillis;
-                            gamewaitdelay = G(waitforplayermaps);
-                            gametick = 0;
-                        }
-                        if(!hasmapdata() && mapsending >= 0 && timewait() >= totalmillis) break;
-                        if(numgetmap && hasmapdata())
-                        {
-                            srvoutf(4, colouryellow, "Please wait for \fs\fc%d\fS %s to download the map..", numgetmap, numgetmap != 1 ? "players" : "player");
-                            gamewaittime = totalmillis;
-                            gamewaitdelay = G(waitforplayermaps);
-                            gamestate = G_S_SENDMAP;
-                            gametick = 0;
-                            break;
-                        }
-                        gamewaittime = totalmillis;
-                        gamewaitdelay = G(waitforplayertime);
-                        gamestate = G_S_READYING;
-                        gametick = 0;
-                        break;
-                    }
-                    case G_S_SENDMAP: // waiting for players
-                    {
-                        if(!gamewaittime)
-                        {
-                            gamewaittime = totalmillis;
-                            gamewaitdelay = G(waitforplayermaps);
-                            gametick = 0;
-                        }
-                        if(numgetmap && timewait() >= totalmillis && hasmapdata()) break;
-                        gamewaittime = totalmillis;
-                        gamewaitdelay = G(waitforplayertime);
-                        gamestate = G_S_READYING;
-                        gametick = 0;
-                        // fall through
-                    }
-                    case G_S_READYING: // waiting for ready
-                    {
-                        if(!gamewaittime)
-                        {
+                            if(!gamewaittime)
+                            {
+                                gamewaittime = totalmillis;
+                                gamewaitdelay = G(waitforplayermaps);
+                                gametick = 0;
+                            }
+
+                            if(numgetmap && timewait() >= totalmillis && hasmapdata()) break;
+
                             gamewaittime = totalmillis;
                             gamewaitdelay = G(waitforplayertime);
+                            gamestate = G_S_READYING;
                             gametick = 0;
+
+                            // fall through
                         }
-                        if(numwait && timewait() >= totalmillis) break;
-                        if(!hasgameinfo)
+
+                        case G_S_READYING: // waiting for ready
                         {
-                            clientinfo *best = NULL;
-                            loopv(clients)
+                            if(!gamewaittime)
                             {
-                                clientinfo *cs = clients[i];
-                                if(cs->actortype > A_PLAYER || !cs->name[0] || !cs->online || cs->wantsmap || !cs->ready) continue;
-                                cs->updatetimeplayed();
-                                if(!best || cs->timeplayed > best->timeplayed) best = cs;
-                            }
-                            if(best)
-                            {
-                                mapgameinfo = best->clientnum;
-                                srvoutf(4, colouryellow, "Requesting game information from %s..", colourname(best));
-                                sendf(best->clientnum, 1, "ri", N_GETGAMEINFO);
                                 gamewaittime = totalmillis;
-                                gamewaitdelay = G(waitforplayerinfo);
-                                gamestate = G_S_GAMEINFO;
+                                gamewaitdelay = G(waitforplayertime);
                                 gametick = 0;
-                                break;
                             }
-                        }
-                        gamestate = G_S_PLAYING;
-                        break;
-                    }
-                    case G_S_GAMEINFO:
-                    {
-                        if(!gamewaittime)
-                        {
-                            gamewaittime = totalmillis;
-                            gamewaitdelay = G(waitforplayerinfo);
-                            gametick = 0;
-                        }
-                        if(!hasgameinfo && timewait() >= totalmillis) break;
-                        if(hasgameinfo) srvoutf(4, colouryellow, "Game information received, starting..");
-                        else
-                        {
-                            if(mapgameinfo != -2)
+
+                            if(numwait && timewait() >= totalmillis) break;
+
+                            if(!hasgameinfo)
                             {
-                                int asked = 0;
-                                mapgameinfo = -2;
+                                clientinfo *best = NULL;
                                 loopv(clients)
                                 {
                                     clientinfo *cs = clients[i];
-                                    if(cs->actortype > A_PLAYER || !cs->name[0] || !cs->online || cs->wantsmap || !cs->ready || cs->clientnum == mapgameinfo) continue;
-                                    sendf(cs->clientnum, 1, "ri", N_GETGAMEINFO);
-                                    asked++;
+                                    if(cs->actortype > A_PLAYER || !cs->name[0] || !cs->online || cs->wantsmap || !cs->ready) continue;
+                                    cs->updatetimeplayed();
+                                    if(!best || cs->timeplayed > best->timeplayed) best = cs;
                                 }
-                                if(!asked) srvoutf(4, colouryellow, "No game information response, and nobody to ask, giving up..");
-                                else
+
+                                if(best)
                                 {
-                                    srvoutf(4, colouryellow, "No game information response, broadcasting..");
+                                    mapgameinfo = best->clientnum;
+                                    srvoutf(4, colouryellow, "Requesting game information from %s..", colourname(best));
+                                    sendf(best->clientnum, 1, "ri", N_GETGAMEINFO);
+
                                     gamewaittime = totalmillis;
                                     gamewaitdelay = G(waitforplayerinfo);
+                                    gamestate = G_S_GAMEINFO;
                                     gametick = 0;
+                                    retry = true;
+
                                     break;
                                 }
                             }
-                            else srvoutf(4, colouryellow, "No broadcast game information response, giving up..");
+
+                            gamestate = G_S_PLAYING;
+                            gamewaittime = gamewaitdelay = 0;
+                            gametick = 0;
+
+                            break;
                         }
-                        mapgameinfo = -1;
+
+                        case G_S_GAMEINFO:
+                        {
+                            if(!gamewaittime)
+                            {
+                                gamewaittime = totalmillis;
+                                gamewaitdelay = G(waitforplayerinfo);
+                                gametick = 0;
+                            }
+
+                            if(!hasgameinfo && timewait() >= totalmillis) break;
+
+                            if(hasgameinfo) srvoutf(4, colouryellow, "Game information received, starting..");
+                            else
+                            {
+                                if(mapgameinfo != -2)
+                                {
+                                    int asked = 0;
+                                    mapgameinfo = -2;
+                                    loopv(clients)
+                                    {
+                                        clientinfo *cs = clients[i];
+                                        if(cs->actortype > A_PLAYER || !cs->name[0] || !cs->online || cs->wantsmap || !cs->ready || cs->clientnum == mapgameinfo) continue;
+                                        sendf(cs->clientnum, 1, "ri", N_GETGAMEINFO);
+                                        asked++;
+                                    }
+
+                                    if(!asked) srvoutf(4, colouryellow, "No game information response, and nobody to ask, giving up..");
+                                    else
+                                    {
+                                        srvoutf(4, colouryellow, "No game information response, broadcasting..");
+                                        gamewaittime = totalmillis;
+                                        gamewaitdelay = G(waitforplayerinfo);
+                                        gametick = 0;
+                                        break;
+                                    }
+                                }
+                                else srvoutf(4, colouryellow, "No broadcast game information response, giving up..");
+                            }
+
+                            mapgameinfo = -1;
+                        }
+
+                        default:
+                            gamestate = G_S_PLAYING;
+                            gamewaittime = gamewaitdelay = 0;
+                            gametick = 0;
+                            break;
                     }
-                    default: gamestate = G_S_PLAYING; break;
+
+                    if(!retry) break;
                 }
 
                 if(gamestate == G_S_PLAYING)
                 {
-                    gamewaittime = gamewaitdelay = 0;
                     if(m_team(gamemode, mutators)) doteambalance(true);
+
                     if(m_play(gamemode))
                     {
                         gamelog log(GAMELOG_EVENT);
@@ -5881,6 +5956,7 @@ namespace server
                         log.addlistf("args", "console", "Match start, FIGHT!");
                         log.push();
                     }
+
                     gametick = 0;
                 }
             }
@@ -5903,7 +5979,7 @@ namespace server
 
             if(!gametick || totalmillis - gametick >= 1000)
             {
-                sendf(-1, 1, "ri4", N_TICK, gamestate, timeleft(), timeelapsed());
+                sendf(-1, 1, "ri5", N_TICK, gamestate, timeleft(), timeelapsed(), timewaitdelay());
                 gametick = totalmillis - ((totalmillis - gametick) % 1000);
             }
         }

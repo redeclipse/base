@@ -4,7 +4,7 @@
 namespace game
 {
     int nextmode = G_EDITING, nextmuts = 0, gamestate = G_S_WAITING, gamemode = G_EDITING, mutators = 0,
-        maptime = 0, mapstart = 0, timeremaining = 0, timeelapsed = 0, timelast = 0, timesync = 0,
+        maptime = 0, mapstart = 0, timeremaining = 0, timeelapsed = 0, timelast = 0, timewait = 0, timesync = 0,
         lastcamera = 0, lasttvcam = 0, lasttvchg = 0, lastzoom = 0, lastcamcn = -1;
     bool zooming = false, inputmouse = false, inputview = false, inputmode = false, wantsloadoutmenu = false, hasspotlights = false, hasvolumetric = false;
     float swayfade = 0, swayspeed = 0, swaydist = 0, bobfade = 0, bobdist = 0;
@@ -524,6 +524,7 @@ namespace game
     ICOMMANDV(0, gametimeelapsed, gettimeelapsed());
     ICOMMANDV(0, gametimetotal, gettimetotal());
     ICOMMANDVF(0, gametimeprogress, gettimeprogress());
+    ICOMMANDV(0, gametimewait, timewait);
     ICOMMANDV(0, gametimesync, gettimesync());
 
     const char *gametitle() { return connected() ? server::gamename(gamemode, mutators) : "Ready"; }
@@ -2222,13 +2223,14 @@ namespace game
         ai::killed(d, v);
     }
 
-    void timeupdate(int state, int remain, int elapsed)
+    void timeupdate(int state, int remain, int elapsed, int wait)
     {
         int oldstate = gamestate;
         gamestate = state;
         timeremaining = remain;
         timeelapsed = elapsed;
         timelast = gs_timeupdate(gamestate) ? lastmillis : totalmillis;
+        timewait = wait;
         if(gs_timeupdate(gamestate) != gs_timeupdate(oldstate)) entities::updaterails();
         if(gs_intermission(gamestate) && gs_playing(oldstate))
         {
@@ -2351,7 +2353,7 @@ namespace game
         if(!empty)
         {
             gamestate = G_S_WAITING;
-            mapstart = maptime = timesync = timelast = 0;
+            mapstart = maptime = timesync = timelast = timewait = 0;
         }
         specreset();
         removedamagemergeall();
@@ -3556,7 +3558,7 @@ namespace game
             if(!maptime)
             {
                 maptime = -1;
-                timesync = timelast = 0;
+                timesync = timelast = timewait = 0;
                 return; // skip the first loop
             }
             else if(maptime < 0)
