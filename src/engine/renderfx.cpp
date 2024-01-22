@@ -58,6 +58,8 @@ void setuphalo(int w, int h)
 
     useshaderbyname("hudhalodepth");
     useshaderbyname("hudhalotop");
+    useshaderbyname("hudhalodepthref");
+    useshaderbyname("hudhalotopref");
 
     halotype = -1;
 }
@@ -175,11 +177,24 @@ void blendhalos()
     {
         switch(i)
         {
-            case HALO_DEPTH: SETSHADER(hudhalodepth); break;
-            case HALO_ONTOP: SETSHADER(hudhalotop); break;
+            case HALO_DEPTH:
+                if(hasrefractmask) SETSHADER(hudhalodepthref);
+                else SETSHADER(hudhalodepth);
+                break;
+            case HALO_ONTOP:
+                if(hasrefractmask) SETSHADER(hudhalotopref);
+                else SETSHADER(hudhalotop);
+                break;
             default: continue;
         }
         glBindTexture(GL_TEXTURE_RECTANGLE, halotex[i]);
+
+        if(hasrefractmask)
+        {
+            glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_MASK);
+            if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msrefracttex);
+            else glBindTexture(GL_TEXTURE_RECTANGLE, refracttex);
+        }
 
         glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_DEPTH);
         if(msaasamples) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
