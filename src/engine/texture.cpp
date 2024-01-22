@@ -2039,6 +2039,7 @@ ICOMMAND(0, materialreset, "", (void), if(editmode || identflags&IDF_MAP) resetm
 bool materialcheck = false;
 void checkmaterials(const char *name)
 {
+    defslot = NULL;
     loopi((MATF_VOLUME|MATF_INDEX)+1)
     {
         if(!materialslots[i].sts.empty()) continue;
@@ -2790,7 +2791,11 @@ void texture(char *type, char *name, int *rot, int *xoffset, int *yoffset, float
         }
         else if((matslot = findmaterial(type)) >= 0)
         {
-            if(materialcheck && !materialslots[matslot].sts.empty()) return;
+            if(materialcheck && !materialslots[matslot].sts.empty())
+            {
+                defslot = NULL;
+                return;
+            }
             tnum = TEX_DIFFUSE;
             defslot = &materialslots[matslot];
             defslot->reset();
