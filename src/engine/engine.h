@@ -457,7 +457,7 @@ enum { SM_NONE = 0, SM_REFLECT, SM_CUBEMAP, SM_CASCADE, SM_SPOT };
 extern int shadowmapping;
 
 extern vec shadoworigin, shadowdir;
-extern float shadowradius, shadowbias, refractdepth;
+extern float shadowradius, shadowbias, refractdepthscale;
 extern int shadowside, shadowspot, shadowtransparent;
 extern matrix4 shadowmatrix;
 

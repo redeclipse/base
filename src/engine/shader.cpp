@@ -338,12 +338,13 @@ static void bindworldtexlocs(Shader &s)
     UNIFORMTEX("glowmap", TEX_GLOW);
     UNIFORMTEX("envmap", TEX_ENVMAP);
     UNIFORMTEX("dispmap", TEX_DISPMAP);
-    UNIFORMTEX("detaildiffusemap", TEX_DETAIL+TEX_DIFFUSE);
-    UNIFORMTEX("detailnormalmap", TEX_DETAIL+TEX_NORMAL);
-    UNIFORMTEX("detaildispmap", TEX_DETAIL+TEX_DISPMAP);
-    UNIFORMTEX("blendmap", 7);
-    UNIFORMTEX("refractmask", 7);
-    UNIFORMTEX("refractlight", 8);
+    UNIFORMTEX("diffusedetail", TEX_DETAIL_DIFFUSE);
+    UNIFORMTEX("normaldetail", TEX_DETAIL_NORMAL);
+    UNIFORMTEX("dispdetail", TEX_DETAIL_DISPMAP);
+    UNIFORMTEX("blendmap", TEX_BLENDMAP);
+    UNIFORMTEX("refractmask", TEX_REFRACT_MASK);
+    UNIFORMTEX("refractlight", TEX_REFRACT_LIGHT);
+    UNIFORMTEX("refractdepthscale", TEX_REFRACT_DEPTH);
 }
 
 static void linkglslprogram(Shader &s, bool msg = true)

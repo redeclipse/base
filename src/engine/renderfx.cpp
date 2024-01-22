@@ -328,18 +328,21 @@ void renderhaze()
 
         if(hasrefractmask)
         {
-            glActiveTexture_(GL_TEXTURE7);
+            glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_MASK);
             if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msrefracttex);
             else glBindTexture(GL_TEXTURE_RECTANGLE, refracttex);
         }
+
         if(textured)
         {
-            glActiveTexture_(GL_TEXTURE8);
+            glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_LIGHT);
             glBindTexture(GL_TEXTURE_RECTANGLE, hazertex);
         }
-        glActiveTexture_(GL_TEXTURE9);
+
+        glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_DEPTH);
         if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
         else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
+
         glActiveTexture_(GL_TEXTURE0);
 
         const bvec &color = gethazecolour();

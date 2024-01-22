@@ -3453,7 +3453,7 @@ namespace UI
             }
             loopv(texs)
             {
-                glActiveTexture_(GL_TEXTURE0+i);
+                glActiveTexture_(GL_TEXTURE0 + i);
                 settexture(texs[i]);
                 defformatstring(texparam, "texsize%d", i);
                 LocalShaderParam param = list.add(LocalShaderParam(texparam));

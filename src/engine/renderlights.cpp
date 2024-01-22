@@ -4999,7 +4999,7 @@ void workinoq()
 }
 
 FVAR(0, refractmargin, 0, 0.1f, 1);
-FVAR(0, refractdepth, 1e-3f, 16, 1e3f);
+FVAR(0, refractdepthscale, 1e-3f, 16, 1e3f);
 
 int transparentlayer = 0;
 bool hasrefractmask = false;
@@ -5044,7 +5044,7 @@ void rendertransparent()
         glClearColor(0, 0, 0, 0);
         glClear(GL_COLOR_BUFFER_BIT);
         if(scissor) glDisable(GL_SCISSOR_TEST);
-        GLOBALPARAMF(refractdepth, 1.0f/refractdepth);
+        GLOBALPARAMF(refractdepthscale, 1.0f/refractdepthscale);
         SETSHADER(refractmask);
         if(hashaze ? hasalphavas : hasalphavas&4) renderrefractmask(hashaze);
         if(hasmats&4) rendermaterialmask();
@@ -5053,15 +5053,18 @@ void rendertransparent()
         hasrefractmask = true;
     }
 
-    glActiveTexture_(GL_TEXTURE7);
+    glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_MASK);
     if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msrefracttex);
     else glBindTexture(GL_TEXTURE_RECTANGLE, refracttex);
-    glActiveTexture_(GL_TEXTURE8);
+
+    glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_LIGHT);
     if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, mshdrtex);
     else glBindTexture(GL_TEXTURE_RECTANGLE, hdrtex);
-    glActiveTexture_(GL_TEXTURE9);
+
+    glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_DEPTH);
     if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
     else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
+
     glActiveTexture_(GL_TEXTURE0);
 
     if(ghasstencil) glEnable(GL_STENCIL_TEST);

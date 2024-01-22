@@ -27,7 +27,7 @@ void setupcaustics(int tmu, float surface = -1e16f)
     if(!caustictex) loadcaustics(true);
 
     vec s = vec(0.011f, 0, 0.0066f).mul(100.0f/causticscale), t = vec(0, 0.011f, 0.0066f).mul(100.0f/causticscale);
-    glActiveTexture_(GL_TEXTURE0+tmu);
+    glActiveTexture_(GL_TEXTURE0 + tmu);
     settexture(caustictex);
     glActiveTexture_(GL_TEXTURE0);
     float blendscale = causticcontrast, blendoffset = 1;
@@ -74,9 +74,10 @@ void renderdepthfog(int mat, float surface)
 
     glEnable(GL_BLEND);
 
-    glActiveTexture_(GL_TEXTURE9);
+    glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_DEPTH);
     if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
     else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
+
     glActiveTexture_(GL_TEXTURE0);
 
     vec p[4] =

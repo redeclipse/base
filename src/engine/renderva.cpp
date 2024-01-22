@@ -1284,7 +1284,7 @@ struct renderstate
     bool blend;
     int blendx, blendy;
     int globals, tmu;
-    GLuint textures[7];
+    GLuint textures[TEX_MAX];
     Slot *slot, *texgenslot;
     VSlot *vslot, *texgenvslot;
     vec2 texgenscroll;
@@ -1292,7 +1292,7 @@ struct renderstate
 
     renderstate() : colormask(true), depthmask(true), alphaing(0), shadowing(false), vbuf(0), vattribs(false), vquery(false), colorscale(1, 1, 1), alphascale(0), shadowopacity(-1), refractscale(0), refractcolor(1, 1, 1), aspect(1), blend(false), blendx(-1), blendy(-1), globals(-1), tmu(-1), slot(NULL), texgenslot(NULL), vslot(NULL), texgenvslot(NULL), texgenscroll(0, 0), texgenorient(-1), texgenmillis(lastmillis)
     {
-        loopk(7) textures[k] = 0;
+        loopk(TEX_MAX) textures[k] = 0;
     }
 };
 
@@ -1525,7 +1525,7 @@ static void changebatchtmus(renderstate &cur, int pass, geombatch &b)
         if((cur.blendx != (b.va->o.x&~0xFFF) || cur.blendy != (b.va->o.y&~0xFFF)))
         {
             cur.tmu = 7;
-            glActiveTexture_(GL_TEXTURE7);
+            glActiveTexture_(GL_TEXTURE0 + TEX_BLENDMAP);
             bindblendtexture(b.va->o);
             cur.blendx = b.va->o.x&~0xFFF;
             cur.blendy = b.va->o.y&~0xFFF;
@@ -1653,7 +1653,9 @@ static void changeslottmus(renderstate &cur, int pass, Slot &slot, VSlot &vslot)
                     // fall-through
                 case TEX_NORMAL:
                 case TEX_DISPMAP:
-                    bindslottex(cur, TEX_DETAIL + t.type, t.t);
+                    bindslottex(cur,
+                        t.type == TEX_DISPMAP ? TEX_DETAIL_DISPMAP : (t.type == TEX_NORMAL ? TEX_DETAIL_NORMAL : TEX_DETAIL_DIFFUSE),
+                            t.t);
                     break;
             }
         }

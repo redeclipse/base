@@ -675,11 +675,16 @@ extern hashnameset<Texture> textures;
 #define TEX_ENUM(en, um) \
     en(um, Diffuse, DIFFUSE) en(um, Normalp, NORMAL) en(um, Glow, GLOW) en(um, Environment, ENVMAP) \
     en(um, Specular, SPEC) en(um, Depth, DEPTH) en(um, Alpha, ALPHA) en(um, Displacement, DISPMAP) \
-    en(um, Unknown, UNKNOWN)  en(um, Maximum, MAX)
+    en(um, Detail Diffuse, DETAIL_DIFFUSE) en(um, Detail Normal, DETAIL_NORMAL) en(um, Detail Displacement, DETAIL_DISPMAP) \
+    en(um, Unknown, UNKNOWN) en(um, Maximum, MAX)
 ENUMDLN(TEX);
 
-VARQ(TEX_DETAIL, TEX_SPEC);
-VARQ(TEX_TYPES, TEX_UNKNOWN);
+VARQ(TEX_BLENDMAP, TEX_UNKNOWN);
+VARQ(TEX_REFRACT_MASK, TEX_UNKNOWN + 1);
+VARQ(TEX_REFRACT_LIGHT, TEX_UNKNOWN + 2);
+VARQ(TEX_REFRACT_DEPTH, TEX_UNKNOWN + 3);
+
+VARQ(TEX_TYPES, TEX_DISPMAP + 1); // NOTE: core texture types end before detail textures start
 
 enum
 {
