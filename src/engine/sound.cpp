@@ -1076,10 +1076,16 @@ void updatesounds()
     alcProcessContext(sndctx);
 }
 
+bool soundready(int n, float gain, int flags)
+{
+    if(!engineready || nosound || gain <= 0 || !soundmastervol || !soundeffectvol || (flags&SND_MAP ? !soundeffectenv : !soundeffectevent)) return false;
+    if((flags&SND_MAP || (!(flags&SND_UNMAPPED) && n >= S_GAMESPECIFIC)) && client::waiting(true)) return false;
+    return true;
+}
+
 int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, float pitch, float rolloff, float refdist, float maxdist, int ends, float offset, int groupid)
 {
-    if(nosound || !pos || gain <= 0 || !soundmastervol || !soundeffectvol || (flags&SND_MAP ? !soundeffectenv : !soundeffectevent)) return -1;
-    if((flags&SND_MAP || (!(flags&SND_UNMAPPED) && n >= S_GAMESPECIFIC)) && client::waiting(true)) return -1;
+    if(!soundready(n, gain, flags) || !pos) return -1;
 
     soundslot *slot = NULL;
 
@@ -1150,8 +1156,11 @@ int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, flo
 
 int emitsoundpos(int n, const vec &pos, int *hook, int flags, float gain, float pitch, float rolloff, float refdist, float maxdist, int ends, float offset, int groupid)
 {
+    if(!soundready(n, gain, flags)) return -1;
+
     vec curpos = pos;
     flags &= ~SND_TRACKED; // can't do that here
+
     return emitsound(n, &curpos, NULL, hook, flags, gain, pitch, rolloff, refdist, maxdist, ends, offset);
 }
 
@@ -1178,8 +1187,13 @@ COMMAND(0, previewsound, "sf");
 
 int playsound(int n, const vec &pos, physent *d, int flags, int vol, int maxrad, int minrad, int *hook, int ends, float offset, int groupid)
 {
+    float gain = vol > 0 ? vol / 255.f : 1.f;
+    if(!soundready(n, gain, flags)) return -1;
+
+    float rolloff = maxrad > soundrolloff ? soundrolloff / float(maxrad) : 1.f,
+          refdist = minrad > soundrefdist ? float(minrad) : -1.f;
     vec o = d ? d->o : pos;
-    float gain = vol > 0 ? vol / 255.f : 1.f, rolloff = maxrad > soundrolloff ? soundrolloff / float(maxrad) : 1.f, refdist = minrad > soundrefdist ? float(minrad) : -1.f;
+
     return emitsound(n, &o, d, hook, flags, gain, 1.f, rolloff, refdist, -1.f, ends, offset);
 }
 
