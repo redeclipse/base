@@ -2802,7 +2802,11 @@ void texture(char *type, char *name, int *rot, int *xoffset, int *yoffset, float
         }
     }
 
-    if(!defslot) { conoutf(colourred, "No default slot set for texture (%s)", name); return; }
+    if(!defslot)
+    {
+        if(!materialcheck) conoutf(colourred, "No default slot set for texture (%s)", name);
+        return;
+    }
     else if(tnum < 0) tnum = TEX_UNKNOWN;
     if(materialcheck && matslot < 0) return;
     Slot &s = *defslot;
