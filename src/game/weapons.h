@@ -242,7 +242,7 @@ WPSVARM(IDF_GAMEMOD, 0, desc,
 );
 
 WPSVAR(IDF_GAMEMOD, 0, name, // keep this incase longname is too long
-    "Claw",     "Pistol",   "Sword",    "Shotgun",  "SMG",      "Flamer",   "Plasma",   "Zapper",   "Rifle",    "Shotgun",  "Grenade",  "Mine",     "Rocket",   "Melee"
+    "Claw",     "Pistol",   "Sword",    "Shotgun",  "SMG",      "Flamer",   "Plasma",   "Zapper",   "Rifle",    "Corroder","Grenade",  "Mine",     "Rocket",   "Melee"
 );
 
 WPFVARM(IDF_GAMEMOD, 0, aidist, 0, FVAR_MAX,

@@ -1,117 +1,108 @@
 # Red Eclipse
-* An arena shooter for the modern era; released as free and open source software
-* Available for Windows, GNU/Linux, BSD, and macOS
-* Features parkour gameplay, such as impulse boosts, dashing, and other tricks
-* Favourite gamemodes with an array of mutators and variables
-* A built-in editor lets you create your own release-quality maps cooperatively online
-* Download for free at https://redeclipse.net/
+
+Red Eclipse is an old-school arena shooter for the modern age. Building on decades of harcore
+    action, from Doom, to Quake, to Halo, to Team Fortress, to Mirror's Edge. Run, gun, and parkour
+    your way to your next frag!
+
+    * Free and open source software; no microtransactions or other payments necessary
+    * Features parkour gameplay, such as wall running, boosts, dashing, and other tricks
+    * Popular gamemodes with an array of mutators and variables
+    * A built-in editor lets you create your own release-quality maps cooperatively online
+    * Available for Windows and GNU/Linux
+
+Download for free at https://redeclipse.net/
 
 ## About
 
-Building on over 14 years of gameplay design and the lessons learned from Red Eclipse 1.x, Red Eclipse 2.x+ focuses on agile, easily accessible arena shooter gameplay over adherence to antiquated arena shooter tropes. For creators, the full power of the [Tesseract](http://tesseract.gg/) engine is at your fingertips in the included realtime multiplayer editor.
+The project is a free and open source game built using SDL and OpenGL which allows it to be ported
+    to many platforms; you can [download a package](https://redeclipse.net/download) for Windows
+    and GNU/Linux; or grab a development copy from our [Git repository](https://redeclipse.net/devel)
+    and live on the bleeding edge.
 
-The project is a free and open source game built using SDL and OpenGL which allows it to be ported to many platforms; you can [download a package](https://redeclipse.net/download) for Windows, GNU/Linux, BSD, and macOS; or grab a development copy from our [Git repository](https://redeclipse.net/devel) and live on the bleeding edge.
+In a true open source by the people for the people nature, we try to work closely with the gaming
+    and open source communities to provide a better overall experience, aiming to create a game
+    environment that is fun and easy to play, while still having elements to master.
 
-In a true open source by the people for the people nature, we try to work closely with the gaming and open source communities to provide a better overall experience, aiming to create a game environment that is fun and easy to play, while still having elements to master.
+If you think you might have something to contribute to the game or community, please feel free to
+    drop by our [Discord server](https://redeclipse.net/chat) or [forums](https://redeclipse.net/forums)
+    and talk to us directly. We try to maintain a standard of friendly behaviour in our community,
+    so don't be afraid to speak up and have your say in building this game for us all!
 
-If you think you might have something to contribute to the game or community, please feel free to drop by our [Discord server](https://redeclipse.net/chat) or [forums](https://redeclipse.net/forums) and talk to us directly. We try to maintain a standard of friendly behaviour in our community, so don't be afraid to speak up and have your say in building this game for us all! :)
+For creators, the full power of a highly expanded [Tesseract](http://tesseract.gg/) engine is at
+    your fingertips in the included realtime easy-to-use WYSIWYG editor that is capable of creating
+    maps both offline and online with other people in cooperative edit mode.
 
 ## Distribution
-This game is primarily distributed via Steam. For the most bleeding-edge version of the game, or for those who are unable to get a Steam account, it is possible to compile the game from source, following the guide at https://www.redeclipse.net/docs/Install-Guide.
+
+This game is primarily distributed via Steam. For the most bleeding-edge version of the game, or
+    for those who are unable to get a Steam account, it is possible to compile the game from
+    source, following the [Install Guide](https://www.redeclipse.net/docs/Install-Guide).
 
 ## Get Involved
-You're encouraged to help the project by joining in with the rest of the community to make a better project! You can do this by participating in our Community, using the development version and reporting any issues, ideas, suggestions or comments you may have.
 
-Our main method of community interaction is via the [Discord server](https://redeclipse.net/chat). Here, you can talk directly to the Red Eclipse developers, contributors, and supporters; whether you just want to have a chat, report a problem, or make a suggestion, this is the best place to do it.
+You're encouraged to help the project by joining in with the rest of the community to make a better
+    project! You can do this by participating in our Community, using the development version and
+    reporting any issues, ideas, suggestions or comments you may have.
+
+Our main method of community interaction is via the [Discord server](https://redeclipse.net/chat).
+    Here, you can talk directly to the Red Eclipse developers, contributors, and supporters;
+    whether you just want to have a chat, report a problem, or make a suggestion, this is the best
+    place to do it.
 
 ## Open Source
-The project is Free and Open Source, meaning that you can both use it for free and be a part of it by contributing in whatever way you can. These are the people who have helped shape Red Eclipse into what you see today. They are regular people just like you who volunteer their time or donate in the spirit of making a really cool game. Your name could be down here, too!
 
-### Developers
+The project is Free and Open Source, meaning that you can both use it for free and be a part of it
+    by contributing in whatever way you can. These are the people who have helped shape Red Eclipse
+    into what you see today. They are regular people just like you who volunteer their time or
+    donate in the spirit of making a really cool game. Your name could be down here, too!
 
-* Quinton "Quin" Reeves
-* Lee "eihrul" Salzman
-* Sławomir "Q009" Błauciak
+## Credits
 
-### Contributors and Supporters
-
-* "Lycanfox"
-* Alex "molexted" Foster - Maps/Balance Lead and CubeScript
-* Alex "ZeroKnight" George - Design/Testing, Support
-* Anup "DOS_WARRIOR" Debnath
-* Cameron "Rhubarb" Dawdy
-* Christopher "Dratz-_C" Dratz
-* Christopher "paroneayea" Webber
-* Corey "c0rdawg" Maher
-* Dale "graphitemaster" Weiler - Check out Neothyne @ https://neothyne.org/
-* Daniel "Imerion" Eriksson
-* David "srbs" Forrest
-* Derek "JoJo" Stegall - Maps, Models, Textures, HUD, Sound FX, Design/Testing
-* Eddie "skedz4u" Webb
-* Henrik "ahven" Pihl
-* Isaac "Zelec" Towns
-* Jacinta "cinta" Hall - Design/Testing, Support, and making babies.
-* Jeff "Architect" Cope - Design/Testing
-* Jeroen "appleflap" Boukens - Textures, Design/Testing
-* Jonathan "Ulukai" De Nil - Maps, Testing, Support
-* Jonathan "W!ck3d" Roels - Maps, Textures, Design/Testing
-* Joseph "ballist1c" Calabria - Maps
-* Joshua "JDWhyte" Dwight
-* Joshua L. "Verbalshadow" Blocher - Some source artwork, Design/Testing
-* Kevin "Hirato" Meyer - Development Assistance, Design/Testing
-* Kirill "TristamK" Kolesnikov - Maps
-* Kurt "Kurtis84" Kessler - Textures
-* Ludwig "Sniper-goth" Boscolo - Mapmodels and Maps
-* Luke "syreal" Jones
-* Mark "xtort-" Doodeman
-* Martin "arand" Werner - Documentation, Legal Drafting, Cross-Dist Support, Open Source Checks, and much more.
-* Matt "greaserpirate" Kalt - Maps
-* Maxim "Acerspyro" Therrien - UI elements, Maps, Models, CubeScript, Support
-* Mike "mikeplus64" Ledger - Maps, Models, Weapons, Textures, HUD, Design/Testing
-* Mikhail "Agustis" Kashin
-* Nick "Fatal_Glory" Watts
-* Petri Lukkarinen
-* Radek "Dziq" Jędrecki - Models and Textures
-* Ricky "unixfreak" Thomson - Maps
-* Riidom Li - Models
-* Rob "Lloir" Shannon
-* Robert "Homicidal" Crane - Parkour design, and the concept of the big blue ball of death.
-* Robert Winkler
-* Ryan "icculus" Gordon / icculus.org - SDL, which we all love, as well as hosting!
-* Ryan Rigby
-* Rémi "LuckystrikeRx" Clouet d'Orval - Maps, Textures, Models, Weapons, Design/Testing, Website
-* Sam "comet_11" - Originally inspired Quin to work on a game with the Cube Engine
-* Scott Baker
-* Sergey "swooboo" Altshuller
-* Slawek "VibrantWave" Blauciak - Ambient Sounds
-* Stefan Norman and Peter McInerney - Supporting us from the very beginning
-* Sébastien "sinma" Chauvel
-* Taiyo Rawle
-* Vadim Peretokin
-* Viktor "Unnamed" Hahn - Maps, Models, and other improvements
-* Wayne Bennett - Design/Testing
-* Zachery "freezurbern" Slocum - Skyboxes
-* "Gaming Tilt"
-* "4rson" - Maps and Support
-* "Beha" - Stats system, appimage builds, bug fixes and other improvements
-* "Bobbo" - Bug fixes and other improvements
-* "bonifarz"
-* "Boognish" - Maps
-* "CD Xbow" - Supporter and dreamer, he saw the potential in everything.
-* "D.a.M.i.E.n" - Maps and Textures
-* "Lyberta", formerly known as "FaTony" - Maps
-* "fbt"
-* "FearFighter"
-* "Fleeky" - Models
-* "fluxord" - Crosshairs
-* "Furor"
-* "Iceflower" - Icons
-* "John_III" - Maps and Models
-* "Korsi" - Maps
-* "littlebabyjesus"
-* "nemurati"
-* "Raiden" - Maps
-* "RaZgRiZ" - Textures and Cubescript maintenance
-* "TheAssassin" - Web stuff, privacy and bug fixes and other improvements
-* "TheLastProject" - Design, Testing and Support
-* "w00p|dazza"
++-------------------------------------------------------------------------------+
+|                               ACTIVE DEVELOPERS                               |
++---------------------------------------+---------------------------------------+
+| Quinton "Quin" Reeves                 | Lee "eihrul" Salzman                  |
+| Sławomir "Q009" Błauciak              | Ricky "unixfreak" Thomson             |
+| Ludwig "SniperGoth" Boscolo           | Viktor "Unnamed" Hahn                 |
+| Paranoid "Rabidbutton" Individual     | Evan "EG Music" Koutsogiannis         |
+| Lovable "MirceaKitsune" Fox           |                                       |
++-------------------------------------------------------------------------------+
+|                         CONTRIBUTORS PAST AND PRESENT                         |
++-------------------------------------------------------------------------------+
+| Alex "molex" Foster                   | Alex "ZeroKnight" George              |
+| Anup "DOS_WARRIOR" Debnath            | Cameron "Rhubarb" Dawdy               |
+| Christopher "Dratz-_C" Dratz          | Christopher "paroneayea" Webber       |
+| Corey "c0rdawg" Maher                 | Dale "graphitemaster" Weiler          |
+| Daniel "Imerion" Eriksson             | David "srbs" Forrest                  |
+| Derek "JoJo" Stegall                  | Eddie "skedz4u" Webb                  |
+| Henrik "ahven" Pihl                   | Isaac "Zelec" Towns                   |
+| Jacinta "cinta" Hall                  | Jeff "Architect" Cope                 |
+| Jeroen "appleflap" Boukens            | Jonathan "Ulukai" De Nil              |
+| Jonathan "W!ck3d" Roels               | Joseph "ballist1c" Calabria           |
+| Joshua "JDWhyte" Dwight               | Joshua L. "Verbalshadow" Blocher      |
+| Kevin "Hirato" Meyer                  | Kirill "TristamK" Kolesnikov          |
+| Kurt "Kurtis84" Kessler               | Luke "syreal" Jones                   |
+| Mark "xtort-" Doodeman                | Martin "arand" Werner                 |
+| Matt "greaserpirate" Kalt             | Maxim "Acerspyro" Therrien            |
+| Mike "mikeplus64" Ledger              | Mikhail "Agustis" Kashin              |
+| Nick "Fatal_Glory" Watts              | Peter McInerney                       |
+| Petri Lukkarinen                      | Radek "Dziq" Jędrecki                 |
+| Riidom Li                             | Rob "Lloir" Shannon                   |
+| Robert "Homicidal" Crane              | Robert Winkler                        |
+| Ryan "icculus" Gordon                 | Ryan Rigby                            |
+| Rémi "LuckystrikeRx" Clouet d'Orval   | Sam "comet_11" Gentle                 |
+| Scott Baker                           | Sergey "swooboo" Altshuller           |
+| Stefan "stefan" Norman                | Sébastien "sinma" Chauvel             |
+| Taiyo Rawle                           | Vadim Peretokin                       |
+| Wayne Bennett                         | Zachery "freezurbern" Slocum          |
++---------------------------------------+---------------------------------------+
+| "Gaming Tilt"     | "4rson"           | "Beha"            | "Bobbo"           |
+| "bonifarz"        | "Boognish"        | "CD Xbow"         | "D.a.M.i.E.n"     |
+| "Lyberta"         | "fbt"             | "FearFighter"     | "Fleeky"          |
+| "fluxord"         | "Furor"           | "Iceflower"       | "John_III"        |
+| "Korsi"           | "littlebabyjesus" | "Lycanfox"        | "nemurati"        |
+| "Raiden"          | "RaZgRiZ"         | "TheAssassin"     | "TheLastProject"  |
+| "w00p|dazza"      |                   |                   |                   |
++-------------------------------------------------------------------------------+
+| YOUR NAME COULD BE HERE TOO - RED ECLIPSE IS DEVELOPED BY VOLUNTEERS LIKE YOU |
++-------------------------------------------------------------------------------+
