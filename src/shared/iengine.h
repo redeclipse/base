@@ -276,7 +276,7 @@ enum
     en(um, Lightning, LIGHTNING) en(um, Lightzap, LIGHTZAP) \
     en(um, Lens Flare, LENS_FLARE) \
     en(um, Max, MAX)
-ENUMDLN(PART);
+ENUM_DLN(PART);
 
 struct particle
 {
@@ -318,7 +318,7 @@ extern void lensflare(const vec &o, const vec &color, bool sun, int sparkle, flo
     en(um, Smoke, SMOKE) en(um, Scorch, SCORCH) en(um, Short Scorch, SCORCH_SHORT) \
     en(um, Blood, BLOOD) en(um, Bullet, BULLET) en(um, Energy, ENERGY) en(um, Stain, STAIN) \
     en(um, Maximum, MAX)
-ENUMDLN(STAIN);
+ENUM_DLN(STAIN);
 
 extern void addstain(int type, const vec &center, const vec &surface, float radius, const bvec &color = bvec(0xFF, 0xFF, 0xFF), int info = 0);
 
@@ -505,11 +505,11 @@ enum { CURSOR_DEFAULT = 0, CURSOR_HOVER, CURSOR_HIDDEN, CURSOR_MAX };
 #define SURFACE_ENUM(en, um) \
     en(um, Visor, VISOR) en(um, Background, BACKGROUND) en(um, Foreground, FOREGROUND) en(um, World, WORLD) \
     en(um, Progress, PROGRESS) en(um, Composite, COMPOSITE) en(um, Maximum, MAX)
-ENUMDLN(SURFACE);
-VARQ(SURFACE_MAIN, SURFACE_FOREGROUND);
-VARQ(SURFACE_LOOP, SURFACE_MAIN+1);
-VARQ(SURFACE_LAST, SURFACE_WORLD);
-VARQ(SURFACE_ALL, SURFACE_LAST+1);
+ENUM_DLN(SURFACE);
+ENUM_VAR(SURFACE_MAIN, SURFACE_FOREGROUND);
+ENUM_VAR(SURFACE_LOOP, SURFACE_MAIN+1);
+ENUM_VAR(SURFACE_LAST, SURFACE_WORLD);
+ENUM_VAR(SURFACE_ALL, SURFACE_LAST+1);
 
 namespace UI
 {

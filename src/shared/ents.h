@@ -9,19 +9,19 @@ enum { LFX_S_NONE = 0, LFX_S_RAND1 = 1<<0, LFX_S_RAND2 = 1<<1, LFX_S_MAX = 2 };
 #define MPV_ENUM(en, um) \
     en(um, Any, ANY) en(um, Default, DEFAULT) en(um, Alternate, ALTERNATE) \
     en(um, Max, MAX)
-ENUMDLN(MPV);
+ENUM_DLN(MPV);
 
 #define LFX_ENUM(en, um) \
     en(um, Spotlight, SPOTLIGHT) en(um, Flicker, FLICKER) \
     en(um, Pulse, PULSE) en(um, Glow, GLOW) \
     en(um, Inverted Pulse, INVPULSE) en(um, Inverted Glow, INVGLOW) \
     en(um, Max, MAX)
-ENUMDLN(LFX);
+ENUM_DLN(LFX);
 
 #define PHYSICS_ENUM(en, um) \
     en(um, Movement, MOVEMENT) en(um, Gravity, GRAVITY) en(um, Coasting, COASTING) \
     en(um, Max, MAX)
-ENUMDLN(PHYSICS);
+ENUM_DLN(PHYSICS);
 
 struct entbase          // persistent map entity
 {
@@ -164,7 +164,7 @@ extern vector<int> enthover;
     en(um, Editing, EDITING) en(um, Spectator, SPECTATOR) \
     en(um, Waiting, WAITING) \
     en(um, Maximum, MAX)
-ENUMDLN(CS); // beware, some stuff uses >= CS_SPECTATOR
+ENUM_DLN(CS); // beware, some stuff uses >= CS_SPECTATOR
 
 enum { PHYS_FLOAT = 0, PHYS_FALL, PHYS_SLIDE, PHYS_SLOPE, PHYS_FLOOR, PHYS_STEP_UP, PHYS_STEP_DOWN, PHYS_MAX };
 enum { ENT_PLAYER = 0, ENT_AI, ENT_INANIMATE, ENT_CAMERA, ENT_PROJ, ENT_RAGDOLL, ENT_DUMMY, ENT_MAX };

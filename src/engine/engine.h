@@ -425,7 +425,7 @@ static inline cubeext &ext(cube &c)
 #define DARK_ENUM(en, um) \
     en(um, Environment, ENV) en(um, Glow, GLOW) en(um, Sunlight, SUN) en(um, Particles, PART) \
     en(um, Halo, HALO) en(um, UI, UI) en(um, Maximum, MAX)
-ENUMDLN(DARK);
+ENUM_DLN(DARK);
 
 #define LIGHTTILE_MAXW 16
 #define LIGHTTILE_MAXH 16
@@ -839,7 +839,7 @@ enum
     en(um, None, NONE) en(um, Disconnecting, DISCONNECT) en(um, Connecting, CONNECT) \
     en(um, Loading, MAPLOAD) en(um, Saving, MAPSAVE) en(um, Downloading, MAPDL) \
     en(um, Starting, GAMESTATE) en(um, Waiting, GAMEWAIT) en(um, Maximum, MAX)
-ENUMDLN(PROGRESS);
+ENUM_DLN(PROGRESS);
 
 extern int initing, fullscreen, fullscreendesktop, numcpus, noconfigfile, firstrun;
 extern bool progressing, pixeling;
@@ -1115,7 +1115,7 @@ extern void viewhaze();
 #define PULSE_ENUM(en, um) \
     en(um, Fire, FIRE) en(um, Burn, BURN) en(um, Disco, DISCO) en(um, Shock, SHOCK) en(um, Bleed, BLEED) \
     en(um, Buff, BUFF) en(um, Warn, WARN) en(um, Regen, REGEN) en(um, Flash, FLASH) en(um, Rainbow, RAINBOW) en(um, Maximum, MAX)
-ENUMDLN(PULSE)
+ENUM_DLN(PULSE)
 #define PULSE_LAST (PULSE_MAX - 1)
 #define PULSECOLOURS 8
 #define PULSE(x) (PULSE_##x)

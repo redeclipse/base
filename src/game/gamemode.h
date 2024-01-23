@@ -1,34 +1,34 @@
 #define G_ENUM(en, um) \
     en(um, Demo, DEMO) en(um, Editing, EDITING) en(um, Deathmatch, DEATHMATCH) en(um, Capture the Flag, CAPTURE) \
     en(um, Defend and Control, DEFEND) en(um, Bomber, BOMBER) en(um, Race, RACE) en(um, Maximum, MAX)
-ENUMDLN(G)
+ENUM_DLN(G)
 
-VARQ(G_START, G_EDITING);
-VARQ(G_PLAY, G_DEATHMATCH);
-VARQ(G_RAND, G_BOMBER-G_DEATHMATCH+1);
-VARQ(G_COUNT, G_MAX-G_PLAY);
-VARQ(G_NEVER, (1<<G_DEMO)|(1<<G_EDITING));
-VARQ(G_LIMIT, (1<<G_DEATHMATCH)|(1<<G_CAPTURE)|(1<<G_DEFEND)|(1<<G_BOMBER));
-VARQ(G_ALL, (1<<G_DEMO)|(1<<G_EDITING)|(1<<G_DEATHMATCH)|(1<<G_CAPTURE)|(1<<G_DEFEND)|(1<<G_BOMBER)|(1<<G_RACE));
-VARQ(G_SW, (1<<G_RACE));
+ENUM_VAR(G_START, G_EDITING);
+ENUM_VAR(G_PLAY, G_DEATHMATCH);
+ENUM_VAR(G_RAND, G_BOMBER-G_DEATHMATCH+1);
+ENUM_VAR(G_COUNT, G_MAX-G_PLAY);
+ENUM_VAR(G_NEVER, (1<<G_DEMO)|(1<<G_EDITING));
+ENUM_VAR(G_LIMIT, (1<<G_DEATHMATCH)|(1<<G_CAPTURE)|(1<<G_DEFEND)|(1<<G_BOMBER));
+ENUM_VAR(G_ALL, (1<<G_DEMO)|(1<<G_EDITING)|(1<<G_DEATHMATCH)|(1<<G_CAPTURE)|(1<<G_DEFEND)|(1<<G_BOMBER)|(1<<G_RACE));
+ENUM_VAR(G_SW, (1<<G_RACE));
 
 #define G_M_ENUM(en, um) \
     en(um, Free for All, FFA) en(um, Coop, COOP) en(um, Instagib, INSTAGIB) en(um, Medieval, MEDIEVAL) en(um, Kaboom, KABOOM) en(um, Duel, DUEL) en(um, Survivor, SURVIVOR) \
     en(um, Classic, CLASSIC) en(um, Onslaught, ONSLAUGHT) en(um, Vampire, VAMPIRE) en(um, Resize, RESIZE) en(um, HARD, HARD) en(um, Arena, ARENA) en(um, Dark, DARK) \
     en(um, Game Specific 1, GSP1) en(um, Game Specific 2, GSP2) en(um, Game Specific 3, GSP3) en(um, Maximum, MAX)
-ENUMDLN(G_M)
+ENUM_DLN(G_M)
 
 #define G_M_GSN (G_M_MAX-G_M_GSP1)
-VARQ(G_M_GSP, G_M_GSP1);
-VARQ(G_M_ALL, (1<<G_M_FFA)|(1<<G_M_COOP)|(1<<G_M_INSTAGIB)|(1<<G_M_MEDIEVAL)|(1<<G_M_KABOOM)|(1<<G_M_DUEL)|(1<<G_M_SURVIVOR)|(1<<G_M_CLASSIC)|(1<<G_M_ONSLAUGHT)|(1<<G_M_VAMPIRE)|(1<<G_M_RESIZE)|(1<<G_M_HARD)|(1<<G_M_ARENA)|(1<<G_M_DARK)|(1<<G_M_GSP1)|(1<<G_M_GSP2)|(1<<G_M_GSP3));
-VARQ(G_M_FILTER, (1<<G_M_FFA)|(1<<G_M_COOP)|(1<<G_M_INSTAGIB)|(1<<G_M_MEDIEVAL)|(1<<G_M_KABOOM)|(1<<G_M_DUEL)|(1<<G_M_SURVIVOR)|(1<<G_M_CLASSIC)|(1<<G_M_ONSLAUGHT)|(1<<G_M_VAMPIRE)|(1<<G_M_RESIZE)|(1<<G_M_HARD)|(1<<G_M_ARENA)|(1<<G_M_DARK)|(1<<G_M_GSP1)|(1<<G_M_GSP2)|(1<<G_M_GSP3));
-VARQ(G_M_ROTATE, (1<<G_M_FFA)|(1<<G_M_INSTAGIB)|(1<<G_M_MEDIEVAL)|(1<<G_M_KABOOM)|(1<<G_M_CLASSIC)|(1<<G_M_ONSLAUGHT)|(1<<G_M_VAMPIRE)|(1<<G_M_RESIZE)|(1<<G_M_ARENA)|(1<<G_M_DARK)|(1<<G_M_GSP1)|(1<<G_M_GSP2)|(1<<G_M_GSP3));
-VARQ(G_M_DUKE, (1<<G_M_DUEL)|(1<<G_M_SURVIVOR));
+ENUM_VAR(G_M_GSP, G_M_GSP1);
+ENUM_VAR(G_M_ALL, (1<<G_M_FFA)|(1<<G_M_COOP)|(1<<G_M_INSTAGIB)|(1<<G_M_MEDIEVAL)|(1<<G_M_KABOOM)|(1<<G_M_DUEL)|(1<<G_M_SURVIVOR)|(1<<G_M_CLASSIC)|(1<<G_M_ONSLAUGHT)|(1<<G_M_VAMPIRE)|(1<<G_M_RESIZE)|(1<<G_M_HARD)|(1<<G_M_ARENA)|(1<<G_M_DARK)|(1<<G_M_GSP1)|(1<<G_M_GSP2)|(1<<G_M_GSP3));
+ENUM_VAR(G_M_FILTER, (1<<G_M_FFA)|(1<<G_M_COOP)|(1<<G_M_INSTAGIB)|(1<<G_M_MEDIEVAL)|(1<<G_M_KABOOM)|(1<<G_M_DUEL)|(1<<G_M_SURVIVOR)|(1<<G_M_CLASSIC)|(1<<G_M_ONSLAUGHT)|(1<<G_M_VAMPIRE)|(1<<G_M_RESIZE)|(1<<G_M_HARD)|(1<<G_M_ARENA)|(1<<G_M_DARK)|(1<<G_M_GSP1)|(1<<G_M_GSP2)|(1<<G_M_GSP3));
+ENUM_VAR(G_M_ROTATE, (1<<G_M_FFA)|(1<<G_M_INSTAGIB)|(1<<G_M_MEDIEVAL)|(1<<G_M_KABOOM)|(1<<G_M_CLASSIC)|(1<<G_M_ONSLAUGHT)|(1<<G_M_VAMPIRE)|(1<<G_M_RESIZE)|(1<<G_M_ARENA)|(1<<G_M_DARK)|(1<<G_M_GSP1)|(1<<G_M_GSP2)|(1<<G_M_GSP3));
+ENUM_VAR(G_M_DUKE, (1<<G_M_DUEL)|(1<<G_M_SURVIVOR));
 
 #define G_S_ENUM(en, um) \
     en(um, Waiting, WAITING) en(um, Getting Map, GETMAP) en(um, Sending Map, SENDMAP) en(um, Readying, READYING) en(um, Syncing Info, GAMEINFO) \
     en(um, Playing, PLAYING) en(um, Overtime, OVERTIME) en(um, Intermission, INTERMISSION) en(um, Voting, VOTING) en(um, Maximum, MAX)
-ENUMDLN(G_S);
+ENUM_DLN(G_S);
 
 #define gs_waiting(a) (a >= G_S_WAITING && a <= G_S_GAMEINFO)
 #define gs_playing(a) (a >= G_S_PLAYING && a <= G_S_OVERTIME)
@@ -36,7 +36,7 @@ ENUMDLN(G_S);
 #define gs_timeupdate(a) (gs_playing(a) || gs_intermission(a))
 
 #define G_F_ENUM(en, um) en(um, Game Specific, GSP) en(um, Maximum, MAX)
-ENUMDLN(G_F);
+ENUM_DLN(G_F);
 
 struct gametypes
 {

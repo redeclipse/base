@@ -102,7 +102,7 @@ struct SlotShaderParamState : LocalShaderParamState
     en(um, Default, DEFAULT, 0) en(um, World, WORLD, 1<<0) en(um, Environment Map, ENVMAP, 1<<1) en(um, Refract, REFRACT, 1<<2) \
     en(um, Option, OPTION, 1<<3) en(um, Dynamic, DYNAMIC, 1<<4) en(um, Triplanar, TRIPLANAR, 1<<5) \
     en(um, Invlaid, INVALID, 1<<6) en(um, Deferred, DEFERRED, 1<<7)
-ENUMALN(SHADER);
+ENUM_ALN(SHADER);
 
 #define MAXVARIANTROWS 32
 
@@ -677,14 +677,14 @@ extern hashnameset<Texture> textures;
     en(um, Specular, SPEC) en(um, Depth, DEPTH) en(um, Alpha, ALPHA) en(um, Displacement, DISPMAP) \
     en(um, Detail Diffuse, DETAIL_DIFFUSE) en(um, Detail Normal, DETAIL_NORMAL) en(um, Detail Displacement, DETAIL_DISPMAP) \
     en(um, Unknown, UNKNOWN) en(um, Maximum, MAX)
-ENUMDLN(TEX);
+ENUM_DLN(TEX);
 
-VARQ(TEX_BLENDMAP, TEX_UNKNOWN);
-VARQ(TEX_REFRACT_MASK, TEX_UNKNOWN + 1);
-VARQ(TEX_REFRACT_LIGHT, TEX_UNKNOWN + 2);
-VARQ(TEX_REFRACT_DEPTH, TEX_UNKNOWN + 3);
+ENUM_VAR(TEX_BLENDMAP, TEX_UNKNOWN);
+ENUM_VAR(TEX_REFRACT_MASK, TEX_UNKNOWN + 1);
+ENUM_VAR(TEX_REFRACT_LIGHT, TEX_UNKNOWN + 2);
+ENUM_VAR(TEX_REFRACT_DEPTH, TEX_UNKNOWN + 3);
 
-VARQ(TEX_TYPES, TEX_DISPMAP + 1); // NOTE: core texture types end before detail textures start
+ENUM_VAR(TEX_TYPES, TEX_DISPMAP + 1); // NOTE: core texture types end before detail textures start
 
 enum
 {
