@@ -2807,6 +2807,11 @@ namespace entities
                 }
             }
         }
+
+        if(gver <= 273 && e.type == WEAPON)
+        { // insert corroder before grenade (9 -> 10) after rifle (8)
+            if(e.attrs[0] >= 9) e.attrs[0]++;
+        }
     }
 
     int getfirstroute()

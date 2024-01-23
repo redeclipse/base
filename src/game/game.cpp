@@ -29,7 +29,7 @@ namespace game
         static const char *nameprefixes[W_MAX] =
         {
             "S_W_CLAW_", "S_W_PISTOL_",
-            "S_W_SWORD_", "S_W_SHOTGUN_", "S_W_SMG_", "S_W_FLAMER_", "S_W_PLASMA_", "S_W_ZAPPER_", "S_W_RIFLE_",
+            "S_W_SWORD_", "S_W_SHOTGUN_", "S_W_SMG_", "S_W_FLAMER_", "S_W_PLASMA_", "S_W_ZAPPER_", "S_W_RIFLE_", "S_W_CORRODER_",
             "S_W_GRENADE_", "S_W_MINE_", "S_W_ROCKET_", "S_W_MELEE_"
         };
 
@@ -104,7 +104,9 @@ namespace game
             fx::getfxhandle("FX_W_ENERGY2"),
             fx::getfxhandle("FX_W_ENERGY_P"),
             fx::getfxhandle("FX_W_BEAM1"),
-            fx::getfxhandle("FX_W_BEAM2")
+            fx::getfxhandle("FX_W_BEAM2"),
+            fx::getfxhandle("FX_W_SPLASH1"),
+            fx::getfxhandle("FX_W_SPLASH2")
         };
 
         return type >= 0 && type < FX_W_TYPES ? weapfx[type] : fx::FxHandle();
@@ -1216,7 +1218,7 @@ namespace game
         int numdyns = numdynents();
         loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL)
         {
-            if(d->burntime && d->burning(lastmillis, d->burntime))
+            if(d->burntime && d->burnfunc(lastmillis, d->burntime))
             {
                 int millis = lastmillis-d->lastres[W_R_BURN], delay = max(d->burndelay, 1);
                 size_t seed = size_t(d) + (millis/50);
@@ -1231,7 +1233,7 @@ namespace game
                 adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d, PULSE_BURN).mul(pc), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
             }
 
-            if(d->shocktime && d->shocking(lastmillis, d->shocktime))
+            if(d->shocktime && d->shockfunc(lastmillis, d->shocktime))
             {
                 int millis = lastmillis-d->lastres[W_R_SHOCK], delay = max(d->shockdelay, 1);
                 size_t seed = size_t(d) + (millis/50);
@@ -1546,7 +1548,7 @@ namespace game
             if(d->suicided >= 0 && lastmillis-d->suicided >= 2500) d->suicided = -1;
         }
 
-        int restime[W_R_MAX] = { d->burntime, d->bleedtime, d->shocktime };
+        int restime[W_R_MAX] = { d->burntime, d->bleedtime, d->shocktime, d->corrodetime };
         loopi(W_R_MAX) if(d->lastres[i] > 0 && lastmillis-d->lastres[i] >= restime[i]) d->resetresidual(i);
         if(gs_playing(gamestate) && d->state == CS_ALIVE && actors[d->actortype].steps)
         {
@@ -1673,9 +1675,20 @@ namespace game
         return false;
     }
 
+    bool corrode(gameent *d, int weap, int flags)
+    {
+        if(wr_corrodes(weap, flags))
+        {
+            d->lastrestime[W_R_CORRODE] = lastmillis;
+            if(isweap(weap) || flags&HIT_MATERIAL) d->lastres[W_R_CORRODE] = lastmillis;
+            else return true;
+        }
+        return false;
+    }
+
     struct damagemerge
     {
-        enum { HURT = 0, BURN, BLEED, SHOCK, MAX };
+        enum { HURT = 0, BURN, BLEED, SHOCK, CORRODE, MAX };
 
         gameent *to, *from;
         int type, weap, flags, amt, millis, ready, delay, length, combine;
@@ -1829,9 +1842,9 @@ namespace game
 
     void hiteffect(int weap, int flags, int damage, gameent *d, gameent *v, vec &dir, vec &vel, float dist, bool local)
     {
-        bool burning = burn(d, weap, flags), bleeding = bleed(d, weap, flags), shocking = shock(d, weap, flags), material = flags&HIT_MATERIAL;
+        bool burnfunc = burn(d, weap, flags), bleedfunc = bleed(d, weap, flags), shockfunc = shock(d, weap, flags), corrodefunc = corrode(d, weap, flags), material = flags&HIT_MATERIAL;
 
-        if(!local || burning || bleeding || shocking || material)
+        if(!local || burnfunc || bleedfunc || shockfunc || corrodefunc || material)
         {
             float scale = isweap(weap) && WF(WK(flags), weap, damage, WS(flags)) != 0 ? abs(damage)/float(WF(WK(flags), weap, damage, WS(flags))) : 1.f;
             if(hitdealt(flags) && damage > 0)
@@ -1840,14 +1853,15 @@ namespace game
                 int hp = max(d->gethealth(gamemode, mutators)/5, 1);
 
                 if(!nogore && bloodscale > 0)
-                    part_splash(PART_BLOOD, int(clamp(damage/hp, 1, 5)*bloodscale)*(bleeding || material ? 2 : 1), bloodfade, p, 0x229999, (rnd((bloodsize+1)/2)+((bloodsize+1)/2))/10.f, 1, 0, 0, 100, 1+STAIN_BLOOD, int(d->radius), 10);
+                    part_splash(PART_BLOOD, int(clamp(damage/hp, 1, 5)*bloodscale)*(bleedfunc || material ? 2 : 1), bloodfade, p, 0x229999, (rnd((bloodsize+1)/2)+((bloodsize+1)/2))/10.f, 1, 0, 0, 100, 1+STAIN_BLOOD, int(d->radius), 10);
                 if(nogore != 2 && (bloodscale <= 0 || bloodsparks))
-                    part_splash(PART_PLASMA, int(clamp(damage/hp, 1, 5))*(bleeding || material ? 2: 1), bloodfade, p, 0x882222, 1, 0.5f, 0, 0, 50, 1+STAIN_STAIN, int(d->radius));
+                    part_splash(PART_PLASMA, int(clamp(damage/hp, 1, 5))*(bleedfunc || material ? 2: 1), bloodfade, p, 0x882222, 1, 0.5f, 0, 0, 50, 1+STAIN_STAIN, int(d->radius));
 
                 int damagetype = damagemerge::HURT;
-                if(burning) damagetype = damagemerge::BURN;
-                else if(bleeding) damagetype = damagemerge::BLEED;
-                else if(shocking) damagetype = damagemerge::SHOCK;
+                if(burnfunc) damagetype = damagemerge::BURN;
+                else if(bleedfunc) damagetype = damagemerge::BLEED;
+                else if(shockfunc) damagetype = damagemerge::SHOCK;
+                else if(corrodefunc) damagetype = damagemerge::CORRODE;
                 pushdamagemerge(d, v, damagetype, weap, flags, damage, damagemergedelay, damagemergetime, damagemergecombine);
 
                 if(!material)
@@ -1865,7 +1879,7 @@ namespace game
 
             if(A(d->actortype, abilities)&(1<<A_A_PUSHABLE))
             {
-                if(weap == -1 && shocking && d->shockstun)
+                if(weap == -1 && shockfunc && d->shockstun)
                 {
                     float amt = WRS(flags&HIT_WAVE || !hitdealt(flags) ? wavestunscale : (d->health <= 0 ? deadstunscale : hitstunscale), stun, gamemode, mutators);
                     if(m_dm_gladiator(gamemode, mutators))
@@ -1881,7 +1895,7 @@ namespace game
                     if(d->shockstun&W_N_GRIMM && g > 0) d->falling.mul(1.f-clamp(g, 0.f, 1.f));
                     if(d->shockstun&W_N_SLIDE) d->impulse[IM_SLIP] = lastmillis;
                 }
-                else if(isweap(weap) && !burning && !bleeding && !material && !shocking && WF(WK(flags), weap, damage, WS(flags)) != 0)
+                else if(isweap(weap) && !burnfunc && !bleedfunc && !material && !shockfunc && !corrodefunc && WF(WK(flags), weap, damage, WS(flags)) != 0)
                 {
                     if(WF(WK(flags), weap, stun, WS(flags)) != 0)
                     {
@@ -1982,7 +1996,7 @@ namespace game
         d->obliterated = (style&FRAG_OBLITERATE)!=0;
         d->headless = (style&FRAG_HEADSHOT)!=0;
 
-        bool burning = burn(d, weap, flags), bleeding = bleed(d, weap, flags), shocking = shock(d, weap, flags);
+        bool burnfunc = burn(d, weap, flags), bleedfunc = bleed(d, weap, flags), shockfunc = shock(d, weap, flags), corrodefunc = corrode(d, weap, flags);
         int anc = d == focus ? S_V_FRAGGED : -1, dth = d->actortype >= A_ENEMY || d->obliterated ? S_SPLOSH : S_DEATH, curmat = material&MATF_VOLUME;
 
         if(d != player1) d->resetinterp();
@@ -2005,10 +2019,11 @@ namespace game
             else if(flags&HIT_MATERIAL) obitctx = *obitdeath ? obitdeath : obitdeathmat;
             else if(flags&HIT_LOST) obitctx = *obitfall ? obitfall : obitlost;
             else if(flags&HIT_CHECKPOINT) obitctx = *obitcheckpoint ? obitcheckpoint : obitwrongcp;
-            else if(flags && isweap(weap) && !burning && !bleeding && !shocking) obitctx = WF(WK(flags), weap, obitsuicide, WS(flags));
-            else if(flags&HIT_BURN || burning) obitctx = obitburnself;
-            else if(flags&HIT_BLEED || bleeding) obitctx = obitbleedself;
-            else if(flags&HIT_SHOCK || shocking) obitctx = obitshockself;
+            else if(flags && isweap(weap) && !burnfunc && !bleedfunc && !shockfunc && !corrodefunc) obitctx = WF(WK(flags), weap, obitsuicide, WS(flags));
+            else if(flags&HIT_BURN || burnfunc) obitctx = obitburnself;
+            else if(flags&HIT_BLEED || bleedfunc) obitctx = obitbleedself;
+            else if(flags&HIT_SHOCK || shockfunc) obitctx = obitshockself;
+            else if(flags&HIT_CORRODE || corrodefunc) obitctx = obitcorrodeself;
             else if(d->obliterated) obitctx = obitobliterated;
             else if(d->headless) obitctx = obitheadless;
             else obitctx = obitsuicide;
@@ -2017,9 +2032,10 @@ namespace game
         }
         else
         {
-            if(burning) obitctx = obitburn;
-            else if(bleeding) obitctx = obitbleed;
-            else if(shocking) obitctx = obitshock;
+            if(burnfunc) obitctx = obitburn;
+            else if(bleedfunc) obitctx = obitbleed;
+            else if(shockfunc) obitctx = obitshock;
+            else if(corrodefunc) obitctx = obitcorrode;
             else if(isweap(weap))
             {
                 if(d->obliterated) obitctx = WF(WK(flags), weap, obitobliterated, WS(flags));
@@ -2183,9 +2199,10 @@ namespace game
             log->addlist("args", "damage", damage);
             log->addlist("args", "style", style);
             log->addlist("args", "material", material);
-            log->addlist("args", "burning", burning);
-            log->addlist("args", "bleeding", bleeding);
-            log->addlist("args", "shocking", shocking);
+            log->addlist("args", "burnfunc", burnfunc);
+            log->addlist("args", "bleedfunc", bleedfunc);
+            log->addlist("args", "shockfunc", shockfunc);
+            log->addlist("args", "corrodefunc", corrodefunc);
             log->addlist("args", "distance", v->o.dist(d->o)/8.f);
             log->addlist("args", "context", obitctx);
             log->addlist("args", "console", d->obit);
@@ -2619,6 +2636,7 @@ namespace game
         burn(d, -1, flags);
         bleed(d, -1, flags);
         shock(d, -1, flags);
+        corrode(d, -1, flags);
         client::addmsg(N_SUICIDE, "ri3", d->clientnum, flags, d->inmaterial);
         d->suicided = lastmillis;
     }
@@ -4190,7 +4208,7 @@ namespace game
             {
                 case ANIM_IDLE: case ANIM_CLAW: case ANIM_PISTOL: case ANIM_SWORD:
                 case ANIM_SHOTGUN: case ANIM_SMG: case ANIM_FLAMER: case ANIM_PLASMA: case ANIM_ZAPPER:
-                case ANIM_RIFLE: case ANIM_GRENADE: case ANIM_MINE: case ANIM_ROCKET:
+                case ANIM_RIFLE: case ANIM_CORRODER: case ANIM_GRENADE: case ANIM_MINE: case ANIM_ROCKET:
                 {
                     mdl.anim = (mdl.anim>>ANIM_SECONDARY) | ((mdl.anim&((1<<ANIM_SECONDARY)-1))<<ANIM_SECONDARY);
                     swap(mdl.basetime, mdl.basetime2);
@@ -4282,7 +4300,7 @@ namespace game
 
         float blend = opacity(d, third);
 
-        if(d->burntime && d->burning(lastmillis, d->burntime))
+        if(d->burntime && d->burnfunc(lastmillis, d->burntime))
         {
             int millis = lastmillis - d->lastres[W_R_BURN], delay = max(d->burndelay, 1);
             float pc = 1, intensity = 0.5f + (rnd(51) / 100.f), fade = (d != focus || d->state != CS_ALIVE ? 0.25f : 0.f) + (rnd(36) / 100.f);
@@ -4294,7 +4312,7 @@ namespace game
             regular_part_create(PART_FIREBALL_SOFT, 200, pos, pulsehexcol(d, PULSE_BURN), d->height * intensity * blend * pc, fade * blend * pc, 0, 0, -25);
         }
 
-        if(d->shocktime && d->shocking(lastmillis, d->shocktime))
+        if(d->shocktime && d->shockfunc(lastmillis, d->shocktime))
         {
             float radius = d->getradius() * 1.2f, height = d->getheight() * 0.45f;
             if(d->ragdoll)
@@ -4322,6 +4340,18 @@ namespace game
                     from = to;
                 }
             }
+        }
+
+        if(d->corrodetime && d->corrodefunc(lastmillis, d->corrodetime))
+        {
+            int millis = lastmillis - d->lastres[W_R_BURN], delay = max(d->corrodedelay, 1);
+            float pc = 1, intensity = 0.5f + (rnd(51) / 100.f), fade = (d != focus || d->state != CS_ALIVE ? 0.25f : 0.f) + (rnd(36) / 100.f);
+
+            if(d->corrodetime - millis < delay) pc *= (d->corrodetime - millis) / float(delay);
+            else pc *= 0.75f + ((millis % delay)/float(delay * 4));
+
+            vec pos = vec(d->center()).add(vec(rnd(11) - 5, rnd(11) - 5, rnd(11) - 3).mul(pc));
+            regular_part_create(PART_SMOKE_SOFT, 200, pos, pulsehexcol(d, PULSE_CORRODE), d->height * intensity * blend * pc, fade * blend * pc, 0, 0, -25);
         }
     }
 

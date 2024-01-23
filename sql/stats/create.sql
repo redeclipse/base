@@ -216,7 +216,7 @@ CREATE TABLE game_weapons (
 
     CHECK (timewielded > 0 OR timeloadout > 0),
     CHECK (playerhandle <> ''),
-    CHECK (weapon IN ('melee', 'pistol', 'sword', 'shotgun', 'smg', 'flamer', 'plasma', 'zapper', 'rifle', 'grenade', 'mine', 'rocket', 'claw')),
+    CHECK (weapon IN ('melee', 'pistol', 'sword', 'shotgun', 'smg', 'flamer', 'plasma', 'zapper', 'rifle', 'corroder', 'grenade', 'mine', 'rocket', 'claw')),
     FOREIGN KEY (game) REFERENCES games(id),
     FOREIGN KEY (game, player) REFERENCES game_players(game, wid)
 );

@@ -501,6 +501,11 @@ namespace server
         {
             sendf(-1, 1, "ri6f2i", N_SHOCKRES, clientnum, shocktime, shockdelay, shockdamage, shockstun, shockstunscale, shockstunfall, shockstuntime);
         }
+
+        void sendcorrode()
+        {
+            sendf(-1, 1, "ri5", N_CORRODERES, clientnum, corrodetime, corrodedelay, corrodedamage);
+        }
     };
 
     #include "gamelog.h"
@@ -4483,17 +4488,20 @@ namespace server
 
         if(isweap(weap) && WF(WK(flags), weap, residualundo, WS(flags)) != 0)
         {
-            if(WF(WK(flags), weap, residualundo, WS(flags))&(1<<W_R_BURN) && m->burning(gamemillis, m->burntime))
+            if(WF(WK(flags), weap, residualundo, WS(flags))&(1<<W_R_BURN) && m->burnfunc(gamemillis, m->burntime))
             {
                 m->lastres[W_R_BURN] = m->lastrestime[W_R_BURN] = 0;
                 sendf(-1, 1, "ri3", N_SPHY, m->clientnum, SPHY_EXTINGUISH);
             }
 
-            if(WF(WK(flags), weap, residualundo, WS(flags))&(1<<W_R_BLEED) && m->bleeding(gamemillis, m->bleedtime))
+            if(WF(WK(flags), weap, residualundo, WS(flags))&(1<<W_R_BLEED) && m->bleedfunc(gamemillis, m->bleedtime))
                 m->lastres[W_R_BLEED] = m->lastrestime[W_R_BLEED] = 0;
 
-            if(WF(WK(flags), weap, residualundo, WS(flags))&(1<<W_R_SHOCK) && m->shocking(gamemillis, m->shocktime))
+            if(WF(WK(flags), weap, residualundo, WS(flags))&(1<<W_R_SHOCK) && m->shockfunc(gamemillis, m->shocktime))
                 m->lastres[W_R_SHOCK] = m->lastrestime[W_R_SHOCK] = 0;
+
+            if(WF(WK(flags), weap, residualundo, WS(flags))&(1<<W_R_CORRODE) && m->corrodefunc(gamemillis, m->corrodetime))
+                m->lastres[W_R_CORRODE] = m->lastrestime[W_R_CORRODE] = 0;
         }
 
         if(nodamage || !hitdealt(realflags))
@@ -4558,21 +4566,21 @@ namespace server
 
                 if(weap >= 0)
                 {
-                    if(wr_burning(weap, flags))
+                    if(wr_burnfunc(weap, flags))
                     {
                         m->burntime = WF(WK(flags), weap, burntime, WS(flags));
                         m->burndelay = WF(WK(flags), weap, burndelay, WS(flags));
                         m->burndamage = WF(WK(flags), weap, burndamage, WS(flags));
                         m->sendburn();
                     }
-                    if(wr_bleeding(weap, flags))
+                    if(wr_bleedfunc(weap, flags))
                     {
                         m->bleedtime = WF(WK(flags), weap, bleedtime, WS(flags));
                         m->bleeddelay = WF(WK(flags), weap, bleeddelay, WS(flags));
                         m->bleeddamage = WF(WK(flags), weap, bleeddamage, WS(flags));
                         m->sendbleed();
                     }
-                    if(wr_shocking(weap, flags))
+                    if(wr_shockfunc(weap, flags))
                     {
                         m->shocktime = WF(WK(flags), weap, shocktime, WS(flags));
                         m->shockdelay = WF(WK(flags), weap, shockdelay, WS(flags));
@@ -4583,9 +4591,16 @@ namespace server
                         m->shockstuntime = WF(WK(flags), weap, shockstuntime, WS(flags));
                         m->sendshock();
                     }
+                    if(wr_corrodefunc(weap, flags))
+                    {
+                        m->corrodetime = WF(WK(flags), weap, corrodetime, WS(flags));
+                        m->corrodedelay = WF(WK(flags), weap, corrodedelay, WS(flags));
+                        m->corrodedamage = WF(WK(flags), weap, corrodedamage, WS(flags));
+                        m->sendcorrode();
+                    }
                 }
 
-                if(wr_burning(weap, flags) && (m->submerged < WATERPHYS(extinguish, m->inmaterial) || (m->inmaterial&MATF_VOLUME) != MAT_WATER))
+                if(wr_burnfunc(weap, flags) && (m->submerged < WATERPHYS(extinguish, m->inmaterial) || (m->inmaterial&MATF_VOLUME) != MAT_WATER))
                 {
                     m->lastres[W_R_BURN] = m->lastrestime[W_R_BURN] = gamemillis;
                     m->lastresowner[W_R_BURN] = v->clientnum;
@@ -4593,7 +4608,7 @@ namespace server
                     m->lastresalt[W_R_BURN] = statalt;
                 }
 
-                if(wr_bleeding(weap, flags))
+                if(wr_bleedfunc(weap, flags))
                 {
                     m->lastres[W_R_BLEED] = m->lastrestime[W_R_BLEED] = gamemillis;
                     m->lastresowner[W_R_BLEED] = v->clientnum;
@@ -4601,12 +4616,20 @@ namespace server
                     m->lastresalt[W_R_BLEED] = statalt;
                 }
 
-                if(wr_shocking(weap, flags))
+                if(wr_shockfunc(weap, flags))
                 {
                     m->lastres[W_R_SHOCK] = m->lastrestime[W_R_SHOCK] = gamemillis;
                     m->lastresowner[W_R_SHOCK] = v->clientnum;
                     m->lastresweapon[W_R_SHOCK] = fromweap;
                     m->lastresalt[W_R_SHOCK] = statalt;
+                }
+
+                if(wr_corrodefunc(weap, flags))
+                {
+                    m->lastres[W_R_CORRODE] = m->lastrestime[W_R_CORRODE] = gamemillis;
+                    m->lastresowner[W_R_CORRODE] = v->clientnum;
+                    m->lastresweapon[W_R_CORRODE] = fromweap;
+                    m->lastresalt[W_R_CORRODE] = statalt;
                 }
 
                 if(isweap(statweap) && m != v && (!m_team(gamemode, mutators) || m->team != v->team) && first)
@@ -4898,6 +4921,12 @@ namespace server
         {
             ci->lastres[W_R_SHOCK] = ci->lastrestime[W_R_SHOCK] = gamemillis;
             ci->lastresowner[W_R_SHOCK] = ci->clientnum;
+        }
+
+        if(ci->corrodetime && flags&HIT_CORRODE)
+        {
+            ci->lastres[W_R_CORRODE] = ci->lastrestime[W_R_CORRODE] = gamemillis;
+            ci->lastresowner[W_R_CORRODE] = ci->clientnum;
         }
 
         static vector<int> dmglog; dmglog.setsize(0);
@@ -5537,6 +5566,15 @@ namespace server
                             ci->sendshock();
                         }
 
+                        if(G(hurtresidual)&(1<<W_R_CORRODE))
+                        {
+                            flags |= HIT_CORRODE;
+                            ci->corrodetime = G(hurtcorrodetime);
+                            ci->corrodedelay = G(hurtcorrodedelay);
+                            ci->corrodedamage = G(hurtcorrodedamage);
+                            ci->sendcorrode();
+                        }
+
                         dodamage(ci, ci, G(hurtdamage), -1, -1, 0, flags, ci->inmaterial);
 
                         if(!ci->lasthurt) ci->lasthurt = gamemillis;
@@ -5546,8 +5584,8 @@ namespace server
                 }
                 else if(ci->lasthurt && gamemillis-ci->lasthurt >= G(hurtdelay)) ci->lasthurt = 0;
 
-                // burning residual
-                if(ci->burning(gamemillis, ci->burntime))
+                // burn residual
+                if(ci->burnfunc(gamemillis, ci->burntime))
                 {
                     if(gamemillis-ci->lastrestime[W_R_BURN] >= ci->burndelay)
                     {
@@ -5559,8 +5597,8 @@ namespace server
                 }
                 else if(ci->lastres[W_R_BURN]) ci->lastres[W_R_BURN] = ci->lastrestime[W_R_BURN] = 0;
 
-                // bleeding residual
-                if(ci->bleeding(gamemillis, ci->bleedtime))
+                // bleed residual
+                if(ci->bleedfunc(gamemillis, ci->bleedtime))
                 {
                     if(gamemillis-ci->lastrestime[W_R_BLEED] >= ci->bleeddelay)
                     {
@@ -5572,8 +5610,8 @@ namespace server
                 }
                 else if(ci->lastres[W_R_BLEED]) ci->lastres[W_R_BLEED] = ci->lastrestime[W_R_BLEED] = 0;
 
-                // shocking residual
-                if(ci->shocking(gamemillis, ci->shocktime))
+                // shock residual
+                if(ci->shockfunc(gamemillis, ci->shocktime))
                 {
                     if(gamemillis-ci->lastrestime[W_R_SHOCK] >= ci->shockdelay)
                     {
@@ -5584,6 +5622,19 @@ namespace server
                     }
                 }
                 else if(ci->lastres[W_R_SHOCK]) ci->lastres[W_R_SHOCK] = ci->lastrestime[W_R_SHOCK] = 0;
+
+                // corrode residual
+                if(ci->corrodefunc(gamemillis, ci->corrodetime))
+                {
+                    if(gamemillis-ci->lastrestime[W_R_CORRODE] >= ci->corrodedelay)
+                    {
+                        clientinfo *co = (clientinfo *)getinfo(ci->lastresowner[W_R_CORRODE]);
+                        dodamage(ci, co ? co : ci, ci->corrodedamage, -1, -1, 0, HIT_CORRODE, 0);
+                        ci->lastrestime[W_R_CORRODE] += ci->corrodedelay;
+                        if(ci->state != CS_ALIVE) continue;
+                    }
+                }
+                else if(ci->lastres[W_R_CORRODE]) ci->lastres[W_R_CORRODE] = ci->lastrestime[W_R_CORRODE] = 0;
 
                 // regen wear-off
                 if(m_regen(gamemode, mutators) && A(ci->actortype, abilities)&(1<<A_A_REGEN))
@@ -6217,8 +6268,30 @@ namespace server
         }
 
         uchar operator[](int msg) const { return msg >= 0 && msg < NUMMSG ? msgmask[msg] : 0; }
-    } msgfilter(-1, N_CONNECT, N_SERVERINIT, N_CLIENTINIT, N_WELCOME, N_MAPCHANGE, N_SERVMSG, N_DAMAGE, N_SHOTFX, N_LOADOUT, N_DIED, N_POINTS, N_SPAWNSTATE, N_ITEMACC, N_ITEMSPAWN, N_TICK, N_DISCONNECT, N_CURRENTPRIV, N_PONG, N_SCOREAFFIN, N_SCORE, N_GAMELOG, N_SENDDEMOLIST, N_SENDDEMO, N_DEMOPLAYBACK, N_SENDMAP, N_REGEN, N_CLIENT, N_AUTHCHAL, N_QUEUEPOS, N_STEAMCHAL, -2, N_REMIP, N_NEWMAP, N_CLIPBOARD, -3, N_EDITENT, N_EDITLINK, N_EDITVAR, N_EDITF, N_EDITT, N_EDITM, N_FLIP, N_COPY, N_PASTE, N_ROTATE, N_REPLACE, N_DELCUBE, N_EDITVSLOT, N_UNDO, N_REDO, -4, N_POS, N_SPAWN, N_DESTROY, NUMMSG),
-      connectfilter(-1, N_CONNECT, -2, N_AUTHANS, N_STEAMANS, N_STEAMFAIL, -3, N_PING, NUMMSG);
+    } msgfilter(
+        -1, N_CONNECT, N_SERVERINIT, N_WELCOME, N_CLIENTINIT,N_GAMELOG, N_DISCONNECT,
+            N_DIED, N_POINTS, N_TOTALS, N_AVGPOS,
+            N_DAMAGE, N_BURNRES, N_BLEEDRES, N_SHOCKRES, N_CORRODERES,
+            N_SHOTFX, N_LOADOUT, N_SPAWNSTATE,
+            N_PONG, N_TICK, N_ITEMACC, N_SERVMSG, N_ATTRMAP,
+            N_MAPCHANGE, N_ITEMSPAWN,
+            N_SENDMAP, N_FAILMAP,
+            N_CURRENTPRIV, N_WAITING,
+            N_INFOAFFIN,
+            N_SCOREAFFIN, N_SCORE,
+            N_SENDDEMOLIST, N_SENDDEMO, N_DEMOREADY, N_DEMOPLAYBACK,
+            N_CLIENT, N_REGEN, N_INITAI,
+            N_AUTHCHAL, N_QUEUEPOS, N_STEAMCHAL,
+        -2, N_REMIP, N_CLIPBOARD, N_NEWMAP,
+        -3, N_EDITENT, N_EDITLINK, N_EDITVAR, N_EDITF, N_EDITT, N_EDITM, N_FLIP,
+            N_COPY, N_PASTE, N_ROTATE, N_REPLACE, N_DELCUBE,
+            N_CALCLIGHT, N_EDITVSLOT, N_UNDO, N_REDO,
+        -4, N_POS, N_DESTROY, N_STICKY, N_SPAWN, NUMMSG
+    ), connectfilter(
+        -1, N_CONNECT,
+        -2, N_AUTHANS, N_STEAMANS, N_STEAMFAIL,
+        -3, N_PING, NUMMSG
+    );
 
     int checktype(int type, clientinfo *ci)
     {
@@ -6750,7 +6823,7 @@ namespace server
                             if(!proceed) break;
                             cp->inmaterial = inmaterial;
                             cp->submerged = submerged;
-                            if((cp->inmaterial&MATF_VOLUME) == MAT_WATER && cp->burning(gamemillis, ci->burntime) && cp->submerged >= WATERPHYS(extinguish, cp->inmaterial))
+                            if((cp->inmaterial&MATF_VOLUME) == MAT_WATER && cp->burnfunc(gamemillis, ci->burntime) && cp->submerged >= WATERPHYS(extinguish, cp->inmaterial))
                             {
                                 cp->lastres[W_R_BURN] = cp->lastrestime[W_R_BURN] = 0;
                                 sendf(-1, 1, "ri3", N_SPHY, cp->clientnum, SPHY_EXTINGUISH);

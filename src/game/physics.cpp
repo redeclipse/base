@@ -1286,7 +1286,7 @@ namespace physics
         if(gameent::is(d))
         {
             gameent *e = (gameent *)d;
-            if(e->shocktime && e->shocking(lastmillis, e->shocktime)) dpos.add(vec(rnd(201)-100, rnd(201)-100, rnd(201)-100).normalize().mul(shocktwitchvel*secs));
+            if(e->shocktime && e->shockfunc(lastmillis, e->shocktime)) dpos.add(vec(rnd(201)-100, rnd(201)-100, rnd(201)-100).normalize().mul(shocktwitchvel*secs));
         }
 
         float coast = (collided ? (

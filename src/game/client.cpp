@@ -1049,9 +1049,10 @@ namespace client
     CLCOMMANDM(impulse, "si", (char *who, int *n), intret(*n >= 0 && *n < IM_MAX ? d->impulse[*n] : 0));
 
     CLCOMMAND(buffing, intret(d->lastbuff));
-    CLCOMMAND(burning, intret(d->burntime ? d->burning(lastmillis, d->burntime) : 0));
-    CLCOMMAND(bleeding, intret(d->bleedtime ? d->bleeding(lastmillis, d->bleedtime) : 0));
-    CLCOMMAND(shocking, intret(d->shocktime ? d->shocking(lastmillis, d->shocktime) : 0));
+    CLCOMMAND(burnfunc, intret(d->burntime ? d->burnfunc(lastmillis, d->burntime) : 0));
+    CLCOMMAND(bleedfunc, intret(d->bleedtime ? d->bleedfunc(lastmillis, d->bleedtime) : 0));
+    CLCOMMAND(shockfunc, intret(d->shocktime ? d->shockfunc(lastmillis, d->shocktime) : 0));
+    CLCOMMAND(corrodefunc, intret(d->corrodetime ? d->corrodefunc(lastmillis, d->corrodetime) : 0));
     CLCOMMAND(regen, intret(regentime ? d->lastregen : 0));
     CLCOMMAND(impulsecollectcount, intret(d->impulse[IM_COLLECT_COUNT]));
     CLCOMMAND(impulselastcount, intret(d->impulse[IM_LASTCOL_COUNT] ? (lastmillis - d->impulse[IM_LASTCOL_COUNT]) % 1000 : 0));
@@ -1078,7 +1079,7 @@ namespace client
         if(buff) rescount++;
         bool critical = d->isalive() && d->health <= d->gethealth(game::gamemode, game::mutators) * game::damagecritical;
         if(critical) rescount++;
-        #define RESIDUAL(name, type, pulse) if(d->name##time && d->name##ing(lastmillis, d->name##time)) rescount++;
+        #define RESIDUAL(name, type, pulse) if(d->name##time && d->name##func(lastmillis, d->name##time)) rescount++;
         RESIDUALS
         #undef RESIDUAL
 
@@ -1096,7 +1097,7 @@ namespace client
                 count++;
             }
             #define RESIDUAL(name, type, pulse) \
-                if(d->name##time && d->name##ing(lastmillis, d->name##time)) \
+                if(d->name##time && d->name##func(lastmillis, d->name##time)) \
                 { \
                     if(cur >= count*iter) ptype = PULSE_##pulse; \
                     count++; \
@@ -2936,6 +2937,17 @@ namespace client
                     m->shockstunscale = getfloat(p);
                     m->shockstunfall = getfloat(p);
                     m->shockstuntime = getint(p);
+                    break;
+                }
+
+                case N_CORRODERES:
+                {
+                    int cn = getint(p);
+                    gameent *m = game::getclient(cn);
+                    if(!m) break;
+                    m->corrodetime = getint(p);
+                    m->corrodedelay = getint(p);
+                    m->corrodedamage = getint(p);
                     break;
                 }
 

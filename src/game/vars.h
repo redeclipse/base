@@ -20,6 +20,9 @@ GFVAR(IDF_MAP, 0, hurtshockstunscale, 0, 0.5f, FVAR_MAX);
 GFVAR(IDF_MAP, 0, hurtshockstunfall, 0, 0.01f, FVAR_MAX);
 GVAR(IDF_MAP, 0, hurtshockstuntime, 0, 500, VAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, shocktwitchvel, 0, 2, FVAR_MAX);
+GVAR(IDF_MAP, 0, hurtcorrodetime, 0, 5500, VAR_MAX);
+GVAR(IDF_MAP, 0, hurtcorrodedelay, 0, 1000, VAR_MAX);
+GVAR(IDF_MAP, 0, hurtcorrodedamage, 0, 30, VAR_MAX);
 
 GFVAR(IDF_MAP, 0, gravity, 0, 50.f, FVAR_MAX); // gravity
 GFVAR(IDF_GAMEMOD, 0, gravityscale, 0, 1, FVAR_MAX);
@@ -291,6 +294,7 @@ GVAR(IDF_GAMEMOD, 0, regendecay, 0, 25, VAR_MAX); // if over maxhealth, decay th
 GVAR(IDF_GAMEMOD, 0, noweapburn, 0, 1, 1);
 GVAR(IDF_GAMEMOD, 0, noweapbleed, 0, 1, 1);
 GVAR(IDF_GAMEMOD, 0, noweapshock, 0, 1, 1);
+GVAR(IDF_GAMEMOD, 0, noweapcorrode, 0, 1, 1);
 
 GVAR(IDF_GAMEMOD, 0, kamikaze, 0, 1, 3); // 0 = never, 1 = holding grenade, 2 = have grenade, 3 = always
 GVAR(IDF_GAMEMOD, 0, itemspawntime, 1, 15000, VAR_MAX); // when items respawn
@@ -752,6 +756,8 @@ GSVAR(0, 0, obitbleed, "fatally wounded");
 GSVAR(0, 0, obitbleedself, "bled out");
 GSVAR(0, 0, obitshock, "shocked");
 GSVAR(0, 0, obitshockself, "twitched to death");
+GSVAR(0, 0, obitcorrode, "melted");
+GSVAR(0, 0, obitcorrodeself, "self-oxidized");
 GSVAR(0, 0, obitobliterated, "obliterated");
 GSVAR(0, 0, obitheadless, "decapitated");
 GSVAR(0, 0, obitsuicide, "suicided");

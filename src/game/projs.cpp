@@ -1585,7 +1585,7 @@ namespace projs
                     if(proj.projtype == PRJ_SHOT)
                     {
                         #define RESIDUAL(name, type, pulse) \
-                            if(WF(WK(proj.flags), proj.weap, destroy##name, WS(proj.flags)) && f->name##ing(lastmillis, f->name##time)) \
+                            if(WF(WK(proj.flags), proj.weap, destroy##name, WS(proj.flags)) && f->name##func(lastmillis, f->name##time)) \
                                 return 0;
                         RESIDUALS
                         #undef RESIDUAL

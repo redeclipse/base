@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 273
+#define VERSION_GAME 274
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -319,6 +319,7 @@ enum
     ANIM_PLASMA, ANIM_PLASMA_PRIMARY, ANIM_PLASMA_SECONDARY, ANIM_PLASMA_RELOAD, ANIM_PLASMA_POWER, ANIM_PLASMA_ZOOM,
     ANIM_ZAPPER, ANIM_ZAPPER_PRIMARY, ANIM_ZAPPER_SECONDARY, ANIM_ZAPPER_RELOAD, ANIM_ZAPPER_POWER, ANIM_ZAPPER_ZOOM,
     ANIM_RIFLE, ANIM_RIFLE_PRIMARY, ANIM_RIFLE_SECONDARY, ANIM_RIFLE_RELOAD, ANIM_RIFLE_POWER, ANIM_RIFLE_ZOOM,
+    ANIM_CORRODER, ANIM_CORRODER_PRIMARY, ANIM_CORRODER_SECONDARY, ANIM_CORRODER_RELOAD, ANIM_CORRODER_POWER, ANIM_CORRODER_ZOOM,
     ANIM_GRENADE, ANIM_GRENADE_PRIMARY, ANIM_GRENADE_SECONDARY, ANIM_GRENADE_RELOAD, ANIM_GRENADE_POWER, ANIM_GRENADE_ZOOM,
     ANIM_MINE, ANIM_MINE_PRIMARY, ANIM_MINE_SECONDARY, ANIM_MINE_RELOAD, ANIM_MINE_POWER, ANIM_MINE_ZOOM,
     ANIM_ROCKET, ANIM_ROCKET_PRIMARY, ANIM_ROCKET_SECONDARY, ANIM_ROCKET_RELOAD, ANIM_ROCKET_POWER, ANIM_ROCKET_ZOOM,
@@ -329,11 +330,13 @@ enum
 #define RESIDUALS \
     RESIDUAL(burn, BURN, BURN); \
     RESIDUAL(bleed, BLEED, BLEED); \
-    RESIDUAL(shock, SHOCK, SHOCK);
+    RESIDUAL(shock, SHOCK, SHOCK); \
+    RESIDUAL(corrode, CORRODE, CORRODE);
 #define RESIDUALSF \
     RESIDUAL(burn, BURN, FIRE); \
     RESIDUAL(bleed, BLEED, BLEED); \
-    RESIDUAL(shock, SHOCK, SHOCK);
+    RESIDUAL(shock, SHOCK, SHOCK); \
+    RESIDUAL(corrode, CORRODE, CORRODE);
 
 #define FRAG_ENUM(en, um) \
     en(um, NONE, 0) en(um, HEADSHOT, 1<<0) en(um, OBLITERATE, 1<<1) \
@@ -379,21 +382,21 @@ extern const char * const sendmaptypes[SENDMAP_MAX];
 enum
 {
     N_CONNECT = 0, N_SERVERINIT, N_WELCOME, N_CLIENTINIT, N_POS, N_SPHY, N_TEXT, N_COMMAND, N_GAMELOG, N_DISCONNECT,
-    N_SHOOT, N_DESTROY, N_STICKY, N_SUICIDE, N_DIED, N_POINTS, N_TOTALS, N_AVGPOS, N_DAMAGE, N_BURNRES, N_BLEEDRES, N_SHOCKRES, N_SHOTFX,
-    N_LOADOUT, N_TRYSPAWN, N_SPAWNSTATE, N_SPAWN, N_WEAPDROP, N_WEAPSELECT, N_WEAPCOOK,
+    N_SHOOT, N_DESTROY, N_STICKY, N_SUICIDE, N_DIED, N_POINTS, N_TOTALS, N_AVGPOS,
+    N_DAMAGE, N_BURNRES, N_BLEEDRES, N_SHOCKRES, N_CORRODERES,
+    N_SHOTFX, N_LOADOUT, N_TRYSPAWN, N_SPAWNSTATE, N_SPAWN, N_WEAPDROP, N_WEAPSELECT, N_WEAPCOOK,
     N_MAPCHANGE, N_MAPVOTE, N_CLEARVOTE, N_CHECKPOINT, N_ITEMSPAWN, N_ITEMUSE, N_TRIGGER, N_EXECLINK,
     N_PING, N_PONG, N_CLIENTPING, N_TICK, N_ITEMACC, N_SERVMSG, N_GETGAMEINFO, N_GAMEINFO, N_ATTRMAP, N_RESUME,
-    N_EDITMODE, N_EDITENT, N_EDITLINK, N_EDITVAR, N_EDITF, N_EDITT, N_EDITM, N_FLIP, N_COPY, N_PASTE, N_ROTATE, N_REPLACE, N_DELCUBE,
+    N_EDITMODE, N_EDITENT, N_EDITLINK, N_EDITVAR, N_EDITF, N_EDITT, N_EDITM, N_FLIP,
+    N_COPY, N_PASTE, N_ROTATE, N_REPLACE, N_DELCUBE,
     N_CALCLIGHT, N_REMIP, N_EDITVSLOT, N_UNDO, N_REDO, N_CLIPBOARD, N_NEWMAP,
     N_GETMAP, N_SENDMAP, N_FAILMAP, N_SENDMAPFILE,
     N_MASTERMODE, N_ADDCONTROL, N_CLRCONTROL, N_CURRENTPRIV, N_SPECTATOR, N_WAITING, N_SETPRIV, N_SETTEAM, N_ADDPRIV,
     N_SETUPAFFIN, N_INFOAFFIN, N_MOVEAFFIN,
     N_TAKEAFFIN, N_RETURNAFFIN, N_RESETAFFIN, N_DROPAFFIN, N_SCOREAFFIN, N_INITAFFIN, N_SCORE,
-    N_LISTDEMOS, N_SENDDEMOLIST, N_GETDEMO, N_SENDDEMO, N_DEMOREADY,
-    N_DEMOPLAYBACK, N_RECORDDEMO, N_STOPDEMO, N_CLEARDEMOS,
+    N_LISTDEMOS, N_SENDDEMOLIST, N_GETDEMO, N_SENDDEMO, N_DEMOREADY, N_DEMOPLAYBACK, N_RECORDDEMO, N_STOPDEMO, N_CLEARDEMOS,
     N_CLIENT, N_RELOAD, N_REGEN, N_INITAI, N_MAPCRC,
-    N_SETPLAYERINFO, N_SWITCHTEAM, N_AUTHTRY, N_AUTHCHAL, N_AUTHANS, N_QUEUEPOS,
-    N_STEAMCHAL, N_STEAMANS, N_STEAMFAIL,
+    N_SETPLAYERINFO, N_SWITCHTEAM, N_AUTHTRY, N_AUTHCHAL, N_AUTHANS, N_QUEUEPOS, N_STEAMCHAL, N_STEAMANS, N_STEAMFAIL,
     NUMMSG
 };
 
@@ -410,17 +413,18 @@ char msgsizelookup(int msg)
     static const int msgsizes[] =               // size inclusive message token, 0 for variable or not-checked sizes
     {
         N_CONNECT, 0, N_SERVERINIT, 5, N_WELCOME, 2, N_CLIENTINIT, 0, N_POS, 0, N_SPHY, 0, N_TEXT, 0, N_COMMAND, 0, N_GAMELOG, 0, N_DISCONNECT, 3,
-        N_SHOOT, 0, N_DESTROY, 0, N_STICKY, 0, N_SUICIDE, 4, N_DIED, 0, N_POINTS, 5, N_TOTALS, 0, N_AVGPOS, 0, N_DAMAGE, 14, N_SHOTFX, 0,
-        N_LOADOUT, 0, N_TRYSPAWN, 2, N_SPAWNSTATE, 0, N_SPAWN, 0, N_WEAPDROP, 0, N_WEAPSELECT, 0, N_WEAPCOOK, 0,
+        N_SHOOT, 0, N_DESTROY, 0, N_STICKY, 0, N_SUICIDE, 4, N_DIED, 0, N_POINTS, 5, N_TOTALS, 0, N_AVGPOS, 0,
+        N_DAMAGE, 14, N_BURNRES, 0, N_BLEEDRES, 0, N_SHOCKRES, 0, N_CORRODERES, 0,
+        N_SHOTFX, 0, N_LOADOUT, 0, N_TRYSPAWN, 2, N_SPAWNSTATE, 0, N_SPAWN, 0, N_WEAPDROP, 0, N_WEAPSELECT, 0, N_WEAPCOOK, 0,
         N_MAPCHANGE, 0, N_MAPVOTE, 0, N_CLEARVOTE, 0, N_CHECKPOINT, 0, N_ITEMSPAWN, 3, N_ITEMUSE, 0, N_TRIGGER, 0, N_EXECLINK, 3,
         N_PING, 2, N_PONG, 2, N_CLIENTPING, 2, N_TICK, 5, N_ITEMACC, 0, N_SERVMSG, 0, N_GETGAMEINFO, 0, N_GAMEINFO, 0, N_ATTRMAP, 0, N_RESUME, 0,
         N_EDITMODE, 2, N_EDITENT, 0, N_EDITLINK, 4, N_EDITVAR, 0, N_EDITF, 16, N_EDITT, 16, N_EDITM, 17, N_FLIP, 14,
         N_COPY, 14, N_PASTE, 14, N_ROTATE, 15, N_REPLACE, 17, N_DELCUBE, 14,
-        N_CALCLIGHT, 1, N_REMIP, 1, N_EDITVSLOT, 16, N_UNDO, 0, N_REDO, 0, N_NEWMAP, 0,
+        N_CALCLIGHT, 1, N_REMIP, 1, N_EDITVSLOT, 16, N_UNDO, 0, N_REDO, 0, N_CLIPBOARD, 0, N_NEWMAP, 0,
         N_GETMAP, 0, N_SENDMAP, 0, N_FAILMAP, 0, N_SENDMAPFILE, 0,
         N_MASTERMODE, 0, N_ADDCONTROL, 0, N_CLRCONTROL, 2, N_CURRENTPRIV, 3, N_SPECTATOR, 3, N_WAITING, 2, N_SETPRIV, 0, N_SETTEAM, 0, N_ADDPRIV, 0,
         N_SETUPAFFIN, 0, N_INFOAFFIN, 0, N_MOVEAFFIN, 0,
-        N_DROPAFFIN, 0, N_SCOREAFFIN, 0, N_RETURNAFFIN, 0, N_TAKEAFFIN, 0, N_RESETAFFIN, 0, N_INITAFFIN, 0, N_SCORE, 0,
+        N_TAKEAFFIN, 0, N_RETURNAFFIN, 0, N_RESETAFFIN, 0, N_DROPAFFIN, 0, N_SCOREAFFIN, 0, N_INITAFFIN, 0, N_SCORE, 0,
         N_LISTDEMOS, 1, N_SENDDEMOLIST, 0, N_GETDEMO, 3, N_SENDDEMO, 0, N_DEMOREADY, 0,
         N_DEMOPLAYBACK, 3, N_RECORDDEMO, 2, N_STOPDEMO, 1, N_CLEARDEMOS, 2,
         N_CLIENT, 0, N_RELOAD, 0, N_REGEN, 0, N_INITAI, 0, N_MAPCRC, 0,
@@ -652,7 +656,7 @@ struct clientstate
     int health, colours[2], model, pattern, checkpointspawn;
     int weapselect, weapammo[W_MAX][W_A_MAX], weapload[W_MAX][W_A_MAX], weapent[W_MAX], weapshot[W_MAX], weapstate[W_MAX], weapwait[W_MAX], weaptime[W_MAX], prevstate[W_MAX], prevtime[W_MAX];
     int lastdeath, lastspawn, lastpain, lastregen, lastregenamt, lastbuff, lastshoot, lastcook, lastaffinity, lastres[W_R_MAX], lastrestime[W_R_MAX];
-    int burntime, burndelay, burndamage, bleedtime, bleeddelay, bleeddamage, shocktime, shockdelay, shockdamage, shockstun, shockstuntime;
+    int burntime, burndelay, burndamage, bleedtime, bleeddelay, bleeddamage, shocktime, shockdelay, shockdamage, shockstun, shockstuntime, corrodetime, corrodedelay, corrodedamage;
     float shockstunscale, shockstunfall;
     int actortype, spawnpoint, ownernum, skill, points, frags, deaths, totalpoints, totalfrags, totaldeaths, spree, lasttimeplayed, timeplayed, cpmillis, cptime, queuepos;
     float totalavgpos;
@@ -940,6 +944,7 @@ struct clientstate
             lastres[W_R_SHOCK] = lastrestime[W_R_SHOCK] = shocktime = shockdelay = shockdamage = shockstun = shockstuntime = 0;
             shockstunscale = shockstunfall = 0.f;
         }
+        if(n < 0 || n == W_R_CORRODE) lastres[W_R_CORRODE] = lastrestime[W_R_CORRODE] = corrodetime = corrodedelay = corrodedamage = 0;
     }
 
     void resetcheckpoint()
@@ -1120,7 +1125,7 @@ struct clientstate
         return delay-len;
     }
 
-    #define RESIDUAL(name, type, pulse) bool name##ing(int millis, int len) { return len && lastres[W_R_##type] && millis-lastres[W_R_##type] <= len; }
+    #define RESIDUAL(name, type, pulse) bool name##func(int millis, int len) { return len && lastres[W_R_##type] && millis-lastres[W_R_##type] <= len; }
     RESIDUALS
     #undef RESIDUAL
 };
@@ -1247,6 +1252,7 @@ static const char * const animnames[] =
     "plasma", "plasma primary", "plasma secondary", "plasma reload", "plasma power", "plasma zoom",
     "zapper", "zapper primary", "zapper secondary", "zapper reload", "zapper power", "zapper zoom",
     "rifle", "rifle primary", "rifle secondary", "rifle reload", "rifle power", "rifle zoom",
+    "corroder", "corroder primary", "corroder secondary", "corroder reload", "corroder power", "corroder zoom",
     "grenade", "grenade primary", "grenade secondary", "grenade reload", "grenade power", "grenade zoom",
     "mine", "mine primary", "mine secondary", "mine reload", "mine power", "mine zoom",
     "rocket", "rocket primary", "rocket secondary", "rocket reload", "rocket power", "rocket zoom",
