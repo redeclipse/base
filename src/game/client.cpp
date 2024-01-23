@@ -1571,7 +1571,7 @@ namespace client
             log->addlist("args", "type", "chat");
             log->addlist("args", "action", flags);
             log->addlist("args", "sound", sndidx);
-            log->addlist("args", "flags", GAMELOG_F_CLIENT1|(ret > 0 ? GAMELOG_F_UNMAPPED : 0));
+            log->addlist("args", "flags", GAMELOG_F_CLIENT1);
             log->addlist("args", "text", msg);
             log->addlist("args", "colour", color);
             log->addlist("args", "console", line);

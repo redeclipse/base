@@ -2599,7 +2599,7 @@ namespace entities
 #define GAMELOG_ENUM(en, um) en(um, Event, EVENT) en(um, Message, MESSAGE) en(um, Maximum, MAX)
 ENUM_DLN(GAMELOG);
 
-#define GAMELOG_F_ENUM(en, um) en(um, NONE, 0) en(um, CLIENT1, 1<<0) en(um, CLIENT2, 1<<1) en(um, CLIENTN, 1<<2) en(um, BROADCAST, 1<<3) en(um, UNMAPPED, 1<<4) \
+#define GAMELOG_F_ENUM(en, um) en(um, NONE, 0) en(um, CLIENT1, 1<<0) en(um, CLIENT2, 1<<1) en(um, CLIENTN, 1<<2) en(um, BROADCAST, 1<<3) \
     en(um, CLIENTS, um##_CLIENT1|um##_CLIENT2|um##_CLIENTN) en(um, ALL, um##_CLIENT1|um##_CLIENT2|um##_CLIENTN|um##_BROADCAST)
 ENUM_AL(GAMELOG_F);
 

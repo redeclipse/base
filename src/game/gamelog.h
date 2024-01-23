@@ -310,7 +310,7 @@ struct gamelog
             delete f;
         }
 
-        int sound = -1, flags = 0, tid = findlistinfo("args");
+        int sound = -1, soundflags = 0, flags = 0, tid = findlistinfo("args");
         if(lists.inrange(tid))
         {
             listinfo &t = lists[tid];
@@ -319,7 +319,10 @@ struct gamelog
             if(t.infos.inrange(sid))
             {
                 if(t.infos[sid].type == VAL_STR) // server sends strings so client can get index itself
+                {
                     sound = gamesounds[t.infos[sid].getstr()].getindex();
+                    soundflags = SND_UNMAPPED;
+                }
                 else sound = t.infos[sid].getint();
             }
 
@@ -342,10 +345,10 @@ struct gamelog
                 gameent *d = game::getclient(g.infos[f].getint());
                 if(!d) continue;
                 if(sound >= 0 && flags&(i == 0 ? GAMELOG_F_CLIENT1 : (i == 1 ? GAMELOG_F_CLIENT2 : GAMELOG_F_CLIENTN)))
-                    entities::announce(sound, d, chan, flags&GAMELOG_F_UNMAPPED ? SND_UNMAPPED : 0);
+                    entities::announce(sound, d, chan, soundflags);
             }
         }
-        if(sound >= 0 && flags&GAMELOG_F_BROADCAST) entities::announce(sound, NULL, -1, flags&GAMELOG_F_UNMAPPED ? SND_UNMAPPED : 0);
+        if(sound >= 0 && flags&GAMELOG_F_BROADCAST) entities::announce(sound, NULL, -1, soundflags);
 
         if(type == GAMELOG_MESSAGE ? messagelogecho : eventlogecho)
         {
