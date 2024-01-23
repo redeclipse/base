@@ -58,7 +58,8 @@ The project is Free and Open Source, meaning that you can both use it for free a
 
 ## Credits
 
-`-------------------------------------------------------------------------------+
+```
++-------------------------------------------------------------------------------+
 |                               ACTIVE DEVELOPERS                               |
 +---------------------------------------+---------------------------------------+
 | Quinton "Quin" Reeves                 | Lee "eihrul" Salzman                  |
@@ -105,4 +106,5 @@ The project is Free and Open Source, meaning that you can both use it for free a
 | "w00p|dazza"      |                   |                   |                   |
 +-------------------------------------------------------------------------------+
 | YOUR NAME COULD BE HERE TOO - RED ECLIPSE IS DEVELOPED BY VOLUNTEERS LIKE YOU |
-+-------------------------------------------------------------------------------`
++-------------------------------------------------------------------------------+
+```
