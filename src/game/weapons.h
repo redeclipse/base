@@ -1,12 +1,18 @@
 // weapons.h configuration file
 // default weapon variables baked into the game
 #define W_ENUM(en, um) \
-    en(um, claw, CLAW, 0) en(um, pistol, PISTOL, 1) en(um, sword, SWORD, 2) en(um, shotgun, SHOTGUN, 3) en(um, smg, SMG, 4) \
-    en(um, flamer, FLAMER, 5) en(um, plasma, PLASMA, 6) en(um, zapper, ZAPPER, 7) en(um, rifle, RIFLE, 8) \
-    en(um, grenade, GRENADE, 9) en(um, mine, MINE, 10) en(um, rocket, ROCKET, 11) en(um, melee, MELEE, 12) \
-    en(um, maximum, MAX, 13) en(um, offset, OFFSET, um##_SWORD) en(um, item, ITEM, um##_GRENADE) en(um, all, ALL, um##_MELEE) \
-    en(um, loadout, LOADOUT, um##_ITEM - um##_OFFSET) en(um, items, ITEMS, um##_MINE - um##_GRENADE + 1) en(um, replace, REPLACE, um##_GRENADE)
-ENUM_ALN(W);
+    en(um, claw, CLAW) en(um, pistol, PISTOL) en(um, sword, SWORD) en(um, shotgun, SHOTGUN) en(um, smg, SMG) \
+    en(um, flamer, FLAMER) en(um, plasma, PLASMA) en(um, zapper, ZAPPER) en(um, rifle, RIFLE) \
+    en(um, grenade, GRENADE) en(um, mine, MINE) en(um, rocket, ROCKET) \
+    en(um, melee, MELEE) en(um, maximum, MAX)
+ENUM_DLN(W);
+
+ENUM_VAR(W_OFFSET, W_SWORD);
+ENUM_VAR(W_ITEM, W_GRENADE);
+ENUM_VAR(W_ALL, W_MELEE);
+ENUM_VAR(W_LOADOUT, W_ITEM - W_OFFSET);
+ENUM_VAR(W_ITEMS, W_MINE - W_GRENADE + 1);
+ENUM_VAR(W_REPLACE, W_GRENADE);
 
 #define WZ(x) (W_MAX+(W_##x))
 
@@ -34,11 +40,12 @@ enum
 };
 
 #define W_S_ENUM(en, um) \
-    en(um, idle, IDLE, 0) en(um, primary, PRIMARY, 1) en(um, secondary, SECONDARY, 2) en(um, reload, RELOAD, 3) \
-    en(um, power, POWER, 4) en(um, zoom, ZOOM, 5) en(um, switch, SWITCH, 6) en(um, use, USE, 7) en(um, wait, WAIT, 8) en(um, max, MAX, 9) \
-    en(um, all, ALL, (1<<um##_IDLE)|(1<<um##_PRIMARY)|(1<<um##_SECONDARY)|(1<<um##_RELOAD)|(1<<um##_SWITCH)|(1<<um##_USE)|(1<<um##_POWER)|(1<<um##_ZOOM)|(1<<um##_WAIT)) \
-    en(um, interrupt, INTERRUPT, (1<<um##_POWER)|(1<<um##_ZOOM))
-ENUM_ALN(W_S);
+    en(um, IDLE) en(um, PRIMARY) en(um, SECONDARY) en(um, RELOAD) \
+    en(um, POWER) en(um, ZOOM) en(um, SWITCH) en(um, USE) en(um, WAIT) en(um, MAX)
+ENUM_DL(W_S);
+
+ENUM_VAR(W_S_ALL, (1<<W_S_IDLE)|(1<<W_S_PRIMARY)|(1<<W_S_SECONDARY)|(1<<W_S_RELOAD)|(1<<W_S_SWITCH)|(1<<W_S_USE)|(1<<W_S_POWER)|(1<<W_S_ZOOM)|(1<<W_S_WAIT));
+ENUM_VAR(W_S_INTERRUPT, (1<<W_S_POWER)|(1<<W_S_ZOOM));
 
 enum { W_A_CLIP = 0, W_A_STORE, W_A_MAX };
 
@@ -149,16 +156,18 @@ enum
     en(um, HEAD, 1<<0) en(um, TORSO, 1<<1) en(um, LIMB, 1<<2) en(um, FULL, 1<<3) en(um, WHIPLASH, 1<<4) en(um, ALT, 1<<5) \
     en(um, WAVE, 1<<6) en(um, PROJ, 1<<7) en(um, EXPLODE, 1<<8) en(um, BURN, 1<<9) en(um, BLEED, 1<<10) en(um, SHOCK, 1<<11) \
     en(um, MATERIAL, 1<<12) en(um, SPAWN, 1<<13) en(um, LOST, 1<<14) en(um, KILL, 1<<15) en(um, FLAK, 1<<16) \
-    en(um, SPEC, 1<<17) en(um, TOUCH, 1<<18) en(um, CRUSH, 1<<19) en(um, CHECKPOINT, 1<<20) \
-    en(um, CLEAR, um##_PROJ|um##_EXPLODE|um##_BURN|um##_BLEED|um##_MATERIAL|um##_SPAWN|um##_LOST|um##_TOUCH|um##_CRUSH) \
-    en(um, SFLAGS, um##_KILL)
+    en(um, SPEC, 1<<17) en(um, TOUCH, 1<<18) en(um, CRUSH, 1<<19) en(um, CHECKPOINT, 1<<20)
 ENUM_AL(HIT);
 
-#define WR(x) (1<<W_R_##x)
+ENUM_VAR(HIT_CLEAR, HIT_PROJ|HIT_EXPLODE|HIT_BURN|HIT_BLEED|HIT_MATERIAL|HIT_SPAWN|HIT_LOST|HIT_TOUCH|HIT_CRUSH);
+ENUM_VAR(HIT_SFLAGS, HIT_KILL);
+
 #define W_R_ENUM(en, um) \
-    en(um, BURN, 0) en(um, BLEED, 1) en(um, SHOCK, 2) en(um, MAX, 3) \
-    en(um, ALL, (1<<um##_BURN)|(1<<um##_BLEED)|(1<<um##_SHOCK))
-ENUM_AL(W_R);
+    en(um, BURN) en(um, BLEED) en(um, SHOCK) en(um, MAX)
+ENUM_DL(W_R);
+
+ENUM_VAR(W_R_ALL, (1<<W_R_BURN)|(1<<W_R_BLEED)|(1<<W_R_SHOCK));
+#define WR(x) (1<<W_R_##x)
 
 struct shotmsg { int id; ivec pos; };
 struct hitmsg { int flags, proj, target, dist; ivec dir, vel; };
