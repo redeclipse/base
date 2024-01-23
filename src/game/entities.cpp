@@ -3457,6 +3457,7 @@ namespace entities
                 break;
             case ROUTE:
             {
+                if(drawtex) break;
                 if(e.attrs[0] != routeid || (!m_edit(game::gamemode) && !m_race(game::gamemode)) || (game::player1->isediting() && editinhibit)) break;
                 loopv(e.links) if(ents.inrange(e.links[i]) && ents[e.links[i]]->type == ROUTE && (!routemaxdist || o.dist(ents[e.links[i]]->o) <= routemaxdist))
                 {
@@ -3494,7 +3495,7 @@ namespace entities
 
         bool hastop = game::player1->state == CS_EDITING && (enthover.find(idx) >= 0 || entgroup.find(idx) >= 0) && dist <= showentdist*showentdist, dotop = hastop && e.dynamic(),
              visible = getvisible(camera1->o, camera1->yaw, camera1->pitch, o, curfov, fovy, 2, hastop ? -1 : VFC_PART_VISIBLE);
-        if(!game::player1->isediting() || !editinhibit)
+        if(!drawtex && (!game::player1->isediting() || !editinhibit))
         {
             bool visiblepos = dotop && getvisible(camera1->o, camera1->yaw, camera1->pitch, e.pos(), curfov, fovy, 2, hastop ? -1 : VFC_PART_VISIBLE);
             loopj(dotop ? 2 : 1) if(j ? visiblepos : visible)
@@ -3534,7 +3535,6 @@ namespace entities
             if(!checkparticle(e) || e.pos().squaredist(camera1->o) > maxdist) continue;
             makeparticle(e.pos(), e.attrs);
         }
-        if(drawtex) return;
 
         bool hasroute = (m_edit(game::gamemode) || m_race(game::gamemode)) && routeid >= 0;
         int fstent = m_edit(game::gamemode) ? 0 : min(firstuse(EU_ITEM), firstent(hasroute ? ROUTE : TELEPORT)),
@@ -3575,6 +3575,7 @@ namespace entities
             v.pos = e.o;
             v.visible = drawparticle(e, e.o, i, e.spawned(), active, skew, dist, maxdist);
         }
+        if(drawtex) return;
 
         visents.sort(visibleent::compare);
 

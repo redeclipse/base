@@ -2384,7 +2384,7 @@ int xtraverts, xtravertsva;
 void gl_drawview()
 {
     GLuint scalefbo = shouldscale();
-    if(!drawtex && scalefbo) { vieww = gw; viewh = gh; }
+    if(scalefbo) { vieww = gw; viewh = gh; }
 
     int fogmat, abovemat;
     float fogbelow;
@@ -2474,8 +2474,6 @@ void gl_drawview()
         GLERROR;
     }
 
-    UI::render(SURFACE_WORLD);
-
     if(!drawtex)
     {
         if(editmode)
@@ -2501,6 +2499,8 @@ void gl_drawview()
             glDepthMask(GL_TRUE);
         }
     }
+
+    UI::render(SURFACE_WORLD);
 
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);

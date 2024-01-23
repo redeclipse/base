@@ -1109,9 +1109,8 @@ namespace game
             }
             case 2: // weapons
             {
-                if(drawtex) break;
                 int weap = index%W_MAX;
-                if(!m_edit(gamemode) && index < W_MAX)
+                if(drawtex && drawtex != DRAWTEX_MAPSHOT && !m_edit(gamemode) && index < W_MAX)
                 {
                     weap = m_attr(WEAPON, weap);
                     if(!isweap(weap) || W(weap, disabled) || (m_rotweaps(gamemode, mutators) && weap < W_ITEM) || !m_check(W(weap, modes), W(weap, muts), gamemode, mutators))
