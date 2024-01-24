@@ -178,7 +178,7 @@ namespace physics
 
     bool isghost(gameent *d, gameent *e, bool proj)
     { // d is target, e is from
-        if(!e || (d == e && !proj)) return false;
+        if(!e || (d == e && !proj) || !(A(e->actortype, abilities)&(1<<A_A_DAMAGE))) return false;
         if(d->actortype < A_ENEMY && e->actortype < A_ENEMY && m_ghost(game::gamemode, game::mutators)) return true;
         switch(d->actortype)
         {

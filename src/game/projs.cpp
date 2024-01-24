@@ -1334,7 +1334,7 @@ namespace projs
                 listpushfront(shotproj, d->projchain, prev, next);
             }
         }
-        if(W2(weap, ammosub, WS(flags)) && ejectfade && *weaptype[weap].eprj[WS(flags) ? 1 : 0]) loopi(W2(weap, ammosub, WS(flags)))
+        if(A(d->actortype, abilities)&(1<<A_A_AMMO) && W2(weap, ammosub, WS(flags)) && ejectfade && *weaptype[weap].eprj[WS(flags) ? 1 : 0]) loopi(W2(weap, ammosub, WS(flags)))
             create(d->ejecttag(), d->ejecttag(), local, d, PRJ_EJECT, -1, 0, rnd(ejectfade)+ejectfade, 0, delay, rnd(weaptype[weap].espeed)+weaptype[weap].espeed, 0, weap, -1, flags);
 
         d->setweapstate(weap, WS(flags) ? W_S_SECONDARY : W_S_PRIMARY, delayattack, lastmillis);

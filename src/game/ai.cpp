@@ -59,6 +59,7 @@ namespace ai
     {
         if(d && e && d != e && e->state == CS_ALIVE && A(d->actortype, abilities)&A_A_ATTACK && (!solid || physics::issolid(e, d)))
         {
+            if(e->actortype == A_HAZARD) return false;
             if(m_onslaught(game::gamemode, game::mutators) && d->actortype >= A_ENEMY && e->actortype >= A_ENEMY) return false;
             if(!m_team(game::gamemode, game::mutators) || d->team != e->team) return true;
         }
@@ -1130,14 +1131,122 @@ namespace ai
         return false;
     }
 
+    void updatemovement(gameent *d)
+    {
+        if(d->ai->dontmove || !(A(d->actortype, abilities)&(1<<A_A_MOVE)) || (A(d->actortype, hurtstop) && lastmillis-d->lastpain <= A(d->actortype, hurtstop)))
+            d->move = d->strafe = 0;
+        else if(actors[d->actortype].onlyfwd)
+        {
+            d->move = 1;
+            d->strafe = 0;
+        }
+        else
+        { // our guys move one way.. but turn another?! :)
+            const struct aimdir { int move, strafe, offset; } aimdirs[8] =
+            {
+                {  1,  0,   0 },
+                {  1,  -1,  45 },
+                {  0,  -1,  90 },
+                { -1,  -1,  135 },
+                { -1,  0,   180 },
+                { -1,  1,   225 },
+                {  0,  1,   270 },
+                {  1,  1,   315 }
+            };
+            float yaw = d->ai->targyaw-d->yaw;
+            if(yaw < 0.0f) yaw = 360.0f - fmodf(-yaw, 360.0f);
+            else if(yaw >= 360.0f) yaw = fmodf(yaw, 360.0f);
+            const aimdir &ad = aimdirs[clamp(((int)floor((yaw+22.5f)/45.0f))&7, 0, 7)];
+            d->move = ad.move;
+            d->strafe = ad.strafe;
+        }
+
+        safefindorientation(d->o, d->yaw, d->pitch, d->ai->target);
+    }
+
+    void runhazard(gameent *d, aistate &b)
+    {
+        d->move = d->strafe = 0;
+        d->ai->dontmove = true;
+        d->ai->spot = d->feetpos();
+
+        if(d->action[AC_SECONDARY])
+        { // primary fire only for now
+            d->action[AC_SECONDARY] = true;
+            d->actiontime[AC_SECONDARY] = -lastmillis;
+        }
+
+        int weap = m_weapon(d->actortype, game::gamemode, game::mutators);
+        bool wantsfire = false;
+
+        if(entities::ents.inrange(d->spawnpoint))
+        {
+            bool hastrigger = false, hasspawned = false;;
+            gameentity &e = *(gameentity *)entities::ents[d->spawnpoint];
+            loopv(e.links) if(entities::ents.inrange(e.links[i]))
+            {
+                gameentity &f = *(gameentity *)entities::ents[e.links[i]];
+                if(f.type != TRIGGER) continue;
+                hastrigger = true;
+                if(!f.spawned()) continue;
+                hasspawned = true;
+                break;
+            }
+
+            weap = clamp(e.attrs[6], 0, int(W_MAX)-1);
+            if((!hastrigger || hasspawned) && (!e.attrs[8] || !d->lastshoot || lastmillis - d->lastshoot >= e.attrs[8]))
+                wantsfire = true;
+
+            fixfullrange(d->yaw = e.attrs[1], d->pitch = e.attrs[2], d->roll = 0);
+        }
+        else if(!d->action[AC_PRIMARY])
+        {
+            d->action[AC_PRIMARY] = true;
+            d->actiontime[AC_PRIMARY] = lastmillis;
+        }
+
+        if(isweap(weap) && weap != d->weapselect)
+        {
+            wantsfire = false;
+            weapons::weapselect(d, weap, (1<<W_S_SWITCH)|(1<<W_S_RELOAD));
+        }
+
+        if(wantsfire)
+        {
+            if(!d->action[AC_PRIMARY])
+            {
+                d->action[AC_PRIMARY] = true;
+                d->actiontime[AC_PRIMARY] = lastmillis;
+                d->ai->lastaction = lastmillis;
+            }
+        }
+        else if(d->action[AC_PRIMARY])
+        {
+            d->action[AC_PRIMARY] = false;
+            d->actiontime[AC_PRIMARY] = -lastmillis;
+        }
+
+        safefindorientation(d->o, d->yaw, d->pitch, d->ai->target);
+    }
+
     void process(gameent *d, aistate &b, bool &occupied, bool &firing, vector<actitem> &items)
     {
+        if(d->actortype == A_HAZARD)
+        {
+            runhazard(d, b);
+            return; // override
+        }
+
         int skmod = max(101 - d->skill, 1);
         float frame = d->skill <= 100 ? ((lastmillis - d->ai->lastrun) * (100.f / gamespeed)) / float(skmod * 20) : 1;
+
         if(d->dominating.length()) frame *= 1 + d->dominating.length(); // berserker mode
+
         bool dancing = b.type == AI_S_OVERRIDE && b.overridetype == AI_O_DANCE,
-             allowrnd = dancing || b.type == AI_S_WAIT || b.type == AI_S_PURSUE || b.type == AI_S_INTEREST;
+            allowrnd = dancing || b.type == AI_S_WAIT || b.type == AI_S_PURSUE || b.type == AI_S_INTEREST;
+
         d->action[AC_SPECIAL] = d->ai->dontmove = false;
+
         if(b.acttype == AI_A_IDLE || !(A(d->actortype, abilities)&(1<<A_A_MOVE)))
         {
             d->ai->dontmove = true;
@@ -1165,6 +1274,7 @@ namespace ai
                 d->ai->targnode = -1;
             }
         }
+
         if(dancing)
         {
             if(!d->ai->lastturn || lastmillis-d->ai->lastturn >= 500)
@@ -1208,6 +1318,7 @@ namespace ai
                     }
                 }
             }
+
             if(e)
             {
                 bool alt = altfire(d, e);
@@ -1269,9 +1380,11 @@ namespace ai
                 }
             }
         }
+
         if(!firing) d->action[AC_PRIMARY] = d->action[AC_SECONDARY] = false;
 
         fixrange(d->ai->targyaw, d->ai->targpitch);
+
         if(dancing || !occupied)
         {
             if(dancing || actors[d->actortype].onlyfwd) frame *= 2;
@@ -1287,6 +1400,7 @@ namespace ai
         }
 
         if(d->canimpulse(IM_T_JUMP)) jumpto(d, b, d->ai->spot);
+
         bool crouch = d->actortype == A_TURRET || (d->ai->dontmove && (b.type != AI_S_OVERRIDE || b.overridetype == AI_O_CROUCH));
         if(d->action[AC_CROUCH] != crouch)
         {
@@ -1294,34 +1408,7 @@ namespace ai
             d->actiontime[AC_CROUCH] = crouch ? lastmillis : -lastmillis;
         }
 
-        if(d->ai->dontmove || !(A(d->actortype, abilities)&(1<<A_A_MOVE)) || (A(d->actortype, hurtstop) && lastmillis-d->lastpain <= A(d->actortype, hurtstop)))
-            d->move = d->strafe = 0;
-        else if(actors[d->actortype].onlyfwd)
-        {
-            d->move = 1;
-            d->strafe = 0;
-        }
-        else
-        { // our guys move one way.. but turn another?! :)
-            const struct aimdir { int move, strafe, offset; } aimdirs[8] =
-            {
-                {  1,  0,   0 },
-                {  1,  -1,  45 },
-                {  0,  -1,  90 },
-                { -1,  -1,  135 },
-                { -1,  0,   180 },
-                { -1,  1,   225 },
-                {  0,  1,   270 },
-                {  1,  1,   315 }
-            };
-            float yaw = d->ai->targyaw-d->yaw;
-            if(yaw < 0.0f) yaw = 360.0f - fmodf(-yaw, 360.0f);
-            else if(yaw >= 360.0f) yaw = fmodf(yaw, 360.0f);
-            const aimdir &ad = aimdirs[clamp(((int)floor((yaw+22.5f)/45.0f))&7, 0, 7)];
-            d->move = ad.move;
-            d->strafe = ad.strafe;
-        }
-        safefindorientation(d->o, d->yaw, d->pitch, d->ai->target);
+        updatemovement(d);
     }
 
     bool hasrange(gameent *d, gameent *e, int weap)
@@ -1340,7 +1427,9 @@ namespace ai
         int sweap = m_weapon(d->actortype, game::gamemode, game::mutators);
         bool occupied = false, firing = false,
              haswaited = d->weapwaited(d->weapselect, lastmillis, (1<<W_S_RELOAD));
-        static vector<actitem> items; items.setsize(0);
+
+        static vector<actitem> items;
+        items.setsize(0);
         if(m_maxcarry(d->actortype, game::gamemode, game::mutators) && d->actortype < A_ENEMY)
         {
             static vector<actitem> actitems;
@@ -1391,7 +1480,9 @@ namespace ai
                 }
             }
         }
+
         process(d, b, occupied, firing, items);
+
         if(haswaited && !firing && !d->action[AC_USE]) while(!items.empty())
         {
             actitem &t = items.last();
@@ -1433,12 +1524,14 @@ namespace ai
         }
 
         bool timepassed = d->weapstate[d->weapselect] == W_S_IDLE && (d->weapammo[d->weapselect][W_A_CLIP] <= 0 || lastmillis-d->weaptime[d->weapselect] >= max(6000-(d->skill*50), W(d->weapselect, delayswitch)));
+
         if(!firing && (!occupied || d->weapammo[d->weapselect][W_A_CLIP] <= 0) && timepassed && d->hasweap(d->weapselect, sweap) && weapons::weapreload(d, d->weapselect))
         {
             d->ai->lastaction = lastmillis;
             return true;
         }
-        if(!firing && timepassed)
+
+        if(d->actortype != A_HAZARD && !firing && timepassed)
         {
             int weap = weappref(d);
             gameent *e = game::getclient(d->ai->enemy);
@@ -1456,6 +1549,7 @@ namespace ai
                 }
                 if(!isweap(weap)) weap = d->bestweap(sweap, true, true);
             }
+
             if(isweap(weap) && weap != d->weapselect && weapons::weapselect(d, weap, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
             {
                 d->ai->lastaction = lastmillis;

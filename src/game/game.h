@@ -177,7 +177,9 @@ extern const enttypes enttype[] = {
     },
     {
         ACTOR,          1,          59,     0,      EU_NONE,    11,             -1,         3,          5,      10,     -1,
-            0, 0, 0,
+            (1<<TRIGGER),
+            0,
+            0,
             false,  true,   false,      true,       false,
                 "actor",        "Actor",            { "type", "yaw", "pitch", "modes", "muts", "id", "weap", "health", "speed", "scale", "variant" }
     },
@@ -702,7 +704,11 @@ struct clientstate
 
     int getammo(int weap, int millis = 0, bool store = false)
     {
-        if(!isweap(weap) || weapammo[weap][W_A_CLIP] < 0) return -1;
+        if(!isweap(weap)) return -1;
+        if(weapammo[weap][W_A_CLIP] < 0) return -1;
+
+        if(!(A(actortype, abilities)&(1<<A_A_AMMO))) return W(weap, ammoclip); // always max ammo
+
         int a = weapammo[weap][W_A_CLIP] > 0 ? weapammo[weap][W_A_CLIP] : 0;
         if(millis && weapstate[weap] == W_S_RELOAD && millis-weaptime[weap] < weapwait[weap] && weapload[weap][W_A_CLIP] > 0)
             a -= weapload[weap][W_A_CLIP];
@@ -862,9 +868,12 @@ struct clientstate
 
     bool candrop(int weap, int sweap, int millis, bool classic, int skip = 0)
     {
+        if(!(A(actortype, abilities)&(1<<A_A_AMMO))) return false;
+
         if(weap < W_ALL && weap != sweap && (classic ? weap >= W_OFFSET && W2(weap, ammosub, false) && W2(weap, ammosub, true) : weap >= W_ITEM)
             && hasweap(weap, sweap) && weapwaited(weap, millis, skip) && weapwaited(weapselect, millis, skip))
                 return true;
+
         return false;
     }
 
@@ -1425,7 +1434,7 @@ struct gameent : dynent, clientstate
 
         float scale = A(actortype, scale), speedscale = 1;
 
-        if(actortype >= A_ENEMY && entities::ents.inrange(spawnpoint) && entities::ents[spawnpoint]->type == ACTOR)
+        if(actortype >= A_ENEMY && actortype != A_HAZARD && entities::ents.inrange(spawnpoint) && entities::ents[spawnpoint]->type == ACTOR)
         {
             if(entities::ents[spawnpoint]->attrs[8] > 0) speedscale *= entities::ents[spawnpoint]->attrs[8]/100.f;
             if(entities::ents[spawnpoint]->attrs[9] > 0) scale *= (entities::ents[spawnpoint]->attrs[9]/100.f);

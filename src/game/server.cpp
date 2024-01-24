@@ -806,7 +806,7 @@ namespace server
             droplist &d = drop.add();
             d.weap = W_GRENADE;
             d.ent = d.ammo = -1;
-            if(!(flags&DROP_EXPLODE)) takeammo(ci, W_GRENADE, W2(W_GRENADE, ammosub, false));
+            if(!(flags&DROP_EXPLODE) && A(ci->actortype, abilities)&(1<<A_A_AMMO)) takeammo(ci, W_GRENADE, W2(W_GRENADE, ammosub, false));
             kamikaze = true;
         }
         if(flags&DROP_WEAPONS) loopi(W_ALL) dropweapon(ci, flags, i, drop);
@@ -5067,7 +5067,7 @@ namespace server
                 {
                     hitset &h = hits[i];
                     clientinfo *m = (clientinfo *)getinfo(h.target);
-                    if(!m) continue;
+                    if(!m || !(A(m->actortype, abilities)&(1<<A_A_DAMAGE))) continue;
                     bool first = true;
                     loopvj(hitclients) if(hitclients[j] == m) first = false;
                     hitclients.add(m);
@@ -5117,7 +5117,7 @@ namespace server
             return;
         }
 
-        int sweap = m_weapon(ci->actortype, gamemode, mutators), sub = W2(weap, ammosub, WS(flags));
+        int sweap = m_weapon(ci->actortype, gamemode, mutators), sub = A(ci->actortype, abilities)&(1<<A_A_AMMO) ? W2(weap, ammosub, WS(flags)) : 0;
         if(sub > 1 && W2(weap, cooktime, WS(flags)))
         {
             if(ci->weapammo[weap][W_A_CLIP] < sub)
@@ -5151,7 +5151,7 @@ namespace server
         if(WS(flags)) ci->weapstats[weap].shots2++;
         else ci->weapstats[weap].shots1++;
 
-        if(W2(weap, ammosub, WS(flags)))
+        if(W2(weap, ammosub, WS(flags)) && A(ci->actortype, abilities)&(1<<A_A_AMMO))
         {
             if(ci->state != CS_ALIVE)
             {
@@ -5218,7 +5218,7 @@ namespace server
         if(etype >= 0)
         {
             float maxscale = 1;
-            int sub = W2(weap, ammosub, etype >= 1);
+            int sub = A(ci->actortype, abilities)&(1<<A_A_AMMO) ? W2(weap, ammosub, etype >= 1) : 0;
             if(sub > 1 && ci->weapammo[weap][W_A_CLIP] < sub) maxscale = ci->weapammo[weap][W_A_CLIP]/float(sub);
             ci->setweapstate(weap, etype >= 2 ? W_S_ZOOM : W_S_POWER, max(int(W2(weap, cooktime, etype >= 1)*maxscale), 1), millis, offtime);
         }

@@ -295,7 +295,7 @@ namespace weapons
             else offset = d->weapload[weap][W_A_CLIP];
         }
         float scale = 1;
-        int sub = W2(weap, ammosub, secondary), cooked = force;
+        int sub = A(d->actortype, abilities)&(1<<A_A_AMMO) ? W2(weap, ammosub, secondary) : 0, cooked = force;
         if(W2(weap, cooktime, secondary) || zooming)
         {
             float maxscale = 1;

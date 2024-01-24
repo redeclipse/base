@@ -10,6 +10,9 @@
 
 #define STRINGIFYX(A) #A
 #define STRINGIFY(A) STRINGIFYX(A)
+#define CONCAT(a, b) a##b
+#define EXPAND(a, b) CONCAT(a, b)
+#define NEXTARG ,
 
 typedef signed char schar;
 typedef unsigned char uchar;

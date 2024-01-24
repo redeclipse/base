@@ -335,39 +335,55 @@ namespace aiman
 
     void checkenemies()
     {
-        if(m_onslaught(gamemode, mutators))
+        loopvj(sents) if(sents[j].type == ACTOR)
         {
-            loopvj(sents) if(sents[j].type == ACTOR)
+            if(!servermapvariant(sents[j].attrs[enttype[sents[j].type].mvattr])) continue;
+            if(sents[j].attrs[0] < 0 || sents[j].attrs[0] >= A_TOTAL || gamemillis < sents[j].millis) continue;
+
+            int atype = sents[j].attrs[0]+A_ENEMY;
+            if(!m_onslaught(gamemode, mutators) && atype != A_HAZARD) continue;
+
+            if(sents[j].attrs[5] && sents[j].attrs[5] != triggerid) continue;
+            if(!m_check(sents[j].attrs[3], sents[j].attrs[4], gamemode, mutators)) continue;
+            if(atype == A_TURRET && m_insta(gamemode, mutators)) continue;
+
+            if(atype == A_HAZARD)
             {
-                if(!servermapvariant(sents[j].attrs[enttype[sents[j].type].mvattr])) continue;
-                if(sents[j].attrs[0] < 0 || sents[j].attrs[0] >= A_TOTAL || gamemillis < sents[j].millis) continue;
-                if(sents[j].attrs[5] && sents[j].attrs[5] != triggerid) continue;
-                if(!m_check(sents[j].attrs[3], sents[j].attrs[4], gamemode, mutators)) continue;
-                if(sents[j].attrs[0]+A_ENEMY == A_TURRET && m_insta(gamemode, mutators)) continue;
-                int count = 0, numenemies = 0;
-                loopvrev(clients) if(clients[i]->actortype >= A_ENEMY)
+                bool found = false;
+                loopvrev(clients) if(clients[i]->actortype == A_HAZARD && clients[i]->spawnpoint == j)
                 {
-                    if(clients[i]->spawnpoint == j)
+                    if(found) deleteai(clients[i]);
+                    found = true;
+                }
+
+                if(!found) addai(atype, j);
+
+                continue;
+            }
+
+            int count = 0, numenemies = 0;
+            loopvrev(clients) if(clients[i]->actortype >= A_ENEMY)
+            {
+                if(clients[i]->spawnpoint == j)
+                {
+                    count++;
+                    if(count > G(enemybalance))
                     {
-                        count++;
-                        if(count > G(enemybalance))
-                        {
-                            deleteai(clients[i]);
-                            count--;
-                            continue;
-                        }
+                        deleteai(clients[i]);
+                        count--;
+                        continue;
                     }
-                    numenemies++;
                 }
-                if(numenemies < G(enemylimit) && count < G(enemybalance))
-                {
-                    int amt = min(G(enemybalance)-count, G(enemylimit)-numenemies);
-                    loopk(amt) addai(sents[j].attrs[0]+A_ENEMY, j);
-                    sents[j].millis = gamemillis+G(enemyspawntime);
-                }
+                numenemies++;
+            }
+
+            if(numenemies < G(enemylimit) && count < G(enemybalance))
+            {
+                int amt = min(G(enemybalance)-count, G(enemylimit)-numenemies);
+                loopk(amt) addai(atype, j);
+                sents[j].millis = gamemillis+G(enemyspawntime);
             }
         }
-        else clearai(2);
     }
 
     void clearai(int type)

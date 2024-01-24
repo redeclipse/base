@@ -2863,7 +2863,7 @@ namespace client
                     if(!t || !isweap(weap) || t == game::player1 || t->ai) break;
                     if(weap != t->weapselect) t->weapswitch(weap, lastmillis);
                     float scale = 1;
-                    int sub = W2(weap, ammosub, WS(flags));
+                    int sub = A(t->actortype, abilities)&(1<<A_A_AMMO) ? W2(weap, ammosub, WS(flags)) : 0;
                     if(W2(weap, cooktime, WS(flags)))
                     {
                         scale = len/float(W2(weap, cooktime, WS(flags)));
@@ -3082,7 +3082,7 @@ namespace client
                     if(etype >= 0)
                     {
                         float maxscale = 1;
-                        int sub = W2(weap, ammosub, etype >= 1);
+                        int sub = A(m->actortype, abilities)&(1<<A_A_AMMO) ? W2(weap, ammosub, etype >= 1) : 0;
                         if(sub > 1 && m->weapammo[weap][W_A_CLIP] < sub) maxscale = m->weapammo[weap][W_A_CLIP]/float(sub);
                         m->setweapstate(weap, etype >= 2 ? W_S_ZOOM : W_S_POWER, max(int(W2(weap, cooktime, etype >= 1)*maxscale), 1), lastmillis, offtime);
                     }

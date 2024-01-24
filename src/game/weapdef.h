@@ -10,10 +10,6 @@
 #endif // CPP_GAME_MAIN
 #endif // CPP_GAME_SERVER
 
-#define WD_CONCAT(a, b) a##b
-#define WD_EXPAND(a, b) WD_CONCAT(a, b)
-#define WD_ARG ,
-
 #define WPVAR(flags, level, name, mn, mx, claw0, pistol0, sword0, shotgun0, smg0, flamer0, plasma0, zapper0, rifle0, corroder0, grenade0, mine0, rocket0, melee0) \
     GVAR(flags, level, claw##name, mn, claw0, mx); \
     GVAR(flags, level, pistol##name, mn, pistol0, mx); \
@@ -29,21 +25,21 @@
     GVAR(flags, level, mine##name, mn, mine0, mx); \
     GVAR(flags, level, rocket##name, mn, rocket0, mx); \
     GVAR(flags, level, melee##name, mn, melee0, mx); \
-    WD_DECLARE(int *WD_EXPAND(WD_PREFIX, weap_stat_##name)[], \
-        &WD_EXPAND(WD_PREFIX, claw##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, pistol##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, sword##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, shotgun##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, smg##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, flamer##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, plasma##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, zapper##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, rifle##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, corroder##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, grenade##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, mine##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, rocket##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, melee##name) \
+    WD_DECLARE(int *EXPAND(WD_PREFIX, weap_stat_##name)[], \
+        &EXPAND(WD_PREFIX, claw##name) NEXTARG \
+        &EXPAND(WD_PREFIX, pistol##name) NEXTARG \
+        &EXPAND(WD_PREFIX, sword##name) NEXTARG \
+        &EXPAND(WD_PREFIX, shotgun##name) NEXTARG \
+        &EXPAND(WD_PREFIX, smg##name) NEXTARG \
+        &EXPAND(WD_PREFIX, flamer##name) NEXTARG \
+        &EXPAND(WD_PREFIX, plasma##name) NEXTARG \
+        &EXPAND(WD_PREFIX, zapper##name) NEXTARG \
+        &EXPAND(WD_PREFIX, rifle##name) NEXTARG \
+        &EXPAND(WD_PREFIX, corroder##name) NEXTARG \
+        &EXPAND(WD_PREFIX, grenade##name) NEXTARG \
+        &EXPAND(WD_PREFIX, mine##name) NEXTARG \
+        &EXPAND(WD_PREFIX, rocket##name) NEXTARG \
+        &EXPAND(WD_PREFIX, melee##name) \
     );
 
 #define WPVARM(flags, level, name, mn, mx, claw1, pistol1, sword1, shotgun1, smg1, flamer1, plasma1, zapper1, rifle1, corroder1, grenade1, mine1, rocket1, melee1, claw2, pistol2, sword2, shotgun2, smg2, flamer2, plasma2, zapper2, rifle2, corroder2, grenade2, mine2, rocket2, melee2) \
@@ -61,21 +57,21 @@
     GVAR(flags, level, mine##name##1, mn, mine1, mx);           GVAR(flags, level, mine##name##2, mn, mine2, mx); \
     GVAR(flags, level, rocket##name##1, mn, rocket1, mx);       GVAR(flags, level, rocket##name##2, mn, rocket2, mx); \
     GVAR(flags, level, melee##name##1, mn, melee1, mx);         GVAR(flags, level, melee##name##2, mn, melee2, mx); \
-    WD_DECLARE(int *WD_EXPAND(WD_PREFIX, weap_stat_##name)[][2], \
-        { &WD_EXPAND(WD_PREFIX, claw##name##1) WD_ARG       &WD_EXPAND(WD_PREFIX, claw##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, pistol##name##1) WD_ARG     &WD_EXPAND(WD_PREFIX, pistol##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, sword##name##1) WD_ARG      &WD_EXPAND(WD_PREFIX, sword##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, shotgun##name##1) WD_ARG    &WD_EXPAND(WD_PREFIX, shotgun##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, smg##name##1) WD_ARG        &WD_EXPAND(WD_PREFIX, smg##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, flamer##name##1) WD_ARG     &WD_EXPAND(WD_PREFIX, flamer##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, plasma##name##1) WD_ARG     &WD_EXPAND(WD_PREFIX, plasma##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, zapper##name##1) WD_ARG     &WD_EXPAND(WD_PREFIX, zapper##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, rifle##name##1) WD_ARG      &WD_EXPAND(WD_PREFIX, rifle##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, corroder##name##1) WD_ARG   &WD_EXPAND(WD_PREFIX, corroder##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, grenade##name##1) WD_ARG    &WD_EXPAND(WD_PREFIX, grenade##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, mine##name##1) WD_ARG       &WD_EXPAND(WD_PREFIX, mine##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, rocket##name##1) WD_ARG     &WD_EXPAND(WD_PREFIX, rocket##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, melee##name##1) WD_ARG      &WD_EXPAND(WD_PREFIX, melee##name##2) } \
+    WD_DECLARE(int *EXPAND(WD_PREFIX, weap_stat_##name)[][2], \
+        { &EXPAND(WD_PREFIX, claw##name##1) NEXTARG       &EXPAND(WD_PREFIX, claw##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, pistol##name##1) NEXTARG     &EXPAND(WD_PREFIX, pistol##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, sword##name##1) NEXTARG      &EXPAND(WD_PREFIX, sword##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, shotgun##name##1) NEXTARG    &EXPAND(WD_PREFIX, shotgun##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, smg##name##1) NEXTARG        &EXPAND(WD_PREFIX, smg##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, flamer##name##1) NEXTARG     &EXPAND(WD_PREFIX, flamer##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, plasma##name##1) NEXTARG     &EXPAND(WD_PREFIX, plasma##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, zapper##name##1) NEXTARG     &EXPAND(WD_PREFIX, zapper##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, rifle##name##1) NEXTARG      &EXPAND(WD_PREFIX, rifle##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, corroder##name##1) NEXTARG   &EXPAND(WD_PREFIX, corroder##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, grenade##name##1) NEXTARG    &EXPAND(WD_PREFIX, grenade##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, mine##name##1) NEXTARG       &EXPAND(WD_PREFIX, mine##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, rocket##name##1) NEXTARG     &EXPAND(WD_PREFIX, rocket##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, melee##name##1) NEXTARG      &EXPAND(WD_PREFIX, melee##name##2) } \
     );
 
 #define WPFVAR(flags, level, name, mn, mx, claw0, pistol0, sword0, shotgun0, smg0, flamer0, plasma0, zapper0, rifle0, corroder0, grenade0, mine0, rocket0, melee0) \
@@ -93,21 +89,21 @@
     GFVAR(flags, level, mine##name, mn, mine0, mx); \
     GFVAR(flags, level, rocket##name, mn, rocket0, mx); \
     GFVAR(flags, level, melee##name, mn, melee0, mx); \
-    WD_DECLARE(float *WD_EXPAND(WD_PREFIX, weap_stat_##name)[], \
-        &WD_EXPAND(WD_PREFIX, claw##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, pistol##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, sword##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, shotgun##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, smg##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, flamer##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, plasma##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, zapper##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, rifle##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, corroder##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, grenade##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, mine##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, rocket##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, melee##name) \
+    WD_DECLARE(float *EXPAND(WD_PREFIX, weap_stat_##name)[], \
+        &EXPAND(WD_PREFIX, claw##name) NEXTARG \
+        &EXPAND(WD_PREFIX, pistol##name) NEXTARG \
+        &EXPAND(WD_PREFIX, sword##name) NEXTARG \
+        &EXPAND(WD_PREFIX, shotgun##name) NEXTARG \
+        &EXPAND(WD_PREFIX, smg##name) NEXTARG \
+        &EXPAND(WD_PREFIX, flamer##name) NEXTARG \
+        &EXPAND(WD_PREFIX, plasma##name) NEXTARG \
+        &EXPAND(WD_PREFIX, zapper##name) NEXTARG \
+        &EXPAND(WD_PREFIX, rifle##name) NEXTARG \
+        &EXPAND(WD_PREFIX, corroder##name) NEXTARG \
+        &EXPAND(WD_PREFIX, grenade##name) NEXTARG \
+        &EXPAND(WD_PREFIX, mine##name) NEXTARG \
+        &EXPAND(WD_PREFIX, rocket##name) NEXTARG \
+        &EXPAND(WD_PREFIX, melee##name) \
     );
 
 #define WPFVARM(flags, level, name, mn, mx, claw1, pistol1, sword1, shotgun1, smg1, flamer1, plasma1, zapper1, rifle1, corroder1, grenade1, mine1, rocket1, melee1, claw2, pistol2, sword2, shotgun2, smg2, flamer2, plasma2, zapper2, rifle2, corroder2, grenade2, mine2, rocket2, melee2) \
@@ -125,21 +121,21 @@
     GFVAR(flags, level, mine##name##1, mn, mine1, mx);          GFVAR(flags, level, mine##name##2, mn, mine2, mx); \
     GFVAR(flags, level, rocket##name##1, mn, rocket1, mx);      GFVAR(flags, level, rocket##name##2, mn, rocket2, mx); \
     GFVAR(flags, level, melee##name##1, mn, melee1, mx);        GFVAR(flags, level, melee##name##2, mn, melee2, mx); \
-    WD_DECLARE(float *WD_EXPAND(WD_PREFIX, weap_stat_##name)[][2], \
-        { &WD_EXPAND(WD_PREFIX, claw##name##1) WD_ARG       &WD_EXPAND(WD_PREFIX, claw##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, pistol##name##1) WD_ARG     &WD_EXPAND(WD_PREFIX, pistol##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, sword##name##1) WD_ARG      &WD_EXPAND(WD_PREFIX, sword##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, shotgun##name##1) WD_ARG    &WD_EXPAND(WD_PREFIX, shotgun##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, smg##name##1) WD_ARG        &WD_EXPAND(WD_PREFIX, smg##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, flamer##name##1) WD_ARG     &WD_EXPAND(WD_PREFIX, flamer##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, plasma##name##1) WD_ARG     &WD_EXPAND(WD_PREFIX, plasma##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, zapper##name##1) WD_ARG     &WD_EXPAND(WD_PREFIX, zapper##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, rifle##name##1) WD_ARG      &WD_EXPAND(WD_PREFIX, rifle##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, corroder##name##1) WD_ARG   &WD_EXPAND(WD_PREFIX, corroder##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, grenade##name##1) WD_ARG    &WD_EXPAND(WD_PREFIX, grenade##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, mine##name##1) WD_ARG       &WD_EXPAND(WD_PREFIX, mine##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, rocket##name##1) WD_ARG     &WD_EXPAND(WD_PREFIX, rocket##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, melee##name##1) WD_ARG      &WD_EXPAND(WD_PREFIX, melee##name##2) } \
+    WD_DECLARE(float *EXPAND(WD_PREFIX, weap_stat_##name)[][2], \
+        { &EXPAND(WD_PREFIX, claw##name##1) NEXTARG       &EXPAND(WD_PREFIX, claw##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, pistol##name##1) NEXTARG     &EXPAND(WD_PREFIX, pistol##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, sword##name##1) NEXTARG      &EXPAND(WD_PREFIX, sword##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, shotgun##name##1) NEXTARG    &EXPAND(WD_PREFIX, shotgun##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, smg##name##1) NEXTARG        &EXPAND(WD_PREFIX, smg##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, flamer##name##1) NEXTARG     &EXPAND(WD_PREFIX, flamer##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, plasma##name##1) NEXTARG     &EXPAND(WD_PREFIX, plasma##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, zapper##name##1) NEXTARG     &EXPAND(WD_PREFIX, zapper##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, rifle##name##1) NEXTARG      &EXPAND(WD_PREFIX, rifle##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, corroder##name##1) NEXTARG   &EXPAND(WD_PREFIX, corroder##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, grenade##name##1) NEXTARG    &EXPAND(WD_PREFIX, grenade##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, mine##name##1) NEXTARG       &EXPAND(WD_PREFIX, mine##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, rocket##name##1) NEXTARG     &EXPAND(WD_PREFIX, rocket##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, melee##name##1) NEXTARG      &EXPAND(WD_PREFIX, melee##name##2) } \
     );
 
 #define WPSVAR(flags, level, name, claw0, pistol0, sword0, shotgun0, smg0, flamer0, plasma0, zapper0, rifle0, corroder0, grenade0, mine0, rocket0, melee0) \
@@ -157,21 +153,21 @@
     GSVAR(flags, level, mine##name, mine0); \
     GSVAR(flags, level, rocket##name, rocket0); \
     GSVAR(flags, level, melee##name, melee0); \
-    WD_DECLARE(char **WD_EXPAND(WD_PREFIX, weap_stat_##name)[], \
-        &WD_EXPAND(WD_PREFIX, claw##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, pistol##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, sword##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, shotgun##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, smg##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, flamer##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, plasma##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, zapper##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, rifle##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, corroder##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, grenade##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, mine##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, rocket##name) WD_ARG \
-        &WD_EXPAND(WD_PREFIX, melee##name) \
+    WD_DECLARE(char **EXPAND(WD_PREFIX, weap_stat_##name)[], \
+        &EXPAND(WD_PREFIX, claw##name) NEXTARG \
+        &EXPAND(WD_PREFIX, pistol##name) NEXTARG \
+        &EXPAND(WD_PREFIX, sword##name) NEXTARG \
+        &EXPAND(WD_PREFIX, shotgun##name) NEXTARG \
+        &EXPAND(WD_PREFIX, smg##name) NEXTARG \
+        &EXPAND(WD_PREFIX, flamer##name) NEXTARG \
+        &EXPAND(WD_PREFIX, plasma##name) NEXTARG \
+        &EXPAND(WD_PREFIX, zapper##name) NEXTARG \
+        &EXPAND(WD_PREFIX, rifle##name) NEXTARG \
+        &EXPAND(WD_PREFIX, corroder##name) NEXTARG \
+        &EXPAND(WD_PREFIX, grenade##name) NEXTARG \
+        &EXPAND(WD_PREFIX, mine##name) NEXTARG \
+        &EXPAND(WD_PREFIX, rocket##name) NEXTARG \
+        &EXPAND(WD_PREFIX, melee##name) \
     );
 
 #define WPSVARM(flags, level, name, claw1, pistol1, sword1, shotgun1, smg1, flamer1, plasma1, zapper1, rifle1, corroder1, grenade1, mine1, rocket1, melee1, claw2, pistol2, sword2, shotgun2, smg2, flamer2, plasma2, zapper2, rifle2, corroder2, grenade2, mine2, rocket2, melee2) \
@@ -189,21 +185,21 @@
     GSVAR(flags, level, mine##name##1, mine1);          GSVAR(flags, level, mine##name##2, mine2); \
     GSVAR(flags, level, rocket##name##1, rocket1);      GSVAR(flags, level, rocket##name##2, rocket2); \
     GSVAR(flags, level, melee##name##1, melee1);        GSVAR(flags, level, melee##name##2, melee2); \
-    WD_DECLARE(char **WD_EXPAND(WD_PREFIX, weap_stat_##name)[][2], \
-        { &WD_EXPAND(WD_PREFIX, claw##name##1) WD_ARG       &WD_EXPAND(WD_PREFIX, claw##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, pistol##name##1) WD_ARG     &WD_EXPAND(WD_PREFIX, pistol##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, sword##name##1) WD_ARG      &WD_EXPAND(WD_PREFIX, sword##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, shotgun##name##1) WD_ARG    &WD_EXPAND(WD_PREFIX, shotgun##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, smg##name##1) WD_ARG        &WD_EXPAND(WD_PREFIX, smg##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, flamer##name##1) WD_ARG     &WD_EXPAND(WD_PREFIX, flamer##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, plasma##name##1) WD_ARG     &WD_EXPAND(WD_PREFIX, plasma##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, zapper##name##1) WD_ARG     &WD_EXPAND(WD_PREFIX, zapper##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, rifle##name##1) WD_ARG      &WD_EXPAND(WD_PREFIX, rifle##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, corroder##name##1) WD_ARG   &WD_EXPAND(WD_PREFIX, corroder##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, grenade##name##1) WD_ARG    &WD_EXPAND(WD_PREFIX, grenade##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, mine##name##1) WD_ARG       &WD_EXPAND(WD_PREFIX, mine##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, rocket##name##1) WD_ARG     &WD_EXPAND(WD_PREFIX, rocket##name##2) } WD_ARG \
-        { &WD_EXPAND(WD_PREFIX, melee##name##1) WD_ARG      &WD_EXPAND(WD_PREFIX, melee##name##2) } \
+    WD_DECLARE(char **EXPAND(WD_PREFIX, weap_stat_##name)[][2], \
+        { &EXPAND(WD_PREFIX, claw##name##1) NEXTARG       &EXPAND(WD_PREFIX, claw##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, pistol##name##1) NEXTARG     &EXPAND(WD_PREFIX, pistol##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, sword##name##1) NEXTARG      &EXPAND(WD_PREFIX, sword##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, shotgun##name##1) NEXTARG    &EXPAND(WD_PREFIX, shotgun##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, smg##name##1) NEXTARG        &EXPAND(WD_PREFIX, smg##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, flamer##name##1) NEXTARG     &EXPAND(WD_PREFIX, flamer##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, plasma##name##1) NEXTARG     &EXPAND(WD_PREFIX, plasma##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, zapper##name##1) NEXTARG     &EXPAND(WD_PREFIX, zapper##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, rifle##name##1) NEXTARG      &EXPAND(WD_PREFIX, rifle##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, corroder##name##1) NEXTARG   &EXPAND(WD_PREFIX, corroder##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, grenade##name##1) NEXTARG    &EXPAND(WD_PREFIX, grenade##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, mine##name##1) NEXTARG       &EXPAND(WD_PREFIX, mine##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, rocket##name##1) NEXTARG     &EXPAND(WD_PREFIX, rocket##name##2) } NEXTARG \
+        { &EXPAND(WD_PREFIX, melee##name##1) NEXTARG      &EXPAND(WD_PREFIX, melee##name##2) } \
     );
 
 #define WPVARK(flags, level, name, mn, mx, claw1, pistol1, sword1, shotgun1, smg1, flamer1, plasma1, zapper1, rifle1, corroder1, grenade1, mine1, rocket1, melee1, claw2, pistol2, sword2, shotgun2, smg2, flamer2, plasma2, zapper2, rifle2, corroder2, grenade2, mine2, rocket2, melee2, claw3, pistol3, sword3, shotgun3, smg3, flamer3, plasma3, zapper3, rifle3, corroder3, grenade3, mine3, rocket3, melee3, claw4, pistol4, sword4, shotgun4, smg4, flamer4, plasma4, zapper4, rifle4, corroder4, grenade4, mine4, rocket4, melee4) \
@@ -222,8 +218,8 @@
     WPSVARM(flags, level, name, claw0, pistol0, sword0, shotgun0, smg0, flamer0, plasma0, zapper0, rifle0, corroder0, grenade0, mine0, rocket0, melee0, claw0, pistol0, sword0, shotgun0, smg0, flamer0, plasma0, zapper0, rifle0, corroder0, grenade0, mine0, rocket0, melee0); \
     WPSVARM(flags, level, flak##name, claw0, pistol0, sword0, shotgun0, smg0, flamer0, plasma0, zapper0, rifle0, corroder0, grenade0, mine0, rocket0, melee0, claw0, pistol0, sword0, shotgun0, smg0, flamer0, plasma0, zapper0, rifle0, corroder0, grenade0, mine0, rocket0, melee0);
 
-#define W(weap,name)            (*WD_EXPAND(WD_PREFIX, weap_stat_##name[weap]))
-#define W2(weap,name,second)    (*WD_EXPAND(WD_PREFIX, weap_stat_##name[weap][second ? 1 : 0]))
+#define W(weap,name)            (*EXPAND(WD_PREFIX, weap_stat_##name[clamp(weap, 0, int(W_MAX)-1)]))
+#define W2(weap,name,second)    (*EXPAND(WD_PREFIX, weap_stat_##name[clamp(weap, 0, int(W_MAX)-1)][second ? 1 : 0]))
 #define WF(c,w,v,s)             (c ? W2(w, flak##v, s) : W2(w, v, s))
 #define WS(flags)               (flags&HIT_ALT)
 #define WK(flags)               (flags&HIT_FLAK)

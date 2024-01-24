@@ -1348,8 +1348,13 @@ namespace entities
             case ACTOR:
             {
                 if(attr[0] < 0 || attr[0] >= A_TOTAL) return "";
-                const char *mdl = actors[attr[0]+A_ENEMY].mdl;
+
+                int atype = attr[0] + A_ENEMY;
+                if(atype == A_HAZARD) return "";
+
+                const char *mdl = actors[atype].mdl;
                 if(!mdl || !*mdl) mdl = playertypes[0][1];
+
                 return mdl;
             }
             default: break;
