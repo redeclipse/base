@@ -7250,6 +7250,7 @@ namespace server
                         if(!servermapvariant(sents[ent].attrs[enttype[sents[ent].type].mvattr])) break;
                         if(sents[ent].attrs[0] && sents[ent].attrs[0] != triggerid) break;
                         if(!m_check(sents[ent].attrs[5], sents[ent].attrs[6], gamemode, mutators)) break;
+                        if(sents[ent].attrs[1] == TRIG_SCRIPT || sents[ent].attrs[2] == TRIG_A_MANUAL) break;
 
                         bool commit = false, kin = false, spawn = (sents[ent].attrs[4]&TRIG_S_INVERTED) != 0;
                         switch(sents[ent].attrs[1])
@@ -7282,6 +7283,7 @@ namespace server
                         }
 
                         if(commit) sendf(-1, 1, "ri3x", N_TRIGGER, ent, sents[ent].spawned ? 1 : 0, cp->clientnum);
+                        else if(!kin) sendf(cp->clientnum, 1, "ri3", N_TRIGGER, ent, sents[ent].spawned ? 1 : 0);
 
                         if(kin) loopvj(sents[ent].kin) if(sents.inrange(sents[ent].kin[j]))
                         {

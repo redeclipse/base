@@ -1522,6 +1522,7 @@ namespace entities
             case TRIGGER:
             {
                 if(!isallowed(e)) return false;
+                if(e.attrs[2] == TRIG_A_MANUAL) return (identflags&IDF_MAP) != 0;
 
                 if(d)
                 {
@@ -1537,6 +1538,7 @@ namespace entities
                         case TRIG_EXIT:
                             if(e.spawned()) return false;
                             break;
+                        case TRIG_SCRIPT: break;
                     }
 
                     int millis = d->lastused(n);
@@ -1574,7 +1576,7 @@ namespace entities
                 case TRIG_EXIT: if(d->actortype >= A_BOT) break;
                 case TRIG_TOGGLE: case TRIG_LINKED: case TRIG_ONCE:
                 {
-                    client::addmsg(N_TRIGGER, "ri2", d->clientnum, n);
+                    if(e.attrs[2] != TRIG_A_MANUAL) client::addmsg(N_TRIGGER, "ri2", d->clientnum, n);
                     if(!e.spawned() || e.attrs[1] == TRIG_TOGGLE) setspawn(n, e.spawned() ? 0 : 1);
                     break;
                 }
