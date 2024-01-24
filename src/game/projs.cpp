@@ -73,7 +73,7 @@ namespace projs
     {
         static const char *typeprefixes[FX_P_TYPES] =
         {
-            "FX_P_BULLET_", "FX_P_PELLET_", "FX_P_FLAK_", "FX_P_SHRAPNEL_", "FX_P_FLAME_",
+            "FX_P_BULLET_", "FX_P_PELLET_", "FX_P_ACID_", "FX_P_FLAK_", "FX_P_SHRAPNEL_", "FX_P_BLOB_", "FX_P_FLAME_",
             "FX_P_AIRBLAST_", "FX_P_PLASMA_", "FX_P_VORTEX_", "FX_P_ENERGY_", "FX_P_BEAM_",
             "FX_P_GRENADE_", "FX_P_MINE_", "FX_P_ROCKET_", "FX_P_CASING_", "FX_P_GIB_",
             "FX_P_DEBRIS_"
