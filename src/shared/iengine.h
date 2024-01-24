@@ -282,10 +282,10 @@ struct particle
 {
     vec o, d, m, prev;
     int collide, fade, gravity, millis;
-    bvec color, hintcolor;
+    bvec color, hintcolor, envcolor;
     uchar flags;
     windprobe wind;
-    float size, sizechange, blend, hintblend;
+    float size, sizechange, blend, hintblend, envblend;
     bool enviro, precollide;
     union
     {
@@ -303,28 +303,33 @@ struct particle
 extern void removetrackedparticles(physent *pl = NULL);
 extern int particletext, maxparticledistance, flarelights;
 
-extern particle *newparticle(const vec &o, const vec &d, int fade, int type, int color = colourwhite, float size = 2, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, float val = 0, physent *pl = NULL, float sizechange = 0);
-extern void create(int type, int color, int fade, const vec &p, float size = 2, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, physent *pl = NULL, float sizechange = 0);
-extern void regularcreate(int type, int color, int fade, const vec &p, float size = 2, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, physent *pl = NULL, int delay = 0, float sizechange = 0);
-extern void splash(int type, int color, float radius, int num, int fade, const vec &p, float size = 2, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, float vel = 1, float sizechange = 0);
-extern void regularsplash(int type, int color, float radius, int num, int fade, const vec &p, float size = 2, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, float vel = 1, int delay = 0, float sizechange = 0);
-extern void createshape(int type, float radius, int color, int dir, int num, int fade, const vec &p, float size = 2, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, float vel = 1, float sizechange = 0);
-extern void regularshape(int type, float radius, int color, int dir, int num, int fade, const vec &p, float size = 2, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, float vel = 1, float sizechange = 0);
-extern void regularflame(int type, const vec &p, float radius, float height, int color, int density = 3, int fade = 500, float size = 2, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = -1, int collide = 0, float vel = 1);
+extern particle *newparticle(const vec &o, const vec &d, int fade, int type, int color = colourwhite, float size = 2, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, float val = 0, physent *pl = NULL, float sizechange = 0, int envcolor = 0xFFFFFF, float envblend = 0.5f);
+extern void create(int type, int color, int fade, const vec &p, float size = 2, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, physent *pl = NULL, float sizechange = 0, int envcolor = 0xFFFFFF, float envblend = 0.5f);
+extern void regularcreate(int type, int color, int fade, const vec &p, float size = 2, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, physent *pl = NULL, int delay = 0, float sizechange = 0, int envcolor = 0xFFFFFF, float envblend = 0.5f);
+extern void splash(int type, int color, float radius, int num, int fade, const vec &p, float size = 2, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, float vel = 1, float sizechange = 0, int envcolor = 0xFFFFFF, float envblend = 0.5f);
+extern void regularsplash(int type, int color, float radius, int num, int fade, const vec &p, float size = 2, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, float vel = 1, int delay = 0, float sizechange = 0, int envcolor = 0xFFFFFF, float envblend = 0.5f);
+extern void createshape(int type, float radius, int color, int dir, int num, int fade, const vec &p, float size = 2, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, float vel = 1, float sizechange = 0, int envcolor = 0xFFFFFF, float envblend = 0.5f);
+extern void regularshape(int type, float radius, int color, int dir, int num, int fade, const vec &p, float size = 2, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, float vel = 1, float sizechange = 0, int envcolor = 0xFFFFFF, float envblend = 0.5f);
+extern void regularflame(int type, const vec &p, float radius, float height, int color, int density = 3, int fade = 500, float size = 2, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = -1, int collide = 0, float vel = 1, int envcolor = 0xFFFFFF, float envblend = 0.5f);
 extern void lensflare(const vec &o, const vec &color, bool sun, int sparkle, float scale = 1);
 
 // stain
 #define STAIN_ENUM(en, um) \
     en(um, Smoke, SMOKE) en(um, Scorch, SCORCH) en(um, Short Scorch, SCORCH_SHORT) \
-    en(um, Blood, BLOOD) en(um, Bullet, BULLET) en(um, Energy, ENERGY) en(um, Stain, STAIN) \
+    en(um, Blood, BLOOD) en(um, Bullet, BULLET) en(um, Energy, ENERGY) en(um, Splash, SPLASH) en(um, Envmap Splash, ENVSPLASH) en(um, Stain, STAIN) \
     en(um, Maximum, MAX)
 ENUM_DLN(STAIN);
 
-extern void addstain(int type, const vec &center, const vec &surface, float radius, const bvec &color = bvec(0xFF, 0xFF, 0xFF), int info = 0);
+extern void addstain(int type, const vec &center, const vec &surface, float radius, const bvec &color = bvec(0xFF, 0xFF, 0xFF), int info = 0, const bvec4 &envcolor = bvec4(0xFF, 0xFF, 0xFF, 0x80));
 
-static inline void addstain(int type, const vec &center, const vec &surface, float radius, int color, int info = 0)
+static inline void addstain(int type, const vec &center, const vec &surface, float radius, const bvec &color = bvec(0xFF, 0xFF, 0xFF), int info = 0, const bvec &envcolor = bvec(0xFF, 0xFF, 0xFF), float envblend = 0.5f)
 {
-    addstain(type, center, surface, radius, bvec::fromcolor(color), info);
+    addstain(type, center, surface, radius, color, info, bvec4(envcolor, uchar(envblend * 255)));
+}
+
+static inline void addstain(int type, const vec &center, const vec &surface, float radius, int color, int info = 0, int envcolor = 0xFFFFFF, float envblend = 0.5f)
+{
+    addstain(type, center, surface, radius, bvec::fromcolor(color), info, bvec4::fromcolor(envcolor, envblend));
 }
 
 // worldio

@@ -41,7 +41,8 @@ namespace fx
         float scale = inst.getscale();
 
         float blend = getblend(inst);
-        int color = getcolor(inst, FX_PART_COLOR).tohexcolor();
+        int color = getcolor(inst, FX_PART_COLOR).tohexcolor(),
+            envcolor = getcolor(inst, FX_PART_ENVCOLOR).tohexcolor();
 
         // Particle stains need to be offset by 1
         int collidestain = inst.getextprop<int>(FX_PART_COLLIDE) + 1;
@@ -71,7 +72,9 @@ namespace fx
                         collidestain,
                         trackent,
                         regdelay,
-                        inst.getextprop<float>(FX_PART_PARTSIZECHANGE) * scale
+                        inst.getextprop<float>(FX_PART_PARTSIZECHANGE) * scale,
+                        envcolor,
+                        inst.getextprop<float>(FX_PART_ENVBLEND)
                     );
                 else
                     part_create(
@@ -86,7 +89,9 @@ namespace fx
                         inst.getextprop<float>(FX_PART_GRAVITY),
                         collidestain,
                         trackent,
-                        inst.getextprop<float>(FX_PART_PARTSIZECHANGE) * scale
+                        inst.getextprop<float>(FX_PART_PARTSIZECHANGE) * scale,
+                        envcolor,
+                        inst.getextprop<float>(FX_PART_ENVBLEND)
                     );
                 break;
             }
@@ -111,7 +116,9 @@ namespace fx
                         inst.getextprop<float>(FX_PART_SHAPESIZE) * scale,
                         inst.getextprop<float>(FX_PART_VEL),
                         regdelay,
-                        inst.getextprop<float>(FX_PART_PARTSIZECHANGE) * scale
+                        inst.getextprop<float>(FX_PART_PARTSIZECHANGE) * scale,
+                        envcolor,
+                        inst.getextprop<float>(FX_PART_ENVBLEND)
                     );
                 else
                     part_splash(
@@ -128,7 +135,9 @@ namespace fx
                         collidestain,
                         inst.getextprop<float>(FX_PART_SHAPESIZE) * scale,
                         inst.getextprop<float>(FX_PART_VEL),
-                        inst.getextprop<float>(FX_PART_PARTSIZECHANGE) * scale
+                        inst.getextprop<float>(FX_PART_PARTSIZECHANGE) * scale,
+                        envcolor,
+                        inst.getextprop<float>(FX_PART_ENVBLEND)
                     );
                 break;
             }
@@ -149,7 +158,9 @@ namespace fx
                     inst.getextprop<float>(FX_PART_GRAVITY),
                     collidestain,
                     inst.getextprop<float>(FX_PART_VEL),
-                    inst.getextprop<float>(FX_PART_PARTSIZECHANGE) * scale
+                    inst.getextprop<float>(FX_PART_PARTSIZECHANGE) * scale,
+                    envcolor,
+                    inst.getextprop<float>(FX_PART_ENVBLEND)
                 );
                 break;
 
@@ -172,7 +183,8 @@ namespace fx
                     inst.getextprop<int>(FX_PART_GRAVITY),
                     collidestain,
                     trackent,
-                    inst.getextprop<float>(FX_PART_PARTSIZECHANGE) * scale
+                    inst.getextprop<float>(FX_PART_PARTSIZECHANGE) * scale,
+                    envcolor,inst.getextprop<float>(FX_PART_ENVBLEND)
                 );
                 break;
             }
@@ -192,7 +204,9 @@ namespace fx
                     collidestain,
                     inst.getextprop<float>(FX_PART_PARTSIZECHANGE) * scale,
                     inst.getextprop<float>(FX_PART_VEL),
-                    inst.getextprop<float>(FX_PART_SHAPESIZE) * (1.0f / scale)
+                    inst.getextprop<float>(FX_PART_SHAPESIZE) * (1.0f / scale),
+                    envcolor,
+                    inst.getextprop<float>(FX_PART_ENVBLEND)
                 );
                 break;
 
@@ -225,7 +239,9 @@ namespace fx
                     inst.getextprop<int>(FX_PART_GRAVITY),
                     collidestain,
                     trackent,
-                    inst.getextprop<float>(FX_PART_PARTSIZECHANGE) * scale
+                    inst.getextprop<float>(FX_PART_PARTSIZECHANGE) * scale,
+                    envcolor,
+                    inst.getextprop<float>(FX_PART_ENVBLEND)
                 );
                 break;
         }
@@ -334,7 +350,8 @@ namespace fx
             inst.from,
             dir,
             radius,
-            getcolor(inst, FX_STAIN_COLOR)
+            getcolor(inst, FX_STAIN_COLOR), 0,
+            getcolor(inst, FX_STAIN_ENVCOLOR), inst.getextprop<float>(FX_STAIN_ENVBLEND)
         );
     }
 

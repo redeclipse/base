@@ -11,6 +11,7 @@ struct staininfo
 {
     int millis;
     bvec color;
+    bvec4 envcolor;
     uchar owner;
     ushort startvert, endvert;
 };
@@ -376,19 +377,6 @@ struct stainrenderer
     {
         float colorscale = 1, alphascale = 1;
 
-        if(flags&SF_ENVMAP && stainenvmap >= 0)
-        {
-            GLuint envtex = lookupenvmapindex(stainenvmap);
-            if(envtex != lastenvmap)
-            {
-                glActiveTexture_(GL_TEXTURE1);
-                glBindTexture(GL_TEXTURE_CUBE_MAP, envtex);
-                glActiveTexture_(GL_TEXTURE0);
-
-                lastenvmap = envtex;
-            }
-        }
-
         if(flags&SF_OVERBRIGHT)
         {
             glBlendFunc(GL_DST_COLOR, GL_SRC_COLOR);
@@ -422,6 +410,21 @@ struct stainrenderer
 
         LOCALPARAMF(colorscale, colorscale, colorscale, colorscale, alphascale);
 
+        if(flags&SF_ENVMAP && stainenvmap >= 0)
+        {
+            GLuint envtex = lookupenvmapindex(stainenvmap);
+            if(envtex != lastenvmap)
+            {
+                glActiveTexture_(GL_TEXTURE1);
+                glBindTexture(GL_TEXTURE_CUBE_MAP, envtex);
+                glActiveTexture_(GL_TEXTURE0);
+
+                lastenvmap = envtex;
+            }
+
+            LOCALPARAMF(envcolor, stainenvcolor.r/255.f, stainenvcolor.g/255.f, stainenvcolor.b/255.f, stainenvcolor.a/255.f);
+        }
+
         if(tex != lasttex)
         {
             settexture(tex);
@@ -444,10 +447,10 @@ struct stainrenderer
     ivec bbmin, bbmax;
     vec staincenter, stainnormal, staintangent, stainbitangent;
     float stainradius, stainu, stainv;
-    bvec4 staincolor;
+    bvec4 staincolor, stainenvcolor;
     int stainenvmap;
 
-    void addstain(const vec &center, const vec &dir, float radius, const bvec &color, int info)
+    void addstain(const vec &center, const vec &dir, float radius, const bvec &color, int info, const bvec4 &envcolor)
     {
         if(dir.iszero()) return;
 
@@ -455,6 +458,7 @@ struct stainrenderer
         bbmax = ivec(center).add(radius).add(1);
 
         staincolor = bvec4(color, 255);
+        stainenvcolor = envcolor;
         staincenter = center;
         stainradius = radius;
         stainnormal = dir;
@@ -493,6 +497,7 @@ struct stainrenderer
             staininfo &d = newstain();
             d.owner = i;
             d.color = color;
+            d.envcolor = envcolor;
             d.millis = lastmillis;
             d.startvert = buf.lastvert;
             d.endvert = buf.endvert;
@@ -786,7 +791,8 @@ stainrenderer stains[] =
     stainrenderer("<grey>particles/blood", SF_RND4|SF_ROTATE|SF_INVMOD|SF_ENVMAP, 0, 1000, 10000),
     stainrenderer("<grey>particles/bullet", SF_OVERBRIGHT, 0, 1000, 10000),
     stainrenderer("<grey>particles/energy", SF_ROTATE|SF_GLOW|SF_SATURATE, 150, 500, 3000),
-    stainrenderer("<grey>particles/splash", SF_RND4|SF_ROTATE|SF_ENVMAP, 0, 1000, 10000),
+    stainrenderer("<grey>particles/splash", SF_RND4|SF_ROTATE, 0, 1000, 10000),
+    stainrenderer("<grey>particles/splash", SF_RND4|SF_ROTATE|SF_ENVMAP, 500, 1000, 2000),
     stainrenderer("<comp>stain", SF_SATURATE, 100, 900, 1000)
 };
 
@@ -846,11 +852,11 @@ void cleanupstains()
 
 VAR(IDF_PERSIST, maxstaindistance, 1, 512, 10000);
 
-void addstain(int type, const vec &center, const vec &surface, float radius, const bvec &color, int info)
+void addstain(int type, const vec &center, const vec &surface, float radius, const bvec &color, int info, const bvec4 &envcolor)
 {
     if(!showstains || type<=0 || (size_t)type>sizeof(stains)/sizeof(stains[0]) || center.dist(camera1->o) - radius > maxstaindistance) return;
     stainrenderer &d = stains[type];
-    d.addstain(center, surface, radius, color, info);
+    d.addstain(center, surface, radius, color, info, envcolor);
 }
 
 void genstainmmtri(stainrenderer *s, const vec v[3])

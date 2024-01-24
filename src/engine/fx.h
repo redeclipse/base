@@ -67,6 +67,8 @@ namespace fx
         FX_PART_NUM,
         FX_PART_SHAPE,
         FX_PART_COLOR,
+        FX_PART_ENVCOLOR,
+        FX_PART_ENVBLEND,
         FX_PART_FADE,
         FX_PART_COLLIDE,
         FX_PART_REGDELAY,
@@ -141,6 +143,8 @@ namespace fx
         FX_STAIN_TYPE = 0,
         FX_STAIN_RADIUS,
         FX_STAIN_COLOR,
+        FX_STAIN_ENVCOLOR,
+        FX_STAIN_ENVBLEND,
 
         FX_STAIN_PROPS
     };
@@ -205,7 +209,7 @@ namespace fx
 
     #define FX_PARAMS 4
 
-    #define FX_EXT_PROPS 18
+    #define FX_EXT_PROPS 20
     #define FX_EXT_PROP(idx) (idx + FX_STD_PROPS)
 
     #define FX_TOTAL_PROPS (FX_STD_PROPS + FX_EXT_PROPS)

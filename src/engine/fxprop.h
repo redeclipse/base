@@ -257,6 +257,18 @@ namespace fx
             BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
+            "envcolour",
+            PROP_COLOR,
+            bvec(0, 0, 0), bvec(255, 255, 255), bvec(255, 255, 255),
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
+        ),
+        fxpropertydef(
+            "envblend",
+            PROP_FLOAT,
+            0.0f, 0.5f, 1.0f,
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
+        ),
+        fxpropertydef(
             "fade",
             PROP_INT,
             1, 1, INT_MAX,
@@ -492,6 +504,18 @@ namespace fx
             "colour",
             PROP_COLOR,
             bvec(0, 0, 0), bvec(255, 255, 255), bvec(255, 255, 255),
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
+        ),
+        fxpropertydef(
+            "envcolour",
+            PROP_COLOR,
+            bvec(0, 0, 0), bvec(255, 255, 255), bvec(255, 255, 255),
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
+        ),
+        fxpropertydef(
+            "envblend",
+            PROP_FLOAT,
+            0.0f, 0.5f, 1.0f,
             BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         )
     };
