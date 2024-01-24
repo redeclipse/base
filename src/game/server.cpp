@@ -2474,6 +2474,8 @@ namespace server
             hasgameinfo = true;
         }
         aiman::poke();
+
+        sendf(-1, 1, "ri2", N_GAMESERVINFO, triggerid);
     }
 
     void changemapvariant(int variant)
@@ -4306,6 +4308,9 @@ namespace server
                 else putint(p, sents[i].spawned ? 1 : 0);
             }
             putint(p, -1);
+
+            putint(p, N_GAMESERVINFO);
+            putint(p, triggerid);
         }
         putint(p, N_ATTRMAP);
         loopi(W_MAX) putint(p, attrmap[i]);
@@ -6273,7 +6278,7 @@ namespace server
             N_DIED, N_POINTS, N_TOTALS, N_AVGPOS,
             N_DAMAGE, N_BURNRES, N_BLEEDRES, N_SHOCKRES, N_CORRODERES,
             N_SHOTFX, N_LOADOUT, N_SPAWNSTATE,
-            N_PONG, N_TICK, N_ITEMACC, N_SERVMSG, N_ATTRMAP,
+            N_PONG, N_TICK, N_ITEMACC, N_SERVMSG, N_GAMESERVINFO, N_ATTRMAP,
             N_MAPCHANGE, N_ITEMSPAWN,
             N_SENDMAP, N_FAILMAP,
             N_CURRENTPRIV, N_WAITING,

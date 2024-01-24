@@ -386,7 +386,7 @@ enum
     N_DAMAGE, N_BURNRES, N_BLEEDRES, N_SHOCKRES, N_CORRODERES,
     N_SHOTFX, N_LOADOUT, N_TRYSPAWN, N_SPAWNSTATE, N_SPAWN, N_WEAPDROP, N_WEAPSELECT, N_WEAPCOOK,
     N_MAPCHANGE, N_MAPVOTE, N_CLEARVOTE, N_CHECKPOINT, N_ITEMSPAWN, N_ITEMUSE, N_TRIGGER, N_EXECLINK,
-    N_PING, N_PONG, N_CLIENTPING, N_TICK, N_ITEMACC, N_SERVMSG, N_GETGAMEINFO, N_GAMEINFO, N_ATTRMAP, N_RESUME,
+    N_PING, N_PONG, N_CLIENTPING, N_TICK, N_ITEMACC, N_SERVMSG, N_GETGAMEINFO, N_GAMEINFO, N_GAMESERVINFO, N_ATTRMAP, N_RESUME,
     N_EDITMODE, N_EDITENT, N_EDITLINK, N_EDITVAR, N_EDITF, N_EDITT, N_EDITM, N_FLIP,
     N_COPY, N_PASTE, N_ROTATE, N_REPLACE, N_DELCUBE,
     N_CALCLIGHT, N_REMIP, N_EDITVSLOT, N_UNDO, N_REDO, N_CLIPBOARD, N_NEWMAP,
@@ -417,7 +417,7 @@ char msgsizelookup(int msg)
         N_DAMAGE, 14, N_BURNRES, 0, N_BLEEDRES, 0, N_SHOCKRES, 0, N_CORRODERES, 0,
         N_SHOTFX, 0, N_LOADOUT, 0, N_TRYSPAWN, 2, N_SPAWNSTATE, 0, N_SPAWN, 0, N_WEAPDROP, 0, N_WEAPSELECT, 0, N_WEAPCOOK, 0,
         N_MAPCHANGE, 0, N_MAPVOTE, 0, N_CLEARVOTE, 0, N_CHECKPOINT, 0, N_ITEMSPAWN, 3, N_ITEMUSE, 0, N_TRIGGER, 0, N_EXECLINK, 3,
-        N_PING, 2, N_PONG, 2, N_CLIENTPING, 2, N_TICK, 5, N_ITEMACC, 0, N_SERVMSG, 0, N_GETGAMEINFO, 0, N_GAMEINFO, 0, N_ATTRMAP, 0, N_RESUME, 0,
+        N_PING, 2, N_PONG, 2, N_CLIENTPING, 2, N_TICK, 5, N_ITEMACC, 0, N_SERVMSG, 0, N_GETGAMEINFO, 0, N_GAMEINFO, 0, N_GAMESERVINFO, 2, N_ATTRMAP, 0, N_RESUME, 0,
         N_EDITMODE, 2, N_EDITENT, 0, N_EDITLINK, 4, N_EDITVAR, 0, N_EDITF, 16, N_EDITT, 16, N_EDITM, 17, N_FLIP, 14,
         N_COPY, 14, N_PASTE, 14, N_ROTATE, 15, N_REPLACE, 17, N_DELCUBE, 14,
         N_CALCLIGHT, 1, N_REMIP, 1, N_EDITVSLOT, 16, N_UNDO, 0, N_REDO, 0, N_CLIPBOARD, 0, N_NEWMAP, 0,
@@ -2334,8 +2334,8 @@ struct cament
 
 namespace client
 {
-    extern int showpresence, showpresencehostinfo, showteamchange, needsmap, gettingmap;
     extern bool demoplayback, isready, loadedmap;
+    extern int showpresence, showpresencehostinfo, showteamchange, needsmap, gettingmap, triggerid;
     extern vector<uchar> messages;
     extern bool radarallow(const vec &o, gameent *d, vec &dir, float &dist, bool self = false);
     extern void clearvotes(gameent *d, bool msg = false);
