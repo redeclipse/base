@@ -183,6 +183,9 @@ struct stainrenderer
     int maxstains, startstain, endstain;
     stainbuffer verts[NUMSTAINBUFS];
 
+    static GLuint lastenvmap;
+    static Texture *lasttex;
+
     stainrenderer(const char *texname, int flags = 0, int fadeintime = 0, int fadeouttime = 1000, int timetolive = -1)
         : texname(texname), flags(flags),
           fadeintime(fadeintime), fadeouttime(fadeouttime), timetolive(timetolive),
@@ -373,11 +376,17 @@ struct stainrenderer
     {
         float colorscale = 1, alphascale = 1;
 
-        if(flags&SF_ENVMAP)
+        if(flags&SF_ENVMAP && stainenvmap >= 0)
         {
-            glActiveTexture_(GL_TEXTURE1);
-            glBindTexture(GL_TEXTURE_CUBE_MAP, closestenvmapbb(staincenter, bbmin, bbmax));
-            glActiveTexture_(GL_TEXTURE0);
+            GLuint envtex = lookupenvmapindex(stainenvmap);
+            if(envtex != lastenvmap)
+            {
+                glActiveTexture_(GL_TEXTURE1);
+                glBindTexture(GL_TEXTURE_CUBE_MAP, envtex);
+                glActiveTexture_(GL_TEXTURE0);
+
+                lastenvmap = envtex;
+            }
         }
 
         if(flags&SF_OVERBRIGHT)
@@ -410,9 +419,14 @@ struct stainrenderer
             if(flags&SF_ENVMAP) SETVARIANT(stainenvmap, sbuf == STAINBUF_TRANSPARENT ? 0 : -1, 0);
             else SETVARIANT(stain, sbuf == STAINBUF_TRANSPARENT ? 0 : -1, 0);
         }
+
         LOCALPARAMF(colorscale, colorscale, colorscale, colorscale, alphascale);
 
-        settexture(tex);
+        if(tex != lasttex)
+        {
+            settexture(tex);
+            lasttex = tex;
+        }
 
         verts[sbuf].render();
     }
@@ -431,6 +445,7 @@ struct stainrenderer
     vec staincenter, stainnormal, staintangent, stainbitangent;
     float stainradius, stainu, stainv;
     bvec4 staincolor;
+    int stainenvmap;
 
     void addstain(const vec &center, const vec &dir, float radius, const bvec &color, int info)
     {
@@ -443,6 +458,9 @@ struct stainrenderer
         staincenter = center;
         stainradius = radius;
         stainnormal = dir;
+
+        stainenvmap = flags&SF_ENVMAP ? closestenvmapindex(staincenter, bbmin, bbmax) : -1;
+
 #if 0
         staintangent.orthogonal(dir);
 #else
@@ -757,6 +775,9 @@ struct stainrenderer
     }
 };
 
+GLuint stainrenderer::lastenvmap = 0;
+Texture *stainrenderer::lasttex = NULL;
+
 stainrenderer stains[] =
 {
     stainrenderer("<comp:1,0,2>smoke", SF_ROTATE, 500, 1000, 10000),
@@ -791,6 +812,10 @@ VARN(IDF_PERSIST, stains, showstains, 0, 1, 1);
 bool renderstains(int sbuf, bool gbuf, int layer)
 {
     bool rendered = false;
+
+    stainrenderer::lastenvmap = 0;
+    stainrenderer::lasttex = NULL;
+
     loopi(sizeof(stains)/sizeof(stains[0]))
     {
         stainrenderer &d = stains[i];

@@ -3812,6 +3812,13 @@ GLuint closestenvmapbb(const vec &center, const ivec &bbmin, const ivec &bbmax)
     return lookupenvmapindex(lookupenvmapbb(center, bbmin, bbmax));
 }
 
+int closestenvmapindex(const vec &center, const ivec &bbmin, const ivec &bbmax)
+{
+    int index = lookupenvmapbb(center, bbmin, bbmax);
+    if(envmaps.inrange(index)) return index;
+    return envmaps.length() ? 0 : -1;
+}
+
 ushort closestenvmap(int orient, const ivec &co, int size)
 {
     vec loc(co);

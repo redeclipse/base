@@ -246,6 +246,7 @@ extern ushort closestenvmap(int orient, const ivec &o, int size);
 extern GLuint closestenvmaptex(const vec &o);
 extern GLuint lookupenvmapindex(int index = -1);
 extern GLuint closestenvmapbb(const vec &center, const ivec &bbmin, const ivec &bbmax);
+extern int closestenvmapindex(const vec &center, const ivec &bbmin, const ivec &bbmax);
 extern GLuint lookupenvmap(ushort emid);
 extern GLuint lookupenvmap(Slot &slot);
 extern GLuint entityenvmap(int id);
