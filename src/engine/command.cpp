@@ -5534,16 +5534,16 @@ COLOURVAR(chartreuse, 0xB0FF00);
 
 vec pulsecolour(int n, int cycle)
 {
-    int q = clamp(n, 0, PULSE_LAST);
-    if(cycle < 0) return vec::fromcolor(pulsecols[q][rnd(PULSECOLOURS)]);
+    int q = clamp(n, 0, int(PULSE_LAST));
+    if(cycle < 0) return vec::fromcolor(pulsecols[q][rnd(PULSE_COLS)]);
     size_t seed = lastmillis/cycle;
-    int n1 = detrnd(seed, 2*PULSECOLOURS), n2 = detrnd(seed + 1, 2*PULSECOLOURS);
-    return vec::fromcolor(pulsecols[q][n1%PULSECOLOURS]).lerp(vec::fromcolor(pulsecols[q][n2%PULSECOLOURS]), (lastmillis%cycle)/float(cycle));
+    int n1 = detrnd(seed, 2*PULSE_COLS), n2 = detrnd(seed + 1, 2*PULSE_COLS);
+    return vec::fromcolor(pulsecols[q][n1%PULSE_COLS]).lerp(vec::fromcolor(pulsecols[q][n2%PULSE_COLS]), (lastmillis%cycle)/float(cycle));
 }
 
 int pulsehexcol(int n, int cycle)
 {
-    if(cycle < 0) return pulsecols[clamp(n, 0, PULSE_LAST)][rnd(PULSECOLOURS)];
+    if(cycle < 0) return pulsecols[clamp(n, 0, int(PULSE_LAST))][rnd(PULSE_COLS)];
     bvec h = bvec::fromcolor(pulsecolour(n, cycle));
     return (h.r<<16)|(h.g<<8)|h.b;
 }
@@ -5565,17 +5565,17 @@ ICOMMAND(0, getpulsecolour, "ib", (int *n, int *cycle), intret(getpulsehexcol(*n
 #ifndef STANDALONE
 vec pulsecolour(physent *d, int n, int cycle)
 {
-    int q = clamp(n, 0, PULSE_LAST);
-    if(cycle < 0) return vec::fromcolor(pulsecols[q][rnd(PULSECOLOURS)]);
+    int q = clamp(n, 0, int(PULSE_LAST));
+    if(cycle < 0) return vec::fromcolor(pulsecols[q][rnd(PULSE_COLS)]);
     if(!d) d = camera1;
     size_t seed = size_t(d) + (lastmillis/cycle);
-    int n1 = detrnd(seed, 2*PULSECOLOURS), n2 = detrnd(seed + 1, 2*PULSECOLOURS);
-    return vec::fromcolor(pulsecols[q][n1%PULSECOLOURS]).lerp(vec::fromcolor(pulsecols[q][n2%PULSECOLOURS]), (lastmillis%cycle)/float(cycle));
+    int n1 = detrnd(seed, 2*PULSE_COLS), n2 = detrnd(seed + 1, 2*PULSE_COLS);
+    return vec::fromcolor(pulsecols[q][n1%PULSE_COLS]).lerp(vec::fromcolor(pulsecols[q][n2%PULSE_COLS]), (lastmillis%cycle)/float(cycle));
 }
 
 int pulsehexcol(physent *d, int n, int cycle)
 {
-    if(cycle < 0) return pulsecols[clamp(n, 0, PULSE_LAST)][rnd(PULSECOLOURS)];
+    if(cycle < 0) return pulsecols[clamp(n, 0, int(PULSE_LAST))][rnd(PULSE_COLS)];
     if(!d) d = camera1;
     bvec h = bvec::fromcolor(pulsecolour(d, n, cycle));
     return (h.r<<16)|(h.g<<8)|h.b;

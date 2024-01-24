@@ -1113,31 +1113,34 @@ extern void viewhaze();
 
 // command extras
 #define PULSE_ENUM(en, um) \
-    en(um, Fire, FIRE) en(um, Burn, BURN) en(um, Disco, DISCO) en(um, Shock, SHOCK) en(um, Bleed, BLEED) en(um, Corrode, CORRODE) \
-    en(um, Buff, BUFF) en(um, Warn, WARN) en(um, Regen, REGEN) en(um, Flash, FLASH) en(um, Rainbow, RAINBOW) en(um, Maximum, MAX)
+    en(um, Fire, FIRE) en(um, Burn, BURN) en(um, Disco, DISCO) en(um, Shock, SHOCK) en(um, Bleed, BLEED) \
+    en(um, Buff, BUFF) en(um, Warn, WARN) en(um, Regen, REGEN) en(um, Flash, FLASH) en(um, Rainbow, RAINBOW) \
+    en(um, Corrode, CORRODE) en(um, Maximum, MAX)
 ENUM_DLN(PULSE)
-#define PULSE_LAST (PULSE_MAX - 1)
-#define PULSECOLOURS 8
+
+ENUM_VAR(PULSE_LAST, PULSE_MAX - 1);
+ENUM_VAR(PULSE_COLS, 8);
+
 #define PULSE(x) (PULSE_##x)
 #define INVPULSE(x) (-1-(x))
 #define PC(x) (INVPULSE(PULSE(x)))
 
 #ifdef CPP_ENGINE_COMMAND
-extern const int pulsecols[PULSE_MAX][PULSECOLOURS] = {
+extern const int pulsecols[PULSE_MAX][PULSE_COLS] = {
     { 0xFF5808, 0x981808, 0x782808, 0x481808, 0x983818, 0x681808, 0xC81808, 0x381808 }, // flames burning
     { 0xFFC848, 0xF86838, 0xA85828, 0xA84838, 0xF8A858, 0xC84828, 0xF86848, 0xA89858 }, // brighter burning
     { 0xFF8888, 0xFFAA88, 0xFFFF88, 0x88FF88, 0x88FFFF, 0x8888FF, 0xFF88FF, 0xFFFFFF }, // disco time
     { 0xAA88FF, 0xAA88FF, 0xAAAAFF, 0x44AAFF, 0x88AAFF, 0x4444FF, 0xAA44FF, 0xFFFFFF }, // electric shock
     { 0xFF0000, 0xFF8888, 0xFF4488, 0xFF8844, 0xBB0000, 0xBB4444, 0xBB0044, 0xBB4400 }, // red bleed
-    { 0x808080, 0x004000, 0x006000, 0x008800, 0x108010, 0x208020, 0x408040, 0x608060 }, // acid corrosion
     { 0xFFFFFF, 0xFFFF40, 0xFFFF00, 0x808000, 0x404000, 0x808000, 0xFFFF00, 0xFFFF40 }, // yellow shield/buff
     { 0xFF0000, 0xFF2020, 0xFF4040, 0xFF8080, 0xFFA0A0, 0xFF8080, 0xFF4040, 0xFF2020 }, // warning
     { 0xFFFFFF, 0x008000, 0x00A000, 0x00FF00, 0x20FF20, 0x40FF40, 0x80FF80, 0xA0FFA0 }, // green regen
     { 0xFFFFFF, 0xC0C0C0, 0xA0A0A0, 0x808080, 0x707070, 0x808080, 0xA0A0A0, 0xC0C0C0 }, // flash
-    { 0xFF0000, 0xFF8800, 0xFFFF00, 0x00FF00, 0x00FFFF, 0x0000FF, 0xFF00FF, 0xFFFFFF }  // rainbow
+    { 0xFF0000, 0xFF8800, 0xFFFF00, 0x00FF00, 0x00FFFF, 0x0000FF, 0xFF00FF, 0xFFFFFF }, // rainbow
+    { 0x808080, 0x004000, 0x006000, 0x008800, 0x108010, 0x208020, 0x408040, 0x608060 }  // acid corrosion
 };
 #else // CPP_ENGINE_COMMAND
-extern const int pulsecols[PULSE_MAX][PULSECOLOURS];
+extern const int pulsecols[PULSE_MAX][PULSE_COLS];
 #endif // CPP_ENGINE_COMMAND
 
 extern vec pulsecolour(int n = 0, int cycle = 50);

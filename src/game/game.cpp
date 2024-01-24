@@ -1092,7 +1092,7 @@ namespace game
             case 0: // misc (rainbow palettes)
             {
                 if(index <= 0 || index > PULSE_MAX) break;
-                return pulsecols[index-1][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)];
+                return pulsecols[index-1][clamp((lastmillis/100)%PULSE_COLS, 0, PULSE_COLS-1)];
                 break;
             }
             case 1: // teams
