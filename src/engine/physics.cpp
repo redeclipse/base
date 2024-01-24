@@ -1205,6 +1205,7 @@ bool overlapsbox(const vec &d, float h1, float r1, const vec &v, float h2, float
     d.z <= v.z+h2+h1 && d.z >= v.z-h2-h1;
 }
 
+
 bool getsight(const vec &o, float yaw, float pitch, const vec &q, vec &v, float mdist, float fovx, float fovy)
 {
     float dist = o.dist(q);

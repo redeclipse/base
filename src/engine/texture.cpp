@@ -3724,9 +3724,9 @@ void genenvmaps()
     }
 }
 
-ushort closestenvmap(const vec &o)
+int lookupenvmappos(const vec &o)
 {
-    ushort minemid = EMID_SKY;
+    int closest = -1;
     float mindist = 1e16f;
     const vector<extentity *> &ents = entities::getents();
     loopv(envmaps)
@@ -3746,11 +3746,70 @@ ushort closestenvmap(const vec &o)
         }
         if(dist < mindist)
         {
-            minemid = EMID_RESERVED + i;
+            closest = i;
             mindist = dist;
         }
     }
-    return minemid;
+    return closest;
+}
+
+template<class T> int lookupenvmapbb(const vec &center, const T &bbmin, const T &bbmax)
+{
+    int closest = -1;
+    float mindist = 1e16f;
+    const vector<extentity *> &ents = entities::getents();
+
+    loopv(envmaps)
+    {
+        envmap &em = envmaps[i];
+        if(ents.inrange(em.id) && !ents[em.id]->links.empty()) continue;
+        float dist, radius = em.radius ? em.radius : envmapradius;
+        if(envmapbb)
+        {
+            T ebbmin = T(em.o).sub(radius), ebbmax = T(em.o).add(radius);
+            if(overlapsbb(bbmin, bbmax, ebbmin, ebbmax)) continue;
+            dist = em.o.dist(center);
+        }
+        else
+        {
+            dist = em.o.dist(center);
+            if(dist > radius) continue;
+        }
+        if(dist < mindist)
+        {
+            closest = i;
+            mindist = dist;
+        }
+    }
+    return closest;
+}
+
+static inline GLuint lookupskyenvmap()
+{
+    return envmaps.length() && envmaps[0].radius < 0 ? envmaps[0].tex : 0;
+}
+
+GLuint lookupenvmapindex(int index)
+{
+    if(index < 0) return lookupskyenvmap();
+    return envmaps[index].tex;
+}
+
+ushort closestenvmap(const vec &o)
+{
+    int index = lookupenvmappos(o);
+    if(index < 0) return EMID_SKY;
+    return EMID_RESERVED + index;
+}
+
+GLuint closestenvmaptex(const vec &o)
+{
+    return lookupenvmapindex(lookupenvmappos(o));
+}
+
+GLuint closestenvmapbb(const vec &center, const ivec &bbmin, const ivec &bbmax)
+{
+    return lookupenvmapindex(lookupenvmapbb(center, bbmin, bbmax));
 }
 
 ushort closestenvmap(int orient, const ivec &co, int size)
@@ -3761,11 +3820,6 @@ ushort closestenvmap(int orient, const ivec &co, int size)
     loc[R[dim]] += size/2;
     loc[C[dim]] += size/2;
     return closestenvmap(loc);
-}
-
-static inline GLuint lookupskyenvmap()
-{
-    return envmaps.length() && envmaps[0].radius < 0 ? envmaps[0].tex : 0;
 }
 
 GLuint lookupenvmap(Slot &slot)

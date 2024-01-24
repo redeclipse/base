@@ -17,12 +17,13 @@ struct staininfo
 
 enum
 {
-    SF_RND4       = 1<<0,
-    SF_ROTATE     = 1<<1,
-    SF_INVMOD     = 1<<2,
-    SF_OVERBRIGHT = 1<<3,
-    SF_GLOW       = 1<<4,
-    SF_SATURATE   = 1<<5
+    SF_RND4         = 1<<0,
+    SF_ROTATE       = 1<<1,
+    SF_INVMOD       = 1<<2,
+    SF_OVERBRIGHT   = 1<<3,
+    SF_GLOW         = 1<<4,
+    SF_SATURATE     = 1<<5,
+    SF_ENVMAP       = 1<<6
 };
 
 VARF(IDF_PERSIST, maxstaintris, 1, 2048, 16384, initstains());
@@ -371,10 +372,19 @@ struct stainrenderer
     void render(int sbuf)
     {
         float colorscale = 1, alphascale = 1;
+
+        if(flags&SF_ENVMAP)
+        {
+            glActiveTexture_(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_CUBE_MAP, closestenvmapbb(staincenter, bbmin, bbmax));
+            glActiveTexture_(GL_TEXTURE0);
+        }
+
         if(flags&SF_OVERBRIGHT)
         {
             glBlendFunc(GL_DST_COLOR, GL_SRC_COLOR);
-            SETVARIANT(overbrightstain, sbuf == STAINBUF_TRANSPARENT ? 0 : -1, 0);
+            if(flags&SF_ENVMAP) SETVARIANT(overbrightstainenvmap, sbuf == STAINBUF_TRANSPARENT ? 0 : -1, 0);
+            else SETVARIANT(overbrightstain, sbuf == STAINBUF_TRANSPARENT ? 0 : -1, 0);
         }
         else if(flags&SF_GLOW)
         {
@@ -382,20 +392,23 @@ struct stainrenderer
             colorscale = ldrscale;
             if(flags&SF_SATURATE) colorscale *= 2;
             alphascale = 0;
-            SETSHADER(foggedstain);
+            if(flags&SF_ENVMAP) SETSHADER(foggedstainenvmap);
+            else SETSHADER(foggedstain);
         }
         else if(flags&SF_INVMOD)
         {
             glBlendFunc(GL_ZERO, GL_ONE_MINUS_SRC_COLOR);
             alphascale = 0;
-            SETSHADER(foggedstain);
+            if(flags&SF_ENVMAP) SETSHADER(foggedstaininvmodenvmap);
+            else SETSHADER(foggedstaininvmod);
         }
         else
         {
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             colorscale = ldrscale;
             if(flags&SF_SATURATE) colorscale *= 2;
-            SETVARIANT(stain, sbuf == STAINBUF_TRANSPARENT ? 0 : -1, 0);
+            if(flags&SF_ENVMAP) SETVARIANT(stainenvmap, sbuf == STAINBUF_TRANSPARENT ? 0 : -1, 0);
+            else SETVARIANT(stain, sbuf == STAINBUF_TRANSPARENT ? 0 : -1, 0);
         }
         LOCALPARAMF(colorscale, colorscale, colorscale, colorscale, alphascale);
 
@@ -749,9 +762,10 @@ stainrenderer stains[] =
     stainrenderer("<comp:1,0,2>smoke", SF_ROTATE, 500, 1000, 10000),
     stainrenderer("<grey>particles/scorch", SF_ROTATE, 500, 1000, 10000),
     stainrenderer("<grey>particles/scorch", SF_ROTATE, 500, 1000, 2000),
-    stainrenderer("<grey>particles/blood", SF_RND4|SF_ROTATE|SF_INVMOD, 0, 1000, 10000),
+    stainrenderer("<grey>particles/blood", SF_RND4|SF_ROTATE|SF_INVMOD|SF_ENVMAP, 0, 1000, 10000),
     stainrenderer("<grey>particles/bullet", SF_OVERBRIGHT, 0, 1000, 10000),
     stainrenderer("<grey>particles/energy", SF_ROTATE|SF_GLOW|SF_SATURATE, 150, 500, 3000),
+    stainrenderer("<grey>particles/splash", SF_RND4|SF_ROTATE|SF_ENVMAP, 0, 1000, 10000),
     stainrenderer("<comp>stain", SF_SATURATE, 100, 900, 1000)
 };
 

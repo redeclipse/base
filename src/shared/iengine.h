@@ -348,6 +348,14 @@ extern const vector<physent *> &checkdynentcache(int x, int y);
 extern void updatedynentcache(physent *d);
 extern void cleardynentcache();
 
+template<class T> static inline bool overlapsbb(const T &bbmin1, const T &bbmax1, const T &bbmin2, const T &bbmax2)
+{
+    if (bbmax1.x < bbmin2.x || bbmin1.x > bbmax2.x) return false;
+    if (bbmax1.y < bbmin2.y || bbmin1.y > bbmax2.y) return false;
+    if (bbmax1.z < bbmin2.z || bbmin1.z > bbmax2.z) return false;
+    return true;
+}
+
 // rendermodel
 extern void rendermodel(const char *mdl, modelstate &state, dynent *d = NULL);
 extern int intersectmodel(const char *mdl, modelstate &state, const vec &o, const vec &ray, float &dist, int mode = 0, dynent *d = NULL);
