@@ -720,7 +720,10 @@ struct clientstate
     {
         if(isweap(weap) && weap != exclude)
         {
+            if(!(A(actortype, abilities)&(1<<A_A_AMMO))) return true;
+
             int ammo = getammo(weap, 0, true);
+
             if(ammo >= 0) switch(level)
             {
                 case 0: default: return true; break; // has weap at all
@@ -880,6 +883,8 @@ struct clientstate
     bool canswitch(int weap, int sweap, int millis, int skip = 0)
     {
         if(!isweap(weap) || weap >= W_ALL) return false;
+        if(!(A(actortype, abilities)&(1<<A_A_AMMO))) return true;
+
         if(weap != weapselect && weapwaited(weapselect, millis, skip) && hasweap(weap, sweap) && weapwaited(weap, millis, skip))
             return true;
         return false;
@@ -888,6 +893,7 @@ struct clientstate
     bool canshoot(int weap, int flags, int sweap, int millis, int skip = 0)
     {
         if(!(A(actortype, abilities)&(WS(flags) ? (1<<A_A_SECONDARY) : (1<<A_A_PRIMARY)))) return false;
+
         if(weap == weapselect || weap == W_MELEE)
             if(hasweap(weap, sweap) && getammo(weap, millis) >= (W2(weap, cooktime, WS(flags)) ? 1 : W2(weap, ammosub, WS(flags))) && weapwaited(weap, millis, W_S_INTERRUPT|skip))
                 return true;
@@ -906,12 +912,14 @@ struct clientstate
     bool canuseweap(int gamemode, int mutators, int attr, int sweap, int millis, int skip = 0, bool full = true)
     {
         if(!m_classic(gamemode, mutators) && attr < W_ITEM && !hasweap(attr, sweap)) return false;
+
         if(full)
         {
             int total = W(attr, ammostore) > 0 ? W(attr, ammostore) : W(attr, ammoclip),
                 ammo = W(attr, ammostore) > 0 ? weapammo[attr][W_A_STORE] : getammo(attr, millis);
             if(ammo >= total) return false;
         }
+
         return true;
     }
 
@@ -1764,6 +1772,8 @@ struct gameent : dynent, clientstate
 
     vec &origintag(int weap = -1)
     {
+        if(actortype == A_HAZARD) return tag[TAG_ORIGIN] = headpos();
+
         if(!isweap(weap)) weap = weapselect;
         if(tag[TAG_ORIGIN] == vec(-1, -1, -1))
         {
@@ -1783,7 +1793,10 @@ struct gameent : dynent, clientstate
 
     vec &muzzletag(int weap = -1)
     {
+        if(actortype == A_HAZARD) return tag[TAG_MUZZLE] = headpos();
+
         if(!isweap(weap)) weap = weapselect;
+
         if(tag[TAG_MUZZLE] == vec(-1, -1, -1))
         {
             if(weap == W_SWORD && ((weapstate[weap] == W_S_PRIMARY) || (weapstate[weap] == W_S_SECONDARY)))

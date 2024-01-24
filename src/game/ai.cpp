@@ -586,7 +586,7 @@ namespace ai
             interest &n = interests.add();
             n.state = AI_S_DEFEND;
             n.target = t;
-            n.node = closestwaypoint(entities::ents[t]->o, CLOSEDIST, true);
+            n.node = closestwaypoint(((gameentity *)entities::ents[t])->pos(), CLOSEDIST, true);
             n.targtype = AI_T_ENTITY;
             n.score = -1;
             n.tolerance = 1;
@@ -670,12 +670,14 @@ namespace ai
     void itemspawned(int ent, int spawned)
     {
         if(!m_play(game::gamemode) || !entities::ents.inrange(ent) || entities::ents[ent]->type != WEAPON || spawned <= 0 || !entities::isallowed(ent)) return;
+        gameentity &e = *(gameentity *)entities::ents[ent];
+
         loopv(game::players) if(game::players[i] && game::players[i]->ai && game::players[i]->actortype == A_BOT && game::players[i]->state == CS_ALIVE && iswaypoint(game::players[i]->lastnode))
         {
             gameent *d = game::players[i];
             if(d->actortype >= A_ENEMY) continue;
             aistate &b = d->ai->getstate();
-            int sweap = m_weapon(d->actortype, game::gamemode, game::mutators), attr = m_attr(entities::ents[ent]->type, entities::ents[ent]->attrs[0]);
+            int sweap = m_weapon(d->actortype, game::gamemode, game::mutators), attr = m_attr(e.type, e.attrs[0]);
             if(!isweap(attr) || b.targtype == AI_T_AFFINITY) continue; // don't override any affinity states
             if((A(d->actortype, abilities)&(1<<A_A_PRIMARY) || A(d->actortype, abilities)&(1<<A_A_SECONDARY)) && !hasweap(d, attr) && (!hasweap(d, weappref(d)) || d->carry(sweap) == 0) && wantsweap(d, attr))
             {
@@ -683,8 +685,9 @@ namespace ai
                 {
                     if(entities::ents.inrange(b.target))
                     {
-                        int weap = m_attr(entities::ents[ent]->type, entities::ents[b.target]->attrs[0]);
-                        if(isweap(attr) && ((attr == weappref(d) && weap != weappref(d)) || d->o.squaredist(entities::ents[ent]->o) < d->o.squaredist(entities::ents[b.target]->o)))
+                        gameentity &f = *(gameentity *)entities::ents[b.target];
+                        int weap = m_attr(e.type, f.attrs[0]);
+                        if(isweap(attr) && ((attr == weappref(d) && weap != weappref(d)) || d->o.squaredist(e.pos()) < d->o.squaredist(f.pos())))
                             d->ai->switchstate(b, AI_S_INTEREST, AI_T_ENTITY, ent);
                     }
                     continue;
@@ -726,7 +729,8 @@ namespace ai
             case AI_T_ENTITY:
             {
                 if(check(d, b)) return true;
-                if(entities::ents.inrange(b.target) && entities::isallowed(b.target)) return defense(d, b, entities::ents[b.target]->o);
+                if(entities::ents.inrange(b.target) && entities::isallowed(b.target))
+                    return defense(d, b, ((gameentity *)entities::ents[b.target])->pos());
                 break;
             }
             case AI_T_AFFINITY:
@@ -1051,10 +1055,14 @@ namespace ai
         }
         else if(b.type == AI_S_INTEREST && b.targtype == AI_T_ENTITY)
         {
-            if(entities::ents.inrange(b.target) && entities::ents[b.target]->o.dist(d->feetpos()) <= WAYPOINTRADIUS*2 && entities::isallowed(b.target))
+            if(entities::ents.inrange(b.target))
             {
-                d->ai->spot = entities::ents[b.target]->o;
-                d->ai->targnode = -1;
+                gameentity &e = *(gameentity *)entities::ents[b.target];
+                if(e.pos().dist(d->feetpos()) <= WAYPOINTRADIUS*2 && entities::isallowed(b.target))
+                {
+                    d->ai->spot = e.pos();
+                    d->ai->targnode = -1;
+                }
             }
         }
         b.override = false;
@@ -1177,11 +1185,10 @@ namespace ai
         }
 
         int weap = m_weapon(d->actortype, game::gamemode, game::mutators);
-        bool wantsfire = false;
+        bool wantsfire = false, hastrigger = false, hasspawned = false;
 
         if(entities::ents.inrange(d->spawnpoint))
         {
-            bool hastrigger = false, hasspawned = false;;
             gameentity &e = *(gameentity *)entities::ents[d->spawnpoint];
             loopv(e.links) if(entities::ents.inrange(e.links[i]))
             {
@@ -1193,11 +1200,9 @@ namespace ai
                 break;
             }
 
-            weap = clamp(e.attrs[6], 0, int(W_MAX)-1);
+            weap = clamp(e.attrs[6] - 1, int(W_CLAW), int(W_MAX)-1);
             if((!hastrigger || hasspawned) && (!e.attrs[8] || !d->lastshoot || lastmillis - d->lastshoot >= e.attrs[8]))
                 wantsfire = true;
-
-            fixfullrange(d->yaw = e.attrs[1], d->pitch = e.attrs[2], d->roll = 0);
         }
         else if(!d->action[AC_PRIMARY])
         {
@@ -1226,7 +1231,10 @@ namespace ai
             d->actiontime[AC_PRIMARY] = -lastmillis;
         }
 
+        entities::getdynamic(d->spawnpoint, d->o, &d->yaw, &d->pitch);
+        fixrange(d->yaw, d->pitch);
         safefindorientation(d->o, d->yaw, d->pitch, d->ai->target);
+        d->resetinterp();
     }
 
     void process(gameent *d, aistate &b, bool &occupied, bool &firing, vector<actitem> &items)
@@ -1664,6 +1672,8 @@ namespace ai
             if(!request(d, b)) target(d, b, W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0);
             weapons::shoot(d, d->ai->target);
         }
+        if(d->actortype == A_HAZARD) return;
+
         if(d->state == CS_DEAD || d->state == CS_WAITING)
         {
             if(d->ragdoll) moveragdoll(d);

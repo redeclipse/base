@@ -156,7 +156,7 @@ APVAR(IDF_GAMEMOD, 0, abilities, 0, A_A_ALL,
     A_A_PLAYER,     A_A_MOVINGAI,   A_A_FIXEDAI,    A_A_MOVINGAI,   A_A_LESSAI,     A_A_ROLLER,     A_A_HAZARD
 );
 APVAR(IDF_GAMEMOD, 0, collide, 0, A_C_ALL,
-    A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL,        0
+    A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL
 );
 APVAR(IDF_GAMEMOD, 0, health, 1, VAR_MAX,
     1000,           1000,           1000,           500,            500,            500,            1000
@@ -174,34 +174,34 @@ APVAR(IDF_GAMEMOD, 0, magboots, 0, 1,
     1,              1,              1,              1,              1,              1,              0
 );
 APVAR(IDF_GAMEMOD, 0, maxcarry, 0, W_LOADOUT,
-    2,              2,              0,              0,              0,              0,              1
+    2,              2,              0,              0,              0,              0,              W_LOADOUT
 );
 APFVAR(IDF_GAMEMOD, 0, scale, FVAR_NONZERO, FVAR_MAX,
     1,              1,              0.5f,           1,              0.85f,          1,              1
 );
-APVAR(IDF_GAMEMOD, 0, spawndelay, 0, VAR_MAX,
-    5000,           5000,           30000,          30000,          30000,          30000,          0
+APVAR(IDF_GAMEMOD, 0, spawndelay, DEATHMILLIS, VAR_MAX,
+    5000,           5000,           30000,          30000,          30000,          30000,          DEATHMILLIS
 );
-APVAR(IDF_GAMEMOD, 0, spawndelayedit, 0, VAR_MAX,
-    0,              5000,           30000,          30000,          30000,          30000,          0
+APVAR(IDF_GAMEMOD, 0, spawndelayedit, DEATHMILLIS, VAR_MAX,
+    0,              5000,           30000,          30000,          30000,          30000,          DEATHMILLIS
 );
-APVAR(IDF_GAMEMOD, 0, spawndelaybomber, 0, VAR_MAX,
-    3000,           3000,           30000,          30000,          30000,          30000,          0
+APVAR(IDF_GAMEMOD, 0, spawndelaybomber, DEATHMILLIS, VAR_MAX,
+    3000,           3000,           30000,          30000,          30000,          30000,          DEATHMILLIS
 );
-APVAR(IDF_GAMEMOD, 0, spawndelaycapture, 0, VAR_MAX,
-    5000,           5000,           30000,          30000,          30000,          30000,          0
+APVAR(IDF_GAMEMOD, 0, spawndelaycapture, DEATHMILLIS, VAR_MAX,
+    5000,           5000,           30000,          30000,          30000,          30000,          DEATHMILLIS
 );
-APVAR(IDF_GAMEMOD, 0, spawndelaydefend, 0, VAR_MAX,
-    5000,           5000,           30000,          30000,          30000,          30000,          0
+APVAR(IDF_GAMEMOD, 0, spawndelaydefend, DEATHMILLIS, VAR_MAX,
+    5000,           5000,           30000,          30000,          30000,          30000,          DEATHMILLIS
 );
-APVAR(IDF_GAMEMOD, 0, spawndelaygauntlet, 0, VAR_MAX,
-    3000,           3000,           30000,          30000,          30000,          30000,          0
+APVAR(IDF_GAMEMOD, 0, spawndelaygauntlet, DEATHMILLIS, VAR_MAX,
+    3000,           3000,           30000,          30000,          30000,          30000,          DEATHMILLIS
 );
 APFVAR(IDF_GAMEMOD, 0, spawndelayinstascale, 0, FVAR_MAX,
-    0.5f,           0.5f,           0.75f,          0.75f,          0.75f,          0.75f,          0
+    0.5f,           0.5f,           0.75f,          0.75f,          0.75f,          0.75f,          1
 );
-APVAR(IDF_GAMEMOD, 0, spawndelayrace, 0, VAR_MAX,
-    1000,           1000,           10000,          10000,          10000,          10000,          0
+APVAR(IDF_GAMEMOD, 0, spawndelayrace, DEATHMILLIS, VAR_MAX,
+    1000,           1000,           10000,          10000,          10000,          10000,          DEATHMILLIS
 );
 APVAR(IDF_GAMEMOD, 0, spawngrenades, 0, 2,
     0,              0,              0,              0,              0,              0,              0
@@ -232,22 +232,22 @@ APVAR(IDF_GAMEMOD, 0, weaponspawn, 0, W_ALL-1,
 );
 // these are modified by gameent::configure() et al
 APFVAR(IDF_GAMEMOD, 0, speed, 0, FVAR_MAX,
-    100,            100,            0,              90,             100,            50,             0
+    100,            100,            0,              90,             100,            50,             100
 );
 APFVAR(IDF_GAMEMOD, 0, speedextra, FVAR_MIN, FVAR_MAX,
     0,              0,              0,              0,              0,              0,              0
 );
 APFVAR(IDF_GAMEMOD, 0, jumpspeed, 0, FVAR_MAX,
-    140,            140,            0,              140,            140,            70,             0
+    140,            140,            0,              140,            140,            70,             100
 );
 APFVAR(IDF_GAMEMOD, 0, jumpspeedextra, FVAR_MIN, FVAR_MAX,
     0,              0,              0,              0,              0,              0,              0
 );
 APFVAR(IDF_GAMEMOD, 0, jumptolerance, 0, FVAR_MAX,
-    100,            100,            1000,           100,            100,            100,            0
+    100,            100,            1000,           100,            100,            100,            100
 );
 APFVAR(IDF_GAMEMOD, 0, impulsespeed, 0, FVAR_MAX,
-    100,            100,            0,              100,            100,            50,             0
+    100,            100,            0,              100,            100,            50,             100
 );
 APFVAR(IDF_GAMEMOD, 0, impulsespeedextra, FVAR_MIN, FVAR_MAX,
     0,              0,              0,              0,              0,              0,              0

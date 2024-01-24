@@ -4366,8 +4366,8 @@ namespace game
             bool third = thirdpersonview();
             loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL)
             {
-                if(d->actortype == A_HAZARD) continue;
                 if(drawtex == DRAWTEX_HALO && (d != focus || third)) d->cleartags();
+                if(d->actortype == A_HAZARD) continue;
                 renderplayer(d, 1, d->curscale, d == focus ? (third ? MDL_FORCESHADOW : MDL_ONLYSHADOW) : 0, vec4(1, 1, 1, opacity(d, true)));
             }
         }
