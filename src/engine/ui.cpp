@@ -5593,6 +5593,7 @@ namespace UI
         int focusmillis, keymillis;
 
         KeyCatcher() : id(NULL), pressedkey(0) {}
+        ~KeyCatcher() { if(inputsteal == this) inputsteal = NULL; }
 
         bool isallowed() const { return surfacetype == SURFACE_VISOR; }
         bool iskeycatcher() const { return true; }
@@ -5617,11 +5618,7 @@ namespace UI
 
         void prepare()
         {
-            if(isfocus())
-            {
-                if(!inputsteal) inputsteal = this;
-                else clearfocus();
-            }
+            if(!inputsteal && isfocus()) inputsteal = this;
 
             Object::prepare();
         }
