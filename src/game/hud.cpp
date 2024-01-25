@@ -3,8 +3,6 @@ namespace hud
 {
     int hudwidth = 0, hudheight = 0, laststats = 0;
 
-    #include "compass.h"
-
     VAR(IDF_PERSIST, showhud, 0, 1, 1);
     VAR(IDF_PERSIST, hudsize, 0, 2048, VAR_MAX);
 
@@ -529,7 +527,7 @@ namespace hud
 
     int hasinput(bool pass, bool cursor)
     {
-        if(cdpi::getoverlay() > 0 || consolemillis > 0 || curcompass) return true;
+        if(cdpi::getoverlay() > 0 || consolemillis > 0) return true;
         int cur = UI::hasinput(cursor);
         if(!cur && UI::hasmenu(pass)) cur = 1;
         return cur;
@@ -543,7 +541,6 @@ namespace hud
 
     bool keypress(int code, bool isdown)
     {
-        if(curcompass) return keycmenu(code, isdown);
         return false;
     }
 
@@ -1546,15 +1543,7 @@ namespace hud
         }
         else
         {
-            if(showhud && consolemillis <= 0 && curcompass)
-            {
-                hudmatrix.ortho(0, w, h, 0, -1, 1);
-                flushhudmatrix();
-                resethudshader();
-
-                rendercmenu();
-            }
-            else UI::render(SURFACE_VISOR, outfbo);
+            UI::render(SURFACE_VISOR, outfbo);
 
             hudmatrix.ortho(0, w, h, 0, -1, 1);
             flushhudmatrix();

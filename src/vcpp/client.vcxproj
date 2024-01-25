@@ -65,7 +65,6 @@
     <ClInclude Include="..\game\bombermode.h" />
     <ClInclude Include="..\game\capture.h" />
     <ClInclude Include="..\game\capturemode.h" />
-    <ClInclude Include="..\game\compass.h" />
     <ClInclude Include="..\game\defend.h" />
     <ClInclude Include="..\game\defendmode.h" />
     <ClInclude Include="..\game\duelmut.h" />

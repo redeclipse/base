@@ -961,7 +961,7 @@ game/hud.o: engine/light.h engine/texture.h engine/bih.h engine/model.h
 game/hud.o: engine/sound.h engine/soundenvprop.h game/gamemode.h
 game/hud.o: game/weapons.h game/weapdef.h game/player.h game/teamdef.h
 game/hud.o: game/playerdef.h game/vars.h game/ai.h game/capture.h
-game/hud.o: game/defend.h game/bomber.h game/compass.h
+game/hud.o: game/defend.h game/bomber.h
 game/physics.o: game/game.h game/gamelog.h engine/engine.h engine/version.h shared/cube.h
 game/physics.o: shared/tools.h shared/command.h shared/enum.h shared/geom.h
 game/physics.o: shared/prop.h shared/ents.h engine/wind.h engine/fx.h

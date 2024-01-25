@@ -164,9 +164,6 @@
     <ClInclude Include="..\game\capturemode.h">
       <Filter>Header Files\game</Filter>
     </ClInclude>
-    <ClInclude Include="..\game\compass.h">
-      <Filter>Header Files\game</Filter>
-    </ClInclude>
     <ClInclude Include="..\game\defend.h">
       <Filter>Header Files\game</Filter>
     </ClInclude>
