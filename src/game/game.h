@@ -2466,7 +2466,7 @@ namespace weapons
 #define CLEARUI(name, id, nottype) \
     { for(int mui_scount = 0; mui_scount < SURFACE_ALL; ++mui_scount) if(mui_scount != nottype) for(int mui_ucount = 0; mui_ucount < 2; ++mui_ucount) UI::hideui(MUINAME(name, mui_ucount), mui_scount, id); }
 
-#define MAKEUI(name, id, test, cansee, forced, pos, above, over) \
+#define MAKEUI(name, id, test, cansee, forced, pos, above, over, body) \
 { \
     for(int mui_count = 0; mui_count < 2; ++mui_count) \
     { \
@@ -2477,6 +2477,7 @@ namespace weapons
             if(mui_type >= 0) \
             { \
                 vec mui_o = mui_count ? vec(pos).sub(vec(pos).sub(camera1->o).normalize().mul(over)) : vec(pos).addz(above); \
+                body; \
                 UI::setui(MUINAME(name, mui_count), \
                     mui_type, id, mui_o, MUIVAL(name, mui_type, yaw), MUIVAL(name, mui_type, pitch), \
                     (mui_type == SURFACE_WORLD ? MUIVAL(name, mui_type, world) : MUIVAL(name, mui_type, scale)), \

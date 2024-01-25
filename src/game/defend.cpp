@@ -162,7 +162,7 @@ namespace defend
 
             MAKEUI(defend, i,
                 true, haloallow(camera1->o, i), false,
-                    curpos, enttype[AFFINITY].radius * 0.25f, enttype[AFFINITY].radius * 0.25f
+                    curpos, enttype[AFFINITY].radius * 0.25f, enttype[AFFINITY].radius * 0.25f, // body
             );
         }
     }

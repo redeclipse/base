@@ -173,7 +173,7 @@ namespace capture
 
             MAKEUI(capture, i,
                 true, haloallow(camera1->o, i), force,
-                    curpos, enttype[AFFINITY].radius * (f.owner || f.droptime ? 0.125f : 0.5f), enttype[AFFINITY].radius * 0.25f
+                    curpos, enttype[AFFINITY].radius * (f.owner || f.droptime ? 0.125f : 0.5f), enttype[AFFINITY].radius * 0.25f, // body
             );
 
             curpos = f.pos(true);
@@ -181,7 +181,7 @@ namespace capture
 
             MAKEUI(captureflag, i,
                 f.owner != game::focus && (f.owner || f.droptime), haloallow(camera1->o, i), force,
-                    curpos, enttype[AFFINITY].radius * (f.droptime ? 0.25f : 0.5f), enttype[AFFINITY].radius * 0.25f
+                    curpos, enttype[AFFINITY].radius * (f.droptime ? 0.25f : 0.5f), enttype[AFFINITY].radius * 0.25f, // body
             );
         }
     }

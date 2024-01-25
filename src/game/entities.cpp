@@ -24,25 +24,7 @@ namespace entities
     FVAR(IDF_PERSIST, showentavailable, 0, 1, 1);
     FVAR(IDF_PERSIST, showentunavailable, 0, 0.125f, 1);
 
-    VAR(IDF_PERSIST, entityui, -1, SURFACE_WORLD, SURFACE_LAST);
-
-    FVAR(IDF_PERSIST, entityaboveyaw, -1, -1, 360);
-    FVAR(IDF_PERSIST, entityabovepitch, -181, 0, 181);
-    FVAR(IDF_PERSIST, entityabovescale, FVAR_NONZERO, 1, FVAR_MAX);
-    FVAR(IDF_PERSIST, entityaboveworld, FVAR_NONZERO, 4, FVAR_MAX);
-    FVAR(IDF_PERSIST, entityabovedetentyaw, 0, 0, 180);
-    FVAR(IDF_PERSIST, entityabovedetentpitch, 0, 0, 90);
-    FVAR(IDF_PERSIST, entityaboveoffset, 0, 4, FVAR_MAX);
-
-    FVAR(IDF_PERSIST, entityoverlayyaw, -1, -1, 360);
-    FVAR(IDF_PERSIST, entityoverlaypitch, -181, 0, 181);
-    FVAR(IDF_PERSIST, entityoverlayscale, FVAR_NONZERO, 1, FVAR_MAX);
-    FVAR(IDF_PERSIST, entityoverlayworld, FVAR_NONZERO, 4, FVAR_MAX);
-    FVAR(IDF_PERSIST, entityoverlaydetentyaw, 0, 0, 180);
-    FVAR(IDF_PERSIST, entityoverlaydetentpitch, 0, 0, 90);
-    FVAR(IDF_PERSIST, entityoverlayoffset, 0, 1, FVAR_MAX);
-
-    static const char *entityuis[2] = { "entityabove", "entityoverlay" };
+    DEFUIVARS(entity, SURFACE_WORLD, SURFACE_WORLD, 1024);
 
     VAR(IDF_PERSIST, entityhalos, 0, 1, 1);
     FVAR(IDF_PERSIST, entselblend, 0, 0.25f, 1);
@@ -3392,10 +3374,11 @@ namespace entities
         int id, ed;
     };
 
-    void maketeleport(gameentity &e)
+    void maketeleport(gameentity &e, const vec &o)
     {
         static vector<teledest> teledests;
         teledests.setsize(0);
+
         loopv(e.links)
         {
             int id = e.links[i];
@@ -3410,12 +3393,14 @@ namespace entities
                 break;
             }
         }
+
         int destid = -1, colour = e.attrs[4] ? e.attrs[4] : (e.attrs[6] || e.attrs[7] ? 0xFFFFFF : 0);
         if(!teledests.empty())
         {
             destid = (lastmillis%(teledests.length()*1000))/1000;
             if(!colour) colour = 0x8888FF;
         }
+
         if(colour)
         {
             if(e.attrs[6] || e.attrs[7])
@@ -3423,19 +3408,21 @@ namespace entities
                 vec r = vec::fromcolor(colour).mul(game::getpalette(e.attrs[6], e.attrs[7]));
                 colour = (int(r.x*255)<<16)|(int(r.y*255)<<8)|(int(r.z*255));
             }
+
             int hintcolor = e.attrs[15] > 0 ? e.attrs[15] : vec::fromcolor(colour).neg().tohexcolor();
             float yaw = e.attrs[0] < 0 ? (lastmillis/5)%360 : e.attrs[0], blend = e.attrs[12] ? e.attrs[12]/100.f : 1.f,
                   size = e.attrs[13] > 0 ? e.attrs[13]/100.f : float(e.attrs[3] > 0 ? e.attrs[3] : enttype[e.type].radius), pitch = e.attrs[1],
                   hintblend = e.attrs[16] > 0 ? e.attrs[16]/100.f : 0.f;
+
             if(destid >= 0)
             {
                 teledest &d = teledests[destid];
                 gameentity &f = *(gameentity *)ents[d.id];
                 GLuint envmap = entityenvmap(d.ed);
                 float envblend = e.attrs[14] ? e.attrs[14]/100.f : 0.75f, destyaw = (f.attrs[0] < 0 ? (lastmillis/5)%360 : f.attrs[0])-yaw, destpitch = f.attrs[1]-pitch;
-                part_portal(e.pos(), size, blend, yaw, pitch, PART_PORTAL_ENV, 1, colour, envmap, envblend, destyaw, destpitch, hintcolor, hintblend);
+                part_portal(o, size, blend, yaw, pitch, PART_PORTAL_ENV, 1, colour, envmap, envblend, destyaw, destpitch, hintcolor, hintblend);
             }
-            else part_portal(e.pos(), size, blend, yaw, pitch, PART_PORTAL, 1, colour, 0, 1, 0, 0, hintcolor, hintblend);
+            else part_portal(o, size, blend, yaw, pitch, PART_PORTAL, 1, colour, 0, 1, 0, 0, hintcolor, hintblend);
         }
     }
 
@@ -3460,19 +3447,21 @@ namespace entities
         return ret;
     }
 
-    bool drawparticle(gameentity &e, const vec &o, int idx, bool spawned, bool active, float skew, float dist, float maxdist)
+    void drawparticle(gameentity &e, const vec &o, int idx = -1)
     {
-        if(dist <= maxdist) switch(e.type)
+        switch(e.type)
         {
             case TELEPORT:
-                maketeleport(e);
+                maketeleport(e, o);
                 break;
             case ROUTE:
             {
                 if(drawtex) break;
                 if(e.attrs[0] != routeid || (!m_edit(game::gamemode) && !m_race(game::gamemode)) || (game::player1->isediting() && editinhibit)) break;
-                loopv(e.links) if(ents.inrange(e.links[i]) && ents[e.links[i]]->type == ROUTE && (!routemaxdist || o.dist(ents[e.links[i]]->o) <= routemaxdist))
+                loopv(e.links) if(ents.inrange(e.links[i]) && ents[e.links[i]]->type == ROUTE)
                 {
+                    gameentity &f = *(gameentity *)ents[e.links[i]];
+                    if(!routemaxdist || o.dist(f.pos()) <= routemaxdist) continue;
                     int col = 0xFF22FF;
                     char *rcol = indexlist(routecolours, routeid);
                     if(rcol)
@@ -3480,7 +3469,7 @@ namespace entities
                         if(*rcol) col = parseint(rcol);
                         delete[] rcol;
                     }
-                    part_flare(o, ents[e.links[i]]->o, 1, PART_LIGHTNING_FLARE, col);
+                    part_flare(o, f.pos(), 1, PART_LIGHTNING_FLARE, col);
                 }
 
                 if(showroutenames && getfirstroute() == idx)
@@ -3503,35 +3492,27 @@ namespace entities
             }
             default: break;
         }
-        if(idx < 0 || !m_edit(game::gamemode) || !cansee(idx)) return false;
-
-        bool hastop = game::player1->state == CS_EDITING && (enthover.find(idx) >= 0 || entgroup.find(idx) >= 0) && dist <= showentdist*showentdist, dotop = hastop && e.dynamic(),
-             visible = getvisible(camera1->o, camera1->yaw, camera1->pitch, o, curfov, fovy, 2, hastop ? -1 : VFC_PART_VISIBLE);
-        if(!drawtex && (!game::player1->isediting() || !editinhibit))
-        {
-            bool visiblepos = dotop && getvisible(camera1->o, camera1->yaw, camera1->pitch, e.pos(), curfov, fovy, 2, hastop ? -1 : VFC_PART_VISIBLE);
-            loopj(dotop ? 2 : 1) if(j ? visiblepos : visible)
-            {
-                if(j && (visible || visiblepos)) part_line(o, e.pos(), entselsize, 1, 1, entselcolourdyn);
-                if(j || entityui < 0) part_create(hastop ? PART_ENTITY_ONTOP : PART_ENTITY, 1, j ? e.pos() : o, j ? entselcolourdyn : (hastop ? entselcolourtop : entselcolour), hastop && !j ? entselsizetop : entselsize, hastop && !j ? entselblendtop : entselblend);
-            }
-        }
-
-        return visible;
     }
 
-    struct visibleent
+    struct sortent
     {
         int idx;
-        float dist;
-        bool visible;
+        float dist, height, radius, skew;
+        bool cansee, ontop, active, drawn;
         vec pos;
 
-        visibleent() {}
-        ~visibleent() {}
+        sortent() : idx(-1),
+            dist(0), height(0), radius(0), skew(1),
+            cansee(false), ontop(false), active(false), drawn(false),
+            pos(0) {}
+        ~sortent() {}
 
-        static bool compare(const visibleent &a, const visibleent &b)
+        static bool compare(const sortent &a, const sortent &b)
         {
+            if(!a.ontop && b.ontop) return true;
+            if(a.ontop && !b.ontop) return false;
+            if(!a.cansee && b.cansee) return true;
+            if(a.cansee && !b.cansee) return false;
             return a.dist > b.dist; // reverse order so we can reverse through it
         }
     };
@@ -3552,105 +3533,77 @@ namespace entities
         int fstent = m_edit(game::gamemode) ? 0 : min(firstuse(EU_ITEM), firstent(hasroute ? ROUTE : TELEPORT)),
             lstent = m_edit(game::gamemode) ? ents.length() : max(lastuse(EU_ITEM), lastent(hasroute ? ROUTE : TELEPORT));
 
-        static vector<visibleent> visents;
+        static vector<sortent> visents;
         visents.setsize(0);
 
         for(int i = fstent; i < lstent; ++i)
         {
             gameentity &e = *(gameentity *)ents[i];
-
             if(e.type == NOTUSED || e.attrs.empty()) continue;
-            if(!m_edit(game::gamemode) && e.type != TELEPORT && e.type != ROUTE && enttype[e.type].usetype != EU_ITEM) continue;
 
-            float skew = 1, dist = e.o.squaredist(camera1->o);
-            bool active = false;
+            sortent &v = visents.add();
+            v.idx = i;
+            v.pos = game::player1->isediting() ? e.o : e.pos();
+            v.dist = v.pos.squaredist(camera1->o);
+            v.height = v.radius = max(enttype[e.type].radius, 4);
 
-            if(e.spawned())
+            if(game::player1->isediting())
+                v.active = enthover.find(v.idx) >= 0 || entgroup.find(v.idx) >= 0;
+            else
             {
-                int millis = lastmillis-e.lastspawn;
-                if(millis < 500) skew = float(millis)/500.f;
-                active = true;
-            }
-            else if(e.lastemit)
-            {
-                int millis = lastmillis-e.lastemit;
-                if(millis < 500)
+                if(e.type != TELEPORT && e.type != ROUTE && enttype[e.type].usetype != EU_ITEM) continue; // they don't do anything
+
+                if(e.spawned())
                 {
-                    skew = 1.f-(float(millis)/500.f);
-                    active = true;
+                    int millis = lastmillis-e.lastspawn;
+                    if(millis < 500) v.skew = float(millis)/500.f;
+                    v.active = true;
+                }
+                else if(e.lastemit)
+                {
+                    int millis = lastmillis-e.lastemit;
+                    if(millis < 500)
+                    {
+                        v.skew = 1.f-(float(millis)/500.f);
+                        v.active = true;
+                    }
                 }
             }
 
-            visibleent &v = visents.add();
-            v.idx = i;
-            v.dist = dist;
-            v.pos = e.o;
-            v.visible = drawparticle(e, e.o, i, e.spawned(), active, skew, dist, maxdist);
+            bool editcheck = v.active && game::player1->isediting() && !editinhibit;
+
+            v.drawn = true;
+            v.ontop = editcheck && v.dist <= showentdist*showentdist;
+            v.cansee = editcheck && getvisible(camera1->o, camera1->yaw, camera1->pitch, v.pos, curfov, fovy, v.radius, v.ontop ? -1 : VFC_PART_VISIBLE);
+
+            if(!drawtex && game::player1->isediting() && !editinhibit)
+            {
+                bool dotop = v.ontop && e.dynamic(), visiblepos = dotop && getvisible(camera1->o, camera1->yaw, camera1->pitch, e.pos(), curfov, fovy, v.radius, v.ontop ? -1 : VFC_PART_VISIBLE);
+                loopj(dotop ? 2 : 1) if(j ? visiblepos : v.cansee)
+                {
+                    if(j && (v.cansee || visiblepos)) part_line(v.pos, e.pos(), entselsize, 1, 1, entselcolourdyn);
+                    if(j || entityoverlayui < 0)
+                        part_create(v.ontop ? PART_ENTITY_ONTOP : PART_ENTITY, 1,
+                            j ? e.pos() : v.pos,
+                            j ? entselcolourdyn : (v.ontop ? entselcolourtop : entselcolour),
+                            v.ontop && !j ? entselsizetop : entselsize,
+                            v.ontop && !j ? entselblendtop : entselblend
+                        );
+                }
+            }
         }
+
         if(drawtex) return;
 
-        visents.sort(visibleent::compare);
+        visents.sort(sortent::compare);
 
-        if(m_edit(game::gamemode) && entityui >= 0)
+        int numdrawn = 0;
+        loopvrev(visents)
         {
-            int numdrawn = 0;
-            float infodist = showentdist*showentdist;
-
-            loopvrev(visents)
-            {
-                visibleent &v = visents[i];
-                if(!v.visible) continue;
-                if(showentdist > 0 && v.dist >= infodist) break;
-                if(!ents.inrange(v.idx)) continue;
-
-                gameentity &e = *(gameentity *)ents[v.idx];
-                bool hasent = game::player1->isediting() && (enthover.find(v.idx) >= 0 || entgroup.find(v.idx) >= 0) && !editinhibit;
-
-                int type = hasent ? entityui : SURFACE_WORLD;
-                loopk(2)
-                {
-                    vec pos;
-                    float yaw, pitch, scale, dyaw, dpitch;
-                    switch(k)
-                    {
-                        case 1: // overlay
-                        {
-                            pos = e.o; // center pulled back a bit
-                            pos.sub(vec(pos).sub(camera1->o).normalize().mul(entityoverlayoffset));
-                            yaw = entityoverlayyaw;
-                            pitch = entityoverlaypitch;
-                            scale = type == SURFACE_WORLD ? entityoverlayworld : entityoverlayscale;
-                            dyaw = entityoverlaydetentyaw;
-                            dpitch = entityoverlaydetentpitch;
-                            break;
-                        }
-                        case 0: default: // above
-                        {
-                            pos = vec(e.o).addz(entityaboveoffset);
-                            yaw = entityaboveyaw;
-                            pitch = entityabovepitch;
-                            scale = type == SURFACE_WORLD ? entityaboveworld : entityabovescale;
-                            dyaw = entityabovedetentyaw;
-                            dpitch = entityabovedetentpitch;
-                            break;
-                        }
-                    }
-                    UI::setui(entityuis[k], type, v.idx, pos, yaw, pitch, scale, dyaw, dpitch);
-                }
-
-                loopj(SURFACE_ALL) if(j != type) loopk(2) UI::hideui(entityuis[k], j, v.idx);
-
-                visents.remove(i);
-                if(++numdrawn >= showentmax) break;
-            }
-
-            loopv(visents)
-            {
-                visibleent &v = visents[i];
-                loopj(SURFACE_ALL) loopk(2) UI::hideui(entityuis[k], j, v.idx);
-            }
+            sortent &v = visents[i];
+            if(v.drawn) drawparticle(*(gameentity *)ents[v.idx], v.pos, v.idx);
+            MAKEUI(entity, v.idx, numdrawn < showentmax, v.cansee, v.ontop, v.pos, v.height, v.radius, numdrawn++);
         }
-        else loopk(2) UI::cleardynui(entityuis[k]);
 
         loopv(projs::projs)
         {
@@ -3660,6 +3613,7 @@ namespace entities
             gameentity &e = *(gameentity *)ents[proj.id];
             if(e.type == NOTUSED || e.attrs.empty()) continue;
 
+            #if 0 // legacy but may be useful in future
             float skew = 1, dist = proj.o.squaredist(camera1->o);
             if(proj.fadetime && proj.lifemillis)
             {
@@ -3671,8 +3625,9 @@ namespace entities
                     if(proj.lifemillis-proj.lifetime < interval) skew = float(proj.lifemillis-proj.lifetime)/float(interval);
                 }
             }
+            #endif
 
-            drawparticle(e, proj.o, -1, true, true, skew, dist, maxdist);
+            drawparticle(e, proj.o);
         }
     }
 
