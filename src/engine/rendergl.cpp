@@ -2580,7 +2580,9 @@ FVAR(IDF_PERSIST, visordistort, -2, 2.0f, 2);
 FVAR(IDF_PERSIST, visornormal, -2, 1.175f, 2);
 FVAR(IDF_PERSIST, visorscalex, FVAR_NONZERO, 0.9075f, 2);
 FVAR(IDF_PERSIST, visorscaley, FVAR_NONZERO, 0.9075f, 2);
-FVAR(IDF_PERSIST, visorscanlines, 0.0, 2.0f, 16.0f);
+FVAR(IDF_PERSIST, visorscanlines, 0.0, 2.66f, 16.0f);
+VAR(IDF_PERSIST|IDF_HEX, visorscanlinemixcolour, 0, 0xFFFFFF, 0xFFFFFF);
+FVAR(IDF_PERSIST, visorscanlinemixblend, 0.0, 0.67f, 1.0f);
 FVAR(IDF_PERSIST, visorscanlineblend, 0.0, 0.25f, 16.0f);
 FVAR(IDF_PERSIST, visornoiseblend, 0.0, 0.125f, 16.0f);
 FVAR(IDF_PERSIST, visorflickerblend, 0.0, 0.02f, 16.0f);
@@ -2726,6 +2728,8 @@ void gl_drawhud(bool noview = false)
 
         LOCALPARAMF(visorsize, visorw, visorh, 1.f/visorw, 1.f/visorh);
         LOCALPARAMF(visorfx, visorscanlines, visorscanlineblend, visornoiseblend, visorflickerblend);
+        vec4 color = vec4::fromcolor(visorscanlinemixcolour, visorscanlinemixblend);
+        LOCALPARAMF(visorfxcol, color.r, color.g, color.b, color.a);
         LOCALPARAMF(time, lastmillis/1000.f);
 
         glEnable(GL_BLEND);
