@@ -2097,13 +2097,13 @@ void lensflare(const vec &o, const vec &color, bool sun, int sparkle, float scal
     flares.addflare(o, uchar(color.r*255), uchar(color.g*255), uchar(color.b*255), sun, sparkle, scale);
 }
 
-static int partcolour(int c, int p, int x)
+static int partcolour(int c, int p, int x, bool hasdark = true)
 {
     if(c <= 0) c = 0xFFFFFF;
 
     vec r = c > 0 ? vec::fromcolor(c) : vec(1, 1, 1);
     if(p || x) r.mul(game::getpalette(p, x));
-    r.mul(game::darkness(DARK_PART));
+    if(hasdark) r.mul(game::darkness(DARK_PART));
 
     return (int(r.x*255)<<16)|(int(r.y*255)<<8)|(int(r.z*255));
 }
@@ -2178,12 +2178,15 @@ void makeparticle(const vec &o, attrvector &attr)
             const int typemap[] =        { PART_FLARE,   -1,     -1,     PART_LIGHTNING, PART_FIREBALL,  PART_SMOKE, PART_ELECTRIC,  PART_PLASMA,    PART_SNOW,  PART_SPARK,     -1,     -1,     PART_HAZE,  PART_HAZE_FLAME,    PART_HAZE_TAPE, PART_RAIN,     PART_CLEAN_FLARE,   PART_NOISY_FLARE,   PART_MUZZLE_FLARE };
             const bool tapemap[] =       { true,         false,  false,  true,           false,          false,      false,          false,          false,      false,          false,  false,  false,      false,              true,           false,         true,               true,               true };
             const float sizemap[] =      { 0.28f,        0.0f,   0.0f,   0.25f,          4.f,            2.f,        0.6f,           4.f,            0.5f,       0.2f,           0.0f,   0.0f,   8.0f,       8.0f,               1.0f,           1.0f,          0.25f,              0.25f,              0.25f };
-            int mapped = attr[0] - 4;
-            bool istape = tapemap[mapped];
-            int type = typemap[mapped], fade = attr[4] > 0 ? attr[4] : 250, gravity = !istape ? attr[7] : 0,
+
+            int mapped = attr[0] - 4, type = typemap[mapped];
+            bool istape = tapemap[mapped], ishaze = type == PART_HAZE || type == PART_HAZE_FLAME || type == PART_HAZE_TAPE;
+
+            int fade = attr[4] > 0 ? attr[4] : 250, gravity = !istape ? attr[7] : 0,
                 stain = !istape ? (attr[6] >= 0 && attr[6] <= STAIN_MAX ? attr[6] : -1) : 0,
-                color = !istape ? partcolour(attr[3], attr[9], attr[10]) : partcolour(attr[3], attr[6], attr[7]),
+                color = !istape ? partcolour(attr[3], attr[9], attr[10], !ishaze) : partcolour(attr[3], attr[6], attr[7], !ishaze),
                 hintcolor = attr[17] > 0 ? attr[17] : vec::fromcolor(color).neg().tohexcolor();
+
             float size = attr[5] != 0 ? attr[5]/100.f : sizemap[mapped], vel = !istape ? attr[8] : 1, blend = attr[11] > 0 ? attr[11]/100.f : 1.f, hintblend = attr[18] > 0 ? attr[18]/100.f : 0.f;
             if(attr[1] >= 256) regularshape(type, max(1+attr[2], 1), color, attr[1]-256, 5, fade, o, size, blend, hintcolor, hintblend, gravity, stain, vel);
             else newparticle(o, vec(offsetvec(!istape ? vec(0, 0, 0) : o, attr[1], max(1+attr[2], 0))).mul(vel), fade, type, color, size, blend, hintcolor, hintblend, gravity, stain);

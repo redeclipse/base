@@ -316,8 +316,9 @@ extern void lensflare(const vec &o, const vec &color, bool sun, int sparkle, flo
 // stain
 #define STAIN_ENUM(en, um) \
     en(um, Smoke, SMOKE) en(um, Scorch, SCORCH) en(um, Short Scorch, SCORCH_SHORT) \
-    en(um, Blood, BLOOD) en(um, Bullet, BULLET) en(um, Energy, ENERGY) en(um, Splash, SPLASH) en(um, Envmap Splash, ENVSPLASH) en(um, Stain, STAIN) \
-    en(um, Maximum, MAX)
+    en(um, Blood, BLOOD) en(um, Bullet, BULLET) en(um, Energy, ENERGY) \
+    en(um, Splash, SPLASH) en(um, Envmap Splash, ENVSPLASH) en(um, Envmap Splash Glow, ENVSPLASH_GLOW) \
+    en(um, Stain, STAIN)  en(um, Maximum, MAX)
 ENUM_DLN(STAIN);
 
 extern void addstain(int type, const vec &center, const vec &surface, float radius, const bvec &color = bvec(0xFF, 0xFF, 0xFF), int info = 0, const bvec4 &envcolor = bvec4(0xFF, 0xFF, 0xFF, 0x80));

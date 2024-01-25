@@ -56,7 +56,7 @@ gametypes gametype[] = {
         "Play back previously recorded games", { "", "", "" },
     },
     {
-        G_EDITING, 0, (1<<G_M_FFA),
+        G_EDITING, 0, (1<<G_M_FFA)|(1<<G_M_ARENA),
         {
             (1<<G_M_FFA)|(1<<G_M_CLASSIC)|(1<<G_M_VAMPIRE)|(1<<G_M_RESIZE)|(1<<G_M_HARD)|(1<<G_M_ARENA),
             0, 0, 0

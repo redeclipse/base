@@ -1847,6 +1847,7 @@ namespace game
         if(!local || burnfunc || bleedfunc || shockfunc || corrodefunc || material)
         {
             float scale = isweap(weap) && WF(WK(flags), weap, damage, WS(flags)) != 0 ? abs(damage)/float(WF(WK(flags), weap, damage, WS(flags))) : 1.f;
+
             if(hitdealt(flags) && damage > 0)
             {
                 vec p = d->headpos(-d->height/4);
@@ -1875,6 +1876,9 @@ namespace game
                 d->lastpain = lastmillis;
 
                 if(isweap(weap) && !WK(flags)) emitsoundpos(WSND2(weap, WS(flags), S_W_IMPACT), vec(d->center()).add(vec(dir).mul(dist)), NULL, 0, clamp(scale, 0.2f, 1.f));
+
+                if(isweap(weap) && !burnfunc && !bleedfunc && !material && !shockfunc && !corrodefunc && WF(WK(flags), weap, damage, WS(flags)) != 0)
+                    projs::updateattract(d, v, weap, flags);
             }
 
             if(A(d->actortype, abilities)&(1<<A_A_PUSHABLE))
@@ -1963,6 +1967,7 @@ namespace game
                     }
                 }
             }
+
             ai::damaged(d, v, weap, flags, damage);
         }
     }
