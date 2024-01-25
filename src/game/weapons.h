@@ -623,8 +623,8 @@ WPVARM(IDF_GAMEMOD, 0, fragcond, 0, 15,
     14,         14,         14,         14,         14,         14,         14,         14,         14,         14,         14,         14,         14,         14
 );
 WPFVARM(IDF_GAMEMOD, 0, fragoffset, 0, FVAR_MAX,
-    4.0f,       4.0f,       4.0f,       4.0f,       4.0f,       4.0f,       4.0f,       1.0f,       1.0f,       4.0f,       4.0f,       1.0f,       2.0f,       4.0f,
-    4.0f,       4.0f,       4.0f,       4.0f,       4.0f,       4.0f,       4.0f,       1.0f,       1.0f,       4.0f,       4.0f,       1.0f,       2.0f,       4.0f
+    4.0f,       2.0f,       2.0f,       2.0f,       2.0f,       2.0f,       2.0f,       1.0f,       1.0f,       2.0f,       2.0f,       1.0f,       2.0f,       2.0f,
+    2.0f,       2.0f,       2.0f,       2.0f,       2.0f,       2.0f,       2.0f,       1.0f,       1.0f,       2.0f,       2.0f,       1.0f,       2.0f,       2.0f
 );
 WPVARM(IDF_GAMEMOD, 0, fragrays, 1, MAXPARAMS,
     5,          5,          5,          5,          5,          5,          5,          5,          5,          25,         25,         25,         50,         5,
@@ -1514,7 +1514,13 @@ struct weaptypes
     int     anim,               sound,          espeed;
     bool    muzzle,     eject,      tape,       thrown;
     float   esize;
-    const char *name, *item, *ammo, *vwep, *hwep, *proj[2], *eprj[2];
+    const char *name, *item, *ammo, *vwep, *hwep;
+
+    struct projtype
+    {
+        int count;
+        const char *name[5];
+    } proj[2], eprj[2];
 };
 #ifdef CPP_GAME_SERVER
 weaptypes weaptype[] =
@@ -1523,85 +1529,116 @@ weaptypes weaptype[] =
             ANIM_CLAW,         S_CLAW,          1,
             true,       false,      true,       false,
             0,
-            "claw", "", "", "weapons/claw/vwep", "weapons/claw/hwep", { "", "" }, { "", "" }
+            "claw", "", "", "weapons/claw/vwep", "weapons/claw/hwep",
+            { { 0, { "", "", "", "", "" } }, { 0, { "", "", "", "", "" } } },
+            { { 0, { "", "", "", "", "" } }, { 0, { "", "", "", "", "" } } }
     },
     {
             ANIM_PISTOL,        S_PISTOL,       10,
             true,       true,       false,      false,
             0.45f,
-            "pistol", "weapons/pistol/item", "weapons/pistol/ammo", "weapons/pistol/vwep", "weapons/pistol/hwep", { "weapons/pistol/proj", "" }, { "projectiles/cartridge", "" }
+            "pistol", "weapons/pistol/item", "weapons/pistol/ammo", "weapons/pistol/vwep", "weapons/pistol/hwep",
+            { { 1, { "weapons/pistol/proj", "", "", "", "" } }, { 0, { "", "", "", "", "" } } },
+            { { 1, { "projectiles/cartridge", "", "", "", "" } }, { 0, { "", "", "", "", "" } } }
     },
     {
             ANIM_SWORD,         S_SWORD,        1,
             true,       false,      true,       false,
             0,
-            "sword", "weapons/sword/item", "weapons/sword/ammo", "weapons/sword/vwep", "weapons/sword/hwep", { "", "" }, { "", "" }
+            "sword", "weapons/sword/item", "weapons/sword/ammo", "weapons/sword/vwep", "weapons/sword/hwep",
+            { { 0, { "", "", "", "", "" } }, { 0, { "", "", "", "", "" } } },
+            { { 0, { "", "", "", "", "" } }, { 0, { "", "", "", "", "" } } }
     },
     {
             ANIM_SHOTGUN,       S_SHOTGUN,      10,
             true,       true,       false,      false,
             0.6f,
-            "shotgun", "weapons/shotgun/item", "weapons/shotgun/ammo", "weapons/shotgun/vwep", "weapons/shotgun/hwep", { "", "" }, { "projectiles/shell", "projectiles/shell" }
+            "shotgun", "weapons/shotgun/item", "weapons/shotgun/ammo", "weapons/shotgun/vwep", "weapons/shotgun/hwep",
+            { { 0, { "", "", "", "", "" } }, { 0, { "", "", "", "", "" } } },
+            { { 1, { "projectiles/shell", "", "", "", "" } }, { 1, { "projectiles/shell", "", "", "", "" } } }
     },
     {
             ANIM_SMG,           S_SMG,          20,
             true,       true,       false,      false,
             0.45f,
-            "smg", "weapons/smg/item", "weapons/smg/ammo", "weapons/smg/vwep", "weapons/smg/hwep", { "", "" }, { "projectiles/cartridge", "projectiles/cartridge" }
+            "smg", "weapons/smg/item", "weapons/smg/ammo", "weapons/smg/vwep", "weapons/smg/hwep",
+            { { 0, { "", "", "", "", "" } }, { 0, { "", "", "", "", "" } } },
+            { { 1, { "projectiles/cartridge", "", "", "", "" } }, { 1, { "projectiles/cartridge", "", "", "", "" } } }
     },
     {
             ANIM_FLAMER,        S_FLAMER,       1,
             true,       true,       false,      false,
             0,
-            "flamer", "weapons/flamer/item", "weapons/flamer/ammo", "weapons/flamer/vwep", "weapons/flamer/hwep", { "", "" }, { "", "" }
+            "flamer", "weapons/flamer/item", "weapons/flamer/ammo", "weapons/flamer/vwep", "weapons/flamer/hwep",
+            { { 0, { "", "", "", "", "" } }, { 0, { "", "", "", "", "" } } },
+            { { 0, { "", "", "", "", "" } }, { 0, { "", "", "", "", "" } } }
     },
     {
             ANIM_PLASMA,        S_PLASMA,       1,
             true,       false,      false,      false,
             0,
-            "plasma", "weapons/plasma/item", "weapons/plasma/ammo", "weapons/plasma/vwep", "weapons/plasma/hwep", { "", "" }, { "", "" }
+            "plasma", "weapons/plasma/item", "weapons/plasma/ammo", "weapons/plasma/vwep", "weapons/plasma/hwep",
+            { { 0, { "", "", "", "", "" } }, { 0, { "", "", "", "", "" } } },
+            { { 0, { "", "", "", "", "" } }, { 0, { "", "", "", "", "" } } }
     },
     {
             ANIM_ZAPPER,        S_ZAPPER,       1,
             true,       false,      true,       false,
             0,
-            "zapper", "weapons/zapper/item", "weapons/zapper/ammo", "weapons/zapper/vwep", "weapons/zapper/hwep", { "", "" }, { "", "" }
+            "zapper", "weapons/zapper/item", "weapons/zapper/ammo", "weapons/zapper/vwep", "weapons/zapper/hwep",
+            { { 0, { "", "", "", "", "" } }, { 0, { "", "", "", "", "" } } },
+            { { 0, { "", "", "", "", "" } }, { 0, { "", "", "", "", "" } } }
     },
     {
             ANIM_RIFLE,         S_RIFLE,        1,
             true,       false,      false,      false,
             0,
-            "rifle", "weapons/rifle/item", "weapons/rifle/ammo", "weapons/rifle/vwep", "weapons/rifle/hwep", { "", "" }, { "", "" }
+            "rifle", "weapons/rifle/item", "weapons/rifle/ammo", "weapons/rifle/vwep", "weapons/rifle/hwep",
+            { { 0, { "", "", "", "", "" } }, { 0, { "", "", "", "", "" } } },
+            { { 0, { "", "", "", "", "" } }, { 0, { "", "", "", "", "" } } }
     },
     {
             ANIM_CORRODER,      S_CORRODER,      5,
             true,       false,       false,      false,
             0.25f,
-            "corroder", "weapons/corroder/item", "weapons/corroder/ammo", "weapons/corroder/vwep", "weapons/corroder/hwep", { "", "" }, { "", "" }
+            "corroder", "weapons/corroder/item", "weapons/corroder/ammo", "weapons/corroder/vwep", "weapons/corroder/hwep",
+            {
+                { 0, { "", "", "", "", "" } },
+                { 5, { "weapons/corroder/proj/1", "weapons/corroder/proj/2", "weapons/corroder/proj/3", "weapons/corroder/proj/4", "weapons/corroder/proj/5" } }
+            },
+            { { 0, { "", "", "", "", "" } }, { 0, { "", "", "", "", "" } } }
     },
     {
             ANIM_GRENADE,       S_GRENADE,      1,
             false,      false,      false,      true,
             0,
-            "grenade", "weapons/grenade/item", "weapons/grenade/ammo", "weapons/grenade/vwep", "weapons/grenade/hwep", { "weapons/grenade/proj", "weapons/grenade/proj" }, { "", "" }
+            "grenade", "weapons/grenade/item", "weapons/grenade/ammo", "weapons/grenade/vwep", "weapons/grenade/hwep",
+            { { 1, { "weapons/grenade/proj", "", "", "", "" } }, { 1, { "weapons/grenade/proj", "", "", "", "" } } },
+            { { 0, { "", "", "", "", "" } }, { 0, { "", "", "", "", "" } } }
     },
     {
             ANIM_MINE,          S_MINE,         1,
             false,      false,      false,      true,
             0,
-            "mine", "weapons/mine/item", "weapons/mine/ammo", "weapons/mine/vwep", "weapons/mine/hwep", { "weapons/mine/proj", "weapons/mine/proj" }, { "", "" }
+            "mine", "weapons/mine/item", "weapons/mine/ammo", "weapons/mine/vwep", "weapons/mine/hwep",
+            { { 1, { "weapons/mine/proj", "", "", "", "" } }, { 1, { "weapons/mine/proj", "", "", "", "" } } },
+            { { 0, { "", "", "", "", "" } }, { 0, { "", "", "", "", "" } } }
     },
     {
             ANIM_ROCKET,        S_ROCKET,       1,
             true,      false,       false,      false,
             0,
-            "rocket", "weapons/rocket/item", "weapons/rocket/ammo", "weapons/rocket/vwep", "weapons/rocket/hwep", { "weapons/rocket/proj", "weapons/rocket/proj" },  { "", "" }
+            "rocket", "weapons/rocket/item", "weapons/rocket/ammo", "weapons/rocket/vwep", "weapons/rocket/hwep",
+            { { 1, { "weapons/rocket/proj", "", "", "", "" } }, { 1, { "weapons/rocket/proj", "", "", "", "" } } },
+            { { 0, { "", "", "", "", "" } }, { 0, { "", "", "", "", "" } } }
     },
     {
             ANIM_CLAW,          S_MELEE,        1,
             false,      false,      false,      false,
             0,
-            "melee",    "", "", "", "", { "", "" }, { "", "" }
+            "melee",    "", "", "", "",
+            { { 0, { "", "", "", "", "" } }, { 0, { "", "", "", "", "" } } },
+            { { 0, { "", "", "", "", "" } }, { 0, { "", "", "", "", "" } } }
     }
 };
 #else

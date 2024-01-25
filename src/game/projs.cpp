@@ -674,8 +674,8 @@ namespace projs
     {
         loopi(W_ALL) loopj(2)
         {
-            if(*weaptype[i].proj[j]) preloadmodel(weaptype[i].proj[j]);
-            if(*weaptype[i].eprj[j]) preloadmodel(weaptype[i].eprj[j]);
+            loopk(weaptype[i].proj[j].count) preloadmodel(weaptype[i].proj[j].name[k]);
+            loopk(weaptype[i].eprj[j].count) preloadmodel(weaptype[i].eprj[j].name[k]);
         }
         const char *mdls[] = {
             "projectiles/gibs/gib01",
@@ -982,7 +982,7 @@ namespace projs
                 proj.speedmax = WF(WK(proj.flags), proj.weap, speedmax, WS(proj.flags));
                 proj.extinguish = WF(WK(proj.flags), proj.weap, extinguish, WS(proj.flags))|4;
                 proj.interacts = WF(WK(proj.flags), proj.weap, interacts, WS(proj.flags));
-                proj.mdlname = weaptype[proj.weap].proj[WS(proj.flags) ? 1 : 0];
+                proj.mdlname = weaptype[proj.weap].proj[WS(proj.flags) ? 1 : 0].count ? weaptype[proj.weap].proj[WS(proj.flags) ? 1 : 0].name[rnd(weaptype[proj.weap].proj[WS(proj.flags) ? 1 : 0].count)] : "";
                 proj.fxtype = WF(WK(proj.flags), proj.weap, fxtypeproj, WS(proj.flags));
                 proj.escaped = !proj.owner || proj.child || WK(proj.flags) || WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_LENGTH || proj.weap == W_MELEE;
                 updatetargets(proj, waited);
@@ -1079,7 +1079,8 @@ namespace projs
                 if(proj.owner) proj.o = proj.from = proj.owner->ejecttag();
                 if(isweap(proj.weap))
                 {
-                    proj.mdlname = *weaptype[proj.weap].eprj[WS(proj.flags) ? 1 : 0] ? weaptype[proj.weap].eprj[WS(proj.flags) ? 1 : 0] : "projectiles/catridge";
+                    proj.mdlname = weaptype[proj.weap].eprj[WS(proj.flags) ? 1 : 0].count ? weaptype[proj.weap].eprj[WS(proj.flags) ? 1 : 0].name[rnd(weaptype[proj.weap].eprj[WS(proj.flags) ? 1 : 0].count)] : "";
+                    if(!proj.mdlname || !*proj.mdlname) proj.mdlname = "projectiles/catridge";
                     proj.lifesize = weaptype[proj.weap].esize;
                     proj.material = bvec::fromcolor(W(proj.weap, colour));
                 }
@@ -1414,7 +1415,7 @@ namespace projs
                 listpushfront(shotproj, d->projchain, prev, next);
             }
         }
-        if(A(d->actortype, abilities)&(1<<A_A_AMMO) && W2(weap, ammosub, WS(flags)) && ejectfade && *weaptype[weap].eprj[WS(flags) ? 1 : 0]) loopi(W2(weap, ammosub, WS(flags)))
+        if(A(d->actortype, abilities)&(1<<A_A_AMMO) && W2(weap, ammosub, WS(flags)) && ejectfade && weaptype[weap].eprj[WS(flags) ? 1 : 0].count) loopi(W2(weap, ammosub, WS(flags)))
             create(d->ejecttag(), d->ejecttag(), local, d, PRJ_EJECT, -1, 0, rnd(ejectfade)+ejectfade, 0, delay, rnd(weaptype[weap].espeed)+weaptype[weap].espeed, 0, weap, -1, flags);
 
         d->setweapstate(weap, WS(flags) ? W_S_SECONDARY : W_S_PRIMARY, delayattack, lastmillis);
@@ -1583,7 +1584,7 @@ namespace projs
                               offset = cond ? W2(proj.weap, fragoffset, WS(proj.flags)) : 1e-6f,
                               skew = cond ? W2(proj.weap, fragskew, WS(proj.flags)) : W2(proj.weap, fragspread, WS(proj.flags));
 
-                        vec dir = vec(proj.stuck ? proj.norm : vel).normalize(), pos = vec(proj.o).sub(vec(dir).mul(offset));
+                        vec dir = vec(proj.stuck ? vec(proj.norm).neg() : vel).normalize(), pos = vec(proj.o).sub(vec(dir).mul(offset));
                         if(W2(proj.weap, fragspeedmax, WS(proj.flags)) > 0) mag = min(mag, W2(proj.weap, fragspeedmax, WS(proj.flags)));
                         if(W2(proj.weap, fragjump, WS(proj.flags)) > 0) life -= int(ceilf(life*W2(proj.weap, fragjump, WS(proj.flags))));
 
