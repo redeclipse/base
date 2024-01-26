@@ -2854,15 +2854,15 @@ namespace entities
         {
             if(!numjanitors)
             {
-                int iter = 0, maxjanitors = max(numplayers / 2, 2);
+                int iter = 0, maxjanitors = max(numplayers / 3, 2);
                 loopv(ents)
                 {
                     if(ents[i]->type != PLAYERSTART) continue;
-                    if((iter++)%3 != 0) continue;
+                    if((iter++)%2 != 0) continue;
                     extentity &e = *newent();
                     ents.add(&e);
                     e.type = ACTOR;
-                    e.o = vec(ents[i]->o).addz(ai::JUMPMAX * 1.1f);
+                    e.o = vec(ents[i]->o).addz(ai::JANITORFLOAT);
                     e.attrs.add(0, numattrs(ACTOR));
                     e.attrs[0] = int(A_JANITOR - A_ENEMY);
                     loopj(5) e.attrs[j+1] = ents[i]->attrs[j+1]; // yaw, pitch, mode, muts, id

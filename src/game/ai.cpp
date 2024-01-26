@@ -616,6 +616,20 @@ namespace ai
                 n.tolerance = 1;
             }
         }
+
+        int numdyns = game::numdynents(1);
+        loopi(numdyns)
+        {
+            dynent *e = game::iterdynents(i);
+            if(!e || !gameent::is(e)) continue;
+
+            gameent *f = (gameent *)e;
+            if(f == e || f->actortype != A_JANITOR || !f->isalive()) continue;
+
+            loopvkrev(interests)
+                if(f->o.squaredist(waypoints[interests[k].node].o) <= JANITORREJECT*JANITORREJECT)
+                    interests.remove(k);
+        }
     }
 
     bool find(gameent *d, aistate &b)
@@ -1021,7 +1035,7 @@ namespace ai
         d->ai->spot = pos;
         d->ai->targnode = targ;
 
-        if(physics::movepitch(d)) d->ai->spot.z += JUMPMAX + 1;
+        if(physics::movepitch(d)) d->ai->spot.z += JANITORFLOAT;
     }
 
     int wpspot(gameent *d, int n, bool check = false)

@@ -2244,12 +2244,16 @@ namespace game
             int hp = max(d->gethealth(gamemode, mutators), 1), gib = clamp(int(max(damage, hp)/(d->obliterated ? 50.f : 100.f)), 2, 20), amt = int((rnd(gib) + gib) * (1 + gibscale));
 
             loopi(amt)
-                projs::create(pos, vec(pos).addz(2), true, d, nogore || !(A(d->actortype, abilities)&(1<<A_A_GIBS)) ? PRJ_DEBRIS : PRJ_GIBS, -1, 0, rnd(gibfade) + gibfade, 0, rnd(250) + 1, rnd(d->obliterated ? 80 : 40) + 20);
+                projs::create(pos, vec(pos).addz(2), true, d, nogore || !(A(d->actortype, abilities)&(1<<A_A_GIBS)) ? PRJ_DEBRIS : PRJ_GIBS, -1, 0, rnd(gibfade) + gibfade, 0, rnd(100) + 1, rnd(d->obliterated || d->headless ? 50 : 50) + 10);
 
             loopv(d->collects)
             {
-                projent *p = projs::create(pos, vec(pos).addz(2), true, d, d->collects[i].type, -1, 0, (rnd(gibfade) + gibfade) / 4, 0, rnd(250) + 1, rnd(d->obliterated ? 80 : 40) + 20);
-                if(p) p->mdlname = d->collects[i].name;
+                projent *p = projs::create(pos, vec(pos).addz(2), true, d, d->collects[i].type, -1, 0, (rnd(gibfade) + gibfade) / 2, 0, rnd(100) + 1, rnd(d->obliterated ? 50 : 25) + 10);
+                if(p)
+                {
+                    p->mdlname = d->collects[i].name;
+                    p->lifesize = max(d->collects[i].size, 0.5f);
+                }
             }
             d->collects.shrink(0);
         }

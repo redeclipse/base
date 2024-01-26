@@ -16,7 +16,7 @@ namespace projs
     };
     vector<toolent> toolents;
 
-    VAR(IDF_PERSIST, maxprojectiles, 1, 128, VAR_MAX);
+    VAR(IDF_PERSIST, maxprojectiles, 1, 1024, VAR_MAX);
 
     VAR(IDF_PERSIST, ejectfade, 0, 2500, VAR_MAX);
     VAR(IDF_PERSIST, ejectspin, 0, 1, 1);
@@ -966,6 +966,7 @@ namespace projs
             proj.yaw = proj.owner->yaw;
             proj.pitch = proj.owner->pitch;
         }
+
         switch(proj.projtype)
         {
             case PRJ_SHOT:
@@ -998,6 +999,7 @@ namespace projs
                     proj.escaped = true;
                     return;
                 }
+
                 if(!game::nogore || game::bloodscale > 0)
                 {
                     proj.height = proj.aboveeye = proj.radius = proj.xradius = proj.yradius = 0.5f;
@@ -1010,21 +1012,23 @@ namespace projs
                             case 1: proj.mdlname = "projectiles/gibs/gib02"; break;
                             case 0: default: proj.mdlname = "projectiles/gibs/gib01"; break;
                         }
-                    }
-                    if(proj.owner)
-                    {
-                        if(!proj.owner->isdead())
+
+                        if(proj.owner)
                         {
-                            proj.lifemillis = proj.lifetime = 1;
-                            proj.lifespan = 1.f;
-                            proj.state = CS_DEAD;
-                            proj.escaped = true;
-                            return;
+                            if(!proj.owner->isdead())
+                            {
+                                proj.lifemillis = proj.lifetime = 1;
+                                proj.lifespan = 1.f;
+                                proj.state = CS_DEAD;
+                                proj.escaped = true;
+                                return;
+                            }
+                            proj.o = proj.owner->headtag();
+                            proj.o.z -= proj.owner->zradius*0.125f;
+                            proj.lifesize *= proj.owner->curscale;
                         }
-                        proj.o = proj.owner->headtag();
-                        proj.o.z -= proj.owner->zradius*0.125f;
-                        proj.lifesize *= proj.owner->curscale;
                     }
+
                     float buoy = gibsbuoyancymax;
                     if(gibsbuoyancymax != gibsbuoyancymin)
                     {
@@ -1036,10 +1040,10 @@ namespace projs
                     proj.liquidcoast = gibsliquidcoast;
                     proj.weight = gibsweight*proj.lifesize;
                     proj.buoyancy = buoy*proj.lifesize;
-                    proj.vel.add(vec(rnd(21)-10, rnd(21)-10, proj.owner && proj.owner->headless ? rnd(61)+10 : rnd(21)-10));
+                    proj.vel.add(vec(rnd(21)-10, rnd(21)-10, proj.owner && (proj.owner->headless || proj.owner->obliterated || proj.owner->actortype == A_JANITOR) ? rnd(61)+10 : rnd(21)-10));
                     proj.projcollide = BOUNCE_GEOM|BOUNCE_PLAYER;
                     proj.escaped = !proj.owner || proj.owner->state != CS_ALIVE;
-                    proj.fadetime = rnd(250)+250;
+                    proj.fadetime = rnd(250) + 250;
                     proj.extinguish = 6;
                     proj.interacts = 3;
                     proj.fxtype = FX_P_GIB;
@@ -1059,13 +1063,13 @@ namespace projs
                         case 1: proj.mdlname = "projectiles/debris/debris02"; break;
                         case 0: default: proj.mdlname = "projectiles/debris/debris01"; break;
                     }
+                    if(proj.owner) proj.lifesize *= proj.owner->curscale;
                 }
                 proj.relativity = 0.f;
                 proj.elasticity = debriselasticity;
                 proj.liquidcoast = debrisliquidcoast;
                 proj.weight = debrisweight*proj.lifesize;
                 proj.buoyancy = debrisbuoyancy*proj.lifesize;
-                if(proj.owner) proj.lifesize *= proj.owner->curscale;
                 proj.vel.add(vec(rnd(101)-50, rnd(101)-50, rnd(151)-50)).mul(2);
                 proj.projcollide = BOUNCE_GEOM|BOUNCE_PLAYER|COLLIDE_OWNER;
                 proj.escaped = !proj.owner || proj.owner->state != CS_ALIVE;
@@ -1097,6 +1101,9 @@ namespace projs
                         proj.lifesize = 1;
                     }
                     if(proj.owner) proj.lifesize *= proj.owner->curscale;
+
+                    vecfromyawpitch(proj.yaw+40+rnd(41), proj.pitch+50-proj.speed+rnd(41), 1, 0, proj.dest);
+                    proj.dest.mul(4).add(proj.from);
                 }
                 proj.elasticity = ejectelasticity;
                 proj.relativity = ejectrelativity;
@@ -1109,10 +1116,6 @@ namespace projs
                 proj.extinguish = 6;
                 proj.interacts = 3;
                 proj.fxtype = FX_P_CASING;
-                //if(proj.owner == game::focus && !game::thirdpersonview())
-                //    proj.o = proj.from.add(vec(proj.from).sub(camera1->o).normalize().mul(4));
-                vecfromyawpitch(proj.yaw+40+rnd(41), proj.pitch+50-proj.speed+rnd(41), 1, 0, proj.dest);
-                proj.dest.mul(4).add(proj.from);
                 break;
             }
             case PRJ_ENT:
@@ -2130,7 +2133,7 @@ namespace projs
 
                 vec ray = vec(e->center()).sub(proj.o);
                 float dist = ray.magnitude();
-                if(dist >= ai::RETRYDIST) continue;
+                if(dist >= ai::JANITORSUCK) continue;
                 ray.normalize();
 
                 if(dist <= f->radius + proj.radius + 1)
@@ -2142,7 +2145,7 @@ namespace projs
                 }
 
                 proj.dest = e->center();
-                float amt = clamp(10*secs, 1e-6f, 1.f), mag = max(proj.vel.magnitude(), physics::movevelocity(&proj), e->speed + dist * 1.5f);
+                float amt = clamp(10*secs, 1e-6f, 1.f), mag = max(proj.vel.magnitude(), physics::movevelocity(&proj), e->speed + dist * 2.f);
                 vec dir = vec(proj.vel).safenormalize().mul(1.f-amt).add(vec(ray).mul(amt)).normalize();
                 if(!dir.iszero()) (proj.vel = dir).mul(mag);
             }
