@@ -2365,10 +2365,9 @@ namespace UI
 
     bool setui(const char *name, int stype, int param, const vec &origin, float yaw, float pitch, float scale, float detentyaw, float detentpitch)
     {
-        if(!pushsurface(stype)) return false;
+        if(!engineready || !pushsurface(stype)) return false;
 
         Window *w = dynuirefwin(name, param, false);
-        popsurface();
 
         if(w && surface->children.find(w) >= 0)
         {
@@ -2378,7 +2377,11 @@ namespace UI
             w->scale = scale;
             w->detentyaw = detentyaw;
             w->detentpitch = detentpitch;
+
+            popsurface();
+            return true;
         }
+        popsurface();
 
         return showui(name, stype, param, origin, yaw, pitch, scale, detentyaw, detentpitch);
     }

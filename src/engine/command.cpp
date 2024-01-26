@@ -5593,3 +5593,15 @@ int getpulsehexcol(physent *d, int n, int cycle)
     return pulsehexcol(d, INVPULSE(n), cycle);
 }
 #endif
+
+static const char *printables = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789";
+const char *getprintable(int arg)
+{
+    static string buf;
+    if(arg < 0) arg = rnd(int(strlen(printables)));
+    else arg %= int(strlen(printables));
+    buf[0] = printables[arg];
+    buf[1] = '\0';
+    return buf;
+}
+ICOMMAND(0, getprintable, "i", (int *n), result(getprintable(*n)));

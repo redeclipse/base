@@ -216,15 +216,90 @@ namespace defend
         st.reset();
     }
 
+    struct DefendSort;
+    vector<DefendSort> defendsort;
+
+    struct DefendSort
+    {
+        static vec average;
+
+        int ent, team;
+        float dist;
+        vec pos;
+
+        DefendSort() : ent(-1), team(T_NEUTRAL), dist(0), pos(0) {}
+        DefendSort(int n, int t, const vec &o) : ent(n), team(t), dist(0), pos(o)
+        {
+            average.add(o);
+        }
+        ~DefendSort() {}
+
+        static bool compare(const DefendSort &x, const DefendSort &y)
+        {
+            if(x.dist < y.dist) return true;
+            if(x.dist > y.dist) return true;
+            return x.team < y.team; // distance first, then team if equal
+        }
+
+        static void reset()
+        {
+            defendsort.shrink(0);
+            average = vec(0);
+        }
+
+        static void process(int kinship)
+        {
+            int count = defendsort.length();
+            average.div(count);
+
+            bool neutral = m_dac_king(game::gamemode, game::mutators);
+            int bases[T_COUNT] = {0};
+            loopv(defendsort)
+            {
+                DefendSort &d = defendsort[i];
+                d.dist = d.pos.squaredist(average);
+                bases[d.team]++;
+            }
+
+            defendsort.sort(DefendSort::compare); // sort with center first
+
+            if(!neutral) loopi(numteams(game::gamemode, game::mutators)-1) if(!bases[i+1] || (bases[i+1] != bases[i+2]))
+            { // check equal kinships otherwise set all neutral
+                neutral = true;
+                break;
+            }
+
+            loopv(defendsort)
+            {
+                DefendSort &d = defendsort[i];
+                gameentity &e = *(gameentity *)entities::ents[d.ent];
+
+                defformatstring(alias, "point_%d", e.attrs[5]);
+                const char *name = m_dac_king(game::gamemode, game::mutators) ? "Hilltop" : getalias(alias);
+                if(!name || !*name) name = "Point";
+
+                st.addaffinity(d.ent, d.pos, neutral ? T_NEUTRAL : d.team, e.attrs[1], e.attrs[2], name);
+
+                if(m_dac_king(game::gamemode, game::mutators)) break; // only need the center for king
+            }
+        }
+    };
+
+    vec DefendSort::average = vec(0);
+
     void setup()
     {
-        int df = m_dac_king(game::gamemode, game::mutators) ? 0 : defendflags, count = 0;
+        int kinship = m_dac_king(game::gamemode, game::mutators) ? 0 : defendflags;
+
+        DefendSort::reset();
+
         loopv(entities::ents) if(entities::ents[i]->type == AFFINITY)
         {
             gameentity &e = *(gameentity *)entities::ents[i];
             if(!entities::isallowed(e)) continue;
+
             int team = e.attrs[0];
-            switch(df)
+            switch(kinship)
             {
                 case 3:
                     if(team && !isteam(game::gamemode, game::mutators, team, T_NEUTRAL)) team = T_NEUTRAL;
@@ -237,56 +312,14 @@ namespace defend
                     break;
                 case 0: team = T_NEUTRAL; break;
             }
-            defformatstring(alias, "point_%d", e.attrs[5]);
-            const char *name = getalias(alias);
-            if(!name || !*name)
-            {
-                if(team) formatstring(alias, "%s Base", TEAM(team, name));
-                else formatstring(alias, "Point %c", char('A' + count));
-                count++;
-                name = alias;
-            }
-            st.addaffinity(i, e.o, team, e.attrs[1], e.attrs[2], name);
+
+            defendsort.add(DefendSort(i, team, e.o));
         }
-        if(!st.flags.length()) return; // map doesn't seem to support this mode at all..
-        if(df != 0)
-        {
-            int bases[T_COUNT] = {0};
-            loopv(st.flags) bases[st.flags[i].kinship]++;
-            loopi(numteams(game::gamemode, game::mutators)-1) if(!bases[i+1] || (bases[i+1] != bases[i+2]))
-            {
-                loopvk(st.flags) st.flags[k].kinship = T_NEUTRAL;
-                break;
-            }
-        }
-        if(m_dac_king(game::gamemode, game::mutators))
-        {
-            vec average(0, 0, 0);
-            int count = 0;
-            loopv(st.flags)
-            {
-                average.add(st.flags[i].o);
-                count++;
-            }
-            int smallest = rnd(st.flags.length());
-            if(count)
-            {
-                average.div(count);
-                float dist = 1e16f, tdist = 1e16f;
-                loopv(st.flags) if(!st.flags.inrange(smallest) || (tdist = st.flags[i].o.dist(average)) < dist)
-                {
-                    smallest = i;
-                    dist = tdist;
-                }
-            }
-            if(st.flags.inrange(smallest))
-            {
-                copystring(st.flags[smallest].name, "Hilltop");
-                st.flags[smallest].kinship = T_NEUTRAL;
-                loopi(smallest) st.flags.remove(0);
-                while(st.flags.length() > 1) st.flags.remove(1);
-            }
-        }
+
+        if(defendsort.empty()) return; // map doesn't seem to support this mode at all..
+
+        DefendSort::process(kinship);
+
         loopv(entities::ents) ((gameentity *)entities::ents[i])->affinity = -1;
         loopv(st.flags)
         {

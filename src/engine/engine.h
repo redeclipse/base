@@ -1116,6 +1116,8 @@ extern void viewhaze();
 #include "sound.h"
 
 // command extras
+extern const char *getprintable(int arg);
+
 #define PULSE_ENUM(en, um) \
     en(um, Fire, FIRE) en(um, Burn, BURN) en(um, Disco, DISCO) en(um, Shock, SHOCK) en(um, Bleed, BLEED) \
     en(um, Buff, BUFF) en(um, Warn, WARN) en(um, Regen, REGEN) en(um, Flash, FLASH) en(um, Rainbow, RAINBOW) \

@@ -550,7 +550,7 @@ namespace hud
     {
         hidecrosshair = 0;
 
-        loopi(SURFACE_LOOP) UI::showui("hud", i);
+        loopi(SURFACE_LOOP) UI::setui("hud", i);
 
         if(!UI::hasmenu(true))
         {
