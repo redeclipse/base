@@ -2234,21 +2234,21 @@ namespace game
                 if(vanities[d->vitems[k]].type && !check) continue;
                 if(found[vanities[d->vitems[k]].type]) continue;
                 if(!(vanities[d->vitems[k]].cond&2)) continue;
-                projs::create(pos, pos, true, d, PRJ_VANITY, -1, 0, (rnd(gibfade) + gibfade) / 2, 0, 0, rnd(50)+10, -1, d->vitems[k], head, 0);
+                projs::create(pos, vec(pos).addz(2), true, d, PRJ_VANITY, -1, 0, (rnd(gibfade) + gibfade) / 2, 0, 0, rnd(50) + 10, -1, d->vitems[k], head, 0);
                 found[vanities[d->vitems[k]].type]++;
             }
         }
 
         if(nogore != 2 && gibscale > 0 && !(flags&HIT_LOST))
         {
-            int hp = max(d->gethealth(gamemode, mutators)/10, 1), gib = clamp(max(damage, hp)/(d->obliterated ? 5 : 20), 2, 10), amt = int((rnd(gib)+gib)*(1+gibscale));
+            int hp = max(d->gethealth(gamemode, mutators), 1), gib = clamp(int(max(damage, hp)/(d->obliterated ? 50.f : 100.f)), 2, 20), amt = int((rnd(gib) + gib) * (1 + gibscale));
 
             loopi(amt)
-                projs::create(pos, pos, true, d, nogore || !(A(d->actortype, abilities)&(1<<A_A_GIBS)) ? PRJ_DEBRIS : PRJ_GIBS, -1, 0, rnd(gibfade) + gibfade, 0, rnd(250)+1, rnd(d->obliterated ? 80 : 40) + 10);
+                projs::create(pos, vec(pos).addz(2), true, d, nogore || !(A(d->actortype, abilities)&(1<<A_A_GIBS)) ? PRJ_DEBRIS : PRJ_GIBS, -1, 0, rnd(gibfade) + gibfade, 0, rnd(250) + 1, rnd(d->obliterated ? 80 : 40) + 20);
 
-            loopvrev(d->collects)
+            loopv(d->collects)
             {
-                projent *p = projs::create(pos, pos, true, d, d->collects[i].type, -1, 0, (rnd(gibfade) + gibfade) / 4, 0, rnd(250) + 1, rnd(d->obliterated ? 80 : 40) + 10);
+                projent *p = projs::create(pos, vec(pos).addz(2), true, d, d->collects[i].type, -1, 0, (rnd(gibfade) + gibfade) / 4, 0, rnd(250) + 1, rnd(d->obliterated ? 80 : 40) + 20);
                 if(p) p->mdlname = d->collects[i].name;
             }
             d->collects.shrink(0);
@@ -3679,6 +3679,7 @@ namespace game
             projs::update();
             ai::update();
             entities::update();
+
             if(gs_playing(gamestate))
             {
                 if(m_capture(gamemode)) capture::update();
@@ -3711,11 +3712,13 @@ namespace game
                     weapons::checkweapons(player1);
                 }
             }
+
             if(gs_playing(gamestate))
             {
                 addsway(focus);
                 if(player1->state == CS_ALIVE || player1->state == CS_DEAD || player1->state == CS_WAITING)
                     entities::checkitems(player1);
+
                 if(!tvmode() && player1->state >= CS_SPECTATOR)
                 {
                     camera1->move = player1->move;
@@ -3723,6 +3726,7 @@ namespace game
                     physics::move(camera1, 10, true);
                 }
             }
+
             entities::runrails();
             if(hud::canshowscores()) hud::showscores(true);
         }

@@ -555,11 +555,10 @@ namespace projs
             vec pos = d->center(), ray = vec(pos).sub(proj.o);
             float dist = ray.magnitude();
             if(dist > WF(WK(proj.flags), proj.weap, attractdist, WS(proj.flags))) continue;
-
             ray.normalize();
 
-            float blocked = tracecollide(&proj, pos, ray, dist, RAY_CLIPMAT|RAY_ALPHAPOLY, true);
-            if(blocked > 0 && blocked < dist) continue;
+            // float blocked = tracecollide(&proj, pos, ray, dist, RAY_CLIPMAT|RAY_ALPHAPOLY, true);
+            // if(blocked >= 0) continue;
 
             proj.target = d;
             proj.stuck = 0;
@@ -1238,6 +1237,7 @@ namespace projs
                 }
             }
         }
+
         if(proj.projtype != PRJ_SHOT || !(WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_LENGTH))
         {
             vec dir = vec(proj.dest).sub(proj.o);
@@ -2133,9 +2133,6 @@ namespace projs
                 if(dist >= ai::RETRYDIST) continue;
                 ray.normalize();
 
-                float blocked = tracecollide(&proj, e->o, ray, dist, RAY_CLIPMAT|RAY_ALPHAPOLY, true);
-                if(blocked > 0 && blocked < dist) continue;
-
                 if(dist <= f->radius + proj.radius + 1)
                 {
                     e->collected(proj.projtype, proj.lifesize, proj.mdlname);
@@ -2145,10 +2142,9 @@ namespace projs
                 }
 
                 proj.dest = e->center();
-                float amt = clamp(10*secs, 1e-6f, 1.f), mag = max(proj.vel.magnitude(), physics::movevelocity(&proj), e->speed + dist * 1.1f);
+                float amt = clamp(10*secs, 1e-6f, 1.f), mag = max(proj.vel.magnitude(), physics::movevelocity(&proj), e->speed + dist * 1.5f);
                 vec dir = vec(proj.vel).safenormalize().mul(1.f-amt).add(vec(ray).mul(amt)).normalize();
                 if(!dir.iszero()) (proj.vel = dir).mul(mag);
-                // part_flare(proj.o, proj.dest, 1, PART_LIGHTNING_FLARE, game::getcolour(e, game::playerovertone, game::playerovertonelevel), 0.5f, 0.0625f, game::getcolour(e, game::playerundertone, game::playerundertonelevel), 0.75f);
             }
         }
 
@@ -2274,6 +2270,7 @@ namespace projs
             {
                 if(proj.projtype == PRJ_ENT && entities::ents.inrange(proj.id)) // in case spawnweapon changes
                     proj.mdlname = entities::entmdlname(entities::ents[proj.id]->type, entities::ents[proj.id]->attrs);
+
                 if(proj.waittime > 0)
                 {
                     if((proj.waittime -= curtime) <= 0)
@@ -2283,7 +2280,9 @@ namespace projs
                     }
                     else continue;
                 }
+
                 iter(proj);
+
                 if(proj.projtype == PRJ_SHOT || proj.projtype == PRJ_ENT || proj.projtype == PRJ_AFFINITY)
                 {
                     if(proj.projtype == PRJ_SHOT && WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_LENGTH ? !raymove(proj) : !move(proj)) switch(proj.projtype)
@@ -2318,6 +2317,7 @@ namespace projs
                         break;
                     }
                 }
+
                 effect(proj);
             }
             else
