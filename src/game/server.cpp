@@ -603,6 +603,7 @@ namespace server
 
     namespace aiman
     {
+        extern void intermission();
         extern void setskill(clientinfo *ci, bool init = false);
         extern bool addai(int type, int ent = -1);
         extern void deleteai(clientinfo *ci);
@@ -1642,6 +1643,7 @@ namespace server
     {
         if(gs_playing(gamestate))
         {
+            aiman::intermission();
             sendstats(true);
             setpause(false);
             timeremaining = 0;

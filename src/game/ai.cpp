@@ -1790,6 +1790,7 @@ namespace ai
             if(!request(d, b)) target(d, b, W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0);
             weapons::shoot(d, d->ai->target);
         }
+
         if(d->actortype == A_HAZARD) return;
 
         if(d->state == CS_DEAD || d->state == CS_WAITING)

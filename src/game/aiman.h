@@ -5,6 +5,17 @@ namespace aiman
         oldbotbalance = -2, oldnumplayers = -1, oldbotlimit = -1, oldbotoffset = 0, oldenemylimit = -1;
     float oldbotbalancescale = -1;
 
+    void intermission()
+    {
+        loopv(clients)
+        {
+            clientinfo *ci = clients[i];
+            if(ci->actortype < A_ENVIRONMENT || ci->state != CS_ALIVE) continue;
+            suicideevent ev;
+            ev.process(ci); // process death immediately
+        }
+    }
+
     int botrnd(clientinfo *ci, int t, int m, bool r = false)
     {
         if(G(botcolourseed)&t) // r makes colour random instead of consistent
