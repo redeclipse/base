@@ -1291,8 +1291,9 @@ namespace game
             int numdyns = numdynents();
             vector<flashent *> list;
             loopi(numdyns)
-                if((d = (gameent *)iterdynents(i)) != NULL && (d->isalive() || (flashlightspectator && d == focus && d->isnophys())))
-                    list.add(new flashent(d));
+                if(((d = (gameent *)iterdynents(i)) != NULL) && (d->actortype < A_ENVIRONMENT))
+                    if(d->isalive() || (flashlightspectator && d == focus && d->isnophys()))
+                        list.add(new flashent(d));
             list.sort(flashent::sort);
 
             int count = m_dark(gamemode, mutators) ? flashlightmaxdark : flashlightmax;
@@ -4264,7 +4265,7 @@ namespace game
 
     bool haloallow(const vec &o, gameent *d, bool justtest, bool check)
     {
-        if(!wanthalos(check, (d == focus ? playerhalos&1 : playerhalos&2) != 0) || (d == focus && inzoom())) return false;
+        if(d->actortype >= A_ENVIRONMENT || !wanthalos(check, (d == focus ? playerhalos&1 : playerhalos&2) != 0) || (d == focus && inzoom())) return false;
         if(justtest) return true;
         vec dir(0, 0, 0);
         float dist = -1;
