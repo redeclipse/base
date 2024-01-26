@@ -1,7 +1,5 @@
 struct gameent;
 
-#define RELPOS(_d,_pos) (physics::movepitch(_d) ? vec(_pos).addz(JUMPMAX * 1.25f) : _pos)
-
 namespace ai
 {
     const int MAXWAYPOINTS      = USHRT_MAX - 2;
@@ -226,9 +224,9 @@ namespace ai
     {
         vector<aistate> state;
         vector<int> route;
-        vec target, spot, views, aimpos;
+        vec target, spot, views, aimpos, bottom;
         int enemy, enemyseen, enemymillis, prevnodes[NUMPREVNODES], targnode, targlast, targtime, targseq,
-            lastrun, lastaction, lastcheck, jumpseed, blocktime, blockseq, lastaimpos, lastmelee, lastturn;
+            lastrun, lastaction, lastcheck, jumpseed, blocktime, blockseq, lastaimpos, lastmelee, lastturn, lastbottom;
         float targyaw, targpitch;
         bool dontmove, tryreset;
 
@@ -245,7 +243,7 @@ namespace ai
             spot = target = vec(0, 0, 0);
             lastaction = lastcheck = enemyseen = enemymillis = 0;
             blocktime = blockseq = targtime = targseq = 0;
-            lastaimpos = lastmelee = lastturn = 0;
+            lastaimpos = lastmelee = lastturn = lastbottom = 0;
             lastrun = jumpseed = lastmillis;
             targnode = targlast = enemy = -1;
             targyaw = targpitch = 0;

@@ -377,9 +377,26 @@ namespace ai
         return false;
     }
 
+    vec getbottom(gameent *d)
+    {
+        if(!d->ai) return d->feetpos();
+        if(totalmillis == d->ai->lastbottom) return d->ai->bottom;
+
+        d->ai->bottom = d->feetpos();
+
+        if(physics::movepitch(d))
+        {
+            vec oldpos = d->ai->bottom;
+            physics::droptofloor(d->ai->bottom);
+            if(oldpos.z - d->ai->bottom.z > CLOSEDIST) d->ai->bottom.z = oldpos.z - CLOSEDIST;
+        }
+
+        return d->ai->bottom;
+    }
+
     bool randomnode(gameent *d, aistate &b, float guard, float wander)
     {
-        return randomnode(d, b, d->feetpos(), guard, wander);
+        return randomnode(d, b, getbottom(d), guard, wander);
     }
 
     bool enemy(gameent *d, aistate &b, const vec &pos, float guard, int pursue, bool force, bool retry = false)
@@ -406,7 +423,7 @@ namespace ai
     {
         if(A(d->actortype, abilities)&(1<<A_A_MOVE))
         {
-            float dist = d->feetpos().squaredist(pos);
+            float dist = getbottom(d).squaredist(pos);
             if(walk == 2 || b.override || (walk && dist <= guard*guard) || !makeroute(d, b, pos))
             { // run away and back to keep ourselves busy
                 if(!b.override && wander > 0 && randomnode(d, b, pos, guard, wander))
@@ -435,7 +452,7 @@ namespace ai
     bool defense(gameent *d, aistate &b, const vec &pos, float guard, float wander, int walk, int actoverride)
     {
         bool canmove = A(d->actortype, abilities)&(1<<A_A_MOVE);
-        if(!canmove || (!walk && d->feetpos().squaredist(pos) <= guard*guard))
+        if(!canmove || (!walk && getbottom(d).squaredist(pos) <= guard*guard))
         {
             if(actoverride >= 0) b.acttype = actoverride;
             else b.acttype = enemy(d, b, pos, wander >= 0 ? wander : guard*2, canmove && W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0, false, !canmove) ? AI_A_PROTECT : AI_A_IDLE;
@@ -530,7 +547,7 @@ namespace ai
 
     void items(gameent *d, aistate &b, vector<interest> &interests, bool force = false)
     {
-        vec pos = d->feetpos();
+        vec pos = getbottom(d);
         loopusej(EU_ITEM)
         {
             gameentity &e = *(gameentity *)entities::ents[j];
@@ -786,8 +803,8 @@ namespace ai
                 gameent *e = game::getclient(b.target);
                 if(e && d->team == e->team)
                 {
-                    if(e->state == CS_ALIVE) return defense(d, b, e->feetpos());
-                    if(b.owner >= 0) return patrol(d, b, d->feetpos());
+                    if(e->state == CS_ALIVE) return defense(d, b, getbottom(e));
+                    if(b.owner >= 0) return patrol(d, b, getbottom(d));
                 }
                 break;
             }
@@ -898,9 +915,9 @@ namespace ai
                                 return true;
                             return false;
                         }
-                        return patrol(d, b, e->feetpos(), weapmindist(d->weapselect, alt), weapmaxdist(d->weapselect, alt));
+                        return patrol(d, b, getbottom(e), weapmindist(d->weapselect, alt), weapmaxdist(d->weapselect, alt));
                     }
-                    if(b.owner >= 0) return patrol(d, b, d->feetpos());
+                    if(b.owner >= 0) return patrol(d, b, getbottom(d));
                 }
                 break;
             }
@@ -947,7 +964,7 @@ namespace ai
                             {
                                 int n = waypoints[e->lastnode].links[i];
                                 if(!n || obstacles.find(n, d)) break;
-                                float dist = waypoints[n].o.dist(d->feetpos());
+                                float dist = waypoints[n].o.dist(getbottom(d));
                                 if(closest < 0 || dist < closedist)
                                 {
                                     closest = n;
@@ -967,19 +984,19 @@ namespace ai
             }
         }
 
-        if(b.owner >= 0) return defense(d, b, d->feetpos(), CLOSEDIST, FARDIST, 0, AI_A_IDLE);
+        if(b.owner >= 0) return defense(d, b, getbottom(d), CLOSEDIST, FARDIST, 0, AI_A_IDLE);
 
         return false;
     }
 
     int closenode(gameent *d)
     {
-        vec pos = d->feetpos();
+        vec pos = getbottom(d);
         int node1 = -1, node2 = -1, node3 = -1;
         float mindist1 = CLOSEDIST*CLOSEDIST, mindist2 = RETRYDIST*RETRYDIST, mindist3 = FARDIST*FARDIST;
         loopv(d->ai->route) if(iswaypoint(d->ai->route[i]))
         {
-            vec epos = RELPOS(d, waypoints[d->ai->route[i]].o);
+            vec epos = waypoints[d->ai->route[i]].o;
             float dist = epos.squaredist(pos);
             if(dist > mindist3) continue;
             if(dist < mindist1) { node1 = i; mindist1 = dist; }
@@ -1003,21 +1020,23 @@ namespace ai
 
         d->ai->spot = pos;
         d->ai->targnode = targ;
+
+        if(physics::movepitch(d)) d->ai->spot.z += JUMPMAX + 1;
     }
 
     int wpspot(gameent *d, int n, bool check = false)
     {
         if(iswaypoint(n)) loopk(2)
         {
-            vec epos = RELPOS(d, waypoints[n].o);
+            vec epos = waypoints[n].o;
             int entid = obstacles.remap(d, n, epos, k!=0);
             if(iswaypoint(entid))
             {
-                vec feet = d->feetpos();
+                vec feet = getbottom(d);
 
                 if(!physics::movepitch(d))
                 {
-                    float zoff = epos.z - d->feetpos().z;
+                    float zoff = epos.z - feet.z;
                     if(!d->canimpulse(IM_T_JUMP) && zoff >= JUMPMIN) epos.z = feet.z;
                     else if(d->canimpulse(IM_T_JUMP) && d->airtime(lastmillis) >= 25 && zoff <= -JUMPMIN) epos.z = feet.z;
                 }
@@ -1140,7 +1159,7 @@ namespace ai
             if(entities::ents.inrange(b.target))
             {
                 gameentity &e = *(gameentity *)entities::ents[b.target];
-                if(e.pos().dist(d->feetpos()) <= WAYPOINTRADIUS*2 && entities::isallowed(b.target))
+                if(e.pos().dist(getbottom(d)) <= WAYPOINTRADIUS*2 && entities::isallowed(b.target))
                     setspot(d, e.pos());
             }
         }
@@ -1152,7 +1171,7 @@ namespace ai
 
     void jumpto(gameent *d, aistate &b, const vec &pos)
     {
-        vec off = vec(pos).sub(d->feetpos());
+        vec off = vec(pos).sub(getbottom(d));
         int airtime = d->airtime(lastmillis);
         bool sequenced = d->ai->blockseq > 1 || d->ai->targseq > 1, offground = airtime && !physics::liquidcheck(d) && !physics::laddercheck(d),
              impulse = d->canimpulse(IM_T_BOOST) && airtime > (b.acttype >= AI_A_LOCKON ? 100 : 250) && d->hasparkour() && (b.acttype >= AI_A_LOCKON || off.z >= JUMPMIN),
@@ -1349,26 +1368,27 @@ namespace ai
         if(b.acttype == AI_A_IDLE || !(A(d->actortype, abilities)&(1<<A_A_MOVE)))
         {
             d->ai->dontmove = true;
-            setspot(d, d->feetpos());
+            setspot(d, getbottom(d));
         }
         else if(hunt(d, b, allowrnd))
         {
             game::getyawpitch(d->o, d->ai->spot, d->ai->targyaw, d->ai->targpitch);
-            if(d->ai->route.length() <= 1 && d->ai->spot.squaredist(d->feetpos()) <= MINWPDIST*MINWPDIST) d->ai->dontmove = true;
+            if(d->ai->route.length() <= 1 && d->ai->spot.squaredist(getbottom(d)) <= MINWPDIST*MINWPDIST) d->ai->dontmove = true;
         }
         else
         {
             if(!allowrnd) d->ai->dontmove = true;
             else
             {
-                if(d->blocked || (!d->ai->lastturn || lastmillis-d->ai->lastturn >= 1000))
+                if(d->blocked || (!d->ai->lastturn || lastmillis-d->ai->lastturn >= 5000))
                 {
                     d->ai->targyaw += 90 + rnd(180);
+                    if(physics::movepitch(d)) d->ai->targpitch = -45;
                     d->ai->lastturn = lastmillis;
                 }
                 d->ai->targpitch = 0;
                 vec dir(d->ai->targyaw, d->ai->targpitch);
-                setspot(d, vec(d->feetpos()).add(dir.mul(FARDIST)));
+                setspot(d, vec(getbottom(d)).add(dir.mul(FARDIST)));
             }
         }
 
@@ -1440,7 +1460,7 @@ namespace ai
                             b.acttype = AI_A_LOCKON;
                             d->ai->targyaw = yaw;
                             d->ai->targpitch = pitch;
-                            setspot(d, e->feetpos());
+                            setspot(d, getbottom(e));
                         }
                     }
 
@@ -1490,9 +1510,10 @@ namespace ai
 
         fixrange(d->ai->targyaw, d->ai->targpitch);
 
-        if(dancing || !occupied)
+        if(dancing || !occupied || d->actortype >= A_ENVIRONMENT)
         {
-            if(dancing || actors[d->actortype].onlyfwd) frame *= 2;
+            if(physics::movepitch(d)) frame *= 20; // we're floating and need free movement
+            else if(dancing || actors[d->actortype].onlyfwd) frame *= 3;
             else if(!m_insta(game::gamemode, game::mutators))
             {
                 int hp = max(d->gethealth(game::gamemode, game::mutators)/3, 1);
@@ -1501,7 +1522,7 @@ namespace ai
                 if(b.acttype == AI_A_HASTE) frame *= 1+(hp/float(max(d->health, 1)));
             }
 
-            game::scaleyawpitch(d->yaw, d->pitch, d->ai->targyaw, d->ai->targpitch, frame, d->actortype >= A_ENVIRONMENT ? frame : frame*0.5f);
+            game::scaleyawpitch(d->yaw, d->pitch, d->ai->targyaw, d->ai->targpitch, frame, frame * 0.5f);
         }
 
         if(d->canimpulse(IM_T_JUMP)) jumpto(d, b, d->ai->spot);
@@ -1667,7 +1688,7 @@ namespace ai
 
     bool transport(gameent *d, int find = 0)
     {
-        vec pos = d->feetpos();
+        vec pos = getbottom(d);
         static vector<int> candidates; candidates.setsize(0);
         if(find) findwaypointswithin(pos, WAYPOINTRADIUS, RETRYDIST*find, candidates);
         if(find ? !candidates.empty() : !d->ai->route.empty()) loopk(2)
@@ -1679,7 +1700,7 @@ namespace ai
                 int n = find ? candidates[i] : d->ai->route[i];
                 if((k || (!d->ai->hasprevnode(n) && n != d->lastnode)) && !obstacles.find(n, d))
                 {
-                    float v = RELPOS(d, waypoints[n].o).squaredist(pos);
+                    float v = waypoints[n].o.squaredist(pos);
                     if(!iswaypoint(best) || v < dist)
                     {
                         best = n;
@@ -1689,7 +1710,7 @@ namespace ai
             }
             if(iswaypoint(best))
             {
-                d->o = RELPOS(d, waypoints[best].o);
+                d->o = waypoints[best].o;
                 d->o.z += d->height;
                 d->resetinterp();
                 return true;
@@ -1715,8 +1736,7 @@ namespace ai
                         if(d->ai->blockseq != 1 && iswaypoint(d->ai->targnode))
                         {
                             if(!d->ai->hasprevnode(d->ai->targnode)) d->ai->addprevnode(d->ai->targnode);
-                            vec relpos = RELPOS(d, waypoints[d->ai->targnode].o);
-                            wpavoid.avoidnear(NULL, relpos.z + WAYPOINTRADIUS, relpos, WAYPOINTRADIUS);
+                            wpavoid.avoidnear(NULL, waypoints[d->ai->targnode].o.z + WAYPOINTRADIUS, waypoints[d->ai->targnode].o, WAYPOINTRADIUS);
                         }
                         break;
                     case 3: if(!transport(d)) d->ai->reset(false); break;
@@ -1900,7 +1920,7 @@ namespace ai
         }
         if(aidebug >= 5)
         {
-            vec pos = d->feetpos();
+            vec pos = getbottom(d);
             if(!d->ai->spot.iszero()) part_trace(pos, d->ai->spot, 1, 1, 1, colourcyan);
             if(iswaypoint(d->ai->targnode)) part_trace(pos, waypoints[d->ai->targnode].o, 1, 1, 1, colourpurple);
             if(iswaypoint(d->lastnode)) part_trace(pos, waypoints[d->lastnode].o, 1, 1, 1, colouryellow);

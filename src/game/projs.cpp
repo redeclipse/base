@@ -1185,20 +1185,23 @@ namespace projs
             case PRJ_VANITY:
             {
                 proj.height = proj.aboveeye = proj.radius = proj.xradius = proj.yradius = 1;
-                if(proj.owner)
+                if(!proj.mdlname || !*proj.mdlname)
                 {
-                    if(!proj.owner->isdead())
+                    if(proj.owner)
                     {
-                        proj.lifemillis = proj.lifetime = 1;
-                        proj.lifespan = 1.f;
-                        proj.state = CS_DEAD;
-                        proj.escaped = true;
-                        return;
+                        if(!proj.owner->isdead())
+                        {
+                            proj.lifemillis = proj.lifetime = 1;
+                            proj.lifespan = 1.f;
+                            proj.state = CS_DEAD;
+                            proj.escaped = true;
+                            return;
+                        }
+                        proj.o = proj.owner->headpos();
+                        proj.lifesize = proj.owner->curscale;
                     }
-                    proj.o = proj.owner->headpos();
-                    proj.lifesize = proj.owner->curscale;
+                    proj.mdlname = game::vanityfname(proj.owner, proj.weap, proj.value, true);
                 }
-                proj.mdlname = game::vanityfname(proj.owner, proj.weap, proj.value, true);
                 proj.elasticity = vanityelasticity;
                 proj.relativity = vanityrelativity;
                 proj.liquidcoast = vanityliquidcoast;
@@ -1214,10 +1217,12 @@ namespace projs
             }
             default: break;
         }
+
         if(proj.projtype != PRJ_SHOT) updatebb(proj, true);
         proj.spawntime = lastmillis;
         proj.hit = NULL;
         proj.collidezones = CLZ_NONE;
+
         if(proj.owner && (proj.projtype != PRJ_SHOT || (!proj.child && !(WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_LENGTH))))
         {
             vec eyedir = vec(proj.o).sub(proj.owner->o);
@@ -2123,9 +2128,15 @@ namespace projs
                 gameent *e = (gameent *)f;
                 if(e->actortype != A_JANITOR) continue;
 
-                float dist = e->o.dist(proj.o);
+                vec ray = vec(e->center()).sub(proj.o);
+                float dist = ray.magnitude();
                 if(dist >= ai::RETRYDIST) continue;
-                if(dist <= f->radius + proj.radius + GUARDRADIUS)
+                ray.normalize();
+
+                float blocked = tracecollide(&proj, e->o, ray, dist, RAY_CLIPMAT|RAY_ALPHAPOLY, true);
+                if(blocked > 0 && blocked < dist) continue;
+
+                if(dist <= f->radius + proj.radius + 1)
                 {
                     e->collected(proj.projtype, proj.lifesize, proj.mdlname);
                     proj.beenused = 1;
@@ -2135,7 +2146,7 @@ namespace projs
 
                 proj.dest = e->center();
                 float amt = clamp(10*secs, 1e-6f, 1.f), mag = max(proj.vel.magnitude(), physics::movevelocity(&proj), e->speed + dist * 1.1f);
-                vec dir = vec(proj.vel).safenormalize().mul(1.f-amt).add(vec(proj.dest).sub(proj.o).safenormalize().mul(amt)).normalize();
+                vec dir = vec(proj.vel).safenormalize().mul(1.f-amt).add(vec(ray).mul(amt)).normalize();
                 if(!dir.iszero()) (proj.vel = dir).mul(mag);
                 // part_flare(proj.o, proj.dest, 1, PART_LIGHTNING_FLARE, game::getcolour(e, game::playerovertone, game::playerovertonelevel), 0.5f, 0.0625f, game::getcolour(e, game::playerundertone, game::playerundertonelevel), 0.75f);
             }

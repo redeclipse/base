@@ -390,7 +390,7 @@ namespace ai
                     { // try to reroute above their head?
                         if(!find(node, d))
                         {
-                            pos = RELPOS(d, ai::waypoints[node].o);
+                            pos = ai::waypoints[node].o;
                             return node;
                         }
                         else return retry ? n : -1;
