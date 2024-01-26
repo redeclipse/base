@@ -542,7 +542,7 @@ namespace projs
 
     void updateattract(gameent *d, gameent *v, int weap, int flags)
     {
-        if(flags&HIT_BURN || !(WF(WK(flags), weap, collide, WS(flags))&ATTRACT_PLAYER)) return;
+        if(!(WF(WK(flags), weap, collide, WS(flags))&ATTRACT_PLAYER)) return;
 
         loopv(projs)
         {
