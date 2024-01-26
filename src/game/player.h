@@ -1,6 +1,9 @@
 // Player and other actor definitions
 
-enum { A_PLAYER = 0, A_BOT, A_TURRET, A_GRUNT, A_DRONE, A_ROLLER, A_HAZARD, A_MAX, A_ENEMY = A_TURRET, A_TOTAL = A_MAX - A_ENEMY };
+enum {
+    A_PLAYER = 0, A_BOT, A_TURRET, A_GRUNT, A_DRONE, A_ROLLER, A_HAZARD, A_JANITOR, A_MAX,
+    A_ENEMY = A_TURRET, A_ENVIRONMENT = A_HAZARD, A_TOTAL = A_MAX - A_ENEMY, A_CLAMP = A_ENVIRONMENT - A_ENEMY
+};
 struct actor
 {
     const char *name;
@@ -18,6 +21,7 @@ actor actors[] = {
     { "drone",          A_DRONE,    CLZ_NOHEAD, true,   true,   true,   true,   false,  18.5f,      4.25f,  NULL },
     { "roller",         A_ROLLER,   CLZ_NONE,   false,  false,  false,  false,  true,   11.475f,    5.75f,  "actors/roller" },
     { "hazard",         A_HAZARD,   CLZ_NONE,   false,  false,  false,  false,  false,  1.f,        1.f,    NULL },
+    { "clenaer",        A_JANITOR,  CLZ_NONE,   false,  false,  false,  false,  false,  11.475f,    5.75f,  "actors/roller" },
 };
 #else
 extern actor actors[];
@@ -26,15 +30,16 @@ extern actor actors[];
 #define AA(type) (1<<A_A_##type)
 enum
 {
-    A_A_MOVE = 0, A_A_JUMP, A_A_CROUCH, A_A_MELEE, A_A_PRIMARY, A_A_SECONDARY, A_A_PUSHABLE, A_A_AFFINITY, A_A_REGEN, A_A_KAMIKAZE, A_A_GIBS, A_A_DAMAGE, A_A_AMMO, A_A_MAX,
+    A_A_MOVE = 0, A_A_JUMP, A_A_CROUCH, A_A_MELEE, A_A_PRIMARY, A_A_SECONDARY, A_A_PUSHABLE, A_A_AFFINITY, A_A_REGEN, A_A_KAMIKAZE, A_A_GIBS, A_A_DAMAGE, A_A_AMMO, A_A_FLOAT, A_A_MAX,
     A_A_ATTACK = (1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_KAMIKAZE),
-    A_A_ALL = (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_CROUCH)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_AFFINITY)|(1<<A_A_REGEN)|(1<<A_A_GIBS)|(1<<A_A_DAMAGE)|(1<<A_A_AMMO),
+    A_A_ALL = (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_CROUCH)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_AFFINITY)|(1<<A_A_REGEN)|(1<<A_A_GIBS)|(1<<A_A_DAMAGE)|(1<<A_A_AMMO)|(1<<A_A_FLOAT),
     A_A_PLAYER = (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_CROUCH)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_AFFINITY)|(1<<A_A_REGEN)|(1<<A_A_GIBS)|(1<<A_A_DAMAGE)|(1<<A_A_AMMO),
     A_A_MOVINGAI = (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_CROUCH)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_AFFINITY)|(1<<A_A_REGEN)|(1<<A_A_GIBS)|(1<<A_A_DAMAGE)|(1<<A_A_AMMO),
     A_A_LESSAI = (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_GIBS)|(1<<A_A_DAMAGE)|(1<<A_A_AMMO),
     A_A_FIXEDAI = (1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_DAMAGE)|(1<<A_A_AMMO),
     A_A_ROLLER = (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_PUSHABLE)|(1<<A_A_KAMIKAZE)|(1<<A_A_DAMAGE)|(1<<A_A_AMMO),
-    A_A_HAZARD = (1<<A_A_PRIMARY)
+    A_A_HAZARD = (1<<A_A_PRIMARY),
+    A_A_JANITOR = (1<<A_A_MOVE)|(1<<A_A_PUSHABLE)|(1<<A_A_DAMAGE)|(1<<A_A_REGEN)|(1<<A_A_FLOAT)
 };
 
 enum
@@ -150,119 +155,119 @@ extern const playerpattern playerpatterns[PLAYERPATTERNS];
 #include "playerdef.h"
 
 APSVAR(IDF_GAMEMOD, 0, vname,
-    "Player",       "Bot",          "Turret",       "Grunt",        "Drone",        "Roller",       "Hazard"
+    "Player",       "Bot",          "Turret",       "Grunt",        "Drone",        "Roller",       "Hazard",       "Janitor"
 );
 APVAR(IDF_GAMEMOD, 0, abilities, 0, A_A_ALL,
-    A_A_PLAYER,     A_A_MOVINGAI,   A_A_FIXEDAI,    A_A_MOVINGAI,   A_A_LESSAI,     A_A_ROLLER,     A_A_HAZARD
+    A_A_PLAYER,     A_A_MOVINGAI,   A_A_FIXEDAI,    A_A_MOVINGAI,   A_A_LESSAI,     A_A_ROLLER,     A_A_HAZARD,     A_A_JANITOR
 );
 APVAR(IDF_GAMEMOD, 0, collide, 0, A_C_ALL,
-    A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL
+    A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL
 );
 APVAR(IDF_GAMEMOD, 0, health, 1, VAR_MAX,
-    1000,           1000,           1000,           500,            500,            500,            1000
+    1000,           1000,           1000,           500,            500,            500,            1000,           1000
 );
 APVAR(IDF_GAMEMOD, 0, hurtstop, 1, VAR_MAX,
-    0,              0,              0,              100,            500,            100,            0
+    0,              0,              0,              100,            500,            100,            0,              100
 );
 APVAR(IDF_GAMEMOD, 0, impulse, 0, IM_T_ALL,
-    IM_T_ALL,       IM_T_MVAI,      0,              IM_T_MVAI,      IM_T_LSAI,      IM_T_ROLLER,    0
+    IM_T_ALL,       IM_T_MVAI,      0,              IM_T_MVAI,      IM_T_LSAI,      IM_T_ROLLER,    0,              0
 );
 APFVAR(IDF_GAMEMOD, 0, liquidboost, 0, FVAR_MAX,
-    0,              1,              1,              1,              1,              1,              0
+    0,              1,              1,              1,              1,              1,              0,              0
 );
 APVAR(IDF_GAMEMOD, 0, magboots, 0, 1,
-    1,              1,              1,              1,              1,              1,              0
+    1,              1,              1,              1,              1,              1,              0,              0
 );
 APVAR(IDF_GAMEMOD, 0, maxcarry, 0, W_LOADOUT,
-    2,              2,              0,              0,              0,              0,              W_LOADOUT
+    2,              2,              0,              0,              0,              0,              W_LOADOUT,      0
 );
 APFVAR(IDF_GAMEMOD, 0, scale, FVAR_NONZERO, FVAR_MAX,
-    1,              1,              0.5f,           1,              0.85f,          1,              1
+    1,              1,              0.5f,           1,              0.85f,          1,              1,              0.5f
 );
 APVAR(IDF_GAMEMOD, 0, spawndelay, DEATHMILLIS, VAR_MAX,
-    5000,           5000,           30000,          30000,          30000,          30000,          DEATHMILLIS
+    5000,           5000,           30000,          30000,          30000,          30000,          DEATHMILLIS,    DEATHMILLIS
 );
 APVAR(IDF_GAMEMOD, 0, spawndelayedit, DEATHMILLIS, VAR_MAX,
-    0,              5000,           30000,          30000,          30000,          30000,          DEATHMILLIS
+    0,              5000,           30000,          30000,          30000,          30000,          DEATHMILLIS,    DEATHMILLIS
 );
 APVAR(IDF_GAMEMOD, 0, spawndelaybomber, DEATHMILLIS, VAR_MAX,
-    3000,           3000,           30000,          30000,          30000,          30000,          DEATHMILLIS
+    3000,           3000,           30000,          30000,          30000,          30000,          DEATHMILLIS,    DEATHMILLIS
 );
 APVAR(IDF_GAMEMOD, 0, spawndelaycapture, DEATHMILLIS, VAR_MAX,
-    5000,           5000,           30000,          30000,          30000,          30000,          DEATHMILLIS
+    5000,           5000,           30000,          30000,          30000,          30000,          DEATHMILLIS,    DEATHMILLIS
 );
 APVAR(IDF_GAMEMOD, 0, spawndelaydefend, DEATHMILLIS, VAR_MAX,
-    5000,           5000,           30000,          30000,          30000,          30000,          DEATHMILLIS
+    5000,           5000,           30000,          30000,          30000,          30000,          DEATHMILLIS,    DEATHMILLIS
 );
 APVAR(IDF_GAMEMOD, 0, spawndelaygauntlet, DEATHMILLIS, VAR_MAX,
-    3000,           3000,           30000,          30000,          30000,          30000,          DEATHMILLIS
+    3000,           3000,           30000,          30000,          30000,          30000,          DEATHMILLIS,    DEATHMILLIS
 );
 APFVAR(IDF_GAMEMOD, 0, spawndelayinstascale, 0, FVAR_MAX,
-    0.5f,           0.5f,           0.75f,          0.75f,          0.75f,          0.75f,          1
+    0.5f,           0.5f,           0.75f,          0.75f,          0.75f,          0.75f,          1,              1
 );
 APVAR(IDF_GAMEMOD, 0, spawndelayrace, DEATHMILLIS, VAR_MAX,
-    1000,           1000,           10000,          10000,          10000,          10000,          DEATHMILLIS
+    1000,           1000,           10000,          10000,          10000,          10000,          DEATHMILLIS,    DEATHMILLIS
 );
 APVAR(IDF_GAMEMOD, 0, spawngrenades, 0, 2,
-    0,              0,              0,              0,              0,              0,              0
+    0,              0,              0,              0,              0,              0,              0,              0
 );
 APVAR(IDF_GAMEMOD, 0, spawnmines, 0, 2,
-    0,              0,              0,              0,              0,              0,              0
+    0,              0,              0,              0,              0,              0,              0,              0
 );
 APVAR(IDF_GAMEMOD, 0, teamdamage, 0, A_T_ALL,
-    A_T_PLAYER,     A_T_AI,         A_T_AI,         A_T_AI,         A_T_AI,         A_T_AI,         A_T_PLAYER
+    A_T_PLAYER,     A_T_AI,         A_T_AI,         A_T_AI,         A_T_AI,         A_T_AI,         A_T_PLAYER,     A_T_PLAYER
 );
 APVAR(IDF_GAMEMOD, 0, weapongladiator, 0, W_ALL-1,
-    W_CLAW,         W_CLAW,         W_SMG,          W_PISTOL,       W_CLAW,         W_CLAW,         W_PISTOL
+    W_CLAW,         W_CLAW,         W_SMG,          W_PISTOL,       W_CLAW,         W_CLAW,         W_PISTOL,       W_CLAW
 );
 APVAR(IDF_GAMEMOD, 0, weaponinsta, 0, W_ALL-1,
-    W_RIFLE,        W_RIFLE,        W_RIFLE,        W_RIFLE,        W_CLAW,         W_CLAW,         W_RIFLE
+    W_RIFLE,        W_RIFLE,        W_RIFLE,        W_RIFLE,        W_CLAW,         W_CLAW,         W_RIFLE,        W_CLAW
 );
 APVAR(IDF_GAMEMOD, 0, weaponkaboom, 0, W_ALL-1,
-    W_GRENADE,      W_GRENADE,      W_GRENADE,      W_GRENADE,      W_CLAW,         W_CLAW,         W_PISTOL
+    W_GRENADE,      W_GRENADE,      W_GRENADE,      W_GRENADE,      W_CLAW,         W_CLAW,         W_PISTOL,       W_CLAW
 );
 APVAR(IDF_GAMEMOD, 0, weaponmedieval, 0, W_ALL-1,
-    W_SWORD,        W_SWORD,        W_RIFLE,        W_SWORD,        W_CLAW,         W_CLAW,         W_PISTOL
+    W_SWORD,        W_SWORD,        W_RIFLE,        W_SWORD,        W_CLAW,         W_CLAW,         W_PISTOL,       W_CLAW
 );
 APVAR(IDF_GAMEMOD, 0, weaponrace, 0, W_ALL-1,
-    W_CLAW,         W_CLAW,         W_SMG,          W_PISTOL,       W_CLAW,         W_CLAW,         W_PISTOL
+    W_CLAW,         W_CLAW,         W_SMG,          W_PISTOL,       W_CLAW,         W_CLAW,         W_PISTOL,       W_CLAW
 );
 APVAR(IDF_GAMEMOD, 0, weaponspawn, 0, W_ALL-1,
-    W_PISTOL,       W_PISTOL,       W_SMG,          W_PISTOL,       W_CLAW,         W_CLAW,         W_PISTOL
+    W_PISTOL,       W_PISTOL,       W_SMG,          W_PISTOL,       W_CLAW,         W_CLAW,         W_PISTOL,       W_CLAW
 );
 // these are modified by gameent::configure() et al
 APFVAR(IDF_GAMEMOD, 0, speed, 0, FVAR_MAX,
-    100,            100,            0,              90,             100,            50,             100
+    100,            100,            0,              90,             100,            50,             100,            150
 );
 APFVAR(IDF_GAMEMOD, 0, speedextra, FVAR_MIN, FVAR_MAX,
-    0,              0,              0,              0,              0,              0,              0
+    0,              0,              0,              0,              0,              0,              0,              0
 );
 APFVAR(IDF_GAMEMOD, 0, jumpspeed, 0, FVAR_MAX,
-    140,            140,            0,              140,            140,            70,             100
+    140,            140,            0,              140,            140,            70,             100,            100
 );
 APFVAR(IDF_GAMEMOD, 0, jumpspeedextra, FVAR_MIN, FVAR_MAX,
-    0,              0,              0,              0,              0,              0,              0
+    0,              0,              0,              0,              0,              0,              0,              0
 );
 APFVAR(IDF_GAMEMOD, 0, jumptolerance, 0, FVAR_MAX,
-    100,            100,            1000,           100,            100,            100,            100
+    100,            100,            1000,           100,            100,            100,            100,            100
 );
 APFVAR(IDF_GAMEMOD, 0, impulsespeed, 0, FVAR_MAX,
-    100,            100,            0,              100,            100,            50,             100
+    100,            100,            0,              100,            100,            50,             100,            100
 );
 APFVAR(IDF_GAMEMOD, 0, impulsespeedextra, FVAR_MIN, FVAR_MAX,
-    0,              0,              0,              0,              0,              0,              0
+    0,              0,              0,              0,              0,              0,              0,              0
 );
 APFVAR(IDF_GAMEMOD, 0, weight, 0, FVAR_MAX,
-    250,            250,            250,            250,            200,            200,            0
+    250,            250,            250,            250,            200,            200,            0,              0
 );
 APFVAR(IDF_GAMEMOD, 0, weightextra, FVAR_MIN, FVAR_MAX,
-    0,              0,              0,              0,              0,              0,              0
+    0,              0,              0,              0,              0,              0,              0,              0
 );
 APFVAR(IDF_GAMEMOD, 0, buoyancy, 0, FVAR_MAX,
-    500,            500,            0,              500,            400,            400,            0
+    500,            500,            0,              500,            400,            400,            0,              0
 );
 APFVAR(IDF_GAMEMOD, 0, buoyancyextra, FVAR_MIN, FVAR_MAX,
-    0,              0,              0,              0,              0,              0,              0
+    0,              0,              0,              0,              0,              0,              0,              0
 );
 
 // WARNING: ensure this value is less than or equal to TAG_MAX

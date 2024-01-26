@@ -379,15 +379,18 @@ namespace ai
                 for(; cur < next; cur++) if(waypoints[cur] == n)
                 {
                     if(ob.above < 0) return retry ? n : -1;
+
                     vec above(pos.x, pos.y, ob.above);
-                    if(above.z-d->o.z >= ai::JUMPMAX)
+
+                    if(!physics::movepitch(d) && above.z - d->o.z >= ai::JUMPMAX)
                         return retry ? n : -1; // too much scotty
+
                     int node = closestwaypoint(above, ai::CLOSEDIST, true);
                     if(ai::iswaypoint(node) && node != n)
                     { // try to reroute above their head?
                         if(!find(node, d))
                         {
-                            pos = ai::waypoints[node].o;
+                            pos = RELPOS(d, ai::waypoints[node].o);
                             return node;
                         }
                         else return retry ? n : -1;
@@ -396,8 +399,10 @@ namespace ai
                     {
                         vec old = d->o;
                         d->o = vec(above).add(vec(0, 0, d->height));
+
                         bool col = collide(d, vec(0, 0, 1));
                         d->o = old;
+
                         if(!col)
                         {
                             pos = above;
@@ -407,8 +412,10 @@ namespace ai
                     }
                 }
             }
+
             cur = next;
         }
+
         return n;
     }
 

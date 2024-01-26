@@ -1882,25 +1882,29 @@ namespace server
         if(!m_play(gamemode)) return;
         bool wasinovertime = gamestate == G_S_OVERTIME;
         int limit = wasinovertime ? m_mmvar(gamemode, mutators, overtimelimit) : m_mmvar(gamemode, mutators, timelimit), numt = numteams(gamemode, mutators);
-        bool newlimit = limit != oldtimelimit, newtimer = gamemillis-curtime > 0 && gamemillis/1000 != (gamemillis-curtime)/1000,
+        bool newlimit = limit != oldtimelimit, newtimer = gamemillis - curtime > 0 && gamemillis / 1000 != (gamemillis - curtime) / 1000,
              iterate = newlimit || newtimer;
+
         if(iterate)
         {
             if(newlimit)
             {
-                if(limit && oldtimelimit) gamelimit += (limit-oldtimelimit)*60000;
-                else if(limit) gamelimit = max(gamemillis, limit*60000);
+                if(limit && oldtimelimit) gamelimit += (limit - oldtimelimit) * 60000;
+                else if(limit) gamelimit = max(gamemillis, limit * 60000);
                 oldtimelimit = limit;
             }
+
             if(timeremaining)
             {
+                bool wantsoneminute = timeremaining > 60000;
+
                 if(limit)
                 {
                     if(gamemillis >= gamelimit) timeremaining = 0;
-                    else timeremaining = gamelimit - gamemillis;
+                    else timeremaining = max(gamelimit - gamemillis, 0);
                 }
                 else timeremaining = -1;
-                bool wantsoneminute = true;
+
                 if(!timeremaining)
                 {
                     if(gamestate != G_S_OVERTIME && wantsovertime())
@@ -1954,7 +1958,8 @@ namespace server
                         return; // bail
                     }
                 }
-                if(gs_playing(gamestate) && timeremaining != 0 && wantsoneminute && timeremaining == 60000)
+
+                if(gs_playing(gamestate) && wantsoneminute && timeremaining > 0 && timeremaining <= 60000)
                 {
                     gamelog log(GAMELOG_EVENT);
                     log.addlist("args", "type", "match");
@@ -1967,6 +1972,7 @@ namespace server
                 }
             }
         }
+
         if(wasinovertime && !wantsovertime())
         {
             gamelog log(GAMELOG_EVENT);

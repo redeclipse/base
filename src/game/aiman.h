@@ -91,6 +91,7 @@ namespace aiman
     {
         int count = 0, limit = getlimit(type);
         if(!limit) return false;
+
         loopv(clients) if(clients[i]->actortype == type)
         {
             clientinfo *ci = clients[i];
@@ -105,8 +106,10 @@ namespace aiman
                 ci->spawnpoint = ent;
                 return true;
             }
+
             if(++count >= limit) return false;
         }
+
         int cn = addclient(ST_REMOTE);
         if(cn >= 0)
         {
@@ -128,6 +131,7 @@ namespace aiman
                 setskill(ci, true);
                 copystring(ci->name, A(ci->actortype, vname), MAXNAMELEN);
                 ci->loadweap.shrink(0);
+
                 if(ci->actortype == A_BOT)
                 {
                     vector<char *> list;
@@ -151,6 +155,7 @@ namespace aiman
                         }
                     }
                     list.deletearrays();
+
                     ci->setvanity(ci->model ? G(botfemalevanities) : G(botmalevanities));
                     static vector<int> weaplist;
                     weaplist.setsize(0);
@@ -162,13 +167,17 @@ namespace aiman
                         weaplist.remove(iter);
                     }
                 }
+
                 ci->state = CS_DEAD;
                 ci->team = type == A_BOT ? T_NEUTRAL : T_ENEMY;
                 ci->online = ci->connected = ci->ready = true;
+
                 return true;
             }
+
             delclient(cn);
         }
+
         return false;
     }
 
@@ -340,17 +349,17 @@ namespace aiman
             if(!servermapvariant(sents[j].attrs[enttype[sents[j].type].mvattr])) continue;
             if(sents[j].attrs[0] < 0 || sents[j].attrs[0] >= A_TOTAL || gamemillis < sents[j].millis) continue;
 
-            int atype = sents[j].attrs[0]+A_ENEMY;
-            if(!m_onslaught(gamemode, mutators) && atype != A_HAZARD) continue;
+            int atype = sents[j].attrs[0] + A_ENEMY;
+            if(!m_onslaught(gamemode, mutators) && atype < A_ENVIRONMENT) continue;
 
             if(sents[j].attrs[5] && sents[j].attrs[5] != triggerid) continue;
             if(!m_check(sents[j].attrs[3], sents[j].attrs[4], gamemode, mutators)) continue;
             if(atype == A_TURRET && m_insta(gamemode, mutators)) continue;
 
-            if(atype == A_HAZARD)
+            if(atype >= A_ENVIRONMENT)
             {
                 bool found = false;
-                loopvrev(clients) if(clients[i]->actortype == A_HAZARD && clients[i]->spawnpoint == j)
+                loopvrev(clients) if(clients[i]->actortype >= A_ENVIRONMENT && clients[i]->spawnpoint == j)
                 {
                     if(found) deleteai(clients[i]);
                     found = true;

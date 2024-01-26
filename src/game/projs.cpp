@@ -1002,7 +1002,16 @@ namespace projs
                 if(!game::nogore || game::bloodscale > 0)
                 {
                     proj.height = proj.aboveeye = proj.radius = proj.xradius = proj.yradius = 0.5f;
-                    proj.lifesize = 1.5f-(rnd(100)/100.f);
+                    if(!proj.mdlname || !*proj.mdlname)
+                    {
+                        proj.lifesize = 1.5f-(rnd(100)/100.f);
+                        switch(rnd(3))
+                        {
+                            case 2: proj.mdlname = "projectiles/gibs/gib03"; break;
+                            case 1: proj.mdlname = "projectiles/gibs/gib02"; break;
+                            case 0: default: proj.mdlname = "projectiles/gibs/gib01"; break;
+                        }
+                    }
                     if(proj.owner)
                     {
                         if(!proj.owner->isdead())
@@ -1016,12 +1025,6 @@ namespace projs
                         proj.o = proj.owner->headtag();
                         proj.o.z -= proj.owner->zradius*0.125f;
                         proj.lifesize *= proj.owner->curscale;
-                    }
-                    switch(rnd(3))
-                    {
-                        case 2: proj.mdlname = "projectiles/gibs/gib03"; break;
-                        case 1: proj.mdlname = "projectiles/gibs/gib02"; break;
-                        case 0: default: proj.mdlname = "projectiles/gibs/gib01"; break;
                     }
                     float buoy = gibsbuoyancymax;
                     if(gibsbuoyancymax != gibsbuoyancymin)
@@ -1047,13 +1050,16 @@ namespace projs
             case PRJ_DEBRIS:
             {
                 proj.height = proj.aboveeye = proj.radius = proj.xradius = proj.yradius = 0.5f;
-                proj.lifesize = 1.5f-(rnd(100)/100.f);
-                switch(rnd(4))
+                if(!proj.mdlname || !*proj.mdlname)
                 {
-                    case 3: proj.mdlname = "projectiles/debris/debris04"; break;
-                    case 2: proj.mdlname = "projectiles/debris/debris03"; break;
-                    case 1: proj.mdlname = "projectiles/debris/debris02"; break;
-                    case 0: default: proj.mdlname = "projectiles/debris/debris01"; break;
+                    proj.lifesize = 1.5f-(rnd(100)/100.f);
+                    switch(rnd(4))
+                    {
+                        case 3: proj.mdlname = "projectiles/debris/debris04"; break;
+                        case 2: proj.mdlname = "projectiles/debris/debris03"; break;
+                        case 1: proj.mdlname = "projectiles/debris/debris02"; break;
+                        case 0: default: proj.mdlname = "projectiles/debris/debris01"; break;
+                    }
                 }
                 proj.relativity = 0.f;
                 proj.elasticity = debriselasticity;
@@ -1075,21 +1081,24 @@ namespace projs
                 proj.height = proj.aboveeye = 0.5f;
                 proj.radius = proj.yradius = 1;
                 proj.xradius = 0.25f;
-                if(!isweap(proj.weap) && proj.owner) proj.weap = proj.owner->weapselect;
-                if(proj.owner) proj.o = proj.from = proj.owner->ejecttag();
-                if(isweap(proj.weap))
+                if(!proj.mdlname || !*proj.mdlname)
                 {
-                    proj.mdlname = weaptype[proj.weap].eprj[WS(proj.flags) ? 1 : 0].count ? weaptype[proj.weap].eprj[WS(proj.flags) ? 1 : 0].name[rnd(weaptype[proj.weap].eprj[WS(proj.flags) ? 1 : 0].count)] : "";
-                    if(!proj.mdlname || !*proj.mdlname) proj.mdlname = "projectiles/catridge";
-                    proj.lifesize = weaptype[proj.weap].esize;
-                    proj.material = bvec::fromcolor(W(proj.weap, colour));
+                    if(!isweap(proj.weap) && proj.owner) proj.weap = proj.owner->weapselect;
+                    if(proj.owner) proj.o = proj.from = proj.owner->ejecttag();
+                    if(isweap(proj.weap))
+                    {
+                        proj.mdlname = weaptype[proj.weap].eprj[WS(proj.flags) ? 1 : 0].count ? weaptype[proj.weap].eprj[WS(proj.flags) ? 1 : 0].name[rnd(weaptype[proj.weap].eprj[WS(proj.flags) ? 1 : 0].count)] : "";
+                        if(!proj.mdlname || !*proj.mdlname) proj.mdlname = "projectiles/catridge";
+                        proj.lifesize = weaptype[proj.weap].esize;
+                        proj.material = bvec::fromcolor(W(proj.weap, colour));
+                    }
+                    else
+                    {
+                        proj.mdlname = "projectiles/catridge";
+                        proj.lifesize = 1;
+                    }
+                    if(proj.owner) proj.lifesize *= proj.owner->curscale;
                 }
-                else
-                {
-                    proj.mdlname = "projectiles/catridge";
-                    proj.lifesize = 1;
-                }
-                if(proj.owner) proj.lifesize *= proj.owner->curscale;
                 proj.elasticity = ejectelasticity;
                 proj.relativity = ejectrelativity;
                 proj.liquidcoast = ejectliquidcoast;
@@ -2101,6 +2110,34 @@ namespace projs
                     dir.mul(1.f-amt).add(vec(proj.dest).sub(proj.o).safenormalize().mul(amt)).normalize();
                     if(!dir.iszero()) (proj.vel = dir).mul(mag);
                 }
+            }
+        }
+        else if(proj.projtype == PRJ_GIBS || proj.projtype == PRJ_DEBRIS || proj.projtype == PRJ_EJECT || proj.projtype == PRJ_VANITY)
+        {
+            int numdyns = game::numdynents();
+            loopj(numdyns)
+            {
+                dynent *f = game::iterdynents(j);
+                if(!gameent::is(f) || !f->isalive()) continue;
+
+                gameent *e = (gameent *)f;
+                if(e->actortype != A_JANITOR) continue;
+
+                float dist = e->o.dist(proj.o);
+                if(dist >= ai::RETRYDIST) continue;
+                if(dist <= f->radius + proj.radius + GUARDRADIUS)
+                {
+                    e->collected(proj.projtype, proj.lifesize, proj.mdlname);
+                    proj.beenused = 1;
+                    proj.lifetime = min(proj.lifetime, proj.fadetime);
+                    return false;
+                }
+
+                proj.dest = e->center();
+                float amt = clamp(10*secs, 1e-6f, 1.f), mag = max(proj.vel.magnitude(), physics::movevelocity(&proj), e->speed + dist * 1.1f);
+                vec dir = vec(proj.vel).safenormalize().mul(1.f-amt).add(vec(proj.dest).sub(proj.o).safenormalize().mul(amt)).normalize();
+                if(!dir.iszero()) (proj.vel = dir).mul(mag);
+                // part_flare(proj.o, proj.dest, 1, PART_LIGHTNING_FLARE, game::getcolour(e, game::playerovertone, game::playerovertonelevel), 0.5f, 0.0625f, game::getcolour(e, game::playerundertone, game::playerundertonelevel), 0.75f);
             }
         }
 

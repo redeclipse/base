@@ -1332,7 +1332,7 @@ namespace entities
                 if(attr[0] < 0 || attr[0] >= A_TOTAL) return "";
 
                 int atype = attr[0] + A_ENEMY;
-                if(atype == A_HAZARD) return "";
+                if(atype >= A_ENVIRONMENT) return "";
 
                 const char *mdl = actors[atype].mdl;
                 if(!mdl || !*mdl) mdl = playertypes[0][1];
@@ -2818,24 +2818,72 @@ namespace entities
 
     void initents(int mver, char *gid, int gver)
     {
+        int numjanitors = 0, numcorroders = 0, nummines = 0;
         lastroutenode = routeid = -1;
         numactors = lastroutetime = droproute = 0;
         airnodes.setsize(0);
         ai::oldwaypoints.setsize(0);
         progress(0, "Setting entity attributes..");
+
         loopv(ents)
         {
             gameentity &e = *(gameentity *)ents[i];
             e.attrs.setsize(numattrs(e.type), 0);
             if(gver < VERSION_GAME) importent(e, i, mver, gver);
             fixentity(i, false);
-            if(e.type == ACTOR) numactors++;
+            if(e.type == ACTOR)
+            {
+                int atype = clamp(e.attrs[0], 0, A_TOTAL-1) + A_ENEMY;
+                if(atype == A_JANITOR) numjanitors++;
+                if(atype < A_ENVIRONMENT) numactors++;
+            }
+            if(e.type == WEAPON)
+            {
+                if(e.attrs[0] == W_MINE) nummines++;
+                if(e.attrs[0] == W_CORRODER) numcorroders++;
+            }
             progress((i+1)/float(ents.length()), "Setting entity attributes..");
         }
+
         memset(firstenttype, 0, sizeof(firstenttype));
         memset(firstusetype, 0, sizeof(firstusetype));
         memset(lastenttype, 0, sizeof(lastenttype));
         memset(lastusetype, 0, sizeof(lastusetype));
+
+        if(m_play(game::gamemode))
+        {
+            if(!numjanitors)
+            {
+                int iter = 0, maxjanitors = max(numplayers / 2, 2);
+                loopv(ents)
+                {
+                    if(ents[i]->type != PLAYERSTART) continue;
+                    if((iter++)%3 != 0) continue;
+                    extentity &e = *newent();
+                    ents.add(&e);
+                    e.type = ACTOR;
+                    e.o = vec(ents[i]->o).addz(ai::JUMPMAX * 1.1f);
+                    e.attrs.add(0, numattrs(ACTOR));
+                    e.attrs[0] = int(A_JANITOR - A_ENEMY);
+                    loopj(5) e.attrs[j+1] = ents[i]->attrs[j+1]; // yaw, pitch, mode, muts, id
+                    numjanitors++;
+                    if(numjanitors >= maxjanitors) break;
+                }
+            }
+
+            if(!numcorroders)
+            {
+                int iter = 0;
+                bool iterchk = nummines > 4;
+                loopv(ents)
+                {
+                    if(ents[i]->type != WEAPON || ents[i]->attrs[0] != W_MINE) continue;
+                    if(iterchk && (iter++)%2 != 0) continue;
+                    ents[i]->attrs[0] = W_CORRODER;
+                }
+            }
+        }
+
         if(m_onslaught(game::gamemode, game::mutators) && !numactors)
         {
             loopv(ents) if(ents[i]->type == PLAYERSTART || ents[i]->type == WEAPON)
@@ -2845,7 +2893,7 @@ namespace entities
                 e.type = ACTOR;
                 e.o = ents[i]->o;
                 e.attrs.add(0, numattrs(ACTOR));
-                e.attrs[0] = A_ENEMY+(i%A_TOTAL);
+                e.attrs[0] = A_ENEMY + (i % A_CLAMP);
                 switch(ents[i]->type)
                 {
                     case PLAYERSTART:
@@ -2860,7 +2908,9 @@ namespace entities
                 numactors++;
             }
         }
+
         progress(0, "Preparing entities..");
+
         loopv(ents)
         {
             gameentity &e = *(gameentity *)ents[i];

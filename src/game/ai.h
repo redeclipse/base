@@ -1,5 +1,7 @@
 struct gameent;
 
+#define RELPOS(_d,_pos) (physics::movepitch(_d) ? vec(_pos).addz(JUMPMAX * 1.25f) : _pos)
+
 namespace ai
 {
     const int MAXWAYPOINTS      = USHRT_MAX - 2;
@@ -169,6 +171,7 @@ namespace ai
         AI_T_AFFINITY,
         AI_T_ENTITY,
         AI_T_DROP,
+        AI_T_JUNK,
         AI_T_MAX
     };
 
@@ -240,7 +243,9 @@ namespace ai
         void clean()
         {
             spot = target = vec(0, 0, 0);
-            lastaction = lastcheck = enemyseen = enemymillis = blocktime = blockseq = targtime = targseq = lastaimpos = lastmelee = lastturn = 0;
+            lastaction = lastcheck = enemyseen = enemymillis = 0;
+            blocktime = blockseq = targtime = targseq = 0;
+            lastaimpos = lastmelee = lastturn = 0;
             lastrun = jumpseed = lastmillis;
             targnode = targlast = enemy = -1;
             targyaw = targpitch = 0;
@@ -334,8 +339,8 @@ namespace ai
 
     extern bool badhealth(gameent *d);
     extern int checkothers(vector<int> &targets, gameent *d = NULL, int state = -1, int targtype = -1, int target = -1, bool teams = false, int *members = NULL);
-    extern bool makeroute(gameent *d, aistate &b, int node, bool changed = true, int retries = 0);
-    extern bool makeroute(gameent *d, aistate &b, const vec &pos, bool changed = true, int retries = 0);
+    extern bool makeroute(gameent *d, aistate &b, int node, bool changed = true, int retries = 0, float dist = CLOSEDIST);
+    extern bool makeroute(gameent *d, aistate &b, const vec &pos, bool changed = true, int retries = 0, float dist = CLOSEDIST);
     extern bool randomnode(gameent *d, aistate &b, const vec &pos, float guard = ALERTMIN, float wander = ALERTMAX);
     extern bool randomnode(gameent *d, aistate &b, float guard = ALERTMIN, float wander = ALERTMAX);
     extern bool violence(gameent *d, aistate &b, gameent *e, int pursue = 0);

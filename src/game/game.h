@@ -1329,6 +1329,14 @@ struct gameent : dynent, clientstate
     fx::emitter *weaponfx, *impulsefx, *flashlightfx;
     projent *projchain;
 
+    struct collectlist
+    {
+        int type;
+        float size;
+        const char *name;
+    };
+    vector<collectlist> collects;
+
     gameent() : edit(NULL), ai(NULL), team(T_NEUTRAL), clientnum(-1), privilege(PRIV_NONE), projid(0), cplast(0), lastupdate(0), lastpredict(0), plag(0), ping(0),
         totaldamage(0), smoothmillis(-1), lastattacker(-1), lastpoints(0), quake(0), wasfiring(-1), conopen(false), k_up(false), k_down(false), k_left(false), k_right(false), obliterated(false),
         weaponfx(NULL), impulsefx(NULL), flashlightfx(NULL), projchain(NULL)
@@ -1355,6 +1363,13 @@ struct gameent : dynent, clientstate
     static bool is(int t) { return t == ENT_PLAYER || t == ENT_AI; }
     static bool is(physent *d) { return d && (d->type == ENT_PLAYER || d->type == ENT_AI); }
 
+    void collected(int type, float size, const char *name)
+    {
+        collectlist &c = collects.add();
+        c.type = type;
+        c.size = size;
+        c.name = name;
+    }
 
     void addstun(int weap, int millis, int delay, float scale, float gravity)
     {
@@ -1648,6 +1663,7 @@ struct gameent : dynent, clientstate
         stuns.shrink(0);
         jitters.shrink(0);
         used.shrink(0);
+        collects.shrink(0);
         clearimpulse();
         cleartags();
     }
@@ -1772,7 +1788,7 @@ struct gameent : dynent, clientstate
 
     vec &origintag(int weap = -1)
     {
-        if(actortype == A_HAZARD) return tag[TAG_ORIGIN] = headpos();
+        if(actortype >= A_ENVIRONMENT) return tag[TAG_ORIGIN] = headpos();
 
         if(!isweap(weap)) weap = weapselect;
         if(tag[TAG_ORIGIN] == vec(-1, -1, -1))
@@ -1793,7 +1809,7 @@ struct gameent : dynent, clientstate
 
     vec &muzzletag(int weap = -1)
     {
-        if(actortype == A_HAZARD) return tag[TAG_MUZZLE] = headpos();
+        if(actortype >= A_ENVIRONMENT) return tag[TAG_MUZZLE] = headpos();
 
         if(!isweap(weap)) weap = weapselect;
 
@@ -2380,6 +2396,7 @@ namespace physics
     extern int hasaffinity(gameent *d);
     extern bool secondaryweap(gameent *d);
     extern float impulsevelocity(physent *d, float amt, int &cost, int type, float redir, vec &keep);
+    extern bool movepitch(physent *d);
     extern bool movecamera(physent *d, const vec &dir, float dist, float stepdist);
     extern void smoothplayer(gameent *d, int res, bool local);
     extern void update();

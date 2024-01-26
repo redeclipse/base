@@ -286,6 +286,9 @@ namespace physics
 
     vec gravityvel(physent *d, const vec &center, float secs, float radius, float height, int matid, float submerged)
     {
+        if(d->weight == 0 || (gameent::is(d) && A(((gameent *)d)->actortype, abilities)&(1<<A_A_FLOAT)))
+            return vec(0);
+
         float vel = PHYS(gravity) * (d->weight / 100.f) * d->gravityscale, buoy = 0.f;
         bool liquid = isliquid(matid&MATF_VOLUME), inliquid = liquid && submerged >= LIQUIDPHYS(submerge, matid);
 
@@ -442,8 +445,9 @@ namespace physics
 
     bool movepitch(physent *d)
     {
-        if(d->type == ENT_CAMERA || d->state == CS_EDITING || d->state == CS_SPECTATOR) return true;
-        if(laddercheck(d) || liquidcheck(d) || PHYS(gravity) == 0) return true;
+        if(d->type == ENT_CAMERA || d->state == CS_EDITING || d->state == CS_SPECTATOR || isfloating(d)) return true;
+        if(laddercheck(d) || liquidcheck(d) || PHYS(gravity) == 0 || d->weight == 0) return true;
+        if(gameent::is(d) && A(((gameent *)d)->actortype, abilities)&(1<<A_A_FLOAT)) return true;
         return false;
     }
 
