@@ -1067,8 +1067,12 @@ struct clientstate
             weapammo[s][W_A_CLIP] = W(s, ammospawn);
             weapselect = s;
         }
-        if(s != W_CLAW && m_edit(gamemode) && !W(W_CLAW, disabled)) weapammo[W_CLAW][W_A_CLIP] = W(W_CLAW, ammospawn); // give SniperGoth his claw in edit mode
+
+        if(s != W_CLAW && (m_kaboom(gamemode, mutators) || m_insta(gamemode, mutators) || (m_edit(gamemode) && !W(W_CLAW, disabled))))
+            weapammo[W_CLAW][W_A_CLIP] = W(W_CLAW, ammospawn); // give SniperGoth his claw in edit mode
+
         if(s != W_MELEE && A(actortype, abilities)&(1<<A_A_MELEE) && !W(W_MELEE, disabled)) weapammo[W_MELEE][W_A_CLIP] = W(W_MELEE, ammospawn);
+
         if(actortype < A_ENEMY)
         {
             if(m_kaboom(gamemode, mutators) && !W(W_MINE, disabled)) weapammo[W_MINE][W_A_CLIP] = W(W_MINE, ammospawn);
@@ -1080,6 +1084,7 @@ struct clientstate
                     weapammo[W_MINE][W_A_CLIP] = W(W_MINE, ammospawn);
             }
         }
+
         if(m_maxcarry(actortype, gamemode, mutators) && m_loadout(gamemode, mutators))
         {
             vector<int> aweap;
