@@ -16,7 +16,7 @@ namespace projs
     };
     vector<toolent> toolents;
 
-    VAR(IDF_PERSIST, maxprojectiles, 1, 1024, VAR_MAX);
+    VAR(IDF_PERSIST, maxprojectiles, 1, 256, VAR_MAX);
 
     VAR(IDF_PERSIST, ejectfade, 0, 2500, VAR_MAX);
     VAR(IDF_PERSIST, ejectspin, 0, 1, 1);
@@ -2244,7 +2244,7 @@ namespace projs
         loopvrev(projs) if(projs[i]->projtype == PRJ_DEBRIS || projs[i]->projtype == PRJ_GIBS || projs[i]->projtype == PRJ_EJECT)
             canremove.add(new canrem(projs[i], camera1->o.dist(projs[i]->o)));
 
-        int count = canremove.length()-maxprojectiles;
+        int count = canremove.length() - maxprojectiles;
         if(count > 0)
         {
             canremove.sort(canrem::cmsort);

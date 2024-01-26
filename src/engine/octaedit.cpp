@@ -4,13 +4,6 @@ VAR(0, showpastegrid, 0, 0, 1);
 VAR(0, showcursorgrid, 0, 0, 1);
 VAR(0, showselboxgrid, 0, 0, 1);
 
-VAR(IDF_PERSIST, selectionui, 0, 0, 1);
-FVAR(IDF_PERSIST, selectionuiyaw, -1, -1, 360);
-FVAR(IDF_PERSIST, selectionuipitch, -181, -181, 181);
-FVAR(IDF_PERSIST, selectionuiscale, FVAR_NONZERO, 1, FVAR_MAX);
-FVAR(IDF_PERSIST, selectionuidetentyaw, 0, 90, 180);
-FVAR(IDF_PERSIST, selectionuidetentpitch, 0, 90, 90);
-
 bool boxoutline = false;
 
 void boxs(int orient, vec o, const vec &s, float size)
@@ -439,7 +432,6 @@ VAR(IDF_PERSIST, selectionpulse, 0, 500, VAR_MAX);
 FVAR(IDF_PERSIST, selectionwidth, 0, 4, 10);
 
 VAR(IDF_PERSIST, selectionoffset, 0, 1, 1);
-VARF(IDF_PERSIST, selectiondynui, 0, 1, 1, if(!selectiondynui) UI::cleardynui("selection"));
 
 int geteditorient(int curorient, int axis)
 {
@@ -728,7 +720,6 @@ void rendereditcursor()
     }
 
     // selections
-    int hasselui = -1;
     if(havesel || moving)
     {
         d = dimension(sel.orient);
@@ -806,38 +797,7 @@ void rendereditcursor()
             gle::colorub(0, 128, 0);
             boxs3D(from, to, sel.grid);
         }
-
-        if(selectionui)
-        {
-            vec pos(sel.o);
-            float mindist = 1e16f;
-            loopk(2)
-            {
-                int curcorner = 0;
-                loop(x, 2) loop(y, 2) loop(z, 2)
-                {
-                    vec o = vec(sel.o);
-                    if(x) o.x += sel.s.x * gridsize;
-                    if(y) o.y += sel.s.y * gridsize;
-                    if(z) o.z += sel.s.z * gridsize;
-                    float dist = camera1->o.squaredist(o);
-                    if(dist < mindist && getvisible(camera1->o, camera1->yaw, camera1->pitch, o, curfov, fovy, 0, k ? -1 : VFC_FULL_VISIBLE))
-                    {
-                        mindist = dist;
-                        pos = o;
-                        hasselui = curcorner;
-                    }
-                    curcorner++;
-                }
-                if(hasselui >= 0) break;
-            }
-            if(hasselui >= 0 && selectiondynui)
-                UI::setui("selection", SURFACE_WORLD, hasselui, pos, selectionuiyaw, selectionuipitch, selectionuiscale, selectionuidetentyaw, selectionuidetentpitch);
-        }
     }
-
-    if(selectiondynui)
-        loopk(8) if(k != hasselui && UI::uivisible("selection", SURFACE_WORLD, k)) UI::hideui("selection", SURFACE_WORLD, k);
 
     if(showpastegrid && localedit && localedit->copy)
     {

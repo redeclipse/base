@@ -2242,7 +2242,7 @@ namespace game
 
         if(nogore != 2 && gibscale > 0 && !(flags&HIT_LOST))
         {
-            int hp = max(d->gethealth(gamemode, mutators), 1), gib = clamp(int(max(damage, hp)/(d->obliterated ? 50.f : 100.f)), 2, 20), amt = int((rnd(gib) + gib) * (1 + gibscale));
+            int hp = max(d->gethealth(gamemode, mutators), 1), gib = clamp(int(max(damage, hp)/(d->obliterated ? 100.f : (d->headless ? 150.f : 200.f))), 1, 15), amt = int((rnd(gib) + gib) * (1 + gibscale));
 
             loopi(amt)
                 projs::create(pos, vec(pos).addz(2), true, d, nogore || !(A(d->actortype, abilities)&(1<<A_A_GIBS)) ? PRJ_DEBRIS : PRJ_GIBS, -1, 0, rnd(gibfade) + gibfade, 0, rnd(100) + 1, rnd(d->obliterated || d->headless ? 50 : 50) + 10);

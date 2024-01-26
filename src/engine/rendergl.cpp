@@ -2490,7 +2490,6 @@ void gl_drawview()
                 glDepthMask(GL_TRUE);
             }
         }
-        else UI::closedynui("selection");
 
         if(showboundingboxes && (!editmode || !editinhibit))
         {
