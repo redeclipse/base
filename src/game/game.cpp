@@ -388,18 +388,23 @@ namespace game
     VAR(IDF_PERSIST, playershadowsqdist, 32, 512, VAR_MAX);
 
     FVAR(IDF_PERSIST, playercombinemix, 0, 0.5f, 1); // when primary and secondary colours are combined
-    VAR(IDF_PERSIST, playerovertone, -1, CTONE_SECONDARY_TEAM_MIX, CTONE_MAX-1);
+
+    VAR(IDF_PERSIST, playerovertone, -1, CTONE_SECONDARY, CTONE_MAX-1);
     FVAR(IDF_PERSIST, playerovertonelevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playerovertonemix, 0, 0.25f, 1); // when colour and team are combined
+
     VAR(IDF_PERSIST, playerundertone, -1, CTONE_PRIMARY, CTONE_MAX-1);
     FVAR(IDF_PERSIST, playerundertonelevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playerundertonemix, 0, 0.25f, 1); // when colour and team are combined
+
     VAR(IDF_PERSIST, playerdisplaytone, -1, CTONE_TEAM, CTONE_MAX-1);
     FVAR(IDF_PERSIST, playerdisplaytonelevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playerdisplaytonemix, 0, 0.5f, 1); // when colour and team are combined
+
     VAR(IDF_PERSIST, playereffecttone, -1, CTONE_TEAM, CTONE_MAX-1);
     FVAR(IDF_PERSIST, playereffecttonelevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playereffecttonemix, 0, 0.25f, 1); // when colour and team are combined
+
     VAR(IDF_PERSIST, playerhalotone, -1, CTONE_TEAM, CTONE_MAX-1);
     FVAR(IDF_PERSIST, playerhalotonelevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playerhalotonemix, 0, 0.75f, 1); // when colour and team are combined
