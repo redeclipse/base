@@ -1680,13 +1680,48 @@ namespace projs
         return 1;
     }
 
-    int impact(projent &proj, const vec &dir, physent *d, int flags, const vec &norm)
+    int impact(projent &proj, const vec &dir, physent *d, int flags, const vec &norm, int inside = 0)
     {
-        if((!d || dynent::is(d)) && (d ? proj.projcollide&(d->type == ENT_PROJ ? COLLIDE_SHOTS : COLLIDE_PLAYER) : proj.projcollide&COLLIDE_GEOM))
-        {
-            int collidemod = proj.projcollide;
-            proj.norm = norm;
+        int collidemod = proj.projcollide;
+        proj.norm = norm;
 
+        if(inside)
+        {
+            conoutf(colourred, "WARNING: projectile inside solid, attempting to reverse..");
+            vec oldpos = proj.o, rev = vec(dir.iszero() ? proj.vel : dir).normalize().mul(max(proj.radius * 0.125f, 0.25f));
+            for(int iters = inside + 8; iters > 0; iters--)
+            {
+                proj.o.sub(rev);
+                if(collide(&proj, dir, 0.f, collidemod&COLLIDE_DYNENT, true, GUARDRADIUS))
+                    if(!collideinside && (!collideplayer || collidemod&(collideplayer->type == ENT_PROJ ? COLLIDE_SHOTS : COLLIDE_PLAYER)))
+                    {
+                        if(collideplayer) d = collideplayer;
+                        proj.norm = collidewall;
+                        conoutf(colourred, "WARNING: new position %.6f,%.6f,%.6f (old: %.6f,%.6f,%.6f) wall %.6f,%.6f,%.6f", proj.o.x, proj.o.y, proj.o.z, oldpos.x, oldpos.y, oldpos.z, proj.norm.x, proj.norm.y, proj.norm.z);
+                        inside = 0;
+                        break;
+                    }
+            }
+            if(inside)
+            {
+                conoutf(colourred, "WARNING: unable to reverse projectile, modifying collision properties");
+                proj.o = oldpos;
+
+                if(collidemod&BOUNCE_PLAYER)
+                {
+                    collidemod &= ~STICK_GEOM;
+                    collidemod |= IMPACT_GEOM|BOUNCE_GEOM;
+                }
+                else
+                {
+                    collidemod &= ~STICK_GEOM|BOUNCE_GEOM;
+                    collidemod |= IMPACT_GEOM;
+                }
+            }
+        }
+
+        if((!d || dynent::is(d)) && (d ? collidemod&(d->type == ENT_PROJ ? COLLIDE_SHOTS : COLLIDE_PLAYER) : collidemod&COLLIDE_GEOM))
+        {
             if(d)
             {
                 if(inanimate::is(d)) return 0; // inanimates don't really work yet
@@ -1802,7 +1837,7 @@ namespace projs
         if(!skip && proj.interacts && checkitems(proj, pos, dir, proj.o.dist(pos))) return -1;
         if(proj.projtype == PRJ_SHOT) updatetaper(proj, proj.distance+proj.o.dist(pos));
         if(ret == 1 && (collide(&proj, dir, 0.f, proj.projcollide&COLLIDE_DYNENT, true, GUARDRADIUS) || collideinside))
-            ret = impact(proj, dir, collideplayer, collidezones, collidewall);
+            ret = impact(proj, dir, collideplayer, collidezones, collidewall, collideinside);
         return ret;
     }
 
