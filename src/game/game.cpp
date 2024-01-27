@@ -2244,17 +2244,24 @@ namespace game
         {
             int hp = max(d->gethealth(gamemode, mutators), 1), gib = clamp(int(max(damage, hp)/(d->obliterated ? 100.f : (d->headless ? 150.f : 200.f))), 1, 15), amt = int((rnd(gib) + gib) * (1 + gibscale));
 
+            int collected = 0;
             loopi(amt)
-                projs::create(pos, vec(pos).addz(2), true, d, nogore || !(A(d->actortype, abilities)&(1<<A_A_GIBS)) ? PRJ_DEBRIS : PRJ_GIBS, -1, 0, rnd(gibfade) + gibfade, 0, rnd(100) + 1, rnd(d->obliterated || d->headless ? 50 : 50) + 10);
-
-            loopv(d->collects)
             {
-                projent *p = projs::create(pos, vec(pos).addz(2), true, d, d->collects[i].type, -1, 0, (rnd(gibfade) + gibfade) / 2, 0, rnd(100) + 1, rnd(d->obliterated ? 50 : 25) + 10);
+                projs::create(pos, vec(pos).addz(2), true, d, nogore || !(A(d->actortype, abilities)&(1<<A_A_GIBS)) ? PRJ_DEBRIS : PRJ_GIBS, -1, 0, rnd(gibfade) + gibfade, 0, rnd(100) + 1, rnd(d->obliterated || d->headless ? 50 : 50) + 10);
+                collected++;
+            }
+
+            while(!d->collects.empty() && collected < 30)
+            {
+                int n = rnd(d->collects.length());
+                projent *p = projs::create(pos, vec(pos).addz(2), true, d, d->collects[n].type, -1, 0, (rnd(gibfade) + gibfade) / 2, 0, rnd(100) + 1, rnd(d->obliterated ? 50 : 25) + 10);
                 if(p)
                 {
-                    p->mdlname = d->collects[i].name;
-                    p->lifesize = max(d->collects[i].size, 0.5f);
+                    p->mdlname = d->collects[n].name;
+                    p->lifesize = max(d->collects[n].size, 0.5f);
                 }
+                d->collects.removeunordered(n);
+                collected++;
             }
             d->collects.shrink(0);
         }
