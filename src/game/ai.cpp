@@ -593,7 +593,7 @@ namespace ai
             projent &proj = *projs::projs[i];
 
             if(proj.state == CS_DEAD || !proj.lifetime || proj.beenused) continue;
-            if(proj.projtype != PRJ_GIBS && proj.projtype != PRJ_DEBRIS && proj.projtype != PRJ_EJECT && proj.projtype != PRJ_VANITY) continue;
+            if(proj.projtype != PRJ_GIBS && proj.projtype != PRJ_DEBRIS && proj.projtype != PRJ_EJECT && proj.projtype != PRJ_VANITY && (proj.projtype != PRJ_ENT || proj.lifespan < 0.25f)) continue;
 
             int v = closestwaypoint(proj.o, JANITORSUCK, true);
             bool found = false;
@@ -856,7 +856,7 @@ namespace ai
             projent &proj = *projs::projs[i];
 
             if(proj.state == CS_DEAD || !proj.lifetime || proj.beenused) continue;
-            if(proj.projtype != PRJ_GIBS && proj.projtype != PRJ_DEBRIS && proj.projtype != PRJ_EJECT && proj.projtype != PRJ_VANITY) continue;
+            if(proj.projtype != PRJ_GIBS && proj.projtype != PRJ_DEBRIS && proj.projtype != PRJ_EJECT && proj.projtype != PRJ_VANITY && (proj.projtype != PRJ_ENT || proj.lifespan < 0.25f)) continue;
             if(proj.o.squaredist(waypoints[b.target].o) > RETRYDIST*RETRYDIST) continue;
             count++;
         }

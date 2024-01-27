@@ -2162,7 +2162,7 @@ namespace projs
                 }
             }
         }
-        else if(proj.projtype == PRJ_GIBS || proj.projtype == PRJ_DEBRIS || proj.projtype == PRJ_EJECT || proj.projtype == PRJ_VANITY)
+        else if(proj.projtype == PRJ_GIBS || proj.projtype == PRJ_DEBRIS || proj.projtype == PRJ_EJECT || proj.projtype == PRJ_VANITY || (proj.projtype == PRJ_ENT && proj.lifespan >= 0.25f))
         {
             int numdyns = game::numdynents();
             loopj(numdyns)
@@ -2180,7 +2180,7 @@ namespace projs
 
                 if(dist <= f->radius + proj.radius + 1)
                 {
-                    e->collected(proj.projtype, proj.lifesize, proj.mdlname);
+                    if(proj.projtype != PRJ_ENT) e->collected(proj.projtype, proj.lifesize, proj.mdlname);
                     proj.beenused = 1;
                     proj.lifetime = min(proj.lifetime, proj.fadetime);
                     return false;
