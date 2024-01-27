@@ -149,7 +149,7 @@ namespace defend
         }
     }
 
-    DEFUIVARS(defend, SURFACE_VISOR, SURFACE_VISOR, 1024);
+    DEFUIVARS(defend, SURFACE_VISOR, 1024);
 
     void checkui()
     {
@@ -157,13 +157,8 @@ namespace defend
         {
             defendstate::flag &f = st.flags[i];
 
-            vec curpos = f.render;
-            curpos.z += enttype[AFFINITY].radius * 0.125f;
-
-            MAKEUI(defend, i,
-                true, haloallow(camera1->o, i), false,
-                    curpos, enttype[AFFINITY].radius * 0.25f, enttype[AFFINITY].radius * 0.25f, // body
-            );
+            vec curpos = vec(f.render).addz(enttype[AFFINITY].radius * 0.375f);
+            MAKEUI(defend, i, haloallow(camera1->o, i), false, curpos);
         }
     }
 

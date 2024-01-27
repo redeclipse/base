@@ -1733,6 +1733,11 @@ void part_icon(const vec &o, Texture *tex, float size, float blend, float gravit
     part_icons(o, tex, PART_ICON, size, blend, gravity, collide, fade, color, hintcolor, hintblend, start, length, pl, envcolor, envblend);
 }
 
+void part_icon_ontop(const vec &o, Texture *tex, float size, float blend, float gravity, int collide, int fade, int color, int hintcolor, float hintblend, float start, float length, physent *pl, int envcolor, float envblend)
+{
+    part_icons(o, tex, PART_ICON_ONTOP, size, blend, gravity, collide, fade, color, hintcolor, hintblend, start, length, pl, envcolor, envblend);
+}
+
 void part_line(const vec &o, const vec &v, float size, float blend, int fade, int color, int type)
 {
     if(!canaddparticles() || (parts[type]->type&PT_TYPE) != PT_LINE) return;

@@ -225,13 +225,14 @@ namespace bomber
         }
     }
 
-    DEFUIVARS(bomber, SURFACE_VISOR, SURFACE_VISOR, 1024);
+    DEFUIVARS(bomber, SURFACE_VISOR, 1024);
 
     void checkui()
     {
         loopv(st.flags)
         {
             bomberstate::flag &f = st.flags[i];
+            if(!f.enabled || (isbomberaffinity(f) && f.owner == game::focus)) continue;
 
             vec curpos = f.render;
             if(isbomberaffinity(f))
@@ -240,12 +241,9 @@ namespace bomber
                 if(!f.owner && !f.droptime) curpos.z += enttype[AFFINITY].radius * 0.25f;
             }
             else curpos.z += enttype[AFFINITY].radius * 0.125f;
-            bool force = hasaffinity(game::focus) && f.team != game::focus->team;
+            curpos.z += enttype[AFFINITY].radius * (isbomberaffinity(f) ? 0.125f : 0.25f);
 
-            MAKEUI(bomber, i,
-                f.enabled && (!isbomberaffinity(f) || f.owner != game::focus), haloallow(camera1->o, i), force,
-                    curpos, enttype[AFFINITY].radius * (isbomberaffinity(f) ? 0.125f : 0.25f), enttype[AFFINITY].radius * (isbomberaffinity(f) ? 0.125f : 0.25f), // body
-            );
+            MAKEUI(bomber, i, haloallow(camera1->o, i), hasaffinity(game::focus) && f.team != game::focus->team, curpos);
         }
     }
 

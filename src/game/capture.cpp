@@ -158,31 +158,23 @@ namespace capture
         }
     }
 
-    DEFUIVARS(capture, SURFACE_VISOR, SURFACE_VISOR, 1024);
-    DEFUIVARS(captureflag, SURFACE_VISOR, SURFACE_VISOR, 1024);
+    DEFUIVARS(capture, SURFACE_VISOR, 1024);
+    DEFUIVARS(captureflag, SURFACE_VISOR, 1024);
 
     void checkui()
     {
         loopv(st.flags)
         {
             capturestate::flag &f = st.flags[i];
+            vec curpos = vec(f.render).addz(enttype[AFFINITY].radius * (f.owner || f.droptime ? 0.25f : 0.875f));
 
-            vec curpos = f.render;
-            curpos.z += enttype[AFFINITY].radius * (f.owner || f.droptime ? 0.125f : 0.375f);
-            bool force = hasaffinity(game::focus) && f.team == game::focus->team;
+            MAKEUI(capture, i, haloallow(camera1->o, i), hasaffinity(game::focus) && f.team == game::focus->team, curpos);
 
-            MAKEUI(capture, i,
-                true, haloallow(camera1->o, i), force,
-                    curpos, enttype[AFFINITY].radius * (f.owner || f.droptime ? 0.125f : 0.5f), enttype[AFFINITY].radius * 0.25f, // body
-            );
-
-            curpos = f.pos(true);
-            curpos.z += enttype[AFFINITY].radius * (f.droptime ? 0.25f : 0.375f);
-
-            MAKEUI(captureflag, i,
-                f.owner != game::focus && (f.owner || f.droptime), haloallow(camera1->o, i), force,
-                    curpos, enttype[AFFINITY].radius * (f.droptime ? 0.25f : 0.5f), enttype[AFFINITY].radius * 0.25f, // body
-            );
+            if(f.owner != game::focus && (f.owner || f.droptime))
+            {
+                curpos = vec(f.pos(true)).addz(enttype[AFFINITY].radius * (f.droptime ? 0.5f : 0.875f));
+                MAKEUI(captureflag, i, haloallow(camera1->o, i), f.team == game::focus->team, curpos);
+            }
         }
     }
 

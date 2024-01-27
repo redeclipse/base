@@ -2465,44 +2465,25 @@ namespace weapons
     extern bool canuse(int weap);
 }
 
-#define MUIVAL(name, type, value) (type ? name##overlay##value : name##above##value)
-#define MUINAME(name, type) (type ? STR_MACRO(name) "overlay" : STR_MACRO(name) "above")
-
-#define DEFUIVARS(name, above, over, dist) \
-    VAR(IDF_PERSIST, name##aboveui, -1, above, SURFACE_LAST); \
-    FVAR(IDF_PERSIST, name##aboveyaw, -1, -1, 360); \
-    FVAR(IDF_PERSIST, name##abovepitch, -181, -181, 181); \
-    FVAR(IDF_PERSIST, name##abovescale, FVAR_NONZERO, 1, FVAR_MAX); \
-    FVAR(IDF_PERSIST, name##aboveworld, FVAR_NONZERO, 4, FVAR_MAX); \
-    FVAR(IDF_PERSIST, name##abovemaxdist, 0, dist, FVAR_MAX); \
-    FVAR(IDF_PERSIST, name##abovedetentyaw, 0, 0, 180); \
-    FVAR(IDF_PERSIST, name##abovedetentpitch, 0, 0, 90); \
-    VAR(IDF_PERSIST, name##overlayui, -1, over, SURFACE_LAST); \
-    FVAR(IDF_PERSIST, name##overlayyaw, -1, -1, 360); \
-    FVAR(IDF_PERSIST, name##overlaypitch, -181, -181, 181); \
-    FVAR(IDF_PERSIST, name##overlayscale, FVAR_NONZERO, 1, FVAR_MAX); \
-    FVAR(IDF_PERSIST, name##overlayworld, FVAR_NONZERO, 4, FVAR_MAX); \
-    FVAR(IDF_PERSIST, name##overlaymaxdist, 0, dist, FVAR_MAX); \
-    FVAR(IDF_PERSIST, name##overlaydetentyaw, 0, 0, 180); \
-    FVAR(IDF_PERSIST, name##overlaydetentpitch, 0, 0, 90);
+#define DEFUIVARS(name, surf, dist) \
+    VAR(IDF_PERSIST, name##ui, -1, surf, SURFACE_LAST); \
+    FVAR(IDF_PERSIST, name##uiyaw, -1, -1, 360); \
+    FVAR(IDF_PERSIST, name##uipitch, -181, -181, 181); \
+    FVAR(IDF_PERSIST, name##uiscale, FVAR_NONZERO, 1, FVAR_MAX); \
+    FVAR(IDF_PERSIST, name##uiworld, FVAR_NONZERO, 4, FVAR_MAX); \
+    FVAR(IDF_PERSIST, name##uimaxdist, 0, dist, FVAR_MAX); \
+    FVAR(IDF_PERSIST, name##uidetentyaw, 0, 0, 180); \
+    FVAR(IDF_PERSIST, name##uidetentpitch, 0, 0, 90); \
 
 #define CLEARUI(name, id, nottype) \
-   for(int mui_scount = 0; mui_scount < SURFACE_ALL; ++mui_scount) if(mui_scount != nottype) for(int mui_ucount = 0; mui_ucount < 2; ++mui_ucount) UI::hideui(MUINAME(name, mui_ucount), mui_scount, id);
+   for(int mui_scount = 0; mui_scount < SURFACE_ALL; ++mui_scount) if(mui_scount != nottype) UI::hideui(#name, mui_scount, id);
 
-#define MAKEUI(name, id, test, cansee, forced, pos, above, over, body) \
-    for(int mui_count = 0; mui_count < 2; ++mui_count) if((test) && ((forced) || !MUIVAL(name, mui_count, maxdist) || camera1->o.dist(pos) <= MUIVAL(name, mui_count, maxdist))) \
+#define MAKEUI(name, id, cansee, forced, pos) \
+    if((forced) || !name##uimaxdist || camera1->o.dist(pos) <= name##uimaxdist) \
     { \
-        int mui_type = (cansee) ? MUIVAL(name, mui_count, ui) : SURFACE_WORLD; \
+        int mui_type = (cansee) ? name##ui : SURFACE_WORLD; \
         if(mui_type >= 0) \
-        { \
-            vec mui_o = mui_count ? vec(pos).sub(vec(pos).sub(camera1->o).normalize().mul(over)) : vec(pos).addz(above); \
-            body; \
-            UI::setui(MUINAME(name, mui_count), \
-                mui_type, id, mui_o, MUIVAL(name, mui_type, yaw), MUIVAL(name, mui_type, pitch), \
-                (mui_type == SURFACE_WORLD ? MUIVAL(name, mui_type, world) : MUIVAL(name, mui_type, scale)), \
-                MUIVAL(name, mui_type, detentyaw), MUIVAL(name, mui_type, detentpitch) \
-            ); \
-        } \
+            UI::setui(#name, mui_type, id, pos, name##uiyaw, name##uipitch, (mui_type == SURFACE_WORLD ? name##uiworld : name##uiscale), name##uidetentyaw, name##uidetentpitch); \
     } \
 
 namespace hud

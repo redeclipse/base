@@ -24,26 +24,24 @@ namespace entities
     FVAR(IDF_PERSIST, showentavailable, 0, 1, 1);
     FVAR(IDF_PERSIST, showentunavailable, 0, 0.125f, 1);
 
-    DEFUIVARS(entity, SURFACE_WORLD, SURFACE_WORLD, 1024);
+    DEFUIVARS(entity, SURFACE_WORLD, 1024);
 
     VAR(IDF_PERSIST, entityhalos, 0, 1, 1);
-    FVAR(IDF_PERSIST, entselblend, 0, 0.25f, 1);
-    FVAR(IDF_PERSIST, entselblendtop, 0, 0.5f, 1);
-    FVAR(IDF_PERSIST, entselsize, 0, 0.5f, FVAR_MAX);
+    FVAR(IDF_PERSIST, entselblend, 0, 1, 1);
+    FVAR(IDF_PERSIST, entselblendtop, 0, 1, 1);
+    FVAR(IDF_PERSIST, entselsize, 0, 0.75f, FVAR_MAX);
     FVAR(IDF_PERSIST, entselsizetop, 0, 1, FVAR_MAX);
     FVAR(IDF_PERSIST, entdirsize, 0, 10, FVAR_MAX);
     FVAR(IDF_PERSIST, entrailoffset, 0, 0.1f, FVAR_MAX);
-    FVAR(IDF_PERSIST, entinfospace, 0, 2, FVAR_MAX);
-    FVAR(IDF_PERSIST, entinfostrut, 0, 0.5f, FVAR_MAX);
 
-    VAR(IDF_PERSIST|IDF_HEX, entselcolour, 0, 0xFF00FF, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, entselcolour, 0, 0xFFFFFF, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, entselcolourtop, 0, 0xFF88FF, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, entselcolourdyn, 0, 0x00FFFF, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, entselcolourrail, 0, 0xFFFF00, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, entlinkcolour, 0, 0xFF00FF, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, entlinkcolourboth, 0, 0xFF88FF, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, entdircolour, 0, 0x88FF88, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, entradiuscolour, 0, 0x88FF88, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, entselcolourdyn, 0, 0x88FFFF, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, entselcolourrail, 0, 0xFFFF88, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, entlinkcolour, 0, 0xFF88FF, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, entlinkcolourboth, 0, 0x88FF88, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, entdircolour, 0, 0xFFFFFF, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, entradiuscolour, 0, 0xFFFFFF, 0xFFFFFF);
 
     VAR(0, mapsoundautomute, 0, 0, 1);
 
@@ -3554,14 +3552,14 @@ namespace entities
         for(int i = fstent; i < lstent; ++i)
         {
             gameentity &e = *(gameentity *)ents[i];
-            if(e.type == NOTUSED || e.attrs.empty()) continue;
 
-            MAKEUI(entity, i, numdrawn < showentmax,
-                game::player1->isediting() || enttype[e.type].usetype == EU_ITEM,
-                editcheck && (enthover.find(i) >= 0 || entgroup.find(i) >= 0),
-                e.o, max(enttype[e.type].radius, 4), max(enttype[e.type].radius, 4),
-                numdrawn++
-            );
+            if(e.type == NOTUSED || e.attrs.empty()) continue;
+            if(!editcheck && enttype[e.type].usetype != EU_ITEM) continue;
+
+            vec curpos = vec(editcheck ? e.o : e.pos()).addz(max(enttype[e.type].radius, 4));
+            MAKEUI(entity, i, true, editcheck && (enthover.find(i) >= 0 || entgroup.find(i) >= 0), curpos);
+
+            if(++numdrawn >= showentmax) break;
         }
     }
 
@@ -3594,16 +3592,16 @@ namespace entities
                      cansee = getvisible(camera1->o, camera1->yaw, camera1->pitch, pos, curfov, fovy, max(enttype[e.type].radius, 4), ontop ? -1 : VFC_PART_VISIBLE),
                      dotop = ontop && e.dynamic(), visiblepos = dotop && getvisible(camera1->o, camera1->yaw, camera1->pitch, e.pos(), curfov, fovy, max(enttype[e.type].radius, 4), ontop ? -1 : VFC_PART_VISIBLE);
 
+                Texture *tex = textureload(getenttex(i), 3);
                 loopj(dotop ? 2 : 1) if(j ? visiblepos : cansee)
                 {
                     if(j && (cansee || visiblepos)) part_line(pos, e.pos(), entselsize, 1, 1, entselcolourdyn);
-                    if(j || entityoverlayui < 0)
-                        part_create(ontop ? PART_ENTITY_ONTOP : PART_ENTITY, 1,
-                            j ? e.pos() : pos,
-                            j ? entselcolourdyn : (ontop ? entselcolourtop : entselcolour),
-                            ontop && !j ? entselsizetop : entselsize,
-                            ontop && !j ? entselblendtop : entselblend
-                        );
+                    if(tex && tex != notexture)
+                    {
+                        if(ontop) part_icon_ontop(j ? e.pos() : pos, tex, !j ? entselsizetop : entselsize, !j ? entselblendtop : entselblend, 0, 0, 1, j ? entselcolourdyn : entselcolourtop);
+                        else part_icon(j ? e.pos() : pos, tex, entselsize, entselblend, 0, 0, 1, j ? entselcolourdyn : entselcolour);
+                    }
+                    else part_create(ontop ? PART_ENTITY_ONTOP : PART_ENTITY, 1, j ? e.pos() : pos, j ? entselcolourdyn : (ontop ? entselcolourtop : entselcolour), ontop && !j ? entselsizetop : entselsize, ontop && !j ? entselblendtop : entselblend);
                 }
             }
 

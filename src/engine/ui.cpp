@@ -1070,7 +1070,7 @@ namespace UI
             }
         }
 
-        void resetworld(const vec &o = vec(-FLT_MAX), float s = 1)
+        void resetworld(const vec &o = nullvec, float s = 1)
         {
             yaw = -1;
             pitch = curyaw = curpitch = 0;
@@ -1095,7 +1095,7 @@ namespace UI
             return scale >= 0 ? scale : (0 - scale) / uiworldscale;
         }
 
-        void show(const vec &o = vec(-FLT_MAX), float y = 0, float p = 0, float s = 1, float dy = 0, float dp = 0)
+        void show(const vec &o = nullvec, float y = 0, float p = 0, float s = 1, float dy = 0, float dp = 0)
         {
             overridepos = false;
             state |= STATE_HIDDEN;
@@ -1177,7 +1177,7 @@ namespace UI
 
             Object::layout();
 
-            bool haspos = pos != vec(-FLT_MAX);
+            bool haspos = pos != nullvec;
             if(hint > 0)
             {
                 int offset = lastmillis - hint;
@@ -1470,7 +1470,7 @@ namespace UI
             if(aa->dist > bb->dist) return true;
             if(aa->dist < bb->dist) return false;
 
-            if(aa->pos != vec(-FLT_MAX) && bb->pos != vec(-FLT_MAX))
+            if(aa->pos != nullvec && bb->pos != nullvec)
             {   // draw bottom-up
                 if(aa->pos.z < bb->pos.z) return true;
                 if(aa->pos.z > bb->pos.z) return false;
@@ -1875,6 +1875,24 @@ namespace UI
             setup();
             loopwindows(w,
             {
+                if(w->lastset && w->lastset != totalmillis)
+                {   // set windows are updated every frame or disregarded
+                    w->visible = false;
+                    continue;
+                }
+
+                if(w->pos != nullvec)
+                {
+                    if(!getvisible(camera1->o, camera1->yaw, camera1->pitch, w->pos, curfov, fovy, 2, VFC_PART_VISIBLE))
+                    {
+                        w->visible = false;
+                        continue;
+                    }
+                    w->dist = w->pos.squaredist(camera1->o);
+                }
+                else w->dist = 0.f;
+                w->visible = true;
+
                 uiscale = 1;
                 w->build();
                 if(!children.inrange(i)) break;
@@ -1912,7 +1930,7 @@ namespace UI
             uiscale = olduiscale;
         }
 
-        bool show(Window *w, const vec &pos = vec(-FLT_MAX), float y = 0, float p = 0, float s = 1, float dy = 0, float dp = 0)
+        bool show(Window *w, const vec &pos = nullvec, float y = 0, float p = 0, float s = 1, float dy = 0, float dp = 0)
         {
             if(children.find(w) >= 0) return false;
             w->resetchildstate();
@@ -2133,24 +2151,6 @@ namespace UI
 
         Window *oldwindow = window;
         window = this;
-
-        if(window->lastset && window->lastset != totalmillis)
-        {   // set windows are updated every frame or disregarded
-            window->visible = false;
-            window = oldwindow;
-            return;
-        }
-
-        bool haspos = window->pos != vec(-FLT_MAX);
-        if(haspos && !getvisible(camera1->o, camera1->yaw, camera1->pitch, window->pos, curfov, fovy, 8, VFC_PART_VISIBLE))
-        {
-            window->visible = false;
-            window = oldwindow;
-            return;
-        }
-        window->visible = true;
-        window->dist = haspos ? window->pos.squaredist(camera1->o) : 0.f;
-
         setargs();
         buildlevel = taglevel = -1;
         if(contents) buildchildren(contents->code, mapdef);

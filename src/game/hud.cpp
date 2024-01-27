@@ -545,7 +545,7 @@ namespace hud
         return false;
     }
 
-    DEFUIVARS(player, SURFACE_VISOR, SURFACE_VISOR, 1024);
+    DEFUIVARS(player, SURFACE_VISOR, 1024);
 
     void checkui()
     {
@@ -568,12 +568,8 @@ namespace hud
 
         gameent *d = NULL;
         int numdyns = game::numdynents();
-        loopi(numdyns) if((d = (gameent *)game::iterdynents(i)) && d->actortype < A_ENEMY) // do the actor test here so it doesn't close UIs that don't exist
-            MAKEUI(player, d->clientnum,
-                d != game::focus && !d->isspectator(), false,
-                    game::haloallow(camera1->o, d, false, false) && (game::focus->isobserver() || (m_team(game::gamemode, game::mutators) && game::focus->team == d->team)),
-                        d->center(), (d->getheight() * 0.5f) + d->aboveeye + 1, d->getradius() * 0.5f, // body
-            );
+        loopi(numdyns) if((d = (gameent *)game::iterdynents(i)) && d->actortype < A_ENEMY && d != game::focus && !d->isspectator()) // do the actor test here so it doesn't close UIs that don't exist
+            MAKEUI(player, d->clientnum, m_team(game::gamemode, game::mutators) && game::focus->team == d->team, game::haloallow(camera1->o, d, false, false), d->abovehead());
 
         entities::checkui();
         if(m_capture(game::gamemode)) capture::checkui();
