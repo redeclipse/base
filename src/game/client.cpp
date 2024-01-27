@@ -3421,8 +3421,13 @@ namespace client
                                     copystring(demofile, files[r]);
                                     break;
                                 }
-                                else files.remove(r);
+                                else
+                                {
+                                    delete[] files[r];
+                                    files.remove(r);
+                                }
                             }
+                            files.deletearrays();
                         }
                         if(*demofile) addmsg(N_MAPVOTE, "rsi2", demofile, G_DEMO, 0);
                     }

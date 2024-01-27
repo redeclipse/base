@@ -2706,6 +2706,7 @@ namespace server
     void adddemo()
     {
         if(!demotmp) return;
+
         int len = (int)min(demotmp->size(), stream::offset(G(demomaxsize) + 0x10000));
         demofile &d = demos.add();
         d.ctime = clocktime;
@@ -2717,6 +2718,7 @@ namespace server
         demotmp->seek(0, SEEK_SET);
         demotmp->read(d.data, len);
         DELETEP(demotmp);
+
         if(G(demoautoserversave))
         {
             stringz(dafilepath);
@@ -2727,6 +2729,7 @@ namespace server
             dafile->close();
             DELETEP(dafile);
         }
+
         if(G(demoserverkeeptime))
         {
             vector<char *> files;
@@ -2735,7 +2738,7 @@ namespace server
             {
                 defformatstring(dirfile, "demos/%s.dmo", files[i]);
                 int q = scandemo(dirfile);
-                if(q >= 0 && (clocktime-demoinfos[q].hdr.starttime) >= G(demoserverkeeptime))
+                if(q >= 0 && (clocktime - demoinfos[q].hdr.starttime) >= G(demoserverkeeptime))
                 {
                     const char *fullfile = findfile(dirfile, "r");
                     if(fullfile && *fullfile && !unlink(fullfile))
@@ -2745,6 +2748,7 @@ namespace server
                     }
                 }
             }
+            files.deletearrays();
         }
     }
 

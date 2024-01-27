@@ -2294,6 +2294,7 @@ namespace UI
         {
             if(!create) return NULL;
             d = new DynUIRef(name, param);
+            conoutf(colouryellow, "allocating dynui: %s", d->ref);
         }
 
         return d ? d->ref : NULL;
@@ -2348,6 +2349,7 @@ namespace UI
         if(d)
         {
             tagval t; t.setint(param);
+            conoutf(colouryellow, "creating dynui: %s", name);
             return newui(dynuiref(name, param), surfacetype, d->contents, d->onshow, d->onhide, d->mapdef, d->name, &t, 1);
         }
 
