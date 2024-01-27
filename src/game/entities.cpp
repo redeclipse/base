@@ -1122,8 +1122,8 @@ namespace entities
             {
                 if(full && attr[0] >= 0 && attr[0] < A_TOTAL)
                 {
-                    addentinfo(actors[attr[0]+A_ENEMY].name);
-                    addentinfo(W(attr[6] > 0 && attr[6] <= W_ALL ? attr[6]-1 : A(attr[0]+A_ENEMY, weaponspawn), name));
+                    addentinfo(actors[attr[0] + A_ENEMY].name);
+                    addentinfo(W(attr[6] > 0 && attr[6] <= W_ALL ? attr[6]-1 : A(attr[0] + A_ENEMY, weaponspawn), name));
                 }
                 break;
             }
@@ -2816,7 +2816,7 @@ namespace entities
 
     void initents(int mver, char *gid, int gver)
     {
-        int numjanitors = 0, numcorroders = 0, nummines = 0;
+        int numcorroders = 0, nummines = 0;
         lastroutenode = routeid = -1;
         numactors = lastroutetime = droproute = 0;
         airnodes.setsize(0);
@@ -2832,7 +2832,6 @@ namespace entities
             if(e.type == ACTOR)
             {
                 int atype = clamp(e.attrs[0], 0, A_TOTAL-1) + A_ENEMY;
-                if(atype == A_JANITOR) numjanitors++;
                 if(atype < A_ENVIRONMENT) numactors++;
             }
             if(e.type == WEAPON)
@@ -2848,37 +2847,15 @@ namespace entities
         memset(lastenttype, 0, sizeof(lastenttype));
         memset(lastusetype, 0, sizeof(lastusetype));
 
-        if(m_play(game::gamemode))
+        if(m_play(game::gamemode) && !numcorroders)
         {
-            if(!numjanitors)
+            int iter = 0;
+            bool iterchk = nummines > 2;
+            loopv(ents)
             {
-                int iter = 0, maxjanitors = max(numplayers / 3, 2);
-                loopv(ents)
-                {
-                    if(ents[i]->type != PLAYERSTART) continue;
-                    if((iter++)%2 != 0) continue;
-                    extentity &e = *newent();
-                    ents.add(&e);
-                    e.type = ACTOR;
-                    e.o = vec(ents[i]->o).addz(ai::JANITORFLOAT);
-                    e.attrs.add(0, numattrs(ACTOR));
-                    e.attrs[0] = int(A_JANITOR - A_ENEMY);
-                    loopj(5) e.attrs[j+1] = ents[i]->attrs[j+1]; // yaw, pitch, mode, muts, id
-                    numjanitors++;
-                    if(numjanitors >= maxjanitors) break;
-                }
-            }
-
-            if(!numcorroders)
-            {
-                int iter = 0;
-                bool iterchk = nummines > 4;
-                loopv(ents)
-                {
-                    if(ents[i]->type != WEAPON || ents[i]->attrs[0] != W_MINE) continue;
-                    if(iterchk && (iter++)%2 != 0) continue;
-                    ents[i]->attrs[0] = W_CORRODER;
-                }
+                if(ents[i]->type != WEAPON || ents[i]->attrs[0] != W_MINE) continue;
+                if(iterchk && (iter++)%2 != 0) continue;
+                ents[i]->attrs[0] = W_CORRODER;
             }
         }
 

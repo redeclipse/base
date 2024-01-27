@@ -60,7 +60,7 @@ namespace ai
         if(d && e && d != e && e->state == CS_ALIVE && A(d->actortype, abilities)&A_A_ATTACK && (!solid || physics::issolid(e, d)))
         {
             if(e->actortype >= A_ENVIRONMENT) return false;
-            if(m_onslaught(game::gamemode, game::mutators) && d->actortype >= A_ENEMY && e->actortype >= A_ENEMY) return false;
+            if(m_onslaught(game::gamemode, game::mutators) && d->team == T_ENEMY && e->team == T_ENEMY) return false;
             if(!m_team(game::gamemode, game::mutators) || d->team != e->team) return true;
         }
         return false;
@@ -333,7 +333,7 @@ namespace ai
         loopi(numdyns) if((e = (gameent *)game::iterdynents(i)))
         {
             if(targets.find(e->clientnum) >= 0) continue;
-            if(teams && (d->team < T_ENEMY || e->team < T_ENEMY) && m_team(game::gamemode, game::mutators) && d->team != e->team) continue;
+            if(teams && (d->actortype >= A_ENEMY || m_team(game::gamemode, game::mutators)) && d->team != e->team) continue;
             if(members) (*members)++;
             if(e == d || !e->ai || e->state != CS_ALIVE || e->actortype != d->actortype) continue;
             aistate &b = e->ai->getstate();
@@ -698,7 +698,7 @@ namespace ai
     void damaged(gameent *d, gameent *e, int weap, int flags, int damage)
     {
         if(d == e) return;
-        if(d->ai && (d->actortype >= A_ENEMY || (hitdealt(flags) && damage > 0) || d->ai->enemy < 0 || d->dominating.find(e))) // see if this ai is interested in a grudge
+        if(d->ai && (d->team == T_ENEMY || (hitdealt(flags) && damage > 0) || d->ai->enemy < 0 || d->dominating.find(e))) // see if this ai is interested in a grudge
         {
             aistate &b = d->ai->getstate();
             violence(d, b, e, d->actortype != A_BOT || W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0);
@@ -847,7 +847,7 @@ namespace ai
             if(f->o.squaredist(waypoints[b.target].o) <= JANITORREJECT*JANITORREJECT) return false;
 
             // if(f->o.squaredist(d->o) <= JANITORREJECT*JANITORREJECT)
-            //    return makeroute(d, b, vec(d->o).sub(f->o).normalize().mul(JANITORREJECT * 0.5f), true, 0, FARDIST);
+            //    return makeroute(d, b, vec(d->o).sub(f->o).normalize().mul(JANITORREJECT), true, 0, FARDIST);
        }
 
         loopv(projs::junkprojs)
@@ -1045,10 +1045,34 @@ namespace ai
     {
         if(!d || !d->ai) return;
 
+        vec lastspot = d->ai->spot;
+
         d->ai->spot = pos;
         d->ai->targnode = targ;
 
-        if(physics::movepitch(d)) d->ai->spot.z += JANITORFLOAT;
+        if(physics::movepitch(d))
+        {
+            if(!d->blocked)
+                d->ai->spot.z += d->actortype == A_JANITOR ? JANITORFLOAT : d->height * 0.5f;
+
+            if(d->ai->spot != lastspot)
+            {
+                vec dir = vec(d->ai->spot).sub(d->o).normalize();
+                if(!dir.iszero())
+                {
+                    vec pos = vec(dir).mul(d->radius + GUARDRADIUS).add(d->o);
+                    int material = lookupmaterial(pos);
+                    loopk(4) if(material&MAT_DEATH || material&MAT_HURT)
+                    {
+                        if(k == 3) pos = d->o;
+                        pos.addz(-GUARDRADIUS);
+                        material = lookupmaterial(pos);
+                    }
+
+                    if(!(material&MAT_DEATH || material&MAT_HURT)) d->ai->spot = pos;
+                }
+            }
+        }
     }
 
     int wpspot(gameent *d, int n, bool check = false)
@@ -1413,20 +1437,20 @@ namespace ai
         else if(hunt(d, b, allowrnd))
         {
             game::getyawpitch(d->o, d->ai->spot, d->ai->targyaw, d->ai->targpitch);
-            if(d->ai->route.length() <= 1 && d->ai->spot.squaredist(getbottom(d)) <= MINWPDIST*MINWPDIST) d->ai->dontmove = true;
+            if(d->ai->route.length() <= 1 && d->ai->spot.squaredist(getbottom(d)) <= MINWPDIST*MINWPDIST)
+                d->ai->dontmove = true;
         }
         else
         {
             if(!allowrnd) d->ai->dontmove = true;
             else
             {
-                if(d->blocked || (!d->ai->lastturn || lastmillis-d->ai->lastturn >= 5000))
+                if(d->blocked || (!d->ai->lastturn || lastmillis - d->ai->lastturn >= 5000))
                 {
                     d->ai->targyaw += 90 + rnd(180);
                     if(physics::movepitch(d)) d->ai->targpitch = -45;
                     d->ai->lastturn = lastmillis;
                 }
-                d->ai->targpitch = 0;
                 vec dir(d->ai->targyaw, d->ai->targpitch);
                 setspot(d, vec(getbottom(d)).add(dir.mul(FARDIST)));
             }
@@ -1437,7 +1461,7 @@ namespace ai
             if(!d->ai->lastturn || lastmillis-d->ai->lastturn >= 500)
             {
                 d->ai->targyaw = rnd(360);
-                d->ai->targpitch = rnd(178)-89;
+                d->ai->targpitch = rnd(178) - 89;
                 d->ai->lastturn = lastmillis;
                 if(rnd(d->skill*2) >= d->skill) d->ai->spot.z += rnd(int(d->height*3/2));
             }
@@ -1504,7 +1528,7 @@ namespace ai
                         }
                     }
 
-                    game::scaleyawpitch(d->yaw, d->pitch, yaw, pitch, frame, frame*0.5f);
+                    game::scaleyawpitch(d->yaw, d->pitch, yaw, pitch, frame * A(d->actortype, aiyawscale), frame * A(d->actortype, aipitchscale));
 
                     if(shootable)
                     {
@@ -1552,8 +1576,7 @@ namespace ai
 
         if(dancing || !occupied || d->actortype >= A_ENVIRONMENT)
         {
-            if(physics::movepitch(d)) frame *= 20; // we're floating and need free movement
-            else if(dancing || actors[d->actortype].onlyfwd) frame *= 3;
+            if(dancing || actors[d->actortype].onlyfwd) frame *= 2;
             else if(!m_insta(game::gamemode, game::mutators))
             {
                 int hp = max(d->gethealth(game::gamemode, game::mutators)/3, 1);
@@ -1562,7 +1585,7 @@ namespace ai
                 if(b.acttype == AI_A_HASTE) frame *= 1+(hp/float(max(d->health, 1)));
             }
 
-            game::scaleyawpitch(d->yaw, d->pitch, d->ai->targyaw, d->ai->targpitch, frame, frame * 0.5f);
+            game::scaleyawpitch(d->yaw, d->pitch, d->ai->targyaw, d->ai->targpitch, frame * A(d->actortype, aiyawscale), frame * A(d->actortype, aipitchscale));
         }
 
         if(d->canimpulse(IM_T_JUMP)) jumpto(d, b, d->ai->spot);

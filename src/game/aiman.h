@@ -2,7 +2,7 @@
 namespace aiman
 {
     int dorefresh = 0, oldbotskillmin = -1, oldbotskillmax = -1, oldcoopskillmin = -1, oldcoopskillmax = -1, oldenemyskillmin = -1, oldenemyskillmax = -1,
-        oldbotbalance = -2, oldnumplayers = -1, oldbotlimit = -1, oldbotoffset = 0, oldenemylimit = -1;
+        oldbotbalance = -2, oldnumplayers = -1, oldbotlimit = -1, oldbotoffset = 0, oldenemylimit = -1, curbalance = 0;;
     float oldbotbalancescale = -1;
 
     void intermission()
@@ -19,7 +19,7 @@ namespace aiman
     int botrnd(clientinfo *ci, int t, int m, bool r = false)
     {
         if(G(botcolourseed)&t) // r makes colour random instead of consistent
-            return ci->colours[r ? rnd(2) : 0]%m;
+            return ci->colours[r ? rnd(2) : 0] % m;
         return rnd(m);
     }
 
@@ -42,11 +42,11 @@ namespace aiman
 
     int getlimit(int type = A_BOT)
     {
-        if(type >= A_ENEMY) return G(enemylimit);
+        if(type >= A_ENEMY) return type >= A_ENVIRONMENT ? MAXAI : G(enemylimit);
         if(m_coop(gamemode, mutators))
         {
-            int people = numclients(-1, true, -1), numt = numteams(gamemode, mutators)-1;
-            return min(int(ceilf(people*numt*G(coopbalance))), MAXAI);
+            int people = numclients(-1, true, -1), numt = numteams(gamemode, mutators) - 1;
+            return min(int(ceilf(people * numt * G(coopbalance))), MAXAI);
         }
         return G(botlimit);
     }
@@ -63,13 +63,13 @@ namespace aiman
                     n = min(G(a##skillmin), m); \
                     if(ci->deaths != 0 && G(a##skilldeaths) != 0) \
                     { \
-                        int amt = int(G(a##skilldeaths)*ci->deaths); \
+                        int amt = int(G(a##skilldeaths) * ci->deaths); \
                         m += amt; \
                         n += amt; \
                     } \
                     if(ci->frags != 0 && G(a##skillfrags) != 0) \
                     { \
-                        int amt = int(G(a##skillfrags)*ci->frags); \
+                        int amt = int(G(a##skillfrags) * ci->frags); \
                         m += amt; \
                         n += amt; \
                     } \
@@ -288,7 +288,7 @@ namespace aiman
         {
             clientinfo *ci = clients[i];
             if(ci->actortype == A_BOT && ++numbots >= blimit) { shiftai(ci, NULL); continue; }
-            if(ci->actortype >= A_ENEMY && ++numenemies >= elimit) { shiftai(ci, NULL); continue; }
+            if(ci->team == T_ENEMY && ++numenemies >= elimit) { shiftai(ci, NULL); continue; }
             setskill(ci);
         }
 
@@ -296,8 +296,8 @@ namespace aiman
         if(m_coop(gamemode, mutators))
         {
             numt--; // filter out the human team
-            balance += int(ceilf(people*numt*G(coopbalance)));
-            balance += G(botoffset)*numt;
+            balance += int(ceilf(people *numt * G(coopbalance)));
+            balance += G(botoffset) * numt;
         }
         else if(m_bots(gamemode) && blimit > 0)
         {
@@ -308,9 +308,9 @@ namespace aiman
                 case  0: balance = 0; break; // no bots
                 default: balance = max(people, bb); break; // balance to at least this
             }
-            balance += G(botoffset)*numt;
+            balance += G(botoffset) * numt;
 
-            if(!m_duke(gamemode, mutators) && G(botbalancescale) != 1) balance = int(ceilf(balance*G(botbalancescale)));
+            if(!m_duke(gamemode, mutators) && G(botbalancescale) != 1) balance = int(ceilf(balance * G(botbalancescale)));
 
             if(balance > 0 && m_team(gamemode, mutators))
             { // skew this if teams are unbalanced
@@ -336,11 +336,11 @@ namespace aiman
                 }
             }
         }
-        else balance += G(botoffset)*numt;
+        else balance += G(botoffset) * numt;
 
-        int bots = balance-people;
-        if(bots > blimit) balance -= bots-blimit;
-        if(numt > 1 && (balance%numt) != 0) balance -= balance%numt;
+        int bots = balance - people;
+        if(bots > blimit) balance -= bots - blimit;
+        if(numt > 1 && (balance%numt) != 0) balance -= balance % numt;
 
         if(balance > 0)
         {
@@ -355,8 +355,65 @@ namespace aiman
                     if(ci->team != teamb) setteam(ci, teamb, TT_RESETX);
                 }
             }
+            curbalance = balance;
         }
         else clearai(1);
+    }
+
+    void checkjanitors()
+    {
+        int numjanitors = 0, maxjanitors = min(G(janitorlimit), int(curbalance * G(janitorbalance)));
+        loopvrev(clients) if(clients[i]->actortype == A_JANITOR) numjanitors++;
+
+        if(numjanitors == maxjanitors) return;
+
+        if(numjanitors > maxjanitors)
+        {
+            loopvrev(clients) if(clients[i]->actortype == A_JANITOR)
+            {
+                deleteai(clients[i]);
+                if(--numjanitors <= maxjanitors) break;
+            }
+
+            return;
+        }
+
+        vector<int> candidates[2];
+        int count = 0;
+        loopvj(sents) if(sents[j].type == ACTOR)
+        {
+            if(!servermapvariant(sents[j].attrs[enttype[sents[j].type].mvattr])) continue;
+            if(sents[j].attrs[0] < 0 || sents[j].attrs[0] >= A_TOTAL || gamemillis < sents[j].millis) continue;
+
+            int atype = sents[j].attrs[0] + A_ENEMY;
+            if(atype != A_JANITOR) continue;
+
+            if(sents[j].attrs[5] && sents[j].attrs[5] != triggerid) continue;
+            if(!m_check(sents[j].attrs[3], sents[j].attrs[4], gamemode, mutators)) continue;
+
+            bool found = false;
+            loopvrev(clients) if(clients[i]->actortype == A_JANITOR && clients[i]->spawnpoint == j) { found = true; break; }
+            candidates[found ? 1 : 0].add(j);
+            count++;
+        }
+
+        int amt = max(maxjanitors - numjanitors, 0);
+        loopk(amt)
+        {
+            if(!count)
+            {
+                addai(A_JANITOR); // with no spawnpoint
+                continue;
+            }
+
+            int n = candidates[0].empty() ? 1 : 0,
+                r = rnd(candidates[n].length()), q = candidates[n][r];
+
+            addai(A_JANITOR, q);
+            sents[q].millis = gamemillis;
+
+            candidates[n].remove(r);
+        }
     }
 
     void checkenemies()
@@ -367,11 +424,11 @@ namespace aiman
             if(sents[j].attrs[0] < 0 || sents[j].attrs[0] >= A_TOTAL || gamemillis < sents[j].millis) continue;
 
             int atype = sents[j].attrs[0] + A_ENEMY;
-            if(!m_onslaught(gamemode, mutators) && atype < A_ENVIRONMENT) continue;
+            if(atype == A_JANITOR || (!m_onslaught(gamemode, mutators) && atype < A_ENVIRONMENT)) continue;
+            if(atype == A_TURRET && m_insta(gamemode, mutators)) continue;
 
             if(sents[j].attrs[5] && sents[j].attrs[5] != triggerid) continue;
             if(!m_check(sents[j].attrs[3], sents[j].attrs[4], gamemode, mutators)) continue;
-            if(atype == A_TURRET && m_insta(gamemode, mutators)) continue;
 
             if(atype >= A_ENVIRONMENT)
             {
@@ -382,13 +439,17 @@ namespace aiman
                     found = true;
                 }
 
-                if(!found) addai(atype, j);
+                if(!found)
+                {
+                    addai(atype, j);
+                    sents[j].millis = gamemillis;
+                }
 
                 continue;
             }
 
             int count = 0, numenemies = 0;
-            loopvrev(clients) if(clients[i]->actortype >= A_ENEMY)
+            loopvrev(clients) if(clients[i]->team == T_ENEMY)
             {
                 if(clients[i]->spawnpoint == j)
                 {
@@ -400,20 +461,22 @@ namespace aiman
                         continue;
                     }
                 }
+
                 numenemies++;
             }
 
             if(numenemies < G(enemylimit) && count < G(enemybalance))
             {
-                int amt = min(G(enemybalance)-count, G(enemylimit)-numenemies);
+                int amt = min(G(enemybalance) - count, G(enemylimit) - numenemies);
                 loopk(amt) addai(atype, j);
-                sents[j].millis = gamemillis+G(enemyspawntime);
+                sents[j].millis = gamemillis + G(enemyspawntime);
             }
         }
     }
 
     void clearai(int type)
     { // clear and remove all ai immediately
+        curbalance = 0;
         loopvrev(clients) if(!type || (type == 2 ? clients[i]->actortype >= A_ENEMY : clients[i]->actortype == A_BOT))
             deleteai(clients[i]);
     }
@@ -455,6 +518,7 @@ namespace aiman
                     int bb = m_botbal(gamemode, mutators);
                     if(oldbotbalance != bb) { dorefresh = 1; oldbotbalance = bb; }
                 }
+
                 if(dorefresh)
                 {
                     if(dorefresh > 0) dorefresh -= curtime;
@@ -468,7 +532,10 @@ namespace aiman
                         else dorefresh = -1;
                     }
                 }
+
+                checkjanitors();
                 checkenemies();
+
                 loopvrev(clients) if(clients[i]->actortype > A_PLAYER) reinitai(clients[i]);
                 while(true) if(!reassignai()) break;
             }

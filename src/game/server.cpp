@@ -890,7 +890,7 @@ namespace server
             if(ci->actortype >= A_ENEMY)
             {
               //note: if actor spawns < enemylimit, some spawns are never used
-              if(!ci->lastdeath) return true;
+              if(!ci->lastdeath || ci->actortype >= A_ENVIRONMENT) return true;
               else if(gamemillis > ci->lastdeath + G(enemyspawntime)) return true;
               else return false;
             }

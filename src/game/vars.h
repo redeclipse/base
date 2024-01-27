@@ -297,8 +297,8 @@ GVAR(IDF_GAMEMOD, 0, noweapshock, 0, 1, 1);
 GVAR(IDF_GAMEMOD, 0, noweapcorrode, 0, 1, 1);
 
 GVAR(IDF_GAMEMOD, 0, kamikaze, 0, 1, 3); // 0 = never, 1 = holding grenade, 2 = have grenade, 3 = always
-GVAR(IDF_GAMEMOD, 0, itemspawntime, 1, 15000, VAR_MAX); // when items respawn
-GVAR(IDF_GAMEMOD, 0, itemspawndelay, 0, 0, VAR_MAX); // after map start items first spawn
+GVAR(IDF_GAMEMOD, 0, itemspawntime, 1, 10000, VAR_MAX); // when items respawn
+GVAR(IDF_GAMEMOD, 0, itemspawndelay, 0, 1000, VAR_MAX); // after map start items first spawn
 GVAR(IDF_GAMEMOD, 0, itemspawnstyle, 0, 0, 3); // 0 = all at once, 1 = staggered, 2 = random, 3 = randomise between both
 GVAR(IDF_GAMEMOD, 0, itemcollide, 0, BOUNCE_GEOM, COLLIDE_ALL);
 GVAR(IDF_GAMEMOD, 0, itemextinguish, 0, 6, 7);
@@ -310,11 +310,11 @@ GFVAR(IDF_GAMEMOD, 0, itemweight, FVAR_MIN, 150, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itembuoyancy, FVAR_MIN, 200, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemspeedmin, 0, 0, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemspeedmax, 0, 0, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, itemrepulsion, 0, 4, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, itemrepelspeed, 0, 20, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, itemdropminspeed, 0, 10, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, itemdropspreadxy, 0, 5, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, itemdropspreadz, 0, 0, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, itemrepulsion, 0, 5, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, itemrepelspeed, 0, 25, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, itemdropminspeed, 0, 15, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, itemdropspreadxy, 0, 10, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, itemdropspreadz, 0, 2, FVAR_MAX);
 
 //  dm          duel        survivor    gladiator   capture     defend      defendking  bomber      bomberhold  race        racelapped  racegauntlet
 MMVAR(IDF_GAMEMOD, 0, timelimit, 0, VAR_MAX,
@@ -494,6 +494,7 @@ GFVAR(0, PRIV_MODERATOR, aihostshift, 0, 75, FVAR_MAX); // Require this much dif
 GVAR(0, PRIV_MODERATOR, airefreshdelay, 0, 1000, VAR_MAX);
 GVAR(0, PRIV_MODERATOR, aiweightdrag, 0, 5000, VAR_MAX);
 GFVAR(0, PRIV_MODERATOR, aiweightpull, 0, 1, FVAR_MAX);
+
 GVAR(IDF_GAMEMOD, 0, botbalance, -1, -1, VAR_MAX); // -1 = always use numplayers, 0 = don't balance, 1 or more = fill only with this many
 GFVAR(IDF_GAMEMOD, 0, botbalancescale, FVAR_NONZERO, 1, FVAR_MAX); // use balance*this
 GVAR(IDF_GAMEMOD, 0, botbalanceduel, -1, 2, VAR_MAX); // -1 = always use numplayers, 0 = don't balance, 1 or more = fill only with this many
@@ -511,18 +512,25 @@ GSVAR(0, PRIV_MODERATOR, botfemalevanities, "");
 GVAR(IDF_GAMEMOD, 0, botcolourseed, 0, 15, 15); // random bot things will be determined by colour as seed, bitwise: 0 = off, 1 = skill, 2 = name, 4 = model, 8 = loadout
 GVAR(IDF_GAMEMOD, 0, botrandomcase, 0, 2, VAR_MAX); // bots will randomise the first letter of their name if rnd(botrandomcase) > 0
 GVAR(0, PRIV_ADMINISTRATOR, botoverridelock, PRIV_NONE, PRIV_ADMINISTRATOR, PRIV_MAX);
+
 GFVAR(IDF_GAMEMOD, 0, coopbalance, FVAR_NONZERO, 1.5f, FVAR_MAX);
 GVAR(IDF_GAMEMOD, 0, coopskillmin, 1, 80, 101);
 GVAR(IDF_GAMEMOD, 0, coopskillmax, 1, 90, 101);
 GFVAR(IDF_GAMEMOD, 0, coopskillfrags, -100, 0, 100);
 GFVAR(IDF_GAMEMOD, 0, coopskilldeaths, -100, 1, 100);
+
 GVAR(IDF_GAMEMOD, 0, enemybalance, 1, 1, 3);
 GVAR(IDF_GAMEMOD, 0, enemyskillmin, 1, 55, 101);
 GVAR(IDF_GAMEMOD, 0, enemyskillmax, 1, 75, 101);
-GVAR(IDF_GAMEMOD, 0, enemylimit, 0, 32, MAXAI);
+GVAR(IDF_GAMEMOD, 0, enemylimit, 0, 32, MAXAI); // maximum number of enemies
 GVAR(IDF_GAMEMOD, 0, enemyspawntime, 1, 60000, VAR_MAX); // when enemies respawn
 GVAR(IDF_GAMEMOD, 0, enemyspawndelay, 0, 1000, VAR_MAX); // after map start enemies first spawn
 GVAR(IDF_GAMEMOD, 0, enemyspawnstyle, 0, 1, 3); // 0 = all at once, 1 = staggered, 2 = random, 3 = randomise between both
+
+GVAR(IDF_GAMEMOD, 0, janitorlimit, 0, 16, MAXAI); // maximum number of janitors
+GFVAR(IDF_GAMEMOD, 0, janitorbalance, 0, 0.5f, FVAR_MAX); // this * current balance = number of janitors
+GFVAR(IDF_GAMEMOD, 0, janitorjunktime, 0, 0.25f, 1); // when shell casings and vanities become "junk"
+GFVAR(IDF_GAMEMOD, 0, janitorjunkitems, 0, 0.5f, 1); // when items become "junk"
 
 GFVAR(IDF_GAMEMOD, 0, movespeed, FVAR_NONZERO, 1.f, FVAR_MAX); // speed
 GFVAR(IDF_GAMEMOD, 0, moveslow, 0, 0.5f, FVAR_MAX); // threshold for running
