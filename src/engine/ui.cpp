@@ -11,8 +11,6 @@ namespace UI
 
     FVAR(0, uitextscale, 1, 0, 0);
 
-    SVAR(0, uiprecmd, "");
-    SVAR(0, uipostcmd, "");
     SVAR(0, uiopencmd, "showui");
     SVAR(0, uiclosecmd, "hideui");
 
@@ -1869,8 +1867,6 @@ namespace UI
 
             calctextscale();
 
-            if(type == SURFACE_VISOR && *uiprecmd) execute(uiprecmd);
-
             reset();
             setup();
             loopwindows(w,
@@ -1901,7 +1897,6 @@ namespace UI
             children.sort(Window::compare);
             resetstate(); // IMPORTED
 
-            if(type == SURFACE_VISOR && *uipostcmd) execute(uipostcmd);
             if(interactive)
             {
                 checkinputsteal();
