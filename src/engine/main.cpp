@@ -962,11 +962,10 @@ void progress(float amt, const char *s, ...)
 {
     if(progressing || !inbetweenframes || drawtex) return;
     if(amt < 0) amt = 0; // signals the start of a long process
-    if(progressfps)
+    if(progressfps && lastprogress)
     {
-        int curprog = progressfps >= 0 ? progressfps : refreshrate, ticks = SDL_GetTicks(), diff = ticks - lastprogress;
+        int curprog = progressfps >= 0 ? progressfps : refreshrate, diff = SDL_GetTicks() - lastprogress;
         if(curprog > 0 && amt > 0 && diff >= 0 && diff < (1000 + curprog-1)/curprog) return;
-        lastprogress = ticks;
     }
     clientkeepalive();
 
@@ -993,6 +992,7 @@ void progress(float amt, const char *s, ...)
     progressing = true;
     gl_drawnoview();
     swapbuffers(false);
+    lastprogress = SDL_GetTicks();
     updatesounds();
     progressing = false;
     identflags = oldflags;
