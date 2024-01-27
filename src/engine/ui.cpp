@@ -7027,20 +7027,26 @@ namespace UI
                 surface->show(w, e.o, e.attrs[2], e.attrs[3], e.attrs[5] != 0 ? e.attrs[5]/100.f : 1.f, e.attrs[6] > 0 ? e.attrs[6] : 0.f, e.attrs[7] > 0 ? e.attrs[7] : 0.f);
 
             float yaw = 0, pitch = 0;
-            entities::getdynamic(e, w->origin, &yaw, &pitch);
-
-            if(e.attrs[2] >= 0)
+            if(entities::getdynamic(e, w->origin, &yaw, &pitch))
             {
-                w->yaw = e.attrs[2] + yaw;
-                if(w->yaw < 0.0f) w->yaw = 360.0f - fmodf(-w->yaw, 360.0f);
-                else if(w->yaw >= 360.0f) w->yaw = fmodf(w->yaw, 360.0f);
+                if(e.attrs[2] >= 0)
+                {
+                    w->yaw = e.attrs[2] + yaw;
+                    if(w->yaw < 0.0f) w->yaw = 360.0f - fmodf(-w->yaw, 360.0f);
+                    else if(w->yaw >= 360.0f) w->yaw = fmodf(w->yaw, 360.0f);
+                }
+
+                if(e.attrs[3] <= 180 || e.attrs[3] >= -180)
+                {
+                    w->pitch = e.attrs[3] + pitch + 90;
+                    if(w->pitch < -180.0f) w->pitch = 180.0f - fmodf(-180.0f - w->pitch, 360.0f);
+                    else if(w->pitch >= 180.0f) w->pitch = fmodf(w->pitch + 180.0f, 360.0f) - 180.0f;
+                }
             }
-
-            if(e.attrs[3] <= 180 || e.attrs[3] >= -180)
+            else
             {
-                w->pitch = e.attrs[3] + pitch + 90;
-                if(w->pitch < -180.0f) w->pitch = 180.0f - fmodf(-180.0f - w->pitch, 360.0f);
-                else if(w->pitch >= 180.0f) w->pitch = fmodf(w->pitch + 180.0f, 360.0f) - 180.0f;
+                w->yaw = e.attrs[2] >= 0 ? e.attrs[2] : 0;
+                w->pitch = e.attrs[3] <= 180 && e.attrs[3] >= -180 ? e.attrs[3] : 0;
             }
 
             w->allowinput = inside && surface->interactive && (e.attrs[1]&MAPUI_INPUTPROX) != 0;
