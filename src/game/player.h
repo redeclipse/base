@@ -166,7 +166,7 @@ APVAR(IDF_GAMEMOD, 0, collide, 0, A_C_ALL,
 APVAR(IDF_GAMEMOD, 0, health, 1, VAR_MAX,
     1000,           1000,           1000,           500,            500,            500,            1000,           1000
 );
-APVAR(IDF_GAMEMOD, 0, hurtstop, 1, VAR_MAX,
+APVAR(IDF_GAMEMOD, 0, hurtstop, 0, VAR_MAX,
     0,              0,              0,              100,            500,            100,            0,              100
 );
 APVAR(IDF_GAMEMOD, 0, impulse, 0, IM_T_ALL,
@@ -188,7 +188,7 @@ APVAR(IDF_GAMEMOD, 0, spawndelay, DEATHMILLIS, VAR_MAX,
     5000,           5000,           30000,          30000,          30000,          30000,          DEATHMILLIS,    DEATHMILLIS
 );
 APVAR(IDF_GAMEMOD, 0, spawndelayedit, DEATHMILLIS, VAR_MAX,
-    0,              5000,           30000,          30000,          30000,          30000,          DEATHMILLIS,    DEATHMILLIS
+    DEATHMILLIS,    5000,           30000,          30000,          30000,          30000,          DEATHMILLIS,    DEATHMILLIS
 );
 APVAR(IDF_GAMEMOD, 0, spawndelaybomber, DEATHMILLIS, VAR_MAX,
     3000,           3000,           30000,          30000,          30000,          30000,          DEATHMILLIS,    DEATHMILLIS

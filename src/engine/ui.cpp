@@ -7060,8 +7060,8 @@ namespace UI
     #define COMPOSITESIZE (1<<9)
     extern void reloadcomp();
     VARF(IDF_PERSIST, compositesize, 1<<1, COMPOSITESIZE, 1<<12, reloadcomp());
-    VAR(IDF_PERSIST, compositeuprate, 0, 16, VAR_MAX); // limit updates to this ms
-    VAR(IDF_PERSIST, compositelimit, 0, 20, VAR_MAX); // limit updates to this count per cycle
+    VAR(IDF_PERSIST, compositeuprate, 0, 33, VAR_MAX); // limit updates to this ms
+    VAR(IDF_PERSIST, compositelimit, 0, 2, VAR_MAX); // limit updates to this count per cycle
     VAR(IDF_PERSIST, compositerewind, 0, 1, 1);
 
     GLenum compformat(int format = -1)

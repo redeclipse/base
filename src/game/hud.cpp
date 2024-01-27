@@ -323,7 +323,8 @@ namespace hud
     FVAR(IDF_PERSIST, mineclipskew, 0, 1.f, 10);
     FVAR(IDF_PERSIST, rocketclipskew, 0, 1.25f, 10);
     FVAR(IDF_PERSIST, meleeclipskew, 0, 0.75f, 10);
-    VAR(IDF_PERSIST, clawcliprotate, 0, 12, 7); // "round-the-clock" rotation of texture, 0 = off, &1 = flip x, &2 = flip y, &4 = angle, &8 = spin
+
+    VAR(IDF_PERSIST, clawcliprotate, 0, 12, 15); // "round-the-clock" rotation of texture, 0 = off, &1 = flip x, &2 = flip y, &4 = angle, &8 = spin
     VAR(IDF_PERSIST, pistolcliprotate, 0, 12, 15);
     VAR(IDF_PERSIST, swordcliprotate, 0, 12, 15);
     VAR(IDF_PERSIST, shotguncliprotate, 0, 12, 15);
@@ -336,7 +337,7 @@ namespace hud
     VAR(IDF_PERSIST, grenadecliprotate, 0, 11, 15);
     VAR(IDF_PERSIST, minecliprotate, 0, 11, 15);
     VAR(IDF_PERSIST, rocketcliprotate, 0, 12, 15);
-    VAR(IDF_PERSIST, meleecliprotate, 0, 12, 7);
+    VAR(IDF_PERSIST, meleecliprotate, 0, 12, 15);
 
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, spree1tex, "textures/rewards/carnage", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, spree2tex, "textures/rewards/slaughter", 3);
