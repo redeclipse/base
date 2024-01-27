@@ -20,18 +20,18 @@ FVARF(IDF_PERSIST, halooutlinecol, 0, 1, FVAR_MAX, initwarning("Halos", INIT_LOA
 FVARF(IDF_PERSIST, halooutlineblend, 0, 1, FVAR_MAX, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // multiply resulting a by this
 FVARF(IDF_PERSIST, halooutlineshadow, 0, 0, 1, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // apply highlight/shadowing with an extra sample
 FVARF(IDF_PERSIST, haloinfillmix, 0, 0, 1, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
-FVARF(IDF_PERSIST, haloinfillcol, 0, 0.75f, FVAR_MAX, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
-FVARF(IDF_PERSIST, haloinfillblend, 0, 0.25f, FVAR_MAX, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
+FVARF(IDF_PERSIST, haloinfillcol, 0, 0.5f, FVAR_MAX, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
+FVARF(IDF_PERSIST, haloinfillblend, 0, 0.5f, FVAR_MAX, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
 FVARF(IDF_PERSIST, halonoisesample, 0, 0.5f, 8, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // apply random noise to sampling by this multiplier
 FVARF(IDF_PERSIST, halonoisemixcol, 0, 0, 1, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // mix noise with the output colour
 FVARF(IDF_PERSIST, halonoisemixblend, 0, 0, 1, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // mix noise with the output alpha
 
 FVAR(IDF_PERSIST, haloscanlines, 0.0, 5.32f, 16.0f);
 VAR(IDF_PERSIST|IDF_HEX, haloscanlinemixcolour, 0, 0xFFFFFF, 0xFFFFFF);
-FVAR(IDF_PERSIST, haloscanlinemixblend, 0.0, 0.67f, 1.0f);
-FVAR(IDF_PERSIST, haloscanlineblend, 0.0, 0.35f, 16.0f);
-FVAR(IDF_PERSIST, halonoiseblend, 0.0, 0.125f, 16.0f);
-FVAR(IDF_PERSIST, haloflickerblend, 0.0, 0.02f, 16.0f);
+FVAR(IDF_PERSIST, haloscanlinemixblend, 0.0, 0.15f, 1.0f);
+FVAR(IDF_PERSIST, haloscanlineblend, 0.0, 0.75f, 16.0f);
+FVAR(IDF_PERSIST, halonoiseblend, 0.0, 0.15f, 16.0f);
+FVAR(IDF_PERSIST, haloflickerblend, 0.0, 0.15f, 16.0f);
 
 void setuphalo(int w, int h)
 {
