@@ -4908,7 +4908,7 @@ namespace server
             ci->sendburn();
         }
 
-        if(!(flags&HIT_MATERIAL) && !(flags&HIT_LOST) && !(flags&HIT_SPEC))
+        if(!(flags&HIT_MATERIAL) && !(flags&HIT_LOST) && !(flags&HIT_JANITOR) && !(flags&HIT_SPEC))
         {
             if(smode && !smode->damage(ci, ci, ci->health, -1, flags, material)) { return; }
             mutate(smuts, if(!mut->damage(ci, ci, ci->health, -1, flags, material)) { return; });
@@ -4924,7 +4924,7 @@ namespace server
             ci->resetcheckpoint();
             sendf(-1, 1, "ri3", N_CHECKPOINT, ci->clientnum, -1);
         }
-        else if(!(flags&HIT_LOST) && !(flags&HIT_SPEC))
+        else if(!(flags&HIT_LOST) && !(flags&HIT_JANITOR) && !(flags&HIT_SPEC))
         {
             int pointvalue = -1;
             if(!m_dm_oldschool(gamemode, mutators))

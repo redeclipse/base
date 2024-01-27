@@ -22,8 +22,8 @@ namespace ai
         if(isliquid(posmat&MATF_VOLUME)) pull *= 5;
         if(dist >= 0)
         {
-            pull = int(dist/JUMPMIN);
-            pos.z -= clamp(dist-8.0f, 0.0f, pos.z);
+            pull = int(dist / JUMPMIN);
+            pos.z -= clamp(dist - 8.0f, 0.0f, pos.z);
             int trgmat = lookupmaterial(pos);
             if(trgmat&MAT_DEATH || trgmat&MAT_HURT) pull *= 100;
             else if(isliquid(trgmat&MATF_VOLUME)) pull *= 2;

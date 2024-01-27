@@ -588,11 +588,52 @@ namespace ai
 
     void janitor(gameent *d, aistate &b, vector<interest> &interests)
     {
+        if(janitorcollect && d->collects.length() >= janitorcollect)
+        {
+            if(entities::ents.inrange(d->spawnpoint))
+            {
+                gameentity &e = *(gameentity *)entities::ents[d->spawnpoint];
+
+                interest &n = interests.add();
+                n.state = AI_S_INTEREST;
+                n.node = n.target = closestwaypoint(e.pos(), JANITORSUCK, true);
+                n.targtype = AI_T_HOME; // go home
+                n.score = d->o.squaredist(e.pos());
+                n.tolerance = 0;
+
+                return;
+            }
+        }
+
+        vector<int> candidates;
+        loopenti(ACTOR)
+        {
+            gameentity &e = *(gameentity *)entities::ents[i];
+            if(e.type != ACTOR || !entities::isallowed(e)) continue;
+
+            int atype = clamp(e.attrs[0], 0, int(A_TOTAL-1)) + A_ENEMY;
+            if(atype != A_JANITOR) continue;
+            candidates.add(i);
+        }
+
         loopv(projs::junkprojs)
         {
             projent &proj = *projs::junkprojs[i];
 
             if(proj.state == CS_DEAD || !proj.lifetime || proj.beenused || !proj.isjunk(true)) continue;
+
+            if(proj.owner && proj.owner->actortype == A_JANITOR)
+            {   // ignore junk left by a janitor
+                bool found = false;
+                loopvk(candidates)
+                {
+                    gameentity &e = *(gameentity *)entities::ents[candidates[i]];
+                    if(proj.o.squaredist(e.pos()) > JANITORSUCK*JANITORSUCK*2) continue;
+                    found = true;
+                    break;
+                }
+                if(found) continue;
+            }
 
             int v = closestwaypoint(proj.o, JANITORSUCK, true);
             bool found = false;
@@ -611,7 +652,6 @@ namespace ai
             interest &n = interests.add();
             n.state = AI_S_INTEREST;
             n.node = n.target = v;
-            n.target = proj.id;
             n.targtype = AI_T_JUNK;
             n.score = d->o.squaredist(proj.o);
             n.tolerance = 0;
@@ -832,11 +872,11 @@ namespace ai
         return false;
     }
 
-    bool dojanitor(gameent *d, aistate &b)
+    bool dojanitorjunk(gameent *d, aistate &b)
     {
-        int count = 0;
+        if(d->collects.length() >= janitorcollect) return false; // go home
 
-        int numdyns = game::numdynents(1);
+        int count = 0, numdyns = game::numdynents(1);
         loopi(numdyns)
         {
             dynent *e = game::iterdynents(i);
@@ -845,10 +885,7 @@ namespace ai
             gameent *f = (gameent *)e;
             if(f == d || f->actortype != A_JANITOR || !f->isalive()) continue;
             if(f->o.squaredist(waypoints[b.target].o) <= JANITORREJECT*JANITORREJECT) return false;
-
-            // if(f->o.squaredist(d->o) <= JANITORREJECT*JANITORREJECT)
-            //    return makeroute(d, b, vec(d->o).sub(f->o).normalize().mul(JANITORREJECT), true, 0, FARDIST);
-       }
+        }
 
         loopv(projs::junkprojs)
         {
@@ -861,7 +898,18 @@ namespace ai
 
         if(!count) return false;
 
-        return makeroute(d, b, waypoints[b.target].o, true, 0, FARDIST);
+        return makeroute(d, b, waypoints[b.target].o, true, 0, JANITORSUCK);
+    }
+
+    bool dojanitorhome(gameent *d, aistate &b)
+    {
+        if(d->collects.empty()) return false;
+        if(d->o.dist(waypoints[b.target].o) <= JANITORSUCK)
+        {
+            game::suicide(d, HIT_JANITOR);
+            return defense(d, b, waypoints[b.target].o, MINWPDIST, JANITORSUCK, 0, AI_A_IDLE);
+        }
+        return makeroute(d, b, waypoints[b.target].o, true, 0, JANITORSUCK);
     }
 
     bool dointerest(gameent *d, aistate &b)
@@ -898,7 +946,12 @@ namespace ai
             }
             case AI_T_JUNK:
             {
-                return dojanitor(d, b);
+                return dojanitorjunk(d, b);
+                break;
+            }
+            case AI_T_HOME:
+            {
+                return dojanitorhome(d, b);
                 break;
             }
             default: // this is like a wait state without sitting still..

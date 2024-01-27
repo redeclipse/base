@@ -528,6 +528,7 @@ GVAR(IDF_GAMEMOD, 0, enemyspawndelay, 0, 1000, VAR_MAX); // after map start enem
 GVAR(IDF_GAMEMOD, 0, enemyspawnstyle, 0, 1, 3); // 0 = all at once, 1 = staggered, 2 = random, 3 = randomise between both
 
 GVAR(IDF_GAMEMOD, 0, janitorlimit, 0, 16, MAXAI); // maximum number of janitors
+GVAR(IDF_GAMEMOD, 0, janitorcollect, 0, 128, VAR_MAX); // collect this much before dumping
 GFVAR(IDF_GAMEMOD, 0, janitorbalance, 0, 0.5f, FVAR_MAX); // this * current balance = number of janitors
 GFVAR(IDF_GAMEMOD, 0, janitorjunktime, 0, 0.25f, 1); // when shell casings and vanities become "junk"
 GFVAR(IDF_GAMEMOD, 0, janitorjunkitems, 0, 0.5f, 1); // when items become "junk"
@@ -772,3 +773,4 @@ GSVAR(0, 0, obitsuicide, "suicided");
 GSVAR(0, 0, obitkilled, "killed");
 GSVAR(0, 0, obitsplat, "splatted");
 GSVAR(0, 0, obitsquish, "crushed");
+GSVAR(0, 0, obitjanitor, "disposed of their trash");

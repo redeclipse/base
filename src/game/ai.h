@@ -173,6 +173,7 @@ namespace ai
         AI_T_ENTITY,
         AI_T_DROP,
         AI_T_JUNK,
+        AI_T_HOME,
         AI_T_MAX
     };
 

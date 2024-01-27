@@ -2028,7 +2028,6 @@ namespace game
             else if(flags&HIT_MATERIAL && curmat&MAT_VOLFOG) obitctx = getobitvolfog(material, obitchoked);
             else if(flags&HIT_MATERIAL && material&MAT_HURT) obitctx = *obithurt ? obithurt : obithurtmat;
             else if(flags&HIT_MATERIAL) obitctx = *obitdeath ? obitdeath : obitdeathmat;
-            else if(flags&HIT_LOST) obitctx = *obitfall ? obitfall : obitlost;
             else if(flags&HIT_CHECKPOINT) obitctx = *obitcheckpoint ? obitcheckpoint : obitwrongcp;
             else if(flags && isweap(weap) && !burnfunc && !bleedfunc && !shockfunc && !corrodefunc) obitctx = WF(WK(flags), weap, obitsuicide, WS(flags));
             else if(flags&HIT_BURN || burnfunc) obitctx = obitburnself;
@@ -2037,6 +2036,8 @@ namespace game
             else if(flags&HIT_CORRODE || corrodefunc) obitctx = obitcorrodeself;
             else if(d->obliterated) obitctx = obitobliterated;
             else if(d->headless) obitctx = obitheadless;
+            else if(flags&HIT_LOST) obitctx = *obitfall ? obitfall : obitlost;
+            else if(flags&HIT_JANITOR) obitctx = obitjanitor;
             else obitctx = obitsuicide;
 
             concformatstring(d->obit, "[\fs%s\fS]", obitctx);
@@ -2240,7 +2241,7 @@ namespace game
             }
         }
 
-        if(nogore != 2 && gibscale > 0 && !(flags&HIT_LOST))
+        if(nogore != 2 && gibscale > 0)
         {
             int hp = max(d->gethealth(gamemode, mutators), 1), gib = clamp(int(max(damage, hp)/(d->obliterated ? 100.f : (d->headless ? 150.f : 200.f))), 1, 15), amt = int((rnd(gib) + gib) * (1 + gibscale));
 

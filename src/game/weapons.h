@@ -161,10 +161,10 @@ enum
     en(um, HEAD, 1<<0) en(um, TORSO, 1<<1) en(um, LIMB, 1<<2) en(um, FULL, 1<<3) en(um, WHIPLASH, 1<<4) en(um, ALT, 1<<5) \
     en(um, WAVE, 1<<6) en(um, PROJ, 1<<7) en(um, EXPLODE, 1<<8) en(um, BURN, 1<<9) en(um, BLEED, 1<<10) en(um, CORRODE, 1<<11) en(um, SHOCK, 1<<12) \
     en(um, MATERIAL, 1<<13) en(um, SPAWN, 1<<14) en(um, LOST, 1<<15) en(um, KILL, 1<<16) en(um, FLAK, 1<<17) \
-    en(um, SPEC, 1<<18) en(um, TOUCH, 1<<19) en(um, CRUSH, 1<<20) en(um, CHECKPOINT, 1<<21)
+    en(um, SPEC, 1<<18) en(um, TOUCH, 1<<19) en(um, CRUSH, 1<<20) en(um, CHECKPOINT, 1<<21) en(um, JANITOR, 1<<22)
 ENUM_AL(HIT);
 
-ENUM_VAR(HIT_CLEAR, HIT_PROJ|HIT_EXPLODE|HIT_BURN|HIT_BLEED|HIT_CORRODE|HIT_MATERIAL|HIT_SPAWN|HIT_LOST|HIT_TOUCH|HIT_CRUSH);
+ENUM_VAR(HIT_CLEAR, HIT_PROJ|HIT_EXPLODE|HIT_BURN|HIT_BLEED|HIT_CORRODE|HIT_MATERIAL|HIT_SPAWN|HIT_LOST|HIT_TOUCH|HIT_CRUSH|HIT_JANITOR);
 ENUM_VAR(HIT_SFLAGS, HIT_KILL);
 
 #define W_R_ENUM(en, um) \
