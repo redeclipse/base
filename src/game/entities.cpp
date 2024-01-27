@@ -2998,9 +2998,9 @@ namespace entities
                 }
                 case ACTOR:
                 {
-                    int atype = clamp(e.attrs[0], 0, A_TOTAL-1)+A_ENEMY;
-                    part_radius(vec(pos).add(vec(0, 0, actors[atype].height*0.5f)), vec(actors[atype].radius, actors[atype].radius, actors[atype].height*0.5f), showentsize, 1, 1, TEAM(T_ENEMY, colour));
-                    part_radius(pos, vec(ai::ALERTMAX), showentsize, 1, 1, TEAM(T_ENEMY, colour));
+                    int atype = clamp(e.attrs[0], 0, int(A_TOTAL-1)) + A_ENEMY, team = atype >= A_ENVIRONMENT ? T_ENVIRONMENT : T_ENEMY;
+                    part_radius(vec(pos).add(vec(0, 0, actors[atype].height*0.5f)), vec(actors[atype].radius, actors[atype].radius, actors[atype].height*0.5f), showentsize, 1, 1, TEAM(team, colour));
+                    part_radius(pos, vec(ai::ALERTMAX), showentsize, 1, 1, TEAM(team, colour));
                     break;
                 }
                 case MAPSOUND:
@@ -3090,7 +3090,8 @@ namespace entities
                 }
                 case ACTOR:
                 {
-                    entdirpart(pos, e.attrs[1], e.attrs[2], 4.f, 1, TEAM(T_ENEMY, colour));
+                    int atype = clamp(e.attrs[0], 0, int(A_TOTAL-1)) + A_ENEMY, team = atype >= A_ENVIRONMENT ? T_ENVIRONMENT : T_ENEMY;
+                    entdirpart(pos, e.attrs[1], e.attrs[2], 4.f, 1, TEAM(team, colour));
                     break;
                 }
                 case TELEPORT:

@@ -333,7 +333,7 @@ namespace ai
         loopi(numdyns) if((e = (gameent *)game::iterdynents(i)))
         {
             if(targets.find(e->clientnum) >= 0) continue;
-            if(teams && (d->team != T_ENEMY || e->team != T_ENEMY) && m_team(game::gamemode, game::mutators) && d->team != e->team) continue;
+            if(teams && (d->team < T_ENEMY || e->team < T_ENEMY) && m_team(game::gamemode, game::mutators) && d->team != e->team) continue;
             if(members) (*members)++;
             if(e == d || !e->ai || e->state != CS_ALIVE || e->actortype != d->actortype) continue;
             aistate &b = e->ai->getstate();
@@ -588,12 +588,11 @@ namespace ai
 
     void janitor(gameent *d, aistate &b, vector<interest> &interests)
     {
-        loopv(projs::projs)
+        loopv(projs::junkprojs)
         {
-            projent &proj = *projs::projs[i];
+            projent &proj = *projs::junkprojs[i];
 
-            if(proj.state == CS_DEAD || !proj.lifetime || proj.beenused) continue;
-            if(proj.projtype != PRJ_GIBS && proj.projtype != PRJ_DEBRIS && proj.projtype != PRJ_EJECT && proj.projtype != PRJ_VANITY && (proj.projtype != PRJ_ENT || proj.lifespan < 0.25f)) continue;
+            if(proj.state == CS_DEAD || !proj.lifetime || proj.beenused || !proj.isjunk(true)) continue;
 
             int v = closestwaypoint(proj.o, JANITORSUCK, true);
             bool found = false;
@@ -851,12 +850,11 @@ namespace ai
             //    return makeroute(d, b, vec(d->o).sub(f->o).normalize().mul(JANITORREJECT * 0.5f), true, 0, FARDIST);
        }
 
-        loopv(projs::projs)
+        loopv(projs::junkprojs)
         {
-            projent &proj = *projs::projs[i];
+            projent &proj = *projs::junkprojs[i];
 
-            if(proj.state == CS_DEAD || !proj.lifetime || proj.beenused) continue;
-            if(proj.projtype != PRJ_GIBS && proj.projtype != PRJ_DEBRIS && proj.projtype != PRJ_EJECT && proj.projtype != PRJ_VANITY && (proj.projtype != PRJ_ENT || proj.lifespan < 0.25f)) continue;
+            if(proj.state == CS_DEAD || !proj.lifetime || proj.beenused || !proj.isjunk(true)) continue;
             if(proj.o.squaredist(waypoints[b.target].o) > RETRYDIST*RETRYDIST) continue;
             count++;
         }

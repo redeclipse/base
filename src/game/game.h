@@ -2283,6 +2283,8 @@ struct projent : dynent
     static bool shot(int t, int w) { return t == ENT_PROJ && w == PRJ_SHOT; }
     static bool shot(physent *d) { return d && d->type == ENT_PROJ && ((projent*)d)->projtype == PRJ_SHOT; }
 
+    bool isjunk(bool span = false) const { return projtype == PRJ_DEBRIS || projtype == PRJ_EJECT || projtype == PRJ_GIBS || (projtype == PRJ_ENT && (!span || lifespan >= 0.25f)); }
+
     void reset()
     {
         physent::reset();
@@ -2434,7 +2436,7 @@ namespace physics
 
 namespace projs
 {
-    extern vector<projent *> projs, collideprojs;
+    extern vector<projent *> projs, collideprojs, junkprojs;
 
     extern void mapprojfx();
     extern void reset();

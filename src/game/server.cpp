@@ -1302,7 +1302,7 @@ namespace server
     {
         if(tone)
         {
-            int col = ci->actortype < A_ENEMY ? ci->colours[sec ? 1 : 0] : TEAM(T_ENEMY, colour);
+            int col = ci->actortype != A_ENEMY ? ci->colours[sec ? 1 : 0] : TEAM(T_ENEMY, colour);
             if(!col && isweap(ci->weapselect)) col = W(ci->weapselect, colour);
             if(col) return col;
         }
@@ -1722,9 +1722,9 @@ namespace server
         loopv(clients)
         {
             clientinfo *cp = clients[i];
-            if(!cp->team || cp->state == CS_SPECTATOR || cp->actortype > A_PLAYER) continue;
+            if(!isteam(gamemode, mutators, cp->team, T_FIRST) || cp->state == CS_SPECTATOR || cp->actortype > A_PLAYER) continue;
             cp->updatetimeplayed();
-            tc[cp->team-T_FIRST].add(cp);
+            tc[cp->team - T_FIRST].add(cp);
             numplaying++;
         }
         if((G(teambalancestyle) || m_swapteam(gamemode, mutators)) && numplaying >= G(teambalanceplaying))
@@ -2062,20 +2062,23 @@ namespace server
                         log.push();
                     }
                 }
+
                 if(gamemillis >= nextbalance && canbalancenow())
                 {
                     int oldbalance = curbalance;
                     if(++curbalance >= numt) curbalance = 0; // safety first
+
                     static vector<clientinfo *> assign[T_NUM];
                     loopk(T_NUM) assign[k].setsize(0);
                     loopv(clients) if(isteam(gamemode, mutators, clients[i]->team, T_FIRST))
                         assign[clients[i]->team-T_FIRST].add(clients[i]);
+
                     int scores[T_NUM] = {0};
-                    loopk(numt) scores[k] = teamscore(k+T_FIRST).total;
+                    loopk(numt) scores[k] = teamscore(k + T_FIRST).total;
                     loopk(numt)
                     {
-                        int from = mapbals[oldbalance][k], fromt = from-T_FIRST,
-                            to = mapbals[curbalance][k], tot = to-T_FIRST;
+                        int from = mapbals[oldbalance][k], fromt = from - T_FIRST,
+                            to = mapbals[curbalance][k], tot = to - T_FIRST;
                         loopv(assign[fromt])
                         {
                             clientinfo *cp = assign[fromt][i];
@@ -2087,9 +2090,11 @@ namespace server
                                     break;
                                 }
                             }
+
                             setteam(cp, to, (m_balreset(gamemode, mutators) ? TT_RESET : 0)|TT_INFO, false);
                             cp->lastdeath = 0;
                         }
+
                         score &cs = teamscore(from);
                         cs.total = scores[tot];
                         sendf(-1, 1, "ri3", N_SCORE, cs.team, cs.total);
@@ -3234,7 +3239,7 @@ namespace server
 
     int chooseteam(clientinfo *ci, int suggest, bool wantbal)
     {
-        if(ci->actortype >= A_ENEMY) return T_ENEMY;
+        if(ci->actortype >= A_ENEMY) return ci->actortype >= A_ENVIRONMENT ? T_ENVIRONMENT : T_ENEMY;
         else if(m_team(gamemode, mutators) && ci->state != CS_SPECTATOR && ci->state != CS_EDITING)
         {
             bool human = ci->actortype == A_PLAYER;
@@ -3254,22 +3259,26 @@ namespace server
                     break;
                 }
             }
+
             teamcheck teamchecks[T_NUM];
-            loopk(T_NUM) teamchecks[k].team = T_FIRST+k;
+            loopk(T_NUM) teamchecks[k].team = T_FIRST + k;
             loopv(clients) if(clients[i] != ci)
             {
                 clientinfo *cp = clients[i];
-                if(!cp->team || cp->state == CS_SPECTATOR) continue;
+                if(!isteam(gamemode, mutators, cp->team, T_FIRST) || cp->state == CS_SPECTATOR) continue;
                 if((cp->actortype > A_PLAYER && cp->ownernum < 0) || cp->actortype >= A_ENEMY) continue;
-                teamcheck &ts = teamchecks[cp->team-T_FIRST];
+
+                teamcheck &ts = teamchecks[cp->team - T_FIRST];
                 if(team > 0 && m_swapteam(gamemode, mutators) && ci->actortype == A_PLAYER && cp->actortype == A_PLAYER && cp->swapteam && ci->team == cp->swapteam && cp->team == team)
                     return team; // swapteam
+
                 if(ci->actortype > A_PLAYER || (ci->actortype == A_PLAYER && cp->actortype == A_PLAYER))
-                { // remember: ai just balance teams
+                {   // remember: ai just balance teams
                     ts.score += cp->balancescore(1);
                     ts.clients++;
                 }
             }
+
             if(bal || team <= 0) loopj(team > 0 ? 2 : 1)
             {
                 teamcheck *worst = NULL;
@@ -3292,6 +3301,7 @@ namespace server
                         }
                     }
                 }
+
                 if(worst)
                 {
                     vector <int> possibleteams;
@@ -3303,11 +3313,14 @@ namespace server
                             possibleteams.add(ts.team);
                         }
                     }
+
                     team = possibleteams[rnd(possibleteams.length())];
                     break;
                 }
+
                 team = -1;
             }
+
             return allowteam(ci, team, T_FIRST, false) ? team : T_ALPHA;
         }
         return T_NEUTRAL;
@@ -3626,7 +3639,7 @@ namespace server
             flushmasteroutput();
             loopi(numteams(gamemode, mutators))
             {
-                int tp = m_team(gamemode, mutators) ? T_FIRST : T_NEUTRAL;
+                int tp = m_team(gamemode, mutators) ? int(T_FIRST) : int(T_NEUTRAL);
                 requestmasterf("stats team %d %d %s\n", i + tp, teamscore(i + tp).total, escapestring(TEAM(i + tp, name)));
                 flushmasteroutput();
             }

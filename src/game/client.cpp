@@ -2763,7 +2763,7 @@ namespace client
                         dummy.get(p);
                         break;
                     }
-                    int c1 = getint(p), c2 = getint(p), model = getint(p), pattern = getint(p), cps = getint(p), team = clamp(getint(p), int(T_NEUTRAL), int(T_ENEMY)), priv = getint(p);
+                    int c1 = getint(p), c2 = getint(p), model = getint(p), pattern = getint(p), cps = getint(p), team = clamp(getint(p), int(T_NEUTRAL), int(T_MAX - 1)), priv = getint(p);
                     getstring(text, p);
                     stringz(namestr);
                     filterstring(namestr, text, true, true, true, true, MAXNAMELEN);

@@ -70,4 +70,4 @@
         &EXPAND(PD_PREFIX, janitor##name) \
     );
 
-#define A(atyp,name)         (*EXPAND(PD_PREFIX, actor_stat_##name[clamp(atyp, 0, int(A_MAX)-1)]))
+#define A(atyp,name) (*EXPAND(PD_PREFIX, actor_stat_##name[clamp(atyp, 0, int(A_MAX)-1)]))

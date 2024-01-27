@@ -4,7 +4,7 @@ namespace projs
     #define FWCOL(n,c,p) ((p).flags&HIT_FLAK ? W##n##COL(&p, (p).weap, flak##c, WS((p).flags)) : W##n##COL(&p, (p).weap, c, WS((p).flags)))
 
     vector<hitmsg> hits;
-    vector<projent *> projs, collideprojs;
+    vector<projent *> projs, collideprojs, junkprojs;
 
     struct toolent
     {
@@ -460,6 +460,9 @@ namespace projs
                         collideprojs.removeobj(projs[i]);
                         cleardynentcache();
                     }
+
+                    if(projs[i]->isjunk()) junkprojs.removeobj(projs[i]);
+
                     delete projs[i];
                     projs.removeunordered(i--);
                 }
@@ -648,6 +651,7 @@ namespace projs
     void reset()
     {
         collideprojs.setsize(0);
+        junkprojs.setsize(0);
         cleardynentcache();
         projs.deletecontents();
         projs.shrink(0);
@@ -1220,6 +1224,8 @@ namespace projs
             default: break;
         }
 
+        if(proj.isjunk()) junkprojs.add(&proj);
+
         if(proj.projtype != PRJ_SHOT) updatebb(proj, true);
         proj.spawntime = lastmillis;
         proj.hit = NULL;
@@ -1577,6 +1583,7 @@ namespace projs
             collideprojs.removeobj(&proj);
             cleardynentcache();
         }
+        if(proj.isjunk()) junkprojs.removeobj(&proj);
 
         switch(proj.projtype)
         {
@@ -2162,7 +2169,8 @@ namespace projs
                 }
             }
         }
-        else if(proj.projtype == PRJ_GIBS || proj.projtype == PRJ_DEBRIS || proj.projtype == PRJ_EJECT || proj.projtype == PRJ_VANITY || (proj.projtype == PRJ_ENT && proj.lifespan >= 0.25f))
+
+        if(proj.isjunk(true))
         {
             int numdyns = game::numdynents();
             loopj(numdyns)
@@ -2271,10 +2279,10 @@ namespace projs
 
         static bool cmsort(const canrem *a, const canrem *b)
         {
-            if(a->dist > b->dist) return true;
-            if(a->dist < b->dist) return false;
             if(a->p->addtime < b->p->addtime) return true;
             if(a->p->addtime > b->p->addtime) return false;
+            if(a->dist > b->dist) return true;
+            if(a->dist < b->dist) return false;
             return false;
         }
     };
@@ -2283,8 +2291,7 @@ namespace projs
     void update()
     {
         vector<canrem *> canremove;
-        loopvrev(projs) if(projs[i]->projtype == PRJ_DEBRIS || projs[i]->projtype == PRJ_GIBS || projs[i]->projtype == PRJ_EJECT)
-            canremove.add(new canrem(projs[i], camera1->o.dist(projs[i]->o)));
+        loopvrev(projs) if(projs[i]->isjunk(true)) canremove.add(new canrem(projs[i], camera1->o.dist(projs[i]->o)));
 
         int count = canremove.length() - maxprojectiles;
         if(count > 0)

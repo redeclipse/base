@@ -180,7 +180,7 @@ namespace aiman
                 }
 
                 ci->state = CS_DEAD;
-                ci->team = type == A_BOT ? T_NEUTRAL : T_ENEMY;
+                ci->team = type == A_BOT ? T_NEUTRAL : (type >= A_ENVIRONMENT ? T_ENVIRONMENT : T_ENEMY);
                 ci->online = ci->connected = ci->ready = true;
 
                 return true;
@@ -309,22 +309,26 @@ namespace aiman
                 default: balance = max(people, bb); break; // balance to at least this
             }
             balance += G(botoffset)*numt;
+
             if(!m_duke(gamemode, mutators) && G(botbalancescale) != 1) balance = int(ceilf(balance*G(botbalancescale)));
+
             if(balance > 0 && m_team(gamemode, mutators))
             { // skew this if teams are unbalanced
                 int plrs[T_NUM] = {0}, highest = -1, bots = 0, offset = balance%numt; // we do this because humans can unbalance in odd ways
                 if(offset) balance += numt-offset;
-                loopv(clients) if(clients[i]->team >= T_FIRST && isteam(gamemode, mutators, clients[i]->team, T_FIRST))
+
+                loopv(clients) if(isteam(gamemode, mutators, clients[i]->team, T_FIRST))
                 {
                     if(clients[i]->actortype == A_BOT)
                     {
                         bots++;
                         continue;
                     }
-                    int team = clients[i]->team-T_FIRST;
+                    int team = clients[i]->team - T_FIRST;
                     plrs[team]++;
                     if(highest < 0 || plrs[team] > plrs[highest]) highest = team;
                 }
+
                 if(highest >= 0) loopi(numt) if(i != highest && plrs[i] < plrs[highest]) loopj(plrs[highest]-plrs[i])
                 {
                     if(bots > 0) bots--;
@@ -333,9 +337,11 @@ namespace aiman
             }
         }
         else balance += G(botoffset)*numt;
+
         int bots = balance-people;
         if(bots > blimit) balance -= bots-blimit;
         if(numt > 1 && (balance%numt) != 0) balance -= balance%numt;
+
         if(balance > 0)
         {
             while(numclients(-1, true, A_BOT) < balance) if(!addai(A_BOT)) break;

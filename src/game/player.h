@@ -56,12 +56,15 @@ enum
     A_T_AI = (1<<A_T_BOTS)|(1<<A_T_ENEMIES)
 };
 
-enum
-{
-    T_NEUTRAL = 0, T_ALPHA, T_OMEGA, T_ENEMY, T_MAX,
-    T_FIRST = T_ALPHA, T_LAST = T_OMEGA,
-    T_COUNT = T_LAST+1, T_NUM = (T_LAST-T_FIRST)+1
-};
+#define T_ENUM(en, um) \
+    en(um, neutral, NEUTRAL) en(um, alpha, ALPHA) en(um, omega, OMEGA) \
+    en(um, enemy, ENEMY) en(um, environment, ENVIRONMENT) en(um, max, MAX)
+ENUM_DLN(T);
+
+ENUM_VAR(T_FIRST, T_ALPHA);
+ENUM_VAR(T_LAST, T_OMEGA);
+ENUM_VAR(T_COUNT, T_LAST + 1);
+ENUM_VAR(T_NUM, T_LAST - T_FIRST + 1);
 
 enum
 {
@@ -75,15 +78,6 @@ int mapbals[T_NUM][T_NUM] = {
     { T_ALPHA, T_OMEGA },
     { T_OMEGA, T_ALPHA },
 };
-SVARR(teamnames, "neutral alpha omega enemy");
-VARR(teamidxneutral, T_NEUTRAL);
-VARR(teamidxalpha, T_ALPHA);
-VARR(teamidxomega, T_OMEGA);
-VARR(teamidxenemy, T_ENEMY);
-VARR(teamidxfirst, T_FIRST);
-VARR(teamidxlast, T_LAST);
-VARR(teamidxcount, T_COUNT);
-VARR(teamidxnum, T_NUM);
 #else
 extern int mapbals[T_NUM][T_NUM];
 #endif
@@ -91,10 +85,10 @@ extern int mapbals[T_NUM][T_NUM];
 #include "teamdef.h"
 
 TPSVAR(IDF_GAMEMOD, 0, name,
-    "Neutral",  "Alpha",    "Omega",    "Enemy"
+    "Neutral",  "Alpha",    "Omega",    "Enemy",    "Environment"
 );
 TPVAR(IDF_GAMEMOD|IDF_HEX, 0, colour, 0, 0xFFFFFF,
-    0x707070,   0x1040F8,   0xFF3210,   0xE0E020
+    0x707070,   0x1040F8,   0xFF3210,   0xE0E020,   0x1EC850
 );
 
 struct score
