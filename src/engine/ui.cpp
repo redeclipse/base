@@ -1164,13 +1164,13 @@ namespace UI
                     return;
                 }
             }
-
+            visible = false;
             state = STATE_HIDDEN;
         }
 
         void layout()
         {
-            if(state&STATE_HIDDEN) { w = h = 0; return; }
+            if(!visible || state&STATE_HIDDEN) { w = h = 0; return; }
 
             Window *oldwindow = window;
             window = this;
@@ -1223,7 +1223,7 @@ namespace UI
 
         void draw(float sx, float sy)
         {
-            if(state&STATE_HIDDEN) return;
+            if(!visible || state&STATE_HIDDEN) return;
             if(drawtex && surfacetype == SURFACE_WORLD && strncmp(name, "entity_", 7)) return;
 
             Window *oldwindow = window;
@@ -1255,7 +1255,7 @@ namespace UI
 
         void adjustchildren()
         {
-            if(state&STATE_HIDDEN) return;
+            if(!visible || state&STATE_HIDDEN) return;
             Window *oldwindow = window;
             window = this;
             Object::adjustchildren();
