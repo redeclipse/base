@@ -10,7 +10,7 @@ namespace ai
     const float CLOSEDIST       = 64.f;    // is close
     const float JANITORFLOAT    = 40.f;    // janitor float dist
     const float JANITORSUCK     = 64.f;    // janitor suck dist
-    const float JANITORREJECT   = 256.f;   // janitor reject dist
+    const float JANITORREJECT   = 128.f;   // janitor reject dist
     const float RETRYDIST       = 128.f;   // is close when retrying
     const float FARDIST         = 256.f;   // too far to remap close
     const float JUMPMIN         = 3.f;     // decides to jump
@@ -331,6 +331,7 @@ namespace ai
     extern float viewfieldx(int x = 101);
     extern float viewfieldy(int x = 101);
 
+    extern vec getbottom(gameent *d);
     extern bool targetable(gameent *d, gameent *e, bool solid = false);
     extern bool cansee(gameent *d, vec &x, vec &y, bool force = false, vec &targ = aitarget);
     extern bool altfire(gameent *d, gameent *e);

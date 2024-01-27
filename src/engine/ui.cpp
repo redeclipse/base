@@ -956,7 +956,7 @@ namespace UI
         char *name, *dyn;
         Code *contents, *onshow, *onhide;
         bool exclusive, mapdef, saved, menu, passthrough, tooltip, popup, persist, ontop, attached, visible;
-        int allowinput, lasthit, lastshow, zindex, numargs, initargs, hint;
+        int allowinput, lasthit, lastshow, lastset, zindex, numargs, initargs, hint;
         float px, py, pw, ph,
               yaw, pitch, curyaw, curpitch, detentyaw, detentpitch,
               scale, dist, hitx, hity;
@@ -969,7 +969,7 @@ namespace UI
             contents(NULL), onshow(NULL), onhide(NULL),
             exclusive(false), mapdef(mapdef_),
             menu(true), passthrough(false), tooltip(false), popup(false), persist(false), ontop(false), attached(false), visible(false),
-            allowinput(1), lasthit(0), lastshow(0), zindex(0), numargs(0), initargs(0), hint(0),
+            allowinput(1), lasthit(0), lastshow(0), lastset(0), zindex(0), numargs(0), initargs(0), hint(0),
             px(0), py(0), pw(0), ph(0),
             yaw(-1), pitch(0), curyaw(0), curpitch(0), detentyaw(0), detentpitch(0),
             scale(1), dist(0), hitx(-1), hity(-1),
@@ -2134,12 +2134,21 @@ namespace UI
         Window *oldwindow = window;
         window = this;
 
-        bool haspos = window->pos != vec(-FLT_MAX);
-        if(!(window->visible = (haspos ? getvisible(camera1->o, camera1->yaw, camera1->pitch, window->pos, curfov, fovy, 8, VFC_PART_VISIBLE) : true)))
-        {
+        if(window->lastset && window->lastset != totalmillis)
+        {   // set windows are updated every frame or disregarded
+            window->visible = false;
             window = oldwindow;
             return;
         }
+
+        bool haspos = window->pos != vec(-FLT_MAX);
+        if(haspos && !getvisible(camera1->o, camera1->yaw, camera1->pitch, window->pos, curfov, fovy, 8, VFC_PART_VISIBLE))
+        {
+            window->visible = false;
+            window = oldwindow;
+            return;
+        }
+        window->visible = true;
         window->dist = haspos ? window->pos.squaredist(camera1->o) : 0.f;
 
         setargs();
@@ -2377,13 +2386,23 @@ namespace UI
             w->scale = scale;
             w->detentyaw = detentyaw;
             w->detentpitch = detentpitch;
+            w->lastset = totalmillis;
 
             popsurface();
             return true;
         }
+
+        if(!w && param >= 0 && dynuiexec(name, param)) w = surface->windows.find(dynuiref(name, param), NULL);
+
+        bool ret = false;
+        if(w && surface->show(w, origin, yaw, pitch, scale, detentyaw, detentpitch))
+        {
+            w->lastset = totalmillis;
+            ret = true;
+        }
         popsurface();
 
-        return showui(name, stype, param, origin, yaw, pitch, scale, detentyaw, detentpitch);
+        return ret;
     }
 
     bool hideui(const char *name, int stype, int param)
@@ -7008,20 +7027,20 @@ namespace UI
                 surface->show(w, e.o, e.attrs[2], e.attrs[3], e.attrs[5] != 0 ? e.attrs[5]/100.f : 1.f, e.attrs[6] > 0 ? e.attrs[6] : 0.f, e.attrs[7] > 0 ? e.attrs[7] : 0.f);
 
             float yaw = 0, pitch = 0;
-            if(entities::getdynamic(e, w->origin, &yaw, &pitch))
+            entities::getdynamic(e, w->origin, &yaw, &pitch);
+
+            if(e.attrs[2] >= 0)
             {
-                if(e.attrs[2] >= 0)
-                {
-                    w->yaw = e.attrs[2] + yaw;
-                    if(w->yaw < 0.0f) w->yaw = 360.0f - fmodf(-w->yaw, 360.0f);
-                    else if(w->yaw >= 360.0f) w->yaw = fmodf(w->yaw, 360.0f);
-                }
-                if(e.attrs[3] <= 180 || e.attrs[3] >= -180)
-                {
-                    w->pitch = e.attrs[2] + pitch + 90;
-                    if(w->pitch < -180.0f) w->pitch = 180.0f - fmodf(-180.0f - w->pitch, 360.0f);
-                    else if(w->pitch >= 180.0f) w->pitch = fmodf(w->pitch + 180.0f, 360.0f) - 180.0f;
-                }
+                w->yaw = e.attrs[2] + yaw;
+                if(w->yaw < 0.0f) w->yaw = 360.0f - fmodf(-w->yaw, 360.0f);
+                else if(w->yaw >= 360.0f) w->yaw = fmodf(w->yaw, 360.0f);
+            }
+
+            if(e.attrs[3] <= 180 || e.attrs[3] >= -180)
+            {
+                w->pitch = e.attrs[3] + pitch + 90;
+                if(w->pitch < -180.0f) w->pitch = 180.0f - fmodf(-180.0f - w->pitch, 360.0f);
+                else if(w->pitch >= 180.0f) w->pitch = fmodf(w->pitch + 180.0f, 360.0f) - 180.0f;
             }
 
             w->allowinput = inside && surface->interactive && (e.attrs[1]&MAPUI_INPUTPROX) != 0;

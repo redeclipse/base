@@ -2487,30 +2487,23 @@ namespace weapons
     FVAR(IDF_PERSIST, name##overlaydetentpitch, 0, 0, 90);
 
 #define CLEARUI(name, id, nottype) \
-    { for(int mui_scount = 0; mui_scount < SURFACE_ALL; ++mui_scount) if(mui_scount != nottype) for(int mui_ucount = 0; mui_ucount < 2; ++mui_ucount) UI::hideui(MUINAME(name, mui_ucount), mui_scount, id); }
+   for(int mui_scount = 0; mui_scount < SURFACE_ALL; ++mui_scount) if(mui_scount != nottype) for(int mui_ucount = 0; mui_ucount < 2; ++mui_ucount) UI::hideui(MUINAME(name, mui_ucount), mui_scount, id);
 
 #define MAKEUI(name, id, test, cansee, forced, pos, above, over, body) \
-{ \
-    for(int mui_count = 0; mui_count < 2; ++mui_count) \
+    for(int mui_count = 0; mui_count < 2; ++mui_count) if((test) && ((forced) || !MUIVAL(name, mui_count, maxdist) || camera1->o.dist(pos) <= MUIVAL(name, mui_count, maxdist))) \
     { \
-        int mui_type = -1; \
-        if((test) && ((forced) || !MUIVAL(name, mui_count, maxdist) || camera1->o.dist(pos) <= MUIVAL(name, mui_count, maxdist))) \
+        int mui_type = (cansee) ? MUIVAL(name, mui_count, ui) : SURFACE_WORLD; \
+        if(mui_type >= 0) \
         { \
-            mui_type = (cansee) ? MUIVAL(name, mui_count, ui) : SURFACE_WORLD; \
-            if(mui_type >= 0) \
-            { \
-                vec mui_o = mui_count ? vec(pos).sub(vec(pos).sub(camera1->o).normalize().mul(over)) : vec(pos).addz(above); \
-                body; \
-                UI::setui(MUINAME(name, mui_count), \
-                    mui_type, id, mui_o, MUIVAL(name, mui_type, yaw), MUIVAL(name, mui_type, pitch), \
-                    (mui_type == SURFACE_WORLD ? MUIVAL(name, mui_type, world) : MUIVAL(name, mui_type, scale)), \
-                    MUIVAL(name, mui_type, detentyaw), MUIVAL(name, mui_type, detentpitch) \
-                ); \
-            } \
+            vec mui_o = mui_count ? vec(pos).sub(vec(pos).sub(camera1->o).normalize().mul(over)) : vec(pos).addz(above); \
+            body; \
+            UI::setui(MUINAME(name, mui_count), \
+                mui_type, id, mui_o, MUIVAL(name, mui_type, yaw), MUIVAL(name, mui_type, pitch), \
+                (mui_type == SURFACE_WORLD ? MUIVAL(name, mui_type, world) : MUIVAL(name, mui_type, scale)), \
+                MUIVAL(name, mui_type, detentyaw), MUIVAL(name, mui_type, detentpitch) \
+            ); \
         } \
-        CLEARUI(name, id, mui_type); \
     } \
-}
 
 namespace hud
 {

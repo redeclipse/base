@@ -383,6 +383,7 @@ namespace ai
         if(totalmillis == d->ai->lastbottom) return d->ai->bottom;
 
         d->ai->bottom = d->feetpos();
+        d->ai->lastbottom = totalmillis;
 
         if(physics::movepitch(d))
         {
@@ -593,28 +594,28 @@ namespace ai
 
             if(proj.state == CS_DEAD || !proj.lifetime || proj.beenused) continue;
             if(proj.projtype != PRJ_GIBS && proj.projtype != PRJ_DEBRIS && proj.projtype != PRJ_EJECT && proj.projtype != PRJ_VANITY) continue;
-            int v = closestwaypoint(proj.o, FARDIST, true);
 
+            int v = closestwaypoint(proj.o, JANITORSUCK, true);
             bool found = false;
+
             loopvj(interests)
             {
                 interest &n = interests[j];
                 if(n.state != AI_S_INTEREST || n.targtype != AI_T_JUNK || n.node != v) continue;
-                n.score += 1;
+                n.score *= 0.9f; // don't scale too much to prioritise nearby junk
                 found = true;
                 break;
             }
 
-            if(!found)
-            {
-                interest &n = interests.add();
-                n.state = AI_S_INTEREST;
-                n.node = n.target = v;
-                n.target = proj.id;
-                n.targtype = AI_T_JUNK;
-                n.score = 1;
-                n.tolerance = 1;
-            }
+            if(found) continue;
+
+            interest &n = interests.add();
+            n.state = AI_S_INTEREST;
+            n.node = n.target = v;
+            n.target = proj.id;
+            n.targtype = AI_T_JUNK;
+            n.score = d->o.squaredist(proj.o);
+            n.tolerance = 0;
         }
 
         int numdyns = game::numdynents(1);
@@ -624,7 +625,7 @@ namespace ai
             if(!e || !gameent::is(e)) continue;
 
             gameent *f = (gameent *)e;
-            if(f == e || f->actortype != A_JANITOR || !f->isalive()) continue;
+            if(f == d || f->actortype != A_JANITOR || !f->isalive()) continue;
 
             loopvkrev(interests)
                 if(f->o.squaredist(waypoints[interests[k].node].o) <= JANITORREJECT*JANITORREJECT)
@@ -835,6 +836,20 @@ namespace ai
     bool dojanitor(gameent *d, aistate &b)
     {
         int count = 0;
+
+        int numdyns = game::numdynents(1);
+        loopi(numdyns)
+        {
+            dynent *e = game::iterdynents(i);
+            if(!e || !gameent::is(e)) continue;
+
+            gameent *f = (gameent *)e;
+            if(f == d || f->actortype != A_JANITOR || !f->isalive()) continue;
+            if(f->o.squaredist(waypoints[b.target].o) <= JANITORREJECT*JANITORREJECT) return false;
+
+            // if(f->o.squaredist(d->o) <= JANITORREJECT*JANITORREJECT)
+            //    return makeroute(d, b, vec(d->o).sub(f->o).normalize().mul(JANITORREJECT * 0.5f), true, 0, FARDIST);
+       }
 
         loopv(projs::projs)
         {
@@ -1297,7 +1312,7 @@ namespace ai
     {
         d->move = d->strafe = 0;
         d->ai->dontmove = true;
-        setspot(d, d->feetpos());
+        setspot(d, getbottom(d));
 
         int weap = m_weapon(d->actortype, game::gamemode, game::mutators);
         bool wantsfire = false, hastrigger = false, hasspawned = false, alt = false;;
@@ -1355,7 +1370,20 @@ namespace ai
             d->actiontime[k ? AC_SECONDARY : AC_PRIMARY] = -lastmillis;
         }
 
-        entities::getdynamic(d->spawnpoint, d->o, &d->yaw, &d->pitch);
+        float oldyaw = d->yaw, oldpitch = d->pitch;
+        if(!entities::getdynamic(d->spawnpoint, d->o, &d->yaw, &d->pitch))
+        {
+            if(entities::ents.inrange(d->spawnpoint))
+            {
+                d->yaw = entities::ents[d->spawnpoint]->attrs[1];
+                d->pitch = entities::ents[d->spawnpoint]->attrs[2];
+            }
+            else
+            {
+                d->yaw = oldyaw;
+                d->pitch = oldpitch;
+            }
+        }
         fixrange(d->yaw, d->pitch);
         safefindorientation(d->o, d->yaw, d->pitch, d->ai->target);
         d->resetinterp();
@@ -1830,6 +1858,7 @@ namespace ai
     {
         obstacles.clear();
         obstacles.add(wpavoid);
+
         int numdyns = game::numdynents(1);
         loopi(numdyns)
         {
@@ -1843,8 +1872,13 @@ namespace ai
                 float expl = WX(WK(p->flags), p->weap, radial, WS(p->flags), game::gamemode, game::mutators, p->curscale);
                 if(expl > 0) obstacles.avoidnear(p, p->o.z + expl + 1, p->o, WAYPOINTRADIUS + expl + 1);
             }
-            else obstacles.avoidnear(d, d->o.z + d->aboveeye + 1, d->feetpos(), WAYPOINTRADIUS + d->radius + 1);
+            else if(gameent::is(d))
+            {
+                gameent *e = (gameent *)d;
+                obstacles.avoidnear(d, d->o.z + d->aboveeye + 1, getbottom(e), WAYPOINTRADIUS + d->radius + 1);
+            }
         }
+
         loopenti(MAPMODEL) if(entities::ents[i]->type == MAPMODEL)
         {
             gameentity &e = *(gameentity *)entities::ents[i];

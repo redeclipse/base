@@ -443,6 +443,7 @@ namespace ai
                 waypoints[d->ai->prevnodes[i]].curscore = -1;
                 waypoints[d->ai->prevnodes[i]].estscore = 0;
             }
+
             if(retries <= 0)
             {
                 loopavoid(obstacles, d,
@@ -454,6 +455,29 @@ namespace ai
                         waypoints[wp].estscore = 0;
                     }
                 });
+            }
+
+            if(d->actortype == A_JANITOR)
+            {
+                int numdyns = game::numdynents(1);
+                loopi(numdyns)
+                {
+                    dynent *e = game::iterdynents(i);
+                    if(!e || !gameent::is(e)) continue;
+
+                    gameent *f = (gameent *)e;
+                    if(f == d || f->actortype != A_JANITOR || !f->isalive()) continue;
+                    loopvk(waypoints)
+                    {
+                        if(!iswaypoint(k)) continue;
+                        if(f->o.squaredist(waypoints[k].o) <= JANITORREJECT*JANITORREJECT)
+                        {
+                            waypoints[k].route = routeid;
+                            waypoints[k].curscore = -1;
+                            waypoints[k].estscore = 0;
+                        }
+                    }
+                }
             }
         }
 
@@ -566,7 +590,7 @@ namespace ai
     void navigate(gameent *d)
     {
         if(d->state != CS_ALIVE) { d->lastnode = -1; return; }
-        vec v(d->feetpos());
+        vec v(ai::getbottom(d));
         bool dropping = shoulddrop(d) && !clipped(v);
         float dist = dropping ? WAYPOINTRADIUS : CLOSEDIST;
         int curnode = closestwaypoint(v, dist, false), prevnode = d->lastnode;
