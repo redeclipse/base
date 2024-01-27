@@ -3544,28 +3544,26 @@ namespace entities
         }
     }
 
-    struct sortent
+    void checkui()
     {
-        int idx;
-        float dist, height, radius, skew;
-        bool cansee, ontop, active, drawn;
-        vec pos;
+        bool editcheck = game::player1->isediting() && !editinhibit;
+        int fstent = m_edit(game::gamemode) ? 0 : firstuse(EU_ITEM),
+            lstent = m_edit(game::gamemode) ? ents.length() : lastuse(EU_ITEM),
+            numdrawn = 0;
 
-        sortent() : idx(-1),
-            dist(0), height(0), radius(0), skew(1),
-            cansee(false), ontop(false), active(false), drawn(false),
-            pos(0) {}
-        ~sortent() {}
-
-        static bool compare(const sortent &a, const sortent &b)
+        for(int i = fstent; i < lstent; ++i)
         {
-            if(!a.ontop && b.ontop) return true;
-            if(a.ontop && !b.ontop) return false;
-            if(!a.cansee && b.cansee) return true;
-            if(a.cansee && !b.cansee) return false;
-            return a.dist > b.dist; // reverse order so we can reverse through it
+            gameentity &e = *(gameentity *)ents[i];
+            if(e.type == NOTUSED || e.attrs.empty()) continue;
+
+            MAKEUI(entity, i, numdrawn < showentmax,
+                game::player1->isediting() || enttype[e.type].usetype == EU_ITEM,
+                editcheck && (enthover.find(i) >= 0 || entgroup.find(i) >= 0),
+                e.o, max(enttype[e.type].radius, 4), max(enttype[e.type].radius, 4),
+                numdrawn++
+            );
         }
-    };
+    }
 
     void drawparticles()
     {
@@ -3583,77 +3581,36 @@ namespace entities
         int fstent = m_edit(game::gamemode) ? 0 : min(firstuse(EU_ITEM), firstent(hasroute ? ROUTE : TELEPORT)),
             lstent = m_edit(game::gamemode) ? ents.length() : max(lastuse(EU_ITEM), lastent(hasroute ? ROUTE : TELEPORT));
 
-        static vector<sortent> visents;
-        visents.setsize(0);
-
         for(int i = fstent; i < lstent; ++i)
         {
             gameentity &e = *(gameentity *)ents[i];
             if(e.type == NOTUSED || e.attrs.empty()) continue;
+            if(!game::player1->isediting() && e.type != TELEPORT && e.type != ROUTE && enttype[e.type].usetype != EU_ITEM) continue; // they don't do anything
 
-            sortent &v = visents.add();
-            v.idx = i;
-            v.pos = game::player1->isediting() ? e.o : e.pos();
-            v.dist = v.pos.squaredist(camera1->o);
-            v.height = v.radius = max(enttype[e.type].radius, 4);
-
-            if(game::player1->isediting())
-                v.active = enthover.find(v.idx) >= 0 || entgroup.find(v.idx) >= 0;
-            else
-            {
-                if(e.type != TELEPORT && e.type != ROUTE && enttype[e.type].usetype != EU_ITEM) continue; // they don't do anything
-
-                if(e.spawned())
-                {
-                    int millis = lastmillis-e.lastspawn;
-                    if(millis < 500) v.skew = float(millis)/500.f;
-                    v.active = true;
-                }
-                else if(e.lastemit)
-                {
-                    int millis = lastmillis-e.lastemit;
-                    if(millis < 500)
-                    {
-                        v.skew = 1.f-(float(millis)/500.f);
-                        v.active = true;
-                    }
-                }
-            }
-
-            bool editcheck = v.active && game::player1->isediting() && !editinhibit;
-
-            v.drawn = true;
-            v.ontop = editcheck && v.dist <= showentdist*showentdist;
-            v.cansee = editcheck && getvisible(camera1->o, camera1->yaw, camera1->pitch, v.pos, curfov, fovy, v.radius, v.ontop ? -1 : VFC_PART_VISIBLE);
-
+            vec pos = game::player1->isediting() ? e.o : e.pos();
             if(!drawtex && game::player1->isediting() && !editinhibit)
             {
-                bool dotop = v.ontop && e.dynamic(), visiblepos = dotop && getvisible(camera1->o, camera1->yaw, camera1->pitch, e.pos(), curfov, fovy, v.radius, v.ontop ? -1 : VFC_PART_VISIBLE);
-                loopj(dotop ? 2 : 1) if(j ? visiblepos : v.cansee)
+                bool ontop = (enthover.find(i) >= 0 || entgroup.find(i) >= 0) && pos.squaredist(camera1->o) <= showentdist*showentdist,
+                     cansee = getvisible(camera1->o, camera1->yaw, camera1->pitch, pos, curfov, fovy, max(enttype[e.type].radius, 4), ontop ? -1 : VFC_PART_VISIBLE),
+                     dotop = ontop && e.dynamic(), visiblepos = dotop && getvisible(camera1->o, camera1->yaw, camera1->pitch, e.pos(), curfov, fovy, max(enttype[e.type].radius, 4), ontop ? -1 : VFC_PART_VISIBLE);
+
+                loopj(dotop ? 2 : 1) if(j ? visiblepos : cansee)
                 {
-                    if(j && (v.cansee || visiblepos)) part_line(v.pos, e.pos(), entselsize, 1, 1, entselcolourdyn);
+                    if(j && (cansee || visiblepos)) part_line(pos, e.pos(), entselsize, 1, 1, entselcolourdyn);
                     if(j || entityoverlayui < 0)
-                        part_create(v.ontop ? PART_ENTITY_ONTOP : PART_ENTITY, 1,
-                            j ? e.pos() : v.pos,
-                            j ? entselcolourdyn : (v.ontop ? entselcolourtop : entselcolour),
-                            v.ontop && !j ? entselsizetop : entselsize,
-                            v.ontop && !j ? entselblendtop : entselblend
+                        part_create(ontop ? PART_ENTITY_ONTOP : PART_ENTITY, 1,
+                            j ? e.pos() : pos,
+                            j ? entselcolourdyn : (ontop ? entselcolourtop : entselcolour),
+                            ontop && !j ? entselsizetop : entselsize,
+                            ontop && !j ? entselblendtop : entselblend
                         );
                 }
             }
+
+            drawparticle(e, pos, i);
         }
 
         if(drawtex) return;
-
-        visents.sort(sortent::compare);
-
-        int numdrawn = 0;
-        loopvrev(visents)
-        {
-            sortent &v = visents[i];
-            if(v.drawn) drawparticle(*(gameentity *)ents[v.idx], v.pos, v.idx);
-            MAKEUI(entity, v.idx, numdrawn < showentmax, v.cansee, v.ontop, v.pos, v.height, v.radius, numdrawn++);
-        }
 
         loopv(projs::projs)
         {

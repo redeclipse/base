@@ -2630,6 +2630,7 @@ namespace entities
     extern void spawnplayer(gameent *d, int ent = -1, bool suicide = false);
     extern void useeffects(gameent *d, int cn, int ent, int ammoamt, bool spawn, int weap, int drop, int ammo = -1);
     extern bool haloallow(const vec &o, int id, bool justtest = false, bool check = true);
+    extern void checkui();
     extern void render();
     extern void update();
     extern void reset();

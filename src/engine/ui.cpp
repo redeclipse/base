@@ -955,8 +955,7 @@ namespace UI
     {
         char *name, *dyn;
         Code *contents, *onshow, *onhide;
-        bool exclusive, mapdef, saved,
-             menu, passthrough, tooltip, popup, persist, ontop, attached;
+        bool exclusive, mapdef, saved, menu, passthrough, tooltip, popup, persist, ontop, attached, visible;
         int allowinput, lasthit, lastshow, zindex, numargs, initargs, hint;
         float px, py, pw, ph,
               yaw, pitch, curyaw, curpitch, detentyaw, detentpitch,
@@ -969,7 +968,7 @@ namespace UI
             name(newstring(name_)), dyn(dyn_ && *dyn_ ? newstring(dyn_) : NULL),
             contents(NULL), onshow(NULL), onhide(NULL),
             exclusive(false), mapdef(mapdef_),
-            menu(true), passthrough(false), tooltip(false), popup(false), persist(false), ontop(false), attached(false),
+            menu(true), passthrough(false), tooltip(false), popup(false), persist(false), ontop(false), attached(false), visible(false),
             allowinput(1), lasthit(0), lastshow(0), zindex(0), numargs(0), initargs(0), hint(0),
             px(0), py(0), pw(0), ph(0),
             yaw(-1), pitch(0), curyaw(0), curpitch(0), detentyaw(0), detentpitch(0),
@@ -1397,7 +1396,7 @@ namespace UI
         #define DOSTATE(chkflags, func) \
             void func##children(float cx, float cy, bool cinside, int mask, int mode, int setflags) \
             { \
-                if(!allowinput || !(allowstate&chkflags) || state&STATE_HIDDEN || pw <= 0 || ph <= 0) return; \
+                if(!visible || !allowinput || !(allowstate&chkflags) || state&STATE_HIDDEN || pw <= 0 || ph <= 0) return; \
                 getcursor(cx, cy); \
                 bool inside = (cx >= 0 && cy >= 0 && cx < w && cy < h); \
                 if(mode != SETSTATE_INSIDE || inside) \
@@ -1455,6 +1454,10 @@ namespace UI
             if(aa->hint < bb->hint) return true;
             if(aa->hint > bb->hint) return false;
 
+            // visible windows last
+            if(!aa->visible && bb->visible) return true;
+            if(aa->visible && !bb->visible) return false;
+
             // ontop windows last
             if(!aa->ontop && bb->ontop) return true;
             if(aa->ontop && !bb->ontop) return false;
@@ -1463,14 +1466,12 @@ namespace UI
             if(aa->zindex < bb->zindex) return true;
             if(aa->zindex > bb->zindex) return false;
 
-            bool apos = aa->pos != vec(-FLT_MAX), bpos = bb->pos != vec(-FLT_MAX);
-            if(apos && bpos)
-            {
-                // reverse order so further gets drawn first
-                if(aa->dist > bb->dist) return true;
-                if(aa->dist < bb->dist) return false;
+            // reverse order so further gets drawn first
+            if(aa->dist > bb->dist) return true;
+            if(aa->dist < bb->dist) return false;
 
-                // draw bottom-up
+            if(aa->pos != vec(-FLT_MAX) && bb->pos != vec(-FLT_MAX))
+            {   // draw bottom-up
                 if(aa->pos.z < bb->pos.z) return true;
                 if(aa->pos.z > bb->pos.z) return false;
             }
@@ -1677,6 +1678,7 @@ namespace UI
     UIWINARGB(persist);
     UIWINARGB(ontop);
     UIWINARGB(attached);
+    UIWINARGB(visible);
 
     UIWINARGV(origin);
     UIWINARGV(pos);
@@ -1939,7 +1941,7 @@ namespace UI
         {
             loopwindowsrev(w,
             {
-                if(!checkexclusive(w)) continue;
+                if(!w->visible || !checkexclusive(w)) continue;
                 if(surfacetype == SURFACE_WORLD || w->state&STATE_HIDDEN || w->persist) continue;
                 if(w->allowinput || w->passthrough) { hide(w, i); return true; }
             });
@@ -1963,7 +1965,7 @@ namespace UI
             int ret = 0;
             loopwindows(w,
             {
-                if(!checkexclusive(w)) continue;
+                if(!w->visible || !checkexclusive(w)) continue;
                 if(surfacetype == SURFACE_WORLD && !w->attached && (!cursor || w->hitx < 0 || w->hitx > 1 || w->hity < 0 || w->hity > 1)) continue;
                 if(w->allowinput && !(w->state&STATE_HIDDEN) && ret != 1) ret = max(w->allowinput, ret);
             });
@@ -1974,7 +1976,7 @@ namespace UI
         {
             loopwindows(w,
             {
-                if(!checkexclusive(w)) continue;
+                if(!w->visible || !checkexclusive(w)) continue;
                 if(surfacetype != SURFACE_WORLD && w->menu && !(w->state&STATE_HIDDEN)) return !pass || !w->passthrough;
             });
             return false;
@@ -1984,7 +1986,7 @@ namespace UI
         {
             loopwindowsrev(w,
             {
-                if(!checkexclusive(w)) continue;
+                if(!w->visible || !checkexclusive(w)) continue;
                 if(surfacetype != SURFACE_WORLD && (w->allowinput || w->passthrough) && !(w->state&STATE_HIDDEN)) { return w->name; }
             });
             return NULL;
@@ -1997,8 +1999,8 @@ namespace UI
             if(children.empty()) return;
             loopwindows(w,
             {
+                if(!w->visible || !checkexclusive(w)) continue;
                 uiscale = 1;
-                if(!checkexclusive(w)) continue;
                 if(w->tooltip) // follows cursor
                     w->setpos((cursorx*float(hudw)/float(hudh))-(w->w*cursorx), cursory >= 0.5f ? cursory-w->h-uitipoffset : cursory+hud::cursorsize+uitipoffset);
                 else if(w->popup && !w->overridepos)
@@ -2104,17 +2106,8 @@ namespace UI
 
     void popsurface()
     {
-        if(surfacestack.empty())
-        {
-            surface = NULL;
-            surfacetype = -1;
-        }
-        else
-        {
-            surface = surfacestack.last();
-            surfacetype = surface ? surface->type : -1;
-            surfacestack.pop();
-        }
+        surface = surfacestack.empty() ? NULL : surfacestack.pop();
+        surfacetype = surface ? surface->type : -1;
     }
 
     #define DOSURFACE(surf, body) \
@@ -2137,10 +2130,18 @@ namespace UI
         if(!surface) return;
         reset(surface);
         setup();
+
         Window *oldwindow = window;
         window = this;
-        if(window->pos != vec(-FLT_MAX))
-            window->dist = window->pos.squaredist(camera1->o);
+
+        bool haspos = window->pos != vec(-FLT_MAX);
+        if(!(window->visible = (haspos ? getvisible(camera1->o, camera1->yaw, camera1->pitch, window->pos, curfov, fovy, 8, VFC_PART_VISIBLE) : true)))
+        {
+            window = oldwindow;
+            return;
+        }
+        window->dist = haspos ? window->pos.squaredist(camera1->o) : 0.f;
+
         setargs();
         buildlevel = taglevel = -1;
         if(contents) buildchildren(contents->code, mapdef);
@@ -2339,14 +2340,13 @@ namespace UI
     {
         if(!name || !*name || param < 0) return false;
 
-        loopv(dynuis) if(!strcmp(dynuis[i]->name, name))
+        DynUI *d = finddynui(name);
+        if(d)
         {
-            defformatstring(refname, "%s_%d", name, param);
-            tagval t;
-            t.setint(param);
-            if(newui(refname, surfacetype, dynuis[i]->contents, dynuis[i]->onshow, dynuis[i]->onhide, dynuis[i]->mapdef, dynuis[i]->name, &t, 1)) return true;
-            return false;
+            tagval t; t.setint(param);
+            return newui(dynuiref(name, param), surfacetype, d->contents, d->onshow, d->onhide, d->mapdef, d->name, &t, 1);
         }
+
         return false;
     }
 
@@ -2414,7 +2414,7 @@ namespace UI
 
     int openui(const char *name, int stype)
     {
-        if(uivisible(name, stype) || !pushsurface(stype)) return 0;
+        if(uitest(name, stype) || !pushsurface(stype)) return 0;
 
         defformatstring(cmd, "%s \"%s\" %d", uiopencmd, name ? name : "",  stype);
         int ret = execute(cmd);
@@ -2426,7 +2426,7 @@ namespace UI
 
     int closeui(const char *name, int stype)
     {
-        if(!uivisible(name, stype) || !pushsurface(stype)) return 0;
+        if(!uitest(name, stype) || !pushsurface(stype)) return 0;
 
         defformatstring(cmd, "%s \"%s\" %d", uiclosecmd, name ? name : "", stype);
         int ret = execute(cmd);
@@ -2449,11 +2449,11 @@ namespace UI
 
     void pressui(const char *name, bool on, int stype, int param, const vec &origin, float yaw, float pitch, float scale, float detentyaw, float detentpitch)
     {
-        if(on) { if(!uivisible(name, stype, param)) showui(name, stype, param, origin, yaw, pitch, scale, detentyaw, detentpitch); }
-        else if(uivisible(name, stype, param)) hideui(name, stype, param);
+        if(on) { if(!uitest(name, stype, param)) showui(name, stype, param, origin, yaw, pitch, scale, detentyaw, detentpitch); }
+        else if(uitest(name, stype, param)) hideui(name, stype, param);
     }
 
-    bool uivisible(const char *name, int stype, int param)
+    bool uitest(const char *name, int stype, int param)
     {
         if(!pushsurface(stype)) return false;
 
@@ -2477,7 +2477,7 @@ namespace UI
     ICOMMAND(IDF_NOECHO, toggleui, "sbbggggffff", (char *name, int *sf, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch), intret(toggleui(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_VISOR), *param, vec(*x, *y, *z), *yaw, *pitch, *scale, *detentyaw, *detentpitch) ? 1 : 0));
     ICOMMAND(IDF_NOECHO, holdui, "sbbggggffffD", (char *name, int *sf, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch, int *down), holdui(name, *down!=0, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_VISOR), *param, vec(*x, *y, *z), *yaw, *pitch, *scale, *detentyaw, *detentpitch));
     ICOMMAND(IDF_NOECHO, pressui, "sbbggggffffD", (char *name, int *sf, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch, int *down), pressui(name, *down!=0, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_VISOR), *param, vec(*x, *y, *z), *yaw, *pitch, *scale, *detentyaw, *detentpitch));
-    ICOMMAND(IDF_NOECHO, uivisible, "sbb", (char *name, int *sf, int *param), intret(uivisible(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_VISOR), *param) ? 1 : 0));
+    ICOMMAND(IDF_NOECHO, uitest, "sbb", (char *name, int *sf, int *param), intret(uitest(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_VISOR), *param) ? 1 : 0));
 
     #define SURFACEOP(idx)  Surface *s = (idx) >= 0 && (idx) < SURFACE_MAX ? surfaces[(idx)] : (surface ? surface : surfaces[SURFACE_VISOR]);
 

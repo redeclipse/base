@@ -574,6 +574,7 @@ namespace hud
                         d->center(), (d->getheight() * 0.5f) + d->aboveeye + 1, d->getradius() * 0.5f, // body
             );
 
+        entities::checkui();
         if(m_capture(game::gamemode)) capture::checkui();
         if(m_defend(game::gamemode)) defend::checkui();
         if(m_bomber(game::gamemode)) bomber::checkui();
