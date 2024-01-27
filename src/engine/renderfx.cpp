@@ -26,12 +26,13 @@ FVARF(IDF_PERSIST, halonoisesample, 0, 0.5f, 8, initwarning("Halos", INIT_LOAD, 
 FVARF(IDF_PERSIST, halonoisemixcol, 0, 0, 1, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // mix noise with the output colour
 FVARF(IDF_PERSIST, halonoisemixblend, 0, 0, 1, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // mix noise with the output alpha
 
-FVAR(IDF_PERSIST, haloscanlines, 0.0, 5.32f, 16.0f);
+extern float visorscanlines; // negative value below is multiplier of this
+FVAR(IDF_PERSIST, haloscanlines, -16.0f, -4.0f, 16.0f);
 VAR(IDF_PERSIST|IDF_HEX, haloscanlinemixcolour, 0, 0xFFFFFF, 0xFFFFFF);
-FVAR(IDF_PERSIST, haloscanlinemixblend, 0.0, 0.15f, 1.0f);
-FVAR(IDF_PERSIST, haloscanlineblend, 0.0, 0.75f, 16.0f);
-FVAR(IDF_PERSIST, halonoiseblend, 0.0, 0.15f, 16.0f);
-FVAR(IDF_PERSIST, haloflickerblend, 0.0, 0.15f, 16.0f);
+FVAR(IDF_PERSIST, haloscanlinemixblend, 0.0f, 0.5f, 1.0f);
+FVAR(IDF_PERSIST, haloscanlineblend, 0.0f, 0.75f, 16.0f);
+FVAR(IDF_PERSIST, halonoiseblend, 0.0f, 0.15f, 16.0f);
+FVAR(IDF_PERSIST, haloflickerblend, 0.0f, 0.15f, 16.0f);
 
 void setuphalo(int w, int h)
 {
@@ -179,7 +180,7 @@ void blendhalos()
     gle::color(halocolour.tocolor().mul(game::darkness(DARK_HALO)), haloblend);
     glEnable(GL_BLEND);
 
-    float maxdist = hud::radarlimit(halodist);
+    float maxdist = hud::radarlimit(halodist), scanlines = haloscanlines >= 0 ? haloscanlines : visorscanlines * fabs(haloscanlines);
     loopirev(HALO_MAX)
     {
         switch(i)
@@ -212,7 +213,7 @@ void blendhalos()
         LOCALPARAMF(millis, lastmillis / 1000.0f);
         LOCALPARAMF(halosize, hudw, hudh, 1.f/hudw, 1.f/hudh);
         LOCALPARAMF(haloparams, maxdist, 1 / maxdist);
-        LOCALPARAMF(halofx, haloscanlines, haloscanlineblend, halonoiseblend, haloflickerblend);
+        LOCALPARAMF(halofx, scanlines, haloscanlineblend, halonoiseblend, haloflickerblend);
         vec4 color = vec4::fromcolor(haloscanlinemixcolour, haloscanlinemixblend);
         LOCALPARAMF(halofxcol, color.r, color.g, color.b, color.a);
 
