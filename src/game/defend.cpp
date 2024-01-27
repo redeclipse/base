@@ -230,34 +230,33 @@ namespace defend
         DefendSort() : ent(-1), team(T_NEUTRAL), dist(0), pos(0) {}
         DefendSort(int n, int t, const vec &o) : ent(n), team(t), dist(0), pos(o)
         {
-            average.add(o);
+            bool iszero = DefendSort::average.iszero();
+            DefendSort::average.add(o);
+            if(!iszero) DefendSort::average.mul(0.5f);
         }
         ~DefendSort() {}
 
         static bool compare(const DefendSort &x, const DefendSort &y)
         {
             if(x.dist < y.dist) return true;
-            if(x.dist > y.dist) return true;
+            if(x.dist > y.dist) return false;
             return x.team < y.team; // distance first, then team if equal
         }
 
         static void reset()
         {
             defendsort.shrink(0);
-            average = vec(0);
+            DefendSort::average = vec(0);
         }
 
         static void process(int kinship)
         {
-            int count = defendsort.length();
-            average.div(count);
-
-            bool neutral = m_dac_king(game::gamemode, game::mutators);
+            bool neutral = m_dac_king(game::gamemode, game::mutators) || kinship == 0;
             int bases[T_COUNT] = {0};
             loopv(defendsort)
             {
                 DefendSort &d = defendsort[i];
-                d.dist = d.pos.squaredist(average);
+                d.dist = d.pos.squaredist(DefendSort::average);
                 bases[d.team]++;
             }
 
