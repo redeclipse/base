@@ -2260,13 +2260,13 @@ namespace UI
 
     struct DynUIRef
     {
-        char *name, *ref;
+        char *name;
         int param;
+        string ref;
 
-        DynUIRef(const char *s, int n) : name(newstring(s)), ref(NULL), param(n)
+        DynUIRef(const char *s, int n) : name(newstring(s)), param(n)
         {
-            defformatstring(refname, "%s_%d", name, param);
-            ref = newstring(refname);
+            formatstring(ref, "%s_%d", name, param);
         }
 
         ~DynUIRef()
@@ -2285,7 +2285,7 @@ namespace UI
         return NULL;
     }
 
-    const char *dynuiref(const char *name, int param = -1, bool create = true)
+    const char *dynuiref(const char *name, int param = -1, bool create = false)
     {
         if(!name || !*name || param < 0) return name; // not dynui
 
@@ -2294,7 +2294,7 @@ namespace UI
         {
             if(!create) return NULL;
             d = new DynUIRef(name, param);
-            conoutf(colouryellow, "allocating dynui: %s", d->ref);
+            dynuirefs.add(d);
         }
 
         return d ? d->ref : NULL;
@@ -2341,27 +2341,38 @@ namespace UI
     ICOMMAND(0, dynui, "ssssi", (char *name, char *contents, char *onshow, char *onhide), dynui(name, contents, onshow, onhide, (identflags&IDF_MAP) != 0));
     ICOMMAND(0, mapdynui, "ssssi", (char *name, char *contents, char *onshow, char *onhide), dynui(name, contents, onshow, onhide, true));
 
-    bool dynuiexec(const char *name, int param)
+    const char *dynuiexec(const char *name, int param)
     {
-        if(!name || !*name || param < 0) return false;
+        if(!name || !*name || param < 0) return NULL;
 
         DynUI *d = finddynui(name);
         if(d)
         {
             tagval t; t.setint(param);
-            conoutf(colouryellow, "creating dynui: %s", name);
-            return newui(dynuiref(name, param), surfacetype, d->contents, d->onshow, d->onhide, d->mapdef, d->name, &t, 1);
+            const char *refname = dynuiref(name, param, true); // should be the only one creating refs
+            if(newui(refname, surfacetype, d->contents, d->onshow, d->onhide, d->mapdef, d->name, &t, 1))
+                return refname;
         }
 
-        return false;
+        return NULL;
+    }
+
+    Window *dynuicreate(const char *name, int param)
+    {
+        if(!name || !*name || param < 0) return NULL;
+
+        const char *refname = dynuiexec(name, param);
+        if(refname) return surface->windows.find(refname, NULL);
+
+        return NULL;
     }
 
     bool showui(const char *name, int stype, int param, const vec &origin, float yaw, float pitch, float scale, float detentyaw, float detentpitch)
     {
         if(!pushsurface(stype)) return false;
 
-        Window *w = dynuirefwin(name, param, false);
-        if(!w && param >= 0 && dynuiexec(name, param)) w = surface->windows.find(dynuiref(name, param), NULL);
+        Window *w = dynuirefwin(name, param);
+        if(!w) w = dynuicreate(name, param);
         bool ret = w && surface->show(w, origin, yaw, pitch, scale, detentyaw, detentpitch);
 
         popsurface();
@@ -2373,7 +2384,7 @@ namespace UI
     {
         if(!engineready || !pushsurface(stype)) return false;
 
-        Window *w = dynuirefwin(name, param, false);
+        Window *w = dynuirefwin(name, param);
 
         if(w && surface->children.find(w) >= 0)
         {
@@ -2389,7 +2400,7 @@ namespace UI
             return true;
         }
 
-        if(!w && param >= 0 && dynuiexec(name, param)) w = surface->windows.find(dynuiref(name, param), NULL);
+        if(!w) w = dynuicreate(name, param);
 
         bool ret = false;
         if(w && surface->show(w, origin, yaw, pitch, scale, detentyaw, detentpitch))
@@ -2413,7 +2424,7 @@ namespace UI
             return ret;
         }
 
-        Window *w = dynuirefwin(name, param, false);
+        Window *w = dynuirefwin(name, param);
         bool ret = w && surface->hide(w);
 
         popsurface();
@@ -2480,7 +2491,7 @@ namespace UI
             return ret;
         }
 
-        Window *w = dynuirefwin(name, param, false);
+        Window *w = dynuirefwin(name, param);
         bool ret = w && surface->children.find(w) >= 0;
 
         popsurface();
@@ -7007,15 +7018,13 @@ namespace UI
             }
 
             defformatstring(name, "entity_%s%d", e.attrs[0] < 0 ? "builtin_" : "", abs(e.attrs[0]));
-            Window *w = dynuirefwin(name, i, false);
+            Window *w = dynuirefwin(name, i);
+            if(!w) w = dynuicreate(name, i);
             if(!w)
             {
-                if((!dynuiexec(name, i) || (w = surface->windows.find(dynuiref(name, i), NULL)) == NULL))
-                {
-                    closemapuis(i);
-                    popsurface();
-                    continue;
-                }
+                closemapuis(i);
+                popsurface();
+                continue;
             }
 
             closemapuis(i, surfacetype); // close this UI on other surfaces first
