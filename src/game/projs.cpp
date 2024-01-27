@@ -1687,25 +1687,32 @@ namespace projs
 
         if(inside)
         {
-            conoutf(colourred, "WARNING: projectile inside solid, attempting to reverse..");
-            vec oldpos = proj.o, rev = vec(dir.iszero() ? proj.vel : dir).normalize().mul(max(proj.radius * 0.125f, 0.25f));
-            for(int iters = inside + 8; iters > 0; iters--)
+            vec oldpos = proj.o;
+            if(proj.projtype == PRJ_SHOT)
             {
-                proj.o.sub(rev);
-                if(collide(&proj, dir, 0.f, collidemod&COLLIDE_DYNENT, true, GUARDRADIUS))
-                    if(!collideinside && (!collideplayer || collidemod&(collideplayer->type == ENT_PROJ ? COLLIDE_SHOTS : COLLIDE_PLAYER)))
-                    {
-                        if(collideplayer) d = collideplayer;
-                        proj.norm = collidewall;
-                        conoutf(colourred, "WARNING: new position %.6f,%.6f,%.6f (old: %.6f,%.6f,%.6f) wall %.6f,%.6f,%.6f", proj.o.x, proj.o.y, proj.o.z, oldpos.x, oldpos.y, oldpos.z, proj.norm.x, proj.norm.y, proj.norm.z);
-                        inside = 0;
-                        break;
-                    }
+                conoutf(colourred, "WARNING: projectile inside solid, attempting to reverse..");
+                vec rev = vec(dir.iszero() ? proj.vel : dir).normalize().mul(max(proj.radius * 0.125f, 0.25f));
+                for(int iters = inside + 8; iters > 0; iters--)
+                {
+                    proj.o.sub(rev);
+                    if(collide(&proj, dir, 0.f, collidemod&COLLIDE_DYNENT, true, GUARDRADIUS))
+                        if(!collideinside && (!collideplayer || collidemod&(collideplayer->type == ENT_PROJ ? COLLIDE_SHOTS : COLLIDE_PLAYER)))
+                        {
+                            if(collideplayer) d = collideplayer;
+                            proj.norm = collidewall;
+                            conoutf(colourred, "WARNING: new position %.6f,%.6f,%.6f (old: %.6f,%.6f,%.6f) wall %.6f,%.6f,%.6f", proj.o.x, proj.o.y, proj.o.z, oldpos.x, oldpos.y, oldpos.z, proj.norm.x, proj.norm.y, proj.norm.z);
+                            inside = 0;
+                            break;
+                        }
+                }
             }
             if(inside)
             {
-                conoutf(colourred, "WARNING: unable to reverse projectile, modifying collision properties");
-                proj.o = oldpos;
+                if(proj.projtype == PRJ_SHOT)
+                {
+                    conoutf(colourred, "WARNING: unable to reverse projectile, modifying collision properties");
+                    proj.o = oldpos;
+                }
 
                 if(collidemod&BOUNCE_PLAYER)
                 {
