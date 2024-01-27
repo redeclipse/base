@@ -61,7 +61,7 @@ bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, boo
 
     static int tempradius;
     if(!radius) radius = &tempradius;
-    *radius = e.attrs[0] ? e.attrs[0] : worldsize; // after this, "0" becomes "off"
+    *radius = e.attrs[0] > 0 ? e.attrs[0] : worldsize; // after this, "0" becomes "off"
 
     const vector<extentity *> &ents = entities::getents();
     loopv(e.links) if(ents.inrange(e.links[i]))

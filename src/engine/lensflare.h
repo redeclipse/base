@@ -32,7 +32,7 @@ VAR(IDF_PERSIST, flarelights, 0, 1, 7); // 0 = off, &1 = defined lights, &2 = al
 VAR(IDF_PERSIST, flarecutoff, 0, 1000, VAR_MAX);
 VAR(IDF_PERSIST, flaresize, 1, 100, VAR_MAX);
 VAR(IDF_PERSIST, flareshine, 1, 10, VAR_MAX);
-FVAR(IDF_PERSIST, flareblend, 0, 0.25f, 1);
+FVAR(IDF_PERSIST, flareblend, 0, 0.5f, 1);
 FVAR(IDF_PERSIST, flareadjust, 0, 0.7f, 1);
 
 struct flarerenderer : partrenderer
@@ -114,7 +114,8 @@ struct flarerenderer : partrenderer
         loopenti(ET_LIGHT)
         {
             extentity &e = *ents[i];
-            if(e.type != ET_LIGHT || (!(flarelights&2) && !(flarelights&1 && e.attrs[4])) || !entities::isallowed(e)) continue;
+            if(e.type != ET_LIGHT || !entities::isallowed(e)) continue;
+            if(!(flarelights&2) && !(flarelights&1 && e.attrs[4])) continue;
 
             int radius = e.attrs[0];
             vec color(255, 255, 255);
@@ -132,8 +133,8 @@ struct flarerenderer : partrenderer
 
             vec flaredir, center;
             float mod = 0, size = 0;
-            if(generate(e.o, center, flaredir, mod, size, sun, sun ? 0.f : radius*flaresize/100.f))
-                newflare(e.o, center, uchar(color.r), uchar(color.g), uchar(color.b), mod, size*scale, sun, sparkle);
+            if(generate(epos, center, flaredir, mod, size, sun, sun ? 0.f : radius*flaresize/100.f))
+                newflare(epos, center, uchar(color.r*255), uchar(color.g*255), uchar(color.b*255), mod, size*scale, sun, sparkle);
         }
     }
 
