@@ -1152,7 +1152,7 @@ struct clientstate
     #undef RESIDUAL
 };
 
-enum { PRJ_SHOT = 0, PRJ_GIBS, PRJ_DEBRIS, PRJ_EJECT, PRJ_ENT, PRJ_AFFINITY, PRJ_VANITY, PRJ_MAX };
+enum { PRJ_SHOT = 0, PRJ_GIBS, PRJ_DEBRIS, PRJ_EJECT, PRJ_ENT, PRJ_AFFINITY, PRJ_VANITY, PRJ_PIECE, PRJ_MAX };
 
 namespace server
 {
@@ -1292,14 +1292,6 @@ struct jitterevent
 {
     int weap, millis, delay, last;
     float yaw, pitch;
-};
-
-enum
-{
-    TAG_CAMERA, TAG_CROWN, TAG_R_CROWN, TAG_TORSO, TAG_R_TORSO, TAG_LIMBS, TAG_R_LIMBS, TAG_WAIST,
-    TAG_MUZZLE, TAG_ORIGIN, TAG_EJECT1, TAG_EJECT2, TAG_JET_LEFT, TAG_JET_RIGHT, TAG_JET_BACK, TAG_TOE_LEFT, TAG_TOE_RIGHT,
-    TAG_MAX, // WARNING: ensure this value is more than or equal to VANITYMAX
-    TAG_EJECT = TAG_EJECT1, TAG_N_EJECT = 2, TAG_JET = TAG_JET_LEFT, TAG_N_JET = 3, TAG_TOE = TAG_TOE_LEFT, TAG_N_TOE = 2
 };
 
 enum
@@ -2283,7 +2275,13 @@ struct projent : dynent
     static bool shot(int t, int w) { return t == ENT_PROJ && w == PRJ_SHOT; }
     static bool shot(physent *d) { return d && d->type == ENT_PROJ && ((projent*)d)->projtype == PRJ_SHOT; }
 
-    bool isjunk(bool span = false) const { return projtype == PRJ_DEBRIS || projtype == PRJ_GIBS || ((projtype == PRJ_VANITY || projtype == PRJ_EJECT) && (!span || lifespan >= janitorjunktime)) || (projtype == PRJ_ENT && (!span || lifespan >= janitorjunkitems)); }
+    bool isjunk(bool span = false) const
+    {
+        if(projtype == PRJ_DEBRIS || projtype == PRJ_GIBS) return true;
+        if(projtype == PRJ_ENT && (!span || lifespan >= janitorjunkitems)) return true;
+        if((projtype == PRJ_VANITY || projtype == PRJ_PIECE || projtype == PRJ_EJECT) && (!span || lifespan >= janitorjunktime)) return true;
+        return false;
+    }
 
     void reset()
     {

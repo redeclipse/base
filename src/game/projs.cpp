@@ -16,7 +16,7 @@ namespace projs
     };
     vector<toolent> toolents;
 
-    VAR(IDF_PERSIST, maxprojectiles, 1, 256, VAR_MAX);
+    VAR(IDF_PERSIST, maxprojectiles, 1, 512, VAR_MAX);
 
     VAR(IDF_PERSIST, ejectfade, 0, 2500, VAR_MAX);
     VAR(IDF_PERSIST, ejectspin, 0, 1, 1);
@@ -691,6 +691,7 @@ namespace projs
             ""
         };
         for(int i = 0; *mdls[i]; i++) preloadmodel(mdls[i]);
+        loopi(PLAYERPARTS) preloadmodel(playerparts[i].filename);
     }
 
     void reflect(projent &proj, vec &pos)
@@ -833,7 +834,7 @@ namespace projs
         switch(proj.projtype)
         {
             case PRJ_AFFINITY: break;
-            case PRJ_GIBS: case PRJ_DEBRIS: case PRJ_EJECT: case PRJ_VANITY: size = proj.lifesize;
+            case PRJ_GIBS: case PRJ_DEBRIS: case PRJ_EJECT: case PRJ_VANITY: case PRJ_PIECE: size = proj.lifesize;
             case PRJ_ENT:
                 if(init) break;
                 else if(proj.lifemillis && proj.fadetime)
@@ -873,7 +874,7 @@ namespace projs
         }
         else switch(proj.projtype)
         {
-            case PRJ_GIBS: case PRJ_DEBRIS: case PRJ_VANITY:
+            case PRJ_GIBS: case PRJ_DEBRIS: case PRJ_VANITY: case PRJ_PIECE:
             {
                 proj.height = proj.radius = proj.xradius = proj.yradius = proj.zradius = proj.aboveeye = 0.5f*size;
                 break;
@@ -1027,10 +1028,11 @@ namespace projs
                                 proj.escaped = true;
                                 return;
                             }
-                            proj.o = proj.owner->headtag();
-                            proj.o.z -= proj.owner->zradius*0.125f;
+                            // proj.o = proj.owner->headtag();
+                            // proj.o.z -= proj.owner->zradius*0.125f;
                             proj.lifesize *= proj.owner->curscale;
                         }
+                        proj.vel.add(vec(rnd(101)-50, rnd(101)-50, rnd(101)-50).mul(proj.speed / 100.f));
                     }
 
                     float buoy = gibsbuoyancymax;
@@ -1044,10 +1046,9 @@ namespace projs
                     proj.liquidcoast = gibsliquidcoast;
                     proj.weight = gibsweight*proj.lifesize;
                     proj.buoyancy = buoy*proj.lifesize;
-                    proj.vel.add(vec(rnd(21)-10, rnd(21)-10, proj.owner && (proj.owner->headless || proj.owner->obliterated || proj.owner->actortype == A_JANITOR) ? rnd(61)+10 : rnd(21)-10));
                     proj.projcollide = BOUNCE_GEOM|BOUNCE_PLAYER;
                     proj.escaped = !proj.owner || proj.owner->state != CS_ALIVE;
-                    proj.fadetime = rnd(250) + 250;
+                    proj.fadetime = rnd(200) + 51;
                     proj.extinguish = 6;
                     proj.interacts = 3;
                     proj.fxtype = FX_P_GIB;
@@ -1068,16 +1069,16 @@ namespace projs
                         case 0: default: proj.mdlname = "projectiles/debris/debris01"; break;
                     }
                     if(proj.owner) proj.lifesize *= proj.owner->curscale;
+                    proj.vel.add(vec(rnd(101)-50, rnd(101)-50, rnd(101)-50).mul(proj.speed / 100.f));
                 }
                 proj.relativity = 0.f;
                 proj.elasticity = debriselasticity;
                 proj.liquidcoast = debrisliquidcoast;
                 proj.weight = debrisweight*proj.lifesize;
                 proj.buoyancy = debrisbuoyancy*proj.lifesize;
-                proj.vel.add(vec(rnd(101)-50, rnd(101)-50, rnd(151)-50)).mul(2);
                 proj.projcollide = BOUNCE_GEOM|BOUNCE_PLAYER|COLLIDE_OWNER;
                 proj.escaped = !proj.owner || proj.owner->state != CS_ALIVE;
-                proj.fadetime = rnd(250)+250;
+                proj.fadetime = rnd(200) + 51;
                 proj.extinguish = 1;
                 proj.interacts = 3;
                 proj.fxtype = FX_P_DEBRIS;
@@ -1091,7 +1092,7 @@ namespace projs
                 if(!proj.mdlname || !*proj.mdlname)
                 {
                     if(!isweap(proj.weap) && proj.owner) proj.weap = proj.owner->weapselect;
-                    if(proj.owner) proj.o = proj.from = proj.owner->ejecttag();
+                    if(waited && proj.owner) proj.o = proj.from = proj.owner->ejecttag();
                     if(isweap(proj.weap))
                     {
                         proj.mdlname = weaptype[proj.weap].eprj[WS(proj.flags) ? 1 : 0].count ? weaptype[proj.weap].eprj[WS(proj.flags) ? 1 : 0].name[rnd(weaptype[proj.weap].eprj[WS(proj.flags) ? 1 : 0].count)] : "";
@@ -1116,7 +1117,7 @@ namespace projs
                 proj.buoyancy = ejectbuoyancy*proj.lifesize;
                 proj.projcollide = BOUNCE_GEOM;
                 proj.escaped = true;
-                proj.fadetime = rnd(250)+250;
+                proj.fadetime = rnd(200 )+ 51;
                 proj.extinguish = 6;
                 proj.interacts = 3;
                 proj.fxtype = FX_P_CASING;
@@ -1145,7 +1146,7 @@ namespace projs
                     if(itemdropspreadz > 0) pitch += n * itemdropspreadz * (m ? 1 : -1);
                 }
                 proj.inertia = vec(yaw*RAD, pitch*RAD).mul(mag);
-                proj.fadetime = 500;
+                proj.fadetime = 250;
                 proj.extinguish = itemextinguish;
                 proj.interacts = iteminteracts;
                 break;
@@ -1188,35 +1189,41 @@ namespace projs
                 }
                 break;
             }
-            case PRJ_VANITY:
+            case PRJ_VANITY: case PRJ_PIECE:
             {
                 proj.height = proj.aboveeye = proj.radius = proj.xradius = proj.yradius = 1;
                 if(!proj.mdlname || !*proj.mdlname)
                 {
-                    if(proj.owner)
+                    if(proj.owner) proj.lifesize = proj.owner->curscale;
+                    switch(proj.projtype)
                     {
-                        if(!proj.owner->isdead())
+                        case PRJ_VANITY: proj.mdlname = game::vanityfname(proj.owner, proj.weap, proj.value, true); break;
+                        case PRJ_PIECE: proj.mdlname = playerparts[clamp(proj.value, 0, PLAYERPARTS-1)].filename; break;
+                        default:
                         {
-                            proj.lifemillis = proj.lifetime = 1;
-                            proj.lifespan = 1.f;
-                            proj.state = CS_DEAD;
-                            proj.escaped = true;
-                            return;
+                            switch(rnd(7))
+                            {
+                                case 6: proj.mdlname = "projectiles/debris/debris04"; break;
+                                case 5: proj.mdlname = "projectiles/debris/debris03"; break;
+                                case 4: proj.mdlname = "projectiles/debris/debris02"; break;
+                                case 3: proj.mdlname = "projectiles/debris/debris01"; break;
+                                case 2: proj.mdlname = "projectiles/gibs/gib03"; break;
+                                case 1: proj.mdlname = "projectiles/gibs/gib02"; break;
+                                case 0: default: proj.mdlname = "projectiles/gibs/gib01"; break;
+                            }
+                            break;
                         }
-                        proj.o = proj.owner->headpos();
-                        proj.lifesize = proj.owner->curscale;
                     }
-                    proj.mdlname = game::vanityfname(proj.owner, proj.weap, proj.value, true);
+                    proj.vel.add(vec(rnd(101)-50, rnd(101)-50, rnd(101)-50).mul(proj.speed / 100.f));
                 }
                 proj.elasticity = vanityelasticity;
                 proj.relativity = vanityrelativity;
                 proj.liquidcoast = vanityliquidcoast;
                 proj.weight = vanityweight;
                 proj.buoyancy = vanitybuoyancy;
-                proj.vel.add(vec(rnd(21)-10, rnd(21)-10, rnd(61)+10));
                 proj.projcollide = BOUNCE_GEOM|BOUNCE_PLAYER;
                 proj.escaped = !proj.owner || proj.owner->state != CS_ALIVE;
-                proj.fadetime = rnd(250)+250;
+                proj.fadetime = rnd(200) + 51;
                 proj.extinguish = 6;
                 proj.interacts = 3;
                 break;
@@ -2022,7 +2029,7 @@ namespace projs
                 }
                 if(proj.weap != W_GRENADE) break;
             }
-            case PRJ_DEBRIS: case PRJ_GIBS: case PRJ_AFFINITY: case PRJ_VANITY:
+            case PRJ_DEBRIS: case PRJ_GIBS: case PRJ_AFFINITY: case PRJ_VANITY: case PRJ_PIECE:
             {
                 if(!proj.lastbounce || proj.movement > 0)
                 {
@@ -2285,7 +2292,7 @@ namespace projs
     void update()
     {
         vector<canrem *> canremove;
-        loopvrev(projs) if(projs[i]->isjunk(true)) canremove.add(new canrem(projs[i], camera1->o.dist(projs[i]->o)));
+        loopvrev(junkprojs) if(junkprojs[i]->isjunk(true)) canremove.add(new canrem(junkprojs[i], camera1->o.dist(junkprojs[i]->o)));
 
         int count = canremove.length() - maxprojectiles;
         if(count > 0)
@@ -2487,7 +2494,7 @@ namespace projs
         loopv(projs) if(projs[i]->ready(false))
         {
             projent &proj = *projs[i];
-            if(proj.projtype == PRJ_AFFINITY || (drawtex == DRAWTEX_HALO && proj.projtype != PRJ_ENT && proj.projtype != PRJ_VANITY)) continue;
+            if(proj.projtype == PRJ_AFFINITY || (drawtex == DRAWTEX_HALO && proj.projtype != PRJ_ENT && proj.projtype != PRJ_VANITY && proj.projtype != PRJ_PIECE)) continue;
             if((proj.projtype == PRJ_ENT && !entities::ents.inrange(proj.id)) || !projs[i]->mdlname || !*projs[i]->mdlname) continue;
             const char *mdlname = proj.mdlname;
             modelstate mdl;
@@ -2509,7 +2516,7 @@ namespace projs
                     if(mdl.color.a <= 0) continue;
                     break;
                 }
-                case PRJ_VANITY:
+                case PRJ_VANITY: case PRJ_PIECE:
                     if(proj.owner)
                     {
                         if(!game::haloallow(camera1->o, proj.owner)) continue;

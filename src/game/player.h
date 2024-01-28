@@ -8,20 +8,20 @@ struct actor
 {
     const char *name;
     int id, collidezones;
-    bool hastags, jetfx, weapfx, steps, onlyfwd;
+    bool hastags, jetfx, weapfx, steps, onlyfwd, pieces;
     float height, radius;
     const char *mdl;
 };
 #ifdef CPP_GAME_SERVER
 actor actors[] = {
-    { "player",         A_PLAYER,   CLZ_ALL,    true,   true,   true,   true,   false,  20.4f,      4.25f,  NULL },
-    { "bot",            A_BOT,      CLZ_ALL,    true,   true,   true,   true,   false,  20.4f,      4.25f,  NULL },
-    { "turret",         A_TURRET,   CLZ_ALL,    true,   true,   true,   true,   false,  20.4f,      4.25f,  NULL },
-    { "grunt",          A_GRUNT,    CLZ_NOHEAD, true,   true,   true,   true,   false,  18.5f,      4.25f,  NULL },
-    { "drone",          A_DRONE,    CLZ_NOHEAD, true,   true,   true,   true,   false,  18.5f,      4.25f,  NULL },
-    { "roller",         A_ROLLER,   CLZ_NONE,   false,  false,  false,  false,  true,   11.475f,    5.75f,  "actors/roller" },
-    { "hazard",         A_HAZARD,   CLZ_NONE,   false,  false,  false,  false,  false,  1.f,        1.f,    NULL },
-    { "clenaer",        A_JANITOR,  CLZ_NONE,   false,  false,  false,  false,  false,  11.475f,    5.75f,  "actors/roller" },
+    { "player",         A_PLAYER,   CLZ_ALL,    true,   true,   true,   true,   false,  true,   20.4f,      4.25f,  NULL },
+    { "bot",            A_BOT,      CLZ_ALL,    true,   true,   true,   true,   false,  true,   20.4f,      4.25f,  NULL },
+    { "turret",         A_TURRET,   CLZ_ALL,    true,   true,   true,   true,   false,  true,   20.4f,      4.25f,  NULL },
+    { "grunt",          A_GRUNT,    CLZ_NOHEAD, true,   true,   true,   true,   false,  true,   18.5f,      4.25f,  NULL },
+    { "drone",          A_DRONE,    CLZ_NOHEAD, true,   true,   true,   true,   false,  true,   18.5f,      4.25f,  NULL },
+    { "roller",         A_ROLLER,   CLZ_NONE,   false,  false,  false,  false,  true,   false,  11.475f,    5.75f,  "actors/roller" },
+    { "hazard",         A_HAZARD,   CLZ_NONE,   false,  false,  false,  false,  false,  false,  1.f,        1.f,    NULL },
+    { "clenaer",        A_JANITOR,  CLZ_NONE,   false,  false,  false,  false,  false,  false,  11.475f,    5.75f,  "actors/roller" },
 };
 #else
 extern actor actors[];
@@ -103,8 +103,17 @@ struct score
 #define isteam(a,b,c,d) (m_team(a,b) ? (c >= d && c <= numteams(a,b)) : c == T_NEUTRAL)
 #define valteam(a,b)    (a >= b && a <= T_NUM)
 
+enum
+{
+    TAG_CAMERA, TAG_CROWN, TAG_R_CROWN, TAG_TORSO, TAG_R_TORSO, TAG_LIMBS, TAG_R_LIMBS, TAG_WAIST,
+    TAG_MUZZLE, TAG_ORIGIN, TAG_EJECT1, TAG_EJECT2, TAG_JET_LEFT, TAG_JET_RIGHT, TAG_JET_BACK, TAG_TOE_LEFT, TAG_TOE_RIGHT,
+    TAG_MAX, // WARNING: ensure this value is more than or equal to VANITYMAX (see bottom of file)
+    TAG_EJECT = TAG_EJECT1, TAG_N_EJECT = 2, TAG_JET = TAG_JET_LEFT, TAG_N_JET = 3, TAG_TOE = TAG_TOE_LEFT, TAG_N_TOE = 2
+};
+
 #define PLAYERTYPES 2
 #define PLAYERPATTERNS 17
+#define PLAYERPARTS 14
 
 struct playerpattern
 {
@@ -115,6 +124,13 @@ struct playerpattern
     float scale;
 };
 
+struct playerpart
+{
+    const char *filename;
+    int tag;
+    float x, y, z;
+};
+
 #ifdef CPP_GAME_SERVER
 extern const char * const playertypes[PLAYERTYPES][7] = {
     { "actors/player/male/hwep",        "actors/player/male/headless",      "actors/player/male/body",      "actors/player/male",       "player",   "male",     "Male" },
@@ -123,27 +139,45 @@ extern const char * const playertypes[PLAYERTYPES][7] = {
 
 // final entry is texscale in playerpattern (512x -> 2 , 1024x -> 1)
 extern const playerpattern playerpatterns[PLAYERPATTERNS] = {
-    { "<grey>textures/patterns/default",  "default",  "Default",  0,     1 },
-    { "<grey>textures/patterns/soft",     "soft",     "Soft",     0,     1 },
-    { "<grey>textures/patterns/camo",     "camo",     "Camo",     0,     1 },
-    { "<grey>textures/patterns/heart",    "heart",    "Heart",    0x300, 2 },
-    { "<grey>textures/patterns/crown",    "crown",    "Crown",    0x300, 2 },
-    { "<grey>textures/patterns/zebra",    "zebra",    "Zebra",    0x300, 2 },
-    { "<grey>textures/patterns/checker",  "checker",  "Checker",  0x300, 2 },
-    { "<grey>textures/patterns/star",     "star",     "Star",     0x300, 2 },
-    { "<grey>textures/patterns/flower",   "flower",   "Flower",   0x300, 2 },
-    { "<grey>textures/patterns/leopard",  "leopard",  "Leopard",  0x300, 2 },
-    { "<grey>textures/patterns/zigzag",   "zigzag",   "Zigzag",   0x300, 2 },
-    { "<grey>textures/patterns/pixel",    "pixel",    "Pixel",    0x300, 2 },
-    { "<grey>textures/patterns/circle",   "circle",   "Circle",   0x300, 2 },
-    { "<grey>textures/patterns/mutant",   "mutant",   "Mutant",   0x300, 2 },
-    { "<grey>textures/patterns/ninja",    "ninja",    "Ninja",    0,     2 },
-    { "<grey>textures/patterns/lines",    "lines",    "Lines",    0,     1 },
-    { "<grey>textures/patterns/softhero", "softhero", "Softhero", 0,     1 },
+    { "<grey>textures/patterns/default",    "default",  "Default",  0,      1 },
+    { "<grey>textures/patterns/soft",       "soft",     "Soft",     0,      1 },
+    { "<grey>textures/patterns/camo",       "camo",     "Camo",     0,      1 },
+    { "<grey>textures/patterns/heart",      "heart",    "Heart",    0x300,  2 },
+    { "<grey>textures/patterns/crown",      "crown",    "Crown",    0x300,  2 },
+    { "<grey>textures/patterns/zebra",      "zebra",    "Zebra",    0x300,  2 },
+    { "<grey>textures/patterns/checker",    "checker",  "Checker",  0x300,  2 },
+    { "<grey>textures/patterns/star",       "star",     "Star",     0x300,  2 },
+    { "<grey>textures/patterns/flower",     "flower",   "Flower",   0x300,  2 },
+    { "<grey>textures/patterns/leopard",    "leopard",  "Leopard",  0x300,  2 },
+    { "<grey>textures/patterns/zigzag",     "zigzag",   "Zigzag",   0x300,  2 },
+    { "<grey>textures/patterns/pixel",      "pixel",    "Pixel",    0x300,  2 },
+    { "<grey>textures/patterns/circle",     "circle",   "Circle",   0x300,  2 },
+    { "<grey>textures/patterns/mutant",     "mutant",   "Mutant",   0x300,  2 },
+    { "<grey>textures/patterns/ninja",      "ninja",    "Ninja",    0,      2 },
+    { "<grey>textures/patterns/lines",      "lines",    "Lines",    0,      1 },
+    { "<grey>textures/patterns/softhero",   "softhero", "Softhero", 0,      1 },
+};
+
+extern const playerpart playerparts[PLAYERPARTS] = {
+    { "projectiles/parts/torso/lower",      TAG_WAIST,          0,      0,      0.1f },
+    { "projectiles/parts/torso/uper",       TAG_WAIST,          0,      0,      0.25f },
+    { "projectiles/parts/foot/left",        TAG_TOE_LEFT,       0,      0,      0 },
+    { "projectiles/parts/foot/right",       TAG_TOE_RIGHT,      0,      0,      0 },
+    { "projectiles/parts/calf/left",        TAG_TOE_LEFT,       0,      0,      0.125f },
+    { "projectiles/parts/calf/right",       TAG_TOE_RIGHT,      0,      0,      0.125f },
+    { "projectiles/parts/thigh/left",       TAG_TOE_LEFT,       0,      0,      0.25f },
+    { "projectiles/parts/thigh/right",      TAG_TOE_RIGHT,      0,      0,      0.25f },
+    { "projectiles/parts/hand/left",        TAG_JET_LEFT,       0.5f,   0.5f,   -0.125f },
+    { "projectiles/parts/hand/right",       TAG_JET_RIGHT,      0.5f,   0.5f,   -0.125f },
+    { "projectiles/parts/forearm/left",     TAG_JET_LEFT,       0.25f,  0.25f,  -0.1f },
+    { "projectiles/parts/forearm/right",    TAG_JET_RIGHT,      0.25f,  0.25f,  -0.1f },
+    { "projectiles/parts/upperarm/left",    TAG_JET_LEFT,       0.125f, 0.125f, -0.075f },
+    { "projectiles/parts/upperarm/right",   TAG_JET_RIGHT,      0.125f, 0.125f, -0.075f },
 };
 #else
 extern const char * const playertypes[PLAYERTYPES][7];
 extern const playerpattern playerpatterns[PLAYERPATTERNS];
+extern const playerpart playerparts[PLAYERPARTS];
 #endif
 
 #include "playerdef.h"
@@ -270,7 +304,7 @@ APFVAR(IDF_GAMEMOD, 0, buoyancyextra, FVAR_MIN, FVAR_MAX,
     0,              0,              0,              0,              0,              0,              0,              0
 );
 
-// WARNING: ensure this value is less than or equal to TAG_MAX
+// WARNING: ensure this value is less than or equal to TAG_MAX (see above)
 #define VANITYMAX 16
 // WARNING: ensure this value is at least equal to VANITYMAX (currently only needs 14 of them)
 #define ATTACHMENTMAX 16
