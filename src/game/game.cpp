@@ -378,14 +378,14 @@ namespace game
     VAR(IDF_PERSIST, ragdolleffect, 2, 500, VAR_MAX);
 
     VAR(IDF_PERSIST, giblimit, 0, 50, VAR_MAX); // max in one burst
-    VAR(IDF_PERSIST, gibpieces, 1, 20, VAR_MAX); // max pieces
+    VAR(IDF_PERSIST, gibpieces, 1, 25, VAR_MAX); // max pieces
     VAR(IDF_PERSIST, gibfade, 1, 60000, VAR_MAX); // rnd(this) + this
     VAR(IDF_PERSIST, gibchancevanity, 0, 90, 100); // percentage chance
-    VAR(IDF_PERSIST, gibchancepieces, 0, 75, 100); // percentage chance
-    VAR(IDF_PERSIST, gibchancecollects, 0, 50, 100); // percentage chance
-    FVAR(IDF_PERSIST, gibdamage, 0, 0.2f, 1); // gibs = (damage / (hp * this))
-    FVAR(IDF_PERSIST, gibheadless, 0, 0.15f, 1);
-    FVAR(IDF_PERSIST, gibobliterated, 0, 0.1f, 1);
+    VAR(IDF_PERSIST, gibchancepieces, 0, 90, 100); // percentage chance
+    VAR(IDF_PERSIST, gibchancecollects, 0, 90, 100); // percentage chance
+    FVAR(IDF_PERSIST, gibdamage, 0, 0.1f, 1); // gibs = (damage / (hp * this))
+    FVAR(IDF_PERSIST, gibheadless, 0, 0.05f, 1);
+    FVAR(IDF_PERSIST, gibobliterated, 0, 0.025f, 1);
     VAR(IDF_PERSIST, gibplayerparts, 0, 0, 1); // can gib into parts
 
     VAR(IDF_PERSIST, playerhalos, 0, 3, 3); // 0 = off, 1 = self, 2 = others
