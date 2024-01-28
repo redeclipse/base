@@ -2277,7 +2277,7 @@ struct projent : dynent
 
     bool isjunk(bool span = false) const
     {
-        if(projtype == PRJ_DEBRIS || projtype == PRJ_GIBS) return true;
+        if((projtype == PRJ_DEBRIS || projtype == PRJ_GIBS) && (!span || lifespan >= janitorjunkdebris)) return true;
         if(projtype == PRJ_ENT && (!span || lifespan >= janitorjunkitems)) return true;
         if((projtype == PRJ_VANITY || projtype == PRJ_PIECE || projtype == PRJ_EJECT) && (!span || lifespan >= janitorjunktime)) return true;
         return false;

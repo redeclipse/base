@@ -530,8 +530,9 @@ GVAR(IDF_GAMEMOD, 0, enemyspawnstyle, 0, 1, 3); // 0 = all at once, 1 = staggere
 GVAR(IDF_GAMEMOD, 0, janitorlimit, 0, 16, MAXAI); // maximum number of janitors
 GVAR(IDF_GAMEMOD, 0, janitorcollect, 0, 128, VAR_MAX); // collect this much before dumping
 GFVAR(IDF_GAMEMOD, 0, janitorbalance, 0, 0.5f, FVAR_MAX); // this * current balance = number of janitors
-GFVAR(IDF_GAMEMOD, 0, janitorjunktime, 0, 0.25f, 1); // when shell casings and vanities become "junk"
+GFVAR(IDF_GAMEMOD, 0, janitorjunktime, 0, 0.25f, 1); // when shell casings and vanities/parts become "junk"
 GFVAR(IDF_GAMEMOD, 0, janitorjunkitems, 0, 0.5f, 1); // when items become "junk"
+GFVAR(IDF_GAMEMOD, 0, janitorjunkdebris, 0, 0.0625f, 1); // when gibs and debris become "junk"
 
 GFVAR(IDF_GAMEMOD, 0, movespeed, FVAR_NONZERO, 1.f, FVAR_MAX); // speed
 GFVAR(IDF_GAMEMOD, 0, moveslow, 0, 0.5f, FVAR_MAX); // threshold for running
