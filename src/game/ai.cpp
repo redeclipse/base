@@ -657,12 +657,16 @@ namespace ai
             if(proj.state == CS_DEAD || !proj.lifetime || proj.beenused || !proj.isjunk(true)) continue;
 
             if(proj.owner && proj.owner->actortype == A_JANITOR)
-            {   // ignore junk left by a janitor
+            {   // ignore junk left by a janitor near their deposit point
                 bool found = false;
                 loopvk(candidates)
                 {
-                    gameentity &e = *(gameentity *)entities::ents[candidates[i]];
+                    int n = candidates[i];
+                    if(proj.owner->spawnpoint != n) continue;
+
+                    gameentity &e = *(gameentity *)entities::ents[n];
                     if(proj.o.squaredist(e.pos()) > JANITORSUCK*JANITORSUCK*2) continue;
+
                     found = true;
                     break;
                 }
@@ -693,7 +697,7 @@ namespace ai
 
         int numdyns = game::numdynents(1);
         loopi(numdyns)
-        {
+        {   // reject junk with nearby janitors
             dynent *e = game::iterdynents(i);
             if(!e || !gameent::is(e)) continue;
 
@@ -701,8 +705,14 @@ namespace ai
             if(f == d || f->actortype != A_JANITOR || !f->isalive()) continue;
 
             loopvkrev(interests)
-                if(f->o.squaredist(waypoints[interests[k].node].o) <= JANITORREJECT*JANITORREJECT)
-                    interests.remove(k);
+            {
+                interest &n = interests[k];
+
+                if(n.state != AI_S_INTEREST || n.targtype != AI_T_JUNK || !iswaypoint(interests[k].node)) continue;
+                if(f->o.squaredist(waypoints[interests[k].node].o) > JANITORREJECT*JANITORREJECT) continue;
+
+                interests.remove(k);
+            }
         }
     }
 

@@ -375,9 +375,14 @@ namespace game
     VAR(IDF_PERSIST, bloodfade, 1, 5000, VAR_MAX);
     VAR(IDF_PERSIST, bloodsize, 1, 50, 1000);
     VAR(IDF_PERSIST, bloodsparks, 0, 0, 1);
-    FVAR(IDF_PERSIST, gibscale, 0, 1, 1000);
-    VAR(IDF_PERSIST, gibfade, 1, 60000, VAR_MAX);
     VAR(IDF_PERSIST, ragdolleffect, 2, 500, VAR_MAX);
+
+    VAR(IDF_PERSIST, gibmax, 1, 15, VAR_MAX);
+    VAR(IDF_PERSIST, giblimit, 1, 30, VAR_MAX);
+    VAR(IDF_PERSIST, gibfade, 1, 60000, VAR_MAX);
+    FVAR(IDF_PERSIST, gibdamage, 0, 0.2f, 1000); // gibs = (damage / (hp * this))
+    FVAR(IDF_PERSIST, gibheadless, 0, 0.15f, 1000);
+    FVAR(IDF_PERSIST, gibobliterated, 0, 0.1f, 1000);
 
     VAR(IDF_PERSIST, playerhalos, 0, 3, 3); // 0 = off, 1 = self, 2 = others
     FVAR(IDF_PERSIST, playerblend, 0, 1, 1);
@@ -2224,10 +2229,10 @@ namespace game
             if(!log->push()) DELETEP(log);
         }
 
-        vec pos = d->headtag();
-        pos.z -= d->zradius*0.125f;
+        int gibcount = 0;
+        vec pos = vec(d->headtag()).addz(d->zradius*0.125f), dest = vec(pos).addz(d->zradius*0.125f);
 
-        if(d->headless)
+        if(d->headless || d->obliterated)
         {
             int head = vanitybuild(d), found[VANITYMAX] = {0};
             bool check = vanitycheck(d);
@@ -2236,33 +2241,37 @@ namespace game
                 if(vanities[d->vitems[k]].type && !check) continue;
                 if(found[vanities[d->vitems[k]].type]) continue;
                 if(!(vanities[d->vitems[k]].cond&2)) continue;
-                projs::create(pos, vec(pos).addz(2), true, d, PRJ_VANITY, -1, 0, (rnd(gibfade) + gibfade) / 2, 0, 0, rnd(50) + 10, -1, d->vitems[k], head, 0);
+
+                projs::create(pos, dest, true, d, PRJ_VANITY, -1, 0, (rnd(gibfade) + gibfade) / 2, 0, 0, rnd(50) + 10, -1, d->vitems[k], head, 0);
                 found[vanities[d->vitems[k]].type]++;
+
+                if(++gibcount >= giblimit) break; // iter before check here only
             }
         }
 
-        if(nogore != 2 && gibscale > 0)
+        if(nogore != 2)
         {
-            int hp = max(d->gethealth(gamemode, mutators), 1), gib = clamp(int(max(damage, hp)/(d->obliterated ? 100.f : (d->headless ? 150.f : 200.f))), 1, 15), amt = int((rnd(gib) + gib) * (1 + gibscale));
-
-            int collected = 0;
-            loopi(amt)
+            if(d->actortype != A_JANITOR || !(flags&HIT_JANITOR))
             {
-                projs::create(pos, vec(pos).addz(2), true, d, nogore || !(A(d->actortype, abilities)&(1<<A_A_GIBS)) ? PRJ_DEBRIS : PRJ_GIBS, -1, 0, rnd(gibfade) + gibfade, 0, rnd(100) + 1, rnd(d->obliterated || d->headless ? 50 : 50) + 10);
-                collected++;
+                int hp = max(d->gethealth(gamemode, mutators), 1), amt = clamp(rnd(int(max(damage, hp)/(d->obliterated ? hp*gibobliterated : (d->headless ? hp*gibheadless : hp*gibdamage))) + 1), 1, gibmax);
+                loopi(amt)
+                {
+                    if(gibcount++ >= giblimit) break; // iter after check to avoid skipping
+                    projs::create(pos, dest, true, d, nogore || !(A(d->actortype, abilities)&(1<<A_A_GIBS)) ? PRJ_DEBRIS : PRJ_GIBS, -1, 0, rnd(gibfade) + gibfade, 0, rnd(100) + 1, rnd(d->obliterated || d->headless ? 50 : 25) + 10);
+                }
             }
 
-            while(!d->collects.empty() && collected < 30)
+            while(!d->collects.empty())
             {
+                if(gibcount++ >= giblimit) break; // iter after check to avoid skipping
                 int n = rnd(d->collects.length());
-                projent *p = projs::create(pos, vec(pos).addz(2), true, d, d->collects[n].type, -1, 0, (rnd(gibfade) + gibfade) / 2, 0, rnd(100) + 1, rnd(d->obliterated ? 50 : 25) + 10);
+                projent *p = projs::create(pos, dest, true, d, d->collects[n].type, -1, 0, (rnd(gibfade) + gibfade) / 2, 0, rnd(100) + 1, rnd(d->obliterated ? 50 : 25) + 10);
                 if(p)
                 {
                     p->mdlname = d->collects[n].name;
-                    p->lifesize = max(d->collects[n].size, 0.5f);
+                    p->lifesize = max(d->collects[n].size, 0.3f) + ((rnd(31) - 15) / 100.f);
                 }
                 d->collects.removeunordered(n);
-                collected++;
             }
             d->collects.shrink(0);
         }
