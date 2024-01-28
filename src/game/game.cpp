@@ -2070,7 +2070,7 @@ namespace game
                     case 1: default: break; // central stuff
                 }
 
-                projs::create(pos, pos, true, d, PRJ_VANITY, -1, 0, (rnd(gibfade) + gibfade) / 2, 0, 0, rnd(50) + 10, -1, n, head);
+                projs::create(pos, pos, true, d, PRJ_VANITY, -1, 0, rnd(gibfade) + gibfade, 0, 0, rnd(50) + 10, -1, n, head);
 
                 if(++gibcount >= giblimit) return;
             }
@@ -2091,7 +2091,7 @@ namespace game
                     }
 
                     vec pos = gibpos(d, i);
-                    projs::create(pos, pos, true, d, PRJ_PIECE, -1, 0, (rnd(gibfade) + gibfade) / 2, 0, 0, rnd(50) + 10, -1, i, 0);
+                    projs::create(pos, pos, true, d, PRJ_PIECE, -1, 0, rnd(gibfade) + gibfade, 0, 0, rnd(50) + 10, -1, i, 0);
 
                     if(++gibcount >= giblimit) return;
                 }
@@ -2121,7 +2121,7 @@ namespace game
                 continue; // let's just say it gets destroyed
             }
 
-            projent *p = projs::create(d->o, vec(d->o).add(vec(rnd(21)-10, rnd(21)-10, rnd(41)-10)), true, d, d->collects[n].type, -1, 0, (rnd(gibfade) + gibfade) / 2, 0, rnd(100) + 1, rnd(d->obliterated ? 50 : 25) + 10);
+            projent *p = projs::create(d->o, vec(d->o).add(vec(rnd(21)-10, rnd(21)-10, rnd(41)-10)), true, d, d->collects[n].type, -1, 0, (rnd(gibfade) + gibfade) / 4, 0, rnd(500) + 1, rnd(d->obliterated ? 50 : 25) + 10);
             if(p)
             {
                 p->mdlname = d->collects[n].name;
