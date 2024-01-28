@@ -229,6 +229,8 @@ namespace bomber
 
     void checkui()
     {
+        if(bomberui < 0) return;
+
         loopv(st.flags)
         {
             bomberstate::flag &f = st.flags[i];

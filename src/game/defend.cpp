@@ -153,6 +153,8 @@ namespace defend
 
     void checkui()
     {
+        if(defendui < 0) return;
+
         loopv(st.flags)
         {
             defendstate::flag &f = st.flags[i];

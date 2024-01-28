@@ -3522,6 +3522,8 @@ namespace entities
 
     void checkui()
     {
+        if(entityui < 0) return;
+
         bool editcheck = game::player1->isediting() && !editinhibit;
         int fstent = m_edit(game::gamemode) ? 0 : firstuse(EU_ITEM),
             lstent = m_edit(game::gamemode) ? ents.length() : lastuse(EU_ITEM),

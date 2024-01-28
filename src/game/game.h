@@ -2480,12 +2480,12 @@ namespace weapons
 #define CLEARUI(name, id, nottype) \
    for(int mui_scount = 0; mui_scount < SURFACE_ALL; ++mui_scount) if(mui_scount != nottype) UI::hideui(#name, mui_scount, id);
 
-#define MAKEUI(name, id, cansee, forced, pos) \
-    if((forced) || !name##uimaxdist || camera1->o.dist(pos) <= name##uimaxdist) \
+#define MAKEUI(name, id, cansee, enabled, pos) \
+    if(enabled) \
     { \
         int mui_type = (cansee) ? name##ui : SURFACE_WORLD; \
         if(mui_type >= 0) \
-            UI::setui(#name, mui_type, id, pos, name##uiyaw, name##uipitch, (mui_type == SURFACE_WORLD ? name##uiworld : name##uiscale), name##uidetentyaw, name##uidetentpitch); \
+            UI::pokeui(#name, mui_type, id, pos, name##uimaxdist, name##uiyaw, name##uipitch, (mui_type == SURFACE_WORLD ? name##uiworld : name##uiscale), name##uidetentyaw, name##uidetentpitch); \
     } \
 
 namespace hud

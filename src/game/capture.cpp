@@ -163,17 +163,19 @@ namespace capture
 
     void checkui()
     {
+        if(captureui < 0 && captureflagui < 0) return;
+
         loopv(st.flags)
         {
             capturestate::flag &f = st.flags[i];
-            vec curpos = vec(f.render).addz(enttype[AFFINITY].radius * (f.owner || f.droptime ? 0.25f : 0.875f));
+            if(captureui >= 0)
+                MAKEUI(capture, i, haloallow(camera1->o, i), hasaffinity(game::focus) && f.team == game::focus->team,
+                    vec(f.render).addz(enttype[AFFINITY].radius * (f.owner || f.droptime ? 0.25f : 0.875f)));
 
-            MAKEUI(capture, i, haloallow(camera1->o, i), hasaffinity(game::focus) && f.team == game::focus->team, curpos);
-
-            if(f.owner != game::focus && (f.owner || f.droptime))
+            if(captureflagui >= 0 && (f.owner != game::focus && (f.owner || f.droptime)))
             {
-                curpos = vec(f.pos(true)).addz(enttype[AFFINITY].radius * (f.droptime ? 0.5f : 0.875f));
-                MAKEUI(captureflag, i, haloallow(camera1->o, i), f.team == game::focus->team, curpos);
+                MAKEUI(captureflag, i, haloallow(camera1->o, i), f.team == game::focus->team,
+                    vec(f.pos(true)).addz(enttype[AFFINITY].radius * (f.droptime ? 0.5f : 0.875f)));
             }
         }
     }

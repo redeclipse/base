@@ -20,6 +20,10 @@ namespace UI
     FVAR(IDF_PERSIST, uiscale, FVAR_NONZERO, 1, 100);
     FVAR(IDF_PERSIST, uiworldscale, FVAR_NONZERO, 50, FVAR_MAX);
 
+    FVAR(IDF_PERSIST, uivisradius, 0, 8, FVAR_MAX);
+    FVAR(IDF_PERSIST, uimaxdist, 0, 1024, FVAR_MAX);
+    FVAR(IDF_PERSIST, uimapmaxdist, 0, 1024, FVAR_MAX);
+
     VAR(IDF_PERSIST, uitextrows, 1, 48, VAR_MAX);
     void calctextscale() { uitextscale = 1.0f/uitextrows; }
 
@@ -954,9 +958,9 @@ namespace UI
         char *name, *dyn;
         Code *contents, *onshow, *onhide;
         bool exclusive, mapdef, saved, menu, passthrough, tooltip, popup, persist, ontop, attached, visible;
-        int allowinput, lasthit, lastshow, lastset, zindex, numargs, initargs, hint;
+        int allowinput, lasthit, lastshow, lastpoke, zindex, numargs, initargs, hint;
         float px, py, pw, ph,
-              yaw, pitch, curyaw, curpitch, detentyaw, detentpitch,
+              maxdist, yaw, pitch, curyaw, curpitch, detentyaw, detentpitch,
               scale, dist, hitx, hity;
         vec2 sscale, soffset;
         vec origin, pos;
@@ -967,9 +971,9 @@ namespace UI
             contents(NULL), onshow(NULL), onhide(NULL),
             exclusive(false), mapdef(mapdef_),
             menu(true), passthrough(false), tooltip(false), popup(false), persist(false), ontop(false), attached(false), visible(false),
-            allowinput(1), lasthit(0), lastshow(0), lastset(0), zindex(0), numargs(0), initargs(0), hint(0),
+            allowinput(1), lasthit(0), lastshow(0), lastpoke(0), zindex(0), numargs(0), initargs(0), hint(0),
             px(0), py(0), pw(0), ph(0),
-            yaw(-1), pitch(0), curyaw(0), curpitch(0), detentyaw(0), detentpitch(0),
+            maxdist(0), yaw(-1), pitch(0), curyaw(0), curpitch(0), detentyaw(0), detentpitch(0),
             scale(1), dist(0), hitx(-1), hity(-1),
             sscale(1, 1), soffset(0, 0),
             origin(0, 0, 0), pos(0, 0, 0)
@@ -1068,8 +1072,9 @@ namespace UI
             }
         }
 
-        void resetworld(const vec &o = nullvec, float s = 1)
+        void resetworld(const vec &o = nullvec, float m = 0, float s = 1)
         {
+            maxdist = m;
             yaw = -1;
             pitch = curyaw = curpitch = 0;
             scale = s;
@@ -1093,13 +1098,13 @@ namespace UI
             return scale >= 0 ? scale : (0 - scale) / uiworldscale;
         }
 
-        void show(const vec &o = nullvec, float y = 0, float p = 0, float s = 1, float dy = 0, float dp = 0)
+        void show(const vec &o = nullvec, float m = 0, float y = 0, float p = 0, float s = 1, float dy = 0, float dp = 0)
         {
             overridepos = false;
             state |= STATE_HIDDEN;
             clearstate(STATE_HOLD_MASK);
 
-            resetworld(o, s);
+            resetworld(o, m, s);
 
             if(surfacetype == SURFACE_WORLD)
             {
@@ -1680,6 +1685,7 @@ namespace UI
 
     UIWINARGV(origin);
     UIWINARGV(pos);
+    UIWINARG(maxdist, "f", float, 0, 360);
     UIWINARG(yaw, "f", float, -1, 360);
     UIWINARG(pitch, "f", float, -181, 181);
     UIWINARG(zindex, "i", int, VAR_MIN, VAR_MAX);
@@ -1871,20 +1877,28 @@ namespace UI
             setup();
             loopwindows(w,
             {
-                if(w->lastset && w->lastset != totalmillis)
-                {   // set windows are updated every frame or disregarded
+                if(w->lastpoke && w->lastpoke != totalmillis)
+                {   // poke windows are updated every frame or disregarded
                     w->visible = false;
                     continue;
                 }
 
                 if(w->pos != nullvec)
                 {
-                    if(!getvisible(camera1->o, camera1->yaw, camera1->pitch, w->pos, curfov, fovy, 2, VFC_PART_VISIBLE))
+                    if(!getvisible(camera1->o, camera1->yaw, camera1->pitch, w->pos, curfov, fovy, uivisradius, -1))
                     {
                         w->visible = false;
                         continue;
                     }
-                    w->dist = w->pos.squaredist(camera1->o);
+
+                    w->dist = w->pos.dist(camera1->o);
+
+                    float maxdist = w->maxdist > 0 ? min(w->maxdist, uimaxdist) : uimaxdist;
+                    if(maxdist > 0 && w->dist > maxdist)
+                    {
+                        w->visible = false;
+                        continue;
+                    }
                 }
                 else w->dist = 0.f;
                 w->visible = true;
@@ -1925,12 +1939,12 @@ namespace UI
             uiscale = olduiscale;
         }
 
-        bool show(Window *w, const vec &pos = nullvec, float y = 0, float p = 0, float s = 1, float dy = 0, float dp = 0)
+        bool show(Window *w, const vec &pos = nullvec, float m = 0, float y = 0, float p = 0, float s = 1, float dy = 0, float dp = 0)
         {
             if(children.find(w) >= 0) return false;
             w->resetchildstate();
             children.add(w);
-            w->show(pos, y, p, s, dy, dp);
+            w->show(pos, m, y, p, s, dy, dp);
             return true;
         }
 
@@ -2367,20 +2381,21 @@ namespace UI
         return NULL;
     }
 
-    bool showui(const char *name, int stype, int param, const vec &origin, float yaw, float pitch, float scale, float detentyaw, float detentpitch)
+    bool showui(const char *name, int stype, int param, const vec &origin, float maxdist, float yaw, float pitch, float scale, float detentyaw, float detentpitch)
     {
         if(!pushsurface(stype)) return false;
 
         Window *w = dynuirefwin(name, param);
         if(!w) w = dynuicreate(name, param);
-        bool ret = w && surface->show(w, origin, yaw, pitch, scale, detentyaw, detentpitch);
+        bool ret = w && surface->show(w, origin, maxdist, yaw, pitch, scale, detentyaw, detentpitch);
 
         popsurface();
 
         return ret;
     }
 
-    bool setui(const char *name, int stype, int param, const vec &origin, float yaw, float pitch, float scale, float detentyaw, float detentpitch)
+    // poke UI's don't display unless they are poked every frame
+    bool pokeui(const char *name, int stype, int param, const vec &origin, float maxdist, float yaw, float pitch, float scale, float detentyaw, float detentpitch)
     {
         if(!engineready || !pushsurface(stype)) return false;
 
@@ -2389,12 +2404,13 @@ namespace UI
         if(w && surface->children.find(w) >= 0)
         {
             w->origin = origin;
+            w->maxdist = maxdist;
             w->yaw = yaw;
             w->pitch = pitch;
             w->scale = scale;
             w->detentyaw = detentyaw;
             w->detentpitch = detentpitch;
-            w->lastset = totalmillis;
+            w->lastpoke = totalmillis;
 
             popsurface();
             return true;
@@ -2403,9 +2419,9 @@ namespace UI
         if(!w) w = dynuicreate(name, param);
 
         bool ret = false;
-        if(w && surface->show(w, origin, yaw, pitch, scale, detentyaw, detentpitch))
+        if(w && surface->show(w, origin, maxdist, yaw, pitch, scale, detentyaw, detentpitch))
         {
-            w->lastset = totalmillis;
+            w->lastpoke = totalmillis;
             ret = true;
         }
         popsurface();
@@ -2432,9 +2448,9 @@ namespace UI
         return ret;
     }
 
-    bool toggleui(const char *name, int stype, int param, const vec &origin, float yaw, float pitch, float scale, float detentyaw, float detentpitch)
+    bool toggleui(const char *name, int stype, int param, const vec &origin, float maxdist, float yaw, float pitch, float scale, float detentyaw, float detentpitch)
     {
-        if(showui(name, stype, param, origin, yaw, pitch, scale, detentyaw, detentpitch)) return true;
+        if(showui(name, stype, param, origin, maxdist, yaw, pitch, scale, detentyaw, detentpitch)) return true;
         hideui(name, stype, param);
         return false;
     }
@@ -2468,15 +2484,15 @@ namespace UI
         loopi(SURFACE_MAX) if(surfaces[i] && surfaces[i]->interactive) hideui(NULL, i);
     }
 
-    void holdui(const char *name, bool on, int stype, int param, const vec &origin, float yaw, float pitch, float scale, float detentyaw, float detentpitch)
+    void holdui(const char *name, bool on, int stype, int param, const vec &origin, float maxdist, float yaw, float pitch, float scale, float detentyaw, float detentpitch)
     {
-        if(on) showui(name, stype, param, origin, yaw, pitch, scale, detentyaw, detentpitch);
+        if(on) showui(name, stype, param, origin, maxdist, yaw, pitch, scale, detentyaw, detentpitch);
         else hideui(name, stype, param);
     }
 
-    void pressui(const char *name, bool on, int stype, int param, const vec &origin, float yaw, float pitch, float scale, float detentyaw, float detentpitch)
+    void pressui(const char *name, bool on, int stype, int param, const vec &origin, float maxdist, float yaw, float pitch, float scale, float detentyaw, float detentpitch)
     {
-        if(on) { if(!uitest(name, stype, param)) showui(name, stype, param, origin, yaw, pitch, scale, detentyaw, detentpitch); }
+        if(on) { if(!uitest(name, stype, param)) showui(name, stype, param, origin, maxdist, yaw, pitch, scale, detentyaw, detentpitch); }
         else if(uitest(name, stype, param)) hideui(name, stype, param);
     }
 
@@ -2499,11 +2515,12 @@ namespace UI
         return ret;
     }
 
-    ICOMMAND(IDF_NOECHO, showui, "sbbggggffff", (char *name, int *sf, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch), intret(showui(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_VISOR), *param, vec(*x, *y, *z), *yaw, *pitch, *scale, *detentyaw, *detentpitch) ? 1 : 0));
+    ICOMMAND(IDF_NOECHO, showui, "sbbgggfgffff", (char *name, int *sf, int *param, float *x, float *y, float *z, float *maxdist, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch), intret(showui(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_VISOR), *param, vec(*x, *y, *z), *maxdist, *yaw, *pitch, *scale, *detentyaw, *detentpitch) ? 1 : 0));
+    ICOMMAND(IDF_NOECHO, pokeui, "sbbgggfgffff", (char *name, int *sf, int *param, float *x, float *y, float *z, float *maxdist, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch), intret(pokeui(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_VISOR), *param, vec(*x, *y, *z), *maxdist, *yaw, *pitch, *scale, *detentyaw, *detentpitch) ? 1 : 0));
     ICOMMAND(IDF_NOECHO, hideui, "sbb", (char *name, int *sf, int *param), intret(hideui(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_VISOR), *param) ? 1 : 0));
-    ICOMMAND(IDF_NOECHO, toggleui, "sbbggggffff", (char *name, int *sf, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch), intret(toggleui(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_VISOR), *param, vec(*x, *y, *z), *yaw, *pitch, *scale, *detentyaw, *detentpitch) ? 1 : 0));
-    ICOMMAND(IDF_NOECHO, holdui, "sbbggggffffD", (char *name, int *sf, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch, int *down), holdui(name, *down!=0, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_VISOR), *param, vec(*x, *y, *z), *yaw, *pitch, *scale, *detentyaw, *detentpitch));
-    ICOMMAND(IDF_NOECHO, pressui, "sbbggggffffD", (char *name, int *sf, int *param, float *x, float *y, float *z, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch, int *down), pressui(name, *down!=0, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_VISOR), *param, vec(*x, *y, *z), *yaw, *pitch, *scale, *detentyaw, *detentpitch));
+    ICOMMAND(IDF_NOECHO, toggleui, "sbbgggfgffff", (char *name, int *sf, int *param, float *x, float *y, float *z, float *maxdist, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch), intret(toggleui(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_VISOR), *param, vec(*x, *y, *z), *maxdist, *yaw, *pitch, *scale, *detentyaw, *detentpitch) ? 1 : 0));
+    ICOMMAND(IDF_NOECHO, holdui, "sbbgggfgffffD", (char *name, int *sf, int *param, float *x, float *y, float *z, float *maxdist, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch, int *down), holdui(name, *down!=0, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_VISOR), *param, vec(*x, *y, *z), *maxdist, *yaw, *pitch, *scale, *detentyaw, *detentpitch));
+    ICOMMAND(IDF_NOECHO, pressui, "sbbgggfgffffD", (char *name, int *sf, int *param, float *x, float *y, float *z, float *maxdist, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch, int *down), pressui(name, *down!=0, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_VISOR), *param, vec(*x, *y, *z), *maxdist, *yaw, *pitch, *scale, *detentyaw, *detentpitch));
     ICOMMAND(IDF_NOECHO, uitest, "sbb", (char *name, int *sf, int *param), intret(uitest(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_VISOR), *param) ? 1 : 0));
 
     #define SURFACEOP(idx)  Surface *s = (idx) >= 0 && (idx) < SURFACE_MAX ? surfaces[(idx)] : (surface ? surface : surfaces[SURFACE_VISOR]);
@@ -7030,7 +7047,7 @@ namespace UI
             closemapuis(i, surfacetype); // close this UI on other surfaces first
 
             if(surface->children.find(w) < 0)
-                surface->show(w, e.o, e.attrs[2], e.attrs[3], e.attrs[5] != 0 ? e.attrs[5]/100.f : 1.f, e.attrs[6] > 0 ? e.attrs[6] : 0.f, e.attrs[7] > 0 ? e.attrs[7] : 0.f);
+                surface->show(w, e.o, uimapmaxdist, e.attrs[2], e.attrs[3], e.attrs[5] != 0 ? e.attrs[5]/100.f : 1.f, e.attrs[6] > 0 ? e.attrs[6] : 0.f, e.attrs[7] > 0 ? e.attrs[7] : 0.f);
 
             float yaw = 0, pitch = 0;
             if(entities::getdynamic(e, w->origin, &yaw, &pitch))
@@ -7626,7 +7643,7 @@ namespace UI
             glDepthMask(GL_FALSE);
         }
         else if(surfacetype == SURFACE_PROGRESS)
-            hasprogress = setui("default", SURFACE_PROGRESS);
+            hasprogress = pokeui("default", SURFACE_PROGRESS);
 
         VISOR(surfacetype,
         {

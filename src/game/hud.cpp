@@ -551,7 +551,7 @@ namespace hud
     {
         hidecrosshair = 0;
 
-        loopi(SURFACE_LOOP) UI::setui("hud", i);
+        loopi(SURFACE_LOOP) UI::pokeui("hud", i);
 
         if(!UI::hasmenu(true))
         {
@@ -566,10 +566,13 @@ namespace hud
 
         if(game::maptime <= 0) return; // wait until map started
 
-        gameent *d = NULL;
-        int numdyns = game::numdynents();
-        loopi(numdyns) if((d = (gameent *)game::iterdynents(i)) && d->actortype < A_ENEMY && d != game::focus && !d->isspectator()) // do the actor test here so it doesn't close UIs that don't exist
-            MAKEUI(player, d->clientnum, m_team(game::gamemode, game::mutators) && game::focus->team == d->team, game::haloallow(camera1->o, d, false, false), d->abovehead());
+        if(playerui >= 0)
+        {
+            gameent *d = NULL;
+            int numdyns = game::numdynents();
+            loopi(numdyns) if((d = (gameent *)game::iterdynents(i)) && d->actortype < A_ENEMY && d != game::focus && !d->isspectator()) // do the actor test here so it doesn't close UIs that don't exist
+                MAKEUI(player, d->clientnum, m_team(game::gamemode, game::mutators) && game::focus->team == d->team, game::haloallow(camera1->o, d, false, false), d->abovehead());
+        }
 
         entities::checkui();
         if(m_capture(game::gamemode)) capture::checkui();
