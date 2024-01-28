@@ -825,6 +825,7 @@ namespace server
             }
             d.ent = ci->weapent[d.weap];
             d.ammo = 1; // one prize per customer
+            ci->dropped.add(d.ent, d.ammo);
         }
 
         if(!drop.empty())
