@@ -155,10 +155,10 @@ APVAR(IDF_GAMEMOD, 0, abilities, 0, A_A_ALL,
     A_A_PLAYER,     A_A_MOVINGAI,   A_A_FIXEDAI,    A_A_MOVINGAI,   A_A_LESSAI,     A_A_ROLLER,     A_A_HAZARD,     A_A_JANITOR
 );
 APFVAR(IDF_GAMEMOD, 0, aipitchscale, FVAR_NONZERO, FVAR_MAX,
-    0.5f,           0.5f,           0.5f,           0.5f,           0.5f,           0.5f,           0.5f,           10
+    0.5f,           0.5f,           0.5f,           0.5f,           0.5f,           0.5f,           1,              4
 );
 APFVAR(IDF_GAMEMOD, 0, aiyawscale, FVAR_NONZERO, FVAR_MAX,
-    1,              1,              1,              1,              1,              1,              2,              10
+    1,              1,              1,              1,              1,              1,              1,              2
 );
 APVAR(IDF_GAMEMOD, 0, collide, 0, A_C_ALL,
     A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL
