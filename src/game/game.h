@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 274
+#define VERSION_GAME 275
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -290,7 +290,8 @@ enum
 
 enum
 {
-    SPHY_JUMP = 0, SPHY_BOOST, SPHY_DASH, SPHY_SLIDE, SPHY_LAUNCH, SPHY_MELEE, SPHY_KICK, SPHY_GRAB, SPHY_PARKOUR, SPHY_VAULT, SPHY_POUND, SPHY_AFTER, SPHY_FLING, SPHY_MATERIAL,
+    SPHY_JUMP = 0, SPHY_BOOST, SPHY_DASH, SPHY_SLIDE, SPHY_LAUNCH, SPHY_MELEE, SPHY_KICK, SPHY_GRAB,
+    SPHY_PARKOUR, SPHY_VAULT, SPHY_POUND, SPHY_AFTER, SPHY_FLING, SPHY_MATERIAL, SPHY_PRIZE,
     SPHY_SERVER, SPHY_EXTINGUISH = SPHY_SERVER, SPHY_BUFF,
     SPHY_MAX
 };
@@ -660,7 +661,7 @@ struct clientstate
     int lastdeath, lastspawn, lastpain, lastregen, lastregenamt, lastbuff, lastshoot, lastcook, lastaffinity, lastres[W_R_MAX], lastrestime[W_R_MAX];
     int burntime, burndelay, burndamage, bleedtime, bleeddelay, bleeddamage, shocktime, shockdelay, shockdamage, shockstun, shockstuntime, corrodetime, corrodedelay, corrodedamage;
     float shockstunscale, shockstunfall;
-    int actortype, spawnpoint, ownernum, skill, points, frags, deaths, totalpoints, totalfrags, totaldeaths, spree, lasttimeplayed, timeplayed, cpmillis, cptime, queuepos;
+    int actortype, spawnpoint, ownernum, skill, points, frags, deaths, totalpoints, totalfrags, totaldeaths, spree, lasttimeplayed, timeplayed, cpmillis, cptime, queuepos, hasprize;
     float totalavgpos;
     bool quarantine;
     string vanity;
@@ -669,7 +670,7 @@ struct clientstate
 
     clientstate() : model(0), pattern(0), checkpointspawn(1), weapselect(W_CLAW), lastdeath(0), lastspawn(0), lastpain(0), lastregen(0), lastregenamt(0), lastbuff(0), lastshoot(0), lastcook(0), lastaffinity(0),
         actortype(A_PLAYER), spawnpoint(-1), ownernum(-1), skill(0), points(0), frags(0), deaths(0), totalpoints(0), totalfrags(0), totaldeaths(0), spree(0), lasttimeplayed(0), timeplayed(0),
-        cpmillis(0), cptime(0), queuepos(-1), totalavgpos(0), quarantine(false)
+        cpmillis(0), cptime(0), queuepos(-1), hasprize(0), totalavgpos(0), quarantine(false)
     {
         loopi(2) colours[i] = 0;
         vanity[0] = '\0';
@@ -986,7 +987,7 @@ struct clientstate
 
     void clearstate()
     {
-        spree = lastdeath = lastpain = lastregen = lastregenamt = lastbuff = lastshoot = lastcook = lastaffinity = 0;
+        spree = lastdeath = lastpain = lastregen = lastregenamt = lastbuff = lastshoot = lastcook = lastaffinity = hasprize = 0;
         queuepos = -1;
         resetresidual();
     }
@@ -1360,12 +1361,30 @@ struct gameent : dynent, clientstate
     static bool is(int t) { return t == ENT_PLAYER || t == ENT_AI; }
     static bool is(physent *d) { return d && (d->type == ENT_PLAYER || d->type == ENT_AI); }
 
-    void collected(int type, float size, const char *name)
+    bool collected(int type, float size = 1, const char *name = NULL)
     {
+        int count = collects.length();
+
         collectlist &c = collects.add();
-        c.type = type;
+        c.type = type != PRJ_ENT ? type : PRJ_DEBRIS;
         c.size = size;
+        if(type == PRJ_ENT) c.size *= 0.3f;
         c.name = name;
+
+        if(ai && count < janitorprize && collects.length() >= janitorprize)
+        {   // award a prize
+            hasprize = -1;
+            return true;
+        }
+
+        return false;
+    }
+
+    void collectprize()
+    {
+        while(collects.length() < janitorprize) // just ensure we have enough in there
+            collected(rnd(2) ? PRJ_GIBS : PRJ_DEBRIS, 0.5f + rnd(101)/100.f);
+        hasprize = -1;
     }
 
     void addstun(int weap, int millis, int delay, float scale, float gravity)

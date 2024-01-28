@@ -2637,6 +2637,11 @@ namespace client
                             t->lastbuff = param ? lastmillis : 0;
                             break;
                         }
+                        case SPHY_PRIZE:
+                        {
+                            if(!proceed) break;
+                            t->collectprize();
+                        }
                         default: break;
                     }
                     break;

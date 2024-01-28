@@ -57,9 +57,14 @@ namespace ai
 
     bool targetable(gameent *d, gameent *e, bool solid)
     {
+        if(d->actortype == A_JANITOR && !d->hasprize) return false; // shrug it off
         if(d && e && d != e && e->state == CS_ALIVE && A(d->actortype, abilities)&A_A_ATTACK && (!solid || physics::issolid(e, d)))
         {
-            if(e->actortype >= A_ENVIRONMENT) return false;
+            if(e->actortype >= A_ENVIRONMENT)
+            {
+                if(d->actortype >= A_ENEMY) return false; // don't let actors just attack each other
+                if(!e->hasprize) return false; // and don't have bots chase down janitors all the time, etc
+            }
             if(m_onslaught(game::gamemode, game::mutators) && d->team == T_ENEMY && e->team == T_ENEMY) return false;
             if(!m_team(game::gamemode, game::mutators) || d->team != e->team) return true;
         }
@@ -436,6 +441,7 @@ namespace ai
 
     bool enemy(gameent *d, aistate &b, const vec &pos, float guard, int pursue, bool force, bool retry = false)
     {
+        if(d->actortype == A_JANITOR && !d->hasprize) return false; // shrug it off
         if(d->ai->enemy >= 0 && lastmillis-d->ai->enemymillis >= (111-d->skill)*50) return false;
         gameent *t = NULL, *e = NULL;
         float mindist = guard*guard, bestdist = 1e16f;
@@ -781,7 +787,7 @@ namespace ai
 
     void damaged(gameent *d, gameent *e, int weap, int flags, int damage)
     {
-        if(d == e) return;
+        if(d == e || (d->actortype == A_JANITOR && !d->hasprize)) return; // shrug it off
         if(d->ai && (d->team == T_ENEMY || (hitdealt(flags) && damage > 0) || d->ai->enemy < 0 || d->dominating.find(e))) // see if this ai is interested in a grudge
         {
             aistate &b = d->ai->getstate();
@@ -1506,6 +1512,7 @@ namespace ai
         float frame = d->skill <= 100 ? ((lastmillis - d->ai->lastrun) * (100.f / gamespeed)) / float(skmod * 20) : 1;
 
         if(d->dominating.length()) frame *= 1 + d->dominating.length(); // berserker mode
+        if(d->hasprize) frame *= 5; // prize carrier defends to their last breath
 
         bool dancing = b.type == AI_S_OVERRIDE && b.overridetype == AI_O_DANCE,
             allowrnd = dancing || b.type == AI_S_WAIT || b.type == AI_S_PURSUE || b.type == AI_S_INTEREST;

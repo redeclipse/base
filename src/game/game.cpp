@@ -2026,7 +2026,7 @@ namespace game
     {
         if(!giblimit) return;
 
-        int gibcount = 0;
+        int gibcount = 0, missed = 0;
         if(gibchancevanity && (d->headless || d->obliterated))
         {
             int head = vanitybuild(d), found[VANITYMAX] = {0};
@@ -2039,35 +2039,38 @@ namespace game
                 if(found[vanities[n].type]) continue; // skip ignored vanities
                 found[vanities[n].type]++;
 
-                if(vanities[n].type && (!check || rnd(101) > gibchancevanity)) continue; // don't spawn crap at a distance
                 if(!(vanities[n].cond&(d->obliterated ? 4 : 2))) continue;
+                if(vanities[n].type && (!check || rnd(101) > gibchancevanity))
+                {
+                    missed++;
+                    continue; // don't spawn crap at a distance
+                }
 
-                vec pos = d->center(), dest = pos;
+                vec pos = d->center();
                 switch(vanities[n].type)
                 {
                     case 0: case 2: case 3: case 4: case 5: case 6: // lots of head stuff
-                        pos = dest = d->headtag();
-                        if(vanities[n].type == 0) dest.z += d->zradius * 0.125f;
+                        pos = d->headtag();
                         break;
                     case 7: // back stuff
-                        pos = dest = d->jetbacktag();
+                        pos = d->jetbacktag();
                         break;
                     case 8: case 9: // feet stuff
-                        pos = dest = d->toetag(vanities[n].type - 8);
+                        pos = d->toetag(vanities[n].type - 8);
                         break;
                     case 10: // left shoulder
-                        pos = dest = d->jetlefttag();
+                        pos = d->jetlefttag();
                         break;
                     case 11: // right shoulder
-                        pos = dest = d->jetrighttag();
+                        pos = d->jetrighttag();
                         break;
                     case 12: // tail
-                        pos = dest = d->waisttag();
+                        pos = d->waisttag();
                         break;
                     case 1: default: break; // central stuff
                 }
 
-                projs::create(pos, dest, true, d, PRJ_VANITY, -1, 0, (rnd(gibfade) + gibfade) / 2, 0, 0, rnd(50) + 10, -1, n, head);
+                projs::create(pos, pos, true, d, PRJ_VANITY, -1, 0, (rnd(gibfade) + gibfade) / 2, 0, 0, rnd(50) + 10, -1, n, head);
 
                 if(++gibcount >= giblimit) return;
             }
@@ -2077,11 +2080,15 @@ namespace game
 
         if(gibchancepieces && (d->actortype != A_JANITOR || !(flags&HIT_JANITOR)))
         {
-            if(d->obliterated && actors[d->actortype].pieces && gibplayerparts)
+            if(d->obliterated && actors[d->actortype].pieces)
             {
                 loopi(PLAYERPARTS)
                 {
-                    if(rnd(101) > gibchancepieces) continue;
+                    if(rnd(101) > gibchancepieces)
+                    {
+                        missed++;
+                        continue;
+                    }
 
                     vec pos = gibpos(d, i);
                     projs::create(pos, pos, true, d, PRJ_PIECE, -1, 0, (rnd(gibfade) + gibfade) / 2, 0, 0, rnd(50) + 10, -1, i, 0);
@@ -2089,9 +2096,11 @@ namespace game
                     if(++gibcount >= giblimit) return;
                 }
             }
+            else missed += PLAYERPARTS;
 
             int hp = max(d->gethealth(gamemode, mutators), 1), divisor = int(ceilf(d->obliterated ? hp * gibobliterated : (d->headless ? hp * gibheadless : hp * gibdamage))),
-                count = max(int(ceilf(damage / float(divisor))), 1), amt = clamp(rnd(count) + count, 1, gibpieces);
+                count = max(int(ceilf(damage / float(divisor))), 1), amt = clamp(rnd(count) + count, 1, gibpieces) + missed;
+
             loopi(amt)
             {
                 if(rnd(101) > gibchancepieces) continue;
@@ -2116,7 +2125,7 @@ namespace game
             if(p)
             {
                 p->mdlname = d->collects[n].name;
-                p->lifesize = max(d->collects[n].size, 0.3f) + ((rnd(31) - 15) / 100.f);
+                p->lifesize = max(d->collects[n].size, 0.25f) + ((rnd(31) - 10) / 100.f);
             }
 
             d->collects.remove(n);
@@ -2630,6 +2639,8 @@ namespace game
 
     int findcolour(gameent *d, int comb, bool tone, float level, float mix)
     {
+        if(d->hasprize) return pulsehexcol(PULSE_DISCO);
+
         int col = d->colours[comb ? 1 : 0];
         switch(comb)
         {

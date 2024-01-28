@@ -2187,12 +2187,12 @@ namespace projs
                 if(dist >= ai::JANITORSUCK) continue;
                 ray.normalize();
 
-                if(dist <= f->radius + proj.radius + 1)
+                if(!proj.beenused && dist <= f->radius + proj.radius + 1)
                 {
-                    if(proj.projtype != PRJ_ENT) e->collected(proj.projtype, proj.lifesize, proj.mdlname);
+                    if(e->collected(proj.projtype, proj.lifesize, proj.mdlname))
+                        client::addmsg(N_SPHY, "ri2", e->clientnum, SPHY_PRIZE);
                     proj.beenused = 1;
                     proj.lifetime = min(proj.lifetime, proj.fadetime);
-                    return false;
                 }
 
                 proj.dest = e->center();

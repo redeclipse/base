@@ -772,8 +772,8 @@ namespace server
     struct droplist { int weap, ent, ammo; };
     enum
     {
-        DROP_NONE = 0, DROP_WEAPONS = 1<<0, DROP_WCLR = 1<<1, DROP_KAMIKAZE = 1<<2, DROP_EXPLODE = 1<<3,
-        DROP_DEATH = DROP_WEAPONS|DROP_KAMIKAZE, DROP_EXPIRE = DROP_WEAPONS|DROP_EXPLODE, DROP_RESET = DROP_WEAPONS|DROP_WCLR
+        DROP_NONE = 0, DROP_WEAPONS = 1<<0, DROP_WCLR = 1<<1, DROP_KAMIKAZE = 1<<2, DROP_EXPLODE = 1<<3, DROP_PRIZE = 1<<4,
+        DROP_DEATH = DROP_WEAPONS|DROP_KAMIKAZE|DROP_PRIZE, DROP_RESET = DROP_WEAPONS|DROP_WCLR
     };
 
     void dropweapon(clientinfo *ci, int flags, int weap, vector<droplist> &drop)
@@ -801,6 +801,7 @@ namespace server
         bool kamikaze = false;
         int ktype = A(ci->actortype, abilities)&(1<<A_A_KAMIKAZE) ? 3 : G(kamikaze);
         vector<droplist> drop;
+
         if(flags&DROP_EXPLODE || (flags&DROP_KAMIKAZE && ktype && (ktype > 2 || (ci->hasweap(W_GRENADE, m_weapon(ci->actortype, gamemode, mutators)) && (ktype > 1 || ci->weapselect == W_GRENADE)))))
         {
             ci->weapshots[W_GRENADE][0].add(1);
@@ -810,9 +811,25 @@ namespace server
             if(!(flags&DROP_EXPLODE) && A(ci->actortype, abilities)&(1<<A_A_AMMO)) takeammo(ci, W_GRENADE, W2(W_GRENADE, ammosub, false));
             kamikaze = true;
         }
+
         if(flags&DROP_WEAPONS) loopi(W_ALL) dropweapon(ci, flags, i, drop);
+
+        if(flags&DROP_PRIZE && ci->hasprize)
+        {
+            droplist &d = drop.add();
+            switch(ci->hasprize > 0 ? ci->hasprize : (rnd(6) % 3) + 1)
+            {
+                case 1: default: d.weap = W_GRENADE; break;
+                case 2: d.weap = W_MINE; break;
+                case 3: d.weap = W_ROCKET; break;
+            }
+            d.ent = ci->weapent[d.weap];
+            d.ammo = 1; // one prize per customer
+        }
+
         if(!drop.empty())
             sendf(-1, 1, "ri3iv", N_WEAPDROP, ci->clientnum, -1, drop.length(), drop.length()*sizeof(droplist)/sizeof(int), drop.getbuf());
+
         return kamikaze;
     }
 
@@ -4788,18 +4805,24 @@ namespace server
                     {
                         style |= FRAG_BREAKER;
                         if(!m_dm_oldschool(gamemode, mutators)) pointvalue += G(spreebreaker);
+                        if(G(spreebreakprize) && m->hasprize <= 0) m->hasprize = G(spreebreakprize);
                         break;
                     }
 
                     if(v->spree <= G(spreecount)*FRAG_SPREES && !(v->spree%G(spreecount)))
                     {
-                        int offset = clamp((v->spree/G(spreecount)), 1, int(FRAG_SPREES))-1, type = 1<<(FRAG_SPREE+offset);
+                        int offset = clamp((v->spree/G(spreecount)), 1, int(FRAG_SPREES)), type = 1<<(FRAG_SPREE + offset - 1);
                         if(!(v->rewards[0]&type))
                         {
                             style |= type;
                             loopj(2) v->rewards[j] |= type;
                             if(!m_dm_oldschool(gamemode, mutators)) pointvalue += G(spreepoints);
                         }
+                        if(offset == FRAG_SPREES)
+                        {
+                            if(G(spreemaxprize) && m->hasprize <= 0) m->hasprize = G(spreemaxprize);
+                        }
+                        else if(G(spreeprize) && m->hasprize <= 0) m->hasprize = G(spreemaxprize);
                     }
 
                     logs = 0;
@@ -4808,6 +4831,7 @@ namespace server
                     {
                         style |= FRAG_REVENGE;
                         if(!m_dm_oldschool(gamemode, mutators)) pointvalue += G(revengepoints);
+                        if(G(revengeprize) && m->hasprize <= 0) m->hasprize = G(revengeprize);
                     }
 
                     logs = 0;
@@ -6866,6 +6890,13 @@ namespace server
                                 ev.process(cp); // process death immediately
                             }
                             break; // does not get sent to clients
+                        }
+                        case SPHY_PRIZE:
+                        {
+                            if(cp->actortype != A_JANITOR || cp->state != CS_ALIVE) break;
+                            qmsg = true;
+                            cp->hasprize = -1;
+                            break;
                         }
                         default:
                         {

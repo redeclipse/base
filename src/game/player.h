@@ -39,7 +39,7 @@ enum
     A_A_FIXEDAI = (1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_DAMAGE)|(1<<A_A_AMMO),
     A_A_ROLLER = (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_PUSHABLE)|(1<<A_A_KAMIKAZE)|(1<<A_A_DAMAGE)|(1<<A_A_AMMO),
     A_A_HAZARD = (1<<A_A_PRIMARY),
-    A_A_JANITOR = (1<<A_A_MOVE)|(1<<A_A_PUSHABLE)|(1<<A_A_DAMAGE)|(1<<A_A_REGEN)|(1<<A_A_FLOAT)
+    A_A_JANITOR = (1<<A_A_MOVE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_DAMAGE)|(1<<A_A_REGEN)|(1<<A_A_FLOAT)
 };
 
 enum
@@ -198,10 +198,10 @@ APVAR(IDF_GAMEMOD, 0, collide, 0, A_C_ALL,
     A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL
 );
 APVAR(IDF_GAMEMOD, 0, health, 1, VAR_MAX,
-    1000,           1000,           1000,           500,            500,            500,            1000,           1000
+    1000,           1000,           1000,           500,            500,            500,            1000,           2000
 );
 APVAR(IDF_GAMEMOD, 0, hurtstop, 0, VAR_MAX,
-    0,              0,              0,              100,            500,            100,            0,              100
+    0,              0,              0,              250,            500,            250,            0,              0
 );
 APVAR(IDF_GAMEMOD, 0, impulse, 0, IM_T_ALL,
     IM_T_ALL,       IM_T_MVAI,      0,              IM_T_MVAI,      IM_T_LSAI,      IM_T_ROLLER,    0,              0
@@ -243,35 +243,35 @@ APVAR(IDF_GAMEMOD, 0, spawndelayrace, DEATHMILLIS, VAR_MAX,
     1000,           1000,           10000,          10000,          10000,          10000,          DEATHMILLIS,    DEATHMILLIS
 );
 APVAR(IDF_GAMEMOD, 0, spawngrenades, 0, 2,
-    0,              0,              0,              0,              0,              0,              0,              0
+    0,              0,              0,              0,              0,              0,              0,              2
 );
 APVAR(IDF_GAMEMOD, 0, spawnmines, 0, 2,
-    0,              0,              0,              0,              0,              0,              0,              0
+    0,              0,              0,              0,              0,              0,              0,              2
 );
 APVAR(IDF_GAMEMOD, 0, teamdamage, 0, A_T_ALL,
     A_T_PLAYER,     A_T_AI,         A_T_AI,         A_T_AI,         A_T_AI,         A_T_AI,         A_T_PLAYER,     A_T_PLAYER
 );
 APVAR(IDF_GAMEMOD, 0, weapongladiator, 0, W_ALL-1,
-    W_CLAW,         W_CLAW,         W_SMG,          W_PISTOL,       W_CLAW,         W_CLAW,         W_PISTOL,       W_CLAW
+    W_CLAW,         W_CLAW,         W_SMG,          W_PISTOL,       W_CLAW,         W_CLAW,         W_PISTOL,       W_RIFLE
 );
 APVAR(IDF_GAMEMOD, 0, weaponinsta, 0, W_ALL-1,
-    W_RIFLE,        W_RIFLE,        W_RIFLE,        W_RIFLE,        W_CLAW,         W_CLAW,         W_RIFLE,        W_CLAW
+    W_RIFLE,        W_RIFLE,        W_RIFLE,        W_RIFLE,        W_CLAW,         W_CLAW,         W_RIFLE,        W_RIFLE
 );
 APVAR(IDF_GAMEMOD, 0, weaponkaboom, 0, W_ALL-1,
-    W_GRENADE,      W_GRENADE,      W_GRENADE,      W_GRENADE,      W_CLAW,         W_CLAW,         W_PISTOL,       W_CLAW
+    W_GRENADE,      W_GRENADE,      W_GRENADE,      W_GRENADE,      W_CLAW,         W_CLAW,         W_PISTOL,       W_RIFLE
 );
 APVAR(IDF_GAMEMOD, 0, weaponmedieval, 0, W_ALL-1,
-    W_SWORD,        W_SWORD,        W_RIFLE,        W_SWORD,        W_CLAW,         W_CLAW,         W_PISTOL,       W_CLAW
+    W_SWORD,        W_SWORD,        W_RIFLE,        W_SWORD,        W_CLAW,         W_CLAW,         W_PISTOL,       W_RIFLE
 );
 APVAR(IDF_GAMEMOD, 0, weaponrace, 0, W_ALL-1,
-    W_CLAW,         W_CLAW,         W_SMG,          W_PISTOL,       W_CLAW,         W_CLAW,         W_PISTOL,       W_CLAW
+    W_CLAW,         W_CLAW,         W_SMG,          W_PISTOL,       W_CLAW,         W_CLAW,         W_PISTOL,       W_RIFLE
 );
 APVAR(IDF_GAMEMOD, 0, weaponspawn, 0, W_ALL-1,
-    W_PISTOL,       W_PISTOL,       W_SMG,          W_PISTOL,       W_CLAW,         W_CLAW,         W_PISTOL,       W_CLAW
+    W_PISTOL,       W_PISTOL,       W_SMG,          W_PISTOL,       W_CLAW,         W_CLAW,         W_PISTOL,       W_RIFLE
 );
 // these are modified by gameent::configure() et al
 APFVAR(IDF_GAMEMOD, 0, speed, 0, FVAR_MAX,
-    100,            100,            0,              90,             100,            50,             100,            150
+    100,            100,            0,              90,             100,            50,             100,            175
 );
 APFVAR(IDF_GAMEMOD, 0, speedextra, FVAR_MIN, FVAR_MAX,
     0,              0,              0,              0,              0,              0,              0,              0

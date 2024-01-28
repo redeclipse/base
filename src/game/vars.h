@@ -528,7 +528,8 @@ GVAR(IDF_GAMEMOD, 0, enemyspawndelay, 0, 1000, VAR_MAX); // after map start enem
 GVAR(IDF_GAMEMOD, 0, enemyspawnstyle, 0, 1, 3); // 0 = all at once, 1 = staggered, 2 = random, 3 = randomise between both
 
 GVAR(IDF_GAMEMOD, 0, janitorlimit, 0, 16, MAXAI); // maximum number of janitors
-GVAR(IDF_GAMEMOD, 0, janitorcollect, 0, 128, VAR_MAX); // collect this much before dumping
+GVAR(IDF_GAMEMOD, 0, janitorprize, 0, 200, VAR_MAX); // award a prize at this much stuff
+GVAR(IDF_GAMEMOD, 0, janitorcollect, 0, 400, VAR_MAX); // collect this much before dumping
 GFVAR(IDF_GAMEMOD, 0, janitorbalance, 0, 0.5f, FVAR_MAX); // this * current balance = number of janitors
 GFVAR(IDF_GAMEMOD, 0, janitorjunktime, 0, 0.25f, 1); // when shell casings and vanities/parts become "junk"
 GFVAR(IDF_GAMEMOD, 0, janitorjunkitems, 0, 0.5f, 1); // when items become "junk"
@@ -746,10 +747,14 @@ GVAR(IDF_GAMEMOD, 0, multikillpoints, 0, 1, VAR_MAX);
 GVAR(IDF_GAMEMOD, 0, multikillbonus, 0, 0, 1); // if bonus is on, then points are multiplied by the current kill mutliplier (x2, x3, x4)
 GVAR(IDF_GAMEMOD, 0, spreecount, 0, 5, VAR_MAX);
 GVAR(IDF_GAMEMOD, 0, spreepoints, 0, 1, VAR_MAX);
+GVAR(IDF_GAMEMOD, 0, spreeprize, -1, 1, 3); // -1 = random, 0 = none, 1 = grenade, 2 = mine, 3 = rocket
+GVAR(IDF_GAMEMOD, 0, spreemaxprize, -1, 3, 3); // -1 = random, 0 = none, 1 = grenade, 2 = mine, 3 = rocket
 GVAR(IDF_GAMEMOD, 0, spreebreaker, 0, 1, VAR_MAX);
+GVAR(IDF_GAMEMOD, 0, spreebreakprize, -1, -1, 3); // -1 = random, 0 = none, 1 = grenade, 2 = mine, 3 = rocket
 GVAR(IDF_GAMEMOD, 0, dominatecount, 0, 5, VAR_MAX);
 GVAR(IDF_GAMEMOD, 0, dominatepoints, 0, 1, VAR_MAX);
 GVAR(IDF_GAMEMOD, 0, revengepoints, 0, 1, VAR_MAX);
+GVAR(IDF_GAMEMOD, 0, revengeprize, -1, 3, 3); // -1 = random, 0 = none, 1 = grenade, 2 = mine, 3 = rocket
 
 GSVAR(0, 0, obitspawn, "tried to spawn inside solid matter");
 GSVAR(0, 0, obitspectator, "gave up their corporeal form");
