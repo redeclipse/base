@@ -2099,7 +2099,7 @@ namespace game
             else missed += PLAYERPARTS;
 
             int hp = max(d->gethealth(gamemode, mutators), 1), divisor = int(ceilf(d->obliterated ? hp * gibobliterated : (d->headless ? hp * gibheadless : hp * gibdamage))),
-                count = max(int(ceilf(damage / float(divisor))), 1), amt = clamp(rnd(count) + count, 1, gibpieces) + missed;
+                count = max(int(ceilf(damage / float(divisor))), 1), amt = clamp(rnd(count) + count + missed, 1, gibpieces);
 
             loopi(amt)
             {
