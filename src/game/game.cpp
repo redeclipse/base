@@ -2240,7 +2240,7 @@ namespace game
             {
                 if(vanities[d->vitems[k]].type && !check) continue;
                 if(found[vanities[d->vitems[k]].type]) continue;
-                if(!(vanities[d->vitems[k]].cond&2)) continue;
+                if(!(vanities[d->vitems[k]].cond&(d->obliterated ? 4 : 2))) continue;
 
                 projs::create(pos, dest, true, d, PRJ_VANITY, -1, 0, (rnd(gibfade) + gibfade) / 2, 0, 0, rnd(50) + 10, -1, d->vitems[k], head, 0);
                 found[vanities[d->vitems[k]].type]++;
