@@ -457,6 +457,7 @@ namespace ai
                 });
             }
 
+            #if 0
             if(d->actortype == A_JANITOR)
             {
                 int numdyns = game::numdynents(1);
@@ -479,6 +480,7 @@ namespace ai
                     }
                 }
             }
+            #endif
         }
 
         waypoints[node].route = routeid;

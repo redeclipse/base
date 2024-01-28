@@ -53,6 +53,8 @@ namespace ai
     };
     extern vector<waypoint> waypoints;
 
+    extern bool clipped(const vec &o);
+
     static inline bool iswaypoint(int n)
     {
         return n > 0 && n < waypoints.length();
@@ -244,13 +246,11 @@ namespace ai
 
         void clean()
         {
-            spot = target = vec(0, 0, 0);
             lastaction = lastcheck = enemyseen = enemymillis = 0;
             blocktime = blockseq = targtime = targseq = 0;
             lastaimpos = lastmelee = lastturn = lastbottom = 0;
             lastrun = jumpseed = lastmillis;
             targnode = targlast = enemy = -1;
-            targyaw = targpitch = 0;
         }
 
         void clear(bool tryit = false)
@@ -347,6 +347,7 @@ namespace ai
     extern bool randomnode(gameent *d, aistate &b, const vec &pos, float guard = ALERTMIN, float wander = ALERTMAX);
     extern bool randomnode(gameent *d, aistate &b, float guard = ALERTMIN, float wander = ALERTMAX);
     extern bool violence(gameent *d, aistate &b, gameent *e, int pursue = 0);
+
     extern bool patrol(gameent *d, aistate &b, const vec &pos, float guard = CLOSEDIST, float wander = FARDIST, int walk = 1, bool retry = false);
     extern bool defense(gameent *d, aistate &b, const vec &pos, float guard = CLOSEDIST, float wander = FARDIST, int walk = 0, int actoverride = -1);
 

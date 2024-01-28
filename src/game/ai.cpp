@@ -377,6 +377,32 @@ namespace ai
         return false;
     }
 
+    int closenode(gameent *d, int retries = 0)
+    {
+        vec pos = getbottom(d);
+        int node1 = -1, node2 = -1, node3 = -1;
+        float mindist1 = retries >= 0 ? CLOSEDIST*CLOSEDIST : MINWPDIST*MINWPDIST, mindist2 = retries > 0 ? RETRYDIST*RETRYDIST : mindist1, mindist3 = retries > 0 ? FARDIST*FARDIST : mindist2;
+        loopv(d->ai->route) if(iswaypoint(d->ai->route[i]))
+        {
+            vec epos = waypoints[d->ai->route[i]].o;
+            float dist = epos.squaredist(pos);
+            if(dist > mindist3) continue;
+            if(dist < mindist1) { node1 = i; mindist1 = dist; }
+            else if(retries >= 0)
+            {
+                int entid = obstacles.remap(d, d->ai->route[i], epos);
+                if(entid >= 0)
+                {
+                    if(entid != i) dist = epos.squaredist(pos);
+                    if(dist < mindist2) { node2 = i; mindist2 = dist; }
+                }
+                else if(dist < mindist3) { node3 = i; mindist3 = dist; }
+            }
+        }
+        int n = node1 >= 0 ? node1 : (node2 >= 0 ? node2 : node3);
+        return n >= 0 || retries ? n : closenode(d, retries + 1);
+    }
+
     vec getbottom(gameent *d)
     {
         if(!d->ai) return d->feetpos();
@@ -387,9 +413,17 @@ namespace ai
 
         if(physics::movepitch(d))
         {
-            vec oldpos = d->ai->bottom;
-            physics::droptofloor(d->ai->bottom);
-            if(oldpos.z - d->ai->bottom.z > CLOSEDIST) d->ai->bottom.z = oldpos.z - CLOSEDIST;
+            int n = closenode(d, -1);
+            if(d->ai->route.inrange(n)) d->ai->bottom.z = waypoints[d->ai->route[n]].o.z;
+            else
+            {
+                vec oldpos = d->ai->bottom;
+                physics::droptofloor(d->ai->bottom);
+                if(oldpos.z - d->ai->bottom.z > JANITORFLOAT) d->ai->bottom.z = oldpos.z - JANITORFLOAT;
+                // performance concerns
+                n = closenode(d, -1);
+                if(d->ai->route.inrange(n)) d->ai->bottom.z = waypoints[d->ai->route[n]].o.z;
+            }
         }
 
         return d->ai->bottom;
@@ -1069,31 +1103,6 @@ namespace ai
         return false;
     }
 
-    int closenode(gameent *d)
-    {
-        vec pos = getbottom(d);
-        int node1 = -1, node2 = -1, node3 = -1;
-        float mindist1 = CLOSEDIST*CLOSEDIST, mindist2 = RETRYDIST*RETRYDIST, mindist3 = FARDIST*FARDIST;
-        loopv(d->ai->route) if(iswaypoint(d->ai->route[i]))
-        {
-            vec epos = waypoints[d->ai->route[i]].o;
-            float dist = epos.squaredist(pos);
-            if(dist > mindist3) continue;
-            if(dist < mindist1) { node1 = i; mindist1 = dist; }
-            else
-            {
-                int entid = obstacles.remap(d, d->ai->route[i], epos);
-                if(entid >= 0)
-                {
-                    if(entid != i) dist = epos.squaredist(pos);
-                    if(dist < mindist2) { node2 = i; mindist2 = dist; }
-                }
-                else if(dist < mindist3) { node3 = i; mindist3 = dist; }
-            }
-        }
-        return node1 >= 0 ? node1 : (node2 >= 0 ? node2 : node3);
-    }
-
     void setspot(gameent *d, const vec &pos, int targ = -1)
     {
         if(!d || !d->ai) return;
@@ -1113,16 +1122,24 @@ namespace ai
                 vec dir = vec(d->ai->spot).sub(d->o).normalize();
                 if(!dir.iszero())
                 {
+                    bool reroute = false, found = false;
                     vec pos = vec(dir).mul(d->radius + GUARDRADIUS).add(d->o);
-                    int material = lookupmaterial(pos);
-                    loopk(4) if(material&MAT_DEATH || material&MAT_HURT)
+                    loopk(3)
                     {
-                        if(k == 3) pos = d->o;
-                        pos.addz(-GUARDRADIUS);
-                        material = lookupmaterial(pos);
+                        if(clipped(pos))
+                        {
+                            if(k == 2) pos = d->o;
+                            pos.z -= GUARDRADIUS;
+                            reroute = true;
+                        }
+                        else
+                        {
+                            if(reroute) found = true;
+                            break;
+                        }
                     }
 
-                    if(!(material&MAT_DEATH || material&MAT_HURT)) d->ai->spot = pos;
+                    if(found) d->ai->spot = pos;
                 }
             }
         }
@@ -1194,16 +1211,19 @@ namespace ai
     bool checkroute(gameent *d, int n)
     {
         if(d->ai->route.empty() || !d->ai->route.inrange(n)) return false;
+
         int len = d->ai->route.length();
-        if(len <= 2 || (d->ai->lastcheck && lastmillis-d->ai->lastcheck <= 500)) return false;
-        int w = iswaypoint(d->lastnode) ? d->lastnode : d->ai->route[n], c = min(len, NUMPREVNODES);
-        if(c >= 3) loopj(c) // check ahead to see if we need to go around something
-        {
+        if(len <= 2 || (d->ai->lastcheck && lastmillis - d->ai->lastcheck <= 1000)) return false;
+
+        int w = d->ai->route[n], c = min(len, NUMPREVNODES);
+        if(c >= 3) loopj(c)
+        {   // check ahead to see if we need to go around something
             int m = len-j-1;
             if(m <= 1) return false; // route length is too short from this point
+
             int v = d->ai->route[j];
-            if(d->ai->hasprevnode(v) || obstacles.find(v, d)) // something is in the way, try to remap around it
-            {
+            if(d->ai->hasprevnode(v) || obstacles.find(v, d))
+            {   // something is in the way, try to remap around it
                 d->ai->lastcheck = lastmillis;
                 loopi(m)
                 {
@@ -1212,7 +1232,7 @@ namespace ai
                     {
                         static vector<int> remap; remap.setsize(0);
                         if(route(d, w, t, remap, obstacles))
-                        { // kill what we don't want and put the remap in
+                        {   // kill what we don't want and put the remap in
                             while(d->ai->route.length() > i) d->ai->route.pop();
                             loopvk(remap) d->ai->route.add(remap[k]);
                             return true;
@@ -1498,25 +1518,25 @@ namespace ai
             if(!allowrnd) d->ai->dontmove = true;
             else
             {
-                if(d->blocked || (!d->ai->lastturn || lastmillis - d->ai->lastturn >= 5000))
+                if(d->blocked || (!d->ai->lastturn || lastmillis - d->ai->lastturn >= 10000))
                 {
                     d->ai->targyaw += 90 + rnd(180);
-                    if(physics::movepitch(d)) d->ai->targpitch = -45;
+                    d->ai->targpitch = physics::movepitch(d) ? rnd(51) - 25 : 0;
                     d->ai->lastturn = lastmillis;
+                    fixrange(d->ai->targyaw, d->ai->targpitch);
                 }
-                vec dir(d->ai->targyaw, d->ai->targpitch);
-                setspot(d, vec(getbottom(d)).add(dir.mul(FARDIST)));
+                setspot(d, vec(d->ai->targyaw * RAD, d->ai->targpitch * RAD).mul(CLOSEDIST).add(getbottom(d)));
             }
         }
 
         if(dancing)
         {
-            if(!d->ai->lastturn || lastmillis-d->ai->lastturn >= 500)
+            if(!d->ai->lastturn || lastmillis-d->ai->lastturn >= 1000)
             {
                 d->ai->targyaw = rnd(360);
-                d->ai->targpitch = rnd(178) - 89;
+                d->ai->targpitch = rnd(91) - 45;
                 d->ai->lastturn = lastmillis;
-                if(rnd(d->skill*2) >= d->skill) d->ai->spot.z += rnd(int(d->height*3/2));
+                if(rnd(d->skill*2) >= d->skill) d->ai->spot.z += rnd(int(d->height * 3 / 2));
             }
         }
         else if(A(d->actortype, abilities)&(1<<A_A_PRIMARY) || A(d->actortype, abilities)&(1<<A_A_SECONDARY))
@@ -1632,10 +1652,10 @@ namespace ai
             if(dancing || actors[d->actortype].onlyfwd) frame *= 2;
             else if(!m_insta(game::gamemode, game::mutators))
             {
-                int hp = max(d->gethealth(game::gamemode, game::mutators)/3, 1);
+                int hp = max(d->gethealth(game::gamemode, game::mutators) / 3, 1);
                 if(b.acttype == AI_A_NORMAL && (d->health <= hp || (iswaypoint(d->ai->targnode) && obstacles.find(d->ai->targnode, d))))
                     b.acttype = AI_A_HASTE;
-                if(b.acttype == AI_A_HASTE) frame *= 1+(hp/float(max(d->health, 1)));
+                if(b.acttype == AI_A_HASTE) frame *= 1 + (hp / float(max(d->health, 1)));
             }
 
             game::scaleyawpitch(d->yaw, d->pitch, d->ai->targyaw, d->ai->targpitch, frame * A(d->actortype, aiyawscale), frame * A(d->actortype, aipitchscale));
