@@ -2079,7 +2079,6 @@ namespace entities
                 if(e.attrs[9] < 0) e.attrs[9] = 0; // palindex, clamp
                 while(e.attrs[18] < 0) e.attrs[18] += ANIM_MAX;
                 while(e.attrs[18] >= ANIM_MAX) e.attrs[18] -= ANIM_MAX;
-                if(e.attrs[19] < 0) e.attrs[19] = 0; // anim speed, clamp
                 break;
             }
             case PLAYERSTART:

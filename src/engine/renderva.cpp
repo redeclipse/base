@@ -578,8 +578,8 @@ VAR(0, mmanimoverride, -1, 0, ANIM_ALL);
 void getmapmodelstate(extentity &e, entmodelstate &mdl)
 {
     int anim = (e.attrs[18] > 0 ? e.attrs[18] : ANIM_MAPMODEL);
-    mdl.anim = anim|ANIM_LOOP;
-    mdl.basetime = e.attrs[19];
+    mdl.anim = e.attrs[19] < 0 ? anim|ANIM_SETTIME : anim|ANIM_LOOP;
+    mdl.basetime = e.attrs[19] < 0 ? e.attrs[20] : e.attrs[19] + e.attrs[20];
     if(e.lastemit)
     {
         mdl.anim = e.spawned() ? ANIM_TRIGGER_ON : ANIM_TRIGGER_OFF;
