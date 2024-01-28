@@ -7068,7 +7068,7 @@ namespace UI
     VARF(IDF_PERSIST, compositesize, 1<<1, COMPOSITESIZE, 1<<12, reloadcomp());
     VAR(IDF_PERSIST, compositeuprate, 0, 33, VAR_MAX); // limit updates to this ms
     VAR(IDF_PERSIST, compositelimit, 0, 2, VAR_MAX); // limit updates to this count per cycle
-    VAR(IDF_PERSIST, compositerewind, 0, 0, 1); // rewind if over time limit
+    VAR(IDF_PERSIST, compositerewind, 0, 1, 1); // rewind if over time limit
 
     GLenum compformat(int format = -1)
     {
@@ -7483,7 +7483,7 @@ namespace UI
         if(!pushsurface(SURFACE_COMPOSITE)) return;
 
         bool found = false;
-        int oldhudw = hudw, oldhudh = hudh, oldsf = surfaceformat;
+        int oldhudw = hudw, oldhudh = hudh, oldsf = surfaceformat, oldlm = lastmillis, oldtm = totalmillis;
 
         int processed = 0;
         surface->texs.sort(texsort);
@@ -7494,11 +7494,25 @@ namespace UI
             int delay = 0, elapsed = t->update(delay, compositeuprate);
             if(t->rendered && elapsed < 0) continue;
 
+            found = true;
+
+            if(compositerewind)
+            {
+                lastmillis = oldlm;
+                totalmillis = oldtm;
+
+                int offset = delay > 1 ? elapsed % delay : delay;
+                if(offset > 0)
+                {
+                    lastmillis -= int(offset * timescale / 100.f);
+                    totalmillis -= offset;
+                }
+            }
+
             GLERROR;
             if(!t->fbo) glGenFramebuffers_(1, &t->fbo);
             glBindFramebuffer_(GL_FRAMEBUFFER, t->fbo);
             uicurfbo = t->fbo;
-            found = true;
 
             if(!t->id)
             {
@@ -7541,7 +7555,6 @@ namespace UI
             }
 
             t->last = totalmillis;
-            if(compositerewind && delay > 1) t->last -= elapsed % delay; // rewind to when it should have occurred
             t->rendered = true;
 
             if(delay < 0)
@@ -7564,6 +7577,8 @@ namespace UI
             hudw = oldhudw;
             hudh = oldhudh;
             surfaceformat = oldsf;
+            lastmillis = oldlm;
+            totalmillis = oldtm;
             glBindFramebuffer_(GL_FRAMEBUFFER, 0);
             uicurfbo = 0;
             glViewport(0, 0, hudw, hudh);
