@@ -2653,7 +2653,7 @@ namespace game
 
     int findcolour(gameent *d, int comb, bool tone, float level, float mix)
     {
-        if(tone)
+        if(!tone)
         {
             if(d->hasprize) return pulsehexcol(PULSE_READY);
             if(game::focus->dominated.find(d) >= 0) return pulsehexcol(PULSE_DOMINATE);
