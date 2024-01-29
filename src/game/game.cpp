@@ -1262,7 +1262,7 @@ namespace game
                 adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d, PULSE_SHOCK).mul(pc), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
             }
 
-            if(d->hasprize) adddynlight(d->center(), d->height * 10, pulsecolour(d, PULSE_SHOCK), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
+            if(d->hasprize || game::focus->dominated.find(d)) adddynlight(d->center(), d->height * 10, pulsecolour(d, PULSE_SHOCK), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
         }
     }
 
@@ -1621,7 +1621,7 @@ namespace game
             }
         }
 
-        if(d->hasprize && d->isalive())
+        if((d->hasprize || game::focus->dominated.find(d)) && d->isalive())
         {
             if(!issound(d->plchan[PLCHAN_PRIZE]))
                 emitsound(S_PRIZELOOP, getplayersoundpos(d), d, &d->plchan[PLCHAN_PRIZE], SND_LOOP|SND_PRIORITY);
@@ -2648,7 +2648,7 @@ namespace game
 
     int findcolour(gameent *d, int comb, bool tone, float level, float mix)
     {
-        if(d->hasprize) return pulsehexcol(PULSE_DISCO);
+        if(d->hasprize || game::focus->dominated.find(d)) return pulsehexcol(PULSE_DISCO);
 
         int col = d->colours[comb ? 1 : 0];
         switch(comb)
@@ -4377,7 +4377,8 @@ namespace game
 
     bool haloallow(const vec &o, gameent *d, bool justtest, bool check)
     {
-        if(d->actortype >= A_ENVIRONMENT || !wanthalos(check, (d == focus ? playerhalos&1 : playerhalos&2) != 0) || (d == focus && inzoom())) return false;
+        if(d->actortype >= A_ENVIRONMENT && !d->hasprize) return false;
+        if(!wanthalos(check, (d == focus ? playerhalos&1 : playerhalos&2) != 0) || (d == focus && inzoom())) return false;
         if(justtest) return true;
         vec dir(0, 0, 0);
         float dist = -1;
