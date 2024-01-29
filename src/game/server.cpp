@@ -6920,7 +6920,7 @@ namespace server
                         {
                             if(cp->actortype != A_JANITOR || cp->state != CS_ALIVE) break;
                             qmsg = true;
-                            cp->hasprize = -1;
+                            cp->hasprize = G(janitorprize);
                             break;
                         }
                         default:

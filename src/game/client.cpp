@@ -1047,6 +1047,8 @@ namespace client
     CLCOMMANDM(impulse, "si", (char *who, int *n), intret(*n >= 0 && *n < IM_MAX ? d->impulse[*n] : 0));
 
     CLCOMMAND(buffing, intret(d->lastbuff));
+    CLCOMMAND(hasprize, intret(d->hasprize));
+    CLCOMMAND(collects, intret(d->collects.length()));
 
     CLCOMMAND(burnfunc, intret(d->burntime ? d->burnfunc(lastmillis, d->burntime) : 0));
     CLCOMMAND(bleedfunc, intret(d->bleedtime ? d->bleedfunc(lastmillis, d->bleedtime) : 0));

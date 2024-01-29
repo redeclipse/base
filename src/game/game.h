@@ -1371,9 +1371,9 @@ struct gameent : dynent, clientstate
         if(type == PRJ_ENT) c.size *= 0.3f;
         c.name = name;
 
-        if(ai && count < janitorprize && collects.length() >= janitorprize)
+        if(ai && count < janitorready && collects.length() >= janitorready)
         {   // award a prize
-            hasprize = -1;
+            hasprize = janitorprize;
             return true;
         }
 
@@ -1382,9 +1382,9 @@ struct gameent : dynent, clientstate
 
     void collectprize()
     {
-        while(collects.length() < janitorprize) // just ensure we have enough in there
+        while(collects.length() < janitorready) // just ensure we have enough in there
             collected(rnd(2) ? PRJ_GIBS : PRJ_DEBRIS, 0.5f + rnd(101)/100.f);
-        hasprize = -1;
+        hasprize = janitorprize;
     }
 
     void addstun(int weap, int millis, int delay, float scale, float gravity)

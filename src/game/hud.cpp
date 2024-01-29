@@ -570,8 +570,8 @@ namespace hud
         {
             gameent *d = NULL;
             int numdyns = game::numdynents();
-            loopi(numdyns) if((d = (gameent *)game::iterdynents(i)) && d->actortype < A_ENEMY && d != game::focus && !d->isspectator()) // do the actor test here so it doesn't close UIs that don't exist
-                MAKEUI(player, d->clientnum, (game::focus->isspectator() || (m_team(game::gamemode, game::mutators) && d->team == game::focus->team)) && game::haloallow(camera1->o, d, false, false), d->abovehead());
+            loopi(numdyns) if((d = (gameent *)game::iterdynents(i)) && (d->hasprize || d->actortype < A_ENEMY) && d != game::focus && !d->isspectator()) // do the actor test here so it doesn't close UIs that don't exist
+                MAKEUI(player, d->clientnum, (d->hasprize || game::focus->isspectator() || (m_team(game::gamemode, game::mutators) && d->team == game::focus->team)) && game::haloallow(camera1->o, d, false, false), d->abovehead());
         }
 
         entities::checkui();
@@ -1250,18 +1250,21 @@ namespace hud
             drawpointertex(getpointer(index, game::focus->weapselect), cx-cs/2, cy-cs/2, cs, n.r, n.g, n.b, fade);
             if(index > POINTER_UI)
             {
-                if(showcirclebar) drawcirclebar(cx, cy, s, wantvisor, blend);
-                if(game::focus->state == CS_ALIVE && game::focus->hasweap(game::focus->weapselect, m_weapon(game::focus->actortype, game::gamemode, game::mutators)))
+                if(game::focus->isalive())
                 {
-                    if(showclips) drawclip(game::focus->weapselect, cx, cy, s, false, wantvisor, blend);
-                    if(showindicator) drawindicator(game::focus->weapselect, cx, cy, int(indicatorsize*s), physics::secondaryweap(game::focus), wantvisor, blend);
-                }
-                if(fade > 0 && crosshairhitspeed && totalmillis-game::focus->lasthit <= crosshairhitspeed)
-                {
-                    vec c2(1, 1, 1);
-                    if(hitcrosshairtone) skewcolour(c2.r, c2.g, c2.b, hitcrosshairtone);
-                    else c2 = c;
-                    drawpointertex(getpointer(POINTER_HIT, game::focus->weapselect), cx-cs/2, cy-cs/2, cs, c2.r, c2.g, c2.b, fade);
+                    if(showcirclebar) drawcirclebar(cx, cy, s, wantvisor, blend);
+                    if(game::focus->hasweap(game::focus->weapselect, m_weapon(game::focus->actortype, game::gamemode, game::mutators)))
+                    {
+                        if(showclips) drawclip(game::focus->weapselect, cx, cy, s, false, wantvisor, blend);
+                        if(showindicator) drawindicator(game::focus->weapselect, cx, cy, int(indicatorsize*s), physics::secondaryweap(game::focus), wantvisor, blend);
+                    }
+                    if(fade > 0 && crosshairhitspeed && totalmillis-game::focus->lasthit <= crosshairhitspeed)
+                    {
+                        vec c2(1, 1, 1);
+                        if(hitcrosshairtone) skewcolour(c2.r, c2.g, c2.b, hitcrosshairtone);
+                        else c2 = c;
+                        drawpointertex(getpointer(POINTER_HIT, game::focus->weapselect), cx-cs/2, cy-cs/2, cs, c2.r, c2.g, c2.b, fade);
+                    }
                 }
                 if(!wantvisor && crosshairdistance && game::focus->state == CS_EDITING)
                 {

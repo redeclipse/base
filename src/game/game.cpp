@@ -3225,7 +3225,7 @@ namespace game
             }
             case cament::PLAYER:
             {
-                if(v->player && game::haloallow(c->o, v->player, true, false)) return true; // override and switch to x-ray
+                if(v->player && haloallow(c->o, v->player, false, false)) return true; // override and switch to x-ray
                 break;
             }
             default: break;
@@ -4382,7 +4382,8 @@ namespace game
 
     bool haloallow(const vec &o, gameent *d, bool justtest, bool check)
     {
-        if(d->actortype >= A_ENVIRONMENT && !d->hasprize) return false;
+        if(d->hasprize) return true;
+        if(d->actortype >= A_ENVIRONMENT) return false;
         if(!wanthalos(check, (d == focus ? playerhalos&1 : playerhalos&2) != 0) || (d == focus && inzoom())) return false;
         if(justtest) return true;
         vec dir(0, 0, 0);
@@ -4428,7 +4429,7 @@ namespace game
         {
             if(haloallow(camera1->o, d))
             {
-                if(focus->isobserver() || (m_team(gamemode, mutators) && focus->team == d->team)) mdl.flags |= MDL_HALO_TOP;
+                if(focus->hasprize || focus->isobserver() || (m_team(gamemode, mutators) && focus->team == d->team)) mdl.flags |= MDL_HALO_TOP;
             }
             else
             {
