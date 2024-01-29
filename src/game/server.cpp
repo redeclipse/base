@@ -842,7 +842,7 @@ namespace server
                 d.ent = ent;
                 d.ammo = 1; // one prize per customer
                 ci->dropped.add(d.ent, d.ammo);
-                if(realflags) *realflags |= HIT_PRIZE;
+                if(realflags) *realflags = ((*realflags)|HIT_PRIZE);
             }
         }
 
@@ -4442,6 +4442,9 @@ namespace server
 
     void addhistory(clientinfo *m, clientinfo *v, int millis)
     {
+        if(m->actortype >= A_ENEMY || v->actortype >= A_ENEMY)
+            return; // don't give extra for enemies
+
         bool found = false;
         loopv(m->damagelog) if (m->damagelog[i].clientnum == v->clientnum)
         {
