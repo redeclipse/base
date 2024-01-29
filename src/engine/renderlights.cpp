@@ -438,7 +438,7 @@ void setupscale(int sw, int sh, int w, int h)
 
 GLuint shouldscale()
 {
-    return drawtex && drawtex != DRAWTEX_MAPSHOT ? 0 : scalefbo[0];
+    return drawtex ? 0 : scalefbo[0];
 }
 
 void doscale(GLuint outfbo)
