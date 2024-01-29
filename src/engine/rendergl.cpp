@@ -2579,12 +2579,13 @@ FVAR(IDF_PERSIST, visordistort, -2, 2.0f, 2);
 FVAR(IDF_PERSIST, visornormal, -2, 1.175f, 2);
 FVAR(IDF_PERSIST, visorscalex, FVAR_NONZERO, 0.9075f, 2);
 FVAR(IDF_PERSIST, visorscaley, FVAR_NONZERO, 0.9075f, 2);
+VAR(IDF_PERSIST, visorscanedit, 0, 1, 7); // bit: 1 = scanlines, 2 = noise, 4 = flicker
 FVAR(IDF_PERSIST, visorscanlines, 0.0, 2.66f, 16.0f);
 VAR(IDF_PERSIST|IDF_HEX, visorscanlinemixcolour, 0, 0xFFFFFF, 0xFFFFFF);
 FVAR(IDF_PERSIST, visorscanlinemixblend, 0.0, 0.67f, 1.0f);
 FVAR(IDF_PERSIST, visorscanlineblend, 0.0, 0.25f, 16.0f);
 FVAR(IDF_PERSIST, visornoiseblend, 0.0, 0.125f, 16.0f);
-FVAR(IDF_PERSIST, visorflickerblend, 0.0, 0.01f, 16.0f);
+FVAR(IDF_PERSIST, visorflickerblend, 0.0, 0.015f, 16.0f);
 
 void cleanupvisor();
 void setupvisor(int w, int h)
@@ -2726,7 +2727,10 @@ void gl_drawhud(bool noview = false)
         else SETSHADER(hudvisor);
 
         LOCALPARAMF(visorsize, visorw, visorh, 1.f/visorw, 1.f/visorh);
-        LOCALPARAMF(visorfx, visorscanlines, visorscanlineblend, visornoiseblend, editmode ? 0.f : visorflickerblend);
+
+        if(!editmode) LOCALPARAMF(visorfx, visorscanlines, visorscanlineblend, visornoiseblend, visorflickerblend);
+        else LOCALPARAMF(visorfx, visorscanedit&1 ? visorscanlines : 0.f, visorscanedit&1 ? visorscanlineblend : 0.f, visorscanedit&2 ? visornoiseblend : 0.f, visorscanedit&4 ? visorflickerblend : 0.f);
+
         vec4 color = vec4::fromcolor(visorscanlinemixcolour, visorscanlinemixblend);
         LOCALPARAMF(visorfxcol, color.r, color.g, color.b, color.a);
         LOCALPARAMF(time, lastmillis/1000.f);

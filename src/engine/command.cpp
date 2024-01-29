@@ -5510,7 +5510,7 @@ void clear_command()
     mrandoms.setsize(0);
 }
 
-#define COLOURDARK 0.45f
+#define COLOURDARK 0.4f
 #define COLOURVAR(a,b) \
     VAR(IDF_PERSIST|IDF_HEX, colour##a, 0, b, 0xFFFFFF); \
     VAR(IDF_PERSIST|IDF_HEX, colourdark##a, 0, ((int(COLOURDARK*((b>>16)&0xFF)))<<16)|((int(COLOURDARK*((b>>8)&0xFF)))<<8)|(int(COLOURDARK*(b&0xFF))), 0xFFFFFF);
@@ -5559,8 +5559,8 @@ int getpulsehexcol(int n, int cycle)
     if(n >= 0) return n;
     return pulsehexcol(INVPULSE(n), cycle);
 }
-ICOMMAND(0, pulsecolour, "ib", (int *n, int *cycle), intret(pulsehexcol(*n, *cycle >= -1 ? *cycle : 50)));
-ICOMMAND(0, getpulsecolour, "ib", (int *n, int *cycle), intret(getpulsehexcol(*n, *cycle >= -1 ? *cycle : 50)));
+ICOMMAND(0, pulsecolour, "ib", (int *n, int *cycle), intret(pulsehexcol(*n, *cycle >= -1 ? *cycle : 100)));
+ICOMMAND(0, getpulsecolour, "ib", (int *n, int *cycle), intret(getpulsehexcol(*n, *cycle >= -1 ? *cycle : 100)));
 
 #ifndef STANDALONE
 vec pulsecolour(physent *d, int n, int cycle)

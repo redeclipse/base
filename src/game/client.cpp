@@ -2927,7 +2927,6 @@ namespace client
                     m->burntime = getint(p);
                     m->burndelay = getint(p);
                     m->burndamage = getint(p);
-                    conoutf(colouryellow, "burn res: %d %d %d", m->burntime, m->burndelay, m->burndamage);
                     break;
                 }
 
@@ -2939,7 +2938,6 @@ namespace client
                     m->bleedtime = getint(p);
                     m->bleeddelay = getint(p);
                     m->bleeddamage = getint(p);
-                    conoutf(colouryellow, "bleed res: %d %d %d", m->bleedtime, m->bleeddelay, m->bleeddamage);
                     break;
                 }
 
@@ -2955,7 +2953,6 @@ namespace client
                     m->shockstunscale = getfloat(p);
                     m->shockstunfall = getfloat(p);
                     m->shockstuntime = getint(p);
-                    conoutf(colouryellow, "shock res: %d %d %d %d %f %f %d", m->shocktime, m->shockdelay, m->shockdamage, m->shockstun, m->shockstunscale, m->shockstunfall, m->shockstuntime);
                     break;
                 }
 
@@ -2967,7 +2964,6 @@ namespace client
                     m->corrodetime = getint(p);
                     m->corrodedelay = getint(p);
                     m->corrodedamage = getint(p);
-                    conoutf(colouryellow, "corrode res: %d %d %d", m->corrodetime, m->corrodedelay, m->corrodedamage);
                     break;
                 }
 

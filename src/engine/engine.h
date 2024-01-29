@@ -1126,7 +1126,7 @@ extern const char *getprintable(int arg);
 ENUM_DLN(PULSE)
 
 ENUM_VAR(PULSE_LAST, PULSE_MAX - 1);
-ENUM_VAR(PULSE_COLS, 8);
+ENUM_VAR(PULSE_COLS, 11);
 
 #define PULSE(x) (PULSE_##x)
 #define INVPULSE(x) (-1-(x))
@@ -1134,31 +1134,31 @@ ENUM_VAR(PULSE_COLS, 8);
 
 #ifdef CPP_ENGINE_COMMAND
 extern const int pulsecols[PULSE_MAX][PULSE_COLS] = {
-    { 0xFF4500, 0xFF6347, 0xFF7F50, 0xFF8C00, 0xFFA500, 0xFFD700, 0xDAA520, 0xB8860B }, // brighter flames burning
-    { 0xFFFFCC, 0xFFFF99, 0xFFFF66, 0xFFFF33, 0xFFF68F, 0xFFEFD5, 0xFFE4B5, 0xFFE4C4 }, // brighter burning
-    { 0xFFB6C1, 0xFFA07A, 0xFFFFE0, 0x90EE90, 0xADD8E6, 0xD8BFD8, 0xFFE4E1, 0xE6E6FA }, // disco time
-    { 0x3D59AB, 0x0000CD, 0x4169E1, 0x0000FF, 0x6495ED, 0x1E90FF, 0x87CEFA, 0x87CEEB }, // electric shock
-    { 0xFF0000, 0xDC143C, 0xB22222, 0xFF6347, 0xFF4500, 0xFF0000, 0xCD5C5C, 0x8B0000 }, // red bleed
-    { 0xFFFFE0, 0xFFFFF0, 0xFFFACD, 0xFFF8DC, 0xFFEFD5, 0xFFE4B5, 0xFFDAB9, 0xFFDEAD }, // yellow shield/buff
-    { 0xFF4500, 0xFF6347, 0xFF7F50, 0xFFFFFF, 0xFFA07A, 0xFFDEAD, 0xFFDAB9, 0xFFE4B5 }, // warning
-    { 0x00FF00, 0x32CD32, 0x228B22, 0x7CFC00, 0x7FFF00, 0x32CD32, 0x98FB98, 0x90EE90 }, // green regen
-    { 0xFFFFFF, 0xF8F8FF, 0xF5F5F5, 0xDCDCDC, 0xD3D3D3, 0xC0C0C0, 0xA9A9A9, 0x808080 }, // flash
-    { 0xFF0000, 0xFF7F00, 0xFFFF00, 0x00FF00, 0x0000FF, 0x4B0082, 0x9400D3, 0x8A2BE2 }, // rainbow
-    { 0x9ACD32, 0x6B8E23, 0x556B2F, 0x808000, 0x6B8E23, 0x556B2F, 0x6B8E23, 0x556B2F }  // acid corrosion
+    { 0xFF6347, 0xFF7F24, 0xFF8C00, 0xFFA500, 0xFFD700, 0xFF4500, 0xD2691E, 0xB22222, 0xA52A2A, 0x8B4513, 0x800000 }, // flames burning
+    { 0xFFE4C4, 0xFFDEAD, 0xFFDAB9, 0xFFE4B5, 0xFFF5EE, 0xFFF8DC, 0xFFFAF0, 0xFFFFFF, 0xF0FFF0, 0xF5FFFA, 0xF0FFFF }, // brighter burning
+    { 0xFFB6C1, 0xFFA07A, 0xFFFFE0, 0x90EE90, 0xADD8E6, 0xD8BFD8, 0xFFE4E1, 0xE6E6FA, 0xDDA0DD, 0xDA70D6, 0xEE82EE }, // disco time
+    { 0x3D59AB, 0x0000CD, 0x4169E1, 0x0000FF, 0x6495ED, 0x1E90FF, 0x87CEFA, 0x87CEEB, 0x4682B4, 0x5F9EA0, 0x48D1CC }, // electric shock
+    { 0xFF0000, 0xDC143C, 0xB22222, 0xFF6347, 0xFF4500, 0xFF0000, 0xCD5C5C, 0x8B0000, 0xA52A2A, 0x8B4513, 0x800000 }, // red bleed
+    { 0xFFFFE0, 0xFFFFF0, 0xFFFACD, 0xFFF8DC, 0xFFEFD5, 0xFFE4B5, 0xFFDAB9, 0xFFDEAD, 0xF5DEB3, 0xFFE4C4, 0xFFEBCD }, // shield/buff
+    { 0xFF4500, 0xFF6347, 0xFF7F50, 0xFFA500, 0xFF8C00, 0xFFD700, 0xFFA07A, 0xFFDEAD, 0xD2691E, 0xB22222, 0xA52A2A }, // warning
+    { 0x00FF00, 0x32CD32, 0x228B22, 0x7CFC00, 0x7FFF00, 0x32CD32, 0x98FB98, 0x90EE90, 0x00FA9A, 0x3CB371, 0x2E8B57 }, // green regen
+    { 0xFFFFFF, 0xF8F8FF, 0xF5F5F5, 0xDCDCDC, 0xD3D3D3, 0xC0C0C0, 0xA9A9A9, 0x808080, 0x696969, 0x778899, 0x708090 }, // flash
+    { 0xFF0000, 0xFF7F00, 0xFFFF00, 0x00FF00, 0x0000FF, 0x4B0082, 0x9400D3, 0x8A2BE2, 0x9932CC, 0x8A2BE2, 0x9400D3 }, // rainbow
+    { 0x808000, 0x9ACD32, 0x556B2F, 0x6B8E23, 0x808000, 0x9ACD32, 0x556B2F, 0x6B8E23, 0x708238, 0x78866B, 0x556832 }  // acid corrosion
 };
 #else // CPP_ENGINE_COMMAND
 extern const int pulsecols[PULSE_MAX][PULSE_COLS];
 #endif // CPP_ENGINE_COMMAND
 
-extern vec pulsecolour(int n = 0, int cycle = 50);
-extern int pulsehexcol(int n = 0, int cycle = 50);
-extern vec getpulsecolour(int n = 0, int cycle = 50);
-extern int getpulsehexcol(int n = 0, int cycle = 50);
+extern vec pulsecolour(int n = 0, int cycle = 100);
+extern int pulsehexcol(int n = 0, int cycle = 100);
+extern vec getpulsecolour(int n = 0, int cycle = 100);
+extern int getpulsehexcol(int n = 0, int cycle = 100);
 #ifndef STANDALONE
-extern vec pulsecolour(physent *d, int n = 0, int cycle = 50);
-extern int pulsehexcol(physent *d, int n = 0, int cycle = 50);
-extern vec getpulsecolour(physent *d, int n = 0, int cycle = 50);
-extern int getpulsehexcol(physent *d, int n = 0, int cycle = 50);
+extern vec pulsecolour(physent *d, int n = 0, int cycle = 100);
+extern int pulsehexcol(physent *d, int n = 0, int cycle = 100);
+extern vec getpulsecolour(physent *d, int n = 0, int cycle = 100);
+extern int getpulsehexcol(physent *d, int n = 0, int cycle = 100);
 #endif // STANDALONE
 #define PCVAR(flags, name, cur) VAR(flags|IDF_HEX, name, PC(LAST), cur, 0xFFFFFF)
 #endif // CPP_ENGINE_HEADER
