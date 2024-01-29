@@ -1601,15 +1601,15 @@ namespace ai
 
                 if(d->ai->dontmove || insight || hasseen)
                 {
-                    bool kamikaze = d->hasprize || A(d->actortype, abilities)&(1<<A_A_KAMIKAZE);
+                    bool kamikaze = A(d->actortype, abilities)&(1<<A_A_KAMIKAZE);
                     frame *= insight || d->skill > 100 ? 1.5f : (hasseen ? 1.25f : 1.f);
 
-                    if(kamikaze || d->o.dist(e->o) < CLOSEDIST)
+                    if(d->hasprize || kamikaze || d->o.dist(e->o) < CLOSEDIST)
                     {
                         frame *= 2.f;
                         d->ai->dontmove = false;
 
-                        if((kamikaze || W2(d->weapselect, aidist, alt) < CLOSEDIST) && lockon(d, e, kamikaze ? FARDIST : CLOSEDIST))
+                        if((d->hasprize || kamikaze || W2(d->weapselect, aidist, alt) < CLOSEDIST) && lockon(d, e, d->hasprize ? FARDIST : CLOSEDIST))
                         {
                             b.acttype = AI_A_LOCKON;
                             d->ai->targyaw = yaw;

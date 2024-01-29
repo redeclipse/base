@@ -796,7 +796,7 @@ namespace server
         }
     }
 
-    bool dropitems(clientinfo *ci, int flags = DROP_RESET, int *realflags = NULL)
+    bool dropitems(clientinfo *ci, int flags = DROP_RESET)
     {
         bool kamikaze = false;
         int ktype = A(ci->actortype, abilities)&(1<<A_A_KAMIKAZE) ? 3 : G(kamikaze);
@@ -842,9 +842,10 @@ namespace server
                 d.ent = ent;
                 d.ammo = 1; // one prize per customer
                 ci->dropped.add(d.ent, d.ammo);
-                if(realflags) *realflags = ((*realflags)|HIT_PRIZE);
             }
+            else ci->hasprize = 0;
         }
+        else ci->hasprize = 0;
 
         if(!drop.empty())
             sendf(-1, 1, "ri3iv", N_WEAPDROP, ci->clientnum, -1, drop.length(), drop.length()*sizeof(droplist)/sizeof(int), drop.getbuf());
@@ -4887,7 +4888,8 @@ namespace server
             m->localtotaldeaths++;
             m->rewards[1] = 0;
 
-            dropitems(m, DROP_DEATH, &realflags);
+            dropitems(m, DROP_DEATH);
+            if(m->hasprize) realflags |= HIT_PRIZE;
 
             static vector<int> dmglog;
             dmglog.setsize(0);
