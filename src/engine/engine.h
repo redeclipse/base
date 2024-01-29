@@ -1121,7 +1121,7 @@ extern const char *getprintable(int arg);
 
 #define PULSE_ENUM(en, um) \
     en(um, Fire, FIRE) en(um, Burn, BURN) en(um, Disco, DISCO) en(um, Shock, SHOCK) en(um, Bleed, BLEED) \
-    en(um, Buff, BUFF) en(um, Warn, WARN) en(um, Regen, REGEN) en(um, Flash, FLASH) en(um, Rainbow, RAINBOW) \
+    en(um, Buff, BUFF) en(um, Warn, WARN) en(um, Health, HEALTH) en(um, Flash, FLASH) en(um, Rainbow, RAINBOW) \
     en(um, Corrode, CORRODE) en(um, Power, POWER) en(um, Earth, EARTH) en(um, Gray, GRAY) en(um, Alert, ALERT) \
     en(um, Growth, GROWTH) en(um, Magic, MAGIC) en(um, Divine, DIVINE) en(um, Shadow, SHADOW) \
     en(um, Headshot, HEADSHOT) en(um, Spree, SPREE) en(um, Break, BREAK) en(um, Ready, READY) en(um, Prize, PRIZE) \
@@ -1132,6 +1132,7 @@ ENUM_DLN(PULSE)
 
 ENUM_VAR(PULSE_LAST, PULSE_MAX - 1);
 ENUM_VAR(PULSE_COLS, 11);
+ENUM_VAR(PULSE_CYCLE, 100);
 
 #define PULSE(x) (PULSE_##x)
 #define INVPULSE(x) (-1-(x))
@@ -1146,7 +1147,7 @@ extern const int pulsecols[PULSE_MAX][PULSE_COLS] = {
     { 0xFF0000, 0xDC143C, 0xB22222, 0xFF6347, 0xFF4500, 0xFF0000, 0xCD5C5C, 0x8B0000, 0xA52A2A, 0x8B4513, 0x800000 }, // red bleed
     { 0xFFFFE0, 0xFFFFF0, 0xFFFACD, 0xFFF8DC, 0xFFEFD5, 0xFFE4B5, 0xFFDAB9, 0xFFDEAD, 0xF5DEB3, 0xFFE4C4, 0xFFEBCD }, // shield/buff
     { 0xFF4500, 0xFF6347, 0xFF7F50, 0xFFA500, 0xFF8C00, 0xFFD700, 0xFFA07A, 0xFFDEAD, 0xD2691E, 0xB22222, 0xA52A2A }, // warning
-    { 0x00FF00, 0x32CD32, 0x228B22, 0x7CFC00, 0x7FFF00, 0x32CD32, 0x98FB98, 0x90EE90, 0x00FA9A, 0x3CB371, 0x2E8B57 }, // green regen
+    { 0xFF0000, 0xFF4500, 0xFF8C00, 0xFFA500, 0xFFD700, 0xFFFF00, 0xADFF2F, 0x7CFC00, 0x00FF00, 0x40E0D0, 0x1E90FF }, // health regen
     { 0xFFFFFF, 0xF8F8FF, 0xF5F5F5, 0xDCDCDC, 0xD3D3D3, 0xC0C0C0, 0xA9A9A9, 0x808080, 0x696969, 0x778899, 0x708090 }, // flash
     { 0xFF0000, 0xFF7F00, 0xFFFF00, 0x00FF00, 0x0000FF, 0x4B0082, 0x9400D3, 0x8A2BE2, 0x9932CC, 0x8A2BE2, 0x9400D3 }, // rainbow
     { 0x7FFF00, 0xADFF2F, 0x32CD32, 0x00FF7F, 0x00FA9A, 0x3CB371, 0x2E8B57, 0x228B22, 0x6B8E23, 0x808000, 0x556B2F }, // acid corrosion
@@ -1173,15 +1174,15 @@ extern const int pulsecols[PULSE_MAX][PULSE_COLS] = {
 extern const int pulsecols[PULSE_MAX][PULSE_COLS];
 #endif // CPP_ENGINE_COMMAND
 
-extern vec pulsecolour(int n = 0, int cycle = 100);
-extern int pulsehexcol(int n = 0, int cycle = 100);
-extern vec getpulsecolour(int n = 0, int cycle = 100);
-extern int getpulsehexcol(int n = 0, int cycle = 100);
+extern vec pulsecolour(int n = 0, int cycle = PULSE_CYCLE);
+extern int pulsehexcol(int n = 0, int cycle = PULSE_CYCLE);
+extern vec getpulsecolour(int n = 0, int cycle = PULSE_CYCLE);
+extern int getpulsehexcol(int n = 0, int cycle = PULSE_CYCLE);
 #ifndef STANDALONE
-extern vec pulsecolour(physent *d, int n = 0, int cycle = 100);
-extern int pulsehexcol(physent *d, int n = 0, int cycle = 100);
-extern vec getpulsecolour(physent *d, int n = 0, int cycle = 100);
-extern int getpulsehexcol(physent *d, int n = 0, int cycle = 100);
+extern vec pulsecolour(physent *d, int n = 0, int cycle = PULSE_CYCLE);
+extern int pulsehexcol(physent *d, int n = 0, int cycle = PULSE_CYCLE);
+extern vec getpulsecolour(physent *d, int n = 0, int cycle = PULSE_CYCLE);
+extern int getpulsehexcol(physent *d, int n = 0, int cycle = PULSE_CYCLE);
 #endif // STANDALONE
 #define PCVAR(flags, name, cur) VAR(flags|IDF_HEX, name, PC(LAST), cur, 0xFFFFFF)
 #endif // CPP_ENGINE_HEADER

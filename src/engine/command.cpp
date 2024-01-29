@@ -5559,8 +5559,8 @@ int getpulsehexcol(int n, int cycle)
     if(n >= 0) return n;
     return pulsehexcol(INVPULSE(n), cycle);
 }
-ICOMMAND(0, pulsecolour, "ib", (int *n, int *cycle), intret(pulsehexcol(*n, *cycle >= -1 ? *cycle : 100)));
-ICOMMAND(0, getpulsecolour, "ib", (int *n, int *cycle), intret(getpulsehexcol(*n, *cycle >= -1 ? *cycle : 100)));
+ICOMMAND(0, pulsecolour, "ib", (int *n, int *cycle), intret(pulsehexcol(*n, *cycle >= -1 ? *cycle : int(PULSE_CYCLE))));
+ICOMMAND(0, getpulsecolour, "ib", (int *n, int *cycle), intret(getpulsehexcol(*n, *cycle >= -1 ? *cycle : int(PULSE_CYCLE))));
 
 #ifndef STANDALONE
 vec pulsecolour(physent *d, int n, int cycle)
