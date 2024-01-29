@@ -24,7 +24,7 @@ namespace entities
     FVAR(IDF_PERSIST, showentavailable, 0, 1, 1);
     FVAR(IDF_PERSIST, showentunavailable, 0, 0.125f, 1);
 
-    DEFUIVARS(entity, SURFACE_WORLD, 1024);
+    DEFUIVARS(entity, SURFACE_WORLD, 2048);
 
     VAR(IDF_PERSIST, entityhalos, 0, 1, 1);
     FVAR(IDF_PERSIST, entselblend, 0, 1, 1);
@@ -3536,7 +3536,7 @@ namespace entities
             if(!editcheck && enttype[e.type].usetype != EU_ITEM) continue;
 
             vec curpos = vec(editcheck ? e.o : e.pos()).addz(max(enttype[e.type].radius, 4));
-            MAKEUI(entity, i, true, editcheck && (enthover.find(i) >= 0 || entgroup.find(i) >= 0), curpos);
+            MAKEUI(entity, i, editcheck && (enthover.find(i) >= 0 || entgroup.find(i) >= 0), curpos);
 
             if(++numdrawn >= showentmax) break;
         }

@@ -907,7 +907,7 @@ namespace client
         if(m_duke(game::gamemode, game::mutators) && (!d->lastdeath || lastmillis-d->lastdeath >= 1000)) return false;
         dir = vec(d->center()).sub(o);
         dist = dir.magnitude();
-        return d->hasprize || game::focus->dominated.find(d) >= 0 || !hud::radarlimited(dist);
+        return d->hasprize || !hud::radarlimited(dist);
     }
 
     CLCOMMANDM(radarallow, "sb", (char *who, int *self),
@@ -1093,7 +1093,7 @@ namespace client
             int iter = len/rescount, count = 0, ptype = -1, cur = lastmillis%len;
             if(critical)
             {
-                if(cur >= count*iter) ptype = PULSE_WARN;
+                if(cur >= count*iter) ptype = PULSE_ALERT;
                 count++;
             }
             if(buff)

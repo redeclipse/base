@@ -1244,7 +1244,7 @@ namespace game
                     if(fluc >= 0.25f) fluc = (0.25f+0.03f-fluc)*(0.25f/0.03f);
                     pc *= 0.75f+fluc;
                 }
-                adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d, PULSE_BURN).mul(pc), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
+                adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d, PULSE_BURN, -1).mul(pc), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
             }
 
             if(d->shocktime && d->shockfunc(lastmillis, d->shocktime))
@@ -1259,10 +1259,11 @@ namespace game
                     if(fluc >= 0.25f) fluc = (0.25f+0.03f-fluc)*(0.25f/0.03f);
                     pc *= 0.75f+fluc;
                 }
-                adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d, PULSE_SHOCK).mul(pc), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
+                adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d, PULSE_SHOCK, -1).mul(pc), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
             }
 
-            if(d->hasprize || game::focus->dominated.find(d) >= 0) adddynlight(d->center(), d->height * 10, pulsecolour(d, PULSE_SHOCK), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
+            if(d->hasprize) adddynlight(d->center(), d->height * 10, pulsecolour(d, PULSE_READY), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
+            else if(game::focus->dominated.find(d) >= 0)  adddynlight(d->center(), d->height * 10, pulsecolour(d, PULSE_DOMINATE), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
         }
     }
 
@@ -4466,15 +4467,14 @@ namespace game
                 height *= 2.2f;
             }
 
-            vec origin = d->center(), col = pulsecolour(d, PULSE_SHOCK), rad = vec(radius, radius, height).mul(blend);
-            int colour = (int(col.x * 255) << 16)|(int(col.y * 255) << 8)|(int(col.z * 255));
-
+            vec origin = d->center(), rad = vec(radius, radius, height).mul(blend);
             loopi(8 + rnd(8))
             {
                 float fade = blend * (d != focus || d->state != CS_ALIVE ? 0.35f : 0.1f) + (rnd(36) / 100.f);
                 vec dir = vec(rnd(201) - 100, rnd(201) - 100, rnd(201) - 100).div(100.f).normalize(),
-                    from = vec(dir).mul(vec(rad).mul(rnd(151) / 100.f)).add(origin), to = from;
-                int count = 5 + rnd(4);
+                    from = vec(dir).mul(rad).mul(rnd(151) / 100.f).add(origin),
+                    col = pulsecolour(d, PULSE_SHOCK, -1), to = from;
+                int count = 5 + rnd(4), colour = (int(col.x * 255) << 16)|(int(col.y * 255) << 8)|(int(col.z * 255));
                 loopj(count)
                 {
                     float q = 1.f - (j / float(count));
@@ -4490,13 +4490,13 @@ namespace game
         if(d->corrodetime && d->corrodefunc(lastmillis, d->corrodetime))
         {
             int millis = lastmillis - d->lastres[W_R_BURN], delay = max(d->corrodedelay, 1);
-            float pc = 1, intensity = 0.5f + (rnd(51) / 100.f), fade = (d != focus || d->state != CS_ALIVE ? 0.25f : 0.f) + (rnd(36) / 100.f);
+            float pc = 1, intensity = 0.5f + (rnd(51) / 100.f), fade = (d != focus || d->state != CS_ALIVE ? 0.1f : 0.f) + (rnd(26) / 100.f);
 
             if(d->corrodetime - millis < delay) pc *= (d->corrodetime - millis) / float(delay);
             else pc *= 0.75f + ((millis % delay)/float(delay * 4));
 
             vec pos = vec(d->center()).add(vec(rnd(11) - 5, rnd(11) - 5, rnd(11) - 3).mul(pc));
-            regular_part_create(PART_SMOKE_SOFT, 200, pos, pulsehexcol(d, PULSE_CORRODE), d->height * intensity * blend * pc, fade * blend * pc, 0, 0, -25);
+            regular_part_create(PART_HINT_SOFT, 200, pos, pulsehexcol(d, PULSE_CORRODE), d->height * intensity * blend * pc, fade * blend * pc, 0, 0, -50);
         }
     }
 

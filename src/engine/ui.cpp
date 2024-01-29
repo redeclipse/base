@@ -21,8 +21,8 @@ namespace UI
     FVAR(IDF_PERSIST, uiworldscale, FVAR_NONZERO, 50, FVAR_MAX);
 
     FVAR(IDF_PERSIST, uivisradius, 0, 8, FVAR_MAX);
-    FVAR(IDF_PERSIST, uimaxdist, 0, 1024, FVAR_MAX);
-    FVAR(IDF_PERSIST, uimapmaxdist, 0, 1024, FVAR_MAX);
+    FVAR(IDF_PERSIST, uimaxdist, 0, 2048, FVAR_MAX);
+    FVAR(IDF_PERSIST, uimapmaxdist, 0, 2048, FVAR_MAX);
 
     VAR(IDF_PERSIST, uitextrows, 1, 48, VAR_MAX);
     void calctextscale() { uitextscale = 1.0f/uitextrows; }

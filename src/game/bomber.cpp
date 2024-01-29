@@ -225,7 +225,7 @@ namespace bomber
         }
     }
 
-    DEFUIVARS(bomber, SURFACE_VISOR, 1024);
+    DEFUIVARS(bomber, SURFACE_VISOR, 2048);
 
     void checkui()
     {
@@ -245,7 +245,7 @@ namespace bomber
             else curpos.z += enttype[AFFINITY].radius * 0.125f;
             curpos.z += enttype[AFFINITY].radius * (isbomberaffinity(f) ? 0.125f : 0.25f);
 
-            MAKEUI(bomber, i, haloallow(camera1->o, i), hasaffinity(game::focus) && f.team != game::focus->team, curpos);
+            MAKEUI(bomber, i, haloallow(camera1->o, i), curpos);
         }
     }
 
