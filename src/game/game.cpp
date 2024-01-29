@@ -2341,12 +2341,15 @@ namespace game
             }
         }
 
+        if(issound(d->plchan[PLCHAN_PRIZE])) soundsources[d->plchan[PLCHAN_PRIZE]].clear();
+        if(flags&HIT_PRIZE) entities::announce(S_OPENPRIZE, d, PLCHAN_PRIZE);
+
         if(d->actortype < A_ENEMY || d->actortype == A_JANITOR)
         {
             gamelog *log = new gamelog(GAMELOG_EVENT);
             log->addlist("args", "type", "frag");
             log->addlist("args", "action", d == v ? "suicide" : "kill");
-            log->addlist("args", "sound", flags&HIT_PRIZE ? S_OPENPRIZE : anc);
+            log->addlist("args", "sound", anc);
             log->addlist("args", "flags", GAMELOG_F_CLIENT1|GAMELOG_F_CLIENT2);
             log->addlist("args", "weapon", weap);
             log->addlist("args", "actflags", flags);
