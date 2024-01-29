@@ -824,7 +824,7 @@ namespace server
                 case 3: case 8: weap = attrmap[W_ROCKET]; break;
             }
 
-            if(!isweap(weap) || (ent = ci->weapent[weap]) >= 0) loopi(6)
+            if(!isweap(weap) || (ent = ci->weapent[weap]) < 0) loopi(6)
             {
                 switch(i)
                 {
@@ -842,6 +842,7 @@ namespace server
                 d.ent = ent;
                 d.ammo = 1; // one prize per customer
                 ci->dropped.add(d.ent, d.ammo);
+                ci->hasprize = d.weap; // after this, refers to prize given
             }
             else ci->hasprize = 0;
         }
