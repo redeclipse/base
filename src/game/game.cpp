@@ -2653,7 +2653,11 @@ namespace game
 
     int findcolour(gameent *d, int comb, bool tone, float level, float mix)
     {
-        if(d->hasprize || game::focus->dominated.find(d) >= 0) return pulsehexcol(PULSE_DISCO);
+        if(tone)
+        {
+            if(d->hasprize) return pulsehexcol(PULSE_READY);
+            if(game::focus->dominated.find(d) >= 0) return pulsehexcol(PULSE_DOMINATE);
+        }
 
         int col = d->colours[comb ? 1 : 0];
         switch(comb)
@@ -4429,7 +4433,8 @@ namespace game
         {
             if(haloallow(camera1->o, d))
             {
-                if(focus->hasprize || focus->isobserver() || (m_team(gamemode, mutators) && focus->team == d->team)) mdl.flags |= MDL_HALO_TOP;
+                if(d->hasprize || focus->isobserver() || (m_team(gamemode, mutators) && focus->team == d->team))
+                    mdl.flags |= MDL_HALO_TOP;
             }
             else
             {
