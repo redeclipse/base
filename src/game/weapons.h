@@ -159,37 +159,41 @@ enum
 
 #define HIT_ENUM(en, um) \
     en(um, HEAD, 1<<0) en(um, TORSO, 1<<1) en(um, LIMB, 1<<2) en(um, FULL, 1<<3) en(um, WHIPLASH, 1<<4) en(um, ALT, 1<<5) \
-    en(um, WAVE, 1<<6) en(um, PROJ, 1<<7) en(um, EXPLODE, 1<<8) en(um, BURN, 1<<9) en(um, BLEED, 1<<10) en(um, CORRODE, 1<<11) en(um, SHOCK, 1<<12) \
+    en(um, WAVE, 1<<6) en(um, PROJ, 1<<7) en(um, EXPLODE, 1<<8) en(um, BURN, 1<<9) en(um, BLEED, 1<<10) en(um, SHOCK, 1<<11) en(um, CORRODE, 1<<12) \
     en(um, MATERIAL, 1<<13) en(um, SPAWN, 1<<14) en(um, LOST, 1<<15) en(um, KILL, 1<<16) en(um, FLAK, 1<<17) \
     en(um, SPEC, 1<<18) en(um, TOUCH, 1<<19) en(um, CRUSH, 1<<20) en(um, CHECKPOINT, 1<<21) en(um, JANITOR, 1<<22) en(um, PRIZE, 1<<23)
 ENUM_AL(HIT);
 
-ENUM_VAR(HIT_CLEAR, HIT_PROJ|HIT_EXPLODE|HIT_BURN|HIT_BLEED|HIT_CORRODE|HIT_MATERIAL|HIT_SPAWN|HIT_LOST|HIT_TOUCH|HIT_CRUSH);
+ENUM_VAR(HIT_CLEAR, HIT_PROJ|HIT_EXPLODE|HIT_BURN|HIT_BLEED|HIT_SHOCK|HIT_CORRODE|HIT_MATERIAL|HIT_SPAWN|HIT_LOST|HIT_TOUCH|HIT_CRUSH);
 ENUM_VAR(HIT_SFLAGS, HIT_KILL|HIT_PRIZE);
 
 #define W_R_ENUM(en, um) \
-    en(um, BURN) en(um, BLEED) en(um, CORRODE) en(um, SHOCK) en(um, MAX)
+    en(um, BURN) en(um, BLEED) en(um, SHOCK) en(um, CORRODE) en(um, MAX)
 ENUM_DL(W_R);
 
-ENUM_VAR(W_R_ALL, (1<<W_R_BURN)|(1<<W_R_BLEED)|(1<<W_R_CORRODE)|(1<<W_R_SHOCK));
+ENUM_VAR(W_R_ALL, (1<<W_R_BURN)|(1<<W_R_BLEED)|(1<<W_R_SHOCK)|(1<<W_R_CORRODE));
 #define WR(x) (1<<W_R_##x)
 
 struct shotmsg { int id; ivec pos; };
 struct hitmsg { int flags, proj, target, dist; ivec dir, vel; };
 
-#define hitdealt(x)         (x&HIT_BURN || x&HIT_BLEED || x&HIT_CORRODE || x&HIT_SHOCK || x&HIT_EXPLODE || x&HIT_PROJ || x&HIT_MATERIAL)
+#define hitdealt(x)         (x&HIT_BURN || x&HIT_BLEED || x&HIT_SHOCK || x&HIT_CORRODE || x&HIT_EXPLODE || x&HIT_PROJ || x&HIT_MATERIAL)
+
 #define wr_burn(x,y)        (isweap(x) && (WF(WK(y), x, residual, WS(y))&(1<<W_R_BURN)))
 #define wr_burns(x,y)       (G(noweapburn) && hitdealt(y) && ((x == -1 && y&HIT_BURN) || wr_burn(x, y)))
-#define wr_burnfunc(x,y)     (G(noweapburn) && hitdealt(y) && ((x == -1 && y&HIT_MATERIAL && y&HIT_BURN) || wr_burn(x, y)))
+#define wr_burnfunc(x,y)    (G(noweapburn) && hitdealt(y) && ((x == -1 && y&HIT_MATERIAL && y&HIT_BURN) || wr_burn(x, y)))
+
 #define wr_bleed(x,y)       (isweap(x) && (WF(WK(y), x, residual, WS(y))&(1<<W_R_BLEED)))
 #define wr_bleeds(x,y)      (G(noweapbleed) && hitdealt(y) && ((x == -1 && y&HIT_BLEED) || wr_bleed(x, y)))
-#define wr_bleedfunc(x,y)    (G(noweapbleed) && hitdealt(y) && ((x == -1 && y&HIT_MATERIAL && y&HIT_BLEED) || wr_bleed(x, y)))
+#define wr_bleedfunc(x,y)   (G(noweapbleed) && hitdealt(y) && ((x == -1 && y&HIT_MATERIAL && y&HIT_BLEED) || wr_bleed(x, y)))
+
 #define wr_shock(x,y)       (isweap(x) && (WF(WK(y), x, residual, WS(y))&(1<<W_R_SHOCK)))
 #define wr_shocks(x,y)      (G(noweapshock) && hitdealt(y) && ((x == -1 && y&HIT_SHOCK) || wr_shock(x, y)))
-#define wr_shockfunc(x,y)    (G(noweapshock) && hitdealt(y) && ((x == -1 && y&HIT_MATERIAL && y&HIT_SHOCK) || wr_shock(x, y)))
+#define wr_shockfunc(x,y)   (G(noweapshock) && hitdealt(y) && ((x == -1 && y&HIT_MATERIAL && y&HIT_SHOCK) || wr_shock(x, y)))
+
 #define wr_corrode(x,y)     (isweap(x) && (WF(WK(y), x, residual, WS(y))&(1<<W_R_CORRODE)))
 #define wr_corrodes(x,y)    (G(noweapcorrode) && hitdealt(y) && ((x == -1 && y&HIT_CORRODE) || wr_corrode(x, y)))
-#define wr_corrodefunc(x,y)   (G(noweapcorrode) && hitdealt(y) && ((x == -1 && y&HIT_MATERIAL && y&HIT_CORRODE) || wr_corrode(x, y)))
+#define wr_corrodefunc(x,y) (G(noweapcorrode) && hitdealt(y) && ((x == -1 && y&HIT_MATERIAL && y&HIT_CORRODE) || wr_corrode(x, y)))
 
 #include "weapdef.h"
 

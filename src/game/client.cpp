@@ -1047,10 +1047,17 @@ namespace client
     CLCOMMANDM(impulse, "si", (char *who, int *n), intret(*n >= 0 && *n < IM_MAX ? d->impulse[*n] : 0));
 
     CLCOMMAND(buffing, intret(d->lastbuff));
+
     CLCOMMAND(burnfunc, intret(d->burntime ? d->burnfunc(lastmillis, d->burntime) : 0));
     CLCOMMAND(bleedfunc, intret(d->bleedtime ? d->bleedfunc(lastmillis, d->bleedtime) : 0));
     CLCOMMAND(shockfunc, intret(d->shocktime ? d->shockfunc(lastmillis, d->shocktime) : 0));
     CLCOMMAND(corrodefunc, intret(d->corrodetime ? d->corrodefunc(lastmillis, d->corrodetime) : 0));
+
+    CLCOMMAND(burntime, intret(d->burntime));
+    CLCOMMAND(bleedtime, intret(d->bleedtime));
+    CLCOMMAND(shocktime, intret(d->shocktime));
+    CLCOMMAND(corrodetime, intret(d->corrodetime));
+
     CLCOMMAND(regen, intret(regentime ? d->lastregen : 0));
     CLCOMMAND(impulsecollectcount, intret(d->impulse[IM_COLLECT_COUNT]));
     CLCOMMAND(impulselastcount, intret(d->impulse[IM_LASTCOL_COUNT] ? (lastmillis - d->impulse[IM_LASTCOL_COUNT]) % 1000 : 0));
@@ -2920,6 +2927,7 @@ namespace client
                     m->burntime = getint(p);
                     m->burndelay = getint(p);
                     m->burndamage = getint(p);
+                    conoutf(colouryellow, "burn res: %d %d %d", m->burntime, m->burndelay, m->burndamage);
                     break;
                 }
 
@@ -2931,6 +2939,7 @@ namespace client
                     m->bleedtime = getint(p);
                     m->bleeddelay = getint(p);
                     m->bleeddamage = getint(p);
+                    conoutf(colouryellow, "bleed res: %d %d %d", m->bleedtime, m->bleeddelay, m->bleeddamage);
                     break;
                 }
 
@@ -2946,6 +2955,7 @@ namespace client
                     m->shockstunscale = getfloat(p);
                     m->shockstunfall = getfloat(p);
                     m->shockstuntime = getint(p);
+                    conoutf(colouryellow, "shock res: %d %d %d %d %f %f %d", m->shocktime, m->shockdelay, m->shockdamage, m->shockstun, m->shockstunscale, m->shockstunfall, m->shockstuntime);
                     break;
                 }
 
@@ -2957,6 +2967,7 @@ namespace client
                     m->corrodetime = getint(p);
                     m->corrodedelay = getint(p);
                     m->corrodedamage = getint(p);
+                    conoutf(colouryellow, "corrode res: %d %d %d", m->corrodetime, m->corrodedelay, m->corrodedamage);
                     break;
                 }
 
@@ -3164,7 +3175,6 @@ namespace client
                                 else if(val > id->maxval) val = id->maxval;
                                 else if(val < id->minval) val = id->minval;
                                 setvar(text, val, true);
-                                conoutf(colouryellow, "%s set map variable \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(d), id->name, intstr(id));
                             }
                             break;
                         }
@@ -3176,7 +3186,6 @@ namespace client
                                 if(val > id->maxvalf) val = id->maxvalf;
                                 else if(val < id->minvalf) val = id->minvalf;
                                 setfvar(text, val, true);
-                                conoutf(colouryellow, "%s set map variable \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(d), id->name, floatstr(*id->storage.f));
                             }
                             break;
                         }
@@ -3189,7 +3198,6 @@ namespace client
                             if(commit)
                             {
                                 setsvar(text, val, true);
-                                conoutf(colouryellow, "%s set map variable \fs\fc%s\fS to \fy\fc%s\fS", game::colourname(d), id->name, *id->storage.s);
                             }
                             delete[] val;
                             break;

@@ -70,7 +70,7 @@ namespace game
             "S_SPLASH1", "S_SPLASH2", "S_SPLOSH", "S_DEBRIS", "S_BURNLAVA",
             "S_EXTINGUISH", "S_SHELL", "S_ITEMUSE", "S_ITEMSPAWN",
             "S_REGEN_BEGIN", "S_REGEN", "S_CRITICAL", "S_DAMAGE", "S_DAMAGE2", "S_DAMAGE3", "S_DAMAGE4", "S_DAMAGE5", "S_DAMAGE6", "S_DAMAGE7", "S_DAMAGE8",
-            "S_BURNED", "S_BLEED", "S_SHOCK", "S_RESPAWN", "S_CHAT", "S_ERROR", "S_ALARM", "S_PRIZELOOP", "S_OPENPRIZE", "S_CATCH", "S_DROP", "S_BOUNCE",
+            "S_BURNED", "S_BLEED", "S_SHOCK", "S_CORRODE", "S_RESPAWN", "S_CHAT", "S_ERROR", "S_ALARM", "S_PRIZELOOP", "S_OPENPRIZE", "S_CATCH", "S_DROP", "S_BOUNCE",
             "S_V_FLAGSECURED", "S_V_FLAGOVERTHROWN", "S_V_FLAGPICKUP", "S_V_FLAGDROP", "S_V_FLAGRETURN", "S_V_FLAGSCORE", "S_V_FLAGRESET",
             "S_V_BOMBSTART", "S_V_BOMBDUEL", "S_V_BOMBPICKUP", "S_V_BOMBDROP", "S_V_BOMBSCORE", "S_V_BOMBRESET",
             "S_V_NOTIFY", "S_V_FIGHT", "S_V_SCORE", "S_V_START", "S_V_CHECKPOINT", "S_V_COMPLETE", "S_V_OVERTIME", "S_V_ONEMINUTE", "S_V_HEADSHOT",
@@ -1750,6 +1750,7 @@ namespace game
                 else if(type == BURN) snd = S_BURNED;
                 else if(type == BLEED) snd = S_BLEED;
                 else if(type == SHOCK) snd = S_SHOCK;
+                else if(type == CORRODE) snd = S_CORRODE;
                 else
                 {
                     const float dmgsnd[8] = { 0, 0.1f, 0.25f, 0.5f, 0.75f, 1.f, 1.5f, 2.f };
@@ -1879,9 +1880,9 @@ namespace game
                 int hp = max(d->gethealth(gamemode, mutators)/5, 1);
 
                 if(!nogore && bloodscale > 0)
-                    part_splash(PART_BLOOD, int(clamp(damage/hp, 1, 5)*bloodscale)*(bleedfunc || material ? 2 : 1), bloodfade, p, 0x229999, (rnd((bloodsize+1)/2)+((bloodsize+1)/2))/10.f, 1, 0, 0, 100, 1+STAIN_BLOOD, int(d->radius), 10);
+                    part_splash(PART_BLOOD, int(clamp(damage/hp, 1, 3)*bloodscale)*(bleedfunc || material ? 2 : 1), bloodfade, p, 0x229999, (rnd((bloodsize+1)/2)+((bloodsize+1)/2))/10.f, 1, 0, 0, 100, 1+STAIN_BLOOD, int(d->radius), 10);
                 if(nogore != 2 && (bloodscale <= 0 || bloodsparks))
-                    part_splash(PART_PLASMA, int(clamp(damage/hp, 1, 5))*(bleedfunc || material ? 2: 1), bloodfade, p, 0x882222, 1, 0.5f, 0, 0, 50, 1+STAIN_STAIN, int(d->radius));
+                    part_splash(PART_PLASMA, int(clamp(damage/hp, 1, 3))*(bleedfunc || material ? 2: 1), bloodfade, p, 0x882222, 1, 0.5f, 0, 0, 50, 1+STAIN_STAIN, int(d->radius));
 
                 int damagetype = damagemerge::HURT;
                 if(burnfunc) damagetype = damagemerge::BURN;

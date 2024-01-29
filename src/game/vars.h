@@ -22,7 +22,7 @@ GVAR(IDF_MAP, 0, hurtshockstuntime, 0, 500, VAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, shocktwitchvel, 0, 2, FVAR_MAX);
 GVAR(IDF_MAP, 0, hurtcorrodetime, 0, 5500, VAR_MAX);
 GVAR(IDF_MAP, 0, hurtcorrodedelay, 0, 1000, VAR_MAX);
-GVAR(IDF_MAP, 0, hurtcorrodedamage, 0, 30, VAR_MAX);
+GVAR(IDF_MAP, 0, hurtcorrodedamage, 0, 15, VAR_MAX);
 
 GFVAR(IDF_MAP, 0, gravity, 0, 50.f, FVAR_MAX); // gravity
 GFVAR(IDF_GAMEMOD, 0, gravityscale, 0, 1, FVAR_MAX);
