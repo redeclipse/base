@@ -1621,12 +1621,13 @@ namespace game
             }
         }
 
-        if(d->hasprize)
+        if(d->hasprize && d->isalive())
         {
             if(!issound(d->plchan[PLCHAN_PRIZE]))
-                emitsound(S_PRIZELOOP, getplayersoundpos(d), d, &d->plchan[PLCHAN_PRIZE], SND_LOOP);
+                emitsound(S_PRIZELOOP, getplayersoundpos(d), d, &d->plchan[PLCHAN_PRIZE], SND_LOOP|SND_PRIORITY);
         }
-        else if(issound(d->plchan[PLCHAN_PRIZE])) soundsources[d->plchan[PLCHAN_PRIZE]].clear();
+        else if(issound(d->plchan[PLCHAN_PRIZE]) && soundsources[d->plchan[PLCHAN_PRIZE]].flags&SND_LOOP)
+            soundsources[d->plchan[PLCHAN_PRIZE]].clear();
     }
 
     void checkfloor(gameent *d)
@@ -2340,14 +2341,12 @@ namespace game
             }
         }
 
-        emitsound(flags&HIT_PRIZE ? S_OPENPRIZE : d->actortype >= A_ENEMY || d->obliterated ? S_SPLOSH : S_DEATH, getplayersoundpos(d), d, &d->plchan[PLCHAN_VOICE]);
-
         if(d->actortype < A_ENEMY || d->actortype == A_JANITOR)
         {
             gamelog *log = new gamelog(GAMELOG_EVENT);
             log->addlist("args", "type", "frag");
             log->addlist("args", "action", d == v ? "suicide" : "kill");
-            log->addlist("args", "sound", anc);
+            log->addlist("args", "sound", flags&HIT_PRIZE ? S_OPENPRIZE : anc);
             log->addlist("args", "flags", GAMELOG_F_CLIENT1|GAMELOG_F_CLIENT2);
             log->addlist("args", "weapon", weap);
             log->addlist("args", "actflags", flags);
@@ -2370,6 +2369,7 @@ namespace game
         if(m_bomber(gamemode)) bomber::killed(d, v);
         ai::killed(d, v);
 
+        emitsound(d->actortype >= A_ENEMY || d->obliterated ? S_SPLOSH : S_DEATH, getplayersoundpos(d), d, &d->plchan[PLCHAN_VOICE]);
         spawngibs(weap, flags, damage, d, v, assist, style, material);
     }
 
