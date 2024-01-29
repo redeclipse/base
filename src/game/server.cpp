@@ -4785,14 +4785,14 @@ namespace server
                     if(!m_dm_oldschool(gamemode, mutators)) pointvalue += G(firstbloodpoints);
                 }
 
-                if(flags&HIT_HEAD) // NOT HZONE
-                {
-                    style |= FRAG_HEADSHOT;
-                    if(!m_dm_oldschool(gamemode, mutators)) pointvalue += G(headshotpoints);
-                }
-
                 if(m->actortype < A_ENEMY)
                 {
+                    if(flags&HIT_HEAD) // NOT HZONE
+                    {
+                        style |= FRAG_HEADSHOT;
+                        if(!m_dm_oldschool(gamemode, mutators)) pointvalue += G(headshotpoints);
+                    }
+
                     int logs = 0;
                     v->spree++;
                     v->fraglog.add(m->clientnum);
