@@ -884,7 +884,6 @@ struct clientstate
     bool canswitch(int weap, int sweap, int millis, int skip = 0)
     {
         if(!isweap(weap) || weap >= W_ALL) return false;
-        if(!(A(actortype, abilities)&(1<<A_A_AMMO))) return true;
 
         if(weap != weapselect && weapwaited(weapselect, millis, skip) && hasweap(weap, sweap) && weapwaited(weap, millis, skip))
             return true;
@@ -903,7 +902,7 @@ struct clientstate
 
     bool canreload(int weap, int sweap, bool check = false, int millis = 0, int skip = 0)
     {
-        if(actortype >= A_ENEMY ||
+        if(A(actortype, abilities)&(1<<A_A_AMMO) ||
             ((W(weap, ammostore) < 0 || weapammo[weap][W_A_STORE] > 0)
                 && (!check || (weap == weapselect && hasweap(weap, sweap) && weapammo[weap][W_A_CLIP] < W(weap, ammoclip) && weapstate[weap] != W_S_ZOOM && weapwaited(weap, millis, skip)))))
             return true;
@@ -912,6 +911,7 @@ struct clientstate
 
     bool canuseweap(int gamemode, int mutators, int attr, int sweap, int millis, int skip = 0, bool full = true)
     {
+        if(A(actortype, abilities)&(1<<A_A_AMMO)) return false;
         if(!m_classic(gamemode, mutators) && attr < W_ITEM && !hasweap(attr, sweap)) return false;
 
         if(full)
@@ -942,7 +942,7 @@ struct clientstate
 
     void useitem(int id, int type, int attr, int ammoamt, int sweap, int millis, int delay)
     {
-        if(type != WEAPON || !isweap(attr)) return;
+        if(type != WEAPON || !isweap(attr) || A(actortype, abilities)&(1<<A_A_AMMO)) return;
         int prevclip = max(weapammo[attr][W_A_CLIP], 0), prevstore = max(weapammo[attr][W_A_STORE], 0);
         weapswitch(attr, millis, delay, W_S_USE);
         weapammo[attr][W_A_CLIP] = W(attr, ammostore) <= 0 || !hasweap(attr, sweap) ? clamp(prevclip+ammoamt, 0, W(attr, ammoclip)) : prevclip;
@@ -1478,6 +1478,7 @@ struct gameent : dynent, clientstate
             if(entities::ents[spawnpoint]->attrs[8] > 0) speedscale *= entities::ents[spawnpoint]->attrs[8]/100.f;
             if(entities::ents[spawnpoint]->attrs[9] > 0) scale *= (entities::ents[spawnpoint]->attrs[9]/100.f);
         }
+        if(hasprize) speedscale *= A(actortype, speedprize);
 
         if(m_resize(gamemode, mutators) && cur)
         {

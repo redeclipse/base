@@ -510,7 +510,7 @@ namespace ai
             gameent *f = game::getclient(d->ai->enemy);
             if(f && (d->o.squaredist(e->o) < d->o.squaredist(f->o) || (d->ai->enemyseen && lastmillis-d->ai->enemyseen <= (d->skill*10)+1000))) return false;
         }
-        if(pursue)
+        if(pursue && d->actortype < A_ENVIRONMENT)
         {
             if((b.targtype != AI_T_AFFINITY || (pursue && !(pursue%2))) && makeroute(d, b, e->lastnode))
                 d->ai->switchstate(b, AI_S_PURSUE, AI_T_ACTOR, e->clientnum, b.targtype != AI_T_AFFINITY ? AI_A_NORMAL : AI_A_HASTE);
@@ -643,6 +643,10 @@ namespace ai
 
                 return;
             }
+
+            game::suicide(d, HIT_JANITOR);
+
+            return; // fail
         }
 
         vector<int> candidates;
@@ -1512,7 +1516,7 @@ namespace ai
         float frame = d->skill <= 100 ? ((lastmillis - d->ai->lastrun) * (100.f / gamespeed)) / float(skmod * 20) : 1;
 
         if(d->dominating.length()) frame *= 1 + d->dominating.length(); // berserker mode
-        if(d->hasprize) frame *= 5; // prize carrier defends to their last breath
+        if(d->hasprize) frame *= A(d->actortype, speedprize); // adjust for increased speed
 
         bool dancing = b.type == AI_S_OVERRIDE && b.overridetype == AI_O_DANCE,
             allowrnd = dancing || b.type == AI_S_WAIT || b.type == AI_S_PURSUE || b.type == AI_S_INTEREST;
@@ -1604,12 +1608,12 @@ namespace ai
                     bool kamikaze = A(d->actortype, abilities)&(1<<A_A_KAMIKAZE);
                     frame *= insight || d->skill > 100 ? 1.5f : (hasseen ? 1.25f : 1.f);
 
-                    if(d->hasprize || kamikaze || d->o.dist(e->o) < CLOSEDIST)
+                    if(kamikaze || d->o.dist(e->o) < CLOSEDIST)
                     {
                         frame *= 2.f;
                         d->ai->dontmove = false;
 
-                        if((d->hasprize || kamikaze || W2(d->weapselect, aidist, alt) < CLOSEDIST) && lockon(d, e, d->hasprize ? FARDIST : CLOSEDIST))
+                        if((kamikaze || W2(d->weapselect, aidist, alt) < CLOSEDIST) && lockon(d, e, CLOSEDIST))
                         {
                             b.acttype = AI_A_LOCKON;
                             d->ai->targyaw = yaw;

@@ -38,17 +38,21 @@ namespace UI
     VAR(IDF_PERSIST, uihintouttime, 0, 3000, VAR_MAX);
     FVAR(IDF_PERSIST, uihintoffset, -0.5f, 0.125f, 0.5f);
 
+    VARR(uilastmillis, 0);
+    VARR(uitotalmillis, 0);
+    VARR(uicurtime, 0);
+
     static Texture *loadthumbnail(const char *name, int tclamp)
     {
         Texture *t = textureloaded(name);
 
         if(!t)
         {
-            if(totalmillis - lastthumbnail < uislotviewtime) t = textureload(uiloadtex, 0, true, false);
+            if(uitotalmillis - lastthumbnail < uislotviewtime) t = textureload(uiloadtex, 0, true, false);
             else
             {
                 t = textureload(name, tclamp, true, false, texgc);
-                lastthumbnail = totalmillis;
+                lastthumbnail = uitotalmillis;
             }
         }
 
@@ -1120,7 +1124,7 @@ namespace UI
                 setargs();
                 DOMAP(mapdef, executeret(onshow->code));
             }
-            lastshow = totalmillis;
+            lastshow = uitotalmillis;
         }
 
         void setup()
@@ -1184,7 +1188,7 @@ namespace UI
             bool haspos = pos != nullvec;
             if(hint > 0)
             {
-                int offset = lastmillis - hint;
+                int offset = uilastmillis - hint;
                 if(offset <= uihintintime + uihintholdtime + uihintouttime)
                 {
                     float amt = smoothinterp(offset > (uihintholdtime + uihintintime) ?
@@ -1364,7 +1368,7 @@ namespace UI
 
         void getcursor(float &cx, float &cy)
         {
-            if(totalmillis == lasthit)
+            if(uitotalmillis == lasthit)
             {
                 cx = hitx * pw + px - x;
                 cy = hity * ph + py - y;
@@ -1396,7 +1400,7 @@ namespace UI
             }
             cx = hitx * pw + px - x;
             cy = hity * ph + py - y;
-            lasthit = totalmillis;
+            lasthit = uitotalmillis;
         }
 
         #define DOSTATE(chkflags, func) \
@@ -1806,10 +1810,10 @@ namespace UI
 
         bool checkexclusive(Window *w)
         {
-            if(exclcheck != totalmillis)
+            if(exclcheck != uitotalmillis)
             {
                 hasexclusive = false;
-                exclcheck = totalmillis;
+                exclcheck = uitotalmillis;
                 loopwindows(w,
                 {
                     if(surfacetype != SURFACE_WORLD && w->exclusive)
@@ -1882,7 +1886,7 @@ namespace UI
             setup();
             loopwindows(w,
             {
-                if(w->lastpoke && w->lastpoke != totalmillis)
+                if(w->lastpoke && w->lastpoke != uitotalmillis)
                 {   // poke windows are updated every frame or disregarded
                     w->visible = false;
                     continue;
@@ -2422,7 +2426,7 @@ namespace UI
             w->scale = scale;
             w->detentyaw = detentyaw;
             w->detentpitch = detentpitch;
-            w->lastpoke = totalmillis;
+            w->lastpoke = uitotalmillis;
 
             popsurface();
             return true;
@@ -2433,7 +2437,7 @@ namespace UI
         bool ret = false;
         if(w && surface->show(w, origin, maxdist, yaw, pitch, scale, detentyaw, detentpitch))
         {
-            w->lastpoke = totalmillis;
+            w->lastpoke = uitotalmillis;
             ret = true;
         }
         popsurface();
@@ -3527,7 +3531,9 @@ namespace UI
         {
             setupdraw(CHANGE_SHADER);
 
-            LOCALPARAMF(millis, lastmillis/1000.0f);
+            LOCALPARAMF(millis, uilastmillis / 1000.0f);
+            LOCALPARAMF(totalmillis, uitotalmillis / 1000.0f);
+            LOCALPARAMF(realmillis, lastmillis / 1000.0f, totalmillis / 1000.0f);
             LOCALPARAMF(viewsize, hudw*w, hudh*h, 1.0f/(hudw*w), 1.0f/(hudh*h));
             LOCALPARAMF(rendersize, sx, sy, w, h);
 
@@ -4976,7 +4982,7 @@ namespace UI
             if(scroller && scroller->canscroll()) addscroll(scroller, dir);
         }
 
-        void arrowscroll(float dir) { addscroll(dir*curtime/1000.0f); }
+        void arrowscroll(float dir) { addscroll(dir*uicurtime/1000.0f); }
         void wheelscroll(float step);
         virtual int wheelscrolldirection() const { return 1; }
 
@@ -5279,7 +5285,7 @@ namespace UI
 
         void press(float cx, float cy, bool inside)
         {
-            laststep = totalmillis + 2*uislidersteptime;
+            laststep = uitotalmillis + 2*uislidersteptime;
 
             Slider *slider = (Slider *)findsibling(Slider::typestr());
             if(slider) slider->arrowscroll(stepdir);
@@ -5287,9 +5293,9 @@ namespace UI
 
         void hold(float cx, float cy, bool inside)
         {
-            if(totalmillis < laststep + uislidersteptime)
+            if(uitotalmillis < laststep + uislidersteptime)
                 return;
-            laststep = totalmillis;
+            laststep = uitotalmillis;
 
             Slider *slider = (Slider *)findsibling(Slider::typestr());
             if(slider) slider->arrowscroll(stepdir);
@@ -5723,7 +5729,7 @@ namespace UI
             if(kc)
             {
                 inputsteal = kc;
-                kc->focusmillis = totalmillis;
+                kc->focusmillis = uitotalmillis;
             }
         }
         void setfocus() { setfocus(this); }
@@ -5755,7 +5761,7 @@ namespace UI
             else
             {
                 pressedkey = code;
-                keymillis = totalmillis;
+                keymillis = uitotalmillis;
             }
             return true;
         }
@@ -6133,7 +6139,7 @@ namespace UI
     UICMDT(ModelPreview, modelpreview, interact, "i", (int *c), o->interact = *c != 0);
     UICMDT(ModelPreview, modelpreview, resetoffset, "", (void), o->resetoffset());
     UICMDT(ModelPreview, modelpreview, colour, "fffg", (float *r, float *g, float *b, float *a), o->mdl.color = vec4(*r, *g, *b, *a >= 0 ? *a : 1.f));
-    UICMDT(ModelPreview, modelpreview, basetime, "bb", (int *b, int *c), o->mdl.basetime = *b >= 0 ? *b : lastmillis; o->mdl.basetime2 = *c >= 0 ? *c : 0);
+    UICMDT(ModelPreview, modelpreview, basetime, "bb", (int *b, int *c), o->mdl.basetime = *b >= 0 ? *b : uilastmillis; o->mdl.basetime2 = *c >= 0 ? *c : 0);
     UICMDT(ModelPreview, modelpreview, material, "iiii", (int *mat, int *r, int *g, int *b), if(*mat >= 0 && *mat < MAXMDLMATERIALS) o->mdl.material[*mat] = bvec(*r, *g, *b));
     UICMDT(ModelPreview, modelpreview, materialcol, "ii", (int *mat, int *c), if(*mat >= 0 && *mat < MAXMDLMATERIALS) o->mdl.material[*mat] = bvec::fromcolor(*c));
     UICMDT(ModelPreview, modelpreview, mixerparams, "ffff", (float *r, float *g, float *b, float *a), o->mdl.mixerparams = vec4(*r, *g, *b, *a));
@@ -6298,11 +6304,11 @@ namespace UI
             {
                 if(!slot.thumbnail)
                 {
-                    if(totalmillis - lastthumbnail < uislotviewtime) t = textureload(uiloadtex);
+                    if(uitotalmillis - lastthumbnail < uislotviewtime) t = textureload(uiloadtex);
                     else
                     {
                         slot.loadthumbnail();
-                        lastthumbnail = totalmillis;
+                        lastthumbnail = uitotalmillis;
                     }
                 }
                 if(slot.thumbnail && slot.thumbnail != notexture) t = slot.thumbnail;
@@ -6408,11 +6414,11 @@ namespace UI
             {
                 if(!slot.thumbnail)
                 {
-                    if(totalmillis - lastthumbnail < uislotviewtime) t = textureload(uiloadtex);
+                    if(uitotalmillis - lastthumbnail < uislotviewtime) t = textureload(uiloadtex);
                     else
                     {
                         slot.loadthumbnail();
-                        lastthumbnail = totalmillis;
+                        lastthumbnail = uitotalmillis;
                     }
                 }
                 if(slot.thumbnail && slot.thumbnail != notexture) t = slot.thumbnail;
@@ -7295,7 +7301,7 @@ namespace UI
         t->delay = delay;
         t->id = id;
         t->fbo = fbo;
-        t->used = t->last = totalmillis;
+        t->used = t->last = uitotalmillis;
 
         bool hastex = false;
         loopv(surface->texs)
@@ -7512,7 +7518,7 @@ namespace UI
         if(!pushsurface(SURFACE_COMPOSITE)) return;
 
         bool found = false;
-        int oldhudw = hudw, oldhudh = hudh, oldsf = surfaceformat, oldlm = lastmillis, oldtm = totalmillis;
+        int oldhudw = hudw, oldhudh = hudh, oldsf = surfaceformat, oldlm = uilastmillis, oldtm = uitotalmillis, oldct = uicurtime;
 
         int processed = 0;
         surface->texs.sort(texsort);
@@ -7527,14 +7533,15 @@ namespace UI
 
             if(compositerewind)
             {
-                lastmillis = oldlm;
-                totalmillis = oldtm;
+                uilastmillis = oldlm;
+                uitotalmillis = oldtm;
+                uicurtime = elapsed;
 
                 int offset = delay > 1 ? elapsed % delay : delay;
                 if(offset > 0)
                 {
-                    lastmillis -= int(offset * timescale / 100.f);
-                    totalmillis -= offset;
+                    uilastmillis -= int(offset * timescale / 100.f);
+                    uitotalmillis -= offset;
                 }
             }
 
@@ -7583,7 +7590,7 @@ namespace UI
                 surface->hide(w);
             }
 
-            t->last = totalmillis;
+            t->last = uitotalmillis;
             t->rendered = true;
 
             if(delay < 0)
@@ -7601,13 +7608,15 @@ namespace UI
 
         popsurface();
 
+        uilastmillis = oldlm;
+        uitotalmillis = oldtm;
+        uicurtime = oldct;
+
         if(found)
         {
             hudw = oldhudw;
             hudh = oldhudh;
             surfaceformat = oldsf;
-            lastmillis = oldlm;
-            totalmillis = oldtm;
             glBindFramebuffer_(GL_FRAMEBUFFER, 0);
             uicurfbo = 0;
             glViewport(0, 0, hudw, hudh);
@@ -7634,6 +7643,13 @@ namespace UI
         if(visor) rendervisor = 1; \
         body; \
         if(visor) rendervisor = oldvisor; \
+    }
+
+    void poke()
+    {
+        uilastmillis = lastmillis;
+        uitotalmillis = totalmillis;
+        uicurtime = curtime;
     }
 
     void update()

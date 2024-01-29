@@ -316,6 +316,10 @@ GFVAR(IDF_GAMEMOD, 0, itemdropminspeed, 0, 15, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemdropspreadxy, 0, 10, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemdropspreadz, 0, 2, FVAR_MAX);
 
+GVAR(IDF_GAMEMOD, 0, prizegrenade, 0, 10, VAR_MAX);
+GVAR(IDF_GAMEMOD, 0, prizemine, 0, 10, VAR_MAX);
+GVAR(IDF_GAMEMOD, 0, prizerocket, 0, 1, VAR_MAX);
+
 //  dm          duel        survivor    gladiator   capture     defend      defendking  bomber      bomberhold  race        racelapped  racegauntlet
 MMVAR(IDF_GAMEMOD, 0, timelimit, 0, VAR_MAX,
     10,         10,         10,         10,         10,         10,         10,         10,         10,         10,         10,         10

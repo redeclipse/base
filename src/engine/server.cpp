@@ -1029,7 +1029,7 @@ int updatetimer(bool limit)
 {
     currenttime = time(NULL);
     clocktime = mktime(gmtime(&currenttime));
-    clockoffset = currenttime-clocktime;
+    clockoffset = currenttime - clocktime;
 
     int millis = getclockmillis();
 #ifndef STANDALONE
@@ -1039,7 +1039,7 @@ int updatetimer(bool limit)
     if(paused) curtime = 0;
     else if(timescale != 100)
     {
-        int scaledtime = elapsedtime*timescale + timeerr;
+        int scaledtime = elapsedtime * timescale + timeerr;
         curtime = scaledtime/100;
         timeerr = scaledtime%100;
     }

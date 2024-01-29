@@ -4496,7 +4496,7 @@ namespace game
         if(d->corrodetime && d->corrodefunc(lastmillis, d->corrodetime))
         {
             int millis = lastmillis - d->lastres[W_R_BURN], delay = max(d->corrodedelay, 1);
-            float pc = 1, intensity = 0.5f + (rnd(51) / 100.f), fade = (d != focus || d->state != CS_ALIVE ? 0.1f : 0.f) + (rnd(26) / 100.f);
+            float pc = 1, intensity = 0.5f + (rnd(51) / 100.f), fade = (d != focus || d->state != CS_ALIVE ? 0.125f : 0.f) + (rnd(26) / 100.f);
 
             if(d->corrodetime - millis < delay) pc *= (d->corrodetime - millis) / float(delay);
             else pc *= 0.75f + ((millis % delay)/float(delay * 4));

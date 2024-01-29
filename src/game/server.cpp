@@ -817,11 +817,24 @@ namespace server
         if(flags&DROP_PRIZE && ci->hasprize)
         {
             int weap = -1, ent = -1;
-            switch(ci->hasprize > 0 ? ci->hasprize : rnd(12) + 1)
+
+            if(ci->hasprize < 0)
             {
-                case 1: case 4: case 6: case 9: case 11: default: weap = attrmap[W_GRENADE]; break;
-                case 2: case 5: case 7: case 10: case 12: weap = attrmap[W_MINE]; break;
-                case 3: case 8: weap = attrmap[W_ROCKET]; break;
+                int amt = G(prizegrenade) + G(prizemine) + G(prizerocket);
+                if(amt > 0)
+                {
+                    int n = amt > 1 ? rnd(amt) : 0;
+                    if(n < G(prizegrenade)) weap = attrmap[W_GRENADE];
+                    else if(n < G(prizegrenade) + G(prizemine)) weap = attrmap[W_MINE];
+                    else weap = attrmap[W_ROCKET];
+                }
+            }
+            else switch(ci->hasprize)
+            {
+                case 1: weap = attrmap[W_GRENADE]; break;
+                case 2: weap = attrmap[W_MINE]; break;
+                case 3: weap = attrmap[W_ROCKET]; break;
+                default: break;
             }
 
             if(!isweap(weap) || (ent = ci->weapent[weap]) < 0) loopi(6)
@@ -831,6 +844,7 @@ namespace server
                     case 0: weap = i > 2 ? W_GRENADE : attrmap[W_GRENADE]; break;
                     case 1: weap = i > 2 ? W_MINE : attrmap[W_MINE]; break;
                     case 2: weap = i > 2 ? W_ROCKET : attrmap[W_ROCKET]; break;
+                    default: break;
                 }
                 if(isweap(weap) && (ent = ci->weapent[weap]) >= 0) break;
             }
