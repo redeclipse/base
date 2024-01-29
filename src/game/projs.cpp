@@ -2280,8 +2280,12 @@ namespace projs
 
         static bool cmsort(const canrem *a, const canrem *b)
         {
+            if(a->p->projtype != PRJ_ENT && b->p->projtype == PRJ_ENT) return true;
+            if(a->p->projtype == PRJ_ENT && b->p->projtype != PRJ_ENT) return false;
             if(a->p->addtime < b->p->addtime) return true;
             if(a->p->addtime > b->p->addtime) return false;
+            if(a->p->lifesize < b->p->lifesize) return true;
+            if(a->p->lifesize > b->p->lifesize) return false;
             if(a->dist > b->dist) return true;
             if(a->dist < b->dist) return false;
             return false;

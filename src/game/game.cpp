@@ -1262,7 +1262,7 @@ namespace game
                 adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d, PULSE_SHOCK).mul(pc), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
             }
 
-            if(d->hasprize) adddynlight(d->center(), d->height, pulsecolour(d, PULSE_SHOCK), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
+            if(d->hasprize) adddynlight(d->center(), d->height * 4, pulsecolour(d, PULSE_SHOCK), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
         }
     }
 
