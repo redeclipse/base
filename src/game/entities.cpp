@@ -3016,7 +3016,7 @@ namespace entities
                 {
                     float radius = enttype[e.type].radius;
                     part_radius(pos, vec(radius), showentsize, 1, 1, TEAM(e.attrs[0], colour));
-                    radius = radius*2/3; // capture pickup dist
+                    radius = radius*3/4; // capture pickup dist
                     part_radius(pos, vec(radius), showentsize, 1, 1, TEAM(e.attrs[0], colour));
                     break;
                 }

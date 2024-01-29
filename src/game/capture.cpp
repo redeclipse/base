@@ -119,7 +119,7 @@ namespace capture
             }
         }
         if(f.lastowner == d && f.droptime && lastmillis-f.droptime <= capturepickupdelay) return false;
-        if((f.pos()).dist(d->feetpos()) > enttype[AFFINITY].radius*2/3) return false;
+        if((f.pos()).dist(d->feetpos()) > enttype[AFFINITY].radius*3/4) return false;
         return true;
     }
 
@@ -136,7 +136,7 @@ namespace capture
             capturestate::flag &f = st.flags[i];
             cament *c = cameras.add(new cament(cameras.length(), cament::AFFINITY, i));
             c->o = f.pos(true);
-            c->o.z += enttype[AFFINITY].radius*2/3;
+            c->o.z += enttype[AFFINITY].radius*3/4;
             c->player = f.owner;
         }
     }
@@ -150,7 +150,7 @@ namespace capture
                 if(!st.flags.inrange(c->id)) break;
                 capturestate::flag &f = st.flags[c->id];
                 c->o = f.pos(true);
-                c->o.z += enttype[AFFINITY].radius*2/3;
+                c->o.z += enttype[AFFINITY].radius*3/4;
                 c->player = f.owner;
                 break;
             }

@@ -74,7 +74,7 @@ struct captureservmode : capturestate, servmode
             loopvk(flags)
             {
                 flag &f = flags[k]; // goal flag
-                if(f.team == ci->team && (f.owner < 0 || (f.owner == ci->clientnum && (i != k || gamemillis-f.taketime >= G(capturepickupdelay)))) && !f.droptime && newpos.dist(f.spawnloc) <= enttype[AFFINITY].radius*2/3)
+                if(f.team == ci->team && (f.owner < 0 || (f.owner == ci->clientnum && (i != k || gamemillis-f.taketime >= G(capturepickupdelay)))) && !f.droptime && newpos.dist(f.spawnloc) <= enttype[AFFINITY].radius*3/4)
                 {
                     capturestate::returnaffinity(i, gamemillis);
                     if(r.team != ci->team)

@@ -129,7 +129,7 @@ namespace defend
             defendstate::flag &f = st.flags[i];
             cament *c = cameras.add(new cament(cameras.length(), cament::AFFINITY, i));
             c->o = f.o;
-            c->o.z += enttype[AFFINITY].radius*2/3;
+            c->o.z += enttype[AFFINITY].radius*3/4;
         }
     }
 
@@ -142,7 +142,7 @@ namespace defend
                 if(!st.flags.inrange(c->id)) break;
                 defendstate::flag &f = st.flags[c->id];
                 c->o = f.o;
-                c->o.z += enttype[AFFINITY].radius*2/3;
+                c->o.z += enttype[AFFINITY].radius*3/4;
                 break;
             }
             default: break;
