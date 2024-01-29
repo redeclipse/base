@@ -181,6 +181,7 @@ namespace UI
     enum { BLEND_ALPHA, BLEND_MOD, BLEND_SRC, BLEND_BUFFER, BLEND_GLOW, BLEND_MAX };
     static int changed = 0, surfacetype = -1, surfaceformat = 0, blendtype = BLEND_ALPHA, blendtypedef = BLEND_ALPHA;
     static bool blendsep = false, blendsepdef = false;
+    static float surfacehint = 0;
 
     void setblend(int type, bool sep, bool force = false)
     {
@@ -1192,12 +1193,12 @@ namespace UI
 
                     if(haspos)
                     {
-                        vec campos = vec(camera1->o).add(vec(camera1->yaw * RAD, (camera1->pitch + fovy * uihintoffset) * RAD).mul(16));
+                        vec campos = vec(camera1->o).add(vec(camera1->yaw * RAD, (camera1->pitch + fovy * surfacehint) * RAD).mul(16));
                         pos = vec(pos).add(vec(campos).sub(pos).mul(amt));
                     }
                     else
                     {
-                        vec2 campos(aspect * 0.5f, 0.5f - uihintoffset), curpos(x, y);
+                        vec2 campos(aspect * 0.5f, 0.5f - surfacehint), curpos(x, y);
 
                         switch(adjust&ALIGN_HMASK)
                         {
@@ -1215,6 +1216,8 @@ namespace UI
 
                         campos = vec2(curpos).add(vec2(campos).sub(curpos).mul(amt));
                         setpos(campos.x, campos.y);
+
+                        surfacehint = surfacehint >= 0 ? surfacehint + h : surfacehint - h;
                     }
                 }
             }
@@ -1774,11 +1777,12 @@ namespace UI
         int type, cursortype, exclcheck;
         bool lockcursor, mousetracking, lockscroll, interactive, hasexclusive;
         vec2 mousetrackvec;
+        float hintoffset;
 
         hashnameset<Window *> windows;
         vector<Texture *> texs;
 
-        Surface() : type(-1), cursortype(CURSOR_DEFAULT), exclcheck(0), lockcursor(false), mousetracking(false), lockscroll(false), interactive(false), hasexclusive(false), mousetrackvec(0, 0) {}
+        Surface() : type(-1), cursortype(CURSOR_DEFAULT), exclcheck(0), lockcursor(false), mousetracking(false), lockscroll(false), interactive(false), hasexclusive(false), mousetrackvec(0, 0), hintoffset(0) {}
         ~Surface() {}
 
         static const char *typestr() { return "#Surface"; }
@@ -1857,6 +1861,7 @@ namespace UI
             lockcursor = false;
             mousetracking = false;
             lockscroll = false;
+            surfacehint = hintoffset = uihintoffset;
 
             checkinputsteal();
             prepare();
@@ -1920,6 +1925,8 @@ namespace UI
                 if(!mousetracking) mousetrackvec = vec2(0, 0);
                 if(type == SURFACE_VISOR) flusheditors();
             }
+
+            hintoffset = surfacehint;
 
             popfont();
             curtextscale = oldtextscale;
@@ -2131,6 +2138,7 @@ namespace UI
         surfacestack.add(surface);
         surface = surfaces[surf];
         surfacetype = surface->type;
+        surfacehint = surface->hintoffset;
         return true;
     }
 
@@ -2138,6 +2146,7 @@ namespace UI
     {
         surface = surfacestack.empty() ? NULL : surfacestack.pop();
         surfacetype = surface ? surface->type : -1;
+        surfacehint = surface ? surface->hintoffset : 0;
     }
 
     #define DOSURFACE(surf, body) \
