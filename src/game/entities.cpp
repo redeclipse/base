@@ -24,7 +24,7 @@ namespace entities
     FVAR(IDF_PERSIST, showentavailable, 0, 1, 1);
     FVAR(IDF_PERSIST, showentunavailable, 0, 0.125f, 1);
 
-    DEFUIVARS(entity, SURFACE_WORLD, 2048);
+    DEFUIVARS(entity, SURFACE_WORLD, 512);
 
     VAR(IDF_PERSIST, entityhalos, 0, 1, 1);
     FVAR(IDF_PERSIST, entselblend, 0, 1, 1);

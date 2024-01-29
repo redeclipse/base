@@ -1685,7 +1685,7 @@ namespace UI
 
     UIWINARGV(origin);
     UIWINARGV(pos);
-    UIWINARG(maxdist, "f", float, 0, 360);
+    UIWINARG(maxdist, "f", float, 0.f, FVAR_MAX);
     UIWINARG(yaw, "f", float, -1, 360);
     UIWINARG(pitch, "f", float, -181, 181);
     UIWINARG(zindex, "i", int, VAR_MIN, VAR_MAX);
@@ -1893,11 +1893,14 @@ namespace UI
 
                     w->dist = w->pos.dist(camera1->o);
 
-                    float maxdist = w->maxdist > 0 ? min(w->maxdist, uimaxdist) : uimaxdist;
-                    if(maxdist > 0 && w->dist > maxdist)
+                    if(!w->ontop && !w->hint)
                     {
-                        w->visible = false;
-                        continue;
+                        float maxdist = w->maxdist > 0 ? min(w->maxdist, uimaxdist) : uimaxdist;
+                        if(maxdist > 0 && w->dist > maxdist)
+                        {
+                            w->visible = false;
+                            continue;
+                        }
                     }
                 }
                 else w->dist = 0.f;
