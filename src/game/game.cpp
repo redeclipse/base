@@ -70,7 +70,7 @@ namespace game
             "S_SPLASH1", "S_SPLASH2", "S_SPLOSH", "S_DEBRIS", "S_BURNLAVA",
             "S_EXTINGUISH", "S_SHELL", "S_ITEMUSE", "S_ITEMSPAWN",
             "S_REGEN_BEGIN", "S_REGEN", "S_CRITICAL", "S_DAMAGE", "S_DAMAGE2", "S_DAMAGE3", "S_DAMAGE4", "S_DAMAGE5", "S_DAMAGE6", "S_DAMAGE7", "S_DAMAGE8",
-            "S_BURNED", "S_BLEED", "S_SHOCK", "S_RESPAWN", "S_CHAT", "S_ERROR", "S_ALARM", "S_CATCH", "S_DROP", "S_BOUNCE",
+            "S_BURNED", "S_BLEED", "S_SHOCK", "S_RESPAWN", "S_CHAT", "S_ERROR", "S_ALARM", "S_HASPRIZE", "S_PRIZEPOP", "S_CATCH", "S_DROP", "S_BOUNCE",
             "S_V_FLAGSECURED", "S_V_FLAGOVERTHROWN", "S_V_FLAGPICKUP", "S_V_FLAGDROP", "S_V_FLAGRETURN", "S_V_FLAGSCORE", "S_V_FLAGRESET",
             "S_V_BOMBSTART", "S_V_BOMBDUEL", "S_V_BOMBPICKUP", "S_V_BOMBDROP", "S_V_BOMBSCORE", "S_V_BOMBRESET",
             "S_V_NOTIFY", "S_V_FIGHT", "S_V_SCORE", "S_V_START", "S_V_CHECKPOINT", "S_V_COMPLETE", "S_V_OVERTIME", "S_V_ONEMINUTE", "S_V_HEADSHOT",
@@ -1261,6 +1261,8 @@ namespace game
                 }
                 adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d, PULSE_SHOCK).mul(pc), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
             }
+
+            if(d->hasprize) adddynlight(d->center(), d->height, pulsecolour(d, PULSE_SHOCK), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
         }
     }
 
@@ -1618,6 +1620,13 @@ namespace game
                 }
             }
         }
+
+        if(d->hasprize)
+        {
+            if(!issound(d->plchan[PLCHAN_PRIZE]))
+                emitsound(S_HASPRIZE, getplayersoundpos(d), d, &d->plchan[PLCHAN_PRIZE], SND_LOOP);
+        }
+        else if(issound(d->plchan[PLCHAN_PRIZE])) soundsources[d->plchan[PLCHAN_PRIZE]].clear();
     }
 
     void checkfloor(gameent *d)
@@ -2142,7 +2151,7 @@ namespace game
         d->headless = (style&FRAG_HEADSHOT)!=0;
 
         bool burnfunc = burn(d, weap, flags), bleedfunc = bleed(d, weap, flags), shockfunc = shock(d, weap, flags), corrodefunc = corrode(d, weap, flags);
-        int anc = d == focus ? S_V_FRAGGED : -1, dth = d->actortype >= A_ENEMY || d->obliterated ? S_SPLOSH : S_DEATH, curmat = material&MATF_VOLUME;
+        int anc = d == focus ? S_V_FRAGGED : -1, dth = d->hasprize ? S_PRIZEPOP : d->actortype >= A_ENEMY || d->obliterated ? S_SPLOSH : S_DEATH, curmat = material&MATF_VOLUME;
 
         if(d != player1) d->resetinterp();
         formatstring(d->obit, "%s ", colourname(d));
