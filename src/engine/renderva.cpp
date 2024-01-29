@@ -512,12 +512,15 @@ bool mapmodelvisible(extentity &e, int n, int colvis, bool shadowpass)
         {
             if(e.spawned()) return false;
         }
-        else if(colvis && e.lastemit > 0)
+        else if(!(e.flags&EF_NOTRIGCOL))
         {
-            int millis = lastmillis-e.lastemit, delay = entities::triggertime(e, true);
-            if(e.spawned() ? millis > delay : millis < delay) return false;
+            if(colvis && e.lastemit > 0)
+            {
+                int millis = lastmillis-e.lastemit, delay = entities::triggertime(e, true);
+                if(e.spawned() ? millis > delay : millis < delay) return false;
+            }
+            else if((colvis&2 || e.lastemit < 0) && e.spawned()) return false;
         }
-        else if((colvis&2 || e.lastemit < 0) && e.spawned()) return false;
     }
     mapmodelinfo &mmi = mapmodels[e.attrs[0]];
     model *m = loadlodmodel(mmi.m ? mmi.m : loadmodel(mmi.name), e.o, e.attrs[17]);

@@ -41,7 +41,8 @@ enum
     EF_RENDER     = 1<<6,
     EF_SPAWNED    = 1<<7,
     EF_DYNAMIC    = 1<<8,
-    EF_BBZONE     = 1<<9
+    EF_BBZONE     = 1<<9,
+    EF_NOTRIGCOL  = 1<<10
 };
 
 typedef smallvector<int> attrvector;

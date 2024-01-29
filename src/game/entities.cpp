@@ -2067,7 +2067,7 @@ namespace entities
                 while(e.attrs[4] > 100) e.attrs[4] -= 101; // wrap both ways
                 if(e.attrs[5] < 0) e.attrs[5] += 101; // scale, wrap around
                 if(e.attrs[6] < 0) e.attrs[6] = 0; // flags, clamp
-                static const int mdlfmap[MDLF_MAX] = { EF_HIDE, EF_NOCOLLIDE, EF_NOSHADOW };
+                static const int mdlfmap[MDLF_MAX] = { EF_HIDE, EF_NOCOLLIDE, EF_NOSHADOW, EF_NOTRIGCOL };
                 loopj(MDLF_MAX)
                 {
                     if(e.flags&mdlfmap[j] && !(e.attrs[6]&(1<<j))) e.flags &= ~mdlfmap[j];
