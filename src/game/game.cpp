@@ -2207,16 +2207,8 @@ namespace game
             bool hasanc = false;
             if(d->headless && !hasanc) anc = S_V_HEADSHOT;
 
-            if(v->actortype >= A_ENEMY)
-            {
-                concatstring(d->obit, " a ");
-                concatstring(d->obit, colourname(v));
-            }
-            else if(m_team(gamemode, mutators) && d->team == v->team)
-            {
-                concatstring(d->obit, " \fs\fzawteam-mate\fS ");
-                concatstring(d->obit, colourname(v));
-            }
+            if(v->actortype >= A_ENEMY) concatstring(d->obit, " a");
+            else if(m_team(gamemode, mutators) && d->team == v->team) concatstring(d->obit, " \fs\fzawteam-mate\fS");
 
             if(style&FRAG_REVENGE)
             {
