@@ -721,10 +721,7 @@ struct clientstate
     {
         if(isweap(weap) && weap != exclude)
         {
-            if(!(A(actortype, abilities)&(1<<A_A_AMMO))) return true;
-
             int ammo = getammo(weap, 0, true);
-
             if(ammo >= 0) switch(level)
             {
                 case 0: default: return true; break; // has weap at all

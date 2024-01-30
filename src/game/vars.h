@@ -316,9 +316,9 @@ GFVAR(IDF_GAMEMOD, 0, itemdropminspeed, 0, 15, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemdropspreadxy, 0, 10, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemdropspreadz, 0, 2, FVAR_MAX);
 
-GVAR(IDF_GAMEMOD, 0, prizegrenade, 0, 10, VAR_MAX);
-GVAR(IDF_GAMEMOD, 0, prizemine, 0, 10, VAR_MAX);
-GVAR(IDF_GAMEMOD, 0, prizerocket, 0, 1, VAR_MAX);
+GVAR(IDF_GAMEMOD, 0, prizegrenade, 0, 49, VAR_MAX);
+GVAR(IDF_GAMEMOD, 0, prizemine, 0, 49, VAR_MAX);
+GVAR(IDF_GAMEMOD, 0, prizerocket, 0, 2, VAR_MAX);
 
 //  dm          duel        survivor    gladiator   capture     defend      defendking  bomber      bomberhold  race        racelapped  racegauntlet
 MMVAR(IDF_GAMEMOD, 0, timelimit, 0, VAR_MAX,
@@ -535,10 +535,10 @@ GVAR(IDF_GAMEMOD, 0, janitorlimit, 0, 16, MAXAI); // maximum number of janitors
 GVAR(IDF_GAMEMOD, 0, janitorprize, 0, -1, 3); // // -1 = random, 0 = none, 1 = grenade, 2 = mine, 3 = rocket
 GVAR(IDF_GAMEMOD, 0, janitorready, 0, 100, VAR_MAX); // ready to award a prize at this much stuff
 GVAR(IDF_GAMEMOD, 0, janitorcollect, 0, 200, VAR_MAX); // collect this much before dumping
-GFVAR(IDF_GAMEMOD, 0, janitorbalance, 0, 0.5f, FVAR_MAX); // this * current balance = number of janitors
+GFVAR(IDF_GAMEMOD, 0, janitorbalance, 0, 0.33f, FVAR_MAX); // this * current balance = number of janitors
 GFVAR(IDF_GAMEMOD, 0, janitorjunktime, 0, 0.25f, 1); // when shell casings and vanities/parts become "junk"
 GFVAR(IDF_GAMEMOD, 0, janitorjunkitems, 0, 0.5f, 1); // when items become "junk"
-GFVAR(IDF_GAMEMOD, 0, janitorjunkdebris, 0, 0.0625f, 1); // when gibs and debris become "junk"
+GFVAR(IDF_GAMEMOD, 0, janitorjunkdebris, 0, 0.125f, 1); // when gibs and debris become "junk"
 
 GFVAR(IDF_GAMEMOD, 0, movespeed, FVAR_NONZERO, 1.f, FVAR_MAX); // speed
 GFVAR(IDF_GAMEMOD, 0, moveslow, 0, 0.5f, FVAR_MAX); // threshold for running
