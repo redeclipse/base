@@ -1428,7 +1428,8 @@ namespace UI
             {
                 worldcalc();
 
-                hudmatrix.muld(nojittermatrix, cammatrix);
+                //hudmatrix.muld(nojittermatrix, cammatrix);
+                hudmatrix = camprojmatrix;
                 hudmatrix.translate(pos);
                 hudmatrix.rotate_around_z(curyaw*RAD);
                 hudmatrix.rotate_around_x((curpitch - 90)*RAD);
