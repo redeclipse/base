@@ -6040,37 +6040,18 @@ namespace server
                                 gametick = 0;
                             }
 
-                            if(!hasgameinfo && timewait() >= totalmillis) break;
-
-                            if(hasgameinfo) srvoutf(4, colouryellow, "Game information received, starting..");
-                            else
+                            if(!hasgameinfo && timewait() >= totalmillis)
                             {
-                                if(mapgameinfo != -2)
-                                {
-                                    int asked = 0;
-                                    mapgameinfo = -2;
-                                    loopv(clients)
-                                    {
-                                        clientinfo *cs = clients[i];
-                                        if(cs->actortype > A_PLAYER || !cs->name[0] || !cs->online || cs->wantsmap || !cs->ready || cs->clientnum == mapgameinfo) continue;
-                                        sendf(cs->clientnum, 1, "ri", N_GETGAMEINFO);
-                                        asked++;
-                                    }
-
-                                    if(!asked) srvoutf(4, colouryellow, "No game information response, and nobody to ask, giving up..");
-                                    else
-                                    {
-                                        srvoutf(4, colouryellow, "No game information response, broadcasting..");
-                                        gamewaittime = totalmillis;
-                                        gamewaitdelay = G(waitforplayerinfo);
-                                        gametick = 0;
-                                        break;
-                                    }
-                                }
-                                else srvoutf(4, colouryellow, "No broadcast game information response, giving up..");
+                                mapgameinfo = -2; // broadcast allowed
+                                sendf(-1, 1, "ri", N_GETGAMEINFO);
+                                srvoutf(4, colouryellow, "No game information response, broadcasting and moving on..");
                             }
-
-                            mapgameinfo = -1;
+                            else if(hasgameinfo)
+                            {
+                                srvoutf(4, colouryellow, "Game information received, starting..");
+                                mapgameinfo = -1;
+                            }
+                            // fall-through
                         }
 
                         default:
