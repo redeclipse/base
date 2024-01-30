@@ -462,7 +462,7 @@ namespace game
 
     int gettimeoffset()
     {
-        return (gs_timeupdate(gamestate) ? lastmillis : totalmillis) - timelast;
+        return (gs_playing(gamestate) ? lastmillis : totalmillis) - timelast;
     }
 
     int gettimeremain()
@@ -491,7 +491,7 @@ namespace game
 
     int gettimesync()
     {
-        if(!timeelapsed || !timelast || !gs_timeupdate(gamestate) || !connected()) timesync = 0;
+        if(!timeelapsed || !timelast || !gs_playing(gamestate) || !connected()) timesync = 0;
         else timesync = max(gettimeelapsed(), timesync);
         return timesync;
     }
@@ -2376,9 +2376,9 @@ namespace game
         gamestate = state;
         timeremaining = remain;
         timeelapsed = elapsed;
-        timelast = gs_timeupdate(gamestate) ? lastmillis : totalmillis;
+        timelast = gs_playing(gamestate) ? lastmillis : totalmillis;
         timewait = wait;
-        if(gs_timeupdate(gamestate) != gs_timeupdate(oldstate)) entities::updaterails();
+        if(gs_playing(gamestate) != gs_playing(oldstate)) entities::updaterails();
         if(gs_intermission(gamestate) && gs_playing(oldstate))
         {
             player1->stopmoving(true);

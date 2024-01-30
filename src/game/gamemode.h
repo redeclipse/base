@@ -33,7 +33,6 @@ ENUM_DLN(G_S);
 #define gs_waiting(a) (a >= G_S_WAITING && a <= G_S_GAMEINFO)
 #define gs_playing(a) (a >= G_S_PLAYING && a <= G_S_OVERTIME)
 #define gs_intermission(a) (a >= G_S_INTERMISSION && a <= G_S_VOTING)
-#define gs_timeupdate(a) (gs_playing(a) || gs_intermission(a))
 
 #define G_F_ENUM(en, um) en(um, Game Specific, GSP) en(um, Maximum, MAX)
 ENUM_DLN(G_F);
