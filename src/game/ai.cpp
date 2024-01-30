@@ -1504,7 +1504,7 @@ namespace ai
         d->resetinterp();
     }
 
-    void process(gameent *d, aistate &b, bool &occupied, bool &firing, vector<actitem> &items)
+    void process(gameent *d, aistate &b, bool &occupied, bool &firing, bool &wantitem)
     {
         if(d->actortype == A_HAZARD)
         {
@@ -1564,7 +1564,7 @@ namespace ai
         {
             gameent *e = game::getclient(d->ai->enemy);
             bool shootable = false;
-            if(items.empty())
+            if(!wantitem)
             {
                 shootable = e && targetable(d, e, true);
                 if(!shootable || d->skill >= 50 || d->ai->dontmove)
@@ -1712,99 +1712,24 @@ namespace ai
         bool occupied = false, firing = false,
              haswaited = d->weapwaited(d->weapselect, lastmillis, (1<<W_S_RELOAD));
 
-        static vector<actitem> items;
-        items.setsize(0);
-        if(m_maxcarry(d->actortype, game::gamemode, game::mutators) && d->actortype < A_ENEMY)
+        bool wantitem = false;
+        if(m_maxcarry(d->actortype, game::gamemode, game::mutators) && d->actortype < A_ENEMY && d->actitems[0].millis == d->lastactitem && entities::ents.inrange(d->actitems[0].ent))
         {
-            static vector<actitem> actitems;
-            actitems.setsize(0);
-            vec pos = d->center();
-            float radius = max(d->height*0.5f, max(d->xradius, d->yradius));
-            if(entities::collateitems(d, pos, radius, actitems))
+            extentity &e = *entities::ents[d->actitems[0].ent];
+            if(enttype[e.type].usetype == EU_ITEM && e.type == WEAPON && entities::isallowed(e))
             {
-                while(!actitems.empty())
-                {
-                    actitem &t = actitems.last();
-                    int ent = -1;
-                    switch(t.type)
-                    {
-                        case actitem::ENT:
-                        {
-                            if(!entities::ents.inrange(t.target)) break;
-                            extentity &e = *entities::ents[t.target];
-                            if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON || !entities::isallowed(e)) break;
-                            ent = t.target;
-                            break;
-                        }
-                        case actitem::PROJ:
-                        {
-                            if(!projs::projs.inrange(t.target)) break;
-                            projent &proj = *projs::projs[t.target];
-                            extentity &e = *entities::ents[proj.id];
-                            if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON || proj.owner == d || !entities::isallowed(e)) break;
-                            ent = proj.id;
-                            break;
-                        }
-                        default: break;
-                    }
-                    if(entities::ents.inrange(ent))
-                    {
-                        extentity &e = *entities::ents[ent];
-                        int attr = m_attr(e.type, e.attrs[0]);
-                        if(isweap(attr) && d->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
-                        {
-                            if(!wantsweap(d, attr, false)) break;
-                            actitem &s = items.add();
-                            s.type = t.type;
-                            s.target = t.target;
-                            s.score = t.score;
-                        }
-                    }
-                    actitems.pop();
-                }
+                int attr = m_attr(e.type, e.attrs[0]);
+                if(isweap(attr) && d->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)) && wantsweap(d, attr, false))
+                    wantitem = true;
             }
         }
 
-        process(d, b, occupied, firing, items);
+        process(d, b, occupied, firing, wantitem);
 
-        if(haswaited && !firing && !d->action[AC_USE]) while(!items.empty())
+        if(haswaited && !firing && !d->action[AC_USE] && wantitem)
         {
-            actitem &t = items.last();
-            int ent = -1;
-            switch(t.type)
-            {
-                case actitem::ENT:
-                {
-                    if(!entities::ents.inrange(t.target)) break;
-                    extentity &e = *entities::ents[t.target];
-                    if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON || !entities::isallowed(e)) break;
-                    ent = t.target;
-                    break;
-                }
-                case actitem::PROJ:
-                {
-                    if(!projs::projs.inrange(t.target)) break;
-                    projent &proj = *projs::projs[t.target];
-                    extentity &e = *entities::ents[proj.id];
-                    if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON || proj.owner == d || !entities::isallowed(e)) break;
-                    ent = proj.id;
-                    break;
-                }
-                default: break;
-            }
-            if(entities::ents.inrange(ent))
-            {
-                extentity &e = *entities::ents[ent];
-                int attr = m_attr(e.type, e.attrs[0]);
-                if(isweap(attr) && d->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
-                {
-                    if(!wantsweap(d, attr, false)) break;
-                    d->action[AC_USE] = true;
-                    d->ai->lastaction = d->actiontime[AC_USE] = lastmillis;
-                    return true;
-                }
-            }
-            items.pop();
+            d->action[AC_USE] = true;
+            d->ai->lastaction = d->actiontime[AC_USE] = lastmillis;
         }
 
         bool timepassed = d->weapstate[d->weapselect] == W_S_IDLE && (d->weapammo[d->weapselect][W_A_CLIP] <= 0 || lastmillis-d->weaptime[d->weapselect] >= max(6000-(d->skill*50), W(d->weapselect, delayswitch)));

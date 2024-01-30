@@ -343,15 +343,36 @@ struct usedent
     int ent, millis;
 };
 
+#define ACTITEM_ENUM(en, um) en(um, Entity, ENT) en(um, Projectile, PROJ) en(um, Max, MAX)
+ENUM_DLN(ACTITEM);
+
+struct actitem
+{
+    int type, ent, id, millis;
+    float score;
+
+    actitem() : type(ACTITEM_ENT), ent(-1), id(-1), millis(0), score(0) {}
+    ~actitem() {}
+
+    static bool sortitems(const actitem &a, const actitem &b)
+    {
+        if(a.millis > b.millis) return true; // most recently poked first
+        if(a.millis < b.millis) return false;
+
+        return a.score < b.score; // closest items first
+    }
+};
+
 struct dynent : physent                         // animated characters, or characters that can receive input
 {
     animinterpinfo animinterp[MAXANIMPARTS];
     ragdolldata *ragdoll;
     occludequery *query;
-    int lastrendered;
+    int lastrendered, lastactitem;
     vector<usedent> used;
+    vector<actitem> actitems;
 
-    dynent() : ragdoll(NULL), query(NULL), lastrendered(0)
+    dynent() : ragdoll(NULL), query(NULL), lastrendered(0), lastactitem(0)
     {
         reset();
     }
@@ -371,6 +392,31 @@ struct dynent : physent                         // animated characters, or chara
     {
         physent::reset();
         loopi(MAXANIMPARTS) animinterp[i].reset();
+        used.shrink(0);
+        actitems.shrink(0);
+        lastactitem = 0;
+    }
+
+    int logitem(int type, int ent, float score, int id = -1)
+    {
+        loopv(actitems)
+        {
+            if(actitems[i].type != type || actitems[i].ent != ent) continue;
+            if(id >= 0 && actitems[i].id >= 0 && actitems[i].id != id) continue;
+
+            actitems[i].score = score;
+            actitems[i].millis = lastactitem;
+            return i;
+        }
+
+        actitem &n = actitems.add();
+        n.type = type;
+        n.ent = ent;
+        n.id = id;
+        n.score = score;
+        n.millis = lastactitem;
+
+        return actitems.length() - 1;
     }
 
     void normalize_yaw(float angle)

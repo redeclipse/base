@@ -866,6 +866,63 @@ namespace client
     LOOPINVENTORY(,loopcsi,loopk,false);
     LOOPINVENTORY(rev,loopcsirev,loopkrev,true);
 
+    CLCOMMANDM(actitem, "sb", (char *who, int *n), intret(*n >= 0 ? (d->actitems.inrange(*n) ? 1 : 0) : d->actitems.length()));
+    CLCOMMANDM(actitemtype, "sb", (char *who, int *n), intret(d->actitems.inrange(*n) ? d->actitems[*n].type : -1));
+    CLCOMMANDM(actitement, "sb", (char *who, int *n), intret(d->actitems.inrange(*n) ? d->actitems[*n].ent : -1));
+    CLCOMMANDM(actitemid, "sb", (char *who, int *n), intret(d->actitems.inrange(*n) ? d->actitems[*n].id : -1));
+    CLCOMMANDM(actitemscore, "sb", (char *who, int *n), floatret(d->actitems.inrange(*n) ? d->actitems[*n].score : 0.f));
+    CLCOMMANDM(actitemmillis, "sb", (char *who, int *n), intret(d->actitems.inrange(*n) ? d->actitems[*n].millis : 0));
+    CLCOMMANDM(actitemready, "sb", (char *who, int *n), intret(d->actitems.inrange(*n) ? (d->actitems[*n].millis == d->lastactitem ? 1 : 0) : 0));
+
+    #define LOOPACTITEMS(name, op) \
+        ICOMMAND(IDF_NAMECOMPLETE, loopactitems##name, "siire", (char *who, int *count, int *skip, ident *id, uint *body), \
+        { \
+            gameent *d = game::getclient(parseplayer(who)); \
+            if(!d) return; \
+            loopstart(id, stack); \
+            op(d->actitems, *count, *skip, \
+            { \
+                loopiter(id, stack, i); \
+                execute(body); \
+            }); \
+            loopend(id, stack); \
+        });
+    LOOPACTITEMS(,loopcsv);
+    LOOPACTITEMS(rev,loopcsvrev);
+
+    #define LOOPACTITEMSIF(name, op) \
+        ICOMMAND(IDF_NAMECOMPLETE, loopactitems##name, "siiree", (char *who, int *count, int *skip, ident *id, uint *cond, uint *body), \
+        { \
+            gameent *d = game::getclient(parseplayer(who)); \
+            if(!d) return; \
+            loopstart(id, stack); \
+            op(d->actitems, *count, *skip, \
+            { \
+                loopiter(id, stack, i); \
+                if(executebool(cond)) execute(body); \
+            }); \
+            loopend(id, stack); \
+        });
+    LOOPACTITEMS(,loopcsv);
+    LOOPACTITEMS(rev,loopcsvrev);
+
+    #define LOOPREADYITEMS(name, op) \
+        ICOMMAND(IDF_NAMECOMPLETE, loopreadyitems##name, "siire", (char *who, int *count, int *skip, ident *id, uint *body), \
+        { \
+            gameent *d = game::getclient(parseplayer(who)); \
+            if(!d) return; \
+            loopstart(id, stack); \
+            op(d->actitems, *count, *skip, \
+            { \
+                if(d->actitems[i].millis != d->lastactitem) break; \
+                loopiter(id, stack, i); \
+                execute(body); \
+            }); \
+            loopend(id, stack); \
+        });
+    LOOPREADYITEMS(,loopcsv);
+    LOOPREADYITEMS(rev,loopcsvrev);
+
     VAR(0, numplayertypes, 1, PLAYERTYPES, -1);
     ICOMMAND(0, getmodelname, "ib", (int *mdl, int *idx), result(*mdl >= 0 ? playertypes[*mdl%PLAYERTYPES][*idx >= 0 ? clamp(*idx, 0, 6) : 6] : ""));
     VAR(0, numpatterns, 1, PLAYERPATTERNS, -1);

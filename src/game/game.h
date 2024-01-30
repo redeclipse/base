@@ -902,16 +902,15 @@ struct clientstate
 
     bool canreload(int weap, int sweap, bool check = false, int millis = 0, int skip = 0)
     {
-        if(A(actortype, abilities)&(1<<A_A_AMMO) ||
-            ((W(weap, ammostore) < 0 || weapammo[weap][W_A_STORE] > 0)
-                && (!check || (weap == weapselect && hasweap(weap, sweap) && weapammo[weap][W_A_CLIP] < W(weap, ammoclip) && weapstate[weap] != W_S_ZOOM && weapwaited(weap, millis, skip)))))
+        if((W(weap, ammostore) < 0 || weapammo[weap][W_A_STORE] > 0 || !(A(actortype, abilities)&(1<<A_A_AMMO)))
+                && (!check || (weap == weapselect && hasweap(weap, sweap) && weapammo[weap][W_A_CLIP] < W(weap, ammoclip) && weapstate[weap] != W_S_ZOOM && weapwaited(weap, millis, skip))))
             return true;
         return false;
     }
 
     bool canuseweap(int gamemode, int mutators, int attr, int sweap, int millis, int skip = 0, bool full = true)
     {
-        if(A(actortype, abilities)&(1<<A_A_AMMO)) return false;
+        if(!(A(actortype, abilities)&(1<<A_A_AMMO))) return false;
         if(!m_classic(gamemode, mutators) && attr < W_ITEM && !hasweap(attr, sweap)) return false;
 
         if(full)
@@ -942,7 +941,7 @@ struct clientstate
 
     void useitem(int id, int type, int attr, int ammoamt, int sweap, int millis, int delay)
     {
-        if(type != WEAPON || !isweap(attr) || A(actortype, abilities)&(1<<A_A_AMMO)) return;
+        if(type != WEAPON || !isweap(attr) || !(A(actortype, abilities)&(1<<A_A_AMMO))) return;
         int prevclip = max(weapammo[attr][W_A_CLIP], 0), prevstore = max(weapammo[attr][W_A_STORE], 0);
         weapswitch(attr, millis, delay, W_S_USE);
         weapammo[attr][W_A_CLIP] = W(attr, ammostore) <= 0 || !hasweap(attr, sweap) ? clamp(prevclip+ammoamt, 0, W(attr, ammoclip)) : prevclip;
@@ -1242,16 +1241,6 @@ struct gameentity : extentity
     }
     vec pos() { getcurpos(); return curpos; }
     vec *getpos() { getcurpos(); return &curpos; }
-};
-
-struct actitem
-{
-    enum { ENT = 0, PROJ };
-    int type, target;
-    float score;
-
-    actitem() : type(ENT), target(-1), score(0) {}
-    ~actitem() {}
 };
 
 static const char * const animnames[] =

@@ -1658,7 +1658,7 @@ namespace game
 
             if(!gs_playing(gamestate)) continue;
 
-            if(d->state == CS_DEAD || d->state == CS_WAITING) entities::checkitems(d);
+            entities::checkitems(d);
 
             const int lagtime = totalmillis-d->lastupdate;
             if(!lagtime) continue;
@@ -3834,8 +3834,7 @@ namespace game
             if(gs_playing(gamestate))
             {
                 addsway(focus);
-                if(player1->state == CS_ALIVE || player1->state == CS_DEAD || player1->state == CS_WAITING)
-                    entities::checkitems(player1);
+                entities::checkitems(player1);
 
                 if(!tvmode() && player1->state >= CS_SPECTATOR)
                 {

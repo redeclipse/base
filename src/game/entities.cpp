@@ -8,7 +8,6 @@ namespace entities
     vector<int> airnodes;
     vector<inanimate *> inanimates;
 
-    VAR(IDF_PERSIST, showentmax, 1, 256, VAR_MAX);
     FVAR(IDF_PERSIST, showentdist, 0, 2048, FVAR_MAX);
     VAR(IDF_PERSIST, showentmodels, 0, 2, 2);
     VAR(IDF_PERSIST, showentweapons, 0, 0, 2);
@@ -1375,75 +1374,6 @@ namespace entities
         }
     }
 
-    /*
-    static inline void collateents(octaentities &oe, const vec &pos, float xyrad, float zrad, bool alive, vector<actitem> &actitems)
-    {
-        vector<extentity *> &ents = entities::getents();
-        loopv(oe.other)
-        {
-            int n = oe.other[i];
-            extentity &e = *ents[n];
-            if(enttype[e.type].usetype != EU_NONE && (enttype[e.type].usetype != EU_ITEM || (alive && e.spawned())))
-            {
-                float radius = enttype[e.type].radius;
-                switch(e.type)
-                {
-                    case TRIGGER: case TELEPORT: case PUSHER: if(e.attrs[3] > 0) radius = e.attrs[3]; break;
-                    case CHECKPOINT: if(e.attrs[0] > 0) radius = e.attrs[0]; break;
-                }
-                if(overlapsbox(pos, zrad, xyrad, e.pos(), radius, radius))
-                {
-                    actitem &t = actitems.add();
-                    t.type = actitem::ENT;
-                    t.target = n;
-                    t.score = pos.squaredist(e.pos());
-                }
-            }
-        }
-    }
-
-    static inline void collateents(cube *c, const ivec &o, int size, const ivec &bo, const ivec &br, const vec &pos, float xyrad, float zrad, bool alive, vector<actitem> &actitems)
-    {
-        loopoctabox(o, size, bo, br)
-        {
-            if(c[i].ext && c[i].ext->ents) collateents(*c[i].ext->ents, pos, xyrad, zrad, alive, actitems);
-            if(c[i].children && size > octaentsize)
-            {
-                ivec co(i, o.x, o.y, o.z, size);
-                collateents(c[i].children, co, size>>1, bo, br, pos, xyrad, zrad, alive, actitems);
-            }
-        }
-    }
-
-    void collateents(const vec &pos, float xyrad, float zrad, bool alive, vector<actitem> &actitems)
-    {
-        ivec bo = vec(pos).sub(vec(xyrad, xyrad, zrad)),
-             br = vec(pos).add(vec(xyrad, xyrad, zrad)).add(1);
-        int diff = (bo.x^br.x) | (bo.y^br.y) | (bo.z^br.z) | octaentsize,
-            scale = worldscale-1;
-        if(diff&~((1<<scale)-1) || uint(bo.x|bo.y|bo.z|br.x|br.y|br.z) >= uint(worldsize))
-        {
-            collateents(worldroot, ivec(0, 0, 0), 1<<scale, bo, br, pos, xyrad, zrad, alive, actitems);
-            return;
-        }
-        cube *c = &worldroot[octastep(bo.x, bo.y, bo.z, scale)];
-        if(c->ext && c->ext->ents) collateents(*c->ext->ents, pos, xyrad, zrad, alive, actitems);
-        scale--;
-        while(c->children && !(diff&(1<<scale)))
-        {
-            c = &c->children[octastep(bo.x, bo.y, bo.z, scale)];
-            if(c->ext && c->ext->ents) collateents(*c->ext->ents, pos, xyrad, zrad, alive, actitems);
-            scale--;
-        }
-        if(c->children && 1<<scale >= octaentsize) collateents(c->children, ivec(bo).mask(~((2<<scale)-1)), 1<<scale, bo, br, pos, xyrad, zrad, alive, actitems);
-    }
-    */
-
-    static inline bool sortitems(const actitem &a, const actitem &b)
-    {
-        return a.score > b.score;
-    }
-
     bool collateitems(dynent *d, vec &pos, float radius, vector<actitem> &actitems)
     {
         loopv(ents)
@@ -1457,12 +1387,11 @@ namespace entities
                     case TRIGGER: case TELEPORT: case PUSHER: if(e.attrs[3] > 0) eradius = e.attrs[3]; break;
                     case CHECKPOINT: if(e.attrs[0] > 0) eradius = e.attrs[0]; break;
                 }
+
                 float diff = edist-radius;
                 if(diff > eradius) continue;
-                actitem &t = actitems.add();
-                t.type = actitem::ENT;
-                t.target = i;
-                t.score = diff;
+
+                d->logitem(ACTITEM_ENT, i, diff);
             }
         }
         if(d->state == CS_ALIVE) loopv(projs::projs)
@@ -1471,24 +1400,23 @@ namespace entities
             if(!proj.owner || proj.projtype != PRJ_ENT || !proj.ready()) continue;
             if(!ents.inrange(proj.id) || enttype[ents[proj.id]->type].usetype != EU_ITEM || !isallowed(proj.id)) continue;
             if(!(enttype[ents[proj.id]->type].canuse&(1<<d->type))) continue;
-            //if(!overlapsbox(m, eye, d->radius, proj.o, enttype[ents[proj.id]->type].radius, enttype[ents[proj.id]->type].radius))
-            //    continue;
+
             float eradius = enttype[ents[proj.id]->type].radius, edist = pos.dist(proj.o);
             switch(ents[proj.id]->type)
             {
                 case TRIGGER: case TELEPORT: case PUSHER: if(ents[proj.id]->attrs[3] > 0) eradius = ents[proj.id]->attrs[3]; break;
                 case CHECKPOINT: if(ents[proj.id]->attrs[0] > 0) eradius = ents[proj.id]->attrs[0]; break;
             }
+
             float diff = edist-radius;
             if(diff > eradius) continue;
-            actitem &t = actitems.add();
-            t.type = actitem::PROJ;
-            t.target = i;
-            t.score = diff;
+
+            d->logitem(ACTITEM_PROJ, proj.id, diff, i);
         }
+
         if(!actitems.empty())
         {
-            actitems.sort(sortitems); // sort items so last is closest
+            actitems.sort(actitem::sortitems); // sort items so last is closest
             return true;
         }
         return false;
@@ -1853,32 +1781,47 @@ namespace entities
 
     void checkitems(dynent *d)
     {
-        static vector<actitem> actitems;
-        actitems.setsize(0);
+        d->lastactitem = totalmillis;
+
+        if(!gs_playing(game::gamestate)) return;
+
+        if(d != game::player1 && (!gameent::is(d) || !((gameent *)d)->ai))
+        {
+            if(!d->isdead()) return;
+        }
+        else if(!d->isactive()) return;
+
         vec pos = d->center();
         float radius = max(d->xradius, d->yradius);
         if(gameent::is(d)) radius = max(d->height*0.5f, radius);
-        if(collateitems(d, pos, radius, actitems))
+
+        if(collateitems(d, pos, radius, d->actitems))
         {
             bool tried = false;
-            while(!actitems.empty())
+            loopv(d->actitems)
             {
-                actitem &t = actitems.last();
+                actitem &t = d->actitems[i];
+
+                if(t.millis != d->lastactitem) break; // rest are invalid
+
                 int ent = -1, cn = -1;
                 float dist = 0;
+
                 switch(t.type)
                 {
-                    case actitem::ENT:
+                    case ACTITEM_ENT:
                     {
-                        if(!ents.inrange(t.target)) break;
-                        ent = t.target;
+                        if(!ents.inrange(t.ent)) break;
+
+                        ent = t.ent;
                         dist = t.score;
                         break;
                     }
-                    case actitem::PROJ:
+                    case ACTITEM_PROJ:
                     {
-                        if(!projs::projs.inrange(t.target)) break;
-                        projent &proj = *projs::projs[t.target];
+                        if(!projs::projs.inrange(t.id)) break;
+
+                        projent &proj = *projs::projs[t.id];
                         cn = proj.owner->clientnum;
                         ent = proj.id;
                         dist = t.score;
@@ -1886,9 +1829,10 @@ namespace entities
                     }
                     default: break;
                 }
+
                 if(ents.inrange(ent) && execitem(ent, cn, d, dist)) tried = true;
-                actitems.pop();
             }
+
             if(tried && gameent::is(d))
             {
                 gameent *e = (gameent *)d;
@@ -3524,21 +3468,18 @@ namespace entities
         if(entityui < 0) return;
 
         bool editcheck = game::player1->isediting() && !editinhibit;
-        int fstent = m_edit(game::gamemode) ? 0 : firstuse(EU_ITEM),
-            lstent = m_edit(game::gamemode) ? ents.length() : lastuse(EU_ITEM),
-            numdrawn = 0;
+        int fstent = editcheck ? 0 : firstuse(EU_ITEM),
+            lstent = editcheck ? ents.length() : lastuse(EU_ITEM);
 
         for(int i = fstent; i < lstent; ++i)
         {
             gameentity &e = *(gameentity *)ents[i];
 
             if(e.type == NOTUSED || e.attrs.empty()) continue;
-            if(!editcheck && enttype[e.type].usetype != EU_ITEM) continue;
+            if(!editcheck && (enttype[e.type].usetype != EU_ITEM || !entities::isallowed(e))) continue;
 
-            vec curpos = vec(editcheck ? e.o : e.pos()).addz(max(enttype[e.type].radius, 4));
+            vec curpos = vec(editcheck ? e.o : e.pos()).addz(clamp(enttype[e.type].radius / 2, 2, 4));
             MAKEUI(entity, i, editcheck && (enthover.find(i) >= 0 || entgroup.find(i) >= 0), curpos);
-
-            if(++numdrawn >= showentmax) break;
         }
     }
 
