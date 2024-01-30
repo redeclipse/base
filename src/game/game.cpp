@@ -4486,14 +4486,14 @@ namespace game
 
         if(d->corrodetime && d->corrodefunc(lastmillis, d->corrodetime))
         {
-            int millis = lastmillis - d->lastres[W_R_BURN], delay = max(d->corrodedelay, 1);
-            float pc = 1, intensity = 0.5f + (rnd(51) / 100.f), fade = (d != focus || d->state != CS_ALIVE ? 0.125f : 0.f) + (rnd(26) / 100.f);
+            int millis = lastmillis - d->lastres[W_R_CORRODE], delay = max(d->corrodedelay, 1);
+            float pc = 1, intensity = 0.5f + (rnd(51) / 100.f), fade = (d != focus || d->state != CS_ALIVE ? 0.05f : 0.f) + (rnd(11) / 100.f);
 
             if(d->corrodetime - millis < delay) pc *= (d->corrodetime - millis) / float(delay);
             else pc *= 0.75f + ((millis % delay)/float(delay * 4));
 
             vec pos = vec(d->center()).add(vec(rnd(11) - 5, rnd(11) - 5, rnd(11) - 3).mul(pc));
-            regular_part_create(PART_HINT_SOFT, 200, pos, pulsehexcol(d, PULSE_CORRODE), d->height * intensity * blend * pc, fade * blend * pc, 0, 0, -50);
+            regular_part_create(PART_HINT_SOFT, 200, pos, pulsehexcol(d, PULSE_CORRODE), d->height * intensity * blend * pc, fade * blend * pc, 0, 0, -25);
         }
     }
 
