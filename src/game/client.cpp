@@ -876,12 +876,13 @@ namespace client
     CLCOMMANDM(actitementer, "sb", (char *who, int *n), intret(d->actitems.inrange(*n) ? d->actitems[*n].enter : -1));
     CLCOMMANDM(actitemleave, "sb", (char *who, int *n), intret(d->actitems.inrange(*n) ? d->actitems[*n].leave : -1));
     CLCOMMANDM(actitemready, "sb", (char *who, int *n), intret(d->actitems.inrange(*n) ? (d->actitems[*n].millis == d->lastactitem ? 1 : 0) : 0));
-    CLCOMMANDM(actitemidx, "sbb", (char *who, int *n, int *v),
+    CLCOMMANDM(actitemidx, "sbbb", (char *who, int *n, int *v, int *r),
     {
         loopv(d->actitems)
         {
             if(*n >= 0 && d->actitems[i].type != *n) continue;
             if(*v >= 0 && d->actitems[i].ent != *v) continue;
+            if(*r >= 0 && d->actitems[i].id != *r) continue;
 
             intret(i);
 

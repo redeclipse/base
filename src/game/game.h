@@ -2258,7 +2258,7 @@ struct projent : dynent
     bool local, limited, escaped, child, bounced;
     int projtype, projcollide, interacts;
     float elasticity, relativity, liquidcoast;
-    int schan, id, weap, fromweap, fromflags, value, flags, collidezones;
+    int seqid, schan, id, weap, fromweap, fromflags, value, flags, collidezones;
     gameent *owner, *target, *stick;
     physent *hit;
     const char *mdlname;
@@ -2266,7 +2266,7 @@ struct projent : dynent
     fx::emitter *effect;
     int fxtype;
 
-    projent() : projtype(PRJ_SHOT), id(-1), collidezones(CLZ_NONE), owner(NULL), target(NULL),
+    projent() : projtype(PRJ_SHOT), seqid(-1), id(-1), collidezones(CLZ_NONE), owner(NULL), target(NULL),
         stick(NULL), hit(NULL), mdlname(NULL), effect(NULL), fxtype(FX_P_NONE) { reset(); }
     ~projent()
     {
@@ -2301,7 +2301,7 @@ struct projent : dynent
         inertia = sticknrm = stickpos = lastgood = vec(0, 0, 0);
         effectpos = vec(-1e16f, -1e16f, -1e16f);
         addtime = lifetime = lifemillis = waittime = spawntime = fadetime = lastradial = lasteffect = lastbounce = beenused = flags = 0;
-        schan = id = weap = fromweap = fromflags = value = -1;
+        seqid = schan = id = weap = fromweap = fromflags = value = -1;
         movement = distance = lifespan = speedmin = speedmax = 0;
         curscale = lifesize = 1;
         extinguish = stuck = interacts = 0;
@@ -2443,11 +2443,12 @@ namespace physics
 
 namespace projs
 {
-    extern vector<projent *> projs, collideprojs, junkprojs;
+    extern vector<projent *> projs, collideprojs, junkprojs, typeprojs[PRJ_MAX];
 
     extern void mapprojfx();
     extern void reset();
     extern void update();
+    extern projent *findprojseq(int type, int id);
     extern projent *create(const vec &from, const vec &to, bool local, gameent *d, int type, int fromweap, int fromflags, int lifetime, int lifemillis, int waittime, int speed, int id = 0, int weap = -1, int value = -1, int flags = 0, float scale = 1, bool child = false, gameent *target = NULL);
     extern void preload();
     extern void removeplayer(gameent *d);
@@ -2474,15 +2475,15 @@ namespace weapons
     extern bool canuse(int weap);
 }
 
-#define DEFUIVARS(name, surf, dist) \
+#define DEFUIVARS(name, surf, yaw, pitch, scale, world, maxdist, detentyaw, detentpitch) \
     VAR(IDF_PERSIST, name##ui, -1, surf, SURFACE_LAST); \
-    FVAR(IDF_PERSIST, name##uiyaw, -1, -1, 360); \
-    FVAR(IDF_PERSIST, name##uipitch, -181, -181, 181); \
-    FVAR(IDF_PERSIST, name##uiscale, FVAR_NONZERO, 1, FVAR_MAX); \
-    FVAR(IDF_PERSIST, name##uiworld, FVAR_NONZERO, 4, FVAR_MAX); \
-    FVAR(IDF_PERSIST, name##uimaxdist, 0, dist, FVAR_MAX); \
-    FVAR(IDF_PERSIST, name##uidetentyaw, 0, 0, 180); \
-    FVAR(IDF_PERSIST, name##uidetentpitch, 0, 0, 90); \
+    FVAR(IDF_PERSIST, name##uiyaw, -1, yaw, 360); \
+    FVAR(IDF_PERSIST, name##uipitch, -181, pitch, 181); \
+    FVAR(IDF_PERSIST, name##uiscale, FVAR_NONZERO, scale, FVAR_MAX); \
+    FVAR(IDF_PERSIST, name##uiworld, FVAR_NONZERO, world, FVAR_MAX); \
+    FVAR(IDF_PERSIST, name##uimaxdist, 0, maxdist, FVAR_MAX); \
+    FVAR(IDF_PERSIST, name##uidetentyaw, 0, detentyaw, 180); \
+    FVAR(IDF_PERSIST, name##uidetentpitch, 0, detentpitch, 90);
 
 #define CLEARUI(name, id, nottype) \
    for(int mui_scount = 0; mui_scount < SURFACE_ALL; ++mui_scount) if(mui_scount != nottype) UI::hideui(#name, mui_scount, id);

@@ -23,7 +23,9 @@ namespace entities
     FVAR(IDF_PERSIST, showentavailable, 0, 1, 1);
     FVAR(IDF_PERSIST, showentunavailable, 0, 0.125f, 1);
 
-    DEFUIVARS(entity, SURFACE_WORLD, 512);
+    DEFUIVARS(entityedit, SURFACE_WORLD, -1.f, 0.f, 1.f, 4.f, 512.f, 0.f, 0.f);
+    DEFUIVARS(entityitem, SURFACE_WORLD, -1.f, 0.f, 1.f, 4.f, 512.f, 0.f, 0.f);
+    DEFUIVARS(entityproj, SURFACE_WORLD, -1.f, 0.f, 1.f, 4.f, 512.f, 0.f, 0.f);
 
     VAR(IDF_PERSIST, entityhalos, 0, 1, 1);
     FVAR(IDF_PERSIST, entselblend, 0, 1, 1);
@@ -1383,7 +1385,7 @@ namespace entities
         loopv(ents)
         {
             gameentity &e = *(gameentity *)ents[i];
-            if(enttype[e.type].usetype != EU_NONE && (enttype[e.type].usetype != EU_ITEM || (d->state == CS_ALIVE && e.spawned())) && isallowed(e))
+            if(enttype[e.type].usetype != EU_NONE && (enttype[e.type].usetype != EU_ITEM || (d->isalive() && e.spawned())) && isallowed(e))
             {
                 float eradius = enttype[e.type].radius, edist = pos.dist(e.pos());
                 switch(e.type)
@@ -1398,9 +1400,10 @@ namespace entities
                 d->logitem(ACTITEM_ENT, i, diff);
             }
         }
-        if(d->state == CS_ALIVE) loopv(projs::projs)
+
+        if(d->isalive()) loopv(projs::typeprojs[PRJ_ENT])
         {
-            projent &proj = *projs::projs[i];
+            projent &proj = *projs::typeprojs[PRJ_ENT][i];
             if(!proj.owner || proj.projtype != PRJ_ENT || !proj.ready()) continue;
             if(!ents.inrange(proj.id) || enttype[ents[proj.id]->type].usetype != EU_ITEM || !isallowed(proj.id)) continue;
             if(!(enttype[ents[proj.id]->type].canuse&(1<<d->type))) continue;
@@ -1415,7 +1418,7 @@ namespace entities
             float diff = edist-radius;
             if(diff > eradius) continue;
 
-            d->logitem(ACTITEM_PROJ, proj.id, diff, i);
+            d->logitem(ACTITEM_PROJ, proj.id, diff, proj.seqid);
         }
 
         return d->updateitems();
@@ -1823,11 +1826,10 @@ namespace entities
                     }
                     case ACTITEM_PROJ:
                     {
-                        if(!projs::projs.inrange(t.id)) break;
-
-                        projent &proj = *projs::projs[t.id];
-                        cn = proj.owner->clientnum;
-                        ent = proj.id;
+                        projent *proj = projs::findprojseq(PRJ_ENT, t.id);
+                        if(!proj || !proj->owner) break;
+                        cn = proj->owner->clientnum;
+                        ent = proj->id;
                         dist = t.score;
                         break;
                     }
@@ -2753,7 +2755,7 @@ namespace entities
         if(lastroutenode == routeid) return -1;
 
         int firstroute = -1;
-        loopenti(ROUTE) if(entities::ents[i]->type == ROUTE && entities::ents[i]->attrs[0] == routeid)
+        loopenti(ROUTE) if(ents[i]->type == ROUTE && ents[i]->attrs[0] == routeid)
         {
             firstroute = i;
             break;
@@ -3469,22 +3471,49 @@ namespace entities
 
     void checkui()
     {
-        if(entityui < 0) return;
-
         bool editcheck = game::player1->isediting() && !editinhibit;
-        int fstent = editcheck ? 0 : firstuse(EU_ITEM), lstent = editcheck ? ents.length() : lastuse(EU_ITEM);
 
-        for(int i = fstent; i < lstent; ++i)
+        if((editcheck ? entityeditui : entityitemui) >= 0)
         {
-            gameentity &e = *(gameentity *)ents[i];
+            int fstent = editcheck ? 0 : firstuse(EU_ITEM), lstent = editcheck ? ents.length() : lastuse(EU_ITEM);
 
-            if(e.type == NOTUSED || e.attrs.empty()) continue;
-            if(!editcheck && (enttype[e.type].usetype != EU_ITEM || !entities::isallowed(e))) continue;
+            for(int i = fstent; i < lstent; ++i)
+            {
+                gameentity &e = *(gameentity *)ents[i];
 
-            vec curpos = vec(editcheck ? e.o : e.pos()).addz(clamp(enttype[e.type].radius / 2, 2, 4));
-            MAKEUI(entity, i, editcheck && (enthover.find(i) >= 0 || entgroup.find(i) >= 0), curpos);
+                if(e.type == NOTUSED || e.attrs.empty()) continue;
+                if(!editcheck && (enttype[e.type].usetype != EU_ITEM || !isallowed(e))) continue;
+
+                vec curpos = vec(editcheck ? e.o : e.pos()).addz(clamp(enttype[e.type].radius / 2, 2, 4));
+                if(editcheck) MAKEUI(entityedit, i, enthover.find(i) >= 0 || entgroup.find(i) >= 0, curpos);
+                else MAKEUI(entityitem, i, false, curpos);
+            }
+        }
+
+        if(editcheck || entityprojui < 0) return;
+
+        loopv(projs::typeprojs[PRJ_ENT])
+        {
+            projent &proj = *projs::typeprojs[PRJ_ENT][i];
+            if(proj.projtype != PRJ_ENT || !ents.inrange(proj.id) || !proj.ready()) continue;
+
+            gameentity &e = *(gameentity *)ents[proj.id];
+            if(e.type == NOTUSED || e.attrs.empty() || enttype[e.type].usetype != EU_ITEM || !isallowed(e)) continue;
+            MAKEUI(entityproj, proj.seqid, false, vec(proj.o).addz(clamp(enttype[e.type].radius / 2, 2, 4)));
         }
     }
+
+    ICOMMAND(0, getprojent, "i", (int *n),
+    {
+        projent *proj = projs::findprojseq(PRJ_ENT, *n);
+        if(!proj || !ents.inrange(proj->id) || !proj->ready())
+        {
+            intret(-1);
+            return;
+        }
+
+        intret(proj->id);
+    });
 
     void drawparticles()
     {
@@ -3533,9 +3562,9 @@ namespace entities
 
         if(drawtex) return;
 
-        loopv(projs::projs)
+        loopv(projs::typeprojs[PRJ_ENT])
         {
-            projent &proj = *projs::projs[i];
+            projent &proj = *projs::typeprojs[PRJ_ENT][i];
             if(proj.projtype != PRJ_ENT || !ents.inrange(proj.id) || !proj.ready()) continue;
 
             gameentity &e = *(gameentity *)ents[proj.id];
@@ -3570,7 +3599,7 @@ namespace entities
             loopv(ents)
             {
                 gameentity &e = *(gameentity *)ents[i];
-                if(k >= 2 ? e.type != PLAYERSTART : (e.type != CAMERA || (!k && (e.attrs[0] != CAMERA_MAPSHOT || !entities::isallowed(e))))) continue;
+                if(k >= 2 ? e.type != PLAYERSTART : (e.type != CAMERA || (!k && (e.attrs[0] != CAMERA_MAPSHOT || !isallowed(e))))) continue;
                 cameras.add(i);
             }
             if(!cameras.empty()) break;

@@ -225,7 +225,7 @@ namespace bomber
         }
     }
 
-    DEFUIVARS(bomber, SURFACE_VISOR, 2048);
+    DEFUIVARS(bomber, SURFACE_WORLD, -1.f, 0.f, 1.f, 4.f, 512.f, 0.f, 0.f);
 
     void checkui()
     {

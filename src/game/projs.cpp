@@ -4,7 +4,7 @@ namespace projs
     #define FWCOL(n,c,p) ((p).flags&HIT_FLAK ? W##n##COL(&p, (p).weap, flak##c, WS((p).flags)) : W##n##COL(&p, (p).weap, c, WS((p).flags)))
 
     vector<hitmsg> hits;
-    vector<projent *> projs, collideprojs, junkprojs;
+    vector<projent *> projs, collideprojs, junkprojs, typeprojs[PRJ_MAX];
 
     struct toolent
     {
@@ -453,6 +453,8 @@ namespace projs
 
             if(projs[i]->owner == d)
             {
+                if(projs[i]->isjunk()) junkprojs.removeobj(projs[i]);
+                typeprojs[projs[i]->projtype].removeobj(projs[i]);
                 if(projs[i]->projtype == PRJ_SHOT)
                 {
                     if(projs[i]->projcollide&COLLIDE_PROJ)
@@ -460,8 +462,6 @@ namespace projs
                         collideprojs.removeobj(projs[i]);
                         cleardynentcache();
                     }
-
-                    if(projs[i]->isjunk()) junkprojs.removeobj(projs[i]);
 
                     delete projs[i];
                     projs.removeunordered(i--);
@@ -652,6 +652,7 @@ namespace projs
     {
         collideprojs.setsize(0);
         junkprojs.setsize(0);
+        loopi(PRJ_MAX) typeprojs[i].setsize(0);
         cleardynentcache();
         projs.deletecontents();
         projs.shrink(0);
@@ -1232,6 +1233,7 @@ namespace projs
         }
 
         if(proj.isjunk()) junkprojs.add(&proj);
+        typeprojs[proj.projtype].add(&proj);
 
         if(proj.projtype != PRJ_SHOT) updatebb(proj, true);
         proj.spawntime = lastmillis;
@@ -1280,9 +1282,28 @@ namespace projs
         proj.resetinterp();
     }
 
+    static int sequenceid = 0;
+
+    projent *findprojseq(int type, int id)
+    {
+        if(type < 0 || type >= PRJ_MAX)
+        {
+            loopv(projs) if(projs[i]->seqid == id) return projs[i];
+            return NULL;
+        }
+
+        loopv(typeprojs[type]) if(typeprojs[type][i]->seqid == id) return typeprojs[type][i];
+
+        return NULL;
+    }
+
     projent *create(const vec &from, const vec &dest, bool local, gameent *d, int type, int fromweap, int fromflags, int lifetime, int lifemillis, int waittime, int speed, int id, int weap, int value, int flags, float scale, bool child, gameent *target)
     {
         projent &proj = *new projent;
+
+        proj.seqid = sequenceid;
+        if(++sequenceid < 0) sequenceid = 0;
+
         proj.o = proj.from = proj.trailpos = from;
         proj.dest = dest;
         proj.local = local;
@@ -1298,6 +1319,7 @@ namespace projs
         proj.target = target;
         proj.movement = proj.distance = 0;
         proj.prev = proj.next = NULL;
+
         if(proj.projtype == PRJ_AFFINITY)
         {
             proj.vel = proj.inertia = proj.dest;
@@ -1343,8 +1365,10 @@ namespace projs
             }
             else vectoyawpitch(vec(proj.dest).sub(proj.from).normalize(), proj.yaw, proj.pitch);
         }
+
         if(!proj.waittime) init(proj, false);
         projs.add(&proj);
+
         return &proj;
     }
 
@@ -1591,6 +1615,7 @@ namespace projs
             cleardynentcache();
         }
         if(proj.isjunk()) junkprojs.removeobj(&proj);
+        typeprojs[proj.projtype].removeobj(&proj);
 
         switch(proj.projtype)
         {

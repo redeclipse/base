@@ -606,9 +606,9 @@ namespace ai
             }
         }
 
-        loopvj(projs::projs) if(projs::projs[j]->projtype == PRJ_ENT && projs::projs[j]->ready())
+        loopvj(projs::typeprojs[PRJ_ENT]) if(projs::typeprojs[PRJ_ENT][j]->projtype == PRJ_ENT && projs::typeprojs[PRJ_ENT][j]->ready())
         {
-            projent &proj = *projs::projs[j];
+            projent &proj = *projs::typeprojs[PRJ_ENT][j];
             if(!entities::ents.inrange(proj.id)) continue;
             gameentity &e = *(gameentity *)entities::ents[proj.id];
             if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON || !entities::isallowed(e)) continue;
@@ -986,9 +986,9 @@ namespace ai
             }
             case AI_T_DROP:
             {
-                loopvj(projs::projs) if(projs::projs[j]->projtype == PRJ_ENT && projs::projs[j]->ready() && projs::projs[j]->id == b.target)
+                loopvj(projs::typeprojs[PRJ_ENT]) if(projs::typeprojs[PRJ_ENT][j]->projtype == PRJ_ENT && projs::typeprojs[PRJ_ENT][j]->ready() && projs::typeprojs[PRJ_ENT][j]->id == b.target)
                 {
-                    projent &proj = *projs::projs[j];
+                    projent &proj = *projs::typeprojs[PRJ_ENT][j];
                     if(!entities::ents.inrange(proj.id) || proj.owner == d) return false;
                     gameentity &e = *(gameentity *)entities::ents[proj.id];
                     if(enttype[entities::ents[proj.id]->type].usetype != EU_ITEM || e.type != WEAPON || !entities::isallowed(e)) return false;
