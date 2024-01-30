@@ -59,8 +59,8 @@ namespace game
         }
     }
 
-    int getweapsound(int weap, int sound) { return WSND(weap, sound); }
-    int getweapcolor(int weap) { return W(weap, colour); }
+    int getweapsound(int weap, int sound) { return isweap(weap) ? WSND(weap, sound) : -1; }
+    int getweapcolor(int weap) { return isweap(weap) ? W(weap, colour) : 0xFFFFFF; }
 
     void mapgamesounds()
     {
@@ -1347,6 +1347,12 @@ namespace game
         }
     }
 
+    void prizeeffect(gameent *d)
+    {
+        static fx::FxHandle prizefx = fx::getfxhandle("FX_PRIZE_OPEN");
+        fx::createfx(prizefx, &d->prizefx).setentity(d);
+    }
+
     void setmode(int nmode, int nmuts) { modecheck(nextmode = nmode, nextmuts = nmuts); }
     ICOMMAND(0, mode, "ii", (int *val, int *mut), setmode(*val, *mut));
 
@@ -1624,11 +1630,11 @@ namespace game
 
         if((d->hasprize || game::focus->dominated.find(d) >= 0) && d->isalive())
         {
-            if(!issound(d->plchan[PLCHAN_PRIZE]))
-                emitsound(S_PRIZELOOP, getplayersoundpos(d), d, &d->plchan[PLCHAN_PRIZE], SND_LOOP|SND_PRIORITY);
+            if(!issound(d->plchan[PLCHAN_ALERT]))
+                emitsound(S_PRIZELOOP, getplayersoundpos(d), d, &d->plchan[PLCHAN_ALERT], SND_LOOP|SND_PRIORITY);
         }
-        else if(issound(d->plchan[PLCHAN_PRIZE]) && soundsources[d->plchan[PLCHAN_PRIZE]].flags&SND_LOOP)
-            soundsources[d->plchan[PLCHAN_PRIZE]].clear();
+        else if(issound(d->plchan[PLCHAN_ALERT]) && soundsources[d->plchan[PLCHAN_ALERT]].flags&SND_LOOP)
+            soundsources[d->plchan[PLCHAN_ALERT]].clear();
     }
 
     void checkfloor(gameent *d)
@@ -2335,8 +2341,9 @@ namespace game
             }
         }
 
-        if(issound(d->plchan[PLCHAN_PRIZE])) soundsources[d->plchan[PLCHAN_PRIZE]].clear();
-        if(flags&HIT_PRIZE) entities::announce(S_OPENPRIZE, d, PLCHAN_PRIZE);
+        if(issound(d->plchan[PLCHAN_ALERT])) soundsources[d->plchan[PLCHAN_ALERT]].clear();
+        if(flags&HIT_PRIZE) prizeeffect(d);
+        // entities::announce(S_OPENPRIZE, d, PLCHAN_ALERT);
 
         if(d->actortype < A_ENEMY || d->actortype == A_JANITOR)
         {

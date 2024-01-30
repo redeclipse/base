@@ -55,7 +55,7 @@ namespace fx
         FX_PROP_END_FROM_ENTPOS,
         FX_PROP_ITER,
         FX_PROP_ITER_OFFSET,
-        FX_PROP_WEAPON,
+        FX_PROP_INDEX,
 
         FX_STD_PROPS
     };

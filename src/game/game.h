@@ -1173,7 +1173,7 @@ namespace server
     extern float getwaterextinguishscale(int mat);
 }
 
-#define PLCHAN_ENUM(en, um) en(um, Announce, ANNOUNCE) en(um, Message, MESSAGE) en(um, Voice, VOICE) en(um, Prize, PRIZE) en(um, Maximum, MAX)
+#define PLCHAN_ENUM(en, um) en(um, Announce, ANNOUNCE) en(um, Message, MESSAGE) en(um, Voice, VOICE) en(um, Alert, ALERT) en(um, Maximum, MAX)
 ENUM_DLN(PLCHAN);
 
 #define HUDPOS_ENUM(en, um) \
@@ -1313,7 +1313,7 @@ struct gameent : dynent, clientstate
     vector<stunevent> stuns;
     vector<jitterevent> jitters;
     vector<int> vitems;
-    fx::emitter *weaponfx, *impulsefx, *flashlightfx;
+    fx::emitter *weaponfx, *impulsefx, *flashlightfx, *prizefx;
     projent *projchain;
 
     struct collectlist
@@ -1326,7 +1326,7 @@ struct gameent : dynent, clientstate
 
     gameent() : edit(NULL), ai(NULL), team(T_NEUTRAL), clientnum(-1), privilege(PRIV_NONE), projid(0), cplast(0), lastupdate(0), lastpredict(0), plag(0), ping(0),
         totaldamage(0), smoothmillis(-1), lastattacker(-1), lastpoints(0), quake(0), wasfiring(-1), conopen(false), k_up(false), k_down(false), k_left(false), k_right(false), obliterated(false),
-        weaponfx(NULL), impulsefx(NULL), flashlightfx(NULL), projchain(NULL)
+        weaponfx(NULL), impulsefx(NULL), flashlightfx(NULL), prizefx(NULL), projchain(NULL)
     {
         state = CS_DEAD;
         type = ENT_PLAYER;
@@ -1621,6 +1621,7 @@ struct gameent : dynent, clientstate
         if(weaponfx) fx::stopfx(weaponfx);
         if(impulsefx) fx::stopfx(impulsefx);
         if(flashlightfx) fx::stopfx(flashlightfx);
+        if(prizefx) fx::stopfx(prizefx);
     }
 
     void removesounds(bool init = false)
