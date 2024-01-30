@@ -866,6 +866,7 @@ namespace client
     LOOPINVENTORY(,loopcsi,loopk,false);
     LOOPINVENTORY(rev,loopcsirev,loopkrev,true);
 
+    CLCOMMAND(lastactitem, intret(d->lastactitem));
     CLCOMMANDM(actitem, "sb", (char *who, int *n), intret(*n >= 0 ? (d->actitems.inrange(*n) ? 1 : 0) : d->actitems.length()));
     CLCOMMANDM(actitemtype, "sb", (char *who, int *n), intret(d->actitems.inrange(*n) ? d->actitems[*n].type : -1));
     CLCOMMANDM(actitement, "sb", (char *who, int *n), intret(d->actitems.inrange(*n) ? d->actitems[*n].ent : -1));
@@ -875,6 +876,20 @@ namespace client
     CLCOMMANDM(actitementer, "sb", (char *who, int *n), intret(d->actitems.inrange(*n) ? d->actitems[*n].enter : -1));
     CLCOMMANDM(actitemleave, "sb", (char *who, int *n), intret(d->actitems.inrange(*n) ? d->actitems[*n].leave : -1));
     CLCOMMANDM(actitemready, "sb", (char *who, int *n), intret(d->actitems.inrange(*n) ? (d->actitems[*n].millis == d->lastactitem ? 1 : 0) : 0));
+    CLCOMMANDM(actitemidx, "sbb", (char *who, int *n, int *v),
+    {
+        loopv(d->actitems)
+        {
+            if(*n >= 0 && d->actitems[i].type != *n) continue;
+            if(*v >= 0 && d->actitems[i].ent != *v) continue;
+
+            intret(i);
+
+            return;
+        }
+
+        intret(-1);
+    });
 
     #define LOOPACTITEMS(name, op) \
         ICOMMAND(IDF_NAMECOMPLETE, loopactitems##name, "siire", (char *who, int *count, int *skip, ident *id, uint *body), \
@@ -1132,8 +1147,28 @@ namespace client
     CLCOMMAND(maxhealth, intret(d->gethealth(game::gamemode, game::mutators, true)));
 
     CLCOMMAND(respawnwait, intret(d->isdead() ? d->respawnwait(lastmillis, m_delay(d->actortype, game::gamemode, game::mutators, d->team)): -1));
-    CLCOMMANDM(canshoot, "bi", (char *who, int *weap, int *alt), intret(d->canshoot(*weap >= 0 ? *weap : d->weapselect, *alt > 0 ? HIT_ALT : 0, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis, (1<<W_S_RELOAD)) ? 1 : 0));
-    CLCOMMANDM(canreload, "b", (char *who, int *weap), intret(d->canreload(*weap >= 0 ? *weap : d->weapselect, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis, (1<<W_S_RELOAD)) ? 1 : 0));
+    CLCOMMANDM(canshoot, "sbi", (char *who, int *weap, int *alt), intret(d->canshoot(*weap >= 0 ? *weap : d->weapselect, *alt > 0 ? HIT_ALT : 0, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis, (1<<W_S_RELOAD)) ? 1 : 0));
+    CLCOMMANDM(canreload, "sb", (char *who, int *weap), intret(d->canreload(*weap >= 0 ? *weap : d->weapselect, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis, (1<<W_S_RELOAD)) ? 1 : 0));
+
+    CLCOMMANDM(canuse, "si", (char *who, int *n),
+    {
+        if(entities::ents.inrange(*n))
+        {
+            extentity &e = *entities::ents[*n];
+            if(enttype[e.type].usetype == EU_ITEM && e.type == WEAPON && entities::isallowed(e))
+            {
+                int attr = m_attr(e.type, e.attrs[0]);
+                if(isweap(attr) && d->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
+                {
+                    intret(1);
+                    return;
+                }
+            }
+        }
+
+        intret(0);
+    });
+
 
     CLCOMMANDM(pulsecolour, "sib", (char *who, int *n, int *c), intret(pulsehexcol(d, *n, *c >= -1 ? *c : PULSE_CYCLE)));
     CLCOMMANDM(velocity, "si", (char *who, int *n), floatret(vec(d->vel).add(d->falling).magnitude()*(*n!=0 ? (*n > 0 ? 3.6f/8.f : 0.125f) : 1.f)));

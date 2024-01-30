@@ -1713,7 +1713,7 @@ namespace ai
              haswaited = d->weapwaited(d->weapselect, lastmillis, (1<<W_S_RELOAD));
 
         bool wantitem = false;
-        if(m_maxcarry(d->actortype, game::gamemode, game::mutators) && d->actortype < A_ENEMY && d->actitems[0].millis == d->lastactitem && entities::ents.inrange(d->actitems[0].ent))
+        if(m_maxcarry(d->actortype, game::gamemode, game::mutators) && d->actortype < A_ENEMY && d->hasitems() && entities::ents.inrange(d->actitems[0].ent))
         {
             extentity &e = *entities::ents[d->actitems[0].ent];
             if(enttype[e.type].usetype == EU_ITEM && e.type == WEAPON && entities::isallowed(e))

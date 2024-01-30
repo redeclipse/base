@@ -36,7 +36,9 @@ namespace UI
     VAR(IDF_PERSIST, uihintintime, 0, 100, VAR_MAX);
     VAR(IDF_PERSIST, uihintholdtime, 0, 1000, VAR_MAX);
     VAR(IDF_PERSIST, uihintouttime, 0, 3000, VAR_MAX);
-    FVAR(IDF_PERSIST, uihintoffset, -0.5f, 0.125f, 0.5f);
+    FVAR(IDF_PERSIST, uihintoffset2d, -0.5f, 0.125f, 0.5f);
+    FVAR(IDF_PERSIST, uihintoffset3d, -0.5f, 0.0625f, 0.5f);
+    FVAR(IDF_PERSIST, uihintdist, 0.f, 56.f, FVAR_MAX);
 
     VARR(uilastmillis, 0);
     VARR(uitotalmillis, 0);
@@ -185,7 +187,7 @@ namespace UI
     enum { BLEND_ALPHA, BLEND_MOD, BLEND_SRC, BLEND_BUFFER, BLEND_GLOW, BLEND_MAX };
     static int changed = 0, surfacetype = -1, surfaceformat = 0, blendtype = BLEND_ALPHA, blendtypedef = BLEND_ALPHA;
     static bool blendsep = false, blendsepdef = false;
-    static float surfacehint = 0;
+    static float *surfacehint2d = NULL, *surfacehint3d = NULL;
 
     void setblend(int type, bool sep, bool force = false)
     {
@@ -961,7 +963,7 @@ namespace UI
     struct Window : Object
     {
         char *name, *dyn;
-        Code *contents, *onshow, *onhide;
+        Code *contents, *onshow, *onhide, *vistest;
         bool exclusive, mapdef, saved, menu, passthrough, tooltip, popup, persist, ontop, attached, visible;
         int allowinput, lasthit, lastshow, lastpoke, zindex, numargs, initargs, hint;
         float px, py, pw, ph,
@@ -971,9 +973,9 @@ namespace UI
         vec origin, pos;
         tagval args[MAXARGS];
 
-        Window(const char *name_, const char *contents_, const char *onshow_, const char *onhide_, bool mapdef_, const char *dyn_ = NULL, tagval *args_ = NULL, int numargs_ = 0) :
+        Window(const char *name_, const char *contents_, const char *onshow_, const char *onhide_, const char *vistest_, bool mapdef_, const char *dyn_ = NULL, tagval *args_ = NULL, int numargs_ = 0) :
             name(newstring(name_)), dyn(dyn_ && *dyn_ ? newstring(dyn_) : NULL),
-            contents(NULL), onshow(NULL), onhide(NULL),
+            contents(NULL), onshow(NULL), onhide(NULL), vistest(NULL),
             exclusive(false), mapdef(mapdef_),
             menu(true), passthrough(false), tooltip(false), popup(false), persist(false), ontop(false), attached(false), visible(false),
             allowinput(1), lasthit(0), lastshow(0), lastpoke(0), zindex(0), numargs(0), initargs(0), hint(0),
@@ -986,6 +988,7 @@ namespace UI
             if(contents_ && *contents_) contents = new Code(contents_);
             if(onshow_ && *onshow_) onshow = new Code(onshow_);
             if(onhide_ && *onhide_) onhide = new Code(onhide_);
+            if(vistest_ && *vistest_) vistest = new Code(vistest_);
             numargs = initargs = 0;
             loopi(MAXARGS) args[i].setnull();
             if(args_ && numargs_ > 0)
@@ -1000,6 +1003,7 @@ namespace UI
             if(contents) delete contents;
             if(onshow) delete onshow;
             if(onhide) delete onhide;
+            if(vistest) delete vistest;
             resetargs(true);
         }
 
@@ -1124,6 +1128,7 @@ namespace UI
                 setargs();
                 DOMAP(mapdef, executeret(onshow->code));
             }
+
             lastshow = uitotalmillis;
         }
 
@@ -1197,12 +1202,12 @@ namespace UI
 
                     if(haspos)
                     {
-                        vec campos = vec(camera1->o).add(vec(camera1->yaw * RAD, (camera1->pitch + fovy * surfacehint) * RAD).mul(16));
-                        pos = vec(pos).add(vec(campos).sub(pos).mul(amt));
+                        vec campos = vec(camera1->o).add(vec(camera1->yaw * RAD, (camera1->pitch + fovy * (*surfacehint3d)) * RAD).mul(uihintdist));
+                        origin = vec(origin).add(vec(campos).sub(origin).mul(amt));
                     }
                     else
                     {
-                        vec2 campos(aspect * 0.5f, 0.5f - surfacehint), curpos(x, y);
+                        vec2 campos(aspect * 0.5f, 0.5f - *surfacehint2d), curpos(x, y);
 
                         switch(adjust&ALIGN_HMASK)
                         {
@@ -1221,7 +1226,7 @@ namespace UI
                         campos = vec2(curpos).add(vec2(campos).sub(curpos).mul(amt));
                         setpos(campos.x, campos.y);
 
-                        surfacehint = surfacehint >= 0 ? surfacehint + h : surfacehint - h;
+                        *surfacehint2d = 0.5f - (campos.y < 0.5f ? campos.y + h : campos.y);
                     }
                 }
             }
@@ -1781,12 +1786,12 @@ namespace UI
         int type, cursortype, exclcheck;
         bool lockcursor, mousetracking, lockscroll, interactive, hasexclusive;
         vec2 mousetrackvec;
-        float hintoffset;
+        float hintoffset2d, hintoffset3d;
 
         hashnameset<Window *> windows;
         vector<Texture *> texs;
 
-        Surface() : type(-1), cursortype(CURSOR_DEFAULT), exclcheck(0), lockcursor(false), mousetracking(false), lockscroll(false), interactive(false), hasexclusive(false), mousetrackvec(0, 0), hintoffset(0) {}
+        Surface() : type(-1), cursortype(CURSOR_DEFAULT), exclcheck(0), lockcursor(false), mousetracking(false), lockscroll(false), interactive(false), hasexclusive(false), mousetrackvec(0, 0), hintoffset2d(0), hintoffset3d(0) {}
         ~Surface() {}
 
         static const char *typestr() { return "#Surface"; }
@@ -1865,7 +1870,8 @@ namespace UI
             lockcursor = false;
             mousetracking = false;
             lockscroll = false;
-            surfacehint = hintoffset = uihintoffset;
+            hintoffset2d = uihintoffset2d;
+            hintoffset3d = uihintoffset3d;
 
             checkinputsteal();
             prepare();
@@ -1885,38 +1891,51 @@ namespace UI
             reset();
             setup();
             loopwindows(w,
-            {
+            {   // try to get rid of any windows that aren't visible early to avoid processing
                 if(w->lastpoke && w->lastpoke != uitotalmillis)
                 {   // poke windows are updated every frame or disregarded
                     w->visible = false;
                     continue;
                 }
 
+                int vistest = 0;
+                if(w->vistest)
+                {   // visibility test script provided
+                    w->setargs();
+                    if((vistest = execute(w->vistest->code)) < 0)
+                    {   // return value: -1 = not visible, 0 = visible, 1 = forced visible
+                        w->visible = false;
+                        continue;
+                    }
+                }
+
                 if(w->pos != nullvec)
-                {
-                    if(!getvisible(camera1->o, camera1->yaw, camera1->pitch, w->pos, curfov, fovy, uivisradius, -1))
-                    {
+                {   // can only be used for things with an actual 3d position
+                    if(!vistest && !getvisible(camera1->o, camera1->yaw, camera1->pitch, w->pos, curfov, fovy, uivisradius, -1))
+                    {   // not inside the view frustrum
                         w->visible = false;
                         continue;
                     }
 
                     w->dist = w->pos.dist(camera1->o);
 
-                    if(!w->ontop && !w->hint)
+                    if(!vistest)
                     {
                         float maxdist = w->maxdist > 0 ? min(w->maxdist, uimaxdist) : uimaxdist;
                         if(maxdist > 0 && w->dist > maxdist)
-                        {
+                        {   // too far away
                             w->visible = false;
                             continue;
                         }
                     }
                 }
-                else w->dist = 0.f;
+                else w->dist = 0.f; // not important then
+
                 w->visible = true;
 
                 uiscale = 1;
                 w->build();
+
                 if(!children.inrange(i)) break;
                 if(children[i] != w) i--;
             });
@@ -1930,8 +1949,6 @@ namespace UI
                 if(type == SURFACE_VISOR) flusheditors();
             }
 
-            hintoffset = surfacehint;
-
             popfont();
             curtextscale = oldtextscale;
             uiscale = olduiscale;
@@ -1942,6 +1959,8 @@ namespace UI
             float oldtextscale = curtextscale, olduiscale = uiscale;
             curtextscale = 1;
             uiscale = 1;
+            hintoffset2d = uihintoffset2d;
+            hintoffset3d = uihintoffset3d;
 
             pushfont();
             layout();
@@ -2142,7 +2161,8 @@ namespace UI
         surfacestack.add(surface);
         surface = surfaces[surf];
         surfacetype = surface->type;
-        surfacehint = surface->hintoffset;
+        surfacehint2d = &surface->hintoffset2d;
+        surfacehint3d = &surface->hintoffset3d;
         return true;
     }
 
@@ -2150,7 +2170,8 @@ namespace UI
     {
         surface = surfacestack.empty() ? NULL : surfacestack.pop();
         surfacetype = surface ? surface->type : -1;
-        surfacehint = surface ? surface->hintoffset : 0;
+        surfacehint2d = surface ? &surface->hintoffset2d : NULL;
+        surfacehint3d = surface ? &surface->hintoffset3d : NULL;
     }
 
     #define DOSURFACE(surf, body) \
@@ -2182,7 +2203,7 @@ namespace UI
         window = oldwindow;
     }
 
-    bool newui(const char *name, int stype, const char *contents, const char *onshow, const char *onhide, bool mapdef = false, const char *dyn = NULL, tagval *args = NULL, int numargs = 0)
+    bool newui(const char *name, int stype, const char *contents, const char *onshow, const char *onhide, const char *vistest, bool mapdef = false, const char *dyn = NULL, tagval *args = NULL, int numargs = 0)
     {
         if(!name || !*name || !contents || !*contents || stype < 0 || stype >= SURFACE_MAX) return false;
 
@@ -2226,14 +2247,14 @@ namespace UI
             }
         }
 
-        surface->windows[name] = new Window(name, contents, onshow, onhide, mapdef, dyn, args, numargs);
+        surface->windows[name] = new Window(name, contents, onshow, onhide, vistest, mapdef, dyn, args, numargs);
         popsurface();
 
         return true;
     }
 
-    ICOMMAND(0, newui, "sisss", (char *name, int *stype, char *contents, char *onshow, char *onhide), if(!(identflags&IDF_MAP)) newui(name, *stype, contents, onshow, onhide, false));
-    ICOMMAND(0, mapui, "sisss", (char *name, int *stype, char *contents, char *onshow, char *onhide), newui(name, *stype, contents, onshow, onhide, true));
+    ICOMMAND(0, newui, "sissss", (char *name, int *stype, char *contents, char *onshow, char *onhide, char *vistest), if(!(identflags&IDF_MAP)) newui(name, *stype, contents, onshow, onhide, vistest, false));
+    ICOMMAND(0, mapui, "sissss", (char *name, int *stype, char *contents, char *onshow, char *onhide, char *vistest), newui(name, *stype, contents, onshow, onhide, vistest, true));
 
     void closedynui(const char *name, int stype, bool mapdef)
     {
@@ -2262,10 +2283,10 @@ namespace UI
 
     struct DynUI
     {
-        char *name, *contents, *onshow, *onhide;
+        char *name, *contents, *onshow, *onhide, *vistest;
         bool mapdef;
 
-        DynUI(const char *s) : name(newstring(s)), contents(NULL), onshow(NULL), onhide(NULL), mapdef(false) {}
+        DynUI(const char *s) : name(newstring(s)), contents(NULL), onshow(NULL), onhide(NULL), vistest(NULL), mapdef(false) {}
         ~DynUI()
         {
             DELETEA(name);
@@ -2277,6 +2298,7 @@ namespace UI
             DELETEA(contents);
             DELETEA(onshow);
             DELETEA(onhide);
+            DELETEA(vistest);
         }
     };
     vector<DynUI *> dynuis;
@@ -2337,7 +2359,7 @@ namespace UI
         return ref && *ref ? surface->windows.find(ref, NULL) : NULL;
     }
 
-    void dynui(const char *name, const char *contents, const char *onshow, const char *onhide, bool mapdef)
+    void dynui(const char *name, const char *contents, const char *onshow, const char *onhide, const char *vistest, bool mapdef)
     {
         if(!name || !*name || !contents || !*contents) return;
 
@@ -2365,11 +2387,12 @@ namespace UI
         m->contents = newstring(contents);
         m->onshow = onshow && *onshow ? newstring(onshow) : NULL;
         m->onhide = onhide && *onhide ? newstring(onhide) : NULL;
+        m->vistest = vistest && *vistest ? newstring(vistest) : NULL;
         m->mapdef = mapdef;
     }
 
-    ICOMMAND(0, dynui, "ssssi", (char *name, char *contents, char *onshow, char *onhide), dynui(name, contents, onshow, onhide, (identflags&IDF_MAP) != 0));
-    ICOMMAND(0, mapdynui, "ssssi", (char *name, char *contents, char *onshow, char *onhide), dynui(name, contents, onshow, onhide, true));
+    ICOMMAND(0, dynui, "sssss", (char *name, char *contents, char *onshow, char *onhide, char *vistest), dynui(name, contents, onshow, onhide, vistest, (identflags&IDF_MAP) != 0));
+    ICOMMAND(0, mapdynui, "sssss", (char *name, char *contents, char *onshow, char *onhide, char *vistest), dynui(name, contents, onshow, onhide, vistest, true));
 
     const char *dynuiexec(const char *name, int param)
     {
@@ -2380,7 +2403,7 @@ namespace UI
         {
             tagval t; t.setint(param);
             const char *refname = dynuiref(name, param, true); // should be the only one creating refs
-            if(newui(refname, surfacetype, d->contents, d->onshow, d->onhide, d->mapdef, d->name, &t, 1))
+            if(newui(refname, surfacetype, d->contents, d->onshow, d->onhide, d->vistest, d->mapdef, d->name, &t, 1))
                 return refname;
         }
 
@@ -7369,10 +7392,16 @@ namespace UI
 
                 h->printf("mapui %s %d [%s]", w->name, surfacetype, w->contents->body);
 
-                if(w->onshow) h->printf(" [%s]", w->onshow->body);
-                else if(w->onhide) h->printf(" []");
+                if(w->onshow)
+                    h->printf(" [%s]", w->onshow->body);
+                else if(w->onhide || w->vistest) h->printf(" []");
 
-                if(w->onhide) h->printf(" [%s]", w->onhide->body);
+                if(w->onhide)
+                    h->printf(" [%s]", w->onhide->body);
+                else if(w->vistest) h->printf(" []");
+
+                if(w->vistest)
+                    h->printf(" [%s]", w->vistest->body);
 
                 h->printf("\n\n");
 
@@ -7389,10 +7418,16 @@ namespace UI
 
             h->printf("mapdynui %s [%s]", d->name, d->contents);
 
-            if(d->onshow) h->printf(" [%s]", d->onshow);
-            else if(d->onhide) h->printf(" []");
+            if(d->onshow)
+                h->printf(" [%s]", d->onshow);
+            else if(d->onhide || d->vistest) h->printf(" []");
 
-            if(d->onhide) h->printf(" [%s]", d->onhide);
+            if(d->onhide)
+                h->printf(" [%s]", d->onhide);
+            else if(d->vistest) h->printf(" []");
+
+            if(d->vistest)
+                h->printf(" [%s]", d->vistest);
 
             h->printf("\n\n");
 

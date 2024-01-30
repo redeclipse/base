@@ -914,7 +914,7 @@ namespace entities
     }
     ICOMMAND(0, entitytriggertime, "bi", (int *n, int *d), intret(triggertime(*n, *d!=0)));
 
-    void getentity(int id, int val, int ex)
+    void getentity(int id, int val, int ex, bool mod)
     {
         if(id < 0) intret(ents.length());
         else if(ents.inrange(id))
@@ -926,7 +926,11 @@ namespace entities
                 case 1: // attrs
                 {
                     if(ex < 0) intret(ents[id]->attrs.length());
-                    else if(ents[id]->attrs.inrange(ex)) intret(ents[id]->attrs[ex]);
+                    else if(ents[id]->attrs.inrange(ex))
+                    {
+                        if(mod && ex == 0) intret(m_attr(ents[id]->type, ents[id]->attrs[ex]));
+                        else intret(ents[id]->attrs[ex]);
+                    }
                     break;
                 }
                 case 2: // links
@@ -938,7 +942,7 @@ namespace entities
             }
         }
     }
-    ICOMMAND(0, getentity, "bbb", (int *id, int *val, int *ex), getentity(*id, *val, *ex));
+    ICOMMAND(0, getentity, "bbbi", (int *id, int *val, int *ex, int *mod), getentity(*id, *val, *ex, *mod != 0));
 
     const char *getenttex(int id)
     {
@@ -1776,7 +1780,7 @@ namespace entities
 
     void checkitems(dynent *d)
     {
-        d->lastactitem = totalmillis;
+        d->lastactitem = lastmillis;
 
         if(!gs_playing(game::gamestate)) return;
 
@@ -3468,8 +3472,7 @@ namespace entities
         if(entityui < 0) return;
 
         bool editcheck = game::player1->isediting() && !editinhibit;
-        int fstent = editcheck ? 0 : firstuse(EU_ITEM),
-            lstent = editcheck ? ents.length() : lastuse(EU_ITEM);
+        int fstent = editcheck ? 0 : firstuse(EU_ITEM), lstent = editcheck ? ents.length() : lastuse(EU_ITEM);
 
         for(int i = fstent; i < lstent; ++i)
         {

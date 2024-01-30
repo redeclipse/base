@@ -419,31 +419,42 @@ struct dynent : physent                         // animated characters, or chara
         return actitems.length() - 1;
     }
 
+    bool hasitems()
+    {
+        loopv(actitems) return actitems[i].millis == lastactitem;
+        return false;
+    }
+
     bool updateitems()
     {
         if(actitems.empty()) return false;
 
         actitems.sort(actitem::sortitems);
 
-        bool hasitems = false;
+        bool found = false;
         loopv(actitems)
         {
             actitem &n = actitems[i];
 
             if(n.millis == lastactitem)
             {
-                hasitems = true;
-                if(n.enter <= n.leave)
+                found = true;
+
+                if(n.enter < 0 || n.enter < n.leave) n.enter = lastactitem;
+            }
+            else
+            {
+                if(n.type == ACTITEM_PROJ)
                 {
-                    n.enter = lastactitem;
+                    actitems.remove(i--);
                     continue;
                 }
-            }
 
-            if(n.leave <= n.enter) n.leave = lastactitem;
+                if(n.leave < 0 || n.leave < n.enter) n.leave = lastactitem;
+            }
         }
 
-        return hasitems;
+        return found;
     }
 
     void normalize_yaw(float angle)
