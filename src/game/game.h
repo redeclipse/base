@@ -2603,8 +2603,8 @@ namespace entities
     extern void updatepassengers();
     extern inanimate *currentpassenger(physent *d);
     extern void announce(int idx, gameent *d = NULL, int chan = -1, int flags = 0);
-    extern bool execitem(int n, int cn, dynent *d, float dist);
-    extern bool collateitems(dynent *d, vec &pos, float radius, vector<actitem> &actitems);
+    extern bool execitem(int n, int cn, dynent *d, float dist, bool local);
+    extern bool collateitems(dynent *d, vec &pos, float radius);
     extern void checkitems(dynent *d);
     extern void putitems(packetbuf &p);
     extern void setspawn(int n, int m);

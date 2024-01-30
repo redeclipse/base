@@ -642,7 +642,7 @@ namespace projs
             if(!(proj.interacts&t.type) || !entities::ents.inrange(t.ent) || !entities::isallowed(t.ent) || !entities::ents[t.ent]->spawned()) continue;
             float dist = 1e16f;
             if(!raysphereintersect(t.pos(), t.radius, o, dir, dist) || dist > maxdist) continue;
-            entities::execitem(t.ent, -1, &proj, dist);
+            entities::execitem(t.ent, -1, &proj, dist, false);
             ret++;
         }
         return ret;

@@ -872,6 +872,8 @@ namespace client
     CLCOMMANDM(actitemid, "sb", (char *who, int *n), intret(d->actitems.inrange(*n) ? d->actitems[*n].id : -1));
     CLCOMMANDM(actitemscore, "sb", (char *who, int *n), floatret(d->actitems.inrange(*n) ? d->actitems[*n].score : 0.f));
     CLCOMMANDM(actitemmillis, "sb", (char *who, int *n), intret(d->actitems.inrange(*n) ? d->actitems[*n].millis : 0));
+    CLCOMMANDM(actitementer, "sb", (char *who, int *n), intret(d->actitems.inrange(*n) ? d->actitems[*n].enter : -1));
+    CLCOMMANDM(actitemleave, "sb", (char *who, int *n), intret(d->actitems.inrange(*n) ? d->actitems[*n].leave : -1));
     CLCOMMANDM(actitemready, "sb", (char *who, int *n), intret(d->actitems.inrange(*n) ? (d->actitems[*n].millis == d->lastactitem ? 1 : 0) : 0));
 
     #define LOOPACTITEMS(name, op) \

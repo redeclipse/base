@@ -160,7 +160,7 @@ extern const playerpattern playerpatterns[PLAYERPATTERNS] = {
 
 extern const playerpart playerparts[PLAYERPARTS] = {
     { "projectiles/parts/torso/lower",      TAG_WAIST,          0,      0,      0.1f },
-    { "projectiles/parts/torso/uper",       TAG_WAIST,          0,      0,      0.25f },
+    { "projectiles/parts/torso/upper",      TAG_WAIST,          0,      0,      0.25f },
     { "projectiles/parts/foot/left",        TAG_TOE_LEFT,       0,      0,      0 },
     { "projectiles/parts/foot/right",       TAG_TOE_RIGHT,      0,      0,      0 },
     { "projectiles/parts/calf/left",        TAG_TOE_LEFT,       0,      0,      0.125f },

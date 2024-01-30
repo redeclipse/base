@@ -1374,7 +1374,7 @@ namespace entities
         }
     }
 
-    bool collateitems(dynent *d, vec &pos, float radius, vector<actitem> &actitems)
+    bool collateitems(dynent *d, vec &pos, float radius)
     {
         loopv(ents)
         {
@@ -1414,12 +1414,7 @@ namespace entities
             d->logitem(ACTITEM_PROJ, proj.id, diff, i);
         }
 
-        if(!actitems.empty())
-        {
-            actitems.sort(actitem::sortitems); // sort items so last is closest
-            return true;
-        }
-        return false;
+        return d->updateitems();
     }
 
     int triggerent = -1;
@@ -1516,14 +1511,14 @@ namespace entities
     }
     ICOMMAND(0, exectrigger, "i", (int *n), if(identflags&IDF_MAP) runtriggers(*n, triggerclient ? triggerclient : game::player1));
 
-    bool execitem(int n, int cn, dynent *d, float dist)
+    bool execitem(int n, int cn, dynent *d, float dist, bool local)
     {
         gameentity &e = *(gameentity *)ents[n];
         switch(enttype[e.type].usetype)
         {
             case EU_ITEM:
             {
-                if(gameent::is(d) && (e.type != WEAPON || ((gameent *)d)->action[AC_USE]))
+                if(local && gameent::is(d) && (e.type != WEAPON || ((gameent *)d)->action[AC_USE]))
                 {
                     gameent *f = (gameent *)d;
                     if(game::allowmove(f))
@@ -1757,7 +1752,7 @@ namespace entities
                 }
                 else if(e.type == TRIGGER)
                 {
-                    if(d->state != CS_ALIVE || !gameent::is(d) || !isallowed(e)) break;
+                    if(!local || d->state != CS_ALIVE || !gameent::is(d) || !isallowed(e)) break;
 
                     gameent *g = (gameent *)d;
                     if((e.attrs[2] == TRIG_A_ACTION && g->action[AC_USE] && g == game::player1) || e.attrs[2] == TRIG_A_AUTO)
@@ -1765,7 +1760,7 @@ namespace entities
                 }
                 else if(e.type == CHECKPOINT)
                 {
-                    if(d->state != CS_ALIVE || !gameent::is(d) || !m_race(game::gamemode) || !isallowed(e)) break;
+                    if(!local || d->state != CS_ALIVE || !gameent::is(d) || !m_race(game::gamemode) || !isallowed(e)) break;
 
                     gameent *g = (gameent *)d;
                     if(m_ra_gauntlet(game::gamemode, game::mutators) && g->team != T_ALPHA) break;
@@ -1785,17 +1780,22 @@ namespace entities
 
         if(!gs_playing(game::gamestate)) return;
 
+        bool local = false;
         if(d != game::player1 && (!gameent::is(d) || !((gameent *)d)->ai))
         {
             if(!d->isdead()) return;
         }
-        else if(!d->isactive()) return;
+        else
+        {
+            if(!d->isactive()) return;
+            local = true;
+        }
 
         vec pos = d->center();
         float radius = max(d->xradius, d->yradius);
         if(gameent::is(d)) radius = max(d->height*0.5f, radius);
 
-        if(collateitems(d, pos, radius, d->actitems))
+        if(collateitems(d, pos, radius))
         {
             bool tried = false;
             loopv(d->actitems)
@@ -1830,10 +1830,10 @@ namespace entities
                     default: break;
                 }
 
-                if(ents.inrange(ent) && execitem(ent, cn, d, dist)) tried = true;
+                if(ents.inrange(ent) && execitem(ent, cn, d, dist, local)) tried = true;
             }
 
-            if(tried && gameent::is(d))
+            if(local && tried && gameent::is(d))
             {
                 gameent *e = (gameent *)d;
                 if(e->action[AC_USE])

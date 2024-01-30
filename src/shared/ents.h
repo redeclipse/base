@@ -348,10 +348,10 @@ ENUM_DLN(ACTITEM);
 
 struct actitem
 {
-    int type, ent, id, millis;
+    int type, ent, id, millis, enter, leave;
     float score;
 
-    actitem() : type(ACTITEM_ENT), ent(-1), id(-1), millis(0), score(0) {}
+    actitem() : type(ACTITEM_ENT), ent(-1), id(-1), millis(0), enter(-1), leave(-1), score(0) {}
     ~actitem() {}
 
     static bool sortitems(const actitem &a, const actitem &b)
@@ -417,6 +417,33 @@ struct dynent : physent                         // animated characters, or chara
         n.millis = lastactitem;
 
         return actitems.length() - 1;
+    }
+
+    bool updateitems()
+    {
+        if(actitems.empty()) return false;
+
+        actitems.sort(actitem::sortitems);
+
+        bool hasitems = false;
+        loopv(actitems)
+        {
+            actitem &n = actitems[i];
+
+            if(n.millis == lastactitem)
+            {
+                hasitems = true;
+                if(n.enter <= n.leave)
+                {
+                    n.enter = lastactitem;
+                    continue;
+                }
+            }
+
+            if(n.leave <= n.enter) n.leave = lastactitem;
+        }
+
+        return hasitems;
     }
 
     void normalize_yaw(float angle)
