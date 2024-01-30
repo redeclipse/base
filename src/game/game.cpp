@@ -4459,40 +4459,46 @@ namespace game
         if(d->burntime && d->burnfunc(lastmillis, d->burntime))
         {
             int millis = lastmillis - d->lastres[W_R_BURN], delay = max(d->burndelay, 1);
-            float pc = 1, intensity = 0.5f + (rnd(51) / 100.f), fade = (d != focus || d->state != CS_ALIVE ? 0.25f : 0.f) + (rnd(36) / 100.f);
+            float pc = 1, intensity = 0.5f + (rnd(51) / 100.f), fade = (d != focus || d->state != CS_ALIVE ? 0.2f : 0.f) + (rnd(36) / 100.f);
 
             if(d->burntime - millis < delay) pc *= (d->burntime - millis) / float(delay);
             else pc *= 0.75f + ((millis % delay)/float(delay * 4));
 
             vec pos = vec(d->center()).add(vec(rnd(11) - 5, rnd(11) - 5, rnd(11) - 3).mul(pc));
-            regular_part_create(PART_FIREBALL_SOFT, 200, pos, pulsehexcol(d, PULSE_BURN), d->height * intensity * blend * pc, fade * blend * pc, 0, 0, -25);
+            regular_part_create(PART_FIREBALL_SOFT, 250, pos, pulsehexcol(d, PULSE_BURN), d->height * intensity * blend * pc, fade * blend * pc, 0, 0, -50);
         }
 
         if(d->shocktime && d->shockfunc(lastmillis, d->shocktime))
         {
-            float radius = d->getradius() * 1.2f, height = d->getheight() * 0.45f;
-            if(d->ragdoll)
-            {
-                radius *= 0.5f;
-                height *= 2.2f;
-            }
+            float radius = d->getradius() * (d->ragdoll ? 0.6f : 1.2f),
+                  height = d->getheight() * (d->ragdoll ? 0.9f : 0.4f);
+            vec origin = d->center(), rad = vec(radius, radius, max(radius * 0.8f, height)).mul(blend);
 
-            vec origin = d->center(), rad = vec(radius, radius, height).mul(blend);
-            loopi(8 + rnd(8))
+            loopi(6 + rnd(6))
             {
-                float fade = blend * (d != focus || d->state != CS_ALIVE ? 0.35f : 0.1f) + (rnd(36) / 100.f);
+                float fade = blend * (d != focus || d->state != CS_ALIVE ? 0.25f : 0.15f) + (rnd(26) / 100.f);
                 vec dir = vec(rnd(201) - 100, rnd(201) - 100, rnd(201) - 100).div(100.f).normalize(),
-                    from = vec(dir).mul(rad).mul(rnd(151) / 100.f).add(origin),
-                    col = pulsecolour(d, PULSE_SHOCK, -1), to = from;
-                int count = 5 + rnd(4), colour = (int(col.x * 255) << 16)|(int(col.y * 255) << 8)|(int(col.z * 255));
+                    from = vec(dir).mul(rad).mul(rnd(51) / 100.f).add(origin),
+                    col = pulsecolour(d, PULSE_SHOCK, (i + 1) * 11), to = from;
+                int count = 6 + rnd(6), colour = (int(col.x * 255) << 16)|(int(col.y * 255) << 8)|(int(col.z * 255));
                 loopj(count)
                 {
-                    float q = 1.f - (j / float(count));
+                    float q = 1.f - (j / float(count)), qc = clamp(q + 0.1f, 0.1f, 1.0f);
                     dir.add(vec(rnd(101) - 50, rnd(101) - 50, rnd(101) - 50).div(100.f).normalize()).mul(0.5f).normalize();
                     to = vec(from).add(vec(dir).mul(rad).mul((rnd(101) + 1) / 50.f * q * 0.5f));
-                    part_flare(from, to, 1, PART_LIGHTNING_FLARE, colour, q, fade * q * 0.5f);
-                    part_flare(from, to, 1, PART_LIGHTZAP_FLARE, colour, q * 0.25f, fade * q);
+                    part_flare(from, to, 1, PART_LIGHTNING_FLARE, colour, q * 0.75f, fade * qc * 0.75f);
+                    part_flare(from, to, 1, PART_LIGHTZAP_FLARE, colour, q * 0.25f, fade * qc);
                     from = to;
+
+                    int r = j ? rnd(j * 4) + 1 : 0;
+                    loopk(r)
+                    {
+                        float qr = qc * qc * (1.f - (k / float(r))), qq = clamp(qr + 0.01f, 0.01f, qc);
+                        vec rdir = vec(dir).add(vec(rnd(101) - 50, rnd(101) - 50, rnd(101) - 50).div(100.f).normalize()).mul(0.5f).normalize();
+                        to = vec(from).add(vec(rdir).mul(rad).mul((rnd(101) + 1) / 50.f * qr * 0.5f));
+                        part_flare(from, to, 1, PART_LIGHTNING_FLARE, colour, qr * 0.6f, fade * qq * 0.75f);
+                        part_flare(from, to, 1, PART_LIGHTZAP_FLARE, colour, qr * 0.2f, fade * qq);
+                    }
                 }
             }
         }
@@ -4500,13 +4506,13 @@ namespace game
         if(d->corrodetime && d->corrodefunc(lastmillis, d->corrodetime))
         {
             int millis = lastmillis - d->lastres[W_R_CORRODE], delay = max(d->corrodedelay, 1);
-            float pc = 1, intensity = 0.5f + (rnd(51) / 100.f), fade = (d != focus || d->state != CS_ALIVE ? 0.01f : 0.f) + (rnd(5) / 100.f);
+            float pc = 1, intensity = 0.5f + (rnd(51) / 100.f), fade = (d != focus || d->state != CS_ALIVE ? 0.1f : 0.05f) + (rnd(5) / 100.f);
 
             if(d->corrodetime - millis < delay) pc *= (d->corrodetime - millis) / float(delay);
             else pc *= 0.75f + ((millis % delay)/float(delay * 4));
 
             vec pos = vec(d->center()).add(vec(rnd(21) - 10, rnd(21) - 10, rnd(11) - 3).mul(pc));
-            regular_part_create(PART_HINT_SOFT, 200, pos, pulsehexcol(d, PULSE_CORRODE), d->height * intensity * blend * pc * 0.25f, fade * blend * pc, 0, 0, -50);
+            regular_part_create(PART_HINT_SOFT, 250, pos, pulsehexcol(d, PULSE_CORRODE), d->height * intensity * blend * pc * 0.25f, fade * blend * pc, 0, 0, -60);
         }
     }
 
