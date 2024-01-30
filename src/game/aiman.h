@@ -363,7 +363,7 @@ namespace aiman
 
     void checkjanitors()
     {
-        int numjanitors = 0, maxjanitors = min(G(janitorlimit), int(curbalance * G(janitorbalance)));
+        int numjanitors = 0, maxjanitors = min(G(janitorlimit), int(ceilf(curbalance * G(janitorbalance))));
         loopvrev(clients) if(clients[i]->actortype == A_JANITOR) numjanitors++;
 
         if(numjanitors == maxjanitors) return;
