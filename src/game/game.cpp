@@ -69,7 +69,7 @@ namespace game
             "S_JUMP", "S_IMPULSE", "S_LAND", "S_FOOTSTEP_L", "S_FOOTSTEP_R", "S_SWIMSTEP", "S_PAIN", "S_DEATH",
             "S_SPLASH1", "S_SPLASH2", "S_SPLOSH", "S_DEBRIS", "S_BURNLAVA",
             "S_EXTINGUISH", "S_SHELL", "S_ITEMUSE", "S_ITEMSPAWN",
-            "S_REGEN_BEGIN", "S_REGEN", "S_CRITICAL", "S_DAMAGE", "S_DAMAGE2", "S_DAMAGE3", "S_DAMAGE4", "S_DAMAGE5", "S_DAMAGE6", "S_DAMAGE7", "S_DAMAGE8",
+            "S_REGEN_BEGIN", "S_REGEN_BOOST", "S_REGEN_DECAY", "S_CRITICAL", "S_DAMAGE", "S_DAMAGE2", "S_DAMAGE3", "S_DAMAGE4", "S_DAMAGE5", "S_DAMAGE6", "S_DAMAGE7", "S_DAMAGE8",
             "S_BURNED", "S_BLEED", "S_SHOCK", "S_CORRODE", "S_RESPAWN", "S_CHAT", "S_ERROR", "S_ALARM", "S_PRIZELOOP", "S_OPENPRIZE", "S_CATCH", "S_DROP", "S_BOUNCE",
             "S_V_FLAGSECURED", "S_V_FLAGOVERTHROWN", "S_V_FLAGPICKUP", "S_V_FLAGDROP", "S_V_FLAGRETURN", "S_V_FLAGSCORE", "S_V_FLAGRESET",
             "S_V_BOMBSTART", "S_V_BOMBDUEL", "S_V_BOMBPICKUP", "S_V_BOMBDROP", "S_V_BOMBSCORE", "S_V_BOMBRESET",
@@ -387,6 +387,8 @@ namespace game
     FVAR(IDF_PERSIST, gibheadless, 0, 0.05f, 1);
     FVAR(IDF_PERSIST, gibobliterated, 0, 0.025f, 1);
     VAR(IDF_PERSIST, gibplayerparts, 0, 0, 1); // can gib into parts
+
+    VAR(IDF_PERSIST, playermixer, VAR_MIN, -256, 1<<12); // 0 = off, positive is scale, negative is abs size
 
     VAR(IDF_PERSIST, playerhalos, 0, 3, 3); // 0 = off, 1 = self, 2 = others
     FVAR(IDF_PERSIST, playerblend, 0, 1, 1);
@@ -4409,8 +4411,11 @@ namespace game
 
         if(drawtex != DRAWTEX_HALO)
         {
-            defformatstring(actortex, "<comp:1,-128>playermixer [cn = %d]", d->clientnum);
-            mdl.mixer = textureload(actortex, 0, true, false);
+            if(d->actortype < A_ENEMY && playermixer)
+            {
+                defformatstring(actortex, "<comp:1,%d>playermixer [cn = %d]", playermixer, d->clientnum);
+                mdl.mixer = textureload(actortex, 0, true, false);
+            }
             getplayereffects(d, mdl);
         }
 
@@ -4494,13 +4499,13 @@ namespace game
         if(d->corrodetime && d->corrodefunc(lastmillis, d->corrodetime))
         {
             int millis = lastmillis - d->lastres[W_R_CORRODE], delay = max(d->corrodedelay, 1);
-            float pc = 1, intensity = 0.5f + (rnd(51) / 100.f), fade = (d != focus || d->state != CS_ALIVE ? 0.05f : 0.f) + (rnd(11) / 100.f);
+            float pc = 1, intensity = 0.5f + (rnd(51) / 100.f), fade = (d != focus || d->state != CS_ALIVE ? 0.01f : 0.f) + (rnd(5) / 100.f);
 
             if(d->corrodetime - millis < delay) pc *= (d->corrodetime - millis) / float(delay);
             else pc *= 0.75f + ((millis % delay)/float(delay * 4));
 
-            vec pos = vec(d->center()).add(vec(rnd(11) - 5, rnd(11) - 5, rnd(11) - 3).mul(pc));
-            regular_part_create(PART_HINT_SOFT, 200, pos, pulsehexcol(d, PULSE_CORRODE), d->height * intensity * blend * pc, fade * blend * pc, 0, 0, -25);
+            vec pos = vec(d->center()).add(vec(rnd(21) - 10, rnd(21) - 10, rnd(11) - 3).mul(pc));
+            regular_part_create(PART_HINT_SOFT, 200, pos, pulsehexcol(d, PULSE_CORRODE), d->height * intensity * blend * pc * 0.25f, fade * blend * pc, 0, 0, -50);
         }
     }
 

@@ -1136,6 +1136,7 @@ namespace client
     CLCOMMAND(corrodetime, intret(d->corrodetime));
 
     CLCOMMAND(regen, intret(regentime ? d->lastregen : 0));
+    CLCOMMAND(regenamt, intret(d->lastregenamt));
     CLCOMMAND(impulsecollectcount, intret(d->impulse[IM_COLLECT_COUNT]));
     CLCOMMAND(impulselastcount, intret(d->impulse[IM_LASTCOL_COUNT] ? (lastmillis - d->impulse[IM_LASTCOL_COUNT]) % 1000 : 0));
     CLCOMMAND(impulsecollectmeter, intret(d->impulse[IM_COLLECT_METER]));
@@ -3083,11 +3084,11 @@ namespace client
                         f->impulse[IM_METER] = 0;
                         f->resetresidual();
                     }
-                    else if(amt > 0 && (!f->lastregen || lastmillis-f->lastregen >= 500))
+                    else if(!f->lastregen || lastmillis-f->lastregen >= 500)
                     {
                         if(f->health < f->gethealth(game::gamemode, game::mutators) && !f->lastregen)
                             emitsound(S_REGEN_BEGIN, game::getplayersoundpos(f), f);
-                        else emitsound(S_REGEN, game::getplayersoundpos(f), f);
+                        else emitsound(amt >= 0 ? S_REGEN_BOOST : S_REGEN_DECAY, game::getplayersoundpos(f), f);
                     }
                     f->health = heal;
                     f->lastregen = lastmillis;
