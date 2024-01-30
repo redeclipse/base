@@ -271,7 +271,7 @@ namespace game
 
     VAR(IDF_PERSIST, followdead, 0, 1, 2); // 0 = never, 1 = in all but duel/survivor, 2 = always
     VAR(IDF_PERSIST, followthirdperson, 0, 1, 1);
-    VAR(IDF_PERSIST, followaiming, 0, 0, 3); // 0 = don't aim, &1 = aim in thirdperson, &2 = aim in first person
+    VAR(IDF_PERSIST, followaiming, 0, 1, 3); // 0 = don't aim, &1 = aim in thirdperson, &2 = aim in first person
     FVAR(IDF_PERSIST, followdist, FVAR_NONZERO, 10, FVAR_MAX);
     FVAR(IDF_PERSIST, followside, FVAR_MIN, 8, FVAR_MAX);
     FVAR(IDF_PERSIST, followblend, 0, 1, 1);
@@ -296,8 +296,8 @@ namespace game
     FVAR(IDF_PERSIST, spectvyawscale, FVAR_MIN, 1, 1000);
     FVAR(IDF_PERSIST, spectvpitchscale, FVAR_MIN, 1, 1000);
     VAR(IDF_PERSIST, spectvdead, 0, 1, 2); // 0 = never, 1 = in all but duel/survivor, 2 = always
-    VAR(IDF_PERSIST, spectvfirstperson, 0, 0, 2); // 0 = aim in direction followed player is facing, 1 = aim in direction determined by spectv when dead, 2 = always aim in direction
-    VAR(IDF_PERSIST, spectvthirdperson, 0, 0, 2); // 0 = aim in direction followed player is facing, 1 = aim in direction determined by spectv when dead, 2 = always aim in direction
+    VAR(IDF_PERSIST, spectvfirstperson, 0, 2, 3); // bit: 0 = aim in direction followed player is facing, 1 = aim in direction determined by spectv when dead, 2 = aim in direction
+    VAR(IDF_PERSIST, spectvthirdperson, 0, 2, 3);
 
     VAR(IDF_PERSIST, spectvintermiters, 1, 6, 6);
     VAR(IDF_PERSIST, spectvintermmintime, 1000, 5000, VAR_MAX);
@@ -3124,7 +3124,7 @@ namespace game
     {
         bool third = d != player1 ? followthirdperson : thirdperson;
         int level = third ? spectvthirdperson : spectvfirstperson;
-        if(level >= (d->state == CS_DEAD || d->state == CS_WAITING ? 1 : 2)) return true;
+        if(level&(d->state == CS_DEAD || d->state == CS_WAITING ? 1 : 2)) return true;
         return false;
     }
 
@@ -3146,6 +3146,7 @@ namespace game
         if(!c) return;
 
         c->chase = true;
+
         if(c->type == cament::ENTITY && entities::ents.inrange(c->id))
         {
             gameentity &e = *(gameentity *)entities::ents[c->id];
