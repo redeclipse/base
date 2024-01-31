@@ -754,193 +754,6 @@ namespace client
     }
     ICOMMAND(0, getlastclientnum, "", (), getlastclientnum());
 
-    #define LOOPCLIENTS(name,op,lp,nop) \
-        ICOMMAND(0, loopclients##name, "iire", (int *count, int *skip, ident *id, uint *body), \
-        { \
-            loopstart(id, stack); \
-            int amt = 1; \
-            loopv(game::players) if(game::players[i]) amt++; \
-            op(amt, *count, *skip, \
-            { \
-                int r = -1; \
-                int n = nop ? amt-1 : 0; \
-                if(!i) \
-                { \
-                    if(nop ? n <= i : n >= i) r = game::player1->clientnum; \
-                    if(nop) n--; \
-                    else n++; \
-                } \
-                else \
-                { \
-                    lp(game::players) if(game::players[k]) \
-                    { \
-                        if(nop ? n <= i : n >= i) \
-                        { \
-                            r = game::players[k]->clientnum; \
-                            break; \
-                        } \
-                        if(nop) n--; \
-                        else n++; \
-                    } \
-                } \
-                if(r >= 0) \
-                { \
-                    loopiter(id, stack, r); \
-                    execute(body); \
-                } \
-            }); \
-            loopend(id, stack); \
-        });
-    LOOPCLIENTS(,loopcsi,loopvk,false);
-    LOOPCLIENTS(rev,loopcsirev,loopvkrev,true);
-
-    #define LOOPCLIENTSIF(name,op,lp,nop) \
-        ICOMMAND(0, loopclients##name##if, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
-        { \
-            loopstart(id, stack); \
-            int amt = 1; \
-            loopv(game::players) if(game::players[i]) amt++; \
-            op(amt, *count, *skip, \
-            { \
-                int r = -1; \
-                int n = nop ? amt-1 : 0; \
-                if(!i) \
-                { \
-                    if(nop ? n <= i : n >= i) r = game::player1->clientnum; \
-                    if(nop) n--; \
-                    else n++; \
-                } \
-                else \
-                { \
-                    lp(game::players) if(game::players[k]) \
-                    { \
-                        if(nop ? n <= i : n >= i) \
-                        { \
-                            r = game::players[k]->clientnum; \
-                            break; \
-                        } \
-                        if(nop) n--; \
-                        else n++; \
-                    } \
-                } \
-                if(r >= 0) \
-                { \
-                    loopiter(id, stack, r); \
-                    if(executebool(cond)) execute(body); \
-                } \
-            }); \
-            loopend(id, stack); \
-        });
-    LOOPCLIENTSIF(,loopcsi,loopvk,false);
-    LOOPCLIENTSIF(rev,loopcsirev,loopvkrev,true);
-
-    #define LOOPINVENTORY(name,op,lp,nop) \
-        ICOMMAND(IDF_NAMECOMPLETE, loopinventory##name, "siire", (char *who, int *count, int *skip, ident *id, uint *body), \
-        { \
-            gameent *d = game::getclient(parseplayer(who)); \
-            if(!d) return; \
-            loopstart(id, stack); \
-            int amt = d->holdweapcount(m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis); \
-            op(amt, *count, *skip, \
-            { \
-                int r = -1; \
-                int n = nop ? amt-1 : 0; \
-                lp(W_ALL) if(d->holdweap(k, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis)) \
-                { \
-                    if(nop ? n <= i : n >= i) \
-                    { \
-                        r = k; \
-                        break; \
-                    } \
-                    if(nop) n--; \
-                    else n++; \
-                } \
-                if(r >= 0) \
-                { \
-                    loopiter(id, stack, r); \
-                    execute(body); \
-                } \
-            }); \
-            loopend(id, stack); \
-        });
-    LOOPINVENTORY(,loopcsi,loopk,false);
-    LOOPINVENTORY(rev,loopcsirev,loopkrev,true);
-
-    CLCOMMAND(lastactitem, intret(d->lastactitem));
-    CLCOMMANDM(actitem, "sb", (char *who, int *n), intret(*n >= 0 ? (d->actitems.inrange(*n) ? 1 : 0) : d->actitems.length()));
-    CLCOMMANDM(actitemtype, "sb", (char *who, int *n), intret(d->actitems.inrange(*n) ? d->actitems[*n].type : -1));
-    CLCOMMANDM(actitement, "sb", (char *who, int *n), intret(d->actitems.inrange(*n) ? d->actitems[*n].ent : -1));
-    CLCOMMANDM(actitemid, "sb", (char *who, int *n), intret(d->actitems.inrange(*n) ? d->actitems[*n].id : -1));
-    CLCOMMANDM(actitemscore, "sb", (char *who, int *n), floatret(d->actitems.inrange(*n) ? d->actitems[*n].score : 0.f));
-    CLCOMMANDM(actitemmillis, "sb", (char *who, int *n), intret(d->actitems.inrange(*n) ? d->actitems[*n].millis : 0));
-    CLCOMMANDM(actitementer, "sb", (char *who, int *n), intret(d->actitems.inrange(*n) ? d->actitems[*n].enter : -1));
-    CLCOMMANDM(actitemleave, "sb", (char *who, int *n), intret(d->actitems.inrange(*n) ? d->actitems[*n].leave : -1));
-    CLCOMMANDM(actitemready, "sb", (char *who, int *n), intret(d->actitems.inrange(*n) ? (d->actitems[*n].millis == d->lastactitem ? 1 : 0) : 0));
-    CLCOMMANDM(actitemidx, "sbbb", (char *who, int *n, int *v, int *r),
-    {
-        loopv(d->actitems)
-        {
-            if(*n >= 0 && d->actitems[i].type != *n) continue;
-            if(*v >= 0 && d->actitems[i].ent != *v) continue;
-            if(*r >= 0 && d->actitems[i].id != *r) continue;
-
-            intret(i);
-
-            return;
-        }
-
-        intret(-1);
-    });
-
-    #define LOOPACTITEMS(name, op) \
-        ICOMMAND(IDF_NAMECOMPLETE, loopactitems##name, "siire", (char *who, int *count, int *skip, ident *id, uint *body), \
-        { \
-            gameent *d = game::getclient(parseplayer(who)); \
-            if(!d) return; \
-            loopstart(id, stack); \
-            op(d->actitems, *count, *skip, \
-            { \
-                loopiter(id, stack, i); \
-                execute(body); \
-            }); \
-            loopend(id, stack); \
-        });
-    LOOPACTITEMS(,loopcsv);
-    LOOPACTITEMS(rev,loopcsvrev);
-
-    #define LOOPACTITEMSIF(name, op) \
-        ICOMMAND(IDF_NAMECOMPLETE, loopactitems##name, "siiree", (char *who, int *count, int *skip, ident *id, uint *cond, uint *body), \
-        { \
-            gameent *d = game::getclient(parseplayer(who)); \
-            if(!d) return; \
-            loopstart(id, stack); \
-            op(d->actitems, *count, *skip, \
-            { \
-                loopiter(id, stack, i); \
-                if(executebool(cond)) execute(body); \
-            }); \
-            loopend(id, stack); \
-        });
-    LOOPACTITEMS(,loopcsv);
-    LOOPACTITEMS(rev,loopcsvrev);
-
-    #define LOOPREADYITEMS(name, op) \
-        ICOMMAND(IDF_NAMECOMPLETE, loopreadyitems##name, "siire", (char *who, int *count, int *skip, ident *id, uint *body), \
-        { \
-            gameent *d = game::getclient(parseplayer(who)); \
-            if(!d) return; \
-            loopstart(id, stack); \
-            op(d->actitems, *count, *skip, \
-            { \
-                if(d->actitems[i].millis != d->lastactitem) break; \
-                loopiter(id, stack, i); \
-                execute(body); \
-            }); \
-            loopend(id, stack); \
-        });
-    LOOPREADYITEMS(,loopcsv);
-    LOOPREADYITEMS(rev,loopcsvrev);
-
     VAR(0, numplayertypes, 1, PLAYERTYPES, -1);
     ICOMMAND(0, getmodelname, "ib", (int *mdl, int *idx), result(*mdl >= 0 ? playertypes[*mdl%PLAYERTYPES][*idx >= 0 ? clamp(*idx, 0, 6) : 6] : ""));
     VAR(0, numpatterns, 1, PLAYERPATTERNS, -1);
@@ -969,12 +782,6 @@ namespace client
     ICOMMANDVF(0, cameraroll, camera1->roll);
     ICOMMAND(0, cameraoffyaw, "f", (float *yaw), floatret(*yaw-camera1->yaw));
 
-    CLCOMMANDK(presence, intret(1), intret(0));
-    CLCOMMAND(yaw, floatret(d->yaw));
-    CLCOMMAND(pitch, floatret(d->pitch));
-    CLCOMMAND(roll, floatret(d->roll));
-    CLCOMMAND(opacity, floatret(game::opacity(d)));
-
     bool radarallow(const vec &o, gameent *d, vec &dir, float &dist, bool self)
     {
         if(m_hard(game::gamemode, game::mutators) || (!self && d == game::focus)) return false;
@@ -984,196 +791,6 @@ namespace client
         dist = dir.magnitude();
         return d->hasprize || !hud::radarlimited(dist);
     }
-
-    CLCOMMANDM(radarallow, "sb", (char *who, int *self),
-    {
-        vec dir(0, 0, 0);
-        float dist = -1;
-        intret(radarallow(camera1->o, d, dir, dist, *self >= 0 ? *self != 0 : false) ? 1 : 0);
-    });
-
-    CLCOMMAND(radardist,
-    {
-        vec dir(0, 0, 0);
-        float dist = -1;
-        if(!radarallow(camera1->o, d, dir, dist)) return;
-        floatret(dist);
-    });
-
-    CLCOMMAND(radardir,
-    {
-        vec dir(0, 0, 0);
-        float dist = -1;
-        if(!radarallow(camera1->o, d, dir, dist)) return;
-        dir.rotate_around_z(-camera1->yaw*RAD).normalize();
-        floatret(-atan2(dir.x, dir.y)/RAD);
-    });
-
-    CLCOMMAND(radaryaw,
-    {
-        vec dir(0, 0, 0);
-        float dist = -1;
-        if(!radarallow(camera1->o, d, dir, dist)) return;
-        floatret(d->yaw-camera1->yaw);
-    });
-
-    CLCOMMAND(radardirxy,
-    {
-        vec dir(0, 0, 0);
-        float dist = -1;
-        if(!radarallow(camera1->o, d, dir, dist)) return;
-        dir.rotate_around_z(-camera1->yaw*RAD).normalize();
-        defformatstring(output, "%s %s", floatstr(dir.x), floatstr(dir.y));
-        result(output);
-    });
-
-    CLCOMMANDM(name, "sbib", (char *who, int *colour, int *icon, int *dupname), result(game::colourname(d, NULL, *icon!=0, *dupname!=0, *colour >= 0 ? *colour : 3)));
-    CLCOMMANDM(colour, "sbgf", (char *who, int *m, float *f, float *x), intret(game::getcolour(d, *m, *f >= 0 && *f <= 10 ? *f : 1.f, *x)));
-    CLCOMMANDM(vitem, "sbi", (char *who, int *n, int *v), getvitem(d, *n, *v));
-
-    CLCOMMAND(weapselect, intret(d->weapselect));
-    CLCOMMANDM(loadweap, "si", (char *who, int *n), intret(d->loadweap.inrange(*n) ? d->loadweap[*n] : -1));
-    CLCOMMANDM(weapget, "siii", (char *who, int *n, int *a, int *b), intret(isweap(*n) ? d->getammo(*n, *a!=0 ? lastmillis : 0, *b!=0) : -1));
-    CLCOMMANDM(weapammo, "sii", (char *who, int *n, int *m), intret(isweap(*n) ? d->weapammo[*n][clamp(*m, 0, W_A_MAX-1)] : -1));
-    CLCOMMANDM(weapclip, "si", (char *who, int *n), intret(isweap(*n) ? d->weapammo[*n][W_A_CLIP] : -1));
-    CLCOMMANDM(weapstore, "si", (char *who, int *n), intret(isweap(*n) ? d->weapammo[*n][W_A_STORE] : -1));
-    CLCOMMANDM(weapstate, "si", (char *who, int *n), intret(isweap(*n) ? d->weapstate[*n] : W_S_IDLE));
-    CLCOMMANDM(weaptime, "si", (char *who, int *n), intret(isweap(*n) ? d->weaptime[*n] : 0));
-    CLCOMMANDM(weapwait, "si", (char *who, int *n), intret(isweap(*n) ? d->weapwait[*n] : 0));
-    CLCOMMANDM(weapload, "sii", (char *who, int *n, int *m), intret(isweap(*n) ? d->weapload[*n][clamp(*m, 0, W_A_MAX-1)] : 0));
-    CLCOMMANDM(weaphold, "si", (char *who, int *n), intret(isweap(*n) && d->holdweap(*n, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis) ? 1 : 0));
-    CLCOMMAND(weapholdnum, intret(d->holdweapcount(m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis)));
-    CLCOMMANDM(action, "sb", (char *who, int *n), intret(d->action[clamp(*n, 0, int(AC_MAX-1))] ? 1 : 0));
-    CLCOMMANDM(actiontime, "sb", (char *who, int *n), intret(d->actiontime[clamp(*n, 0, int(AC_MAX-1))]));
-
-    CLCOMMAND(move, intret(d->move));
-    CLCOMMAND(strafe, intret(d->strafe));
-    CLCOMMAND(turnside, intret(d->turnside));
-    CLCOMMAND(physstate, intret(d->physstate));
-    CLCOMMAND(lastdeath, intret(d->lastdeath));
-    CLCOMMAND(lastspawn, intret(d->lastspawn));
-    CLCOMMAND(lastbuff, intret(d->lastbuff));
-    CLCOMMAND(lastshoot, intret(d->lastshoot));
-    CLCOMMAND(lastattacker, intret(d->lastattacker));
-    CLCOMMAND(airmillis, intret(d->airmillis));
-    CLCOMMAND(floormillis, intret(d->floormillis));
-    CLCOMMAND(inmaterial, intret(d->inmaterial));
-    CLCOMMAND(inliquid, intret(isliquid(d->inmaterial&MATF_VOLUME) ? 1 : 0));
-    CLCOMMAND(hasliquid, intret(physics::liquidcheck(d) ? 1 : 0));
-    CLCOMMAND(onladder, intret(isladder(d->inmaterial) ? 1 : 0));
-    CLCOMMAND(hasladder, intret(physics::laddercheck(d) ? 1 : 0));
-    CLCOMMAND(headless, intret(d->headless ? 1 : 0));
-    CLCOMMAND(obliterated, intret(d->obliterated ? 1 : 0));
-    CLCOMMAND(actortype, intret(d->actortype));
-    CLCOMMAND(pcolour, intret(d->colours[0]));
-    CLCOMMAND(scolour, intret(d->colours[1]));
-    CLCOMMAND(model, intret(d->model%PLAYERTYPES));
-    CLCOMMAND(pattern, intret(d->pattern%PLAYERPATTERNS));
-    CLCOMMAND(vanity, result(d->vanity));
-    CLCOMMAND(obit, result(d->obit));
-    CLCOMMAND(handle, result(d->handle));
-    CLCOMMAND(steamid, result(d->steamid));
-    CLCOMMAND(host, result(d->hostip));
-    CLCOMMAND(ip, result(d->hostip));
-    CLCOMMAND(ping, intret(d->ping));
-    CLCOMMAND(pj, intret(d->plag));
-    CLCOMMAND(team, intret(d->team));
-    CLCOMMAND(state, intret(d->state));
-    CLCOMMAND(health, intret(d->health));
-    CLCOMMAND(points, intret(d->points));
-    CLCOMMAND(cptime, intret(d->cptime));
-    CLCOMMAND(cplast, intret(d->cplast));
-    CLCOMMAND(cpmillis, intret(d->cpmillis ? lastmillis-d->cpmillis : 0));
-    CLCOMMAND(frags, intret(d->frags));
-    CLCOMMAND(deaths, intret(d->deaths));
-
-    CLCOMMAND(conopen, intret(d->conopen ? 1 : 0));
-    CLCOMMAND(queuepos, intret(d->queuepos));
-
-    CLCOMMAND(totalpoints, intret(d->totalpoints));
-    CLCOMMAND(totalfrags, intret(d->totalfrags));
-    CLCOMMAND(totaldeaths, intret(d->totaldeaths));
-    CLCOMMAND(totalavgpos, floatret(d->totalavgpos));
-    CLCOMMAND(balancescore, floatret(d->balancescore()));
-    CLCOMMAND(timeplayed, intret(d->updatetimeplayed()));
-    CLCOMMAND(timeplayed, intret(d->updatetimeplayed()));
-
-    CLCOMMAND(speed, floatret(d->speed));
-    CLCOMMAND(jumpspeed, floatret(d->jumpspeed));
-    CLCOMMAND(impulsespeed, floatret(d->impulsespeed));
-    CLCOMMAND(weight, floatret(d->weight));
-    CLCOMMAND(buoyancy, floatret(d->buoyancy));
-
-    CLCOMMAND(movescale, floatret(d->movescale));
-    CLCOMMAND(gravityscale, floatret(d->gravityscale));
-    CLCOMMAND(coastscale, floatret(d->coastscale));
-
-    CLCOMMAND(scoretime, floatret(d->scoretime()));
-    CLCOMMANDM(kdratio, "si", (char *who, int *n), intret(d->kdratio(*n!=0)));
-
-    CLCOMMAND(allowimpulse, intret(A(d->actortype, impulse)&IM_T_CHECK ? 1 : 0));
-    CLCOMMAND(impulsecostmeter, intret(d->impulse[IM_METER]));
-    CLCOMMAND(impulsetype, intret(d->impulse[IM_TYPE]));
-    CLCOMMANDM(impulsetimer, "b", (char *who, int *n), intret(d->impulsetime[*n >= 0 && *n < IM_T_MAX ? *n : d->impulse[IM_TYPE]]));
-    CLCOMMAND(impulseregen, intret(d->impulse[IM_REGEN]));
-    CLCOMMAND(impulsecount, intret(d->impulse[IM_COUNT]));
-    CLCOMMAND(impulsejump, intret(d->impulsetime[IM_T_JUMP]));
-    CLCOMMAND(impulsewait, intret(d->impulsetime[IM_T_PUSHER]));
-    CLCOMMANDM(impulse, "si", (char *who, int *n), intret(*n >= 0 && *n < IM_MAX ? d->impulse[*n] : 0));
-
-    CLCOMMAND(buffing, intret(d->lastbuff));
-    CLCOMMAND(hasprize, intret(d->hasprize));
-    CLCOMMAND(collects, intret(d->collects.length()));
-
-    CLCOMMAND(burnfunc, intret(d->burntime ? d->burnfunc(lastmillis, d->burntime) : 0));
-    CLCOMMAND(bleedfunc, intret(d->bleedtime ? d->bleedfunc(lastmillis, d->bleedtime) : 0));
-    CLCOMMAND(shockfunc, intret(d->shocktime ? d->shockfunc(lastmillis, d->shocktime) : 0));
-    CLCOMMAND(corrodefunc, intret(d->corrodetime ? d->corrodefunc(lastmillis, d->corrodetime) : 0));
-
-    CLCOMMAND(burntime, intret(d->burntime));
-    CLCOMMAND(bleedtime, intret(d->bleedtime));
-    CLCOMMAND(shocktime, intret(d->shocktime));
-    CLCOMMAND(corrodetime, intret(d->corrodetime));
-
-    CLCOMMAND(regen, intret(regentime ? d->lastregen : 0));
-    CLCOMMAND(regenamt, intret(d->lastregenamt));
-    CLCOMMAND(impulsecollectcount, intret(d->impulse[IM_COLLECT_COUNT]));
-    CLCOMMAND(impulselastcount, intret(d->impulse[IM_LASTCOL_COUNT] ? (lastmillis - d->impulse[IM_LASTCOL_COUNT]) % 1000 : 0));
-    CLCOMMAND(impulsecollectmeter, intret(d->impulse[IM_COLLECT_METER]));
-    CLCOMMAND(impulselastmeter, intret(d->impulse[IM_LASTCOL_METER] ? (lastmillis - d->impulse[IM_LASTCOL_METER]) % 1000 : 0));
-
-    CLCOMMAND(spawnweap, intret(m_weapon(d->actortype, game::gamemode, game::mutators)));
-    CLCOMMAND(spawndelay, intret(m_delay(d->actortype, game::gamemode, game::mutators, d->team)));
-    CLCOMMAND(spawnprotect, intret(m_protect(game::gamemode, game::mutators)));
-    CLCOMMAND(spawnhealth, intret(d->gethealth(game::gamemode, game::mutators)));
-    CLCOMMAND(maxhealth, intret(d->gethealth(game::gamemode, game::mutators, true)));
-
-    CLCOMMAND(respawnwait, intret(d->isdead() ? d->respawnwait(lastmillis, m_delay(d->actortype, game::gamemode, game::mutators, d->team)): -1));
-    CLCOMMANDM(canshoot, "sbi", (char *who, int *weap, int *alt), intret(d->canshoot(*weap >= 0 ? *weap : d->weapselect, *alt > 0 ? HIT_ALT : 0, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis, (1<<W_S_RELOAD)) ? 1 : 0));
-    CLCOMMANDM(canreload, "sb", (char *who, int *weap), intret(d->canreload(*weap >= 0 ? *weap : d->weapselect, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis, (1<<W_S_RELOAD)) ? 1 : 0));
-
-    CLCOMMANDM(canuse, "si", (char *who, int *n),
-    {
-        if(entities::ents.inrange(*n))
-        {
-            extentity &e = *entities::ents[*n];
-            if(enttype[e.type].usetype == EU_ITEM && e.type == WEAPON && entities::isallowed(e))
-            {
-                int attr = m_attr(e.type, e.attrs[0]);
-                if(isweap(attr) && d->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
-                {
-                    intret(1);
-                    return;
-                }
-            }
-        }
-
-        intret(0);
-    });
-
-
-    CLCOMMANDM(pulsecolour, "sib", (char *who, int *n, int *c), intret(pulsehexcol(d, *n, *c >= -1 ? *c : PULSE_CYCLE)));
-    CLCOMMANDM(velocity, "si", (char *who, int *n), floatret(vec(d->vel).add(d->falling).magnitude()*(*n!=0 ? (*n > 0 ? 3.6f/8.f : 0.125f) : 1.f)));
 
     int getresidualfx(gameent *d, int n, int c)
     {
@@ -1211,56 +828,13 @@ namespace client
         }
         return -1;
     }
-    CLCOMMANDM(residualfx, "sib", (char *who, int *n, int *c), intret(getresidualfx(d, *n, *c)));
 
-    #define CLDOMCMD(dtype) \
-        CLCOMMANDM(dtype, "sb", (char *who, int *n), \
-        { \
-            if(*n < 0) intret(d->dtype.length()); \
-            else if(d->dtype.inrange(*n)) intret(d->dtype[*n]->clientnum); \
-        });
-    CLDOMCMD(dominating);
-    CLDOMCMD(dominated);
-
-    #define CLISDOMCMD(dtype) \
-        CLCOMMANDMK(is##dtype, "ss", (char *who, char *n), \
-        { \
-            gameent *e = game::getclient(client::parseplayer(n)); \
-            if(!e) \
-            { \
-                intret(0); \
-                return; \
-            } \
-            loopv(d->dtype) if(d->dtype[i]->clientnum == e->clientnum) \
-            { \
-                intret(1); \
-                return; \
-            } \
-            intret(0); \
-            return; \
-        }, intret(0); return);
-    CLISDOMCMD(dominating);
-    CLISDOMCMD(dominated);
-
-    CLCOMMAND(privilege, intret(d->privilege&PRIV_TYPE));
-    CLCOMMAND(privlocal, intret(d->privilege&PRIV_LOCAL ? 1 : 0));
-    CLCOMMAND(privtex, result(hud::privtex(d->privilege, d->actortype)));
     bool haspriv(gameent *d, int priv)
     {
         if(!d) return false;
         if(!priv || (d == game::player1 && !remote)) return true;
         return (d->privilege&PRIV_TYPE) >= priv;
     }
-    #define CLPRIVCMD(pname,pval) CLCOMMAND(priv##pname, intret(haspriv(d, pval) ? 1 : 0));
-    CLPRIVCMD(none, PRIV_NONE);
-    CLPRIVCMD(player, PRIV_PLAYER);
-    CLPRIVCMD(supporter, PRIV_SUPPORTER);
-    CLPRIVCMD(moderator, PRIV_MODERATOR);
-    CLPRIVCMD(administrator, PRIV_ADMINISTRATOR);
-    CLPRIVCMD(developer, PRIV_DEVELOPER);
-    CLPRIVCMD(founder, PRIV_CREATOR);
-    CLCOMMANDM(priv, "si", (char *who, int *priv), intret(haspriv(d, clamp(*priv, 0, PRIV_MAX-1)) ? 1 : 0));
-
     void getclientversion(int cn, int prop)
     {
         gameent *d = cn >= 0 ? game::getclient(cn) : game::player1;
@@ -1724,7 +1298,7 @@ namespace client
             {
                 case ID_COMMAND:
                 {
-#if 0 // these shouldn't get here
+                    #if 0 // these shouldn't get here
                     int slen = strlen(cmd)+1+strlen(arg);
                     char *s = newstring(slen+1);
                     formatstring(s, slen, "%s %s", cmd, arg);
@@ -1732,7 +1306,7 @@ namespace client
                     DELETEA(s);
                     if(ret) conoutf(colourgreen, "%s: \fc%s", cmd, ret);
                     DELETEA(ret);
-#endif
+                    #endif
                     return;
                 }
                 case ID_VAR:
@@ -4180,4 +3754,432 @@ namespace client
                 *nextcomplete = names[i];
         }
     }
+
+    #define LOOPCLIENTS(name,op,lp,nop) \
+        ICOMMAND(0, loopclients##name, "iire", (int *count, int *skip, ident *id, uint *body), \
+        { \
+            loopstart(id, stack); \
+            int amt = 1; \
+            loopv(game::players) if(game::players[i]) amt++; \
+            op(amt, *count, *skip, \
+            { \
+                int r = -1; \
+                int n = nop ? amt-1 : 0; \
+                if(!i) \
+                { \
+                    if(nop ? n <= i : n >= i) r = game::player1->clientnum; \
+                    if(nop) n--; \
+                    else n++; \
+                } \
+                else \
+                { \
+                    lp(game::players) if(game::players[k]) \
+                    { \
+                        if(nop ? n <= i : n >= i) \
+                        { \
+                            r = game::players[k]->clientnum; \
+                            break; \
+                        } \
+                        if(nop) n--; \
+                        else n++; \
+                    } \
+                } \
+                if(r >= 0) \
+                { \
+                    loopiter(id, stack, r); \
+                    execute(body); \
+                } \
+            }); \
+            loopend(id, stack); \
+        });
+    LOOPCLIENTS(,loopcsi,loopvk,false);
+    LOOPCLIENTS(rev,loopcsirev,loopvkrev,true);
+
+    #define LOOPCLIENTSIF(name,op,lp,nop) \
+        ICOMMAND(0, loopclients##name##if, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
+        { \
+            loopstart(id, stack); \
+            int amt = 1; \
+            loopv(game::players) if(game::players[i]) amt++; \
+            op(amt, *count, *skip, \
+            { \
+                int r = -1; \
+                int n = nop ? amt-1 : 0; \
+                if(!i) \
+                { \
+                    if(nop ? n <= i : n >= i) r = game::player1->clientnum; \
+                    if(nop) n--; \
+                    else n++; \
+                } \
+                else \
+                { \
+                    lp(game::players) if(game::players[k]) \
+                    { \
+                        if(nop ? n <= i : n >= i) \
+                        { \
+                            r = game::players[k]->clientnum; \
+                            break; \
+                        } \
+                        if(nop) n--; \
+                        else n++; \
+                    } \
+                } \
+                if(r >= 0) \
+                { \
+                    loopiter(id, stack, r); \
+                    if(executebool(cond)) execute(body); \
+                } \
+            }); \
+            loopend(id, stack); \
+        });
+    LOOPCLIENTSIF(,loopcsi,loopvk,false);
+    LOOPCLIENTSIF(rev,loopcsirev,loopvkrev,true);
+
+    #define LOOPINVENTORY(name,op,lp,nop) \
+        ICOMMAND(IDF_NAMECOMPLETE, loopinventory##name, "siire", (char *who, int *count, int *skip, ident *id, uint *body), \
+        { \
+            gameent *d = game::getclient(parseplayer(who)); \
+            if(!d) return; \
+            loopstart(id, stack); \
+            int amt = d->holdweapcount(m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis); \
+            op(amt, *count, *skip, \
+            { \
+                int r = -1; \
+                int n = nop ? amt-1 : 0; \
+                lp(W_ALL) if(d->holdweap(k, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis)) \
+                { \
+                    if(nop ? n <= i : n >= i) \
+                    { \
+                        r = k; \
+                        break; \
+                    } \
+                    if(nop) n--; \
+                    else n++; \
+                } \
+                if(r >= 0) \
+                { \
+                    loopiter(id, stack, r); \
+                    execute(body); \
+                } \
+            }); \
+            loopend(id, stack); \
+        });
+    LOOPINVENTORY(,loopcsi,loopk,false);
+    LOOPINVENTORY(rev,loopcsirev,loopkrev,true);
+
+    CLCOMMAND(lastactitem, intret(d->lastactitem));
+    CLCOMMANDM(actitem, "sb", (char *who, int *n), intret(*n >= 0 ? (d->actitems.inrange(*n) ? 1 : 0) : d->actitems.length()));
+    CLCOMMANDM(actitemtype, "sb", (char *who, int *n), intret(d->actitems.inrange(*n) ? d->actitems[*n].type : -1));
+    CLCOMMANDM(actitement, "sb", (char *who, int *n), intret(d->actitems.inrange(*n) ? d->actitems[*n].ent : -1));
+    CLCOMMANDM(actitemid, "sb", (char *who, int *n), intret(d->actitems.inrange(*n) ? d->actitems[*n].id : -1));
+    CLCOMMANDM(actitemscore, "sb", (char *who, int *n), floatret(d->actitems.inrange(*n) ? d->actitems[*n].score : 0.f));
+    CLCOMMANDM(actitemmillis, "sb", (char *who, int *n), intret(d->actitems.inrange(*n) ? d->actitems[*n].millis : 0));
+    CLCOMMANDM(actitementer, "sb", (char *who, int *n), intret(d->actitems.inrange(*n) ? d->actitems[*n].enter : -1));
+    CLCOMMANDM(actitemleave, "sb", (char *who, int *n), intret(d->actitems.inrange(*n) ? d->actitems[*n].leave : -1));
+    CLCOMMANDM(actitemready, "sb", (char *who, int *n), intret(d->actitems.inrange(*n) ? (d->actitems[*n].millis == d->lastactitem ? 1 : 0) : 0));
+    CLCOMMANDM(actitemidx, "sbbb", (char *who, int *n, int *v, int *r),
+    {
+        loopv(d->actitems)
+        {
+            if(*n >= 0 && d->actitems[i].type != *n) continue;
+            if(*v >= 0 && d->actitems[i].ent != *v) continue;
+            if(*r >= 0 && d->actitems[i].id != *r) continue;
+
+            intret(i);
+
+            return;
+        }
+
+        intret(-1);
+    });
+
+    #define LOOPACTITEMS(name, op) \
+        ICOMMAND(IDF_NAMECOMPLETE, loopactitems##name, "siire", (char *who, int *count, int *skip, ident *id, uint *body), \
+        { \
+            gameent *d = game::getclient(parseplayer(who)); \
+            if(!d) return; \
+            loopstart(id, stack); \
+            op(d->actitems, *count, *skip, \
+            { \
+                loopiter(id, stack, i); \
+                execute(body); \
+            }); \
+            loopend(id, stack); \
+        });
+    LOOPACTITEMS(,loopcsv);
+    LOOPACTITEMS(rev,loopcsvrev);
+
+    #define LOOPACTITEMSIF(name, op) \
+        ICOMMAND(IDF_NAMECOMPLETE, loopactitems##name, "siiree", (char *who, int *count, int *skip, ident *id, uint *cond, uint *body), \
+        { \
+            gameent *d = game::getclient(parseplayer(who)); \
+            if(!d) return; \
+            loopstart(id, stack); \
+            op(d->actitems, *count, *skip, \
+            { \
+                loopiter(id, stack, i); \
+                if(executebool(cond)) execute(body); \
+            }); \
+            loopend(id, stack); \
+        });
+    LOOPACTITEMS(,loopcsv);
+    LOOPACTITEMS(rev,loopcsvrev);
+
+    #define LOOPREADYITEMS(name, op) \
+        ICOMMAND(IDF_NAMECOMPLETE, loopreadyitems##name, "siire", (char *who, int *count, int *skip, ident *id, uint *body), \
+        { \
+            gameent *d = game::getclient(parseplayer(who)); \
+            if(!d) return; \
+            loopstart(id, stack); \
+            op(d->actitems, *count, *skip, \
+            { \
+                if(d->actitems[i].millis != d->lastactitem) break; \
+                loopiter(id, stack, i); \
+                execute(body); \
+            }); \
+            loopend(id, stack); \
+        });
+    LOOPREADYITEMS(,loopcsv);
+    LOOPREADYITEMS(rev,loopcsvrev);
+
+    CLCOMMANDK(presence, intret(1), intret(0));
+    CLCOMMAND(yaw, floatret(d->yaw));
+    CLCOMMAND(pitch, floatret(d->pitch));
+    CLCOMMAND(roll, floatret(d->roll));
+    CLCOMMAND(opacity, floatret(game::opacity(d)));
+
+    CLCOMMANDM(radarallow, "sb", (char *who, int *self),
+    {
+        vec dir(0, 0, 0);
+        float dist = -1;
+        intret(radarallow(camera1->o, d, dir, dist, *self >= 0 ? *self != 0 : false) ? 1 : 0);
+    });
+
+    CLCOMMAND(radardist,
+    {
+        vec dir(0, 0, 0);
+        float dist = -1;
+        if(!radarallow(camera1->o, d, dir, dist)) return;
+        floatret(dist);
+    });
+
+    CLCOMMAND(radardir,
+    {
+        vec dir(0, 0, 0);
+        float dist = -1;
+        if(!radarallow(camera1->o, d, dir, dist)) return;
+        dir.rotate_around_z(-camera1->yaw*RAD).normalize();
+        floatret(-atan2(dir.x, dir.y)/RAD);
+    });
+
+    CLCOMMAND(radaryaw,
+    {
+        vec dir(0, 0, 0);
+        float dist = -1;
+        if(!radarallow(camera1->o, d, dir, dist)) return;
+        floatret(d->yaw-camera1->yaw);
+    });
+
+    CLCOMMAND(radardirxy,
+    {
+        vec dir(0, 0, 0);
+        float dist = -1;
+        if(!radarallow(camera1->o, d, dir, dist)) return;
+        dir.rotate_around_z(-camera1->yaw*RAD).normalize();
+        defformatstring(output, "%s %s", floatstr(dir.x), floatstr(dir.y));
+        result(output);
+    });
+
+    CLCOMMANDM(name, "sbib", (char *who, int *colour, int *icon, int *dupname), result(game::colourname(d, NULL, *icon!=0, *dupname!=0, *colour >= 0 ? *colour : 3)));
+    CLCOMMANDM(colour, "sbgf", (char *who, int *m, float *f, float *x), intret(game::getcolour(d, *m, *f >= 0 && *f <= 10 ? *f : 1.f, *x)));
+    CLCOMMANDM(vitem, "sbi", (char *who, int *n, int *v), getvitem(d, *n, *v));
+
+    CLCOMMAND(weapselect, intret(d->weapselect));
+    CLCOMMANDM(loadweap, "si", (char *who, int *n), intret(d->loadweap.inrange(*n) ? d->loadweap[*n] : -1));
+    CLCOMMANDM(weapget, "siii", (char *who, int *n, int *a, int *b), intret(isweap(*n) ? d->getammo(*n, *a!=0 ? lastmillis : 0, *b!=0) : -1));
+    CLCOMMANDM(weapammo, "sii", (char *who, int *n, int *m), intret(isweap(*n) ? d->weapammo[*n][clamp(*m, 0, W_A_MAX-1)] : -1));
+    CLCOMMANDM(weapclip, "si", (char *who, int *n), intret(isweap(*n) ? d->weapammo[*n][W_A_CLIP] : -1));
+    CLCOMMANDM(weapstore, "si", (char *who, int *n), intret(isweap(*n) ? d->weapammo[*n][W_A_STORE] : -1));
+    CLCOMMANDM(weapstate, "si", (char *who, int *n), intret(isweap(*n) ? d->weapstate[*n] : W_S_IDLE));
+    CLCOMMANDM(weaptime, "si", (char *who, int *n), intret(isweap(*n) ? d->weaptime[*n] : 0));
+    CLCOMMANDM(weapwait, "si", (char *who, int *n), intret(isweap(*n) ? d->weapwait[*n] : 0));
+    CLCOMMANDM(weapload, "sii", (char *who, int *n, int *m), intret(isweap(*n) ? d->weapload[*n][clamp(*m, 0, W_A_MAX-1)] : 0));
+    CLCOMMANDM(weaphold, "si", (char *who, int *n), intret(isweap(*n) && d->holdweap(*n, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis) ? 1 : 0));
+    CLCOMMAND(weapholdnum, intret(d->holdweapcount(m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis)));
+    CLCOMMANDM(action, "sb", (char *who, int *n), intret(d->action[clamp(*n, 0, int(AC_MAX-1))] ? 1 : 0));
+    CLCOMMANDM(actiontime, "sb", (char *who, int *n), intret(d->actiontime[clamp(*n, 0, int(AC_MAX-1))]));
+
+    CLCOMMAND(move, intret(d->move));
+    CLCOMMAND(strafe, intret(d->strafe));
+    CLCOMMAND(turnside, intret(d->turnside));
+    CLCOMMAND(physstate, intret(d->physstate));
+    CLCOMMAND(lastdeath, intret(d->lastdeath));
+    CLCOMMAND(lastspawn, intret(d->lastspawn));
+    CLCOMMAND(lastbuff, intret(d->lastbuff));
+    CLCOMMAND(lastshoot, intret(d->lastshoot));
+    CLCOMMAND(lastattacker, intret(d->lastattacker));
+    CLCOMMAND(airmillis, intret(d->airmillis));
+    CLCOMMAND(floormillis, intret(d->floormillis));
+    CLCOMMAND(inmaterial, intret(d->inmaterial));
+    CLCOMMAND(inliquid, intret(isliquid(d->inmaterial&MATF_VOLUME) ? 1 : 0));
+    CLCOMMAND(hasliquid, intret(physics::liquidcheck(d) ? 1 : 0));
+    CLCOMMAND(onladder, intret(isladder(d->inmaterial) ? 1 : 0));
+    CLCOMMAND(hasladder, intret(physics::laddercheck(d) ? 1 : 0));
+    CLCOMMAND(headless, intret(d->headless ? 1 : 0));
+    CLCOMMAND(obliterated, intret(d->obliterated ? 1 : 0));
+    CLCOMMAND(actortype, intret(d->actortype));
+    CLCOMMAND(pcolour, intret(d->colours[0]));
+    CLCOMMAND(scolour, intret(d->colours[1]));
+    CLCOMMAND(model, intret(d->model%PLAYERTYPES));
+    CLCOMMAND(pattern, intret(d->pattern%PLAYERPATTERNS));
+    CLCOMMAND(vanity, result(d->vanity));
+    CLCOMMAND(obit, result(d->obit));
+    CLCOMMAND(handle, result(d->handle));
+    CLCOMMAND(steamid, result(d->steamid));
+    CLCOMMAND(host, result(d->hostip));
+    CLCOMMAND(ip, result(d->hostip));
+    CLCOMMAND(ping, intret(d->ping));
+    CLCOMMAND(pj, intret(d->plag));
+    CLCOMMAND(team, intret(d->team));
+    CLCOMMAND(state, intret(d->state));
+    CLCOMMAND(health, intret(d->health));
+    CLCOMMAND(points, intret(d->points));
+    CLCOMMAND(cptime, intret(d->cptime));
+    CLCOMMAND(cplast, intret(d->cplast));
+    CLCOMMAND(cpmillis, intret(d->cpmillis ? lastmillis-d->cpmillis : 0));
+    CLCOMMAND(frags, intret(d->frags));
+    CLCOMMAND(deaths, intret(d->deaths));
+
+    CLCOMMAND(conopen, intret(d->conopen ? 1 : 0));
+    CLCOMMAND(queuepos, intret(d->queuepos));
+
+    CLCOMMAND(totalpoints, intret(d->totalpoints));
+    CLCOMMAND(totalfrags, intret(d->totalfrags));
+    CLCOMMAND(totaldeaths, intret(d->totaldeaths));
+    CLCOMMAND(totalavgpos, floatret(d->totalavgpos));
+    CLCOMMAND(balancescore, floatret(d->balancescore()));
+    CLCOMMAND(timeplayed, intret(d->updatetimeplayed()));
+    CLCOMMAND(timeplayed, intret(d->updatetimeplayed()));
+
+    CLCOMMAND(speed, floatret(d->speed));
+    CLCOMMAND(jumpspeed, floatret(d->jumpspeed));
+    CLCOMMAND(impulsespeed, floatret(d->impulsespeed));
+    CLCOMMAND(weight, floatret(d->weight));
+    CLCOMMAND(buoyancy, floatret(d->buoyancy));
+
+    CLCOMMAND(movescale, floatret(d->movescale));
+    CLCOMMAND(gravityscale, floatret(d->gravityscale));
+    CLCOMMAND(coastscale, floatret(d->coastscale));
+
+    CLCOMMAND(scoretime, floatret(d->scoretime()));
+    CLCOMMANDM(kdratio, "si", (char *who, int *n), intret(d->kdratio(*n!=0)));
+
+    CLCOMMAND(allowimpulse, intret(A(d->actortype, impulse)&IM_T_CHECK ? 1 : 0));
+    CLCOMMAND(impulsecostmeter, intret(d->impulse[IM_METER]));
+    CLCOMMAND(impulsetype, intret(d->impulse[IM_TYPE]));
+    CLCOMMANDM(impulsetimer, "b", (char *who, int *n), intret(d->impulsetime[*n >= 0 && *n < IM_T_MAX ? *n : d->impulse[IM_TYPE]]));
+    CLCOMMAND(impulseregen, intret(d->impulse[IM_REGEN]));
+    CLCOMMAND(impulsecount, intret(d->impulse[IM_COUNT]));
+    CLCOMMAND(impulsejump, intret(d->impulsetime[IM_T_JUMP]));
+    CLCOMMAND(impulsewait, intret(d->impulsetime[IM_T_PUSHER]));
+    CLCOMMANDM(impulse, "si", (char *who, int *n), intret(*n >= 0 && *n < IM_MAX ? d->impulse[*n] : 0));
+
+    CLCOMMAND(buffing, intret(d->lastbuff));
+    CLCOMMAND(hasprize, intret(d->hasprize));
+    CLCOMMAND(collects, intret(d->collects.length()));
+
+    CLCOMMAND(burnfunc, intret(d->burntime ? d->burnfunc(lastmillis, d->burntime) : 0));
+    CLCOMMAND(bleedfunc, intret(d->bleedtime ? d->bleedfunc(lastmillis, d->bleedtime) : 0));
+    CLCOMMAND(shockfunc, intret(d->shocktime ? d->shockfunc(lastmillis, d->shocktime) : 0));
+    CLCOMMAND(corrodefunc, intret(d->corrodetime ? d->corrodefunc(lastmillis, d->corrodetime) : 0));
+
+    CLCOMMAND(burntime, intret(d->burntime));
+    CLCOMMAND(bleedtime, intret(d->bleedtime));
+    CLCOMMAND(shocktime, intret(d->shocktime));
+    CLCOMMAND(corrodetime, intret(d->corrodetime));
+
+    CLCOMMAND(regen, intret(regentime ? d->lastregen : 0));
+    CLCOMMAND(regenamt, intret(d->lastregenamt));
+    CLCOMMAND(impulsecollectcount, intret(d->impulse[IM_COLLECT_COUNT]));
+    CLCOMMAND(impulselastcount, intret(d->impulse[IM_LASTCOL_COUNT] ? (lastmillis - d->impulse[IM_LASTCOL_COUNT]) % 1000 : 0));
+    CLCOMMAND(impulsecollectmeter, intret(d->impulse[IM_COLLECT_METER]));
+    CLCOMMAND(impulselastmeter, intret(d->impulse[IM_LASTCOL_METER] ? (lastmillis - d->impulse[IM_LASTCOL_METER]) % 1000 : 0));
+
+    CLCOMMAND(spawnweap, intret(m_weapon(d->actortype, game::gamemode, game::mutators)));
+    CLCOMMAND(spawndelay, intret(m_delay(d->actortype, game::gamemode, game::mutators, d->team)));
+    CLCOMMAND(spawnprotect, intret(m_protect(game::gamemode, game::mutators)));
+    CLCOMMAND(spawnhealth, intret(d->gethealth(game::gamemode, game::mutators)));
+    CLCOMMAND(maxhealth, intret(d->gethealth(game::gamemode, game::mutators, true)));
+
+    CLCOMMAND(respawnwait, intret(d->isdead() ? d->respawnwait(lastmillis, m_delay(d->actortype, game::gamemode, game::mutators, d->team)): -1));
+    CLCOMMANDM(canshoot, "sbi", (char *who, int *weap, int *alt), intret(d->canshoot(*weap >= 0 ? *weap : d->weapselect, *alt > 0 ? HIT_ALT : 0, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis, (1<<W_S_RELOAD)) ? 1 : 0));
+    CLCOMMANDM(canreload, "sb", (char *who, int *weap), intret(d->canreload(*weap >= 0 ? *weap : d->weapselect, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis, (1<<W_S_RELOAD)) ? 1 : 0));
+
+    CLCOMMANDM(canuse, "si", (char *who, int *n),
+    {
+        if(entities::ents.inrange(*n))
+        {
+            extentity &e = *entities::ents[*n];
+            if(enttype[e.type].usetype == EU_ITEM && e.type == WEAPON && entities::isallowed(e))
+            {
+                int attr = m_attr(e.type, e.attrs[0]);
+                if(isweap(attr) && d->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
+                {
+                    intret(1);
+                    return;
+                }
+            }
+        }
+
+        intret(0);
+    });
+
+
+    CLCOMMANDM(pulsecolour, "sib", (char *who, int *n, int *c), intret(pulsehexcol(d, *n, *c >= -1 ? *c : PULSE_CYCLE)));
+    CLCOMMANDM(velocity, "si", (char *who, int *n), floatret(vec(d->vel).add(d->falling).magnitude()*(*n!=0 ? (*n > 0 ? 3.6f/8.f : 0.125f) : 1.f)));
+
+    CLCOMMANDM(residualfx, "sib", (char *who, int *n, int *c), intret(getresidualfx(d, *n, *c)));
+
+    #define CLDOMCMD(dtype) \
+        CLCOMMANDM(dtype, "sb", (char *who, int *n), \
+        { \
+            if(*n < 0) intret(d->dtype.length()); \
+            else if(d->dtype.inrange(*n)) intret(d->dtype[*n]->clientnum); \
+        });
+    CLDOMCMD(dominating);
+    CLDOMCMD(dominated);
+
+    #define CLISDOMCMD(dtype) \
+        CLCOMMANDMK(is##dtype, "ss", (char *who, char *n), \
+        { \
+            gameent *e = game::getclient(client::parseplayer(n)); \
+            if(!e) \
+            { \
+                intret(0); \
+                return; \
+            } \
+            loopv(d->dtype) if(d->dtype[i]->clientnum == e->clientnum) \
+            { \
+                intret(1); \
+                return; \
+            } \
+            intret(0); \
+            return; \
+        }, intret(0); return);
+    CLISDOMCMD(dominating);
+    CLISDOMCMD(dominated);
+
+    CLCOMMAND(privilege, intret(d->privilege&PRIV_TYPE));
+    CLCOMMAND(privlocal, intret(d->privilege&PRIV_LOCAL ? 1 : 0));
+    CLCOMMAND(privtex, result(hud::privtex(d->privilege, d->actortype)));
+
+    #define CLPRIVCMD(pname,pval) CLCOMMAND(priv##pname, intret(haspriv(d, pval) ? 1 : 0));
+    CLPRIVCMD(none, PRIV_NONE);
+    CLPRIVCMD(player, PRIV_PLAYER);
+    CLPRIVCMD(supporter, PRIV_SUPPORTER);
+    CLPRIVCMD(moderator, PRIV_MODERATOR);
+    CLPRIVCMD(administrator, PRIV_ADMINISTRATOR);
+    CLPRIVCMD(developer, PRIV_DEVELOPER);
+    CLPRIVCMD(founder, PRIV_CREATOR);
+    CLCOMMANDM(priv, "si", (char *who, int *priv), intret(haspriv(d, clamp(*priv, 0, PRIV_MAX-1)) ? 1 : 0));
 }

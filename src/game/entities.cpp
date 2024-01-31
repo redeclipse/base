@@ -921,7 +921,7 @@ namespace entities
         if(id < 0) intret(ents.length());
         else if(ents.inrange(id))
         {
-            if(val < 0) intret(3);
+            if(val < 0) intret(4);
             else switch(val)
             {
                 case 0: intret(ents[id]->type); break; // type
@@ -941,9 +941,26 @@ namespace entities
                     else if(ents[id]->links.inrange(ex)) intret(ents[id]->links[ex]);
                     break;
                 }
+                case 3: // info
+                {
+                    if(ex < 0) intret(3);
+                    else
+                    {
+                        gameentity &e = *(gameentity *)ents[id];
+                        switch(ex)
+                        {
+                            case 0: intret(e.spawned()); break;
+                            case 1: intret(e.lastspawn); break;
+                            case 2: intret(e.lastemit); break;
+                            default: break;
+                        }
+                    }
+                    break;
+                }
             }
         }
     }
+
     ICOMMAND(0, getentity, "bbbi", (int *id, int *val, int *ex, int *mod), getentity(*id, *val, *ex, *mod != 0));
 
     const char *getenttex(int id)
@@ -1371,7 +1388,7 @@ namespace entities
         if(cn >= 0)
         {
             gameent *m = game::getclient(cn);
-            if(m) projs::destruct(m, PRJ_ENT, ent);
+            if(m) projs::destruct(m, PROJ_ENTITY, ent);
         }
         else if(e.spawned() != spawn)
         {
@@ -1401,10 +1418,10 @@ namespace entities
             }
         }
 
-        if(d->isalive()) loopv(projs::typeprojs[PRJ_ENT])
+        if(d->isalive()) loopv(projs::typeprojs[PROJ_ENTITY])
         {
-            projent &proj = *projs::typeprojs[PRJ_ENT][i];
-            if(!proj.owner || proj.projtype != PRJ_ENT || !proj.ready()) continue;
+            projent &proj = *projs::typeprojs[PROJ_ENTITY][i];
+            if(!proj.owner || proj.projtype != PROJ_ENTITY || !proj.ready()) continue;
             if(!ents.inrange(proj.id) || enttype[ents[proj.id]->type].usetype != EU_ITEM || !isallowed(proj.id)) continue;
             if(!(enttype[ents[proj.id]->type].canuse&(1<<d->type))) continue;
 
@@ -1567,7 +1584,7 @@ namespace entities
                     if(e.attrs[8]&(1<<TELE_NOAFFIN))
                     {
                         if(gameent::is(d) && physics::hasaffinity((gameent *)d)) break;
-                        if(projent::is(d) && ((projent *)d)->type == PRJ_AFFINITY) break;
+                        if(projent::is(d) && ((projent *)d)->type == PROJ_AFFINITY) break;
                     }
 
                     int millis = d->lastused(n);
@@ -1668,7 +1685,7 @@ namespace entities
                             projent *g = (projent *)d;
                             switch(g->projtype)
                             {
-                                case PRJ_ENT: case PRJ_AFFINITY:
+                                case PROJ_ENTITY: case PROJ_AFFINITY:
                                 {
                                     if(!g->beenused)
                                     {
@@ -1826,7 +1843,7 @@ namespace entities
                     }
                     case ACTITEM_PROJ:
                     {
-                        projent *proj = projs::findprojseq(PRJ_ENT, t.id);
+                        projent *proj = projs::findprojseq(PROJ_ENTITY, t.id);
                         if(!proj || !proj->owner) break;
                         cn = proj->owner->clientnum;
                         ent = proj->id;
@@ -3492,28 +3509,16 @@ namespace entities
 
         if(editcheck || entityprojui < 0) return;
 
-        loopv(projs::typeprojs[PRJ_ENT])
+        loopv(projs::typeprojs[PROJ_ENTITY])
         {
-            projent &proj = *projs::typeprojs[PRJ_ENT][i];
-            if(proj.projtype != PRJ_ENT || !ents.inrange(proj.id) || !proj.ready()) continue;
+            projent &proj = *projs::typeprojs[PROJ_ENTITY][i];
+            if(proj.projtype != PROJ_ENTITY || !ents.inrange(proj.id) || !proj.ready()) continue;
 
             gameentity &e = *(gameentity *)ents[proj.id];
             if(e.type == NOTUSED || e.attrs.empty() || enttype[e.type].usetype != EU_ITEM || !isallowed(e)) continue;
             MAKEUI(entityproj, proj.seqid, false, vec(proj.o).addz(clamp(enttype[e.type].radius / 2, 2, 4)));
         }
     }
-
-    ICOMMAND(0, getprojent, "i", (int *n),
-    {
-        projent *proj = projs::findprojseq(PRJ_ENT, *n);
-        if(!proj || !ents.inrange(proj->id) || !proj->ready())
-        {
-            intret(-1);
-            return;
-        }
-
-        intret(proj->id);
-    });
 
     void drawparticles()
     {
@@ -3562,10 +3567,10 @@ namespace entities
 
         if(drawtex) return;
 
-        loopv(projs::typeprojs[PRJ_ENT])
+        loopv(projs::typeprojs[PROJ_ENTITY])
         {
-            projent &proj = *projs::typeprojs[PRJ_ENT][i];
-            if(proj.projtype != PRJ_ENT || !ents.inrange(proj.id) || !proj.ready()) continue;
+            projent &proj = *projs::typeprojs[PROJ_ENTITY][i];
+            if(proj.projtype != PROJ_ENTITY || !ents.inrange(proj.id) || !proj.ready()) continue;
 
             gameentity &e = *(gameentity *)ents[proj.id];
             if(e.type == NOTUSED || e.attrs.empty()) continue;

@@ -746,7 +746,7 @@ namespace server
     {
         if(!sents.inrange(ent)) return;
         if(clear) loopvk(clients) if(clients[k]->dropped.removeall(ent))
-            sendf(-1, 1, "ri5", N_DESTROY, clients[k]->clientnum, PRJ_ENT, -1, ent);
+            sendf(-1, 1, "ri5", N_DESTROY, clients[k]->clientnum, PROJ_ENTITY, -1, ent);
         bool oldspawn = sents[ent].spawned;
         sents[ent].spawned = spawned;
         sents[ent].millis = sents[ent].last = gamemillis;
@@ -5119,13 +5119,13 @@ namespace server
     {
         switch(type)
         {
-            case PRJ_ENT:
+            case PROJ_ENTITY:
             {
                 if(ci->dropped.remove(id))
-                    sendf(-1, 1, "ri5x", N_DESTROY, ci->clientnum, PRJ_ENT, 1, id, ci->clientnum);
+                    sendf(-1, 1, "ri5x", N_DESTROY, ci->clientnum, PROJ_ENTITY, 1, id, ci->clientnum);
                 break;
             }
-            case PRJ_SHOT:
+            case PROJ_SHOT:
             {
                 if(!isweap(weap)) break;
                 if(!ci->weapshots[weap][WS(flags) ? 1 : 0].find(id))
@@ -5149,7 +5149,7 @@ namespace server
                             else ci->weapstats[weap].flakshots1 += r;
                         }
                     }
-                    sendf(-1, 1, "ri5x", N_DESTROY, ci->clientnum, PRJ_SHOT, 1, id, ci->clientnum);
+                    sendf(-1, 1, "ri5x", N_DESTROY, ci->clientnum, PROJ_SHOT, 1, id, ci->clientnum);
                 }
                 else loopv(hits)
                 {
@@ -5163,7 +5163,7 @@ namespace server
                     {
                         loopj(W_MAX) loopk(2) if(m->weapshots[j][k].find(h.proj))
                         {
-                            sendf(m->clientnum, 1, "ri5", N_DESTROY, m->clientnum, PRJ_SHOT, 1, h.proj);
+                            sendf(m->clientnum, 1, "ri5", N_DESTROY, m->clientnum, PROJ_SHOT, 1, h.proj);
                             break;
                         }
                     }
@@ -7146,7 +7146,7 @@ namespace server
                     bool havecn = hasclient(cp, ci);
                     destroyevent *ev = new destroyevent;
                     ev->type = getint(p);
-                    if(ev->type != PRJ_SHOT && ev->type != PRJ_ENT) havecn = false;
+                    if(ev->type != PROJ_SHOT && ev->type != PROJ_ENTITY) havecn = false;
                     ev->weap = getint(p);
                     ev->fromweap = getint(p);
                     ev->fromflags = getint(p);

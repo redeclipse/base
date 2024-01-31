@@ -1,5 +1,7 @@
 // script binding functionality
 
+struct vec; // need this
+
 enum
 {
     MAXARGS = 25,
@@ -255,6 +257,7 @@ extern void numberret(double v);
 extern void stringret(char *s);
 extern void result(tagval &v);
 extern void result(const char *s);
+extern void result(const vec &v);
 extern char *conc(tagval *v, int n, bool space, const char *prefix, int prefixlen);
 
 static inline char *conc(tagval *v, int n, bool space)
@@ -432,6 +435,7 @@ extern void printintvar(ident *id, int n, const char *str = NULL);
 extern void printfvar(ident *id, float f, const char *str = NULL);
 extern void printfloatvar(ident *id, float f, const char *str = NULL);
 extern void printsvar(ident *id, const char *s, const char *str = NULL);
+extern void printsvar(ident *id, const vec &v, const char *str = NULL);
 extern void printvar(ident *id);
 extern int clampvar(ident *id, int i, int minval, int maxval, bool msg = true);
 extern float clampfvar(ident *id, float f, float minval, float maxval, bool msg = true);

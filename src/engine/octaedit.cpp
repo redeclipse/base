@@ -2791,8 +2791,7 @@ COMMAND(0, vcolour, "fff");
 ICOMMAND(0, getvcolour, "ii", (int *tex, int *type),
 {
     VSlot &vslot = universallookup(*tex, *type);
-    defformatstring(str, "%s %s %s", floatstr(vslot.colorscale.r), floatstr(vslot.colorscale.g), floatstr(vslot.colorscale.b));
-    result(str);
+    result(vslot.colorscale);
 });
 
 void vpalette(int *p, int *x)
@@ -2916,8 +2915,7 @@ ICOMMAND(0, getvgrassname, "i", (int *tex),  result(lookupvslot(*tex, false).slo
 ICOMMAND(0, getvgrasscolour, "i", (int *tex),
 {
     VSlot &vslot = lookupvslot(*tex, false);
-    defformatstring(str, "%s %s %s", floatstr(vslot.slot->grasscolor.r), floatstr(vslot.slot->grasscolor.g), floatstr(vslot.slot->grasscolor.b));
-    result(str);
+    result(vslot.slot->grasscolor);
 });
 ICOMMAND(0, getvgrassblend, "i", (int *tex), floatret(lookupvslot(*tex, false).slot->grassblend));
 ICOMMAND(0, getvgrasscale, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grassscale));

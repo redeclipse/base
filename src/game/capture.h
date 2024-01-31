@@ -126,7 +126,7 @@ struct capturestate
     void destroy(int id)
     {
         flags[id].proj = NULL;
-        loopv(projs::projs) if(projs::projs[i]->projtype == PRJ_AFFINITY && projs::projs[i]->id == id)
+        loopv(projs::projs) if(projs::projs[i]->projtype == PROJ_AFFINITY && projs::projs[i]->id == id)
         {
             projs::projs[i]->state = CS_DEAD;
             projs::projs[i]->beenused = 2;
@@ -136,7 +136,7 @@ struct capturestate
     void create(int id)
     {
         flag &f = flags[id];
-        f.proj = projs::create(f.droploc, f.inertia, false, NULL, PRJ_AFFINITY, -1, 0, capturedelay, capturedelay, 1, 1, id);
+        f.proj = projs::create(f.droploc, f.inertia, false, NULL, PROJ_AFFINITY, -1, 0, capturedelay, capturedelay, 1, 1, id);
     }
 #endif
 

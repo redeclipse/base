@@ -360,6 +360,7 @@ enum
 extern const char * const sendmaptypes[SENDMAP_MAX] = { "mpz", "cfg", "png", "txt", "wpt" };
 #else
 extern const char * const sendmaptypes[SENDMAP_MAX];
+// Client Getters
 #define CLCOMMANDK(name, body, fail) \
     ICOMMAND(IDF_NAMECOMPLETE, getclient##name, "s", (char *who), \
     { \
@@ -376,6 +377,23 @@ extern const char * const sendmaptypes[SENDMAP_MAX];
         body; \
     });
 #define CLCOMMANDM(name, fmt, args, body) CLCOMMANDMK(name, fmt, args, body,)
+// Projectile Getters
+#define PRCOMMANDK(name, body, fail) \
+    ICOMMAND(0, getproj##name, "ib", (int *seqid, int *type), \
+    { \
+        projent *p = projs::findprojseq(*type, *seqid); \
+        if(!p) { fail; return; } \
+        body; \
+    });
+#define PRCOMMAND(name, body) PRCOMMANDK(name, body,)
+#define PRCOMMANDMK(name, fmt, args, body, fail) \
+    ICOMMAND(0, getproj##name, fmt, args, \
+    { \
+        projent *p = projs::findprojseq(*type, *seqid); \
+        if(!p) { fail; return; } \
+        body; \
+    });
+#define PRCOMMANDM(name, fmt, args, body) PRCOMMANDMK(name, fmt, args, body,)
 #endif
 
 #include "gamemode.h"
@@ -1149,7 +1167,12 @@ struct clientstate
     #undef RESIDUAL
 };
 
-enum { PRJ_SHOT = 0, PRJ_GIBS, PRJ_DEBRIS, PRJ_EJECT, PRJ_ENT, PRJ_AFFINITY, PRJ_VANITY, PRJ_PIECE, PRJ_MAX };
+
+#define PROJ_ENUM(en, um) \
+    en(um, Shot, SHOT) en(um, Giblet, GIB) en(um, Debris, DEBRIS) en(um, Eject, EJECT) \
+    en(um, Entity, ENTITY) en(um, Affinity, AFFINITY) en(um, Vanity, VANITY) en(um, Piece, PIECE) \
+    en(um, Max, MAX)
+ENUM_DLN(PROJ);
 
 namespace server
 {
@@ -1352,9 +1375,9 @@ struct gameent : dynent, clientstate
         int count = collects.length();
 
         collectlist &c = collects.add();
-        c.type = type != PRJ_ENT ? type : PRJ_DEBRIS;
+        c.type = type != PROJ_ENTITY ? type : PROJ_DEBRIS;
         c.size = size;
-        if(type == PRJ_ENT) c.size *= 0.3f;
+        if(type == PROJ_ENTITY) c.size *= 0.3f;
         c.name = name;
 
         if(ai && count < janitorready && collects.length() >= janitorready)
@@ -1369,7 +1392,7 @@ struct gameent : dynent, clientstate
     void collectprize()
     {
         while(collects.length() < janitorready) // just ensure we have enough in there
-            collected(rnd(2) ? PRJ_GIBS : PRJ_DEBRIS, 0.5f + rnd(101)/100.f);
+            collected(rnd(2) ? PROJ_GIB : PROJ_DEBRIS, 0.5f + rnd(101)/100.f);
         hasprize = janitorprize;
     }
 
@@ -2264,7 +2287,7 @@ struct projent : dynent
     fx::emitter *effect;
     int fxtype;
 
-    projent() : projtype(PRJ_SHOT), seqid(-1), id(-1), collidezones(CLZ_NONE), owner(NULL), target(NULL),
+    projent() : projtype(PROJ_SHOT), seqid(-1), id(-1), collidezones(CLZ_NONE), owner(NULL), target(NULL),
         stick(NULL), hit(NULL), mdlname(NULL), effect(NULL), fxtype(FX_P_NONE) { reset(); }
     ~projent()
     {
@@ -2279,14 +2302,14 @@ struct projent : dynent
 
     static bool is(int t) { return t == ENT_PROJ; }
     static bool is(physent *d) { return d && d->type == ENT_PROJ; }
-    static bool shot(int t, int w) { return t == ENT_PROJ && w == PRJ_SHOT; }
-    static bool shot(physent *d) { return d && d->type == ENT_PROJ && ((projent*)d)->projtype == PRJ_SHOT; }
+    static bool shot(int t, int w) { return t == ENT_PROJ && w == PROJ_SHOT; }
+    static bool shot(physent *d) { return d && d->type == ENT_PROJ && ((projent*)d)->projtype == PROJ_SHOT; }
 
     bool isjunk(bool span = false) const
     {
-        if((projtype == PRJ_DEBRIS || projtype == PRJ_GIBS) && (!span || lifespan >= janitorjunkdebris)) return true;
-        if(projtype == PRJ_ENT && (!span || lifespan >= janitorjunkitems)) return true;
-        if((projtype == PRJ_VANITY || projtype == PRJ_PIECE || projtype == PRJ_EJECT) && (!span || lifespan >= janitorjunktime)) return true;
+        if((projtype == PROJ_DEBRIS || projtype == PROJ_GIB) && (!span || lifespan >= janitorjunkdebris)) return true;
+        if(projtype == PROJ_ENTITY && (!span || lifespan >= janitorjunkitems)) return true;
+        if((projtype == PROJ_VANITY || projtype == PROJ_PIECE || projtype == PROJ_EJECT) && (!span || lifespan >= janitorjunktime)) return true;
         return false;
     }
 
@@ -2312,7 +2335,7 @@ struct projent : dynent
 
     bool ready(bool used = true)
     {
-        if(owner && (!used || projtype == PRJ_SHOT || !beenused) && waittime <= 0 && state != CS_DEAD)
+        if(owner && (!used || projtype == PROJ_SHOT || !beenused) && waittime <= 0 && state != CS_DEAD)
             return true;
         return false;
     }
@@ -2321,6 +2344,38 @@ struct projent : dynent
     {
         if(projcollide&COLLIDE_SCAN) return false;
         return stuck != 0;
+    }
+
+    float getfade(bool used = true, bool test = true)
+    {
+        if(!ready(used) | !fadetime || !lifemillis) return 0.f;
+
+        int interval = min(lifemillis, fadetime);
+        if(lifetime < interval) return float(lifetime) / float(interval);
+        else if((!test || projtype != PROJ_EJECT) && lifemillis > interval)
+        {
+            interval = min(lifemillis - interval, fadetime);
+            if(lifemillis - lifetime < interval)
+                return float(lifemillis - lifetime) / float(interval);
+        }
+
+        return 0.f;
+    }
+
+    int getfadedir(bool used = true, bool test = true)
+    {
+        if(!ready(used) | !fadetime || !lifemillis) return 0;
+
+        int interval = min(lifemillis, fadetime);
+        if(lifetime < interval) return 1;
+        else if((!test || projtype != PROJ_EJECT) && lifemillis > interval)
+        {
+            interval = min(lifemillis - interval, fadetime);
+            if(lifemillis - lifetime < interval)
+                return -1;
+        }
+
+        return 0;
     }
 };
 
@@ -2441,7 +2496,7 @@ namespace physics
 
 namespace projs
 {
-    extern vector<projent *> projs, collideprojs, junkprojs, typeprojs[PRJ_MAX];
+    extern vector<projent *> projs, collideprojs, junkprojs, typeprojs[PROJ_MAX];
 
     extern void mapprojfx();
     extern void reset();

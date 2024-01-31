@@ -2090,7 +2090,7 @@ namespace game
                     case 1: default: break; // central stuff
                 }
 
-                projs::create(pos, pos, true, d, PRJ_VANITY, -1, 0, rnd(gibfade) + gibfade, 0, 0, rnd(50) + 10, -1, n, head);
+                projs::create(pos, pos, true, d, PROJ_VANITY, -1, 0, rnd(gibfade) + gibfade, 0, 0, rnd(50) + 10, -1, n, head);
 
                 if(++gibcount >= giblimit) return;
             }
@@ -2111,7 +2111,7 @@ namespace game
                     }
 
                     vec pos = gibpos(d, i);
-                    projs::create(pos, pos, true, d, PRJ_PIECE, -1, 0, rnd(gibfade) + gibfade, 0, 0, rnd(50) + 10, -1, i, 0);
+                    projs::create(pos, pos, true, d, PROJ_PIECE, -1, 0, rnd(gibfade) + gibfade, 0, 0, rnd(50) + 10, -1, i, 0);
 
                     if(++gibcount >= giblimit) return;
                 }
@@ -2126,7 +2126,7 @@ namespace game
                 if(rnd(101) > gibchancepieces) continue;
 
                 vec pos = gibpos(d, rnd(PLAYERPARTS));
-                projs::create(pos, pos, true, d, nogore || !(A(d->actortype, abilities)&(1<<A_A_GIBS)) ? PRJ_DEBRIS : PRJ_GIBS, -1, 0, rnd(gibfade) + gibfade, 0, rnd(100) + 1, rnd(d->obliterated || d->headless ? 50 : 25) + 10);
+                projs::create(pos, pos, true, d, nogore || !(A(d->actortype, abilities)&(1<<A_A_GIBS)) ? PROJ_DEBRIS : PROJ_GIB, -1, 0, rnd(gibfade) + gibfade, 0, rnd(100) + 1, rnd(d->obliterated || d->headless ? 50 : 25) + 10);
 
                 if(++gibcount >= giblimit) return;
             }

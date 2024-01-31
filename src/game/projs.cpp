@@ -4,7 +4,7 @@ namespace projs
     #define FWCOL(n,c,p) ((p).flags&HIT_FLAK ? W##n##COL(&p, (p).weap, flak##c, WS((p).flags)) : W##n##COL(&p, (p).weap, c, WS((p).flags)))
 
     vector<hitmsg> hits;
-    vector<projent *> projs, collideprojs, junkprojs, typeprojs[PRJ_MAX];
+    vector<projent *> projs, collideprojs, junkprojs, typeprojs[PROJ_MAX];
 
     struct toolent
     {
@@ -57,17 +57,17 @@ namespace projs
 
     enum
     {
-        PRJ_FX_HIT = 0,
-        PRJ_FX_BOUNCE,
-        PRJ_FX_DESTROY,
-        PRJ_FX_LIFE,
-        PRJ_FX_TRIPWIRE,
+        PROJ_FX_HIT = 0,
+        PROJ_FX_BOUNCE,
+        PROJ_FX_DESTROY,
+        PROJ_FX_LIFE,
+        PROJ_FX_TRIPWIRE,
 
-        PRJ_NUM_FX_SUBTYPES
+        PROJ_NUM_FX_SUBTYPES
     };
 
-    static fx::FxHandle projfx[FX_P_TYPES * PRJ_NUM_FX_SUBTYPES];
-    #define PROJFXINDEX(type, subtype) (((type) * PRJ_NUM_FX_SUBTYPES) + (subtype))
+    static fx::FxHandle projfx[FX_P_TYPES * PROJ_NUM_FX_SUBTYPES];
+    #define PROJFXINDEX(type, subtype) (((type) * PROJ_NUM_FX_SUBTYPES) + (subtype))
 
     void mapprojfx()
     {
@@ -79,12 +79,12 @@ namespace projs
             "FX_P_DEBRIS_"
         };
 
-        static const char *subtypes[PRJ_NUM_FX_SUBTYPES] =
+        static const char *subtypes[PROJ_NUM_FX_SUBTYPES] =
         {
             "HIT", "BOUNCE", "DESTROY", "LIFE", "TRIPWIRE"
         };
 
-        loopi(FX_P_TYPES) loopj(PRJ_NUM_FX_SUBTYPES)
+        loopi(FX_P_TYPES) loopj(PROJ_NUM_FX_SUBTYPES)
         {
             string slotname;
             formatstring(slotname, "%s%s", typeprefixes[i], subtypes[j]);
@@ -95,7 +95,7 @@ namespace projs
     static inline fx::FxHandle getprojfx(int fxtype, int subtype)
     {
         return fxtype >= 0 && fxtype < FX_P_TYPES &&
-            subtype >= 0 && subtype < PRJ_NUM_FX_SUBTYPES ?
+            subtype >= 0 && subtype < PROJ_NUM_FX_SUBTYPES ?
                 projfx[PROJFXINDEX(fxtype, subtype)] : fx::FxHandle();
     }
 
@@ -108,7 +108,7 @@ namespace projs
         {
             switch(subtype)
             {
-                case PRJ_FX_DESTROY:
+                case PROJ_FX_DESTROY:
                     proj.effect->setparam(P_FX_LIFETIME_PARAM, 1.0f);
                     break;
             }
@@ -121,7 +121,7 @@ namespace projs
         fx::emitter **hook = NULL;
         vec from = proj.o, to = vec(proj.o).add(proj.norm);
 
-        if(proj.projtype == PRJ_SHOT && proj.weap >= 0)
+        if(proj.projtype == PROJ_SHOT && proj.weap >= 0)
         {
             color = bvec(FWCOL(H, fxcol, proj));
             scale = WF(WK(proj.flags), proj.weap, fxscale, WS(proj.flags))*proj.curscale*proj.lifesize;
@@ -130,17 +130,17 @@ namespace projs
 
         switch(subtype)
         {
-            case PRJ_FX_LIFE:
+            case PROJ_FX_LIFE:
             {
                 hook = &proj.effect;
-                if(proj.projtype != PRJ_SHOT) break;
+                if(proj.projtype != PROJ_SHOT) break;
                 from = proj.trailpos;
                 to = proj.next ? proj.next->trailpos : proj.o;
                 break;
             }
-            case PRJ_FX_TRIPWIRE:
+            case PROJ_FX_TRIPWIRE:
             {
-                if(proj.projtype != PRJ_SHOT) break;
+                if(proj.projtype != PROJ_SHOT) break;
                 to = proj.trailpos;
             }
             default: break;
@@ -149,7 +149,7 @@ namespace projs
         physent *pe = NULL;
 
         // allow parttrack for hit-scan projectiles
-        if(subtype == PRJ_FX_LIFE && proj.projcollide&COLLIDE_SCAN)
+        if(subtype == PROJ_FX_LIFE && proj.projcollide&COLLIDE_SCAN)
             pe = proj.owner;
 
         fx::emitter &e = fx::createfx(fxhandle, hook)
@@ -164,12 +164,12 @@ namespace projs
 
         switch(subtype)
         {
-            case PRJ_FX_LIFE:
+            case PROJ_FX_LIFE:
                 param = clamp(proj.lifespan, 0.0f, 1.0f);
                 e.setparam(P_FX_LIFETIME_PARAM, param);
                 break;
 
-            case PRJ_FX_BOUNCE:
+            case PROJ_FX_BOUNCE:
                 param = clamp(vec(proj.vel).add(proj.falling).magnitude()*proj.curscale*0.005f, 0.0f, 1.0f);
                 e.setparam(P_FX_BOUNCE_VEL_PARAM, param);
                 break;
@@ -293,7 +293,7 @@ namespace projs
 
     void projpush(projent *p, float dist = 0)
     {
-        if(p->projtype != PRJ_SHOT || !p->owner) return;
+        if(p->projtype != PROJ_SHOT || !p->owner) return;
         if(p->local) p->state = CS_DEAD;
         else
         {
@@ -400,7 +400,7 @@ namespace projs
     {
         if(!d || !dynent::is(d)) return false;
 
-        if(proj.projtype == PRJ_SHOT && physics::issolid(d, &proj))
+        if(proj.projtype == PROJ_SHOT && physics::issolid(d, &proj))
         {
             bool drill = proj.projcollide&(d->type == ENT_PROJ ? DRILL_SHOTS : DRILL_PLAYER);
             proj.hit = d;
@@ -430,7 +430,7 @@ namespace projs
                 else if(d->type == ENT_PROJ) projpush((projent *)d);
             }
 
-            doprojfx(proj, PRJ_FX_HIT);
+            doprojfx(proj, PROJ_FX_HIT);
 
             return !drill;
         }
@@ -455,7 +455,7 @@ namespace projs
             {
                 if(projs[i]->isjunk()) junkprojs.removeobj(projs[i]);
                 typeprojs[projs[i]->projtype].removeobj(projs[i]);
-                if(projs[i]->projtype == PRJ_SHOT)
+                if(projs[i]->projtype == PROJ_SHOT)
                 {
                     if(projs[i]->projcollide&COLLIDE_PROJ)
                     {
@@ -551,7 +551,7 @@ namespace projs
         {
             projent &proj = *projs[i];
 
-            if(proj.projtype != PRJ_SHOT || proj.weap != weap || !proj.stuck || !proj.lifetime) continue;
+            if(proj.projtype != PROJ_SHOT || proj.weap != weap || !proj.stuck || !proj.lifetime) continue;
             if((proj.target && proj.vel.magnitude() > WF(WK(proj.flags), proj.weap, attractminvel, WS(proj.flags))) || proj.owner != v) continue;
             if(!(WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&ATTRACT_PLAYER)) continue;
 
@@ -586,13 +586,13 @@ namespace projs
 
     void stick(projent &proj, const vec &dir, gameent *d = NULL)
     {
-        if(proj.projtype != PRJ_SHOT || (proj.owner && proj.local))
+        if(proj.projtype != PROJ_SHOT || (proj.owner && proj.local))
         {
             proj.stick = d;
             proj.sticknrm = proj.norm;
             proj.stuck = proj.lastbounce = lastmillis ? lastmillis : 1;
 
-            doprojfx(proj, PRJ_FX_BOUNCE);
+            doprojfx(proj, PROJ_FX_BOUNCE);
 
             #if 0
             vec fwd = dir.iszero() ? vec(proj.vel).add(proj.falling).normalize() : dir;
@@ -613,7 +613,7 @@ namespace projs
                 proj.sticknrm.rotate_around_z(-proj.stick->yaw*RAD);
             }
 
-            if(updatesticky(proj, true) && proj.projtype == PRJ_SHOT)
+            if(updatesticky(proj, true) && proj.projtype == PROJ_SHOT)
                 client::addmsg(N_STICKY, "ri9i3",
                     proj.owner->clientnum, lastmillis-game::maptime, proj.weap, proj.flags, WK(proj.flags) ? -proj.id : proj.id, proj.stick ? proj.stick->clientnum : -1,
                         int(proj.sticknrm.x*DNF), int(proj.sticknrm.y*DNF), int(proj.sticknrm.z*DNF), int(proj.stickpos.x*DMF), int(proj.stickpos.y*DMF), int(proj.stickpos.z*DMF));
@@ -622,7 +622,7 @@ namespace projs
 
     void sticky(gameent *d, int id, vec &norm, vec &pos, gameent *f)
     {
-        loopv(projs) if(projs[i]->owner == d && projs[i]->projtype == PRJ_SHOT && projs[i]->id == id)
+        loopv(projs) if(projs[i]->owner == d && projs[i]->projtype == PROJ_SHOT && projs[i]->id == id)
         {
             projs[i]->stuck = projs[i]->lastbounce = lastmillis ? lastmillis : 1;
             projs[i]->sticknrm = norm;
@@ -652,7 +652,7 @@ namespace projs
     {
         collideprojs.setsize(0);
         junkprojs.setsize(0);
-        loopi(PRJ_MAX) typeprojs[i].setsize(0);
+        loopi(PROJ_MAX) typeprojs[i].setsize(0);
         cleardynentcache();
         projs.deletecontents();
         projs.shrink(0);
@@ -724,22 +724,22 @@ namespace projs
         }
         switch(proj.projtype)
         {
-            case PRJ_ENT:
+            case PROJ_ENTITY:
             {
                 if(itemrepulsion > 0 && entities::ents.inrange(proj.id) && enttype[entities::ents[proj.id]->type].usetype == EU_ITEM)
                 {
-                    loopv(projs) if(projs[i]->projtype == PRJ_ENT && projs[i] != &proj && entities::ents.inrange(projs[i]->id) && enttype[entities::ents[projs[i]->id]->type].usetype == EU_ITEM)
+                    loopv(projs) if(projs[i]->projtype == PROJ_ENTITY && projs[i] != &proj && entities::ents.inrange(projs[i]->id) && enttype[entities::ents[projs[i]->id]->type].usetype == EU_ITEM)
                         repel(projs[i]->o, itemrepulsion, itemrepelspeed);
                     loopusei(EU_ITEM) if(enttype[entities::ents[i]->type].usetype == EU_ITEM && entities::ents[i]->spawned())
                         repel(entities::ents[i]->o, itemrepulsion, itemrepelspeed);
                 }
                 break;
             }
-            case PRJ_AFFINITY:
+            case PROJ_AFFINITY:
             {
                 if(m_capture(game::gamemode) && capturerepulsion > 0)
                 {
-                    loopv(projs) if(projs[i]->projtype == PRJ_AFFINITY && projs[i] != &proj)
+                    loopv(projs) if(projs[i]->projtype == PROJ_AFFINITY && projs[i] != &proj)
                         repel(projs[i]->o, capturerepulsion, capturerepelspeed);
                 }
                 break;
@@ -749,8 +749,8 @@ namespace projs
 
     void bounce(projent &proj, bool ricochet)
     {
-        if(!proj.limited && (proj.movement > 0 || (proj.projtype == PRJ_SHOT && WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_LENGTH)) && (!proj.lastbounce || lastmillis-proj.lastbounce >= 250))
-            doprojfx(proj, PRJ_FX_BOUNCE);
+        if(!proj.limited && (proj.movement > 0 || (proj.projtype == PROJ_SHOT && WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_LENGTH)) && (!proj.lastbounce || lastmillis-proj.lastbounce >= 250))
+            doprojfx(proj, PROJ_FX_BOUNCE);
     }
 
     float fadeweap(projent &proj)
@@ -834,9 +834,9 @@ namespace projs
         float size = 1;
         switch(proj.projtype)
         {
-            case PRJ_AFFINITY: break;
-            case PRJ_GIBS: case PRJ_DEBRIS: case PRJ_EJECT: case PRJ_VANITY: case PRJ_PIECE: size = proj.lifesize;
-            case PRJ_ENT:
+            case PROJ_AFFINITY: break;
+            case PROJ_GIB: case PROJ_DEBRIS: case PROJ_EJECT: case PROJ_VANITY: case PROJ_PIECE: size = proj.lifesize;
+            case PROJ_ENTITY:
                 if(init) break;
                 else if(proj.lifemillis && proj.fadetime)
                 {
@@ -853,19 +853,19 @@ namespace projs
         model *m = NULL;
         if(proj.mdlname && *proj.mdlname && ((m = loadmodel(proj.mdlname)) != NULL))
         {
-            bool fullrot = proj.projtype == PRJ_GIBS || proj.projtype == PRJ_EJECT;
+            bool fullrot = proj.projtype == PROJ_GIB || proj.projtype == PROJ_EJECT;
             vec center, radius;
             m->boundbox(center, radius);
             center.mul(size);
             radius.mul(size);
-            if(proj.projtype == PRJ_ENT)
+            if(proj.projtype == PROJ_ENTITY)
             {
                 center.add(size*0.5f);
                 radius.add(size);
             }
-            rotatebb(center, radius, proj.projtype != PRJ_AFFINITY ? proj.yaw : 0.f, fullrot ? proj.pitch : 0.f, fullrot ? proj.roll : 0.f);
+            rotatebb(center, radius, proj.projtype != PROJ_AFFINITY ? proj.yaw : 0.f, fullrot ? proj.pitch : 0.f, fullrot ? proj.roll : 0.f);
             proj.radius = max(radius.x, radius.y);
-            if(proj.projtype == PRJ_AFFINITY) proj.xradius = proj.yradius = proj.radius;
+            if(proj.projtype == PROJ_AFFINITY) proj.xradius = proj.yradius = proj.radius;
             else
             {
                 proj.xradius = radius.x;
@@ -875,19 +875,19 @@ namespace projs
         }
         else switch(proj.projtype)
         {
-            case PRJ_GIBS: case PRJ_DEBRIS: case PRJ_VANITY: case PRJ_PIECE:
+            case PROJ_GIB: case PROJ_DEBRIS: case PROJ_VANITY: case PROJ_PIECE:
             {
                 proj.height = proj.radius = proj.xradius = proj.yradius = proj.zradius = proj.aboveeye = 0.5f*size;
                 break;
             }
-            case PRJ_EJECT:
+            case PROJ_EJECT:
             {
                 proj.height = proj.zradius = proj.aboveeye = 0.25f*size;
                 proj.radius = proj.yradius = 0.5f*size;
                 proj.xradius = 0.125f*size;
                 break;
             }
-            case PRJ_ENT:
+            case PROJ_ENTITY:
             {
                 if(entities::ents.inrange(proj.id))
                     proj.radius = proj.xradius = proj.yradius = proj.height = proj.zradius = proj.aboveeye = enttype[entities::ents[proj.id]->type].radius*0.25f*size;
@@ -905,7 +905,7 @@ namespace projs
             proj.trailpos = proj.from;
             return;
         }
-        if(proj.projtype == PRJ_SHOT && proj.stuck && !proj.beenused && WF(WK(proj.flags), proj.weap, proxtype, WS(proj.flags)) == 2)
+        if(proj.projtype == PROJ_SHOT && proj.stuck && !proj.beenused && WF(WK(proj.flags), proj.weap, proxtype, WS(proj.flags)) == 2)
         {
             float dist = WX(WK(proj.flags), proj.weap, proxdist, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
             int stucktime = lastmillis-proj.stuck, stuckdelay = WF(WK(proj.flags), proj.weap, proxdelay, WS(proj.flags));
@@ -975,7 +975,7 @@ namespace projs
 
         switch(proj.projtype)
         {
-            case PRJ_SHOT:
+            case PROJ_SHOT:
             {
                 proj.height = proj.aboveeye = proj.radius = proj.xradius = proj.yradius = WF(WK(proj.flags), proj.weap, radius, WS(proj.flags));
                 proj.elasticity = WF(WK(proj.flags), proj.weap, elasticity, WS(proj.flags));
@@ -995,7 +995,7 @@ namespace projs
                 if(proj.projcollide&COLLIDE_PROJ) collideprojs.add(&proj);
                 break;
             }
-            case PRJ_GIBS:
+            case PROJ_GIB:
             {
                 if(game::nogore == 2)
                 {
@@ -1056,7 +1056,7 @@ namespace projs
                     break;
                 } // otherwise fall through
             }
-            case PRJ_DEBRIS:
+            case PROJ_DEBRIS:
             {
                 proj.height = proj.aboveeye = proj.radius = proj.xradius = proj.yradius = 0.5f;
                 if(!proj.mdlname || !*proj.mdlname)
@@ -1085,7 +1085,7 @@ namespace projs
                 proj.fxtype = FX_P_DEBRIS;
                 break;
             }
-            case PRJ_EJECT:
+            case PROJ_EJECT:
             {
                 proj.height = proj.aboveeye = 0.5f;
                 proj.radius = proj.yradius = 1;
@@ -1124,7 +1124,7 @@ namespace projs
                 proj.fxtype = FX_P_CASING;
                 break;
             }
-            case PRJ_ENT:
+            case PROJ_ENTITY:
             {
                 proj.height = proj.aboveeye = proj.radius = proj.xradius = proj.yradius = 4;
                 proj.mdlname = entities::entmdlname(entities::ents[proj.id]->type, entities::ents[proj.id]->attrs);
@@ -1147,12 +1147,12 @@ namespace projs
                     if(itemdropspreadz > 0) pitch += n * itemdropspreadz * (m ? 1 : -1);
                 }
                 proj.inertia = vec(yaw*RAD, pitch*RAD).mul(mag);
-                proj.fadetime = 250;
+                proj.fadetime = itemfadetime;
                 proj.extinguish = itemextinguish;
                 proj.interacts = iteminteracts;
                 break;
             }
-            case PRJ_AFFINITY:
+            case PROJ_AFFINITY:
             {
                 proj.height = proj.aboveeye = proj.radius = proj.xradius = proj.yradius = 4;
                 vec dir = vec(proj.dest).sub(proj.from).safenormalize();
@@ -1190,7 +1190,7 @@ namespace projs
                 }
                 break;
             }
-            case PRJ_VANITY: case PRJ_PIECE:
+            case PROJ_VANITY: case PROJ_PIECE:
             {
                 proj.height = proj.aboveeye = proj.radius = proj.xradius = proj.yradius = 1;
                 if(!proj.mdlname || !*proj.mdlname)
@@ -1198,8 +1198,8 @@ namespace projs
                     if(proj.owner) proj.lifesize = proj.owner->curscale;
                     switch(proj.projtype)
                     {
-                        case PRJ_VANITY: proj.mdlname = game::vanityfname(proj.owner, proj.weap, proj.value, true); break;
-                        case PRJ_PIECE: proj.mdlname = playerparts[clamp(proj.value, 0, PLAYERPARTS-1)].filename; break;
+                        case PROJ_VANITY: proj.mdlname = game::vanityfname(proj.owner, proj.weap, proj.value, true); break;
+                        case PROJ_PIECE: proj.mdlname = playerparts[clamp(proj.value, 0, PLAYERPARTS-1)].filename; break;
                         default:
                         {
                             switch(rnd(7))
@@ -1235,12 +1235,12 @@ namespace projs
         if(proj.isjunk()) junkprojs.add(&proj);
         typeprojs[proj.projtype].add(&proj);
 
-        if(proj.projtype != PRJ_SHOT) updatebb(proj, true);
+        if(proj.projtype != PROJ_SHOT) updatebb(proj, true);
         proj.spawntime = lastmillis;
         proj.hit = NULL;
         proj.collidezones = CLZ_NONE;
 
-        if(proj.owner && (proj.projtype != PRJ_SHOT || (!proj.child && !(WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_LENGTH))))
+        if(proj.owner && (proj.projtype != PROJ_SHOT || (!proj.child && !(WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_LENGTH))))
         {
             vec eyedir = vec(proj.o).sub(proj.owner->o);
             float eyedist = eyedir.magnitude();
@@ -1256,18 +1256,18 @@ namespace projs
             }
         }
 
-        if(proj.projtype != PRJ_SHOT || !(WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_LENGTH))
+        if(proj.projtype != PROJ_SHOT || !(WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_LENGTH))
         {
             vec dir = vec(proj.dest).sub(proj.o);
             float maxdist = dir.magnitude();
             if(maxdist > 1e-3f)
             {
                 dir.mul(1/maxdist);
-                if(proj.projtype != PRJ_EJECT) vectoyawpitch(dir, proj.yaw, proj.pitch);
+                if(proj.projtype != PROJ_EJECT) vectoyawpitch(dir, proj.yaw, proj.pitch);
             }
             else if(!proj.child && proj.owner)
             {
-                if(proj.projtype != PRJ_EJECT)
+                if(proj.projtype != PROJ_EJECT)
                 {
                     proj.yaw = proj.owner->yaw;
                     proj.pitch = proj.owner->pitch;
@@ -1278,7 +1278,7 @@ namespace projs
             proj.vel = vec(rel).add(vec(dir).mul(physics::movevelocity(&proj)));
             proj.falling = vec(0, 0, 0);
         }
-        if(proj.projtype != PRJ_SHOT) spherecheck(proj, proj.projcollide&BOUNCE_GEOM);
+        if(proj.projtype != PROJ_SHOT) spherecheck(proj, proj.projcollide&BOUNCE_GEOM);
         proj.resetinterp();
     }
 
@@ -1286,7 +1286,7 @@ namespace projs
 
     projent *findprojseq(int type, int id)
     {
-        if(type < 0 || type >= PRJ_MAX)
+        if(type < 0 || type >= PROJ_MAX)
         {
             loopv(projs) if(projs[i]->seqid == id) return projs[i];
             return NULL;
@@ -1320,7 +1320,7 @@ namespace projs
         proj.movement = proj.distance = 0;
         proj.prev = proj.next = NULL;
 
-        if(proj.projtype == PRJ_AFFINITY)
+        if(proj.projtype == PROJ_AFFINITY)
         {
             proj.vel = proj.inertia = proj.dest;
             proj.dest.add(proj.from);
@@ -1344,7 +1344,7 @@ namespace projs
                 proj.yaw = d->yaw;
                 proj.pitch = d->pitch;
                 proj.inertia = vec(d->vel).add(d->falling);
-                if(proj.projtype == PRJ_SHOT && isweap(proj.weap))
+                if(proj.projtype == PROJ_SHOT && isweap(proj.weap))
                 {
                     if(issound(d->wschan[WS_POWER_CHAN]))
                     {
@@ -1379,12 +1379,12 @@ namespace projs
             if(ammo >= 0)
             {
                 if(ammo > 0 && entities::ents.inrange(ent))
-                    create(d->muzzletag(), d->muzzletag(), local, d, PRJ_ENT, -1, 0, W(weap, spawnstay), W(weap, spawnstay), 1, 1, ent, ammo, index, count);
+                    create(d->muzzletag(), d->muzzletag(), local, d, PROJ_ENTITY, -1, 0, W(weap, spawnstay), W(weap, spawnstay), 1, 1, ent, ammo, index, count);
                 d->weapammo[weap][W_A_CLIP] = -1;
                 d->weapammo[weap][W_A_STORE] = 0;
                 if(targ >= 0) d->setweapstate(weap, W_S_SWITCH, W(weap, delayswitch), lastmillis);
             }
-            else create(d->muzzletag(), d->muzzletag(), local, d, PRJ_SHOT, -1, 0, 1, W2(weap, time, false), 1, 1, 1, weap);
+            else create(d->muzzletag(), d->muzzletag(), local, d, PROJ_SHOT, -1, 0, 1, W2(weap, time, false), 1, 1, 1, weap);
         }
     }
 
@@ -1461,7 +1461,7 @@ namespace projs
         }
         loopv(shots)
         {
-            projent *shotproj = create(orig, vec(shots[i].pos).div(DMF), local, d, PRJ_SHOT, weap, flags, max(life, 1), W2(weap, time, WS(flags)), delay+(iter*i), speed, shots[i].id, weap, -1, flags, skew, false, v);
+            projent *shotproj = create(orig, vec(shots[i].pos).div(DMF), local, d, PROJ_SHOT, weap, flags, max(life, 1), W2(weap, time, WS(flags)), delay+(iter*i), speed, shots[i].id, weap, -1, flags, skew, false, v);
 
             if(W2(weap, fxchain, WS(flags)))
             {
@@ -1470,7 +1470,7 @@ namespace projs
             }
         }
         if(A(d->actortype, abilities)&(1<<A_A_AMMO) && W2(weap, ammosub, WS(flags)) && ejectfade && weaptype[weap].eprj[WS(flags) ? 1 : 0].count) loopi(W2(weap, ammosub, WS(flags)))
-            create(d->ejecttag(), d->ejecttag(), local, d, PRJ_EJECT, -1, 0, rnd(ejectfade)+ejectfade, 0, delay, rnd(weaptype[weap].espeed)+weaptype[weap].espeed, 0, weap, -1, flags);
+            create(d->ejecttag(), d->ejecttag(), local, d, PROJ_EJECT, -1, 0, rnd(ejectfade)+ejectfade, 0, delay, rnd(weaptype[weap].espeed)+weaptype[weap].espeed, 0, weap, -1, flags);
 
         d->setweapstate(weap, WS(flags) ? W_S_SECONDARY : W_S_PRIMARY, delayattack, lastmillis);
         d->weapammo[weap][W_A_CLIP] = max(d->weapammo[weap][W_A_CLIP]-sub-offset, 0);
@@ -1579,7 +1579,7 @@ namespace projs
         if(proj.target && !proj.target->isalive()) proj.target = NULL;
         updatesticky(proj);
 
-        if(proj.projtype == PRJ_SHOT)
+        if(proj.projtype == PROJ_SHOT)
         {
             updatetargets(proj);
             updatetaper(proj, proj.distance, true);
@@ -1599,10 +1599,10 @@ namespace projs
             part_dir(proj.o, yaw, pitch, max(vel.magnitude(), proj.radius+2), 2, 1, 1, 0xFF22FF);
         }
 
-        if(proj.projtype == PRJ_SHOT) updatetaper(proj, proj.distance);
-        doprojfx(proj, PRJ_FX_LIFE);
-        if(proj.projtype == PRJ_SHOT && proj.stuck && !proj.beenused && WF(WK(proj.flags), proj.weap, proxtype, WS(proj.flags)) == 2)
-            doprojfx(proj, PRJ_FX_TRIPWIRE);
+        if(proj.projtype == PROJ_SHOT) updatetaper(proj, proj.distance);
+        doprojfx(proj, PROJ_FX_LIFE);
+        if(proj.projtype == PROJ_SHOT && proj.stuck && !proj.beenused && WF(WK(proj.flags), proj.weap, proxtype, WS(proj.flags)) == 2)
+            doprojfx(proj, PROJ_FX_TRIPWIRE);
     }
 
     void destroy(projent &proj)
@@ -1619,7 +1619,7 @@ namespace projs
 
         switch(proj.projtype)
         {
-            case PRJ_SHOT:
+            case PROJ_SHOT:
             {
                 updatetargets(proj);
 
@@ -1654,7 +1654,7 @@ namespace projs
 
                             if(W2(proj.weap, fragrel, WS(proj.flags)) != 0) to.add(vec(dir).mul(W2(proj.weap, fragrel, WS(proj.flags))*mag));
 
-                            create(pos, to, proj.local, proj.owner, PRJ_SHOT, proj.weap, proj.flags, max(life, 1), W2(proj.weap, fragtime, WS(proj.flags)), delay, W2(proj.weap, fragspeed, WS(proj.flags)), proj.id, w, -1, (f >= W_MAX ? HIT_ALT : 0)|HIT_FLAK, scale, true, proj.target);
+                            create(pos, to, proj.local, proj.owner, PROJ_SHOT, proj.weap, proj.flags, max(life, 1), W2(proj.weap, fragtime, WS(proj.flags)), delay, W2(proj.weap, fragspeed, WS(proj.flags)), proj.id, w, -1, (f >= W_MAX ? HIT_ALT : 0)|HIT_FLAK, scale, true, proj.target);
 
                             delay += W2(proj.weap, fragtimeiter, WS(proj.flags));
                         }
@@ -1665,13 +1665,13 @@ namespace projs
                 }
                 break;
             }
-            case PRJ_ENT:
+            case PROJ_ENTITY:
             {
                 if(proj.beenused <= 1 && proj.local && proj.owner)
                     client::addmsg(N_DESTROY, "ri9i2", proj.owner->clientnum, lastmillis-game::maptime, proj.projtype, -1, -1, 0, 0, proj.id, 0, int(proj.curscale*DNF), 0);
                 break;
             }
-            case PRJ_AFFINITY:
+            case PROJ_AFFINITY:
             {
                 if(proj.beenused <= 1) client::addmsg(N_RESETAFFIN, "ri", proj.id);
                 if(m_capture(game::gamemode) && capture::st.flags.inrange(proj.id)) capture::st.flags[proj.id].proj = NULL;
@@ -1681,12 +1681,12 @@ namespace projs
             default: break;
         }
 
-        doprojfx(proj, PRJ_FX_DESTROY);
+        doprojfx(proj, PROJ_FX_DESTROY);
     }
 
     int check(projent &proj, const vec &dir)
     {
-        if(proj.projtype == PRJ_SHOT ? proj.o.z <= physics::getdeathplane()*worldsize : !insideworld(proj.o)) return 0; // remove, always..
+        if(proj.projtype == PROJ_SHOT ? proj.o.z <= physics::getdeathplane()*worldsize : !insideworld(proj.o)) return 0; // remove, always..
         int chk = 0;
         if(proj.extinguish&1 || proj.extinguish&2)
         {
@@ -1699,7 +1699,7 @@ namespace projs
             {
                 int snd = S_EXTINGUISH;
                 float gain = clamp(0.2f*proj.curscale, 0.f, 1.f), size = max(proj.radius, 1.f);
-                if(proj.projtype == PRJ_SHOT && isweap(proj.weap))
+                if(proj.projtype == PROJ_SHOT && isweap(proj.weap))
                 {
                     snd = WSND2(proj.weap, WS(proj.flags), S_W_EXTINGUISH);
                     gain = clamp(0.1f+(0.9f*proj.lifespan*proj.lifesize*proj.curscale), 0.f, 1.f);
@@ -1711,7 +1711,7 @@ namespace projs
                 if(gain > 0) emitsound(snd, &proj.o, NULL, NULL, 0, gain);
                 part_create(PART_SMOKE, 500, proj.o, 0xAAAAAA, max(size, 1.5f), 1, -10);
                 proj.limited = true;
-                if(proj.projtype == PRJ_DEBRIS) proj.material = bvec::fromcolor(colourwhite);
+                if(proj.projtype == PROJ_DEBRIS) proj.material = bvec::fromcolor(colourwhite);
             }
             proj.norm = dir;
             if(proj.extinguish&4) return 0;
@@ -1727,7 +1727,7 @@ namespace projs
         if(inside)
         {
             vec oldpos = proj.o;
-            if(proj.projtype == PRJ_SHOT)
+            if(proj.projtype == PROJ_SHOT)
             {
                 vec rev = vec(dir.iszero() ? proj.vel : dir).normalize().mul(max(proj.radius * 0.125f, 0.25f));
                 for(int iters = inside + 8; iters > 0; iters--)
@@ -1745,7 +1745,7 @@ namespace projs
             }
             if(inside)
             {
-                if(proj.projtype == PRJ_SHOT) proj.o = oldpos;
+                if(proj.projtype == PROJ_SHOT) proj.o = oldpos;
 
                 if(collidemod&BOUNCE_PLAYER)
                 {
@@ -1772,7 +1772,7 @@ namespace projs
                 {
                     gameent *f = (gameent *)d;
 
-                    if(proj.projtype == PRJ_SHOT)
+                    if(proj.projtype == PROJ_SHOT)
                     {
                         #define RESIDUAL(name, type, pulse) \
                             if(WF(WK(proj.flags), proj.weap, destroy##name, WS(proj.flags)) && f->name##func(lastmillis, f->name##time)) \
@@ -1812,7 +1812,7 @@ namespace projs
                 }
             }
 
-            if(proj.projtype == PRJ_SHOT && (WF(WK(proj.flags), proj.weap, grab, WS(proj.flags))&(d ? 2 : 1)) && gameent::is(d)
+            if(proj.projtype == PROJ_SHOT && (WF(WK(proj.flags), proj.weap, grab, WS(proj.flags))&(d ? 2 : 1)) && gameent::is(d)
                 && (proj.owner == game::player1 || proj.owner->ai) && proj.owner->state == CS_ALIVE && (d || fabs(proj.norm.z) <= impulseparkournorm))
             {
                 gameent *e = (gameent *)proj.owner;
@@ -1852,7 +1852,7 @@ namespace projs
 
             if(ricochet)
             {
-                if(proj.projtype != PRJ_SHOT || proj.child || !(WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_LENGTH))
+                if(proj.projtype != PROJ_SHOT || proj.child || !(WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_LENGTH))
                 {
                     reflect(proj, proj.norm);
                     proj.o.add(vec(proj.norm).mul(0.1f)); // offset from surface slightly to avoid initial collision
@@ -1875,7 +1875,7 @@ namespace projs
         int ret = check(proj, dir);
         if(!ret) return 0;
         if(!skip && proj.interacts && checkitems(proj, pos, dir, proj.o.dist(pos))) return -1;
-        if(proj.projtype == PRJ_SHOT) updatetaper(proj, proj.distance+proj.o.dist(pos));
+        if(proj.projtype == PROJ_SHOT) updatetaper(proj, proj.distance+proj.o.dist(pos));
         if(ret == 1 && (collide(&proj, dir, 0.f, proj.projcollide&COLLIDE_DYNENT, true, GUARDRADIUS) || collideinside))
             ret = impact(proj, dir, collideplayer, collidezones, collidewall, collideinside);
         return ret;
@@ -1916,7 +1916,7 @@ namespace projs
             total = dist >= 0 ? dist : maxdist;
             if(total > 0) proj.o.add(vec(ray).mul(total));
         }
-        if(proj.projtype == PRJ_SHOT) updatetaper(proj, proj.distance+total);
+        if(proj.projtype == PROJ_SHOT) updatetaper(proj, proj.distance+total);
         if(dist >= 0) ret = impact(proj, dir, collideplayer, collidezones, collidewall);
         return ret;
     }
@@ -1926,7 +1926,7 @@ namespace projs
         if(!proj.owner || !(proj.projcollide&COLLIDE_OWNER) || proj.lastbounce || !proj.spawntime) proj.escaped = true;
         else
         {
-            int delay = proj.projtype == PRJ_SHOT ? W2(proj.weap, escapedelay, WS(proj.flags)) : PHYSMILLIS;
+            int delay = proj.projtype == PROJ_SHOT ? W2(proj.weap, escapedelay, WS(proj.flags)) : PHYSMILLIS;
             if(lastmillis-proj.spawntime >= delay)
             {
                 vec ray = vec(dir).safenormalize();
@@ -1962,7 +1962,7 @@ namespace projs
         }
         else
         {
-            if(proj.projtype == PRJ_SHOT)
+            if(proj.projtype == PROJ_SHOT)
             {
                 float stepdist = dir.magnitude();
                 vec ray(dir);
@@ -1990,12 +1990,12 @@ namespace projs
                 {
                     case 2:
                         proj.o = pos;
-                        if(proj.projtype == PRJ_SHOT) blocked = true;
+                        if(proj.projtype == PROJ_SHOT) blocked = true;
                         break;
                     case 1: default: break;
                     case 0:
                         proj.o = pos;
-                        if(proj.projtype == PRJ_SHOT)
+                        if(proj.projtype == PROJ_SHOT)
                         {
                             dir.rescale(max(dir.magnitude()-0.15f, 0.0f));
                             proj.o.add(dir);
@@ -2012,7 +2012,7 @@ namespace projs
         proj.distance += dist;
         switch(proj.projtype)
         {
-            case PRJ_SHOT:
+            case PROJ_SHOT:
             {
                 if(proj.stuck) break;
                 if(proj.weap == W_MINE)
@@ -2054,7 +2054,7 @@ namespace projs
                 }
                 if(proj.weap != W_GRENADE) break;
             }
-            case PRJ_DEBRIS: case PRJ_GIBS: case PRJ_AFFINITY: case PRJ_VANITY: case PRJ_PIECE:
+            case PROJ_DEBRIS: case PROJ_GIB: case PROJ_AFFINITY: case PROJ_VANITY: case PROJ_PIECE:
             {
                 if(!proj.lastbounce || proj.movement > 0)
                 {
@@ -2067,7 +2067,7 @@ namespace projs
                     break;
                 }
             }
-            case PRJ_EJECT:
+            case PROJ_EJECT:
                 if(!proj.lastbounce || proj.movement > 0)
                 {
                     vec axis(sinf(proj.yaw*RAD), -cosf(proj.yaw*RAD), 0);
@@ -2083,7 +2083,7 @@ namespace projs
                     }
                     break;
                 }
-            case PRJ_ENT:
+            case PROJ_ENTITY:
             {
                 if(proj.pitch != 0)
                 {
@@ -2123,7 +2123,7 @@ namespace projs
         float secs = millis/1000.f;
         physics::updatematerial(&proj, proj.o, proj.feetpos(), true);
 
-        if(proj.projtype == PRJ_AFFINITY && m_bomber(game::gamemode) && proj.target && !proj.lastbounce)
+        if(proj.projtype == PROJ_AFFINITY && m_bomber(game::gamemode) && proj.target && !proj.lastbounce)
         {
             vec targ = vec(proj.target->o).sub(proj.o).safenormalize();
             if(!targ.iszero())
@@ -2135,7 +2135,7 @@ namespace projs
                 if(!dir.iszero()) (proj.vel = dir).mul(mag);
             }
         }
-        else if(proj.projtype == PRJ_SHOT && proj.escaped)
+        else if(proj.projtype == PROJ_SHOT && proj.escaped)
         {
             if(WF(WK(proj.flags), proj.weap, guided, WS(proj.flags)) && lastmillis - proj.spawntime >= WF(WK(proj.flags), proj.weap, guideddelay, WS(proj.flags)))
             {
@@ -2305,8 +2305,8 @@ namespace projs
 
         static bool cmsort(const canrem *a, const canrem *b)
         {
-            if(a->p->projtype != PRJ_ENT && b->p->projtype == PRJ_ENT) return true;
-            if(a->p->projtype == PRJ_ENT && b->p->projtype != PRJ_ENT) return false;
+            if(a->p->projtype != PROJ_ENTITY && b->p->projtype == PROJ_ENTITY) return true;
+            if(a->p->projtype == PROJ_ENTITY && b->p->projtype != PROJ_ENTITY) return false;
             if(a->p->addtime < b->p->addtime) return true;
             if(a->p->addtime > b->p->addtime) return false;
             if(a->p->lifesize < b->p->lifesize) return true;
@@ -2341,16 +2341,16 @@ namespace projs
 
             entities::physents(&proj);
 
-            if(proj.projtype == PRJ_SHOT && WF(WK(proj.flags), proj.weap, radialdelay, WS(proj.flags)))
+            if(proj.projtype == PROJ_SHOT && WF(WK(proj.flags), proj.weap, radialdelay, WS(proj.flags)))
             {
                 proj.hit = NULL;
                 proj.collidezones = CLZ_NONE;
             }
             hits.setsize(0);
 
-            if((proj.projtype != PRJ_SHOT || proj.owner) && proj.state != CS_DEAD)
+            if((proj.projtype != PROJ_SHOT || proj.owner) && proj.state != CS_DEAD)
             {
-                if(proj.projtype == PRJ_ENT && entities::ents.inrange(proj.id)) // in case spawnweapon changes
+                if(proj.projtype == PROJ_ENTITY && entities::ents.inrange(proj.id)) // in case spawnweapon changes
                     proj.mdlname = entities::entmdlname(entities::ents[proj.id]->type, entities::ents[proj.id]->attrs);
 
                 if(proj.waittime > 0)
@@ -2365,11 +2365,11 @@ namespace projs
 
                 iter(proj);
 
-                if(proj.projtype == PRJ_SHOT || proj.projtype == PRJ_ENT || proj.projtype == PRJ_AFFINITY)
+                if(proj.projtype == PROJ_SHOT || proj.projtype == PROJ_ENTITY || proj.projtype == PROJ_AFFINITY)
                 {
-                    if(proj.projtype == PRJ_SHOT && WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_LENGTH ? !raymove(proj) : !move(proj)) switch(proj.projtype)
+                    if(proj.projtype == PROJ_SHOT && WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_LENGTH ? !raymove(proj) : !move(proj)) switch(proj.projtype)
                     {
-                        case PRJ_ENT: case PRJ_AFFINITY:
+                        case PROJ_ENTITY: case PROJ_AFFINITY:
                         {
                             if(!proj.beenused)
                             {
@@ -2408,7 +2408,7 @@ namespace projs
                 proj.escaped = true;
             }
 
-            if(proj.local && proj.owner && proj.projtype == PRJ_SHOT)
+            if(proj.local && proj.owner && proj.projtype == PROJ_SHOT)
             {
                 float expl = WX(WK(proj.flags), proj.weap, radial, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
 
@@ -2494,7 +2494,7 @@ namespace projs
 
     void fadeproj(projent &proj, float &trans, float &size)
     {
-        if(proj.projtype == PRJ_SHOT && proj.owner && physics::isghost(proj.owner, game::focus, true)) trans *= 0.5f;
+        if(proj.projtype == PROJ_SHOT && proj.owner && physics::isghost(proj.owner, game::focus, true)) trans *= 0.5f;
         if(proj.fadetime && proj.lifemillis)
         {
             int interval = min(proj.lifemillis, proj.fadetime);
@@ -2504,7 +2504,7 @@ namespace projs
                 size *= amt;
                 trans *= amt;
             }
-            else if(proj.projtype != PRJ_EJECT && proj.lifemillis > interval)
+            else if(proj.projtype != PROJ_EJECT && proj.lifemillis > interval)
             {
                 interval = min(proj.lifemillis-interval, proj.fadetime);
                 if(proj.lifemillis-proj.lifetime < interval)
@@ -2523,8 +2523,8 @@ namespace projs
         loopv(projs) if(projs[i]->ready(false))
         {
             projent &proj = *projs[i];
-            if(proj.projtype == PRJ_AFFINITY || (drawtex == DRAWTEX_HALO && proj.projtype != PRJ_ENT && proj.projtype != PRJ_VANITY && proj.projtype != PRJ_PIECE)) continue;
-            if((proj.projtype == PRJ_ENT && !entities::ents.inrange(proj.id)) || !projs[i]->mdlname || !*projs[i]->mdlname) continue;
+            if(proj.projtype == PROJ_AFFINITY || (drawtex == DRAWTEX_HALO && proj.projtype != PROJ_ENTITY && proj.projtype != PROJ_VANITY && proj.projtype != PROJ_PIECE)) continue;
+            if((proj.projtype == PROJ_ENTITY && !entities::ents.inrange(proj.id)) || !projs[i]->mdlname || !*projs[i]->mdlname) continue;
             const char *mdlname = proj.mdlname;
             modelstate mdl;
             mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
@@ -2538,20 +2538,20 @@ namespace projs
             mdl.material[0] = proj.material;
             switch(proj.projtype)
             {
-                case PRJ_DEBRIS:
+                case PROJ_DEBRIS:
                 {
                     mdl.size *= proj.lifesize;
                     fadeproj(proj, mdl.color.a, mdl.size);
                     if(mdl.color.a <= 0) continue;
                     break;
                 }
-                case PRJ_VANITY: case PRJ_PIECE:
+                case PROJ_VANITY: case PROJ_PIECE:
                     if(proj.owner)
                     {
                         if(!game::haloallow(camera1->o, proj.owner)) continue;
                         game::getplayermaterials(proj.owner, mdl);
                     }
-                case PRJ_GIBS: case PRJ_EJECT:
+                case PROJ_GIB: case PROJ_EJECT:
                 {
                     mdl.size *= proj.lifesize;
                     fadeproj(proj, mdl.color.a, mdl.size);
@@ -2559,7 +2559,7 @@ namespace projs
                     if(proj.owner && !proj.limited && drawtex != DRAWTEX_HALO) game::getplayereffects(proj.owner, mdl);
                     break;
                 }
-                case PRJ_SHOT:
+                case PROJ_SHOT:
                 {
                     mdl.color.a *= fadeweap(proj);
                     if(mdl.color.a <= 0) continue;
@@ -2574,7 +2574,7 @@ namespace projs
                     else if(WF(WK(proj.flags), proj.weap, fxcol, WS(proj.flags))) mdl.material[2] = bvec::fromcolor(FWCOL(P, fxcol, proj));
                     break;
                 }
-                case PRJ_ENT:
+                case PROJ_ENTITY:
                 {
                     if(!entities::haloallow(camera1->o, proj.id)) continue;
                     fadeproj(proj, mdl.color.a, mdl.size);
@@ -2610,4 +2610,62 @@ namespace projs
             rendermodel(mdlname, mdl, &proj);
         }
     }
+
+    PRCOMMANDK(from, result(p->from), intret(-1));
+    PRCOMMANDK(dest, result(p->dest), intret(-1));
+    PRCOMMANDK(norm, result(p->norm), intret(-1));
+    PRCOMMANDK(inertia, result(p->inertia), intret(-1));
+    PRCOMMANDK(sticknrm, result(p->sticknrm), intret(-1));
+    PRCOMMANDK(stickpos, result(p->stickpos), intret(-1));
+    PRCOMMANDK(effectpos, result(p->effectpos), intret(-1));
+    PRCOMMANDK(trailpos, result(p->trailpos), intret(-1));
+    PRCOMMANDK(lastgood, result(p->lastgood), intret(-1));
+    PRCOMMANDK(addtime, intret(p->addtime), intret(0));
+    PRCOMMANDK(lifetime, intret(p->lifetime), intret(0));
+    PRCOMMANDK(lifemillis, intret(p->lifemillis), intret(0));
+    PRCOMMANDK(waittime, intret(p->waittime), intret(0));
+    PRCOMMANDK(spawntime, intret(p->spawntime), intret(0));
+    PRCOMMANDK(fadetime, intret(p->fadetime), intret(0));
+    PRCOMMANDK(lastradial, intret(p->lastradial), intret(-1));
+    PRCOMMANDK(lasteffect, intret(p->lasteffect), intret(-1));
+    PRCOMMANDK(lastbounce, intret(p->lastbounce), intret(-1));
+    PRCOMMANDK(beenused, intret(p->beenused), intret(0));
+    PRCOMMANDK(extinguish, intret(p->extinguish), intret(0));
+    PRCOMMANDK(stuck, intret(p->stuck), intret(-1));
+    PRCOMMANDK(movement, floatret(p->movement), floatret(0));
+    PRCOMMANDK(distance, floatret(p->distance), floatret(0));
+    PRCOMMANDK(lifespan, floatret(p->lifespan), floatret(0));
+    PRCOMMANDK(lifesize, floatret(p->lifesize), floatret(0));
+    PRCOMMANDK(speedmin, floatret(p->speedmin), floatret(0));
+    PRCOMMANDK(speedmax, floatret(p->speedmax), floatret(0));
+    PRCOMMANDK(local, intret(p->local ? 1: 0), intret(0));
+    PRCOMMANDK(limited, intret(p->limited ? 1: 0), intret(0));
+    PRCOMMANDK(escaped, intret(p->escaped ? 1: 0), intret(0));
+    PRCOMMANDK(child, intret(p->child ? 1: 0), intret(0));
+    PRCOMMANDK(bounced, intret(p->bounced ? 1 : 0), intret(0));
+    PRCOMMANDK(projtype, intret(p->projtype), intret(-1));
+    PRCOMMANDK(projcollide, intret(p->projcollide), intret(0));
+    PRCOMMANDK(interacts, intret(p->interacts), intret(0));
+    PRCOMMANDK(elasticity, floatret(p->elasticity), intret(0));
+    PRCOMMANDK(relativity, floatret(p->relativity), intret(0));
+    PRCOMMANDK(liquidcoast, floatret(p->liquidcoast), intret(0));
+    PRCOMMANDK(seqid, intret(p->seqid), intret(-1));
+    PRCOMMANDK(schan, intret(p->schan), intret(-1));
+    PRCOMMANDK(id, intret(p->id), intret(-1));
+    PRCOMMANDK(weap, intret(p->weap), intret(-1));
+    PRCOMMANDK(fromweap, intret(p->fromweap), intret(-1));
+    PRCOMMANDK(fromflags, intret(p->fromflags), intret(0));
+    PRCOMMANDK(value, intret(p->value), intret(-1));
+    PRCOMMANDK(flags, intret(p->flags), intret(0));
+    PRCOMMANDK(collidezones, intret(p->collidezones), intret(0));
+    PRCOMMANDK(owner, intret(p->owner ? p->owner->clientnum : -1), intret(-1));
+    PRCOMMANDK(target, intret(p->target ? p->target->clientnum : -1), intret(-1));
+    PRCOMMANDK(stick, intret(p->stick ? p->stick->clientnum : -1), intret(-1));
+    PRCOMMANDK(hit, intret(p->hit && gameent::is(p->hit) ? ((gameent *)p->hit)->clientnum : -1), intret(-1));
+    PRCOMMAND(mdlname, result(p->mdlname));
+    PRCOMMANDK(fxtype, intret(p->fxtype), intret(-1));
+    PRCOMMANDMK(isjunk, "iii", (int *seqid, int *type, int *timespan), intret(p->isjunk(*timespan != 0)), intret(0));
+    PRCOMMANDMK(ready, "iib", (int *seqid, int *type, int *used), intret(p->ready(*used != 0) ? 1 : 0), intret(0));
+    PRCOMMANDMK(fade, "iibb", (int *seqid, int *type, int *used, int *test), floatret(p->getfade(*used != 0, *test != 0)), floatret(0));
+    PRCOMMANDMK(fadedir, "iibb", (int *seqid, int *type, int *used, int *test), intret(p->getfadedir(*used != 0, *test != 0)), intret(0));
 }

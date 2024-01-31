@@ -606,9 +606,9 @@ namespace ai
             }
         }
 
-        loopvj(projs::typeprojs[PRJ_ENT]) if(projs::typeprojs[PRJ_ENT][j]->projtype == PRJ_ENT && projs::typeprojs[PRJ_ENT][j]->ready())
+        loopvj(projs::typeprojs[PROJ_ENTITY]) if(projs::typeprojs[PROJ_ENTITY][j]->projtype == PROJ_ENTITY && projs::typeprojs[PROJ_ENTITY][j]->ready())
         {
-            projent &proj = *projs::typeprojs[PRJ_ENT][j];
+            projent &proj = *projs::typeprojs[PROJ_ENTITY][j];
             if(!entities::ents.inrange(proj.id)) continue;
             gameentity &e = *(gameentity *)entities::ents[proj.id];
             if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON || !entities::isallowed(e)) continue;
@@ -986,9 +986,9 @@ namespace ai
             }
             case AI_T_DROP:
             {
-                loopvj(projs::typeprojs[PRJ_ENT]) if(projs::typeprojs[PRJ_ENT][j]->projtype == PRJ_ENT && projs::typeprojs[PRJ_ENT][j]->ready() && projs::typeprojs[PRJ_ENT][j]->id == b.target)
+                loopvj(projs::typeprojs[PROJ_ENTITY]) if(projs::typeprojs[PROJ_ENTITY][j]->projtype == PROJ_ENTITY && projs::typeprojs[PROJ_ENTITY][j]->ready() && projs::typeprojs[PROJ_ENTITY][j]->id == b.target)
                 {
-                    projent &proj = *projs::typeprojs[PRJ_ENT][j];
+                    projent &proj = *projs::typeprojs[PROJ_ENTITY][j];
                     if(!entities::ents.inrange(proj.id) || proj.owner == d) return false;
                     gameentity &e = *(gameentity *)entities::ents[proj.id];
                     if(enttype[entities::ents[proj.id]->type].usetype != EU_ITEM || e.type != WEAPON || !entities::isallowed(e)) return false;
@@ -1909,7 +1909,7 @@ namespace ai
             if(projent::is(d))
             {
                 projent *p = (projent *)d;
-                if(p->projtype != PRJ_SHOT) continue;
+                if(p->projtype != PROJ_SHOT) continue;
                 float expl = WX(WK(p->flags), p->weap, radial, WS(p->flags), game::gamemode, game::mutators, p->curscale);
                 if(expl > 0) obstacles.avoidnear(p, p->o.z + expl + 1, p->o, WAYPOINTRADIUS + expl + 1);
             }

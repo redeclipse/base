@@ -2553,6 +2553,13 @@ void printsvar(ident *id, const char *s, const char *str)
     conoutf(colourwhite, "%s", output);
 }
 
+void printsvar(ident *id, const vec &v, const char *str)
+{
+    defformatstring(output, "%s %s %s", floatstr(v.x), floatstr(v.y), floatstr(v.z));
+    if(str && *str) concformatstring(output, " (%s)", str);
+    conoutf(colourwhite, "%s", output);
+}
+
 template <class V>
 static void printvar(ident *id, int type, V &val)
 {
@@ -4001,6 +4008,12 @@ void result(const char *s)
     commandret->setstr(newstring(s));
 }
 
+void result(const vec &v)
+{
+    defformatstring(s, "%s %s %s", floatstr(v.x), floatstr(v.y), floatstr(v.z));
+    commandret->setstr(newstring(s));
+}
+
 ICOMMANDK(0, result, ID_RESULT, "T", (tagval *v),
 {
     *commandret = *v;
@@ -5402,14 +5415,7 @@ bool hasflag(const char *flags, char f)
 }
 ICOMMAND(0, hasflag, "ss", (char *s, char *f), intret(*s && *f && hasflag(s, *f) ? 1 : 0));
 
-const char *veccolour(int c)
-{
-    retidx = (retidx + 1)%MAXRET;
-    vec col = vec::fromcolor(c);
-    formatstring(retbuf[retidx], "%.6g %.6g %.6g", col.x, col.y, col.z);
-    return retbuf[retidx];
-}
-ICOMMAND(0, veccolour, "i", (int *c), result(veccolour(*c)));
+ICOMMAND(0, veccolour, "i", (int *c), result(vec::fromcolor(*c)));
 
 int scalecolour(int c, int m) { return vec::fromcolor(c).mul(vec::fromcolor(m)).tohexcolor(); }
 ICOMMAND(0, scalecolour, "ii", (int *c, int *m), intret(scalecolour(*c, *m)));
@@ -5426,7 +5432,7 @@ ICOMMAND(0, skewcolour, "iif", (int *c, int *m, float *s), intret(skewcolour(*c,
 float magcolour(int c, bool renorm = false)
 {
     float mag = vec::fromcolor(c).magnitude();
-    if(renorm) mag /= 1.73205f;
+    if(renorm) mag *= 0.57735054f; // 1/sqrt(3) or 1.73205f
     return mag;
 }
 ICOMMAND(0, magcolour, "ib", (int *c, int *r), floatret(magcolour(*c, *r >= 0 ? *r != 0 : false)));

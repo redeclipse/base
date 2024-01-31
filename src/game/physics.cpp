@@ -230,7 +230,7 @@ namespace physics
             else if(projent::is(d))
             {
                 projent *q = (projent *)d;
-                if(p->projtype == PRJ_SHOT && q->projtype == PRJ_SHOT)
+                if(p->projtype == PROJ_SHOT && q->projtype == PROJ_SHOT)
                 {
                     if((p->projcollide&IMPACT_SHOTS || p->projcollide&BOUNCE_SHOTS) && q->projcollide&COLLIDE_PROJ) return true;
                 }

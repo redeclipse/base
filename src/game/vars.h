@@ -303,6 +303,7 @@ GVAR(IDF_GAMEMOD, 0, itemspawnstyle, 0, 0, 3); // 0 = all at once, 1 = staggered
 GVAR(IDF_GAMEMOD, 0, itemcollide, 0, BOUNCE_GEOM, COLLIDE_ALL);
 GVAR(IDF_GAMEMOD, 0, itemextinguish, 0, 6, 7);
 GVAR(IDF_GAMEMOD, 0, iteminteracts, 0, 3, 3);
+GVAR(IDF_GAMEMOD, 0, itemfadetime, 0, 1000, VAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemelasticity, FVAR_MIN, 0.4f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemrelativity, FVAR_MIN, 1, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemliquidcoast, FVAR_NONZERO, 1.75f, FVAR_MAX);

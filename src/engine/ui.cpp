@@ -1661,9 +1661,8 @@ namespace UI
             if(*numargs > 0) o->vname = vec(*x, *y, *z); \
             else \
             { \
-                defformatstring(pos, "%s %s %s", floatstr(o->vname.x), floatstr(o->vname.y), floatstr(o->vname.z)); \
-                if(*numargs < 0) result(pos); \
-                else printsvar(id, pos); \
+                if(*numargs < 0) result(o->vname); \
+                else printsvar(id, o->vname); \
             } \
         }); \
         UIWINCMD(vname##x, "fN$", (float *v, int *numargs, ident *id), { \
@@ -2113,9 +2112,8 @@ namespace UI
             if(*numargs > 0) o->vname = vec(*x, *y, *z); \
             else \
             { \
-                defformatstring(pos, "%s %s %s", floatstr(o->vname.x), floatstr(o->vname.y), floatstr(o->vname.z)); \
-                if(*numargs < 0) result(pos); \
-                else printsvar(id, pos); \
+                if(*numargs < 0) result(o->vname); \
+                else printsvar(id, o->vname); \
             } \
         }); \
         UISURFCMD(vname##x, "fN$", (float *v, int *numargs, ident *id), { \
