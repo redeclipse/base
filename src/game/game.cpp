@@ -1331,6 +1331,7 @@ namespace game
     {
         static fx::FxHandle impulsesound = fx::getfxhandle("FX_PLAYER_IMPULSE_SOUND");
         static fx::FxHandle impulsejet = fx::getfxhandle("FX_PLAYER_IMPULSE_JET");
+        static fx::FxHandle janitorfx = fx::getfxhandle("FX_JANITOR");
 
         switch(effect)
         {
@@ -1338,7 +1339,7 @@ namespace game
             case 1:
             {
                 if(!actors[d->actortype].jetfx || paused) break;
-                fx::createfx(impulsejet, &d->impulsefx)
+                fx::createfx(d->actortype == A_JANITOR ? janitorfx : impulsejet, &d->impulsefx)
                     .setentity(d)
                     .setparam(0, effect ? 0.0f : 1.0f)
                     .setcolor(bvec(getcolour(d)));
@@ -1392,7 +1393,7 @@ namespace game
         entities::physents(d);
         d->configure(lastmillis, gamemode, mutators, physics::hasaffinity(d), curtime, playerrotdecay, playerrotinertia, playerrotmaxinertia);
 
-        if(d->state == CS_ALIVE)
+        if(d->isalive())
         {
             bool sliding = d->sliding(true), crouching = sliding || (d->action[AC_CROUCH] && A(d->actortype, abilities)&(1<<A_A_CROUCH)),
                  moving = d->move || d->strafe || (d->physstate < PHYS_SLOPE && !physics::laddercheck(d)), ishi = moving && !sliding;
@@ -1456,7 +1457,7 @@ namespace game
                 d->actiontime[AC_CROUCH] = 0;
             }
 
-            if(d->hasparkour() || d->impulsetime[IM_T_JUMP] || d->sliding(true)) impulseeffect(d, 1);
+            if(physics::movepitch(d) || d->hasparkour() || d->impulsetime[IM_T_JUMP] || d->sliding(true)) impulseeffect(d, 1);
         }
         else
         {
@@ -2654,11 +2655,8 @@ namespace game
 
     int findcolour(gameent *d, int comb, bool tone, float level, float mix)
     {
-        if(!tone)
-        {
-            if(d->hasprize) return pulsehexcol(PULSE_READY);
-            if(game::focus->dominated.find(d) >= 0) return pulsehexcol(PULSE_DOMINATE);
-        }
+        if(d->hasprize && d->isalive()) return pulsehexcol(tone ? PULSE_PRIZE : PULSE_READY);
+        if(game::focus->dominated.find(d) >= 0) return pulsehexcol(tone ? PULSE_WARN : PULSE_DOMINATE);
 
         int col = d->colours[comb ? 1 : 0];
         switch(comb)
@@ -4076,7 +4074,7 @@ namespace game
         else
         {
             float weapscale = 1.f;
-            bool showweap = (third != 2 || firstpersoncamera) && isweap(weap) && weap < W_ALL;
+            bool showweap = actors[d->actortype].weapmdl && (third != 2 || firstpersoncamera) && isweap(weap) && weap < W_ALL;
             if(showweap)
             {
                 mdl.basetime = d->weaptime[weap];
@@ -4190,6 +4188,7 @@ namespace game
                     }
                 }
             }
+
             if(third)
             {
                 int count = 0, head = vanitybuild(d), found[VANITYMAX] = {0};
@@ -4387,7 +4386,7 @@ namespace game
 
     bool haloallow(const vec &o, gameent *d, bool justtest, bool check)
     {
-        if(d->hasprize) return true;
+        if(d->hasprize && d->isalive()) return true;
         if(d->actortype >= A_ENVIRONMENT) return false;
         if(!wanthalos(check, (d == focus ? playerhalos&1 : playerhalos&2) != 0) || (d == focus && inzoom())) return false;
         if(justtest) return true;

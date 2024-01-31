@@ -8,20 +8,20 @@ struct actor
 {
     const char *name;
     int id, collidezones;
-    bool hastags, jetfx, weapfx, steps, onlyfwd, pieces;
-    float height, radius;
+    bool hastags, jetfx, weapfx, weapmdl, steps, onlyfwd, pieces;
+    float height, radius, aboveeye;
     const char *mdl;
 };
 #ifdef CPP_GAME_SERVER
 actor actors[] = {
-    { "player",         A_PLAYER,   CLZ_ALL,    true,   true,   true,   true,   false,  true,   20.4f,      4.25f,  NULL },
-    { "bot",            A_BOT,      CLZ_ALL,    true,   true,   true,   true,   false,  true,   20.4f,      4.25f,  NULL },
-    { "turret",         A_TURRET,   CLZ_ALL,    true,   true,   true,   true,   false,  true,   20.4f,      4.25f,  NULL },
-    { "grunt",          A_GRUNT,    CLZ_NOHEAD, true,   true,   true,   true,   false,  true,   18.5f,      4.25f,  NULL },
-    { "drone",          A_DRONE,    CLZ_NOHEAD, true,   true,   true,   true,   false,  true,   18.5f,      4.25f,  NULL },
-    { "roller",         A_ROLLER,   CLZ_NONE,   false,  false,  false,  false,  true,   false,  11.475f,    5.75f,  "actors/roller" },
-    { "hazard",         A_HAZARD,   CLZ_NONE,   false,  false,  false,  false,  false,  false,  1.f,        1.f,    NULL },
-    { "clenaer",        A_JANITOR,  CLZ_NONE,   false,  false,  false,  false,  false,  false,  11.475f,    5.75f,  "actors/roller" },
+    { "player",         A_PLAYER,   CLZ_ALL,    true,   true,   true,   true,   true,   false,  true,   20.4f,      4.25f,  1.f,    NULL },
+    { "bot",            A_BOT,      CLZ_ALL,    true,   true,   true,   true,   true,   false,  true,   20.4f,      4.25f,  1.f,    NULL },
+    { "turret",         A_TURRET,   CLZ_ALL,    true,   true,   true,   true,   true,   false,  true,   20.4f,      4.25f,  1.f,    NULL },
+    { "grunt",          A_GRUNT,    CLZ_NOHEAD, true,   true,   true,   true,   true,   false,  true,   18.5f,      4.25f,  1.f,    NULL },
+    { "drone",          A_DRONE,    CLZ_NOHEAD, true,   true,   true,   true,   true,   false,  true,   18.5f,      4.25f,  1.f,    NULL },
+    { "roller",         A_ROLLER,   CLZ_NONE,   false,  false,  false,  false,  false,  true,   false,  11.475f,    5.75f,  1.f,    "actors/roller" },
+    { "hazard",         A_HAZARD,   CLZ_TORSO,  false,  false,  false,  false,  false,  false,  false,  1.f,        1.f,    1.f,    NULL },
+    { "janitor",        A_JANITOR,  CLZ_TORSO,  true,   true,   true,   false,  false,  false,  false,  3.5f,       3.5f,   3.5f,   "actors/janitor" },
 };
 #else
 extern actor actors[];
@@ -216,7 +216,7 @@ APVAR(IDF_GAMEMOD, 0, maxcarry, 0, W_LOADOUT,
     2,              2,              0,              0,              0,              0,              W_LOADOUT,      0
 );
 APFVAR(IDF_GAMEMOD, 0, scale, FVAR_NONZERO, FVAR_MAX,
-    1,              1,              0.5f,           1,              0.85f,          1,              1,              0.5f
+    1,              1,              0.5f,           1,              0.85f,          1,              1,              1
 );
 APVAR(IDF_GAMEMOD, 0, spawndelay, DEATHMILLIS, VAR_MAX,
     5000,           5000,           30000,          30000,          30000,          30000,          DEATHMILLIS,    DEATHMILLIS
@@ -295,7 +295,7 @@ APFVAR(IDF_GAMEMOD, 0, impulsespeedextra, FVAR_MIN, FVAR_MAX,
     0,              0,              0,              0,              0,              0,              0,              0
 );
 APFVAR(IDF_GAMEMOD, 0, weight, 0, FVAR_MAX,
-    250,            250,            250,            250,            200,            200,            0,              0
+    250,            250,            250,            250,            200,            200,            0,              100
 );
 APFVAR(IDF_GAMEMOD, 0, weightextra, FVAR_MIN, FVAR_MAX,
     0,              0,              0,              0,              0,              0,              0,              0

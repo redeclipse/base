@@ -144,7 +144,9 @@ namespace aiman
                 copystring(ci->name, A(ci->actortype, vname), MAXNAMELEN);
                 ci->loadweap.shrink(0);
 
-                if(ci->actortype == A_BOT)
+                const char *vanitylist = NULL;
+                if(ci->actortype == A_JANITOR) vanitylist = G(janitorvanities);
+                else if(ci->actortype == A_BOT)
                 {
                     vector<char *> list;
                     explodelist(ci->model ? G(botfemalenames) : G(botmalenames), list);
@@ -168,7 +170,7 @@ namespace aiman
                     }
                     list.deletearrays();
 
-                    ci->setvanity(ci->model ? G(botfemalevanities) : G(botmalevanities));
+                    vanitylist = ci->model ? G(botfemalevanities) : G(botmalevanities);
                     static vector<int> weaplist;
                     weaplist.setsize(0);
                     loopi(W_LOADOUT) weaplist.add(W_OFFSET+i);
@@ -178,6 +180,26 @@ namespace aiman
                         ci->loadweap.add(weaplist[iter]);
                         weaplist.remove(iter);
                     }
+                }
+
+                if(vanitylist && *vanitylist)
+                {
+                    vector<char *> list;
+                    explodelist(vanitylist, list);
+                    while(!list.empty())
+                    {
+                        int r = botrnd(ci, 1, list.length(), true);
+                        char *name = list[r];
+                        if(!name || !*name)
+                        {
+                            list.remove(r);
+                            DELETEA(name);
+                            continue;
+                        }
+                        ci->setvanity(name);
+                        break;
+                    }
+                    list.deletearrays();
                 }
 
                 ci->state = CS_DEAD;
