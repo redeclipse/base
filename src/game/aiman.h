@@ -429,13 +429,16 @@ namespace aiman
                 continue;
             }
 
-            int n = candidates[0].empty() ? 1 : 0,
-                r = rnd(candidates[n].length()), q = candidates[n][r];
+            loopj(2)
+            {
+                if(candidates[j].empty()) continue;
+                int r = rnd(candidates[j].length()), q = candidates[j][r];
 
-            addai(A_JANITOR, q);
-            sents[q].millis = gamemillis;
+                addai(A_JANITOR, q);
+                sents[q].millis = gamemillis;
 
-            candidates[n].remove(r);
+                candidates[j].remove(r);
+            }
         }
     }
 
