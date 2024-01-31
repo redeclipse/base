@@ -7100,7 +7100,7 @@ namespace UI
 
                 if(e.attrs[3] <= 180 || e.attrs[3] >= -180)
                 {
-                    w->pitch = e.attrs[3] + pitch + 90;
+                    w->pitch = e.attrs[3] + pitch;
                     if(w->pitch < -180.0f) w->pitch = 180.0f - fmodf(-180.0f - w->pitch, 360.0f);
                     else if(w->pitch >= 180.0f) w->pitch = fmodf(w->pitch + 180.0f, 360.0f) - 180.0f;
                 }
@@ -7322,7 +7322,7 @@ namespace UI
         t->delay = delay;
         t->id = id;
         t->fbo = fbo;
-        t->used = t->last = uitotalmillis;
+        t->used = t->last = totalmillis;
 
         bool hastex = false;
         loopv(surface->texs)
@@ -7551,7 +7551,7 @@ namespace UI
         if(!pushsurface(SURFACE_COMPOSITE)) return;
 
         bool found = false;
-        int oldhudw = hudw, oldhudh = hudh, oldsf = surfaceformat, oldlm = uilastmillis, oldtm = uitotalmillis, oldct = uicurtime;
+        int oldhudw = hudw, oldhudh = hudh, oldsf = surfaceformat;
 
         int processed = 0;
         surface->texs.sort(texsort);
@@ -7566,8 +7566,7 @@ namespace UI
 
             if(compositerewind)
             {
-                uilastmillis = oldlm;
-                uitotalmillis = oldtm;
+                poke();
                 uicurtime = elapsed;
 
                 int offset = delay > 1 ? elapsed % delay : delay;
@@ -7623,7 +7622,7 @@ namespace UI
                 surface->hide(w);
             }
 
-            t->last = uitotalmillis;
+            t->last = totalmillis;
             t->rendered = true;
 
             if(delay < 0)
@@ -7640,10 +7639,7 @@ namespace UI
         }
 
         popsurface();
-
-        uilastmillis = oldlm;
-        uitotalmillis = oldtm;
-        uicurtime = oldct;
+        poke();
 
         if(found)
         {
