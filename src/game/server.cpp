@@ -4904,7 +4904,7 @@ namespace server
             m->rewards[1] = 0;
 
             dropitems(m, DROP_DEATH);
-            if(m->hasprize) realflags |= HIT_PRIZE;
+            if(m->hasprize && m != v) realflags |= HIT_PRIZE;
 
             static vector<int> dmglog;
             dmglog.setsize(0);
