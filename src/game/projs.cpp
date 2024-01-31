@@ -997,16 +997,7 @@ namespace projs
             }
             case PROJ_GIB:
             {
-                if(game::nogore == 2)
-                {
-                    proj.lifemillis = proj.lifetime = 1;
-                    proj.lifespan = 1.f;
-                    proj.state = CS_DEAD;
-                    proj.escaped = true;
-                    return;
-                }
-
-                if(!game::nogore || game::bloodscale > 0)
+                if(!game::nogore && game::bloodscale > 0)
                 {
                     proj.height = proj.aboveeye = proj.radius = proj.xradius = proj.yradius = 0.5f;
                     if(!proj.mdlname || !*proj.mdlname)
@@ -1033,7 +1024,7 @@ namespace projs
                             // proj.o.z -= proj.owner->zradius*0.125f;
                             proj.lifesize *= proj.owner->curscale;
                         }
-                        proj.vel.add(vec(rnd(101)-50, rnd(101)-50, rnd(101)-50).mul(proj.speed / 100.f));
+                        proj.vel.add(vec(rnd(101)-50, rnd(101)-50, rnd(101)-50).mul((proj.speed / 100.f) * (proj.owner && proj.owner->obliterated ? 8 : 1)));
                     }
 
                     float buoy = gibsbuoyancymax;
@@ -1070,7 +1061,7 @@ namespace projs
                         case 0: default: proj.mdlname = "projectiles/debris/debris01"; break;
                     }
                     if(proj.owner) proj.lifesize *= proj.owner->curscale;
-                    proj.vel.add(vec(rnd(101)-50, rnd(101)-50, rnd(101)-50).mul(proj.speed / 100.f));
+                    proj.vel.add(vec(rnd(101)-50, rnd(101)-50, rnd(101)-50).mul((proj.speed / 100.f) * (proj.owner && proj.owner->obliterated ? 8 : 1)));
                 }
                 proj.relativity = 0.f;
                 proj.elasticity = debriselasticity;
@@ -1195,11 +1186,10 @@ namespace projs
                 proj.height = proj.aboveeye = proj.radius = proj.xradius = proj.yradius = 1;
                 if(!proj.mdlname || !*proj.mdlname)
                 {
-                    if(proj.owner) proj.lifesize = proj.owner->curscale;
                     switch(proj.projtype)
                     {
                         case PROJ_VANITY: proj.mdlname = game::vanityfname(proj.owner, proj.weap, proj.value, true); break;
-                        case PROJ_PIECE: proj.mdlname = playerparts[clamp(proj.value, 0, PLAYERPARTS-1)].filename; break;
+                        case PROJ_PIECE: proj.mdlname = playerparts[clamp(proj.weap, 0, PLAYERPARTS-1)].filename; break;
                         default:
                         {
                             switch(rnd(7))
@@ -1215,7 +1205,8 @@ namespace projs
                             break;
                         }
                     }
-                    proj.vel.add(vec(rnd(101)-50, rnd(101)-50, rnd(101)-50).mul(proj.speed / 100.f));
+                    if(proj.owner) proj.lifesize = proj.owner->curscale;
+                    proj.vel.add(vec(rnd(101)-50, rnd(101)-50, rnd(101)-50).mul((proj.speed / 100.f) * (proj.owner && proj.owner->obliterated ? 8 : 1)));
                 }
                 proj.elasticity = vanityelasticity;
                 proj.relativity = vanityrelativity;
@@ -1227,6 +1218,7 @@ namespace projs
                 proj.fadetime = rnd(200) + 51;
                 proj.extinguish = 6;
                 proj.interacts = 3;
+                if(proj.projtype == PROJ_PIECE) proj.fxtype = FX_P_GIB;
                 break;
             }
             default: break;

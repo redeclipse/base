@@ -380,7 +380,7 @@ namespace game
     VAR(IDF_PERSIST, giblimit, 0, 50, VAR_MAX); // max in one burst
     VAR(IDF_PERSIST, gibpieces, 1, 25, VAR_MAX); // max pieces
     VAR(IDF_PERSIST, gibfade, 1, 60000, VAR_MAX); // rnd(this) + this
-    VAR(IDF_PERSIST, gibchancevanity, 0, 90, 100); // percentage chance
+    VAR(IDF_PERSIST, gibchancevanity, 0, 99, 100); // percentage chance
     VAR(IDF_PERSIST, gibchancepieces, 0, 90, 100); // percentage chance
     VAR(IDF_PERSIST, gibchancecollects, 0, 90, 100); // percentage chance
     FVAR(IDF_PERSIST, gibdamage, 0, 0.1f, 1); // gibs = (damage / (hp * this))
@@ -446,7 +446,7 @@ namespace game
     FVAR(IDF_PERSIST, footstepsoundrolloff, 0, 0, FVAR_MAX);
     FVAR(IDF_PERSIST, footstepsoundrefdist, 0, 0, FVAR_MAX);
 
-    VAR(IDF_PERSIST, nogore, 0, 0, 2); // turns off all gore, 0 = off, 1 = replace, 2 = remove
+    VAR(IDF_PERSIST, nogore, 0, 0, 1); // turns off all gore, 0 = off, 1 = replace
     VAR(IDF_PERSIST, forceplayermodel, -1, -1, PLAYERTYPES-1);
     VAR(IDF_PERSIST, forceplayerpattern, -1, -1, PLAYERPATTERNS-1);
     VAR(IDF_PERSIST, vanitymodels, 0, 1, 1);
@@ -1891,7 +1891,7 @@ namespace game
 
                 if(!nogore && bloodscale > 0)
                     part_splash(PART_BLOOD, int(clamp(damage/hp, 1, 3)*bloodscale)*(bleedfunc || material ? 2 : 1), bloodfade, p, 0x229999, (rnd((bloodsize+1)/2)+((bloodsize+1)/2))/10.f, 1, 0, 0, 100, 1+STAIN_BLOOD, int(d->radius), 10);
-                if(nogore != 2 && (bloodscale <= 0 || bloodsparks))
+                else if(bloodscale <= 0 || bloodsparks)
                     part_splash(PART_PLASMA, int(clamp(damage/hp, 1, 3))*(bleedfunc || material ? 2: 1), bloodfade, p, 0x882222, 1, 0.5f, 0, 0, 50, 1+STAIN_STAIN, int(d->radius));
 
                 int damagetype = damagemerge::HURT;
@@ -2055,7 +2055,7 @@ namespace game
             loopvk(d->vitems)
             {
                 int n = d->vitems[k];
-                if(vanities.inrange(n)) continue;
+                if(!vanities.inrange(n)) continue;
 
                 if(found[vanities[n].type]) continue; // skip ignored vanities
                 found[vanities[n].type]++;
@@ -2091,13 +2091,11 @@ namespace game
                     case 1: default: break; // central stuff
                 }
 
-                projs::create(pos, pos, true, d, PROJ_VANITY, -1, 0, rnd(gibfade) + gibfade, 0, 0, rnd(50) + 10, -1, n, head);
+                projs::create(pos, vec(pos).addz(rnd(d->obliterated ? 64 : 8)), true, d, PROJ_VANITY, -1, 0, rnd(gibfade) + gibfade, 0, 0, rnd(50) + 10, -1, n, head);
 
                 if(++gibcount >= giblimit) return;
             }
         }
-
-        if(nogore == 2) return;
 
         if(gibchancepieces && (d->actortype != A_JANITOR || !(flags&HIT_JANITOR)))
         {
@@ -2112,7 +2110,7 @@ namespace game
                     }
 
                     vec pos = gibpos(d, i);
-                    projs::create(pos, pos, true, d, PROJ_PIECE, -1, 0, rnd(gibfade) + gibfade, 0, 0, rnd(50) + 10, -1, i, 0);
+                    projs::create(pos, vec(pos).addz(rnd(64)), true, d, PROJ_PIECE, -1, 0, rnd(gibfade) + gibfade, 0, 0, rnd(50) + 10, -1, i);
 
                     if(++gibcount >= giblimit) return;
                 }
@@ -2127,7 +2125,7 @@ namespace game
                 if(rnd(101) > gibchancepieces) continue;
 
                 vec pos = gibpos(d, rnd(PLAYERPARTS));
-                projs::create(pos, pos, true, d, nogore || !(A(d->actortype, abilities)&(1<<A_A_GIBS)) ? PROJ_DEBRIS : PROJ_GIB, -1, 0, rnd(gibfade) + gibfade, 0, rnd(100) + 1, rnd(d->obliterated || d->headless ? 50 : 25) + 10);
+                projs::create(pos, vec(pos).addz(rnd(d->obliterated ? 64 : 8)), true, d, A(d->actortype, abilities)&(1<<A_A_GIBS) ? PROJ_GIB : PROJ_DEBRIS, -1, 0, rnd(gibfade) + gibfade, 0, rnd(100) + 1, rnd(d->obliterated || d->headless ? 50 : 25) + 10);
 
                 if(++gibcount >= giblimit) return;
             }
@@ -2142,7 +2140,7 @@ namespace game
                 continue; // let's just say it gets destroyed
             }
 
-            projent *p = projs::create(d->o, vec(d->o).add(vec(rnd(21)-10, rnd(21)-10, rnd(41)-10)), true, d, d->collects[n].type, -1, 0, (rnd(gibfade) + gibfade) / 4, 0, rnd(500) + 1, rnd(d->obliterated ? 50 : 25) + 10);
+            projent *p = projs::create(d->o, vec(d->o).add(vec(rnd(21)-10, rnd(21)-10, rnd(61)-10)), true, d, d->collects[n].type, -1, 0, (rnd(gibfade) + gibfade) / 4, 0, rnd(500) + 1, rnd(d->obliterated ? 50 : 25) + 10);
             if(p)
             {
                 p->mdlname = d->collects[n].name;

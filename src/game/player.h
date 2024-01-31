@@ -21,7 +21,7 @@ actor actors[] = {
     { "drone",          A_DRONE,    CLZ_NOHEAD, true,   true,   true,   true,   true,   false,  true,   18.5f,      4.25f,  1.f,    NULL },
     { "roller",         A_ROLLER,   CLZ_NONE,   false,  false,  false,  false,  false,  true,   false,  11.475f,    5.75f,  1.f,    "actors/roller" },
     { "hazard",         A_HAZARD,   CLZ_TORSO,  false,  false,  false,  false,  false,  false,  false,  1.f,        1.f,    1.f,    NULL },
-    { "janitor",        A_JANITOR,  CLZ_TORSO,  true,   true,   true,   false,  false,  false,  false,  3.5f,       3.5f,   3.5f,   "actors/janitor" },
+    { "janitor",        A_JANITOR,  CLZ_TORSO,  true,   true,   true,   false,  false,  false,  false,  3.f,        3.f,    3.f,    "actors/janitor" },
 };
 #else
 extern actor actors[];
