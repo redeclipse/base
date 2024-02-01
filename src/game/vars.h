@@ -539,12 +539,12 @@ GFVAR(IDF_GAMEMOD, 0, gibliquidcoast, 0, 2, 10000);
 GFVAR(IDF_GAMEMOD, 0, gibweight, -10000, 150, 10000);
 GFVAR(IDF_GAMEMOD, 0, gibbuoyancymax, -10000, 200, 10000);
 GFVAR(IDF_GAMEMOD, 0, gibbuoyancymin, -10000, 0, 10000);
-GVAR(IDF_GAMEMOD, 0, giblimit, 0, 50, VAR_MAX); // max in one burst
-GVAR(IDF_GAMEMOD, 0, gibpieces, 1, 25, VAR_MAX); // max pieces
+GVAR(IDF_GAMEMOD, 0, giblimit, 0, 25, VAR_MAX); // max in one burst
+GVAR(IDF_GAMEMOD, 0, gibpieces, 1, 10, VAR_MAX); // max pieces
 GVAR(IDF_GAMEMOD, 0, gibfade, 1, 60000, VAR_MAX); // rnd(this) + this
-GVAR(IDF_GAMEMOD, 0, gibchancevanity, 0, 90, 100); // percentage chance
-GVAR(IDF_GAMEMOD, 0, gibchancepieces, 0, 90, 100); // percentage chance
-GVAR(IDF_GAMEMOD, 0, gibchancecollects, 0, 90, 100); // percentage chance
+GVAR(IDF_GAMEMOD, 0, gibchancevanity, 0, 75, 100); // percentage chance
+GVAR(IDF_GAMEMOD, 0, gibchancepieces, 0, 75, 100); // percentage chance
+GVAR(IDF_GAMEMOD, 0, gibchancecollects, 0, 75, 100); // percentage chance
 GFVAR(IDF_GAMEMOD, 0, gibdamage, 0, 0.1f, 1); // gibs = (damage / (hp * this))
 GFVAR(IDF_GAMEMOD, 0, gibheadless, 0, 0.05f, 1);
 GFVAR(IDF_GAMEMOD, 0, gibobliterated, 0, 0.025f, 1);

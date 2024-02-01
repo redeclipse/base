@@ -2041,110 +2041,116 @@ namespace game
 
     void spawngibs(int weap, int flags, int damage, gameent *d, gameent *v, vector<gameent *> &assist, int style, int material)
     {
-        if(!giblimit) return;
-
-        int gibcount = 0, missed = 0;
-        if(gibchancevanity && (d->headless || d->obliterated))
+        if(giblimit)
         {
-            int head = vanitybuild(d), found[VANITYMAX] = {0};
-            bool check = vanitycheck(d);
-            loopvk(d->vitems)
+            int gibcount = 0, missed = 0;
+            if(gibchancevanity && (d->headless || d->obliterated))
             {
-                int n = d->vitems[k];
-                if(!vanities.inrange(n)) continue;
-
-                if(found[vanities[n].type]) continue; // skip ignored vanities
-                found[vanities[n].type]++;
-
-                if(!(vanities[n].cond&(d->obliterated ? 4 : 2))) continue;
-                if(vanities[n].type ? !check || rnd(101) > gibchancevanity : !actors[d->actortype].hashead)
+                int head = vanitybuild(d), found[VANITYMAX] = {0};
+                bool check = vanitycheck(d);
+                loopvk(d->vitems)
                 {
-                    missed++;
-                    continue;
-                }
+                    int n = d->vitems[k];
+                    if(!vanities.inrange(n)) continue;
 
-                vec pos = d->center();
-                switch(vanities[n].type)
-                {
-                    case 0: case 2: case 3: case 4: case 5: case 6: // lots of head stuff
-                        pos = d->headtag();
-                        break;
-                    case 7: // back stuff
-                        pos = d->jetbacktag();
-                        break;
-                    case 8: case 9: // feet stuff
-                        pos = d->toetag(vanities[n].type - 8);
-                        break;
-                    case 10: // left shoulder
-                        pos = d->jetlefttag();
-                        break;
-                    case 11: // right shoulder
-                        pos = d->jetrighttag();
-                        break;
-                    case 12: // tail
-                        pos = d->waisttag();
-                        break;
-                    case 1: default: break; // central stuff
-                }
+                    if(found[vanities[n].type]) continue; // skip ignored vanities
+                    found[vanities[n].type]++;
 
-                projs::create(pos, vec(pos).addz(rnd(d->obliterated ? 64 : 8)), true, d, PROJ_VANITY, -1, 0, rnd(gibfade) + gibfade, 0, 0, rnd(50) + 10, -1, n, head);
-
-                if(++gibcount >= giblimit) return;
-            }
-        }
-
-        if(gibchancepieces && (d->actortype != A_JANITOR || !(flags&HIT_JANITOR)))
-        {
-            if(d->obliterated && actors[d->actortype].pieces)
-            {
-                loopi(PLAYERPARTS)
-                {
-                    if(rnd(101) > gibchancepieces)
+                    if(!(vanities[n].cond&(d->obliterated ? 4 : 2))) continue;
+                    if(vanities[n].type ? !check || rnd(101) > gibchancevanity : !actors[d->actortype].hashead)
                     {
                         missed++;
                         continue;
                     }
 
-                    vec pos = gibpos(d, i);
-                    projs::create(pos, vec(pos).addz(rnd(64)), true, d, PROJ_PIECE, -1, 0, rnd(gibfade) + gibfade, 0, 0, rnd(50) + 10, -1, i);
+                    vec pos = d->center();
+                    switch(vanities[n].type)
+                    {
+                        case 0: case 2: case 3: case 4: case 5: case 6: // lots of head stuff
+                            pos = d->headtag();
+                            break;
+                        case 7: // back stuff
+                            pos = d->jetbacktag();
+                            break;
+                        case 8: case 9: // feet stuff
+                            pos = d->toetag(vanities[n].type - 8);
+                            break;
+                        case 10: // left shoulder
+                            pos = d->jetlefttag();
+                            break;
+                        case 11: // right shoulder
+                            pos = d->jetrighttag();
+                            break;
+                        case 12: // tail
+                            pos = d->waisttag();
+                            break;
+                        case 1: default: break; // central stuff
+                    }
+
+                    projs::create(pos, vec(pos).addz(rnd(d->obliterated ? 64 : 8)), true, d, PROJ_VANITY, -1, 0, rnd(gibfade) + gibfade, 0, 0, rnd(50) + 10, -1, n, head);
 
                     if(++gibcount >= giblimit) return;
                 }
             }
-            else missed += PLAYERPARTS;
 
-            int hp = max(d->gethealth(gamemode, mutators), 1), divisor = int(ceilf(d->obliterated ? hp * gibobliterated : (d->headless ? hp * gibheadless : hp * gibdamage))),
-                count = max(int(ceilf(damage / float(divisor))), 1), amt = clamp(rnd(count) + count + missed, 1, gibpieces);
-
-            loopi(amt)
+            if(gibchancepieces && (d->actortype != A_JANITOR || !(flags&HIT_JANITOR)))
             {
-                if(rnd(101) > gibchancepieces) continue;
+                if(d->obliterated && actors[d->actortype].pieces)
+                {
+                    loopi(PLAYERPARTS)
+                    {
+                        if(rnd(101) > gibchancepieces)
+                        {
+                            missed++;
+                            continue;
+                        }
 
-                vec pos = gibpos(d, rnd(PLAYERPARTS));
-                projs::create(pos, vec(pos).addz(rnd(d->obliterated ? 64 : 8)), true, d, A(d->actortype, abilities)&(1<<A_A_GIBS) ? PROJ_GIB : PROJ_DEBRIS, -1, 0, rnd(gibfade) + gibfade, 0, rnd(100) + 1, rnd(d->obliterated || d->headless ? 50 : 25) + 10);
+                        vec pos = gibpos(d, i);
+                        projs::create(pos, vec(pos).addz(rnd(64)), true, d, PROJ_PIECE, -1, 0, rnd(gibfade) + gibfade, 0, 0, rnd(50) + 10, -1, i);
 
-                if(++gibcount >= giblimit) return;
+                        if(++gibcount >= giblimit) return;
+                    }
+                }
+                else missed += PLAYERPARTS;
+
+                int hp = max(d->gethealth(gamemode, mutators), 1), divisor = int(ceilf(d->obliterated ? hp * gibobliterated : (d->headless ? hp * gibheadless : hp * gibdamage))),
+                    count = max(int(ceilf(damage / float(divisor))), 1), amt = clamp(rnd(count) + count + missed, 1, gibpieces);
+
+                loopi(amt)
+                {
+                    if(rnd(101) > gibchancepieces) continue;
+
+                    vec pos = gibpos(d, rnd(PLAYERPARTS));
+                    projs::create(pos, vec(pos).addz(rnd(d->obliterated ? 64 : 8)), true, d, A(d->actortype, abilities)&(1<<A_A_GIBS) ? PROJ_GIB : PROJ_DEBRIS, -1, 0, rnd(gibfade) + gibfade, 0, rnd(100) + 1, rnd(d->obliterated || d->headless ? 50 : 25) + 10);
+
+                    if(++gibcount >= giblimit) return;
+                }
             }
         }
 
-        if(gibchancecollects) while(!d->collects.empty())
+        if(gibchancecollects)
         {
-            int n = rnd(d->collects.length());
-            if(rnd(101) > gibchancecollects)
+            int count = 0, limit = max(giblimit, 5);
+
+            while(!d->collects.empty())
             {
+                int n = rnd(d->collects.length());
+                if(rnd(101) > gibchancecollects)
+                {
+                    d->collects.remove(n);
+                    continue; // let's just say it gets destroyed
+                }
+
+                projent *p = projs::create(d->o, vec(d->o).add(vec(rnd(21)-10, rnd(21)-10, rnd(61)-10)), true, d, d->collects[n].type, -1, 0, (rnd(gibfade) + gibfade) / 4, 0, rnd(500) + 1, rnd(d->obliterated ? 50 : 25) + 10);
+                if(p)
+                {
+                    p->mdlname = d->collects[n].name;
+                    p->lifesize = max(d->collects[n].size, 0.25f) + ((rnd(31) - 10) / 100.f);
+                }
+
                 d->collects.remove(n);
-                continue; // let's just say it gets destroyed
+                if(++count >= limit) return;
             }
-
-            projent *p = projs::create(d->o, vec(d->o).add(vec(rnd(21)-10, rnd(21)-10, rnd(61)-10)), true, d, d->collects[n].type, -1, 0, (rnd(gibfade) + gibfade) / 4, 0, rnd(500) + 1, rnd(d->obliterated ? 50 : 25) + 10);
-            if(p)
-            {
-                p->mdlname = d->collects[n].name;
-                p->lifesize = max(d->collects[n].size, 0.25f) + ((rnd(31) - 10) / 100.f);
-            }
-
-            d->collects.remove(n);
-            if(++gibcount >= giblimit) return;
         }
     }
 
