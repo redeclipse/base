@@ -597,7 +597,7 @@ namespace UI
             changed &= ~change;
             if(changed)
             {
-                if(changed&CHANGE_SHADER) (surfacetype == SURFACE_WORLD ? hudworldshader : hudshader)->set();
+                if(changed&CHANGE_SHADER) hudshader->set();
                 if(changed&CHANGE_COLOR) gle::colorf(1, 1, 1);
                 if(changed&CHANGE_BLEND) resetblend();
             }
@@ -1247,7 +1247,7 @@ namespace UI
             projection();
             resetblend(true);
 
-            (surfacetype == SURFACE_WORLD ? hudworldshader : hudshader)->set();
+            hudshader->set();
             gle::colorf(1, 1, 1);
 
             changed = 0;
@@ -3539,7 +3539,7 @@ namespace UI
             if(shdr) shdr->set();
             else
             {
-                (surfacetype == SURFACE_WORLD ? hudworldshader : hudshader)->set();
+                hudshader->set();
                 params.setsize(0);
                 texs.setsize(0);
                 texs.add(notexture);
@@ -5962,7 +5962,7 @@ namespace UI
 
         void startdraw()
         {
-            (surfacetype == SURFACE_WORLD ? hudworldshader : hudshader)->set();
+            hudshader->set();
 
             gle::defvertex();
             gle::defcolor();

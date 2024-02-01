@@ -4,7 +4,7 @@
 
 Shader *Shader::lastshader = NULL;
 
-Shader *nullshader = NULL, *hudshader = NULL, *hudworldshader = NULL, *hudoutlineshader = NULL, *hudtextshader = NULL, *hudtextworldshader = NULL, *hudnotextureshader = NULL, *hudbackgroundshader = NULL, *nocolorshader = NULL, *foggedshader = NULL, *foggednotextureshader = NULL, *ldrshader = NULL, *ldrnotextureshader = NULL, *stdworldshader = NULL;
+Shader *nullshader = NULL, *hudshader = NULL, *hudoutlineshader = NULL, *hudtextshader = NULL, *hudtextworldshader = NULL, *hudnotextureshader = NULL, *hudbackgroundshader = NULL, *nocolorshader = NULL, *foggedshader = NULL, *foggednotextureshader = NULL, *ldrshader = NULL, *ldrnotextureshader = NULL, *stdworldshader = NULL;
 
 static hashnameset<GlobalShaderParamState> globalparams(256);
 static hashtable<const char *, int> localparams(256);
@@ -1023,13 +1023,12 @@ void setupshaders()
 
     nullshader = lookupshaderbyname("null");
     hudshader = lookupshaderbyname("hud");
-    hudworldshader = lookupshaderbyname("hudworld");
     hudoutlineshader = lookupshaderbyname("hudoutline");
     hudtextshader = lookupshaderbyname("hudtext");
     hudtextworldshader = lookupshaderbyname("hudtextworld");
     hudnotextureshader = lookupshaderbyname("hudnotexture");
     hudbackgroundshader = lookupshaderbyname("hudbackground");
-    if(!nullshader || !hudshader || !hudworldshader || !hudoutlineshader || !hudtextshader || !hudtextworldshader || !hudnotextureshader) fatal("Failed to setup shaders");
+    if(!nullshader || !hudshader || !hudoutlineshader || !hudtextshader || !hudtextworldshader || !hudnotextureshader) fatal("Failed to setup shaders");
 
     dummyslot.shader = nullshader;
 }
@@ -1542,7 +1541,7 @@ void cleanupshaders()
     cleanuppostfx(true);
 
     loadedshaders = false;
-    nullshader = hudshader = hudworldshader = hudoutlineshader = hudnotextureshader = NULL;
+    nullshader = hudshader = hudoutlineshader = hudnotextureshader = NULL;
     enumerate(shaders, Shader, s, s.cleanup());
     Shader::lastshader = NULL;
     glUseProgram_(0);
