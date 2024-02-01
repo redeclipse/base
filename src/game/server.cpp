@@ -796,6 +796,26 @@ namespace server
         }
     }
 
+    void setprize(clientinfo *ci, int prize)
+    {
+        if(prize < 0)
+        {
+            int amt = G(prizegrenade) + G(prizemine) + G(prizerocket);
+            if(amt > 0)
+            {
+                int n = amt > 1 ? rnd(amt) : 0;
+                if(n < G(prizegrenade)) prize = 1;
+                else if(n < G(prizegrenade) + G(prizemine)) prize = 2;
+                else prize = 3;
+            }
+            else prize = 1;
+        }
+
+        int oldprize = ci->hasprize;
+        if(ci->hasprize <= 0 || prize > ci->hasprize) ci->hasprize = prize;
+        if(ci->hasprize != oldprize) sendf(-1, 1, "ri4", N_SPHY, ci->clientnum, SPHY_PRIZE, ci->hasprize);
+    }
+
     bool dropitems(clientinfo *ci, int flags = DROP_RESET)
     {
         bool kamikaze = false;
@@ -818,23 +838,11 @@ namespace server
         {
             int weap = -1, ent = -1;
 
-            if(ci->hasprize < 0)
+            switch(ci->hasprize)
             {
-                int amt = G(prizegrenade) + G(prizemine) + G(prizerocket);
-                if(amt > 0)
-                {
-                    int n = amt > 1 ? rnd(amt) : 0;
-                    if(n < G(prizegrenade)) weap = attrmap[W_GRENADE];
-                    else if(n < G(prizegrenade) + G(prizemine)) weap = attrmap[W_MINE];
-                    else weap = attrmap[W_ROCKET];
-                }
-            }
-            else switch(ci->hasprize)
-            {
-                case 1: weap = attrmap[W_GRENADE]; break;
+                case 1: default: weap = attrmap[W_GRENADE]; break;
                 case 2: weap = attrmap[W_MINE]; break;
                 case 3: weap = attrmap[W_ROCKET]; break;
-                default: break;
             }
 
             if(!isweap(weap) || (ent = ci->weapent[weap]) < 0) loopi(6)
@@ -856,11 +864,8 @@ namespace server
                 d.ent = ent;
                 d.ammo = 1; // one prize per customer
                 ci->dropped.add(d.ent, d.ammo);
-                ci->hasprize = d.weap; // after this, refers to prize given
             }
-            else ci->hasprize = 0;
         }
-        else ci->hasprize = 0;
 
         if(!drop.empty())
             sendf(-1, 1, "ri3iv", N_WEAPDROP, ci->clientnum, -1, drop.length(), drop.length()*sizeof(droplist)/sizeof(int), drop.getbuf());
@@ -4843,7 +4848,6 @@ namespace server
                     {
                         style |= FRAG_BREAKER;
                         if(!m_dm_oldschool(gamemode, mutators)) pointvalue += G(spreebreaker);
-                        if(G(spreebreakprize) && m->hasprize <= 0) m->hasprize = G(spreebreakprize);
                         break;
                     }
 
@@ -4856,11 +4860,11 @@ namespace server
                             loopj(2) v->rewards[j] |= type;
                             if(!m_dm_oldschool(gamemode, mutators)) pointvalue += G(spreepoints);
                         }
-                        if(offset == FRAG_SPREES)
-                        {
-                            if(G(spreemaxprize) && m->hasprize <= 0) m->hasprize = G(spreemaxprize);
-                        }
-                        else if(G(spreeprize) && m->hasprize <= 0) m->hasprize = G(spreemaxprize);
+
+                        if(G(spreebreakprize)) setprize(v, G(spreebreakprize));
+
+                        if(offset == FRAG_SPREES) { if(G(spreemaxprize)) setprize(m, G(spreemaxprize)); }
+                        else if(G(spreeprize)) setprize(m, G(spreemaxprize));
                     }
 
                     logs = 0;
@@ -4869,7 +4873,7 @@ namespace server
                     {
                         style |= FRAG_REVENGE;
                         if(!m_dm_oldschool(gamemode, mutators)) pointvalue += G(revengepoints);
-                        if(G(revengeprize) && m->hasprize <= 0) m->hasprize = G(revengeprize);
+                        if(G(revengeprize)) setprize(m, G(revengeprize));
                     }
 
                     logs = 0;
@@ -6914,8 +6918,7 @@ namespace server
                         case SPHY_PRIZE:
                         {
                             if(cp->actortype != A_JANITOR || cp->state != CS_ALIVE) break;
-                            qmsg = true;
-                            cp->hasprize = G(janitorprize);
+                            setprize(cp, G(janitorprize));
                             break;
                         }
                         default:

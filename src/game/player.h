@@ -8,20 +8,20 @@ struct actor
 {
     const char *name;
     int id, collidezones;
-    bool hastags, jetfx, weapfx, weapmdl, steps, onlyfwd, pieces;
+    bool hastags, hashead, jetfx, weapfx, weapmdl, steps, onlyfwd, pieces;
     float height, radius, aboveeye;
     const char *mdl;
 };
 #ifdef CPP_GAME_SERVER
 actor actors[] = {
-    { "player",         A_PLAYER,   CLZ_ALL,    true,   true,   true,   true,   true,   false,  true,   20.4f,      4.25f,  1.f,    NULL },
-    { "bot",            A_BOT,      CLZ_ALL,    true,   true,   true,   true,   true,   false,  true,   20.4f,      4.25f,  1.f,    NULL },
-    { "turret",         A_TURRET,   CLZ_ALL,    true,   true,   true,   true,   true,   false,  true,   20.4f,      4.25f,  1.f,    NULL },
-    { "grunt",          A_GRUNT,    CLZ_NOHEAD, true,   true,   true,   true,   true,   false,  true,   18.5f,      4.25f,  1.f,    NULL },
-    { "drone",          A_DRONE,    CLZ_NOHEAD, true,   true,   true,   true,   true,   false,  true,   18.5f,      4.25f,  1.f,    NULL },
-    { "roller",         A_ROLLER,   CLZ_NONE,   false,  false,  false,  false,  false,  true,   false,  11.475f,    5.75f,  1.f,    "actors/roller" },
-    { "hazard",         A_HAZARD,   CLZ_TORSO,  false,  false,  false,  false,  false,  false,  false,  1.f,        1.f,    1.f,    NULL },
-    { "janitor",        A_JANITOR,  CLZ_TORSO,  true,   true,   true,   false,  false,  false,  false,  3.f,        3.f,    3.f,    "actors/janitor" },
+    { "player",         A_PLAYER,   CLZ_ALL,    true,   true,   true,   true,   true,   true,   false,  true,   20.4f,      4.25f,  1.f,    NULL },
+    { "bot",            A_BOT,      CLZ_ALL,    true,   true,   true,   true,   true,   true,   false,  true,   20.4f,      4.25f,  1.f,    NULL },
+    { "turret",         A_TURRET,   CLZ_ALL,    true,   false,  true,   true,   true,   true,   false,  true,   20.4f,      4.25f,  1.f,    NULL },
+    { "grunt",          A_GRUNT,    CLZ_NOHEAD, true,   false,  true,   true,   true,   true,   false,  true,   18.5f,      4.25f,  1.f,    NULL },
+    { "drone",          A_DRONE,    CLZ_NOHEAD, true,   false,  true,   true,   true,   true,   false,  true,   18.5f,      4.25f,  1.f,    NULL },
+    { "roller",         A_ROLLER,   CLZ_NONE,   false,  false,  false,  false,  false,  false,  true,   false,  11.475f,    5.75f,  1.f,    "actors/roller" },
+    { "hazard",         A_HAZARD,   CLZ_TORSO,  false,  false,  false,  false,  false,  false,  false,  false,  1.f,        1.f,    1.f,    NULL },
+    { "janitor",        A_JANITOR,  CLZ_TORSO,  true,   false,  true,   true,   false,  false,  false,  false,  2.f,        2.f,    2.f,    "actors/janitor" },
 };
 #else
 extern actor actors[];
@@ -188,6 +188,9 @@ APSVAR(IDF_GAMEMOD, 0, vname,
 APVAR(IDF_GAMEMOD, 0, abilities, 0, A_A_ALL,
     A_A_PLAYER,     A_A_MOVINGAI,   A_A_FIXEDAI,    A_A_MOVINGAI,   A_A_LESSAI,     A_A_ROLLER,     A_A_HAZARD,     A_A_JANITOR
 );
+APFVAR(IDF_GAMEMOD, 0, aipitchangle, 0, 89.9f,
+    22.5f,          22.5f,          22.5f,          22.5f,          22.5f,          22.5f,          22.5f,          22.5f
+);
 APFVAR(IDF_GAMEMOD, 0, aipitchscale, FVAR_NONZERO, FVAR_MAX,
     0.5f,           0.5f,           0.5f,           0.5f,           0.5f,           0.5f,           1,              4
 );
@@ -271,13 +274,13 @@ APVAR(IDF_GAMEMOD, 0, weaponspawn, 0, W_ALL-1,
 );
 // these are modified by gameent::configure() et al
 APFVAR(IDF_GAMEMOD, 0, speed, 0, FVAR_MAX,
-    100,            100,            0,              90,             100,            50,             100,            150
+    100,            100,            0,              90,             100,            50,             100,            100
 );
 APFVAR(IDF_GAMEMOD, 0, speedextra, FVAR_MIN, FVAR_MAX,
     0,              0,              0,              0,              0,              0,              0,              0
 );
 APFVAR(IDF_GAMEMOD, 0, speedprize, 0, FVAR_MAX,
-    1,              1,              1,              1,              1,              1,              1,              2
+    1,              1,              1,              1,              1,              1,              1,              1.5f
 );
 APFVAR(IDF_GAMEMOD, 0, jumpspeed, 0, FVAR_MAX,
     140,            140,            0,              140,            140,            70,             100,            100

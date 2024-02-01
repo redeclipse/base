@@ -57,13 +57,13 @@ namespace ai
 
     bool targetable(gameent *d, gameent *e, bool solid)
     {
-        if(d->actortype == A_JANITOR && !d->hasprize) return false; // shrug it off
+        if(d->actortype == A_JANITOR && d->hasprize <= 0) return false; // shrug it off
         if(d && e && d != e && e->state == CS_ALIVE && A(d->actortype, abilities)&A_A_ATTACK && (!solid || physics::issolid(e, d)))
         {
             if(e->actortype >= A_ENVIRONMENT)
             {
                 if(d->actortype >= A_ENEMY) return false; // don't let actors just attack each other
-                if(!e->hasprize) return false; // and don't have bots chase down janitors all the time, etc
+                if(e->hasprize <= 0) return false; // and don't have bots chase down janitors all the time, etc
             }
             if(m_onslaught(game::gamemode, game::mutators) && d->team == T_ENEMY && e->team == T_ENEMY) return false;
             if(!m_team(game::gamemode, game::mutators) || d->team != e->team) return true;
@@ -109,7 +109,7 @@ namespace ai
                 case W_PISTOL: return true; break;
                 case W_ROCKET: default: return false; break;
                 case W_CLAW: case W_SWORD: case W_SHOTGUN: case W_SMG: case W_FLAMER: case W_PLASMA: case W_ZAPPER: case W_GRENADE: case W_MINE:
-                    if(rnd(d->skill*3) <= d->skill) return false;
+                    if(rnd(d->skill*2) <= d->skill) return false;
                     break;
                 case W_RIFLE: case W_CORRODER: if(weaprange(d, d->weapselect, false, e->o.squaredist(d->o))) return false; break;
             }
@@ -441,7 +441,7 @@ namespace ai
 
     bool enemy(gameent *d, aistate &b, const vec &pos, float guard, int pursue, bool force, bool retry = false)
     {
-        if(d->actortype == A_JANITOR && !d->hasprize) return false; // shrug it off
+        if(d->actortype == A_JANITOR && d->hasprize <= 0) return false; // shrug it off
         if(d->ai->enemy >= 0 && lastmillis-d->ai->enemymillis >= (111-d->skill)*50) return false;
         gameent *t = NULL, *e = NULL;
         float mindist = guard*guard, bestdist = 1e16f;
@@ -791,7 +791,7 @@ namespace ai
 
     void damaged(gameent *d, gameent *e, int weap, int flags, int damage)
     {
-        if(d == e || (d->actortype == A_JANITOR && !d->hasprize)) return; // shrug it off
+        if(d == e || (d->actortype == A_JANITOR && d->hasprize <= 0)) return; // shrug it off
         if(d->ai && (d->team == T_ENEMY || (hitdealt(flags) && damage > 0) || d->ai->enemy < 0 || d->dominating.find(e))) // see if this ai is interested in a grudge
         {
             aistate &b = d->ai->getstate();
@@ -1359,7 +1359,7 @@ namespace ai
         if(d->action[AC_JUMP] != jump)
         {
             d->action[AC_JUMP] = jump;
-            d->actiontime[AC_JUMP] = lastmillis;
+            d->actiontime[AC_JUMP] = jump ? lastmillis : -lastmillis;
         }
 
         if(jumper && d->action[AC_JUMP])
@@ -1389,14 +1389,20 @@ namespace ai
         return false;
     }
 
-    void updatemovement(gameent *d)
+    bool updatemovement(gameent *d, bool occupied)
     {
+        bool ret = true;
+
         if(d->ai->dontmove || !(A(d->actortype, abilities)&(1<<A_A_MOVE)) || (A(d->actortype, hurtstop) && lastmillis-d->lastpain <= A(d->actortype, hurtstop)))
+        {
             d->move = d->strafe = 0;
+            ret = false;
+        }
         else if(actors[d->actortype].onlyfwd)
         {
             d->move = 1;
             d->strafe = 0;
+            ret = true;
         }
         else
         { // our guys move one way.. but turn another?! :)
@@ -1411,16 +1417,39 @@ namespace ai
                 {  0,  1,   270 },
                 {  1,  1,   315 }
             };
+
+            if(physics::movepitch(d))
+            {
+                bool wantjump = d->ai->targpitch > A(d->actortype, aipitchangle),
+                     wantcrouch = d->ai->targpitch < -A(d->actortype, aipitchangle);
+
+                if(d->action[AC_JUMP] != wantjump)
+                {
+                    d->action[AC_JUMP] = wantjump;
+                    d->actiontime[AC_JUMP] = wantjump ? lastmillis : -lastmillis;
+                    d->ai->targpitch -= 90;
+                }
+
+                if(d->action[AC_CROUCH] != wantcrouch)
+                {
+                    d->action[AC_CROUCH] = wantcrouch;
+                    d->actiontime[AC_CROUCH] = wantcrouch ? lastmillis : -lastmillis;
+                    d->ai->targpitch += 90;
+                }
+
+                ret = false;
+            }
+
             float yaw = d->ai->targyaw - d->yaw;
             if(yaw < 0.0f) yaw = 360.0f - fmodf(-yaw, 360.0f);
             else if(yaw >= 360.0f) yaw = fmodf(yaw, 360.0f);
 
-            const aimdir &ad = aimdirs[clamp(((int)floor((yaw+22.5f)/45.0f))&7, 0, 7)];
+            const aimdir &ad = aimdirs[clamp(((int)floor((yaw + 22.5f) / 45.0f))&7, 0, 7)];
             d->move = ad.move;
             d->strafe = ad.strafe;
         }
 
-        safefindorientation(d->o, d->yaw, d->pitch, d->ai->target);
+        return ret;
     }
 
     void runhazard(gameent *d, aistate &b)
@@ -1499,6 +1528,7 @@ namespace ai
                 d->pitch = oldpitch;
             }
         }
+
         fixrange(d->yaw, d->pitch);
         safefindorientation(d->o, d->yaw, d->pitch, d->ai->target);
         d->resetinterp();
@@ -1516,7 +1546,7 @@ namespace ai
         float frame = d->skill <= 100 ? ((lastmillis - d->ai->lastrun) * (100.f / gamespeed)) / float(skmod * 20) : 1;
 
         if(d->dominating.length()) frame *= 1 + d->dominating.length(); // berserker mode
-        if(d->hasprize) frame *= A(d->actortype, speedprize); // adjust for increased speed
+        if(d->hasprize > 0) frame *= A(d->actortype, speedprize); // adjust for increased speed
 
         bool dancing = b.type == AI_S_OVERRIDE && b.overridetype == AI_O_DANCE,
             allowrnd = dancing || b.type == AI_S_WAIT || b.type == AI_S_PURSUE || b.type == AI_S_INTEREST;
@@ -1525,29 +1555,34 @@ namespace ai
 
         if(b.acttype == AI_A_IDLE || !(A(d->actortype, abilities)&(1<<A_A_MOVE)))
         {
+            d->ai->lastturn = 0;
             d->ai->dontmove = true;
             setspot(d, getbottom(d));
         }
         else if(hunt(d, b, allowrnd))
         {
+            d->ai->lastturn = 0;
             game::getyawpitch(d->o, d->ai->spot, d->ai->targyaw, d->ai->targpitch);
             if(d->ai->route.length() <= 1 && d->ai->spot.squaredist(getbottom(d)) <= MINWPDIST*MINWPDIST)
                 d->ai->dontmove = true;
         }
-        else
+        else if(!allowrnd)
         {
-            if(!allowrnd) d->ai->dontmove = true;
-            else
+            d->ai->lastturn = 0;
+            d->ai->dontmove = true;
+        }
+        else if(d->blocked || (!d->ai->lastturn || lastmillis - d->ai->lastturn >= 10000))
+        {
+            int n = closestwaypoint(d->o, SIGHTMAX, true);
+            if(iswaypoint(n))
             {
-                if(d->blocked || (!d->ai->lastturn || lastmillis - d->ai->lastturn >= 10000))
-                {
-                    d->ai->targyaw += 90 + rnd(180);
-                    d->ai->targpitch = physics::movepitch(d) ? rnd(51) - 25 : 0;
-                    d->ai->lastturn = lastmillis;
-                    fixrange(d->ai->targyaw, d->ai->targpitch);
-                }
-                setspot(d, vec(d->ai->targyaw * RAD, d->ai->targpitch * RAD).mul(CLOSEDIST).add(getbottom(d)));
+                if(!d->blocked && d->ai->lastturn) game::suicide(d, HIT_LOST);
+                else setspot(d, waypoints[n].o);
             }
+            else setspot(d, vec((d->ai->targyaw + 90 + rnd(180)) * RAD, (physics::movepitch(d) ? rnd(51) - 25 : 0) * RAD).mul(CLOSEDIST).add(getbottom(d)));
+
+            d->ai->lastturn = lastmillis;
+            game::getyawpitch(d->o, d->ai->spot, d->ai->targyaw, d->ai->targpitch);
         }
 
         if(dancing)
@@ -1564,8 +1599,9 @@ namespace ai
         {
             gameent *e = game::getclient(d->ai->enemy);
             bool shootable = false;
+
             if(!wantitem)
-            {
+            {   // allow a random intersection to cause us to get aggressive
                 shootable = e && targetable(d, e, true);
                 if(!shootable || d->skill >= 50 || d->ai->dontmove)
                 {
@@ -1667,9 +1703,19 @@ namespace ai
 
         if(!firing) d->action[AC_PRIMARY] = d->action[AC_SECONDARY] = false;
 
-        fixrange(d->ai->targyaw, d->ai->targpitch);
+        if(updatemovement(d, occupied))
+        {
+            if(d->canimpulse(IM_T_JUMP)) jumpto(d, b, d->ai->spot);
 
-        if(dancing || !occupied || d->actortype >= A_ENVIRONMENT)
+            bool crouch = d->actortype == A_TURRET || (d->ai->dontmove && (b.type != AI_S_OVERRIDE || b.overridetype == AI_O_CROUCH));
+            if(d->action[AC_CROUCH] != crouch)
+            {
+                d->action[AC_CROUCH] = crouch;
+                d->actiontime[AC_CROUCH] = crouch ? lastmillis : -lastmillis;
+            }
+        }
+
+        if(dancing || !occupied || d->actortype == A_HAZARD)
         {
             if(dancing || actors[d->actortype].onlyfwd) frame *= 2;
             else if(!m_insta(game::gamemode, game::mutators))
@@ -1682,17 +1728,9 @@ namespace ai
 
             game::scaleyawpitch(d->yaw, d->pitch, d->ai->targyaw, d->ai->targpitch, frame * A(d->actortype, aiyawscale), frame * A(d->actortype, aipitchscale));
         }
+        else fixrange(d->yaw, d->pitch);
 
-        if(d->canimpulse(IM_T_JUMP)) jumpto(d, b, d->ai->spot);
-
-        bool crouch = d->actortype == A_TURRET || (d->ai->dontmove && (b.type != AI_S_OVERRIDE || b.overridetype == AI_O_CROUCH));
-        if(d->action[AC_CROUCH] != crouch)
-        {
-            d->action[AC_CROUCH] = crouch;
-            d->actiontime[AC_CROUCH] = crouch ? lastmillis : -lastmillis;
-        }
-
-        updatemovement(d);
+        safefindorientation(d->o, d->yaw, d->pitch, d->ai->target);
     }
 
     bool hasrange(gameent *d, gameent *e, int weap)

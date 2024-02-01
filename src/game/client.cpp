@@ -789,7 +789,7 @@ namespace client
         if(m_duke(game::gamemode, game::mutators) && (!d->lastdeath || lastmillis-d->lastdeath >= 1000)) return false;
         dir = vec(d->center()).sub(o);
         dist = dir.magnitude();
-        return d->hasprize || !hud::radarlimited(dist);
+        return d->hasprize > 0 || !hud::radarlimited(dist);
     }
 
     int getresidualfx(gameent *d, int n, int c)
@@ -2315,8 +2315,8 @@ namespace client
                         }
                         case SPHY_PRIZE:
                         {
-                            if(!proceed) break;
-                            t->collectprize();
+                            int param = getint(p);
+                            t->collectprize(param);
                         }
                         default: break;
                     }

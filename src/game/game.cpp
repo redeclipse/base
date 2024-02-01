@@ -16,10 +16,14 @@ namespace game
     vector<gameent *> players, waiting;
     vector<cament *> cameras;
 
+    VAR(IDF_PERSIST, playersoundpos, 0, 2, 2);
+
     vec *getplayersoundpos(physent *d)
     {
-        return d == focus && !thirdpersonview(true) ?
-            &camera1->o : &d->o;
+        static vec nullvec = vec(0);
+        if(d && gameent::is(d) && d == focus && playersoundpos >= (thirdpersonview(true) ? 2 : 1))
+            return &camera1->o;
+        return d ? &d->o : &nullvec;
     }
 
     VAR(0, showweapfx, 0, 1, 1);
@@ -376,16 +380,6 @@ namespace game
     VAR(IDF_PERSIST, bloodsize, 1, 50, 1000);
     VAR(IDF_PERSIST, bloodsparks, 0, 0, 1);
     VAR(IDF_PERSIST, ragdolleffect, 2, 500, VAR_MAX);
-
-    VAR(IDF_PERSIST, giblimit, 0, 50, VAR_MAX); // max in one burst
-    VAR(IDF_PERSIST, gibpieces, 1, 25, VAR_MAX); // max pieces
-    VAR(IDF_PERSIST, gibfade, 1, 60000, VAR_MAX); // rnd(this) + this
-    VAR(IDF_PERSIST, gibchancevanity, 0, 99, 100); // percentage chance
-    VAR(IDF_PERSIST, gibchancepieces, 0, 90, 100); // percentage chance
-    VAR(IDF_PERSIST, gibchancecollects, 0, 90, 100); // percentage chance
-    FVAR(IDF_PERSIST, gibdamage, 0, 0.1f, 1); // gibs = (damage / (hp * this))
-    FVAR(IDF_PERSIST, gibheadless, 0, 0.05f, 1);
-    FVAR(IDF_PERSIST, gibobliterated, 0, 0.025f, 1);
     VAR(IDF_PERSIST, gibplayerparts, 0, 0, 1); // can gib into parts
 
     VAR(IDF_PERSIST, playermixer, VAR_MIN, -256, 1<<12); // 0 = off, positive is scale, negative is abs size
@@ -629,7 +623,7 @@ namespace game
                     {
                         if(strcmp(vanities[k].ref, vanitylist[i])) continue;
                         d->vitems.add(k);
-                        if(vanities[k].type || head >= 0) continue;
+                        if(!actors[d->actortype].hashead || vanities[k].type || head >= 0) continue;
                         head = k;
                     }
                 }
@@ -645,7 +639,7 @@ namespace game
                 break;
             }
         }
-        if(!vanities.inrange(head)) loopv(vanities)
+        if(actors[d->actortype].hashead && !vanities.inrange(head)) loopv(vanities)
         {
             if(vanities[i].type) continue;
             d->vitems.add(i);
@@ -1264,8 +1258,7 @@ namespace game
                 adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d, PULSE_SHOCK, -1).mul(pc), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
             }
 
-            if(d->hasprize) adddynlight(d->center(), d->height * 10, pulsecolour(d, PULSE_READY), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
-            else if(game::focus->dominated.find(d) >= 0)  adddynlight(d->center(), d->height * 10, pulsecolour(d, PULSE_DOMINATE), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
+            if(d->hasprize > 0) adddynlight(d->center(), d->height * 10, pulsecolour(d, PULSE_READY), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
         }
     }
 
@@ -1395,66 +1388,69 @@ namespace game
 
         if(d->isalive())
         {
-            bool sliding = d->sliding(true), crouching = sliding || (d->action[AC_CROUCH] && A(d->actortype, abilities)&(1<<A_A_CROUCH)),
-                 moving = d->move || d->strafe || (d->physstate < PHYS_SLOPE && !physics::laddercheck(d)), ishi = moving && !sliding;
-            float zradlo = d->zradius*CROUCHLOW, zradhi = d->zradius*CROUCHHIGH, zrad = ishi ? zradhi : zradlo;
-            vec old = d->o;
-            if(A(d->actortype, abilities)&(1<<A_A_CROUCH) && (!crouching || ishi))
+            if(!physics::movepitch(d))
             {
-                short wantcrouch[2] = { 0, 0 };
-                loopj(2)
+                bool sliding = d->sliding(true), crouching = sliding || (d->action[AC_CROUCH] && A(d->actortype, abilities)&(1<<A_A_CROUCH)),
+                    moving = d->move || d->strafe || (d->physstate < PHYS_SLOPE && !physics::laddercheck(d)), ishi = moving && !sliding;
+                float zradlo = d->zradius*CROUCHLOW, zradhi = d->zradius*CROUCHHIGH, zrad = ishi ? zradhi : zradlo;
+                vec old = d->o;
+                if(A(d->actortype, abilities)&(1<<A_A_CROUCH) && (!crouching || ishi))
                 {
-                    if(j)
+                    short wantcrouch[2] = { 0, 0 };
+                    loopj(2)
                     {
-                        vec dir;
-                        vecfromyawpitch(d->yaw, 0.f, d->move, d->strafe, dir);
-                        d->o.add(dir);
-                    }
-                    d->o.z += d->zradius;
-                    d->height = d->zradius;
-                    if(collide(d, vec(0, 0, 1), 0, false) || collideinside) loopk(2)
-                    {
-                        zrad = k ? zradlo : zradhi;
-                        float zoff = d->zradius - zrad;
-                        d->o.z -= zoff;
-                        d->height = zrad;
-                        if(!collide(d, vec(0, 0, 1), 0, false) && !collideinside)
+                        if(j)
                         {
-                            wantcrouch[j] = k + 1;
-                            break;
+                            vec dir;
+                            vecfromyawpitch(d->yaw, 0.f, d->move, d->strafe, dir);
+                            d->o.add(dir);
                         }
-                        d->o.z += zoff;
+                        d->o.z += d->zradius;
+                        d->height = d->zradius;
+                        if(collide(d, vec(0, 0, 1), 0, false) || collideinside) loopk(2)
+                        {
+                            zrad = k ? zradlo : zradhi;
+                            float zoff = d->zradius - zrad;
+                            d->o.z -= zoff;
+                            d->height = zrad;
+                            if(!collide(d, vec(0, 0, 1), 0, false) && !collideinside)
+                            {
+                                wantcrouch[j] = k + 1;
+                                break;
+                            }
+                            d->o.z += zoff;
+                        }
+                        d->o = old;
+                        d->height = offset;
                     }
-                    d->o = old;
-                    d->height = offset;
+                    loopj(2) if(wantcrouch[j])
+                    {
+                        if(ishi && wantcrouch[j] == 2) ishi = false;
+                        crouching = true;
+                    }
+                    zrad = ishi ? zradhi : zradlo;
                 }
-                loopj(2) if(wantcrouch[j])
+                if(crouching || d->crouching(true))
                 {
-                    if(ishi && wantcrouch[j] == 2) ishi = false;
-                    crouching = true;
-                }
-                zrad = ishi ? zradhi : zradlo;
-            }
-            if(crouching || d->crouching(true))
-            {
-                float zamt = (d->zradius - zrad)*curtime/float(PHYSMILLIS);
-                if(crouching)
-                {
-                    if(d->actiontime[AC_CROUCH] <= 0) d->actiontime[AC_CROUCH] = lastmillis;
-                    if(d->height > zrad && ((d->height -= zamt) < zrad)) d->height = zrad;
-                    else if(d->height < zrad && ((d->height += zamt) > zrad)) d->height = zrad;
+                    float zamt = (d->zradius - zrad)*curtime/float(PHYSMILLIS);
+                    if(crouching)
+                    {
+                        if(d->actiontime[AC_CROUCH] <= 0) d->actiontime[AC_CROUCH] = lastmillis;
+                        if(d->height > zrad && ((d->height -= zamt) < zrad)) d->height = zrad;
+                        else if(d->height < zrad && ((d->height += zamt) > zrad)) d->height = zrad;
+                    }
+                    else
+                    {
+                        if(d->actiontime[AC_CROUCH] >= 0) d->actiontime[AC_CROUCH] = -lastmillis;
+                        if(d->height < d->zradius && ((d->height += zamt) > d->zradius)) d->height = d->zradius;
+                        else if(d->height > d->zradius && ((d->height -= zamt) < d->zradius)) d->height = d->zradius;
+                    }
                 }
                 else
                 {
-                    if(d->actiontime[AC_CROUCH] >= 0) d->actiontime[AC_CROUCH] = -lastmillis;
-                    if(d->height < d->zradius && ((d->height += zamt) > d->zradius)) d->height = d->zradius;
-                    else if(d->height > d->zradius && ((d->height -= zamt) < d->zradius)) d->height = d->zradius;
+                    d->height = d->zradius;
+                    d->actiontime[AC_CROUCH] = 0;
                 }
-            }
-            else
-            {
-                d->height = d->zradius;
-                d->actiontime[AC_CROUCH] = 0;
             }
 
             if(physics::movepitch(d) || d->hasparkour() || d->impulsetime[IM_T_JUMP] || d->sliding(true)) impulseeffect(d, 1);
@@ -1631,7 +1627,7 @@ namespace game
             }
         }
 
-        if((d->hasprize || game::focus->dominated.find(d) >= 0) && d->isalive())
+        if(d->hasprize > 0 && d->isalive())
         {
             if(!issound(d->plchan[PLCHAN_ALERT]))
                 emitsound(S_PRIZELOOP, getplayersoundpos(d), d, &d->plchan[PLCHAN_ALERT], SND_LOOP|SND_PRIORITY);
@@ -2061,10 +2057,10 @@ namespace game
                 found[vanities[n].type]++;
 
                 if(!(vanities[n].cond&(d->obliterated ? 4 : 2))) continue;
-                if(vanities[n].type && (!check || rnd(101) > gibchancevanity))
+                if(vanities[n].type ? !check || rnd(101) > gibchancevanity : !actors[d->actortype].hashead)
                 {
                     missed++;
-                    continue; // don't spawn crap at a distance
+                    continue;
                 }
 
                 vec pos = d->center();
@@ -2355,6 +2351,7 @@ namespace game
             log->addlist("args", "flags", GAMELOG_F_CLIENT1|GAMELOG_F_CLIENT2);
             log->addlist("args", "weapon", weap);
             log->addlist("args", "actflags", flags);
+            if(d->hasprize > 0) log->addlist("args", "prize", d->hasprize);
             log->addlist("args", "damage", damage);
             log->addlist("args", "style", style);
             log->addlist("args", "material", material);
@@ -2653,8 +2650,7 @@ namespace game
 
     int findcolour(gameent *d, int comb, bool tone, float level, float mix)
     {
-        if(d->hasprize && d->isalive()) return pulsehexcol(tone ? PULSE_PRIZE : PULSE_READY);
-        if(game::focus->dominated.find(d) >= 0) return pulsehexcol(tone ? PULSE_WARN : PULSE_DOMINATE);
+        if(d->hasprize > 0 && d->isalive() && (tone || d->actortype == A_JANITOR)) return pulsehexcol(tone ? PULSE_PRIZE : PULSE_READY);
 
         int col = d->colours[comb ? 1 : 0];
         switch(comb)
@@ -2939,17 +2935,22 @@ namespace game
     void getyawpitch(const vec &from, const vec &pos, float &yaw, float &pitch)
     {
         float dist = from.dist(pos);
-        yaw = -atan2(pos.x-from.x, pos.y-from.y)/RAD;
-        pitch = dist > 0 ? asin((pos.z-from.z)/dist)/RAD : 0;
+        yaw = -atan2(pos.x - from.x, pos.y - from.y) / RAD;
+        pitch = dist > 0 ? asin((pos.z - from.z)/dist) / RAD : 0;
         fixrange(yaw, pitch);
     }
 
     void scaleyawpitch(float &yaw, float &pitch, float targyaw, float targpitch, float yawspeed, float pitchspeed, float rotate)
     {
-        if(yaw < targyaw-180.0f) yaw += 360.0f;
-        if(yaw > targyaw+180.0f) yaw -= 360.0f;
-        float offyaw = (rotate < 0 ? fabs(rotate) : (rotate > 0 ? min(float(fabs(targyaw-yaw)), rotate) : fabs(targyaw-yaw)))*yawspeed,
-              offpitch = (rotate < 0 ? fabs(rotate) : (rotate > 0 ? min(float(fabs(targpitch-pitch)), rotate) : fabs(targpitch-pitch)))*pitchspeed;
+        fixrange(yaw, pitch);
+        fixrange(targyaw, targpitch);
+
+        if(yaw < targyaw - 180.0f) yaw += 360.0f;
+        if(yaw > targyaw + 180.0f) yaw -= 360.0f;
+
+        float offyaw = (rotate < 0 ? fabs(rotate) : (rotate > 0 ? min(float(fabs(targyaw - yaw)), rotate) : fabs(targyaw - yaw))) * max(yawspeed, 1e-6f),
+              offpitch = (rotate < 0 ? fabs(rotate) : (rotate > 0 ? min(float(fabs(targpitch - pitch)), rotate) : fabs(targpitch - pitch))) * max(pitchspeed, 1e-6f);
+
         if(targyaw > yaw)
         {
             yaw += offyaw;
@@ -2970,6 +2971,7 @@ namespace game
             pitch -= offpitch;
             if(targpitch > pitch) pitch = targpitch;
         }
+
         fixrange(yaw, pitch);
     }
 
@@ -4193,7 +4195,7 @@ namespace game
                 bool check = vanitycheck(d);
                 loopvk(d->vitems) if(vanities.inrange(d->vitems[k]))
                 {
-                    if(vanities[d->vitems[k]].type && !check) continue;
+                    if(vanities[d->vitems[k]].type ? !check : !actors[d->actortype].hashead) continue;
                     if(found[vanities[d->vitems[k]].type]) continue;
                     if(vanities[d->vitems[k]].cond&1 && third == 2) continue;
                     if(vanities[d->vitems[k]].cond&2 && d->headless) continue;
@@ -4384,7 +4386,7 @@ namespace game
 
     bool haloallow(const vec &o, gameent *d, bool justtest, bool check)
     {
-        if(d->hasprize && d->isalive()) return true;
+        if(d->hasprize > 0 && d->isalive()) return true;
         if(d->actortype >= A_ENVIRONMENT) return false;
         if(!wanthalos(check, (d == focus ? playerhalos&1 : playerhalos&2) != 0) || (d == focus && inzoom())) return false;
         if(justtest) return true;
@@ -4434,7 +4436,7 @@ namespace game
         {
             if(haloallow(camera1->o, d))
             {
-                if(d->hasprize || focus->isobserver() || (m_team(gamemode, mutators) && focus->team == d->team))
+                if(d->hasprize > 0 || focus->isobserver() || (m_team(gamemode, mutators) && focus->team == d->team))
                     mdl.flags |= MDL_HALO_TOP;
             }
             else
@@ -4461,8 +4463,11 @@ namespace game
             if(d->burntime - millis < delay) pc *= (d->burntime - millis) / float(delay);
             else pc *= 0.75f + ((millis % delay)/float(delay * 4));
 
-            vec pos = vec(d->center()).add(vec(rnd(11) - 5, rnd(11) - 5, rnd(11) - 3).mul(pc));
-            regular_part_create(PART_FIREBALL_SOFT, 250, pos, pulsehexcol(d, PULSE_BURN), d->height * intensity * blend * pc, fade * blend * pc, 0, 0, -50);
+            loopi(2)
+            {
+                vec pos = vec(d->center()).add(vec(rnd(11) - 5, rnd(11) - 5, rnd(11) - 3).mul(pc));
+                regular_part_create(PART_FIREBALL_SOFT, 250, pos, pulsehexcol(d, PULSE_BURN, i ? -1 : 50), d->height * intensity * blend * pc, fade * blend * pc, 0, 0, -25);
+            }
         }
 
         if(d->shocktime && d->shockfunc(lastmillis, d->shocktime))
@@ -4480,7 +4485,7 @@ namespace game
                 int count = 6 + rnd(6), colour = (int(col.x * 255) << 16)|(int(col.y * 255) << 8)|(int(col.z * 255));
                 loopj(count)
                 {
-                    float q = 1.f - (j / float(count)), qc = clamp(q + 0.1f, 0.1f, 1.0f);
+                    float q = 1.f - (j / float(count)), qc = clamp(q + 0.01f, 0.01f, 1.0f);
                     dir.add(vec(rnd(101) - 50, rnd(101) - 50, rnd(101) - 50).div(100.f).normalize()).mul(0.5f).normalize();
                     to = vec(from).add(vec(dir).mul(rad).mul((rnd(101) + 1) / 50.f * q * 0.5f));
                     part_flare(from, to, 1, PART_LIGHTNING_FLARE, colour, q * 0.75f, fade * qc * 0.75f);
@@ -4490,7 +4495,7 @@ namespace game
                     int r = j ? rnd(j * 4) + 1 : 0;
                     loopk(r)
                     {
-                        float qr = qc * qc * (1.f - (k / float(r))), qq = clamp(qr + 0.01f, 0.01f, qc);
+                        float qr = qc * qc * (1.f - (k / float(r))), qq = clamp(qr + 0.001f, 0.001f, qc);
                         vec rdir = vec(dir).add(vec(rnd(101) - 50, rnd(101) - 50, rnd(101) - 50).div(100.f).normalize()).mul(0.5f).normalize();
                         to = vec(from).add(vec(rdir).mul(rad).mul((rnd(101) + 1) / 50.f * qr * 0.5f));
                         part_flare(from, to, 1, PART_LIGHTNING_FLARE, colour, qr * 0.6f, fade * qq * 0.75f);
@@ -4503,13 +4508,16 @@ namespace game
         if(d->corrodetime && d->corrodefunc(lastmillis, d->corrodetime))
         {
             int millis = lastmillis - d->lastres[W_R_CORRODE], delay = max(d->corrodedelay, 1);
-            float pc = 1, intensity = 0.5f + (rnd(51) / 100.f), fade = (d != focus || d->state != CS_ALIVE ? 0.1f : 0.05f) + (rnd(5) / 100.f);
+            float pc = 1, intensity = 0.0125f + (rnd(5) / 100.f), fade = (d != focus || d->state != CS_ALIVE ? 0.05f : 0.025f) + (rnd(5) / 100.f);
 
             if(d->corrodetime - millis < delay) pc *= (d->corrodetime - millis) / float(delay);
             else pc *= 0.75f + ((millis % delay)/float(delay * 4));
 
-            vec pos = vec(d->center()).add(vec(rnd(21) - 10, rnd(21) - 10, rnd(11) - 3).mul(pc));
-            regular_part_create(PART_HINT_SOFT, 250, pos, pulsehexcol(d, PULSE_CORRODE), d->height * intensity * blend * pc * 0.25f, fade * blend * pc, 0, 0, -60);
+            loopi(2)
+            {
+                vec pos = vec(d->center()).add(vec(rnd(21) - 10, rnd(21) - 10, rnd(11) - 3).mul(pc));
+                regular_part_create(PART_HINT_SOFT, 250, pos, pulsehexcol(d, PULSE_CORRODE, i ? -1 : 50), d->height * intensity * blend * pc, fade * blend * pc, 0, 0, -65);
+            }
         }
     }
 

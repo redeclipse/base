@@ -839,14 +839,14 @@ namespace physics
 
     bool impulseplayer(gameent *d, bool onfloor, const vec &inertia, bool melee = false, bool slide = false)
     {
-        bool launch = !melee && !slide && onfloor && d->action[AC_JUMP] && impulsemethod&1 && d->sliding(true),
+        bool launch = !melee && !slide && onfloor && d->action[AC_JUMP] && !physics::movepitch(d) && impulsemethod&1 && d->sliding(true),
              mchk = !melee || onfloor, action = mchk && (d->actortype >= A_BOT || melee || impulseaction&2),
              dash = d->action[AC_DASH] && onfloor, sliding = slide || (dash && d->move == 1 && d->crouching());
         int move = action ? d->move : 0, strafe = action ? d->strafe : 0;
-        bool moving = mchk && (move || strafe), pound = !melee && !launch && !sliding && !onfloor && (impulsepoundstyle || !moving) && d->action[AC_CROUCH];
+        bool moving = mchk && (move || strafe), pound = !melee && !launch && !sliding && !onfloor && (impulsepoundstyle || !moving) && d->action[AC_CROUCH] && !physics::movepitch(d);
         if(d->actortype < A_BOT && !launch && !melee && !sliding && !impulseaction && !d->action[AC_DASH]) return false;
 
-        bool pulse = melee ? !onfloor : d->action[AC_DASH] || (!launch && !onfloor && (d->actortype >= A_BOT || impulseaction&1) && d->action[AC_JUMP]);
+        bool pulse = melee ? !onfloor : d->action[AC_DASH] || (!launch && !onfloor && (d->actortype >= A_BOT || impulseaction&1) && d->action[AC_JUMP] && !physics::movepitch(d));
         int type = melee ? IM_T_MELEE : (sliding ? IM_T_SLIDE : (launch ? IM_T_LAUNCH : (pound ? IM_T_POUND : (dash ? IM_T_DASH : IM_T_BOOST))));
         if((!launch && !melee && !sliding && !pulse) || !d->canimpulse(type)) return false;
 
@@ -870,8 +870,8 @@ namespace physics
                 if(dir.z < 0) force += -dir.z*force;
             }
         }
-        d
-        ->vel = vec(dir).mul(force).add(keepvel);
+
+        d->vel = vec(dir).mul(force).add(keepvel);
         if(launch) d->vel.z += jumpvel(d);
         d->doimpulse(type, lastmillis, cost);
         d->action[AC_JUMP] = d->action[AC_DASH] = false;
@@ -925,7 +925,7 @@ namespace physics
         else
         {
             bool floortolerance = onfloor || d->airtime(lastmillis) < A(d->actortype, jumptolerance);
-            if(!impulseplayer(d, floortolerance, vec(d->vel).add(d->falling)) && floortolerance && d->action[AC_JUMP] && d->canimpulse(IM_T_JUMP))
+            if(!impulseplayer(d, floortolerance, vec(d->vel).add(d->falling)) && floortolerance && d->action[AC_JUMP] && d->canimpulse(IM_T_JUMP) && !physics::movepitch(d))
             {
                 float force = jumpvel(d);
                 if(force > 0)
@@ -1138,29 +1138,36 @@ namespace physics
         vec m(0, 0, 0);
         bool wantsmove = game::allowmove(d) && (d->move || d->strafe), floating = isfloating(d), inliquid = liquidcheck(d),
              onfloor = !floating && (sticktospecial(d, false) || d->physstate != PHYS_FALL), slide = false, dopitch = movepitch(d);
+
         if(wantsmove) vecfromyawpitch(d->yaw, dopitch ? d->pitch : 0, d->move, d->strafe, m);
 
-        if(!floating && gameent::is(d))
+        if(gameent::is(d))
         {
             gameent *e = (gameent *)d;
-            if(local && game::allowmove(e)) modifyinput(e, m, wantsmove);
+            if(dopitch && (e->action[AC_JUMP] || e->action[AC_CROUCH]))
+                vecfromyawpitch(d->yaw, clamp(d->pitch + (e->action[AC_JUMP] ? 90.0f : -90.0f), -89.9f, 89.9f), 1, d->strafe, m);
 
-            if(wantsmove && !e->hasparkour())
+            if(!floating)
             {
-                if(laddercheck(d))
-                {
-                    m.z = m.iszero() ? 1 : m.z + 1;
-                    m.normalize();
-                }
-                else if(!sticktospecial(e) && e->physstate >= PHYS_SLOPE)
-                { // move up or down slopes in air but only move up slopes in liquid
-                    float dz = -(m.x*e->floor.x + m.y*e->floor.y)/e->floor.z;
-                    m.z = inliquid ? max(m.z, dz) : dz;
-                    if(!m.iszero()) m.normalize();
-                }
-            }
+                if(local && game::allowmove(e)) modifyinput(e, m, wantsmove);
 
-            slide = e->sliding();
+                if(wantsmove && !e->hasparkour())
+                {
+                    if(laddercheck(d))
+                    {
+                        m.z = m.iszero() ? 1 : m.z + 1;
+                        m.normalize();
+                    }
+                    else if(!sticktospecial(e) && e->physstate >= PHYS_SLOPE)
+                    { // move up or down slopes in air but only move up slopes in liquid
+                        float dz = -(m.x*e->floor.x + m.y*e->floor.y)/e->floor.z;
+                        m.z = inliquid ? max(m.z, dz) : dz;
+                        if(!m.iszero()) m.normalize();
+                    }
+                }
+
+                slide = e->sliding();
+            }
         }
 
         if(floating && d->physstate != PHYS_FLOAT)
@@ -1332,7 +1339,7 @@ namespace physics
                 gameent *e = (gameent *)d;
                 if(!e->airmillis && !sticktospecial(e))
                 {
-                    if(local && impulsemethod&2 && timeinair >= impulseslideinair && (e->move == 1 || e->strafe) && e->action[AC_CROUCH] && e->canimpulse(IM_T_SLIDE))
+                    if(local && impulsemethod&2 && timeinair >= impulseslideinair && (e->move == 1 || e->strafe) && e->action[AC_CROUCH] && e->canimpulse(IM_T_SLIDE) && !physics::movepitch(d))
                         impulseplayer(e, true, prevel, false, true);
                     if(timeinair >= PHYSMILLIS)
                     {

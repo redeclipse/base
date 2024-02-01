@@ -18,33 +18,8 @@ namespace projs
 
     VAR(IDF_PERSIST, maxprojectiles, 1, 512, VAR_MAX);
 
-    VAR(IDF_PERSIST, ejectfade, 0, 2500, VAR_MAX);
     VAR(IDF_PERSIST, ejectspin, 0, 1, 1);
     VAR(IDF_PERSIST, ejecthint, 0, 0, 1);
-
-    FVAR(IDF_PERSIST, gibselasticity, -10000, 0.35f, 10000);
-    FVAR(IDF_PERSIST, gibsrelativity, -10000, 0.95f, 10000);
-    FVAR(IDF_PERSIST, gibsliquidcoast, 0, 2, 10000);
-    FVAR(IDF_PERSIST, gibsweight, -10000, 150, 10000);
-    FVAR(IDF_PERSIST, gibsbuoyancymax, -10000, 200, 10000);
-    FVAR(IDF_PERSIST, gibsbuoyancymin, -10000, 0, 10000);
-
-    FVAR(IDF_PERSIST, vanityelasticity, -10000, 0.5f, 10000);
-    FVAR(IDF_PERSIST, vanityrelativity, -10000, 0.95f, 10000);
-    FVAR(IDF_PERSIST, vanityliquidcoast, 0, 2, 10000);
-    FVAR(IDF_PERSIST, vanityweight, -10000, 100, 10000);
-    FVAR(IDF_PERSIST, vanitybuoyancy, -10000, 50, 10000);
-
-    FVAR(IDF_PERSIST, debriselasticity, -10000, 0.6f, 10000);
-    FVAR(IDF_PERSIST, debrisliquidcoast, 0, 1.7f, 10000);
-    FVAR(IDF_PERSIST, debrisweight, -10000, 165, 10000);
-    FVAR(IDF_PERSIST, debrisbuoyancy, -10000, 0, 10000);
-
-    FVAR(IDF_PERSIST, ejectelasticity, -10000, 0.35f, 10000);
-    FVAR(IDF_PERSIST, ejectrelativity, -10000, 1, 10000);
-    FVAR(IDF_PERSIST, ejectliquidcoast, 0, 1.75f, 10000);
-    FVAR(IDF_PERSIST, ejectweight, -10000, 180, 10000);
-    FVAR(IDF_PERSIST, ejectbuoyancy, -10000, 0, 10000);
 
     VAR(IDF_PERSIST, projburntime, 0, 5500, VAR_MAX);
     VAR(IDF_PERSIST, projburndelay, 0, 1000, VAR_MAX);
@@ -1027,16 +1002,16 @@ namespace projs
                         proj.vel.add(vec(rnd(101)-50, rnd(101)-50, rnd(101)-50).mul((proj.speed / 100.f) * (proj.owner && proj.owner->obliterated ? 8 : 1)));
                     }
 
-                    float buoy = gibsbuoyancymax;
-                    if(gibsbuoyancymax != gibsbuoyancymin)
+                    float buoy = gibbuoyancymax;
+                    if(gibbuoyancymax != gibbuoyancymin)
                     {
-                        float bmin = min(gibsbuoyancymax, gibsbuoyancymin), boff = max(gibsbuoyancymax, gibsbuoyancymin)-bmin;
+                        float bmin = min(gibbuoyancymax, gibbuoyancymin), boff = max(gibbuoyancymax, gibbuoyancymin)-bmin;
                         buoy = bmin+(rnd(1000)*boff/1000.f);
                     }
-                    proj.elasticity = gibselasticity;
-                    proj.relativity = gibsrelativity;
-                    proj.liquidcoast = gibsliquidcoast;
-                    proj.weight = gibsweight*proj.lifesize;
+                    proj.elasticity = gibelasticity;
+                    proj.relativity = gibrelativity;
+                    proj.liquidcoast = gibliquidcoast;
+                    proj.weight = gibweight*proj.lifesize;
                     proj.buoyancy = buoy*proj.lifesize;
                     proj.projcollide = BOUNCE_GEOM|BOUNCE_PLAYER;
                     proj.escaped = !proj.owner || proj.owner->state != CS_ALIVE;
@@ -1409,9 +1384,9 @@ namespace projs
                 if(weap == W_ZAPPER && !(WS(flags)))
                     emitsound(WSND2(weap, WS(flags), S_W_TRANSIT), sndpos, d, &d->wschan[WS_OTHER_CHAN], 0, skew);
 
-                if((weap == W_FLAMER || weap == W_ZAPPER) && !(WS(flags)))
+                if((weap == W_FLAMER || weap == W_ZAPPER || weap == W_CORRODER) && !(WS(flags)))
                 {
-                    int ends = lastmillis+delayattack+PHYSMILLIS;
+                    int ends = lastmillis + delayattack + PHYSMILLIS;
                     if(issound(d->wschan[WS_MAIN_CHAN]) && soundsources[d->wschan[WS_MAIN_CHAN]].slotnum == getsoundslot(slot))
                         soundsources[d->wschan[WS_MAIN_CHAN]].ends = ends;
                     else emitsound(slot, sndpos, d, &d->wschan[WS_MAIN_CHAN], SND_LOOP, skew, 1, -1, -1, -1, ends);
@@ -2206,8 +2181,11 @@ namespace projs
 
                 if(!proj.beenused && dist <= f->radius + proj.radius + 1)
                 {
-                    if(e->collected(proj.projtype, proj.lifesize, proj.mdlname))
+                    if(e->collected(proj.projtype, proj.lifesize, proj.mdlname) && !e->hasprize)
+                    {
                         client::addmsg(N_SPHY, "ri2", e->clientnum, SPHY_PRIZE);
+                        e->hasprize = -1;
+                    }
                     proj.beenused = 1;
                     proj.lifetime = min(proj.lifetime, proj.fadetime);
                 }

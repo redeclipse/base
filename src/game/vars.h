@@ -297,26 +297,6 @@ GVAR(IDF_GAMEMOD, 0, noweapshock, 0, 1, 1);
 GVAR(IDF_GAMEMOD, 0, noweapcorrode, 0, 1, 1);
 
 GVAR(IDF_GAMEMOD, 0, kamikaze, 0, 1, 3); // 0 = never, 1 = holding grenade, 2 = have grenade, 3 = always
-GVAR(IDF_GAMEMOD, 0, itemspawntime, 1, 10000, VAR_MAX); // when items respawn
-GVAR(IDF_GAMEMOD, 0, itemspawndelay, 0, 1000, VAR_MAX); // after map start items first spawn
-GVAR(IDF_GAMEMOD, 0, itemspawnstyle, 0, 0, 3); // 0 = all at once, 1 = staggered, 2 = random, 3 = randomise between both
-GVAR(IDF_GAMEMOD, 0, itemcollide, 0, BOUNCE_GEOM, COLLIDE_ALL);
-GVAR(IDF_GAMEMOD, 0, itemextinguish, 0, 6, 7);
-GVAR(IDF_GAMEMOD, 0, iteminteracts, 0, 3, 3);
-GVAR(IDF_GAMEMOD, 0, itemfadetime, 0, 1000, VAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, itemelasticity, FVAR_MIN, 0.4f, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, itemrelativity, FVAR_MIN, 1, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, itemliquidcoast, FVAR_NONZERO, 1.75f, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, itemweight, FVAR_MIN, 150, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, itembuoyancy, FVAR_MIN, 200, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, itemspeedmin, 0, 0, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, itemspeedmax, 0, 0, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, itemrepulsion, 0, 5, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, itemrepelspeed, 0, 25, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, itemdropminspeed, 0, 15, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, itemdropspreadxy, 0, 10, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, itemdropspreadz, 0, 2, FVAR_MAX);
-
 GVAR(IDF_GAMEMOD, 0, prizegrenade, 0, 49, VAR_MAX);
 GVAR(IDF_GAMEMOD, 0, prizemine, 0, 49, VAR_MAX);
 GVAR(IDF_GAMEMOD, 0, prizerocket, 0, 2, VAR_MAX);
@@ -531,6 +511,60 @@ GVAR(IDF_GAMEMOD, 0, enemylimit, 0, 32, MAXAI); // maximum number of enemies
 GVAR(IDF_GAMEMOD, 0, enemyspawntime, 1, 60000, VAR_MAX); // when enemies respawn
 GVAR(IDF_GAMEMOD, 0, enemyspawndelay, 0, 1000, VAR_MAX); // after map start enemies first spawn
 GVAR(IDF_GAMEMOD, 0, enemyspawnstyle, 0, 1, 3); // 0 = all at once, 1 = staggered, 2 = random, 3 = randomise between both
+
+GVAR(IDF_GAMEMOD, 0, ejectfade, 0, 2500, VAR_MAX);
+GVAR(IDF_GAMEMOD, 0, itemspawntime, 1, 10000, VAR_MAX); // when items respawn
+GVAR(IDF_GAMEMOD, 0, itemspawndelay, 0, 1000, VAR_MAX); // after map start items first spawn
+GVAR(IDF_GAMEMOD, 0, itemspawnstyle, 0, 0, 3); // 0 = all at once, 1 = staggered, 2 = random, 3 = randomise between both
+GVAR(IDF_GAMEMOD, 0, itemcollide, 0, BOUNCE_GEOM, COLLIDE_ALL);
+GVAR(IDF_GAMEMOD, 0, itemextinguish, 0, 6, 7);
+GVAR(IDF_GAMEMOD, 0, iteminteracts, 0, 3, 3);
+GVAR(IDF_GAMEMOD, 0, itemfadetime, 0, 2000, VAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, itemelasticity, FVAR_MIN, 0.4f, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, itemrelativity, FVAR_MIN, 1, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, itemliquidcoast, FVAR_NONZERO, 1.75f, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, itemweight, FVAR_MIN, 150, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, itembuoyancy, FVAR_MIN, 200, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, itemspeedmin, 0, 0, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, itemspeedmax, 0, 0, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, itemrepulsion, 0, 5, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, itemrepelspeed, 0, 25, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, itemdropminspeed, 0, 15, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, itemdropspreadxy, 0, 10, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, itemdropspreadz, 0, 2, FVAR_MAX);
+
+GFVAR(IDF_GAMEMOD, 0, gibelasticity, -10000, 0.35f, 10000);
+GFVAR(IDF_GAMEMOD, 0, gibrelativity, -10000, 0.95f, 10000);
+GFVAR(IDF_GAMEMOD, 0, gibliquidcoast, 0, 2, 10000);
+GFVAR(IDF_GAMEMOD, 0, gibweight, -10000, 150, 10000);
+GFVAR(IDF_GAMEMOD, 0, gibbuoyancymax, -10000, 200, 10000);
+GFVAR(IDF_GAMEMOD, 0, gibbuoyancymin, -10000, 0, 10000);
+GVAR(IDF_GAMEMOD, 0, giblimit, 0, 50, VAR_MAX); // max in one burst
+GVAR(IDF_GAMEMOD, 0, gibpieces, 1, 25, VAR_MAX); // max pieces
+GVAR(IDF_GAMEMOD, 0, gibfade, 1, 60000, VAR_MAX); // rnd(this) + this
+GVAR(IDF_GAMEMOD, 0, gibchancevanity, 0, 90, 100); // percentage chance
+GVAR(IDF_GAMEMOD, 0, gibchancepieces, 0, 90, 100); // percentage chance
+GVAR(IDF_GAMEMOD, 0, gibchancecollects, 0, 90, 100); // percentage chance
+GFVAR(IDF_GAMEMOD, 0, gibdamage, 0, 0.1f, 1); // gibs = (damage / (hp * this))
+GFVAR(IDF_GAMEMOD, 0, gibheadless, 0, 0.05f, 1);
+GFVAR(IDF_GAMEMOD, 0, gibobliterated, 0, 0.025f, 1);
+
+GFVAR(IDF_GAMEMOD, 0, vanityelasticity, -10000, 0.5f, 10000);
+GFVAR(IDF_GAMEMOD, 0, vanityrelativity, -10000, 0.95f, 10000);
+GFVAR(IDF_GAMEMOD, 0, vanityliquidcoast, 0, 2, 10000);
+GFVAR(IDF_GAMEMOD, 0, vanityweight, -10000, 100, 10000);
+GFVAR(IDF_GAMEMOD, 0, vanitybuoyancy, -10000, 50, 10000);
+
+GFVAR(IDF_GAMEMOD, 0, debriselasticity, -10000, 0.6f, 10000);
+GFVAR(IDF_GAMEMOD, 0, debrisliquidcoast, 0, 1.7f, 10000);
+GFVAR(IDF_GAMEMOD, 0, debrisweight, -10000, 165, 10000);
+GFVAR(IDF_GAMEMOD, 0, debrisbuoyancy, -10000, 0, 10000);
+
+GFVAR(IDF_GAMEMOD, 0, ejectelasticity, -10000, 0.35f, 10000);
+GFVAR(IDF_GAMEMOD, 0, ejectrelativity, -10000, 1, 10000);
+GFVAR(IDF_GAMEMOD, 0, ejectliquidcoast, 0, 1.75f, 10000);
+GFVAR(IDF_GAMEMOD, 0, ejectweight, -10000, 180, 10000);
+GFVAR(IDF_GAMEMOD, 0, ejectbuoyancy, -10000, 0, 10000);
 
 GVAR(IDF_GAMEMOD, 0, janitorlimit, 0, 4, MAXAI); // maximum number of janitors
 GVAR(IDF_GAMEMOD, 0, janitorprize, 0, -1, 3); // // -1 = random, 0 = none, 1 = grenade, 2 = mine, 3 = rocket

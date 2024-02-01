@@ -1372,28 +1372,24 @@ struct gameent : dynent, clientstate
 
     bool collected(int type, float size = 1, const char *name = NULL)
     {
-        int count = collects.length();
-
         collectlist &c = collects.add();
         c.type = type != PROJ_ENTITY ? type : PROJ_DEBRIS;
         c.size = size;
         if(type == PROJ_ENTITY) c.size *= 0.3f;
         c.name = name;
 
-        if(ai && count < janitorready && collects.length() >= janitorready)
-        {   // award a prize
-            hasprize = janitorprize;
-            return true;
-        }
+        if(ai != NULL && actortype == A_JANITOR && collects.length() >= janitorready)
+            return true; // award a prize
 
         return false;
     }
 
-    void collectprize()
+    void collectprize(int prize)
     {
-        while(collects.length() < janitorready) // just ensure we have enough in there
-            collected(rnd(2) ? PROJ_GIB : PROJ_DEBRIS, 0.5f + rnd(101)/100.f);
-        hasprize = janitorprize;
+        if(actortype == A_JANITOR)
+            while(collects.length() < janitorready) // just ensure we have enough in there
+                collected(rnd(2) ? PROJ_GIB : PROJ_DEBRIS, 0.5f + rnd(101)/100.f);
+        hasprize = prize;
     }
 
     void addstun(int weap, int millis, int delay, float scale, float gravity)
@@ -1487,7 +1483,7 @@ struct gameent : dynent, clientstate
             if(entities::ents[spawnpoint]->attrs[8] > 0) speedscale *= entities::ents[spawnpoint]->attrs[8]/100.f;
             if(entities::ents[spawnpoint]->attrs[9] > 0) scale *= (entities::ents[spawnpoint]->attrs[9]/100.f);
         }
-        if(hasprize) speedscale *= A(actortype, speedprize);
+        if(hasprize > 0) speedscale *= A(actortype, speedprize);
 
         if(m_resize(gamemode, mutators) && cur)
         {
@@ -1735,7 +1731,7 @@ struct gameent : dynent, clientstate
 
     void cleartags()
     {
-        loopi(TAG_MAX) tag[i] = vec(-1, -1, -1);
+        loopi(TAG_MAX) tag[i] = vec(-1);
     }
 
     float headsize()
@@ -1746,24 +1742,23 @@ struct gameent : dynent, clientstate
 
     vec &headtag()
     {
-        if(tag[TAG_CROWN] == vec(-1, -1, -1))
+        if(tag[TAG_CROWN] == vec(-1))
         {
             tag[TAG_CROWN] = o;
-            tag[TAG_CROWN].z -= headsize()*0.375f;
+            tag[TAG_CROWN].z -= headsize() * 0.375f;
         }
         return tag[TAG_CROWN];
     }
 
     vec &cameratag()
     {
-        if(tag[TAG_CAMERA] == vec(-1, -1, -1)) tag[TAG_CAMERA] = o;
+        if(tag[TAG_CAMERA] == vec(-1)) tag[TAG_CAMERA] = o;
         return tag[TAG_CAMERA];
     }
 
     vec &headbox()
     {
-        if(tag[TAG_R_CROWN] == vec(-1, -1, -1))
-            tag[TAG_R_CROWN] = vec(xradius*0.5f, yradius*0.5f, headsize());
+        if(tag[TAG_R_CROWN] == vec(-1)) tag[TAG_R_CROWN] = vec(headsize());
         return tag[TAG_R_CROWN];
     }
 
@@ -1775,18 +1770,17 @@ struct gameent : dynent, clientstate
 
     vec &torsotag()
     {
-        if(tag[TAG_TORSO] == vec(-1, -1, -1))
+        if(tag[TAG_TORSO] == vec(-1))
         {
             tag[TAG_TORSO] = o;
-            tag[TAG_TORSO].z -= height*0.45f;
+            tag[TAG_TORSO].z -= height  *0.45f;
         }
         return tag[TAG_TORSO];
     }
 
     vec &torsobox()
     {
-        if(tag[TAG_R_TORSO] == vec(-1, -1, -1))
-            tag[TAG_R_TORSO] = vec(xradius, yradius, torsosize());
+        if(tag[TAG_R_TORSO] == vec(-1)) tag[TAG_R_TORSO] = vec(torsosize());
         return tag[TAG_R_TORSO];
     }
 
@@ -1798,7 +1792,7 @@ struct gameent : dynent, clientstate
 
     vec &limbstag()
     {
-        if(tag[TAG_LIMBS] == vec(-1, -1, -1))
+        if(tag[TAG_LIMBS] == vec(-1))
         {
             tag[TAG_LIMBS] = torsotag();
             tag[TAG_LIMBS].z -= torsobox().z + limbsize();
@@ -1808,8 +1802,7 @@ struct gameent : dynent, clientstate
 
     vec &limbsbox()
     {
-        if(tag[TAG_R_LIMBS] == vec(-1, -1, -1))
-            tag[TAG_R_LIMBS] = vec(xradius * 0.85f, yradius * 0.85f, limbsize());
+        if(tag[TAG_R_LIMBS] == vec(-1)) tag[TAG_R_LIMBS] = vec(limbsize());
         return tag[TAG_R_LIMBS];
     }
 
@@ -1818,7 +1811,7 @@ struct gameent : dynent, clientstate
         if(!actors[actortype].hastags) return tag[TAG_ORIGIN] = headpos();
 
         if(!isweap(weap)) weap = weapselect;
-        if(tag[TAG_ORIGIN] == vec(-1, -1, -1))
+        if(tag[TAG_ORIGIN] == vec(-1))
         {
             if(weap == W_MELEE) tag[TAG_ORIGIN] = feetpos();
             else
@@ -1840,7 +1833,7 @@ struct gameent : dynent, clientstate
 
         if(!isweap(weap)) weap = weapselect;
 
-        if(tag[TAG_MUZZLE] == vec(-1, -1, -1))
+        if(tag[TAG_MUZZLE] == vec(-1))
         {
             if(weap == W_SWORD && ((weapstate[weap] == W_S_PRIMARY) || (weapstate[weap] == W_S_SECONDARY)))
             {
@@ -1881,13 +1874,13 @@ struct gameent : dynent, clientstate
         if(!isweap(weap)) weap = weapselect;
         if(idx < 0 || idx >= TAG_N_EJECT) idx = 0;
         int tnum = TAG_EJECT + idx;
-        if(tag[tnum] == vec(-1, -1, -1)) tag[tnum] = idx ? origintag(weap) : muzzletag(weap);
+        if(tag[tnum] == vec(-1)) tag[tnum] = idx ? origintag(weap) : muzzletag(weap);
         return tag[tnum];
     }
 
     vec &waisttag()
     {
-        if(tag[TAG_WAIST] == vec(-1, -1, -1))
+        if(tag[TAG_WAIST] == vec(-1))
         {
             vec dir;
             vecfromyawpitch(yaw, 0, -1, 0, dir);
@@ -1900,7 +1893,7 @@ struct gameent : dynent, clientstate
 
     vec &jetlefttag()
     {
-        if(tag[TAG_JET_LEFT] == vec(-1, -1, -1))
+        if(tag[TAG_JET_LEFT] == vec(-1))
         {
             vec dir;
             vecfromyawpitch(yaw, 0, -1, -1, dir);
@@ -1913,7 +1906,7 @@ struct gameent : dynent, clientstate
 
     vec &jetrighttag()
     {
-        if(tag[TAG_JET_RIGHT] == vec(-1, -1, -1))
+        if(tag[TAG_JET_RIGHT] == vec(-1))
         {
             vec dir;
             vecfromyawpitch(yaw, 0, -1, 1, dir);
@@ -1926,7 +1919,7 @@ struct gameent : dynent, clientstate
 
     vec &jetbacktag()
     {
-        if(tag[TAG_JET_BACK] == vec(-1, -1, -1))
+        if(tag[TAG_JET_BACK] == vec(-1))
         {
             vec dir;
             vecfromyawpitch(yaw, 0, -1, 0, dir);
@@ -1953,7 +1946,7 @@ struct gameent : dynent, clientstate
     {
         if(idx < 0 || idx > 1) idx = 0;
         int tnum = TAG_TOE + idx;
-        if(tag[tnum] == vec(-1, -1, -1))
+        if(tag[tnum] == vec(-1))
         {
             int millis = lastmillis%500;
             float amt = millis > 250 ? (500-millis)/250.f : millis/250.f;

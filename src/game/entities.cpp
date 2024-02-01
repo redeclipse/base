@@ -972,7 +972,7 @@ namespace entities
             gameentity &e = *(gameentity *)ents[id];
 
             int attr = m_attr(e.type, e.attrs[0]);
-            formatstring(enttex, "textures/%s/%s", e.type == WEAPON ? "weapons" : "icons/edit", e.type == WEAPON ? W_STR[isweap(attr) ? attr : W_PISTOL] : enttype[e.type].name);
+            formatstring(enttex, "<grey>textures/%s/%s", e.type == WEAPON ? "weapons" : "icons/edit", e.type == WEAPON ? W_STR[isweap(attr) ? attr : W_PISTOL] : enttype[e.type].name);
 
             Texture *t = textureload(enttex, 0, true, false);
             if(t && t != notexture) return enttex;
@@ -982,6 +982,20 @@ namespace entities
 
     }
     ICOMMAND(0, getenttex, "b", (int *id), result(getenttex(*id)));
+
+    const char *getweaptex(int id)
+    {
+        static string weaptex = "";
+        if(isweap(id))
+        {
+            formatstring(weaptex, "<grey>textures/weapons/%s", W_STR[id]);
+            Texture *t = textureload(weaptex, 0, true, false);
+            if(t && t != notexture) return weaptex;
+        }
+        return "<grey>textures/icons/question";
+
+    }
+    ICOMMAND(0, getweaptex, "b", (int *id), result(getweaptex(*id)));
 
     const char *entinfo(int type, attrvector &attr, bool full, bool icon)
     {

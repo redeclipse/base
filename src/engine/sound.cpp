@@ -996,7 +996,7 @@ int soundindex(soundslot *slot, int slotnum, const vec &pos, int flags, int *hoo
     }
 
     sources.sort(sourcecmp); // sort as a last resort
-    if(sources[0]->index >= 0)
+    if(!sources.empty() && sources[0]->index >= 0)
     { // as long as the top isn't our dummy we can clear it
         sources[0]->clear();
         return sources[0]->index;
@@ -1129,11 +1129,8 @@ int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, flo
             else s.vel = vec(0, 0, 0);
             s.flags |= SND_TRACKED;
         }
-        else
-        {
-            s.vpos = NULL;
-            s.pos = *pos;
-        }
+        else s.vpos = NULL;
+        s.pos = *pos;
 
         s.gain = gain > 0 ? clamp(gain, 0.f, 100.f) : 1.f;
         s.pitch = pitch >= 0 ? clamp(pitch, 1e-6f, 100.f) : 1.f;
@@ -1147,6 +1144,8 @@ int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, flo
 
         if(hook) *hook = s.index;
         s.hook = hook;
+
+        // conoutf(colouryellow, "SND: %d / %.8g %.8g %.8g [%d] (%d)", index, s.pos.x, s.pos.y, s.pos.z, s.owner ? s.owner->type : -1, s.hook ? *s.hook : -1);
 
         SOUNDCHECK(s.push(sample), return index, conoutf(colourred, "Error playing sample [%d] %s (%d): %s [%s@%s:%d]", n, sample->name, index, alGetString(err), al_errfunc, al_errfile, al_errline));
     }
@@ -1216,7 +1215,11 @@ void removemapsounds()
 
 void removetrackedsounds(physent *d)
 {
-    loopv(soundsources) if(soundsources[i].owner == d) soundsources[i].clear();
+    if(!d) return;
+
+    vec *pos = game::getplayersoundpos(d);
+    loopv(soundsources) if(soundsources[i].owner == d || (soundsources[i].flags&SND_TRACKED && soundsources[i].vpos && soundsources[i].vpos == pos))
+        soundsources[i].clear();
 }
 
 void resetsound()
@@ -1654,14 +1657,10 @@ void soundsource::unhook()
 {
     if(hook) *hook = -1;
     hook = NULL;
-    if(owner || flags&SND_TRACKED)
-    {
-        pos = *vpos;
-        vpos = NULL;
-        vel = vec(0, 0, 0);
-        owner = NULL;
-        flags &= ~(SND_TRACKED|SND_LOOP);
-    }
+    vpos = NULL;
+    vel = vec(0, 0, 0);
+    owner = NULL;
+    flags &= ~(SND_TRACKED|SND_LOOP);
 }
 
 ALenum soundsource::updatefilter()
@@ -1682,7 +1681,11 @@ ALenum soundsource::updatefilter()
 
 ALenum soundsource::update()
 {
-    if(vpos) pos = *vpos;
+    if(flags&SND_TRACKED)
+    {
+        if(owner) vpos = game::getplayersoundpos(owner);
+        if(vpos) pos = *vpos;
+    }
     material = lookupmaterial(pos);
     curgain = clamp(soundeffectvol*slot->gain*(flags&SND_MAP ? soundeffectenv : soundeffectevent), 0.f, 100.f);
 
@@ -1715,14 +1718,17 @@ ALenum soundsource::update()
     alSourcef(source, AL_PITCH, pitch);
     SOUNDERRORTRACK(clear(); return err);
 
+    alSourcei(source, AL_LOOPING, flags&SND_LOOP ? AL_TRUE : AL_FALSE);
+    SOUNDERRORTRACK(clear(); return err);
+
     vec rpos = pos;
-    if(flags&SND_NOATTEN) rpos = vel = vec(0, 0, 0);
+    if(flags&SND_NOATTEN) rpos = vel = camera1->o;
     else if(flags&SND_NOPAN)
     {
         float mag = vec(rpos).sub(camera1->o).magnitude();
-        rpos = vec(camera1->yaw*RAD, camera1->pitch*RAD).mul(mag).add(camera1->o);
+        rpos = vec(camera1->yaw*RAD, camera1->pitch*RAD).mul(max(mag, 2.f)).add(camera1->o);
     }
-    else if(flags&SND_NODIST) rpos.sub(camera1->o).safenormalize().mul(2).add(camera1->o);
+    else if(flags&SND_NODIST) rpos.sub(camera1->o).safenormalize().mul(2.f).add(camera1->o);
 
     alSourcefv(source, AL_POSITION, (ALfloat *) &rpos);
     SOUNDERRORTRACK(clear(); return err);
