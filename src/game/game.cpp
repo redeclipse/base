@@ -250,6 +250,10 @@ namespace game
     FVAR(IDF_PERSIST, firstpersonswayside, 0, 0.05f, 10);
     FVAR(IDF_PERSIST, firstpersonswayup, 0, 0.05f, 10);
 
+    FVAR(IDF_PERSIST, firstpersonside, -10.0f, 0.0f, 10.0f);
+    FVAR(IDF_PERSIST, firstpersonup, -10.0f, 0.0f, 10.0f);
+    FVAR(IDF_PERSIST, firstpersondist, -10.0f, 0.0f, 10.0f);
+
     VAR(IDF_PERSIST, firstpersonbob, 0, 0, 1);
     FVAR(IDF_PERSIST, firstpersonbobmin, 0, 0.2f, 1);
     FVAR(IDF_PERSIST, firstpersonbobstep, 1, 40.f, 1000);
@@ -4221,6 +4225,18 @@ namespace game
             {
                 if(!firstpersoncamera && gs_playing(gamestate) && firstpersonsway)
                     calchwepsway(d, mdl);
+
+                // apply constant first-person model offset
+
+                vec dirforward = vec(mdl.yaw*RAD, mdl.pitch*RAD);
+                vec dirside = vec((mdl.yaw+90)*RAD, 0.0f);
+                vec dirup = vec(mdl.yaw*RAD, (mdl.pitch+90)*RAD);
+
+                vec trans = vec(0, 0, 0);
+                trans.add(vec(dirforward).mul(firstpersondist));
+                trans.add(vec(dirside).mul(firstpersonside));
+                trans.add(vec(dirup).mul(firstpersonup));
+                mdl.o.add(trans);
 
                 if(d->sliding(true) && firstpersonslidetime && firstpersonslideroll != 0)
                 {
