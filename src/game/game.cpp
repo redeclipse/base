@@ -2157,8 +2157,8 @@ namespace game
         d->lastregen = d->lastregenamt = 0;
         d->lastpain = lastmillis;
         d->state = CS_DEAD;
-        d->obliterated = (style&FRAG_OBLITERATE)!=0;
-        d->headless = (style&FRAG_HEADSHOT)!=0;
+        d->obliterated = (style&FRAG_OBLITERATE) != 0 || (flags&HIT_PRIZE) != 0;
+        d->headless = (style&FRAG_HEADSHOT) != 0;
 
         bool burnfunc = burn(d, weap, flags), bleedfunc = bleed(d, weap, flags), shockfunc = shock(d, weap, flags), corrodefunc = corrode(d, weap, flags);
         int anc = d == focus ? S_V_FRAGGED : -1, curmat = material&MATF_VOLUME;
