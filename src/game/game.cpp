@@ -4508,14 +4508,14 @@ namespace game
         if(d->corrodetime && d->corrodefunc(lastmillis, d->corrodetime))
         {
             int millis = lastmillis - d->lastres[W_R_CORRODE], delay = max(d->corrodedelay, 1);
-            float pc = 1, intensity = 0.0125f + (rnd(5) / 100.f), fade = (d != focus || d->state != CS_ALIVE ? 0.05f : 0.025f) + (rnd(5) / 100.f);
+            float pc = 1, intensity = 0.0125f + (rnd(5) / 100.f), fade = (d != focus || d->state != CS_ALIVE ? 0.25f : 0.125f) + (rnd(26) / 100.f);
 
             if(d->corrodetime - millis < delay) pc *= (d->corrodetime - millis) / float(delay);
             else pc *= 0.75f + ((millis % delay)/float(delay * 4));
 
             loopi(2)
             {
-                vec pos = vec(d->center()).add(vec(rnd(21) - 10, rnd(21) - 10, rnd(11) - 3).mul(pc));
+                vec pos = vec(d->center()).add(vec(rnd(11) - 5, rnd(11) - 5, rnd(21) - 10).mul(pc));
                 regular_part_create(PART_HINT_SOFT, 250, pos, pulsehexcol(d, PULSE_CORRODE, i ? -1 : 50), d->height * intensity * blend * pc, fade * blend * pc, 0, 0, -65);
             }
         }

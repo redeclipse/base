@@ -1495,7 +1495,7 @@ namespace hud
         }
     }
 
-    void startrender(int w, int h, bool wantvisor, bool noview)
+    void startrender(int w, int h, bool wantvisor, bool noview, uint outfbo)
     {
         int wait = client::waiting();
 
@@ -1518,7 +1518,7 @@ namespace hud
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         resethudshader();
 
-        UI::render(SURFACE_BACKGROUND);
+        UI::render(SURFACE_BACKGROUND, outfbo);
 
         hudmatrix.ortho(0, w, h, 0, -1, 1);
         flushhudmatrix();
@@ -1527,7 +1527,32 @@ namespace hud
         glDisable(GL_BLEND);
     }
 
-    void visorrender(int w, int h, bool wantvisor, bool noview, int outfbo)
+    void midrender(int w, int h, bool wantvisor, bool noview, uint outfbo)
+    {
+        if(!engineready || progressing || noview) return;
+
+        hudmatrix.ortho(0, w, h, 0, -1, 1);
+        flushhudmatrix();
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        resethudshader();
+
+        glEnable(GL_CULL_FACE);
+        glEnable(GL_DEPTH_TEST);
+
+        UI::render(SURFACE_WORLD, outfbo);
+
+        glDisable(GL_CULL_FACE);
+        glDisable(GL_DEPTH_TEST);
+
+        hudmatrix.ortho(0, w, h, 0, -1, 1);
+        flushhudmatrix();
+        resethudshader();
+
+        glDisable(GL_BLEND);
+    }
+
+    void visorrender(int w, int h, bool wantvisor, bool noview, uint outfbo)
     {
         if(!engineready) return;
 
@@ -1538,7 +1563,7 @@ namespace hud
         {
             if(wantvisor)
             {
-                UI::render(SURFACE_PROGRESS);
+                UI::render(SURFACE_PROGRESS, outfbo);
 
                 hudmatrix.ortho(0, w, h, 0, -1, 1);
                 flushhudmatrix();
@@ -1563,7 +1588,7 @@ namespace hud
         glDisable(GL_BLEND);
     }
 
-    void endrender(int w, int h, bool wantvisor, bool noview)
+    void endrender(int w, int h, bool wantvisor, bool noview, uint outfbo)
     {
         if(!engineready) return;
 
@@ -1575,7 +1600,7 @@ namespace hud
 
         if(!progressing)
         {
-            UI::render(SURFACE_FOREGROUND);
+            UI::render(SURFACE_FOREGROUND, outfbo);
 
             hudmatrix.ortho(0, w, h, 0, -1, 1);
             flushhudmatrix();
@@ -1589,7 +1614,7 @@ namespace hud
         }
         else if(!wantvisor)
         {
-            UI::render(SURFACE_PROGRESS);
+            UI::render(SURFACE_PROGRESS, outfbo);
 
             hudmatrix.ortho(0, w, h, 0, -1, 1);
             flushhudmatrix();

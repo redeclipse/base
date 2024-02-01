@@ -2499,8 +2499,6 @@ void gl_drawview()
         }
     }
 
-    UI::render(SURFACE_WORLD);
-
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
 
@@ -2575,11 +2573,13 @@ static int visorw = -1, visorh = -1; // render target dimensions
 float visorx = 0.5f, visory = 0.5f, visoroffx = 0.f, visoroffy = 0.f; // cursor projection coordinates
 
 VAR(IDF_PERSIST, visorhud, 0, 13, 15); // bit: 1 = normal, 2 = edit, 4 = progress, 8 = noview
+VAR(IDF_PERSIST, visorsurfaces, 0, 4, 15); // bit: 1 = background, 2 = world UI's, 4 = visor, 8 = foreground
 FVAR(IDF_PERSIST, visordistort, -2, 2.0f, 2);
 FVAR(IDF_PERSIST, visornormal, -2, 1.175f, 2);
 FVAR(IDF_PERSIST, visorscalex, FVAR_NONZERO, 0.9075f, 2);
 FVAR(IDF_PERSIST, visorscaley, FVAR_NONZERO, 0.9075f, 2);
 VAR(IDF_PERSIST, visorscanedit, 0, 1, 7); // bit: 1 = scanlines, 2 = noise, 4 = flicker
+VAR(IDF_PERSIST, visorscansurfaces, 0, 6, 15); // bit: 1 = background, 2 = world UI's, 4 = visor, 8 = foreground
 FVAR(IDF_PERSIST, visorscanlines, 0.0, 2.66f, 16.0f);
 VAR(IDF_PERSIST|IDF_HEX, visorscanlinemixcolour, 0, 0xFFFFFF, 0xFFFFFF);
 FVAR(IDF_PERSIST, visorscanlinemixblend, 0.0, 0.67f, 1.0f);
@@ -2695,57 +2695,79 @@ void gl_drawhud(bool noview = false)
     }
     else visorx = visory = visoroffx = visoroffy = 0;
 
-    hud::startrender(hudw, hudh, wantvisor, noview);
-
     int curw = hudw, curh = hudh;
     if(engineready)
     {
-        glBindFramebuffer_(GL_FRAMEBUFFER, visorfbo);
-        glViewport(0, 0, visorw, visorh);
-
-        glClearColor(0, 0, 0, 0);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        curw = visorw;
-        curh = visorh;
-    }
-
-    rendervisor = wantvisor ? 1 : 0;
-    hud::visorrender(curw, curh, wantvisor, noview, visorfbo);
-    rendervisor = 0;
-
-    if(engineready)
-    {
-        glBindFramebuffer_(GL_FRAMEBUFFER, 0);
-        glViewport(0, 0, hudw, hudh);
-
-        if(wantvisor)
+        loopi(4)
         {
-            SETSHADER(hudvisorview);
-            LOCALPARAMF(visorparams, visordistort, visornormal, visorscalex, visorscaley);
+            glBindFramebuffer_(GL_FRAMEBUFFER, visorfbo);
+            bindgdepth();
+
+            curw = visorw;
+            curh = visorh;
+
+            glViewport(0, 0, curw, curh);
+            glClearColor(0, 0, 0, 0);
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            hudmatrix.ortho(0, curw, curh, 0, -1, 1);
+            resethudmatrix();
+            resethudshader();
+
+            rendervisor = wantvisor ? 1 : 0;
+            switch(i)
+            {
+                case 0: hud::startrender(curw, curh, wantvisor, noview, visorfbo); break;
+                case 1: hud::midrender(curw, curh, wantvisor, noview, visorfbo); break;
+                case 2: hud::visorrender(curw, curh, wantvisor, noview, visorfbo); break;
+                case 3: hud::endrender(curw, curh, wantvisor, noview, visorfbo); break;
+
+            }
+            rendervisor = 0;
+
+            glBindFramebuffer_(GL_FRAMEBUFFER, 0);
+            glViewport(0, 0, hudw, hudh);
+
+            if(wantvisor && visorsurfaces&(1<<i))
+            {
+                SETSHADER(hudvisorview);
+                LOCALPARAMF(visorparams, visordistort, visornormal, visorscalex, visorscaley);
+            }
+            else SETSHADER(hudvisor);
+
+            LOCALPARAMF(time, lastmillis / 1000.f);
+            LOCALPARAMF(visorsize, visorw, visorh, 1.f/visorw, 1.f/visorh);
+
+            if(visorscansurfaces&(1<<i))
+            {
+                if(!editmode) LOCALPARAMF(visorfx, visorscanlines, visorscanlineblend, visornoiseblend, visorflickerblend);
+                else LOCALPARAMF(visorfx, visorscanedit&1 ? visorscanlines : 0.f, visorscanedit&1 ? visorscanlineblend : 0.f, visorscanedit&2 ? visornoiseblend : 0.f, visorscanedit&4 ? visorflickerblend : 0.f);
+
+                vec4 color = vec4::fromcolor(visorscanlinemixcolour, visorscanlinemixblend);
+                LOCALPARAMF(visorfxcol, color.r, color.g, color.b, color.a);
+            }
+            else
+            {
+                LOCALPARAMF(visorfx, 0, 0, 0, 0);
+                LOCALPARAMF(visorfxcol, 0, 0, 0, 0);
+            }
+
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+            gle::colorf(1, 1, 1, 1);
+            glBindTexture(GL_TEXTURE_RECTANGLE, visortex);
+            debugquad(visoroffx, visoroffy, hudw, hudh, 0, 0, visorw, visorh);
+
+            glDisable(GL_BLEND);
         }
-        else SETSHADER(hudvisor);
-
-        LOCALPARAMF(visorsize, visorw, visorh, 1.f/visorw, 1.f/visorh);
-
-        if(!editmode) LOCALPARAMF(visorfx, visorscanlines, visorscanlineblend, visornoiseblend, visorflickerblend);
-        else LOCALPARAMF(visorfx, visorscanedit&1 ? visorscanlines : 0.f, visorscanedit&1 ? visorscanlineblend : 0.f, visorscanedit&2 ? visornoiseblend : 0.f, visorscanedit&4 ? visorflickerblend : 0.f);
-
-        vec4 color = vec4::fromcolor(visorscanlinemixcolour, visorscanlinemixblend);
-        LOCALPARAMF(visorfxcol, color.r, color.g, color.b, color.a);
-        LOCALPARAMF(time, lastmillis/1000.f);
-
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-
-        gle::colorf(1, 1, 1, 1);
-        glBindTexture(GL_TEXTURE_RECTANGLE, visortex);
-        debugquad(visoroffx, visoroffy, hudw, hudh, 0, 0, visorw, visorh);
-
-        glDisable(GL_BLEND);
     }
-
-    hud::endrender(hudw, hudh, wantvisor, noview);
+    else
+    {
+        hud::startrender(hudw, hudh, false, noview);
+        hud::visorrender(hudw, hudh, false, noview);
+        hud::endrender(hudw, hudh, false, noview);
+    }
 
     debugparticles();
     debuglights();
