@@ -82,7 +82,6 @@ namespace hud
     extern bool keypress(int code, bool isdown);
     extern void visorinfo(float &x, float &y);
     extern void startrender(int w, int h, bool wantvisor, bool noview = false, uint outfbo = 0);
-    extern void midrender(int w, int h, bool wantvisor, bool noview = false, uint outfbo = 0);
     extern void visorrender(int w, int h, bool wantvisor, bool noview = false, uint outfbo = 0);
     extern void endrender(int w, int h, bool wantvisor, bool noview = false, uint outfbo = 0);
     extern bool getcolour(vec &colour);
@@ -92,7 +91,7 @@ namespace hud
     extern void drawcoord(float x, float y, float w, float h, float tx = 0, float ty = 0, float tw = 1, float th = 1, bool flipx = false, bool flipy = false);
     extern void drawtexture(float x, float y, float w, float h, bool flipx = false, bool flipy = false);
     extern void drawsized(float x, float y, float s, bool flipx = false, bool flipy = false);
-    extern void drawblend(int x, int y, int w, int h, float r, float g, float b, bool blend = false);
+    extern void drawblend(int x, int y, int w, int h, float v);
     extern void colourskew(float &r, float &g, float &b, float skew = 1);
     extern void drawclip(int weap, int x, int y, float s, bool preview = false, bool wantvisor = false, float blend = 1);
 }

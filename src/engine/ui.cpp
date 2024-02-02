@@ -215,7 +215,7 @@ namespace UI
         if(force)
         {
             blendtypedef = BLEND_ALPHA;
-            blendsepdef = surfacetype == SURFACE_VISOR || surfacetype == SURFACE_COMPOSITE;
+            blendsepdef = true; // all roads lead to visor now
         }
         setblend(blendtypedef, blendsepdef, force);
     }
@@ -4546,7 +4546,7 @@ namespace UI
             hudmatrix.translate(left, top, 0);
             if(rotate) hudmatrix.rotate_around_z(rotate*90*RAD);
             flushhudmatrix();
-            textshader = surfacetype == SURFACE_WORLD ? hudtextworldshader : hudtextshader;
+            textshader = hudtextshader;
             draw_text(getstr(), 0, 0, colors[0].val.r, colors[0].val.g, colors[0].val.b, colors[0].val.a, flags, pos, wlen, 1);
             textshader = NULL;
             pophudmatrix();
@@ -5493,7 +5493,7 @@ namespace UI
             float k = drawscale();
             pushhudtranslate(sx, sy, k);
 
-            textshader = surfacetype == SURFACE_WORLD ? hudtextworldshader : hudtextshader;
+            textshader = hudtextshader;
             edit->draw(FONTW/2, 0, colors[0].val.tohexcolor(), colors[0].val.a, isfocus());
             textshader = NULL;
 
@@ -7693,13 +7693,7 @@ namespace UI
 
         uicurfbo = outfbo;
 
-        if(surfacetype == SURFACE_WORLD)
-        {
-            glEnable(GL_BLEND);
-            glDisable(GL_CULL_FACE);
-            glDepthMask(GL_FALSE);
-        }
-        else if(surfacetype == SURFACE_PROGRESS)
+        if(surfacetype == SURFACE_PROGRESS)
             hasprogress = pokeui("default", SURFACE_PROGRESS);
 
         VISOR(surfacetype,
@@ -7707,13 +7701,6 @@ namespace UI
             surface->build();
             surface->render();
         });
-
-        if(surfacetype == SURFACE_WORLD)
-        {
-            glDepthMask(GL_TRUE);
-            glEnable(GL_CULL_FACE);
-            glDisable(GL_BLEND);
-        }
 
         uicurfbo = 0;
 

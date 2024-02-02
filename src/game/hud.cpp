@@ -603,20 +603,17 @@ namespace hud
     void drawtexture(float x, float y, float w, float h, bool flipx, bool flipy) { drawquad(x, y, w, h, 0, 0, 1, 1, flipx, flipy); }
     void drawsized(float x, float y, float s, bool flipx, bool flipy) { drawquad(x, y, s, s, 0, 0, 1, 1, flipx, flipy); }
 
-    void drawblend(int x, int y, int w, int h, float r, float g, float b, bool blend)
+    void drawblend(int x, int y, int w, int h, float v)
     {
-        if(!blend) glEnable(GL_BLEND);
-        glBlendFunc(GL_ZERO, GL_SRC_COLOR);
-        gle::colorf(r, g, b);
+        gle::colorf(0, 0, 0, v);
+
         gle::defvertex(2);
         gle::begin(GL_TRIANGLE_STRIP);
-        gle::attribf(x, y);
-        gle::attribf(x+w, y);
-        gle::attribf(x, y+h);
-        gle::attribf(x+w, y+h);
+        gle::attribf(x,     y);
+        gle::attribf(x + w, y);
+        gle::attribf(x,     y + h);
+        gle::attribf(x + w, y + h);
         gle::end();
-        if(!blend) glDisable(GL_BLEND);
-        else glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     }
 
     void colourskew(float &r, float &g, float &b, float skew)
@@ -1125,29 +1122,29 @@ namespace hud
     void drawzoom(int w, int h)
     {
         if(!gs_playing(game::gamestate) || game::focus->state != CS_ALIVE || !game::inzoom()) return;
+
         float pc = game::zoomscale();
         int x = 0, y = 0, c = 0;
         if(w > h)
         {
-            float rc = 1.f-pc;
             c = h;
-            x += (w-h)/2;
+            x += (w - h) / 2;
             usetexturing(false);
-            drawblend(0, 0, x, c, rc, rc, rc, true);
-            drawblend(x+c, 0, x+1, c, rc, rc, rc, true);
+            drawblend(0, 0, x, c, pc);
+            drawblend(x + c, 0, x + 1, c, pc);
             usetexturing(true);
         }
         else if(h > w)
         {
-            float rc = 1.f-pc;
             c = w;
-            y += (h-w)/2;
+            y += (h - w) / 2;
             usetexturing(false);
-            drawblend(0, 0, c, y, rc, rc, rc, true);
-            drawblend(0, y+c, c, y, rc, rc, rc, true);
+            drawblend(0, 0, c, y, pc);
+            drawblend(0, y + c, c, y, pc);
             usetexturing(true);
         }
         else c = h;
+
         Texture *t = textureload(zoomtex, 3, true, false);
         if(!t || t == notexture) return;
         settexture(t);
@@ -1306,9 +1303,8 @@ namespace hud
         flushhudmatrix();
         resethudshader();
 
-        glEnable(GL_BLEND);
-        if(seq == 0) glBlendFuncSeparate_(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE);
-        else glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        // if(rendervisor) glBlendFuncSeparate_(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE);
+        // else glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         if(wantvisor)
         {
@@ -1362,8 +1358,6 @@ namespace hud
             else if(seq == 1) drawpointer(w, h, s, index, false, cursorx, cursory);
         }
         else if(seq == 1) drawpointer(w, h, s, index, false, cursorx, cursory);
-
-        glDisable(GL_BLEND);
     }
 
     CVAR(IDF_PERSIST, backgroundcolour, 0x000000);
@@ -1501,8 +1495,6 @@ namespace hud
 
         hudmatrix.ortho(0, hudwidth, hudheight, 0, -1, 1);
         flushhudmatrix();
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         resethudshader();
 
         if(noview || wait || !engineready) drawbackground(hudwidth, hudheight);
@@ -1511,117 +1503,28 @@ namespace hud
             drawzoom(hudwidth, hudheight);
             drawpointers(w, h, -1, wantvisor);
         }
-
-        hudmatrix.ortho(0, w, h, 0, -1, 1);
-        flushhudmatrix();
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        resethudshader();
-
-        UI::render(SURFACE_BACKGROUND, outfbo);
-
-        hudmatrix.ortho(0, w, h, 0, -1, 1);
-        flushhudmatrix();
-        resethudshader();
-
-        glDisable(GL_BLEND);
-    }
-
-    void midrender(int w, int h, bool wantvisor, bool noview, uint outfbo)
-    {
-        if(!engineready || progressing || noview) return;
-
-        hudmatrix.ortho(0, w, h, 0, -1, 1);
-        flushhudmatrix();
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        resethudshader();
-
-        glEnable(GL_CULL_FACE);
-        glEnable(GL_DEPTH_TEST);
-
-        UI::render(SURFACE_WORLD, outfbo);
-
-        glDisable(GL_CULL_FACE);
-        glDisable(GL_DEPTH_TEST);
-
-        hudmatrix.ortho(0, w, h, 0, -1, 1);
-        flushhudmatrix();
-        resethudshader();
-
-        glDisable(GL_BLEND);
     }
 
     void visorrender(int w, int h, bool wantvisor, bool noview, uint outfbo)
     {
-        if(!engineready) return;
+        if(!engineready || progressing) return;
 
-        glEnable(GL_BLEND);
-        glBlendFuncSeparate_(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE);
+        hudmatrix.ortho(0, w, h, 0, -1, 1);
+        flushhudmatrix();
+        resethudshader();
 
-        if(progressing)
-        {
-            if(wantvisor)
-            {
-                UI::render(SURFACE_PROGRESS, outfbo);
-
-                hudmatrix.ortho(0, w, h, 0, -1, 1);
-                flushhudmatrix();
-                resethudshader();
-            }
-        }
-        else
-        {
-            UI::render(SURFACE_VISOR, outfbo);
-
-            hudmatrix.ortho(0, w, h, 0, -1, 1);
-            flushhudmatrix();
-            resethudshader();
-
-            drawpointers(w, h, 0, wantvisor);
-
-            hudmatrix.ortho(0, w, h, 0, -1, 1);
-            flushhudmatrix();
-            resethudshader();
-        }
-
-        glDisable(GL_BLEND);
+        drawpointers(w, h, 0, wantvisor);
     }
 
     void endrender(int w, int h, bool wantvisor, bool noview, uint outfbo)
     {
-        if(!engineready) return;
+        if(!engineready || progressing) return;
 
         hudmatrix.ortho(0, w, h, 0, -1, 1);
         flushhudmatrix();
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         resethudshader();
 
-        if(!progressing)
-        {
-            UI::render(SURFACE_FOREGROUND, outfbo);
-
-            hudmatrix.ortho(0, w, h, 0, -1, 1);
-            flushhudmatrix();
-            resethudshader();
-
-            drawpointers(w, h, 1, wantvisor);
-
-            hudmatrix.ortho(0, w, h, 0, -1, 1);
-            flushhudmatrix();
-            resethudshader();
-        }
-        else if(!wantvisor)
-        {
-            UI::render(SURFACE_PROGRESS, outfbo);
-
-            hudmatrix.ortho(0, w, h, 0, -1, 1);
-            flushhudmatrix();
-            resethudshader();
-        }
-
-        glDisable(GL_BLEND);
+        drawpointers(w, h, 1, wantvisor);
     }
 
     void update(int w, int h)
