@@ -106,12 +106,6 @@ namespace hud
     VAR(IDF_PERSIST|IDF_HEX, hitcrosshairtone, -CTONE_MAX, 0, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, clipstone, -CTONE_MAX, 0, 0xFFFFFF);
 
-    VAR(IDF_PERSIST, visorcursor, 0, 12, 15); // bit: 1 = normal, 2 = editmode, 4 = UI, 8 = editmode UI
-    VAR(IDF_PERSIST, visorcursorproject, 0, 8, 15);
-    VAR(IDF_PERSIST, visorcursorlevels, 0, 5, 16);
-    FVAR(IDF_PERSIST, visorcursormin, 0, 0.005f, 1);
-    FVAR(IDF_PERSIST, visorcursorblend, 0, 0.75f, 1);
-    VAR(IDF_PERSIST, visorcursorcolour, 0, 0xFF6666, 0xFFFFFF);
     FVAR(IDF_PERSIST, visorcamvelx, FVAR_MIN, 1, FVAR_MAX);
     FVAR(IDF_PERSIST, visorcamvely, FVAR_MIN, 1, FVAR_MAX);
 
@@ -1238,9 +1232,8 @@ namespace hud
                 if(fade > 0 && accskew > 0) fade /= accskew;
             }
         }
-        vec n = c;
-        if(wantvisor) n.add(vec(vec::fromcolor(visorcursorcolour)).sub(c).mul(1 - delta));
 
+        vec n = c;
         int cx = int(x * w), cy = int(y * h);
         if(index != POINTER_UI)
         {
@@ -1273,7 +1266,7 @@ namespace hud
         else drawpointertex(getpointer(index, game::focus->weapselect), cx, cy, cs, n.r, n.g, n.b, fade);
     }
 
-    void drawpointers(int w, int h, int seq, bool wantvisor)
+    void drawpointers(int w, int h, bool wantvisor, bool behind)
     {
         int index = POINTER_NONE;
         if(hasinput(false, true)) index = hasinput(true, true) ? POINTER_UI : POINTER_NONE;
@@ -1298,66 +1291,7 @@ namespace hud
         if(index <= POINTER_NONE) return;
 
         int s = min(w, h);
-
-        hudmatrix.ortho(0, w, h, 0, -1, 1);
-        flushhudmatrix();
-        resethudshader();
-
-        // if(rendervisor) glBlendFuncSeparate_(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE);
-        // else glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-        if(wantvisor)
-        {
-            bool wantcursor = false;
-            if(index == POINTER_UI) wantcursor = (visorcursor&(editmode ? 8 : 4))!=0;
-            else wantcursor = (visorcursor&(editmode ? 2 : 1))!=0;
-
-            if(wantcursor)
-            {
-                switch(seq)
-                {
-                    case -1:
-                    {
-                        if(!visorcursorlevels) break;
-                        bool wantproj = false;
-                        if(index == POINTER_UI) wantproj = (visorcursorproject&(editmode ? 8 : 4))!=0;
-                        else wantproj = (visorcursorproject&(editmode ? 2 : 1))!=0;
-
-                        if(wantproj)
-                        {
-                            vec2 cursor(cursorx, cursory), visor(visorx, visory);
-                            float dist = cursor.dist(visor);
-                            if(dist > 1e-6f)
-                            {
-                                int loops = visorcursorlevels;
-                                float amt = dist / float(loops);
-                                while(amt < visorcursormin && loops > 1)
-                                {
-                                    loops--;
-                                    amt = dist / float(loops);
-                                }
-
-                                float blend = visorcursorblend, iter = (1 - visorcursorblend) / float(loops + 1);
-                                vec2 mdir = vec2(cursor).sub(visor).normalize().mul(amt);
-
-                                loopi(loops)
-                                {
-                                    float delta = i / float(loops);
-                                    drawpointer(w, h, s, index, true, cursor.x, cursor.y, blend, delta);
-                                    cursor.sub(mdir);
-                                    blend += iter;
-                                }
-                            }
-                        }
-                        break;
-                    }
-                    case 1: drawpointer(w, h, s, index, false, visorx, visory); break;
-                    default: break;
-                }
-            }
-            else if(seq == 1) drawpointer(w, h, s, index, false, cursorx, cursory);
-        }
-        else if(seq == 1) drawpointer(w, h, s, index, false, cursorx, cursory);
+        drawpointer(w, h, s, index, false, cursorx, cursory);
     }
 
     CVAR(IDF_PERSIST, backgroundcolour, 0x000000);
@@ -1498,22 +1432,11 @@ namespace hud
         resethudshader();
 
         if(noview || wait || !engineready) drawbackground(hudwidth, hudheight);
-        else
-        {
-            drawzoom(hudwidth, hudheight);
-            drawpointers(w, h, -1, wantvisor);
-        }
+        else drawzoom(hudwidth, hudheight);
     }
 
     void visorrender(int w, int h, bool wantvisor, bool noview, uint outfbo)
     {
-        if(!engineready || progressing) return;
-
-        hudmatrix.ortho(0, w, h, 0, -1, 1);
-        flushhudmatrix();
-        resethudshader();
-
-        drawpointers(w, h, 0, wantvisor);
     }
 
     void endrender(int w, int h, bool wantvisor, bool noview, uint outfbo)
@@ -1524,7 +1447,7 @@ namespace hud
         flushhudmatrix();
         resethudshader();
 
-        drawpointers(w, h, 1, wantvisor);
+        drawpointers(w, h, wantvisor, false);
     }
 
     void update(int w, int h)

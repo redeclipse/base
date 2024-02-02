@@ -537,7 +537,6 @@ namespace UI
 
     extern bool hasprogress;
     extern int uihidden;
-    extern char *uiopencmd, *uiclosecmd;
 
     extern bool showui(const char *name, int stype = SURFACE_VISOR, int param = -1, const vec &origin = nullvec, float maxdist = 0, float yaw = -1, float pitch = 0, float scale = 1, float detentyaw = 0, float detentpitch = 0);
     extern bool pokeui(const char *name, int stype = SURFACE_VISOR, int param = -1, const vec &origin = nullvec, float maxdist = 0, float yaw = -1, float pitch = 0, float scale = 1, float detentyaw = 0, float detentpitch = 0);

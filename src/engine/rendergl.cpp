@@ -2681,7 +2681,7 @@ void gl_drawhud(bool noview = false)
     {
         setupvisor(hudw, hudh);
 
-        if(wantvisor) visorcoords(cursorx, cursory, visorx, visory);
+        if(wantvisor) visorcoords(cursorx, cursory, visorx, visory, true);
         else
         {
             visorx = cursorx;
@@ -2743,10 +2743,19 @@ void gl_drawhud(bool noview = false)
                 }
                 case 2:
                 {
+                    float oldcx = cursorx, oldcy = cursory;
+
+                    cursorx = visorx;
+                    cursory = visory;
+
                     if(progressing && wantvisor) UI::render(SURFACE_PROGRESS, visorfbo);
                     else UI::render(SURFACE_VISOR, visorfbo);
 
                     hud::visorrender(curw, curh, wantvisor, noview, visorfbo);
+
+                    cursorx = oldcx;
+                    cursory = oldcy;
+
                     break;
                 }
                 case 3:

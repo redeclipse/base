@@ -398,7 +398,7 @@ void inputconsole(const char *init, const char *prompt = NULL, const char *actio
     consolepos = -1;
     if(action && action[0]) consoleaction = newstring(action);
     if(prompt && prompt[0]) consoleprompt = newstring(prompt);
-    UI::openui("console");
+    for(int surf = 0; surf <= SURFACE_FOREGROUND && !UI::showui("console", surf); ++surf);
 }
 
 ICOMMAND(0, inputconsole, "sss", (char *init, char *prompt, char *action), inputconsole(init, prompt, action));

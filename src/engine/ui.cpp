@@ -7485,13 +7485,7 @@ namespace UI
         {
             surfaces[i] = new Surface;
             surfaces[i]->type = i;
-            switch(i)
-            {
-                case SURFACE_VISOR: case SURFACE_WORLD:
-                    surfaces[i]->interactive = true;
-                    break;
-                default: break;
-            }
+            surfaces[i]->interactive = i == SURFACE_VISOR || i == SURFACE_WORLD;
         }
 
         surface = NULL;
