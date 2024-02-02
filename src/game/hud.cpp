@@ -133,7 +133,7 @@ namespace hud
     FVAR(IDF_PERSIST, crosshairsize, 0, 0.05f, 1000);
     FVAR(IDF_PERSIST, crosshairscale, 0, 1.0f, 4.0f);
     VAR(IDF_PERSIST, crosshairhitspeed, 0, 500, VAR_MAX);
-    FVAR(IDF_PERSIST, crosshairblend, 0, 1, 1);
+    FVAR(IDF_PERSIST, crosshairblend, 0, 0.75f, 1);
     FVAR(IDF_PERSIST, crosshairvisor, 0, 0, 1);
     FVAR(IDF_PERSIST, crosshairaccamt, 0, 0, 1);
     VAR(IDF_PERSIST, crosshairflash, 0, 1, 1);
@@ -226,8 +226,8 @@ namespace hud
     FVAR(IDF_PERSIST, tvcursorblend, 0, 1, 1);
     FVAR(IDF_PERSIST, tvcursorvisor, 0, 0, 1);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, tvcursortex, "", 3);
-    FVAR(IDF_PERSIST, teamcrosshairsize, 0, 0.05f, 1000);
-    FVAR(IDF_PERSIST, teamcrosshairblend, 0, 1, 1);
+    FVAR(IDF_PERSIST, teamcrosshairsize, 0, 0.06f, 1000);
+    FVAR(IDF_PERSIST, teamcrosshairblend, 0, 0.5f, 1);
     FVAR(IDF_PERSIST, teamcrosshairvisor, 0, 0, 1);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, teamcrosshairtex, "<grey>textures/icons/warning", 3);
     VAR(IDF_PERSIST, teamcrosshaircolour, 0, 0xFF0000, 0xFFFFFF);
@@ -271,11 +271,11 @@ namespace hud
 
     VAR(IDF_PERSIST, showclips, 0, 1, 1);
     VAR(IDF_PERSIST, clipanims, 0, 2, 2);
-    FVAR(IDF_PERSIST, clipsize, 0, 0.03f, 1000);
-    FVAR(IDF_PERSIST, clipoffset, 0, 0.045f, 1000);
-    FVAR(IDF_PERSIST, clipminscale, 0, 0.3f, 1000);
+    FVAR(IDF_PERSIST, clipsize, 0, 0.035f, 1000);
+    FVAR(IDF_PERSIST, clipoffset, 0, 0.05f, 1000);
+    FVAR(IDF_PERSIST, clipminscale, 0, 0.25f, 1000);
     FVAR(IDF_PERSIST, clipmaxscale, 0, 1, 1000);
-    FVAR(IDF_PERSIST, clipblend, 0, 1, 1);
+    FVAR(IDF_PERSIST, clipblend, 0, 0.33f, 1);
     FVAR(IDF_PERSIST, clipvisor, 0, 0, 1);
     FVAR(IDF_PERSIST, clipcolour, 0, 1, 1);
     VAR(IDF_PERSIST, cliplength, 0, 0, VAR_MAX);
@@ -318,7 +318,7 @@ namespace hud
     FVAR(IDF_PERSIST, plasmaclipskew, 0, 0.5f, 10);
     FVAR(IDF_PERSIST, zapperclipskew, 0, 0.5f, 10);
     FVAR(IDF_PERSIST, rifleclipskew, 0, 0.9f, 10);
-    FVAR(IDF_PERSIST, corroderclipskew, 0, 0.5f, 10);
+    FVAR(IDF_PERSIST, corroderclipskew, 0, 0.7f, 10);
     FVAR(IDF_PERSIST, grenadeclipskew, 0, 1.f, 10);
     FVAR(IDF_PERSIST, mineclipskew, 0, 1.f, 10);
     FVAR(IDF_PERSIST, rocketclipskew, 0, 1.25f, 10);

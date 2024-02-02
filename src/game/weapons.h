@@ -283,7 +283,7 @@ WPVAR(IDF_GAMEMOD, 0, ammostore, -1, VAR_MAX,
     -1,         -1,         -1,         48,         240,        600,        180,        288,        36,         1200,       0,          0,          0,          -1
 );
 WPVARM(IDF_GAMEMOD, 0, ammosub, 0, VAR_MAX,
-    0,          1,          0,          1,          1,          1,          2,          1,          1,          1,          1,          1,          1,          0,
+    0,          1,          0,          1,          1,          1,          1,          1,          1,          1,          1,          1,          1,          0,
     0,          0,          0,          2,          4,          10,         30,         8,          1,          20,         1,          1,          1,          0
 );
 WPFVARK(IDF_GAMEMOD, 0, attractspeed, 0, FVAR_MAX,
