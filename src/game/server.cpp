@@ -5566,25 +5566,27 @@ namespace server
         {
             case TRIGGER:
             {
-                if(sents[i].attrs[4]&TRIG_S_PERSIST || (sents[i].attrs[1] != TRIG_TOGGLE && sents[i].attrs[1] != TRIG_LINKED)) continue;
+                if((sents[i].attrs[0] && sents[i].attrs[0] != triggerid) || gamemillis < sents[i].millis) continue;
+                if(!m_check(sents[i].attrs[5], sents[i].attrs[6], gamemode, mutators)) continue;
                 if(!servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr])) continue;
+                if(sents[i].attrs[4]&TRIG_S_PERSIST || (sents[i].attrs[1] != TRIG_TOGGLE && sents[i].attrs[1] != TRIG_LINKED)) continue;
 
                 bool spawn = (sents[i].attrs[4]&TRIG_S_INVERTED) != 0;
-                if(spawn != sents[i].spawned && gamemillis >= sents[i].millis && (sents[i].attrs[0] == triggerid || !sents[i].attrs[0]) && m_check(sents[i].attrs[5], sents[i].attrs[6], gamemode, mutators))
+                if(spawn == sents[i].spawned) continue;
+
+                sents[i].spawned = spawn;
+                sents[i].millis = gamemillis + triggertime();
+
+                sendf(-1, 1, "ri3", N_TRIGGER, i, 0);
+
+                loopvj(sents[i].kin) if(sents.inrange(sents[i].kin[j]))
                 {
-                    sents[i].spawned = spawn;
-                    sents[i].millis = gamemillis + triggertime();
-
-                    sendf(-1, 1, "ri3", N_TRIGGER, i, 0);
-
-                    loopvj(sents[i].kin) if(sents.inrange(sents[i].kin[j]))
-                    {
-                        if(sents[sents[i].kin[j]].type == TRIGGER && !m_check(sents[sents[i].kin[j]].attrs[5], sents[sents[i].kin[j]].attrs[6], gamemode, mutators))
-                            continue;
-                        sents[sents[i].kin[j]].spawned = sents[i].spawned;
-                        sents[sents[i].kin[j]].millis = sents[i].millis;
-                    }
+                    if(sents[sents[i].kin[j]].type == TRIGGER && !m_check(sents[sents[i].kin[j]].attrs[5], sents[sents[i].kin[j]].attrs[6], gamemode, mutators))
+                        continue;
+                    sents[sents[i].kin[j]].spawned = sents[i].spawned;
+                    sents[sents[i].kin[j]].millis = sents[i].millis;
                 }
+
                 break;
             }
             default:
@@ -7326,10 +7328,10 @@ namespace server
                     }
                     else if(sents[ent].type == TRIGGER)
                     {
-                        if(!servermapvariant(sents[ent].attrs[enttype[sents[ent].type].mvattr])) break;
                         if(sents[ent].attrs[0] && sents[ent].attrs[0] != triggerid) break;
-                        if(!m_check(sents[ent].attrs[5], sents[ent].attrs[6], gamemode, mutators)) break;
                         if(sents[ent].attrs[1] == TRIG_SCRIPT || sents[ent].attrs[2] == TRIG_A_MANUAL) break;
+                        if(!servermapvariant(sents[ent].attrs[enttype[sents[ent].type].mvattr])) break;
+                        if(!m_check(sents[ent].attrs[5], sents[ent].attrs[6], gamemode, mutators)) break;
 
                         bool commit = false, kin = false, spawn = (sents[ent].attrs[4]&TRIG_S_INVERTED) != 0;
                         switch(sents[ent].attrs[1])
