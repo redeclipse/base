@@ -378,7 +378,7 @@ void initmapsound()
 }
 
 SVARF(IDF_INIT, sounddevice, "", initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
-VARF(IDF_INIT, soundmaxsources, 16, 128, 1024, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
+VARF(IDF_INIT, soundmaxsources, 1, 200, 1000, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
 
 #define SOUNDVOL(oldname, newname, def, body) \
     FVARF(IDF_PERSIST, sound##newname##vol, 0, def, 100, body); \
