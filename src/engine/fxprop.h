@@ -135,7 +135,13 @@ namespace fx
         fxpropertydef(
             "colorized",
             PROP_INT,
-            0, 0, 3,
+            FX_COLORIZE_DISABLED, FX_COLORIZE_DISABLED, FX_COLORIZE_PALETTE,
+            0
+        ),
+        fxpropertydef(
+            "palette",
+            PROP_INT,
+            0, 0, (int)PULSE_MAX,
             0
         ),
         fxpropertydef(
@@ -217,7 +223,7 @@ namespace fx
             BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         ),
         fxpropertydef(
-            "index",
+            "weapon",
             PROP_INT,
             -1, -1, INT_MAX,
             BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)

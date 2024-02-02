@@ -27,24 +27,28 @@ namespace fx
 
     static bvec getcolor(instance &inst, int colprop)
     {
-        int type = inst.getprop<int>(FX_PROP_COLORIZED);
-        switch(type)
+        int colorized = inst.getprop<int>(FX_PROP_COLORIZED);
+
+        switch(colorized)
         {
-            case 1:
+            case FX_COLORIZE_DISABLED:
+                return inst.getextprop<bvec>(colprop);
+
+            case FX_COLORIZE_PARAM:
             {
-                int weap = inst.getprop<int>(FX_PROP_INDEX);
+                int weap = inst.getprop<int>(FX_PROP_WEAPON);
                 if(weap >= 0) return bvec(game::getweapcolor(weap));
-                return inst.e->color;
+                else return inst.e->color;
             }
-            case 2: case 3:
-            {
-                int col = inst.getprop<int>(FX_PROP_INDEX);
-                if(col >= 0 && col < PULSE_MAX)
-                    return bvec(pulsehexcol(col, type == 2 ? int(PULSE_CYCLE) : -1));
-                return inst.e->color;
-            }
-            case 0: default: break;
+
+            case FX_COLORIZE_PALETTE:
+                return bvec(pulsehexcol(inst.getprop<int>(FX_PROP_PALETTE)));
+
+            default:
+                ASSERT(0); // Not possible unless clamping on the colorized property is broken
         }
+
+        // Will never happen, leaving it a as a decoration
         return inst.getextprop<bvec>(colprop);
     }
 
@@ -289,7 +293,7 @@ namespace fx
             int flags = inst.getextprop<int>(FX_SOUND_FLAGS);
 
             int soundindex = def.sound.getindex();
-            int weap = inst.getprop<int>(FX_PROP_INDEX);
+            int weap = inst.getprop<int>(FX_PROP_WEAPON);
             int weapsound = inst.getextprop<int>(FX_SOUND_WEAPONSOUND);
 
             if(weap >= 0 && weapsound >= 0) soundindex = game::getweapsound(weap, weapsound);

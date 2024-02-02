@@ -27,6 +27,13 @@ namespace fx
 
     enum
     {
+        FX_COLORIZE_DISABLED = 0,
+        FX_COLORIZE_PARAM,
+        FX_COLORIZE_PALETTE
+    };
+
+    enum
+    {
         FX_PROP_ACTIVE_LENGTH = 0,
         FX_PROP_EMIT_LENGTH,
         FX_PROP_EMIT_INTERVAL,
@@ -42,6 +49,7 @@ namespace fx
         FX_PROP_BLEND,
         FX_PROP_SCALE,
         FX_PROP_COLORIZED,
+        FX_PROP_PALETTE,
         FX_RPOP_REL_OFFSET,
         FX_PROP_POS_OFFSET,
         FX_PROP_END_OFFSET,
@@ -55,7 +63,7 @@ namespace fx
         FX_PROP_END_FROM_ENTPOS,
         FX_PROP_ITER,
         FX_PROP_ITER_OFFSET,
-        FX_PROP_INDEX,
+        FX_PROP_WEAPON,
 
         FX_STD_PROPS
     };
