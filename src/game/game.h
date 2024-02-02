@@ -1259,6 +1259,7 @@ struct gameentity : extentity
 
         if(dynamic()) curpos.add(offset);
     }
+
     vec pos() { getcurpos(); return curpos; }
     vec *getpos() { getcurpos(); return &curpos; }
 };
@@ -2300,6 +2301,8 @@ struct projent : dynent
 
     bool isjunk(bool span = false) const
     {
+        if(span && (state == CS_DEAD || !lifetime || beenused || fromflags&HIT_JANITOR)) return false;
+
         if((projtype == PROJ_DEBRIS || projtype == PROJ_GIB) && (!span || lifespan >= janitorjunkdebris)) return true;
         if(projtype == PROJ_ENTITY && (!span || lifespan >= janitorjunkitems)) return true;
         if((projtype == PROJ_VANITY || projtype == PROJ_PIECE || projtype == PROJ_EJECT) && (!span || lifespan >= janitorjunktime)) return true;

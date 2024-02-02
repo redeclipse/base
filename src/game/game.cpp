@@ -2087,7 +2087,7 @@ namespace game
                         case 1: default: break; // central stuff
                     }
 
-                    projs::create(pos, vec(pos).addz(rnd(d->obliterated ? 64 : 8)), true, d, PROJ_VANITY, -1, 0, rnd(gibfade) + gibfade, 0, 0, rnd(50) + 10, -1, n, head);
+                    projs::create(pos, vec(pos).addz(rnd(d->obliterated ? 64 : 8)), true, d, PROJ_VANITY, weap, flags, rnd(gibfade) + gibfade, 0, 0, rnd(50) + 10, -1, n, head);
 
                     if(++gibcount >= giblimit) return;
                 }
@@ -2106,7 +2106,7 @@ namespace game
                         }
 
                         vec pos = gibpos(d, i);
-                        projs::create(pos, vec(pos).addz(rnd(64)), true, d, PROJ_PIECE, -1, 0, rnd(gibfade) + gibfade, 0, 0, rnd(50) + 10, -1, i);
+                        projs::create(pos, vec(pos).addz(rnd(64)), true, d, PROJ_PIECE, weap, flags, rnd(gibfade) + gibfade, 0, 0, rnd(50) + 10, -1, i);
 
                         if(++gibcount >= giblimit) return;
                     }
@@ -2121,7 +2121,7 @@ namespace game
                     if(rnd(101) > gibchancepieces) continue;
 
                     vec pos = gibpos(d, rnd(PLAYERPARTS));
-                    projs::create(pos, vec(pos).addz(rnd(d->obliterated ? 64 : 8)), true, d, A(d->actortype, abilities)&(1<<A_A_GIBS) ? PROJ_GIB : PROJ_DEBRIS, -1, 0, rnd(gibfade) + gibfade, 0, rnd(100) + 1, rnd(d->obliterated || d->headless ? 50 : 25) + 10);
+                    projs::create(pos, vec(pos).addz(rnd(d->obliterated ? 64 : 8)), true, d, A(d->actortype, abilities)&(1<<A_A_GIBS) ? PROJ_GIB : PROJ_DEBRIS, weap, flags, rnd(gibfade) + gibfade, 0, rnd(100) + 1, rnd(d->obliterated || d->headless ? 50 : 25) + 10);
 
                     if(++gibcount >= giblimit) return;
                 }
@@ -2141,11 +2141,11 @@ namespace game
                     continue; // let's just say it gets destroyed
                 }
 
-                projent *p = projs::create(d->o, vec(d->o).add(vec(rnd(21)-10, rnd(21)-10, rnd(61)-10)), true, d, d->collects[n].type, -1, 0, (rnd(gibfade) + gibfade) / 4, 0, rnd(500) + 1, rnd(d->obliterated ? 50 : 25) + 10);
+                projent *p = projs::create(d->o, vec(d->o).add(vec(rnd(21)-10, rnd(21)-10, rnd(61)-10)), true, d, d->collects[n].type, weap, flags, (rnd(gibfade) + gibfade) / 4, 0, rnd(500) + 1, rnd(d->obliterated ? 50 : 25) + 10);
                 if(p)
                 {
                     p->mdlname = d->collects[n].name;
-                    p->lifesize = max(d->collects[n].size, 0.25f) + ((rnd(31) - 10) / 100.f);
+                    p->lifesize = clamp((d->collects[n].size * 0.25f) + ((rnd(31) - 10) / 100.f), 0.05f, 0.25f);
                 }
 
                 d->collects.remove(n);

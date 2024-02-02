@@ -2179,12 +2179,12 @@ namespace projs
                 if(dist >= ai::JANITORSUCK) continue;
                 ray.normalize();
 
-                if(!proj.beenused && dist <= f->radius + proj.radius + 1)
+                if(dist <= f->radius + proj.radius + 1)
                 {
                     if(e->collected(proj.projtype, proj.lifesize, proj.mdlname) && !e->hasprize)
                     {
-                        client::addmsg(N_SPHY, "ri2", e->clientnum, SPHY_PRIZE);
                         e->hasprize = -1;
+                        client::addmsg(N_SPHY, "ri2", e->clientnum, SPHY_PRIZE);
                     }
                     proj.beenused = 1;
                     proj.lifetime = min(proj.lifetime, proj.fadetime);
@@ -2291,7 +2291,7 @@ namespace projs
     void update()
     {
         vector<canrem *> canremove;
-        loopvrev(junkprojs) if(junkprojs[i]->isjunk(true)) canremove.add(new canrem(junkprojs[i], camera1->o.dist(junkprojs[i]->o)));
+        loopvrev(junkprojs) if(junkprojs[i]->isjunk()) canremove.add(new canrem(junkprojs[i], camera1->o.dist(junkprojs[i]->o)));
 
         int count = canremove.length() - maxprojectiles;
         if(count > 0)

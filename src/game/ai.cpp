@@ -649,39 +649,11 @@ namespace ai
             return; // fail
         }
 
-        vector<int> candidates;
-        loopenti(ACTOR)
-        {
-            gameentity &e = *(gameentity *)entities::ents[i];
-            if(e.type != ACTOR || !entities::isallowed(e)) continue;
-
-            int atype = clamp(e.attrs[0], 0, int(A_TOTAL-1)) + A_ENEMY;
-            if(atype != A_JANITOR) continue;
-            candidates.add(i);
-        }
-
         loopv(projs::junkprojs)
         {
             projent &proj = *projs::junkprojs[i];
 
-            if(proj.state == CS_DEAD || !proj.lifetime || proj.beenused || !proj.isjunk(true)) continue;
-
-            if(proj.owner && proj.owner->actortype == A_JANITOR)
-            {   // ignore junk left by a janitor near their deposit point
-                bool found = false;
-                loopvk(candidates)
-                {
-                    int n = candidates[i];
-                    if(proj.owner->spawnpoint != n) continue;
-
-                    gameentity &e = *(gameentity *)entities::ents[n];
-                    if(proj.o.squaredist(e.pos()) > JANITORSUCK*JANITORSUCK*2) continue;
-
-                    found = true;
-                    break;
-                }
-                if(found) continue;
-            }
+            if(!proj.isjunk(true)) continue;
 
             int v = closestwaypoint(proj.o, JANITORSUCK, true);
             bool found = false;
@@ -945,7 +917,7 @@ namespace ai
         {
             projent &proj = *projs::junkprojs[i];
 
-            if(proj.state == CS_DEAD || !proj.lifetime || proj.beenused || !proj.isjunk(true)) continue;
+            if(!proj.isjunk(true)) continue;
             if(proj.o.squaredist(waypoints[b.target].o) > RETRYDIST*RETRYDIST) continue;
             count++;
         }
