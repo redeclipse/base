@@ -8,9 +8,6 @@ namespace ai
 
     const float MINWPDIST       = 8.f;     // is on top of
     const float CLOSEDIST       = 64.f;    // is close
-    const float JANITORFLOAT    = 40.f;    // janitor float dist
-    const float JANITORSUCK     = 64.f;    // janitor suck dist
-    const float JANITORREJECT   = 128.f;   // janitor reject dist
     const float RETRYDIST       = 128.f;   // is close when retrying
     const float FARDIST         = 256.f;   // too far to remap close
     const float JUMPMIN         = 3.f;     // decides to jump

@@ -471,7 +471,7 @@ namespace ai
                     loopvk(waypoints)
                     {
                         if(!iswaypoint(k)) continue;
-                        if(f->o.squaredist(waypoints[k].o) <= JANITORREJECT*JANITORREJECT)
+                        if(f->o.squaredist(waypoints[k].o) <= janitorreject*janitorreject)
                         {
                             waypoints[k].route = routeid;
                             waypoints[k].curscore = -1;

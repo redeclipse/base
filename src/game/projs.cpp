@@ -2176,7 +2176,7 @@ namespace projs
 
                 vec ray = vec(e->muzzletag()).sub(proj.o);
                 float dist = ray.magnitude();
-                if(dist >= ai::JANITORSUCK) continue;
+                if(dist >= janitorsuck) continue;
                 ray.normalize();
 
                 if(dist <= f->radius + proj.radius + 1)

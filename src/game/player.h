@@ -188,6 +188,9 @@ APSVAR(IDF_GAMEMOD, 0, vname,
 APVAR(IDF_GAMEMOD, 0, abilities, 0, A_A_ALL,
     A_A_PLAYER,     A_A_MOVINGAI,   A_A_FIXEDAI,    A_A_MOVINGAI,   A_A_LESSAI,     A_A_ROLLER,     A_A_HAZARD,     A_A_JANITOR
 );
+APFVAR(IDF_GAMEMOD, 0, aifloatheight, 0, FVAR_MAX,
+    10.0f,          10.0f,          10.0f,          10.0f,          20.0f,          20.0f,          0.0f,           40.0f
+);
 APFVAR(IDF_GAMEMOD, 0, aipitchangle, 0, 89.9f,
     22.5f,          22.5f,          22.5f,          22.5f,          22.5f,          22.5f,          22.5f,          22.5f
 );

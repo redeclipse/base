@@ -424,7 +424,7 @@ namespace ai
             {
                 vec oldpos = d->ai->bottom;
                 physics::droptofloor(d->ai->bottom);
-                if(oldpos.z - d->ai->bottom.z > JANITORFLOAT) d->ai->bottom.z = oldpos.z - JANITORFLOAT;
+                if(oldpos.z - d->ai->bottom.z > A(d->actortype, aifloatheight)) d->ai->bottom.z = oldpos.z - A(d->actortype, aifloatheight);
                 // performance concerns
                 n = closenode(d, -1);
                 if(d->ai->route.inrange(n)) d->ai->bottom.z = waypoints[d->ai->route[n]].o.z;
@@ -636,7 +636,7 @@ namespace ai
 
                 interest &n = interests.add();
                 n.state = AI_S_INTEREST;
-                n.node = n.target = closestwaypoint(e.pos(), JANITORSUCK, true);
+                n.node = n.target = closestwaypoint(e.pos(), janitorsuck, true);
                 n.targtype = AI_T_HOME; // go home
                 n.score = d->o.squaredist(e.pos());
                 n.tolerance = 0;
@@ -655,7 +655,7 @@ namespace ai
 
             if(!proj.isjunk(true)) continue;
 
-            int v = closestwaypoint(proj.o, JANITORSUCK, true);
+            int v = closestwaypoint(proj.o, janitorsuck, true);
             bool found = false;
 
             loopvj(interests)
@@ -691,7 +691,7 @@ namespace ai
                 interest &n = interests[k];
 
                 if(n.state != AI_S_INTEREST || n.targtype != AI_T_JUNK || !iswaypoint(interests[k].node)) continue;
-                if(f->o.squaredist(waypoints[interests[k].node].o) > JANITORREJECT*JANITORREJECT) continue;
+                if(f->o.squaredist(waypoints[interests[k].node].o) > janitorreject*janitorreject) continue;
 
                 interests.remove(k);
             }
@@ -910,7 +910,7 @@ namespace ai
 
             gameent *f = (gameent *)e;
             if(f == d || f->actortype != A_JANITOR || !f->isalive()) continue;
-            if(f->o.squaredist(waypoints[b.target].o) <= JANITORREJECT*JANITORREJECT) return false;
+            if(f->o.squaredist(waypoints[b.target].o) <= janitorreject*janitorreject) return false;
         }
 
         loopv(projs::junkprojs)
@@ -924,18 +924,18 @@ namespace ai
 
         if(!count) return false;
 
-        return makeroute(d, b, waypoints[b.target].o, true, 0, JANITORSUCK);
+        return makeroute(d, b, waypoints[b.target].o, true, 0, janitorsuck);
     }
 
     bool dojanitorhome(gameent *d, aistate &b)
     {
         if(d->collects.empty()) return false;
-        if(d->o.dist(waypoints[b.target].o) <= JANITORSUCK)
+        if(d->o.dist(waypoints[b.target].o) <= janitorsuck)
         {
             game::suicide(d, HIT_JANITOR);
-            return defense(d, b, waypoints[b.target].o, MINWPDIST, JANITORSUCK, 0, AI_A_IDLE);
+            return defense(d, b, waypoints[b.target].o, MINWPDIST, janitorsuck, 0, AI_A_IDLE);
         }
-        return makeroute(d, b, waypoints[b.target].o, true, 0, JANITORSUCK);
+        return makeroute(d, b, waypoints[b.target].o, true, 0, janitorsuck);
     }
 
     bool dointerest(gameent *d, aistate &b)
@@ -1107,7 +1107,7 @@ namespace ai
         if(physics::movepitch(d))
         {
             if(!d->blocked)
-                d->ai->spot.z += d->actortype == A_JANITOR ? JANITORFLOAT : d->height * 0.5f;
+                d->ai->spot.z += A(d->actortype, aifloatheight);
 
             if(d->ai->spot != lastspot)
             {
@@ -1115,13 +1115,13 @@ namespace ai
                 if(!dir.iszero())
                 {
                     bool reroute = false, found = false;
-                    vec pos = vec(dir).mul(d->radius + GUARDRADIUS).add(d->o);
+                    vec pos = vec(dir).mul(d->radius + GUARDRADIUS * 2).add(d->o);
                     loopk(3)
                     {
                         if(clipped(pos))
                         {
                             if(k == 2) pos = d->o;
-                            pos.z -= GUARDRADIUS;
+                            pos.z -= GUARDRADIUS * (k + 1);
                             reroute = true;
                         }
                         else
@@ -1685,7 +1685,7 @@ namespace ai
                 if(!p.isjunk(true)) continue;
 
                 float dist = p.o.squaredist(d->muzzletag());
-                if(dist > JANITORSUCK*JANITORSUCK || (closest >= 0 && dist >= closedist))
+                if(dist > janitorsuck*janitorsuck || (closest >= 0 && dist >= closedist))
                     continue;
 
                 closedist = dist;

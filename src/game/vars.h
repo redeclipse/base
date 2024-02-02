@@ -574,6 +574,8 @@ GFVAR(IDF_GAMEMOD, 0, janitorbalance, 0, 0.33f, FVAR_MAX); // this * current bal
 GFVAR(IDF_GAMEMOD, 0, janitorjunktime, 0, 0.25f, 1); // when shell casings and vanities/parts become "junk"
 GFVAR(IDF_GAMEMOD, 0, janitorjunkitems, 0, 0.75f, 1); // when items become "junk"
 GFVAR(IDF_GAMEMOD, 0, janitorjunkdebris, 0, 0.125f, 1); // when gibs and debris become "junk"
+GFVAR(IDF_GAMEMOD, 0, janitorsuck, 0, 64.f, FVAR_MAX); // suck distance
+GFVAR(IDF_GAMEMOD, 0, janitorreject, 0, 128.f, FVAR_MAX); // reject distance
 GSVAR(0, PRIV_MODERATOR, janitorvanities, "");
 
 GFVAR(IDF_GAMEMOD, 0, movespeed, FVAR_NONZERO, 1.f, FVAR_MAX); // speed
