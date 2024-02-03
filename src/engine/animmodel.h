@@ -181,17 +181,24 @@ struct animmodel : model
             if(color.r < 0) LOCALPARAMF(colorscale, colorscale.r, colorscale.g, colorscale.b, colorscale.a*blend);
             else LOCALPARAMF(colorscale, color.r, color.g, color.b, colorscale.a*blend);
 
-            if(!skinned)
+            if(drawtex == DRAWTEX_HALO) LOCALPARAM(material1, modelmaterial[2].tocolor().mul(matbright.x));
+            else if(patterned())
             {
-                if(drawtex == DRAWTEX_HALO) LOCALPARAM(material1, modelmaterial[0].tocolor());
-                return;
+                LOCALPARAM(material1, modelmaterial[0].tocolor().mul(matbright.x));
+                LOCALPARAM(material2, modelmaterial[1].tocolor().mul(matbright.y));
+                LOCALPARAM(material3, modelmaterial[2].tocolor().mul(matbright.z));
+                LOCALPARAM(material4, modelmaterial[3].tocolor().mul(matbright.w));
             }
+            else
+            {
+                LOCALPARAM(material1, material1 > 0 ? modelmaterial[min(material1, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.x) : vec(matbright.x));
+                LOCALPARAM(material2, material2 > 0 ? modelmaterial[min(material2, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.y) : vec(matbright.y));
+            }
+
+            if(!skinned) return;
 
             if(mixed()) LOCALPARAM(mixerparams, mixerparams);
             if(patterned()) LOCALPARAMF(patternscale, patternscale);
-
-            LOCALPARAM(material1, material1 > 0 ? modelmaterial[min(material1, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.x) : vec(matbright.x));
-            LOCALPARAM(material2, material2 > 0 ? modelmaterial[min(material2, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.y) : vec(matbright.y));
 
             if(fullbright) LOCALPARAMF(fullbright, 0.0f, fullbright);
             else LOCALPARAMF(fullbright, 1.0f, as->cur.anim&ANIM_FULLBRIGHT ? 0.5f*fullbrightmodels/100.0f : 0.0f);
@@ -1509,7 +1516,7 @@ struct animmodel : model
             return;
         }
 
-        if(!(anim&ANIM_NOSKIN))
+        if(!(anim&ANIM_NOSKIN) || drawtex == DRAWTEX_HALO)
         {
             bool invalidate = false;
             if(colorscale != state->color)
@@ -1552,21 +1559,6 @@ struct animmodel : model
                 closestenvmaptex = lookupenvmap(closestenvmap(state->o));
                 break;
             }
-        }
-        else if(drawtex == DRAWTEX_HALO)
-        {
-            bool invalidate = false;
-            if(colorscale != state->color)
-            {
-                colorscale = state->color;
-                invalidate = true;
-            }
-            if(modelmaterial[0] != state->material[0])
-            {
-                modelmaterial[0] = state->material[0];
-                invalidate = true;
-            }
-            if(invalidate) shaderparamskey::invalidate();
         }
 
         if(depthoffset && !enabledepthoffset)
@@ -1925,8 +1917,7 @@ struct animmodel : model
 
     static bool enabletc, enablecullface, enabletangents, enablebones, enabledepthoffset, enablecolor;
     static float sizescale;
-    static vec4 colorscale, mixerparams;
-    static vec2 matbright;
+    static vec4 colorscale, mixerparams, matbright;
     static float patternscale;
     static bvec modelmaterial[MAXMDLMATERIALS];
     static GLuint lastvbuf, lasttcbuf, lastxbuf, lastbbuf, lastebuf, lastcolbuf, lastenvmaptex, closestenvmaptex;
@@ -2057,10 +2048,9 @@ float animmodel::intersectdist = 0, animmodel::intersectscale = 1;
 bool animmodel::enabletc = false, animmodel::enabletangents = false, animmodel::enablebones = false,
      animmodel::enablecullface = true, animmodel::enabledepthoffset = false, animmodel::enablecolor = false;
 float animmodel::sizescale = 1;
-vec4 animmodel::colorscale(1, 1, 1, 1), animmodel::mixerparams(1, 1, 1, 1);
-vec2 animmodel::matbright(1, 1);
+vec4 animmodel::colorscale(1, 1, 1, 1), animmodel::mixerparams(1, 1, 1, 1), animmodel::matbright(1, 1);
 float animmodel::patternscale = 1;
-bvec animmodel::modelmaterial[MAXMDLMATERIALS] = { bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255) };
+bvec animmodel::modelmaterial[MAXMDLMATERIALS] = { bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255) };
 GLuint animmodel::lastvbuf = 0, animmodel::lasttcbuf = 0, animmodel::lastxbuf = 0, animmodel::lastbbuf = 0, animmodel::lastebuf = 0,
        animmodel::lastcolbuf = 0, animmodel::lastenvmaptex = 0, animmodel::closestenvmaptex = 0;
 Texture *animmodel::lasttex = NULL, *animmodel::lastdecal = NULL, *animmodel::lastmasks = NULL, *animmodel::lastmixer = NULL, *animmodel::lastpattern = NULL, *animmodel::lastnormalmap = NULL;

@@ -174,7 +174,7 @@ namespace defend
             vec effect = skewcolour(b.owner, b.enemy, occupy);
             int colour = effect.tohexcolor();
 
-            mdl.material[0] = bvec::fromcolor(effect);
+            loopk(MAXMDLMATERIALS) mdl.material[k] = bvec::fromcolor(effect);
             mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
             mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_HALO_TOP;
             mdl.yaw = b.yaw;
@@ -182,7 +182,7 @@ namespace defend
 
             if(drawtex == DRAWTEX_HALO)
             {
-                mdl.material[0].mul(mdl.color.a);
+                loopk(MAXMDLMATERIALS) mdl.material[k].mul(mdl.color.a);
                 mdl.color.a = hud::radardepth(mdl.o, halodist, halotolerance, haloaddz);
             }
 

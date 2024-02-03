@@ -434,6 +434,8 @@ namespace game
     FVAR(IDF_PERSIST, playerovertonebright, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playerundertoneinterp, 0, 0, 1); // interpolate this much brightness from the opposing tone
     FVAR(IDF_PERSIST, playerundertonebright, 0.f, 1.f, 10.f);
+    FVAR(IDF_PERSIST, playereffecttoneinterp, 0, 0, 1); // interpolate this much brightness from the opposing tone
+    FVAR(IDF_PERSIST, playereffecttonebright, 0.f, 1.f, 10.f);
 
     FVAR(IDF_PERSIST, playerrotdecay, 0, 0.994f, 0.9999f);
     FVAR(IDF_PERSIST, playerrotinertia, 0, 0.2f, 1);
@@ -3932,20 +3934,6 @@ namespace game
 
     void getplayermaterials(gameent *d, modelstate &mdl)
     {
-        if(drawtex == DRAWTEX_HALO)
-        {
-            mdl.material[0] = bvec::fromcolor(getcolour(d, playerhalotone, playerhalotonelevel, playerhalotonemix));
-            if(d->state == CS_ALIVE && d->lastbuff)
-            {
-                int millis = lastmillis%1000;
-                float amt = millis <= 500 ? 1.f-(millis/500.f) : (millis-500)/500.f;
-                bvec pc = bvec::fromcolor(pulsecolour(d, PULSE_BUFF));
-                flashcolour(mdl.material[0].r, mdl.material[0].g, mdl.material[0].b, pc.r, pc.g, pc.b, amt);
-            }
-            mdl.material[1] = mdl.material[2] = mdl.material[0].mul(mdl.color.a);
-            mdl.color.a = hud::radardepth(d->center(), halodist, halotolerance, haloaddz);
-            return;
-        }
         #define TONEINTERP(name, var) \
             mdl.material[var] = bvec::fromcolor(getcolour(d, player##name##tone, player##name##tonelevel, player##name##tonemix)); \
             mdl.matbright[var] = player##name##tonebright; \
@@ -3956,7 +3944,9 @@ namespace game
             }
         TONEINTERP(over, 0);
         TONEINTERP(under, 1);
+        TONEINTERP(effect, 2);
         #undef TONEINTERP
+
         if(isweap(d->weapselect))
         {
             bool secondary = physics::secondaryweap(d);
@@ -3984,10 +3974,18 @@ namespace game
                 }
                 if(scale < 1) color.mul(scale);
             }
+
             if(W(d->weapselect, lightpersist)&2) color.max(WPCOL(d, d->weapselect, lightcol, physics::secondaryweap(d)));
-            mdl.material[2] = bvec::fromcolor(color);
+
+            mdl.material[3] = bvec::fromcolor(color);
         }
-        else mdl.material[2] = bvec::fromcolor(colourwhite);
+        else mdl.material[3] = bvec::fromcolor(colourwhite);
+
+        if(drawtex == DRAWTEX_HALO)
+        {
+            loopk(MAXMDLMATERIALS) mdl.material[k].mul(mdl.color.a);
+            mdl.color.a = hud::radardepth(d->center(), halodist, halotolerance, haloaddz);
+        }
     }
 
     static void calchwepsway(gameent *d, modelstate &mdl)

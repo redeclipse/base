@@ -54,7 +54,7 @@ struct entity : entbase
     linkvector links;
 };
 
-enum { MAXMDLMATERIALS = 3 };
+enum { MAXMDLMATERIALS = 4 };
 enum
 {
     MDL_CULL_VFC         = 1<<0,
@@ -114,8 +114,7 @@ struct entmodelstate
 
 struct modelstate : entmodelstate
 {
-    vec4 mixerparams;
-    vec2 matbright;
+    vec4 mixerparams, matbright;
     float patternscale;
     Texture *mixer, *pattern;
     modelattach *attached;
@@ -124,8 +123,7 @@ struct modelstate : entmodelstate
 
     void reset()
     {
-        mixerparams = vec4(1, 1, 1, 1);
-        matbright = vec2(1, 1);
+        mixerparams = matbright = vec4(1, 1, 1, 1);
         patternscale = 1;
         mixer = pattern = NULL;
         attached = NULL;

@@ -214,7 +214,7 @@ namespace capture
                 flashcolour(effect.r, effect.g, effect.b, 0.65f, 0.65f, 0.65f, amt);
             }
 
-            basemdl.material[0] = mdl.material[0] = bvec::fromcolor(effect);
+            loopk(MAXMDLMATERIALS) basemdl.material[k] = mdl.material[k] = bvec::fromcolor(effect);
             mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
             mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_HALO_TOP;
 
@@ -226,7 +226,7 @@ namespace capture
 
                 if(drawtex == DRAWTEX_HALO)
                 {
-                    mdl.material[0].mul(mdl.color.a);
+                    loopk(MAXMDLMATERIALS) mdl.material[k].mul(mdl.color.a);
                     mdl.color.a = hud::radardepth(mdl.o, halodist, halotolerance, haloaddz);
                 }
 
@@ -253,7 +253,7 @@ namespace capture
 
                 if(drawtex == DRAWTEX_HALO)
                 {
-                    mdl.material[0].mul(mdl.color.a);
+                    loopk(MAXMDLMATERIALS) mdl.material[k].mul(mdl.color.a);
                     mdl.color.a = hud::radardepth(mdl.o, halodist, halotolerance, haloaddz);
                 }
 
@@ -268,7 +268,7 @@ namespace capture
 
             if(drawtex == DRAWTEX_HALO)
             {
-                basemdl.material[0].mul(basemdl.color.a);
+                loopk(MAXMDLMATERIALS) basemdl.material[k].mul(basemdl.color.a);
                 basemdl.color.a = hud::radardepth(basemdl.o, halodist, halotolerance, haloaddz);
             }
 

@@ -3343,7 +3343,7 @@ namespace entities
                 if(millis < 500) mdl.size = mdl.color.a = 1.f - (millis / 500.f);
             }
 
-            if(!cansee && e.type == WEAPON)
+            if(e.type == WEAPON)
             {
                 int attr = m_attr(e.type, e.attrs[0]);
                 if(isweap(attr))
@@ -3356,18 +3356,17 @@ namespace entities
                     }
                     else mdl.color.a *= showentunavailable;
                 }
-                else continue;
+                else if(!cansee) continue;
             }
+            else if(!cansee) continue;
 
             if(mdl.color.a <= 0) continue;
 
-            mdl.material[0] = bvec::fromcolor(game::getcolour(game::focus, game::playerovertone, game::playerovertonelevel, game::playerovertonemix));
-            mdl.material[1] = bvec::fromcolor(game::getcolour(game::focus, game::playerundertone, game::playerundertonelevel, game::playerundertonemix));
+            loopk(MAXMDLMATERIALS) mdl.material[k] = bvec::fromcolor(colour);
 
-            if(colour >= 0) mdl.material[0] = mdl.material[2] = bvec::fromcolor(colour);
             if(drawtex == DRAWTEX_HALO)
             {
-                mdl.material[0].mul(mdl.color.a);
+                loopk(MAXMDLMATERIALS) mdl.material[k].mul(mdl.color.a);
                 mdl.color.a = hud::radardepth(mdl.o, halodist, halotolerance, haloaddz);
             }
 

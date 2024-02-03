@@ -2535,30 +2535,32 @@ namespace projs
                     if(mdl.color.a <= 0) continue;
                     mdl.material[0] = proj.owner ? bvec::fromcolor(game::getcolour(proj.owner, game::playerovertone, game::playerovertonelevel, game::playerovertonemix)) : bvec(128, 128, 128);
                     mdl.material[1] = proj.owner ? bvec::fromcolor(game::getcolour(proj.owner, game::playerundertone, game::playerundertonelevel, game::playerundertonemix)) : bvec(128, 128, 128);
-                    if(!isweap(proj.weap) || (WF(WK(proj.flags), proj.weap, proxtype, WS(proj.flags)) && (!proj.stuck || proj.lifetime%500 >= 300))) mdl.material[2] = bvec(0, 0, 0);
+                    mdl.material[2] = proj.owner ? bvec::fromcolor(game::getcolour(proj.owner, game::playereffecttone, game::playereffecttonelevel, game::playereffecttonemix)) : bvec(128, 128, 128);
+                    if(!isweap(proj.weap) || (WF(WK(proj.flags), proj.weap, proxtype, WS(proj.flags)) && (!proj.stuck || proj.lifetime%500 >= 300))) mdl.material[3] = bvec(0, 0, 0);
                     else if(W2(proj.weap, colourproj, WS(proj.flags)) != 0)
                     {
                         float amt = clamp(proj.lifespan, 0.f, 1.f);
-                        mdl.material[2] = bvec::fromcolor(vec::fromcolor(W(proj.weap, colour)).mul(1-amt).add(vec(WPCOL(&proj, proj.weap, colourproj, WS(proj.flags))).mul(amt)).clamp(0.f, 1.f));
+                        mdl.material[3] = bvec::fromcolor(vec::fromcolor(W(proj.weap, colour)).mul(1-amt).add(vec(WPCOL(&proj, proj.weap, colourproj, WS(proj.flags))).mul(amt)).clamp(0.f, 1.f));
                     }
-                    else if(WF(WK(proj.flags), proj.weap, fxcol, WS(proj.flags))) mdl.material[2] = bvec::fromcolor(FWCOL(P, fxcol, proj));
+                    else if(WF(WK(proj.flags), proj.weap, fxcol, WS(proj.flags))) mdl.material[3] = bvec::fromcolor(FWCOL(P, fxcol, proj));
                     break;
                 }
                 case PROJ_ENTITY:
                 {
                     if(!entities::haloallow(camera1->o, proj.id)) continue;
                     fadeproj(proj, mdl.color.a, mdl.size);
+
                     if(!entities::ents.inrange(proj.id)) continue;
                     gameentity &e = *(gameentity *)entities::ents[proj.id];
                     mdlname = entities::entmdlname(e.type, e.attrs);
-                    mdl.material[0] = proj.owner ? bvec::fromcolor(game::getcolour(proj.owner, game::playerovertone, game::playerovertonelevel, game::playerovertonemix)) : bvec(128, 128, 128);
-                    mdl.material[1] = proj.owner ? bvec::fromcolor(game::getcolour(proj.owner, game::playerundertone, game::playerundertonelevel, game::playerundertonemix)) : bvec(128, 128, 128);
+
+                    int colour = 0;
                     if(e.type == WEAPON)
                     {
                         int attr = m_attr(e.type, e.attrs[0]);
                         if(isweap(attr))
                         {
-                            mdl.material[0] = mdl.material[2] = bvec::fromcolor(W(attr, colour));
+                            colour = W(attr, colour);
                             if(game::focus->isobserver() || game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !entities::showentfull))
                             {
                                 if(drawtex == DRAWTEX_HALO) mdl.flags |= MDL_HALO_TOP;
@@ -2568,11 +2570,16 @@ namespace projs
                         }
                         else continue;
                     }
+                    else continue;
+
+                    loopk(MAXMDLMATERIALS) mdl.material[k] = bvec::fromcolor(colour);
+
                     if(drawtex == DRAWTEX_HALO)
                     {
-                        mdl.material[0].mul(mdl.color.a);
+                        loopk(MAXMDLMATERIALS) mdl.material[k].mul(mdl.color.a);
                         mdl.color.a = hud::radardepth(mdl.o, halodist, halotolerance, haloaddz);
                     }
+
                     break;
                 }
                 default: break;

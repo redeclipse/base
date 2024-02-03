@@ -259,7 +259,10 @@ namespace bomber
             int millis = lastmillis-f.displaytime;
             if(millis <= 1000) trans *= float(millis)/1000.f;
 
-            if(!f.enabled) basemdl.material[0] = mdl.material[0] = bvec(0, 0, 0);
+            if(!f.enabled)
+            {
+                loopk(MAXMDLMATERIALS) basemdl.material[k] = mdl.material[k]  = bvec(0, 0, 0);
+            }
             else if(isbomberaffinity(f))
             {
                 vec above(f.pos(true, true));
@@ -282,7 +285,7 @@ namespace bomber
                     flashcolour(effect.r, effect.g, effect.b, 1.f, 0.f, 0.f, amt);
                 }
 
-                basemdl.material[0] = mdl.material[0] = bvec::fromcolor(effect);
+                loopk(MAXMDLMATERIALS) basemdl.material[k] = mdl.material[k] = bvec::fromcolor(effect);
 
                 if(f.owner != game::focus || game::thirdpersonview(true))
                 {
@@ -292,7 +295,7 @@ namespace bomber
 
                     if(drawtex == DRAWTEX_HALO)
                     {
-                        mdl.material[0].mul(mdl.color.a);
+                        loopk(MAXMDLMATERIALS) mdl.material[k].mul(mdl.color.a);
                         mdl.color.a = hud::radardepth(mdl.o, halodist, halotolerance, haloaddz) * trans;
                     }
 
@@ -303,7 +306,7 @@ namespace bomber
             {
                 vec effect = vec::fromcolor(TEAM(f.team, colour)).mul(trans);
 
-                basemdl.material[0] = mdl.material[0] = bvec::fromcolor(effect);
+                loopk(MAXMDLMATERIALS) basemdl.material[k] = mdl.material[k] = bvec::fromcolor(effect);
                 basemdl.color.a *= trans;
 
                 if(drawtex != DRAWTEX_HALO)
@@ -324,7 +327,7 @@ namespace bomber
 
                 if(drawtex == DRAWTEX_HALO)
                 {
-                    basemdl.material[0].mul(basemdl.color.a);
+                    loopk(MAXMDLMATERIALS) basemdl.material[k].mul(basemdl.color.a);
                     basemdl.color.a = hud::radardepth(basemdl.o, halodist, halotolerance, haloaddz);
                 }
 
