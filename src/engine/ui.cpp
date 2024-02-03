@@ -1701,13 +1701,16 @@ namespace UI
     UIWINARG(zindex, "i", int, VAR_MIN, VAR_MAX);
     UIWINARG(hint, "i", int, 0, VAR_MAX);
 
+    float getuicursorx(bool aspect = true) { return getcursorx(surfacetype == SURFACE_VISOR ? 1 : -1) * (aspect ? hudw / float(hudh) : 1.0f); }
+    float getuicursory() { return getcursory(surfacetype == SURFACE_VISOR ? 1 : -1); }
+
     ICOMMANDVF(0, uicuryaw, window ? window->curyaw : -1.f);
     ICOMMANDVF(0, uicurpitch, window ? window->curpitch : -1.f);
     ICOMMANDVF(0, uihitx, window ? window->hitx : -1.f);
     ICOMMANDVF(0, uihity, window ? window->hity : -1.f);
     ICOMMANDV(0, uiworld, surfacetype == SURFACE_WORLD ? 1 : 0);
-    ICOMMANDVF(0, uicursorx, getcursorx(surfacetype == SURFACE_VISOR ? 1 : -1) * hudw / float(hudh));
-    ICOMMANDVF(0, uicursory, getcursory(surfacetype == SURFACE_VISOR ? 1 : -1));
+    ICOMMANDVF(0, uicursorx, getuicursorx());
+    ICOMMANDVF(0, uicursory, getuicursory());
     ICOMMANDVF(0, uiaspect, hudw / float(hudh));
 
     static void pushclip(float x, float y, float w, float h)
@@ -1851,7 +1854,7 @@ namespace UI
 
         void checkinputsteal()
         {
-            if(type != SURFACE_VISOR) return;
+            if(!interactive) return;
 
             if(inputsteal && !inputsteal->isfocus())
                 inputsteal = NULL;
@@ -1876,12 +1879,12 @@ namespace UI
 
             if(interactive)
             {
-                if(type == SURFACE_VISOR) readyeditors();
+                readyeditors();
 
-                setstate(STATE_HOVER, getcursorx(surfacetype == SURFACE_VISOR ? 1 : -1), getcursory(surfacetype == SURFACE_VISOR ? 1 : -1), childstate&STATE_HOLD_MASK);
-                if(childstate&STATE_HOLD) setstate(STATE_HOLD, getcursorx(surfacetype == SURFACE_VISOR ? 1 : -1), getcursory(surfacetype == SURFACE_VISOR ? 1 : -1), STATE_HOLD, SETSTATE_ANY);
-                if(childstate&STATE_ALT_HOLD) setstate(STATE_ALT_HOLD, getcursorx(surfacetype == SURFACE_VISOR ? 1 : -1), getcursory(surfacetype == SURFACE_VISOR ? 1 : -1), STATE_ALT_HOLD, SETSTATE_ANY);
-                if(childstate&STATE_ESC_HOLD) setstate(STATE_ESC_HOLD, getcursorx(surfacetype == SURFACE_VISOR ? 1 : -1), getcursory(surfacetype == SURFACE_VISOR ? 1 : -1), STATE_ESC_HOLD, SETSTATE_ANY);
+                setstate(STATE_HOVER, getuicursorx(false), getuicursory(), childstate&STATE_HOLD_MASK);
+                if(childstate&STATE_HOLD) setstate(STATE_HOLD, getuicursorx(false), getuicursory(), STATE_HOLD, SETSTATE_ANY);
+                if(childstate&STATE_ALT_HOLD) setstate(STATE_ALT_HOLD, getuicursorx(false), getuicursory(), STATE_ALT_HOLD, SETSTATE_ANY);
+                if(childstate&STATE_ESC_HOLD) setstate(STATE_ESC_HOLD, getuicursorx(false), getuicursory(), STATE_ESC_HOLD, SETSTATE_ANY);
             }
 
             calctextscale();
@@ -1944,7 +1947,7 @@ namespace UI
             {
                 checkinputsteal();
                 if(!mousetracking) mousetrackvec = vec2(0, 0);
-                if(type == SURFACE_VISOR) flusheditors();
+                if(interactive) flusheditors();
             }
 
             popfont();
@@ -2021,7 +2024,7 @@ namespace UI
         int allowinput(bool cursor)
         {
             int ret = 0;
-            loopwindows(w,
+            if(interactive) loopwindows(w,
             {
                 if(!w->visible || !checkexclusive(w)) continue;
                 if(surfacetype == SURFACE_WORLD && !w->attached && (!cursor || w->hitx < 0 || w->hitx > 1 || w->hity < 0 || w->hity > 1)) continue;
@@ -2032,7 +2035,7 @@ namespace UI
 
         bool hasmenu(bool pass = true)
         {
-            loopwindows(w,
+            if(interactive) loopwindows(w,
             {
                 if(!w->visible || !checkexclusive(w)) continue;
                 if(surfacetype != SURFACE_WORLD && w->menu && !(w->state&STATE_HIDDEN)) return !pass || !w->passthrough;
@@ -2060,9 +2063,8 @@ namespace UI
                 if(!w->visible || !checkexclusive(w)) continue;
                 uiscale = 1;
                 if(w->tooltip) // follows cursor
-                    w->setpos((getcursorx(surfacetype == SURFACE_VISOR ? 1 : -1)*float(hudw)/float(hudh))-(w->w*getcursorx(surfacetype == SURFACE_VISOR ? 1 : -1)), getcursory(surfacetype == SURFACE_VISOR ? 1 : -1) >= 0.5f ? getcursory(surfacetype == SURFACE_VISOR ? 1 : -1)-w->h-uitipoffset : getcursory(surfacetype == SURFACE_VISOR ? 1 : -1)+hud::cursorsize+uitipoffset);
-                else if(w->popup && !w->overridepos)
-                    w->setpos((getcursorx(surfacetype == SURFACE_VISOR ? 1 : -1)*float(hudw)/float(hudh))-(w->w*getcursorx(surfacetype == SURFACE_VISOR ? 1 : -1)), getcursory(surfacetype == SURFACE_VISOR ? 1 : -1)-w->h*0.5f);
+                    w->setpos(getuicursorx() - (w->w * getuicursorx(false)), getuicursory() >= 0.5f ? getuicursory() - w->h-uitipoffset : getuicursory() + hud::cursorsize + uitipoffset);
+                else if(w->popup && !w->overridepos) w->setpos(getuicursorx() - (w->w * getuicursorx(false)), getuicursory() - w->h * 0.5f);
                 w->draw();
             });
         }
@@ -2136,6 +2138,7 @@ namespace UI
     UISURFARG(cursortype, "i", int, 0, int(CURSOR_MAX)-1);
     ICOMMANDV(0, uisurfacetype, surfacetype);
     ICOMMANDV(0, uisurfaceformat, surfaceformat);
+    ICOMMANDV(0, uiinteractive, surface && surface->interactive ? 1 : 0);
 
     ICOMMAND(0, uimousetrackx, "", (), {
         if(surface)
@@ -2517,7 +2520,7 @@ namespace UI
 
     void hideall()
     {
-        loopi(SURFACE_MAX) if(surfaces[i] && surfaces[i]->interactive) hideui(NULL, i);
+        loopi(SURFACE_MAX) hideui(NULL, i);
     }
 
     void holdui(const char *name, bool on, int stype, int param, const vec &origin, float maxdist, float yaw, float pitch, float scale, float detentyaw, float detentpitch)
@@ -5405,7 +5408,7 @@ namespace UI
 
         TextEditor() : edit(NULL), keyfilter(NULL), canfocus(true), allowlines(true) {}
 
-        bool isallowed() const { return surfacetype == SURFACE_VISOR; }
+        bool isallowed() const { return surface && surface->interactive; }
         bool iseditor() const { return true; }
 
         void setup(const char *name, int length, int height, float scale_ = 1, const char *initval = NULL, int mode = EDITORUSED, const char *keyfilter_ = NULL, bool allowlines_ = true, int limit_ = 0)
@@ -5714,7 +5717,7 @@ namespace UI
         KeyCatcher() : id(NULL), pressedkey(0) {}
         ~KeyCatcher() { if(inputsteal == this) inputsteal = NULL; }
 
-        bool isallowed() const { return surfacetype == SURFACE_VISOR; }
+        bool isallowed() const { return surface && surface->interactive; }
         bool iskeycatcher() const { return true; }
 
         static const char *typestr() { return "#KeyCatcher"; }
@@ -6981,7 +6984,7 @@ namespace UI
             if(isdown)
             {
                 if(hold) surface->clearstate(hold);
-                if(surface->setstate(action, getcursorx(surfacetype == SURFACE_VISOR ? 1 : -1), getcursory(surfacetype == SURFACE_VISOR ? 1 : -1), 0, setmode, action|hold))
+                if(surface->setstate(action, getuicursorx(false), getuicursory(), 0, setmode, action|hold))
                 {
                     popsurface();
                     return true;
@@ -6989,7 +6992,7 @@ namespace UI
             }
             else if(hold)
             {
-                if(surface->setstate(action, getcursorx(surfacetype == SURFACE_VISOR ? 1 : -1), getcursory(surfacetype == SURFACE_VISOR ? 1 : -1), hold, setmode, action))
+                if(surface->setstate(action, getuicursorx(false), getuicursory(), hold, setmode, action))
                 {
                     surface->clearstate(hold);
                     popsurface();
@@ -7484,7 +7487,7 @@ namespace UI
         {
             surfaces[i] = new Surface;
             surfaces[i]->type = i;
-            surfaces[i]->interactive = i == SURFACE_VISOR || i == SURFACE_WORLD;
+            surfaces[i]->interactive = i == SURFACE_VISOR; // not working yet: || i == SURFACE_WORLD;
         }
 
         surface = NULL;
