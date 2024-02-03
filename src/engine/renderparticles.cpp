@@ -1326,6 +1326,10 @@ static partrenderer *parts[] =
     new quadrenderer("<comp:1,1,2>fire", PT_HAZE|PT_PART|PT_WIND),
     new taperenderer("<grey>particles/sflare", PT_HAZE|PT_TAPE),
     new trailrenderer("<comp:0,0.25,2>hint", PT_TRAIL|PT_LERP|PT_WIND),
+    new quadrenderer("<grey>particles/bubbles", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
+    new quadrenderer("<grey>particles/bubbles", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
+    new quadrenderer("<grey>particles/splash", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
+    new quadrenderer("<grey>particles/splash", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
     &texts, &textontop,
     &explosions, &shockwaves, &shockballs, &glimmerballs, &lightnings, &lightzaps,
     &flares // must be done last!
@@ -1828,7 +1832,7 @@ FVAR(IDF_PERSIST, weatherdropnumscale, 0, 1.0f, FVAR_MAX);
 
 #define MPVVARS(name) \
     FVAR(IDF_MAP, weatherdrops##name, 0, 0, FVAR_MAX); \
-    VAR(IDF_MAP, weatherdroppart##name, PART_FIREBALL_LERP, PART_RAIN, PART_RAIN); \
+    VAR(IDF_MAP, weatherdroppart##name, PART_FIREBALL_LERP, PART_RAIN, PART_LAST); \
     VAR(IDF_MAP, weatherdropcollide##name, -2, -1, STAIN_MAX); \
     VAR(IDF_MAP, weatherdropfade##name, 1, 750, VAR_MAX); \
     VAR(IDF_MAP, weatherdropgravity##name, VAR_MIN, 300, VAR_MAX); \
@@ -1903,7 +1907,7 @@ void part_weather()
     if(!drops) return;
 
     int part = getweatherdroppart();
-    if(part < PART_FIREBALL_LERP || part > PART_RAIN) return;
+    if(part < PART_FIREBALL_LERP || part > PART_LAST) return;
     bool istape = (parts[part]->type&PT_TAPE) != 0;
 
     int collide = getweatherdropcollide(), fade = getweatherdropfade(),
@@ -2132,14 +2136,14 @@ void makeparticle(const vec &o, attrvector &attr)
                 fade = attr[4] > 0 ? attr[4] : 1000, gravity = attr[9] ? attr[9] : -10,
                 hintcolor = attr[17] > 0 ? attr[17] : vec::fromcolor(color).neg().tohexcolor();
             regularflame(PART_FLAME, o, radius, height, color, 3, fade/2, size, blend, hintcolor, hintblend, gravity/2, 0, vel);
-            regularflame(PART_SMOKE, vec(o).addz(2.f*min(radius, height)), radius, height, 0x101008, 1, fade, size, blend, 0x000000, 0.25f, gravity, 0, vel);
+            regularflame(PART_SMOKE_SOFT, vec(o).addz(2.f*min(radius, height)), radius, height, 0x101008, 1, fade, size, blend, 0x000000, 0.25f, gravity, 0, vel);
             break;
         }
         case 1: // smoke vent - <dir>
         {
             float hintblend = attr[18] > 0 ? attr[18]/100.f : 0.f;
             int hintcolor = attr[17] > 0 ? attr[17] : vec::fromcolor(0x897661).neg().tohexcolor();
-            regularsplash(PART_SMOKE, 0x897661, 2, 1, 200, offsetvec(o, attr[1], rnd(10)), 2.4f, 1.f, hintcolor, hintblend);
+            regularsplash(PART_SMOKE_SOFT, 0x897661, 2, 1, 200, offsetvec(o, attr[1], rnd(10)), 2.4f, 1.f, hintcolor, hintblend);
             break;
         }
         case 2: // water fountain - <dir>
@@ -2179,10 +2183,12 @@ void makeparticle(const vec &o, attrvector &attr)
         case 20: // clean flare
         case 21: // noisy flare
         case 22: // muzzle flare
+        case 23: // bubbles
+        case 24: // splash
         {
-            const int typemap[] =        { PART_FLARE,   -1,     -1,     PART_LIGHTNING, PART_FIREBALL,  PART_SMOKE, PART_ELECTRIC,  PART_PLASMA,    PART_SNOW,  PART_SPARK,     -1,     -1,     PART_HAZE,  PART_HAZE_FLAME,    PART_HAZE_TAPE, PART_RAIN,     PART_CLEAN_FLARE,   PART_NOISY_FLARE,   PART_MUZZLE_FLARE };
-            const bool tapemap[] =       { true,         false,  false,  true,           false,          false,      false,          false,          false,      false,          false,  false,  false,      false,              true,           false,         true,               true,               true };
-            const float sizemap[] =      { 0.28f,        0.0f,   0.0f,   0.25f,          4.f,            2.f,        0.6f,           4.f,            0.5f,       0.2f,           0.0f,   0.0f,   8.0f,       8.0f,               1.0f,           1.0f,          0.25f,              0.25f,              0.25f };
+            const int typemap[] =        { PART_FLARE,   -1,     -1,     PART_LIGHTNING, PART_FIREBALL,  PART_SMOKE, PART_ELECTRIC,  PART_PLASMA,    PART_SNOW,  PART_SPARK,     -1,     -1,     PART_HAZE,  PART_HAZE_FLAME,    PART_HAZE_TAPE, PART_RAIN,     PART_CLEAN_FLARE,   PART_NOISY_FLARE,   PART_MUZZLE_FLARE,  PART_BUBBLES_SOFT,      PART_SPLASH_SOFT };
+            const bool tapemap[] =       { true,         false,  false,  true,           false,          false,      false,          false,          false,      false,          false,  false,  false,      false,              true,           false,         true,               true,               true,               false,                  false };
+            const float sizemap[] =      { 0.28f,        0.0f,   0.0f,   0.25f,          4.f,            2.f,        0.6f,           4.f,            0.5f,       0.2f,           0.0f,   0.0f,   8.0f,       8.0f,               1.0f,           1.0f,          0.25f,              0.25f,              0.25f,              0.25f,                  0.25f };
 
             int mapped = attr[0] - 4, type = typemap[mapped];
             bool istape = tapemap[mapped], ishaze = type == PART_HAZE || type == PART_HAZE_FLAME || type == PART_HAZE_TAPE;

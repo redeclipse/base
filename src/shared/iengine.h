@@ -271,12 +271,15 @@ enum
     en(um, Muzzle Flash, MUZZLE_FLASH) en(um, Snow, SNOW) \
     en(um, Haze, HAZE) en(um, Haze Flame, HAZE_FLAME) en(um, Haze Tape, HAZE_TAPE) \
     en(um, Rain, RAIN) \
+    en(um, Bubbles Soft, BUBBLES_SOFT) en(um, Bubbles, BUBBLES) \
+    en(um, Splash Soft, SPLASH_SOFT) en(um, Splash, SPLASH) \
     en(um, Text, TEXT) en(um, Text Ontop, TEXT_ONTOP) \
     en(um, Explosion, EXPLOSION) en(um, Shockwave, SHOCKWAVE) en(um, Shockball, SHOCKBALL) en(um, Glimmery, GLIMMERY) \
     en(um, Lightning, LIGHTNING) en(um, Lightzap, LIGHTZAP) \
     en(um, Lens Flare, LENS_FLARE) \
     en(um, Max, MAX)
 ENUM_DLN(PART);
+ENUM_VAR(PART_LAST, PART_TEXT - 1);
 
 struct particle
 {
@@ -318,6 +321,7 @@ extern void lensflare(const vec &o, const vec &color, bool sun, int sparkle, flo
     en(um, Smoke, SMOKE) en(um, Scorch, SCORCH) en(um, Short Scorch, SCORCH_SHORT) \
     en(um, Blood, BLOOD) en(um, Bullet, BULLET) en(um, Energy, ENERGY) \
     en(um, Splash, SPLASH) en(um, Envmap Splash, ENVSPLASH) en(um, Envmap Splash Glow, ENVSPLASH_GLOW) \
+    en(um, Splat, SPLAT) en(um, Envmap Splat, ENVSPLAT) en(um, Envmap Splat Glow, ENVSPLAT_GLOW) \
     en(um, Stain, STAIN)  en(um, Maximum, MAX)
 ENUM_DLN(STAIN);
 

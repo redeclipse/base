@@ -794,6 +794,9 @@ stainrenderer stains[] =
     stainrenderer("<grey>particles/splash", SF_RND4|SF_ROTATE, 0, 500, 10000),
     stainrenderer("<grey>particles/splash", SF_RND4|SF_ROTATE|SF_ENVMAP, 500, 500, 2000),
     stainrenderer("<grey>particles/splash", SF_RND4|SF_ROTATE|SF_GLOW|SF_ENVMAP, 0, 500, 10000),
+    stainrenderer("<grey>particles/splat", SF_ROTATE, 0, 500, 10000),
+    stainrenderer("<grey>particles/splat", SF_ROTATE|SF_ENVMAP, 500, 500, 2000),
+    stainrenderer("<grey>particles/splat", SF_ROTATE|SF_GLOW|SF_ENVMAP, 0, 500, 10000),
     stainrenderer("<comp>stain", SF_SATURATE, 100, 500, 1000)
 };
 

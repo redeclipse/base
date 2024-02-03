@@ -686,11 +686,11 @@ struct clientstate
     vector<int> loadweap, lastweap, randweap, cpnodes;
     verinfo version;
 
-    clientstate() : model(0), pattern(0), checkpointspawn(1), weapselect(W_CLAW), lastdeath(0), lastspawn(0), lastpain(0), lastregen(0), lastregenamt(0), lastbuff(0), lastshoot(0), lastcook(0), lastaffinity(0),
+    clientstate() : model(-1), pattern(-1), checkpointspawn(1), weapselect(W_CLAW), lastdeath(0), lastspawn(0), lastpain(0), lastregen(0), lastregenamt(0), lastbuff(0), lastshoot(0), lastcook(0), lastaffinity(0),
         actortype(A_PLAYER), spawnpoint(-1), ownernum(-1), skill(0), points(0), frags(0), deaths(0), totalpoints(0), totalfrags(0), totaldeaths(0), spree(0), lasttimeplayed(0), timeplayed(0),
         cpmillis(0), cptime(0), queuepos(-1), hasprize(0), totalavgpos(0), quarantine(false)
     {
-        loopi(2) colours[i] = 0;
+        loopi(2) colours[i] = -1;
         vanity[0] = '\0';
         loadweap.shrink(0);
         lastweap.shrink(0);
@@ -1001,6 +1001,9 @@ struct clientstate
 
     void clearstate()
     {
+        loopi(2) if(colours[i] < 0) colours[i] = rnd(0xFFFFFF);
+        if(model < 0) model = rnd(PLAYERTYPES);
+        if(pattern < 0) pattern = rnd(PLAYERPATTERNS);
         spree = lastdeath = lastpain = lastregen = lastregenamt = lastbuff = lastshoot = lastcook = lastaffinity = hasprize = 0;
         queuepos = -1;
         resetresidual();
@@ -2436,7 +2439,7 @@ struct cament
 namespace client
 {
     extern bool demoplayback, isready, loadedmap;
-    extern int showpresence, showpresencehostinfo, showteamchange, needsmap, gettingmap, triggerid;
+    extern int showpresence, showpresencehostinfo, showteamchange, needsmap, gettingmap, triggerid, playercolour, playercolour2, playermodel, playerpattern;
     extern vector<uchar> messages;
     extern bool radarallow(const vec &o, gameent *d, vec &dir, float &dist, bool self = false);
     extern void clearvotes(gameent *d, bool msg = false);

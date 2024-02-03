@@ -140,6 +140,22 @@ namespace game
         player1->version.gpurenderer = newstring(gfxrenderer);
         if(player1->version.gpuversion) delete[] player1->version.gpuversion;
         player1->version.gpuversion = newstring(gfxversion);
+
+        loopi(2) if(game::player1->colours[i] < 0)
+        {
+            game::player1->colours[i] = i ? client::playercolour2 : client::playercolour;
+            if(game::player1->colours[i] < 0) setvar(i ? "playercolour2" : "playercolour", rnd(0xFFFFFF), true);
+        }
+        if(game::player1->model < 0)
+        {
+            game::player1->model = client::playermodel;
+            if(game::player1->model < 0) setvar("playermodel", rnd(PLAYERTYPES), true);
+        }
+        if(game::player1->pattern < 0)
+        {
+            game::player1->pattern = client::playerpattern;
+            if(game::player1->pattern < 0) setvar("playerpattern", rnd(PLAYERPATTERNS), true);
+        }
     }
 
     VAR(IDF_PERSIST, flashlightvolumetric, 0, 0, 1);
@@ -4494,7 +4510,7 @@ namespace game
         if(d->corrodetime && d->corrodefunc(lastmillis, d->corrodetime))
         {
             int millis = lastmillis - d->lastres[W_R_CORRODE], delay = max(d->corrodedelay, 1);
-            float pc = 1, intensity = 0.0125f + (rnd(5) / 100.f), fade = (d != focus || d->state != CS_ALIVE ? 0.25f : 0.125f) + (rnd(26) / 100.f);
+            float pc = 1, intensity = 0.0625f + (rnd(10) / 100.f), fade = (d != focus || d->state != CS_ALIVE ? 0.2f : 0.1f) + (rnd(20) / 100.f);
 
             if(d->corrodetime - millis < delay) pc *= (d->corrodetime - millis) / float(delay);
             else pc *= 0.75f + ((millis % delay)/float(delay * 4));
@@ -4502,7 +4518,7 @@ namespace game
             loopi(2)
             {
                 vec pos = vec(d->center()).add(vec(rnd(11) - 5, rnd(11) - 5, rnd(21) - 10).mul(pc));
-                regular_part_create(PART_HINT_SOFT, 250, pos, pulsehexcol(d, PULSE_CORRODE, i ? -1 : 50), d->height * intensity * blend * pc, fade * blend * pc, 0, 0, -65);
+                regular_part_create(i ? PART_SPLASH_SOFT : PART_BUBBLES_SOFT, 250, pos, pulsehexcol(d, PULSE_CORRODE, i ? -1 : 50), d->height * intensity * blend * pc * (i ? 0.25f : 1.f), fade * blend * pc, 0, 0, -65);
             }
         }
     }
