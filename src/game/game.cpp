@@ -141,20 +141,20 @@ namespace game
         if(player1->version.gpuversion) delete[] player1->version.gpuversion;
         player1->version.gpuversion = newstring(gfxversion);
 
-        loopi(2) if(game::player1->colours[i] < 0)
+        loopi(2) if(player1->colours[i] < 0)
         {
-            game::player1->colours[i] = i ? client::playercolour2 : client::playercolour;
-            if(game::player1->colours[i] < 0) setvar(i ? "playercolour2" : "playercolour", rnd(0xFFFFFF), true);
+            player1->colours[i] = i ? client::playercolour2 : client::playercolour;
+            if(player1->colours[i] < 0) setvar(i ? "playercolour2" : "playercolour", rnd(0xFFFFFF), true);
         }
-        if(game::player1->model < 0)
+        if(player1->model < 0)
         {
-            game::player1->model = client::playermodel;
-            if(game::player1->model < 0) setvar("playermodel", rnd(PLAYERTYPES), true);
+            player1->model = client::playermodel;
+            if(player1->model < 0) setvar("playermodel", rnd(PLAYERTYPES), true);
         }
-        if(game::player1->pattern < 0)
+        if(player1->pattern < 0)
         {
-            game::player1->pattern = client::playerpattern;
-            if(game::player1->pattern < 0) setvar("playerpattern", rnd(PLAYERPATTERNS), true);
+            player1->pattern = client::playerpattern;
+            if(player1->pattern < 0) setvar("playerpattern", rnd(PLAYERPATTERNS), true);
         }
     }
 
@@ -380,6 +380,9 @@ namespace game
     VAR(IDF_PERSIST, playdamagetones, 0, 1, 3);
     FVAR(IDF_PERSIST, damagetonealarm, 0, 1.f, FVAR_MAX);
     FVAR(IDF_PERSIST, damagetonegain, 0, 0.25f, FVAR_MAX);
+
+    VAR(IDF_PERSIST, prizeeffects, 0, 7, 7); // bit: 1 = sound, 2 = light, 4 = tone
+    FVAR(IDF_PERSIST, prizeloopgain, 0, 1.0f, FVAR_MAX);
 
     VAR(IDF_PERSIST, playreloadnotify, 0, 3, 15);
     FVAR(IDF_PERSIST, reloadnotifygain, 0, 1, FVAR_MAX);
@@ -1276,7 +1279,7 @@ namespace game
                 adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d, PULSE_SHOCK, -1).mul(pc), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
             }
 
-            if(d->hasprize > 0) adddynlight(d->center(), d->height * 10, pulsecolour(d, PULSE_READY), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
+            if(prizeeffects&2 && d->isprize(focus) > 0) adddynlight(d->center(), d->height * 10, pulsecolour(d, PULSE_READY), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
         }
     }
 
@@ -1645,10 +1648,10 @@ namespace game
             }
         }
 
-        if(d->hasprize > 0 && d->isalive())
+        if(prizeeffects&1 && d->isprize(focus))
         {
             if(!issound(d->plchan[PLCHAN_ALERT]))
-                emitsound(S_PRIZELOOP, getplayersoundpos(d), d, &d->plchan[PLCHAN_ALERT], SND_LOOP|SND_PRIORITY);
+                emitsound(S_PRIZELOOP, getplayersoundpos(d), d, &d->plchan[PLCHAN_ALERT], SND_LOOP|SND_PRIORITY, prizeloopgain);
         }
         else if(issound(d->plchan[PLCHAN_ALERT]) && soundsources[d->plchan[PLCHAN_ALERT]].flags&SND_LOOP)
             soundsources[d->plchan[PLCHAN_ALERT]].clear();
@@ -2650,8 +2653,8 @@ namespace game
 
     int findcolour(gameent *d, int comb, bool tone, float level, float mix)
     {
-        if(d->hasprize > 0 && d->isalive() && (tone || d->actortype == A_JANITOR))
-            return pulsehexcol(tone ? PULSE_PRIZE : PULSE_READY);
+        if(prizeeffects&4 && d->isprize(focus) && (tone || d->actortype == A_JANITOR))
+            return pulsehexcol(tone ? PULSE_READY : PULSE_PRIZE);
 
         int col = d->colours[comb ? 1 : 0];
         switch(comb)
@@ -2662,9 +2665,9 @@ namespace game
                 {
                     int r1 = (col>>16), g1 = ((col>>8) & 0xFF), b1 = (col & 0xFF),
                         r2 = (d->colours[0]>>16), g2 = ((d->colours[0]>>8) & 0xFF), b2 = (d->colours[0] & 0xFF),
-                        r3 = clamp(int((r1 * (1 - playercombinemix)) + (r2*playercombinemix)), 0, 255),
-                        g3 = clamp(int((g1 * (1 - playercombinemix)) + (g2*playercombinemix)), 0, 255),
-                        b3 = clamp(int((b1 * (1 - playercombinemix)) + (b2*playercombinemix)), 0, 255);
+                        r3 = clamp(int((r1 * (1 - playercombinemix)) + (r2 * playercombinemix)), 0, 255),
+                        g3 = clamp(int((g1 * (1 - playercombinemix)) + (g2 * playercombinemix)), 0, 255),
+                        b3 = clamp(int((b1 * (1 - playercombinemix)) + (b2 * playercombinemix)), 0, 255);
                     col = (r3<<16) | (g3<<8) | b3;
                     break;
                 }
@@ -4386,7 +4389,7 @@ namespace game
 
     bool haloallow(const vec &o, gameent *d, bool justtest, bool check)
     {
-        if(d->hasprize > 0 && d->isalive()) return true;
+        if(d->isprize(focus)) return true;
         if(d->actortype >= A_ENVIRONMENT) return false;
         if(!wanthalos(check, (d == focus ? playerhalos&1 : playerhalos&2) != 0) || (d == focus && inzoom())) return false;
         if(justtest) return true;
@@ -4436,7 +4439,7 @@ namespace game
         {
             if(haloallow(camera1->o, d))
             {
-                if(d->hasprize > 0 || focus->isobserver() || (m_team(gamemode, mutators) && focus->team == d->team))
+                if(d->isprize(focus) || focus->isobserver() || (m_team(gamemode, mutators) && focus->team == d->team))
                     mdl.flags |= MDL_HALO_TOP;
             }
             else

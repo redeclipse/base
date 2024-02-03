@@ -539,8 +539,8 @@ namespace hud
         {
             gameent *d = NULL;
             int numdyns = game::numdynents();
-            loopi(numdyns) if((d = (gameent *)game::iterdynents(i)) && ((d->hasprize > 0 && d->isalive()) || d->actortype < A_ENEMY) && d != game::focus && !d->isspectator()) // do the actor test here so it doesn't close UIs that don't exist
-                MAKEUI(player, d->clientnum, (d->hasprize > 0 || game::focus->isspectator() || (m_team(game::gamemode, game::mutators) && d->team == game::focus->team)) && game::haloallow(camera1->o, d, false, false), d->abovehead());
+            loopi(numdyns) if((d = (gameent *)game::iterdynents(i)) && (d->isprize(game::focus) || d->actortype < A_ENEMY) && d != game::focus && !d->isspectator()) // do the actor test here so it doesn't close UIs that don't exist
+                MAKEUI(player, d->clientnum, (d->isprize(game::focus) || game::focus->isspectator() || (m_team(game::gamemode, game::mutators) && d->team == game::focus->team)) && game::haloallow(camera1->o, d, false, false), d->abovehead());
         }
 
         entities::checkui();

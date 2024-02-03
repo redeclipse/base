@@ -1396,6 +1396,14 @@ struct gameent : dynent, clientstate
         hasprize = prize;
     }
 
+    int isprize(gameent *d = NULL)
+    {
+        if(hasprize > 0) return 1;
+        if(getammo(W_ROCKET, lastmillis) > 0) return 2;
+        if(d && revengeprize && dominating.find(d) >= 0) return 3;
+        return 0;
+    }
+
     void addstun(int weap, int millis, int delay, float scale, float gravity)
     {
         if(delay <= 0 || (scale == 0 && gravity == 0)) return;

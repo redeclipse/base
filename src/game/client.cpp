@@ -789,7 +789,7 @@ namespace client
         if(m_duke(game::gamemode, game::mutators) && (!d->lastdeath || lastmillis-d->lastdeath >= 1000)) return false;
         dir = vec(d->center()).sub(o);
         dist = dir.magnitude();
-        return d->hasprize > 0 || !hud::radarlimited(dist);
+        return d->isprize(game::focus) > 0 || !hud::radarlimited(dist);
     }
 
     int getresidualfx(gameent *d, int n, int c)
@@ -4086,6 +4086,7 @@ namespace client
 
     CLCOMMAND(buffing, intret(d->lastbuff));
     CLCOMMAND(hasprize, intret(d->hasprize));
+    CLCOMMAND(isprize, intret(d->isprize(game::focus)));
     CLCOMMAND(collects, intret(d->collects.length()));
 
     CLCOMMAND(burnfunc, intret(d->burntime ? d->burnfunc(lastmillis, d->burntime) : 0));
