@@ -127,12 +127,12 @@ struct animmodel : model
         };
 
         part *owner;
-        Texture *tex, *decal, *masks, *envmap, *normalmap;
+        Texture *tex, *decal, *masks, *envmap, *normalmap, *patternmap;
         Shader *shader, *rsmshader;
         int flags;
         shaderparamskey *key;
 
-        skin() : owner(0), tex(notexture), decal(NULL), masks(notexture), envmap(NULL), normalmap(NULL), shader(NULL), rsmshader(NULL), flags(CULL_FACE|CULL_HALO), key(NULL) {}
+        skin() : owner(0), tex(notexture), decal(NULL), masks(notexture), envmap(NULL), normalmap(NULL), patternmap(NULL), shader(NULL), rsmshader(NULL), flags(CULL_FACE|CULL_HALO), key(NULL) {}
 
         bool firstmodel(const animstate *as) const
         {
@@ -161,7 +161,7 @@ struct animmodel : model
 
         bool canpattern(const modelstate *state, const animstate *as) const
         {
-            if(!state->pattern || state->pattern == notexture) return false;
+            if((!state->pattern || state->pattern == notexture) && (!patternmap || patternmap == notexture)) return false;
             return !(state->flags&MDL_NOPATTERN) || firstmodel(as);
         }
 
@@ -339,33 +339,38 @@ struct animmodel : model
                 }
                 return;
             }
+
             int activetmu = 0;
             if(tex!=lasttex)
             {
                 settexture(tex);
                 lasttex = tex;
             }
-            if(bumpmapped() && normalmap!=lastnormalmap)
+
+            if(bumpmapped() && normalmap != lastnormalmap)
             {
                 glActiveTexture_(GL_TEXTURE3);
                 activetmu = 3;
                 settexture(normalmap);
                 lastnormalmap = normalmap;
             }
-            if(decaled() && decal!=lastdecal)
+
+            if(decaled() && decal != lastdecal)
             {
                 glActiveTexture_(GL_TEXTURE4);
                 activetmu = 4;
                 settexture(decal);
                 lastdecal = decal;
             }
-            if(masked() && masks!=lastmasks)
+
+            if(masked() && masks != lastmasks)
             {
                 glActiveTexture_(GL_TEXTURE1);
                 activetmu = 1;
                 settexture(masks);
                 lastmasks = masks;
             }
+
             int oldflags = flags;
             if(flags&ALLOW_MIXER)
             {
@@ -382,24 +387,28 @@ struct animmodel : model
                 }
                 else flags &= ~ENABLE_MIXER;
             }
+
             if(flags&ALLOW_PATTERN)
             {
                 if(canpattern(state, as))
                 {
+                    Texture *pattern = state->pattern && state->pattern != notexture ? state->pattern : patternmap;
+
                     flags |= ENABLE_PATTERN;
-                    if(state->pattern != lastpattern)
+                    if(pattern != lastpattern)
                     {
                         glActiveTexture_(GL_TEXTURE6);
                         activetmu = 6;
-                        settexture(state->pattern);
-                        lastpattern = state->pattern;
+                        settexture(pattern);
+                        lastpattern = pattern;
                     }
 
-                    if(state->pattern->bpp == 4) flags |= RGBA_PATTERN;
+                    if(pattern->bpp == 4) flags |= RGBA_PATTERN;
                     else flags &= ~RGBA_PATTERN;
                 }
                 else flags &= ~(ENABLE_PATTERN|RGBA_PATTERN);
             }
+
             if(envmapped())
             {
                 GLuint emtex = envmap ? envmap->id : closestenvmaptex;
@@ -411,6 +420,7 @@ struct animmodel : model
                     lastenvmaptex = emtex;
                 }
             }
+
             if(activetmu != 0) glActiveTexture_(GL_TEXTURE0);
             setshader(b, as, flags != oldflags);
             setshaderparams(b, as);
@@ -2222,6 +2232,12 @@ template<class MDL, class MESH> struct modelcommands
         loopskins(meshname, s, s.normalmap = normalmaptex);
     }
 
+    static void setpatternmap(char *meshname, char *patternmapfile)
+    {
+        Texture *patternmaptex = textureload(makerelpath(MDL::dir, patternmapfile), 0, true, false);
+        loopskins(meshname, s, s.patternmap = patternmaptex);
+    }
+
     static void setdecal(char *meshname, char *decal)
     {
         loopskins(meshname, s,
@@ -2304,6 +2320,7 @@ template<class MDL, class MESH> struct modelcommands
             modelcommand(setcolor, "color", "sfff");
             modelcommand(setenvmap, "envmap", "ssgg");
             modelcommand(setbumpmap, "bumpmap", "ss");
+            modelcommand(setpatternmap, "patternmap", "ss");
             modelcommand(setdecal, "decal", "ss");
             modelcommand(setfullbright, "fullbright", "sf");
             modelcommand(setshader, "shader", "ss");
