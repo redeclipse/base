@@ -122,7 +122,8 @@ struct animmodel : model
             DITHER         = 1<<4,
             CULL_FACE      = 1<<5,
             DOUBLE_SIDED   = 1<<6,
-            CULL_HALO      = 1<<7
+            CULL_HALO      = 1<<7,
+            RGBA_PATTERN   = 1<<8
         };
 
         part *owner;
@@ -156,6 +157,8 @@ struct animmodel : model
         }
 
         bool patterned() const { return (flags&ENABLE_PATTERN) != 0; }
+        bool rgbapattern() const { return (flags&RGBA_PATTERN) != 0; }
+
         bool canpattern(const modelstate *state, const animstate *as) const
         {
             if(!state->pattern || state->pattern == notexture) return false;
@@ -257,7 +260,7 @@ struct animmodel : model
             if(masked() || envmapped()) opts[optslen++] = 'm';
             if(envmapped()) opts[optslen++] = 'e';
             if(mixed()) opts[optslen++] = 'x';
-            if(patterned()) opts[optslen++] = 'p';
+            if(patterned()) opts[optslen++] = rgbapattern() ? 'P' : 'p';
             if(doublesided()) opts[optslen++] = 'c';
             opts[optslen++] = '\0';
 
@@ -391,8 +394,11 @@ struct animmodel : model
                         settexture(state->pattern);
                         lastpattern = state->pattern;
                     }
+
+                    if(state->pattern->bpp == 4) flags |= RGBA_PATTERN;
+                    else flags &= ~RGBA_PATTERN;
                 }
-                else flags &= ~ENABLE_PATTERN;
+                else flags &= ~(ENABLE_PATTERN|RGBA_PATTERN);
             }
             if(envmapped())
             {
