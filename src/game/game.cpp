@@ -2615,48 +2615,27 @@ namespace game
         {
             int col = colour;
 
-            if(!col && isweap(weapselect))
+            if(mix > 0)
             {
-                col = W(weapselect, colour);
+                int r1 = (col>>16), g1 = ((col>>8)&0xFF), b1 = (col&0xFF),
+                    c = TEAM(team, colour), r2 = (c>>16), g2 = ((c>>8)&0xFF), b2 = (c&0xFF),
+                    r3 = clamp(int((r1*(1-mix))+(r2*mix)), 0, 255),
+                    g3 = clamp(int((g1*(1-mix))+(g2*mix)), 0, 255),
+                    b3 = clamp(int((b1*(1-mix))+(b2*mix)), 0, 255);
 
-                #if 0 // was cool, but can result in weird colours being extracted at specific moments elsewhere
-                int lastweap = d->getlastweap(m_weapon(d->actortype, gamemode, mutators));
-                if(isweap(lastweap) && d->weapselect != lastweap && (d->weapstate[d->weapselect] == W_S_USE || d->weapstate[d->weapselect] == W_S_SWITCH))
-                {
-                    float amt = (lastmillis-d->weaptime[d->weapselect])/float(d->weapwait[d->weapselect]);
-                    int r2 = (col>>16), g2 = ((col>>8)&0xFF), b2 = (col&0xFF),
-                        c = W(lastweap, colour), r1 = (c>>16), g1 = ((c>>8)&0xFF), b1 = (c&0xFF),
-                        r3 = clamp(int((r1*(1-amt))+(r2*amt)), 0, 255),
-                        g3 = clamp(int((g1*(1-amt))+(g2*amt)), 0, 255),
-                        b3 = clamp(int((b1*(1-amt))+(b2*amt)), 0, 255);
-
-                    col = (r3<<16)|(g3<<8)|b3;
-                }
-                #endif
+                col = (r3<<16)|(g3<<8)|b3;
             }
 
-            if(col)
-            {
-                if(mix > 0)
-                {
-                    int r1 = (col>>16), g1 = ((col>>8)&0xFF), b1 = (col&0xFF),
-                        c = TEAM(team, colour), r2 = (c>>16), g2 = ((c>>8)&0xFF), b2 = (c&0xFF),
-                        r3 = clamp(int((r1*(1-mix))+(r2*mix)), 0, 255),
-                        g3 = clamp(int((g1*(1-mix))+(g2*mix)), 0, 255),
-                        b3 = clamp(int((b1*(1-mix))+(b2*mix)), 0, 255);
-
-                    col = (r3<<16)|(g3<<8)|b3;
-                }
-
-                return levelcolour(col, level);
-            }
+            return levelcolour(col, level);
         }
+
         return levelcolour(TEAM(team, colour), level);
     }
 
     int findcolour(gameent *d, int comb, bool tone, float level, float mix)
     {
-        if(d->hasprize > 0 && d->isalive() && (tone || d->actortype == A_JANITOR)) return pulsehexcol(tone ? PULSE_PRIZE : PULSE_READY);
+        if(d->hasprize > 0 && d->isalive() && (tone || d->actortype == A_JANITOR))
+            return pulsehexcol(tone ? PULSE_PRIZE : PULSE_READY);
 
         int col = d->colours[comb ? 1 : 0];
         switch(comb)
