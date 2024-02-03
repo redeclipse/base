@@ -612,7 +612,7 @@ struct gamelog
         addinfo(g.infos, "actortype", d->actortype);
         addinfo(g.infos, "team", d->team);
         addinfo(g.infos, "colour", d->colours[0]);
-        addinfo(g.infos, "scolour", d->colours[1]);
+        addinfo(g.infos, "colour2", d->colours[1]);
         addinfo(g.infos, "model", d->model);
         addinfo(g.infos, "privilege", d->privilege);
         addinfo(g.infos, "weapselect", d->weapselect);

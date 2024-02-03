@@ -542,20 +542,20 @@ namespace client
     }
     SVARF(IDF_PERSIST, playername, "", setplayername(playername));
 
-    #define SETPLAYERINFO(name, access, flags, minval, maxval, setter) \
+    #define SETPLAYERINFO(name, access, flags, maxval) \
         void setplayer##name(int value) \
         { \
-            value = clamp(setter, minval, maxval); \
-            if(game::player1->access == value) return; \
-            game::player1->access = value; \
+            int realval = min(value < 0 ? rnd(min(maxval, 0xFFFFFE) + 1) : value, maxval); \
+            if(game::player1->access == realval) return; \
+            game::player1->access = realval; \
             sendplayerinfo = true; \
         } \
-        VARF(IDF_PERSIST|flags, player##name, minval, minval, maxval, setplayer##name(player##name));
+        VARF(IDF_PERSIST|flags, player##name, -1, rnd(min(maxval, 0xFFFFFE) + 1), maxval, setplayer##name(player##name));
 
-    SETPLAYERINFO(colour, colours[0], IDF_HEX, 0, 0xFFFFFF, value);
-    SETPLAYERINFO(scolour, colours[1], IDF_HEX, 0, 0xFFFFFF, value ? value : 0xFFFFFF);
-    SETPLAYERINFO(model, model, 0, 0, PLAYERTYPES-1, value);
-    SETPLAYERINFO(pattern, pattern, 0, 0, PLAYERPATTERNS-1, value);
+    SETPLAYERINFO(colour, colours[0], IDF_HEX, 0xFFFFFF);
+    SETPLAYERINFO(colour2, colours[1], IDF_HEX, 0xFFFFFF);
+    SETPLAYERINFO(model, model, 0, PLAYERTYPES-1);
+    SETPLAYERINFO(pattern, pattern, 0, PLAYERPATTERNS-1);
 
     SVARF(IDF_PERSIST, playervanity, "", if(game::player1->setvanity(playervanity)) sendplayerinfo = true;);
 
@@ -4029,7 +4029,7 @@ namespace client
     CLCOMMAND(obliterated, intret(d->obliterated ? 1 : 0));
     CLCOMMAND(actortype, intret(d->actortype));
     CLCOMMAND(pcolour, intret(d->colours[0]));
-    CLCOMMAND(scolour, intret(d->colours[1]));
+    CLCOMMAND(colour2, intret(d->colours[1]));
     CLCOMMAND(model, intret(d->model%PLAYERTYPES));
     CLCOMMAND(pattern, intret(d->pattern%PLAYERPATTERNS));
     CLCOMMAND(vanity, result(d->vanity));

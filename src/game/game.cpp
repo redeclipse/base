@@ -2605,7 +2605,7 @@ namespace game
     int levelcolour(int colour, float level)
     {
         if(level != 1)
-            return (clamp(int((colour>>16)*level), 0, 255)<<16)|(clamp(int(((colour>>8)&0xFF)*level), 0, 255)<<8)|(clamp(int((colour&0xFF)*level), 0, 255));
+            return (clamp(int((colour>>16) * level), 0, 255)<<16) | (clamp(int(((colour>>8) & 0xFF) * level), 0, 255)<<8) | (clamp(int((colour & 0xFF) * level), 0, 255));
         return colour;
     }
 
@@ -2613,20 +2613,18 @@ namespace game
     {
         if(tone)
         {
-            int col = colour;
-
             if(mix > 0)
             {
-                int r1 = (col>>16), g1 = ((col>>8)&0xFF), b1 = (col&0xFF),
-                    c = TEAM(team, colour), r2 = (c>>16), g2 = ((c>>8)&0xFF), b2 = (c&0xFF),
-                    r3 = clamp(int((r1*(1-mix))+(r2*mix)), 0, 255),
-                    g3 = clamp(int((g1*(1-mix))+(g2*mix)), 0, 255),
-                    b3 = clamp(int((b1*(1-mix))+(b2*mix)), 0, 255);
+                int r1 = (colour>>16), g1 = ((colour>>8) & 0xFF), b1 = (colour & 0xFF),
+                    c = TEAM(team, colour), r2 = (c>>16), g2 = ((c>>8) & 0xFF), b2 = (c & 0xFF),
+                    r3 = clamp(int((r1 * (1 - mix)) + (r2 * mix)), 0, 255),
+                    g3 = clamp(int((g1 * (1 - mix)) + (g2 * mix)), 0, 255),
+                    b3 = clamp(int((b1 * (1 - mix)) + (b2 * mix)), 0, 255);
 
-                col = (r3<<16)|(g3<<8)|b3;
+                colour = (r3<<16) | (g3<<8) | b3;
             }
 
-            return levelcolour(col, level);
+            return levelcolour(colour, level);
         }
 
         return levelcolour(TEAM(team, colour), level);
@@ -2644,20 +2642,22 @@ namespace game
             {
                 if(playercombinemix > 0)
                 {
-                    int r1 = (col>>16), g1 = ((col>>8)&0xFF), b1 = (col&0xFF),
-                        r2 = (d->colours[0]>>16), g2 = ((d->colours[1]>>8)&0xFF), b2 = (d->colours[1]&0xFF),
-                        r3 = clamp(int((r1*(1-playercombinemix))+(r2*playercombinemix)), 0, 255),
-                        g3 = clamp(int((g1*(1-playercombinemix))+(g2*playercombinemix)), 0, 255),
-                        b3 = clamp(int((b1*(1-playercombinemix))+(b2*playercombinemix)), 0, 255);
-                    col = (r3<<16)|(g3<<8)|b3;
+                    int r1 = (col>>16), g1 = ((col>>8) & 0xFF), b1 = (col & 0xFF),
+                        r2 = (d->colours[0]>>16), g2 = ((d->colours[0]>>8) & 0xFF), b2 = (d->colours[0] & 0xFF),
+                        r3 = clamp(int((r1 * (1 - playercombinemix)) + (r2*playercombinemix)), 0, 255),
+                        g3 = clamp(int((g1 * (1 - playercombinemix)) + (g2*playercombinemix)), 0, 255),
+                        b3 = clamp(int((b1 * (1 - playercombinemix)) + (b2*playercombinemix)), 0, 255);
+                    col = (r3<<16) | (g3<<8) | b3;
                     break;
                 }
+
                 col = d->colours[0];
                 break;
             }
             case 1: col = d->colours[1]; break;
             case 0: default: break;
         }
+
         return findcolour(d->team, col, d->weapselect, tone, level, mix);
     }
 
@@ -2687,6 +2687,7 @@ namespace game
             case -1: return findcolour(d, 0, true, level, 0); break;
             case -2: default: return levelcolour(d->colours[0], level); break;
         }
+
         return 0;
     }
 
