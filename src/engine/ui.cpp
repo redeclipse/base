@@ -7550,7 +7550,7 @@ namespace UI
         int oldhudw = hudw, oldhudh = hudh, oldsf = surfaceformat;
 
         int processed = 0;
-        surface->texs.sort(texsort);
+        if(compositelimit) surface->texs.sort(texsort);
 
         loopv(surface->texs)
         {
@@ -7631,7 +7631,7 @@ namespace UI
                 surface->texs.remove(i--);
             }
 
-            if(++processed >= compositelimit) break;
+            if(compositelimit > 0 && ++processed >= compositelimit) break;
         }
 
         popsurface();

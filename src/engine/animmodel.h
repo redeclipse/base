@@ -1993,9 +1993,9 @@ struct animmodel : model
     struct lodmdl
     {
         char *name;
-        float dist;
+        float sqdist;
 
-        lodmdl() : name(NULL), dist(0) {}
+        lodmdl() : name(NULL), sqdist(0) {}
         ~lodmdl() { DELETEA(name); }
     };
     vector<lodmdl> lod;
@@ -2003,30 +2003,52 @@ struct animmodel : model
     void addlod(const char *str, float dist)
     {
         if(!str || !*str || dist <= 0) return;
-        float sqdist = dist*dist;
-        loopv(lod) if(!strcmp(lod[i].name, str) || lod[i].dist == sqdist) return;
+
+        float sqdist = dist * dist;
+        loopv(lod) if(!strcmp(lod[i].name, str) || lod[i].sqdist == sqdist) return;
+
         defformatstring(s, "%s/%s", name, str);
         lodmdl &lm = lod.add();
         lm.name = newstring(s);
-        lm.dist = sqdist;
+        lm.sqdist = sqdist;
     }
 
-    const char *lodmodel(float sqdist, float sqoff)
+    const char *bestlod(float sqdist, float sqoff)
     {
         if(sqdist <= 0) return NULL;
+
         int curid = -1;
         float curdist = 0;
         loopv(lod)
         {
-            float curlod = lod[i].dist + sqoff;
-            if(sqdist >= curlod && (curid < 0 || curlod > curdist))
+            float curlod = lod[i].sqdist + sqoff;
+            if(sqdist >= curlod && (curid < 0 || curlod <= curdist))
             {
                 curid = i;
                 curdist = curlod;
             }
         }
+
         return lod.inrange(curid) ? lod[curid].name : NULL;
     }
+
+    const char *lowestlod()
+    {
+        int curid = -1;
+        float curdist = 0;
+        loopv(lod)
+        {
+            if(curid < 0 || lod[i].sqdist > curdist)
+            {
+                curid = i;
+                curdist = lod[i].sqdist;
+            }
+        }
+
+        return lod.inrange(curid) ? lod[curid].name : NULL;
+    }
+
+   bool haslod() const { return !lod.empty(); }
 };
 
 hashnameset<animmodel::meshgroup *> animmodel::meshgroups;
