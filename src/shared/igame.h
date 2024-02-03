@@ -74,16 +74,23 @@ namespace hud
     extern char *progresstex, *progringtex;
     extern float cursorsize;
     extern const char *modeimage();
+
     extern float radarlimit(float dist = -1);
     extern float radardepth(const vec &o, float dist = -1, float tolerance = 0, float addz = 0);
     extern bool radarlimited(float dist);
+
     extern int hasinput(bool pass = false, bool cursor = false);
     extern bool textinput(const char *str, int len);
     extern bool keypress(int code, bool isdown);
+
+    extern void drawpointers(int w, int h, float x, float y, float blend = 1);
+    extern void drawclip(int weap, int x, int y, float s, bool preview = false, float blend = 1);
+
     extern void visorinfo(float &x, float &y);
     extern void startrender(int w, int h, bool wantvisor, bool noview = false, uint outfbo = 0);
     extern void visorrender(int w, int h, bool wantvisor, bool noview = false, uint outfbo = 0);
     extern void endrender(int w, int h, bool wantvisor, bool noview = false, uint outfbo = 0);
+
     extern bool getcolour(vec &colour);
     extern void update(int w, int h);
     extern bool needminimap();
@@ -93,7 +100,6 @@ namespace hud
     extern void drawsized(float x, float y, float s, bool flipx = false, bool flipy = false);
     extern void drawblend(int x, int y, int w, int h, float v);
     extern void colourskew(float &r, float &g, float &b, float skew = 1);
-    extern void drawclip(int weap, int x, int y, float s, bool preview = false, bool wantvisor = false, float blend = 1);
 }
 
 namespace physics

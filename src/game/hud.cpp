@@ -112,7 +112,6 @@ namespace hud
     VAR(IDF_PERSIST, showindicator, 0, 4, 4);
     FVAR(IDF_PERSIST, indicatorsize, 0, 0.03f, 1000);
     FVAR(IDF_PERSIST, indicatorblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, indicatorvisor, 0, 0, 1);
     VAR(IDF_PERSIST, indicatorminattack, 0, 1000, VAR_MAX);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, indicatortex, "<grey>textures/hud/indicator", 3);
 
@@ -120,7 +119,6 @@ namespace hud
     VAR(IDF_PERSIST, showcrosshair, 0, 2, 2); // 0 = off, 1 = on, 2 = blend depending on current accuracy level
     VAR(IDF_PERSIST, crosshairdistance, 0, 0, 1); // 0 = off, 1 = shows distance to crosshair target
     FVAR(IDF_PERSIST, crosshairdistblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, crosshairdistvisor, 0, 0, 1);
     VAR(IDF_PERSIST, crosshairdistancex, VAR_MIN, 160, VAR_MAX); // offset from the crosshair
     VAR(IDF_PERSIST, crosshairdistancey, VAR_MIN, 80, VAR_MAX); // offset from the crosshair
     VAR(IDF_PERSIST, crosshairweapons, 0, 1, 3); // 0 = off, &1 = crosshair-specific weapons, &2 = also appy colour
@@ -128,7 +126,6 @@ namespace hud
     FVAR(IDF_PERSIST, crosshairscale, 0, 1.0f, 4.0f);
     VAR(IDF_PERSIST, crosshairhitspeed, 0, 500, VAR_MAX);
     FVAR(IDF_PERSIST, crosshairblend, 0, 0.75f, 1);
-    FVAR(IDF_PERSIST, crosshairvisor, 0, 0, 1);
     FVAR(IDF_PERSIST, crosshairaccamt, 0, 0, 1);
     VAR(IDF_PERSIST, crosshairflash, 0, 1, 1);
     FVAR(IDF_PERSIST, crosshairthrob, 0, 0, 1000);
@@ -139,109 +136,88 @@ namespace hud
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, hithairtex, "crosshairs/cross-01-hit", 3);
     FVAR(IDF_PERSIST, clawcrosshairsize, 0, 0.045f, 1000);
     FVAR(IDF_PERSIST, clawcrosshairblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, clawcrosshairvisor, 0, 0, 1);
     TVAR(IDF_PERSIST, clawcrosshairtex, "crosshairs/triangle-02", 3);
     TVAR(IDF_PERSIST, clawhithairtex, "crosshairs/triangle-02-hit", 3);
     FVAR(IDF_PERSIST, pistolcrosshairsize, 0, 0.045f, 1000);
     FVAR(IDF_PERSIST, pistolcrosshairblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, pistolcrosshairvisor, 0, 0, 1);
     TVAR(IDF_PERSIST, pistolcrosshairtex, "crosshairs/simple-04", 3);
     TVAR(IDF_PERSIST, pistolhithairtex, "crosshairs/simple-04-hit", 3);
     FVAR(IDF_PERSIST, swordcrosshairsize, 0, 0.045f, 1000);
     FVAR(IDF_PERSIST, swordcrosshairblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, swordcrosshairvisor, 0, 0, 1);
     TVAR(IDF_PERSIST, swordcrosshairtex, "crosshairs/simple-02", 3);
     TVAR(IDF_PERSIST, swordhithairtex, "crosshairs/simple-02-hit", 3);
     FVAR(IDF_PERSIST, shotguncrosshairsize, 0, 0.045f, 1000);
     FVAR(IDF_PERSIST, shotguncrosshairblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, shotguncrosshairvisor, 0, 0, 1);
     TVAR(IDF_PERSIST, shotguncrosshairtex, "crosshairs/cross-02", 3);
     TVAR(IDF_PERSIST, shotgunhithairtex, "crosshairs/cross-02-hit", 3);
     FVAR(IDF_PERSIST, smgcrosshairsize, 0, 0.045f, 1000);
     FVAR(IDF_PERSIST, smgcrosshairblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, smgcrosshairvisor, 0, 0, 1);
     TVAR(IDF_PERSIST, smgcrosshairtex, "crosshairs/simple-03", 3);
     TVAR(IDF_PERSIST, smghithairtex, "crosshairs/simple-03-hit", 3);
     FVAR(IDF_PERSIST, plasmacrosshairsize, 0, 0.06f, 1000);
     FVAR(IDF_PERSIST, plasmacrosshairblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, plasmacrosshairvisor, 0, 0, 1);
     TVAR(IDF_PERSIST, plasmacrosshairtex, "crosshairs/circle-05", 3);
     TVAR(IDF_PERSIST, plasmahithairtex, "crosshairs/circle-05-hit", 3);
     FVAR(IDF_PERSIST, zappercrosshairsize, 0, 0.06f, 1000);
     FVAR(IDF_PERSIST, zappercrosshairblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, zappercrosshairvisor, 0, 0, 1);
     TVAR(IDF_PERSIST, zappercrosshairtex, "crosshairs/circle-03", 3);
     TVAR(IDF_PERSIST, zapperhithairtex, "crosshairs/circle-03-hit", 3);
     FVAR(IDF_PERSIST, flamercrosshairsize, 0, 0.06f, 1000);
     FVAR(IDF_PERSIST, flamercrosshairblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, flamercrosshairvisor, 0, 0, 1);
     TVAR(IDF_PERSIST, flamercrosshairtex, "crosshairs/circle-06", 3);
     TVAR(IDF_PERSIST, flamerhithairtex, "crosshairs/circle-06-hit", 3);
     FVAR(IDF_PERSIST, riflecrosshairsize, 0, 0.075f, 1000);
     FVAR(IDF_PERSIST, riflecrosshairblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, riflecrosshairvisor, 0, 0, 1);
     TVAR(IDF_PERSIST, riflecrosshairtex, "crosshairs/simple-01", 3);
     TVAR(IDF_PERSIST, riflehithairtex, "crosshairs/simple-01-hit", 3);
     FVAR(IDF_PERSIST, corrodercrosshairsize, 0, 0.075f, 1000);
     FVAR(IDF_PERSIST, corrodercrosshairblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, corrodercrosshairvisor, 0, 0, 1);
     TVAR(IDF_PERSIST, corrodercrosshairtex, "crosshairs/circle-01", 3);
     TVAR(IDF_PERSIST, corroderhithairtex, "crosshairs/circle-01-hit", 3);
     FVAR(IDF_PERSIST, grenadecrosshairsize, 0, 0.05f, 1000);
     FVAR(IDF_PERSIST, grenadecrosshairblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, grenadecrosshairvisor, 0, 0, 1);
     TVAR(IDF_PERSIST, grenadecrosshairtex, "crosshairs/circle-02", 3);
     TVAR(IDF_PERSIST, grenadehithairtex, "crosshairs/circle-02-hit", 3);
     FVAR(IDF_PERSIST, minecrosshairsize, 0, 0.05f, 1000);
     FVAR(IDF_PERSIST, minecrosshairblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, minecrosshairvisor, 0, 0, 1);
     TVAR(IDF_PERSIST, minecrosshairtex, "crosshairs/circle-02", 3);
     TVAR(IDF_PERSIST, minehithairtex, "crosshairs/circle-02-hit", 3);
     FVAR(IDF_PERSIST, rocketcrosshairsize, 0, 0.05f, 1000);
     FVAR(IDF_PERSIST, rocketcrosshairblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, rocketcrosshairvisor, 0, 0, 1);
     TVAR(IDF_PERSIST, rocketcrosshairtex, "crosshairs/circle-01", 3);
     TVAR(IDF_PERSIST, rockethithairtex, "crosshairs/circle-01-hit", 3);
     FVAR(IDF_PERSIST, meleecrosshairsize, 0, 0.045f, 1000);
     FVAR(IDF_PERSIST, meleecrosshairblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, meleecrosshairvisor, 0, 0, 1);
     TVAR(IDF_PERSIST, meleecrosshairtex, "crosshairs/triangle-02", 3);
     TVAR(IDF_PERSIST, meleehithairtex, "crosshairs/triangle-02-hit", 3);
 
     FVAR(IDF_PERSIST, editcursorsize, 0, 0.05f, 1000);
     FVAR(IDF_PERSIST, editcursorblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, editcursorvisor, 0, 1, 1);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, editcursortex, "crosshairs/cross-01", 3);
     FVAR(IDF_PERSIST, speccursorsize, 0, 0.05f, 1000);
     FVAR(IDF_PERSIST, speccursorblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, speccursorvisor, 0, 0, 1);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, speccursortex, "crosshairs/cross-01", 3);
     FVAR(IDF_PERSIST, tvcursorsize, 0, 0.05f, 1000);
     FVAR(IDF_PERSIST, tvcursorblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, tvcursorvisor, 0, 0, 1);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, tvcursortex, "", 3);
     FVAR(IDF_PERSIST, teamcrosshairsize, 0, 0.06f, 1000);
     FVAR(IDF_PERSIST, teamcrosshairblend, 0, 0.5f, 1);
-    FVAR(IDF_PERSIST, teamcrosshairvisor, 0, 0, 1);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, teamcrosshairtex, "<grey>textures/icons/warning", 3);
     VAR(IDF_PERSIST, teamcrosshaircolour, 0, 0xFF0000, 0xFFFFFF);
 
     VAR(IDF_PERSIST, cursorstyle, 0, 0, 1); // 0 = top left tracking, 1 = center
     FVAR(IDF_PERSIST, cursorsize, 0, 0.03f, 1000);
     FVAR(IDF_PERSIST, cursorblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, cursorvisor, 0, 1, 1);
 
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, zoomtex, "textures/hud/zoom", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, zoomcrosshairtex, "crosshairs/simple-01", 3);
     FVAR(IDF_PERSIST, zoomcrosshairsize, 0, 0.04f, 1000);
     FVAR(IDF_PERSIST, zoomcrosshairblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, zoomcrosshairvisor, 0, 0, 1);
 
     VAR(IDF_PERSIST, showcirclebar, 0, 0, 1);
     VAR(IDF_PERSIST, circlebartype, 0, 7, 7); // 0 = off, &1 = health, &2 = impulse, &4 = ammo
     FVAR(IDF_PERSIST, circlebarsize, 0, 0.04f, 1000);
     FVAR(IDF_PERSIST, circlebarblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, circlebarvisor, 0, 0, 1);
     VAR(IDF_PERSIST|IDF_HEX, circlebarhealthtone, -CTONE_MAX, 0x88FF88, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, circlebarimpulsetone, -CTONE_MAX, 0xFF88FF, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, circlebarammocolour, 0, 1, 1);
@@ -270,7 +246,6 @@ namespace hud
     FVAR(IDF_PERSIST, clipminscale, 0, 0.25f, 1000);
     FVAR(IDF_PERSIST, clipmaxscale, 0, 1, 1000);
     FVAR(IDF_PERSIST, clipblend, 0, 0.33f, 1);
-    FVAR(IDF_PERSIST, clipvisor, 0, 0, 1);
     FVAR(IDF_PERSIST, clipcolour, 0, 1, 1);
     VAR(IDF_PERSIST, cliplength, 0, 0, VAR_MAX);
     VAR(IDF_PERSIST, clipstore, 0, 1, 1);
@@ -707,9 +682,9 @@ namespace hud
     }
     ICOMMAND(0, getpointer, "ii", (int *i, int *j), result(getpointer(*i, *j)));
 
-    void drawindicator(int weap, int x, int y, float s, bool secondary, bool wantvisor, float blend)
+    void drawindicator(int weap, int x, int y, float s, bool secondary, float blend)
     {
-        float fade = (wantvisor ? indicatorvisor : indicatorblend) * blend;
+        float fade = indicatorblend * blend;
         if(fade <= 0) return;
 
         int millis = lastmillis-game::focus->weaptime[weap];
@@ -790,11 +765,11 @@ namespace hud
         gle::end();
     }
 
-    void drawclip(int weap, int x, int y, float s, bool preview, bool wantvisor, float blend)
+    void drawclip(int weap, int x, int y, float s, bool preview, float blend)
     {
         if(!isweap(weap) || weap >= W_MAX || (!W2(weap, ammosub, false) && !W2(weap, ammosub, true))) return;
 
-        float orig = (wantvisor ? clipvisor : clipblend) * blend, fade = orig;
+        float orig = clipblend * blend, fade = orig;
         if(fade <= 0) return;
 
         const char *cliptexs[W_MAX] = {
@@ -919,11 +894,11 @@ namespace hud
         }
     }
 
-    void drawcirclebar(int x, int y, float s, bool wantvisor, float blend)
+    void drawcirclebar(int x, int y, float s, float blend)
     {
         if(game::focus->state != CS_ALIVE) return;
 
-        float orig = wantvisor ? circlebarvisor : circlebarblend, fade = orig;
+        float orig = circlebarblend, fade = orig;
         if(fade <= 0) return;
 
         int num = 0;
@@ -980,7 +955,7 @@ namespace hud
                     break;
                 }
             }
-            gle::color(vec(c).mul(0.25f), (wantvisor ? circlebarvisor : circlebarblend) * 0.65f);
+            gle::color(vec(c).mul(0.25f), circlebarblend * 0.65f);
             drawslice(pos, slice, x, y, s*circlebarsize);
             if(val > 0)
             {
@@ -1157,19 +1132,19 @@ namespace hud
         return true;
     }
 
-    void drawpointer(int w, int h, int s, int index, bool wantvisor, float x, float y, float blend = 1, float delta = 0)
+    void drawpointer(int w, int h, int s, int index, float x, float y, float blend)
     {
-        float csize = crosshairsize * crosshairscale, fade = wantvisor ? crosshairvisor : crosshairblend;
+        float csize = crosshairsize * crosshairscale, fade = crosshairblend;
         switch(index)
         {
-            case POINTER_EDIT: csize = editcursorsize; fade = wantvisor ? editcursorvisor : editcursorblend; break;
-            case POINTER_SPEC: csize = speccursorsize; fade = wantvisor ? speccursorvisor : speccursorblend; break;
-            case POINTER_TEAM: csize = teamcrosshairsize; fade = wantvisor ? teamcrosshairvisor : teamcrosshairblend; break;
+            case POINTER_EDIT: csize = editcursorsize; fade = editcursorblend; break;
+            case POINTER_SPEC: csize = speccursorsize; fade = speccursorblend; break;
+            case POINTER_TEAM: csize = teamcrosshairsize; fade = teamcrosshairblend; break;
             case POINTER_ZOOM:
                 if(game::inzoom())
                 {
                     csize = zoomcrosshairsize * crosshairscale;
-                    fade = wantvisor ? zoomcrosshairvisor : zoomcrosshairblend;
+                    fade = zoomcrosshairblend;
                     break;
                 } // fall through
             case POINTER_HIT: case POINTER_HAIR:
@@ -1182,16 +1157,13 @@ namespace hud
                     }, crosshairblends[W_MAX] = {
                         clawcrosshairblend, pistolcrosshairblend, swordcrosshairblend, shotguncrosshairblend, smgcrosshairblend,
                         flamercrosshairblend, plasmacrosshairblend, zappercrosshairblend, riflecrosshairblend, corrodercrosshairblend, grenadecrosshairblend, minecrosshairblend, rocketcrosshairblend, meleecrosshairblend
-                    }, crosshairvisors[W_MAX] = {
-                        clawcrosshairvisor, pistolcrosshairvisor, swordcrosshairvisor, shotguncrosshairvisor, smgcrosshairvisor,
-                        flamercrosshairvisor, plasmacrosshairvisor, zappercrosshairvisor, riflecrosshairvisor, corrodercrosshairvisor, grenadecrosshairvisor, minecrosshairvisor, rocketcrosshairvisor, meleecrosshairvisor
                     };
                     csize = crosshairsizes[game::focus->weapselect] * crosshairscale;
-                    fade = crosshairblends[game::focus->weapselect] * (wantvisor ? crosshairvisors[game::focus->weapselect] : 1.f);
+                    fade = crosshairblends[game::focus->weapselect];
                 }
                 break;
             }
-            default: csize = cursorsize; fade = wantvisor ? cursorvisor : cursorblend; break;
+            default: csize = cursorsize; fade = cursorblend; break;
         }
         fade *= blend;
 
@@ -1233,20 +1205,19 @@ namespace hud
             }
         }
 
-        vec n = c;
         int cx = int(x * w), cy = int(y * h);
         if(index != POINTER_UI)
         {
-            drawpointertex(getpointer(index, game::focus->weapselect), cx-cs/2, cy-cs/2, cs, n.r, n.g, n.b, fade);
+            drawpointertex(getpointer(index, game::focus->weapselect), cx-cs/2, cy-cs/2, cs, c.r, c.g, c.b, fade);
             if(index > POINTER_UI)
             {
                 if(game::focus->isalive())
                 {
-                    if(showcirclebar) drawcirclebar(cx, cy, s, wantvisor, blend);
+                    if(showcirclebar) drawcirclebar(cx, cy, s, blend);
                     if(game::focus->hasweap(game::focus->weapselect, m_weapon(game::focus->actortype, game::gamemode, game::mutators)))
                     {
-                        if(showclips) drawclip(game::focus->weapselect, cx, cy, s, false, wantvisor, blend);
-                        if(showindicator) drawindicator(game::focus->weapselect, cx, cy, int(indicatorsize*s), physics::secondaryweap(game::focus), wantvisor, blend);
+                        if(showclips) drawclip(game::focus->weapselect, cx, cy, s, false, blend);
+                        if(showindicator) drawindicator(game::focus->weapselect, cx, cy, int(indicatorsize*s), physics::secondaryweap(game::focus), blend);
                     }
                     if(fade > 0 && crosshairhitspeed && totalmillis-game::focus->lasthit <= crosshairhitspeed)
                     {
@@ -1256,17 +1227,17 @@ namespace hud
                         drawpointertex(getpointer(POINTER_HIT, game::focus->weapselect), cx-cs/2, cy-cs/2, cs, c2.r, c2.g, c2.b, fade);
                     }
                 }
-                if(!wantvisor && crosshairdistance && game::focus->state == CS_EDITING)
+                if(crosshairdistance && game::focus->state == CS_EDITING)
                 {
                     draw_textf("\fa%.1f\fwm", cx+crosshairdistancex, cy+crosshairdistancey, 0, 0, -1, -1, -1, int(255*crosshairdistblend), TEXT_RIGHT_JUSTIFY, -1, -1, 1, game::focus->o.dist(worldpos)/8.f);
                     resethudshader();
                 }
             }
         }
-        else drawpointertex(getpointer(index, game::focus->weapselect), cx, cy, cs, n.r, n.g, n.b, fade);
+        else drawpointertex(getpointer(index, game::focus->weapselect), cx, cy, cs, c.r, c.g, c.b, fade);
     }
 
-    void drawpointers(int w, int h, bool wantvisor, bool behind)
+    void drawpointers(int w, int h, float x, float y, float blend)
     {
         int index = POINTER_NONE;
         if(hasinput(false, true)) index = hasinput(true, true) ? POINTER_UI : POINTER_NONE;
@@ -1291,7 +1262,7 @@ namespace hud
         if(index <= POINTER_NONE) return;
 
         int s = min(w, h);
-        drawpointer(w, h, s, index, false, cursorx, cursory);
+        drawpointer(w, h, s, index, x, y, blend);
     }
 
     CVAR(IDF_PERSIST, backgroundcolour, 0x000000);
@@ -1441,13 +1412,6 @@ namespace hud
 
     void endrender(int w, int h, bool wantvisor, bool noview, uint outfbo)
     {
-        if(!engineready || progressing) return;
-
-        hudmatrix.ortho(0, w, h, 0, -1, 1);
-        flushhudmatrix();
-        resethudshader();
-
-        drawpointers(w, h, wantvisor, false);
     }
 
     void update(int w, int h)

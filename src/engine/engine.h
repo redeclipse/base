@@ -309,7 +309,8 @@ extern matrix4 cammatrix, projmatrix, camprojmatrix, invcammatrix, invcamprojmat
 extern vec curfogcolor;
 extern int wireframe, editinhibit;
 
-extern float cursorx, cursory, visorx, visory, visorscanlines;
+extern float cursorx, cursory, visorscanlines;
+extern float getcursorx(int type = 0), getcursory(int type = 0);
 extern vec cursordir;
 
 extern int glerr;

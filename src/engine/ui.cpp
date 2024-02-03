@@ -1151,8 +1151,7 @@ namespace UI
 
             if(vectocursor(pos, cx, cy, cz))
             {
-                if(surfacetype == SURFACE_VISOR && rendervisor)
-                    visorcoords(cx, cy, cx, cy, true);
+                if(rendervisor == 2) visorcoords(cx, cy, cx, cy, true);
 
                 float aspect = hudw/float(hudh);
                 cx *= aspect; // convert to UI coordinate system
@@ -1171,7 +1170,7 @@ namespace UI
                     case ALIGN_BOTTOM:  break;
                 }
 
-                if(surfacetype != SURFACE_VISOR || (cx > 0 && cx + w < aspect && cy > 0 && cy + h < 1))
+                if(rendervisor != 2 || (cx > 0 && cx + w < aspect && cy > 0 && cy + h < 1))
                 { // keep away from the edges of the visor to avoid smearing
                     setpos(cx, cy);
                     return;
@@ -1707,9 +1706,9 @@ namespace UI
     ICOMMANDVF(0, uihitx, window ? window->hitx : -1.f);
     ICOMMANDVF(0, uihity, window ? window->hity : -1.f);
     ICOMMANDV(0, uiworld, surfacetype == SURFACE_WORLD ? 1 : 0);
-    ICOMMANDVF(0, uicursorx, cursorx*float(hudw)/hudh);
-    ICOMMANDVF(0, uicursory, cursory);
-    ICOMMANDVF(0, uiaspect, float(hudw)/hudh);
+    ICOMMANDVF(0, uicursorx, getcursorx(surfacetype == SURFACE_VISOR ? 1 : -1) * hudw / float(hudh));
+    ICOMMANDVF(0, uicursory, getcursory(surfacetype == SURFACE_VISOR ? 1 : -1));
+    ICOMMANDVF(0, uiaspect, hudw / float(hudh));
 
     static void pushclip(float x, float y, float w, float h)
     {
@@ -1879,10 +1878,10 @@ namespace UI
             {
                 if(type == SURFACE_VISOR) readyeditors();
 
-                setstate(STATE_HOVER, cursorx, cursory, childstate&STATE_HOLD_MASK);
-                if(childstate&STATE_HOLD) setstate(STATE_HOLD, cursorx, cursory, STATE_HOLD, SETSTATE_ANY);
-                if(childstate&STATE_ALT_HOLD) setstate(STATE_ALT_HOLD, cursorx, cursory, STATE_ALT_HOLD, SETSTATE_ANY);
-                if(childstate&STATE_ESC_HOLD) setstate(STATE_ESC_HOLD, cursorx, cursory, STATE_ESC_HOLD, SETSTATE_ANY);
+                setstate(STATE_HOVER, getcursorx(surfacetype == SURFACE_VISOR ? 1 : -1), getcursory(surfacetype == SURFACE_VISOR ? 1 : -1), childstate&STATE_HOLD_MASK);
+                if(childstate&STATE_HOLD) setstate(STATE_HOLD, getcursorx(surfacetype == SURFACE_VISOR ? 1 : -1), getcursory(surfacetype == SURFACE_VISOR ? 1 : -1), STATE_HOLD, SETSTATE_ANY);
+                if(childstate&STATE_ALT_HOLD) setstate(STATE_ALT_HOLD, getcursorx(surfacetype == SURFACE_VISOR ? 1 : -1), getcursory(surfacetype == SURFACE_VISOR ? 1 : -1), STATE_ALT_HOLD, SETSTATE_ANY);
+                if(childstate&STATE_ESC_HOLD) setstate(STATE_ESC_HOLD, getcursorx(surfacetype == SURFACE_VISOR ? 1 : -1), getcursory(surfacetype == SURFACE_VISOR ? 1 : -1), STATE_ESC_HOLD, SETSTATE_ANY);
             }
 
             calctextscale();
@@ -2061,9 +2060,9 @@ namespace UI
                 if(!w->visible || !checkexclusive(w)) continue;
                 uiscale = 1;
                 if(w->tooltip) // follows cursor
-                    w->setpos((cursorx*float(hudw)/float(hudh))-(w->w*cursorx), cursory >= 0.5f ? cursory-w->h-uitipoffset : cursory+hud::cursorsize+uitipoffset);
+                    w->setpos((getcursorx(surfacetype == SURFACE_VISOR ? 1 : -1)*float(hudw)/float(hudh))-(w->w*getcursorx(surfacetype == SURFACE_VISOR ? 1 : -1)), getcursory(surfacetype == SURFACE_VISOR ? 1 : -1) >= 0.5f ? getcursory(surfacetype == SURFACE_VISOR ? 1 : -1)-w->h-uitipoffset : getcursory(surfacetype == SURFACE_VISOR ? 1 : -1)+hud::cursorsize+uitipoffset);
                 else if(w->popup && !w->overridepos)
-                    w->setpos((cursorx*float(hudw)/float(hudh))-(w->w*cursorx), cursory-w->h*0.5f);
+                    w->setpos((getcursorx(surfacetype == SURFACE_VISOR ? 1 : -1)*float(hudw)/float(hudh))-(w->w*getcursorx(surfacetype == SURFACE_VISOR ? 1 : -1)), getcursory(surfacetype == SURFACE_VISOR ? 1 : -1)-w->h*0.5f);
                 w->draw();
             });
         }
@@ -6942,7 +6941,7 @@ namespace UI
     }
 
     ICOMMANDV(0, uihasinput, hasinput());
-    ICOMMAND(0, uigetinput, "ib", (int *cursor, int *stype), intret(hasinput(*cursor != 0, *stype >= 0 ? *stype : SURFACE_VISOR)));
+    ICOMMAND(0, uigetinput, "ib", (int *cursor, int *stype), intret(hasinput(*cursor != 0, *stype >= 0 ? *stype : -1)));
 
     bool hasmenu(bool pass, int stype)
     {
@@ -6952,7 +6951,7 @@ namespace UI
     }
 
     ICOMMANDV(0, uihasmenu, hasmenu());
-    ICOMMAND(0, uigetmenu, "ib", (int *pass, int *stype), intret(hasmenu(*pass != 0, *stype >= 0 ? *stype : SURFACE_VISOR)));
+    ICOMMAND(0, uigetmenu, "ib", (int *pass, int *stype), intret(hasmenu(*pass != 0, *stype >= 0 ? *stype : -1)));
 
     bool keypress(int code, bool isdown)
     {
@@ -6982,7 +6981,7 @@ namespace UI
             if(isdown)
             {
                 if(hold) surface->clearstate(hold);
-                if(surface->setstate(action, cursorx, cursory, 0, setmode, action|hold))
+                if(surface->setstate(action, getcursorx(surfacetype == SURFACE_VISOR ? 1 : -1), getcursory(surfacetype == SURFACE_VISOR ? 1 : -1), 0, setmode, action|hold))
                 {
                     popsurface();
                     return true;
@@ -6990,7 +6989,7 @@ namespace UI
             }
             else if(hold)
             {
-                if(surface->setstate(action, cursorx, cursory, hold, setmode, action))
+                if(surface->setstate(action, getcursorx(surfacetype == SURFACE_VISOR ? 1 : -1), getcursory(surfacetype == SURFACE_VISOR ? 1 : -1), hold, setmode, action))
                 {
                     surface->clearstate(hold);
                     popsurface();
@@ -7647,27 +7646,6 @@ namespace UI
     }
     ICOMMANDV(0, compositecount, surfaces[SURFACE_COMPOSITE] ? surfaces[SURFACE_COMPOSITE]->texs.length() : 0);
 
-    bool isvisor(int stype)
-    {
-        if(!engineready || (stype != SURFACE_PROGRESS && stype != SURFACE_VISOR)) return false;
-
-        if(stype == SURFACE_PROGRESS) return (visorhud&8)!=0;
-        else if(progressing) return (visorhud&4)!=0;
-        else if(editmode) return (visorhud&2)!=0;
-        else return (visorhud&1)!=0;
-
-        return false;
-    }
-
-    #define VISOR(type, body) \
-    { \
-        bool visor = isvisor(type); \
-        int oldvisor = rendervisor; \
-        if(visor) rendervisor = 1; \
-        body; \
-        if(visor) rendervisor = oldvisor; \
-    }
-
     void poke()
     {
         uilastmillis = lastmillis;
@@ -7690,11 +7668,8 @@ namespace UI
         if(surfacetype == SURFACE_PROGRESS)
             hasprogress = pokeui("default", SURFACE_PROGRESS);
 
-        VISOR(surfacetype,
-        {
-            surface->build();
-            surface->render();
-        });
+        surface->build();
+        surface->render();
 
         uicurfbo = 0;
 

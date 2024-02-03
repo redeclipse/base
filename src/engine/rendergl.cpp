@@ -2644,7 +2644,7 @@ bool visorenabled(bool noview)
     return false;
 }
 ICOMMANDV(0, visorenabled, visorenabled());
-VARR(rendervisor, 0);
+VARR(rendervisor, -1);
 
 void visorcoords(float cx, float cy, float &vx, float &vy, bool back)
 {
@@ -2666,6 +2666,28 @@ void visorcoords(float cx, float cy, float &vx, float &vy, bool back)
 
     vx = back ? to.x : from.x - to.x; // what we get is an offset from requested position
     vy = back ? to.y : from.y - to.y; // that is then returned or subtracted from it
+}
+
+float getcursorx(int type)
+{
+    switch(type)
+    {
+        case -1: return cursorx; // force cursor
+        case 1: return visorx; // force visor
+        default: break;
+    }
+    return rendervisor == 2 ? visorx : cursorx;
+}
+
+float getcursory(int type)
+{
+    switch(type)
+    {
+        case -1: return cursory; // force cursor
+        case 1: return visory; // force visor
+        default: break;
+    }
+    return rendervisor == 2 ? visory : cursory;
 }
 
 void gl_drawhud(bool noview = false)
@@ -2701,6 +2723,8 @@ void gl_drawhud(bool noview = false)
     {
         loopi(4)
         {
+            if(i == 1 && (progressing || noview)) continue; // skip world UI's when in progress or noview
+
             glBindFramebuffer_(GL_FRAMEBUFFER, visorfbo);
 
             curw = visorw;
@@ -2717,7 +2741,7 @@ void gl_drawhud(bool noview = false)
             glEnable(GL_BLEND);
             glBlendFuncSeparate_(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE);
 
-            rendervisor = wantvisor ? 1 : 0;
+            rendervisor = wantvisor ? i : -1;
             switch(i)
             {
                 case 0:
@@ -2725,6 +2749,7 @@ void gl_drawhud(bool noview = false)
                     UI::render(SURFACE_BACKGROUND, visorfbo);
 
                     hud::startrender(curw, curh, wantvisor, noview, visorfbo);
+
                     break;
                 }
                 case 1:
@@ -2743,18 +2768,10 @@ void gl_drawhud(bool noview = false)
                 }
                 case 2:
                 {
-                    float oldcx = cursorx, oldcy = cursory;
-
-                    cursorx = visorx;
-                    cursory = visory;
-
                     if(progressing && wantvisor) UI::render(SURFACE_PROGRESS, visorfbo);
                     else UI::render(SURFACE_VISOR, visorfbo);
 
                     hud::visorrender(curw, curh, wantvisor, noview, visorfbo);
-
-                    cursorx = oldcx;
-                    cursory = oldcy;
 
                     break;
                 }
@@ -2764,10 +2781,17 @@ void gl_drawhud(bool noview = false)
                     else UI::render(SURFACE_FOREGROUND, visorfbo);
 
                     hud::endrender(curw, curh, wantvisor, noview, visorfbo);
+
+                    hudmatrix.ortho(0, curw, curh, 0, -1, 1);
+                    flushhudmatrix();
+                    resethudshader();
+
+                    hud::drawpointers(curw, curh, getcursorx(), getcursory());
+
                     break;
                 }
             }
-            rendervisor = 0;
+            rendervisor = -1;
 
             glBindFramebuffer_(GL_FRAMEBUFFER, 0);
             glViewport(0, 0, hudw, hudh);
