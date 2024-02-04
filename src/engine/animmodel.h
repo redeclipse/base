@@ -79,7 +79,7 @@ struct animmodel : model
         vec color;
         int material1, material2, material3, blendmode;
 
-        shaderparams() : spec(1.0f), gloss(1), glow(3.0f), glowdelta(0), glowpulse(0), fullbright(0), envmapmin(0), envmapmax(0), scrollu(0), scrollv(0), alphatest(0.9f), blend(1.0f), matsplit(0.0f), color(1, 1, 1), material1(1), material2(0), material3(0), blendmode(MDL_BLEND_TEST) {}
+        shaderparams() : spec(1.0f), gloss(1), glow(3.0f), glowdelta(0), glowpulse(0), fullbright(0), envmapmin(0), envmapmax(0), scrollu(0), scrollv(0), alphatest(0.9f), blend(1.0f), matsplit(-1.0f), color(1, 1, 1), material1(1), material2(0), material3(0), blendmode(MDL_BLEND_TEST) {}
     };
 
     struct shaderparamskey
@@ -194,7 +194,7 @@ struct animmodel : model
             }
             else
             {   // Grayscale mask that picks three colours with a defined split point
-                float split = modelmatsplit > 0 ? modelmatsplit : matsplit;
+                float split = modelmatsplit >= 0.0f ? modelmatsplit : matsplit;
                 if(split > 0.0f)
                 {
                     float splitv = clamp(split, 0.0f, 0.5f), splitc = 1.0f - splitv;
@@ -2081,7 +2081,7 @@ bool animmodel::enabletc = false, animmodel::enabletangents = false, animmodel::
      animmodel::enablecullface = true, animmodel::enabledepthoffset = false, animmodel::enablecolor = false;
 float animmodel::sizescale = 1;
 vec4 animmodel::colorscale(1, 1, 1, 1), animmodel::mixerparams(1, 1, 1, 1), animmodel::matbright(1, 1);
-float animmodel::patternscale = 1, animmodel::modelmatsplit = 0;
+float animmodel::patternscale = 1, animmodel::modelmatsplit = -1;
 bvec animmodel::modelmaterial[MAXMDLMATERIALS] = { bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255) };
 GLuint animmodel::lastvbuf = 0, animmodel::lasttcbuf = 0, animmodel::lastxbuf = 0, animmodel::lastbbuf = 0, animmodel::lastebuf = 0,
        animmodel::lastcolbuf = 0, animmodel::lastenvmaptex = 0, animmodel::closestenvmaptex = 0;

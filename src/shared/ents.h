@@ -125,7 +125,7 @@ struct modelstate : entmodelstate
     {
         mixerparams = matbright = vec4(1, 1, 1, 1);
         patternscale = 1;
-        matsplit = 0;
+        matsplit = -1;
         mixer = pattern = NULL;
         attached = NULL;
     }
