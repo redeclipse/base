@@ -4415,14 +4415,17 @@ namespace game
             }
         }
 
-        int pattern = forceplayerpattern >= 0 ? forceplayerpattern : d->pattern;
-        if(pattern >= 0)
+        if(d->actortype < A_ENEMY)
         {
-            const playerpattern &p = playerpatterns[pattern%PLAYERPATTERNS];
-            mdl.pattern = textureload(p.filename, p.clamp, true, false);
-            mdl.patternscale = p.scale;
-            mdl.matsplit = p.split;
-            if(pattern < 2) mdl.flags |= MDL_NOPATTERN; // first two shouldn't recurse
+            int pattern = forceplayerpattern >= 0 ? forceplayerpattern : d->pattern;
+            if(pattern >= 0)
+            {
+                const playerpattern &p = playerpatterns[pattern%PLAYERPATTERNS];
+                mdl.pattern = textureload(p.filename, p.clamp, true, false);
+                mdl.patternscale = p.scale;
+                mdl.matsplit = p.split;
+                if(pattern < 2) mdl.flags |= MDL_NOPATTERN; // first two shouldn't recurse
+            }
         }
     }
 

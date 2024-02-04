@@ -173,11 +173,9 @@ struct animmodel : model
 
         void setshaderparams(mesh &m, const animstate *as, bool skinned = true)
         {
-            #if 0 // broken for attached models
             if(!Shader::lastshader) return;
             if(key->checkversion() && Shader::lastshader->owner == key) return;
             Shader::lastshader->owner = key;
-            #endif
 
             LOCALPARAMF(texscroll, scrollu*lastmillis/1000.0f, scrollv*lastmillis/1000.0f);
             if(alphatested()) LOCALPARAMF(alphatest, alphatest);
@@ -400,12 +398,12 @@ struct animmodel : model
                     if(pattern != lastpattern)
                     {
                         glActiveTexture_(GL_TEXTURE5);
-                        activetmu = 6;
+                        activetmu = 5;
                         settexture(pattern);
                         lastpattern = pattern;
                     }
 
-                    if(pattern->bpp == 4) flags |= RGBA_PATTERN;
+                    if(pattern->bpp > 2) flags |= RGBA_PATTERN;
                     else flags &= ~RGBA_PATTERN;
                 }
                 else flags &= ~(ENABLE_PATTERN|RGBA_PATTERN);
@@ -2246,7 +2244,11 @@ template<class MDL, class MESH> struct modelcommands
     static void setpatternmap(char *meshname, char *patternmapfile)
     {
         Texture *patternmaptex = textureload(makerelpath(MDL::dir, patternmapfile), 0, true, false);
-        loopskins(meshname, s, s.patternmap = patternmaptex);
+        loopskins(meshname, s,
+        {
+            s.patternmap = patternmaptex;
+            s.flags |= skin::ALLOW_PATTERN;
+        });
     }
 
     static void setdecal(char *meshname, char *decal)
