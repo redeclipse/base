@@ -2311,9 +2311,9 @@ struct projent : dynent
     static bool shot(int t, int w) { return t == ENT_PROJ && w == PROJ_SHOT; }
     static bool shot(physent *d) { return d && d->type == ENT_PROJ && ((projent*)d)->projtype == PROJ_SHOT; }
 
-    bool isjunk(float scale = -1) const
+    bool isjunk(float scale = -1, bool suck = false) const
     {
-        if(scale >= 0 && (state == CS_DEAD || !lifetime || beenused || fromflags&HIT_JANITOR)) return false;
+        if(scale >= 0 && (state == CS_DEAD || !lifetime || (!suck && beenused) || fromflags&HIT_JANITOR)) return false;
 
         if((projtype == PROJ_DEBRIS || projtype == PROJ_GIB) && (scale < 0 || lifespan >= janitorjunkdebris * scale)) return true;
         if((projtype == PROJ_VANITY || projtype == PROJ_PIECE || projtype == PROJ_EJECT) && (scale < 0 || lifespan >= janitorjunktime * scale)) return true;

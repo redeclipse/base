@@ -1682,7 +1682,7 @@ namespace ai
             loopv(projs::junkprojs)
             {
                 projent &p = *projs::junkprojs[i];
-                if(!p.isjunk(m_messy(game::gamemode, game::mutators))) continue;
+                if(!p.isjunk(m_messy(game::gamemode, game::mutators), true)) continue;
 
                 float dist = p.o.squaredist(d->muzzletag());
                 if(dist > janitorsuck*janitorsuck || (closest >= 0 && dist >= closedist))
