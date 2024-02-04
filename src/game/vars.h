@@ -568,8 +568,8 @@ GFVAR(IDF_GAMEMOD, 0, ejectbuoyancy, -10000, 0, 10000);
 
 GVAR(IDF_GAMEMOD, 0, janitorlimit, 0, 8, MAXAI); // maximum number of janitors
 GVAR(IDF_GAMEMOD, 0, janitorprize, 0, -1, 3); // // -1 = random, 0 = none, 1 = grenade, 2 = mine, 3 = rocket
-GVAR(IDF_GAMEMOD, 0, janitorready, 0, 250, VAR_MAX); // ready to award a prize at this much stuff
-GVAR(IDF_GAMEMOD, 0, janitorcollect, 0, 500, VAR_MAX); // collect this much before dumping
+GVAR(IDF_GAMEMOD, 0, janitorready, 0, 400, VAR_MAX); // ready to award a prize at this much stuff
+GVAR(IDF_GAMEMOD, 0, janitorcollect, 0, 800, VAR_MAX); // collect this much before dumping
 GFVAR(IDF_GAMEMOD, 0, janitorbalance, 0, 0.33f, FVAR_MAX); // this * current balance = number of janitors
 GFVAR(IDF_GAMEMOD, 0, janitorjunktime, 0, 0.25f, 1); // when shell casings and vanities/parts become "junk"
 GFVAR(IDF_GAMEMOD, 0, janitorjunkitems, 0, 0.75f, 1); // when items become "junk"
