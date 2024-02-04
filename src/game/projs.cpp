@@ -2176,7 +2176,7 @@ namespace projs
 
                 vec ray = vec(e->muzzletag()).sub(proj.o);
                 float dist = ray.magnitude();
-                if(dist >= janitorsuck) continue;
+                if(dist >= janitorsuckdist) continue;
                 ray.normalize();
 
                 if(dist <= f->radius + proj.radius + 1)
@@ -2191,7 +2191,7 @@ namespace projs
                 }
 
                 proj.dest = e->muzzletag();
-                float amt = clamp(10*secs, 1e-6f, 1.f), mag = max(proj.vel.magnitude(), physics::movevelocity(&proj), e->speed + dist * 2.f);
+                float amt = clamp(10*secs, 1e-6f, 1.f), mag = max(proj.vel.magnitude(), physics::movevelocity(&proj), janitorsuckspeed + dist * 2.f);
                 vec dir = vec(proj.vel).safenormalize().mul(1.f-amt).add(vec(ray).mul(amt)).normalize();
                 if(!dir.iszero()) (proj.vel = dir).mul(mag);
             }

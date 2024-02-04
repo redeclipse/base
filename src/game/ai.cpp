@@ -636,7 +636,7 @@ namespace ai
 
                 interest &n = interests.add();
                 n.state = AI_S_INTEREST;
-                n.node = n.target = closestwaypoint(e.pos(), janitorsuck, true);
+                n.node = n.target = closestwaypoint(e.pos(), janitorsuckdist, true);
                 n.targtype = AI_T_HOME; // go home
                 n.score = d->o.squaredist(e.pos());
                 n.tolerance = 0;
@@ -655,7 +655,7 @@ namespace ai
 
             if(!proj.isjunk(m_messy(game::gamemode, game::mutators))) continue;
 
-            int v = closestwaypoint(proj.o, janitorsuck, true);
+            int v = closestwaypoint(proj.o, janitorsuckdist, true);
             bool found = false;
 
             loopvj(interests)
@@ -924,18 +924,18 @@ namespace ai
 
         if(!count) return false;
 
-        return makeroute(d, b, waypoints[b.target].o, true, 0, janitorsuck);
+        return makeroute(d, b, waypoints[b.target].o, true, 0, janitorsuckdist);
     }
 
     bool dojanitorhome(gameent *d, aistate &b)
     {
         if(d->collects.empty()) return false;
-        if(d->o.dist(waypoints[b.target].o) <= janitorsuck)
+        if(d->o.dist(waypoints[b.target].o) <= janitorsuckdist)
         {
             game::suicide(d, HIT_JANITOR);
-            return defense(d, b, waypoints[b.target].o, MINWPDIST, janitorsuck, 0, AI_A_IDLE);
+            return defense(d, b, waypoints[b.target].o, MINWPDIST, janitorsuckdist, 0, AI_A_IDLE);
         }
-        return makeroute(d, b, waypoints[b.target].o, true, 0, janitorsuck);
+        return makeroute(d, b, waypoints[b.target].o, true, 0, janitorsuckdist);
     }
 
     bool dointerest(gameent *d, aistate &b)
@@ -1685,7 +1685,7 @@ namespace ai
                 if(!p.isjunk(m_messy(game::gamemode, game::mutators), true)) continue;
 
                 float dist = p.o.squaredist(d->muzzletag());
-                if(dist > janitorsuck*janitorsuck || (closest >= 0 && dist >= closedist))
+                if(dist > janitorsuckdist*janitorsuckdist || (closest >= 0 && dist >= closedist))
                     continue;
 
                 closedist = dist;
