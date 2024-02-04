@@ -11,7 +11,7 @@ namespace game
     vec swaydir(0, 0, 0), swaypush(0, 0, 0);
     int attrmap[W_MAX] = {0};
 
-    gameent *player1 = new gameent(), *focus = player1, *lastfocus = focus;
+    gameent *player1 = new gameent(), *focus = player1, *lastfocus = focus, *previewent = NULL;
     avatarent avatarmodel, bodymodel;
     vector<gameent *> players, waiting;
     vector<cament *> cameras;
@@ -2653,7 +2653,7 @@ namespace game
 
     int findcolour(gameent *d, int comb, bool tone, float level, float mix)
     {
-        if(prizeeffects&4 && d->isprize(focus) && (tone || d->actortype == A_JANITOR))
+        if(prizeeffects&4 && d != previewent && d->isprize(focus) && (tone || d->actortype == A_JANITOR))
             return pulsehexcol(tone ? PULSE_READY : PULSE_PRIZE);
 
         int col = d->colours[comb ? 1 : 0];
@@ -4383,6 +4383,7 @@ namespace game
             const playerpattern &p = playerpatterns[pattern%PLAYERPATTERNS];
             mdl.pattern = textureload(p.filename, p.clamp, true, false);
             mdl.patternscale = p.scale;
+            mdl.matsplit = p.split;
             if(pattern < 2) mdl.flags |= MDL_NOPATTERN; // first two shouldn't recurse
         }
     }
@@ -4604,8 +4605,6 @@ namespace game
 
         if(drawtex != DRAWTEX_HALO) rendercheck(focus, false);
     }
-
-    static gameent *previewent = NULL;
 
     void initplayerpreview()
     {

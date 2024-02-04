@@ -54,7 +54,7 @@ struct model
     virtual void setcullface(int cullface) {}
     virtual void setcullhalo(bool cullhalo) {}
     virtual void setcolor(const vec &color) {}
-    virtual void setmaterial(int material1, int material2) {}
+    virtual void setmaterial(int material1, int material2, int material3, float split) {}
     virtual void setmixer(bool) {}
     virtual void setpattern(bool) {}
 

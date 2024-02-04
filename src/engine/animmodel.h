@@ -75,11 +75,11 @@ struct animmodel : model
 
     struct shaderparams
     {
-        float spec, gloss, glow, glowdelta, glowpulse, fullbright, envmapmin, envmapmax, scrollu, scrollv, alphatest, blend;
+        float spec, gloss, glow, glowdelta, glowpulse, fullbright, envmapmin, envmapmax, scrollu, scrollv, alphatest, blend, matsplit;
         vec color;
-        int material1, material2, blendmode;
+        int material1, material2, material3, blendmode;
 
-        shaderparams() : spec(1.0f), gloss(1), glow(3.0f), glowdelta(0), glowpulse(0), fullbright(0), envmapmin(0), envmapmax(0), scrollu(0), scrollv(0), alphatest(0.9f), blend(1.0f), color(1, 1, 1), material1(1), material2(0), blendmode(MDL_BLEND_TEST) {}
+        shaderparams() : spec(1.0f), gloss(1), glow(3.0f), glowdelta(0), glowpulse(0), fullbright(0), envmapmin(0), envmapmax(0), scrollu(0), scrollv(0), alphatest(0.9f), blend(1.0f), matsplit(0.0f), color(1, 1, 1), material1(1), material2(0), material3(0), blendmode(MDL_BLEND_TEST) {}
     };
 
     struct shaderparamskey
@@ -185,17 +185,26 @@ struct animmodel : model
             else LOCALPARAMF(colorscale, color.r, color.g, color.b, colorscale.a*blend);
 
             if(drawtex == DRAWTEX_HALO) LOCALPARAM(material1, modelmaterial[2].tocolor().mul(matbright.x));
-            else if(patterned())
-            {
+            else if(rgbapattern())
+            {   // RGBA mask that supports all four colours at once
                 LOCALPARAM(material1, modelmaterial[0].tocolor().mul(matbright.x));
                 LOCALPARAM(material2, modelmaterial[1].tocolor().mul(matbright.y));
                 LOCALPARAM(material3, modelmaterial[2].tocolor().mul(matbright.z));
                 LOCALPARAM(material4, modelmaterial[3].tocolor().mul(matbright.w));
             }
             else
-            {
+            {   // Grayscale mask that picks three colours with a defined split point
+                float split = modelmatsplit > 0 ? modelmatsplit : matsplit;
+                if(split > 0.0f)
+                {
+                    float splitv = clamp(split, 0.0f, 0.5f), splitc = 1.0f - splitv;
+                    LOCALPARAMF(matsplit, splitv, splitc, 1.0f / split, 1.0f / ((splitc - splitv) * 0.5f));
+                }
+                else LOCALPARAMF(matsplit, 0, 0, 0, 0);
+
                 LOCALPARAM(material1, material1 > 0 ? modelmaterial[min(material1, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.x) : vec(matbright.x));
                 LOCALPARAM(material2, material2 > 0 ? modelmaterial[min(material2, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.y) : vec(matbright.y));
+                LOCALPARAM(material3, material3 > 0 ? modelmaterial[min(material3, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.y) : vec(matbright.z));
             }
 
             if(!skinned) return;
@@ -1566,6 +1575,11 @@ struct animmodel : model
                     invalidate = true;
                 }
             }
+            if(modelmatsplit != state->matsplit)
+            {
+                modelmatsplit = state->matsplit;
+                invalidate = true;
+            }
 
             if(invalidate) shaderparamskey::invalidate();
 
@@ -1862,7 +1876,7 @@ struct animmodel : model
         loopv(parts) loopvj(parts[i]->skins) parts[i]->skins[j].color = color;
     }
 
-    void setmaterial(int material1, int material2)
+    void setmaterial(int material1, int material2, int material3, float split)
     {
         if(parts.empty()) loaddefaultparts();
         loopv(parts) loopvj(parts[i]->skins)
@@ -1870,6 +1884,8 @@ struct animmodel : model
             skin &s = parts[i]->skins[j];
             s.material1 = material1;
             s.material2 = material2;
+            s.material3 = material3;
+            s.matsplit = split;
         }
     }
 
@@ -1934,7 +1950,7 @@ struct animmodel : model
     static bool enabletc, enablecullface, enabletangents, enablebones, enabledepthoffset, enablecolor;
     static float sizescale;
     static vec4 colorscale, mixerparams, matbright;
-    static float patternscale;
+    static float patternscale, modelmatsplit;
     static bvec modelmaterial[MAXMDLMATERIALS];
     static GLuint lastvbuf, lasttcbuf, lastxbuf, lastbbuf, lastebuf, lastcolbuf, lastenvmaptex, closestenvmaptex;
     static Texture *lasttex, *lastdecal, *lastmasks, *lastmixer, *lastpattern, *lastnormalmap;
@@ -2065,7 +2081,7 @@ bool animmodel::enabletc = false, animmodel::enabletangents = false, animmodel::
      animmodel::enablecullface = true, animmodel::enabledepthoffset = false, animmodel::enablecolor = false;
 float animmodel::sizescale = 1;
 vec4 animmodel::colorscale(1, 1, 1, 1), animmodel::mixerparams(1, 1, 1, 1), animmodel::matbright(1, 1);
-float animmodel::patternscale = 1;
+float animmodel::patternscale = 1, animmodel::modelmatsplit = 0;
 bvec animmodel::modelmaterial[MAXMDLMATERIALS] = { bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255) };
 GLuint animmodel::lastvbuf = 0, animmodel::lasttcbuf = 0, animmodel::lastxbuf = 0, animmodel::lastbbuf = 0, animmodel::lastebuf = 0,
        animmodel::lastcolbuf = 0, animmodel::lastenvmaptex = 0, animmodel::closestenvmaptex = 0;
@@ -2274,9 +2290,15 @@ template<class MDL, class MESH> struct modelcommands
         MDL::loading->collide = COLLIDE_TRI;
     }
 
-    static void setmaterial(char *meshname, int *material1, int *material2)
+    static void setmaterial(char *meshname, int *material1, int *material2, int *material3, float *split)
     {
-        loopskins(meshname, s, { s.material1 = clamp(*material1, 0, int(MAXMDLMATERIALS)); s.material2 = clamp(*material2, 0, int(MAXMDLMATERIALS)); });
+        loopskins(meshname, s,
+        {
+            s.material1 = clamp(*material1, 0, int(MAXMDLMATERIALS));
+            s.material2 = clamp(*material2, 0, int(MAXMDLMATERIALS));
+            s.material3 = clamp(*material3, 0, int(MAXMDLMATERIALS));
+            s.matsplit = clamp(*split, 0.0f, 0.5f);
+        });
     }
 
     static void setmixer(char *meshname, int *mixer)
@@ -2327,7 +2349,7 @@ template<class MDL, class MESH> struct modelcommands
             modelcommand(setscroll, "scroll", "sff");
             modelcommand(setnoclip, "noclip", "si");
             modelcommand(settricollide, "tricollide", "s");
-            modelcommand(setmaterial, "material", "sii");
+            modelcommand(setmaterial, "material", "siif");
             modelcommand(setmixer, "mixer", "si");
             modelcommand(setpattern, "pattern", "si");
         }

@@ -49,12 +49,12 @@ void mdlwind(float *wind)
 }
 COMMAND(0, mdlwind, "f");
 
-void mdlmaterial(int *material1, int *material2)
+void mdlmaterial(int *material1, int *material2, int *material3, float *split)
 {
     checkmdl;
-    loadingmodel->setmaterial(clamp(*material1, 0, int(MAXMDLMATERIALS)), clamp(*material2, 0, int(MAXMDLMATERIALS)));
+    loadingmodel->setmaterial(clamp(*material1, 0, int(MAXMDLMATERIALS)), clamp(*material2, 0, int(MAXMDLMATERIALS)), clamp(*material3, 0, int(MAXMDLMATERIALS)), clamp(*split, 0.0f, 1.0f));
 }
-COMMAND(0, mdlmaterial, "ii");
+COMMAND(0, mdlmaterial, "iiif");
 
 void mdlmixer(int *mixer)
 {
