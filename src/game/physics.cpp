@@ -286,9 +286,8 @@ namespace physics
 
     vec gravityvel(physent *d, const vec &center, float secs, float radius, float height, int matid, float submerged)
     {
-        if(movepitch(d)) return vec(0);
-
-        float vel = PHYS(gravity) * (d->weight / 100.f) * d->gravityscale, buoy = 0.f;
+        bool floating = movepitch(d) && (!gameent::is(d) || A(((gameent *)d)->actortype, abilities)&(1<<A_A_FLOAT));
+        float vel = floating ? 0.f : PHYS(gravity) * (d->weight / 100.f) * d->gravityscale, buoy = 0.f;
         bool liquid = isliquid(matid&MATF_VOLUME), inliquid = liquid && submerged >= LIQUIDPHYS(submerge, matid);
 
         if(inliquid) buoy = LIQUIDPHYS(buoyancy, matid) * (d->buoyancy / 100.f) * d->submerged;
