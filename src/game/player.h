@@ -139,7 +139,7 @@ extern const char * const playertypes[PLAYERTYPES][7] = {
 
 // final entry is texscale in playerpattern (512x -> 2 , 1024x -> 1)
 extern const playerpattern playerpatterns[PLAYERPATTERNS] = {
-    { "<grey>textures/patterns/default",    "default",  "Default",  0,      1,  0.5f },
+    { "<grey>textures/patterns/default",    "default",  "Default",  0,      1,  0.0f },
     { "<grey>textures/patterns/soft",       "soft",     "Soft",     0,      1,  0.0f },
     { "<grey>textures/patterns/camo",       "camo",     "Camo",     0,      1,  0.35f },
     { "<grey>textures/patterns/heart",      "heart",    "Heart",    0x300,  2,  0.35f },
@@ -154,7 +154,7 @@ extern const playerpattern playerpatterns[PLAYERPATTERNS] = {
     { "<grey>textures/patterns/circle",     "circle",   "Circle",   0x300,  2,  0.35f },
     { "<grey>textures/patterns/mutant",     "mutant",   "Mutant",   0x300,  2,  0.35f },
     { "<grey>textures/patterns/ninja",      "ninja",    "Ninja",    0,      2,  0.35f },
-    { "<grey>textures/patterns/lines",      "lines",    "Lines",    0,      1,  0.5f },
+    { "<grey>textures/patterns/lines",      "lines",    "Lines",    0,      1,  0.0f },
     { "<grey>textures/patterns/softhero",   "softhero", "Softhero", 0,      1,  0.0f },
 };
 
