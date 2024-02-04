@@ -382,7 +382,10 @@ namespace game
     FVAR(IDF_PERSIST, damagetonegain, 0, 0.25f, FVAR_MAX);
 
     VAR(IDF_PERSIST, prizeeffects, 0, 7, 7); // bit: 1 = sound, 2 = light, 4 = tone
-    FVAR(IDF_PERSIST, prizeloopgain, 0, 1.0f, FVAR_MAX);
+    VAR(IDF_PERSIST, prizeeffectsself, 0, 2, 7); // bit: 1 = sound, 2 = light, 4 = tone
+    FVAR(IDF_PERSIST, prizeloopself, 0, 0.5f, FVAR_MAX);
+    FVAR(IDF_PERSIST, prizeloopplayer, 0, 0.75f, FVAR_MAX);
+    FVAR(IDF_PERSIST, prizeloopjanitor, 0, 1.0f, FVAR_MAX);
 
     VAR(IDF_PERSIST, playreloadnotify, 0, 3, 15);
     FVAR(IDF_PERSIST, reloadnotifygain, 0, 1, FVAR_MAX);
@@ -1279,7 +1282,8 @@ namespace game
                 adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d, PULSE_SHOCK, -1).mul(pc), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
             }
 
-            if(prizeeffects&2 && d->isprize(focus) > 0) adddynlight(d->center(), d->height * 10, pulsecolour(d, PULSE_READY), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
+            if((d != focus ? prizeeffects : prizeeffectsself)&2 && d->isprize(focus) > 0)
+                adddynlight(d->center(), d->height * 10, pulsecolour(d, PULSE_PRIZE), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
         }
     }
 
@@ -1648,10 +1652,12 @@ namespace game
             }
         }
 
-        if(prizeeffects&1 && d->isprize(focus))
+        if((d != focus ? prizeeffects : prizeeffectsself)&1 && d->isprize(focus))
         {
+            float gain = d != focus ? (d->actortype == A_JANITOR ? prizeloopjanitor : prizeloopplayer) : prizeloopself;
             if(!issound(d->plchan[PLCHAN_ALERT]))
-                emitsound(S_PRIZELOOP, getplayersoundpos(d), d, &d->plchan[PLCHAN_ALERT], SND_LOOP|SND_PRIORITY, prizeloopgain);
+                emitsound(S_PRIZELOOP, getplayersoundpos(d), d, &d->plchan[PLCHAN_ALERT], SND_LOOP|SND_PRIORITY, gain);
+            else soundsources[d->plchan[PLCHAN_ALERT]].gain = gain;
         }
         else if(issound(d->plchan[PLCHAN_ALERT]) && soundsources[d->plchan[PLCHAN_ALERT]].flags&SND_LOOP)
             soundsources[d->plchan[PLCHAN_ALERT]].clear();
@@ -2653,7 +2659,7 @@ namespace game
 
     int findcolour(gameent *d, int comb, bool tone, float level, float mix)
     {
-        if(prizeeffects&4 && d != previewent && d->isprize(focus) && (tone || d->actortype == A_JANITOR))
+        if(prizeeffects&4 && (d != focus || prizeeffects&8) && d != previewent && d->isprize(focus) && (tone || d->actortype == A_JANITOR))
             return pulsehexcol(tone ? PULSE_READY : PULSE_PRIZE);
 
         int col = d->colours[comb ? 1 : 0];
