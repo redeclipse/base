@@ -690,12 +690,14 @@ namespace game
             {
                 // Unique ID for this vanity setup.
                 defformatstring(id, "%s", vanities[n].model);
-                if(vanities[n].style&VANITYSTYLE_MODEL) concformatstring(id, "/%s", vanitymodel(d));
-                if(vanities[n].style&VANITYSTYLE_HEAD && vanities.inrange(head))
+                if(vanities[n].style&VANITYSTYLE_HEAD)
                 {
-                    concformatstring(id, "/%s", vanities[head].ref);
-                    if(vanities[head].style&VANITYSTYLE_MODEL) concformatstring(id, "/%s", vanitymodel(d));
+                    bool hashead = head >= 0 && vanities.inrange(head);
+                    concformatstring(id, "/%s", hashead ? vanities[head].ref : vanitymodel(d));
+                    if(hashead && vanities[head].style&VANITYSTYLE_MODEL) concformatstring(id, "/%s", vanitymodel(d));
                 }
+                else if(vanities[n].style&VANITYSTYLE_MODEL) concformatstring(id, "/%s", vanitymodel(d));
+
                 if(vanities[n].style&VANITYSTYLE_PRIV) concformatstring(id, "/%s", server::privnamex(d->privilege, d->actortype, true));
                 if(proj) concatstring(id, "/proj");
 
@@ -4383,11 +4385,11 @@ namespace game
 
     VAR(IDF_PERSIST, playerregeneffects, 0, 1, 1);
     FVAR(IDF_PERSIST, playerregentime, 0, 1, 1);
-    FVAR(IDF_PERSIST, playerregenfade, 0, 1.25f, 16);
+    FVAR(IDF_PERSIST, playerregenfade, 0, 1.0f, 16);
     FVAR(IDF_PERSIST, playerregenslice, 0, 0.125f, 1);
     FVAR(IDF_PERSIST, playerregenblend, 0, 0.5f, 1);
     FVAR(IDF_PERSIST, playerregendecayblend, 0, 0.5f, 1);
-    FVAR(IDF_PERSIST, playerregenbright, -16, 0.5f, 16);
+    FVAR(IDF_PERSIST, playerregenbright, -16, 1.0f, 16);
     FVAR(IDF_PERSIST, playerregendecaybright, -16, -1.0f, 16);
 
     void getplayereffects(gameent *d, modelstate &mdl)
@@ -4502,7 +4504,7 @@ namespace game
             loopi(2)
             {
                 vec pos = vec(d->center()).add(vec(rnd(11) - 5, rnd(11) - 5, rnd(11) - 3).mul(pc));
-                regular_part_create(PART_FIREBALL_SOFT, 250, pos, pulsehexcol(d, PULSE_BURN, i ? -1 : 50), d->height * intensity * blend * pc, fade * blend * pc, 0, 0, -25);
+                regular_part_create(PART_FIREBALL_SOFT, 250, pos, pulsehexcol(d, i ? PULSE_BURN : PULSE_FIRE, 50), d->height * intensity * blend * pc, fade * blend * pc * (i ? 0.5f : 1.f), 0, 0, -25);
             }
         }
 
