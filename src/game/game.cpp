@@ -1283,7 +1283,7 @@ namespace game
             }
 
             if((d != focus ? prizeeffects : prizeeffectsself)&2 && d->isprize(focus) > 0)
-                adddynlight(d->center(), d->height * 10, pulsecolour(d, PULSE_PRIZE), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
+                adddynlight(d->center(), d->height * 2, pulsecolour(d, PULSE_PRIZE), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
         }
     }
 
