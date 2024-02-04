@@ -4381,8 +4381,40 @@ namespace game
         return mdlname;
     }
 
+    VAR(IDF_PERSIST, playerregeneffects, 0, 1, 1);
+    FVAR(IDF_PERSIST, playerregentime, 0, 1, 1);
+    FVAR(IDF_PERSIST, playerregenfade, 0, 1.25f, 16);
+    FVAR(IDF_PERSIST, playerregenslice, 0, 0.125f, 1);
+    FVAR(IDF_PERSIST, playerregenblend, 0, 0.5f, 1);
+    FVAR(IDF_PERSIST, playerregendecayblend, 0, 0.5f, 1);
+    FVAR(IDF_PERSIST, playerregenbright, -16, 0.5f, 16);
+    FVAR(IDF_PERSIST, playerregendecaybright, -16, -1.0f, 16);
+
     void getplayereffects(gameent *d, modelstate &mdl)
     {
+        if(regentime && d->lastregen && playerregenslice > 0)
+        {
+            int regenoffset = lastmillis - d->lastregen, regenscaled = int(ceilf(regentime * playerregentime));
+            if(regenoffset <= regenscaled)
+            {
+                int regenpulse = PULSE_HEALTH;
+                bool regendecay = d->lastregenamt < 0;
+                float regenamt = regenoffset / float(regenscaled),
+                      regenblend = playerregenblend, regenbright = playerregenbright;
+
+                if(regendecay)
+                {
+                    regenpulse = PULSE_DECAY;
+                    regenblend = playerregendecayblend;
+                    regenbright = playerregendecaybright;
+                }
+                else regenamt = 1.0f - regenamt;
+
+                mdl.mixercolor = vec4(pulsehexcol(d, regenpulse, 50), regenblend);
+                mdl.mixerparams = vec4(regenamt, playerregenslice, playerregenfade / playerregenslice, regenbright);
+            }
+        }
+
         int pattern = forceplayerpattern >= 0 ? forceplayerpattern : d->pattern;
         if(pattern >= 0)
         {
@@ -4418,16 +4450,7 @@ namespace game
 
         mdl.color = color;
         getplayermaterials(d, mdl);
-
-        if(drawtex != DRAWTEX_HALO)
-        {
-            if(d->actortype < A_ENEMY && playermixer)
-            {
-                defformatstring(actortex, "<comp:1,%d>playermixer [cn = %d]", playermixer, d->clientnum);
-                mdl.mixer = textureload(actortex, 0, true, false);
-            }
-            getplayereffects(d, mdl);
-        }
+        if(drawtex != DRAWTEX_HALO) getplayereffects(d, mdl);
 
         if(!drawtex)
         {

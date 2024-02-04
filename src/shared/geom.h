@@ -325,6 +325,7 @@ struct vec4
     bool operator==(const vec4 &o) const { return x == o.x && y == o.y && z == o.z && w == o.w; }
     bool operator!=(const vec4 &o) const { return x != o.x || y != o.y || z != o.z || w != o.w; }
 
+    bool iszero() const { return x==0 && y==0 && z==0 && w==0; }
     float dot3(const vec4 &o) const { return x*o.x + y*o.y + z*o.z; }
     float dot3(const vec &o) const { return x*o.x + y*o.y + z*o.z; }
     float dot(const vec4 &o) const { return dot3(o) + w*o.w; }

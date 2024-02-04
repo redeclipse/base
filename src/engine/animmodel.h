@@ -150,9 +150,10 @@ struct animmodel : model
         bool doublesided() const { return (flags&DOUBLE_SIDED) != 0; }
 
         bool mixed() const { return (flags&ENABLE_MIXER) != 0; }
+
         bool canmix(const modelstate *state, const animstate *as) const
         {
-            if(!state->mixer || state->mixer == notexture) return false;
+            if(state->mixerparams.iszero()) return false;
             return !(state->flags&MDL_NOMIXER) || firstmodel(as);
         }
 
@@ -209,7 +210,11 @@ struct animmodel : model
 
             if(!skinned) return;
 
-            if(mixed()) LOCALPARAM(mixerparams, mixerparams);
+            if(mixed())
+            {
+                LOCALPARAM(mixercolor, mixercolor);
+                LOCALPARAM(mixerparams, mixerparams);
+            }
             if(patterned()) LOCALPARAMF(patternscale, patternscale);
 
             if(fullbright) LOCALPARAMF(fullbright, 0.0f, fullbright);
@@ -381,21 +386,10 @@ struct animmodel : model
             }
 
             int oldflags = flags;
-            if(flags&ALLOW_MIXER)
-            {
-                if(canmix(state, as))
-                {
-                    flags |= ENABLE_MIXER;
-                    if(state->mixer != lastmixer)
-                    {
-                        glActiveTexture_(GL_TEXTURE5);
-                        activetmu = 5;
-                        settexture(state->mixer);
-                        lastmixer = state->mixer;
-                    }
-                }
-                else flags &= ~ENABLE_MIXER;
-            }
+
+            if(flags&ALLOW_MIXER && canmix(state, as))
+                flags |= ENABLE_MIXER;
+            else flags &= ~ENABLE_MIXER;
 
             if(flags&ALLOW_PATTERN)
             {
@@ -406,7 +400,7 @@ struct animmodel : model
                     flags |= ENABLE_PATTERN;
                     if(pattern != lastpattern)
                     {
-                        glActiveTexture_(GL_TEXTURE6);
+                        glActiveTexture_(GL_TEXTURE5);
                         activetmu = 6;
                         settexture(pattern);
                         lastpattern = pattern;
@@ -1559,13 +1553,15 @@ struct animmodel : model
                 matbright = state->matbright;
                 invalidate = true;
             }
-            if(state->mixer && state->mixer != notexture)
+            if(mixercolor != state->mixercolor)
             {
-                if(mixerparams != state->mixerparams)
-                {
-                    mixerparams = state->mixerparams;
-                    invalidate = true;
-                }
+                mixercolor = state->mixercolor;
+                invalidate = true;
+            }
+            if(mixerparams != state->mixerparams)
+            {
+                mixerparams = state->mixerparams;
+                invalidate = true;
             }
             if(state->pattern && state->pattern != notexture)
             {
@@ -1949,11 +1945,11 @@ struct animmodel : model
 
     static bool enabletc, enablecullface, enabletangents, enablebones, enabledepthoffset, enablecolor;
     static float sizescale;
-    static vec4 colorscale, mixerparams, matbright;
+    static vec4 colorscale, mixercolor, mixerparams, matbright;
     static float patternscale, modelmatsplit;
     static bvec modelmaterial[MAXMDLMATERIALS];
     static GLuint lastvbuf, lasttcbuf, lastxbuf, lastbbuf, lastebuf, lastcolbuf, lastenvmaptex, closestenvmaptex;
-    static Texture *lasttex, *lastdecal, *lastmasks, *lastmixer, *lastpattern, *lastnormalmap;
+    static Texture *lasttex, *lastdecal, *lastmasks, *lastpattern, *lastnormalmap;
     static int matrixpos;
     static matrix4 matrixstack[64];
 
@@ -1962,7 +1958,7 @@ struct animmodel : model
         enabletc = enabletangents = enablebones = enabledepthoffset = enablecolor = false;
         enablecullface = true;
         lastvbuf = lasttcbuf = lastxbuf = lastbbuf = lastebuf = lastcolbuf = lastenvmaptex = closestenvmaptex = 0;
-        lasttex = lastdecal = lastmasks = lastmixer = lastpattern = lastnormalmap = NULL;
+        lasttex = lastdecal = lastmasks = lastpattern = lastnormalmap = NULL;
         shaderparamskey::invalidate();
     }
 
@@ -2080,12 +2076,12 @@ float animmodel::intersectdist = 0, animmodel::intersectscale = 1;
 bool animmodel::enabletc = false, animmodel::enabletangents = false, animmodel::enablebones = false,
      animmodel::enablecullface = true, animmodel::enabledepthoffset = false, animmodel::enablecolor = false;
 float animmodel::sizescale = 1;
-vec4 animmodel::colorscale(1, 1, 1, 1), animmodel::mixerparams(1, 1, 1, 1), animmodel::matbright(1, 1);
+vec4 animmodel::colorscale = vec4(1), animmodel::mixercolor = vec4(1), animmodel::mixerparams = vec4(0), animmodel::matbright = vec4(1);
 float animmodel::patternscale = 1, animmodel::modelmatsplit = -1;
 bvec animmodel::modelmaterial[MAXMDLMATERIALS] = { bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255) };
 GLuint animmodel::lastvbuf = 0, animmodel::lasttcbuf = 0, animmodel::lastxbuf = 0, animmodel::lastbbuf = 0, animmodel::lastebuf = 0,
        animmodel::lastcolbuf = 0, animmodel::lastenvmaptex = 0, animmodel::closestenvmaptex = 0;
-Texture *animmodel::lasttex = NULL, *animmodel::lastdecal = NULL, *animmodel::lastmasks = NULL, *animmodel::lastmixer = NULL, *animmodel::lastpattern = NULL, *animmodel::lastnormalmap = NULL;
+Texture *animmodel::lasttex = NULL, *animmodel::lastdecal = NULL, *animmodel::lastmasks = NULL, *animmodel::lastpattern = NULL, *animmodel::lastnormalmap = NULL;
 int animmodel::matrixpos = 0;
 matrix4 animmodel::matrixstack[64];
 

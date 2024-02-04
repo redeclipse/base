@@ -6168,8 +6168,7 @@ namespace UI
     UICMDT(ModelPreview, modelpreview, mixerparams, "ffff", (float *r, float *g, float *b, float *a), o->mdl.mixerparams = vec4(*r, *g, *b, *a));
     UICMDT(ModelPreview, modelpreview, matbright, "ffff", (float *x, float *y, float *z, float *w), o->mdl.matbright = vec4(*x, *y, *z, *w));
     UICMDT(ModelPreview, modelpreview, patternscale, "f", (float *n), o->mdl.patternscale = *n);
-    UICMDT(ModelPreview, modelpreview, matrplit, "f", (float *n), o->mdl.matsplit = clamp(*n, 0.0f, 0.5f));
-    UICMDT(ModelPreview, modelpreview, mixer, "s", (const char *texname), o->mdl.mixer = textureload(texname, 3, true, false));
+    UICMDT(ModelPreview, modelpreview, matsplit, "f", (float *n), o->mdl.matsplit = clamp(*n, 0.0f, 0.5f));
     UICMDT(ModelPreview, modelpreview, pattern, "s", (const char *texname), o->mdl.pattern = textureload(texname, 3, true, false));
 
     struct PlayerPreview : Preview
