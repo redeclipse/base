@@ -4496,7 +4496,7 @@ namespace game
         if(d->burntime && d->burnfunc(lastmillis, d->burntime))
         {
             int millis = lastmillis - d->lastres[W_R_BURN], delay = max(d->burndelay, 1);
-            float pc = 1, intensity = 0.5f + (rnd(51) / 100.f), fade = (d != focus || d->state != CS_ALIVE ? 0.2f : 0.f) + (rnd(36) / 100.f);
+            float pc = 1, intensity = 0.5f + (rnd(51) / 100.f), fade = (d != focus || d->state != CS_ALIVE ? 0.175f : 0.f) + (rnd(26) / 100.f);
 
             if(d->burntime - millis < delay) pc *= (d->burntime - millis) / float(delay);
             else pc *= 0.75f + ((millis % delay)/float(delay * 4));
@@ -4504,7 +4504,7 @@ namespace game
             loopi(2)
             {
                 vec pos = vec(d->center()).add(vec(rnd(11) - 5, rnd(11) - 5, rnd(11) - 3).mul(pc));
-                regular_part_create(PART_FIREBALL_SOFT, 250, pos, pulsehexcol(d, i ? PULSE_BURN : PULSE_FIRE, 50), d->height * intensity * blend * pc, fade * blend * pc * (i ? 0.5f : 1.f), 0, 0, -25);
+                regular_part_create(PART_FIREBALL_SOFT, i ? 150 : 300, pos, pulsehexcol(d, i ? PULSE_BURN : PULSE_FIRE, 50), d->height * intensity * blend * pc, fade * blend * pc, 0, 0, i ? -50 : -25);
             }
         }
 
@@ -4516,7 +4516,7 @@ namespace game
 
             loopi(6 + rnd(6))
             {
-                float fade = blend * (d != focus || d->state != CS_ALIVE ? 0.25f : 0.15f) + (rnd(26) / 100.f);
+                float fade = blend * (d != focus || d->state != CS_ALIVE ? 0.35f : 0.2f) + (rnd(26) / 100.f);
                 vec dir = vec(rnd(201) - 100, rnd(201) - 100, rnd(201) - 100).div(100.f).normalize(),
                     from = vec(dir).mul(rad).mul(rnd(51) / 100.f).add(origin),
                     col = pulsecolour(d, PULSE_SHOCK, (i + 1) * 11), to = from;
@@ -4546,15 +4546,15 @@ namespace game
         if(d->corrodetime && d->corrodefunc(lastmillis, d->corrodetime))
         {
             int millis = lastmillis - d->lastres[W_R_CORRODE], delay = max(d->corrodedelay, 1);
-            float pc = 1, intensity = 0.0625f + (rnd(10) / 100.f), fade = (d != focus || d->state != CS_ALIVE ? 0.2f : 0.1f) + (rnd(20) / 100.f);
+            float pc = 1, intensity = 0.25f + (rnd(26) / 100.f), fade = (d != focus || d->state != CS_ALIVE ? 0.2f : 0.1f) + (rnd(20) / 100.f);
 
             if(d->corrodetime - millis < delay) pc *= (d->corrodetime - millis) / float(delay);
             else pc *= 0.75f + ((millis % delay)/float(delay * 4));
 
             loopi(2)
             {
-                vec pos = vec(d->center()).add(vec(rnd(11) - 5, rnd(11) - 5, rnd(21) - 10).mul(pc));
-                regular_part_create(i ? PART_SPLASH_SOFT : PART_BUBBLES_SOFT, 250, pos, pulsehexcol(d, PULSE_CORRODE, i ? -1 : 50), d->height * intensity * blend * pc * (i ? 0.25f : 1.f), fade * blend * pc, 0, 0, -65);
+                vec pos = vec(d->center()).add(vec(rnd(21) - 10, rnd(21) - 10, rnd(21) - 10).mul(pc));
+                regular_part_create(i ? PART_BUBBLES_SOFT : PART_SPLASH_SOFT, i ? 750 : 350, pos, pulsehexcol(d, PULSE_CORRODE, i ? -1 : 50), intensity * blend * pc, fade * blend * pc * (i ? 0.5f : 0.75f), 0, 0, i ? -35 : -70);
             }
         }
     }

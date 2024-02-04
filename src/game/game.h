@@ -335,11 +335,6 @@ enum
     RESIDUAL(bleed, BLEED, BLEED); \
     RESIDUAL(shock, SHOCK, SHOCK); \
     RESIDUAL(corrode, CORRODE, CORRODE);
-#define RESIDUALSF \
-    RESIDUAL(burn, BURN, FIRE); \
-    RESIDUAL(bleed, BLEED, BLEED); \
-    RESIDUAL(shock, SHOCK, SHOCK); \
-    RESIDUAL(corrode, CORRODE, CORRODE);
 
 #define FRAG_ENUM(en, um) \
     en(um, NONE, 0) en(um, HEADSHOT, 1<<0) en(um, OBLITERATE, 1<<1) \
