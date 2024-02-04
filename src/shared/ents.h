@@ -125,8 +125,8 @@ struct modelstate : entmodelstate
     {
         entmodelstate::reset();
 
-        mixercolor = matbright = vec4(1);
-        mixerparams = vec4(0);
+        mixercolor = matbright = vec4(1, 1, 1, 1);
+        mixerparams = vec4(0, 0, 0, 0);
         patternscale = 1;
         matsplit = -1;
         attached = NULL;

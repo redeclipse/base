@@ -185,8 +185,7 @@ struct animmodel : model
             if(color.r < 0) LOCALPARAMF(colorscale, colorscale.r, colorscale.g, colorscale.b, colorscale.a*blend);
             else LOCALPARAMF(colorscale, color.r, color.g, color.b, colorscale.a*blend);
 
-            if(drawtex == DRAWTEX_HALO) LOCALPARAM(material1, modelmaterial[2].tocolor().mul(matbright.x));
-            else if(rgbapattern())
+            if(drawtex == DRAWTEX_HALO || rgbapattern())
             {   // RGBA mask that supports all four colours at once
                 LOCALPARAM(material1, modelmaterial[0].tocolor().mul(matbright.x));
                 LOCALPARAM(material2, modelmaterial[1].tocolor().mul(matbright.y));
@@ -2076,7 +2075,7 @@ float animmodel::intersectdist = 0, animmodel::intersectscale = 1;
 bool animmodel::enabletc = false, animmodel::enabletangents = false, animmodel::enablebones = false,
      animmodel::enablecullface = true, animmodel::enabledepthoffset = false, animmodel::enablecolor = false;
 float animmodel::sizescale = 1;
-vec4 animmodel::colorscale = vec4(1), animmodel::mixercolor = vec4(1), animmodel::mixerparams = vec4(0), animmodel::matbright = vec4(1);
+vec4 animmodel::colorscale = vec4(1, 1, 1, 1), animmodel::mixercolor = vec4(1, 1, 1, 1), animmodel::mixerparams = vec4(0, 0, 0, 0), animmodel::matbright = vec4(1, 1, 1, 1);
 float animmodel::patternscale = 1, animmodel::modelmatsplit = -1;
 bvec animmodel::modelmaterial[MAXMDLMATERIALS] = { bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255) };
 GLuint animmodel::lastvbuf = 0, animmodel::lasttcbuf = 0, animmodel::lastxbuf = 0, animmodel::lastbbuf = 0, animmodel::lastebuf = 0,

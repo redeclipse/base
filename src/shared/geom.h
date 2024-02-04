@@ -313,6 +313,7 @@ struct vec4
     };
 
     vec4() {}
+    explicit vec4(float a) : x(a), y(a), z(a), w(a) {}
     explicit vec4(const vec &p, float w = 0) : x(p.x), y(p.y), z(p.z), w(w) {}
     explicit vec4(const vec2 &p, float z = 0, float w = 0) : x(p.x), y(p.y), z(z), w(w) {}
     vec4(float x, float y, float z, float w) : x(x), y(y), z(z), w(w) {}
@@ -1413,8 +1414,8 @@ struct bvec
 
     bool iszero() const { return x==0 && y==0 && z==0; }
 
-    bvec &mul(float n) { x *= n; y *= n; z *= n; return *this; }
-    bvec &div(float n) { x /= n; y /= n; z /= n; return *this; }
+    bvec &mul(float n) { x = uchar(::clamp(x * n, 0.0f, 255.0f)); y = uchar(::clamp(y * n, 0.0f, 255.0f)); z = uchar(::clamp(z * n, 0.0f, 255.0f)); return *this; }
+    bvec &div(float n) { x = uchar(::clamp(x / n, 0.0f, 255.0f)); y = uchar(::clamp(y / n, 0.0f, 255.0f)); z = uchar(::clamp(z / n, 0.0f, 255.0f)); return *this; }
     bvec &mul(int n) { x *= n; y *= n; z *= n; return *this; }
     bvec &div(int n) { x /= n; y /= n; z /= n; return *this; }
     bvec &add(int n) { x += n; y += n; z += n; return *this; }
@@ -1423,7 +1424,8 @@ struct bvec
     bvec &sub(const bvec &v) { x -= v.x; y -= v.y; z -= v.z; return *this; }
     bvec &min(const bvec &o)   { x = ::min(x, o.x); y = ::min(y, o.y); z = ::min(z, o.z); return *this; }
     bvec &max(const bvec &o)   { x = ::max(x, o.x); y = ::max(y, o.y); z = ::max(z, o.z); return *this; }
-    bvec &mul(const vec &v) { x *= v.x; y *= v.y; z *= v.z; return *this; }
+    bvec &mul(const vec &v) { x = uchar(::clamp(x * v.x, 0.0f, 255.0f)); y = uchar(::clamp(y * v.y, 0.0f, 255.0f)); z = uchar(::clamp(z * v.z, 0.0f, 255.0f)); return *this; }
+    bvec &div(const vec &v) { x = uchar(::clamp(x / v.x, 0.0f, 255.0f)); y = uchar(::clamp(y / v.y, 0.0f, 255.0f)); z = uchar(::clamp(z / v.z, 0.0f, 255.0f)); return *this; }
     bvec &min(int f)        { x = ::min(int(x), f); y = ::min(int(y), f); z = ::min(int(z), f); return *this; }
     bvec &max(int f)        { x = ::max(int(x), f); y = ::max(int(y), f); z = ::max(int(z), f); return *this; }
     bvec &abs() { return *this; }
