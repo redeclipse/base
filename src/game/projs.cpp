@@ -2493,10 +2493,12 @@ namespace projs
         loopv(projs) if(projs[i]->ready(false))
         {
             projent &proj = *projs[i];
-            if(proj.projtype == PROJ_AFFINITY || (drawtex == DRAWTEX_HALO && proj.projtype != PROJ_ENTITY && proj.projtype != PROJ_VANITY && proj.projtype != PROJ_PIECE)) continue;
+            if(proj.projtype == PROJ_AFFINITY || (drawtex == DRAWTEX_HALO && proj.projtype != PROJ_ENTITY && proj.projtype != PROJ_VANITY && (proj.projtype != PROJ_PIECE || proj.lifespan >= 0.0625f))) continue;
             if((proj.projtype == PROJ_ENTITY && !entities::ents.inrange(proj.id)) || !projs[i]->mdlname || !*projs[i]->mdlname) continue;
+
             const char *mdlname = proj.mdlname;
             modelstate mdl;
+
             mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
             mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_CULL_DIST;
             mdl.basetime = proj.spawntime;
@@ -2506,36 +2508,55 @@ namespace projs
             mdl.roll = proj.roll;
             mdl.o = proj.o;
             mdl.material[0] = proj.material;
+
             switch(proj.projtype)
             {
                 case PROJ_DEBRIS:
                 {
                     mdl.size *= proj.lifesize;
                     fadeproj(proj, mdl.color.a, mdl.size);
+
                     if(mdl.color.a <= 0) continue;
+
                     break;
                 }
-                case PROJ_VANITY: case PROJ_PIECE:
+
+                case PROJ_PIECE:
+                {   // fade out pieces from halo quickly
+                    if(drawtex == DRAWTEX_HALO) mdl.color.a *= 1.0f - (proj.lifespan * 16.0f);
+                    // fall-through
+                }
+                case PROJ_VANITY:
+                {
                     if(proj.owner)
                     {
                         if(!game::haloallow(camera1->o, proj.owner)) continue;
                         game::getplayermaterials(proj.owner, mdl);
                     }
+                    // fall-through
+                }
+
                 case PROJ_GIB: case PROJ_EJECT:
                 {
                     mdl.size *= proj.lifesize;
                     fadeproj(proj, mdl.color.a, mdl.size);
+
                     if(mdl.color.a <= 0) continue;
+
                     if(proj.owner && !proj.limited && drawtex != DRAWTEX_HALO) game::getplayereffects(proj.owner, mdl);
+
                     break;
                 }
+
                 case PROJ_SHOT:
                 {
                     mdl.color.a *= fadeweap(proj);
                     if(mdl.color.a <= 0) continue;
+
                     mdl.material[0] = proj.owner ? bvec::fromcolor(game::getcolour(proj.owner, game::playerovertone, game::playerovertonelevel, game::playerovertonemix)) : bvec(128, 128, 128);
                     mdl.material[1] = proj.owner ? bvec::fromcolor(game::getcolour(proj.owner, game::playerundertone, game::playerundertonelevel, game::playerundertonemix)) : bvec(128, 128, 128);
                     mdl.material[2] = proj.owner ? bvec::fromcolor(game::getcolour(proj.owner, game::playereffecttone, game::playereffecttonelevel, game::playereffecttonemix)) : bvec(128, 128, 128);
+
                     if(!isweap(proj.weap) || (WF(WK(proj.flags), proj.weap, proxtype, WS(proj.flags)) && (!proj.stuck || proj.lifetime%500 >= 300))) mdl.material[3] = bvec(0, 0, 0);
                     else if(W2(proj.weap, colourproj, WS(proj.flags)) != 0)
                     {
@@ -2543,8 +2564,10 @@ namespace projs
                         mdl.material[3] = bvec::fromcolor(vec::fromcolor(W(proj.weap, colour)).mul(1-amt).add(vec(WPCOL(&proj, proj.weap, colourproj, WS(proj.flags))).mul(amt)).clamp(0.f, 1.f));
                     }
                     else if(WF(WK(proj.flags), proj.weap, fxcol, WS(proj.flags))) mdl.material[3] = bvec::fromcolor(FWCOL(P, fxcol, proj));
+
                     break;
                 }
+
                 case PROJ_ENTITY:
                 {
                     if(!entities::haloallow(camera1->o, proj.id)) continue;
@@ -2584,6 +2607,7 @@ namespace projs
                 }
                 default: break;
             }
+
             rendermodel(mdlname, mdl, &proj);
         }
     }
