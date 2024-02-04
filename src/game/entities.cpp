@@ -8,7 +8,6 @@ namespace entities
     vector<int> airnodes;
     vector<inanimate *> inanimates;
 
-    FVAR(IDF_PERSIST, showentdist, 0, 2048, FVAR_MAX);
     VAR(IDF_PERSIST, showentmodels, 0, 2, 2);
     VAR(IDF_PERSIST, showentweapons, 0, 0, 2);
 
@@ -22,10 +21,14 @@ namespace entities
     FVAR(IDF_PERSIST, showentsize, 0, 3, 10);
     FVAR(IDF_PERSIST, showentavailable, 0, 1, 1);
     FVAR(IDF_PERSIST, showentunavailable, 0, 0.125f, 1);
+    FVAR(IDF_PERSIST, entitymaxdist, 0, 1024, FVAR_MAX);
 
-    DEFUIVARS(entityedit, SURFACE_WORLD, -1.f, 0.f, 1.f, 4.f, 512.f, 0.f, 0.f);
+    DEFUIVARS(entityedit, SURFACE_WORLD, -1.f, 0.f, 1.f, 4.f, 256.f, 0.f, 0.f);
     DEFUIVARS(entityitem, SURFACE_WORLD, -1.f, 0.f, 1.f, 4.f, 512.f, 0.f, 0.f);
     DEFUIVARS(entityproj, SURFACE_WORLD, -1.f, 0.f, 1.f, 4.f, 512.f, 0.f, 0.f);
+
+    VAR(IDF_PERSIST, entityicons, 0, 1, 1);
+    FVAR(IDF_PERSIST, entityiconmaxdist, 0.f, 256.f, FVAR_MAX);
 
     VAR(IDF_PERSIST, entityhalos, 0, 1, 1);
     FVAR(IDF_PERSIST, entselblend, 0, 1, 1);
@@ -2926,7 +2929,7 @@ namespace entities
     {
         if(dynamic && (e.dynamic() || showentdynamic >= level)) return;
         vec pos = dynamic ? e.pos() : e.o;
-        if(pos.squaredist(camera1->o) > showentdist*showentdist) return;
+        if(pos.squaredist(camera1->o) > entitymaxdist * entitymaxdist) return;
         #define entdirpart(o,y,p,length,fade,colour) \
         { \
             float targyaw = y, targpitch = p; \
@@ -3535,17 +3538,19 @@ namespace entities
 
     void drawparticles()
     {
-        float maxdist = maxparticledistance*maxparticledistance;
         loopv(railways) loopvj(railways[i].parents)
         {
             int n = railways[i].parents[j];
             if(!ents.inrange(n) || ents[n]->type != PARTICLES) continue;
+
             gameentity &e = *(gameentity *)ents[n];
-            if(!checkparticle(e) || e.pos().squaredist(camera1->o) > maxdist) continue;
+            if(!checkparticle(e) || e.pos().squaredist(camera1->o) > maxparticledistance * maxparticledistance) continue;
+
             makeparticle(e.pos(), e.attrs);
         }
 
-        bool hasroute = (m_edit(game::gamemode) || m_race(game::gamemode)) && routeid >= 0;
+        bool hasroute = (m_edit(game::gamemode) || m_race(game::gamemode)) && routeid >= 0,
+             editcheck = entityicons && !drawtex && game::player1->isediting() && !editinhibit;
         int fstent = m_edit(game::gamemode) ? 0 : min(firstuse(EU_ITEM), firstent(hasroute ? ROUTE : TELEPORT)),
             lstent = m_edit(game::gamemode) ? ents.length() : max(lastuse(EU_ITEM), lastent(hasroute ? ROUTE : TELEPORT));
 
@@ -3553,12 +3558,14 @@ namespace entities
         {
             gameentity &e = *(gameentity *)ents[i];
             if(e.type == NOTUSED || e.attrs.empty()) continue;
-            if(!game::player1->isediting() && e.type != TELEPORT && e.type != ROUTE && enttype[e.type].usetype != EU_ITEM) continue; // they don't do anything
+            if(!editcheck && e.type != TELEPORT && e.type != ROUTE && enttype[e.type].usetype != EU_ITEM) continue; // they don't do anything
 
-            vec pos = game::player1->isediting() ? e.o : e.pos();
-            if(!drawtex && game::player1->isediting() && !editinhibit)
+            vec pos = editcheck ? e.o : e.pos();
+            bool hassel = enthover.find(i) >= 0 || entgroup.find(i) >= 0;
+            float dist = pos.squaredist(camera1->o);
+            if(editcheck && (hassel || dist <= entityiconmaxdist * entityiconmaxdist))
             {
-                bool ontop = (enthover.find(i) >= 0 || entgroup.find(i) >= 0) && pos.squaredist(camera1->o) <= showentdist*showentdist,
+                bool ontop = hassel && dist <= entitymaxdist * entitymaxdist,
                      cansee = getvisible(camera1->o, camera1->yaw, camera1->pitch, pos, curfov, fovy, max(enttype[e.type].radius, 4), ontop ? -1 : VFC_PART_VISIBLE),
                      dotop = ontop && e.dynamic(), visiblepos = dotop && getvisible(camera1->o, camera1->yaw, camera1->pitch, e.pos(), curfov, fovy, max(enttype[e.type].radius, 4), ontop ? -1 : VFC_PART_VISIBLE);
 
