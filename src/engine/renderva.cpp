@@ -463,7 +463,7 @@ bool mapmodeltransparent(extentity &e)
     if(mapmodels.inrange(e.attrs[0]))
     {
         mapmodelinfo &mmi = mapmodels[e.attrs[0]];
-        model *m = loadbestlod(mmi.m ? mmi.m : loadmodel(mmi.name), e.o, e.attrs[17]);
+        model *m = mmi.m ? mmi.m : loadmodel(mmi.name);
         if(m && m->alphablended()) return true;
     #if 0
         if(m && m->alphatested(true)) return true;
@@ -523,7 +523,7 @@ bool mapmodelvisible(extentity &e, int n, int colvis, bool shadowpass)
         }
     }
     mapmodelinfo &mmi = mapmodels[e.attrs[0]];
-    model *m = loadbestlod(mmi.m ? mmi.m : loadmodel(mmi.name), e.o, e.attrs[17]);
+    model *m = mmi.m ? mmi.m : loadmodel(mmi.name);
     if(!m) return false;
     if(shadowpass && mmshadowdist && mmshadowreject(e, m)) return false;
     return true;

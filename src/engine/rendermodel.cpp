@@ -997,16 +997,16 @@ FVAR(IDF_PERSIST, lodmodelfovmin, 1, 10, 180);
 FVARF(IDF_PERSIST, lodmodelfovdist, 0, 0, FVAR_MAX, lodmodelfovsqdist = lodmodelfovdist*lodmodelfovdist);
 FVAR(IDF_PERSIST, lodmodelfovscale, 0, 1, 1000);
 
-model *loadbestlod(model *m, const vec &pos, float offset)
+model *loadbestlod(model *m, const vec &center, float radius, float offset)
 {
     if(!lodmodels || (drawtex && drawtex != DRAWTEX_HALO) || !m || !m->haslod()) return m;
     const char *mdl = NULL;
 
-    if(!getvisible(camera1->o, camera1->yaw, camera1->pitch, pos, curfov, fovy, max(m->bbradius.x, m->bbradius.y, m->bbradius.z), -1))
+    if(cullmodel(m, center, radius, MDL_CULL_DIST|MDL_CULL_VFC|MDL_CULL_OCCLUDED))
         mdl = m->lowestlod(); // if we can't see it then use the lowest detail model
     else
     {
-        float sqdist = camera1->o.squaredist(pos);
+        float sqdist = camera1->o.squaredist(center);
         if(sqdist > 0)
         {
             if(lodmodelfov && (!lodmodelfovdist || sqdist <= lodmodelfovsqdist))
@@ -1035,7 +1035,7 @@ void rendermapmodel(int idx, entmodelstate &state, bool tpass)
     if(!mapmodels.inrange(idx) || (editmode && !showmapmodels)) return;
 
     mapmodelinfo &mmi = mapmodels[idx];
-    model *m = loadbestlod(mmi.m ? mmi.m : loadmodel(mmi.name), state.o, state.lodoffset);
+    model *m = mmi.m ? mmi.m : loadmodel(mmi.name);
     if(!m) return;
 
     vec bbradius;
@@ -1047,6 +1047,8 @@ void rendermapmodel(int idx, entmodelstate &state, bool tpass)
     state.center.rotate_around_z(state.yaw*RAD);
     state.center.add(state.o);
     state.radius *= state.size;
+
+    m = loadbestlod(m, state.center, state.radius, state.lodoffset);
 
     int visible = 0;
     if(shadowmapping)
@@ -1069,7 +1071,7 @@ void rendermapmodel(int idx, entmodelstate &state, bool tpass)
 
 void rendermodel(const char *mdl, modelstate &state, dynent *d)
 {
-    model *m = loadbestlod(loadmodel(mdl), state.o, state.lodoffset);
+    model *m = loadmodel(mdl);
     if(!m) return;
     vec bbradius;
     m->boundbox(state.center, bbradius);
@@ -1096,10 +1098,12 @@ void rendermodel(const char *mdl, modelstate &state, dynent *d)
 hasboundbox:
     state.radius *= state.size;
 
+    m = loadbestlod(m, state.center, state.radius, state.lodoffset);
+
     if(state.flags&MDL_NORENDER) state.anim |= ANIM_NORENDER;
 
-    if(state.attached) for(int i = 0; state.attached[i].tag; i++)
-        if(state.attached[i].name) state.attached[i].m = loadbestlod(loadmodel(state.attached[i].name), state.o, state.lodoffset);
+    if(state.attached) for(int i = 0; state.attached[i].tag; i++) if(state.attached[i].name)
+        state.attached[i].m = loadbestlod(loadmodel(state.attached[i].name), state.o, state.radius, state.lodoffset);
 
     if(state.flags&MDL_CULL_QUERY)
     {
