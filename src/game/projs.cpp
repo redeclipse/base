@@ -2163,7 +2163,7 @@ namespace projs
             }
         }
 
-        if(proj.isjunk(true))
+        if(proj.isjunk(m_messy(game::gamemode, game::mutators)))
         {
             int numdyns = game::numdynents();
             loopj(numdyns)

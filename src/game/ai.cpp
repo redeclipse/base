@@ -653,7 +653,7 @@ namespace ai
         {
             projent &proj = *projs::junkprojs[i];
 
-            if(!proj.isjunk(true)) continue;
+            if(!proj.isjunk(m_messy(game::gamemode, game::mutators))) continue;
 
             int v = closestwaypoint(proj.o, janitorsuck, true);
             bool found = false;
@@ -917,7 +917,7 @@ namespace ai
         {
             projent &proj = *projs::junkprojs[i];
 
-            if(!proj.isjunk(true)) continue;
+            if(!proj.isjunk(m_messy(game::gamemode, game::mutators))) continue;
             if(proj.o.squaredist(waypoints[b.target].o) > RETRYDIST*RETRYDIST) continue;
             count++;
         }
@@ -1682,7 +1682,7 @@ namespace ai
             loopv(projs::junkprojs)
             {
                 projent &p = *projs::junkprojs[i];
-                if(!p.isjunk(true)) continue;
+                if(!p.isjunk(m_messy(game::gamemode, game::mutators))) continue;
 
                 float dist = p.o.squaredist(d->muzzletag());
                 if(dist > janitorsuck*janitorsuck || (closest >= 0 && dist >= closedist))

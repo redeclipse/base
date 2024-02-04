@@ -566,7 +566,7 @@ GFVAR(IDF_GAMEMOD, 0, ejectliquidcoast, 0, 1.75f, 10000);
 GFVAR(IDF_GAMEMOD, 0, ejectweight, -10000, 180, 10000);
 GFVAR(IDF_GAMEMOD, 0, ejectbuoyancy, -10000, 0, 10000);
 
-GVAR(IDF_GAMEMOD, 0, janitorlimit, 0, 4, MAXAI); // maximum number of janitors
+GVAR(IDF_GAMEMOD, 0, janitorlimit, 0, 8, MAXAI); // maximum number of janitors
 GVAR(IDF_GAMEMOD, 0, janitorprize, 0, -1, 3); // // -1 = random, 0 = none, 1 = grenade, 2 = mine, 3 = rocket
 GVAR(IDF_GAMEMOD, 0, janitorready, 0, 250, VAR_MAX); // ready to award a prize at this much stuff
 GVAR(IDF_GAMEMOD, 0, janitorcollect, 0, 500, VAR_MAX); // collect this much before dumping
@@ -574,6 +574,7 @@ GFVAR(IDF_GAMEMOD, 0, janitorbalance, 0, 0.33f, FVAR_MAX); // this * current bal
 GFVAR(IDF_GAMEMOD, 0, janitorjunktime, 0, 0.25f, 1); // when shell casings and vanities/parts become "junk"
 GFVAR(IDF_GAMEMOD, 0, janitorjunkitems, 0, 0.75f, 1); // when items become "junk"
 GFVAR(IDF_GAMEMOD, 0, janitorjunkdebris, 0, 0.125f, 1); // when gibs and debris become "junk"
+GFVAR(IDF_GAMEMOD, 0, janitorjunkmessy, 0, 0.5f, 1); // scale all junk delays by this much in messy modes
 GFVAR(IDF_GAMEMOD, 0, janitorsuck, 0, 64.f, FVAR_MAX); // suck distance
 GFVAR(IDF_GAMEMOD, 0, janitorreject, 0, 128.f, FVAR_MAX); // reject distance
 GSVAR(0, PRIV_MODERATOR, janitorvanities, "");

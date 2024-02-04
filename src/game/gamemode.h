@@ -291,6 +291,8 @@ extern mutstypes mutstype[];
 #define m_balance(a,b,c)    (m_play(a) && m_teamspawn(a, b) && (m_forcebal(a, b) || ((G(balanceduke) || !m_duke(a, b)) && ((G(balancemaps) >= 0 ? G(balancemaps) : G(mapbalance)) >= (m_affinity(a) ? 1 : (c ? 2 : 3))))))
 #define m_balreset(a,b)     (G(balancereset) && (G(balancereset) == 2 || m_capture(a) || m_bomber(a) || m_race(a) || m_duke(a, b)))
 
+#define m_messy(a,b)        (!m_insta(a,b) && !m_kaboom(a,b) ? G(janitorjunkmessy) : 1.f)
+
 #ifdef CPP_GAME_SERVER
 #define m_attr(a,b)         (a == WEAPON ? attrmap[isweap(b) ? b : W_GRENADE] : b)
 #else
