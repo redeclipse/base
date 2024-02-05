@@ -555,7 +555,7 @@ namespace client
     SETPLAYERINFO(colour, colours[0], IDF_HEX, 0xFFFFFF);
     SETPLAYERINFO(colour2, colours[1], IDF_HEX, 0xFFFFFF);
     SETPLAYERINFO(model, model, 0, PLAYERTYPES-1);
-    SETPLAYERINFO(pattern, pattern, 0, PLAYERPATTERNS-1);
+    SETPLAYERINFO(mixer, mixer, 0, PLAYERMIXERS-1);
 
     SVARF(IDF_PERSIST, playervanity, "", if(game::player1->setvanity(playervanity)) sendplayerinfo = true;);
 
@@ -756,11 +756,11 @@ namespace client
 
     VAR(0, numplayertypes, 1, PLAYERTYPES, -1);
     ICOMMAND(0, getmodelname, "ib", (int *mdl, int *idx), result(*mdl >= 0 ? playertypes[*mdl%PLAYERTYPES][*idx >= 0 ? clamp(*idx, 0, 6) : 6] : ""));
-    VAR(0, numpatterns, 1, PLAYERPATTERNS, -1);
-    ICOMMAND(0, getpattern, "bb", (int *pattern, int *idx),
-        if(*pattern >= 0)
+    VAR(0, nummixers, 1, PLAYERMIXERS, -1);
+    ICOMMAND(0, getmixer, "bb", (int *mixer, int *idx),
+        if(*mixer >= 0)
         {
-            const ::playerpattern &p = playerpatterns[*pattern%PLAYERPATTERNS];
+            const ::playermixer &p = playermixers[*mixer%PLAYERMIXERS];
             switch(*idx)
             {
                 case 0: result(p.filename); break;
@@ -771,7 +771,7 @@ namespace client
                 default: break;
             }
         }
-        else intret(PLAYERPATTERNS);
+        else intret(PLAYERMIXERS);
     );
 
     ICOMMANDVF(0, cameraposx, camera1->o.x);
@@ -1777,7 +1777,7 @@ namespace client
         sendstring(game::player1->name, p);
         loopk(2) putint(p, game::player1->colours[k]);
         putint(p, game::player1->model);
-        putint(p, game::player1->pattern);
+        putint(p, game::player1->mixer);
         sendstring(game::player1->vanity, p);
         putint(p, game::player1->loadweap.length());
         loopv(game::player1->loadweap) putint(p, game::player1->loadweap[i]);
@@ -1926,11 +1926,11 @@ namespace client
                 p.reliable();
                 sendplayerinfo = false;
                 lastplayerinfo = totalmillis ? totalmillis : 1;
-                putint(p, N_SETPLAYERINFO); // name colour model pattern checkpoint vanity count <loadweaps> count <randweaps>
+                putint(p, N_SETPLAYERINFO); // name colour model mixer checkpoint vanity count <loadweaps> count <randweaps>
                 sendstring(game::player1->name, p);
                 loopk(2) putint(p, game::player1->colours[k]);
                 putint(p, game::player1->model);
-                putint(p, game::player1->pattern);
+                putint(p, game::player1->mixer);
                 putint(p, game::player1->checkpointspawn);
                 sendstring(game::player1->vanity, p);
                 putint(p, game::player1->loadweap.length());
@@ -2396,10 +2396,10 @@ namespace client
                     break;
                 }
 
-                case N_SETPLAYERINFO: // name colour model pattern checkpoint vanity count <loadweaps> count <randweaps>
+                case N_SETPLAYERINFO: // name colour model mixer checkpoint vanity count <loadweaps> count <randweaps>
                 {
                     getstring(text, p);
-                    int c1 = getint(p), c2 = getint(p), model = getint(p), pattern = getint(p), cps = getint(p);
+                    int c1 = getint(p), c2 = getint(p), model = getint(p), mixer = getint(p), cps = getint(p);
                     stringz(vanity);
                     getstring(vanity, p);
                     int lw = getint(p);
@@ -2416,17 +2416,17 @@ namespace client
                     {
                         string oldname, newname;
                         copystring(oldname, game::colourname(d));
-                        d->setinfo(namestr, c1, c2, model, pattern, vanity, lweaps, rweaps);
+                        d->setinfo(namestr, c1, c2, model, mixer, vanity, lweaps, rweaps);
                         copystring(newname, game::colourname(d));
                         if(showpresence >= (waiting(false) ? 2 : 1) && !isignored(d->clientnum))
                             conoutf(colourmagenta, "%s is now known as %s", oldname, newname);
                     }
-                    else d->setinfo(namestr, c1, c2, model, pattern, vanity, lweaps, rweaps);
+                    else d->setinfo(namestr, c1, c2, model, mixer, vanity, lweaps, rweaps);
                     d->checkpointspawn = cps;
                     break;
                 }
 
-                case N_CLIENTINIT: // cn colour model pattern checkpoint team priv name vanity count <loadweaps> count <randweaps> handle steamid hostip <version>
+                case N_CLIENTINIT: // cn colour model mixer checkpoint team priv name vanity count <loadweaps> count <randweaps> handle steamid hostip <version>
                 {
                     int tcn = getint(p);
                     verinfo dummy;
@@ -2444,7 +2444,7 @@ namespace client
                         dummy.get(p);
                         break;
                     }
-                    int c1 = getint(p), c2 = getint(p), model = getint(p), pattern = getint(p), cps = getint(p), team = clamp(getint(p), int(T_NEUTRAL), int(T_MAX - 1)), priv = getint(p);
+                    int c1 = getint(p), c2 = getint(p), model = getint(p), mixer = getint(p), cps = getint(p), team = clamp(getint(p), int(T_NEUTRAL), int(T_MAX - 1)), priv = getint(p);
                     getstring(text, p);
                     stringz(namestr);
                     filterstring(namestr, text, true, true, true, true, MAXNAMELEN);
@@ -2465,10 +2465,10 @@ namespace client
                     d->checkpointspawn = cps;
                     d->team = team;
                     d->privilege = priv;
-                    if(d->name[0]) d->setinfo(namestr, c1, c2, model, pattern, vanity, lweaps, rweaps); // already connected
+                    if(d->name[0]) d->setinfo(namestr, c1, c2, model, mixer, vanity, lweaps, rweaps); // already connected
                     else // new client
                     {
-                        d->setinfo(namestr, c1, c2, model, pattern, vanity, lweaps, rweaps);
+                        d->setinfo(namestr, c1, c2, model, mixer, vanity, lweaps, rweaps);
                         if(showpresence >= (waiting(false) ? 2 : 1))
                         {
                             int amt = otherclients(true);
@@ -4031,7 +4031,7 @@ namespace client
     CLCOMMAND(pcolour, intret(d->colours[0]));
     CLCOMMAND(colour2, intret(d->colours[1]));
     CLCOMMAND(model, intret(d->model%PLAYERTYPES));
-    CLCOMMAND(pattern, intret(d->pattern%PLAYERPATTERNS));
+    CLCOMMAND(mixer, intret(d->mixer%PLAYERMIXERS));
     CLCOMMAND(vanity, result(d->vanity));
     CLCOMMAND(obit, result(d->obit));
     CLCOMMAND(handle, result(d->handle));

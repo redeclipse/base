@@ -151,10 +151,10 @@ namespace game
             player1->model = client::playermodel;
             if(player1->model < 0) setvar("playermodel", rnd(PLAYERTYPES), true);
         }
-        if(player1->pattern < 0)
+        if(player1->mixer < 0)
         {
-            player1->pattern = client::playerpattern;
-            if(player1->pattern < 0) setvar("playerpattern", rnd(PLAYERPATTERNS), true);
+            player1->mixer = client::playermixer;
+            if(player1->mixer < 0) setvar("playermixer", rnd(PLAYERMIXERS), true);
         }
     }
 
@@ -466,7 +466,7 @@ namespace game
 
     VAR(IDF_PERSIST, nogore, 0, 0, 1); // turns off all gore, 0 = off, 1 = replace
     VAR(IDF_PERSIST, forceplayermodel, -1, -1, PLAYERTYPES-1);
-    VAR(IDF_PERSIST, forceplayerpattern, -1, -1, PLAYERPATTERNS-1);
+    VAR(IDF_PERSIST, forceplayermixer, -1, -1, PLAYERMIXERS-1);
     VAR(IDF_PERSIST, vanitymodels, 0, 1, 1);
     FVAR(IDF_PERSIST, vanitymaxdist, FVAR_NONZERO, 1024, FVAR_MAX);
 
@@ -4417,26 +4417,24 @@ namespace game
             }
         }
 
-        int pattern = forceplayerpattern >= 0 && d->actortype != A_JANITOR ? forceplayerpattern : d->pattern;
-        if(pattern >= 0)
+        int mixer = forceplayermixer >= 0 && d->actortype != A_JANITOR ? forceplayermixer : d->mixer;
+        if(mixer >= 0)
         {
-            const playerpattern &p = playerpatterns[pattern%PLAYERPATTERNS];
+            const playermixer &p = playermixers[mixer%PLAYERMIXERS];
             if(d->actortype == A_JANITOR)
             {
-                if(p.mixer && janitorpattern > 0)
+                if(p.mixer && janitormixer > 0)
                 {   // allows mixing
                     mdl.mixer = textureload(p.filename, p.clamp, true, false);
-                    mdl.mixerscale = p.scale * janitorpattern;
-                    mdl.matsplit = p.split;
+                    mdl.mixerscale = p.scale * janitormixer;
                 }
             }
             else
             {
-                mdl.pattern = textureload(p.filename, p.clamp, true, false);
-                mdl.patternscale = p.scale;
-                mdl.matsplit = p.split;
-                if(p.mixer) mdl.flags |= MDL_NOPATTERN; // proper ones shouldn't recurse
+                mdl.mixer = textureload(p.filename, p.clamp, true, false);
+                mdl.mixerscale = p.scale;
             }
+            mdl.matsplit = p.split;
         }
     }
 
@@ -4697,7 +4695,7 @@ namespace game
     PLAYERPREV(health, "bbb", (int *n, int *m, int *o), previewent->health = *n >= 0 ? *n : previewent->gethealth(*m >= 0 ? *m : G_DEATHMATCH, *o >= 0 ? *o : 0));
     PLAYERPREV(model, "i", (int *n), previewent->model = clamp(*n, 0, PLAYERTYPES-1));
     PLAYERPREV(colour, "ii", (int *n, int *v), previewent->colours[*v%2] = clamp(*n, 0, 0xFFFFFF));
-    PLAYERPREV(pattern, "i", (int *n), previewent->pattern = clamp(*n, 0, PLAYERPATTERNS-1));
+    PLAYERPREV(mixer, "i", (int *n), previewent->mixer = clamp(*n, 0, PLAYERMIXERS-1));
     PLAYERPREV(team, "i", (int *n), previewent->team = clamp(*n, 0, int(T_LAST)));
     PLAYERPREV(privilege, "i", (int *n), previewent->privilege = clamp(*n, 0, int(PRIV_MAX-1)));
     PLAYERPREV(weapselect, "i", (int *n), previewent->weapselect = clamp(*n, 0, W_MAX-1));

@@ -232,7 +232,7 @@ struct animmodel : model
                 if(split > 0.0f)
                 {
                     float splitv = clamp(split, 0.0f, 0.5f), splitc = 1.0f - splitv;
-                    LOCALPARAMF(matsplit, splitv, splitc, 1.0f / split, 1.0f / ((splitc - splitv) * 0.5f));
+                    LOCALPARAMF(matsplit, splitv, splitc, 1.0f / splitv, 1.0f / ((splitc - splitv) * 0.5f));
                 }
                 else LOCALPARAMF(matsplit, 0, 0, 0, 0);
 

@@ -257,7 +257,7 @@ namespace ai
         d->colours[0] = c1;
         d->colours[1] = c2;
         d->model = md;
-        d->pattern = pt;
+        d->mixer = pt;
         d->setvanity(vn);
 
         if(resetthisguy) projs::removeplayer(d);

@@ -112,10 +112,10 @@ enum
 };
 
 #define PLAYERTYPES 2
-#define PLAYERPATTERNS 17
+#define PLAYERMIXERS 17
 #define PLAYERPARTS 14
 
-struct playerpattern
+struct playermixer
 {
     const char *filename;
     const char *id;
@@ -138,25 +138,25 @@ extern const char * const playertypes[PLAYERTYPES][7] = {
     { "actors/player/female/hwep",      "actors/player/female/headless",    "actors/player/male/body",      "actors/player/female",     "player",   "female",   "Female" }
 };
 
-// final entry is texscale in playerpattern (512x -> 2 , 1024x -> 1)
-extern const playerpattern playerpatterns[PLAYERPATTERNS] = {
-    { "<grey>textures/patterns/default",    "default",  "Default",  0,      1,  0.0f,   false },
-    { "<grey>textures/patterns/soft",       "soft",     "Soft",     0,      1,  0.0f,   false },
-    { "<grey>textures/patterns/camo",       "camo",     "Camo",     0,      1,  0.35f,  true },
-    { "<grey>textures/patterns/heart",      "heart",    "Heart",    0x300,  2,  0.35f,  true },
-    { "<grey>textures/patterns/crown",      "crown",    "Crown",    0x300,  2,  0.35f,  true },
-    { "<grey>textures/patterns/zebra",      "zebra",    "Zebra",    0x300,  2,  0.35f,  true },
-    { "<grey>textures/patterns/checker",    "checker",  "Checker",  0x300,  2,  0.35f,  true },
-    { "<grey>textures/patterns/star",       "star",     "Star",     0x300,  2,  0.35f,  true },
-    { "<grey>textures/patterns/flower",     "flower",   "Flower",   0x300,  2,  0.35f,  true },
-    { "<grey>textures/patterns/leopard",    "leopard",  "Leopard",  0x300,  2,  0.35f,  true },
-    { "<grey>textures/patterns/zigzag",     "zigzag",   "Zigzag",   0x300,  2,  0.35f,  true },
-    { "<grey>textures/patterns/pixel",      "pixel",    "Pixel",    0x300,  2,  0.35f,  true },
-    { "<grey>textures/patterns/circle",     "circle",   "Circle",   0x300,  2,  0.35f,  true },
-    { "<grey>textures/patterns/mutant",     "mutant",   "Mutant",   0x300,  2,  0.35f,  true },
-    { "<grey>textures/patterns/ninja",      "ninja",    "Ninja",    0,      2,  0.35f,  true },
-    { "<grey>textures/patterns/lines",      "lines",    "Lines",    0,      1,  0.0f,   false },
-    { "<grey>textures/patterns/softhero",   "softhero", "Softhero", 0,      1,  0.0f,   false },
+// final entry is texscale in playermixer (512x -> 2 , 1024x -> 1)
+extern const playermixer playermixers[PLAYERMIXERS] = {
+    { "<comp:0,-1024>rgbamixer [tex = [<grey>textures/mixers/default]]",                  "default",  "Default",  0,      1,  0.0f,   false },
+    { "<comp:0,-1024>rgbamixer [tex = [<grey>textures/mixers/soft]]",                     "soft",     "Soft",     0,      1,  0.0f,   false },
+    { "<comp:0,-1024>rgbamixer [split = 0.35; tex = [<grey>textures/mixers/camo]]",       "camo",     "Camo",     0,      1,  0.35f,  true },
+    { "<comp:0,-1024>rgbamixer [split = 0.35; tex = [<grey>textures/mixers/heart]]",      "heart",    "Heart",    0x300,  1,  0.35f,  true },
+    { "<comp:0,-1024>rgbamixer [split = 0.35; tex = [<grey>textures/mixers/crown]]",      "crown",    "Crown",    0x300,  1,  0.35f,  true },
+    { "<comp:0,-1024>rgbamixer [split = 0.35; tex = [<grey>textures/mixers/zebra]]",      "zebra",    "Zebra",    0x300,  1,  0.35f,  true },
+    { "<comp:0,-1024>rgbamixer [split = 0.35; tex = [<grey>textures/mixers/checker]]",    "checker",  "Checker",  0x300,  1,  0.35f,  true },
+    { "<comp:0,-1024>rgbamixer [split = 0.35; tex = [<grey>textures/mixers/star]]",       "star",     "Star",     0x300,  1,  0.35f,  true },
+    { "<comp:0,-1024>rgbamixer [split = 0.35; tex = [<grey>textures/mixers/flower]]",     "flower",   "Flower",   0x300,  1,  0.35f,  true },
+    { "<comp:0,-1024>rgbamixer [split = 0.35; tex = [<grey>textures/mixers/leopard]]",    "leopard",  "Leopard",  0x300,  1,  0.35f,  true },
+    { "<comp:0,-1024>rgbamixer [split = 0.35; tex = [<grey>textures/mixers/zigzag]]",     "zigzag",   "Zigzag",   0x300,  1,  0.35f,  true },
+    { "<comp:0,-1024>rgbamixer [split = 0.35; tex = [<grey>textures/mixers/pixel]]",      "pixel",    "Pixel",    0x300,  1,  0.35f,  true },
+    { "<comp:0,-1024>rgbamixer [split = 0.35; tex = [<grey>textures/mixers/circle]]",     "circle",   "Circle",   0x300,  1,  0.35f,  true },
+    { "<comp:0,-1024>rgbamixer [split = 0.35; tex = [<grey>textures/mixers/mutant]]",     "mutant",   "Mutant",   0x300,  1,  0.35f,  true },
+    { "<comp:0,-1024>rgbamixer [split = 0.35; tex = [<grey>textures/mixers/ninja]]",      "ninja",    "Ninja",    0,      1,  0.35f,  true },
+    { "<comp:0,-1024>rgbamixer [tex = [<grey>textures/mixers/lines]]",                    "lines",    "Lines",    0,      1,  0.0f,   false },
+    { "<comp:0,-1024>rgbamixer [tex = [<grey>textures/mixers/softhero]]",                 "softhero", "Softhero", 0,      1,  0.0f,   false },
 };
 
 extern const playerpart playerparts[PLAYERPARTS] = {
@@ -177,7 +177,7 @@ extern const playerpart playerparts[PLAYERPARTS] = {
 };
 #else
 extern const char * const playertypes[PLAYERTYPES][7];
-extern const playerpattern playerpatterns[PLAYERPATTERNS];
+extern const playermixer playermixers[PLAYERMIXERS];
 extern const playerpart playerparts[PLAYERPARTS];
 #endif
 

@@ -1216,6 +1216,8 @@ void updatetextures()
         t.id = t.frames.inrange(frame) ? t.frames[frame] : 0;
         t.last = delay > 1 ? totalmillis - (elapsed % delay) : totalmillis;
     });
+
+    UI::updatetextures();
 }
 
 void preloadtextures(uint flags)
@@ -1383,7 +1385,7 @@ static Texture *newtexture(Texture *t, const char *rname, ImageData &s, int tcla
     }
     t->id = t->frames.length() ? t->frames[0] : 0;
     t->used = t->last = totalmillis;
-    t->rendered = true;
+    t->rendered = 1;
     return t;
 }
 
@@ -3538,7 +3540,7 @@ Texture *cubemaploadwildcard(Texture *t, const char *name, bool mipit, bool msg,
         else createtexture(t->frames[0], t->w, t->h, s.data, i ? -1 : 3, mipit ? 2 : 1, component, side.target, s.w, s.h, s.pitch, false, t->format, true);
     }
     t->id = t->frames.length() ? t->frames[0] : 0;
-    t->rendered = true;
+    t->rendered = 1;
     return t;
 }
 

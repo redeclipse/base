@@ -669,7 +669,7 @@ struct verinfo
 // inherited by gameent and server clients
 struct clientstate
 {
-    int health, colours[2], model, pattern, checkpointspawn;
+    int health, colours[2], model, mixer, checkpointspawn;
     int weapselect, weapammo[W_MAX][W_A_MAX], weapload[W_MAX][W_A_MAX], weapent[W_MAX], weapshot[W_MAX], weapstate[W_MAX], weapwait[W_MAX], weaptime[W_MAX], prevstate[W_MAX], prevtime[W_MAX];
     int lastdeath, lastspawn, lastpain, lastregen, lastregenamt, lastbuff, lastshoot, lastcook, lastaffinity, lastres[W_R_MAX], lastrestime[W_R_MAX];
     int burntime, burndelay, burndamage, bleedtime, bleeddelay, bleeddamage, shocktime, shockdelay, shockdamage, shockstun, shockstuntime, corrodetime, corrodedelay, corrodedamage;
@@ -681,7 +681,7 @@ struct clientstate
     vector<int> loadweap, lastweap, randweap, cpnodes;
     verinfo version;
 
-    clientstate() : model(-1), pattern(-1), checkpointspawn(1), weapselect(W_CLAW), lastdeath(0), lastspawn(0), lastpain(0), lastregen(0), lastregenamt(0), lastbuff(0), lastshoot(0), lastcook(0), lastaffinity(0),
+    clientstate() : model(-1), mixer(-1), checkpointspawn(1), weapselect(W_CLAW), lastdeath(0), lastspawn(0), lastpain(0), lastregen(0), lastregenamt(0), lastbuff(0), lastshoot(0), lastcook(0), lastaffinity(0),
         actortype(A_PLAYER), spawnpoint(-1), ownernum(-1), skill(0), points(0), frags(0), deaths(0), totalpoints(0), totalfrags(0), totaldeaths(0), spree(0), lasttimeplayed(0), timeplayed(0),
         cpmillis(0), cptime(0), queuepos(-1), hasprize(0), totalavgpos(0), quarantine(false)
     {
@@ -998,7 +998,7 @@ struct clientstate
     {
         loopi(2) if(colours[i] < 0) colours[i] = rnd(0xFFFFFF);
         if(model < 0) model = rnd(PLAYERTYPES);
-        if(pattern < 0) pattern = rnd(PLAYERPATTERNS);
+        if(mixer < 0) mixer = rnd(PLAYERMIXERS);
         spree = lastdeath = lastpain = lastregen = lastregenamt = lastbuff = lastshoot = lastcook = lastaffinity = hasprize = 0;
         queuepos = -1;
         resetresidual();
@@ -2124,7 +2124,7 @@ struct gameent : dynent, clientstate
         colours[0] = c1;
         colours[1] = c2;
         model = m;
-        pattern = p;
+        mixer = p;
         setvanity(v);
         loadweap.shrink(0);
         loopv(w) loadweap.add(w[i]);
@@ -2442,7 +2442,7 @@ struct cament
 namespace client
 {
     extern bool demoplayback, isready, loadedmap;
-    extern int showpresence, showpresencehostinfo, showteamchange, needsmap, gettingmap, triggerid, playercolour, playercolour2, playermodel, playerpattern;
+    extern int showpresence, showpresencehostinfo, showteamchange, needsmap, gettingmap, triggerid, playercolour, playercolour2, playermodel, playermixer;
     extern vector<uchar> messages;
     extern bool radarallow(const vec &o, gameent *d, vec &dir, float &dist, bool self = false);
     extern void clearvotes(gameent *d, bool msg = false);
@@ -2581,7 +2581,7 @@ namespace game
 {
     extern int nextmode, nextmuts, lastzoom, lasttvcam, lasttvchg, spectvtime, waittvtime,
             maptime, mapstart, timeremaining, timeelapsed, timelast, timesync, bloodfade, bloodsize, bloodsparks, damageinteger,
-            announcefilter, dynlighteffects, followthirdperson, nogore, forceplayermodel, forceplayerpattern,
+            announcefilter, dynlighteffects, followthirdperson, nogore, forceplayermodel, forceplayermixer,
             playerovertone, playerundertone, playerdisplaytone, playerhalotone, playereffecttone, follow, specmode, spectvfollow, clientcrc;
     extern float bloodscale, aboveitemiconsize, playerovertonelevel, playerundertonelevel, playerdisplaytonelevel, playerhalotonelevel, playereffecttonelevel,
             playerovertonemix, playerundertonemix, playerdisplaytonemix, playerhalotonemix, playereffecttonemix, affinityfadeat, affinityfadecut, affinityfollowblend, affinitythirdblend, damagedivisor, damagecritical,

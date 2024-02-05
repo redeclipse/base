@@ -2243,7 +2243,7 @@ namespace UI
             {
                 Texture *t = surface->texs[i];
                 if(strcmp(name, t->comp)) continue;
-                t->rendered = false; // redraw
+                t->rendered = 0; // redraw
             }
         }
 
@@ -7360,7 +7360,7 @@ namespace UI
         {
             if(!(t.type&Texture::COMPOSITE)) continue;
             composite(t.name, t.tclamp, t.mipmap, true, t.type&Texture::GC, &t, true);
-            t.rendered = false;
+            t.rendered = 0;
         });
     }
 
@@ -7557,14 +7557,18 @@ namespace UI
         loopv(surface->texs)
         {
             Texture *t = surface->texs[i];
+
+            if(t->rendered >= 2 && compositelimit > 0 && processed >= compositelimit) continue;
+
             int delay = 0, elapsed = t->update(delay, compositeuprate);
-            if(t->rendered && elapsed < 0) continue;
+            if(t->rendered >= 2 && elapsed < 0) continue;
 
             found = true;
 
-            if(compositerewind)
+            poke();
+
+            if(delay >= 0 && compositerewind)
             {
-                poke();
                 uicurtime = elapsed;
 
                 int offset = delay > 1 ? elapsed % delay : delay;
@@ -7621,9 +7625,9 @@ namespace UI
             }
 
             t->last = totalmillis;
-            t->rendered = true;
 
-            if(delay < 0)
+            if(t->rendered < 2) t->rendered++;
+            else if(delay < 0)
             { // don't need to keep stuff we're not going to continue using it
                 if(t->fbo)
                 {
@@ -7633,7 +7637,7 @@ namespace UI
                 surface->texs.remove(i--);
             }
 
-            if(compositelimit > 0 && ++processed >= compositelimit) break;
+            processed++;
         }
 
         popsurface();
@@ -7660,7 +7664,6 @@ namespace UI
 
     void update()
     {
-        updatetextures();
         checkmapuis();
     }
 

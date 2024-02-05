@@ -578,7 +578,7 @@ GFVAR(IDF_GAMEMOD, 0, janitorjunkmessy, 0, 0.25f, 1); // scale all junk delays b
 GFVAR(IDF_GAMEMOD, 0, janitorsuckdist, 0, 64.f, FVAR_MAX); // suck distance
 GFVAR(IDF_GAMEMOD, 0, janitorsuckspeed, 0, 150.f, FVAR_MAX); // suck speed
 GFVAR(IDF_GAMEMOD, 0, janitorreject, 0, 128.f, FVAR_MAX); // reject distance
-GFVAR(IDF_GAMEMOD, 0, janitorpattern, 0, 0.25f, FVAR_MAX); // pattern scale
+GFVAR(IDF_GAMEMOD, 0, janitormixer, 0, 0.25f, FVAR_MAX); // mixer scale
 GSVAR(0, PRIV_MODERATOR, janitorvanities, "");
 
 GFVAR(IDF_GAMEMOD, 0, movespeed, FVAR_NONZERO, 1.f, FVAR_MAX); // speed

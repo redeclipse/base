@@ -571,6 +571,8 @@ namespace UI
     extern int savemap(stream *h);
     extern void resetmap();
 
+    extern void updatetextures();
+
     extern void setup();
     extern void cleanup();
     extern void cleangl();

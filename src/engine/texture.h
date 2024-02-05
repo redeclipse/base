@@ -586,15 +586,15 @@ struct Texture
     };
 
     char *name, *comp, *args;
-    int type, w, h, xs, ys, bpp, tclamp, used, frame, delay, last;
-    bool mipmap, canreduce, throb, rendered;
+    int type, w, h, xs, ys, bpp, tclamp, used, frame, delay, last, rendered;
+    bool mipmap, canreduce, throb;
     vector<GLuint> frames;
     GLuint id, fbo;
     GLenum format;
     uchar *alphamask;
 
 
-    Texture() : comp(NULL), args(NULL), used(0), frame(0), delay(0), last(0), throb(false), rendered(false), id(0), fbo(0), format(0), alphamask(NULL)
+    Texture() : comp(NULL), args(NULL), used(0), frame(0), delay(0), last(0), rendered(0), throb(false), id(0), fbo(0), format(0), alphamask(NULL)
     {
         frames.shrink(0);
     }
@@ -631,7 +631,7 @@ struct Texture
         id = 0;
         delay = last = 0;
         format = 0;
-        rendered = false;
+        rendered = 0;
     }
 
     GLuint idframe(int idx)

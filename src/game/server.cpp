@@ -4246,7 +4246,7 @@ namespace server
                 putint(p, ci->team);
                 loopk(2) putint(p, ci->colours[k]);
                 putint(p, ci->model);
-                putint(p, ci->pattern);
+                putint(p, ci->mixer);
                 sendstring(ci->vanity, p);
                 putint(p, ci->loadweap.length());
                 loopv(ci->loadweap) putint(p, ci->loadweap[i]);
@@ -4258,7 +4258,7 @@ namespace server
             putint(p, ci->clientnum);
             loopk(2) putint(p, ci->colours[k]);
             putint(p, ci->model);
-            putint(p, ci->pattern);
+            putint(p, ci->mixer);
             putint(p, ci->checkpointspawn);
             putint(p, ci->team);
             putint(p, ci->privilege);
@@ -6650,7 +6650,7 @@ namespace server
                         copystring(ci->name, namestr, MAXNAMELEN+1);
                         loopk(2) ci->colours[k] = max(getint(p), 0);
                         ci->model = max(getint(p), 0);
-                        ci->pattern = max(getint(p), 0);
+                        ci->mixer = max(getint(p), 0);
                         getstring(text, p);
                         ci->setvanity(text);
                         int lw = getint(p);
@@ -7485,7 +7485,7 @@ namespace server
                     break;
                 }
 
-                case N_SETPLAYERINFO: // name colour model pattern checkpoint vanity count <loadweaps> count <randweaps>
+                case N_SETPLAYERINFO: // name colour model mixer checkpoint vanity count <loadweaps> count <randweaps>
                 {
                     uint ip = getclientip(ci->clientnum);
                     getstring(text, p);
@@ -7518,7 +7518,7 @@ namespace server
                     }
                     loopk(2) ci->colours[k] = max(getint(p), 0);
                     ci->model = max(getint(p), 0);
-                    ci->pattern = max(getint(p), 0);
+                    ci->mixer = max(getint(p), 0);
                     ci->checkpointspawn = max(getint(p), 0);
                     getstring(text, p);
                     ci->setvanity(text);
@@ -7542,7 +7542,7 @@ namespace server
                     QUEUE_STR(ci->name);
                     loopk(2) QUEUE_INT(ci->colours[k]);
                     QUEUE_INT(ci->model);
-                    QUEUE_INT(ci->pattern);
+                    QUEUE_INT(ci->mixer);
                     QUEUE_INT(ci->checkpointspawn);
                     QUEUE_STR(ci->vanity);
                     QUEUE_INT(ci->loadweap.length());

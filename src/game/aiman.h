@@ -139,7 +139,7 @@ namespace aiman
                 ci->lasttimeplayed = totalmillis;
                 loopk(2) ci->colours[k] = rnd(0xFFFFFF);
                 ci->model = botrnd(ci, 4, PLAYERTYPES, true);
-                ci->pattern = botrnd(ci, 4, PLAYERPATTERNS, true);
+                ci->mixer = botrnd(ci, 4, PLAYERMIXERS, true);
                 setskill(ci, true);
                 copystring(ci->name, A(ci->actortype, vname), MAXNAMELEN);
                 ci->loadweap.shrink(0);
@@ -258,7 +258,7 @@ namespace aiman
         else if(ci->aireinit >= 1)
         {
             if(ci->aireinit == 2) loopk(W_MAX) loopj(2) ci->weapshots[k][j].reset();
-            sendf(-1, 1, "ri6si5siv", N_INITAI, ci->clientnum, ci->ownernum, ci->actortype, ci->spawnpoint, ci->skill, ci->name, ci->team, ci->colours[0], ci->colours[1], ci->model, ci->pattern, ci->vanity, ci->loadweap.length(), ci->loadweap.length(), ci->loadweap.getbuf());
+            sendf(-1, 1, "ri6si5siv", N_INITAI, ci->clientnum, ci->ownernum, ci->actortype, ci->spawnpoint, ci->skill, ci->name, ci->team, ci->colours[0], ci->colours[1], ci->model, ci->mixer, ci->vanity, ci->loadweap.length(), ci->loadweap.length(), ci->loadweap.getbuf());
             if(ci->aireinit == 2)
             {
                 waiting(ci, DROP_RESET);
