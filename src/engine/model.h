@@ -56,7 +56,6 @@ struct model
     virtual void setcolor(const vec &color) {}
     virtual void setmaterial(int material1, int material2, int material3, float split) {}
     virtual void setshimmer(bool) {}
-    virtual void setpattern(int) {}
     virtual void setmixer(int) {}
 
     virtual void genshadowmesh(vector<triangle> &tris, const matrix4x3 &orient) {}

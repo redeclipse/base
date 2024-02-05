@@ -952,7 +952,7 @@ namespace ai
         delete f;
         conoutf(colourwhite, "Loaded %d waypoints from %s", numwp, wptname);
 
-        if(m_edit(game::gamemode) ? autoexplodewaypoints&8 != 0 : autoexplodewaypoints)
+        if(m_edit(game::gamemode) ? (autoexplodewaypoints&8) != 0 : autoexplodewaypoints)
         {
             conoutf(colourwhite, "Exploding waypoints..");
             if(autoexplodewaypoints&1) explodewaypoints(1, 6, true, false);

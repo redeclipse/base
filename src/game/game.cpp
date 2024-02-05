@@ -3981,34 +3981,35 @@ namespace game
 
         if(isweap(d->weapselect))
         {
-            bool secondary = physics::secondaryweap(d);
             vec color = vec::fromcolor(W(d->weapselect, colour));
-            if((d->weapstate[d->weapselect] == W_S_POWER || d->weapstate[d->weapselect] == W_S_ZOOM) && W2(d->weapselect, colourcook, secondary) != 0)
+            if(d != previewent)
             {
-                float amt = clamp(float(lastmillis-d->weaptime[d->weapselect])/max(d->weapwait[d->weapselect], 1), 0.f, 1.f);
-                color.mul(1-amt).add(vec(WPCOL(d, d->weapselect, colourcook, secondary)).mul(amt)).clamp(0.f, 1.f);
-            }
-            else if(d->weapselect >= W_OFFSET && d->weapselect < W_ITEM && (W2(d->weapselect, ammosub, false) || W2(d->weapselect, ammosub, true)))
-            {
-                int ammo = d->weapammo[d->weapselect][W_A_CLIP], maxammo = max(W(d->weapselect, ammoclip), 1);
-                float scale = 1;
-                switch(d->weapstate[d->weapselect])
+                bool secondary = physics::secondaryweap(d);
+                if((d->weapstate[d->weapselect] == W_S_POWER || d->weapstate[d->weapselect] == W_S_ZOOM) && W2(d->weapselect, colourcook, secondary) != 0)
                 {
-                    case W_S_RELOAD:
-                    {
-                        int millis = lastmillis-d->weaptime[d->weapselect], check = d->weapwait[d->weapselect]/2;
-                        scale = millis >= check ? float(millis-check)/check : 0.f;
-                        if(d->weapload[d->weapselect][W_A_CLIP] > 0)
-                            scale = max(scale, float(ammo - d->weapload[d->weapselect][W_A_CLIP])/maxammo);
-                        break;
-                    }
-                    default: scale = float(ammo)/maxammo; break;
+                    float amt = clamp(float(lastmillis-d->weaptime[d->weapselect])/max(d->weapwait[d->weapselect], 1), 0.f, 1.f);
+                    color.mul(1-amt).add(vec(WPCOL(d, d->weapselect, colourcook, secondary)).mul(amt)).clamp(0.f, 1.f);
                 }
-                if(scale < 1) color.mul(scale);
+                else if(d->weapselect >= W_OFFSET && d->weapselect < W_ITEM && (W2(d->weapselect, ammosub, false) || W2(d->weapselect, ammosub, true)))
+                {
+                    int ammo = d->weapammo[d->weapselect][W_A_CLIP], maxammo = max(W(d->weapselect, ammoclip), 1);
+                    float scale = 1;
+                    switch(d->weapstate[d->weapselect])
+                    {
+                        case W_S_RELOAD:
+                        {
+                            int millis = lastmillis-d->weaptime[d->weapselect], check = d->weapwait[d->weapselect]/2;
+                            scale = millis >= check ? float(millis-check)/check : 0.f;
+                            if(d->weapload[d->weapselect][W_A_CLIP] > 0)
+                                scale = max(scale, float(ammo - d->weapload[d->weapselect][W_A_CLIP])/maxammo);
+                            break;
+                        }
+                        default: scale = float(ammo)/maxammo; break;
+                    }
+                    if(scale < 1) color.mul(scale);
+                }
+                if(W(d->weapselect, lightpersist)&2) color.max(WPCOL(d, d->weapselect, lightcol, physics::secondaryweap(d)));
             }
-
-            if(W(d->weapselect, lightpersist)&2) color.max(WPCOL(d, d->weapselect, lightcol, physics::secondaryweap(d)));
-
             mdl.material[3] = bvec::fromcolor(color);
         }
         else mdl.material[3] = bvec::fromcolor(colourwhite);

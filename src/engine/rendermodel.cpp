@@ -63,13 +63,6 @@ void mdlshimmer(int *shimmer)
 }
 COMMAND(0, mdlshimmer, "i");
 
-void mdlpattern(int *pattern)
-{
-    checkmdl;
-    loadingmodel->setpattern(*pattern);
-}
-COMMAND(0, mdlpattern, "i");
-
 void mdlmixer(int *mixer)
 {
     checkmdl;
