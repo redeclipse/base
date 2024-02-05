@@ -4,29 +4,29 @@ namespace ai
 {
     using namespace game;
 
+    int waypointversion = -1;
     vector<waypoint> waypoints;
     vector<oldwaypoint> oldwaypoints;
 
-    bool clipped(const vec &o)
+    bool clipped(const vec &o, bool full)
     {
+        if(!insideworld(o)) return true;
         int material = lookupmaterial(o), clipmat = material&MATF_CLIP;
-        return clipmat == MAT_CLIP || clipmat == MAT_AICLIP || material&MAT_DEATH || material&MAT_HURT || (material&MATF_VOLUME) == MAT_LAVA;
+        return (full && (clipmat == MAT_CLIP || clipmat == MAT_AICLIP)) || material&MAT_DEATH || material&MAT_HURT || (material&MATF_VOLUME) == MAT_LAVA;
     }
 
     int getpull(const vec &o)
     {
-        vec pos = o; pos.z += JUMPMIN;
+        vec pos = vec(o).addz(1);
         if(!insideworld(vec(pos.x, pos.y, min(pos.z, worldsize - 1e-3f)))) return -2;
         float dist = raycube(pos, vec(0, 0, -1), 0, RAY_CLIPMAT);
-        int posmat = lookupmaterial(pos), pull = 1;
-        if(isliquid(posmat&MATF_VOLUME)) pull *= 5;
+        int pull = 1;
         if(dist >= 0)
         {
             pull = int(dist / JUMPMIN);
-            pos.z -= clamp(dist - 8.0f, 0.0f, pos.z);
+            pos.z -= clamp(dist - WAYPOINTRADIUS, 0.0f, pos.z);
             int trgmat = lookupmaterial(pos);
             if(trgmat&MAT_DEATH || trgmat&MAT_HURT) pull *= 100;
-            else if(isliquid(trgmat&MATF_VOLUME)) pull *= 2;
         }
         return pull;
     }
@@ -536,12 +536,170 @@ namespace ai
 
     string loadedwaypoints = "";
     VARF(0, dropwaypoints, 0, 0, 1, if(dropwaypoints) getwaypoints());
+    VAR(IDF_PERSIST, autoexplodewaypoints, 0, 7, 15);
 
-    int addwaypoint(const vec &o, int pull = -1)
+    static const vec recursedirs[6] = {
+        vec(1, 0, 0), vec(-1, 0, 0), vec(0, 1, 0), vec(0, -1, 0), vec(0, 0, -1), vec(0, 0, 1)
+    };
+
+    int recursewaypoint(int n, int passes = 5, bool linkup = false)
+    {
+        if(waypoints.length() >= MAXWAYPOINTFILL) return 0;
+
+        waypoint &w = waypoints[n];
+        if(clipped(w.o)) return 0;
+
+        int created = 0;
+        vec wpos = vec(w.o).addz(1);
+        passes = clamp(passes, 1, 6);
+        loopi(passes)
+        {
+            if(waypoints.length() >= MAXWAYPOINTFILL) break;
+
+            float dist = raycube(wpos, recursedirs[i], 0, RAY_CLIPMAT),
+                  dradius = i >= 4 ? WAYPOINTRADIUS * 2 : WAYPOINTRADIUS;
+
+            if(dist >= dradius)
+            {
+                vec o;
+                int posmat = 0;
+                bool bail = false;
+                loopj(3)
+                {
+                    float jradius = dradius;
+                    bool fullclip = false;
+                    switch(j)
+                    {
+                        case 0: jradius = dist + GUARDRADIUS; break;
+                        case 1: jradius = dist - GUARDRADIUS; break;
+                        case 2: jradius = min(dradius, dist); fullclip = true; break;
+                    }
+
+                    o = vec(w.o).add(vec(recursedirs[i]).mul(jradius));
+                    if(clipped(o, fullclip)) { bail = true; break; }
+                }
+                if(bail) continue;
+
+                int close = closestwaypoint(o, WAYPOINTRADIUS, false);
+                if(iswaypoint(close))
+                {
+                    if(i >= 5 && !linkup) continue;
+
+                    waypoint &c = waypoints[close];
+                    vec cpos = vec(c.o).addz(1);
+
+                    float cdist = raycube(cpos, vec(cpos).sub(wpos).safenormalize(), 0, RAY_CLIPMAT);
+                    if(cdist < WAYPOINTRADIUS) continue;
+
+                    loopj(MAXWAYPOINTLINKS)
+                    {
+                        if(c.links[j] == n) continue;
+                        if(!c.links[j]) { c.links[j] = n; break; }
+                    }
+
+                    loopj(MAXWAYPOINTLINKS)
+                    {
+                        if(w.links[j] == close) continue;
+                        if(!w.links[j]) { w.links[j] = close; break; }
+                    }
+
+                    continue;
+                }
+
+                int pull = 1;
+                if(isliquid(posmat&MATF_VOLUME)) pull *= 5;
+                pull = int(dist / JUMPMIN);
+
+                int r = waypoints.length();
+                waypoint &a = waypoints.add(waypoint(o, pull));
+                if(waypoints.length() <= r) break;
+
+                vec apos = vec(a.o).addz(1);
+                loopk(linkup ? 6 : 5)
+                {
+                    float adist = raycube(apos, recursedirs[k], 0, RAY_CLIPMAT);
+                    if(adist < WAYPOINTRADIUS) continue;
+
+                    vec kpos = vec(a.o).add(vec(recursedirs[k]).mul(min(float(WAYPOINTRADIUS), adist)));
+                    close = closestwaypoint(kpos, WAYPOINTRADIUS, false);
+
+                    if(!iswaypoint(close)) continue;
+
+                    waypoint &c = waypoints[close];
+                    vec cpos = vec(c.o).addz(1);
+
+                    float cdist = raycube(apos, vec(cpos).sub(wpos).safenormalize(), 0, RAY_CLIPMAT);
+                    if(cdist < WAYPOINTRADIUS) continue;
+
+                    loopj(MAXWAYPOINTLINKS)
+                    {
+                        if(c.links[j] == r) continue;
+                        if(!c.links[j]) { c.links[j] = r; break; }
+                    }
+
+                    loopj(MAXWAYPOINTLINKS)
+                    {
+                        if(a.links[j] == close) continue;
+                        if(!a.links[j]) { a.links[j] = close; break; }
+                    }
+                }
+
+                created++;
+
+                if(i >= 5 && !linkup) continue;
+                loopj(MAXWAYPOINTLINKS)
+                {
+                    if(a.links[j] == n) continue;
+                    if(!a.links[j]) { a.links[j] = n; continue; }
+                }
+                a.links[rnd(MAXWAYPOINTLINKS)] = n;
+            }
+        }
+
+        return created;
+    }
+
+    void remapwaypoints();
+
+    int explodewaypoints(int n = 1, int passes = 6, bool linkup = false)
+    {
+        vector<int> considered;
+        int created = 0;
+
+        clearwpcache();
+
+        loopk(n)
+        {
+            if(waypoints.length() >= MAXWAYPOINTFILL) break;
+
+            vector<int> origwaypoints;
+            loopv(waypoints) if(iswaypoint(i) && considered.find(i) < 0)
+                origwaypoints.add(i);
+
+            int count = origwaypoints.length(), createbefore = created;
+            loopv(origwaypoints)
+            {
+                progress(i / float(count), "Exploding waypoints: Pass %d of %d, created %d", k + 1, n, created);
+                int create = recursewaypoint(origwaypoints[i], passes, linkup);
+                if(!create) continue;
+                created += create;
+                considered.add(i);
+            }
+            if(createbefore == created) break;
+        }
+
+        remapwaypoints();
+
+        return created;
+    }
+    ICOMMAND(0, explodewaypoints, "bbi", (int *n, int *p, int *u), intret(explodewaypoints(*n > 0 ? *n : 1, *p > 0 ? *p : 6, *u != 0)));
+
+    int addwaypoint(const vec &o, int pull = -1, bool saved = true)
     {
         if(waypoints.length() > MAXWAYPOINTS) return -1;
         int n = waypoints.length();
-        waypoints.add(waypoint(o, pull >= 0 ? pull : getpull(o)));
+        waypoints.add(waypoint(o, pull >= 0 ? pull : getpull(o), WAYPOINTVERSION, saved));
+        recursewaypoint(n);
         invalidatewpcache(n);
         return n;
     }
@@ -577,7 +735,11 @@ namespace ai
             return;
         }
         int from = closestwaypoint(o, mindist, false), to = closestwaypoint(v, mindist, false);
-        if(!iswaypoint(from)) from = addwaypoint(o);
+        if(!iswaypoint(from))
+        {
+            from = addwaypoint(o);
+            to = closestwaypoint(v, mindist, false);
+        }
         if(!iswaypoint(to)) to = addwaypoint(v);
         if(d->lastnode != from && iswaypoint(d->lastnode) && iswaypoint(from))
             linkwaypoint(waypoints[d->lastnode], from);
@@ -726,34 +888,77 @@ namespace ai
     bool loadwaypoints(bool force, const char *mname)
     {
         string wptname;
+        waypointversion = -1;
         if(!getwaypointfile(mname, wptname)) return false;
         if(!force && (waypoints.length() || !strcmp(loadedwaypoints, wptname))) return true;
 
         stream *f = opengzfile(wptname, "rb");
-        if(!f) return false;
+        if(!f)
+        {
+            conoutf(colourred, "Cannot open waypoint file: %s", wptname);
+            return false;
+        }
+
         char magic[4];
-        if(f->read(magic, 4) < 4 || memcmp(magic, "OWPT", 4)) { delete f; return false; }
+        if(f->read(magic, 4) < 4)
+        {
+            conoutf(colourred, "Cannot read waypoint file: %s", wptname);
+            delete f;
+            return false;
+        }
+
+        if(!memcmp(magic, "OWPT", 4)) waypointversion = 0;
+        else if(!memcmp(magic, "RWPT", 4))
+        {
+            waypointversion = f->getlil<int>();
+            if(waypointversion > WAYPOINTVERSION)
+            {
+                conoutf(colourred, "Waypoint file %s is from a newer version", wptname);
+                waypointversion = -1;
+                delete f;
+                return false;
+            }
+        }
+        else
+        {
+            conoutf(colourred, "Invalid waypoint file %s: %s", wptname, magic);
+            waypointversion = -1;
+            delete f;
+            return false;
+        }
 
         copystring(loadedwaypoints, wptname);
 
         waypoints.setsize(0);
         waypoints.add(vec(0, 0, 0));
+
         ushort numwp = f->getlil<ushort>();
         loopi(numwp)
         {
             if(f->end()) break;
+
             vec o;
             o.x = f->getlil<float>();
             o.y = f->getlil<float>();
             o.z = f->getlil<float>();
-            waypoint &w = waypoints.add(waypoint(o, getpull(o)));
+
+            int version = waypointversion >= 1 ? f->getlil<int>() : 1; // start fresh at 1
+            waypoint &w = waypoints.add(waypoint(o, getpull(o), version, true));
+
             int numlinks = f->getchar(), k = 0;
             loopj(numlinks) if((w.links[k] = f->getlil<ushort>()) != 0) if(++k >= MAXWAYPOINTLINKS) break;
-            //if(!w.haslinks()) conoutf(colourorange, "Warning: waypoint %d has no links", i);
         }
 
         delete f;
         conoutf(colourwhite, "Loaded %d waypoints from %s", numwp, wptname);
+
+        if(m_edit(game::gamemode) ? autoexplodewaypoints&8 != 0 : autoexplodewaypoints)
+        {
+            conoutf(colourwhite, "Exploding waypoints..");
+            if(autoexplodewaypoints&1) explodewaypoints(1, 6, true);
+            if(autoexplodewaypoints&2) explodewaypoints(1, 6, false);
+            if(autoexplodewaypoints&4) explodewaypoints(5, 5, false);
+        }
 
         if(!cleanwaypoints()) clearwpcache();
         game::specreset();
@@ -770,14 +975,24 @@ namespace ai
 
         stream *f = opengzfile(wptname, "wb");
         if(!f) return;
-        f->write("OWPT", 4);
-        f->putlil<ushort>(waypoints.length()-1);
-        for(int i = 1; i < waypoints.length(); i++)
+        f->write("RWPT", 4);
+        f->putlil<int>(WAYPOINTVERSION);
+
+        vector<int> savedwaypoints;
+        loopv(waypoints) if(iswaypoint(i) && waypoints[i].saved) savedwaypoints.add(i);
+
+        f->putlil<ushort>(savedwaypoints.length() - 1);
+        loopv(savedwaypoints)
         {
-            waypoint &w = waypoints[i];
+            int n = savedwaypoints[i];
+            waypoint &w = waypoints[n];
+
             f->putlil<float>(w.o.x);
             f->putlil<float>(w.o.y);
             f->putlil<float>(w.o.z);
+
+            f->putlil<int>(w.version);
+
             int numlinks = 0;
             loopj(MAXWAYPOINTLINKS) { if(!w.links[j]) break; numlinks++; }
             f->putchar(numlinks);
@@ -805,10 +1020,9 @@ namespace ai
                 v.links[j] = k+1;
                 break;
             }
-            waypoint &w = waypoints.add(waypoint(v.o, getpull(v.o)));
+            waypoint &w = waypoints.add(waypoint(v.o, getpull(v.o), 0, true));
             int k = 0;
             loopvj(v.links) if((w.links[k] = v.links[j]) != 0) if(++k >= MAXWAYPOINTLINKS) break;
-            //if(!w.haslinks()) conoutf(colourorange, "Warning: imported waypoint %d has no links", i);
         }
         conoutf(colourwhite, "Imported %d waypoints from the map file", oldwaypoints.length());
         oldwaypoints.setsize(0);
@@ -818,7 +1032,6 @@ namespace ai
 
     bool getwaypoints(bool force, const char *mname, bool check)
     {
-        //if(check && (client::demoplayback || loadedwaypoints[0])) return false;
         if(check && loadedwaypoints[0]) return false;
         return loadwaypoints(force, mname) || importwaypoints();
     }

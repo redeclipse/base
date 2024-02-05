@@ -28,7 +28,9 @@ namespace ai
     {
         if(autosavewaypoints) savewaypoints();
         clearwaypoints(true);
+        waypointversion = -1;
         showwaypoints = dropwaypoints = 0;
+        if(!empty) getwaypoints();
     }
 
     float viewdist(int x) { return x <= 100 ? clamp((SIGHTMIN+(SIGHTMAX-SIGHTMIN))/100.f*float(x), float(SIGHTMIN), max(float(getfog()), SIGHTMIN)) : max(float(getfog()), SIGHTMIN); }

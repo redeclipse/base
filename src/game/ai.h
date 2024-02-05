@@ -2,7 +2,9 @@ struct gameent;
 
 namespace ai
 {
+    const int WAYPOINTVERSION   = 1;
     const int MAXWAYPOINTS      = USHRT_MAX - 2;
+    const int MAXWAYPOINTFILL   = MAXWAYPOINTS / 3;
     const int MAXWAYPOINTLINKS  = 6;
     const int WAYPOINTRADIUS    = 16;
 
@@ -19,16 +21,18 @@ namespace ai
     const float VIEWMIN         = 90.f;    // minimum field of view
     const float VIEWMAX         = 180.f;   // maximum field of view
 
+    extern int waypointversion;
     struct waypoint
     {
         vec o;
         float curscore, estscore;
-        int pull, drag;
+        int pull, drag, version;
         ushort route, prev;
         ushort links[MAXWAYPOINTLINKS];
+        bool saved;
 
         waypoint() {}
-        waypoint(const vec &o, int p = 0) : o(o), pull(p), drag(0), route(0) { memset(links, 0, sizeof(links)); }
+        waypoint(const vec &o, int p = 0, int v = -1, bool a = false) : o(o), pull(p), drag(0), version(v >= 0 ? v : WAYPOINTVERSION), route(0), saved(a) { memset(links, 0, sizeof(links)); }
 
         int score() const { return int(curscore) + int(estscore); }
 
@@ -50,7 +54,7 @@ namespace ai
     };
     extern vector<waypoint> waypoints;
 
-    extern bool clipped(const vec &o);
+    extern bool clipped(const vec &o, bool full = true);
 
     static inline bool iswaypoint(int n)
     {
