@@ -267,7 +267,7 @@ namespace aiman
         else if(ci->aireinit >= 1)
         {
             if(ci->aireinit == 2) loopk(W_MAX) loopj(2) ci->weapshots[k][j].reset();
-            sendf(-1, 1, "ri6si5siv", N_INITAI, ci->clientnum, ci->ownernum, ci->actortype, ci->spawnpoint, ci->skill, ci->name, ci->team, ci->colours[0], ci->colours[1], ci->model, ci->mixer, ci->vanity, ci->loadweap.length(), ci->loadweap.length(), ci->loadweap.getbuf());
+            sendf(-1, 1, "ri6si4ssiv", N_INITAI, ci->clientnum, ci->ownernum, ci->actortype, ci->spawnpoint, ci->skill, ci->name, ci->team, ci->colours[0], ci->colours[1], ci->model, ci->vanity, ci->mixer, ci->loadweap.length(), ci->loadweap.length(), ci->loadweap.getbuf());
             if(ci->aireinit == 2)
             {
                 waiting(ci, DROP_RESET);

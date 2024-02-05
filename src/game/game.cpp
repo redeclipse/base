@@ -4467,7 +4467,7 @@ namespace game
 
             if(d->actortype == A_JANITOR)
             {
-                if(janitormixer > 0)
+                if(m.anytype && janitormixer > 0)
                 {   // allows mixing
                     mdl.mixer = m.loadtex();
                     mdl.mixerscale = m.scale * janitormixer;
