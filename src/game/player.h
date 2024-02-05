@@ -112,18 +112,7 @@ enum
 };
 
 #define PLAYERTYPES 2
-#define PLAYERMIXERS 17
 #define PLAYERPARTS 14
-
-struct playermixer
-{
-    const char *filename;
-    const char *id;
-    const char *name;
-    int clamp;
-    float scale, split;
-    bool mixer;
-};
 
 struct playerpart
 {
@@ -136,27 +125,6 @@ struct playerpart
 extern const char * const playertypes[PLAYERTYPES][7] = {
     { "actors/player/male/hwep",        "actors/player/male/headless",      "actors/player/male/body",      "actors/player/male",       "player",   "male",     "Male" },
     { "actors/player/female/hwep",      "actors/player/female/headless",    "actors/player/male/body",      "actors/player/female",     "player",   "female",   "Female" }
-};
-
-// final entry is texscale in playermixer (512x -> 2 , 1024x -> 1)
-extern const playermixer playermixers[PLAYERMIXERS] = {
-    { "<comp:0,-1024>rgbamixer [tex = [<grey>mixers/default]]",                  "default",  "Default",  0,      1,  0.0f,   false },
-    { "<comp:0,-1024>rgbamixer [tex = [<grey>mixers/soft]]",                     "soft",     "Soft",     0,      1,  0.0f,   false },
-    { "<comp:0,-1024>rgbamixer [split = 0.35; tex = [<grey>mixers/camo]]",       "camo",     "Camo",     0,      1,  0.35f,  true },
-    { "<comp:0,-1024>rgbamixer [split = 0.35; tex = [<grey>mixers/heart]]",      "heart",    "Heart",    0x300,  1,  0.35f,  true },
-    { "<comp:0,-1024>rgbamixer [split = 0.35; tex = [<grey>mixers/crown]]",      "crown",    "Crown",    0x300,  1,  0.35f,  true },
-    { "<comp:0,-1024>rgbamixer [split = 0.35; tex = [<grey>mixers/zebra]]",      "zebra",    "Zebra",    0x300,  1,  0.35f,  true },
-    { "<comp:0,-1024>rgbamixer [split = 0.35; tex = [<grey>mixers/checker]]",    "checker",  "Checker",  0x300,  1,  0.35f,  true },
-    { "<comp:0,-1024>rgbamixer [split = 0.35; tex = [<grey>mixers/star]]",       "star",     "Star",     0x300,  1,  0.35f,  true },
-    { "<comp:0,-1024>rgbamixer [split = 0.35; tex = [<grey>mixers/flower]]",     "flower",   "Flower",   0x300,  1,  0.35f,  true },
-    { "<comp:0,-1024>rgbamixer [split = 0.35; tex = [<grey>mixers/leopard]]",    "leopard",  "Leopard",  0x300,  1,  0.35f,  true },
-    { "<comp:0,-1024>rgbamixer [split = 0.35; tex = [<grey>mixers/zigzag]]",     "zigzag",   "Zigzag",   0x300,  1,  0.35f,  true },
-    { "<comp:0,-1024>rgbamixer [split = 0.35; tex = [<grey>mixers/pixel]]",      "pixel",    "Pixel",    0x300,  1,  0.35f,  true },
-    { "<comp:0,-1024>rgbamixer [split = 0.35; tex = [<grey>mixers/circle]]",     "circle",   "Circle",   0x300,  1,  0.35f,  true },
-    { "<comp:0,-1024>rgbamixer [split = 0.35; tex = [<grey>mixers/mutant]]",     "mutant",   "Mutant",   0x300,  1,  0.35f,  true },
-    { "<comp:0,-1024>rgbamixer [split = 0.35; tex = [<grey>mixers/ninja]]",      "ninja",    "Ninja",    0,      1,  0.35f,  true },
-    { "<comp:0,-1024>rgbamixer [tex = [<grey>mixers/lines]]",                    "lines",    "Lines",    0,      1,  0.0f,   false },
-    { "<comp:0,-1024>rgbamixer [tex = [<grey>mixers/softhero]]",                 "softhero", "Softhero", 0,      1,  0.0f,   false },
 };
 
 extern const playerpart playerparts[PLAYERPARTS] = {
@@ -177,7 +145,6 @@ extern const playerpart playerparts[PLAYERPARTS] = {
 };
 #else
 extern const char * const playertypes[PLAYERTYPES][7];
-extern const playermixer playermixers[PLAYERMIXERS];
 extern const playerpart playerparts[PLAYERPARTS];
 #endif
 
@@ -313,6 +280,57 @@ APFVAR(IDF_GAMEMOD, 0, buoyancy, 0, FVAR_MAX,
 APFVAR(IDF_GAMEMOD, 0, buoyancyextra, FVAR_MIN, FVAR_MAX,
     0,              0,              0,              0,              0,              0,              0,              0
 );
+
+#ifndef STANDALONE
+struct mixer
+{
+    char *id, *name, *filename;
+    int tclamp;
+    float scale, split;
+    bool anytype, convert, triedload;
+    Texture *tex;
+
+    mixer() : id(NULL), name(NULL), filename(NULL), tclamp(0), scale(1), split(0), anytype(false), convert(false), triedload(false), tex(NULL) {}
+    ~mixer()
+    {
+        if(id) delete[] id;
+        if(name) delete[] name;
+        if(filename) delete[] filename;
+    }
+
+    Texture *loadtex()
+    {
+        if(triedload || !engineready) return tex;
+
+        tex = textureload(filename, tclamp, true, false);
+
+        if(convert && tex && tex != notexture)
+        {
+            defformatstring(m, "<comp:0,-%d>rgbamixer [", max(tex->w, tex->h));
+            if(split > 0.0f) concformatstring(m, "split = %.8g; ", clamp(split, 0.0f, 0.5f));
+            concformatstring(m, "tex = [%s]]", filename);
+            Texture *t = textureload(m, tclamp, true, false);
+            if(t && t != notexture) tex = t;
+        }
+
+        triedload = true;
+
+        return tex;
+    }
+
+    void setnames(const char *d, const char *n, const char *f)
+    {
+        id = newstring(d);
+        name = newstring(n);
+        filename = newstring(f);
+    }
+};
+#ifdef CPP_GAME_MAIN
+vector<mixer> mixers;
+#else
+extern vector<mixer> mixers;
+#endif
+#endif
 
 // WARNING: ensure this value is less than or equal to TAG_MAX (see above)
 #define VANITYMAX 16

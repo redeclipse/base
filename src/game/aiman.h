@@ -139,17 +139,16 @@ namespace aiman
                 ci->lasttimeplayed = totalmillis;
                 loopk(2) ci->colours[k] = rnd(0xFFFFFF);
                 ci->model = botrnd(ci, 4, PLAYERTYPES, true);
-                ci->mixer = botrnd(ci, 4, PLAYERMIXERS, true);
                 setskill(ci, true);
                 copystring(ci->name, A(ci->actortype, vname), MAXNAMELEN);
                 ci->loadweap.shrink(0);
 
-                const char *vanitylist = NULL;
-                if(ci->actortype == A_JANITOR) vanitylist = G(janitorvanities);
-                else if(ci->actortype == A_BOT)
+                if(ci->actortype == A_BOT)
                 {
                     vector<char *> list;
+
                     explodelist(ci->model ? G(botfemalenames) : G(botmalenames), list);
+
                     while(!list.empty())
                     {
                         int r = botrnd(ci, 1, list.length(), true);
@@ -170,9 +169,7 @@ namespace aiman
                     }
                     list.deletearrays();
 
-                    vanitylist = ci->model ? G(botfemalevanities) : G(botmalevanities);
-                    static vector<int> weaplist;
-                    weaplist.setsize(0);
+                    vector<int> weaplist;
                     loopi(W_LOADOUT) weaplist.add(W_OFFSET+i);
                     while(!weaplist.empty())
                     {
@@ -182,24 +179,36 @@ namespace aiman
                     }
                 }
 
-                if(vanitylist && *vanitylist)
+                loopj(2)
                 {
-                    vector<char *> list;
-                    explodelist(vanitylist, list);
-                    while(!list.empty())
+                    const char *itemlist = NULL;
+                    if(ci->actortype == A_JANITOR) itemlist = j ? G(janitormixers) : G(janitorvanities);
+                    else if(ci->actortype == A_BOT)
                     {
-                        int r = botrnd(ci, 1, list.length(), true);
-                        char *name = list[r];
-                        if(!name || !*name)
-                        {
-                            list.remove(r);
-                            DELETEA(name);
-                            continue;
-                        }
-                        ci->setvanity(name);
-                        break;
+                        if(j) itemlist = ci->model ? G(botfemalemixers) : G(botmalemixers);
+                        else itemlist = ci->model ? G(botfemalevanities) : G(botmalevanities);
                     }
-                    list.deletearrays();
+
+                    if(itemlist && *itemlist)
+                    {
+                        vector<char *> list;
+                        explodelist(itemlist, list);
+                        while(!list.empty())
+                        {
+                            int r = botrnd(ci, 1, list.length(), true);
+                            char *name = list[r];
+                            if(!name || !*name)
+                            {
+                                list.remove(r);
+                                DELETEA(name);
+                                continue;
+                            }
+                            if(j) ci->setmixer(name);
+                            else ci->setvanity(name);
+                            break;
+                        }
+                        list.deletearrays();
+                    }
                 }
 
                 ci->state = CS_DEAD;

@@ -151,11 +151,6 @@ namespace game
             player1->model = client::playermodel;
             if(player1->model < 0) setvar("playermodel", rnd(PLAYERTYPES), true);
         }
-        if(player1->mixer < 0)
-        {
-            player1->mixer = client::playermixer;
-            if(player1->mixer < 0) setvar("playermixer", rnd(PLAYERMIXERS), true);
-        }
     }
 
     VAR(IDF_PERSIST, flashlightvolumetric, 0, 0, 1);
@@ -448,6 +443,15 @@ namespace game
     FVAR(IDF_PERSIST, playerrotmaxinertia, 0, 32.0f, FVAR_MAX);
     FVAR(IDF_PERSIST, playerrotthresh, FVAR_NONZERO, 5, FVAR_MAX);
 
+    VAR(IDF_PERSIST, playerregeneffects, 0, 1, 1);
+    FVAR(IDF_PERSIST, playerregentime, 0, 1, 1);
+    FVAR(IDF_PERSIST, playerregenfade, 0, 1.0f, 16);
+    FVAR(IDF_PERSIST, playerregenslice, 0, 0.125f, 1);
+    FVAR(IDF_PERSIST, playerregenblend, 0, 0.5f, 1);
+    FVAR(IDF_PERSIST, playerregendecayblend, 0, 0.5f, 1);
+    FVAR(IDF_PERSIST, playerregenbright, -16, 1.0f, 16);
+    FVAR(IDF_PERSIST, playerregendecaybright, -16, -1.0f, 16);
+
     FVAR(IDF_PERSIST, affinityfadeat, 0, 32, FVAR_MAX);
     FVAR(IDF_PERSIST, affinityfadecut, 0, 4, FVAR_MAX);
     FVAR(IDF_PERSIST, affinityfollowblend, 0, 0.5f, 1);
@@ -466,7 +470,7 @@ namespace game
 
     VAR(IDF_PERSIST, nogore, 0, 0, 1); // turns off all gore, 0 = off, 1 = replace
     VAR(IDF_PERSIST, forceplayermodel, -1, -1, PLAYERTYPES-1);
-    VAR(IDF_PERSIST, forceplayermixer, -1, -1, PLAYERMIXERS-1);
+
     VAR(IDF_PERSIST, vanitymodels, 0, 1, 1);
     FVAR(IDF_PERSIST, vanitymaxdist, FVAR_NONZERO, 1024, FVAR_MAX);
 
@@ -4383,14 +4387,53 @@ namespace game
         return mdlname;
     }
 
-    VAR(IDF_PERSIST, playerregeneffects, 0, 1, 1);
-    FVAR(IDF_PERSIST, playerregentime, 0, 1, 1);
-    FVAR(IDF_PERSIST, playerregenfade, 0, 1.0f, 16);
-    FVAR(IDF_PERSIST, playerregenslice, 0, 0.125f, 1);
-    FVAR(IDF_PERSIST, playerregenblend, 0, 0.5f, 1);
-    FVAR(IDF_PERSIST, playerregendecayblend, 0, 0.5f, 1);
-    FVAR(IDF_PERSIST, playerregenbright, -16, 1.0f, 16);
-    FVAR(IDF_PERSIST, playerregendecaybright, -16, -1.0f, 16);
+    void mixerreset()
+    {
+        loopvrev(mixers) mixers.remove(i);
+    }
+    ICOMMAND(0, resetmixer, "", (), mixerreset());
+
+    int mixerfind(const char *id)
+    {
+        loopv(mixers) if(!strcmp(mixers[i].id, id)) return i;
+        return -1;
+    }
+    ICOMMAND(0, findmixer, "s", (char *s), intret(mixerfind(s)));
+
+    int mixeritem(const char *id, const char *name, const char *filename, int tclamp, float scale, float split, bool anytype, bool convert)
+    {
+        if(!id || !*id || !name || !*name || !filename || !*filename || mixerfind(id) >= 0) return -1;
+
+        mixer &m = mixers.add();
+        m.tclamp = tclamp;
+        m.scale = scale;
+        m.split = split;
+        m.anytype = anytype;
+        m.convert = convert;
+        m.setnames(id, name, filename);
+
+        return mixers.length() - 1;
+    }
+    ICOMMAND(0, addmixer, "sssigfii", (char *d, char *n, char *f, int *t, float *s, float *m, int *a, int *c), intret(mixeritem(d, n, f, *t, *s >= 0.0f ? *s : 1.0f, *m, *a != 0, *c != 0)));
+
+    void mixerinfo(int id, int value)
+    {
+        if(id < 0) intret(mixers.length());
+        else if(value < 0) intret(8);
+        else if(mixers.inrange(id)) switch(value)
+        {
+            case 0: result(mixers[id].id); break;
+            case 1: result(mixers[id].name); break;
+            case 2: result(mixers[id].loadtex() ? mixers[id].tex->name : ""); break;
+            case 3: intret(mixers[id].tclamp); break;
+            case 4: floatret(mixers[id].scale); break;
+            case 5: floatret(mixers[id].split); break;
+            case 6: intret(mixers[id].anytype ? 1 : 0); break;
+            case 7: intret(mixers[id].convert ? 1 : 0); break;
+            default: break;
+        }
+    }
+    ICOMMAND(0, getmixer, "bb", (int *t, int *v), mixerinfo(*t, *v));
 
     void getplayereffects(gameent *d, modelstate &mdl)
     {
@@ -4417,24 +4460,26 @@ namespace game
             }
         }
 
-        int mixer = forceplayermixer >= 0 && d->actortype != A_JANITOR ? forceplayermixer : d->mixer;
-        if(mixer >= 0)
+        int playermix = mixerfind(d->mixer);
+        if(mixers.inrange(playermix))
         {
-            const playermixer &p = playermixers[mixer%PLAYERMIXERS];
+            mixer &m = mixers[playermix];
+
             if(d->actortype == A_JANITOR)
             {
-                if(p.mixer && janitormixer > 0)
+                if(janitormixer > 0)
                 {   // allows mixing
-                    mdl.mixer = textureload(p.filename, p.clamp, true, false);
-                    mdl.mixerscale = p.scale * janitormixer;
+                    mdl.mixer = m.loadtex();
+                    mdl.mixerscale = m.scale * janitormixer;
                 }
             }
             else
             {
-                mdl.mixer = textureload(p.filename, p.clamp, true, false);
-                mdl.mixerscale = p.scale;
+                mdl.mixer = m.loadtex();
+                mdl.mixerscale = m.scale;
             }
-            mdl.matsplit = p.split;
+
+            mdl.matsplit = m.split;
         }
     }
 
@@ -4695,7 +4740,6 @@ namespace game
     PLAYERPREV(health, "bbb", (int *n, int *m, int *o), previewent->health = *n >= 0 ? *n : previewent->gethealth(*m >= 0 ? *m : G_DEATHMATCH, *o >= 0 ? *o : 0));
     PLAYERPREV(model, "i", (int *n), previewent->model = clamp(*n, 0, PLAYERTYPES-1));
     PLAYERPREV(colour, "ii", (int *n, int *v), previewent->colours[*v%2] = clamp(*n, 0, 0xFFFFFF));
-    PLAYERPREV(mixer, "i", (int *n), previewent->mixer = clamp(*n, 0, PLAYERMIXERS-1));
     PLAYERPREV(team, "i", (int *n), previewent->team = clamp(*n, 0, int(T_LAST)));
     PLAYERPREV(privilege, "i", (int *n), previewent->privilege = clamp(*n, 0, int(PRIV_MAX-1)));
     PLAYERPREV(weapselect, "i", (int *n), previewent->weapselect = clamp(*n, 0, W_MAX-1));
@@ -4717,6 +4761,7 @@ namespace game
     PLAYERPREV(impulsetime, "ii", (int *n, int *o), previewent->impulse[clamp(*n, 0, int(IM_T_MAX-1))] = *o);
     PLAYERPREV(headless, "i", (int *n), previewent->headless = *n != 0);
     PLAYERPREV(vanity, "s", (char *n), previewent->setvanity(n));
+    PLAYERPREV(mixer, "s", (char *n), previewent->setmixer(n));
     void setplayerprevresidual(int n, int q, int r, int s)
     {
         if(n < 0 || n >= W_R_MAX) return;

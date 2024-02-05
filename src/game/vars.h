@@ -494,6 +494,8 @@ GSVAR(0, PRIV_MODERATOR, botmalenames, "");
 GSVAR(0, PRIV_MODERATOR, botfemalenames, "");
 GSVAR(0, PRIV_MODERATOR, botmalevanities, "");
 GSVAR(0, PRIV_MODERATOR, botfemalevanities, "");
+GSVAR(0, PRIV_MODERATOR, botmalemixers, "");
+GSVAR(0, PRIV_MODERATOR, botfemalemixers, "");
 GVAR(IDF_GAMEMOD, 0, botcolourseed, 0, 15, 15); // random bot things will be determined by colour as seed, bitwise: 0 = off, 1 = skill, 2 = name, 4 = model, 8 = loadout
 GVAR(IDF_GAMEMOD, 0, botrandomcase, 0, 2, VAR_MAX); // bots will randomise the first letter of their name if rnd(botrandomcase) > 0
 GVAR(0, PRIV_ADMINISTRATOR, botoverridelock, PRIV_NONE, PRIV_ADMINISTRATOR, PRIV_MAX);
@@ -580,6 +582,7 @@ GFVAR(IDF_GAMEMOD, 0, janitorsuckspeed, 0, 150.f, FVAR_MAX); // suck speed
 GFVAR(IDF_GAMEMOD, 0, janitorreject, 0, 128.f, FVAR_MAX); // reject distance
 GFVAR(IDF_GAMEMOD, 0, janitormixer, 0, 1, FVAR_MAX); // mixer scale
 GSVAR(0, PRIV_MODERATOR, janitorvanities, "");
+GSVAR(0, PRIV_MODERATOR, janitormixers, "");
 
 GFVAR(IDF_GAMEMOD, 0, movespeed, FVAR_NONZERO, 1.f, FVAR_MAX); // speed
 GFVAR(IDF_GAMEMOD, 0, moveslow, 0, 0.5f, FVAR_MAX); // threshold for running

@@ -212,7 +212,7 @@ namespace ai
         }
     }
 
-    void init(gameent *d, int at, int et, int on, int sk, int bn, char *name, int tm, int c1, int c2, int md, int pt, const char *vn, vector<int> &lweaps)
+    void init(gameent *d, int at, int et, int on, int sk, int bn, char *name, int tm, int c1, int c2, int md, const char *vn, const char *mx, vector<int> &lweaps)
     {
         getwaypoints();
 
@@ -257,8 +257,8 @@ namespace ai
         d->colours[0] = c1;
         d->colours[1] = c2;
         d->model = md;
-        d->mixer = pt;
         d->setvanity(vn);
+        d->setmixer(mx);
 
         if(resetthisguy) projs::removeplayer(d);
         if(d->ownernum >= 0 && game::player1->clientnum == d->ownernum)

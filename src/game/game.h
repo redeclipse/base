@@ -669,7 +669,7 @@ struct verinfo
 // inherited by gameent and server clients
 struct clientstate
 {
-    int health, colours[2], model, mixer, checkpointspawn;
+    int health, colours[2], model, checkpointspawn;
     int weapselect, weapammo[W_MAX][W_A_MAX], weapload[W_MAX][W_A_MAX], weapent[W_MAX], weapshot[W_MAX], weapstate[W_MAX], weapwait[W_MAX], weaptime[W_MAX], prevstate[W_MAX], prevtime[W_MAX];
     int lastdeath, lastspawn, lastpain, lastregen, lastregenamt, lastbuff, lastshoot, lastcook, lastaffinity, lastres[W_R_MAX], lastrestime[W_R_MAX];
     int burntime, burndelay, burndamage, bleedtime, bleeddelay, bleeddamage, shocktime, shockdelay, shockdamage, shockstun, shockstuntime, corrodetime, corrodedelay, corrodedamage;
@@ -677,16 +677,16 @@ struct clientstate
     int actortype, spawnpoint, ownernum, skill, points, frags, deaths, totalpoints, totalfrags, totaldeaths, spree, lasttimeplayed, timeplayed, cpmillis, cptime, queuepos, hasprize;
     float totalavgpos;
     bool quarantine;
-    string vanity;
+    string vanity, mixer;
     vector<int> loadweap, lastweap, randweap, cpnodes;
     verinfo version;
 
-    clientstate() : model(-1), mixer(-1), checkpointspawn(1), weapselect(W_CLAW), lastdeath(0), lastspawn(0), lastpain(0), lastregen(0), lastregenamt(0), lastbuff(0), lastshoot(0), lastcook(0), lastaffinity(0),
+    clientstate() : model(-1), checkpointspawn(1), weapselect(W_CLAW), lastdeath(0), lastspawn(0), lastpain(0), lastregen(0), lastregenamt(0), lastbuff(0), lastshoot(0), lastcook(0), lastaffinity(0),
         actortype(A_PLAYER), spawnpoint(-1), ownernum(-1), skill(0), points(0), frags(0), deaths(0), totalpoints(0), totalfrags(0), totaldeaths(0), spree(0), lasttimeplayed(0), timeplayed(0),
         cpmillis(0), cptime(0), queuepos(-1), hasprize(0), totalavgpos(0), quarantine(false)
     {
         loopi(2) colours[i] = -1;
-        vanity[0] = '\0';
+        vanity[0] = mixer[0] = '\0';
         loadweap.shrink(0);
         lastweap.shrink(0);
         randweap.shrink(0);
@@ -713,6 +713,13 @@ struct clientstate
     {
         bool changed = strcmp(v, vanity);
         if(changed) copystring(vanity, v);
+        return changed;
+    }
+
+    bool setmixer(const char *v)
+    {
+        bool changed = strcmp(v, mixer);
+        if(changed) copystring(mixer, v);
         return changed;
     }
 
@@ -998,7 +1005,6 @@ struct clientstate
     {
         loopi(2) if(colours[i] < 0) colours[i] = rnd(0xFFFFFF);
         if(model < 0) model = rnd(PLAYERTYPES);
-        if(mixer < 0) mixer = rnd(PLAYERMIXERS);
         spree = lastdeath = lastpain = lastregen = lastregenamt = lastbuff = lastshoot = lastcook = lastaffinity = hasprize = 0;
         queuepos = -1;
         resetresidual();
@@ -2118,14 +2124,19 @@ struct gameent : dynent, clientstate
         return false;
     }
 
-    void setinfo(const char *n, int c1, int c2, int m, int p, const char *v, vector<int> &w, vector<int> &r)
+    bool setmixer(const char *v)
+    {
+        return clientstate::setmixer(v);
+    }
+
+    void setinfo(const char *n, int c1, int c2, int m, const char *v, const char *p, vector<int> &w, vector<int> &r)
     {
         setname(n);
         colours[0] = c1;
         colours[1] = c2;
         model = m;
-        mixer = p;
         setvanity(v);
+        setmixer(p);
         loadweap.shrink(0);
         loopv(w) loadweap.add(w[i]);
         randweap.shrink(0);
@@ -2442,7 +2453,7 @@ struct cament
 namespace client
 {
     extern bool demoplayback, isready, loadedmap;
-    extern int showpresence, showpresencehostinfo, showteamchange, needsmap, gettingmap, triggerid, playercolour, playercolour2, playermodel, playermixer;
+    extern int showpresence, showpresencehostinfo, showteamchange, needsmap, gettingmap, triggerid, playercolour, playercolour2, playermodel;
     extern vector<uchar> messages;
     extern bool radarallow(const vec &o, gameent *d, vec &dir, float &dist, bool self = false);
     extern void clearvotes(gameent *d, bool msg = false);
@@ -2581,7 +2592,7 @@ namespace game
 {
     extern int nextmode, nextmuts, lastzoom, lasttvcam, lasttvchg, spectvtime, waittvtime,
             maptime, mapstart, timeremaining, timeelapsed, timelast, timesync, bloodfade, bloodsize, bloodsparks, damageinteger,
-            announcefilter, dynlighteffects, followthirdperson, nogore, forceplayermodel, forceplayermixer,
+            announcefilter, dynlighteffects, followthirdperson, nogore, forceplayermodel,
             playerovertone, playerundertone, playerdisplaytone, playerhalotone, playereffecttone, follow, specmode, spectvfollow, clientcrc;
     extern float bloodscale, aboveitemiconsize, playerovertonelevel, playerundertonelevel, playerdisplaytonelevel, playerhalotonelevel, playereffecttonelevel,
             playerovertonemix, playerundertonemix, playerdisplaytonemix, playerhalotonemix, playereffecttonemix, affinityfadeat, affinityfadecut, affinityfollowblend, affinitythirdblend, damagedivisor, damagecritical,

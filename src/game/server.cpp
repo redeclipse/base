@@ -4246,8 +4246,8 @@ namespace server
                 putint(p, ci->team);
                 loopk(2) putint(p, ci->colours[k]);
                 putint(p, ci->model);
-                putint(p, ci->mixer);
                 sendstring(ci->vanity, p);
+                sendstring(ci->mixer, p);
                 putint(p, ci->loadweap.length());
                 loopv(ci->loadweap) putint(p, ci->loadweap[i]);
             }
@@ -4258,12 +4258,12 @@ namespace server
             putint(p, ci->clientnum);
             loopk(2) putint(p, ci->colours[k]);
             putint(p, ci->model);
-            putint(p, ci->mixer);
             putint(p, ci->checkpointspawn);
             putint(p, ci->team);
             putint(p, ci->privilege);
             sendstring(ci->name, p);
             sendstring(ci->vanity, p);
+            sendstring(ci->mixer, p);
             putint(p, ci->loadweap.length());
             loopv(ci->loadweap) putint(p, ci->loadweap[i]);
             putint(p, ci->randweap.length());
@@ -6650,9 +6650,10 @@ namespace server
                         copystring(ci->name, namestr, MAXNAMELEN+1);
                         loopk(2) ci->colours[k] = max(getint(p), 0);
                         ci->model = max(getint(p), 0);
-                        ci->mixer = max(getint(p), 0);
                         getstring(text, p);
                         ci->setvanity(text);
+                        getstring(text, p);
+                        ci->setmixer(text);
                         int lw = getint(p);
                         ci->loadweap.shrink(0);
                         loopk(lw)
@@ -7485,7 +7486,7 @@ namespace server
                     break;
                 }
 
-                case N_SETPLAYERINFO: // name colour model mixer checkpoint vanity count <loadweaps> count <randweaps>
+                case N_SETPLAYERINFO: // name colour model checkpoint vanity mixer count <loadweaps> count <randweaps>
                 {
                     uint ip = getclientip(ci->clientnum);
                     getstring(text, p);
@@ -7500,8 +7501,8 @@ namespace server
                         else if(totalmillis-ci->lastplayerinfo < G(setinfowait)) allow = false;
                         if(!allow)
                         {
-                            loopk(4) getint(p);
-                            getstring(text, p);
+                            loopk(3) getint(p);
+                            loopk(2) getstring(text, p);
                             int lw = getint(p);
                             loopk(lw) getint(p);
                             int rw = getint(p);
@@ -7518,10 +7519,11 @@ namespace server
                     }
                     loopk(2) ci->colours[k] = max(getint(p), 0);
                     ci->model = max(getint(p), 0);
-                    ci->mixer = max(getint(p), 0);
                     ci->checkpointspawn = max(getint(p), 0);
                     getstring(text, p);
                     ci->setvanity(text);
+                    getstring(text, p);
+                    ci->setmixer(text);
                     ci->loadweap.shrink(0);
                     int lw = getint(p);
                     vector<int> lweaps;
@@ -7542,9 +7544,9 @@ namespace server
                     QUEUE_STR(ci->name);
                     loopk(2) QUEUE_INT(ci->colours[k]);
                     QUEUE_INT(ci->model);
-                    QUEUE_INT(ci->mixer);
                     QUEUE_INT(ci->checkpointspawn);
                     QUEUE_STR(ci->vanity);
+                    QUEUE_STR(ci->mixer);
                     QUEUE_INT(ci->loadweap.length());
                     loopvk(ci->loadweap) QUEUE_INT(ci->loadweap[k]);
                     QUEUE_INT(ci->randweap.length());
