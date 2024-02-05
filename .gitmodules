@@ -61,7 +61,7 @@
 	url = https://github.com/redeclipse/maps.git
 	branch = master
 [submodule "mixers"]
-	path = mixers
+	path = data/mixers
 	url = https://github.com/redeclipse/mixers.git
 	branch = master
 [submodule "mayhem"]
