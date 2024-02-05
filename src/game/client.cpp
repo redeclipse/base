@@ -2289,10 +2289,10 @@ namespace client
                             fx::createfx(fx).setentity(t).setcolor(bvec(game::getcolour(t)));
                             break;
                         }
-                        case SPHY_BOOST: case SPHY_DASH: case SPHY_POUND: case SPHY_SLIDE: case SPHY_LAUNCH: case SPHY_MELEE: case SPHY_KICK: case SPHY_GRAB: case SPHY_PARKOUR: case SPHY_VAULT: case SPHY_AFTER: case SPHY_FLING:
+                        case SPHY_BOOST: case SPHY_DASH: case SPHY_POUND: case SPHY_SLIDE: case SPHY_LAUNCH: case SPHY_MELEE: case SPHY_KICK: case SPHY_GRAB: case SPHY_PARKOUR: case SPHY_VAULT: case SPHY_AFTER:
                         {
                             if(!proceed) break;
-                            if(st != SPHY_FLING) t->doimpulse(IM_T_BOOST+(st-SPHY_BOOST), lastmillis);
+                            t->doimpulse(IM_T_BOOST + (st - SPHY_BOOST), lastmillis);
                             game::impulseeffect(t);
                             if(st == SPHY_KICK || st == SPHY_MELEE) game::footstep(d);
                             break;

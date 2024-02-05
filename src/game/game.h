@@ -271,8 +271,8 @@ enum
 
 enum
 {
-    IM_METER = 0, IM_COUNT, IM_TYPE, IM_REGEN, IM_SLIP, IM_FLING, IM_PUSHER, IM_COLLECT_METER, IM_LASTCOL_METER, IM_COLLECT_COUNT, IM_LASTCOL_COUNT, IM_MAX,
-    IM_ALL          = (1<<IM_METER)|(1<<IM_COUNT)|(1<<IM_TYPE)|(1<<IM_REGEN)|(1<<IM_SLIP)|(1<<IM_FLING)|(1<<IM_PUSHER)|(1<<IM_COLLECT_METER)|(1<<IM_LASTCOL_METER)|(1<<IM_COLLECT_COUNT)|(1<<IM_LASTCOL_COUNT),
+    IM_METER = 0, IM_COUNT, IM_TYPE, IM_REGEN, IM_SLIP, IM_PUSHER, IM_COLLECT_METER, IM_LASTCOL_METER, IM_COLLECT_COUNT, IM_LASTCOL_COUNT, IM_MAX,
+    IM_ALL          = (1<<IM_METER)|(1<<IM_COUNT)|(1<<IM_TYPE)|(1<<IM_REGEN)|(1<<IM_SLIP)|(1<<IM_PUSHER)|(1<<IM_COLLECT_METER)|(1<<IM_LASTCOL_METER)|(1<<IM_COLLECT_COUNT)|(1<<IM_LASTCOL_COUNT),
     IM_CHECKPOINT   = (1<<IM_COUNT)|(1<<IM_COLLECT_COUNT)|(1<<IM_LASTCOL_COUNT)
 };
 
@@ -291,7 +291,7 @@ enum
 enum
 {
     SPHY_JUMP = 0, SPHY_BOOST, SPHY_DASH, SPHY_SLIDE, SPHY_LAUNCH, SPHY_MELEE, SPHY_KICK, SPHY_GRAB,
-    SPHY_PARKOUR, SPHY_VAULT, SPHY_POUND, SPHY_AFTER, SPHY_FLING, SPHY_MATERIAL, SPHY_PRIZE,
+    SPHY_PARKOUR, SPHY_VAULT, SPHY_POUND, SPHY_AFTER, SPHY_MATERIAL, SPHY_PRIZE,
     SPHY_SERVER, SPHY_EXTINGUISH = SPHY_SERVER, SPHY_BUFF,
     SPHY_MAX
 };
@@ -2009,7 +2009,7 @@ struct gameent : dynent, clientstate
 
     void resetjump(bool wait = false)
     {
-        airmillis = turnside = impulse[IM_FLING] = 0;
+        airmillis = turnside = 0;
         if(!impulsecostcount) impulse[IM_COUNT] = 0;
         impulsetime[IM_T_JUMP] = 0;
         if(!wait)
@@ -2050,7 +2050,6 @@ struct gameent : dynent, clientstate
             if(type == IM_T_PUSHER) resetair(true);
             else resetphys(true);
         }
-        else impulse[IM_FLING] = 0;
         turnside = side;
         turnmillis = turn;
         turnyaw = yaw;
