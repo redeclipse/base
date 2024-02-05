@@ -70,6 +70,13 @@ void mdlpattern(int *pattern)
 }
 COMMAND(0, mdlpattern, "i");
 
+void mdlmixer(int *mixer)
+{
+    checkmdl;
+    loadingmodel->setmixer(*mixer);
+}
+COMMAND(0, mdlmixer, "i");
+
 void mdlcullface(int *cullface)
 {
     checkmdl;

@@ -69,10 +69,11 @@ enum
     MDL_NOSHADOW         = 1<<9,
     MDL_FORCESHADOW      = 1<<10,
     MDL_FORCETRANSPARENT = 1<<11,
-    MDL_NOMIXER          = 1<<12,
+    MDL_NOSHIMMER        = 1<<12,
     MDL_NOPATTERN        = 1<<13,
-    MDL_FORCEDYNAMIC     = 1<<14,
-    MDL_HALO_TOP         = 1<<15
+    MDL_NOMIXER          = 1<<14,
+    MDL_FORCEDYNAMIC     = 1<<15,
+    MDL_HALO_TOP         = 1<<16
 };
 
 struct model;
@@ -115,8 +116,8 @@ struct entmodelstate
 struct modelstate : entmodelstate
 {
     vec4 shimmercolor, shimmerparams, matbright;
-    float patternscale, matsplit;
-    Texture *pattern;
+    float patternscale, mixerscale, matsplit;
+    Texture *pattern, *mixer;
     modelattach *attached;
 
     modelstate() { reset(); }
@@ -127,9 +128,9 @@ struct modelstate : entmodelstate
 
         shimmercolor = matbright = vec4(1, 1, 1, 1);
         shimmerparams = vec4(0, 0, 0, 0);
-        patternscale = 1;
+        patternscale = mixerscale = 1;
         matsplit = -1;
-        pattern = NULL;
+        pattern = mixer = NULL;
         attached = NULL;
     }
 };

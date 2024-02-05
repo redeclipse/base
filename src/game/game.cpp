@@ -4417,16 +4417,25 @@ namespace game
             }
         }
 
-        if(d->actortype < A_ENEMY)
+        int pattern = forceplayerpattern >= 0 && d->actortype != A_JANITOR ? forceplayerpattern : d->pattern;
+        if(pattern >= 0)
         {
-            int pattern = forceplayerpattern >= 0 ? forceplayerpattern : d->pattern;
-            if(pattern >= 0)
+            const playerpattern &p = playerpatterns[pattern%PLAYERPATTERNS];
+            if(d->actortype == A_JANITOR)
             {
-                const playerpattern &p = playerpatterns[pattern%PLAYERPATTERNS];
+                if(p.mixer && janitorpattern > 0)
+                {   // allows mixing
+                    mdl.mixer = textureload(p.filename, p.clamp, true, false);
+                    mdl.mixerscale = p.scale * janitorpattern;
+                    mdl.matsplit = p.split;
+                }
+            }
+            else
+            {
                 mdl.pattern = textureload(p.filename, p.clamp, true, false);
                 mdl.patternscale = p.scale;
                 mdl.matsplit = p.split;
-                if(pattern < 2) mdl.flags |= MDL_NOPATTERN; // first two shouldn't recurse
+                if(p.mixer) mdl.flags |= MDL_NOPATTERN; // proper ones shouldn't recurse
             }
         }
     }

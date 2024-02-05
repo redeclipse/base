@@ -122,6 +122,7 @@ struct playerpattern
     const char *name;
     int clamp;
     float scale, split;
+    bool mixer;
 };
 
 struct playerpart
@@ -139,23 +140,23 @@ extern const char * const playertypes[PLAYERTYPES][7] = {
 
 // final entry is texscale in playerpattern (512x -> 2 , 1024x -> 1)
 extern const playerpattern playerpatterns[PLAYERPATTERNS] = {
-    { "<grey>textures/patterns/default",    "default",  "Default",  0,      1,  0.0f },
-    { "<grey>textures/patterns/soft",       "soft",     "Soft",     0,      1,  0.0f },
-    { "<grey>textures/patterns/camo",       "camo",     "Camo",     0,      1,  0.35f },
-    { "<grey>textures/patterns/heart",      "heart",    "Heart",    0x300,  2,  0.35f },
-    { "<grey>textures/patterns/crown",      "crown",    "Crown",    0x300,  2,  0.35f },
-    { "<grey>textures/patterns/zebra",      "zebra",    "Zebra",    0x300,  2,  0.35f },
-    { "<grey>textures/patterns/checker",    "checker",  "Checker",  0x300,  2,  0.35f },
-    { "<grey>textures/patterns/star",       "star",     "Star",     0x300,  2,  0.35f },
-    { "<grey>textures/patterns/flower",     "flower",   "Flower",   0x300,  2,  0.35f },
-    { "<grey>textures/patterns/leopard",    "leopard",  "Leopard",  0x300,  2,  0.35f },
-    { "<grey>textures/patterns/zigzag",     "zigzag",   "Zigzag",   0x300,  2,  0.35f },
-    { "<grey>textures/patterns/pixel",      "pixel",    "Pixel",    0x300,  2,  0.35f },
-    { "<grey>textures/patterns/circle",     "circle",   "Circle",   0x300,  2,  0.35f },
-    { "<grey>textures/patterns/mutant",     "mutant",   "Mutant",   0x300,  2,  0.35f },
-    { "<grey>textures/patterns/ninja",      "ninja",    "Ninja",    0,      2,  0.35f },
-    { "<grey>textures/patterns/lines",      "lines",    "Lines",    0,      1,  0.0f },
-    { "<grey>textures/patterns/softhero",   "softhero", "Softhero", 0,      1,  0.0f },
+    { "<grey>textures/patterns/default",    "default",  "Default",  0,      1,  0.0f,   false },
+    { "<grey>textures/patterns/soft",       "soft",     "Soft",     0,      1,  0.0f,   false },
+    { "<grey>textures/patterns/camo",       "camo",     "Camo",     0,      1,  0.35f,  true },
+    { "<grey>textures/patterns/heart",      "heart",    "Heart",    0x300,  2,  0.35f,  true },
+    { "<grey>textures/patterns/crown",      "crown",    "Crown",    0x300,  2,  0.35f,  true },
+    { "<grey>textures/patterns/zebra",      "zebra",    "Zebra",    0x300,  2,  0.35f,  true },
+    { "<grey>textures/patterns/checker",    "checker",  "Checker",  0x300,  2,  0.35f,  true },
+    { "<grey>textures/patterns/star",       "star",     "Star",     0x300,  2,  0.35f,  true },
+    { "<grey>textures/patterns/flower",     "flower",   "Flower",   0x300,  2,  0.35f,  true },
+    { "<grey>textures/patterns/leopard",    "leopard",  "Leopard",  0x300,  2,  0.35f,  true },
+    { "<grey>textures/patterns/zigzag",     "zigzag",   "Zigzag",   0x300,  2,  0.35f,  true },
+    { "<grey>textures/patterns/pixel",      "pixel",    "Pixel",    0x300,  2,  0.35f,  true },
+    { "<grey>textures/patterns/circle",     "circle",   "Circle",   0x300,  2,  0.35f,  true },
+    { "<grey>textures/patterns/mutant",     "mutant",   "Mutant",   0x300,  2,  0.35f,  true },
+    { "<grey>textures/patterns/ninja",      "ninja",    "Ninja",    0,      2,  0.35f,  true },
+    { "<grey>textures/patterns/lines",      "lines",    "Lines",    0,      1,  0.0f,   false },
+    { "<grey>textures/patterns/softhero",   "softhero", "Softhero", 0,      1,  0.0f,   false },
 };
 
 extern const playerpart playerparts[PLAYERPARTS] = {
