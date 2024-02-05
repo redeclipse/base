@@ -1545,7 +1545,7 @@ namespace ai
         }
         else if(d->blocked || (!d->ai->lastturn || lastmillis - d->ai->lastturn >= 10000))
         {
-            int n = closestwaypoint(d->o, SIGHTMAX, true);
+            int n = closestwaypoint(getbottom(d), SIGHTMAX, true);
             if(iswaypoint(n))
             {
                 if(!d->blocked && d->ai->lastturn) game::suicide(d, HIT_LOST);
