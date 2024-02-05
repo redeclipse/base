@@ -1177,7 +1177,14 @@ namespace game
 
     void fixpalette(int &palette, int &index, int gver)
     {
-        if(gver <= 244 && palette == 1 && index%(T_COUNT+2) > T_LAST) index = T_NEUTRAL; // remove kappa and sigma
+        if(gver <= 244 && palette == 1 && index%(T_COUNT+2) > T_LAST)
+            index = T_NEUTRAL; // remove kappa and sigma
+
+        if(gver <= 273 && palette == 2)
+        {
+            int weap = index % 13; // old W_MAX
+            if(weap >= 9) index++;
+        }
     }
 
     float darkness(int type)

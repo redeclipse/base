@@ -2041,8 +2041,6 @@ namespace entities
                 while(e.attrs[4] >= 4) e.attrs[4] -= 4; // flare, wrap around
                 while(e.attrs[5] < 0) e.attrs[5] += 101; // flarescale, wrap around
                 if(e.attrs[6] < 0) e.attrs[6] = 0; // flags, clamp
-                if(e.attrs[7] < 0) e.attrs[7] = 0; // palette, clamp
-                if(e.attrs[8] < 0) e.attrs[8] = 0; // palindex, clamp
                 break;
             }
             case MAPMODEL:
@@ -2066,8 +2064,6 @@ namespace entities
                 }
                 while(e.attrs[7] < 0) e.attrs[7] += 0x1000000; // colour
                 while(e.attrs[7] > 0xFFFFFF) e.attrs[7] -= 0x1000000; // wrap both ways
-                if(e.attrs[8] < 0) e.attrs[8] = 0; // palette, clamp
-                if(e.attrs[9] < 0) e.attrs[9] = 0; // palindex, clamp
                 while(e.attrs[18] < 0) e.attrs[18] += ANIM_MAX;
                 while(e.attrs[18] >= ANIM_MAX) e.attrs[18] -= ANIM_MAX;
                 break;
@@ -2147,8 +2143,6 @@ namespace entities
                 while(e.attrs[5] > 100) e.attrs[5] -= 101; // wrap both ways
                 while(e.attrs[6] < 0) e.attrs[6] += 0x1000000; // colour
                 while(e.attrs[6] > 0xFFFFFF) e.attrs[6] -= 0x1000000; // wrap both ways
-                if(e.attrs[7] < 0) e.attrs[7] = 0; // palette, clamp
-                if(e.attrs[8] < 0) e.attrs[8] = 0; // palindex, clamp
                 break;
             }
             case WIND:
@@ -2227,8 +2221,6 @@ namespace entities
                 while(e.attrs[4] > 0xFFFFFF) e.attrs[4] -= 0x1000000; // wrap both ways
                 while(e.attrs[5] < 0) e.attrs[5] += 6; // type
                 while(e.attrs[5] >= 6) e.attrs[5] -= 6; // wrap both ways
-                if(e.attrs[6] < 0) e.attrs[6] = 0; // palette, clamp
-                if(e.attrs[7] < 0) e.attrs[7] = 0; // palindex, clamp
                 if(e.attrs[8] < 0) e.attrs[8] = 0; // flags, clamp
                 break;
             }
@@ -2289,6 +2281,11 @@ namespace entities
         #undef FIXDIRR
         #undef FIXDIRY
 
+        if(enttype[e.type].palattr >= 0)
+        {
+            if(e.attrs[enttype[e.type].palattr] < 0) e.attrs[enttype[e.type].palattr] = 0;
+            if(e.attrs[enttype[e.type].palattr + 1] < 0) e.attrs[enttype[e.type].palattr + 1] = 0;
+        }
         if(enttype[e.type].mvattr >= 0)
         {
             while(e.attrs[enttype[e.type].mvattr] < 0) e.attrs[enttype[e.type].mvattr] += MPV_MAX;
@@ -2788,6 +2785,7 @@ namespace entities
         if(gver <= 273 && e.type == WEAPON)
         { // insert corroder before grenade (9 -> 10) after rifle (8)
             if(e.attrs[0] >= 9) e.attrs[0]++;
+            if(enttype[e.type].palattr >= 0) game::fixpalette(e.attrs[enttype[e.type].palattr], e.attrs[enttype[e.type].palattr + 1], gver);
         }
     }
 
