@@ -38,6 +38,13 @@ namespace entities
     FVAR(IDF_PERSIST, entdirsize, 0, 10, FVAR_MAX);
     FVAR(IDF_PERSIST, entrailoffset, 0, 0.1f, FVAR_MAX);
 
+    VAR(IDF_PERSIST, entityshimmer, 0, 1, 1);
+    FVAR(IDF_PERSIST, entityshimmertime, 0, 2, FVAR_MAX);
+    FVAR(IDF_PERSIST, entityshimmerfade, 0, 1.0f, 16);
+    FVAR(IDF_PERSIST, entityshimmerslice, 0, 0.25f, 1);
+    FVAR(IDF_PERSIST, entityshimmerblend, 0, 0.5f, 1);
+    FVAR(IDF_PERSIST, entityshimmerbright, -16, 2.0f, 16);
+
     VAR(IDF_PERSIST|IDF_HEX, entselcolour, 0, 0xFFFFFF, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, entselcolourtop, 0, 0xFF88FF, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, entselcolourdyn, 0, 0x88FFFF, 0xFFFFFF);
@@ -3339,6 +3346,18 @@ namespace entities
                     mdl.size = mdl.color.a = millis / 250.f;
                     mdl.o.z += 32 * (1.f - mdl.size);
                 }
+                if(entityshimmer && enttype[e.type].usetype == EU_ITEM)
+                {
+                    int timeoffset = int(ceilf(entityshimmertime * itemfadetime));
+                    if(millis < timeoffset)
+                    {
+                        int partoffset = timeoffset / 2;
+                        float partamt = millis / float(partoffset);
+                        if(partamt >= 1.0f) partamt = 2.0f - partamt;
+                        mdl.shimmercolor = vec4(pulsehexcol(PULSE_READY), entityshimmerblend);
+                        mdl.shimmerparams = vec4(partamt, entityshimmerslice, entityshimmerfade / entityshimmerslice, entityshimmerbright);
+                    }
+                }
             }
             else if(e.lastemit)
             {
@@ -3352,6 +3371,8 @@ namespace entities
                 if(isweap(attr))
                 {
                     colour = W(attr, colour);
+                    mdl.shimmercolor.mul(vec::fromcolor(colour));
+
                     if(e.spawned() && (game::focus->isobserver() || game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !showentfull)))
                     {
                         if(drawtex == DRAWTEX_HALO) mdl.flags |= MDL_HALO_TOP;

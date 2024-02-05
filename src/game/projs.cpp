@@ -2577,6 +2577,19 @@ namespace projs
                     gameentity &e = *(gameentity *)entities::ents[proj.id];
                     mdlname = entities::entmdlname(e.type, e.attrs);
 
+                    if(entities::entityshimmer && enttype[e.type].usetype == EU_ITEM)
+                    {
+                        int millis = proj.lifemillis - proj.lifetime, timeoffset = int(ceilf(entities::entityshimmertime * itemfadetime));
+                        if(millis < timeoffset)
+                        {
+                            int partoffset = timeoffset / 2;
+                            float partamt = millis / float(partoffset);
+                            if(partamt >= 1.0f) partamt = 2.0f - partamt;
+                            mdl.shimmercolor = vec4(pulsehexcol(PULSE_READY), entities::entityshimmerblend);
+                            mdl.shimmerparams = vec4(partamt, entities::entityshimmerslice, entities::entityshimmerfade / entities::entityshimmerslice, entities::entityshimmerbright);
+                        }
+                    }
+
                     int colour = 0;
                     if(e.type == WEAPON)
                     {
@@ -2584,6 +2597,8 @@ namespace projs
                         if(isweap(attr))
                         {
                             colour = W(attr, colour);
+                            mdl.shimmercolor.mul(vec::fromcolor(colour));
+
                             if(game::focus->isobserver() || game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !entities::showentfull))
                             {
                                 if(drawtex == DRAWTEX_HALO) mdl.flags |= MDL_HALO_TOP;

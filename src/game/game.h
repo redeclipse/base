@@ -2660,8 +2660,8 @@ namespace game
 namespace entities
 {
     extern vector<inanimate *> inanimates;
-    extern int showentfull, showentweapons;
-    extern float showentavailable, showentunavailable;
+    extern int showentfull, showentweapons, entityshimmer;
+    extern float showentavailable, showentunavailable, entityshimmertime, entityshimmerblend, entityshimmerfade, entityshimmerslice, entityshimmerbright;
     extern void physents(physent *d);
     extern void runrails();
     extern void updaterails();
