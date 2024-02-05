@@ -404,7 +404,7 @@ namespace game
     VAR(IDF_PERSIST, ragdolleffect, 2, 500, VAR_MAX);
     VAR(IDF_PERSIST, gibplayerparts, 0, 0, 1); // can gib into parts
 
-    VAR(IDF_PERSIST, playermixer, VAR_MIN, -256, 1<<12); // 0 = off, positive is scale, negative is abs size
+    VAR(IDF_PERSIST, playershimmer, VAR_MIN, -256, 1<<12); // 0 = off, positive is scale, negative is abs size
 
     VAR(IDF_PERSIST, playerhalos, 0, 3, 3); // 0 = off, 1 = self, 2 = others
     FVAR(IDF_PERSIST, playerblend, 0, 1, 1);
@@ -4412,8 +4412,8 @@ namespace game
                 }
                 else regenamt = 1.0f - regenamt;
 
-                mdl.mixercolor = vec4(pulsehexcol(d, regenpulse, 50), regenblend);
-                mdl.mixerparams = vec4(regenamt, playerregenslice, playerregenfade / playerregenslice, regenbright);
+                mdl.shimmercolor = vec4(pulsehexcol(d, regenpulse, 50), regenblend);
+                mdl.shimmerparams = vec4(regenamt, playerregenslice, playerregenfade / playerregenslice, regenbright);
             }
         }
 

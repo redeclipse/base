@@ -6165,7 +6165,7 @@ namespace UI
     UICMDT(ModelPreview, modelpreview, basetime, "bb", (int *b, int *c), o->mdl.basetime = *b >= 0 ? *b : uilastmillis; o->mdl.basetime2 = *c >= 0 ? *c : 0);
     UICMDT(ModelPreview, modelpreview, material, "iiii", (int *mat, int *r, int *g, int *b), if(*mat >= 0 && *mat < MAXMDLMATERIALS) o->mdl.material[*mat] = bvec(*r, *g, *b));
     UICMDT(ModelPreview, modelpreview, materialcol, "ii", (int *mat, int *c), if(*mat >= 0 && *mat < MAXMDLMATERIALS) o->mdl.material[*mat] = bvec::fromcolor(*c));
-    UICMDT(ModelPreview, modelpreview, mixerparams, "ffff", (float *r, float *g, float *b, float *a), o->mdl.mixerparams = vec4(*r, *g, *b, *a));
+    UICMDT(ModelPreview, modelpreview, shimmerparams, "ffff", (float *r, float *g, float *b, float *a), o->mdl.shimmerparams = vec4(*r, *g, *b, *a));
     UICMDT(ModelPreview, modelpreview, matbright, "ffff", (float *x, float *y, float *z, float *w), o->mdl.matbright = vec4(*x, *y, *z, *w));
     UICMDT(ModelPreview, modelpreview, patternscale, "f", (float *n), o->mdl.patternscale = *n);
     UICMDT(ModelPreview, modelpreview, matsplit, "f", (float *n), o->mdl.matsplit = clamp(*n, 0.0f, 0.5f));

@@ -114,7 +114,7 @@ struct entmodelstate
 
 struct modelstate : entmodelstate
 {
-    vec4 mixercolor, mixerparams, matbright;
+    vec4 shimmercolor, shimmerparams, matbright;
     float patternscale, matsplit;
     Texture *pattern;
     modelattach *attached;
@@ -125,8 +125,8 @@ struct modelstate : entmodelstate
     {
         entmodelstate::reset();
 
-        mixercolor = matbright = vec4(1, 1, 1, 1);
-        mixerparams = vec4(0, 0, 0, 0);
+        shimmercolor = matbright = vec4(1, 1, 1, 1);
+        shimmerparams = vec4(0, 0, 0, 0);
         patternscale = 1;
         matsplit = -1;
         pattern = NULL;

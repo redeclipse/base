@@ -154,7 +154,7 @@ struct animmodel : model
 
         bool canmix(const modelstate *state, const animstate *as) const
         {
-            if(state->mixerparams.iszero()) return false;
+            if(state->shimmerparams.iszero()) return false;
             return !(state->flags&MDL_NOMIXER) || firstmodel(as);
         }
 
@@ -226,8 +226,8 @@ struct animmodel : model
 
             if(mixed())
             {
-                LOCALPARAM(mixercolor, mixercolor);
-                LOCALPARAM(mixerparams, mixerparams);
+                LOCALPARAM(shimmercolor, shimmercolor);
+                LOCALPARAM(shimmerparams, shimmerparams);
             }
             if(patterned()) LOCALPARAMF(patternscale, patternscale);
 
@@ -1567,14 +1567,14 @@ struct animmodel : model
                 matbright = state->matbright;
                 invalidate = true;
             }
-            if(mixercolor != state->mixercolor)
+            if(shimmercolor != state->shimmercolor)
             {
-                mixercolor = state->mixercolor;
+                shimmercolor = state->shimmercolor;
                 invalidate = true;
             }
-            if(mixerparams != state->mixerparams)
+            if(shimmerparams != state->shimmerparams)
             {
-                mixerparams = state->mixerparams;
+                shimmerparams = state->shimmerparams;
                 invalidate = true;
             }
             if(state->pattern && state->pattern != notexture)
@@ -1899,7 +1899,7 @@ struct animmodel : model
         }
     }
 
-    void setmixer(bool val)
+    void setshimmer(bool val)
     {
         if(parts.empty()) loaddefaultparts();
         loopv(parts) loopvj(parts[i]->skins)
@@ -1959,7 +1959,7 @@ struct animmodel : model
 
     static bool enabletc, enablecullface, enabletangents, enablebones, enabledepthoffset, enablecolor;
     static float sizescale;
-    static vec4 colorscale, mixercolor, mixerparams, matbright;
+    static vec4 colorscale, shimmercolor, shimmerparams, matbright;
     static float patternscale, modelmatsplit;
     static bvec modelmaterial[MAXMDLMATERIALS];
     static GLuint lastvbuf, lasttcbuf, lastxbuf, lastbbuf, lastebuf, lastcolbuf, lastenvmaptex, closestenvmaptex;
@@ -2090,7 +2090,7 @@ float animmodel::intersectdist = 0, animmodel::intersectscale = 1;
 bool animmodel::enabletc = false, animmodel::enabletangents = false, animmodel::enablebones = false,
      animmodel::enablecullface = true, animmodel::enabledepthoffset = false, animmodel::enablecolor = false;
 float animmodel::sizescale = 1;
-vec4 animmodel::colorscale = vec4(1, 1, 1, 1), animmodel::mixercolor = vec4(1, 1, 1, 1), animmodel::mixerparams = vec4(0, 0, 0, 0), animmodel::matbright = vec4(1, 1, 1, 1);
+vec4 animmodel::colorscale = vec4(1, 1, 1, 1), animmodel::shimmercolor = vec4(1, 1, 1, 1), animmodel::shimmerparams = vec4(0, 0, 0, 0), animmodel::matbright = vec4(1, 1, 1, 1);
 float animmodel::patternscale = 1, animmodel::modelmatsplit = -1;
 bvec animmodel::modelmaterial[MAXMDLMATERIALS] = { bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255) };
 GLuint animmodel::lastvbuf = 0, animmodel::lasttcbuf = 0, animmodel::lastxbuf = 0, animmodel::lastbbuf = 0, animmodel::lastebuf = 0,
@@ -2315,9 +2315,9 @@ template<class MDL, class MESH> struct modelcommands
         });
     }
 
-    static void setmixer(char *meshname, int *mixer)
+    static void setshimmer(char *meshname, int *shimmer)
     {
-        loopskins(meshname, s, { if(*mixer) s.flags |= skin::ALLOW_MIXER; else s.flags &= ~skin::ALLOW_MIXER; });
+        loopskins(meshname, s, { if(*shimmer) s.flags |= skin::ALLOW_MIXER; else s.flags &= ~skin::ALLOW_MIXER; });
     }
 
     static void setpattern(char *meshname, int *pattern)
@@ -2368,7 +2368,7 @@ template<class MDL, class MESH> struct modelcommands
             modelcommand(setnoclip, "noclip", "si");
             modelcommand(settricollide, "tricollide", "s");
             modelcommand(setmaterial, "material", "siif");
-            modelcommand(setmixer, "mixer", "si");
+            modelcommand(setshimmer, "shimmer", "si");
             modelcommand(setpattern, "pattern", "si");
         }
         if(MDL::multiparted()) modelcommand(setlink, "link", "iisffffff");
