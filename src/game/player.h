@@ -286,11 +286,11 @@ struct mixer
 {
     char *id, *name, *filename;
     int tclamp;
-    float scale, split;
-    bool anytype, convert, triedload;
+    float scale, split, blur;
+    bool anytype, triedload;
     Texture *tex;
 
-    mixer() : id(NULL), name(NULL), filename(NULL), tclamp(0), scale(1), split(0), anytype(false), convert(false), triedload(false), tex(NULL) {}
+    mixer() : id(NULL), name(NULL), filename(NULL), tclamp(0), scale(1), split(0), blur(0), anytype(false), triedload(false), tex(NULL) {}
     ~mixer()
     {
         if(id) delete[] id;
@@ -304,11 +304,21 @@ struct mixer
 
         tex = textureload(filename, tclamp, true, false);
 
-        if(convert && tex && tex != notexture)
+        if(tex && tex != notexture && (blur > 0.0f || tex->bpp <= 2))
         {
-            defformatstring(m, "<comp:0,-%d>rgbamixer [", max(tex->w, tex->h));
-            if(split > 0.0f) concformatstring(m, "split = %.8g; ", clamp(split, 0.0f, 0.5f));
+            defformatstring(m, "<comp:0,-%d>", max(tex->w, tex->h));
+
+            if(tex->bpp > 2) concatstring(m, "blur [");
+            else
+            {
+                concatstring(m, "rgbamixer [");
+                if(split > 0.0f) concformatstring(m, "split = %.8g; ", clamp(split, 0.0f, 0.5f));
+            }
+
+            if(blur > 0.0f) concformatstring(m, "blur = %.8g; ", clamp(blur, 0.0f, 0.5f));
+
             concformatstring(m, "tex = [%s]]", filename);
+
             Texture *t = textureload(m, tclamp, true, false);
             if(t && t != notexture) tex = t;
         }

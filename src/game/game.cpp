@@ -399,8 +399,6 @@ namespace game
     VAR(IDF_PERSIST, ragdolleffect, 2, 500, VAR_MAX);
     VAR(IDF_PERSIST, gibplayerparts, 0, 0, 1); // can gib into parts
 
-    VAR(IDF_PERSIST, playershimmer, VAR_MIN, -256, 1<<12); // 0 = off, positive is scale, negative is abs size
-
     VAR(IDF_PERSIST, playerhalos, 0, 3, 3); // 0 = off, 1 = self, 2 = others
     FVAR(IDF_PERSIST, playerblend, 0, 1, 1);
     FVAR(IDF_PERSIST, playereditblend, 0, 1, 1);
@@ -451,6 +449,12 @@ namespace game
     FVAR(IDF_PERSIST, playerregendecayblend, 0, 0.5f, 1);
     FVAR(IDF_PERSIST, playerregenbright, -16, 1.0f, 16);
     FVAR(IDF_PERSIST, playerregendecaybright, -16, -1.0f, 16);
+
+    VAR(IDF_PERSIST, playershimmer, 0, 1, 1);
+    FVAR(IDF_PERSIST, playershimmerfade, 0, 1.0f, 16);
+    FVAR(IDF_PERSIST, playershimmerslice, 0, 0.125f, 1);
+    FVAR(IDF_PERSIST, playershimmerblend, 0, 0.75f, 1);
+    FVAR(IDF_PERSIST, playershimmerbright, -16, 0.75f, 16);
 
     FVAR(IDF_PERSIST, affinityfadeat, 0, 32, FVAR_MAX);
     FVAR(IDF_PERSIST, affinityfadecut, 0, 4, FVAR_MAX);
@@ -2539,6 +2543,12 @@ namespace game
 
     void startmap(bool empty) // called just after a map load
     {
+        if(!*player1->mixer && !mixers.empty())
+        {
+            int r = rnd(mixers.length());
+            if(mixers.inrange(r)) setsvar("playermixer", mixers[r].id, true);
+        }
+
         checklights(true);
         ai::startmap(empty);
         if(!empty)
@@ -4400,7 +4410,7 @@ namespace game
     }
     ICOMMAND(0, findmixer, "s", (char *s), intret(mixerfind(s)));
 
-    int mixeritem(const char *id, const char *name, const char *filename, int tclamp, float scale, float split, bool anytype, bool convert)
+    int mixeritem(const char *id, const char *name, const char *filename, int tclamp, float scale, float split, float blur, bool anytype)
     {
         if(!id || !*id || !name || !*name || !filename || !*filename || mixerfind(id) >= 0) return -1;
 
@@ -4408,13 +4418,13 @@ namespace game
         m.tclamp = tclamp;
         m.scale = scale;
         m.split = split;
+        m.blur = blur;
         m.anytype = anytype;
-        m.convert = convert;
         m.setnames(id, name, filename);
 
         return mixers.length() - 1;
     }
-    ICOMMAND(0, addmixer, "sssigfii", (char *d, char *n, char *f, int *t, float *s, float *m, int *a, int *c), intret(mixeritem(d, n, f, *t, *s >= 0.0f ? *s : 1.0f, *m, *a != 0, *c != 0)));
+    ICOMMAND(0, addmixer, "sssigffii", (char *d, char *n, char *f, int *t, float *s, float *m, float *b, int *a), intret(mixeritem(d, n, f, *t, *s >= 0.0f ? *s : 1.0f, *m, *b, *a != 0)));
 
     void mixerinfo(int id, int value)
     {
@@ -4428,8 +4438,8 @@ namespace game
             case 3: intret(mixers[id].tclamp); break;
             case 4: floatret(mixers[id].scale); break;
             case 5: floatret(mixers[id].split); break;
-            case 6: intret(mixers[id].anytype ? 1 : 0); break;
-            case 7: intret(mixers[id].convert ? 1 : 0); break;
+            case 6: floatret(mixers[id].blur); break;
+            case 7: intret(mixers[id].anytype ? 1 : 0); break;
             default: break;
         }
     }
@@ -4457,6 +4467,16 @@ namespace game
 
                 mdl.shimmercolor = vec4(pulsehexcol(d, regenpulse, 50), regenblend);
                 mdl.shimmerparams = vec4(regenamt, playerregenslice, playerregenfade / playerregenslice, regenbright);
+            }
+        }
+        else if(playershimmer)
+        {
+            float fade = protectfade(d);
+            if(fade > 0.0f && fade < 1.0f)
+            {
+                mdl.shimmercolor = vec4(pulsehexcol(d, PULSE_READY, 50), playershimmerblend);
+                mdl.shimmercolor.mul(vec::fromcolor(game::getcolour(d, playereffecttone, playereffecttonelevel, playereffecttonemix)));
+                mdl.shimmerparams = vec4(1.0f - fade, playershimmerslice, playershimmerfade / playershimmerslice, playershimmerbright);
             }
         }
 

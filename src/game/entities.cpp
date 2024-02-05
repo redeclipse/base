@@ -39,11 +39,11 @@ namespace entities
     FVAR(IDF_PERSIST, entrailoffset, 0, 0.1f, FVAR_MAX);
 
     VAR(IDF_PERSIST, entityshimmer, 0, 1, 1);
-    FVAR(IDF_PERSIST, entityshimmertime, 0, 2, FVAR_MAX);
+    FVAR(IDF_PERSIST, entityshimmertime, 0, 1.5f, FVAR_MAX);
     FVAR(IDF_PERSIST, entityshimmerfade, 0, 1.0f, 16);
-    FVAR(IDF_PERSIST, entityshimmerslice, 0, 0.25f, 1);
-    FVAR(IDF_PERSIST, entityshimmerblend, 0, 0.5f, 1);
-    FVAR(IDF_PERSIST, entityshimmerbright, -16, 2.0f, 16);
+    FVAR(IDF_PERSIST, entityshimmerslice, 0, 0.125f, 1);
+    FVAR(IDF_PERSIST, entityshimmerblend, 0, 0.75f, 1);
+    FVAR(IDF_PERSIST, entityshimmerbright, -16, 1.0f, 16);
 
     VAR(IDF_PERSIST|IDF_HEX, entselcolour, 0, 0xFFFFFF, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, entselcolourtop, 0, 0xFF88FF, 0xFFFFFF);
