@@ -67,8 +67,8 @@ gametypes gametype[] = {
         G_DEATHMATCH, 0, 0,
         {
             (1<<G_M_FFA)|(1<<G_M_COOP)|(1<<G_M_INSTAGIB)|(1<<G_M_DUEL)|(1<<G_M_SURVIVOR)|(1<<G_M_CLASSIC)|(1<<G_M_MEDIEVAL)|(1<<G_M_KABOOM)|(1<<G_M_ONSLAUGHT)|(1<<G_M_VAMPIRE)|(1<<G_M_RESIZE)|(1<<G_M_HARD)|(1<<G_M_ARENA)|(1<<G_M_DARK)|(1<<G_M_GSP1)|(1<<G_M_GSP2),
-            (1<<G_M_FFA)|(1<<G_M_COOP)|(1<<G_M_INSTAGIB)|(1<<G_M_DUEL)|(1<<G_M_SURVIVOR)|(1<<G_M_CLASSIC)|(1<<G_M_MEDIEVAL)|(1<<G_M_KABOOM)|(1<<G_M_ONSLAUGHT)|(1<<G_M_VAMPIRE)|(1<<G_M_RESIZE)|(1<<G_M_HARD)|(1<<G_M_DARK)|(1<<G_M_GSP1),
-            (1<<G_M_FFA)|(1<<G_M_COOP)|(1<<G_M_INSTAGIB)|(1<<G_M_CLASSIC)|(1<<G_M_MEDIEVAL)|(1<<G_M_KABOOM)|(1<<G_M_ONSLAUGHT)|(1<<G_M_VAMPIRE)|(1<<G_M_RESIZE)|(1<<G_M_HARD)|(1<<G_M_ARENA)|(1<<G_M_DARK)|(1<<G_M_GSP2),
+            (1<<G_M_FFA)|(1<<G_M_COOP)|(1<<G_M_INSTAGIB)|(1<<G_M_DUEL)|(1<<G_M_SURVIVOR)|(1<<G_M_MEDIEVAL)|(1<<G_M_ONSLAUGHT)|(1<<G_M_VAMPIRE)|(1<<G_M_RESIZE)|(1<<G_M_HARD)|(1<<G_M_DARK)|(1<<G_M_GSP1)|(1<<G_M_GSP2),
+            (1<<G_M_FFA)|(1<<G_M_COOP)|(1<<G_M_INSTAGIB)|(1<<G_M_CLASSIC)|(1<<G_M_MEDIEVAL)|(1<<G_M_KABOOM)|(1<<G_M_ONSLAUGHT)|(1<<G_M_VAMPIRE)|(1<<G_M_RESIZE)|(1<<G_M_HARD)|(1<<G_M_ARENA)|(1<<G_M_DARK)|(1<<G_M_GSP1)|(1<<G_M_GSP2),
             0
         },
         "Deathmatch", "DM", { "Gladiator", "Old School", "" },
@@ -291,7 +291,7 @@ extern mutstypes mutstype[];
 #define m_balance(a,b,c)    (m_play(a) && m_teamspawn(a, b) && (m_forcebal(a, b) || ((G(balanceduke) || !m_duke(a, b)) && ((G(balancemaps) >= 0 ? G(balancemaps) : G(mapbalance)) >= (m_affinity(a) ? 1 : (c ? 2 : 3))))))
 #define m_balreset(a,b)     (G(balancereset) && (G(balancereset) == 2 || m_capture(a) || m_bomber(a) || m_race(a) || m_duke(a, b)))
 
-#define m_messy(a,b)        (!m_insta(a,b) && !m_kaboom(a,b) ? G(janitorjunkmessy) : 1.f)
+#define m_messy(a,b)        ((m_insta(a,b) ? G(janitorjunkmessy) : 1.f) * (m_kaboom(a,b) ? G(janitorjunkmessy) : 1.f))
 
 #ifdef CPP_GAME_SERVER
 #define m_attr(a,b)         (a == WEAPON ? attrmap[isweap(b) ? b : W_GRENADE] : b)
