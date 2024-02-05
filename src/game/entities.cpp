@@ -2696,28 +2696,36 @@ namespace entities
 
         if(gver <= 223 && e.type == ROUTE) e.type = NOTUSED; // removing old route entity
 
+        bool fixedpalette = false;
         if(gver <= 244)
         {
             if((e.type == PLAYERSTART || e.type == AFFINITY) && e.attrs[0] > T_OMEGA) e.type = NOTUSED;
-            if(e.type == PARTICLES) switch(e.attrs[0])
+            if(e.type == PARTICLES)
             {
-                case 0: game::fixpalette(e.attrs[5], e.attrs[6], gver); break;
-                case 3: game::fixpalette(e.attrs[3], e.attrs[4], gver); break;
-                case 4: game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
-                case 5: game::fixpalette(e.attrs[3], e.attrs[4], gver); break;
-                case 6: game::fixpalette(e.attrs[4], e.attrs[5], gver); game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
-                case 7: game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
-                case 8: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
-                case 9: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
-                case 10: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
-                case 11: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
-                case 12: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
-                case 13: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
-                case 14: game::fixpalette(e.attrs[8], e.attrs[9], gver); break;
-                case 15: game::fixpalette(e.attrs[8], e.attrs[9], gver); break;
-                default: break;
+                switch(e.attrs[0])
+                {
+                    case 0: fixedpalette = true; game::fixpalette(e.attrs[5], e.attrs[6], gver); break;
+                    case 3: fixedpalette = true; game::fixpalette(e.attrs[3], e.attrs[4], gver); break;
+                    case 4: fixedpalette = true; game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
+                    case 5: fixedpalette = true; game::fixpalette(e.attrs[3], e.attrs[4], gver); break;
+                    case 6: fixedpalette = true; game::fixpalette(e.attrs[4], e.attrs[5], gver); game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
+                    case 7: fixedpalette = true; game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
+                    case 8: fixedpalette = true; game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
+                    case 9: fixedpalette = true; game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
+                    case 10: fixedpalette = true; game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
+                    case 11: fixedpalette = true; game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
+                    case 12: fixedpalette = true; game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
+                    case 13: fixedpalette = true; game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
+                    case 14: fixedpalette = true; game::fixpalette(e.attrs[8], e.attrs[9], gver); break;
+                    case 15: fixedpalette = true; game::fixpalette(e.attrs[8], e.attrs[9], gver); break;
+                    default: break;
+                }
             }
-            if(enttype[e.type].palattr >= 0) game::fixpalette(e.attrs[enttype[e.type].palattr], e.attrs[enttype[e.type].palattr+1], gver);
+            else if(enttype[e.type].palattr >= 0)
+            {
+                game::fixpalette(e.attrs[enttype[e.type].palattr], e.attrs[enttype[e.type].palattr+1], gver);
+                fixedpalette = true;
+            }
             if(enttype[e.type].modesattr >= 0)
             { // removing freestyle and multi
                 int mattr = enttype[e.type].modesattr+1;
@@ -2785,7 +2793,36 @@ namespace entities
         if(gver <= 273 && e.type == WEAPON)
         { // insert corroder before grenade (9 -> 10) after rifle (8)
             if(e.attrs[0] >= 9) e.attrs[0]++;
-            if(enttype[e.type].palattr >= 0) game::fixpalette(e.attrs[enttype[e.type].palattr], e.attrs[enttype[e.type].palattr + 1], gver);
+
+            if(!fixedpalette)
+            {
+                if(e.type == PARTICLES)
+                {
+                    switch(e.attrs[0])
+                    {
+                        case 0: fixedpalette = true; game::fixpalette(e.attrs[5], e.attrs[6], gver); break;
+                        case 3: fixedpalette = true; game::fixpalette(e.attrs[3], e.attrs[4], gver); break;
+                        case 4: fixedpalette = true; game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
+                        case 5: fixedpalette = true; game::fixpalette(e.attrs[3], e.attrs[4], gver); break;
+                        case 6: fixedpalette = true; game::fixpalette(e.attrs[4], e.attrs[5], gver); game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
+                        case 7: fixedpalette = true; game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
+                        case 8: fixedpalette = true; game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
+                        case 9: fixedpalette = true; game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
+                        case 10: fixedpalette = true; game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
+                        case 11: fixedpalette = true; game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
+                        case 12: fixedpalette = true; game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
+                        case 13: fixedpalette = true; game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
+                        case 14: fixedpalette = true; game::fixpalette(e.attrs[8], e.attrs[9], gver); break;
+                        case 15: fixedpalette = true; game::fixpalette(e.attrs[8], e.attrs[9], gver); break;
+                        default: break;
+                    }
+                }
+                else if(enttype[e.type].palattr >= 0)
+                {
+                    game::fixpalette(e.attrs[enttype[e.type].palattr], e.attrs[enttype[e.type].palattr+1], gver);
+                    fixedpalette = true;
+                }
+            }
         }
     }
 
