@@ -66,7 +66,7 @@ COMMAND(0, mdlmixer, "i");
 void mdlpattern(int *pattern)
 {
     checkmdl;
-    loadingmodel->setpattern(*pattern != 0);
+    loadingmodel->setpattern(*pattern);
 }
 COMMAND(0, mdlpattern, "i");
 

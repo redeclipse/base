@@ -115,15 +115,16 @@ struct animmodel : model
     {
         enum
         {
-            ALLOW_MIXER    = 1<<0,
-            ENABLE_MIXER   = 1<<1,
-            ALLOW_PATTERN  = 1<<2,
-            ENABLE_PATTERN = 1<<3,
-            DITHER         = 1<<4,
-            CULL_FACE      = 1<<5,
-            DOUBLE_SIDED   = 1<<6,
-            CULL_HALO      = 1<<7,
-            RGBA_PATTERN   = 1<<8
+            ALLOW_MIXER     = 1<<0,
+            ENABLE_MIXER    = 1<<1,
+            ALLOW_PATTERN   = 1<<2,
+            ENABLE_PATTERN  = 1<<3,
+            DITHER          = 1<<4,
+            CULL_FACE       = 1<<5,
+            DOUBLE_SIDED    = 1<<6,
+            CULL_HALO       = 1<<7,
+            RGBA_PATTERN    = 1<<8,
+            INHERIT_PATTERN = 1<<9
         };
 
         part *owner;
@@ -162,8 +163,22 @@ struct animmodel : model
 
         bool canpattern(const modelstate *state, const animstate *as) const
         {
-            if((!state->pattern || state->pattern == notexture) && (!patternmap || patternmap == notexture)) return false;
-            return !(state->flags&MDL_NOPATTERN) || firstmodel(as);
+            if(state->flags&MDL_NOPATTERN && !firstmodel(as)) return false;
+
+            if((flags&INHERIT_PATTERN || firstmodel(as)) && (state->pattern && state->pattern != notexture)) return true;
+            if(patternmap && patternmap != notexture) return true;
+
+            return false;
+        }
+
+        Texture *patterntex(const modelstate *state, const animstate *as) const
+        {
+            if(state->flags&MDL_NOPATTERN && !firstmodel(as)) return NULL;
+
+            if((flags&INHERIT_PATTERN || firstmodel(as)) && (state->pattern && state->pattern != notexture)) return state->pattern;
+            if(patternmap && patternmap != notexture) return patternmap;
+
+            return NULL;
         }
 
         void setkey()
@@ -394,7 +409,7 @@ struct animmodel : model
             {
                 if(canpattern(state, as))
                 {
-                    Texture *pattern = state->pattern && state->pattern != notexture ? state->pattern : patternmap;
+                    Texture *pattern = patterntex(state, as);
 
                     flags |= ENABLE_PATTERN;
                     if(pattern != lastpattern)
@@ -1895,14 +1910,14 @@ struct animmodel : model
         }
     }
 
-    void setpattern(bool val)
+    void setpattern(int val)
     {
         if(parts.empty()) loaddefaultparts();
         loopv(parts) loopvj(parts[i]->skins)
         {
             skin &s = parts[i]->skins[j];
-            if(val) s.flags |= skin::ALLOW_PATTERN;
-            else s.flags &= ~skin::ALLOW_PATTERN;
+            if(val) s.flags |= skin::ALLOW_PATTERN|(val > 1 ? skin::INHERIT_PATTERN : 0);
+            else s.flags &= ~(skin::ALLOW_PATTERN|(val > 1 ? skin::INHERIT_PATTERN : 0));
         }
     }
 
@@ -2307,7 +2322,11 @@ template<class MDL, class MESH> struct modelcommands
 
     static void setpattern(char *meshname, int *pattern)
     {
-        loopskins(meshname, s, { if(*pattern) s.flags |= skin::ALLOW_PATTERN; else s.flags &= ~skin::ALLOW_PATTERN; });
+        loopskins(meshname, s,
+        {
+            if(*pattern) s.flags |= skin::ALLOW_PATTERN|(*pattern > 1 ? skin::INHERIT_PATTERN : 0);
+            else s.flags &= ~(skin::ALLOW_PATTERN|(*pattern > 1 ? skin::INHERIT_PATTERN : 0));
+        });
     }
 
     static void setlink(int *parent, int *child, char *tagname, float *x, float *y, float *z, float *yaw, float *pitch, float *roll)
