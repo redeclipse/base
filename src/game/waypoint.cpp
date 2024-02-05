@@ -542,7 +542,7 @@ namespace ai
         vec(1, 0, 0), vec(-1, 0, 0), vec(0, 1, 0), vec(0, -1, 0), vec(0, 0, -1), vec(0, 0, 1)
     };
 
-    int recursewaypoint(int n, int passes = 5, bool linkup = false)
+    int recursewaypoint(int n, int passes = 5, bool linkup = false, bool saved = true)
     {
         if(waypoints.length() >= MAXWAYPOINTFILL) return 0;
 
@@ -611,7 +611,7 @@ namespace ai
                 pull = int(dist / JUMPMIN);
 
                 int r = waypoints.length();
-                waypoint &a = waypoints.add(waypoint(o, pull));
+                waypoint &a = waypoints.add(waypoint(o, pull, WAYPOINTVERSION, saved));
                 if(waypoints.length() <= r) break;
 
                 vec apos = vec(a.o).addz(1);
@@ -661,7 +661,7 @@ namespace ai
 
     void remapwaypoints();
 
-    int explodewaypoints(int n = 1, int passes = 6, bool linkup = false)
+    int explodewaypoints(int n = 1, int passes = 6, bool linkup = false, bool saved = true)
     {
         vector<int> considered;
         int created = 0;
@@ -680,7 +680,7 @@ namespace ai
             loopv(origwaypoints)
             {
                 progress(i / float(count), "Exploding waypoints: Pass %d of %d, created %d", k + 1, n, created);
-                int create = recursewaypoint(origwaypoints[i], passes, linkup);
+                int create = recursewaypoint(origwaypoints[i], passes, linkup, saved);
                 if(!create) continue;
                 created += create;
                 considered.add(i);
@@ -692,7 +692,7 @@ namespace ai
 
         return created;
     }
-    ICOMMAND(0, explodewaypoints, "bbi", (int *n, int *p, int *u), intret(explodewaypoints(*n > 0 ? *n : 1, *p > 0 ? *p : 6, *u != 0)));
+    ICOMMAND(0, explodewaypoints, "bbib", (int *n, int *p, int *u, int *s), intret(explodewaypoints(*n > 0 ? *n : 1, *p > 0 ? *p : 6, *u != 0, *s != 0)));
 
     int addwaypoint(const vec &o, int pull = -1, bool saved = true)
     {
@@ -955,9 +955,9 @@ namespace ai
         if(m_edit(game::gamemode) ? autoexplodewaypoints&8 != 0 : autoexplodewaypoints)
         {
             conoutf(colourwhite, "Exploding waypoints..");
-            if(autoexplodewaypoints&1) explodewaypoints(1, 6, true);
-            if(autoexplodewaypoints&2) explodewaypoints(1, 6, false);
-            if(autoexplodewaypoints&4) explodewaypoints(5, 5, false);
+            if(autoexplodewaypoints&1) explodewaypoints(1, 6, true, false);
+            if(autoexplodewaypoints&2) explodewaypoints(1, 6, false, false);
+            if(autoexplodewaypoints&4) explodewaypoints(5, 5, false, false);
         }
 
         if(!cleanwaypoints()) clearwpcache();
