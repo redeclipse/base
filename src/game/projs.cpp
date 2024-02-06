@@ -1806,7 +1806,7 @@ namespace projs
                             default: break;
                         }
                         e->vel = vec(yaw*RAD, pitch*RAD).mul(mag).add(keepvel);
-                        e->doimpulse(IM_T_GRAB, lastmillis, cost);
+                        e->doimpulse(IM_T_GRAB, lastmillis, cost, 0);
                         client::addmsg(N_SPHY, "ri2", e->clientnum, SPHY_GRAB);
                         game::impulseeffect(e);
                         game::footstep(e);

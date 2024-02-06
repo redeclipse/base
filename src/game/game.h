@@ -280,9 +280,9 @@ enum
 {
     IM_T_JUMP = 0, IM_T_BOOST, IM_T_DASH, IM_T_SLIDE, IM_T_LAUNCH, IM_T_MELEE, IM_T_KICK, IM_T_GRAB, IM_T_PARKOUR, IM_T_VAULT, IM_T_POUND, IM_T_AFTER, IM_T_PUSHER, IM_T_MAX,
     IM_T_ALL    = (1<<IM_T_JUMP)|(1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_MELEE)|(1<<IM_T_KICK)|(1<<IM_T_GRAB)|(1<<IM_T_PARKOUR)|(1<<IM_T_VAULT)|(1<<IM_T_POUND)|(1<<IM_T_AFTER)|(1<<IM_T_PUSHER),
-    IM_T_ACTION = (1<<IM_T_JUMP)|(1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_MELEE)|(1<<IM_T_KICK)|(1<<IM_T_GRAB)|(1<<IM_T_PARKOUR)|(1<<IM_T_VAULT)|(1<<IM_T_POUND),
-    IM_T_COUNT  = (1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_PARKOUR)|(1<<IM_T_VAULT)|(1<<IM_T_POUND),
-    IM_T_CHECK  = (1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_PARKOUR)|(1<<IM_T_VAULT)|(1<<IM_T_POUND),
+    IM_T_ACTION = (1<<IM_T_JUMP)|(1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_MELEE)|(1<<IM_T_KICK)|(1<<IM_T_GRAB)|(1<<IM_T_PARKOUR)|(1<<IM_T_VAULT)|(1<<IM_T_POUND)|(1<<IM_T_AFTER)|(1<<IM_T_PUSHER),
+    IM_T_COUNT  = (1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_PARKOUR)|(1<<IM_T_POUND),
+    IM_T_CHECK  = (1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_PARKOUR)|(1<<IM_T_VAULT)|(1<<IM_T_POUND)|(1<<IM_T_AFTER)|(1<<IM_T_PUSHER),
     IM_T_TOUCH  = (1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH), IM_T_NOTOUCH = (1<<IM_T_BOOST), IM_T_RELAX  = (1<<IM_T_VAULT),
     IM_T_MVAI   = (1<<IM_T_JUMP)|(1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_MELEE)|(1<<IM_T_KICK)|(1<<IM_T_GRAB)|(1<<IM_T_PARKOUR)|(1<<IM_T_VAULT)|(1<<IM_T_POUND)|(1<<IM_T_AFTER)|(1<<IM_T_PUSHER),
     IM_T_LSAI   = (1<<IM_T_JUMP), IM_T_ROLLER = (1<<IM_T_JUMP)|(1<<IM_T_PARKOUR)|(1<<IM_T_VAULT),
@@ -1327,9 +1327,9 @@ struct gameent : dynent, clientstate
     editinfo *edit;
     ai::aiinfo *ai;
     int team, clientnum, privilege, projid, lastnode, cplast, respawned, suicided, lastupdate, lastpredict, plag, ping, lastflag, totaldamage,
-        actiontime[AC_MAX], impulse[IM_MAX], impulsetime[IM_T_MAX], smoothmillis, turnside, turnmillis, plchan[PLCHAN_MAX], wschan[WS_CHANS], sschan[2],
+        actiontime[AC_MAX], impulse[IM_MAX], impulsetime[IM_T_MAX], smoothmillis, turnside, turnmillis[3], turntime[3], plchan[PLCHAN_MAX], wschan[WS_CHANS], sschan[2],
         lasthit, lastteamhit, lastkill, lastattacker, lastpoints, quake, wasfiring, lastfoot, lastdir;
-    float deltayaw, deltapitch, newyaw, newpitch, stunscale, stungravity, turnyaw, turnroll, lastyaw, lastpitch;
+    float deltayaw, deltapitch, newyaw, newpitch, stunscale, stungravity, turnangle[3], lastyaw, lastpitch;
     bool action[AC_MAX], conopen, k_up, k_down, k_left, k_right, obliterated, headless;
     vec tag[TAG_MAX];
     vec2 rotvel;
@@ -1691,9 +1691,14 @@ struct gameent : dynent, clientstate
 
     void clearstate(int millis, int gamemode, int mutators)
     {
-        lasthit = lastkill = quake = turnside = turnmillis = 0;
+        lasthit = lastkill = quake = turnside = 0;
+        loopi(3)
+        {
+            turnmillis[i] = turntime[i] = 0;
+            turnangle[i] = 0.0f;
+        }
         lastteamhit = lastflag = respawned = suicided = lastnode = lastfoot = wasfiring = lastdir = -1;
-        turnyaw = turnroll = lastyaw = lastpitch = 0;
+        lastyaw = lastpitch = 0;
         rotvel = vec2(0);
         obit[0] = '\0';
         obliterated = headless = false;
@@ -2032,34 +2037,78 @@ struct gameent : dynent, clientstate
     }
 
 
-    bool hasparkour(int type = -1, bool check = false)
+    int getdash(bool len = false)
     {
-        if(type < 0) type = impulse[IM_TYPE];
-        return type == IM_T_PARKOUR || type == IM_T_VAULT || (check && type == IM_T_AFTER);
+        if(len && impulse[IM_TYPE] != IM_T_DASH) return 0;
+        if(!impulsetime[IM_T_DASH] || lastmillis - impulsetime[IM_T_DASH] > (len ? impulsedashlen : impulsedashdelay)) return 0;
+        return impulsetime[IM_T_DASH];
     }
 
-    void doimpulse(int type, int millis, int cost = 0, int side = 0, int turn = 0, float yaw = 0, float roll = 0)
+    int getvault(bool len = false)
+    {
+        if(impulse[IM_TYPE] != IM_T_VAULT) return 0;
+        if(!impulsetime[IM_T_VAULT] || lastmillis - impulsetime[IM_T_VAULT] > (len ? impulsevaultlen : impulsevaultdelay)) return 0;
+        return impulsetime[IM_T_VAULT];
+    }
+
+    int getparkour(bool len = true)
+    {
+        if(impulse[IM_TYPE] != IM_T_PARKOUR) return 0;
+        if(!impulsetime[IM_T_PARKOUR] || lastmillis - impulsetime[IM_T_PARKOUR] > (len ? impulseparkourlen : impulseparkourdelay)) return 0;
+        return impulsetime[IM_T_PARKOUR];
+    }
+
+    bool hasparkour(int type = -1, bool check = true)
+    {
+        if(type < 0) type = impulse[IM_TYPE];
+        return check ? getparkour() != 0 : type == IM_T_PARKOUR;
+    }
+
+    void updateturn(int side, float yaw = 0, int yawtime = 0, float pitch = 0, int pitchtime = 0, float roll = 0, int rolltime = 0)
+    {
+        turnside = side;
+
+        if(yawtime >= 0)
+        {
+            turnangle[0] = yaw;
+            turnmillis[0] = turntime[0] = yawtime;
+        }
+
+        if(pitchtime >= 0)
+        {
+            turnangle[1] = pitch;
+            turnmillis[1] = turntime[1] = pitchtime;
+        }
+
+        if(rolltime >= 0)
+        {
+            turnangle[2] = roll;
+            turnmillis[2] = turntime[2] = rolltime;
+        }
+    }
+
+    void doimpulse(int type, int millis, int cost = 0, int reset = 0)
     {
         if(type < 0 || type >= IM_T_MAX) return;
+
         if(cost)
         {
             if(type == IM_T_PUSHER) impulse[IM_PUSHER] = cost;
             else impulse[IM_METER] += cost;
         }
-        impulse[IM_SLIP] = impulsetime[type] = millis;
+
         impulse[IM_TYPE] = type;
+        impulse[IM_SLIP] = impulsetime[type] = millis;
+
         if(type != IM_T_JUMP && !impulsetime[IM_T_JUMP]) impulsetime[IM_T_JUMP] = millis;
         if(impulsecounttypes&(1<<type)) impulse[IM_COUNT]++;
-        if(type != IM_T_AFTER)
-        {
-            impulse[IM_REGEN] = millis;
-            if(type == IM_T_PUSHER) resetair(true);
-            else resetphys(true);
-        }
-        turnside = side;
-        turnmillis = turn;
-        turnyaw = yaw;
-        turnroll = roll;
+
+        impulse[IM_REGEN] = millis;
+        if(type == IM_T_PUSHER) resetair(true);
+        else resetphys(true);
+
+        if(reset&1) action[AC_JUMP] = false;
+        if(reset&2) action[AC_SPECIAL] = false;
     }
 
     bool delayimpulse(bool regen)
@@ -2194,7 +2243,7 @@ struct gameent : dynent, clientstate
     {
         if(G(impulseslidelen) && impulsetime[IM_T_SLIDE] && lastmillis-impulsetime[IM_T_SLIDE] <= G(impulseslidelen)) return true;
         if(!power && G(impulsesliplen) && impulse[IM_SLIP] && lastmillis-impulse[IM_SLIP] <= G(impulsesliplen)) return true;
-        return false;
+        return 0;
     }
 
     int zooming()
@@ -2633,7 +2682,7 @@ namespace game
     extern void respawn(gameent *d);
     extern void respawned(gameent *d, bool local, int ent = -1);
     extern void spawneffect(int type, const vec &pos, float radius, int colour, float size);
-    extern void impulseeffect(gameent *d, int effect = 0);
+    extern void impulseeffect(gameent *d, float gain = 1, int effect = 0);
     extern void suicide(gameent *d, int flags = 0);
     extern void getyawpitch(const vec &from, const vec &pos, float &yaw, float &pitch);
     extern void scaleyawpitch(float &yaw, float &pitch, float targyaw, float targpitch, float yawspeed = 1, float pitchspeed = 1, float rotate = 0);

@@ -1362,7 +1362,7 @@ namespace game
         return hasvolumetric;
     }
 
-    void impulseeffect(gameent *d, int effect)
+    void impulseeffect(gameent *d, float gain, int effect)
     {
         static fx::FxHandle impulsesound = fx::getfxhandle("FX_PLAYER_IMPULSE_SOUND");
         static fx::FxHandle impulsejet = fx::getfxhandle("FX_PLAYER_IMPULSE_JET");
@@ -1370,7 +1370,7 @@ namespace game
 
         switch(effect)
         {
-            case 0: fx::createfx(impulsesound).setentity(d); // fall through
+            case 0: fx::createfx(impulsesound).setparam(0, gain).setentity(d); // fall through
             case 1:
             {
                 if(!actors[d->actortype].jetfx || paused) break;
@@ -1495,7 +1495,7 @@ namespace game
                 }
             }
 
-            if(physics::movepitch(d) || d->hasparkour() || d->impulsetime[IM_T_JUMP] || d->sliding(true)) impulseeffect(d, 1);
+            if(physics::movepitch(d) || d->hasparkour() || d->impulsetime[IM_T_JUMP] || d->sliding(true)) impulseeffect(d, 1.f, 1);
         }
         else
         {
@@ -4160,9 +4160,10 @@ namespace game
                     case W_S_IDLE: case W_S_WAIT: default:
                     {
                         if(!d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators))) showweap = false;
-                        if(d->impulse[IM_TYPE] == IM_T_VAULT)
+                        int vaulttime = d->getvault();
+                        if(vaulttime)
                         {
-                            mdl.basetime = d->impulsetime[IM_T_VAULT];
+                            mdl.basetime = vaulttime;
                             mdl.anim = ANIM_VAULT;
                         }
                         else mdl.anim = weaptype[weap].anim|ANIM_LOOP;
@@ -4293,6 +4294,7 @@ namespace game
             {
                 // Test if the player is actually moving at a meaningful speed. This may not be the case if the player is running against a wall or another obstacle.
                 bool moving = fabsf(d->vel.x) > 5.0f || fabsf(d->vel.y) > 5.0f, turning = fabsf(d->rotvel.x) >= playerrotthresh * (d->crouching() ? 0.5f : 1.f);
+                int vaulttime = d->getvault(), parkourtime = d->getparkour(), dashtime = d->getdash();
 
                 if(physics::liquidcheck(d, 0.1f) && d->physstate <= PHYS_FALL)
                 {
@@ -4306,14 +4308,14 @@ namespace game
                     }
                     else mdl.anim |= ((d->move || d->strafe ? int(ANIM_SWIM) : int(ANIM_SINK))|ANIM_LOOP)<<ANIM_SECONDARY;
                 }
-                else if(d->impulse[IM_TYPE] == IM_T_VAULT)
+                else if(vaulttime)
                 {
-                    mdl.basetime2 = d->impulsetime[IM_T_VAULT];
+                    mdl.basetime2 = vaulttime;
                     mdl.anim |= ANIM_VAULT<<ANIM_SECONDARY;
                 }
-                else if(d->impulse[IM_TYPE] == IM_T_PARKOUR)
+                else if(parkourtime)
                 {
-                    mdl.basetime2 = d->impulsetime[IM_T_PARKOUR];
+                    mdl.basetime2 = parkourtime;
                     mdl.anim |= ((d->turnside > 0 ? ANIM_PARKOUR_LEFT : (d->turnside < 0 ? ANIM_PARKOUR_RIGHT : ANIM_PARKOUR_UP))|ANIM_LOOP)<<ANIM_SECONDARY;
                 }
                 else if(d->physstate == PHYS_FALL && !physics::laddercheck(d) && d->impulsetime[d->impulse[IM_TYPE]] && lastmillis-d->impulsetime[d->impulse[IM_TYPE]] <= 1000)
@@ -4352,14 +4354,9 @@ namespace game
                     else mdl.anim |= ANIM_JUMP<<ANIM_SECONDARY;
                     if(!mdl.basetime2) mdl.anim |= ANIM_END<<ANIM_SECONDARY;
                 }
-                else if(d->sliding(true))
+                else if(dashtime)
                 {
-                    mdl.basetime2 = d->slidetime(true);
-                    mdl.anim |= (ANIM_POWERSLIDE|ANIM_LOOP)<<ANIM_SECONDARY;
-                }
-                else if(d->impulsetime[IM_T_DASH] && lastmillis-d->impulsetime[IM_T_DASH] <= impulsedashdelay/2)
-                {
-                    mdl.basetime2 = d->impulsetime[IM_T_DASH];
+                    mdl.basetime2 = dashtime;
                     if(d->strafe) mdl.anim |= (d->strafe > 0 ? ANIM_BOOST_LEFT : ANIM_BOOST_RIGHT)<<ANIM_SECONDARY;
                     else if(d->move > 0) mdl.anim |= ANIM_BOOST_FORWARD<<ANIM_SECONDARY;
                     else if(d->move < 0) mdl.anim |= ANIM_BOOST_BACKWARD<<ANIM_SECONDARY;

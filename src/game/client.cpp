@@ -2276,8 +2276,7 @@ namespace client
                         {
                             if(!proceed) break;
                             t->doimpulse(IM_T_BOOST + (st - SPHY_BOOST), lastmillis);
-                            game::impulseeffect(t);
-                            if(st == SPHY_KICK || st == SPHY_MELEE) game::footstep(d);
+                            game::impulseeffect(t, st == SPHY_VAULT || st == SPHY_AFTER ? 0.5f : 1.f);
                             break;
                         }
                         case SPHY_EXTINGUISH:
