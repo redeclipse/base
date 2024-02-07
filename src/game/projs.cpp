@@ -688,11 +688,12 @@ namespace projs
         proj.vel = vec(dir).mul(mag);
         proj.falling = vec(0, 0, 0);
 
-        #define repel(x,r,z) \
+        #define repel(_x,_r,_z) \
         { \
-            if(overlapsbox(proj.o, r, r, x, r, r)) \
+            if(overlapsbox(proj.o, _r, _r, _x, _r, _r)) \
             { \
-                vec nrm = vec(proj.o).sub(x).normalize().mul(z); \
+                vec nrm = vec(proj.o).sub(_x).normalize().mul(_z); \
+                if(nrm.iszero() || nrm.z <= 0.f) nrm.z = nrm.z < 0.0f ? -nrm.z : 1; \
                 proj.vel.add(nrm); \
                 break; \
             } \
