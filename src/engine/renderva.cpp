@@ -622,7 +622,7 @@ static inline void rendermapmodelent(extentity &e, int n, bool tpass, bool spass
     entmodelstate mdl;
     mdl.o = e.o;
     mdl.flags = MDL_CULL_VFC|MDL_CULL_DIST;
-    if(spass) mdl.flags |= MDL_NOLOD;
+    if(spass) mdl.flags |= MDL_NOLODVIS;
     getmapmodelstate(e, mdl);
     if(!tpass) mdl.color.a = 1;
     rendermapmodel(e.attrs[0], mdl, tpass);
