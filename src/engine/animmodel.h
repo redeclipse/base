@@ -1755,8 +1755,9 @@ struct animmodel : model
     virtual void startload() {}
     virtual void endload() {}
 
-    bool load()
+    bool load(model *parent)
     {
+        parentlod = parent;
         startload();
         bool success = loadconfig() && parts.length(); // configured model, will call the model commands below
         if(!success)

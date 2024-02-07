@@ -614,7 +614,7 @@ void getmapmodelstate(extentity &e, entmodelstate &mdl)
     if(e.attrs[19] > 0) mdl.speed = 1/float(e.attrs[19]/100.f);
 }
 
-static inline void rendermapmodelent(extentity &e, int n, bool tpass)
+static inline void rendermapmodelent(extentity &e, int n, bool tpass, bool spass = false)
 {
     if(!mapmodelvisible(e, n)) return;
     bool blended = mapmodeltransparent(e);
@@ -622,6 +622,7 @@ static inline void rendermapmodelent(extentity &e, int n, bool tpass)
     entmodelstate mdl;
     mdl.o = e.o;
     mdl.flags = MDL_CULL_VFC|MDL_CULL_DIST;
+    if(spass) mdl.flags |= MDL_NOLOD;
     getmapmodelstate(e, mdl);
     if(!tpass) mdl.color.a = 1;
     rendermapmodel(e.attrs[0], mdl, tpass);
@@ -1264,7 +1265,7 @@ void batchshadowmapmodels(bool skipmesh)
     {
         extentity &e = *ents[oe->mapmodels[j]];
         if(!(e.flags&EF_RENDER)) continue;
-        rendermapmodelent(e, oe->mapmodels[j], false);
+        rendermapmodelent(e, oe->mapmodels[j], false, true);
         e.flags &= ~EF_RENDER;
     }
 }
