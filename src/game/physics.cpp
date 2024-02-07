@@ -1015,20 +1015,6 @@ namespace physics
                                 break;
                             }
                             d->o = oldpos;
-                            if(side && (testcollide || collideinside))
-                            {
-                                back.rotate_around_z(-side * 90.0f * RAD);
-                                loopk(8)
-                                {
-                                    d->o.sub(back);
-                                    testcollide = collide(d, rft);
-                                    if(testcollide || collideinside) continue;
-                                    d->o.sub(back);
-                                    oldpos = d->o;
-                                    break;
-                                }
-                                d->o = oldpos;
-                            }
                         }
 
                         if(!haswallrun && (testcollide || collideinside)) continue; // it'll just result in a wasted move otherwise
