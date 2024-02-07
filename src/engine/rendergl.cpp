@@ -2718,7 +2718,6 @@ void gl_drawhud(bool noview = false)
     }
     else visorx = visory = visoroffx = visoroffy = 0;
 
-    int curw = hudw, curh = hudh;
     if(engineready)
     {
         loopi(4)
@@ -2727,14 +2726,11 @@ void gl_drawhud(bool noview = false)
 
             glBindFramebuffer_(GL_FRAMEBUFFER, visorfbo);
 
-            curw = visorw;
-            curh = visorh;
-
-            glViewport(0, 0, curw, curh);
+            glViewport(0, 0, hudw, hudh);
             glClearColor(0, 0, 0, 0);
             glClear(GL_COLOR_BUFFER_BIT);
 
-            hudmatrix.ortho(0, curw, curh, 0, -1, 1);
+            hudmatrix.ortho(0, hudw, hudh, 0, -1, 1);
             flushhudmatrix();
             resethudshader();
 
@@ -2748,7 +2744,7 @@ void gl_drawhud(bool noview = false)
                 {
                     UI::render(SURFACE_BACKGROUND, visorfbo);
 
-                    hud::startrender(curw, curh, wantvisor, noview, visorfbo);
+                    hud::startrender(hudw, hudh, wantvisor, noview, visorfbo);
 
                     break;
                 }
@@ -2771,7 +2767,7 @@ void gl_drawhud(bool noview = false)
                     if(progressing && wantvisor) UI::render(SURFACE_PROGRESS, visorfbo);
                     else UI::render(SURFACE_VISOR, visorfbo);
 
-                    hud::visorrender(curw, curh, wantvisor, noview, visorfbo);
+                    hud::visorrender(hudw, hudh, wantvisor, noview, visorfbo);
 
                     break;
                 }
@@ -2780,13 +2776,13 @@ void gl_drawhud(bool noview = false)
                     if(progressing && !wantvisor) UI::render(SURFACE_PROGRESS, visorfbo);
                     else UI::render(SURFACE_FOREGROUND, visorfbo);
 
-                    hud::endrender(curw, curh, wantvisor, noview, visorfbo);
+                    hud::endrender(hudw, hudh, wantvisor, noview, visorfbo);
 
-                    hudmatrix.ortho(0, curw, curh, 0, -1, 1);
+                    hudmatrix.ortho(0, hudw, hudh, 0, -1, 1);
                     flushhudmatrix();
                     resethudshader();
 
-                    hud::drawpointers(curw, curh, getcursorx(), getcursory());
+                    hud::drawpointers(hudw, hudh, getcursorx(), getcursory());
 
                     break;
                 }
@@ -2810,7 +2806,7 @@ void gl_drawhud(bool noview = false)
             else SETSHADER(hudvisor);
 
             LOCALPARAMF(time, lastmillis / 1000.f);
-            LOCALPARAMF(visorsize, visorw, visorh, 1.f/visorw, 1.f/visorh);
+            LOCALPARAMF(visorsize, hudw, hudh, 1.f/hudw, 1.f/hudh);
 
             if(visorscansurfaces&(1<<i))
             {
@@ -2828,8 +2824,8 @@ void gl_drawhud(bool noview = false)
 
             gle::colorf(1, 1, 1, 1);
             glBindTexture(GL_TEXTURE_RECTANGLE, visortex);
-            if(visortiltsurfaces&(1<<i)) debugquad(visoroffx, visoroffy, hudw, hudh, 0, 0, visorw, visorh);
-            else debugquad(0, 0, hudw, hudh, 0, 0, visorw, visorh);
+            if(visortiltsurfaces&(1<<i)) debugquad(visoroffx, visoroffy, hudw, hudh, 0, 0, hudw, hudh);
+            else debugquad(0, 0, hudw, hudh, 0, 0, hudw, hudh);
 
             glDisable(GL_BLEND);
         }
