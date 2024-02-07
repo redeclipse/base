@@ -278,20 +278,21 @@ enum
 
 enum
 {
-    IM_T_JUMP = 0, IM_T_BOOST, IM_T_DASH, IM_T_SLIDE, IM_T_LAUNCH, IM_T_MELEE, IM_T_KICK, IM_T_GRAB, IM_T_PARKOUR, IM_T_VAULT, IM_T_POUND, IM_T_AFTER, IM_T_PUSHER, IM_T_MAX,
-    IM_T_ALL    = (1<<IM_T_JUMP)|(1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_MELEE)|(1<<IM_T_KICK)|(1<<IM_T_GRAB)|(1<<IM_T_PARKOUR)|(1<<IM_T_VAULT)|(1<<IM_T_POUND)|(1<<IM_T_AFTER)|(1<<IM_T_PUSHER),
-    IM_T_ACTION = (1<<IM_T_JUMP)|(1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_MELEE)|(1<<IM_T_KICK)|(1<<IM_T_GRAB)|(1<<IM_T_PARKOUR)|(1<<IM_T_VAULT)|(1<<IM_T_POUND)|(1<<IM_T_AFTER)|(1<<IM_T_PUSHER),
-    IM_T_COUNT  = (1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_PARKOUR)|(1<<IM_T_POUND),
-    IM_T_CHECK  = (1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_PARKOUR)|(1<<IM_T_VAULT)|(1<<IM_T_POUND)|(1<<IM_T_AFTER)|(1<<IM_T_PUSHER),
+    IM_T_JUMP = 0, IM_T_BOOST, IM_T_DASH, IM_T_SLIDE, IM_T_LAUNCH, IM_T_MELEE, IM_T_KICK, IM_T_GRAB, IM_T_WALLRUN, IM_T_VAULT, IM_T_POUND, IM_T_PUSHER, IM_T_MAX,
+    IM_T_ALL    = (1<<IM_T_JUMP)|(1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_MELEE)|(1<<IM_T_KICK)|(1<<IM_T_GRAB)|(1<<IM_T_WALLRUN)|(1<<IM_T_VAULT)|(1<<IM_T_POUND)|(1<<IM_T_PUSHER),
+    IM_T_ACTION = (1<<IM_T_JUMP)|(1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_MELEE)|(1<<IM_T_KICK)|(1<<IM_T_GRAB)|(1<<IM_T_WALLRUN)|(1<<IM_T_VAULT)|(1<<IM_T_POUND)|(1<<IM_T_PUSHER),
+    IM_T_PUSH   = (1<<IM_T_JUMP)|(1<<IM_T_BOOST)|(1<<IM_T_PUSHER),
+    IM_T_COUNT  = (1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_WALLRUN)|(1<<IM_T_POUND),
+    IM_T_CHECK  = (1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_WALLRUN)|(1<<IM_T_VAULT)|(1<<IM_T_POUND)|(1<<IM_T_PUSHER),
     IM_T_TOUCH  = (1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH), IM_T_NOTOUCH = (1<<IM_T_BOOST), IM_T_RELAX  = (1<<IM_T_VAULT),
-    IM_T_MVAI   = (1<<IM_T_JUMP)|(1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_MELEE)|(1<<IM_T_KICK)|(1<<IM_T_GRAB)|(1<<IM_T_PARKOUR)|(1<<IM_T_VAULT)|(1<<IM_T_POUND)|(1<<IM_T_AFTER)|(1<<IM_T_PUSHER),
-    IM_T_LSAI   = (1<<IM_T_JUMP), IM_T_ROLLER = (1<<IM_T_JUMP)|(1<<IM_T_PARKOUR)|(1<<IM_T_VAULT),
+    IM_T_MVAI   = (1<<IM_T_JUMP)|(1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_MELEE)|(1<<IM_T_KICK)|(1<<IM_T_GRAB)|(1<<IM_T_WALLRUN)|(1<<IM_T_VAULT)|(1<<IM_T_POUND)|(1<<IM_T_PUSHER),
+    IM_T_LSAI   = (1<<IM_T_JUMP), IM_T_ROLLER = (1<<IM_T_JUMP)|(1<<IM_T_WALLRUN)|(1<<IM_T_VAULT),
 };
 
 enum
 {
     SPHY_JUMP = 0, SPHY_BOOST, SPHY_DASH, SPHY_SLIDE, SPHY_LAUNCH, SPHY_MELEE, SPHY_KICK, SPHY_GRAB,
-    SPHY_PARKOUR, SPHY_VAULT, SPHY_POUND, SPHY_AFTER, SPHY_MATERIAL, SPHY_PRIZE,
+    SPHY_WALLRUN, SPHY_VAULT, SPHY_POUND, SPHY_MATERIAL, SPHY_PRIZE, SPHY_SWITCH,
     SPHY_SERVER, SPHY_EXTINGUISH = SPHY_SERVER, SPHY_BUFF,
     SPHY_MAX
 };
@@ -2018,28 +2019,22 @@ struct gameent : dynent, clientstate
         return &tag[idx];
     }
 
-    void resetjump(bool wait = false)
+    void resetjump()
     {
         airmillis = turnside = 0;
         if(!impulsecostcount) impulse[IM_COUNT] = 0;
         impulsetime[IM_T_JUMP] = 0;
-        if(!wait)
-        {
-            impulse[IM_TYPE] = IM_T_JUMP;
-            impulsetime[IM_T_PUSHER] = 0;
-        }
     }
 
-    void resetair(bool wait = false)
+    void resetair()
     {
         resetphys();
-        resetjump(wait);
+        resetjump();
     }
-
 
     int getdash(bool len = false)
     {
-        if(len && impulse[IM_TYPE] != IM_T_DASH) return 0;
+        if(impulse[IM_TYPE] != IM_T_DASH) return 0;
         if(!impulsetime[IM_T_DASH] || lastmillis - impulsetime[IM_T_DASH] > (len ? impulsedashlen : impulsedashdelay)) return 0;
         return impulsetime[IM_T_DASH];
     }
@@ -2051,17 +2046,22 @@ struct gameent : dynent, clientstate
         return impulsetime[IM_T_VAULT];
     }
 
+    int getwallrun(bool len = true)
+    {
+        if(impulse[IM_TYPE] != IM_T_WALLRUN) return 0;
+        if(!impulsetime[IM_T_WALLRUN] || lastmillis - impulsetime[IM_T_WALLRUN] > (len ? impulsewallrunlen : impulsewallrundelay)) return 0;
+        return impulsetime[IM_T_WALLRUN];
+    }
+
     int getparkour(bool len = true)
     {
-        if(impulse[IM_TYPE] != IM_T_PARKOUR) return 0;
-        if(!impulsetime[IM_T_PARKOUR] || lastmillis - impulsetime[IM_T_PARKOUR] > (len ? impulseparkourlen : impulseparkourdelay)) return 0;
-        return impulsetime[IM_T_PARKOUR];
+        return max(getwallrun(len), getdash(len));
     }
 
     bool hasparkour(int type = -1, bool check = true)
     {
         if(type < 0) type = impulse[IM_TYPE];
-        return check ? getparkour() != 0 : type == IM_T_PARKOUR;
+        return check ? getwallrun() != 0 || getdash() != 0 : type == IM_T_WALLRUN || type == IM_T_DASH;
     }
 
     void updateturn(int side, float yaw = 0, int yawtime = 0, float pitch = 0, int pitchtime = 0, float roll = 0, int rolltime = 0)
@@ -2101,50 +2101,67 @@ struct gameent : dynent, clientstate
         impulse[IM_SLIP] = impulsetime[type] = millis;
 
         if(type != IM_T_JUMP && !impulsetime[IM_T_JUMP]) impulsetime[IM_T_JUMP] = millis;
-        if(impulsecounttypes&(1<<type)) impulse[IM_COUNT]++;
+        if(cost && impulsecounttypes&(1<<type)) impulse[IM_COUNT]++;
 
         impulse[IM_REGEN] = millis;
-        if(type == IM_T_PUSHER) resetair(true);
-        else resetphys(true);
+        if(type == IM_T_PUSHER) resetair();
+        else resetphys();
 
         if(reset&1) action[AC_JUMP] = false;
         if(reset&2) action[AC_SPECIAL] = false;
     }
 
-    bool delayimpulse(bool regen)
+    bool delayimpulse(int type = -1, bool regen = false)
     {
+        int mask = IM_T_ALL;
+
+        switch(type)
+        {
+            case IM_T_BOOST: mask = impulseboostcheck; break;
+            case IM_T_DASH: mask = impulsedashcheck; break;
+            case IM_T_SLIDE: mask = impulseslidecheck; break;
+            case IM_T_LAUNCH: mask = impulselaunchcheck; break;
+            case IM_T_MELEE: mask = impulsemeleecheck; break;
+            case IM_T_KICK: mask = impulsekickcheck; break;
+            case IM_T_GRAB: mask = impulsegrabcheck; break;
+            case IM_T_WALLRUN: mask = impulsewallruncheck;; break;
+            case IM_T_VAULT: mask = impulsevaultcheck; break;
+            case IM_T_POUND: mask = impulsepoundcheck; break;
+            case IM_T_PUSHER: mask = IM_T_ACTION; break;
+            case IM_T_JUMP: mask = impulsejumpcheck; break;
+            default: break;
+        }
+
         loopi(IM_T_MAX)
         {
-            if(!impulsetime[i]) continue;
-            int check = 0, delay = 0;
+            if(!impulsetime[i] || !(mask&(1<<i))) continue;
+            int delay = 0;
             switch(i)
             {
-                case IM_T_BOOST: check = impulseboostcheck; delay = impulseboostdelay; break;
-                case IM_T_DASH: check = impulsedashcheck; delay = impulsedashdelay; break;
-                case IM_T_SLIDE: check = impulseslidecheck; delay = impulseslidedelay; break;
-                case IM_T_LAUNCH: check = impulselaunchcheck; delay = impulselaunchdelay; break;
-                case IM_T_MELEE: check = impulsemeleecheck; delay = impulsemeleedelay; break;
-                case IM_T_KICK: check = impulsekickcheck; delay = impulsekickdelay; break;
-                case IM_T_GRAB: check = impulsegrabcheck; delay = impulsegrabdelay; break;
-                case IM_T_PARKOUR: check = impulseparkourcheck; delay = impulseparkourdelay; break;
-                case IM_T_VAULT: check = impulsevaultcheck; delay = impulsevaultdelay; break;
-                case IM_T_POUND: check = impulsepoundcheck; delay = impulsepounddelay; break;
+                case IM_T_BOOST: delay = impulseboostdelay; break;
+                case IM_T_DASH: delay = impulsedashdelay; break;
+                case IM_T_SLIDE: delay = impulseslidedelay; break;
+                case IM_T_LAUNCH: delay = impulselaunchdelay; break;
+                case IM_T_MELEE: delay = impulsemeleedelay; break;
+                case IM_T_KICK: delay = impulsekickdelay; break;
+                case IM_T_GRAB: delay = impulsegrabdelay; break;
+                case IM_T_WALLRUN: delay = impulsewallrundelay; break;
+                case IM_T_VAULT: delay = impulsevaultdelay; break;
+                case IM_T_POUND: delay = impulsepounddelay; break;
                 case IM_T_PUSHER: delay = impulse[IM_PUSHER]; break;
-                case IM_T_AFTER: continue; // no delay
                 case IM_T_JUMP: default:
                     if(regen) continue; // jump doesn't inhibit regen
-                    check = impulsejumpcheck;
                     delay = impulsejumpdelay;
                     break;
             }
-            if(check&(1<<i) && lastmillis - impulsetime[i] < delay) return false;
+            if(delay > 0 && lastmillis - impulsetime[i] < delay) return false;
         }
         return true;
     }
 
     bool regenimpulse()
     {
-        if(!isalive() || !delayimpulse(true)) return false;
+        if(!isalive() || !delayimpulse(-1, true)) return false;
         if(impulseregendelay && lastmillis - impulse[IM_REGEN] < impulseregendelay) return false;
         return (impulsecostcount && impulse[IM_COUNT] > 0) || (impulsecostmeter && impulse[IM_METER] > 0);
     }
@@ -2154,7 +2171,7 @@ struct gameent : dynent, clientstate
         if(!(A(actortype, impulse)&(1<<type))) return false;
         if(PHYS(gravity) != 0 && impulsetouchchecks&(1<<type) && impulsetouchtypes&(1<<impulse[IM_TYPE])) return false;
         if(impulsecounttypes&(1<<type) && impulse[IM_COUNT] >= impulsecount) return false;
-        return delayimpulse(false);
+        return delayimpulse(type);
     }
 
     void setname(const char *n)
@@ -2195,7 +2212,7 @@ struct gameent : dynent, clientstate
     bool hasmelee(int millis, bool check = true)
     {
         if(!(A(actortype, abilities)&(1<<A_A_MELEE))) return false;
-        if(check && ((weapstate[W_MELEE] != W_S_PRIMARY && weapstate[W_MELEE] != W_S_SECONDARY) || millis-weaptime[W_MELEE] >= weapwait[W_MELEE])) return false;
+        if(check && ((weapstate[W_MELEE] != W_S_PRIMARY && weapstate[W_MELEE] != W_S_SECONDARY) || millis - weaptime[W_MELEE] >= weapwait[W_MELEE])) return false;
         return true;
     }
 
@@ -2228,21 +2245,14 @@ struct gameent : dynent, clientstate
 
     bool running(float minspeed = 0)
     {
-        if(minspeed != 0 && vel.magnitude() >= speed*0.5f*minspeed) return true;
-        return sliding(true) || (!action[AC_WALK] && !crouching());
+        if(minspeed != 0 && vel.magnitude() >= speed * 0.5f * minspeed) return true;
+        return getslide(true) != 0 || (!action[AC_WALK] && !crouching());
     }
 
-    int slidetime(bool power = false)
+    int getslide(bool power = false)
     {
-        if(G(impulseslidelen) && impulsetime[IM_T_SLIDE] && lastmillis-impulsetime[IM_T_SLIDE] <= G(impulseslidelen)) return impulsetime[IM_T_SLIDE];
-        if(!power && G(impulsesliplen) && impulse[IM_SLIP] && lastmillis-impulse[IM_SLIP] <= G(impulsesliplen)) return impulse[IM_SLIP];
-        return 0;
-    }
-
-    bool sliding(bool power = false)
-    {
-        if(G(impulseslidelen) && impulsetime[IM_T_SLIDE] && lastmillis-impulsetime[IM_T_SLIDE] <= G(impulseslidelen)) return true;
-        if(!power && G(impulsesliplen) && impulse[IM_SLIP] && lastmillis-impulse[IM_SLIP] <= G(impulsesliplen)) return true;
+        if(G(impulseslidelen) && impulsetime[IM_T_SLIDE] && lastmillis - impulsetime[IM_T_SLIDE] <= G(impulseslidelen)) return impulsetime[IM_T_SLIDE];
+        if(!power && G(impulsesliplen) && impulse[IM_SLIP] && lastmillis - impulse[IM_SLIP] <= G(impulsesliplen)) return impulse[IM_SLIP];
         return 0;
     }
 

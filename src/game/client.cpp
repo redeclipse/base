@@ -2272,11 +2272,13 @@ namespace client
                             fx::createfx(fx).setentity(t).setcolor(bvec(game::getcolour(t)));
                             break;
                         }
-                        case SPHY_BOOST: case SPHY_DASH: case SPHY_POUND: case SPHY_SLIDE: case SPHY_LAUNCH: case SPHY_MELEE: case SPHY_KICK: case SPHY_GRAB: case SPHY_PARKOUR: case SPHY_VAULT: case SPHY_AFTER:
+                        case SPHY_BOOST: case SPHY_DASH: case SPHY_POUND: case SPHY_SLIDE: case SPHY_LAUNCH: case SPHY_MELEE: case SPHY_KICK: case SPHY_GRAB: case SPHY_WALLRUN: case SPHY_VAULT:
                         {
+                            int param = st == SPHY_VAULT ? 0 : 1;
+                            if(st == SPHY_WALLRUN) param = getint(p);
                             if(!proceed) break;
                             t->doimpulse(IM_T_BOOST + (st - SPHY_BOOST), lastmillis);
-                            game::impulseeffect(t, st == SPHY_VAULT || st == SPHY_AFTER ? 0.5f : 1.f);
+                            if(param != 0) game::impulseeffect(t);
                             break;
                         }
                         case SPHY_EXTINGUISH:
@@ -3999,6 +4001,7 @@ namespace client
 
     CLCOMMAND(move, intret(d->move));
     CLCOMMAND(strafe, intret(d->strafe));
+    CLCOMMAND(physstate, intret(d->physstate));
     CLCOMMAND(turnside, intret(d->turnside));
     CLCOMMAND(physstate, intret(d->physstate));
     CLCOMMAND(lastdeath, intret(d->lastdeath));
@@ -4007,7 +4010,9 @@ namespace client
     CLCOMMAND(lastshoot, intret(d->lastshoot));
     CLCOMMAND(lastattacker, intret(d->lastattacker));
     CLCOMMAND(airmillis, intret(d->airmillis));
+    CLCOMMAND(airtime, intret(d->airtime(lastmillis)));
     CLCOMMAND(floormillis, intret(d->floormillis));
+    CLCOMMAND(floortime, intret(d->floortime(lastmillis)));
     CLCOMMAND(inmaterial, intret(d->inmaterial));
     CLCOMMAND(inliquid, intret(isliquid(d->inmaterial&MATF_VOLUME) ? 1 : 0));
     CLCOMMAND(hasliquid, intret(physics::liquidcheck(d) ? 1 : 0));

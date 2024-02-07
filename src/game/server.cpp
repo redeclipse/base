@@ -6924,6 +6924,7 @@ namespace server
                             setprize(cp, G(janitorprize));
                             break;
                         }
+                        case SPHY_WALLRUN: getint(p); // eat the data
                         default:
                         {
                             if(!proceed || cp->state != CS_ALIVE || idx >= SPHY_SERVER) break;

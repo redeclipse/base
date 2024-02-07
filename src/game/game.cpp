@@ -822,7 +822,7 @@ namespace game
     void addsway(gameent *d)
     {
         float speed = physics::movevelocity(d), step = firstpersonbob ? firstpersonbobstep : firstpersonswaystep;
-        bool bobbed = false, sliding = d->sliding(true);
+        bool bobbed = false, sliding = d->getslide(true) != 0;
         if(d->state == CS_ALIVE && (d->physstate >= PHYS_SLOPE || physics::sticktospecial(d) || sliding))
         {
             float mag = d->vel.magnitude();
@@ -1432,7 +1432,7 @@ namespace game
         {
             if(!physics::movepitch(d))
             {
-                bool sliding = d->sliding(true), crouching = sliding || (d->action[AC_CROUCH] && A(d->actortype, abilities)&(1<<A_A_CROUCH)),
+                bool sliding = d->getslide(true) != 0, crouching = sliding || (d->action[AC_CROUCH] && A(d->actortype, abilities)&(1<<A_A_CROUCH)),
                     moving = d->move || d->strafe || (d->physstate < PHYS_SLOPE && !physics::laddercheck(d)), ishi = moving && !sliding;
                 float zradlo = d->zradius*CROUCHLOW, zradhi = d->zradius*CROUCHHIGH, zrad = ishi ? zradhi : zradlo;
                 vec old = d->o;
@@ -1495,7 +1495,7 @@ namespace game
                 }
             }
 
-            if(physics::movepitch(d) || d->hasparkour() || d->impulsetime[IM_T_JUMP] || d->sliding(true)) impulseeffect(d, 1.f, 1);
+            if(physics::movepitch(d) || d->hasparkour() || d->impulsetime[IM_T_JUMP] || d->getslide(true) != 0) impulseeffect(d, 1.f, 1);
         }
         else
         {
@@ -1505,42 +1505,46 @@ namespace game
 
         d->o.z += d->airmillis ? offset : d->height;
         float feetz = d->feetpos().z;
-        if(feetz < minz) d->o.z += minz-feetz; // ensure player doesn't end up lower than they were
+        if(feetz < minz) d->o.z += minz - feetz; // ensure player doesn't end up lower than they were
 
         bool collectcount = false, collectmeter = false;
         if(d->regenimpulse())
         {
             bool onfloor = d->physstate >= PHYS_SLOPE || physics::sticktospecial(d, false) || physics::liquidcheck(d); // collect time until we are able to act upon it
 
-            #define IMPULSEMOD(name, type, check, body) \
-                if(impulsecost##name && d->impulse[IM_##type] > 0) \
+            #define IMPULSEMOD(name, type, test, check, body) \
+            { \
+                if(impulsecost##name && (test)) \
                 { \
                     float skew = 1; \
                     if(d->running()) skew *= impulseregen##name##run; \
                     if(skew > 0 && (d->move || d->strafe)) skew *= impulseregen##name##move; \
-                    if(skew > 0 && ((!onfloor && PHYS(gravity) > 0) || d->sliding())) skew *= impulseregen##name##inair; \
-                    if(skew > 0 && onfloor && d->crouching() && !d->sliding()) skew *= impulseregen##name##crouch; \
-                    if(skew > 0 && d->hasparkour()) skew *= impulseregen##name##parkour; \
-                    if(skew > 0 && d->sliding()) skew *= impulseregen##name##slide; \
-                    if(skew > 0) \
+                    if(skew > 0 && ((!onfloor && PHYS(gravity) > 0) || d->getslide() != 0)) skew *= impulseregen##name##inair; \
+                    if(skew > 0 && onfloor && d->crouching() && d->getslide() == 0) skew *= impulseregen##name##crouch; \
+                    if(skew > 0 && d->getwallrun() != 0) skew *= impulseregen##name##wallrun; \
+                    if(skew > 0 && d->getvault() != 0) skew *= impulseregen##name##vault; \
+                    if(skew > 0 && d->getdash() != 0) skew *= impulseregen##name##dash; \
+                    if(skew > 0 && d->getslide() != 0) skew *= impulseregen##name##slide; \
+                    int timeslice = int(ceilf((curtime + d->impulse[IM_COLLECT_##type]) * skew)); \
+                    if(check) { body; } \
+                    else \
                     { \
-                        int timeslice = int((curtime + d->impulse[IM_COLLECT_##type]) * skew); \
-                        if(check) { body; } \
-                        else d->impulse[IM_COLLECT_##type] += curtime; \
+                        d->impulse[IM_COLLECT_##type] += curtime; \
                         if(!d->impulse[IM_LASTCOL_##type]) d->impulse[IM_LASTCOL_##type] = lastmillis; \
                         collect##name = true; \
                     } \
-                }
+                } \
+            }
 
-            IMPULSEMOD(count, COUNT, timeslice >= impulsecostcount,
+            IMPULSEMOD(count, COUNT, d->impulse[IM_COUNT] > 0, timeslice >= impulsecostcount,
                 while(timeslice >= impulsecostcount && d->impulse[IM_COUNT] > 0)
                 {
                     timeslice -= impulsecostcount;
                     d->impulse[IM_COUNT]--;
                 }
-                d->impulse[IM_COLLECT_COUNT] = int(timeslice / skew);
+                d->impulse[IM_COLLECT_COUNT] = int(ceilf(timeslice / skew));
             );
-            IMPULSEMOD(meter, METER, timeslice > 0,
+            IMPULSEMOD(meter, METER, d->impulse[IM_METER] > 0, timeslice > 0,
                 d->impulse[IM_METER] = max(d->impulse[IM_METER] - timeslice, 0);
                 d->impulse[IM_COLLECT_METER] = 0;
             );
@@ -1685,7 +1689,7 @@ namespace game
         if(d->state != CS_ALIVE) return;
         vec pos = d->feetpos();
 
-        if(d->impulse[IM_TYPE] != IM_T_PARKOUR && (d->physstate >= PHYS_SLOPE || physics::sticktospecial(d, false) || physics::liquidcheck(d)) && pos.z > 0 && d->floortime(lastmillis))
+        if(d->getwallrun() == 0 && (d->physstate >= PHYS_SLOPE || physics::sticktospecial(d, false) || physics::liquidcheck(d)) && pos.z > 0 && d->floortime(lastmillis))
         {
             int mat = lookupmaterial(pos);
             if(!isclipped(mat&MATF_VOLUME) && !(mat&MAT_DEATH)) d->floorpos = pos;
@@ -4250,9 +4254,10 @@ namespace game
                 if(!firstpersoncamera && gs_playing(gamestate) && firstpersonsway)
                     calchwepsway(d, mdl);
 
-                if(d->sliding(true) && firstpersonslidetime && firstpersonslideroll != 0)
+                int slidetime = d->getslide(true);
+                if(slidetime != 0 && firstpersonslidetime && firstpersonslideroll != 0)
                 {
-                    int dur = min(impulseslidelen/2, firstpersonslidetime), millis = lastmillis-d->slidetime();
+                    int dur = min(impulseslidelen/2, firstpersonslidetime), millis = lastmillis - slidetime;
                     float amt = 1;
                     if(millis > dur)
                     {
@@ -4294,7 +4299,8 @@ namespace game
             {
                 // Test if the player is actually moving at a meaningful speed. This may not be the case if the player is running against a wall or another obstacle.
                 bool moving = fabsf(d->vel.x) > 5.0f || fabsf(d->vel.y) > 5.0f, turning = fabsf(d->rotvel.x) >= playerrotthresh * (d->crouching() ? 0.5f : 1.f);
-                int vaulttime = d->getvault(), parkourtime = d->getparkour(), dashtime = d->getdash();
+                int vaulttime = d->getvault(), dashtime = d->getdash(), slidetime = d->getslide(true), parkourtime = d->getwallrun(),
+                    impulsetime = d->impulse[IM_TYPE] >= 0 && d->impulse[IM_TYPE] < IM_MAX ? d->impulsetime[d->impulse[IM_TYPE]] : 0;
 
                 if(physics::liquidcheck(d, 0.1f) && d->physstate <= PHYS_FALL)
                 {
@@ -4318,9 +4324,9 @@ namespace game
                     mdl.basetime2 = parkourtime;
                     mdl.anim |= ((d->turnside > 0 ? ANIM_PARKOUR_LEFT : (d->turnside < 0 ? ANIM_PARKOUR_RIGHT : ANIM_PARKOUR_UP))|ANIM_LOOP)<<ANIM_SECONDARY;
                 }
-                else if(d->physstate == PHYS_FALL && !physics::laddercheck(d) && d->impulsetime[d->impulse[IM_TYPE]] && lastmillis-d->impulsetime[d->impulse[IM_TYPE]] <= 1000)
+                else if(d->physstate == PHYS_FALL && !physics::laddercheck(d) && impulsetime && lastmillis - impulsetime <= 1000)
                 {
-                    mdl.basetime2 = d->impulsetime[d->impulse[IM_TYPE]];
+                    mdl.basetime2 = impulsetime;
                     if(d->impulse[IM_TYPE] == IM_T_KICK || d->impulse[IM_TYPE] == IM_T_GRAB) mdl.anim |= ANIM_PARKOUR_JUMP<<ANIM_SECONDARY;
                     else if(d->action[AC_SPECIAL] || d->impulse[IM_TYPE] == IM_T_POUND)
                     {
@@ -4361,6 +4367,11 @@ namespace game
                     else if(d->move > 0) mdl.anim |= ANIM_BOOST_FORWARD<<ANIM_SECONDARY;
                     else if(d->move < 0) mdl.anim |= ANIM_BOOST_BACKWARD<<ANIM_SECONDARY;
                     else mdl.anim |= ANIM_BOOST_UP<<ANIM_SECONDARY;
+                }
+                else if(slidetime)
+                {
+                    mdl.basetime2 = slidetime;
+                    mdl.anim |= (ANIM_POWERSLIDE|ANIM_LOOP)<<ANIM_SECONDARY;
                 }
                 else if(d->crouching())
                 {

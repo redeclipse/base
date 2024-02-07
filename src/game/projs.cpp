@@ -1457,7 +1457,7 @@ namespace projs
                 if(d == game::focus) game::swaypush.add(vec(kick).mul(kickpushsway));
                 float kickmod = kickpushscale;
                 if(W2(weap, cooked, WS(flags))&W_C_ZOOM && WS(flags)) kickmod *= kickpushzoom;
-                if(d->crouching() && !d->sliding(true)) kickmod *= kickpushcrouch;
+                if(d->crouching() && d->getslide(true) != 0) kickmod *= kickpushcrouch;
                 d->vel.add(vec(kick).mul(kickmod));
             }
         }
@@ -1781,7 +1781,7 @@ namespace projs
             }
 
             if(proj.projtype == PROJ_SHOT && (WF(WK(proj.flags), proj.weap, grab, WS(proj.flags))&(d ? 2 : 1)) && gameent::is(d)
-                && (proj.owner == game::player1 || proj.owner->ai) && proj.owner->state == CS_ALIVE && (d || fabs(proj.norm.z) <= impulseparkournorm))
+                && (proj.owner == game::player1 || proj.owner->ai) && proj.owner->state == CS_ALIVE && (d || fabs(proj.norm.z) <= impulsewallrunnorm))
             {
                 gameent *e = (gameent *)proj.owner;
                 if(e->canimpulse(IM_T_GRAB))
@@ -1807,10 +1807,9 @@ namespace projs
                             default: break;
                         }
                         e->vel = vec(yaw*RAD, pitch*RAD).mul(mag).add(keepvel);
-                        e->doimpulse(IM_T_GRAB, lastmillis, cost, 0);
+                        e->doimpulse(IM_T_GRAB, lastmillis, cost);
                         client::addmsg(N_SPHY, "ri2", e->clientnum, SPHY_GRAB);
                         game::impulseeffect(e);
-                        game::footstep(e);
                     }
                 }
             }

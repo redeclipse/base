@@ -36,7 +36,7 @@ namespace physics
     FVAR(IDF_PERSIST, ragdollaccuracydist, 0, 1024, FVAR_MAX);
     FVAR(IDF_PERSIST, ragdollgravity, FVAR_MIN, 1.5f, FVAR_MAX);
 
-    FVAR(IDF_PERSIST, impulseparkouryaw, 0, 150, 180); // determines the minimum yaw angle to switch between parkour climb and run
+    FVAR(IDF_PERSIST, impulsewallrunyaw, 0, 150, 180); // determines the minimum yaw angle to switch between parkour climb and run
     VAR(IDF_PERSIST, impulsemethod, 0, 3, 3); // determines which impulse method to use, 0 = none, 1 = launch, 2 = slide, 3 = both
     VAR(IDF_PERSIST, impulseaction, 0, 3, 3); // determines how impulse action works, 0 = off, 1 = impulse jump, 2 = impulse boost, 3 = both
     FVAR(IDF_PERSIST, impulseturnroll, 0, 15, 89);
@@ -294,11 +294,8 @@ namespace physics
             {
                 if(d->state == CS_ALIVE && !inliquid)
                 {
-                    if(e->hasparkour())
-                    {
-                        if(e->getvault()) vel *= gravityvault;
-                        else vel *= e->turnside ? gravityparkour : gravityclimb;
-                    }
+                    if(e->getwallrun()) vel *= e->turnside ? gravitywallrun : gravityclimb;
+                    else if(e->getvault()) vel *= gravityvault;
                     else if(e->actiontime[AC_JUMP] >= 0) vel *= e->crouching() ? gravityjumpcrouch : gravityjump;
                     else if(e->crouching()) vel *= gravitycrouch;
                 }
@@ -353,7 +350,7 @@ namespace physics
         {
             gameent *e = (gameent *)d;
             if(!A(e->actortype, magboots) && !entities::currentpassenger(d)) return false;
-            if(e->sliding()) return false;
+            if(e->getslide() != 0) return false;
         }
 
         return true;
@@ -363,7 +360,7 @@ namespace physics
     {
         if(laddercheck(d) || (!liquidcheck(d) && entities::currentpassenger(d))) return true;
 
-        if(parkour && gameent::is(d) && d->isalive() && ((gameent *)d)->hasparkour()) return true;
+        if(parkour && gameent::is(d) && d->isalive() && ((gameent *)d)->getwallrun() != 0) return true;
 
         return false;
     }
@@ -383,19 +380,13 @@ namespace physics
             gameent *e = (gameent *)p;
             vel *= e->stunscale;
 
-            if((d->physstate >= PHYS_SLOPE || sticktospecial(d, false)) && !e->sliding(true) && e->crouching()) vel *= movecrawl;
+            if((d->physstate >= PHYS_SLOPE || sticktospecial(d, false)) && e->getslide(true) == 0 && e->crouching()) vel *= movecrawl;
             else if(isweap(e->weapselect) && e->weapstate[e->weapselect] == W_S_ZOOM) vel *= movecrawl;
 
-            if(e->hasparkour())
-            {
-                if(e->getvault()) vel *= movevault;
-                else vel *= e->turnside ? moveparkour : moveclimb;
-            }
-            else
-            {
-                if(e->move >= 0) vel *= e->strafe ? movestrafe : movestraight;
-                if(e->running()) vel *= moverun;
-            }
+            if(e->getwallrun()) vel *= e->turnside ? movewallrun : moveclimb;
+            else if(e->getvault()) vel *= movevault;
+            if(e->move >= 0) vel *= e->strafe ? movestrafe : movestraight;
+            if(e->running()) vel *= moverun;
 
             switch(e->physstate)
             {
@@ -671,16 +662,17 @@ namespace physics
 
     void falling(physent *d, vec &dir, const vec &floor)
     {
-        if(sticktospecial(d) || entities::currentpassenger(d))
+        if(entities::currentpassenger(d))
         {
             d->floor = vec(0, 0, 1);
+            d->airmillis = 0;
+            d->physstate = PHYS_FLOOR;
+            return;
+        }
 
-            if(gameent::is(d) && ((gameent *)d)->hasparkour())
-            {
-                d->physstate = PHYS_FALL;
-                return;
-            }
-
+        if(sticktospecial(d))
+        {
+            d->floor = vec(0, 0, 1);
             d->airmillis = 0;
             d->physstate = PHYS_FLOOR;
             return;
@@ -689,7 +681,6 @@ namespace physics
         if(floor.z > 0.0f && floor.z < slopez)
         {
             if(floor.z >= wallz) switchfloor(d, dir, floor);
-            d->airmillis = 0;
             d->physstate = PHYS_SLIDE;
             d->floor = floor;
         }
@@ -700,11 +691,11 @@ namespace physics
     void landing(physent *d, vec &dir, const vec &floor, bool collided)
     {
         switchfloor(d, dir, floor);
-        d->airmillis = 0;
 
         if((d->physstate != PHYS_STEP_UP && d->physstate != PHYS_STEP_DOWN) || !collided)
             d->physstate = floor.z >= floorz ? PHYS_FLOOR : PHYS_SLOPE;
 
+        if(d->physstate != PHYS_SLOPE) d->airmillis = 0;
         d->floor = floor;
     }
 
@@ -833,7 +824,7 @@ namespace physics
 
     bool impulseplayer(gameent *d, bool onfloor, const vec &inertia, bool melee = false, bool slide = false)
     {
-        bool launch = !melee && !slide && onfloor && d->action[AC_JUMP] && !physics::movepitch(d) && impulsemethod&1 && d->sliding(true),
+        bool launch = !melee && !slide && onfloor && d->action[AC_JUMP] && !physics::movepitch(d) && impulsemethod&1 && d->getslide(true) != 0,
              mchk = !melee || onfloor, action = mchk && (d->actortype >= A_BOT || melee || impulseaction&2),
              dash = d->action[AC_SPECIAL] && onfloor, sliding = slide || (dash && d->move == 1 && d->crouching());
         int move = action ? d->move : 0, strafe = action ? d->strafe : 0;
@@ -876,10 +867,51 @@ namespace physics
 
     void modifyinput(gameent *d, vec &m, bool wantsmove)
     {
-        bool onfloor = d->physstate >= PHYS_SLOPE || sticktospecial(d, false) || liquidcheck(d), found = false;
-        if(d->hasparkour() || (d->action[AC_SPECIAL] && d->canimpulse(IM_T_PARKOUR)))
+        bool onfloor = d->physstate >= PHYS_SLOPE || sticktospecial(d, false) || liquidcheck(d),
+             canparkour = d->action[AC_SPECIAL] && d->canimpulse(IM_T_WALLRUN), haswallrun = d->impulse[IM_TYPE] == IM_T_WALLRUN,
+             found = false;
+
+        if(d->hasparkour() || canparkour)
         {   // are we doing some fancy foot work?
-            vec oldpos = d->o, dir;
+            vec oldpos = d->o, newpos = oldpos, dir;
+
+            if(!d->turnside)
+            {
+                bool testcollide = collide(d);
+                if(testcollide || collideinside)
+                {   // test if we need to pop the player out first
+                    dir = vec(d->vel).normalize();
+                    if(!dir.iszero())
+                    {
+                        loopk(8)
+                        {
+                            d->o.sub(dir);
+                            testcollide = collide(d);
+                            if(testcollide || collideinside) continue;
+                            d->o.sub(dir);
+                            oldpos = d->o;
+                            break;
+                        }
+                        d->o = oldpos;
+                    }
+
+                    if(testcollide || collideinside)
+                    {
+                        dir = vec(d->yaw * RAD, 0.0f).safenormalize();
+                        loopk(8)
+                        {
+                            d->o.sub(dir);
+                            testcollide = collide(d);
+                            if(testcollide || collideinside) continue;
+                            d->o.sub(dir);
+                            oldpos = d->o;
+                            break;
+                        }
+                        d->o = oldpos;
+                    }
+                }
+            }
+
             const int movements[7][2] = { { 2, 2 }, { 1, 2 }, { 1, 0 }, { 1, -1 }, { 1, 1 }, { 0, 1 }, { 0, -1 } };
             loopi(7) // we do these insane checks so that running along walls works regardless of direction faced
             {
@@ -890,17 +922,10 @@ namespace physics
                 vecfromyawpitch(d->yaw, 0, move, strafe, dir);
                 bool foundwall = false;
 
-                d->o = oldpos;
-
                 loopk(4)
                 {   // check ahead for collision with something else
                     bool collided = collide(d, dir);
-                    if(collideinside)
-                    {
-                        d->o.sub(dir);
-                        continue;
-                    }
-                    else if(!collided || (collideplayer && !inanimate::is(collideplayer)) || collidewall.iszero() ||
+                    if(!collided || (collideplayer && !inanimate::is(collideplayer)) || collidewall.iszero() ||
                         (collidematerial && (collidematerial&MATF_CLIP) == MAT_CLIP && collidematerial&MAT_LADDER))
                     {
                         d->o.add(dir);
@@ -911,12 +936,14 @@ namespace physics
                     break;
                 }
 
-                d->o = oldpos;
-
-                if(!foundwall) continue; // nothing, can't be running on it then
+                if(!foundwall)
+                {
+                    d->o = oldpos;
+                    continue; // nothing, can't be running on it then
+                }
 
                 vec face = vec(collidewall).safenormalize();
-                if(fabs(face.z) > impulseparkournorm) continue; // check for correct normal to initiate wall running
+                if(fabs(face.z) > impulsewallrunnorm) continue; // check for correct normal to initiate wall running
 
                 float yaw = 0, pitch = 0;
                 vectoyawpitch(face, yaw, pitch);
@@ -925,39 +952,29 @@ namespace physics
                 if(off > 180.0f) off -= 360.0f;
                 else if(off < -180.0f) off += 360.0f;
 
-                bool isclimb = fabs(off) >= impulseparkouryaw;
+                bool isclimb = fabs(off) >= impulsewallrunyaw;
                 int side = isclimb ? 0 : (off < 0 ? -1 : 1); // something succeeded, let's do it
 
-                if(!side && !d->hasparkour())
-                {   // try to pull us out of a slope
-                    bool collided = collide(d);
-                    if(collided || collideinside)
+                switch(side)
+                {
+                    case 0: default:
                     {
-                        bool fixed = false;
-                        loopk(8)
-                        {
-                            d->o.sub(dir);
-                            collided = collide(d);
-                            if(collided || collideinside) continue;
-                            fixed = true;
-                            oldpos = d->o;
-                            d->resetinterp();
-                            break;
-                        }
-                        if(!fixed) continue;
+                        pitch = min(90.0f - pitch, 89.9f); // go up
+                        yaw += 180.0f; // and turn the vector around
+                        break;
                     }
-                }
-
-                if(side)
-                {
-                    if(off < 0) yaw += 90.0f;
-                    else yaw -= 90.0f; // keep the wall at our side
-                    pitch = 0.0f; // stay level
-                }
-                else
-                {
-                    pitch = min(90.0f - pitch, 89.9f); // go up
-                    yaw += 180.0f; // and turn the vector around
+                    case 1:
+                    {
+                        yaw -= 90.0f; // keep the wall at our right side
+                        pitch = 0.0f;
+                        break;
+                    }
+                    case -1:
+                    {
+                        yaw += 90.0f; // keep the wall at our left side
+                        pitch = 0.0f;
+                        break;
+                    }
                 }
 
                 if(yaw < 0.0f) yaw = 360.0f - fmodf(-yaw, 360.0f);
@@ -969,114 +986,143 @@ namespace physics
 
                 vec rft = vec(yaw * RAD, pitch * RAD).safenormalize();
 
-                if(!d->hasparkour())
-                {   // we're not already doing it, so let's do it
-                    int cost = isclimb ? impulsecostclimb : impulsecostparkour;
-                    vec keepvel = vec(d->vel).add(d->falling);
-                    float mag = impulsevelocity(d, isclimb ? impulseclimb : impulseparkour, cost, IM_T_PARKOUR, isclimb ? impulseclimbredir : impulseparkourredir, keepvel);
+                if(!side)
+                {   // work around conditions where up is slopey
+                    bool testcollide = collide(d, rft);
+                    if(testcollide || collideinside)
+                    {   // we shouldn't be colliding with our reflection angle
+                        loopk(8)
+                        {
+                            d->o.sub(dir);
+                            testcollide = collide(d, rft);
+                            if(testcollide || collideinside) continue;
+                            if(!side) d->o.sub(dir);
+                            oldpos = d->o;
+                            break;
+                        }
+                        d->o = oldpos;
 
-                    if(mag > 0)
-                    {
-                        d->vel = vec(rft).mul(mag).add(keepvel);
+                        if(testcollide || collideinside)
+                        {
+                            vec back = vec(d->yaw * RAD, 0.0f);
+                            loopk(8)
+                            {
+                                d->o.sub(back);
+                                testcollide = collide(d, rft);
+                                if(testcollide || collideinside) continue;
+                                d->o.sub(back);
+                                oldpos = d->o;
+                                break;
+                            }
+                            d->o = oldpos;
+                            if(side && (testcollide || collideinside))
+                            {
+                                back.rotate_around_z(-side * 90.0f * RAD);
+                                loopk(8)
+                                {
+                                    d->o.sub(back);
+                                    testcollide = collide(d, rft);
+                                    if(testcollide || collideinside) continue;
+                                    d->o.sub(back);
+                                    oldpos = d->o;
+                                    break;
+                                }
+                                d->o = oldpos;
+                            }
+                        }
 
-                        d->doimpulse(IM_T_PARKOUR, lastmillis, cost, 3);
-                        d->updateturn(side, offyaw * impulseyawscale, impulseyawtime, offpitch * impulsepitchscale, impulsepitchtime, side ? (impulseturnroll * side * impulserollscale) - d->roll : 0.0f, impulserolltime);
-
-                        client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_PARKOUR);
-                        game::impulseeffect(d);
+                        if(!haswallrun && (testcollide || collideinside)) continue; // it'll just result in a wasted move otherwise
                     }
-                    else break;
                 }
-                else if(d->turnside != side) d->updateturn(side, 0.0f, -1, 0.0f, -1, side ? (impulseturnroll * side * impulserollscale) - d->roll : 0.0f, impulserolltime);
+
+                int updateturn = 0;
+                if(canparkour)
+                {   // we're not already doing it, so let's do it
+                    int cost = isclimb ? impulsecostclimb : impulsecostwallrun;
+                    vec keepvel = vec(d->vel).add(d->falling);
+                    float mag = impulsevelocity(d, isclimb ? impulseclimb : impulsewallrun, cost, IM_T_WALLRUN, isclimb ? impulseclimbredir : impulsewallrunredir, keepvel);
+
+                    if(mag > 0) d->vel = vec(rft).mul(mag).add(keepvel);
+                    else
+                    {
+                        d->vel = vec(rft).mul(d->vel.magnitude());
+                        cost = 0;
+                    }
+
+                    d->doimpulse(IM_T_WALLRUN, lastmillis, cost, 3);
+                    haswallrun = true;
+                    updateturn = 7;
+
+                    client::addmsg(N_SPHY, "ri3", d->clientnum, SPHY_WALLRUN, 1);
+                    game::impulseeffect(d);
+                }
+                else if(d->turnside != side || !haswallrun)
+                {
+                    updateturn = 1;
+
+                    if(!haswallrun)
+                    {   // run-on from a dash
+                        d->vel = vec(rft).mul(d->vel.magnitude());
+                        client::addmsg(N_SPHY, "ri3", d->clientnum, SPHY_WALLRUN, 0);
+                        d->doimpulse(IM_T_WALLRUN, d->getdash());
+                        haswallrun = true;
+                        updateturn |= 6;
+                    }
+                }
+
+                if(updateturn)
+                    d->updateturn(side,
+                        (updateturn&1) != 0 ? (offyaw * impulseyawscale) : 0.0f, (updateturn&1) != 0 ? impulseyawtime : -1,
+                        (updateturn&2) != 0 ? (offpitch * impulsepitchscale) : 0.0f, (updateturn&2) != 0 ? impulsepitchtime : -1,
+                        (updateturn&4) != 0 ? (impulseturnroll * side * impulserollscale) - d->roll : 0.0f, (updateturn&4) != 0 ? impulserolltime : -1);
 
                 m = rft; // re-project and override
                 found = true;
 
                 break;
             }
-            d->o = oldpos;
+
+            d->o = found && oldpos != newpos ? oldpos : newpos;
         }
 
-        if(d->hasparkour() && (!found || !d->getparkour()))
+        if(haswallrun && (!found || d->getwallrun() == 0))
         {
-            bool after = true, vault = false;
+            vec dir(d->yaw * RAD, d->pitch * RAD);
+            float mag = max(d->vel.magnitude() + d->falling.magnitude(), d->speed * impulsevaultminspeed);
+
             if(!d->turnside)
             {   // if we were climbing something then broke free, fling us off
-                vec dir(d->yaw * RAD, (impulsevaultpitchclamp && d->pitch >= impulsevaultpitch ? d->pitch : impulsevaultpitch) * RAD),
-                    oldpos = d->o;
+                vec oldpos = d->o, olddir = dir;
+                dir = vec(d->yaw * RAD, (impulsevaultpitchclamp && d->pitch >= impulsevaultpitch ? d->pitch : impulsevaultpitch) * RAD);
 
+                float pitchgap = (89.9f - impulsevaultpitch) * 0.1f;
+                found = false; // we can re-use this from earlier
                 loopj(11)
                 {   // scan for obstacle and try to go up and over
                     d->o.add(dir);
-                    if(!collide(d) && !collideinside) break;
-                    dir = vec(d->yaw * RAD, 89.9f * j / 10.f * RAD);
+                    if(!collide(d, dir) && !collideinside)
+                    {
+                        found = true;
+                        break;
+                    }
+                    dir = vec(d->yaw * RAD, j * pitchgap * RAD);
                     d->o = oldpos;
                 }
+                if(!found) dir = olddir;
                 d->o = oldpos;
-
-                if(d->canimpulse(IM_T_VAULT))
-                {
-                    int cost = impulsecostvault;
-                    vec keepvel = vec(d->vel).add(d->falling);
-                    float mag = impulsevelocity(d, impulsevault, impulsecostvault, IM_T_VAULT, impulsevaultredir, keepvel);
-                    if(mag > 0)
-                    {
-                        d->vel = vec(dir).mul(mag).add(keepvel);
-
-                        d->doimpulse(IM_T_VAULT, lastmillis, cost, 0);
-                        d->updateturn(0);
-
-                        client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_VAULT);
-                        game::impulseeffect(d);
-
-                        after = false;
-                    }
-                }
-
-                if(after)
-                {
-                    d->vel = vec(dir).mul(d->vel.magnitude() + d->falling.magnitude());
-                    vault = true;
-                }
             }
 
-            if(after)
-            {
-                d->doimpulse(vault ? IM_T_VAULT : IM_T_AFTER, lastmillis, 0);
-                client::addmsg(N_SPHY, "ri2", d->clientnum, vault ? SPHY_VAULT : SPHY_AFTER);
-                game::impulseeffect(d, 0.5f);
-            }
+            d->vel = vec(dir).mul(mag);
+            d->doimpulse(IM_T_VAULT, lastmillis);
+            client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_VAULT);
+            haswallrun = false;
         }
 
-        if(d->hasparkour())
-        {   // running on a wall
-            if(d->action[AC_JUMP] && d->canimpulse(IM_T_KICK))
-            {   // check for kick off
-                int cost = impulsecostkick;
-                vec keepvel = vec(d->vel).add(d->falling);
-                float mag = impulsevelocity(d, impulsekick, cost, IM_T_KICK, impulsekickredir, keepvel);
-
-                if(mag > 0)
-                {
-                    vec rft;
-                    float pitch = clamp(d->pitch, impulsekickpitchmin, impulsekickpitchmax);
-                    vecfromyawpitch(d->yaw, pitch, d->move || d->strafe ? d->move : 1, d->strafe, rft);
-
-                    d->vel = vec(rft).mul(mag).add(keepvel);
-                    d->doimpulse(IM_T_KICK, lastmillis, cost, 3);
-
-                    client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_KICK);
-                    game::impulseeffect(d);
-                    game::footstep(d);
-                    onfloor = false;
-                }
-            }
-        }
-        else
+        if(!haswallrun)
         {   // normal movement
-            bool floortolerance = onfloor || d->airtime(lastmillis) < A(d->actortype, jumptolerance);
+            bool floortolerance = onfloor || d->airtime(lastmillis) <= A(d->actortype, jumptolerance) || (impulsedashtolerate && d->getdash() != 0) || (impulsevaulttolerate && d->getvault() != 0);
             if(!impulseplayer(d, floortolerance, vec(d->vel).add(d->falling)) && floortolerance && d->action[AC_JUMP] && d->canimpulse(IM_T_JUMP) && !physics::movepitch(d))
-            {   // can't impulse and on floor, so jump
+            {   // can't impulse and on the 'floor', so jump
                 float force = jumpvel(d);
                 if(force > 0)
                 {
@@ -1097,8 +1143,28 @@ namespace physics
                 }
             }
         }
+        else if(d->action[AC_JUMP] && d->canimpulse(IM_T_KICK))
+        {   // check for kick off from a wall run
+            int cost = impulsecostkick;
+            vec keepvel = vec(d->vel).add(d->falling);
+            float mag = impulsevelocity(d, impulsekick, cost, IM_T_KICK, impulsekickredir, keepvel);
 
-        bool sliding = d->sliding(true),
+            if(mag > 0)
+            {
+                vec rft;
+                float pitch = clamp(d->pitch, impulsekickpitchmin, impulsekickpitchmax);
+                vecfromyawpitch(d->yaw, pitch, d->move || d->strafe ? d->move : 1, d->strafe, rft);
+
+                d->vel = vec(rft).mul(mag).add(keepvel);
+                d->doimpulse(IM_T_KICK, lastmillis, cost, 3);
+
+                client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_KICK);
+                game::impulseeffect(d);
+                onfloor = false;
+            }
+        }
+
+        bool sliding = d->getslide(true) != 0,
              pounding = !sliding && !onfloor && d->impulse[IM_TYPE] == IM_T_POUND && d->impulsetime[IM_T_POUND] != 0,
              kicking = !sliding && !pounding && !onfloor && d->action[AC_SPECIAL];
 
@@ -1135,7 +1201,7 @@ namespace physics
     {
         vec m(0, 0, 0);
         bool wantsmove = game::allowmove(d) && (d->move || d->strafe), floating = isfloating(d), inliquid = liquidcheck(d),
-             onfloor = !floating && (sticktospecial(d, false) || d->physstate != PHYS_FALL), slide = false, dopitch = movepitch(d);
+             onfloor = !floating && (sticktospecial(d, false) || d->physstate >= PHYS_SLOPE), slide = false, dopitch = movepitch(d);
 
         if(wantsmove) vecfromyawpitch(d->yaw, dopitch ? d->pitch : 0, d->move, d->strafe, m);
 
@@ -1164,7 +1230,7 @@ namespace physics
                     }
                 }
 
-                slide = e->sliding();
+                slide = e->getslide() != 0;
             }
         }
 
@@ -1368,7 +1434,7 @@ namespace physics
                         return false;
                     }
 
-                    if(e->hasparkour())
+                    if(e->getwallrun() != 0)
                     {
                         loopi(3)
                         {

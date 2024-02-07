@@ -1344,7 +1344,7 @@ namespace ai
 
         if(allowspecial)
         {
-            if(airtime > impulsejumpdelay && !d->hasparkour() && (d->skill >= 100 || !rnd(101-d->skill)) && d->canimpulse(IM_T_PARKOUR))
+            if(!d->hasparkour() && (d->skill >= 100 || !rnd(101-d->skill)) && d->canimpulse(airtime > impulsejumpdelay ? IM_T_DASH : IM_T_WALLRUN))
                 d->action[AC_SPECIAL] = true;
             else if(lastmillis-d->ai->lastmelee >= (201-d->skill)*35 && d->canmelee(m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis))
             {
