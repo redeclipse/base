@@ -667,16 +667,16 @@ GVAR(IDF_GAMEMOD, 0, impulseparkourcheck, 0, IM_T_ACTION, IM_T_ACTION); // check
 GVAR(IDF_GAMEMOD, 0, impulsevaultcheck, 0, IM_T_ACTION, IM_T_ACTION); // check actions for delay to vault moves
 GVAR(IDF_GAMEMOD, 0, impulsepoundcheck, 0, IM_T_ACTION, IM_T_ACTION); // check actions for delay to pounds
 
-GVAR(IDF_GAMEMOD, 0, impulsejumpdelay, 0, 250, VAR_MAX); // minimum time after jump
-GVAR(IDF_GAMEMOD, 0, impulseboostdelay, 0, 500, VAR_MAX); // minimum time after boosts
+GVAR(IDF_GAMEMOD, 0, impulsejumpdelay, 0, 125, VAR_MAX); // minimum time after jump
+GVAR(IDF_GAMEMOD, 0, impulseboostdelay, 0, 250, VAR_MAX); // minimum time after boosts
 GVAR(IDF_GAMEMOD, 0, impulsedashdelay, 0, 500, VAR_MAX); // minimum time after dashes
 GVAR(IDF_GAMEMOD, 0, impulseslidedelay, 0, 500, VAR_MAX); // minimum time after slides
 GVAR(IDF_GAMEMOD, 0, impulselaunchdelay, 0, 500, VAR_MAX); // minimum time after launches
-GVAR(IDF_GAMEMOD, 0, impulsemeleedelay, 0, 500, VAR_MAX); // minimum time after melee
-GVAR(IDF_GAMEMOD, 0, impulsekickdelay, 0, 500, VAR_MAX); // minimum time after kicks
-GVAR(IDF_GAMEMOD, 0, impulsegrabdelay, 0, 500, VAR_MAX); // minimum time after grabs
+GVAR(IDF_GAMEMOD, 0, impulsemeleedelay, 0, 250, VAR_MAX); // minimum time after melee
+GVAR(IDF_GAMEMOD, 0, impulsekickdelay, 0, 250, VAR_MAX); // minimum time after kicks
+GVAR(IDF_GAMEMOD, 0, impulsegrabdelay, 0, 250, VAR_MAX); // minimum time after grabs
 GVAR(IDF_GAMEMOD, 0, impulseparkourdelay, 0, 500, VAR_MAX); // minimum time after parkour moves
-GVAR(IDF_GAMEMOD, 0, impulsevaultdelay, 0, 500, VAR_MAX); // minimum time after vault moves
+GVAR(IDF_GAMEMOD, 0, impulsevaultdelay, 0, 250, VAR_MAX); // minimum time after vault moves
 GVAR(IDF_GAMEMOD, 0, impulsepounddelay, 0, 500, VAR_MAX); // minimum time after pounds
 GVAR(IDF_GAMEMOD, 0, impulseslideinair, 0, 250, VAR_MAX); // minimum time in air for slide
 
