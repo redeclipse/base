@@ -5873,11 +5873,8 @@ namespace server
                     clientinfo *cs = clients[i];
                     if(cs->actortype > A_PLAYER) continue;
                     if(cs->wantsmap || cs->gettingmap) numgetmap++;
-                    if(m_play(gamemode) && G(waitforplayers))
-                    {
-                        if(G(waitforplayers) == 2 && cs->state == CS_SPECTATOR) numwait++;
-                        if(!cs->ready) numnotready++;
-                    }
+                    if(G(waitforplayers) == 2 && cs->state == CS_SPECTATOR) numwait++;
+                    if(!cs->ready) numnotready++;
                 }
 
                 while(gamestate < G_S_PLAYING)
