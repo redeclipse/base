@@ -536,13 +536,16 @@ namespace ai
 
     string loadedwaypoints = "";
     VARF(0, dropwaypoints, 0, 0, 1, if(dropwaypoints) getwaypoints());
-    VAR(IDF_PERSIST, autoexplodewaypoints, 0, 4, 15);
+    VAR(IDF_PERSIST, explodewaypoints, 0, 1, 3);
+    VAR(IDF_PERSIST, explodewaypointsup, 0, 0, VAR_MAX);
+    VAR(IDF_PERSIST, explodewaypointsdown, 0, 1, VAR_MAX);
+    VAR(IDF_PERSIST, explodewaypointsaround, 0, 3, VAR_MAX);
 
     static const vec recursedirs[6] = {
         vec(1, 0, 0), vec(-1, 0, 0), vec(0, 1, 0), vec(0, -1, 0), vec(0, 0, -1), vec(0, 0, 1)
     };
 
-    int recursewaypoint(int n, int passes = 5, bool linkup = false, bool saved = true)
+    int recursewaypoint(int n, int dirs = 5, bool linkup = false, bool saved = true)
     {
         if(waypoints.length() >= MAXWAYPOINTFILL) return 0;
 
@@ -551,8 +554,8 @@ namespace ai
 
         int created = 0;
         vec wpos = vec(w.o).addz(1);
-        passes = clamp(passes, 1, 6);
-        loopi(passes)
+        dirs = clamp(dirs, 1, 6);
+        loopi(dirs)
         {
             if(waypoints.length() >= MAXWAYPOINTFILL) break;
 
@@ -661,7 +664,7 @@ namespace ai
 
     void remapwaypoints();
 
-    int explodewaypoints(int n = 5, int passes = 5, bool linkup = false, bool saved = false)
+    int explodewaypointmesh(int n = 4, int dirs = 4, bool linkup = false, bool saved = false)
     {
         vector<int> considered;
         int created = 0;
@@ -680,7 +683,7 @@ namespace ai
             loopv(origwaypoints)
             {
                 progress(i / float(count), "Exploding waypoints: Pass %d of %d, created %d", k + 1, n, created);
-                int create = recursewaypoint(origwaypoints[i], passes, linkup, saved);
+                int create = recursewaypoint(origwaypoints[i], dirs, linkup, saved);
                 if(!create) continue;
                 created += create;
                 considered.add(i);
@@ -692,7 +695,7 @@ namespace ai
 
         return created;
     }
-    ICOMMAND(0, explodewaypoints, "bbib", (int *n, int *p, int *u, int *s), intret(explodewaypoints(*n > 0 ? *n : 5, *p > 0 ? *p : 5, *u != 0, *s != 0)));
+    ICOMMAND(0, explodewaypointmesh, "bbib", (int *n, int *p, int *u, int *s), intret(explodewaypointmesh(*n > 0 ? *n : 4, *p > 0 ? *p : 4, *u != 0, *s != 0)));
 
     int addwaypoint(const vec &o, int pull = -1, bool saved = true)
     {
@@ -952,12 +955,12 @@ namespace ai
         delete f;
         conoutf(colourwhite, "Loaded %d waypoints from %s", numwp, wptname);
 
-        if(m_edit(game::gamemode) ? (autoexplodewaypoints&8) != 0 : autoexplodewaypoints)
+        if(explodewaypoints&(m_edit(game::gamemode) ? 2 : 1))
         {
             conoutf(colourwhite, "Exploding waypoints..");
-            if(autoexplodewaypoints&1) explodewaypoints(1, 6, true);
-            if(autoexplodewaypoints&2) explodewaypoints(1, 6, false);
-            if(autoexplodewaypoints&4) explodewaypoints();
+            if(explodewaypointsup) explodewaypointmesh(explodewaypointsup, 6, true);
+            if(explodewaypointsdown) explodewaypointmesh(explodewaypointsdown, 5);
+            if(explodewaypointsaround) explodewaypointmesh(explodewaypointsaround, 4);
         }
 
         if(!cleanwaypoints()) clearwpcache();
