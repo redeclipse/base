@@ -386,6 +386,14 @@ void forcergbaimage(ImageData &s, uchar newalpha = 255)
     s.replace(d);
 }
 
+void removealpha(ImageData &s)
+{
+    if(s.bpp < 4) return;
+    ImageData d(s.w, s.h, 3);
+    readwritetex(d, s, { dst[0] = src[0]; dst[1] = src[1]; dst[2] = src[2]; });
+    s.replace(d);
+}
+
 void swizzleimage(ImageData &s)
 {
     if(s.bpp==2)
@@ -1822,6 +1830,7 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
             }
         }
         else if(matchstring(cmd, len, "rgba")) forcergbaimage(d);
+        else if(matchstring(cmd, len, "remalpha")) removealpha(d);
         else
     compressed:
         if(matchstring(cmd, len, "mirror"))
