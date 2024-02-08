@@ -963,7 +963,7 @@ namespace UI
     struct Window : Object
     {
         char *name, *dyn;
-        Code *contents, *onshow, *onhide, *vistest;
+        Code *contents, *onshow, *onhide, *vistest, *forcetest;
         bool exclusive, mapdef, saved, menu, passthrough, tooltip, popup, persist, ontop, attached, visible;
         int allowinput, lasthit, lastshow, lastpoke, zindex, numargs, initargs, hint;
         float px, py, pw, ph,
@@ -973,9 +973,9 @@ namespace UI
         vec origin, pos;
         tagval args[MAXARGS];
 
-        Window(const char *name_, const char *contents_, const char *onshow_, const char *onhide_, const char *vistest_, bool mapdef_, const char *dyn_ = NULL, tagval *args_ = NULL, int numargs_ = 0) :
+        Window(const char *name_, const char *contents_, const char *onshow_, const char *onhide_, const char *vistest_, const char *forcetest_, bool mapdef_, const char *dyn_ = NULL, tagval *args_ = NULL, int numargs_ = 0) :
             name(newstring(name_)), dyn(dyn_ && *dyn_ ? newstring(dyn_) : NULL),
-            contents(NULL), onshow(NULL), onhide(NULL), vistest(NULL),
+            contents(NULL), onshow(NULL), onhide(NULL), vistest(NULL), forcetest(NULL),
             exclusive(false), mapdef(mapdef_),
             menu(true), passthrough(false), tooltip(false), popup(false), persist(false), ontop(false), attached(false), visible(false),
             allowinput(1), lasthit(0), lastshow(0), lastpoke(0), zindex(0), numargs(0), initargs(0), hint(0),
@@ -989,6 +989,7 @@ namespace UI
             if(onshow_ && *onshow_) onshow = new Code(onshow_);
             if(onhide_ && *onhide_) onhide = new Code(onhide_);
             if(vistest_ && *vistest_) vistest = new Code(vistest_);
+            if(forcetest_ && *forcetest_) forcetest = new Code(forcetest_);
             numargs = initargs = 0;
             loopi(MAXARGS) args[i].setnull();
             if(args_ && numargs_ > 0)
@@ -1004,6 +1005,7 @@ namespace UI
             if(onshow) delete onshow;
             if(onhide) delete onhide;
             if(vistest) delete vistest;
+            if(forcetest) delete forcetest;
             resetargs(true);
         }
 
@@ -1899,12 +1901,14 @@ namespace UI
                     continue;
                 }
 
-                int vistest = 0;
+                w->dist = 0.0f;
+                w->visible = true;
+
                 if(w->vistest)
                 {   // visibility test script provided
                     w->setargs();
-                    if((vistest = execute(w->vistest->code)) < 0)
-                    {   // return value: -1 = not visible, 0 = visible, 1 = forced visible
+                    if(!executebool(w->vistest->code))
+                    {
                         w->visible = false;
                         continue;
                     }
@@ -1912,27 +1916,20 @@ namespace UI
 
                 if(w->pos != nullvec)
                 {   // can only be used for things with an actual 3d position
-                    if(!vistest && !getvisible(camera1->o, camera1->yaw, camera1->pitch, w->pos, curfov, fovy, uivisradius, -1))
-                    {   // not inside the view frustrum
+                    if(!getvisible(camera1->o, camera1->yaw, camera1->pitch, w->pos, curfov, fovy, uivisradius, -1))
                         w->visible = false;
-                        continue;
-                    }
 
                     w->dist = w->pos.dist(camera1->o);
 
-                    if(!vistest)
-                    {
-                        float maxdist = w->maxdist > 0 ? min(w->maxdist, uimaxdist) : uimaxdist;
-                        if(maxdist > 0 && w->dist > maxdist)
-                        {   // too far away
-                            w->visible = false;
-                            continue;
-                        }
+                    float maxdist = w->maxdist > 0 ? min(w->maxdist, uimaxdist) : uimaxdist;
+                    if(maxdist > 0 && w->dist > maxdist) w->visible = false;
+
+                    if(!w->visible && w->forcetest)
+                    {   // fall back to the force test script
+                        w->setargs();
+                        if(executebool(w->forcetest->code)) w->visible = true;
                     }
                 }
-                else w->dist = 0.f; // not important then
-
-                w->visible = true;
 
                 uiscale = 1;
                 w->build();
@@ -2203,7 +2200,7 @@ namespace UI
         window = oldwindow;
     }
 
-    bool newui(const char *name, int stype, const char *contents, const char *onshow, const char *onhide, const char *vistest, bool mapdef = false, const char *dyn = NULL, tagval *args = NULL, int numargs = 0)
+    bool newui(const char *name, int stype, const char *contents, const char *onshow, const char *onhide, const char *vistest, const char *forcetest, bool mapdef = false, const char *dyn = NULL, tagval *args = NULL, int numargs = 0)
     {
         if(!name || !*name || !contents || !*contents || stype < 0 || stype >= SURFACE_MAX) return false;
 
@@ -2247,14 +2244,14 @@ namespace UI
             }
         }
 
-        surface->windows[name] = new Window(name, contents, onshow, onhide, vistest, mapdef, dyn, args, numargs);
+        surface->windows[name] = new Window(name, contents, onshow, onhide, vistest, forcetest, mapdef, dyn, args, numargs);
         popsurface();
 
         return true;
     }
 
-    ICOMMAND(0, newui, "sissss", (char *name, int *stype, char *contents, char *onshow, char *onhide, char *vistest), if(!(identflags&IDF_MAP)) newui(name, *stype, contents, onshow, onhide, vistest, false));
-    ICOMMAND(0, mapui, "sissss", (char *name, int *stype, char *contents, char *onshow, char *onhide, char *vistest), newui(name, *stype, contents, onshow, onhide, vistest, true));
+    ICOMMAND(0, newui, "sisssss", (char *name, int *stype, char *contents, char *onshow, char *onhide, char *vistest, char *forcetest), if(!(identflags&IDF_MAP)) newui(name, *stype, contents, onshow, onhide, vistest, forcetest, false));
+    ICOMMAND(0, mapui, "sisssss", (char *name, int *stype, char *contents, char *onshow, char *onhide, char *vistest, char *forcetest), newui(name, *stype, contents, onshow, onhide, vistest, forcetest, true));
 
     void closedynui(const char *name, int stype, bool mapdef)
     {
@@ -2283,10 +2280,10 @@ namespace UI
 
     struct DynUI
     {
-        char *name, *contents, *onshow, *onhide, *vistest;
+        char *name, *contents, *onshow, *onhide, *vistest, *forcetest;
         bool mapdef;
 
-        DynUI(const char *s) : name(newstring(s)), contents(NULL), onshow(NULL), onhide(NULL), vistest(NULL), mapdef(false) {}
+        DynUI(const char *s) : name(newstring(s)), contents(NULL), onshow(NULL), onhide(NULL), vistest(NULL), forcetest(NULL), mapdef(false) {}
         ~DynUI()
         {
             DELETEA(name);
@@ -2299,6 +2296,7 @@ namespace UI
             DELETEA(onshow);
             DELETEA(onhide);
             DELETEA(vistest);
+            DELETEA(forcetest);
         }
     };
     vector<DynUI *> dynuis;
@@ -2359,7 +2357,7 @@ namespace UI
         return ref && *ref ? surface->windows.find(ref, NULL) : NULL;
     }
 
-    void dynui(const char *name, const char *contents, const char *onshow, const char *onhide, const char *vistest, bool mapdef)
+    void dynui(const char *name, const char *contents, const char *onshow, const char *onhide, const char *vistest, const char *forcetest, bool mapdef)
     {
         if(!name || !*name || !contents || !*contents) return;
 
@@ -2388,11 +2386,12 @@ namespace UI
         m->onshow = onshow && *onshow ? newstring(onshow) : NULL;
         m->onhide = onhide && *onhide ? newstring(onhide) : NULL;
         m->vistest = vistest && *vistest ? newstring(vistest) : NULL;
+        m->forcetest = forcetest && *forcetest ? newstring(forcetest) : NULL;
         m->mapdef = mapdef;
     }
 
-    ICOMMAND(0, dynui, "sssss", (char *name, char *contents, char *onshow, char *onhide, char *vistest), dynui(name, contents, onshow, onhide, vistest, (identflags&IDF_MAP) != 0));
-    ICOMMAND(0, mapdynui, "sssss", (char *name, char *contents, char *onshow, char *onhide, char *vistest), dynui(name, contents, onshow, onhide, vistest, true));
+    ICOMMAND(0, dynui, "ssssss", (char *name, char *contents, char *onshow, char *onhide, char *vistest, char *forcetest), dynui(name, contents, onshow, onhide, vistest, forcetest, (identflags&IDF_MAP) != 0));
+    ICOMMAND(0, mapdynui, "ssssss", (char *name, char *contents, char *onshow, char *onhide, char *vistest, char *forcetest), dynui(name, contents, onshow, onhide, vistest, forcetest, true));
 
     const char *dynuiexec(const char *name, int param)
     {
@@ -2403,7 +2402,7 @@ namespace UI
         {
             tagval t; t.setint(param);
             const char *refname = dynuiref(name, param, true); // should be the only one creating refs
-            if(newui(refname, surfacetype, d->contents, d->onshow, d->onhide, d->vistest, d->mapdef, d->name, &t, 1))
+            if(newui(refname, surfacetype, d->contents, d->onshow, d->onhide, d->vistest, d->forcetest, d->mapdef, d->name, &t, 1))
                 return refname;
         }
 
@@ -7394,14 +7393,18 @@ namespace UI
 
                 if(w->onshow)
                     h->printf(" [%s]", w->onshow->body);
-                else if(w->onhide || w->vistest) h->printf(" []");
+                else if(w->onhide || w->vistest || w->forcetest) h->printf(" []");
 
                 if(w->onhide)
                     h->printf(" [%s]", w->onhide->body);
-                else if(w->vistest) h->printf(" []");
+                else if(w->vistest || w->forcetest) h->printf(" []");
 
                 if(w->vistest)
                     h->printf(" [%s]", w->vistest->body);
+                else if(w->forcetest) h->printf(" []");
+
+                if(w->forcetest)
+                    h->printf(" [%s]", w->forcetest->body);
 
                 h->printf("\n\n");
 
@@ -7420,14 +7423,18 @@ namespace UI
 
             if(d->onshow)
                 h->printf(" [%s]", d->onshow);
-            else if(d->onhide || d->vistest) h->printf(" []");
+            else if(d->onhide || d->vistest || d->forcetest) h->printf(" []");
 
             if(d->onhide)
                 h->printf(" [%s]", d->onhide);
-            else if(d->vistest) h->printf(" []");
+            else if(d->vistest || d->forcetest) h->printf(" []");
 
             if(d->vistest)
                 h->printf(" [%s]", d->vistest);
+            else if(d->forcetest) h->printf(" []");
+
+            if(d->forcetest)
+                h->printf(" [%s]", d->forcetest);
 
             h->printf("\n\n");
 

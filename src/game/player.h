@@ -257,16 +257,16 @@ APFVAR(IDF_GAMEMOD, 0, speedprize, 0, FVAR_MAX,
     1,              1,              1,              1,              1,              1,              1,              1.5f
 );
 APFVAR(IDF_GAMEMOD, 0, jumpspeed, 0, FVAR_MAX,
-    140,            140,            0,              140,            140,            70,             100,            100
+    150,            150,            0,              150,            150,            75,             100,            100
 );
 APFVAR(IDF_GAMEMOD, 0, jumpspeedextra, FVAR_MIN, FVAR_MAX,
     0,              0,              0,              0,              0,              0,              0,              0
 );
 APFVAR(IDF_GAMEMOD, 0, jumptolerance, 0, FVAR_MAX,
-    100,            100,            1000,           100,            100,            100,            100,            100
+    125,            125,            1000,           100,            125,            125,            125,            125
 );
 APFVAR(IDF_GAMEMOD, 0, impulsespeed, 0, FVAR_MAX,
-    100,            100,            0,              100,            100,            50,             100,            100
+    75,             75,             0,              75,             75,             50,             75,             75
 );
 APFVAR(IDF_GAMEMOD, 0, impulsespeedextra, FVAR_MIN, FVAR_MAX,
     0,              0,              0,              0,              0,              0,              0,              0
