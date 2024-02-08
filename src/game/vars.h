@@ -238,10 +238,10 @@ GVAR(0, PRIV_MODERATOR, smallmapmax, 0, 6, VAR_MAX); // maximum number of player
 GVAR(0, PRIV_MODERATOR, mediummapmax, 0, 12, VAR_MAX); // maximum number of players for a medium map
 
 GVAR(0, PRIV_MODERATOR, waitforplayers, 0, 2, 2); // wait for players: 0 = off, 1 = to load the map, 2 = to exit spectator
-GVAR(0, PRIV_MODERATOR, waitforplayertime, 0, 10000, VAR_MAX); // wait at most this long for players to meet waitforplayers criteria
-GVAR(0, PRIV_MODERATOR, waitforplayerload, 0, 20000, VAR_MAX); // wait this long for players to load the map to schedule map requests
+GVAR(0, PRIV_MODERATOR, waitforplayertime, 0, 5000, VAR_MAX); // wait at most this long for players to meet waitforplayers criteria
+GVAR(0, PRIV_MODERATOR, waitforplayerload, 0, 15000, VAR_MAX); // wait this long for players to load the map to schedule map requests
 GVAR(0, PRIV_MODERATOR, waitforplayermaps, 0, 30000, VAR_MAX); // wait this long for sendmap and getmap requests
-GVAR(0, PRIV_MODERATOR, waitforplayerinfo, 0, 10000, VAR_MAX); // wait at least this long for players to send info
+GVAR(0, PRIV_MODERATOR, waitforplayerinfo, 0, 15000, VAR_MAX); // wait at least this long for players to send info
 
 namespace server
 {

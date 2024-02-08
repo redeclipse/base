@@ -3378,7 +3378,8 @@ namespace client
 
                 case N_FAILMAP:
                 {
-                    conoutf(colouryellow, "Failed to get a valid map");
+                    conoutf(colouryellow, "The server failed to get a map, sending them ours..");
+                    sendmap();
                     needsmap = gettingmap = 0;
                     break;
                 }
