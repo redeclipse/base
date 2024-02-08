@@ -400,8 +400,6 @@ void cleanupscale()
     scalew = scaleh = -1;
 }
 
-extern int gscale, gscalecubic, gscalenearest;
-
 void setupscale(int sw, int sh, int w, int h)
 {
     scalew = w;

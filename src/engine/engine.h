@@ -309,8 +309,7 @@ extern matrix4 cammatrix, projmatrix, camprojmatrix, invcammatrix, invcamprojmat
 extern vec curfogcolor;
 extern int wireframe, editinhibit;
 
-extern float cursorx, cursory, visorscanlines;
-extern float getcursorx(int type = 0), getcursory(int type = 0);
+extern float cursorx, cursory;
 extern vec cursordir;
 
 extern int glerr;
@@ -324,7 +323,6 @@ extern void gl_resize();
 extern void gl_setupframe(bool force = false);
 extern void gl_drawview();
 extern void gl_drawnoview();
-extern void gl_drawhalos();
 extern void gl_drawframe();
 extern void cleanupgl();
 
@@ -365,10 +363,6 @@ namespace modelpreview
 struct timer;
 extern timer *begintimer(const char *name, bool gpu = true);
 extern void endtimer(timer *t);
-
-extern int visorhud, rendervisor;
-extern bool visorenabled(bool noview = false);
-extern void visorcoords(float cx, float cy, float &vx, float &vy, bool back = false);
 
 // octa
 extern cube *newcubes(uint face = F_EMPTY, int mat = MAT_AIR);
@@ -426,6 +420,8 @@ static inline cubeext &ext(cube &c)
 }
 
 // renderlights
+
+extern int gscale, gscalecubic, gscalenearest;
 
 #define DARK_ENUM(en, um) \
     en(um, Environment, ENV) en(um, Glow, GLOW) en(um, Sunlight, SUN) en(um, Particles, PART) \
@@ -1096,43 +1092,42 @@ struct RenderSurface
     GLenum format, target;
     vector<GLuint> texs, fbos;
 
-    RenderSurface() : tclamp(3), filter(1), width(0), height(0), format(GL_RGBA), target(GL_TEXTURE_RECTANGLE) {}
-    ~RenderSurface() { cleanup(); }
+    RenderSurface() { reset(); }
+    ~RenderSurface() { destroy(); }
 
-    virtual void checkformat(int &w, int &h, GLenum &f, GLenum &t, bool &b);
+    void reset();
+    bool cleanup();
+    int genbuffers(int wanttex = 1, int wantfbo = -1, GLuint origfbo = 0);
 
-    virtual bool cleanup();
-    virtual int genbuffers(int n = 1, bool wantfbo = true);
-    virtual int setup(int w = 0, int h = 0, int n = 1, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, bool wantfbo = true);
-    virtual int init(int w = 0, int h = 0, int n = 1, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, bool wantfbo = true);
-    virtual bool bindtex(int n = 0, int tmu = 0);
-    virtual bool bindfbo(int n = 0);
-
-    virtual int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, bool wantfbo = true);
+    virtual void checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n, int &o);
+    virtual int setup(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1, GLuint origfbo = 0);
+    virtual int init(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1, GLuint origfbo = 0);
+    virtual bool bindtex(int wanttex = 0, int tmu = 0);
+    virtual bool bindfbo(int wantfbo = 0);
+    virtual int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1, GLuint origfbo = 0);
     virtual bool destroy();
-    virtual bool render();
-    virtual bool swap(int n = 0);
+    virtual bool render(GLuint origfbo = 0);
+    virtual bool swap(int wantfbo = 0);
     virtual bool draw(int x = 0, int y = 0, int w = 0, int h = 0);
-    virtual void debug(int w, int h, int n = 0, bool large = false);
+    virtual void debug(int w, int h, int wanttex = 0, bool large = false);
 };
 
 struct HaloSurface : RenderSurface
 {
-    enum { DEPTH, ONTOP, MAX };
+    enum { DEPTH = 0, ONTOP, MAX };
 
     int halotype;
 
-    HaloSurface() : halotype(-1) {}
-    ~HaloSurface() { RenderSurface::cleanup(); }
+    HaloSurface() : halotype(-1) { reset(); }
+    ~HaloSurface() { destroy(); }
 
     bool check(bool check, bool val);
 
-    void checkformat(int &w, int &h, GLenum &f, GLenum &t, bool &b) override;
-
-    int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, bool wantfbo = true) override;
+    void checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n, int &o) override;
+    int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1, GLuint origfbo = 0) override;
     bool destroy() override;
-    bool render() override;
-    bool swap(int n = 0) override;
+    bool render(GLuint origfbo = 0) override;
+    bool swap(int wantfbo = 0) override;
     bool draw(int x = 0, int y = 0, int w = 0, int h = 0) override;
 };
 extern HaloSurface halosurf;
@@ -1151,17 +1146,38 @@ struct HazeSurface : RenderSurface
 {
     Texture *tex;
 
-    HazeSurface() : tex(NULL) {}
-    ~HazeSurface() { RenderSurface::cleanup(); }
+    HazeSurface() : tex(NULL) { reset(); }
+    ~HazeSurface() { destroy(); }
 
     bool check();
 
-    void checkformat(int &w, int &h, GLenum &f, GLenum &t, bool &b) override;
-
-    int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, bool wantfbo = true) override;
-    bool render() override;
+    void checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n, int &o) override;
+    int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1, GLuint origfbo = 0) override;
+    bool render(GLuint origfbo = 0) override;
 };
 extern HazeSurface hazesurf;
+
+extern int visorhud, rendervisor;
+extern float  visorscanlines;
+
+struct VisorSurface : RenderSurface
+{
+    enum { BACKGROUND = 0, WORLD, VISOR, FOREGROUND, MAX };
+    float cursorx, cursory, offsetx, offsety;
+    bool enabled;
+
+    VisorSurface() : cursorx(0.5f), cursory(0.5f), offsetx(0.f), offsety(0.f), enabled(false) { reset(); }
+    ~VisorSurface() { destroy(); }
+
+    float getcursorx(int type = 0);
+    float getcursory(int type = 0);
+    bool check();
+    void coords(float cx, float cy, float &vx, float &vy, bool back = false);
+
+    void checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n, int &o) override;
+    bool render(GLuint origfbo = 0) override;
+};
+extern VisorSurface visorsurf;
 
 #endif // STANDALONE
 #include "sound.h"

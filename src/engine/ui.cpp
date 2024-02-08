@@ -1151,7 +1151,7 @@ namespace UI
 
             if(vectocursor(pos, cx, cy, cz))
             {
-                if(rendervisor == 2) visorcoords(cx, cy, cx, cy, true);
+                if(rendervisor == 2) visorsurf.coords(cx, cy, cx, cy, true);
 
                 float aspect = hudw/float(hudh);
                 cx *= aspect; // convert to UI coordinate system
@@ -1701,8 +1701,8 @@ namespace UI
     UIWINARG(zindex, "i", int, VAR_MIN, VAR_MAX);
     UIWINARG(hint, "i", int, 0, VAR_MAX);
 
-    float getuicursorx(bool aspect = true) { return getcursorx(surfacetype == SURFACE_VISOR ? 1 : -1) * (aspect ? hudw / float(hudh) : 1.0f); }
-    float getuicursory() { return getcursory(surfacetype == SURFACE_VISOR ? 1 : -1); }
+    float getuicursorx(bool aspect = true) { return visorsurf.getcursorx(surfacetype == SURFACE_VISOR ? 1 : -1) * (aspect ? hudw / float(hudh) : 1.0f); }
+    float getuicursory() { return visorsurf.getcursory(surfacetype == SURFACE_VISOR ? 1 : -1); }
 
     ICOMMANDVF(0, uicuryaw, window ? window->curyaw : -1.f);
     ICOMMANDVF(0, uicurpitch, window ? window->curpitch : -1.f);

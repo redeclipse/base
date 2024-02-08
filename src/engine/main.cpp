@@ -519,7 +519,7 @@ void resetgl()
     cleanupblendmap();
     cleanuplights();
     halosurf.destroy();
-    hazesurf.cleanup();
+    hazesurf.destroy();
     cleanupshaders();
     cleanupgl();
 
@@ -1307,7 +1307,7 @@ int main(int argc, char **argv)
                 game::recomputecamera();
                 setviewcell(camera1->o);
 
-                gl_drawhalos();
+                halosurf.render();
 
                 cleardynlights();
                 fx::update();

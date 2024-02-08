@@ -1575,7 +1575,7 @@ void resetshaders()
 
     cleanuplights();
     halosurf.destroy();
-    hazesurf.cleanup();
+    hazesurf.destroy();
     cleanupmodels();
     cleanupshaders();
     setupshaders();

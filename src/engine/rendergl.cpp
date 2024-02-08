@@ -1310,7 +1310,7 @@ void setcammatrix()
     #endif
 }
 
-void setcamprojmatrix(bool init = true, bool flush = false)
+void setcamprojmatrix(bool init, bool flush)
 {
     if(init)
     {
@@ -2568,128 +2568,6 @@ void gl_setupframe(bool force)
     setuplights();
 }
 
-static GLuint visorfbo = 0, visortex = 0;
-static int visorw = -1, visorh = -1; // render target dimensions
-float visorx = 0.5f, visory = 0.5f, visoroffx = 0.f, visoroffy = 0.f; // cursor projection coordinates
-
-VAR(IDF_PERSIST, visorhud, 0, 13, 15); // bit: 1 = normal, 2 = edit, 4 = progress, 8 = noview
-FVAR(IDF_PERSIST, visordistort, -2, 2.0f, 2);
-FVAR(IDF_PERSIST, visornormal, -2, 1.175f, 2);
-FVAR(IDF_PERSIST, visorscalex, FVAR_NONZERO, 0.9075f, 2);
-FVAR(IDF_PERSIST, visorscaley, FVAR_NONZERO, 0.9075f, 2);
-VAR(IDF_PERSIST, visorscanedit, 0, 1, 7); // bit: 1 = scanlines, 2 = noise, 4 = flicker
-FVAR(IDF_PERSIST, visorscanlines, 0.0, 2.66f, 16.0f);
-VAR(IDF_PERSIST|IDF_HEX, visorscanlinemixcolour, 0, 0xFFFFFF, 0xFFFFFF);
-FVAR(IDF_PERSIST, visorscanlinemixblend, 0.0, 0.67f, 1.0f);
-FVAR(IDF_PERSIST, visorscanlineblend, 0.0, 0.25f, 16.0f);
-FVAR(IDF_PERSIST, visornoiseblend, 0.0, 0.125f, 16.0f);
-FVAR(IDF_PERSIST, visorflickerblend, 0.0, 0.015f, 16.0f);
-
-VAR(IDF_PERSIST, visortiltsurfaces, 0, 4, 15); // bit: 1 = background, 2 = world UI's, 4 = visor, 8 = foreground
-VAR(IDF_PERSIST, visorscansurfaces, 0, 15, 15); // bit: 1 = background, 2 = world UI's, 4 = visor, 8 = foreground
-
-void cleanupvisor();
-void setupvisor(int w, int h)
-{
-    w = max(w, 2);
-    h = max(h, 2);
-    if(w != visorw || h != visorh)
-    {
-        cleanupvisor();
-        visorw = w;
-        visorh = h;
-    }
-
-    GLERROR;
-    if(!visortex)
-    {
-        glGenTextures(1, &visortex);
-        createtexture(visortex, visorw, visorh, NULL, 3, 1, GL_RGBA, GL_TEXTURE_RECTANGLE);
-    }
-
-    if(!visorfbo)
-    {
-        glGenFramebuffers_(1, &visorfbo);
-        glBindFramebuffer_(GL_FRAMEBUFFER, visorfbo);
-        glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, visortex, 0);
-    }
-
-    GLERROR;
-    glBindFramebuffer_(GL_FRAMEBUFFER, 0);
-}
-
-void cleanupvisor()
-{
-    if(visorfbo)
-    {
-        glDeleteFramebuffers_(1, &visorfbo);
-        visorfbo = 0;
-    }
-
-    if(visortex)
-    {
-        glDeleteTextures(1, &visortex);
-        visortex = 0;
-    }
-}
-
-bool visorenabled(bool noview)
-{
-    if(!engineready) return false;
-
-    if(noview) return (visorhud&8)!=0;
-    else if(progressing) return (visorhud&4)!=0;
-    else if(editmode) return (visorhud&2)!=0;
-    else return (visorhud&1)!=0;
-    return false;
-}
-ICOMMANDV(0, visorenabled, visorenabled());
-VARR(rendervisor, -1);
-
-void visorcoords(float cx, float cy, float &vx, float &vy, bool back)
-{
-    // WARNING: This function MUST produce the same
-    // results as the 'hudvisorview' shader for cursor projection.
-
-    vec2 from(cx, cy), to = from;
-
-    to.sub(vec2(0.5f));
-    to.mul(vec2(visorscalex, visorscaley));
-
-    float mag = to.magnitude();
-
-    to.mul(1.0 + visordistort * visornormal * visornormal);
-    to.div(1.0 + visordistort + mag * mag);
-
-    to.add(vec2(0.5f));
-    if(!back) to.sub(from);
-
-    vx = back ? to.x : from.x - to.x; // what we get is an offset from requested position
-    vy = back ? to.y : from.y - to.y; // that is then returned or subtracted from it
-}
-
-float getcursorx(int type)
-{
-    switch(type)
-    {
-        case -1: return cursorx; // force cursor
-        case 1: return visorx; // force visor
-        default: break;
-    }
-    return rendervisor == 2 ? visorx : cursorx;
-}
-
-float getcursory(int type)
-{
-    switch(type)
-    {
-        case -1: return cursory; // force cursor
-        case 1: return visory; // force visor
-        default: break;
-    }
-    return rendervisor == 2 ? visory : cursory;
-}
-
 void gl_drawhud(bool noview = false)
 {
     hudmatrix.ortho(0, hudw, hudh, 0, -1, 1);
@@ -2697,154 +2575,7 @@ void gl_drawhud(bool noview = false)
     resethudshader();
     if(!noview) halosurf.draw();
 
-    bool wantvisor = visorenabled(noview);
-
-    if(engineready)
-    {
-        setupvisor(hudw, hudh);
-
-        if(wantvisor) visorcoords(cursorx, cursory, visorx, visory, true);
-        else
-        {
-            visorx = cursorx;
-            visory = cursory;
-        }
-
-        visoroffx = visoroffy = 0;
-        hud::visorinfo(visoroffx, visoroffy);
-
-        if(visoroffx) visorx += visoroffx / hudw;
-        if(visoroffy) visory += visoroffy / hudh;
-    }
-    else visorx = visory = visoroffx = visoroffy = 0;
-
-    if(engineready)
-    {
-        loopi(4)
-        {
-            if(i == 1 && (progressing || noview)) continue; // skip world UI's when in progress or noview
-
-            glBindFramebuffer_(GL_FRAMEBUFFER, visorfbo);
-
-            glViewport(0, 0, hudw, hudh);
-            glClearColor(0, 0, 0, 0);
-            glClear(GL_COLOR_BUFFER_BIT);
-
-            hudmatrix.ortho(0, hudw, hudh, 0, -1, 1);
-            flushhudmatrix();
-            resethudshader();
-
-            glEnable(GL_BLEND);
-            glBlendFuncSeparate_(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE);
-
-            rendervisor = wantvisor ? i : -1;
-            switch(i)
-            {
-                case 0:
-                {
-                    UI::render(SURFACE_BACKGROUND, visorfbo);
-
-                    hud::startrender(hudw, hudh, wantvisor, noview, visorfbo);
-
-                    break;
-                }
-                case 1:
-                {
-                    bindgdepth();
-
-                    glEnable(GL_DEPTH_TEST);
-                    glDepthMask(GL_FALSE);
-
-                    UI::render(SURFACE_WORLD, visorfbo);
-
-                    glDepthMask(GL_TRUE);
-                    glDisable(GL_DEPTH_TEST);
-
-                    break;
-                }
-                case 2:
-                {
-                    if(progressing && wantvisor) UI::render(SURFACE_PROGRESS, visorfbo);
-                    else UI::render(SURFACE_VISOR, visorfbo);
-
-                    hud::visorrender(hudw, hudh, wantvisor, noview, visorfbo);
-
-                    break;
-                }
-                case 3:
-                {
-                    if(progressing && !wantvisor) UI::render(SURFACE_PROGRESS, visorfbo);
-                    else UI::render(SURFACE_FOREGROUND, visorfbo);
-
-                    hud::endrender(hudw, hudh, wantvisor, noview, visorfbo);
-
-                    hudmatrix.ortho(0, hudw, hudh, 0, -1, 1);
-                    flushhudmatrix();
-                    resethudshader();
-
-                    hud::drawpointers(hudw, hudh, getcursorx(), getcursory());
-
-                    break;
-                }
-            }
-            rendervisor = -1;
-
-            glBindFramebuffer_(GL_FRAMEBUFFER, 0);
-            glViewport(0, 0, hudw, hudh);
-
-            hudmatrix.ortho(0, hudw, hudh, 0, -1, 1);
-            flushhudmatrix();
-            resethudshader();
-            glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-
-            bool visorok = i != 0 || (!noview && !progressing);
-            if(wantvisor && i == 2 && visorok)
-            {
-                SETSHADER(hudvisorview);
-                LOCALPARAMF(visorparams, visordistort, visornormal, visorscalex, visorscaley);
-            }
-            else SETSHADER(hudvisor);
-
-            LOCALPARAMF(time, lastmillis / 1000.f);
-            LOCALPARAMF(visorsize, hudw, hudh, 1.f/hudw, 1.f/hudh);
-
-            if(visorscansurfaces&(1<<i))
-            {
-                if(!editmode) LOCALPARAMF(visorfx, visorscanlines, visorscanlineblend, visornoiseblend, visorok ? visorflickerblend : 0.f);
-                else LOCALPARAMF(visorfx, visorscanedit&1 ? visorscanlines : 0.f, visorscanedit&1 ? visorscanlineblend : 0.f, visorscanedit&2 ? visornoiseblend : 0.f, visorscanedit&4 && visorok ? visorflickerblend : 0.f);
-
-                vec4 color = vec4::fromcolor(visorscanlinemixcolour, visorscanlinemixblend);
-                LOCALPARAMF(visorfxcol, color.r, color.g, color.b, color.a);
-            }
-            else
-            {
-                LOCALPARAMF(visorfx, 0, 0, 0, 0);
-                LOCALPARAMF(visorfxcol, 0, 0, 0, 0);
-            }
-
-            gle::colorf(1, 1, 1, 1);
-            glBindTexture(GL_TEXTURE_RECTANGLE, visortex);
-            if(visortiltsurfaces&(1<<i)) debugquad(visoroffx, visoroffy, hudw, hudh, 0, 0, hudw, hudh);
-            else debugquad(0, 0, hudw, hudh, 0, 0, hudw, hudh);
-
-            glDisable(GL_BLEND);
-        }
-    }
-    else
-    {
-        hudmatrix.ortho(0, hudw, hudh, 0, -1, 1);
-        flushhudmatrix();
-        resethudshader();
-
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-        hud::startrender(hudw, hudh, false, noview);
-        hud::visorrender(hudw, hudh, false, noview);
-        hud::endrender(hudw, hudh, false, noview);
-
-        glDisable(GL_BLEND);
-    }
+    visorsurf.render();
 
     debugparticles();
     debuglights();
@@ -2855,24 +2586,6 @@ void gl_drawnoview()
     gl_setupframe();
     hud::update(hudw, hudh);
     gl_drawhud(true);
-}
-
-void gl_drawhalos()
-{
-    if(hasnoview()) return;
-    drawtex = DRAWTEX_HALO;
-
-    GLERROR;
-    gl_setupframe();
-    vieww = hudw;
-    viewh = hudh;
-
-    projmatrix.perspective(fovy, aspect, nearplane, farplane);
-    setcamprojmatrix();
-
-    if(halosurf.render()) glBindFramebuffer_(GL_FRAMEBUFFER, 0);
-
-    drawtex = 0;
 }
 
 void gl_drawframe()
@@ -2900,7 +2613,7 @@ void cleanupgl()
     clearminimap();
     cleanuptimers();
     cleanupscreenquad();
-    cleanupvisor();
+    visorsurf.destroy();
     gle::cleanup();
 }
 

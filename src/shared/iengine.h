@@ -198,6 +198,7 @@ extern vec minimapcenter, minimapradius, minimapscale;
 extern void bindminimap();
 
 extern matrix4 hudmatrix;
+extern void setcamprojmatrix(bool init = true, bool flush = false);
 extern void resethudmatrix();
 extern void pushhudmatrix();
 extern void flushhudmatrix(bool flushparams = true);
