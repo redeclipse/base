@@ -22,10 +22,10 @@ VAR(IDF_PERSIST, maxparticleicondistance, 0, 512, 10000);
 VAR(IDF_PERSIST, softparticles, 0, 1, 1);
 VAR(IDF_PERSIST, softparticleblend, 1, 8, 64);
 
-Texture *particlehazetexture = NULL;
+Texture *particletex = NULL;
 VAR(IDF_PERSIST, particlehaze, 0, 1, 1);
 FVAR(IDF_PERSIST, particlehazeblend, 0, 1, 1);
-SVARF(IDF_PERSIST, particlehazetex, "textures/watern", particlehazetexture = textureload(particlehazetex, 0, true, false));
+SVARF(IDF_PERSIST, particlehazetex, "textures/watern", particletex = textureload(particlehazetex, 0, true, false));
 FVAR(IDF_PERSIST, particlehazedist, 0, 64, FVAR_MAX);
 FVAR(IDF_PERSIST, particlehazemargin, 0, 8, FVAR_MAX);
 FVAR(IDF_PERSIST, particlehazescalex, FVAR_NONZERO, 0.5f, FVAR_MAX);
@@ -496,10 +496,10 @@ struct portalrenderer : listrenderer<portal>
         gle::defhintblend(2, GL_FLOAT);
         if(type&PT_ENVMAP)
         {
-            if(!particlehazetexture) particlehazetexture = textureload(particlehazetex, 0, true, false);
+            if(!particletex) particletex = textureload(particlehazetex, 0, true, false);
 
             glActiveTexture_(GL_TEXTURE4);
-            settexture(particlehazetexture);
+            settexture(particletex);
             glActiveTexture_(GL_TEXTURE0);
         }
         else gle::begin(GL_QUADS);
@@ -1493,7 +1493,7 @@ void renderhazeparticles(GLuint hazertex, bool hazemix)
         return;
     }
     timer *parttimer = begintimer("Particles", false);
-    if(!particlehazetexture) particlehazetexture = textureload(particlehazetex, 0, true, false);
+    if(!particletex) particletex = textureload(particlehazetex, 0, true, false);
     canstep = true;
 
     glDepthMask(GL_FALSE);
@@ -1512,7 +1512,7 @@ void renderhazeparticles(GLuint hazertex, bool hazemix)
     else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
 
     glActiveTexture_(GL_TEXTURE4);
-    settexture(particlehazetexture);
+    settexture(particletex);
 
     glActiveTexture_(GL_TEXTURE5);
     glBindTexture(GL_TEXTURE_RECTANGLE, hazertex);

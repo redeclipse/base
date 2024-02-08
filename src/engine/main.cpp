@@ -518,8 +518,8 @@ void resetgl()
     cleanuptextures();
     cleanupblendmap();
     cleanuplights();
-    cleanuphalo();
-    cleanuphaze();
+    halosurf.destroy();
+    hazesurf.cleanup();
     cleanupshaders();
     cleanupgl();
 

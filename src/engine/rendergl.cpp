@@ -2470,7 +2470,7 @@ void gl_drawview()
 
     if(DRAWTEX_HAZE&(1<<drawtex))
     {
-        renderhaze();
+        hazesurf.render();
         GLERROR;
     }
 
@@ -2695,7 +2695,7 @@ void gl_drawhud(bool noview = false)
     hudmatrix.ortho(0, hudw, hudh, 0, -1, 1);
     resethudmatrix();
     resethudshader();
-    if(!noview) blendhalos();
+    if(!noview) halosurf.draw();
 
     bool wantvisor = visorenabled(noview);
 
@@ -2870,7 +2870,7 @@ void gl_drawhalos()
     projmatrix.perspective(fovy, aspect, nearplane, farplane);
     setcamprojmatrix();
 
-    renderhalo();
+    if(halosurf.render()) glBindFramebuffer_(GL_FRAMEBUFFER, 0);
 
     drawtex = 0;
 }

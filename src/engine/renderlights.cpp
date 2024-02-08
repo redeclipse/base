@@ -285,7 +285,7 @@ void viewao()
 {
     if(!ao) return;
     int w = min(hudw, hudh)/2, h = (w*hudh)/hudw;
-    SETSHADER(hudrect);
+    SETSHADER(hudrectrgb);
     gle::colorf(1, 1, 1);
     glBindTexture(GL_TEXTURE_RECTANGLE, aotex[2] ? aotex[2] : aotex[0]);
     int tw = aotex[2] ? gw : aow, th = aotex[2] ? gh : aoh;
@@ -1360,7 +1360,7 @@ VAR(0, debugbloom, 0, 0, 1);
 void viewbloom()
 {
     int w = min(hudw, hudh)/2, h = (w*hudh)/hudw;
-    SETSHADER(hudrect);
+    SETSHADER(hudrectrgb);
     gle::colorf(1, 1, 1);
     glBindTexture(GL_TEXTURE_RECTANGLE, bloomtex[3]);
     debugquad(0, 0, w, h, 0, 0, bloomw, bloomh);
@@ -1371,7 +1371,7 @@ VAR(0, debugdepth, 0, 0, 1);
 void viewdepth()
 {
     int w = min(hudw, hudh)/2, h = (w*hudh)/hudw;
-    SETSHADER(hudrect);
+    SETSHADER(hudrectrgb);
     gle::colorf(1, 1, 1);
     glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
     debugquad(0, 0, w, h, 0, 0, gw, gh);
@@ -1400,7 +1400,7 @@ void viewstencil()
     glViewport(0, 0, hudw, hudh);
 
     int w = min(hudw, hudh)/2, h = (w*hudh)/hudw;
-    SETSHADER(hudrect);
+    SETSHADER(hudrectrgb);
     gle::colorf(1, 1, 1);
     glBindTexture(GL_TEXTURE_RECTANGLE, hdrtex);
     debugquad(0, 0, w, h, 0, 0, gw, gh);
@@ -1411,7 +1411,7 @@ VAR(0, debugrefract, 0, 0, 1);
 void viewrefract()
 {
     int w = min(hudw, hudh)/2, h = (w*hudh)/hudw;
-    SETSHADER(hudrect);
+    SETSHADER(hudrectrgb);
     gle::colorf(1, 1, 1);
     glBindTexture(GL_TEXTURE_RECTANGLE, refracttex);
     debugquad(0, 0, w, h, 0, 0, gw, gh);
@@ -1585,7 +1585,7 @@ VAR(0, debugrsm, 0, 0, 2);
 void viewrsm()
 {
     int w = min(hudw, hudh)/2, h = (w*hudh)/hudw, x = hudw-w, y = hudh-h;
-    SETSHADER(hudrect);
+    SETSHADER(hudrectrgb);
     gle::colorf(1, 1, 1);
     glBindTexture(GL_TEXTURE_RECTANGLE, debugrsm == 2 ? rsmnormaltex : rsmcolortex);
     debugquad(x, y, w, h, 0, 0, rsmsize, rsmsize);
@@ -1598,7 +1598,7 @@ void viewrh()
     gle::colorf(1, 1, 1);
     if(debugrh < 0 && rhrect)
     {
-        SETSHADER(hudrect);
+        SETSHADER(hudrectrgb);
         glBindTexture(GL_TEXTURE_RECTANGLE, rhtex[5]);
         float tw = (rhgrid+2*rhborder)*(rhgrid+2*rhborder), th = (rhgrid+2*rhborder)*rhsplits;
         gle::defvertex(2);
@@ -1834,7 +1834,7 @@ void viewshadowatlas()
         tw = shadowatlaspacker.w;
         th = shadowatlaspacker.h;
         if(debugshadowatlas > 2) { tw /= 2; th /= 2; }
-        SETSHADER(hudrect);
+        SETSHADER(hudrectrgb);
     }
     else hudshader->set();
     gle::colorf(1, 1, 1);
@@ -2693,7 +2693,7 @@ void viewvol()
 {
     int w = min(hudw, hudh)/2, h = (w*hudh)/hudw;
     gle::colorf(1, 1, 1);
-    SETSHADER(hudrect);
+    SETSHADER(hudrectrgb);
     glBindTexture(GL_TEXTURE_RECTANGLE, voltex[debugvol]);
     debugquad(0, 0, w, h, 0, 0, gw, gh);
 }
@@ -5480,8 +5480,8 @@ bool debuglights()
     else if(debugrsm) viewrsm();
     else if(debugrh) viewrh();
     else if(debugvol) viewvol();
-    else if(debughaze) viewhaze();
-    else if(debughalo) viewhalo();
+    else if(debughaze) hazesurf.debug(hudw, hudh, debughalo == 2);
+    else if(debughalo) halosurf.debug(hudw, hudh, debughalo == 2);
     else if(!debugaa()) return false;
     return true;
 }

@@ -619,7 +619,7 @@ static inline void renderbatchedmodel(model *m, batchedmodel &b)
     if(shadowmapping > SM_REFLECT || drawtex == DRAWTEX_HALO) anim |= ANIM_NOSKIN;
     else if(b.state.flags&MDL_FULLBRIGHT) anim |= ANIM_FULLBRIGHT;
 
-    if(drawtex == DRAWTEX_HALO) swaphalo(b.state.flags&MDL_HALO_TOP ? HALO_ONTOP : HALO_DEPTH);
+    if(drawtex == DRAWTEX_HALO) halosurf.swap(b.state.flags&MDL_HALO_TOP ? HaloSurface::ONTOP : HaloSurface::DEPTH);
     m->render(anim, &b.state, b.d);
 }
 
@@ -1142,7 +1142,7 @@ hasboundbox:
         m->startrender();
         setaamask(true);
         if(state.flags&MDL_FULLBRIGHT) state.anim |= ANIM_FULLBRIGHT;
-        if(drawtex == DRAWTEX_HALO) swaphalo(state.flags&MDL_HALO_TOP ? HALO_ONTOP : HALO_DEPTH);
+        if(drawtex == DRAWTEX_HALO) halosurf.swap(state.flags&MDL_HALO_TOP ? HaloSurface::ONTOP : HaloSurface::DEPTH);
         m->render(state.anim, &state, d);
         m->endrender();
         if(state.flags&MDL_CULL_QUERY && d->query) endquery(d->query);

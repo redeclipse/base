@@ -77,7 +77,7 @@ VAR(0, debugtqaa, 0, 0, 2);
 void viewtqaa()
 {
     int w = min(hudw, hudh)*1.0f, h = (w*hudh)/hudw, tw = gw, th = gh;
-    SETSHADER(hudrect);
+    SETSHADER(hudrectrgb);
     gle::colorf(1, 1, 1);
     switch(debugtqaa)
     {
@@ -567,7 +567,7 @@ VAR(0, debugsmaa, 0, 0, 5);
 void viewsmaa()
 {
     int w = min(hudw, hudh)*1.0f, h = (w*hudh)/hudw, tw = gw, th = gh;
-    SETSHADER(hudrect);
+    SETSHADER(hudrectrgb);
     gle::colorf(1, 1, 1);
     switch(debugsmaa)
     {

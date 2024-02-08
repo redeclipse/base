@@ -1090,14 +1090,52 @@ extern int halodist;
 extern float haloblend, halotolerance, haloaddz;
 extern bvec halocolour;
 
-enum { HALO_DEPTH, HALO_ONTOP, HALO_MAX };
+struct RenderSurface
+{
+    int tclamp, filter, width, height;
+    GLenum format, target;
+    vector<GLuint> texs, fbos;
 
-extern bool wanthalos(bool check, bool val);
-extern void renderhalo();
-extern void viewhalo();
-extern void blendhalos();
-extern void cleanuphalo();
-extern void swaphalo(int type);
+    RenderSurface() : tclamp(3), filter(1), width(0), height(0), format(GL_RGBA), target(GL_TEXTURE_RECTANGLE) {}
+    ~RenderSurface() { cleanup(); }
+
+    virtual void checkformat(int &w, int &h, GLenum &f, GLenum &t, bool &b);
+
+    virtual bool cleanup();
+    virtual int genbuffers(int n = 1, bool wantfbo = true);
+    virtual int setup(int w = 0, int h = 0, int n = 1, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, bool wantfbo = true);
+    virtual int init(int w = 0, int h = 0, int n = 1, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, bool wantfbo = true);
+    virtual bool bindtex(int n = 0, int tmu = 0);
+    virtual bool bindfbo(int n = 0);
+
+    virtual int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, bool wantfbo = true);
+    virtual bool destroy();
+    virtual bool render();
+    virtual bool swap(int n = 0);
+    virtual bool draw(int x = 0, int y = 0, int w = 0, int h = 0);
+    virtual void debug(int w, int h, int n = 0, bool large = false);
+};
+
+struct HaloSurface : RenderSurface
+{
+    enum { DEPTH, ONTOP, MAX };
+
+    int halotype;
+
+    HaloSurface() : halotype(-1) {}
+    ~HaloSurface() { RenderSurface::cleanup(); }
+
+    bool check(bool check, bool val);
+
+    void checkformat(int &w, int &h, GLenum &f, GLenum &t, bool &b) override;
+
+    int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, bool wantfbo = true) override;
+    bool destroy() override;
+    bool render() override;
+    bool swap(int n = 0) override;
+    bool draw(int x = 0, int y = 0, int w = 0, int h = 0) override;
+};
+extern HaloSurface halosurf;
 
 extern int debughaze;
 
@@ -1109,10 +1147,21 @@ extern float gethazemindist();
 extern float gethazemaxdist();
 extern float gethazeblend();
 
-extern void cleanuphaze();
-extern void inithaze();
-extern void renderhaze();
-extern void viewhaze();
+struct HazeSurface : RenderSurface
+{
+    Texture *tex;
+
+    HazeSurface() : tex(NULL) {}
+    ~HazeSurface() { RenderSurface::cleanup(); }
+
+    bool check();
+
+    void checkformat(int &w, int &h, GLenum &f, GLenum &t, bool &b) override;
+
+    int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, bool wantfbo = true) override;
+    bool render() override;
+};
+extern HazeSurface hazesurf;
 
 #endif // STANDALONE
 #include "sound.h"

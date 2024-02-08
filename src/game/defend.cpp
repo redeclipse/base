@@ -37,7 +37,7 @@ namespace defend
 
     bool haloallow(const vec &o, int id, int render, bool justtest, bool check)
     {
-        if(!wanthalos(check, defendhalos != 0)) return false;
+        if(!halosurf.check(check, defendhalos != 0)) return false;
         vec dir(0, 0, 0);
         float dist = -1;
         if(!radarallow(o, id, render, dir, dist, justtest)) return false;

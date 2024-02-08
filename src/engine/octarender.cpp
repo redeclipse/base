@@ -1811,7 +1811,7 @@ void allchanged(bool load)
     if(filltjoints) findtjoints();
     octarender();
     if(load) precachetextures();
-    inithaze();
+    hazesurf.create();
     setupmaterials();
     clearshadowcache();
     updatevabbs(true);

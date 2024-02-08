@@ -4523,7 +4523,7 @@ namespace game
     {
         if(d->isprize(focus)) return true;
         if(d->actortype >= A_ENVIRONMENT) return false;
-        if(!wanthalos(check, (d == focus ? playerhalos&1 : playerhalos&2) != 0) || (d == focus && inzoom())) return false;
+        if(!halosurf.check(check, (d == focus ? playerhalos&1 : playerhalos&2) != 0) || (d == focus && inzoom())) return false;
         if(justtest) return true;
         vec dir(0, 0, 0);
         float dist = -1;
