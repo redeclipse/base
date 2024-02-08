@@ -2214,7 +2214,7 @@ namespace game
         int anc = d == focus ? S_V_FRAGGED : -1, curmat = material&MATF_VOLUME;
 
         if(d != player1) d->resetinterp();
-        formatstring(d->obit, "%s ", colourname(d));
+        formatstring(d->obit, "%s ", colourname(v));
 
         if(d != v && v->lastattacker == d->clientnum) v->lastattacker = -1;
         d->lastattacker = v->clientnum;
@@ -2243,10 +2243,24 @@ namespace game
             else if(flags&HIT_JANITOR) obitctx = obitjanitor;
             else obitctx = obitsuicide;
 
-            concformatstring(d->obit, "[\fs%s\fS]", obitctx);
+            concatstring(d->obit, obitctx);
         }
         else
         {
+            if(damageinteger) concformatstring(d->obit, "(\fs\fc%d\fS) ", int(ceilf(v->health/damagedivisor)));
+            else concformatstring(d->obit, "(\fs\fc%.1f\fS) ", v->health/damagedivisor);
+
+            if(!assist.empty())
+            {
+                loopv(assist) if(assist[i])
+                {
+                    concformatstring(d->obit, "+ %s ", colourname(assist[i]));
+
+                    if(damageinteger) concformatstring(d->obit, "(\fs\fc%d\fS) ", int(ceilf(assist[i]->health/damagedivisor)));
+                    else concformatstring(d->obit, "(\fs\fc%.1f\fS) ", assist[i]->health/damagedivisor);
+                }
+            }
+
             if(burnfunc) obitctx = obitburn;
             else if(bleedfunc) obitctx = obitbleed;
             else if(shockfunc) obitctx = obitshock;
@@ -2259,17 +2273,16 @@ namespace game
             }
             else obitctx = obitkilled;
 
-            concformatstring(d->obit, "[\fs%s\fS] by", obitctx);
+            concatstring(d->obit, obitctx);
+            if(m_team(gamemode, mutators) && d->team == v->team) concatstring(d->obit, " \fs\fzawteam-mate\fS");
+            concformatstring(d->obit, " %s", colourname(d));
 
             bool hasanc = false;
             if(d->headless && !hasanc) anc = S_V_HEADSHOT;
 
-            if(v->actortype >= A_ENEMY) concatstring(d->obit, " a");
-            else if(m_team(gamemode, mutators) && d->team == v->team) concatstring(d->obit, " \fs\fzawteam-mate\fS");
-
             if(style&FRAG_REVENGE)
             {
-                concatstring(d->obit, " \fs\fzoyvengeful\fS");
+                concatstring(d->obit, " \fs\fzoyrevenge\fS");
                 v->dominating.removeobj(d);
                 d->dominated.removeobj(v);
                 anc = S_V_REVENGE;
@@ -2284,9 +2297,6 @@ namespace game
                 anc = S_V_DOMINATE;
                 hasanc = true;
             }
-
-            concatstring(d->obit, " ");
-            concatstring(d->obit, colourname(v));
 
             if(style&FRAG_BREAKER)
             {
@@ -2366,25 +2376,6 @@ namespace game
         if(d != v)
         {
             concformatstring(d->obit, " \fs\fo@\fy%.2f\fom\fS", v->o.dist(d->o)/8.f);
-            if(damageinteger) concformatstring(d->obit, " (\fs\fc%d\fS)", int(ceilf(v->health/damagedivisor)));
-            else concformatstring(d->obit, " (\fs\fc%.1f\fS)", v->health/damagedivisor);
-        }
-
-        if(!assist.empty())
-        {
-            concatstring(d->obit, " +");
-            loopv(assist) if(assist[i])
-            {
-                concatstring(d->obit, assist.length() > 1 && i == assist.length()-1 ? " + " : (i ? " + " : " "));
-                if(assist[i]->actortype >= A_ENEMY) concatstring(d->obit, "a ");
-                concatstring(d->obit, colourname(assist[i]));
-                if(damageinteger) concformatstring(d->obit, " (\fs\fc%d\fS)", int(ceilf(assist[i]->health/damagedivisor)));
-                else concformatstring(d->obit, " (\fs\fc%.1f\fS)", assist[i]->health/damagedivisor);
-            }
-        }
-
-        if(d != v)
-        {
             if(v->state == CS_ALIVE && d->actortype < A_ENEMY)
             {
                 copystring(v->obit, d->obit);
