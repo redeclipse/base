@@ -184,7 +184,7 @@ namespace projs
             flags |= HIT_WAVE;
         }
 
-        float skew = clamp(scale, 0.f, 1.f)*damagescale;
+        float skew = clamp(scale, 0.f, 1.f) * damagescale * A(v->actortype, damage);
 
         if(flags&HIT_WHIPLASH) skew *= WF(WK(flags), weap, damagewhiplash, WS(flags));
         else if(flags&HIT_HEAD || flags&HIT_FULL) skew *= WF(WK(flags), weap, damagehead, WS(flags));

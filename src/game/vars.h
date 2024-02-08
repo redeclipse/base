@@ -484,10 +484,10 @@ GVAR(IDF_GAMEMOD, 0, botbalance, -1, -1, VAR_MAX); // -1 = always use numplayers
 GFVAR(IDF_GAMEMOD, 0, botbalancescale, FVAR_NONZERO, 1, FVAR_MAX); // use balance*this
 GVAR(IDF_GAMEMOD, 0, botbalanceduel, -1, 2, VAR_MAX); // -1 = always use numplayers, 0 = don't balance, 1 or more = fill only with this many
 GVAR(IDF_GAMEMOD, 0, botbalancesurvivor, -1, 2, VAR_MAX); // -1 = always use numplayers, 0 = don't balance, 1 or more = fill only with this many
-GVAR(IDF_GAMEMOD, 0, botskillmin, 1, 85, 101);
-GVAR(IDF_GAMEMOD, 0, botskillmax, 1, 95, 101);
-GFVAR(IDF_GAMEMOD, 0, botskillfrags, -100, -1, 100);
-GFVAR(IDF_GAMEMOD, 0, botskilldeaths, -100, 1, 100);
+GVAR(IDF_GAMEMOD, 0, botskillmin, 1, 65, 101);
+GVAR(IDF_GAMEMOD, 0, botskillmax, 1, 90, 101);
+GFVAR(IDF_GAMEMOD, 0, botskillfrags, -100, -0.1f, 100);
+GFVAR(IDF_GAMEMOD, 0, botskilldeaths, -100, 0.1f, 100);
 GVAR(IDF_GAMEMOD, 0, botlimit, 0, 32, MAXAI);
 GVAR(IDF_GAMEMOD, 0, botoffset, VAR_MIN, 0, VAR_MAX);
 GSVAR(0, PRIV_MODERATOR, botmalenames, "");
@@ -570,8 +570,8 @@ GFVAR(IDF_GAMEMOD, 0, ejectbuoyancy, -10000, 0, 10000);
 
 GVAR(IDF_GAMEMOD, 0, janitorlimit, 0, 8, MAXAI); // maximum number of janitors
 GVAR(IDF_GAMEMOD, 0, janitorprize, 0, -1, 3); // // -1 = random, 0 = none, 1 = grenade, 2 = mine, 3 = rocket
-GVAR(IDF_GAMEMOD, 0, janitorready, 0, 400, VAR_MAX); // ready to award a prize at this much stuff
-GVAR(IDF_GAMEMOD, 0, janitorcollect, 0, 800, VAR_MAX); // collect this much before dumping
+GVAR(IDF_GAMEMOD, 0, janitorready, 0, 1000, VAR_MAX); // ready to award a prize at this much stuff
+GVAR(IDF_GAMEMOD, 0, janitorcollect, 0, 2000, VAR_MAX); // collect this much before dumping
 GFVAR(IDF_GAMEMOD, 0, janitorbalance, 0, 0.33f, FVAR_MAX); // this * current balance = number of janitors
 GFVAR(IDF_GAMEMOD, 0, janitorjunktime, 0, 0.25f, 1); // when shell casings and vanities/parts become "junk"
 GFVAR(IDF_GAMEMOD, 0, janitorjunkitems, 0, 0.75f, 1); // when items become "junk"

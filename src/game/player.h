@@ -171,6 +171,9 @@ APFVAR(IDF_GAMEMOD, 0, aiyawscale, FVAR_NONZERO, FVAR_MAX,
 APVAR(IDF_GAMEMOD, 0, collide, 0, A_C_ALL,
     A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL
 );
+APFVAR(IDF_GAMEMOD, 0, damage, 1, FVAR_MAX,
+    1.0f,           1.0f,           1.0f,           1.0f,           1.0f,           1.0f,           1.0f,           0.25f
+);
 APVAR(IDF_GAMEMOD, 0, health, 1, VAR_MAX,
     1000,           1000,           1000,           500,            500,            500,            1000,           2000
 );
@@ -226,22 +229,22 @@ APVAR(IDF_GAMEMOD, 0, teamdamage, 0, A_T_ALL,
     A_T_PLAYER,     A_T_AI,         A_T_AI,         A_T_AI,         A_T_AI,         A_T_AI,         A_T_PLAYER,     A_T_PLAYER
 );
 APVAR(IDF_GAMEMOD, 0, weapongladiator, 0, W_ALL-1,
-    W_CLAW,         W_CLAW,         W_SMG,          W_PISTOL,       W_CLAW,         W_CLAW,         W_PISTOL,       W_SMG
+    W_CLAW,         W_CLAW,         W_SMG,          W_PISTOL,       W_CLAW,         W_CLAW,         W_PISTOL,       W_ZAPPER
 );
 APVAR(IDF_GAMEMOD, 0, weaponinsta, 0, W_ALL-1,
     W_RIFLE,        W_RIFLE,        W_RIFLE,        W_RIFLE,        W_CLAW,         W_CLAW,         W_RIFLE,        W_RIFLE
 );
 APVAR(IDF_GAMEMOD, 0, weaponkaboom, 0, W_ALL-1,
-    W_GRENADE,      W_GRENADE,      W_GRENADE,      W_GRENADE,      W_CLAW,         W_CLAW,         W_PISTOL,       W_SMG
+    W_GRENADE,      W_GRENADE,      W_GRENADE,      W_GRENADE,      W_CLAW,         W_CLAW,         W_PISTOL,       W_ZAPPER
 );
 APVAR(IDF_GAMEMOD, 0, weaponmedieval, 0, W_ALL-1,
-    W_SWORD,        W_SWORD,        W_RIFLE,        W_SWORD,        W_CLAW,         W_CLAW,         W_PISTOL,       W_SMG
+    W_SWORD,        W_SWORD,        W_RIFLE,        W_SWORD,        W_CLAW,         W_CLAW,         W_PISTOL,       W_ZAPPER
 );
 APVAR(IDF_GAMEMOD, 0, weaponrace, 0, W_ALL-1,
-    W_CLAW,         W_CLAW,         W_SMG,          W_PISTOL,       W_CLAW,         W_CLAW,         W_PISTOL,       W_SMG
+    W_CLAW,         W_CLAW,         W_SMG,          W_PISTOL,       W_CLAW,         W_CLAW,         W_PISTOL,       W_ZAPPER
 );
 APVAR(IDF_GAMEMOD, 0, weaponspawn, 0, W_ALL-1,
-    W_PISTOL,       W_PISTOL,       W_SMG,          W_PISTOL,       W_CLAW,         W_CLAW,         W_PISTOL,       W_SMG
+    W_PISTOL,       W_PISTOL,       W_SMG,          W_PISTOL,       W_CLAW,         W_CLAW,         W_PISTOL,       W_ZAPPER
 );
 // these are modified by gameent::configure() et al
 APFVAR(IDF_GAMEMOD, 0, speed, 0, FVAR_MAX,
