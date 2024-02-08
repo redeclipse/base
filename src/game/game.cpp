@@ -2226,9 +2226,9 @@ namespace game
             else if(flags&HIT_TOUCH) obitctx = *obittouch ? obittouch : obitsplat;
             else if(flags&HIT_CRUSH) obitctx = *obitcrush ? obitcrush : obitsquish;
             else if(flags&HIT_SPEC) obitctx = obitspectator;
-            else if(flags&HIT_MATERIAL && curmat&MAT_WATER) obitctx = getobitwater(material, obitdrowned);
-            else if(flags&HIT_MATERIAL && curmat&MAT_LAVA) obitctx = getobitlava(material, obitmelted);
-            else if(flags&HIT_MATERIAL && curmat&MAT_VOLFOG) obitctx = getobitvolfog(material, obitchoked);
+            else if(flags&HIT_MATERIAL && curmat&MAT_WATER && getwaterenabled(curmat)) obitctx = getobitwater(material, obitdrowned);
+            else if(flags&HIT_MATERIAL && curmat&MAT_LAVA && getlavaenabled(curmat)) obitctx = getobitlava(material, obitmelted);
+            else if(flags&HIT_MATERIAL && curmat&MAT_VOLFOG && getvolfogenabled(curmat)) obitctx = getobitvolfog(material, obitchoked);
             else if(flags&HIT_MATERIAL && material&MAT_HURT) obitctx = *obithurt ? obithurt : obithurtmat;
             else if(flags&HIT_MATERIAL) obitctx = *obitdeath ? obitdeath : obitdeathmat;
             else if(flags&HIT_CHECKPOINT) obitctx = *obitcheckpoint ? obitcheckpoint : obitwrongcp;

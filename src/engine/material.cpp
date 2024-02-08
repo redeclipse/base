@@ -173,22 +173,22 @@ int visiblematerial(const cube &c, int orient, const ivec &co, int size, ushort 
 
     case MAT_LAVA:
         if(visibleface(c, orient, co, size, mat, MAT_AIR, matmask))
-            return (orient != O_BOTTOM && (1<<orient)&getlavafaces(c.material) ? MATSURF_VISIBLE : MATSURF_EDIT_ONLY);
+            return (getlavaenabled(c.material) && orient != O_BOTTOM && (1<<orient)&getlavafaces(c.material) ? MATSURF_VISIBLE : MATSURF_EDIT_ONLY);
         break;
 
     case MAT_WATER:
         if(visibleface(c, orient, co, size, mat, MAT_AIR, matmask))
-            return (orient != O_BOTTOM && (1<<orient)&getwaterfaces(c.material) ? MATSURF_VISIBLE : MATSURF_EDIT_ONLY);
+            return (getwaterenabled(c.material) && orient != O_BOTTOM && (1<<orient)&getwaterfaces(c.material) ? MATSURF_VISIBLE : MATSURF_EDIT_ONLY);
         break;
 
     case MAT_GLASS:
         if(visibleface(c, orient, co, size, MAT_GLASS, MAT_AIR, matmask))
-            return ((1<<orient)&getglassfaces(c.material) ? MATSURF_VISIBLE : MATSURF_EDIT_ONLY);
+            return (getglassenabled(c.material) && (1<<orient)&getglassfaces(c.material) ? MATSURF_VISIBLE : MATSURF_EDIT_ONLY);
         break;
 
     case MAT_VOLFOG:
         if(visibleface(c, orient, co, size, MAT_VOLFOG, MAT_AIR, matmask))
-            return (orient != O_TOP ? MATSURF_EDIT_ONLY : MATSURF_VISIBLE);
+            return (getvolfogenabled(c.material) && orient == O_TOP ? MATSURF_VISIBLE : MATSURF_EDIT_ONLY);
         break;
 
     default:
@@ -723,6 +723,7 @@ void rendermaterialmask()
 }
 
 #define GLASSVARS(type, name) \
+    VAR(IDF_MAP, name##enabled##type, 0, 1, 1); \
     CVAR(IDF_MAP, name##colour##type, 0xB0D8FF); \
     FVAR(IDF_MAP, name##refract##type, 0, 0.1f, 1e3f); \
     VAR(IDF_MAP, name##spec##type, 0, 150, 200);
@@ -736,6 +737,7 @@ GLASSVARS(alt, glass2)
 GLASSVARS(alt, glass3)
 GLASSVARS(alt, glass4)
 
+GETMATIDXVAR(glass, enabled, int)
 GETMATIDXVARDARK(glass, colour, const bvec &)
 GETMATIDXVAR(glass, refract, float)
 GETMATIDXVAR(glass, spec, int)

@@ -91,7 +91,7 @@ void renderdepthfog(int mat, float surface)
           syl = p[1].z > p[0].z ? 2*(bz - p[0].z)/(p[1].z - p[0].z) - 1 : 1,
           syr = p[3].z > p[2].z ? 2*(bz - p[2].z)/(p[3].z - p[2].z) - 1 : 1;
 
-    if((mat&MATF_VOLUME) == MAT_WATER)
+    if((mat&MATF_VOLUME) == MAT_WATER && getwaterenabled(mat))
     {
         const bvec &deepcolor = getwaterdeepcolour(mat);
         int deep = getwaterdeep(mat);
@@ -105,7 +105,7 @@ void renderdepthfog(int mat, float surface)
 
         rendercaustics(surface, syl, syr);
     }
-    else if((mat&MATF_VOLUME) == MAT_VOLFOG)
+    else if((mat&MATF_VOLUME) == MAT_VOLFOG && getvolfogenabled(mat))
     {
         const bvec &deepcolor = getvolfogdeepcolour(mat);
         int deep = getvolfogdeep(mat);
@@ -363,6 +363,7 @@ static inline void rendervolume(const materialsurface &m, int mat = MAT_WATER)
 }
 
 #define WATERVARS(type, name) \
+    VAR(IDF_MAP, name##enabled##type, 0, 1, 1); \
     CVAR(IDF_MAP, name##colour##type, 0x01212C); \
     CVAR(IDF_MAP, name##deepcolour##type, 0x010A10); \
     CVAR(IDF_MAP, name##deepfade##type, 0x60BFFF); \
@@ -388,6 +389,7 @@ WATERVARS(alt, water2)
 WATERVARS(alt, water3)
 WATERVARS(alt, water4)
 
+GETMATIDXVAR(water, enabled, int)
 GETMATIDXVARDARK(water, colour, const bvec &)
 GETMATIDXVARDARK(water, deepcolour, const bvec &)
 GETMATIDXVARDARK(water, deepfade, const bvec &)
@@ -409,6 +411,7 @@ VARF(IDF_PERSIST, waterenvmap, 0, 1, 1, { preloadwatershaders(); });
 VARF(IDF_PERSIST, waterfallenv, 0, 1, 1, preloadwatershaders());
 
 #define LAVAVARS(type, name) \
+    VAR(IDF_MAP, name##enabled##type, 0, 1, 1); \
     CVAR(IDF_MAP, name##colour##type, 0xFF4000); \
     VAR(IDF_MAP, name##fog##type, 0, 50, 10000); \
     FVAR(IDF_MAP, name##glowmin##type, 0, 0.25f, 2); \
@@ -428,6 +431,7 @@ LAVAVARS(alt, lava2)
 LAVAVARS(alt, lava3)
 LAVAVARS(alt, lava4)
 
+GETMATIDXVAR(lava, enabled, int)
 GETMATIDXVARDARK(lava, colour, const bvec &)
 GETMATIDXVAR(lava, fog, int)
 GETMATIDXVAR(lava, glowmin, float)
@@ -439,6 +443,7 @@ GETMATIDXVAR(lava, fallscrollx, float)
 GETMATIDXVAR(lava, fallscrolly, float)
 
 #define VOLFOGVARS(type, name) \
+    VAR(IDF_MAP, name##enabled##type, 0, 1, 1); \
     CVAR(IDF_MAP, name##colour##type, 0); \
     CVAR(IDF_MAP, name##deepcolour##type, 0); \
     CVAR(IDF_MAP, name##deepfade##type, 0); \
@@ -481,6 +486,8 @@ VOLFOGVARS(alt, volfog4)
         res.mul(game::darkness(DARK_ENV)); \
         return res; \
     }
+
+GETMATIDXVAR(volfog, enabled, int);
 
 GETVFIDXVAR(volfog, colour, const bvec &);
 GETVFIDXVAR(volfog, deepcolour, const bvec &);

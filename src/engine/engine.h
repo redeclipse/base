@@ -725,6 +725,7 @@ extern float watersx1, watersy1, watersx2, watersy2;
         return res; \
     }
 
+extern int getwaterenabled(int mat);
 extern const bvec &getwatercolour(int mat);
 extern const bvec &getwaterdeepcolour(int mat);
 extern const bvec &getwaterdeepfade(int mat);
@@ -741,6 +742,7 @@ extern int getwaterreflectstep(int mat);
 extern float getwaterfallscrollx(int mat);
 extern float getwaterfallscrolly(int mat);
 
+extern int getlavaenabled(int mat);
 extern const bvec &getlavacolour(int mat);
 extern int getlavafog(int mat);
 extern float getlavaglowmin(int mat);
@@ -751,10 +753,12 @@ extern float getlavascrolly(int mat);
 extern float getlavafallscrollx(int mat);
 extern float getlavafallscrolly(int mat);
 
+extern int getglassenabled(int mat);
 extern const bvec &getglasscolour(int mat);
 extern float getglassrefract(int mat);
 extern int getglassspec(int mat);
 
+extern int getvolfogenabled(int mat);
 extern const bvec &getvolfogcolour(int mat);
 extern const bvec &getvolfogdeepcolour(int mat);
 extern const bvec &getvolfogdeepfade(int mat);
