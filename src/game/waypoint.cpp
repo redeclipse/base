@@ -536,7 +536,7 @@ namespace ai
 
     string loadedwaypoints = "";
     VARF(0, dropwaypoints, 0, 0, 1, if(dropwaypoints) getwaypoints());
-    VAR(IDF_PERSIST, autoexplodewaypoints, 0, 7, 15);
+    VAR(IDF_PERSIST, autoexplodewaypoints, 0, 4, 15);
 
     static const vec recursedirs[6] = {
         vec(1, 0, 0), vec(-1, 0, 0), vec(0, 1, 0), vec(0, -1, 0), vec(0, 0, -1), vec(0, 0, 1)
@@ -661,7 +661,7 @@ namespace ai
 
     void remapwaypoints();
 
-    int explodewaypoints(int n = 1, int passes = 6, bool linkup = false, bool saved = true)
+    int explodewaypoints(int n = 5, int passes = 5, bool linkup = false, bool saved = false)
     {
         vector<int> considered;
         int created = 0;
@@ -692,7 +692,7 @@ namespace ai
 
         return created;
     }
-    ICOMMAND(0, explodewaypoints, "bbib", (int *n, int *p, int *u, int *s), intret(explodewaypoints(*n > 0 ? *n : 1, *p > 0 ? *p : 6, *u != 0, *s != 0)));
+    ICOMMAND(0, explodewaypoints, "bbib", (int *n, int *p, int *u, int *s), intret(explodewaypoints(*n > 0 ? *n : 5, *p > 0 ? *p : 5, *u != 0, *s != 0)));
 
     int addwaypoint(const vec &o, int pull = -1, bool saved = true)
     {
@@ -955,9 +955,9 @@ namespace ai
         if(m_edit(game::gamemode) ? (autoexplodewaypoints&8) != 0 : autoexplodewaypoints)
         {
             conoutf(colourwhite, "Exploding waypoints..");
-            if(autoexplodewaypoints&1) explodewaypoints(1, 6, true, false);
-            if(autoexplodewaypoints&2) explodewaypoints(1, 6, false, false);
-            if(autoexplodewaypoints&4) explodewaypoints(5, 5, false, false);
+            if(autoexplodewaypoints&1) explodewaypoints(1, 6, true);
+            if(autoexplodewaypoints&2) explodewaypoints(1, 6, false);
+            if(autoexplodewaypoints&4) explodewaypoints();
         }
 
         if(!cleanwaypoints()) clearwpcache();
