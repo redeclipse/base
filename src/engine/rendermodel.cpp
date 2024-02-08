@@ -1002,7 +1002,7 @@ model *loadbestlod(model *m, const vec &center, float radius, float offset, bool
     if(!lodmodels || (drawtex && drawtex != DRAWTEX_HALO) || !m || !m->haslod()) return m;
     const char *mdl = NULL;
 
-    if(lodvis && cullmodel(m, center, radius, MDL_CULL_DIST|MDL_CULL_VFC|MDL_CULL_OCCLUDED))
+    if(cullmodel(m, center, radius, MDL_CULL_DIST|(lodvis ? MDL_CULL_VFC|MDL_CULL_OCCLUDED : 0)))
         mdl = m->lowestlod(); // if we can't see it then use the lowest detail model
     else
     {
