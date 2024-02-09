@@ -1,9 +1,15 @@
 // Player and other actor definitions
 
-enum {
-    A_PLAYER = 0, A_BOT, A_TURRET, A_GRUNT, A_DRONE, A_ROLLER, A_HAZARD, A_JANITOR, A_MAX,
-    A_ENEMY = A_TURRET, A_ENVIRONMENT = A_HAZARD, A_TOTAL = A_MAX - A_ENEMY, A_CLAMP = A_ENVIRONMENT - A_ENEMY
-};
+#define A_ENUM(en, um) \
+    en(um, player, PLAYER) en(um, bot, BOT) en(um, turret, TURRET) en(um, grunt, GRUNT) \
+    en(um, drone, DRONE) en(um, roller, ROLLER) en(um, hazard, HAZARD) en(um, janitor, JANITOR) \
+    en(um, max, MAX)
+ENUM_DLN(A);
+ENUM_VAR(A_ENEMY, A_TURRET);
+ENUM_VAR(A_ENVIRONMENT, A_HAZARD);
+ENUM_VAR(A_TOTAL, A_MAX - A_ENEMY);
+ENUM_VAR(A_CLAMP, A_ENVIRONMENT - A_ENEMY);
+
 struct actor
 {
     const char *name;
@@ -28,39 +34,40 @@ extern actor actors[];
 #endif
 
 #define AA(type) (1<<A_A_##type)
-enum
-{
-    A_A_MOVE = 0, A_A_JUMP, A_A_CROUCH, A_A_MELEE, A_A_PRIMARY, A_A_SECONDARY, A_A_PUSHABLE, A_A_AFFINITY, A_A_REGEN, A_A_KAMIKAZE, A_A_GIBS, A_A_DAMAGE, A_A_AMMO, A_A_FLOAT, A_A_MAX,
-    A_A_ATTACK = (1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_KAMIKAZE),
-    A_A_ALL = (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_CROUCH)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_AFFINITY)|(1<<A_A_REGEN)|(1<<A_A_GIBS)|(1<<A_A_DAMAGE)|(1<<A_A_AMMO)|(1<<A_A_FLOAT),
-    A_A_PLAYER = (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_CROUCH)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_AFFINITY)|(1<<A_A_REGEN)|(1<<A_A_GIBS)|(1<<A_A_DAMAGE)|(1<<A_A_AMMO),
-    A_A_MOVINGAI = (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_CROUCH)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_AFFINITY)|(1<<A_A_REGEN)|(1<<A_A_GIBS)|(1<<A_A_DAMAGE)|(1<<A_A_AMMO),
-    A_A_LESSAI = (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_GIBS)|(1<<A_A_DAMAGE)|(1<<A_A_AMMO),
-    A_A_FIXEDAI = (1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_DAMAGE)|(1<<A_A_AMMO),
-    A_A_ROLLER = (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_PUSHABLE)|(1<<A_A_KAMIKAZE)|(1<<A_A_DAMAGE)|(1<<A_A_AMMO),
-    A_A_HAZARD = (1<<A_A_PRIMARY),
-    A_A_JANITOR = (1<<A_A_MOVE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_DAMAGE)|(1<<A_A_REGEN)|(1<<A_A_FLOAT)
-};
 
-enum
-{
-    A_C_PLAYERS = 0, A_C_BOTS, A_C_ENEMIES, A_C_MAX,
-    A_C_ALL = (1<<A_C_PLAYERS)|(1<<A_C_BOTS)|(1<<A_C_ENEMIES)
-};
+#define A_A_ENUM(en, um) \
+    en(um, move, MOVE) en(um, jump, JUMP) en(um, crouch, CROUCH) en(um, melee, MELEE) \
+    en(um, primary, PRIMARY) en(um, secondary, SECONDARY) en(um, pushable, PUSHABLE) \
+    en(um, affinity, AFFINITY) en(um, regen, REGEN) en(um, kamikaze, KAMIKAZE) \
+    en(um, living, LIVING) en(um, damage, DAMAGE) en(um, ammo, AMMO) en(um, float, FLOAT) \
+    en(um, max, MAX)
+ENUM_DLN(A_A);
+ENUM_VAR(A_A_ATTACK, (1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_KAMIKAZE));
+ENUM_VAR(A_A_ALL, (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_CROUCH)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_AFFINITY)|(1<<A_A_REGEN)|(1<<A_A_LIVING)|(1<<A_A_DAMAGE)|(1<<A_A_AMMO)|(1<<A_A_FLOAT));
+ENUM_VAR(A_A_PLAYER, (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_CROUCH)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_AFFINITY)|(1<<A_A_REGEN)|(1<<A_A_LIVING)|(1<<A_A_DAMAGE)|(1<<A_A_AMMO));
+ENUM_VAR(A_A_MOVINGAI, (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_CROUCH)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_AFFINITY)|(1<<A_A_REGEN)|(1<<A_A_LIVING)|(1<<A_A_DAMAGE)|(1<<A_A_AMMO));
+ENUM_VAR(A_A_LESSAI, (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_LIVING)|(1<<A_A_DAMAGE)|(1<<A_A_AMMO));
+ENUM_VAR(A_A_FIXEDAI, (1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_DAMAGE)|(1<<A_A_AMMO));
+ENUM_VAR(A_A_ROLLER, (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_PUSHABLE)|(1<<A_A_KAMIKAZE)|(1<<A_A_DAMAGE)|(1<<A_A_AMMO));
+ENUM_VAR(A_A_HAZARD, (1<<A_A_PRIMARY));
+ENUM_VAR(A_A_JANITOR, (1<<A_A_MOVE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_DAMAGE)|(1<<A_A_REGEN)|(1<<A_A_FLOAT));
 
-enum
-{
-    A_T_PLAYERS = 0, A_T_BOTS, A_T_ENEMIES, A_T_GHOST, A_T_MAX,
-    A_T_ALL = (1<<A_T_PLAYERS)|(1<<A_T_BOTS)|(1<<A_T_ENEMIES)|(1<<A_T_GHOST),
-    A_T_PLAYER = (1<<A_T_PLAYERS)|(1<<A_T_BOTS)|(1<<A_T_ENEMIES),
-    A_T_AI = (1<<A_T_BOTS)|(1<<A_T_ENEMIES)
-};
+#define A_C_ENUM(en, um) \
+    en(um, players, PLAYERS) en(um, bots, BOTS) en(um, enemies, ENEMIES) en(um, max, MAX)
+ENUM_DLN(A_C);
+ENUM_VAR(A_C_ALL, (1<<A_C_PLAYERS)|(1<<A_C_BOTS)|(1<<A_C_ENEMIES));
+
+#define A_T_ENUM(en, um) \
+    en(um, players, PLAYERS) en(um, bots, BOTS) en(um, enemies, ENEMIES) en(um, ghost, GHOST) en(um, max, MAX)
+ENUM_DLN(A_T);
+ENUM_VAR(A_T_ALL, (1<<A_T_PLAYERS)|(1<<A_T_BOTS)|(1<<A_T_ENEMIES)|(1<<A_T_GHOST));
+ENUM_VAR(A_T_PLAYER, (1<<A_T_PLAYERS)|(1<<A_T_BOTS)|(1<<A_T_ENEMIES));
+ENUM_VAR(A_T_AI, (1<<A_T_BOTS)|(1<<A_T_ENEMIES));
 
 #define T_ENUM(en, um) \
     en(um, neutral, NEUTRAL) en(um, alpha, ALPHA) en(um, omega, OMEGA) \
     en(um, enemy, ENEMY) en(um, environment, ENVIRONMENT) en(um, max, MAX)
 ENUM_DLN(T);
-
 ENUM_VAR(T_FIRST, T_ALPHA);
 ENUM_VAR(T_LAST, T_OMEGA);
 ENUM_VAR(T_COUNT, T_LAST + 1);
@@ -103,13 +110,19 @@ struct score
 #define isteam(a,b,c,d) (m_team(a,b) ? (c >= d && c <= numteams(a,b)) : c == T_NEUTRAL)
 #define valteam(a,b)    (a >= b && a <= T_NUM)
 
-enum
-{
-    TAG_CAMERA, TAG_CROWN, TAG_R_CROWN, TAG_TORSO, TAG_R_TORSO, TAG_LIMBS, TAG_R_LIMBS, TAG_WAIST,
-    TAG_MUZZLE, TAG_ORIGIN, TAG_EJECT1, TAG_EJECT2, TAG_JET_LEFT, TAG_JET_RIGHT, TAG_JET_BACK, TAG_TOE_LEFT, TAG_TOE_RIGHT,
-    TAG_MAX, // WARNING: ensure this value is more than or equal to VANITYMAX (see bottom of file)
-    TAG_EJECT = TAG_EJECT1, TAG_N_EJECT = 2, TAG_JET = TAG_JET_LEFT, TAG_N_JET = 3, TAG_TOE = TAG_TOE_LEFT, TAG_N_TOE = 2
-};
+#define TAG_ENUM(en, um) \
+    en(um, Camera, CAMERA) en(um, Crown, CROWN) en(um, Crown Radius, R_CROWN) en(um, Torso, TORSO) \
+    en(um, Torso Radius, R_TORSO) en(um, Limbs, LIMBS) en(um, Limbs Radius, R_LIMBS) en(um, Waist, WAIST) \
+    en(um, Muzzle, MUZZLE) en(um, Origin, ORIGIN) en(um, Eject 1, EJECT1) en(um, Eject 2, EJECT2) \
+    en(um, Left Jet, JET_LEFT) en(um, Right Jet, JET_RIGHT) en(um, Back Jet, JET_BACK) \
+    en(um, Left Toe, TOE_LEFT) en(um, Right Toe, TOE_RIGHT) en(um, Max, MAX)
+ENUM_DLN(TAG);
+ENUM_VAR(TAG_EJECT, TAG_EJECT1);
+ENUM_VAR(TAG_N_EJECT, 2);
+ENUM_VAR(TAG_JET, TAG_JET_LEFT);
+ENUM_VAR(TAG_N_JET, 3);
+ENUM_VAR(TAG_TOE, TAG_TOE_LEFT);
+ENUM_VAR(TAG_N_TOE, 2);
 
 #define PLAYERTYPES 2
 #define PLAYERPARTS 14

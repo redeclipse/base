@@ -2169,7 +2169,7 @@ namespace game
                     if(rnd(101) > gibchancepieces) continue;
 
                     vec pos = gibpos(d, rnd(PLAYERPARTS));
-                    projs::create(pos, vec(pos).addz(rnd(d->obliterated ? 64 : 8)), true, d, A(d->actortype, abilities)&(1<<A_A_GIBS) ? PROJ_GIB : PROJ_DEBRIS, weap, flags, rnd(gibfade) + gibfade, 0, rnd(100) + 1, rnd(d->obliterated || d->headless ? 50 : 25) + 10);
+                    projs::create(pos, vec(pos).addz(rnd(d->obliterated ? 64 : 8)), true, d, A(d->actortype, abilities)&(1<<A_A_LIVING) ? PROJ_GIB : PROJ_DEBRIS, weap, flags, rnd(gibfade) + gibfade, 0, rnd(100) + 1, rnd(d->obliterated || d->headless ? 50 : 25) + 10);
 
                     if(++gibcount >= giblimit) return;
                 }
