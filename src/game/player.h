@@ -197,7 +197,7 @@ APVAR(IDF_GAMEMOD, 0, impulse, 0, IM_T_ALL,
     IM_T_ALL,       IM_T_MVAI,      0,              IM_T_MVAI,      IM_T_LSAI,      IM_T_ROLLER,    0,              0
 );
 APFVAR(IDF_GAMEMOD, 0, liquidboost, 0, FVAR_MAX,
-    0,              1,              1,              1,              1,              1,              0,              0
+    16,             16,             16,             16,             16,             16,             16,             16
 );
 APVAR(IDF_GAMEMOD, 0, magboots, 0, 1,
     1,              1,              1,              1,              1,              1,              0,              0
@@ -260,6 +260,9 @@ APVAR(IDF_GAMEMOD, 0, weaponspawn, 0, W_ALL-1,
     W_PISTOL,       W_PISTOL,       W_SMG,          W_PISTOL,       W_CLAW,         W_CLAW,         W_PISTOL,       W_ZAPPER
 );
 // these are modified by gameent::configure() et al
+APFVAR(IDF_GAMEMOD, 0, airtolerance, 0, FVAR_MAX,
+    125,            125,            1000,           100,            125,            125,            125,            125
+);
 APFVAR(IDF_GAMEMOD, 0, speed, 0, FVAR_MAX,
     100,            100,            0,              90,             100,            50,             100,            100
 );
@@ -268,15 +271,6 @@ APFVAR(IDF_GAMEMOD, 0, speedextra, FVAR_MIN, FVAR_MAX,
 );
 APFVAR(IDF_GAMEMOD, 0, speedprize, 0, FVAR_MAX,
     1,              1,              1,              1,              1,              1,              1,              1.5f
-);
-APFVAR(IDF_GAMEMOD, 0, jumpspeed, 0, FVAR_MAX,
-    150,            150,            0,              150,            150,            75,             100,            100
-);
-APFVAR(IDF_GAMEMOD, 0, jumpspeedextra, FVAR_MIN, FVAR_MAX,
-    0,              0,              0,              0,              0,              0,              0,              0
-);
-APFVAR(IDF_GAMEMOD, 0, jumptolerance, 0, FVAR_MAX,
-    125,            125,            1000,           100,            125,            125,            125,            125
 );
 APFVAR(IDF_GAMEMOD, 0, impulsespeed, 0, FVAR_MAX,
     75,             75,             0,              75,             75,             50,             75,             75

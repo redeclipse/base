@@ -309,6 +309,8 @@ ENUM_VAR(IM_CHECKPOINT, (1<<IM_COUNT)|(1<<IM_COLLECT_COUNT)|(1<<IM_LASTCOL_COUNT
 ENUM_DLN(IM_T);
 ENUM_VAR(IM_T_ALL, (1<<IM_T_JUMP)|(1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_MELEE)|(1<<IM_T_KICK)|(1<<IM_T_GRAB)|(1<<IM_T_WALLRUN)|(1<<IM_T_VAULT)|(1<<IM_T_POUND)|(1<<IM_T_PUSHER));
 ENUM_VAR(IM_T_ACTION, (1<<IM_T_JUMP)|(1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_MELEE)|(1<<IM_T_KICK)|(1<<IM_T_GRAB)|(1<<IM_T_WALLRUN)|(1<<IM_T_VAULT)|(1<<IM_T_POUND)|(1<<IM_T_PUSHER));
+ENUM_VAR(IM_T_COAST, (1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_WALLRUN)|(1<<IM_T_VAULT)|(1<<IM_T_POUND)|(1<<IM_T_PUSHER));
+ENUM_VAR(IM_T_REGEN, (1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_MELEE)|(1<<IM_T_KICK)|(1<<IM_T_GRAB)|(1<<IM_T_WALLRUN)|(1<<IM_T_VAULT)|(1<<IM_T_POUND));
 ENUM_VAR(IM_T_PUSH, (1<<IM_T_JUMP)|(1<<IM_T_BOOST)|(1<<IM_T_PUSHER));
 ENUM_VAR(IM_T_COUNT, (1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_WALLRUN)|(1<<IM_T_POUND));
 ENUM_VAR(IM_T_CHECK, (1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_WALLRUN)|(1<<IM_T_VAULT)|(1<<IM_T_POUND)|(1<<IM_T_PUSHER));
@@ -1516,7 +1518,6 @@ struct gameent : dynent, clientstate
     {
         #define MODPHYSL \
             MODPHYS(speed, float, speedscale); \
-            MODPHYS(jumpspeed, float, speedscale); \
             MODPHYS(impulsespeed, float, speedscale); \
             MODPHYS(weight, float, curscale); \
             MODPHYS(buoyancy, float, curscale);
@@ -2062,36 +2063,116 @@ struct gameent : dynent, clientstate
         resetjump();
     }
 
-    int getdash(bool len = false)
+    int impulsemask(int type)
     {
-        if(impulse[IM_TYPE] != IM_T_DASH) return 0;
-        if(!impulsetime[IM_T_DASH] || lastmillis - impulsetime[IM_T_DASH] > (len ? impulsedashlen : impulsedashdelay)) return 0;
-        return impulsetime[IM_T_DASH];
+        switch(type)
+        {
+            case IM_T_JUMP: return impulsejumpmask;
+            case IM_T_BOOST: return impulseboostmask;
+            case IM_T_DASH: return impulsedashmask;
+            case IM_T_SLIDE: return impulseslidemask;
+            case IM_T_LAUNCH: return impulselaunchmask;
+            case IM_T_MELEE: return impulsemeleemask;
+            case IM_T_KICK: return impulsekickmask;
+            case IM_T_GRAB: return impulsegrabmask;
+            case IM_T_WALLRUN: return impulsewallrunmask;;
+            case IM_T_VAULT: return impulsevaultmask;
+            case IM_T_POUND: return impulsepoundmask;
+            case IM_T_PUSHER: return IM_T_ACTION;
+            default: break;
+        }
+        return IM_T_ALL;
     }
 
-    int getvault(bool len = false)
+    int impulsedelay(int type)
     {
-        if(impulse[IM_TYPE] != IM_T_VAULT) return 0;
-        if(!impulsetime[IM_T_VAULT] || lastmillis - impulsetime[IM_T_VAULT] > (len ? impulsevaultlen : impulsevaultdelay)) return 0;
-        return impulsetime[IM_T_VAULT];
+        switch(type)
+        {
+            case IM_T_JUMP: return impulseboostdelay;
+            case IM_T_BOOST: return impulseboostdelay;
+            case IM_T_DASH: return impulsedashdelay;
+            case IM_T_SLIDE: return impulseslidedelay;
+            case IM_T_LAUNCH: return impulselaunchdelay;
+            case IM_T_MELEE: return impulsemeleedelay;
+            case IM_T_KICK: return impulsekickdelay;
+            case IM_T_GRAB: return impulsegrabdelay;
+            case IM_T_WALLRUN: return impulsewallrundelay;
+            case IM_T_VAULT: return impulsevaultdelay;
+            case IM_T_POUND: return impulsepounddelay;
+            case IM_T_PUSHER: return impulse[IM_PUSHER];
+            default: break;
+        }
+        return impulsejumpdelay;
     }
 
-    int getwallrun(bool len = true)
+    int impulselen(int type)
     {
-        if(impulse[IM_TYPE] != IM_T_WALLRUN) return 0;
-        if(!impulsetime[IM_T_WALLRUN] || lastmillis - impulsetime[IM_T_WALLRUN] > (len ? impulsewallrunlen : impulsewallrundelay)) return 0;
-        return impulsetime[IM_T_WALLRUN];
+        switch(type)
+        {
+            case IM_T_JUMP: return impulseboostlen;
+            case IM_T_BOOST: return impulseboostlen;
+            case IM_T_DASH: return impulsedashlen;
+            case IM_T_SLIDE: return impulseslidelen;
+            case IM_T_LAUNCH: return impulselaunchlen;
+            case IM_T_MELEE: return impulsemeleelen;
+            case IM_T_KICK: return impulsekicklen;
+            case IM_T_GRAB: return impulsegrablen;
+            case IM_T_WALLRUN: return impulsewallrunlen;
+            case IM_T_VAULT: return impulsevaultlen;
+            case IM_T_POUND: return impulsepoundlen;
+            case IM_T_PUSHER: return impulse[IM_PUSHER];
+            default: break;
+        }
+        return 0;
     }
 
-    int getparkour(bool len = true)
+    int impulsetimer(int type = -1, bool check = true, bool delay = false, int retval = 0)
     {
-        return max(getwallrun(len), getdash(len));
+        if(type < 0 || type >= IM_T_MAX) type = impulse[IM_TYPE];
+
+        if((check && impulse[IM_TYPE] != type) || !impulsetime[type]) return 0;
+
+        int millis = lastmillis - impulsetime[type], timer = delay ? impulsedelay(type) : impulselen(type);
+        if(!timer || millis > timer) return 0;
+
+        switch(retval)
+        {
+            case 1: return millis;
+            case 2: return timer - millis;
+            case 3: return timer;
+            default: break;
+        }
+        return impulsetime[type];
     }
 
-    bool hasparkour(int type = -1, bool check = true)
+    bool impulseready(int mask, bool check = false, bool delay = true)
     {
-        if(type < 0) type = impulse[IM_TYPE];
-        return check ? getwallrun() != 0 || getdash() != 0 : type == IM_T_WALLRUN || type == IM_T_DASH;
+        loopi(IM_T_MAX)
+        {
+            if(!(mask&(1<<i))) continue;
+            if(impulsetimer(i, check, delay)) return false;
+        }
+        return true;
+    }
+
+    bool regenimpulse()
+    {
+        if(!isalive() || !impulseready(impulseregenmask)) return false;
+        if(impulseregendelay && lastmillis - impulse[IM_REGEN] < impulseregendelay) return false;
+        return (impulsecostcount && impulse[IM_COUNT] > 0) || (impulsecostmeter && impulse[IM_METER] > 0);
+    }
+
+    bool canimpulse(int type)
+    {
+        if(!(A(actortype, impulse)&(1<<type))) return false;
+        if(PHYS(gravity) != 0 && impulsetouchmasks&(1<<type) && impulsetouchtypes&(1<<impulse[IM_TYPE])) return false;
+        if(impulsecounttypes&(1<<type) && impulse[IM_COUNT] >= impulsecount) return false;
+        return impulseready(impulsemask(type));
+    }
+
+    bool hasparkour()
+    {
+        return impulsetimer(IM_T_WALLRUN) != 0 || impulsetimer(IM_T_DASH) != 0;
     }
 
     void updateturn(int side, float yaw = 0, int yawtime = 0, float pitch = 0, int pitchtime = 0, float roll = 0, int rolltime = 0)
@@ -2139,69 +2220,6 @@ struct gameent : dynent, clientstate
 
         if(reset&1) action[AC_JUMP] = false;
         if(reset&2) action[AC_SPECIAL] = false;
-    }
-
-    bool delayimpulse(int type = -1, bool regen = false)
-    {
-        int mask = IM_T_ALL;
-
-        switch(type)
-        {
-            case IM_T_BOOST: mask = impulseboostcheck; break;
-            case IM_T_DASH: mask = impulsedashcheck; break;
-            case IM_T_SLIDE: mask = impulseslidecheck; break;
-            case IM_T_LAUNCH: mask = impulselaunchcheck; break;
-            case IM_T_MELEE: mask = impulsemeleecheck; break;
-            case IM_T_KICK: mask = impulsekickcheck; break;
-            case IM_T_GRAB: mask = impulsegrabcheck; break;
-            case IM_T_WALLRUN: mask = impulsewallruncheck;; break;
-            case IM_T_VAULT: mask = impulsevaultcheck; break;
-            case IM_T_POUND: mask = impulsepoundcheck; break;
-            case IM_T_PUSHER: mask = IM_T_ACTION; break;
-            case IM_T_JUMP: mask = impulsejumpcheck; break;
-            default: break;
-        }
-
-        loopi(IM_T_MAX)
-        {
-            if(!impulsetime[i] || !(mask&(1<<i))) continue;
-            int delay = 0;
-            switch(i)
-            {
-                case IM_T_BOOST: delay = impulseboostdelay; break;
-                case IM_T_DASH: delay = impulsedashdelay; break;
-                case IM_T_SLIDE: delay = impulseslidedelay; break;
-                case IM_T_LAUNCH: delay = impulselaunchdelay; break;
-                case IM_T_MELEE: delay = impulsemeleedelay; break;
-                case IM_T_KICK: delay = impulsekickdelay; break;
-                case IM_T_GRAB: delay = impulsegrabdelay; break;
-                case IM_T_WALLRUN: delay = impulsewallrundelay; break;
-                case IM_T_VAULT: delay = impulsevaultdelay; break;
-                case IM_T_POUND: delay = impulsepounddelay; break;
-                case IM_T_PUSHER: delay = impulse[IM_PUSHER]; break;
-                case IM_T_JUMP: default:
-                    if(regen) continue; // jump doesn't inhibit regen
-                    delay = impulsejumpdelay;
-                    break;
-            }
-            if(delay > 0 && lastmillis - impulsetime[i] < delay) return false;
-        }
-        return true;
-    }
-
-    bool regenimpulse()
-    {
-        if(!isalive() || !delayimpulse(-1, true)) return false;
-        if(impulseregendelay && lastmillis - impulse[IM_REGEN] < impulseregendelay) return false;
-        return (impulsecostcount && impulse[IM_COUNT] > 0) || (impulsecostmeter && impulse[IM_METER] > 0);
-    }
-
-    bool canimpulse(int type)
-    {
-        if(!(A(actortype, impulse)&(1<<type))) return false;
-        if(PHYS(gravity) != 0 && impulsetouchchecks&(1<<type) && impulsetouchtypes&(1<<impulse[IM_TYPE])) return false;
-        if(impulsecounttypes&(1<<type) && impulse[IM_COUNT] >= impulsecount) return false;
-        return delayimpulse(type);
     }
 
     void setname(const char *n)

@@ -4056,7 +4056,6 @@ namespace client
     CLCOMMAND(timeplayed, intret(d->updatetimeplayed()));
 
     CLCOMMAND(speed, floatret(d->speed));
-    CLCOMMAND(jumpspeed, floatret(d->jumpspeed));
     CLCOMMAND(impulsespeed, floatret(d->impulsespeed));
     CLCOMMAND(weight, floatret(d->weight));
     CLCOMMAND(buoyancy, floatret(d->buoyancy));
@@ -4071,12 +4070,20 @@ namespace client
     CLCOMMAND(allowimpulse, intret(A(d->actortype, impulse)&IM_T_CHECK ? 1 : 0));
     CLCOMMAND(impulsecostmeter, intret(d->impulse[IM_METER]));
     CLCOMMAND(impulsetype, intret(d->impulse[IM_TYPE]));
-    CLCOMMANDM(impulsetimer, "b", (char *who, int *n), intret(d->impulsetime[*n >= 0 && *n < IM_T_MAX ? *n : (d->impulse[IM_TYPE] >= 0 && d->impulse[IM_TYPE] < IM_T_MAX ? d->impulse[IM_TYPE] : IM_T_JUMP)]));
+    CLCOMMANDM(impulsetime, "sb", (char *who, int *n), intret(d->impulsetime[*n >= 0 && *n < IM_T_MAX ? *n : (d->impulse[IM_TYPE] >= 0 && d->impulse[IM_TYPE] < IM_T_MAX ? d->impulse[IM_TYPE] : IM_T_JUMP)]));
     CLCOMMAND(impulseregen, intret(d->impulse[IM_REGEN]));
     CLCOMMAND(impulsecount, intret(d->impulse[IM_COUNT]));
     CLCOMMAND(impulsejump, intret(d->impulsetime[IM_T_JUMP]));
     CLCOMMAND(impulsewait, intret(d->impulsetime[IM_T_PUSHER]));
     CLCOMMANDM(impulse, "si", (char *who, int *n), intret(*n >= 0 && *n < IM_MAX ? d->impulse[*n] : 0));
+
+    CLCOMMANDM(impulsemask, "sb", (char *who, int *n), intret(d->impulsemask(*n)));
+    CLCOMMANDM(impulselen, "sb", (char *who, int *n), intret(d->impulselen(*n)));
+    CLCOMMANDM(impulsedelay, "sb", (char *who, int *n), intret(d->impulsedelay(*n)));
+    CLCOMMANDM(impulsetimer, "sbiii", (char *who, int *n, int *c, int *a, int *r), intret(d->impulsetimer(*n, *c != 0, *a != 0, *r)));
+    CLCOMMANDM(impulseready, "si", (char *who, int *n), intret(d->impulseready(*n)));
+    CLCOMMANDM(canimpulse, "si", (char *who, int *n), intret(d->canimpulse(*n) ? 1 : 0));
+    CLCOMMAND(regenimpulse, intret(d->regenimpulse() ? 1 : 0));
 
     CLCOMMAND(buffing, intret(d->lastbuff));
     CLCOMMAND(hasprize, intret(d->hasprize));

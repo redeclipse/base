@@ -1356,35 +1356,6 @@ WPFVAR(IDF_GAMEMOD, 0, modhealthammo, FVAR_MIN, FVAR_MAX,
 WPFVAR(IDF_GAMEMOD, 0, modhealthequip, FVAR_MIN, FVAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
 );
-// JUMP
-WPFVAR(IDF_GAMEMOD, 0, modjumpspeed, FVAR_MIN, FVAR_MAX,
-    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
-);
-WPFVAR(IDF_GAMEMOD, 0, modjumpspeedammo, FVAR_MIN, FVAR_MAX,
-    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
-);
-WPFVAR(IDF_GAMEMOD, 0, modjumpspeedequip, FVAR_MIN, FVAR_MAX,
-    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
-);
-WPFVARM(IDF_GAMEMOD, 0, modjumpspeedattack, FVAR_MIN, FVAR_MAX,
-    -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,
-    -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5
-);
-WPFVAR(IDF_GAMEMOD, 0, modjumpspeedreload, FVAR_MIN, FVAR_MAX,
-    -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5
-);
-WPFVAR(IDF_GAMEMOD, 0, modjumpspeedswitch, FVAR_MIN, FVAR_MAX,
-    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
-);
-WPFVAR(IDF_GAMEMOD, 0, modjumpspeedpower, FVAR_MIN, FVAR_MAX,
-    -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5
-);
-WPFVAR(IDF_GAMEMOD, 0, modjumpspeeduse, FVAR_MIN, FVAR_MAX,
-    0,          0,          -1,         -2,         -2,         -2,         -2,         -2,         -2,         -2,         -2,         -2,         -5,         0
-);
-WPFVAR(IDF_GAMEMOD, 0, modjumpspeedzoom, FVAR_MIN, FVAR_MAX,
-    -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5,         -5
-);
 // IMPULSE
 WPFVAR(IDF_GAMEMOD, 0, modimpulsespeed, FVAR_MIN, FVAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0

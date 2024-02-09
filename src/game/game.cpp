@@ -822,7 +822,7 @@ namespace game
     void addsway(gameent *d)
     {
         float speed = physics::movevelocity(d), step = firstpersonbob ? firstpersonbobstep : firstpersonswaystep;
-        bool bobbed = false, sliding = d->getslide(true) != 0;
+        bool bobbed = false, sliding = d->getslide(true) != 0 || d->impulsetimer(IM_T_DASH) != 0;
         if(d->state == CS_ALIVE && (d->physstate >= PHYS_SLOPE || physics::sticktospecial(d) || sliding))
         {
             float mag = d->vel.magnitude();
@@ -1521,9 +1521,9 @@ namespace game
                     if(skew > 0 && (d->move || d->strafe)) skew *= impulseregen##name##move; \
                     if(skew > 0 && ((!onfloor && PHYS(gravity) > 0) || d->getslide() != 0)) skew *= impulseregen##name##inair; \
                     if(skew > 0 && onfloor && d->crouching() && d->getslide() == 0) skew *= impulseregen##name##crouch; \
-                    if(skew > 0 && d->getwallrun() != 0) skew *= impulseregen##name##wallrun; \
-                    if(skew > 0 && d->getvault() != 0) skew *= impulseregen##name##vault; \
-                    if(skew > 0 && d->getdash() != 0) skew *= impulseregen##name##dash; \
+                    if(skew > 0 && d->impulsetimer(IM_T_WALLRUN) != 0) skew *= impulseregen##name##wallrun; \
+                    if(skew > 0 && d->impulsetimer(IM_T_VAULT) != 0) skew *= impulseregen##name##vault; \
+                    if(skew > 0 && d->impulsetimer(IM_T_DASH) != 0) skew *= impulseregen##name##dash; \
                     if(skew > 0 && d->getslide() != 0) skew *= impulseregen##name##slide; \
                     int timeslice = int(ceilf((curtime + d->impulse[IM_COLLECT_##type]) * skew)); \
                     if(check) { body; } \
@@ -1689,7 +1689,7 @@ namespace game
         if(d->state != CS_ALIVE) return;
         vec pos = d->feetpos();
 
-        if(d->getwallrun() == 0 && (d->physstate >= PHYS_SLOPE || physics::sticktospecial(d, false) || physics::liquidcheck(d)) && pos.z > 0 && d->floortime(lastmillis))
+        if(d->impulsetimer(IM_T_WALLRUN) == 0 && (d->physstate >= PHYS_SLOPE || physics::sticktospecial(d, false) || physics::liquidcheck(d)) && pos.z > 0 && d->floortime(lastmillis))
         {
             int mat = lookupmaterial(pos);
             if(!isclipped(mat&MATF_VOLUME) && !(mat&MAT_DEATH)) d->floorpos = pos;
@@ -4155,7 +4155,7 @@ namespace game
                     case W_S_IDLE: case W_S_WAIT: default:
                     {
                         if(!d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators))) showweap = false;
-                        int vaulttime = d->getvault();
+                        int vaulttime = d->impulsetimer(IM_T_VAULT);
                         if(vaulttime)
                         {
                             mdl.basetime = vaulttime;
@@ -4290,7 +4290,7 @@ namespace game
             {
                 // Test if the player is actually moving at a meaningful speed. This may not be the case if the player is running against a wall or another obstacle.
                 bool moving = fabsf(d->vel.x) > 5.0f || fabsf(d->vel.y) > 5.0f, turning = fabsf(d->rotvel.x) >= playerrotthresh * (d->crouching() ? 0.5f : 1.f);
-                int vaulttime = d->getvault(), dashtime = d->getdash(), slidetime = d->getslide(true), parkourtime = d->getwallrun(),
+                int vaulttime = d->impulsetimer(IM_T_VAULT), dashtime = d->impulsetimer(IM_T_DASH), slidetime = d->getslide(true), parkourtime = d->impulsetimer(IM_T_WALLRUN),
                     impulsetime = d->impulse[IM_TYPE] >= 0 && d->impulse[IM_TYPE] < IM_MAX ? d->impulsetime[d->impulse[IM_TYPE]] : 0;
 
                 if(physics::liquidcheck(d, 0.1f) && d->physstate <= PHYS_FALL)

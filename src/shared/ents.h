@@ -171,9 +171,22 @@ extern vector<int> enthover;
     en(um, Maximum, MAX)
 ENUM_DLN(CS); // beware, some stuff uses >= CS_SPECTATOR
 
-enum { PHYS_FLOAT = 0, PHYS_FALL, PHYS_SLIDE, PHYS_SLOPE, PHYS_FLOOR, PHYS_STEP_UP, PHYS_STEP_DOWN, PHYS_MAX };
-enum { ENT_PLAYER = 0, ENT_AI, ENT_INANIMATE, ENT_CAMERA, ENT_PROJ, ENT_RAGDOLL, ENT_DUMMY, ENT_MAX };
-enum { COLLIDE_NONE = 0, COLLIDE_ELLIPSE, COLLIDE_OBB, COLLIDE_TRI, COLLIDE_MAX };
+#define PHYS_ENUM(en, um) \
+    en(um, Float, FLOAT) en(um, Fall, FALL) en(um, Slide, SLIDE) \
+    en(um, Slope, SLOPE) en(um, Floor, FLOOR) en(um, Step Up, STEP_UP) en(um, Step Down, STEP_DOWN) \
+    en(um, Maximum, MAX)
+ENUM_DLN(PHYS);
+
+#define ENT_ENUM(en, um) \
+    en(um, Player, PLAYER) en(um, AI, AI) en(um, Inanimate, INANIMATE) \
+    en(um, Camera, CAMERA) en(um, Projectile, PROJ) en(um, Ragdoll, RAGDOLL) \
+    en(um, Dummy, DUMMY) en(um, Maximum, MAX)
+ENUM_DLN(ENT);
+
+#define COLLIDE_ENUM(en, um) \
+    en(um, None, NONE) en(um, Ellipse, ELLIPSE) en(um, OBB, OBB) en(um, Triangle, TRI) \
+    en(um, Maximum, MAX)
+ENUM_DLN(COLLIDE);
 
 struct baseent
 {
@@ -210,7 +223,7 @@ struct baseent
 struct physent : baseent                        // can be affected by physics
 {
     vec deltapos, newpos;
-    float speed, jumpspeed, impulsespeed, weight, buoyancy;
+    float speed, impulsespeed, weight, buoyancy;
     int airmillis, floormillis;
     float radius, height, aboveeye;             // bounding box size
     float xradius, yradius, zradius, zmargin;
@@ -225,7 +238,7 @@ struct physent : baseent                        // can be affected by physics
     uchar collidetype;                          // one of COLLIDE_* above
 
     physent() : deltapos(0, 0, 0), newpos(0, 0, 0),
-        speed(100), jumpspeed(100), impulsespeed(100), weight(100), buoyancy(100),
+        speed(100), impulsespeed(100), weight(100), buoyancy(100),
         radius(3.75f), height(17.5f), aboveeye(1.25f),
         xradius(3.75f), yradius(3.75f), zradius(17.5f), zmargin(0),
         curscale(1), movescale(1), gravityscale(1), coastscale(1),
