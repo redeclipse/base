@@ -1371,6 +1371,7 @@ struct gameent : dynent, clientstate
         removetrackedsounds(this);
         fx::removetracked(this);
         entities::removepassenger(this);
+        clearimpulse();
     }
 
     static bool is(int t) { return t == ENT_PLAYER || t == ENT_AI; }
