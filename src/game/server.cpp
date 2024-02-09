@@ -617,7 +617,7 @@ namespace server
 
     string smapname = "";
     int smapcrc = 0, smapvariant = MPV_DEFAULT, mapsending = -1, mapgameinfo = -1, gamestate = G_S_WAITING, gamemode = G_EDITING, mutators = 0, gamemillis = 0, gamelimit = 0, gametick = 0,
-        mastermode = MM_OPEN, timeremaining = -1, oldtimelimit = -1, gamewaittime = 0, gamewaitdelay = 0, lastteambalance = 0, nextteambalance = 0, lastavgposcalc = 0, lastrotatecycle = 0;
+        mastermode = MASTERMODE_OPEN, timeremaining = -1, oldtimelimit = -1, gamewaittime = 0, gamewaitdelay = 0, lastteambalance = 0, nextteambalance = 0, lastavgposcalc = 0, lastrotatecycle = 0;
     bool hasgameinfo = false, updatecontrols = false, shouldcheckvotes = false, firstblood = false, sentstats = false;
     enet_uint32 lastsend = 0;
     stream *mapdata[SENDMAP_MAX] = { NULL };
@@ -1062,10 +1062,10 @@ namespace server
     {
         switch(G(serveropen))
         {
-            case 0: default: return MM_FREESERV; break;
-            case 1: return MM_OPENSERV; break;
-            case 2: return MM_COOPSERV; break;
-            case 3: return MM_VETOSERV; break;
+            case 0: default: return MASTERMODE_FREESERV; break;
+            case 1: return MASTERMODE_OPENSERV; break;
+            case 2: return MASTERMODE_COOPSERV; break;
+            case 3: return MASTERMODE_VETOSERV; break;
         }
         return 0;
     }
@@ -1246,7 +1246,7 @@ namespace server
     {
         setpause(false);
         setmod(sv_botoffset, 0);
-        if(G(resetmmonend)) { mastermode = MM_OPEN; resetcontrols(ipinfo::ALLOW); }
+        if(G(resetmmonend)) { mastermode = MASTERMODE_OPEN; resetcontrols(ipinfo::ALLOW); }
         if(G(resetbansonend)) resetcontrols(ipinfo::BAN);
         if(G(resetmutesonend)) resetcontrols(ipinfo::MUTE);
         if(G(resetlimitsonend)) resetcontrols(ipinfo::LIMIT);
@@ -1373,7 +1373,7 @@ namespace server
             { "none", "player account", "global supporter", "global moderator", "global administrator", "project developer", "project founder" },
             { "none", "player account", "local supporter", "local moderator", "local administrator", "none", "none" }
         };
-        return privnames[priv&PRIV_LOCAL ? 1 : 0][clamp(priv&PRIV_TYPE, 0, int(priv&PRIV_LOCAL ? PRIV_ADMINISTRATOR : PRIV_LAST))];
+        return privnames[priv&PRIV_LOCAL ? 1 : 0][clamp(priv&PRIV_TYPE, 0, priv&PRIV_LOCAL ? int(PRIV_ADMINISTRATOR) : int(PRIV_LAST))];
     }
 
     const char *privnamex(int priv, int actortype, bool local)
@@ -1383,7 +1383,7 @@ namespace server
             { "none", "player", "supporter", "moderator", "administrator", "developer", "founder" },
             { "none", "player", "localsupporter", "localmoderator", "localadministrator", "none", "none" }
         };
-        return privnames[local && priv&PRIV_LOCAL ? 1 : 0][clamp(priv&PRIV_TYPE, 0, int(priv&PRIV_LOCAL ? PRIV_ADMINISTRATOR : PRIV_LAST))];
+        return privnames[local && priv&PRIV_LOCAL ? 1 : 0][clamp(priv&PRIV_TYPE, 0, priv&PRIV_LOCAL ? int(PRIV_ADMINISTRATOR) : int(PRIV_LAST))];
     }
 
     const char *colourname(clientinfo *ci, char *name = NULL, bool icon = false, bool dupname = true, int colour = 3)
@@ -1442,7 +1442,7 @@ namespace server
     bool haspriv(clientinfo *ci, int flag, const char *msg = NULL)
     {
         if((ci->local && flag <= PRIV_MAX) || (ci->privilege&PRIV_TYPE) >= flag) return true;
-        else if(mastermask()&MM_AUTOAPPROVE && flag <= PRIV_ELEVATED && !numclients(ci->clientnum)) return true;
+        else if(mastermask()&MASTERMODE_AUTOAPPROVE && flag <= PRIV_ELEVATED && !numclients(ci->clientnum)) return true;
         else if(msg && *msg)
             srvmsgf(ci->clientnum, colourred, "Access denied, you need to be \fs\fc%s\fS to \fs\fc%s\fS", privnamex(flag), msg);
         return false;
@@ -2282,7 +2282,7 @@ namespace server
         {
             if(sents[triggers[i+1].ents[k]].type != TRIGGER) continue;
 
-            bool spawn = (sents[triggers[i+1].ents[k]].attrs[4]%TRIG_S_INVERTED) != 0;
+            bool spawn = (sents[triggers[i+1].ents[k]].attrs[4]%(1<<TRIG_S_INVERTED)) != 0;
             if(spawn != sents[triggers[i+1].ents[k]].spawned)
             {
                 sents[triggers[i+1].ents[k]].spawned = spawn;
@@ -2869,7 +2869,7 @@ namespace server
         setpause(false);
         checkdemorecord(true);
         setmod(sv_botoffset, 0);
-        if(G(resetmmonend) >= 2) mastermode = MM_OPEN;
+        if(G(resetmmonend) >= 2) mastermode = MASTERMODE_OPEN;
         if(G(resetvarsonend) >= 2) resetgamevars(false);
         if(G(resetallowsonend) >= 2) resetcontrols(ipinfo::ALLOW);
         if(G(resetbansonend) >= 2) resetcontrols(ipinfo::BAN);
@@ -2981,7 +2981,7 @@ namespace server
             srvmsgf(ci->clientnum, colourred, "Access denied, you must be a local client to start a %s game", gametype[reqmode].name);
             return;
         }
-        bool hasvote = false, hasveto = (mastermode == MM_VETO && haspriv(ci, G(vetolock))) || !numclients(ci->clientnum);
+        bool hasvote = false, hasveto = (mastermode == MASTERMODE_VETO && haspriv(ci, G(vetolock))) || !numclients(ci->clientnum);
         if(!hasveto)
         {
             if(ci->lastvote && totalmillis-ci->lastvote <= G(votewait)) return;
@@ -3610,7 +3610,7 @@ namespace server
             {
                 if(ci->quarantine || (ci->state == CS_SPECTATOR && numclients(ci->clientnum, true) >= G(serverclients))) return false;
                 if(ci->actortype == A_PLAYER)
-                    if(mastermode >= MM_LOCKED && ip && !checkipinfo(control, ipinfo::ALLOW, ip) && !haspriv(ci, lock, "spawn"))
+                    if(mastermode >= MASTERMODE_LOCKED && ip && !checkipinfo(control, ipinfo::ALLOW, ip) && !haspriv(ci, lock, "spawn"))
                         return false;
                 if(ci->state == CS_ALIVE || ci->state == CS_WAITING) return false;
                 if(ci->lastdeath && gamemillis-ci->lastdeath <= DEATHMILLIS) return false;
@@ -3638,7 +3638,7 @@ namespace server
             case ALST_EDIT: // edit on/off
             {
                 if(ci->quarantine || (ci->state == CS_SPECTATOR && numclients(ci->clientnum, true) >= G(serverclients)) || ci->actortype != A_PLAYER || !m_edit(gamemode)) return false;
-                if(mastermode >= MM_LOCKED && ip && !checkipinfo(control, ipinfo::ALLOW, ip) && !haspriv(ci, lock, "edit")) return false;
+                if(mastermode >= MASTERMODE_LOCKED && ip && !checkipinfo(control, ipinfo::ALLOW, ip) && !haspriv(ci, lock, "edit")) return false;
                 break;
             }
             default: break;
@@ -5570,9 +5570,9 @@ namespace server
                 if((sents[i].attrs[0] && sents[i].attrs[0] != triggerid) || gamemillis < sents[i].millis) continue;
                 if(!m_check(sents[i].attrs[5], sents[i].attrs[6], gamemode, mutators)) continue;
                 if(!servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr])) continue;
-                if(sents[i].attrs[4]&TRIG_S_PERSIST || (sents[i].attrs[1] != TRIG_TOGGLE && sents[i].attrs[1] != TRIG_LINKED)) continue;
+                if(sents[i].attrs[4]&(1<<TRIG_S_PERSIST) || (sents[i].attrs[1] != TRIG_TOGGLE && sents[i].attrs[1] != TRIG_LINKED)) continue;
 
-                bool spawn = (sents[i].attrs[4]&TRIG_S_INVERTED) != 0;
+                bool spawn = (sents[i].attrs[4]&(1<<TRIG_S_INVERTED)) != 0;
                 if(spawn == sents[i].spawned) continue;
 
                 sents[i].spawned = spawn;
@@ -6202,7 +6202,7 @@ namespace server
         putint(p, mutators); // 3
         putint(p, timeremaining); // 4
         putint(p, maxslots()); // 5
-        putint(p, serverpass[0] || G(connectlock) ? MM_PASSWORD : (m_local(gamemode) ? MM_PRIVATE : mastermode)); // 6
+        putint(p, serverpass[0] || G(connectlock) ? MASTERMODE_PASSWORD : (m_local(gamemode) ? MASTERMODE_PRIVATE : mastermode)); // 6
         putint(p, numgamevars); // 7
         putint(p, numgamemods); // 8
         putint(p, versionmajor); // 9
@@ -6867,7 +6867,7 @@ namespace server
                         case SPHY_WALLRUN: getint(p); // eat the data
                         default:
                         {
-                            if(!proceed || cp->state != CS_ALIVE || idx >= SPHY_SERVER) break;
+                            if(!proceed || cp->state != CS_ALIVE || (SPHY_SERVER&(1<<idx))) break;
                             qmsg = true;
                             break;
                         }
@@ -7272,12 +7272,12 @@ namespace server
                         if(!servermapvariant(sents[ent].attrs[enttype[sents[ent].type].mvattr])) break;
                         if(!m_check(sents[ent].attrs[5], sents[ent].attrs[6], gamemode, mutators)) break;
 
-                        bool commit = false, kin = false, spawn = (sents[ent].attrs[4]&TRIG_S_INVERTED) != 0;
+                        bool commit = false, kin = false, spawn = (sents[ent].attrs[4]&(1<<TRIG_S_INVERTED)) != 0;
                         switch(sents[ent].attrs[1])
                         {
                             case TRIG_TOGGLE:
                             {
-                                if(sents[ent].attrs[4]&TRIG_S_ONEWAY && sents[ent].spawned != spawn) break;
+                                if(sents[ent].attrs[4]&(1<<TRIG_S_ONEWAY) && sents[ent].spawned != spawn) break;
                                 sents[ent].millis = gamemillis + (triggertime() * TRIGGERMULTI);
                                 sents[ent].spawned = !sents[ent].spawned;
                                 commit = kin = true;
@@ -7744,13 +7744,13 @@ namespace server
                 case N_MASTERMODE:
                 {
                     int mm = getint(p);
-                    if(haspriv(ci, G(masterlock), "change mastermode") && mm >= MM_OPEN && mm <= MM_PRIVATE)
+                    if(haspriv(ci, G(masterlock), "change mastermode") && mm >= MASTERMODE_OPEN && mm <= MASTERMODE_PRIVATE)
                     {
                         if(haspriv(ci, PRIV_ADMINISTRATOR) || (mastermask()&(1<<mm)))
                         {
                             mastermode = mm;
                             resetcontrols(ipinfo::ALLOW);
-                            if(mastermode >= MM_PRIVATE) loopv(clients)
+                            if(mastermode >= MASTERMODE_PRIVATE) loopv(clients)
                             {
                                 ipinfo &allow = control.add();
                                 allow.ip = getclientip(clients[i]->clientnum);
@@ -8100,7 +8100,7 @@ namespace server
                         else if((ci->privilege&PRIV_TYPE) < PRIV_ELEVATED)
                         {
                             bool fail = false;
-                            if(!(mastermask()&MM_AUTOAPPROVE))
+                            if(!(mastermask()&MASTERMODE_AUTOAPPROVE))
                             {
                                 srvmsgf(ci->clientnum, colourred, "Access denied, you need a \fs\fcpassword/account\fS to \fs\fcelevate privileges\fS");
                                 fail = true;

@@ -42,11 +42,23 @@ enum                                // entity types
     MAXENTTYPES
 };
 
-enum { EU_NONE = 0, EU_ITEM, EU_AUTO, EU_ACT, EU_MAX };
+#define EU_ENUM(en, um) \
+    en(um, None, NONE) en(um, Item, ITEM) en(um, Automatic, AUTO) en(um, Action, ACT) en(um, Max, MAX)
+ENUM_DLN(EU);
 
-enum { TRIG_TOGGLE = 0, TRIG_LINKED, TRIG_SCRIPT, TRIG_ONCE, TRIG_EXIT, TRIG_MAX };
-enum { TRIG_A_MANUAL = 0, TRIG_A_AUTO, TRIG_A_ACTION, TRIG_A_MAX };
-enum { TRIG_S_NORMAL = 0, TRIG_S_INVERTED = 1<<0, TRIG_S_ROUTED = 1<<1, TRIG_S_ONEWAY = 1<<2, TRIG_S_PERSIST = 1<<3, TRIG_S_ALL = TRIG_S_INVERTED|TRIG_S_ROUTED|TRIG_S_ONEWAY|TRIG_S_PERSIST };
+#define TRIG_ENUM(en, um) \
+    en(um, Toggle, TOGGLE) en(um, Linked, LINKED) en(um, Script, SCRIPT) en(um, Once, ONCE) en(um, Exit, EXIT) en(um, Max, MAX)
+ENUM_DLN(TRIG);
+
+#define TRIG_A_ENUM(en, um) \
+    en(um, Manual, MANUAL) en(um, Automatic, AUTO) en(um, Action, ACTION) en(um, Max, MAX)
+ENUM_DLN(TRIG_A);
+
+#define TRIG_S_ENUM(en, um) \
+    en(um, Inverted, INVERTED) en(um, Routed, ROUTED) en(um, One Way, ONEWAY) en(um, Persist, PERSIST) en(um, Max, MAX)
+ENUM_DLN(TRIG_S);
+ENUM_VAR(TRIG_S_ALL, (1<<TRIG_S_INVERTED)|(1<<TRIG_S_ROUTED)|(1<<TRIG_S_ONEWAY)|(1<<TRIG_S_PERSIST));
+
 enum { RAIL_YAW = 0, RAIL_PITCH, RAIL_SEEK, RAIL_SPLINE, RAIL_SPEED, RAIL_PREV, RAIL_NEXT, RAIL_MAX, RAIL_ALL = (1<<RAIL_YAW)|(1<<RAIL_PITCH)|(1<<RAIL_SEEK)|(1<<RAIL_SPLINE)|(1<<RAIL_SPEED)|(1<<RAIL_PREV)|(1<<RAIL_NEXT) };
 enum { CAMERA_NORMAL = 0, CAMERA_MAPSHOT, CAMERA_MAX };
 enum { CAMERA_F_STATIC = 0, CAMERA_F_MAX, CAMERA_F_ALL = (1<<CAMERA_F_STATIC)};
@@ -243,59 +255,76 @@ namespace entities
 #define isent(a) (a >= NOTUSED && a < MAXENTTYPES)
 
 #define MAXNAMELEN 24
+
 #define SAY_ENUM(en, um) en(um, Message, MESSAGE, 1<<0) en(um, Action, ACTION, 1<<1) en(um, Team, TEAM, 1<<2) en(um, Whisper, WHISPER, 1<<3)
 ENUM_ALN(SAY);
 
-enum
-{
-    PRIV_NONE = 0, PRIV_PLAYER, PRIV_SUPPORTER, PRIV_MODERATOR, PRIV_ADMINISTRATOR, PRIV_DEVELOPER, PRIV_CREATOR, PRIV_MAX,
-    PRIV_START = PRIV_PLAYER, PRIV_ELEVATED = PRIV_MODERATOR, PRIV_LAST = PRIV_CREATOR, PRIV_TYPE = 0xFF, PRIV_LOCAL = 1<<8
-};
+#define PRIV_ENUM(en, um) \
+    en(um, None, NONE) en(um, Player, PLAYER) en(um, Supporter, SUPPORTER) en(um, Moderator, MODERATOR) \
+    en(um, Administrator, ADMINISTRATOR) en(um, Developer, DEVELOPER) en(um, Creator, CREATOR) en(um, Max, MAX)
+ENUM_DLN(PRIV);
+ENUM_VAR(PRIV_START, PRIV_PLAYER);
+ENUM_VAR(PRIV_ELEVATED, PRIV_MODERATOR);
+ENUM_VAR(PRIV_LAST, PRIV_CREATOR);
+ENUM_VAR(PRIV_TYPE, 0xFF);
+ENUM_VAR(PRIV_LOCAL, 1<<8);
 
-#define MM_MODE 0xF
-#define MM_AUTOAPPROVE 0x1000
-#define MM_FREESERV (MM_AUTOAPPROVE|MM_MODE)
-#define MM_VETOSERV ((1<<MM_OPEN)|(1<<MM_VETO))
-#define MM_COOPSERV (MM_AUTOAPPROVE|MM_VETOSERV|(1<<MM_LOCKED))
-#define MM_OPENSERV (MM_AUTOAPPROVE|(1<<MM_OPEN))
+#define MASTERMODE_ENUM(en, um) \
+    en(um, Open, OPEN) en(um, Veto, VETO) en(um, Locked, LOCKED) en(um, Private, PRIVATE) en(um, Password, PASSWORD) en(um, Max, MAX)
+ENUM_DLN(MASTERMODE);
+ENUM_VAR(MASTERMODE_MODE, 0xF);
+ENUM_VAR(MASTERMODE_AUTOAPPROVE, 0x1000);
+ENUM_VAR(MASTERMODE_FREESERV, (MASTERMODE_AUTOAPPROVE|MASTERMODE_MODE));
+ENUM_VAR(MASTERMODE_VETOSERV, ((1<<MASTERMODE_OPEN)|(1<<MASTERMODE_VETO)));
+ENUM_VAR(MASTERMODE_COOPSERV, (MASTERMODE_AUTOAPPROVE|MASTERMODE_VETOSERV|(1<<MASTERMODE_LOCKED)));
+ENUM_VAR(MASTERMODE_OPENSERV, (MASTERMODE_AUTOAPPROVE|(1<<MASTERMODE_OPEN)));
 
-enum { MM_OPEN = 0, MM_VETO, MM_LOCKED, MM_PRIVATE, MM_PASSWORD };
-enum { SINFO_NONE = 0, SINFO_STATUS, SINFO_NAME, SINFO_PORT, SINFO_QPORT, SINFO_DESC, SINFO_MODE, SINFO_MUTS, SINFO_MAP, SINFO_TIME, SINFO_NUMPLRS, SINFO_MAXPLRS, SINFO_PING, SINFO_PRIO, SINFO_MAX };
-enum { SSTAT_OPEN = 0, SSTAT_LOCKED, SSTAT_PRIVATE, SSTAT_FULL, SSTAT_UNKNOWN, SSTAT_MAX };
+#define SINFO_ENUM(en, um) \
+    en(um, None, NONE) en(um, Status, STATUS) en(um, Name, NAME) en(um, Port, PORT) en(um, Query Port, QPORT) en(um, Description, DESC) \
+    en(um, Mode, MODE) en(um, Mutators, MUTS) en(um, Map, MAP) en(um, Time, TIME) en(um, Num Players, NUMPLRS) en(um, Max Players, MAXPLRS) \
+    en(um, Ping, PING) en(um, Priority, PRIO) en(um, Max, MAX)
+ENUM_DLN(SINFO);
 
-enum
-{
-    AC_PRIMARY = 0, AC_SECONDARY, AC_RELOAD, AC_USE, AC_JUMP, AC_WALK, AC_CROUCH, AC_SPECIAL, AC_DROP, AC_AFFINITY, AC_DASH, AC_MAX,
-    AC_ALL = (1<<AC_PRIMARY)|(1<<AC_SECONDARY)|(1<<AC_RELOAD)|(1<<AC_USE)|(1<<AC_JUMP)|(1<<AC_WALK)|(1<<AC_CROUCH)|(1<<AC_SPECIAL)|(1<<AC_DROP)|(1<<AC_AFFINITY)
-};
+#define SSTAT_ENUM(en, um) \
+    en(um, Open, OPEN) en(um, Locked, LOCKED) en(um, Private, PRIVATE) en(um, Full, FULL) en(um, Unknown, UNKNOWN) en(um, Max, MAX)
+ENUM_DLN(SSTAT);
 
-enum
-{
-    IM_METER = 0, IM_COUNT, IM_TYPE, IM_REGEN, IM_SLIP, IM_PUSHER, IM_COLLECT_METER, IM_LASTCOL_METER, IM_COLLECT_COUNT, IM_LASTCOL_COUNT, IM_MAX,
-    IM_ALL          = (1<<IM_METER)|(1<<IM_COUNT)|(1<<IM_TYPE)|(1<<IM_REGEN)|(1<<IM_SLIP)|(1<<IM_PUSHER)|(1<<IM_COLLECT_METER)|(1<<IM_LASTCOL_METER)|(1<<IM_COLLECT_COUNT)|(1<<IM_LASTCOL_COUNT),
-    IM_CHECKPOINT   = (1<<IM_COUNT)|(1<<IM_COLLECT_COUNT)|(1<<IM_LASTCOL_COUNT)
-};
+#define AC_ENUM(en, um) \
+    en(um, Primary, PRIMARY) en(um, Secondary, SECONDARY) en(um, Reload, RELOAD) en(um, Use, USE) en(um, Jump, JUMP) en(um, Walk, WALK) \
+    en(um, Crouch, CROUCH) en(um, Special, SPECIAL) en(um, Drop, DROP) en(um, Affinity, AFFINITY) en(um, Dash, DASH) en(um, Max, MAX)
+ENUM_DLN(AC);
+ENUM_VAR(AC_ALL, (1<<AC_PRIMARY)|(1<<AC_SECONDARY)|(1<<AC_RELOAD)|(1<<AC_USE)|(1<<AC_JUMP)|(1<<AC_WALK)|(1<<AC_CROUCH)|(1<<AC_SPECIAL)|(1<<AC_DROP)|(1<<AC_AFFINITY)|(1<<AC_DASH));
 
-enum
-{
-    IM_T_JUMP = 0, IM_T_BOOST, IM_T_DASH, IM_T_SLIDE, IM_T_LAUNCH, IM_T_MELEE, IM_T_KICK, IM_T_GRAB, IM_T_WALLRUN, IM_T_VAULT, IM_T_POUND, IM_T_PUSHER, IM_T_MAX,
-    IM_T_ALL    = (1<<IM_T_JUMP)|(1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_MELEE)|(1<<IM_T_KICK)|(1<<IM_T_GRAB)|(1<<IM_T_WALLRUN)|(1<<IM_T_VAULT)|(1<<IM_T_POUND)|(1<<IM_T_PUSHER),
-    IM_T_ACTION = (1<<IM_T_JUMP)|(1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_MELEE)|(1<<IM_T_KICK)|(1<<IM_T_GRAB)|(1<<IM_T_WALLRUN)|(1<<IM_T_VAULT)|(1<<IM_T_POUND)|(1<<IM_T_PUSHER),
-    IM_T_PUSH   = (1<<IM_T_JUMP)|(1<<IM_T_BOOST)|(1<<IM_T_PUSHER),
-    IM_T_COUNT  = (1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_WALLRUN)|(1<<IM_T_POUND),
-    IM_T_CHECK  = (1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_WALLRUN)|(1<<IM_T_VAULT)|(1<<IM_T_POUND)|(1<<IM_T_PUSHER),
-    IM_T_TOUCH  = (1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH), IM_T_NOTOUCH = (1<<IM_T_BOOST), IM_T_RELAX  = (1<<IM_T_VAULT),
-    IM_T_MVAI   = (1<<IM_T_JUMP)|(1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_MELEE)|(1<<IM_T_KICK)|(1<<IM_T_GRAB)|(1<<IM_T_WALLRUN)|(1<<IM_T_VAULT)|(1<<IM_T_POUND)|(1<<IM_T_PUSHER),
-    IM_T_LSAI   = (1<<IM_T_JUMP), IM_T_ROLLER = (1<<IM_T_JUMP)|(1<<IM_T_WALLRUN)|(1<<IM_T_VAULT),
-};
+#define IM_ENUM(en, um) \
+    en(um, Meter, METER) en(um, Count, COUNT) en(um, Type, TYPE) en(um, Regen, REGEN) en(um, Slip, SLIP) en(um, Pusher, PUSHER) \
+    en(um, Collect Meter, COLLECT_METER) en(um, Last Collect Meter, LASTCOL_METER) en(um, Collect Count, COLLECT_COUNT) en(um, Last Collect Count, LASTCOL_COUNT) \
+    en(um, Max, MAX)
+ENUM_DLN(IM);
+ENUM_VAR(IM_ALL, (1<<IM_METER)|(1<<IM_COUNT)|(1<<IM_TYPE)|(1<<IM_REGEN)|(1<<IM_SLIP)|(1<<IM_PUSHER)|(1<<IM_COLLECT_METER)|(1<<IM_LASTCOL_METER)|(1<<IM_COLLECT_COUNT)|(1<<IM_LASTCOL_COUNT));
+ENUM_VAR(IM_CHECKPOINT, (1<<IM_COUNT)|(1<<IM_COLLECT_COUNT)|(1<<IM_LASTCOL_COUNT));
 
-enum
-{
-    SPHY_JUMP = 0, SPHY_BOOST, SPHY_DASH, SPHY_SLIDE, SPHY_LAUNCH, SPHY_MELEE, SPHY_KICK, SPHY_GRAB,
-    SPHY_WALLRUN, SPHY_VAULT, SPHY_POUND, SPHY_MATERIAL, SPHY_PRIZE, SPHY_SWITCH,
-    SPHY_SERVER, SPHY_EXTINGUISH = SPHY_SERVER, SPHY_BUFF,
-    SPHY_MAX
-};
+#define IM_T_ENUM(en, um) \
+    en(um, Jump, JUMP) en(um, Boost, BOOST) en(um, Dash, DASH) en(um, Slide, SLIDE) en(um, Launch, LAUNCH) en(um, Melee, MELEE) en(um, Kick, KICK) en(um, Grab, GRAB) \
+    en(um, Wallrun, WALLRUN) en(um, Vault, VAULT) en(um, Pound, POUND) en(um, Pusher, PUSHER) en(um, Max, MAX)
+ENUM_DLN(IM_T);
+ENUM_VAR(IM_T_ALL, (1<<IM_T_JUMP)|(1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_MELEE)|(1<<IM_T_KICK)|(1<<IM_T_GRAB)|(1<<IM_T_WALLRUN)|(1<<IM_T_VAULT)|(1<<IM_T_POUND)|(1<<IM_T_PUSHER));
+ENUM_VAR(IM_T_ACTION, (1<<IM_T_JUMP)|(1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_MELEE)|(1<<IM_T_KICK)|(1<<IM_T_GRAB)|(1<<IM_T_WALLRUN)|(1<<IM_T_VAULT)|(1<<IM_T_POUND)|(1<<IM_T_PUSHER));
+ENUM_VAR(IM_T_PUSH, (1<<IM_T_JUMP)|(1<<IM_T_BOOST)|(1<<IM_T_PUSHER));
+ENUM_VAR(IM_T_COUNT, (1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_WALLRUN)|(1<<IM_T_POUND));
+ENUM_VAR(IM_T_CHECK, (1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_WALLRUN)|(1<<IM_T_VAULT)|(1<<IM_T_POUND)|(1<<IM_T_PUSHER));
+ENUM_VAR(IM_T_TOUCH, (1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH));
+ENUM_VAR(IM_T_NOTOUCH, (1<<IM_T_BOOST));
+ENUM_VAR(IM_T_RELAX, (1<<IM_T_VAULT));
+ENUM_VAR(IM_T_MVAI, (1<<IM_T_JUMP)|(1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_MELEE)|(1<<IM_T_KICK)|(1<<IM_T_GRAB)|(1<<IM_T_WALLRUN)|(1<<IM_T_VAULT)|(1<<IM_T_POUND)|(1<<IM_T_PUSHER));
+ENUM_VAR(IM_T_LSAI, (1<<IM_T_JUMP));
+ENUM_VAR(IM_T_ROLLER, (1<<IM_T_JUMP)|(1<<IM_T_WALLRUN)|(1<<IM_T_VAULT));
+
+#define SPHY_ENUM(en, um) \
+    en(um, Jump, JUMP) en(um, Boost, BOOST) en(um, Dash, DASH) en(um, Slide, SLIDE) en(um, Launch, LAUNCH) en(um, Melee, MELEE) en(um, Kick, KICK) en(um, Grab, GRAB) \
+    en(um, Wallrun, WALLRUN) en(um, Vault, VAULT) en(um, Pound, POUND) en(um, Material, MATERIAL) en(um, Prize, PRIZE) en(um, Switch, SWITCH) en(um, Extinguish, EXTINGUISH) \
+    en(um, Buff, BUFF) en(um, Max, MAX)
+ENUM_DLN(SPHY);
+ENUM_VAR(SPHY_SERVER, (1<<SPHY_EXTINGUISH)|(1<<SPHY_BUFF));
 
 #define CROUCHLOW 0.7f
 #define CROUCHHIGH 0.9f
@@ -567,11 +596,11 @@ static inline const char *mastermodename(int type)
 {
     switch(type)
     {
-        case MM_OPEN: return "open";
-        case MM_VETO: return "veto";
-        case MM_LOCKED: return "locked";
-        case MM_PRIVATE: return "private";
-        case MM_PASSWORD: return "password";
+        case MASTERMODE_OPEN: return "open";
+        case MASTERMODE_VETO: return "veto";
+        case MASTERMODE_LOCKED: return "locked";
+        case MASTERMODE_PRIVATE: return "private";
+        case MASTERMODE_PASSWORD: return "password";
         default: return "unknown";
     }
 }
@@ -2646,7 +2675,6 @@ namespace hud
     en(um, Combined Team, COMBINED_TEAM) en(um, Combined Alone, COMBINED_ALONE) en(um, Combined Mix, COMBINED_MIX) en(um, Combined Team Mix, COMBINED_TEAM_MIX) en(um, Combined Alone Mix, COMBINED_ALONE_MIX) \
     en(um, Maximum, MAX)
 ENUM_DLN(CTONE);
-//enum { CTONE_TEAM = 0, CTONE_PRIMARY, CTONE_PRIMARY_TEAM, CTONE_PRIMARY_ALONE, CTONE_PRIMARY_MIX, CTONE_PRIMARY_TEAM_MIX, CTONE_PRIMARY_ALONE_MIX, CTONE_MAX };
 
 namespace game
 {

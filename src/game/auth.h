@@ -188,7 +188,7 @@ namespace auth
             ci->handle[0] = '\0';
             int others = 0;
             loopv(clients) if((clients[i]->privilege&PRIV_TYPE) >= PRIV_MODERATOR || clients[i]->local) others++;
-            if(!others) mastermode = MM_OPEN;
+            if(!others) mastermode = MASTERMODE_OPEN;
             if(!val && (privilege&PRIV_TYPE) >= PRIV_ELEVATED)
                 formatstring(msg, "%s relinquished \fs\fc%s\fS status", colourname(ci), privname(privilege));
             if((oldpriv&PRIV_TYPE) >= G(iphostlock) && (ci->privilege&PRIV_TYPE) < G(iphostlock)) resendinit = true;
@@ -260,7 +260,7 @@ namespace auth
         uint ip = getclientip(ci->clientnum);
         if(!ip || !checkipinfo(control, ipinfo::EXCEPT, ip))
         {
-            if(mastermode >= MM_PRIVATE || serverpass[0] || (G(connectlock) && !haspriv(ci, G(connectlock)))) return DISC_PASSWORD;
+            if(mastermode >= MASTERMODE_PRIVATE || serverpass[0] || (G(connectlock) && !haspriv(ci, G(connectlock)))) return DISC_PASSWORD;
             ipinfo *info = checkipinfo(control, ipinfo::BAN, ip);
             if(info)
             {

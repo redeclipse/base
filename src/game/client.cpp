@@ -2260,7 +2260,7 @@ namespace client
                 {
                     int lcn = getint(p), st = getint(p);
                     gameent *t = game::getclient(lcn);
-                    bool proceed = t && (st >= SPHY_SERVER || (t != game::player1 && !t->ai));
+                    bool proceed = t && ((SPHY_SERVER&(1<<st)) || (t != game::player1 && !t->ai));
                     switch(st)
                     {
                         case SPHY_JUMP:
@@ -3487,12 +3487,12 @@ namespace client
         }
         else if(a->attr.length() > 5) switch(a->attr[5])
         {
-            case MM_LOCKED:
+            case MASTERMODE_LOCKED:
             {
                 return SSTAT_LOCKED;
             }
-            case MM_PRIVATE:
-            case MM_PASSWORD:
+            case MASTERMODE_PRIVATE:
+            case MASTERMODE_PASSWORD:
             {
                 return SSTAT_PRIVATE;
             }

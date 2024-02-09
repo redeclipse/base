@@ -1228,10 +1228,10 @@ namespace entities
                     const char *trgnames[TRIG_MAX+1] = { "toggle", "link", "script", "once", "exit", "" }, *actnames[TRIG_A_MAX+1] = { "manual", "proximity", "action", "" };
                     addentinfo(trgnames[attr[1] < 0 || attr[1] >= TRIG_MAX ? TRIG_MAX : attr[1]]);
                     addentinfo(actnames[attr[2] < 0 || attr[2] >= TRIG_A_MAX ? TRIG_A_MAX : attr[2]]);
-                    addentinfo(attr[4]&TRIG_S_INVERTED ? "on" : "off");
-                    addentinfo(attr[4]&TRIG_S_ROUTED ? "routed" : "unrouted");
-                    addentinfo(attr[4]&TRIG_S_ONEWAY ? "one-way" : "both-ways");
-                    addentinfo(attr[4]&TRIG_S_PERSIST ? "persist" : "reset");
+                    addentinfo(attr[4]&(1<<TRIG_S_INVERTED) ? "on" : "off");
+                    addentinfo(attr[4]&(1<<TRIG_S_ROUTED) ? "routed" : "unrouted");
+                    addentinfo(attr[4]&(1<<TRIG_S_ONEWAY) ? "one-way" : "both-ways");
+                    addentinfo(attr[4]&(1<<TRIG_S_PERSIST) ? "persist" : "reset");
                 }
                 break;
             }
@@ -1482,11 +1482,11 @@ namespace entities
 
                 if(d)
                 {
-                    bool spawn = (e.attrs[4]&TRIG_S_INVERTED) != 0;
+                    bool spawn = (e.attrs[4]&(1<<TRIG_S_INVERTED)) != 0;
                     switch(e.attrs[1])
                     {
                         case TRIG_TOGGLE:
-                            if(e.attrs[4]&TRIG_S_ONEWAY && e.spawned() != spawn) return false;
+                            if(e.attrs[4]&(1<<TRIG_S_ONEWAY) && e.spawned() != spawn) return false;
                             break;
                         case TRIG_ONCE:
                             if(e.spawned() != spawn) return false;
