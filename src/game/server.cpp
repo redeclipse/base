@@ -3593,8 +3593,10 @@ namespace server
             }
             return true;
         }
-        mapsending = ci->clientnum;
-        sendf(ci->clientnum, 1, "ri", N_FAILMAP);
+
+        mapsending = -2; // accept from anyone then
+        sendf(-1, 1, "ri", N_FAILMAP);
+
         return false;
     }
 
@@ -6244,7 +6246,7 @@ namespace server
 
         if(type != N_SENDMAPFILE) return -1;
         if(n < 0 || n >= SENDMAP_MAX) return -1;
-        if(ci->clientnum != mapsending) return -1;
+        if(mapsending != -2 && ci->clientnum != mapsending) return -1;
         if(mapdata[n]) DELETEP(mapdata[n]);
         if(!len) return n; // zero len is no file
 
@@ -6260,6 +6262,7 @@ namespace server
 
         if(n == SENDMAP_MPZ)
         {
+            if(mapsending == -2) mapsending = sender;
             smapcrc = crcstream(mapdata[n]);
             if(crc != smapcrc)
             {

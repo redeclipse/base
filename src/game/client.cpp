@@ -4071,7 +4071,7 @@ namespace client
     CLCOMMAND(allowimpulse, intret(A(d->actortype, impulse)&IM_T_CHECK ? 1 : 0));
     CLCOMMAND(impulsecostmeter, intret(d->impulse[IM_METER]));
     CLCOMMAND(impulsetype, intret(d->impulse[IM_TYPE]));
-    CLCOMMANDM(impulsetimer, "b", (char *who, int *n), intret(d->impulsetime[*n >= 0 && *n < IM_T_MAX ? *n : d->impulse[IM_TYPE]]));
+    CLCOMMANDM(impulsetimer, "b", (char *who, int *n), intret(d->impulsetime[*n >= 0 && *n < IM_T_MAX ? *n : (d->impulse[IM_TYPE] >= 0 && d->impulse[IM_TYPE] < IM_T_MAX ? d->impulse[IM_TYPE] : IM_T_JUMP)]));
     CLCOMMAND(impulseregen, intret(d->impulse[IM_REGEN]));
     CLCOMMAND(impulsecount, intret(d->impulse[IM_COUNT]));
     CLCOMMAND(impulsejump, intret(d->impulsetime[IM_T_JUMP]));
