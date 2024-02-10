@@ -3573,7 +3573,7 @@ namespace entities
                 if(!editcheck && (enttype[e.type].usetype != EU_ITEM || !isallowed(e))) continue;
 
                 vec curpos = vec(editcheck ? e.o : e.pos()).addz(clamp(enttype[e.type].radius / 2, 2, 4));
-                if(curpos.squaredist(camera1->o) > (!editcheck || enthover.find(i) >= 0 || entgroup.find(i) >= 0 ? entitymaxdist * entitymaxdist : entityshowmaxdist * entityshowmaxdist))
+                if(curpos.squaredist(camera1->o) > (!editcheck || enthover.find(i) >= 0 || entgroup.find(i) >= 0 ? entityitemuimaxdist * entityitemuimaxdist : entityedituimaxdist * entityedituimaxdist))
                     continue;
 
                 if(editcheck) MAKEUI(entityedit, i, enthover.find(i) >= 0 || entgroup.find(i) >= 0, curpos);
@@ -3592,7 +3592,7 @@ namespace entities
             if(e.type == NOTUSED || e.attrs.empty() || enttype[e.type].usetype != EU_ITEM || !isallowed(e)) continue;
 
             vec curpos = vec(proj.o).addz(clamp(enttype[e.type].radius / 2, 2, 4));
-            if(curpos.squaredist(camera1->o) > entitymaxdist * entitymaxdist) continue;
+            if(curpos.squaredist(camera1->o) > entityitemuimaxdist * entityitemuimaxdist) continue;
 
             MAKEUI(entityproj, proj.seqid, false, curpos);
         }
