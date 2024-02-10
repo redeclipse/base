@@ -4148,8 +4148,7 @@ namespace client
             if(*n < 0) intret(d->dtype.length()); \
             else if(d->dtype.inrange(*n)) intret(d->dtype[*n]->clientnum); \
         });
-    CLDOMCMD(dominating);
-    CLDOMCMD(dominated);
+    CLDOMCMD(dominator);
 
     #define CLISDOMCMD(dtype) \
         CLCOMMANDMK(is##dtype, "ss", (char *who, char *n), \
@@ -4168,8 +4167,7 @@ namespace client
             intret(0); \
             return; \
         }, intret(0); return);
-    CLISDOMCMD(dominating);
-    CLISDOMCMD(dominated);
+    CLISDOMCMD(dominator);
 
     CLCOMMAND(privilege, intret(d->privilege&PRIV_TYPE));
     CLCOMMAND(privlocal, intret(d->privilege&PRIV_LOCAL ? 1 : 0));

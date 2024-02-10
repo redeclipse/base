@@ -596,7 +596,7 @@ GFVAR(IDF_GAMEMOD, 0, impulseboostpitchmin, -89.9f, -89.9f, 89.9f); // boost pit
 GFVAR(IDF_GAMEMOD, 0, impulseboostpitchmax, -89.9f, 89.9f, 89.9f); // boost pitch maximum
 GFVAR(IDF_GAMEMOD, 0, impulseboostup, 0, 3.0f, FVAR_MAX); // jump upward modifier
 GFVAR(IDF_GAMEMOD, 0, impulseboostupredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
-GFVAR(IDF_GAMEMOD, 0, impulsedash, 0, 3.0f, FVAR_MAX); // dash modifier
+GFVAR(IDF_GAMEMOD, 0, impulsedash, 0, 2.0f, FVAR_MAX); // dash modifier
 GFVAR(IDF_GAMEMOD, 0, impulsedashback, 0, 1.0f, FVAR_MAX); // dash modifier
 GFVAR(IDF_GAMEMOD, 0, impulsedashredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, 0, impulsepound, 0, 2.0f, FVAR_MAX); // pound modifier

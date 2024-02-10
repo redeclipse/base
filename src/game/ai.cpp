@@ -559,7 +559,7 @@ namespace ai
             targcache &c = targets.add();
             c.d = e;
             c.dist = d->o.squaredist(e->o);
-            if(d->dominating.find(c.d) >= 0) c.dominated = true;
+            if(c.d->dominator.find(d) >= 0) c.dominated = true;
             c.visible = force || cansee(d, d->o, e->o, d->actortype >= A_ENEMY);
         }
         if(targets.empty()) return false;
@@ -766,7 +766,7 @@ namespace ai
     void damaged(gameent *d, gameent *e, int weap, int flags, int damage)
     {
         if(d == e || (d->actortype == A_JANITOR && d->hasprize <= 0)) return; // shrug it off
-        if(d->ai && (d->team == T_ENEMY || (hitdealt(flags) && damage > 0) || d->ai->enemy < 0 || d->dominating.find(e))) // see if this ai is interested in a grudge
+        if(d->ai && (d->team == T_ENEMY || (hitdealt(flags) && damage > 0) || d->ai->enemy < 0 || d->dominator.find(e) >= 0)) // see if this ai is interested in a grudge
         {
             aistate &b = d->ai->getstate();
             violence(d, b, e, d->actortype != A_BOT || W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0);
@@ -776,7 +776,7 @@ namespace ai
         if(checkothers(targets, d, AI_S_DEFEND, AI_T_ACTOR, d->clientnum, true))
         {
             gameent *t;
-            loopv(targets) if((t = game::getclient(targets[i])) && t->ai && t->actortype == A_BOT && ((hitdealt(flags) && damage > 0) || t->ai->enemy < 0 || t->dominating.find(e)))
+            loopv(targets) if((t = game::getclient(targets[i])) && t->ai && t->actortype == A_BOT && ((hitdealt(flags) && damage > 0) || t->ai->enemy < 0 || t->dominator.find(e) >= 0))
             {
                 aistate &c = t->ai->getstate();
                 violence(t, c, e, W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0);
@@ -1519,7 +1519,7 @@ namespace ai
         int skmod = max(101 - d->skill, 1);
         float frame = d->skill <= 100 ? ((lastmillis - d->ai->lastrun) * (100.f / gamespeed)) / float(skmod * 20) : 1;
 
-        if(d->dominating.length()) frame *= 1 + d->dominating.length(); // berserker mode
+        if(d->dominator.length()) frame *= 1 + d->dominator.length(); // berserker mode
         if(d->hasprize > 0) frame *= A(d->actortype, speedprize); // adjust for increased speed
 
         bool dancing = b.type == AI_S_OVERRIDE && b.overridetype == AI_O_DANCE,
@@ -1959,12 +1959,13 @@ namespace ai
             }
         }
 
+        #if 0
         loopenti(MAPMODEL) if(entities::ents[i]->type == MAPMODEL)
         {
             gameentity &e = *(gameentity *)entities::ents[i];
             if(e.attrs[6]&(1<<MDLF_NOCLIP) || !mapmodelvisible(e, i, 2)) continue;
             mapmodelinfo *mmi = getmminfo(e.attrs[0]);
-            if(!mmi || !mmi->m || mmi->m->collide == COLLIDE_NONE) continue;
+            if(!mmi || !mmi->m || mmi->m->collide == COLLIDE_NONE|| mmi->m->collide == COLLIDE_TRI) continue;
             vec center, radius;
             mmi->m->collisionbox(center, radius);
             if(e.attrs[5])
@@ -1979,6 +1980,7 @@ namespace ai
             z += WAYPOINTRADIUS;
             obstacles.avoidnear(NULL, e.o.z + z + 1, e.o, xy + 1);
         }
+        #endif
     }
 
     void think(gameent *d, bool run)

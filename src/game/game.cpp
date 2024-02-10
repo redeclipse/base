@@ -445,7 +445,7 @@ namespace game
     FVAR(IDF_PERSIST, playerregentime, 0, 1, 1);
     FVAR(IDF_PERSIST, playerregenfade, 0, 1.0f, 16);
     FVAR(IDF_PERSIST, playerregenslice, 0, 0.125f, 1);
-    FVAR(IDF_PERSIST, playerregenblend, 0, 0.5f, 1);
+    FVAR(IDF_PERSIST, playerregenblend, 0, 0.25f, 1);
     FVAR(IDF_PERSIST, playerregendecayblend, 0, 0.5f, 1);
     FVAR(IDF_PERSIST, playerregenbright, -16, 1.0f, 16);
     FVAR(IDF_PERSIST, playerregendecaybright, -16, -1.0f, 16);
@@ -453,7 +453,7 @@ namespace game
     VAR(IDF_PERSIST, playershimmer, 0, 1, 1);
     FVAR(IDF_PERSIST, playershimmerfade, 0, 1.0f, 16);
     FVAR(IDF_PERSIST, playershimmerslice, 0, 0.125f, 1);
-    FVAR(IDF_PERSIST, playershimmerblend, 0, 0.75f, 1);
+    FVAR(IDF_PERSIST, playershimmerblend, 0, 0.5f, 1);
     FVAR(IDF_PERSIST, playershimmerbright, -16, 0.75f, 16);
 
     FVAR(IDF_PERSIST, affinityfadeat, 0, 32, FVAR_MAX);
@@ -2283,8 +2283,7 @@ namespace game
             if(style&FRAG_REVENGE)
             {
                 concatstring(d->obit, " \fs\fzoyrevenge\fS");
-                v->dominating.removeobj(d);
-                d->dominated.removeobj(v);
+                d->dominator.removeobj(v);
                 anc = S_V_REVENGE;
                 hasanc = true;
             }
@@ -2292,8 +2291,7 @@ namespace game
             if(style&FRAG_DOMINATE)
             {
                 concatstring(d->obit, " \fs\fzoydominating\fS");
-                if(v->dominated.find(d) < 0) v->dominated.add(d);
-                if(d->dominating.find(v) < 0) d->dominating.add(v);
+                if(v->dominator.find(d) < 0) v->dominator.add(d);
                 anc = S_V_DOMINATE;
                 hasanc = true;
             }
@@ -2495,8 +2493,7 @@ namespace game
         int numdyns = numdynents();
         loopi(numdyns) if((e = (gameent *)iterdynents(i)))
         {
-            e->dominating.removeobj(d);
-            e->dominated.removeobj(d);
+            e->dominator.removeobj(d);
             if(e->ai) loopvj(e->ai->state)
             {
                 if(e->ai->state[j].owner == cn) e->ai->state[j].owner = -1;

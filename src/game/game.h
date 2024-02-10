@@ -1366,7 +1366,7 @@ struct gameent : dynent, clientstate
     vec tag[TAG_MAX];
     vec2 rotvel;
     string hostip, name, handle, steamid, info, obit;
-    vector<gameent *> dominating, dominated;
+    vector<gameent *> dominator;
     vector<stunevent> stuns;
     vector<jitterevent> jitters;
     vector<int> vitems;
@@ -1435,7 +1435,7 @@ struct gameent : dynent, clientstate
         if(!isalive()) return false;
         if(hasprize > 0) return 1;
         if(getammo(W_ROCKET, lastmillis) > 0) return 2;
-        if(d && revengeprize && dominating.find(d) >= 0) return 3;
+        if(d && revengeprize && d->dominator.find(this) >= 0) return 3;
         return 0;
     }
 
@@ -1774,8 +1774,7 @@ struct gameent : dynent, clientstate
 
     void mapchange(int millis, int gamemode, int mutators)
     {
-        dominating.shrink(0);
-        dominated.shrink(0);
+        dominator.shrink(0);
         resetstate(millis, gamemode, mutators);
         clientstate::mapchange();
     }
