@@ -1916,18 +1916,24 @@ namespace UI
 
                 if(w->pos != nullvec)
                 {   // can only be used for things with an actual 3d position
-                    if(!getvisible(camera1->o, camera1->yaw, camera1->pitch, w->pos, curfov, fovy, uivisradius, -1))
+                    if(w->visible)
+                    {
+                        w->dist = w->pos.dist(camera1->o);
+                        float maxdist = w->maxdist > 0 ? min(w->maxdist, uimaxdist) : uimaxdist;
+                        if(maxdist > 0 && w->dist > maxdist) w->visible = false;
+                    }
+
+                    if(w->visible && !getvisible(camera1->o, camera1->yaw, camera1->pitch, w->pos, curfov, fovy, uivisradius, -1))
                         w->visible = false;
-
-                    w->dist = w->pos.dist(camera1->o);
-
-                    float maxdist = w->maxdist > 0 ? min(w->maxdist, uimaxdist) : uimaxdist;
-                    if(maxdist > 0 && w->dist > maxdist) w->visible = false;
 
                     if(!w->visible && w->forcetest)
                     {   // fall back to the force test script
                         w->setargs();
-                        if(executebool(w->forcetest->code)) w->visible = true;
+                        if(executebool(w->forcetest->code))
+                        {
+                            w->dist = w->pos.dist(camera1->o);
+                            w->visible = true;
+                        }
                     }
                 }
 

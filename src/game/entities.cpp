@@ -21,15 +21,12 @@ namespace entities
     FVAR(IDF_PERSIST, showentsize, 0, 3, 10);
     FVAR(IDF_PERSIST, showentavailable, 0, 1, 1);
     FVAR(IDF_PERSIST, showentunavailable, 0, 0.125f, 1);
-    FVAR(IDF_PERSIST, entitymaxdist, 0, 1024, FVAR_MAX);
 
     DEFUIVARS(entityedit, SURFACE_WORLD, -1.f, 0.f, 1.f, 4.f, 256.f, 0.f, 0.f);
     DEFUIVARS(entityitem, SURFACE_WORLD, -1.f, 0.f, 1.f, 4.f, 512.f, 0.f, 0.f);
     DEFUIVARS(entityproj, SURFACE_WORLD, -1.f, 0.f, 1.f, 4.f, 512.f, 0.f, 0.f);
 
     VAR(IDF_PERSIST, entityicons, 0, 1, 1);
-    FVAR(IDF_PERSIST, entityiconmaxdist, 0.f, 256.f, FVAR_MAX);
-
     VAR(IDF_PERSIST, entityhalos, 0, 1, 1);
     FVAR(IDF_PERSIST, entselblend, 0, 1, 1);
     FVAR(IDF_PERSIST, entselblendtop, 0, 1, 1);
@@ -37,6 +34,10 @@ namespace entities
     FVAR(IDF_PERSIST, entselsizetop, 0, 1, FVAR_MAX);
     FVAR(IDF_PERSIST, entdirsize, 0, 10, FVAR_MAX);
     FVAR(IDF_PERSIST, entrailoffset, 0, 0.1f, FVAR_MAX);
+
+    FVAR(IDF_PERSIST, entitymaxdist, 0, 1024, FVAR_MAX);
+    FVAR(IDF_PERSIST, entityshowmaxdist, 0, 512, FVAR_MAX);
+    FVAR(IDF_PERSIST, entityiconmaxdist, 0.f, 256, FVAR_MAX);
 
     VAR(IDF_PERSIST, entityshimmer, 0, 1, 1);
     FVAR(IDF_PERSIST, entityshimmertime, 0, 1.5f, FVAR_MAX);
@@ -2971,7 +2972,7 @@ namespace entities
     {
         if(dynamic && (e.dynamic() || showentdynamic >= level)) return;
         vec pos = dynamic ? e.pos() : e.o;
-        if(pos.squaredist(camera1->o) > entitymaxdist * entitymaxdist) return;
+        if(pos.squaredist(camera1->o) > entityshowmaxdist * entityshowmaxdist) return;
         #define entdirpart(o,y,p,length,fade,colour) \
         { \
             float targyaw = y, targpitch = p; \
@@ -3318,10 +3319,8 @@ namespace entities
 
         if(drawtex && drawtex != DRAWTEX_HALO) return;
 
-        if(drawtex != DRAWTEX_HALO && shouldshowents(game::player1->isediting() ? 1 : (!entgroup.empty() || !enthover.empty() ? 2 : 3)))
-            loopv(ents) renderfocus(i, renderentshow(e, i, showlevel(i), j!=0));
-
-        bool cansee = m_edit(game::gamemode) && game::player1->isediting();
+        bool cansee = game::player1->isediting() && !editinhibit,
+             shouldshow = drawtex != DRAWTEX_HALO && shouldshowents(cansee ? 1 : (!entgroup.empty() || !enthover.empty() ? 2 : 3));
 
         int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators),
             fstent = cansee ? 0 : firstuse(EU_ITEM),
@@ -3331,8 +3330,8 @@ namespace entities
         {
             gameentity &e = *(gameentity *)ents[i];
             if(e.type <= NOTUSED || e.type >= MAXENTTYPES || !haloallow(camera1->o, i)) continue;
-
             if(!cansee && (enttype[e.type].usetype != EU_ITEM || (!e.spawned() && (e.lastemit && lastmillis-e.lastemit > 500)))) continue;
+            if(shouldshow) renderfocus(i, renderentshow(e, i, showlevel(i), j != 0));
 
             const char *mdlname = entmdlname(e.type, e.attrs);
             if(!mdlname || !*mdlname) continue;
@@ -3361,7 +3360,7 @@ namespace entities
                         mdl.yaw = e.attrs[1];
                         mdl.pitch = e.attrs[2];
                         int weap = e.attrs[6] > 0 ? e.attrs[6]-1 : A(e.attrs[0], weaponspawn);
-                        mdl.size = e.attrs[9] > 0 ? e.attrs[9]/100.f : A(e.attrs[0], scale);
+                        mdl.size = e.attrs[9] > 0 ? e.attrs[9] / 100.0f : A(e.attrs[0], scale);
                         if(isweap(weap)) colour = W(weap, colour);
                     }
                 }
@@ -3397,7 +3396,7 @@ namespace entities
             else if(e.lastemit)
             {
                 int millis = lastmillis - e.lastemit;
-                if(millis < 500) mdl.size = mdl.color.a = 1.f - (millis / 500.f);
+                if(millis < 500) mdl.size = mdl.color.a = 1.f - (millis / 500.0f);
             }
 
             if(e.type == WEAPON)
@@ -3574,6 +3573,9 @@ namespace entities
                 if(!editcheck && (enttype[e.type].usetype != EU_ITEM || !isallowed(e))) continue;
 
                 vec curpos = vec(editcheck ? e.o : e.pos()).addz(clamp(enttype[e.type].radius / 2, 2, 4));
+                if(curpos.squaredist(camera1->o) > (!editcheck || enthover.find(i) >= 0 || entgroup.find(i) >= 0 ? entitymaxdist * entitymaxdist : entityshowmaxdist * entityshowmaxdist))
+                    continue;
+
                 if(editcheck) MAKEUI(entityedit, i, enthover.find(i) >= 0 || entgroup.find(i) >= 0, curpos);
                 else MAKEUI(entityitem, i, false, curpos);
             }
@@ -3588,7 +3590,11 @@ namespace entities
 
             gameentity &e = *(gameentity *)ents[proj.id];
             if(e.type == NOTUSED || e.attrs.empty() || enttype[e.type].usetype != EU_ITEM || !isallowed(e)) continue;
-            MAKEUI(entityproj, proj.seqid, false, vec(proj.o).addz(clamp(enttype[e.type].radius / 2, 2, 4)));
+
+            vec curpos = vec(proj.o).addz(clamp(enttype[e.type].radius / 2, 2, 4));
+            if(curpos.squaredist(camera1->o) > entitymaxdist * entitymaxdist) continue;
+
+            MAKEUI(entityproj, proj.seqid, false, curpos);
         }
     }
 
@@ -3621,7 +3627,7 @@ namespace entities
             float dist = pos.squaredist(camera1->o);
             if(editcheck && (hassel || dist <= entityiconmaxdist * entityiconmaxdist))
             {
-                bool ontop = hassel && dist <= entitymaxdist * entitymaxdist,
+                bool ontop = hassel && dist <= entityshowmaxdist * entityshowmaxdist,
                      cansee = getvisible(camera1->o, camera1->yaw, camera1->pitch, pos, curfov, fovy, max(enttype[e.type].radius, 4), ontop ? -1 : VFC_PART_VISIBLE),
                      dotop = ontop && e.dynamic(), visiblepos = dotop && getvisible(camera1->o, camera1->yaw, camera1->pitch, e.pos(), curfov, fovy, max(enttype[e.type].radius, 4), ontop ? -1 : VFC_PART_VISIBLE);
 
