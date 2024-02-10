@@ -719,7 +719,6 @@ void httpindex(httpreq *r)
 {
     r->send("Content-Type: text/plain");
     r->send("\r\n");
-    defformatstring(branch, "%s", versionbranch);
     r->sendf("%s", getverstr());
     r->send("");
     r->send("Headers:");

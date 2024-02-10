@@ -107,7 +107,7 @@ namespace physics
     extern int physsteps, physframetime;
     extern float floorz, slopez, wallz;
     extern bool laddercheck(physent *d);
-    extern bool liquidcheck(physent *d, float minval = 0, float maxval = 1);
+    extern bool liquidcheck(physent *d, float val = -1.0f);
     extern float liquidmerge(physent *d, float from, float to);
     extern vec gravityvel(physent *d, const vec &center, float secs, float radius = 1.f, float height = 1.f, int matid = 0, float submerged = 0.f);
     extern bool isfloating(physent *d);

@@ -7,7 +7,7 @@ namespace ai
 
     VAR(0, aidebug, 0, 0, 7);
     VAR(0, aidebugfocus, 0, 1, 2);
-    VAR(0, aitimeout, 500, 1000, VAR_MAX);
+    VAR(0, aitimeout, 500, 500, VAR_MAX);
 
     VARF(0, showwaypoints, 0, 0, 1, if(showwaypoints) getwaypoints());
 
@@ -1516,8 +1516,7 @@ namespace ai
             return; // override
         }
 
-        int skmod = max(101 - d->skill, 1);
-        float frame = d->skill <= 100 ? ((lastmillis - d->ai->lastrun) * (100.f / gamespeed)) / float(skmod * 20) : 1;
+        float frame = d->skill <= 100 ? (lastmillis - d->ai->lastrun) / float(max(101 - d->skill, 1) * 10) : 1;
 
         if(d->dominator.length()) frame *= 1 + d->dominator.length(); // berserker mode
         if(d->hasprize > 0) frame *= A(d->actortype, speedprize); // adjust for increased speed
@@ -1846,8 +1845,8 @@ namespace ai
     {
         if(d->blocked)
         {
-            d->ai->blocktime += lastmillis-d->ai->lastrun;
-            if(d->ai->blocktime > (d->ai->blockseq+1)*aitimeout)
+            d->ai->blocktime += lastmillis - d->ai->lastrun;
+            if(d->ai->blocktime > (d->ai->blockseq + 1) * aitimeout)
             {
                 d->ai->blockseq++;
                 switch(d->ai->blockseq)
@@ -1875,8 +1874,8 @@ namespace ai
 
         if(iswaypoint(d->ai->targnode) && (d->ai->targnode == d->ai->targlast || d->ai->hasprevnode(d->ai->targnode)))
         {
-            d->ai->targtime += lastmillis-d->ai->lastrun;
-            if(d->ai->targtime > (d->ai->targseq+1)*aitimeout)
+            d->ai->targtime += lastmillis - d->ai->lastrun;
+            if(d->ai->targtime > (d->ai->targseq + 1) * aitimeout)
             {
                 d->ai->targseq++;
                 switch(d->ai->targseq)

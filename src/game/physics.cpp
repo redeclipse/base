@@ -252,9 +252,9 @@ namespace physics
         return true;
     }
 
-    bool liquidcheck(physent *d, float minval, float maxval)
+    bool liquidcheck(physent *d, float val)
     {
-        return !laddercheck(d) && isliquid(d->inmaterial&MATF_VOLUME) && d->submerged >= clamp(LIQUIDPHYS(submerge, d->inmaterial), minval, maxval);
+        return !laddercheck(d) && isliquid(d->inmaterial&MATF_VOLUME) && d->submerged >= (val >= 0.0f ? clamp(val, 0.0f, 1.0f) : LIQUIDPHYS(submerge, d->inmaterial));
     }
 
     float liquidmerge(physent *d, float from, float to)
@@ -275,7 +275,7 @@ namespace physics
         float vel = floating ? 0.f : PHYS(gravity) * (d->weight / 100.f) * d->gravityscale, buoy = 0.f;
         bool liquid = isliquid(matid&MATF_VOLUME), inliquid = liquid && submerged >= LIQUIDPHYS(submerge, matid);
 
-        if(inliquid) buoy = LIQUIDPHYS(buoyancy, matid) * (d->buoyancy / 100.f) * d->submerged;
+        if(inliquid) buoy = LIQUIDPHYS(buoyancy, matid) * (d->buoyancy / 100.f) * submerged;
 
         if(gameent::is(d))
         {
@@ -299,20 +299,14 @@ namespace physics
                         case IM_T_POUND: vel *= impulsepoundgravity; break;
                     }
 
-                    if(e->actiontime[AC_JUMP] >= 0)
-                        vel *= e->crouching() ? gravityjumpcrouch : gravityjump;
-                    else if(e->crouching()) vel *= gravitycrouch;
+                    if(e->crouching()) vel *= gravitycrouch;
                 }
                 vel *= e->stungravity;
             }
 
             if(buoy != 0)
             {
-                if(d->state == CS_ALIVE)
-                {
-                    if(e->actiontime[AC_JUMP] >= 0) buoy *= buoyancyjump;
-                    else if(e->crouching()) buoy *= buoyancycrouch;
-                }
+                if(d->state == CS_ALIVE && e->crouching()) buoy *= buoyancycrouch;
                 buoy *= e->stungravity;
             }
         }
@@ -340,6 +334,7 @@ namespace physics
                     }
                 }
             }
+
             if(fall) g.add(f.div(fall).mul(LIQUIDVAR(fallpush, matid)).subz(1).mul(LIQUIDVAR(fallspeed, matid)));
         }
 
@@ -451,7 +446,7 @@ namespace physics
     {
         if(d->type == ENT_DUMMY) return false;
         if(d->type == ENT_CAMERA || d->isnophys() || isfloating(d) || PHYS(gravity) == 0 || d->weight == 0) return true;
-        if(d->isalive() && (laddercheck(d) || liquidcheck(d) || (gameent::is(d) && A(((gameent *)d)->actortype, abilities)&(1<<A_A_FLOAT)))) return true;
+        if(d->isalive() && (laddercheck(d) || liquidcheck(d, 1.0f) || (gameent::is(d) && A(((gameent *)d)->actortype, abilities)&(1<<A_A_FLOAT)))) return true;
         return false;
     }
 
@@ -948,11 +943,14 @@ namespace physics
                     continue; // nothing, can't be running on it then
                 }
 
+                vec face = vec(collidewall).safenormalize();
+                if(fabs(face.z) > impulsewallrunnorm) continue; // check for correct normal to initiate wall running
+
                 if(!haswallrun)
                 {   // check for minimum step height
                     d->o.add(vec(dir).mul(impulsewallrunstep * 0.5f).addz(impulsewallrunstep));
 
-                    if(!collide(d, dir))
+                    if(!collide(d, dir) && !collideinside)
                     {
                         d->o = oldpos;
                         continue;
@@ -960,9 +958,6 @@ namespace physics
 
                     d->o = oldpos;
                 }
-
-                vec face = vec(collidewall).safenormalize();
-                if(fabs(face.z) > impulsewallrunnorm) continue; // check for correct normal to initiate wall running
 
                 float yaw = 0, pitch = 0;
                 vectoyawpitch(face, yaw, pitch);
@@ -1038,6 +1033,14 @@ namespace physics
 
                         if(!haswallrun && (testcollide || collideinside)) continue; // it'll just result in a wasted move otherwise
                     }
+
+                    d->o.addz(impulsewallrunhead);
+                    if(collide(d, vec(0, 0, 1)) || collideinside)
+                    {   // check for minimum head room
+                        d->o = oldpos;
+                        continue;
+                    }
+                    d->o = oldpos;
                 }
 
                 int updateturn = 0;
@@ -1336,7 +1339,7 @@ namespace physics
         if(gameent::is(d) && local)
         {
             gameent *e = (gameent *)d;
-            if(e->state == CS_ALIVE && e->physstate < PHYS_SLIDE && e->vel.z > 1e-3f)
+            if(e->state == CS_ALIVE && e->physstate < PHYS_SLIDE)
             {
                 float boost = LIQUIDPHYS(boost, e->inmaterial);
                 if(submerged >= boost && e->submerged < boost) e->vel.z = max(e->vel.z, A(e->actortype, liquidboost));
