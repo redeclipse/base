@@ -1934,9 +1934,9 @@ namespace game
                 int hp = max(d->gethealth(gamemode, mutators)/5, 1);
 
                 if(!nogore && bloodscale > 0)
-                    part_splash(PART_BLOOD, int(clamp(damage/hp, 1, 3)*bloodscale)*(bleedfunc || material ? 2 : 1), bloodfade, p, 0x229999, (rnd((bloodsize+1)/2)+((bloodsize+1)/2))/10.f, 1, 0, 0, 100, 1+STAIN_BLOOD, int(d->radius), 10);
+                    part_splash(PART_BLOOD, int(clamp(damage/hp, 1, 3)*bloodscale)*(bleedfunc || material ? 2 : 1), bloodfade, p, A(d->actortype, abilities)&(1<<A_A_LIVING) ? 0x209090 : 0xE0E0E0, (rnd((bloodsize+1)/2)+((bloodsize+1)/2))/10.f, 1, 0, 0, 100, 1+STAIN_BLOOD, int(d->radius), 10);
                 else if(bloodscale <= 0 || bloodsparks)
-                    part_splash(PART_PLASMA, int(clamp(damage/hp, 1, 3))*(bleedfunc || material ? 2: 1), bloodfade, p, 0x882222, 1, 0.5f, 0, 0, 50, 1+STAIN_STAIN, int(d->radius));
+                    part_splash(PART_PLASMA, int(clamp(damage/hp, 1, 3))*(bleedfunc || material ? 2: 1), bloodfade, p, A(d->actortype, abilities)&(1<<A_A_LIVING) ? 0x902020 : 0x101010, 1, 0.5f, 0, 0, 50, 1+STAIN_STAIN, int(d->radius));
 
                 int damagetype = damagemerge::HURT;
                 if(burnfunc) damagetype = damagemerge::BURN;
