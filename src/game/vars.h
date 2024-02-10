@@ -585,7 +585,7 @@ GFVAR(IDF_GAMEMOD, 0, moveinair, FVAR_NONZERO, 0.75f, FVAR_MAX); // in-air modif
 GFVAR(IDF_GAMEMOD, 0, movestepup, FVAR_NONZERO, 0.95f, FVAR_MAX); // step-up modifier
 GFVAR(IDF_GAMEMOD, 0, movestepdown, FVAR_NONZERO, 1.15f, FVAR_MAX); // step-down modifier
 
-GFVAR(IDF_GAMEMOD, 0, impulsejump, 0, 2.0f, FVAR_MAX); // jump modifier
+GFVAR(IDF_GAMEMOD, 0, impulsejump, 0, 1.5f, FVAR_MAX); // jump modifier
 GFVAR(IDF_GAMEMOD, 0, impulsejumpredir, 0, 0.5f, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, 0, impulseboost, 0, 2.0f, FVAR_MAX); // boost modifier
 GFVAR(IDF_GAMEMOD, 0, impulseboostredir, 0, 0.5f, FVAR_MAX); // how much of the old velocity is redirected into the new one
@@ -623,6 +623,7 @@ GFVAR(IDF_GAMEMOD, 0, impulsegrabredir, 0, 1, FVAR_MAX); // how much of the old 
 GFVAR(IDF_GAMEMOD, 0, impulsegrabplayer, 0, 2, FVAR_MAX); // wallrun grab player modifier
 GFVAR(IDF_GAMEMOD, 0, impulsegrabplayerredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
 
+GVAR(IDF_GAMEMOD, 0, impulsevaultstyle, 0, 2, 3); // when to do vault transitions, bit: 1 = wallrun, 2 = climb
 GVAR(IDF_GAMEMOD, 0, impulsevaultpitchclamp, 0, 1, 1); // clamp vault pitch to player pitch
 GFVAR(IDF_GAMEMOD, 0, impulsevaultpitch, 0.0f, 0.0f, 89.9f); // z direction to funnel in when vaulting
 GFVAR(IDF_GAMEMOD, 0, impulsevaultminspeed, 0.0f, 0.05f, FVAR_MAX); // minimum percentage of player speed

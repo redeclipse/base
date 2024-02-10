@@ -1095,32 +1095,36 @@ namespace physics
 
         if(haswallrun && (!found || d->impulsetimer(IM_T_WALLRUN) == 0))
         {
-            vec dir(d->yaw * RAD, d->pitch * RAD);
-            float mag = max(d->vel.magnitude() + d->falling.magnitude(), d->speed * impulsevaultminspeed);
+            if(impulsevaultstyle&(d->turnside ? 1 : 2))
+            {
+                vec dir(d->yaw * RAD, d->pitch * RAD);
+                float mag = max(d->vel.magnitude() + d->falling.magnitude(), d->speed * impulsevaultminspeed);
 
-            if(!d->turnside)
-            {   // if we were climbing something then broke free, fling us off
-                vec oldpos = d->o, olddir = dir;
-                dir = vec(d->yaw * RAD, (impulsevaultpitchclamp && d->pitch >= impulsevaultpitch ? d->pitch : impulsevaultpitch) * RAD);
+                if(!d->turnside)
+                {   // if we were climbing something then broke free, fling us off
+                    vec oldpos = d->o, olddir = dir;
+                    dir = vec(d->yaw * RAD, (impulsevaultpitchclamp && d->pitch >= impulsevaultpitch ? d->pitch : impulsevaultpitch) * RAD);
 
-                float pitchgap = (89.9f - impulsevaultpitch) * 0.1f;
-                found = false; // we can re-use this from earlier
-                loopj(11)
-                {   // scan for obstacle and try to go up and over
-                    d->o.add(dir);
-                    if(!collide(d, dir) && !collideinside)
-                    {
-                        found = true;
-                        break;
+                    float pitchgap = (89.9f - impulsevaultpitch) * 0.1f;
+                    found = false; // we can re-use this from earlier
+                    loopj(11)
+                    {   // scan for obstacle and try to go up and over
+                        d->o.add(dir);
+                        if(!collide(d, dir) && !collideinside)
+                        {
+                            found = true;
+                            break;
+                        }
+                        dir = vec(d->yaw * RAD, j * pitchgap * RAD);
+                        d->o = oldpos;
                     }
-                    dir = vec(d->yaw * RAD, j * pitchgap * RAD);
+                    if(!found) dir = olddir;
                     d->o = oldpos;
                 }
-                if(!found) dir = olddir;
-                d->o = oldpos;
+
+                d->vel = vec(dir).mul(mag);
             }
 
-            d->vel = vec(dir).mul(mag);
             d->doimpulse(IM_T_VAULT, lastmillis);
             client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_VAULT);
             haswallrun = false;
