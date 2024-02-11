@@ -658,11 +658,11 @@ GVAR(IDF_GAMEMOD, 0, impulsecount, 0, 6, VAR_MAX); // number of impulse actions 
 GVAR(IDF_GAMEMOD, 0, impulsecounttypes, 0, IM_T_COUNT, IM_T_ACTION); // what actions get counted
 GVAR(IDF_GAMEMOD, 0, impulsepoundstyle, 0, 0, 1); // pound style: 0 = stop moving first, 1 = allow moving
 
-GVAR(IDF_GAMEMOD, 0, impulseyawtime, 0, 400, VAR_MAX);
+GVAR(IDF_GAMEMOD, 0, impulseyawtime, 0, 250, VAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, impulseyawscale, 0, 1, 1);
-GVAR(IDF_GAMEMOD, 0, impulsepitchtime, 0, 800, VAR_MAX);
+GVAR(IDF_GAMEMOD, 0, impulsepitchtime, 0, 250, VAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, impulsepitchscale, 0, 1, 1);
-GVAR(IDF_GAMEMOD, 0, impulserolltime, 0, 200, VAR_MAX);
+GVAR(IDF_GAMEMOD, 0, impulserolltime, 0, 250, VAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, impulserollscale, 0, 1, 1);
 
 GVAR(IDF_GAMEMOD, 0, impulsetouchtypes, 0, IM_T_ISTOUCH, IM_T_ACTION); // what actions count as touch

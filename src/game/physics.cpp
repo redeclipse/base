@@ -1102,7 +1102,7 @@ namespace physics
                 }
                 else if(d->turnside != side || !haswallrun)
                 {
-                    updateturn = 1;
+                    updateturn = 4;
 
                     if(!haswallrun)
                     {   // run-on from a dash
@@ -1110,7 +1110,7 @@ namespace physics
                         client::addmsg(N_SPHY, "ri3", d->clientnum, SPHY_WALLRUN, 0);
                         d->doimpulse(IM_T_WALLRUN, d->impulsetimer(IM_T_DASH, false));
                         haswallrun = true;
-                        updateturn |= 6;
+                        updateturn |= 3;
                     }
                 }
 
@@ -1471,8 +1471,8 @@ namespace physics
                         {
                             if(e->turnmillis[i] <= 0 || e->turntime[i] <= 0) continue;
 
-                            float amt = min(e->turnmillis[i], millis) / float(e->turntime[i]),
-                                inc = e->turnangle[i] * amt;
+                            float amt = clamp(min(e->turnmillis[i], millis) / float(e->turntime[i]), 0.0f, 1.0f),
+                                  inc = e->turnangle[i] * amt;
 
                             switch(i)
                             {
@@ -1480,7 +1480,6 @@ namespace physics
                                 case 1: e->pitch += inc; break;
                                 case 2: e->roll += inc; break;
                             }
-
                             if((e->turnmillis[i] -= millis) < 0) e->turnmillis[i] = 0;
                         }
                     }
