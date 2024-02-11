@@ -577,9 +577,10 @@ namespace UI
     extern void setup();
     extern void cleanup();
     extern void cleangl();
-    extern void poke();
+    extern void poke(bool full = false);
     extern void update();
-    extern void render(int stype = SURFACE_VISOR, int outfbo = 0);
+    extern void build(int stype = SURFACE_VISOR);
+    extern void render(int stype = SURFACE_VISOR);
 }
 
 // menus

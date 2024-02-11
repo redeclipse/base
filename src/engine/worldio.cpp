@@ -731,15 +731,13 @@ VARF(IDF_PERSIST, mapshotsize, 2, 512, INT_MAX-1, mapshotsize -= mapshotsize%2);
 
 void save_mapshot(char *mname, bool forcesave = false, int backuprev = -1)
 {
-    vec worldpos = camera1->o;
-    float yaw = camera1->yaw, pitch = camera1->pitch, roll = 0.0f, mfov = curfov;
-    entities::mapshot(worldpos, yaw, pitch, mfov);
-
     int oldmapvariant = mapvariant;
     changemapvariant(MPV_DEFAULT);
 
-    ViewSurface mapshot(worldpos, yaw, pitch, roll, mfov);
-    if(mapshot.render())
+    ViewSurface mapshot;
+    entities::mapshot(mapshot.worldpos, mapshot.yaw, mapshot.pitch, mapshot.fov);
+
+    if(mapshot.render(mapshotsize * 2, mapshotsize * 2))
     {
         if(autosavebackups && !forcesave) backup(mname, ifmtexts[imageformat], backuprev >= 0 ? backuprev : hdr.revision, autosavebackups > 2, !(autosavebackups%2));
         mapshot.save(mname, mapshotsize, mapshotsize);

@@ -932,7 +932,7 @@ namespace entities
         if(id < 0) intret(ents.length());
         else if(ents.inrange(id))
         {
-            if(val < 0) intret(4);
+            if(val < 0) intret(5);
             else switch(val)
             {
                 case 0: intret(ents[id]->type); break; // type
@@ -954,7 +954,7 @@ namespace entities
                 }
                 case 3: // info
                 {
-                    if(ex < 0) intret(3);
+                    if(ex < 0) intret(7);
                     else
                     {
                         gameentity &e = *(gameentity *)ents[id];
@@ -963,10 +963,34 @@ namespace entities
                             case 0: intret(e.spawned()); break;
                             case 1: intret(e.lastspawn); break;
                             case 2: intret(e.lastemit); break;
+                            case 3: result(e.o); break;
+                            case 4: floatret(e.o.x); break;
+                            case 5: floatret(e.o.y); break;
+                            case 6: floatret(e.o.z); break;
                             default: break;
                         }
                     }
                     break;
+                }
+                case 4: // dynamic
+                {
+                    if(ex < 0) intret(6);
+                    else
+                    {
+                        vec pos;
+                        float yaw = 0.0f, pitch = 0.0f;
+                        getdynamic(id, pos, &yaw, &pitch);
+                        switch(ex)
+                        {
+                            case 0: result(pos); break;
+                            case 1: floatret(pos.x); break;
+                            case 2: floatret(pos.y); break;
+                            case 3: floatret(pos.z); break;
+                            case 4: floatret(yaw); break;
+                            case 5: floatret(pitch); break;
+                            default: break;
+                        }
+                    }
                 }
             }
         }

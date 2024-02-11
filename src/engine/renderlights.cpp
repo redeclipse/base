@@ -5375,7 +5375,7 @@ void shademinimap(const vec &color)
     GLERROR;
 }
 
-void shademodelpreview(int outfbo, int x, int y, int w, int h, bool background, bool scissor, const vec &skycol, const vec &suncol, const vec &sundir, const vec &excol, const vec &exdir)
+void shademodelpreview(GLuint outfbo, int x, int y, int w, int h, bool background, bool scissor, const vec &skycol, const vec &suncol, const vec &sundir, const vec &excol, const vec &exdir)
 {
     GLERROR;
 

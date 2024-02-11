@@ -357,7 +357,7 @@ extern float calcfogcull();
 namespace modelpreview
 {
     extern void start(int x, int y, int w, int h, float pitch = -15, float roll = 0, float fov = 0, bool background = true, bool scissor = false, vec translate = vec(0, 0, 0));
-    extern void end(int outfbo, const vec &skycol = vec(0.1f, 0.1f, 0.1f), const vec &suncol = vec(0.6f, 0.6f, 0.6f), const vec &sundir = vec(0, -1, 2), const vec &excol_ = vec(0.f, 0.f, 0.f), const vec &exdir_ = vec(0, 0, 0));
+    extern void end(GLuint outfbo, const vec &skycol = vec(0.1f, 0.1f, 0.1f), const vec &suncol = vec(0.6f, 0.6f, 0.6f), const vec &sundir = vec(0, -1, 2), const vec &excol_ = vec(0.f, 0.f, 0.f), const vec &exdir_ = vec(0, 0, 0));
 }
 
 struct timer;
@@ -537,7 +537,7 @@ extern void rendergbuffer(bool depthclear = true);
 extern void shadesky();
 extern void shadegbuffer();
 extern void shademinimap(const vec &color = vec(-1, -1, -1));
-extern void shademodelpreview(int outfbo, int x, int y, int w, int h, bool background = true, bool scissor = false, const vec &skycol = vec(0.1f, 0.1f, 0.1f), const vec &suncol = vec(0.6f, 0.6f, 0.6f), const vec &sundir = vec(0, -1, 2), const vec &excol_ = vec(0.f, 0.f, 0.f), const vec &exdir_ = vec(0, 0, 0));
+extern void shademodelpreview(GLuint outfbo, int x, int y, int w, int h, bool background = true, bool scissor = false, const vec &skycol = vec(0.1f, 0.1f, 0.1f), const vec &suncol = vec(0.6f, 0.6f, 0.6f), const vec &sundir = vec(0, -1, 2), const vec &excol_ = vec(0.f, 0.f, 0.f), const vec &exdir_ = vec(0, 0, 0));
 extern void rendertransparent();
 extern void renderao();
 extern void loadhdrshaders(int aa = AA_UNUSED);
@@ -1098,9 +1098,9 @@ extern bvec halocolour;
 
 struct RenderSurface
 {
-    int tclamp = 3, filter = 1, width = 0, height = 0;
-    GLenum format = GL_RGBA, target = GL_TEXTURE_RECTANGLE;
-    GLuint origfbo = 0;
+    int tclamp = 3, filter = 1, width = 0, height = 0, origvieww = 0, origviewh = 0, blitsize = 0;
+    GLenum format = GL_RGBA, target = GL_TEXTURE_RECTANGLE, blittarget = 0;
+    GLuint origfbo = 0, blittex = 0, blitfbo = 0;
     vector<GLuint> texs, fbos;
 
     RenderSurface() { reset(); }
@@ -1108,21 +1108,24 @@ struct RenderSurface
 
     void reset();
     bool cleanup();
-    int genbuffers(int wanttex = 1, int wantfbo = -1);
+    int genbuffers(int wanttex = 1, int wantfbo = -1, GLenum b = 0);
 
     virtual void checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n, int &o);
-    virtual int setup(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1);
-    virtual int init(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1);
-    virtual bool bindtex(int wanttex = 0, int tmu = 0);
-    virtual bool savefbo(int wantfbo = 0);
+    virtual int setup(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1, GLenum b = 0);
+    virtual int init(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1, GLenum b = 0);
+    virtual bool bindtex(int wanttex = 0, int tmu = -1);
+    virtual void savefbo();
     virtual bool bindfbo(int wantfbo = 0);
-    virtual int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1);
+    virtual int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1, GLenum b = 0);
     virtual bool destroy();
-    virtual bool render();
+    virtual bool render(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1, GLenum b = 0);
     virtual bool swap(int wantfbo = 0);
     virtual bool draw(int x = 0, int y = 0, int w = 0, int h = 0);
+    virtual bool blit(int index = 0, bool restore = false);
+    virtual bool setblit(int tmu = -1);
     virtual void debug(int w, int h, int wanttex = 0, bool large = false);
     virtual bool save(const char *name, int w, int h);
+    virtual bool saveblit(const char *name, int w, int h);
     virtual void restorefbo();
 };
 
@@ -1138,9 +1141,9 @@ struct HaloSurface : RenderSurface
     bool check(bool check, bool val);
 
     void checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n, int &o) override;
-    int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1) override;
+    int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1, GLenum b = 0) override;
     bool destroy() override;
-    bool render() override;
+    bool render(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1, GLenum b = 0) override;
     bool swap(int wantfbo = 0) override;
     bool draw(int x = 0, int y = 0, int w = 0, int h = 0) override;
 };
@@ -1166,8 +1169,8 @@ struct HazeSurface : RenderSurface
     bool check();
 
     void checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n, int &o) override;
-    int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1) override;
-    bool render() override;
+    int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1, GLenum b = 0) override;
+    bool render(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1, GLenum b = 0) override;
 };
 extern HazeSurface hazesurf;
 
@@ -1189,7 +1192,7 @@ struct VisorSurface : RenderSurface
     void coords(float cx, float cy, float &vx, float &vy, bool back = false);
 
     void checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n, int &o) override;
-    bool render() override;
+    bool render(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = MAX, int wantfbo = -1, GLenum b = 0) override;
 };
 extern VisorSurface visorsurf;
 
@@ -1199,13 +1202,9 @@ struct ViewSurface : RenderSurface
     float yaw = 0.0f, pitch = 0.0f, roll = 0.0f, fov = 90.0f, ratio = 1.0f, nearpoint = 0.54f, farscale = 1.0f;
 
     ViewSurface() { reset(); }
-    ViewSurface(const vec &o, float y = 0.0f, float p = 0.0f, float r = 0.0f, float f = 90.0f, float t = 1.0f, float n = 0.54f, float s = 1.0f) : worldpos(o), yaw(y), pitch(p), roll(r), fov(f), ratio(t), nearpoint(n), farscale(s) { reset(); }
     ~ViewSurface() { destroy(); }
 
-    void checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n, int &o) override;
-    int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1) override;
-    bool destroy() override;
-    bool render() override;
+    bool render(int w = 0, int h = 0, GLenum f = GL_RGB, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = 1, GLenum b = 0) override;
 };
 
 #endif // STANDALONE

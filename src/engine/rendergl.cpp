@@ -2355,7 +2355,7 @@ namespace modelpreview
         preparegbuffer();
     }
 
-    void end(GLint outfbo, const vec &skycol, const vec &suncol, const vec &sundir, const vec &excol, const vec &exdir)
+    void end(GLuint outfbo, const vec &skycol, const vec &suncol, const vec &sundir, const vec &excol, const vec &exdir)
     {
         rendermodelbatches();
 
@@ -2580,11 +2580,13 @@ void gl_setupframe(bool force)
 
 void gl_drawhud(bool noview = false)
 {
-    hudmatrix.ortho(0, hudw, hudh, 0, -1, 1);
-    resethudmatrix();
-    resethudshader();
-    if(!noview) halosurf.draw();
+    loopi(SURFACE_ALL)
+    {
+        if(i == SURFACE_WORLD && (progressing || noview)) continue; // skip world UI's when in progress or noview
+        UI::build(i);
+    }
 
+    if(!noview) halosurf.draw();
     visorsurf.render();
 
     debugparticles();

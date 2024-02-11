@@ -6,7 +6,6 @@ namespace UI
     bool hasprogress = false;
     static bool texgc = false;
     static int lastthumbnail = 0;
-    static int uicurfbo = 0;
     vector<ident *> uiargs;
 
     FVAR(0, uitextscale, 1, 0, 0);
@@ -587,6 +586,8 @@ namespace UI
             return false;
         }
 
+        virtual void init() {}
+
         virtual void startdraw() {}
         virtual void enddraw() {}
 
@@ -743,6 +744,7 @@ namespace UI
         virtual bool iscolour() const { return false; }
         virtual bool istext() const { return false; }
         virtual bool isrender() const { return false; }
+        virtual bool isviewport() const { return false; }
         virtual bool isimage() const { return false; }
         virtual bool iseditor() const { return false; }
         virtual bool isclip() const { return false; }
@@ -1956,6 +1958,18 @@ namespace UI
             popfont();
             curtextscale = oldtextscale;
             uiscale = olduiscale;
+        }
+
+        void initchildren(Object *o)
+        {
+            if(!o) return;
+            o->init();
+            loopv(o->children) initchildren(o->children[i]);
+        }
+
+        void init()
+        {
+            loopwindows(w, if(w->visible) initchildren(w));
         }
 
         void render()
@@ -3625,6 +3639,152 @@ namespace UI
         if(!name || !*name || o->texs.length() >= 10) return;
         o->texs.add(textureload(name, *tclamp >= 0 ? *tclamp : 3, *mipit != 0, false, *tgc >= 0 ? *tgc != 0 : texgc));
     });
+
+    struct ViewPortEntry
+    {
+        char *refname = NULL;
+        ViewSurface surf;
+        int lastupdate = 0, lastrender = 0, width = 0, height = 0;
+        bool ready = false;
+
+        ViewPortEntry(const char *n, int w, int h) : refname(newstring(n)), width(w), height(h) {}
+        ~ViewPortEntry() { surf.destroy(); DELETEA(refname); }
+    };
+
+    vector<ViewPortEntry *> viewports;
+
+    ViewPortEntry *findviewport(const char *refname)
+    {
+        loopv(viewports) if(!strcmp(viewports[i]->refname, refname)) return viewports[i];
+        return NULL;
+    }
+
+    ViewPortEntry *getviewport(const char *refname, int w, int h)
+    {
+        ViewPortEntry *vp = findviewport(refname);
+        if(vp) return vp;
+        vp = new ViewPortEntry(refname, w, h);
+        viewports.add(vp);
+        return vp;
+    }
+
+    void processviewports()
+    {
+        loopvrev(viewports)
+        {
+            ViewPortEntry *vp = viewports[i];
+            if(totalmillis - vp->lastupdate < 1000) continue;
+            viewports.removeobj(vp);
+            delete vp;
+        }
+
+        loopv(viewports)
+        {
+            ViewPortEntry *vp = viewports[i];
+            bool wasready = vp->ready;
+            vp->ready = vp->surf.render(vp->width, vp->height);
+            if(!wasready && vp->ready) vp->surf.save(vp->refname, vp->surf.width, vp->surf.height);
+            if(vp->ready) vp->lastrender = totalmillis;
+        }
+    }
+
+    struct ViewPort : Target
+    {
+        char *refname = NULL;
+        int refwidth = 512, refheight = 512;
+        vec worldpos = vec(0, 0, 0);
+        float yaw = 0.0f, pitch = 0.0f, roll = 0.0f, fov = 90.0f, ratio = 1.0f, nearpoint = 0.54f, farscale = 1.0f;
+        ViewPortEntry *vp = NULL;
+
+        ViewPort() : refname(NULL) {}
+        ~ViewPort() { DELETEA(refname); }
+
+        void setup(const char *_refname, float _x, float _y, float _z, float _yaw, float _pitch, float minw_ = 0, float minh_ = 0, const Color &color_ = Color(colourwhite))
+        {
+            Target::setup(minw_, minh_, color_);
+            SETSTR(refname, _refname);
+            worldpos = vec(_x, _y, _z);
+            yaw = _yaw;
+            pitch = _pitch;
+            vp = NULL;
+        }
+
+        static const char *typestr() { return "#ViewPort"; }
+        const char *gettype() const { return typestr(); }
+        bool isviewport() const { return true; }
+
+        void init()
+        {
+            if(!refname || !*refname)
+            {
+                vp = NULL;
+                return;
+            }
+
+            vp = getviewport(refname, refwidth, refheight);
+            if(!vp) return;
+
+            vp->lastupdate = totalmillis;
+            vp->surf.worldpos = worldpos;
+            vp->surf.yaw = yaw;
+            vp->surf.pitch = pitch;
+            vp->surf.roll = roll;
+            vp->surf.fov = fov;
+            vp->surf.ratio = ratio;
+            vp->surf.nearpoint = nearpoint;
+            vp->surf.farscale = farscale;
+        }
+
+        void startdraw()
+        {
+            (!vp || !vp->ready ? hudshader : hudrectshader)->set();
+            gle::defvertex(2);
+            gle::deftexcoord0();
+        }
+
+        void draw(float sx, float sy)
+        {
+            setupdraw(CHANGE_SHADER);
+
+            colors[0].init();
+            if(!vp || !vp->ready)
+            {
+                settexture(notexture);
+
+                gle::begin(GL_TRIANGLE_STRIP);
+                gle::attribf(sx+(w*getcoord(FC_TL, 0)), sy+(h*getcoord(FC_TL, 1))); gle::attribf(0, 0);
+                gle::attribf(sx+(w*getcoord(FC_TR, 0)), sy+(h*getcoord(FC_TR, 1))); gle::attribf(1, 0);
+                gle::attribf(sx+(w*getcoord(FC_BL, 0)), sy+(h*getcoord(FC_BL, 1))); gle::attribf(0, 1);
+                gle::attribf(sx+(w*getcoord(FC_BR, 0)), sy+(h*getcoord(FC_BR, 1))); gle::attribf(1, 1);
+                gle::end();
+            }
+            else
+            {
+                vp->surf.bindtex();
+
+                gle::begin(GL_TRIANGLE_STRIP);
+                gle::attribf(sx+(w*getcoord(FC_TL, 0)), sy+(h*getcoord(FC_TL, 1))); gle::attribf(0, vp->surf.height);
+                gle::attribf(sx+(w*getcoord(FC_TR, 0)), sy+(h*getcoord(FC_TR, 1))); gle::attribf(vp->surf.width, vp->surf.height);
+                gle::attribf(sx+(w*getcoord(FC_BL, 0)), sy+(h*getcoord(FC_BL, 1))); gle::attribf(0, 0);
+                gle::attribf(sx+(w*getcoord(FC_BR, 0)), sy+(h*getcoord(FC_BR, 1))); gle::attribf(vp->surf.width, 0);
+                gle::end();
+            }
+
+            Object::draw(sx, sy);
+        }
+    };
+
+    ICOMMAND(0, uiviewport, "sfffffffe", (char *s, float *x, float *y, float *z, float *yaw, float *pitch, float *minw, float *minh, uint *children), \
+        BUILD(ViewPort, o, o->setup(s, *x, *y, *z, *yaw, *pitch, *minw*uiscale, *minh*uiscale), children));
+
+    UICMD(ViewPort, viewport, pos, "fff", (float *x, float *y, float *z), o->worldpos = vec(*x, *y, *z));
+    UIARGT(ViewPort, viewport, yaw, "f", float, 0.0f, 360.0f);
+    UIARGT(ViewPort, viewport, pitch, "f", float, -89.9f, 89.9f);
+    UIARGT(ViewPort, viewport, roll, "f", float, -180.0f, 180.0f);
+    UIARGT(ViewPort, viewport, fov, "f", float, 10.0f, 180.0f);
+    UIARGT(ViewPort, viewport, ratio, "f", float, FVAR_NONZERO, FVAR_MAX);
+    UIARGT(ViewPort, viewport, nearpoint, "f", float, 0.0f, 1.0f);
+    UIARGT(ViewPort, viewport, farscale, "f", float, FVAR_NONZERO, FVAR_MAX);
 
     struct Image : Target
     {
@@ -6143,7 +6303,7 @@ namespace UI
                 rendermodel(name, mdl);
             }
             if(hasclipstack) clipstack.last().scissor();
-            modelpreview::end(uicurfbo, skycol, suncol, sundir, excol, exdir);
+            modelpreview::end(renderfbo, skycol, suncol, sundir, excol, exdir);
 
             Object::draw(sx, sy);
         }
@@ -6214,7 +6374,7 @@ namespace UI
             // Steal the matrix for calculating positions on the model
             lastmatrix = camprojmatrix;
 
-            modelpreview::end(uicurfbo, skycol, suncol, sundir, excol, exdir);
+            modelpreview::end(renderfbo, skycol, suncol, sundir, excol, exdir);
 
             Object::draw(sx, sy);
         }
@@ -6291,7 +6451,7 @@ namespace UI
             modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch, roll, fov, false, hasclipstack);
             previewprefab(name, colors[0].val.tocolor(), blend*(colors[0].val.a/255.f), yaw, offsetyaw);
             if(hasclipstack) clipstack.last().scissor();
-            modelpreview::end(uicurfbo, skycol, suncol, sundir, excol, exdir);
+            modelpreview::end(renderfbo, skycol, suncol, sundir, excol, exdir);
         }
     };
 
@@ -7264,8 +7424,7 @@ namespace UI
             return notexture;
         }
 
-        GLint oldfbo = 0; // necessary as a texture can load at pretty much any point in the frame
-        glGetIntegerv(GL_FRAMEBUFFER_BINDING, &oldfbo);
+        GLint oldfbo = renderfbo; // necessary as a texture can load at pretty much any point in the frame
 
         GLERROR;
         GLuint fbo = t ? t->fbo : 0;
@@ -7276,7 +7435,7 @@ namespace UI
         }
         glGenFramebuffers_(1, &fbo);
         glBindFramebuffer_(GL_FRAMEBUFFER, fbo);
-        uicurfbo = fbo;
+        renderfbo = fbo;
 
         GLenum format = compformat(bpp);
         GLuint id = t ? t->id : 0;
@@ -7297,7 +7456,7 @@ namespace UI
             if(id) glDeleteTextures(1, &id);
             if(fbo) glDeleteFramebuffers_(1, &fbo);
             glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
-            uicurfbo = 0;
+            renderfbo = oldfbo;
 
             list.deletearrays();
             popsurface();
@@ -7348,7 +7507,7 @@ namespace UI
         }
 
         glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
-        uicurfbo = 0;
+        renderfbo = oldfbo;
         glViewport(0, 0, hudw, hudh);
 
         list.deletearrays();
@@ -7505,6 +7664,7 @@ namespace UI
 
         surface = NULL;
         inputsteal = NULL;
+        viewports.deletecontents();
     }
 
     void cleanup()
@@ -7530,6 +7690,7 @@ namespace UI
         inputsteal = NULL;
         surfacestack.setsize(0);
         loopi(SURFACE_MAX) DELETEP(surfaces[i]);
+        viewports.deletecontents();
     }
 
     void cleangl()
@@ -7544,6 +7705,7 @@ namespace UI
             surface->texs.setsize(0);
             popsurface();
         }
+        viewports.deletecontents();
     }
 
     static inline bool texsort(Texture *a, Texture *b)
@@ -7561,6 +7723,7 @@ namespace UI
 
         bool found = false;
         int oldhudw = hudw, oldhudh = hudh, oldsf = surfaceformat;
+        GLuint oldfbo = renderfbo;
 
         int processed = 0;
         if(compositelimit) surface->texs.sort(texsort);
@@ -7593,7 +7756,7 @@ namespace UI
             GLERROR;
             if(!t->fbo) glGenFramebuffers_(1, &t->fbo);
             glBindFramebuffer_(GL_FRAMEBUFFER, t->fbo);
-            uicurfbo = t->fbo;
+            renderfbo = t->fbo;
 
             if(!t->id)
             {
@@ -7659,18 +7822,19 @@ namespace UI
             hudw = oldhudw;
             hudh = oldhudh;
             surfaceformat = oldsf;
-            glBindFramebuffer_(GL_FRAMEBUFFER, renderfbo);
-            uicurfbo = 0;
+            glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
+            renderfbo = oldfbo;
             glViewport(0, 0, hudw, hudh);
         }
     }
     ICOMMANDV(0, compositecount, surfaces[SURFACE_COMPOSITE] ? surfaces[SURFACE_COMPOSITE]->texs.length() : 0);
 
-    void poke()
+    void poke(bool full)
     {
         uilastmillis = lastmillis;
         uitotalmillis = totalmillis;
         uicurtime = curtime;
+        if(full) processviewports();
     }
 
     void update()
@@ -7678,19 +7842,24 @@ namespace UI
         checkmapuis();
     }
 
-    void render(int stype, int outfbo)
+    void build(int stype)
+    {
+        if((stype == SURFACE_VISOR && uihidden) || !pushsurface(stype)) return;
+        surface->build();
+        surface->init();
+        popsurface();
+    }
+
+    void render(int stype)
     {
         if((stype == SURFACE_VISOR && uihidden) || !pushsurface(stype)) return;
 
-        uicurfbo = outfbo;
-
         if(surfacetype == SURFACE_PROGRESS)
+        {
             hasprogress = pokeui("default", SURFACE_PROGRESS);
-
-        surface->build();
+            surface->build();
+        }
         surface->render();
-
-        uicurfbo = 0;
 
         popsurface();
     }

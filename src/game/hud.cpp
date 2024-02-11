@@ -1394,7 +1394,7 @@ namespace hud
         }
     }
 
-    void startrender(int w, int h, bool wantvisor, bool noview, uint outfbo)
+    void startrender(int w, int h, bool wantvisor, bool noview)
     {
         int wait = client::waiting();
 
@@ -1406,11 +1406,11 @@ namespace hud
         else drawzoom(hudwidth, hudheight);
     }
 
-    void visorrender(int w, int h, bool wantvisor, bool noview, uint outfbo)
+    void visorrender(int w, int h, bool wantvisor, bool noview)
     {
     }
 
-    void endrender(int w, int h, bool wantvisor, bool noview, uint outfbo)
+    void endrender(int w, int h, bool wantvisor, bool noview)
     {
     }
 

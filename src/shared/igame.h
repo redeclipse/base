@@ -87,9 +87,9 @@ namespace hud
     extern void drawclip(int weap, int x, int y, float s, bool preview = false, float blend = 1);
 
     extern void visorinfo(float &x, float &y);
-    extern void startrender(int w, int h, bool wantvisor, bool noview = false, uint outfbo = 0);
-    extern void visorrender(int w, int h, bool wantvisor, bool noview = false, uint outfbo = 0);
-    extern void endrender(int w, int h, bool wantvisor, bool noview = false, uint outfbo = 0);
+    extern void startrender(int w, int h, bool wantvisor, bool noview = false);
+    extern void visorrender(int w, int h, bool wantvisor, bool noview = false);
+    extern void endrender(int w, int h, bool wantvisor, bool noview = false);
 
     extern bool getcolour(vec &colour);
     extern void update(int w, int h);
