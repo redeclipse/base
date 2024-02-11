@@ -586,7 +586,7 @@ GFVAR(IDF_GAMEMOD, 0, movestepup, FVAR_NONZERO, 0.95f, FVAR_MAX); // step-up mod
 GFVAR(IDF_GAMEMOD, 0, movestepdown, FVAR_NONZERO, 1.15f, FVAR_MAX); // step-down modifier
 
 GFVAR(IDF_GAMEMOD, 0, impulsejump, 0, 1.5f, FVAR_MAX); // jump modifier
-GFVAR(IDF_GAMEMOD, 0, impulsejumpredir, 0, 0.5f, FVAR_MAX); // how much of the old velocity is redirected into the new one
+GFVAR(IDF_GAMEMOD, 0, impulsejumpredir, 0, 0.25f, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, 0, impulseboost, 0, 2.0f, FVAR_MAX); // boost modifier
 GFVAR(IDF_GAMEMOD, 0, impulseboostredir, 0, 0.5f, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, 0, impulseboostpitchmin, -89.9f, -89.9f, 89.9f); // boost pitch minimum
