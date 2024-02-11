@@ -1457,7 +1457,7 @@ namespace projs
                 if(d == game::focus) game::swaypush.add(vec(kick).mul(kickpushsway));
                 float kickmod = kickpushscale;
                 if(W2(weap, cooked, WS(flags))&W_C_ZOOM && WS(flags)) kickmod *= kickpushzoom;
-                if(d->crouching() && d->getslide(true) != 0) kickmod *= kickpushcrouch;
+                if(d->crouching() && !d->hasslide()) kickmod *= kickpushcrouch;
                 d->vel.add(vec(kick).mul(kickmod));
             }
         }

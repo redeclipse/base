@@ -297,7 +297,7 @@ ENUM_VAR(AC_ALL, (1<<AC_PRIMARY)|(1<<AC_SECONDARY)|(1<<AC_RELOAD)|(1<<AC_USE)|(1
 
 #define IM_ENUM(en, um) \
     en(um, Meter, METER) en(um, Count, COUNT) en(um, Type, TYPE) en(um, Regen, REGEN) en(um, Slip, SLIP) en(um, Pusher, PUSHER) \
-    en(um, Collect Meter, COLLECT_METER) en(um, Last Collect Meter, LASTCOL_METER) en(um, Collect Count, COLLECT_COUNT) en(um, Last Collect Count, LASTCOL_COUNT) \
+    en(um, Collect Meter, COLLECT_METER) en(um, Last Meter, LASTCOL_METER) en(um, Collect Count, COLLECT_COUNT) en(um, Last Count, LASTCOL_COUNT) \
     en(um, Max, MAX)
 ENUM_DLN(IM);
 ENUM_VAR(IM_ALL, (1<<IM_METER)|(1<<IM_COUNT)|(1<<IM_TYPE)|(1<<IM_REGEN)|(1<<IM_SLIP)|(1<<IM_PUSHER)|(1<<IM_COLLECT_METER)|(1<<IM_LASTCOL_METER)|(1<<IM_COLLECT_COUNT)|(1<<IM_LASTCOL_COUNT));
@@ -314,8 +314,8 @@ ENUM_VAR(IM_T_REGEN, (1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAU
 ENUM_VAR(IM_T_PUSH, (1<<IM_T_JUMP)|(1<<IM_T_BOOST)|(1<<IM_T_PUSHER));
 ENUM_VAR(IM_T_COUNT, (1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_WALLRUN)|(1<<IM_T_POUND));
 ENUM_VAR(IM_T_CHECK, (1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_WALLRUN)|(1<<IM_T_VAULT)|(1<<IM_T_POUND)|(1<<IM_T_PUSHER));
-ENUM_VAR(IM_T_TOUCH, (1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH));
-ENUM_VAR(IM_T_NOTOUCH, (1<<IM_T_BOOST));
+ENUM_VAR(IM_T_ISTOUCH, (1<<IM_T_JUMP)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_MELEE)|(1<<IM_T_KICK)|(1<<IM_T_GRAB)|(1<<IM_T_WALLRUN)|(1<<IM_T_VAULT)|(1<<IM_T_PUSHER));
+ENUM_VAR(IM_T_NEEDTOUCH, (1<<IM_T_BOOST));
 ENUM_VAR(IM_T_RELAX, (1<<IM_T_VAULT));
 ENUM_VAR(IM_T_MVAI, (1<<IM_T_JUMP)|(1<<IM_T_BOOST)|(1<<IM_T_DASH)|(1<<IM_T_SLIDE)|(1<<IM_T_LAUNCH)|(1<<IM_T_MELEE)|(1<<IM_T_KICK)|(1<<IM_T_GRAB)|(1<<IM_T_WALLRUN)|(1<<IM_T_VAULT)|(1<<IM_T_POUND)|(1<<IM_T_PUSHER));
 ENUM_VAR(IM_T_LSAI, (1<<IM_T_JUMP));
@@ -1715,10 +1715,10 @@ struct gameent : dynent, clientstate
         }
     }
 
-    void clearimpulse()
+    void clearimpulse(int clear = -1, int reset = -1)
     {
-        loopi(IM_MAX) impulse[i] = 0;
-        loopi(IM_T_MAX) impulsetime[i] = 0;
+        loopi(IM_MAX) if(clear < 0 || (clear&(1<<i))) impulse[i] = 0;
+        loopi(IM_T_MAX) if(reset < 0 || (reset&(1<<i))) impulsetime[i] = 0;
     }
 
     void clearstate(int millis, int gamemode, int mutators)
@@ -2049,19 +2049,6 @@ struct gameent : dynent, clientstate
         return &tag[idx];
     }
 
-    void resetjump()
-    {
-        airmillis = turnside = 0;
-        if(!impulsecostcount) impulse[IM_COUNT] = 0;
-        impulsetime[IM_T_JUMP] = 0;
-    }
-
-    void resetair()
-    {
-        resetphys();
-        resetjump();
-    }
-
     int impulsemask(int type)
     {
         switch(type)
@@ -2077,17 +2064,58 @@ struct gameent : dynent, clientstate
             case IM_T_WALLRUN: return impulsewallrunmask;;
             case IM_T_VAULT: return impulsevaultmask;
             case IM_T_POUND: return impulsepoundmask;
-            case IM_T_PUSHER: return IM_T_ACTION;
             default: break;
         }
-        return IM_T_ALL;
+        return 0;
+    }
+
+    int impulsereset(int type)
+    {
+        switch(type)
+        {
+            case IM_T_JUMP: return impulsejumpreset;
+            case IM_T_BOOST: return impulseboostreset;
+            case IM_T_DASH: return impulsedashreset;
+            case IM_T_SLIDE: return impulseslidereset;
+            case IM_T_LAUNCH: return impulselaunchreset;
+            case IM_T_MELEE: return impulsemeleereset;
+            case IM_T_KICK: return impulsekickreset;
+            case IM_T_GRAB: return impulsegrabreset;
+            case IM_T_WALLRUN: return impulsewallrunreset;;
+            case IM_T_VAULT: return impulsevaultreset;
+            case IM_T_POUND: return impulsepoundreset;
+            case IM_T_PUSHER: return impulsepusherreset;
+            default: break;
+        }
+        return 0;
+    }
+
+    int impulseclear(int type)
+    {
+        switch(type)
+        {
+            case IM_T_JUMP: return impulsejumpclear;
+            case IM_T_BOOST: return impulseboostclear;
+            case IM_T_DASH: return impulsedashclear;
+            case IM_T_SLIDE: return impulseslideclear;
+            case IM_T_LAUNCH: return impulselaunchclear;
+            case IM_T_MELEE: return impulsemeleeclear;
+            case IM_T_KICK: return impulsekickclear;
+            case IM_T_GRAB: return impulsegrabclear;
+            case IM_T_WALLRUN: return impulsewallrunclear;;
+            case IM_T_VAULT: return impulsevaultclear;
+            case IM_T_POUND: return impulsepoundclear;
+            case IM_T_PUSHER: return impulsepusherclear;
+            default: break;
+        }
+        return 0;
     }
 
     int impulsedelay(int type)
     {
         switch(type)
         {
-            case IM_T_JUMP: return impulseboostdelay;
+            case IM_T_JUMP: return impulsejumpdelay;
             case IM_T_BOOST: return impulseboostdelay;
             case IM_T_DASH: return impulsedashdelay;
             case IM_T_SLIDE: return impulseslidedelay;
@@ -2101,14 +2129,14 @@ struct gameent : dynent, clientstate
             case IM_T_PUSHER: return impulse[IM_PUSHER];
             default: break;
         }
-        return impulsejumpdelay;
+        return 0;
     }
 
     int impulselen(int type)
     {
         switch(type)
         {
-            case IM_T_JUMP: return impulseboostlen;
+            case IM_T_JUMP: return impulsejumplen;
             case IM_T_BOOST: return impulseboostlen;
             case IM_T_DASH: return impulsedashlen;
             case IM_T_SLIDE: return impulseslidelen;
@@ -2123,6 +2151,62 @@ struct gameent : dynent, clientstate
             default: break;
         }
         return 0;
+    }
+
+    float impulseskewmeter(bool onfloor)
+    {
+        float skew = 1.0f;
+
+        if(running()) skew *= impulserunregenmeter;
+        if(move || strafe) skew *= impulsemoveregenmeter;
+        if((!onfloor || hasslide()) && PHYS(gravity) > 0) skew *= impulseinairregenmeter;
+        if(onfloor && crouching() && !hasslide()) skew *= impulsecrouchregenmeter;
+
+        loopi(IM_T_MAX) if(impulsetimer(i, false, false) || impulsetimer(i, false, true)) switch(i)
+        {
+            case IM_T_JUMP: skew *= impulsejumpregenmeter;
+            case IM_T_BOOST: skew *= impulseboostregenmeter;
+            case IM_T_DASH: skew *= impulsedashregenmeter;
+            case IM_T_SLIDE: skew *= impulseslideregenmeter;
+            case IM_T_LAUNCH: skew *= impulselaunchregenmeter;
+            case IM_T_MELEE: skew *= impulsemeleeregenmeter;
+            case IM_T_KICK: skew *= impulsekickregenmeter;
+            case IM_T_GRAB: skew *= impulsegrabregenmeter;
+            case IM_T_WALLRUN: skew *= impulsewallrunregenmeter;
+            case IM_T_VAULT: skew *= impulsevaultregenmeter;
+            case IM_T_POUND: skew *= impulsepoundregenmeter;
+            default: break;
+        }
+
+        return skew;
+    }
+
+    float impulseskewcount(bool onfloor)
+    {
+        float skew = 1.0f;
+
+        if(running()) skew *= impulserunregencount;
+        if(move || strafe) skew *= impulsemoveregencount;
+        if((!onfloor || hasslide()) && PHYS(gravity) > 0) skew *= impulseinairregencount;
+        if(onfloor && crouching() && !hasslide()) skew *= impulsecrouchregencount;
+
+        loopi(IM_T_MAX) if(impulsetimer(i, false, false) || impulsetimer(i, false, true)) switch(i)
+        {
+            case IM_T_JUMP: skew *= impulsejumpregencount;
+            case IM_T_BOOST: skew *= impulseboostregencount;
+            case IM_T_DASH: skew *= impulsedashregencount;
+            case IM_T_SLIDE: skew *= impulseslideregencount;
+            case IM_T_LAUNCH: skew *= impulselaunchregencount;
+            case IM_T_MELEE: skew *= impulsemeleeregencount;
+            case IM_T_KICK: skew *= impulsekickregencount;
+            case IM_T_GRAB: skew *= impulsegrabregencount;
+            case IM_T_WALLRUN: skew *= impulsewallrunregencount;
+            case IM_T_VAULT: skew *= impulsevaultregencount;
+            case IM_T_POUND: skew *= impulsepoundregencount;
+            default: break;
+        }
+
+        return skew;
     }
 
     int impulsetimer(int type = -1, bool check = true, bool delay = false, int retval = 0)
@@ -2154,6 +2238,12 @@ struct gameent : dynent, clientstate
         return true;
     }
 
+    bool impulseeffect()
+    {
+        loopi(IM_T_MAX) if(impulsetimer(i, true)) return true;
+        return false;
+    }
+
     bool regenimpulse()
     {
         if(!isalive() || !impulseready(impulseregenmask)) return false;
@@ -2164,7 +2254,7 @@ struct gameent : dynent, clientstate
     bool canimpulse(int type)
     {
         if(!(A(actortype, impulse)&(1<<type))) return false;
-        if(PHYS(gravity) != 0 && impulsetouchmasks&(1<<type) && impulsetouchtypes&(1<<impulse[IM_TYPE])) return false;
+        if(PHYS(gravity) != 0 && impulsetouchmasks&(1<<type) && !(impulsetouchtypes&(1<<impulse[IM_TYPE]))) return false;
         if(impulsecounttypes&(1<<type) && impulse[IM_COUNT] >= impulsecount) return false;
         return impulseready(impulsemask(type));
     }
@@ -2197,6 +2287,18 @@ struct gameent : dynent, clientstate
         }
     }
 
+    void resetjump()
+    {
+        airmillis = turnside = 0;
+        if(!impulsecostcount) impulse[IM_COUNT] = 0;
+    }
+
+    void resetair()
+    {
+        resetphys();
+        resetjump();
+    }
+
     void doimpulse(int type, int millis, int cost = 0, int reset = 0)
     {
         if(type < 0 || type >= IM_T_MAX) return;
@@ -2208,14 +2310,11 @@ struct gameent : dynent, clientstate
         }
 
         impulse[IM_TYPE] = type;
-        impulse[IM_SLIP] = impulsetime[type] = millis;
-
-        if(type != IM_T_JUMP && !impulsetime[IM_T_JUMP]) impulsetime[IM_T_JUMP] = millis;
+        impulse[IM_SLIP] = impulse[IM_REGEN] = impulsetime[type] = millis;
         if(cost && impulsecounttypes&(1<<type)) impulse[IM_COUNT]++;
 
-        impulse[IM_REGEN] = millis;
-        if(type == IM_T_PUSHER) resetair();
-        else resetphys();
+        clearimpulse(impulseclear(type), impulsereset(type));
+        resetair();
 
         if(reset&1) action[AC_JUMP] = false;
         if(reset&2) action[AC_SPECIAL] = false;
@@ -2293,14 +2392,17 @@ struct gameent : dynent, clientstate
     bool running(float minspeed = 0)
     {
         if(minspeed != 0 && vel.magnitude() >= speed * 0.5f * minspeed) return true;
-        return getslide(true) != 0 || (!action[AC_WALK] && !crouching());
+        return hasslide() || (!action[AC_WALK] && !crouching());
     }
 
-    int getslide(bool power = false)
+    bool hasslip()
     {
-        if(G(impulseslidelen) && impulsetime[IM_T_SLIDE] && lastmillis - impulsetime[IM_T_SLIDE] <= G(impulseslidelen)) return impulsetime[IM_T_SLIDE];
-        if(!power && G(impulsesliplen) && impulse[IM_SLIP] && lastmillis - impulse[IM_SLIP] <= G(impulsesliplen)) return impulse[IM_SLIP];
-        return 0;
+        return G(impulsesliplen) && impulse[IM_SLIP] && lastmillis - impulse[IM_SLIP] <= G(impulsesliplen);
+    }
+
+    bool hasslide()
+    {
+        return hasslip() || impulsetimer(IM_T_SLIDE) != 0 || impulsetimer(IM_T_DASH) != 0;
     }
 
     int zooming()

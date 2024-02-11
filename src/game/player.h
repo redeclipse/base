@@ -199,9 +199,6 @@ APVAR(IDF_GAMEMOD, 0, impulse, 0, IM_T_ALL,
 APFVAR(IDF_GAMEMOD, 0, liquidboost, 0, FVAR_MAX,
     8,              8,              8,              8,              8,              8,              8,              8
 );
-APVAR(IDF_GAMEMOD, 0, magboots, 0, 1,
-    1,              1,              1,              1,              1,              1,              0,              0
-);
 APVAR(IDF_GAMEMOD, 0, maxcarry, 0, W_LOADOUT,
     2,              2,              0,              0,              0,              0,              W_LOADOUT,      0
 );

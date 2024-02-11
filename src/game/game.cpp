@@ -822,7 +822,7 @@ namespace game
     void addsway(gameent *d)
     {
         float speed = physics::movevelocity(d), step = firstpersonbob ? firstpersonbobstep : firstpersonswaystep;
-        bool bobbed = false, sliding = d->getslide(true) != 0 || d->impulsetimer(IM_T_DASH) != 0;
+        bool bobbed = false, sliding = d->hasslide();
         if(d->state == CS_ALIVE && (d->physstate >= PHYS_SLOPE || physics::sticktospecial(d) || sliding))
         {
             float mag = d->vel.magnitude();
@@ -1432,7 +1432,7 @@ namespace game
         {
             if(!physics::movepitch(d))
             {
-                bool sliding = d->getslide(true) != 0, crouching = sliding || (d->action[AC_CROUCH] && A(d->actortype, abilities)&(1<<A_A_CROUCH)),
+                bool sliding = d->impulsetimer(IM_T_SLIDE) != 0, crouching = sliding || (d->action[AC_CROUCH] && A(d->actortype, abilities)&(1<<A_A_CROUCH)),
                     moving = d->move || d->strafe || (d->physstate < PHYS_SLOPE && !physics::laddercheck(d)), ishi = moving && !sliding;
                 float zradlo = d->zradius*CROUCHLOW, zradhi = d->zradius*CROUCHHIGH, zrad = ishi ? zradhi : zradlo;
                 vec old = d->o;
@@ -1495,7 +1495,7 @@ namespace game
                 }
             }
 
-            if(physics::movepitch(d) || d->hasparkour() || d->impulsetime[IM_T_JUMP] || d->getslide(true) != 0) impulseeffect(d, 1.f, 1);
+            if(physics::movepitch(d) || d->hasparkour() || d->impulseeffect()) impulseeffect(d, 1.f, 1);
         }
         else
         {
@@ -1516,22 +1516,17 @@ namespace game
             { \
                 if(impulsecost##name && (test)) \
                 { \
-                    float skew = 1; \
-                    if(d->running()) skew *= impulseregen##name##run; \
-                    if(skew > 0 && (d->move || d->strafe)) skew *= impulseregen##name##move; \
-                    if(skew > 0 && ((!onfloor && PHYS(gravity) > 0) || d->getslide() != 0)) skew *= impulseregen##name##inair; \
-                    if(skew > 0 && onfloor && d->crouching() && d->getslide() == 0) skew *= impulseregen##name##crouch; \
-                    if(skew > 0 && d->impulsetimer(IM_T_WALLRUN) != 0) skew *= impulseregen##name##wallrun; \
-                    if(skew > 0 && d->impulsetimer(IM_T_VAULT) != 0) skew *= impulseregen##name##vault; \
-                    if(skew > 0 && d->impulsetimer(IM_T_DASH) != 0) skew *= impulseregen##name##dash; \
-                    if(skew > 0 && d->getslide() != 0) skew *= impulseregen##name##slide; \
-                    int timeslice = int(ceilf((curtime + d->impulse[IM_COLLECT_##type]) * skew)); \
-                    if(check) { body; } \
-                    else \
+                    float skew = d->impulseskew##name(onfloor); \
+                    if(skew > 0.0f) \
                     { \
-                        d->impulse[IM_COLLECT_##type] += curtime; \
-                        if(!d->impulse[IM_LASTCOL_##type]) d->impulse[IM_LASTCOL_##type] = lastmillis; \
-                        collect##name = true; \
+                        int timeslice = int(floorf((curtime + d->impulse[IM_COLLECT_##type]) * skew)); \
+                        if(check) { body; } \
+                        else \
+                        { \
+                            d->impulse[IM_COLLECT_##type] += curtime; \
+                            if(!d->impulse[IM_LASTCOL_##type]) d->impulse[IM_LASTCOL_##type] = lastmillis; \
+                            collect##name = true; \
+                        } \
                     } \
                 } \
             }
@@ -1542,7 +1537,7 @@ namespace game
                     timeslice -= impulsecostcount;
                     d->impulse[IM_COUNT]--;
                 }
-                d->impulse[IM_COLLECT_COUNT] = int(ceilf(timeslice / skew));
+                d->impulse[IM_COLLECT_COUNT] = timeslice;
             );
             IMPULSEMOD(meter, METER, d->impulse[IM_METER] > 0, timeslice > 0,
                 d->impulse[IM_METER] = max(d->impulse[IM_METER] - timeslice, 0);
@@ -4242,7 +4237,7 @@ namespace game
                 if(!firstpersoncamera && gs_playing(gamestate) && firstpersonsway)
                     calchwepsway(d, mdl);
 
-                int slidetime = d->getslide(true);
+                int slidetime = d->impulsetimer(IM_T_SLIDE);
                 if(slidetime != 0 && firstpersonslidetime && firstpersonslideroll != 0)
                 {
                     int dur = min(impulseslidelen/2, firstpersonslidetime), millis = lastmillis - slidetime;
@@ -4287,7 +4282,7 @@ namespace game
             {
                 // Test if the player is actually moving at a meaningful speed. This may not be the case if the player is running against a wall or another obstacle.
                 bool moving = fabsf(d->vel.x) > 5.0f || fabsf(d->vel.y) > 5.0f, turning = fabsf(d->rotvel.x) >= playerrotthresh * (d->crouching() ? 0.5f : 1.f);
-                int vaulttime = d->impulsetimer(IM_T_VAULT), dashtime = d->impulsetimer(IM_T_DASH), slidetime = d->getslide(true), parkourtime = d->impulsetimer(IM_T_WALLRUN),
+                int vaulttime = d->impulsetimer(IM_T_VAULT), dashtime = d->impulsetimer(IM_T_DASH), slidetime = d->impulsetimer(IM_T_SLIDE), parkourtime = d->impulsetimer(IM_T_WALLRUN),
                     impulsetime = d->impulse[IM_TYPE] >= 0 && d->impulse[IM_TYPE] < IM_MAX ? d->impulsetime[d->impulse[IM_TYPE]] : 0;
 
                 if(physics::liquidcheck(d, 0.1f) && d->physstate <= PHYS_FALL)

@@ -3274,7 +3274,7 @@ namespace client
                     else
                     {
                         if(t != game::player1 && !t->ai) t->setcheckpoint(ent, lastmillis, entities::ents[ent]->attrs[6]);
-                        loopk(IM_MAX) if(impulsecheckpoint&(1<<k)) t->impulse[k] = 0; // checkpoint reset
+                        t->clearimpulse(impulsecheckpointclear, impulsecheckpointreset);
                     }
 
                     if((checkpointannounce&(t != game::focus ? 2 : 1) || (m_ra_gauntlet(game::gamemode, game::mutators) && checkpointannounce&4)) && checkpointannouncefilter&(1<<entities::ents[ent]->attrs[6])) switch(entities::ents[ent]->attrs[6])
@@ -4084,6 +4084,7 @@ namespace client
     CLCOMMANDM(impulseready, "si", (char *who, int *n), intret(d->impulseready(*n)));
     CLCOMMANDM(canimpulse, "si", (char *who, int *n), intret(d->canimpulse(*n) ? 1 : 0));
     CLCOMMAND(regenimpulse, intret(d->regenimpulse() ? 1 : 0));
+    CLCOMMANDM(slide, "s", (char *who), intret(d->hasslide() ? 1 : 0));
 
     CLCOMMAND(buffing, intret(d->lastbuff));
     CLCOMMAND(hasprize, intret(d->hasprize));

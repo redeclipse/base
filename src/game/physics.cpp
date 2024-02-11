@@ -344,15 +344,14 @@ namespace physics
 
     bool sticktofloor(physent *d)
     {
-        if(liquidcheck(d)) return false;
-
         if(gameent::is(d))
         {
             gameent *e = (gameent *)d;
-            if(!A(e->actortype, magboots) && !entities::currentpassenger(d)) return false;
+            if(entities::currentpassenger(d)) return true;
+            if(PHYS(gravity) != 0 && d->weight != 0 && !(A(e->actortype, abilities)&(1<<A_A_FLOAT))) return true;
         }
 
-        return true;
+        return false;
     }
 
     bool sticktospecial(physent *d, bool parkour)
@@ -379,7 +378,7 @@ namespace physics
             gameent *e = (gameent *)p;
             vel *= e->stunscale;
 
-            if((d->physstate >= PHYS_SLOPE || sticktospecial(d, false)) && e->getslide(true) == 0 && e->crouching()) vel *= movecrawl;
+            if((d->physstate >= PHYS_SLOPE || sticktospecial(d, false)) && !e->hasslide() && e->crouching()) vel *= movecrawl;
             else if(isweap(e->weapselect) && e->weapstate[e->weapselect] == W_S_ZOOM) vel *= movecrawl;
 
             if(e->impulsetimer()) switch(e->impulse[IM_TYPE])
@@ -826,7 +825,7 @@ namespace physics
 
     bool impulseplayer(gameent *d, bool onfloor, const vec &inertia, bool melee = false, bool slide = false)
     {
-        bool launch = !melee && !slide && onfloor && d->action[AC_JUMP] && !physics::movepitch(d) && impulsemethod&1 && d->getslide(true) != 0,
+        bool launch = !melee && !slide && onfloor && d->action[AC_JUMP] && !physics::movepitch(d) && impulsemethod&1 && d->impulsetimer(IM_T_SLIDE) != 0,
              mchk = !melee || onfloor, action = mchk && (d->actortype >= A_BOT || melee || impulseaction&2),
              dash = d->action[AC_SPECIAL] && onfloor, sliding = slide || (dash && d->move == 1 && d->crouching());
         int move = action ? d->move : 0, strafe = action ? d->strafe : 0;
@@ -865,6 +864,43 @@ namespace physics
         game::impulseeffect(d);
 
         return true;
+    }
+
+    bool checkvault(gameent *d)
+    {
+        bool found = false;
+        if(impulsevaultstyle&(d->turnside ? 1 : 2))
+        {
+            vec dir(d->yaw * RAD, d->pitch * RAD);
+            float mag = max(d->vel.magnitude() + d->falling.magnitude(), d->speed * impulsevaultminspeed);
+
+            if(!d->turnside)
+            {   // if we were climbing something then broke free, fling us off
+                vec oldpos = d->o, olddir = dir;
+                dir = vec(d->yaw * RAD, (impulsevaultpitchclamp && d->pitch >= impulsevaultpitch ? d->pitch : impulsevaultpitch) * RAD);
+
+                float pitchgap = (89.9f - impulsevaultpitch) * 0.1f;
+                loopj(11)
+                {   // scan for obstacle and try to go up and over
+                    if(!collide(d, dir) && !collideinside)
+                    {
+                        found = true;
+                        break;
+                    }
+                    dir = vec(d->yaw * RAD, j * pitchgap * RAD);
+                    d->o = oldpos;
+                }
+                if(!found) dir = olddir;
+                d->o = oldpos;
+            }
+
+            d->vel = vec(dir).mul(mag);
+        }
+
+        d->doimpulse(IM_T_VAULT, lastmillis);
+        client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_VAULT);
+
+        return found;
     }
 
     void modifyinput(gameent *d, vec &m, bool wantsmove)
@@ -1095,39 +1131,8 @@ namespace physics
 
         if(haswallrun && (!found || d->impulsetimer(IM_T_WALLRUN) == 0))
         {
-            if(impulsevaultstyle&(d->turnside ? 1 : 2))
-            {
-                vec dir(d->yaw * RAD, d->pitch * RAD);
-                float mag = max(d->vel.magnitude() + d->falling.magnitude(), d->speed * impulsevaultminspeed);
-
-                if(!d->turnside)
-                {   // if we were climbing something then broke free, fling us off
-                    vec oldpos = d->o, olddir = dir;
-                    dir = vec(d->yaw * RAD, (impulsevaultpitchclamp && d->pitch >= impulsevaultpitch ? d->pitch : impulsevaultpitch) * RAD);
-
-                    float pitchgap = (89.9f - impulsevaultpitch) * 0.1f;
-                    found = false; // we can re-use this from earlier
-                    loopj(11)
-                    {   // scan for obstacle and try to go up and over
-                        d->o.add(dir);
-                        if(!collide(d, dir) && !collideinside)
-                        {
-                            found = true;
-                            break;
-                        }
-                        dir = vec(d->yaw * RAD, j * pitchgap * RAD);
-                        d->o = oldpos;
-                    }
-                    if(!found) dir = olddir;
-                    d->o = oldpos;
-                }
-
-                d->vel = vec(dir).mul(mag);
-            }
-
-            d->doimpulse(IM_T_VAULT, lastmillis);
-            client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_VAULT);
-            haswallrun = false;
+            checkvault(d);
+            haswallrun = onfloor = false;
         }
 
         if(!haswallrun)
@@ -1177,7 +1182,7 @@ namespace physics
             }
         }
 
-        bool sliding = d->getslide(true) != 0,
+        bool sliding = d->impulsetimer(IM_T_SLIDE) != 0,
              pounding = !sliding && !onfloor && d->impulse[IM_TYPE] == IM_T_POUND && d->impulsetime[IM_T_POUND] != 0,
              kicking = !sliding && !pounding && !onfloor && d->action[AC_SPECIAL];
 
@@ -1243,7 +1248,7 @@ namespace physics
                     }
                 }
 
-                slide = !e->impulseready(impulsecoastmask, true, false);
+                slide = e->hasslide();
             }
         }
 
@@ -1269,14 +1274,15 @@ namespace physics
         if(floating) coast = floatcoast;
         else
         {
-            float c = onfloor || sticktospecial(d) ? (slide ? PHYS(slidecoast) : PHYS(floorcoast)) * coastscale(d->feetpos(-1)) : PHYS(aircoast);
+            float c = onfloor ? (slide ? PHYS(slidecoast) : PHYS(floorcoast)) * coastscale(d->feetpos(-1)) : PHYS(aircoast);
             coast = inliquid ? liquidmerge(d, c, LIQUIDPHYS(coast, d->inmaterial)) : c;
         }
         coast *= d->coastscale;
+
         d->vel.lerp(m, d->vel, pow(max(1.0f - 1.0f / coast, 0.0f), millis / 20.0f));
 
         bool floorchk = d->floor.z > 0 && d->floor.z < floorz;
-        if(floating) d->resetphys(false);
+        if(floating || (onfloor && !slide)) d->resetphys(false);
         else
         {
             vec g = gravityvel(d, d->center(), millis / 1000.f, d->getradius(), d->getheight(), d->inmaterial, d->submerged);
@@ -1288,6 +1294,7 @@ namespace physics
             {
                 float scoast = (inliquid ? liquidmerge(d, PHYS(aircoast), LIQUIDPHYS(coast, d->inmaterial)) : PHYS(floorcoast) * coastscale(d->feetpos(-1))) * d->coastscale,
                         floordiff = floorz-slopez, c = inliquid || floordiff == 0 ? 1.0f : clamp((d->floor.z-slopez)/floordiff, 0.0f, 1.0f);
+
                 d->falling.mul(pow(max(1.0f - c / scoast, 0.0f), millis / 20.0f));
             }
         }
@@ -1414,10 +1421,10 @@ namespace physics
 
             loopi(moveres) if(!move(d, vel)) { if(++collisions < 5) i--; } // discrete steps collision detection & sliding
 
-            if(gameent::is(d) && timeinair)
+            if(gameent::is(d) && !d->airmillis)
             {
                 gameent *e = (gameent *)d;
-                if(!e->airmillis && !sticktospecial(e))
+                if(timeinair && !sticktospecial(e))
                 {
                     if(local && impulsemethod&2 && timeinair >= impulseslideinair && (e->move == 1 || e->strafe) && e->action[AC_CROUCH] && e->canimpulse(IM_T_SLIDE) && !physics::movepitch(d))
                         impulseplayer(e, true, prevel, false, true);
@@ -1433,8 +1440,13 @@ namespace physics
                         }
                         else game::footstep(e);
                     }
-
                     e->resetjump();
+                }
+
+                if(e->impulseready(IM_T_ALL, false, false) && e->impulseready(IM_T_ALL, false, true))
+                {
+                    if(e->impulse[IM_TYPE] == IM_T_WALLRUN) checkvault(e);
+                    e->clearimpulse((1<<IM_TYPE), IM_T_ALL);
                 }
             }
         }
