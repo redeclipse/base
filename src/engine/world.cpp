@@ -1287,6 +1287,8 @@ int entlistpos(const vector<int> &list, int n)
 }
 ICOMMAND(0, entgrouppos, "i", (int *n), intret(entlistpos(entgroup, *n)));
 ICOMMAND(0, enthoverpos, "i", (int *n), intret(entlistpos(enthover, *n)));
+ICOMMAND(0, entgroupidx, "i", (int *n), intret(entgroup.inrange(*n) ? entgroup[*n] : -1));
+ICOMMAND(0, enthoveridx, "i", (int *n), intret(enthover.inrange(*n) ? enthover[*n] : -1));
 
 void entlast(uint *body)
 {

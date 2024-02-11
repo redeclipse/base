@@ -407,7 +407,6 @@ bool HaloSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int want
 
     drawtex = 0;
     restorefbo();
-    glViewport(0, 0, vieww, viewh);
 
     return true;
 }
@@ -833,6 +832,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int wan
 
             restorefbo();
             glViewport(0, 0, hudw, hudh);
+
             hudmatrix.ortho(0, hudw, hudh, 0, -1, 1);
             flushhudmatrix();
             resethudshader();
@@ -902,16 +902,9 @@ bool ViewSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int want
     savefbo();
     if(!bindfbo()) return false;
 
-    GLERROR;
-    setuplights();
-    vieww = width;
-    viewh = height;
-
-    glClearColor(0, 0, 0, 0);
-    glClear(GL_COLOR_BUFFER_BIT);
-
     float oldaspect = aspect, oldfovy = fovy, oldfov = curfov, oldnear = nearplane, oldfar = farplane;
     int olddrawtex = drawtex;
+    drawtex = DRAWTEX_VIEW;
 
     physent *oldcamera = camera1;
     static physent cmcamera;
@@ -929,7 +922,6 @@ bool ViewSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int want
     curfov = fov;
     fovy = 2*atan2(tan(curfov/2*RAD), aspect)/RAD;
     setviewcell(camera1->o);
-    drawtex = DRAWTEX_VIEW;
 
     int fogmat, abovemat;
     float fogbelow;
@@ -945,10 +937,21 @@ bool ViewSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int want
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
 
+    xtravertsva = xtraverts = glde = gbatches = vtris = vverts = 0;
+    flipqueries();
+
+    gl_setupframe(true);
+
+    vieww = width;
+    viewh = height;
+
+    glClearColor(0, 0, 0, 0);
+    glClear(GL_COLOR_BUFFER_BIT);
+
     ldrscale = 0.5f;
     ldrscaleb = ldrscale/255;
 
-    visiblecubes();
+    visiblecubes(false);
     rendergbuffer();
 
     renderao();
@@ -1007,6 +1010,7 @@ bool ViewSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int want
     fovy = oldfovy;
     curfov = oldfov;
     camera1 = oldcamera;
+
     setviewcell(camera1->o);
     projmatrix.perspective(fovy, aspect, nearplane, farplane);
     setcamprojmatrix();
@@ -1014,7 +1018,6 @@ bool ViewSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int want
     if(blittex) blit();
 
     restorefbo();
-    glViewport(0, 0, vieww, viewh);
 
     return true;
 }

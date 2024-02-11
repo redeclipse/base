@@ -3743,7 +3743,7 @@ void collectlights()
     lightorder.sort(sortlights);
 
     bool queried = false;
-    if((!drawtex || drawtex == DRAWTEX_VIEW) && smquery && oqfrags && oqlights) loopv(lightorder)
+    if(!drawtex && smquery && oqfrags && oqlights) loopv(lightorder)
     {
         int idx = lightorder[i];
         lightinfo &l = lights[idx];
@@ -3824,7 +3824,7 @@ VAR(0, rhinoq, 0, 1, 1);
 
 static inline bool shouldworkinoq()
 {
-    return (!drawtex || drawtex == DRAWTEX_VIEW) && oqfrags && (!wireframe || !editmode);
+    return !drawtex && oqfrags && (!wireframe || !editmode);
 }
 
 struct batchrect : lightrect
@@ -4979,10 +4979,10 @@ void workinoq()
 {
     collectlights();
 
-    if(drawtex && drawtex != DRAWTEX_VIEW) return;
+    if(drawtex) return;
 
     rendertransparentmapmodels();
-    game::render();
+    if(!drawtex) game::render();
 
     if(shouldworkinoq())
     {
@@ -5009,11 +5009,11 @@ void rendertransparent()
     hasrefractmask = false;
     if(!hasalphavas && !hasmats && !hasmodels)
     {
-        if(!editmode) renderparticles();
+        if(!editmode && !drawtex) renderparticles();
         return;
     }
 
-    if(!editmode && particlelayers && ghasstencil) renderparticles(PL_UNDER);
+    if(!editmode && particlelayers && ghasstencil && !drawtex) renderparticles(PL_UNDER);
 
     timer *transtimer = begintimer("Transparent");
 
@@ -5206,7 +5206,7 @@ void rendertransparent()
 
     endtimer(transtimer);
 
-    if(editmode) return;
+    if(editmode || drawtex) return;
 
     if(particlelayers && ghasstencil)
     {
@@ -5283,10 +5283,10 @@ void setupscreenparams()
 
 void preparegbuffer(bool depthclear)
 {
-    glBindFramebuffer_(GL_FRAMEBUFFER, msaasamples && (msaalight || (!drawtex || drawtex == DRAWTEX_VIEW)) ? msfbo : gfbo);
+    glBindFramebuffer_(GL_FRAMEBUFFER, msaasamples && (msaalight || !drawtex) ? msfbo : gfbo);
     glViewport(0, 0, vieww, viewh);
 
-    if((drawtex && drawtex != DRAWTEX_VIEW) && gdepthinit)
+    if(drawtex && gdepthinit)
     {
         glEnable(GL_SCISSOR_TEST);
         glScissor(0, 0, vieww, viewh);
@@ -5303,7 +5303,7 @@ void preparegbuffer(bool depthclear)
     if(gcolorclear) glClearColor(0, 0, 0, 0);
     glClear((depthclear ? GL_DEPTH_BUFFER_BIT : 0)|(gcolorclear ? GL_COLOR_BUFFER_BIT : 0)|(depthclear && ghasstencil && (!msaasamples || msaalight || ghasstencil > 1) ? GL_STENCIL_BUFFER_BIT : 0));
     if(gdepthformat && gdepthclear) maskgbuffer("cnd");
-    if((drawtex && drawtex != DRAWTEX_VIEW) && gdepthinit) glDisable(GL_SCISSOR_TEST);
+    if(drawtex && gdepthinit) glDisable(GL_SCISSOR_TEST);
     gdepthinit = true;
 
     setupscreenparams();
@@ -5322,7 +5322,7 @@ void rendergbuffer(bool depthclear)
 
     preparegbuffer(depthclear);
 
-    if((!drawtex || drawtex == DRAWTEX_VIEW) && limitsky())
+    if(!drawtex && limitsky())
     {
         renderexplicitsky();
         GLERROR;
@@ -5425,7 +5425,7 @@ void shadesky()
 
 void shadegbuffer()
 {
-    if(msaasamples && !msaalight && (!drawtex || drawtex == DRAWTEX_VIEW)) resolvemsaadepth();
+    if(msaasamples && !msaalight && !drawtex) resolvemsaadepth();
     GLERROR;
 
     timer *shcputimer = begintimer("Deferred Shading", false);
@@ -5433,10 +5433,10 @@ void shadegbuffer()
 
     shadesky();
 
-    if(msaasamples && (msaalight || !drawtex || drawtex == DRAWTEX_VIEW))
+    if(msaasamples && (msaalight || !drawtex))
     {
         if((ghasstencil && msaaedgedetect) || msaalight==2) loopi(2) renderlights(-1, -1, 1, 1, NULL, 0, i+1);
-        else renderlights(-1, -1, 1, 1, NULL, 0, drawtex && drawtex != DRAWTEX_VIEW ? -1 : 3);
+        else renderlights(-1, -1, 1, 1, NULL, 0, drawtex ? -1 : 3);
     }
     else renderlights();
     GLERROR;

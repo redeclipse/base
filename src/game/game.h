@@ -1270,12 +1270,12 @@ AFFINITYPOS(defend);
 AFFINITYPOS(bomber);
 struct gameentity : extentity
 {
-    int schan, affinity, lastspawn, nextemit;
+    int schan, affinity, lastspawn, nextemit, lastthirdpos;
     linkvector kin;
-    vec offset, curpos;
+    vec offset, thirdpos, curpos;
     float yaw, pitch;
 
-    gameentity() : schan(-1), affinity(-1), lastspawn(0), nextemit(0), offset(0, 0, 0), yaw(0), pitch(0) {}
+    gameentity() : schan(-1), affinity(-1), lastspawn(0), nextemit(0), lastthirdpos(0), offset(0, 0, 0), yaw(0), pitch(0) {}
     ~gameentity()
     {
         if(issound(schan)) soundsources[schan].clear();
@@ -2848,6 +2848,7 @@ namespace game
     extern void checkzoom();
     extern bool inzoom();
     extern float zoomscale();
+    extern bool camcheck(vec &pos, int csize);
     extern bool tvmode(bool check = true);
     extern void resetcamera(bool cam = true, bool input = true);
     extern void resetsway();

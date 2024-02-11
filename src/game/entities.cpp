@@ -932,7 +932,7 @@ namespace entities
         if(id < 0) intret(ents.length());
         else if(ents.inrange(id))
         {
-            if(val < 0) intret(5);
+            if(val < 0) intret(6);
             else switch(val)
             {
                 case 0: intret(ents[id]->type); break; // type
@@ -991,6 +991,60 @@ namespace entities
                             default: break;
                         }
                     }
+                    break;
+                }
+                case 5: // pulled back view
+                {
+                    if(ex < 0) intret(6);
+                    else
+                    {
+                        float yaw = -lastmillis / 50.f, pitch = -45.0f;
+                        gameentity &e = *(gameentity *)ents[id];
+
+                        if(!e.lastthirdpos || e.lastthirdpos != totalmillis)
+                        {
+                            vec pos = e.o;
+                            e.thirdpos = game::thirdpos(pos, yaw, pitch, 4);
+                            if(e.thirdpos == pos)
+                            {
+                                if(e.type == MAPMODEL)
+                                {
+                                    mapmodelinfo *mmi = getmminfo(e.attrs[0]);
+                                    if(mmi && mmi->m)
+                                    {
+                                        vec center, radius;
+                                        mmi->m->collisionbox(center, radius);
+                                        if(e.attrs[5])
+                                        {
+                                            float scale = e.attrs[5]/100.f;
+                                            center.mul(scale);
+                                            radius.mul(scale);
+                                        }
+                                        rotatebb(center, radius, int(e.attrs[1]), int(e.attrs[2]), int(e.attrs[3]));
+
+                                        pos.sub(vec(yaw * RAD, pitch * RAD).normalize().mul(2 + max(radius.x + fabs(center.x), radius.y + fabs(center.y))));
+                                    }
+                                }
+                                game::camcheck(pos, 2);
+                                e.thirdpos = game::thirdpos(pos, yaw, pitch, 4);
+                            }
+                            e.lastthirdpos = totalmillis;
+                        }
+
+                        vectoyawpitch(vec(e.o).sub(e.thirdpos).normalize(), yaw, pitch);
+
+                        switch(ex)
+                        {
+                            case 0: result(e.thirdpos); break;
+                            case 1: floatret(e.thirdpos.x); break;
+                            case 2: floatret(e.thirdpos.y); break;
+                            case 3: floatret(e.thirdpos.z); break;
+                            case 4: floatret(yaw); break;
+                            case 5: floatret(pitch); break;
+                            default: break;
+                        }
+                    }
+                    break;
                 }
             }
         }
