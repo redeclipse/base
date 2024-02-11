@@ -359,7 +359,7 @@ bool checkdepthtexstencilrb()
 
     bool supported = glCheckFramebufferStatus_(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
 
-    glBindFramebuffer_(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer_(GL_FRAMEBUFFER, renderfbo);
     glDeleteFramebuffers_(1, &fbo);
     glDeleteTextures(1, &depthtex);
     glDeleteRenderbuffers_(1, &stencilrb);
@@ -1717,6 +1717,7 @@ bool calcspotscissor(const vec &origin, float radius, const vec &dir, int spot, 
     return true;
 }
 
+GLuint renderfbo = 0;
 static GLuint screenquadvbo = 0;
 
 static void setupscreenquad()
@@ -1830,7 +1831,7 @@ static float findsurface(int fogmat, const vec &v, int &abovemat)
     return worldsize;
 }
 
-static void getcamfogmat(int &fogmat, int &abovemat, float &fogbelow)
+void getcamfogmat(int &fogmat, int &abovemat, float &fogbelow)
 {
     vec pos = vec(camera1->o).subz(nearplane);
     fogmat = abovemat = MAT_AIR;
@@ -1965,7 +1966,7 @@ float calcfogcull()
     return log(fogcullintensity) / (M_LN2*calcfogdensity(fogdepth));
 }
 
-static void setfog(int fogmat, float below = 0, float blend = 1, int abovemat = MAT_AIR)
+void setfog(int fogmat, float below, float blend, int abovemat)
 {
     float start = 0, end = 0;
     float logscale = 256, logblend = log(1 + (logscale - 1)*blend) / log(logscale);
@@ -2186,7 +2187,7 @@ void drawminimap()
     glBindFramebuffer_(GL_FRAMEBUFFER, fbo);
     glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, minimaptex, 0);
     copyhdr(size, size, fbo);
-    glBindFramebuffer_(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer_(GL_FRAMEBUFFER, renderfbo);
     glDeleteFramebuffers_(1, &fbo);
 
     glViewport(0, 0, hudw, hudh);
@@ -2519,7 +2520,7 @@ void gl_drawview()
         renderpostfx(scalefbo);
         if(scalefbo) doscale();
     }
-    else if(drawtex == DRAWTEX_MAPSHOT)
+    else if(drawtex == DRAWTEX_VIEW)
     {
         processhdr(scalefbo, AA_UNUSED);
         if(scalefbo) doscale();

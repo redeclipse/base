@@ -1142,7 +1142,7 @@ namespace game
             case 1: // teams
             {
                 int team = index%T_COUNT;
-                if(drawtex != DRAWTEX_MAPSHOT && index < T_COUNT)
+                if(drawtex != DRAWTEX_VIEW && index < T_COUNT)
                 {
                     if(m_edit(gamemode) && forcepalette)
                     {
@@ -1156,7 +1156,7 @@ namespace game
             case 2: // weapons
             {
                 int weap = index%W_MAX;
-                if(drawtex && drawtex != DRAWTEX_MAPSHOT && !m_edit(gamemode) && index < W_MAX)
+                if(drawtex && drawtex != DRAWTEX_VIEW && !m_edit(gamemode) && index < W_MAX)
                 {
                     weap = m_attr(WEAPON, weap);
                     if(!isweap(weap) || W(weap, disabled) || (m_rotweaps(gamemode, mutators) && weap < W_ITEM) || !m_check(W(weap, modes), W(weap, muts), gamemode, mutators))

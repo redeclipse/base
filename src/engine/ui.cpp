@@ -7659,7 +7659,7 @@ namespace UI
             hudw = oldhudw;
             hudh = oldhudh;
             surfaceformat = oldsf;
-            glBindFramebuffer_(GL_FRAMEBUFFER, 0);
+            glBindFramebuffer_(GL_FRAMEBUFFER, renderfbo);
             uicurfbo = 0;
             glViewport(0, 0, hudw, hudh);
         }

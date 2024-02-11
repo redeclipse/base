@@ -922,7 +922,7 @@ void uploadtexture(int tnum, GLenum target, GLenum internal, int tw, int th, GLe
     if(shouldgpumipmap)
     {
         GLint fbo = 0;
-        if(progressing || !inbetweenframes || (drawtex && drawtex != DRAWTEX_MAPSHOT)) glGetIntegerv(GL_FRAMEBUFFER_BINDING, &fbo);
+        if(progressing || !inbetweenframes || (drawtex && drawtex != DRAWTEX_VIEW)) glGetIntegerv(GL_FRAMEBUFFER_BINDING, &fbo);
         if(!prealloc) for(int level = 1, mw = tw, mh = th; max(mw, mh) > 1; level++)
         {
             if(mw > 1) mw /= 2;
@@ -3698,7 +3698,7 @@ GLuint genenvmap(const vec &o, int esize, int aasize, int blur, bool onlysky)
             swap(emtex[0], emtex[1]);
         }
     }
-    glBindFramebuffer_(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer_(GL_FRAMEBUFFER, renderfbo);
     glViewport(0, 0, hudw, hudh);
     clientkeepalive();
     return tex;
@@ -3848,7 +3848,7 @@ GLuint lookupenvmap(Slot &slot)
 
 GLuint lookupenvmap(ushort emid)
 {
-    if(emid==EMID_SKY || emid==EMID_CUSTOM || (drawtex && drawtex != DRAWTEX_MAPSHOT)) return lookupskyenvmap();
+    if(emid==EMID_SKY || emid==EMID_CUSTOM || (drawtex && drawtex != DRAWTEX_VIEW)) return lookupskyenvmap();
     if(emid==EMID_NONE || !envmaps.inrange(emid-EMID_RESERVED)) return 0;
     GLuint tex = envmaps[emid-EMID_RESERVED].tex;
     return tex ? tex : lookupskyenvmap();

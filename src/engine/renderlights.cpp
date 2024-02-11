@@ -79,7 +79,7 @@ void setupbloom(int w, int h)
             fatal("Failed allocating bloom buffer!");
     }
 
-    glBindFramebuffer_(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer_(GL_FRAMEBUFFER, renderfbo);
 }
 
 void cleanupbloom()
@@ -214,7 +214,7 @@ void setupao(int w, int h)
             fatal("Failed allocating AO buffer!");
     }
 
-    glBindFramebuffer_(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer_(GL_FRAMEBUFFER, renderfbo);
 
     loadaoshaders();
     loadbilateralshaders();
@@ -425,7 +425,7 @@ void setupscale(int sw, int sh, int w, int h)
             fatal("Failed allocating scale buffer!");
     }
 
-    glBindFramebuffer_(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer_(GL_FRAMEBUFFER, renderfbo);
 
     if(gscalecubic)
     {
@@ -726,7 +726,7 @@ void setupmsbuffer(int w, int h)
             fatal("Failed allocating MSAA refraction buffer!");
     }
 
-    glBindFramebuffer_(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer_(GL_FRAMEBUFFER, renderfbo);
 
     useshaderbyname("msaaedgedetect");
     useshaderbyname("msaaresolve");
@@ -872,7 +872,7 @@ void setupgbuffer()
             fatal("Failed allocating refraction buffer!");
     }
 
-    glBindFramebuffer_(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer_(GL_FRAMEBUFFER, renderfbo);
 
     if(gw < hudw || gh < hudh) setupscale(gw, gh, hudw, hudh);
 }
@@ -1344,7 +1344,7 @@ void getavglum(int *numargs, ident *id)
     glPixelStorei(GL_PACK_ALIGNMENT, 1);
     float avglum = -1;
     glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &avglum);
-    glBindFramebuffer_(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer_(GL_FRAMEBUFFER, renderfbo);
     if(avglum < 0) return;
     avglum *= 4;
     if(*numargs < 0) floatret(avglum);
@@ -1394,7 +1394,7 @@ void viewstencil()
     debugquad(0, 0, hudw, hudh, 0, 0, gw, gh);
     glDisable(GL_STENCIL_TEST);
 
-    glBindFramebuffer_(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer_(GL_FRAMEBUFFER, renderfbo);
     glViewport(0, 0, hudw, hudh);
 
     int w = min(hudw, hudh)/2, h = (w*hudh)/hudw;
@@ -1509,7 +1509,7 @@ void setupradiancehints()
     if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         fatal("Failed allocating RSM buffer!");
 
-    glBindFramebuffer_(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer_(GL_FRAMEBUFFER, renderfbo);
 
     loadrhshaders();
 
@@ -1908,7 +1908,7 @@ void setupshadowatlas()
     if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         fatal("Failed allocating shadow atlas!");
 
-    glBindFramebuffer_(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer_(GL_FRAMEBUFFER, renderfbo);
 
     loadsmshaders();
 }
@@ -2651,7 +2651,7 @@ void setupvolumetric(int w, int h)
             fatal("Failed allocating volumetric buffer!");
     }
 
-    glBindFramebuffer_(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer_(GL_FRAMEBUFFER, renderfbo);
 
     loadvolumetricshaders();
 }
@@ -3044,7 +3044,7 @@ static inline void setlightglobals(bool transparent = false)
     GLOBALPARAMF(shadowatlasscale, 1.0f/shadowatlaspacker.w, 1.0f/shadowatlaspacker.h);
     if(ao)
     {
-        if(transparent || (drawtex && drawtex != DRAWTEX_MAPSHOT) || (editmode && fullbright))
+        if(transparent || (drawtex && drawtex != DRAWTEX_VIEW) || (editmode && fullbright))
         {
             GLOBALPARAMF(aoscale, 0.0f, 0.0f);
             GLOBALPARAMF(aoparams, 1.0f, 0.0f, 1.0f, 0.0f);
@@ -3743,7 +3743,7 @@ void collectlights()
     lightorder.sort(sortlights);
 
     bool queried = false;
-    if((!drawtex || drawtex == DRAWTEX_MAPSHOT) && smquery && oqfrags && oqlights) loopv(lightorder)
+    if((!drawtex || drawtex == DRAWTEX_VIEW) && smquery && oqfrags && oqlights) loopv(lightorder)
     {
         int idx = lightorder[i];
         lightinfo &l = lights[idx];
@@ -3824,7 +3824,7 @@ VAR(0, rhinoq, 0, 1, 1);
 
 static inline bool shouldworkinoq()
 {
-    return (!drawtex || drawtex == DRAWTEX_MAPSHOT) && oqfrags && (!wireframe || !editmode);
+    return (!drawtex || drawtex == DRAWTEX_VIEW) && oqfrags && (!wireframe || !editmode);
 }
 
 struct batchrect : lightrect
@@ -4979,7 +4979,7 @@ void workinoq()
 {
     collectlights();
 
-    if(drawtex && drawtex != DRAWTEX_MAPSHOT) return;
+    if(drawtex && drawtex != DRAWTEX_VIEW) return;
 
     rendertransparentmapmodels();
     game::render();
@@ -5283,10 +5283,10 @@ void setupscreenparams()
 
 void preparegbuffer(bool depthclear)
 {
-    glBindFramebuffer_(GL_FRAMEBUFFER, msaasamples && (msaalight || (!drawtex || drawtex == DRAWTEX_MAPSHOT)) ? msfbo : gfbo);
+    glBindFramebuffer_(GL_FRAMEBUFFER, msaasamples && (msaalight || (!drawtex || drawtex == DRAWTEX_VIEW)) ? msfbo : gfbo);
     glViewport(0, 0, vieww, viewh);
 
-    if((drawtex && drawtex != DRAWTEX_MAPSHOT) && gdepthinit)
+    if((drawtex && drawtex != DRAWTEX_VIEW) && gdepthinit)
     {
         glEnable(GL_SCISSOR_TEST);
         glScissor(0, 0, vieww, viewh);
@@ -5303,7 +5303,7 @@ void preparegbuffer(bool depthclear)
     if(gcolorclear) glClearColor(0, 0, 0, 0);
     glClear((depthclear ? GL_DEPTH_BUFFER_BIT : 0)|(gcolorclear ? GL_COLOR_BUFFER_BIT : 0)|(depthclear && ghasstencil && (!msaasamples || msaalight || ghasstencil > 1) ? GL_STENCIL_BUFFER_BIT : 0));
     if(gdepthformat && gdepthclear) maskgbuffer("cnd");
-    if((drawtex && drawtex != DRAWTEX_MAPSHOT) && gdepthinit) glDisable(GL_SCISSOR_TEST);
+    if((drawtex && drawtex != DRAWTEX_VIEW) && gdepthinit) glDisable(GL_SCISSOR_TEST);
     gdepthinit = true;
 
     setupscreenparams();
@@ -5322,7 +5322,7 @@ void rendergbuffer(bool depthclear)
 
     preparegbuffer(depthclear);
 
-    if((!drawtex || drawtex == DRAWTEX_MAPSHOT) && limitsky())
+    if((!drawtex || drawtex == DRAWTEX_VIEW) && limitsky())
     {
         renderexplicitsky();
         GLERROR;
@@ -5425,7 +5425,7 @@ void shadesky()
 
 void shadegbuffer()
 {
-    if(msaasamples && !msaalight && (!drawtex || drawtex == DRAWTEX_MAPSHOT)) resolvemsaadepth();
+    if(msaasamples && !msaalight && (!drawtex || drawtex == DRAWTEX_VIEW)) resolvemsaadepth();
     GLERROR;
 
     timer *shcputimer = begintimer("Deferred Shading", false);
@@ -5433,10 +5433,10 @@ void shadegbuffer()
 
     shadesky();
 
-    if(msaasamples && (msaalight || !drawtex || drawtex == DRAWTEX_MAPSHOT))
+    if(msaasamples && (msaalight || !drawtex || drawtex == DRAWTEX_VIEW))
     {
         if((ghasstencil && msaaedgedetect) || msaalight==2) loopi(2) renderlights(-1, -1, 1, 1, NULL, 0, i+1);
-        else renderlights(-1, -1, 1, 1, NULL, 0, drawtex && drawtex != DRAWTEX_MAPSHOT ? -1 : 3);
+        else renderlights(-1, -1, 1, 1, NULL, 0, drawtex && drawtex != DRAWTEX_VIEW ? -1 : 3);
     }
     else renderlights();
     GLERROR;

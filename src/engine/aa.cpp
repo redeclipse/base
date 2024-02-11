@@ -37,7 +37,7 @@ void setuptqaa(int w, int h)
         if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
             fatal("Failed allocating TQAA buffer!");
     }
-    glBindFramebuffer_(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer_(GL_FRAMEBUFFER, renderfbo);
 
     tqaaprevscreenmatrix.identity();
 
@@ -155,7 +155,7 @@ void setupfxaa(int w, int h)
     bindgdepth();
     if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         fatal("Failed allocating FXAA buffer!");
-    glBindFramebuffer_(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer_(GL_FRAMEBUFFER, renderfbo);
 
     loadfxaashaders();
 }
@@ -538,7 +538,7 @@ void setupsmaa(int w, int h)
         if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
             fatal("Failed allocating SMAA buffer!");
     }
-    glBindFramebuffer_(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer_(GL_FRAMEBUFFER, renderfbo);
 
     loadsmaashaders(split);
 }

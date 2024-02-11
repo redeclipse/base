@@ -631,7 +631,7 @@ static inline void rendermapmodelent(extentity &e, int n, bool tpass, bool spass
 void rendermapmodels()
 {
     static int skipoq = 0;
-    bool doquery = (!drawtex || drawtex == DRAWTEX_MAPSHOT) && oqfrags && oqmm;
+    bool doquery = (!drawtex || drawtex == DRAWTEX_VIEW) && oqfrags && oqmm;
     const vector<extentity *> &ents = entities::getents();
     findvisiblemms(ents, doquery);
 
@@ -1933,7 +1933,7 @@ VAR(0, oqgeom, 0, 1, 1);
 
 void rendergeom()
 {
-    bool doOQ = oqfrags && oqgeom && (!drawtex || drawtex == DRAWTEX_MAPSHOT), multipassing = false;
+    bool doOQ = oqfrags && oqgeom && (!drawtex || drawtex == DRAWTEX_VIEW), multipassing = false;
     renderstate cur;
 
     int blends = 0;

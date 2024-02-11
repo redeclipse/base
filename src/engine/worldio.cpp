@@ -731,61 +731,28 @@ VARF(IDF_PERSIST, mapshotsize, 2, 512, INT_MAX-1, mapshotsize -= mapshotsize%2);
 
 void save_mapshot(char *mname, bool forcesave = false, int backuprev = -1)
 {
-    int olddrawtex = drawtex;
-    drawtex = DRAWTEX_MAPSHOT;
-    progress(0, "Saving map preview image..");
+    vec worldpos = camera1->o;
+    float yaw = camera1->yaw, pitch = camera1->pitch, roll = 0.0f, mfov = curfov;
+    entities::mapshot(worldpos, yaw, pitch, mfov);
 
-    float oldaspect = aspect, oldfovy = fovy, oldfov = curfov;
-    int oldvieww = vieww, oldviewh = viewh, rsize = min(mapshotsize*2, vieww, viewh);
+    int oldmapvariant = mapvariant;
+    changemapvariant(MPV_DEFAULT);
 
-    physent *oldcamera = camera1;
-    static physent cmcamera;
-    cmcamera = *camera1;
-    cmcamera.reset();
-    cmcamera.type = ENT_CAMERA;
-    cmcamera.o = camera1->o;
-    cmcamera.yaw = camera1->yaw;
-    cmcamera.pitch = camera1->pitch;
-    cmcamera.roll = 0;
-    camera1 = &cmcamera;
-
-    entities::mapshot(camera1->o, camera1->yaw, camera1->pitch, curfov);
-
-    vieww = viewh = rsize;
-    aspect = 1;
-    fovy = 2*atan2(tan(curfov/2*RAD), aspect)/RAD;
-    setviewcell(camera1->o);
-
-    GLuint tex;
-    glGenTextures(1, &tex);
-    glPixelStorei(GL_PACK_ALIGNMENT, 1);
-    ImageData image(vieww, viewh, 3);
-    memset(image.data, 0, 3*vieww*viewh);
-    gl_drawview();
-    glReadPixels(0, 0, vieww, viewh, GL_RGB, GL_UNSIGNED_BYTE, image.data);
-
-    if(autosavebackups && !forcesave) backup(mname, ifmtexts[imageformat], backuprev >= 0 ? backuprev : hdr.revision, autosavebackups > 2, !(autosavebackups%2));
-    scaleimage(image, mapshotsize, mapshotsize);
-    saveimage(mname, image, imageformat, compresslevel, true);
-    glDeleteTextures(1, &tex);
-
-    const char *mapshotnames[3] = { "", "<blur:1>", "<blur:2>" };
-    loopi(3)
+    ViewSurface mapshot(worldpos, yaw, pitch, roll, mfov);
+    if(mapshot.render())
     {
-        defformatstring(texname, "%s%s", mapshotnames[i], mname);
-        reloadtexture(texname);
+        if(autosavebackups && !forcesave) backup(mname, ifmtexts[imageformat], backuprev >= 0 ? backuprev : hdr.revision, autosavebackups > 2, !(autosavebackups%2));
+        mapshot.save(mname, mapshotsize, mapshotsize);
+
+        const char *mapshotnames[3] = { "", "<blur:1>", "<blur:2>" };
+        loopi(3)
+        {
+            defformatstring(texname, "%s%s", mapshotnames[i], mname);
+            reloadtexture(texname);
+        }
     }
 
-    aspect = oldaspect;
-    fovy = oldfovy;
-    curfov = oldfov;
-    vieww = oldvieww;
-    viewh = oldviewh;
-
-    camera1 = oldcamera;
-    drawtex = olddrawtex;
-
-    progress(1, "Saved map preview image..");
+    changemapvariant(oldmapvariant);
 }
 ICOMMAND(0, savemapshot, "s", (char *mname), if(!(identflags&IDF_MAP)) save_mapshot(*mname ? mname : mapname));
 

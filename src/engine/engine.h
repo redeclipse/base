@@ -292,8 +292,8 @@ extern char *gfxvendor, *gfxrenderer, *gfxversion;
 extern int maxdrawbufs, maxdualdrawbufs;
 
 enum {
-    DRAWTEX_NONE = 0, DRAWTEX_ENVMAP, DRAWTEX_MAPSHOT, DRAWTEX_MINIMAP, DRAWTEX_MODELPREVIEW, DRAWTEX_HALO,
-    DRAWTEX_HAZE = (1<<DRAWTEX_NONE)|(1<<DRAWTEX_ENVMAP)|(1<<DRAWTEX_MAPSHOT),
+    DRAWTEX_NONE = 0, DRAWTEX_ENVMAP, DRAWTEX_VIEW, DRAWTEX_MINIMAP, DRAWTEX_MODELPREVIEW, DRAWTEX_HALO,
+    DRAWTEX_HAZE = (1<<DRAWTEX_NONE)|(1<<DRAWTEX_ENVMAP)|(1<<DRAWTEX_VIEW),
     DRAWTEX_DARK = (1<<DRAWTEX_NONE)|(1<<DRAWTEX_ENVMAP)
 };
 
@@ -363,6 +363,12 @@ namespace modelpreview
 struct timer;
 extern timer *begintimer(const char *name, bool gpu = true);
 extern void endtimer(timer *t);
+
+extern GLuint renderfbo;
+extern int fogoverlay;
+extern void getcamfogmat(int &fogmat, int &abovemat, float &fogbelow);
+extern void setfog(int fogmat, float below = 0, float blend = 1, int abovemat = MAT_AIR);
+extern void drawfogoverlay(int fogmat, float fogbelow, float fogblend, int abovemat);
 
 // octa
 extern cube *newcubes(uint face = F_EMPTY, int mat = MAT_AIR);
@@ -1092,8 +1098,9 @@ extern bvec halocolour;
 
 struct RenderSurface
 {
-    int tclamp, filter, width, height;
-    GLenum format, target;
+    int tclamp = 3, filter = 1, width = 0, height = 0;
+    GLenum format = GL_RGBA, target = GL_TEXTURE_RECTANGLE;
+    GLuint origfbo = 0;
     vector<GLuint> texs, fbos;
 
     RenderSurface() { reset(); }
@@ -1101,19 +1108,22 @@ struct RenderSurface
 
     void reset();
     bool cleanup();
-    int genbuffers(int wanttex = 1, int wantfbo = -1, GLuint origfbo = 0);
+    int genbuffers(int wanttex = 1, int wantfbo = -1);
 
     virtual void checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n, int &o);
-    virtual int setup(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1, GLuint origfbo = 0);
-    virtual int init(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1, GLuint origfbo = 0);
+    virtual int setup(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1);
+    virtual int init(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1);
     virtual bool bindtex(int wanttex = 0, int tmu = 0);
+    virtual bool savefbo(int wantfbo = 0);
     virtual bool bindfbo(int wantfbo = 0);
-    virtual int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1, GLuint origfbo = 0);
+    virtual int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1);
     virtual bool destroy();
-    virtual bool render(GLuint origfbo = 0);
+    virtual bool render();
     virtual bool swap(int wantfbo = 0);
     virtual bool draw(int x = 0, int y = 0, int w = 0, int h = 0);
     virtual void debug(int w, int h, int wanttex = 0, bool large = false);
+    virtual bool save(const char *name, int w, int h);
+    virtual void restorefbo();
 };
 
 struct HaloSurface : RenderSurface
@@ -1128,9 +1138,9 @@ struct HaloSurface : RenderSurface
     bool check(bool check, bool val);
 
     void checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n, int &o) override;
-    int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1, GLuint origfbo = 0) override;
+    int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1) override;
     bool destroy() override;
-    bool render(GLuint origfbo = 0) override;
+    bool render() override;
     bool swap(int wantfbo = 0) override;
     bool draw(int x = 0, int y = 0, int w = 0, int h = 0) override;
 };
@@ -1156,8 +1166,8 @@ struct HazeSurface : RenderSurface
     bool check();
 
     void checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n, int &o) override;
-    int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1, GLuint origfbo = 0) override;
-    bool render(GLuint origfbo = 0) override;
+    int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1) override;
+    bool render() override;
 };
 extern HazeSurface hazesurf;
 
@@ -1167,10 +1177,10 @@ extern float  visorscanlines;
 struct VisorSurface : RenderSurface
 {
     enum { BACKGROUND = 0, WORLD, VISOR, FOREGROUND, MAX };
-    float cursorx, cursory, offsetx, offsety;
-    bool enabled;
+    float cursorx = 0.5f, cursory = 0.5f, offsetx = 0.0f, offsety = 0.0f;
+    bool enabled = false;
 
-    VisorSurface() : cursorx(0.5f), cursory(0.5f), offsetx(0.f), offsety(0.f), enabled(false) { reset(); }
+    VisorSurface() { reset(); }
     ~VisorSurface() { destroy(); }
 
     float getcursorx(int type = 0);
@@ -1179,9 +1189,24 @@ struct VisorSurface : RenderSurface
     void coords(float cx, float cy, float &vx, float &vy, bool back = false);
 
     void checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n, int &o) override;
-    bool render(GLuint origfbo = 0) override;
+    bool render() override;
 };
 extern VisorSurface visorsurf;
+
+struct ViewSurface : RenderSurface
+{
+    vec worldpos = vec(0, 0, 0);
+    float yaw = 0.0f, pitch = 0.0f, roll = 0.0f, fov = 90.0f, ratio = 1.0f, nearpoint = 0.54f, farscale = 1.0f;
+
+    ViewSurface() { reset(); }
+    ViewSurface(const vec &o, float y = 0.0f, float p = 0.0f, float r = 0.0f, float f = 90.0f, float t = 1.0f, float n = 0.54f, float s = 1.0f) : worldpos(o), yaw(y), pitch(p), roll(r), fov(f), ratio(t), nearpoint(n), farscale(s) { reset(); }
+    ~ViewSurface() { destroy(); }
+
+    void checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n, int &o) override;
+    int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1) override;
+    bool destroy() override;
+    bool render() override;
+};
 
 #endif // STANDALONE
 #include "sound.h"

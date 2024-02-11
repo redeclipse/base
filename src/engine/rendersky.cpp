@@ -761,7 +761,11 @@ void drawenvlayer(Texture *tex, float height, const bvec &colour, float blend, f
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         matrix4 skymatrix = cammatrix, skyprojmatrix;
         if(skyplane) skymatrix.settranslation(0, 0, 0);
-        else skymatrix.translate(worldsize*0.5f, worldsize*0.5f, 0);
+        else
+        {
+            skymatrix.translate(worldsize*0.5f, worldsize*0.5f, 0);
+            if(renderfbo) blend *= 0.125f; // hack to prevent overbrightening in FBO mode
+        }
         skymatrix.rotate_around_z(zrot);
         skyprojmatrix.mul(projmatrix, skymatrix);
         LOCALPARAM(skymatrix, skyprojmatrix);
