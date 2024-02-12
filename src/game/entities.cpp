@@ -822,8 +822,8 @@ namespace entities
         if(!e.dynamic())
         {
             pos = e.o;
-            if(yaw) *yaw = 0;
-            if(pitch) *pitch = 0;
+            if(yaw) *yaw = enttype[e.type].yawattr >= 0 ? e.attrs[enttype[e.type].yawattr] : 0;
+            if(pitch) *pitch = enttype[e.type].pitchattr >= 0 ? e.attrs[enttype[e.type].pitchattr] : 0;
 
             return false;
         }
