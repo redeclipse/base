@@ -3696,7 +3696,15 @@ namespace UI
                 continue;
             }
 
-            if(vp->ready && totalmillis - vp->lastrender < max(vp->uprate, viewportuprate)) continue;
+            if(vp->ready)
+            {
+                if(!vp->uprate)
+                {   // zero uprate signals not to render more than once
+                    vp->lastrender = lastmillis;
+                    continue;
+                }
+                if(totalmillis - vp->lastrender < max(vp->uprate, viewportuprate)) continue;
+            }
 
             vp->ready = vp->surf.render(min(vp->width, viewportsize), min(vp->height, viewportsize));
             processed++;
@@ -3715,7 +3723,7 @@ namespace UI
     struct ViewPort : Target
     {
         char *refname = NULL;
-        int uprate = 500, width = 128, height = 128;
+        int uprate = 1000, width = 64, height = 64;
         vec worldpos = vec(0, 0, 0);
         float yaw = 0.0f, pitch = 0.0f, roll = 0.0f, fov = 90.0f, ratio = 1.0f, nearpoint = 0.54f, farscale = 1.0f;
         ViewPortEntry *vp = NULL;
