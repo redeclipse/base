@@ -34,7 +34,7 @@ namespace cdpi
 
 #ifdef HAS_STEAM
         int curoverlay = 0, curplayers = 0;
-        bool servconnected;
+        bool servconnected = false;
         ISteamUser *user = NULL;
         ISteamFriends *friends = NULL;
         ISteamUserStats *stats = NULL;
