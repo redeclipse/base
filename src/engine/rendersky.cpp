@@ -764,7 +764,7 @@ void drawenvlayer(Texture *tex, float height, const bvec &colour, float blend, f
         else
         {
             skymatrix.translate(worldsize*0.5f, worldsize*0.5f, 0);
-            if(renderfbo) blend *= 0.125f; // hack to prevent overbrightening in FBO mode
+            // if(renderfbo) blend *= 0.125f; // hack to prevent overbrightening in FBO mode
         }
         skymatrix.rotate_around_z(zrot);
         skyprojmatrix.mul(projmatrix, skymatrix);

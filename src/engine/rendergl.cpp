@@ -2396,13 +2396,14 @@ void gl_drawview()
     GLuint scalefbo = shouldscale();
     if(scalefbo) { vieww = gw; viewh = gh; }
 
+    xtravertsva = xtraverts = glde = gbatches = vtris = vverts = 0;
+    flipqueries();
+
     int fogmat, abovemat;
     float fogbelow;
     getcamfogmat(fogmat, abovemat, fogbelow);
     setfog(abovemat);
     //setfog(fogmat, fogbelow, 1, abovemat);
-
-    farplane = worldsize*farplanescale;
 
     projmatrix.perspective(fovy, aspect, nearplane, farplane);
     setcamprojmatrix();
@@ -2569,7 +2570,7 @@ void gl_setupframe(bool force)
 {
     hudw = renderw;
     hudh = renderh;
-    if(!force || drawtex == DRAWTEX_HALO) return;
+    if(!force) return;
     setuplights();
 }
 
@@ -2600,12 +2601,10 @@ void gl_drawframe()
     bool noview = hasnoview();
     synctimers();
 
-    xtravertsva = xtraverts = glde = gbatches = vtris = vverts = 0;
-    flipqueries();
-
     gl_setupframe(!noview);
     hud::update(hudw, hudh);
 
+    farplane = worldsize*farplanescale;
     if(!noview) gl_drawview();
     gl_drawhud(noview);
 

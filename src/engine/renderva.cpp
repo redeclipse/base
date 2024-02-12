@@ -1933,7 +1933,7 @@ VAR(0, oqgeom, 0, 1, 1);
 
 void rendergeom()
 {
-    bool doOQ = oqfrags && oqgeom && !drawtex, multipassing = false;
+    bool doOQ = oqfrags && oqgeom && DRAWTEX_GAME&(1<<drawtex), multipassing = false;
     renderstate cur;
 
     int blends = 0;

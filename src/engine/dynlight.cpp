@@ -132,7 +132,7 @@ bool getdynlight(int n, vec &o, float &radius, vec &color, vec &dir, int &spot, 
 {
     if(!closedynlights.inrange(n)) return false;
     dynlight &d = *closedynlights[n];
-    if(drawtex) return false;
+    if(!(DRAWTEX_GAME&(1<<drawtex))) return false;
     o = d.o;
     radius = d.curradius;
     color = d.curcolor;

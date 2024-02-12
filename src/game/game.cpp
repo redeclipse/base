@@ -1156,7 +1156,7 @@ namespace game
             case 2: // weapons
             {
                 int weap = index%W_MAX;
-                if(drawtex && drawtex != DRAWTEX_MAP && !m_edit(gamemode) && index < W_MAX)
+                if(drawtex != DRAWTEX_MAP && !m_edit(gamemode) && index < W_MAX)
                 {
                     weap = m_attr(WEAPON, weap);
                     if(!isweap(weap) || W(weap, disabled) || (m_rotweaps(gamemode, mutators) && weap < W_ITEM) || !m_check(W(weap, modes), W(weap, muts), gamemode, mutators))
@@ -1256,7 +1256,7 @@ namespace game
 
     void adddynlights()
     {
-        if(!dynlighteffects || drawtex) return;
+        if(!dynlighteffects || !(DRAWTEX_GAME&(1<<drawtex))) return;
 
         if(dynlighteffects >= 2)
         {
@@ -4522,11 +4522,11 @@ namespace game
         getplayermaterials(d, mdl);
         if(drawtex != DRAWTEX_HALO) getplayereffects(d, mdl);
 
-        if(!drawtex)
+        if(DRAWTEX_GAME&(1<<drawtex))
         {
             if(d != focus && !d->ai)
             {
-                if(!(mdl.anim&ANIM_RAGDOLL)) mdl.flags |= MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY;
+                if(!(mdl.anim&ANIM_RAGDOLL)) mdl.flags |= MDL_CULL_VFC | MDL_CULL_OCCLUDED | (drawtex ? 0 : MDL_CULL_QUERY);
                 if(d->actortype >= A_ENEMY) mdl.flags |= MDL_CULL_DIST;
             }
             if(d != focus || (d != player1 ? fullbrightfocus&1 : fullbrightfocus&2)) mdl.flags |= MDL_FULLBRIGHT;
@@ -4626,22 +4626,20 @@ namespace game
 
     void render(int n)
     {
-        if(!n && drawtex) return;
-
-        if(n == 0 || n == 1)
+        if(n != 2)
         {
             gameent *d;
             int numdyns = numdynents();
             bool third = thirdpersonview();
             loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL)
             {
-                if(drawtex == DRAWTEX_HALO && (d != focus || third)) d->cleartags();
+                if(!n && drawtex == DRAWTEX_HALO) d->cleartags();
                 if(d->actortype == A_HAZARD) continue;
                 renderplayer(d, 1, d->curscale, d == focus ? (third ? MDL_FORCESHADOW : MDL_ONLYSHADOW) : 0, vec4(1, 1, 1, opacity(d, true)));
             }
         }
 
-        if(n == 0 || n == 2)
+        if(n != 1)
         {
             ai::render();
             entities::render();
@@ -4679,8 +4677,6 @@ namespace game
         if(thirdpersonview() || focus->obliterated) return;
 
         vec4 color = vec4(1, 1, 1, opacity(focus, false));
-        if(drawtex == DRAWTEX_HALO) focus->cleartags();
-
         if(firstpersoncamera) renderplayer(focus, 2, focus->curscale, MDL_NOBATCH, color);
         else if(firstpersonmodel)
         {

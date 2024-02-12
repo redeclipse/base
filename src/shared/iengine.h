@@ -572,7 +572,7 @@ namespace UI
     extern int savemap(stream *h);
     extern void resetmap();
 
-    extern void processviewports();
+    extern int processviewports();
     extern void updatetextures();
 
     extern void setup();

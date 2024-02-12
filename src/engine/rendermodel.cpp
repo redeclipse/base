@@ -999,7 +999,7 @@ FVAR(IDF_PERSIST, lodmodelfovscale, 0, 1, 1000);
 
 model *loadbestlod(model *m, const vec &center, float radius, float offset, bool lodvis)
 {
-    if(!lodmodels || (drawtex && drawtex != DRAWTEX_HALO) || !m || !m->haslod()) return m;
+    if(!lodmodels || !m || !m->haslod()) return m;
     const char *mdl = NULL;
 
     if(cullmodel(m, center, radius, MDL_CULL_DIST|(lodvis ? MDL_CULL_VFC|MDL_CULL_OCCLUDED : 0)))

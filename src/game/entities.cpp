@@ -927,6 +927,12 @@ namespace entities
     }
     ICOMMAND(0, entitytriggertime, "bi", (int *n, int *d), intret(triggertime(*n, *d!=0)));
 
+    FVAR(IDF_PERSIST, entityviewspin, FVAR_MIN, -10.0f, FVAR_MAX);
+    FVAR(IDF_PERSIST, entityviewpitch, -89.9f, -45.0f, 89.9f);
+    FVAR(IDF_PERSIST, entityviewzdist, 0, 4.0f, FVAR_MAX);
+    FVAR(IDF_PERSIST, entityviewmindist, 0, 8.0f, FVAR_MAX);
+    FVAR(IDF_PERSIST, entityviewpulldist, 0, 16.0f, FVAR_MAX);
+
     void getentity(int id, int val, int ex, bool mod)
     {
         if(id < 0) intret(ents.length());
@@ -998,17 +1004,17 @@ namespace entities
                     if(ex < 0) intret(6);
                     else
                     {
-                        float yaw = -lastmillis / 50.f, pitch = -45.0f;
+                        float yaw = entityviewspin * lastmillis / 1000.0f, pitch = entityviewpitch;
                         gameentity &e = *(gameentity *)ents[id];
 
                         if(!e.lastthirdpos || e.lastthirdpos != totalmillis)
                         {
-                            vec pos = e.o;
-                            e.thirdpos = game::thirdpos(pos, yaw, pitch, 16);
+                            vec pos = vec(e.o).addz(max(float(enttype[e.type].radius), entityviewzdist));
+                            e.thirdpos = game::thirdpos(pos, yaw, pitch, entityviewpulldist);
 
-                            if(e.thirdpos == pos)
+                            if(e.thirdpos.squaredist(pos) <= entityviewmindist*entityviewmindist)
                             {
-                                float rad = 2;
+                                float rad = entityviewmindist;
                                 if(e.type == MAPMODEL)
                                 {
                                     mapmodelinfo *mmi = getmminfo(e.attrs[0]);
@@ -1027,7 +1033,7 @@ namespace entities
                                     }
                                 }
                                 loopj(16) if(game::camcheck(pos, rad + j)) break;
-                                e.thirdpos = game::thirdpos(pos, yaw, pitch, 16);
+                                e.thirdpos = game::thirdpos(pos, yaw, pitch, entityviewpulldist);
 
                             }
                             e.lastthirdpos = totalmillis;
@@ -3396,10 +3402,10 @@ namespace entities
             }
         }
 
-        if(drawtex && drawtex != DRAWTEX_HALO) return;
+        if(!(DRAWTEX_GAMEHALO&(1<<drawtex))) return;
 
-        bool cansee = game::player1->isediting() && !editinhibit,
-             shouldshow = drawtex != DRAWTEX_HALO && shouldshowents(cansee ? 1 : (!entgroup.empty() || !enthover.empty() ? 2 : 3));
+        bool cansee = DRAWTEX_GAMEHALO&(1<<drawtex) && game::player1->isediting() && !editinhibit,
+             shouldshow = !drawtex && shouldshowents(cansee ? 1 : (!entgroup.empty() || !enthover.empty() ? 2 : 3));
 
         int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators),
             fstent = cansee ? 0 : firstuse(EU_ITEM),
@@ -3598,7 +3604,6 @@ namespace entities
                 break;
             case ROUTE:
             {
-                if(drawtex) break;
                 if(e.attrs[0] != routeid || (!m_edit(game::gamemode) && !m_race(game::gamemode)) || (game::player1->isediting() && editinhibit)) break;
                 loopv(e.links) if(ents.inrange(e.links[i]) && ents[e.links[i]]->type == ROUTE)
                 {
@@ -3691,7 +3696,7 @@ namespace entities
         }
 
         bool hasroute = (m_edit(game::gamemode) || m_race(game::gamemode)) && routeid >= 0,
-             editcheck = entityicons && !drawtex && game::player1->isediting() && !editinhibit;
+             editcheck = entityicons && game::player1->isediting() && !editinhibit;
         int fstent = m_edit(game::gamemode) ? 0 : min(firstuse(EU_ITEM), firstent(hasroute ? ROUTE : TELEPORT)),
             lstent = m_edit(game::gamemode) ? ents.length() : max(lastuse(EU_ITEM), lastent(hasroute ? ROUTE : TELEPORT));
 
@@ -3725,8 +3730,6 @@ namespace entities
 
             drawparticle(e, pos, i);
         }
-
-        if(drawtex) return;
 
         loopv(projs::typeprojs[PROJ_ENTITY])
         {

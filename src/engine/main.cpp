@@ -1303,16 +1303,13 @@ int main(int argc, char **argv)
 
             if(frameloops)
             {
-                halosurf.render();
+                bool dorender = !minimized || renderunfocused;
 
                 RUNMAP("on_update");
                 game::updateworld();
 
-                UI::processviewports();
-
                 game::recomputecamera();
                 setviewcell(camera1->o);
-
                 cleardynlights();
 
                 fx::update();
@@ -1322,9 +1319,18 @@ int main(int argc, char **argv)
                 updateparticles();
                 updatesounds();
 
-                if(!minimized || renderunfocused)
+                if(dorender)
                 {
                     inbetweenframes = renderedframe = false;
+
+                    halosurf.render(); // need halos to be first in pipline..
+                    if(UI::processviewports())
+                    {   // .. and the camera needs to be restored for the rest of the rendering
+                        game::recomputecamera();
+                        setviewcell(camera1->o);
+                        cleardynlights();
+                    }
+
                     gl_drawframe();
                     renderedframe = true;
                     swapbuffers();

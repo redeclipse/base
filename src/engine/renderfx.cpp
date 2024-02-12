@@ -363,6 +363,7 @@ bool HaloSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int want
     vieww = width;
     viewh = height;
 
+    int olddrawtex = drawtex;
     drawtex = DRAWTEX_HALO;
 
     projmatrix.perspective(fovy, aspect, nearplane, farplane);
@@ -403,7 +404,7 @@ bool HaloSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int want
 
     glDisable(GL_CULL_FACE);
 
-    drawtex = 0;
+    drawtex = olddrawtex;
     restorefbo();
 
     return true;
@@ -943,83 +944,18 @@ bool ViewSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int want
     fovy = 2*atan2(tan(curfov/2*RAD), aspect)/RAD;
     setviewcell(camera1->o);
 
-    int fogmat, abovemat;
-    float fogbelow;
-    getcamfogmat(fogmat, abovemat, fogbelow);
-    setfog(abovemat);
-
     nearplane = nearpoint;
     farplane = worldsize * farscale;
-
-    projmatrix.perspective(fovy, aspect, nearplane, farplane);
-    setcamprojmatrix();
-
-    glEnable(GL_CULL_FACE);
-    glEnable(GL_DEPTH_TEST);
-
-    xtravertsva = xtraverts = glde = gbatches = vtris = vverts = 0;
-    flipqueries();
 
     gl_setupframe(true);
 
     vieww = width;
     viewh = height;
 
-    glClearColor(0, 0, 0, 0);
+    glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    ldrscale = 0.5f;
-    ldrscaleb = ldrscale/255;
-
-    visiblecubes();
-    rendergbuffer();
-
-    renderao();
-    GLERROR;
-
-    // render grass after AO to avoid disturbing shimmering patterns
-    generategrass();
-    rendergrass();
-    GLERROR;
-
-    glFlush();
-
-    renderradiancehints();
-    GLERROR;
-
-    rendershadowatlas();
-    GLERROR;
-
-    shadegbuffer();
-    GLERROR;
-
-    if(fogmat)
-    {
-        setfog(fogmat, fogbelow, 1, abovemat);
-        renderdepthfog(fogmat, fogbelow);
-        setfog(fogmat, fogbelow, clamp(fogbelow, 0.0f, 1.0f), abovemat);
-    }
-
-    rendertransparent();
-    GLERROR;
-    if(fogmat) setfog(fogmat, fogbelow, 1, abovemat);
-
-    rendervolumetric();
-    GLERROR;
-
-    drawenvlayers(false);
-    GLERROR;
-
-    if(DRAWTEX_HAZE&(1<<drawtex))
-    {
-        hazesurf.render();
-        GLERROR;
-    }
-
-    glDisable(GL_CULL_FACE);
-    glDisable(GL_DEPTH_TEST);
-
-    if(fogoverlay && fogmat != MAT_AIR && (fogoverlay == 2 || (fogmat&MATF_VOLUME) != MAT_VOLFOG)) drawfogoverlay(fogmat, fogbelow, clamp(fogbelow, 0.0f, 1.0f), abovemat);
+    gl_drawview();
 
     processhdr(fbos[0], AA_UNUSED);
 

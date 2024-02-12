@@ -1133,7 +1133,7 @@ void processhdr(GLuint outfbo, int aa)
         swap(b0h, b1h);
     }
 
-    if(!lasthdraccum || lastmillis - lasthdraccum >= hdraccummillis)
+    if(!drawtex && (!lasthdraccum || lastmillis - lasthdraccum >= hdraccummillis))
     {
         GLuint ltex = ptex;
         int lw = pw, lh = ph;
@@ -3723,7 +3723,7 @@ void collectlights()
         if(l.validscissor()) lightorder.add(lights.length()-1);
     }
 
-    if(!drawtex)
+    if(DRAWTEX_GAME&(1<<drawtex))
     {
         updatedynlights();
         int numdynlights = finddynlights();
@@ -4979,10 +4979,10 @@ void workinoq()
 {
     collectlights();
 
-    if(drawtex) return;
+    if(!(DRAWTEX_GAME&(1<<drawtex))) return;
 
     rendertransparentmapmodels();
-    if(!drawtex) game::render();
+    game::render();
 
     if(shouldworkinoq())
     {

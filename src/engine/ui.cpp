@@ -1242,7 +1242,6 @@ namespace UI
         void draw(float sx, float sy)
         {
             if(!visible || state&STATE_HIDDEN) return;
-            if(drawtex && surfacetype == SURFACE_WORLD && strncmp(name, "entity_", 7)) return;
 
             Window *oldwindow = window;
             window = this;
@@ -3640,8 +3639,7 @@ namespace UI
         o->texs.add(textureload(name, *tclamp >= 0 ? *tclamp : 3, *mipit != 0, false, *tgc >= 0 ? *tgc != 0 : texgc));
     });
 
-    VAR(IDF_PERSIST, viewportkeeptime, 0, 500, VAR_MAX); // keep this long
-    VAR(IDF_PERSIST, viewportuprate, 0, 100, VAR_MAX); // limit updates to this ms
+    VAR(IDF_PERSIST, viewportuprate, 0, 50, VAR_MAX); // limit updates to this ms
     VAR(IDF_PERSIST, viewportlimit, 0, 1, VAR_MAX); // limit updates to this count per cycle
     VAR(IDF_PERSIST, viewportmaxsize, 0, 256, VAR_MAX); // limit size to this much
 
@@ -3649,10 +3647,10 @@ namespace UI
     {
         char *refname = NULL;
         ViewSurface surf = ViewSurface(DRAWTEX_SCENE);
-        int lastupdate = 0, lastrender = 0, width = 0, height = 0;
+        int lastupdate = 0, lastrender = 0, width = 0, height = 0, uprate = 0;
         bool ready = false;
 
-        ViewPortEntry(const char *n, int w, int h) : refname(newstring(n)), width(w), height(h) {}
+        ViewPortEntry(const char *n) : refname(newstring(n)) {}
         ~ViewPortEntry() { surf.destroy(); DELETEA(refname); }
     };
 
@@ -3664,11 +3662,11 @@ namespace UI
         return NULL;
     }
 
-    ViewPortEntry *getviewport(const char *refname, int w, int h)
+    ViewPortEntry *getviewport(const char *refname)
     {
         ViewPortEntry *vp = findviewport(refname);
         if(vp) return vp;
-        vp = new ViewPortEntry(refname, w, h);
+        vp = new ViewPortEntry(refname);
         viewports.add(vp);
         return vp;
     }
@@ -3680,25 +3678,28 @@ namespace UI
         return false;
     }
 
-    void processviewports()
+    int processviewports()
     {
-        int keeptime = max(viewportuprate + 1, viewportkeeptime) + curtime; // account for long progress delays
-        loopvrev(viewports)
-        {
-            ViewPortEntry *vp = viewports[i];
-            if(totalmillis - vp->lastupdate < keeptime) continue;
-            viewports.removeobj(vp);
-            delete vp;
-        }
+        static int lastframe = 0;
 
-        int rendered = 0;
+        int rendered = 0, processed = 0;
         if(viewportlimit) viewports.sort(vpsort);
         loopv(viewports)
         {
             ViewPortEntry *vp = viewports[i];
-            if(vp->ready && totalmillis - vp->lastrender < viewportuprate) continue;
+
+            if(lastframe && vp->lastupdate < lastframe)
+            {
+                viewports.removeobj(vp);
+                delete vp;
+                i--;
+                continue;
+            }
+
+            if(vp->ready && totalmillis - vp->lastrender < max(vp->uprate, viewportuprate)) continue;
 
             vp->ready = vp->surf.render(min(vp->width, viewportmaxsize), min(vp->height, viewportmaxsize));
+            processed++;
 
             if(vp->ready)
             {
@@ -3706,12 +3707,15 @@ namespace UI
                 if(++rendered >= viewportlimit) break;
             }
         }
+        lastframe = totalmillis;
+
+        return processed;
     }
 
     struct ViewPort : Target
     {
         char *refname = NULL;
-        int refwidth = 128, refheight = 128;
+        int uprate = 1000, width = 128, height = 128;
         vec worldpos = vec(0, 0, 0);
         float yaw = 0.0f, pitch = 0.0f, roll = 0.0f, fov = 90.0f, ratio = 1.0f, nearpoint = 0.54f, farscale = 1.0f;
         ViewPortEntry *vp = NULL;
@@ -3719,15 +3723,13 @@ namespace UI
         ViewPort() : refname(NULL) {}
         ~ViewPort() { DELETEA(refname); }
 
-        void setup(const char *_refname, float _x, float _y, float _z, float _yaw, float _pitch, int _refwidth, int _refheight, float minw_ = 0, float minh_ = 0, const Color &color_ = Color(colourwhite))
+        void setup(const char *_refname, float _x, float _y, float _z, float _yaw, float _pitch, float minw_ = 0, float minh_ = 0, const Color &color_ = Color(colourwhite))
         {
             Target::setup(minw_, minh_, color_);
             SETSTR(refname, _refname);
             worldpos = vec(_x, _y, _z);
             yaw = _yaw;
             pitch = _pitch;
-            refwidth = clamp(_refwidth, 2, 1024);
-            refheight = clamp(_refheight, 2, 1024);
             vp = NULL;
         }
 
@@ -3743,9 +3745,12 @@ namespace UI
                 return;
             }
 
-            vp = getviewport(refname, refwidth, refheight);
+            vp = getviewport(refname);
             if(!vp) return;
 
+            vp->uprate = uprate;
+            vp->width = width;
+            vp->height = height;
             vp->lastupdate = totalmillis;
             vp->surf.worldpos = worldpos;
             vp->surf.yaw = yaw;
@@ -3796,8 +3801,8 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uiviewport, "sfffffiiffe", (char *s, float *x, float *y, float *z, float *yaw, float *pitch, int *refwidth, int *refheight, float *minw, float *minh, uint *children), \
-        BUILD(ViewPort, o, o->setup(s, *x, *y, *z, *yaw, *pitch, *refwidth, *refheight, *minw*uiscale, *minh*uiscale), children));
+    ICOMMAND(0, uiviewport, "sfffffffe", (char *s, float *x, float *y, float *z, float *yaw, float *pitch, float *minw, float *minh, uint *children), \
+        BUILD(ViewPort, o, o->setup(s, *x, *y, *z, *yaw, *pitch, *minw*uiscale, *minh*uiscale), children));
 
     UICMD(ViewPort, viewport, pos, "fff", (float *x, float *y, float *z), o->worldpos = vec(*x, *y, *z));
     UIARGT(ViewPort, viewport, yaw, "f", float, 0.0f, 360.0f);
@@ -3807,8 +3812,9 @@ namespace UI
     UIARGT(ViewPort, viewport, ratio, "f", float, FVAR_NONZERO, FVAR_MAX);
     UIARGT(ViewPort, viewport, nearpoint, "f", float, 0.0f, 1.0f);
     UIARGT(ViewPort, viewport, farscale, "f", float, FVAR_NONZERO, FVAR_MAX);
-    UIARGT(ViewPort, viewport, refwidth, "i", int, 2, 1024);
-    UIARGT(ViewPort, viewport, refheight, "i", int, 2, 1024);
+    UIARGT(ViewPort, viewport, uprate, "i", int, 0, VAR_MAX);
+    UIARGT(ViewPort, viewport, width, "i", int, 2, 1024);
+    UIARGT(ViewPort, viewport, height, "i", int, 2, 1024);
 
     struct Image : Target
     {
