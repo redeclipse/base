@@ -309,7 +309,7 @@ VAR(IDF_PERSIST|IDF_HEX, haloscanlinemixcolour, 0, 0xFFFFFF, 0xFFFFFF);
 FVAR(IDF_PERSIST, haloscanlinemixblend, 0.0f, 0.5f, 1.0f);
 FVAR(IDF_PERSIST, haloscanlineblend, 0.0f, 0.75f, 16.0f);
 FVAR(IDF_PERSIST, halonoiseblend, 0.0f, 0.15f, 16.0f);
-FVAR(IDF_PERSIST, haloflickerblend, 0.0f, 0.1f, 16.0f);
+FVAR(IDF_PERSIST, haloflickerblend, 0.0f, 0.075f, 16.0f);
 
 HaloSurface halosurf;
 
