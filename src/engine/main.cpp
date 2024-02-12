@@ -1310,6 +1310,8 @@ int main(int argc, char **argv)
 
                 game::recomputecamera();
                 setviewcell(camera1->o);
+                if(dorender) halosurf.render(); // need halos to be first in pipline..
+
                 cleardynlights();
 
                 fx::update();
@@ -1323,7 +1325,6 @@ int main(int argc, char **argv)
                 {
                     inbetweenframes = renderedframe = false;
 
-                    halosurf.render(); // need halos to be first in pipline..
                     if(UI::processviewports())
                     {   // .. and the camera needs to be restored for the rest of the rendering
                         game::recomputecamera();
