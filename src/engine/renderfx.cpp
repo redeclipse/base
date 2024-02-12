@@ -923,7 +923,7 @@ bool ViewSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int want
     if(!bindfbo()) return false;
 
     savevfcP();
-    float oldaspect = aspect, oldfovy = fovy, oldfov = curfov, oldnear = nearplane, oldfar = farplane;
+    float oldaspect = aspect, oldfovy = fovy, oldfov = curfov, oldnear = nearplane, oldfar = farplane, oldldrscale = ldrscale, oldldrscaleb = ldrscaleb;
     int olddrawtex = drawtex;
     drawtex = texmode;
 
@@ -956,10 +956,11 @@ bool ViewSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int want
     glClear(GL_COLOR_BUFFER_BIT);
 
     gl_drawview();
-
-    processhdr(fbos[0], AA_UNUSED);
+    copyhdr(width, height, fbos[0]);
 
     drawtex = olddrawtex;
+    ldrscale = oldldrscale;
+    ldrscaleb = oldldrscaleb;
     farplane = oldfar;
     nearplane = oldnear;
     aspect = oldaspect;

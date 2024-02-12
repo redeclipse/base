@@ -2144,7 +2144,7 @@ void drawminimap()
     flipqueries();
 
     ldrscale = 1;
-    ldrscaleb = ldrscale/255;
+    ldrscaleb = ldrscale / 255;
 
     visiblecubes(false);
 
@@ -2231,7 +2231,7 @@ void drawcubemap(int size, const vec &o, float yaw, float pitch, bool onlysky)
     flipqueries();
 
     ldrscale = 1;
-    ldrscaleb = ldrscale/255;
+    ldrscaleb = ldrscale / 255;
 
     visiblecubes();
 
@@ -2344,7 +2344,7 @@ namespace modelpreview
         vieww = min(gw, w);
         viewh = min(gh, h);
         ldrscale = 1;
-        ldrscaleb = ldrscale/255;
+        ldrscaleb = ldrscale / 255;
 
         projmatrix.perspective(fovy, aspect, nearplane, farplane);
         setcamprojmatrix();
@@ -2415,8 +2415,8 @@ void gl_drawview()
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
 
-    ldrscale = 0.5f;
-    ldrscaleb = ldrscale/255;
+    ldrscale = drawtex ? 1.0f : 0.5f;
+    ldrscaleb = ldrscale / 255;
 
     visiblecubes();
 

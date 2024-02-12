@@ -989,7 +989,7 @@ VARF(IDF_PERSIST, gscalecubic, 0, 0, 1, cleanupgbuffer());
 VARF(IDF_PERSIST, gscalenearest, -1, -1, 1, cleanupgbuffer());
 FVARF(IDF_PERSIST, gscalecubicsoft, 0, 0, 1, initwarning("scaling setup", INIT_LOAD, CHANGE_SHADERS));
 
-float ldrscale = 1.0f, ldrscaleb = 1.0f/255;
+float ldrscale = 1.0f, ldrscaleb = 1.0f / 255;
 
 void copyhdr(int sw, int sh, GLuint fbo, int dw, int dh, bool flipx, bool flipy, bool swapxy)
 {
@@ -1133,7 +1133,7 @@ void processhdr(GLuint outfbo, int aa)
         swap(b0h, b1h);
     }
 
-    if(!drawtex && (!lasthdraccum || lastmillis - lasthdraccum >= hdraccummillis))
+    if(!lasthdraccum || lastmillis - lasthdraccum >= hdraccummillis)
     {
         GLuint ltex = ptex;
         int lw = pw, lh = ph;
