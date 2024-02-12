@@ -1202,7 +1202,7 @@ extern VisorSurface visorsurf;
 struct ViewSurface : RenderSurface
 {
     vec worldpos = vec(0, 0, 0);
-    float yaw = 0.0f, pitch = 0.0f, roll = 0.0f, fov = 90.0f, ratio = 1.0f, nearpoint = 0.54f, farscale = 1.0f;
+    float yaw = 0.0f, pitch = 0.0f, roll = 0.0f, fov = 90.0f, ratio = 0.0f, nearpoint = 0.54f, farscale = 1.0f;
     int texmode = DRAWTEX_SCENE;
 
     ViewSurface() { reset(); }

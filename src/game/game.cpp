@@ -3401,9 +3401,9 @@ namespace game
 
         static const float sphereyawchecks[8] = { 0, 45, 90, 135, 180, 225, 270, 315 },
                            spherepitchchecks[9] = { 0.0f, 22.5f, -22.5f, 45.0f, -45.0f, 67.5f, -67.5f, 89.9f, -89.9f };
-        loopi(10) loopj(9) loopk(8)
+        loopk(8) loopi(csize) loopj(9)
         {
-            c.o = vec(pos).add(vec(sphereyawchecks[k] * RAD, spherepitchchecks[j] * RAD).mul((i + 1) * csize));
+            c.o = vec(pos).add(vec(sphereyawchecks[k] * RAD, spherepitchchecks[j] * RAD).mul(i + 1));
             if(!collide(&c, vec(0, 0, 0), 0, false) && !collideinside)
             {
                 pos = c.o;

@@ -928,10 +928,9 @@ namespace entities
     ICOMMAND(0, entitytriggertime, "bi", (int *n, int *d), intret(triggertime(*n, *d!=0)));
 
     FVAR(IDF_PERSIST, entityviewspin, FVAR_MIN, -10.0f, FVAR_MAX);
-    FVAR(IDF_PERSIST, entityviewpitch, -89.9f, -45.0f, 89.9f);
-    FVAR(IDF_PERSIST, entityviewzdist, 0, 4.0f, FVAR_MAX);
-    FVAR(IDF_PERSIST, entityviewmindist, 0, 8.0f, FVAR_MAX);
-    FVAR(IDF_PERSIST, entityviewpulldist, 0, 16.0f, FVAR_MAX);
+    FVAR(IDF_PERSIST, entityviewpitch, -89.9f, -22.5f, 89.9f);
+    FVAR(IDF_PERSIST, entityviewzdist, 0, 2.0f, FVAR_MAX);
+    FVAR(IDF_PERSIST, entityviewpulldist, 0, 8.0f, FVAR_MAX);
 
     void getentity(int id, int val, int ex, bool mod)
     {
@@ -1006,40 +1005,39 @@ namespace entities
                     {
                         float yaw = entityviewspin * lastmillis / 1000.0f, pitch = entityviewpitch;
                         gameentity &e = *(gameentity *)ents[id];
+                        vec origpos = vec(e.o).addz(entityviewzdist);
 
                         if(!e.lastthirdpos || e.lastthirdpos != totalmillis)
                         {
-                            vec pos = vec(e.o).addz(max(float(enttype[e.type].radius), entityviewzdist));
-                            e.thirdpos = game::thirdpos(pos, yaw, pitch, entityviewpulldist);
+                            float pulldist = max(float(enttype[e.type].radius), entityviewpulldist);
+                            vec pos = origpos;
 
-                            if(e.thirdpos.squaredist(pos) <= entityviewmindist*entityviewmindist)
+                            if(e.type == MAPMODEL)
                             {
-                                float rad = entityviewmindist;
-                                if(e.type == MAPMODEL)
+                                mapmodelinfo *mmi = getmminfo(e.attrs[0]);
+                                if(mmi && mmi->m)
                                 {
-                                    mapmodelinfo *mmi = getmminfo(e.attrs[0]);
-                                    if(mmi && mmi->m)
+                                    vec center, radius;
+                                    mmi->m->collisionbox(center, radius);
+                                    if(e.attrs[5])
                                     {
-                                        vec center, radius;
-                                        mmi->m->collisionbox(center, radius);
-                                        if(e.attrs[5])
-                                        {
-                                            float scale = e.attrs[5]/100.f;
-                                            center.mul(scale);
-                                            radius.mul(scale);
-                                        }
-                                        rotatebb(center, radius, int(e.attrs[1]), int(e.attrs[2]), int(e.attrs[3]));
-                                        rad += max(radius.x + fabs(center.x), radius.y + fabs(center.y));
+                                        float scale = e.attrs[5]/100.f;
+                                        center.mul(scale);
+                                        radius.mul(scale);
                                     }
+                                    rotatebb(center, radius, int(e.attrs[1]), int(e.attrs[2]), int(e.attrs[3]));
+                                    radius.add(center.abs());
+                                    pos.sub(vec(yaw * RAD, 0.0f).mul(max(radius.x, radius.y)));
+                                    pos.z += radius.z;
                                 }
-                                loopj(16) if(game::camcheck(pos, rad + j)) break;
-                                e.thirdpos = game::thirdpos(pos, yaw, pitch, entityviewpulldist);
-
                             }
+
+                            e.thirdpos = game::thirdpos(pos, yaw, pitch, pulldist);
+                            if(e.thirdpos == pos && game::camcheck(pos, int(pulldist)))
+                                e.thirdpos = game::thirdpos(pos, yaw, pitch, pulldist);
+
                             e.lastthirdpos = totalmillis;
                         }
-
-                        vectoyawpitch(vec(e.o).sub(e.thirdpos).normalize(), yaw, pitch);
 
                         switch(ex)
                         {
@@ -1047,8 +1045,8 @@ namespace entities
                             case 1: floatret(e.thirdpos.x); break;
                             case 2: floatret(e.thirdpos.y); break;
                             case 3: floatret(e.thirdpos.z); break;
-                            case 4: floatret(yaw); break;
-                            case 5: floatret(pitch); break;
+                            case 4: vectoyawpitch(vec(origpos).sub(e.thirdpos).normalize(), yaw, pitch); floatret(yaw); break;
+                            case 5: vectoyawpitch(vec(origpos).sub(e.thirdpos).normalize(), yaw, pitch); floatret(pitch); break;
                             default: break;
                         }
                     }

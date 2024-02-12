@@ -3639,8 +3639,8 @@ namespace UI
         o->texs.add(textureload(name, *tclamp >= 0 ? *tclamp : 3, *mipit != 0, false, *tgc >= 0 ? *tgc != 0 : texgc));
     });
 
-    VAR(IDF_PERSIST, viewportsize, 0, 128, VAR_MAX); // limit size to this much
-    VAR(IDF_PERSIST, viewportuprate, 0, 100, VAR_MAX); // limit updates to this ms
+    VAR(IDF_PERSIST, viewportsize, 0, 256, VAR_MAX); // limit size to this much
+    VAR(IDF_PERSIST, viewportuprate, 0, 50, VAR_MAX); // limit updates to this ms
     VAR(IDF_PERSIST, viewportlimit, 0, 1, VAR_MAX); // limit updates to this count per cycle
 
     struct ViewPortEntry
@@ -3723,9 +3723,9 @@ namespace UI
     struct ViewPort : Target
     {
         char *refname = NULL;
-        int uprate = 1000, width = 64, height = 64;
+        int uprate = 0, width = 0, height = 0;
         vec worldpos = vec(0, 0, 0);
-        float yaw = 0.0f, pitch = 0.0f, roll = 0.0f, fov = 90.0f, ratio = 1.0f, nearpoint = 0.54f, farscale = 1.0f;
+        float yaw = 0.0f, pitch = 0.0f, roll = 0.0f, fov = 90.0f, ratio = 0.0f, nearpoint = 0.54f, farscale = 1.0f;
         ViewPortEntry *vp = NULL;
 
         ViewPort() : refname(NULL) {}
@@ -3757,8 +3757,8 @@ namespace UI
             if(!vp) return;
 
             vp->uprate = uprate;
-            vp->width = width;
-            vp->height = height;
+            vp->width = width > 0 ? width : viewportsize;
+            vp->height = height > 0 ? height : viewportsize;
             vp->lastupdate = totalmillis;
             vp->surf.worldpos = worldpos;
             vp->surf.yaw = yaw;
@@ -3821,8 +3821,8 @@ namespace UI
     UIARGT(ViewPort, viewport, nearpoint, "f", float, 0.0f, 1.0f);
     UIARGT(ViewPort, viewport, farscale, "f", float, FVAR_NONZERO, FVAR_MAX);
     UIARGT(ViewPort, viewport, uprate, "i", int, 0, VAR_MAX);
-    UIARGT(ViewPort, viewport, width, "i", int, 2, 1024);
-    UIARGT(ViewPort, viewport, height, "i", int, 2, 1024);
+    UIARGT(ViewPort, viewport, width, "i", int, 2, VAR_MAX);
+    UIARGT(ViewPort, viewport, height, "i", int, 2, VAR_MAX);
 
     struct Image : Target
     {

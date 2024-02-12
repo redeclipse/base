@@ -939,7 +939,7 @@ bool ViewSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int want
     camera1 = &cmcamera;
     fixfullrange(camera1->yaw, camera1->pitch, camera1->roll);
 
-    aspect = ratio;
+    aspect = ratio > 0.0f ? ratio : width/float(height);
     curfov = fov;
     fovy = 2*atan2(tan(curfov/2*RAD), aspect)/RAD;
     setviewcell(camera1->o);
