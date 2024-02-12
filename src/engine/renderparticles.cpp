@@ -168,8 +168,12 @@ struct partrenderer
     // blend = 0 => remove it
     void calc(particle *p, int &blend, int &ts, float &size, bool step = true)
     {
-        if(p->enviro) numenvparts++;
-        p->prev = p->o;
+        if(step)
+        {
+            if(p->enviro) numenvparts++;
+            p->prev = p->o;
+        }
+
         if(p->fade <= 5)
         {
             ts = 1;
@@ -178,74 +182,80 @@ struct partrenderer
         }
         else
         {
-            ts = lastmillis-p->millis;
-            blend = max(255-((ts<<8)/p->fade), 0);
+            ts = lastmillis - p->millis;
+            blend = max(255 - ((ts<<8) / p->fade), step ? 0 : 1);
             size = p->size + (p->sizechange * ts);
 
-            float secs = curtime/1000.f;
-            int part = type&0xFF;
-            vec v = (part == PT_PART || part == PT_TRAIL) ? vec(p->d).mul(secs) : vec(0, 0, 0);
-            bool istape = (type&PT_TAPE) != 0;
-
-            if(p->gravity != 0)
+            if(step)
             {
-                if(ts > p->fade) ts = p->fade;
-                static struct particleent : physent
-                {
-                    particleent()
-                    {
-                        physent::reset();
-                        type = ENT_DUMMY;
-                    }
-                } d;
-                d.weight = p->gravity;
-                vec gravity = physics::gravityvel(&d, p->o, secs);
-                if(istape)
-                { // Cheat a bit and use the gravity magnitude to travel along the tape direction
-                    float mag = gravity.magnitude();
-                    gravity = vec(p->o).sub(p->d).normalize().mul(mag);
-                }
-                v.add(gravity);
-            }
+                float secs = curtime/1000.f;
+                int part = type&0xFF;
+                vec v = (part == PT_PART || part == PT_TRAIL) ? vec(p->d).mul(secs) : vec(0, 0, 0);
+                bool istape = (type&PT_TAPE) != 0;
 
-            p->o.add(v);
-            if(istape) p->d.add(v); // Also add to the destination so the tape follows along
-            if(particlewind && type&PT_WIND) p->o.add(p->wind.probe(p->prev).mul(secs * 10.0f));
+                if(p->gravity != 0)
+                {
+                    if(ts > p->fade) ts = p->fade;
+                    static struct particleent : physent
+                    {
+                        particleent()
+                        {
+                            physent::reset();
+                            type = ENT_DUMMY;
+                        }
+                    } d;
+                    d.weight = p->gravity;
+                    vec gravity = physics::gravityvel(&d, p->o, secs);
+                    if(istape)
+                    { // Cheat a bit and use the gravity magnitude to travel along the tape direction
+                        float mag = gravity.magnitude();
+                        gravity = vec(p->o).sub(p->d).normalize().mul(mag);
+                    }
+                    v.add(gravity);
+                }
 
-            vec move = vec(p->o).sub(p->prev);
-            if(step && p->collide)
-            {
-                vec dir = move, hitpos;
-                float mag = dir.magnitude();
-                dir.mul(1/mag);
-                bool hit = false;
-                if(!p->precollide)
+                p->o.add(v);
+                if(istape) p->d.add(v); // Also add to the destination so the tape follows along
+                if(particlewind && type&PT_WIND) p->o.add(p->wind.probe(p->prev).mul(secs * 10.0f));
+
+                vec move = vec(p->o).sub(p->prev);
+                if(p->collide)
                 {
-                    float dist = raycube(p->prev, dir);
-                    if(dist <= mag)
+                    vec dir = move, hitpos;
+                    float mag = dir.magnitude();
+                    dir.mul(1/mag);
+                    bool hit = false;
+                    if(!p->precollide)
                     {
-                        hit = true;
-                        hitpos = vec(dir).mul(dist).add(p->prev);
+                        float dist = raycube(p->prev, dir);
+                        if(dist <= mag)
+                        {
+                            hit = true;
+                            hitpos = vec(dir).mul(dist).add(p->prev);
+                        }
+                    }
+                    else
+                    {
+                        if(dir.z <= 0 ? p->o.z < p->val : p->o.z > p->val)
+                        {
+                            hit = true;
+                            hitpos = vec(p->o.x, p->o.y, p->val);
+                        }
+                    }
+
+                    if(hit)
+                    {
+                        p->o = hitpos;
+                        if(p->collide > 0) addstain(p->collide - 1, hitpos, vec(dir).neg(), 2*p->size, p->color, type&PT_RND4 || type&PT_RND16 ? (p->flags>>5)&3 : 0, p->envcolor, p->envblend);
+                        blend = 0;
                     }
                 }
-                else
-                {
-                    if(dir.z <= 0 ? p->o.z < p->val : p->o.z > p->val)
-                    {
-                        hit = true;
-                        hitpos = vec(p->o.x, p->o.y, p->val);
-                    }
-                }
-                if(hit)
-                {
-                    p->o = hitpos;
-                    if(p->collide > 0) addstain(p->collide - 1, hitpos, vec(dir).neg(), 2*p->size, p->color, type&PT_RND4 || type&PT_RND16 ? (p->flags>>5)&3 : 0, p->envcolor, p->envblend);
-                    blend = 0;
-                }
+
+                if(blend > 0) p->m.add(move);
             }
-            if(blend > 0) p->m.add(move);
         }
-        game::particletrack(p, type, ts, step);
+
+        if(!step) game::particletrack(p, type, ts, step);
     }
 
     void debuginfo()
@@ -395,15 +405,18 @@ struct listrenderer : partrenderer
     {
         startrender();
         if(tex) settexture(tex);
-        if(canstep) for(T **prev = &list, *p = list; p; p = *prev)
+        if(canstep)
         {
-            if((drawtex && !p->enviro) || renderpart(p)) prev = &p->next;
-            else
-            { // remove
-                *prev = p->next;
-                p->next = parempty;
-                killpart(p);
-                parempty = p;
+            for(T **prev = &list, *p = list; p; p = *prev)
+            {
+                if(renderpart(p) || drawtex) prev = &p->next;
+                else
+                { // remove
+                    *prev = p->next;
+                    p->next = parempty;
+                    killpart(p);
+                    parempty = p;
+                }
             }
         }
         else for(T *p = list; p; p = p->next) renderpart(p);
@@ -1397,9 +1410,9 @@ bool hazeparticles = false;
 
 void renderparticles(int layer)
 {
-    timer *parttimer = begintimer("Particles", false);
+    timer *parttimer = drawtex ? NULL : begintimer("Particles", false);
 
-    canstep = layer != PL_UNDER;
+    canstep = !drawtex && layer != PL_UNDER;
 
     // want to debug BEFORE the lastpass render (that would delete particles)
     if(dbgparts && (layer == PL_ALL || layer == PL_UNDER)) loopi(sizeof(parts)/sizeof(parts[0])) parts[i]->debuginfo();
@@ -1481,8 +1494,9 @@ void renderparticles(int layer)
         glDisable(GL_BLEND);
         glDepthMask(GL_TRUE);
     }
+    canstep = false;
 
-    endtimer(parttimer);
+    if(!drawtex) endtimer(parttimer);
 }
 
 void renderhazeparticles(GLuint hazertex, bool hazemix)
@@ -1492,9 +1506,10 @@ void renderhazeparticles(GLuint hazertex, bool hazemix)
         hazeparticles = false;
         return;
     }
-    timer *parttimer = begintimer("Particles", false);
+    timer *parttimer = drawtex ? NULL : begintimer("Particles", false);
+
     if(!particletex) particletex = textureload(particlehazetex, 0, true, false);
-    canstep = true;
+    canstep = !drawtex;
 
     glDepthMask(GL_FALSE);
     glEnable(GL_BLEND);
@@ -1546,9 +1561,9 @@ void renderhazeparticles(GLuint hazertex, bool hazemix)
 
     glDisable(GL_BLEND);
     glDepthMask(GL_TRUE);
-    hazeparticles = false;
+    canstep = hazeparticles = false;
 
-    endtimer(parttimer);
+    if(!drawtex) endtimer(parttimer);
 }
 
 static int addedparticles = 0;

@@ -2394,7 +2394,11 @@ int xtraverts, xtravertsva;
 void gl_drawview()
 {
     GLuint scalefbo = shouldscale();
-    if(scalefbo) { vieww = gw; viewh = gh; }
+    if(scalefbo)
+    {
+        vieww = gw;
+        viewh = gh;
+    }
 
     xtravertsva = xtraverts = glde = gbatches = vtris = vverts = 0;
     flipqueries();
@@ -2472,8 +2476,8 @@ void gl_drawview()
 
     if(!drawtex && editmode)
     {
-        renderparticles();
-        GLERROR;
+         renderparticles();
+         GLERROR;
     }
 
     drawenvlayers(false);
