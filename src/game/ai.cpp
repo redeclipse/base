@@ -1426,7 +1426,7 @@ namespace ai
         return ret;
     }
 
-    void runhazard(gameent *d, aistate &b)
+    void runhazard(gameent *d, aistate &b, bool &occupied, bool &firing, bool &wantitem)
     {
         d->move = d->strafe = 0;
         d->ai->dontmove = true;
@@ -1465,6 +1465,7 @@ namespace ai
         if(isweap(weap) && weap != d->weapselect)
         {
             wantsfire = false;
+            occupied = true;
             weapons::weapselect(d, weap, (1<<W_S_SWITCH)|(1<<W_S_RELOAD));
         }
 
@@ -1481,6 +1482,7 @@ namespace ai
                 d->action[alt ? AC_PRIMARY : AC_SECONDARY] = true;
                 d->actiontime[alt ? AC_PRIMARY : AC_SECONDARY] = -lastmillis;
             }
+            firing = occupied = true;
         }
         else loopk(2) if(d->action[k ? AC_SECONDARY : AC_PRIMARY])
         {
@@ -1512,7 +1514,7 @@ namespace ai
     {
         if(d->actortype == A_HAZARD)
         {
-            runhazard(d, b);
+            runhazard(d, b, occupied, firing, wantitem);
             return; // override
         }
 
