@@ -188,7 +188,7 @@ APFVAR(IDF_GAMEMOD, 0, damage, 1, FVAR_MAX,
     1.0f,           1.0f,           1.0f,           1.0f,           1.0f,           1.0f,           1.0f,           0.25f
 );
 APVAR(IDF_GAMEMOD, 0, health, 1, VAR_MAX,
-    1000,           1000,           1000,           500,            500,            500,            1000,           2000
+    1000,           1000,           1000,           500,            500,            500,            1000,           1000
 );
 APVAR(IDF_GAMEMOD, 0, hurtstop, 0, VAR_MAX,
     0,              0,              0,              250,            500,            250,            0,              50
