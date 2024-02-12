@@ -3648,7 +3648,7 @@ namespace UI
     struct ViewPortEntry
     {
         char *refname = NULL;
-        ViewSurface surf;
+        ViewSurface surf = ViewSurface(DRAWTEX_SCENE);
         int lastupdate = 0, lastrender = 0, width = 0, height = 0;
         bool ready = false;
 
@@ -7853,12 +7853,11 @@ namespace UI
     }
     ICOMMANDV(0, compositecount, surfaces[SURFACE_COMPOSITE] ? surfaces[SURFACE_COMPOSITE]->texs.length() : 0);
 
-    void poke(bool full)
+    void poke()
     {
         uilastmillis = lastmillis;
         uitotalmillis = totalmillis;
         uicurtime = curtime;
-        if(full) processviewports();
     }
 
     void update()

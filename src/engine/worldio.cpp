@@ -734,7 +734,7 @@ void save_mapshot(char *mname, bool forcesave = false, int backuprev = -1)
     int oldmapvariant = mapvariant;
     changemapvariant(MPV_DEFAULT);
 
-    ViewSurface mapshot;
+    ViewSurface mapshot = ViewSurface(DRAWTEX_MAP);
     entities::mapshot(mapshot.worldpos, mapshot.yaw, mapshot.pitch, mapshot.fov);
 
     if(mapshot.render(mapshotsize * 2, mapshotsize * 2))

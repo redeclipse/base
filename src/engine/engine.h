@@ -292,9 +292,10 @@ extern char *gfxvendor, *gfxrenderer, *gfxversion;
 extern int maxdrawbufs, maxdualdrawbufs;
 
 enum {
-    DRAWTEX_NONE = 0, DRAWTEX_ENVMAP, DRAWTEX_VIEW, DRAWTEX_MINIMAP, DRAWTEX_MODELPREVIEW, DRAWTEX_HALO,
-    DRAWTEX_HAZE = (1<<DRAWTEX_NONE)|(1<<DRAWTEX_ENVMAP)|(1<<DRAWTEX_VIEW),
-    DRAWTEX_DARK = (1<<DRAWTEX_NONE)|(1<<DRAWTEX_ENVMAP)
+    DRAWTEX_NONE = 0, DRAWTEX_ENVMAP, DRAWTEX_SCENE, DRAWTEX_MAP, DRAWTEX_MINIMAP, DRAWTEX_MODELPREVIEW, DRAWTEX_HALO, DRAWTEX_MAX,
+    DRAWTEX_VIEW = (1<<DRAWTEX_NONE)|(1<<DRAWTEX_SCENE)|(1<<DRAWTEX_MAP),
+    DRAWTEX_HAZE = (1<<DRAWTEX_NONE)|(1<<DRAWTEX_ENVMAP)|(1<<DRAWTEX_SCENE)|(1<<DRAWTEX_MAP),
+    DRAWTEX_DARK = (1<<DRAWTEX_NONE)|(1<<DRAWTEX_ENVMAP)|(1<<DRAWTEX_SCENE)
 };
 
 extern int vieww, viewh;
@@ -1200,8 +1201,10 @@ struct ViewSurface : RenderSurface
 {
     vec worldpos = vec(0, 0, 0);
     float yaw = 0.0f, pitch = 0.0f, roll = 0.0f, fov = 90.0f, ratio = 1.0f, nearpoint = 0.54f, farscale = 1.0f;
+    int texmode = DRAWTEX_SCENE;
 
     ViewSurface() { reset(); }
+    ViewSurface(int m) : texmode(m) { reset(); }
     ~ViewSurface() { destroy(); }
 
     bool render(int w = 0, int h = 0, GLenum f = GL_RGB, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = 1, GLenum b = 0) override;

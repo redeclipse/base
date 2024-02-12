@@ -2599,6 +2599,7 @@ void gl_drawframe()
 {
     bool noview = hasnoview();
     synctimers();
+
     xtravertsva = xtraverts = glde = gbatches = vtris = vverts = 0;
     flipqueries();
 

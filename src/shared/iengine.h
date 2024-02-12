@@ -572,12 +572,13 @@ namespace UI
     extern int savemap(stream *h);
     extern void resetmap();
 
+    extern void processviewports();
     extern void updatetextures();
 
     extern void setup();
     extern void cleanup();
     extern void cleangl();
-    extern void poke(bool full = false);
+    extern void poke();
     extern void update();
     extern void build(int stype = SURFACE_VISOR);
     extern void render(int stype = SURFACE_VISOR);

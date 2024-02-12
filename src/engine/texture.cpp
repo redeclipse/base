@@ -3848,7 +3848,7 @@ GLuint lookupenvmap(Slot &slot)
 
 GLuint lookupenvmap(ushort emid)
 {
-    if(emid==EMID_SKY || emid==EMID_CUSTOM || (drawtex && drawtex != DRAWTEX_VIEW)) return lookupskyenvmap();
+    if(emid==EMID_SKY || emid==EMID_CUSTOM || !(DRAWTEX_VIEW&(1<<drawtex))) return lookupskyenvmap();
     if(emid==EMID_NONE || !envmaps.inrange(emid-EMID_RESERVED)) return 0;
     GLuint tex = envmaps[emid-EMID_RESERVED].tex;
     return tex ? tex : lookupskyenvmap();

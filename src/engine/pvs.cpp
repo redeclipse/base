@@ -986,6 +986,7 @@ VARN(0, waterpvs, usewaterpvs, 0, 1, 1);
 
 void setviewcell(const vec &p)
 {
+    if(!drawtex) findorientation(camera1->o, camera1->yaw, camera1->pitch, worldpos);
     if(!usepvs) curpvs = NULL;
     else if(lockedpvs)
     {

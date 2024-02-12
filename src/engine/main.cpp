@@ -1244,6 +1244,7 @@ int main(int argc, char **argv)
     {
         conoutf(colourwhite, "Loading required data..");
         progress(0, "Loading required data..");
+
         restoregamma();
         restorevsync();
         initgbuffer();
@@ -1251,6 +1252,7 @@ int main(int argc, char **argv)
         preloadtextures();
         initparticles();
         initstains();
+
         if(firstrun || noconfigfile)
         {
             conoutf(colourwhite, "First run!");
@@ -1286,36 +1288,40 @@ int main(int argc, char **argv)
             fx::startframe();
             if(wantdisplaysetup) setupdisplay();
             curtextscale = textscale;
+
             int elapsed = updatetimer(true);
             updatefps(frameloops, elapsed);
+
             cdpi::runframe();
-            UI::poke(true);
+            UI::poke();
             checkinput();
             tryedit();
-
-            if(frameloops)
-            {
-                RUNMAP("on_update");
-                game::updateworld();
-            }
 
             checksleep(lastmillis);
             serverslice();
             ircslice();
+
             if(frameloops)
             {
+                halosurf.render();
+
+                RUNMAP("on_update");
+                game::updateworld();
+
+                UI::processviewports();
+
                 game::recomputecamera();
                 setviewcell(camera1->o);
 
-                halosurf.render();
-
                 cleardynlights();
+
                 fx::update();
                 updatewind();
                 UI::update();
                 updatetextures();
                 updateparticles();
                 updatesounds();
+
                 if(!minimized || renderunfocused)
                 {
                     inbetweenframes = renderedframe = false;
@@ -1323,6 +1329,7 @@ int main(int argc, char **argv)
                     renderedframe = true;
                     swapbuffers();
                     inbetweenframes = true;
+
                     if(pixeling)
                     {
                         if(editmode)
@@ -1335,11 +1342,13 @@ int main(int argc, char **argv)
                         pixeling = false;
                     }
                 }
+
                 if(*progresstitle || progressamt >= 0)
                 {
                     setsvar("progresstitle", "");
                     setfvar("progressamt", -1.f);
                 }
+
                 setcaption(game::gametitle(), game::gametext());
             }
         }

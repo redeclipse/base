@@ -3044,7 +3044,7 @@ static inline void setlightglobals(bool transparent = false)
     GLOBALPARAMF(shadowatlasscale, 1.0f/shadowatlaspacker.w, 1.0f/shadowatlaspacker.h);
     if(ao)
     {
-        if(transparent || (drawtex && drawtex != DRAWTEX_VIEW) || (editmode && fullbright))
+        if(transparent || !(DRAWTEX_VIEW&(1<<drawtex)) || (editmode && fullbright))
         {
             GLOBALPARAMF(aoscale, 0.0f, 0.0f);
             GLOBALPARAMF(aoparams, 1.0f, 0.0f, 1.0f, 0.0f);

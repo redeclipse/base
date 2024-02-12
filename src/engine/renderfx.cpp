@@ -360,8 +360,6 @@ bool HaloSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int want
 {
     if(hasnoview() || !create(w, h, f, t, wanttex, wantfbo, b)) return false;
 
-    GLERROR;
-    setuplights();
     vieww = width;
     viewh = height;
 
@@ -726,14 +724,22 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int wan
     savefbo();
 
     int sw = renderw, sh = renderh;
-    if(engineready && gscale != 100)
-    {
-        sw = max((renderw*gscale + 99)/100, 1);
-        sh = max((renderh*gscale + 99)/100, 1);
-    }
+    if(engineready)
+    {   // make sure surface is at least the size of the gbuffer
+        if(gscale != 100)
+        {
+            sw = max((renderw*gscale + 99)/100, 1);
+            sh = max((renderh*gscale + 99)/100, 1);
+        }
 
-    vieww = max(sw, hudw);
-    viewh = max(sh, hudh);
+        vieww = max(sw, hudw);
+        viewh = max(sh, hudh);
+    }
+    else
+    {
+        vieww = hudw;
+        viewh = hudh;
+    }
 
     if(engineready && create(w, h, f, t, wanttex, wantfbo, b))
     {
@@ -897,14 +903,28 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int wan
 
 bool ViewSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int wantfbo, GLenum b)
 {
-    if(!create(w, h, f, t, wanttex, wantfbo, b)) return false;
+    int sw = renderw, sh = renderh;
+    if(engineready)
+    {   // make sure surface is not bigger than the gbuffer
+        if(gscale != 100)
+        {
+            sw = max((renderw*gscale + 99)/100, 1);
+            sh = max((renderh*gscale + 99)/100, 1);
+        }
+
+        w = min(sw, w);
+        h = min(sh, h);
+    }
+
+   if(!create(w, h, f, t, wanttex, wantfbo, b)) return false;
 
     savefbo();
     if(!bindfbo()) return false;
 
+    savevfcP();
     float oldaspect = aspect, oldfovy = fovy, oldfov = curfov, oldnear = nearplane, oldfar = farplane;
     int olddrawtex = drawtex;
-    drawtex = DRAWTEX_VIEW;
+    drawtex = texmode;
 
     physent *oldcamera = camera1;
     static physent cmcamera;
@@ -951,7 +971,7 @@ bool ViewSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int want
     ldrscale = 0.5f;
     ldrscaleb = ldrscale/255;
 
-    visiblecubes(false);
+    visiblecubes();
     rendergbuffer();
 
     renderao();
@@ -1011,9 +1031,9 @@ bool ViewSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int want
     curfov = oldfov;
     camera1 = oldcamera;
 
-    setviewcell(camera1->o);
     projmatrix.perspective(fovy, aspect, nearplane, farplane);
     setcamprojmatrix();
+    restorevfcP();
 
     if(blittex) blit();
 

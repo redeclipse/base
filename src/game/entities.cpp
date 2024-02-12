@@ -1004,9 +1004,11 @@ namespace entities
                         if(!e.lastthirdpos || e.lastthirdpos != totalmillis)
                         {
                             vec pos = e.o;
-                            e.thirdpos = game::thirdpos(pos, yaw, pitch, 4);
+                            e.thirdpos = game::thirdpos(pos, yaw, pitch, 16);
+
                             if(e.thirdpos == pos)
                             {
+                                float rad = 2;
                                 if(e.type == MAPMODEL)
                                 {
                                     mapmodelinfo *mmi = getmminfo(e.attrs[0]);
@@ -1021,12 +1023,12 @@ namespace entities
                                             radius.mul(scale);
                                         }
                                         rotatebb(center, radius, int(e.attrs[1]), int(e.attrs[2]), int(e.attrs[3]));
-
-                                        pos.sub(vec(yaw * RAD, pitch * RAD).normalize().mul(2 + max(radius.x + fabs(center.x), radius.y + fabs(center.y))));
+                                        rad += max(radius.x + fabs(center.x), radius.y + fabs(center.y));
                                     }
                                 }
-                                game::camcheck(pos, 2);
-                                e.thirdpos = game::thirdpos(pos, yaw, pitch, 4);
+                                loopj(16) if(game::camcheck(pos, rad + j)) break;
+                                e.thirdpos = game::thirdpos(pos, yaw, pitch, 16);
+
                             }
                             e.lastthirdpos = totalmillis;
                         }

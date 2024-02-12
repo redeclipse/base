@@ -1142,7 +1142,7 @@ namespace game
             case 1: // teams
             {
                 int team = index%T_COUNT;
-                if(drawtex != DRAWTEX_VIEW && index < T_COUNT)
+                if(drawtex != DRAWTEX_MAP && index < T_COUNT)
                 {
                     if(m_edit(gamemode) && forcepalette)
                     {
@@ -1156,7 +1156,7 @@ namespace game
             case 2: // weapons
             {
                 int weap = index%W_MAX;
-                if(drawtex && drawtex != DRAWTEX_VIEW && !m_edit(gamemode) && index < W_MAX)
+                if(drawtex && drawtex != DRAWTEX_MAP && !m_edit(gamemode) && index < W_MAX)
                 {
                     weap = m_attr(WEAPON, weap);
                     if(!isweap(weap) || W(weap, disabled) || (m_rotweaps(gamemode, mutators) && weap < W_ITEM) || !m_check(W(weap, modes), W(weap, muts), gamemode, mutators))
@@ -3399,17 +3399,11 @@ namespace game
 
         c.o = pos;
 
-        if(csize) c.o.z += csize;
-        if(!collide(&c, vec(0, 0, 0), 0, false) && !collideinside)
+        static const float sphereyawchecks[8] = { 0, 45, 90, 135, 180, 225, 270, 315 },
+                           spherepitchchecks[9] = { 0.0f, 22.5f, -22.5f, 45.0f, -45.0f, 67.5f, -67.5f, 89.9f, -89.9f };
+        loopi(10) loopj(9) loopk(8)
         {
-            pos = c.o;
-            return true;
-        }
-
-        static const int sphereyawchecks[8] = { 180, 135, 225, 90, 270, 45, 315 }, spherepitchchecks[5] = { 0, 45, -45, 89, -89 };
-        loopi(10) loopj(5) loopk(8)
-        {
-            c.o = vec(pos).add(vec(sphereyawchecks[k]*RAD, spherepitchchecks[j]*RAD).mul((i + 1) * 2));
+            c.o = vec(pos).add(vec(sphereyawchecks[k] * RAD, spherepitchchecks[j] * RAD).mul((i + 1) * csize));
             if(!collide(&c, vec(0, 0, 0), 0, false) && !collideinside)
             {
                 pos = c.o;
@@ -3429,8 +3423,8 @@ namespace game
                 gameentity &e = *(gameentity *)entities::ents[i];
                 if(k ? (e.type != LIGHT && e.type != ENVMAP && e.type != PLAYERSTART && e.type != WEAPON && e.type != CAMERA) : (e.type != CAMERA || e.attrs[0] != CAMERA_NORMAL || !entities::isallowed(e))) continue;
                 vec pos = e.pos();
-                float radius = (e.type == PLAYERSTART || !enttype[e.type].radius ? actors[A_PLAYER].height : enttype[e.type].radius) + 2;
-                if(!camcheck(pos, radius)) continue;
+                float radius = e.type == PLAYERSTART || !enttype[e.type].radius ? actors[A_PLAYER].height : enttype[e.type].radius;
+                loopj(16) if(camcheck(pos, radius + j)) break;
                 cameras.add(new cament(cameras.length(), cament::ENTITY, i, pos));
                 found++;
             }
