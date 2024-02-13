@@ -266,7 +266,7 @@ namespace server
         }
     };
 
-    extern int gamemode, mutators, gamemillis;
+    int gamemode = G_EDITING, mutators = 0, gamemillis = 0, gamelimit = 0;
 
     enum { WARN_CHAT = 0, WARN_TEAMKILL, WARN_MAX };
 
@@ -616,7 +616,7 @@ namespace server
     }
 
     string smapname = "";
-    int smapcrc = 0, smapvariant = MPV_DEFAULT, mapsending = -1, mapgameinfo = -1, gamestate = G_S_WAITING, gamemode = G_EDITING, mutators = 0, gamemillis = 0, gamelimit = 0, gametick = 0,
+    int smapcrc = 0, smapvariant = MPV_DEFAULT, mapsending = -1, mapgameinfo = -1, gamestate = G_S_WAITING, gametick = 0,
         mastermode = MASTERMODE_OPEN, timeremaining = -1, oldtimelimit = -1, gamewaittime = 0, gamewaitdelay = 0, lastteambalance = 0, nextteambalance = 0, lastavgposcalc = 0, lastrotatecycle = 0;
     bool hasgameinfo = false, updatecontrols = false, shouldcheckvotes = false, firstblood = false, sentstats = false;
     enet_uint32 lastsend = 0;
@@ -1700,7 +1700,7 @@ namespace server
         gamewaittime = delay ? totalmillis : 0;
         gamewaitdelay = delay;
         gametick = 0;
-        srvoutf(3, colouryellow, "Server entering phase: %s (%s)", G_S_STR[gamestate], timestr(delay));
+        srvoutf(3, colouryellow, "Server entering phase: %s (delay: %d)", G_S_STR[gamestate], delay);
     }
 
     bool checkvotes(bool force = false);
@@ -1795,8 +1795,8 @@ namespace server
             {
                 if(!init && !nextteambalance)
                 {
-                    int secs = G(teambalancedelay)/1000;
-                    nextteambalance = gamemillis+G(teambalancedelay);
+                    int secs = G(teambalancedelay) / 1000;
+                    nextteambalance = gamemillis + G(teambalancedelay);
                     gamelog log(GAMELOG_EVENT);
                     log.addlist("args", "type", "balance");
                     log.addlist("args", "action", "warning");
@@ -1894,7 +1894,7 @@ namespace server
                             log.push();
                         }
                     }
-                    lastteambalance = gamemillis+G(teambalancewait);
+                    lastteambalance = gamemillis + G(teambalancewait);
                     nextteambalance = 0;
                 }
             }
@@ -1911,7 +1911,7 @@ namespace server
                     log.addlistf("args", "console", "Teams no longer need to be \fs\fcbalanced\fS");
                     log.push();
                 }
-                lastteambalance = gamemillis+(nextteambalance ? G(teambalancewait) : G(teambalancedelay));
+                lastteambalance = gamemillis + (nextteambalance ? G(teambalancewait) : G(teambalancedelay));
                 nextteambalance = 0;
             }
         }
@@ -1928,7 +1928,7 @@ namespace server
                 log.addlistf("args", "console", "Teams are no longer able to be \fs\fcbalanced\fS");
                 log.push();
             }
-            lastteambalance = gamemillis+(nextteambalance ? G(teambalancewait) : G(teambalancedelay));
+            lastteambalance = gamemillis + (nextteambalance ? G(teambalancewait) : G(teambalancedelay));
             nextteambalance = 0;
         }
     }
@@ -2099,7 +2099,7 @@ namespace server
             {
                 if(!nextbalance)
                 {
-                    nextbalance = gamemillis+delpart;
+                    nextbalance = gamemillis + delpart;
                     if(delpart >= 1000)
                     {
                         int secs = delpart/1000;
@@ -2219,7 +2219,7 @@ namespace server
                 if(!m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators)) continue;
                 if(sents[i].attrs[0] == A_TURRET && m_insta(gamemode, mutators)) continue;
 
-                sents[i].millis = gamemillis+G(enemyspawndelay);
+                sents[i].millis = gamemillis + G(enemyspawndelay);
                 switch(G(enemyspawnstyle) == 3 ? rnd(2)+1 : G(enemyspawnstyle))
                 {
                     case 1: enemies.add(i); break;
@@ -3614,7 +3614,7 @@ namespace server
                     if(mastermode >= MASTERMODE_LOCKED && ip && !checkipinfo(control, ipinfo::ALLOW, ip) && !haspriv(ci, lock, "spawn"))
                         return false;
                 if(ci->state == CS_ALIVE || ci->state == CS_WAITING) return false;
-                if(ci->lastdeath && gamemillis-ci->lastdeath <= DEATHMILLIS) return false;
+                if(ci->lastdeath && gamemillis - ci->lastdeath <= DEATHMILLIS) return false;
                 if(crclocked(ci, true))
                 {
                     getmap(ci);
@@ -3626,7 +3626,7 @@ namespace server
             {
                 if(ci->quarantine || (ci->state == CS_SPECTATOR && numclients(ci->clientnum, true) >= G(serverclients))) return false;
                 if(ci->state != CS_DEAD && ci->state != CS_WAITING) return false;
-                if(ci->lastdeath && gamemillis-ci->lastdeath <= DEATHMILLIS) return false;
+                if(ci->lastdeath && gamemillis - ci->lastdeath <= DEATHMILLIS) return false;
                 if(crclocked(ci, true))
                 {
                     getmap(ci);
@@ -3694,7 +3694,7 @@ namespace server
                     }
                 }
             }
-            requestmasterf("stats game %s %d %d %d %d %d\n", escapestring(smapname), gamemode, mutators, gamemillis/1000, unique, m_normweaps(gamemode, mutators) ? 1 : 0);
+            requestmasterf("stats game %s %d %d %d %d %d\n", escapestring(smapname), gamemode, mutators, gamemillis / 1000, unique, m_normweaps(gamemode, mutators) ? 1 : 0);
             flushmasteroutput();
             requestmasterf("stats server %s %s %d\n", escapestring(limitstring(G(serverdesc), MAXSDESCLEN+1)), versionstring, serverport);
             flushmasteroutput();
@@ -4828,12 +4828,14 @@ namespace server
                         logs = 0;
                         loopv(v->fragmillis)
                         {
-                            if(gamemillis-v->fragmillis[i] > G(multikilldelay)) v->fragmillis.remove(i--);
+                            if(gamemillis - v->fragmillis[i] > G(multikilldelay)) v->fragmillis.remove(i--);
                             else logs++;
                         }
+
                         if(!logs) v->rewards[0] &= ~FRAG_MULTI;
                         v->fragmillis.add(gamemillis);
                         logs++;
+
                         if(logs >= 2)
                         {
                             int offset = clamp(logs-2, 0, 2), type = 1<<(FRAG_MKILL+offset); // double, triple, multi..
@@ -5605,7 +5607,7 @@ namespace server
 
     void checkclients()
     {
-        bool avgposcalc = (m_normweaps(gamemode, mutators) && gamemillis-lastavgposcalc >= G(teambalanceavgposdelay));
+        bool avgposcalc = (m_normweaps(gamemode, mutators) && gamemillis -  lastavgposcalc >= G(teambalanceavgposdelay));
         int maxpoints = 0;
         if(avgposcalc)
         {
@@ -5633,7 +5635,7 @@ namespace server
                 // hurt material
                 if(ci->inmaterial&MAT_HURT)
                 {
-                    if(!ci->lasthurt || gamemillis-ci->lasthurt >= G(hurtdelay))
+                    if(!ci->lasthurt || gamemillis - ci->lasthurt >= G(hurtdelay))
                     {
                         int flags = HIT_MATERIAL;
                         if(G(hurtresidual)&(1<<W_R_BURN))
@@ -5683,12 +5685,12 @@ namespace server
                         if(ci->state != CS_ALIVE) continue;
                     }
                 }
-                else if(ci->lasthurt && gamemillis-ci->lasthurt >= G(hurtdelay)) ci->lasthurt = 0;
+                else if(ci->lasthurt && gamemillis - ci->lasthurt >= G(hurtdelay)) ci->lasthurt = 0;
 
                 // burn residual
                 if(ci->burnfunc(gamemillis, ci->burntime))
                 {
-                    if(gamemillis-ci->lastrestime[W_R_BURN] >= ci->burndelay)
+                    if(gamemillis - ci->lastrestime[W_R_BURN] >= ci->burndelay)
                     {
                         clientinfo *co = (clientinfo *)getinfo(ci->lastresowner[W_R_BURN]);
                         dodamage(ci, co ? co : ci, ci->burndamage, -1, -1, 0, HIT_BURN, 0);
@@ -5701,7 +5703,7 @@ namespace server
                 // bleed residual
                 if(ci->bleedfunc(gamemillis, ci->bleedtime))
                 {
-                    if(gamemillis-ci->lastrestime[W_R_BLEED] >= ci->bleeddelay)
+                    if(gamemillis - ci->lastrestime[W_R_BLEED] >= ci->bleeddelay)
                     {
                         clientinfo *co = (clientinfo *)getinfo(ci->lastresowner[W_R_BLEED]);
                         dodamage(ci, co ? co : ci, ci->bleeddamage, -1, -1, 0, HIT_BLEED, 0);
@@ -5714,7 +5716,7 @@ namespace server
                 // shock residual
                 if(ci->shockfunc(gamemillis, ci->shocktime))
                 {
-                    if(gamemillis-ci->lastrestime[W_R_SHOCK] >= ci->shockdelay)
+                    if(gamemillis - ci->lastrestime[W_R_SHOCK] >= ci->shockdelay)
                     {
                         clientinfo *co = (clientinfo *)getinfo(ci->lastresowner[W_R_SHOCK]);
                         dodamage(ci, co ? co : ci, ci->shockdamage, -1, -1, 0, HIT_SHOCK, 0);
@@ -5727,7 +5729,7 @@ namespace server
                 // corrode residual
                 if(ci->corrodefunc(gamemillis, ci->corrodetime))
                 {
-                    if(gamemillis-ci->lastrestime[W_R_CORRODE] >= ci->corrodedelay)
+                    if(gamemillis - ci->lastrestime[W_R_CORRODE] >= ci->corrodedelay)
                     {
                         clientinfo *co = (clientinfo *)getinfo(ci->lastresowner[W_R_CORRODE]);
                         dodamage(ci, co ? co : ci, ci->corrodedamage, -1, -1, 0, HIT_CORRODE, 0);
@@ -5745,7 +5747,7 @@ namespace server
                     if(smode) smode->regen(ci, total, amt, delay);
                     if(delay && ci->health != total)
                     {
-                        int millis = gamemillis-(ci->lastregen ? ci->lastregen : ci->lastpain);
+                        int millis = gamemillis - (ci->lastregen ? ci->lastregen : ci->lastpain);
                         if(millis >= delay)
                         {
                             int low = 0;
@@ -5783,7 +5785,7 @@ namespace server
                 }
             }
 
-            if(G(autospectate) && !m_duke(gamemode, mutators) && ci->state == CS_DEAD && ci->lastdeath && gamemillis-ci->lastdeath >= G(autospecdelay))
+            if(G(autospectate) && !m_duke(gamemode, mutators) && ci->state == CS_DEAD && ci->lastdeath && gamemillis - ci->lastdeath >= G(autospecdelay))
             {
                 if(ci->actortype > A_PLAYER) waiting(ci, DROP_RESET);
                 else spectate(ci, true);
@@ -5793,7 +5795,7 @@ namespace server
 
     void serverupdate()
     {
-        loopvrev(connects) if(totalmillis-connects[i]->connectmillis >= G(connecttimeout))
+        loopvrev(connects) if(totalmillis - connects[i]->connectmillis >= G(connecttimeout))
         {
             clientinfo *ci = connects[i];
             if(ci->connectauth)
@@ -5829,6 +5831,7 @@ namespace server
 
             if(timeout && totalmillis-control[i].time >= timeout) control.remove(i);
         }
+
         if(updatecontrols)
         {
             loopvrev(clients)
@@ -5853,8 +5856,8 @@ namespace server
         {
             if(servercheck(shutdownwait))
             {
-                int waituntil = maxshutdownwait*(gs_playing(gamestate) ? 2000 : 1000);
-                if(totalmillis >= shutdownwait+waituntil)
+                int waituntil = maxshutdownwait * (gs_playing(gamestate) ? 2000 : 1000);
+                if(totalmillis >= shutdownwait + waituntil)
                 {
                     srvoutf(3, colourred, "Waited \fs\fc%s\fS to shutdown, overriding and exiting..", timestr(totalmillis - shutdownwait, 4));
 #ifdef STANDALONE
@@ -5977,12 +5980,12 @@ namespace server
 
                                     setphase(G_S_GAMEINFO, G(waitforplayerinfo));
                                     retry = true;
-
-                                    break;
                                 }
+
+                                break;
                             }
 
-                            setphase(G_S_PLAYING, 0);
+                            setphase(G_S_GAMEINFO, 0);
                             break;
                         }
 
@@ -5996,7 +5999,7 @@ namespace server
                                 sendf(-1, 1, "ri", N_GETGAMEINFO);
                                 srvoutf(4, colouryellow, "No game information response, broadcasting and moving on..");
                             }
-                            else if(hasgameinfo)
+                            else
                             {
                                 srvoutf(4, colouryellow, "Game information received, starting..");
                                 mapgameinfo = -1;
@@ -6052,28 +6055,25 @@ namespace server
             if(gs_intermission(gamestate) && timewait() < totalmillis) startintermission(true); // wait then call for next map
             if(shouldcheckvotes) checkvotes();
 
-            if(!gametick || totalmillis - gametick >= 1000)
+            if(!gametick || gametick > totalmillis || totalmillis - gametick >= 1000)
             {
                 sendf(-1, 1, "ri5", N_TICK, gamestate, timeleft(), timeelapsed(), timewaitdelay());
-                gametick = gametick ? totalmillis - ((totalmillis - gametick) % 1000) : totalmillis;
+                gametick = gametick > 0 && gametick < totalmillis ? totalmillis - ((totalmillis - gametick) % 1000) : totalmillis;
             }
         }
-        else
+        else if(servercheck(shutdownwait))
         {
-            if(servercheck(shutdownwait))
-            {
-                srvoutf(4, colouryellow, "Server empty, shutting down as scheduled");
-                #ifdef STANDALONE
-                cleanupserver();
-                exit(EXIT_SUCCESS);
-                #else
-                quit();
-                #endif
-                return;
-            }
-
-            if(G(rotatecycle) && clocktime-lastrotatecycle >= G(rotatecycle)*60) cleanup();
+            srvoutf(4, colouryellow, "Server empty, shutting down as scheduled");
+            #ifdef STANDALONE
+            cleanupserver();
+            exit(EXIT_SUCCESS);
+            #else
+            quit();
+            #endif
+            return;
         }
+        else if(G(rotatecycle) && clocktime - lastrotatecycle >= G(rotatecycle) * 60) cleanup();
+
         aiman::checkai();
         auth::update();
     }
