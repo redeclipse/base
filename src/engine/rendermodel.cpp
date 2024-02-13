@@ -1074,9 +1074,17 @@ void rendermodel(const char *mdl, modelstate &state, dynent *d)
 {
     model *m = loadmodel(mdl);
     if(!m) return;
+
+    if(drawtex == DRAWTEX_MODELPREVIEW)
+    {
+        state.flags |= MDL_NOLOD;
+        state.flags &= ~(MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY);
+    }
+
     vec bbradius;
     m->boundbox(state.center, bbradius);
     state.radius = bbradius.magnitude();
+
     if(d)
     {
         if(d->ragdoll)
@@ -1091,6 +1099,7 @@ void rendermodel(const char *mdl, modelstate &state, dynent *d)
         }
         if(state.anim&ANIM_RAGDOLL) state.flags &= ~(MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY);
     }
+
     state.center.mul(state.size);
     if(state.roll) state.center.rotate_around_y(-state.roll*RAD);
     if(state.pitch && m->pitched()) state.center.rotate_around_x(state.pitch*RAD);
