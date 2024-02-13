@@ -927,7 +927,7 @@ namespace game
     bool intermthresh()
     {
         if(!gs_playing(gamestate)) return true;
-        if(gamestate == G_S_PLAYING && gettimeelapsed() >= spectvintermthresh && focus->iswatching()) return true;
+        if(gamestate == G_S_PLAYING && gettimeelapsed() <= spectvintermthresh && focus->iswatching()) return true;
         return false;
     }
 
