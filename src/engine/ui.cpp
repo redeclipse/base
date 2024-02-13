@@ -1937,7 +1937,10 @@ namespace UI
                             w->visible = true;
                         }
                     }
+
+                    if(!w->visible) continue;
                 }
+
 
                 uiscale = 1;
                 w->build();
@@ -1945,6 +1948,9 @@ namespace UI
                 if(!children.inrange(i)) break;
                 if(children[i] != w) i--;
             });
+
+            loopwindowsrev(w, if(!w->visible && !w->persist) hide(w, i));
+
             children.sort(Window::compare);
             resetstate(); // IMPORTED
 
@@ -2482,6 +2488,8 @@ namespace UI
             w->lastpoke = uitotalmillis;
             ret = true;
         }
+        else conoutf(colouryellow, "Failed to poke UI %s [%d]", name, stype);
+
         popsurface();
 
         return ret;

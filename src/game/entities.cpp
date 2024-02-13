@@ -3716,8 +3716,8 @@ namespace entities
                 if(curpos.squaredist(camera1->o) > (!editcheck || enthover.find(i) >= 0 || entgroup.find(i) >= 0 ? entityitemuimaxdist * entityitemuimaxdist : entityedituimaxdist * entityedituimaxdist))
                     continue;
 
-                if(editcheck) MAKEUI(entityedit, i, enthover.find(i) >= 0 || entgroup.find(i) >= 0, curpos);
-                else MAKEUI(entityitem, i, false, curpos);
+                if(editcheck) { MAKEUI(entityedit, i, enthover.find(i) >= 0 || entgroup.find(i) >= 0, curpos); }
+                else { MAKEUI(entityitem, i, false, curpos); }
             }
         }
 

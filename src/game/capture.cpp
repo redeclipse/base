@@ -169,8 +169,10 @@ namespace capture
         {
             capturestate::flag &f = st.flags[i];
             if(captureui >= 0)
+            {
                 MAKEUI(capture, i, haloallow(camera1->o, i),
                     vec(f.render).addz(enttype[AFFINITY].radius * (f.owner || f.droptime ? 0.25f : 0.875f)));
+            }
 
             if(captureflagui >= 0 && (f.owner != game::focus && (f.owner || f.droptime)))
             {

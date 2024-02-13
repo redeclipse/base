@@ -540,7 +540,9 @@ namespace hud
             gameent *d = NULL;
             int numdyns = game::numdynents();
             loopi(numdyns) if((d = (gameent *)game::iterdynents(i)) && (d->actortype < A_ENEMY || d->isprize(game::focus)) && d != game::focus && !d->isspectator())
-                MAKEUI(player, d->clientnum, (game::focus->isspectator() || (m_team(game::gamemode, game::mutators) && d->team == game::focus->team) || d->isprize(game::focus)) && game::haloallow(camera1->o, d, false, false), d->abovehead(2));
+            {
+                MAKEUI(player, d->clientnum, (game::focus->isspectator() || (m_team(game::gamemode, game::mutators) && d->team == game::focus->team) || d->isprize(game::focus)) && game::haloallow(camera1->o, d, false, false), d->abovehead());
+            }
         }
 
         entities::checkui();
