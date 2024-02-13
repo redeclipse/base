@@ -1792,7 +1792,7 @@ namespace game
                 int snd = -1;
                 float gain = damagetonegain;
 
-                if(m_team(gamemode, mutators) && from == focus && to->team == from->team)
+                if(m_team(gamemode, mutators) && from == focus && to->team == from->team && from != to)
                 {
                     snd = S_ALARM;
                     gain = damagetonealarm;
