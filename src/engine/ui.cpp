@@ -3634,6 +3634,23 @@ namespace UI
         p->value = vec4(*x, *y, *z, *w);
     });
 
+    UICMD(Render, render, pmcol, "sig", (char *name, int *c, float *a),
+    {
+        if(!name || !*name) return;
+        Render::param *p = NULL;
+        loopv(o->params) if(!strcmp(o->params[i].name, name))
+        {
+            p = &o->params[i];
+            break;
+        }
+        if(!p)
+        {
+            p = &o->params.add();
+            p->name = newstring(name);
+        }
+        p->value = vec4::fromcolor(*c, *a >= 0.0f ? *a : 1.0f);
+    });
+
     UICMD(Render, render, tex, "sbbb", (char *name, int *tclamp, int *mipit, int *tgc),
     {
         if(!name || !*name || o->texs.length() >= 10) return;

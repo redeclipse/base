@@ -318,7 +318,7 @@ struct mixer
             if(tex->bpp > 2) concatstring(m, "blur [");
             else
             {
-                concatstring(m, "rgbamixer [");
+                concatstring(m, "mixerconv [");
                 if(split > 0.0f) concformatstring(m, "split = %.8g; ", clamp(split, 0.0f, 0.5f));
             }
 
