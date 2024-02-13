@@ -2429,13 +2429,16 @@ namespace game
         timeelapsed = elapsed;
         timelast = gs_playing(gamestate) ? lastmillis : totalmillis;
         timewait = wait;
+
         if(gs_playing(gamestate) != gs_playing(oldstate)) entities::updaterails();
+
         if(gs_intermission(gamestate) && gs_playing(oldstate))
         {
             player1->stopmoving(true);
             if(gamestate == G_S_INTERMISSION) hud::showscores(true, true);
             smartmusic(true, false, true);
         }
+
         if(gamestate == G_S_VOTING && oldstate != G_S_VOTING)
         {
             hud::showscores(false);
