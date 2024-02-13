@@ -501,9 +501,9 @@ model *loadmodel(const char *name, int i, bool msg, model *parent)
     else
     {
         if(!name[0] || loadingmodel || failedmodels.find(name, NULL)) return NULL;
-        if(msg) progress(loadprogress, "Loading model: %s", name);
         loopi(NUMMODELTYPES)
         {
+            if(msg) progress(loadprogress, "Loading model: %s", name);
             m = modeltypes[i](name);
             if(!m) continue;
             loadingmodel = m;

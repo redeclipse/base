@@ -626,6 +626,7 @@ void save_config(char *mname, bool forcesave = false, int backuprev = -1)
     if(*desc) h->printf("// %s\n", desc);
     h->printf("\n");
 
+    progress(0, "Saving map config..");
     int aliases = 0;
     enumerate(idents, ident, id,
     {
@@ -656,7 +657,7 @@ void save_config(char *mname, bool forcesave = false, int backuprev = -1)
 
     // texture slots
     int nummats = sizeof(materialslots)/sizeof(materialslots[0]);
-    progress(0, "Saving material slots..");
+    progress(-nummats, "Saving material slots..");
     lasttexgroup = NULL;
     loopi(nummats)
     {
@@ -666,9 +667,10 @@ void save_config(char *mname, bool forcesave = false, int backuprev = -1)
                 saveslotconfig(h, materialslots[i], -i, false);
                 break;
         }
-        progress((i+1)/float(nummats), "Saving material slots..");
+        PROGRESS(i);
     }
     if(verbose) conoutf(colourwhite, "Saved %d material slots", nummats);
+    PROGRESS(nummats);
 
     loopv(smoothgroups)
     {
@@ -676,34 +678,41 @@ void save_config(char *mname, bool forcesave = false, int backuprev = -1)
         h->printf("smoothangle %i %i\n", i, smoothgroups[i]);
     }
 
-    progress(0, "Saving texture slots..");
+    int numslots = slots.length();
+    progress(-numslots, "Saving texture slots..");
     lasttexgroup = NULL;
     loopv(slots)
     {
         saveslotconfig(h, *slots[i], i, false);
-        progress((i+1)/float(slots.length()), "Saving texture slots..");
+        PROGRESS(i);
     }
-    if(verbose) conoutf(colourwhite, "Saved %d texture slots", slots.length());
+    if(verbose) conoutf(colourwhite, "Saved %d texture slots", numslots);
+    PROGRESS(numslots);
 
-    progress(0, "Saving decal slots..");
+    numslots = decalslots.length();
+    progress(-numslots, "Saving decal slots..");
     lasttexgroup = NULL;
     loopv(decalslots)
     {
         saveslotconfig(h, *decalslots[i], i, true);
-        progress((i+1)/float(decalslots.length()), "Saving decal slots..");
+        PROGRESS(i);
     }
     if(verbose) conoutf(colourwhite, "Saved %d decal slots", decalslots.length());
+    PROGRESS(numslots);
 
-    progress(0, "Saving mapmodel slots..");
+    numslots = mapmodels.length();
+    progress(-numslots, "Saving mapmodel slots..");
     loopv(mapmodels)
     {
         h->printf("mapmodel %s\n", escapestring(mapmodels[i].name));
-        progress((i+1)/float(mapmodels.length()), "Saving mapmodel slots..");
+        PROGRESS(i);
     }
     if(mapmodels.length()) h->printf("\n");
     if(verbose) conoutf(colourwhite, "Saved %d mapmodel slots", mapmodels.length());
+    PROGRESS(numslots);
 
-    progress(0, "Saving mapsound slots..");
+    numslots = mapsounds.length();
+    progress(-numslots, "Saving mapsound slots..");
     loopv(mapsounds)
     {
         h->printf("mapsound %s", escapestring(mapsounds[i].name));
@@ -714,10 +723,11 @@ void save_config(char *mname, bool forcesave = false, int backuprev = -1)
         h->printf(" %s", floatstr(mapsounds[i].maxdist));
         h->printf(" %d", mapsounds[i].variants);
         h->printf("\n");
-        progress((i+1)/float(mapsounds.length()), "Saving mapsound slots..");
+        PROGRESS(i);
     }
     if(mapsounds.length()) h->printf("\n");
     if(verbose) conoutf(colourwhite, "Saved %d mapsound slots", mapsounds.length());
+    PROGRESS(numslots);
 
     progress(0, "Saving mapsoundenvs..");
     dumpsoundenvs(h);
@@ -734,21 +744,28 @@ void save_mapshot(char *mname, bool forcesave = false, int backuprev = -1)
     int oldmapvariant = mapvariant;
     changemapvariant(MPV_DEFAULT);
 
+    progress(-6, "Saving map screenshot..");
+
     ViewSurface mapshot = ViewSurface(DRAWTEX_MAP);
     entities::mapshot(mapshot.worldpos, mapshot.yaw, mapshot.pitch, mapshot.fov);
+    PROGRESS(0);
 
     if(mapshot.render(mapshotsize * 2, mapshotsize * 2))
     {
+        PROGRESS(1);
         if(autosavebackups && !forcesave) backup(mname, ifmtexts[imageformat], backuprev >= 0 ? backuprev : hdr.revision, autosavebackups > 2, !(autosavebackups%2));
+        PROGRESS(2);
         mapshot.save(mname, mapshotsize, mapshotsize);
 
         const char *mapshotnames[3] = { "", "<blur:1>", "<blur:2>" };
         loopi(3)
         {
+            PROGRESS(3 + i);
             defformatstring(texname, "%s%s", mapshotnames[i], mname);
             reloadtexture(texname);
         }
     }
+    PROGRESS(6);
 
     changemapvariant(oldmapvariant);
 }
@@ -777,7 +794,7 @@ void save_world(const char *mname, bool nodata, bool forcesave)
     }
 
     savemapprogress = 0;
-    progress(-1, "Saving map..");
+    progress(0, "Saving map..");
     memcpy(hdr.head, "MAPZ", 4);
     hdr.version = MAPVERSION;
     hdr.headersize = sizeof(mapz);
@@ -1065,7 +1082,7 @@ bool load_world(const char *mname, int crc, int variant)
             }
             #undef MAPZCOMPAT
 
-            progress(-1, "Loading map file..");
+            progress(0, "Loading map..");
 
             resetmap(false, variant);
             hdr = newhdr;
@@ -1371,6 +1388,8 @@ bool load_world(const char *mname, int crc, int variant)
         identflags |= IDF_MAP;
         defformatstring(cfgname, "%s.cfg", mapname);
         if(!execfile(cfgname, false)) execfile("config/map/default.cfg");
+
+        progress(0, "Initialising materials..");
         if(hdr.version <= 43)
         {
             resetmaterials();

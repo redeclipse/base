@@ -1102,7 +1102,7 @@ void genpvs(int *viewcellsize)
         return;
     }
 
-    progress(-1, "Generating PVS.. (ESC to abort)");
+    progress(0, "Generating PVS.. (ESC to abort)");
     genpvs_canceled = false;
     Uint32 start = getclockticks();
 

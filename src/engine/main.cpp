@@ -956,22 +956,19 @@ FVAR(0, loadprogress, 0, 0, 1);
 SVAR(0, progresstitle, "");
 FVAR(0, progressamt, -1, 0, 1);
 VAR(IDF_PERSIST, progressfps, -1, -1, VAR_MAX);
-int lastprogress = 0;
+int lastprogress = 0, progsteps = 0;
 
 void progress(float amt, const char *s, ...)
 {
-    if(progressing || !inbetweenframes || drawtex) return;
-    if(amt < 0) amt = 0; // signals the start of a long process
-    if(progressfps && lastprogress)
+    if(amt < 0.0f)
     {
-        int curprog = progressfps >= 0 ? progressfps : refreshrate, diff = getclockticks() - lastprogress;
-        if(curprog > 0 && amt > 0 && diff >= 0 && diff < (1000 + curprog-1)/curprog) return;
+        amt = 0;
+        progsteps = int(amt);
     }
-    clientkeepalive();
-
-    SDL_PumpEvents(); // keep the event queue awake to avoid appearing unresponsive
+    else if(progsteps && (amt == 0.0f || amt == 1.0f)) progsteps = 0;
 
     bool oldconvars = consolevars;
+    int oldflags = identflags;
     if(consolevars == 1 && consolerun) consolevars = 0;
 
     string sf;
@@ -983,20 +980,37 @@ void progress(float amt, const char *s, ...)
         va_end(args);
     }
     else copystring(sf, "Loading..");
+
     setsvar("progresstitle", sf);
     setfvar("progressamt", amt);
+
+    if(progressing || !inbetweenframes || drawtex) goto progresskip;
+
+    if(progressfps && lastprogress)
+    {
+        int curprog = progressfps >= 0 ? progressfps : refreshrate, diff = getclockticks() - lastprogress;
+        if(curprog > 0 && amt > 0 && diff >= 0 && diff < (1000 + curprog-1)/curprog) goto progresskip;
+    }
+
+    clientkeepalive();
+    SDL_PumpEvents(); // keep the event queue awake to avoid appearing unresponsive
+
     if(verbose >= 4) conoutf(colourwhite, "%s [%.2f%%]", sf, amt*100.f);
 
-    int oldflags = identflags;
     identflags &= ~IDF_MAP;
     progressing = true;
+
     updatetextures();
     gl_drawnoview();
     swapbuffers(false);
+
     lastprogress = getclockticks();
+
     updatesounds();
+
     progressing = false;
     identflags = oldflags;
+progresskip:
     consolevars = oldconvars;
 }
 

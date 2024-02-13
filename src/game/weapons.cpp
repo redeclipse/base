@@ -402,6 +402,7 @@ namespace weapons
         loopi(W_ALL)
         {
             if(*weaptype[i].item) preloadmodel(weaptype[i].item);
+            if(*weaptype[i].ammo) preloadmodel(weaptype[i].ammo);
             if(*weaptype[i].vwep) preloadmodel(weaptype[i].vwep);
             if(*weaptype[i].hwep) preloadmodel(weaptype[i].hwep);
         }

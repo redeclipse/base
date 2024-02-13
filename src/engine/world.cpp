@@ -1446,29 +1446,32 @@ ICOMMAND(0, resetmapvars, "", (), if(editmode || identflags&IDF_MAP) clearmapvar
 
 void resetmap(bool empty, int variant)
 {
-    progress(-1, "Resetting map..");
-    fx::clear();
-    resetdecals();
-    resetmaterials();
-    resetmapmodels();
-    clearsound();
-    resetblendmap();
-    clearlights();
-    clearpvs();
-    clearslots();
-    clearparticles();
-    clearwindemitters();
-    clearstains();
-    clearsleep();
-    cancelsel();
-    pruneundos();
-    resetmapshaders();
-    UI::resetmap();
+    progress(-22, "Resetting map..");
+    PROGRESS(0); fx::clear();
+    PROGRESS(1); resetdecals();
+    PROGRESS(2); resetmaterials();
+    PROGRESS(3); resetmapmodels();
+    PROGRESS(4); clearsound();
+    PROGRESS(5); resetblendmap();
+    PROGRESS(6); clearlights();
+    PROGRESS(7); clearpvs();
+    PROGRESS(8); clearslots();
+    PROGRESS(9); clearparticles();
+    PROGRESS(10); clearwindemitters();
+    PROGRESS(11); clearstains();
+    PROGRESS(12); clearsleep();
+    PROGRESS(13); cancelsel();
+    PROGRESS(14); pruneundos();
+    PROGRESS(15); resetmapshaders();
+    PROGRESS(16); UI::resetmap();
+
+    PROGRESS(17);
     setsvar("maptext", "", false);
     mapcrc = 0;
     mapvariant = variant;
 
-    entities::clearents();
+    PROGRESS(18); entities::clearents();
+    PROGRESS(19);
     outsideents.setsize(0);
     numoctaents = 0;
     spotlights = 0;
@@ -1477,14 +1480,15 @@ void resetmap(bool empty, int variant)
     smalphalights = 0;
     volumetricsmalphalights = 0;
     vismatmask = 0xFFFF;
-    game::resetmap(empty);
+    PROGRESS(20); game::resetmap(empty);
+    PROGRESS(21);
 }
 
 bool emptymap(int scale, bool force, const char *mname, bool usecfg)    // main empty world creation routine
 {
     if(!force && !editmode)
     {
-        conoutf(colourred, "Newmap only allowed in edit mode");
+        conoutf(colourred, "Creating a new map is only allowed in edit mode");
         return false;
     }
 

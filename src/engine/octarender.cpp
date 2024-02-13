@@ -1800,30 +1800,31 @@ void precachetextures()
 void allchanged(bool load)
 {
     if(!connected()) load = false;
-    if(load) initlights();
-    progress(-1, "Clearing vertex arrays..");
-    clearvas(worldroot);
-    resetqueries();
-    resetclipplanes();
-    if(load) initenvtexs();
-    entitiesinoctanodes();
-    tjoints.setsize(0);
-    if(filltjoints) findtjoints();
-    octarender();
-    if(load) precachetextures();
-    hazesurf.create();
-    setupmaterials();
-    clearshadowcache();
-    updatevabbs(true);
-    entities::allchanged(load);
+    progress(-20, "Recalculating world..");
+    PROGRESS(0); if(load) initlights();
+    PROGRESS(1); clearvas(worldroot);
+    PROGRESS(2); resetqueries();
+    PROGRESS(3); resetclipplanes();
+    PROGRESS(4); if(load) initenvtexs();
+    PROGRESS(5); entitiesinoctanodes();
+    PROGRESS(6); tjoints.setsize(0);
+    PROGRESS(7); if(filltjoints) findtjoints();
+    PROGRESS(8); octarender();
+    PROGRESS(9); if(load) precachetextures();
+    PROGRESS(10); hazesurf.create();
+    PROGRESS(11); setupmaterials();
+    PROGRESS(12); clearshadowcache();
+    PROGRESS(13); updatevabbs(true);
+    PROGRESS(14); entities::allchanged(load);
     if(load)
     {
-        genshadowmeshes();
-        updateblendtextures();
-        seedparticles();
-        genenvtexs();
-        drawminimap();
+        PROGRESS(15); genshadowmeshes();
+        PROGRESS(16); updateblendtextures();
+        PROGRESS(17); seedparticles();
+        PROGRESS(18); genenvtexs();
+        PROGRESS(19); drawminimap();
     }
+    PROGRESS(20);
 }
 
 void recalc()

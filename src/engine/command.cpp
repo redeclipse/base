@@ -728,7 +728,8 @@ hashnameset<defvar> defvars;
 #define DEFVAR(cmdname, fmt, args, typebody, body) \
     ICOMMAND(0, cmdname, fmt, args, \
     { \
-        if(idents.access(name)) \
+        ident *id = idents.access(name); \
+        if(id) \
         { \
             if(!defvars.access(name)) debugcode("Cannot redefine %s as a variable", name); \
             else { typebody; } \
@@ -742,14 +743,29 @@ hashnameset<defvar> defvars;
     });
 
 #define DEFIVAR(cmdname, flags) \
-    DEFVAR(cmdname, "siiis", (char *name, int *min, int *cur, int *max, char *onchange), , \
+    DEFVAR(cmdname, "siiis", (char *name, int *min, int *cur, int *max, char *onchange), \
+        { \
+            id->minval = *min; \
+            id->maxval = *max; \
+            *id->storage.i = clamp(*id->storage.i, id->minval, id->maxval); \
+            id->def.i = id->bin.i = clamp(*cur, id->minval, id->maxval); \
+        }, \
         def.i = variable(name, *min, *cur, *max, &def.i, defvar::changed, flags))
+
 #define DEFFVAR(cmdname, flags) \
-    DEFVAR(cmdname, "sfffs", (char *name, float *min, float *cur, float *max, char *onchange), , \
+    DEFVAR(cmdname, "sfffs", (char *name, float *min, float *cur, float *max, char *onchange), \
+        { \
+            id->minvalf = *min; \
+            id->maxvalf = *max; \
+            *id->storage.f = clamp(*id->storage.f, id->minvalf, id->maxvalf); \
+            id->def.f = id->bin.f = clamp(*cur, id->minvalf, id->maxvalf); \
+        }, \
         def.f = fvariable(name, *min, *cur, *max, &def.f, defvar::changed, flags))
+
 #define DEFSVAR(cmdname, flags) \
     DEFVAR(cmdname, "sss", (char *name, char *cur, char *onchange), , \
         def.s = svariable(name, cur, &def.s, defvar::changed, flags))
+
 
 DEFIVAR(defvar, IDF_COMPLETE);
 DEFIVAR(defvarp, IDF_COMPLETE|IDF_PERSIST);
@@ -759,6 +775,19 @@ DEFFVAR(deffvar, IDF_COMPLETE);
 DEFFVAR(deffvarp, IDF_COMPLETE|IDF_PERSIST);
 DEFSVAR(defsvar, IDF_COMPLETE);
 DEFSVAR(defsvarp, IDF_COMPLETE|IDF_PERSIST);
+
+#ifdef STANDALONE
+#define DEFTVAR(cmdname, flags) \
+    DEFVAR(cmdname, "ssbs", (char *name, char *cur, int *tclamp, char *onchange), , \
+        def.s = svariable(name, cur, &def.s, defvar::changed, flags))
+#else
+#define DEFTVAR(cmdname, flags) \
+    DEFVAR(cmdname, "ssbs", (char *name, char *cur, int *tclamp, char *onchange), if(initing == NOT_INITING && *id->storage.s[0]) textureload(*id->storage.s, *tclamp >= 0 ? *tclamp : 3, true), \
+        def.s = svariable(name, cur, &def.s, defvar::changed, flags); \
+        if(initing == NOT_INITING && def.s[0]) textureload(def.s, *tclamp >= 0 ? *tclamp : 3, true))
+#endif
+DEFTVAR(deftvar, IDF_COMPLETE|IDF_TEXTURE|IDF_PRELOAD);
+DEFTVAR(deftvarp, IDF_COMPLETE|IDF_TEXTURE|IDF_PERSIST|IDF_PRELOAD);
 
 #define GETVAR(id, vartype, name, retval) \
     ident *id = idents.access(name); \

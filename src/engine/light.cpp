@@ -619,7 +619,7 @@ static Uint32 calclighttimer(Uint32 interval, void *param)
 
 void calclight()
 {
-    progress(-1, "Computing lighting.. (ESC to abort)");
+    progress(0, "Computing lighting.. (ESC to abort)");
     remip();
     optimizeblendmap();
     clearsurfaces(worldroot);

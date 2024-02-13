@@ -7469,7 +7469,7 @@ namespace UI
         if(tsize <= 0) tsize = compositesize;
         else if(tsize < 1<<1) tsize = 1<<1;
 
-        if(msg) progress(loadprogress, "Compositing texture: %s (%s)", cname, args && *args ? args : "-");
+        if(msg) progress(0, "Compositing texture: %s (%s)", cname, args && *args ? args : "-");
 
         Window *w = surface->windows.find(cname, NULL);
         if(!w)
@@ -7569,6 +7569,8 @@ namespace UI
 
         list.deletearrays();
         popsurface();
+
+        if(msg) progress(1, "Compositing texture: %s (%s)", cname, args && *args ? args : "-");
 
         return t;
     }

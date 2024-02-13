@@ -52,8 +52,8 @@ Slotmanager<soundslot> gamesounds;
 vector<soundslot> mapsounds;
 vector<SoundHandle> soundmap;
 vector<soundsource> soundsources;
-SDL_Thread *music_thread;
-SDL_mutex *music_mutex;
+SDL_Thread *music_thread = NULL;
+SDL_mutex *music_mutex = NULL;
 musicstream *music = NULL;
 
 vector<Sharedptr<soundenv>> soundenvs;

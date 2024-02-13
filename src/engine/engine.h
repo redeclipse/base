@@ -855,11 +855,14 @@ enum
     en(um, Starting, GAMESTATE) en(um, Waiting, GAMEWAIT) en(um, Maximum, MAX)
 ENUM_DLN(PROGRESS);
 
-extern int initing, fullscreen, fullscreendesktop, numcpus, noconfigfile, firstrun;
+extern void setfullscreen(bool enable);
+
+extern int initing, fullscreen, fullscreendesktop, numcpus, noconfigfile, firstrun, progsteps;
 extern bool progressing, pixeling;
 extern float loadprogress, progressamt;
 extern char *progresstitle;
-extern void setfullscreen(bool enable);
+
+#define PROGRESS(n) progress(((n) + 1) / float(max(progsteps, 1)), progresstitle)
 extern void progress(float amt, const char *s, ...) PRINTFARGS(2, 3);
 extern void limitfps(int &millis, int curmillis);
 

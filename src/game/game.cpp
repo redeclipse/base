@@ -2518,6 +2518,7 @@ namespace game
         ai::preload();
         weapons::preload();
         projs::preload();
+        loopv(mixers) mixers[i].loadtex();
         if(m_edit(gamemode) || m_capture(gamemode)) capture::preload();
         if(m_edit(gamemode) || m_defend(gamemode)) defend::preload();
         if(m_edit(gamemode) || m_bomber(gamemode)) bomber::preload();
