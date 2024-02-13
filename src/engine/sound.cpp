@@ -768,7 +768,8 @@ SVAR(0, musicinterm, "sounds/interm");
 
 void smartmusic(bool cond, bool init, bool interm)
 {
-    SDL_LockMutex(music_mutex);
+    if(init) canmusic = true;
+    else if(!canmusic) return;
 
     bool delstr = false;
     char *name = interm ? musicinterm : musictheme;
@@ -793,16 +794,14 @@ void smartmusic(bool cond, bool init, bool interm)
         list.deletearrays();
     }
 
+    SDL_LockMutex(music_mutex);
+
     bool isplaying = music && music->playing();
     bool hasmusic = music && !strcmp(music->name, name);
 
     SDL_UnlockMutex(music_mutex);
 
-    if(init) canmusic = true;
-    if(canmusic && !nosound && soundmastervol && soundmusicvol && (cond || !isplaying) && *name)
-    {
-        if(!playingmusic() || (cond && !hasmusic)) playmusic(name);
-    }
+    if(!nosound && soundmastervol && soundmusicvol && (cond || !isplaying || !hasmusic) && *name) playmusic(name);
 
     if(delstr) delete[] name;
 }
