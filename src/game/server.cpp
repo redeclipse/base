@@ -761,7 +761,7 @@ namespace server
             }
         }
         else sents[ent].millis += G(itemspawntime);
-        if(msg && sents[ent].spawned != oldspawn) sendf(-1, 1, "ri3", N_ITEMSPAWN, ent, sents[ent].spawned ? 1 : 0);
+        if(msg && sents[ent].spawned != oldspawn) sendf(-1, 1, "ri4", N_ITEMSPAWN, ent, sents[ent].spawned ? 1 : 0, sents[ent].millis - gamemillis);
     }
 
     void takeammo(clientinfo *ci, int weap, int amt = 1)
@@ -5456,7 +5456,7 @@ namespace server
 
         ci->useitem(ent, sents[ent].type, attr, ammoamt, sweap, millis, W(attr, delayitem));
 
-        sendf(-1, 1, "ri9", N_ITEMACC, ci->clientnum, cn, ent, ammoamt, cn < 0 && sents[ent].spawned ? 1 : 0, weap, dropped, ammo);
+        sendf(-1, 1, "ri9i", N_ITEMACC, ci->clientnum, cn, ent, ammoamt, cn < 0 && sents[ent].spawned ? 1 : 0, weap, dropped, ammo, sents[ent].millis - gamemillis);
     }
 
     bool gameevent::flush(clientinfo *ci, int fmillis)

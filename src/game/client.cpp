@@ -2775,36 +2775,10 @@ namespace client
 
                 case N_ITEMSPAWN:
                 {
-                    int ent = getint(p), value = getint(p);
+                    int ent = getint(p), value = getint(p), delay = getint(p);
                     if(!entities::ents.inrange(ent)) break;
-                    gameentity &e = *(gameentity *)entities::ents[ent];
-                    int attr = m_attr(e.type, e.attrs[0]);
-
-                    entities::setspawn(ent, value);
+                    entities::setspawn(ent, value, delay);
                     ai::itemspawned(ent, value!=0);
-
-                    if(e.spawned())
-                    {
-                        static fx::FxHandle fx = fx::getfxhandle("FX_ITEM_SPAWN");
-                        fx::createfx(fx)
-                            .setfrom(e.pos())
-                            .setscale(enttype[e.type].radius*0.125f)
-                            .setparam(0, attr);
-                    }
-
-                    if(e.type == WEAPON && attr == W_ROCKET)
-                    {
-                        gamelog *log = new gamelog(GAMELOG_EVENT);
-                        log->addlist("args", "type", "item");
-                        log->addlist("args", "action", "spawn");
-                        log->addlist("args", "entity", ent);
-                        log->addlist("args", "attr", attr);
-                        log->addlist("args", "spawn", value);
-                        log->addlist("args", "colour", colourwhite);
-                        log->addlistf("args", "console", "The %s has spawned", e.type == WEAPON && isweap(attr) ? W(attr, longname) : enttype[e.type].name);
-                        log->addclient("client", d);
-                        if(!log->push()) DELETEP(log);
-                    }
 
                     break;
                 }
@@ -2819,11 +2793,11 @@ namespace client
                 case N_ITEMACC:
                 { // uses a specific drop so the client knows what to replace
                     int lcn = getint(p), fcn = getint(p), ent = getint(p), ammoamt = getint(p), spawn = getint(p),
-                        weap = getint(p), drop = getint(p), ammo = getint(p);
+                        weap = getint(p), drop = getint(p), ammo = getint(p), delay = getint(p);
                     gameent *m = game::getclient(lcn);
                     if(!m) break;
                     if(entities::ents.inrange(ent) && enttype[entities::ents[ent]->type].usetype == EU_ITEM)
-                        entities::useeffects(m, fcn, ent, ammoamt, spawn, weap, drop, ammo);
+                        entities::useeffects(m, fcn, ent, ammoamt, spawn, weap, drop, ammo, delay);
                     break;
                 }
 

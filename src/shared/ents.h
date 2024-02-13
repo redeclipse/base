@@ -141,10 +141,7 @@ struct extentity : entity                       // part of the entity that doesn
     int flags;        // the only dynamic state of a map entity
     int lastemit, emit[3];
 
-    extentity() : flags(0), lastemit(0)
-    {
-        emit[0] = emit[1] = emit[2] = 0;
-    }
+    extentity() : flags(0), lastemit(0) { emit[0] = emit[1] = emit[2] = 0; }
 
     bool spawned() const { return (flags&EF_SPAWNED) != 0; }
     void setspawned(bool val) { if(val) flags |= EF_SPAWNED; else flags &= ~EF_SPAWNED; }

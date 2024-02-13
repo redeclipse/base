@@ -959,7 +959,7 @@ namespace entities
                 }
                 case 3: // info
                 {
-                    if(ex < 0) intret(7);
+                    if(ex < 0) intret(9);
                     else
                     {
                         gameentity &e = *(gameentity *)ents[id];
@@ -972,6 +972,8 @@ namespace entities
                             case 4: floatret(e.o.x); break;
                             case 5: floatret(e.o.y); break;
                             case 6: floatret(e.o.z); break;
+                            case 7: intret(e.spawndelay); break;
+                            case 8: floatret(!e.spawned() && e.lastspawn && e.spawndelay ? (lastmillis - e.lastspawn) / float(e.spawndelay) : -1.0f); break;
                             default: break;
                         }
                     }
@@ -1473,7 +1475,7 @@ namespace entities
         return "";
     }
 
-    void useeffects(gameent *d, int cn, int ent, int ammoamt, bool spawn, int weap, int drop, int ammo)
+    void useeffects(gameent *d, int cn, int ent, int ammoamt, bool spawn, int weap, int drop, int ammo, int delay)
     {
         gameentity &e = *(gameentity *)ents[ent];
         int sweap = m_weapon(d->actortype, game::gamemode, game::mutators), attr = m_attr(e.type, e.attrs[0]),
@@ -1507,6 +1509,8 @@ namespace entities
         {
             e.setspawned(spawn);
             e.lastemit = lastmillis;
+            e.lastspawn = lastmillis;
+            e.spawndelay = delay;
         }
 
         if(e.type == WEAPON && attr == W_ROCKET)
@@ -1516,6 +1520,7 @@ namespace entities
             log->addlist("args", "action", "use");
             log->addlist("args", "entity", ent);
             log->addlist("args", "attr", attr);
+            log->addlist("args", "delay", delay);
             log->addlist("args", "spawn", spawn ? 1 : 0);
             log->addlist("args", "colour", colourwhite);
             log->addlistf("args", "console", "%s picked up the %s", game::colourname(d), e.type == WEAPON && isweap(attr) ? W(attr, longname) : enttype[e.type].name);
@@ -2024,24 +2029,59 @@ namespace entities
         }
     }
 
-    void setspawn(int n, int m)
+    void setspawn(int n, int m, int p)
     {
         if(!ents.inrange(n)) return;
         gameentity &e = *(gameentity *)ents[n];
         bool on = m%2, spawned = e.spawned();
+
         e.setspawned(on);
-        if(on) e.lastspawn = lastmillis;
-        if(e.type == TRIGGER && cantrigger(n) && (e.attrs[1] == TRIG_TOGGLE || e.attrs[1] == TRIG_LINKED || e.attrs[1] == TRIG_ONCE) && (m >= 2 || e.lastemit <= 0 || e.spawned() != spawned))
+
+        if(e.type == TRIGGER)
         {
-            if(m >= 2) e.lastemit = -1;
-            else if(e.lastemit > 0)
+            if(cantrigger(n) && (e.attrs[1] == TRIG_TOGGLE || e.attrs[1] == TRIG_LINKED || e.attrs[1] == TRIG_ONCE) && (m >= 2 || e.lastemit <= 0 || e.spawned() != spawned))
             {
-                int last = lastmillis-e.lastemit, trig = triggertime(e, true);
-                if(last > 0 && last < trig) e.lastemit = lastmillis-(trig-last);
+                if(m >= 2) e.lastemit = -1;
+                else if(e.lastemit > 0)
+                {
+                    int last = lastmillis - e.lastemit, trig = triggertime(e, true);
+                    if(last > 0 && last < trig) e.lastemit = lastmillis - (trig - last);
+                    else e.lastemit = lastmillis;
+                }
                 else e.lastemit = lastmillis;
+
+                execlink(NULL, n, false);
             }
-            else e.lastemit = lastmillis;
-            execlink(NULL, n, false);
+        }
+        else e.lastemit = lastmillis;
+        e.lastspawn = lastmillis;
+        e.spawndelay = p;
+
+        if(enttype[e.type].usetype == EU_ITEM)
+        {
+            int attr = m_attr(e.type, e.attrs[0]);
+
+            if(e.spawned())
+            {
+                static fx::FxHandle fx = fx::getfxhandle("FX_ITEM_SPAWN");
+                fx::createfx(fx)
+                    .setfrom(e.pos())
+                    .setscale(enttype[e.type].radius*0.125f)
+                    .setparam(0, attr);
+            }
+
+            if(e.type == WEAPON && attr == W_ROCKET)
+            {
+                gamelog *log = new gamelog(GAMELOG_EVENT);
+                log->addlist("args", "type", "item");
+                log->addlist("args", "action", "spawn");
+                log->addlist("args", "entity", n);
+                log->addlist("args", "attr", attr);
+                log->addlist("args", "spawn", m);
+                log->addlist("args", "colour", colourwhite);
+                log->addlistf("args", "console", "The %s has spawned", e.type == WEAPON && isweap(attr) ? W(attr, longname) : enttype[e.type].name);
+                if(!log->push()) DELETEP(log);
+            }
         }
     }
     ICOMMAND(0, entspawned, "i", (int *n), intret(ents.inrange(*n) && ents[*n]->spawned() ? 1 : 0));

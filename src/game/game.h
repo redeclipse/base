@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 276
+#define VERSION_GAME 277
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -464,7 +464,7 @@ char msgsizelookup(int msg)
         N_SHOOT, 0, N_DESTROY, 0, N_STICKY, 0, N_SUICIDE, 4, N_DIED, 0, N_POINTS, 5, N_TOTALS, 0, N_AVGPOS, 0,
         N_DAMAGE, 14, N_BURNRES, 0, N_BLEEDRES, 0, N_SHOCKRES, 0, N_CORRODERES, 0,
         N_SHOTFX, 0, N_LOADOUT, 0, N_TRYSPAWN, 2, N_SPAWNSTATE, 0, N_SPAWN, 0, N_WEAPDROP, 0, N_WEAPSELECT, 0, N_WEAPCOOK, 0,
-        N_MAPCHANGE, 0, N_MAPVOTE, 0, N_CLEARVOTE, 0, N_CHECKPOINT, 0, N_ITEMSPAWN, 3, N_ITEMUSE, 0, N_TRIGGER, 0, N_EXECLINK, 3,
+        N_MAPCHANGE, 0, N_MAPVOTE, 0, N_CLEARVOTE, 0, N_CHECKPOINT, 0, N_ITEMSPAWN, 4, N_ITEMUSE, 0, N_TRIGGER, 0, N_EXECLINK, 3,
         N_PING, 2, N_PONG, 2, N_CLIENTPING, 2, N_TICK, 5, N_ITEMACC, 0, N_SERVMSG, 0, N_GETGAMEINFO, 0, N_GAMEINFO, 0, N_GAMESERVINFO, 2, N_ATTRMAP, 0, N_RESUME, 0,
         N_EDITMODE, 2, N_EDITENT, 0, N_EDITLINK, 4, N_EDITVAR, 0, N_EDITF, 16, N_EDITT, 16, N_EDITM, 17, N_FLIP, 14,
         N_COPY, 14, N_PASTE, 14, N_ROTATE, 15, N_REPLACE, 17, N_DELCUBE, 14,
@@ -1270,12 +1270,12 @@ AFFINITYPOS(defend);
 AFFINITYPOS(bomber);
 struct gameentity : extentity
 {
-    int schan, affinity, lastspawn, nextemit, lastthirdpos;
+    int schan, affinity, lastspawn, nextemit, lastthirdpos, spawndelay;
     linkvector kin;
     vec offset, thirdpos, curpos;
     float yaw, pitch;
 
-    gameentity() : schan(-1), affinity(-1), lastspawn(0), nextemit(0), lastthirdpos(0), offset(0, 0, 0), yaw(0), pitch(0) {}
+    gameentity() : schan(-1), affinity(-1), lastspawn(0), nextemit(0), lastthirdpos(0), spawndelay(0), offset(0, 0, 0), yaw(0), pitch(0) {}
     ~gameentity()
     {
         if(issound(schan)) soundsources[schan].clear();
@@ -2882,10 +2882,10 @@ namespace entities
     extern bool collateitems(dynent *d, vec &pos, float radius);
     extern void checkitems(dynent *d);
     extern void putitems(packetbuf &p);
-    extern void setspawn(int n, int m);
+    extern void setspawn(int n, int m, int p = 0);
     extern bool tryspawn(dynent *d, const vec &o, float yaw = 0, float pitch = 0);
     extern void spawnplayer(gameent *d, int ent = -1, bool suicide = false);
-    extern void useeffects(gameent *d, int cn, int ent, int ammoamt, bool spawn, int weap, int drop, int ammo = -1);
+    extern void useeffects(gameent *d, int cn, int ent, int ammoamt, bool spawn, int weap, int drop, int ammo = -1, int delay = 0);
     extern bool haloallow(const vec &o, int id, bool justtest = false, bool check = true);
     extern void checkui();
     extern void render();

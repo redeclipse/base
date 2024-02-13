@@ -241,11 +241,11 @@ namespace hud
 
     VAR(IDF_PERSIST, showclips, 0, 1, 1);
     VAR(IDF_PERSIST, clipanims, 0, 2, 2);
-    FVAR(IDF_PERSIST, clipsize, 0, 0.035f, 1000);
+    FVAR(IDF_PERSIST, clipsize, 0, 0.025f, 1000);
     FVAR(IDF_PERSIST, clipoffset, 0, 0.05f, 1000);
     FVAR(IDF_PERSIST, clipminscale, 0, 0.25f, 1000);
     FVAR(IDF_PERSIST, clipmaxscale, 0, 1, 1000);
-    FVAR(IDF_PERSIST, clipblend, 0, 0.33f, 1);
+    FVAR(IDF_PERSIST, clipblend, 0, 0.5f, 1);
     FVAR(IDF_PERSIST, clipcolour, 0, 1, 1);
     VAR(IDF_PERSIST, cliplength, 0, 0, VAR_MAX);
     VAR(IDF_PERSIST, clipstore, 0, 1, 1);
@@ -290,7 +290,7 @@ namespace hud
     FVAR(IDF_PERSIST, corroderclipskew, 0, 0.7f, 10);
     FVAR(IDF_PERSIST, grenadeclipskew, 0, 1.f, 10);
     FVAR(IDF_PERSIST, mineclipskew, 0, 1.f, 10);
-    FVAR(IDF_PERSIST, rocketclipskew, 0, 1.25f, 10);
+    FVAR(IDF_PERSIST, rocketclipskew, 0, 1.0f, 10);
     FVAR(IDF_PERSIST, meleeclipskew, 0, 0.75f, 10);
 
     VAR(IDF_PERSIST, clawcliprotate, 0, 12, 15); // "round-the-clock" rotation of texture, 0 = off, &1 = flip x, &2 = flip y, &4 = angle, &8 = spin
