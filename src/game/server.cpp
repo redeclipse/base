@@ -1700,6 +1700,7 @@ namespace server
         gamewaittime = delay ? totalmillis : 0;
         gamewaitdelay = delay;
         gametick = 0;
+        srvoutf(3, colouryellow, "Server entering phase: %s (%s)", G_S_STR[gamestate], timestr(delay));
     }
 
     bool checkvotes(bool force = false);
@@ -6054,7 +6055,7 @@ namespace server
             if(!gametick || totalmillis - gametick >= 1000)
             {
                 sendf(-1, 1, "ri5", N_TICK, gamestate, timeleft(), timeelapsed(), timewaitdelay());
-                gametick = totalmillis - ((totalmillis - gametick) % 1000);
+                gametick = gametick ? totalmillis - ((totalmillis - gametick) % 1000) : totalmillis;
             }
         }
         else

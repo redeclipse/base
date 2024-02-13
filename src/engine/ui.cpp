@@ -19,7 +19,6 @@ namespace UI
     FVAR(IDF_PERSIST, uiscale, FVAR_NONZERO, 1, 100);
     FVAR(IDF_PERSIST, uiworldscale, FVAR_NONZERO, 50, FVAR_MAX);
 
-    // FVAR(IDF_PERSIST, uivisradius, 0, 8, FVAR_MAX);
     FVAR(IDF_PERSIST, uimaxdist, 0, 2048, FVAR_MAX);
     FVAR(IDF_PERSIST, uimapmaxdist, 0, 2048, FVAR_MAX);
 
@@ -1926,8 +1925,8 @@ namespace UI
                         if(maxdist > 0 && w->dist > maxdist) w->visible = false;
                     }
 
-                    // if(w->visible && !getvisible(camera1->o, camera1->yaw, camera1->pitch, w->pos, curfov, fovy, uivisradius, -1))
-                    //    w->visible = false;
+                    if(w->visible && !getvisible(camera1->o, camera1->yaw, camera1->pitch, w->pos, curfov, fovy, 0, -1))
+                        w->visible = false;
 
                     if(!w->visible && w->forcetest)
                     {   // fall back to the force test script
