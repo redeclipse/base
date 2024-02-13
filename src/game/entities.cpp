@@ -1485,15 +1485,19 @@ namespace entities
             d->weapammo[weap][W_A_CLIP] = -1;
             d->weapammo[weap][W_A_STORE] = 0;
         }
+
         d->useitem(ent, e.type, attr, ammoamt, sweap, lastmillis, W(attr, delayitem));
+
         emitsound(e.type == WEAPON && attr >= W_OFFSET && attr < W_ALL ? WSND(attr, S_W_USE) : S_ITEMUSE, weapons::getweapsoundpos(d, TAG_ORIGIN), d, &d->wschan[WS_MAIN_CHAN]);
         if(game::dynlighteffects) adddynlight(d->center(), enttype[e.type].radius*2, vec::fromcolor(colour).mul(2.f), 250, 250, L_NOSHADOW|L_NODYNSHADOW);
+
         if(ents.inrange(drop) && ents[drop]->type == WEAPON)
         {
             gameentity &f = *(gameentity *)ents[drop];
             attr = m_attr(f.type, f.attrs[0]);
             if(isweap(attr)) projs::drop(d, attr, drop, ammo, d == game::player1 || d->ai, weap);
         }
+
         if(cn >= 0)
         {
             gameent *m = game::getclient(cn);
@@ -1503,6 +1507,20 @@ namespace entities
         {
             e.setspawned(spawn);
             e.lastemit = lastmillis;
+        }
+
+        if(e.type == WEAPON && attr == W_ROCKET)
+        {
+            gamelog *log = new gamelog(GAMELOG_EVENT);
+            log->addlist("args", "type", "item");
+            log->addlist("args", "action", "use");
+            log->addlist("args", "entity", ent);
+            log->addlist("args", "attr", attr);
+            log->addlist("args", "spawn", spawn ? 1 : 0);
+            log->addlist("args", "colour", colourwhite);
+            log->addlistf("args", "console", "%s picked up the %s", game::colourname(d), e.type == WEAPON && isweap(attr) ? W(attr, longname) : enttype[e.type].name);
+            log->addclient("client", d);
+            if(!log->push()) DELETEP(log);
         }
     }
 

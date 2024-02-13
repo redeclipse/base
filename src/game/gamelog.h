@@ -350,7 +350,15 @@ struct gamelog
         }
         if(sound >= 0 && flags&GAMELOG_F_BROADCAST) entities::announce(sound, NULL, -1, soundflags);
 
-        if(type == GAMELOG_MESSAGE ? messagelogecho : eventlogecho)
+        bool wantecho = false;
+        switch(type)
+        {
+            case GAMELOG_EVENT: wantecho = eventlogecho != 0; break;
+            case GAMELOG_MESSAGE: wantecho = messagelogecho != 0; break;
+            default: break;
+        }
+
+        if(wantecho)
         {
             const char *con = constr();
             if(con && *con) conoutf(concolor(), "%s", con);
@@ -367,7 +375,14 @@ struct gamelog
 #ifdef CPP_GAME_SERVER
         return serverpush();
 #else
-        return clientpush(type == GAMELOG_MESSAGE ? messagelog : eventlog);
+        vector<gamelog *> *log;
+        switch(type)
+        {
+            case GAMELOG_EVENT: log = &eventlog; break;
+            case GAMELOG_MESSAGE: log = &messagelog; break;
+            default: return false;
+        }
+        return clientpush(*log);
 #endif
     }
 
@@ -672,6 +687,17 @@ struct gamelog
 };
 
 #ifdef CPP_GAME_MAIN
+
+#define GETLOGDEF(_MACRO) \
+    _MACRO(event); \
+    _MACRO(message);
+
+#define GETLOGLOOP(_MACRO) \
+    _MACRO(event, , loopcsv); \
+    _MACRO(message, , loopcsv); \
+    _MACRO(event, rev, loopcsvrev); \
+    _MACRO(message, rev, loopcsvrev);
+
 #define GETLOGVALS(logt) \
     ICOMMANDV(0, logt##count, logt##log.length()); \
     ICOMMAND(0, get##logt##millis, "i", (int *val), intret(logt##log.inrange(*val) ? logt##log[*val]->millis : -1)); \
@@ -723,8 +749,7 @@ struct gamelog
         gamelog::info *n = gamelog::getlistinfo(logt##log, *val, list, name); \
         if(n) n->comret(); \
     });
-GETLOGVALS(event);
-GETLOGVALS(message);
+GETLOGDEF(GETLOGVALS);
 
 #define LOOPLOGS(logt, name, op) \
     ICOMMAND(0, loop##logt##s##name, "iire", (int *count, int *skip, ident *id, uint *body), \
@@ -737,10 +762,34 @@ GETLOGVALS(message);
         }); \
         loopend(id, stack); \
     });
-LOOPLOGS(event,,loopcsv);
-LOOPLOGS(event,rev,loopcsvrev);
-LOOPLOGS(message,,loopcsv);
-LOOPLOGS(message,rev,loopcsvrev);
+GETLOGLOOP(LOOPLOGS);
+
+#define LOOPLOGSIF(logt, name, op) \
+    ICOMMAND(0, loop##logt##s##name##if, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
+    { \
+        loopstart(id, stack); \
+        op(logt##log, *count, *skip, \
+        { \
+            loopiter(id, stack, i); \
+            if(executebool(cond)) execute(body); \
+        }); \
+        loopend(id, stack); \
+    });
+GETLOGLOOP(LOOPLOGSIF);
+
+#define LOOPLOGSWHILE(logt, name, op) \
+    ICOMMAND(0, loop##logt##s##name##while, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
+    { \
+        loopstart(id, stack); \
+        op(logt##log, *count, *skip, \
+        { \
+            if(!executebool(cond)) break; \
+            loopiter(id, stack, i); \
+            execute(body); \
+        }); \
+        loopend(id, stack); \
+    });
+GETLOGLOOP(LOOPLOGSWHILE);
 
 #define LOOPLOGTAGS(logt, name, op) \
     ICOMMAND(0, loop##logt##tags##name, "iiire", (int *val, int *count, int *skip, ident *id, uint *body), \
@@ -755,10 +804,7 @@ LOOPLOGS(message,rev,loopcsvrev);
         }); \
         loopend(id, stack); \
     });
-LOOPLOGTAGS(event,,loopcsv);
-LOOPLOGTAGS(event,rev,loopcsvrev);
-LOOPLOGTAGS(message,,loopcsv);
-LOOPLOGTAGS(message,rev,loopcsvrev);
+GETLOGLOOP(LOOPLOGTAGS);
 
 #define LOOPLOGGROUPS(logt, name, op) \
     ICOMMAND(0, loop##logt##groups##name, "isiire", (int *val, char *tag, int *count, int *skip, ident *id, uint *body), \
@@ -774,10 +820,7 @@ LOOPLOGTAGS(message,rev,loopcsvrev);
         }); \
         loopend(id, stack); \
     });
-LOOPLOGGROUPS(event,,loopcsv);
-LOOPLOGGROUPS(event,rev,loopcsvrev);
-LOOPLOGGROUPS(message,,loopcsv);
-LOOPLOGGROUPS(message,rev,loopcsvrev);
+GETLOGLOOP(LOOPLOGGROUPS);
 
 #define LOOPLOGGROUPINFOS(logt, name, op) \
     ICOMMAND(0, loop##logt##groupinfos##name, "isiiire", (int *val, char *tag, int *grp, int *count, int *skip, ident *id, uint *body), \
@@ -792,10 +835,7 @@ LOOPLOGGROUPS(message,rev,loopcsvrev);
         }); \
         loopend(id, stack); \
     });
-LOOPLOGGROUPINFOS(event,,loopcsv);
-LOOPLOGGROUPINFOS(event,rev,loopcsvrev);
-LOOPLOGGROUPINFOS(message,,loopcsv);
-LOOPLOGGROUPINFOS(message,rev,loopcsvrev);
+GETLOGLOOP(LOOPLOGGROUPINFOS);
 
 #define LOOPLOGLISTS(logt, name, op) \
     ICOMMAND(0, loop##logt##lists##name, "isiiire", (int *val, int *count, int *skip, ident *id, uint *body), \
@@ -810,10 +850,7 @@ LOOPLOGGROUPINFOS(message,rev,loopcsvrev);
         }); \
         loopend(id, stack); \
     });
-LOOPLOGLISTS(event,,loopcsv);
-LOOPLOGLISTS(event,rev,loopcsvrev);
-LOOPLOGLISTS(message,,loopcsv);
-LOOPLOGLISTS(message,rev,loopcsvrev);
+GETLOGLOOP(LOOPLOGLISTS);
 
 #define LOOPLOGLISTINFOS(logt, name, op) \
     ICOMMAND(0, loop##logt##listinfos##name, "isiiire", (int *val, char *list, int *count, int *skip, ident *id, uint *body), \
@@ -828,8 +865,5 @@ LOOPLOGLISTS(message,rev,loopcsvrev);
         }); \
         loopend(id, stack); \
     });
-LOOPLOGLISTINFOS(event,,loopcsv);
-LOOPLOGLISTINFOS(event,rev,loopcsvrev);
-LOOPLOGLISTINFOS(message,,loopcsv);
-LOOPLOGLISTINFOS(message,rev,loopcsvrev);
+GETLOGLOOP(LOOPLOGLISTINFOS);
 #endif

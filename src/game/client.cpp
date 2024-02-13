@@ -2778,16 +2778,34 @@ namespace client
                     int ent = getint(p), value = getint(p);
                     if(!entities::ents.inrange(ent)) break;
                     gameentity &e = *(gameentity *)entities::ents[ent];
+                    int attr = m_attr(e.type, e.attrs[0]);
+
                     entities::setspawn(ent, value);
                     ai::itemspawned(ent, value!=0);
+
                     if(e.spawned())
                     {
                         static fx::FxHandle fx = fx::getfxhandle("FX_ITEM_SPAWN");
                         fx::createfx(fx)
                             .setfrom(e.pos())
                             .setscale(enttype[e.type].radius*0.125f)
-                            .setparam(0, m_attr(e.type, e.attrs[0]));
+                            .setparam(0, attr);
                     }
+
+                    if(e.type == WEAPON && attr == W_ROCKET)
+                    {
+                        gamelog *log = new gamelog(GAMELOG_EVENT);
+                        log->addlist("args", "type", "item");
+                        log->addlist("args", "action", "spawn");
+                        log->addlist("args", "entity", ent);
+                        log->addlist("args", "attr", attr);
+                        log->addlist("args", "spawn", value);
+                        log->addlist("args", "colour", colourwhite);
+                        log->addlistf("args", "console", "The %s has spawned", e.type == WEAPON && isweap(attr) ? W(attr, longname) : enttype[e.type].name);
+                        log->addclient("client", d);
+                        if(!log->push()) DELETEP(log);
+                    }
+
                     break;
                 }
 
