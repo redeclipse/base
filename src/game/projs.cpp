@@ -1347,7 +1347,28 @@ namespace projs
             if(ammo >= 0)
             {
                 if(ammo > 0 && entities::ents.inrange(ent))
+                {
                     create(d->muzzletag(), d->muzzletag(), local, d, PROJ_ENTITY, -1, 0, W(weap, spawnstay), W(weap, spawnstay), 1, 1, ent, ammo, index, count);
+
+                    gameentity &e = *(gameentity *)entities::ents[ent];
+                    if(enttype[e.type].usetype == EU_ITEM)
+                    {
+                        int attr = m_attr(e.type, e.attrs[0]);
+
+                        if(gs_playing(game::gamestate) && e.type == WEAPON && (itemannouncedrop&(1<<attr)) != 0)
+                        {
+                            gamelog *log = new gamelog(GAMELOG_EVENT);
+                            log->addlist("args", "type", "item");
+                            log->addlist("args", "action", "drop");
+                            log->addlist("args", "entity", ent);
+                            log->addlist("args", "attr", attr);
+                            log->addlist("args", "colour", colourwhite);
+                            log->addlistf("args", "console", "%s dropped a %s", game::colourname(d), e.type == WEAPON && isweap(attr) ? W(attr, longname) : enttype[e.type].name);
+                            log->addclient("client", d);
+                            if(!log->push()) DELETEP(log);
+                        }
+                    }
+                }
                 d->weapammo[weap][W_A_CLIP] = -1;
                 d->weapammo[weap][W_A_STORE] = 0;
                 if(targ >= 0) d->setweapstate(weap, W_S_SWITCH, W(weap, delayswitch), lastmillis);

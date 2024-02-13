@@ -1513,7 +1513,7 @@ namespace entities
             e.spawndelay = delay;
         }
 
-        if(gs_playing(game::gamestate) && e.type == WEAPON && attr == W_ROCKET)
+        if(gs_playing(game::gamestate) && e.type == WEAPON && (itemannounceuse&(1<<attr)) != 0)
         {
             gamelog *log = new gamelog(GAMELOG_EVENT);
             log->addlist("args", "type", "item");
@@ -2070,7 +2070,7 @@ namespace entities
                     .setparam(0, attr);
             }
 
-            if(gs_playing(game::gamestate) && e.type == WEAPON && attr == W_ROCKET)
+            if(gs_playing(game::gamestate) && e.type == WEAPON && (itemannouncespawn&(1<<attr)) != 0)
             {
                 gamelog *log = new gamelog(GAMELOG_EVENT);
                 log->addlist("args", "type", "item");
