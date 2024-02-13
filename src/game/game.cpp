@@ -2286,7 +2286,7 @@ namespace game
             if(style&FRAG_REVENGE)
             {
                 concatstring(d->obit, " \fs\fzoyrevenge\fS");
-                d->dominator.removeobj(v);
+                v->dominator.removeobj(d);
                 anc = S_V_REVENGE;
                 hasanc = true;
             }
@@ -2294,7 +2294,7 @@ namespace game
             if(style&FRAG_DOMINATE)
             {
                 concatstring(d->obit, " \fs\fzoydominating\fS");
-                if(v->dominator.find(d) < 0) v->dominator.add(d);
+                if(d->dominator.find(v) < 0) d->dominator.add(v);
                 anc = S_V_DOMINATE;
                 hasanc = true;
             }
@@ -2394,7 +2394,7 @@ namespace game
             log->addlist("args", "type", "frag");
             log->addlist("args", "action", d == v ? "suicide" : "kill");
             log->addlist("args", "sound", anc);
-            log->addlist("args", "flags", GAMELOG_F_CLIENT1|GAMELOG_F_CLIENT2);
+            log->addlist("args", "flags", GAMELOG_F_CLIENT1);
             log->addlist("args", "weapon", weap);
             log->addlist("args", "actflags", flags);
             if(d->hasprize > 0) log->addlist("args", "prize", d->hasprize);
@@ -2417,8 +2417,8 @@ namespace game
         if(m_bomber(gamemode)) bomber::killed(d, v);
         ai::killed(d, v);
 
-        emitsound(d->actortype >= A_ENEMY || d->obliterated ? S_SPLOSH : S_DEATH, getplayersoundpos(d), d, &d->plchan[PLCHAN_VOICE]);
         spawngibs(weap, flags, damage, d, v, assist, style, material);
+        emitsound(d->actortype >= A_ENEMY || d->obliterated ? S_SPLOSH : S_DEATH, getplayersoundpos(d), d, &d->plchan[PLCHAN_VOICE]);
     }
 
     void timeupdate(int state, int remain, int elapsed, int wait)
