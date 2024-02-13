@@ -2585,7 +2585,7 @@ namespace projs
                             int partoffset = timeoffset / 2;
                             float partamt = millis / float(partoffset);
                             if(partamt >= 1.0f) partamt = 2.0f - partamt;
-                            mdl.shimmercolor = vec4(pulsehexcol(PULSE_READY), entities::entityshimmerblend);
+                            mdl.shimmercolor = vec4(pulsehexcol(PULSE_FLASH), entities::entityshimmerblend);
                             mdl.shimmerparams = vec4(partamt, entities::entityshimmerslice, entities::entityshimmerfade / entities::entityshimmerslice, entities::entityshimmerbright);
                         }
                     }

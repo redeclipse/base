@@ -4467,7 +4467,7 @@ namespace game
             float fade = protectfade(d);
             if(fade > 0.0f && fade < 1.0f)
             {
-                mdl.shimmercolor = vec4(pulsehexcol(d, PULSE_READY, 50), playershimmerblend);
+                mdl.shimmercolor = vec4(pulsehexcol(d, PULSE_FLASH, 50), playershimmerblend);
                 mdl.shimmercolor.mul(vec::fromcolor(game::getcolour(d, playereffecttone, playereffecttonelevel, playereffecttonemix)));
                 mdl.shimmerparams = vec4(1.0f - fade, playershimmerslice, playershimmerfade / playershimmerslice, playershimmerbright);
             }
