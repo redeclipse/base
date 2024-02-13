@@ -136,7 +136,7 @@ namespace capture
             capturestate::flag &f = st.flags[i];
             cament *c = cameras.add(new cament(cameras.length(), cament::AFFINITY, i));
             c->o = f.pos(true);
-            c->o.z += enttype[AFFINITY].radius*3/4;
+            c->o.z += enttype[AFFINITY].radius;
             c->player = f.owner;
         }
     }
@@ -150,7 +150,7 @@ namespace capture
                 if(!st.flags.inrange(c->id)) break;
                 capturestate::flag &f = st.flags[c->id];
                 c->o = f.pos(true);
-                c->o.z += enttype[AFFINITY].radius*3/4;
+                c->o.z += enttype[AFFINITY].radius;
                 c->player = f.owner;
                 break;
             }

@@ -291,7 +291,7 @@ namespace game
     FVAR(IDF_PERSIST, followside, FVAR_MIN, 8, FVAR_MAX);
     FVAR(IDF_PERSIST, followblend, 0, 1, 1);
 
-    VAR(IDF_PERSIST, followtvspeed, 1, 500, VAR_MAX);
+    VAR(IDF_PERSIST, followtvspeed, 1, 100, VAR_MAX);
     VAR(IDF_PERSIST, followtvyawspeed, 1, 500, VAR_MAX);
     VAR(IDF_PERSIST, followtvpitchspeed, 1, 500, VAR_MAX);
     FVAR(IDF_PERSIST, followtvrotate, FVAR_MIN, 0, FVAR_MAX); // rotate style, < 0 = absolute angle, 0 = scaled, > 0 = scaled with max angle
@@ -300,11 +300,12 @@ namespace game
 
     VAR(0, spectvcamera, -1, -1, VAR_MAX); // use this specific camera id
     VAR(0, spectvcameraaim, 0, 1, 1); // use this specific camera aiming
+    VAR(0, spectvintermthresh, 0, 1000, VAR_MAX); // wait this long before exiting intermission camera
     VAR(IDF_PERSIST, spectviters, 1, 6, 6);
     VAR(IDF_PERSIST, spectvmintime, 1, 5000, VAR_MAX);
     VAR(IDF_PERSIST, spectvtime, 1000, 10000, VAR_MAX);
     VAR(IDF_PERSIST, spectvmaxtime, 0, 20000, VAR_MAX);
-    VAR(IDF_PERSIST, spectvspeed, 1, 500, VAR_MAX);
+    VAR(IDF_PERSIST, spectvspeed, 1, 250, VAR_MAX);
     VAR(IDF_PERSIST, spectvyawspeed, 1, 500, VAR_MAX);
     VAR(IDF_PERSIST, spectvpitchspeed, 1, 500, VAR_MAX);
     FVAR(IDF_PERSIST, spectvrotate, FVAR_MIN, 0, FVAR_MAX); // rotate style, < 0 = absolute angle, 0 = scaled, > 0 = scaled with max angle
@@ -331,20 +332,20 @@ namespace game
     VAR(IDF_PERSIST, spectvfollowmintime, 1000, 5000, VAR_MAX);
     VAR(IDF_PERSIST, spectvfollowtime, 1000, 10000, VAR_MAX);
     VAR(IDF_PERSIST, spectvfollowmaxtime, 0, 20000, VAR_MAX);
-    VAR(IDF_PERSIST, spectvfollowspeed, 1, 500, VAR_MAX);
+    VAR(IDF_PERSIST, spectvfollowspeed, 1, 100, VAR_MAX);
     VAR(IDF_PERSIST, spectvfollowyawspeed, 1, 500, VAR_MAX);
     VAR(IDF_PERSIST, spectvfollowpitchspeed, 1, 500, VAR_MAX);
     FVAR(IDF_PERSIST, spectvfollowrotate, FVAR_MIN, 0, FVAR_MAX); // rotate style, < 0 = absolute angle, 0 = scaled, > 0 = scaled with max angle
     FVAR(IDF_PERSIST, spectvfollowyawscale, FVAR_MIN, 0.75f, 1000);
     FVAR(IDF_PERSIST, spectvfollowpitchscale, FVAR_MIN, 0.5f, 1000);
 
-    FVAR(IDF_PERSIST, spectvmindist, 0, 16, FVAR_MAX);
+    FVAR(IDF_PERSIST, spectvmindist, 0, 4, FVAR_MAX);
     FVAR(IDF_PERSIST, spectvmaxdist, 0, 1024, FVAR_MAX);
-    FVAR(IDF_PERSIST, spectvfollowmindist, 0, 8, FVAR_MAX);
+    FVAR(IDF_PERSIST, spectvfollowmindist, 0, 4, FVAR_MAX);
     FVAR(IDF_PERSIST, spectvfollowmaxdist, 0, 512, FVAR_MAX);
 
     VAR(IDF_PERSIST, deathcamstyle, 0, 1, 2); // 0 = no follow, 1 = follow attacker, 2 = follow self
-    VAR(IDF_PERSIST, deathcamspeed, 0, 500, VAR_MAX);
+    VAR(IDF_PERSIST, deathcamspeed, 0, 250, VAR_MAX);
 
     VAR(IDF_PERSIST, mouseinvert, 0, 0, 1);
     FVAR(IDF_PERSIST, sensitivity, 1e-4f, 10, 10000);
@@ -927,7 +928,7 @@ namespace game
     {
         if(!check || !cameras.empty())
         {
-            if(!gs_playing(gamestate) && intermmode) return true;
+            if(!(gs_playing(gamestate) && (gamestate != G_S_PLAYING || gettimeelapsed() >= spectvintermthresh)) && intermmode) return true;
             else switch(player1->state)
             {
                 case CS_SPECTATOR: if(specmode) return true; break;
@@ -3337,6 +3338,11 @@ namespace game
         return true;
     }
 
+    bool cameraaim(cament *c)
+    {
+        return spectvcameraaim && c->chase && (!c->player || thirdpersonview(true, c->player));
+    }
+
     bool camupdate(cament *c, int iters, bool renew = false)
     {
         if(!c || (c->player && !allowspec(c->player, spectvdead, spectvfollow))) return false;
@@ -3348,7 +3354,7 @@ namespace game
 
         loopj(iters)
         {
-            if((!c->chase || !spectvcameraaim) && j%4 != 0) continue;
+            if(!cameraaim(c) && j%4 != 0) continue;
 
             int count = 0;
             vec dir(0, 0, 0);
@@ -3366,7 +3372,7 @@ namespace game
 
             if(!count) continue; // can't fix it without a free camera or something visible
 
-            if(!c->chase || !spectvcameraaim)
+            if(!cameraaim(c))
             {
                 getcamyawpitch(c, yaw, pitch, true);
                 c->dir = vec(yaw*RAD, pitch*RAD);
@@ -3501,7 +3507,7 @@ namespace game
     {
         if(gs_waiting(gamestate)) return true; // override
         if(!tvmode(false) || (cameras.empty() && !buildcams())) return false;
-
+        bool playing = gs_playing(gamestate) && (gamestate != G_S_PLAYING || gettimeelapsed() > spectvintermthresh);
         if(!gs_playing(gamestate)) spectvfollow = -1;
         else if(player1->state != CS_SPECTATOR && spectvfollowself >= (m_duke(gamemode, mutators) ? 2 : 1)) spectvfollow = player1->clientnum;
 
@@ -3515,7 +3521,7 @@ namespace game
         bool reset = false;
         int count = findcams(cam), lastcn = cam->cn;
 
-        #define stvf(z) (!gs_playing(gamestate) ? spectvinterm##z : (spectvfollow >= 0 ? spectvfollow##z : spectv##z))
+        #define stvf(z) (!playing ? spectvinterm##z : (spectvfollow >= 0 ? spectvfollow##z : spectv##z))
 
         if(spectvcamera >= 0)
         {
@@ -3523,14 +3529,14 @@ namespace game
             if(spectvcamera != lastcamcn) reset = true;
             cam = cameras[spectvcamera];
             lastcamcn = cam->cn;
-            camupdate(cam, stvf(iters), restart || !count || !spectvcameraaim);
+            camupdate(cam, stvf(iters), restart || !count || !cameraaim(cam));
         }
         else
         {
             camrefresh(cam);
 
             int millis = lasttvchg ? totalmillis - lasttvchg : 0;
-            bool updated = camupdate(cam, stvf(iters), restart || !count || !spectvcameraaim), override = !lasttvchg || millis >= stvf(mintime),
+            bool updated = camupdate(cam, stvf(iters), restart || !count || !cameraaim(cam)), override = !lasttvchg || millis >= stvf(mintime),
                 timeup = !lasttvcam || totalmillis-lasttvcam >= stvf(time), overtime = stvf(maxtime) && millis >= stvf(maxtime);
 
             if(restart || overtime || timeup || (!updated && override))
@@ -3579,7 +3585,7 @@ namespace game
 
         if(!cam->player || cam->chase)
         {
-            if(cam->chase && !reset && spectvcameraaim)
+            if(!reset && cameraaim(cam))
             {
                 float speed = curtime / float(cam->player ? followtvspeed : stvf(speed));
                 #define SCALEAXIS(x) \
@@ -3601,7 +3607,7 @@ namespace game
                     float x##speed = speed * (cam->player ? followtv##x##scale : stvf(x##scale)) * x##scale;
                 SCALEAXIS(yaw);
                 SCALEAXIS(pitch);
-                scaleyawpitch(camera1->yaw, camera1->pitch, yaw, pitch, yawspeed, pitchspeed, (cam->player ? followtvrotate : stvf(rotate)));
+                scaleyawpitch(camera1->yaw, camera1->pitch, yaw, pitch, yawspeed, pitchspeed, cam->player ? followtvrotate : stvf(rotate));
             }
             else
             {
