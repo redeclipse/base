@@ -801,7 +801,7 @@ void smartmusic(bool cond, bool init, bool interm)
 
     SDL_UnlockMutex(music_mutex);
 
-    if(!nosound && soundmastervol && soundmusicvol && (cond || !isplaying || !hasmusic) && *name) playmusic(name);
+    if(!nosound && soundmastervol && soundmusicvol && (cond || !isplaying || !hasmusic)) playmusic(name);
 
     if(delstr) delete[] name;
 }

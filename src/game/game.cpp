@@ -2441,7 +2441,6 @@ namespace game
         {
             player1->stopmoving(true);
             if(gamestate == G_S_INTERMISSION) hud::showscores(true, true);
-            smartmusic(true, false, true);
         }
 
         if(gamestate == G_S_VOTING && oldstate != G_S_VOTING)
@@ -3754,7 +3753,8 @@ namespace game
                 return;
             }
 
-            int type = client::needsmap ? 6 : (m_edit(gamemode) && musicedit >= 0 ? musicedit : musictype);
+            static int lastmustype = 0;
+            int mustype = gs_intermission(gamestate) || client::needsmap ? 6 : (m_edit(gamemode) && musicedit >= 0 ? musicedit : musictype);
             if(!maptime)
             {
                 maptime = -1;
@@ -3765,16 +3765,16 @@ namespace game
             {
                 maptime = lastmillis ? lastmillis : 1;
                 mapstart = totalmillis ? totalmillis : 1;
-                if(type != 6) musicfade = totalmillis;
+                if(mustype != 6) musicfade = totalmillis;
                 RUNMAP("on_start");
                 resetcamera();
                 resetsway();
                 return;
             }
-            else if(!nosound && soundmastervol && soundmusicvol && type && !playingmusic())
+            else if(!nosound && soundmastervol && soundmusicvol && mustype && (!playingmusic() || mustype != lastmustype))
             {
-                if(type == 6) smartmusic(true);
-                else if((type == 2 || type == 5 || (!playmusic(mapmusic, type < 4) && (type == 1 || type == 4))) && *musicdir)
+                if(mustype == 6) smartmusic(true, false, true);
+                else if((mustype == 2 || mustype == 5 || (!playmusic(mapmusic, mustype < 4) && (mustype == 1 || mustype == 4))) && *musicdir)
                 {
                     vector<char *> files;
                     listfiles(musicdir, NULL, files);
@@ -3798,7 +3798,7 @@ namespace game
                             if(!goodext) continue;
 
                             defformatstring(musicfile, "%s/%s", musicdir, files[r]);
-                            if(playmusic(musicfile, type < 4)) break;
+                            if(playmusic(musicfile, mustype < 4)) break;
                         }
                         files.remove(r);
                     }
@@ -3823,6 +3823,8 @@ namespace game
                     log->addlist("args", "console", constr);
                     if(!log->push()) DELETEP(log);
                 }
+
+                lastmustype = mustype;
             }
 
             checklights();
