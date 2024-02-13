@@ -703,6 +703,37 @@ char *svariable(const char *name, const char *cur, char **storage, identfun fun,
     return newstring(cur);
 }
 
+#define GETVAR(id, vartype, name, retval) \
+    ident *id = idents.access(name); \
+    if(!id || id->type!=vartype) return retval;
+
+int clampvar(ident *id, int val, int minval, int maxval, bool msg)
+{
+    int oldval = val;
+    if(id->flags&IDF_HEX && uint(maxval) == 0xFFFFFFFFU)
+    {
+        if(uint(val) < uint(minval)) val = uint(minval);
+        else if(uint(val) > uint(maxval)) val = uint(maxval);
+        if(msg && val != oldval) debugcode("Valid range for %s is 0x%X..0x%X", id->name, uint(minval), uint(maxval));
+        return val;
+    }
+    else if(val < minval) val = minval;
+    else if(val > maxval) val = maxval;
+    if(msg && val != oldval) debugcode(id->flags&IDF_HEX ?
+            (minval <= 255 ? "Valid range for %s is %d..0x%X" : "Valid range for %s is 0x%X..0x%X") : "Valid range for %s is %d..%d",
+                id->name, minval, maxval);
+    return val;
+}
+
+float clampfvar(ident *id, float val, float minval, float maxval, bool msg)
+{
+    float oldval = val;
+    if(val < minval) val = minval;
+    else if(val > maxval) val = maxval;
+    if(msg && val != oldval) debugcode("Valid range for %s is %s..%s", id->name, floatstr(minval), floatstr(maxval));
+    return val;
+}
+
 struct defvar : identval
 {
     char *name;
@@ -747,8 +778,8 @@ hashnameset<defvar> defvars;
         { \
             id->minval = *min; \
             id->maxval = *max; \
-            *id->storage.i = clamp(*id->storage.i, id->minval, id->maxval); \
-            id->def.i = id->bin.i = clamp(*cur, id->minval, id->maxval); \
+            *id->storage.i = clampvar(id, *id->storage.i, id->minval, id->maxval); \
+            id->def.i = id->bin.i = clampvar(id, *cur, id->minval, id->maxval); \
         }, \
         def.i = variable(name, *min, *cur, *max, &def.i, defvar::changed, flags))
 
@@ -757,8 +788,8 @@ hashnameset<defvar> defvars;
         { \
             id->minvalf = *min; \
             id->maxvalf = *max; \
-            *id->storage.f = clamp(*id->storage.f, id->minvalf, id->maxvalf); \
-            id->def.f = id->bin.f = clamp(*cur, id->minvalf, id->maxvalf); \
+            *id->storage.f = clampfvar(id, *id->storage.f, id->minvalf, id->maxvalf); \
+            id->def.f = id->bin.f = clampfvar(id, *cur, id->minvalf, id->maxvalf); \
         }, \
         def.f = fvariable(name, *min, *cur, *max, &def.f, defvar::changed, flags))
 
@@ -788,37 +819,6 @@ DEFSVAR(defsvarp, IDF_COMPLETE|IDF_PERSIST);
 #endif
 DEFTVAR(deftvar, IDF_COMPLETE|IDF_TEXTURE|IDF_PRELOAD);
 DEFTVAR(deftvarp, IDF_COMPLETE|IDF_TEXTURE|IDF_PERSIST|IDF_PRELOAD);
-
-#define GETVAR(id, vartype, name, retval) \
-    ident *id = idents.access(name); \
-    if(!id || id->type!=vartype) return retval;
-
-int clampvar(ident *id, int val, int minval, int maxval, bool msg)
-{
-    int oldval = val;
-    if(id->flags&IDF_HEX && uint(maxval) == 0xFFFFFFFFU)
-    {
-        if(uint(val) < uint(minval)) val = uint(minval);
-        else if(uint(val) > uint(maxval)) val = uint(maxval);
-        if(msg && val != oldval) debugcode("Valid range for %s is 0x%X..0x%X", id->name, uint(minval), uint(maxval));
-        return val;
-    }
-    else if(val < minval) val = minval;
-    else if(val > maxval) val = maxval;
-    if(msg && val != oldval) debugcode(id->flags&IDF_HEX ?
-            (minval <= 255 ? "Valid range for %s is %d..0x%X" : "Valid range for %s is 0x%X..0x%X") : "Valid range for %s is %d..%d",
-                id->name, minval, maxval);
-    return val;
-}
-
-float clampfvar(ident *id, float val, float minval, float maxval, bool msg)
-{
-    float oldval = val;
-    if(val < minval) val = minval;
-    else if(val > maxval) val = maxval;
-    if(msg && val != oldval) debugcode("Valid range for %s is %s..%s", id->name, floatstr(minval), floatstr(maxval));
-    return val;
-}
 
 void setvar(const char *name, int i, bool dofunc, bool def, bool force)
 {
