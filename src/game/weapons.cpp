@@ -345,7 +345,7 @@ namespace weapons
         {
             if(weap == W_MELEE)
             {
-                from = secondary ? d->foottag(0) : d->feetpos();
+                from = d->feetpos();
                 dest = targ;
             }
             else

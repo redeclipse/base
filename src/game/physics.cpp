@@ -962,8 +962,9 @@ namespace physics
                 loopk(4)
                 {   // check ahead for collision with something else
                     bool collided = collide(d, dir);
-                    if(!collided || (collideplayer && !inanimate::is(collideplayer)) || collidewall.iszero() ||
-                        (collidematerial && (collidematerial&MATF_CLIP) == MAT_CLIP && collidematerial&MAT_LADDER))
+                    if(collided && collideplayer && !inanimate::is(collideplayer)) break;
+
+                    if(!collided || collidewall.iszero() || (collidematerial && (collidematerial&MATF_CLIP) == MAT_CLIP && collidematerial&MAT_LADDER))
                     {
                         d->o.add(dir);
                         continue;
@@ -1182,13 +1183,10 @@ namespace physics
             }
         }
 
-        bool sliding = d->impulsetimer(IM_T_SLIDE) != 0,
-             pounding = !sliding && !onfloor && d->impulse[IM_TYPE] == IM_T_POUND && d->impulsetime[IM_T_POUND] != 0,
-             kicking = !sliding && !pounding && !onfloor && d->action[AC_SPECIAL];
-
+        bool sliding = d->impulsetimer(IM_T_SLIDE) != 0, pounding = d->impulsetimer(IM_T_POUND) != 0, kicking = !onfloor && d->action[AC_SPECIAL];
         if((sliding || pounding || kicking) && d->canmelee(m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis, sliding))
         {   // we were doing something terrible with our feet, but now we're going to kick someone
-            vec oldpos = d->o, dir(d->yaw*RAD, 0.f);
+            vec oldpos = d->o, dir(d->yaw * RAD, 0.f);
             loopi(2)
             {
                 d->o.add(dir);

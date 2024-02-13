@@ -915,11 +915,11 @@ namespace projs
 
     void updatetargets(projent &proj, bool waited = false)
     {
-        if(proj.weap == W_MELEE || WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_LENGTH)
+        if(WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_LENGTH)
         {
             if(proj.weap == W_MELEE)
             {
-                vec feet = WS(proj.flags) ? proj.owner->foottag(0) : proj.owner->feetpos();
+                vec feet = proj.owner->feetpos();
                 if(proj.target && proj.target->isalive()) proj.dest = proj.target->headpos();
                 else proj.dest = vec(proj.dest).sub(proj.from).normalize().mul(proj.owner->radius).add(feet);
                 proj.o = proj.dest;
