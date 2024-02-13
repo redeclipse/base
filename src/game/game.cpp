@@ -927,7 +927,7 @@ namespace game
     bool intermthresh()
     {
         if(!gs_playing(gamestate)) return true;
-        if(gamestate == G_S_PLAYING && gettimeelapsed() <= spectvintermthresh && focus->iswatching()) return true;
+        if(gamestate == G_S_PLAYING && gettimeelapsed() <= spectvintermthresh && player1->iswatching()) return true;
         return false;
     }
 
@@ -939,7 +939,7 @@ namespace game
             else switch(player1->state)
             {
                 case CS_SPECTATOR: if(specmode) return true; break;
-                case CS_WAITING: if((waitmode && (!player1->lastdeath || lastmillis-player1->lastdeath >= 500))) return true; break;
+                case CS_WAITING: if((waitmode && (!player1->lastdeath || lastmillis - player1->lastdeath >= 500))) return true; break;
                 default: break;
             }
         }
