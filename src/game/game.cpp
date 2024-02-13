@@ -924,11 +924,18 @@ namespace game
 
     bool followaim() { return followaiming&(thirdpersonview(true) ? 1 : 2); }
 
+    bool intermthresh()
+    {
+        if(!gs_playing(gamestate)) return true;
+        if(gamestate == G_S_PLAYING && gettimeelapsed() >= spectvintermthresh && focus->iswatching()) return true;
+        return false;
+    }
+
     bool tvmode(bool check)
     {
         if(!check || !cameras.empty())
         {
-            if(!(gs_playing(gamestate) && (gamestate != G_S_PLAYING || gettimeelapsed() >= spectvintermthresh)) && intermmode) return true;
+            if(intermthresh() && intermmode) return true;
             else switch(player1->state)
             {
                 case CS_SPECTATOR: if(specmode) return true; break;
@@ -3508,7 +3515,6 @@ namespace game
     {
         if(gs_waiting(gamestate)) return true; // override
         if(!tvmode(false) || (cameras.empty() && !buildcams())) return false;
-        bool playing = gs_playing(gamestate) && (gamestate != G_S_PLAYING || gettimeelapsed() > spectvintermthresh);
         if(!gs_playing(gamestate)) spectvfollow = -1;
         else if(player1->state != CS_SPECTATOR && spectvfollowself >= (m_duke(gamemode, mutators) ? 2 : 1)) spectvfollow = player1->clientnum;
 
@@ -3522,7 +3528,7 @@ namespace game
         bool reset = false;
         int count = findcams(cam), lastcn = cam->cn;
 
-        #define stvf(z) (!playing ? spectvinterm##z : (spectvfollow >= 0 ? spectvfollow##z : spectv##z))
+        #define stvf(z) (intermthresh() ? spectvinterm##z : (spectvfollow >= 0 ? spectvfollow##z : spectv##z))
 
         if(spectvcamera >= 0)
         {
