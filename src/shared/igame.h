@@ -139,6 +139,8 @@ namespace game
     extern void start();
     extern bool clientoption(char *arg);
     extern void preload();
+    extern void cleangl();
+    extern void start();
     extern void updateworld();
     extern void newmap(int size, const char *mname = "");
     extern void resetmap(bool empty);
@@ -194,7 +196,6 @@ namespace game
     extern bool thirdpersonview(bool viewonly = false, physent *d = NULL);
     extern vec thirdpos(const vec &pos, float yaw, float pitch, float dist = 1, float side = 0);
     extern vec camerapos(physent *d, bool hasfoc = false, bool hasyp = false, float yaw = 0, float pitch = 0);
-    extern void start();
 }
 #endif
 namespace server

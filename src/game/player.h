@@ -305,6 +305,12 @@ struct mixer
         if(filename) delete[] filename;
     }
 
+    void cleanup()
+    {
+        tex = NULL;
+        triedload = false;
+    }
+
     Texture *loadtex()
     {
         if(triedload || !engineready) return tex;

@@ -153,6 +153,11 @@ namespace game
         }
     }
 
+    void cleangl()
+    {
+        loopv(mixers) mixers[i].cleanup();
+    }
+
     VAR(IDF_PERSIST, flashlightvolumetric, 0, 0, 1);
     VAR(IDF_PERSIST, flashlightspectator, 0, 0, 1);
     FVAR(IDF_PERSIST, flashlightlevelthird, 0, 0.5f, 1);

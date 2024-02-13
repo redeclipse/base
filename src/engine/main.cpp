@@ -509,6 +509,7 @@ void resetgl()
     engineready = false;
 
     UI::cleangl();
+    game::cleangl();
     cleanupva();
     cleanupparticles();
     cleanupstains();
@@ -541,6 +542,7 @@ void resetgl()
     allchanged(true);
 
     engineready = oldengineready;
+    if(engineready) game::preload();
 }
 
 ICOMMAND(IDF_NOECHO, resetgl, "", (void), if(!(identflags&IDF_MAP)) resetgl());
