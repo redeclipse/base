@@ -627,11 +627,11 @@ void calclight()
     calclight_canceled = false;
     check_calclight_progress = false;
     SDL_TimerID timer = SDL_AddTimer(250, calclighttimer, NULL);
-    Uint32 start = SDL_GetTicks();
+    Uint32 start = getclockticks();
     calcnormals(filltjoints > 0);
     calcsurfaces(worldroot, ivec(0, 0, 0), worldsize >> 1);
     clearnormals();
-    Uint32 end = SDL_GetTicks();
+    Uint32 end = getclockticks();
     if(timer) SDL_RemoveTimer(timer);
     progress(0, "Lighting done..");
     allchanged();

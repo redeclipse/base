@@ -72,6 +72,8 @@
 #ifndef STANDALONE
 #include "glexts.h"
 #include "glemu.h"
+#else
+typedef enet_uint32 Uint32;
 #endif
 
 #include "iengine.h"

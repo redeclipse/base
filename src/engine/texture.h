@@ -567,6 +567,8 @@ struct TextureAnim
 };
 
 extern int texturepause;
+extern Uint32 getclockticks();
+
 struct Texture
 {
     enum
@@ -655,15 +657,15 @@ struct Texture
         return id;
     }
 
-    bool paused()
+    bool paused(int ticks)
     {
-        return used < last && texturepause && totalmillis - used >= texturepause;
+        return used < last && texturepause && ticks - used >= texturepause;
     }
 
-    int update(int &d, int mindelay = -1)
+    int update(int &d, int ticks, int mindelay = -1)
     {
-        if(delay <= 0 || paused()) return -1;
-        int elapsed = totalmillis - last, wait = delay;
+        if(delay <= 0 || paused(ticks)) return -1;
+        int elapsed = ticks - last, wait = delay;
         if(mindelay >= 0 && wait < mindelay) wait = mindelay;
         if(elapsed < wait) return -1;
         d = wait;

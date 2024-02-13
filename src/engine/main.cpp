@@ -38,7 +38,7 @@ void textinput(bool on, int mask)
         if(!textinputmask)
         {
             SDL_StartTextInput();
-            textinputtime = SDL_GetTicks();
+            textinputtime = getclockticks();
         }
         textinputmask |= mask;
     }
@@ -964,7 +964,7 @@ void progress(float amt, const char *s, ...)
     if(amt < 0) amt = 0; // signals the start of a long process
     if(progressfps && lastprogress)
     {
-        int curprog = progressfps >= 0 ? progressfps : refreshrate, diff = SDL_GetTicks() - lastprogress;
+        int curprog = progressfps >= 0 ? progressfps : refreshrate, diff = getclockticks() - lastprogress;
         if(curprog > 0 && amt > 0 && diff >= 0 && diff < (1000 + curprog-1)/curprog) return;
     }
     clientkeepalive();
@@ -990,9 +990,10 @@ void progress(float amt, const char *s, ...)
     int oldflags = identflags;
     identflags &= ~IDF_MAP;
     progressing = true;
+    updatetextures();
     gl_drawnoview();
     swapbuffers(false);
-    lastprogress = SDL_GetTicks();
+    lastprogress = getclockticks();
     updatesounds();
     progressing = false;
     identflags = oldflags;

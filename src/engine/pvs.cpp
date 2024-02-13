@@ -1104,7 +1104,7 @@ void genpvs(int *viewcellsize)
 
     progress(-1, "Generating PVS.. (ESC to abort)");
     genpvs_canceled = false;
-    Uint32 start = SDL_GetTicks();
+    Uint32 start = getclockticks();
 
     clearpvs();
     calcpvsbounds();
@@ -1163,7 +1163,7 @@ void genpvs(int *viewcellsize)
     origpvsnodes.setsize(0);
     pvscompress.clear();
 
-    Uint32 end = SDL_GetTicks();
+    Uint32 end = getclockticks();
     if(genpvs_canceled)
     {
         clearpvs();

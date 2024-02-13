@@ -150,7 +150,7 @@ bool resolverwait(const char *name, ENetAddress *address)
     SDL_LockMutex(resolvermutex);
     resolverqueries.add(name);
     SDL_CondSignal(querycond);
-    int starttime = SDL_GetTicks(), timeout = 0;
+    int starttime = getclockticks(), timeout = 0;
     bool resolved = false;
     for(;;)
     {
@@ -164,7 +164,7 @@ bool resolverwait(const char *name, ENetAddress *address)
         }
         if(resolved) break;
 
-        timeout = SDL_GetTicks() - starttime;
+        timeout = getclockticks() - starttime;
         progress(min(float(timeout)/RESOLVERLIMIT, 1.0f), "%s", text);
         if(interceptkey(SDLK_ESCAPE)) timeout = RESOLVERLIMIT + 1;
         if(timeout > RESOLVERLIMIT) break;
@@ -189,7 +189,7 @@ int connectwithtimeout(ENetSocket sock, const char *hostname, const ENetAddress 
     progress(0, "%s", text);
 
     ENetSocketSet readset, writeset;
-    if(!enet_socket_connect(sock, &address)) for(int starttime = SDL_GetTicks(), timeout = 0; timeout <= CONNLIMIT;)
+    if(!enet_socket_connect(sock, &address)) for(int starttime = getclockticks(), timeout = 0; timeout <= CONNLIMIT;)
     {
         ENET_SOCKETSET_EMPTY(readset);
         ENET_SOCKETSET_EMPTY(writeset);
@@ -206,7 +206,7 @@ int connectwithtimeout(ENetSocket sock, const char *hostname, const ENetAddress 
                 return 0;
             }
         }
-        timeout = SDL_GetTicks() - starttime;
+        timeout = getclockticks() - starttime;
         progress(min(float(timeout)/CONNLIMIT, 1.0f), "%s", text);
         if(interceptkey(SDLK_ESCAPE)) break;
     }
@@ -427,7 +427,7 @@ void retrieveservers(vector<char> &data)
     defformatstring(text, "Retrieving servers from %s:[%d]..", servermaster, servermasterport);
     progress(0, "%s", text);
 
-    int starttime = SDL_GetTicks(), timeout = 0;
+    int starttime = getclockticks(), timeout = 0;
     const char *req = "update\n";
     int reqlen = strlen(req);
     ENetBuffer buf;
@@ -444,7 +444,7 @@ void retrieveservers(vector<char> &data)
             reqlen -= sent;
             if(reqlen <= 0) break;
         }
-        timeout = SDL_GetTicks() - starttime;
+        timeout = getclockticks() - starttime;
         progress(min(float(timeout)/RETRIEVELIMIT, 1.0f), "%s", text);
         if(interceptkey(SDLK_ESCAPE)) timeout = RETRIEVELIMIT + 1;
         if(timeout > RETRIEVELIMIT) break;
@@ -462,7 +462,7 @@ void retrieveservers(vector<char> &data)
             if(recv <= 0) break;
             data.advance(recv);
         }
-        timeout = SDL_GetTicks() - starttime;
+        timeout = getclockticks() - starttime;
         progress(min(float(timeout)/RETRIEVELIMIT, 1.0f), "%s", text);
         if(interceptkey(SDLK_ESCAPE)) timeout = RETRIEVELIMIT + 1;
         if(timeout > RETRIEVELIMIT) break;

@@ -756,7 +756,7 @@ ICOMMAND(0, savemapshot, "s", (char *mname), if(!(identflags&IDF_MAP)) save_maps
 
 void save_world(const char *mname, bool nodata, bool forcesave)
 {
-    int savingstart = SDL_GetTicks(), backuprev = hdr.revision;
+    int savingstart = getclockticks(), backuprev = hdr.revision;
 
     mapsaving = 1;
     setnames(mname, forcesave ? -1 : 0);
@@ -921,7 +921,7 @@ void save_world(const char *mname, bool nodata, bool forcesave)
         }
     }
 
-    conoutf(colourwhite, "Saved %s (\fs%s\fS by \fs%s\fS) v%d:%d(r%d) [0x%.8x] in %.1f secs", mapname, *maptitle ? maptitle : "Untitled", *mapauthor ? mapauthor : "Unknown", hdr.version, hdr.gamever, hdr.revision, mapcrc, (SDL_GetTicks()-savingstart)/1000.0f);
+    conoutf(colourwhite, "Saved %s (\fs%s\fS by \fs%s\fS) v%d:%d(r%d) [0x%.8x] in %.1f secs", mapname, *maptitle ? maptitle : "Untitled", *mapauthor ? mapauthor : "Unknown", hdr.version, hdr.gamever, hdr.revision, mapcrc, (getclockticks()-savingstart)/1000.0f);
     mapsaving = 0;
 }
 
@@ -987,7 +987,7 @@ ICOMMAND(0, copyvariantvars, "iii", (int *n, int *a, int *v), if(editmode) copyv
 
 bool load_world(const char *mname, int crc, int variant)
 {
-    int loadingstart = SDL_GetTicks();
+    int loadingstart = getclockticks();
     mapcrc = 0;
     setsvar("maptext", "", false);
     loop(tempfile, crc > 0 ? 2 : 1)
@@ -1383,7 +1383,7 @@ bool load_world(const char *mname, int crc, int variant)
 
         progress(0, "Preloading map models..");
         preloadusedmapmodels(true);
-        conoutf(colourwhite, "Loaded %s (\fs%s\fS by \fs%s\fS) v.%d:%d(r%d) [0x%.8x] in %.1fs", mapname, *maptitle ? maptitle : "Untitled", *mapauthor ? mapauthor : "Unknown", hdr.version, hdr.gamever, hdr.revision, mapcrc, (SDL_GetTicks()-loadingstart)/1000.0f);
+        conoutf(colourwhite, "Loaded %s (\fs%s\fS by \fs%s\fS) v.%d:%d(r%d) [0x%.8x] in %.1fs", mapname, *maptitle ? maptitle : "Untitled", *mapauthor ? mapauthor : "Unknown", hdr.version, hdr.gamever, hdr.revision, mapcrc, (getclockticks()-loadingstart)/1000.0f);
 
         progress(0, "Checking map..");
 

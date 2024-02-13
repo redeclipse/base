@@ -41,6 +41,8 @@ namespace UI
 
     VARR(uilastmillis, 0);
     VARR(uitotalmillis, 0);
+    VARR(uiclockmillis, 0);
+    VARR(uiclockticks, 0);
     VARR(uicurtime, 0);
 
     static Texture *loadthumbnail(const char *name, int tclamp)
@@ -49,11 +51,11 @@ namespace UI
 
         if(!t)
         {
-            if(uitotalmillis - lastthumbnail < uislotviewtime) t = textureload(uiloadtex, 0, true, false);
+            if(uiclockticks - lastthumbnail < uislotviewtime) t = textureload(uiloadtex, 0, true, false);
             else
             {
                 t = textureload(name, tclamp, true, false, texgc);
-                lastthumbnail = uitotalmillis;
+                lastthumbnail = uiclockticks;
             }
         }
 
@@ -3572,10 +3574,9 @@ namespace UI
         {
             setupdraw(CHANGE_SHADER);
 
-            LOCALPARAMF(millis, uilastmillis / 1000.0f);
-            LOCALPARAMF(totalmillis, uitotalmillis / 1000.0f);
-            LOCALPARAMF(realmillis, lastmillis / 1000.0f, totalmillis / 1000.0f);
-            LOCALPARAMF(viewsize, hudw*w, hudh*h, 1.0f/(hudw*w), 1.0f/(hudh*h));
+            LOCALPARAMF(curmillis, uilastmillis / 1000.0f, uitotalmillis / 1000.0f, lastmillis / 1000.0f, totalmillis / 1000.0f);
+            LOCALPARAMF(curticks, uiclockticks / 1000.0f, uiclockmillis / 1000.0f, getclockticks() / 1000.0f, getclockmillis() / 1000.0f);
+            LOCALPARAMF(viewsize, hudw * w, hudh * h, 1.0f / (hudw * w), 1.0f / (hudh * h));
             LOCALPARAMF(rendersize, sx, sy, w, h);
 
             vector<LocalShaderParam> list;
@@ -3700,10 +3701,10 @@ namespace UI
             {
                 if(!vp->uprate)
                 {   // zero uprate signals not to render more than once
-                    vp->lastrender = lastmillis;
+                    vp->lastrender = uiclockticks;
                     continue;
                 }
-                if(totalmillis - vp->lastrender < max(vp->uprate, viewportuprate)) continue;
+                if(uiclockticks - vp->lastrender < max(vp->uprate, viewportuprate)) continue;
             }
 
             vp->ready = vp->surf.render(min(vp->width, viewportsize), min(vp->height, viewportsize));
@@ -3711,11 +3712,11 @@ namespace UI
 
             if(vp->ready)
             {
-                vp->lastrender = totalmillis;
+                vp->lastrender = uiclockticks;
                 if(++rendered >= viewportlimit) break;
             }
         }
-        lastframe = totalmillis;
+        lastframe = uiclockticks;
 
         return processed;
     }
@@ -3759,7 +3760,7 @@ namespace UI
             vp->uprate = uprate;
             vp->width = width > 0 ? width : viewportsize;
             vp->height = height > 0 ? height : viewportsize;
-            vp->lastupdate = totalmillis;
+            vp->lastupdate = uiclockticks;
             vp->surf.worldpos = worldpos;
             vp->surf.yaw = yaw;
             vp->surf.pitch = pitch;
@@ -6530,11 +6531,11 @@ namespace UI
             {
                 if(!slot.thumbnail)
                 {
-                    if(uitotalmillis - lastthumbnail < uislotviewtime) t = textureload(uiloadtex);
+                    if(uiclockticks - lastthumbnail < uislotviewtime) t = textureload(uiloadtex);
                     else
                     {
                         slot.loadthumbnail();
-                        lastthumbnail = uitotalmillis;
+                        lastthumbnail = uiclockticks;
                     }
                 }
                 if(slot.thumbnail && slot.thumbnail != notexture) t = slot.thumbnail;
@@ -6640,11 +6641,11 @@ namespace UI
             {
                 if(!slot.thumbnail)
                 {
-                    if(uitotalmillis - lastthumbnail < uislotviewtime) t = textureload(uiloadtex);
+                    if(uiclockticks - lastthumbnail < uislotviewtime) t = textureload(uiloadtex);
                     else
                     {
                         slot.loadthumbnail();
-                        lastthumbnail = uitotalmillis;
+                        lastthumbnail = uiclockticks;
                     }
                 }
                 if(slot.thumbnail && slot.thumbnail != notexture) t = slot.thumbnail;
@@ -7463,6 +7464,7 @@ namespace UI
         }
 
         GLint oldfbo = renderfbo; // necessary as a texture can load at pretty much any point in the frame
+        poke(true);
 
         GLERROR;
         GLuint fbo = t ? t->fbo : 0;
@@ -7526,7 +7528,7 @@ namespace UI
         t->delay = delay;
         t->id = id;
         t->fbo = fbo;
-        t->used = t->last = totalmillis;
+        t->used = t->last = uiclockticks;
 
         bool hastex = false;
         loopv(surface->texs)
@@ -7748,8 +7750,8 @@ namespace UI
 
     static inline bool texsort(Texture *a, Texture *b)
     {
-        if(!a->paused() && b->paused()) return true;
-        if(a->paused() && !b->paused()) return false;
+        if(!a->paused(uiclockticks) && b->paused(uiclockticks)) return true;
+        if(a->paused(uiclockticks) && !b->paused(uiclockticks)) return false;
         if(a->last < b->last) return true;
         if(a->last > b->last) return false;
         return false;
@@ -7763,6 +7765,8 @@ namespace UI
         int oldhudw = hudw, oldhudh = hudh, oldsf = surfaceformat;
         GLuint oldfbo = renderfbo;
 
+        poke(true);
+
         int processed = 0;
         if(compositelimit) surface->texs.sort(texsort);
 
@@ -7772,12 +7776,12 @@ namespace UI
 
             if(t->rendered >= 2 && compositelimit > 0 && processed >= compositelimit) continue;
 
-            int delay = 0, elapsed = t->update(delay, compositeuprate);
+            int delay = 0, elapsed = t->update(delay, uiclockticks, compositeuprate);
             if(t->rendered >= 2 && elapsed < 0) continue;
 
             found = true;
 
-            poke();
+            poke(false);
 
             if(delay >= 0 && compositerewind)
             {
@@ -7836,7 +7840,7 @@ namespace UI
                 surface->hide(w);
             }
 
-            t->last = totalmillis;
+            t->last = uiclockticks;
 
             if(t->rendered < 2) t->rendered++;
             else if(delay < 0)
@@ -7853,7 +7857,7 @@ namespace UI
         }
 
         popsurface();
-        poke();
+        poke(false);
 
         if(found)
         {
@@ -7867,10 +7871,15 @@ namespace UI
     }
     ICOMMANDV(0, compositecount, surfaces[SURFACE_COMPOSITE] ? surfaces[SURFACE_COMPOSITE]->texs.length() : 0);
 
-    void poke()
+    void poke(bool ticks)
     {
         uilastmillis = lastmillis;
         uitotalmillis = totalmillis;
+        if(ticks)
+        {
+            uiclockmillis = getclockmillis();
+            uiclockticks = getclockticks();
+        }
         uicurtime = curtime;
     }
 

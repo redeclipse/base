@@ -16,12 +16,6 @@ VARR(paused, 0);
 VARR(timeerr, 0);
 VARR(shutdownwait, 0);
 
-#ifdef STANDALONE
-ICOMMANDV(0, tickmillis, int(enet_time_get()));
-#else
-ICOMMANDV(0, tickmillis, int(SDL_GetTicks()));
-#endif
-
 time_t clocktime = 0, currenttime = 0, clockoffset = 0;
 uint totalsecs = 0;
 
@@ -1008,22 +1002,33 @@ void flushserver(bool force)
 
 #ifndef STANDALONE
 int clockrealbase = 0, clockvirtbase = 0;
-void clockreset() { clockrealbase = SDL_GetTicks(); clockvirtbase = totalmillis; }
+void clockreset() { clockrealbase = getclockticks(); clockvirtbase = totalmillis; }
 VARF(IDF_PERSIST, clockerror, 990000, 1000000, 1010000, clockreset());
 VARF(IDF_PERSIST, clockfix, 0, 0, 1, clockreset());
 #endif
 
-int getclockmillis()
+Uint32 getclockticks()
 {
 #ifdef STANDALONE
-    return (int)enet_time_get();
+    return enet_time_get();
 #else
-    int millis = SDL_GetTicks() - clockrealbase;
+    return SDL_GetTicks();
+#endif
+}
+ICOMMANDV(0, clockticks, getclockticks());
+
+Uint32 getclockmillis()
+{
+#ifdef STANDALONE
+    return enet_time_get();
+#else
+    int millis = getclockticks() - clockrealbase;
     if(clockfix) millis = int(millis*(double(clockerror)/1000000));
     millis += clockvirtbase;
     return max(millis, totalmillis);
 #endif
 }
+ICOMMANDV(0, clockmillis, getclockmillis());
 
 int updatetimer(bool limit)
 {
@@ -1036,6 +1041,7 @@ int updatetimer(bool limit)
     if(limit) limitfps(millis, totalmillis);
 #endif
     elapsedtime = millis - totalmillis;
+
     if(paused) curtime = 0;
     else if(timescale != 100)
     {
@@ -1048,23 +1054,28 @@ int updatetimer(bool limit)
         curtime = elapsedtime + timeerr;
         timeerr = 0;
     }
+
 #ifndef STANDALONE
     if(limit && curtime > 200 && !connected(false, false) && !hasnonlocalclients()) curtime = 200;
 #endif
+
     lastmillis += curtime;
     totalmillis = millis;
+
     static int lastsec = 0;
     if(totalmillis-lastsec >= 1000)
     {
-        int cursecs = (totalmillis-lastsec)/1000;
+        int cursecs = (totalmillis - lastsec) / 1000;
         totalsecs += cursecs;
-        lastsec += cursecs*1000;
+        lastsec += cursecs * 1000;
+
         if(servercheck(maxruntime && !shutdownwait && int(totalsecs) >= maxruntime))
         {
             server::srvoutf(3, colouryellow, "Max run time reached (\fs\fc%s\fS), waiting for server to empty", timestr(maxruntime*1000, 4));
             shutdownwait = totalmillis;
         }
     }
+
     return elapsedtime;
 }
 
@@ -1352,9 +1363,6 @@ void serverloop()
     conoutf(colourgreen, "Dedicated server started, waiting for clients..");
     for(;;)
     {
-        //int _lastmillis = lastmillis;
-        //lastmillis = totalmillis = (int)enet_time_get();
-        //curtime = lastmillis-_lastmillis;
         updatetimer(false);
         cdpi::runframe();
         checkmaster();

@@ -880,7 +880,8 @@ extern void resetcursor(bool warp = true, bool reset = true);
 extern void getframemillis(float &avg, float &best, float &worst);
 extern void getfps(int &fps, int &bestdiff, int &worstdiff);
 extern void swapbuffers(bool overlay = true);
-extern int getclockmillis();
+extern Uint32 getclockticks();
+extern Uint32 getclockmillis();
 
 enum { KR_CONSOLE = 1<<0, KR_UI = 1<<1, KR_EDITMODE = 1<<2 };
 

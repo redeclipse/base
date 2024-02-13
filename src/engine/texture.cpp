@@ -1211,18 +1211,22 @@ VAR(IDF_PERSIST, texturepause, 0, 10000, VAR_MAX);
 
 void updatetextures()
 {
+    int ticks = getclockticks();
     enumerate(textures, Texture, t,
     {
         if(t.type&Texture::COMPOSITE || t.frames.length() <= 1) continue;
+
         int delay = 0;
-        int elapsed = t.update(delay);
+        int elapsed = t.update(delay, ticks);
         if(elapsed < 0) continue;
+
         int animlen = t.throb ? (t.frames.length() - 1) * 2 : t.frames.length();
         t.frame += elapsed / t.delay;
         t.frame %= animlen;
-        int frame = t.throb && t.frame >= t.frames.length() ? animlen-t.frame : t.frame;
+
+        int frame = t.throb && t.frame >= t.frames.length() ? animlen - t.frame : t.frame;
         t.id = t.frames.inrange(frame) ? t.frames[frame] : 0;
-        t.last = delay > 1 ? totalmillis - (elapsed % delay) : totalmillis;
+        t.last = delay > 1 ? ticks - (elapsed % delay) : ticks;
     });
 
     UI::updatetextures();
@@ -1392,7 +1396,7 @@ static Texture *newtexture(Texture *t, const char *rname, ImageData &s, int tcla
         }
     }
     t->id = t->frames.length() ? t->frames[0] : 0;
-    t->used = t->last = totalmillis;
+    t->used = t->last = getclockticks();
     t->rendered = 1;
     return t;
 }
@@ -1917,8 +1921,8 @@ Texture *textureload(const char *name, int tclamp, bool mipit, bool msg, bool gc
 bool settexture(Texture *t)
 {
     if(!t) t = notexture;
-    if(t->used && totalmillis)
-    if(t->used != totalmillis) t->used = totalmillis;
+    int ticks = getclockticks();
+    if(t->used != ticks) t->used = ticks;
     glBindTexture(GL_TEXTURE_2D, t->id);
     return t != notexture;
 }
