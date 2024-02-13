@@ -4491,7 +4491,7 @@ namespace game
             if(fade > 0.0f && fade < 1.0f)
             {
                 mdl.shimmercolor = vec4(pulsehexcol(d, PULSE_FLASH, 50), playershimmerblend);
-                mdl.shimmercolor.mul(vec::fromcolor(game::getcolour(d, playereffecttone, playereffecttonelevel, playereffecttonemix)));
+                mdl.shimmercolor.mul(vec::fromcolor(getcolour(d, playereffecttone, playereffecttonelevel, playereffecttonemix)));
                 mdl.shimmerparams = vec4(1.0f - fade, playershimmerslice, playershimmerfade / playershimmerslice, playershimmerbright);
             }
         }
@@ -4553,9 +4553,7 @@ namespace game
                 if(d->actortype >= A_ENEMY) mdl.flags |= MDL_CULL_DIST;
             }
             if(d != focus || (d != player1 ? fullbrightfocus&1 : fullbrightfocus&2)) mdl.flags |= MDL_FULLBRIGHT;
-            if((d != focus && playershadow < 2) || playershadow < 1 ||
-                (d == focus && d->state == CS_EDITING) ||
-                (camera1->o.squaredist(d->o) > playershadowsqdist))
+            if((d != focus && playershadow < 2) || playershadow < 1 || (d == focus && d->state == CS_EDITING) || (camera1->o.squaredist(d->o) > playershadowsqdist))
                 mdl.flags |= MDL_NOSHADOW;
         }
         else if(drawtex == DRAWTEX_HALO)
@@ -4656,7 +4654,7 @@ namespace game
             bool third = thirdpersonview();
             loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL)
             {
-                if(!n && drawtex == DRAWTEX_HALO) d->cleartags();
+                if(drawtex == DRAWTEX_HALO) d->cleartags();
                 if(d->actortype == A_HAZARD) continue;
                 renderplayer(d, 1, d->curscale, d == focus ? (third ? MDL_FORCESHADOW : MDL_ONLYSHADOW) : 0, vec4(1, 1, 1, opacity(d, true)));
             }
