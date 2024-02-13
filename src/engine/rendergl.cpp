@@ -1312,11 +1312,7 @@ void setcammatrix()
 
 void setcamprojmatrix(bool init, bool flush)
 {
-    if(init)
-    {
-        setcammatrix();
-    }
-
+    if(init) setcammatrix();
     jitteraa();
 
     camprojmatrix.muld(projmatrix, cammatrix);

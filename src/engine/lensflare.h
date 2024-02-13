@@ -28,11 +28,12 @@ struct flare
     int sparkle; // 0 = off, 1 = sparkles and flares, 2 = only sparkles
 };
 
+// VAR(IDF_PERSIST, flaresun, 0, 1, 1);
 VAR(IDF_PERSIST, flarelights, 0, 1, 7); // 0 = off, &1 = defined lights, &2 = all lights, &4 = all sparkle
 VAR(IDF_PERSIST, flarecutoff, 0, 1000, VAR_MAX);
 VAR(IDF_PERSIST, flaresize, 1, 100, VAR_MAX);
 VAR(IDF_PERSIST, flareshine, 1, 10, VAR_MAX);
-FVAR(IDF_PERSIST, flareblend, 0, 0.5f, 1);
+FVAR(IDF_PERSIST, flareblend, 0, 0.25f, 1);
 FVAR(IDF_PERSIST, flareadjust, 0, 0.7f, 1);
 
 struct flarerenderer : partrenderer
@@ -72,7 +73,7 @@ struct flarerenderer : partrenderer
         f.sparkle = sparkle;
     }
 
-    bool generate(const vec &o, vec &center, vec &flaredir, float &mod, float &size, bool sun, float radius)
+    bool generate(const vec &o, vec &center, vec &flaredir, float &mod, float &size, bool sun)
     {
         // frustrum + fog check
         if(isvisiblesphere(0.0f, o) > (sun?VFC_FOGGED:VFC_FULL_VISIBLE)) return false;
@@ -81,7 +82,7 @@ struct flarerenderer : partrenderer
         center = vec(camdir).mul(flaredir.dot(camdir)).add(camera1->o);
         if(sun) // fixed size
         {
-            mod = 1.0;
+            mod = 1.0f;
             size = flaredir.magnitude() * flaresize / 100.0f;
         }
         else
@@ -97,8 +98,7 @@ struct flarerenderer : partrenderer
     {
         vec flaredir, center;
         float mod = 0, size = 0;
-        if(generate(o, center, flaredir, mod, size, sun, sun ? 0.f : flarecutoff))
-            newflare(o, center, r, g, b, mod, size*scale, sun, sparkle);
+        if(generate(o, center, flaredir, mod, size, sun)) newflare(o, center, r, g, b, mod, size*scale, sun, sparkle);
     }
 
     void update()
@@ -109,7 +109,19 @@ struct flarerenderer : partrenderer
 
     void drawflares()
     {
+        /*
+        if(flaresun)
+        {
+            bvec color = getpielight();
+            vec epos = vec(camera1->o).add(vec(getpielightdir()).mul(2 * worldsize)), flaredir, center;
+            float mod = 0, size = 0;
+            if(generate(epos, center, flaredir, mod, size, true))
+                newflare(epos, center, color.r, color.g, color.b, mod, size, true, 1);
+        }
+        */
+
         if(!flarelights) return;
+
         const vector<extentity *> &ents = entities::getents();
         loopenti(ET_LIGHT)
         {
@@ -133,8 +145,8 @@ struct flarerenderer : partrenderer
 
             vec flaredir, center;
             float mod = 0, size = 0;
-            if(generate(epos, center, flaredir, mod, size, sun, sun ? 0.f : radius*flaresize/100.f))
-                newflare(epos, center, uchar(color.r*255), uchar(color.g*255), uchar(color.b*255), mod, size*scale, sun, sparkle);
+            if(generate(epos, center, flaredir, mod, size, sun))
+                newflare(epos, center, uchar(color.r * 255), uchar(color.g * 255), uchar(color.b * 255), mod, size*scale, sun, sparkle);
         }
     }
 
