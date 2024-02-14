@@ -156,7 +156,7 @@ mutstypes mutstype[] = {
         "Survivor", "Players battle to determine the winner"
     },
     {
-        G_M_CLASSIC,    (1<<G_M_CLASSIC),
+        G_M_CLASSIC, (1<<G_M_CLASSIC),
         (1<<G_M_FFA)|(1<<G_M_COOP)|(1<<G_M_DUEL)|(1<<G_M_SURVIVOR)|(1<<G_M_CLASSIC)|(1<<G_M_ONSLAUGHT)|(1<<G_M_VAMPIRE)|(1<<G_M_RESIZE)|(1<<G_M_HARD)|(1<<G_M_ARENA)|(1<<G_M_DARK)|(1<<G_M_GSP1)|(1<<G_M_GSP2)|(1<<G_M_GSP3),
         "Classic", "Weapons must be collected from spawns in the arena"
     },
@@ -212,7 +212,7 @@ extern mutstypes mutstype[];
 #endif
 
 #define m_game(a)           (a > -1 && a < G_MAX)
-#define m_check(a,b,c,d)    ((!a || (a < 0 ? !((0-a)&(1<<(c-G_PLAY))) : a&(1<<(c-G_PLAY)))) && (!b || (b < 0 ? !((0-b)&d) : b&d)))
+#define m_check(a,b,c,d)    ((!a || (a < 0 ? !((0 - a)&(1<<(c - G_PLAY))) : a&(1<<(c - G_PLAY)))) && (!b || (b < 0 ? !((0 - b)&d) : b&d)))
 #define m_local(a)          (a == G_DEMO)
 
 #define m_demo(a)           (a == G_DEMO)
@@ -333,7 +333,7 @@ extern mutstypes mutstype[];
     GVAR(f, l, a##racelapped, b, w11, c); \
     GVAR(f, l, a##racegauntlet, b, w12, c);
 
-#define DSG(a,b,x)          (m_duel(a, b) ? G(duel##x) : G(survivor##x))
+#define DSG(a,b,x) (m_duel(a, b) ? G(duel##x) : G(survivor##x))
 
 #define mapshrink(a,b,c,d) if((a) && (b) && (c) && *(c)) \
 { \
