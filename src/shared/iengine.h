@@ -270,10 +270,11 @@ enum
     en(um, Flare, FLARE) en(um, Clean Flare, CLEAN_FLARE) en(um, Noisy Flare, NOISY_FLARE) en(um, Muzzle Flare, MUZZLE_FLARE) \
     en(um, Lightning Flare, LIGHTNING_FLARE) en(um, Lightzap Flare, LIGHTZAP_FLARE) \
     en(um, Muzzle Flash, MUZZLE_FLASH) en(um, Snow, SNOW) \
-    en(um, Haze, HAZE) en(um, Haze Flame, HAZE_FLAME) en(um, Haze Tape, HAZE_TAPE) \
+    en(um, Haze, HAZE) en(um, Haze Flame, FLAME_HAZE) en(um, Haze Tape, TAPE_HAZE) \
     en(um, Rain, RAIN) \
-    en(um, Bubbles Soft, BUBBLES_SOFT) en(um, Bubbles, BUBBLES) \
+    en(um, Bubble Soft, BUBBLE_SOFT) en(um, Bubble, BUBBLE) \
     en(um, Splash Soft, SPLASH_SOFT) en(um, Splash, SPLASH) \
+    en(um, Bubble Haze, BUBBLE_HAZE) \
     en(um, Text, TEXT) en(um, Text Ontop, TEXT_ONTOP) \
     en(um, Explosion, EXPLOSION) en(um, Shockwave, SHOCKWAVE) en(um, Shockball, SHOCKBALL) en(um, Glimmery, GLIMMERY) \
     en(um, Lightning, LIGHTNING) en(um, Lightzap, LIGHTZAP) \

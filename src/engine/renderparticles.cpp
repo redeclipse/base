@@ -1336,13 +1336,14 @@ static partrenderer *parts[] =
     new quadrenderer("<grey>particles/muzzle", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP),
     new quadrenderer("<grey>particles/snow", PT_PART|PT_BRIGHT|PT_FLIP|PT_WIND),
     new quadrenderer("<comp:0,0.25,2>hint", PT_HAZE|PT_PART),
-    new quadrenderer("<comp:1,1,2>fire", PT_HAZE|PT_PART|PT_WIND),
+    new quadrenderer("<comp:1,1,2>fire", PT_HAZE|PT_PART|PT_HFLIP|PT_RND4|PT_WIND),
     new taperenderer("<grey>particles/sflare", PT_HAZE|PT_TAPE),
     new trailrenderer("<comp:0,0.25,2>hint", PT_TRAIL|PT_LERP|PT_WIND),
-    new quadrenderer("<grey>particles/bubbles", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
-    new quadrenderer("<grey>particles/bubbles", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
+    new quadrenderer("<comp:1,1,2>bubble", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
+    new quadrenderer("<comp:1,1,2>bubble", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
     new quadrenderer("<grey>particles/splash", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
     new quadrenderer("<grey>particles/splash", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
+    new quadrenderer("<comp:1,1,2>bubble", PT_HAZE|PT_PART|PT_RND4|PT_FLIP|PT_WIND),
     &texts, &textontop,
     &explosions, &shockwaves, &shockballs, &glimmerballs, &lightnings, &lightzaps,
     &flares // must be done last!
@@ -2201,12 +2202,12 @@ void makeparticle(const vec &o, attrvector &attr)
         case 23: // bubbles
         case 24: // splash
         {
-            const int typemap[] =        { PART_FLARE,   -1,     -1,     PART_LIGHTNING, PART_FIREBALL,  PART_SMOKE, PART_ELECTRIC,  PART_PLASMA,    PART_SNOW,  PART_SPARK,     -1,     -1,     PART_HAZE,  PART_HAZE_FLAME,    PART_HAZE_TAPE, PART_RAIN,     PART_CLEAN_FLARE,   PART_NOISY_FLARE,   PART_MUZZLE_FLARE,  PART_BUBBLES_SOFT,      PART_SPLASH_SOFT };
+            const int typemap[] =        { PART_FLARE,   -1,     -1,     PART_LIGHTNING, PART_FIREBALL,  PART_SMOKE, PART_ELECTRIC,  PART_PLASMA,    PART_SNOW,  PART_SPARK,     -1,     -1,     PART_HAZE,  PART_FLAME_HAZE,    PART_TAPE_HAZE, PART_RAIN,     PART_CLEAN_FLARE,   PART_NOISY_FLARE,   PART_MUZZLE_FLARE,  PART_BUBBLE_SOFT,      PART_SPLASH_SOFT };
             const bool tapemap[] =       { true,         false,  false,  true,           false,          false,      false,          false,          false,      false,          false,  false,  false,      false,              true,           false,         true,               true,               true,               false,                  false };
             const float sizemap[] =      { 0.28f,        0.0f,   0.0f,   0.25f,          4.f,            2.f,        0.6f,           4.f,            0.5f,       0.2f,           0.0f,   0.0f,   8.0f,       8.0f,               1.0f,           1.0f,          0.25f,              0.25f,              0.25f,              0.25f,                  0.25f };
 
             int mapped = attr[0] - 4, type = typemap[mapped];
-            bool istape = tapemap[mapped], ishaze = type == PART_HAZE || type == PART_HAZE_FLAME || type == PART_HAZE_TAPE;
+            bool istape = tapemap[mapped], ishaze = type == PART_HAZE || type == PART_FLAME_HAZE || type == PART_TAPE_HAZE;
 
             int fade = attr[4] > 0 ? attr[4] : 250, gravity = !istape ? attr[7] : 0,
                 stain = !istape ? (attr[6] >= 0 && attr[6] <= STAIN_MAX ? attr[6] : -1) : 0,

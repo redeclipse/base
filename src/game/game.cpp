@@ -4636,15 +4636,15 @@ namespace game
         if(d->corrodetime && d->corrodefunc(lastmillis, d->corrodetime))
         {
             int millis = lastmillis - d->lastres[W_R_CORRODE], delay = max(d->corrodedelay, 1);
-            float pc = 1, intensity = 0.25f + (rnd(26) / 100.f), fade = (d != focus || d->state != CS_ALIVE ? 0.2f : 0.1f) + (rnd(20) / 100.f);
+            float pc = 1, intensity = 0.35f + (rnd(36) / 100.f), fade = (d != focus || d->state != CS_ALIVE ? 0.2f : 0.1f) + (rnd(20) / 100.f);
 
             if(d->corrodetime - millis < delay) pc *= (d->corrodetime - millis) / float(delay);
             else pc *= 0.75f + ((millis % delay)/float(delay * 4));
 
             loopi(2)
             {
-                vec pos = vec(d->center()).add(vec(rnd(21) - 10, rnd(21) - 10, rnd(21) - 10).mul(pc));
-                regular_part_create(i ? PART_BUBBLES_SOFT : PART_SPLASH_SOFT, i ? 750 : 350, pos, pulsehexcol(d, PULSE_CORRODE, i ? -1 : 50), intensity * blend * pc, fade * blend * pc * (i ? 0.5f : 0.75f), 0, 0, i ? -35 : -70);
+                vec pos = vec(d->center()).add(vec(rnd(17) - 8, rnd(17) - 8, rnd(17) - 8).mul(pc));
+                regular_part_create(i ? PART_BUBBLE_SOFT : PART_SPLASH_SOFT, i ? 500 : 250, pos, pulsehexcol(d, PULSE_CORRODE, i ? -1 : 50), intensity * blend * pc, fade * blend * pc, 0, 0, i ? -25 : -50);
             }
         }
     }
