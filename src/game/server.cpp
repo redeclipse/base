@@ -4839,26 +4839,27 @@ namespace server
 
                         if(logs >= 2)
                         {
-                            int offset = clamp(logs-2, 0, 2), type = 1<<(FRAG_MKILL+offset); // double, triple, multi..
+                            int offset = clamp(logs - 2, 0, 2), type = 1<<(FRAG_MKILL + offset); // double, triple, multi..
                             if(!(v->rewards[0]&type))
                             {
                                 style |= type;
                                 v->rewards[0] |= type;
-                                if(!m_dm_oldschool(gamemode, mutators)) pointvalue += (G(multikillbonus) ? offset+1 : 1)*G(multikillpoints);
+                                if(!m_dm_oldschool(gamemode, mutators))
+                                    pointvalue += (G(multikillbonus) ? offset+1 : 1) * G(multikillpoints);
                             }
                         }
                     }
 
-                    loopj(FRAG_SPREES) if(m->rewards[1]&(1<<(FRAG_SPREE+j)))
+                    loopj(FRAG_SPREES) if(m->rewards[1]&(1<<(FRAG_SPREE + j)))
                     {
                         style |= FRAG_BREAKER;
                         if(!m_dm_oldschool(gamemode, mutators)) pointvalue += G(spreebreaker);
                         break;
                     }
 
-                    if(v->spree <= G(spreecount)*FRAG_SPREES && !(v->spree%G(spreecount)))
+                    if(v->spree <= G(spreecount) * FRAG_SPREES && !(v->spree % G(spreecount)))
                     {
-                        int offset = clamp((v->spree/G(spreecount)), 1, int(FRAG_SPREES)), type = 1<<(FRAG_SPREE + offset - 1);
+                        int offset = clamp((v->spree / G(spreecount)), 1, int(FRAG_SPREES)), type = 1<<(FRAG_SPREE + offset - 1);
                         if(!(v->rewards[0]&type))
                         {
                             style |= type;

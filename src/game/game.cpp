@@ -2394,7 +2394,6 @@ namespace game
 
         if(issound(d->plchan[PLCHAN_ALERT])) soundsources[d->plchan[PLCHAN_ALERT]].clear();
         if(flags&HIT_PRIZE) prizeeffect(d);
-        // entities::announce(S_OPENPRIZE, d, PLCHAN_ALERT);
 
         if(d->actortype < A_ENEMY || d->actortype == A_JANITOR)
         {
@@ -2402,7 +2401,7 @@ namespace game
             log->addlist("args", "type", "frag");
             log->addlist("args", "action", d == v ? "suicide" : "kill");
             log->addlist("args", "sound", anc);
-            log->addlist("args", "flags", GAMELOG_F_CLIENT1);
+            log->addlist("args", "flags", GAMELOG_F_CLIENT2);
             log->addlist("args", "actweap", weap);
             log->addlist("args", "actflags", flags);
             log->addlist("args", "fromweap", fromweap);
