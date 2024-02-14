@@ -921,6 +921,6 @@ GSVAR(0, 0, obitobliterated, "obliterated");
 GSVAR(0, 0, obitheadless, "decapitated");
 GSVAR(0, 0, obitsuicide, "suicided");
 GSVAR(0, 0, obitkilled, "killed");
-GSVAR(0, 0, obitsplat, "splatted");
-GSVAR(0, 0, obitsquish, "crushed");
+GSVAR(0, 0, obitsplat, "got splatted");
+GSVAR(0, 0, obitsquish, "was crushed");
 GSVAR(0, 0, obitjanitor, "disposed of their trash");
